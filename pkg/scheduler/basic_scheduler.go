@@ -34,16 +34,6 @@ func (scheduler *BasicScheduler) printCandidates(candidates []*core.Task) {
 	}
 }
 
-func inS(a string, list []string) bool {
-	for _, b := range list {
-		if b == a {
-			return true
-		}
-	}
-
-	return false
-}
-
 func (scheduler *BasicScheduler) Select(workerID string, candidates []*core.Task) *core.Task {
 	if len(candidates) == 0 {
 		return nil

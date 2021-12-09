@@ -18,8 +18,8 @@ func (db *Database) AddTask(task *core.Task) error {
 
 	submissionTime := time.Now()
 
-	sqlStatement := `INSERT INTO  ` + db.dbPrefix + `TASKS (TASK_ID, TARGET_COLONY_ID, TARGET_WORKER_IDS, ASSIGNED_WORKER_ID, STATUS, WORKER_TYPE, SUBMISSION_TIME, START_TIME, END_TIME, DEADLINE, RETRIES, TIMEOUT, MAX_RETRIES, LOG, MEM, CORES, GPUs) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)`
-	_, err := db.postgresql.Exec(sqlStatement, task.ID(), task.TargetColonyID(), pq.Array(targetWorkerIDs), task.AssignedWorkerID(), core.PENDING, task.WorkerType(), submissionTime, time.Time{}, time.Time{}, task.Deadline(), 0, task.Timeout(), task.MaxRetries(), "", task.Mem(), task.Cores(), task.GPUs())
+	sqlStatement := `INSERT INTO  ` + db.dbPrefix + `TASKS (TASK_ID, TARGET_COLONY_ID, TARGET_WORKER_IDS, ASSIGNED_WORKER_ID, STATUS, IS_ASSIGNED, WORKER_TYPE, SUBMISSION_TIME, START_TIME, END_TIME, DEADLINE, RETRIES, TIMEOUT, MAX_RETRIES, LOG, MEM, CORES, GPUs) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)`
+	_, err := db.postgresql.Exec(sqlStatement, task.ID(), task.TargetColonyID(), pq.Array(targetWorkerIDs), task.AssignedWorkerID(), task.Status(), task.Assigned(), task.WorkerType(), submissionTime, time.Time{}, time.Time{}, task.Deadline(), 0, task.Timeout(), task.MaxRetries(), "", task.Mem(), task.Cores(), task.GPUs())
 	if err != nil {
 		return err
 	}
@@ -38,6 +38,7 @@ func (db *Database) parseTasks(rows *sql.Rows) ([]*core.Task, error) {
 		var targetWorkerIDs []string
 		var assignedWorkerID string
 		var status int
+		var isAssigned bool
 		var workerType string
 		var submissionTime time.Time
 		var startTime time.Time
@@ -51,11 +52,11 @@ func (db *Database) parseTasks(rows *sql.Rows) ([]*core.Task, error) {
 		var cores int
 		var gpus int
 
-		if err := rows.Scan(&taskID, &targetColonyID, pq.Array(&targetWorkerIDs), &assignedWorkerID, &status, &workerType, &submissionTime, &startTime, &endTime, &deadline, &timeout, &retries, &maxRetries, &log, &mem, &cores, &gpus); err != nil {
+		if err := rows.Scan(&taskID, &targetColonyID, pq.Array(&targetWorkerIDs), &assignedWorkerID, &status, &isAssigned, &workerType, &submissionTime, &startTime, &endTime, &deadline, &timeout, &retries, &maxRetries, &log, &mem, &cores, &gpus); err != nil {
 			return nil, err
 		}
 
-		task := core.CreateTaskFromDB(taskID, targetColonyID, targetWorkerIDs, assignedWorkerID, status, workerType, submissionTime, startTime, endTime, deadline, timeout, retries, maxRetries, log, mem, cores, gpus)
+		task := core.CreateTaskFromDB(taskID, targetColonyID, targetWorkerIDs, assignedWorkerID, status, isAssigned, workerType, submissionTime, startTime, endTime, deadline, timeout, retries, maxRetries, log, mem, cores, gpus)
 		tasks = append(tasks, task)
 	}
 
@@ -112,7 +113,7 @@ func (db *Database) SearchTask(colonyID string, workerID string) ([]*core.Task, 
 
 	// Note: The @> function tests if an array is a subset of another array
 	// We need to do that since the TARGET_WORKER_IDS can contains many IDs
-	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `TASKS WHERE TARGET_COLONY_ID=$1 AND TARGET_WORKER_IDS@>$2 ORDER BY SUBMISSION_TIME LIMIT 1`
+	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `TASKS WHERE IS_ASSIGNED=FALSE AND TARGET_COLONY_ID=$1 AND TARGET_WORKER_IDS@>$2 ORDER BY SUBMISSION_TIME LIMIT 1`
 	rows1, err := db.postgresql.Query(sqlStatement, colonyID, pq.Array([]string{workerID}))
 	if err != nil {
 		return nil, err
@@ -155,6 +156,111 @@ func (db *Database) DeleteTaskByID(taskID string) error {
 	if err != nil {
 		return err
 	}
+
+	return nil
+}
+
+func (db *Database) AssignWorker(workerID string, task *core.Task) error {
+	startTime := time.Now()
+
+	sqlStatement := `UPDATE ` + db.dbPrefix + `TASKS SET IS_ASSIGNED=TRUE, START_TIME=$1, ASSIGNED_WORKER_ID=$2, STATUS=$3 WHERE TASK_ID=$4`
+	_, err := db.postgresql.Exec(sqlStatement, startTime, workerID, core.RUNNING, task.ID())
+	if err != nil {
+		return err
+	}
+
+	task.SetStartTime(startTime)
+	task.Assign()
+	task.SetAssignedWorkerID(workerID)
+	task.SetStatus(core.RUNNING)
+
+	return nil
+}
+
+func (db *Database) UnassignWorker(task *core.Task) error {
+	endTime := time.Now()
+
+	sqlStatement := `UPDATE ` + db.dbPrefix + `TASKS SET IS_ASSIGNED=FALSE, END_TIME=$1, STATUS=$2 WHERE TASK_ID=$3`
+	_, err := db.postgresql.Exec(sqlStatement, endTime, core.FAILED, task.ID())
+	if err != nil {
+		return err
+	}
+
+	task.SetEndTime(endTime)
+	task.Unassign()
+	task.SetStatus(core.FAILED)
+
+	return nil
+}
+
+func (db *Database) MarkSuccessful(task *core.Task) error {
+	if task.Status() == core.FAILED {
+		return errors.New("tried to set failed task as completed")
+	}
+
+	if task.Status() == core.WAITING {
+		return errors.New("tried to set waiting task as completed without being running")
+	}
+
+	taskFromDB, err := db.GetTaskByID(task.ID())
+	if err != nil {
+		return err
+	}
+
+	if taskFromDB.Status() == core.FAILED {
+		return errors.New("tried to set failed task (from db) as successful")
+	}
+
+	if taskFromDB.Status() == core.WAITING {
+		return errors.New("tried to set waiting task (from db) as successful without being running")
+	}
+
+	endTime := time.Now()
+
+	sqlStatement := `UPDATE ` + db.dbPrefix + `TASKS SET END_TIME=$1, STATUS=$2 WHERE TASK_ID=$3`
+	_, err = db.postgresql.Exec(sqlStatement, endTime, core.SUCCESS, task.ID())
+	if err != nil {
+		return err
+	}
+
+	task.SetEndTime(endTime)
+	task.SetStatus(core.SUCCESS)
+
+	return nil
+}
+
+func (db *Database) MarkFailed(task *core.Task) error {
+	endTime := time.Now()
+
+	if task.Status() == core.SUCCESS {
+		return errors.New("tried to set successful task as failed")
+	}
+
+	if task.Status() == core.WAITING {
+		return errors.New("tried to set waiting task as failed without being running")
+	}
+
+	taskFromDB, err := db.GetTaskByID(task.ID())
+	if err != nil {
+		return err
+	}
+
+	if taskFromDB.Status() == core.SUCCESS {
+		return errors.New("tried to set successful (from db) as failed")
+	}
+
+	if taskFromDB.Status() == core.WAITING {
+		return errors.New("tried to set successful task (from db) as failed without being running")
+	}
+
+	sqlStatement := `UPDATE ` + db.dbPrefix + `TASKS SET END_TIME=$1, STATUS=$2 WHERE TASK_ID=$3`
+	_, err = db.postgresql.Exec(sqlStatement, endTime, core.FAILED, task.ID())
+	if err != nil {
+		return err
+	}
+
+	task.SetEndTime(endTime)
+	task.SetStatus(core.SUCCESS)
 
 	return nil
 }
