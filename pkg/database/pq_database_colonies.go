@@ -8,7 +8,7 @@ import (
 	_ "github.com/lib/pq"
 )
 
-func (db *Database) AddColony(colony *core.Colony) error {
+func (db *PQDatabase) AddColony(colony *core.Colony) error {
 	sqlStatement := `INSERT INTO  ` + db.dbPrefix + `COLONIES (COLONY_ID, PRIVATE_KEY, NAME) VALUES ($1, $2, $3)`
 	_, err := db.postgresql.Exec(sqlStatement, colony.ID(), colony.PrivateKey(), colony.Name())
 	if err != nil {
@@ -18,7 +18,7 @@ func (db *Database) AddColony(colony *core.Colony) error {
 	return nil
 }
 
-func (db *Database) parseColonies(rows *sql.Rows) ([]*core.Colony, error) {
+func (db *PQDatabase) parseColonies(rows *sql.Rows) ([]*core.Colony, error) {
 	var colonies []*core.Colony
 
 	for rows.Next() {
@@ -39,7 +39,7 @@ func (db *Database) parseColonies(rows *sql.Rows) ([]*core.Colony, error) {
 	return colonies, nil
 }
 
-func (db *Database) GetColonies() ([]*core.Colony, error) {
+func (db *PQDatabase) GetColonies() ([]*core.Colony, error) {
 	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `COLONIES`
 	rows, err := db.postgresql.Query(sqlStatement)
 	if err != nil {
@@ -51,7 +51,7 @@ func (db *Database) GetColonies() ([]*core.Colony, error) {
 	return db.parseColonies(rows)
 }
 
-func (db *Database) GetColonyByID(id string) (*core.Colony, error) {
+func (db *PQDatabase) GetColonyByID(id string) (*core.Colony, error) {
 	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `COLONIES WHERE COLONY_ID=$1`
 	rows, err := db.postgresql.Query(sqlStatement, id)
 	if err != nil {
@@ -76,7 +76,7 @@ func (db *Database) GetColonyByID(id string) (*core.Colony, error) {
 	return colonies[0], nil
 }
 
-func (db *Database) DeleteColonyByID(colonyID string) error {
+func (db *PQDatabase) DeleteColonyByID(colonyID string) error {
 	err := db.DeleteWorkersByColonyID(colonyID)
 	if err != nil {
 		return err

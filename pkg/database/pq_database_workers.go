@@ -8,7 +8,7 @@ import (
 	_ "github.com/lib/pq"
 )
 
-func (db *Database) AddWorker(worker *core.Worker) error {
+func (db *PQDatabase) AddWorker(worker *core.Worker) error {
 	sqlStatement := `INSERT INTO  ` + db.dbPrefix + `WORKERS (WORKER_ID, NAME, COLONY_ID, CPU, CORES, MEM, GPU, GPUS, STATUS) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`
 	_, err := db.postgresql.Exec(sqlStatement, worker.ID(), worker.Name(), worker.ColonyID(), worker.CPU(), worker.Cores(), worker.Mem(), worker.GPU(), worker.GPUs(), 0)
 	if err != nil {
@@ -18,7 +18,7 @@ func (db *Database) AddWorker(worker *core.Worker) error {
 	return nil
 }
 
-func (db *Database) parseWorkers(rows *sql.Rows) ([]*core.Worker, error) {
+func (db *PQDatabase) parseWorkers(rows *sql.Rows) ([]*core.Worker, error) {
 	var workers []*core.Worker
 
 	for rows.Next() {
@@ -42,7 +42,7 @@ func (db *Database) parseWorkers(rows *sql.Rows) ([]*core.Worker, error) {
 	return workers, nil
 }
 
-func (db *Database) GetWorkers() ([]*core.Worker, error) {
+func (db *PQDatabase) GetWorkers() ([]*core.Worker, error) {
 	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `WORKERS`
 	rows, err := db.postgresql.Query(sqlStatement)
 	if err != nil {
@@ -54,7 +54,7 @@ func (db *Database) GetWorkers() ([]*core.Worker, error) {
 	return db.parseWorkers(rows)
 }
 
-func (db *Database) GetWorkerByID(workerID string) (*core.Worker, error) {
+func (db *PQDatabase) GetWorkerByID(workerID string) (*core.Worker, error) {
 	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `WORKERS WHERE WORKER_ID=$1`
 	rows, err := db.postgresql.Query(sqlStatement, workerID)
 	if err != nil {
@@ -79,7 +79,7 @@ func (db *Database) GetWorkerByID(workerID string) (*core.Worker, error) {
 	return workers[0], nil
 }
 
-func (db *Database) GetWorkersByColonyID(workerID string) ([]*core.Worker, error) {
+func (db *PQDatabase) GetWorkersByColonyID(workerID string) ([]*core.Worker, error) {
 	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `WORKERS WHERE COLONY_ID=$1`
 	rows, err := db.postgresql.Query(sqlStatement, workerID)
 	if err != nil {
@@ -96,7 +96,7 @@ func (db *Database) GetWorkersByColonyID(workerID string) ([]*core.Worker, error
 	return workers, nil
 }
 
-func (db *Database) ApproveWorker(worker *core.Worker) error {
+func (db *PQDatabase) ApproveWorker(worker *core.Worker) error {
 	sqlStatement := `UPDATE ` + db.dbPrefix + `WORKERS SET STATUS=1 WHERE WORKER_ID=$1`
 	_, err := db.postgresql.Exec(sqlStatement, worker.ID())
 	if err != nil {
@@ -108,7 +108,7 @@ func (db *Database) ApproveWorker(worker *core.Worker) error {
 	return nil
 }
 
-func (db *Database) RejectWorker(worker *core.Worker) error {
+func (db *PQDatabase) RejectWorker(worker *core.Worker) error {
 	sqlStatement := `UPDATE ` + db.dbPrefix + `WORKERS SET STATUS=2 WHERE WORKER_ID=$1`
 	_, err := db.postgresql.Exec(sqlStatement, worker.ID())
 	if err != nil {
@@ -120,7 +120,7 @@ func (db *Database) RejectWorker(worker *core.Worker) error {
 	return nil
 }
 
-func (db *Database) DeleteWorkerByID(workerID string) error {
+func (db *PQDatabase) DeleteWorkerByID(workerID string) error {
 	sqlStatement := `DELETE FROM ` + db.dbPrefix + `WORKERS WHERE WORKER_ID=$1`
 	_, err := db.postgresql.Exec(sqlStatement, workerID)
 	if err != nil {
@@ -130,7 +130,7 @@ func (db *Database) DeleteWorkerByID(workerID string) error {
 	return nil
 }
 
-func (db *Database) DeleteWorkersByColonyID(colonyID string) error {
+func (db *PQDatabase) DeleteWorkersByColonyID(colonyID string) error {
 	sqlStatement := `DELETE FROM ` + db.dbPrefix + `WORKERS WHERE COLONY_ID=$1`
 	_, err := db.postgresql.Exec(sqlStatement, colonyID)
 	if err != nil {

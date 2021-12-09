@@ -5,7 +5,7 @@ import (
 	"log"
 )
 
-func PrepareTests() (*Database, error) {
+func PrepareTests() (*PQDatabase, error) {
 	log.SetOutput(ioutil.Discard)
 
 	dbHost := "localhost"
@@ -15,7 +15,7 @@ func PrepareTests() (*Database, error) {
 	dbName := "postgres"
 	dbPrefix := "test"
 
-	db := CreateDatabase(dbHost, dbPort, dbUser, dbPassword, dbName, dbPrefix)
+	db := CreatePQDatabase(dbHost, dbPort, dbUser, dbPassword, dbName, dbPrefix)
 
 	err := db.Connect()
 	if err != nil {
