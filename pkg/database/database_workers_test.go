@@ -16,7 +16,8 @@ func TestAddWorker(t *testing.T) {
 	err = db.AddColony(colony)
 	CheckError(t, err)
 
-	worker := core.CreateWorker("1e1bfca6feb8a13df3cbbca1104f20b4b29c311724ee5f690356257108023fb", "test_worker", colony.ID(), "AMD Ryzen 9 5950X (32) @ 3.400GHz", 32, 80326, "NVIDIA GeForce RTX 2080 Ti Rev. A", 1)
+	workerID := core.GenerateRandomID()
+	worker := core.CreateWorker(workerID, "test_worker", colony.ID(), "AMD Ryzen 9 5950X (32) @ 3.400GHz", 32, 80326, "NVIDIA GeForce RTX 2080 Ti Rev. A", 1)
 
 	err = db.AddWorker(worker)
 	CheckError(t, err)
@@ -38,7 +39,7 @@ func TestAddWorker(t *testing.T) {
 		Fatal(t, "expected worker to be pending, not rejected")
 	}
 
-	if workerFromDB.ID() != "1e1bfca6feb8a13df3cbbca1104f20b4b29c311724ee5f690356257108023fb" {
+	if workerFromDB.ID() != workerID {
 		Fatal(t, "invalid worker id")
 	}
 
@@ -81,12 +82,14 @@ func TestAddTwoWorker(t *testing.T) {
 	err = db.AddColony(colony)
 	CheckError(t, err)
 
-	worker1 := core.CreateWorker("5dfda4f1d4be06bf9d9a143737fc87698e65f09c404c05de80ed43a49fe9aea", "test_worker", colony.ID(), "AMD Ryzen 9 5950X (32) @ 3.400GHz", 32, 80326, "NVIDIA GeForce RTX 2080 Ti Rev. A", 1)
+	worker1ID := core.GenerateRandomID()
+	worker1 := core.CreateWorker(worker1ID, "test_worker", colony.ID(), "AMD Ryzen 9 5950X (32) @ 3.400GHz", 32, 80326, "NVIDIA GeForce RTX 2080 Ti Rev. A", 1)
 
 	err = db.AddWorker(worker1)
 	CheckError(t, err)
 
-	worker2 := core.CreateWorker("4c9e02e0e1ee3e895128de093039d89cdeb7e66742520c96c4772afb374366a", "test_worker", colony.ID(), "AMD Ryzen 9 5950X (32) @ 3.400GHz", 32, 80326, "NVIDIA GeForce RTX 2080 Ti Rev. A", 1)
+	worker2ID := core.GenerateRandomID()
+	worker2 := core.CreateWorker(worker2ID, "test_worker", colony.ID(), "AMD Ryzen 9 5950X (32) @ 3.400GHz", 32, 80326, "NVIDIA GeForce RTX 2080 Ti Rev. A", 1)
 
 	err = db.AddWorker(worker2)
 	CheckError(t, err)
@@ -108,12 +111,14 @@ func TestGetWorkerByID(t *testing.T) {
 	err = db.AddColony(colony)
 	CheckError(t, err)
 
-	worker1 := core.CreateWorker("5dfda4f1d4be06bf9d9a143737fc87698e65f09c404c05de80ed43a49fe9aea", "test_worker", colony.ID(), "AMD Ryzen 9 5950X (32) @ 3.400GHz", 32, 80326, "NVIDIA GeForce RTX 2080 Ti Rev. A", 1)
+	worker1ID := core.GenerateRandomID()
+	worker1 := core.CreateWorker(worker1ID, "test_worker", colony.ID(), "AMD Ryzen 9 5950X (32) @ 3.400GHz", 32, 80326, "NVIDIA GeForce RTX 2080 Ti Rev. A", 1)
 
 	err = db.AddWorker(worker1)
 	CheckError(t, err)
 
-	worker2 := core.CreateWorker("4c9e02e0e1ee3e895128de093039d89cdeb7e66742520c96c4772afb374366a", "test_worker", colony.ID(), "AMD Ryzen 9 5950X (32) @ 3.400GHz", 32, 80326, "NVIDIA GeForce RTX 2080 Ti Rev. A", 1)
+	worker2ID := core.GenerateRandomID()
+	worker2 := core.CreateWorker(worker2ID, "test_worker", colony.ID(), "AMD Ryzen 9 5950X (32) @ 3.400GHz", 32, 80326, "NVIDIA GeForce RTX 2080 Ti Rev. A", 1)
 
 	err = db.AddWorker(worker2)
 	CheckError(t, err)
@@ -141,17 +146,20 @@ func TestGetWorkerByColonyID(t *testing.T) {
 	err = db.AddColony(colony2)
 	CheckError(t, err)
 
-	worker1 := core.CreateWorker("5dfda4f1d4be06bf9d9a143737fc87698e65f09c404c05de80ed43a49fe9aea", "test_worker", colony1.ID(), "AMD Ryzen 9 5950X (32) @ 3.400GHz", 32, 80326, "NVIDIA GeForce RTX 2080 Ti Rev. A", 1)
+	worker1ID := core.GenerateRandomID()
+	worker1 := core.CreateWorker(worker1ID, "test_worker", colony1.ID(), "AMD Ryzen 9 5950X (32) @ 3.400GHz", 32, 80326, "NVIDIA GeForce RTX 2080 Ti Rev. A", 1)
 
 	err = db.AddWorker(worker1)
 	CheckError(t, err)
 
-	worker2 := core.CreateWorker("4c9e02e0e1ee3e895128de093039d89cdeb7e66742520c96c4772afb374366a", "test_worker", colony1.ID(), "AMD Ryzen 9 5950X (32) @ 3.400GHz", 32, 80326, "NVIDIA GeForce RTX 2080 Ti Rev. A", 1)
+	worker2ID := core.GenerateRandomID()
+	worker2 := core.CreateWorker(worker2ID, "test_worker", colony1.ID(), "AMD Ryzen 9 5950X (32) @ 3.400GHz", 32, 80326, "NVIDIA GeForce RTX 2080 Ti Rev. A", 1)
 
 	err = db.AddWorker(worker2)
 	CheckError(t, err)
 
-	worker3 := core.CreateWorker("c93a222feea1e8d567a2c9d0f9e84bd7b3fe808bc5fd2e329cca0923184c096e", "test_worker", colony2.ID(), "AMD Ryzen 9 5950X (32) @ 3.400GHz", 32, 80326, "NVIDIA GeForce RTX 2080 Ti Rev. A", 1)
+	worker3ID := core.GenerateRandomID()
+	worker3 := core.CreateWorker(worker3ID, "test_worker", colony2.ID(), "AMD Ryzen 9 5950X (32) @ 3.400GHz", 32, 80326, "NVIDIA GeForce RTX 2080 Ti Rev. A", 1)
 
 	err = db.AddWorker(worker3)
 	CheckError(t, err)
@@ -161,10 +169,10 @@ func TestGetWorkerByColonyID(t *testing.T) {
 
 	counter := 0
 	for _, worker := range workersInColony1 {
-		if worker.ID() == "5dfda4f1d4be06bf9d9a143737fc87698e65f09c404c05de80ed43a49fe9aea" {
+		if worker.ID() == worker1ID {
 			counter++
 		}
-		if worker.ID() == "4c9e02e0e1ee3e895128de093039d89cdeb7e66742520c96c4772afb374366a" {
+		if worker.ID() == worker2ID {
 			counter++
 		}
 	}
@@ -183,7 +191,8 @@ func TestApproveWorker(t *testing.T) {
 	err = db.AddColony(colony)
 	CheckError(t, err)
 
-	worker := core.CreateWorker("5dfda4f1d4be06bf9d9a143737fc87698e65f09c404c05de80ed43a49fe9aea", "test_worker", colony.ID(), "AMD Ryzen 9 5950X (32) @ 3.400GHz", 32, 80326, "NVIDIA GeForce RTX 2080 Ti Rev. A", 1)
+	workerID := core.GenerateRandomID()
+	worker := core.CreateWorker(workerID, "test_worker", colony.ID(), "AMD Ryzen 9 5950X (32) @ 3.400GHz", 32, 80326, "NVIDIA GeForce RTX 2080 Ti Rev. A", 1)
 
 	err = db.AddWorker(worker)
 	CheckError(t, err)
@@ -242,17 +251,20 @@ func TestDeleteWorkers(t *testing.T) {
 	err = db.AddColony(colony2)
 	CheckError(t, err)
 
-	worker1 := core.CreateWorker("5dfda4f1d4be06bf9d9a143737fc87698e65f09c404c05de80ed43a49fe9aea", "test_worker", colony1.ID(), "AMD Ryzen 9 5950X (32) @ 3.400GHz", 32, 80326, "NVIDIA GeForce RTX 2080 Ti Rev. A", 1)
+	worker1ID := core.GenerateRandomID()
+	worker1 := core.CreateWorker(worker1ID, "test_worker", colony1.ID(), "AMD Ryzen 9 5950X (32) @ 3.400GHz", 32, 80326, "NVIDIA GeForce RTX 2080 Ti Rev. A", 1)
 
 	err = db.AddWorker(worker1)
 	CheckError(t, err)
 
-	worker2 := core.CreateWorker("4c9e02e0e1ee3e895128de093039d89cdeb7e66742520c96c4772afb374366a", "test_worker", colony1.ID(), "AMD Ryzen 9 5950X (32) @ 3.400GHz", 32, 80326, "NVIDIA GeForce RTX 2080 Ti Rev. A", 1)
+	worker2ID := core.GenerateRandomID()
+	worker2 := core.CreateWorker(worker2ID, "test_worker", colony1.ID(), "AMD Ryzen 9 5950X (32) @ 3.400GHz", 32, 80326, "NVIDIA GeForce RTX 2080 Ti Rev. A", 1)
 
 	err = db.AddWorker(worker2)
 	CheckError(t, err)
 
-	worker3 := core.CreateWorker("c93a222feea1e8d567a2c9d0f9e84bd7b3fe808bc5fd2e329cca0923184c096e", "test_worker", colony2.ID(), "AMD Ryzen 9 5950X (32) @ 3.400GHz", 32, 80326, "NVIDIA GeForce RTX 2080 Ti Rev. A", 1)
+	worker3ID := core.GenerateRandomID()
+	worker3 := core.CreateWorker(worker3ID, "test_worker", colony2.ID(), "AMD Ryzen 9 5950X (32) @ 3.400GHz", 32, 80326, "NVIDIA GeForce RTX 2080 Ti Rev. A", 1)
 
 	err = db.AddWorker(worker3)
 	CheckError(t, err)
