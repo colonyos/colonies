@@ -10,7 +10,7 @@ import (
 	_ "github.com/lib/pq"
 )
 
-func (db *Database) AddTask(task *core.Task) error {
+func (db *PQDatabase) AddTask(task *core.Task) error {
 	targetWorkerIDs := task.TargetWorkerIDs()
 	if len(task.TargetWorkerIDs()) == 0 {
 		targetWorkerIDs = []string{"*"}
@@ -29,7 +29,7 @@ func (db *Database) AddTask(task *core.Task) error {
 	return nil
 }
 
-func (db *Database) parseTasks(rows *sql.Rows) ([]*core.Task, error) {
+func (db *PQDatabase) parseTasks(rows *sql.Rows) ([]*core.Task, error) {
 	var tasks []*core.Task
 
 	for rows.Next() {
@@ -63,7 +63,7 @@ func (db *Database) parseTasks(rows *sql.Rows) ([]*core.Task, error) {
 	return tasks, nil
 }
 
-func (db *Database) GetTasks() ([]*core.Task, error) {
+func (db *PQDatabase) GetTasks() ([]*core.Task, error) {
 	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `TASKS`
 	rows, err := db.postgresql.Query(sqlStatement)
 	if err != nil {
@@ -75,9 +75,9 @@ func (db *Database) GetTasks() ([]*core.Task, error) {
 	return db.parseTasks(rows)
 }
 
-func (db *Database) GetTaskByID(id string) (*core.Task, error) {
+func (db *PQDatabase) GetTaskByID(taskID string) (*core.Task, error) {
 	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `TASKS WHERE TASK_ID=$1`
-	rows, err := db.postgresql.Query(sqlStatement, id)
+	rows, err := db.postgresql.Query(sqlStatement, taskID)
 	if err != nil {
 		return nil, err
 	}
@@ -100,7 +100,7 @@ func (db *Database) GetTaskByID(id string) (*core.Task, error) {
 	return tasks[0], nil
 }
 
-func (db *Database) selectCandidate(candidates []*core.Task) *core.Task {
+func (db *PQDatabase) selectCandidate(candidates []*core.Task) *core.Task {
 	if len(candidates) > 0 {
 		return candidates[0]
 	} else {
@@ -108,7 +108,7 @@ func (db *Database) selectCandidate(candidates []*core.Task) *core.Task {
 	}
 }
 
-func (db *Database) SearchTask(colonyID string, workerID string) ([]*core.Task, error) {
+func (db *PQDatabase) SearchTasks(colonyID string, workerID string) ([]*core.Task, error) {
 	var matches []*core.Task
 
 	// Note: The @> function tests if an array is a subset of another array
@@ -130,7 +130,7 @@ func (db *Database) SearchTask(colonyID string, workerID string) ([]*core.Task, 
 		matches = append(matches, tasks[0])
 	}
 
-	sqlStatement = `SELECT * FROM ` + db.dbPrefix + `TASKS WHERE TARGET_COLONY_ID=$1 AND TARGET_WORKER_IDS=$2 ORDER BY SUBMISSION_TIME LIMIT 1`
+	sqlStatement = `SELECT * FROM ` + db.dbPrefix + `TASKS WHERE IS_ASSIGNED=FALSE AND TARGET_COLONY_ID=$1 AND TARGET_WORKER_IDS=$2 ORDER BY SUBMISSION_TIME LIMIT 1`
 	rows2, err := db.postgresql.Query(sqlStatement, colonyID, pq.Array([]string{"*"}))
 	if err != nil {
 		return nil, err
@@ -150,7 +150,7 @@ func (db *Database) SearchTask(colonyID string, workerID string) ([]*core.Task, 
 	return matches, nil
 }
 
-func (db *Database) DeleteTaskByID(taskID string) error {
+func (db *PQDatabase) DeleteTaskByID(taskID string) error {
 	sqlStatement := `DELETE FROM ` + db.dbPrefix + `TASKS WHERE TASK_ID=$1`
 	_, err := db.postgresql.Exec(sqlStatement, taskID)
 	if err != nil {
@@ -160,7 +160,42 @@ func (db *Database) DeleteTaskByID(taskID string) error {
 	return nil
 }
 
-func (db *Database) AssignWorker(workerID string, task *core.Task) error {
+func (db *PQDatabase) DeleteAllTasks() error {
+	sqlStatement := `DELETE FROM ` + db.dbPrefix + `TASKS`
+	_, err := db.postgresql.Exec(sqlStatement)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (db *PQDatabase) ResetTask(task *core.Task) error {
+	sqlStatement := `UPDATE ` + db.dbPrefix + `TASKS SET IS_ASSIGNED=FALSE, START_TIME=$1, END_TIME=$2, ASSIGNED_WORKER_ID=$3, STATUS=$4 WHERE TASK_ID=$5`
+	_, err := db.postgresql.Exec(sqlStatement, time.Time{}, time.Time{}, "", core.WAITING, task.ID())
+	if err != nil {
+		return err
+	}
+
+	task.SetStartTime(time.Time{})
+	task.SetEndTime(time.Time{})
+	task.SetAssignedWorkerID("")
+	task.SetStatus(core.WAITING)
+
+	return nil
+}
+
+func (db *PQDatabase) ResetAllTasks(task *core.Task) error {
+	sqlStatement := `UPDATE ` + db.dbPrefix + `TASKS SET IS_ASSIGNED=FALSE, START_TIME=$1, END_TIME=$2, ASSIGNED_WORKER_ID=$3, STATUS=$4`
+	_, err := db.postgresql.Exec(sqlStatement, time.Time{}, time.Time{}, "", core.WAITING)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (db *PQDatabase) AssignWorker(workerID string, task *core.Task) error {
 	startTime := time.Now()
 
 	sqlStatement := `UPDATE ` + db.dbPrefix + `TASKS SET IS_ASSIGNED=TRUE, START_TIME=$1, ASSIGNED_WORKER_ID=$2, STATUS=$3 WHERE TASK_ID=$4`
@@ -177,7 +212,7 @@ func (db *Database) AssignWorker(workerID string, task *core.Task) error {
 	return nil
 }
 
-func (db *Database) UnassignWorker(task *core.Task) error {
+func (db *PQDatabase) UnassignWorker(task *core.Task) error {
 	endTime := time.Now()
 
 	sqlStatement := `UPDATE ` + db.dbPrefix + `TASKS SET IS_ASSIGNED=FALSE, END_TIME=$1, STATUS=$2 WHERE TASK_ID=$3`
@@ -193,7 +228,7 @@ func (db *Database) UnassignWorker(task *core.Task) error {
 	return nil
 }
 
-func (db *Database) MarkSuccessful(task *core.Task) error {
+func (db *PQDatabase) MarkSuccessful(task *core.Task) error {
 	if task.Status() == core.FAILED {
 		return errors.New("tried to set failed task as completed")
 	}
@@ -229,7 +264,7 @@ func (db *Database) MarkSuccessful(task *core.Task) error {
 	return nil
 }
 
-func (db *Database) MarkFailed(task *core.Task) error {
+func (db *PQDatabase) MarkFailed(task *core.Task) error {
 	endTime := time.Now()
 
 	if task.Status() == core.SUCCESS {
@@ -263,4 +298,54 @@ func (db *Database) MarkFailed(task *core.Task) error {
 	task.SetStatus(core.SUCCESS)
 
 	return nil
+}
+
+func (db *PQDatabase) NumberOfTasks() (int, error) {
+	sqlStatement := `SELECT COUNT(*) FROM ` + db.dbPrefix + `TASKS`
+	rows, err := db.postgresql.Query(sqlStatement)
+	if err != nil {
+		return -1, err
+	}
+
+	defer rows.Close()
+
+	rows.Next()
+	var count int
+	err = rows.Scan(&count)
+	if err != nil {
+		return -1, err
+	}
+
+	return count, nil
+}
+
+func (db *PQDatabase) countTasks(status int) (int, error) {
+	sqlStatement := `SELECT COUNT(*) FROM ` + db.dbPrefix + `TASKS WHERE STATUS=$1`
+	rows, err := db.postgresql.Query(sqlStatement, status)
+	if err != nil {
+		return -1, err
+	}
+
+	defer rows.Close()
+
+	rows.Next()
+	var count int
+	err = rows.Scan(&count)
+	if err != nil {
+		return -1, err
+	}
+
+	return count, nil
+}
+
+func (db *PQDatabase) NumberOfRunningTasks() (int, error) {
+	return db.countTasks(core.RUNNING)
+}
+
+func (db *PQDatabase) NumberOfSuccessfulTasks() (int, error) {
+	return db.countTasks(core.SUCCESS)
+}
+
+func (db *PQDatabase) NumberOfFailedTasks() (int, error) {
+	return db.countTasks(core.FAILED)
 }

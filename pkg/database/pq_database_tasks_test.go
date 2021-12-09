@@ -43,6 +43,51 @@ func TestAddTask(t *testing.T) {
 	}
 }
 
+func TestDeleteTasks(t *testing.T) {
+	db, err := PrepareTests()
+	CheckError(t, err)
+
+	colonyID := core.GenerateRandomID()
+	worker1ID := core.GenerateRandomID()
+	worker2ID := core.GenerateRandomID()
+
+	task1 := core.CreateTask(colonyID, []string{worker1ID, worker2ID}, "dummy", -1, 3, 1000, 10, 1)
+	err = db.AddTask(task1)
+	CheckError(t, err)
+
+	task2 := core.CreateTask(colonyID, []string{worker1ID, worker2ID}, "dummy", -1, 3, 1000, 10, 1)
+	err = db.AddTask(task2)
+	CheckError(t, err)
+
+	task3 := core.CreateTask(colonyID, []string{worker1ID, worker2ID}, "dummy", -1, 3, 1000, 10, 1)
+	err = db.AddTask(task3)
+	CheckError(t, err)
+
+	numberOfTasks, err := db.NumberOfTasks()
+	CheckError(t, err)
+	if numberOfTasks != 3 {
+		Fatal(t, "expected number of tasks to be 3")
+	}
+
+	err = db.DeleteTaskByID(task1.ID())
+	CheckError(t, err)
+
+	numberOfTasks, err = db.NumberOfTasks()
+	CheckError(t, err)
+	if numberOfTasks != 2 {
+		Fatal(t, "expected number of tasks to be 2")
+	}
+
+	err = db.DeleteAllTasks()
+	CheckError(t, err)
+
+	numberOfTasks, err = db.NumberOfTasks()
+	CheckError(t, err)
+	if numberOfTasks != 0 {
+		Fatal(t, "expected number of tasks to be 0")
+	}
+}
+
 func TestAssign(t *testing.T) {
 	db, err := PrepareTests()
 	CheckError(t, err)
@@ -202,6 +247,63 @@ func TestMarkFailed(t *testing.T) {
 	}
 }
 
+func TestReset(t *testing.T) {
+	db, err := PrepareTests()
+	CheckError(t, err)
+
+	colony, err := core.CreateColony("test_colony_name")
+	CheckError(t, err)
+
+	worker := core.CreateWorker(colony.ID(), "test_worker", colony.ID(), "AMD Ryzen 9 5950X (32) @ 3.400GHz", 32, 80326, "NVIDIA GeForce RTX 2080 Ti Rev. A", 1)
+	err = db.AddWorker(worker)
+	CheckError(t, err)
+
+	task := core.CreateTask(colony.ID(), []string{}, "dummy", -1, 3, 1000, 10, 1)
+	err = db.AddTask(task)
+	CheckError(t, err)
+	err = db.AssignWorker(worker.ID(), task)
+	CheckError(t, err)
+	err = db.MarkFailed(task)
+	CheckError(t, err)
+
+	task = core.CreateTask(colony.ID(), []string{}, "dummy", -1, 3, 1000, 10, 1)
+	err = db.AddTask(task)
+	CheckError(t, err)
+	err = db.AssignWorker(worker.ID(), task)
+	CheckError(t, err)
+	err = db.MarkFailed(task)
+	CheckError(t, err)
+
+	task = core.CreateTask(colony.ID(), []string{}, "dummy", -1, 3, 1000, 10, 1)
+	err = db.AddTask(task)
+	CheckError(t, err)
+	err = db.AssignWorker(worker.ID(), task)
+	CheckError(t, err)
+	err = db.MarkFailed(task)
+	CheckError(t, err)
+
+	numberOfFailedTasks, err := db.NumberOfFailedTasks()
+	if numberOfFailedTasks != 3 {
+		Fatal(t, "expected 3 failed tasks")
+	}
+
+	err = db.ResetTask(task)
+	CheckError(t, err)
+
+	numberOfFailedTasks, err = db.NumberOfFailedTasks()
+	if numberOfFailedTasks != 2 {
+		Fatal(t, "expected 2 failed tasks")
+	}
+
+	err = db.ResetAllTasks(task)
+	CheckError(t, err)
+
+	numberOfFailedTasks, err = db.NumberOfFailedTasks()
+	if numberOfFailedTasks != 0 {
+		Fatal(t, "expected 0 failed tasks")
+	}
+}
+
 func TestSearchTask1(t *testing.T) {
 	db, err := PrepareTests()
 	CheckError(t, err)
@@ -231,7 +333,7 @@ func TestSearchTask1(t *testing.T) {
 	err = db.AddTask(task2)
 	CheckError(t, err)
 
-	tasksFromDB, err := db.SearchTask(colony.ID(), worker2.ID())
+	tasksFromDB, err := db.SearchTasks(colony.ID(), worker2.ID())
 	CheckError(t, err)
 
 	if len(tasksFromDB) > 1 {
@@ -278,7 +380,7 @@ func TestSearchTask2(t *testing.T) {
 
 	time.Sleep(50 * time.Millisecond)
 
-	tasksFromDB, err := db.SearchTask(colony.ID(), worker2.ID())
+	tasksFromDB, err := db.SearchTasks(colony.ID(), worker2.ID())
 	CheckError(t, err)
 
 	if len(tasksFromDB) != 2 {
@@ -332,7 +434,7 @@ func TestSearchTask3(t *testing.T) {
 	err = db.AddTask(task2)
 	CheckError(t, err)
 
-	tasksFromDB, err := db.SearchTask(colony.ID(), worker1.ID())
+	tasksFromDB, err := db.SearchTasks(colony.ID(), worker1.ID())
 	CheckError(t, err)
 
 	if len(tasksFromDB) != 1 {
@@ -343,7 +445,7 @@ func TestSearchTask3(t *testing.T) {
 		Fatal(t, "expected task 1")
 	}
 
-	tasksFromDB, err = db.SearchTask(colony.ID(), worker2.ID())
+	tasksFromDB, err = db.SearchTasks(colony.ID(), worker2.ID())
 	CheckError(t, err)
 
 	if len(tasksFromDB) != 1 {
@@ -369,20 +471,91 @@ func TestSearchTaskAssigned(t *testing.T) {
 	err = db.AddWorker(worker1)
 	CheckError(t, err)
 
-	task1 := core.CreateTask(colony.ID(), []string{worker1.ID(), worker2.ID()}, "dummy", -1, 3, 1000, 10, 1)
+	task1 := core.CreateTask(colony.ID(), []string{}, "dummy", -1, 3, 1000, 10, 1)
 	err = db.AddTask(task1)
 	CheckError(t, err)
 
 	time.Sleep(50 * time.Millisecond)
 
-	task2 := core.CreateTask(colony.ID(), []string{worker1.ID(), worker2.ID()}, "dummy", -1, 3, 1000, 10, 1)
+	task2 := core.CreateTask(colony.ID(), []string{}, "dummy", -1, 3, 1000, 10, 1)
 	err = db.AddTask(task2)
 	CheckError(t, err)
 
-	tasksFromDB, err := db.SearchTask(colony.ID(), worker1.ID())
+	numberOfTasks, err := db.NumberOfTasks()
+	CheckError(t, err)
+	if numberOfTasks != 2 {
+		Fatal(t, "expected number of tasks to be 2")
+	}
+
+	numberOfRunningTasks, err := db.NumberOfRunningTasks()
+	CheckError(t, err)
+	if numberOfRunningTasks != 0 {
+		Fatal(t, "expected number of running tasks to be 0")
+	}
+
+	numberOfSuccesfulTasks, err := db.NumberOfSuccessfulTasks()
+	CheckError(t, err)
+	if numberOfSuccesfulTasks != 0 {
+		Fatal(t, "expected number of successful tasks to be 0")
+	}
+
+	numberOfFailedTasks, err := db.NumberOfFailedTasks()
+	CheckError(t, err)
+	if numberOfFailedTasks != 0 {
+		Fatal(t, "expected number of failed tasks to be 0")
+	}
+
+	tasksFromDB1, err := db.SearchTasks(colony.ID(), worker1.ID())
 	CheckError(t, err)
 
-	if len(tasksFromDB) != 1 {
+	if tasksFromDB1[0].ID() != task1.ID() {
+		Fatal(t, "expected task 1")
+	}
+
+	if len(tasksFromDB1) != 1 {
 		Fatal(t, "expected one task")
+	}
+
+	err = db.AssignWorker(worker1.ID(), tasksFromDB1[0])
+	CheckError(t, err)
+
+	numberOfRunningTasks, err = db.NumberOfRunningTasks()
+	CheckError(t, err)
+	if numberOfRunningTasks != 1 {
+		Fatal(t, "expected number of running tasks to be 1")
+	}
+
+	tasksFromDB2, err := db.SearchTasks(colony.ID(), worker1.ID())
+	CheckError(t, err)
+
+	if tasksFromDB2[0].ID() != task2.ID() {
+		Fatal(t, "expected task 2")
+	}
+
+	err = db.AssignWorker(worker1.ID(), tasksFromDB2[0])
+	CheckError(t, err)
+
+	numberOfRunningTasks, err = db.NumberOfRunningTasks()
+	CheckError(t, err)
+	if numberOfRunningTasks != 2 {
+		Fatal(t, "expected number of running tasks to be 2")
+	}
+
+	err = db.MarkSuccessful(tasksFromDB1[0])
+	CheckError(t, err)
+
+	err = db.MarkFailed(tasksFromDB2[0])
+	CheckError(t, err)
+
+	numberOfSuccesfulTasks, err = db.NumberOfSuccessfulTasks()
+	CheckError(t, err)
+	if numberOfSuccesfulTasks != 1 {
+		Fatal(t, "expected number of successful tasks to be 1")
+	}
+
+	numberOfFailedTasks, err = db.NumberOfFailedTasks()
+	CheckError(t, err)
+	if numberOfFailedTasks != 1 {
+		Fatal(t, "expected number of failed tasks to be 1")
 	}
 }
