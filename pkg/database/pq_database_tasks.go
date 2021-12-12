@@ -157,12 +157,24 @@ func (db *PQDatabase) DeleteTaskByID(taskID string) error {
 		return err
 	}
 
+	// TODO test this code
+	err = db.DeleteAllAttributesByTaskID(taskID)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
 func (db *PQDatabase) DeleteAllTasks() error {
 	sqlStatement := `DELETE FROM ` + db.dbPrefix + `TASKS`
 	_, err := db.postgresql.Exec(sqlStatement)
+	if err != nil {
+		return err
+	}
+
+	// TODO test this code
+	err = db.DeleteAllAttributes()
 	if err != nil {
 		return err
 	}

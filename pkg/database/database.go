@@ -37,4 +37,15 @@ type Database interface {
 	NumberOfRunningTasks()
 	NumberOfSuccessfulTasks()
 	NumberOfFailedTasks()
+
+	// Attribute functions
+	AddAttribute(attribute *core.Attribute) error
+	GetAttributeByID(attributeID string) (*core.Attribute, error)
+	GetAttribute(taskID string, key string, attributeType int) (*core.Attribute, error)
+	GetAttributes(taskID string, attributeType int) ([]*core.Attribute, error)
+	UpdateAttribute(attribute *core.Attribute) error
+	DeleteAttributeByID(attributeID string)
+	DeleteAttributeByTaskID(taskID string, attributeType int)
+	DeleteAllAttributesByTaskID(taskID string) error
+	DeleteAllAttributes() error
 }

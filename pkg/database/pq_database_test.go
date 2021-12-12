@@ -13,7 +13,7 @@ func PrepareTests() (*PQDatabase, error) {
 	dbUser := "postgres"
 	dbPassword := "rFcLGNkgsNtksg6Pgtn9CumL4xXBQ7"
 	dbName := "postgres"
-	dbPrefix := "test"
+	dbPrefix := "TEST_"
 
 	db := CreatePQDatabase(dbHost, dbPort, dbUser, dbPassword, dbName, dbPrefix)
 

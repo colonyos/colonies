@@ -22,13 +22,14 @@ func (db *PQDatabase) parseColonies(rows *sql.Rows) ([]*core.Colony, error) {
 	var colonies []*core.Colony
 
 	for rows.Next() {
-		var id string
+		var colonyID string
 		var privateKey string
 		var name string
-		if err := rows.Scan(&id, &privateKey, &name); err != nil {
+		if err := rows.Scan(&colonyID, &privateKey, &name); err != nil {
 			return nil, err
 		}
 
+		// No need to pass colonyID as it is derived from the private key
 		colony, err := core.CreateColonyFromDB(name, privateKey)
 		if err != nil {
 			return nil, err
