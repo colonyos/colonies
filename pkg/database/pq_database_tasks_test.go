@@ -88,6 +88,68 @@ func TestDeleteTasks(t *testing.T) {
 	}
 }
 
+func TestDeleteAllTasksAndAttributes(t *testing.T) {
+	db, err := PrepareTests()
+	CheckError(t, err)
+
+	colonyID := core.GenerateRandomID()
+
+	task1 := core.CreateTask(colonyID, []string{}, "dummy", -1, 3, 1000, 10, 1)
+	err = db.AddTask(task1)
+	CheckError(t, err)
+
+	attribute := core.CreateAttribute(task1.ID(), core.IN, "test_key1", "test_value1")
+	err = db.AddAttribute(attribute)
+	CheckError(t, err)
+
+	err = db.DeleteAllTasks()
+	CheckError(t, err)
+
+	attributeFromDB, err := db.GetAttribute(task1.ID(), "test_key1", core.IN)
+	CheckError(t, err)
+	if attributeFromDB != nil {
+		Fatal(t, "expected attribute not to be in database")
+	}
+}
+
+func TestDeleteTasksAndAttributes(t *testing.T) {
+	db, err := PrepareTests()
+	CheckError(t, err)
+
+	colonyID := core.GenerateRandomID()
+
+	task1 := core.CreateTask(colonyID, []string{}, "dummy", -1, 3, 1000, 10, 1)
+	err = db.AddTask(task1)
+	CheckError(t, err)
+
+	task2 := core.CreateTask(colonyID, []string{}, "dummy", -1, 3, 1000, 10, 1)
+	err = db.AddTask(task2)
+	CheckError(t, err)
+
+	attribute := core.CreateAttribute(task1.ID(), core.IN, "test_key1", "test_value1")
+	err = db.AddAttribute(attribute)
+	CheckError(t, err)
+
+	attribute = core.CreateAttribute(task2.ID(), core.IN, "test_key2", "test_value2")
+	err = db.AddAttribute(attribute)
+	CheckError(t, err)
+
+	err = db.DeleteTaskByID(task1.ID())
+	CheckError(t, err)
+
+	attributeFromDB, err := db.GetAttribute(task1.ID(), "test_key1", core.IN)
+	CheckError(t, err)
+	if attributeFromDB != nil {
+		Fatal(t, "expected attribute not to be in database")
+	}
+
+	attributeFromDB, err = db.GetAttribute(task2.ID(), "test_key2", core.IN)
+	CheckError(t, err)
+	if attributeFromDB == nil {
+		Fatal(t, "expected attribute to be in database")
+	}
+}
+
 func TestAssign(t *testing.T) {
 	db, err := PrepareTests()
 	CheckError(t, err)

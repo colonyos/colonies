@@ -3,7 +3,6 @@ package database
 import "colonies/pkg/core"
 
 type Database interface {
-
 	// Colony functions ...
 	AddColony(colony *core.Colony) error
 	GetColonies() ([]*core.Colony, error)
@@ -45,7 +44,7 @@ type Database interface {
 	GetAttributes(taskID string, attributeType int) ([]*core.Attribute, error)
 	UpdateAttribute(attribute *core.Attribute) error
 	DeleteAttributeByID(attributeID string)
-	DeleteAttributeByTaskID(taskID string, attributeType int)
+	DeleteAttributesByTaskID(taskID string, attributeType int)
 	DeleteAllAttributesByTaskID(taskID string) error
 	DeleteAllAttributes() error
 }

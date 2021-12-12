@@ -112,21 +112,41 @@ func (db *PQDatabase) UpdateAttribute(attribute *core.Attribute) error {
 }
 
 func (db *PQDatabase) DeleteAttributeByID(attributeID string) error {
-	// TODO
+	sqlStatement := `DELETE FROM ` + db.dbPrefix + `ATTRIBUTES WHERE ATTRIBUTE_ID=$1`
+	_, err := db.postgresql.Exec(sqlStatement, attributeID)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
-func (db *PQDatabase) DeleteAttributeByTaskID(taskID string, attributeType int) error {
-	// TODO
+func (db *PQDatabase) DeleteAttributesByTaskID(taskID string, attributeType int) error {
+	sqlStatement := `DELETE FROM ` + db.dbPrefix + `ATTRIBUTES WHERE TASK_ID=$1 AND ATTRIBUTE_TYPE=$2`
+	_, err := db.postgresql.Exec(sqlStatement, taskID, attributeType)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
 func (db *PQDatabase) DeleteAllAttributesByTaskID(taskID string) error {
-	// TODO
+	sqlStatement := `DELETE FROM ` + db.dbPrefix + `ATTRIBUTES WHERE TASK_ID=$1`
+	_, err := db.postgresql.Exec(sqlStatement, taskID)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
 func (db *PQDatabase) DeleteAllAttributes() error {
-	// TODO
+	sqlStatement := `DELETE FROM ` + db.dbPrefix + `ATTRIBUTES`
+	_, err := db.postgresql.Exec(sqlStatement)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
