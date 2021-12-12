@@ -134,3 +134,137 @@ func TestUpdateAttribute(t *testing.T) {
 		Fatal(t, "updated an attribute does not exists")
 	}
 }
+
+func TestDeleteAttributes(t *testing.T) {
+	db, err := PrepareTests()
+	CheckError(t, err)
+
+	taskID1 := core.GenerateRandomID()
+	taskID2 := core.GenerateRandomID()
+
+	attribute1 := core.CreateAttribute(taskID1, core.IN, "test_key1", "test_value1")
+	err = db.AddAttribute(attribute1)
+	CheckError(t, err)
+
+	attribute2 := core.CreateAttribute(taskID1, core.IN, "test_key2", "test_value2")
+	err = db.AddAttribute(attribute2)
+	CheckError(t, err)
+
+	attribute3 := core.CreateAttribute(taskID1, core.ERR, "test_key3", "test_value3")
+	err = db.AddAttribute(attribute3)
+	CheckError(t, err)
+
+	attribute4 := core.CreateAttribute(taskID2, core.OUT, "test_key4", "test_value4")
+	err = db.AddAttribute(attribute4)
+	CheckError(t, err)
+
+	attribute5 := core.CreateAttribute(taskID2, core.ERR, "test_key5", "test_value5")
+	err = db.AddAttribute(attribute5)
+	CheckError(t, err)
+
+	attribute6 := core.CreateAttribute(taskID2, core.ERR, "test_key6", "test_value6")
+	err = db.AddAttribute(attribute6)
+	CheckError(t, err)
+
+	attribute7 := core.CreateAttribute(taskID2, core.OUT, "test_key7", "test_value7")
+	err = db.AddAttribute(attribute7)
+	CheckError(t, err)
+
+	// Test DeleteAttributesByID
+
+	attributeFromDB, err := db.GetAttributeByID(attribute6.ID())
+	CheckError(t, err)
+	if attributeFromDB == nil {
+		Fatal(t, "expected attribute to be in database")
+	}
+
+	err = db.DeleteAttributeByID(attribute6.ID())
+	CheckError(t, err)
+
+	attributeFromDB, err = db.GetAttributeByID(attribute6.ID())
+	CheckError(t, err)
+	if attributeFromDB != nil {
+		Fatal(t, "expected attribute not to be in database")
+	}
+
+	// Test DeleteAttributesByTaskID
+
+	err = db.DeleteAttributesByTaskID(taskID1, core.IN)
+	CheckError(t, err)
+
+	attributeFromDB, err = db.GetAttributeByID(attribute1.ID())
+	CheckError(t, err)
+	if attributeFromDB != nil {
+		Fatal(t, "expected attribute not to be in database")
+	}
+
+	attributeFromDB, err = db.GetAttributeByID(attribute2.ID())
+	CheckError(t, err)
+	if attributeFromDB != nil {
+		Fatal(t, "expected attribute not to be in database")
+	}
+
+	attributeFromDB, err = db.GetAttributeByID(attribute3.ID())
+	CheckError(t, err)
+	if attributeFromDB == nil { // Attribute 3 should still be there since it is of type core.ERR
+		Fatal(t, "expected attribute to be in database")
+	}
+
+	// Test DeleteAllAttributesByTaskID
+
+	attributeFromDB, err = db.GetAttributeByID(attribute4.ID())
+	CheckError(t, err)
+	if attributeFromDB == nil {
+		Fatal(t, "expected attribute to be in database")
+	}
+
+	attributeFromDB, err = db.GetAttributeByID(attribute5.ID())
+	CheckError(t, err)
+	if attributeFromDB == nil {
+		Fatal(t, "expected attribute to be in database")
+	}
+
+	attributeFromDB, err = db.GetAttributeByID(attribute7.ID())
+	CheckError(t, err)
+	if attributeFromDB == nil {
+		Fatal(t, "expected attribute to be in database")
+	}
+
+	err = db.DeleteAllAttributesByTaskID(taskID2)
+	CheckError(t, err)
+
+	attributeFromDB, err = db.GetAttributeByID(attribute4.ID())
+	CheckError(t, err)
+	if attributeFromDB != nil {
+		Fatal(t, "expected attribute not to be in database")
+	}
+
+	attributeFromDB, err = db.GetAttributeByID(attribute5.ID())
+	CheckError(t, err)
+	if attributeFromDB != nil {
+		Fatal(t, "expected attribute not to be in database")
+	}
+
+	attributeFromDB, err = db.GetAttributeByID(attribute7.ID())
+	CheckError(t, err)
+	if attributeFromDB != nil {
+		Fatal(t, "expected attribute not to be in database")
+	}
+
+	// Test DeleteAllAttributes
+
+	attributeFromDB, err = db.GetAttributeByID(attribute3.ID())
+	CheckError(t, err)
+	if attributeFromDB == nil {
+		Fatal(t, "expected attribute to be in database")
+	}
+
+	err = db.DeleteAllAttributes()
+	CheckError(t, err)
+
+	attributeFromDB, err = db.GetAttributeByID(attribute3.ID())
+	CheckError(t, err)
+	if attributeFromDB != nil {
+		Fatal(t, "expected attribute not to be in database")
+	}
+}

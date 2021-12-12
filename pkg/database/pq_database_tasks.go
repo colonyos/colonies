@@ -173,7 +173,6 @@ func (db *PQDatabase) DeleteAllTasks() error {
 		return err
 	}
 
-	// TODO test this code
 	err = db.DeleteAllAttributes()
 	if err != nil {
 		return err
