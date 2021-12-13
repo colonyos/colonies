@@ -9,8 +9,8 @@ import (
 )
 
 func (db *PQDatabase) AddColony(colony *core.Colony) error {
-	sqlStatement := `INSERT INTO  ` + db.dbPrefix + `COLONIES (COLONY_ID, PRIVATE_KEY, NAME) VALUES ($1, $2, $3)`
-	_, err := db.postgresql.Exec(sqlStatement, colony.ID(), colony.PrivateKey(), colony.Name())
+	sqlStatement := `INSERT INTO  ` + db.dbPrefix + `COLONIES (COLONY_ID, NAME) VALUES ($1, $2)`
+	_, err := db.postgresql.Exec(sqlStatement, colony.ID(), colony.Name())
 	if err != nil {
 		return err
 	}
@@ -23,14 +23,12 @@ func (db *PQDatabase) parseColonies(rows *sql.Rows) ([]*core.Colony, error) {
 
 	for rows.Next() {
 		var colonyID string
-		var privateKey string
 		var name string
-		if err := rows.Scan(&colonyID, &privateKey, &name); err != nil {
+		if err := rows.Scan(&colonyID, &name); err != nil {
 			return nil, err
 		}
 
-		// No need to pass colonyID as it is derived from the private key
-		colony, err := core.CreateColonyFromDB(name, privateKey)
+		colony, err := core.CreateColony(colonyID, name)
 		if err != nil {
 			return nil, err
 		}

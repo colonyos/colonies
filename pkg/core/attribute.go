@@ -9,27 +9,28 @@ const (
 	IN  int = 0
 	OUT     = 1
 	ERR     = 2
+	ENV     = 4
 )
 
 type Attribute struct {
 	attributeID   string
-	taskID        string
+	targetID      string
 	attributeType int
 	key           string
 	value         string
 }
 
-func CreateAttribute(taskID string, attributeType int, key string, value string) *Attribute {
-	attributeID := crypto.GenerateHash([]byte(taskID + key + strconv.Itoa(attributeType))).String()
-	return &Attribute{attributeID: attributeID, taskID: taskID, attributeType: attributeType, key: key, value: value}
+func CreateAttribute(targetID string, attributeType int, key string, value string) *Attribute {
+	attributeID := crypto.GenerateHash([]byte(targetID + key + strconv.Itoa(attributeType))).String()
+	return &Attribute{attributeID: attributeID, targetID: targetID, attributeType: attributeType, key: key, value: value}
 }
 
 func (attribute *Attribute) ID() string {
 	return attribute.attributeID
 }
 
-func (attribute *Attribute) TaskID() string {
-	return attribute.taskID
+func (attribute *Attribute) TargetID() string {
+	return attribute.targetID
 }
 
 func (attribute *Attribute) AttributeType() int {

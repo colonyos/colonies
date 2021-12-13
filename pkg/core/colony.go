@@ -1,34 +1,12 @@
 package core
 
-import (
-	"colonies/pkg/crypto"
-)
-
 type Colony struct {
-	name     string
-	identity *crypto.Idendity
+	id   string
+	name string
 }
 
-func CreateColony(name string) (*Colony, error) {
-	colony := &Colony{name: name}
-
-	identity, err := crypto.CreateIdendity()
-	if err != nil {
-		return nil, err
-	}
-
-	colony.identity = identity
-
-	return colony, nil
-}
-
-func CreateColonyFromDB(name string, privateKey string) (*Colony, error) {
-	colony := &Colony{name: name}
-	var err error
-	colony.identity, err = crypto.CreateIdendityFromString(privateKey)
-	if err != nil {
-		return nil, err
-	}
+func CreateColony(id string, name string) (*Colony, error) {
+	colony := &Colony{id: id, name: name}
 
 	return colony, nil
 }
@@ -38,9 +16,5 @@ func (colony *Colony) Name() string {
 }
 
 func (colony *Colony) ID() string {
-	return colony.identity.ID()
-}
-
-func (colony *Colony) PrivateKey() string {
-	return colony.identity.PrivateKeyAsHex()
+	return colony.id
 }

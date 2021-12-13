@@ -25,8 +25,8 @@ func TestAddAttribute(t *testing.T) {
 	if attributeFromDB.ID() != attribute.ID() {
 		Fatal(t, "invalid attribute id")
 	}
-	if attributeFromDB.TaskID() != attribute.TaskID() {
-		Fatal(t, "invalid attribute task id")
+	if attributeFromDB.TargetID() != attribute.TargetID() {
+		Fatal(t, "invalid attribute target id")
 	}
 	if attributeFromDB.AttributeType() != attribute.AttributeType() {
 		Fatal(t, "invalid attribute type")
