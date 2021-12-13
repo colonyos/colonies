@@ -20,31 +20,31 @@ type Database interface {
 	DeleteWorkersByColonyID(colonyID string) error
 
 	// Task functions ...
-	AddTask(task *core.Task)
+	AddTask(task *core.Task) error
 	GetTasks() ([]*core.Task, error)
 	GetTaskByID(taskID string) (*core.Task, error)
 	SearchTasks(colonyID string, workerID string) ([]*core.Task, error)
 	DeleteTaskByID(taskID string) error
 	DeleteAllTasks() error
-	ResetTask(task *core.Task)
-	ResetAllTasks(task *core.Task)
-	AssignWorker(workerID string, task *core.Task)
-	UnassignWorker(task *core.Task)
+	ResetTask(task *core.Task) error
+	ResetAllTasks(task *core.Task) error
+	AssignWorker(workerID string, task *core.Task) error
+	UnassignWorker(task *core.Task) error
 	MarkSuccessful(task *core.Task) error
 	MarkFailed(task *core.Task) error
 	NumberOfTasks() (int, error)
-	NumberOfRunningTasks()
-	NumberOfSuccessfulTasks()
-	NumberOfFailedTasks()
+	NumberOfRunningTasks() (int, error)
+	NumberOfSuccessfulTasks() (int, error)
+	NumberOfFailedTasks() (int, error)
 
 	// Attribute functions
 	AddAttribute(attribute *core.Attribute) error
 	GetAttributeByID(attributeID string) (*core.Attribute, error)
-	GetAttribute(taskID string, key string, attributeType int) (*core.Attribute, error)
-	GetAttributes(taskID string, attributeType int) ([]*core.Attribute, error)
+	GetAttribute(targetID string, key string, attributeType int) (*core.Attribute, error)
+	GetAttributes(targetID string, attributeType int) ([]*core.Attribute, error)
 	UpdateAttribute(attribute *core.Attribute) error
-	DeleteAttributeByID(attributeID string)
-	DeleteAttributesByTaskID(taskID string, attributeType int)
-	DeleteAllAttributesByTaskID(taskID string) error
+	DeleteAttributeByID(attributeID string) error
+	DeleteAttributesByTaskID(targetID string, attributeType int) error
+	DeleteAllAttributesByTaskID(targetID string) error
 	DeleteAllAttributes() error
 }

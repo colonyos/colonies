@@ -10,7 +10,7 @@ func TestAddColony(t *testing.T) {
 	db, err := PrepareTests()
 	CheckError(t, err)
 
-	colony, err := core.CreateColony("test_colony_name")
+	colony, err := core.CreateColony(core.GenerateRandomID(), "test_colony_name")
 	CheckError(t, err)
 
 	err = db.AddColony(colony)
@@ -23,9 +23,6 @@ func TestAddColony(t *testing.T) {
 	if colonyFromDB.ID() != colony.ID() {
 		Fatal(t, "colony id mismatches")
 	}
-	if colonyFromDB.PrivateKey() != colony.PrivateKey() {
-		Fatal(t, "private key mismatches")
-	}
 	if colonyFromDB.Name() != colony.Name() {
 		Fatal(t, "name mismatches")
 	}
@@ -35,13 +32,13 @@ func TestAddTwoColonies(t *testing.T) {
 	db, err := PrepareTests()
 	CheckError(t, err)
 
-	colony1, err := core.CreateColony("test_colony_name_1")
+	colony1, err := core.CreateColony(core.GenerateRandomID(), "test_colony_name_1")
 	CheckError(t, err)
 
 	err = db.AddColony(colony1)
 	CheckError(t, err)
 
-	colony2, err := core.CreateColony("test_colony_name_2")
+	colony2, err := core.CreateColony(core.GenerateRandomID(), "test_colony_name_2")
 	CheckError(t, err)
 
 	err = db.AddColony(colony2)
@@ -58,13 +55,13 @@ func TestGetColonyByID(t *testing.T) {
 	db, err := PrepareTests()
 	CheckError(t, err)
 
-	colony1, err := core.CreateColony("test_colony_name_1")
+	colony1, err := core.CreateColony(core.GenerateRandomID(), "test_colony_name_1")
 	CheckError(t, err)
 
 	err = db.AddColony(colony1)
 	CheckError(t, err)
 
-	colony2, err := core.CreateColony("test_colony_name_2")
+	colony2, err := core.CreateColony(core.GenerateRandomID(), "test_colony_name_2")
 	CheckError(t, err)
 
 	err = db.AddColony(colony2)
@@ -81,13 +78,13 @@ func TestDeleteColonies(t *testing.T) {
 	db, err := PrepareTests()
 	CheckError(t, err)
 
-	colony1, err := core.CreateColony("test_colony_name_1")
+	colony1, err := core.CreateColony(core.GenerateRandomID(), "test_colony_name_1")
 	CheckError(t, err)
 
 	err = db.AddColony(colony1)
 	CheckError(t, err)
 
-	colony2, err := core.CreateColony("test_colony_name_2")
+	colony2, err := core.CreateColony(core.GenerateRandomID(), "test_colony_name_2")
 	CheckError(t, err)
 
 	err = db.AddColony(colony2)

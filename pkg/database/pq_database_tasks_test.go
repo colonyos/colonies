@@ -154,7 +154,7 @@ func TestAssign(t *testing.T) {
 	db, err := PrepareTests()
 	CheckError(t, err)
 
-	colony, err := core.CreateColony("test_colony_name")
+	colony, err := core.CreateColony(core.GenerateRandomID(), "test_colony_name")
 	CheckError(t, err)
 
 	worker := core.CreateWorker(colony.ID(), "test_worker", colony.ID(), "AMD Ryzen 9 5950X (32) @ 3.400GHz", 32, 80326, "NVIDIA GeForce RTX 2080 Ti Rev. A", 1)
@@ -213,7 +213,7 @@ func TestMarkSuccessful(t *testing.T) {
 	db, err := PrepareTests()
 	CheckError(t, err)
 
-	colony, err := core.CreateColony("test_colony_name")
+	colony, err := core.CreateColony(core.GenerateRandomID(), "test_colony_name")
 	CheckError(t, err)
 
 	worker := core.CreateWorker(colony.ID(), "test_worker", colony.ID(), "AMD Ryzen 9 5950X (32) @ 3.400GHz", 32, 80326, "NVIDIA GeForce RTX 2080 Ti Rev. A", 1)
@@ -263,7 +263,7 @@ func TestMarkFailed(t *testing.T) {
 	db, err := PrepareTests()
 	CheckError(t, err)
 
-	colony, err := core.CreateColony("test_colony_name")
+	colony, err := core.CreateColony(core.GenerateRandomID(), "test_colony_name")
 	CheckError(t, err)
 
 	worker := core.CreateWorker(colony.ID(), "test_worker", colony.ID(), "AMD Ryzen 9 5950X (32) @ 3.400GHz", 32, 80326, "NVIDIA GeForce RTX 2080 Ti Rev. A", 1)
@@ -313,7 +313,7 @@ func TestReset(t *testing.T) {
 	db, err := PrepareTests()
 	CheckError(t, err)
 
-	colony, err := core.CreateColony("test_colony_name")
+	colony, err := core.CreateColony(core.GenerateRandomID(), "test_colony_name")
 	CheckError(t, err)
 
 	worker := core.CreateWorker(colony.ID(), "test_worker", colony.ID(), "AMD Ryzen 9 5950X (32) @ 3.400GHz", 32, 80326, "NVIDIA GeForce RTX 2080 Ti Rev. A", 1)
@@ -370,7 +370,7 @@ func TestSearchTask1(t *testing.T) {
 	db, err := PrepareTests()
 	CheckError(t, err)
 
-	colony, err := core.CreateColony("test_colony_name_1")
+	colony, err := core.CreateColony(core.GenerateRandomID(), "test_colony_name_1")
 	CheckError(t, err)
 	err = db.AddColony(colony)
 	CheckError(t, err)
@@ -411,7 +411,7 @@ func TestSearchTask2(t *testing.T) {
 	db, err := PrepareTests()
 	CheckError(t, err)
 
-	colony, err := core.CreateColony("test_colony_name_1")
+	colony, err := core.CreateColony(core.GenerateRandomID(), "test_colony_name_1")
 	CheckError(t, err)
 	err = db.AddColony(colony)
 	CheckError(t, err)
@@ -469,7 +469,7 @@ func TestSearchTask3(t *testing.T) {
 	db, err := PrepareTests()
 	CheckError(t, err)
 
-	colony, err := core.CreateColony("test_colony_name_1")
+	colony, err := core.CreateColony(core.GenerateRandomID(), "test_colony_name_1")
 	CheckError(t, err)
 	err = db.AddColony(colony)
 	CheckError(t, err)
@@ -523,7 +523,7 @@ func TestSearchTaskAssigned(t *testing.T) {
 	db, err := PrepareTests()
 	CheckError(t, err)
 
-	colony, err := core.CreateColony("test_colony_name_1")
+	colony, err := core.CreateColony(core.GenerateRandomID(), "test_colony_name_1")
 	CheckError(t, err)
 	err = db.AddColony(colony)
 	CheckError(t, err)

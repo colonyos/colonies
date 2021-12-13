@@ -7,8 +7,8 @@ import (
 )
 
 func (db *PQDatabase) AddAttribute(attribute *core.Attribute) error {
-	sqlStatement := `INSERT INTO  ` + db.dbPrefix + `ATTRIBUTES (ATTRIBUTE_ID, KEY, VALUE, ATTRIBUTE_TYPE, TASK_ID) VALUES ($1, $2, $3, $4, $5)`
-	_, err := db.postgresql.Exec(sqlStatement, attribute.ID(), attribute.Key(), attribute.Value(), attribute.AttributeType(), attribute.TaskID())
+	sqlStatement := `INSERT INTO  ` + db.dbPrefix + `ATTRIBUTES (ATTRIBUTE_ID, KEY, VALUE, ATTRIBUTE_TYPE, TARGET_ID) VALUES ($1, $2, $3, $4, $5)`
+	_, err := db.postgresql.Exec(sqlStatement, attribute.ID(), attribute.Key(), attribute.Value(), attribute.AttributeType(), attribute.TargetID())
 	if err != nil {
 		return err
 	}
@@ -24,13 +24,12 @@ func (db *PQDatabase) parseAttributes(rows *sql.Rows) ([]*core.Attribute, error)
 		var key string
 		var value string
 		var taskType int
-		var taskID string
-		if err := rows.Scan(&attributeID, &key, &value, &taskType, &taskID); err != nil {
+		var targetID string
+		if err := rows.Scan(&attributeID, &key, &value, &taskType, &targetID); err != nil {
 			return nil, err
 		}
 
-		// No need to pass attribute ID as it is derived from taskID and key
-		attribute := core.CreateAttribute(taskID, taskType, key, value)
+		attribute := core.CreateAttribute(targetID, taskType, key, value)
 		attributes = append(attributes, attribute)
 	}
 
@@ -59,9 +58,9 @@ func (db *PQDatabase) GetAttributeByID(attributeID string) (*core.Attribute, err
 	return attributes[0], nil
 }
 
-func (db *PQDatabase) GetAttribute(taskID string, key string, attributeType int) (*core.Attribute, error) {
-	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `ATTRIBUTES where TASK_ID=$1 AND KEY=$2 AND ATTRIBUTE_TYPE=$3`
-	rows, err := db.postgresql.Query(sqlStatement, taskID, key, attributeType)
+func (db *PQDatabase) GetAttribute(targetID string, key string, attributeType int) (*core.Attribute, error) {
+	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `ATTRIBUTES where TARGET_ID=$1 AND KEY=$2 AND ATTRIBUTE_TYPE=$3`
+	rows, err := db.postgresql.Query(sqlStatement, targetID, key, attributeType)
 	if err != nil {
 		return nil, err
 	}
@@ -81,9 +80,9 @@ func (db *PQDatabase) GetAttribute(taskID string, key string, attributeType int)
 	return attributes[0], nil
 }
 
-func (db *PQDatabase) GetAttributes(taskID string, attributeType int) ([]*core.Attribute, error) {
-	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `ATTRIBUTES where TASK_ID=$1 AND ATTRIBUTE_TYPE=$2`
-	rows, err := db.postgresql.Query(sqlStatement, taskID, attributeType)
+func (db *PQDatabase) GetAttributes(targetID string, attributeType int) ([]*core.Attribute, error) {
+	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `ATTRIBUTES where TARGET_ID=$1 AND ATTRIBUTE_TYPE=$2`
+	rows, err := db.postgresql.Query(sqlStatement, targetID, attributeType)
 	if err != nil {
 		return nil, err
 	}
@@ -121,9 +120,9 @@ func (db *PQDatabase) DeleteAttributeByID(attributeID string) error {
 	return nil
 }
 
-func (db *PQDatabase) DeleteAttributesByTaskID(taskID string, attributeType int) error {
-	sqlStatement := `DELETE FROM ` + db.dbPrefix + `ATTRIBUTES WHERE TASK_ID=$1 AND ATTRIBUTE_TYPE=$2`
-	_, err := db.postgresql.Exec(sqlStatement, taskID, attributeType)
+func (db *PQDatabase) DeleteAttributesByTaskID(targetID string, attributeType int) error {
+	sqlStatement := `DELETE FROM ` + db.dbPrefix + `ATTRIBUTES WHERE TARGET_ID=$1 AND ATTRIBUTE_TYPE=$2`
+	_, err := db.postgresql.Exec(sqlStatement, targetID, attributeType)
 	if err != nil {
 		return err
 	}
@@ -131,9 +130,9 @@ func (db *PQDatabase) DeleteAttributesByTaskID(taskID string, attributeType int)
 	return nil
 }
 
-func (db *PQDatabase) DeleteAllAttributesByTaskID(taskID string) error {
-	sqlStatement := `DELETE FROM ` + db.dbPrefix + `ATTRIBUTES WHERE TASK_ID=$1`
-	_, err := db.postgresql.Exec(sqlStatement, taskID)
+func (db *PQDatabase) DeleteAllAttributesByTaskID(targetID string) error {
+	sqlStatement := `DELETE FROM ` + db.dbPrefix + `ATTRIBUTES WHERE TARGET_ID=$1`
+	_, err := db.postgresql.Exec(sqlStatement, targetID)
 	if err != nil {
 		return err
 	}

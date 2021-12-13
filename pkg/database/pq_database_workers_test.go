@@ -10,7 +10,7 @@ func TestAddWorker(t *testing.T) {
 	db, err := PrepareTests()
 	CheckError(t, err)
 
-	colony, err := core.CreateColony("test_colony_name_1")
+	colony, err := core.CreateColony(core.GenerateRandomID(), "test_colony_name_1")
 	CheckError(t, err)
 
 	err = db.AddColony(colony)
@@ -76,7 +76,7 @@ func TestAddTwoWorker(t *testing.T) {
 	db, err := PrepareTests()
 	CheckError(t, err)
 
-	colony, err := core.CreateColony("test_colony_name_1")
+	colony, err := core.CreateColony(core.GenerateRandomID(), "test_colony_name_1")
 	CheckError(t, err)
 
 	err = db.AddColony(colony)
@@ -105,7 +105,7 @@ func TestGetWorkerByID(t *testing.T) {
 	db, err := PrepareTests()
 	CheckError(t, err)
 
-	colony, err := core.CreateColony("test_colony_name_1")
+	colony, err := core.CreateColony(core.GenerateRandomID(), "test_colony_name_1")
 	CheckError(t, err)
 
 	err = db.AddColony(colony)
@@ -134,13 +134,13 @@ func TestGetWorkerByColonyID(t *testing.T) {
 	db, err := PrepareTests()
 	CheckError(t, err)
 
-	colony1, err := core.CreateColony("test_colony_name_1")
+	colony1, err := core.CreateColony(core.GenerateRandomID(), "test_colony_name_1")
 	CheckError(t, err)
 
 	err = db.AddColony(colony1)
 	CheckError(t, err)
 
-	colony2, err := core.CreateColony("test_colony_name_2")
+	colony2, err := core.CreateColony(core.GenerateRandomID(), "test_colony_name_2")
 	CheckError(t, err)
 
 	err = db.AddColony(colony2)
@@ -185,7 +185,7 @@ func TestApproveWorker(t *testing.T) {
 	db, err := PrepareTests()
 	CheckError(t, err)
 
-	colony, err := core.CreateColony("test_colony_name")
+	colony, err := core.CreateColony(core.GenerateRandomID(), "test_colony_name")
 	CheckError(t, err)
 
 	err = db.AddColony(colony)
@@ -239,13 +239,13 @@ func TestDeleteWorkers(t *testing.T) {
 	db, err := PrepareTests()
 	CheckError(t, err)
 
-	colony1, err := core.CreateColony("test_colony_name_1")
+	colony1, err := core.CreateColony(core.GenerateRandomID(), "test_colony_name_1")
 	CheckError(t, err)
 
 	err = db.AddColony(colony1)
 	CheckError(t, err)
 
-	colony2, err := core.CreateColony("test_colony_name_2")
+	colony2, err := core.CreateColony(core.GenerateRandomID(), "test_colony_name_2")
 	CheckError(t, err)
 
 	err = db.AddColony(colony2)

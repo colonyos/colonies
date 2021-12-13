@@ -6,7 +6,7 @@ import (
 )
 
 func TestCreateColony(t *testing.T) {
-	colony, err := CreateColony("test_colony_name")
+	colony, err := CreateColony(GenerateRandomID(), "test_colony_name")
 	CheckError(t, err)
 
 	if colony.Name() != "test_colony_name" {
@@ -14,10 +14,6 @@ func TestCreateColony(t *testing.T) {
 	}
 
 	if len(colony.ID()) != 64 {
-		Fatal(t, "invalid id")
-	}
-
-	if len(colony.PrivateKey()) != 64 {
 		Fatal(t, "invalid id")
 	}
 }

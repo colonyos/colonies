@@ -85,7 +85,7 @@ func (db *PQDatabase) Drop() error {
 }
 
 func (db *PQDatabase) Initialize() error {
-	sqlStatement := `CREATE TABLE ` + db.dbPrefix + `COLONIES (COLONY_ID TEXT PRIMARY KEY NOT NULL, PRIVATE_KEY TEXT NOT NULL, NAME TEXT NOT NULL)`
+	sqlStatement := `CREATE TABLE ` + db.dbPrefix + `COLONIES (COLONY_ID TEXT PRIMARY KEY NOT NULL, NAME TEXT NOT NULL)`
 	_, err := db.postgresql.Exec(sqlStatement)
 	if err != nil {
 		log.Println(err)
@@ -103,7 +103,7 @@ func (db *PQDatabase) Initialize() error {
 		log.Println(err)
 	}
 
-	sqlStatement = `CREATE TABLE ` + db.dbPrefix + `ATTRIBUTES (ATTRIBUTE_ID TEXT PRIMARY KEY NOT NULL, KEY TEXT NOT NULL, VALUE TEXT NOT NULL, ATTRIBUTE_TYPE INTEGER, TASK_ID TEXT NOT NULL)`
+	sqlStatement = `CREATE TABLE ` + db.dbPrefix + `ATTRIBUTES (ATTRIBUTE_ID TEXT PRIMARY KEY NOT NULL, KEY TEXT NOT NULL, VALUE TEXT NOT NULL, ATTRIBUTE_TYPE INTEGER, TARGET_ID TEXT NOT NULL)`
 	_, err = db.postgresql.Exec(sqlStatement)
 	if err != nil {
 		log.Println(err)
