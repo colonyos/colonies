@@ -10,8 +10,7 @@ import (
 func TestCreateTask(t *testing.T) {
 	startTime := time.Now()
 
-	colony, err := core.CreateColony(core.GenerateRandomID(), "test_colony_name")
-	CheckError(t, err)
+	colony := core.CreateColony(core.GenerateRandomID(), "test_colony_name")
 
 	task1 := core.CreateTask(colony.ID(), []string{}, "dummy", -1, 3, 1000, 10, 1)
 	task1.SetSubmissionTime(startTime.Add(600 * time.Millisecond))
@@ -34,8 +33,7 @@ func TestCreateTask(t *testing.T) {
 func TestCreateTask2(t *testing.T) {
 	startTime := time.Now()
 
-	colony, err := core.CreateColony(core.GenerateRandomID(), "test_colony_name")
-	CheckError(t, err)
+	colony := core.CreateColony(core.GenerateRandomID(), "test_colony_name")
 
 	task1 := core.CreateTask(colony.ID(), []string{}, "dummy", -1, 3, 1000, 10, 1)
 	task1.SetSubmissionTime(startTime.Add(60 * time.Millisecond))
@@ -58,8 +56,7 @@ func TestCreateTask2(t *testing.T) {
 func TestCreateTask3(t *testing.T) { // Note same submission times
 	startTime := time.Now()
 
-	colony, err := core.CreateColony(core.GenerateRandomID(), "test_colony_name")
-	CheckError(t, err)
+	colony := core.CreateColony(core.GenerateRandomID(), "test_colony_name")
 
 	task1 := core.CreateTask(colony.ID(), []string{}, "dummy", -1, 3, 1000, 10, 1)
 	task1.SetSubmissionTime(startTime)
@@ -92,8 +89,7 @@ func TestCreateTask4(t *testing.T) { // Note same submission times
 func TestCreateTask5(t *testing.T) {
 	startTime := time.Now()
 
-	colony, err := core.CreateColony(core.GenerateRandomID(), "test_colony_name")
-	CheckError(t, err)
+	colony := core.CreateColony(core.GenerateRandomID(), "test_colony_name")
 
 	task1 := core.CreateTask(colony.ID(), []string{}, "dummy", -1, 3, 1000, 10, 1)
 	task1.SetSubmissionTime(startTime.Add(600 * time.Millisecond))
