@@ -28,10 +28,7 @@ func (db *PQDatabase) parseColonies(rows *sql.Rows) ([]*core.Colony, error) {
 			return nil, err
 		}
 
-		colony, err := core.CreateColony(colonyID, name)
-		if err != nil {
-			return nil, err
-		}
+		colony := core.CreateColony(colonyID, name)
 		colonies = append(colonies, colony)
 	}
 

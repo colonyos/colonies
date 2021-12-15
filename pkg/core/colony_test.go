@@ -1,19 +1,29 @@
 package core
 
 import (
-	. "colonies/pkg/utils"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestCreateColony(t *testing.T) {
-	colony, err := CreateColony(GenerateRandomID(), "test_colony_name")
-	CheckError(t, err)
+	name := "test_colony_name"
+	colony := CreateColony(GenerateRandomID(), name)
 
-	if colony.Name() != "test_colony_name" {
-		Fatal(t, "invalid colony name")
-	}
+	assert.Equal(t, colony.Name(), name)
+	assert.Len(t, colony.ID(), 64)
+}
 
-	if len(colony.ID()) != 64 {
-		Fatal(t, "invalid id")
-	}
+func TestColonyToJSON(t *testing.T) {
+	name := "test_colony_name"
+	colony := CreateColony(GenerateRandomID(), name)
+
+	jsonString, err := colony.ToJSON()
+	assert.Nil(t, err)
+
+	colony2, err := CreateColonyFromJSON(jsonString)
+	assert.Nil(t, err)
+
+	assert.Equal(t, colony.Name(), colony2.Name())
+	assert.Equal(t, colony.ID(), colony2.ID())
 }
