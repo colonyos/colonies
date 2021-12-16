@@ -1,25 +1,19 @@
 package core
 
 import (
-	. "colonies/pkg/utils"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestCreateAttribute(t *testing.T) {
-	attribute := CreateAttribute(GenerateRandomID(), OUT, "test_key", "test_value")
-	if len(attribute.ID()) != 64 {
-		Fatal(t, "invalid attribute id length")
-	}
+	key := "test_key"
+	value := "test_value"
 
-	if attribute.AttributeType() != OUT {
-		Fatal(t, "invalid attribute type")
-	}
+	attribute := CreateAttribute(GenerateRandomID(), OUT, key, value)
 
-	if attribute.Key() != "test_key" {
-		Fatal(t, "invalid attribute key")
-	}
-
-	if attribute.Value() != "test_value" {
-		Fatal(t, "invalid attribute value")
-	}
+	assert.Len(t, attribute.ID(), 64)
+	assert.Equal(t, OUT, attribute.AttributeType())
+	assert.Equal(t, key, attribute.Key())
+	assert.Equal(t, value, attribute.Value())
 }

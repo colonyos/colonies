@@ -36,6 +36,8 @@ type APIServer struct {
 
 func CreateAPIServer(coloniesController *ColoniesController, port int, apiKey string, tlsPrivateKeyPath string, tlsCertPath string) *APIServer {
 	gin.SetMode(gin.ReleaseMode)
+	gin.DefaultWriter = ioutil.Discard
+
 	apiServer := &APIServer{}
 	apiServer.ginHandler = gin.Default()
 

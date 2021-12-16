@@ -18,18 +18,18 @@ func TestCreateWorker(t *testing.T) {
 
 	worker := CreateWorker(id, name, colonyID, cpu, cores, mem, gpu, gpus)
 
-	assert.Equal(t, worker.Status(), PENDING)
+	assert.Equal(t, PENDING, worker.Status())
 	assert.True(t, worker.IsPending())
 	assert.False(t, worker.IsApproved())
 	assert.False(t, worker.IsRejected())
-	assert.Equal(t, worker.ID(), id)
-	assert.Equal(t, worker.Name(), name)
-	assert.Equal(t, worker.ColonyID(), colonyID)
-	assert.Equal(t, worker.CPU(), cpu)
-	assert.Equal(t, worker.Cores(), cores)
-	assert.Equal(t, worker.Mem(), mem)
-	assert.Equal(t, worker.GPU(), gpu)
-	assert.Equal(t, worker.GPUs(), gpus)
+	assert.Equal(t, id, worker.ID())
+	assert.Equal(t, name, worker.Name())
+	assert.Equal(t, colonyID, worker.ColonyID())
+	assert.Equal(t, cpu, worker.CPU())
+	assert.Equal(t, cores, worker.Cores())
+	assert.Equal(t, mem, worker.Mem())
+	assert.Equal(t, gpu, worker.GPU())
+	assert.Equal(t, gpus, worker.GPUs())
 }
 
 func TestWorkerToJSON(t *testing.T) {

@@ -2,9 +2,10 @@ package scheduler
 
 import (
 	"colonies/pkg/core"
-	. "colonies/pkg/utils"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestCreateTask(t *testing.T) {
@@ -25,9 +26,7 @@ func TestCreateTask(t *testing.T) {
 
 	scheduler := CreateBasicScheduler()
 	selectedTask := scheduler.Select("workerid_1", candidates)
-	if selectedTask.ID() != task1.ID() {
-		Fatal(t, "not the latest task was selected")
-	}
+	assert.Equal(t, selectedTask.ID(), task1.ID())
 }
 
 func TestCreateTask2(t *testing.T) {
@@ -48,12 +47,10 @@ func TestCreateTask2(t *testing.T) {
 
 	scheduler := CreateBasicScheduler()
 	selectedTask := scheduler.Select("workerid_1", candidates)
-	if selectedTask.ID() != task3.ID() {
-		Fatal(t, "not the latest task was selected")
-	}
+	assert.Equal(t, selectedTask.ID(), task3.ID())
 }
 
-func TestCreateTask3(t *testing.T) { // Note same submission times
+func TestCreateTaskSameSubmissionTimes(t *testing.T) {
 	startTime := time.Now()
 
 	colony := core.CreateColony(core.GenerateRandomID(), "test_colony_name")
@@ -71,19 +68,15 @@ func TestCreateTask3(t *testing.T) { // Note same submission times
 
 	scheduler := CreateBasicScheduler()
 	selectedTask := scheduler.Select("workerid_1", candidates)
-	if selectedTask.ID() != task1.ID() { // The first task will be selected
-		Fatal(t, "not the latest task was selected")
-	}
+	assert.Equal(t, selectedTask.ID(), task1.ID())
 }
 
-func TestCreateTask4(t *testing.T) { // Note same submission times
+func TestCreateTaskNoTasks(t *testing.T) {
 	candidates := []*core.Task{}
 
 	scheduler := CreateBasicScheduler()
 	selectedTask := scheduler.Select("workerid_1", candidates)
-	if selectedTask != nil {
-		Fatal(t, "expected nil")
-	}
+	assert.Nil(t, selectedTask)
 }
 
 func TestCreateTask5(t *testing.T) {
@@ -104,7 +97,5 @@ func TestCreateTask5(t *testing.T) {
 
 	scheduler := CreateBasicScheduler()
 	selectedTask := scheduler.Select("workerid_1", candidates)
-	if selectedTask.ID() != task2.ID() {
-		Fatal(t, "not the latest task was selected")
-	}
+	assert.Equal(t, selectedTask.ID(), task2.ID())
 }
