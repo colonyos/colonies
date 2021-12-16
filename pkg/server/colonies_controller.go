@@ -1,6 +1,9 @@
 package server
 
-import "colonies/pkg/database"
+import (
+	"colonies/pkg/core"
+	"colonies/pkg/database"
+)
 
 type ColoniesController struct {
 	db database.Database
@@ -11,5 +14,25 @@ func CreateColoniesController(db database.Database) *ColoniesController {
 	return controller
 }
 
-func (controller *ColoniesController) AddColony() {
+func (controller *ColoniesController) GetColonies() ([]*core.Colony, error) {
+	var colonies []*core.Colony
+	colonies, err := controller.db.GetColonies()
+	if err != nil {
+		return colonies, err
+	}
+
+	return colonies, nil
+}
+
+func (controller *ColoniesController) AddColony(colony *core.Colony) error {
+	err := controller.db.AddColony(colony)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (controller *ColoniesController) AddWorker(worker *core.Worker) error {
+	return nil
 }

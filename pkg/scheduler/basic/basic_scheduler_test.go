@@ -1,4 +1,4 @@
-package scheduler
+package basic
 
 import (
 	"colonies/pkg/core"
@@ -24,7 +24,7 @@ func TestCreateTask(t *testing.T) {
 
 	candidates := []*core.Task{task1, task2, task3}
 
-	scheduler := CreateBasicScheduler()
+	scheduler := CreateScheduler()
 	selectedTask := scheduler.Select("workerid_1", candidates)
 	assert.Equal(t, selectedTask.ID(), task1.ID())
 }
@@ -45,7 +45,7 @@ func TestCreateTask2(t *testing.T) {
 
 	candidates := []*core.Task{task1, task2, task3}
 
-	scheduler := CreateBasicScheduler()
+	scheduler := CreateScheduler()
 	selectedTask := scheduler.Select("workerid_1", candidates)
 	assert.Equal(t, selectedTask.ID(), task3.ID())
 }
@@ -66,7 +66,7 @@ func TestCreateTaskSameSubmissionTimes(t *testing.T) {
 
 	candidates := []*core.Task{task1, task2, task3}
 
-	scheduler := CreateBasicScheduler()
+	scheduler := CreateScheduler()
 	selectedTask := scheduler.Select("workerid_1", candidates)
 	assert.Equal(t, selectedTask.ID(), task1.ID())
 }
@@ -74,7 +74,7 @@ func TestCreateTaskSameSubmissionTimes(t *testing.T) {
 func TestCreateTaskNoTasks(t *testing.T) {
 	candidates := []*core.Task{}
 
-	scheduler := CreateBasicScheduler()
+	scheduler := CreateScheduler()
 	selectedTask := scheduler.Select("workerid_1", candidates)
 	assert.Nil(t, selectedTask)
 }
@@ -95,7 +95,7 @@ func TestCreateTask5(t *testing.T) {
 
 	candidates := []*core.Task{task1, task2, task3}
 
-	scheduler := CreateBasicScheduler()
+	scheduler := CreateScheduler()
 	selectedTask := scheduler.Select("workerid_1", candidates)
 	assert.Equal(t, selectedTask.ID(), task2.ID())
 }

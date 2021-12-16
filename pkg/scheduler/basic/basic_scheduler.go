@@ -1,4 +1,4 @@
-package scheduler
+package basic
 
 import (
 	"colonies/pkg/core"
@@ -23,7 +23,7 @@ func (c bySubmissionTime) Swap(i, j int) {
 type BasicScheduler struct {
 }
 
-func CreateBasicScheduler() *BasicScheduler {
+func CreateScheduler() *BasicScheduler {
 	return &BasicScheduler{}
 }
 

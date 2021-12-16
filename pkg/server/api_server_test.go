@@ -4,7 +4,6 @@ import (
 	"colonies/pkg/client"
 	"colonies/pkg/core"
 	"colonies/pkg/database/postgresql"
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -14,8 +13,7 @@ func PrepareTests(t *testing.T, apiKey string) (*APIServer, chan bool) {
 	db, err := postgresql.PrepareTests()
 	assert.Nil(t, err)
 
-	controller := CreateColoniesController(db)
-	apiServer := CreateAPIServer(controller, 8080, apiKey, "../../cert/key.pem", "../../cert/cert.pem")
+	apiServer := CreateAPIServer(db, 8080, apiKey, "../../cert/key.pem", "../../cert/cert.pem")
 	done := make(chan bool)
 
 	go func() {
@@ -43,6 +41,41 @@ func TestAddColony(t *testing.T) {
 
 	err = client.AddColony(colony, apiKey)
 	assert.Nil(t, err)
+
+	apiServer.Shutdown()
+	<-done
+}
+
+func TestGetColonies(t *testing.T) {
+	apiKey := "testapikey"
+	apiServer, done := PrepareTests(t, apiKey)
+
+	privateKey1, err := client.GeneratePrivateKey()
+	assert.Nil(t, err)
+	colonyID1, err := client.GenerateID(privateKey1)
+	assert.Nil(t, err)
+	colony1 := core.CreateColony(colonyID1, "test_colony_name")
+	err = client.AddColony(colony1, apiKey)
+	assert.Nil(t, err)
+
+	privateKey2, err := client.GeneratePrivateKey()
+	assert.Nil(t, err)
+	colonyID2, err := client.GenerateID(privateKey2)
+	assert.Nil(t, err)
+	colony2 := core.CreateColony(colonyID2, "test_colony_name")
+	err = client.AddColony(colony2, apiKey)
+	assert.Nil(t, err)
+
+	colonies, err := client.GetColonies(apiKey)
+	assert.Nil(t, err)
+
+	counter := 0
+	for _, colony := range colonies {
+		if colony.ID() == colonyID1 || colony.ID() == colonyID2 {
+			counter++
+		}
+	}
+	assert.Equal(t, 2, counter)
 
 	apiServer.Shutdown()
 	<-done
@@ -81,7 +114,6 @@ func TestAddWorker(t *testing.T) {
 	worker := core.CreateWorker(workerID, name, colonyID, cpu, cores, mem, gpu, gpus)
 
 	err = client.AddWorker(worker, colonyPrivateKey)
-	fmt.Println(err)
 	assert.Nil(t, err)
 
 	apiServer.Shutdown()

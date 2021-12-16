@@ -4,14 +4,11 @@ import (
 	"colonies/pkg/crypto"
 	"encoding/hex"
 	"errors"
-
-	"github.com/gin-gonic/gin"
 )
 
-func CheckAPIKey(c *gin.Context, expectedAPIKey string) error {
-	apiKey := c.GetHeader("Api-Key")
+func VerifyAPIKey(apiKey string, expectedAPIKey string) error {
 	if apiKey == "" {
-		return errors.New("Api-Key header not specified")
+		return errors.New("Api-Key is missing")
 	}
 
 	if apiKey != expectedAPIKey {
@@ -21,7 +18,7 @@ func CheckAPIKey(c *gin.Context, expectedAPIKey string) error {
 	return nil
 }
 
-func GenSignature(jsonString string, prvKey string) (string, error) {
+func GenerateSignature(jsonString string, prvKey string) (string, error) {
 	idendity, err := crypto.CreateIdendityFromString(prvKey)
 	if err != nil {
 		return "", err
@@ -34,4 +31,28 @@ func GenSignature(jsonString string, prvKey string) (string, error) {
 	}
 
 	return hex.EncodeToString(sig), nil
+}
+
+func VerifyColonyOwnership(colonyID string, data string, signature string, ownership Ownership) error {
+	signatureBytes, err := hex.DecodeString(signature)
+	if err != nil {
+		return err
+	}
+
+	hash := crypto.GenerateHash([]byte(data))
+	derivedColonyID, err := crypto.RecoveredID(hash, []byte(signatureBytes))
+	if err != nil {
+		return err
+	}
+
+	if derivedColonyID != colonyID {
+		return errors.New("invalid signature")
+	}
+
+	err = ownership.CheckIfColonyExists(colonyID)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
