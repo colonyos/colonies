@@ -6,6 +6,7 @@ import (
 	"colonies/pkg/security"
 	"crypto/tls"
 	"errors"
+	"strconv"
 
 	"github.com/go-resty/resty/v2"
 )
@@ -69,6 +70,34 @@ func AddColony(colony *core.Colony, apiKey string) error {
 	return nil
 }
 
+func GetColonies(apiKey string) ([]*core.Colony, error) {
+	client := client()
+
+	var colonies []*core.Colony
+
+	resp, err := client.R().
+		SetHeader("Content-Type", "application/json").
+		SetHeader("Api-Key", apiKey).
+		Get("https://localhost:8080/colonies")
+
+	err = checkStatusCode(resp.StatusCode(), string(resp.Body()))
+	if err != nil {
+		return colonies, err
+	}
+
+	unquotedResponse, err := strconv.Unquote(string(resp.Body()))
+	if err != nil {
+		return colonies, err
+	}
+
+	colonies, err = core.CreateColonyArrayFromJSON(unquotedResponse)
+	if err != nil {
+		return colonies, err
+	}
+
+	return colonies, nil
+}
+
 func AddWorker(worker *core.Worker, colonyPrvKey string) error {
 	client := client()
 
@@ -77,7 +106,7 @@ func AddWorker(worker *core.Worker, colonyPrvKey string) error {
 		return err
 	}
 
-	sig, err := security.GenSignature(workerJSON, colonyPrvKey)
+	sig, err := security.GenerateSignature(workerJSON, colonyPrvKey)
 	if err != nil {
 		return err
 	}
@@ -86,7 +115,7 @@ func AddWorker(worker *core.Worker, colonyPrvKey string) error {
 		SetHeader("Content-Type", "application/json").
 		SetHeader("Signature", sig).
 		SetBody(workerJSON).
-		Post("https://localhost:8080/colonies/" + worker.ColonyID())
+		Post("https://localhost:8080/colonies/" + worker.ColonyID() + "/workers")
 
 	err = checkStatusCode(resp.StatusCode(), string(resp.Body()))
 	if err != nil {

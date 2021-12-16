@@ -1,17 +1,19 @@
 package server
 
 import (
+	"colonies/pkg/core"
+	"colonies/pkg/database"
 	"colonies/pkg/logging"
 	"colonies/pkg/security"
 	"context"
 	"errors"
-	"fmt"
 	"io/ioutil"
 	"net/http"
 	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/sirupsen/logrus"
 )
 
 /*
@@ -32,9 +34,10 @@ type APIServer struct {
 	tlsCertPath        string
 	port               int
 	httpServer         *http.Server
+	ownership          security.Ownership
 }
 
-func CreateAPIServer(coloniesController *ColoniesController, port int, apiKey string, tlsPrivateKeyPath string, tlsCertPath string) *APIServer {
+func CreateAPIServer(db database.Database, port int, apiKey string, tlsPrivateKeyPath string, tlsCertPath string) *APIServer {
 	gin.SetMode(gin.ReleaseMode)
 	gin.DefaultWriter = ioutil.Discard
 
@@ -47,7 +50,8 @@ func CreateAPIServer(coloniesController *ColoniesController, port int, apiKey st
 	}
 
 	apiServer.httpServer = httpServer
-	apiServer.coloniesController = coloniesController
+	apiServer.coloniesController = CreateColoniesController(db)
+	apiServer.ownership = security.CreateOwnership(db)
 	apiServer.apiKey = apiKey
 	apiServer.port = port
 	apiServer.tlsPrivateKeyPath = tlsPrivateKeyPath
@@ -55,50 +59,99 @@ func CreateAPIServer(coloniesController *ColoniesController, port int, apiKey st
 
 	apiServer.setupRoutes()
 
+	logrus.SetLevel(logrus.DebugLevel)
 	logging.Log().Info("Starting Colonies API server at port: " + strconv.Itoa(port))
 
 	return apiServer
 }
 
 func (apiServer *APIServer) setupRoutes() {
+	apiServer.ginHandler.GET("/colonies", apiServer.handleGetColoniesRequest)
+	//apiServer.ginHandler.GET("/colonies/:id", apiServer.handleGetColonyRequest)
 	apiServer.ginHandler.POST("/colonies", apiServer.handleAddColonyRequest)
-	apiServer.ginHandler.POST("/colonies/:id", apiServer.handleAddWorkerRequest)
+	apiServer.ginHandler.POST("/colonies/:id/workers", apiServer.handleAddWorkerRequest)
+}
+
+func (apiServer *APIServer) handleGetColoniesRequest(c *gin.Context) {
+	err := security.VerifyAPIKey(c.GetHeader("Api-Key"), apiServer.apiKey)
+	if err != nil {
+		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
+		return
+	}
+
+	colonies, err := apiServer.coloniesController.GetColonies()
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	jsonString, err := core.ColonyArrayToJSON(colonies)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, jsonString)
 }
 
 func (apiServer *APIServer) handleAddColonyRequest(c *gin.Context) {
-	err := security.CheckAPIKey(c, apiServer.apiKey)
+	err := security.VerifyAPIKey(c.GetHeader("Api-Key"), apiServer.apiKey)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
 		return
 	}
 
 	jsonData, err := ioutil.ReadAll(c.Request.Body)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	fmt.Println(string(jsonData))
+	colony, err := core.CreateColonyFromJSON(string(jsonData))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	err = apiServer.coloniesController.AddColony(colony)
+	if err != nil {
+		c.JSON(http.StatusMethodNotAllowed, gin.H{"error": err.Error()})
+		return
+	}
 
 	c.JSON(http.StatusOK, "")
 }
 
 func (apiServer *APIServer) handleAddWorkerRequest(c *gin.Context) {
+	colonyID := c.Param("id")
+
 	jsonData, err := ioutil.ReadAll(c.Request.Body)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		logging.Log().Warning(err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	colonyID := c.Param("id")
-	fmt.Println("-colonyID---------------")
-	fmt.Println(colonyID)
-	fmt.Println("----------------")
+	worker, err := core.CreateWorkerFromJSON(string(jsonData))
+	if err != nil {
+		logging.Log().Warning(err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
 
-	// TODO
-	// 1. Parse JOSN and create a worker object
-	// 2. Verify signature
-	fmt.Println(string(jsonData))
+	err = security.VerifyColonyOwnership(colonyID, string(jsonData), c.GetHeader("Signature"), apiServer.ownership)
+	if err != nil {
+		logging.Log().Warning(err)
+		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
+		return
+	}
+
+	err = apiServer.coloniesController.AddWorker(worker)
+	if err != nil {
+		logging.Log().Warning(err)
+		c.JSON(http.StatusMethodNotAllowed, gin.H{"error": err.Error()})
+		return
+	}
 
 	c.JSON(http.StatusOK, "")
 }

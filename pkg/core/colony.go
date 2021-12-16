@@ -1,6 +1,9 @@
 package core
 
-import "encoding/json"
+import (
+	"encoding/json"
+	"fmt"
+)
 
 type ColonyJSON struct {
 	ID   string `json:"colonyid"`
@@ -26,6 +29,38 @@ func CreateColonyFromJSON(jsonString string) (*Colony, error) {
 	}
 
 	return CreateColony(colonyJSON.ID, colonyJSON.Name), nil
+}
+
+func CreateColonyArrayFromJSON(jsonString string) ([]*Colony, error) {
+	var colonies []*Colony
+	var coloniesJSON []*ColonyJSON
+
+	err := json.Unmarshal([]byte(jsonString), &coloniesJSON)
+	if err != nil {
+		fmt.Println(err)
+		return colonies, err
+	}
+
+	for _, colonyJSON := range coloniesJSON {
+		colonies = append(colonies, CreateColony(colonyJSON.ID, colonyJSON.Name))
+	}
+
+	return colonies, nil
+}
+
+func ColonyArrayToJSON(colonies []*Colony) (string, error) { // TODO: not unit tested
+	var coloniesJSON []ColonyJSON
+
+	for _, colony := range colonies {
+		colonyJSON := ColonyJSON{ID: colony.ID(), Name: colony.Name()}
+		coloniesJSON = append(coloniesJSON, colonyJSON)
+	}
+
+	jsonString, err := json.Marshal(coloniesJSON)
+	if err != nil {
+		return "", err
+	}
+	return string(jsonString), nil
 }
 
 func (colony *Colony) Name() string {

@@ -19,7 +19,7 @@ var (
 
 func RecoveredID(hash *Hash, sig []byte) (string, error) {
 	if len(sig) != 65 {
-		return "", errors.New("invalid signature")
+		return "", errors.New("invalid signature length")
 	}
 
 	if len(hash.Bytes()) != 32 {

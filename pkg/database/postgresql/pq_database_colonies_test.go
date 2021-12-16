@@ -60,6 +60,9 @@ func TestGetColonyByID(t *testing.T) {
 	colonyFromDB, err := db.GetColonyByID(colony1.ID())
 	assert.Nil(t, err)
 	assert.Equal(t, colony1.ID(), colonyFromDB.ID())
+
+	colonyFromDB, err = db.GetColonyByID(core.GenerateRandomID())
+	assert.Nil(t, err)
 }
 
 func TestDeleteColonies(t *testing.T) {
