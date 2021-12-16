@@ -1,4 +1,4 @@
-package database
+package postgresql
 
 import (
 	"colonies/pkg/core"

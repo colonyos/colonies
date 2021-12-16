@@ -3,7 +3,7 @@ package server
 import (
 	"colonies/pkg/client"
 	"colonies/pkg/core"
-	"colonies/pkg/database"
+	"colonies/pkg/database/postgresql"
 	"fmt"
 	"testing"
 
@@ -11,7 +11,7 @@ import (
 )
 
 func PrepareTests(t *testing.T, apiKey string) (*APIServer, chan bool) {
-	db, err := database.PrepareTests()
+	db, err := postgresql.PrepareTests()
 	assert.Nil(t, err)
 
 	controller := CreateColoniesController(db)
