@@ -1,12 +1,12 @@
 package server
 
 import (
+	"colonies/pkg/logging"
 	"colonies/pkg/security"
 	"context"
 	"errors"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"strconv"
 	"time"
@@ -54,6 +54,8 @@ func CreateAPIServer(coloniesController *ColoniesController, port int, apiKey st
 	apiServer.tlsCertPath = tlsCertPath
 
 	apiServer.setupRoutes()
+
+	logging.Log().Info("Starting Colonies API server at port: " + strconv.Itoa(port))
 
 	return apiServer
 }
@@ -114,6 +116,6 @@ func (apiServer *APIServer) Shutdown() {
 	defer cancel()
 
 	if err := apiServer.httpServer.Shutdown(ctx); err != nil {
-		log.Fatal("Server forced to shutdown:", err)
+		logging.Log().Warning("Server forced to shutdown:", err)
 	}
 }
