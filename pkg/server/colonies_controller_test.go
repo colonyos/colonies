@@ -2,16 +2,14 @@ package server
 
 import (
 	"colonies/pkg/database"
-	. "colonies/pkg/utils"
-	"fmt"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestCreateColonyController(t *testing.T) {
 	db, err := database.PrepareTests()
-	CheckError(t, err)
+	assert.Nil(t, err)
 
-	controller := CreateColoniesController(db)
-
-	fmt.Println(controller)
+	CreateColoniesController(db)
 }
