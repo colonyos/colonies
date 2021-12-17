@@ -24,6 +24,15 @@ func (controller *ColoniesController) GetColonies() ([]*core.Colony, error) {
 	return colonies, nil
 }
 
+func (controller *ColoniesController) GetColony(colonyID string) (*core.Colony, error) {
+	colony, err := controller.db.GetColonyByID(colonyID)
+	if err != nil {
+		return nil, err
+	}
+
+	return colony, nil
+}
+
 func (controller *ColoniesController) AddColony(colony *core.Colony) error {
 	err := controller.db.AddColony(colony)
 	if err != nil {

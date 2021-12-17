@@ -67,7 +67,7 @@ func CreateAPIServer(db database.Database, port int, apiKey string, tlsPrivateKe
 
 func (apiServer *APIServer) setupRoutes() {
 	apiServer.ginHandler.GET("/colonies", apiServer.handleGetColoniesRequest)
-	//apiServer.ginHandler.GET("/colonies/:id", apiServer.handleGetColonyRequest)
+	apiServer.ginHandler.GET("/colonies/:id", apiServer.handleGetColonyRequest)
 	apiServer.ginHandler.POST("/colonies", apiServer.handleAddColonyRequest)
 	apiServer.ginHandler.POST("/colonies/:id/workers", apiServer.handleAddWorkerRequest)
 }
@@ -86,6 +86,34 @@ func (apiServer *APIServer) handleGetColoniesRequest(c *gin.Context) {
 	}
 
 	jsonString, err := core.ColonyArrayToJSON(colonies)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, jsonString)
+}
+
+func (apiServer *APIServer) handleGetColonyRequest(c *gin.Context) {
+	colonyID := c.Param("id")
+
+	params := c.Request.URL.Query()
+	randomData := params["dummydata"][0]
+
+	err := security.VerifyColonyOwnership(colonyID, string(randomData), c.GetHeader("Signature"), apiServer.ownership)
+	if err != nil {
+		logging.Log().Warning(err)
+		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
+		return
+	}
+
+	colony, err := apiServer.coloniesController.GetColony(colonyID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	jsonString, err := colony.ToJSON()
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return

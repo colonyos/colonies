@@ -6,6 +6,7 @@ import (
 	"colonies/pkg/security"
 	"crypto/tls"
 	"errors"
+	"fmt"
 	"strconv"
 
 	"github.com/go-resty/resty/v2"
@@ -85,17 +86,50 @@ func GetColonies(apiKey string) ([]*core.Colony, error) {
 		return colonies, err
 	}
 
-	unquotedResponse, err := strconv.Unquote(string(resp.Body()))
+	unquotedResp, err := strconv.Unquote(string(resp.Body()))
 	if err != nil {
 		return colonies, err
 	}
 
-	colonies, err = core.CreateColonyArrayFromJSON(unquotedResponse)
+	colonies, err = core.CreateColonyArrayFromJSON(unquotedResp)
 	if err != nil {
 		return colonies, err
 	}
 
 	return colonies, nil
+}
+
+func GetColony(colonyID string, colonyPrvKey string) (*core.Colony, error) {
+	client := client()
+
+	dummyData := security.GenerateRandomString()
+	sig, err := security.GenerateSignature(dummyData, colonyPrvKey)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := client.R().
+		SetHeader("Signature", sig).
+		Get("https://localhost:8080/colonies/" + colonyID + "?dummydata=" + dummyData)
+
+	err = checkStatusCode(resp.StatusCode(), string(resp.Body()))
+	if err != nil {
+		fmt.Println("ERROR")
+		return nil, err
+	}
+
+	unquotedResp, err := strconv.Unquote(string(resp.Body()))
+	if err != nil {
+		return nil, err
+	}
+
+	colony, err := core.CreateColonyFromJSON(unquotedResp)
+	if err != nil {
+		return nil, err
+	}
+
+	return colony, nil
+
 }
 
 func AddWorker(worker *core.Worker, colonyPrvKey string) error {

@@ -48,7 +48,7 @@ func CreateColonyArrayFromJSON(jsonString string) ([]*Colony, error) {
 	return colonies, nil
 }
 
-func ColonyArrayToJSON(colonies []*Colony) (string, error) { // TODO: not unit tested
+func ColonyArrayToJSON(colonies []*Colony) (string, error) {
 	var coloniesJSON []ColonyJSON
 
 	for _, colony := range colonies {

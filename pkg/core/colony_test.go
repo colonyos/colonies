@@ -27,3 +27,26 @@ func TestColonyToJSON(t *testing.T) {
 	assert.Equal(t, colony.Name(), colony2.Name())
 	assert.Equal(t, colony.ID(), colony2.ID())
 }
+
+func TestColonyToJSONArray(t *testing.T) {
+	var colonies []*Colony
+
+	colonies = append(colonies, CreateColony(GenerateRandomID(), "test_colony_name1"))
+	colonies = append(colonies, CreateColony(GenerateRandomID(), "test_colony_name2"))
+
+	jsonString, err := ColonyArrayToJSON(colonies)
+	assert.Nil(t, err)
+
+	colonies2, err := CreateColonyArrayFromJSON(jsonString)
+	assert.Nil(t, err)
+
+	counter := 0
+	for _, colony := range colonies2 {
+		for _, colony2 := range colonies2 {
+			if colony.ID() == colony2.ID() {
+				counter++
+			}
+		}
+	}
+	assert.Equal(t, 2, counter)
+}
