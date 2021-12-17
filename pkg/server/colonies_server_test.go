@@ -124,6 +124,7 @@ func TestAddWorker(t *testing.T) {
 
 	workerFromServer, err := client.GetWorker(workerID, colonyID, colonyPrivateKey)
 	assert.Nil(t, err)
+	assert.NotNil(t, workerFromServer)
 	assert.Equal(t, workerID, workerFromServer.ID())
 
 	server.Shutdown()

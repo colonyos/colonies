@@ -139,13 +139,15 @@ func AddWorker(worker *core.Worker, colonyPrvKey string) error {
 		return err
 	}
 
-	sig, err := security.GenerateSignature(workerJSON, colonyPrvKey)
+	digest := security.GenerateRandomString()
+	sig, err := security.GenerateSignature(digest, colonyPrvKey)
 	if err != nil {
 		return err
 	}
 
 	resp, err := client.R().
 		SetHeader("Content-Type", "application/json").
+		SetHeader("Digest", digest).
 		SetHeader("Signature", sig).
 		SetBody(workerJSON).
 		Post("https://localhost:8080/colonies/" + worker.ColonyID() + "/workers")
@@ -161,19 +163,19 @@ func AddWorker(worker *core.Worker, colonyPrvKey string) error {
 func GetWorker(workerID string, colonyID string, colonyPrvKey string) (*core.Worker, error) {
 	client := client()
 
-	dummyData := security.GenerateRandomString()
-	sig, err := security.GenerateSignature(dummyData, colonyPrvKey)
+	digest := security.GenerateRandomString()
+	sig, err := security.GenerateSignature(digest, colonyPrvKey)
 	if err != nil {
 		return nil, err
 	}
 
 	resp, err := client.R().
+		SetHeader("Digest", digest).
 		SetHeader("Signature", sig).
-		Get("https://localhost:8080/colonies/" + colonyID + "/workers/" + workerID + "?dummydata=" + dummyData)
+		Get("https://localhost:8080/colonies/" + colonyID + "/workers/" + workerID)
 
 	err = checkStatusCode(resp.StatusCode(), string(resp.Body()))
 	if err != nil {
-		fmt.Println("ERROR")
 		return nil, err
 	}
 
