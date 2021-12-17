@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"math/rand"
+	"strconv"
 )
 
 const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -14,8 +15,10 @@ const (
 	letterIdxMax  = 63 / letterIdxBits   // # of letter indices fitting in 63 bits
 )
 
+const dummyDataLength = 64
+
 func GenerateRandomString() string {
-	n := 64
+	n := dummyDataLength
 	b := make([]byte, n)
 	// A rand.Int63() generates 63 random bits, enough for letterIdxMax letters!
 	for i, cache, remain := n-1, rand.Int63(), letterIdxMax; i >= 0; {
@@ -60,6 +63,14 @@ func GenerateSignature(jsonString string, prvKey string) (string, error) {
 	return hex.EncodeToString(sig), nil
 }
 
+func VerifyDummyData(dummyData string) error {
+	if len(dummyData) != dummyDataLength {
+		return errors.New("dummy data needs to be " + strconv.Itoa(dummyDataLength) + "characters")
+	}
+
+	return nil
+}
+
 func VerifyColonyOwnership(colonyID string, data string, signature string, ownership Ownership) error {
 	signatureBytes, err := hex.DecodeString(signature)
 	if err != nil {
@@ -82,4 +93,8 @@ func VerifyColonyOwnership(colonyID string, data string, signature string, owner
 	}
 
 	return nil
+}
+
+func VerifyWorkerMembership(workerID string, colonyID string, ownership Ownership) error {
+	return ownership.CheckIfWorkerBelongsToColony(workerID, colonyID)
 }

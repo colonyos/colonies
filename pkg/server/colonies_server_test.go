@@ -9,24 +9,24 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func PrepareTests(t *testing.T, apiKey string) (*APIServer, chan bool) {
+func PrepareTests(t *testing.T, apiKey string) (*ColoniesServer, chan bool) {
 	db, err := postgresql.PrepareTests()
 	assert.Nil(t, err)
 
-	apiServer := CreateAPIServer(db, 8080, apiKey, "../../cert/key.pem", "../../cert/cert.pem")
+	server := CreateColoniesServer(db, 8080, apiKey, "../../cert/key.pem", "../../cert/cert.pem")
 	done := make(chan bool)
 
 	go func() {
-		apiServer.ServeForever()
+		server.ServeForever()
 		done <- true
 	}()
 
-	return apiServer, done
+	return server, done
 }
 
 func TestAddColony(t *testing.T) {
 	apiKey := "testapikey"
-	apiServer, done := PrepareTests(t, apiKey)
+	server, done := PrepareTests(t, apiKey)
 
 	privateKey, err := client.GeneratePrivateKey()
 	assert.Nil(t, err)
@@ -48,13 +48,13 @@ func TestAddColony(t *testing.T) {
 	assert.Equal(t, colony.ID(), colonyFromServer.ID())
 	assert.Equal(t, colony.Name(), colonyFromServer.Name())
 
-	apiServer.Shutdown()
+	server.Shutdown()
 	<-done
 }
 
 func TestGetColonies(t *testing.T) {
 	apiKey := "testapikey"
-	apiServer, done := PrepareTests(t, apiKey)
+	server, done := PrepareTests(t, apiKey)
 
 	privateKey1, err := client.GeneratePrivateKey()
 	assert.Nil(t, err)
@@ -83,13 +83,13 @@ func TestGetColonies(t *testing.T) {
 	}
 	assert.Equal(t, 2, counter)
 
-	apiServer.Shutdown()
+	server.Shutdown()
 	<-done
 }
 
 func TestAddWorker(t *testing.T) {
 	apiKey := "testapikey"
-	apiServer, done := PrepareTests(t, apiKey)
+	server, done := PrepareTests(t, apiKey)
 
 	// Create a Colony
 	colonyPrivateKey, err := client.GeneratePrivateKey()
@@ -122,6 +122,10 @@ func TestAddWorker(t *testing.T) {
 	err = client.AddWorker(worker, colonyPrivateKey)
 	assert.Nil(t, err)
 
-	apiServer.Shutdown()
+	workerFromServer, err := client.GetWorker(workerID, colonyID, colonyPrivateKey)
+	assert.Nil(t, err)
+	assert.Equal(t, workerID, workerFromServer.ID())
+
+	server.Shutdown()
 	<-done
 }

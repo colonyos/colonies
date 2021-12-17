@@ -43,5 +43,19 @@ func (controller *ColoniesController) AddColony(colony *core.Colony) error {
 }
 
 func (controller *ColoniesController) AddWorker(worker *core.Worker) error {
+	err := controller.db.AddWorker(worker)
+	if err != nil {
+		return err
+	}
+
 	return nil
+}
+
+func (controller *ColoniesController) GetWorker(workerID string) (*core.Worker, error) {
+	worker, err := controller.db.GetWorkerByID(workerID)
+	if err != nil {
+		return nil, err
+	}
+
+	return worker, nil
 }

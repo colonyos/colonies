@@ -13,7 +13,7 @@ type Database interface {
 	AddWorker(worker *core.Worker) error
 	GetWorkers() ([]*core.Worker, error)
 	GetWorkerByID(workerID string) (*core.Worker, error)
-	GetWorkersByColonyID(workerID string) ([]*core.Worker, error)
+	GetWorkersByColonyID(colonyID string) ([]*core.Worker, error)
 	ApproveWorker(worker *core.Worker) error
 	RejectWorker(worker *core.Worker) error
 	DeleteWorkerByID(workerID string) error

@@ -28,6 +28,15 @@ func (ownership *OwnershipImpl) CheckIfColonyExists(colonyID string) error {
 	return nil
 }
 
-func (ownership *OwnershipImpl) CheckIfColonyHasWorker(colonyID string, workerID string) error {
+func (ownership *OwnershipImpl) CheckIfWorkerBelongsToColony(workerID string, colonyID string) error {
+	worker, err := ownership.db.GetWorkerByID(workerID)
+	if err != nil {
+		return err
+	}
+
+	if worker.ColonyID() != colonyID {
+		return errors.New("worker not member of colony")
+	}
+
 	return nil
 }

@@ -79,9 +79,9 @@ func (db *PQDatabase) GetWorkerByID(workerID string) (*core.Worker, error) {
 	return workers[0], nil
 }
 
-func (db *PQDatabase) GetWorkersByColonyID(workerID string) ([]*core.Worker, error) {
+func (db *PQDatabase) GetWorkersByColonyID(colonyID string) ([]*core.Worker, error) {
 	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `WORKERS WHERE COLONY_ID=$1`
-	rows, err := db.postgresql.Query(sqlStatement, workerID)
+	rows, err := db.postgresql.Query(sqlStatement, colonyID)
 	if err != nil {
 		return nil, err
 	}
