@@ -34,6 +34,10 @@ func (ownership *OwnershipImpl) CheckIfWorkerBelongsToColony(workerID string, co
 		return err
 	}
 
+	if worker == nil {
+		return errors.New("worker not found")
+	}
+
 	if worker.ColonyID() != colonyID {
 		return errors.New("worker not member of colony")
 	}

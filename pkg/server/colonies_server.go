@@ -16,6 +16,9 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// params := c.Request.URL.Query()
+// randomData := params["dummydata"][0]
+
 type ColoniesServer struct {
 	ginHandler        *gin.Engine
 	controller        *ColoniesController
@@ -170,7 +173,7 @@ func (server *ColoniesServer) handleAddWorkerRequest(c *gin.Context) {
 		return
 	}
 
-	err = security.VerifyColonyOwnership(colonyID, string(jsonData), c.GetHeader("Signature"), server.ownership)
+	err = security.VerifyColonyOwnership(colonyID, c.GetHeader("Digest"), c.GetHeader("Signature"), server.ownership)
 	if err != nil {
 		logging.Log().Warning(err)
 		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
@@ -193,10 +196,7 @@ func (server *ColoniesServer) handleGetWorkerRequest(c *gin.Context) {
 	colonyID := c.Param("colonyid")
 	workerID := c.Param("workerid")
 
-	params := c.Request.URL.Query()
-	randomData := params["dummydata"][0]
-
-	err := security.VerifyColonyOwnership(colonyID, string(randomData), c.GetHeader("Signature"), server.ownership)
+	err := security.VerifyColonyOwnership(colonyID, c.GetHeader("Digest"), c.GetHeader("Signature"), server.ownership)
 	if err != nil {
 		logging.Log().Warning(err)
 		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
