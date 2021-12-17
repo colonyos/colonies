@@ -16,11 +16,11 @@ func CreateOwnershipMock() *OwnershipMock {
 	return ownership
 }
 
-func (ownership *OwnershipMock) AddColony(colonyID string) {
+func (ownership *OwnershipMock) addColony(colonyID string) {
 	ownership.colonies[colonyID] = true
 }
 
-func (ownership *OwnershipMock) AddWorker(colonyID string, workerID string) {
+func (ownership *OwnershipMock) addWorker(workerID string, colonyID string) {
 	ownership.workers[workerID] = colonyID
 }
 
@@ -33,7 +33,7 @@ func (ownership *OwnershipMock) CheckIfColonyExists(colonyID string) error {
 	return nil
 }
 
-func (ownership *OwnershipMock) CheckIfColonyHasWorker(colonyID string, workerID string) error {
+func (ownership *OwnershipMock) CheckIfWorkerBelongsToColony(workerID string, colonyID string) error {
 	colonyIDFromDB := ownership.workers[workerID]
 	if colonyIDFromDB == "" {
 		return errors.New("colony does not exists")

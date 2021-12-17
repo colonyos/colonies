@@ -129,7 +129,6 @@ func GetColony(colonyID string, colonyPrvKey string) (*core.Colony, error) {
 	}
 
 	return colony, nil
-
 }
 
 func AddWorker(worker *core.Worker, colonyPrvKey string) error {
@@ -157,4 +156,36 @@ func AddWorker(worker *core.Worker, colonyPrvKey string) error {
 	}
 
 	return nil
+}
+
+func GetWorker(workerID string, colonyID string, colonyPrvKey string) (*core.Worker, error) {
+	client := client()
+
+	dummyData := security.GenerateRandomString()
+	sig, err := security.GenerateSignature(dummyData, colonyPrvKey)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := client.R().
+		SetHeader("Signature", sig).
+		Get("https://localhost:8080/colonies/" + colonyID + "/workers/" + workerID + "?dummydata=" + dummyData)
+
+	err = checkStatusCode(resp.StatusCode(), string(resp.Body()))
+	if err != nil {
+		fmt.Println("ERROR")
+		return nil, err
+	}
+
+	unquotedResp, err := strconv.Unquote(string(resp.Body()))
+	if err != nil {
+		return nil, err
+	}
+
+	worker, err := core.CreateWorkerFromJSON(unquotedResp)
+	if err != nil {
+		return nil, err
+	}
+
+	return worker, nil
 }
