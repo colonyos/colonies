@@ -42,6 +42,12 @@ func TestAddColony(t *testing.T) {
 	err = client.AddColony(colony, apiKey)
 	assert.Nil(t, err)
 
+	colonyFromServer, err := client.GetColony(colonyID, privateKey)
+	assert.Nil(t, err)
+
+	assert.Equal(t, colony.ID(), colonyFromServer.ID())
+	assert.Equal(t, colony.Name(), colonyFromServer.Name())
+
 	apiServer.Shutdown()
 	<-done
 }
@@ -66,11 +72,11 @@ func TestGetColonies(t *testing.T) {
 	err = client.AddColony(colony2, apiKey)
 	assert.Nil(t, err)
 
-	colonies, err := client.GetColonies(apiKey)
+	coloniesFromServer, err := client.GetColonies(apiKey)
 	assert.Nil(t, err)
 
 	counter := 0
-	for _, colony := range colonies {
+	for _, colony := range coloniesFromServer {
 		if colony.ID() == colonyID1 || colony.ID() == colonyID2 {
 			counter++
 		}
