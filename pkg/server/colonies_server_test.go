@@ -4,6 +4,7 @@ import (
 	"colonies/pkg/client"
 	"colonies/pkg/core"
 	"colonies/pkg/database/postgresql"
+	"colonies/pkg/security"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -28,10 +29,10 @@ func TestAddColony(t *testing.T) {
 	apiKey := "testapikey"
 	server, done := PrepareTests(t, apiKey)
 
-	privateKey, err := client.GeneratePrivateKey()
+	privateKey, err := security.GeneratePrivateKey()
 	assert.Nil(t, err)
 
-	colonyID, err := client.GenerateID(privateKey)
+	colonyID, err := security.GenerateID(privateKey)
 	assert.Nil(t, err)
 
 	colony := core.CreateColony(colonyID, "test_colony_name")
@@ -56,17 +57,17 @@ func TestGetColonies(t *testing.T) {
 	apiKey := "testapikey"
 	server, done := PrepareTests(t, apiKey)
 
-	privateKey1, err := client.GeneratePrivateKey()
+	privateKey1, err := security.GeneratePrivateKey()
 	assert.Nil(t, err)
-	colonyID1, err := client.GenerateID(privateKey1)
+	colonyID1, err := security.GenerateID(privateKey1)
 	assert.Nil(t, err)
 	colony1 := core.CreateColony(colonyID1, "test_colony_name")
 	err = client.AddColony(colony1, apiKey)
 	assert.Nil(t, err)
 
-	privateKey2, err := client.GeneratePrivateKey()
+	privateKey2, err := security.GeneratePrivateKey()
 	assert.Nil(t, err)
-	colonyID2, err := client.GenerateID(privateKey2)
+	colonyID2, err := security.GenerateID(privateKey2)
 	assert.Nil(t, err)
 	colony2 := core.CreateColony(colonyID2, "test_colony_name")
 	err = client.AddColony(colony2, apiKey)
@@ -92,10 +93,10 @@ func TestAddWorker(t *testing.T) {
 	server, done := PrepareTests(t, apiKey)
 
 	// Create a Colony
-	colonyPrivateKey, err := client.GeneratePrivateKey()
+	colonyPrivateKey, err := security.GeneratePrivateKey()
 	assert.Nil(t, err)
 
-	colonyID, err := client.GenerateID(colonyPrivateKey)
+	colonyID, err := security.GenerateID(colonyPrivateKey)
 	assert.Nil(t, err)
 
 	colony := core.CreateColony(colonyID, "test_colony_name")
@@ -104,10 +105,9 @@ func TestAddWorker(t *testing.T) {
 	assert.Nil(t, err)
 
 	// Create a worker
-	workerPrivateKey, err := client.GeneratePrivateKey()
+	workerPrivateKey, err := security.GeneratePrivateKey()
 	assert.Nil(t, err)
-
-	workerID, err := client.GenerateID(workerPrivateKey)
+	workerID, err := security.GenerateID(workerPrivateKey)
 	assert.Nil(t, err)
 
 	name := "test_worker"
@@ -118,7 +118,6 @@ func TestAddWorker(t *testing.T) {
 	gpus := 1
 
 	worker := core.CreateWorker(workerID, name, colonyID, cpu, cores, mem, gpu, gpus)
-
 	err = client.AddWorker(worker, colonyPrivateKey)
 	assert.Nil(t, err)
 
@@ -126,6 +125,59 @@ func TestAddWorker(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, workerFromServer)
 	assert.Equal(t, workerID, workerFromServer.ID())
+
+	server.Shutdown()
+	<-done
+}
+
+func TestGetWorkers(t *testing.T) {
+	apiKey := "testapikey"
+	server, done := PrepareTests(t, apiKey)
+
+	// Create a Colony
+	colonyPrivateKey, err := security.GeneratePrivateKey()
+	assert.Nil(t, err)
+
+	colonyID, err := security.GenerateID(colonyPrivateKey)
+	assert.Nil(t, err)
+
+	colony := core.CreateColony(colonyID, "test_colony_name")
+
+	err = client.AddColony(colony, apiKey)
+	assert.Nil(t, err)
+
+	// Create a worker 1
+	worker1PrivateKey, err := security.GeneratePrivateKey()
+	assert.Nil(t, err)
+	worker1ID, err := security.GenerateID(worker1PrivateKey)
+	assert.Nil(t, err)
+
+	name := "test_worker 1"
+	cpu := "AMD Ryzen 9 5950X (32) @ 3.400GHz"
+	cores := 32
+	mem := 80326
+	gpu := "NVIDIA GeForce RTX 2080 Ti Rev. A"
+	gpus := 1
+
+	worker1 := core.CreateWorker(worker1ID, name, colonyID, cpu, cores, mem, gpu, gpus)
+	err = client.AddWorker(worker1, colonyPrivateKey)
+	assert.Nil(t, err)
+
+	// Create a worker2
+	worker2PrivateKey, err := security.GeneratePrivateKey()
+	assert.Nil(t, err)
+	worker2ID, err := security.GenerateID(worker2PrivateKey)
+	assert.Nil(t, err)
+
+	name = "test_worker 2"
+
+	worker2 := core.CreateWorker(worker2ID, name, colonyID, cpu, cores, mem, gpu, gpus)
+	err = client.AddWorker(worker2, colonyPrivateKey)
+	assert.Nil(t, err)
+
+	workers, err := client.GetWorkersByColonyID(colonyID, colonyPrivateKey)
+	assert.Nil(t, err)
+	assert.Len(t, workers, 2)
 
 	server.Shutdown()
 	<-done

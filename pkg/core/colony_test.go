@@ -41,7 +41,7 @@ func TestColonyToJSONArray(t *testing.T) {
 	assert.Nil(t, err)
 
 	counter := 0
-	for _, colony := range colonies2 {
+	for _, colony := range colonies {
 		for _, colony2 := range colonies2 {
 			if colony.ID() == colony2.ID() {
 				counter++

@@ -50,6 +50,37 @@ func CreateWorkerFromJSON(jsonString string) (*Worker, error) {
 	return CreateWorkerFromDB(workerJSON.ID, workerJSON.Name, workerJSON.ColonyID, workerJSON.CPU, workerJSON.Cores, workerJSON.Mem, workerJSON.GPU, workerJSON.GPUs, workerJSON.Status), nil
 }
 
+func CreateWorkerArrayFromJSON(jsonString string) ([]*Worker, error) {
+	var workers []*Worker
+	var workersJSON []*WorkerJSON
+
+	err := json.Unmarshal([]byte(jsonString), &workersJSON)
+	if err != nil {
+		return workers, err
+	}
+
+	for _, workerJSON := range workersJSON {
+		workers = append(workers, CreateWorkerFromDB(workerJSON.ID, workerJSON.Name, workerJSON.ColonyID, workerJSON.CPU, workerJSON.Cores, workerJSON.Mem, workerJSON.GPU, workerJSON.GPUs, workerJSON.Status))
+	}
+
+	return workers, nil
+}
+
+func WorkerArrayToJSON(workers []*Worker) (string, error) {
+	var workersJSON []*WorkerJSON
+
+	for _, worker := range workers {
+		workerJSON := &WorkerJSON{ID: worker.ID(), Name: worker.Name(), ColonyID: worker.ColonyID(), CPU: worker.CPU(), Cores: worker.Cores(), Mem: worker.Mem(), GPU: worker.GPU(), GPUs: worker.GPUs(), Status: worker.Status()}
+		workersJSON = append(workersJSON, workerJSON)
+	}
+
+	jsonString, err := json.Marshal(workersJSON)
+	if err != nil {
+		return "", err
+	}
+	return string(jsonString), nil
+}
+
 func (worker *Worker) ID() string {
 	return worker.id
 }
