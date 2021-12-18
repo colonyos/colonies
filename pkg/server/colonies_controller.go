@@ -24,7 +24,7 @@ func (controller *ColoniesController) GetColonies() ([]*core.Colony, error) {
 	return colonies, nil
 }
 
-func (controller *ColoniesController) GetColony(colonyID string) (*core.Colony, error) {
+func (controller *ColoniesController) GetColonyByID(colonyID string) (*core.Colony, error) {
 	colony, err := controller.db.GetColonyByID(colonyID)
 	if err != nil {
 		return nil, err

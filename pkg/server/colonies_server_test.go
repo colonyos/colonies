@@ -29,21 +29,17 @@ func TestAddColony(t *testing.T) {
 	apiKey := "testapikey"
 	server, done := PrepareTests(t, apiKey)
 
-	privateKey, err := security.GeneratePrivateKey()
+	prvKey, err := security.GeneratePrivateKey()
 	assert.Nil(t, err)
 
-	colonyID, err := security.GenerateID(privateKey)
+	colonyID, err := security.GenerateID(prvKey)
 	assert.Nil(t, err)
 
 	colony := core.CreateColony(colonyID, "test_colony_name")
-
-	err = client.AddColony(colony, "invalid_api_key")
-	assert.NotNilf(t, err, "it should be possible to create a colony without correct api key")
-
 	err = client.AddColony(colony, apiKey)
 	assert.Nil(t, err)
 
-	colonyFromServer, err := client.GetColony(colonyID, privateKey)
+	colonyFromServer, err := client.GetColonyByID(colonyID, prvKey)
 	assert.Nil(t, err)
 
 	assert.Equal(t, colony.ID(), colonyFromServer.ID())
@@ -57,17 +53,17 @@ func TestGetColonies(t *testing.T) {
 	apiKey := "testapikey"
 	server, done := PrepareTests(t, apiKey)
 
-	privateKey1, err := security.GeneratePrivateKey()
+	prvKey1, err := security.GeneratePrivateKey()
 	assert.Nil(t, err)
-	colonyID1, err := security.GenerateID(privateKey1)
+	colonyID1, err := security.GenerateID(prvKey1)
 	assert.Nil(t, err)
 	colony1 := core.CreateColony(colonyID1, "test_colony_name")
 	err = client.AddColony(colony1, apiKey)
 	assert.Nil(t, err)
 
-	privateKey2, err := security.GeneratePrivateKey()
+	prvKey2, err := security.GeneratePrivateKey()
 	assert.Nil(t, err)
-	colonyID2, err := security.GenerateID(privateKey2)
+	colonyID2, err := security.GenerateID(prvKey2)
 	assert.Nil(t, err)
 	colony2 := core.CreateColony(colonyID2, "test_colony_name")
 	err = client.AddColony(colony2, apiKey)
@@ -93,10 +89,10 @@ func TestAddWorker(t *testing.T) {
 	server, done := PrepareTests(t, apiKey)
 
 	// Create a Colony
-	colonyPrivateKey, err := security.GeneratePrivateKey()
+	colonyPrvKey, err := security.GeneratePrivateKey()
 	assert.Nil(t, err)
 
-	colonyID, err := security.GenerateID(colonyPrivateKey)
+	colonyID, err := security.GenerateID(colonyPrvKey)
 	assert.Nil(t, err)
 
 	colony := core.CreateColony(colonyID, "test_colony_name")
@@ -105,9 +101,9 @@ func TestAddWorker(t *testing.T) {
 	assert.Nil(t, err)
 
 	// Create a worker
-	workerPrivateKey, err := security.GeneratePrivateKey()
+	workerPrvKey, err := security.GeneratePrivateKey()
 	assert.Nil(t, err)
-	workerID, err := security.GenerateID(workerPrivateKey)
+	workerID, err := security.GenerateID(workerPrvKey)
 	assert.Nil(t, err)
 
 	name := "test_worker"
@@ -118,10 +114,10 @@ func TestAddWorker(t *testing.T) {
 	gpus := 1
 
 	worker := core.CreateWorker(workerID, name, colonyID, cpu, cores, mem, gpu, gpus)
-	err = client.AddWorker(worker, colonyPrivateKey)
+	err = client.AddWorker(worker, colonyPrvKey)
 	assert.Nil(t, err)
 
-	workerFromServer, err := client.GetWorker(workerID, colonyID, colonyPrivateKey)
+	workerFromServer, err := client.GetWorkerByID(workerID, colonyID, colonyPrvKey)
 	assert.Nil(t, err)
 	assert.NotNil(t, workerFromServer)
 	assert.Equal(t, workerID, workerFromServer.ID())
@@ -135,10 +131,10 @@ func TestGetWorkers(t *testing.T) {
 	server, done := PrepareTests(t, apiKey)
 
 	// Create a Colony
-	colonyPrivateKey, err := security.GeneratePrivateKey()
+	colonyPrvKey, err := security.GeneratePrivateKey()
 	assert.Nil(t, err)
 
-	colonyID, err := security.GenerateID(colonyPrivateKey)
+	colonyID, err := security.GenerateID(colonyPrvKey)
 	assert.Nil(t, err)
 
 	colony := core.CreateColony(colonyID, "test_colony_name")
@@ -147,9 +143,9 @@ func TestGetWorkers(t *testing.T) {
 	assert.Nil(t, err)
 
 	// Create a worker 1
-	worker1PrivateKey, err := security.GeneratePrivateKey()
+	worker1PrvKey, err := security.GeneratePrivateKey()
 	assert.Nil(t, err)
-	worker1ID, err := security.GenerateID(worker1PrivateKey)
+	worker1ID, err := security.GenerateID(worker1PrvKey)
 	assert.Nil(t, err)
 
 	name := "test_worker 1"
@@ -160,22 +156,22 @@ func TestGetWorkers(t *testing.T) {
 	gpus := 1
 
 	worker1 := core.CreateWorker(worker1ID, name, colonyID, cpu, cores, mem, gpu, gpus)
-	err = client.AddWorker(worker1, colonyPrivateKey)
+	err = client.AddWorker(worker1, colonyPrvKey)
 	assert.Nil(t, err)
 
 	// Create a worker2
-	worker2PrivateKey, err := security.GeneratePrivateKey()
+	worker2PrvKey, err := security.GeneratePrivateKey()
 	assert.Nil(t, err)
-	worker2ID, err := security.GenerateID(worker2PrivateKey)
+	worker2ID, err := security.GenerateID(worker2PrvKey)
 	assert.Nil(t, err)
 
 	name = "test_worker 2"
 
 	worker2 := core.CreateWorker(worker2ID, name, colonyID, cpu, cores, mem, gpu, gpus)
-	err = client.AddWorker(worker2, colonyPrivateKey)
+	err = client.AddWorker(worker2, colonyPrvKey)
 	assert.Nil(t, err)
 
-	workers, err := client.GetWorkersByColonyID(colonyID, colonyPrivateKey)
+	workers, err := client.GetWorkersByColonyID(colonyID, colonyPrvKey)
 	assert.Nil(t, err)
 	assert.Len(t, workers, 2)
 

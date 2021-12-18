@@ -90,19 +90,18 @@ func (server *ColoniesServer) handleGetColoniesRequest(c *gin.Context) {
 	c.JSON(http.StatusOK, jsonString)
 }
 
-// Security condition 1: Only the colony owner can get colony info.
-// Security condition 2: Dummy data has to be valid.
+// Security condition: Only the colony owner can get colony info.
 func (server *ColoniesServer) handleGetColonyRequest(c *gin.Context) {
 	colonyID := c.Param("colonyid")
 
-	err := security.VerifyColonyOwnership(colonyID, colonyID, c.GetHeader("Digest"), c.GetHeader("Signature"), server.ownership)
+	err := security.VerifyColonyOwnership(c.GetHeader("Id"), colonyID, c.GetHeader("Digest"), c.GetHeader("Signature"), server.ownership)
 	if err != nil {
 		logging.Log().Warning(err)
 		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
 		return
 	}
 
-	colony, err := server.controller.GetColony(colonyID)
+	colony, err := server.controller.GetColonyByID(colonyID)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -164,7 +163,7 @@ func (server *ColoniesServer) handleAddWorkerRequest(c *gin.Context) {
 		return
 	}
 
-	err = security.VerifyColonyOwnership(colonyID, colonyID, c.GetHeader("Digest"), c.GetHeader("Signature"), server.ownership)
+	err = security.VerifyColonyOwnership(c.GetHeader("Id"), colonyID, c.GetHeader("Digest"), c.GetHeader("Signature"), server.ownership)
 	if err != nil {
 		logging.Log().Warning(err)
 		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
@@ -185,6 +184,13 @@ func (server *ColoniesServer) handleAddWorkerRequest(c *gin.Context) {
 func (server *ColoniesServer) handleGetWorkersRequest(c *gin.Context) {
 	colonyID := c.Param("colonyid")
 
+	err := security.VerifyAccessRights(c.GetHeader("Id"), colonyID, c.GetHeader("Digest"), c.GetHeader("Signature"), server.ownership)
+	if err != nil {
+		logging.Log().Warning(err)
+		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
+		return
+	}
+
 	workers, err := server.controller.GetWorkerByColonyID(colonyID)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -204,9 +210,8 @@ func (server *ColoniesServer) handleGetWorkersRequest(c *gin.Context) {
 func (server *ColoniesServer) handleGetWorkerRequest(c *gin.Context) {
 	colonyID := c.Param("colonyid")
 	workerID := c.Param("workerid")
-	id := colonyID
 
-	err := security.VerifyAccessRights(id, colonyID, c.GetHeader("Digest"), c.GetHeader("Signature"), server.ownership)
+	err := security.VerifyAccessRights(c.GetHeader("Id"), colonyID, c.GetHeader("Digest"), c.GetHeader("Signature"), server.ownership)
 	if err != nil {
 		logging.Log().Warning(err)
 		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})

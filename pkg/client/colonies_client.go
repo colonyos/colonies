@@ -78,7 +78,7 @@ func GetColonies(apiKey string) ([]*core.Colony, error) {
 	return colonies, nil
 }
 
-func GetColony(colonyID string, prvKey string) (*core.Colony, error) {
+func GetColonyByID(colonyID string, prvKey string) (*core.Colony, error) {
 	client := client()
 	digest, sig, id, err := security.GenerateCredentials(prvKey)
 	if err != nil {
@@ -167,7 +167,7 @@ func GetWorkersByColonyID(colonyID string, prvKey string) ([]*core.Worker, error
 	return workers, nil
 }
 
-func GetWorker(workerID string, colonyID string, prvKey string) (*core.Worker, error) {
+func GetWorkerByID(workerID string, colonyID string, prvKey string) (*core.Worker, error) {
 	client := client()
 	digest, sig, id, err := security.GenerateCredentials(prvKey)
 	if err != nil {
