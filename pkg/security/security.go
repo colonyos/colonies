@@ -5,7 +5,6 @@ import (
 	"encoding/hex"
 	"errors"
 	"math/rand"
-	"strconv"
 )
 
 const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -15,10 +14,43 @@ const (
 	letterIdxMax  = 63 / letterIdxBits   // # of letter indices fitting in 63 bits
 )
 
-const dummyDataLength = 64
+const digestLength = 64
 
-func GenerateRandomString() string {
-	n := dummyDataLength
+func GenerateCredentials(prvKey string) (string, string, string, error) {
+	digest := GenerateDigest()
+	sig, err := GenerateSignature(digest, prvKey)
+	if err != nil {
+		return "", "", "", err
+	}
+
+	id, err := GenerateID(prvKey)
+	if err != nil {
+		return "", "", "", err
+	}
+
+	return digest, sig, id, nil
+}
+
+func GenerateID(privateKey string) (string, error) {
+	identify, err := crypto.CreateIdendityFromString(privateKey)
+	if err != nil {
+		return "", nil
+	}
+
+	return identify.ID(), nil
+}
+
+func GeneratePrivateKey() (string, error) {
+	identify, err := crypto.CreateIdendity()
+	if err != nil {
+		return "", nil
+	}
+
+	return identify.PrivateKeyAsHex(), nil
+}
+
+func GenerateDigest() string {
+	n := digestLength
 	b := make([]byte, n)
 	// A rand.Int63() generates 63 random bits, enough for letterIdxMax letters!
 	for i, cache, remain := n-1, rand.Int63(), letterIdxMax; i >= 0; {
@@ -33,7 +65,8 @@ func GenerateRandomString() string {
 		remain--
 	}
 
-	return string(b)
+	hash := crypto.GenerateHash(b)
+	return hash.String()
 }
 
 func VerifyAPIKey(apiKey string, expectedAPIKey string) error {
@@ -63,28 +96,33 @@ func GenerateSignature(jsonString string, prvKey string) (string, error) {
 	return hex.EncodeToString(sig), nil
 }
 
-func VerifyDummyData(dummyData string) error {
-	if len(dummyData) != dummyDataLength {
-		return errors.New("dummy data needs to be " + strconv.Itoa(dummyDataLength) + "characters")
-	}
-
-	return nil
-}
-
-func VerifyColonyOwnership(colonyID string, data string, signature string, ownership Ownership) error {
+func Authenticate(claimedID string, digest string, signature string) error {
 	signatureBytes, err := hex.DecodeString(signature)
 	if err != nil {
 		return err
 	}
 
-	hash := crypto.GenerateHash([]byte(data))
-	derivedColonyID, err := crypto.RecoveredID(hash, []byte(signatureBytes))
+	hash := crypto.GenerateHashFromString(digest)
+	derivedID, err := crypto.RecoveredID(hash, []byte(signatureBytes))
 	if err != nil {
 		return err
 	}
 
-	if derivedColonyID != colonyID {
-		return errors.New("invalid signature")
+	if derivedID != claimedID {
+		return errors.New("invalid id, authentication failed")
+	}
+
+	return nil
+}
+
+func VerifyColonyOwnership(id string, colonyID string, digest string, signature string, ownership Ownership) error {
+	if id != colonyID {
+		return errors.New("invalid id")
+	}
+
+	err := Authenticate(id, digest, signature)
+	if err != nil {
+		return err
 	}
 
 	err = ownership.CheckIfColonyExists(colonyID)
@@ -95,6 +133,28 @@ func VerifyColonyOwnership(colonyID string, data string, signature string, owner
 	return nil
 }
 
-func VerifyWorkerMembership(workerID string, colonyID string, ownership Ownership) error {
-	return ownership.CheckIfWorkerBelongsToColony(workerID, colonyID)
+func VerifyWorkerMembership(id string, colonyID string, digest string, signature string, ownership Ownership) error {
+	err := Authenticate(id, digest, signature)
+	if err != nil {
+		return err
+	}
+
+	return ownership.CheckIfWorkerBelongsToColony(id, colonyID)
+}
+
+func VerifyAccessRights(id string, colonyID string, digest string, signature string, ownership Ownership) error {
+	err := VerifyColonyOwnership(id, colonyID, digest, signature, ownership)
+	if err != nil {
+		err = VerifyWorkerMembership(id, colonyID, digest, signature, ownership)
+		if err != nil {
+			return err
+		}
+
+		err = ownership.CheckIfWorkerBelongsToColony(id, colonyID)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }

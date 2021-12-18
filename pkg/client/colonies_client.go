@@ -2,11 +2,9 @@ package client
 
 import (
 	"colonies/pkg/core"
-	"colonies/pkg/crypto"
 	"colonies/pkg/security"
 	"crypto/tls"
 	"errors"
-	"fmt"
 	"strconv"
 
 	"github.com/go-resty/resty/v2"
@@ -16,24 +14,6 @@ func client() *resty.Client {
 	client := resty.New()
 	client.SetTLSClientConfig(&tls.Config{InsecureSkipVerify: true})
 	return client
-}
-
-func GeneratePrivateKey() (string, error) {
-	identify, err := crypto.CreateIdendity()
-	if err != nil {
-		return "", nil
-	}
-
-	return identify.PrivateKeyAsHex(), nil
-}
-
-func GenerateID(privateKey string) (string, error) {
-	identify, err := crypto.CreateIdendityFromString(privateKey)
-	if err != nil {
-		return "", nil
-	}
-
-	return identify.ID(), nil
 }
 
 func checkStatusCode(statusCode int, jsonString string) error {
@@ -75,7 +55,6 @@ func GetColonies(apiKey string) ([]*core.Colony, error) {
 	client := client()
 
 	var colonies []*core.Colony
-
 	resp, err := client.R().
 		SetHeader("Content-Type", "application/json").
 		SetHeader("Api-Key", apiKey).
@@ -99,22 +78,21 @@ func GetColonies(apiKey string) ([]*core.Colony, error) {
 	return colonies, nil
 }
 
-func GetColony(colonyID string, colonyPrvKey string) (*core.Colony, error) {
+func GetColony(colonyID string, prvKey string) (*core.Colony, error) {
 	client := client()
-
-	dummyData := security.GenerateRandomString()
-	sig, err := security.GenerateSignature(dummyData, colonyPrvKey)
+	digest, sig, id, err := security.GenerateCredentials(prvKey)
 	if err != nil {
 		return nil, err
 	}
 
 	resp, err := client.R().
+		SetHeader("Id", id).
+		SetHeader("Digest", digest).
 		SetHeader("Signature", sig).
-		Get("https://localhost:8080/colonies/" + colonyID + "?dummydata=" + dummyData)
+		Get("https://localhost:8080/colonies/" + colonyID)
 
 	err = checkStatusCode(resp.StatusCode(), string(resp.Body()))
 	if err != nil {
-		fmt.Println("ERROR")
 		return nil, err
 	}
 
@@ -131,22 +109,20 @@ func GetColony(colonyID string, colonyPrvKey string) (*core.Colony, error) {
 	return colony, nil
 }
 
-func AddWorker(worker *core.Worker, colonyPrvKey string) error {
+func AddWorker(worker *core.Worker, prvKey string) error {
 	client := client()
+	digest, sig, id, err := security.GenerateCredentials(prvKey)
+	if err != nil {
+		return err
+	}
 
 	workerJSON, err := worker.ToJSON()
 	if err != nil {
 		return err
 	}
 
-	digest := security.GenerateRandomString()
-	sig, err := security.GenerateSignature(digest, colonyPrvKey)
-	if err != nil {
-		return err
-	}
-
 	resp, err := client.R().
-		SetHeader("Content-Type", "application/json").
+		SetHeader("Id", id).
 		SetHeader("Digest", digest).
 		SetHeader("Signature", sig).
 		SetBody(workerJSON).
@@ -160,16 +136,46 @@ func AddWorker(worker *core.Worker, colonyPrvKey string) error {
 	return nil
 }
 
-func GetWorker(workerID string, colonyID string, colonyPrvKey string) (*core.Worker, error) {
+func GetWorkersByColonyID(colonyID string, prvKey string) ([]*core.Worker, error) {
 	client := client()
-
-	digest := security.GenerateRandomString()
-	sig, err := security.GenerateSignature(digest, colonyPrvKey)
+	digest, sig, id, err := security.GenerateCredentials(prvKey)
 	if err != nil {
 		return nil, err
 	}
 
 	resp, err := client.R().
+		SetHeader("Id", id).
+		SetHeader("Digest", digest).
+		SetHeader("Signature", sig).
+		Get("https://localhost:8080/colonies/" + colonyID + "/workers")
+
+	err = checkStatusCode(resp.StatusCode(), string(resp.Body()))
+	if err != nil {
+		return nil, err
+	}
+
+	unquotedResp, err := strconv.Unquote(string(resp.Body()))
+	if err != nil {
+		return nil, err
+	}
+
+	workers, err := core.CreateWorkerArrayFromJSON(unquotedResp)
+	if err != nil {
+		return nil, err
+	}
+
+	return workers, nil
+}
+
+func GetWorker(workerID string, colonyID string, prvKey string) (*core.Worker, error) {
+	client := client()
+	digest, sig, id, err := security.GenerateCredentials(prvKey)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := client.R().
+		SetHeader("Id", id).
 		SetHeader("Digest", digest).
 		SetHeader("Signature", sig).
 		Get("https://localhost:8080/colonies/" + colonyID + "/workers/" + workerID)

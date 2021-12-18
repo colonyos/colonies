@@ -59,3 +59,12 @@ func (controller *ColoniesController) GetWorker(workerID string) (*core.Worker, 
 
 	return worker, nil
 }
+
+func (controller *ColoniesController) GetWorkerByColonyID(colonyID string) ([]*core.Worker, error) {
+	workers, err := controller.db.GetWorkersByColonyID(colonyID)
+	if err != nil {
+		return nil, err
+	}
+
+	return workers, nil
+}

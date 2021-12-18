@@ -2,7 +2,6 @@ package core
 
 import (
 	"encoding/json"
-	"fmt"
 )
 
 type ColonyJSON struct {
@@ -37,7 +36,6 @@ func CreateColonyArrayFromJSON(jsonString string) ([]*Colony, error) {
 
 	err := json.Unmarshal([]byte(jsonString), &coloniesJSON)
 	if err != nil {
-		fmt.Println(err)
 		return colonies, err
 	}
 
