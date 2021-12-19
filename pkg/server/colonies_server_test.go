@@ -178,3 +178,70 @@ func TestGetComputers(t *testing.T) {
 	server.Shutdown()
 	<-done
 }
+
+type clientTestEnv struct {
+	colonyID       string
+	colony         *core.Colony
+	colonyPrvKey   string
+	computerID     string
+	computer       *core.Computer
+	computerPrvKey string
+}
+
+func createTestEnv(t *testing.T, rootPassword string) *clientTestEnv {
+	// Create a Colony
+	colonyPrvKey, err := security.GeneratePrivateKey()
+	assert.Nil(t, err)
+
+	colonyID, err := security.GenerateID(colonyPrvKey)
+	assert.Nil(t, err)
+
+	colony := core.CreateColony(colonyID, "test_colony_name")
+
+	err = client.AddColony(colony, rootPassword)
+	assert.Nil(t, err)
+
+	// Create a computer
+	computerPrvKey, err := security.GeneratePrivateKey()
+	assert.Nil(t, err)
+	computerID, err := security.GenerateID(computerPrvKey)
+	assert.Nil(t, err)
+
+	name := "test_computer"
+	cpu := "AMD Ryzen 9 5950X (32) @ 3.400GHz"
+	cores := 32
+	mem := 80326
+	gpu := "NVIDIA GeForce RTX 2080 Ti Rev. A"
+	gpus := 1
+
+	computer := core.CreateComputer(computerID, name, colonyID, cpu, cores, mem, gpu, gpus)
+	err = client.AddComputer(computer, colonyPrvKey)
+	assert.Nil(t, err)
+
+	return &clientTestEnv{colonyID: colonyID,
+		colony:         colony,
+		colonyPrvKey:   colonyPrvKey,
+		computerID:     computerID,
+		computer:       computer,
+		computerPrvKey: computerPrvKey}
+}
+
+func TestAddProcess(t *testing.T) {
+	rootPassword := "password"
+	server, done := PrepareTests(t, rootPassword)
+	env := createTestEnv(t, rootPassword)
+
+	process := core.CreateProcess(env.colonyID, []string{}, "test_computer", -1, 3, 1000, 10, 1)
+	var attributes []*core.Attribute
+	attributes = append(attributes, core.CreateAttribute(process.ID(), core.IN, "test_key_1", "test_value_2"))
+	attributes = append(attributes, core.CreateAttribute(process.ID(), core.IN, "test_key_2", "test_value_2"))
+	process.SetInAttributes(attributes)
+
+	err := client.AddProcess(process, env.computerPrvKey)
+	assert.Nil(t, err)
+
+	err = client.GetWaitingProcesses(env.colonyID, 100, env.computerPrvKey)
+
+	server.Shutdown()
+	<-done
+}
