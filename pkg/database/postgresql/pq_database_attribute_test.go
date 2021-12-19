@@ -11,12 +11,12 @@ func TestAddAttribute(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
 
-	taskID := core.GenerateRandomID()
-	attribute := core.CreateAttribute(taskID, core.IN, "test_key1", "test_value1")
+	processID := core.GenerateRandomID()
+	attribute := core.CreateAttribute(processID, core.IN, "test_key1", "test_value1")
 	err = db.AddAttribute(attribute)
 	assert.Nil(t, err)
 
-	attributeFromDB, err := db.GetAttribute(taskID, "test_key1", core.IN)
+	attributeFromDB, err := db.GetAttribute(processID, "test_key1", core.IN)
 	assert.Nil(t, err)
 
 	assert.NotNil(t, attributeFromDB)
@@ -31,21 +31,21 @@ func TestGetAttributes(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
 
-	taskID := core.GenerateRandomID()
+	processID := core.GenerateRandomID()
 
-	attribute := core.CreateAttribute(taskID, core.IN, "test_key1", "test_value1")
+	attribute := core.CreateAttribute(processID, core.IN, "test_key1", "test_value1")
 	err = db.AddAttribute(attribute)
 	assert.Nil(t, err)
 
-	attribute = core.CreateAttribute(taskID, core.IN, "test_key2", "test_value2")
+	attribute = core.CreateAttribute(processID, core.IN, "test_key2", "test_value2")
 	err = db.AddAttribute(attribute)
 	assert.Nil(t, err)
 
-	attribute = core.CreateAttribute(taskID, core.ERR, "test_key3", "test_value3")
+	attribute = core.CreateAttribute(processID, core.ERR, "test_key3", "test_value3")
 	err = db.AddAttribute(attribute)
 	assert.Nil(t, err)
 
-	attributesFromDB, err := db.GetAttributes(taskID, core.IN)
+	attributesFromDB, err := db.GetAttributes(processID, core.IN)
 	assert.Nil(t, err)
 
 	counter := 0
@@ -60,7 +60,7 @@ func TestGetAttributes(t *testing.T) {
 	}
 	assert.Equal(t, 2, counter)
 
-	attributesFromDB, err = db.GetAttributes(taskID, core.ERR)
+	attributesFromDB, err = db.GetAttributes(processID, core.ERR)
 	assert.Nil(t, err)
 
 	counter = 0
@@ -71,7 +71,7 @@ func TestGetAttributes(t *testing.T) {
 	}
 	assert.Equal(t, 1, counter)
 
-	attributesFromDB, err = db.GetAttributes(taskID, core.OUT)
+	attributesFromDB, err = db.GetAttributes(processID, core.OUT)
 	assert.Len(t, attributesFromDB, 0)
 }
 
@@ -79,13 +79,13 @@ func TestUpdateAttribute(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
 
-	taskID := core.GenerateRandomID()
+	processID := core.GenerateRandomID()
 
-	attribute := core.CreateAttribute(taskID, core.IN, "test_key1", "test_value1")
+	attribute := core.CreateAttribute(processID, core.IN, "test_key1", "test_value1")
 	err = db.AddAttribute(attribute)
 	assert.Nil(t, err)
 
-	attributeFromDB, err := db.GetAttribute(taskID, "test_key1", core.IN)
+	attributeFromDB, err := db.GetAttribute(processID, "test_key1", core.IN)
 	assert.Nil(t, err)
 	assert.NotNil(t, attributeFromDB)
 	assert.Equal(t, "test_value1", attributeFromDB.Value())
@@ -94,13 +94,13 @@ func TestUpdateAttribute(t *testing.T) {
 	err = db.UpdateAttribute(attributeFromDB)
 	assert.Nil(t, err)
 
-	attributeFromDB, err = db.GetAttribute(taskID, "test_key1", core.IN)
+	attributeFromDB, err = db.GetAttribute(processID, "test_key1", core.IN)
 	assert.Nil(t, err)
 	assert.NotNil(t, attributeFromDB)
 	assert.Equal(t, "updated_test_value1", attributeFromDB.Value())
 
 	// Test update an attribute not added to the database
-	nonExistingAttribute := core.CreateAttribute(taskID, core.ERR, "test_key2", "test_value2")
+	nonExistingAttribute := core.CreateAttribute(processID, core.ERR, "test_key2", "test_value2")
 	err = db.UpdateAttribute(nonExistingAttribute)
 	assert.NotNil(t, err)
 }
@@ -109,34 +109,34 @@ func TestDeleteAttributes(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
 
-	taskID1 := core.GenerateRandomID()
-	taskID2 := core.GenerateRandomID()
+	processID1 := core.GenerateRandomID()
+	processID2 := core.GenerateRandomID()
 
-	attribute1 := core.CreateAttribute(taskID1, core.IN, "test_key1", "test_value1")
+	attribute1 := core.CreateAttribute(processID1, core.IN, "test_key1", "test_value1")
 	err = db.AddAttribute(attribute1)
 	assert.Nil(t, err)
 
-	attribute2 := core.CreateAttribute(taskID1, core.IN, "test_key2", "test_value2")
+	attribute2 := core.CreateAttribute(processID1, core.IN, "test_key2", "test_value2")
 	err = db.AddAttribute(attribute2)
 	assert.Nil(t, err)
 
-	attribute3 := core.CreateAttribute(taskID1, core.ERR, "test_key3", "test_value3")
+	attribute3 := core.CreateAttribute(processID1, core.ERR, "test_key3", "test_value3")
 	err = db.AddAttribute(attribute3)
 	assert.Nil(t, err)
 
-	attribute4 := core.CreateAttribute(taskID2, core.OUT, "test_key4", "test_value4")
+	attribute4 := core.CreateAttribute(processID2, core.OUT, "test_key4", "test_value4")
 	err = db.AddAttribute(attribute4)
 	assert.Nil(t, err)
 
-	attribute5 := core.CreateAttribute(taskID2, core.ERR, "test_key5", "test_value5")
+	attribute5 := core.CreateAttribute(processID2, core.ERR, "test_key5", "test_value5")
 	err = db.AddAttribute(attribute5)
 	assert.Nil(t, err)
 
-	attribute6 := core.CreateAttribute(taskID2, core.ERR, "test_key6", "test_value6")
+	attribute6 := core.CreateAttribute(processID2, core.ERR, "test_key6", "test_value6")
 	err = db.AddAttribute(attribute6)
 	assert.Nil(t, err)
 
-	attribute7 := core.CreateAttribute(taskID2, core.OUT, "test_key7", "test_value7")
+	attribute7 := core.CreateAttribute(processID2, core.OUT, "test_key7", "test_value7")
 	err = db.AddAttribute(attribute7)
 	assert.Nil(t, err)
 
@@ -153,9 +153,9 @@ func TestDeleteAttributes(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Nil(t, attributeFromDB)
 
-	// Test DeleteAttributesByTaskID
+	// Test DeleteAttributesByProcessID
 
-	err = db.DeleteAttributesByTaskID(taskID1, core.IN)
+	err = db.DeleteAttributesByProcessID(processID1, core.IN)
 	assert.Nil(t, err)
 
 	attributeFromDB, err = db.GetAttributeByID(attribute1.ID())
@@ -170,7 +170,7 @@ func TestDeleteAttributes(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, attributeFromDB) // Attribute 3 should still be there since it is of type core.ERR
 
-	// Test DeleteAllAttributesByTaskID
+	// Test DeleteAllAttributesByProcessID
 
 	attributeFromDB, err = db.GetAttributeByID(attribute4.ID())
 	assert.Nil(t, err)
@@ -184,7 +184,7 @@ func TestDeleteAttributes(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, attributeFromDB)
 
-	err = db.DeleteAllAttributesByTaskID(taskID2)
+	err = db.DeleteAllAttributesByProcessID(processID2)
 	assert.Nil(t, err)
 
 	attributeFromDB, err = db.GetAttributeByID(attribute4.ID())

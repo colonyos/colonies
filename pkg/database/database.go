@@ -9,33 +9,33 @@ type Database interface {
 	GetColonyByID(id string) (*core.Colony, error)
 	DeleteColonyByID(colonyID string) error
 
-	// Worker functions ...
-	AddWorker(worker *core.Worker) error
-	GetWorkers() ([]*core.Worker, error)
-	GetWorkerByID(workerID string) (*core.Worker, error)
-	GetWorkersByColonyID(colonyID string) ([]*core.Worker, error)
-	ApproveWorker(worker *core.Worker) error
-	RejectWorker(worker *core.Worker) error
-	DeleteWorkerByID(workerID string) error
-	DeleteWorkersByColonyID(colonyID string) error
+	// Computer functions ...
+	AddComputer(computer *core.Computer) error
+	GetComputers() ([]*core.Computer, error)
+	GetComputerByID(computerID string) (*core.Computer, error)
+	GetComputersByColonyID(colonyID string) ([]*core.Computer, error)
+	ApproveComputer(computer *core.Computer) error
+	RejectComputer(computer *core.Computer) error
+	DeleteComputerByID(computerID string) error
+	DeleteComputersByColonyID(colonyID string) error
 
-	// Task functions ...
-	AddTask(task *core.Task) error
-	GetTasks() ([]*core.Task, error)
-	GetTaskByID(taskID string) (*core.Task, error)
-	SearchTasks(colonyID string, workerID string) ([]*core.Task, error)
-	DeleteTaskByID(taskID string) error
-	DeleteAllTasks() error
-	ResetTask(task *core.Task) error
-	ResetAllTasks(task *core.Task) error
-	AssignWorker(workerID string, task *core.Task) error
-	UnassignWorker(task *core.Task) error
-	MarkSuccessful(task *core.Task) error
-	MarkFailed(task *core.Task) error
-	NumberOfTasks() (int, error)
-	NumberOfRunningTasks() (int, error)
-	NumberOfSuccessfulTasks() (int, error)
-	NumberOfFailedTasks() (int, error)
+	// process functions ...
+	AddProcess(process *core.Process) error
+	GetProcesses() ([]*core.Process, error)
+	GetProcessByID(processID string) (*core.Process, error)
+	SearchProcesses(colonyID string, computerID string) ([]*core.Process, error)
+	DeleteProcessByID(processID string) error
+	DeleteAllProcesses() error
+	ResetProcess(process *core.Process) error
+	ResetAllProcesses(process *core.Process) error
+	AssignComputer(computerID string, process *core.Process) error
+	UnassignComputer(process *core.Process) error
+	MarkSuccessful(process *core.Process) error
+	MarkFailed(process *core.Process) error
+	NumberOfProcesses() (int, error)
+	NumberOfRunningProcesses() (int, error)
+	NumberOfSuccessfulProcesses() (int, error)
+	NumberOfFailedProcesses() (int, error)
 
 	// Attribute functions
 	AddAttribute(attribute *core.Attribute) error
@@ -44,7 +44,7 @@ type Database interface {
 	GetAttributes(targetID string, attributeType int) ([]*core.Attribute, error)
 	UpdateAttribute(attribute *core.Attribute) error
 	DeleteAttributeByID(attributeID string) error
-	DeleteAttributesByTaskID(targetID string, attributeType int) error
-	DeleteAllAttributesByTaskID(targetID string) error
+	DeleteAttributesByProcessID(targetID string, attributeType int) error
+	DeleteAllAttributesByProcessID(targetID string) error
 	DeleteAllAttributes() error
 }

@@ -62,9 +62,9 @@ func (server *ColoniesServer) setupRoutes() {
 	server.ginHandler.GET("/colonies", server.handleGetColoniesRequest)
 	server.ginHandler.GET("/colonies/:colonyid", server.handleGetColonyRequest)
 	server.ginHandler.POST("/colonies", server.handleAddColonyRequest)
-	server.ginHandler.POST("/colonies/:colonyid/workers", server.handleAddWorkerRequest)
-	server.ginHandler.GET("/colonies/:colonyid/workers", server.handleGetWorkersRequest)
-	server.ginHandler.GET("/colonies/:colonyid/workers/:workerid", server.handleGetWorkerRequest)
+	server.ginHandler.POST("/colonies/:colonyid/computers", server.handleAddComputerRequest)
+	server.ginHandler.GET("/colonies/:colonyid/computers", server.handleGetComputersRequest)
+	server.ginHandler.GET("/colonies/:colonyid/computers/:computerid", server.handleGetComputerRequest)
 }
 
 // Security condition: Only system admins can get info about all colonies.
@@ -144,8 +144,8 @@ func (server *ColoniesServer) handleAddColonyRequest(c *gin.Context) {
 	c.JSON(http.StatusOK, "")
 }
 
-// Security condition: Only a colony owner can add a worker.
-func (server *ColoniesServer) handleAddWorkerRequest(c *gin.Context) {
+// Security condition: Only a colony owner can add a computer.
+func (server *ColoniesServer) handleAddComputerRequest(c *gin.Context) {
 	colonyID := c.Param("colonyid")
 	err := security.RequireColonyOwner(c.GetHeader("Id"), colonyID, c.GetHeader("Digest"), c.GetHeader("Signature"), server.ownership)
 	if err != nil {
@@ -161,14 +161,14 @@ func (server *ColoniesServer) handleAddWorkerRequest(c *gin.Context) {
 		return
 	}
 
-	worker, err := core.CreateWorkerFromJSON(string(jsonData))
+	computer, err := core.CreateComputerFromJSON(string(jsonData))
 	if err != nil {
 		logging.Log().Warning(err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	err = server.controller.AddWorker(worker)
+	err = server.controller.AddComputer(computer)
 	if err != nil {
 		logging.Log().Warning(err)
 		c.JSON(http.StatusMethodNotAllowed, gin.H{"error": err.Error()})
@@ -178,8 +178,8 @@ func (server *ColoniesServer) handleAddWorkerRequest(c *gin.Context) {
 	c.JSON(http.StatusOK, "")
 }
 
-// Security condition: Colony owner or worker members can get worker info.
-func (server *ColoniesServer) handleGetWorkersRequest(c *gin.Context) {
+// Security condition: Colony owner or computer members can get computer info.
+func (server *ColoniesServer) handleGetComputersRequest(c *gin.Context) {
 	colonyID := c.Param("colonyid")
 
 	err := security.RequireColonyOwnerOrMember(c.GetHeader("Id"), colonyID, c.GetHeader("Digest"), c.GetHeader("Signature"), server.ownership)
@@ -189,13 +189,13 @@ func (server *ColoniesServer) handleGetWorkersRequest(c *gin.Context) {
 		return
 	}
 
-	workers, err := server.controller.GetWorkerByColonyID(colonyID)
+	computers, err := server.controller.GetComputerByColonyID(colonyID)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	jsonString, err := core.WorkerArrayToJSON(workers)
+	jsonString, err := core.ComputerArrayToJSON(computers)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -204,10 +204,10 @@ func (server *ColoniesServer) handleGetWorkersRequest(c *gin.Context) {
 	c.JSON(http.StatusOK, jsonString)
 }
 
-// Security condition: Colony owner or worker members can get worker info.
-func (server *ColoniesServer) handleGetWorkerRequest(c *gin.Context) {
+// Security condition: Colony owner or computer members can get computer info.
+func (server *ColoniesServer) handleGetComputerRequest(c *gin.Context) {
 	colonyID := c.Param("colonyid")
-	workerID := c.Param("workerid")
+	computerID := c.Param("computerid")
 
 	err := security.RequireColonyOwnerOrMember(c.GetHeader("Id"), colonyID, c.GetHeader("Digest"), c.GetHeader("Signature"), server.ownership)
 	if err != nil {
@@ -216,13 +216,13 @@ func (server *ColoniesServer) handleGetWorkerRequest(c *gin.Context) {
 		return
 	}
 
-	worker, err := server.controller.GetWorker(workerID)
+	computer, err := server.controller.GetComputer(computerID)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	jsonString, err := worker.ToJSON()
+	jsonString, err := computer.ToJSON()
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return

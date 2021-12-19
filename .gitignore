@@ -1,0 +1,10 @@
+bin/
+*.swp
+pkg/database/postgresql/*.swp
+pkg/database/*.swp
+pkg/server/*.swp
+pkg/core/*.swp
+pkg/security/*.swp
+pkg/logging/*.swp
+pkg/client/*.swp
+pkg/cmd/*.swp

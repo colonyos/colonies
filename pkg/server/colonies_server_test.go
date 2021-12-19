@@ -84,7 +84,7 @@ func TestGetColonies(t *testing.T) {
 	<-done
 }
 
-func TestAddWorker(t *testing.T) {
+func TestAddComputer(t *testing.T) {
 	rootPassword := "testapikey"
 	server, done := PrepareTests(t, rootPassword)
 
@@ -100,33 +100,33 @@ func TestAddWorker(t *testing.T) {
 	err = client.AddColony(colony, rootPassword)
 	assert.Nil(t, err)
 
-	// Create a worker
-	workerPrvKey, err := security.GeneratePrivateKey()
+	// Create a computer
+	computerPrvKey, err := security.GeneratePrivateKey()
 	assert.Nil(t, err)
-	workerID, err := security.GenerateID(workerPrvKey)
+	computerID, err := security.GenerateID(computerPrvKey)
 	assert.Nil(t, err)
 
-	name := "test_worker"
+	name := "test_computer"
 	cpu := "AMD Ryzen 9 5950X (32) @ 3.400GHz"
 	cores := 32
 	mem := 80326
 	gpu := "NVIDIA GeForce RTX 2080 Ti Rev. A"
 	gpus := 1
 
-	worker := core.CreateWorker(workerID, name, colonyID, cpu, cores, mem, gpu, gpus)
-	err = client.AddWorker(worker, colonyPrvKey)
+	computer := core.CreateComputer(computerID, name, colonyID, cpu, cores, mem, gpu, gpus)
+	err = client.AddComputer(computer, colonyPrvKey)
 	assert.Nil(t, err)
 
-	workerFromServer, err := client.GetWorkerByID(workerID, colonyID, colonyPrvKey)
+	computerFromServer, err := client.GetComputerByID(computerID, colonyID, colonyPrvKey)
 	assert.Nil(t, err)
-	assert.NotNil(t, workerFromServer)
-	assert.Equal(t, workerID, workerFromServer.ID())
+	assert.NotNil(t, computerFromServer)
+	assert.Equal(t, computerID, computerFromServer.ID())
 
 	server.Shutdown()
 	<-done
 }
 
-func TestGetWorkers(t *testing.T) {
+func TestGetComputers(t *testing.T) {
 	rootPassword := "password"
 	server, done := PrepareTests(t, rootPassword)
 
@@ -142,38 +142,38 @@ func TestGetWorkers(t *testing.T) {
 	err = client.AddColony(colony, rootPassword)
 	assert.Nil(t, err)
 
-	// Create a worker 1
-	worker1PrvKey, err := security.GeneratePrivateKey()
+	// Create a computer 1
+	computer1PrvKey, err := security.GeneratePrivateKey()
 	assert.Nil(t, err)
-	worker1ID, err := security.GenerateID(worker1PrvKey)
+	computer1ID, err := security.GenerateID(computer1PrvKey)
 	assert.Nil(t, err)
 
-	name := "test_worker 1"
+	name := "test_computer 1"
 	cpu := "AMD Ryzen 9 5950X (32) @ 3.400GHz"
 	cores := 32
 	mem := 80326
 	gpu := "NVIDIA GeForce RTX 2080 Ti Rev. A"
 	gpus := 1
 
-	worker1 := core.CreateWorker(worker1ID, name, colonyID, cpu, cores, mem, gpu, gpus)
-	err = client.AddWorker(worker1, colonyPrvKey)
+	computer1 := core.CreateComputer(computer1ID, name, colonyID, cpu, cores, mem, gpu, gpus)
+	err = client.AddComputer(computer1, colonyPrvKey)
 	assert.Nil(t, err)
 
-	// Create a worker2
-	worker2PrvKey, err := security.GeneratePrivateKey()
+	// Create a computer2
+	computer2PrvKey, err := security.GeneratePrivateKey()
 	assert.Nil(t, err)
-	worker2ID, err := security.GenerateID(worker2PrvKey)
-	assert.Nil(t, err)
-
-	name = "test_worker 2"
-
-	worker2 := core.CreateWorker(worker2ID, name, colonyID, cpu, cores, mem, gpu, gpus)
-	err = client.AddWorker(worker2, colonyPrvKey)
+	computer2ID, err := security.GenerateID(computer2PrvKey)
 	assert.Nil(t, err)
 
-	workers, err := client.GetWorkersByColonyID(colonyID, colonyPrvKey)
+	name = "test_computer 2"
+
+	computer2 := core.CreateComputer(computer2ID, name, colonyID, cpu, cores, mem, gpu, gpus)
+	err = client.AddComputer(computer2, colonyPrvKey)
 	assert.Nil(t, err)
-	assert.Len(t, workers, 2)
+
+	computers, err := client.GetComputersByColonyID(colonyID, colonyPrvKey)
+	assert.Nil(t, err)
+	assert.Len(t, computers, 2)
 
 	server.Shutdown()
 	<-done

@@ -109,7 +109,7 @@ func Authenticate(claimedID string, digest string, signature string) error {
 	}
 
 	if derivedID != claimedID {
-		return errors.New("invalid id, authentication failed")
+		return errors.New("Invalid ID, authentication failed")
 	}
 
 	return nil
@@ -117,7 +117,7 @@ func Authenticate(claimedID string, digest string, signature string) error {
 
 func RequireColonyOwner(id string, colonyID string, digest string, signature string, ownership Ownership) error {
 	if id != colonyID {
-		return errors.New("invalid id")
+		return errors.New("Provided ID does not match colonyID")
 	}
 
 	err := Authenticate(id, digest, signature)
@@ -133,24 +133,24 @@ func RequireColonyOwner(id string, colonyID string, digest string, signature str
 	return nil
 }
 
-func VerifyWorkerMembership(id string, colonyID string, digest string, signature string, ownership Ownership) error {
+func VerifyComputerMembership(id string, colonyID string, digest string, signature string, ownership Ownership) error {
 	err := Authenticate(id, digest, signature)
 	if err != nil {
 		return err
 	}
 
-	return ownership.CheckIfWorkerBelongsToColony(id, colonyID)
+	return ownership.CheckIfComputerBelongsToColony(id, colonyID)
 }
 
 func RequireColonyOwnerOrMember(id string, colonyID string, digest string, signature string, ownership Ownership) error {
 	err := RequireColonyOwner(id, colonyID, digest, signature, ownership)
 	if err != nil {
-		err = VerifyWorkerMembership(id, colonyID, digest, signature, ownership)
+		err = VerifyComputerMembership(id, colonyID, digest, signature, ownership)
 		if err != nil {
 			return err
 		}
 
-		err = ownership.CheckIfWorkerBelongsToColony(id, colonyID)
+		err = ownership.CheckIfComputerBelongsToColony(id, colonyID)
 		if err != nil {
 			return err
 		}

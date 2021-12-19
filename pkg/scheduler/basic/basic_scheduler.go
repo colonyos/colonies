@@ -6,7 +6,7 @@ import (
 	"sort"
 )
 
-type bySubmissionTime []*core.Task
+type bySubmissionTime []*core.Process
 
 func (c bySubmissionTime) Len() int {
 	return len(c)
@@ -27,28 +27,28 @@ func CreateScheduler() *BasicScheduler {
 	return &BasicScheduler{}
 }
 
-func (scheduler *BasicScheduler) printCandidates(candidates []*core.Task) {
+func (scheduler *BasicScheduler) printCandidates(candidates []*core.Process) {
 	for _, c := range candidates {
 		fmt.Println(c.TargetColonyID())
 		fmt.Println(c.SubmissionTime())
 	}
 }
 
-func (scheduler *BasicScheduler) Select(workerID string, candidates []*core.Task) *core.Task {
+func (scheduler *BasicScheduler) Select(computerID string, candidates []*core.Process) *core.Process {
 	if len(candidates) == 0 {
 		return nil
 	}
 
-	// First, check if there is task candidate target this specific worker
+	// First, check if there is process candidate target this specific computer
 	for _, candidate := range candidates {
-		for _, targetWorkerID := range candidate.TargetWorkerIDs() {
-			if targetWorkerID == workerID {
+		for _, targetComputerID := range candidate.TargetComputerIDs() {
+			if targetComputerID == computerID {
 				return candidate
 			}
 		}
 	}
 
-	// Ok, let's look for any task and pick the oldest task
+	// Ok, let's look for any process and pick the oldest process
 	c := bySubmissionTime(candidates)
 
 	sort.Sort(&c)

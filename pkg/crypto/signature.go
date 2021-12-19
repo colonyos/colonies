@@ -19,24 +19,24 @@ var (
 
 func RecoveredID(hash *Hash, sig []byte) (string, error) {
 	if len(sig) != 65 {
-		return "", errors.New("invalid signature length")
+		return "", errors.New("Invalid signature length")
 	}
 
 	if len(hash.Bytes()) != 32 {
-		return "", errors.New("invalid hash length")
+		return "", errors.New("Invalid hash length")
 	}
 
 	pub, err := RecoverPublicKey(hash, sig)
 	if err != nil {
-		return "", errors.Wrap(err, "failed to recover public key")
+		return "", errors.Wrap(err, "Failed to recover public key")
 	}
 
 	validSig, err := Verify(pub, hash, sig)
 	if err != nil {
-		return "", errors.Wrap(err, "failed verify signature")
+		return "", errors.Wrap(err, "Failed verify signature")
 	}
 	if !validSig {
-		return "", errors.New("invalid signature")
+		return "", errors.New("Invalid signature")
 	}
 
 	return GenerateHashFromString(hex.EncodeToString(pub)).String(), nil
@@ -65,7 +65,7 @@ func Verify(pubkey []byte, hash *Hash, sigrec []byte) (bool, error) {
 		return false, nil
 	}
 	if len(hash.Bytes()) != 32 {
-		return false, errors.New("invalid hash length, expected it to be 32")
+		return false, errors.New("Invalid hash length, expected it to be 32")
 	}
 
 	sig := sigrec[:len(sigrec)-1]
