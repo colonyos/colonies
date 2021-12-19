@@ -23,7 +23,11 @@ type Database interface {
 	AddProcess(process *core.Process) error
 	GetProcesses() ([]*core.Process, error)
 	GetProcessByID(processID string) (*core.Process, error)
-	SearchProcesses(colonyID string, computerID string) ([]*core.Process, error)
+	FindWaitingProcesses(colonyID string, count int) ([]*core.Process, error)
+	FindRunningProcesses(colonyID string, count int) ([]*core.Process, error)
+	FindSuccessfulProcesses(colonyID string, count int) ([]*core.Process, error)
+	FindFailedProcesses(colonyID string, count int) ([]*core.Process, error)
+	FindUnassignedProcesses(colonyID string, computerID string, count int) ([]*core.Process, error)
 	DeleteProcessByID(processID string) error
 	DeleteAllProcesses() error
 	ResetProcess(process *core.Process) error
@@ -33,6 +37,7 @@ type Database interface {
 	MarkSuccessful(process *core.Process) error
 	MarkFailed(process *core.Process) error
 	NumberOfProcesses() (int, error)
+	NumberOfWaitingProcesses() (int, error)
 	NumberOfRunningProcesses() (int, error)
 	NumberOfSuccessfulProcesses() (int, error)
 	NumberOfFailedProcesses() (int, error)
