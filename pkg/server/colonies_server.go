@@ -22,7 +22,7 @@ import (
 type ColoniesServer struct {
 	ginHandler        *gin.Engine
 	controller        *ColoniesController
-	apiKey            string
+	rootPassword      string
 	tlsPrivateKeyPath string
 	tlsCertPath       string
 	port              int
@@ -30,7 +30,7 @@ type ColoniesServer struct {
 	ownership         security.Ownership
 }
 
-func CreateColoniesServer(db database.Database, port int, apiKey string, tlsPrivateKeyPath string, tlsCertPath string) *ColoniesServer {
+func CreateColoniesServer(db database.Database, port int, rootPassword string, tlsPrivateKeyPath string, tlsCertPath string) *ColoniesServer {
 	gin.SetMode(gin.ReleaseMode)
 	gin.DefaultWriter = ioutil.Discard
 
@@ -45,7 +45,7 @@ func CreateColoniesServer(db database.Database, port int, apiKey string, tlsPriv
 	server.httpServer = httpServer
 	server.controller = CreateColoniesController(db)
 	server.ownership = security.CreateOwnership(db)
-	server.apiKey = apiKey
+	server.rootPassword = rootPassword
 	server.port = port
 	server.tlsPrivateKeyPath = tlsPrivateKeyPath
 	server.tlsCertPath = tlsCertPath
@@ -69,7 +69,7 @@ func (server *ColoniesServer) setupRoutes() {
 
 // Security condition: Only system admins can get info about all colonies.
 func (server *ColoniesServer) handleGetColoniesRequest(c *gin.Context) {
-	err := security.VerifyAPIKey(c.GetHeader("Api-Key"), server.apiKey)
+	err := security.RequireRoot(c.GetHeader("RootPassword"), server.rootPassword)
 	if err != nil {
 		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
 		return
@@ -93,8 +93,7 @@ func (server *ColoniesServer) handleGetColoniesRequest(c *gin.Context) {
 // Security condition: Only the colony owner can get colony info.
 func (server *ColoniesServer) handleGetColonyRequest(c *gin.Context) {
 	colonyID := c.Param("colonyid")
-
-	err := security.VerifyColonyOwnership(c.GetHeader("Id"), colonyID, c.GetHeader("Digest"), c.GetHeader("Signature"), server.ownership)
+	err := security.RequireColonyOwnerOrMember(c.GetHeader("Id"), colonyID, c.GetHeader("Digest"), c.GetHeader("Signature"), server.ownership)
 	if err != nil {
 		logging.Log().Warning(err)
 		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
@@ -118,7 +117,7 @@ func (server *ColoniesServer) handleGetColonyRequest(c *gin.Context) {
 
 // Security condition: Only system admins can add a colony.
 func (server *ColoniesServer) handleAddColonyRequest(c *gin.Context) {
-	err := security.VerifyAPIKey(c.GetHeader("Api-Key"), server.apiKey)
+	err := security.RequireRoot(c.GetHeader("RootPassword"), server.rootPassword)
 	if err != nil {
 		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
 		return
@@ -148,6 +147,12 @@ func (server *ColoniesServer) handleAddColonyRequest(c *gin.Context) {
 // Security condition: Only a colony owner can add a worker.
 func (server *ColoniesServer) handleAddWorkerRequest(c *gin.Context) {
 	colonyID := c.Param("colonyid")
+	err := security.RequireColonyOwner(c.GetHeader("Id"), colonyID, c.GetHeader("Digest"), c.GetHeader("Signature"), server.ownership)
+	if err != nil {
+		logging.Log().Warning(err)
+		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
+		return
+	}
 
 	jsonData, err := ioutil.ReadAll(c.Request.Body)
 	if err != nil {
@@ -160,13 +165,6 @@ func (server *ColoniesServer) handleAddWorkerRequest(c *gin.Context) {
 	if err != nil {
 		logging.Log().Warning(err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	err = security.VerifyColonyOwnership(c.GetHeader("Id"), colonyID, c.GetHeader("Digest"), c.GetHeader("Signature"), server.ownership)
-	if err != nil {
-		logging.Log().Warning(err)
-		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -184,7 +182,7 @@ func (server *ColoniesServer) handleAddWorkerRequest(c *gin.Context) {
 func (server *ColoniesServer) handleGetWorkersRequest(c *gin.Context) {
 	colonyID := c.Param("colonyid")
 
-	err := security.VerifyAccessRights(c.GetHeader("Id"), colonyID, c.GetHeader("Digest"), c.GetHeader("Signature"), server.ownership)
+	err := security.RequireColonyOwnerOrMember(c.GetHeader("Id"), colonyID, c.GetHeader("Digest"), c.GetHeader("Signature"), server.ownership)
 	if err != nil {
 		logging.Log().Warning(err)
 		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
@@ -211,7 +209,7 @@ func (server *ColoniesServer) handleGetWorkerRequest(c *gin.Context) {
 	colonyID := c.Param("colonyid")
 	workerID := c.Param("workerid")
 
-	err := security.VerifyAccessRights(c.GetHeader("Id"), colonyID, c.GetHeader("Digest"), c.GetHeader("Signature"), server.ownership)
+	err := security.RequireColonyOwnerOrMember(c.GetHeader("Id"), colonyID, c.GetHeader("Digest"), c.GetHeader("Signature"), server.ownership)
 	if err != nil {
 		logging.Log().Warning(err)
 		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})

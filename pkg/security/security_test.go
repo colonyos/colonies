@@ -8,14 +8,14 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestVerifyAPIKey(t *testing.T) {
-	apiKey := "apikey"
-	assert.Nil(t, VerifyAPIKey(apiKey, apiKey))
-	assert.NotNil(t, VerifyAPIKey(apiKey, ""))
-	assert.NotNil(t, VerifyAPIKey(apiKey, "invalid"))
+func TestRequireRoot(t *testing.T) {
+	rootPassword := "password"
+	assert.Nil(t, RequireRoot(rootPassword, rootPassword))
+	assert.NotNil(t, RequireRoot(rootPassword, ""))
+	assert.NotNil(t, RequireRoot(rootPassword, "invalid"))
 }
 
-func TestVerifyColonyOwnership(t *testing.T) {
+func TestRequireColonyOwner(t *testing.T) {
 	idendity, err := crypto.CreateIdendity()
 	message := "test_message"
 	colonyID := idendity.ID()
@@ -25,16 +25,16 @@ func TestVerifyColonyOwnership(t *testing.T) {
 	assert.Nil(t, err)
 
 	ownership := CreateOwnershipMock()
-	err = VerifyColonyOwnership(id, colonyID, message, string(signature), ownership)
+	err = RequireColonyOwner(id, colonyID, message, string(signature), ownership)
 	assert.NotNil(t, err) // Should be an error since colony does not exists
 
 	ownership.addColony(colonyID)
-	err = VerifyColonyOwnership(id, colonyID, message, string(signature), ownership)
+	err = RequireColonyOwner(id, colonyID, message, string(signature), ownership)
 	assert.Nil(t, err) // Should work now
 
 	// Use an invalid cert
 	ownership.addColony(colonyID)
-	err = VerifyColonyOwnership(id, colonyID, message, "", ownership)
+	err = RequireColonyOwner(id, colonyID, message, "", ownership)
 	assert.NotNil(t, err) // Whould not work
 
 	idendity2, err := crypto.CreateIdendity()
@@ -43,11 +43,11 @@ func TestVerifyColonyOwnership(t *testing.T) {
 	assert.Nil(t, err)
 
 	ownership.addColony(colonyID)
-	err = VerifyColonyOwnership(id, colonyID, message, string(signature2), ownership)
+	err = RequireColonyOwner(id, colonyID, message, string(signature2), ownership)
 	assert.NotNil(t, err) // Should not work
 }
 
-func TestVerifyWorkerMembership(t *testing.T) {
+func TestRequireColonyOwnerOrMember(t *testing.T) {
 	colonyID := core.GenerateRandomID()
 	ownership := CreateOwnershipMock()
 
@@ -61,10 +61,10 @@ func TestVerifyWorkerMembership(t *testing.T) {
 	sig, err := GenerateSignature(digest, prvKey)
 	assert.Nil(t, err)
 
-	err = VerifyWorkerMembership(id, colonyID, digest, sig, ownership)
+	err = RequireColonyOwnerOrMember(id, colonyID, digest, sig, ownership)
 	assert.NotNil(t, err) // Should not work since worker not member of colony
 
 	ownership.addWorker(workerID, colonyID)
-	err = VerifyWorkerMembership(workerID, colonyID, digest, sig, ownership)
+	err = RequireColonyOwnerOrMember(workerID, colonyID, digest, sig, ownership)
 	assert.Nil(t, err)
 }
