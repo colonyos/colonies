@@ -33,11 +33,27 @@ type Computer struct {
 }
 
 func CreateComputer(id string, name string, colonyID string, cpu string, cores int, mem int, gpu string, gpus int) *Computer {
-	return &Computer{id: id, name: name, colonyID: colonyID, cpu: cpu, cores: cores, mem: mem, gpu: gpu, gpus: gpus, status: PENDING}
+	return &Computer{id: id,
+		name:     name,
+		colonyID: colonyID,
+		cpu:      cpu,
+		cores:    cores,
+		mem:      mem,
+		gpu:      gpu,
+		gpus:     gpus,
+		status:   PENDING}
 }
 
 func CreateComputerFromDB(id string, name string, colonyID string, cpu string, cores int, mem int, gpu string, gpus int, status int) *Computer {
-	return &Computer{id: id, name: name, colonyID: colonyID, cpu: cpu, cores: cores, mem: mem, gpu: gpu, gpus: gpus, status: status}
+	return &Computer{id: id,
+		name:     name,
+		colonyID: colonyID,
+		cpu:      cpu,
+		cores:    cores,
+		mem:      mem,
+		gpu:      gpu,
+		gpus:     gpus,
+		status:   status}
 }
 
 func CreateComputerFromJSON(jsonString string) (*Computer, error) {
@@ -70,7 +86,15 @@ func ComputerArrayToJSON(computers []*Computer) (string, error) {
 	var computersJSON []*ComputerJSON
 
 	for _, computer := range computers {
-		computerJSON := &ComputerJSON{ID: computer.ID(), Name: computer.Name(), ColonyID: computer.ColonyID(), CPU: computer.CPU(), Cores: computer.Cores(), Mem: computer.Mem(), GPU: computer.GPU(), GPUs: computer.GPUs(), Status: computer.Status()}
+		computerJSON := &ComputerJSON{ID: computer.id,
+			Name:     computer.name,
+			ColonyID: computer.colonyID,
+			CPU:      computer.cpu,
+			Cores:    computer.cores,
+			Mem:      computer.mem,
+			GPU:      computer.gpu,
+			GPUs:     computer.gpus,
+			Status:   computer.status}
 		computersJSON = append(computersJSON, computerJSON)
 	}
 
@@ -150,7 +174,15 @@ func (computer *Computer) Reject() {
 }
 
 func (computer *Computer) ToJSON() (string, error) {
-	computerJSON := &ComputerJSON{ID: computer.ID(), Name: computer.Name(), ColonyID: computer.ColonyID(), CPU: computer.CPU(), Cores: computer.Cores(), Mem: computer.Mem(), GPU: computer.GPU(), GPUs: computer.GPUs(), Status: computer.Status()}
+	computerJSON := &ComputerJSON{ID: computer.id,
+		Name:     computer.name,
+		ColonyID: computer.colonyID,
+		CPU:      computer.cpu,
+		Cores:    computer.cores,
+		Mem:      computer.mem,
+		GPU:      computer.gpu,
+		GPUs:     computer.gpus,
+		Status:   computer.status}
 
 	jsonString, err := json.Marshal(computerJSON)
 	if err != nil {

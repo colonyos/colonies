@@ -50,7 +50,7 @@ func ColonyArrayToJSON(colonies []*Colony) (string, error) {
 	var coloniesJSON []ColonyJSON
 
 	for _, colony := range colonies {
-		colonyJSON := ColonyJSON{ID: colony.ID(), Name: colony.Name()}
+		colonyJSON := ColonyJSON{ID: colony.id, Name: colony.name}
 		coloniesJSON = append(coloniesJSON, colonyJSON)
 	}
 
@@ -70,7 +70,7 @@ func (colony *Colony) ID() string {
 }
 
 func (colony *Colony) ToJSON() (string, error) {
-	colonyJSON := &ColonyJSON{ID: colony.ID(), Name: colony.Name()}
+	colonyJSON := &ColonyJSON{ID: colony.id, Name: colony.name}
 
 	jsonString, err := json.Marshal(colonyJSON)
 	if err != nil {
