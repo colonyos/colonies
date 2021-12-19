@@ -44,6 +44,7 @@ type Database interface {
 
 	// Attribute functions
 	AddAttribute(attribute *core.Attribute) error
+	AddAttributes(attribute []*core.Attribute) error
 	GetAttributeByID(attributeID string) (*core.Attribute, error)
 	GetAttribute(targetID string, key string, attributeType int) (*core.Attribute, error)
 	GetAttributes(targetID string, attributeType int) ([]*core.Attribute, error)

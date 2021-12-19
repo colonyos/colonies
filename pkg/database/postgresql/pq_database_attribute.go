@@ -6,6 +6,17 @@ import (
 	"errors"
 )
 
+func (db *PQDatabase) AddAttributes(attributes []*core.Attribute) error { // TODO: Unit tests
+	for _, attribute := range attributes {
+		err := db.AddAttribute(attribute)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 func (db *PQDatabase) AddAttribute(attribute *core.Attribute) error {
 	sqlStatement := `INSERT INTO  ` + db.dbPrefix + `ATTRIBUTES (ATTRIBUTE_ID, KEY, VALUE, ATTRIBUTE_TYPE, TARGET_ID) VALUES ($1, $2, $3, $4, $5)`
 	_, err := db.postgresql.Exec(sqlStatement, attribute.ID(), attribute.Key(), attribute.Value(), attribute.AttributeType(), attribute.TargetID())

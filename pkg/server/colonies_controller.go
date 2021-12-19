@@ -68,3 +68,30 @@ func (controller *ColoniesController) GetComputerByColonyID(colonyID string) ([]
 
 	return computers, nil
 }
+
+func (controller *ColoniesController) AddProcess(process *core.Process) error {
+	err := controller.db.AddProcess(process)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (controller *ColoniesController) FindWaitingProcesses(colonyID string, count int) ([]*core.Process, error) {
+	// if count > MAX_COUNT {
+	// 	return errors.New("Count is larger than MaxCount limit <" + strconv.Itoa(MAX_COUNT) + ">")
+	// }
+
+	// processes, err := db.FindWaitingProcesses(colonyID, count)
+	// if err != nil {
+	// 	return err
+	// }
+
+	// for _, process := range processes {
+	// 	fmt.Println(process)
+	// }
+
+	// TODO
+	return nil, nil
+}

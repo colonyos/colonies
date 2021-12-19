@@ -7,6 +7,7 @@ import (
 	"colonies/pkg/security"
 	"context"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"strconv"
@@ -15,9 +16,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
 )
-
-// params := c.Request.URL.Query()
-// randomData := params["dummydata"][0]
 
 type ColoniesServer struct {
 	ginHandler        *gin.Engine
@@ -31,8 +29,8 @@ type ColoniesServer struct {
 }
 
 func CreateColoniesServer(db database.Database, port int, rootPassword string, tlsPrivateKeyPath string, tlsCertPath string) *ColoniesServer {
-	gin.SetMode(gin.ReleaseMode)
-	gin.DefaultWriter = ioutil.Discard
+	//gin.SetMode(gin.ReleaseMode)
+	//gin.DefaultWriter = ioutil.Discard
 
 	server := &ColoniesServer{}
 	server.ginHandler = gin.Default()
@@ -65,9 +63,10 @@ func (server *ColoniesServer) setupRoutes() {
 	server.ginHandler.POST("/colonies/:colonyid/computers", server.handleAddComputerRequest)
 	server.ginHandler.GET("/colonies/:colonyid/computers", server.handleGetComputersRequest)
 	server.ginHandler.GET("/colonies/:colonyid/computers/:computerid", server.handleGetComputerRequest)
+	server.ginHandler.POST("/colonies/:colonyid/processes", server.handleAddProcessRequest)
+	server.ginHandler.GET("/colonies/:colonyid/processes", server.handleGetProcessesRequest)
 }
 
-// Security condition: Only system admins can get info about all colonies.
 func (server *ColoniesServer) handleGetColoniesRequest(c *gin.Context) {
 	err := security.RequireRoot(c.GetHeader("RootPassword"), server.rootPassword)
 	if err != nil {
@@ -90,7 +89,6 @@ func (server *ColoniesServer) handleGetColoniesRequest(c *gin.Context) {
 	c.JSON(http.StatusOK, jsonString)
 }
 
-// Security condition: Only the colony owner can get colony info.
 func (server *ColoniesServer) handleGetColonyRequest(c *gin.Context) {
 	colonyID := c.Param("colonyid")
 	err := security.RequireColonyOwnerOrMember(c.GetHeader("Id"), colonyID, c.GetHeader("Digest"), c.GetHeader("Signature"), server.ownership)
@@ -115,7 +113,6 @@ func (server *ColoniesServer) handleGetColonyRequest(c *gin.Context) {
 	c.JSON(http.StatusOK, jsonString)
 }
 
-// Security condition: Only system admins can add a colony.
 func (server *ColoniesServer) handleAddColonyRequest(c *gin.Context) {
 	err := security.RequireRoot(c.GetHeader("RootPassword"), server.rootPassword)
 	if err != nil {
@@ -144,7 +141,6 @@ func (server *ColoniesServer) handleAddColonyRequest(c *gin.Context) {
 	c.JSON(http.StatusOK, "")
 }
 
-// Security condition: Only a colony owner can add a computer.
 func (server *ColoniesServer) handleAddComputerRequest(c *gin.Context) {
 	colonyID := c.Param("colonyid")
 	err := security.RequireColonyOwner(c.GetHeader("Id"), colonyID, c.GetHeader("Digest"), c.GetHeader("Signature"), server.ownership)
@@ -178,7 +174,6 @@ func (server *ColoniesServer) handleAddComputerRequest(c *gin.Context) {
 	c.JSON(http.StatusOK, "")
 }
 
-// Security condition: Colony owner or computer members can get computer info.
 func (server *ColoniesServer) handleGetComputersRequest(c *gin.Context) {
 	colonyID := c.Param("colonyid")
 
@@ -204,7 +199,6 @@ func (server *ColoniesServer) handleGetComputersRequest(c *gin.Context) {
 	c.JSON(http.StatusOK, jsonString)
 }
 
-// Security condition: Colony owner or computer members can get computer info.
 func (server *ColoniesServer) handleGetComputerRequest(c *gin.Context) {
 	colonyID := c.Param("colonyid")
 	computerID := c.Param("computerid")
@@ -229,6 +223,96 @@ func (server *ColoniesServer) handleGetComputerRequest(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, jsonString)
+}
+
+func (server *ColoniesServer) handleAddProcessRequest(c *gin.Context) {
+	colonyID := c.Param("colonyid")
+
+	err := security.RequireColonyOwnerOrMember(c.GetHeader("Id"), colonyID, c.GetHeader("Digest"), c.GetHeader("Signature"), server.ownership)
+	if err != nil {
+		logging.Log().Warning(err)
+		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
+		return
+	}
+
+	jsonData, err := ioutil.ReadAll(c.Request.Body)
+	if err != nil {
+		logging.Log().Warning(err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	process, err := core.CreateProcessFromJSON(string(jsonData))
+	if err != nil {
+		logging.Log().Warning(err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	err = server.controller.AddProcess(process)
+	if err != nil {
+		logging.Log().Warning(err)
+		c.JSON(http.StatusMethodNotAllowed, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, "")
+}
+
+func (server *ColoniesServer) handleGetProcessesRequest(c *gin.Context) {
+	colonyID := c.Param("colonyid")
+	stateStr := c.GetHeader("State")
+	countStr := c.GetHeader("Count")
+
+	err := security.RequireColonyOwnerOrMember(c.GetHeader("Id"), colonyID, c.GetHeader("Digest"), c.GetHeader("Signature"), server.ownership)
+	if err != nil {
+		logging.Log().Warning(err)
+		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
+		return
+	}
+
+	if stateStr == "" {
+		errorMsg := "State must be specified"
+		logging.Log().Warning(errors.New(errorMsg))
+		c.JSON(http.StatusForbidden, gin.H{"error": errorMsg})
+		return
+	}
+
+	state, err := strconv.Atoi(stateStr)
+	if err != nil {
+		logging.Log().Warning(err)
+		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
+		return
+	}
+
+	if countStr == "" {
+		errorMsg := "Count must be specified"
+		logging.Log().Warning(errors.New(errorMsg))
+		c.JSON(http.StatusForbidden, gin.H{"error": errorMsg})
+		return
+	}
+
+	count, err := strconv.Atoi(countStr)
+	if err != nil {
+		logging.Log().Warning(err)
+		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
+		return
+	}
+
+	fmt.Println("colonyID: " + colonyID)
+	fmt.Println("state: " + strconv.Itoa(state))
+	fmt.Println("count: " + strconv.Itoa(count))
+
+	switch state {
+	case core.WAITING:
+		fmt.Println("waiting")
+	case core.RUNNING:
+		fmt.Println("running")
+	case core.SUCCESS:
+		fmt.Println("success")
+	case core.FAILED:
+		fmt.Println("failed")
+	}
 }
 
 func (server *ColoniesServer) ServeForever() error {

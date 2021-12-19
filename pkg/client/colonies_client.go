@@ -5,6 +5,7 @@ import (
 	"colonies/pkg/security"
 	"crypto/tls"
 	"errors"
+	"fmt"
 	"strconv"
 
 	"github.com/go-resty/resty/v2"
@@ -196,4 +197,56 @@ func GetComputerByID(computerID string, colonyID string, prvKey string) (*core.C
 	}
 
 	return computer, nil
+}
+
+func AddProcess(process *core.Process, prvKey string) error {
+	client := client()
+	digest, sig, id, err := security.GenerateCredentials(prvKey)
+	if err != nil {
+		return err
+	}
+
+	processJSON, err := process.ToJSON()
+	if err != nil {
+		return err
+	}
+
+	resp, err := client.R().
+		SetHeader("Id", id).
+		SetHeader("Digest", digest).
+		SetHeader("Signature", sig).
+		SetBody(processJSON).
+		Post("https://localhost:8080/colonies/" + process.TargetColonyID() + "/processes")
+
+	err = checkStatusCode(resp.StatusCode(), string(resp.Body()))
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func GetWaitingProcesses(colonyID string, count int, prvKey string) error {
+	client := client()
+	digest, sig, id, err := security.GenerateCredentials(prvKey)
+	if err != nil {
+		return err
+	}
+
+	resp, err := client.R().
+		SetHeader("Id", id).
+		SetHeader("Digest", digest).
+		SetHeader("Signature", sig).
+		SetHeader("Count", strconv.Itoa(count)).
+		SetHeader("State", strconv.Itoa(core.WAITING)).
+		Get("https://localhost:8080/colonies/" + colonyID + "/processes")
+
+	err = checkStatusCode(resp.StatusCode(), string(resp.Body()))
+	if err != nil {
+		return err
+	}
+
+	fmt.Println(resp.Body())
+
+	return nil
 }
