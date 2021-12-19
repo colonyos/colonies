@@ -42,8 +42,8 @@ func (controller *ColoniesController) AddColony(colony *core.Colony) error {
 	return nil
 }
 
-func (controller *ColoniesController) AddWorker(worker *core.Worker) error {
-	err := controller.db.AddWorker(worker)
+func (controller *ColoniesController) AddComputer(computer *core.Computer) error {
+	err := controller.db.AddComputer(computer)
 	if err != nil {
 		return err
 	}
@@ -51,20 +51,20 @@ func (controller *ColoniesController) AddWorker(worker *core.Worker) error {
 	return nil
 }
 
-func (controller *ColoniesController) GetWorker(workerID string) (*core.Worker, error) {
-	worker, err := controller.db.GetWorkerByID(workerID)
+func (controller *ColoniesController) GetComputer(computerID string) (*core.Computer, error) {
+	computer, err := controller.db.GetComputerByID(computerID)
 	if err != nil {
 		return nil, err
 	}
 
-	return worker, nil
+	return computer, nil
 }
 
-func (controller *ColoniesController) GetWorkerByColonyID(colonyID string) ([]*core.Worker, error) {
-	workers, err := controller.db.GetWorkersByColonyID(colonyID)
+func (controller *ColoniesController) GetComputerByColonyID(colonyID string) ([]*core.Computer, error) {
+	computers, err := controller.db.GetComputersByColonyID(colonyID)
 	if err != nil {
 		return nil, err
 	}
 
-	return workers, nil
+	return computers, nil
 }

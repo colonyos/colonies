@@ -8,94 +8,94 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestCreateTask(t *testing.T) {
+func TestCreateProcess(t *testing.T) {
 	startTime := time.Now()
 
 	colony := core.CreateColony(core.GenerateRandomID(), "test_colony_name")
 
-	task1 := core.CreateTask(colony.ID(), []string{}, "dummy", -1, 3, 1000, 10, 1)
-	task1.SetSubmissionTime(startTime.Add(600 * time.Millisecond))
+	process1 := core.CreateProcess(colony.ID(), []string{}, "dummy", -1, 3, 1000, 10, 1)
+	process1.SetSubmissionTime(startTime.Add(600 * time.Millisecond))
 
-	task2 := core.CreateTask(colony.ID(), []string{}, "dummy", -1, 3, 1000, 10, 1)
-	task2.SetSubmissionTime(startTime.Add(100 * time.Millisecond))
+	process2 := core.CreateProcess(colony.ID(), []string{}, "dummy", -1, 3, 1000, 10, 1)
+	process2.SetSubmissionTime(startTime.Add(100 * time.Millisecond))
 
-	task3 := core.CreateTask(colony.ID(), []string{}, "dummy", -1, 3, 1000, 10, 1)
-	task3.SetSubmissionTime(startTime.Add(300 * time.Millisecond))
+	process3 := core.CreateProcess(colony.ID(), []string{}, "dummy", -1, 3, 1000, 10, 1)
+	process3.SetSubmissionTime(startTime.Add(300 * time.Millisecond))
 
-	candidates := []*core.Task{task1, task2, task3}
+	candidates := []*core.Process{process1, process2, process3}
 
 	scheduler := CreateScheduler()
-	selectedTask := scheduler.Select("workerid_1", candidates)
-	assert.Equal(t, selectedTask.ID(), task1.ID())
+	selectedProcess := scheduler.Select("computerid_1", candidates)
+	assert.Equal(t, selectedProcess.ID(), process1.ID())
 }
 
-func TestCreateTask2(t *testing.T) {
+func TestCreateProcess2(t *testing.T) {
 	startTime := time.Now()
 
 	colony := core.CreateColony(core.GenerateRandomID(), "test_colony_name")
 
-	task1 := core.CreateTask(colony.ID(), []string{}, "dummy", -1, 3, 1000, 10, 1)
-	task1.SetSubmissionTime(startTime.Add(60 * time.Millisecond))
+	process1 := core.CreateProcess(colony.ID(), []string{}, "dummy", -1, 3, 1000, 10, 1)
+	process1.SetSubmissionTime(startTime.Add(60 * time.Millisecond))
 
-	task2 := core.CreateTask(colony.ID(), []string{}, "dummy", -1, 3, 1000, 10, 1)
-	task2.SetSubmissionTime(startTime.Add(100 * time.Millisecond))
+	process2 := core.CreateProcess(colony.ID(), []string{}, "dummy", -1, 3, 1000, 10, 1)
+	process2.SetSubmissionTime(startTime.Add(100 * time.Millisecond))
 
-	task3 := core.CreateTask(colony.ID(), []string{}, "dummy", -1, 3, 1000, 10, 1)
-	task3.SetSubmissionTime(startTime.Add(300 * time.Millisecond))
+	process3 := core.CreateProcess(colony.ID(), []string{}, "dummy", -1, 3, 1000, 10, 1)
+	process3.SetSubmissionTime(startTime.Add(300 * time.Millisecond))
 
-	candidates := []*core.Task{task1, task2, task3}
+	candidates := []*core.Process{process1, process2, process3}
 
 	scheduler := CreateScheduler()
-	selectedTask := scheduler.Select("workerid_1", candidates)
-	assert.Equal(t, selectedTask.ID(), task3.ID())
+	selectedProcess := scheduler.Select("computerid_1", candidates)
+	assert.Equal(t, selectedProcess.ID(), process3.ID())
 }
 
-func TestCreateTaskSameSubmissionTimes(t *testing.T) {
+func TestCreateProcessSameSubmissionTimes(t *testing.T) {
 	startTime := time.Now()
 
 	colony := core.CreateColony(core.GenerateRandomID(), "test_colony_name")
 
-	task1 := core.CreateTask(colony.ID(), []string{}, "dummy", -1, 3, 1000, 10, 1)
-	task1.SetSubmissionTime(startTime)
+	process1 := core.CreateProcess(colony.ID(), []string{}, "dummy", -1, 3, 1000, 10, 1)
+	process1.SetSubmissionTime(startTime)
 
-	task2 := core.CreateTask(colony.ID(), []string{}, "dummy", -1, 3, 1000, 10, 1)
-	task2.SetSubmissionTime(startTime)
+	process2 := core.CreateProcess(colony.ID(), []string{}, "dummy", -1, 3, 1000, 10, 1)
+	process2.SetSubmissionTime(startTime)
 
-	task3 := core.CreateTask(colony.ID(), []string{}, "dummy", -1, 3, 1000, 10, 1)
-	task3.SetSubmissionTime(startTime)
+	process3 := core.CreateProcess(colony.ID(), []string{}, "dummy", -1, 3, 1000, 10, 1)
+	process3.SetSubmissionTime(startTime)
 
-	candidates := []*core.Task{task1, task2, task3}
-
-	scheduler := CreateScheduler()
-	selectedTask := scheduler.Select("workerid_1", candidates)
-	assert.Equal(t, selectedTask.ID(), task1.ID())
-}
-
-func TestCreateTaskNoTasks(t *testing.T) {
-	candidates := []*core.Task{}
+	candidates := []*core.Process{process1, process2, process3}
 
 	scheduler := CreateScheduler()
-	selectedTask := scheduler.Select("workerid_1", candidates)
-	assert.Nil(t, selectedTask)
+	selectedProcess := scheduler.Select("computerid_1", candidates)
+	assert.Equal(t, selectedProcess.ID(), process1.ID())
 }
 
-func TestCreateTask5(t *testing.T) {
+func TestCreateProcessNoProcesss(t *testing.T) {
+	candidates := []*core.Process{}
+
+	scheduler := CreateScheduler()
+	selectedProcess := scheduler.Select("computerid_1", candidates)
+	assert.Nil(t, selectedProcess)
+}
+
+func TestCreateProcess5(t *testing.T) {
 	startTime := time.Now()
 
 	colony := core.CreateColony(core.GenerateRandomID(), "test_colony_name")
 
-	task1 := core.CreateTask(colony.ID(), []string{}, "dummy", -1, 3, 1000, 10, 1)
-	task1.SetSubmissionTime(startTime.Add(600 * time.Millisecond))
+	process1 := core.CreateProcess(colony.ID(), []string{}, "dummy", -1, 3, 1000, 10, 1)
+	process1.SetSubmissionTime(startTime.Add(600 * time.Millisecond))
 
-	task2 := core.CreateTask(colony.ID(), []string{"workerid_1"}, "dummy", -1, 3, 1000, 10, 1)
-	task2.SetSubmissionTime(startTime.Add(100 * time.Millisecond))
+	process2 := core.CreateProcess(colony.ID(), []string{"computerid_1"}, "dummy", -1, 3, 1000, 10, 1)
+	process2.SetSubmissionTime(startTime.Add(100 * time.Millisecond))
 
-	task3 := core.CreateTask(colony.ID(), []string{}, "dummy", -1, 3, 1000, 10, 1)
-	task3.SetSubmissionTime(startTime.Add(300 * time.Millisecond))
+	process3 := core.CreateProcess(colony.ID(), []string{}, "dummy", -1, 3, 1000, 10, 1)
+	process3.SetSubmissionTime(startTime.Add(300 * time.Millisecond))
 
-	candidates := []*core.Task{task1, task2, task3}
+	candidates := []*core.Process{process1, process2, process3}
 
 	scheduler := CreateScheduler()
-	selectedTask := scheduler.Select("workerid_1", candidates)
-	assert.Equal(t, selectedTask.ID(), task2.ID())
+	selectedProcess := scheduler.Select("computerid_1", candidates)
+	assert.Equal(t, selectedProcess.ID(), process2.ID())
 }

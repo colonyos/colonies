@@ -79,22 +79,22 @@ func TestDeleteColonies(t *testing.T) {
 	err = db.AddColony(colony2)
 	assert.Nil(t, err)
 
-	worker1ID := core.GenerateRandomID()
-	worker1 := core.CreateWorker(worker1ID, "test_worker", colony1.ID(), "AMD Ryzen 9 5950X (32) @ 3.400GHz", 32, 80326, "NVIDIA GeForce RTX 2080 Ti Rev. A", 1)
+	computer1ID := core.GenerateRandomID()
+	computer1 := core.CreateComputer(computer1ID, "test_computer", colony1.ID(), "AMD Ryzen 9 5950X (32) @ 3.400GHz", 32, 80326, "NVIDIA GeForce RTX 2080 Ti Rev. A", 1)
 
-	err = db.AddWorker(worker1)
+	err = db.AddComputer(computer1)
 	assert.Nil(t, err)
 
-	worker2ID := core.GenerateRandomID()
-	worker2 := core.CreateWorker(worker2ID, "test_worker", colony1.ID(), "AMD Ryzen 9 5950X (32) @ 3.400GHz", 32, 80326, "NVIDIA GeForce RTX 2080 Ti Rev. A", 1)
+	computer2ID := core.GenerateRandomID()
+	computer2 := core.CreateComputer(computer2ID, "test_computer", colony1.ID(), "AMD Ryzen 9 5950X (32) @ 3.400GHz", 32, 80326, "NVIDIA GeForce RTX 2080 Ti Rev. A", 1)
 
-	err = db.AddWorker(worker2)
+	err = db.AddComputer(computer2)
 	assert.Nil(t, err)
 
-	worker3ID := core.GenerateRandomID()
-	worker3 := core.CreateWorker(worker3ID, "test_worker", colony2.ID(), "AMD Ryzen 9 5950X (32) @ 3.400GHz", 32, 80326, "NVIDIA GeForce RTX 2080 Ti Rev. A", 1)
+	computer3ID := core.GenerateRandomID()
+	computer3 := core.CreateComputer(computer3ID, "test_computer", colony2.ID(), "AMD Ryzen 9 5950X (32) @ 3.400GHz", 32, 80326, "NVIDIA GeForce RTX 2080 Ti Rev. A", 1)
 
-	err = db.AddWorker(worker3)
+	err = db.AddComputer(computer3)
 	assert.Nil(t, err)
 
 	err = db.DeleteColonyByID(colony1.ID())
@@ -104,15 +104,15 @@ func TestDeleteColonies(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Nil(t, colonyFromDB)
 
-	workerFromDB, err := db.GetWorkerByID(worker1.ID())
+	computerFromDB, err := db.GetComputerByID(computer1.ID())
 	assert.Nil(t, err)
-	assert.Nil(t, workerFromDB)
+	assert.Nil(t, computerFromDB)
 
-	workerFromDB, err = db.GetWorkerByID(worker2.ID())
+	computerFromDB, err = db.GetComputerByID(computer2.ID())
 	assert.Nil(t, err)
-	assert.Nil(t, workerFromDB)
+	assert.Nil(t, computerFromDB)
 
-	workerFromDB, err = db.GetWorkerByID(worker3.ID())
+	computerFromDB, err = db.GetComputerByID(computer3.ID())
 	assert.Nil(t, err)
-	assert.NotNil(t, workerFromDB) // Belongs to colony 2 and should therefore not be deleted
+	assert.NotNil(t, computerFromDB) // Belongs to colony 2 and should therefore not be deleted
 }

@@ -5,14 +5,14 @@ import (
 )
 
 type OwnershipMock struct {
-	colonies map[string]bool
-	workers  map[string]string
+	colonies  map[string]bool
+	computers map[string]string
 }
 
 func CreateOwnershipMock() *OwnershipMock {
 	ownership := &OwnershipMock{}
 	ownership.colonies = make(map[string]bool)
-	ownership.workers = make(map[string]string)
+	ownership.computers = make(map[string]string)
 	return ownership
 }
 
@@ -20,26 +20,26 @@ func (ownership *OwnershipMock) addColony(colonyID string) {
 	ownership.colonies[colonyID] = true
 }
 
-func (ownership *OwnershipMock) addWorker(workerID string, colonyID string) {
-	ownership.workers[workerID] = colonyID
+func (ownership *OwnershipMock) addComputer(computerID string, colonyID string) {
+	ownership.computers[computerID] = colonyID
 }
 
 func (ownership *OwnershipMock) CheckIfColonyExists(colonyID string) error {
 	colonyIDFromDB := ownership.colonies[colonyID]
 	if !colonyIDFromDB {
-		return errors.New("colony does not exists")
+		return errors.New("Colony does not exists")
 	}
 
 	return nil
 }
 
-func (ownership *OwnershipMock) CheckIfWorkerBelongsToColony(workerID string, colonyID string) error {
-	colonyIDFromDB := ownership.workers[workerID]
+func (ownership *OwnershipMock) CheckIfComputerBelongsToColony(computerID string, colonyID string) error {
+	colonyIDFromDB := ownership.computers[computerID]
 	if colonyIDFromDB == "" {
-		return errors.New("colony does not exists")
+		return errors.New("Colony does not exists")
 	}
 	if colonyIDFromDB != colonyID {
-		return errors.New("colony does have such a worker")
+		return errors.New("Colony does have such a computer")
 	}
 
 	return nil

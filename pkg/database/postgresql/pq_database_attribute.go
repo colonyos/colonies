@@ -23,13 +23,13 @@ func (db *PQDatabase) parseAttributes(rows *sql.Rows) ([]*core.Attribute, error)
 		var attributeID string
 		var key string
 		var value string
-		var taskType int
+		var processType int
 		var targetID string
-		if err := rows.Scan(&attributeID, &key, &value, &taskType, &targetID); err != nil {
+		if err := rows.Scan(&attributeID, &key, &value, &processType, &targetID); err != nil {
 			return nil, err
 		}
 
-		attribute := core.CreateAttribute(targetID, taskType, key, value)
+		attribute := core.CreateAttribute(targetID, processType, key, value)
 		attributes = append(attributes, attribute)
 	}
 
@@ -50,7 +50,7 @@ func (db *PQDatabase) GetAttributeByID(attributeID string) (*core.Attribute, err
 		return nil, err
 	}
 	if len(attributes) > 1 {
-		return nil, errors.New("expected attributes to be unique")
+		return nil, errors.New("Expected attributes to be unique")
 	} else if len(attributes) == 0 {
 		return nil, nil
 	}
@@ -72,7 +72,7 @@ func (db *PQDatabase) GetAttribute(targetID string, key string, attributeType in
 		return nil, err
 	}
 	if len(attributes) > 1 {
-		return nil, errors.New("expected attributes to be unique")
+		return nil, errors.New("Expected attributes to be unique")
 	} else if len(attributes) == 0 {
 		return nil, nil
 	}
@@ -98,7 +98,7 @@ func (db *PQDatabase) UpdateAttribute(attribute *core.Attribute) error {
 		return err
 	}
 	if existingAttribute == nil {
-		return errors.New("attribute <" + attribute.ID() + "> does not exists")
+		return errors.New("Attribute <" + attribute.ID() + "> does not exists")
 	}
 
 	sqlStatement := `UPDATE ` + db.dbPrefix + `ATTRIBUTES SET ATTRIBUTE_ID=$1, VALUE=$2`
@@ -120,7 +120,7 @@ func (db *PQDatabase) DeleteAttributeByID(attributeID string) error {
 	return nil
 }
 
-func (db *PQDatabase) DeleteAttributesByTaskID(targetID string, attributeType int) error {
+func (db *PQDatabase) DeleteAttributesByProcessID(targetID string, attributeType int) error {
 	sqlStatement := `DELETE FROM ` + db.dbPrefix + `ATTRIBUTES WHERE TARGET_ID=$1 AND ATTRIBUTE_TYPE=$2`
 	_, err := db.postgresql.Exec(sqlStatement, targetID, attributeType)
 	if err != nil {
@@ -130,7 +130,7 @@ func (db *PQDatabase) DeleteAttributesByTaskID(targetID string, attributeType in
 	return nil
 }
 
-func (db *PQDatabase) DeleteAllAttributesByTaskID(targetID string) error {
+func (db *PQDatabase) DeleteAllAttributesByProcessID(targetID string) error {
 	sqlStatement := `DELETE FROM ` + db.dbPrefix + `ATTRIBUTES WHERE TARGET_ID=$1`
 	_, err := db.postgresql.Exec(sqlStatement, targetID)
 	if err != nil {

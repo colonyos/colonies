@@ -73,20 +73,20 @@ func CreateIdendityFromString(hexEncodedPrv string) (*Idendity, error) {
 	prv.PublicKey.Curve = btcec.S256()
 
 	if 8*len(decodedPrv) != prv.Params().BitSize {
-		return nil, fmt.Errorf("invalid private key length, should be %d bits", prv.Params().BitSize)
+		return nil, fmt.Errorf("Invalid private key length, should be %d bits", prv.Params().BitSize)
 	}
 
 	prv.D = new(big.Int).SetBytes(decodedPrv)
 	if prv.D.Cmp(secp256k1N) >= 0 {
-		return nil, fmt.Errorf("invalid private key")
+		return nil, fmt.Errorf("Invalid private key")
 	}
 	if prv.D.Sign() <= 0 {
-		return nil, fmt.Errorf("invalid private key")
+		return nil, fmt.Errorf("Invalid private key")
 	}
 
 	prv.PublicKey.X, prv.PublicKey.Y = prv.PublicKey.Curve.ScalarBaseMult(decodedPrv)
 	if prv.PublicKey.X == nil {
-		return nil, errors.New("invalid private key")
+		return nil, errors.New("Invalid private key")
 	}
 
 	idendity.prv = prv

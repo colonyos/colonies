@@ -109,14 +109,14 @@ func GetColonyByID(colonyID string, prvKey string) (*core.Colony, error) {
 	return colony, nil
 }
 
-func AddWorker(worker *core.Worker, prvKey string) error {
+func AddComputer(computer *core.Computer, prvKey string) error {
 	client := client()
 	digest, sig, id, err := security.GenerateCredentials(prvKey)
 	if err != nil {
 		return err
 	}
 
-	workerJSON, err := worker.ToJSON()
+	computerJSON, err := computer.ToJSON()
 	if err != nil {
 		return err
 	}
@@ -125,8 +125,8 @@ func AddWorker(worker *core.Worker, prvKey string) error {
 		SetHeader("Id", id).
 		SetHeader("Digest", digest).
 		SetHeader("Signature", sig).
-		SetBody(workerJSON).
-		Post("https://localhost:8080/colonies/" + worker.ColonyID() + "/workers")
+		SetBody(computerJSON).
+		Post("https://localhost:8080/colonies/" + computer.ColonyID() + "/computers")
 
 	err = checkStatusCode(resp.StatusCode(), string(resp.Body()))
 	if err != nil {
@@ -136,7 +136,7 @@ func AddWorker(worker *core.Worker, prvKey string) error {
 	return nil
 }
 
-func GetWorkersByColonyID(colonyID string, prvKey string) ([]*core.Worker, error) {
+func GetComputersByColonyID(colonyID string, prvKey string) ([]*core.Computer, error) {
 	client := client()
 	digest, sig, id, err := security.GenerateCredentials(prvKey)
 	if err != nil {
@@ -147,7 +147,7 @@ func GetWorkersByColonyID(colonyID string, prvKey string) ([]*core.Worker, error
 		SetHeader("Id", id).
 		SetHeader("Digest", digest).
 		SetHeader("Signature", sig).
-		Get("https://localhost:8080/colonies/" + colonyID + "/workers")
+		Get("https://localhost:8080/colonies/" + colonyID + "/computers")
 
 	err = checkStatusCode(resp.StatusCode(), string(resp.Body()))
 	if err != nil {
@@ -159,15 +159,15 @@ func GetWorkersByColonyID(colonyID string, prvKey string) ([]*core.Worker, error
 		return nil, err
 	}
 
-	workers, err := core.CreateWorkerArrayFromJSON(unquotedResp)
+	computers, err := core.CreateComputerArrayFromJSON(unquotedResp)
 	if err != nil {
 		return nil, err
 	}
 
-	return workers, nil
+	return computers, nil
 }
 
-func GetWorkerByID(workerID string, colonyID string, prvKey string) (*core.Worker, error) {
+func GetComputerByID(computerID string, colonyID string, prvKey string) (*core.Computer, error) {
 	client := client()
 	digest, sig, id, err := security.GenerateCredentials(prvKey)
 	if err != nil {
@@ -178,7 +178,7 @@ func GetWorkerByID(workerID string, colonyID string, prvKey string) (*core.Worke
 		SetHeader("Id", id).
 		SetHeader("Digest", digest).
 		SetHeader("Signature", sig).
-		Get("https://localhost:8080/colonies/" + colonyID + "/workers/" + workerID)
+		Get("https://localhost:8080/colonies/" + colonyID + "/computers/" + computerID)
 
 	err = checkStatusCode(resp.StatusCode(), string(resp.Body()))
 	if err != nil {
@@ -190,10 +190,10 @@ func GetWorkerByID(workerID string, colonyID string, prvKey string) (*core.Worke
 		return nil, err
 	}
 
-	worker, err := core.CreateWorkerFromJSON(unquotedResp)
+	computer, err := core.CreateComputerFromJSON(unquotedResp)
 	if err != nil {
 		return nil, err
 	}
 
-	return worker, nil
+	return computer, nil
 }

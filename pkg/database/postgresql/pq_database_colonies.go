@@ -62,7 +62,7 @@ func (db *PQDatabase) GetColonyByID(id string) (*core.Colony, error) {
 	}
 
 	if len(colonies) > 1 {
-		return nil, errors.New("expected one colony, colony id should be unique")
+		return nil, errors.New("Expected one colony, colony id should be unique")
 	}
 
 	if len(colonies) == 0 {
@@ -73,7 +73,7 @@ func (db *PQDatabase) GetColonyByID(id string) (*core.Colony, error) {
 }
 
 func (db *PQDatabase) DeleteColonyByID(colonyID string) error {
-	err := db.DeleteWorkersByColonyID(colonyID)
+	err := db.DeleteComputersByColonyID(colonyID)
 	if err != nil {
 		return err
 	}
