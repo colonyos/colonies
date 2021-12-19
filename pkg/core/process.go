@@ -2,6 +2,7 @@ package core
 
 import (
 	"colonies/pkg/crypto"
+	"encoding/json"
 	"time"
 
 	"github.com/google/uuid"
@@ -14,8 +15,32 @@ const (
 	FAILED      = 3
 )
 
+type ProcessJSON struct {
+	ID                 string           `json:"processid"`
+	TargetColonyID     string           `json:"targetcolonyid"`
+	TargetComputerIDs  []string         `json:"targetcomputerids"`
+	AssignedComputerID string           `json:"assignedcomputerid"`
+	Status             int              `json:"status"`
+	IsAssigned         bool             `json:"isassigned"`
+	ComputerType       string           `json:"computertype"`
+	SubmissionTime     time.Time        `json:"submissiontime"`
+	StartTime          time.Time        `json:"starttime"`
+	EndTime            time.Time        `json:"endtime"`
+	Deadline           time.Time        `json:"deadline"`
+	Timeout            int              `json:"timeout"`
+	Retries            int              `json:"retries"`
+	MaxRetries         int              `json:"maxretries"`
+	Log                string           `json:"log"`
+	Mem                int              `json:"mem"`
+	Cores              int              `json:"cores"`
+	GPUs               int              `json:"gpus"`
+	InAttributes       []*AttributeJSON `json:"in"`
+	OutAttributes      []*AttributeJSON `json:"out"`
+	ErrAttributes      []*AttributeJSON `json:"err"`
+}
+
 type Process struct {
-	processID          string
+	id                 string
 	targetColonyID     string
 	targetComputerIDs  []string
 	assignedComputerID string
@@ -37,19 +62,83 @@ type Process struct {
 
 func CreateProcess(targetColonyID string, targetComputerIDs []string, computerType string, timeout int, maxRetries int, mem int, cores int, gpus int) *Process {
 	uuid := uuid.New()
-	processID := crypto.GenerateHashFromString(uuid.String()).String()
+	id := crypto.GenerateHashFromString(uuid.String()).String()
 
-	process := &Process{processID: processID, targetColonyID: targetColonyID, targetComputerIDs: targetComputerIDs, status: WAITING, isAssigned: false, computerType: computerType, timeout: timeout, maxRetries: maxRetries, mem: mem, cores: cores, gpus: gpus}
+	process := &Process{id: id,
+		targetColonyID:    targetColonyID,
+		targetComputerIDs: targetComputerIDs,
+		status:            WAITING,
+		isAssigned:        false,
+		computerType:      computerType,
+		timeout:           timeout,
+		maxRetries:        maxRetries,
+		mem:               mem,
+		cores:             cores,
+		gpus:              gpus}
 
 	return process
 }
 
-func CreateProcessFromDB(processID string, targetColonyID string, targetComputerIDs []string, assignedComputerID string, status int, isAssigned bool, computerType string, submissionTime time.Time, startTime time.Time, endTime time.Time, deadline time.Time, timeout int, retries int, maxRetries int, log string, mem int, cores int, gpus int) *Process {
-	return &Process{processID: processID, targetColonyID: targetColonyID, targetComputerIDs: targetComputerIDs, assignedComputerID: assignedComputerID, status: status, isAssigned: isAssigned, computerType: computerType, submissionTime: submissionTime, startTime: startTime, endTime: endTime, deadline: deadline, timeout: timeout, retries: retries, maxRetries: maxRetries, log: log, mem: mem, cores: cores, gpus: gpus}
+func CreateProcessFromDB(id string, targetColonyID string, targetComputerIDs []string, assignedComputerID string, status int, isAssigned bool, computerType string, submissionTime time.Time, startTime time.Time, endTime time.Time, deadline time.Time, timeout int, retries int, maxRetries int, log string, mem int, cores int, gpus int) *Process {
+	return &Process{id: id,
+		targetColonyID:     targetColonyID,
+		targetComputerIDs:  targetComputerIDs,
+		assignedComputerID: assignedComputerID,
+		status:             status,
+		isAssigned:         isAssigned,
+		computerType:       computerType,
+		submissionTime:     submissionTime,
+		startTime:          startTime,
+		endTime:            endTime,
+		deadline:           deadline,
+		timeout:            timeout,
+		retries:            retries,
+		maxRetries:         maxRetries,
+		log:                log,
+		mem:                mem,
+		cores:              cores,
+		gpus:               gpus}
+}
+
+func CreateFromJSON(jsonString string) (*Process, []*Attribute, []*Attribute, []*Attribute, error) {
+	var processJSON ProcessJSON
+	var inAttributes []*Attribute
+	var errAttributes []*Attribute
+	var outAttributes []*Attribute
+
+	err := json.Unmarshal([]byte(jsonString), &processJSON)
+	if err != nil {
+		return nil, inAttributes, errAttributes, outAttributes, err
+	}
+
+	inAttributes = convertFromAttributeJSON(processJSON.InAttributes)
+	errAttributes = convertFromAttributeJSON(processJSON.ErrAttributes)
+	outAttributes = convertFromAttributeJSON(processJSON.OutAttributes)
+
+	process := &Process{id: processJSON.ID,
+		targetColonyID:     processJSON.TargetColonyID,
+		targetComputerIDs:  processJSON.TargetComputerIDs,
+		assignedComputerID: processJSON.AssignedComputerID,
+		status:             processJSON.Status,
+		isAssigned:         processJSON.IsAssigned,
+		computerType:       processJSON.ComputerType,
+		submissionTime:     processJSON.SubmissionTime,
+		startTime:          processJSON.StartTime,
+		endTime:            processJSON.EndTime,
+		deadline:           processJSON.Deadline,
+		timeout:            processJSON.Timeout,
+		retries:            processJSON.Retries,
+		maxRetries:         processJSON.MaxRetries,
+		log:                processJSON.Log,
+		mem:                processJSON.Mem,
+		cores:              processJSON.Cores,
+		gpus:               processJSON.GPUs}
+
+	return process, inAttributes, errAttributes, outAttributes, nil
 }
 
 func (process *Process) ID() string {
-	return process.processID
+	return process.id
 }
 
 func (process *Process) TargetColonyID() string {
@@ -153,4 +242,39 @@ func (process *Process) WaitingTime() time.Duration {
 
 func (process *Process) ProcessingTime() time.Duration {
 	return process.EndTime().Sub(process.StartTime())
+}
+
+func (process *Process) ToJSON(inAttributes []*Attribute, errAttributes []*Attribute, outAttributes []*Attribute) (string, error) {
+	inAttributesJSON := convertToAttributeJSON(inAttributes)
+	errAttributesJSON := convertToAttributeJSON(errAttributes)
+	outAttributesJSON := convertToAttributeJSON(outAttributes)
+
+	processJSON := &ProcessJSON{ID: process.id,
+		TargetColonyID:     process.targetColonyID,
+		TargetComputerIDs:  process.targetComputerIDs,
+		AssignedComputerID: process.assignedComputerID,
+		Status:             process.status,
+		IsAssigned:         process.isAssigned,
+		ComputerType:       process.computerType,
+		SubmissionTime:     process.submissionTime,
+		StartTime:          process.startTime,
+		EndTime:            process.endTime,
+		Deadline:           process.deadline,
+		Timeout:            process.timeout,
+		Retries:            process.retries,
+		MaxRetries:         process.maxRetries,
+		Log:                process.log,
+		Mem:                process.mem,
+		Cores:              process.cores,
+		GPUs:               process.gpus,
+		InAttributes:       inAttributesJSON,
+		ErrAttributes:      errAttributesJSON,
+		OutAttributes:      outAttributesJSON}
+
+	jsonString, err := json.Marshal(processJSON)
+	if err != nil {
+		return "", err
+	}
+
+	return string(jsonString), nil
 }

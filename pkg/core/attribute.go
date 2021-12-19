@@ -2,6 +2,7 @@ package core
 
 import (
 	"colonies/pkg/crypto"
+	"encoding/json"
 	"strconv"
 )
 
@@ -12,8 +13,16 @@ const (
 	ENV     = 4
 )
 
+type AttributeJSON struct {
+	ID            string `json:"attributeid"`
+	TargetID      string `json:"targetid"`
+	AttributeType int    `json:"attributetype"`
+	Key           string `json:"key"`
+	Value         string `json:"value"`
+}
+
 type Attribute struct {
-	attributeID   string
+	id            string
 	targetID      string
 	attributeType int
 	key           string
@@ -21,12 +30,52 @@ type Attribute struct {
 }
 
 func CreateAttribute(targetID string, attributeType int, key string, value string) *Attribute {
-	attributeID := crypto.GenerateHash([]byte(targetID + key + strconv.Itoa(attributeType))).String()
-	return &Attribute{attributeID: attributeID, targetID: targetID, attributeType: attributeType, key: key, value: value}
+	id := crypto.GenerateHash([]byte(targetID + key + strconv.Itoa(attributeType))).String()
+	return &Attribute{id: id,
+		targetID:      targetID,
+		attributeType: attributeType,
+		key:           key,
+		value:         value}
+}
+
+func CreateAttributeFromJSON(jsonString string) (*Attribute, error) {
+	var attributeJSON AttributeJSON
+	err := json.Unmarshal([]byte(jsonString), &attributeJSON)
+	if err != nil {
+		return nil, err
+	}
+
+	return CreateAttribute(attributeJSON.TargetID, attributeJSON.AttributeType, attributeJSON.Key, attributeJSON.Value), nil
+}
+
+func convertToAttributeJSON(attributes []*Attribute) []*AttributeJSON {
+	var attributesJSON []*AttributeJSON
+	for _, attribute := range attributes {
+		attributesJSON = append(attributesJSON, &AttributeJSON{ID: attribute.id,
+			TargetID:      attribute.targetID,
+			AttributeType: attribute.attributeType,
+			Key:           attribute.key,
+			Value:         attribute.value})
+	}
+
+	return attributesJSON
+}
+
+func convertFromAttributeJSON(attributesJSON []*AttributeJSON) []*Attribute {
+	var attributes []*Attribute
+	for _, attributeJSON := range attributesJSON {
+		attributes = append(attributes, &Attribute{id: attributeJSON.ID,
+			targetID:      attributeJSON.TargetID,
+			attributeType: attributeJSON.AttributeType,
+			key:           attributeJSON.Key,
+			value:         attributeJSON.Value})
+	}
+
+	return attributes
 }
 
 func (attribute *Attribute) ID() string {
-	return attribute.attributeID
+	return attribute.id
 }
 
 func (attribute *Attribute) TargetID() string {
@@ -52,4 +101,19 @@ func (attribute *Attribute) SetValue(value string) {
 func (attribute *Attribute) ToMap(attributes []*Attribute) map[string]string {
 	attributeMap := make(map[string]string)
 	return attributeMap
+}
+
+func (attribute *Attribute) ToJSON() (string, error) {
+	attributeJSON := &AttributeJSON{ID: attribute.id,
+		TargetID:      attribute.targetID,
+		AttributeType: attribute.attributeType,
+		Key:           attribute.key,
+		Value:         attribute.value}
+
+	jsonString, err := json.Marshal(attributeJSON)
+	if err != nil {
+		return "", err
+	}
+
+	return string(jsonString), nil
 }

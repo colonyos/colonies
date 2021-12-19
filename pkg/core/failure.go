@@ -37,7 +37,7 @@ func (failure *Failure) Message() string {
 }
 
 func (failure *Failure) ToJSON() (string, error) {
-	failureJSON := &FailureJSON{Status: failure.Status(), Message: failure.Message()}
+	failureJSON := &FailureJSON{Status: failure.status, Message: failure.message}
 
 	jsonString, err := json.Marshal(failureJSON)
 	if err != nil {
