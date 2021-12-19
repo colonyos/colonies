@@ -10,11 +10,11 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func PrepareTests(t *testing.T, apiKey string) (*ColoniesServer, chan bool) {
+func PrepareTests(t *testing.T, rootPassword string) (*ColoniesServer, chan bool) {
 	db, err := postgresql.PrepareTests()
 	assert.Nil(t, err)
 
-	server := CreateColoniesServer(db, 8080, apiKey, "../../cert/key.pem", "../../cert/cert.pem")
+	server := CreateColoniesServer(db, 8080, rootPassword, "../../cert/key.pem", "../../cert/cert.pem")
 	done := make(chan bool)
 
 	go func() {
@@ -26,8 +26,8 @@ func PrepareTests(t *testing.T, apiKey string) (*ColoniesServer, chan bool) {
 }
 
 func TestAddColony(t *testing.T) {
-	apiKey := "testapikey"
-	server, done := PrepareTests(t, apiKey)
+	rootPassword := "password"
+	server, done := PrepareTests(t, rootPassword)
 
 	prvKey, err := security.GeneratePrivateKey()
 	assert.Nil(t, err)
@@ -36,7 +36,7 @@ func TestAddColony(t *testing.T) {
 	assert.Nil(t, err)
 
 	colony := core.CreateColony(colonyID, "test_colony_name")
-	err = client.AddColony(colony, apiKey)
+	err = client.AddColony(colony, rootPassword)
 	assert.Nil(t, err)
 
 	colonyFromServer, err := client.GetColonyByID(colonyID, prvKey)
@@ -50,15 +50,15 @@ func TestAddColony(t *testing.T) {
 }
 
 func TestGetColonies(t *testing.T) {
-	apiKey := "testapikey"
-	server, done := PrepareTests(t, apiKey)
+	rootPassword := "password"
+	server, done := PrepareTests(t, rootPassword)
 
 	prvKey1, err := security.GeneratePrivateKey()
 	assert.Nil(t, err)
 	colonyID1, err := security.GenerateID(prvKey1)
 	assert.Nil(t, err)
 	colony1 := core.CreateColony(colonyID1, "test_colony_name")
-	err = client.AddColony(colony1, apiKey)
+	err = client.AddColony(colony1, rootPassword)
 	assert.Nil(t, err)
 
 	prvKey2, err := security.GeneratePrivateKey()
@@ -66,10 +66,10 @@ func TestGetColonies(t *testing.T) {
 	colonyID2, err := security.GenerateID(prvKey2)
 	assert.Nil(t, err)
 	colony2 := core.CreateColony(colonyID2, "test_colony_name")
-	err = client.AddColony(colony2, apiKey)
+	err = client.AddColony(colony2, rootPassword)
 	assert.Nil(t, err)
 
-	coloniesFromServer, err := client.GetColonies(apiKey)
+	coloniesFromServer, err := client.GetColonies(rootPassword)
 	assert.Nil(t, err)
 
 	counter := 0
@@ -85,8 +85,8 @@ func TestGetColonies(t *testing.T) {
 }
 
 func TestAddWorker(t *testing.T) {
-	apiKey := "testapikey"
-	server, done := PrepareTests(t, apiKey)
+	rootPassword := "testapikey"
+	server, done := PrepareTests(t, rootPassword)
 
 	// Create a Colony
 	colonyPrvKey, err := security.GeneratePrivateKey()
@@ -97,7 +97,7 @@ func TestAddWorker(t *testing.T) {
 
 	colony := core.CreateColony(colonyID, "test_colony_name")
 
-	err = client.AddColony(colony, apiKey)
+	err = client.AddColony(colony, rootPassword)
 	assert.Nil(t, err)
 
 	// Create a worker
@@ -127,8 +127,8 @@ func TestAddWorker(t *testing.T) {
 }
 
 func TestGetWorkers(t *testing.T) {
-	apiKey := "testapikey"
-	server, done := PrepareTests(t, apiKey)
+	rootPassword := "password"
+	server, done := PrepareTests(t, rootPassword)
 
 	// Create a Colony
 	colonyPrvKey, err := security.GeneratePrivateKey()
@@ -139,7 +139,7 @@ func TestGetWorkers(t *testing.T) {
 
 	colony := core.CreateColony(colonyID, "test_colony_name")
 
-	err = client.AddColony(colony, apiKey)
+	err = client.AddColony(colony, rootPassword)
 	assert.Nil(t, err)
 
 	// Create a worker 1

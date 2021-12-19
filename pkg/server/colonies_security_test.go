@@ -127,6 +127,14 @@ func TestGetColonyByIDSecurity(t *testing.T) {
 	_, err = client.GetColonyByID(env.colony1ID, env.colony1PrvKey)
 	assert.Nil(t, err) // Should work
 
+	// Now, try to get colony1 info using worker1 credentials
+	_, err = client.GetColonyByID(env.colony1ID, env.worker1PrvKey)
+	assert.Nil(t, err) // Should work
+
+	// Now, try to get colony1 info using worker1 credentials
+	_, err = client.GetColonyByID(env.colony1ID, env.worker2PrvKey)
+	assert.NotNil(t, err) // Should not work
+
 	server.Shutdown()
 	<-done
 }

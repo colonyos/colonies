@@ -69,13 +69,13 @@ func GenerateDigest() string {
 	return hash.String()
 }
 
-func VerifyAPIKey(apiKey string, expectedAPIKey string) error {
-	if apiKey == "" {
-		return errors.New("Api-Key is missing")
+func RequireRoot(rootPassword string, expectedRootPassword string) error {
+	if rootPassword == "" {
+		return errors.New("Root password is missing")
 	}
 
-	if apiKey != expectedAPIKey {
-		return errors.New("Invalid Api-Key")
+	if rootPassword != expectedRootPassword {
+		return errors.New("Invalid root password")
 	}
 
 	return nil
@@ -115,7 +115,7 @@ func Authenticate(claimedID string, digest string, signature string) error {
 	return nil
 }
 
-func VerifyColonyOwnership(id string, colonyID string, digest string, signature string, ownership Ownership) error {
+func RequireColonyOwner(id string, colonyID string, digest string, signature string, ownership Ownership) error {
 	if id != colonyID {
 		return errors.New("invalid id")
 	}
@@ -142,8 +142,8 @@ func VerifyWorkerMembership(id string, colonyID string, digest string, signature
 	return ownership.CheckIfWorkerBelongsToColony(id, colonyID)
 }
 
-func VerifyAccessRights(id string, colonyID string, digest string, signature string, ownership Ownership) error {
-	err := VerifyColonyOwnership(id, colonyID, digest, signature, ownership)
+func RequireColonyOwnerOrMember(id string, colonyID string, digest string, signature string, ownership Ownership) error {
+	err := RequireColonyOwner(id, colonyID, digest, signature, ownership)
 	if err != nil {
 		err = VerifyWorkerMembership(id, colonyID, digest, signature, ownership)
 		if err != nil {
