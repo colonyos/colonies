@@ -90,14 +90,18 @@ func TestProcessToJSON(t *testing.T) {
 	outAttributes = append(outAttributes, CreateAttribute(attribute5ID, OUT, "out_key_1", "out_value_1"))
 	outAttributes = append(outAttributes, CreateAttribute(attribute6ID, OUT, "out_key_2", "out_value_2"))
 
-	jsonString, err := process.ToJSON(inAttributes, errAttributes, outAttributes)
+	process.SetInAttributes(inAttributes)
+	process.SetErrAttributes(errAttributes)
+	process.SetOutAttributes(outAttributes)
+
+	jsonString, err := process.ToJSON()
 	assert.Nil(t, err)
 
-	process2, inAttributes2, errAttributes2, outAttributes2, err := CreateFromJSON(jsonString)
+	process2, err := CreateProcessFromJSON(jsonString)
 	assert.Nil(t, err)
 
 	counter := 0
-	for _, attribute := range inAttributes2 {
+	for _, attribute := range process2.InAttributes() {
 		if attribute.TargetID() == attribute1ID &&
 			attribute.AttributeType() == IN &&
 			attribute.Key() == "in_key_1" &&
@@ -114,7 +118,7 @@ func TestProcessToJSON(t *testing.T) {
 	assert.Equal(t, 2, counter)
 
 	counter = 0
-	for _, attribute := range errAttributes2 {
+	for _, attribute := range process2.ErrAttributes() {
 		if attribute.TargetID() == attribute3ID &&
 			attribute.AttributeType() == ERR &&
 			attribute.Key() == "err_key_1" &&
@@ -131,7 +135,7 @@ func TestProcessToJSON(t *testing.T) {
 	assert.Equal(t, 2, counter)
 
 	counter = 0
-	for _, attribute := range outAttributes2 {
+	for _, attribute := range process.OutAttributes() {
 		if attribute.TargetID() == attribute5ID &&
 			attribute.AttributeType() == OUT &&
 			attribute.Key() == "out_key_1" &&

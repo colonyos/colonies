@@ -3,6 +3,7 @@ package core
 import (
 	"colonies/pkg/crypto"
 	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
@@ -58,11 +59,18 @@ type Process struct {
 	mem                int
 	cores              int
 	gpus               int
+	inAttributes       []*Attribute
+	outAttributes      []*Attribute
+	errAttributes      []*Attribute
 }
 
 func CreateProcess(targetColonyID string, targetComputerIDs []string, computerType string, timeout int, maxRetries int, mem int, cores int, gpus int) *Process {
 	uuid := uuid.New()
 	id := crypto.GenerateHashFromString(uuid.String()).String()
+
+	var outAttributes []*Attribute
+	var errAttributes []*Attribute
+	var inAttributes []*Attribute
 
 	process := &Process{id: id,
 		targetColonyID:    targetColonyID,
@@ -74,12 +82,16 @@ func CreateProcess(targetColonyID string, targetComputerIDs []string, computerTy
 		maxRetries:        maxRetries,
 		mem:               mem,
 		cores:             cores,
-		gpus:              gpus}
+		gpus:              gpus,
+		inAttributes:      inAttributes,
+		errAttributes:     errAttributes,
+		outAttributes:     outAttributes,
+	}
 
 	return process
 }
 
-func CreateProcessFromDB(id string, targetColonyID string, targetComputerIDs []string, assignedComputerID string, status int, isAssigned bool, computerType string, submissionTime time.Time, startTime time.Time, endTime time.Time, deadline time.Time, timeout int, retries int, maxRetries int, log string, mem int, cores int, gpus int) *Process {
+func CreateProcessFromDB(id string, targetColonyID string, targetComputerIDs []string, assignedComputerID string, status int, isAssigned bool, computerType string, submissionTime time.Time, startTime time.Time, endTime time.Time, deadline time.Time, timeout int, retries int, maxRetries int, log string, mem int, cores int, gpus int, inAttributes []*Attribute, errAttributes []*Attribute, outAttributes []*Attribute) *Process {
 	return &Process{id: id,
 		targetColonyID:     targetColonyID,
 		targetComputerIDs:  targetComputerIDs,
@@ -97,23 +109,23 @@ func CreateProcessFromDB(id string, targetColonyID string, targetComputerIDs []s
 		log:                log,
 		mem:                mem,
 		cores:              cores,
-		gpus:               gpus}
+		gpus:               gpus,
+		inAttributes:       inAttributes,
+		errAttributes:      errAttributes,
+		outAttributes:      outAttributes,
+	}
 }
 
-func CreateFromJSON(jsonString string) (*Process, []*Attribute, []*Attribute, []*Attribute, error) {
+func CreateProcessFromJSON(jsonString string) (*Process, error) {
 	var processJSON ProcessJSON
-	var inAttributes []*Attribute
-	var errAttributes []*Attribute
-	var outAttributes []*Attribute
-
 	err := json.Unmarshal([]byte(jsonString), &processJSON)
 	if err != nil {
-		return nil, inAttributes, errAttributes, outAttributes, err
+		return nil, err
 	}
 
-	inAttributes = convertFromAttributeJSON(processJSON.InAttributes)
-	errAttributes = convertFromAttributeJSON(processJSON.ErrAttributes)
-	outAttributes = convertFromAttributeJSON(processJSON.OutAttributes)
+	inAttributes := convertFromAttributeJSON(processJSON.InAttributes)
+	errAttributes := convertFromAttributeJSON(processJSON.ErrAttributes)
+	outAttributes := convertFromAttributeJSON(processJSON.OutAttributes)
 
 	process := &Process{id: processJSON.ID,
 		targetColonyID:     processJSON.TargetColonyID,
@@ -132,9 +144,29 @@ func CreateFromJSON(jsonString string) (*Process, []*Attribute, []*Attribute, []
 		log:                processJSON.Log,
 		mem:                processJSON.Mem,
 		cores:              processJSON.Cores,
-		gpus:               processJSON.GPUs}
+		gpus:               processJSON.GPUs,
+		inAttributes:       inAttributes,
+		errAttributes:      errAttributes,
+		outAttributes:      outAttributes,
+	}
 
-	return process, inAttributes, errAttributes, outAttributes, nil
+	return process, nil
+}
+
+func ProcessArrayToJSON(processes []*Process) (string, error) {
+	var processJSON []ProcessJSON
+
+	for _, process := range processes {
+		fmt.Println(process)
+		//colonyJSON :=
+		//coloniesJSON = append(coloniesJSON, colonyJSON)
+	}
+
+	jsonString, err := json.Marshal(processJSON)
+	if err != nil {
+		return "", err
+	}
+	return string(jsonString), nil
 }
 
 func (process *Process) ID() string {
@@ -244,10 +276,34 @@ func (process *Process) ProcessingTime() time.Duration {
 	return process.EndTime().Sub(process.StartTime())
 }
 
-func (process *Process) ToJSON(inAttributes []*Attribute, errAttributes []*Attribute, outAttributes []*Attribute) (string, error) {
-	inAttributesJSON := convertToAttributeJSON(inAttributes)
-	errAttributesJSON := convertToAttributeJSON(errAttributes)
-	outAttributesJSON := convertToAttributeJSON(outAttributes)
+func (process *Process) SetInAttributes(attributes []*Attribute) {
+	process.inAttributes = attributes
+}
+
+func (process *Process) SetErrAttributes(attributes []*Attribute) {
+	process.errAttributes = attributes
+}
+
+func (process *Process) SetOutAttributes(attributes []*Attribute) {
+	process.outAttributes = attributes
+}
+
+func (process *Process) InAttributes() []*Attribute {
+	return process.inAttributes
+}
+
+func (process *Process) ErrAttributes() []*Attribute {
+	return process.errAttributes
+}
+
+func (process *Process) OutAttributes() []*Attribute {
+	return process.outAttributes
+}
+
+func (process *Process) ToJSON() (string, error) {
+	inAttributesJSON := convertToAttributeJSON(process.inAttributes)
+	errAttributesJSON := convertToAttributeJSON(process.errAttributes)
+	outAttributesJSON := convertToAttributeJSON(process.outAttributes)
 
 	processJSON := &ProcessJSON{ID: process.id,
 		TargetColonyID:     process.targetColonyID,
