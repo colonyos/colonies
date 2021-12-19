@@ -2,6 +2,7 @@ package basic
 
 import (
 	"colonies/pkg/core"
+	"errors"
 	"fmt"
 	"sort"
 )
@@ -34,24 +35,45 @@ func (scheduler *BasicScheduler) printCandidates(candidates []*core.Process) {
 	}
 }
 
-func (scheduler *BasicScheduler) Select(computerID string, candidates []*core.Process) *core.Process {
+func (scheduler *BasicScheduler) Select(computerID string, candidates []*core.Process) (*core.Process, error) {
+	prioritizedProcesses := scheduler.Prioritize(computerID, candidates, 1)
+	if len(prioritizedProcesses) < 1 {
+		return nil, errors.New("No processes can be selected")
+	}
+
+	return prioritizedProcesses[0], nil
+}
+
+// There is no built-in max or min function for integers, but it’s simple to write
+func min(x, y int) int {
+	if x < y {
+		return x
+	}
+	return y
+}
+
+func (scheduler *BasicScheduler) Prioritize(computerID string, candidates []*core.Process, count int) []*core.Process {
+	var prioritizedCandidates []*core.Process
 	if len(candidates) == 0 {
-		return nil
+		return prioritizedCandidates
 	}
 
 	// First, check if there is process candidate target this specific computer
 	for _, candidate := range candidates {
-		for _, targetComputerID := range candidate.TargetComputerIDs() {
-			if targetComputerID == computerID {
-				return candidate
+		if len(candidate.TargetComputerIDs()) == 0 {
+			prioritizedCandidates = append(prioritizedCandidates, candidate)
+		} else {
+			for _, targetComputerID := range candidate.TargetComputerIDs() {
+				if targetComputerID == computerID {
+					prioritizedCandidates = append(prioritizedCandidates, candidate)
+				}
 			}
 		}
 	}
 
 	// Ok, let's look for any process and pick the oldest process
-	c := bySubmissionTime(candidates)
-
+	c := bySubmissionTime(prioritizedCandidates)
 	sort.Sort(&c)
 
-	return c[0]
+	return c[:min(count, len(prioritizedCandidates))]
 }

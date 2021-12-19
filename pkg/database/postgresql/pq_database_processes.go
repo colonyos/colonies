@@ -108,43 +108,83 @@ func (db *PQDatabase) selectCandidate(candidates []*core.Process) *core.Process 
 	}
 }
 
-func (db *PQDatabase) SearchProcesses(colonyID string, computerID string) ([]*core.Process, error) {
-	var matches []*core.Process
+func (db *PQDatabase) FindWaitingProcesses(colonyID string, count int) ([]*core.Process, error) {
+	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `PROCESSES WHERE TARGET_COLONY_ID=$1 AND STATUS=$2 ORDER BY SUBMISSION_TIME LIMIT $3`
+	rows, err := db.postgresql.Query(sqlStatement, colonyID, core.WAITING, count)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
 
+	matches, err := db.parseProcesses(rows)
+	if err != nil {
+		return nil, err
+	}
+
+	return matches, nil
+}
+
+func (db *PQDatabase) FindRunningProcesses(colonyID string, count int) ([]*core.Process, error) {
+	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `PROCESSES WHERE TARGET_COLONY_ID=$1 AND STATUS=$2 ORDER BY START_TIME LIMIT $3`
+	rows, err := db.postgresql.Query(sqlStatement, colonyID, core.RUNNING, count)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	matches, err := db.parseProcesses(rows)
+	if err != nil {
+		return nil, err
+	}
+
+	return matches, nil
+}
+
+func (db *PQDatabase) FindSuccessfulProcesses(colonyID string, count int) ([]*core.Process, error) {
+	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `PROCESSES WHERE TARGET_COLONY_ID=$1 AND STATUS=$2 ORDER BY END_TIME LIMIT $3`
+	rows, err := db.postgresql.Query(sqlStatement, colonyID, core.SUCCESS, count)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	matches, err := db.parseProcesses(rows)
+	if err != nil {
+		return nil, err
+	}
+
+	return matches, nil
+}
+
+func (db *PQDatabase) FindFailedProcesses(colonyID string, count int) ([]*core.Process, error) {
+	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `PROCESSES WHERE TARGET_COLONY_ID=$1 AND STATUS=$2 ORDER BY END_TIME LIMIT $3`
+	rows, err := db.postgresql.Query(sqlStatement, colonyID, core.FAILED, count)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	matches, err := db.parseProcesses(rows)
+	if err != nil {
+		return nil, err
+	}
+
+	return matches, nil
+}
+
+func (db *PQDatabase) FindUnassignedProcesses(colonyID string, computerID string, count int) ([]*core.Process, error) {
 	// Note: The @> function tests if an array is a subset of another array
 	// We need to do that since the TARGET_COMPUTER_IDS can contains many IDs
-	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `PROCESSES WHERE IS_ASSIGNED=FALSE AND TARGET_COLONY_ID=$1 AND TARGET_COMPUTER_IDS@>$2 ORDER BY SUBMISSION_TIME LIMIT 1`
-	rows1, err := db.postgresql.Query(sqlStatement, colonyID, pq.Array([]string{computerID}))
+	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `PROCESSES WHERE IS_ASSIGNED=FALSE AND TARGET_COLONY_ID=$1 AND (TARGET_COMPUTER_IDS@>$2 OR TARGET_COMPUTER_IDS@>$3) ORDER BY SUBMISSION_TIME LIMIT $4`
+	rows, err := db.postgresql.Query(sqlStatement, colonyID, pq.Array([]string{computerID}), pq.Array([]string{"*"}), count)
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
-	defer rows1.Close()
-
-	processes, err := db.parseProcesses(rows1)
+	matches, err := db.parseProcesses(rows)
 	if err != nil {
 		return nil, err
-	}
-
-	if len(processes) > 0 {
-		matches = append(matches, processes[0])
-	}
-
-	sqlStatement = `SELECT * FROM ` + db.dbPrefix + `PROCESSES WHERE IS_ASSIGNED=FALSE AND TARGET_COLONY_ID=$1 AND TARGET_COMPUTER_IDS=$2 ORDER BY SUBMISSION_TIME LIMIT 1`
-	rows2, err := db.postgresql.Query(sqlStatement, colonyID, pq.Array([]string{"*"}))
-	if err != nil {
-		return nil, err
-	}
-
-	defer rows2.Close()
-
-	processes, err = db.parseProcesses(rows2)
-	if err != nil {
-		return nil, err
-	}
-
-	if len(processes) > 0 {
-		matches = append(matches, processes[0])
 	}
 
 	return matches, nil
@@ -347,6 +387,10 @@ func (db *PQDatabase) countProcesses(status int) (int, error) {
 	}
 
 	return count, nil
+}
+
+func (db *PQDatabase) NumberOfWaitingProcesses() (int, error) {
+	return db.countProcesses(core.WAITING)
 }
 
 func (db *PQDatabase) NumberOfRunningProcesses() (int, error) {
