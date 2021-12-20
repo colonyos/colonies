@@ -56,7 +56,7 @@ func CreateComputerFromDB(id string, name string, colonyID string, cpu string, c
 		status:   status}
 }
 
-func CreateComputerFromJSON(jsonString string) (*Computer, error) {
+func ConvertJSONToComputer(jsonString string) (*Computer, error) {
 	var computerJSON ComputerJSON
 	err := json.Unmarshal([]byte(jsonString), &computerJSON)
 	if err != nil {
@@ -66,7 +66,7 @@ func CreateComputerFromJSON(jsonString string) (*Computer, error) {
 	return CreateComputerFromDB(computerJSON.ID, computerJSON.Name, computerJSON.ColonyID, computerJSON.CPU, computerJSON.Cores, computerJSON.Mem, computerJSON.GPU, computerJSON.GPUs, computerJSON.Status), nil
 }
 
-func CreateComputerArrayFromJSON(jsonString string) ([]*Computer, error) {
+func ConvertJSONToComputerArray(jsonString string) ([]*Computer, error) {
 	var computers []*Computer
 	var computersJSON []*ComputerJSON
 
@@ -82,7 +82,7 @@ func CreateComputerArrayFromJSON(jsonString string) ([]*Computer, error) {
 	return computers, nil
 }
 
-func ComputerArrayToJSON(computers []*Computer) (string, error) {
+func ConvertComputerArrayToJSON(computers []*Computer) (string, error) {
 	var computersJSON []*ComputerJSON
 
 	for _, computer := range computers {

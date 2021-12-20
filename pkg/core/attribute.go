@@ -98,11 +98,6 @@ func (attribute *Attribute) SetValue(value string) {
 	attribute.value = value
 }
 
-func (attribute *Attribute) ToMap(attributes []*Attribute) map[string]string {
-	attributeMap := make(map[string]string)
-	return attributeMap
-}
-
 func (attribute *Attribute) ToJSON() (string, error) {
 	attributeJSON := &AttributeJSON{ID: attribute.id,
 		TargetID:      attribute.targetID,

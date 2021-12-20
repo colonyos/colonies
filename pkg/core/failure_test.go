@@ -23,7 +23,7 @@ func TestFailureParseJSON(t *testing.T) {
 	failureJSON, err := failure.ToJSON()
 	assert.Nil(t, err)
 
-	failure2, err := CreateFailureFromJSON(failureJSON)
+	failure2, err := ConvertJSONToFailure(failureJSON)
 	assert.Nil(t, err)
 
 	assert.Equal(t, failure.Status(), failure2.Status())

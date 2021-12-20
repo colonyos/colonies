@@ -38,7 +38,7 @@ func TestComputerToJSON(t *testing.T) {
 	jsonString, err := computer.ToJSON()
 	assert.Nil(t, err)
 
-	computer2, err := CreateComputerFromJSON(jsonString)
+	computer2, err := ConvertJSONToComputer(jsonString)
 	assert.Nil(t, err)
 
 	assert.Equal(t, computer.ID(), computer2.ID())
@@ -58,10 +58,10 @@ func TestComputerToJSONArray(t *testing.T) {
 	computers = append(computers, CreateComputer(GenerateRandomID(), "test_computer", "e0a17fead699b3e3b3eec21a3ab0efad54224f6eb22f4550abe9f2a207440834", "AMD Ryzen 9 5950X (32) @ 3.400GHz", 32, 80326, "NVIDIA GeForce RTX 2080 Ti Rev. A", 1))
 	computers = append(computers, CreateComputer(GenerateRandomID(), "test_computer", "e0a17fead699b3e3b3eec21a3ab0efad54224f6eb22f4550abe9f2a207440834", "AMD Ryzen 9 5950X (32) @ 3.400GHz", 32, 80326, "NVIDIA GeForce RTX 2080 Ti Rev. A", 1))
 
-	jsonString, err := ComputerArrayToJSON(computers)
+	jsonString, err := ConvertComputerArrayToJSON(computers)
 	assert.Nil(t, err)
 
-	computers2, err := CreateComputerArrayFromJSON(jsonString)
+	computers2, err := ConvertJSONToComputerArray(jsonString)
 	assert.Nil(t, err)
 
 	counter := 0

@@ -18,7 +18,7 @@ func CreateFailure(status int, message string) *Failure {
 	return &Failure{status: status, message: message}
 }
 
-func CreateFailureFromJSON(jsonString string) (*Failure, error) {
+func ConvertJSONToFailure(jsonString string) (*Failure, error) {
 	var failureJSON FailureJSON
 	err := json.Unmarshal([]byte(jsonString), &failureJSON)
 	if err != nil {
