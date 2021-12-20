@@ -69,6 +69,10 @@ func (server *ColoniesServer) setupRoutes() {
 	server.ginHandler.PUT("/colonies/:colonyid/computers/:computerid/reject", server.handleRejectComputerRequest)
 	server.ginHandler.POST("/colonies/:colonyid/processes", server.handleAddProcessRequest)
 	server.ginHandler.GET("/colonies/:colonyid/processes", server.handleGetProcessesRequest)
+	server.ginHandler.GET("/colonies/:colonyid/processes/:processid", server.handleGetProcessRequest)
+	server.ginHandler.PUT("/colonies/:colonyid/processes/:processid/finish", server.handleFinishProcessRequest)
+	server.ginHandler.PUT("/colonies/:colonyid/processes/:processid/failed", server.handleFailedProcessRequest)
+	server.ginHandler.POST("/colonies/:colonyid/processes/:processid/attributes", server.handleAddAttributeRequest)
 	server.ginHandler.GET("/colonies/:colonyid/processes/assign", server.handleAssignProcessRequest)
 }
 
@@ -394,6 +398,110 @@ func (server *ColoniesServer) handleGetProcessesRequest(c *gin.Context) {
 	case core.FAILED:
 		fmt.Println("failed")
 	}
+}
+
+func (server *ColoniesServer) handleGetProcessRequest(c *gin.Context) {
+	colonyID := c.Param("colonyid")
+	processID := c.Param("processid")
+
+	err := security.RequireColonyOwnerOrMember(c.GetHeader("Id"), colonyID, c.GetHeader("Digest"), c.GetHeader("Signature"), server.ownership)
+	if err != nil {
+		logging.Log().Warning(err)
+		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
+		return
+	}
+
+	process, err := server.controller.GetProcessByID(colonyID, processID)
+	if err != nil {
+		logging.Log().Warning(err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	jsonString, err := process.ToJSON()
+	if err != nil {
+		logging.Log().Warning(err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, jsonString)
+}
+
+func (server *ColoniesServer) handleFinishProcessRequest(c *gin.Context) {
+	colonyID := c.Param("colonyid")
+	processID := c.Param("processid")
+
+	err := security.RequireColonyMember(c.GetHeader("Id"), colonyID, c.GetHeader("Digest"), c.GetHeader("Signature"), server.ownership)
+	if err != nil {
+		logging.Log().Warning(err)
+		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
+		return
+	}
+
+	err = server.controller.MarkSuccessful(c.GetHeader("Id"), processID)
+	if err != nil {
+		logging.Log().Warning(err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, "")
+}
+
+func (server *ColoniesServer) handleFailedProcessRequest(c *gin.Context) {
+	colonyID := c.Param("colonyid")
+	processID := c.Param("processid")
+
+	err := security.RequireColonyMember(c.GetHeader("Id"), colonyID, c.GetHeader("Digest"), c.GetHeader("Signature"), server.ownership)
+	if err != nil {
+		logging.Log().Warning(err)
+		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
+		return
+	}
+
+	err = server.controller.MarkFailed(c.GetHeader("Id"), processID)
+	if err != nil {
+		logging.Log().Warning(err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, "")
+}
+
+func (server *ColoniesServer) handleAddAttributeRequest(c *gin.Context) {
+	colonyID := c.Param("colonyid")
+
+	err := security.RequireColonyMember(c.GetHeader("Id"), colonyID, c.GetHeader("Digest"), c.GetHeader("Signature"), server.ownership)
+	if err != nil {
+		logging.Log().Warning(err)
+		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
+		return
+	}
+
+	jsonData, err := ioutil.ReadAll(c.Request.Body)
+	if err != nil {
+		logging.Log().Warning(err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	attribute, err := core.ConvertJSONToAttribute(string(jsonData))
+	if err != nil {
+		logging.Log().Warning(err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	err = server.controller.AddAttribute(attribute)
+	if err != nil {
+		logging.Log().Warning(err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, "")
 }
 
 func (server *ColoniesServer) handleAssignProcessRequest(c *gin.Context) {

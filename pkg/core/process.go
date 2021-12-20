@@ -346,6 +346,30 @@ func (process *Process) OutAttributes() []*Attribute {
 	return process.outAttributes
 }
 
+func (process *Process) In() map[string]string {
+	out := make(map[string]string)
+	for _, attribute := range process.inAttributes {
+		out[attribute.Key()] = attribute.Value()
+	}
+	return out
+}
+
+func (process *Process) Err() map[string]string {
+	out := make(map[string]string)
+	for _, attribute := range process.errAttributes {
+		out[attribute.Key()] = attribute.Value()
+	}
+	return out
+}
+
+func (process *Process) Out() map[string]string {
+	out := make(map[string]string)
+	for _, attribute := range process.outAttributes {
+		out[attribute.Key()] = attribute.Value()
+	}
+	return out
+}
+
 func (process *Process) ToJSON() (string, error) {
 	processJSON := convertProcessToProcessJSON(process)
 	jsonString, err := json.Marshal(processJSON)

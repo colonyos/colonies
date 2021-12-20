@@ -38,7 +38,7 @@ func CreateAttribute(targetID string, attributeType int, key string, value strin
 		value:         value}
 }
 
-func CreateAttributeFromJSON(jsonString string) (*Attribute, error) {
+func ConvertJSONToAttribute(jsonString string) (*Attribute, error) {
 	var attributeJSON AttributeJSON
 	err := json.Unmarshal([]byte(jsonString), &attributeJSON)
 	if err != nil {

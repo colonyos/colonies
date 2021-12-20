@@ -15,7 +15,8 @@ func PrepareTests(t *testing.T, rootPassword string) (*ColoniesServer, chan bool
 	db, err := postgresql.PrepareTests()
 	assert.Nil(t, err)
 
-	server := CreateColoniesServer(db, 8080, rootPassword, "../../cert/key.pem", "../../cert/cert.pem", false)
+	debug := true
+	server := CreateColoniesServer(db, 8080, rootPassword, "../../cert/key.pem", "../../cert/cert.pem", debug)
 	done := make(chan bool)
 
 	go func() {
@@ -310,6 +311,88 @@ func TestAssignProcess(t *testing.T) {
 	assignedProcess, err = client.AssignProcess(env.computerID, env.colonyID, env.computerPrvKey)
 	assert.Nil(t, err)
 	assert.Equal(t, process2.ID(), assignedProcess.ID())
+
+	server.Shutdown()
+	<-done
+}
+
+func TestMarkSuccessful(t *testing.T) {
+	rootPassword := "password"
+	server, done := PrepareTests(t, rootPassword)
+	env := createTestEnv(t, rootPassword)
+
+	process := core.CreateProcess(env.colonyID, []string{}, "test_computer", -1, 3, 1000, 10, 1)
+	err := client.AddProcess(process, env.computerPrvKey)
+	assert.Nil(t, err)
+
+	processFromServer, err := client.GetProcessByID(process.ID(), env.colonyID, env.computerPrvKey)
+	assert.Equal(t, core.PENDING, processFromServer.Status())
+
+	assignedProcess, err := client.AssignProcess(env.computerID, env.colonyID, env.computerPrvKey)
+	assert.Nil(t, err)
+
+	assignedProcessFromServer, err := client.GetProcessByID(assignedProcess.ID(), env.colonyID, env.computerPrvKey)
+	assert.Equal(t, core.RUNNING, assignedProcessFromServer.Status())
+
+	err = client.MarkSuccessful(assignedProcess, env.computerPrvKey)
+	assert.Nil(t, err)
+
+	assignedProcessFromServer, err = client.GetProcessByID(assignedProcess.ID(), env.colonyID, env.computerPrvKey)
+	assert.Equal(t, core.SUCCESS, assignedProcessFromServer.Status())
+
+	server.Shutdown()
+	<-done
+}
+
+func TestMarkFailed(t *testing.T) {
+	rootPassword := "password"
+	server, done := PrepareTests(t, rootPassword)
+	env := createTestEnv(t, rootPassword)
+
+	process := core.CreateProcess(env.colonyID, []string{}, "test_computer", -1, 3, 1000, 10, 1)
+	err := client.AddProcess(process, env.computerPrvKey)
+	assert.Nil(t, err)
+
+	processFromServer, err := client.GetProcessByID(process.ID(), env.colonyID, env.computerPrvKey)
+	assert.Equal(t, core.PENDING, processFromServer.Status())
+
+	assignedProcess, err := client.AssignProcess(env.computerID, env.colonyID, env.computerPrvKey)
+	assert.Nil(t, err)
+
+	assignedProcessFromServer, err := client.GetProcessByID(assignedProcess.ID(), env.colonyID, env.computerPrvKey)
+	assert.Equal(t, core.RUNNING, assignedProcessFromServer.Status())
+
+	err = client.MarkFailed(assignedProcess, env.computerPrvKey)
+	assert.Nil(t, err)
+
+	assignedProcessFromServer, err = client.GetProcessByID(assignedProcess.ID(), env.colonyID, env.computerPrvKey)
+	assert.Equal(t, core.FAILED, assignedProcessFromServer.Status())
+
+	server.Shutdown()
+	<-done
+}
+
+func TestAddAttributes(t *testing.T) {
+	rootPassword := "password"
+	server, done := PrepareTests(t, rootPassword)
+	env := createTestEnv(t, rootPassword)
+
+	process := core.CreateProcess(env.colonyID, []string{}, "test_computer", -1, 3, 1000, 10, 1)
+	err := client.AddProcess(process, env.computerPrvKey)
+	assert.Nil(t, err)
+
+	processFromServer, err := client.GetProcessByID(process.ID(), env.colonyID, env.computerPrvKey)
+	assert.Equal(t, core.PENDING, processFromServer.Status())
+
+	assignedProcess, err := client.AssignProcess(env.computerID, env.colonyID, env.computerPrvKey)
+	assert.Nil(t, err)
+
+	attribute := core.CreateAttribute(assignedProcess.ID(), core.OUT, "result", "helloworld")
+	err = client.AddAttribute(attribute, env.colonyID, env.computerPrvKey)
+	assert.Nil(t, err)
+
+	assignedProcessFromServer, err := client.GetProcessByID(assignedProcess.ID(), env.colonyID, env.computerPrvKey)
+	assert.Equal(t, "helloworld", assignedProcessFromServer.Out()["result"])
 
 	server.Shutdown()
 	<-done

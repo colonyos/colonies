@@ -267,6 +267,63 @@ func AddProcess(process *core.Process, prvKey string) error {
 	return nil
 }
 
+func AddAttribute(attribute *core.Attribute, colonyID string, prvKey string) error {
+	client := client()
+	digest, sig, id, err := security.GenerateCredentials(prvKey)
+	if err != nil {
+		return err
+	}
+
+	jsonString, err := attribute.ToJSON()
+	if err != nil {
+		return err
+	}
+
+	resp, err := client.R().
+		SetHeader("Id", id).
+		SetHeader("Digest", digest).
+		SetHeader("Signature", sig).
+		SetBody(jsonString).
+		Post("https://localhost:8080/colonies/" + colonyID + "/processes/" + attribute.TargetID() + "/attributes")
+
+	err = checkStatusCode(resp.StatusCode(), string(resp.Body()))
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func GetProcessByID(processID string, colonyID string, prvKey string) (*core.Process, error) {
+	client := client()
+	digest, sig, id, err := security.GenerateCredentials(prvKey)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := client.R().
+		SetHeader("Id", id).
+		SetHeader("Digest", digest).
+		SetHeader("Signature", sig).
+		Get("https://localhost:8080/colonies/" + colonyID + "/processes/" + processID)
+
+	err = checkStatusCode(resp.StatusCode(), string(resp.Body()))
+	if err != nil {
+		return nil, err
+	}
+
+	unquotedResp, err := strconv.Unquote(string(resp.Body()))
+	if err != nil {
+		return nil, err
+	}
+	process, err := core.ConvertJSONToProcess(unquotedResp)
+	if err != nil {
+		return nil, err
+	}
+
+	return process, nil
+}
+
 func GetWaitingProcesses(computerID string, colonyID string, count int, prvKey string) ([]*core.Process, error) {
 	var processes []*core.Process
 	client := client()
@@ -327,4 +384,46 @@ func AssignProcess(computerID string, colonyID string, prvKey string) (*core.Pro
 	}
 
 	return process, nil
+}
+
+func MarkSuccessful(process *core.Process, prvKey string) error {
+	client := client()
+	digest, sig, id, err := security.GenerateCredentials(prvKey)
+	if err != nil {
+		return err
+	}
+
+	resp, err := client.R().
+		SetHeader("Id", id).
+		SetHeader("Digest", digest).
+		SetHeader("Signature", sig).
+		Put("https://localhost:8080/colonies/" + process.TargetColonyID() + "/processes/" + process.ID() + "/finish")
+
+	err = checkStatusCode(resp.StatusCode(), string(resp.Body()))
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func MarkFailed(process *core.Process, prvKey string) error {
+	client := client()
+	digest, sig, id, err := security.GenerateCredentials(prvKey)
+	if err != nil {
+		return err
+	}
+
+	resp, err := client.R().
+		SetHeader("Id", id).
+		SetHeader("Digest", digest).
+		SetHeader("Signature", sig).
+		Put("https://localhost:8080/colonies/" + process.TargetColonyID() + "/processes/" + process.ID() + "/failed")
+
+	err = checkStatusCode(resp.StatusCode(), string(resp.Body()))
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

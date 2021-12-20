@@ -1,7 +1,6 @@
 package core
 
 import (
-	"fmt"
 	"testing"
 	"time"
 
@@ -217,7 +216,6 @@ func TestProcessArrayToJSON(t *testing.T) {
 	assert.Nil(t, err)
 	processes2, err := ConvertJSONToProcessArray(jsonString)
 	assert.Nil(t, err)
-	fmt.Println(processes2)
 
 	counter := 0
 	for _, process := range processes2 {
