@@ -3,6 +3,8 @@ package server
 import (
 	"colonies/pkg/core"
 	"colonies/pkg/database"
+	"errors"
+	"strconv"
 )
 
 type ColoniesController struct {
@@ -79,19 +81,16 @@ func (controller *ColoniesController) AddProcess(process *core.Process) error {
 }
 
 func (controller *ColoniesController) FindWaitingProcesses(colonyID string, count int) ([]*core.Process, error) {
-	// if count > MAX_COUNT {
-	// 	return errors.New("Count is larger than MaxCount limit <" + strconv.Itoa(MAX_COUNT) + ">")
-	// }
+	var processes []*core.Process
 
-	// processes, err := db.FindWaitingProcesses(colonyID, count)
-	// if err != nil {
-	// 	return err
-	// }
+	if count > MAX_COUNT {
+		return processes, errors.New("Count is larger than MaxCount limit <" + strconv.Itoa(MAX_COUNT) + ">")
+	}
 
-	// for _, process := range processes {
-	// 	fmt.Println(process)
-	// }
+	processes, err := controller.db.FindWaitingProcesses(colonyID, count)
+	if err != nil {
+		return processes, err
+	}
 
-	// TODO
-	return nil, nil
+	return processes, nil
 }
