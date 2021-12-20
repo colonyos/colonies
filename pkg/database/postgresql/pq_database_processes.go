@@ -87,6 +87,10 @@ func (db *PQDatabase) parseProcesses(rows *sql.Rows) ([]*core.Process, error) {
 			return nil, err
 		}
 
+		if len(targetComputerIDs) == 1 && targetComputerIDs[0] == "*" {
+			targetComputerIDs = []string{}
+		}
+
 		process := core.CreateProcessFromDB(processID, targetColonyID, targetComputerIDs, assignedComputerID, status, isAssigned, computerType, submissionTime, startTime, endTime, deadline, timeout, retries, maxRetries, log, mem, cores, gpus, inAttributes, errAttributes, outAttributes)
 		processes = append(processes, process)
 	}

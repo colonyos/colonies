@@ -5,6 +5,7 @@ import (
 	"colonies/pkg/core"
 	"colonies/pkg/security"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -209,6 +210,43 @@ func TestGetComputersByColonySecurity(t *testing.T) {
 	// Now try to access computer1 using colony1 credentials
 	_, err = client.GetComputersByColonyID(env.colony1ID, env.colony2PrvKey)
 	assert.NotNil(t, err) // Should not work
+
+	server.Shutdown()
+	<-done
+}
+
+func TestAssignProcessSecurity(t *testing.T) {
+	env, server, done := setupTestEnvironment(t)
+
+	// The setup looks like this:
+	//   computer1 is member of colony1
+	//   computer2 is member of colony2
+
+	process1 := core.CreateProcess(env.colony1ID, []string{}, "test_computer", -1, 3, 1000, 10, 1)
+	err := client.AddProcess(process1, env.computer1PrvKey)
+	assert.Nil(t, err)
+
+	time.Sleep(50 * time.Millisecond)
+
+	process2 := core.CreateProcess(env.colony2ID, []string{}, "test_computer", -1, 3, 1000, 10, 1)
+	err = client.AddProcess(process2, env.computer2PrvKey)
+	assert.Nil(t, err)
+
+	// Now try to assign a process from colony2 using computer1 credentials
+	_, err = client.AssignProcess(env.computer2ID, env.colony1ID, env.computer1PrvKey)
+	assert.NotNil(t, err) // Should not work
+
+	// Now try to assign a process from colony2 using computer1 credentials
+	_, err = client.AssignProcess(env.computer1ID, env.colony1ID, env.computer1PrvKey)
+	assert.Nil(t, err) // Should work
+
+	// Now try to assign a process from colony2 using colony1 credentials
+	_, err = client.AssignProcess(env.computer1ID, env.colony1ID, env.colony1PrvKey)
+	assert.NotNil(t, err) // Should not work, only computers are allowed
+
+	// Now try to assign a process from colony2 using colony1 credentials
+	_, err = client.AssignProcess(env.computer1ID, env.colony1ID, env.colony2PrvKey)
+	assert.NotNil(t, err) // Should not work, only computers are allowed, also invalid credentials are used
 
 	server.Shutdown()
 	<-done

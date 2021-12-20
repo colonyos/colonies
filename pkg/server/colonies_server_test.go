@@ -5,8 +5,8 @@ import (
 	"colonies/pkg/core"
 	"colonies/pkg/database/postgresql"
 	"colonies/pkg/security"
-	"fmt"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -15,7 +15,7 @@ func PrepareTests(t *testing.T, rootPassword string) (*ColoniesServer, chan bool
 	db, err := postgresql.PrepareTests()
 	assert.Nil(t, err)
 
-	server := CreateColoniesServer(db, 8080, rootPassword, "../../cert/key.pem", "../../cert/cert.pem")
+	server := CreateColoniesServer(db, 8080, rootPassword, "../../cert/key.pem", "../../cert/cert.pem", false)
 	done := make(chan bool)
 
 	go func() {
@@ -232,18 +232,84 @@ func TestAddProcess(t *testing.T) {
 	server, done := PrepareTests(t, rootPassword)
 	env := createTestEnv(t, rootPassword)
 
-	process := core.CreateProcess(env.colonyID, []string{}, "test_computer", -1, 3, 1000, 10, 1)
-	var attributes []*core.Attribute
-	attributes = append(attributes, core.CreateAttribute(process.ID(), core.IN, "test_key_1", "test_value_2"))
-	attributes = append(attributes, core.CreateAttribute(process.ID(), core.IN, "test_key_2", "test_value_2"))
-	process.SetInAttributes(attributes)
-
-	err := client.AddProcess(process, env.computerPrvKey)
+	process1 := core.CreateProcess(env.colonyID, []string{}, "test_computer", -1, 3, 1000, 10, 1)
+	var attributes1 []*core.Attribute
+	attributes1 = append(attributes1, core.CreateAttribute(process1.ID(), core.IN, "test_key_1", "test_value_2"))
+	process1.SetInAttributes(attributes1)
+	err := client.AddProcess(process1, env.computerPrvKey)
 	assert.Nil(t, err)
 
-	processes, err := client.GetWaitingProcesses(env.colonyID, 100, env.computerPrvKey)
+	process2 := core.CreateProcess(env.colonyID, []string{}, "test_computer", -1, 3, 1000, 10, 1)
+	err = client.AddProcess(process2, env.computerPrvKey)
 	assert.Nil(t, err)
-	fmt.Println(processes)
+
+	processes, err := client.GetWaitingProcesses(env.computerID, env.colonyID, 100, env.computerPrvKey)
+	assert.Nil(t, err)
+
+	counter := 0
+	for _, processFromServer := range processes {
+		if processFromServer.ID() == process1.ID() {
+			counter++
+		}
+		if processFromServer.ID() == process2.ID() {
+			counter++
+		}
+	}
+	assert.Equal(t, 2, counter)
+
+	server.Shutdown()
+	<-done
+}
+
+func TestApproveComputer(t *testing.T) {
+	rootPassword := "password"
+	server, done := PrepareTests(t, rootPassword)
+	env := createTestEnv(t, rootPassword)
+
+	computerFromServer, err := client.GetComputerByID(env.computerID, env.colonyID, env.colonyPrvKey)
+	assert.Nil(t, err)
+	assert.False(t, computerFromServer.IsApproved())
+
+	err = client.ApproveComputer(env.computer, env.colonyPrvKey)
+	assert.Nil(t, err)
+
+	computerFromServer, err = client.GetComputerByID(env.computerID, env.colonyID, env.colonyPrvKey)
+	assert.Nil(t, err)
+	assert.True(t, computerFromServer.IsApproved())
+
+	err = client.RejectComputer(env.computer, env.colonyPrvKey)
+	assert.Nil(t, err)
+
+	computerFromServer, err = client.GetComputerByID(env.computerID, env.colonyID, env.colonyPrvKey)
+	assert.Nil(t, err)
+	assert.False(t, computerFromServer.IsApproved())
+
+	server.Shutdown()
+	<-done
+}
+
+func TestAssignProcess(t *testing.T) {
+	rootPassword := "password"
+	server, done := PrepareTests(t, rootPassword)
+	env := createTestEnv(t, rootPassword)
+
+	process1 := core.CreateProcess(env.colonyID, []string{}, "test_computer", -1, 3, 1000, 10, 1)
+	err := client.AddProcess(process1, env.computerPrvKey)
+	assert.Nil(t, err)
+
+	time.Sleep(50 * time.Millisecond)
+
+	process2 := core.CreateProcess(env.colonyID, []string{}, "test_computer", -1, 3, 1000, 10, 1)
+	err = client.AddProcess(process2, env.computerPrvKey)
+	assert.Nil(t, err)
+
+	assignedProcess, err := client.AssignProcess(env.computerID, env.colonyID, env.computerPrvKey)
+	assert.Nil(t, err)
+	assert.Equal(t, process1.ID(), assignedProcess.ID())
+
+	assignedProcess, err = client.AssignProcess(env.computerID, env.colonyID, env.computerPrvKey)
+	assert.Nil(t, err)
+	assert.Equal(t, process2.ID(), assignedProcess.ID())
 
 	server.Shutdown()
 	<-done

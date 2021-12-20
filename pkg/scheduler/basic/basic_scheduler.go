@@ -14,7 +14,7 @@ func (c bySubmissionTime) Len() int {
 }
 
 func (c bySubmissionTime) Less(i, j int) bool {
-	return c[i].SubmissionTime().UnixNano() > c[j].SubmissionTime().UnixNano()
+	return c[i].SubmissionTime().UnixNano() < c[j].SubmissionTime().UnixNano()
 }
 
 func (c bySubmissionTime) Swap(i, j int) {
@@ -30,7 +30,7 @@ func CreateScheduler() *BasicScheduler {
 
 func (scheduler *BasicScheduler) printCandidates(candidates []*core.Process) {
 	for _, c := range candidates {
-		fmt.Println(c.TargetColonyID())
+		fmt.Println(c.ID())
 		fmt.Println(c.SubmissionTime())
 	}
 }

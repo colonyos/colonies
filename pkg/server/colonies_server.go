@@ -28,9 +28,11 @@ type ColoniesServer struct {
 	ownership         security.Ownership
 }
 
-func CreateColoniesServer(db database.Database, port int, rootPassword string, tlsPrivateKeyPath string, tlsCertPath string) *ColoniesServer {
-	//gin.SetMode(gin.ReleaseMode)
-	//gin.DefaultWriter = ioutil.Discard
+func CreateColoniesServer(db database.Database, port int, rootPassword string, tlsPrivateKeyPath string, tlsCertPath string, debug bool) *ColoniesServer {
+	if !debug {
+		gin.SetMode(gin.ReleaseMode)
+		gin.DefaultWriter = ioutil.Discard
+	}
 
 	server := &ColoniesServer{}
 	server.ginHandler = gin.Default()
@@ -63,8 +65,11 @@ func (server *ColoniesServer) setupRoutes() {
 	server.ginHandler.POST("/colonies/:colonyid/computers", server.handleAddComputerRequest)
 	server.ginHandler.GET("/colonies/:colonyid/computers", server.handleGetComputersRequest)
 	server.ginHandler.GET("/colonies/:colonyid/computers/:computerid", server.handleGetComputerRequest)
+	server.ginHandler.PUT("/colonies/:colonyid/computers/:computerid/approve", server.handleApproveComputerRequest)
+	server.ginHandler.PUT("/colonies/:colonyid/computers/:computerid/reject", server.handleRejectComputerRequest)
 	server.ginHandler.POST("/colonies/:colonyid/processes", server.handleAddProcessRequest)
 	server.ginHandler.GET("/colonies/:colonyid/processes", server.handleGetProcessesRequest)
+	server.ginHandler.GET("/colonies/:colonyid/processes/assign", server.handleAssignProcessRequest)
 }
 
 func (server *ColoniesServer) handleGetColoniesRequest(c *gin.Context) {
@@ -143,6 +148,7 @@ func (server *ColoniesServer) handleAddColonyRequest(c *gin.Context) {
 
 func (server *ColoniesServer) handleAddComputerRequest(c *gin.Context) {
 	colonyID := c.Param("colonyid")
+
 	err := security.RequireColonyOwner(c.GetHeader("Id"), colonyID, c.GetHeader("Digest"), c.GetHeader("Signature"), server.ownership)
 	if err != nil {
 		logging.Log().Warning(err)
@@ -210,6 +216,13 @@ func (server *ColoniesServer) handleGetComputerRequest(c *gin.Context) {
 		return
 	}
 
+	err = security.VerifyComputerMembership(computerID, colonyID, server.ownership)
+	if err != nil {
+		logging.Log().Warning(err)
+		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
+		return
+	}
+
 	computer, err := server.controller.GetComputerByID(computerID)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -223,6 +236,60 @@ func (server *ColoniesServer) handleGetComputerRequest(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, jsonString)
+}
+
+func (server *ColoniesServer) handleApproveComputerRequest(c *gin.Context) {
+	colonyID := c.Param("colonyid")
+	computerID := c.Param("computerid")
+
+	err := security.RequireColonyOwner(c.GetHeader("Id"), colonyID, c.GetHeader("Digest"), c.GetHeader("Signature"), server.ownership)
+	if err != nil {
+		logging.Log().Warning(err)
+		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
+		return
+	}
+
+	err = security.VerifyComputerMembership(computerID, colonyID, server.ownership)
+	if err != nil {
+		logging.Log().Warning(err)
+		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
+		return
+	}
+
+	err = server.controller.ApproveComputer(computerID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, "")
+}
+
+func (server *ColoniesServer) handleRejectComputerRequest(c *gin.Context) {
+	colonyID := c.Param("colonyid")
+	computerID := c.Param("computerid")
+
+	err := security.RequireColonyOwnerOrMember(c.GetHeader("Id"), colonyID, c.GetHeader("Digest"), c.GetHeader("Signature"), server.ownership)
+	if err != nil {
+		logging.Log().Warning(err)
+		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
+		return
+	}
+
+	err = security.VerifyComputerMembership(computerID, colonyID, server.ownership)
+	if err != nil {
+		logging.Log().Warning(err)
+		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
+		return
+	}
+
+	err = server.controller.RejectComputer(computerID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, "")
 }
 
 func (server *ColoniesServer) handleAddProcessRequest(c *gin.Context) {
@@ -263,8 +330,16 @@ func (server *ColoniesServer) handleGetProcessesRequest(c *gin.Context) {
 	colonyID := c.Param("colonyid")
 	stateStr := c.GetHeader("State")
 	countStr := c.GetHeader("Count")
+	computerID := c.GetHeader("ComputerID")
 
 	err := security.RequireColonyOwnerOrMember(c.GetHeader("Id"), colonyID, c.GetHeader("Digest"), c.GetHeader("Signature"), server.ownership)
+	if err != nil {
+		logging.Log().Warning(err)
+		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
+		return
+	}
+
+	err = security.VerifyComputerMembership(computerID, colonyID, server.ownership)
 	if err != nil {
 		logging.Log().Warning(err)
 		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
@@ -274,34 +349,34 @@ func (server *ColoniesServer) handleGetProcessesRequest(c *gin.Context) {
 	if stateStr == "" {
 		errorMsg := "State must be specified"
 		logging.Log().Warning(errors.New(errorMsg))
-		c.JSON(http.StatusForbidden, gin.H{"error": errorMsg})
+		c.JSON(http.StatusBadRequest, gin.H{"error": errorMsg})
 		return
 	}
 
 	state, err := strconv.Atoi(stateStr)
 	if err != nil {
 		logging.Log().Warning(err)
-		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
 	if countStr == "" {
 		errorMsg := "Count must be specified"
 		logging.Log().Warning(errors.New(errorMsg))
-		c.JSON(http.StatusForbidden, gin.H{"error": errorMsg})
+		c.JSON(http.StatusBadRequest, gin.H{"error": errorMsg})
 		return
 	}
 
 	count, err := strconv.Atoi(countStr)
 	if err != nil {
 		logging.Log().Warning(err)
-		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
 	switch state {
 	case core.WAITING:
-		processes, err := server.controller.FindWaitingProcesses(colonyID, count)
+		processes, err := server.controller.FindWaitingProcesses(computerID, colonyID, count)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
@@ -319,6 +394,41 @@ func (server *ColoniesServer) handleGetProcessesRequest(c *gin.Context) {
 	case core.FAILED:
 		fmt.Println("failed")
 	}
+}
+
+func (server *ColoniesServer) handleAssignProcessRequest(c *gin.Context) {
+	colonyID := c.Param("colonyid")
+	computerID := c.GetHeader("ComputerID")
+
+	err := security.RequireColonyMember(c.GetHeader("Id"), colonyID, c.GetHeader("Digest"), c.GetHeader("Signature"), server.ownership)
+	if err != nil {
+		logging.Log().Warning(err)
+		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
+		return
+	}
+
+	err = security.VerifyComputerMembership(computerID, colonyID, server.ownership)
+	if err != nil {
+		logging.Log().Warning(err)
+		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
+		return
+	}
+
+	process, err := server.controller.AssignProcess(computerID, colonyID)
+	if err != nil {
+		logging.Log().Warning(err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	jsonString, err := process.ToJSON()
+	if err != nil {
+		logging.Log().Warning(err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, jsonString)
 }
 
 func (server *ColoniesServer) ServeForever() error {

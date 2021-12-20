@@ -133,7 +133,11 @@ func RequireColonyOwner(id string, colonyID string, digest string, signature str
 	return nil
 }
 
-func VerifyComputerMembership(id string, colonyID string, digest string, signature string, ownership Ownership) error {
+func VerifyComputerMembership(computerID string, colonyID string, ownership Ownership) error {
+	return ownership.CheckIfComputerBelongsToColony(computerID, colonyID)
+}
+
+func RequireColonyMember(id string, colonyID string, digest string, signature string, ownership Ownership) error {
 	err := Authenticate(id, digest, signature)
 	if err != nil {
 		return err
@@ -145,7 +149,7 @@ func VerifyComputerMembership(id string, colonyID string, digest string, signatu
 func RequireColonyOwnerOrMember(id string, colonyID string, digest string, signature string, ownership Ownership) error {
 	err := RequireColonyOwner(id, colonyID, digest, signature, ownership)
 	if err != nil {
-		err = VerifyComputerMembership(id, colonyID, digest, signature, ownership)
+		err = RequireColonyMember(id, colonyID, digest, signature, ownership)
 		if err != nil {
 			return err
 		}
