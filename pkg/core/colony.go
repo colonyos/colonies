@@ -30,7 +30,7 @@ func CreateColonyFromJSON(jsonString string) (*Colony, error) {
 	return CreateColony(colonyJSON.ID, colonyJSON.Name), nil
 }
 
-func CreateColonyArrayFromJSON(jsonString string) ([]*Colony, error) {
+func ConvertJSONToColonyArray(jsonString string) ([]*Colony, error) {
 	var colonies []*Colony
 	var coloniesJSON []*ColonyJSON
 
@@ -46,7 +46,7 @@ func CreateColonyArrayFromJSON(jsonString string) ([]*Colony, error) {
 	return colonies, nil
 }
 
-func ColonyArrayToJSON(colonies []*Colony) (string, error) {
+func ConvertColonyArrayToJSON(colonies []*Colony) (string, error) {
 	var coloniesJSON []ColonyJSON
 
 	for _, colony := range colonies {

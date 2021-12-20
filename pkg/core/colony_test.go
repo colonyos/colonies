@@ -34,10 +34,10 @@ func TestColonyToJSONArray(t *testing.T) {
 	colonies = append(colonies, CreateColony(GenerateRandomID(), "test_colony_name1"))
 	colonies = append(colonies, CreateColony(GenerateRandomID(), "test_colony_name2"))
 
-	jsonString, err := ColonyArrayToJSON(colonies)
+	jsonString, err := ConvertColonyArrayToJSON(colonies)
 	assert.Nil(t, err)
 
-	colonies2, err := CreateColonyArrayFromJSON(jsonString)
+	colonies2, err := ConvertJSONToColonyArray(jsonString)
 	assert.Nil(t, err)
 
 	counter := 0

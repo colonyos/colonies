@@ -5,7 +5,6 @@ import (
 	"colonies/pkg/security"
 	"crypto/tls"
 	"errors"
-	"fmt"
 	"strconv"
 
 	"github.com/go-resty/resty/v2"
@@ -19,7 +18,7 @@ func client() *resty.Client {
 
 func checkStatusCode(statusCode int, jsonString string) error {
 	if statusCode != 200 {
-		failure, err := core.CreateFailureFromJSON(jsonString)
+		failure, err := core.ConvertJSONToFailure(jsonString)
 		if err != nil {
 			return err
 		}
@@ -71,7 +70,7 @@ func GetColonies(rootPassword string) ([]*core.Colony, error) {
 		return colonies, err
 	}
 
-	colonies, err = core.CreateColonyArrayFromJSON(unquotedResp)
+	colonies, err = core.ConvertJSONToColonyArray(unquotedResp)
 	if err != nil {
 		return colonies, err
 	}
@@ -160,7 +159,7 @@ func GetComputersByColonyID(colonyID string, prvKey string) ([]*core.Computer, e
 		return nil, err
 	}
 
-	computers, err := core.CreateComputerArrayFromJSON(unquotedResp)
+	computers, err := core.ConvertJSONToComputerArray(unquotedResp)
 	if err != nil {
 		return nil, err
 	}
@@ -191,7 +190,7 @@ func GetComputerByID(computerID string, colonyID string, prvKey string) (*core.C
 		return nil, err
 	}
 
-	computer, err := core.CreateComputerFromJSON(unquotedResp)
+	computer, err := core.ConvertJSONToComputer(unquotedResp)
 	if err != nil {
 		return nil, err
 	}
@@ -226,11 +225,12 @@ func AddProcess(process *core.Process, prvKey string) error {
 	return nil
 }
 
-func GetWaitingProcesses(colonyID string, count int, prvKey string) error {
+func GetWaitingProcesses(colonyID string, count int, prvKey string) ([]*core.Process, error) {
+	var processes []*core.Process
 	client := client()
 	digest, sig, id, err := security.GenerateCredentials(prvKey)
 	if err != nil {
-		return err
+		return processes, err
 	}
 
 	resp, err := client.R().
@@ -243,10 +243,14 @@ func GetWaitingProcesses(colonyID string, count int, prvKey string) error {
 
 	err = checkStatusCode(resp.StatusCode(), string(resp.Body()))
 	if err != nil {
-		return err
+		return processes, err
 	}
 
-	fmt.Println(resp.Body())
+	unquotedResp, err := strconv.Unquote(string(resp.Body()))
+	if err != nil {
+		return processes, err
+	}
+	processes, err = core.ConvertJSONToProcessArray(unquotedResp)
 
-	return nil
+	return processes, nil
 }

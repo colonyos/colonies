@@ -3,7 +3,6 @@ package core
 import (
 	"colonies/pkg/crypto"
 	"encoding/json"
-	"fmt"
 	"time"
 
 	"github.com/google/uuid"
@@ -116,18 +115,40 @@ func CreateProcessFromDB(id string, targetColonyID string, targetComputerIDs []s
 	}
 }
 
-func CreateProcessFromJSON(jsonString string) (*Process, error) {
-	var processJSON ProcessJSON
-	err := json.Unmarshal([]byte(jsonString), &processJSON)
-	if err != nil {
-		return nil, err
-	}
+func convertProcessToProcessJSON(process *Process) *ProcessJSON {
+	inAttributesJSON := convertToAttributeJSON(process.inAttributes)
+	errAttributesJSON := convertToAttributeJSON(process.errAttributes)
+	outAttributesJSON := convertToAttributeJSON(process.outAttributes)
 
+	return &ProcessJSON{ID: process.id,
+		TargetColonyID:     process.targetColonyID,
+		TargetComputerIDs:  process.targetComputerIDs,
+		AssignedComputerID: process.assignedComputerID,
+		Status:             process.status,
+		IsAssigned:         process.isAssigned,
+		ComputerType:       process.computerType,
+		SubmissionTime:     process.submissionTime,
+		StartTime:          process.startTime,
+		EndTime:            process.endTime,
+		Deadline:           process.deadline,
+		Timeout:            process.timeout,
+		Retries:            process.retries,
+		MaxRetries:         process.maxRetries,
+		Log:                process.log,
+		Mem:                process.mem,
+		Cores:              process.cores,
+		GPUs:               process.gpus,
+		InAttributes:       inAttributesJSON,
+		ErrAttributes:      errAttributesJSON,
+		OutAttributes:      outAttributesJSON}
+}
+
+func convertProcessJSONToProcess(processJSON *ProcessJSON) *Process {
 	inAttributes := convertFromAttributeJSON(processJSON.InAttributes)
 	errAttributes := convertFromAttributeJSON(processJSON.ErrAttributes)
 	outAttributes := convertFromAttributeJSON(processJSON.OutAttributes)
 
-	process := &Process{id: processJSON.ID,
+	return &Process{id: processJSON.ID,
 		targetColonyID:     processJSON.TargetColonyID,
 		targetComputerIDs:  processJSON.TargetComputerIDs,
 		assignedComputerID: processJSON.AssignedComputerID,
@@ -149,24 +170,49 @@ func CreateProcessFromJSON(jsonString string) (*Process, error) {
 		errAttributes:      errAttributes,
 		outAttributes:      outAttributes,
 	}
+}
 
+func ConvertJSONToProcess(jsonString string) (*Process, error) {
+	var processJSON *ProcessJSON
+	err := json.Unmarshal([]byte(jsonString), &processJSON)
+	if err != nil {
+		return nil, err
+	}
+
+	process := convertProcessJSONToProcess(processJSON)
 	return process, nil
 }
 
-func ProcessArrayToJSON(processes []*Process) (string, error) {
-	var processJSON []ProcessJSON
+func ConvertProcessArrayToJSON(processes []*Process) (string, error) {
+	var processesJSON []*ProcessJSON
 
 	for _, process := range processes {
-		fmt.Println(process)
-		//colonyJSON :=
-		//coloniesJSON = append(coloniesJSON, colonyJSON)
+		processJSON := convertProcessToProcessJSON(process)
+		processesJSON = append(processesJSON, processJSON)
 	}
 
-	jsonString, err := json.Marshal(processJSON)
+	jsonString, err := json.Marshal(processesJSON)
 	if err != nil {
 		return "", err
 	}
 	return string(jsonString), nil
+}
+
+func ConvertJSONToProcessArray(jsonString string) ([]*Process, error) {
+	var processesJSON []*ProcessJSON
+	var processes []*Process
+	err := json.Unmarshal([]byte(jsonString), &processesJSON)
+	if err != nil {
+		return processes, err
+	}
+
+	for _, processJSON := range processesJSON {
+		process := convertProcessJSONToProcess(processJSON)
+		processes = append(processes, process)
+	}
+
+	return processes, nil
+
 }
 
 func (process *Process) ID() string {
@@ -301,32 +347,7 @@ func (process *Process) OutAttributes() []*Attribute {
 }
 
 func (process *Process) ToJSON() (string, error) {
-	inAttributesJSON := convertToAttributeJSON(process.inAttributes)
-	errAttributesJSON := convertToAttributeJSON(process.errAttributes)
-	outAttributesJSON := convertToAttributeJSON(process.outAttributes)
-
-	processJSON := &ProcessJSON{ID: process.id,
-		TargetColonyID:     process.targetColonyID,
-		TargetComputerIDs:  process.targetComputerIDs,
-		AssignedComputerID: process.assignedComputerID,
-		Status:             process.status,
-		IsAssigned:         process.isAssigned,
-		ComputerType:       process.computerType,
-		SubmissionTime:     process.submissionTime,
-		StartTime:          process.startTime,
-		EndTime:            process.endTime,
-		Deadline:           process.deadline,
-		Timeout:            process.timeout,
-		Retries:            process.retries,
-		MaxRetries:         process.maxRetries,
-		Log:                process.log,
-		Mem:                process.mem,
-		Cores:              process.cores,
-		GPUs:               process.gpus,
-		InAttributes:       inAttributesJSON,
-		ErrAttributes:      errAttributesJSON,
-		OutAttributes:      outAttributesJSON}
-
+	processJSON := convertProcessToProcessJSON(process)
 	jsonString, err := json.Marshal(processJSON)
 	if err != nil {
 		return "", err
