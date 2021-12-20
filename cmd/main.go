@@ -1,7 +1,7 @@
 package main
 
-import "fmt"
+import "colonies/pkg/cli"
 
 func main() {
-	fmt.Println("vim-go")
+	cli.Execute()
 }
