@@ -80,7 +80,7 @@ func (server *ColoniesServer) handleGetColoniesRequest(c *gin.Context) {
 		return
 	}
 
-	jsonString, err := core.ColonyArrayToJSON(colonies)
+	jsonString, err := core.ConvertColonyArrayToJSON(colonies)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -157,7 +157,7 @@ func (server *ColoniesServer) handleAddComputerRequest(c *gin.Context) {
 		return
 	}
 
-	computer, err := core.CreateComputerFromJSON(string(jsonData))
+	computer, err := core.ConvertJSONToComputer(string(jsonData))
 	if err != nil {
 		logging.Log().Warning(err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -190,7 +190,7 @@ func (server *ColoniesServer) handleGetComputersRequest(c *gin.Context) {
 		return
 	}
 
-	jsonString, err := core.ComputerArrayToJSON(computers)
+	jsonString, err := core.ConvertComputerArrayToJSON(computers)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -242,7 +242,7 @@ func (server *ColoniesServer) handleAddProcessRequest(c *gin.Context) {
 		return
 	}
 
-	process, err := core.CreateProcessFromJSON(string(jsonData))
+	process, err := core.ConvertJSONToProcess(string(jsonData))
 	if err != nil {
 		logging.Log().Warning(err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -299,13 +299,19 @@ func (server *ColoniesServer) handleGetProcessesRequest(c *gin.Context) {
 		return
 	}
 
-	fmt.Println("colonyID: " + colonyID)
-	fmt.Println("state: " + strconv.Itoa(state))
-	fmt.Println("count: " + strconv.Itoa(count))
-
 	switch state {
 	case core.WAITING:
-		fmt.Println("waiting")
+		processes, err := server.controller.FindWaitingProcesses(colonyID, count)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+		jsonString, err := core.ConvertProcessArrayToJSON(processes)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, jsonString)
 	case core.RUNNING:
 		fmt.Println("running")
 	case core.SUCCESS:

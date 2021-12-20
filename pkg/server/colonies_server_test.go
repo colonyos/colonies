@@ -5,6 +5,7 @@ import (
 	"colonies/pkg/core"
 	"colonies/pkg/database/postgresql"
 	"colonies/pkg/security"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -240,7 +241,9 @@ func TestAddProcess(t *testing.T) {
 	err := client.AddProcess(process, env.computerPrvKey)
 	assert.Nil(t, err)
 
-	err = client.GetWaitingProcesses(env.colonyID, 100, env.computerPrvKey)
+	processes, err := client.GetWaitingProcesses(env.colonyID, 100, env.computerPrvKey)
+	assert.Nil(t, err)
+	fmt.Println(processes)
 
 	server.Shutdown()
 	<-done
