@@ -21,7 +21,7 @@ func TestColonyToJSON(t *testing.T) {
 	jsonString, err := colony.ToJSON()
 	assert.Nil(t, err)
 
-	colony2, err := CreateColonyFromJSON(jsonString)
+	colony2, err := ConvertJSONToColony(jsonString)
 	assert.Nil(t, err)
 
 	assert.Equal(t, colony.Name(), colony2.Name())

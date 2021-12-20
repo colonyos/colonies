@@ -47,7 +47,7 @@ func setupTestEnvironment(t *testing.T) (*testEnv, *ColoniesServer, chan bool) {
 	colony1ID, err := security.GenerateID(colony1PrvKey)
 	assert.Nil(t, err)
 	colony1 := core.CreateColony(colony1ID, "test_colony_name")
-	err = client.AddColony(colony1, apiKey)
+	_, err = client.AddColony(colony1, apiKey)
 
 	// Create a colony
 	colony2PrvKey, err := security.GeneratePrivateKey()
@@ -55,16 +55,16 @@ func setupTestEnvironment(t *testing.T) (*testEnv, *ColoniesServer, chan bool) {
 	colony2ID, err := security.GenerateID(colony2PrvKey)
 	assert.Nil(t, err)
 	colony2 := core.CreateColony(colony2ID, "test_colony_name")
-	err = client.AddColony(colony2, apiKey)
+	_, err = client.AddColony(colony2, apiKey)
 
 	// Create a computer
 	computer1, computer1ID, computer1PrvKey := generateComputer(t, colony1ID)
-	err = client.AddComputer(computer1, colony1PrvKey)
+	_, err = client.AddComputer(computer1, colony1PrvKey)
 	assert.Nil(t, err)
 
 	// Create a computer
 	computer2, computer2ID, computer2PrvKey := generateComputer(t, colony2ID)
-	err = client.AddComputer(computer2, colony2PrvKey)
+	_, err = client.AddComputer(computer2, colony2PrvKey)
 	assert.Nil(t, err)
 
 	env := &testEnv{colony1PrvKey: colony1PrvKey, colony1ID: colony1ID, colony2PrvKey: colony2PrvKey, colony2ID: colony2ID, computer1PrvKey: computer1PrvKey, computer1ID: computer1ID, computer2PrvKey: computer2PrvKey, computer2ID: computer2ID}
@@ -84,10 +84,10 @@ func TestAddColonySecurity(t *testing.T) {
 
 	colony := core.CreateColony(colonyID, "test_colony_name")
 
-	err = client.AddColony(colony, "invalid_api_key")
+	_, err = client.AddColony(colony, "invalid_api_key")
 	assert.NotNilf(t, err, "it should be possible to create a colony without correct api key")
 
-	err = client.AddColony(colony, apiKey)
+	_, err = client.AddColony(colony, apiKey)
 	assert.Nil(t, err)
 
 	server.Shutdown()
@@ -150,11 +150,11 @@ func TestAddComputerSecurity(t *testing.T) {
 	//   computer3 is bound to colony1, but not yet a member
 
 	// Now, try to add computer 3 to colony1 using colony 2 credentials
-	err := client.AddComputer(computer3, env.colony2PrvKey)
+	_, err := client.AddComputer(computer3, env.colony2PrvKey)
 	assert.NotNil(t, err) // Should not work
 
 	// Now, try to add computer 3 to colony1 using colony 1 credentials
-	err = client.AddComputer(computer3, env.colony1PrvKey)
+	_, err = client.AddComputer(computer3, env.colony1PrvKey)
 	assert.Nil(t, err) // Should work
 
 	server.Shutdown()
@@ -223,13 +223,13 @@ func TestAssignProcessSecurity(t *testing.T) {
 	//   computer2 is member of colony2
 
 	process1 := core.CreateProcess(env.colony1ID, []string{}, "test_computer", -1, 3, 1000, 10, 1)
-	err := client.AddProcess(process1, env.computer1PrvKey)
+	_, err := client.AddProcess(process1, env.computer1PrvKey)
 	assert.Nil(t, err)
 
 	time.Sleep(50 * time.Millisecond)
 
 	process2 := core.CreateProcess(env.colony2ID, []string{}, "test_computer", -1, 3, 1000, 10, 1)
-	err = client.AddProcess(process2, env.computer2PrvKey)
+	_, err = client.AddProcess(process2, env.computer2PrvKey)
 	assert.Nil(t, err)
 
 	// Now try to assign a process from colony2 using computer1 credentials

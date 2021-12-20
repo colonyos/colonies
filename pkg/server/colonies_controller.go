@@ -23,6 +23,7 @@ type command struct {
 	processesReplyChan chan []*core.Process
 	computerReplyChan  chan *core.Computer
 	computersReplyChan chan []*core.Computer
+	attributeReplyChan chan *core.Attribute
 	handler            func(cmd *command)
 }
 
@@ -62,9 +63,9 @@ func (controller *ColoniesController) GetColonies() ([]*core.Colony, error) {
 			colonies, err := controller.db.GetColonies()
 			if err != nil {
 				cmd.errorChan <- err
-			} else {
-				cmd.coloniesReplyChan <- colonies
+				return
 			}
+			cmd.coloniesReplyChan <- colonies
 		}}
 
 	controller.cmdQueue <- cmd
@@ -84,9 +85,9 @@ func (controller *ColoniesController) GetColonyByID(colonyID string) (*core.Colo
 			colony, err := controller.db.GetColonyByID(colonyID)
 			if err != nil {
 				cmd.errorChan <- err
-			} else {
-				cmd.colonyReplyChan <- colony
+				return
 			}
+			cmd.colonyReplyChan <- colony
 		}}
 
 	controller.cmdQueue <- cmd
@@ -98,22 +99,56 @@ func (controller *ColoniesController) GetColonyByID(colonyID string) (*core.Colo
 	}
 }
 
-func (controller *ColoniesController) AddColony(colony *core.Colony) error {
-	cmd := &command{errorChan: make(chan error, 1), handler: func(cmd *command) {
-		cmd.errorChan <- controller.db.AddColony(colony)
-	}}
+func (controller *ColoniesController) AddColony(colony *core.Colony) (*core.Colony, error) {
+	cmd := &command{colonyReplyChan: make(chan *core.Colony, 1),
+		errorChan: make(chan error, 1),
+		handler: func(cmd *command) {
+			err := controller.db.AddColony(colony)
+			if err != nil {
+				cmd.errorChan <- err
+				return
+			}
+			addedColony, err := controller.db.GetColonyByID(colony.ID())
+			if err != nil {
+				cmd.errorChan <- err
+				return
+			}
+			cmd.colonyReplyChan <- addedColony
+		}}
 
 	controller.cmdQueue <- cmd
-	return <-cmd.errorChan
+	select {
+	case err := <-cmd.errorChan:
+		return nil, err
+	case addedColony := <-cmd.colonyReplyChan:
+		return addedColony, nil
+	}
 }
 
-func (controller *ColoniesController) AddComputer(computer *core.Computer) error {
-	cmd := &command{errorChan: make(chan error, 1), handler: func(cmd *command) {
-		cmd.errorChan <- controller.db.AddComputer(computer)
-	}}
+func (controller *ColoniesController) AddComputer(computer *core.Computer) (*core.Computer, error) {
+	cmd := &command{computerReplyChan: make(chan *core.Computer, 1),
+		errorChan: make(chan error, 1),
+		handler: func(cmd *command) {
+			err := controller.db.AddComputer(computer)
+			if err != nil {
+				cmd.errorChan <- err
+				return
+			}
+			addedComputer, err := controller.db.GetComputerByID(computer.ID())
+			if err != nil {
+				cmd.errorChan <- err
+				return
+			}
+			cmd.computerReplyChan <- addedComputer
+		}}
 
 	controller.cmdQueue <- cmd
-	return <-cmd.errorChan
+	select {
+	case err := <-cmd.errorChan:
+		return nil, err
+	case addedComputer := <-cmd.computerReplyChan:
+		return addedComputer, nil
+	}
 }
 
 func (controller *ColoniesController) GetComputerByID(computerID string) (*core.Computer, error) {
@@ -123,9 +158,9 @@ func (controller *ColoniesController) GetComputerByID(computerID string) (*core.
 			computer, err := controller.db.GetComputerByID(computerID)
 			if err != nil {
 				cmd.errorChan <- err
-			} else {
-				cmd.computerReplyChan <- computer
+				return
 			}
+			cmd.computerReplyChan <- computer
 		}}
 
 	controller.cmdQueue <- cmd
@@ -144,9 +179,9 @@ func (controller *ColoniesController) GetComputerByColonyID(colonyID string) ([]
 			computers, err := controller.db.GetComputersByColonyID(colonyID)
 			if err != nil {
 				cmd.errorChan <- err
-			} else {
-				cmd.computersReplyChan <- computers
+				return
 			}
+			cmd.computersReplyChan <- computers
 		}}
 
 	controller.cmdQueue <- cmd
@@ -191,29 +226,47 @@ func (controller *ColoniesController) RejectComputer(computerID string) error {
 	return <-cmd.errorChan
 }
 
-func (controller *ColoniesController) AddProcess(process *core.Process) error {
-	cmd := &command{errorChan: make(chan error, 1), handler: func(cmd *command) {
-		cmd.errorChan <- controller.db.AddProcess(process)
-	}}
+func (controller *ColoniesController) AddProcess(process *core.Process) (*core.Process, error) {
+	cmd := &command{processReplyChan: make(chan *core.Process, 1),
+		errorChan: make(chan error, 1),
+		handler: func(cmd *command) {
+			err := controller.db.AddProcess(process)
+			if err != nil {
+				cmd.errorChan <- err
+				return
+			}
+			addedProcess, err := controller.db.GetProcessByID(process.ID())
+			if err != nil {
+				cmd.errorChan <- err
+				return
+			}
+			cmd.processReplyChan <- addedProcess
+		}}
 
 	controller.cmdQueue <- cmd
-	return <-cmd.errorChan
+	select {
+	case err := <-cmd.errorChan:
+		return nil, err
+	case process := <-cmd.processReplyChan:
+		return process, nil
+	}
 }
 
 func (controller *ColoniesController) GetProcessByID(colonyID string, processID string) (*core.Process, error) {
-	cmd := &command{processReplyChan: make(chan *core.Process, 1), errorChan: make(chan error, 1), handler: func(cmd *command) {
-		process, err := controller.db.GetProcessByID(processID)
-		if err != nil {
-			cmd.errorChan <- err
-			return
-		} else {
+	cmd := &command{processReplyChan: make(chan *core.Process, 1),
+		errorChan: make(chan error, 1),
+		handler: func(cmd *command) {
+			process, err := controller.db.GetProcessByID(processID)
+			if err != nil {
+				cmd.errorChan <- err
+				return
+			}
 			if process.TargetColonyID() != colonyID { // TODO: These kinds of checks should be done by security
 				cmd.errorChan <- errors.New("Process not bound to specifid colony id <" + colonyID + ">")
 				return
 			}
 			cmd.processReplyChan <- process
-		}
-	}}
+		}}
 
 	controller.cmdQueue <- cmd
 	select {
@@ -231,15 +284,15 @@ func (controller *ColoniesController) FindWaitingProcesses(computerID string, co
 			var processes []*core.Process
 			if count > MAX_COUNT {
 				cmd.errorChan <- errors.New("Count is larger than MaxCount limit <" + strconv.Itoa(MAX_COUNT) + ">")
+				return
 			}
-
 			processes, err := controller.db.FindWaitingProcesses(colonyID, count)
 			if err != nil {
 				cmd.errorChan <- err
-			} else {
-				prioritizedProcesses := controller.scheduler.Prioritize(computerID, processes, count)
-				cmd.processesReplyChan <- prioritizedProcesses
+				return
 			}
+			prioritizedProcesses := controller.scheduler.Prioritize(computerID, processes, count)
+			cmd.processesReplyChan <- prioritizedProcesses
 		}}
 
 	controller.cmdQueue <- cmd
@@ -259,14 +312,12 @@ func (controller *ColoniesController) MarkSuccessful(computerID string, processI
 			if err != nil {
 				cmd.errorChan <- err
 				return
-			} else {
-				if process.AssignedComputerID() != computerID { // TODO: Move to security
-					cmd.errorChan <- errors.New("Computer is not assigned to process, cannot mark as succesful")
-					return
-				} else {
-					cmd.errorChan <- controller.db.MarkSuccessful(process)
-				}
 			}
+			if process.AssignedComputerID() != computerID { // TODO: Move to security
+				cmd.errorChan <- errors.New("Computer is not assigned to process, cannot mark as succesful")
+				return
+			}
+			cmd.errorChan <- controller.db.MarkSuccessful(process)
 		}}
 
 	controller.cmdQueue <- cmd
@@ -280,14 +331,12 @@ func (controller *ColoniesController) MarkFailed(computerID string, processID st
 			if err != nil {
 				cmd.errorChan <- err
 				return
-			} else {
-				if process.AssignedComputerID() != computerID { // TODO: Move to security
-					cmd.errorChan <- errors.New("Computer is not assigned to process, cannot mark as succesful")
-					return
-				} else {
-					cmd.errorChan <- controller.db.MarkFailed(process)
-				}
 			}
+			if process.AssignedComputerID() != computerID { // TODO: Move to security
+				cmd.errorChan <- errors.New("Computer is not assigned to process, cannot mark as succesful")
+				return
+			}
+			cmd.errorChan <- controller.db.MarkFailed(process)
 		}}
 
 	controller.cmdQueue <- cmd
@@ -303,20 +352,18 @@ func (controller *ColoniesController) AssignProcess(computerID string, colonyID 
 			if err != nil {
 				cmd.errorChan <- err
 				return
-			} else {
-				selectedProcesses, err := controller.scheduler.Select(computerID, processes)
-				if err != nil {
-					cmd.errorChan <- err
-					return
-				}
-
-				err = controller.db.AssignComputer(computerID, selectedProcesses)
-				if err != nil {
-					cmd.errorChan <- err
-					return
-				}
-				cmd.processReplyChan <- selectedProcesses
 			}
+			selectedProcesses, err := controller.scheduler.Select(computerID, processes)
+			if err != nil {
+				cmd.errorChan <- err
+				return
+			}
+			err = controller.db.AssignComputer(computerID, selectedProcesses)
+			if err != nil {
+				cmd.errorChan <- err
+				return
+			}
+			cmd.processReplyChan <- selectedProcesses
 		}}
 
 	controller.cmdQueue <- cmd
@@ -332,11 +379,49 @@ func (controller *ColoniesController) Stop() {
 	controller.cmdQueue <- &command{stop: true}
 }
 
-func (controller *ColoniesController) AddAttribute(attribute *core.Attribute) error {
-	cmd := &command{errorChan: make(chan error, 1), handler: func(cmd *command) {
-		cmd.errorChan <- controller.db.AddAttribute(attribute)
-	}}
+func (controller *ColoniesController) AddAttribute(attribute *core.Attribute) (*core.Attribute, error) {
+	cmd := &command{attributeReplyChan: make(chan *core.Attribute, 1),
+		errorChan: make(chan error, 1),
+		handler: func(cmd *command) {
+			err := controller.db.AddAttribute(attribute)
+			if err != nil {
+				cmd.errorChan <- err
+				return
+			}
+			addedAttribute, err := controller.db.GetAttributeByID(attribute.ID())
+			if err != nil {
+				cmd.errorChan <- err
+				return
+			}
+			cmd.attributeReplyChan <- addedAttribute
+		}}
 
 	controller.cmdQueue <- cmd
-	return <-cmd.errorChan
+	select {
+	case err := <-cmd.errorChan:
+		return nil, err
+	case addedAttribute := <-cmd.attributeReplyChan:
+		return addedAttribute, nil
+	}
+}
+
+func (controller *ColoniesController) GetAttribute(attributeID string) (*core.Attribute, error) {
+	cmd := &command{attributeReplyChan: make(chan *core.Attribute, 1),
+		errorChan: make(chan error, 1),
+		handler: func(cmd *command) {
+			attribute, err := controller.db.GetAttributeByID(attributeID)
+			if err != nil {
+				cmd.errorChan <- err
+				return
+			}
+			cmd.attributeReplyChan <- attribute
+		}}
+
+	controller.cmdQueue <- cmd
+	select {
+	case err := <-cmd.errorChan:
+		return nil, err
+	case attribute := <-cmd.attributeReplyChan:
+		return attribute, nil
+	}
 }

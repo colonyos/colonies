@@ -20,7 +20,7 @@ func CreateColony(id string, name string) *Colony {
 	return colony
 }
 
-func CreateColonyFromJSON(jsonString string) (*Colony, error) {
+func ConvertJSONToColony(jsonString string) (*Colony, error) {
 	var colonyJSON ColonyJSON
 	err := json.Unmarshal([]byte(jsonString), &colonyJSON)
 	if err != nil {
