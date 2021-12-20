@@ -29,9 +29,12 @@ type ColoniesServer struct {
 }
 
 func CreateColoniesServer(db database.Database, port int, rootPassword string, tlsPrivateKeyPath string, tlsCertPath string, debug bool) *ColoniesServer {
-	if !debug {
+	if debug {
+		logrus.SetLevel(logrus.DebugLevel)
+	} else {
 		gin.SetMode(gin.ReleaseMode)
 		gin.DefaultWriter = ioutil.Discard
+		logging.DisableDebug()
 	}
 
 	server := &ColoniesServer{}
@@ -52,7 +55,6 @@ func CreateColoniesServer(db database.Database, port int, rootPassword string, t
 
 	server.setupRoutes()
 
-	logrus.SetLevel(logrus.DebugLevel)
 	logging.Log().Info("Starting Colonies API server at port: " + strconv.Itoa(port))
 
 	return server

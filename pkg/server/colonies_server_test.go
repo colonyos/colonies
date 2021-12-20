@@ -4,6 +4,7 @@ import (
 	"colonies/pkg/client"
 	"colonies/pkg/core"
 	"colonies/pkg/database/postgresql"
+	"colonies/pkg/logging"
 	"colonies/pkg/security"
 	"testing"
 	"time"
@@ -12,10 +13,15 @@ import (
 )
 
 func PrepareTests(t *testing.T, rootPassword string) (*ColoniesServer, chan bool) {
+	debug := false
+
+	if debug {
+		logging.DisableDebug()
+	}
+
 	db, err := postgresql.PrepareTests()
 	assert.Nil(t, err)
 
-	debug := true
 	server := CreateColoniesServer(db, 8080, rootPassword, "../../cert/key.pem", "../../cert/cert.pem", debug)
 	done := make(chan bool)
 
