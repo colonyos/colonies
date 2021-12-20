@@ -210,7 +210,7 @@ func (server *ColoniesServer) handleGetComputerRequest(c *gin.Context) {
 		return
 	}
 
-	computer, err := server.controller.GetComputer(computerID)
+	computer, err := server.controller.GetComputerByID(computerID)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -330,6 +330,8 @@ func (server *ColoniesServer) ServeForever() error {
 }
 
 func (server *ColoniesServer) Shutdown() {
+	server.controller.Stop()
+
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
