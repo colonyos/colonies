@@ -28,7 +28,7 @@ func TestSelectProcess(t *testing.T) {
 	selectedProcess, err := scheduler.Select("computerid_1", candidates)
 	assert.Nil(t, err)
 	assert.NotNil(t, selectedProcess)
-	assert.Equal(t, selectedProcess.ID(), process1.ID())
+	assert.Equal(t, selectedProcess.ID(), process2.ID())
 }
 
 func TestSelectProcess2(t *testing.T) {
@@ -50,7 +50,7 @@ func TestSelectProcess2(t *testing.T) {
 	scheduler := CreateScheduler()
 	selectedProcess, err := scheduler.Select("computerid_1", candidates)
 	assert.Nil(t, err)
-	assert.Equal(t, selectedProcess.ID(), process3.ID())
+	assert.Equal(t, selectedProcess.ID(), process1.ID())
 }
 
 func TestSelectProcessSameSubmissionTimes(t *testing.T) {
@@ -126,14 +126,14 @@ func TestPrioritize(t *testing.T) {
 	prioritizedProcesses := scheduler.Prioritize("computerid_1", candidates, 3)
 	assert.Len(t, prioritizedProcesses, 3)
 
-	assert.Equal(t, process1.ID(), prioritizedProcesses[0].ID())
+	assert.Equal(t, process2.ID(), prioritizedProcesses[0].ID())
 	assert.Equal(t, process3.ID(), prioritizedProcesses[1].ID())
-	assert.Equal(t, process2.ID(), prioritizedProcesses[2].ID())
+	assert.Equal(t, process1.ID(), prioritizedProcesses[2].ID())
 
 	prioritizedProcesses = scheduler.Prioritize("computerid_1", candidates, 2)
 	assert.Len(t, prioritizedProcesses, 2)
 
-	assert.Equal(t, process1.ID(), prioritizedProcesses[0].ID())
+	assert.Equal(t, process2.ID(), prioritizedProcesses[0].ID())
 	assert.Equal(t, process3.ID(), prioritizedProcesses[1].ID())
 }
 

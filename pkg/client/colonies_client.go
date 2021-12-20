@@ -136,6 +136,48 @@ func AddComputer(computer *core.Computer, prvKey string) error {
 	return nil
 }
 
+func ApproveComputer(computer *core.Computer, prvKey string) error {
+	client := client()
+	digest, sig, id, err := security.GenerateCredentials(prvKey)
+	if err != nil {
+		return err
+	}
+
+	resp, err := client.R().
+		SetHeader("Id", id).
+		SetHeader("Digest", digest).
+		SetHeader("Signature", sig).
+		Put("https://localhost:8080/colonies/" + computer.ColonyID() + "/computers/" + computer.ID() + "/approve")
+
+	err = checkStatusCode(resp.StatusCode(), string(resp.Body()))
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func RejectComputer(computer *core.Computer, prvKey string) error {
+	client := client()
+	digest, sig, id, err := security.GenerateCredentials(prvKey)
+	if err != nil {
+		return err
+	}
+
+	resp, err := client.R().
+		SetHeader("Id", id).
+		SetHeader("Digest", digest).
+		SetHeader("Signature", sig).
+		Put("https://localhost:8080/colonies/" + computer.ColonyID() + "/computers/" + computer.ID() + "/reject")
+
+	err = checkStatusCode(resp.StatusCode(), string(resp.Body()))
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func GetComputersByColonyID(colonyID string, prvKey string) ([]*core.Computer, error) {
 	client := client()
 	digest, sig, id, err := security.GenerateCredentials(prvKey)
@@ -225,7 +267,7 @@ func AddProcess(process *core.Process, prvKey string) error {
 	return nil
 }
 
-func GetWaitingProcesses(colonyID string, count int, prvKey string) ([]*core.Process, error) {
+func GetWaitingProcesses(computerID string, colonyID string, count int, prvKey string) ([]*core.Process, error) {
 	var processes []*core.Process
 	client := client()
 	digest, sig, id, err := security.GenerateCredentials(prvKey)
@@ -237,6 +279,7 @@ func GetWaitingProcesses(colonyID string, count int, prvKey string) ([]*core.Pro
 		SetHeader("Id", id).
 		SetHeader("Digest", digest).
 		SetHeader("Signature", sig).
+		SetHeader("ComputerId", computerID).
 		SetHeader("Count", strconv.Itoa(count)).
 		SetHeader("State", strconv.Itoa(core.WAITING)).
 		Get("https://localhost:8080/colonies/" + colonyID + "/processes")
@@ -253,4 +296,35 @@ func GetWaitingProcesses(colonyID string, count int, prvKey string) ([]*core.Pro
 	processes, err = core.ConvertJSONToProcessArray(unquotedResp)
 
 	return processes, nil
+}
+
+func AssignProcess(computerID string, colonyID string, prvKey string) (*core.Process, error) {
+	client := client()
+	digest, sig, id, err := security.GenerateCredentials(prvKey)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := client.R().
+		SetHeader("Id", id).
+		SetHeader("Digest", digest).
+		SetHeader("Signature", sig).
+		SetHeader("ComputerId", computerID).
+		Get("https://localhost:8080/colonies/" + colonyID + "/processes/assign")
+
+	err = checkStatusCode(resp.StatusCode(), string(resp.Body()))
+	if err != nil {
+		return nil, err
+	}
+
+	unquotedResp, err := strconv.Unquote(string(resp.Body()))
+	if err != nil {
+		return nil, err
+	}
+	process, err := core.ConvertJSONToProcess(unquotedResp)
+	if err != nil {
+		return nil, err
+	}
+
+	return process, nil
 }

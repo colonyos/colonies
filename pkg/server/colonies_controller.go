@@ -4,6 +4,8 @@ import (
 	"colonies/pkg/core"
 	"colonies/pkg/database"
 	"colonies/pkg/logging"
+	"colonies/pkg/scheduler"
+	"colonies/pkg/scheduler/basic"
 	"errors"
 	"strconv"
 )
@@ -25,13 +27,15 @@ type command struct {
 }
 
 type ColoniesController struct {
-	db       database.Database
-	cmdQueue chan *command
+	db        database.Database
+	cmdQueue  chan *command
+	scheduler scheduler.Scheduler
 }
 
 func CreateColoniesController(db database.Database) *ColoniesController {
 	controller := &ColoniesController{db: db}
 	controller.cmdQueue = make(chan *command)
+	controller.scheduler = basic.CreateScheduler()
 	go controller.masterWorker()
 	return controller
 }
@@ -157,6 +161,36 @@ func (controller *ColoniesController) GetComputerByColonyID(colonyID string) ([]
 	return computers, nil
 }
 
+func (controller *ColoniesController) ApproveComputer(computerID string) error {
+	cmd := &command{errorChan: make(chan error, 1),
+		handler: func(cmd *command) {
+			computer, err := controller.db.GetComputerByID(computerID)
+			if err != nil {
+				cmd.errorChan <- err
+				return
+			}
+			cmd.errorChan <- controller.db.ApproveComputer(computer)
+		}}
+
+	controller.cmdQueue <- cmd
+	return <-cmd.errorChan
+}
+
+func (controller *ColoniesController) RejectComputer(computerID string) error {
+	cmd := &command{errorChan: make(chan error, 1),
+		handler: func(cmd *command) {
+			computer, err := controller.db.GetComputerByID(computerID)
+			if err != nil {
+				cmd.errorChan <- err
+				return
+			}
+			cmd.errorChan <- controller.db.RejectComputer(computer)
+		}}
+
+	controller.cmdQueue <- cmd
+	return <-cmd.errorChan
+}
+
 func (controller *ColoniesController) AddProcess(process *core.Process) error {
 	cmd := &command{errorChan: make(chan error, 1), handler: func(cmd *command) {
 		cmd.errorChan <- controller.db.AddProcess(process)
@@ -166,7 +200,7 @@ func (controller *ColoniesController) AddProcess(process *core.Process) error {
 	return <-cmd.errorChan
 }
 
-func (controller *ColoniesController) FindWaitingProcesses(colonyID string, count int) ([]*core.Process, error) {
+func (controller *ColoniesController) FindWaitingProcesses(computerID string, colonyID string, count int) ([]*core.Process, error) {
 	cmd := &command{processesReplyChan: make(chan []*core.Process),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
@@ -179,7 +213,8 @@ func (controller *ColoniesController) FindWaitingProcesses(colonyID string, coun
 			if err != nil {
 				cmd.errorChan <- err
 			} else {
-				cmd.processesReplyChan <- processes
+				prioritizedProcesses := controller.scheduler.Prioritize(computerID, processes, count)
+				cmd.processesReplyChan <- prioritizedProcesses
 			}
 		}}
 
@@ -189,6 +224,41 @@ func (controller *ColoniesController) FindWaitingProcesses(colonyID string, coun
 	case err := <-cmd.errorChan:
 		return processes, err
 	case processes := <-cmd.processesReplyChan:
+		return processes, nil
+	}
+}
+
+func (controller *ColoniesController) AssignProcess(computerID string, colonyID string) (*core.Process, error) {
+	cmd := &command{processReplyChan: make(chan *core.Process),
+		errorChan: make(chan error, 1),
+		handler: func(cmd *command) {
+			var processes []*core.Process
+			processes, err := controller.db.FindUnassignedProcesses(colonyID, computerID, 10)
+
+			if err != nil {
+				cmd.errorChan <- err
+				return
+			} else {
+				selectedProcesses, err := controller.scheduler.Select(computerID, processes)
+				if err != nil {
+					cmd.errorChan <- err
+					return
+				}
+
+				err = controller.db.AssignComputer(computerID, selectedProcesses)
+				if err != nil {
+					cmd.errorChan <- err
+					return
+				}
+				cmd.processReplyChan <- selectedProcesses
+			}
+		}}
+
+	controller.cmdQueue <- cmd
+	select {
+	case err := <-cmd.errorChan:
+		return nil, err
+	case processes := <-cmd.processReplyChan:
 		return processes, nil
 	}
 }
