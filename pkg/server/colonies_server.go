@@ -72,8 +72,9 @@ func (server *ColoniesServer) setupRoutes() {
 	server.ginHandler.GET("/colonies/:colonyid/processes/:processid", server.handleGetProcessRequest)
 	server.ginHandler.PUT("/colonies/:colonyid/processes/:processid/finish", server.handleFinishProcessRequest)
 	server.ginHandler.PUT("/colonies/:colonyid/processes/:processid/failed", server.handleFailedProcessRequest)
-	server.ginHandler.POST("/colonies/:colonyid/processes/:processid/attributes", server.handleAddAttributeRequest)
 	server.ginHandler.GET("/colonies/:colonyid/processes/assign", server.handleAssignProcessRequest)
+	server.ginHandler.POST("/colonies/:colonyid/processes/:processid/attributes", server.handleAddAttributeRequest)
+	server.ginHandler.GET("/colonies/:colonyid/processes/:processid/attributes/:attributeid", server.handleGetAttributeRequest)
 }
 
 func (server *ColoniesServer) handleGetColoniesRequest(c *gin.Context) {
@@ -129,25 +130,31 @@ func (server *ColoniesServer) handleAddColonyRequest(c *gin.Context) {
 		return
 	}
 
-	jsonData, err := ioutil.ReadAll(c.Request.Body)
+	jsonBytes, err := ioutil.ReadAll(c.Request.Body)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	colony, err := core.CreateColonyFromJSON(string(jsonData))
+	colony, err := core.ConvertJSONToColony(string(jsonBytes))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	err = server.controller.AddColony(colony)
+	addedColony, err := server.controller.AddColony(colony)
 	if err != nil {
-		c.JSON(http.StatusMethodNotAllowed, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, "")
+	jsonString, err := addedColony.ToJSON()
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, jsonString)
 }
 
 func (server *ColoniesServer) handleAddComputerRequest(c *gin.Context) {
@@ -160,28 +167,35 @@ func (server *ColoniesServer) handleAddComputerRequest(c *gin.Context) {
 		return
 	}
 
-	jsonData, err := ioutil.ReadAll(c.Request.Body)
+	jsonBytes, err := ioutil.ReadAll(c.Request.Body)
 	if err != nil {
 		logging.Log().Warning(err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	computer, err := core.ConvertJSONToComputer(string(jsonData))
+	computer, err := core.ConvertJSONToComputer(string(jsonBytes))
 	if err != nil {
 		logging.Log().Warning(err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	err = server.controller.AddComputer(computer)
+	addedComputer, err := server.controller.AddComputer(computer)
 	if err != nil {
 		logging.Log().Warning(err)
-		c.JSON(http.StatusMethodNotAllowed, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, "")
+	jsonString, err := addedComputer.ToJSON()
+	if err != nil {
+		logging.Log().Warning(err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, jsonString)
 }
 
 func (server *ColoniesServer) handleGetComputersRequest(c *gin.Context) {
@@ -306,28 +320,35 @@ func (server *ColoniesServer) handleAddProcessRequest(c *gin.Context) {
 		return
 	}
 
-	jsonData, err := ioutil.ReadAll(c.Request.Body)
+	jsonBytes, err := ioutil.ReadAll(c.Request.Body)
 	if err != nil {
 		logging.Log().Warning(err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	process, err := core.ConvertJSONToProcess(string(jsonData))
+	process, err := core.ConvertJSONToProcess(string(jsonBytes))
 	if err != nil {
 		logging.Log().Warning(err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	err = server.controller.AddProcess(process)
+	addedProcess, err := server.controller.AddProcess(process)
 	if err != nil {
 		logging.Log().Warning(err)
-		c.JSON(http.StatusMethodNotAllowed, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, "")
+	jsonString, err := addedProcess.ToJSON()
+	if err != nil {
+		logging.Log().Warning(err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, jsonString)
 }
 
 func (server *ColoniesServer) handleGetProcessesRequest(c *gin.Context) {
@@ -470,40 +491,6 @@ func (server *ColoniesServer) handleFailedProcessRequest(c *gin.Context) {
 	c.JSON(http.StatusOK, "")
 }
 
-func (server *ColoniesServer) handleAddAttributeRequest(c *gin.Context) {
-	colonyID := c.Param("colonyid")
-
-	err := security.RequireColonyMember(c.GetHeader("Id"), colonyID, c.GetHeader("Digest"), c.GetHeader("Signature"), server.ownership)
-	if err != nil {
-		logging.Log().Warning(err)
-		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
-		return
-	}
-
-	jsonData, err := ioutil.ReadAll(c.Request.Body)
-	if err != nil {
-		logging.Log().Warning(err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	attribute, err := core.ConvertJSONToAttribute(string(jsonData))
-	if err != nil {
-		logging.Log().Warning(err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	err = server.controller.AddAttribute(attribute)
-	if err != nil {
-		logging.Log().Warning(err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	c.JSON(http.StatusOK, "")
-}
-
 func (server *ColoniesServer) handleAssignProcessRequest(c *gin.Context) {
 	colonyID := c.Param("colonyid")
 	computerID := c.GetHeader("ComputerID")
@@ -530,6 +517,76 @@ func (server *ColoniesServer) handleAssignProcessRequest(c *gin.Context) {
 	}
 
 	jsonString, err := process.ToJSON()
+	if err != nil {
+		logging.Log().Warning(err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, jsonString)
+}
+
+func (server *ColoniesServer) handleAddAttributeRequest(c *gin.Context) {
+	colonyID := c.Param("colonyid")
+
+	err := security.RequireColonyMember(c.GetHeader("Id"), colonyID, c.GetHeader("Digest"), c.GetHeader("Signature"), server.ownership)
+	if err != nil {
+		logging.Log().Warning(err)
+		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
+		return
+	}
+
+	jsonBytes, err := ioutil.ReadAll(c.Request.Body)
+	if err != nil {
+		logging.Log().Warning(err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	attribute, err := core.ConvertJSONToAttribute(string(jsonBytes))
+	if err != nil {
+		logging.Log().Warning(err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	addedAttribute, err := server.controller.AddAttribute(attribute)
+	if err != nil {
+		logging.Log().Warning(err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	jsonString, err := addedAttribute.ToJSON()
+	if err != nil {
+		logging.Log().Warning(err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, jsonString)
+}
+
+func (server *ColoniesServer) handleGetAttributeRequest(c *gin.Context) {
+	colonyID := c.Param("colonyid")
+	//processID := c.Param("processid")
+	attributeID := c.Param("attributeid")
+
+	err := security.RequireColonyOwnerOrMember(c.GetHeader("Id"), colonyID, c.GetHeader("Digest"), c.GetHeader("Signature"), server.ownership)
+	if err != nil {
+		logging.Log().Warning(err)
+		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
+		return
+	}
+
+	attribute, err := server.controller.GetAttribute(attributeID)
+	if err != nil {
+		logging.Log().Warning(err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	jsonString, err := attribute.ToJSON()
 	if err != nil {
 		logging.Log().Warning(err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})

@@ -29,12 +29,12 @@ func checkStatusCode(statusCode int, jsonString string) error {
 	return nil
 }
 
-func AddColony(colony *core.Colony, rootPassword string) error {
+func AddColony(colony *core.Colony, rootPassword string) (*core.Colony, error) {
 	client := client()
 
 	colonyJSON, err := colony.ToJSON()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	resp, err := client.R().
@@ -43,12 +43,22 @@ func AddColony(colony *core.Colony, rootPassword string) error {
 		SetBody(colonyJSON).
 		Post("https://localhost:8080/colonies")
 
-	err = checkStatusCode(resp.StatusCode(), string(resp.Body()))
+	unquotedResp, err := strconv.Unquote(string(resp.Body()))
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	return nil
+	err = checkStatusCode(resp.StatusCode(), unquotedResp)
+	if err != nil {
+		return nil, err
+	}
+
+	addedColony, err := core.ConvertJSONToColony(unquotedResp)
+	if err != nil {
+		return nil, err
+	}
+
+	return addedColony, nil
 }
 
 func GetColonies(rootPassword string) ([]*core.Colony, error) {
@@ -60,12 +70,12 @@ func GetColonies(rootPassword string) ([]*core.Colony, error) {
 		SetHeader("RootPassword", rootPassword).
 		Get("https://localhost:8080/colonies")
 
-	err = checkStatusCode(resp.StatusCode(), string(resp.Body()))
+	unquotedResp, err := strconv.Unquote(string(resp.Body()))
 	if err != nil {
 		return colonies, err
 	}
 
-	unquotedResp, err := strconv.Unquote(string(resp.Body()))
+	err = checkStatusCode(resp.StatusCode(), unquotedResp)
 	if err != nil {
 		return colonies, err
 	}
@@ -91,17 +101,17 @@ func GetColonyByID(colonyID string, prvKey string) (*core.Colony, error) {
 		SetHeader("Signature", sig).
 		Get("https://localhost:8080/colonies/" + colonyID)
 
-	err = checkStatusCode(resp.StatusCode(), string(resp.Body()))
-	if err != nil {
-		return nil, err
-	}
-
 	unquotedResp, err := strconv.Unquote(string(resp.Body()))
 	if err != nil {
 		return nil, err
 	}
 
-	colony, err := core.CreateColonyFromJSON(unquotedResp)
+	err = checkStatusCode(resp.StatusCode(), unquotedResp)
+	if err != nil {
+		return nil, err
+	}
+
+	colony, err := core.ConvertJSONToColony(unquotedResp)
 	if err != nil {
 		return nil, err
 	}
@@ -109,16 +119,16 @@ func GetColonyByID(colonyID string, prvKey string) (*core.Colony, error) {
 	return colony, nil
 }
 
-func AddComputer(computer *core.Computer, prvKey string) error {
+func AddComputer(computer *core.Computer, prvKey string) (*core.Computer, error) {
 	client := client()
 	digest, sig, id, err := security.GenerateCredentials(prvKey)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	computerJSON, err := computer.ToJSON()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	resp, err := client.R().
@@ -128,12 +138,22 @@ func AddComputer(computer *core.Computer, prvKey string) error {
 		SetBody(computerJSON).
 		Post("https://localhost:8080/colonies/" + computer.ColonyID() + "/computers")
 
-	err = checkStatusCode(resp.StatusCode(), string(resp.Body()))
+	unquotedResp, err := strconv.Unquote(string(resp.Body()))
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	return nil
+	err = checkStatusCode(resp.StatusCode(), unquotedResp)
+	if err != nil {
+		return nil, err
+	}
+
+	addedComputer, err := core.ConvertJSONToComputer(unquotedResp)
+	if err != nil {
+		return nil, err
+	}
+
+	return addedComputer, nil
 }
 
 func ApproveComputer(computer *core.Computer, prvKey string) error {
@@ -149,7 +169,12 @@ func ApproveComputer(computer *core.Computer, prvKey string) error {
 		SetHeader("Signature", sig).
 		Put("https://localhost:8080/colonies/" + computer.ColonyID() + "/computers/" + computer.ID() + "/approve")
 
-	err = checkStatusCode(resp.StatusCode(), string(resp.Body()))
+	unquotedResp, err := strconv.Unquote(string(resp.Body()))
+	if err != nil {
+		return err
+	}
+
+	err = checkStatusCode(resp.StatusCode(), unquotedResp)
 	if err != nil {
 		return err
 	}
@@ -170,7 +195,12 @@ func RejectComputer(computer *core.Computer, prvKey string) error {
 		SetHeader("Signature", sig).
 		Put("https://localhost:8080/colonies/" + computer.ColonyID() + "/computers/" + computer.ID() + "/reject")
 
-	err = checkStatusCode(resp.StatusCode(), string(resp.Body()))
+	unquotedResp, err := strconv.Unquote(string(resp.Body()))
+	if err != nil {
+		return err
+	}
+
+	err = checkStatusCode(resp.StatusCode(), unquotedResp)
 	if err != nil {
 		return err
 	}
@@ -191,12 +221,12 @@ func GetComputersByColonyID(colonyID string, prvKey string) ([]*core.Computer, e
 		SetHeader("Signature", sig).
 		Get("https://localhost:8080/colonies/" + colonyID + "/computers")
 
-	err = checkStatusCode(resp.StatusCode(), string(resp.Body()))
+	unquotedResp, err := strconv.Unquote(string(resp.Body()))
 	if err != nil {
 		return nil, err
 	}
 
-	unquotedResp, err := strconv.Unquote(string(resp.Body()))
+	err = checkStatusCode(resp.StatusCode(), unquotedResp)
 	if err != nil {
 		return nil, err
 	}
@@ -222,12 +252,12 @@ func GetComputerByID(computerID string, colonyID string, prvKey string) (*core.C
 		SetHeader("Signature", sig).
 		Get("https://localhost:8080/colonies/" + colonyID + "/computers/" + computerID)
 
-	err = checkStatusCode(resp.StatusCode(), string(resp.Body()))
+	unquotedResp, err := strconv.Unquote(string(resp.Body()))
 	if err != nil {
 		return nil, err
 	}
 
-	unquotedResp, err := strconv.Unquote(string(resp.Body()))
+	err = checkStatusCode(resp.StatusCode(), unquotedResp)
 	if err != nil {
 		return nil, err
 	}
@@ -240,16 +270,16 @@ func GetComputerByID(computerID string, colonyID string, prvKey string) (*core.C
 	return computer, nil
 }
 
-func AddProcess(process *core.Process, prvKey string) error {
+func AddProcess(process *core.Process, prvKey string) (*core.Process, error) {
 	client := client()
 	digest, sig, id, err := security.GenerateCredentials(prvKey)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	processJSON, err := process.ToJSON()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	resp, err := client.R().
@@ -259,24 +289,34 @@ func AddProcess(process *core.Process, prvKey string) error {
 		SetBody(processJSON).
 		Post("https://localhost:8080/colonies/" + process.TargetColonyID() + "/processes")
 
-	err = checkStatusCode(resp.StatusCode(), string(resp.Body()))
+	unquotedResp, err := strconv.Unquote(string(resp.Body()))
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	return nil
+	err = checkStatusCode(resp.StatusCode(), unquotedResp)
+	if err != nil {
+		return nil, err
+	}
+
+	addedProcess, err := core.ConvertJSONToProcess(unquotedResp)
+	if err != nil {
+		return nil, err
+	}
+
+	return addedProcess, nil
 }
 
-func AddAttribute(attribute *core.Attribute, colonyID string, prvKey string) error {
+func AddAttribute(attribute *core.Attribute, colonyID string, prvKey string) (*core.Attribute, error) {
 	client := client()
 	digest, sig, id, err := security.GenerateCredentials(prvKey)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	jsonString, err := attribute.ToJSON()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	resp, err := client.R().
@@ -286,12 +326,53 @@ func AddAttribute(attribute *core.Attribute, colonyID string, prvKey string) err
 		SetBody(jsonString).
 		Post("https://localhost:8080/colonies/" + colonyID + "/processes/" + attribute.TargetID() + "/attributes")
 
-	err = checkStatusCode(resp.StatusCode(), string(resp.Body()))
+	unquotedResp, err := strconv.Unquote(string(resp.Body()))
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	return nil
+	err = checkStatusCode(resp.StatusCode(), unquotedResp)
+	if err != nil {
+		return nil, err
+	}
+
+	addedAttribute, err := core.ConvertJSONToAttribute(unquotedResp)
+	if err != nil {
+		return nil, err
+	}
+
+	return addedAttribute, nil
+}
+
+func GetAttribute(attributeID string, processID string, colonyID string, prvKey string) (*core.Attribute, error) {
+	client := client()
+	digest, sig, id, err := security.GenerateCredentials(prvKey)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := client.R().
+		SetHeader("Id", id).
+		SetHeader("Digest", digest).
+		SetHeader("Signature", sig).
+		Get("https://localhost:8080/colonies/" + colonyID + "/processes/" + processID + "/attributes/" + attributeID)
+
+	unquotedResp, err := strconv.Unquote(string(resp.Body()))
+	if err != nil {
+		return nil, err
+	}
+
+	err = checkStatusCode(resp.StatusCode(), unquotedResp)
+	if err != nil {
+		return nil, err
+	}
+
+	attribute, err := core.ConvertJSONToAttribute(unquotedResp)
+	if err != nil {
+		return nil, err
+	}
+
+	return attribute, nil
 }
 
 func GetProcessByID(processID string, colonyID string, prvKey string) (*core.Process, error) {
@@ -307,15 +388,16 @@ func GetProcessByID(processID string, colonyID string, prvKey string) (*core.Pro
 		SetHeader("Signature", sig).
 		Get("https://localhost:8080/colonies/" + colonyID + "/processes/" + processID)
 
-	err = checkStatusCode(resp.StatusCode(), string(resp.Body()))
-	if err != nil {
-		return nil, err
-	}
-
 	unquotedResp, err := strconv.Unquote(string(resp.Body()))
 	if err != nil {
 		return nil, err
 	}
+
+	err = checkStatusCode(resp.StatusCode(), unquotedResp)
+	if err != nil {
+		return nil, err
+	}
+
 	process, err := core.ConvertJSONToProcess(unquotedResp)
 	if err != nil {
 		return nil, err
@@ -341,15 +423,16 @@ func GetWaitingProcesses(computerID string, colonyID string, count int, prvKey s
 		SetHeader("State", strconv.Itoa(core.WAITING)).
 		Get("https://localhost:8080/colonies/" + colonyID + "/processes")
 
-	err = checkStatusCode(resp.StatusCode(), string(resp.Body()))
-	if err != nil {
-		return processes, err
-	}
-
 	unquotedResp, err := strconv.Unquote(string(resp.Body()))
 	if err != nil {
 		return processes, err
 	}
+
+	err = checkStatusCode(resp.StatusCode(), unquotedResp)
+	if err != nil {
+		return processes, err
+	}
+
 	processes, err = core.ConvertJSONToProcessArray(unquotedResp)
 
 	return processes, nil
@@ -369,15 +452,16 @@ func AssignProcess(computerID string, colonyID string, prvKey string) (*core.Pro
 		SetHeader("ComputerId", computerID).
 		Get("https://localhost:8080/colonies/" + colonyID + "/processes/assign")
 
-	err = checkStatusCode(resp.StatusCode(), string(resp.Body()))
-	if err != nil {
-		return nil, err
-	}
-
 	unquotedResp, err := strconv.Unquote(string(resp.Body()))
 	if err != nil {
 		return nil, err
 	}
+
+	err = checkStatusCode(resp.StatusCode(), unquotedResp)
+	if err != nil {
+		return nil, err
+	}
+
 	process, err := core.ConvertJSONToProcess(unquotedResp)
 	if err != nil {
 		return nil, err
@@ -399,7 +483,12 @@ func MarkSuccessful(process *core.Process, prvKey string) error {
 		SetHeader("Signature", sig).
 		Put("https://localhost:8080/colonies/" + process.TargetColonyID() + "/processes/" + process.ID() + "/finish")
 
-	err = checkStatusCode(resp.StatusCode(), string(resp.Body()))
+	unquotedResp, err := strconv.Unquote(string(resp.Body()))
+	if err != nil {
+		return err
+	}
+
+	err = checkStatusCode(resp.StatusCode(), unquotedResp)
 	if err != nil {
 		return err
 	}
@@ -420,7 +509,12 @@ func MarkFailed(process *core.Process, prvKey string) error {
 		SetHeader("Signature", sig).
 		Put("https://localhost:8080/colonies/" + process.TargetColonyID() + "/processes/" + process.ID() + "/failed")
 
-	err = checkStatusCode(resp.StatusCode(), string(resp.Body()))
+	unquotedResp, err := strconv.Unquote(string(resp.Body()))
+	if err != nil {
+		return err
+	}
+
+	err = checkStatusCode(resp.StatusCode(), unquotedResp)
 	if err != nil {
 		return err
 	}
