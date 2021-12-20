@@ -200,6 +200,30 @@ func (controller *ColoniesController) AddProcess(process *core.Process) error {
 	return <-cmd.errorChan
 }
 
+func (controller *ColoniesController) GetProcessByID(colonyID string, processID string) (*core.Process, error) {
+	cmd := &command{processReplyChan: make(chan *core.Process, 1), errorChan: make(chan error, 1), handler: func(cmd *command) {
+		process, err := controller.db.GetProcessByID(processID)
+		if err != nil {
+			cmd.errorChan <- err
+			return
+		} else {
+			if process.TargetColonyID() != colonyID { // TODO: These kinds of checks should be done by security
+				cmd.errorChan <- errors.New("Process not bound to specifid colony id <" + colonyID + ">")
+				return
+			}
+			cmd.processReplyChan <- process
+		}
+	}}
+
+	controller.cmdQueue <- cmd
+	select {
+	case err := <-cmd.errorChan:
+		return nil, err
+	case process := <-cmd.processReplyChan:
+		return process, nil
+	}
+}
+
 func (controller *ColoniesController) FindWaitingProcesses(computerID string, colonyID string, count int) ([]*core.Process, error) {
 	cmd := &command{processesReplyChan: make(chan []*core.Process),
 		errorChan: make(chan error, 1),
@@ -228,13 +252,54 @@ func (controller *ColoniesController) FindWaitingProcesses(computerID string, co
 	}
 }
 
+func (controller *ColoniesController) MarkSuccessful(computerID string, processID string) error {
+	cmd := &command{errorChan: make(chan error, 1),
+		handler: func(cmd *command) {
+			process, err := controller.db.GetProcessByID(processID)
+			if err != nil {
+				cmd.errorChan <- err
+				return
+			} else {
+				if process.AssignedComputerID() != computerID { // TODO: Move to security
+					cmd.errorChan <- errors.New("Computer is not assigned to process, cannot mark as succesful")
+					return
+				} else {
+					cmd.errorChan <- controller.db.MarkSuccessful(process)
+				}
+			}
+		}}
+
+	controller.cmdQueue <- cmd
+	return <-cmd.errorChan
+}
+
+func (controller *ColoniesController) MarkFailed(computerID string, processID string) error {
+	cmd := &command{errorChan: make(chan error, 1),
+		handler: func(cmd *command) {
+			process, err := controller.db.GetProcessByID(processID)
+			if err != nil {
+				cmd.errorChan <- err
+				return
+			} else {
+				if process.AssignedComputerID() != computerID { // TODO: Move to security
+					cmd.errorChan <- errors.New("Computer is not assigned to process, cannot mark as succesful")
+					return
+				} else {
+					cmd.errorChan <- controller.db.MarkFailed(process)
+				}
+			}
+		}}
+
+	controller.cmdQueue <- cmd
+	return <-cmd.errorChan
+}
+
 func (controller *ColoniesController) AssignProcess(computerID string, colonyID string) (*core.Process, error) {
 	cmd := &command{processReplyChan: make(chan *core.Process),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
 			var processes []*core.Process
 			processes, err := controller.db.FindUnassignedProcesses(colonyID, computerID, 10)
-
 			if err != nil {
 				cmd.errorChan <- err
 				return
@@ -265,4 +330,13 @@ func (controller *ColoniesController) AssignProcess(computerID string, colonyID 
 
 func (controller *ColoniesController) Stop() {
 	controller.cmdQueue <- &command{stop: true}
+}
+
+func (controller *ColoniesController) AddAttribute(attribute *core.Attribute) error {
+	cmd := &command{errorChan: make(chan error, 1), handler: func(cmd *command) {
+		cmd.errorChan <- controller.db.AddAttribute(attribute)
+	}}
+
+	controller.cmdQueue <- cmd
+	return <-cmd.errorChan
 }
