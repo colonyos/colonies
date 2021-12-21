@@ -270,7 +270,7 @@ func GetComputerByID(computerID string, colonyID string, prvKey string, host str
 	return computer, nil
 }
 
-func AddProcess(processSpec *core.ProcessSpec, prvKey string, host string, port int) (*core.Process, error) {
+func SubmitProcessSpec(processSpec *core.ProcessSpec, prvKey string, host string, port int) (*core.Process, error) {
 	client := client()
 	digest, sig, id, err := security.GenerateCredentials(prvKey)
 	if err != nil {

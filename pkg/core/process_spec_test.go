@@ -1,7 +1,6 @@
 package core
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -22,6 +21,15 @@ func TestProcessSpecJSON(t *testing.T) {
 	jsonString, err := processSpec.ToJSON()
 	assert.Nil(t, err)
 
-	fmt.Println(jsonString)
+	processSpec2, err := ConvertJSONToProcessSpec(jsonString)
+	assert.Nil(t, err)
 
+	assert.Equal(t, processSpec.TargetColonyID, processSpec2.TargetColonyID)
+	assert.Equal(t, processSpec.TargetComputerIDs, processSpec2.TargetComputerIDs)
+	assert.Equal(t, processSpec.ComputerType, processSpec2.ComputerType)
+	assert.Equal(t, processSpec.Timeout, processSpec2.Timeout)
+	assert.Equal(t, processSpec.MaxRetries, processSpec2.MaxRetries)
+	assert.Equal(t, processSpec.Cores, processSpec2.Cores)
+	assert.Equal(t, processSpec.GPUs, processSpec2.GPUs)
+	assert.Equal(t, processSpec.In, processSpec2.In)
 }

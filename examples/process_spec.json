@@ -1,0 +1,14 @@
+{
+    "targetcolonyid": "5dd23ec3bf9d643d47eb8486845071dcf0cfcba4362c3a541ea7cfea5174b7d4",
+    "targetcomputerids": [],
+    "computertype": "test_computer_type",
+    "timeout": -1,
+    "maxretries": 0,
+    "mem": 1000,
+    "cores": 10,
+    "gpus": 1,
+    "in": {
+        "test_key1": "test_value1",
+        "test_key2": "test_value2"
+    }
+}

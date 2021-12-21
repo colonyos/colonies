@@ -1,9 +1,0 @@
-{
-    "computertype": "test_computer_type",
-    "timeout": -1,
-    "retries": 0,
-    "maxretries": 3,
-    "mem": 1000,
-    "cores": 10,
-    "gpus": 1
-}
