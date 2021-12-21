@@ -22,7 +22,8 @@ var TLSKey string
 var ServerHost string
 var ServerPort int
 var RootPassword string
-var JSONSpecFile string
+var SpecFile string
+var InputFile string
 var ID string
 var ColonyPrvKey string
 var ColonyID string

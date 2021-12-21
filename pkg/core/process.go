@@ -191,7 +191,7 @@ func ConvertProcessArrayToJSON(processes []*Process) (string, error) {
 		processesJSON = append(processesJSON, processJSON)
 	}
 
-	jsonString, err := json.Marshal(processesJSON)
+	jsonString, err := json.MarshalIndent(processesJSON, "", "    ")
 	if err != nil {
 		return "", err
 	}
@@ -372,7 +372,7 @@ func (process *Process) Out() map[string]string {
 
 func (process *Process) ToJSON() (string, error) {
 	processJSON := convertProcessToProcessJSON(process)
-	jsonString, err := json.Marshal(processJSON)
+	jsonString, err := json.MarshalIndent(processJSON, "", "    ")
 	if err != nil {
 		return "", err
 	}

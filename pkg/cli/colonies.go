@@ -19,8 +19,8 @@ func init() {
 	colonyCmd.PersistentFlags().IntVarP(&ServerPort, "port", "", 8080, "Server HTTP port")
 	registerColonyCmd.Flags().StringVarP(&RootPassword, "rootpassword", "", "", "Root password to the Colonies server")
 	registerColonyCmd.MarkFlagRequired("rootpassword")
-	registerColonyCmd.Flags().StringVarP(&JSONSpecFile, "json", "", "", "JSON specification of a Colony")
-	registerColonyCmd.MarkFlagRequired("json")
+	registerColonyCmd.Flags().StringVarP(&SpecFile, "spec", "", "", "JSON specification of a Colony")
+	registerColonyCmd.MarkFlagRequired("spec")
 
 	lsColoniesCmd.Flags().StringVarP(&RootPassword, "rootpassword", "", "", "Root password to the Colonies server")
 	lsColoniesCmd.MarkFlagRequired("rootpassword")
@@ -37,7 +37,7 @@ var registerColonyCmd = &cobra.Command{
 	Short: "Register a new Colony",
 	Long:  "Register a new Colony",
 	Run: func(cmd *cobra.Command, args []string) {
-		jsonSpecBytes, err := ioutil.ReadFile(JSONSpecFile)
+		jsonSpecBytes, err := ioutil.ReadFile(SpecFile)
 		CheckError(err)
 
 		colony, err := core.ConvertJSONToColony(string(jsonSpecBytes))

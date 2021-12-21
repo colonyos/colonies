@@ -22,8 +22,8 @@ func init() {
 	computerCmd.PersistentFlags().IntVarP(&ServerPort, "port", "", 8080, "Server HTTP port")
 
 	registerComputerCmd.Flags().StringVarP(&ColonyPrvKey, "colonyprvkey", "", "", "Colony private key")
-	registerComputerCmd.Flags().StringVarP(&JSONSpecFile, "json", "", "", "JSON specification of a Colony Computer")
-	registerComputerCmd.MarkFlagRequired("json")
+	registerComputerCmd.Flags().StringVarP(&SpecFile, "spec", "", "", "JSON specification of a Colony Computer")
+	registerComputerCmd.MarkFlagRequired("spec")
 
 	approveComputersCmd.Flags().StringVarP(&ColonyPrvKey, "colonyprvkey", "", "", "Colony private key")
 	approveComputersCmd.Flags().StringVarP(&ComputerID, "computerid", "", "", "Colony Computer Id")
@@ -45,7 +45,7 @@ var registerComputerCmd = &cobra.Command{
 	Short: "Register a new Computer",
 	Long:  "Register a new Computer",
 	Run: func(cmd *cobra.Command, args []string) {
-		jsonSpecBytes, err := ioutil.ReadFile(JSONSpecFile)
+		jsonSpecBytes, err := ioutil.ReadFile(SpecFile)
 		CheckError(err)
 
 		computer, err := core.ConvertJSONToComputer(string(jsonSpecBytes))

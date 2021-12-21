@@ -245,11 +245,11 @@ func TestAddProcess(t *testing.T) {
 	var attributes1 []*core.Attribute
 	attributes1 = append(attributes1, core.CreateAttribute(process1.ID(), core.IN, "test_key_1", "test_value_2"))
 	process1.SetInAttributes(attributes1)
-	_, err := client.AddProcess(process1, env.computerPrvKey)
+	_, err := client.AddProcess(process1, env.computerPrvKey, TESTHOST, TESTPORT)
 	assert.Nil(t, err)
 
 	process2 := core.CreateProcess(env.colonyID, []string{}, "test_computer", -1, 3, 1000, 10, 1)
-	addedProcess2, err := client.AddProcess(process2, env.computerPrvKey)
+	addedProcess2, err := client.AddProcess(process2, env.computerPrvKey, TESTHOST, TESTPORT)
 	assert.Nil(t, err)
 	assert.Equal(t, process2.ID(), addedProcess2.ID())
 
@@ -304,13 +304,13 @@ func TestAssignProcess(t *testing.T) {
 	env := createTestEnv(t, rootPassword)
 
 	process1 := core.CreateProcess(env.colonyID, []string{}, "test_computer", -1, 3, 1000, 10, 1)
-	_, err := client.AddProcess(process1, env.computerPrvKey)
+	_, err := client.AddProcess(process1, env.computerPrvKey, TESTHOST, TESTPORT)
 	assert.Nil(t, err)
 
 	time.Sleep(50 * time.Millisecond)
 
 	process2 := core.CreateProcess(env.colonyID, []string{}, "test_computer", -1, 3, 1000, 10, 1)
-	_, err = client.AddProcess(process2, env.computerPrvKey)
+	_, err = client.AddProcess(process2, env.computerPrvKey, TESTHOST, TESTPORT)
 	assert.Nil(t, err)
 
 	assignedProcess, err := client.AssignProcess(env.computerID, env.colonyID, env.computerPrvKey)
@@ -331,7 +331,7 @@ func TestMarkSuccessful(t *testing.T) {
 	env := createTestEnv(t, rootPassword)
 
 	process := core.CreateProcess(env.colonyID, []string{}, "test_computer", -1, 3, 1000, 10, 1)
-	_, err := client.AddProcess(process, env.computerPrvKey)
+	_, err := client.AddProcess(process, env.computerPrvKey, TESTHOST, TESTPORT)
 	assert.Nil(t, err)
 
 	processFromServer, err := client.GetProcessByID(process.ID(), env.colonyID, env.computerPrvKey)
@@ -359,7 +359,7 @@ func TestMarkFailed(t *testing.T) {
 	env := createTestEnv(t, rootPassword)
 
 	process := core.CreateProcess(env.colonyID, []string{}, "test_computer", -1, 3, 1000, 10, 1)
-	_, err := client.AddProcess(process, env.computerPrvKey)
+	_, err := client.AddProcess(process, env.computerPrvKey, TESTHOST, TESTPORT)
 	assert.Nil(t, err)
 
 	processFromServer, err := client.GetProcessByID(process.ID(), env.colonyID, env.computerPrvKey)
@@ -387,7 +387,7 @@ func TestAddAttributes(t *testing.T) {
 	env := createTestEnv(t, rootPassword)
 
 	process := core.CreateProcess(env.colonyID, []string{}, "test_computer", -1, 3, 1000, 10, 1)
-	_, err := client.AddProcess(process, env.computerPrvKey)
+	_, err := client.AddProcess(process, env.computerPrvKey, TESTHOST, TESTPORT)
 	assert.Nil(t, err)
 
 	processFromServer, err := client.GetProcessByID(process.ID(), env.colonyID, env.computerPrvKey)
