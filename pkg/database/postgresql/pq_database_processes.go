@@ -18,8 +18,8 @@ func (db *PQDatabase) AddProcess(process *core.Process) error {
 
 	submissionTime := time.Now()
 
-	sqlStatement := `INSERT INTO  ` + db.dbPrefix + `PROCESSES (PROCESS_ID, TARGET_COLONY_ID, TARGET_COMPUTER_IDS, ASSIGNED_COMPUTER_ID, STATUS, IS_ASSIGNED, COMPUTER_TYPE, SUBMISSION_TIME, START_TIME, END_TIME, DEADLINE, RETRIES, TIMEOUT, MAX_RETRIES, LOG, MEM, CORES, GPUs) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)`
-	_, err := db.postgresql.Exec(sqlStatement, process.ID(), process.TargetColonyID(), pq.Array(targetComputerIDs), process.AssignedComputerID(), process.Status(), process.Assigned(), process.ComputerType(), submissionTime, time.Time{}, time.Time{}, process.Deadline(), 0, process.Timeout(), process.MaxRetries(), "", process.Mem(), process.Cores(), process.GPUs())
+	sqlStatement := `INSERT INTO  ` + db.dbPrefix + `PROCESSES (PROCESS_ID, TARGET_COLONY_ID, TARGET_COMPUTER_IDS, ASSIGNED_COMPUTER_ID, STATUS, IS_ASSIGNED, COMPUTER_TYPE, SUBMISSION_TIME, START_TIME, END_TIME, DEADLINE, RETRIES, TIMEOUT, MAX_RETRIES, MEM, CORES, GPUs) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)`
+	_, err := db.postgresql.Exec(sqlStatement, process.ID(), process.TargetColonyID(), pq.Array(targetComputerIDs), process.AssignedComputerID(), process.Status(), process.Assigned(), process.ComputerType(), submissionTime, time.Time{}, time.Time{}, process.Deadline(), 0, process.Timeout(), process.MaxRetries(), process.Mem(), process.Cores(), process.GPUs())
 	if err != nil {
 		return err
 	}
@@ -63,12 +63,11 @@ func (db *PQDatabase) parseProcesses(rows *sql.Rows) ([]*core.Process, error) {
 		var timeout int
 		var retries int
 		var maxRetries int
-		var log string
 		var mem int
 		var cores int
 		var gpus int
 
-		if err := rows.Scan(&processID, &targetColonyID, pq.Array(&targetComputerIDs), &assignedComputerID, &status, &isAssigned, &computerType, &submissionTime, &startTime, &endTime, &deadline, &timeout, &retries, &maxRetries, &log, &mem, &cores, &gpus); err != nil {
+		if err := rows.Scan(&processID, &targetColonyID, pq.Array(&targetComputerIDs), &assignedComputerID, &status, &isAssigned, &computerType, &submissionTime, &startTime, &endTime, &deadline, &timeout, &retries, &maxRetries, &mem, &cores, &gpus); err != nil {
 			return nil, err
 		}
 
@@ -91,7 +90,7 @@ func (db *PQDatabase) parseProcesses(rows *sql.Rows) ([]*core.Process, error) {
 			targetComputerIDs = []string{}
 		}
 
-		process := core.CreateProcessFromDB(processID, targetColonyID, targetComputerIDs, assignedComputerID, status, isAssigned, computerType, submissionTime, startTime, endTime, deadline, timeout, retries, maxRetries, log, mem, cores, gpus, inAttributes, errAttributes, outAttributes)
+		process := core.CreateProcessFromDB(processID, targetColonyID, targetComputerIDs, assignedComputerID, status, isAssigned, computerType, submissionTime, startTime, endTime, deadline, timeout, retries, maxRetries, mem, cores, gpus, inAttributes, errAttributes, outAttributes)
 		processes = append(processes, process)
 	}
 

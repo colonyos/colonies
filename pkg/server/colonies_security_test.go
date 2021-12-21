@@ -224,14 +224,14 @@ func TestAssignProcessSecurity(t *testing.T) {
 	//   computer1 is member of colony1
 	//   computer2 is member of colony2
 
-	process1 := core.CreateProcess(env.colony1ID, []string{}, "test_computer", -1, 3, 1000, 10, 1)
-	_, err := client.AddProcess(process1, env.computer1PrvKey, TESTHOST, TESTPORT)
+	processSpec1 := core.CreateProcessSpec(env.colony1ID, []string{}, "test_computer", -1, 3, 1000, 10, 1, make(map[string]string))
+	_, err := client.AddProcess(processSpec1, env.computer1PrvKey, TESTHOST, TESTPORT)
 	assert.Nil(t, err)
 
 	time.Sleep(50 * time.Millisecond)
 
-	process2 := core.CreateProcess(env.colony2ID, []string{}, "test_computer", -1, 3, 1000, 10, 1)
-	_, err = client.AddProcess(process2, env.computer2PrvKey, TESTHOST, TESTPORT)
+	processSpec2 := core.CreateProcessSpec(env.colony2ID, []string{}, "test_computer", -1, 3, 1000, 10, 1, make(map[string]string))
+	_, err = client.AddProcess(processSpec2, env.computer2PrvKey, TESTHOST, TESTPORT)
 	assert.Nil(t, err)
 
 	// Now try to assign a process from colony2 using computer1 credentials

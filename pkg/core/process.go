@@ -15,6 +15,8 @@ const (
 	FAILED      = 3
 )
 
+// TODO: This code should be refactored so that it contains a ProcessSpec instead of all this redundant information
+
 type ProcessJSON struct {
 	ID                 string           `json:"processid"`
 	TargetColonyID     string           `json:"targetcolonyid"`
@@ -30,7 +32,6 @@ type ProcessJSON struct {
 	Timeout            int              `json:"timeout"`
 	Retries            int              `json:"retries"`
 	MaxRetries         int              `json:"maxretries"`
-	Log                string           `json:"log"`
 	Mem                int              `json:"mem"`
 	Cores              int              `json:"cores"`
 	GPUs               int              `json:"gpus"`
@@ -54,7 +55,6 @@ type Process struct {
 	timeout            int
 	retries            int
 	maxRetries         int
-	log                string
 	mem                int
 	cores              int
 	gpus               int
@@ -90,7 +90,7 @@ func CreateProcess(targetColonyID string, targetComputerIDs []string, computerTy
 	return process
 }
 
-func CreateProcessFromDB(id string, targetColonyID string, targetComputerIDs []string, assignedComputerID string, status int, isAssigned bool, computerType string, submissionTime time.Time, startTime time.Time, endTime time.Time, deadline time.Time, timeout int, retries int, maxRetries int, log string, mem int, cores int, gpus int, inAttributes []*Attribute, errAttributes []*Attribute, outAttributes []*Attribute) *Process {
+func CreateProcessFromDB(id string, targetColonyID string, targetComputerIDs []string, assignedComputerID string, status int, isAssigned bool, computerType string, submissionTime time.Time, startTime time.Time, endTime time.Time, deadline time.Time, timeout int, retries int, maxRetries int, mem int, cores int, gpus int, inAttributes []*Attribute, errAttributes []*Attribute, outAttributes []*Attribute) *Process {
 	return &Process{id: id,
 		targetColonyID:     targetColonyID,
 		targetComputerIDs:  targetComputerIDs,
@@ -105,7 +105,6 @@ func CreateProcessFromDB(id string, targetColonyID string, targetComputerIDs []s
 		timeout:            timeout,
 		retries:            retries,
 		maxRetries:         maxRetries,
-		log:                log,
 		mem:                mem,
 		cores:              cores,
 		gpus:               gpus,
@@ -134,7 +133,6 @@ func convertProcessToProcessJSON(process *Process) *ProcessJSON {
 		Timeout:            process.timeout,
 		Retries:            process.retries,
 		MaxRetries:         process.maxRetries,
-		Log:                process.log,
 		Mem:                process.mem,
 		Cores:              process.cores,
 		GPUs:               process.gpus,
@@ -162,7 +160,6 @@ func convertProcessJSONToProcess(processJSON *ProcessJSON) *Process {
 		timeout:            processJSON.Timeout,
 		retries:            processJSON.Retries,
 		maxRetries:         processJSON.MaxRetries,
-		log:                processJSON.Log,
 		mem:                processJSON.Mem,
 		cores:              processJSON.Cores,
 		gpus:               processJSON.GPUs,
@@ -284,10 +281,6 @@ func (process *Process) Retries() int {
 
 func (process *Process) MaxRetries() int {
 	return process.maxRetries
-}
-
-func (process *Process) Log() string {
-	return process.log
 }
 
 func (process *Process) Mem() int {
