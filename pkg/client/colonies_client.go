@@ -270,14 +270,14 @@ func GetComputerByID(computerID string, colonyID string, prvKey string, host str
 	return computer, nil
 }
 
-func AddProcess(process *core.Process, prvKey string, host string, port int) (*core.Process, error) {
+func AddProcess(processSpec *core.ProcessSpec, prvKey string, host string, port int) (*core.Process, error) {
 	client := client()
 	digest, sig, id, err := security.GenerateCredentials(prvKey)
 	if err != nil {
 		return nil, err
 	}
 
-	processJSON, err := process.ToJSON()
+	processSpecJSON, err := processSpec.ToJSON()
 	if err != nil {
 		return nil, err
 	}
@@ -286,8 +286,8 @@ func AddProcess(process *core.Process, prvKey string, host string, port int) (*c
 		SetHeader("Id", id).
 		SetHeader("Digest", digest).
 		SetHeader("Signature", sig).
-		SetBody(processJSON).
-		Post("https://" + host + ":" + strconv.Itoa(port) + "/colonies/" + process.TargetColonyID() + "/processes")
+		SetBody(processSpecJSON).
+		Post("https://" + host + ":" + strconv.Itoa(port) + "/colonies/" + processSpec.TargetColonyID + "/processes")
 
 	unquotedResp, err := strconv.Unquote(string(resp.Body()))
 	if err != nil {

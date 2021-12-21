@@ -329,12 +329,21 @@ func (server *ColoniesServer) handleAddProcessRequest(c *gin.Context) {
 		return
 	}
 
-	process, err := core.ConvertJSONToProcess(string(jsonBytes))
+	processSpec, err := core.ConvertJSONToProcessSpec(string(jsonBytes))
 	if err != nil {
 		logging.Log().Warning(err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
+
+	process := core.CreateProcess(processSpec.TargetColonyID, processSpec.TargetComputerIDs, processSpec.ComputerType, processSpec.Timeout, processSpec.MaxRetries, processSpec.Mem, processSpec.Cores, processSpec.GPUs)
+
+	var attributes []*core.Attribute
+	for key, value := range processSpec.In {
+		attributes = append(attributes, core.CreateAttribute(process.ID(), core.OUT, key, value))
+	}
+
+	process.SetInAttributes(attributes)
 
 	addedProcess, err := server.controller.AddProcess(process)
 	if err != nil {

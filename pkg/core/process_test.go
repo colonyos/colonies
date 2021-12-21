@@ -157,7 +157,6 @@ func TestProcessToJSON(t *testing.T) {
 	assert.Equal(t, process.Timeout(), process2.Timeout())
 	assert.Equal(t, process.Retries(), process2.Retries())
 	assert.Equal(t, process.MaxRetries(), process2.MaxRetries())
-	assert.Equal(t, process.Log(), process2.Log())
 	assert.Equal(t, process.Mem(), process2.Mem())
 	assert.Equal(t, process.Cores(), process2.Cores())
 	assert.Equal(t, process.GPUs(), process2.GPUs())

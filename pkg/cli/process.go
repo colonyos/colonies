@@ -2,6 +2,7 @@ package cli
 
 import (
 	"colonies/pkg/core"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 
@@ -39,10 +40,20 @@ var submitProcessCmd = &cobra.Command{
 		inputBytes, err := ioutil.ReadFile(InputFile)
 		CheckError(err)
 
+		inputMap := make(map[string]string)
+		err = json.Unmarshal(inputBytes, &inputMap)
+		CheckError(err)
+
 		process, err := core.ConvertJSONToProcess(string(jsonSpecBytes))
 		CheckError(err)
 
-		fmt.Println(string(inputBytes))
+		var attributes []*core.Attribute
+		for key, value := range inputMap {
+			attributes = append(attributes, core.CreateAttribute(process.ID(), core.OUT, key, value))
+		}
+
+		process.SetInAttributes(attributes)
+
 		fmt.Println(process)
 		//fmt.Println(process.ToJSON())
 	},
