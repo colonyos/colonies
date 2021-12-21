@@ -1,3 +1,6 @@
+## What is Colonies? 
+Colonies is a generic framework for implementing distributed applications and systems. It can for example be used for implementing on Edge Computing Operating System.
+
 ## Getting started
 ## Installation
 ### Start a TimescaleDB server
@@ -31,7 +34,7 @@ First, create a file named colony.json, and put the following content into it.
 
 Then use the colonies tool to register the colony. The id of the colony will be returned if the command is successful. Note that the root password is required for this operation.
 ```
-$ colonies colony register --rootpassword=secret --json ./examples/colony.json 
+$ colonies colony register --rootpassword=secret --spec ./examples/colony.json 
 2770116b0d66a71840a4513bec52707c4a26042462b62e0830497724f7d37773
 ```
 
@@ -56,7 +59,7 @@ $ colonies keychain privatekey --id 2770116b0d66a71840a4513bec52707c4a26042462b6
 ### Register a new Colony Computer
 Only the colony owner is allowed to register a new Colony computer. 
 ```
-$ colonies computer register --colonyid 2770116b0d66a71840a4513bec52707c4a26042462b62e0830497724f7d37773 --json computer.json
+$ colonies computer register --colonyid 2770116b0d66a71840a4513bec52707c4a26042462b62e0830497724f7d37773 --spec ./examples/computer.json
 4c60e0e108690dc034a3f3c6e369e63e077aa4c9795cf46c531938efc4e67243
 ```
 
@@ -64,7 +67,7 @@ The private key for the colony owner is automatically obtained from the keychain
 private key as an argument. 
 
 ```
-$ colonies computer register --colonyid 2770116b0d66a71840a4513bec52707c4a26042462b62e0830497724f7d37773 --colonyprvkey=4b24941ca1d85fb1ff055e81fad7dba97471e756bebc38e03e657c738f0e1224 --json computer.json
+$ colonies computer register --colonyid 2770116b0d66a71840a4513bec52707c4a26042462b62e0830497724f7d37773 --colonyprvkey=4b24941ca1d85fb1ff055e81fad7dba97471e756bebc38e03e657c738f0e1224 --spec computer.json
 ```
 
 ### List registered Colony Computers
@@ -98,4 +101,29 @@ $ colonies computer approve --colonyid 2770116b0d66a71840a4513bec52707c4a2604246
 Similarly, a Colony Computer can be disapproved with the "disapprove" command.
 ```
 $ colonies computer disapprove --colonyid 2770116b0d66a71840a4513bec52707c4a26042462b62e0830497724f7d37773 --computerid 2089d3897e512a4e16cfb99d781cb494044323216ec6a1fffecb4da4312fd389
+```
+
+### Submit a process to a Colony 
+First we need to create a process spec file.
+```
+{
+    "computertype": "test_computer_type",
+    "timeout": -1,
+    "retries": 0,
+    "maxretries": 3,
+    "mem": 1000,
+    "cores": 10,
+    "gpus": 1,
+}
+```
+And a input file. 
+```
+{
+    "cmd": "helloworld",
+    "args": "hello"
+}
+```
+
+```
+$ colonies process submit --colonyid 2770116b0d66a71840a4513bec52707c4a26042462b62e0830497724f7d37773 --spec ./examples/process.json -in ./examples/input.js
 ```
