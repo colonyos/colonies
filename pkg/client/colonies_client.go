@@ -29,7 +29,7 @@ func checkStatusCode(statusCode int, jsonString string) error {
 	return nil
 }
 
-func AddColony(colony *core.Colony, rootPassword string) (*core.Colony, error) {
+func AddColony(colony *core.Colony, rootPassword string, host string, port int) (*core.Colony, error) {
 	client := client()
 
 	colonyJSON, err := colony.ToJSON()
@@ -41,7 +41,7 @@ func AddColony(colony *core.Colony, rootPassword string) (*core.Colony, error) {
 		SetHeader("Content-Type", "application/json").
 		SetHeader("RootPassword", rootPassword).
 		SetBody(colonyJSON).
-		Post("https://localhost:8080/colonies")
+		Post("https://" + host + ":" + strconv.Itoa(port) + "/colonies")
 
 	unquotedResp, err := strconv.Unquote(string(resp.Body()))
 	if err != nil {
@@ -61,14 +61,14 @@ func AddColony(colony *core.Colony, rootPassword string) (*core.Colony, error) {
 	return addedColony, nil
 }
 
-func GetColonies(rootPassword string) ([]*core.Colony, error) {
+func GetColonies(rootPassword string, host string, port int) ([]*core.Colony, error) {
 	client := client()
 
 	var colonies []*core.Colony
 	resp, err := client.R().
 		SetHeader("Content-Type", "application/json").
 		SetHeader("RootPassword", rootPassword).
-		Get("https://localhost:8080/colonies")
+		Get("https://" + host + ":" + strconv.Itoa(port) + "/colonies")
 
 	unquotedResp, err := strconv.Unquote(string(resp.Body()))
 	if err != nil {

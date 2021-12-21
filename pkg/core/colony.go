@@ -54,7 +54,7 @@ func ConvertColonyArrayToJSON(colonies []*Colony) (string, error) {
 		coloniesJSON = append(coloniesJSON, colonyJSON)
 	}
 
-	jsonString, err := json.Marshal(coloniesJSON)
+	jsonString, err := json.MarshalIndent(coloniesJSON, "", "    ")
 	if err != nil {
 		return "", err
 	}
@@ -63,6 +63,10 @@ func ConvertColonyArrayToJSON(colonies []*Colony) (string, error) {
 
 func (colony *Colony) Name() string {
 	return colony.name
+}
+
+func (colony *Colony) SetID(id string) {
+	colony.id = id
 }
 
 func (colony *Colony) ID() string {

@@ -11,13 +11,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// bHost := "localhost"
-//     dbPort := 5432
-//     dbUser := "postgres"
-//     dbPassword := "rFcLGNkgsNtksg6Pgtn9CumL4xXBQ7"
-//     dbName := "postgres"
-//     dbPrefix := "TEST_"
-
 func init() {
 	dbCmd.AddCommand(dbCreateCmd)
 	dbCmd.AddCommand(dbDropCmd)
@@ -35,22 +28,22 @@ func init() {
 
 var dbCmd = &cobra.Command{
 	Use:   "database",
-	Short: "Manage Colonies database",
-	Long:  "Manage Colonies database",
+	Short: "manage Colonies database",
+	Long:  "manage Colonies database",
 }
 
 var dbCreateCmd = &cobra.Command{
 	Use:   "create",
-	Short: "Create a database",
-	Long:  "Create a database",
+	Short: "create a database",
+	Long:  "create a database",
 	Run: func(cmd *cobra.Command, args []string) {
-		db := postgresql.CreatePQDatabase(DBHost, DBPort, DBUser, DBPassword, "postgres", "PROD_")
+		db := postgresql.CreatePQDatabase(DBHost, DBPort, DBUser, DBPassword, DBName, DBPrefix)
 		err := db.Connect()
 		if err != nil {
 			fmt.Println("Failed to connect to database")
 			os.Exit(-1)
 		}
-		logging.Log().Info("Connecting to Colonies database, dbHost: " + db.dbHost + ", dbPort: " + strconv.Itoa(db.dbPort) + ", dbUser: " + db.dbUser + ", dbPassword: " + "****************, dbName: " + db.dbName + ". dbPrefix: " + db.dbPrefix)
+		logging.Log().Info("Connecting to Colonies database, host: " + DBHost + ", port: " + strconv.Itoa(DBPort) + ", user: " + DBUser + ", password: " + "******************, name: " + DBName + ". prefix: " + DBPrefix)
 		err = db.Initialize()
 		if err != nil {
 			fmt.Println("Failed to create database")
@@ -62,8 +55,8 @@ var dbCreateCmd = &cobra.Command{
 
 var dbDropCmd = &cobra.Command{
 	Use:   "drop",
-	Short: "Drop the database",
-	Long:  "Drop the database",
+	Short: "drop the database",
+	Long:  "drop the database",
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Print("WARNING!!! Are you sure you want to drop the database? This operation cannot be undone! (YES,no): ")
 
@@ -71,13 +64,13 @@ var dbDropCmd = &cobra.Command{
 		reply, _ := reader.ReadString('\n')
 
 		if reply == "YES\n" {
-			db := postgresql.CreatePQDatabase(DBHost, DBPort, DBUser, DBPassword, "postgres", "PROD_")
+			db := postgresql.CreatePQDatabase(DBHost, DBPort, DBUser, DBPassword, DBName, DBPrefix)
 			err := db.Connect()
 			if err != nil {
 				fmt.Println("Failed to connect to database")
 				os.Exit(-1)
 			}
-			logging.Log().Info("Connecting to Colonies database, dbHost: " + db.dbHost + ", dbPort: " + strconv.Itoa(db.dbPort) + ", dbUser: " + db.dbUser + ", dbPassword: " + "****************, dbName: " + db.dbName + ". dbPrefix: " + db.dbPrefix)
+			logging.Log().Info("Connecting to Colonies database, host: " + DBHost + ", port: " + strconv.Itoa(DBPort) + ", user: " + DBUser + ", password: " + "******************, name: " + DBName + ". prefix: " + DBPrefix)
 			err = db.Drop()
 			if err != nil {
 				fmt.Println("Failed to drop database")
