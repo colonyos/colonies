@@ -1,8 +1,9 @@
 package cli
 
 import (
+	"colonies/pkg/client"
 	"colonies/pkg/core"
-	"encoding/json"
+	"colonies/pkg/security"
 	"fmt"
 	"io/ioutil"
 
@@ -11,16 +12,23 @@ import (
 
 func init() {
 	processCmd.AddCommand(submitProcessCmd)
+	processCmd.AddCommand(listWaitingProcessesCmd)
 	rootCmd.AddCommand(processCmd)
 
-	processCmd.PersistentFlags().StringVarP(&ColonyID, "colonyid", "", "", "Colony Id")
 	processCmd.PersistentFlags().StringVarP(&ServerHost, "host", "", "localhost", "Server host")
 	processCmd.PersistentFlags().IntVarP(&ServerPort, "port", "", 8080, "Server HTTP port")
 
+	submitProcessCmd.Flags().StringVarP(&ID, "id", "", "", "Colony or Computer Id")
+	submitProcessCmd.Flags().StringVarP(&PrvKey, "prvkey", "", "", "Colony or Computer private key")
 	submitProcessCmd.Flags().StringVarP(&SpecFile, "spec", "", "", "JSON specification of a Colony process")
 	approveComputersCmd.MarkFlagRequired("spec")
-	submitProcessCmd.Flags().StringVarP(&InputFile, "in", "", "", "JSON specification of the input data")
-	approveComputersCmd.MarkFlagRequired("in")
+
+	listWaitingProcessesCmd.Flags().StringVarP(&ColonyID, "colonyid", "", "", "Colony Id")
+	listWaitingProcessesCmd.MarkFlagRequired("colonyid")
+	listWaitingProcessesCmd.Flags().StringVarP(&ComputerID, "computerid", "", "", "Computer Id")
+	listWaitingProcessesCmd.MarkFlagRequired("computerid")
+	listWaitingProcessesCmd.Flags().StringVarP(&ComputerPrvKey, "colonyprvkey", "", "", "Computer private key")
+	listWaitingProcessesCmd.Flags().IntVarP(&Count, "count", "", 10, "Number of processes to list")
 }
 
 var processCmd = &cobra.Command{
@@ -37,24 +45,43 @@ var submitProcessCmd = &cobra.Command{
 		jsonSpecBytes, err := ioutil.ReadFile(SpecFile)
 		CheckError(err)
 
-		inputBytes, err := ioutil.ReadFile(InputFile)
+		processSpec, err := core.ConvertJSONToProcessSpec(string(jsonSpecBytes))
 		CheckError(err)
 
-		inputMap := make(map[string]string)
-		err = json.Unmarshal(inputBytes, &inputMap)
+		keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
 		CheckError(err)
 
-		process, err := core.ConvertJSONToProcess(string(jsonSpecBytes))
-		CheckError(err)
-
-		var attributes []*core.Attribute
-		for key, value := range inputMap {
-			attributes = append(attributes, core.CreateAttribute(process.ID(), core.OUT, key, value))
+		if PrvKey == "" {
+			PrvKey, err = keychain.GetPrvKey(ID)
+			CheckError(err)
 		}
 
-		process.SetInAttributes(attributes)
+		addedProcess, err := client.SubmitProcessSpec(processSpec, PrvKey, ServerHost, ServerPort)
+		CheckError(err)
 
-		fmt.Println(process)
-		//fmt.Println(process.ToJSON())
+		fmt.Println(addedProcess.ToJSON())
+	},
+}
+
+var listWaitingProcessesCmd = &cobra.Command{
+	Use:   "psw",
+	Short: "List all waiting processes",
+	Long:  "List all waiting processes",
+	Run: func(cmd *cobra.Command, args []string) {
+		keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
+		CheckError(err)
+
+		if ComputerPrvKey == "" {
+			ComputerPrvKey, err = keychain.GetPrvKey(ComputerID)
+			CheckError(err)
+		}
+
+		processes, err := client.GetWaitingProcesses(ComputerID, ColonyID, Count, ComputerPrvKey)
+		CheckError(err)
+
+		jsonString, err := core.ConvertProcessArrayToJSON(processes)
+		CheckError(err)
+
+		fmt.Println(jsonString)
 	},
 }

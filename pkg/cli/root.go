@@ -23,11 +23,13 @@ var ServerHost string
 var ServerPort int
 var RootPassword string
 var SpecFile string
-var InputFile string
+var Count int
 var ID string
+var PrvKey string
+var ComputerID string
+var ComputerPrvKey string
 var ColonyPrvKey string
 var ColonyID string
-var ComputerID string
 
 func init() {
 	rootCmd.PersistentFlags().BoolVarP(&Verbose, "verbose", "v", false, "verbose output")
