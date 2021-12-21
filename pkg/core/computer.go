@@ -97,12 +97,15 @@ func ConvertComputerArrayToJSON(computers []*Computer) (string, error) {
 			Status:   computer.status}
 		computersJSON = append(computersJSON, computerJSON)
 	}
-
-	jsonString, err := json.Marshal(computersJSON)
+	jsonString, err := json.MarshalIndent(computersJSON, "", "    ")
 	if err != nil {
 		return "", err
 	}
 	return string(jsonString), nil
+}
+
+func (computer *Computer) SetID(id string) {
+	computer.id = id
 }
 
 func (computer *Computer) ID() string {
@@ -111,6 +114,10 @@ func (computer *Computer) ID() string {
 
 func (computer *Computer) Name() string {
 	return computer.name
+}
+
+func (computer *Computer) SetColonyID(colonyID string) {
+	computer.colonyID = colonyID
 }
 
 func (computer *Computer) ColonyID() string {
@@ -184,7 +191,7 @@ func (computer *Computer) ToJSON() (string, error) {
 		GPUs:     computer.gpus,
 		Status:   computer.status}
 
-	jsonString, err := json.Marshal(computerJSON)
+	jsonString, err := json.MarshalIndent(computerJSON, "", "    ")
 	if err != nil {
 		return "", err
 	}

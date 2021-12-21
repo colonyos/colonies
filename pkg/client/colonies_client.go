@@ -119,7 +119,7 @@ func GetColonyByID(colonyID string, prvKey string) (*core.Colony, error) {
 	return colony, nil
 }
 
-func AddComputer(computer *core.Computer, prvKey string) (*core.Computer, error) {
+func AddComputer(computer *core.Computer, prvKey string, host string, port int) (*core.Computer, error) {
 	client := client()
 	digest, sig, id, err := security.GenerateCredentials(prvKey)
 	if err != nil {
@@ -136,7 +136,7 @@ func AddComputer(computer *core.Computer, prvKey string) (*core.Computer, error)
 		SetHeader("Digest", digest).
 		SetHeader("Signature", sig).
 		SetBody(computerJSON).
-		Post("https://localhost:8080/colonies/" + computer.ColonyID() + "/computers")
+		Post("https://" + host + ":" + strconv.Itoa(port) + "/colonies/" + computer.ColonyID() + "/computers")
 
 	unquotedResp, err := strconv.Unquote(string(resp.Body()))
 	if err != nil {
@@ -156,7 +156,7 @@ func AddComputer(computer *core.Computer, prvKey string) (*core.Computer, error)
 	return addedComputer, nil
 }
 
-func ApproveComputer(computer *core.Computer, prvKey string) error {
+func ApproveComputer(computer *core.Computer, prvKey string, host string, port int) error {
 	client := client()
 	digest, sig, id, err := security.GenerateCredentials(prvKey)
 	if err != nil {
@@ -167,7 +167,7 @@ func ApproveComputer(computer *core.Computer, prvKey string) error {
 		SetHeader("Id", id).
 		SetHeader("Digest", digest).
 		SetHeader("Signature", sig).
-		Put("https://localhost:8080/colonies/" + computer.ColonyID() + "/computers/" + computer.ID() + "/approve")
+		Put("https://" + host + ":" + strconv.Itoa(port) + "/colonies/" + computer.ColonyID() + "/computers/" + computer.ID() + "/approve")
 
 	unquotedResp, err := strconv.Unquote(string(resp.Body()))
 	if err != nil {
@@ -182,7 +182,7 @@ func ApproveComputer(computer *core.Computer, prvKey string) error {
 	return nil
 }
 
-func RejectComputer(computer *core.Computer, prvKey string) error {
+func RejectComputer(computer *core.Computer, prvKey string, host string, port int) error {
 	client := client()
 	digest, sig, id, err := security.GenerateCredentials(prvKey)
 	if err != nil {
@@ -193,7 +193,7 @@ func RejectComputer(computer *core.Computer, prvKey string) error {
 		SetHeader("Id", id).
 		SetHeader("Digest", digest).
 		SetHeader("Signature", sig).
-		Put("https://localhost:8080/colonies/" + computer.ColonyID() + "/computers/" + computer.ID() + "/reject")
+		Put("https://" + host + ":" + strconv.Itoa(port) + "/colonies/" + computer.ColonyID() + "/computers/" + computer.ID() + "/reject")
 
 	unquotedResp, err := strconv.Unquote(string(resp.Body()))
 	if err != nil {
@@ -208,7 +208,7 @@ func RejectComputer(computer *core.Computer, prvKey string) error {
 	return nil
 }
 
-func GetComputersByColonyID(colonyID string, prvKey string) ([]*core.Computer, error) {
+func GetComputersByColonyID(colonyID string, prvKey string, host string, port int) ([]*core.Computer, error) {
 	client := client()
 	digest, sig, id, err := security.GenerateCredentials(prvKey)
 	if err != nil {
@@ -219,7 +219,7 @@ func GetComputersByColonyID(colonyID string, prvKey string) ([]*core.Computer, e
 		SetHeader("Id", id).
 		SetHeader("Digest", digest).
 		SetHeader("Signature", sig).
-		Get("https://localhost:8080/colonies/" + colonyID + "/computers")
+		Get("https://" + host + ":" + strconv.Itoa(port) + "/colonies/" + colonyID + "/computers")
 
 	unquotedResp, err := strconv.Unquote(string(resp.Body()))
 	if err != nil {
@@ -239,7 +239,7 @@ func GetComputersByColonyID(colonyID string, prvKey string) ([]*core.Computer, e
 	return computers, nil
 }
 
-func GetComputerByID(computerID string, colonyID string, prvKey string) (*core.Computer, error) {
+func GetComputerByID(computerID string, colonyID string, prvKey string, host string, port int) (*core.Computer, error) {
 	client := client()
 	digest, sig, id, err := security.GenerateCredentials(prvKey)
 	if err != nil {
@@ -250,7 +250,7 @@ func GetComputerByID(computerID string, colonyID string, prvKey string) (*core.C
 		SetHeader("Id", id).
 		SetHeader("Digest", digest).
 		SetHeader("Signature", sig).
-		Get("https://localhost:8080/colonies/" + colonyID + "/computers/" + computerID)
+		Get("https://" + host + ":" + strconv.Itoa(port) + "/colonies/" + colonyID + "/computers/" + computerID)
 
 	unquotedResp, err := strconv.Unquote(string(resp.Body()))
 	if err != nil {

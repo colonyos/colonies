@@ -59,12 +59,12 @@ func setupTestEnvironment(t *testing.T) (*testEnv, *ColoniesServer, chan bool) {
 
 	// Create a computer
 	computer1, computer1ID, computer1PrvKey := generateComputer(t, colony1ID)
-	_, err = client.AddComputer(computer1, colony1PrvKey)
+	_, err = client.AddComputer(computer1, colony1PrvKey, TESTHOST, TESTPORT)
 	assert.Nil(t, err)
 
 	// Create a computer
 	computer2, computer2ID, computer2PrvKey := generateComputer(t, colony2ID)
-	_, err = client.AddComputer(computer2, colony2PrvKey)
+	_, err = client.AddComputer(computer2, colony2PrvKey, TESTHOST, TESTPORT)
 	assert.Nil(t, err)
 
 	env := &testEnv{colony1PrvKey: colony1PrvKey, colony1ID: colony1ID, colony2PrvKey: colony2PrvKey, colony2ID: colony2ID, computer1PrvKey: computer1PrvKey, computer1ID: computer1ID, computer2PrvKey: computer2PrvKey, computer2ID: computer2ID}
@@ -150,11 +150,11 @@ func TestAddComputerSecurity(t *testing.T) {
 	//   computer3 is bound to colony1, but not yet a member
 
 	// Now, try to add computer 3 to colony1 using colony 2 credentials
-	_, err := client.AddComputer(computer3, env.colony2PrvKey)
+	_, err := client.AddComputer(computer3, env.colony2PrvKey, TESTHOST, TESTPORT)
 	assert.NotNil(t, err) // Should not work
 
 	// Now, try to add computer 3 to colony1 using colony 1 credentials
-	_, err = client.AddComputer(computer3, env.colony1PrvKey)
+	_, err = client.AddComputer(computer3, env.colony1PrvKey, TESTHOST, TESTPORT)
 	assert.Nil(t, err) // Should work
 
 	server.Shutdown()
@@ -169,19 +169,19 @@ func TestGetComputerByIDSecurity(t *testing.T) {
 	//   computer2 is member of colony2
 
 	// Now try to access computer1 using credentials of computer2
-	_, err := client.GetComputerByID(env.computer1ID, env.colony1ID, env.computer2PrvKey)
+	_, err := client.GetComputerByID(env.computer1ID, env.colony1ID, env.computer2PrvKey, TESTHOST, TESTPORT)
 	assert.NotNil(t, err) // Should not work
 
 	// Now try to access computer1 using computer1 credentials
-	_, err = client.GetComputerByID(env.computer1ID, env.colony1ID, env.computer1PrvKey)
+	_, err = client.GetComputerByID(env.computer1ID, env.colony1ID, env.computer1PrvKey, TESTHOST, TESTPORT)
 	assert.Nil(t, err) // Should work
 
 	// Now try to access computer1 using colony1 credentials
-	_, err = client.GetComputerByID(env.computer1ID, env.colony1ID, env.colony1PrvKey)
+	_, err = client.GetComputerByID(env.computer1ID, env.colony1ID, env.colony1PrvKey, TESTHOST, TESTPORT)
 	assert.Nil(t, err) // Should work
 
 	// Now try to access computer1 using colony1 credentials
-	_, err = client.GetComputerByID(env.computer1ID, env.colony1ID, env.colony2PrvKey)
+	_, err = client.GetComputerByID(env.computer1ID, env.colony1ID, env.colony2PrvKey, TESTHOST, TESTPORT)
 	assert.NotNil(t, err) // Should not work
 
 	server.Shutdown()
@@ -196,19 +196,19 @@ func TestGetComputersByColonySecurity(t *testing.T) {
 	//   computer2 is member of colony2
 
 	// Now try to access computer1 using credentials of computer2
-	_, err := client.GetComputersByColonyID(env.colony1ID, env.computer2PrvKey)
+	_, err := client.GetComputersByColonyID(env.colony1ID, env.computer2PrvKey, TESTHOST, TESTPORT)
 	assert.NotNil(t, err) // Should not work
 
 	// Now try to access computer1 using computer1 credentials
-	_, err = client.GetComputersByColonyID(env.colony1ID, env.computer1PrvKey)
+	_, err = client.GetComputersByColonyID(env.colony1ID, env.computer1PrvKey, TESTHOST, TESTPORT)
 	assert.Nil(t, err) // Should work
 
 	// Now try to access computer1 using colony1 credentials
-	_, err = client.GetComputersByColonyID(env.colony1ID, env.colony1PrvKey)
+	_, err = client.GetComputersByColonyID(env.colony1ID, env.colony1PrvKey, TESTHOST, TESTPORT)
 	assert.Nil(t, err) // Should work
 
 	// Now try to access computer1 using colony1 credentials
-	_, err = client.GetComputersByColonyID(env.colony1ID, env.colony2PrvKey)
+	_, err = client.GetComputersByColonyID(env.colony1ID, env.colony2PrvKey, TESTHOST, TESTPORT)
 	assert.NotNil(t, err) // Should not work
 
 	server.Shutdown()

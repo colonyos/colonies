@@ -24,6 +24,9 @@ var ServerPort int
 var RootPassword string
 var JSONSpecFile string
 var ID string
+var ColonyPrvKey string
+var ColonyID string
+var ComputerID string
 
 func init() {
 	rootCmd.PersistentFlags().BoolVarP(&Verbose, "verbose", "v", false, "verbose output")
