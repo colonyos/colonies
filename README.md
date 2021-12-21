@@ -42,6 +42,9 @@ $ ./bin/colonies colony register --rootpassword=secret --spec ./examples/colony.
 Note that root password of Colonies server is also required to list all colonies.
 ```
 $ ./bin/colonies colony ls --rootpassword=secret
+```
+
+```json
 [
     {
         "colonyid": "2770116b0d66a71840a4513bec52707c4a26042462b62e0830497724f7d37773",
@@ -73,6 +76,9 @@ $ ./bin/colonies computer register --colonyid 2770116b0d66a71840a4513bec52707c4a
 ### List registered Colony Computers
 ```
 $ ./bin/colonies computer ls --colonyid 2770116b0d66a71840a4513bec52707c4a26042462b62e0830497724f7d37773
+```
+
+```json
 [
     {
         "computerid": "2089d3897e512a4e16cfb99d781cb494044323216ec6a1fffecb4da4312fd389",
@@ -105,7 +111,8 @@ $ ./bin/colonies computer disapprove --colonyid 2770116b0d66a71840a4513bec52707c
 
 ### Submit a process to a Colony 
 First we need to create a process spec file.
-```
+
+```json
 {
     "targetcolonyid": "2770116b0d66a71840a4513bec52707c4a26042462b62e0830497724f7d37773",
     "targetcomputerids": [],
@@ -126,6 +133,9 @@ To submit the process spec to the Colony, type:
 
 ```
 $ ./bin/colonies process submit --id 2089d3897e512a4e16cfb99d781cb494044323216ec6a1fffecb4da4312fd38 --spec ./examples/process_spec.json
+```
+
+```json
 {
     "processid": "817f0353e55ea9fa41ebc6d92622bbba49da5ff521751fb0136f99530e2e1d76",
     "targetcolonyid": "5dd23ec3bf9d643d47eb8486845071dcf0cfcba4362c3a541ea7cfea5174b7d4",
