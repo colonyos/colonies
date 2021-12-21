@@ -245,7 +245,7 @@ func (server *ColoniesServer) handleGetComputerRequest(c *gin.Context) {
 
 	computer, err := server.controller.GetComputerByID(computerID)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 		return
 	}
 

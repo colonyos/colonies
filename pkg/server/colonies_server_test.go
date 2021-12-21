@@ -123,10 +123,10 @@ func TestAddComputer(t *testing.T) {
 	gpus := 1
 
 	computer := core.CreateComputer(computerID, name, colonyID, cpu, cores, mem, gpu, gpus)
-	addedComputer, err := client.AddComputer(computer, colonyPrvKey)
+	addedComputer, err := client.AddComputer(computer, colonyPrvKey, TESTHOST, TESTPORT)
 	assert.Nil(t, err)
 
-	computerFromServer, err := client.GetComputerByID(computerID, colonyID, colonyPrvKey)
+	computerFromServer, err := client.GetComputerByID(computerID, colonyID, colonyPrvKey, TESTHOST, TESTPORT)
 	assert.Nil(t, err)
 	assert.NotNil(t, computerFromServer)
 	assert.Equal(t, computerID, computerFromServer.ID())
@@ -166,7 +166,7 @@ func TestGetComputers(t *testing.T) {
 	gpus := 1
 
 	computer1 := core.CreateComputer(computer1ID, name, colonyID, cpu, cores, mem, gpu, gpus)
-	_, err = client.AddComputer(computer1, colonyPrvKey)
+	_, err = client.AddComputer(computer1, colonyPrvKey, TESTHOST, TESTPORT)
 	assert.Nil(t, err)
 
 	// Create a computer2
@@ -178,10 +178,10 @@ func TestGetComputers(t *testing.T) {
 	name = "test_computer 2"
 
 	computer2 := core.CreateComputer(computer2ID, name, colonyID, cpu, cores, mem, gpu, gpus)
-	_, err = client.AddComputer(computer2, colonyPrvKey)
+	_, err = client.AddComputer(computer2, colonyPrvKey, TESTHOST, TESTPORT)
 	assert.Nil(t, err)
 
-	computers, err := client.GetComputersByColonyID(colonyID, colonyPrvKey)
+	computers, err := client.GetComputersByColonyID(colonyID, colonyPrvKey, TESTHOST, TESTPORT)
 	assert.Nil(t, err)
 	assert.Len(t, computers, 2)
 
@@ -225,7 +225,7 @@ func createTestEnv(t *testing.T, rootPassword string) *clientTestEnv {
 	gpus := 1
 
 	computer := core.CreateComputer(computerID, name, colonyID, cpu, cores, mem, gpu, gpus)
-	_, err = client.AddComputer(computer, colonyPrvKey)
+	_, err = client.AddComputer(computer, colonyPrvKey, TESTHOST, TESTPORT)
 	assert.Nil(t, err)
 
 	return &clientTestEnv{colonyID: colonyID,
@@ -276,21 +276,21 @@ func TestApproveComputer(t *testing.T) {
 	server, done := PrepareTests(t, rootPassword)
 	env := createTestEnv(t, rootPassword)
 
-	computerFromServer, err := client.GetComputerByID(env.computerID, env.colonyID, env.colonyPrvKey)
+	computerFromServer, err := client.GetComputerByID(env.computerID, env.colonyID, env.colonyPrvKey, TESTHOST, TESTPORT)
 	assert.Nil(t, err)
 	assert.False(t, computerFromServer.IsApproved())
 
-	err = client.ApproveComputer(env.computer, env.colonyPrvKey)
+	err = client.ApproveComputer(env.computer, env.colonyPrvKey, TESTHOST, TESTPORT)
 	assert.Nil(t, err)
 
-	computerFromServer, err = client.GetComputerByID(env.computerID, env.colonyID, env.colonyPrvKey)
+	computerFromServer, err = client.GetComputerByID(env.computerID, env.colonyID, env.colonyPrvKey, TESTHOST, TESTPORT)
 	assert.Nil(t, err)
 	assert.True(t, computerFromServer.IsApproved())
 
-	err = client.RejectComputer(env.computer, env.colonyPrvKey)
+	err = client.RejectComputer(env.computer, env.colonyPrvKey, TESTHOST, TESTPORT)
 	assert.Nil(t, err)
 
-	computerFromServer, err = client.GetComputerByID(env.computerID, env.colonyID, env.colonyPrvKey)
+	computerFromServer, err = client.GetComputerByID(env.computerID, env.colonyID, env.colonyPrvKey, TESTHOST, TESTPORT)
 	assert.Nil(t, err)
 	assert.False(t, computerFromServer.IsApproved())
 

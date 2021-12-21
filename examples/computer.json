@@ -1,0 +1,9 @@
+{
+    "name": "my_computer",
+    "cpu": "AMD Ryzen 9 5950X (32) @ 3.400GHz",
+    "cores": 32,
+    "mem": 80326,
+    "gpu": "NVIDIA GeForce RTX 2080 Ti Rev. A",
+    "gpus": 1,
+    "status": 0
+}

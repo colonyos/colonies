@@ -20,7 +20,7 @@ $ colonies database drop --dbhost localhost --dbport 5432 --dbuser postgres --db
 $ colonies server start --rootpassword=secret --port=8080 --tlscert=./cert/cert.pem --tlskey=./cert/key.pem --dbhost localhost --dbport 5432 --dbuser postgres --dbpassword=rFcLGNkgsNtksg6Pgtn9CumL4xXBQ7
 ```
 
-## Guide
+## Using the Colonies CLI tool 
 ### Register a new Colony
 First, create a file named colony.json, and put the following content into it.
 ```
@@ -54,6 +54,48 @@ $ colonies keychain privatekey --id 2770116b0d66a71840a4513bec52707c4a26042462b6
 ```
 
 ### Register a new Colony Computer
+Only the colony owner is allowed to register a new Colony computer. 
 ```
 $ colonies computer register --colonyid 2770116b0d66a71840a4513bec52707c4a26042462b62e0830497724f7d37773 --json computer.json
+4c60e0e108690dc034a3f3c6e369e63e077aa4c9795cf46c531938efc4e67243
+```
+
+The private key for the colony owner is automatically obtained from the keychain. It is also possible to specify the 
+private key as an argument. 
+
+```
+$ colonies computer register --colonyid 2770116b0d66a71840a4513bec52707c4a26042462b62e0830497724f7d37773 --colonyprvkey=4b24941ca1d85fb1ff055e81fad7dba97471e756bebc38e03e657c738f0e1224 --json computer.json
+```
+
+### List registered Colony Computers
+```
+$ colonies computer ls --colonyid 2770116b0d66a71840a4513bec52707c4a26042462b62e0830497724f7d37773
+[
+    {
+        "computerid": "2089d3897e512a4e16cfb99d781cb494044323216ec6a1fffecb4da4312fd389",
+        "name": "my_computer",
+        "colonyid": "2770116b0d66a71840a4513bec52707c4a26042462b62e0830497724f7d37773",
+        "cpu": "AMD Ryzen 9 5950X (32) @ 3.400GHz",
+        "cores": 32,
+        "mem": 80326,
+        "gpu": "NVIDIA GeForce RTX 2080 Ti Rev. A",
+        "gpus": 1,
+        "status": 0
+    }
+]
+```
+
+The private key for the colony owner is automatically obtained from the keychain. It is also possible to specify the 
+private key as an argument, as in the example above. 
+
+### Approve Colony Computers 
+A Colony Computer needs to be approved by the Colony owner before it can execute processes. As before, the private key is automatically fetched from the keychain.
+```
+$ colonies computer approve --colonyid 2770116b0d66a71840a4513bec52707c4a26042462b62e0830497724f7d37773 --computerid 2089d3897e512a4e16cfb99d781cb494044323216ec6a1fffecb4da4312fd389
+```
+
+### Disapprove Colony Computers 
+Similarly, a Colony Computer can be disapproved with the "disapprove" command.
+```
+$ colonies computer disapprove --colonyid 2770116b0d66a71840a4513bec52707c4a26042462b62e0830497724f7d37773 --computerid 2089d3897e512a4e16cfb99d781cb494044323216ec6a1fffecb4da4312fd389
 ```
