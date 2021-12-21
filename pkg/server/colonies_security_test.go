@@ -47,7 +47,7 @@ func setupTestEnvironment(t *testing.T) (*testEnv, *ColoniesServer, chan bool) {
 	colony1ID, err := security.GenerateID(colony1PrvKey)
 	assert.Nil(t, err)
 	colony1 := core.CreateColony(colony1ID, "test_colony_name")
-	_, err = client.AddColony(colony1, apiKey)
+	_, err = client.AddColony(colony1, apiKey, TESTHOST, TESTPORT)
 
 	// Create a colony
 	colony2PrvKey, err := security.GeneratePrivateKey()
@@ -55,7 +55,7 @@ func setupTestEnvironment(t *testing.T) (*testEnv, *ColoniesServer, chan bool) {
 	colony2ID, err := security.GenerateID(colony2PrvKey)
 	assert.Nil(t, err)
 	colony2 := core.CreateColony(colony2ID, "test_colony_name")
-	_, err = client.AddColony(colony2, apiKey)
+	_, err = client.AddColony(colony2, apiKey, TESTHOST, TESTPORT)
 
 	// Create a computer
 	computer1, computer1ID, computer1PrvKey := generateComputer(t, colony1ID)
@@ -84,10 +84,10 @@ func TestAddColonySecurity(t *testing.T) {
 
 	colony := core.CreateColony(colonyID, "test_colony_name")
 
-	_, err = client.AddColony(colony, "invalid_api_key")
+	_, err = client.AddColony(colony, "invalid_api_key", TESTHOST, TESTPORT)
 	assert.NotNilf(t, err, "it should be possible to create a colony without correct api key")
 
-	_, err = client.AddColony(colony, apiKey)
+	_, err = client.AddColony(colony, apiKey, TESTHOST, TESTPORT)
 	assert.Nil(t, err)
 
 	server.Shutdown()
@@ -102,11 +102,11 @@ func TestGetColoniesSecurity(t *testing.T) {
 	//   computer2 is member of colony2
 
 	// Now, try to get colonies info using an invalid api
-	_, err := client.GetColonies("invalid-api-key")
+	_, err := client.GetColonies("invalid-api-key", TESTHOST, TESTPORT)
 	assert.NotNil(t, err) // Should not work
 
 	// Now, try to get colonies info using an invalid api
-	_, err = client.GetColonies("testapikey")
+	_, err = client.GetColonies("testapikey", TESTHOST, TESTPORT)
 	assert.Nil(t, err) // Should work
 
 	server.Shutdown()

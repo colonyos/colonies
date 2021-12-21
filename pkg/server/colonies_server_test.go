@@ -44,7 +44,7 @@ func TestAddColony(t *testing.T) {
 	assert.Nil(t, err)
 
 	colony := core.CreateColony(colonyID, "test_colony_name")
-	colonyAdded, err := client.AddColony(colony, rootPassword)
+	colonyAdded, err := client.AddColony(colony, rootPassword, TESTHOST, TESTPORT)
 	assert.Nil(t, err)
 
 	colonyFromServer, err := client.GetColonyByID(colonyID, prvKey)
@@ -67,7 +67,7 @@ func TestGetColonies(t *testing.T) {
 	colonyID1, err := security.GenerateID(prvKey1)
 	assert.Nil(t, err)
 	colony1 := core.CreateColony(colonyID1, "test_colony_name")
-	_, err = client.AddColony(colony1, rootPassword)
+	_, err = client.AddColony(colony1, rootPassword, TESTHOST, TESTPORT)
 	assert.Nil(t, err)
 
 	prvKey2, err := security.GeneratePrivateKey()
@@ -75,10 +75,10 @@ func TestGetColonies(t *testing.T) {
 	colonyID2, err := security.GenerateID(prvKey2)
 	assert.Nil(t, err)
 	colony2 := core.CreateColony(colonyID2, "test_colony_name")
-	_, err = client.AddColony(colony2, rootPassword)
+	_, err = client.AddColony(colony2, rootPassword, TESTHOST, TESTPORT)
 	assert.Nil(t, err)
 
-	coloniesFromServer, err := client.GetColonies(rootPassword)
+	coloniesFromServer, err := client.GetColonies(rootPassword, TESTHOST, TESTPORT)
 	assert.Nil(t, err)
 
 	counter := 0
@@ -106,7 +106,7 @@ func TestAddComputer(t *testing.T) {
 
 	colony := core.CreateColony(colonyID, "test_colony_name")
 
-	_, err = client.AddColony(colony, rootPassword)
+	_, err = client.AddColony(colony, rootPassword, TESTHOST, TESTPORT)
 	assert.Nil(t, err)
 
 	// Create a computer
@@ -149,7 +149,7 @@ func TestGetComputers(t *testing.T) {
 
 	colony := core.CreateColony(colonyID, "test_colony_name")
 
-	_, err = client.AddColony(colony, rootPassword)
+	_, err = client.AddColony(colony, rootPassword, TESTHOST, TESTPORT)
 	assert.Nil(t, err)
 
 	// Create a computer 1
@@ -208,7 +208,7 @@ func createTestEnv(t *testing.T, rootPassword string) *clientTestEnv {
 
 	colony := core.CreateColony(colonyID, "test_colony_name")
 
-	_, err = client.AddColony(colony, rootPassword)
+	_, err = client.AddColony(colony, rootPassword, TESTHOST, TESTPORT)
 	assert.Nil(t, err)
 
 	// Create a computer

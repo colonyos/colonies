@@ -13,9 +13,9 @@ push-image:
 	docker push $(IMAGE)
 
 test:
-	cd pkg/core; grc go test -v
-	cd pkg/database/postgresql; grc go test -v
-	cd pkg/crypto; grc go test -v
-	cd pkg/security; grc go test -v
-	cd pkg/server; grc go test -v
-	cd pkg/scheduler/basic; grc go test -v
+	@cd pkg/core; grc go test -v
+	@cd pkg/database/postgresql; grc go test -v
+	@cd pkg/crypto; grc go test -v
+	@cd pkg/security; grc go test -v
+	@cd pkg/server; grc go test -v
+	@cd pkg/scheduler/basic; grc go test -v
