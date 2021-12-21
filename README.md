@@ -170,6 +170,9 @@ The first waiting processes has highest priority.
 
 ```
 $ ./bin/colonies process psw --computerid d7f4e767f4efd1b78c7f129c62610b622168b4f69400bcc3bec7b72eeeb4e7bc --colonyid 5dd23ec3bf9d643d47eb8486845071dcf0cfcba4362c3a541ea7cfea5174b7d4
+```
+
+```json
 [
     {
         "processid": "d9f987677edd9a88ef95c48ceb1ffc76008e4050a8e95cba8212e65599c5b735",
