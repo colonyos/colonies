@@ -105,7 +105,7 @@ func (attribute *Attribute) ToJSON() (string, error) {
 		Key:           attribute.key,
 		Value:         attribute.value}
 
-	jsonString, err := json.Marshal(attributeJSON)
+	jsonString, err := json.MarshalIndent(attributeJSON, "", "    ")
 	if err != nil {
 		return "", err
 	}

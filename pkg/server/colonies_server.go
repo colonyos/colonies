@@ -69,7 +69,7 @@ func (server *ColoniesServer) setupRoutes() {
 	server.ginHandler.GET("/colonies/:colonyid/computers/:computerid", server.handleGetComputerRequest)
 	server.ginHandler.PUT("/colonies/:colonyid/computers/:computerid/approve", server.handleApproveComputerRequest)
 	server.ginHandler.PUT("/colonies/:colonyid/computers/:computerid/reject", server.handleRejectComputerRequest)
-	server.ginHandler.POST("/colonies/:colonyid/processes", server.handleAddProcessRequest)
+	server.ginHandler.POST("/colonies/:colonyid/processes", server.handlePublishProcessRequest)
 	server.ginHandler.GET("/colonies/:colonyid/processes", server.handleGetProcessesRequest)
 	server.ginHandler.GET("/colonies/:colonyid/processes/:processid", server.handleGetProcessRequest)
 	server.ginHandler.PUT("/colonies/:colonyid/processes/:processid/finish", server.handleFinishProcessRequest)
@@ -312,7 +312,7 @@ func (server *ColoniesServer) handleRejectComputerRequest(c *gin.Context) {
 	c.JSON(http.StatusOK, "")
 }
 
-func (server *ColoniesServer) handleAddProcessRequest(c *gin.Context) {
+func (server *ColoniesServer) handlePublishProcessRequest(c *gin.Context) {
 	colonyID := c.Param("colonyid")
 
 	err := security.RequireColonyOwnerOrMember(c.GetHeader("Id"), colonyID, c.GetHeader("Digest"), c.GetHeader("Signature"), server.ownership)
@@ -375,12 +375,12 @@ func (server *ColoniesServer) handleGetProcessesRequest(c *gin.Context) {
 		return
 	}
 
-	err = security.VerifyComputerMembership(computerID, colonyID, server.ownership)
-	if err != nil {
-		logging.Log().Warning(err)
-		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
-		return
-	}
+	// err = security.VerifyComputerMembership(computerID, colonyID, server.ownership)
+	// if err != nil {
+	// 	logging.Log().Warning(err)
+	// 	c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
+	// 	return
+	// }
 
 	if stateStr == "" {
 		errorMsg := "State must be specified"
@@ -424,11 +424,48 @@ func (server *ColoniesServer) handleGetProcessesRequest(c *gin.Context) {
 		}
 		c.JSON(http.StatusOK, jsonString)
 	case core.RUNNING:
-		fmt.Println("running")
+		processes, err := server.controller.FindRunningProcesses(colonyID, count)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+		jsonString, err := core.ConvertProcessArrayToJSON(processes)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, jsonString)
 	case core.SUCCESS:
+		processes, err := server.controller.FindSuccessfulProcesses(colonyID, count)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+		jsonString, err := core.ConvertProcessArrayToJSON(processes)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, jsonString)
 		fmt.Println("success")
 	case core.FAILED:
-		fmt.Println("failed")
+		processes, err := server.controller.FindFailedProcesses(colonyID, count)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+		jsonString, err := core.ConvertProcessArrayToJSON(processes)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, jsonString)
+	default:
+		err := errors.New("Invalid state when calling handleGetProcessesRequest")
+		logging.Log().Warning(err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+
 	}
 }
 

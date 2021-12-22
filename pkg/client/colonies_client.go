@@ -270,7 +270,7 @@ func GetComputerByID(computerID string, colonyID string, prvKey string, host str
 	return computer, nil
 }
 
-func SubmitProcessSpec(processSpec *core.ProcessSpec, prvKey string, host string, port int) (*core.Process, error) {
+func PublishProcessSpec(processSpec *core.ProcessSpec, prvKey string, host string, port int) (*core.Process, error) {
 	client := client()
 	digest, sig, id, err := security.GenerateCredentials(prvKey)
 	if err != nil {
@@ -421,6 +421,99 @@ func GetWaitingProcesses(computerID string, colonyID string, count int, prvKey s
 		SetHeader("ComputerId", computerID).
 		SetHeader("Count", strconv.Itoa(count)).
 		SetHeader("State", strconv.Itoa(core.WAITING)).
+		Get("https://localhost:8080/colonies/" + colonyID + "/processes")
+
+	unquotedResp, err := strconv.Unquote(string(resp.Body()))
+	if err != nil {
+		return processes, err
+	}
+
+	err = checkStatusCode(resp.StatusCode(), unquotedResp)
+	if err != nil {
+		return processes, err
+	}
+
+	processes, err = core.ConvertJSONToProcessArray(unquotedResp)
+
+	return processes, nil
+}
+
+func GetRunningProcesses(colonyID string, count int, prvKey string) ([]*core.Process, error) { // TODO: unittest
+	var processes []*core.Process
+	client := client()
+	digest, sig, id, err := security.GenerateCredentials(prvKey)
+	if err != nil {
+		return processes, err
+	}
+
+	resp, err := client.R().
+		SetHeader("Id", id).
+		SetHeader("Digest", digest).
+		SetHeader("Signature", sig).
+		SetHeader("Count", strconv.Itoa(count)).
+		SetHeader("State", strconv.Itoa(core.RUNNING)).
+		Get("https://localhost:8080/colonies/" + colonyID + "/processes")
+
+	unquotedResp, err := strconv.Unquote(string(resp.Body()))
+	if err != nil {
+		return processes, err
+	}
+
+	err = checkStatusCode(resp.StatusCode(), unquotedResp)
+	if err != nil {
+		return processes, err
+	}
+
+	processes, err = core.ConvertJSONToProcessArray(unquotedResp)
+
+	return processes, nil
+}
+
+func GetSuccessfulProcesses(colonyID string, count int, prvKey string) ([]*core.Process, error) { // TODO: unittest
+	var processes []*core.Process
+	client := client()
+	digest, sig, id, err := security.GenerateCredentials(prvKey)
+	if err != nil {
+		return processes, err
+	}
+
+	resp, err := client.R().
+		SetHeader("Id", id).
+		SetHeader("Digest", digest).
+		SetHeader("Signature", sig).
+		SetHeader("Count", strconv.Itoa(count)).
+		SetHeader("State", strconv.Itoa(core.SUCCESS)).
+		Get("https://localhost:8080/colonies/" + colonyID + "/processes")
+
+	unquotedResp, err := strconv.Unquote(string(resp.Body()))
+	if err != nil {
+		return processes, err
+	}
+
+	err = checkStatusCode(resp.StatusCode(), unquotedResp)
+	if err != nil {
+		return processes, err
+	}
+
+	processes, err = core.ConvertJSONToProcessArray(unquotedResp)
+
+	return processes, nil
+}
+
+func GetFailedProcesses(colonyID string, count int, prvKey string) ([]*core.Process, error) { // TODO: unittest
+	var processes []*core.Process
+	client := client()
+	digest, sig, id, err := security.GenerateCredentials(prvKey)
+	if err != nil {
+		return processes, err
+	}
+
+	resp, err := client.R().
+		SetHeader("Id", id).
+		SetHeader("Digest", digest).
+		SetHeader("Signature", sig).
+		SetHeader("Count", strconv.Itoa(count)).
+		SetHeader("State", strconv.Itoa(core.FAILED)).
 		Get("https://localhost:8080/colonies/" + colonyID + "/processes")
 
 	unquotedResp, err := strconv.Unquote(string(resp.Body()))
