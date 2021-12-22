@@ -30,6 +30,10 @@ var ComputerID string
 var ComputerPrvKey string
 var ColonyPrvKey string
 var ColonyID string
+var ProcessID string
+var Key string
+var Value string
+var AttributeID string
 
 func init() {
 	rootCmd.PersistentFlags().BoolVarP(&Verbose, "verbose", "v", false, "verbose output")
