@@ -1,6 +1,8 @@
 ## What is Colonies? 
 Colonies is a generic framework for implementing distributed applications and systems. It can for example be used for implementing on Edge Computing Operating System.
 
+![Colonies Architecture](doc/ColoniesArch.png?raw=true "Colonies Architecture")
+
 ## Getting started
 ## Installation
 ### Start a TimescaleDB server
