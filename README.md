@@ -232,7 +232,7 @@ $ ./bin/colonies process psw --runtimeid d7f4e767f4efd1b78c7f129c62610b622168b4f
     },
 ```
 
-### Assign a process to a Colony 
+### Submit a process to a Colony 
 ```
 $ ./bin/colonies process assign --colonyid 5dd23ec3bf9d643d47eb8486845071dcf0cfcba4362c3a541ea7cfea5174b7d4 --runtimeid 5dd23ec3bf9d643d47eb8486845071dcf0cfcba4362c3a541ea7cfea5174b7d4
 ```
