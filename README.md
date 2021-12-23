@@ -1,7 +1,13 @@
 ## What is Colonies? 
-Colonies is a generic framework for implementing distributed applications and systems. It can for example be used for implementing on Edge Computing Operating System.
+Colonies is a generic framework for implementing next-generation distributed applications and systems. It can for example be used as a building block for implementing an *Edge Computing Operating System* or a "Grid Computing Engine". 
+
+A **Colony** is a collection of (geographically) distributed computers that can be controlled using a single API. A **Colony Runtime** receives intructions from the **Colonies Server** and is responsible for executing processes. The Colonies server works as a mediator, trying to match submitted processes specification to suitable runtimes. It also keep tracks of the history of all process execution and can assign a process to another runtime, for example if it is not completed in time. 
+
+A Colony may consists of many different kinds of Colony Runtimes, e.g. a **Kubernetes Colony Runtime**, **Docker Colony Runtime**, **AWS Colony Runtime, or a **Slurm Singulairty Colony Runtime**. A Colony Runtime can also reside in IoT devices or smart phones, thus making it possible to deploy and manage applications that run across devices and servers. In this way, Colonies can be used to implement a "Cloud-of-Cloud" platform that combines many execution environments into a new virtual computing environment that can be controlled using an unified API. 
 
 ![Colonies Architecture](doc/ColoniesArch.png?raw=true "Colonies Architecture")
+
+A core concept of Colonies is security and crypto identity management. Each Colony and Colony Runtime is assigned a *Digital Identity* that is verified by the Colonies server. The Colonies Server can be seen as a certificate registry and maintains a list of valid identities and rules how different runtimes can interact with each other. In this way, different runtimes can trust each other even though they reside in different environments across providers. The Colony Private key serves as a *"one ring to rule them all"* and gives full controll to the Colony owner.    
 
 ## Getting started
 ## Installation
@@ -55,16 +61,16 @@ $ ./bin/colonies colony ls --rootpassword=secret
 ]
 ```
 
-### Get the private key of a Colony (or a Computer)
+### Get the private key of a Colony (or a Colony Runtime)
 ```
 $ ./bin/colonies keychain privatekey --id 2770116b0d66a71840a4513bec52707c4a26042462b62e0830497724f7d37773 
 4b24941ca1d85fb1ff055e81fad7dba97471e756bebc38e03e657c738f0e1224
 ```
 
-### Register a new Colony Computer
-Only the colony owner is allowed to register a new Colony computer. 
+### Register a new Colony Runtime 
+Only the colony owner is allowed to register a new Colony Runtimes. 
 ```
-$ ./bin/colonies computer register --colonyid 2770116b0d66a71840a4513bec52707c4a26042462b62e0830497724f7d37773 --spec ./examples/computer.json
+$ ./bin/colonies runtime register --colonyid 2770116b0d66a71840a4513bec52707c4a26042462b62e0830497724f7d37773 --spec ./examples/runtime.json
 4c60e0e108690dc034a3f3c6e369e63e077aa4c9795cf46c531938efc4e67243
 ```
 
@@ -72,19 +78,20 @@ The private key for the colony owner is automatically obtained from the keychain
 private key as an argument. 
 
 ```
-$ ./bin/colonies computer register --colonyid 2770116b0d66a71840a4513bec52707c4a26042462b62e0830497724f7d37773 --colonyprvkey=4b24941ca1d85fb1ff055e81fad7dba97471e756bebc38e03e657c738f0e1224 --spec ./examples/computer.json
+$ ./bin/colonies runtime register --colonyid 2770116b0d66a71840a4513bec52707c4a26042462b62e0830497724f7d37773 --colonyprvkey=4b24941ca1d85fb1ff055e81fad7dba97471e756bebc38e03e657c738f0e1224 --spec ./examples/runtime.json
 ```
 
-### List registered Colony Computers
+### List registered Colony Runtimes
 ```
-$ ./bin/colonies computer ls --colonyid 2770116b0d66a71840a4513bec52707c4a26042462b62e0830497724f7d37773
+$ ./bin/colonies runtimes ls --colonyid 2770116b0d66a71840a4513bec52707c4a26042462b62e0830497724f7d37773
 ```
 
 ```json
 [
     {
-        "computerid": "2089d3897e512a4e16cfb99d781cb494044323216ec6a1fffecb4da4312fd389",
-        "name": "my_computer",
+        "runtimeid": "2089d3897e512a4e16cfb99d781cb494044323216ec6a1fffecb4da4312fd389",
+        "name": "my_runtime",
+        "runtimetype": "test",
         "colonyid": "2770116b0d66a71840a4513bec52707c4a26042462b62e0830497724f7d37773",
         "cpu": "AMD Ryzen 9 5950X (32) @ 3.400GHz",
         "cores": 32,
@@ -99,26 +106,26 @@ $ ./bin/colonies computer ls --colonyid 2770116b0d66a71840a4513bec52707c4a260424
 The private key for the colony owner is automatically obtained from the keychain. It is also possible to specify the 
 private key as an argument, as in the example above. 
 
-### Approve Colony Computers 
-A Colony Computer needs to be approved by the Colony owner before it can execute processes. As before, the private key is automatically fetched from the keychain.
+### Approve a Colony Runtime 
+A Colony runtime needs to be approved by the Colony owner before it can execute processes. As before, the private key is automatically fetched from the keychain.
 ```
-$ ./bin/colonies computer approve --colonyid 2770116b0d66a71840a4513bec52707c4a26042462b62e0830497724f7d37773 --computerid 2089d3897e512a4e16cfb99d781cb494044323216ec6a1fffecb4da4312fd389
-```
-
-### Disapprove Colony Computers 
-Similarly, a Colony Computer can be disapproved with the "disapprove" command.
-```
-$ ./bin/colonies computer disapprove --colonyid 2770116b0d66a71840a4513bec52707c4a26042462b62e0830497724f7d37773 --computerid 2089d3897e512a4e16cfb99d781cb494044323216ec6a1fffecb4da4312fd389
+$ ./bin/colonies runtime approve --colonyid 2770116b0d66a71840a4513bec52707c4a26042462b62e0830497724f7d37773 --runtimeid 2089d3897e512a4e16cfb99d781cb494044323216ec6a1fffecb4da4312fd389
 ```
 
-### Submit a process to a Colony 
+### Disapprove a Colony Runtime 
+Similarly, a Colony Runtime can be disapproved with the "disapprove" command.
+```
+$ ./bin/colonies runtime disapprove --colonyid 2770116b0d66a71840a4513bec52707c4a26042462b62e0830497724f7d37773 --runtimeid 2089d3897e512a4e16cfb99d781cb494044323216ec6a1fffecb4da4312fd389
+```
+
+### Submit a process to a Colony
 First we need to create a process spec file.
 
 ```json
 {
     "targetcolonyid": "2770116b0d66a71840a4513bec52707c4a26042462b62e0830497724f7d37773",
-    "targetcomputerids": [],
-    "computertype": "test_computer_type",
+    "targetruntimesids": [],
+    "runtimetype": "test",
     "timeout": -1,
     "maxretries": 0,
     "mem": 1000,
@@ -141,11 +148,11 @@ $ ./bin/colonies process submit --id 2089d3897e512a4e16cfb99d781cb494044323216ec
 {
     "processid": "817f0353e55ea9fa41ebc6d92622bbba49da5ff521751fb0136f99530e2e1d76",
     "targetcolonyid": "5dd23ec3bf9d643d47eb8486845071dcf0cfcba4362c3a541ea7cfea5174b7d4",
-    "targetcomputerids": [],
-    "assignedcomputerid": "",
+    "targetruntimeids": [],
+    "assignedruntimeid": "",
     "status": 0,
     "isassigned": false,
-    "computertype": "test_computer_type",
+    "runtimetype": "test",
     "submissiontime": "2021-12-21T21:04:07.807378Z",
     "starttime": "0001-01-01T00:00:00Z",
     "endtime": "0001-01-01T00:00:00Z",
@@ -177,11 +184,11 @@ $ ./bin/colonies process submit --id 2089d3897e512a4e16cfb99d781cb494044323216ec
 } 
 ```
 
-### List all waiting/submitted processes for a certain computer 
+### List all waiting/submitted processes
 The first waiting processes has highest priority.
 
 ```
-$ ./bin/colonies process psw --computerid d7f4e767f4efd1b78c7f129c62610b622168b4f69400bcc3bec7b72eeeb4e7bc --colonyid 5dd23ec3bf9d643d47eb8486845071dcf0cfcba4362c3a541ea7cfea5174b7d4
+$ ./bin/colonies process psw --runtimeid d7f4e767f4efd1b78c7f129c62610b622168b4f69400bcc3bec7b72eeeb4e7bc --colonyid 5dd23ec3bf9d643d47eb8486845071dcf0cfcba4362c3a541ea7cfea5174b7d4
 ```
 
 ```json
@@ -189,11 +196,11 @@ $ ./bin/colonies process psw --computerid d7f4e767f4efd1b78c7f129c62610b622168b4
     {
         "processid": "d9f987677edd9a88ef95c48ceb1ffc76008e4050a8e95cba8212e65599c5b735",
         "targetcolonyid": "5dd23ec3bf9d643d47eb8486845071dcf0cfcba4362c3a541ea7cfea5174b7d4",
-        "targetcomputerids": [],
-        "assignedcomputerid": "",
+        "targetruntimeids": [],
+        "assignedruntimeid": "",
         "status": 0,
         "isassigned": false,
-        "computertype": "test_computer_type",
+        "runtimetype": "test",
         "submissiontime": "2021-12-21T20:59:23.563125Z",
         "starttime": "0001-01-01T00:00:00Z",
         "endtime": "0001-01-01T00:00:00Z",
@@ -225,20 +232,20 @@ $ ./bin/colonies process psw --computerid d7f4e767f4efd1b78c7f129c62610b622168b4
     },
 ```
 
-### Assign a process to a computer 
+### Assign a process to a Colony 
 ```
-$ ./bin/colonies process assign --colonyid 5dd23ec3bf9d643d47eb8486845071dcf0cfcba4362c3a541ea7cfea5174b7d4 --computerid 5dd23ec3bf9d643d47eb8486845071dcf0cfcba4362c3a541ea7cfea5174b7d4
+$ ./bin/colonies process assign --colonyid 5dd23ec3bf9d643d47eb8486845071dcf0cfcba4362c3a541ea7cfea5174b7d4 --runtimeid 5dd23ec3bf9d643d47eb8486845071dcf0cfcba4362c3a541ea7cfea5174b7d4
 ```
 
 ```json
 {
     "processid": "a5620e355153765ed52c4068aff8d17bf617e4d7d3167ded3ccd3fff157a4177",
     "targetcolonyid": "7c7b3582fd05fda2e39ac70c7c6a214be735090eeb2d8db636a4ad4424dcca82",
-    "targetcomputerids": [],
-    "assignedcomputerid": "163a086a2dcb21de28144379cfa3fb0bd4a64ae06956ee816c2a52b999b00c95",
+    "targetcruntimeids": [],
+    "assignedruntimeid": "163a086a2dcb21de28144379cfa3fb0bd4a64ae06956ee816c2a52b999b00c95",
     "status": 1,
     "isassigned": true,
-    "computertype": "test_computer_type",
+    "runtimetype": "test",
     "submissiontime": "2021-12-22T08:23:44.158115Z",
     "starttime": "2021-12-22T08:23:45.369808389+01:00",
     "endtime": "0001-01-01T00:00:00Z",
@@ -271,7 +278,6 @@ $ ./bin/colonies process assign --colonyid 5dd23ec3bf9d643d47eb8486845071dcf0cfc
 ```
 
 ### List all running processes
-The id flag can either be Colony owner or a Computer id.
 ```
 $ ./bin/colonies process ps --colonyid 5dd23ec3bf9d643d47eb8486845071dcf0cfcba4362c3a541ea7cfea5174b7d4 --id 5dd23ec3bf9d643d47eb8486845071dcf0cfcba4362c3a541ea7cfea5174b7d4
 ```
@@ -281,11 +287,11 @@ $ ./bin/colonies process ps --colonyid 5dd23ec3bf9d643d47eb8486845071dcf0cfcba43
     {
         "processid": "8c3016c897be1f1c0cf9976b98ffa119076a92c8f8f4a8087d912d354e878a10",
         "targetcolonyid": "7c7b3582fd05fda2e39ac70c7c6a214be735090eeb2d8db636a4ad4424dcca82",
-        "targetcomputerids": [],
-        "assignedcomputerid": "163a086a2dcb21de28144379cfa3fb0bd4a64ae06956ee816c2a52b999b00c95",
+        "targetruntimeids": [],
+        "assignedruntimeid": "163a086a2dcb21de28144379cfa3fb0bd4a64ae06956ee816c2a52b999b00c95",
         "status": 1,
         "isassigned": true,
-        "computertype": "test_computer_type",
+        "runtimetype": "test",
         "submissiontime": "2021-12-22T08:13:34.135203Z",
         "starttime": "2021-12-22T08:15:15.564647Z",
         "endtime": "0001-01-01T00:00:00Z",
@@ -318,14 +324,12 @@ $ ./bin/colonies process ps --colonyid 5dd23ec3bf9d643d47eb8486845071dcf0cfcba43
 ```
 
 ### List all successful processes
-The id flag can either be Colony owner or a Computer id.
 ```
-$ ./bin/colonies process pss --colonyid 5dd23ec3bf9d643d47eb8486845071dcf0cfcba4362c3a541ea7cfea5174b7d4 --id 5dd23ec3bf9d643d47eb8486845071dcf0cfcba4362c3a541ea7cfea5174b7d4
+$ ./bin/colonies process pss --colonyid 5dd23ec3bf9d643d47eb8486845071dcf0cfcba4362c3a541ea7cfea5174b7d4 --runtimeid 5dd23ec3bf9d643d47eb8486845071dcf0cfcba4362c3a541ea7cfea5174b7d4
 No successful processs found
 ```
 
 ### List all failed processes
-The id flag can either be Colony owner or a Computer id.
 ```
 $ ./bin/colonies process psf --colonyid 5dd23ec3bf9d643d47eb8486845071dcf0cfcba4362c3a541ea7cfea5174b7d4 --id 5dd23ec3bf9d643d47eb8486845071dcf0cfcba4362c3a541ea7cfea5174b7d4
 No failed processs found
@@ -340,11 +344,11 @@ No failed processs found
 {
     "processid": "b5b1b347888414da99c971d9266640429a2ee6d94e89bf83ecac89dd4d3438df",
     "targetcolonyid": "7c7b3582fd05fda2e39ac70c7c6a214be735090eeb2d8db636a4ad4424dcca82",
-    "targetcomputerids": [],
-    "assignedcomputerid": "163a086a2dcb21de28144379cfa3fb0bd4a64ae06956ee816c2a52b999b00c95",
+    "targetruntimeids": [],
+    "assignedruntimeid": "163a086a2dcb21de28144379cfa3fb0bd4a64ae06956ee816c2a52b999b00c95",
     "status": 1,
     "isassigned": true,
-    "computertype": "test_computer_type",
+    "runtimetype": "test_runtime_type",
     "submissiontime": "2021-12-22T08:22:31.505733Z",
     "starttime": "2021-12-22T08:22:33.18657Z",
     "endtime": "0001-01-01T00:00:00Z",
@@ -379,7 +383,7 @@ No failed processs found
 
 ### Add attribute to a running process 
 ```
-./bin/colonies attribute add --key test_xcdd --value sdsdsdd --colonyid 7c7b3582fd05fda2e39ac70c7c6a214be735090eeb2d8db636a4ad4424dcca82 --computerid 163a086a2dcb21de28144379cfa3fb0bd4a64ae06956ee816c2a52b999b00c95 --processid a5620e355153765ed52c4068aff8d17bf617e4d7d3167ded3ccd3fff157a4177
+./bin/colonies attribute add --key test_xcdd --value sdsdsdd --colonyid 7c7b3582fd05fda2e39ac70c7c6a214be735090eeb2d8db636a4ad4424dcca82 --runtimeid 163a086a2dcb21de28144379cfa3fb0bd4a64ae06956ee816c2a52b999b00c95 --processid a5620e355153765ed52c4068aff8d17bf617e4d7d3167ded3ccd3fff157a4177
 ```
 
 ```json
@@ -409,13 +413,13 @@ No failed processs found
 
 ### Mark a process as successful
 ```
-./bin/colonies process successful --colonyid 7c7b3582fd05fda2e39ac70c7c6a214be735090eeb2d8db636a4ad4424dcca82 --processid a5620e355153765ed52c4068aff8d17bf617e4d7d3167ded3ccd3fff157a4177 --computerid 163a086a2dcb21de28144379cfa3fb0bd4a64ae06956ee816c2a52b999b00c95
+./bin/colonies process successful --colonyid 7c7b3582fd05fda2e39ac70c7c6a214be735090eeb2d8db636a4ad4424dcca82 --processid a5620e355153765ed52c4068aff8d17bf617e4d7d3167ded3ccd3fff157a4177 --runtimeid 163a086a2dcb21de28144379cfa3fb0bd4a64ae06956ee816c2a52b999b00c95
 Process marked as successful
 ```
 
 ### Mark a process as failed 
 ```
-./bin/colonies process failed --colonyid 7c7b3582fd05fda2e39ac70c7c6a214be735090eeb2d8db636a4ad4424dcca82 --processid a5620e355153765ed52c4068aff8d17bf617e4d7d3167ded3ccd3fff157a4177 --computerid 163a086a2dcb21de28144379cfa3fb0bd4a64ae06956ee816c2a52b999b00c95
+./bin/colonies process failed --colonyid 7c7b3582fd05fda2e39ac70c7c6a214be735090eeb2d8db636a4ad4424dcca82 --processid a5620e355153765ed52c4068aff8d17bf617e4d7d3167ded3ccd3fff157a4177 --runtimeid 163a086a2dcb21de28144379cfa3fb0bd4a64ae06956ee816c2a52b999b00c95
 Process marked as successful
 ```
 
