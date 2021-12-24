@@ -18,18 +18,18 @@ func TestCreateComputer(t *testing.T) {
 
 	computer := CreateComputer(id, name, colonyID, cpu, cores, mem, gpu, gpus)
 
-	assert.Equal(t, PENDING, computer.Status())
+	assert.Equal(t, PENDING, computer.Status)
 	assert.True(t, computer.IsPending())
 	assert.False(t, computer.IsApproved())
 	assert.False(t, computer.IsRejected())
-	assert.Equal(t, id, computer.ID())
-	assert.Equal(t, name, computer.Name())
-	assert.Equal(t, colonyID, computer.ColonyID())
-	assert.Equal(t, cpu, computer.CPU())
-	assert.Equal(t, cores, computer.Cores())
-	assert.Equal(t, mem, computer.Mem())
-	assert.Equal(t, gpu, computer.GPU())
-	assert.Equal(t, gpus, computer.GPUs())
+	assert.Equal(t, id, computer.ID)
+	assert.Equal(t, name, computer.Name)
+	assert.Equal(t, colonyID, computer.ColonyID)
+	assert.Equal(t, cpu, computer.CPU)
+	assert.Equal(t, cores, computer.Cores)
+	assert.Equal(t, mem, computer.Mem)
+	assert.Equal(t, gpu, computer.GPU)
+	assert.Equal(t, gpus, computer.GPUs)
 }
 
 func TestComputerToJSON(t *testing.T) {
@@ -41,15 +41,15 @@ func TestComputerToJSON(t *testing.T) {
 	computer2, err := ConvertJSONToComputer(jsonString)
 	assert.Nil(t, err)
 
-	assert.Equal(t, computer.ID(), computer2.ID())
-	assert.Equal(t, computer.Name(), computer2.Name())
-	assert.Equal(t, computer.ColonyID(), computer2.ColonyID())
-	assert.Equal(t, computer.CPU(), computer2.CPU())
-	assert.Equal(t, computer.Cores(), computer2.Cores())
-	assert.Equal(t, computer.Mem(), computer2.Mem())
-	assert.Equal(t, computer.GPU(), computer2.GPU())
-	assert.Equal(t, computer.GPUs(), computer2.GPUs())
-	assert.Equal(t, computer.Status(), computer2.Status())
+	assert.Equal(t, computer.ID, computer2.ID)
+	assert.Equal(t, computer.Name, computer2.Name)
+	assert.Equal(t, computer.ColonyID, computer2.ColonyID)
+	assert.Equal(t, computer.CPU, computer2.CPU)
+	assert.Equal(t, computer.Cores, computer2.Cores)
+	assert.Equal(t, computer.Mem, computer2.Mem)
+	assert.Equal(t, computer.GPU, computer2.GPU)
+	assert.Equal(t, computer.GPUs, computer2.GPUs)
+	assert.Equal(t, computer.Status, computer2.Status)
 }
 
 func TestComputerToJSONArray(t *testing.T) {
@@ -67,7 +67,7 @@ func TestComputerToJSONArray(t *testing.T) {
 	counter := 0
 	for _, computer := range computers {
 		for _, computer2 := range computers2 {
-			if computer.ID() == computer2.ID() {
+			if computer.ID == computer2.ID {
 				counter++
 			}
 		}

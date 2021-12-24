@@ -4,45 +4,30 @@ import (
 	"encoding/json"
 )
 
-type FailureJSON struct {
+type Failure struct {
 	Status  int    `json:"status"`
 	Message string `json:"message"`
 }
 
-type Failure struct {
-	status  int
-	message string
-}
-
 func CreateFailure(status int, message string) *Failure {
-	return &Failure{status: status, message: message}
+	return &Failure{Status: status, Message: message}
 }
 
 func ConvertJSONToFailure(jsonString string) (*Failure, error) {
-	var failureJSON FailureJSON
-	err := json.Unmarshal([]byte(jsonString), &failureJSON)
+	var failure *Failure
+	err := json.Unmarshal([]byte(jsonString), &failure)
 	if err != nil {
 		return nil, err
 	}
 
-	return CreateFailure(failureJSON.Status, failureJSON.Message), nil
-}
-
-func (failure *Failure) Status() int {
-	return failure.status
-}
-
-func (failure *Failure) Message() string {
-	return failure.message
+	return failure, nil
 }
 
 func (failure *Failure) ToJSON() (string, error) {
-	failureJSON := &FailureJSON{Status: failure.status, Message: failure.message}
-
-	jsonString, err := json.Marshal(failureJSON)
+	jsonBytes, err := json.Marshal(failure)
 	if err != nil {
 		return "", err
 	}
 
-	return string(jsonString), nil
+	return string(jsonBytes), nil
 }

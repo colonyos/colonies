@@ -20,20 +20,20 @@ func TestCreateProcess(t *testing.T) {
 
 	process := CreateProcess(colonyID, []string{computer1ID, computer2ID}, computerType, timeout, maxRetries, mem, cores, gpus)
 
-	assert.Equal(t, colonyID, process.TargetColonyID())
-	assert.Contains(t, process.TargetComputerIDs(), computer1ID)
-	assert.Contains(t, process.TargetComputerIDs(), computer2ID)
-	assert.Equal(t, computerType, process.ComputerType())
-	assert.Equal(t, timeout, process.Timeout())
-	assert.Equal(t, maxRetries, process.MaxRetries())
-	assert.Equal(t, mem, process.Mem())
-	assert.Equal(t, cores, process.Cores())
-	assert.Equal(t, gpus, process.GPUs())
-	assert.False(t, process.Assigned())
+	assert.Equal(t, colonyID, process.TargetColonyID)
+	assert.Contains(t, process.TargetComputerIDs, computer1ID)
+	assert.Contains(t, process.TargetComputerIDs, computer2ID)
+	assert.Equal(t, computerType, process.ComputerType)
+	assert.Equal(t, timeout, process.Timeout)
+	assert.Equal(t, maxRetries, process.MaxRetries)
+	assert.Equal(t, mem, process.Mem)
+	assert.Equal(t, cores, process.Cores)
+	assert.Equal(t, gpus, process.GPUs)
+	assert.False(t, process.IsAssigned)
 	process.Assign()
-	assert.True(t, process.Assigned())
+	assert.True(t, process.IsAssigned)
 	process.Unassign()
-	assert.False(t, process.Assigned())
+	assert.False(t, process.IsAssigned)
 }
 
 func TestTimeCalc(t *testing.T) {
@@ -96,70 +96,71 @@ func TestProcessToJSON(t *testing.T) {
 	assert.Nil(t, err)
 
 	counter := 0
-	for _, attribute := range process2.InAttributes() {
-		if attribute.TargetID() == attribute1ID &&
-			attribute.AttributeType() == IN &&
-			attribute.Key() == "in_key_1" &&
-			attribute.Value() == "in_value_1" {
+	for _, attribute := range process2.InAttributes {
+		if attribute.TargetID == attribute1ID &&
+			attribute.AttributeType == IN &&
+			attribute.Key == "in_key_1" &&
+			attribute.Value == "in_value_1" {
 			counter++
 		}
-		if attribute.TargetID() == attribute2ID &&
-			attribute.AttributeType() == IN &&
-			attribute.Key() == "in_key_2" &&
-			attribute.Value() == "in_value_2" {
-			counter++
-		}
-	}
-	assert.Equal(t, 2, counter)
-
-	counter = 0
-	for _, attribute := range process2.ErrAttributes() {
-		if attribute.TargetID() == attribute3ID &&
-			attribute.AttributeType() == ERR &&
-			attribute.Key() == "err_key_1" &&
-			attribute.Value() == "err_value_1" {
-			counter++
-		}
-		if attribute.TargetID() == attribute4ID &&
-			attribute.AttributeType() == ERR &&
-			attribute.Key() == "err_key_2" &&
-			attribute.Value() == "err_value_2" {
+		if attribute.TargetID == attribute2ID &&
+			attribute.AttributeType == IN &&
+			attribute.Key == "in_key_2" &&
+			attribute.Value == "in_value_2" {
 			counter++
 		}
 	}
 	assert.Equal(t, 2, counter)
 
 	counter = 0
-	for _, attribute := range process.OutAttributes() {
-		if attribute.TargetID() == attribute5ID &&
-			attribute.AttributeType() == OUT &&
-			attribute.Key() == "out_key_1" &&
-			attribute.Value() == "out_value_1" {
+	for _, attribute := range process2.ErrAttributes {
+		if attribute.TargetID == attribute3ID &&
+			attribute.AttributeType == ERR &&
+			attribute.Key == "err_key_1" &&
+			attribute.Value == "err_value_1" {
 			counter++
 		}
-		if attribute.TargetID() == attribute6ID &&
-			attribute.AttributeType() == OUT &&
-			attribute.Key() == "out_key_2" &&
-			attribute.Value() == "out_value_2" {
+		if attribute.TargetID == attribute4ID &&
+			attribute.AttributeType == ERR &&
+			attribute.Key == "err_key_2" &&
+			attribute.Value == "err_value_2" {
 			counter++
 		}
 	}
 	assert.Equal(t, 2, counter)
 
-	assert.Equal(t, process.ID(), process2.ID())
-	assert.Equal(t, process.TargetColonyID(), process2.TargetColonyID())
-	assert.Equal(t, process.TargetComputerIDs(), process2.TargetComputerIDs())
-	assert.Equal(t, process.AssignedComputerID(), process2.AssignedComputerID())
-	assert.Equal(t, process.Status(), process2.Status())
-	assert.Equal(t, process.Assigned(), process2.Assigned())
-	assert.Equal(t, process.ComputerType(), process2.ComputerType())
-	assert.Equal(t, process.Deadline(), process2.Deadline())
-	assert.Equal(t, process.Timeout(), process2.Timeout())
-	assert.Equal(t, process.Retries(), process2.Retries())
-	assert.Equal(t, process.MaxRetries(), process2.MaxRetries())
-	assert.Equal(t, process.Mem(), process2.Mem())
-	assert.Equal(t, process.Cores(), process2.Cores())
-	assert.Equal(t, process.GPUs(), process2.GPUs())
+	counter = 0
+	for _, attribute := range process.OutAttributes {
+		if attribute.TargetID == attribute5ID &&
+			attribute.AttributeType == OUT &&
+			attribute.Key == "out_key_1" &&
+			attribute.Value == "out_value_1" {
+			counter++
+		}
+		if attribute.TargetID == attribute6ID &&
+			attribute.AttributeType == OUT &&
+			attribute.Key == "out_key_2" &&
+			attribute.Value == "out_value_2" {
+			counter++
+		}
+	}
+	assert.Equal(t, 2, counter)
+
+	// TODO: equal
+	assert.Equal(t, process.ID, process2.ID)
+	assert.Equal(t, process.TargetColonyID, process2.TargetColonyID)
+	assert.Equal(t, process.TargetComputerIDs, process2.TargetComputerIDs)
+	assert.Equal(t, process.AssignedComputerID, process2.AssignedComputerID)
+	assert.Equal(t, process.Status, process2.Status)
+	assert.Equal(t, process.IsAssigned, process2.IsAssigned)
+	assert.Equal(t, process.ComputerType, process2.ComputerType)
+	assert.Equal(t, process.Deadline, process2.Deadline)
+	assert.Equal(t, process.Timeout, process2.Timeout)
+	assert.Equal(t, process.Retries, process2.Retries)
+	assert.Equal(t, process.MaxRetries, process2.MaxRetries)
+	assert.Equal(t, process.Mem, process2.Mem)
+	assert.Equal(t, process.Cores, process2.Cores)
+	assert.Equal(t, process.GPUs, process2.GPUs)
 }
 
 func TestProcessArrayToJSON(t *testing.T) {
@@ -218,10 +219,10 @@ func TestProcessArrayToJSON(t *testing.T) {
 
 	counter := 0
 	for _, process := range processes2 {
-		if process.ID() == process1.ID() {
+		if process.ID == process1.ID {
 			counter++
 		}
-		if process.ID() == process2.ID() {
+		if process.ID == process2.ID {
 			counter++
 		}
 	}

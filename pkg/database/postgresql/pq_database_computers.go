@@ -10,7 +10,7 @@ import (
 
 func (db *PQDatabase) AddComputer(computer *core.Computer) error {
 	sqlStatement := `INSERT INTO  ` + db.dbPrefix + `COMPUTERS (COMPUTER_ID, NAME, COLONY_ID, CPU, CORES, MEM, GPU, GPUS, STATUS) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`
-	_, err := db.postgresql.Exec(sqlStatement, computer.ID(), computer.Name(), computer.ColonyID(), computer.CPU(), computer.Cores(), computer.Mem(), computer.GPU(), computer.GPUs(), 0)
+	_, err := db.postgresql.Exec(sqlStatement, computer.ID, computer.Name, computer.ColonyID, computer.CPU, computer.Cores, computer.Mem, computer.GPU, computer.GPUs, 0)
 	if err != nil {
 		return err
 	}
@@ -98,7 +98,7 @@ func (db *PQDatabase) GetComputersByColonyID(colonyID string) ([]*core.Computer,
 
 func (db *PQDatabase) ApproveComputer(computer *core.Computer) error {
 	sqlStatement := `UPDATE ` + db.dbPrefix + `COMPUTERS SET STATUS=1 WHERE COMPUTER_ID=$1`
-	_, err := db.postgresql.Exec(sqlStatement, computer.ID())
+	_, err := db.postgresql.Exec(sqlStatement, computer.ID)
 	if err != nil {
 		return err
 	}
@@ -110,7 +110,7 @@ func (db *PQDatabase) ApproveComputer(computer *core.Computer) error {
 
 func (db *PQDatabase) RejectComputer(computer *core.Computer) error {
 	sqlStatement := `UPDATE ` + db.dbPrefix + `COMPUTERS SET STATUS=2 WHERE COMPUTER_ID=$1`
-	_, err := db.postgresql.Exec(sqlStatement, computer.ID())
+	_, err := db.postgresql.Exec(sqlStatement, computer.ID)
 	if err != nil {
 		return err
 	}

@@ -11,30 +11,30 @@ import (
 )
 
 func (db *PQDatabase) AddProcess(process *core.Process) error {
-	targetComputerIDs := process.TargetComputerIDs()
-	if len(process.TargetComputerIDs()) == 0 {
+	targetComputerIDs := process.TargetComputerIDs
+	if len(process.TargetComputerIDs) == 0 {
 		targetComputerIDs = []string{"*"}
 	}
 
 	submissionTime := time.Now()
 
 	sqlStatement := `INSERT INTO  ` + db.dbPrefix + `PROCESSES (PROCESS_ID, TARGET_COLONY_ID, TARGET_COMPUTER_IDS, ASSIGNED_COMPUTER_ID, STATUS, IS_ASSIGNED, COMPUTER_TYPE, SUBMISSION_TIME, START_TIME, END_TIME, DEADLINE, RETRIES, TIMEOUT, MAX_RETRIES, MEM, CORES, GPUs) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)`
-	_, err := db.postgresql.Exec(sqlStatement, process.ID(), process.TargetColonyID(), pq.Array(targetComputerIDs), process.AssignedComputerID(), process.Status(), process.Assigned(), process.ComputerType(), submissionTime, time.Time{}, time.Time{}, process.Deadline(), 0, process.Timeout(), process.MaxRetries(), process.Mem(), process.Cores(), process.GPUs())
+	_, err := db.postgresql.Exec(sqlStatement, process.ID, process.TargetColonyID, pq.Array(targetComputerIDs), process.AssignedComputerID, process.Status, process.IsAssigned, process.ComputerType, submissionTime, time.Time{}, time.Time{}, process.Deadline, 0, process.Timeout, process.MaxRetries, process.Mem, process.Cores, process.GPUs)
 	if err != nil {
 		return err
 	}
 
-	err = db.AddAttributes(process.InAttributes())
+	err = db.AddAttributes(process.InAttributes)
 	if err != nil {
 		// XXX: Should we also remove the process we just added?
 		return err
 	}
-	err = db.AddAttributes(process.ErrAttributes())
+	err = db.AddAttributes(process.ErrAttributes)
 	if err != nil {
 		// XXX: Should we also remove the process we just added?
 		return err
 	}
-	err = db.AddAttributes(process.OutAttributes())
+	err = db.AddAttributes(process.OutAttributes)
 	if err != nil {
 		// XXX: Should we also remove the process we just added?
 		return err
@@ -257,7 +257,7 @@ func (db *PQDatabase) DeleteAllProcesses() error {
 
 func (db *PQDatabase) ResetProcess(process *core.Process) error {
 	sqlStatement := `UPDATE ` + db.dbPrefix + `PROCESSES SET IS_ASSIGNED=FALSE, START_TIME=$1, END_TIME=$2, ASSIGNED_COMPUTER_ID=$3, STATUS=$4 WHERE process_ID=$5`
-	_, err := db.postgresql.Exec(sqlStatement, time.Time{}, time.Time{}, "", core.WAITING, process.ID())
+	_, err := db.postgresql.Exec(sqlStatement, time.Time{}, time.Time{}, "", core.WAITING, process.ID)
 	if err != nil {
 		return err
 	}
@@ -284,7 +284,7 @@ func (db *PQDatabase) AssignComputer(computerID string, process *core.Process) e
 	startTime := time.Now()
 
 	sqlStatement := `UPDATE ` + db.dbPrefix + `PROCESSES SET IS_ASSIGNED=TRUE, START_TIME=$1, ASSIGNED_COMPUTER_ID=$2, STATUS=$3 WHERE PROCESS_ID=$4`
-	_, err := db.postgresql.Exec(sqlStatement, startTime, computerID, core.RUNNING, process.ID())
+	_, err := db.postgresql.Exec(sqlStatement, startTime, computerID, core.RUNNING, process.ID)
 	if err != nil {
 		return err
 	}
@@ -301,7 +301,7 @@ func (db *PQDatabase) UnassignComputer(process *core.Process) error {
 	endTime := time.Now()
 
 	sqlStatement := `UPDATE ` + db.dbPrefix + `PROCESSES SET IS_ASSIGNED=FALSE, END_TIME=$1, STATUS=$2 WHERE PROCESS_ID=$3`
-	_, err := db.postgresql.Exec(sqlStatement, endTime, core.FAILED, process.ID())
+	_, err := db.postgresql.Exec(sqlStatement, endTime, core.FAILED, process.ID)
 	if err != nil {
 		return err
 	}
@@ -314,31 +314,31 @@ func (db *PQDatabase) UnassignComputer(process *core.Process) error {
 }
 
 func (db *PQDatabase) MarkSuccessful(process *core.Process) error {
-	if process.Status() == core.FAILED {
+	if process.Status == core.FAILED {
 		return errors.New("Tried to set failed process as completed")
 	}
 
-	if process.Status() == core.WAITING {
+	if process.Status == core.WAITING {
 		return errors.New("Tried to set waiting process as completed without being running")
 	}
 
-	processFromDB, err := db.GetProcessByID(process.ID())
+	processFromDB, err := db.GetProcessByID(process.ID)
 	if err != nil {
 		return err
 	}
 
-	if processFromDB.Status() == core.FAILED {
+	if processFromDB.Status == core.FAILED {
 		return errors.New("Tried to set failed process (from db) as successful")
 	}
 
-	if processFromDB.Status() == core.WAITING {
+	if processFromDB.Status == core.WAITING {
 		return errors.New("Tried to set waiting process (from db) as successful without being running")
 	}
 
 	endTime := time.Now()
 
 	sqlStatement := `UPDATE ` + db.dbPrefix + `PROCESSES SET END_TIME=$1, STATUS=$2 WHERE PROCESS_ID=$3`
-	_, err = db.postgresql.Exec(sqlStatement, endTime, core.SUCCESS, process.ID())
+	_, err = db.postgresql.Exec(sqlStatement, endTime, core.SUCCESS, process.ID)
 	if err != nil {
 		return err
 	}
@@ -352,29 +352,30 @@ func (db *PQDatabase) MarkSuccessful(process *core.Process) error {
 func (db *PQDatabase) MarkFailed(process *core.Process) error {
 	endTime := time.Now()
 
-	if process.Status() == core.SUCCESS {
+	// TODO: May be move away theses conditions tests to a seperate struct to make the database layer more clean?
+	if process.Status == core.SUCCESS {
 		return errors.New("Tried to set successful process as failed")
 	}
 
-	if process.Status() == core.WAITING {
+	if process.Status == core.WAITING {
 		return errors.New("Tried to set waiting process as failed without being running")
 	}
 
-	processFromDB, err := db.GetProcessByID(process.ID())
+	processFromDB, err := db.GetProcessByID(process.ID)
 	if err != nil {
 		return err
 	}
 
-	if processFromDB.Status() == core.SUCCESS {
+	if processFromDB.Status == core.SUCCESS {
 		return errors.New("Tried to set successful (from db) as failed")
 	}
 
-	if processFromDB.Status() == core.WAITING {
+	if processFromDB.Status == core.WAITING {
 		return errors.New("Tried to set successful process (from db) as failed without being running")
 	}
 
 	sqlStatement := `UPDATE ` + db.dbPrefix + `PROCESSES SET END_TIME=$1, STATUS=$2 WHERE PROCESS_ID=$3`
-	_, err = db.postgresql.Exec(sqlStatement, endTime, core.FAILED, process.ID())
+	_, err = db.postgresql.Exec(sqlStatement, endTime, core.FAILED, process.ID)
 	if err != nil {
 		return err
 	}

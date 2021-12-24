@@ -19,7 +19,7 @@ func (db *PQDatabase) AddAttributes(attributes []*core.Attribute) error { // TOD
 
 func (db *PQDatabase) AddAttribute(attribute *core.Attribute) error {
 	sqlStatement := `INSERT INTO  ` + db.dbPrefix + `ATTRIBUTES (ATTRIBUTE_ID, KEY, VALUE, ATTRIBUTE_TYPE, TARGET_ID) VALUES ($1, $2, $3, $4, $5)`
-	_, err := db.postgresql.Exec(sqlStatement, attribute.ID(), attribute.Key(), attribute.Value(), attribute.AttributeType(), attribute.TargetID())
+	_, err := db.postgresql.Exec(sqlStatement, attribute.ID, attribute.Key, attribute.Value, attribute.AttributeType, attribute.TargetID)
 	if err != nil {
 		return err
 	}
@@ -104,16 +104,16 @@ func (db *PQDatabase) GetAttributes(targetID string, attributeType int) ([]*core
 }
 
 func (db *PQDatabase) UpdateAttribute(attribute *core.Attribute) error {
-	existingAttribute, err := db.GetAttributeByID(attribute.ID())
+	existingAttribute, err := db.GetAttributeByID(attribute.ID)
 	if err != nil {
 		return err
 	}
 	if existingAttribute == nil {
-		return errors.New("Attribute <" + attribute.ID() + "> does not exists")
+		return errors.New("Attribute <" + attribute.ID + "> does not exists")
 	}
 
 	sqlStatement := `UPDATE ` + db.dbPrefix + `ATTRIBUTES SET ATTRIBUTE_ID=$1, VALUE=$2`
-	_, err = db.postgresql.Exec(sqlStatement, attribute.ID(), attribute.Value())
+	_, err = db.postgresql.Exec(sqlStatement, attribute.ID, attribute.Value)
 	if err != nil {
 		return err
 	}

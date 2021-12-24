@@ -23,7 +23,7 @@ func checkStatusCode(statusCode int, jsonString string) error {
 			return err
 		}
 
-		return errors.New(failure.Message())
+		return errors.New(failure.Message)
 	}
 
 	return nil
@@ -136,7 +136,7 @@ func AddComputer(computer *core.Computer, prvKey string, host string, port int) 
 		SetHeader("Digest", digest).
 		SetHeader("Signature", sig).
 		SetBody(computerJSON).
-		Post("https://" + host + ":" + strconv.Itoa(port) + "/colonies/" + computer.ColonyID() + "/computers")
+		Post("https://" + host + ":" + strconv.Itoa(port) + "/colonies/" + computer.ColonyID + "/computers")
 
 	unquotedResp, err := strconv.Unquote(string(resp.Body()))
 	if err != nil {
@@ -167,7 +167,7 @@ func ApproveComputer(computer *core.Computer, prvKey string, host string, port i
 		SetHeader("Id", id).
 		SetHeader("Digest", digest).
 		SetHeader("Signature", sig).
-		Put("https://" + host + ":" + strconv.Itoa(port) + "/colonies/" + computer.ColonyID() + "/computers/" + computer.ID() + "/approve")
+		Put("https://" + host + ":" + strconv.Itoa(port) + "/colonies/" + computer.ColonyID + "/computers/" + computer.ID + "/approve")
 
 	unquotedResp, err := strconv.Unquote(string(resp.Body()))
 	if err != nil {
@@ -193,7 +193,7 @@ func RejectComputer(computer *core.Computer, prvKey string, host string, port in
 		SetHeader("Id", id).
 		SetHeader("Digest", digest).
 		SetHeader("Signature", sig).
-		Put("https://" + host + ":" + strconv.Itoa(port) + "/colonies/" + computer.ColonyID() + "/computers/" + computer.ID() + "/reject")
+		Put("https://" + host + ":" + strconv.Itoa(port) + "/colonies/" + computer.ColonyID + "/computers/" + computer.ID + "/reject")
 
 	unquotedResp, err := strconv.Unquote(string(resp.Body()))
 	if err != nil {
@@ -324,7 +324,7 @@ func AddAttribute(attribute *core.Attribute, colonyID string, prvKey string) (*c
 		SetHeader("Digest", digest).
 		SetHeader("Signature", sig).
 		SetBody(jsonString).
-		Post("https://localhost:8080/colonies/" + colonyID + "/processes/" + attribute.TargetID() + "/attributes")
+		Post("https://localhost:8080/colonies/" + colonyID + "/processes/" + attribute.TargetID + "/attributes")
 
 	unquotedResp, err := strconv.Unquote(string(resp.Body()))
 	if err != nil {
@@ -574,7 +574,7 @@ func MarkSuccessful(process *core.Process, prvKey string) error {
 		SetHeader("Id", id).
 		SetHeader("Digest", digest).
 		SetHeader("Signature", sig).
-		Put("https://localhost:8080/colonies/" + process.TargetColonyID() + "/processes/" + process.ID() + "/finish")
+		Put("https://localhost:8080/colonies/" + process.TargetColonyID + "/processes/" + process.ID + "/finish")
 
 	unquotedResp, err := strconv.Unquote(string(resp.Body()))
 	if err != nil {
@@ -600,7 +600,7 @@ func MarkFailed(process *core.Process, prvKey string) error {
 		SetHeader("Id", id).
 		SetHeader("Digest", digest).
 		SetHeader("Signature", sig).
-		Put("https://localhost:8080/colonies/" + process.TargetColonyID() + "/processes/" + process.ID() + "/failed")
+		Put("https://localhost:8080/colonies/" + process.TargetColonyID + "/processes/" + process.ID + "/failed")
 
 	unquotedResp, err := strconv.Unquote(string(resp.Body()))
 	if err != nil {

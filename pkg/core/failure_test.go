@@ -11,8 +11,8 @@ func TestCreateFailure(t *testing.T) {
 	errorMessage := "error_msg"
 	failure := CreateFailure(status, errorMessage)
 
-	assert.Equal(t, status, failure.Status())
-	assert.Equal(t, errorMessage, failure.Message())
+	assert.Equal(t, status, failure.Status)
+	assert.Equal(t, errorMessage, failure.Message)
 }
 
 func TestFailureParseJSON(t *testing.T) {
@@ -26,6 +26,6 @@ func TestFailureParseJSON(t *testing.T) {
 	failure2, err := ConvertJSONToFailure(failureJSON)
 	assert.Nil(t, err)
 
-	assert.Equal(t, failure.Status(), failure2.Status())
-	assert.Equal(t, failure.Message(), failure2.Message())
+	assert.Equal(t, failure.Status, failure2.Status)
+	assert.Equal(t, failure.Message, failure2.Message)
 }

@@ -340,7 +340,7 @@ func (server *ColoniesServer) handlePublishProcessRequest(c *gin.Context) {
 
 	var attributes []*core.Attribute
 	for key, value := range processSpec.In {
-		attributes = append(attributes, core.CreateAttribute(process.ID(), core.IN, key, value))
+		attributes = append(attributes, core.CreateAttribute(process.ID, core.IN, key, value))
 	}
 
 	process.SetInAttributes(attributes)
