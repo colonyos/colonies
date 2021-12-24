@@ -24,17 +24,7 @@ func (db *PQDatabase) AddProcess(process *core.Process) error {
 		return err
 	}
 
-	err = db.AddAttributes(process.InAttributes)
-	if err != nil {
-		// XXX: Should we also remove the process we just added?
-		return err
-	}
-	err = db.AddAttributes(process.ErrAttributes)
-	if err != nil {
-		// XXX: Should we also remove the process we just added?
-		return err
-	}
-	err = db.AddAttributes(process.OutAttributes)
+	err = db.AddAttributes(process.Attributes)
 	if err != nil {
 		// XXX: Should we also remove the process we just added?
 		return err
@@ -71,17 +61,7 @@ func (db *PQDatabase) parseProcesses(rows *sql.Rows) ([]*core.Process, error) {
 			return nil, err
 		}
 
-		inAttributes, err := db.GetAttributes(processID, core.IN)
-		if err != nil {
-			return nil, err
-		}
-
-		errAttributes, err := db.GetAttributes(processID, core.ERR)
-		if err != nil {
-			return nil, err
-		}
-
-		outAttributes, err := db.GetAttributes(processID, core.OUT)
+		attributes, err := db.GetAttributes(processID)
 		if err != nil {
 			return nil, err
 		}
@@ -90,7 +70,7 @@ func (db *PQDatabase) parseProcesses(rows *sql.Rows) ([]*core.Process, error) {
 			targetComputerIDs = []string{}
 		}
 
-		process := core.CreateProcessFromDB(processID, targetColonyID, targetComputerIDs, assignedComputerID, status, isAssigned, computerType, submissionTime, startTime, endTime, deadline, timeout, retries, maxRetries, mem, cores, gpus, inAttributes, errAttributes, outAttributes)
+		process := core.CreateProcessFromDB(processID, targetColonyID, targetComputerIDs, assignedComputerID, status, isAssigned, computerType, submissionTime, startTime, endTime, deadline, timeout, retries, maxRetries, mem, cores, gpus, attributes)
 		processes = append(processes, process)
 	}
 

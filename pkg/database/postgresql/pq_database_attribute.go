@@ -91,7 +91,19 @@ func (db *PQDatabase) GetAttribute(targetID string, key string, attributeType in
 	return attributes[0], nil
 }
 
-func (db *PQDatabase) GetAttributes(targetID string, attributeType int) ([]*core.Attribute, error) {
+func (db *PQDatabase) GetAttributes(targetID string) ([]*core.Attribute, error) {
+	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `ATTRIBUTES where TARGET_ID=$1`
+	rows, err := db.postgresql.Query(sqlStatement, targetID)
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	return db.parseAttributes(rows)
+}
+
+func (db *PQDatabase) GetAttributesByType(targetID string, attributeType int) ([]*core.Attribute, error) {
 	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `ATTRIBUTES where TARGET_ID=$1 AND ATTRIBUTE_TYPE=$2`
 	rows, err := db.postgresql.Query(sqlStatement, targetID, attributeType)
 	if err != nil {
