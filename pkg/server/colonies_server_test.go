@@ -397,7 +397,13 @@ func TestAddAttributes(t *testing.T) {
 	assert.Equal(t, attribute.ID, addedAttribute.ID)
 
 	assignedProcessFromServer, err := client.GetProcessByID(assignedProcess.ID, env.colonyID, env.computerPrvKey)
-	assert.Equal(t, "helloworld", assignedProcessFromServer.Out()["result"])
+
+	out := make(map[string]string)
+	for _, attribute := range assignedProcessFromServer.Attributes {
+		out[attribute.Key] = attribute.Value
+	}
+
+	assert.Equal(t, "helloworld", out["result"])
 
 	attributeFromServer, err := client.GetAttribute(attribute.ID, addedProcess.ID, env.colonyID, env.computerPrvKey)
 	assert.Nil(t, err)

@@ -343,7 +343,7 @@ func (server *ColoniesServer) handlePublishProcessRequest(c *gin.Context) {
 		attributes = append(attributes, core.CreateAttribute(process.ID, core.IN, key, value))
 	}
 
-	process.SetInAttributes(attributes)
+	process.SetAttributes(attributes)
 
 	addedProcess, err := server.controller.AddProcess(process)
 	if err != nil {

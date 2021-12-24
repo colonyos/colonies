@@ -46,7 +46,7 @@ func TestGetAttributes(t *testing.T) {
 	err = db.AddAttribute(attribute)
 	assert.Nil(t, err)
 
-	attributesFromDB, err := db.GetAttributes(processID, core.IN)
+	attributesFromDB, err := db.GetAttributesByType(processID, core.IN)
 	assert.Nil(t, err)
 
 	counter := 0
@@ -61,7 +61,7 @@ func TestGetAttributes(t *testing.T) {
 	}
 	assert.Equal(t, 2, counter)
 
-	attributesFromDB, err = db.GetAttributes(processID, core.ERR)
+	attributesFromDB, err = db.GetAttributesByType(processID, core.ERR)
 	assert.Nil(t, err)
 
 	counter = 0
@@ -72,8 +72,11 @@ func TestGetAttributes(t *testing.T) {
 	}
 	assert.Equal(t, 1, counter)
 
-	attributesFromDB, err = db.GetAttributes(processID, core.OUT)
+	attributesFromDB, err = db.GetAttributesByType(processID, core.OUT)
 	assert.Len(t, attributesFromDB, 0)
+
+	attributesFromDB, err = db.GetAttributes(processID)
+	assert.Len(t, attributesFromDB, 3)
 }
 
 func TestUpdateAttribute(t *testing.T) {

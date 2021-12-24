@@ -35,18 +35,14 @@ type Process struct {
 	Mem                int          `json:"mem"`
 	Cores              int          `json:"cores"`
 	GPUs               int          `json:"gpus"`
-	InAttributes       []*Attribute `json:"in"`
-	OutAttributes      []*Attribute `json:"out"`
-	ErrAttributes      []*Attribute `json:"err"`
+	Attributes         []*Attribute `json:"attributes"`
 }
 
 func CreateProcess(targetColonyID string, targetComputerIDs []string, computerType string, timeout int, maxRetries int, mem int, cores int, gpus int) *Process {
 	uuid := uuid.New()
 	id := crypto.GenerateHashFromString(uuid.String()).String()
 
-	var outAttributes []*Attribute
-	var errAttributes []*Attribute
-	var inAttributes []*Attribute
+	var attributes []*Attribute
 
 	process := &Process{ID: id,
 		TargetColonyID:    targetColonyID,
@@ -59,15 +55,13 @@ func CreateProcess(targetColonyID string, targetComputerIDs []string, computerTy
 		Mem:               mem,
 		Cores:             cores,
 		GPUs:              gpus,
-		InAttributes:      inAttributes,
-		ErrAttributes:     errAttributes,
-		OutAttributes:     outAttributes,
+		Attributes:        attributes,
 	}
 
 	return process
 }
 
-func CreateProcessFromDB(id string, targetColonyID string, targetComputerIDs []string, assignedComputerID string, status int, isAssigned bool, computerType string, submissionTime time.Time, startTime time.Time, endTime time.Time, deadline time.Time, timeout int, retries int, maxRetries int, mem int, cores int, gpus int, inAttributes []*Attribute, errAttributes []*Attribute, outAttributes []*Attribute) *Process {
+func CreateProcessFromDB(id string, targetColonyID string, targetComputerIDs []string, assignedComputerID string, status int, isAssigned bool, computerType string, submissionTime time.Time, startTime time.Time, endTime time.Time, deadline time.Time, timeout int, retries int, maxRetries int, mem int, cores int, gpus int, attributes []*Attribute) *Process {
 	return &Process{ID: id,
 		TargetColonyID:     targetColonyID,
 		TargetComputerIDs:  targetComputerIDs,
@@ -85,9 +79,7 @@ func CreateProcessFromDB(id string, targetColonyID string, targetComputerIDs []s
 		Mem:                mem,
 		Cores:              cores,
 		GPUs:               gpus,
-		InAttributes:       inAttributes,
-		ErrAttributes:      errAttributes,
-		OutAttributes:      outAttributes,
+		Attributes:         attributes,
 	}
 }
 
@@ -137,16 +129,8 @@ func (process *Process) SetAssignedComputerID(computerID string) {
 	// TODO: set IsAssigned to true?
 }
 
-func (process *Process) SetInAttributes(attributes []*Attribute) {
-	process.InAttributes = attributes
-}
-
-func (process *Process) SetErrAttributes(attributes []*Attribute) {
-	process.ErrAttributes = attributes
-}
-
-func (process *Process) SetOutAttributes(attributes []*Attribute) {
-	process.OutAttributes = attributes
+func (process *Process) SetAttributes(attributes []*Attribute) {
+	process.Attributes = attributes
 }
 
 func (process *Process) SetSubmissionTime(submissionTime time.Time) {
@@ -167,30 +151,6 @@ func (process *Process) WaitingTime() time.Duration {
 
 func (process *Process) ProcessingTime() time.Duration {
 	return process.EndTime.Sub(process.StartTime)
-}
-
-func (process *Process) In() map[string]string {
-	out := make(map[string]string)
-	for _, attribute := range process.InAttributes {
-		out[attribute.Key] = attribute.Value
-	}
-	return out
-}
-
-func (process *Process) Err() map[string]string {
-	out := make(map[string]string)
-	for _, attribute := range process.ErrAttributes {
-		out[attribute.Key] = attribute.Value
-	}
-	return out
-}
-
-func (process *Process) Out() map[string]string {
-	out := make(map[string]string)
-	for _, attribute := range process.OutAttributes {
-		out[attribute.Key] = attribute.Value
-	}
-	return out
 }
 
 func (process *Process) ToJSON() (string, error) {
