@@ -45,6 +45,32 @@ func ConvertColonyArrayToJSON(colonies []*Colony) (string, error) {
 	return string(jsonBytes), nil
 }
 
+func IsColonyArraysEqual(colonies1 []*Colony, colonies2 []*Colony) bool {
+	counter := 0
+	for _, colony1 := range colonies1 {
+		for _, colony2 := range colonies2 {
+			if colony1.Equals(colony2) {
+				counter++
+			}
+		}
+	}
+
+	if counter == len(colonies1) && counter == len(colonies2) {
+		return true
+	}
+
+	return false
+}
+
+func (colony *Colony) Equals(colony2 *Colony) bool {
+	if colony.ID == colony2.ID &&
+		colony.Name == colony2.Name {
+		return true
+	}
+
+	return false
+}
+
 func (colony *Colony) ToJSON() (string, error) {
 	jsonBytes, err := json.Marshal(colony)
 	if err != nil {

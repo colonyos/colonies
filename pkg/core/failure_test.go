@@ -18,14 +18,12 @@ func TestCreateFailure(t *testing.T) {
 func TestFailureParseJSON(t *testing.T) {
 	status := 200
 	errorMessage := "error_msg"
-	failure := CreateFailure(status, errorMessage)
+	failure1 := CreateFailure(status, errorMessage)
 
-	failureJSON, err := failure.ToJSON()
+	failureJSON, err := failure1.ToJSON()
 	assert.Nil(t, err)
 
 	failure2, err := ConvertJSONToFailure(failureJSON)
 	assert.Nil(t, err)
-
-	assert.Equal(t, failure.Status, failure2.Status)
-	assert.Equal(t, failure.Message, failure2.Message)
+	assert.True(t, failure2.Equals(failure1))
 }

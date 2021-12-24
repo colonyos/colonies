@@ -112,6 +112,69 @@ func ConvertJSONToProcessArray(jsonString string) ([]*Process, error) {
 	return processes, nil
 }
 
+func IsProcessArrayEqual(processes1 []*Process, processes2 []*Process) bool {
+	counter := 0
+	for _, process1 := range processes1 {
+		for _, process2 := range processes2 {
+			if process1.Equals(process2) {
+				counter++
+			}
+		}
+	}
+
+	if counter == len(processes1) && counter == len(processes2) {
+		return true
+	}
+
+	return false
+}
+
+func (process *Process) Equals(process2 *Process) bool {
+	same := true
+	if process.ID != process2.ID &&
+		process.TargetColonyID != process2.TargetColonyID &&
+		process.AssignedComputerID != process2.AssignedComputerID &&
+		process.Status != process2.Status &&
+		process.IsAssigned != process2.IsAssigned &&
+		process.ComputerType != process2.ComputerType &&
+		process.SubmissionTime != process2.SubmissionTime &&
+		process.StartTime != process2.StartTime &&
+		process.EndTime != process2.EndTime &&
+		process.Deadline != process2.Deadline &&
+		process.Timeout != process2.Timeout &&
+		process.Retries != process2.Retries &&
+		process.MaxRetries != process2.MaxRetries &&
+		process.Mem != process2.Mem &&
+		process.Cores != process2.Cores &&
+		process.GPUs != process2.GPUs {
+		same = false
+	}
+
+	if process.TargetComputerIDs != nil && process2.TargetComputerIDs == nil {
+		same = false
+	} else if process.TargetComputerIDs == nil && process2.TargetComputerIDs != nil {
+		same = false
+	} else {
+		counter := 0
+		for _, targetComputerID1 := range process.TargetComputerIDs {
+			for _, targetComputerID2 := range process2.TargetComputerIDs {
+				if targetComputerID1 == targetComputerID2 {
+					counter++
+				}
+			}
+		}
+		if counter != len(process.TargetComputerIDs) && counter != len(process2.TargetComputerIDs) {
+			same = false
+		}
+	}
+
+	if !IsAttributeArrayEqual(process.Attributes, process2.Attributes) {
+		same = false
+	}
+
+	return same
+}
+
 func (process *Process) Assign() {
 	process.IsAssigned = true
 }
