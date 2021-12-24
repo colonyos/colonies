@@ -33,44 +33,26 @@ func TestCreateComputer(t *testing.T) {
 }
 
 func TestComputerToJSON(t *testing.T) {
-	computer := CreateComputer("1e1bfca6feb8a13df3cbbca1104f20b4b29c311724ee5f690356257108023fb", "test_computer", "e0a17fead699b3e3b3eec21a3ab0efad54224f6eb22f4550abe9f2a207440834", "AMD Ryzen 9 5950X (32) @ 3.400GHz", 32, 80326, "NVIDIA GeForce RTX 2080 Ti Rev. A", 1)
+	computer1 := CreateComputer("1e1bfca6feb8a13df3cbbca1104f20b4b29c311724ee5f690356257108023fb", "test_computer", "e0a17fead699b3e3b3eec21a3ab0efad54224f6eb22f4550abe9f2a207440834", "AMD Ryzen 9 5950X (32) @ 3.400GHz", 32, 80326, "NVIDIA GeForce RTX 2080 Ti Rev. A", 1)
 
-	jsonString, err := computer.ToJSON()
+	jsonString, err := computer1.ToJSON()
 	assert.Nil(t, err)
 
 	computer2, err := ConvertJSONToComputer(jsonString)
 	assert.Nil(t, err)
-
-	assert.Equal(t, computer.ID, computer2.ID)
-	assert.Equal(t, computer.Name, computer2.Name)
-	assert.Equal(t, computer.ColonyID, computer2.ColonyID)
-	assert.Equal(t, computer.CPU, computer2.CPU)
-	assert.Equal(t, computer.Cores, computer2.Cores)
-	assert.Equal(t, computer.Mem, computer2.Mem)
-	assert.Equal(t, computer.GPU, computer2.GPU)
-	assert.Equal(t, computer.GPUs, computer2.GPUs)
-	assert.Equal(t, computer.Status, computer2.Status)
+	assert.True(t, computer2.Equals(computer1))
 }
 
 func TestComputerToJSONArray(t *testing.T) {
-	var computers []*Computer
+	var computers1 []*Computer
 
-	computers = append(computers, CreateComputer(GenerateRandomID(), "test_computer", "e0a17fead699b3e3b3eec21a3ab0efad54224f6eb22f4550abe9f2a207440834", "AMD Ryzen 9 5950X (32) @ 3.400GHz", 32, 80326, "NVIDIA GeForce RTX 2080 Ti Rev. A", 1))
-	computers = append(computers, CreateComputer(GenerateRandomID(), "test_computer", "e0a17fead699b3e3b3eec21a3ab0efad54224f6eb22f4550abe9f2a207440834", "AMD Ryzen 9 5950X (32) @ 3.400GHz", 32, 80326, "NVIDIA GeForce RTX 2080 Ti Rev. A", 1))
+	computers1 = append(computers1, CreateComputer(GenerateRandomID(), "test_computer", "e0a17fead699b3e3b3eec21a3ab0efad54224f6eb22f4550abe9f2a207440834", "AMD Ryzen 9 5950X (32) @ 3.400GHz", 32, 80326, "NVIDIA GeForce RTX 2080 Ti Rev. A", 1))
+	computers1 = append(computers1, CreateComputer(GenerateRandomID(), "test_computer", "e0a17fead699b3e3b3eec21a3ab0efad54224f6eb22f4550abe9f2a207440834", "AMD Ryzen 9 5950X (32) @ 3.400GHz", 32, 80326, "NVIDIA GeForce RTX 2080 Ti Rev. A", 1))
 
-	jsonString, err := ConvertComputerArrayToJSON(computers)
+	jsonString, err := ConvertComputerArrayToJSON(computers1)
 	assert.Nil(t, err)
 
 	computers2, err := ConvertJSONToComputerArray(jsonString)
 	assert.Nil(t, err)
-
-	counter := 0
-	for _, computer := range computers {
-		for _, computer2 := range computers2 {
-			if computer.ID == computer2.ID {
-				counter++
-			}
-		}
-	}
-	assert.Equal(t, 2, counter)
+	assert.True(t, IsComputerArraysEqual(computers1, computers2))
 }

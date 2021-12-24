@@ -90,63 +90,7 @@ func TestProcessToJSON(t *testing.T) {
 
 	process2, err := ConvertJSONToProcess(jsonString)
 	assert.Nil(t, err)
-
-	counter := 0
-	for _, attribute := range process2.Attributes {
-		if attribute.TargetID == attribute1ID &&
-			attribute.AttributeType == IN &&
-			attribute.Key == "in_key_1" &&
-			attribute.Value == "in_value_1" {
-			counter++
-		}
-		if attribute.TargetID == attribute2ID &&
-			attribute.AttributeType == IN &&
-			attribute.Key == "in_key_2" &&
-			attribute.Value == "in_value_2" {
-			counter++
-		}
-		if attribute.TargetID == attribute3ID &&
-			attribute.AttributeType == ERR &&
-			attribute.Key == "err_key_1" &&
-			attribute.Value == "err_value_1" {
-			counter++
-		}
-		if attribute.TargetID == attribute4ID &&
-			attribute.AttributeType == ERR &&
-			attribute.Key == "err_key_2" &&
-			attribute.Value == "err_value_2" {
-			counter++
-		}
-		if attribute.TargetID == attribute5ID &&
-			attribute.AttributeType == OUT &&
-			attribute.Key == "out_key_1" &&
-			attribute.Value == "out_value_1" {
-			counter++
-		}
-		if attribute.TargetID == attribute6ID &&
-			attribute.AttributeType == OUT &&
-			attribute.Key == "out_key_2" &&
-			attribute.Value == "out_value_2" {
-			counter++
-		}
-	}
-	assert.Equal(t, 6, counter)
-
-	// TODO: equal
-	assert.Equal(t, process.ID, process2.ID)
-	assert.Equal(t, process.TargetColonyID, process2.TargetColonyID)
-	assert.Equal(t, process.TargetComputerIDs, process2.TargetComputerIDs)
-	assert.Equal(t, process.AssignedComputerID, process2.AssignedComputerID)
-	assert.Equal(t, process.Status, process2.Status)
-	assert.Equal(t, process.IsAssigned, process2.IsAssigned)
-	assert.Equal(t, process.ComputerType, process2.ComputerType)
-	assert.Equal(t, process.Deadline, process2.Deadline)
-	assert.Equal(t, process.Timeout, process2.Timeout)
-	assert.Equal(t, process.Retries, process2.Retries)
-	assert.Equal(t, process.MaxRetries, process2.MaxRetries)
-	assert.Equal(t, process.Mem, process2.Mem)
-	assert.Equal(t, process.Cores, process2.Cores)
-	assert.Equal(t, process.GPUs, process2.GPUs)
+	assert.True(t, process.Equals(process2))
 }
 
 func TestProcessArrayToJSON(t *testing.T) {
@@ -186,24 +130,13 @@ func TestProcessArrayToJSON(t *testing.T) {
 	attributes2 = append(attributes2, CreateAttribute(attribute6ID, OUT, "out_key_1", "out_value_1"))
 	process2.SetAttributes(attributes2)
 
-	var processes []*Process
-	processes = append(processes, process1)
-	processes = append(processes, process2)
+	var processes1 []*Process
+	processes1 = append(processes1, process1)
+	processes1 = append(processes1, process2)
 
-	jsonString, err := ConvertProcessArrayToJSON(processes)
+	jsonString, err := ConvertProcessArrayToJSON(processes1)
 	assert.Nil(t, err)
 	processes2, err := ConvertJSONToProcessArray(jsonString)
 	assert.Nil(t, err)
-
-	counter := 0
-	for _, process := range processes2 {
-		if process.ID == process1.ID {
-			counter++
-		}
-		if process.ID == process2.ID {
-			counter++
-		}
-	}
-
-	assert.Equal(t, 2, counter)
+	assert.True(t, IsProcessArrayEqual(processes1, processes2))
 }

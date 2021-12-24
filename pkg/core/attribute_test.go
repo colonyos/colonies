@@ -22,15 +22,10 @@ func TestAttributeToJSON(t *testing.T) {
 	key := "test_key"
 	value := "test_value"
 
-	attribute := CreateAttribute(GenerateRandomID(), OUT, key, value)
-	jsonString, err := attribute.ToJSON()
+	attribute1 := CreateAttribute(GenerateRandomID(), OUT, key, value)
+	jsonString, err := attribute1.ToJSON()
 	assert.Nil(t, err)
 
 	attribute2, err := ConvertJSONToAttribute(jsonString)
-
-	assert.Equal(t, attribute.ID, attribute2.ID)
-	assert.Equal(t, attribute.TargetID, attribute2.TargetID)
-	assert.Equal(t, attribute.AttributeType, attribute2.AttributeType)
-	assert.Equal(t, attribute.Key, attribute2.Key)
-	assert.Equal(t, attribute.Value, attribute2.Value)
+	assert.True(t, attribute2.Equals(attribute1))
 }

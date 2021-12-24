@@ -23,6 +23,15 @@ func ConvertJSONToFailure(jsonString string) (*Failure, error) {
 	return failure, nil
 }
 
+func (failure *Failure) Equals(failure2 *Failure) bool {
+	if failure.Status == failure2.Status &&
+		failure.Message == failure2.Message {
+		return true
+	}
+
+	return false
+}
+
 func (failure *Failure) ToJSON() (string, error) {
 	jsonBytes, err := json.Marshal(failure)
 	if err != nil {

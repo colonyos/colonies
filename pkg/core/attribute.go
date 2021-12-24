@@ -40,8 +40,35 @@ func ConvertJSONToAttribute(jsonString string) (*Attribute, error) {
 	return attribute, nil
 }
 
+func IsAttributeArrayEqual(attributes1 []*Attribute, attributes2 []*Attribute) bool {
+	counter := 0
+	for _, attribute1 := range attributes1 {
+		for _, attribute2 := range attributes2 {
+			if attribute1.Equals(attribute2) {
+				counter++
+			}
+		}
+	}
+	if counter == len(attributes1) && counter == len(attributes2) {
+		return true
+	}
+
+	return false
+}
+
 func (attribute *Attribute) SetValue(value string) {
 	attribute.Value = value
+}
+
+func (attribute *Attribute) Equals(attribute2 *Attribute) bool {
+	if attribute.ID == attribute2.ID &&
+		attribute.TargetID == attribute2.TargetID &&
+		attribute.AttributeType == attribute2.AttributeType &&
+		attribute.Key == attribute2.Key &&
+		attribute.Value == attribute2.Value {
+		return true
+	}
+	return false
 }
 
 func (attribute *Attribute) ToJSON() (string, error) {
