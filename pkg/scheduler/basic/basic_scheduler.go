@@ -14,7 +14,7 @@ func (c bySubmissionTime) Len() int {
 }
 
 func (c bySubmissionTime) Less(i, j int) bool {
-	return c[i].SubmissionTime().UnixNano() < c[j].SubmissionTime().UnixNano()
+	return c[i].SubmissionTime.UnixNano() < c[j].SubmissionTime.UnixNano()
 }
 
 func (c bySubmissionTime) Swap(i, j int) {
@@ -30,8 +30,8 @@ func CreateScheduler() *BasicScheduler {
 
 func (scheduler *BasicScheduler) printCandidates(candidates []*core.Process) {
 	for _, c := range candidates {
-		fmt.Println(c.ID())
-		fmt.Println(c.SubmissionTime())
+		fmt.Println(c.ID)
+		fmt.Println(c.SubmissionTime)
 	}
 }
 
@@ -60,10 +60,10 @@ func (scheduler *BasicScheduler) Prioritize(computerID string, candidates []*cor
 
 	// First, check if there is process candidate target this specific computer
 	for _, candidate := range candidates {
-		if len(candidate.TargetComputerIDs()) == 0 {
+		if len(candidate.TargetComputerIDs) == 0 {
 			prioritizedCandidates = append(prioritizedCandidates, candidate)
 		} else {
-			for _, targetComputerID := range candidate.TargetComputerIDs() {
+			for _, targetComputerID := range candidate.TargetComputerIDs {
 				if targetComputerID == computerID {
 					prioritizedCandidates = append(prioritizedCandidates, candidate)
 				}

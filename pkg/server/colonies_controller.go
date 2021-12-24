@@ -108,7 +108,7 @@ func (controller *ColoniesController) AddColony(colony *core.Colony) (*core.Colo
 				cmd.errorChan <- err
 				return
 			}
-			addedColony, err := controller.db.GetColonyByID(colony.ID())
+			addedColony, err := controller.db.GetColonyByID(colony.ID)
 			if err != nil {
 				cmd.errorChan <- err
 				return
@@ -134,7 +134,7 @@ func (controller *ColoniesController) AddComputer(computer *core.Computer) (*cor
 				cmd.errorChan <- err
 				return
 			}
-			addedComputer, err := controller.db.GetComputerByID(computer.ID())
+			addedComputer, err := controller.db.GetComputerByID(computer.ID)
 			if err != nil {
 				cmd.errorChan <- err
 				return
@@ -235,7 +235,7 @@ func (controller *ColoniesController) AddProcess(process *core.Process) (*core.P
 				cmd.errorChan <- err
 				return
 			}
-			addedProcess, err := controller.db.GetProcessByID(process.ID())
+			addedProcess, err := controller.db.GetProcessByID(process.ID)
 			if err != nil {
 				cmd.errorChan <- err
 				return
@@ -261,7 +261,7 @@ func (controller *ColoniesController) GetProcessByID(colonyID string, processID 
 				cmd.errorChan <- err
 				return
 			}
-			if process.TargetColonyID() != colonyID { // TODO: These kinds of checks should be done by security
+			if process.TargetColonyID != colonyID { // TODO: These kinds of checks should be done by security
 				cmd.errorChan <- errors.New("Process not bound to specifid colony id <" + colonyID + ">")
 				return
 			}
@@ -394,7 +394,7 @@ func (controller *ColoniesController) MarkSuccessful(computerID string, processI
 				cmd.errorChan <- err
 				return
 			}
-			if process.AssignedComputerID() != computerID { // TODO: Move to security
+			if process.AssignedComputerID != computerID { // TODO: Move to security
 				cmd.errorChan <- errors.New("Computer is not assigned to process, cannot mark as succesful")
 				return
 			}
@@ -413,7 +413,7 @@ func (controller *ColoniesController) MarkFailed(computerID string, processID st
 				cmd.errorChan <- err
 				return
 			}
-			if process.AssignedComputerID() != computerID { // TODO: Move to security
+			if process.AssignedComputerID != computerID { // TODO: Move to security
 				cmd.errorChan <- errors.New("Computer is not assigned to process, cannot mark as succesful")
 				return
 			}
@@ -469,7 +469,7 @@ func (controller *ColoniesController) AddAttribute(attribute *core.Attribute) (*
 				cmd.errorChan <- err
 				return
 			}
-			addedAttribute, err := controller.db.GetAttributeByID(attribute.ID())
+			addedAttribute, err := controller.db.GetAttributeByID(attribute.ID)
 			if err != nil {
 				cmd.errorChan <- err
 				return

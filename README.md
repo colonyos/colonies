@@ -5,7 +5,7 @@ A **Colony** is a collection of (geographically) distributed computers that can 
 
 A Colony may consists of many different kinds of Colony Runtimes, e.g. a **Kubernetes Colony Runtime**, **Docker Colony Runtime**, **AWS Colony Runtime, or a **Slurm Singulairty Colony Runtime**. A Colony Runtime can also reside in IoT devices or smart phones, thus making it possible to deploy and manage applications that run across devices and servers. In this way, Colonies can be used to implement a "Cloud-of-Cloud" platform that combines many execution environments into a new virtual computing environment that can be controlled using an unified API. 
 
-![Colonies Architecture](doc/ColoniesArch.png?raw=true "Colonies Architecture")
+![Colonies Architecture](docs/ColoniesArch.png?raw=true "Colonies Architecture")
 
 A core concept of Colonies is security and crypto identity management. Each Colony and Colony Runtime is assigned a *Digital Identity* that is verified by the Colonies server. The Colonies Server can be seen as a certificate registry and maintains a list of valid identities and rules how different runtimes can interact with each other. In this way, different runtimes can trust each other even though they reside in different environments across providers. The Colony Private key serves as a *"one ring to rule them all"* and gives full controll to the Colony owner.    
 

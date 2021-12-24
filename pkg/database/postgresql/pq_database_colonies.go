@@ -10,7 +10,7 @@ import (
 
 func (db *PQDatabase) AddColony(colony *core.Colony) error {
 	sqlStatement := `INSERT INTO  ` + db.dbPrefix + `COLONIES (COLONY_ID, NAME) VALUES ($1, $2)`
-	_, err := db.postgresql.Exec(sqlStatement, colony.ID(), colony.Name())
+	_, err := db.postgresql.Exec(sqlStatement, colony.ID, colony.Name)
 	if err != nil {
 		return err
 	}

@@ -10,8 +10,8 @@ func TestCreateColony(t *testing.T) {
 	name := "test_colony_name"
 	colony := CreateColony(GenerateRandomID(), name)
 
-	assert.Equal(t, colony.Name(), name)
-	assert.Len(t, colony.ID(), 64)
+	assert.Equal(t, colony.Name, name)
+	assert.Len(t, colony.ID, 64)
 }
 
 func TestColonyToJSON(t *testing.T) {
@@ -24,8 +24,8 @@ func TestColonyToJSON(t *testing.T) {
 	colony2, err := ConvertJSONToColony(jsonString)
 	assert.Nil(t, err)
 
-	assert.Equal(t, colony.Name(), colony2.Name())
-	assert.Equal(t, colony.ID(), colony2.ID())
+	assert.Equal(t, colony.Name, colony2.Name)
+	assert.Equal(t, colony.ID, colony2.ID)
 }
 
 func TestColonyToJSONArray(t *testing.T) {
@@ -43,7 +43,7 @@ func TestColonyToJSONArray(t *testing.T) {
 	counter := 0
 	for _, colony := range colonies {
 		for _, colony2 := range colonies2 {
-			if colony.ID() == colony2.ID() {
+			if colony.ID == colony2.ID {
 				counter++
 			}
 		}

@@ -38,7 +38,7 @@ func (ownership *OwnershipImpl) CheckIfComputerBelongsToColony(computerID string
 		return errors.New("Computer not found <" + computerID + ">")
 	}
 
-	if computer.ColonyID() != colonyID {
+	if computer.ColonyID != colonyID {
 		return errors.New("Computer " + "<" + computerID + "> not member of colony <" + colonyID + ">")
 	}
 
