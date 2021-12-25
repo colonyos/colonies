@@ -46,15 +46,11 @@ func TestAddColony(t *testing.T) {
 	colony := core.CreateColony(colonyID, "test_colony_name")
 	colonyAdded, err := client.AddColony(colony, rootPassword, TESTHOST, TESTPORT)
 	assert.Nil(t, err)
+	assert.True(t, colony.Equals(colonyAdded))
 
 	colonyFromServer, err := client.GetColonyByID(colonyID, prvKey)
 	assert.Nil(t, err)
-
-	// TODO equals
-	assert.Equal(t, colony.ID, colonyFromServer.ID)
-	assert.Equal(t, colony.Name, colonyFromServer.Name)
-	assert.Equal(t, colony.ID, colonyAdded.ID)
-	assert.Equal(t, colony.Name, colonyAdded.Name)
+	assert.True(t, colony.Equals(colonyFromServer))
 
 	server.Shutdown()
 	<-done
@@ -80,16 +76,13 @@ func TestGetColonies(t *testing.T) {
 	_, err = client.AddColony(colony2, rootPassword, TESTHOST, TESTPORT)
 	assert.Nil(t, err)
 
+	var colonies []*core.Colony
+	colonies = append(colonies, colony1)
+	colonies = append(colonies, colony2)
+
 	coloniesFromServer, err := client.GetColonies(rootPassword, TESTHOST, TESTPORT)
 	assert.Nil(t, err)
-
-	counter := 0
-	for _, colony := range coloniesFromServer {
-		if colony.ID == colonyID1 || colony.ID == colonyID2 {
-			counter++
-		}
-	}
-	assert.Equal(t, 2, counter)
+	assert.True(t, core.IsColonyArraysEqual(colonies, coloniesFromServer))
 
 	server.Shutdown()
 	<-done
@@ -127,12 +120,12 @@ func TestAddComputer(t *testing.T) {
 	computer := core.CreateComputer(computerID, name, colonyID, cpu, cores, mem, gpu, gpus)
 	addedComputer, err := client.AddComputer(computer, colonyPrvKey, TESTHOST, TESTPORT)
 	assert.Nil(t, err)
+	assert.True(t, computer.Equals(addedComputer))
 
 	computerFromServer, err := client.GetComputerByID(computerID, colonyID, colonyPrvKey, TESTHOST, TESTPORT)
 	assert.Nil(t, err)
 	assert.NotNil(t, computerFromServer)
-	assert.Equal(t, computerID, computerFromServer.ID)
-	assert.Equal(t, computerID, addedComputer.ID)
+	assert.True(t, computer.Equals(computerFromServer))
 
 	server.Shutdown()
 	<-done
@@ -145,7 +138,6 @@ func TestGetComputers(t *testing.T) {
 	// Create a Colony
 	colonyPrvKey, err := security.GeneratePrivateKey()
 	assert.Nil(t, err)
-
 	colonyID, err := security.GenerateID(colonyPrvKey)
 	assert.Nil(t, err)
 
@@ -154,7 +146,7 @@ func TestGetComputers(t *testing.T) {
 	_, err = client.AddColony(colony, rootPassword, TESTHOST, TESTPORT)
 	assert.Nil(t, err)
 
-	// Create a computer 1
+	// Create a Computer
 	computer1PrvKey, err := security.GeneratePrivateKey()
 	assert.Nil(t, err)
 	computer1ID, err := security.GenerateID(computer1PrvKey)
@@ -171,21 +163,24 @@ func TestGetComputers(t *testing.T) {
 	_, err = client.AddComputer(computer1, colonyPrvKey, TESTHOST, TESTPORT)
 	assert.Nil(t, err)
 
-	// Create a computer2
+	// Create a Computer
 	computer2PrvKey, err := security.GeneratePrivateKey()
 	assert.Nil(t, err)
 	computer2ID, err := security.GenerateID(computer2PrvKey)
 	assert.Nil(t, err)
 
 	name = "test_computer 2"
-
 	computer2 := core.CreateComputer(computer2ID, name, colonyID, cpu, cores, mem, gpu, gpus)
 	_, err = client.AddComputer(computer2, colonyPrvKey, TESTHOST, TESTPORT)
 	assert.Nil(t, err)
 
-	computers, err := client.GetComputersByColonyID(colonyID, colonyPrvKey, TESTHOST, TESTPORT)
+	var computers []*core.Computer
+	computers = append(computers, computer1)
+	computers = append(computers, computer2)
+
+	computersFromServer, err := client.GetComputersByColonyID(colonyID, colonyPrvKey, TESTHOST, TESTPORT)
 	assert.Nil(t, err)
-	assert.Len(t, computers, 2)
+	assert.True(t, core.IsComputerArraysEqual(computers, computersFromServer))
 
 	server.Shutdown()
 	<-done
@@ -254,19 +249,13 @@ func TestAddProcess(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, processSpec2.TargetColonyID, addedProcess2.TargetColonyID)
 
-	processes, err := client.GetWaitingProcesses(env.computerID, env.colonyID, 100, env.computerPrvKey)
-	assert.Nil(t, err)
+	var processes []*core.Process
+	processes = append(processes, addedProcess1)
+	processes = append(processes, addedProcess2)
 
-	counter := 0
-	for _, processFromServer := range processes {
-		if processFromServer.ID == addedProcess1.ID {
-			counter++
-		}
-		if processFromServer.ID == addedProcess2.ID {
-			counter++
-		}
-	}
-	assert.Equal(t, 2, counter)
+	processesFromServer, err := client.GetWaitingProcesses(env.computerID, env.colonyID, 100, env.computerPrvKey)
+	assert.Nil(t, err)
+	assert.True(t, core.IsProcessArrayEqual(processes, processesFromServer))
 
 	server.Shutdown()
 	<-done

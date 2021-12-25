@@ -40,7 +40,7 @@ func ConvertJSONToAttribute(jsonString string) (*Attribute, error) {
 	return attribute, nil
 }
 
-func IsAttributeArrayEqual(attributes1 []*Attribute, attributes2 []*Attribute) bool {
+func IsAttributeArraysEqual(attributes1 []*Attribute, attributes2 []*Attribute) bool {
 	counter := 0
 	for _, attribute1 := range attributes1 {
 		for _, attribute2 := range attributes2 {

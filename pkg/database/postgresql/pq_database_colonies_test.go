@@ -20,8 +20,11 @@ func TestAddColony(t *testing.T) {
 	assert.Nil(t, err)
 
 	colonyFromDB := colonies[0]
-	assert.Equal(t, colony.ID, colonyFromDB.ID)
-	assert.Equal(t, colony.Name, colonyFromDB.Name)
+	assert.True(t, colony.Equals(colonyFromDB))
+
+	colonyFromDB, err = db.GetColonyByID(colony.ID)
+	assert.Nil(t, err)
+	assert.True(t, colony.Equals(colonyFromDB))
 }
 
 func TestAddTwoColonies(t *testing.T) {
@@ -29,18 +32,20 @@ func TestAddTwoColonies(t *testing.T) {
 	assert.Nil(t, err)
 
 	colony1 := core.CreateColony(core.GenerateRandomID(), "test_colony_name_1")
-
 	err = db.AddColony(colony1)
 	assert.Nil(t, err)
 
 	colony2 := core.CreateColony(core.GenerateRandomID(), "test_colony_name_2")
-
 	err = db.AddColony(colony2)
 	assert.Nil(t, err)
 
-	colonies, err := db.GetColonies()
+	var colonies []*core.Colony
+	colonies = append(colonies, colony1)
+	colonies = append(colonies, colony2)
+
+	coloniesFromDB, err := db.GetColonies()
 	assert.Nil(t, err)
-	assert.Len(t, colonies, 2)
+	assert.True(t, core.IsColonyArraysEqual(colonies, coloniesFromDB))
 }
 
 func TestGetColonyByID(t *testing.T) {
