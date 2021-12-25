@@ -26,8 +26,8 @@ var SpecFile string
 var Count int
 var ID string
 var PrvKey string
-var ComputerID string
-var ComputerPrvKey string
+var RuntimeID string
+var RuntimePrvKey string
 var ColonyPrvKey string
 var ColonyID string
 var ProcessID string

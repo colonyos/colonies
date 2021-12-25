@@ -13,30 +13,30 @@ import (
 // TODO: Add more tests
 
 type testEnv struct {
-	colony1PrvKey   string
-	colony1ID       string
-	colony2PrvKey   string
-	colony2ID       string
-	computer1PrvKey string
-	computer1ID     string
-	computer2PrvKey string
-	computer2ID     string
+	colony1PrvKey  string
+	colony1ID      string
+	colony2PrvKey  string
+	colony2ID      string
+	runtime1PrvKey string
+	runtime1ID     string
+	runtime2PrvKey string
+	runtime2ID     string
 }
 
-func generateComputer(t *testing.T, colonyID string) (*core.Computer, string, string) {
-	computerPrvKey, err := security.GeneratePrivateKey()
+func generateRuntime(t *testing.T, colonyID string) (*core.Runtime, string, string) {
+	runtimePrvKey, err := security.GeneratePrivateKey()
 	assert.Nil(t, err)
-	computerID, err := security.GenerateID(computerPrvKey)
+	runtimeID, err := security.GenerateID(runtimePrvKey)
 	assert.Nil(t, err)
 
-	name := "test_computer"
+	name := "test_runtime"
 	cpu := "AMD Ryzen 9 5950X (32) @ 3.400GHz"
 	cores := 32
 	mem := 80326
 	gpu := "NVIDIA GeForce RTX 2080 Ti Rev. A"
 	gpus := 1
 
-	return core.CreateComputer(computerID, name, colonyID, cpu, cores, mem, gpu, gpus), computerID, computerPrvKey
+	return core.CreateRuntime(runtimeID, name, colonyID, cpu, cores, mem, gpu, gpus), runtimeID, runtimePrvKey
 }
 
 func setupTestEnvironment(t *testing.T) (*testEnv, *ColoniesServer, chan bool) {
@@ -59,17 +59,17 @@ func setupTestEnvironment(t *testing.T) (*testEnv, *ColoniesServer, chan bool) {
 	colony2 := core.CreateColony(colony2ID, "test_colony_name")
 	_, err = client.AddColony(colony2, apiKey, TESTHOST, TESTPORT)
 
-	// Create a computer
-	computer1, computer1ID, computer1PrvKey := generateComputer(t, colony1ID)
-	_, err = client.AddComputer(computer1, colony1PrvKey, TESTHOST, TESTPORT)
+	// Create a runtime
+	runtime1, runtime1ID, runtime1PrvKey := generateRuntime(t, colony1ID)
+	_, err = client.AddRuntime(runtime1, colony1PrvKey, TESTHOST, TESTPORT)
 	assert.Nil(t, err)
 
-	// Create a computer
-	computer2, computer2ID, computer2PrvKey := generateComputer(t, colony2ID)
-	_, err = client.AddComputer(computer2, colony2PrvKey, TESTHOST, TESTPORT)
+	// Create a runtime
+	runtime2, runtime2ID, runtime2PrvKey := generateRuntime(t, colony2ID)
+	_, err = client.AddRuntime(runtime2, colony2PrvKey, TESTHOST, TESTPORT)
 	assert.Nil(t, err)
 
-	env := &testEnv{colony1PrvKey: colony1PrvKey, colony1ID: colony1ID, colony2PrvKey: colony2PrvKey, colony2ID: colony2ID, computer1PrvKey: computer1PrvKey, computer1ID: computer1ID, computer2PrvKey: computer2PrvKey, computer2ID: computer2ID}
+	env := &testEnv{colony1PrvKey: colony1PrvKey, colony1ID: colony1ID, colony2PrvKey: colony2PrvKey, colony2ID: colony2ID, runtime1PrvKey: runtime1PrvKey, runtime1ID: runtime1ID, runtime2PrvKey: runtime2PrvKey, runtime2ID: runtime2ID}
 
 	return env, server, done
 }
@@ -100,8 +100,8 @@ func TestGetColoniesSecurity(t *testing.T) {
 	_, server, done := setupTestEnvironment(t)
 
 	// The setup looks like this:
-	//   computer1 is member of colony1
-	//   computer2 is member of colony2
+	//   runtime1 is member of colony1
+	//   runtime2 is member of colony2
 
 	// Now, try to get colonies info using an invalid api
 	_, err := client.GetColonies("invalid-api-key", TESTHOST, TESTPORT)
@@ -119,8 +119,8 @@ func TestGetColonyByIDSecurity(t *testing.T) {
 	env, server, done := setupTestEnvironment(t)
 
 	// The setup looks like this:
-	//   computer1 is member of colony1
-	//   computer2 is member of colony2
+	//   runtime1 is member of colony1
+	//   runtime2 is member of colony2
 
 	// Now, try to get colony1 info using colony2 credentials
 	_, err := client.GetColonyByID(env.colony1ID, env.colony2PrvKey)
@@ -130,87 +130,87 @@ func TestGetColonyByIDSecurity(t *testing.T) {
 	_, err = client.GetColonyByID(env.colony1ID, env.colony1PrvKey)
 	assert.Nil(t, err) // Should work
 
-	// Now, try to get colony1 info using computer1 credentials
-	_, err = client.GetColonyByID(env.colony1ID, env.computer1PrvKey)
+	// Now, try to get colony1 info using runtime1 credentials
+	_, err = client.GetColonyByID(env.colony1ID, env.runtime1PrvKey)
 	assert.Nil(t, err) // Should work
 
-	// Now, try to get colony1 info using computer1 credentials
-	_, err = client.GetColonyByID(env.colony1ID, env.computer2PrvKey)
+	// Now, try to get colony1 info using runtime1 credentials
+	_, err = client.GetColonyByID(env.colony1ID, env.runtime2PrvKey)
 	assert.NotNil(t, err) // Should not work
 
 	server.Shutdown()
 	<-done
 }
 
-func TestAddComputerSecurity(t *testing.T) {
+func TestAddRuntimeSecurity(t *testing.T) {
 	env, server, done := setupTestEnvironment(t)
-	computer3, _, _ := generateComputer(t, env.colony1ID)
+	runtime3, _, _ := generateRuntime(t, env.colony1ID)
 
 	// The setup looks like this:
-	//   computer1 is member of colony1
-	//   computer2 is member of colony2
-	//   computer3 is bound to colony1, but not yet a member
+	//   runtime1 is member of colony1
+	//   runtime2 is member of colony2
+	//   runtime3 is bound to colony1, but not yet a member
 
-	// Now, try to add computer 3 to colony1 using colony 2 credentials
-	_, err := client.AddComputer(computer3, env.colony2PrvKey, TESTHOST, TESTPORT)
+	// Now, try to add runtime 3 to colony1 using colony 2 credentials
+	_, err := client.AddRuntime(runtime3, env.colony2PrvKey, TESTHOST, TESTPORT)
 	assert.NotNil(t, err) // Should not work
 
-	// Now, try to add computer 3 to colony1 using colony 1 credentials
-	_, err = client.AddComputer(computer3, env.colony1PrvKey, TESTHOST, TESTPORT)
+	// Now, try to add runtime 3 to colony1 using colony 1 credentials
+	_, err = client.AddRuntime(runtime3, env.colony1PrvKey, TESTHOST, TESTPORT)
 	assert.Nil(t, err) // Should work
 
 	server.Shutdown()
 	<-done
 }
 
-func TestGetComputerByIDSecurity(t *testing.T) {
+func TestGetRuntimeByIDSecurity(t *testing.T) {
 	env, server, done := setupTestEnvironment(t)
 
 	// The setup looks like this:
-	//   computer1 is member of colony1
-	//   computer2 is member of colony2
+	//   runtime1 is member of colony1
+	//   runtime2 is member of colony2
 
-	// Now try to access computer1 using credentials of computer2
-	_, err := client.GetComputerByID(env.computer1ID, env.colony1ID, env.computer2PrvKey, TESTHOST, TESTPORT)
+	// Now try to access runtime1 using credentials of runtime2
+	_, err := client.GetRuntimeByID(env.runtime1ID, env.colony1ID, env.runtime2PrvKey, TESTHOST, TESTPORT)
 	assert.NotNil(t, err) // Should not work
 
-	// Now try to access computer1 using computer1 credentials
-	_, err = client.GetComputerByID(env.computer1ID, env.colony1ID, env.computer1PrvKey, TESTHOST, TESTPORT)
+	// Now try to access runtime1 using runtime1 credentials
+	_, err = client.GetRuntimeByID(env.runtime1ID, env.colony1ID, env.runtime1PrvKey, TESTHOST, TESTPORT)
 	assert.Nil(t, err) // Should work
 
-	// Now try to access computer1 using colony1 credentials
-	_, err = client.GetComputerByID(env.computer1ID, env.colony1ID, env.colony1PrvKey, TESTHOST, TESTPORT)
+	// Now try to access runtime1 using colony1 credentials
+	_, err = client.GetRuntimeByID(env.runtime1ID, env.colony1ID, env.colony1PrvKey, TESTHOST, TESTPORT)
 	assert.Nil(t, err) // Should work
 
-	// Now try to access computer1 using colony1 credentials
-	_, err = client.GetComputerByID(env.computer1ID, env.colony1ID, env.colony2PrvKey, TESTHOST, TESTPORT)
+	// Now try to access runtime1 using colony1 credentials
+	_, err = client.GetRuntimeByID(env.runtime1ID, env.colony1ID, env.colony2PrvKey, TESTHOST, TESTPORT)
 	assert.NotNil(t, err) // Should not work
 
 	server.Shutdown()
 	<-done
 }
 
-func TestGetComputersByColonySecurity(t *testing.T) {
+func TestGetRuntimesByColonySecurity(t *testing.T) {
 	env, server, done := setupTestEnvironment(t)
 
 	// The setup looks like this:
-	//   computer1 is member of colony1
-	//   computer2 is member of colony2
+	//   runtime1 is member of colony1
+	//   runtime2 is member of colony2
 
-	// Now try to access computer1 using credentials of computer2
-	_, err := client.GetComputersByColonyID(env.colony1ID, env.computer2PrvKey, TESTHOST, TESTPORT)
+	// Now try to access runtime1 using credentials of runtime2
+	_, err := client.GetRuntimesByColonyID(env.colony1ID, env.runtime2PrvKey, TESTHOST, TESTPORT)
 	assert.NotNil(t, err) // Should not work
 
-	// Now try to access computer1 using computer1 credentials
-	_, err = client.GetComputersByColonyID(env.colony1ID, env.computer1PrvKey, TESTHOST, TESTPORT)
+	// Now try to access runtime1 using runtime1 credentials
+	_, err = client.GetRuntimesByColonyID(env.colony1ID, env.runtime1PrvKey, TESTHOST, TESTPORT)
 	assert.Nil(t, err) // Should work
 
-	// Now try to access computer1 using colony1 credentials
-	_, err = client.GetComputersByColonyID(env.colony1ID, env.colony1PrvKey, TESTHOST, TESTPORT)
+	// Now try to access runtime1 using colony1 credentials
+	_, err = client.GetRuntimesByColonyID(env.colony1ID, env.colony1PrvKey, TESTHOST, TESTPORT)
 	assert.Nil(t, err) // Should work
 
-	// Now try to access computer1 using colony1 credentials
-	_, err = client.GetComputersByColonyID(env.colony1ID, env.colony2PrvKey, TESTHOST, TESTPORT)
+	// Now try to access runtime1 using colony1 credentials
+	_, err = client.GetRuntimesByColonyID(env.colony1ID, env.colony2PrvKey, TESTHOST, TESTPORT)
 	assert.NotNil(t, err) // Should not work
 
 	server.Shutdown()
@@ -221,34 +221,34 @@ func TestAssignProcessSecurity(t *testing.T) {
 	env, server, done := setupTestEnvironment(t)
 
 	// The setup looks like this:
-	//   computer1 is member of colony1
-	//   computer2 is member of colony2
+	//   runtime1 is member of colony1
+	//   runtime2 is member of colony2
 
-	processSpec1 := core.CreateProcessSpec(env.colony1ID, []string{}, "test_computer", -1, 3, 1000, 10, 1, make(map[string]string))
-	_, err := client.PublishProcessSpec(processSpec1, env.computer1PrvKey, TESTHOST, TESTPORT)
+	processSpec1 := core.CreateProcessSpec(env.colony1ID, []string{}, "test_runtime", -1, 3, 1000, 10, 1, make(map[string]string))
+	_, err := client.PublishProcessSpec(processSpec1, env.runtime1PrvKey, TESTHOST, TESTPORT)
 	assert.Nil(t, err)
 
 	time.Sleep(50 * time.Millisecond)
 
-	processSpec2 := core.CreateProcessSpec(env.colony2ID, []string{}, "test_computer", -1, 3, 1000, 10, 1, make(map[string]string))
-	_, err = client.PublishProcessSpec(processSpec2, env.computer2PrvKey, TESTHOST, TESTPORT)
+	processSpec2 := core.CreateProcessSpec(env.colony2ID, []string{}, "test_runtime", -1, 3, 1000, 10, 1, make(map[string]string))
+	_, err = client.PublishProcessSpec(processSpec2, env.runtime2PrvKey, TESTHOST, TESTPORT)
 	assert.Nil(t, err)
 
-	// Now try to assign a process from colony2 using computer1 credentials
-	_, err = client.AssignProcess(env.computer2ID, env.colony1ID, env.computer1PrvKey)
+	// Now try to assign a process from colony2 using runtime1 credentials
+	_, err = client.AssignProcess(env.runtime2ID, env.colony1ID, env.runtime1PrvKey)
 	assert.NotNil(t, err) // Should not work
 
-	// Now try to assign a process from colony2 using computer1 credentials
-	_, err = client.AssignProcess(env.computer1ID, env.colony1ID, env.computer1PrvKey)
+	// Now try to assign a process from colony2 using runtime1 credentials
+	_, err = client.AssignProcess(env.runtime1ID, env.colony1ID, env.runtime1PrvKey)
 	assert.Nil(t, err) // Should work
 
 	// Now try to assign a process from colony2 using colony1 credentials
-	_, err = client.AssignProcess(env.computer1ID, env.colony1ID, env.colony1PrvKey)
-	assert.NotNil(t, err) // Should not work, only computers are allowed
+	_, err = client.AssignProcess(env.runtime1ID, env.colony1ID, env.colony1PrvKey)
+	assert.NotNil(t, err) // Should not work, only runtimes are allowed
 
 	// Now try to assign a process from colony2 using colony1 credentials
-	_, err = client.AssignProcess(env.computer1ID, env.colony1ID, env.colony2PrvKey)
-	assert.NotNil(t, err) // Should not work, only computers are allowed, also invalid credentials are used
+	_, err = client.AssignProcess(env.runtime1ID, env.colony1ID, env.colony2PrvKey)
+	assert.NotNil(t, err) // Should not work, only runtimes are allowed, also invalid credentials are used
 
 	server.Shutdown()
 	<-done

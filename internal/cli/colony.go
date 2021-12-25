@@ -59,7 +59,7 @@ var registerColonyCmd = &cobra.Command{
 		addedColony, err := client.AddColony(colony, RootPassword, ServerHost, ServerPort)
 		CheckError(err)
 
-		fmt.Println(addedColony.ID())
+		fmt.Println(addedColony.ID)
 	},
 }
 

@@ -73,7 +73,7 @@ func (db *PQDatabase) GetColonyByID(id string) (*core.Colony, error) {
 }
 
 func (db *PQDatabase) DeleteColonyByID(colonyID string) error {
-	err := db.DeleteComputersByColonyID(colonyID)
+	err := db.DeleteRuntimesByColonyID(colonyID)
 	if err != nil {
 		return err
 	}

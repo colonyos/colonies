@@ -1,6 +1,6 @@
 package main
 
-import "colonies/pkg/cli"
+import "colonies/internal/cli"
 
 func main() {
 	cli.Execute()

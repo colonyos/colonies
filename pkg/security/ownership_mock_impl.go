@@ -5,14 +5,14 @@ import (
 )
 
 type OwnershipMock struct {
-	colonies  map[string]bool
-	computers map[string]string
+	colonies map[string]bool
+	runtimes map[string]string
 }
 
 func CreateOwnershipMock() *OwnershipMock {
 	ownership := &OwnershipMock{}
 	ownership.colonies = make(map[string]bool)
-	ownership.computers = make(map[string]string)
+	ownership.runtimes = make(map[string]string)
 	return ownership
 }
 
@@ -20,8 +20,8 @@ func (ownership *OwnershipMock) addColony(colonyID string) {
 	ownership.colonies[colonyID] = true
 }
 
-func (ownership *OwnershipMock) addComputer(computerID string, colonyID string) {
-	ownership.computers[computerID] = colonyID
+func (ownership *OwnershipMock) addRuntime(runtimeID string, colonyID string) {
+	ownership.runtimes[runtimeID] = colonyID
 }
 
 func (ownership *OwnershipMock) CheckIfColonyExists(colonyID string) error {
@@ -33,13 +33,13 @@ func (ownership *OwnershipMock) CheckIfColonyExists(colonyID string) error {
 	return nil
 }
 
-func (ownership *OwnershipMock) CheckIfComputerBelongsToColony(computerID string, colonyID string) error {
-	colonyIDFromDB := ownership.computers[computerID]
+func (ownership *OwnershipMock) CheckIfRuntimeBelongsToColony(runtimeID string, colonyID string) error {
+	colonyIDFromDB := ownership.runtimes[runtimeID]
 	if colonyIDFromDB == "" {
 		return errors.New("Colony does not exists")
 	}
 	if colonyIDFromDB != colonyID {
-		return errors.New("Colony does have such a computer")
+		return errors.New("Colony does have such a runtime")
 	}
 
 	return nil

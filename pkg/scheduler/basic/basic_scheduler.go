@@ -35,8 +35,8 @@ func (scheduler *BasicScheduler) printCandidates(candidates []*core.Process) {
 	}
 }
 
-func (scheduler *BasicScheduler) Select(computerID string, candidates []*core.Process) (*core.Process, error) {
-	prioritizedProcesses := scheduler.Prioritize(computerID, candidates, 1)
+func (scheduler *BasicScheduler) Select(runtimeID string, candidates []*core.Process) (*core.Process, error) {
+	prioritizedProcesses := scheduler.Prioritize(runtimeID, candidates, 1)
 	if len(prioritizedProcesses) < 1 {
 		return nil, errors.New("No processes can be selected")
 	}
@@ -52,19 +52,19 @@ func min(x, y int) int {
 	return y
 }
 
-func (scheduler *BasicScheduler) Prioritize(computerID string, candidates []*core.Process, count int) []*core.Process {
+func (scheduler *BasicScheduler) Prioritize(runtimeID string, candidates []*core.Process, count int) []*core.Process {
 	var prioritizedCandidates []*core.Process
 	if len(candidates) == 0 {
 		return prioritizedCandidates
 	}
 
-	// First, check if there is process candidate target this specific computer
+	// First, check if there is process candidate target this specific runtime
 	for _, candidate := range candidates {
-		if len(candidate.TargetComputerIDs) == 0 {
+		if len(candidate.TargetRuntimeIDs) == 0 {
 			prioritizedCandidates = append(prioritizedCandidates, candidate)
 		} else {
-			for _, targetComputerID := range candidate.TargetComputerIDs {
-				if targetComputerID == computerID {
+			for _, targetRuntimeID := range candidate.TargetRuntimeIDs {
+				if targetRuntimeID == runtimeID {
 					prioritizedCandidates = append(prioritizedCandidates, candidate)
 				}
 			}

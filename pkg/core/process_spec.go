@@ -3,19 +3,19 @@ package core
 import "encoding/json"
 
 type ProcessSpec struct {
-	TargetColonyID    string            `json:"targetcolonyid"`
-	TargetComputerIDs []string          `json:"targetcomputerids"`
-	ComputerType      string            `json:"computertype"`
-	Timeout           int               `json:"timeout"`
-	MaxRetries        int               `json:"maxretries"`
-	Mem               int               `json:"mem"`
-	Cores             int               `json:"cores"`
-	GPUs              int               `json:"gpus"`
-	In                map[string]string `json:"in"`
+	TargetColonyID   string            `json:"targetcolonyid"`
+	TargetRuntimeIDs []string          `json:"targetruntimeids"`
+	RuntimeType      string            `json:"runtimetype"`
+	Timeout          int               `json:"timeout"`
+	MaxRetries       int               `json:"maxretries"`
+	Mem              int               `json:"mem"`
+	Cores            int               `json:"cores"`
+	GPUs             int               `json:"gpus"`
+	In               map[string]string `json:"in"`
 }
 
-func CreateProcessSpec(targetColonyID string, targetComputerIDs []string, computerType string, timeout int, maxRetries int, mem int, cores int, gpus int, in map[string]string) *ProcessSpec {
-	return &ProcessSpec{TargetColonyID: targetColonyID, TargetComputerIDs: targetComputerIDs, ComputerType: computerType, Timeout: timeout, Mem: mem, Cores: cores, GPUs: gpus, In: in}
+func CreateProcessSpec(targetColonyID string, targetRuntimeIDs []string, runtimeType string, timeout int, maxRetries int, mem int, cores int, gpus int, in map[string]string) *ProcessSpec {
+	return &ProcessSpec{TargetColonyID: targetColonyID, TargetRuntimeIDs: targetRuntimeIDs, RuntimeType: runtimeType, Timeout: timeout, Mem: mem, Cores: cores, GPUs: gpus, In: in}
 }
 
 func ConvertJSONToProcessSpec(jsonString string) (*ProcessSpec, error) {
