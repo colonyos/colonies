@@ -15,71 +15,58 @@ const (
 	FAILED      = 3
 )
 
-// TODO: This code should be refactored so that it contains a ProcessSpec instead of all this redundant information
-
 type Process struct {
 	ID                string       `json:"processid"`
-	TargetColonyID    string       `json:"targetcolonyid"`
-	TargetRuntimeIDs  []string     `json:"targetruntimeids"`
 	AssignedRuntimeID string       `json:"assignedruntimeid"`
-	Status            int          `json:"status"`
 	IsAssigned        bool         `json:"isassigned"`
-	RuntimeType       string       `json:"runtimetype"`
+	Status            int          `json:"status"`
 	SubmissionTime    time.Time    `json:"submissiontime"`
 	StartTime         time.Time    `json:"starttime"`
 	EndTime           time.Time    `json:"endtime"`
 	Deadline          time.Time    `json:"deadline"`
-	Timeout           int          `json:"timeout"`
 	Retries           int          `json:"retries"`
-	MaxRetries        int          `json:"maxretries"`
-	Mem               int          `json:"mem"`
-	Cores             int          `json:"cores"`
-	GPUs              int          `json:"gpus"`
 	Attributes        []*Attribute `json:"attributes"`
+	ProcessSpec       *ProcessSpec `json:"spec"`
 }
 
-func CreateProcess(targetColonyID string, targetRuntimeIDs []string, runtimeType string, timeout int, maxRetries int, mem int, cores int, gpus int) *Process {
+func CreateProcess(processSpec *ProcessSpec) *Process {
 	uuid := uuid.New()
 	id := crypto.GenerateHashFromString(uuid.String()).String()
 
 	var attributes []*Attribute
 
 	process := &Process{ID: id,
-		TargetColonyID:   targetColonyID,
-		TargetRuntimeIDs: targetRuntimeIDs,
-		Status:           WAITING,
-		IsAssigned:       false,
-		RuntimeType:      runtimeType,
-		Timeout:          timeout,
-		MaxRetries:       maxRetries,
-		Mem:              mem,
-		Cores:            cores,
-		GPUs:             gpus,
-		Attributes:       attributes,
+		Status:      WAITING,
+		IsAssigned:  false,
+		Attributes:  attributes,
+		ProcessSpec: processSpec,
 	}
 
 	return process
 }
 
-func CreateProcessFromDB(id string, targetColonyID string, targetRuntimeIDs []string, assignedRuntimeID string, status int, isAssigned bool, runtimeType string, submissionTime time.Time, startTime time.Time, endTime time.Time, deadline time.Time, timeout int, retries int, maxRetries int, mem int, cores int, gpus int, attributes []*Attribute) *Process {
+func CreateProcessFromDB(processSpec *ProcessSpec,
+	id string,
+	assignedRuntimeID string,
+	isAssigned bool,
+	status int,
+	submissionTime time.Time,
+	startTime time.Time,
+	endTime time.Time,
+	deadline time.Time,
+	retries int,
+	attributes []*Attribute) *Process {
 	return &Process{ID: id,
-		TargetColonyID:    targetColonyID,
-		TargetRuntimeIDs:  targetRuntimeIDs,
 		AssignedRuntimeID: assignedRuntimeID,
-		Status:            status,
 		IsAssigned:        isAssigned,
-		RuntimeType:       runtimeType,
+		Status:            status,
 		SubmissionTime:    submissionTime,
 		StartTime:         startTime,
 		EndTime:           endTime,
 		Deadline:          deadline,
-		Timeout:           timeout,
 		Retries:           retries,
-		MaxRetries:        maxRetries,
-		Mem:               mem,
-		Cores:             cores,
-		GPUs:              gpus,
 		Attributes:        attributes,
+		ProcessSpec:       processSpec,
 	}
 }
 
@@ -132,43 +119,22 @@ func IsProcessArrayEqual(processes1 []*Process, processes2 []*Process) bool {
 func (process *Process) Equals(process2 *Process) bool {
 	same := true
 	if process.ID != process2.ID &&
-		process.TargetColonyID != process2.TargetColonyID &&
 		process.AssignedRuntimeID != process2.AssignedRuntimeID &&
 		process.Status != process2.Status &&
 		process.IsAssigned != process2.IsAssigned &&
-		process.RuntimeType != process2.RuntimeType &&
 		process.SubmissionTime != process2.SubmissionTime &&
 		process.StartTime != process2.StartTime &&
 		process.EndTime != process2.EndTime &&
 		process.Deadline != process2.Deadline &&
-		process.Timeout != process2.Timeout &&
-		process.Retries != process2.Retries &&
-		process.MaxRetries != process2.MaxRetries &&
-		process.Mem != process2.Mem &&
-		process.Cores != process2.Cores &&
-		process.GPUs != process2.GPUs {
+		process.Retries != process2.Retries {
 		same = false
-	}
-
-	if process.TargetRuntimeIDs != nil && process2.TargetRuntimeIDs == nil {
-		same = false
-	} else if process.TargetRuntimeIDs == nil && process2.TargetRuntimeIDs != nil {
-		same = false
-	} else {
-		counter := 0
-		for _, targetRuntimeID1 := range process.TargetRuntimeIDs {
-			for _, targetRuntimeID2 := range process2.TargetRuntimeIDs {
-				if targetRuntimeID1 == targetRuntimeID2 {
-					counter++
-				}
-			}
-		}
-		if counter != len(process.TargetRuntimeIDs) && counter != len(process2.TargetRuntimeIDs) {
-			same = false
-		}
 	}
 
 	if !IsAttributeArraysEqual(process.Attributes, process2.Attributes) {
+		same = false
+	}
+
+	if !process.ProcessSpec.Equals(process2.ProcessSpec) {
 		same = false
 	}
 

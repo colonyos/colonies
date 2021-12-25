@@ -16,15 +16,16 @@ func TestAddProcess(t *testing.T) {
 	runtime1ID := core.GenerateRandomID()
 	runtime2ID := core.GenerateRandomID()
 
-	process := core.CreateProcess(colonyID, []string{runtime1ID, runtime2ID}, "dummy", -1, 3, 1000, 10, 1)
+	processSpec := core.CreateProcessSpec(colonyID, []string{runtime1ID, runtime2ID}, "dummy", -1, 3, 1000, 10, 1, make(map[string]string))
+	process := core.CreateProcess(processSpec)
 	err = db.AddProcess(process)
 	assert.Nil(t, err)
 
 	processFromDB, err := db.GetProcessByID(process.ID)
 	assert.Nil(t, err)
 	assert.True(t, process.Equals(processFromDB))
-	assert.Contains(t, processFromDB.TargetRuntimeIDs, runtime1ID)
-	assert.Contains(t, processFromDB.TargetRuntimeIDs, runtime2ID)
+	assert.Contains(t, processFromDB.ProcessSpec.TargetRuntimeIDs, runtime1ID)
+	assert.Contains(t, processFromDB.ProcessSpec.TargetRuntimeIDs, runtime2ID)
 }
 
 func TestDeleteProcesses(t *testing.T) {
@@ -35,15 +36,18 @@ func TestDeleteProcesses(t *testing.T) {
 	runtime1ID := core.GenerateRandomID()
 	runtime2ID := core.GenerateRandomID()
 
-	process1 := core.CreateProcess(colonyID, []string{runtime1ID, runtime2ID}, "dummy", -1, 3, 1000, 10, 1)
+	processSpec1 := core.CreateProcessSpec(colonyID, []string{runtime1ID, runtime2ID}, "dummy", -1, 3, 1000, 10, 1, make(map[string]string))
+	process1 := core.CreateProcess(processSpec1)
 	err = db.AddProcess(process1)
 	assert.Nil(t, err)
 
-	process2 := core.CreateProcess(colonyID, []string{runtime1ID, runtime2ID}, "dummy", -1, 3, 1000, 10, 1)
+	processSpec2 := core.CreateProcessSpec(colonyID, []string{runtime1ID, runtime2ID}, "dummy", -1, 3, 1000, 10, 1, make(map[string]string))
+	process2 := core.CreateProcess(processSpec2)
 	err = db.AddProcess(process2)
 	assert.Nil(t, err)
 
-	process3 := core.CreateProcess(colonyID, []string{runtime1ID, runtime2ID}, "dummy", -1, 3, 1000, 10, 1)
+	processSpec3 := core.CreateProcessSpec(colonyID, []string{runtime1ID, runtime2ID}, "dummy", -1, 3, 1000, 10, 1, make(map[string]string))
+	process3 := core.CreateProcess(processSpec3)
 	err = db.AddProcess(process3)
 	assert.Nil(t, err)
 
@@ -76,7 +80,8 @@ func TestDeleteAllProcessesAndAttributes(t *testing.T) {
 
 	colonyID := core.GenerateRandomID()
 
-	process1 := core.CreateProcess(colonyID, []string{}, "dummy", -1, 3, 1000, 10, 1)
+	processSpec1 := core.CreateProcessSpec(colonyID, []string{}, "dummy", -1, 3, 1000, 10, 1, make(map[string]string))
+	process1 := core.CreateProcess(processSpec1)
 	err = db.AddProcess(process1)
 	assert.Nil(t, err)
 
@@ -98,11 +103,13 @@ func TestDeleteProcessesAndAttributes(t *testing.T) {
 
 	colonyID := core.GenerateRandomID()
 
-	process1 := core.CreateProcess(colonyID, []string{}, "dummy", -1, 3, 1000, 10, 1)
+	processSpec1 := core.CreateProcessSpec(colonyID, []string{}, "dummy", -1, 3, 1000, 10, 1, make(map[string]string))
+	process1 := core.CreateProcess(processSpec1)
 	err = db.AddProcess(process1)
 	assert.Nil(t, err)
 
-	process2 := core.CreateProcess(colonyID, []string{}, "dummy", -1, 3, 1000, 10, 1)
+	processSpec2 := core.CreateProcessSpec(colonyID, []string{}, "dummy", -1, 3, 1000, 10, 1, make(map[string]string))
+	process2 := core.CreateProcess(processSpec2)
 	err = db.AddProcess(process2)
 	assert.Nil(t, err)
 
@@ -136,7 +143,8 @@ func TestAssign(t *testing.T) {
 	err = db.AddRuntime(runtime)
 	assert.Nil(t, err)
 
-	process := core.CreateProcess(colony.ID, []string{}, "dummy", -1, 3, 1000, 10, 1)
+	processSpec := core.CreateProcessSpec(colony.ID, []string{}, "dummy", -1, 3, 1000, 10, 1, make(map[string]string))
+	process := core.CreateProcess(processSpec)
 	err = db.AddProcess(process)
 	assert.Nil(t, err)
 
@@ -175,7 +183,8 @@ func TestMarkSuccessful(t *testing.T) {
 	err = db.AddRuntime(runtime)
 	assert.Nil(t, err)
 
-	process := core.CreateProcess(colony.ID, []string{}, "dummy", -1, 3, 1000, 10, 1)
+	processSpec := core.CreateProcessSpec(colony.ID, []string{}, "dummy", -1, 3, 1000, 10, 1, make(map[string]string))
+	process := core.CreateProcess(processSpec)
 	err = db.AddProcess(process)
 	assert.Nil(t, err)
 
@@ -214,7 +223,8 @@ func TestMarkFailed(t *testing.T) {
 	err = db.AddRuntime(runtime)
 	assert.Nil(t, err)
 
-	process := core.CreateProcess(colony.ID, []string{}, "dummy", -1, 3, 1000, 10, 1)
+	processSpec := core.CreateProcessSpec(colony.ID, []string{}, "dummy", -1, 3, 1000, 10, 1, make(map[string]string))
+	process := core.CreateProcess(processSpec)
 	err = db.AddProcess(process)
 	assert.Nil(t, err)
 
@@ -253,7 +263,8 @@ func TestReset(t *testing.T) {
 	err = db.AddRuntime(runtime)
 	assert.Nil(t, err)
 
-	process := core.CreateProcess(colony.ID, []string{}, "dummy", -1, 3, 1000, 10, 1)
+	processSpec := core.CreateProcessSpec(colony.ID, []string{}, "dummy", -1, 3, 1000, 10, 1, make(map[string]string))
+	process := core.CreateProcess(processSpec)
 	err = db.AddProcess(process)
 	assert.Nil(t, err)
 	err = db.AssignRuntime(runtime.ID, process)
@@ -261,7 +272,8 @@ func TestReset(t *testing.T) {
 	err = db.MarkFailed(process)
 	assert.Nil(t, err)
 
-	process = core.CreateProcess(colony.ID, []string{}, "dummy", -1, 3, 1000, 10, 1)
+	processSpec = core.CreateProcessSpec(colony.ID, []string{}, "dummy", -1, 3, 1000, 10, 1, make(map[string]string))
+	process = core.CreateProcess(processSpec)
 	err = db.AddProcess(process)
 	assert.Nil(t, err)
 	err = db.AssignRuntime(runtime.ID, process)
@@ -269,7 +281,8 @@ func TestReset(t *testing.T) {
 	err = db.MarkFailed(process)
 	assert.Nil(t, err)
 
-	process = core.CreateProcess(colony.ID, []string{}, "dummy", -1, 3, 1000, 10, 1)
+	processSpec = core.CreateProcessSpec(colony.ID, []string{}, "dummy", -1, 3, 1000, 10, 1, make(map[string]string))
+	process = core.CreateProcess(processSpec)
 	err = db.AddProcess(process)
 	assert.Nil(t, err)
 	err = db.AssignRuntime(runtime.ID, process)
@@ -311,13 +324,15 @@ func TestFindUnassignedProcesses1(t *testing.T) {
 	err = db.AddRuntime(runtime2)
 	assert.Nil(t, err)
 
-	process1 := core.CreateProcess(colony.ID, []string{runtime2.ID}, "dummy", -1, 3, 1000, 10, 1)
+	processSpec1 := core.CreateProcessSpec(colony.ID, []string{runtime2.ID}, "dummy", -1, 3, 1000, 10, 1, make(map[string]string))
+	process1 := core.CreateProcess(processSpec1)
 	err = db.AddProcess(process1)
 	assert.Nil(t, err)
 
 	time.Sleep(50 * time.Millisecond)
 
-	process2 := core.CreateProcess(colony.ID, []string{runtime2.ID}, "dummy", -1, 3, 1000, 10, 1)
+	processSpec2 := core.CreateProcessSpec(colony.ID, []string{runtime2.ID}, "dummy", -1, 3, 1000, 10, 1, make(map[string]string))
+	process2 := core.CreateProcess(processSpec2)
 	err = db.AddProcess(process2)
 	assert.Nil(t, err)
 
@@ -349,17 +364,20 @@ func TestFindUnassignedProcesses2(t *testing.T) {
 	err = db.AddRuntime(runtime2)
 	assert.Nil(t, err)
 
-	process1 := core.CreateProcess(colony.ID, []string{}, "dummy", -1, 3, 1000, 10, 1)
+	processSpec1 := core.CreateProcessSpec(colony.ID, []string{}, "dummy", -1, 3, 1000, 10, 1, make(map[string]string))
+	process1 := core.CreateProcess(processSpec1)
 	err = db.AddProcess(process1)
 	assert.Nil(t, err)
 
 	time.Sleep(50 * time.Millisecond)
 
-	process2 := core.CreateProcess(colony.ID, []string{runtime2.ID}, "dummy", -1, 3, 1000, 10, 1)
+	processSpec2 := core.CreateProcessSpec(colony.ID, []string{runtime2.ID}, "dummy", -1, 3, 1000, 10, 1, make(map[string]string))
+	process2 := core.CreateProcess(processSpec2)
 	err = db.AddProcess(process2)
 	assert.Nil(t, err)
 
-	process3 := core.CreateProcess(colony.ID, []string{runtime2.ID}, "dummy", -1, 3, 1000, 10, 1)
+	processSpec3 := core.CreateProcessSpec(colony.ID, []string{runtime2.ID}, "dummy", -1, 3, 1000, 10, 1, make(map[string]string))
+	process3 := core.CreateProcess(processSpec3)
 	err = db.AddProcess(process3)
 	assert.Nil(t, err)
 
@@ -404,13 +422,15 @@ func TestFindUnassignedProcesses3(t *testing.T) {
 
 	// Here, we are testing that the order of targetRuntimeIDs strings does not matter
 
-	process1 := core.CreateProcess(colony.ID, []string{runtime1.ID, runtime2.ID}, "dummy", -1, 3, 1000, 10, 1)
+	processSpec1 := core.CreateProcessSpec(colony.ID, []string{runtime1.ID, runtime2.ID}, "dummy", -1, 3, 1000, 10, 1, make(map[string]string))
+	process1 := core.CreateProcess(processSpec1)
 	err = db.AddProcess(process1)
 	assert.Nil(t, err)
 
 	time.Sleep(50 * time.Millisecond)
 
-	process2 := core.CreateProcess(colony.ID, []string{runtime1.ID, runtime2.ID}, "dummy", -1, 3, 1000, 10, 1)
+	processSpec2 := core.CreateProcessSpec(colony.ID, []string{runtime1.ID, runtime2.ID}, "dummy", -1, 3, 1000, 10, 1, make(map[string]string))
+	process2 := core.CreateProcess(processSpec2)
 	err = db.AddProcess(process2)
 	assert.Nil(t, err)
 
@@ -440,13 +460,15 @@ func TestFindProcessAssigned(t *testing.T) {
 	err = db.AddRuntime(runtime1)
 	assert.Nil(t, err)
 
-	process1 := core.CreateProcess(colony.ID, []string{}, "dummy", -1, 3, 1000, 10, 1)
+	processSpec1 := core.CreateProcessSpec(colony.ID, []string{}, "dummy", -1, 3, 1000, 10, 1, make(map[string]string))
+	process1 := core.CreateProcess(processSpec1)
 	err = db.AddProcess(process1)
 	assert.Nil(t, err)
 
 	time.Sleep(50 * time.Millisecond)
 
-	process2 := core.CreateProcess(colony.ID, []string{}, "dummy", -1, 3, 1000, 10, 1)
+	processSpec2 := core.CreateProcessSpec(colony.ID, []string{}, "dummy", -1, 3, 1000, 10, 1, make(map[string]string))
+	process2 := core.CreateProcess(processSpec2)
 	err = db.AddProcess(process2)
 	assert.Nil(t, err)
 
@@ -520,7 +542,8 @@ func TestFindWaitingProcesses(t *testing.T) {
 	// Create some waiting/unassigned processes
 	waitingProcessIDs := make(map[string]bool)
 	for i := 0; i < 10; i++ {
-		process := core.CreateProcess(colony.ID, []string{}, "dummy", -1, 3, 1000, 10, 1)
+		processSpec := core.CreateProcessSpec(colony.ID, []string{}, "dummy", -1, 3, 1000, 10, 1, make(map[string]string))
+		process := core.CreateProcess(processSpec)
 		err = db.AddProcess(process)
 		assert.Nil(t, err)
 		//	err = db.AssignRuntime(runtimeID, process)
@@ -533,7 +556,8 @@ func TestFindWaitingProcesses(t *testing.T) {
 	// Create some running processes
 	runningProcessIDs := make(map[string]bool)
 	for i := 0; i < 10; i++ {
-		process := core.CreateProcess(colony.ID, []string{}, "dummy", -1, 3, 1000, 10, 1)
+		processSpec := core.CreateProcessSpec(colony.ID, []string{}, "dummy", -1, 3, 1000, 10, 1, make(map[string]string))
+		process := core.CreateProcess(processSpec)
 		err = db.AddProcess(process)
 		assert.Nil(t, err)
 		err = db.AssignRuntime(runtimeID, process)
@@ -546,7 +570,8 @@ func TestFindWaitingProcesses(t *testing.T) {
 	// Create some successful processes
 	successfulProcessIDs := make(map[string]bool)
 	for i := 0; i < 10; i++ {
-		process := core.CreateProcess(colony.ID, []string{}, "dummy", -1, 3, 1000, 10, 1)
+		processSpec := core.CreateProcessSpec(colony.ID, []string{}, "dummy", -1, 3, 1000, 10, 1, make(map[string]string))
+		process := core.CreateProcess(processSpec)
 		err = db.AddProcess(process)
 		assert.Nil(t, err)
 		err = db.AssignRuntime(runtimeID, process)
@@ -561,7 +586,8 @@ func TestFindWaitingProcesses(t *testing.T) {
 	// Create some successful processes
 	failedProcessIDs := make(map[string]bool)
 	for i := 0; i < 10; i++ {
-		process := core.CreateProcess(colony.ID, []string{}, "dummy", -1, 3, 1000, 10, 1)
+		processSpec := core.CreateProcessSpec(colony.ID, []string{}, "dummy", -1, 3, 1000, 10, 1, make(map[string]string))
+		process := core.CreateProcess(processSpec)
 		err = db.AddProcess(process)
 		assert.Nil(t, err)
 		err = db.AssignRuntime(runtimeID, process)

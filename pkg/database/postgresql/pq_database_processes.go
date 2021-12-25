@@ -11,15 +11,15 @@ import (
 )
 
 func (db *PQDatabase) AddProcess(process *core.Process) error {
-	targetRuntimeIDs := process.TargetRuntimeIDs
-	if len(process.TargetRuntimeIDs) == 0 {
+	targetRuntimeIDs := process.ProcessSpec.TargetRuntimeIDs
+	if len(process.ProcessSpec.TargetRuntimeIDs) == 0 {
 		targetRuntimeIDs = []string{"*"}
 	}
 
 	submissionTime := time.Now()
 
 	sqlStatement := `INSERT INTO  ` + db.dbPrefix + `PROCESSES (PROCESS_ID, TARGET_COLONY_ID, TARGET_runtime_IDS, ASSIGNED_runtime_ID, STATUS, IS_ASSIGNED, runtime_TYPE, SUBMISSION_TIME, START_TIME, END_TIME, DEADLINE, RETRIES, TIMEOUT, MAX_RETRIES, MEM, CORES, GPUs) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)`
-	_, err := db.postgresql.Exec(sqlStatement, process.ID, process.TargetColonyID, pq.Array(targetRuntimeIDs), process.AssignedRuntimeID, process.Status, process.IsAssigned, process.RuntimeType, submissionTime, time.Time{}, time.Time{}, process.Deadline, 0, process.Timeout, process.MaxRetries, process.Mem, process.Cores, process.GPUs)
+	_, err := db.postgresql.Exec(sqlStatement, process.ID, process.ProcessSpec.TargetColonyID, pq.Array(targetRuntimeIDs), process.AssignedRuntimeID, process.Status, process.IsAssigned, process.ProcessSpec.Conditions.RuntimeType, submissionTime, time.Time{}, time.Time{}, process.Deadline, 0, process.ProcessSpec.Timeout, process.ProcessSpec.MaxRetries, process.ProcessSpec.Conditions.Mem, process.ProcessSpec.Conditions.Cores, process.ProcessSpec.Conditions.GPUs)
 	if err != nil {
 		return err
 	}
@@ -70,7 +70,9 @@ func (db *PQDatabase) parseProcesses(rows *sql.Rows) ([]*core.Process, error) {
 			targetRuntimeIDs = []string{}
 		}
 
-		process := core.CreateProcessFromDB(processID, targetColonyID, targetRuntimeIDs, assignedRuntimeID, status, isAssigned, runtimeType, submissionTime, startTime, endTime, deadline, timeout, retries, maxRetries, mem, cores, gpus, attributes)
+		// TODO: we need to re-create ProcessSpec Env map
+		processSpec := core.CreateProcessSpec(targetColonyID, targetRuntimeIDs, runtimeType, timeout, maxRetries, mem, cores, gpus, make(map[string]string))
+		process := core.CreateProcessFromDB(processSpec, processID, assignedRuntimeID, isAssigned, status, submissionTime, startTime, endTime, deadline, retries, attributes)
 		processes = append(processes, process)
 	}
 
