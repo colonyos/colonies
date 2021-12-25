@@ -28,6 +28,25 @@ func TestAddProcess(t *testing.T) {
 	assert.Contains(t, processFromDB.ProcessSpec.TargetRuntimeIDs, runtime2ID)
 }
 
+func TestAddProcessWithEnv(t *testing.T) {
+	db, err := PrepareTests()
+	assert.Nil(t, err)
+
+	env := make(map[string]string)
+	env["test_key_1"] = "test_value_1"
+	env["test_key_2"] = "test_value_2"
+
+	colonyID := core.GenerateRandomID()
+	processSpec := core.CreateProcessSpec(colonyID, []string{}, "dummy", -1, 3, 1000, 10, 1, env)
+	process := core.CreateProcess(processSpec)
+	err = db.AddProcess(process)
+	assert.Nil(t, err)
+
+	processFromDB, err := db.GetProcessByID(process.ID)
+	assert.Nil(t, err)
+	assert.True(t, process.Equals(processFromDB))
+}
+
 func TestDeleteProcesses(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
