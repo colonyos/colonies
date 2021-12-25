@@ -18,14 +18,8 @@ func TestAddAttribute(t *testing.T) {
 
 	attributeFromDB, err := db.GetAttribute(processID, "test_key1", core.IN)
 	assert.Nil(t, err)
-
 	assert.NotNil(t, attributeFromDB)
-	// TODO: equal
-	assert.Equal(t, attribute.ID, attributeFromDB.ID)
-	assert.Equal(t, attribute.TargetID, attributeFromDB.TargetID)
-	assert.Equal(t, attribute.AttributeType, attributeFromDB.AttributeType)
-	assert.Equal(t, attribute.Key, attributeFromDB.Key)
-	assert.Equal(t, attribute.Value, attributeFromDB.Value)
+	assert.True(t, attribute.Equals(attributeFromDB))
 }
 
 func TestGetAttributes(t *testing.T) {
@@ -34,49 +28,44 @@ func TestGetAttributes(t *testing.T) {
 
 	processID := core.GenerateRandomID()
 
-	attribute := core.CreateAttribute(processID, core.IN, "test_key1", "test_value1")
-	err = db.AddAttribute(attribute)
+	attribute1 := core.CreateAttribute(processID, core.IN, "test_key1", "test_value1")
+	err = db.AddAttribute(attribute1)
 	assert.Nil(t, err)
 
-	attribute = core.CreateAttribute(processID, core.IN, "test_key2", "test_value2")
-	err = db.AddAttribute(attribute)
+	attribute2 := core.CreateAttribute(processID, core.IN, "test_key2", "test_value2")
+	err = db.AddAttribute(attribute2)
 	assert.Nil(t, err)
 
-	attribute = core.CreateAttribute(processID, core.ERR, "test_key3", "test_value3")
-	err = db.AddAttribute(attribute)
+	attribute3 := core.CreateAttribute(processID, core.ERR, "test_key3", "test_value3")
+	err = db.AddAttribute(attribute3)
 	assert.Nil(t, err)
+
+	var allAttributes []*core.Attribute
+	allAttributes = append(allAttributes, attribute1)
+	allAttributes = append(allAttributes, attribute2)
+	allAttributes = append(allAttributes, attribute3)
+
+	var inAttributes []*core.Attribute
+	inAttributes = append(inAttributes, attribute1)
+	inAttributes = append(inAttributes, attribute2)
+
+	var errAttributes []*core.Attribute
+	errAttributes = append(errAttributes, attribute3)
 
 	attributesFromDB, err := db.GetAttributesByType(processID, core.IN)
 	assert.Nil(t, err)
-
-	counter := 0
-	for _, attributeFromDB := range attributesFromDB {
-		if attributeFromDB.Key == "test_key1" && attributeFromDB.Value == "test_value1" {
-			counter++
-		}
-
-		if attributeFromDB.Key == "test_key2" && attributeFromDB.Value == "test_value2" {
-			counter++
-		}
-	}
-	assert.Equal(t, 2, counter)
+	assert.True(t, core.IsAttributeArraysEqual(inAttributes, attributesFromDB))
 
 	attributesFromDB, err = db.GetAttributesByType(processID, core.ERR)
 	assert.Nil(t, err)
-
-	counter = 0
-	for _, attributeFromDB := range attributesFromDB {
-		if attributeFromDB.Key == "test_key3" && attributeFromDB.Value == "test_value3" {
-			counter++
-		}
-	}
-	assert.Equal(t, 1, counter)
+	assert.True(t, core.IsAttributeArraysEqual(errAttributes, attributesFromDB))
 
 	attributesFromDB, err = db.GetAttributesByType(processID, core.OUT)
+	assert.Nil(t, err)
 	assert.Len(t, attributesFromDB, 0)
 
 	attributesFromDB, err = db.GetAttributes(processID)
-	assert.Len(t, attributesFromDB, 3)
+	assert.True(t, core.IsAttributeArraysEqual(allAttributes, attributesFromDB))
 }
 
 func TestUpdateAttribute(t *testing.T) {

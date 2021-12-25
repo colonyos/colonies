@@ -18,6 +18,54 @@ func TestCreateAttribute(t *testing.T) {
 	assert.Equal(t, value, attribute.Value)
 }
 
+func TestIsAttributeEquals(t *testing.T) {
+	attribute1 := CreateAttribute(GenerateRandomID(), OUT, "test_key", "test_value")
+	attribute2 := CreateAttribute(GenerateRandomID(), OUT, "test_key", "test_value")
+	attribute3 := CreateAttribute(attribute1.ID, IN, "test_key", "test_value")
+	attribute4 := CreateAttribute(attribute1.ID, ERR, "test_key", "test_value")
+	attribute5 := CreateAttribute(attribute1.ID, OUT, "test_keyX", "test_value")
+	attribute6 := CreateAttribute(attribute1.ID, OUT, "test_key", "test_valueX")
+
+	assert.True(t, attribute1.Equals(attribute1))
+	assert.False(t, attribute1.Equals(attribute2))
+	assert.False(t, attribute1.Equals(attribute3))
+	assert.False(t, attribute1.Equals(attribute4))
+	assert.False(t, attribute1.Equals(attribute5))
+	assert.False(t, attribute1.Equals(attribute6))
+}
+
+func TestISAttributeArraysEqual(t *testing.T) {
+	attribute1 := CreateAttribute(GenerateRandomID(), OUT, "test_key", "test_value")
+	attribute2 := CreateAttribute(GenerateRandomID(), OUT, "test_key", "test_value")
+	attribute3 := CreateAttribute(GenerateRandomID(), OUT, "test_key", "test_value")
+	attribute4 := CreateAttribute(GenerateRandomID(), OUT, "test_key", "test_value")
+
+	var attributes1 []*Attribute
+	attributes1 = append(attributes1, attribute1)
+	attributes1 = append(attributes1, attribute2)
+	attributes1 = append(attributes1, attribute3)
+
+	var attributes2 []*Attribute
+	attributes2 = append(attributes2, attribute2)
+	attributes2 = append(attributes2, attribute3)
+	attributes2 = append(attributes2, attribute1)
+
+	var attributes3 []*Attribute
+	attributes3 = append(attributes3, attribute2)
+	attributes3 = append(attributes3, attribute3)
+	attributes3 = append(attributes3, attribute4)
+
+	var attributes4 []*Attribute
+
+	assert.True(t, IsAttributeArraysEqual(attributes1, attributes1))
+	assert.True(t, IsAttributeArraysEqual(attributes1, attributes2))
+	assert.False(t, IsAttributeArraysEqual(attributes1, attributes3))
+	assert.False(t, IsAttributeArraysEqual(attributes1, attributes4))
+	assert.True(t, IsAttributeArraysEqual(attributes4, attributes4))
+	assert.True(t, IsAttributeArraysEqual(nil, nil))
+	assert.False(t, IsAttributeArraysEqual(nil, attributes2))
+}
+
 func TestAttributeToJSON(t *testing.T) {
 	key := "test_key"
 	value := "test_value"

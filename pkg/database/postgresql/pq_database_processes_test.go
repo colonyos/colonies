@@ -22,8 +22,7 @@ func TestAddProcess(t *testing.T) {
 
 	processFromDB, err := db.GetProcessByID(process.ID)
 	assert.Nil(t, err)
-
-	assert.Equal(t, colonyID, processFromDB.TargetColonyID)
+	assert.True(t, process.Equals(processFromDB))
 	assert.Contains(t, processFromDB.TargetComputerIDs, computer1ID)
 	assert.Contains(t, processFromDB.TargetComputerIDs, computer2ID)
 }
@@ -626,5 +625,4 @@ func TestFindWaitingProcesses(t *testing.T) {
 	numberOfProcesses, err = db.NumberOfFailedProcesses()
 	assert.Nil(t, err)
 	assert.Equal(t, 10, numberOfProcesses)
-
 }

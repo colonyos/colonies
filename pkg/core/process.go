@@ -168,7 +168,7 @@ func (process *Process) Equals(process2 *Process) bool {
 		}
 	}
 
-	if !IsAttributeArrayEqual(process.Attributes, process2.Attributes) {
+	if !IsAttributeArraysEqual(process.Attributes, process2.Attributes) {
 		same = false
 	}
 
@@ -189,7 +189,7 @@ func (process *Process) SetStatus(status int) {
 
 func (process *Process) SetAssignedComputerID(computerID string) {
 	process.AssignedComputerID = computerID
-	// TODO: set IsAssigned to true?
+	process.IsAssigned = true
 }
 
 func (process *Process) SetAttributes(attributes []*Attribute) {
