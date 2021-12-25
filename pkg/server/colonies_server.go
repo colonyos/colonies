@@ -336,10 +336,10 @@ func (server *ColoniesServer) handlePublishProcessRequest(c *gin.Context) {
 		return
 	}
 
-	process := core.CreateProcess(processSpec.TargetColonyID, processSpec.TargetRuntimeIDs, processSpec.RuntimeType, processSpec.Timeout, processSpec.MaxRetries, processSpec.Mem, processSpec.Cores, processSpec.GPUs)
+	process := core.CreateProcess(processSpec)
 
 	var attributes []*core.Attribute
-	for key, value := range processSpec.In {
+	for key, value := range processSpec.Env {
 		attributes = append(attributes, core.CreateAttribute(process.ID, core.IN, key, value))
 	}
 

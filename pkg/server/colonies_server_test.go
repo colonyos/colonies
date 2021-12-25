@@ -247,7 +247,7 @@ func TestAddProcess(t *testing.T) {
 	processSpec2 := core.CreateProcessSpec(env.colonyID, []string{}, "test_runtime", -1, 3, 1000, 10, 1, make(map[string]string))
 	addedProcess2, err := client.PublishProcessSpec(processSpec2, env.runtimePrvKey, TESTHOST, TESTPORT)
 	assert.Nil(t, err)
-	assert.Equal(t, processSpec2.TargetColonyID, addedProcess2.TargetColonyID)
+	assert.Equal(t, processSpec2.TargetColonyID, addedProcess2.ProcessSpec.TargetColonyID)
 
 	var processes []*core.Process
 	processes = append(processes, addedProcess1)

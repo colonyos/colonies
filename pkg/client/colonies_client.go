@@ -574,7 +574,7 @@ func MarkSuccessful(process *core.Process, prvKey string) error {
 		SetHeader("Id", id).
 		SetHeader("Digest", digest).
 		SetHeader("Signature", sig).
-		Put("https://localhost:8080/colonies/" + process.TargetColonyID + "/processes/" + process.ID + "/finish")
+		Put("https://localhost:8080/colonies/" + process.ProcessSpec.TargetColonyID + "/processes/" + process.ID + "/finish")
 
 	unquotedResp, err := strconv.Unquote(string(resp.Body()))
 	if err != nil {
@@ -600,7 +600,7 @@ func MarkFailed(process *core.Process, prvKey string) error {
 		SetHeader("Id", id).
 		SetHeader("Digest", digest).
 		SetHeader("Signature", sig).
-		Put("https://localhost:8080/colonies/" + process.TargetColonyID + "/processes/" + process.ID + "/failed")
+		Put("https://localhost:8080/colonies/" + process.ProcessSpec.TargetColonyID + "/processes/" + process.ID + "/failed")
 
 	unquotedResp, err := strconv.Unquote(string(resp.Body()))
 	if err != nil {

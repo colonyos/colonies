@@ -60,10 +60,10 @@ func (scheduler *BasicScheduler) Prioritize(runtimeID string, candidates []*core
 
 	// First, check if there is process candidate target this specific runtime
 	for _, candidate := range candidates {
-		if len(candidate.TargetRuntimeIDs) == 0 {
+		if len(candidate.ProcessSpec.TargetRuntimeIDs) == 0 {
 			prioritizedCandidates = append(prioritizedCandidates, candidate)
 		} else {
-			for _, targetRuntimeID := range candidate.TargetRuntimeIDs {
+			for _, targetRuntimeID := range candidate.ProcessSpec.TargetRuntimeIDs {
 				if targetRuntimeID == runtimeID {
 					prioritizedCandidates = append(prioritizedCandidates, candidate)
 				}

@@ -13,13 +13,16 @@ func TestSelectProcess(t *testing.T) {
 
 	colony := core.CreateColony(core.GenerateRandomID(), "test_colony_name")
 
-	process1 := core.CreateProcess(colony.ID, []string{}, "dummy", -1, 3, 1000, 10, 1)
+	processSpec1 := core.CreateProcessSpec(colony.ID, []string{}, "dummy", -1, 3, 1000, 10, 1, make(map[string]string))
+	process1 := core.CreateProcess(processSpec1)
 	process1.SetSubmissionTime(startTime.Add(600 * time.Millisecond))
 
-	process2 := core.CreateProcess(colony.ID, []string{}, "dummy", -1, 3, 1000, 10, 1)
+	processSpec2 := core.CreateProcessSpec(colony.ID, []string{}, "dummy", -1, 3, 1000, 10, 1, make(map[string]string))
+	process2 := core.CreateProcess(processSpec2)
 	process2.SetSubmissionTime(startTime.Add(100 * time.Millisecond))
 
-	process3 := core.CreateProcess(colony.ID, []string{}, "dummy", -1, 3, 1000, 10, 1)
+	processSpec3 := core.CreateProcessSpec(colony.ID, []string{}, "dummy", -1, 3, 1000, 10, 1, make(map[string]string))
+	process3 := core.CreateProcess(processSpec3)
 	process3.SetSubmissionTime(startTime.Add(300 * time.Millisecond))
 
 	candidates := []*core.Process{process1, process2, process3}
@@ -36,13 +39,16 @@ func TestSelectProcess2(t *testing.T) {
 
 	colony := core.CreateColony(core.GenerateRandomID(), "test_colony_name")
 
-	process1 := core.CreateProcess(colony.ID, []string{}, "dummy", -1, 3, 1000, 10, 1)
+	processSpec1 := core.CreateProcessSpec(colony.ID, []string{}, "dummy", -1, 3, 1000, 10, 1, make(map[string]string))
+	process1 := core.CreateProcess(processSpec1)
 	process1.SetSubmissionTime(startTime.Add(60 * time.Millisecond))
 
-	process2 := core.CreateProcess(colony.ID, []string{}, "dummy", -1, 3, 1000, 10, 1)
+	processSpec2 := core.CreateProcessSpec(colony.ID, []string{}, "dummy", -1, 3, 1000, 10, 1, make(map[string]string))
+	process2 := core.CreateProcess(processSpec2)
 	process2.SetSubmissionTime(startTime.Add(100 * time.Millisecond))
 
-	process3 := core.CreateProcess(colony.ID, []string{}, "dummy", -1, 3, 1000, 10, 1)
+	processSpec3 := core.CreateProcessSpec(colony.ID, []string{}, "dummy", -1, 3, 1000, 10, 1, make(map[string]string))
+	process3 := core.CreateProcess(processSpec3)
 	process3.SetSubmissionTime(startTime.Add(300 * time.Millisecond))
 
 	candidates := []*core.Process{process1, process2, process3}
@@ -58,13 +64,16 @@ func TestSelectProcessSameSubmissionTimes(t *testing.T) {
 
 	colony := core.CreateColony(core.GenerateRandomID(), "test_colony_name")
 
-	process1 := core.CreateProcess(colony.ID, []string{}, "dummy", -1, 3, 1000, 10, 1)
+	processSpec1 := core.CreateProcessSpec(colony.ID, []string{}, "dummy", -1, 3, 1000, 10, 1, make(map[string]string))
+	process1 := core.CreateProcess(processSpec1)
 	process1.SetSubmissionTime(startTime)
 
-	process2 := core.CreateProcess(colony.ID, []string{}, "dummy", -1, 3, 1000, 10, 1)
+	processSpec2 := core.CreateProcessSpec(colony.ID, []string{}, "dummy", -1, 3, 1000, 10, 1, make(map[string]string))
+	process2 := core.CreateProcess(processSpec2)
 	process2.SetSubmissionTime(startTime)
 
-	process3 := core.CreateProcess(colony.ID, []string{}, "dummy", -1, 3, 1000, 10, 1)
+	processSpec3 := core.CreateProcessSpec(colony.ID, []string{}, "dummy", -1, 3, 1000, 10, 1, make(map[string]string))
+	process3 := core.CreateProcess(processSpec3)
 	process3.SetSubmissionTime(startTime)
 
 	candidates := []*core.Process{process1, process2, process3}
@@ -89,13 +98,16 @@ func TestSelectProccess5(t *testing.T) {
 
 	colony := core.CreateColony(core.GenerateRandomID(), "test_colony_name")
 
-	process1 := core.CreateProcess(colony.ID, []string{"runtimeid_2"}, "dummy", -1, 3, 1000, 10, 1)
+	processSpec1 := core.CreateProcessSpec(colony.ID, []string{"runtimeid_2"}, "dummy", -1, 3, 1000, 10, 1, make(map[string]string))
+	process1 := core.CreateProcess(processSpec1)
 	process1.SetSubmissionTime(startTime.Add(600 * time.Millisecond))
 
-	process2 := core.CreateProcess(colony.ID, []string{"runtimeid_2"}, "dummy", -1, 3, 1000, 10, 1)
+	processSpec2 := core.CreateProcessSpec(colony.ID, []string{"runtimeid_2"}, "dummy", -1, 3, 1000, 10, 1, make(map[string]string))
+	process2 := core.CreateProcess(processSpec2)
 	process2.SetSubmissionTime(startTime.Add(100 * time.Millisecond))
 
-	process3 := core.CreateProcess(colony.ID, []string{"runtimeid_1"}, "dummy", -1, 3, 1000, 10, 1)
+	processSpec3 := core.CreateProcessSpec(colony.ID, []string{"runtimeid_1"}, "dummy", -1, 3, 1000, 10, 1, make(map[string]string))
+	process3 := core.CreateProcess(processSpec3)
 	process3.SetSubmissionTime(startTime.Add(300 * time.Millisecond))
 
 	candidates := []*core.Process{process1, process2, process3}
@@ -111,13 +123,16 @@ func TestPrioritize(t *testing.T) {
 
 	colony := core.CreateColony(core.GenerateRandomID(), "test_colony_name")
 
-	process1 := core.CreateProcess(colony.ID, []string{}, "dummy", -1, 3, 1000, 10, 1)
+	processSpec1 := core.CreateProcessSpec(colony.ID, []string{}, "dummy", -1, 3, 1000, 10, 1, make(map[string]string))
+	process1 := core.CreateProcess(processSpec1)
 	process1.SetSubmissionTime(startTime.Add(600 * time.Millisecond))
 
-	process2 := core.CreateProcess(colony.ID, []string{}, "dummy", -1, 3, 1000, 10, 1)
+	processSpec2 := core.CreateProcessSpec(colony.ID, []string{}, "dummy", -1, 3, 1000, 10, 1, make(map[string]string))
+	process2 := core.CreateProcess(processSpec2)
 	process2.SetSubmissionTime(startTime.Add(100 * time.Millisecond))
 
-	process3 := core.CreateProcess(colony.ID, []string{}, "dummy", -1, 3, 1000, 10, 1)
+	processSpec3 := core.CreateProcessSpec(colony.ID, []string{}, "dummy", -1, 3, 1000, 10, 1, make(map[string]string))
+	process3 := core.CreateProcess(processSpec3)
 	process3.SetSubmissionTime(startTime.Add(300 * time.Millisecond))
 
 	candidates := []*core.Process{process1, process2, process3}
@@ -142,13 +157,16 @@ func TestPrioritize2(t *testing.T) {
 
 	colony := core.CreateColony(core.GenerateRandomID(), "test_colony_name")
 
-	process1 := core.CreateProcess(colony.ID, []string{"runtimeid_1"}, "dummy", -1, 3, 1000, 10, 1)
+	processSpec1 := core.CreateProcessSpec(colony.ID, []string{"runtimeid_1"}, "dummy", -1, 3, 1000, 10, 1, make(map[string]string))
+	process1 := core.CreateProcess(processSpec1)
 	process1.SetSubmissionTime(startTime.Add(600 * time.Millisecond))
 
-	process2 := core.CreateProcess(colony.ID, []string{"runtimeid_1"}, "dummy", -1, 3, 1000, 10, 1)
+	processSpec2 := core.CreateProcessSpec(colony.ID, []string{"runtimeid_1"}, "dummy", -1, 3, 1000, 10, 1, make(map[string]string))
+	process2 := core.CreateProcess(processSpec2)
 	process2.SetSubmissionTime(startTime.Add(100 * time.Millisecond))
 
-	process3 := core.CreateProcess(colony.ID, []string{}, "dummy", -1, 3, 1000, 10, 1)
+	processSpec3 := core.CreateProcessSpec(colony.ID, []string{}, "dummy", -1, 3, 1000, 10, 1, make(map[string]string))
+	process3 := core.CreateProcess(processSpec3)
 	process3.SetSubmissionTime(startTime.Add(300 * time.Millisecond))
 
 	candidates := []*core.Process{process1, process2, process3}
