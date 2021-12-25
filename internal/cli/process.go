@@ -26,80 +26,80 @@ func init() {
 	processCmd.PersistentFlags().StringVarP(&ServerHost, "host", "", "localhost", "Server host")
 	processCmd.PersistentFlags().IntVarP(&ServerPort, "port", "", 8080, "Server HTTP port")
 
-	submitProcessCmd.Flags().StringVarP(&ID, "id", "", "", "Colony or Computer Id")
-	submitProcessCmd.Flags().StringVarP(&PrvKey, "prvkey", "", "", "Colony or Computer private key")
+	submitProcessCmd.Flags().StringVarP(&ID, "id", "", "", "Colony or Runtime Id")
+	submitProcessCmd.Flags().StringVarP(&PrvKey, "prvkey", "", "", "Colony or Runtime private key")
 	submitProcessCmd.Flags().StringVarP(&SpecFile, "spec", "", "", "JSON specification of a Colony process")
-	approveComputersCmd.MarkFlagRequired("spec")
+	approveRuntimesCmd.MarkFlagRequired("spec")
 
 	listWaitingProcessesCmd.Flags().StringVarP(&ColonyID, "colonyid", "", "", "Colony Id")
 	listWaitingProcessesCmd.MarkFlagRequired("colonyid")
-	listWaitingProcessesCmd.Flags().StringVarP(&ComputerID, "computerid", "", "", "Computer Id")
-	listWaitingProcessesCmd.MarkFlagRequired("computerid")
-	listWaitingProcessesCmd.Flags().StringVarP(&ComputerPrvKey, "computerprvkey", "", "", "Computer private key")
+	listWaitingProcessesCmd.Flags().StringVarP(&RuntimeID, "runtimeid", "", "", "Runtime Id")
+	listWaitingProcessesCmd.MarkFlagRequired("runtimeid")
+	listWaitingProcessesCmd.Flags().StringVarP(&RuntimePrvKey, "runtimeprvkey", "", "", "Runtime private key")
 	listWaitingProcessesCmd.Flags().IntVarP(&Count, "count", "", 10, "Number of processes to list")
 
-	listRunningProcessesCmd.Flags().StringVarP(&ID, "id", "", "", "Colony or Computer Id")
+	listRunningProcessesCmd.Flags().StringVarP(&ID, "id", "", "", "Colony or Runtime Id")
 	listRunningProcessesCmd.MarkFlagRequired("id")
 	listRunningProcessesCmd.Flags().StringVarP(&ColonyID, "colonyid", "", "", "Colony Id")
 	listRunningProcessesCmd.MarkFlagRequired("colonyid")
-	listRunningProcessesCmd.Flags().StringVarP(&PrvKey, "prvkey", "", "", "Colony or Computer private key")
+	listRunningProcessesCmd.Flags().StringVarP(&PrvKey, "prvkey", "", "", "Colony or Runtime private key")
 	listRunningProcessesCmd.Flags().IntVarP(&Count, "count", "", 10, "Number of processes to list")
 
-	listSuccessfulProcessesCmd.Flags().StringVarP(&ID, "id", "", "", "Colony or Computer Id")
+	listSuccessfulProcessesCmd.Flags().StringVarP(&ID, "id", "", "", "Colony or Runtime Id")
 	listSuccessfulProcessesCmd.MarkFlagRequired("id")
 	listSuccessfulProcessesCmd.Flags().StringVarP(&ColonyID, "colonyid", "", "", "Colony Id")
 	listSuccessfulProcessesCmd.MarkFlagRequired("colonyid")
-	listSuccessfulProcessesCmd.Flags().StringVarP(&PrvKey, "prvkey", "", "", "Colony or Computer private key")
+	listSuccessfulProcessesCmd.Flags().StringVarP(&PrvKey, "prvkey", "", "", "Colony or Runtime private key")
 	listSuccessfulProcessesCmd.Flags().IntVarP(&Count, "count", "", 10, "Number of processes to list")
 
-	listFailedProcessesCmd.Flags().StringVarP(&ID, "id", "", "", "Colony or Computer Id")
+	listFailedProcessesCmd.Flags().StringVarP(&ID, "id", "", "", "Colony or Runtime Id")
 	listFailedProcessesCmd.MarkFlagRequired("id")
 	listFailedProcessesCmd.Flags().StringVarP(&ColonyID, "colonyid", "", "", "Colony Id")
 	listFailedProcessesCmd.MarkFlagRequired("colonyid")
-	listFailedProcessesCmd.Flags().StringVarP(&PrvKey, "prvkey", "", "", "Colony or Computer private key")
+	listFailedProcessesCmd.Flags().StringVarP(&PrvKey, "prvkey", "", "", "Colony or Runtime private key")
 	listFailedProcessesCmd.Flags().IntVarP(&Count, "count", "", 10, "Number of processes to list")
 
-	getProcessCmd.Flags().StringVarP(&ID, "id", "", "", "Colony or Computer Id")
+	getProcessCmd.Flags().StringVarP(&ID, "id", "", "", "Colony or Runtime Id")
 	getProcessCmd.MarkFlagRequired("id")
 	getProcessCmd.Flags().StringVarP(&ColonyID, "colonyid", "", "", "Colony Id")
 	getProcessCmd.MarkFlagRequired("colonyid")
 	getProcessCmd.Flags().StringVarP(&ProcessID, "processid", "", "", "Process Id")
 	getProcessCmd.MarkFlagRequired("processid")
-	getProcessCmd.Flags().StringVarP(&PrvKey, "prvkey", "", "", "Colony or Computer private key")
+	getProcessCmd.Flags().StringVarP(&PrvKey, "prvkey", "", "", "Colony or Runtime private key")
 
 	assignProcessCmd.Flags().StringVarP(&ColonyID, "colonyid", "", "", "Colony Id")
 	assignProcessCmd.MarkFlagRequired("colonyid")
-	assignProcessCmd.Flags().StringVarP(&ComputerID, "computerid", "", "", "Computer Id")
-	assignProcessCmd.MarkFlagRequired("computerid")
-	assignProcessCmd.Flags().StringVarP(&ComputerPrvKey, "computerprvkey", "", "", "Computer private key")
+	assignProcessCmd.Flags().StringVarP(&RuntimeID, "runtimeid", "", "", "Runtime Id")
+	assignProcessCmd.MarkFlagRequired("runtimeid")
+	assignProcessCmd.Flags().StringVarP(&RuntimePrvKey, "runtimeprvkey", "", "", "Runtime private key")
 
 	markSuccessfull.Flags().StringVarP(&ColonyID, "colonyid", "", "", "Colony Id")
 	markSuccessfull.MarkFlagRequired("colonyid")
-	markSuccessfull.Flags().StringVarP(&ComputerID, "computerid", "", "", "Computer Id")
-	markSuccessfull.MarkFlagRequired("computerid")
-	markSuccessfull.Flags().StringVarP(&ComputerPrvKey, "computerprvkey", "", "", "Computer private key")
+	markSuccessfull.Flags().StringVarP(&RuntimeID, "runtimeid", "", "", "Runtime Id")
+	markSuccessfull.MarkFlagRequired("runtimeid")
+	markSuccessfull.Flags().StringVarP(&RuntimePrvKey, "runtimeprvkey", "", "", "Runtime private key")
 	markSuccessfull.Flags().StringVarP(&ProcessID, "processid", "", "", "Process Id")
 	markSuccessfull.MarkFlagRequired("processid")
 
 	markFailed.Flags().StringVarP(&ColonyID, "colonyid", "", "", "Colony Id")
 	markFailed.MarkFlagRequired("colonyid")
-	markFailed.Flags().StringVarP(&ComputerID, "computerid", "", "", "Computer Id")
-	markFailed.MarkFlagRequired("computerid")
-	markFailed.Flags().StringVarP(&ComputerPrvKey, "computerprvkey", "", "", "Computer private key")
+	markFailed.Flags().StringVarP(&RuntimeID, "runtimeid", "", "", "Runtime Id")
+	markFailed.MarkFlagRequired("runtimeid")
+	markFailed.Flags().StringVarP(&RuntimePrvKey, "runtimeprvkey", "", "", "Runtime private key")
 	markFailed.Flags().StringVarP(&ProcessID, "processid", "", "", "Process Id")
 	markFailed.MarkFlagRequired("processid")
 }
 
 var processCmd = &cobra.Command{
 	Use:   "process",
-	Short: "Manage Colony processes",
-	Long:  "Manage Colony processes",
+	Short: "Manage Colony Processes",
+	Long:  "Manage Colony Processes",
 }
 
 var submitProcessCmd = &cobra.Command{
 	Use:   "submit",
-	Short: "Submit a process to a Colony",
-	Long:  "Submit a process to a Colony",
+	Short: "Submit a Process to a Colony",
+	Long:  "Submit a Process to a Colony",
 	Run: func(cmd *cobra.Command, args []string) {
 		jsonSpecBytes, err := ioutil.ReadFile(SpecFile)
 		CheckError(err)
@@ -124,18 +124,18 @@ var submitProcessCmd = &cobra.Command{
 
 var assignProcessCmd = &cobra.Command{
 	Use:   "assign",
-	Short: "Assign a process to a Computer",
-	Long:  "Assign a process to a Computer",
+	Short: "Assign a Process to a Runtime",
+	Long:  "Assign a Process to a Runtime",
 	Run: func(cmd *cobra.Command, args []string) {
 		keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
 		CheckError(err)
 
-		if ComputerPrvKey == "" {
-			ComputerPrvKey, err = keychain.GetPrvKey(ComputerID)
+		if RuntimePrvKey == "" {
+			RuntimePrvKey, err = keychain.GetPrvKey(RuntimeID)
 			CheckError(err)
 		}
 
-		process, err := client.AssignProcess(ComputerID, ColonyID, ComputerPrvKey)
+		process, err := client.AssignProcess(RuntimeID, ColonyID, RuntimePrvKey)
 		if err != nil {
 			fmt.Println("No process was assigned")
 		} else {
@@ -148,22 +148,22 @@ var assignProcessCmd = &cobra.Command{
 
 var listWaitingProcessesCmd = &cobra.Command{
 	Use:   "psw",
-	Short: "List all waiting processes",
-	Long:  "List all waiting processes",
+	Short: "List all Waiting Processes",
+	Long:  "List all Waiting Processes",
 	Run: func(cmd *cobra.Command, args []string) {
 		keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
 		CheckError(err)
 
-		if ComputerPrvKey == "" {
-			ComputerPrvKey, err = keychain.GetPrvKey(ComputerID)
+		if RuntimePrvKey == "" {
+			RuntimePrvKey, err = keychain.GetPrvKey(RuntimeID)
 			CheckError(err)
 		}
 
-		processes, err := client.GetWaitingProcesses(ComputerID, ColonyID, Count, ComputerPrvKey)
+		processes, err := client.GetWaitingProcesses(RuntimeID, ColonyID, Count, RuntimePrvKey)
 		CheckError(err)
 
 		if len(processes) == 0 {
-			fmt.Println("No waiting processes found")
+			fmt.Println("No Waiting Process found")
 		} else {
 			jsonString, err := core.ConvertProcessArrayToJSON(processes)
 			CheckError(err)
@@ -176,8 +176,8 @@ var listWaitingProcessesCmd = &cobra.Command{
 
 var listRunningProcessesCmd = &cobra.Command{
 	Use:   "ps",
-	Short: "List all running processes",
-	Long:  "List all running processes",
+	Short: "List all Running Processes",
+	Long:  "List all Running Processes",
 	Run: func(cmd *cobra.Command, args []string) {
 		keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
 		CheckError(err)
@@ -191,7 +191,7 @@ var listRunningProcessesCmd = &cobra.Command{
 		CheckError(err)
 
 		if len(processes) == 0 {
-			fmt.Println("No running processes found")
+			fmt.Println("No Running Process found")
 		} else {
 			jsonString, err := core.ConvertProcessArrayToJSON(processes)
 			CheckError(err)
@@ -203,8 +203,8 @@ var listRunningProcessesCmd = &cobra.Command{
 
 var listSuccessfulProcessesCmd = &cobra.Command{
 	Use:   "pss",
-	Short: "List all successfull processes",
-	Long:  "List all successful processes",
+	Short: "List all Successfull Processes",
+	Long:  "List all Successfull Processes",
 	Run: func(cmd *cobra.Command, args []string) {
 		keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
 		CheckError(err)
@@ -218,7 +218,7 @@ var listSuccessfulProcessesCmd = &cobra.Command{
 		CheckError(err)
 
 		if len(processes) == 0 {
-			fmt.Println("No successful processes found")
+			fmt.Println("No Successful Process found")
 		} else {
 			jsonString, err := core.ConvertProcessArrayToJSON(processes)
 			CheckError(err)
@@ -230,8 +230,8 @@ var listSuccessfulProcessesCmd = &cobra.Command{
 
 var listFailedProcessesCmd = &cobra.Command{
 	Use:   "psf",
-	Short: "List all failed processes",
-	Long:  "List all failed processes",
+	Short: "List all Failed Processes",
+	Long:  "List all Failed Processes",
 	Run: func(cmd *cobra.Command, args []string) {
 		keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
 		CheckError(err)
@@ -245,7 +245,7 @@ var listFailedProcessesCmd = &cobra.Command{
 		CheckError(err)
 
 		if len(processes) == 0 {
-			fmt.Println("No failed processes found")
+			fmt.Println("No Failed Process found")
 		} else {
 			jsonString, err := core.ConvertProcessArrayToJSON(processes)
 			CheckError(err)
@@ -257,8 +257,8 @@ var listFailedProcessesCmd = &cobra.Command{
 
 var getProcessCmd = &cobra.Command{
 	Use:   "get",
-	Short: "Get info about a process",
-	Long:  "Get info about a process",
+	Short: "Get info about a Process",
+	Long:  "Get info about a Process",
 	Run: func(cmd *cobra.Command, args []string) {
 		keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
 		CheckError(err)
@@ -283,46 +283,46 @@ var getProcessCmd = &cobra.Command{
 
 var markSuccessfull = &cobra.Command{
 	Use:   "successful",
-	Short: "Mark a process as successful",
-	Long:  "Mark a process as successful",
+	Short: "Mark a Process as Successful",
+	Long:  "Mark a Process as Successful",
 	Run: func(cmd *cobra.Command, args []string) {
 		keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
 		CheckError(err)
 
-		if ComputerPrvKey == "" {
-			ComputerPrvKey, err = keychain.GetPrvKey(ComputerID)
+		if RuntimePrvKey == "" {
+			RuntimePrvKey, err = keychain.GetPrvKey(RuntimeID)
 			CheckError(err)
 		}
 
-		process, err := client.GetProcessByID(ProcessID, ColonyID, ComputerPrvKey)
+		process, err := client.GetProcessByID(ProcessID, ColonyID, RuntimePrvKey)
 		CheckError(err)
 
-		err = client.MarkSuccessful(process, ComputerPrvKey)
+		err = client.MarkSuccessful(process, RuntimePrvKey)
 		CheckError(err)
 
-		fmt.Println("Process marked as successful")
+		fmt.Println("Process marked as Successful")
 	},
 }
 
 var markFailed = &cobra.Command{
 	Use:   "failed",
-	Short: "Mark a process as failed",
-	Long:  "Mark a process as failed",
+	Short: "Mark a Process as Failed",
+	Long:  "Mark a Process as Failed",
 	Run: func(cmd *cobra.Command, args []string) {
 		keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
 		CheckError(err)
 
-		if ComputerPrvKey == "" {
-			ComputerPrvKey, err = keychain.GetPrvKey(ComputerID)
+		if RuntimePrvKey == "" {
+			RuntimePrvKey, err = keychain.GetPrvKey(RuntimeID)
 			CheckError(err)
 		}
 
-		process, err := client.GetProcessByID(ProcessID, ColonyID, ComputerPrvKey)
+		process, err := client.GetProcessByID(ProcessID, ColonyID, RuntimePrvKey)
 		CheckError(err)
 
-		err = client.MarkFailed(process, ComputerPrvKey)
+		err = client.MarkFailed(process, RuntimePrvKey)
 		CheckError(err)
 
-		fmt.Println("Process marked as failed")
+		fmt.Println("Process marked as Failed")
 	},
 }

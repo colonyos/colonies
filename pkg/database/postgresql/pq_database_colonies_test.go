@@ -84,22 +84,22 @@ func TestDeleteColonies(t *testing.T) {
 	err = db.AddColony(colony2)
 	assert.Nil(t, err)
 
-	computer1ID := core.GenerateRandomID()
-	computer1 := core.CreateComputer(computer1ID, "test_computer", colony1.ID, "AMD Ryzen 9 5950X (32) @ 3.400GHz", 32, 80326, "NVIDIA GeForce RTX 2080 Ti Rev. A", 1)
+	runtime1ID := core.GenerateRandomID()
+	runtime1 := core.CreateRuntime(runtime1ID, "test_runtime", colony1.ID, "AMD Ryzen 9 5950X (32) @ 3.400GHz", 32, 80326, "NVIDIA GeForce RTX 2080 Ti Rev. A", 1)
 
-	err = db.AddComputer(computer1)
+	err = db.AddRuntime(runtime1)
 	assert.Nil(t, err)
 
-	computer2ID := core.GenerateRandomID()
-	computer2 := core.CreateComputer(computer2ID, "test_computer", colony1.ID, "AMD Ryzen 9 5950X (32) @ 3.400GHz", 32, 80326, "NVIDIA GeForce RTX 2080 Ti Rev. A", 1)
+	runtime2ID := core.GenerateRandomID()
+	runtime2 := core.CreateRuntime(runtime2ID, "test_runtime", colony1.ID, "AMD Ryzen 9 5950X (32) @ 3.400GHz", 32, 80326, "NVIDIA GeForce RTX 2080 Ti Rev. A", 1)
 
-	err = db.AddComputer(computer2)
+	err = db.AddRuntime(runtime2)
 	assert.Nil(t, err)
 
-	computer3ID := core.GenerateRandomID()
-	computer3 := core.CreateComputer(computer3ID, "test_computer", colony2.ID, "AMD Ryzen 9 5950X (32) @ 3.400GHz", 32, 80326, "NVIDIA GeForce RTX 2080 Ti Rev. A", 1)
+	runtime3ID := core.GenerateRandomID()
+	runtime3 := core.CreateRuntime(runtime3ID, "test_runtime", colony2.ID, "AMD Ryzen 9 5950X (32) @ 3.400GHz", 32, 80326, "NVIDIA GeForce RTX 2080 Ti Rev. A", 1)
 
-	err = db.AddComputer(computer3)
+	err = db.AddRuntime(runtime3)
 	assert.Nil(t, err)
 
 	err = db.DeleteColonyByID(colony1.ID)
@@ -109,15 +109,15 @@ func TestDeleteColonies(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Nil(t, colonyFromDB)
 
-	computerFromDB, err := db.GetComputerByID(computer1.ID)
+	runtimeFromDB, err := db.GetRuntimeByID(runtime1.ID)
 	assert.Nil(t, err)
-	assert.Nil(t, computerFromDB)
+	assert.Nil(t, runtimeFromDB)
 
-	computerFromDB, err = db.GetComputerByID(computer2.ID)
+	runtimeFromDB, err = db.GetRuntimeByID(runtime2.ID)
 	assert.Nil(t, err)
-	assert.Nil(t, computerFromDB)
+	assert.Nil(t, runtimeFromDB)
 
-	computerFromDB, err = db.GetComputerByID(computer3.ID)
+	runtimeFromDB, err = db.GetRuntimeByID(runtime3.ID)
 	assert.Nil(t, err)
-	assert.NotNil(t, computerFromDB) // Belongs to colony 2 and should therefore not be deleted
+	assert.NotNil(t, runtimeFromDB) // Belongs to colony 2 and should therefore not be deleted
 }

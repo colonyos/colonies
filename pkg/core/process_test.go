@@ -9,21 +9,21 @@ import (
 
 func TestCreateProcess(t *testing.T) {
 	colonyID := GenerateRandomID()
-	computer1ID := GenerateRandomID()
-	computer2ID := GenerateRandomID()
-	computerType := "test_computer_type"
+	runtime1ID := GenerateRandomID()
+	runtime2ID := GenerateRandomID()
+	runtimeType := "test_runtime_type"
 	timeout := -1
 	maxRetries := 3
 	mem := 1000
 	cores := 10
 	gpus := 1
 
-	process := CreateProcess(colonyID, []string{computer1ID, computer2ID}, computerType, timeout, maxRetries, mem, cores, gpus)
+	process := CreateProcess(colonyID, []string{runtime1ID, runtime2ID}, runtimeType, timeout, maxRetries, mem, cores, gpus)
 
 	assert.Equal(t, colonyID, process.TargetColonyID)
-	assert.Contains(t, process.TargetComputerIDs, computer1ID)
-	assert.Contains(t, process.TargetComputerIDs, computer2ID)
-	assert.Equal(t, computerType, process.ComputerType)
+	assert.Contains(t, process.TargetRuntimeIDs, runtime1ID)
+	assert.Contains(t, process.TargetRuntimeIDs, runtime2ID)
+	assert.Equal(t, runtimeType, process.RuntimeType)
 	assert.Equal(t, timeout, process.Timeout)
 	assert.Equal(t, maxRetries, process.MaxRetries)
 	assert.Equal(t, mem, process.Mem)
@@ -40,14 +40,14 @@ func TestTimeCalc(t *testing.T) {
 	startTime := time.Now()
 
 	colonyID := GenerateRandomID()
-	computerType := "test_computer_type"
+	runtimeType := "test_runtime_type"
 	timeout := -1
 	maxRetries := 3
 	mem := 1000
 	cores := 10
 	gpus := 1
 
-	process := CreateProcess(colonyID, []string{}, computerType, timeout, maxRetries, mem, cores, gpus)
+	process := CreateProcess(colonyID, []string{}, runtimeType, timeout, maxRetries, mem, cores, gpus)
 	process.SetSubmissionTime(startTime)
 	process.SetStartTime(startTime.Add(1 * time.Second))
 	process.SetEndTime(startTime.Add(4 * time.Second))
@@ -59,14 +59,14 @@ func TestProcessToJSON(t *testing.T) {
 	startTime := time.Now()
 
 	colonyID := GenerateRandomID()
-	computerType := "test_computer_type"
+	runtimeType := "test_runtime_type"
 	timeout := -1
 	maxRetries := 3
 	mem := 1000
 	cores := 10
 	gpus := 1
 
-	process := CreateProcess(colonyID, []string{}, computerType, timeout, maxRetries, mem, cores, gpus)
+	process := CreateProcess(colonyID, []string{}, runtimeType, timeout, maxRetries, mem, cores, gpus)
 	process.SetSubmissionTime(startTime)
 	process.SetStartTime(startTime.Add(1 * time.Second))
 	process.SetEndTime(startTime.Add(4 * time.Second))
@@ -97,14 +97,14 @@ func TestProcessArrayToJSON(t *testing.T) {
 	startTime := time.Now()
 
 	colonyID := GenerateRandomID()
-	computerType := "test_computer_type"
+	runtimeType := "test_runtime_type"
 	timeout := -1
 	maxRetries := 3
 	mem := 1000
 	cores := 10
 	gpus := 1
 
-	process1 := CreateProcess(colonyID, []string{}, computerType, timeout, maxRetries, mem, cores, gpus)
+	process1 := CreateProcess(colonyID, []string{}, runtimeType, timeout, maxRetries, mem, cores, gpus)
 	process1.SetSubmissionTime(startTime)
 	process1.SetStartTime(startTime.Add(1 * time.Second))
 	process1.SetEndTime(startTime.Add(4 * time.Second))
@@ -117,7 +117,7 @@ func TestProcessArrayToJSON(t *testing.T) {
 	attributes1 = append(attributes1, CreateAttribute(attribute3ID, OUT, "out_key_1", "out_value_1"))
 	process1.SetAttributes(attributes1)
 
-	process2 := CreateProcess(colonyID, []string{}, computerType, timeout, maxRetries, mem, cores, gpus)
+	process2 := CreateProcess(colonyID, []string{}, runtimeType, timeout, maxRetries, mem, cores, gpus)
 	process2.SetSubmissionTime(startTime)
 	process2.SetStartTime(startTime.Add(1 * time.Second))
 	process2.SetEndTime(startTime.Add(4 * time.Second))

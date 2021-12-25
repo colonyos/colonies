@@ -28,18 +28,18 @@ func (ownership *OwnershipImpl) CheckIfColonyExists(colonyID string) error {
 	return nil
 }
 
-func (ownership *OwnershipImpl) CheckIfComputerBelongsToColony(computerID string, colonyID string) error {
-	computer, err := ownership.db.GetComputerByID(computerID)
+func (ownership *OwnershipImpl) CheckIfRuntimeBelongsToColony(runtimeID string, colonyID string) error {
+	runtime, err := ownership.db.GetRuntimeByID(runtimeID)
 	if err != nil {
 		return err
 	}
 
-	if computer == nil {
-		return errors.New("Computer not found <" + computerID + ">")
+	if runtime == nil {
+		return errors.New("Runtime not found <" + runtimeID + ">")
 	}
 
-	if computer.ColonyID != colonyID {
-		return errors.New("Computer " + "<" + computerID + "> not member of colony <" + colonyID + ">")
+	if runtime.ColonyID != colonyID {
+		return errors.New("Runtime " + "<" + runtimeID + "> not member of colony <" + colonyID + ">")
 	}
 
 	return nil

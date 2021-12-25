@@ -7,7 +7,7 @@ import (
 	"math/rand"
 )
 
-// TODO: Pending or disapproved computers should be blocked!
+// TODO: Pending or disapproved runtimes should be blocked!
 
 const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 const (
@@ -135,8 +135,8 @@ func RequireColonyOwner(id string, colonyID string, digest string, signature str
 	return nil
 }
 
-func VerifyComputerMembership(computerID string, colonyID string, ownership Ownership) error {
-	return ownership.CheckIfComputerBelongsToColony(computerID, colonyID)
+func VerifyRuntimeMembership(runtimeID string, colonyID string, ownership Ownership) error {
+	return ownership.CheckIfRuntimeBelongsToColony(runtimeID, colonyID)
 }
 
 func RequireColonyMember(id string, colonyID string, digest string, signature string, ownership Ownership) error {
@@ -145,7 +145,7 @@ func RequireColonyMember(id string, colonyID string, digest string, signature st
 		return err
 	}
 
-	return ownership.CheckIfComputerBelongsToColony(id, colonyID)
+	return ownership.CheckIfRuntimeBelongsToColony(id, colonyID)
 }
 
 func RequireColonyOwnerOrMember(id string, colonyID string, digest string, signature string, ownership Ownership) error {
@@ -156,7 +156,7 @@ func RequireColonyOwnerOrMember(id string, colonyID string, digest string, signa
 			return err
 		}
 
-		err = ownership.CheckIfComputerBelongsToColony(id, colonyID)
+		err = ownership.CheckIfRuntimeBelongsToColony(id, colonyID)
 		if err != nil {
 			return err
 		}

@@ -14,6 +14,13 @@ func TestCreateColony(t *testing.T) {
 	assert.Len(t, colony.ID, 64)
 }
 
+func TestSetColonyID(t *testing.T) {
+	name := "test_colony_name"
+	colony := CreateColony(GenerateRandomID(), name)
+	colony.SetID("test_id_set")
+	assert.Equal(t, colony.ID, "test_id_set")
+}
+
 func TestColonyToJSON(t *testing.T) {
 	name := "test_colony_name"
 	colony := CreateColony(GenerateRandomID(), name)

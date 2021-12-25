@@ -13,18 +13,18 @@ func TestAddProcess(t *testing.T) {
 	assert.Nil(t, err)
 
 	colonyID := core.GenerateRandomID()
-	computer1ID := core.GenerateRandomID()
-	computer2ID := core.GenerateRandomID()
+	runtime1ID := core.GenerateRandomID()
+	runtime2ID := core.GenerateRandomID()
 
-	process := core.CreateProcess(colonyID, []string{computer1ID, computer2ID}, "dummy", -1, 3, 1000, 10, 1)
+	process := core.CreateProcess(colonyID, []string{runtime1ID, runtime2ID}, "dummy", -1, 3, 1000, 10, 1)
 	err = db.AddProcess(process)
 	assert.Nil(t, err)
 
 	processFromDB, err := db.GetProcessByID(process.ID)
 	assert.Nil(t, err)
 	assert.True(t, process.Equals(processFromDB))
-	assert.Contains(t, processFromDB.TargetComputerIDs, computer1ID)
-	assert.Contains(t, processFromDB.TargetComputerIDs, computer2ID)
+	assert.Contains(t, processFromDB.TargetRuntimeIDs, runtime1ID)
+	assert.Contains(t, processFromDB.TargetRuntimeIDs, runtime2ID)
 }
 
 func TestDeleteProcesses(t *testing.T) {
@@ -32,18 +32,18 @@ func TestDeleteProcesses(t *testing.T) {
 	assert.Nil(t, err)
 
 	colonyID := core.GenerateRandomID()
-	computer1ID := core.GenerateRandomID()
-	computer2ID := core.GenerateRandomID()
+	runtime1ID := core.GenerateRandomID()
+	runtime2ID := core.GenerateRandomID()
 
-	process1 := core.CreateProcess(colonyID, []string{computer1ID, computer2ID}, "dummy", -1, 3, 1000, 10, 1)
+	process1 := core.CreateProcess(colonyID, []string{runtime1ID, runtime2ID}, "dummy", -1, 3, 1000, 10, 1)
 	err = db.AddProcess(process1)
 	assert.Nil(t, err)
 
-	process2 := core.CreateProcess(colonyID, []string{computer1ID, computer2ID}, "dummy", -1, 3, 1000, 10, 1)
+	process2 := core.CreateProcess(colonyID, []string{runtime1ID, runtime2ID}, "dummy", -1, 3, 1000, 10, 1)
 	err = db.AddProcess(process2)
 	assert.Nil(t, err)
 
-	process3 := core.CreateProcess(colonyID, []string{computer1ID, computer2ID}, "dummy", -1, 3, 1000, 10, 1)
+	process3 := core.CreateProcess(colonyID, []string{runtime1ID, runtime2ID}, "dummy", -1, 3, 1000, 10, 1)
 	err = db.AddProcess(process3)
 	assert.Nil(t, err)
 
@@ -132,8 +132,8 @@ func TestAssign(t *testing.T) {
 
 	colony := core.CreateColony(core.GenerateRandomID(), "test_colony_name")
 
-	computer := core.CreateComputer(colony.ID, "test_computer", colony.ID, "AMD Ryzen 9 5950X (32) @ 3.400GHz", 32, 80326, "NVIDIA GeForce RTX 2080 Ti Rev. A", 1)
-	err = db.AddComputer(computer)
+	runtime := core.CreateRuntime(colony.ID, "test_runtime", colony.ID, "AMD Ryzen 9 5950X (32) @ 3.400GHz", 32, 80326, "NVIDIA GeForce RTX 2080 Ti Rev. A", 1)
+	err = db.AddRuntime(runtime)
 	assert.Nil(t, err)
 
 	process := core.CreateProcess(colony.ID, []string{}, "dummy", -1, 3, 1000, 10, 1)
@@ -146,7 +146,7 @@ func TestAssign(t *testing.T) {
 	assert.Equal(t, core.WAITING, processFromDB.Status)
 	assert.False(t, processFromDB.IsAssigned)
 
-	err = db.AssignComputer(computer.ID, process)
+	err = db.AssignRuntime(runtime.ID, process)
 	assert.Nil(t, err)
 
 	processFromDB, err = db.GetProcessByID(process.ID)
@@ -156,7 +156,7 @@ func TestAssign(t *testing.T) {
 	assert.False(t, int64(processFromDB.StartTime.Sub(processFromDB.SubmissionTime)) < 0)
 	assert.Equal(t, core.RUNNING, processFromDB.Status)
 
-	err = db.UnassignComputer(process)
+	err = db.UnassignRuntime(process)
 	assert.Nil(t, err)
 
 	processFromDB, err = db.GetProcessByID(process.ID)
@@ -171,8 +171,8 @@ func TestMarkSuccessful(t *testing.T) {
 
 	colony := core.CreateColony(core.GenerateRandomID(), "test_colony_name")
 
-	computer := core.CreateComputer(colony.ID, "test_computer", colony.ID, "AMD Ryzen 9 5950X (32) @ 3.400GHz", 32, 80326, "NVIDIA GeForce RTX 2080 Ti Rev. A", 1)
-	err = db.AddComputer(computer)
+	runtime := core.CreateRuntime(colony.ID, "test_runtime", colony.ID, "AMD Ryzen 9 5950X (32) @ 3.400GHz", 32, 80326, "NVIDIA GeForce RTX 2080 Ti Rev. A", 1)
+	err = db.AddRuntime(runtime)
 	assert.Nil(t, err)
 
 	process := core.CreateProcess(colony.ID, []string{}, "dummy", -1, 3, 1000, 10, 1)
@@ -184,7 +184,7 @@ func TestMarkSuccessful(t *testing.T) {
 	err = db.MarkSuccessful(process)
 	assert.NotNil(t, err) // Not possible to set waiting process to successfull
 
-	err = db.AssignComputer(computer.ID, process)
+	err = db.AssignRuntime(runtime.ID, process)
 	assert.Nil(t, err)
 
 	processFromDB, err := db.GetProcessByID(process.ID)
@@ -210,8 +210,8 @@ func TestMarkFailed(t *testing.T) {
 
 	colony := core.CreateColony(core.GenerateRandomID(), "test_colony_name")
 
-	computer := core.CreateComputer(colony.ID, "test_computer", colony.ID, "AMD Ryzen 9 5950X (32) @ 3.400GHz", 32, 80326, "NVIDIA GeForce RTX 2080 Ti Rev. A", 1)
-	err = db.AddComputer(computer)
+	runtime := core.CreateRuntime(colony.ID, "test_runtime", colony.ID, "AMD Ryzen 9 5950X (32) @ 3.400GHz", 32, 80326, "NVIDIA GeForce RTX 2080 Ti Rev. A", 1)
+	err = db.AddRuntime(runtime)
 	assert.Nil(t, err)
 
 	process := core.CreateProcess(colony.ID, []string{}, "dummy", -1, 3, 1000, 10, 1)
@@ -223,7 +223,7 @@ func TestMarkFailed(t *testing.T) {
 	err = db.MarkFailed(process)
 	assert.NotNil(t, err) // Not possible to set waiting process to failed
 
-	err = db.AssignComputer(computer.ID, process)
+	err = db.AssignRuntime(runtime.ID, process)
 	assert.Nil(t, err)
 
 	processFromDB, err := db.GetProcessByID(process.ID)
@@ -249,14 +249,14 @@ func TestReset(t *testing.T) {
 
 	colony := core.CreateColony(core.GenerateRandomID(), "test_colony_name")
 
-	computer := core.CreateComputer(colony.ID, "test_computer", colony.ID, "AMD Ryzen 9 5950X (32) @ 3.400GHz", 32, 80326, "NVIDIA GeForce RTX 2080 Ti Rev. A", 1)
-	err = db.AddComputer(computer)
+	runtime := core.CreateRuntime(colony.ID, "test_runtime", colony.ID, "AMD Ryzen 9 5950X (32) @ 3.400GHz", 32, 80326, "NVIDIA GeForce RTX 2080 Ti Rev. A", 1)
+	err = db.AddRuntime(runtime)
 	assert.Nil(t, err)
 
 	process := core.CreateProcess(colony.ID, []string{}, "dummy", -1, 3, 1000, 10, 1)
 	err = db.AddProcess(process)
 	assert.Nil(t, err)
-	err = db.AssignComputer(computer.ID, process)
+	err = db.AssignRuntime(runtime.ID, process)
 	assert.Nil(t, err)
 	err = db.MarkFailed(process)
 	assert.Nil(t, err)
@@ -264,7 +264,7 @@ func TestReset(t *testing.T) {
 	process = core.CreateProcess(colony.ID, []string{}, "dummy", -1, 3, 1000, 10, 1)
 	err = db.AddProcess(process)
 	assert.Nil(t, err)
-	err = db.AssignComputer(computer.ID, process)
+	err = db.AssignRuntime(runtime.ID, process)
 	assert.Nil(t, err)
 	err = db.MarkFailed(process)
 	assert.Nil(t, err)
@@ -272,7 +272,7 @@ func TestReset(t *testing.T) {
 	process = core.CreateProcess(colony.ID, []string{}, "dummy", -1, 3, 1000, 10, 1)
 	err = db.AddProcess(process)
 	assert.Nil(t, err)
-	err = db.AssignComputer(computer.ID, process)
+	err = db.AssignRuntime(runtime.ID, process)
 	assert.Nil(t, err)
 	err = db.MarkFailed(process)
 	assert.Nil(t, err)
@@ -301,32 +301,32 @@ func TestFindUnassignedProcesses1(t *testing.T) {
 	err = db.AddColony(colony)
 	assert.Nil(t, err)
 
-	computer1ID := core.GenerateRandomID()
-	computer1 := core.CreateComputer(computer1ID, "test_computer", colony.ID, "AMD Ryzen 9 5950X (32) @ 3.400GHz", 32, 80326, "NVIDIA GeForce RTX 2080 Ti Rev. A", 1)
-	err = db.AddComputer(computer1)
+	runtime1ID := core.GenerateRandomID()
+	runtime1 := core.CreateRuntime(runtime1ID, "test_runtime", colony.ID, "AMD Ryzen 9 5950X (32) @ 3.400GHz", 32, 80326, "NVIDIA GeForce RTX 2080 Ti Rev. A", 1)
+	err = db.AddRuntime(runtime1)
 	assert.Nil(t, err)
 
-	computer2ID := core.GenerateRandomID()
-	computer2 := core.CreateComputer(computer2ID, "test_computer", colony.ID, "AMD Ryzen 9 5950X (32) @ 3.400GHz", 32, 80326, "NVIDIA GeForce RTX 2080 Ti Rev. A", 1)
-	err = db.AddComputer(computer2)
+	runtime2ID := core.GenerateRandomID()
+	runtime2 := core.CreateRuntime(runtime2ID, "test_runtime", colony.ID, "AMD Ryzen 9 5950X (32) @ 3.400GHz", 32, 80326, "NVIDIA GeForce RTX 2080 Ti Rev. A", 1)
+	err = db.AddRuntime(runtime2)
 	assert.Nil(t, err)
 
-	process1 := core.CreateProcess(colony.ID, []string{computer2.ID}, "dummy", -1, 3, 1000, 10, 1)
+	process1 := core.CreateProcess(colony.ID, []string{runtime2.ID}, "dummy", -1, 3, 1000, 10, 1)
 	err = db.AddProcess(process1)
 	assert.Nil(t, err)
 
 	time.Sleep(50 * time.Millisecond)
 
-	process2 := core.CreateProcess(colony.ID, []string{computer2.ID}, "dummy", -1, 3, 1000, 10, 1)
+	process2 := core.CreateProcess(colony.ID, []string{runtime2.ID}, "dummy", -1, 3, 1000, 10, 1)
 	err = db.AddProcess(process2)
 	assert.Nil(t, err)
 
-	processsFromDB, err := db.FindUnassignedProcesses(colony.ID, computer2.ID, 1)
+	processsFromDB, err := db.FindUnassignedProcesses(colony.ID, runtime2.ID, 1)
 	assert.Nil(t, err)
 	assert.Len(t, processsFromDB, 1)
 	assert.Equal(t, process1.ID, processsFromDB[0].ID)
 
-	processsFromDB, err = db.FindUnassignedProcesses(colony.ID, computer2.ID, 2)
+	processsFromDB, err = db.FindUnassignedProcesses(colony.ID, runtime2.ID, 2)
 	assert.Nil(t, err)
 	assert.Len(t, processsFromDB, 2)
 }
@@ -339,14 +339,14 @@ func TestFindUnassignedProcesses2(t *testing.T) {
 	err = db.AddColony(colony)
 	assert.Nil(t, err)
 
-	computer1ID := core.GenerateRandomID()
-	computer1 := core.CreateComputer(computer1ID, "test_computer", colony.ID, "AMD Ryzen 9 5950X (32) @ 3.400GHz", 32, 80326, "NVIDIA GeForce RTX 2080 Ti Rev. A", 1)
-	err = db.AddComputer(computer1)
+	runtime1ID := core.GenerateRandomID()
+	runtime1 := core.CreateRuntime(runtime1ID, "test_runtime", colony.ID, "AMD Ryzen 9 5950X (32) @ 3.400GHz", 32, 80326, "NVIDIA GeForce RTX 2080 Ti Rev. A", 1)
+	err = db.AddRuntime(runtime1)
 	assert.Nil(t, err)
 
-	computer2ID := core.GenerateRandomID()
-	computer2 := core.CreateComputer(computer2ID, "test_computer", colony.ID, "AMD Ryzen 9 5950X (32) @ 3.400GHz", 32, 80326, "NVIDIA GeForce RTX 2080 Ti Rev. A", 1)
-	err = db.AddComputer(computer2)
+	runtime2ID := core.GenerateRandomID()
+	runtime2 := core.CreateRuntime(runtime2ID, "test_runtime", colony.ID, "AMD Ryzen 9 5950X (32) @ 3.400GHz", 32, 80326, "NVIDIA GeForce RTX 2080 Ti Rev. A", 1)
+	err = db.AddRuntime(runtime2)
 	assert.Nil(t, err)
 
 	process1 := core.CreateProcess(colony.ID, []string{}, "dummy", -1, 3, 1000, 10, 1)
@@ -355,17 +355,17 @@ func TestFindUnassignedProcesses2(t *testing.T) {
 
 	time.Sleep(50 * time.Millisecond)
 
-	process2 := core.CreateProcess(colony.ID, []string{computer2.ID}, "dummy", -1, 3, 1000, 10, 1)
+	process2 := core.CreateProcess(colony.ID, []string{runtime2.ID}, "dummy", -1, 3, 1000, 10, 1)
 	err = db.AddProcess(process2)
 	assert.Nil(t, err)
 
-	process3 := core.CreateProcess(colony.ID, []string{computer2.ID}, "dummy", -1, 3, 1000, 10, 1)
+	process3 := core.CreateProcess(colony.ID, []string{runtime2.ID}, "dummy", -1, 3, 1000, 10, 1)
 	err = db.AddProcess(process3)
 	assert.Nil(t, err)
 
 	time.Sleep(50 * time.Millisecond)
 
-	processsFromDB, err := db.FindUnassignedProcesses(colony.ID, computer2.ID, 2)
+	processsFromDB, err := db.FindUnassignedProcesses(colony.ID, runtime2.ID, 2)
 	assert.Nil(t, err)
 	assert.Len(t, processsFromDB, 2)
 
@@ -392,35 +392,35 @@ func TestFindUnassignedProcesses3(t *testing.T) {
 	err = db.AddColony(colony)
 	assert.Nil(t, err)
 
-	computer1ID := core.GenerateRandomID()
-	computer1 := core.CreateComputer(computer1ID, "test_computer", colony.ID, "AMD Ryzen 9 5950X (32) @ 3.400GHz", 32, 80326, "NVIDIA GeForce RTX 2080 Ti Rev. A", 1)
-	err = db.AddComputer(computer1)
+	runtime1ID := core.GenerateRandomID()
+	runtime1 := core.CreateRuntime(runtime1ID, "test_runtime", colony.ID, "AMD Ryzen 9 5950X (32) @ 3.400GHz", 32, 80326, "NVIDIA GeForce RTX 2080 Ti Rev. A", 1)
+	err = db.AddRuntime(runtime1)
 	assert.Nil(t, err)
 
-	computer2ID := core.GenerateRandomID()
-	computer2 := core.CreateComputer(computer2ID, "test_computer", colony.ID, "AMD Ryzen 9 5950X (32) @ 3.400GHz", 32, 80326, "NVIDIA GeForce RTX 2080 Ti Rev. A", 1)
-	err = db.AddComputer(computer2)
+	runtime2ID := core.GenerateRandomID()
+	runtime2 := core.CreateRuntime(runtime2ID, "test_runtime", colony.ID, "AMD Ryzen 9 5950X (32) @ 3.400GHz", 32, 80326, "NVIDIA GeForce RTX 2080 Ti Rev. A", 1)
+	err = db.AddRuntime(runtime2)
 	assert.Nil(t, err)
 
-	// Here, we are testing that the order of targetComputerIDs strings does not matter
+	// Here, we are testing that the order of targetRuntimeIDs strings does not matter
 
-	process1 := core.CreateProcess(colony.ID, []string{computer1.ID, computer2.ID}, "dummy", -1, 3, 1000, 10, 1)
+	process1 := core.CreateProcess(colony.ID, []string{runtime1.ID, runtime2.ID}, "dummy", -1, 3, 1000, 10, 1)
 	err = db.AddProcess(process1)
 	assert.Nil(t, err)
 
 	time.Sleep(50 * time.Millisecond)
 
-	process2 := core.CreateProcess(colony.ID, []string{computer1.ID, computer2.ID}, "dummy", -1, 3, 1000, 10, 1)
+	process2 := core.CreateProcess(colony.ID, []string{runtime1.ID, runtime2.ID}, "dummy", -1, 3, 1000, 10, 1)
 	err = db.AddProcess(process2)
 	assert.Nil(t, err)
 
-	processsFromDB, err := db.FindUnassignedProcesses(colony.ID, computer1.ID, 1)
+	processsFromDB, err := db.FindUnassignedProcesses(colony.ID, runtime1.ID, 1)
 	assert.Nil(t, err)
 
 	assert.Len(t, processsFromDB, 1)
 	assert.Equal(t, process1.ID, processsFromDB[0].ID)
 
-	processsFromDB, err = db.FindUnassignedProcesses(colony.ID, computer2.ID, 1)
+	processsFromDB, err = db.FindUnassignedProcesses(colony.ID, runtime2.ID, 1)
 	assert.Nil(t, err)
 
 	assert.Len(t, processsFromDB, 1)
@@ -435,9 +435,9 @@ func TestFindProcessAssigned(t *testing.T) {
 	err = db.AddColony(colony)
 	assert.Nil(t, err)
 
-	computer1ID := core.GenerateRandomID()
-	computer1 := core.CreateComputer(computer1ID, "test_computer", colony.ID, "AMD Ryzen 9 5950X (32) @ 3.400GHz", 32, 80326, "NVIDIA GeForce RTX 2080 Ti Rev. A", 1)
-	err = db.AddComputer(computer1)
+	runtime1ID := core.GenerateRandomID()
+	runtime1 := core.CreateRuntime(runtime1ID, "test_runtime", colony.ID, "AMD Ryzen 9 5950X (32) @ 3.400GHz", 32, 80326, "NVIDIA GeForce RTX 2080 Ti Rev. A", 1)
+	err = db.AddRuntime(runtime1)
 	assert.Nil(t, err)
 
 	process1 := core.CreateProcess(colony.ID, []string{}, "dummy", -1, 3, 1000, 10, 1)
@@ -466,23 +466,23 @@ func TestFindProcessAssigned(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, 0, numberOfFailedProcesses)
 
-	processsFromDB1, err := db.FindUnassignedProcesses(colony.ID, computer1.ID, 1)
+	processsFromDB1, err := db.FindUnassignedProcesses(colony.ID, runtime1.ID, 1)
 	assert.Nil(t, err)
 	assert.Equal(t, process1.ID, processsFromDB1[0].ID)
 	assert.Len(t, processsFromDB1, 1)
 
-	err = db.AssignComputer(computer1.ID, processsFromDB1[0])
+	err = db.AssignRuntime(runtime1.ID, processsFromDB1[0])
 	assert.Nil(t, err)
 
 	numberOfRunningProcesses, err = db.NumberOfRunningProcesses()
 	assert.Nil(t, err)
 	assert.Equal(t, 1, numberOfRunningProcesses)
 
-	processsFromDB2, err := db.FindUnassignedProcesses(colony.ID, computer1.ID, 1)
+	processsFromDB2, err := db.FindUnassignedProcesses(colony.ID, runtime1.ID, 1)
 	assert.Nil(t, err)
 	assert.Equal(t, process2.ID, processsFromDB2[0].ID)
 
-	err = db.AssignComputer(computer1.ID, processsFromDB2[0])
+	err = db.AssignRuntime(runtime1.ID, processsFromDB2[0])
 	assert.Nil(t, err)
 
 	numberOfRunningProcesses, err = db.NumberOfRunningProcesses()
@@ -512,9 +512,9 @@ func TestFindWaitingProcesses(t *testing.T) {
 	err = db.AddColony(colony)
 	assert.Nil(t, err)
 
-	computerID := core.GenerateRandomID()
-	computer := core.CreateComputer(computerID, "test_computer", colony.ID, "AMD Ryzen 9 5950X (32) @ 3.400GHz", 32, 80326, "NVIDIA GeForce RTX 2080 Ti Rev. A", 1)
-	err = db.AddComputer(computer)
+	runtimeID := core.GenerateRandomID()
+	runtime := core.CreateRuntime(runtimeID, "test_runtime", colony.ID, "AMD Ryzen 9 5950X (32) @ 3.400GHz", 32, 80326, "NVIDIA GeForce RTX 2080 Ti Rev. A", 1)
+	err = db.AddRuntime(runtime)
 	assert.Nil(t, err)
 
 	// Create some waiting/unassigned processes
@@ -523,7 +523,7 @@ func TestFindWaitingProcesses(t *testing.T) {
 		process := core.CreateProcess(colony.ID, []string{}, "dummy", -1, 3, 1000, 10, 1)
 		err = db.AddProcess(process)
 		assert.Nil(t, err)
-		//	err = db.AssignComputer(computerID, process)
+		//	err = db.AssignRuntime(runtimeID, process)
 		//assert.Nil(t, err)
 		waitingProcessIDs[process.ID] = true
 	}
@@ -536,7 +536,7 @@ func TestFindWaitingProcesses(t *testing.T) {
 		process := core.CreateProcess(colony.ID, []string{}, "dummy", -1, 3, 1000, 10, 1)
 		err = db.AddProcess(process)
 		assert.Nil(t, err)
-		err = db.AssignComputer(computerID, process)
+		err = db.AssignRuntime(runtimeID, process)
 		assert.Nil(t, err)
 		runningProcessIDs[process.ID] = true
 	}
@@ -549,7 +549,7 @@ func TestFindWaitingProcesses(t *testing.T) {
 		process := core.CreateProcess(colony.ID, []string{}, "dummy", -1, 3, 1000, 10, 1)
 		err = db.AddProcess(process)
 		assert.Nil(t, err)
-		err = db.AssignComputer(computerID, process)
+		err = db.AssignRuntime(runtimeID, process)
 		assert.Nil(t, err)
 		err = db.MarkSuccessful(process)
 		assert.Nil(t, err)
@@ -564,7 +564,7 @@ func TestFindWaitingProcesses(t *testing.T) {
 		process := core.CreateProcess(colony.ID, []string{}, "dummy", -1, 3, 1000, 10, 1)
 		err = db.AddProcess(process)
 		assert.Nil(t, err)
-		err = db.AssignComputer(computerID, process)
+		err = db.AssignRuntime(runtimeID, process)
 		assert.Nil(t, err)
 		err = db.MarkFailed(process)
 		assert.Nil(t, err)

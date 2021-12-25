@@ -52,9 +52,9 @@ func TestRequireColonyMember(t *testing.T) {
 	ownership := CreateOwnershipMock()
 
 	prvKey, err := GeneratePrivateKey()
-	computerID, err := GenerateID(prvKey)
+	runtimeID, err := GenerateID(prvKey)
 	assert.Nil(t, err)
-	id := computerID
+	id := runtimeID
 	assert.Nil(t, err)
 
 	digest := GenerateDigest()
@@ -62,10 +62,10 @@ func TestRequireColonyMember(t *testing.T) {
 	assert.Nil(t, err)
 
 	err = RequireColonyMember(id, colonyID, digest, sig, ownership)
-	assert.NotNil(t, err) // Should not work since computer not member of colony
+	assert.NotNil(t, err) // Should not work since runtime not member of colony
 
-	ownership.addComputer(computerID, colonyID)
-	err = RequireColonyMember(computerID, colonyID, digest, sig, ownership)
+	ownership.addRuntime(runtimeID, colonyID)
+	err = RequireColonyMember(runtimeID, colonyID, digest, sig, ownership)
 	assert.Nil(t, err)
 }
 
@@ -74,9 +74,9 @@ func TestRequireColonyOwnerOrMember(t *testing.T) {
 	ownership := CreateOwnershipMock()
 
 	prvKey, err := GeneratePrivateKey()
-	computerID, err := GenerateID(prvKey)
+	runtimeID, err := GenerateID(prvKey)
 	assert.Nil(t, err)
-	id := computerID
+	id := runtimeID
 	assert.Nil(t, err)
 
 	digest := GenerateDigest()
@@ -84,9 +84,9 @@ func TestRequireColonyOwnerOrMember(t *testing.T) {
 	assert.Nil(t, err)
 
 	err = RequireColonyOwnerOrMember(id, colonyID, digest, sig, ownership)
-	assert.NotNil(t, err) // Should not work since computer not member of colony
+	assert.NotNil(t, err) // Should not work since runtime not member of colony
 
-	ownership.addComputer(computerID, colonyID)
-	err = RequireColonyOwnerOrMember(computerID, colonyID, digest, sig, ownership)
+	ownership.addRuntime(runtimeID, colonyID)
+	err = RequireColonyOwnerOrMember(runtimeID, colonyID, digest, sig, ownership)
 	assert.Nil(t, err)
 }

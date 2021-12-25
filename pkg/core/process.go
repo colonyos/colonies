@@ -18,68 +18,68 @@ const (
 // TODO: This code should be refactored so that it contains a ProcessSpec instead of all this redundant information
 
 type Process struct {
-	ID                 string       `json:"processid"`
-	TargetColonyID     string       `json:"targetcolonyid"`
-	TargetComputerIDs  []string     `json:"targetcomputerids"`
-	AssignedComputerID string       `json:"assignedcomputerid"`
-	Status             int          `json:"status"`
-	IsAssigned         bool         `json:"isassigned"`
-	ComputerType       string       `json:"computertype"`
-	SubmissionTime     time.Time    `json:"submissiontime"`
-	StartTime          time.Time    `json:"starttime"`
-	EndTime            time.Time    `json:"endtime"`
-	Deadline           time.Time    `json:"deadline"`
-	Timeout            int          `json:"timeout"`
-	Retries            int          `json:"retries"`
-	MaxRetries         int          `json:"maxretries"`
-	Mem                int          `json:"mem"`
-	Cores              int          `json:"cores"`
-	GPUs               int          `json:"gpus"`
-	Attributes         []*Attribute `json:"attributes"`
+	ID                string       `json:"processid"`
+	TargetColonyID    string       `json:"targetcolonyid"`
+	TargetRuntimeIDs  []string     `json:"targetruntimeids"`
+	AssignedRuntimeID string       `json:"assignedruntimeid"`
+	Status            int          `json:"status"`
+	IsAssigned        bool         `json:"isassigned"`
+	RuntimeType       string       `json:"runtimetype"`
+	SubmissionTime    time.Time    `json:"submissiontime"`
+	StartTime         time.Time    `json:"starttime"`
+	EndTime           time.Time    `json:"endtime"`
+	Deadline          time.Time    `json:"deadline"`
+	Timeout           int          `json:"timeout"`
+	Retries           int          `json:"retries"`
+	MaxRetries        int          `json:"maxretries"`
+	Mem               int          `json:"mem"`
+	Cores             int          `json:"cores"`
+	GPUs              int          `json:"gpus"`
+	Attributes        []*Attribute `json:"attributes"`
 }
 
-func CreateProcess(targetColonyID string, targetComputerIDs []string, computerType string, timeout int, maxRetries int, mem int, cores int, gpus int) *Process {
+func CreateProcess(targetColonyID string, targetRuntimeIDs []string, runtimeType string, timeout int, maxRetries int, mem int, cores int, gpus int) *Process {
 	uuid := uuid.New()
 	id := crypto.GenerateHashFromString(uuid.String()).String()
 
 	var attributes []*Attribute
 
 	process := &Process{ID: id,
-		TargetColonyID:    targetColonyID,
-		TargetComputerIDs: targetComputerIDs,
-		Status:            WAITING,
-		IsAssigned:        false,
-		ComputerType:      computerType,
-		Timeout:           timeout,
-		MaxRetries:        maxRetries,
-		Mem:               mem,
-		Cores:             cores,
-		GPUs:              gpus,
-		Attributes:        attributes,
+		TargetColonyID:   targetColonyID,
+		TargetRuntimeIDs: targetRuntimeIDs,
+		Status:           WAITING,
+		IsAssigned:       false,
+		RuntimeType:      runtimeType,
+		Timeout:          timeout,
+		MaxRetries:       maxRetries,
+		Mem:              mem,
+		Cores:            cores,
+		GPUs:             gpus,
+		Attributes:       attributes,
 	}
 
 	return process
 }
 
-func CreateProcessFromDB(id string, targetColonyID string, targetComputerIDs []string, assignedComputerID string, status int, isAssigned bool, computerType string, submissionTime time.Time, startTime time.Time, endTime time.Time, deadline time.Time, timeout int, retries int, maxRetries int, mem int, cores int, gpus int, attributes []*Attribute) *Process {
+func CreateProcessFromDB(id string, targetColonyID string, targetRuntimeIDs []string, assignedRuntimeID string, status int, isAssigned bool, runtimeType string, submissionTime time.Time, startTime time.Time, endTime time.Time, deadline time.Time, timeout int, retries int, maxRetries int, mem int, cores int, gpus int, attributes []*Attribute) *Process {
 	return &Process{ID: id,
-		TargetColonyID:     targetColonyID,
-		TargetComputerIDs:  targetComputerIDs,
-		AssignedComputerID: assignedComputerID,
-		Status:             status,
-		IsAssigned:         isAssigned,
-		ComputerType:       computerType,
-		SubmissionTime:     submissionTime,
-		StartTime:          startTime,
-		EndTime:            endTime,
-		Deadline:           deadline,
-		Timeout:            timeout,
-		Retries:            retries,
-		MaxRetries:         maxRetries,
-		Mem:                mem,
-		Cores:              cores,
-		GPUs:               gpus,
-		Attributes:         attributes,
+		TargetColonyID:    targetColonyID,
+		TargetRuntimeIDs:  targetRuntimeIDs,
+		AssignedRuntimeID: assignedRuntimeID,
+		Status:            status,
+		IsAssigned:        isAssigned,
+		RuntimeType:       runtimeType,
+		SubmissionTime:    submissionTime,
+		StartTime:         startTime,
+		EndTime:           endTime,
+		Deadline:          deadline,
+		Timeout:           timeout,
+		Retries:           retries,
+		MaxRetries:        maxRetries,
+		Mem:               mem,
+		Cores:             cores,
+		GPUs:              gpus,
+		Attributes:        attributes,
 	}
 }
 
@@ -133,10 +133,10 @@ func (process *Process) Equals(process2 *Process) bool {
 	same := true
 	if process.ID != process2.ID &&
 		process.TargetColonyID != process2.TargetColonyID &&
-		process.AssignedComputerID != process2.AssignedComputerID &&
+		process.AssignedRuntimeID != process2.AssignedRuntimeID &&
 		process.Status != process2.Status &&
 		process.IsAssigned != process2.IsAssigned &&
-		process.ComputerType != process2.ComputerType &&
+		process.RuntimeType != process2.RuntimeType &&
 		process.SubmissionTime != process2.SubmissionTime &&
 		process.StartTime != process2.StartTime &&
 		process.EndTime != process2.EndTime &&
@@ -150,20 +150,20 @@ func (process *Process) Equals(process2 *Process) bool {
 		same = false
 	}
 
-	if process.TargetComputerIDs != nil && process2.TargetComputerIDs == nil {
+	if process.TargetRuntimeIDs != nil && process2.TargetRuntimeIDs == nil {
 		same = false
-	} else if process.TargetComputerIDs == nil && process2.TargetComputerIDs != nil {
+	} else if process.TargetRuntimeIDs == nil && process2.TargetRuntimeIDs != nil {
 		same = false
 	} else {
 		counter := 0
-		for _, targetComputerID1 := range process.TargetComputerIDs {
-			for _, targetComputerID2 := range process2.TargetComputerIDs {
-				if targetComputerID1 == targetComputerID2 {
+		for _, targetRuntimeID1 := range process.TargetRuntimeIDs {
+			for _, targetRuntimeID2 := range process2.TargetRuntimeIDs {
+				if targetRuntimeID1 == targetRuntimeID2 {
 					counter++
 				}
 			}
 		}
-		if counter != len(process.TargetComputerIDs) && counter != len(process2.TargetComputerIDs) {
+		if counter != len(process.TargetRuntimeIDs) && counter != len(process2.TargetRuntimeIDs) {
 			same = false
 		}
 	}
@@ -187,8 +187,8 @@ func (process *Process) SetStatus(status int) {
 	process.Status = status
 }
 
-func (process *Process) SetAssignedComputerID(computerID string) {
-	process.AssignedComputerID = computerID
+func (process *Process) SetAssignedRuntimeID(runtimeID string) {
+	process.AssignedRuntimeID = runtimeID
 	process.IsAssigned = true
 }
 

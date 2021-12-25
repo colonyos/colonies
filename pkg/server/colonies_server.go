@@ -64,11 +64,11 @@ func (server *ColoniesServer) setupRoutes() {
 	server.ginHandler.GET("/colonies", server.handleGetColoniesRequest)
 	server.ginHandler.GET("/colonies/:colonyid", server.handleGetColonyRequest)
 	server.ginHandler.POST("/colonies", server.handleAddColonyRequest)
-	server.ginHandler.POST("/colonies/:colonyid/computers", server.handleAddComputerRequest)
-	server.ginHandler.GET("/colonies/:colonyid/computers", server.handleGetComputersRequest)
-	server.ginHandler.GET("/colonies/:colonyid/computers/:computerid", server.handleGetComputerRequest)
-	server.ginHandler.PUT("/colonies/:colonyid/computers/:computerid/approve", server.handleApproveComputerRequest)
-	server.ginHandler.PUT("/colonies/:colonyid/computers/:computerid/reject", server.handleRejectComputerRequest)
+	server.ginHandler.POST("/colonies/:colonyid/runtimes", server.handleAddRuntimeRequest)
+	server.ginHandler.GET("/colonies/:colonyid/runtimes", server.handleGetRuntimesRequest)
+	server.ginHandler.GET("/colonies/:colonyid/runtimes/:runtimeid", server.handleGetRuntimeRequest)
+	server.ginHandler.PUT("/colonies/:colonyid/runtimes/:runtimeid/approve", server.handleApproveRuntimeRequest)
+	server.ginHandler.PUT("/colonies/:colonyid/runtimes/:runtimeid/reject", server.handleRejectRuntimeRequest)
 	server.ginHandler.POST("/colonies/:colonyid/processes", server.handlePublishProcessRequest)
 	server.ginHandler.GET("/colonies/:colonyid/processes", server.handleGetProcessesRequest)
 	server.ginHandler.GET("/colonies/:colonyid/processes/:processid", server.handleGetProcessRequest)
@@ -159,7 +159,7 @@ func (server *ColoniesServer) handleAddColonyRequest(c *gin.Context) {
 	c.JSON(http.StatusOK, jsonString)
 }
 
-func (server *ColoniesServer) handleAddComputerRequest(c *gin.Context) {
+func (server *ColoniesServer) handleAddRuntimeRequest(c *gin.Context) {
 	colonyID := c.Param("colonyid")
 
 	err := security.RequireColonyOwner(c.GetHeader("Id"), colonyID, c.GetHeader("Digest"), c.GetHeader("Signature"), server.ownership)
@@ -176,21 +176,21 @@ func (server *ColoniesServer) handleAddComputerRequest(c *gin.Context) {
 		return
 	}
 
-	computer, err := core.ConvertJSONToComputer(string(jsonBytes))
+	runtime, err := core.ConvertJSONToRuntime(string(jsonBytes))
 	if err != nil {
 		logging.Log().Warning(err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	addedComputer, err := server.controller.AddComputer(computer)
+	addedRuntime, err := server.controller.AddRuntime(runtime)
 	if err != nil {
 		logging.Log().Warning(err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	jsonString, err := addedComputer.ToJSON()
+	jsonString, err := addedRuntime.ToJSON()
 	if err != nil {
 		logging.Log().Warning(err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -200,7 +200,7 @@ func (server *ColoniesServer) handleAddComputerRequest(c *gin.Context) {
 	c.JSON(http.StatusOK, jsonString)
 }
 
-func (server *ColoniesServer) handleGetComputersRequest(c *gin.Context) {
+func (server *ColoniesServer) handleGetRuntimesRequest(c *gin.Context) {
 	colonyID := c.Param("colonyid")
 
 	err := security.RequireColonyOwnerOrMember(c.GetHeader("Id"), colonyID, c.GetHeader("Digest"), c.GetHeader("Signature"), server.ownership)
@@ -210,13 +210,13 @@ func (server *ColoniesServer) handleGetComputersRequest(c *gin.Context) {
 		return
 	}
 
-	computers, err := server.controller.GetComputerByColonyID(colonyID)
+	runtimes, err := server.controller.GetRuntimeByColonyID(colonyID)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	jsonString, err := core.ConvertComputerArrayToJSON(computers)
+	jsonString, err := core.ConvertRuntimeArrayToJSON(runtimes)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -225,9 +225,9 @@ func (server *ColoniesServer) handleGetComputersRequest(c *gin.Context) {
 	c.JSON(http.StatusOK, jsonString)
 }
 
-func (server *ColoniesServer) handleGetComputerRequest(c *gin.Context) {
+func (server *ColoniesServer) handleGetRuntimeRequest(c *gin.Context) {
 	colonyID := c.Param("colonyid")
-	computerID := c.Param("computerid")
+	runtimeID := c.Param("runtimeid")
 
 	err := security.RequireColonyOwnerOrMember(c.GetHeader("Id"), colonyID, c.GetHeader("Digest"), c.GetHeader("Signature"), server.ownership)
 	if err != nil {
@@ -236,20 +236,20 @@ func (server *ColoniesServer) handleGetComputerRequest(c *gin.Context) {
 		return
 	}
 
-	err = security.VerifyComputerMembership(computerID, colonyID, server.ownership)
+	err = security.VerifyRuntimeMembership(runtimeID, colonyID, server.ownership)
 	if err != nil {
 		logging.Log().Warning(err)
 		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
 		return
 	}
 
-	computer, err := server.controller.GetComputerByID(computerID)
+	runtime, err := server.controller.GetRuntimeByID(runtimeID)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 		return
 	}
 
-	jsonString, err := computer.ToJSON()
+	jsonString, err := runtime.ToJSON()
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -258,9 +258,9 @@ func (server *ColoniesServer) handleGetComputerRequest(c *gin.Context) {
 	c.JSON(http.StatusOK, jsonString)
 }
 
-func (server *ColoniesServer) handleApproveComputerRequest(c *gin.Context) {
+func (server *ColoniesServer) handleApproveRuntimeRequest(c *gin.Context) {
 	colonyID := c.Param("colonyid")
-	computerID := c.Param("computerid")
+	runtimeID := c.Param("runtimeid")
 
 	err := security.RequireColonyOwner(c.GetHeader("Id"), colonyID, c.GetHeader("Digest"), c.GetHeader("Signature"), server.ownership)
 	if err != nil {
@@ -269,14 +269,14 @@ func (server *ColoniesServer) handleApproveComputerRequest(c *gin.Context) {
 		return
 	}
 
-	err = security.VerifyComputerMembership(computerID, colonyID, server.ownership)
+	err = security.VerifyRuntimeMembership(runtimeID, colonyID, server.ownership)
 	if err != nil {
 		logging.Log().Warning(err)
 		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
 		return
 	}
 
-	err = server.controller.ApproveComputer(computerID)
+	err = server.controller.ApproveRuntime(runtimeID)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -285,9 +285,9 @@ func (server *ColoniesServer) handleApproveComputerRequest(c *gin.Context) {
 	c.JSON(http.StatusOK, "")
 }
 
-func (server *ColoniesServer) handleRejectComputerRequest(c *gin.Context) {
+func (server *ColoniesServer) handleRejectRuntimeRequest(c *gin.Context) {
 	colonyID := c.Param("colonyid")
-	computerID := c.Param("computerid")
+	runtimeID := c.Param("runtimeid")
 
 	err := security.RequireColonyOwnerOrMember(c.GetHeader("Id"), colonyID, c.GetHeader("Digest"), c.GetHeader("Signature"), server.ownership)
 	if err != nil {
@@ -296,14 +296,14 @@ func (server *ColoniesServer) handleRejectComputerRequest(c *gin.Context) {
 		return
 	}
 
-	err = security.VerifyComputerMembership(computerID, colonyID, server.ownership)
+	err = security.VerifyRuntimeMembership(runtimeID, colonyID, server.ownership)
 	if err != nil {
 		logging.Log().Warning(err)
 		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
 		return
 	}
 
-	err = server.controller.RejectComputer(computerID)
+	err = server.controller.RejectRuntime(runtimeID)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -336,7 +336,7 @@ func (server *ColoniesServer) handlePublishProcessRequest(c *gin.Context) {
 		return
 	}
 
-	process := core.CreateProcess(processSpec.TargetColonyID, processSpec.TargetComputerIDs, processSpec.ComputerType, processSpec.Timeout, processSpec.MaxRetries, processSpec.Mem, processSpec.Cores, processSpec.GPUs)
+	process := core.CreateProcess(processSpec.TargetColonyID, processSpec.TargetRuntimeIDs, processSpec.RuntimeType, processSpec.Timeout, processSpec.MaxRetries, processSpec.Mem, processSpec.Cores, processSpec.GPUs)
 
 	var attributes []*core.Attribute
 	for key, value := range processSpec.In {
@@ -366,7 +366,7 @@ func (server *ColoniesServer) handleGetProcessesRequest(c *gin.Context) {
 	colonyID := c.Param("colonyid")
 	stateStr := c.GetHeader("State")
 	countStr := c.GetHeader("Count")
-	computerID := c.GetHeader("ComputerID")
+	runtimeID := c.GetHeader("RuntimeID")
 
 	err := security.RequireColonyOwnerOrMember(c.GetHeader("Id"), colonyID, c.GetHeader("Digest"), c.GetHeader("Signature"), server.ownership)
 	if err != nil {
@@ -375,7 +375,7 @@ func (server *ColoniesServer) handleGetProcessesRequest(c *gin.Context) {
 		return
 	}
 
-	// err = security.VerifyComputerMembership(computerID, colonyID, server.ownership)
+	// err = security.VerifyRuntimeMembership(runtimeID, colonyID, server.ownership)
 	// if err != nil {
 	// 	logging.Log().Warning(err)
 	// 	c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
@@ -412,7 +412,7 @@ func (server *ColoniesServer) handleGetProcessesRequest(c *gin.Context) {
 
 	switch state {
 	case core.WAITING:
-		processes, err := server.controller.FindWaitingProcesses(computerID, colonyID, count)
+		processes, err := server.controller.FindWaitingProcesses(runtimeID, colonyID, count)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
@@ -541,7 +541,7 @@ func (server *ColoniesServer) handleFailedProcessRequest(c *gin.Context) {
 
 func (server *ColoniesServer) handleAssignProcessRequest(c *gin.Context) {
 	colonyID := c.Param("colonyid")
-	computerID := c.GetHeader("ComputerID")
+	runtimeID := c.GetHeader("RuntimeID")
 
 	err := security.RequireColonyMember(c.GetHeader("Id"), colonyID, c.GetHeader("Digest"), c.GetHeader("Signature"), server.ownership)
 	if err != nil {
@@ -550,14 +550,14 @@ func (server *ColoniesServer) handleAssignProcessRequest(c *gin.Context) {
 		return
 	}
 
-	err = security.VerifyComputerMembership(computerID, colonyID, server.ownership)
+	err = security.VerifyRuntimeMembership(runtimeID, colonyID, server.ownership)
 	if err != nil {
 		logging.Log().Warning(err)
 		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
 		return
 	}
 
-	process, err := server.controller.AssignProcess(computerID, colonyID)
+	process, err := server.controller.AssignProcess(runtimeID, colonyID)
 	if err != nil {
 		logging.Log().Warning(err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})

@@ -9,15 +9,15 @@ type Database interface {
 	GetColonyByID(id string) (*core.Colony, error)
 	DeleteColonyByID(colonyID string) error
 
-	// Computer functions ...
-	AddComputer(computer *core.Computer) error
-	GetComputers() ([]*core.Computer, error)
-	GetComputerByID(computerID string) (*core.Computer, error)
-	GetComputersByColonyID(colonyID string) ([]*core.Computer, error)
-	ApproveComputer(computer *core.Computer) error
-	RejectComputer(computer *core.Computer) error
-	DeleteComputerByID(computerID string) error
-	DeleteComputersByColonyID(colonyID string) error
+	// Runtime functions ...
+	AddRuntime(runtime *core.Runtime) error
+	GetRuntimes() ([]*core.Runtime, error)
+	GetRuntimeByID(runtimeID string) (*core.Runtime, error)
+	GetRuntimesByColonyID(colonyID string) ([]*core.Runtime, error)
+	ApproveRuntime(runtime *core.Runtime) error
+	RejectRuntime(runtime *core.Runtime) error
+	DeleteRuntimeByID(runtimeID string) error
+	DeleteRuntimesByColonyID(colonyID string) error
 
 	// process functions ...
 	AddProcess(process *core.Process) error
@@ -27,13 +27,13 @@ type Database interface {
 	FindRunningProcesses(colonyID string, count int) ([]*core.Process, error)
 	FindSuccessfulProcesses(colonyID string, count int) ([]*core.Process, error)
 	FindFailedProcesses(colonyID string, count int) ([]*core.Process, error)
-	FindUnassignedProcesses(colonyID string, computerID string, count int) ([]*core.Process, error)
+	FindUnassignedProcesses(colonyID string, runtimeID string, count int) ([]*core.Process, error)
 	DeleteProcessByID(processID string) error
 	DeleteAllProcesses() error
 	ResetProcess(process *core.Process) error
 	ResetAllProcesses(process *core.Process) error
-	AssignComputer(computerID string, process *core.Process) error
-	UnassignComputer(process *core.Process) error
+	AssignRuntime(runtimeID string, process *core.Process) error
+	UnassignRuntime(process *core.Process) error
 	MarkSuccessful(process *core.Process) error
 	MarkFailed(process *core.Process) error
 	NumberOfProcesses() (int, error)

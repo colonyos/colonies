@@ -88,7 +88,7 @@ func TestGetColonies(t *testing.T) {
 	<-done
 }
 
-func TestAddComputer(t *testing.T) {
+func TestAddRuntime(t *testing.T) {
 	rootPassword := "testapikey"
 	server, done := PrepareTests(t, rootPassword)
 
@@ -104,34 +104,34 @@ func TestAddComputer(t *testing.T) {
 	_, err = client.AddColony(colony, rootPassword, TESTHOST, TESTPORT)
 	assert.Nil(t, err)
 
-	// Create a computer
-	computerPrvKey, err := security.GeneratePrivateKey()
+	// Create a runtime
+	runtimePrvKey, err := security.GeneratePrivateKey()
 	assert.Nil(t, err)
-	computerID, err := security.GenerateID(computerPrvKey)
+	runtimeID, err := security.GenerateID(runtimePrvKey)
 	assert.Nil(t, err)
 
-	name := "test_computer"
+	name := "test_runtime"
 	cpu := "AMD Ryzen 9 5950X (32) @ 3.400GHz"
 	cores := 32
 	mem := 80326
 	gpu := "NVIDIA GeForce RTX 2080 Ti Rev. A"
 	gpus := 1
 
-	computer := core.CreateComputer(computerID, name, colonyID, cpu, cores, mem, gpu, gpus)
-	addedComputer, err := client.AddComputer(computer, colonyPrvKey, TESTHOST, TESTPORT)
+	runtime := core.CreateRuntime(runtimeID, name, colonyID, cpu, cores, mem, gpu, gpus)
+	addedRuntime, err := client.AddRuntime(runtime, colonyPrvKey, TESTHOST, TESTPORT)
 	assert.Nil(t, err)
-	assert.True(t, computer.Equals(addedComputer))
+	assert.True(t, runtime.Equals(addedRuntime))
 
-	computerFromServer, err := client.GetComputerByID(computerID, colonyID, colonyPrvKey, TESTHOST, TESTPORT)
+	runtimeFromServer, err := client.GetRuntimeByID(runtimeID, colonyID, colonyPrvKey, TESTHOST, TESTPORT)
 	assert.Nil(t, err)
-	assert.NotNil(t, computerFromServer)
-	assert.True(t, computer.Equals(computerFromServer))
+	assert.NotNil(t, runtimeFromServer)
+	assert.True(t, runtime.Equals(runtimeFromServer))
 
 	server.Shutdown()
 	<-done
 }
 
-func TestGetComputers(t *testing.T) {
+func TestGetRuntimes(t *testing.T) {
 	rootPassword := "password"
 	server, done := PrepareTests(t, rootPassword)
 
@@ -146,53 +146,53 @@ func TestGetComputers(t *testing.T) {
 	_, err = client.AddColony(colony, rootPassword, TESTHOST, TESTPORT)
 	assert.Nil(t, err)
 
-	// Create a Computer
-	computer1PrvKey, err := security.GeneratePrivateKey()
+	// Create a Runtime
+	runtime1PrvKey, err := security.GeneratePrivateKey()
 	assert.Nil(t, err)
-	computer1ID, err := security.GenerateID(computer1PrvKey)
+	runtime1ID, err := security.GenerateID(runtime1PrvKey)
 	assert.Nil(t, err)
 
-	name := "test_computer 1"
+	name := "test_runtime 1"
 	cpu := "AMD Ryzen 9 5950X (32) @ 3.400GHz"
 	cores := 32
 	mem := 80326
 	gpu := "NVIDIA GeForce RTX 2080 Ti Rev. A"
 	gpus := 1
 
-	computer1 := core.CreateComputer(computer1ID, name, colonyID, cpu, cores, mem, gpu, gpus)
-	_, err = client.AddComputer(computer1, colonyPrvKey, TESTHOST, TESTPORT)
+	runtime1 := core.CreateRuntime(runtime1ID, name, colonyID, cpu, cores, mem, gpu, gpus)
+	_, err = client.AddRuntime(runtime1, colonyPrvKey, TESTHOST, TESTPORT)
 	assert.Nil(t, err)
 
-	// Create a Computer
-	computer2PrvKey, err := security.GeneratePrivateKey()
+	// Create a Runtime
+	runtime2PrvKey, err := security.GeneratePrivateKey()
 	assert.Nil(t, err)
-	computer2ID, err := security.GenerateID(computer2PrvKey)
-	assert.Nil(t, err)
-
-	name = "test_computer 2"
-	computer2 := core.CreateComputer(computer2ID, name, colonyID, cpu, cores, mem, gpu, gpus)
-	_, err = client.AddComputer(computer2, colonyPrvKey, TESTHOST, TESTPORT)
+	runtime2ID, err := security.GenerateID(runtime2PrvKey)
 	assert.Nil(t, err)
 
-	var computers []*core.Computer
-	computers = append(computers, computer1)
-	computers = append(computers, computer2)
-
-	computersFromServer, err := client.GetComputersByColonyID(colonyID, colonyPrvKey, TESTHOST, TESTPORT)
+	name = "test_runtime 2"
+	runtime2 := core.CreateRuntime(runtime2ID, name, colonyID, cpu, cores, mem, gpu, gpus)
+	_, err = client.AddRuntime(runtime2, colonyPrvKey, TESTHOST, TESTPORT)
 	assert.Nil(t, err)
-	assert.True(t, core.IsComputerArraysEqual(computers, computersFromServer))
+
+	var runtimes []*core.Runtime
+	runtimes = append(runtimes, runtime1)
+	runtimes = append(runtimes, runtime2)
+
+	runtimesFromServer, err := client.GetRuntimesByColonyID(colonyID, colonyPrvKey, TESTHOST, TESTPORT)
+	assert.Nil(t, err)
+	assert.True(t, core.IsRuntimeArraysEqual(runtimes, runtimesFromServer))
 
 	server.Shutdown()
 	<-done
 }
 
 type clientTestEnv struct {
-	colonyID       string
-	colony         *core.Colony
-	colonyPrvKey   string
-	computerID     string
-	computer       *core.Computer
-	computerPrvKey string
+	colonyID      string
+	colony        *core.Colony
+	colonyPrvKey  string
+	runtimeID     string
+	runtime       *core.Runtime
+	runtimePrvKey string
 }
 
 func createTestEnv(t *testing.T, rootPassword string) *clientTestEnv {
@@ -208,29 +208,29 @@ func createTestEnv(t *testing.T, rootPassword string) *clientTestEnv {
 	_, err = client.AddColony(colony, rootPassword, TESTHOST, TESTPORT)
 	assert.Nil(t, err)
 
-	// Create a computer
-	computerPrvKey, err := security.GeneratePrivateKey()
+	// Create a runtime
+	runtimePrvKey, err := security.GeneratePrivateKey()
 	assert.Nil(t, err)
-	computerID, err := security.GenerateID(computerPrvKey)
+	runtimeID, err := security.GenerateID(runtimePrvKey)
 	assert.Nil(t, err)
 
-	name := "test_computer"
+	name := "test_runtime"
 	cpu := "AMD Ryzen 9 5950X (32) @ 3.400GHz"
 	cores := 32
 	mem := 80326
 	gpu := "NVIDIA GeForce RTX 2080 Ti Rev. A"
 	gpus := 1
 
-	computer := core.CreateComputer(computerID, name, colonyID, cpu, cores, mem, gpu, gpus)
-	_, err = client.AddComputer(computer, colonyPrvKey, TESTHOST, TESTPORT)
+	runtime := core.CreateRuntime(runtimeID, name, colonyID, cpu, cores, mem, gpu, gpus)
+	_, err = client.AddRuntime(runtime, colonyPrvKey, TESTHOST, TESTPORT)
 	assert.Nil(t, err)
 
 	return &clientTestEnv{colonyID: colonyID,
-		colony:         colony,
-		colonyPrvKey:   colonyPrvKey,
-		computerID:     computerID,
-		computer:       computer,
-		computerPrvKey: computerPrvKey}
+		colony:        colony,
+		colonyPrvKey:  colonyPrvKey,
+		runtimeID:     runtimeID,
+		runtime:       runtime,
+		runtimePrvKey: runtimePrvKey}
 }
 
 func TestAddProcess(t *testing.T) {
@@ -240,12 +240,12 @@ func TestAddProcess(t *testing.T) {
 
 	in := make(map[string]string)
 	in["test_key_1"] = "test_value_1"
-	processSpec1 := core.CreateProcessSpec(env.colonyID, []string{}, "test_computer", -1, 3, 1000, 10, 1, in)
-	addedProcess1, err := client.PublishProcessSpec(processSpec1, env.computerPrvKey, TESTHOST, TESTPORT)
+	processSpec1 := core.CreateProcessSpec(env.colonyID, []string{}, "test_runtime", -1, 3, 1000, 10, 1, in)
+	addedProcess1, err := client.PublishProcessSpec(processSpec1, env.runtimePrvKey, TESTHOST, TESTPORT)
 	assert.Nil(t, err)
 
-	processSpec2 := core.CreateProcessSpec(env.colonyID, []string{}, "test_computer", -1, 3, 1000, 10, 1, make(map[string]string))
-	addedProcess2, err := client.PublishProcessSpec(processSpec2, env.computerPrvKey, TESTHOST, TESTPORT)
+	processSpec2 := core.CreateProcessSpec(env.colonyID, []string{}, "test_runtime", -1, 3, 1000, 10, 1, make(map[string]string))
+	addedProcess2, err := client.PublishProcessSpec(processSpec2, env.runtimePrvKey, TESTHOST, TESTPORT)
 	assert.Nil(t, err)
 	assert.Equal(t, processSpec2.TargetColonyID, addedProcess2.TargetColonyID)
 
@@ -253,7 +253,7 @@ func TestAddProcess(t *testing.T) {
 	processes = append(processes, addedProcess1)
 	processes = append(processes, addedProcess2)
 
-	processesFromServer, err := client.GetWaitingProcesses(env.computerID, env.colonyID, 100, env.computerPrvKey)
+	processesFromServer, err := client.GetWaitingProcesses(env.runtimeID, env.colonyID, 100, env.runtimePrvKey)
 	assert.Nil(t, err)
 	assert.True(t, core.IsProcessArrayEqual(processes, processesFromServer))
 
@@ -261,28 +261,28 @@ func TestAddProcess(t *testing.T) {
 	<-done
 }
 
-func TestApproveComputer(t *testing.T) {
+func TestApproveRuntime(t *testing.T) {
 	rootPassword := "password"
 	server, done := PrepareTests(t, rootPassword)
 	env := createTestEnv(t, rootPassword)
 
-	computerFromServer, err := client.GetComputerByID(env.computerID, env.colonyID, env.colonyPrvKey, TESTHOST, TESTPORT)
+	runtimeFromServer, err := client.GetRuntimeByID(env.runtimeID, env.colonyID, env.colonyPrvKey, TESTHOST, TESTPORT)
 	assert.Nil(t, err)
-	assert.False(t, computerFromServer.IsApproved())
+	assert.False(t, runtimeFromServer.IsApproved())
 
-	err = client.ApproveComputer(env.computer, env.colonyPrvKey, TESTHOST, TESTPORT)
-	assert.Nil(t, err)
-
-	computerFromServer, err = client.GetComputerByID(env.computerID, env.colonyID, env.colonyPrvKey, TESTHOST, TESTPORT)
-	assert.Nil(t, err)
-	assert.True(t, computerFromServer.IsApproved())
-
-	err = client.RejectComputer(env.computer, env.colonyPrvKey, TESTHOST, TESTPORT)
+	err = client.ApproveRuntime(env.runtime, env.colonyPrvKey, TESTHOST, TESTPORT)
 	assert.Nil(t, err)
 
-	computerFromServer, err = client.GetComputerByID(env.computerID, env.colonyID, env.colonyPrvKey, TESTHOST, TESTPORT)
+	runtimeFromServer, err = client.GetRuntimeByID(env.runtimeID, env.colonyID, env.colonyPrvKey, TESTHOST, TESTPORT)
 	assert.Nil(t, err)
-	assert.False(t, computerFromServer.IsApproved())
+	assert.True(t, runtimeFromServer.IsApproved())
+
+	err = client.RejectRuntime(env.runtime, env.colonyPrvKey, TESTHOST, TESTPORT)
+	assert.Nil(t, err)
+
+	runtimeFromServer, err = client.GetRuntimeByID(env.runtimeID, env.colonyID, env.colonyPrvKey, TESTHOST, TESTPORT)
+	assert.Nil(t, err)
+	assert.False(t, runtimeFromServer.IsApproved())
 
 	server.Shutdown()
 	<-done
@@ -293,21 +293,21 @@ func TestAssignProcess(t *testing.T) {
 	server, done := PrepareTests(t, rootPassword)
 	env := createTestEnv(t, rootPassword)
 
-	processSpec1 := core.CreateProcessSpec(env.colonyID, []string{}, "test_computer", -1, 3, 1000, 10, 1, make(map[string]string))
-	addedProcess1, err := client.PublishProcessSpec(processSpec1, env.computerPrvKey, TESTHOST, TESTPORT)
+	processSpec1 := core.CreateProcessSpec(env.colonyID, []string{}, "test_runtime", -1, 3, 1000, 10, 1, make(map[string]string))
+	addedProcess1, err := client.PublishProcessSpec(processSpec1, env.runtimePrvKey, TESTHOST, TESTPORT)
 	assert.Nil(t, err)
 
 	time.Sleep(50 * time.Millisecond)
 
-	processSpec2 := core.CreateProcessSpec(env.colonyID, []string{}, "test_computer", -1, 3, 1000, 10, 1, make(map[string]string))
-	addedProcess2, err := client.PublishProcessSpec(processSpec2, env.computerPrvKey, TESTHOST, TESTPORT)
+	processSpec2 := core.CreateProcessSpec(env.colonyID, []string{}, "test_runtime", -1, 3, 1000, 10, 1, make(map[string]string))
+	addedProcess2, err := client.PublishProcessSpec(processSpec2, env.runtimePrvKey, TESTHOST, TESTPORT)
 	assert.Nil(t, err)
 
-	assignedProcess, err := client.AssignProcess(env.computerID, env.colonyID, env.computerPrvKey)
+	assignedProcess, err := client.AssignProcess(env.runtimeID, env.colonyID, env.runtimePrvKey)
 	assert.Nil(t, err)
 	assert.Equal(t, addedProcess1.ID, assignedProcess.ID)
 
-	assignedProcess, err = client.AssignProcess(env.computerID, env.colonyID, env.computerPrvKey)
+	assignedProcess, err = client.AssignProcess(env.runtimeID, env.colonyID, env.runtimePrvKey)
 	assert.Nil(t, err)
 	assert.Equal(t, addedProcess2.ID, assignedProcess.ID)
 
@@ -320,21 +320,21 @@ func TestMarkSuccessful(t *testing.T) {
 	server, done := PrepareTests(t, rootPassword)
 	env := createTestEnv(t, rootPassword)
 
-	processSpec := core.CreateProcessSpec(env.colonyID, []string{}, "test_computer", -1, 3, 1000, 10, 1, make(map[string]string))
-	addedProcess, err := client.PublishProcessSpec(processSpec, env.computerPrvKey, TESTHOST, TESTPORT)
+	processSpec := core.CreateProcessSpec(env.colonyID, []string{}, "test_runtime", -1, 3, 1000, 10, 1, make(map[string]string))
+	addedProcess, err := client.PublishProcessSpec(processSpec, env.runtimePrvKey, TESTHOST, TESTPORT)
 	assert.Nil(t, err)
 	assert.Equal(t, core.PENDING, addedProcess.Status)
 
-	assignedProcess, err := client.AssignProcess(env.computerID, env.colonyID, env.computerPrvKey)
+	assignedProcess, err := client.AssignProcess(env.runtimeID, env.colonyID, env.runtimePrvKey)
 	assert.Nil(t, err)
 
-	assignedProcessFromServer, err := client.GetProcessByID(assignedProcess.ID, env.colonyID, env.computerPrvKey)
+	assignedProcessFromServer, err := client.GetProcessByID(assignedProcess.ID, env.colonyID, env.runtimePrvKey)
 	assert.Equal(t, core.RUNNING, assignedProcessFromServer.Status)
 
-	err = client.MarkSuccessful(assignedProcess, env.computerPrvKey)
+	err = client.MarkSuccessful(assignedProcess, env.runtimePrvKey)
 	assert.Nil(t, err)
 
-	assignedProcessFromServer, err = client.GetProcessByID(assignedProcess.ID, env.colonyID, env.computerPrvKey)
+	assignedProcessFromServer, err = client.GetProcessByID(assignedProcess.ID, env.colonyID, env.runtimePrvKey)
 	assert.Equal(t, core.SUCCESS, assignedProcessFromServer.Status)
 
 	server.Shutdown()
@@ -346,21 +346,21 @@ func TestMarkFailed(t *testing.T) {
 	server, done := PrepareTests(t, rootPassword)
 	env := createTestEnv(t, rootPassword)
 
-	processSpec := core.CreateProcessSpec(env.colonyID, []string{}, "test_computer", -1, 3, 1000, 10, 1, make(map[string]string))
-	addedProcess, err := client.PublishProcessSpec(processSpec, env.computerPrvKey, TESTHOST, TESTPORT)
+	processSpec := core.CreateProcessSpec(env.colonyID, []string{}, "test_runtime", -1, 3, 1000, 10, 1, make(map[string]string))
+	addedProcess, err := client.PublishProcessSpec(processSpec, env.runtimePrvKey, TESTHOST, TESTPORT)
 	assert.Nil(t, err)
 	assert.Equal(t, core.PENDING, addedProcess.Status)
 
-	assignedProcess, err := client.AssignProcess(env.computerID, env.colonyID, env.computerPrvKey)
+	assignedProcess, err := client.AssignProcess(env.runtimeID, env.colonyID, env.runtimePrvKey)
 	assert.Nil(t, err)
 
-	assignedProcessFromServer, err := client.GetProcessByID(assignedProcess.ID, env.colonyID, env.computerPrvKey)
+	assignedProcessFromServer, err := client.GetProcessByID(assignedProcess.ID, env.colonyID, env.runtimePrvKey)
 	assert.Equal(t, core.RUNNING, assignedProcessFromServer.Status)
 
-	err = client.MarkFailed(assignedProcess, env.computerPrvKey)
+	err = client.MarkFailed(assignedProcess, env.runtimePrvKey)
 	assert.Nil(t, err)
 
-	assignedProcessFromServer, err = client.GetProcessByID(assignedProcess.ID, env.colonyID, env.computerPrvKey)
+	assignedProcessFromServer, err = client.GetProcessByID(assignedProcess.ID, env.colonyID, env.runtimePrvKey)
 	assert.Equal(t, core.FAILED, assignedProcessFromServer.Status)
 
 	server.Shutdown()
@@ -372,20 +372,20 @@ func TestAddAttributes(t *testing.T) {
 	server, done := PrepareTests(t, rootPassword)
 	env := createTestEnv(t, rootPassword)
 
-	processSpec := core.CreateProcessSpec(env.colonyID, []string{}, "test_computer", -1, 3, 1000, 10, 1, make(map[string]string))
-	addedProcess, err := client.PublishProcessSpec(processSpec, env.computerPrvKey, TESTHOST, TESTPORT)
+	processSpec := core.CreateProcessSpec(env.colonyID, []string{}, "test_runtime", -1, 3, 1000, 10, 1, make(map[string]string))
+	addedProcess, err := client.PublishProcessSpec(processSpec, env.runtimePrvKey, TESTHOST, TESTPORT)
 	assert.Nil(t, err)
 	assert.Equal(t, core.PENDING, addedProcess.Status)
 
-	assignedProcess, err := client.AssignProcess(env.computerID, env.colonyID, env.computerPrvKey)
+	assignedProcess, err := client.AssignProcess(env.runtimeID, env.colonyID, env.runtimePrvKey)
 	assert.Nil(t, err)
 
 	attribute := core.CreateAttribute(assignedProcess.ID, core.OUT, "result", "helloworld")
-	addedAttribute, err := client.AddAttribute(attribute, env.colonyID, env.computerPrvKey)
+	addedAttribute, err := client.AddAttribute(attribute, env.colonyID, env.runtimePrvKey)
 	assert.Nil(t, err)
 	assert.Equal(t, attribute.ID, addedAttribute.ID)
 
-	assignedProcessFromServer, err := client.GetProcessByID(assignedProcess.ID, env.colonyID, env.computerPrvKey)
+	assignedProcessFromServer, err := client.GetProcessByID(assignedProcess.ID, env.colonyID, env.runtimePrvKey)
 
 	out := make(map[string]string)
 	for _, attribute := range assignedProcessFromServer.Attributes {
@@ -394,7 +394,7 @@ func TestAddAttributes(t *testing.T) {
 
 	assert.Equal(t, "helloworld", out["result"])
 
-	attributeFromServer, err := client.GetAttribute(attribute.ID, addedProcess.ID, env.colonyID, env.computerPrvKey)
+	attributeFromServer, err := client.GetAttribute(attribute.ID, addedProcess.ID, env.colonyID, env.runtimePrvKey)
 	assert.Nil(t, err)
 	assert.Equal(t, attribute.ID, attributeFromServer.ID)
 

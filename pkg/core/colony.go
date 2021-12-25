@@ -62,6 +62,10 @@ func IsColonyArraysEqual(colonies1 []*Colony, colonies2 []*Colony) bool {
 	return false
 }
 
+func (colony *Colony) SetID(id string) {
+	colony.ID = id
+}
+
 func (colony *Colony) Equals(colony2 *Colony) bool {
 	if colony.ID == colony2.ID &&
 		colony.Name == colony2.Name {

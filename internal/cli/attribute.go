@@ -22,14 +22,14 @@ func init() {
 	addAttributeCmd.MarkFlagRequired("processid")
 	addAttributeCmd.Flags().StringVarP(&ColonyID, "colonyid", "", "", "Colony Id")
 	addAttributeCmd.MarkFlagRequired("colonyid")
-	addAttributeCmd.Flags().StringVarP(&ComputerID, "computerid", "", "", "Computer Id")
-	addAttributeCmd.MarkFlagRequired("computerid")
+	addAttributeCmd.Flags().StringVarP(&RuntimeID, "runtimeid", "", "", "Runtime Id")
+	addAttributeCmd.MarkFlagRequired("runtimeid")
 
 	getAttributeCmd.Flags().StringVarP(&ProcessID, "processid", "", "", "Process Id")
 	getAttributeCmd.MarkFlagRequired("processid")
 	getAttributeCmd.Flags().StringVarP(&ColonyID, "colonyid", "", "", "Colony Id")
 	getAttributeCmd.MarkFlagRequired("colonyid")
-	getAttributeCmd.Flags().StringVarP(&ID, "id", "", "", "Colony or Computer Id")
+	getAttributeCmd.Flags().StringVarP(&ID, "id", "", "", "Colony or Runtime Id")
 	getAttributeCmd.MarkFlagRequired("id")
 	getAttributeCmd.Flags().StringVarP(&AttributeID, "attributeid", "", "", "Attribute Id")
 	getAttributeCmd.MarkFlagRequired("attributeid")
@@ -49,13 +49,13 @@ var addAttributeCmd = &cobra.Command{
 		keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
 		CheckError(err)
 
-		if ComputerPrvKey == "" {
-			ComputerPrvKey, err = keychain.GetPrvKey(ComputerID)
+		if RuntimePrvKey == "" {
+			RuntimePrvKey, err = keychain.GetPrvKey(RuntimeID)
 			CheckError(err)
 		}
 
 		attribute := core.CreateAttribute(ProcessID, core.OUT, Key, Value)
-		addedAttribute, err := client.AddAttribute(attribute, ColonyID, ComputerPrvKey)
+		addedAttribute, err := client.AddAttribute(attribute, ColonyID, RuntimePrvKey)
 		CheckError(err)
 
 		fmt.Println(addedAttribute.ToJSON())

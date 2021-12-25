@@ -21,8 +21,8 @@ type command struct {
 	coloniesReplyChan  chan []*core.Colony
 	processReplyChan   chan *core.Process
 	processesReplyChan chan []*core.Process
-	computerReplyChan  chan *core.Computer
-	computersReplyChan chan []*core.Computer
+	runtimeReplyChan   chan *core.Runtime
+	runtimesReplyChan  chan []*core.Runtime
 	attributeReplyChan chan *core.Attribute
 	handler            func(cmd *command)
 }
@@ -125,101 +125,101 @@ func (controller *ColoniesController) AddColony(colony *core.Colony) (*core.Colo
 	}
 }
 
-func (controller *ColoniesController) AddComputer(computer *core.Computer) (*core.Computer, error) {
-	cmd := &command{computerReplyChan: make(chan *core.Computer, 1),
+func (controller *ColoniesController) AddRuntime(runtime *core.Runtime) (*core.Runtime, error) {
+	cmd := &command{runtimeReplyChan: make(chan *core.Runtime, 1),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
-			err := controller.db.AddComputer(computer)
+			err := controller.db.AddRuntime(runtime)
 			if err != nil {
 				cmd.errorChan <- err
 				return
 			}
-			addedComputer, err := controller.db.GetComputerByID(computer.ID)
+			addedRuntime, err := controller.db.GetRuntimeByID(runtime.ID)
 			if err != nil {
 				cmd.errorChan <- err
 				return
 			}
-			cmd.computerReplyChan <- addedComputer
+			cmd.runtimeReplyChan <- addedRuntime
 		}}
 
 	controller.cmdQueue <- cmd
 	select {
 	case err := <-cmd.errorChan:
 		return nil, err
-	case addedComputer := <-cmd.computerReplyChan:
-		return addedComputer, nil
+	case addedRuntime := <-cmd.runtimeReplyChan:
+		return addedRuntime, nil
 	}
 }
 
-func (controller *ColoniesController) GetComputerByID(computerID string) (*core.Computer, error) {
-	cmd := &command{computerReplyChan: make(chan *core.Computer),
+func (controller *ColoniesController) GetRuntimeByID(runtimeID string) (*core.Runtime, error) {
+	cmd := &command{runtimeReplyChan: make(chan *core.Runtime),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
-			computer, err := controller.db.GetComputerByID(computerID)
+			runtime, err := controller.db.GetRuntimeByID(runtimeID)
 			if err != nil {
 				cmd.errorChan <- err
 				return
 			}
-			cmd.computerReplyChan <- computer
+			cmd.runtimeReplyChan <- runtime
 		}}
 
 	controller.cmdQueue <- cmd
 	select {
 	case err := <-cmd.errorChan:
 		return nil, err
-	case computer := <-cmd.computerReplyChan:
-		return computer, nil
+	case runtime := <-cmd.runtimeReplyChan:
+		return runtime, nil
 	}
 }
 
-func (controller *ColoniesController) GetComputerByColonyID(colonyID string) ([]*core.Computer, error) {
-	cmd := &command{computersReplyChan: make(chan []*core.Computer),
+func (controller *ColoniesController) GetRuntimeByColonyID(colonyID string) ([]*core.Runtime, error) {
+	cmd := &command{runtimesReplyChan: make(chan []*core.Runtime),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
-			computers, err := controller.db.GetComputersByColonyID(colonyID)
+			runtimes, err := controller.db.GetRuntimesByColonyID(colonyID)
 			if err != nil {
 				cmd.errorChan <- err
 				return
 			}
-			cmd.computersReplyChan <- computers
+			cmd.runtimesReplyChan <- runtimes
 		}}
 
 	controller.cmdQueue <- cmd
-	var computers []*core.Computer
+	var runtimes []*core.Runtime
 	select {
 	case err := <-cmd.errorChan:
-		return computers, err
-	case computers := <-cmd.computersReplyChan:
-		return computers, nil
+		return runtimes, err
+	case runtimes := <-cmd.runtimesReplyChan:
+		return runtimes, nil
 	}
 
-	return computers, nil
+	return runtimes, nil
 }
 
-func (controller *ColoniesController) ApproveComputer(computerID string) error {
+func (controller *ColoniesController) ApproveRuntime(runtimeID string) error {
 	cmd := &command{errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
-			computer, err := controller.db.GetComputerByID(computerID)
+			runtime, err := controller.db.GetRuntimeByID(runtimeID)
 			if err != nil {
 				cmd.errorChan <- err
 				return
 			}
-			cmd.errorChan <- controller.db.ApproveComputer(computer)
+			cmd.errorChan <- controller.db.ApproveRuntime(runtime)
 		}}
 
 	controller.cmdQueue <- cmd
 	return <-cmd.errorChan
 }
 
-func (controller *ColoniesController) RejectComputer(computerID string) error {
+func (controller *ColoniesController) RejectRuntime(runtimeID string) error {
 	cmd := &command{errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
-			computer, err := controller.db.GetComputerByID(computerID)
+			runtime, err := controller.db.GetRuntimeByID(runtimeID)
 			if err != nil {
 				cmd.errorChan <- err
 				return
 			}
-			cmd.errorChan <- controller.db.RejectComputer(computer)
+			cmd.errorChan <- controller.db.RejectRuntime(runtime)
 		}}
 
 	controller.cmdQueue <- cmd
@@ -277,7 +277,7 @@ func (controller *ColoniesController) GetProcessByID(colonyID string, processID 
 	}
 }
 
-func (controller *ColoniesController) FindWaitingProcesses(computerID string, colonyID string, count int) ([]*core.Process, error) {
+func (controller *ColoniesController) FindWaitingProcesses(runtimeID string, colonyID string, count int) ([]*core.Process, error) {
 	cmd := &command{processesReplyChan: make(chan []*core.Process),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
@@ -291,7 +291,7 @@ func (controller *ColoniesController) FindWaitingProcesses(computerID string, co
 				cmd.errorChan <- err
 				return
 			}
-			prioritizedProcesses := controller.scheduler.Prioritize(computerID, processes, count)
+			prioritizedProcesses := controller.scheduler.Prioritize(runtimeID, processes, count)
 			cmd.processesReplyChan <- prioritizedProcesses
 		}}
 
@@ -386,7 +386,7 @@ func (controller *ColoniesController) FindFailedProcesses(colonyID string, count
 	}
 }
 
-func (controller *ColoniesController) MarkSuccessful(computerID string, processID string) error {
+func (controller *ColoniesController) MarkSuccessful(runtimeID string, processID string) error {
 	cmd := &command{errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
 			process, err := controller.db.GetProcessByID(processID)
@@ -394,8 +394,8 @@ func (controller *ColoniesController) MarkSuccessful(computerID string, processI
 				cmd.errorChan <- err
 				return
 			}
-			if process.AssignedComputerID != computerID { // TODO: Move to security
-				cmd.errorChan <- errors.New("Computer is not assigned to process, cannot mark as succesful")
+			if process.AssignedRuntimeID != runtimeID { // TODO: Move to security
+				cmd.errorChan <- errors.New("Runtime is not assigned to process, cannot mark as succesful")
 				return
 			}
 			cmd.errorChan <- controller.db.MarkSuccessful(process)
@@ -405,7 +405,7 @@ func (controller *ColoniesController) MarkSuccessful(computerID string, processI
 	return <-cmd.errorChan
 }
 
-func (controller *ColoniesController) MarkFailed(computerID string, processID string) error {
+func (controller *ColoniesController) MarkFailed(runtimeID string, processID string) error {
 	cmd := &command{errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
 			process, err := controller.db.GetProcessByID(processID)
@@ -413,8 +413,8 @@ func (controller *ColoniesController) MarkFailed(computerID string, processID st
 				cmd.errorChan <- err
 				return
 			}
-			if process.AssignedComputerID != computerID { // TODO: Move to security
-				cmd.errorChan <- errors.New("Computer is not assigned to process, cannot mark as succesful")
+			if process.AssignedRuntimeID != runtimeID { // TODO: Move to security
+				cmd.errorChan <- errors.New("Runtime is not assigned to process, cannot mark as succesful")
 				return
 			}
 			cmd.errorChan <- controller.db.MarkFailed(process)
@@ -424,22 +424,22 @@ func (controller *ColoniesController) MarkFailed(computerID string, processID st
 	return <-cmd.errorChan
 }
 
-func (controller *ColoniesController) AssignProcess(computerID string, colonyID string) (*core.Process, error) {
+func (controller *ColoniesController) AssignProcess(runtimeID string, colonyID string) (*core.Process, error) {
 	cmd := &command{processReplyChan: make(chan *core.Process),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
 			var processes []*core.Process
-			processes, err := controller.db.FindUnassignedProcesses(colonyID, computerID, 10)
+			processes, err := controller.db.FindUnassignedProcesses(colonyID, runtimeID, 10)
 			if err != nil {
 				cmd.errorChan <- err
 				return
 			}
-			selectedProcesses, err := controller.scheduler.Select(computerID, processes)
+			selectedProcesses, err := controller.scheduler.Select(runtimeID, processes)
 			if err != nil {
 				cmd.errorChan <- err
 				return
 			}
-			err = controller.db.AssignComputer(computerID, selectedProcesses)
+			err = controller.db.AssignRuntime(runtimeID, selectedProcesses)
 			if err != nil {
 				cmd.errorChan <- err
 				return

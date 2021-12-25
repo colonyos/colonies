@@ -119,14 +119,14 @@ func GetColonyByID(colonyID string, prvKey string) (*core.Colony, error) {
 	return colony, nil
 }
 
-func AddComputer(computer *core.Computer, prvKey string, host string, port int) (*core.Computer, error) {
+func AddRuntime(runtime *core.Runtime, prvKey string, host string, port int) (*core.Runtime, error) {
 	client := client()
 	digest, sig, id, err := security.GenerateCredentials(prvKey)
 	if err != nil {
 		return nil, err
 	}
 
-	computerJSON, err := computer.ToJSON()
+	runtimeJSON, err := runtime.ToJSON()
 	if err != nil {
 		return nil, err
 	}
@@ -135,8 +135,8 @@ func AddComputer(computer *core.Computer, prvKey string, host string, port int) 
 		SetHeader("Id", id).
 		SetHeader("Digest", digest).
 		SetHeader("Signature", sig).
-		SetBody(computerJSON).
-		Post("https://" + host + ":" + strconv.Itoa(port) + "/colonies/" + computer.ColonyID + "/computers")
+		SetBody(runtimeJSON).
+		Post("https://" + host + ":" + strconv.Itoa(port) + "/colonies/" + runtime.ColonyID + "/runtimes")
 
 	unquotedResp, err := strconv.Unquote(string(resp.Body()))
 	if err != nil {
@@ -148,15 +148,15 @@ func AddComputer(computer *core.Computer, prvKey string, host string, port int) 
 		return nil, err
 	}
 
-	addedComputer, err := core.ConvertJSONToComputer(unquotedResp)
+	addedRuntime, err := core.ConvertJSONToRuntime(unquotedResp)
 	if err != nil {
 		return nil, err
 	}
 
-	return addedComputer, nil
+	return addedRuntime, nil
 }
 
-func ApproveComputer(computer *core.Computer, prvKey string, host string, port int) error {
+func ApproveRuntime(runtime *core.Runtime, prvKey string, host string, port int) error {
 	client := client()
 	digest, sig, id, err := security.GenerateCredentials(prvKey)
 	if err != nil {
@@ -167,7 +167,7 @@ func ApproveComputer(computer *core.Computer, prvKey string, host string, port i
 		SetHeader("Id", id).
 		SetHeader("Digest", digest).
 		SetHeader("Signature", sig).
-		Put("https://" + host + ":" + strconv.Itoa(port) + "/colonies/" + computer.ColonyID + "/computers/" + computer.ID + "/approve")
+		Put("https://" + host + ":" + strconv.Itoa(port) + "/colonies/" + runtime.ColonyID + "/runtimes/" + runtime.ID + "/approve")
 
 	unquotedResp, err := strconv.Unquote(string(resp.Body()))
 	if err != nil {
@@ -182,7 +182,7 @@ func ApproveComputer(computer *core.Computer, prvKey string, host string, port i
 	return nil
 }
 
-func RejectComputer(computer *core.Computer, prvKey string, host string, port int) error {
+func RejectRuntime(runtime *core.Runtime, prvKey string, host string, port int) error {
 	client := client()
 	digest, sig, id, err := security.GenerateCredentials(prvKey)
 	if err != nil {
@@ -193,7 +193,7 @@ func RejectComputer(computer *core.Computer, prvKey string, host string, port in
 		SetHeader("Id", id).
 		SetHeader("Digest", digest).
 		SetHeader("Signature", sig).
-		Put("https://" + host + ":" + strconv.Itoa(port) + "/colonies/" + computer.ColonyID + "/computers/" + computer.ID + "/reject")
+		Put("https://" + host + ":" + strconv.Itoa(port) + "/colonies/" + runtime.ColonyID + "/runtimes/" + runtime.ID + "/reject")
 
 	unquotedResp, err := strconv.Unquote(string(resp.Body()))
 	if err != nil {
@@ -208,7 +208,7 @@ func RejectComputer(computer *core.Computer, prvKey string, host string, port in
 	return nil
 }
 
-func GetComputersByColonyID(colonyID string, prvKey string, host string, port int) ([]*core.Computer, error) {
+func GetRuntimesByColonyID(colonyID string, prvKey string, host string, port int) ([]*core.Runtime, error) {
 	client := client()
 	digest, sig, id, err := security.GenerateCredentials(prvKey)
 	if err != nil {
@@ -219,7 +219,7 @@ func GetComputersByColonyID(colonyID string, prvKey string, host string, port in
 		SetHeader("Id", id).
 		SetHeader("Digest", digest).
 		SetHeader("Signature", sig).
-		Get("https://" + host + ":" + strconv.Itoa(port) + "/colonies/" + colonyID + "/computers")
+		Get("https://" + host + ":" + strconv.Itoa(port) + "/colonies/" + colonyID + "/runtimes")
 
 	unquotedResp, err := strconv.Unquote(string(resp.Body()))
 	if err != nil {
@@ -231,15 +231,15 @@ func GetComputersByColonyID(colonyID string, prvKey string, host string, port in
 		return nil, err
 	}
 
-	computers, err := core.ConvertJSONToComputerArray(unquotedResp)
+	runtimes, err := core.ConvertJSONToRuntimeArray(unquotedResp)
 	if err != nil {
 		return nil, err
 	}
 
-	return computers, nil
+	return runtimes, nil
 }
 
-func GetComputerByID(computerID string, colonyID string, prvKey string, host string, port int) (*core.Computer, error) {
+func GetRuntimeByID(runtimeID string, colonyID string, prvKey string, host string, port int) (*core.Runtime, error) {
 	client := client()
 	digest, sig, id, err := security.GenerateCredentials(prvKey)
 	if err != nil {
@@ -250,7 +250,7 @@ func GetComputerByID(computerID string, colonyID string, prvKey string, host str
 		SetHeader("Id", id).
 		SetHeader("Digest", digest).
 		SetHeader("Signature", sig).
-		Get("https://" + host + ":" + strconv.Itoa(port) + "/colonies/" + colonyID + "/computers/" + computerID)
+		Get("https://" + host + ":" + strconv.Itoa(port) + "/colonies/" + colonyID + "/runtimes/" + runtimeID)
 
 	unquotedResp, err := strconv.Unquote(string(resp.Body()))
 	if err != nil {
@@ -262,12 +262,12 @@ func GetComputerByID(computerID string, colonyID string, prvKey string, host str
 		return nil, err
 	}
 
-	computer, err := core.ConvertJSONToComputer(unquotedResp)
+	runtime, err := core.ConvertJSONToRuntime(unquotedResp)
 	if err != nil {
 		return nil, err
 	}
 
-	return computer, nil
+	return runtime, nil
 }
 
 func PublishProcessSpec(processSpec *core.ProcessSpec, prvKey string, host string, port int) (*core.Process, error) {
@@ -406,7 +406,7 @@ func GetProcessByID(processID string, colonyID string, prvKey string) (*core.Pro
 	return process, nil
 }
 
-func GetWaitingProcesses(computerID string, colonyID string, count int, prvKey string) ([]*core.Process, error) {
+func GetWaitingProcesses(runtimeID string, colonyID string, count int, prvKey string) ([]*core.Process, error) {
 	var processes []*core.Process
 	client := client()
 	digest, sig, id, err := security.GenerateCredentials(prvKey)
@@ -418,7 +418,7 @@ func GetWaitingProcesses(computerID string, colonyID string, count int, prvKey s
 		SetHeader("Id", id).
 		SetHeader("Digest", digest).
 		SetHeader("Signature", sig).
-		SetHeader("ComputerId", computerID).
+		SetHeader("RuntimeId", runtimeID).
 		SetHeader("Count", strconv.Itoa(count)).
 		SetHeader("State", strconv.Itoa(core.WAITING)).
 		Get("https://localhost:8080/colonies/" + colonyID + "/processes")
@@ -531,7 +531,7 @@ func GetFailedProcesses(colonyID string, count int, prvKey string) ([]*core.Proc
 	return processes, nil
 }
 
-func AssignProcess(computerID string, colonyID string, prvKey string) (*core.Process, error) {
+func AssignProcess(runtimeID string, colonyID string, prvKey string) (*core.Process, error) {
 	client := client()
 	digest, sig, id, err := security.GenerateCredentials(prvKey)
 	if err != nil {
@@ -542,7 +542,7 @@ func AssignProcess(computerID string, colonyID string, prvKey string) (*core.Pro
 		SetHeader("Id", id).
 		SetHeader("Digest", digest).
 		SetHeader("Signature", sig).
-		SetHeader("ComputerId", computerID).
+		SetHeader("RuntimeId", runtimeID).
 		Get("https://localhost:8080/colonies/" + colonyID + "/processes/assign")
 
 	unquotedResp, err := strconv.Unquote(string(resp.Body()))
