@@ -24,9 +24,13 @@ func (db *PQDatabase) AddProcess(process *core.Process) error {
 		return err
 	}
 
+	// Convert Envs to Attributes
+	for key, value := range process.ProcessSpec.Env {
+		process.Attributes = append(process.Attributes, core.CreateAttribute(process.ID, core.IN, key, value))
+	}
+
 	err = db.AddAttributes(process.Attributes)
 	if err != nil {
-		// XXX: Should we also remove the process we just added?
 		return err
 	}
 
@@ -70,8 +74,18 @@ func (db *PQDatabase) parseProcesses(rows *sql.Rows) ([]*core.Process, error) {
 			targetRuntimeIDs = []string{}
 		}
 
-		// TODO: we need to re-create ProcessSpec Env map
-		processSpec := core.CreateProcessSpec(targetColonyID, targetRuntimeIDs, runtimeType, timeout, maxRetries, mem, cores, gpus, make(map[string]string))
+		// Restore env map
+		env := make(map[string]string)
+		inAttributes, err := db.GetAttributesByType(processID, core.IN)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, attribute := range inAttributes {
+			env[attribute.Key] = attribute.Value
+		}
+
+		processSpec := core.CreateProcessSpec(targetColonyID, targetRuntimeIDs, runtimeType, timeout, maxRetries, mem, cores, gpus, env)
 		process := core.CreateProcessFromDB(processSpec, processID, assignedRuntimeID, isAssigned, status, submissionTime, startTime, endTime, deadline, retries, attributes)
 		processes = append(processes, process)
 	}

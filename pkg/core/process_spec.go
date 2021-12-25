@@ -1,6 +1,8 @@
 package core
 
-import "encoding/json"
+import (
+	"encoding/json"
+)
 
 type Conditions struct {
 	RuntimeType string `json:"runtimetype"`
@@ -76,7 +78,8 @@ func (processSpec *ProcessSpec) Equals(processSpec2 *ProcessSpec) bool {
 				counter++
 			}
 		}
-		if counter != len(processSpec.Env) && counter != len(processSpec2.Env) {
+
+		if !(counter == len(processSpec.Env) && counter == len(processSpec2.Env)) {
 			same = false
 		}
 	}

@@ -337,14 +337,6 @@ func (server *ColoniesServer) handlePublishProcessRequest(c *gin.Context) {
 	}
 
 	process := core.CreateProcess(processSpec)
-
-	var attributes []*core.Attribute
-	for key, value := range processSpec.Env {
-		attributes = append(attributes, core.CreateAttribute(process.ID, core.IN, key, value))
-	}
-
-	process.SetAttributes(attributes)
-
 	addedProcess, err := server.controller.AddProcess(process)
 	if err != nil {
 		logging.Log().Warning(err)
