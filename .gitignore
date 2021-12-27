@@ -1,4 +1,3 @@
-bin/
 *.sw*
 pkg/database/postgresql/*.sw*
 pkg/database/*.sw*

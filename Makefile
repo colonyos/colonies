@@ -4,7 +4,8 @@ all: build
 IMAGE ?= registry.ice.ri.se/colonies
 
 build:
-	CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o ./bin/colonies ./cmd/main.go
+	@CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o ./bin/colonies ./cmd/main.go
+	@go build -buildmode=c-shared -o ./lib/cryptolib.so ./internal/cryptolib/cryptolib.go
 
 docker:
 	docker build -t $(IMAGE) .

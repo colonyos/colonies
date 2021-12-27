@@ -20,7 +20,7 @@ const digestLength = 64
 
 func GenerateCredentials(prvKey string) (string, string, string, error) {
 	digest := GenerateDigest()
-	sig, err := GenerateSignature(digest, prvKey)
+	signature, err := GenerateSignature(digest, prvKey)
 	if err != nil {
 		return "", "", "", err
 	}
@@ -30,7 +30,7 @@ func GenerateCredentials(prvKey string) (string, string, string, error) {
 		return "", "", "", err
 	}
 
-	return digest, sig, id, nil
+	return digest, signature, id, nil
 }
 
 func GenerateID(privateKey string) (string, error) {
@@ -90,12 +90,12 @@ func GenerateSignature(jsonString string, prvKey string) (string, error) {
 	}
 
 	hash := crypto.GenerateHashFromString(jsonString)
-	sig, err := crypto.Sign(hash, idendity.PrivateKey())
+	signatureBytes, err := crypto.Sign(hash, idendity.PrivateKey())
 	if err != nil {
 		return "", err
 	}
 
-	return hex.EncodeToString(sig), nil
+	return hex.EncodeToString(signatureBytes), nil
 }
 
 func Authenticate(claimedID string, digest string, signature string) error {
