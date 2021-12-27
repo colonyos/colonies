@@ -5,6 +5,8 @@ import (
 	"encoding/hex"
 	"fmt"
 	"math/big"
+	"math/rand"
+	"time"
 
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/pkg/errors"
@@ -16,6 +18,10 @@ var (
 	wordBits       = 32 << (uint64(^big.Word(0)) >> 63)
 	wordBytes      = wordBits / 8
 )
+
+func init() {
+	rand.Seed(time.Now().UTC().UnixNano())
+}
 
 func RecoveredID(hash *Hash, sig []byte) (string, error) {
 	if len(sig) != 65 {
