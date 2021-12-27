@@ -1,29 +1,32 @@
 ## What is Colonies? 
 Colonies is a generic framework for implementing next-generation distributed applications and systems. It can for example be used as a building block for implementing an *Edge Computing Operating System* or a "Grid Computing Engine". 
 
-A **Colony** is a collection of (geographically) distributed computers that can be controlled using a single API. A **Colony Runtime** receives intructions from the **Colonies Server** and is responsible for executing processes. The Colonies server works as a mediator, trying to match submitted processes specification to suitable runtimes. It also keep tracks of the history of all process execution and can assign a process to another runtime, for example if it is not completed in time. 
+A **Colony** is a collection of (geographically) distributed computers that can be controlled using a single API. A **Colony Runtime** receives intructions from the **Colonies Server** and is responsible for executing processes. The Colonies server works as a mediator, trying to match submitted processes specification to suitable runtimes. It also keep tracks of the history of all process execution and can assign a process to another runtime, for example re-assign a task if it is not completed in time. 
 
-A Colony may consists of many different kinds of Colony Runtimes, e.g. a **Kubernetes Colony Runtime**, **Docker Colony Runtime**, **AWS Colony Runtime, or a **Slurm Singulairty Colony Runtime**. A Colony Runtime can also reside in IoT devices or smart phones, thus making it possible to deploy and manage applications that run across devices and servers. In this way, Colonies can be used to implement a "Cloud-of-Cloud" platform that combines many execution environments into a new virtual computing environment that can be controlled using an unified API. 
+A Colony may consists of many different kinds of Colony Runtimes, e.g. a **Kubernetes Colony Runtime**, **Docker Colony Runtime**, or a **Slurm Colony Runtime**. A Colony Runtime can also reside in IoT devices or smart phones, thus making it possible to deploy and manage applications that run across devices and servers. In this way, Colonies can be used to implement a "Cloud-of-Cloud" platform that combines many execution environments into a new virtual computing environment that can be controlled using an unified API. 
 
 ![Colonies Architecture](docs/ColoniesArch.png?raw=true "Colonies Architecture")
 
-A core concept of Colonies is security and crypto identity management. Each Colony and Colony Runtime is assigned a *Digital Identity* that is verified by the Colonies server. The Colonies Server can be seen as a certificate registry and maintains a list of valid identities and rules how different runtimes can interact with each other. In this way, different runtimes can trust each other even though they reside in different environments across providers. The Colony Private key serves as a *"one ring to rule them all"* and gives full controll to the Colony owner.    
+### Identity management  
+A core concept of Colonies is a crypto identity protocol inspired by Bitcoin and Ethereum. Each Colony and Colony Runtime is assigned a *Digital Identity* that is verified by the Colonies server using a so-called [Implicit certificates](https://en.wikipedia.org/wiki/Implicit_certificate), which is implemented using [Elliptic-curve cryptography](https://en.wikipedia.org/wiki/Elliptic-curve_cryptography). This makes it possible to reconstruct public-keys from signatures. Identities can then simply be calculated as cryptographic hashes of the reconstructed public-keys.
+
+The Colonies Server functions as a registry and keep a list of valid identities and rules how different runtimes can interact with each other. Hense, different runtimes can trust each other even though they reside in different environments across providers. The Colony Private key serves as a *"one ring to rule them all"* and gives full controll to the Colony owner.    
 
 ## Getting started
 ## Installation
 ### Start a TimescaleDB server
 ```
-$ docker run -d --name timescaledb -p 5432:5432 -v /storage/fast/lib/timescaledb/data:/var/lib/postgresql/data -e POSTGRES_PASSWORD=rFcLGNkgsNtksg6Pgtn9CumL4xXBQ7 --restart unless-stopped timescale/timescaledb:latest-pg12
+docker run -d --name timescaledb -p 5432:5432 -v /storage/fast/lib/timescaledb/data:/var/lib/postgresql/data -e POSTGRES_PASSWORD=rFcLGNkgsNtksg6Pgtn9CumL4xXBQ7 --restart unless-stopped timescale/timescaledb:latest-pg12
 ```
 
 ### Setup a database
 ```
-$ ./bin/colonies database create --dbhost localhost --dbport 5432 --dbuser postgres --dbpassword=rFcLGNkgsNtksg6Pgtn9CumL4xXBQ7
+./bin/colonies database create --dbhost localhost --dbport 5432 --dbuser postgres --dbpassword=rFcLGNkgsNtksg6Pgtn9CumL4xXBQ7
 ```
 
 ### In case, you would like to clear the database
 ```
-$ ./bin/colonies database drop --dbhost localhost --dbport 5432 --dbuser postgres --dbpassword=rFcLGNkgsNtksg6Pgtn9CumL4xXBQ7
+./bin/colonies database drop --dbhost localhost --dbport 5432 --dbuser postgres --dbpassword=rFcLGNkgsNtksg6Pgtn9CumL4xXBQ7
 ```
 
 ### Start a Colonies server 
@@ -34,41 +37,49 @@ $ ./bin/colonies server start --rootpassword=secret --port=8080 --tlscert=./cert
 ## Using the Colonies CLI tool 
 ### Register a new Colony
 First, create a file named colony.json, and put the following content into it.
-```
+```json
 {
     "name": "mycolony"
 }
 ```
 
 Then use the colonies tool to register the colony. The id of the colony will be returned if the command is successful. Note that the root password is required for this operation.
+```console
+./bin/colonies colony register --rootpassword=secret --spec ./examples/colony.json 
 ```
-$ ./bin/colonies colony register --rootpassword=secret --spec ./examples/colony.json 
-2770116b0d66a71840a4513bec52707c4a26042462b62e0830497724f7d37773
+
+Output: 
+```console
+42ba8284ee2e988ebddf28a9bb4559e0683f9e3291914a992eb7aac823b27af6
 ```
 
 ### List all Colonies 
 Note that root password of Colonies server is also required to list all colonies.
-```
-$ ./bin/colonies colony ls --rootpassword=secret
+```console
+./bin/colonies colony ls --rootpassword=secret
 ```
 
-```json
-[
-    {
-        "colonyid": "2770116b0d66a71840a4513bec52707c4a26042462b62e0830497724f7d37773",
-        "name": "mycolony"
-    }
-]
+Output:
+```
++------------------------------------------------------------------+----------+
+|                                ID                                |   NAME   |
++------------------------------------------------------------------+----------+
+| 42ba8284ee2e988ebddf28a9bb4559e0683f9e3291914a992eb7aac823b27af6 | mycolony |
++------------------------------------------------------------------+----------+
 ```
 
 ### Get the private key of a Colony (or a Colony Runtime)
 ```
-$ ./bin/colonies keychain privatekey --id 2770116b0d66a71840a4513bec52707c4a26042462b62e0830497724f7d37773 
-4b24941ca1d85fb1ff055e81fad7dba97471e756bebc38e03e657c738f0e1224
+./bin/colonies keychain privatekey --id 2770116b0d66a71840a4513bec52707c4a26042462b62e0830497724f7d37773 
+```
+
+Output:
+```
+d19d30a7f84f1d58feba6ab4728daf2fd769510e74ffea67eaee575ed1f2e312
 ```
 
 ### Register a new Colony Runtime 
-Only the colony owner is allowed to register a new Colony Runtimes. 
+Only the colony owner is allowed to register a new Colony Runtime. 
 ```
 $ ./bin/colonies runtime register --colonyid 2770116b0d66a71840a4513bec52707c4a26042462b62e0830497724f7d37773 --spec ./examples/runtime.json
 4c60e0e108690dc034a3f3c6e369e63e077aa4c9795cf46c531938efc4e67243
