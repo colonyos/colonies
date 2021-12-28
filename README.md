@@ -8,14 +8,14 @@ A Colony may consists of many different kinds of Colony Runtimes, e.g. a **Kuber
 ![Colonies Architecture](docs/images/ColoniesArch.png?raw=true "Colonies Architecture")
 
 ### Security principles
-A core component of Colonies is a crypto identity protocol inspired by Bitcoin and Ethereum. Each Colony and Colony Runtime is assigned a *Digital Identity* that is verified by the Colonies server using a so-called [Implicit certificates](https://en.wikipedia.org/wiki/Implicit_certificate), which is implemented using [Elliptic-curve cryptography](https://en.wikipedia.org/wiki/Elliptic-curve_cryptography). This protocol makes it possible to reconstruct public-keys from signatures. Identities can then simply be calculated as cryptographic hashes of the reconstructed public-keys.
+A core component of Colonies is a crypto identity protocol inspired by Bitcoin and Ethereum. Each Colony and Colony Runtime is assigned a *Digital Identity* that is verified by the Colonies server using a so-called [Implicit certificates](https://en.wikipedia.org/wiki/Implicit_certificate), which is implemented using [Elliptic-curve cryptography](https://en.wikipedia.org/wiki/Elliptic-curve_cryptography). This protocol makes it possible to reconstruct public-keys from signatures. Identities can then simply be calculated as cryptographic hashes (SHA3-256) of the reconstructed public-keys.
 
-The Colonies Server keeps track of these identities and applies several rules how runtimes can interact with each other. 
+The Colonies Server keeps track of these identities and applies several rules how runtimes are allowed to interact with each other. 
 
 1. Only the Colonies Server Owner may register a new Colony. **Requires rootpassword** specified when starting the Colonies Server. See example below.
-2. Only a Colony Owner may register/approve/disapprove/list/get info about Colony Runtimes in a Colony. **Requires Colony Private key.**
-3. Only a Colony Runtime may submit/list/get info about a Colony Process. **Requires Runtime Private Key.**
-4. Only a Colony Runtime may set/get/list attributes on a Colony Process. **Requires Runtime Private Key.**
+2. Only a Colony Owner may register/approve/disapprove/list/get info about Colony Runtimes in a Colony. **Requires a Colony Private key.**
+3. Only a Colony Runtime may submit/list/get info about a process. **Requires a Runtime Private Key.**
+4. Only a Colony Runtime may set/get/list attributes on a process. **Requires a Runtime Private Key.**
 
 Note that the Colonies server does not store any crypto keys, but rather stores identites in a database and verifies that reconstructed identities obtained from RPC calls matches the identities stored in the database.
 
