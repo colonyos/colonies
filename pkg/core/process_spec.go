@@ -5,24 +5,24 @@ import (
 )
 
 type Conditions struct {
-	RuntimeType string `json:"runtimetype"`
-	Mem         int    `json:"mem"`
-	Cores       int    `json:"cores"`
-	GPUs        int    `json:"gpus"`
+	ColonyID    string   `json:"colonyid"`
+	RuntimeIDs  []string `json:"runtimeids"`
+	RuntimeType string   `json:"runtimetype"`
+	Mem         int      `json:"mem"`
+	Cores       int      `json:"cores"`
+	GPUs        int      `json:"gpus"`
 }
 
 type ProcessSpec struct {
-	TargetColonyID   string            `json:"targetcolonyid"`
-	TargetRuntimeIDs []string          `json:"targetruntimeids"`
-	Timeout          int               `json:"timeout"`
-	MaxRetries       int               `json:"maxretries"`
-	Conditions       Conditions        `json:"conditions"`
-	Env              map[string]string `json:"env"`
+	Timeout    int               `json:"timeout"`
+	MaxRetries int               `json:"maxretries"`
+	Conditions Conditions        `json:"conditions"`
+	Env        map[string]string `json:"env"`
 }
 
-func CreateProcessSpec(targetColonyID string, targetRuntimeIDs []string, runtimeType string, timeout int, maxRetries int, mem int, cores int, gpus int, env map[string]string) *ProcessSpec {
-	conditions := Conditions{RuntimeType: runtimeType, Mem: mem, Cores: cores, GPUs: gpus}
-	return &ProcessSpec{TargetColonyID: targetColonyID, TargetRuntimeIDs: targetRuntimeIDs, Timeout: timeout, Conditions: conditions, Env: env}
+func CreateProcessSpec(colonyID string, runtimeIDs []string, runtimeType string, timeout int, maxRetries int, mem int, cores int, gpus int, env map[string]string) *ProcessSpec {
+	conditions := Conditions{ColonyID: colonyID, RuntimeIDs: runtimeIDs, RuntimeType: runtimeType, Mem: mem, Cores: cores, GPUs: gpus}
+	return &ProcessSpec{Timeout: timeout, MaxRetries: maxRetries, Conditions: conditions, Env: env}
 }
 
 func ConvertJSONToProcessSpec(jsonString string) (*ProcessSpec, error) {
@@ -39,9 +39,9 @@ func ConvertJSONToProcessSpec(jsonString string) (*ProcessSpec, error) {
 
 func (processSpec *ProcessSpec) Equals(processSpec2 *ProcessSpec) bool {
 	same := true
-	if processSpec.TargetColonyID != processSpec2.TargetColonyID &&
-		processSpec.Timeout != processSpec2.Timeout &&
+	if processSpec.Timeout != processSpec2.Timeout &&
 		processSpec.MaxRetries != processSpec2.MaxRetries &&
+		processSpec.Conditions.ColonyID != processSpec2.Conditions.ColonyID &&
 		processSpec.Conditions.RuntimeType != processSpec2.Conditions.RuntimeType &&
 		processSpec.Conditions.Mem != processSpec2.Conditions.Mem &&
 		processSpec.Conditions.Cores != processSpec2.Conditions.Cores &&
@@ -49,20 +49,20 @@ func (processSpec *ProcessSpec) Equals(processSpec2 *ProcessSpec) bool {
 		same = false
 	}
 
-	if processSpec.TargetRuntimeIDs != nil && processSpec2.TargetRuntimeIDs == nil {
+	if processSpec.Conditions.RuntimeIDs != nil && processSpec2.Conditions.RuntimeIDs == nil {
 		same = false
-	} else if processSpec.TargetRuntimeIDs == nil && processSpec2.TargetRuntimeIDs != nil {
+	} else if processSpec.Conditions.RuntimeIDs == nil && processSpec2.Conditions.RuntimeIDs != nil {
 		same = false
 	} else {
 		counter := 0
-		for _, targetRuntimeID1 := range processSpec.TargetRuntimeIDs {
-			for _, targetRuntimeID2 := range processSpec2.TargetRuntimeIDs {
+		for _, targetRuntimeID1 := range processSpec.Conditions.RuntimeIDs {
+			for _, targetRuntimeID2 := range processSpec2.Conditions.RuntimeIDs {
 				if targetRuntimeID1 == targetRuntimeID2 {
 					counter++
 				}
 			}
 		}
-		if counter != len(processSpec.TargetRuntimeIDs) && counter != len(processSpec2.TargetRuntimeIDs) {
+		if counter != len(processSpec.Conditions.RuntimeIDs) && counter != len(processSpec2.Conditions.RuntimeIDs) {
 			same = false
 		}
 	}
