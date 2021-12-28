@@ -2,6 +2,7 @@ package client
 
 import (
 	"colonies/pkg/core"
+	"colonies/pkg/rpc"
 	"colonies/pkg/security"
 	"crypto/tls"
 	"errors"
@@ -270,24 +271,21 @@ func GetRuntimeByID(runtimeID string, colonyID string, prvKey string, host strin
 	return runtime, nil
 }
 
-func PublishProcessSpec(processSpec *core.ProcessSpec, prvKey string, host string, port int) (*core.Process, error) {
+func SubmitProcessSpec(processSpec *core.ProcessSpec, prvKey string, host string, port int) (*core.Process, error) {
 	client := client()
-	digest, sig, id, err := security.GenerateCredentials(prvKey)
+
+	submitProcessRPC := rpc.CreateSubmitProcessSpec(processSpec)
+	jsonString, err := submitProcessRPC.ToJSON()
 	if err != nil {
 		return nil, err
 	}
 
-	processSpecJSON, err := processSpec.ToJSON()
-	if err != nil {
-		return nil, err
-	}
+	signature, err := security.GenerateSignature(jsonString, prvKey)
 
 	resp, err := client.R().
-		SetHeader("Id", id).
-		SetHeader("Digest", digest).
-		SetHeader("Signature", sig).
-		SetBody(processSpecJSON).
-		Post("https://" + host + ":" + strconv.Itoa(port) + "/colonies/" + processSpec.Conditions.ColonyID + "/processes")
+		SetHeader("Signature", signature).
+		SetBody(jsonString).
+		Post("https://" + host + ":" + strconv.Itoa(port) + "/endpoint")
 
 	unquotedResp, err := strconv.Unquote(string(resp.Body()))
 	if err != nil {

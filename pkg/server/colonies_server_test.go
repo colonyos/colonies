@@ -244,11 +244,11 @@ func TestAddProcess(t *testing.T) {
 	in := make(map[string]string)
 	in["test_key_1"] = "test_value_1"
 	processSpec1 := core.CreateProcessSpec(env.colonyID, []string{}, "test_runtime_type", -1, 3, 1000, 10, 1, in)
-	addedProcess1, err := client.PublishProcessSpec(processSpec1, env.runtimePrvKey, TESTHOST, TESTPORT)
+	addedProcess1, err := client.SubmitProcessSpec(processSpec1, env.runtimePrvKey, TESTHOST, TESTPORT)
 	assert.Nil(t, err)
 
 	processSpec2 := core.CreateProcessSpec(env.colonyID, []string{}, "test_runtime_type", -1, 3, 1000, 10, 1, make(map[string]string))
-	addedProcess2, err := client.PublishProcessSpec(processSpec2, env.runtimePrvKey, TESTHOST, TESTPORT)
+	addedProcess2, err := client.SubmitProcessSpec(processSpec2, env.runtimePrvKey, TESTHOST, TESTPORT)
 	assert.Nil(t, err)
 	assert.Equal(t, processSpec2.Conditions.ColonyID, addedProcess2.ProcessSpec.Conditions.ColonyID)
 
@@ -297,13 +297,13 @@ func TestAssignProcess(t *testing.T) {
 	env := createTestEnv(t, rootPassword)
 
 	processSpec1 := core.CreateProcessSpec(env.colonyID, []string{}, "test_runtime_type", -1, 3, 1000, 10, 1, make(map[string]string))
-	addedProcess1, err := client.PublishProcessSpec(processSpec1, env.runtimePrvKey, TESTHOST, TESTPORT)
+	addedProcess1, err := client.SubmitProcessSpec(processSpec1, env.runtimePrvKey, TESTHOST, TESTPORT)
 	assert.Nil(t, err)
 
 	time.Sleep(50 * time.Millisecond)
 
 	processSpec2 := core.CreateProcessSpec(env.colonyID, []string{}, "test_runtime_type", -1, 3, 1000, 10, 1, make(map[string]string))
-	addedProcess2, err := client.PublishProcessSpec(processSpec2, env.runtimePrvKey, TESTHOST, TESTPORT)
+	addedProcess2, err := client.SubmitProcessSpec(processSpec2, env.runtimePrvKey, TESTHOST, TESTPORT)
 	assert.Nil(t, err)
 
 	assignedProcess, err := client.AssignProcess(env.runtimeID, env.colonyID, env.runtimePrvKey)
@@ -324,7 +324,7 @@ func TestMarkSuccessful(t *testing.T) {
 	env := createTestEnv(t, rootPassword)
 
 	processSpec := core.CreateProcessSpec(env.colonyID, []string{}, "test_runtime_type", -1, 3, 1000, 10, 1, make(map[string]string))
-	addedProcess, err := client.PublishProcessSpec(processSpec, env.runtimePrvKey, TESTHOST, TESTPORT)
+	addedProcess, err := client.SubmitProcessSpec(processSpec, env.runtimePrvKey, TESTHOST, TESTPORT)
 	assert.Nil(t, err)
 	assert.Equal(t, core.PENDING, addedProcess.Status)
 
@@ -350,7 +350,7 @@ func TestMarkFailed(t *testing.T) {
 	env := createTestEnv(t, rootPassword)
 
 	processSpec := core.CreateProcessSpec(env.colonyID, []string{}, "test_runtime_type", -1, 3, 1000, 10, 1, make(map[string]string))
-	addedProcess, err := client.PublishProcessSpec(processSpec, env.runtimePrvKey, TESTHOST, TESTPORT)
+	addedProcess, err := client.SubmitProcessSpec(processSpec, env.runtimePrvKey, TESTHOST, TESTPORT)
 	assert.Nil(t, err)
 	assert.Equal(t, core.PENDING, addedProcess.Status)
 
@@ -376,7 +376,7 @@ func TestAddAttributes(t *testing.T) {
 	env := createTestEnv(t, rootPassword)
 
 	processSpec := core.CreateProcessSpec(env.colonyID, []string{}, "test_runtime_type", -1, 3, 1000, 10, 1, make(map[string]string))
-	addedProcess, err := client.PublishProcessSpec(processSpec, env.runtimePrvKey, TESTHOST, TESTPORT)
+	addedProcess, err := client.SubmitProcessSpec(processSpec, env.runtimePrvKey, TESTHOST, TESTPORT)
 	assert.Nil(t, err)
 	assert.Equal(t, core.PENDING, addedProcess.Status)
 

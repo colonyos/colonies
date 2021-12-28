@@ -4,6 +4,7 @@ import (
 	"colonies/pkg/core"
 	"colonies/pkg/database"
 	"colonies/pkg/logging"
+	"colonies/pkg/rpc"
 	"colonies/pkg/security"
 	"context"
 	"errors"
@@ -60,6 +61,7 @@ func CreateColoniesServer(db database.Database, port int, rootPassword string, t
 }
 
 func (server *ColoniesServer) setupRoutes() {
+	server.ginHandler.POST("/endpoint", server.handleEndpointRequest)
 	server.ginHandler.GET("/colonies", server.handleGetColoniesRequest)
 	server.ginHandler.GET("/colonies/:colonyid", server.handleGetColonyRequest)
 	server.ginHandler.POST("/colonies", server.handleAddColonyRequest)
@@ -68,7 +70,6 @@ func (server *ColoniesServer) setupRoutes() {
 	server.ginHandler.GET("/colonies/:colonyid/runtimes/:runtimeid", server.handleGetRuntimeRequest)
 	server.ginHandler.PUT("/colonies/:colonyid/runtimes/:runtimeid/approve", server.handleApproveRuntimeRequest)
 	server.ginHandler.PUT("/colonies/:colonyid/runtimes/:runtimeid/reject", server.handleRejectRuntimeRequest)
-	server.ginHandler.POST("/colonies/:colonyid/processes", server.handlePublishProcessRequest)
 	server.ginHandler.GET("/colonies/:colonyid/processes", server.handleGetProcessesRequest)
 	server.ginHandler.GET("/colonies/:colonyid/processes/:processid", server.handleGetProcessRequest)
 	server.ginHandler.PUT("/colonies/:colonyid/processes/:processid/finish", server.handleFinishProcessRequest)
@@ -76,6 +77,62 @@ func (server *ColoniesServer) setupRoutes() {
 	server.ginHandler.GET("/colonies/:colonyid/processes/assign", server.handleAssignProcessRequest)
 	server.ginHandler.POST("/colonies/:colonyid/processes/:processid/attributes", server.handleAddAttributeRequest)
 	server.ginHandler.GET("/colonies/:colonyid/processes/:processid/attributes/:attributeid", server.handleGetAttributeRequest)
+}
+
+func (server *ColoniesServer) handleSubmitProcessSpec(c *gin.Context, recoveredID string, jsonString string) {
+	msg, err := rpc.CreateSubmitProcessSpecFromJSON(jsonString)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// We need to check if the recoveredID is a member of the targeted colony
+	err = security.VerifyRuntimeMembership(recoveredID, msg.ProcessSpec.Conditions.ColonyID, server.ownership)
+	if err != nil {
+		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
+		return
+	}
+
+	process := core.CreateProcess(msg.ProcessSpec)
+	addedProcess, err := server.controller.AddProcess(process)
+	if err != nil {
+		logging.Log().Warning(err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	jsonString, err = addedProcess.ToJSON()
+	if err != nil {
+		logging.Log().Warning(err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, jsonString)
+}
+
+func (server *ColoniesServer) handleEndpointRequest(c *gin.Context) {
+	jsonBytes, err := ioutil.ReadAll(c.Request.Body)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	jsonString := string(jsonBytes)
+	signature := c.GetHeader("Signature")
+	recoveredID, err := security.RecoverID(jsonString, signature)
+	if err != nil {
+		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
+		return
+	}
+
+	msgType := rpc.DetermineRPCMethod(jsonString)
+	switch msgType {
+	case rpc.MethodSubmitProcessSpec:
+		server.handleSubmitProcessSpec(c, recoveredID, jsonString)
+	default:
+		c.JSON(http.StatusBadRequest, gin.H{"error": errors.New("invalid rpc msg type")})
+	}
 }
 
 func (server *ColoniesServer) handleGetColoniesRequest(c *gin.Context) {
@@ -309,48 +366,6 @@ func (server *ColoniesServer) handleRejectRuntimeRequest(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, "")
-}
-
-func (server *ColoniesServer) handlePublishProcessRequest(c *gin.Context) {
-	colonyID := c.Param("colonyid")
-
-	err := security.RequireColonyOwnerOrMember(c.GetHeader("Id"), colonyID, c.GetHeader("Digest"), c.GetHeader("Signature"), server.ownership)
-	if err != nil {
-		logging.Log().Warning(err)
-		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
-		return
-	}
-
-	jsonBytes, err := ioutil.ReadAll(c.Request.Body)
-	if err != nil {
-		logging.Log().Warning(err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	processSpec, err := core.ConvertJSONToProcessSpec(string(jsonBytes))
-	if err != nil {
-		logging.Log().Warning(err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	process := core.CreateProcess(processSpec)
-	addedProcess, err := server.controller.AddProcess(process)
-	if err != nil {
-		logging.Log().Warning(err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	jsonString, err := addedProcess.ToJSON()
-	if err != nil {
-		logging.Log().Warning(err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	c.JSON(http.StatusOK, jsonString)
 }
 
 func (server *ColoniesServer) handleGetProcessesRequest(c *gin.Context) {
