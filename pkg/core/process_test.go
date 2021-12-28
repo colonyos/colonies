@@ -150,5 +150,5 @@ func TestProcessArrayToJSON(t *testing.T) {
 	assert.Nil(t, err)
 	processes2, err := ConvertJSONToProcessArray(jsonString)
 	assert.Nil(t, err)
-	assert.True(t, IsProcessArrayEqual(processes1, processes2))
+	assert.True(t, IsProcessArraysEqual(processes1, processes2))
 }

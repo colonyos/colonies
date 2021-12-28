@@ -99,7 +99,7 @@ func ConvertJSONToProcessArray(jsonString string) ([]*Process, error) {
 	return processes, nil
 }
 
-func IsProcessArrayEqual(processes1 []*Process, processes2 []*Process) bool {
+func IsProcessArraysEqual(processes1 []*Process, processes2 []*Process) bool {
 	counter := 0
 	for _, process1 := range processes1 {
 		for _, process2 := range processes2 {

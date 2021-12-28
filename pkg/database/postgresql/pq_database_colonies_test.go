@@ -85,19 +85,19 @@ func TestDeleteColonies(t *testing.T) {
 	assert.Nil(t, err)
 
 	runtime1ID := core.GenerateRandomID()
-	runtime1 := core.CreateRuntime(runtime1ID, "test_runtime", colony1.ID, "AMD Ryzen 9 5950X (32) @ 3.400GHz", 32, 80326, "NVIDIA GeForce RTX 2080 Ti Rev. A", 1)
+	runtime1 := core.CreateRuntime(runtime1ID, "test_runtime_type", "test_runtime_name", colony1.ID, "AMD Ryzen 9 5950X (32) @ 3.400GHz", 32, 80326, "NVIDIA GeForce RTX 2080 Ti Rev. A", 1)
 
 	err = db.AddRuntime(runtime1)
 	assert.Nil(t, err)
 
 	runtime2ID := core.GenerateRandomID()
-	runtime2 := core.CreateRuntime(runtime2ID, "test_runtime", colony1.ID, "AMD Ryzen 9 5950X (32) @ 3.400GHz", 32, 80326, "NVIDIA GeForce RTX 2080 Ti Rev. A", 1)
+	runtime2 := core.CreateRuntime(runtime2ID, "test_runtime_type", "test_runtime_name", colony1.ID, "AMD Ryzen 9 5950X (32) @ 3.400GHz", 32, 80326, "NVIDIA GeForce RTX 2080 Ti Rev. A", 1)
 
 	err = db.AddRuntime(runtime2)
 	assert.Nil(t, err)
 
 	runtime3ID := core.GenerateRandomID()
-	runtime3 := core.CreateRuntime(runtime3ID, "test_runtime", colony2.ID, "AMD Ryzen 9 5950X (32) @ 3.400GHz", 32, 80326, "NVIDIA GeForce RTX 2080 Ti Rev. A", 1)
+	runtime3 := core.CreateRuntime(runtime3ID, "test_runtime_type", "test_runtime_name", colony2.ID, "AMD Ryzen 9 5950X (32) @ 3.400GHz", 32, 80326, "NVIDIA GeForce RTX 2080 Ti Rev. A", 1)
 
 	err = db.AddRuntime(runtime3)
 	assert.Nil(t, err)
