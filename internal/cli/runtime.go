@@ -53,9 +53,11 @@ var registerRuntimeCmd = &cobra.Command{
 		jsonSpecBytes, err := ioutil.ReadFile(SpecFile)
 		CheckError(err)
 
-		ColonyID = os.Getenv("COLONYID")
 		if ColonyID == "" {
-			CheckError(errors.New("unkown colonyid"))
+			ColonyID = os.Getenv("COLONYID")
+		}
+		if ColonyID == "" {
+			CheckError(errors.New("Unknown Colony Id"))
 		}
 
 		runtime, err := core.ConvertJSONToRuntime(string(jsonSpecBytes))
@@ -95,9 +97,11 @@ var lsRuntimesCmd = &cobra.Command{
 		keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
 		CheckError(err)
 
-		ColonyID = os.Getenv("COLONYID")
 		if ColonyID == "" {
-			CheckError(errors.New("unkown colonyid"))
+			ColonyID = os.Getenv("COLONYID")
+		}
+		if ColonyID == "" {
+			CheckError(errors.New("Unknown Colony Id"))
 		}
 
 		if ColonyPrvKey == "" {
@@ -126,7 +130,7 @@ var lsRuntimesCmd = &cobra.Command{
 			case core.REJECTED:
 				status = "Disapproved"
 			default:
-				status = "Unkown"
+				status = "Unknown"
 			}
 
 			data = append(data, []string{runtime.ID, runtime.Name, status})
@@ -151,9 +155,11 @@ var approveRuntimesCmd = &cobra.Command{
 		keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
 		CheckError(err)
 
-		ColonyID = os.Getenv("COLONYID")
 		if ColonyID == "" {
-			CheckError(errors.New("unkown colonyid"))
+			ColonyID = os.Getenv("COLONYID")
+		}
+		if ColonyID == "" {
+			CheckError(errors.New("Unknown Colony Id"))
 		}
 
 		if ColonyPrvKey == "" {
@@ -179,9 +185,11 @@ var disapproveRuntimesCmd = &cobra.Command{
 		keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
 		CheckError(err)
 
-		ColonyID = os.Getenv("COLONYID")
 		if ColonyID == "" {
-			CheckError(errors.New("unkown colonyid"))
+			ColonyID = os.Getenv("COLONYID")
+		}
+		if ColonyID == "" {
+			CheckError(errors.New("Unknown Colony Id"))
 		}
 
 		if ColonyPrvKey == "" {

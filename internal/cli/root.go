@@ -10,6 +10,7 @@ import (
 const DBName = "postgres"
 const DBPrefix = "PROD_"
 const KEYCHAIN_PATH = ".colonies"
+const TimeLayout = "2006-01-02T15:04:05.999999999Z07:00"
 
 var Verbose bool
 var DBHost string

@@ -291,8 +291,9 @@ func (controller *ColoniesController) FindWaitingProcesses(runtimeID string, col
 				cmd.errorChan <- err
 				return
 			}
-			prioritizedProcesses := controller.scheduler.Prioritize(runtimeID, processes, count)
-			cmd.processesReplyChan <- prioritizedProcesses
+			cmd.processesReplyChan <- processes
+			//prioritizedProcesses := controller.scheduler.Prioritize(runtimeID, processes, count)
+			//cmd.processesReplyChan <- prioritizedProcesses
 		}}
 
 	controller.cmdQueue <- cmd
