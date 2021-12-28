@@ -18,7 +18,7 @@ func (db *PQDatabase) AddProcess(process *core.Process) error {
 
 	submissionTime := time.Now()
 
-	sqlStatement := `INSERT INTO  ` + db.dbPrefix + `PROCESSES (PROCESS_ID, TARGET_COLONY_ID, TARGET_runtime_IDS, ASSIGNED_runtime_ID, STATUS, IS_ASSIGNED, runtime_TYPE, SUBMISSION_TIME, START_TIME, END_TIME, DEADLINE, RETRIES, TIMEOUT, MAX_RETRIES, MEM, CORES, GPUs) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)`
+	sqlStatement := `INSERT INTO  ` + db.dbPrefix + `PROCESSES (PROCESS_ID, TARGET_COLONY_ID, TARGET_RUNTIME_IDS, ASSIGNED_runtime_ID, STATUS, IS_ASSIGNED, RUNTIME_TYPE, SUBMISSION_TIME, START_TIME, END_TIME, DEADLINE, RETRIES, TIMEOUT, MAX_RETRIES, MEM, CORES, GPUs) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)`
 	_, err := db.postgresql.Exec(sqlStatement, process.ID, process.ProcessSpec.TargetColonyID, pq.Array(targetRuntimeIDs), process.AssignedRuntimeID, process.Status, process.IsAssigned, process.ProcessSpec.Conditions.RuntimeType, submissionTime, time.Time{}, time.Time{}, process.Deadline, 0, process.ProcessSpec.Timeout, process.ProcessSpec.MaxRetries, process.ProcessSpec.Conditions.Mem, process.ProcessSpec.Conditions.Cores, process.ProcessSpec.Conditions.GPUs)
 	if err != nil {
 		return err
@@ -202,11 +202,11 @@ func (db *PQDatabase) FindFailedProcesses(colonyID string, count int) ([]*core.P
 	return matches, nil
 }
 
-func (db *PQDatabase) FindUnassignedProcesses(colonyID string, runtimeID string, count int) ([]*core.Process, error) {
+func (db *PQDatabase) FindUnassignedProcesses(colonyID string, runtimeID string, runtimeType string, count int) ([]*core.Process, error) {
 	// Note: The @> function tests if an array is a subset of another array
 	// We need to do that since the TARGET_runtime_IDS can contains many IDs
-	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `PROCESSES WHERE IS_ASSIGNED=FALSE AND TARGET_COLONY_ID=$1 AND (TARGET_runtime_IDS@>$2 OR TARGET_runtime_IDS@>$3) ORDER BY SUBMISSION_TIME LIMIT $4`
-	rows, err := db.postgresql.Query(sqlStatement, colonyID, pq.Array([]string{runtimeID}), pq.Array([]string{"*"}), count)
+	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `PROCESSES WHERE RUNTIME_TYPE=$1 AND IS_ASSIGNED=FALSE AND TARGET_COLONY_ID=$2 AND (TARGET_runtime_IDS@>$3 OR TARGET_runtime_IDS@>$4) ORDER BY SUBMISSION_TIME LIMIT $5`
+	rows, err := db.postgresql.Query(sqlStatement, runtimeType, colonyID, pq.Array([]string{runtimeID}), pq.Array([]string{"*"}), count)
 	if err != nil {
 		return nil, err
 	}

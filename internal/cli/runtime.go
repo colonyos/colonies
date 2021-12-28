@@ -4,9 +4,12 @@ import (
 	"colonies/pkg/client"
 	"colonies/pkg/core"
 	"colonies/pkg/security"
+	"errors"
 	"fmt"
 	"io/ioutil"
+	"os"
 
+	"github.com/kataras/tablewriter"
 	"github.com/spf13/cobra"
 )
 
@@ -24,6 +27,8 @@ func init() {
 	registerRuntimeCmd.Flags().StringVarP(&ColonyPrvKey, "colonyprvkey", "", "", "Colony private key")
 	registerRuntimeCmd.Flags().StringVarP(&SpecFile, "spec", "", "", "JSON specification of a Colony Runtime")
 	registerRuntimeCmd.MarkFlagRequired("spec")
+
+	lsRuntimesCmd.Flags().BoolVarP(&JSON, "json", "", false, "Print JSON instead of tables")
 
 	approveRuntimesCmd.Flags().StringVarP(&ColonyPrvKey, "colonyprvkey", "", "", "Colony private key")
 	approveRuntimesCmd.Flags().StringVarP(&RuntimeID, "runtimeid", "", "", "Colony Runtime Id")
@@ -47,6 +52,11 @@ var registerRuntimeCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		jsonSpecBytes, err := ioutil.ReadFile(SpecFile)
 		CheckError(err)
+
+		ColonyID = os.Getenv("COLONYID")
+		if ColonyID == "" {
+			CheckError(errors.New("unkown colonyid"))
+		}
 
 		runtime, err := core.ConvertJSONToRuntime(string(jsonSpecBytes))
 		CheckError(err)
@@ -85,18 +95,51 @@ var lsRuntimesCmd = &cobra.Command{
 		keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
 		CheckError(err)
 
+		ColonyID = os.Getenv("COLONYID")
+		if ColonyID == "" {
+			CheckError(errors.New("unkown colonyid"))
+		}
+
 		if ColonyPrvKey == "" {
 			ColonyPrvKey, err = keychain.GetPrvKey(ColonyID)
 			CheckError(err)
 		}
 
-		runtimes, err := client.GetRuntimesByColonyID(ColonyID, ColonyPrvKey, ServerHost, ServerPort)
+		runtimesFromServer, err := client.GetRuntimesByColonyID(ColonyID, ColonyPrvKey, ServerHost, ServerPort)
 		CheckError(err)
 
-		jsonString, err := core.ConvertRuntimeArrayToJSON(runtimes)
-		CheckError(err)
+		if JSON {
+			jsonString, err := core.ConvertRuntimeArrayToJSON(runtimesFromServer)
+			CheckError(err)
+			fmt.Println(jsonString)
+			os.Exit(0)
+		}
 
-		fmt.Println(jsonString)
+		var data [][]string
+		for _, runtime := range runtimesFromServer {
+			status := ""
+			switch runtime.Status {
+			case core.PENDING:
+				status = "Pending"
+			case core.APPROVED:
+				status = "Approved"
+			case core.REJECTED:
+				status = "Disapproved"
+			default:
+				status = "Unkown"
+			}
+
+			data = append(data, []string{runtime.ID, runtime.Name, status})
+		}
+
+		table := tablewriter.NewWriter(os.Stdout)
+		table.SetHeader([]string{"ID", "Name", "Status"})
+
+		for _, v := range data {
+			table.Append(v)
+		}
+
+		table.Render()
 	},
 }
 
@@ -107,6 +150,11 @@ var approveRuntimesCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
 		CheckError(err)
+
+		ColonyID = os.Getenv("COLONYID")
+		if ColonyID == "" {
+			CheckError(errors.New("unkown colonyid"))
+		}
 
 		if ColonyPrvKey == "" {
 			ColonyPrvKey, err = keychain.GetPrvKey(ColonyID)
@@ -130,6 +178,11 @@ var disapproveRuntimesCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
 		CheckError(err)
+
+		ColonyID = os.Getenv("COLONYID")
+		if ColonyID == "" {
+			CheckError(errors.New("unkown colonyid"))
+		}
 
 		if ColonyPrvKey == "" {
 			ColonyPrvKey, err = keychain.GetPrvKey(ColonyID)

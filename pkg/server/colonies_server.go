@@ -7,7 +7,6 @@ import (
 	"colonies/pkg/security"
 	"context"
 	"errors"
-	"fmt"
 	"io/ioutil"
 	"net/http"
 	"strconv"
@@ -439,7 +438,6 @@ func (server *ColoniesServer) handleGetProcessesRequest(c *gin.Context) {
 			return
 		}
 		c.JSON(http.StatusOK, jsonString)
-		fmt.Println("success")
 	case core.FAILED:
 		processes, err := server.controller.FindFailedProcesses(colonyID, count)
 		if err != nil {

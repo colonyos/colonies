@@ -6,7 +6,9 @@ import (
 	"colonies/pkg/security"
 	"fmt"
 	"io/ioutil"
+	"os"
 
+	"github.com/kataras/tablewriter"
 	"github.com/spf13/cobra"
 )
 
@@ -23,7 +25,7 @@ func init() {
 	registerColonyCmd.MarkFlagRequired("spec")
 
 	lsColoniesCmd.Flags().StringVarP(&RootPassword, "rootpassword", "", "", "Root password to the Colonies server")
-	lsColoniesCmd.MarkFlagRequired("rootpassword")
+	lsColoniesCmd.Flags().BoolVarP(&JSON, "json", "", false, "Print JSON instead of tables")
 }
 
 var colonyCmd = &cobra.Command{
@@ -71,9 +73,25 @@ var lsColoniesCmd = &cobra.Command{
 		coloniesFromServer, err := client.GetColonies(RootPassword, ServerHost, ServerPort)
 		CheckError(err)
 
-		jsonString, err := core.ConvertColonyArrayToJSON(coloniesFromServer)
-		CheckError(err)
+		if JSON {
+			jsonString, err := core.ConvertColonyArrayToJSON(coloniesFromServer)
+			CheckError(err)
+			fmt.Println(jsonString)
+			os.Exit(0)
+		}
 
-		fmt.Println(jsonString)
+		var data [][]string
+		for _, colony := range coloniesFromServer {
+			data = append(data, []string{colony.ID, colony.Name})
+		}
+
+		table := tablewriter.NewWriter(os.Stdout)
+		table.SetHeader([]string{"ID", "Name"})
+
+		for _, v := range data {
+			table.Append(v)
+		}
+
+		table.Render()
 	},
 }
