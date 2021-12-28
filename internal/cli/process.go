@@ -115,7 +115,7 @@ var submitProcessCmd = &cobra.Command{
 			CheckError(err)
 		}
 
-		addedProcess, err := client.PublishProcessSpec(processSpec, RuntimePrvKey, ServerHost, ServerPort)
+		addedProcess, err := client.SubmitProcessSpec(processSpec, RuntimePrvKey, ServerHost, ServerPort)
 		CheckError(err)
 
 		fmt.Println(addedProcess.ID)

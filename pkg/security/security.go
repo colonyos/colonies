@@ -82,7 +82,7 @@ func RequireRoot(rootPassword string, expectedRootPassword string) error {
 	return nil
 }
 
-func GenerateSignature(jsonString string, prvKey string) (string, error) {
+func GenerateSignature(jsonString string, prvKey string) (string, error) { // TODO: unittest
 	idendity, err := crypto.CreateIdendityFromString(prvKey)
 	if err != nil {
 		return "", err
@@ -95,6 +95,17 @@ func GenerateSignature(jsonString string, prvKey string) (string, error) {
 	}
 
 	return hex.EncodeToString(signatureBytes), nil
+}
+
+func RecoverID(jsonString string, signature string) (string, error) { // TODO: unittest
+	signatureString, err := hex.DecodeString(signature)
+	hash := crypto.GenerateHashFromString(jsonString)
+	derivedID, err := crypto.RecoveredID(hash, []byte(signatureString))
+	if err != nil {
+		return "", err
+	}
+
+	return derivedID, nil
 }
 
 func Authenticate(claimedID string, digest string, signature string) error {
