@@ -5,17 +5,20 @@ A **Colony** is a collection of (geographically) distributed computers that can 
 
 A Colony may consists of many different kinds of Colony Runtimes, e.g. a **Kubernetes Colony Runtime**, **Docker Colony Runtime**, or a **Slurm Colony Runtime**. A Colony Runtime can also reside in IoT devices or smart phones, thus making it possible to deploy and manage applications that run across devices and servers. In this way, Colonies can be used to implement a "Cloud-of-Cloud" platform that combines many execution environments into a new virtual computing environment that can be controlled using an unified API. 
 
-![Colonies Architecture](docs/ColoniesArch.png?raw=true "Colonies Architecture")
+![Colonies Architecture](docs/images/ColoniesArch.png?raw=true "Colonies Architecture")
 
-### Security
+### Security principles
 A core concept of Colonies is a crypto identity protocol inspired by Bitcoin and Ethereum. Each Colony and Colony Runtime is assigned a *Digital Identity* that is verified by the Colonies server using a so-called [Implicit certificates](https://en.wikipedia.org/wiki/Implicit_certificate), which is implemented using [Elliptic-curve cryptography](https://en.wikipedia.org/wiki/Elliptic-curve_cryptography). This protocol makes it possible to reconstruct public-keys from signatures. Identities can then simply be calculated as cryptographic hashes of the reconstructed public-keys.
 
 The Colonies Server functions as a registry and keep a list of valid identities and rules how different runtimes can interact with each other. 
 
-1. Only the Colonies Server Owner may register a new Colony. Requires *rootpassword* specified when starting the Colonies Server. See example below.
+1. Only the Colonies Server Owner may register a new Colony. **Requires rootpassword** specified when starting the Colonies Server. See example below.
 2. Only a Colony Owner may register/approve/disapprove/list/get info about Colony Runtimes in a Colony. **Requires Colony Private key.**
 3. Only a Colony Runtime may submit/list/get info about a Colony Process. **Requires Runtime Private Key.**
-4. Only a Colony Process may set/get/list attributes on a Colony Process. **Requires Process Private Key.**
+4. Only a Colony Runtime may set/get/list attributes on a Colony Process. **Requires Runtime Private Key.**
+
+## Links
+* [Installation](docs/Installation.md)
 
 ## Getting started
 ## Installation
