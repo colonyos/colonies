@@ -104,7 +104,7 @@ Colony Runtime with Id <4599f89a8afb7ecd9beec0b7861fab3bacba3a0e2dbe050e9f7584f3
 ### Disapprove a Colony Runtime 
 Similarly, a Colony Runtime can be disapproved with the "disapprove" command.
 ```console
-$ ./bin/colonies runtime disapprove --runtimeid 4599f89a8afb7ecd9beec0b7861fab3bacba3a0e2dbe050e9f7584f3c9d7ac58 
+./bin/colonies runtime disapprove --runtimeid 4599f89a8afb7ecd9beec0b7861fab3bacba3a0e2dbe050e9f7584f3c9d7ac58 
 ```
 Output:
 ```
@@ -186,7 +186,7 @@ Attributes:
 
 ### List all waiting processes
 ```console
-$ ./bin/colonies process psw
+./bin/colonies process psw
 ```
 
 Output:
@@ -205,7 +205,7 @@ Output:
 ### Assign a process to runtime 
 An assigned process will change state to Running.
 ```console
-$ ./bin/colonies process assign
+./bin/colonies process assign
 ```
 
 Output:
@@ -215,7 +215,7 @@ Process with Id <5513617dc4407b6190959a07db2a39c6ad93771c7e8457391e2e64927214c25
 
 ### List all running processes
 ```console
-$ ./bin/colonies process ps
+./bin/colonies process ps
 ```
 
 Output:
