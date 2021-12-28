@@ -4,8 +4,11 @@ import (
 	"colonies/pkg/client"
 	"colonies/pkg/core"
 	"colonies/pkg/security"
+	"errors"
 	"fmt"
+	"os"
 
+	"github.com/kataras/tablewriter"
 	"github.com/spf13/cobra"
 )
 
@@ -21,18 +24,14 @@ func init() {
 	addAttributeCmd.Flags().StringVarP(&ProcessID, "processid", "", "", "Process Id")
 	addAttributeCmd.MarkFlagRequired("processid")
 	addAttributeCmd.Flags().StringVarP(&ColonyID, "colonyid", "", "", "Colony Id")
-	addAttributeCmd.MarkFlagRequired("colonyid")
 	addAttributeCmd.Flags().StringVarP(&RuntimeID, "runtimeid", "", "", "Runtime Id")
-	addAttributeCmd.MarkFlagRequired("runtimeid")
 
-	getAttributeCmd.Flags().StringVarP(&ProcessID, "processid", "", "", "Process Id")
-	getAttributeCmd.MarkFlagRequired("processid")
 	getAttributeCmd.Flags().StringVarP(&ColonyID, "colonyid", "", "", "Colony Id")
-	getAttributeCmd.MarkFlagRequired("colonyid")
-	getAttributeCmd.Flags().StringVarP(&ID, "id", "", "", "Colony or Runtime Id")
-	getAttributeCmd.MarkFlagRequired("id")
+	getAttributeCmd.Flags().StringVarP(&RuntimeID, "runtimeid", "", "", "Runtime Id")
 	getAttributeCmd.Flags().StringVarP(&AttributeID, "attributeid", "", "", "Attribute Id")
 	getAttributeCmd.MarkFlagRequired("attributeid")
+	getAttributeCmd.Flags().StringVarP(&ProcessID, "processid", "", "", "Process Id")
+	getAttributeCmd.MarkFlagRequired("processid")
 }
 
 var attributeCmd = &cobra.Command{
@@ -49,6 +48,20 @@ var addAttributeCmd = &cobra.Command{
 		keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
 		CheckError(err)
 
+		if ColonyID == "" {
+			ColonyID = os.Getenv("COLONYID")
+		}
+		if ColonyID == "" {
+			CheckError(errors.New("Unknown Colony Id"))
+		}
+
+		if RuntimeID == "" {
+			RuntimeID = os.Getenv("RUNTIMEID")
+		}
+		if RuntimeID == "" {
+			CheckError(errors.New("Unknown Runtime Id"))
+		}
+
 		if RuntimePrvKey == "" {
 			RuntimePrvKey, err = keychain.GetPrvKey(RuntimeID)
 			CheckError(err)
@@ -58,7 +71,7 @@ var addAttributeCmd = &cobra.Command{
 		addedAttribute, err := client.AddAttribute(attribute, ColonyID, RuntimePrvKey)
 		CheckError(err)
 
-		fmt.Println(addedAttribute.ToJSON())
+		fmt.Println(addedAttribute.ID)
 	},
 }
 
@@ -70,14 +83,54 @@ var getAttributeCmd = &cobra.Command{
 		keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
 		CheckError(err)
 
-		if PrvKey == "" {
-			PrvKey, err = keychain.GetPrvKey(ID)
+		if ColonyID == "" {
+			ColonyID = os.Getenv("COLONYID")
+		}
+		if ColonyID == "" {
+			CheckError(errors.New("Unknown Colony Id"))
+		}
+
+		if RuntimeID == "" {
+			RuntimeID = os.Getenv("RUNTIMEID")
+		}
+		if RuntimeID == "" {
+			CheckError(errors.New("Unknown Runtime Id"))
+		}
+
+		if RuntimePrvKey == "" {
+			RuntimePrvKey, err = keychain.GetPrvKey(RuntimeID)
 			CheckError(err)
 		}
 
-		attribute, err := client.GetAttribute(AttributeID, ProcessID, ColonyID, PrvKey)
+		attribute, err := client.GetAttribute(AttributeID, ProcessID, ColonyID, RuntimePrvKey)
 		CheckError(err)
 
-		fmt.Println(attribute.ToJSON())
+		var attributeType string
+		switch attribute.AttributeType {
+		case core.IN:
+			attributeType = "In"
+		case core.OUT:
+			attributeType = "Out"
+		case core.ERR:
+			attributeType = "Err"
+		case core.ENV:
+			attributeType = "Env"
+		default:
+			attributeType = "Unknown"
+		}
+
+		attributeData := [][]string{
+			[]string{"ID", attribute.ID},
+			[]string{"TargetID", attribute.TargetID},
+			[]string{"AttributeType", attributeType},
+			[]string{"Key", attribute.Key},
+			[]string{"Value", attribute.Value},
+		}
+		attributeTable := tablewriter.NewWriter(os.Stdout)
+		for _, v := range attributeData {
+			attributeTable.Append(v)
+		}
+		attributeTable.SetAlignment(tablewriter.ALIGN_LEFT)
+		attributeTable.Render()
 	},
 }

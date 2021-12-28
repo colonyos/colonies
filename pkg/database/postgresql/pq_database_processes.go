@@ -26,7 +26,7 @@ func (db *PQDatabase) AddProcess(process *core.Process) error {
 
 	// Convert Envs to Attributes
 	for key, value := range process.ProcessSpec.Env {
-		process.Attributes = append(process.Attributes, core.CreateAttribute(process.ID, core.IN, key, value))
+		process.Attributes = append(process.Attributes, core.CreateAttribute(process.ID, core.ENV, key, value))
 	}
 
 	err = db.AddAttributes(process.Attributes)
@@ -76,7 +76,7 @@ func (db *PQDatabase) parseProcesses(rows *sql.Rows) ([]*core.Process, error) {
 
 		// Restore env map
 		env := make(map[string]string)
-		inAttributes, err := db.GetAttributesByType(processID, core.IN)
+		inAttributes, err := db.GetAttributesByType(processID, core.ENV)
 		if err != nil {
 			return nil, err
 		}
