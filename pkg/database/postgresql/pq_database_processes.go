@@ -11,15 +11,15 @@ import (
 )
 
 func (db *PQDatabase) AddProcess(process *core.Process) error {
-	targetRuntimeIDs := process.ProcessSpec.TargetRuntimeIDs
-	if len(process.ProcessSpec.TargetRuntimeIDs) == 0 {
+	targetRuntimeIDs := process.ProcessSpec.Conditions.RuntimeIDs
+	if len(process.ProcessSpec.Conditions.RuntimeIDs) == 0 {
 		targetRuntimeIDs = []string{"*"}
 	}
 
 	submissionTime := time.Now()
 
 	sqlStatement := `INSERT INTO  ` + db.dbPrefix + `PROCESSES (PROCESS_ID, TARGET_COLONY_ID, TARGET_RUNTIME_IDS, ASSIGNED_runtime_ID, STATUS, IS_ASSIGNED, RUNTIME_TYPE, SUBMISSION_TIME, START_TIME, END_TIME, DEADLINE, RETRIES, TIMEOUT, MAX_RETRIES, MEM, CORES, GPUs) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)`
-	_, err := db.postgresql.Exec(sqlStatement, process.ID, process.ProcessSpec.TargetColonyID, pq.Array(targetRuntimeIDs), process.AssignedRuntimeID, process.Status, process.IsAssigned, process.ProcessSpec.Conditions.RuntimeType, submissionTime, time.Time{}, time.Time{}, process.Deadline, 0, process.ProcessSpec.Timeout, process.ProcessSpec.MaxRetries, process.ProcessSpec.Conditions.Mem, process.ProcessSpec.Conditions.Cores, process.ProcessSpec.Conditions.GPUs)
+	_, err := db.postgresql.Exec(sqlStatement, process.ID, process.ProcessSpec.Conditions.ColonyID, pq.Array(targetRuntimeIDs), process.AssignedRuntimeID, process.Status, process.IsAssigned, process.ProcessSpec.Conditions.RuntimeType, submissionTime, time.Time{}, time.Time{}, process.Deadline, 0, process.ProcessSpec.Timeout, process.ProcessSpec.MaxRetries, process.ProcessSpec.Conditions.Mem, process.ProcessSpec.Conditions.Cores, process.ProcessSpec.Conditions.GPUs)
 	if err != nil {
 		return err
 	}

@@ -287,7 +287,7 @@ func PublishProcessSpec(processSpec *core.ProcessSpec, prvKey string, host strin
 		SetHeader("Digest", digest).
 		SetHeader("Signature", sig).
 		SetBody(processSpecJSON).
-		Post("https://" + host + ":" + strconv.Itoa(port) + "/colonies/" + processSpec.TargetColonyID + "/processes")
+		Post("https://" + host + ":" + strconv.Itoa(port) + "/colonies/" + processSpec.Conditions.ColonyID + "/processes")
 
 	unquotedResp, err := strconv.Unquote(string(resp.Body()))
 	if err != nil {
@@ -574,7 +574,7 @@ func MarkSuccessful(process *core.Process, prvKey string) error {
 		SetHeader("Id", id).
 		SetHeader("Digest", digest).
 		SetHeader("Signature", sig).
-		Put("https://localhost:8080/colonies/" + process.ProcessSpec.TargetColonyID + "/processes/" + process.ID + "/finish")
+		Put("https://localhost:8080/colonies/" + process.ProcessSpec.Conditions.ColonyID + "/processes/" + process.ID + "/finish")
 
 	unquotedResp, err := strconv.Unquote(string(resp.Body()))
 	if err != nil {
@@ -600,7 +600,7 @@ func MarkFailed(process *core.Process, prvKey string) error {
 		SetHeader("Id", id).
 		SetHeader("Digest", digest).
 		SetHeader("Signature", sig).
-		Put("https://localhost:8080/colonies/" + process.ProcessSpec.TargetColonyID + "/processes/" + process.ID + "/failed")
+		Put("https://localhost:8080/colonies/" + process.ProcessSpec.Conditions.ColonyID + "/processes/" + process.ID + "/failed")
 
 	unquotedResp, err := strconv.Unquote(string(resp.Body()))
 	if err != nil {
