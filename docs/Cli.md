@@ -328,6 +328,7 @@ Output:
 ### Mark a process as successful
 ```console
 ./bin/colonies process successful --processid 5513617dc4407b6190959a07db2a39c6ad93771c7e8457391e2e64927214c258
+```
 
 Output:
 ```
