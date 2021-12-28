@@ -110,14 +110,15 @@ func TestAddRuntime(t *testing.T) {
 	runtimeID, err := security.GenerateID(runtimePrvKey)
 	assert.Nil(t, err)
 
-	name := "test_runtime"
+	runtimeType := "test_runtime_type"
+	name := "test_runtime_name"
 	cpu := "AMD Ryzen 9 5950X (32) @ 3.400GHz"
 	cores := 32
 	mem := 80326
 	gpu := "NVIDIA GeForce RTX 2080 Ti Rev. A"
 	gpus := 1
 
-	runtime := core.CreateRuntime(runtimeID, name, colonyID, cpu, cores, mem, gpu, gpus)
+	runtime := core.CreateRuntime(runtimeID, runtimeType, name, colonyID, cpu, cores, mem, gpu, gpus)
 	addedRuntime, err := client.AddRuntime(runtime, colonyPrvKey, TESTHOST, TESTPORT)
 	assert.Nil(t, err)
 	assert.True(t, runtime.Equals(addedRuntime))
@@ -152,14 +153,15 @@ func TestGetRuntimes(t *testing.T) {
 	runtime1ID, err := security.GenerateID(runtime1PrvKey)
 	assert.Nil(t, err)
 
-	name := "test_runtime 1"
+	name := "test_runtime_name_1"
+	runtimeType := "test_runtime_type"
 	cpu := "AMD Ryzen 9 5950X (32) @ 3.400GHz"
 	cores := 32
 	mem := 80326
 	gpu := "NVIDIA GeForce RTX 2080 Ti Rev. A"
 	gpus := 1
 
-	runtime1 := core.CreateRuntime(runtime1ID, name, colonyID, cpu, cores, mem, gpu, gpus)
+	runtime1 := core.CreateRuntime(runtime1ID, runtimeType, name, colonyID, cpu, cores, mem, gpu, gpus)
 	_, err = client.AddRuntime(runtime1, colonyPrvKey, TESTHOST, TESTPORT)
 	assert.Nil(t, err)
 
@@ -169,8 +171,8 @@ func TestGetRuntimes(t *testing.T) {
 	runtime2ID, err := security.GenerateID(runtime2PrvKey)
 	assert.Nil(t, err)
 
-	name = "test_runtime 2"
-	runtime2 := core.CreateRuntime(runtime2ID, name, colonyID, cpu, cores, mem, gpu, gpus)
+	name = "test_runtime_name_2"
+	runtime2 := core.CreateRuntime(runtime2ID, runtimeType, name, colonyID, cpu, cores, mem, gpu, gpus)
 	_, err = client.AddRuntime(runtime2, colonyPrvKey, TESTHOST, TESTPORT)
 	assert.Nil(t, err)
 
@@ -214,14 +216,15 @@ func createTestEnv(t *testing.T, rootPassword string) *clientTestEnv {
 	runtimeID, err := security.GenerateID(runtimePrvKey)
 	assert.Nil(t, err)
 
-	name := "test_runtime"
+	name := "test_runtime_name"
+	runtimeType := "test_runtime_type"
 	cpu := "AMD Ryzen 9 5950X (32) @ 3.400GHz"
 	cores := 32
 	mem := 80326
 	gpu := "NVIDIA GeForce RTX 2080 Ti Rev. A"
 	gpus := 1
 
-	runtime := core.CreateRuntime(runtimeID, name, colonyID, cpu, cores, mem, gpu, gpus)
+	runtime := core.CreateRuntime(runtimeID, runtimeType, name, colonyID, cpu, cores, mem, gpu, gpus)
 	_, err = client.AddRuntime(runtime, colonyPrvKey, TESTHOST, TESTPORT)
 	assert.Nil(t, err)
 
@@ -240,11 +243,11 @@ func TestAddProcess(t *testing.T) {
 
 	in := make(map[string]string)
 	in["test_key_1"] = "test_value_1"
-	processSpec1 := core.CreateProcessSpec(env.colonyID, []string{}, "test_runtime", -1, 3, 1000, 10, 1, in)
+	processSpec1 := core.CreateProcessSpec(env.colonyID, []string{}, "test_runtime_type", -1, 3, 1000, 10, 1, in)
 	addedProcess1, err := client.PublishProcessSpec(processSpec1, env.runtimePrvKey, TESTHOST, TESTPORT)
 	assert.Nil(t, err)
 
-	processSpec2 := core.CreateProcessSpec(env.colonyID, []string{}, "test_runtime", -1, 3, 1000, 10, 1, make(map[string]string))
+	processSpec2 := core.CreateProcessSpec(env.colonyID, []string{}, "test_runtime_type", -1, 3, 1000, 10, 1, make(map[string]string))
 	addedProcess2, err := client.PublishProcessSpec(processSpec2, env.runtimePrvKey, TESTHOST, TESTPORT)
 	assert.Nil(t, err)
 	assert.Equal(t, processSpec2.TargetColonyID, addedProcess2.ProcessSpec.TargetColonyID)
@@ -255,7 +258,7 @@ func TestAddProcess(t *testing.T) {
 
 	processesFromServer, err := client.GetWaitingProcesses(env.runtimeID, env.colonyID, 100, env.runtimePrvKey)
 	assert.Nil(t, err)
-	assert.True(t, core.IsProcessArrayEqual(processes, processesFromServer))
+	assert.True(t, core.IsProcessArraysEqual(processes, processesFromServer))
 
 	server.Shutdown()
 	<-done
@@ -293,13 +296,13 @@ func TestAssignProcess(t *testing.T) {
 	server, done := PrepareTests(t, rootPassword)
 	env := createTestEnv(t, rootPassword)
 
-	processSpec1 := core.CreateProcessSpec(env.colonyID, []string{}, "test_runtime", -1, 3, 1000, 10, 1, make(map[string]string))
+	processSpec1 := core.CreateProcessSpec(env.colonyID, []string{}, "test_runtime_type", -1, 3, 1000, 10, 1, make(map[string]string))
 	addedProcess1, err := client.PublishProcessSpec(processSpec1, env.runtimePrvKey, TESTHOST, TESTPORT)
 	assert.Nil(t, err)
 
 	time.Sleep(50 * time.Millisecond)
 
-	processSpec2 := core.CreateProcessSpec(env.colonyID, []string{}, "test_runtime", -1, 3, 1000, 10, 1, make(map[string]string))
+	processSpec2 := core.CreateProcessSpec(env.colonyID, []string{}, "test_runtime_type", -1, 3, 1000, 10, 1, make(map[string]string))
 	addedProcess2, err := client.PublishProcessSpec(processSpec2, env.runtimePrvKey, TESTHOST, TESTPORT)
 	assert.Nil(t, err)
 
@@ -320,7 +323,7 @@ func TestMarkSuccessful(t *testing.T) {
 	server, done := PrepareTests(t, rootPassword)
 	env := createTestEnv(t, rootPassword)
 
-	processSpec := core.CreateProcessSpec(env.colonyID, []string{}, "test_runtime", -1, 3, 1000, 10, 1, make(map[string]string))
+	processSpec := core.CreateProcessSpec(env.colonyID, []string{}, "test_runtime_type", -1, 3, 1000, 10, 1, make(map[string]string))
 	addedProcess, err := client.PublishProcessSpec(processSpec, env.runtimePrvKey, TESTHOST, TESTPORT)
 	assert.Nil(t, err)
 	assert.Equal(t, core.PENDING, addedProcess.Status)
@@ -346,7 +349,7 @@ func TestMarkFailed(t *testing.T) {
 	server, done := PrepareTests(t, rootPassword)
 	env := createTestEnv(t, rootPassword)
 
-	processSpec := core.CreateProcessSpec(env.colonyID, []string{}, "test_runtime", -1, 3, 1000, 10, 1, make(map[string]string))
+	processSpec := core.CreateProcessSpec(env.colonyID, []string{}, "test_runtime_type", -1, 3, 1000, 10, 1, make(map[string]string))
 	addedProcess, err := client.PublishProcessSpec(processSpec, env.runtimePrvKey, TESTHOST, TESTPORT)
 	assert.Nil(t, err)
 	assert.Equal(t, core.PENDING, addedProcess.Status)
@@ -372,7 +375,7 @@ func TestAddAttributes(t *testing.T) {
 	server, done := PrepareTests(t, rootPassword)
 	env := createTestEnv(t, rootPassword)
 
-	processSpec := core.CreateProcessSpec(env.colonyID, []string{}, "test_runtime", -1, 3, 1000, 10, 1, make(map[string]string))
+	processSpec := core.CreateProcessSpec(env.colonyID, []string{}, "test_runtime_type", -1, 3, 1000, 10, 1, make(map[string]string))
 	addedProcess, err := client.PublishProcessSpec(processSpec, env.runtimePrvKey, TESTHOST, TESTPORT)
 	assert.Nil(t, err)
 	assert.Equal(t, core.PENDING, addedProcess.Status)

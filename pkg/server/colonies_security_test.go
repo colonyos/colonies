@@ -29,14 +29,15 @@ func generateRuntime(t *testing.T, colonyID string) (*core.Runtime, string, stri
 	runtimeID, err := security.GenerateID(runtimePrvKey)
 	assert.Nil(t, err)
 
-	name := "test_runtime"
+	runtimeType := "test_runtime_type"
+	name := "test_runtime_name"
 	cpu := "AMD Ryzen 9 5950X (32) @ 3.400GHz"
 	cores := 32
 	mem := 80326
 	gpu := "NVIDIA GeForce RTX 2080 Ti Rev. A"
 	gpus := 1
 
-	return core.CreateRuntime(runtimeID, name, colonyID, cpu, cores, mem, gpu, gpus), runtimeID, runtimePrvKey
+	return core.CreateRuntime(runtimeID, runtimeType, name, colonyID, cpu, cores, mem, gpu, gpus), runtimeID, runtimePrvKey
 }
 
 func setupTestEnvironment(t *testing.T) (*testEnv, *ColoniesServer, chan bool) {
@@ -224,13 +225,13 @@ func TestAssignProcessSecurity(t *testing.T) {
 	//   runtime1 is member of colony1
 	//   runtime2 is member of colony2
 
-	processSpec1 := core.CreateProcessSpec(env.colony1ID, []string{}, "test_runtime", -1, 3, 1000, 10, 1, make(map[string]string))
+	processSpec1 := core.CreateProcessSpec(env.colony1ID, []string{}, "test_runtime_type", -1, 3, 1000, 10, 1, make(map[string]string))
 	_, err := client.PublishProcessSpec(processSpec1, env.runtime1PrvKey, TESTHOST, TESTPORT)
 	assert.Nil(t, err)
 
 	time.Sleep(50 * time.Millisecond)
 
-	processSpec2 := core.CreateProcessSpec(env.colony2ID, []string{}, "test_runtime", -1, 3, 1000, 10, 1, make(map[string]string))
+	processSpec2 := core.CreateProcessSpec(env.colony2ID, []string{}, "test_runtime_type", -1, 3, 1000, 10, 1, make(map[string]string))
 	_, err = client.PublishProcessSpec(processSpec2, env.runtime2PrvKey, TESTHOST, TESTPORT)
 	assert.Nil(t, err)
 

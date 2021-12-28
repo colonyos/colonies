@@ -9,8 +9,8 @@ import (
 )
 
 func (db *PQDatabase) AddRuntime(runtime *core.Runtime) error {
-	sqlStatement := `INSERT INTO  ` + db.dbPrefix + `RUNTIMES (RUNTIME_ID, NAME, COLONY_ID, CPU, CORES, MEM, GPU, GPUS, STATUS) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`
-	_, err := db.postgresql.Exec(sqlStatement, runtime.ID, runtime.Name, runtime.ColonyID, runtime.CPU, runtime.Cores, runtime.Mem, runtime.GPU, runtime.GPUs, 0)
+	sqlStatement := `INSERT INTO  ` + db.dbPrefix + `RUNTIMES (RUNTIME_ID, RUNTIME_TYPE, NAME, COLONY_ID, CPU, CORES, MEM, GPU, GPUS, STATUS) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`
+	_, err := db.postgresql.Exec(sqlStatement, runtime.ID, runtime.RuntimeType, runtime.Name, runtime.ColonyID, runtime.CPU, runtime.Cores, runtime.Mem, runtime.GPU, runtime.GPUs, 0)
 	if err != nil {
 		return err
 	}
@@ -23,6 +23,7 @@ func (db *PQDatabase) parseRuntimes(rows *sql.Rows) ([]*core.Runtime, error) {
 
 	for rows.Next() {
 		var id string
+		var runtimeType string
 		var name string
 		var colonyID string
 		var cpu string
@@ -31,11 +32,11 @@ func (db *PQDatabase) parseRuntimes(rows *sql.Rows) ([]*core.Runtime, error) {
 		var gpu string
 		var gpus int
 		var status int
-		if err := rows.Scan(&id, &name, &colonyID, &cpu, &cores, &mem, &gpu, &gpus, &status); err != nil {
+		if err := rows.Scan(&id, &runtimeType, &name, &colonyID, &cpu, &cores, &mem, &gpu, &gpus, &status); err != nil {
 			return nil, err
 		}
 
-		runtime := core.CreateRuntimeFromDB(id, name, colonyID, cpu, cores, mem, gpu, gpus, status)
+		runtime := core.CreateRuntimeFromDB(id, runtimeType, name, colonyID, cpu, cores, mem, gpu, gpus, status)
 		runtimes = append(runtimes, runtime)
 	}
 

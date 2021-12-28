@@ -34,6 +34,7 @@ var ProcessID string
 var Key string
 var Value string
 var AttributeID string
+var JSON bool
 
 func init() {
 	rootCmd.PersistentFlags().BoolVarP(&Verbose, "verbose", "v", false, "verbose output")

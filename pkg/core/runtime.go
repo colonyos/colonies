@@ -9,31 +9,33 @@ const (
 )
 
 type Runtime struct {
-	ID       string `json:"runtimeid"`
-	Name     string `json:"name"`
-	ColonyID string `json:"colonyid"`
-	CPU      string `json:"cpu"`
-	Cores    int    `json:"cores"`
-	Mem      int    `json:"mem"`
-	GPU      string `json:"gpu"`
-	GPUs     int    `json:"gpus"`
-	Status   int    `json:"status"`
+	ID          string `json:"runtimeid"`
+	RuntimeType string `json:"runtimetype"`
+	Name        string `json:"name"`
+	ColonyID    string `json:"colonyid"`
+	CPU         string `json:"cpu"`
+	Cores       int    `json:"cores"`
+	Mem         int    `json:"mem"`
+	GPU         string `json:"gpu"`
+	GPUs        int    `json:"gpus"`
+	Status      int    `json:"status"`
 }
 
-func CreateRuntime(id string, name string, colonyID string, cpu string, cores int, mem int, gpu string, gpus int) *Runtime {
+func CreateRuntime(id string, runtimeType string, name string, colonyID string, cpu string, cores int, mem int, gpu string, gpus int) *Runtime {
 	return &Runtime{ID: id,
-		Name:     name,
-		ColonyID: colonyID,
-		CPU:      cpu,
-		Cores:    cores,
-		Mem:      mem,
-		GPU:      gpu,
-		GPUs:     gpus,
-		Status:   PENDING}
+		RuntimeType: runtimeType,
+		Name:        name,
+		ColonyID:    colonyID,
+		CPU:         cpu,
+		Cores:       cores,
+		Mem:         mem,
+		GPU:         gpu,
+		GPUs:        gpus,
+		Status:      PENDING}
 }
 
-func CreateRuntimeFromDB(id string, name string, colonyID string, cpu string, cores int, mem int, gpu string, gpus int, status int) *Runtime {
-	runtime := CreateRuntime(id, name, colonyID, cpu, cores, mem, gpu, gpus)
+func CreateRuntimeFromDB(id string, runtimeType string, name string, colonyID string, cpu string, cores int, mem int, gpu string, gpus int, status int) *Runtime {
+	runtime := CreateRuntime(id, runtimeType, name, colonyID, cpu, cores, mem, gpu, gpus)
 	runtime.Status = status
 	return runtime
 }
@@ -86,6 +88,7 @@ func IsRuntimeArraysEqual(runtimes1 []*Runtime, runtimes2 []*Runtime) bool {
 
 func (runtime *Runtime) Equals(runtime2 *Runtime) bool {
 	if runtime.ID == runtime2.ID &&
+		runtime.RuntimeType == runtime2.RuntimeType &&
 		runtime.Name == runtime2.Name &&
 		runtime.ColonyID == runtime2.ColonyID &&
 		runtime.CPU == runtime2.CPU &&

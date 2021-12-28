@@ -428,8 +428,18 @@ func (controller *ColoniesController) AssignProcess(runtimeID string, colonyID s
 	cmd := &command{processReplyChan: make(chan *core.Process),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
+			runtime, err := controller.db.GetRuntimeByID(runtimeID)
+			if err != nil {
+				cmd.errorChan <- err
+				return
+			}
+			if runtime == nil {
+				cmd.errorChan <- errors.New("runtime with id <" + runtimeID + "> could not be found")
+				return
+			}
+
 			var processes []*core.Process
-			processes, err := controller.db.FindUnassignedProcesses(colonyID, runtimeID, 10)
+			processes, err = controller.db.FindUnassignedProcesses(colonyID, runtimeID, runtime.RuntimeType, 10)
 			if err != nil {
 				cmd.errorChan <- err
 				return
