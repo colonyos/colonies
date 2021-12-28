@@ -1,5 +1,6 @@
 {
     "name": "my_runtime",
+    "runtimetype": "my_runtime_type",
     "cpu": "AMD Ryzen 9 5950X (32) @ 3.400GHz",
     "cores": 32,
     "mem": 80326,
