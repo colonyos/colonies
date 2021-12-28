@@ -261,7 +261,7 @@ func (controller *ColoniesController) GetProcessByID(colonyID string, processID 
 				cmd.errorChan <- err
 				return
 			}
-			if process.ProcessSpec.TargetColonyID != colonyID { // TODO: These kinds of checks should be done by security
+			if process.ProcessSpec.Conditions.ColonyID != colonyID { // TODO: These kinds of checks should be done by security
 				cmd.errorChan <- errors.New("Process not bound to specifid colony id <" + colonyID + ">")
 				return
 			}
