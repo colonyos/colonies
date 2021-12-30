@@ -70,18 +70,6 @@ func GenerateDigest() string {
 	return hash.String()
 }
 
-func RequireRoot(rootPassword string, expectedRootPassword string) error {
-	if rootPassword == "" {
-		return errors.New("Root password is missing")
-	}
-
-	if rootPassword != expectedRootPassword {
-		return errors.New("Invalid root password")
-	}
-
-	return nil
-}
-
 func GenerateSignature(jsonString string, prvKey string) (string, error) { // TODO: unittest
 	idendity, err := crypto.CreateIdendityFromString(prvKey)
 	if err != nil {
@@ -97,6 +85,7 @@ func GenerateSignature(jsonString string, prvKey string) (string, error) { // TO
 	return hex.EncodeToString(signatureBytes), nil
 }
 
+// This one is used
 func RecoverID(jsonString string, signature string) (string, error) { // TODO: unittest
 	signatureString, err := hex.DecodeString(signature)
 	hash := crypto.GenerateHashFromString(jsonString)
@@ -127,6 +116,40 @@ func Authenticate(claimedID string, digest string, signature string) error {
 	return nil
 }
 
+// This one is used
+func VerifyRoot(rootPassword string, expectedRootPassword string) error {
+	if rootPassword == "" {
+		return errors.New("Root password is missing")
+	}
+
+	if rootPassword != expectedRootPassword {
+		return errors.New("Invalid root password")
+	}
+
+	return nil
+}
+
+// This one is used
+func VerifyColonyOwner(recoveredID string, colonyID string, ownership Ownership) error {
+	if recoveredID != colonyID {
+		return errors.New("RecoveredID does not match Colony with Id <" + colonyID + ">")
+	}
+
+	err := ownership.CheckIfColonyExists(colonyID)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// This one is used
+func VerifyRuntimeMembership(runtimeID string, colonyID string, ownership Ownership) error {
+	return ownership.CheckIfRuntimeBelongsToColony(runtimeID, colonyID)
+}
+
+// JUNK CODE BELOW
+
 func RequireColonyOwner(id string, colonyID string, digest string, signature string, ownership Ownership) error {
 	if id != colonyID {
 		return errors.New("Provided ID does not match colonyID")
@@ -143,10 +166,6 @@ func RequireColonyOwner(id string, colonyID string, digest string, signature str
 	}
 
 	return nil
-}
-
-func VerifyRuntimeMembership(runtimeID string, colonyID string, ownership Ownership) error {
-	return ownership.CheckIfRuntimeBelongsToColony(runtimeID, colonyID)
 }
 
 func RequireColonyMember(id string, colonyID string, digest string, signature string, ownership Ownership) error {

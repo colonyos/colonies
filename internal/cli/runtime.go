@@ -16,8 +16,8 @@ import (
 func init() {
 	runtimeCmd.AddCommand(registerRuntimeCmd)
 	runtimeCmd.AddCommand(lsRuntimesCmd)
-	runtimeCmd.AddCommand(approveRuntimesCmd)
-	runtimeCmd.AddCommand(disapproveRuntimesCmd)
+	runtimeCmd.AddCommand(approveRuntimeCmd)
+	runtimeCmd.AddCommand(rejectRuntimeCmd)
 	rootCmd.AddCommand(runtimeCmd)
 
 	runtimeCmd.PersistentFlags().StringVarP(&ColonyID, "colonyid", "", "", "Colony Id")
@@ -30,13 +30,13 @@ func init() {
 
 	lsRuntimesCmd.Flags().BoolVarP(&JSON, "json", "", false, "Print JSON instead of tables")
 
-	approveRuntimesCmd.Flags().StringVarP(&ColonyPrvKey, "colonyprvkey", "", "", "Colony private key")
-	approveRuntimesCmd.Flags().StringVarP(&RuntimeID, "runtimeid", "", "", "Colony Runtime Id")
-	approveRuntimesCmd.MarkFlagRequired("runtimeid")
+	approveRuntimeCmd.Flags().StringVarP(&ColonyPrvKey, "colonyprvkey", "", "", "Colony private key")
+	approveRuntimeCmd.Flags().StringVarP(&RuntimeID, "runtimeid", "", "", "Colony Runtime Id")
+	approveRuntimeCmd.MarkFlagRequired("runtimeid")
 
-	disapproveRuntimesCmd.Flags().StringVarP(&ColonyPrvKey, "colonyprvkey", "", "", "Colony private key")
-	disapproveRuntimesCmd.Flags().StringVarP(&RuntimeID, "runtimeid", "", "", "Colony Runtime Id")
-	disapproveRuntimesCmd.MarkFlagRequired("runtimeid")
+	rejectRuntimeCmd.Flags().StringVarP(&ColonyPrvKey, "colonyprvkey", "", "", "Colony private key")
+	rejectRuntimeCmd.Flags().StringVarP(&RuntimeID, "runtimeid", "", "", "Colony Runtime Id")
+	rejectRuntimeCmd.MarkFlagRequired("runtimeid")
 }
 
 var runtimeCmd = &cobra.Command{
@@ -109,7 +109,7 @@ var lsRuntimesCmd = &cobra.Command{
 			CheckError(err)
 		}
 
-		runtimesFromServer, err := client.GetRuntimesByColonyID(ColonyID, ColonyPrvKey, ServerHost, ServerPort)
+		runtimesFromServer, err := client.GetRuntimes(ColonyID, ColonyPrvKey, ServerHost, ServerPort)
 		CheckError(err)
 
 		if JSON {
@@ -128,7 +128,7 @@ var lsRuntimesCmd = &cobra.Command{
 			case core.APPROVED:
 				status = "Approved"
 			case core.REJECTED:
-				status = "Disapproved"
+				status = "Rejected"
 			default:
 				status = "Unknown"
 			}
@@ -147,7 +147,7 @@ var lsRuntimesCmd = &cobra.Command{
 	},
 }
 
-var approveRuntimesCmd = &cobra.Command{
+var approveRuntimeCmd = &cobra.Command{
 	Use:   "approve",
 	Short: "Approve a Colony Runtime",
 	Long:  "Approve a Colony Runtime",
@@ -167,20 +167,20 @@ var approveRuntimesCmd = &cobra.Command{
 			CheckError(err)
 		}
 
-		runtime, err := client.GetRuntimeByID(RuntimeID, ColonyID, ColonyPrvKey, ServerHost, ServerPort)
+		runtime, err := client.GetRuntime(RuntimeID, ColonyPrvKey, ServerHost, ServerPort)
 		CheckError(err)
 
-		err = client.ApproveRuntime(runtime, ColonyPrvKey, ServerHost, ServerPort)
+		err = client.ApproveRuntime(runtime.ID, ColonyPrvKey, ServerHost, ServerPort)
 		CheckError(err)
 
 		fmt.Println("Colony Runtime with Id <" + runtime.ID + "> is now approved")
 	},
 }
 
-var disapproveRuntimesCmd = &cobra.Command{
-	Use:   "disapprove",
-	Short: "Disapprove a Colony Runtime",
-	Long:  "Disapprove a Colony Runtime",
+var rejectRuntimeCmd = &cobra.Command{
+	Use:   "rject",
+	Short: "Reject a Colony Runtime",
+	Long:  "Reject a Colony Runtime",
 	Run: func(cmd *cobra.Command, args []string) {
 		keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
 		CheckError(err)
@@ -197,12 +197,12 @@ var disapproveRuntimesCmd = &cobra.Command{
 			CheckError(err)
 		}
 
-		runtime, err := client.GetRuntimeByID(RuntimeID, ColonyID, ColonyPrvKey, ServerHost, ServerPort)
+		runtime, err := client.GetRuntime(RuntimeID, ColonyPrvKey, ServerHost, ServerPort)
 		CheckError(err)
 
-		err = client.RejectRuntime(runtime, ColonyPrvKey, ServerHost, ServerPort)
+		err = client.RejectRuntime(runtime.ID, ColonyPrvKey, ServerHost, ServerPort)
 		CheckError(err)
 
-		fmt.Println("Colony Runtime with Id <" + runtime.ID + "> is now disapproved")
+		fmt.Println("Colony Runtime with Id <" + runtime.ID + "> is now rejected")
 	},
 }
