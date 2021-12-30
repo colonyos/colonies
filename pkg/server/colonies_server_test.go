@@ -3,8 +3,6 @@ package server
 import (
 	"colonies/pkg/client"
 	"colonies/pkg/core"
-	"colonies/pkg/database/postgresql"
-	"colonies/pkg/logging"
 	"colonies/pkg/security"
 	"testing"
 	"time"
@@ -12,35 +10,14 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func PrepareTests(t *testing.T, rootPassword string) (*ColoniesServer, chan bool) {
-	debug := false
-
-	if debug {
-		logging.DisableDebug()
-	}
-
-	db, err := postgresql.PrepareTests()
-	assert.Nil(t, err)
-
-	server := CreateColoniesServer(db, 8080, rootPassword, "../../cert/key.pem", "../../cert/cert.pem", debug)
-	done := make(chan bool)
-
-	go func() {
-		server.ServeForever()
-		done <- true
-	}()
-
-	return server, done
-}
-
 func TestAddColony(t *testing.T) {
 	rootPassword := "password"
 	server, done := PrepareTests(t, rootPassword)
 
-	prvKey, err := security.GeneratePrivateKey()
+	colonyPrvKey, err := security.GeneratePrivateKey()
 	assert.Nil(t, err)
 
-	colonyID, err := security.GenerateID(prvKey)
+	colonyID, err := security.GenerateID(colonyPrvKey)
 	assert.Nil(t, err)
 
 	colony := core.CreateColony(colonyID, "test_colony_name")
@@ -48,7 +25,29 @@ func TestAddColony(t *testing.T) {
 	assert.Nil(t, err)
 	assert.True(t, colony.Equals(colonyAdded))
 
-	colonyFromServer, err := client.GetColonyByID(colonyID, prvKey)
+	server.Shutdown()
+	<-done
+}
+
+func TestGetColony(t *testing.T) {
+	rootPassword := "password"
+	server, done := PrepareTests(t, rootPassword)
+
+	colonyPrvKey, err := security.GeneratePrivateKey()
+	assert.Nil(t, err)
+
+	colonyID, err := security.GenerateID(colonyPrvKey)
+	assert.Nil(t, err)
+
+	colony := core.CreateColony(colonyID, "test_colony_name")
+	_, err = client.AddColony(colony, rootPassword, TESTHOST, TESTPORT)
+	assert.Nil(t, err)
+
+	runtime, _, runtimePrvKey := generateRuntime(t, colonyID)
+	_, err = client.AddRuntime(runtime, colonyPrvKey, TESTHOST, TESTPORT)
+	assert.Nil(t, err)
+
+	colonyFromServer, err := client.GetColonyByID(colonyID, runtimePrvKey, TESTHOST, TESTPORT)
 	assert.Nil(t, err)
 	assert.True(t, colony.Equals(colonyFromServer))
 
@@ -123,7 +122,7 @@ func TestAddRuntime(t *testing.T) {
 	assert.Nil(t, err)
 	assert.True(t, runtime.Equals(addedRuntime))
 
-	runtimeFromServer, err := client.GetRuntimeByID(runtimeID, colonyID, colonyPrvKey, TESTHOST, TESTPORT)
+	runtimeFromServer, err := client.GetRuntime(runtimeID, runtimePrvKey, TESTHOST, TESTPORT)
 	assert.Nil(t, err)
 	assert.NotNil(t, runtimeFromServer)
 	assert.True(t, runtime.Equals(runtimeFromServer))
@@ -180,7 +179,7 @@ func TestGetRuntimes(t *testing.T) {
 	runtimes = append(runtimes, runtime1)
 	runtimes = append(runtimes, runtime2)
 
-	runtimesFromServer, err := client.GetRuntimesByColonyID(colonyID, colonyPrvKey, TESTHOST, TESTPORT)
+	runtimesFromServer, err := client.GetRuntimes(colonyID, runtime1PrvKey, TESTHOST, TESTPORT)
 	assert.Nil(t, err)
 	assert.True(t, core.IsRuntimeArraysEqual(runtimes, runtimesFromServer))
 
@@ -188,55 +187,34 @@ func TestGetRuntimes(t *testing.T) {
 	<-done
 }
 
-type clientTestEnv struct {
-	colonyID      string
-	colony        *core.Colony
-	colonyPrvKey  string
-	runtimeID     string
-	runtime       *core.Runtime
-	runtimePrvKey string
+func TestApproveRejectRuntime(t *testing.T) {
+	rootPassword := "password"
+	server, done := PrepareTests(t, rootPassword)
+	env := createTestEnv(t, rootPassword)
+
+	runtimeFromServer, err := client.GetRuntime(env.runtimeID, env.runtimePrvKey, TESTHOST, TESTPORT)
+	assert.Nil(t, err)
+	assert.False(t, runtimeFromServer.IsApproved())
+
+	err = client.ApproveRuntime(env.runtime.ID, env.colonyPrvKey, TESTHOST, TESTPORT)
+	assert.Nil(t, err)
+
+	runtimeFromServer, err = client.GetRuntime(env.runtimeID, env.runtimePrvKey, TESTHOST, TESTPORT)
+	assert.Nil(t, err)
+	assert.True(t, runtimeFromServer.IsApproved())
+
+	err = client.RejectRuntime(env.runtime.ID, env.colonyPrvKey, TESTHOST, TESTPORT)
+	assert.Nil(t, err)
+
+	runtimeFromServer, err = client.GetRuntime(env.runtimeID, env.runtimePrvKey, TESTHOST, TESTPORT)
+	assert.Nil(t, err)
+	assert.False(t, runtimeFromServer.IsApproved())
+
+	server.Shutdown()
+	<-done
 }
 
-func createTestEnv(t *testing.T, rootPassword string) *clientTestEnv {
-	// Create a Colony
-	colonyPrvKey, err := security.GeneratePrivateKey()
-	assert.Nil(t, err)
-
-	colonyID, err := security.GenerateID(colonyPrvKey)
-	assert.Nil(t, err)
-
-	colony := core.CreateColony(colonyID, "test_colony_name")
-
-	_, err = client.AddColony(colony, rootPassword, TESTHOST, TESTPORT)
-	assert.Nil(t, err)
-
-	// Create a runtime
-	runtimePrvKey, err := security.GeneratePrivateKey()
-	assert.Nil(t, err)
-	runtimeID, err := security.GenerateID(runtimePrvKey)
-	assert.Nil(t, err)
-
-	name := "test_runtime_name"
-	runtimeType := "test_runtime_type"
-	cpu := "AMD Ryzen 9 5950X (32) @ 3.400GHz"
-	cores := 32
-	mem := 80326
-	gpu := "NVIDIA GeForce RTX 2080 Ti Rev. A"
-	gpus := 1
-
-	runtime := core.CreateRuntime(runtimeID, runtimeType, name, colonyID, cpu, cores, mem, gpu, gpus)
-	_, err = client.AddRuntime(runtime, colonyPrvKey, TESTHOST, TESTPORT)
-	assert.Nil(t, err)
-
-	return &clientTestEnv{colonyID: colonyID,
-		colony:        colony,
-		colonyPrvKey:  colonyPrvKey,
-		runtimeID:     runtimeID,
-		runtime:       runtime,
-		runtimePrvKey: runtimePrvKey}
-}
-
-func TestAddProcess(t *testing.T) {
+func TestSubmitProcess(t *testing.T) {
 	rootPassword := "password"
 	server, done := PrepareTests(t, rootPassword)
 	env := createTestEnv(t, rootPassword)
@@ -264,32 +242,7 @@ func TestAddProcess(t *testing.T) {
 	<-done
 }
 
-func TestApproveRuntime(t *testing.T) {
-	rootPassword := "password"
-	server, done := PrepareTests(t, rootPassword)
-	env := createTestEnv(t, rootPassword)
-
-	runtimeFromServer, err := client.GetRuntimeByID(env.runtimeID, env.colonyID, env.colonyPrvKey, TESTHOST, TESTPORT)
-	assert.Nil(t, err)
-	assert.False(t, runtimeFromServer.IsApproved())
-
-	err = client.ApproveRuntime(env.runtime, env.colonyPrvKey, TESTHOST, TESTPORT)
-	assert.Nil(t, err)
-
-	runtimeFromServer, err = client.GetRuntimeByID(env.runtimeID, env.colonyID, env.colonyPrvKey, TESTHOST, TESTPORT)
-	assert.Nil(t, err)
-	assert.True(t, runtimeFromServer.IsApproved())
-
-	err = client.RejectRuntime(env.runtime, env.colonyPrvKey, TESTHOST, TESTPORT)
-	assert.Nil(t, err)
-
-	runtimeFromServer, err = client.GetRuntimeByID(env.runtimeID, env.colonyID, env.colonyPrvKey, TESTHOST, TESTPORT)
-	assert.Nil(t, err)
-	assert.False(t, runtimeFromServer.IsApproved())
-
-	server.Shutdown()
-	<-done
-}
+////////////////////////////////////
 
 func TestAssignProcess(t *testing.T) {
 	rootPassword := "password"

@@ -101,14 +101,14 @@ Colony Runtime with Id <4599f89a8afb7ecd9beec0b7861fab3bacba3a0e2dbe050e9f7584f3
 +------------------------------------------------------------------+------------+----------+
 ```
 
-### Disapprove a Colony Runtime 
-Similarly, a Colony Runtime can be disapproved with the "disapprove" command.
+### Reject a Colony Runtime 
+Similarly, a Colony Runtime can be rejected with the "rejected" command. 
 ```console
-./bin/colonies runtime disapprove --runtimeid 4599f89a8afb7ecd9beec0b7861fab3bacba3a0e2dbe050e9f7584f3c9d7ac58 
+./bin/colonies runtime reject --runtimeid 4599f89a8afb7ecd9beec0b7861fab3bacba3a0e2dbe050e9f7584f3c9d7ac58 
 ```
 Output:
 ```
-Colony Runtime with Id <4599f89a8afb7ecd9beec0b7861fab3bacba3a0e2dbe050e9f7584f3c9d7ac58> is now disapproved
+Colony Runtime with Id <4599f89a8afb7ecd9beec0b7861fab3bacba3a0e2dbe050e9f7584f3c9d7ac58> is now rejected
 ```
 
 ### Submit a process to a Colony

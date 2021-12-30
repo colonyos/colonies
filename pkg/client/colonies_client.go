@@ -30,31 +30,52 @@ func checkStatusCode(statusCode int, jsonString string) error {
 	return nil
 }
 
+func sendRPCMessageNoSignature(client *resty.Client, jsonString string, host string, port int) (string, error) {
+	resp, err := client.R().
+		SetBody(jsonString).
+		Post("https://" + host + ":" + strconv.Itoa(port) + "/endpoint")
+
+	respBodyString := string(resp.Body())
+	err = checkStatusCode(resp.StatusCode(), respBodyString)
+	if err != nil {
+		return "", err
+	}
+
+	return respBodyString, nil
+}
+
+func sendRPCMessage(client *resty.Client, jsonString string, prvKey string, host string, port int) (string, error) {
+	signature, err := security.GenerateSignature(jsonString, prvKey)
+	resp, err := client.R().
+		SetHeader("Signature", signature).
+		SetBody(jsonString).
+		Post("https://" + host + ":" + strconv.Itoa(port) + "/endpoint")
+
+	respBodyString := string(resp.Body())
+	err = checkStatusCode(resp.StatusCode(), respBodyString)
+	if err != nil {
+		return "", err
+	}
+
+	return respBodyString, nil
+}
+
+// OK
 func AddColony(colony *core.Colony, rootPassword string, host string, port int) (*core.Colony, error) {
 	client := client()
 
-	colonyJSON, err := colony.ToJSON()
+	rpc := rpc.CreateAddColonyRPC(rootPassword, colony)
+	jsonString, err := rpc.ToJSON()
 	if err != nil {
 		return nil, err
 	}
 
-	resp, err := client.R().
-		SetHeader("Content-Type", "application/json").
-		SetHeader("RootPassword", rootPassword).
-		SetBody(colonyJSON).
-		Post("https://" + host + ":" + strconv.Itoa(port) + "/colonies")
-
-	unquotedResp, err := strconv.Unquote(string(resp.Body()))
+	respBodyString, err := sendRPCMessageNoSignature(client, jsonString, host, port)
 	if err != nil {
 		return nil, err
 	}
 
-	err = checkStatusCode(resp.StatusCode(), unquotedResp)
-	if err != nil {
-		return nil, err
-	}
-
-	addedColony, err := core.ConvertJSONToColony(unquotedResp)
+	addedColony, err := core.ConvertJSONToColony(respBodyString)
 	if err != nil {
 		return nil, err
 	}
@@ -62,26 +83,22 @@ func AddColony(colony *core.Colony, rootPassword string, host string, port int) 
 	return addedColony, nil
 }
 
+// OK
 func GetColonies(rootPassword string, host string, port int) ([]*core.Colony, error) {
 	client := client()
 
-	var colonies []*core.Colony
-	resp, err := client.R().
-		SetHeader("Content-Type", "application/json").
-		SetHeader("RootPassword", rootPassword).
-		Get("https://" + host + ":" + strconv.Itoa(port) + "/colonies")
-
-	unquotedResp, err := strconv.Unquote(string(resp.Body()))
+	rpc := rpc.CreateGetColoniesRPC(rootPassword)
+	jsonString, err := rpc.ToJSON()
 	if err != nil {
-		return colonies, err
+		return nil, err
 	}
 
-	err = checkStatusCode(resp.StatusCode(), unquotedResp)
+	respBodyString, err := sendRPCMessageNoSignature(client, jsonString, host, port)
 	if err != nil {
-		return colonies, err
+		return nil, err
 	}
 
-	colonies, err = core.ConvertJSONToColonyArray(unquotedResp)
+	colonies, err := core.ConvertJSONToColonyArray(respBodyString)
 	if err != nil {
 		return colonies, err
 	}
@@ -89,30 +106,22 @@ func GetColonies(rootPassword string, host string, port int) ([]*core.Colony, er
 	return colonies, nil
 }
 
-func GetColonyByID(colonyID string, prvKey string) (*core.Colony, error) {
+// OK
+func GetColonyByID(colonyID string, prvKey string, host string, port int) (*core.Colony, error) {
 	client := client()
-	digest, sig, id, err := security.GenerateCredentials(prvKey)
+
+	rpc := rpc.CreateGetColonyRPC(colonyID)
+	jsonString, err := rpc.ToJSON()
 	if err != nil {
 		return nil, err
 	}
 
-	resp, err := client.R().
-		SetHeader("Id", id).
-		SetHeader("Digest", digest).
-		SetHeader("Signature", sig).
-		Get("https://localhost:8080/colonies/" + colonyID)
-
-	unquotedResp, err := strconv.Unquote(string(resp.Body()))
+	respBodyString, err := sendRPCMessage(client, jsonString, prvKey, host, port)
 	if err != nil {
 		return nil, err
 	}
 
-	err = checkStatusCode(resp.StatusCode(), unquotedResp)
-	if err != nil {
-		return nil, err
-	}
-
-	colony, err := core.ConvertJSONToColony(unquotedResp)
+	colony, err := core.ConvertJSONToColony(respBodyString)
 	if err != nil {
 		return nil, err
 	}
@@ -120,36 +129,22 @@ func GetColonyByID(colonyID string, prvKey string) (*core.Colony, error) {
 	return colony, nil
 }
 
+// OK
 func AddRuntime(runtime *core.Runtime, prvKey string, host string, port int) (*core.Runtime, error) {
 	client := client()
-	digest, sig, id, err := security.GenerateCredentials(prvKey)
+
+	rpc := rpc.CreateAddRuntimeRPC(runtime)
+	jsonString, err := rpc.ToJSON()
 	if err != nil {
 		return nil, err
 	}
 
-	runtimeJSON, err := runtime.ToJSON()
+	respBodyString, err := sendRPCMessage(client, jsonString, prvKey, host, port)
 	if err != nil {
 		return nil, err
 	}
 
-	resp, err := client.R().
-		SetHeader("Id", id).
-		SetHeader("Digest", digest).
-		SetHeader("Signature", sig).
-		SetBody(runtimeJSON).
-		Post("https://" + host + ":" + strconv.Itoa(port) + "/colonies/" + runtime.ColonyID + "/runtimes")
-
-	unquotedResp, err := strconv.Unquote(string(resp.Body()))
-	if err != nil {
-		return nil, err
-	}
-
-	err = checkStatusCode(resp.StatusCode(), unquotedResp)
-	if err != nil {
-		return nil, err
-	}
-
-	addedRuntime, err := core.ConvertJSONToRuntime(unquotedResp)
+	addedRuntime, err := core.ConvertJSONToRuntime(respBodyString)
 	if err != nil {
 		return nil, err
 	}
@@ -157,82 +152,22 @@ func AddRuntime(runtime *core.Runtime, prvKey string, host string, port int) (*c
 	return addedRuntime, nil
 }
 
-func ApproveRuntime(runtime *core.Runtime, prvKey string, host string, port int) error {
+// OK
+func GetRuntimes(colonyID string, prvKey string, host string, port int) ([]*core.Runtime, error) {
 	client := client()
-	digest, sig, id, err := security.GenerateCredentials(prvKey)
-	if err != nil {
-		return err
-	}
 
-	resp, err := client.R().
-		SetHeader("Id", id).
-		SetHeader("Digest", digest).
-		SetHeader("Signature", sig).
-		Put("https://" + host + ":" + strconv.Itoa(port) + "/colonies/" + runtime.ColonyID + "/runtimes/" + runtime.ID + "/approve")
-
-	unquotedResp, err := strconv.Unquote(string(resp.Body()))
-	if err != nil {
-		return err
-	}
-
-	err = checkStatusCode(resp.StatusCode(), unquotedResp)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func RejectRuntime(runtime *core.Runtime, prvKey string, host string, port int) error {
-	client := client()
-	digest, sig, id, err := security.GenerateCredentials(prvKey)
-	if err != nil {
-		return err
-	}
-
-	resp, err := client.R().
-		SetHeader("Id", id).
-		SetHeader("Digest", digest).
-		SetHeader("Signature", sig).
-		Put("https://" + host + ":" + strconv.Itoa(port) + "/colonies/" + runtime.ColonyID + "/runtimes/" + runtime.ID + "/reject")
-
-	unquotedResp, err := strconv.Unquote(string(resp.Body()))
-	if err != nil {
-		return err
-	}
-
-	err = checkStatusCode(resp.StatusCode(), unquotedResp)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func GetRuntimesByColonyID(colonyID string, prvKey string, host string, port int) ([]*core.Runtime, error) {
-	client := client()
-	digest, sig, id, err := security.GenerateCredentials(prvKey)
+	rpc := rpc.CreateGetRuntimesRPC(colonyID)
+	jsonString, err := rpc.ToJSON()
 	if err != nil {
 		return nil, err
 	}
 
-	resp, err := client.R().
-		SetHeader("Id", id).
-		SetHeader("Digest", digest).
-		SetHeader("Signature", sig).
-		Get("https://" + host + ":" + strconv.Itoa(port) + "/colonies/" + colonyID + "/runtimes")
-
-	unquotedResp, err := strconv.Unquote(string(resp.Body()))
+	respBodyString, err := sendRPCMessage(client, jsonString, prvKey, host, port)
 	if err != nil {
 		return nil, err
 	}
 
-	err = checkStatusCode(resp.StatusCode(), unquotedResp)
-	if err != nil {
-		return nil, err
-	}
-
-	runtimes, err := core.ConvertJSONToRuntimeArray(unquotedResp)
+	runtimes, err := core.ConvertJSONToRuntimeArray(respBodyString)
 	if err != nil {
 		return nil, err
 	}
@@ -240,30 +175,22 @@ func GetRuntimesByColonyID(colonyID string, prvKey string, host string, port int
 	return runtimes, nil
 }
 
-func GetRuntimeByID(runtimeID string, colonyID string, prvKey string, host string, port int) (*core.Runtime, error) {
+// Ok
+func GetRuntime(runtimeID string, prvKey string, host string, port int) (*core.Runtime, error) {
 	client := client()
-	digest, sig, id, err := security.GenerateCredentials(prvKey)
+
+	rpc := rpc.CreateGetRuntimeRPC(runtimeID)
+	jsonString, err := rpc.ToJSON()
 	if err != nil {
 		return nil, err
 	}
 
-	resp, err := client.R().
-		SetHeader("Id", id).
-		SetHeader("Digest", digest).
-		SetHeader("Signature", sig).
-		Get("https://" + host + ":" + strconv.Itoa(port) + "/colonies/" + colonyID + "/runtimes/" + runtimeID)
-
-	unquotedResp, err := strconv.Unquote(string(resp.Body()))
+	respBodyString, err := sendRPCMessage(client, jsonString, prvKey, host, port)
 	if err != nil {
 		return nil, err
 	}
 
-	err = checkStatusCode(resp.StatusCode(), unquotedResp)
-	if err != nil {
-		return nil, err
-	}
-
-	runtime, err := core.ConvertJSONToRuntime(unquotedResp)
+	runtime, err := core.ConvertJSONToRuntime(respBodyString)
 	if err != nil {
 		return nil, err
 	}
@@ -271,33 +198,58 @@ func GetRuntimeByID(runtimeID string, colonyID string, prvKey string, host strin
 	return runtime, nil
 }
 
+// Ok
+func ApproveRuntime(runtimeID string, prvKey string, host string, port int) error {
+	client := client()
+
+	rpc := rpc.CreateApproveRuntimeRPC(runtimeID)
+	jsonString, err := rpc.ToJSON()
+	if err != nil {
+		return err
+	}
+
+	_, err = sendRPCMessage(client, jsonString, prvKey, host, port)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// Ok
+func RejectRuntime(runtimeID string, prvKey string, host string, port int) error {
+	client := client()
+
+	rpc := rpc.CreateRejectRuntimeRPC(runtimeID)
+	jsonString, err := rpc.ToJSON()
+	if err != nil {
+		return err
+	}
+
+	_, err = sendRPCMessage(client, jsonString, prvKey, host, port)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// OK
 func SubmitProcessSpec(processSpec *core.ProcessSpec, prvKey string, host string, port int) (*core.Process, error) {
 	client := client()
 
-	submitProcessRPC := rpc.CreateSubmitProcessSpec(processSpec)
-	jsonString, err := submitProcessRPC.ToJSON()
+	rpc := rpc.CreateSubmitProcessSpecRPC(processSpec)
+	jsonString, err := rpc.ToJSON()
 	if err != nil {
 		return nil, err
 	}
 
-	signature, err := security.GenerateSignature(jsonString, prvKey)
-
-	resp, err := client.R().
-		SetHeader("Signature", signature).
-		SetBody(jsonString).
-		Post("https://" + host + ":" + strconv.Itoa(port) + "/endpoint")
-
-	unquotedResp, err := strconv.Unquote(string(resp.Body()))
+	respBodyString, err := sendRPCMessage(client, jsonString, prvKey, host, port)
 	if err != nil {
 		return nil, err
 	}
 
-	err = checkStatusCode(resp.StatusCode(), unquotedResp)
-	if err != nil {
-		return nil, err
-	}
-
-	addedProcess, err := core.ConvertJSONToProcess(unquotedResp)
+	addedProcess, err := core.ConvertJSONToProcess(respBodyString)
 	if err != nil {
 		return nil, err
 	}

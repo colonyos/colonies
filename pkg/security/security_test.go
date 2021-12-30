@@ -8,11 +8,12 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+// This one is used
 func TestRequireRoot(t *testing.T) {
 	rootPassword := "password"
-	assert.Nil(t, RequireRoot(rootPassword, rootPassword))
-	assert.NotNil(t, RequireRoot(rootPassword, ""))
-	assert.NotNil(t, RequireRoot(rootPassword, "invalid"))
+	assert.Nil(t, VerifyRoot(rootPassword, rootPassword))
+	assert.NotNil(t, VerifyRoot(rootPassword, ""))
+	assert.NotNil(t, VerifyRoot(rootPassword, "invalid"))
 }
 
 func TestRequireColonyOwner(t *testing.T) {
