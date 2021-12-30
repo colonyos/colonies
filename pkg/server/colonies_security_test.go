@@ -315,7 +315,7 @@ func TestGetSuccessfulProcessesSecurity(t *testing.T) {
 		assert.Nil(t, err)
 		processFromServer, err := client.AssignProcess(env.colony1ID, env.runtime1PrvKey, TESTHOST, TESTPORT)
 		assert.Nil(t, err)
-		err = client.MarkSuccessful(processFromServer, env.runtime1PrvKey)
+		err = client.MarkSuccessful(processFromServer.ID, env.runtime1PrvKey, TESTHOST, TESTPORT)
 		assert.Nil(t, err)
 	}
 
@@ -339,7 +339,7 @@ func TestGetFailedProcessesSecurity(t *testing.T) {
 		assert.Nil(t, err)
 		processFromServer, err := client.AssignProcess(env.colony1ID, env.runtime1PrvKey, TESTHOST, TESTPORT)
 		assert.Nil(t, err)
-		err = client.MarkFailed(processFromServer, env.runtime1PrvKey)
+		err = client.MarkFailed(processFromServer.ID, env.runtime1PrvKey, TESTHOST, TESTPORT)
 		assert.Nil(t, err)
 	}
 
@@ -351,4 +351,77 @@ func TestGetFailedProcessesSecurity(t *testing.T) {
 
 	server.Shutdown()
 	<-done
+}
+
+func TestGetProcessSecurity(t *testing.T) {
+	env, server, done := setupTestEnvironment(t)
+	processSpec := core.CreateProcessSpec(env.colony1ID, []string{}, "test_runtime_type", -1, 3, 1000, 10, 1, make(map[string]string))
+	addedProcess, err := client.SubmitProcessSpec(processSpec, env.runtime1PrvKey, TESTHOST, TESTPORT)
+	assert.Nil(t, err)
+
+	_, err = client.GetProcessByID(addedProcess.ID, env.runtime2PrvKey, TESTHOST, TESTPORT)
+	assert.NotNil(t, err) // Should not work
+
+	_, err = client.GetProcessByID(addedProcess.ID, env.runtime1PrvKey, TESTHOST, TESTPORT)
+	assert.Nil(t, err) // Should work
+
+	server.Shutdown()
+	<-done
+}
+
+func TestMarkSuccessfulSecurity(t *testing.T) {
+	env, server, done := setupTestEnvironment(t)
+
+	processSpec := core.CreateProcessSpec(env.colony1ID, []string{}, "test_runtime_type", -1, 3, 1000, 10, 1, make(map[string]string))
+	_, err := client.SubmitProcessSpec(processSpec, env.runtime1PrvKey, TESTHOST, TESTPORT)
+	assert.Nil(t, err)
+	processFromServer, err := client.AssignProcess(env.colony1ID, env.runtime1PrvKey, TESTHOST, TESTPORT)
+	assert.Nil(t, err)
+
+	err = client.MarkSuccessful(processFromServer.ID, env.runtime2PrvKey, TESTHOST, TESTPORT)
+	assert.NotNil(t, err) // Should not work
+
+	err = client.MarkSuccessful(processFromServer.ID, env.runtime1PrvKey, TESTHOST, TESTPORT)
+	assert.Nil(t, err) // Should work
+
+	// Add another Runtime to Colony 1 and try to close the process statred by Runtime 1, it should not be possible
+	runtime3, _, runtime3PrvKey := generateRuntime(t, env.colony1ID)
+	_, err = client.AddRuntime(runtime3, env.colony1PrvKey, TESTHOST, TESTPORT)
+	assert.Nil(t, err)
+	err = client.MarkSuccessful(processFromServer.ID, runtime3PrvKey, TESTHOST, TESTPORT)
+	assert.NotNil(t, err) // Should work
+
+	server.Shutdown()
+	<-done
+}
+
+func TestMarkFailedSecurity(t *testing.T) {
+	env, server, done := setupTestEnvironment(t)
+
+	processSpec := core.CreateProcessSpec(env.colony1ID, []string{}, "test_runtime_type", -1, 3, 1000, 10, 1, make(map[string]string))
+	_, err := client.SubmitProcessSpec(processSpec, env.runtime1PrvKey, TESTHOST, TESTPORT)
+	assert.Nil(t, err)
+	processFromServer, err := client.AssignProcess(env.colony1ID, env.runtime1PrvKey, TESTHOST, TESTPORT)
+	assert.Nil(t, err)
+
+	err = client.MarkFailed(processFromServer.ID, env.runtime2PrvKey, TESTHOST, TESTPORT)
+	assert.NotNil(t, err) // Should not work
+
+	err = client.MarkFailed(processFromServer.ID, env.runtime1PrvKey, TESTHOST, TESTPORT)
+	assert.Nil(t, err) // Should work
+
+	// Add another Runtime to Colony 1 and try to close the process statred by Runtime 1, it should not be possible
+	runtime3, _, runtime3PrvKey := generateRuntime(t, env.colony1ID)
+	_, err = client.AddRuntime(runtime3, env.colony1PrvKey, TESTHOST, TESTPORT)
+	assert.Nil(t, err)
+	err = client.MarkFailed(processFromServer.ID, runtime3PrvKey, TESTHOST, TESTPORT)
+	assert.NotNil(t, err) // Should work
+
+	server.Shutdown()
+	<-done
+}
+
+func TestAddGetSecurity(t *testing.T) {
+	// TODO
+	// Who should be able to add and get attributes, any process?
 }
