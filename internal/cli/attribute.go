@@ -17,6 +17,9 @@ func init() {
 	attributeCmd.AddCommand(getAttributeCmd)
 	rootCmd.AddCommand(attributeCmd)
 
+	attributeCmd.PersistentFlags().StringVarP(&ServerHost, "host", "", "localhost", "Server host")
+	attributeCmd.PersistentFlags().IntVarP(&ServerPort, "port", "", 8080, "Server HTTP port")
+
 	addAttributeCmd.Flags().StringVarP(&Key, "key", "", "", "Key")
 	addAttributeCmd.MarkFlagRequired("key")
 	addAttributeCmd.Flags().StringVarP(&Value, "value", "", "", "Value")
@@ -68,7 +71,7 @@ var addAttributeCmd = &cobra.Command{
 		}
 
 		attribute := core.CreateAttribute(ProcessID, core.OUT, Key, Value)
-		addedAttribute, err := client.AddAttribute(attribute, ColonyID, RuntimePrvKey)
+		addedAttribute, err := client.AddAttribute(attribute, RuntimePrvKey, ServerHost, ServerPort)
 		CheckError(err)
 
 		fmt.Println(addedAttribute.ID)
@@ -102,7 +105,7 @@ var getAttributeCmd = &cobra.Command{
 			CheckError(err)
 		}
 
-		attribute, err := client.GetAttribute(AttributeID, ProcessID, ColonyID, RuntimePrvKey)
+		attribute, err := client.GetAttribute(AttributeID, RuntimePrvKey, ServerHost, ServerPort)
 		CheckError(err)
 
 		var attributeType string

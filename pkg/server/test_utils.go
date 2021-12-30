@@ -11,6 +11,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+// TODO: cleanup testEnv and clientTestEnv, combine them or change name?
+
 type testEnv struct {
 	colony1PrvKey  string
 	colony1ID      string

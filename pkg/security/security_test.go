@@ -1,93 +1,91 @@
 package security
 
 import (
-	"colonies/pkg/core"
-	"colonies/pkg/crypto"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
 // This one is used
-func TestRequireRoot(t *testing.T) {
+func TestValidateRoot(t *testing.T) {
 	rootPassword := "password"
 	assert.Nil(t, VerifyRoot(rootPassword, rootPassword))
 	assert.NotNil(t, VerifyRoot(rootPassword, ""))
 	assert.NotNil(t, VerifyRoot(rootPassword, "invalid"))
 }
 
-func TestRequireColonyOwner(t *testing.T) {
-	idendity, err := crypto.CreateIdendity()
-	message := "test_message"
-	colonyID := idendity.ID()
-	id := colonyID
+// func TestRequireColonyOwner(t *testing.T) {
+// 	idendity, err := crypto.CreateIdendity()
+// 	message := "test_message"
+// 	colonyID := idendity.ID()
+// 	id := colonyID
 
-	signature, err := GenerateSignature(message, idendity.PrivateKeyAsHex())
-	assert.Nil(t, err)
+// 	signature, err := GenerateSignature(message, idendity.PrivateKeyAsHex())
+// 	assert.Nil(t, err)
 
-	ownership := CreateOwnershipMock()
-	err = RequireColonyOwner(id, colonyID, message, string(signature), ownership)
-	assert.NotNil(t, err) // Should be an error since colony does not exists
+// 	ownership := CreateOwnershipMock()
+// 	err = RequireColonyOwner(id, colonyID, message, string(signature), ownership)
+// 	assert.NotNil(t, err) // Should be an error since colony does not exists
 
-	ownership.addColony(colonyID)
-	err = RequireColonyOwner(id, colonyID, message, string(signature), ownership)
-	assert.Nil(t, err) // Should work now
+// 	ownership.addColony(colonyID)
+// 	err = RequireColonyOwner(id, colonyID, message, string(signature), ownership)
+// 	assert.Nil(t, err) // Should work now
 
-	// Use an invalid cert
-	ownership.addColony(colonyID)
-	err = RequireColonyOwner(id, colonyID, message, "", ownership)
-	assert.NotNil(t, err) // Whould not work
+// 	// Use an invalid cert
+// 	ownership.addColony(colonyID)
+// 	err = RequireColonyOwner(id, colonyID, message, "", ownership)
+// 	assert.NotNil(t, err) // Whould not work
 
-	idendity2, err := crypto.CreateIdendity()
-	assert.Nil(t, err)
-	signature2, err := GenerateSignature(message, idendity2.PrivateKeyAsHex())
-	assert.Nil(t, err)
+// 	idendity2, err := crypto.CreateIdendity()
+// 	assert.Nil(t, err)
+// 	signature2, err := GenerateSignature(message, idendity2.PrivateKeyAsHex())
+// 	assert.Nil(t, err)
 
-	ownership.addColony(colonyID)
-	err = RequireColonyOwner(id, colonyID, message, string(signature2), ownership)
-	assert.NotNil(t, err) // Should not work
-}
+// 	ownership.addColony(colonyID)
+// 	err = RequireColonyOwner(id, colonyID, message, string(signature2), ownership)
+// 	assert.NotNil(t, err) // Should not work
+// }
 
-func TestRequireColonyMember(t *testing.T) {
-	colonyID := core.GenerateRandomID()
-	ownership := CreateOwnershipMock()
+// func TestRequireColonyMember(t *testing.T) {
+// 	colonyID := core.GenerateRandomID()
+// 	ownership := CreateOwnershipMock()
 
-	prvKey, err := GeneratePrivateKey()
-	runtimeID, err := GenerateID(prvKey)
-	assert.Nil(t, err)
-	id := runtimeID
-	assert.Nil(t, err)
+// 	prvKey, err := GeneratePrivateKey()
+// 	runtimeID, err := GenerateID(prvKey)
+// 	assert.Nil(t, err)
+// 	id := runtimeID
+// 	assert.Nil(t, err)
 
-	digest := GenerateDigest()
-	sig, err := GenerateSignature(digest, prvKey)
-	assert.Nil(t, err)
+// 	digest := GenerateDigest()
+// 	sig, err := GenerateSignature(digest, prvKey)
+// 	assert.Nil(t, err)
 
-	err = RequireColonyMember(id, colonyID, digest, sig, ownership)
-	assert.NotNil(t, err) // Should not work since runtime not member of colony
+// 	err = RequireColonyMember(id, colonyID, digest, sig, ownership)
+// 	assert.NotNil(t, err) // Should not work since runtime not member of colony
 
-	ownership.addRuntime(runtimeID, colonyID)
-	err = RequireColonyMember(runtimeID, colonyID, digest, sig, ownership)
-	assert.Nil(t, err)
-}
+// 	ownership.addRuntime(runtimeID, colonyID)
+// 	err = RequireColonyMember(runtimeID, colonyID, digest, sig, ownership)
+// 	assert.Nil(t, err)
+// }
 
-func TestRequireColonyOwnerOrMember(t *testing.T) {
-	colonyID := core.GenerateRandomID()
-	ownership := CreateOwnershipMock()
+// func TestRequireColonyOwnerOrMember(t *testing.T) {
+// 	colonyID := core.GenerateRandomID()
+// 	ownership := CreateOwnershipMock()
 
-	prvKey, err := GeneratePrivateKey()
-	runtimeID, err := GenerateID(prvKey)
-	assert.Nil(t, err)
-	id := runtimeID
-	assert.Nil(t, err)
+// 	prvKey, err := GeneratePrivateKey()
+// 	runtimeID, err := GenerateID(prvKey)
+// 	assert.Nil(t, err)
+// 	id := runtimeID
+// 	assert.Nil(t, err)
 
-	digest := GenerateDigest()
-	sig, err := GenerateSignature(digest, prvKey)
-	assert.Nil(t, err)
+// 	digest := GenerateDigest()
+// 	sig, err := GenerateSignature(digest, prvKey)
+// 	assert.Nil(t, err)
 
-	err = RequireColonyOwnerOrMember(id, colonyID, digest, sig, ownership)
-	assert.NotNil(t, err) // Should not work since runtime not member of colony
+// 	err = RequireColonyOwnerOrMember(id, colonyID, digest, sig, ownership)
+// 	assert.NotNil(t, err) // Should not work since runtime not member of colony
 
-	ownership.addRuntime(runtimeID, colonyID)
-	err = RequireColonyOwnerOrMember(runtimeID, colonyID, digest, sig, ownership)
-	assert.Nil(t, err)
-}
+// 	ownership.addRuntime(runtimeID, colonyID)
+// 	err = RequireColonyOwnerOrMember(runtimeID, colonyID, digest, sig, ownership)
+// 	assert.Nil(t, err)
+// }

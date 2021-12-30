@@ -252,17 +252,13 @@ func (controller *ColoniesController) AddProcess(process *core.Process) (*core.P
 	}
 }
 
-func (controller *ColoniesController) GetProcessByID(colonyID string, processID string) (*core.Process, error) {
+func (controller *ColoniesController) GetProcessByID(processID string) (*core.Process, error) {
 	cmd := &command{processReplyChan: make(chan *core.Process, 1),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
 			process, err := controller.db.GetProcessByID(processID)
 			if err != nil {
 				cmd.errorChan <- err
-				return
-			}
-			if process.ProcessSpec.Conditions.ColonyID != colonyID { // TODO: These kinds of checks should be done by security
-				cmd.errorChan <- errors.New("Process not bound to specifid colony id <" + colonyID + ">")
 				return
 			}
 			cmd.processReplyChan <- process
@@ -413,16 +409,12 @@ func (controller *ColoniesController) FindFailedProcesses(colonyID string, count
 	}
 }
 
-func (controller *ColoniesController) MarkSuccessful(runtimeID string, processID string) error {
+func (controller *ColoniesController) MarkSuccessful(processID string) error {
 	cmd := &command{errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
 			process, err := controller.db.GetProcessByID(processID)
 			if err != nil {
 				cmd.errorChan <- err
-				return
-			}
-			if process.AssignedRuntimeID != runtimeID { // TODO: Move to security
-				cmd.errorChan <- errors.New("Runtime is not assigned to process, cannot mark as succesful")
 				return
 			}
 			cmd.errorChan <- controller.db.MarkSuccessful(process)
@@ -432,16 +424,12 @@ func (controller *ColoniesController) MarkSuccessful(runtimeID string, processID
 	return <-cmd.errorChan
 }
 
-func (controller *ColoniesController) MarkFailed(runtimeID string, processID string) error {
+func (controller *ColoniesController) MarkFailed(processID string) error {
 	cmd := &command{errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
 			process, err := controller.db.GetProcessByID(processID)
 			if err != nil {
 				cmd.errorChan <- err
-				return
-			}
-			if process.AssignedRuntimeID != runtimeID { // TODO: Move to security
-				cmd.errorChan <- errors.New("Runtime is not assigned to process, cannot mark as succesful")
 				return
 			}
 			cmd.errorChan <- controller.db.MarkFailed(process)
