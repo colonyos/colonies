@@ -331,7 +331,7 @@ func TestGetSuccessfulProcesses(t *testing.T) {
 		assert.Nil(t, err)
 		processFromServer, err := client.AssignProcess(env.colonyID, env.runtimePrvKey, TESTHOST, TESTPORT)
 		assert.Nil(t, err)
-		err = client.MarkSuccessful(processFromServer, env.runtimePrvKey)
+		err = client.MarkSuccessful(processFromServer.ID, env.runtimePrvKey, TESTHOST, TESTPORT)
 		assert.Nil(t, err)
 	}
 
@@ -359,7 +359,7 @@ func TestGetFailedProcesses(t *testing.T) {
 		assert.Nil(t, err)
 		processFromServer, err := client.AssignProcess(env.colonyID, env.runtimePrvKey, TESTHOST, TESTPORT)
 		assert.Nil(t, err)
-		err = client.MarkFailed(processFromServer, env.runtimePrvKey)
+		err = client.MarkFailed(processFromServer.ID, env.runtimePrvKey, TESTHOST, TESTPORT)
 		assert.Nil(t, err)
 	}
 
@@ -375,7 +375,21 @@ func TestGetFailedProcesses(t *testing.T) {
 	<-done
 }
 
-////////////////////////////////////
+func TestGetProcess(t *testing.T) {
+	rootPassword := "password"
+	server, done := PrepareTests(t, rootPassword)
+	env := createTestEnv(t, rootPassword)
+
+	processSpec := core.CreateProcessSpec(env.colonyID, []string{}, "test_runtime_type", -1, 3, 1000, 10, 1, make(map[string]string))
+	addedProcess, err := client.SubmitProcessSpec(processSpec, env.runtimePrvKey, TESTHOST, TESTPORT)
+	assert.Nil(t, err)
+
+	processFromServer, err := client.GetProcessByID(addedProcess.ID, env.runtimePrvKey, TESTHOST, TESTPORT)
+	assert.True(t, addedProcess.Equals(processFromServer))
+
+	server.Shutdown()
+	<-done
+}
 
 func TestMarkSuccessful(t *testing.T) {
 	rootPassword := "password"
@@ -390,13 +404,13 @@ func TestMarkSuccessful(t *testing.T) {
 	assignedProcess, err := client.AssignProcess(env.colonyID, env.runtimePrvKey, TESTHOST, TESTPORT)
 	assert.Nil(t, err)
 
-	assignedProcessFromServer, err := client.GetProcessByID(assignedProcess.ID, env.colonyID, env.runtimePrvKey)
+	assignedProcessFromServer, err := client.GetProcessByID(assignedProcess.ID, env.runtimePrvKey, TESTHOST, TESTPORT)
 	assert.Equal(t, core.RUNNING, assignedProcessFromServer.Status)
 
-	err = client.MarkSuccessful(assignedProcess, env.runtimePrvKey)
+	err = client.MarkSuccessful(assignedProcess.ID, env.runtimePrvKey, TESTHOST, TESTPORT)
 	assert.Nil(t, err)
 
-	assignedProcessFromServer, err = client.GetProcessByID(assignedProcess.ID, env.colonyID, env.runtimePrvKey)
+	assignedProcessFromServer, err = client.GetProcessByID(assignedProcess.ID, env.runtimePrvKey, TESTHOST, TESTPORT)
 	assert.Equal(t, core.SUCCESS, assignedProcessFromServer.Status)
 
 	server.Shutdown()
@@ -416,20 +430,20 @@ func TestMarkFailed(t *testing.T) {
 	assignedProcess, err := client.AssignProcess(env.colonyID, env.runtimePrvKey, TESTHOST, TESTPORT)
 	assert.Nil(t, err)
 
-	assignedProcessFromServer, err := client.GetProcessByID(assignedProcess.ID, env.colonyID, env.runtimePrvKey)
+	assignedProcessFromServer, err := client.GetProcessByID(assignedProcess.ID, env.runtimePrvKey, TESTHOST, TESTPORT)
 	assert.Equal(t, core.RUNNING, assignedProcessFromServer.Status)
 
-	err = client.MarkFailed(assignedProcess, env.runtimePrvKey)
+	err = client.MarkFailed(assignedProcess.ID, env.runtimePrvKey, TESTHOST, TESTPORT)
 	assert.Nil(t, err)
 
-	assignedProcessFromServer, err = client.GetProcessByID(assignedProcess.ID, env.colonyID, env.runtimePrvKey)
+	assignedProcessFromServer, err = client.GetProcessByID(assignedProcess.ID, env.runtimePrvKey, TESTHOST, TESTPORT)
 	assert.Equal(t, core.FAILED, assignedProcessFromServer.Status)
 
 	server.Shutdown()
 	<-done
 }
 
-func TestAddAttributes(t *testing.T) {
+func TestAddGetAttributes(t *testing.T) {
 	rootPassword := "password"
 	server, done := PrepareTests(t, rootPassword)
 	env := createTestEnv(t, rootPassword)
@@ -443,11 +457,11 @@ func TestAddAttributes(t *testing.T) {
 	assert.Nil(t, err)
 
 	attribute := core.CreateAttribute(assignedProcess.ID, core.OUT, "result", "helloworld")
-	addedAttribute, err := client.AddAttribute(attribute, env.colonyID, env.runtimePrvKey)
+	addedAttribute, err := client.AddAttribute(attribute, env.runtimePrvKey, TESTHOST, TESTPORT)
 	assert.Nil(t, err)
 	assert.Equal(t, attribute.ID, addedAttribute.ID)
 
-	assignedProcessFromServer, err := client.GetProcessByID(assignedProcess.ID, env.colonyID, env.runtimePrvKey)
+	assignedProcessFromServer, err := client.GetProcessByID(assignedProcess.ID, env.runtimePrvKey, TESTHOST, TESTPORT)
 
 	out := make(map[string]string)
 	for _, attribute := range assignedProcessFromServer.Attributes {
@@ -456,7 +470,7 @@ func TestAddAttributes(t *testing.T) {
 
 	assert.Equal(t, "helloworld", out["result"])
 
-	attributeFromServer, err := client.GetAttribute(attribute.ID, addedProcess.ID, env.colonyID, env.runtimePrvKey)
+	attributeFromServer, err := client.GetAttribute(attribute.ID, env.runtimePrvKey, TESTHOST, TESTPORT)
 	assert.Nil(t, err)
 	assert.Equal(t, attribute.ID, attributeFromServer.ID)
 

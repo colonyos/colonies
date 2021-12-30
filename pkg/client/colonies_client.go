@@ -60,7 +60,6 @@ func sendMessage(client *resty.Client, jsonString string, prvKey string, host st
 	return respBodyString, nil
 }
 
-// OK
 func AddColony(colony *core.Colony, rootPassword string, host string, port int) (*core.Colony, error) {
 	client := client()
 
@@ -83,7 +82,6 @@ func AddColony(colony *core.Colony, rootPassword string, host string, port int) 
 	return addedColony, nil
 }
 
-// OK
 func GetColonies(rootPassword string, host string, port int) ([]*core.Colony, error) {
 	client := client()
 
@@ -98,15 +96,9 @@ func GetColonies(rootPassword string, host string, port int) ([]*core.Colony, er
 		return nil, err
 	}
 
-	colonies, err := core.ConvertJSONToColonyArray(respBodyString)
-	if err != nil {
-		return colonies, err
-	}
-
-	return colonies, nil
+	return core.ConvertJSONToColonyArray(respBodyString)
 }
 
-// OK
 func GetColonyByID(colonyID string, prvKey string, host string, port int) (*core.Colony, error) {
 	client := client()
 
@@ -121,15 +113,9 @@ func GetColonyByID(colonyID string, prvKey string, host string, port int) (*core
 		return nil, err
 	}
 
-	colony, err := core.ConvertJSONToColony(respBodyString)
-	if err != nil {
-		return nil, err
-	}
-
-	return colony, nil
+	return core.ConvertJSONToColony(respBodyString)
 }
 
-// OK
 func AddRuntime(runtime *core.Runtime, prvKey string, host string, port int) (*core.Runtime, error) {
 	client := client()
 
@@ -144,15 +130,9 @@ func AddRuntime(runtime *core.Runtime, prvKey string, host string, port int) (*c
 		return nil, err
 	}
 
-	addedRuntime, err := core.ConvertJSONToRuntime(respBodyString)
-	if err != nil {
-		return nil, err
-	}
-
-	return addedRuntime, nil
+	return core.ConvertJSONToRuntime(respBodyString)
 }
 
-// OK
 func GetRuntimes(colonyID string, prvKey string, host string, port int) ([]*core.Runtime, error) {
 	client := client()
 
@@ -167,15 +147,9 @@ func GetRuntimes(colonyID string, prvKey string, host string, port int) ([]*core
 		return nil, err
 	}
 
-	runtimes, err := core.ConvertJSONToRuntimeArray(respBodyString)
-	if err != nil {
-		return nil, err
-	}
-
-	return runtimes, nil
+	return core.ConvertJSONToRuntimeArray(respBodyString)
 }
 
-// Ok
 func GetRuntime(runtimeID string, prvKey string, host string, port int) (*core.Runtime, error) {
 	client := client()
 
@@ -190,15 +164,9 @@ func GetRuntime(runtimeID string, prvKey string, host string, port int) (*core.R
 		return nil, err
 	}
 
-	runtime, err := core.ConvertJSONToRuntime(respBodyString)
-	if err != nil {
-		return nil, err
-	}
-
-	return runtime, nil
+	return core.ConvertJSONToRuntime(respBodyString)
 }
 
-// Ok
 func ApproveRuntime(runtimeID string, prvKey string, host string, port int) error {
 	client := client()
 
@@ -216,7 +184,6 @@ func ApproveRuntime(runtimeID string, prvKey string, host string, port int) erro
 	return nil
 }
 
-// Ok
 func RejectRuntime(runtimeID string, prvKey string, host string, port int) error {
 	client := client()
 
@@ -234,7 +201,6 @@ func RejectRuntime(runtimeID string, prvKey string, host string, port int) error
 	return nil
 }
 
-// OK
 func SubmitProcessSpec(processSpec *core.ProcessSpec, prvKey string, host string, port int) (*core.Process, error) {
 	client := client()
 
@@ -249,15 +215,9 @@ func SubmitProcessSpec(processSpec *core.ProcessSpec, prvKey string, host string
 		return nil, err
 	}
 
-	addedProcess, err := core.ConvertJSONToProcess(respBodyString)
-	if err != nil {
-		return nil, err
-	}
-
-	return addedProcess, nil
+	return core.ConvertJSONToProcess(respBodyString)
 }
 
-// Ok
 func AssignProcess(colonyID string, prvKey string, host string, port int) (*core.Process, error) {
 	client := client()
 
@@ -272,12 +232,7 @@ func AssignProcess(colonyID string, prvKey string, host string, port int) (*core
 		return nil, err
 	}
 
-	process, err := core.ConvertJSONToProcess(respBodyString)
-	if err != nil {
-		return nil, err
-	}
-
-	return process, nil
+	return core.ConvertJSONToProcess(respBodyString)
 }
 
 func getProcesses(state int, colonyID string, count int, prvKey string, host string, port int) ([]*core.Process, error) {
@@ -297,144 +252,49 @@ func getProcesses(state int, colonyID string, count int, prvKey string, host str
 	return core.ConvertJSONToProcessArray(respBodyString)
 }
 
-// Ok
 func GetWaitingProcesses(colonyID string, count int, prvKey string, host string, port int) ([]*core.Process, error) {
 	return getProcesses(core.WAITING, colonyID, count, prvKey, host, port)
 }
 
-// Ok
 func GetRunningProcesses(colonyID string, count int, prvKey string, host string, port int) ([]*core.Process, error) {
 	return getProcesses(core.RUNNING, colonyID, count, prvKey, host, port)
 }
 
-// Ok
 func GetSuccessfulProcesses(colonyID string, count int, prvKey string, host string, port int) ([]*core.Process, error) {
 	return getProcesses(core.SUCCESS, colonyID, count, prvKey, host, port)
 }
 
-// Ok
 func GetFailedProcesses(colonyID string, count int, prvKey string, host string, port int) ([]*core.Process, error) {
 	return getProcesses(core.FAILED, colonyID, count, prvKey, host, port)
 }
 
-func AddAttribute(attribute *core.Attribute, colonyID string, prvKey string) (*core.Attribute, error) {
+func GetProcessByID(processID string, prvKey string, host string, port int) (*core.Process, error) {
 	client := client()
-	digest, sig, id, err := security.GenerateCredentials(prvKey)
+
+	msg := rpc.CreateGetProcessMsg(processID)
+	jsonString, err := msg.ToJSON()
 	if err != nil {
 		return nil, err
 	}
 
-	jsonString, err := attribute.ToJSON()
+	respBodyString, err := sendMessage(client, jsonString, prvKey, host, port)
 	if err != nil {
 		return nil, err
 	}
 
-	resp, err := client.R().
-		SetHeader("Id", id).
-		SetHeader("Digest", digest).
-		SetHeader("Signature", sig).
-		SetBody(jsonString).
-		Post("https://localhost:8080/colonies/" + colonyID + "/processes/" + attribute.TargetID + "/attributes")
-
-	unquotedResp, err := strconv.Unquote(string(resp.Body()))
-	if err != nil {
-		return nil, err
-	}
-
-	err = checkStatusCode(resp.StatusCode(), unquotedResp)
-	if err != nil {
-		return nil, err
-	}
-
-	addedAttribute, err := core.ConvertJSONToAttribute(unquotedResp)
-	if err != nil {
-		return nil, err
-	}
-
-	return addedAttribute, nil
+	return core.ConvertJSONToProcess(respBodyString)
 }
 
-func GetAttribute(attributeID string, processID string, colonyID string, prvKey string) (*core.Attribute, error) {
+func MarkSuccessful(processID string, prvKey string, host string, port int) error {
 	client := client()
-	digest, sig, id, err := security.GenerateCredentials(prvKey)
-	if err != nil {
-		return nil, err
-	}
 
-	resp, err := client.R().
-		SetHeader("Id", id).
-		SetHeader("Digest", digest).
-		SetHeader("Signature", sig).
-		Get("https://localhost:8080/colonies/" + colonyID + "/processes/" + processID + "/attributes/" + attributeID)
-
-	unquotedResp, err := strconv.Unquote(string(resp.Body()))
-	if err != nil {
-		return nil, err
-	}
-
-	err = checkStatusCode(resp.StatusCode(), unquotedResp)
-	if err != nil {
-		return nil, err
-	}
-
-	attribute, err := core.ConvertJSONToAttribute(unquotedResp)
-	if err != nil {
-		return nil, err
-	}
-
-	return attribute, nil
-}
-
-func GetProcessByID(processID string, colonyID string, prvKey string) (*core.Process, error) {
-	client := client()
-	digest, sig, id, err := security.GenerateCredentials(prvKey)
-	if err != nil {
-		return nil, err
-	}
-
-	resp, err := client.R().
-		SetHeader("Id", id).
-		SetHeader("Digest", digest).
-		SetHeader("Signature", sig).
-		Get("https://localhost:8080/colonies/" + colonyID + "/processes/" + processID)
-
-	unquotedResp, err := strconv.Unquote(string(resp.Body()))
-	if err != nil {
-		return nil, err
-	}
-
-	err = checkStatusCode(resp.StatusCode(), unquotedResp)
-	if err != nil {
-		return nil, err
-	}
-
-	process, err := core.ConvertJSONToProcess(unquotedResp)
-	if err != nil {
-		return nil, err
-	}
-
-	return process, nil
-}
-
-func MarkSuccessful(process *core.Process, prvKey string) error {
-	client := client()
-	digest, sig, id, err := security.GenerateCredentials(prvKey)
+	msg := rpc.CreateMarkSuccessfulMsg(processID)
+	jsonString, err := msg.ToJSON()
 	if err != nil {
 		return err
 	}
 
-	resp, err := client.R().
-		SetHeader("Id", id).
-		SetHeader("Digest", digest).
-		SetHeader("Signature", sig).
-		Put("https://localhost:8080/colonies/" + process.ProcessSpec.Conditions.ColonyID + "/processes/" + process.ID + "/finish")
-
-	unquotedResp, err := strconv.Unquote(string(resp.Body()))
-	if err != nil {
-		return err
-	}
-
-	err = checkStatusCode(resp.StatusCode(), unquotedResp)
+	_, err = sendMessage(client, jsonString, prvKey, host, port)
 	if err != nil {
 		return err
 	}
@@ -442,28 +302,53 @@ func MarkSuccessful(process *core.Process, prvKey string) error {
 	return nil
 }
 
-func MarkFailed(process *core.Process, prvKey string) error {
+func MarkFailed(processID string, prvKey string, host string, port int) error {
 	client := client()
-	digest, sig, id, err := security.GenerateCredentials(prvKey)
+
+	msg := rpc.CreateMarkFailedMsg(processID)
+	jsonString, err := msg.ToJSON()
 	if err != nil {
 		return err
 	}
 
-	resp, err := client.R().
-		SetHeader("Id", id).
-		SetHeader("Digest", digest).
-		SetHeader("Signature", sig).
-		Put("https://localhost:8080/colonies/" + process.ProcessSpec.Conditions.ColonyID + "/processes/" + process.ID + "/failed")
-
-	unquotedResp, err := strconv.Unquote(string(resp.Body()))
-	if err != nil {
-		return err
-	}
-
-	err = checkStatusCode(resp.StatusCode(), unquotedResp)
+	_, err = sendMessage(client, jsonString, prvKey, host, port)
 	if err != nil {
 		return err
 	}
 
 	return nil
+}
+
+func AddAttribute(attribute *core.Attribute, prvKey string, host string, port int) (*core.Attribute, error) {
+	client := client()
+
+	msg := rpc.CreateAddAttributeMsg(attribute)
+	jsonString, err := msg.ToJSON()
+	if err != nil {
+		return nil, err
+	}
+
+	respBodyString, err := sendMessage(client, jsonString, prvKey, host, port)
+	if err != nil {
+		return nil, err
+	}
+
+	return core.ConvertJSONToAttribute(respBodyString)
+}
+
+func GetAttribute(attributeID string, prvKey string, host string, port int) (*core.Attribute, error) {
+	client := client()
+
+	msg := rpc.CreateGetAttributeMsg(attributeID)
+	jsonString, err := msg.ToJSON()
+	if err != nil {
+		return nil, err
+	}
+
+	respBodyString, err := sendMessage(client, jsonString, prvKey, host, port)
+	if err != nil {
+		return nil, err
+	}
+
+	return core.ConvertJSONToAttribute(respBodyString)
 }

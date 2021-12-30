@@ -62,11 +62,6 @@ func CreateColoniesServer(db database.Database, port int, rootPassword string, t
 
 func (server *ColoniesServer) setupRoutes() {
 	server.ginHandler.POST("/endpoint", server.handleEndpointRequest)
-	server.ginHandler.GET("/colonies/:colonyid/processes/:processid", server.handleGetProcessRequest)
-	server.ginHandler.PUT("/colonies/:colonyid/processes/:processid/finish", server.handleFinishProcessRequest)
-	server.ginHandler.PUT("/colonies/:colonyid/processes/:processid/failed", server.handleFailedProcessRequest)
-	server.ginHandler.POST("/colonies/:colonyid/processes/:processid/attributes", server.handleAddAttributeRequest)
-	server.ginHandler.GET("/colonies/:colonyid/processes/:processid/attributes/:attributeid", server.handleGetAttributeRequest)
 }
 
 func (server *ColoniesServer) handleEndpointRequest(c *gin.Context) {
@@ -117,6 +112,18 @@ func (server *ColoniesServer) handleEndpointRequest(c *gin.Context) {
 		server.handleAssignProcessRequest(c, recoveredID, jsonString)
 	case rpc.GetProcessesMsgType:
 		server.handleGetProcessesRequest(c, recoveredID, jsonString)
+	case rpc.GetProcessMsgType:
+		server.handleGetProcessRequest(c, recoveredID, jsonString)
+	case rpc.MarkSuccessfulMsgType:
+		server.handleMarkSuccessfulRequest(c, recoveredID, jsonString)
+	case rpc.MarkFailedMsgType:
+		server.handleMarkFailedRequest(c, recoveredID, jsonString)
+
+	// Attribute operations
+	case rpc.AddAttributeMsgType:
+		server.handleAddAttributeRequest(c, recoveredID, jsonString)
+	case rpc.GetAttributeMsgType:
+		server.handleGetAttributeRequest(c, recoveredID, jsonString)
 	default:
 		if server.handleError(c, errors.New("Invalid RPC message type"), http.StatusForbidden) {
 			return
@@ -146,7 +153,6 @@ func (server *ColoniesServer) handleAddColonyRequest(c *gin.Context, jsonString 
 		return
 	}
 
-	// SECURITY: Check that the root password matches the server root password
 	err = security.VerifyRoot(msg.RootPassword, server.rootPassword)
 	if server.handleError(c, err, http.StatusForbidden) {
 		return
@@ -171,7 +177,6 @@ func (server *ColoniesServer) handleGetColoniesRequest(c *gin.Context, jsonStrin
 		return
 	}
 
-	// SECURITY: Check that the root password matches the server root password
 	err = security.VerifyRoot(msg.RootPassword, server.rootPassword)
 	if server.handleError(c, err, http.StatusForbidden) {
 		return
@@ -196,7 +201,6 @@ func (server *ColoniesServer) handleGetColonyRequest(c *gin.Context, recoveredID
 		return
 	}
 
-	// SECURITY: We need to check if the recoveredID is a member of the targeted colony
 	err = security.VerifyRuntimeMembership(recoveredID, msg.ColonyID, server.ownership)
 	if server.handleError(c, err, http.StatusForbidden) {
 		return
@@ -221,7 +225,6 @@ func (server *ColoniesServer) handleAddRuntimeRequest(c *gin.Context, recoveredI
 		return
 	}
 
-	// SECURITY: We need to check if the recoveredID is the owner of the colony
 	err = security.VerifyColonyOwner(recoveredID, msg.Runtime.ColonyID, server.ownership)
 	if server.handleError(c, err, http.StatusForbidden) {
 		return
@@ -246,7 +249,6 @@ func (server *ColoniesServer) handleGetRuntimesRequest(c *gin.Context, recovered
 		return
 	}
 
-	// SECURITY: We need to check if the recoveredID is a member of the targeted colony
 	err = security.VerifyRuntimeMembership(recoveredID, msg.ColonyID, server.ownership)
 	if server.handleError(c, err, http.StatusForbidden) {
 		return
@@ -280,7 +282,6 @@ func (server *ColoniesServer) handleGetRuntimeRequest(c *gin.Context, recoveredI
 		return
 	}
 
-	// SECURITY: We need to check if the recoveredID is a member of the targeted colony
 	err = security.VerifyRuntimeMembership(recoveredID, runtime.ColonyID, server.ownership)
 	if server.handleError(c, err, http.StatusForbidden) {
 		return
@@ -309,7 +310,6 @@ func (server *ColoniesServer) handleApproveRuntimeRequest(c *gin.Context, recove
 		return
 	}
 
-	// SECURITY: We need to check if the recoveredID is the owner of the colony
 	err = security.VerifyColonyOwner(recoveredID, runtime.ColonyID, server.ownership)
 	if server.handleError(c, err, http.StatusForbidden) {
 		return
@@ -339,7 +339,6 @@ func (server *ColoniesServer) handleRejectRuntimeRequest(c *gin.Context, recover
 		return
 	}
 
-	// SECURITY: We need to check if the recoveredID is the owner of the colony
 	err = security.VerifyColonyOwner(recoveredID, runtime.ColonyID, server.ownership)
 	if server.handleError(c, err, http.StatusForbidden) {
 		return
@@ -364,7 +363,6 @@ func (server *ColoniesServer) handleSubmitProcessSpec(c *gin.Context, recoveredI
 		return
 	}
 
-	// SECURITY: We need to check if the recoveredID is a member of the targeted colony
 	err = security.VerifyRuntimeMembership(recoveredID, msg.ProcessSpec.Conditions.ColonyID, server.ownership)
 	if server.handleError(c, err, http.StatusForbidden) {
 		return
@@ -390,7 +388,6 @@ func (server *ColoniesServer) handleAssignProcessRequest(c *gin.Context, recover
 		return
 	}
 
-	// SECURITY: We need to check if the recoveredID is a member of the targeted colony
 	err = security.VerifyRuntimeMembership(recoveredID, msg.ColonyID, server.ownership)
 	if server.handleError(c, err, http.StatusForbidden) {
 		return
@@ -468,144 +465,149 @@ func (server *ColoniesServer) handleGetProcessesRequest(c *gin.Context, recovere
 	}
 }
 
-func (server *ColoniesServer) handleGetProcessRequest(c *gin.Context) {
-	colonyID := c.Param("colonyid")
-	processID := c.Param("processid")
-
-	err := security.RequireColonyOwnerOrMember(c.GetHeader("Id"), colonyID, c.GetHeader("Digest"), c.GetHeader("Signature"), server.ownership)
-	if err != nil {
-		logging.Log().Warning(err)
-		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
+func (server *ColoniesServer) handleGetProcessRequest(c *gin.Context, recoveredID string, jsonString string) {
+	msg, err := rpc.CreateGetProcessMsgFromJSON(jsonString)
+	if server.handleError(c, err, http.StatusBadRequest) {
 		return
 	}
 
-	process, err := server.controller.GetProcessByID(colonyID, processID)
-	if err != nil {
-		logging.Log().Warning(err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	process, err := server.controller.GetProcessByID(msg.ProcessID)
+	if server.handleError(c, err, http.StatusBadRequest) {
 		return
 	}
 
-	jsonString, err := process.ToJSON()
-	if err != nil {
-		logging.Log().Warning(err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	err = security.VerifyRuntimeMembership(recoveredID, process.ProcessSpec.Conditions.ColonyID, server.ownership)
+	if server.handleError(c, err, http.StatusForbidden) {
 		return
 	}
 
-	c.JSON(http.StatusOK, jsonString)
+	jsonString, err = process.ToJSON()
+	if server.handleError(c, err, http.StatusBadRequest) {
+		return
+	}
+
+	c.String(http.StatusOK, jsonString)
 }
 
-func (server *ColoniesServer) handleFinishProcessRequest(c *gin.Context) {
-	colonyID := c.Param("colonyid")
-	processID := c.Param("processid")
-
-	err := security.RequireColonyMember(c.GetHeader("Id"), colonyID, c.GetHeader("Digest"), c.GetHeader("Signature"), server.ownership)
-	if err != nil {
-		logging.Log().Warning(err)
-		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
+func (server *ColoniesServer) handleMarkSuccessfulRequest(c *gin.Context, recoveredID string, jsonString string) {
+	msg, err := rpc.CreateMarkSuccessfulMsgFromJSON(jsonString)
+	if server.handleError(c, err, http.StatusBadRequest) {
 		return
 	}
 
-	err = server.controller.MarkSuccessful(c.GetHeader("Id"), processID)
-	if err != nil {
-		logging.Log().Warning(err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	process, err := server.controller.GetProcessByID(msg.ProcessID)
+	if server.handleError(c, err, http.StatusBadRequest) {
 		return
 	}
 
-	c.JSON(http.StatusOK, "")
+	err = security.VerifyRuntimeMembership(recoveredID, process.ProcessSpec.Conditions.ColonyID, server.ownership)
+	if server.handleError(c, err, http.StatusForbidden) {
+		return
+	}
+
+	if process.AssignedRuntimeID != recoveredID {
+		err := errors.New("Only Runtime with Id <" + process.AssignedRuntimeID + "> is allowed to mark process as failed")
+		server.handleError(c, err, http.StatusForbidden)
+	}
+
+	err = server.controller.MarkSuccessful(process.ID)
+	if server.handleError(c, err, http.StatusBadRequest) {
+		return
+	}
+
+	c.String(http.StatusOK, "")
 }
 
-func (server *ColoniesServer) handleFailedProcessRequest(c *gin.Context) {
-	colonyID := c.Param("colonyid")
-	processID := c.Param("processid")
-
-	err := security.RequireColonyMember(c.GetHeader("Id"), colonyID, c.GetHeader("Digest"), c.GetHeader("Signature"), server.ownership)
-	if err != nil {
-		logging.Log().Warning(err)
-		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
+func (server *ColoniesServer) handleMarkFailedRequest(c *gin.Context, recoveredID string, jsonString string) {
+	msg, err := rpc.CreateMarkSuccessfulMsgFromJSON(jsonString)
+	if server.handleError(c, err, http.StatusBadRequest) {
 		return
 	}
 
-	err = server.controller.MarkFailed(c.GetHeader("Id"), processID)
-	if err != nil {
-		logging.Log().Warning(err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	process, err := server.controller.GetProcessByID(msg.ProcessID)
+	if server.handleError(c, err, http.StatusBadRequest) {
 		return
 	}
 
-	c.JSON(http.StatusOK, "")
+	err = security.VerifyRuntimeMembership(recoveredID, process.ProcessSpec.Conditions.ColonyID, server.ownership)
+	if server.handleError(c, err, http.StatusForbidden) {
+		return
+	}
+
+	if process.AssignedRuntimeID != recoveredID {
+		err := errors.New("Only Runtime with Id <" + process.AssignedRuntimeID + "> is allowed to mark process as failed")
+		server.handleError(c, err, http.StatusForbidden)
+	}
+
+	err = server.controller.MarkFailed(process.ID)
+	if server.handleError(c, err, http.StatusBadRequest) {
+		return
+	}
+
+	c.String(http.StatusOK, "")
 }
 
-func (server *ColoniesServer) handleAddAttributeRequest(c *gin.Context) {
-	colonyID := c.Param("colonyid")
-
-	err := security.RequireColonyMember(c.GetHeader("Id"), colonyID, c.GetHeader("Digest"), c.GetHeader("Signature"), server.ownership)
-	if err != nil {
-		logging.Log().Warning(err)
-		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
+func (server *ColoniesServer) handleAddAttributeRequest(c *gin.Context, recoveredID string, jsonString string) {
+	msg, err := rpc.CreateAddAttributeMsgFromJSON(jsonString)
+	if server.handleError(c, err, http.StatusBadRequest) {
 		return
 	}
 
-	jsonBytes, err := ioutil.ReadAll(c.Request.Body)
-	if err != nil {
-		logging.Log().Warning(err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	process, err := server.controller.GetProcessByID(msg.Attribute.TargetID)
+	if server.handleError(c, err, http.StatusBadRequest) {
 		return
 	}
 
-	attribute, err := core.ConvertJSONToAttribute(string(jsonBytes))
-	if err != nil {
-		logging.Log().Warning(err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	err = security.VerifyRuntimeMembership(recoveredID, process.ProcessSpec.Conditions.ColonyID, server.ownership)
+	if server.handleError(c, err, http.StatusForbidden) {
 		return
 	}
 
-	addedAttribute, err := server.controller.AddAttribute(attribute)
-	if err != nil {
-		logging.Log().Warning(err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	addedAttribute, err := server.controller.AddAttribute(msg.Attribute)
+	if server.handleError(c, err, http.StatusBadRequest) {
 		return
 	}
 
-	jsonString, err := addedAttribute.ToJSON()
-	if err != nil {
-		logging.Log().Warning(err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	jsonString, err = addedAttribute.ToJSON()
+	if server.handleError(c, err, http.StatusBadRequest) {
 		return
 	}
 
-	c.JSON(http.StatusOK, jsonString)
+	c.String(http.StatusOK, jsonString)
 }
 
-func (server *ColoniesServer) handleGetAttributeRequest(c *gin.Context) {
-	colonyID := c.Param("colonyid")
-	//processID := c.Param("processid")
-	attributeID := c.Param("attributeid")
-
-	err := security.RequireColonyOwnerOrMember(c.GetHeader("Id"), colonyID, c.GetHeader("Digest"), c.GetHeader("Signature"), server.ownership)
-	if err != nil {
-		logging.Log().Warning(err)
-		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
+func (server *ColoniesServer) handleGetAttributeRequest(c *gin.Context, recoveredID string, jsonString string) {
+	msg, err := rpc.CreateGetAttributeMsgFromJSON(jsonString)
+	if server.handleError(c, err, http.StatusBadRequest) {
 		return
 	}
 
-	attribute, err := server.controller.GetAttribute(attributeID)
-	if err != nil {
-		logging.Log().Warning(err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	attribute, err := server.controller.GetAttribute(msg.AttributeID)
+	if server.handleError(c, err, http.StatusBadRequest) {
 		return
 	}
 
-	jsonString, err := attribute.ToJSON()
-	if err != nil {
-		logging.Log().Warning(err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	process, err := server.controller.GetProcessByID(attribute.TargetID)
+	if server.handleError(c, err, http.StatusBadRequest) {
 		return
 	}
 
-	c.JSON(http.StatusOK, jsonString)
+	err = security.VerifyRuntimeMembership(recoveredID, process.ProcessSpec.Conditions.ColonyID, server.ownership)
+	if server.handleError(c, err, http.StatusForbidden) {
+		return
+	}
+
+	if process.AssignedRuntimeID != recoveredID {
+		err := errors.New("Only Runtime with Id <" + process.AssignedRuntimeID + "> is allowed to set attributes")
+		server.handleError(c, err, http.StatusForbidden)
+	}
+
+	jsonString, err = attribute.ToJSON()
+	if server.handleError(c, err, http.StatusBadRequest) {
+		return
+	}
+
+	c.String(http.StatusOK, jsonString)
 }
 
 func (server *ColoniesServer) ServeForever() error {
