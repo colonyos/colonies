@@ -149,7 +149,7 @@ var assignProcessCmd = &cobra.Command{
 			CheckError(err)
 		}
 
-		process, err := client.AssignProcess(RuntimeID, ColonyID, RuntimePrvKey)
+		process, err := client.AssignProcess(ColonyID, RuntimePrvKey, ServerHost, ServerPort)
 		if err != nil {
 			fmt.Println("No process was assigned")
 		} else {
@@ -185,7 +185,7 @@ var listWaitingProcessesCmd = &cobra.Command{
 			CheckError(err)
 		}
 
-		processes, err := client.GetWaitingProcesses(RuntimeID, ColonyID, Count, RuntimePrvKey)
+		processes, err := client.GetWaitingProcesses(ColonyID, Count, RuntimePrvKey, ServerHost, ServerPort)
 		CheckError(err)
 
 		if len(processes) == 0 {
@@ -240,7 +240,7 @@ var listRunningProcessesCmd = &cobra.Command{
 			CheckError(err)
 		}
 
-		processes, err := client.GetRunningProcesses(ColonyID, Count, RuntimePrvKey)
+		processes, err := client.GetRunningProcesses(ColonyID, Count, RuntimePrvKey, ServerHost, ServerPort)
 		CheckError(err)
 
 		if len(processes) == 0 {
@@ -294,7 +294,7 @@ var listSuccessfulProcessesCmd = &cobra.Command{
 			CheckError(err)
 		}
 
-		processes, err := client.GetSuccessfulProcesses(ColonyID, Count, RuntimePrvKey)
+		processes, err := client.GetSuccessfulProcesses(ColonyID, Count, RuntimePrvKey, ServerHost, ServerPort)
 		CheckError(err)
 
 		if len(processes) == 0 {
@@ -348,7 +348,7 @@ var listFailedProcessesCmd = &cobra.Command{
 			CheckError(err)
 		}
 
-		processes, err := client.GetFailedProcesses(ColonyID, Count, RuntimePrvKey)
+		processes, err := client.GetFailedProcesses(ColonyID, Count, RuntimePrvKey, ServerHost, ServerPort)
 		CheckError(err)
 
 		if len(processes) == 0 {

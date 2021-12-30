@@ -277,7 +277,35 @@ func (controller *ColoniesController) GetProcessByID(colonyID string, processID 
 	}
 }
 
-func (controller *ColoniesController) FindWaitingProcesses(runtimeID string, colonyID string, count int) ([]*core.Process, error) {
+func (controller *ColoniesController) FindPrioritizedProcesses(runtimeID string, colonyID string, count int) ([]*core.Process, error) {
+	cmd := &command{processesReplyChan: make(chan []*core.Process),
+		errorChan: make(chan error, 1),
+		handler: func(cmd *command) {
+			var processes []*core.Process
+			if count > MAX_COUNT {
+				cmd.errorChan <- errors.New("Count is larger than MaxCount limit <" + strconv.Itoa(MAX_COUNT) + ">")
+				return
+			}
+			processes, err := controller.db.FindWaitingProcesses(colonyID, count)
+			if err != nil {
+				cmd.errorChan <- err
+				return
+			}
+			prioritizedProcesses := controller.scheduler.Prioritize(runtimeID, processes, count)
+			cmd.processesReplyChan <- prioritizedProcesses
+		}}
+
+	controller.cmdQueue <- cmd
+	var processes []*core.Process
+	select {
+	case err := <-cmd.errorChan:
+		return processes, err
+	case processes := <-cmd.processesReplyChan:
+		return processes, nil
+	}
+}
+
+func (controller *ColoniesController) FindWaitingProcesses(colonyID string, count int) ([]*core.Process, error) {
 	cmd := &command{processesReplyChan: make(chan []*core.Process),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
@@ -292,8 +320,6 @@ func (controller *ColoniesController) FindWaitingProcesses(runtimeID string, col
 				return
 			}
 			cmd.processesReplyChan <- processes
-			//prioritizedProcesses := controller.scheduler.Prioritize(runtimeID, processes, count)
-			//cmd.processesReplyChan <- prioritizedProcesses
 		}}
 
 	controller.cmdQueue <- cmd

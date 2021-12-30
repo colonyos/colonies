@@ -49,7 +49,7 @@ func (db *PQDatabase) Drop() error {
 		return err
 	}
 
-	sqlStatement = `DROP TABLE ` + db.dbPrefix + `runtimeS`
+	sqlStatement = `DROP TABLE ` + db.dbPrefix + `RUNTIMES`
 	_, err = db.postgresql.Exec(sqlStatement)
 	if err != nil {
 		return err
@@ -62,6 +62,30 @@ func (db *PQDatabase) Drop() error {
 	}
 
 	sqlStatement = `DROP TABLE ` + db.dbPrefix + `ATTRIBUTES`
+	_, err = db.postgresql.Exec(sqlStatement)
+	if err != nil {
+		return err
+	}
+
+	sqlStatement = `DROP INDEX PROCESSES_INDEX1`
+	_, err = db.postgresql.Exec(sqlStatement)
+	if err != nil {
+		return err
+	}
+
+	sqlStatement = `DROP INDEX PROCESSES_INDEX2`
+	_, err = db.postgresql.Exec(sqlStatement)
+	if err != nil {
+		return err
+	}
+
+	sqlStatement = `DROP INDEX PROCESSES_INDEX3`
+	_, err = db.postgresql.Exec(sqlStatement)
+	if err != nil {
+		return err
+	}
+
+	sqlStatement = `DROP INDEX PROCESSES_INDEX4`
 	_, err = db.postgresql.Exec(sqlStatement)
 	if err != nil {
 		return err
@@ -83,13 +107,37 @@ func (db *PQDatabase) Initialize() error {
 		return err
 	}
 
-	sqlStatement = `CREATE TABLE ` + db.dbPrefix + `PROCESSES (PROCESS_ID TEXT PRIMARY KEY NOT NULL, TARGET_COLONY_ID TEXT NOT NULL, TARGET_runtime_IDS TEXT[], ASSIGNED_runtime_ID TEXT, STATUS INTEGER, IS_ASSIGNED BOOLEAN, runtime_TYPE TEXT, SUBMISSION_TIME TIMESTAMP, START_TIME TIMESTAMP, END_TIME TIMESTAMP, DEADLINE TIMESTAMP, TIMEOUT INTEGER, RETRIES INTEGER, MAX_RETRIES INTEGER, MEM INTEGER, CORES INTEGER, GPUS INTEGER)`
+	sqlStatement = `CREATE TABLE ` + db.dbPrefix + `PROCESSES (PROCESS_ID TEXT PRIMARY KEY NOT NULL, TARGET_COLONY_ID TEXT NOT NULL, TARGET_runtime_IDS TEXT[], ASSIGNED_RUNTIME_ID TEXT, STATUS INTEGER, IS_ASSIGNED BOOLEAN, runtime_TYPE TEXT, SUBMISSION_TIME TIMESTAMP, START_TIME TIMESTAMP, END_TIME TIMESTAMP, DEADLINE TIMESTAMP, TIMEOUT INTEGER, RETRIES INTEGER, MAX_RETRIES INTEGER, MEM INTEGER, CORES INTEGER, GPUS INTEGER)`
 	_, err = db.postgresql.Exec(sqlStatement)
 	if err != nil {
 		return err
 	}
 
 	sqlStatement = `CREATE TABLE ` + db.dbPrefix + `ATTRIBUTES (ATTRIBUTE_ID TEXT PRIMARY KEY NOT NULL, KEY TEXT NOT NULL, VALUE TEXT NOT NULL, ATTRIBUTE_TYPE INTEGER, TARGET_ID TEXT NOT NULL)`
+	_, err = db.postgresql.Exec(sqlStatement)
+	if err != nil {
+		return err
+	}
+
+	sqlStatement = `CREATE INDEX PROCESSES_INDEX1 ON ` + db.dbPrefix + `PROCESSES (TARGET_COLONY_ID, STATUS, SUBMISSION_TIME)`
+	_, err = db.postgresql.Exec(sqlStatement)
+	if err != nil {
+		return err
+	}
+
+	sqlStatement = `CREATE INDEX PROCESSES_INDEX2 ON ` + db.dbPrefix + `PROCESSES (TARGET_COLONY_ID, STATUS, START_TIME)`
+	_, err = db.postgresql.Exec(sqlStatement)
+	if err != nil {
+		return err
+	}
+
+	sqlStatement = `CREATE INDEX PROCESSES_INDEX3 ON ` + db.dbPrefix + `PROCESSES (TARGET_COLONY_ID, STATUS, END_TIME)`
+	_, err = db.postgresql.Exec(sqlStatement)
+	if err != nil {
+		return err
+	}
+
+	sqlStatement = `CREATE INDEX PROCESSES_INDEX4 ON ` + db.dbPrefix + `PROCESSES (IS_ASSIGNED, START_TIME, ASSIGNED_RUNTIME_ID, STATUS, PROCESS_ID)`
 	_, err = db.postgresql.Exec(sqlStatement)
 	if err != nil {
 		return err

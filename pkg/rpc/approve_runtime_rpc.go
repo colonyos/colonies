@@ -4,16 +4,16 @@ import (
 	"encoding/json"
 )
 
-const RPCMethodApproveRuntime = "ApproveRuntime"
+const ApproveRuntimeMsgType = "ApproveRuntime"
 
 type ApproveRuntimeRPC struct {
 	RPC       RPC    `json:"rpc"`
 	RuntimeID string `json:"runtimeid"`
 }
 
-func CreateApproveRuntimeRPC(runtimeID string) *ApproveRuntimeRPC {
+func CreateApproveRuntimeMsg(runtimeID string) *ApproveRuntimeRPC {
 	msg := &ApproveRuntimeRPC{}
-	msg.RPC.Method = RPCMethodApproveRuntime
+	msg.RPC.Method = ApproveRuntimeMsgType
 	msg.RuntimeID = runtimeID
 
 	return msg
@@ -28,7 +28,7 @@ func (msg *ApproveRuntimeRPC) ToJSON() (string, error) {
 	return string(jsonBytes), nil
 }
 
-func CreateApproveRuntimeRPCFromJSON(jsonString string) (*ApproveRuntimeRPC, error) {
+func CreateApproveRuntimeMsgFromJSON(jsonString string) (*ApproveRuntimeRPC, error) {
 	var msg *ApproveRuntimeRPC
 
 	err := json.Unmarshal([]byte(jsonString), &msg)
