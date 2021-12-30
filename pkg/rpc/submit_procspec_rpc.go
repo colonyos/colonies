@@ -5,22 +5,22 @@ import (
 	"encoding/json"
 )
 
-const RPCMethodSubmitProcessSpec = "SubmitProcessSpec"
+const SubmitProcessSpecMsgType = "SubmitProcessSpec"
 
-type SubmitProcessSpecRPC struct {
+type SubmitProcessSpecMsg struct {
 	RPC         RPC               `json:"rpc"`
 	ProcessSpec *core.ProcessSpec `json:"spec"`
 }
 
-func CreateSubmitProcessSpecRPC(processSpec *core.ProcessSpec) *SubmitProcessSpecRPC {
-	msg := &SubmitProcessSpecRPC{}
-	msg.RPC.Method = RPCMethodSubmitProcessSpec
+func CreateSubmitProcessSpecMsg(processSpec *core.ProcessSpec) *SubmitProcessSpecMsg {
+	msg := &SubmitProcessSpecMsg{}
+	msg.RPC.Method = SubmitProcessSpecMsgType
 	msg.ProcessSpec = processSpec
 
 	return msg
 }
 
-func (msg *SubmitProcessSpecRPC) ToJSON() (string, error) {
+func (msg *SubmitProcessSpecMsg) ToJSON() (string, error) {
 	jsonBytes, err := json.Marshal(msg)
 	if err != nil {
 		return "", err
@@ -29,8 +29,8 @@ func (msg *SubmitProcessSpecRPC) ToJSON() (string, error) {
 	return string(jsonBytes), nil
 }
 
-func CreateSubmitProcessSpecRPCFromJSON(jsonString string) (*SubmitProcessSpecRPC, error) {
-	var msg *SubmitProcessSpecRPC
+func CreateSubmitProcessSpecMsgFromJSON(jsonString string) (*SubmitProcessSpecMsg, error) {
+	var msg *SubmitProcessSpecMsg
 
 	err := json.Unmarshal([]byte(jsonString), &msg)
 	if err != nil {

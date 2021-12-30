@@ -222,8 +222,6 @@ func TestSubmitProcessSpecSecurity(t *testing.T) {
 	<-done
 }
 
-///////////// NOT REFACTORED BELOW
-
 func TestAssignProcessSecurity(t *testing.T) {
 	env, server, done := setupTestEnvironment(t)
 
@@ -242,20 +240,114 @@ func TestAssignProcessSecurity(t *testing.T) {
 	assert.Nil(t, err)
 
 	// Now try to assign a process from colony2 using runtime1 credentials
-	_, err = client.AssignProcess(env.runtime2ID, env.colony1ID, env.runtime1PrvKey)
+	_, err = client.AssignProcess(env.colony2ID, env.runtime1PrvKey, TESTHOST, TESTPORT)
 	assert.NotNil(t, err) // Should not work
 
 	// Now try to assign a process from colony2 using runtime1 credentials
-	_, err = client.AssignProcess(env.runtime1ID, env.colony1ID, env.runtime1PrvKey)
+	_, err = client.AssignProcess(env.colony1ID, env.runtime2PrvKey, TESTHOST, TESTPORT)
+	assert.NotNil(t, err) // Should not work
+
+	// Now try to assign a process from colony2 using runtime1 credentials
+	_, err = client.AssignProcess(env.colony1ID, env.runtime1PrvKey, TESTHOST, TESTPORT)
 	assert.Nil(t, err) // Should work
 
 	// Now try to assign a process from colony2 using colony1 credentials
-	_, err = client.AssignProcess(env.runtime1ID, env.colony1ID, env.colony1PrvKey)
+	_, err = client.AssignProcess(env.colony1ID, env.colony1PrvKey, TESTHOST, TESTPORT)
 	assert.NotNil(t, err) // Should not work, only runtimes are allowed
 
 	// Now try to assign a process from colony2 using colony1 credentials
-	_, err = client.AssignProcess(env.runtime1ID, env.colony1ID, env.colony2PrvKey)
+	_, err = client.AssignProcess(env.colony1ID, env.colony2PrvKey, TESTHOST, TESTPORT)
 	assert.NotNil(t, err) // Should not work, only runtimes are allowed, also invalid credentials are used
+
+	server.Shutdown()
+	<-done
+}
+
+func TestGetWaitingProcessesSecurity(t *testing.T) {
+	env, server, done := setupTestEnvironment(t)
+
+	numberOfRunningProcesses := 2
+	for i := 0; i < numberOfRunningProcesses; i++ {
+		processSpec := core.CreateProcessSpec(env.colony1ID, []string{}, "test_runtime_type", -1, 3, 1000, 10, 1, make(map[string]string))
+		_, err := client.SubmitProcessSpec(processSpec, env.runtime1PrvKey, TESTHOST, TESTPORT)
+		assert.Nil(t, err)
+		_, err = client.AssignProcess(env.colony1ID, env.runtime1PrvKey, TESTHOST, TESTPORT)
+		assert.Nil(t, err)
+	}
+
+	_, err := client.GetRunningProcesses(env.colony1ID, numberOfRunningProcesses, env.runtime2PrvKey, TESTHOST, TESTPORT)
+	assert.NotNil(t, err) // Should not work
+
+	_, err = client.GetRunningProcesses(env.colony1ID, numberOfRunningProcesses, env.runtime1PrvKey, TESTHOST, TESTPORT)
+	assert.Nil(t, err) // Should work
+
+	server.Shutdown()
+	<-done
+}
+
+func TestRunningProcessesSecurity(t *testing.T) {
+	env, server, done := setupTestEnvironment(t)
+
+	numberOfRunningProcesses := 2
+	for i := 0; i < numberOfRunningProcesses; i++ {
+		processSpec := core.CreateProcessSpec(env.colony1ID, []string{}, "test_runtime_type", -1, 3, 1000, 10, 1, make(map[string]string))
+		_, err := client.SubmitProcessSpec(processSpec, env.runtime1PrvKey, TESTHOST, TESTPORT)
+		assert.Nil(t, err)
+	}
+
+	_, err := client.GetWaitingProcesses(env.colony1ID, numberOfRunningProcesses, env.runtime2PrvKey, TESTHOST, TESTPORT)
+	assert.NotNil(t, err) // Should not work
+
+	_, err = client.GetWaitingProcesses(env.colony1ID, numberOfRunningProcesses, env.runtime1PrvKey, TESTHOST, TESTPORT)
+	assert.Nil(t, err) // Should work
+
+	server.Shutdown()
+	<-done
+}
+
+func TestGetSuccessfulProcessesSecurity(t *testing.T) {
+	env, server, done := setupTestEnvironment(t)
+
+	numberOfRunningProcesses := 2
+	for i := 0; i < numberOfRunningProcesses; i++ {
+		processSpec := core.CreateProcessSpec(env.colony1ID, []string{}, "test_runtime_type", -1, 3, 1000, 10, 1, make(map[string]string))
+		_, err := client.SubmitProcessSpec(processSpec, env.runtime1PrvKey, TESTHOST, TESTPORT)
+		assert.Nil(t, err)
+		processFromServer, err := client.AssignProcess(env.colony1ID, env.runtime1PrvKey, TESTHOST, TESTPORT)
+		assert.Nil(t, err)
+		err = client.MarkSuccessful(processFromServer, env.runtime1PrvKey)
+		assert.Nil(t, err)
+	}
+
+	_, err := client.GetSuccessfulProcesses(env.colony1ID, numberOfRunningProcesses, env.runtime2PrvKey, TESTHOST, TESTPORT)
+	assert.NotNil(t, err) // Should not work
+
+	_, err = client.GetSuccessfulProcesses(env.colony1ID, numberOfRunningProcesses, env.runtime1PrvKey, TESTHOST, TESTPORT)
+	assert.Nil(t, err) // Should work
+
+	server.Shutdown()
+	<-done
+}
+
+func TestGetFailedProcessesSecurity(t *testing.T) {
+	env, server, done := setupTestEnvironment(t)
+
+	numberOfRunningProcesses := 2
+	for i := 0; i < numberOfRunningProcesses; i++ {
+		processSpec := core.CreateProcessSpec(env.colony1ID, []string{}, "test_runtime_type", -1, 3, 1000, 10, 1, make(map[string]string))
+		_, err := client.SubmitProcessSpec(processSpec, env.runtime1PrvKey, TESTHOST, TESTPORT)
+		assert.Nil(t, err)
+		processFromServer, err := client.AssignProcess(env.colony1ID, env.runtime1PrvKey, TESTHOST, TESTPORT)
+		assert.Nil(t, err)
+		err = client.MarkFailed(processFromServer, env.runtime1PrvKey)
+		assert.Nil(t, err)
+	}
+
+	_, err := client.GetFailedProcesses(env.colony1ID, numberOfRunningProcesses, env.runtime2PrvKey, TESTHOST, TESTPORT)
+	assert.NotNil(t, err) // Should not work
+
+	_, err = client.GetFailedProcesses(env.colony1ID, numberOfRunningProcesses, env.runtime1PrvKey, TESTHOST, TESTPORT)
+	assert.Nil(t, err) // Should work
 
 	server.Shutdown()
 	<-done

@@ -5,22 +5,22 @@ import (
 	"encoding/json"
 )
 
-const RPCMethodAddRuntime = "AddRuntime"
+const AddRuntimeMsgType = "AddRuntime"
 
-type AddRuntimeRPC struct {
+type AddRuntimeMsg struct {
 	RPC     RPC           `json:"rpc"`
 	Runtime *core.Runtime `json:"runtime"`
 }
 
-func CreateAddRuntimeRPC(runtime *core.Runtime) *AddRuntimeRPC {
-	msg := &AddRuntimeRPC{}
-	msg.RPC.Method = RPCMethodAddRuntime
+func CreateAddRuntimeMsg(runtime *core.Runtime) *AddRuntimeMsg {
+	msg := &AddRuntimeMsg{}
+	msg.RPC.Method = AddRuntimeMsgType
 	msg.Runtime = runtime
 
 	return msg
 }
 
-func (msg *AddRuntimeRPC) ToJSON() (string, error) {
+func (msg *AddRuntimeMsg) ToJSON() (string, error) {
 	jsonBytes, err := json.Marshal(msg)
 	if err != nil {
 		return "", err
@@ -29,8 +29,8 @@ func (msg *AddRuntimeRPC) ToJSON() (string, error) {
 	return string(jsonBytes), nil
 }
 
-func CreateAddRuntimeRPCFromJSON(jsonString string) (*AddRuntimeRPC, error) {
-	var msg *AddRuntimeRPC
+func CreateAddRuntimeMsgFromJSON(jsonString string) (*AddRuntimeMsg, error) {
+	var msg *AddRuntimeMsg
 
 	err := json.Unmarshal([]byte(jsonString), &msg)
 	if err != nil {

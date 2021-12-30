@@ -4,22 +4,22 @@ import (
 	"encoding/json"
 )
 
-const RPCMethodGetColony = "GetColony"
+const GetColonyMsgType = "GetColony"
 
-type GetColonyRPC struct {
+type GetColonyMsg struct {
 	RPC      RPC    `json:"rpc"`
 	ColonyID string `json:"colonyid"`
 }
 
-func CreateGetColonyRPC(colonyID string) *GetColonyRPC {
-	msg := &GetColonyRPC{}
-	msg.RPC.Method = RPCMethodGetColony
+func CreateGetColonyMsg(colonyID string) *GetColonyMsg {
+	msg := &GetColonyMsg{}
+	msg.RPC.Method = GetColonyMsgType
 	msg.ColonyID = colonyID
 
 	return msg
 }
 
-func (msg *GetColonyRPC) ToJSON() (string, error) {
+func (msg *GetColonyMsg) ToJSON() (string, error) {
 	jsonBytes, err := json.Marshal(msg)
 	if err != nil {
 		return "", err
@@ -28,8 +28,8 @@ func (msg *GetColonyRPC) ToJSON() (string, error) {
 	return string(jsonBytes), nil
 }
 
-func CreateGetColonyRPCFromJSON(jsonString string) (*GetColonyRPC, error) {
-	var msg *GetColonyRPC
+func CreateGetColonyMsgFromJSON(jsonString string) (*GetColonyMsg, error) {
+	var msg *GetColonyMsg
 
 	err := json.Unmarshal([]byte(jsonString), &msg)
 	if err != nil {

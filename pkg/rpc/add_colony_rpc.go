@@ -5,24 +5,24 @@ import (
 	"encoding/json"
 )
 
-const RPCMethodAddColony = "AddColony"
+const AddColonyMsgType = "AddColony"
 
-type AddColonyRPC struct {
+type AddColonyMsg struct {
 	RPC          RPC          `json:"rpc"`
 	RootPassword string       `json:"rootpassword"`
 	Colony       *core.Colony `json:"colony"`
 }
 
-func CreateAddColonyRPC(rootPassword string, colony *core.Colony) *AddColonyRPC {
-	msg := &AddColonyRPC{}
-	msg.RPC.Method = RPCMethodAddColony
+func CreateAddColonyMsg(rootPassword string, colony *core.Colony) *AddColonyMsg {
+	msg := &AddColonyMsg{}
+	msg.RPC.Method = AddColonyMsgType
 	msg.RootPassword = rootPassword
 	msg.Colony = colony
 
 	return msg
 }
 
-func (msg *AddColonyRPC) ToJSON() (string, error) {
+func (msg *AddColonyMsg) ToJSON() (string, error) {
 	jsonBytes, err := json.Marshal(msg)
 	if err != nil {
 		return "", err
@@ -31,8 +31,8 @@ func (msg *AddColonyRPC) ToJSON() (string, error) {
 	return string(jsonBytes), nil
 }
 
-func CreateAddColonyRPCFromJSON(jsonString string) (*AddColonyRPC, error) {
-	var msg *AddColonyRPC
+func CreateAddColonyMsgFromJSON(jsonString string) (*AddColonyMsg, error) {
+	var msg *AddColonyMsg
 
 	err := json.Unmarshal([]byte(jsonString), &msg)
 	if err != nil {
