@@ -4,22 +4,22 @@ import (
 	"encoding/json"
 )
 
-const RPCMethodGetRuntimes = "GetRuntimes"
+const GetRuntimesMsgType = "GetRuntimes"
 
-type GetRuntimesRPC struct {
+type GetRuntimesMsg struct {
 	RPC      RPC    `json:"rpc"`
 	ColonyID string `json:"colonyid"`
 }
 
-func CreateGetRuntimesRPC(colonyID string) *GetRuntimesRPC {
-	msg := &GetRuntimesRPC{}
-	msg.RPC.Method = RPCMethodGetRuntimes
+func CreateGetRuntimesMsg(colonyID string) *GetRuntimesMsg {
+	msg := &GetRuntimesMsg{}
+	msg.RPC.Method = GetRuntimesMsgType
 	msg.ColonyID = colonyID
 
 	return msg
 }
 
-func (msg *GetRuntimesRPC) ToJSON() (string, error) {
+func (msg *GetRuntimesMsg) ToJSON() (string, error) {
 	jsonBytes, err := json.Marshal(msg)
 	if err != nil {
 		return "", err
@@ -28,8 +28,8 @@ func (msg *GetRuntimesRPC) ToJSON() (string, error) {
 	return string(jsonBytes), nil
 }
 
-func CreateGetRuntimesRPCFromJSON(jsonString string) (*GetRuntimesRPC, error) {
-	var msg *GetRuntimesRPC
+func CreateGetRuntimesMsgFromJSON(jsonString string) (*GetRuntimesMsg, error) {
+	var msg *GetRuntimesMsg
 
 	err := json.Unmarshal([]byte(jsonString), &msg)
 	if err != nil {

@@ -4,22 +4,22 @@ import (
 	"encoding/json"
 )
 
-const RPCMethodRejectRuntime = "RejectRuntime"
+const RejectRuntimeMsgType = "RejectRuntime"
 
-type RejectRuntimeRPC struct {
+type RejectRuntimeMsg struct {
 	RPC       RPC    `json:"rpc"`
 	RuntimeID string `json:"runtimeid"`
 }
 
-func CreateRejectRuntimeRPC(runtimeID string) *RejectRuntimeRPC {
-	msg := &RejectRuntimeRPC{}
-	msg.RPC.Method = RPCMethodRejectRuntime
+func CreateRejectRuntimeMsg(runtimeID string) *RejectRuntimeMsg {
+	msg := &RejectRuntimeMsg{}
+	msg.RPC.Method = RejectRuntimeMsgType
 	msg.RuntimeID = runtimeID
 
 	return msg
 }
 
-func (msg *RejectRuntimeRPC) ToJSON() (string, error) {
+func (msg *RejectRuntimeMsg) ToJSON() (string, error) {
 	jsonBytes, err := json.Marshal(msg)
 	if err != nil {
 		return "", err
@@ -28,8 +28,8 @@ func (msg *RejectRuntimeRPC) ToJSON() (string, error) {
 	return string(jsonBytes), nil
 }
 
-func CreateRejectRuntimeRPCFromJSON(jsonString string) (*RejectRuntimeRPC, error) {
-	var msg *RejectRuntimeRPC
+func CreateRejectRuntimeMsgFromJSON(jsonString string) (*RejectRuntimeMsg, error) {
+	var msg *RejectRuntimeMsg
 
 	err := json.Unmarshal([]byte(jsonString), &msg)
 	if err != nil {

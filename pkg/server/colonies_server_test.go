@@ -234,15 +234,13 @@ func TestSubmitProcess(t *testing.T) {
 	processes = append(processes, addedProcess1)
 	processes = append(processes, addedProcess2)
 
-	processesFromServer, err := client.GetWaitingProcesses(env.runtimeID, env.colonyID, 100, env.runtimePrvKey)
+	processesFromServer, err := client.GetWaitingProcesses(env.colonyID, 100, env.runtimePrvKey, TESTHOST, TESTPORT)
 	assert.Nil(t, err)
 	assert.True(t, core.IsProcessArraysEqual(processes, processesFromServer))
 
 	server.Shutdown()
 	<-done
 }
-
-////////////////////////////////////
 
 func TestAssignProcess(t *testing.T) {
 	rootPassword := "password"
@@ -259,17 +257,125 @@ func TestAssignProcess(t *testing.T) {
 	addedProcess2, err := client.SubmitProcessSpec(processSpec2, env.runtimePrvKey, TESTHOST, TESTPORT)
 	assert.Nil(t, err)
 
-	assignedProcess, err := client.AssignProcess(env.runtimeID, env.colonyID, env.runtimePrvKey)
+	assignedProcess, err := client.AssignProcess(env.colonyID, env.runtimePrvKey, TESTHOST, TESTPORT)
 	assert.Nil(t, err)
 	assert.Equal(t, addedProcess1.ID, assignedProcess.ID)
 
-	assignedProcess, err = client.AssignProcess(env.runtimeID, env.colonyID, env.runtimePrvKey)
+	assignedProcess, err = client.AssignProcess(env.colonyID, env.runtimePrvKey, TESTHOST, TESTPORT)
 	assert.Nil(t, err)
 	assert.Equal(t, addedProcess2.ID, assignedProcess.ID)
 
 	server.Shutdown()
 	<-done
 }
+
+func TestGetWaitingProcesses(t *testing.T) {
+	rootPassword := "password"
+	server, done := PrepareTests(t, rootPassword)
+	env := createTestEnv(t, rootPassword)
+
+	numberOfRunningProcesses := 20
+	for i := 0; i < numberOfRunningProcesses; i++ {
+		processSpec := core.CreateProcessSpec(env.colonyID, []string{}, "test_runtime_type", -1, 3, 1000, 10, 1, make(map[string]string))
+		_, err := client.SubmitProcessSpec(processSpec, env.runtimePrvKey, TESTHOST, TESTPORT)
+		assert.Nil(t, err)
+	}
+
+	processesFromServer, err := client.GetWaitingProcesses(env.colonyID, numberOfRunningProcesses, env.runtimePrvKey, TESTHOST, TESTPORT)
+	assert.Nil(t, err)
+	assert.Len(t, processesFromServer, numberOfRunningProcesses)
+
+	processesFromServer, err = client.GetWaitingProcesses(env.colonyID, 10, env.runtimePrvKey, TESTHOST, TESTPORT)
+	assert.Nil(t, err)
+	assert.Len(t, processesFromServer, 10)
+
+	server.Shutdown()
+	<-done
+}
+
+func TestGetRunningProcesses(t *testing.T) {
+	rootPassword := "password"
+	server, done := PrepareTests(t, rootPassword)
+	env := createTestEnv(t, rootPassword)
+
+	numberOfRunningProcesses := 20
+	for i := 0; i < numberOfRunningProcesses; i++ {
+		processSpec := core.CreateProcessSpec(env.colonyID, []string{}, "test_runtime_type", -1, 3, 1000, 10, 1, make(map[string]string))
+		_, err := client.SubmitProcessSpec(processSpec, env.runtimePrvKey, TESTHOST, TESTPORT)
+		assert.Nil(t, err)
+		_, err = client.AssignProcess(env.colonyID, env.runtimePrvKey, TESTHOST, TESTPORT)
+		assert.Nil(t, err)
+	}
+
+	processesFromServer, err := client.GetRunningProcesses(env.colonyID, numberOfRunningProcesses, env.runtimePrvKey, TESTHOST, TESTPORT)
+	assert.Nil(t, err)
+	assert.Len(t, processesFromServer, numberOfRunningProcesses)
+
+	processesFromServer, err = client.GetRunningProcesses(env.colonyID, 10, env.runtimePrvKey, TESTHOST, TESTPORT)
+	assert.Nil(t, err)
+	assert.Len(t, processesFromServer, 10)
+
+	server.Shutdown()
+	<-done
+}
+
+func TestGetSuccessfulProcesses(t *testing.T) {
+	rootPassword := "password"
+	server, done := PrepareTests(t, rootPassword)
+	env := createTestEnv(t, rootPassword)
+
+	numberOfRunningProcesses := 20
+	for i := 0; i < numberOfRunningProcesses; i++ {
+		processSpec := core.CreateProcessSpec(env.colonyID, []string{}, "test_runtime_type", -1, 3, 1000, 10, 1, make(map[string]string))
+		_, err := client.SubmitProcessSpec(processSpec, env.runtimePrvKey, TESTHOST, TESTPORT)
+		assert.Nil(t, err)
+		processFromServer, err := client.AssignProcess(env.colonyID, env.runtimePrvKey, TESTHOST, TESTPORT)
+		assert.Nil(t, err)
+		err = client.MarkSuccessful(processFromServer, env.runtimePrvKey)
+		assert.Nil(t, err)
+	}
+
+	processesFromServer, err := client.GetSuccessfulProcesses(env.colonyID, numberOfRunningProcesses, env.runtimePrvKey, TESTHOST, TESTPORT)
+	assert.Nil(t, err)
+	assert.Len(t, processesFromServer, numberOfRunningProcesses)
+
+	processesFromServer, err = client.GetSuccessfulProcesses(env.colonyID, 10, env.runtimePrvKey, TESTHOST, TESTPORT)
+	assert.Nil(t, err)
+	assert.Len(t, processesFromServer, 10)
+
+	server.Shutdown()
+	<-done
+}
+
+func TestGetFailedProcesses(t *testing.T) {
+	rootPassword := "password"
+	server, done := PrepareTests(t, rootPassword)
+	env := createTestEnv(t, rootPassword)
+
+	numberOfRunningProcesses := 20
+	for i := 0; i < numberOfRunningProcesses; i++ {
+		processSpec := core.CreateProcessSpec(env.colonyID, []string{}, "test_runtime_type", -1, 3, 1000, 10, 1, make(map[string]string))
+		_, err := client.SubmitProcessSpec(processSpec, env.runtimePrvKey, TESTHOST, TESTPORT)
+		assert.Nil(t, err)
+		processFromServer, err := client.AssignProcess(env.colonyID, env.runtimePrvKey, TESTHOST, TESTPORT)
+		assert.Nil(t, err)
+		err = client.MarkFailed(processFromServer, env.runtimePrvKey)
+		assert.Nil(t, err)
+	}
+
+	processesFromServer, err := client.GetFailedProcesses(env.colonyID, numberOfRunningProcesses, env.runtimePrvKey, TESTHOST, TESTPORT)
+	assert.Nil(t, err)
+	assert.Len(t, processesFromServer, numberOfRunningProcesses)
+
+	processesFromServer, err = client.GetFailedProcesses(env.colonyID, 10, env.runtimePrvKey, TESTHOST, TESTPORT)
+	assert.Nil(t, err)
+	assert.Len(t, processesFromServer, 10)
+
+	server.Shutdown()
+	<-done
+}
+
+////////////////////////////////////
 
 func TestMarkSuccessful(t *testing.T) {
 	rootPassword := "password"
@@ -281,7 +387,7 @@ func TestMarkSuccessful(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, core.PENDING, addedProcess.Status)
 
-	assignedProcess, err := client.AssignProcess(env.runtimeID, env.colonyID, env.runtimePrvKey)
+	assignedProcess, err := client.AssignProcess(env.colonyID, env.runtimePrvKey, TESTHOST, TESTPORT)
 	assert.Nil(t, err)
 
 	assignedProcessFromServer, err := client.GetProcessByID(assignedProcess.ID, env.colonyID, env.runtimePrvKey)
@@ -307,7 +413,7 @@ func TestMarkFailed(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, core.PENDING, addedProcess.Status)
 
-	assignedProcess, err := client.AssignProcess(env.runtimeID, env.colonyID, env.runtimePrvKey)
+	assignedProcess, err := client.AssignProcess(env.colonyID, env.runtimePrvKey, TESTHOST, TESTPORT)
 	assert.Nil(t, err)
 
 	assignedProcessFromServer, err := client.GetProcessByID(assignedProcess.ID, env.colonyID, env.runtimePrvKey)
@@ -333,7 +439,7 @@ func TestAddAttributes(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, core.PENDING, addedProcess.Status)
 
-	assignedProcess, err := client.AssignProcess(env.runtimeID, env.colonyID, env.runtimePrvKey)
+	assignedProcess, err := client.AssignProcess(env.colonyID, env.runtimePrvKey, TESTHOST, TESTPORT)
 	assert.Nil(t, err)
 
 	attribute := core.CreateAttribute(assignedProcess.ID, core.OUT, "result", "helloworld")

@@ -17,8 +17,8 @@ func TestDetermineRPCMethod(t *testing.T) {
 	in["test_key"] = "test_value"
 	processSpec := core.CreateProcessSpec(colonyID, []string{}, "test_runtime_type", -1, 3, 1000, 10, 1, in)
 
-	submitProcessRPC := CreateSubmitProcessSpecRPC(processSpec)
-	jsonString, err := submitProcessRPC.ToJSON()
+	msg := CreateSubmitProcessSpecMsg(processSpec)
+	jsonString, err := msg.ToJSON()
 	assert.Nil(t, err)
-	assert.Equal(t, RPCMethodSubmitProcessSpec, DetermineRPCMethod(jsonString))
+	assert.Equal(t, SubmitProcessSpecMsgType, DetermineMsgType(jsonString))
 }
