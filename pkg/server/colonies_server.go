@@ -62,310 +62,324 @@ func CreateColoniesServer(db database.Database, port int, rootPassword string, t
 
 func (server *ColoniesServer) setupRoutes() {
 	server.ginHandler.POST("/endpoint", server.handleEndpointRequest)
-	server.ginHandler.GET("/colonies", server.handleGetColoniesRequest)
-	server.ginHandler.GET("/colonies/:colonyid", server.handleGetColonyRequest)
-	server.ginHandler.POST("/colonies", server.handleAddColonyRequest)
-	server.ginHandler.POST("/colonies/:colonyid/runtimes", server.handleAddRuntimeRequest)
-	server.ginHandler.GET("/colonies/:colonyid/runtimes", server.handleGetRuntimesRequest)
-	server.ginHandler.GET("/colonies/:colonyid/runtimes/:runtimeid", server.handleGetRuntimeRequest)
-	server.ginHandler.PUT("/colonies/:colonyid/runtimes/:runtimeid/approve", server.handleApproveRuntimeRequest)
-	server.ginHandler.PUT("/colonies/:colonyid/runtimes/:runtimeid/reject", server.handleRejectRuntimeRequest)
+	server.ginHandler.GET("/colonies/:colonyid/processes/assign", server.handleAssignProcessRequest)
 	server.ginHandler.GET("/colonies/:colonyid/processes", server.handleGetProcessesRequest)
 	server.ginHandler.GET("/colonies/:colonyid/processes/:processid", server.handleGetProcessRequest)
 	server.ginHandler.PUT("/colonies/:colonyid/processes/:processid/finish", server.handleFinishProcessRequest)
 	server.ginHandler.PUT("/colonies/:colonyid/processes/:processid/failed", server.handleFailedProcessRequest)
-	server.ginHandler.GET("/colonies/:colonyid/processes/assign", server.handleAssignProcessRequest)
 	server.ginHandler.POST("/colonies/:colonyid/processes/:processid/attributes", server.handleAddAttributeRequest)
 	server.ginHandler.GET("/colonies/:colonyid/processes/:processid/attributes/:attributeid", server.handleGetAttributeRequest)
 }
 
-func (server *ColoniesServer) handleSubmitProcessSpec(c *gin.Context, recoveredID string, jsonString string) {
-	msg, err := rpc.CreateSubmitProcessSpecFromJSON(jsonString)
+func (server *ColoniesServer) handleEndpointRequest(c *gin.Context) {
+	jsonBytes, err := ioutil.ReadAll(c.Request.Body)
+	if server.handleError(c, err, http.StatusBadRequest) {
+		return
+	}
+	jsonString := string(jsonBytes)
+
+	msgType := rpc.DetermineRPCMethod(jsonString)
+
+	recoveredID := ""
+	if msgType == rpc.RPCMethodGetColonies || msgType == rpc.RPCMethodAddColony {
+		// AddColony and GetColonies requires root password instead of signatures
+	} else {
+		signature := c.GetHeader("Signature")
+		recoveredID, err = security.RecoverID(jsonString, signature)
+		if server.handleError(c, err, http.StatusForbidden) {
+			return
+		}
+	}
+
+	switch msgType {
+	// Colony operations
+	case rpc.RPCMethodAddColony:
+		server.handleAddColonyRequest(c, jsonString)
+	case rpc.RPCMethodGetColonies:
+		server.handleGetColoniesRequest(c, jsonString)
+	case rpc.RPCMethodGetColony:
+		server.handleGetColonyRequest(c, recoveredID, jsonString)
+
+	// Runtime operations
+	case rpc.RPCMethodAddRuntime:
+		server.handleAddRuntimeRequest(c, recoveredID, jsonString)
+	case rpc.RPCMethodGetRuntimes:
+		server.handleGetRuntimesRequest(c, recoveredID, jsonString)
+	case rpc.RPCMethodGetRuntime:
+		server.handleGetRuntimeRequest(c, recoveredID, jsonString)
+	case rpc.RPCMethodApproveRuntime:
+		server.handleApproveRuntimeRequest(c, recoveredID, jsonString)
+	case rpc.RPCMethodRejectRuntime:
+		server.handleRejectRuntimeRequest(c, recoveredID, jsonString)
+
+	// Process operations
+	case rpc.RPCMethodSubmitProcessSpec:
+		server.handleSubmitProcessSpec(c, recoveredID, jsonString)
+	default:
+		if server.handleError(c, errors.New("Invalid RPC message type"), http.StatusForbidden) {
+			return
+		}
+	}
+}
+
+func (server *ColoniesServer) handleError(c *gin.Context, err error, errorCode int) bool {
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		logging.Log().Warning(err)
+		failure := core.CreateFailure(errorCode, err.Error())
+		failureString, err := failure.ToJSON()
+		if err != nil {
+			logging.Log().Error(err)
+		}
+		c.String(http.StatusBadRequest, failureString)
+
+		return true
+	}
+
+	return false
+}
+
+func (server *ColoniesServer) handleAddColonyRequest(c *gin.Context, jsonString string) {
+	msg, err := rpc.CreateAddColonyRPCFromJSON(jsonString)
+	if server.handleError(c, err, http.StatusBadRequest) {
 		return
 	}
 
-	// We need to check if the recoveredID is a member of the targeted colony
+	// SECURITY: Check that the root password matches the server root password
+	err = security.VerifyRoot(msg.RootPassword, server.rootPassword)
+	if server.handleError(c, err, http.StatusForbidden) {
+		return
+	}
+
+	addedColony, err := server.controller.AddColony(msg.Colony)
+	if server.handleError(c, err, http.StatusBadRequest) {
+		return
+	}
+
+	jsonString, err = addedColony.ToJSON()
+	if server.handleError(c, err, http.StatusBadRequest) {
+		return
+	}
+
+	c.String(http.StatusOK, jsonString)
+}
+
+func (server *ColoniesServer) handleGetColoniesRequest(c *gin.Context, jsonString string) {
+	msg, err := rpc.CreateGetColoniesRPCFromJSON(jsonString)
+	if server.handleError(c, err, http.StatusBadRequest) {
+		return
+	}
+
+	// SECURITY: Check that the root password matches the server root password
+	err = security.VerifyRoot(msg.RootPassword, server.rootPassword)
+	if server.handleError(c, err, http.StatusForbidden) {
+		return
+	}
+
+	colonies, err := server.controller.GetColonies()
+	if server.handleError(c, err, http.StatusBadRequest) {
+		return
+	}
+
+	jsonString, err = core.ConvertColonyArrayToJSON(colonies)
+	if server.handleError(c, err, http.StatusBadRequest) {
+		return
+	}
+
+	c.String(http.StatusOK, jsonString)
+}
+
+func (server *ColoniesServer) handleGetColonyRequest(c *gin.Context, recoveredID, jsonString string) {
+	msg, err := rpc.CreateGetColonyRPCFromJSON(jsonString)
+	if server.handleError(c, err, http.StatusBadRequest) {
+		return
+	}
+
+	// SECURITY: We need to check if the recoveredID is a member of the targeted colony
+	err = security.VerifyRuntimeMembership(recoveredID, msg.ColonyID, server.ownership)
+	if server.handleError(c, err, http.StatusForbidden) {
+		return
+	}
+
+	colony, err := server.controller.GetColonyByID(msg.ColonyID)
+	if server.handleError(c, err, http.StatusBadRequest) {
+		return
+	}
+
+	jsonString, err = colony.ToJSON()
+	if server.handleError(c, err, http.StatusBadRequest) {
+		return
+	}
+
+	c.String(http.StatusOK, jsonString)
+}
+
+func (server *ColoniesServer) handleAddRuntimeRequest(c *gin.Context, recoveredID string, jsonString string) {
+	msg, err := rpc.CreateAddRuntimeRPCFromJSON(jsonString)
+	if server.handleError(c, err, http.StatusBadRequest) {
+		return
+	}
+
+	// SECURITY: We need to check if the recoveredID is the owner of the colony
+	err = security.VerifyColonyOwner(recoveredID, msg.Runtime.ColonyID, server.ownership)
+	if server.handleError(c, err, http.StatusForbidden) {
+		return
+	}
+
+	addedRuntime, err := server.controller.AddRuntime(msg.Runtime)
+	if server.handleError(c, err, http.StatusBadRequest) {
+		return
+	}
+
+	jsonString, err = addedRuntime.ToJSON()
+	if server.handleError(c, err, http.StatusBadRequest) {
+		return
+	}
+
+	c.String(http.StatusOK, jsonString)
+}
+
+func (server *ColoniesServer) handleGetRuntimesRequest(c *gin.Context, recoveredID string, jsonString string) {
+	msg, err := rpc.CreateGetRuntimesRPCFromJSON(jsonString)
+	if server.handleError(c, err, http.StatusBadRequest) {
+		return
+	}
+
+	// SECURITY: We need to check if the recoveredID is a member of the targeted colony
+	err = security.VerifyRuntimeMembership(recoveredID, msg.ColonyID, server.ownership)
+	if server.handleError(c, err, http.StatusForbidden) {
+		return
+	}
+
+	runtimes, err := server.controller.GetRuntimeByColonyID(msg.ColonyID)
+	if server.handleError(c, err, http.StatusBadRequest) {
+		return
+	}
+
+	jsonString, err = core.ConvertRuntimeArrayToJSON(runtimes)
+	if server.handleError(c, err, http.StatusBadRequest) {
+		return
+	}
+
+	c.String(http.StatusOK, jsonString)
+}
+
+func (server *ColoniesServer) handleGetRuntimeRequest(c *gin.Context, recoveredID string, jsonString string) {
+	msg, err := rpc.CreateGetRuntimeRPCFromJSON(jsonString)
+	if server.handleError(c, err, http.StatusBadRequest) {
+		return
+	}
+
+	runtime, err := server.controller.GetRuntimeByID(msg.RuntimeID)
+	if server.handleError(c, err, http.StatusBadRequest) {
+		return
+	}
+	if runtime == nil {
+		server.handleError(c, errors.New("Runtime with Id <"+msg.RuntimeID+"> not found"), http.StatusBadRequest)
+		return
+	}
+
+	// SECURITY: We need to check if the recoveredID is a member of the targeted colony
+	err = security.VerifyRuntimeMembership(recoveredID, runtime.ColonyID, server.ownership)
+	if server.handleError(c, err, http.StatusForbidden) {
+		return
+	}
+
+	jsonString, err = runtime.ToJSON()
+	if server.handleError(c, err, http.StatusBadRequest) {
+		return
+	}
+
+	c.String(http.StatusOK, jsonString)
+}
+
+func (server *ColoniesServer) handleApproveRuntimeRequest(c *gin.Context, recoveredID string, jsonString string) {
+	msg, err := rpc.CreateApproveRuntimeRPCFromJSON(jsonString)
+	if server.handleError(c, err, http.StatusBadRequest) {
+		return
+	}
+
+	runtime, err := server.controller.GetRuntimeByID(msg.RuntimeID)
+	if server.handleError(c, err, http.StatusBadRequest) {
+		return
+	}
+	if runtime == nil {
+		server.handleError(c, errors.New("Runtime with Id <"+msg.RuntimeID+"> not found"), http.StatusBadRequest)
+		return
+	}
+
+	// SECURITY: We need to check if the recoveredID is the owner of the colony
+	err = security.VerifyColonyOwner(recoveredID, runtime.ColonyID, server.ownership)
+	if server.handleError(c, err, http.StatusForbidden) {
+		return
+	}
+
+	err = server.controller.ApproveRuntime(msg.RuntimeID)
+	if server.handleError(c, err, http.StatusBadRequest) {
+		return
+	}
+
+	jsonString, err = runtime.ToJSON()
+	if server.handleError(c, err, http.StatusBadRequest) {
+		return
+	}
+
+	c.String(http.StatusOK, jsonString)
+}
+
+func (server *ColoniesServer) handleRejectRuntimeRequest(c *gin.Context, recoveredID string, jsonString string) {
+	msg, err := rpc.CreateRejectRuntimeRPCFromJSON(jsonString)
+	if server.handleError(c, err, http.StatusBadRequest) {
+		return
+	}
+
+	runtime, err := server.controller.GetRuntimeByID(msg.RuntimeID)
+	if server.handleError(c, err, http.StatusBadRequest) {
+		return
+	}
+
+	// SECURITY: We need to check if the recoveredID is the owner of the colony
+	err = security.VerifyColonyOwner(recoveredID, runtime.ColonyID, server.ownership)
+	if server.handleError(c, err, http.StatusForbidden) {
+		return
+	}
+
+	err = server.controller.RejectRuntime(msg.RuntimeID)
+	if server.handleError(c, err, http.StatusBadRequest) {
+		return
+	}
+
+	jsonString, err = runtime.ToJSON()
+	if server.handleError(c, err, http.StatusBadRequest) {
+		return
+	}
+
+	c.String(http.StatusOK, jsonString)
+}
+
+func (server *ColoniesServer) handleSubmitProcessSpec(c *gin.Context, recoveredID string, jsonString string) {
+	msg, err := rpc.CreateSubmitProcessSpecRPCFromJSON(jsonString)
+	if server.handleError(c, err, http.StatusBadRequest) {
+		return
+	}
+
+	// SECURITY: We need to check if the recoveredID is a member of the targeted colony
 	err = security.VerifyRuntimeMembership(recoveredID, msg.ProcessSpec.Conditions.ColonyID, server.ownership)
-	if err != nil {
-		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
+	if server.handleError(c, err, http.StatusForbidden) {
 		return
 	}
 
 	process := core.CreateProcess(msg.ProcessSpec)
 	addedProcess, err := server.controller.AddProcess(process)
-	if err != nil {
-		logging.Log().Warning(err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	if server.handleError(c, err, http.StatusBadRequest) {
 		return
 	}
 
 	jsonString, err = addedProcess.ToJSON()
-	if err != nil {
-		logging.Log().Warning(err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	if server.handleError(c, err, http.StatusBadRequest) {
 		return
 	}
 
-	c.JSON(http.StatusOK, jsonString)
-}
-
-func (server *ColoniesServer) handleEndpointRequest(c *gin.Context) {
-	jsonBytes, err := ioutil.ReadAll(c.Request.Body)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	jsonString := string(jsonBytes)
-	signature := c.GetHeader("Signature")
-	recoveredID, err := security.RecoverID(jsonString, signature)
-	if err != nil {
-		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
-		return
-	}
-
-	msgType := rpc.DetermineRPCMethod(jsonString)
-	switch msgType {
-	case rpc.MethodSubmitProcessSpec:
-		server.handleSubmitProcessSpec(c, recoveredID, jsonString)
-	default:
-		c.JSON(http.StatusBadRequest, gin.H{"error": errors.New("invalid rpc msg type")})
-	}
-}
-
-func (server *ColoniesServer) handleGetColoniesRequest(c *gin.Context) {
-	err := security.RequireRoot(c.GetHeader("RootPassword"), server.rootPassword)
-	if err != nil {
-		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
-		return
-	}
-
-	colonies, err := server.controller.GetColonies()
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	jsonString, err := core.ConvertColonyArrayToJSON(colonies)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	c.JSON(http.StatusOK, jsonString)
-}
-
-func (server *ColoniesServer) handleGetColonyRequest(c *gin.Context) {
-	colonyID := c.Param("colonyid")
-	err := security.RequireColonyOwnerOrMember(c.GetHeader("Id"), colonyID, c.GetHeader("Digest"), c.GetHeader("Signature"), server.ownership)
-	if err != nil {
-		logging.Log().Warning(err)
-		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
-		return
-	}
-
-	colony, err := server.controller.GetColonyByID(colonyID)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	jsonString, err := colony.ToJSON()
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	c.JSON(http.StatusOK, jsonString)
-}
-
-func (server *ColoniesServer) handleAddColonyRequest(c *gin.Context) {
-	err := security.RequireRoot(c.GetHeader("RootPassword"), server.rootPassword)
-	if err != nil {
-		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
-		return
-	}
-
-	jsonBytes, err := ioutil.ReadAll(c.Request.Body)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	colony, err := core.ConvertJSONToColony(string(jsonBytes))
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	addedColony, err := server.controller.AddColony(colony)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	jsonString, err := addedColony.ToJSON()
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	c.JSON(http.StatusOK, jsonString)
-}
-
-func (server *ColoniesServer) handleAddRuntimeRequest(c *gin.Context) {
-	colonyID := c.Param("colonyid")
-
-	err := security.RequireColonyOwner(c.GetHeader("Id"), colonyID, c.GetHeader("Digest"), c.GetHeader("Signature"), server.ownership)
-	if err != nil {
-		logging.Log().Warning(err)
-		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
-		return
-	}
-
-	jsonBytes, err := ioutil.ReadAll(c.Request.Body)
-	if err != nil {
-		logging.Log().Warning(err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	runtime, err := core.ConvertJSONToRuntime(string(jsonBytes))
-	if err != nil {
-		logging.Log().Warning(err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	addedRuntime, err := server.controller.AddRuntime(runtime)
-	if err != nil {
-		logging.Log().Warning(err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	jsonString, err := addedRuntime.ToJSON()
-	if err != nil {
-		logging.Log().Warning(err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	c.JSON(http.StatusOK, jsonString)
-}
-
-func (server *ColoniesServer) handleGetRuntimesRequest(c *gin.Context) {
-	colonyID := c.Param("colonyid")
-
-	err := security.RequireColonyOwnerOrMember(c.GetHeader("Id"), colonyID, c.GetHeader("Digest"), c.GetHeader("Signature"), server.ownership)
-	if err != nil {
-		logging.Log().Warning(err)
-		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
-		return
-	}
-
-	runtimes, err := server.controller.GetRuntimeByColonyID(colonyID)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	jsonString, err := core.ConvertRuntimeArrayToJSON(runtimes)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	c.JSON(http.StatusOK, jsonString)
-}
-
-func (server *ColoniesServer) handleGetRuntimeRequest(c *gin.Context) {
-	colonyID := c.Param("colonyid")
-	runtimeID := c.Param("runtimeid")
-
-	err := security.RequireColonyOwnerOrMember(c.GetHeader("Id"), colonyID, c.GetHeader("Digest"), c.GetHeader("Signature"), server.ownership)
-	if err != nil {
-		logging.Log().Warning(err)
-		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
-		return
-	}
-
-	err = security.VerifyRuntimeMembership(runtimeID, colonyID, server.ownership)
-	if err != nil {
-		logging.Log().Warning(err)
-		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
-		return
-	}
-
-	runtime, err := server.controller.GetRuntimeByID(runtimeID)
-	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
-		return
-	}
-
-	jsonString, err := runtime.ToJSON()
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	c.JSON(http.StatusOK, jsonString)
-}
-
-func (server *ColoniesServer) handleApproveRuntimeRequest(c *gin.Context) {
-	colonyID := c.Param("colonyid")
-	runtimeID := c.Param("runtimeid")
-
-	err := security.RequireColonyOwner(c.GetHeader("Id"), colonyID, c.GetHeader("Digest"), c.GetHeader("Signature"), server.ownership)
-	if err != nil {
-		logging.Log().Warning(err)
-		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
-		return
-	}
-
-	err = security.VerifyRuntimeMembership(runtimeID, colonyID, server.ownership)
-	if err != nil {
-		logging.Log().Warning(err)
-		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
-		return
-	}
-
-	err = server.controller.ApproveRuntime(runtimeID)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	c.JSON(http.StatusOK, "")
-}
-
-func (server *ColoniesServer) handleRejectRuntimeRequest(c *gin.Context) {
-	colonyID := c.Param("colonyid")
-	runtimeID := c.Param("runtimeid")
-
-	err := security.RequireColonyOwnerOrMember(c.GetHeader("Id"), colonyID, c.GetHeader("Digest"), c.GetHeader("Signature"), server.ownership)
-	if err != nil {
-		logging.Log().Warning(err)
-		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
-		return
-	}
-
-	err = security.VerifyRuntimeMembership(runtimeID, colonyID, server.ownership)
-	if err != nil {
-		logging.Log().Warning(err)
-		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
-		return
-	}
-
-	err = server.controller.RejectRuntime(runtimeID)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	c.JSON(http.StatusOK, "")
+	c.String(http.StatusOK, jsonString)
 }
 
 func (server *ColoniesServer) handleGetProcessesRequest(c *gin.Context) {

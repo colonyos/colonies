@@ -35,11 +35,11 @@ func (ownership *OwnershipImpl) CheckIfRuntimeBelongsToColony(runtimeID string, 
 	}
 
 	if runtime == nil {
-		return errors.New("Runtime not found <" + runtimeID + ">")
+		return errors.New("Runtime with Id <" + runtimeID + "> is not a member of Colony with Id <" + colonyID + "> (Runtime does not exist)")
 	}
 
 	if runtime.ColonyID != colonyID {
-		return errors.New("Runtime " + "<" + runtimeID + "> not member of colony <" + colonyID + ">")
+		return errors.New("Runtime with Id <" + runtimeID + "> is not a member of Colony with Id <" + colonyID + ">, (Recovered Id and Colony Id missmatches)")
 	}
 
 	return nil
