@@ -152,6 +152,9 @@ func (server *ColoniesServer) handleAddColonyRequest(c *gin.Context, jsonString 
 	if server.handleError(c, err, http.StatusBadRequest) {
 		return
 	}
+	if msg == nil {
+		server.handleError(c, errors.New("Failed to parse AddColonyMsg JSON"), http.StatusBadRequest)
+	}
 
 	err = security.VerifyRoot(msg.RootPassword, server.rootPassword)
 	if server.handleError(c, err, http.StatusForbidden) {
@@ -162,9 +165,12 @@ func (server *ColoniesServer) handleAddColonyRequest(c *gin.Context, jsonString 
 	if server.handleError(c, err, http.StatusBadRequest) {
 		return
 	}
+	if addedColony == nil {
+		server.handleError(c, errors.New("handleAddColonyRequest: addedColony is nil"), http.StatusInternalServerError)
+	}
 
 	jsonString, err = addedColony.ToJSON()
-	if server.handleError(c, err, http.StatusBadRequest) {
+	if server.handleError(c, err, http.StatusInternalServerError) {
 		return
 	}
 
@@ -176,6 +182,9 @@ func (server *ColoniesServer) handleGetColoniesRequest(c *gin.Context, jsonStrin
 	if server.handleError(c, err, http.StatusBadRequest) {
 		return
 	}
+	if msg == nil {
+		server.handleError(c, errors.New("Failed to parse GetColoniesMsg JSON"), http.StatusBadRequest)
+	}
 
 	err = security.VerifyRoot(msg.RootPassword, server.rootPassword)
 	if server.handleError(c, err, http.StatusForbidden) {
@@ -185,6 +194,9 @@ func (server *ColoniesServer) handleGetColoniesRequest(c *gin.Context, jsonStrin
 	colonies, err := server.controller.GetColonies()
 	if server.handleError(c, err, http.StatusBadRequest) {
 		return
+	}
+	if colonies == nil {
+		server.handleError(c, errors.New("handleGetColoniesRequest: colonies is nil"), http.StatusInternalServerError)
 	}
 
 	jsonString, err = core.ConvertColonyArrayToJSON(colonies)
@@ -200,6 +212,9 @@ func (server *ColoniesServer) handleGetColonyRequest(c *gin.Context, recoveredID
 	if server.handleError(c, err, http.StatusBadRequest) {
 		return
 	}
+	if msg == nil {
+		server.handleError(c, errors.New("Failed to parse GetColonyMsg JSON"), http.StatusBadRequest)
+	}
 
 	err = security.VerifyRuntimeMembership(recoveredID, msg.ColonyID, server.ownership)
 	if server.handleError(c, err, http.StatusForbidden) {
@@ -210,9 +225,12 @@ func (server *ColoniesServer) handleGetColonyRequest(c *gin.Context, recoveredID
 	if server.handleError(c, err, http.StatusBadRequest) {
 		return
 	}
+	if colony == nil {
+		server.handleError(c, errors.New("handleGetColonyRequest: colony is nil"), http.StatusInternalServerError)
+	}
 
 	jsonString, err = colony.ToJSON()
-	if server.handleError(c, err, http.StatusBadRequest) {
+	if server.handleError(c, err, http.StatusInternalServerError) {
 		return
 	}
 
@@ -224,6 +242,9 @@ func (server *ColoniesServer) handleAddRuntimeRequest(c *gin.Context, recoveredI
 	if server.handleError(c, err, http.StatusBadRequest) {
 		return
 	}
+	if msg == nil {
+		server.handleError(c, errors.New("Failed to parse AddRuntimeMsg JSON"), http.StatusBadRequest)
+	}
 
 	err = security.VerifyColonyOwner(recoveredID, msg.Runtime.ColonyID, server.ownership)
 	if server.handleError(c, err, http.StatusForbidden) {
@@ -234,9 +255,12 @@ func (server *ColoniesServer) handleAddRuntimeRequest(c *gin.Context, recoveredI
 	if server.handleError(c, err, http.StatusBadRequest) {
 		return
 	}
+	if addedRuntime == nil {
+		server.handleError(c, errors.New("handleAddRuntimeRequest: addedRuntime is nil"), http.StatusInternalServerError)
+	}
 
 	jsonString, err = addedRuntime.ToJSON()
-	if server.handleError(c, err, http.StatusBadRequest) {
+	if server.handleError(c, err, http.StatusInternalServerError) {
 		return
 	}
 
@@ -248,6 +272,9 @@ func (server *ColoniesServer) handleGetRuntimesRequest(c *gin.Context, recovered
 	if server.handleError(c, err, http.StatusBadRequest) {
 		return
 	}
+	if msg == nil {
+		server.handleError(c, errors.New("Failed to parse GetRuntimesMsg JSON"), http.StatusBadRequest)
+	}
 
 	err = security.VerifyRuntimeMembership(recoveredID, msg.ColonyID, server.ownership)
 	if server.handleError(c, err, http.StatusForbidden) {
@@ -257,6 +284,9 @@ func (server *ColoniesServer) handleGetRuntimesRequest(c *gin.Context, recovered
 	runtimes, err := server.controller.GetRuntimeByColonyID(msg.ColonyID)
 	if server.handleError(c, err, http.StatusBadRequest) {
 		return
+	}
+	if runtimes == nil {
+		server.handleError(c, errors.New("handleGetRuntimesRequest: runtimes is nil"), http.StatusInternalServerError)
 	}
 
 	jsonString, err = core.ConvertRuntimeArrayToJSON(runtimes)
@@ -272,14 +302,16 @@ func (server *ColoniesServer) handleGetRuntimeRequest(c *gin.Context, recoveredI
 	if server.handleError(c, err, http.StatusBadRequest) {
 		return
 	}
+	if msg == nil {
+		server.handleError(c, errors.New("Failed to parse GetRuntimeMsg JSON"), http.StatusBadRequest)
+	}
 
 	runtime, err := server.controller.GetRuntimeByID(msg.RuntimeID)
 	if server.handleError(c, err, http.StatusBadRequest) {
 		return
 	}
 	if runtime == nil {
-		server.handleError(c, errors.New("Runtime with Id <"+msg.RuntimeID+"> not found"), http.StatusBadRequest)
-		return
+		server.handleError(c, errors.New("handleGetRuntimeRequest: runtime is nil"), http.StatusInternalServerError)
 	}
 
 	err = security.VerifyRuntimeMembership(recoveredID, runtime.ColonyID, server.ownership)
@@ -288,7 +320,7 @@ func (server *ColoniesServer) handleGetRuntimeRequest(c *gin.Context, recoveredI
 	}
 
 	jsonString, err = runtime.ToJSON()
-	if server.handleError(c, err, http.StatusBadRequest) {
+	if server.handleError(c, err, http.StatusInternalServerError) {
 		return
 	}
 
@@ -300,14 +332,16 @@ func (server *ColoniesServer) handleApproveRuntimeRequest(c *gin.Context, recove
 	if server.handleError(c, err, http.StatusBadRequest) {
 		return
 	}
+	if msg == nil {
+		server.handleError(c, errors.New("Failed to parse ApproveRuntimeMsg JSON"), http.StatusBadRequest)
+	}
 
 	runtime, err := server.controller.GetRuntimeByID(msg.RuntimeID)
 	if server.handleError(c, err, http.StatusBadRequest) {
 		return
 	}
 	if runtime == nil {
-		server.handleError(c, errors.New("Runtime with Id <"+msg.RuntimeID+"> not found"), http.StatusBadRequest)
-		return
+		server.handleError(c, errors.New("handleApproveColonyRequest: runtime is nil"), http.StatusInternalServerError)
 	}
 
 	err = security.VerifyColonyOwner(recoveredID, runtime.ColonyID, server.ownership)
@@ -321,7 +355,7 @@ func (server *ColoniesServer) handleApproveRuntimeRequest(c *gin.Context, recove
 	}
 
 	jsonString, err = runtime.ToJSON()
-	if server.handleError(c, err, http.StatusBadRequest) {
+	if server.handleError(c, err, http.StatusInternalServerError) {
 		return
 	}
 
@@ -333,10 +367,16 @@ func (server *ColoniesServer) handleRejectRuntimeRequest(c *gin.Context, recover
 	if server.handleError(c, err, http.StatusBadRequest) {
 		return
 	}
+	if msg == nil {
+		server.handleError(c, errors.New("Failed to parse RejectRuntimeMsg JSON"), http.StatusBadRequest)
+	}
 
 	runtime, err := server.controller.GetRuntimeByID(msg.RuntimeID)
 	if server.handleError(c, err, http.StatusBadRequest) {
 		return
+	}
+	if runtime == nil {
+		server.handleError(c, errors.New("handleRejectRuntimeRequest: runtime is nil"), http.StatusInternalServerError)
 	}
 
 	err = security.VerifyColonyOwner(recoveredID, runtime.ColonyID, server.ownership)
@@ -350,7 +390,7 @@ func (server *ColoniesServer) handleRejectRuntimeRequest(c *gin.Context, recover
 	}
 
 	jsonString, err = runtime.ToJSON()
-	if server.handleError(c, err, http.StatusBadRequest) {
+	if server.handleError(c, err, http.StatusInternalServerError) {
 		return
 	}
 
@@ -361,6 +401,9 @@ func (server *ColoniesServer) handleSubmitProcessSpec(c *gin.Context, recoveredI
 	msg, err := rpc.CreateSubmitProcessSpecMsgFromJSON(jsonString)
 	if server.handleError(c, err, http.StatusBadRequest) {
 		return
+	}
+	if msg == nil {
+		server.handleError(c, errors.New("Failed to parse SubmitRuntimeMsg JSON"), http.StatusBadRequest)
 	}
 
 	err = security.VerifyRuntimeMembership(recoveredID, msg.ProcessSpec.Conditions.ColonyID, server.ownership)
@@ -373,9 +416,12 @@ func (server *ColoniesServer) handleSubmitProcessSpec(c *gin.Context, recoveredI
 	if server.handleError(c, err, http.StatusBadRequest) {
 		return
 	}
+	if addedProcess == nil {
+		server.handleError(c, errors.New("handleSubmitProcessSpecRequest: addedProcess is nil"), http.StatusInternalServerError)
+	}
 
 	jsonString, err = addedProcess.ToJSON()
-	if server.handleError(c, err, http.StatusBadRequest) {
+	if server.handleError(c, err, http.StatusInternalServerError) {
 		return
 	}
 
@@ -387,6 +433,9 @@ func (server *ColoniesServer) handleAssignProcessRequest(c *gin.Context, recover
 	if server.handleError(c, err, http.StatusBadRequest) {
 		return
 	}
+	if msg == nil {
+		server.handleError(c, errors.New("Failed to parse AssignRuntimeMsg JSON"), http.StatusBadRequest)
+	}
 
 	err = security.VerifyRuntimeMembership(recoveredID, msg.ColonyID, server.ownership)
 	if server.handleError(c, err, http.StatusForbidden) {
@@ -397,9 +446,12 @@ func (server *ColoniesServer) handleAssignProcessRequest(c *gin.Context, recover
 	if server.handleError(c, err, http.StatusBadRequest) {
 		return
 	}
+	if process == nil {
+		server.handleError(c, errors.New("handleAssignRequest: process is nil"), http.StatusInternalServerError)
+	}
 
 	jsonString, err = process.ToJSON()
-	if server.handleError(c, err, http.StatusBadRequest) {
+	if server.handleError(c, err, http.StatusInternalServerError) {
 		return
 	}
 
@@ -410,6 +462,9 @@ func (server *ColoniesServer) handleGetProcessesRequest(c *gin.Context, recovere
 	msg, err := rpc.CreateGetProcessesMsgFromJSON(jsonString)
 	if server.handleError(c, err, http.StatusBadRequest) {
 		return
+	}
+	if msg == nil {
+		server.handleError(c, errors.New("Failed to parse GetProcessesMsg JSON"), http.StatusBadRequest)
 	}
 
 	err = security.VerifyRuntimeMembership(recoveredID, msg.ColonyID, server.ownership)
@@ -423,6 +478,9 @@ func (server *ColoniesServer) handleGetProcessesRequest(c *gin.Context, recovere
 		if server.handleError(c, err, http.StatusBadRequest) {
 			return
 		}
+		if processes == nil {
+			server.handleError(c, errors.New("handleGetProcessesRequest (WAITING): processes is nil"), http.StatusInternalServerError)
+		}
 		jsonString, err := core.ConvertProcessArrayToJSON(processes)
 		if server.handleError(c, err, http.StatusBadRequest) {
 			return
@@ -432,6 +490,9 @@ func (server *ColoniesServer) handleGetProcessesRequest(c *gin.Context, recovere
 		processes, err := server.controller.FindRunningProcesses(msg.ColonyID, msg.Count)
 		if server.handleError(c, err, http.StatusBadRequest) {
 			return
+		}
+		if processes == nil {
+			server.handleError(c, errors.New("handleGetProcessesRequest (RUNNING): processes is nil"), http.StatusInternalServerError)
 		}
 		jsonString, err := core.ConvertProcessArrayToJSON(processes)
 		if server.handleError(c, err, http.StatusBadRequest) {
@@ -443,6 +504,9 @@ func (server *ColoniesServer) handleGetProcessesRequest(c *gin.Context, recovere
 		if server.handleError(c, err, http.StatusBadRequest) {
 			return
 		}
+		if processes == nil {
+			server.handleError(c, errors.New("handleGetProcessesRequest (SUCCESS): processes is nil"), http.StatusInternalServerError)
+		}
 		jsonString, err := core.ConvertProcessArrayToJSON(processes)
 		if server.handleError(c, err, http.StatusBadRequest) {
 			return
@@ -452,6 +516,9 @@ func (server *ColoniesServer) handleGetProcessesRequest(c *gin.Context, recovere
 		processes, err := server.controller.FindFailedProcesses(msg.ColonyID, msg.Count)
 		if server.handleError(c, err, http.StatusBadRequest) {
 			return
+		}
+		if processes == nil {
+			server.handleError(c, errors.New("handleGetProcessesRequest (FAILED): processes is nil"), http.StatusInternalServerError)
 		}
 		jsonString, err := core.ConvertProcessArrayToJSON(processes)
 		if server.handleError(c, err, http.StatusBadRequest) {
@@ -470,10 +537,16 @@ func (server *ColoniesServer) handleGetProcessRequest(c *gin.Context, recoveredI
 	if server.handleError(c, err, http.StatusBadRequest) {
 		return
 	}
+	if msg == nil {
+		server.handleError(c, errors.New("Failed to parse GetProcessMsg JSON"), http.StatusBadRequest)
+	}
 
 	process, err := server.controller.GetProcessByID(msg.ProcessID)
 	if server.handleError(c, err, http.StatusBadRequest) {
 		return
+	}
+	if process == nil {
+		server.handleError(c, errors.New("handleGetProcessRequest: process is nil"), http.StatusInternalServerError)
 	}
 
 	err = security.VerifyRuntimeMembership(recoveredID, process.ProcessSpec.Conditions.ColonyID, server.ownership)
@@ -482,7 +555,7 @@ func (server *ColoniesServer) handleGetProcessRequest(c *gin.Context, recoveredI
 	}
 
 	jsonString, err = process.ToJSON()
-	if server.handleError(c, err, http.StatusBadRequest) {
+	if server.handleError(c, err, http.StatusInternalServerError) {
 		return
 	}
 
@@ -494,10 +567,16 @@ func (server *ColoniesServer) handleMarkSuccessfulRequest(c *gin.Context, recove
 	if server.handleError(c, err, http.StatusBadRequest) {
 		return
 	}
+	if msg == nil {
+		server.handleError(c, errors.New("Failed to parse MarkSuccessfulMsg JSON"), http.StatusBadRequest)
+	}
 
 	process, err := server.controller.GetProcessByID(msg.ProcessID)
 	if server.handleError(c, err, http.StatusBadRequest) {
 		return
+	}
+	if process == nil {
+		server.handleError(c, errors.New("handleMarkSuccessfulRequest: process is nil"), http.StatusInternalServerError)
 	}
 
 	err = security.VerifyRuntimeMembership(recoveredID, process.ProcessSpec.Conditions.ColonyID, server.ownership)
@@ -519,14 +598,20 @@ func (server *ColoniesServer) handleMarkSuccessfulRequest(c *gin.Context, recove
 }
 
 func (server *ColoniesServer) handleMarkFailedRequest(c *gin.Context, recoveredID string, jsonString string) {
-	msg, err := rpc.CreateMarkSuccessfulMsgFromJSON(jsonString)
+	msg, err := rpc.CreateMarkFailedMsgFromJSON(jsonString)
 	if server.handleError(c, err, http.StatusBadRequest) {
 		return
+	}
+	if msg == nil {
+		server.handleError(c, errors.New("Failed to parse MarkedFailedMsg JSON"), http.StatusBadRequest)
 	}
 
 	process, err := server.controller.GetProcessByID(msg.ProcessID)
 	if server.handleError(c, err, http.StatusBadRequest) {
 		return
+	}
+	if process == nil {
+		server.handleError(c, errors.New("handleMarkFailedRequest: process is nil"), http.StatusInternalServerError)
 	}
 
 	err = security.VerifyRuntimeMembership(recoveredID, process.ProcessSpec.Conditions.ColonyID, server.ownership)
@@ -552,10 +637,16 @@ func (server *ColoniesServer) handleAddAttributeRequest(c *gin.Context, recovere
 	if server.handleError(c, err, http.StatusBadRequest) {
 		return
 	}
+	if msg == nil {
+		server.handleError(c, errors.New("Failed to parse AddAttributeMsg JSON"), http.StatusBadRequest)
+	}
 
 	process, err := server.controller.GetProcessByID(msg.Attribute.TargetID)
 	if server.handleError(c, err, http.StatusBadRequest) {
 		return
+	}
+	if process == nil {
+		server.handleError(c, errors.New("handleAddAttributeRequest: process is nil"), http.StatusInternalServerError)
 	}
 
 	err = security.VerifyRuntimeMembership(recoveredID, process.ProcessSpec.Conditions.ColonyID, server.ownership)
@@ -567,9 +658,17 @@ func (server *ColoniesServer) handleAddAttributeRequest(c *gin.Context, recovere
 	if server.handleError(c, err, http.StatusBadRequest) {
 		return
 	}
+	if addedAttribute == nil {
+		server.handleError(c, errors.New("handleAddAttributeRequest: addedAttribute is nil"), http.StatusInternalServerError)
+	}
+
+	err = security.VerifyRuntimeMembership(recoveredID, process.ProcessSpec.Conditions.ColonyID, server.ownership)
+	if server.handleError(c, err, http.StatusBadRequest) {
+		return
+	}
 
 	jsonString, err = addedAttribute.ToJSON()
-	if server.handleError(c, err, http.StatusBadRequest) {
+	if server.handleError(c, err, http.StatusInternalServerError) {
 		return
 	}
 
@@ -581,15 +680,24 @@ func (server *ColoniesServer) handleGetAttributeRequest(c *gin.Context, recovere
 	if server.handleError(c, err, http.StatusBadRequest) {
 		return
 	}
+	if msg == nil {
+		server.handleError(c, errors.New("Failed to parse GetAttributeMsg JSON"), http.StatusBadRequest)
+	}
 
 	attribute, err := server.controller.GetAttribute(msg.AttributeID)
 	if server.handleError(c, err, http.StatusBadRequest) {
 		return
 	}
+	if attribute == nil {
+		server.handleError(c, errors.New("handleGetAttributeRequest: attribute is nil"), http.StatusInternalServerError)
+	}
 
 	process, err := server.controller.GetProcessByID(attribute.TargetID)
 	if server.handleError(c, err, http.StatusBadRequest) {
 		return
+	}
+	if process == nil {
+		server.handleError(c, errors.New("handleGetAttributeRequest: process is nil"), http.StatusInternalServerError)
 	}
 
 	err = security.VerifyRuntimeMembership(recoveredID, process.ProcessSpec.Conditions.ColonyID, server.ownership)
@@ -603,7 +711,7 @@ func (server *ColoniesServer) handleGetAttributeRequest(c *gin.Context, recovere
 	}
 
 	jsonString, err = attribute.ToJSON()
-	if server.handleError(c, err, http.StatusBadRequest) {
+	if server.handleError(c, err, http.StatusInternalServerError) {
 		return
 	}
 
