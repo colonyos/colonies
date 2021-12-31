@@ -8,15 +8,6 @@ import (
 
 // TODO: Pending or disapproved runtimes should be blocked!
 
-func GenerateID(privateKey string) (string, error) {
-	identify, err := crypto.CreateIdendityFromString(privateKey)
-	if err != nil {
-		return "", nil
-	}
-
-	return identify.ID(), nil
-}
-
 func GeneratePrivateKey() (string, error) {
 	identify, err := crypto.CreateIdendity()
 	if err != nil {
@@ -24,6 +15,15 @@ func GeneratePrivateKey() (string, error) {
 	}
 
 	return identify.PrivateKeyAsHex(), nil
+}
+
+func GenerateID(privateKey string) (string, error) {
+	identify, err := crypto.CreateIdendityFromString(privateKey)
+	if err != nil {
+		return "", nil
+	}
+
+	return identify.ID(), nil
 }
 
 func GenerateSignature(jsonString string, prvKey string) (string, error) { // TODO: unittest
@@ -41,18 +41,17 @@ func GenerateSignature(jsonString string, prvKey string) (string, error) { // TO
 	return hex.EncodeToString(signatureBytes), nil
 }
 
-func RecoverID(jsonString string, signature string) (string, error) { // TODO: unittest
+func RecoverID(jsonString string, signature string) (string, error) {
 	signatureString, err := hex.DecodeString(signature)
-	hash := crypto.GenerateHashFromString(jsonString)
-	derivedID, err := crypto.RecoveredID(hash, []byte(signatureString))
 	if err != nil {
 		return "", err
 	}
 
-	return derivedID, nil
+	hash := crypto.GenerateHashFromString(jsonString)
+	return crypto.RecoveredID(hash, []byte(signatureString))
 }
 
-func VerifyRoot(rootPassword string, expectedRootPassword string) error {
+func RequireRoot(rootPassword string, expectedRootPassword string) error {
 	if rootPassword == "" {
 		return errors.New("Root password is missing")
 	}
@@ -64,19 +63,14 @@ func VerifyRoot(rootPassword string, expectedRootPassword string) error {
 	return nil
 }
 
-func VerifyColonyOwner(recoveredID string, colonyID string, ownership Ownership) error {
+func RequireColonyOwner(recoveredID string, colonyID string, ownership Ownership) error {
 	if recoveredID != colonyID {
 		return errors.New("RecoveredID does not match Colony with Id <" + colonyID + ">")
 	}
 
-	err := ownership.CheckIfColonyExists(colonyID)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return ownership.CheckIfColonyExists(colonyID)
 }
 
-func VerifyRuntimeMembership(runtimeID string, colonyID string, ownership Ownership) error {
-	return ownership.CheckIfRuntimeBelongsToColony(runtimeID, colonyID)
+func RequireRuntimeMembership(runtimeID string, colonyID string, ownership Ownership) error {
+	return ownership.CheckIfRuntimeIsApproved(runtimeID, colonyID)
 }

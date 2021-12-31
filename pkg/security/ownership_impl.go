@@ -28,7 +28,16 @@ func (ownership *OwnershipImpl) CheckIfColonyExists(colonyID string) error {
 	return nil
 }
 
-func (ownership *OwnershipImpl) CheckIfRuntimeBelongsToColony(runtimeID string, colonyID string) error {
+func (ownership *OwnershipImpl) CheckIfRuntimeIsApproved(runtimeID string, colonyID string) error {
+	colony, err := ownership.db.GetColonyByID(colonyID)
+	if err != nil {
+		return err
+	}
+
+	if colony == nil {
+		return errors.New("Colony <" + colonyID + "> does not exists")
+	}
+
 	runtime, err := ownership.db.GetRuntimeByID(runtimeID)
 	if err != nil {
 		return err
