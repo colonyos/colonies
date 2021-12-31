@@ -1,6 +1,7 @@
 package security
 
 import (
+	"colonies/pkg/core"
 	"colonies/pkg/database"
 	"errors"
 )
@@ -28,7 +29,7 @@ func (ownership *OwnershipImpl) CheckIfColonyExists(colonyID string) error {
 	return nil
 }
 
-func (ownership *OwnershipImpl) CheckIfRuntimeIsApproved(runtimeID string, colonyID string) error {
+func (ownership *OwnershipImpl) CheckIfRuntimeIsValid(runtimeID string, colonyID string) error {
 	colony, err := ownership.db.GetColonyByID(colonyID)
 	if err != nil {
 		return err
@@ -49,6 +50,10 @@ func (ownership *OwnershipImpl) CheckIfRuntimeIsApproved(runtimeID string, colon
 
 	if runtime.ColonyID != colonyID {
 		return errors.New("Runtime with Id <" + runtimeID + "> is not a member of Colony with Id <" + colonyID + ">, (Recovered Id and Colony Id missmatches)")
+	}
+
+	if runtime.Status != core.APPROVED {
+		return errors.New("Runtime with Id <" + runtimeID + "> is not approved")
 	}
 
 	return nil

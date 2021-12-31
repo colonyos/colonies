@@ -47,6 +47,9 @@ func TestGetColony(t *testing.T) {
 	_, err = client.AddRuntime(runtime, colonyPrvKey, TESTHOST, TESTPORT)
 	assert.Nil(t, err)
 
+	err = client.ApproveRuntime(runtime.ID, colonyPrvKey, TESTHOST, TESTPORT)
+	assert.Nil(t, err)
+
 	colonyFromServer, err := client.GetColonyByID(colonyID, runtimePrvKey, TESTHOST, TESTPORT)
 	assert.Nil(t, err)
 	assert.True(t, colony.Equals(colonyFromServer))
@@ -121,11 +124,16 @@ func TestAddRuntime(t *testing.T) {
 	addedRuntime, err := client.AddRuntime(runtime, colonyPrvKey, TESTHOST, TESTPORT)
 	assert.Nil(t, err)
 	assert.True(t, runtime.Equals(addedRuntime))
+	err = client.ApproveRuntime(runtime.ID, colonyPrvKey, TESTHOST, TESTPORT)
+	assert.Nil(t, err)
+
+	// Just to make the comparison below work, the status will change after it has been approved
+	addedRuntime.Status = core.APPROVED
 
 	runtimeFromServer, err := client.GetRuntime(runtimeID, runtimePrvKey, TESTHOST, TESTPORT)
 	assert.Nil(t, err)
 	assert.NotNil(t, runtimeFromServer)
-	assert.True(t, runtime.Equals(runtimeFromServer))
+	assert.True(t, addedRuntime.Equals(runtimeFromServer))
 
 	server.Shutdown()
 	<-done
@@ -163,6 +171,8 @@ func TestGetRuntimes(t *testing.T) {
 	runtime1 := core.CreateRuntime(runtime1ID, runtimeType, name, colonyID, cpu, cores, mem, gpu, gpus)
 	_, err = client.AddRuntime(runtime1, colonyPrvKey, TESTHOST, TESTPORT)
 	assert.Nil(t, err)
+	err = client.ApproveRuntime(runtime1.ID, colonyPrvKey, TESTHOST, TESTPORT)
+	assert.Nil(t, err)
 
 	// Create a Runtime
 	runtime2PrvKey, err := security.GeneratePrivateKey()
@@ -174,6 +184,12 @@ func TestGetRuntimes(t *testing.T) {
 	runtime2 := core.CreateRuntime(runtime2ID, runtimeType, name, colonyID, cpu, cores, mem, gpu, gpus)
 	_, err = client.AddRuntime(runtime2, colonyPrvKey, TESTHOST, TESTPORT)
 	assert.Nil(t, err)
+	err = client.ApproveRuntime(runtime2.ID, colonyPrvKey, TESTHOST, TESTPORT)
+	assert.Nil(t, err)
+
+	// Just to make the comparison below work, the status will change after it has been approved
+	runtime1.Status = core.APPROVED
+	runtime2.Status = core.APPROVED
 
 	var runtimes []*core.Runtime
 	runtimes = append(runtimes, runtime1)
@@ -190,21 +206,32 @@ func TestGetRuntimes(t *testing.T) {
 func TestApproveRejectRuntime(t *testing.T) {
 	env, server, done := setupTestEnv2(t)
 
-	runtimeFromServer, err := client.GetRuntime(env.runtimeID, env.runtimePrvKey, TESTHOST, TESTPORT)
+	// Add an approved runtime to use for the test below
+	approvedRuntime, _, approvedRuntimePrvKey := generateRuntime(t, env.colonyID)
+	_, err := client.AddRuntime(approvedRuntime, env.colonyPrvKey, TESTHOST, TESTPORT)
+	assert.Nil(t, err)
+	err = client.ApproveRuntime(approvedRuntime.ID, env.colonyPrvKey, TESTHOST, TESTPORT)
+	assert.Nil(t, err)
+
+	testRuntime, _, _ := generateRuntime(t, env.colonyID)
+	_, err = client.AddRuntime(testRuntime, env.colonyPrvKey, TESTHOST, TESTPORT)
+	assert.Nil(t, err)
+
+	runtimeFromServer, err := client.GetRuntime(testRuntime.ID, approvedRuntimePrvKey, TESTHOST, TESTPORT)
 	assert.Nil(t, err)
 	assert.False(t, runtimeFromServer.IsApproved())
 
-	err = client.ApproveRuntime(env.runtime.ID, env.colonyPrvKey, TESTHOST, TESTPORT)
+	err = client.ApproveRuntime(testRuntime.ID, env.colonyPrvKey, TESTHOST, TESTPORT)
 	assert.Nil(t, err)
 
-	runtimeFromServer, err = client.GetRuntime(env.runtimeID, env.runtimePrvKey, TESTHOST, TESTPORT)
+	runtimeFromServer, err = client.GetRuntime(testRuntime.ID, approvedRuntimePrvKey, TESTHOST, TESTPORT)
 	assert.Nil(t, err)
 	assert.True(t, runtimeFromServer.IsApproved())
 
-	err = client.RejectRuntime(env.runtime.ID, env.colonyPrvKey, TESTHOST, TESTPORT)
+	err = client.RejectRuntime(testRuntime.ID, env.colonyPrvKey, TESTHOST, TESTPORT)
 	assert.Nil(t, err)
 
-	runtimeFromServer, err = client.GetRuntime(env.runtimeID, env.runtimePrvKey, TESTHOST, TESTPORT)
+	runtimeFromServer, err = client.GetRuntime(testRuntime.ID, approvedRuntimePrvKey, TESTHOST, TESTPORT)
 	assert.Nil(t, err)
 	assert.False(t, runtimeFromServer.IsApproved())
 
