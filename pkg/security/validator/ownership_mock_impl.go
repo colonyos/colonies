@@ -1,4 +1,4 @@
-package security
+package validator
 
 import (
 	"errors"
@@ -10,7 +10,7 @@ type OwnershipMock struct {
 	approvedRuntimes map[string]bool
 }
 
-func CreateOwnershipMock() *OwnershipMock {
+func createOwnershipMock() *OwnershipMock {
 	ownership := &OwnershipMock{}
 	ownership.colonies = make(map[string]bool)
 	ownership.runtimes = make(map[string]string)
@@ -31,7 +31,7 @@ func (ownership *OwnershipMock) approveRuntime(runtimeID string, colonyID string
 	ownership.approvedRuntimes[runtimeID] = true
 }
 
-func (ownership *OwnershipMock) CheckIfColonyExists(colonyID string) error {
+func (ownership *OwnershipMock) checkIfColonyExists(colonyID string) error {
 	colonyIDFromDB := ownership.colonies[colonyID]
 	if !colonyIDFromDB {
 		return errors.New("Colony does not exists")
@@ -40,7 +40,7 @@ func (ownership *OwnershipMock) CheckIfColonyExists(colonyID string) error {
 	return nil
 }
 
-func (ownership *OwnershipMock) CheckIfRuntimeBelongsToColony(runtimeID string, colonyID string) error {
+func (ownership *OwnershipMock) checkIfRuntimeBelongsToColony(runtimeID string, colonyID string) error {
 	colonyIDFromDB := ownership.runtimes[runtimeID]
 	if colonyIDFromDB == "" {
 		return errors.New("Colony does not exists")
@@ -52,7 +52,7 @@ func (ownership *OwnershipMock) CheckIfRuntimeBelongsToColony(runtimeID string, 
 	return nil
 }
 
-func (ownership *OwnershipMock) CheckIfRuntimeIsValid(runtimeID string, colonyID string) error {
+func (ownership *OwnershipMock) checkIfRuntimeIsValid(runtimeID string, colonyID string) error {
 	if ownership.runtimes[runtimeID] == "" {
 		return errors.New("Runtime does not exists")
 	}

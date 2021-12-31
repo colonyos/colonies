@@ -1,4 +1,4 @@
-package security
+package validator
 
 import (
 	"colonies/pkg/core"
@@ -6,17 +6,17 @@ import (
 	"errors"
 )
 
-type OwnershipImpl struct {
+type ownershipImpl struct {
 	db database.Database
 }
 
-func CreateOwnership(db database.Database) *OwnershipImpl {
-	ownership := &OwnershipImpl{}
+func createOwnership(db database.Database) *ownershipImpl {
+	ownership := &ownershipImpl{}
 	ownership.db = db
 	return ownership
 }
 
-func (ownership *OwnershipImpl) CheckIfColonyExists(colonyID string) error {
+func (ownership *ownershipImpl) checkIfColonyExists(colonyID string) error {
 	colony, err := ownership.db.GetColonyByID(colonyID)
 	if err != nil {
 		return err
@@ -29,7 +29,7 @@ func (ownership *OwnershipImpl) CheckIfColonyExists(colonyID string) error {
 	return nil
 }
 
-func (ownership *OwnershipImpl) CheckIfRuntimeIsValid(runtimeID string, colonyID string) error {
+func (ownership *ownershipImpl) checkIfRuntimeIsValid(runtimeID string, colonyID string) error {
 	colony, err := ownership.db.GetColonyByID(colonyID)
 	if err != nil {
 		return err

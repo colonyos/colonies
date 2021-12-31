@@ -3,7 +3,7 @@ package server
 import (
 	"colonies/pkg/client"
 	"colonies/pkg/core"
-	"colonies/pkg/security"
+	"colonies/pkg/security/crypto"
 	"testing"
 	"time"
 
@@ -14,10 +14,10 @@ func TestAddColony(t *testing.T) {
 	rootPassword := "password"
 	server, done := prepareTests(t, rootPassword)
 
-	colonyPrvKey, err := security.GeneratePrivateKey()
+	crypto := crypto.CreateCrypto()
+	colonyPrvKey, err := crypto.GeneratePrivateKey()
 	assert.Nil(t, err)
-
-	colonyID, err := security.GenerateID(colonyPrvKey)
+	colonyID, err := crypto.GenerateID(colonyPrvKey)
 	assert.Nil(t, err)
 
 	colony := core.CreateColony(colonyID, "test_colony_name")
@@ -33,10 +33,10 @@ func TestGetColony(t *testing.T) {
 	rootPassword := "password"
 	server, done := prepareTests(t, rootPassword)
 
-	colonyPrvKey, err := security.GeneratePrivateKey()
+	crypto := crypto.CreateCrypto()
+	colonyPrvKey, err := crypto.GeneratePrivateKey()
 	assert.Nil(t, err)
-
-	colonyID, err := security.GenerateID(colonyPrvKey)
+	colonyID, err := crypto.GenerateID(colonyPrvKey)
 	assert.Nil(t, err)
 
 	colony := core.CreateColony(colonyID, "test_colony_name")
@@ -62,17 +62,18 @@ func TestGetColonies(t *testing.T) {
 	rootPassword := "password"
 	server, done := prepareTests(t, rootPassword)
 
-	prvKey1, err := security.GeneratePrivateKey()
+	crypto := crypto.CreateCrypto()
+	prvKey1, err := crypto.GeneratePrivateKey()
 	assert.Nil(t, err)
-	colonyID1, err := security.GenerateID(prvKey1)
+	colonyID1, err := crypto.GenerateID(prvKey1)
 	assert.Nil(t, err)
 	colony1 := core.CreateColony(colonyID1, "test_colony_name")
 	_, err = client.AddColony(colony1, rootPassword, TESTHOST, TESTPORT)
 	assert.Nil(t, err)
 
-	prvKey2, err := security.GeneratePrivateKey()
+	prvKey2, err := crypto.GeneratePrivateKey()
 	assert.Nil(t, err)
-	colonyID2, err := security.GenerateID(prvKey2)
+	colonyID2, err := crypto.GenerateID(prvKey2)
 	assert.Nil(t, err)
 	colony2 := core.CreateColony(colonyID2, "test_colony_name")
 	_, err = client.AddColony(colony2, rootPassword, TESTHOST, TESTPORT)
@@ -95,10 +96,11 @@ func TestAddRuntime(t *testing.T) {
 	server, done := prepareTests(t, rootPassword)
 
 	// Create a Colony
-	colonyPrvKey, err := security.GeneratePrivateKey()
+	crypto := crypto.CreateCrypto()
+	colonyPrvKey, err := crypto.GeneratePrivateKey()
 	assert.Nil(t, err)
 
-	colonyID, err := security.GenerateID(colonyPrvKey)
+	colonyID, err := crypto.GenerateID(colonyPrvKey)
 	assert.Nil(t, err)
 
 	colony := core.CreateColony(colonyID, "test_colony_name")
@@ -107,9 +109,9 @@ func TestAddRuntime(t *testing.T) {
 	assert.Nil(t, err)
 
 	// Create a runtime
-	runtimePrvKey, err := security.GeneratePrivateKey()
+	runtimePrvKey, err := crypto.GeneratePrivateKey()
 	assert.Nil(t, err)
-	runtimeID, err := security.GenerateID(runtimePrvKey)
+	runtimeID, err := crypto.GenerateID(runtimePrvKey)
 	assert.Nil(t, err)
 
 	runtimeType := "test_runtime_type"
@@ -144,9 +146,10 @@ func TestGetRuntimes(t *testing.T) {
 	server, done := prepareTests(t, rootPassword)
 
 	// Create a Colony
-	colonyPrvKey, err := security.GeneratePrivateKey()
+	crypto := crypto.CreateCrypto()
+	colonyPrvKey, err := crypto.GeneratePrivateKey()
 	assert.Nil(t, err)
-	colonyID, err := security.GenerateID(colonyPrvKey)
+	colonyID, err := crypto.GenerateID(colonyPrvKey)
 	assert.Nil(t, err)
 
 	colony := core.CreateColony(colonyID, "test_colony_name")
@@ -155,9 +158,9 @@ func TestGetRuntimes(t *testing.T) {
 	assert.Nil(t, err)
 
 	// Create a Runtime
-	runtime1PrvKey, err := security.GeneratePrivateKey()
+	runtime1PrvKey, err := crypto.GeneratePrivateKey()
 	assert.Nil(t, err)
-	runtime1ID, err := security.GenerateID(runtime1PrvKey)
+	runtime1ID, err := crypto.GenerateID(runtime1PrvKey)
 	assert.Nil(t, err)
 
 	name := "test_runtime_name_1"
@@ -175,9 +178,9 @@ func TestGetRuntimes(t *testing.T) {
 	assert.Nil(t, err)
 
 	// Create a Runtime
-	runtime2PrvKey, err := security.GeneratePrivateKey()
+	runtime2PrvKey, err := crypto.GeneratePrivateKey()
 	assert.Nil(t, err)
-	runtime2ID, err := security.GenerateID(runtime2PrvKey)
+	runtime2ID, err := crypto.GenerateID(runtime2PrvKey)
 	assert.Nil(t, err)
 
 	name = "test_runtime_name_2"

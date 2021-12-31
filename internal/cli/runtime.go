@@ -4,6 +4,7 @@ import (
 	"colonies/pkg/client"
 	"colonies/pkg/core"
 	"colonies/pkg/security"
+	"colonies/pkg/security/crypto"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -66,10 +67,12 @@ var registerRuntimeCmd = &cobra.Command{
 		keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
 		CheckError(err)
 
-		prvKey, err := security.GeneratePrivateKey()
+		crypto := crypto.CreateCrypto()
+
+		prvKey, err := crypto.GeneratePrivateKey()
 		CheckError(err)
 
-		runtimeID, err := security.GenerateID(prvKey)
+		runtimeID, err := crypto.GenerateID(prvKey)
 		CheckError(err)
 		runtime.SetID(runtimeID)
 		runtime.SetColonyID(ColonyID)
