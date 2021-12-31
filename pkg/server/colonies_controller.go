@@ -1,9 +1,9 @@
 package server
 
 import (
+	"colonies/internal/logging"
 	"colonies/pkg/core"
 	"colonies/pkg/database"
-	"colonies/pkg/logging"
 	"colonies/pkg/scheduler"
 	"colonies/pkg/scheduler/basic"
 	"errors"

@@ -4,6 +4,7 @@ import (
 	"colonies/pkg/client"
 	"colonies/pkg/core"
 	"colonies/pkg/security"
+	"colonies/pkg/security/crypto"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -45,13 +46,15 @@ var registerColonyCmd = &cobra.Command{
 		colony, err := core.ConvertJSONToColony(string(jsonSpecBytes))
 		CheckError(err)
 
+		crypto := crypto.CreateCrypto()
+
 		keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
 		CheckError(err)
 
-		prvKey, err := security.GeneratePrivateKey()
+		prvKey, err := crypto.GeneratePrivateKey()
 		CheckError(err)
 
-		colonyID, err := security.GenerateID(prvKey)
+		colonyID, err := crypto.GenerateID(prvKey)
 		CheckError(err)
 		colony.SetID(colonyID)
 

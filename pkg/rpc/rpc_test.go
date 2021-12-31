@@ -2,16 +2,18 @@ package rpc
 
 import (
 	"colonies/pkg/core"
-	"colonies/pkg/crypto"
+	"colonies/pkg/security/crypto"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
 func TestDetermineRPCMethod(t *testing.T) {
-	colonyIdendity, err := crypto.CreateIdendity()
+	crypto := crypto.CreateCrypto()
+	prvKey, err := crypto.GeneratePrivateKey()
 	assert.Nil(t, err)
-	colonyID := colonyIdendity.ID()
+	colonyID, err := crypto.GenerateID(prvKey)
+	assert.Nil(t, err)
 
 	in := make(map[string]string)
 	in["test_key"] = "test_value"

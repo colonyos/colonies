@@ -1,8 +1,8 @@
 package cli
 
 import (
+	"colonies/internal/logging"
 	"colonies/pkg/database/postgresql"
-	"colonies/pkg/logging"
 	"colonies/pkg/server"
 	"fmt"
 	"os"
