@@ -7,6 +7,8 @@ import (
 	"fmt"
 )
 
+// TODO: should be built on security package rather than using crytpo package directly
+
 //export sign
 func sign(cmsg *C.char, cprv *C.char) *C.char {
 	msg := C.GoString(cmsg)
