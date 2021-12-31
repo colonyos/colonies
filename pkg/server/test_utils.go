@@ -1,11 +1,11 @@
 package server
 
 import (
+	"colonies/internal/logging"
 	"colonies/pkg/client"
 	"colonies/pkg/core"
 	"colonies/pkg/database/postgresql"
-	"colonies/pkg/logging"
-	"colonies/pkg/security"
+	"colonies/pkg/security/crypto"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -35,18 +35,20 @@ func setupTestEnv1(t *testing.T) (*testEnv1, *ColoniesServer, chan bool) {
 	rootPassword := "secretpassword"
 	server, done := prepareTests(t, rootPassword)
 
+	crypto := crypto.CreateCrypto()
+
 	// Create a colony
-	colony1PrvKey, err := security.GeneratePrivateKey()
+	colony1PrvKey, err := crypto.GeneratePrivateKey()
 	assert.Nil(t, err)
-	colony1ID, err := security.GenerateID(colony1PrvKey)
+	colony1ID, err := crypto.GenerateID(colony1PrvKey)
 	assert.Nil(t, err)
 	colony1 := core.CreateColony(colony1ID, "test_colony_name")
 	_, err = client.AddColony(colony1, rootPassword, TESTHOST, TESTPORT)
 
 	// Create a colony
-	colony2PrvKey, err := security.GeneratePrivateKey()
+	colony2PrvKey, err := crypto.GeneratePrivateKey()
 	assert.Nil(t, err)
-	colony2ID, err := security.GenerateID(colony2PrvKey)
+	colony2ID, err := crypto.GenerateID(colony2PrvKey)
 	assert.Nil(t, err)
 	colony2 := core.CreateColony(colony2ID, "test_colony_name")
 	_, err = client.AddColony(colony2, rootPassword, TESTHOST, TESTPORT)
@@ -83,11 +85,13 @@ func setupTestEnv2(t *testing.T) (*testEnv2, *ColoniesServer, chan bool) {
 	rootPassword := "secretpassword"
 	server, done := prepareTests(t, rootPassword)
 
+	crypto := crypto.CreateCrypto()
+
 	// Create a Colony
-	colonyPrvKey, err := security.GeneratePrivateKey()
+	colonyPrvKey, err := crypto.GeneratePrivateKey()
 	assert.Nil(t, err)
 
-	colonyID, err := security.GenerateID(colonyPrvKey)
+	colonyID, err := crypto.GenerateID(colonyPrvKey)
 	assert.Nil(t, err)
 
 	colony := core.CreateColony(colonyID, "test_colony_name")
@@ -96,9 +100,9 @@ func setupTestEnv2(t *testing.T) (*testEnv2, *ColoniesServer, chan bool) {
 	assert.Nil(t, err)
 
 	// Create a runtime
-	runtimePrvKey, err := security.GeneratePrivateKey()
+	runtimePrvKey, err := crypto.GeneratePrivateKey()
 	assert.Nil(t, err)
-	runtimeID, err := security.GenerateID(runtimePrvKey)
+	runtimeID, err := crypto.GenerateID(runtimePrvKey)
 	assert.Nil(t, err)
 
 	name := "test_runtime_name"
@@ -127,9 +131,11 @@ func setupTestEnv2(t *testing.T) (*testEnv2, *ColoniesServer, chan bool) {
 }
 
 func generateRuntime(t *testing.T, colonyID string) (*core.Runtime, string, string) {
-	runtimePrvKey, err := security.GeneratePrivateKey()
+	crypto := crypto.CreateCrypto()
+
+	runtimePrvKey, err := crypto.GeneratePrivateKey()
 	assert.Nil(t, err)
-	runtimeID, err := security.GenerateID(runtimePrvKey)
+	runtimeID, err := crypto.GenerateID(runtimePrvKey)
 	assert.Nil(t, err)
 
 	runtimeType := "test_runtime_type"

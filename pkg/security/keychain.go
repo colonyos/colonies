@@ -1,7 +1,5 @@
 package security
 
-// TODO: It might be a good idea to organize keys beloning to colony in seperate folders
-
 import (
 	"errors"
 	"io/ioutil"

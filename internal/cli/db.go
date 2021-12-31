@@ -2,8 +2,8 @@ package cli
 
 import (
 	"bufio"
+	"colonies/internal/logging"
 	"colonies/pkg/database/postgresql"
-	"colonies/pkg/logging"
 	"fmt"
 	"os"
 	"strconv"

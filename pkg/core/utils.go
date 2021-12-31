@@ -1,12 +1,13 @@
 package core
 
 import (
-	"colonies/pkg/crypto"
+	"colonies/pkg/security/crypto"
 
 	"github.com/google/uuid"
 )
 
 func GenerateRandomID() string {
 	uuid := uuid.New()
-	return crypto.GenerateHashFromString(uuid.String()).String()
+	crypto := crypto.CreateCrypto()
+	return crypto.GenerateHash(uuid.String())
 }

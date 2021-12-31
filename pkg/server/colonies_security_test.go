@@ -3,7 +3,7 @@ package server
 import (
 	"colonies/pkg/client"
 	"colonies/pkg/core"
-	"colonies/pkg/security"
+	"colonies/pkg/security/crypto"
 	"testing"
 	"time"
 
@@ -14,10 +14,12 @@ func TestAddColonySecurity(t *testing.T) {
 	rootPassword := "testapikey"
 	server, done := prepareTests(t, rootPassword)
 
-	privateKey, err := security.GeneratePrivateKey()
+	crypto := crypto.CreateCrypto()
+
+	privateKey, err := crypto.GeneratePrivateKey()
 	assert.Nil(t, err)
 
-	colonyID, err := security.GenerateID(privateKey)
+	colonyID, err := crypto.GenerateID(privateKey)
 	assert.Nil(t, err)
 
 	colony := core.CreateColony(colonyID, "test_colony_name")

@@ -3,7 +3,7 @@ package client
 import (
 	"colonies/pkg/core"
 	"colonies/pkg/rpc"
-	"colonies/pkg/security"
+	"colonies/pkg/security/crypto"
 	"crypto/tls"
 	"errors"
 	"strconv"
@@ -45,7 +45,7 @@ func sendMessageNoSignature(client *resty.Client, jsonString string, host string
 }
 
 func sendMessage(client *resty.Client, jsonString string, prvKey string, host string, port int) (string, error) {
-	signature, err := security.GenerateSignature(jsonString, prvKey)
+	signature, err := crypto.CreateCrypto().GenerateSignature(jsonString, prvKey)
 	resp, err := client.R().
 		SetHeader("Signature", signature).
 		SetBody(jsonString).

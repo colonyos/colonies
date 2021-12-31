@@ -1,11 +1,13 @@
 package server
 
 import (
+	"colonies/internal/logging"
 	"colonies/pkg/core"
 	"colonies/pkg/database"
-	"colonies/pkg/logging"
 	"colonies/pkg/rpc"
 	"colonies/pkg/security"
+	"colonies/pkg/security/crypto"
+	"colonies/pkg/security/validator"
 	"context"
 	"errors"
 	"io/ioutil"
@@ -25,7 +27,8 @@ type ColoniesServer struct {
 	tlsCertPath       string
 	port              int
 	httpServer        *http.Server
-	ownership         security.Ownership
+	crypto            security.Crypto
+	validator         security.Validator
 }
 
 func CreateColoniesServer(db database.Database, port int, rootPassword string, tlsPrivateKeyPath string, tlsCertPath string, debug bool) *ColoniesServer {
@@ -47,11 +50,12 @@ func CreateColoniesServer(db database.Database, port int, rootPassword string, t
 
 	server.httpServer = httpServer
 	server.controller = CreateColoniesController(db)
-	server.ownership = security.CreateOwnership(db)
 	server.rootPassword = rootPassword
 	server.port = port
 	server.tlsPrivateKeyPath = tlsPrivateKeyPath
 	server.tlsCertPath = tlsCertPath
+	server.crypto = crypto.CreateCrypto()
+	server.validator = validator.CreateValidator(db)
 
 	server.setupRoutes()
 
@@ -78,7 +82,7 @@ func (server *ColoniesServer) handleEndpointRequest(c *gin.Context) {
 		// AddColony and GetColonies requires root password instead of signatures
 	} else {
 		signature := c.GetHeader("Signature")
-		recoveredID, err = security.RecoverID(jsonString, signature)
+		recoveredID, err = server.crypto.RecoverID(jsonString, signature)
 		if server.handleError(c, err, http.StatusForbidden) {
 			return
 		}
@@ -156,7 +160,7 @@ func (server *ColoniesServer) handleAddColonyRequest(c *gin.Context, jsonString 
 		server.handleError(c, errors.New("Failed to parse AddColonyMsg JSON"), http.StatusBadRequest)
 	}
 
-	err = security.RequireRoot(msg.RootPassword, server.rootPassword)
+	err = server.validator.RequireRoot(msg.RootPassword, server.rootPassword)
 	if server.handleError(c, err, http.StatusForbidden) {
 		return
 	}
@@ -186,7 +190,7 @@ func (server *ColoniesServer) handleGetColoniesRequest(c *gin.Context, jsonStrin
 		server.handleError(c, errors.New("Failed to parse GetColoniesMsg JSON"), http.StatusBadRequest)
 	}
 
-	err = security.RequireRoot(msg.RootPassword, server.rootPassword)
+	err = server.validator.RequireRoot(msg.RootPassword, server.rootPassword)
 	if server.handleError(c, err, http.StatusForbidden) {
 		return
 	}
@@ -216,7 +220,7 @@ func (server *ColoniesServer) handleGetColonyRequest(c *gin.Context, recoveredID
 		server.handleError(c, errors.New("Failed to parse GetColonyMsg JSON"), http.StatusBadRequest)
 	}
 
-	err = security.RequireRuntimeMembership(recoveredID, msg.ColonyID, server.ownership)
+	err = server.validator.RequireRuntimeMembership(recoveredID, msg.ColonyID)
 	if server.handleError(c, err, http.StatusForbidden) {
 		return
 	}
@@ -246,7 +250,7 @@ func (server *ColoniesServer) handleAddRuntimeRequest(c *gin.Context, recoveredI
 		server.handleError(c, errors.New("Failed to parse AddRuntimeMsg JSON"), http.StatusBadRequest)
 	}
 
-	err = security.RequireColonyOwner(recoveredID, msg.Runtime.ColonyID, server.ownership)
+	err = server.validator.RequireColonyOwner(recoveredID, msg.Runtime.ColonyID)
 	if server.handleError(c, err, http.StatusForbidden) {
 		return
 	}
@@ -276,7 +280,7 @@ func (server *ColoniesServer) handleGetRuntimesRequest(c *gin.Context, recovered
 		server.handleError(c, errors.New("Failed to parse GetRuntimesMsg JSON"), http.StatusBadRequest)
 	}
 
-	err = security.RequireRuntimeMembership(recoveredID, msg.ColonyID, server.ownership)
+	err = server.validator.RequireRuntimeMembership(recoveredID, msg.ColonyID)
 	if server.handleError(c, err, http.StatusForbidden) {
 		return
 	}
@@ -314,7 +318,7 @@ func (server *ColoniesServer) handleGetRuntimeRequest(c *gin.Context, recoveredI
 		server.handleError(c, errors.New("handleGetRuntimeRequest: runtime is nil"), http.StatusInternalServerError)
 	}
 
-	err = security.RequireRuntimeMembership(recoveredID, runtime.ColonyID, server.ownership)
+	err = server.validator.RequireRuntimeMembership(recoveredID, runtime.ColonyID)
 	if server.handleError(c, err, http.StatusForbidden) {
 		return
 	}
@@ -344,7 +348,7 @@ func (server *ColoniesServer) handleApproveRuntimeRequest(c *gin.Context, recove
 		server.handleError(c, errors.New("handleApproveColonyRequest: runtime is nil"), http.StatusInternalServerError)
 	}
 
-	err = security.RequireColonyOwner(recoveredID, runtime.ColonyID, server.ownership)
+	err = server.validator.RequireColonyOwner(recoveredID, runtime.ColonyID)
 	if server.handleError(c, err, http.StatusForbidden) {
 		return
 	}
@@ -379,7 +383,7 @@ func (server *ColoniesServer) handleRejectRuntimeRequest(c *gin.Context, recover
 		server.handleError(c, errors.New("handleRejectRuntimeRequest: runtime is nil"), http.StatusInternalServerError)
 	}
 
-	err = security.RequireColonyOwner(recoveredID, runtime.ColonyID, server.ownership)
+	err = server.validator.RequireColonyOwner(recoveredID, runtime.ColonyID)
 	if server.handleError(c, err, http.StatusForbidden) {
 		return
 	}
@@ -406,7 +410,7 @@ func (server *ColoniesServer) handleSubmitProcessSpec(c *gin.Context, recoveredI
 		server.handleError(c, errors.New("Failed to parse SubmitRuntimeMsg JSON"), http.StatusBadRequest)
 	}
 
-	err = security.RequireRuntimeMembership(recoveredID, msg.ProcessSpec.Conditions.ColonyID, server.ownership)
+	err = server.validator.RequireRuntimeMembership(recoveredID, msg.ProcessSpec.Conditions.ColonyID)
 	if server.handleError(c, err, http.StatusForbidden) {
 		return
 	}
@@ -437,7 +441,7 @@ func (server *ColoniesServer) handleAssignProcessRequest(c *gin.Context, recover
 		server.handleError(c, errors.New("Failed to parse AssignRuntimeMsg JSON"), http.StatusBadRequest)
 	}
 
-	err = security.RequireRuntimeMembership(recoveredID, msg.ColonyID, server.ownership)
+	err = server.validator.RequireRuntimeMembership(recoveredID, msg.ColonyID)
 	if server.handleError(c, err, http.StatusForbidden) {
 		return
 	}
@@ -467,7 +471,7 @@ func (server *ColoniesServer) handleGetProcessesRequest(c *gin.Context, recovere
 		server.handleError(c, errors.New("Failed to parse GetProcessesMsg JSON"), http.StatusBadRequest)
 	}
 
-	err = security.RequireRuntimeMembership(recoveredID, msg.ColonyID, server.ownership)
+	err = server.validator.RequireRuntimeMembership(recoveredID, msg.ColonyID)
 	if server.handleError(c, err, http.StatusForbidden) {
 		return
 	}
@@ -549,7 +553,7 @@ func (server *ColoniesServer) handleGetProcessRequest(c *gin.Context, recoveredI
 		server.handleError(c, errors.New("handleGetProcessRequest: process is nil"), http.StatusInternalServerError)
 	}
 
-	err = security.RequireRuntimeMembership(recoveredID, process.ProcessSpec.Conditions.ColonyID, server.ownership)
+	err = server.validator.RequireRuntimeMembership(recoveredID, process.ProcessSpec.Conditions.ColonyID)
 	if server.handleError(c, err, http.StatusForbidden) {
 		return
 	}
@@ -579,7 +583,7 @@ func (server *ColoniesServer) handleMarkSuccessfulRequest(c *gin.Context, recove
 		server.handleError(c, errors.New("handleMarkSuccessfulRequest: process is nil"), http.StatusInternalServerError)
 	}
 
-	err = security.RequireRuntimeMembership(recoveredID, process.ProcessSpec.Conditions.ColonyID, server.ownership)
+	err = server.validator.RequireRuntimeMembership(recoveredID, process.ProcessSpec.Conditions.ColonyID)
 	if server.handleError(c, err, http.StatusForbidden) {
 		return
 	}
@@ -614,7 +618,7 @@ func (server *ColoniesServer) handleMarkFailedRequest(c *gin.Context, recoveredI
 		server.handleError(c, errors.New("handleMarkFailedRequest: process is nil"), http.StatusInternalServerError)
 	}
 
-	err = security.RequireRuntimeMembership(recoveredID, process.ProcessSpec.Conditions.ColonyID, server.ownership)
+	err = server.validator.RequireRuntimeMembership(recoveredID, process.ProcessSpec.Conditions.ColonyID)
 	if server.handleError(c, err, http.StatusForbidden) {
 		return
 	}
@@ -649,7 +653,7 @@ func (server *ColoniesServer) handleAddAttributeRequest(c *gin.Context, recovere
 		server.handleError(c, errors.New("handleAddAttributeRequest: process is nil"), http.StatusInternalServerError)
 	}
 
-	err = security.RequireRuntimeMembership(recoveredID, process.ProcessSpec.Conditions.ColonyID, server.ownership)
+	err = server.validator.RequireRuntimeMembership(recoveredID, process.ProcessSpec.Conditions.ColonyID)
 	if server.handleError(c, err, http.StatusForbidden) {
 		return
 	}
@@ -701,7 +705,7 @@ func (server *ColoniesServer) handleGetAttributeRequest(c *gin.Context, recovere
 		server.handleError(c, errors.New("handleGetAttributeRequest: process is nil"), http.StatusInternalServerError)
 	}
 
-	err = security.RequireRuntimeMembership(recoveredID, process.ProcessSpec.Conditions.ColonyID, server.ownership)
+	err = server.validator.RequireRuntimeMembership(recoveredID, process.ProcessSpec.Conditions.ColonyID)
 	if server.handleError(c, err, http.StatusForbidden) {
 		return
 	}

@@ -1,7 +1,7 @@
 package core
 
 import (
-	"colonies/pkg/crypto"
+	"colonies/pkg/security/crypto"
 	"encoding/json"
 	"time"
 
@@ -31,7 +31,8 @@ type Process struct {
 
 func CreateProcess(processSpec *ProcessSpec) *Process {
 	uuid := uuid.New()
-	id := crypto.GenerateHashFromString(uuid.String()).String()
+	crypto := crypto.CreateCrypto()
+	id := crypto.GenerateHash(uuid.String())
 
 	var attributes []*Attribute
 

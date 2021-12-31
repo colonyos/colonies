@@ -1,7 +1,7 @@
 package core
 
 import (
-	"colonies/pkg/crypto"
+	"colonies/pkg/security/crypto"
 	"encoding/json"
 	"strconv"
 )
@@ -22,7 +22,8 @@ type Attribute struct {
 }
 
 func CreateAttribute(targetID string, attributeType int, key string, value string) *Attribute {
-	id := crypto.GenerateHash([]byte(targetID + key + strconv.Itoa(attributeType))).String()
+	crypto := crypto.CreateCrypto()
+	id := crypto.GenerateHash(targetID + key + strconv.Itoa(attributeType))
 	return &Attribute{ID: id,
 		TargetID:      targetID,
 		AttributeType: attributeType,

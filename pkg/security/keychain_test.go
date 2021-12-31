@@ -2,6 +2,7 @@ package security
 
 import (
 	"colonies/pkg/core"
+	"colonies/pkg/security/crypto"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -11,7 +12,8 @@ func TestKeychain(t *testing.T) {
 	keychain, err := CreateKeychain(".colonies_test")
 	assert.Nil(t, err)
 
-	prvKey, err := GeneratePrivateKey()
+	crypto := crypto.CreateCrypto()
+	prvKey, err := crypto.GeneratePrivateKey()
 	assert.Nil(t, err)
 
 	id := core.GenerateRandomID()
