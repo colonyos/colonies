@@ -61,6 +61,12 @@ func setupTestEnv1(t *testing.T) (*testEnv1, *ColoniesServer, chan bool) {
 	_, err = client.AddRuntime(runtime2, colony2PrvKey, TESTHOST, TESTPORT)
 	assert.Nil(t, err)
 
+	err = client.ApproveRuntime(runtime1.ID, colony1PrvKey, TESTHOST, TESTPORT)
+	assert.Nil(t, err)
+
+	err = client.ApproveRuntime(runtime2.ID, colony2PrvKey, TESTHOST, TESTPORT)
+	assert.Nil(t, err)
+
 	env := &testEnv1{colony1PrvKey: colony1PrvKey,
 		colony1ID:      colony1ID,
 		colony2PrvKey:  colony2PrvKey,
@@ -105,6 +111,9 @@ func setupTestEnv2(t *testing.T) (*testEnv2, *ColoniesServer, chan bool) {
 
 	runtime := core.CreateRuntime(runtimeID, runtimeType, name, colonyID, cpu, cores, mem, gpu, gpus)
 	_, err = client.AddRuntime(runtime, colonyPrvKey, TESTHOST, TESTPORT)
+	assert.Nil(t, err)
+
+	err = client.ApproveRuntime(runtime.ID, colonyPrvKey, TESTHOST, TESTPORT)
 	assert.Nil(t, err)
 
 	env := &testEnv2{colonyID: colonyID,

@@ -197,6 +197,31 @@ func TestRejectRuntimeSecurity(t *testing.T) {
 	<-done
 }
 
+func TestNonApprovedRuntime(t *testing.T) {
+	env, server, done := setupTestEnv1(t)
+
+	// The setup looks like this:
+	//   runtime1 is member of colony1
+	//   runtime2 is member of colony2
+
+	// Add another runtime to colony1 and try to close the process started by runtime1, it should not be possible
+	runtime3, _, runtime3PrvKey := generateRuntime(t, env.colony1ID)
+	_, err := client.AddRuntime(runtime3, env.colony1PrvKey, TESTHOST, TESTPORT)
+	assert.Nil(t, err)
+
+	_, err = client.GetRuntimes(env.colony1ID, runtime3PrvKey, TESTHOST, TESTPORT)
+	assert.NotNil(t, err) // Should not work, runtime not approved
+
+	err = client.ApproveRuntime(runtime3.ID, env.colony1PrvKey, TESTHOST, TESTPORT)
+	assert.Nil(t, err)
+
+	_, err = client.GetRuntimes(env.colony1ID, runtime3PrvKey, TESTHOST, TESTPORT)
+	assert.Nil(t, err) // Should work
+
+	server.Shutdown()
+	<-done
+}
+
 func TestSubmitProcessSpecSecurity(t *testing.T) {
 	env, server, done := setupTestEnv1(t)
 
@@ -413,6 +438,8 @@ func TestMarkSuccessfulSecurity(t *testing.T) {
 	runtime3, _, runtime3PrvKey := generateRuntime(t, env.colony1ID)
 	_, err = client.AddRuntime(runtime3, env.colony1PrvKey, TESTHOST, TESTPORT)
 	assert.Nil(t, err)
+	err = client.ApproveRuntime(runtime3.ID, env.colony1PrvKey, TESTHOST, TESTPORT)
+	assert.Nil(t, err)
 	err = client.MarkSuccessful(processFromServer.ID, runtime3PrvKey, TESTHOST, TESTPORT)
 	assert.NotNil(t, err) // Should work
 
@@ -442,6 +469,8 @@ func TestMarkFailedSecurity(t *testing.T) {
 	// Add another runtime to colony1 and try to close the process started by runtime1, it should not be possible
 	runtime3, _, runtime3PrvKey := generateRuntime(t, env.colony1ID)
 	_, err = client.AddRuntime(runtime3, env.colony1PrvKey, TESTHOST, TESTPORT)
+	assert.Nil(t, err)
+	err = client.ApproveRuntime(runtime3.ID, env.colony1PrvKey, TESTHOST, TESTPORT)
 	assert.Nil(t, err)
 	err = client.MarkFailed(processFromServer.ID, runtime3PrvKey, TESTHOST, TESTPORT)
 	assert.NotNil(t, err) // Should work
@@ -473,6 +502,8 @@ func TestAddAttributeSecurity(t *testing.T) {
 	// runtime1, it should not be possible
 	runtime3, _, runtime3PrvKey := generateRuntime(t, env.colony1ID)
 	_, err = client.AddRuntime(runtime3, env.colony1PrvKey, TESTHOST, TESTPORT)
+	assert.Nil(t, err)
+	err = client.ApproveRuntime(runtime3.ID, env.colony1PrvKey, TESTHOST, TESTPORT)
 	assert.Nil(t, err)
 	_, err = client.AddAttribute(attribute, runtime3PrvKey, TESTHOST, TESTPORT)
 	assert.NotNil(t, err) // Should not work
