@@ -32,8 +32,8 @@ type testEnv2 struct {
 }
 
 func setupTestEnv1(t *testing.T) (*testEnv1, *ColoniesServer, chan bool) {
-	apiKey := "testapikey"
-	server, done := prepareTests(t, apiKey)
+	rootPassword := "secretpassword"
+	server, done := prepareTests(t, rootPassword)
 
 	// Create a colony
 	colony1PrvKey, err := security.GeneratePrivateKey()
@@ -41,7 +41,7 @@ func setupTestEnv1(t *testing.T) (*testEnv1, *ColoniesServer, chan bool) {
 	colony1ID, err := security.GenerateID(colony1PrvKey)
 	assert.Nil(t, err)
 	colony1 := core.CreateColony(colony1ID, "test_colony_name")
-	_, err = client.AddColony(colony1, apiKey, TESTHOST, TESTPORT)
+	_, err = client.AddColony(colony1, rootPassword, TESTHOST, TESTPORT)
 
 	// Create a colony
 	colony2PrvKey, err := security.GeneratePrivateKey()
@@ -49,7 +49,7 @@ func setupTestEnv1(t *testing.T) (*testEnv1, *ColoniesServer, chan bool) {
 	colony2ID, err := security.GenerateID(colony2PrvKey)
 	assert.Nil(t, err)
 	colony2 := core.CreateColony(colony2ID, "test_colony_name")
-	_, err = client.AddColony(colony2, apiKey, TESTHOST, TESTPORT)
+	_, err = client.AddColony(colony2, rootPassword, TESTHOST, TESTPORT)
 
 	// Create a runtime
 	runtime1, runtime1ID, runtime1PrvKey := generateRuntime(t, colony1ID)
@@ -61,12 +61,22 @@ func setupTestEnv1(t *testing.T) (*testEnv1, *ColoniesServer, chan bool) {
 	_, err = client.AddRuntime(runtime2, colony2PrvKey, TESTHOST, TESTPORT)
 	assert.Nil(t, err)
 
-	env := &testEnv1{colony1PrvKey: colony1PrvKey, colony1ID: colony1ID, colony2PrvKey: colony2PrvKey, colony2ID: colony2ID, runtime1PrvKey: runtime1PrvKey, runtime1ID: runtime1ID, runtime2PrvKey: runtime2PrvKey, runtime2ID: runtime2ID}
+	env := &testEnv1{colony1PrvKey: colony1PrvKey,
+		colony1ID:      colony1ID,
+		colony2PrvKey:  colony2PrvKey,
+		colony2ID:      colony2ID,
+		runtime1PrvKey: runtime1PrvKey,
+		runtime1ID:     runtime1ID,
+		runtime2PrvKey: runtime2PrvKey,
+		runtime2ID:     runtime2ID}
 
 	return env, server, done
 }
 
-func setupTestEnv2(t *testing.T, rootPassword string) *testEnv2 {
+func setupTestEnv2(t *testing.T) (*testEnv2, *ColoniesServer, chan bool) {
+	rootPassword := "secretpassword"
+	server, done := prepareTests(t, rootPassword)
+
 	// Create a Colony
 	colonyPrvKey, err := security.GeneratePrivateKey()
 	assert.Nil(t, err)
@@ -97,12 +107,14 @@ func setupTestEnv2(t *testing.T, rootPassword string) *testEnv2 {
 	_, err = client.AddRuntime(runtime, colonyPrvKey, TESTHOST, TESTPORT)
 	assert.Nil(t, err)
 
-	return &testEnv2{colonyID: colonyID,
+	env := &testEnv2{colonyID: colonyID,
 		colony:        colony,
 		colonyPrvKey:  colonyPrvKey,
 		runtimeID:     runtimeID,
 		runtime:       runtime,
 		runtimePrvKey: runtimePrvKey}
+
+	return env, server, done
 }
 
 func generateRuntime(t *testing.T, colonyID string) (*core.Runtime, string, string) {
