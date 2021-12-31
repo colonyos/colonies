@@ -654,17 +654,18 @@ func (server *ColoniesServer) handleAddAttributeRequest(c *gin.Context, recovere
 		return
 	}
 
+	if process.AssignedRuntimeID != recoveredID {
+		err := errors.New("Only Runtime with Id <" + process.AssignedRuntimeID + "> is allowed to set attributes")
+		server.handleError(c, err, http.StatusForbidden)
+		return
+	}
+
 	addedAttribute, err := server.controller.AddAttribute(msg.Attribute)
 	if server.handleError(c, err, http.StatusBadRequest) {
 		return
 	}
 	if addedAttribute == nil {
 		server.handleError(c, errors.New("handleAddAttributeRequest: addedAttribute is nil"), http.StatusInternalServerError)
-	}
-
-	err = security.VerifyRuntimeMembership(recoveredID, process.ProcessSpec.Conditions.ColonyID, server.ownership)
-	if server.handleError(c, err, http.StatusBadRequest) {
-		return
 	}
 
 	jsonString, err = addedAttribute.ToJSON()
