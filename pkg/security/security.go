@@ -6,8 +6,6 @@ import (
 	"errors"
 )
 
-// TODO: Pending or disapproved runtimes should be blocked!
-
 func GeneratePrivateKey() (string, error) {
 	identify, err := crypto.CreateIdendity()
 	if err != nil {
@@ -72,5 +70,5 @@ func RequireColonyOwner(recoveredID string, colonyID string, ownership Ownership
 }
 
 func RequireRuntimeMembership(runtimeID string, colonyID string, ownership Ownership) error {
-	return ownership.CheckIfRuntimeIsApproved(runtimeID, colonyID)
+	return ownership.CheckIfRuntimeIsValid(runtimeID, colonyID)
 }
