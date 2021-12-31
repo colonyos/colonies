@@ -12,7 +12,7 @@ import (
 
 func TestAddColony(t *testing.T) {
 	rootPassword := "password"
-	server, done := PrepareTests(t, rootPassword)
+	server, done := prepareTests(t, rootPassword)
 
 	colonyPrvKey, err := security.GeneratePrivateKey()
 	assert.Nil(t, err)
@@ -31,7 +31,7 @@ func TestAddColony(t *testing.T) {
 
 func TestGetColony(t *testing.T) {
 	rootPassword := "password"
-	server, done := PrepareTests(t, rootPassword)
+	server, done := prepareTests(t, rootPassword)
 
 	colonyPrvKey, err := security.GeneratePrivateKey()
 	assert.Nil(t, err)
@@ -57,7 +57,7 @@ func TestGetColony(t *testing.T) {
 
 func TestGetColonies(t *testing.T) {
 	rootPassword := "password"
-	server, done := PrepareTests(t, rootPassword)
+	server, done := prepareTests(t, rootPassword)
 
 	prvKey1, err := security.GeneratePrivateKey()
 	assert.Nil(t, err)
@@ -89,7 +89,7 @@ func TestGetColonies(t *testing.T) {
 
 func TestAddRuntime(t *testing.T) {
 	rootPassword := "testapikey"
-	server, done := PrepareTests(t, rootPassword)
+	server, done := prepareTests(t, rootPassword)
 
 	// Create a Colony
 	colonyPrvKey, err := security.GeneratePrivateKey()
@@ -133,7 +133,7 @@ func TestAddRuntime(t *testing.T) {
 
 func TestGetRuntimes(t *testing.T) {
 	rootPassword := "password"
-	server, done := PrepareTests(t, rootPassword)
+	server, done := prepareTests(t, rootPassword)
 
 	// Create a Colony
 	colonyPrvKey, err := security.GeneratePrivateKey()
@@ -189,8 +189,8 @@ func TestGetRuntimes(t *testing.T) {
 
 func TestApproveRejectRuntime(t *testing.T) {
 	rootPassword := "password"
-	server, done := PrepareTests(t, rootPassword)
-	env := createTestEnv(t, rootPassword)
+	server, done := prepareTests(t, rootPassword)
+	env := setupTestEnv2(t, rootPassword)
 
 	runtimeFromServer, err := client.GetRuntime(env.runtimeID, env.runtimePrvKey, TESTHOST, TESTPORT)
 	assert.Nil(t, err)
@@ -216,8 +216,8 @@ func TestApproveRejectRuntime(t *testing.T) {
 
 func TestSubmitProcess(t *testing.T) {
 	rootPassword := "password"
-	server, done := PrepareTests(t, rootPassword)
-	env := createTestEnv(t, rootPassword)
+	server, done := prepareTests(t, rootPassword)
+	env := setupTestEnv2(t, rootPassword)
 
 	in := make(map[string]string)
 	in["test_key_1"] = "test_value_1"
@@ -244,8 +244,8 @@ func TestSubmitProcess(t *testing.T) {
 
 func TestAssignProcess(t *testing.T) {
 	rootPassword := "password"
-	server, done := PrepareTests(t, rootPassword)
-	env := createTestEnv(t, rootPassword)
+	server, done := prepareTests(t, rootPassword)
+	env := setupTestEnv2(t, rootPassword)
 
 	processSpec1 := core.CreateProcessSpec(env.colonyID, []string{}, "test_runtime_type", -1, 3, 1000, 10, 1, make(map[string]string))
 	addedProcess1, err := client.SubmitProcessSpec(processSpec1, env.runtimePrvKey, TESTHOST, TESTPORT)
@@ -271,8 +271,8 @@ func TestAssignProcess(t *testing.T) {
 
 func TestGetWaitingProcesses(t *testing.T) {
 	rootPassword := "password"
-	server, done := PrepareTests(t, rootPassword)
-	env := createTestEnv(t, rootPassword)
+	server, done := prepareTests(t, rootPassword)
+	env := setupTestEnv2(t, rootPassword)
 
 	numberOfRunningProcesses := 20
 	for i := 0; i < numberOfRunningProcesses; i++ {
@@ -295,8 +295,8 @@ func TestGetWaitingProcesses(t *testing.T) {
 
 func TestGetRunningProcesses(t *testing.T) {
 	rootPassword := "password"
-	server, done := PrepareTests(t, rootPassword)
-	env := createTestEnv(t, rootPassword)
+	server, done := prepareTests(t, rootPassword)
+	env := setupTestEnv2(t, rootPassword)
 
 	numberOfRunningProcesses := 20
 	for i := 0; i < numberOfRunningProcesses; i++ {
@@ -321,8 +321,8 @@ func TestGetRunningProcesses(t *testing.T) {
 
 func TestGetSuccessfulProcesses(t *testing.T) {
 	rootPassword := "password"
-	server, done := PrepareTests(t, rootPassword)
-	env := createTestEnv(t, rootPassword)
+	server, done := prepareTests(t, rootPassword)
+	env := setupTestEnv2(t, rootPassword)
 
 	numberOfRunningProcesses := 20
 	for i := 0; i < numberOfRunningProcesses; i++ {
@@ -349,8 +349,8 @@ func TestGetSuccessfulProcesses(t *testing.T) {
 
 func TestGetFailedProcesses(t *testing.T) {
 	rootPassword := "password"
-	server, done := PrepareTests(t, rootPassword)
-	env := createTestEnv(t, rootPassword)
+	server, done := prepareTests(t, rootPassword)
+	env := setupTestEnv2(t, rootPassword)
 
 	numberOfRunningProcesses := 20
 	for i := 0; i < numberOfRunningProcesses; i++ {
@@ -377,8 +377,8 @@ func TestGetFailedProcesses(t *testing.T) {
 
 func TestGetProcess(t *testing.T) {
 	rootPassword := "password"
-	server, done := PrepareTests(t, rootPassword)
-	env := createTestEnv(t, rootPassword)
+	server, done := prepareTests(t, rootPassword)
+	env := setupTestEnv2(t, rootPassword)
 
 	processSpec := core.CreateProcessSpec(env.colonyID, []string{}, "test_runtime_type", -1, 3, 1000, 10, 1, make(map[string]string))
 	addedProcess, err := client.SubmitProcessSpec(processSpec, env.runtimePrvKey, TESTHOST, TESTPORT)
@@ -393,8 +393,8 @@ func TestGetProcess(t *testing.T) {
 
 func TestMarkSuccessful(t *testing.T) {
 	rootPassword := "password"
-	server, done := PrepareTests(t, rootPassword)
-	env := createTestEnv(t, rootPassword)
+	server, done := prepareTests(t, rootPassword)
+	env := setupTestEnv2(t, rootPassword)
 
 	processSpec := core.CreateProcessSpec(env.colonyID, []string{}, "test_runtime_type", -1, 3, 1000, 10, 1, make(map[string]string))
 	addedProcess, err := client.SubmitProcessSpec(processSpec, env.runtimePrvKey, TESTHOST, TESTPORT)
@@ -419,8 +419,8 @@ func TestMarkSuccessful(t *testing.T) {
 
 func TestMarkFailed(t *testing.T) {
 	rootPassword := "password"
-	server, done := PrepareTests(t, rootPassword)
-	env := createTestEnv(t, rootPassword)
+	server, done := prepareTests(t, rootPassword)
+	env := setupTestEnv2(t, rootPassword)
 
 	processSpec := core.CreateProcessSpec(env.colonyID, []string{}, "test_runtime_type", -1, 3, 1000, 10, 1, make(map[string]string))
 	addedProcess, err := client.SubmitProcessSpec(processSpec, env.runtimePrvKey, TESTHOST, TESTPORT)
@@ -445,8 +445,8 @@ func TestMarkFailed(t *testing.T) {
 
 func TestAddGetAttributes(t *testing.T) {
 	rootPassword := "password"
-	server, done := PrepareTests(t, rootPassword)
-	env := createTestEnv(t, rootPassword)
+	server, done := prepareTests(t, rootPassword)
+	env := setupTestEnv2(t, rootPassword)
 
 	processSpec := core.CreateProcessSpec(env.colonyID, []string{}, "test_runtime_type", -1, 3, 1000, 10, 1, make(map[string]string))
 	addedProcess, err := client.SubmitProcessSpec(processSpec, env.runtimePrvKey, TESTHOST, TESTPORT)

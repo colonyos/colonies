@@ -11,9 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// TODO: cleanup testEnv and clientTestEnv, combine them or change name?
-
-type testEnv struct {
+type testEnv1 struct {
 	colony1PrvKey  string
 	colony1ID      string
 	colony2PrvKey  string
@@ -24,7 +22,7 @@ type testEnv struct {
 	runtime2ID     string
 }
 
-type clientTestEnv struct {
+type testEnv2 struct {
 	colonyID      string
 	colony        *core.Colony
 	colonyPrvKey  string
@@ -33,7 +31,42 @@ type clientTestEnv struct {
 	runtimePrvKey string
 }
 
-func createTestEnv(t *testing.T, rootPassword string) *clientTestEnv {
+func setupTestEnv1(t *testing.T) (*testEnv1, *ColoniesServer, chan bool) {
+	apiKey := "testapikey"
+	server, done := prepareTests(t, apiKey)
+
+	// Create a colony
+	colony1PrvKey, err := security.GeneratePrivateKey()
+	assert.Nil(t, err)
+	colony1ID, err := security.GenerateID(colony1PrvKey)
+	assert.Nil(t, err)
+	colony1 := core.CreateColony(colony1ID, "test_colony_name")
+	_, err = client.AddColony(colony1, apiKey, TESTHOST, TESTPORT)
+
+	// Create a colony
+	colony2PrvKey, err := security.GeneratePrivateKey()
+	assert.Nil(t, err)
+	colony2ID, err := security.GenerateID(colony2PrvKey)
+	assert.Nil(t, err)
+	colony2 := core.CreateColony(colony2ID, "test_colony_name")
+	_, err = client.AddColony(colony2, apiKey, TESTHOST, TESTPORT)
+
+	// Create a runtime
+	runtime1, runtime1ID, runtime1PrvKey := generateRuntime(t, colony1ID)
+	_, err = client.AddRuntime(runtime1, colony1PrvKey, TESTHOST, TESTPORT)
+	assert.Nil(t, err)
+
+	// Create a runtime
+	runtime2, runtime2ID, runtime2PrvKey := generateRuntime(t, colony2ID)
+	_, err = client.AddRuntime(runtime2, colony2PrvKey, TESTHOST, TESTPORT)
+	assert.Nil(t, err)
+
+	env := &testEnv1{colony1PrvKey: colony1PrvKey, colony1ID: colony1ID, colony2PrvKey: colony2PrvKey, colony2ID: colony2ID, runtime1PrvKey: runtime1PrvKey, runtime1ID: runtime1ID, runtime2PrvKey: runtime2PrvKey, runtime2ID: runtime2ID}
+
+	return env, server, done
+}
+
+func setupTestEnv2(t *testing.T, rootPassword string) *testEnv2 {
 	// Create a Colony
 	colonyPrvKey, err := security.GeneratePrivateKey()
 	assert.Nil(t, err)
@@ -64,7 +97,7 @@ func createTestEnv(t *testing.T, rootPassword string) *clientTestEnv {
 	_, err = client.AddRuntime(runtime, colonyPrvKey, TESTHOST, TESTPORT)
 	assert.Nil(t, err)
 
-	return &clientTestEnv{colonyID: colonyID,
+	return &testEnv2{colonyID: colonyID,
 		colony:        colony,
 		colonyPrvKey:  colonyPrvKey,
 		runtimeID:     runtimeID,
@@ -89,42 +122,7 @@ func generateRuntime(t *testing.T, colonyID string) (*core.Runtime, string, stri
 	return core.CreateRuntime(runtimeID, runtimeType, name, colonyID, cpu, cores, mem, gpu, gpus), runtimeID, runtimePrvKey
 }
 
-func setupTestEnvironment(t *testing.T) (*testEnv, *ColoniesServer, chan bool) {
-	apiKey := "testapikey"
-	server, done := PrepareTests(t, apiKey)
-
-	// Create a colony
-	colony1PrvKey, err := security.GeneratePrivateKey()
-	assert.Nil(t, err)
-	colony1ID, err := security.GenerateID(colony1PrvKey)
-	assert.Nil(t, err)
-	colony1 := core.CreateColony(colony1ID, "test_colony_name")
-	_, err = client.AddColony(colony1, apiKey, TESTHOST, TESTPORT)
-
-	// Create a colony
-	colony2PrvKey, err := security.GeneratePrivateKey()
-	assert.Nil(t, err)
-	colony2ID, err := security.GenerateID(colony2PrvKey)
-	assert.Nil(t, err)
-	colony2 := core.CreateColony(colony2ID, "test_colony_name")
-	_, err = client.AddColony(colony2, apiKey, TESTHOST, TESTPORT)
-
-	// Create a runtime
-	runtime1, runtime1ID, runtime1PrvKey := generateRuntime(t, colony1ID)
-	_, err = client.AddRuntime(runtime1, colony1PrvKey, TESTHOST, TESTPORT)
-	assert.Nil(t, err)
-
-	// Create a runtime
-	runtime2, runtime2ID, runtime2PrvKey := generateRuntime(t, colony2ID)
-	_, err = client.AddRuntime(runtime2, colony2PrvKey, TESTHOST, TESTPORT)
-	assert.Nil(t, err)
-
-	env := &testEnv{colony1PrvKey: colony1PrvKey, colony1ID: colony1ID, colony2PrvKey: colony2PrvKey, colony2ID: colony2ID, runtime1PrvKey: runtime1PrvKey, runtime1ID: runtime1ID, runtime2PrvKey: runtime2PrvKey, runtime2ID: runtime2ID}
-
-	return env, server, done
-}
-
-func PrepareTests(t *testing.T, rootPassword string) (*ColoniesServer, chan bool) {
+func prepareTests(t *testing.T, rootPassword string) (*ColoniesServer, chan bool) {
 	debug := false
 
 	if debug {
