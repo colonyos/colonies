@@ -1,7 +1,6 @@
 package server
 
 import (
-	"colonies/pkg/client"
 	"colonies/pkg/core"
 	"colonies/pkg/security/crypto"
 	"testing"
@@ -12,7 +11,7 @@ import (
 
 func TestAddColony(t *testing.T) {
 	rootPassword := "password"
-	server, done := prepareTests(t, rootPassword)
+	client, server, done := prepareTests(t, rootPassword)
 
 	crypto := crypto.CreateCrypto()
 	colonyPrvKey, err := crypto.GeneratePrivateKey()
@@ -21,7 +20,7 @@ func TestAddColony(t *testing.T) {
 	assert.Nil(t, err)
 
 	colony := core.CreateColony(colonyID, "test_colony_name")
-	colonyAdded, err := client.AddColony(colony, rootPassword, TESTHOST, TESTPORT)
+	colonyAdded, err := client.AddColony(colony, rootPassword)
 	assert.Nil(t, err)
 	assert.True(t, colony.Equals(colonyAdded))
 
@@ -31,7 +30,7 @@ func TestAddColony(t *testing.T) {
 
 func TestGetColony(t *testing.T) {
 	rootPassword := "password"
-	server, done := prepareTests(t, rootPassword)
+	client, server, done := prepareTests(t, rootPassword)
 
 	crypto := crypto.CreateCrypto()
 	colonyPrvKey, err := crypto.GeneratePrivateKey()
@@ -40,17 +39,17 @@ func TestGetColony(t *testing.T) {
 	assert.Nil(t, err)
 
 	colony := core.CreateColony(colonyID, "test_colony_name")
-	_, err = client.AddColony(colony, rootPassword, TESTHOST, TESTPORT)
+	_, err = client.AddColony(colony, rootPassword)
 	assert.Nil(t, err)
 
 	runtime, _, runtimePrvKey := generateRuntime(t, colonyID)
-	_, err = client.AddRuntime(runtime, colonyPrvKey, TESTHOST, TESTPORT)
+	_, err = client.AddRuntime(runtime, colonyPrvKey)
 	assert.Nil(t, err)
 
-	err = client.ApproveRuntime(runtime.ID, colonyPrvKey, TESTHOST, TESTPORT)
+	err = client.ApproveRuntime(runtime.ID, colonyPrvKey)
 	assert.Nil(t, err)
 
-	colonyFromServer, err := client.GetColonyByID(colonyID, runtimePrvKey, TESTHOST, TESTPORT)
+	colonyFromServer, err := client.GetColonyByID(colonyID, runtimePrvKey)
 	assert.Nil(t, err)
 	assert.True(t, colony.Equals(colonyFromServer))
 
@@ -60,7 +59,7 @@ func TestGetColony(t *testing.T) {
 
 func TestGetColonies(t *testing.T) {
 	rootPassword := "password"
-	server, done := prepareTests(t, rootPassword)
+	client, server, done := prepareTests(t, rootPassword)
 
 	crypto := crypto.CreateCrypto()
 	prvKey1, err := crypto.GeneratePrivateKey()
@@ -68,7 +67,7 @@ func TestGetColonies(t *testing.T) {
 	colonyID1, err := crypto.GenerateID(prvKey1)
 	assert.Nil(t, err)
 	colony1 := core.CreateColony(colonyID1, "test_colony_name")
-	_, err = client.AddColony(colony1, rootPassword, TESTHOST, TESTPORT)
+	_, err = client.AddColony(colony1, rootPassword)
 	assert.Nil(t, err)
 
 	prvKey2, err := crypto.GeneratePrivateKey()
@@ -76,14 +75,14 @@ func TestGetColonies(t *testing.T) {
 	colonyID2, err := crypto.GenerateID(prvKey2)
 	assert.Nil(t, err)
 	colony2 := core.CreateColony(colonyID2, "test_colony_name")
-	_, err = client.AddColony(colony2, rootPassword, TESTHOST, TESTPORT)
+	_, err = client.AddColony(colony2, rootPassword)
 	assert.Nil(t, err)
 
 	var colonies []*core.Colony
 	colonies = append(colonies, colony1)
 	colonies = append(colonies, colony2)
 
-	coloniesFromServer, err := client.GetColonies(rootPassword, TESTHOST, TESTPORT)
+	coloniesFromServer, err := client.GetColonies(rootPassword)
 	assert.Nil(t, err)
 	assert.True(t, core.IsColonyArraysEqual(colonies, coloniesFromServer))
 
@@ -93,7 +92,7 @@ func TestGetColonies(t *testing.T) {
 
 func TestAddRuntime(t *testing.T) {
 	rootPassword := "testapikey"
-	server, done := prepareTests(t, rootPassword)
+	client, server, done := prepareTests(t, rootPassword)
 
 	// Create a Colony
 	crypto := crypto.CreateCrypto()
@@ -105,7 +104,7 @@ func TestAddRuntime(t *testing.T) {
 
 	colony := core.CreateColony(colonyID, "test_colony_name")
 
-	_, err = client.AddColony(colony, rootPassword, TESTHOST, TESTPORT)
+	_, err = client.AddColony(colony, rootPassword)
 	assert.Nil(t, err)
 
 	// Create a runtime
@@ -123,16 +122,16 @@ func TestAddRuntime(t *testing.T) {
 	gpus := 1
 
 	runtime := core.CreateRuntime(runtimeID, runtimeType, name, colonyID, cpu, cores, mem, gpu, gpus)
-	addedRuntime, err := client.AddRuntime(runtime, colonyPrvKey, TESTHOST, TESTPORT)
+	addedRuntime, err := client.AddRuntime(runtime, colonyPrvKey)
 	assert.Nil(t, err)
 	assert.True(t, runtime.Equals(addedRuntime))
-	err = client.ApproveRuntime(runtime.ID, colonyPrvKey, TESTHOST, TESTPORT)
+	err = client.ApproveRuntime(runtime.ID, colonyPrvKey)
 	assert.Nil(t, err)
 
 	// Just to make the comparison below work, the status will change after it has been approved
 	addedRuntime.Status = core.APPROVED
 
-	runtimeFromServer, err := client.GetRuntime(runtimeID, runtimePrvKey, TESTHOST, TESTPORT)
+	runtimeFromServer, err := client.GetRuntime(runtimeID, runtimePrvKey)
 	assert.Nil(t, err)
 	assert.NotNil(t, runtimeFromServer)
 	assert.True(t, addedRuntime.Equals(runtimeFromServer))
@@ -143,7 +142,7 @@ func TestAddRuntime(t *testing.T) {
 
 func TestGetRuntimes(t *testing.T) {
 	rootPassword := "password"
-	server, done := prepareTests(t, rootPassword)
+	client, server, done := prepareTests(t, rootPassword)
 
 	// Create a Colony
 	crypto := crypto.CreateCrypto()
@@ -154,7 +153,7 @@ func TestGetRuntimes(t *testing.T) {
 
 	colony := core.CreateColony(colonyID, "test_colony_name")
 
-	_, err = client.AddColony(colony, rootPassword, TESTHOST, TESTPORT)
+	_, err = client.AddColony(colony, rootPassword)
 	assert.Nil(t, err)
 
 	// Create a Runtime
@@ -172,9 +171,9 @@ func TestGetRuntimes(t *testing.T) {
 	gpus := 1
 
 	runtime1 := core.CreateRuntime(runtime1ID, runtimeType, name, colonyID, cpu, cores, mem, gpu, gpus)
-	_, err = client.AddRuntime(runtime1, colonyPrvKey, TESTHOST, TESTPORT)
+	_, err = client.AddRuntime(runtime1, colonyPrvKey)
 	assert.Nil(t, err)
-	err = client.ApproveRuntime(runtime1.ID, colonyPrvKey, TESTHOST, TESTPORT)
+	err = client.ApproveRuntime(runtime1.ID, colonyPrvKey)
 	assert.Nil(t, err)
 
 	// Create a Runtime
@@ -185,9 +184,9 @@ func TestGetRuntimes(t *testing.T) {
 
 	name = "test_runtime_name_2"
 	runtime2 := core.CreateRuntime(runtime2ID, runtimeType, name, colonyID, cpu, cores, mem, gpu, gpus)
-	_, err = client.AddRuntime(runtime2, colonyPrvKey, TESTHOST, TESTPORT)
+	_, err = client.AddRuntime(runtime2, colonyPrvKey)
 	assert.Nil(t, err)
-	err = client.ApproveRuntime(runtime2.ID, colonyPrvKey, TESTHOST, TESTPORT)
+	err = client.ApproveRuntime(runtime2.ID, colonyPrvKey)
 	assert.Nil(t, err)
 
 	// Just to make the comparison below work, the status will change after it has been approved
@@ -198,7 +197,7 @@ func TestGetRuntimes(t *testing.T) {
 	runtimes = append(runtimes, runtime1)
 	runtimes = append(runtimes, runtime2)
 
-	runtimesFromServer, err := client.GetRuntimes(colonyID, runtime1PrvKey, TESTHOST, TESTPORT)
+	runtimesFromServer, err := client.GetRuntimes(colonyID, runtime1PrvKey)
 	assert.Nil(t, err)
 	assert.True(t, core.IsRuntimeArraysEqual(runtimes, runtimesFromServer))
 
@@ -207,34 +206,34 @@ func TestGetRuntimes(t *testing.T) {
 }
 
 func TestApproveRejectRuntime(t *testing.T) {
-	env, server, done := setupTestEnv2(t)
+	env, client, server, done := setupTestEnv2(t)
 
 	// Add an approved runtime to use for the test below
 	approvedRuntime, _, approvedRuntimePrvKey := generateRuntime(t, env.colonyID)
-	_, err := client.AddRuntime(approvedRuntime, env.colonyPrvKey, TESTHOST, TESTPORT)
+	_, err := client.AddRuntime(approvedRuntime, env.colonyPrvKey)
 	assert.Nil(t, err)
-	err = client.ApproveRuntime(approvedRuntime.ID, env.colonyPrvKey, TESTHOST, TESTPORT)
+	err = client.ApproveRuntime(approvedRuntime.ID, env.colonyPrvKey)
 	assert.Nil(t, err)
 
 	testRuntime, _, _ := generateRuntime(t, env.colonyID)
-	_, err = client.AddRuntime(testRuntime, env.colonyPrvKey, TESTHOST, TESTPORT)
+	_, err = client.AddRuntime(testRuntime, env.colonyPrvKey)
 	assert.Nil(t, err)
 
-	runtimeFromServer, err := client.GetRuntime(testRuntime.ID, approvedRuntimePrvKey, TESTHOST, TESTPORT)
+	runtimeFromServer, err := client.GetRuntime(testRuntime.ID, approvedRuntimePrvKey)
 	assert.Nil(t, err)
 	assert.False(t, runtimeFromServer.IsApproved())
 
-	err = client.ApproveRuntime(testRuntime.ID, env.colonyPrvKey, TESTHOST, TESTPORT)
+	err = client.ApproveRuntime(testRuntime.ID, env.colonyPrvKey)
 	assert.Nil(t, err)
 
-	runtimeFromServer, err = client.GetRuntime(testRuntime.ID, approvedRuntimePrvKey, TESTHOST, TESTPORT)
+	runtimeFromServer, err = client.GetRuntime(testRuntime.ID, approvedRuntimePrvKey)
 	assert.Nil(t, err)
 	assert.True(t, runtimeFromServer.IsApproved())
 
-	err = client.RejectRuntime(testRuntime.ID, env.colonyPrvKey, TESTHOST, TESTPORT)
+	err = client.RejectRuntime(testRuntime.ID, env.colonyPrvKey)
 	assert.Nil(t, err)
 
-	runtimeFromServer, err = client.GetRuntime(testRuntime.ID, approvedRuntimePrvKey, TESTHOST, TESTPORT)
+	runtimeFromServer, err = client.GetRuntime(testRuntime.ID, approvedRuntimePrvKey)
 	assert.Nil(t, err)
 	assert.False(t, runtimeFromServer.IsApproved())
 
@@ -243,16 +242,16 @@ func TestApproveRejectRuntime(t *testing.T) {
 }
 
 func TestSubmitProcess(t *testing.T) {
-	env, server, done := setupTestEnv2(t)
+	env, client, server, done := setupTestEnv2(t)
 
 	in := make(map[string]string)
 	in["test_key_1"] = "test_value_1"
 	processSpec1 := core.CreateProcessSpec(env.colonyID, []string{}, "test_runtime_type", -1, 3, 1000, 10, 1, in)
-	addedProcess1, err := client.SubmitProcessSpec(processSpec1, env.runtimePrvKey, TESTHOST, TESTPORT)
+	addedProcess1, err := client.SubmitProcessSpec(processSpec1, env.runtimePrvKey)
 	assert.Nil(t, err)
 
 	processSpec2 := core.CreateProcessSpec(env.colonyID, []string{}, "test_runtime_type", -1, 3, 1000, 10, 1, make(map[string]string))
-	addedProcess2, err := client.SubmitProcessSpec(processSpec2, env.runtimePrvKey, TESTHOST, TESTPORT)
+	addedProcess2, err := client.SubmitProcessSpec(processSpec2, env.runtimePrvKey)
 	assert.Nil(t, err)
 	assert.Equal(t, processSpec2.Conditions.ColonyID, addedProcess2.ProcessSpec.Conditions.ColonyID)
 
@@ -260,7 +259,7 @@ func TestSubmitProcess(t *testing.T) {
 	processes = append(processes, addedProcess1)
 	processes = append(processes, addedProcess2)
 
-	processesFromServer, err := client.GetWaitingProcesses(env.colonyID, 100, env.runtimePrvKey, TESTHOST, TESTPORT)
+	processesFromServer, err := client.GetWaitingProcesses(env.colonyID, 100, env.runtimePrvKey)
 	assert.Nil(t, err)
 	assert.True(t, core.IsProcessArraysEqual(processes, processesFromServer))
 
@@ -269,23 +268,23 @@ func TestSubmitProcess(t *testing.T) {
 }
 
 func TestAssignProcess(t *testing.T) {
-	env, server, done := setupTestEnv2(t)
+	env, client, server, done := setupTestEnv2(t)
 
 	processSpec1 := core.CreateProcessSpec(env.colonyID, []string{}, "test_runtime_type", -1, 3, 1000, 10, 1, make(map[string]string))
-	addedProcess1, err := client.SubmitProcessSpec(processSpec1, env.runtimePrvKey, TESTHOST, TESTPORT)
+	addedProcess1, err := client.SubmitProcessSpec(processSpec1, env.runtimePrvKey)
 	assert.Nil(t, err)
 
 	time.Sleep(50 * time.Millisecond)
 
 	processSpec2 := core.CreateProcessSpec(env.colonyID, []string{}, "test_runtime_type", -1, 3, 1000, 10, 1, make(map[string]string))
-	addedProcess2, err := client.SubmitProcessSpec(processSpec2, env.runtimePrvKey, TESTHOST, TESTPORT)
+	addedProcess2, err := client.SubmitProcessSpec(processSpec2, env.runtimePrvKey)
 	assert.Nil(t, err)
 
-	assignedProcess, err := client.AssignProcess(env.colonyID, env.runtimePrvKey, TESTHOST, TESTPORT)
+	assignedProcess, err := client.AssignProcess(env.colonyID, env.runtimePrvKey)
 	assert.Nil(t, err)
 	assert.Equal(t, addedProcess1.ID, assignedProcess.ID)
 
-	assignedProcess, err = client.AssignProcess(env.colonyID, env.runtimePrvKey, TESTHOST, TESTPORT)
+	assignedProcess, err = client.AssignProcess(env.colonyID, env.runtimePrvKey)
 	assert.Nil(t, err)
 	assert.Equal(t, addedProcess2.ID, assignedProcess.ID)
 
@@ -294,20 +293,20 @@ func TestAssignProcess(t *testing.T) {
 }
 
 func TestGetWaitingProcesses(t *testing.T) {
-	env, server, done := setupTestEnv2(t)
+	env, client, server, done := setupTestEnv2(t)
 
 	numberOfRunningProcesses := 20
 	for i := 0; i < numberOfRunningProcesses; i++ {
 		processSpec := core.CreateProcessSpec(env.colonyID, []string{}, "test_runtime_type", -1, 3, 1000, 10, 1, make(map[string]string))
-		_, err := client.SubmitProcessSpec(processSpec, env.runtimePrvKey, TESTHOST, TESTPORT)
+		_, err := client.SubmitProcessSpec(processSpec, env.runtimePrvKey)
 		assert.Nil(t, err)
 	}
 
-	processesFromServer, err := client.GetWaitingProcesses(env.colonyID, numberOfRunningProcesses, env.runtimePrvKey, TESTHOST, TESTPORT)
+	processesFromServer, err := client.GetWaitingProcesses(env.colonyID, numberOfRunningProcesses, env.runtimePrvKey)
 	assert.Nil(t, err)
 	assert.Len(t, processesFromServer, numberOfRunningProcesses)
 
-	processesFromServer, err = client.GetWaitingProcesses(env.colonyID, 10, env.runtimePrvKey, TESTHOST, TESTPORT)
+	processesFromServer, err = client.GetWaitingProcesses(env.colonyID, 10, env.runtimePrvKey)
 	assert.Nil(t, err)
 	assert.Len(t, processesFromServer, 10)
 
@@ -316,22 +315,22 @@ func TestGetWaitingProcesses(t *testing.T) {
 }
 
 func TestGetRunningProcesses(t *testing.T) {
-	env, server, done := setupTestEnv2(t)
+	env, client, server, done := setupTestEnv2(t)
 
 	numberOfRunningProcesses := 20
 	for i := 0; i < numberOfRunningProcesses; i++ {
 		processSpec := core.CreateProcessSpec(env.colonyID, []string{}, "test_runtime_type", -1, 3, 1000, 10, 1, make(map[string]string))
-		_, err := client.SubmitProcessSpec(processSpec, env.runtimePrvKey, TESTHOST, TESTPORT)
+		_, err := client.SubmitProcessSpec(processSpec, env.runtimePrvKey)
 		assert.Nil(t, err)
-		_, err = client.AssignProcess(env.colonyID, env.runtimePrvKey, TESTHOST, TESTPORT)
+		_, err = client.AssignProcess(env.colonyID, env.runtimePrvKey)
 		assert.Nil(t, err)
 	}
 
-	processesFromServer, err := client.GetRunningProcesses(env.colonyID, numberOfRunningProcesses, env.runtimePrvKey, TESTHOST, TESTPORT)
+	processesFromServer, err := client.GetRunningProcesses(env.colonyID, numberOfRunningProcesses, env.runtimePrvKey)
 	assert.Nil(t, err)
 	assert.Len(t, processesFromServer, numberOfRunningProcesses)
 
-	processesFromServer, err = client.GetRunningProcesses(env.colonyID, 10, env.runtimePrvKey, TESTHOST, TESTPORT)
+	processesFromServer, err = client.GetRunningProcesses(env.colonyID, 10, env.runtimePrvKey)
 	assert.Nil(t, err)
 	assert.Len(t, processesFromServer, 10)
 
@@ -340,24 +339,24 @@ func TestGetRunningProcesses(t *testing.T) {
 }
 
 func TestGetSuccessfulProcesses(t *testing.T) {
-	env, server, done := setupTestEnv2(t)
+	env, client, server, done := setupTestEnv2(t)
 
 	numberOfRunningProcesses := 20
 	for i := 0; i < numberOfRunningProcesses; i++ {
 		processSpec := core.CreateProcessSpec(env.colonyID, []string{}, "test_runtime_type", -1, 3, 1000, 10, 1, make(map[string]string))
-		_, err := client.SubmitProcessSpec(processSpec, env.runtimePrvKey, TESTHOST, TESTPORT)
+		_, err := client.SubmitProcessSpec(processSpec, env.runtimePrvKey)
 		assert.Nil(t, err)
-		processFromServer, err := client.AssignProcess(env.colonyID, env.runtimePrvKey, TESTHOST, TESTPORT)
+		processFromServer, err := client.AssignProcess(env.colonyID, env.runtimePrvKey)
 		assert.Nil(t, err)
-		err = client.MarkSuccessful(processFromServer.ID, env.runtimePrvKey, TESTHOST, TESTPORT)
+		err = client.MarkSuccessful(processFromServer.ID, env.runtimePrvKey)
 		assert.Nil(t, err)
 	}
 
-	processesFromServer, err := client.GetSuccessfulProcesses(env.colonyID, numberOfRunningProcesses, env.runtimePrvKey, TESTHOST, TESTPORT)
+	processesFromServer, err := client.GetSuccessfulProcesses(env.colonyID, numberOfRunningProcesses, env.runtimePrvKey)
 	assert.Nil(t, err)
 	assert.Len(t, processesFromServer, numberOfRunningProcesses)
 
-	processesFromServer, err = client.GetSuccessfulProcesses(env.colonyID, 10, env.runtimePrvKey, TESTHOST, TESTPORT)
+	processesFromServer, err = client.GetSuccessfulProcesses(env.colonyID, 10, env.runtimePrvKey)
 	assert.Nil(t, err)
 	assert.Len(t, processesFromServer, 10)
 
@@ -366,24 +365,24 @@ func TestGetSuccessfulProcesses(t *testing.T) {
 }
 
 func TestGetFailedProcesses(t *testing.T) {
-	env, server, done := setupTestEnv2(t)
+	env, client, server, done := setupTestEnv2(t)
 
 	numberOfRunningProcesses := 20
 	for i := 0; i < numberOfRunningProcesses; i++ {
 		processSpec := core.CreateProcessSpec(env.colonyID, []string{}, "test_runtime_type", -1, 3, 1000, 10, 1, make(map[string]string))
-		_, err := client.SubmitProcessSpec(processSpec, env.runtimePrvKey, TESTHOST, TESTPORT)
+		_, err := client.SubmitProcessSpec(processSpec, env.runtimePrvKey)
 		assert.Nil(t, err)
-		processFromServer, err := client.AssignProcess(env.colonyID, env.runtimePrvKey, TESTHOST, TESTPORT)
+		processFromServer, err := client.AssignProcess(env.colonyID, env.runtimePrvKey)
 		assert.Nil(t, err)
-		err = client.MarkFailed(processFromServer.ID, env.runtimePrvKey, TESTHOST, TESTPORT)
+		err = client.MarkFailed(processFromServer.ID, env.runtimePrvKey)
 		assert.Nil(t, err)
 	}
 
-	processesFromServer, err := client.GetFailedProcesses(env.colonyID, numberOfRunningProcesses, env.runtimePrvKey, TESTHOST, TESTPORT)
+	processesFromServer, err := client.GetFailedProcesses(env.colonyID, numberOfRunningProcesses, env.runtimePrvKey)
 	assert.Nil(t, err)
 	assert.Len(t, processesFromServer, numberOfRunningProcesses)
 
-	processesFromServer, err = client.GetFailedProcesses(env.colonyID, 10, env.runtimePrvKey, TESTHOST, TESTPORT)
+	processesFromServer, err = client.GetFailedProcesses(env.colonyID, 10, env.runtimePrvKey)
 	assert.Nil(t, err)
 	assert.Len(t, processesFromServer, 10)
 
@@ -392,13 +391,13 @@ func TestGetFailedProcesses(t *testing.T) {
 }
 
 func TestGetProcess(t *testing.T) {
-	env, server, done := setupTestEnv2(t)
+	env, client, server, done := setupTestEnv2(t)
 
 	processSpec := core.CreateProcessSpec(env.colonyID, []string{}, "test_runtime_type", -1, 3, 1000, 10, 1, make(map[string]string))
-	addedProcess, err := client.SubmitProcessSpec(processSpec, env.runtimePrvKey, TESTHOST, TESTPORT)
+	addedProcess, err := client.SubmitProcessSpec(processSpec, env.runtimePrvKey)
 	assert.Nil(t, err)
 
-	processFromServer, err := client.GetProcessByID(addedProcess.ID, env.runtimePrvKey, TESTHOST, TESTPORT)
+	processFromServer, err := client.GetProcessByID(addedProcess.ID, env.runtimePrvKey)
 	assert.True(t, addedProcess.Equals(processFromServer))
 
 	server.Shutdown()
@@ -406,23 +405,23 @@ func TestGetProcess(t *testing.T) {
 }
 
 func TestMarkSuccessful(t *testing.T) {
-	env, server, done := setupTestEnv2(t)
+	env, client, server, done := setupTestEnv2(t)
 
 	processSpec := core.CreateProcessSpec(env.colonyID, []string{}, "test_runtime_type", -1, 3, 1000, 10, 1, make(map[string]string))
-	addedProcess, err := client.SubmitProcessSpec(processSpec, env.runtimePrvKey, TESTHOST, TESTPORT)
+	addedProcess, err := client.SubmitProcessSpec(processSpec, env.runtimePrvKey)
 	assert.Nil(t, err)
 	assert.Equal(t, core.PENDING, addedProcess.Status)
 
-	assignedProcess, err := client.AssignProcess(env.colonyID, env.runtimePrvKey, TESTHOST, TESTPORT)
+	assignedProcess, err := client.AssignProcess(env.colonyID, env.runtimePrvKey)
 	assert.Nil(t, err)
 
-	assignedProcessFromServer, err := client.GetProcessByID(assignedProcess.ID, env.runtimePrvKey, TESTHOST, TESTPORT)
+	assignedProcessFromServer, err := client.GetProcessByID(assignedProcess.ID, env.runtimePrvKey)
 	assert.Equal(t, core.RUNNING, assignedProcessFromServer.Status)
 
-	err = client.MarkSuccessful(assignedProcess.ID, env.runtimePrvKey, TESTHOST, TESTPORT)
+	err = client.MarkSuccessful(assignedProcess.ID, env.runtimePrvKey)
 	assert.Nil(t, err)
 
-	assignedProcessFromServer, err = client.GetProcessByID(assignedProcess.ID, env.runtimePrvKey, TESTHOST, TESTPORT)
+	assignedProcessFromServer, err = client.GetProcessByID(assignedProcess.ID, env.runtimePrvKey)
 	assert.Equal(t, core.SUCCESS, assignedProcessFromServer.Status)
 
 	server.Shutdown()
@@ -430,23 +429,23 @@ func TestMarkSuccessful(t *testing.T) {
 }
 
 func TestMarkFailed(t *testing.T) {
-	env, server, done := setupTestEnv2(t)
+	env, client, server, done := setupTestEnv2(t)
 
 	processSpec := core.CreateProcessSpec(env.colonyID, []string{}, "test_runtime_type", -1, 3, 1000, 10, 1, make(map[string]string))
-	addedProcess, err := client.SubmitProcessSpec(processSpec, env.runtimePrvKey, TESTHOST, TESTPORT)
+	addedProcess, err := client.SubmitProcessSpec(processSpec, env.runtimePrvKey)
 	assert.Nil(t, err)
 	assert.Equal(t, core.PENDING, addedProcess.Status)
 
-	assignedProcess, err := client.AssignProcess(env.colonyID, env.runtimePrvKey, TESTHOST, TESTPORT)
+	assignedProcess, err := client.AssignProcess(env.colonyID, env.runtimePrvKey)
 	assert.Nil(t, err)
 
-	assignedProcessFromServer, err := client.GetProcessByID(assignedProcess.ID, env.runtimePrvKey, TESTHOST, TESTPORT)
+	assignedProcessFromServer, err := client.GetProcessByID(assignedProcess.ID, env.runtimePrvKey)
 	assert.Equal(t, core.RUNNING, assignedProcessFromServer.Status)
 
-	err = client.MarkFailed(assignedProcess.ID, env.runtimePrvKey, TESTHOST, TESTPORT)
+	err = client.MarkFailed(assignedProcess.ID, env.runtimePrvKey)
 	assert.Nil(t, err)
 
-	assignedProcessFromServer, err = client.GetProcessByID(assignedProcess.ID, env.runtimePrvKey, TESTHOST, TESTPORT)
+	assignedProcessFromServer, err = client.GetProcessByID(assignedProcess.ID, env.runtimePrvKey)
 	assert.Equal(t, core.FAILED, assignedProcessFromServer.Status)
 
 	server.Shutdown()
@@ -454,22 +453,22 @@ func TestMarkFailed(t *testing.T) {
 }
 
 func TestAddGetAttributes(t *testing.T) {
-	env, server, done := setupTestEnv2(t)
+	env, client, server, done := setupTestEnv2(t)
 
 	processSpec := core.CreateProcessSpec(env.colonyID, []string{}, "test_runtime_type", -1, 3, 1000, 10, 1, make(map[string]string))
-	addedProcess, err := client.SubmitProcessSpec(processSpec, env.runtimePrvKey, TESTHOST, TESTPORT)
+	addedProcess, err := client.SubmitProcessSpec(processSpec, env.runtimePrvKey)
 	assert.Nil(t, err)
 	assert.Equal(t, core.PENDING, addedProcess.Status)
 
-	assignedProcess, err := client.AssignProcess(env.colonyID, env.runtimePrvKey, TESTHOST, TESTPORT)
+	assignedProcess, err := client.AssignProcess(env.colonyID, env.runtimePrvKey)
 	assert.Nil(t, err)
 
 	attribute := core.CreateAttribute(assignedProcess.ID, core.OUT, "result", "helloworld")
-	addedAttribute, err := client.AddAttribute(attribute, env.runtimePrvKey, TESTHOST, TESTPORT)
+	addedAttribute, err := client.AddAttribute(attribute, env.runtimePrvKey)
 	assert.Nil(t, err)
 	assert.Equal(t, attribute.ID, addedAttribute.ID)
 
-	assignedProcessFromServer, err := client.GetProcessByID(assignedProcess.ID, env.runtimePrvKey, TESTHOST, TESTPORT)
+	assignedProcessFromServer, err := client.GetProcessByID(assignedProcess.ID, env.runtimePrvKey)
 
 	out := make(map[string]string)
 	for _, attribute := range assignedProcessFromServer.Attributes {
@@ -478,7 +477,7 @@ func TestAddGetAttributes(t *testing.T) {
 
 	assert.Equal(t, "helloworld", out["result"])
 
-	attributeFromServer, err := client.GetAttribute(attribute.ID, env.runtimePrvKey, TESTHOST, TESTPORT)
+	attributeFromServer, err := client.GetAttribute(attribute.ID, env.runtimePrvKey)
 	assert.Nil(t, err)
 	assert.Equal(t, attribute.ID, attributeFromServer.ID)
 
