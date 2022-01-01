@@ -2,4 +2,4 @@ package server
 
 const MAX_COUNT = 100
 const TESTHOST = "localhost"
-const TESTPORT = 8080
+const TESTPORT = 28080

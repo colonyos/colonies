@@ -10,12 +10,14 @@ import (
 	"colonies/pkg/security/validator"
 	"context"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/gorilla/websocket"
 	"github.com/sirupsen/logrus"
 )
 
@@ -65,7 +67,31 @@ func CreateColoniesServer(db database.Database, port int, rootPassword string, t
 }
 
 func (server *ColoniesServer) setupRoutes() {
-	server.ginHandler.POST("/endpoint", server.handleEndpointRequest)
+	server.ginHandler.POST("/api", server.handleEndpointRequest)
+	server.ginHandler.GET("/events", server.handleWebsocketRequest)
+}
+
+func (server *ColoniesServer) handleWebsocketRequest(c *gin.Context) {
+	wshandler(c.Writer, c.Request)
+}
+
+var wsupgrader = websocket.Upgrader{} // use default options
+
+func wshandler(w http.ResponseWriter, r *http.Request) {
+	conn, err := wsupgrader.Upgrade(w, r, nil)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	for {
+		t, msg, err := conn.ReadMessage()
+		if err != nil {
+			break
+		}
+		fmt.Println("got " + string(msg))
+		conn.WriteMessage(t, msg)
+	}
 }
 
 func (server *ColoniesServer) handleEndpointRequest(c *gin.Context) {

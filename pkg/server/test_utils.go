@@ -31,9 +31,9 @@ type testEnv2 struct {
 	runtimePrvKey string
 }
 
-func setupTestEnv1(t *testing.T) (*testEnv1, *ColoniesServer, chan bool) {
+func setupTestEnv1(t *testing.T) (*testEnv1, *client.ColoniesClient, *ColoniesServer, chan bool) {
 	rootPassword := "secretpassword"
-	server, done := prepareTests(t, rootPassword)
+	client, server, done := prepareTests(t, rootPassword)
 
 	crypto := crypto.CreateCrypto()
 
@@ -43,7 +43,7 @@ func setupTestEnv1(t *testing.T) (*testEnv1, *ColoniesServer, chan bool) {
 	colony1ID, err := crypto.GenerateID(colony1PrvKey)
 	assert.Nil(t, err)
 	colony1 := core.CreateColony(colony1ID, "test_colony_name")
-	_, err = client.AddColony(colony1, rootPassword, TESTHOST, TESTPORT)
+	_, err = client.AddColony(colony1, rootPassword)
 
 	// Create a colony
 	colony2PrvKey, err := crypto.GeneratePrivateKey()
@@ -51,22 +51,22 @@ func setupTestEnv1(t *testing.T) (*testEnv1, *ColoniesServer, chan bool) {
 	colony2ID, err := crypto.GenerateID(colony2PrvKey)
 	assert.Nil(t, err)
 	colony2 := core.CreateColony(colony2ID, "test_colony_name")
-	_, err = client.AddColony(colony2, rootPassword, TESTHOST, TESTPORT)
+	_, err = client.AddColony(colony2, rootPassword)
 
 	// Create a runtime
 	runtime1, runtime1ID, runtime1PrvKey := generateRuntime(t, colony1ID)
-	_, err = client.AddRuntime(runtime1, colony1PrvKey, TESTHOST, TESTPORT)
+	_, err = client.AddRuntime(runtime1, colony1PrvKey)
 	assert.Nil(t, err)
 
 	// Create a runtime
 	runtime2, runtime2ID, runtime2PrvKey := generateRuntime(t, colony2ID)
-	_, err = client.AddRuntime(runtime2, colony2PrvKey, TESTHOST, TESTPORT)
+	_, err = client.AddRuntime(runtime2, colony2PrvKey)
 	assert.Nil(t, err)
 
-	err = client.ApproveRuntime(runtime1.ID, colony1PrvKey, TESTHOST, TESTPORT)
+	err = client.ApproveRuntime(runtime1.ID, colony1PrvKey)
 	assert.Nil(t, err)
 
-	err = client.ApproveRuntime(runtime2.ID, colony2PrvKey, TESTHOST, TESTPORT)
+	err = client.ApproveRuntime(runtime2.ID, colony2PrvKey)
 	assert.Nil(t, err)
 
 	env := &testEnv1{colony1PrvKey: colony1PrvKey,
@@ -78,12 +78,12 @@ func setupTestEnv1(t *testing.T) (*testEnv1, *ColoniesServer, chan bool) {
 		runtime2PrvKey: runtime2PrvKey,
 		runtime2ID:     runtime2ID}
 
-	return env, server, done
+	return env, client, server, done
 }
 
-func setupTestEnv2(t *testing.T) (*testEnv2, *ColoniesServer, chan bool) {
+func setupTestEnv2(t *testing.T) (*testEnv2, *client.ColoniesClient, *ColoniesServer, chan bool) {
 	rootPassword := "secretpassword"
-	server, done := prepareTests(t, rootPassword)
+	client, server, done := prepareTests(t, rootPassword)
 
 	crypto := crypto.CreateCrypto()
 
@@ -96,7 +96,7 @@ func setupTestEnv2(t *testing.T) (*testEnv2, *ColoniesServer, chan bool) {
 
 	colony := core.CreateColony(colonyID, "test_colony_name")
 
-	_, err = client.AddColony(colony, rootPassword, TESTHOST, TESTPORT)
+	_, err = client.AddColony(colony, rootPassword)
 	assert.Nil(t, err)
 
 	// Create a runtime
@@ -114,10 +114,10 @@ func setupTestEnv2(t *testing.T) (*testEnv2, *ColoniesServer, chan bool) {
 	gpus := 1
 
 	runtime := core.CreateRuntime(runtimeID, runtimeType, name, colonyID, cpu, cores, mem, gpu, gpus)
-	_, err = client.AddRuntime(runtime, colonyPrvKey, TESTHOST, TESTPORT)
+	_, err = client.AddRuntime(runtime, colonyPrvKey)
 	assert.Nil(t, err)
 
-	err = client.ApproveRuntime(runtime.ID, colonyPrvKey, TESTHOST, TESTPORT)
+	err = client.ApproveRuntime(runtime.ID, colonyPrvKey)
 	assert.Nil(t, err)
 
 	env := &testEnv2{colonyID: colonyID,
@@ -127,7 +127,7 @@ func setupTestEnv2(t *testing.T) (*testEnv2, *ColoniesServer, chan bool) {
 		runtime:       runtime,
 		runtimePrvKey: runtimePrvKey}
 
-	return env, server, done
+	return env, client, server, done
 }
 
 func generateRuntime(t *testing.T, colonyID string) (*core.Runtime, string, string) {
@@ -149,9 +149,10 @@ func generateRuntime(t *testing.T, colonyID string) (*core.Runtime, string, stri
 	return core.CreateRuntime(runtimeID, runtimeType, name, colonyID, cpu, cores, mem, gpu, gpus), runtimeID, runtimePrvKey
 }
 
-func prepareTests(t *testing.T, rootPassword string) (*ColoniesServer, chan bool) {
-	debug := false
+func prepareTests(t *testing.T, rootPassword string) (*client.ColoniesClient, *ColoniesServer, chan bool) {
+	client := client.CreateColoniesClient(TESTHOST, TESTPORT, true)
 
+	debug := false
 	if debug {
 		logging.DisableDebug()
 	}
@@ -159,7 +160,7 @@ func prepareTests(t *testing.T, rootPassword string) (*ColoniesServer, chan bool
 	db, err := postgresql.PrepareTests()
 	assert.Nil(t, err)
 
-	server := CreateColoniesServer(db, 8080, rootPassword, "../../cert/key.pem", "../../cert/cert.pem", debug)
+	server := CreateColoniesServer(db, TESTPORT, rootPassword, "../../cert/key.pem", "../../cert/cert.pem", debug)
 	done := make(chan bool)
 
 	go func() {
@@ -167,5 +168,5 @@ func prepareTests(t *testing.T, rootPassword string) (*ColoniesServer, chan bool
 		done <- true
 	}()
 
-	return server, done
+	return client, server, done
 }
