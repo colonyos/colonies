@@ -11,13 +11,27 @@ import (
 	"github.com/go-resty/resty/v2"
 )
 
-func client() *resty.Client {
-	client := resty.New()
-	client.SetTLSClientConfig(&tls.Config{InsecureSkipVerify: true})
+type ColoniesClient struct {
+	restyClient *resty.Client
+	host        string
+	port        int
+}
+
+func CreateColoniesClient(host string, port int, insecure bool) *ColoniesClient {
+	client := &ColoniesClient{}
+	client.restyClient = resty.New()
+
+	client.host = host
+	client.port = port
+
+	if insecure {
+		client.restyClient.SetTLSClientConfig(&tls.Config{InsecureSkipVerify: true})
+	}
+
 	return client
 }
 
-func checkStatusCode(statusCode int, jsonString string) error {
+func (client *ColoniesClient) checkStatusCode(statusCode int, jsonString string) error {
 	if statusCode != 200 {
 		failure, err := core.ConvertJSONToFailure(jsonString)
 		if err != nil {
@@ -30,13 +44,13 @@ func checkStatusCode(statusCode int, jsonString string) error {
 	return nil
 }
 
-func sendMessageNoSignature(client *resty.Client, jsonString string, host string, port int) (string, error) {
-	resp, err := client.R().
+func (client *ColoniesClient) sendMessageNoSignature(jsonString string) (string, error) {
+	resp, err := client.restyClient.R().
 		SetBody(jsonString).
-		Post("https://" + host + ":" + strconv.Itoa(port) + "/endpoint")
+		Post("https://" + client.host + ":" + strconv.Itoa(client.port) + "/api")
 
 	respBodyString := string(resp.Body())
-	err = checkStatusCode(resp.StatusCode(), respBodyString)
+	err = client.checkStatusCode(resp.StatusCode(), respBodyString)
 	if err != nil {
 		return "", err
 	}
@@ -44,15 +58,15 @@ func sendMessageNoSignature(client *resty.Client, jsonString string, host string
 	return respBodyString, nil
 }
 
-func sendMessage(client *resty.Client, jsonString string, prvKey string, host string, port int) (string, error) {
+func (client *ColoniesClient) sendMessage(jsonString string, prvKey string) (string, error) {
 	signature, err := crypto.CreateCrypto().GenerateSignature(jsonString, prvKey)
-	resp, err := client.R().
+	resp, err := client.restyClient.R().
 		SetHeader("Signature", signature).
 		SetBody(jsonString).
-		Post("https://" + host + ":" + strconv.Itoa(port) + "/endpoint")
+		Post("https://" + client.host + ":" + strconv.Itoa(client.port) + "/api")
 
 	respBodyString := string(resp.Body())
-	err = checkStatusCode(resp.StatusCode(), respBodyString)
+	err = client.checkStatusCode(resp.StatusCode(), respBodyString)
 	if err != nil {
 		return "", err
 	}
@@ -60,16 +74,14 @@ func sendMessage(client *resty.Client, jsonString string, prvKey string, host st
 	return respBodyString, nil
 }
 
-func AddColony(colony *core.Colony, rootPassword string, host string, port int) (*core.Colony, error) {
-	client := client()
-
+func (client *ColoniesClient) AddColony(colony *core.Colony, rootPassword string) (*core.Colony, error) {
 	msg := rpc.CreateAddColonyMsg(rootPassword, colony)
 	jsonString, err := msg.ToJSON()
 	if err != nil {
 		return nil, err
 	}
 
-	respBodyString, err := sendMessageNoSignature(client, jsonString, host, port)
+	respBodyString, err := client.sendMessageNoSignature(jsonString)
 	if err != nil {
 		return nil, err
 	}
@@ -82,16 +94,14 @@ func AddColony(colony *core.Colony, rootPassword string, host string, port int) 
 	return addedColony, nil
 }
 
-func GetColonies(rootPassword string, host string, port int) ([]*core.Colony, error) {
-	client := client()
-
+func (client *ColoniesClient) GetColonies(rootPassword string) ([]*core.Colony, error) {
 	msg := rpc.CreateGetColoniesMsg(rootPassword)
 	jsonString, err := msg.ToJSON()
 	if err != nil {
 		return nil, err
 	}
 
-	respBodyString, err := sendMessageNoSignature(client, jsonString, host, port)
+	respBodyString, err := client.sendMessageNoSignature(jsonString)
 	if err != nil {
 		return nil, err
 	}
@@ -99,16 +109,14 @@ func GetColonies(rootPassword string, host string, port int) ([]*core.Colony, er
 	return core.ConvertJSONToColonyArray(respBodyString)
 }
 
-func GetColonyByID(colonyID string, prvKey string, host string, port int) (*core.Colony, error) {
-	client := client()
-
+func (client *ColoniesClient) GetColonyByID(colonyID string, prvKey string) (*core.Colony, error) {
 	msg := rpc.CreateGetColonyMsg(colonyID)
 	jsonString, err := msg.ToJSON()
 	if err != nil {
 		return nil, err
 	}
 
-	respBodyString, err := sendMessage(client, jsonString, prvKey, host, port)
+	respBodyString, err := client.sendMessage(jsonString, prvKey)
 	if err != nil {
 		return nil, err
 	}
@@ -116,16 +124,14 @@ func GetColonyByID(colonyID string, prvKey string, host string, port int) (*core
 	return core.ConvertJSONToColony(respBodyString)
 }
 
-func AddRuntime(runtime *core.Runtime, prvKey string, host string, port int) (*core.Runtime, error) {
-	client := client()
-
+func (client *ColoniesClient) AddRuntime(runtime *core.Runtime, prvKey string) (*core.Runtime, error) {
 	msg := rpc.CreateAddRuntimeMsg(runtime)
 	jsonString, err := msg.ToJSON()
 	if err != nil {
 		return nil, err
 	}
 
-	respBodyString, err := sendMessage(client, jsonString, prvKey, host, port)
+	respBodyString, err := client.sendMessage(jsonString, prvKey)
 	if err != nil {
 		return nil, err
 	}
@@ -133,16 +139,14 @@ func AddRuntime(runtime *core.Runtime, prvKey string, host string, port int) (*c
 	return core.ConvertJSONToRuntime(respBodyString)
 }
 
-func GetRuntimes(colonyID string, prvKey string, host string, port int) ([]*core.Runtime, error) {
-	client := client()
-
+func (client *ColoniesClient) GetRuntimes(colonyID string, prvKey string) ([]*core.Runtime, error) {
 	msg := rpc.CreateGetRuntimesMsg(colonyID)
 	jsonString, err := msg.ToJSON()
 	if err != nil {
 		return nil, err
 	}
 
-	respBodyString, err := sendMessage(client, jsonString, prvKey, host, port)
+	respBodyString, err := client.sendMessage(jsonString, prvKey)
 	if err != nil {
 		return nil, err
 	}
@@ -150,16 +154,14 @@ func GetRuntimes(colonyID string, prvKey string, host string, port int) ([]*core
 	return core.ConvertJSONToRuntimeArray(respBodyString)
 }
 
-func GetRuntime(runtimeID string, prvKey string, host string, port int) (*core.Runtime, error) {
-	client := client()
-
+func (client *ColoniesClient) GetRuntime(runtimeID string, prvKey string) (*core.Runtime, error) {
 	msg := rpc.CreateGetRuntimeMsg(runtimeID)
 	jsonString, err := msg.ToJSON()
 	if err != nil {
 		return nil, err
 	}
 
-	respBodyString, err := sendMessage(client, jsonString, prvKey, host, port)
+	respBodyString, err := client.sendMessage(jsonString, prvKey)
 	if err != nil {
 		return nil, err
 	}
@@ -167,16 +169,14 @@ func GetRuntime(runtimeID string, prvKey string, host string, port int) (*core.R
 	return core.ConvertJSONToRuntime(respBodyString)
 }
 
-func ApproveRuntime(runtimeID string, prvKey string, host string, port int) error {
-	client := client()
-
+func (client *ColoniesClient) ApproveRuntime(runtimeID string, prvKey string) error {
 	msg := rpc.CreateApproveRuntimeMsg(runtimeID)
 	jsonString, err := msg.ToJSON()
 	if err != nil {
 		return err
 	}
 
-	_, err = sendMessage(client, jsonString, prvKey, host, port)
+	_, err = client.sendMessage(jsonString, prvKey)
 	if err != nil {
 		return err
 	}
@@ -184,16 +184,14 @@ func ApproveRuntime(runtimeID string, prvKey string, host string, port int) erro
 	return nil
 }
 
-func RejectRuntime(runtimeID string, prvKey string, host string, port int) error {
-	client := client()
-
+func (client *ColoniesClient) RejectRuntime(runtimeID string, prvKey string) error {
 	msg := rpc.CreateRejectRuntimeMsg(runtimeID)
 	jsonString, err := msg.ToJSON()
 	if err != nil {
 		return err
 	}
 
-	_, err = sendMessage(client, jsonString, prvKey, host, port)
+	_, err = client.sendMessage(jsonString, prvKey)
 	if err != nil {
 		return err
 	}
@@ -201,16 +199,14 @@ func RejectRuntime(runtimeID string, prvKey string, host string, port int) error
 	return nil
 }
 
-func SubmitProcessSpec(processSpec *core.ProcessSpec, prvKey string, host string, port int) (*core.Process, error) {
-	client := client()
-
+func (client *ColoniesClient) SubmitProcessSpec(processSpec *core.ProcessSpec, prvKey string) (*core.Process, error) {
 	msg := rpc.CreateSubmitProcessSpecMsg(processSpec)
 	jsonString, err := msg.ToJSON()
 	if err != nil {
 		return nil, err
 	}
 
-	respBodyString, err := sendMessage(client, jsonString, prvKey, host, port)
+	respBodyString, err := client.sendMessage(jsonString, prvKey)
 	if err != nil {
 		return nil, err
 	}
@@ -218,16 +214,14 @@ func SubmitProcessSpec(processSpec *core.ProcessSpec, prvKey string, host string
 	return core.ConvertJSONToProcess(respBodyString)
 }
 
-func AssignProcess(colonyID string, prvKey string, host string, port int) (*core.Process, error) {
-	client := client()
-
+func (client *ColoniesClient) AssignProcess(colonyID string, prvKey string) (*core.Process, error) {
 	msg := rpc.CreateAssignProcessMsg(colonyID)
 	jsonString, err := msg.ToJSON()
 	if err != nil {
 		return nil, err
 	}
 
-	respBodyString, err := sendMessage(client, jsonString, prvKey, host, port)
+	respBodyString, err := client.sendMessage(jsonString, prvKey)
 	if err != nil {
 		return nil, err
 	}
@@ -235,16 +229,14 @@ func AssignProcess(colonyID string, prvKey string, host string, port int) (*core
 	return core.ConvertJSONToProcess(respBodyString)
 }
 
-func getProcesses(state int, colonyID string, count int, prvKey string, host string, port int) ([]*core.Process, error) {
-	client := client()
-
+func (client *ColoniesClient) getProcesses(state int, colonyID string, count int, prvKey string) ([]*core.Process, error) {
 	msg := rpc.CreateGetProcessesMsg(colonyID, count, state)
 	jsonString, err := msg.ToJSON()
 	if err != nil {
 		return nil, err
 	}
 
-	respBodyString, err := sendMessage(client, jsonString, prvKey, host, port)
+	respBodyString, err := client.sendMessage(jsonString, prvKey)
 	if err != nil {
 		return nil, err
 	}
@@ -252,32 +244,30 @@ func getProcesses(state int, colonyID string, count int, prvKey string, host str
 	return core.ConvertJSONToProcessArray(respBodyString)
 }
 
-func GetWaitingProcesses(colonyID string, count int, prvKey string, host string, port int) ([]*core.Process, error) {
-	return getProcesses(core.WAITING, colonyID, count, prvKey, host, port)
+func (client *ColoniesClient) GetWaitingProcesses(colonyID string, count int, prvKey string) ([]*core.Process, error) {
+	return client.getProcesses(core.WAITING, colonyID, count, prvKey)
 }
 
-func GetRunningProcesses(colonyID string, count int, prvKey string, host string, port int) ([]*core.Process, error) {
-	return getProcesses(core.RUNNING, colonyID, count, prvKey, host, port)
+func (client *ColoniesClient) GetRunningProcesses(colonyID string, count int, prvKey string) ([]*core.Process, error) {
+	return client.getProcesses(core.RUNNING, colonyID, count, prvKey)
 }
 
-func GetSuccessfulProcesses(colonyID string, count int, prvKey string, host string, port int) ([]*core.Process, error) {
-	return getProcesses(core.SUCCESS, colonyID, count, prvKey, host, port)
+func (client *ColoniesClient) GetSuccessfulProcesses(colonyID string, count int, prvKey string) ([]*core.Process, error) {
+	return client.getProcesses(core.SUCCESS, colonyID, count, prvKey)
 }
 
-func GetFailedProcesses(colonyID string, count int, prvKey string, host string, port int) ([]*core.Process, error) {
-	return getProcesses(core.FAILED, colonyID, count, prvKey, host, port)
+func (client *ColoniesClient) GetFailedProcesses(colonyID string, count int, prvKey string) ([]*core.Process, error) {
+	return client.getProcesses(core.FAILED, colonyID, count, prvKey)
 }
 
-func GetProcessByID(processID string, prvKey string, host string, port int) (*core.Process, error) {
-	client := client()
-
+func (client *ColoniesClient) GetProcessByID(processID string, prvKey string) (*core.Process, error) {
 	msg := rpc.CreateGetProcessMsg(processID)
 	jsonString, err := msg.ToJSON()
 	if err != nil {
 		return nil, err
 	}
 
-	respBodyString, err := sendMessage(client, jsonString, prvKey, host, port)
+	respBodyString, err := client.sendMessage(jsonString, prvKey)
 	if err != nil {
 		return nil, err
 	}
@@ -285,16 +275,14 @@ func GetProcessByID(processID string, prvKey string, host string, port int) (*co
 	return core.ConvertJSONToProcess(respBodyString)
 }
 
-func MarkSuccessful(processID string, prvKey string, host string, port int) error {
-	client := client()
-
+func (client *ColoniesClient) MarkSuccessful(processID string, prvKey string) error {
 	msg := rpc.CreateMarkSuccessfulMsg(processID)
 	jsonString, err := msg.ToJSON()
 	if err != nil {
 		return err
 	}
 
-	_, err = sendMessage(client, jsonString, prvKey, host, port)
+	_, err = client.sendMessage(jsonString, prvKey)
 	if err != nil {
 		return err
 	}
@@ -302,16 +290,14 @@ func MarkSuccessful(processID string, prvKey string, host string, port int) erro
 	return nil
 }
 
-func MarkFailed(processID string, prvKey string, host string, port int) error {
-	client := client()
-
+func (client *ColoniesClient) MarkFailed(processID string, prvKey string) error {
 	msg := rpc.CreateMarkFailedMsg(processID)
 	jsonString, err := msg.ToJSON()
 	if err != nil {
 		return err
 	}
 
-	_, err = sendMessage(client, jsonString, prvKey, host, port)
+	_, err = client.sendMessage(jsonString, prvKey)
 	if err != nil {
 		return err
 	}
@@ -319,16 +305,14 @@ func MarkFailed(processID string, prvKey string, host string, port int) error {
 	return nil
 }
 
-func AddAttribute(attribute *core.Attribute, prvKey string, host string, port int) (*core.Attribute, error) {
-	client := client()
-
+func (client *ColoniesClient) AddAttribute(attribute *core.Attribute, prvKey string) (*core.Attribute, error) {
 	msg := rpc.CreateAddAttributeMsg(attribute)
 	jsonString, err := msg.ToJSON()
 	if err != nil {
 		return nil, err
 	}
 
-	respBodyString, err := sendMessage(client, jsonString, prvKey, host, port)
+	respBodyString, err := client.sendMessage(jsonString, prvKey)
 	if err != nil {
 		return nil, err
 	}
@@ -336,16 +320,14 @@ func AddAttribute(attribute *core.Attribute, prvKey string, host string, port in
 	return core.ConvertJSONToAttribute(respBodyString)
 }
 
-func GetAttribute(attributeID string, prvKey string, host string, port int) (*core.Attribute, error) {
-	client := client()
-
+func (client *ColoniesClient) GetAttribute(attributeID string, prvKey string) (*core.Attribute, error) {
 	msg := rpc.CreateGetAttributeMsg(attributeID)
 	jsonString, err := msg.ToJSON()
 	if err != nil {
 		return nil, err
 	}
 
-	respBodyString, err := sendMessage(client, jsonString, prvKey, host, port)
+	respBodyString, err := client.sendMessage(jsonString, prvKey)
 	if err != nil {
 		return nil, err
 	}

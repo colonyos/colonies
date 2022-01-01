@@ -71,7 +71,8 @@ var addAttributeCmd = &cobra.Command{
 		}
 
 		attribute := core.CreateAttribute(ProcessID, core.OUT, Key, Value)
-		addedAttribute, err := client.AddAttribute(attribute, RuntimePrvKey, ServerHost, ServerPort)
+		client := client.CreateColoniesClient(ServerHost, ServerPort, true) // XXX: Insecure
+		addedAttribute, err := client.AddAttribute(attribute, RuntimePrvKey)
 		CheckError(err)
 
 		fmt.Println(addedAttribute.ID)
@@ -105,7 +106,8 @@ var getAttributeCmd = &cobra.Command{
 			CheckError(err)
 		}
 
-		attribute, err := client.GetAttribute(AttributeID, RuntimePrvKey, ServerHost, ServerPort)
+		client := client.CreateColoniesClient(ServerHost, ServerPort, true) // XXX: Insecure
+		attribute, err := client.GetAttribute(AttributeID, RuntimePrvKey)
 		CheckError(err)
 
 		var attributeType string

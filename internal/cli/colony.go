@@ -61,7 +61,8 @@ var registerColonyCmd = &cobra.Command{
 		err = keychain.AddPrvKey(colonyID, prvKey)
 		CheckError(err)
 
-		addedColony, err := client.AddColony(colony, RootPassword, ServerHost, ServerPort)
+		client := client.CreateColoniesClient(ServerHost, ServerPort, true) // XXX: Insecure
+		addedColony, err := client.AddColony(colony, RootPassword)
 		CheckError(err)
 
 		fmt.Println(addedColony.ID)
@@ -73,7 +74,8 @@ var lsColoniesCmd = &cobra.Command{
 	Short: "List all Colonies",
 	Long:  "List all Colonies",
 	Run: func(cmd *cobra.Command, args []string) {
-		coloniesFromServer, err := client.GetColonies(RootPassword, ServerHost, ServerPort)
+		client := client.CreateColoniesClient(ServerHost, ServerPort, true) // XXX: Insecure
+		coloniesFromServer, err := client.GetColonies(RootPassword)
 		CheckError(err)
 
 		if JSON {

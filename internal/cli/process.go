@@ -113,7 +113,8 @@ var submitProcessCmd = &cobra.Command{
 			CheckError(err)
 		}
 
-		addedProcess, err := client.SubmitProcessSpec(processSpec, RuntimePrvKey, ServerHost, ServerPort)
+		client := client.CreateColoniesClient(ServerHost, ServerPort, true) // XXX: Insecure
+		addedProcess, err := client.SubmitProcessSpec(processSpec, RuntimePrvKey)
 		CheckError(err)
 
 		fmt.Println(addedProcess.ID)
@@ -147,7 +148,8 @@ var assignProcessCmd = &cobra.Command{
 			CheckError(err)
 		}
 
-		process, err := client.AssignProcess(ColonyID, RuntimePrvKey, ServerHost, ServerPort)
+		client := client.CreateColoniesClient(ServerHost, ServerPort, true) // XXX: Insecure
+		process, err := client.AssignProcess(ColonyID, RuntimePrvKey)
 		if err != nil {
 			fmt.Println("No process was assigned")
 		} else {
@@ -183,7 +185,8 @@ var listWaitingProcessesCmd = &cobra.Command{
 			CheckError(err)
 		}
 
-		processes, err := client.GetWaitingProcesses(ColonyID, Count, RuntimePrvKey, ServerHost, ServerPort)
+		client := client.CreateColoniesClient(ServerHost, ServerPort, true) // XXX: Insecure
+		processes, err := client.GetWaitingProcesses(ColonyID, Count, RuntimePrvKey)
 		CheckError(err)
 
 		if len(processes) == 0 {
@@ -238,7 +241,8 @@ var listRunningProcessesCmd = &cobra.Command{
 			CheckError(err)
 		}
 
-		processes, err := client.GetRunningProcesses(ColonyID, Count, RuntimePrvKey, ServerHost, ServerPort)
+		client := client.CreateColoniesClient(ServerHost, ServerPort, true) // XXX: Insecure
+		processes, err := client.GetRunningProcesses(ColonyID, Count, RuntimePrvKey)
 		CheckError(err)
 
 		if len(processes) == 0 {
@@ -292,7 +296,8 @@ var listSuccessfulProcessesCmd = &cobra.Command{
 			CheckError(err)
 		}
 
-		processes, err := client.GetSuccessfulProcesses(ColonyID, Count, RuntimePrvKey, ServerHost, ServerPort)
+		client := client.CreateColoniesClient(ServerHost, ServerPort, true) // XXX: Insecure
+		processes, err := client.GetSuccessfulProcesses(ColonyID, Count, RuntimePrvKey)
 		CheckError(err)
 
 		if len(processes) == 0 {
@@ -346,7 +351,8 @@ var listFailedProcessesCmd = &cobra.Command{
 			CheckError(err)
 		}
 
-		processes, err := client.GetFailedProcesses(ColonyID, Count, RuntimePrvKey, ServerHost, ServerPort)
+		client := client.CreateColoniesClient(ServerHost, ServerPort, true) // XXX: Insecure
+		processes, err := client.GetFailedProcesses(ColonyID, Count, RuntimePrvKey)
 		CheckError(err)
 
 		if len(processes) == 0 {
@@ -400,7 +406,8 @@ var getProcessCmd = &cobra.Command{
 			CheckError(err)
 		}
 
-		process, err := client.GetProcessByID(ProcessID, RuntimePrvKey, ServerHost, ServerPort)
+		client := client.CreateColoniesClient(ServerHost, ServerPort, true) // XXX: Insecure
+		process, err := client.GetProcessByID(ProcessID, RuntimePrvKey)
 		if process == nil {
 			fmt.Println("Process with Id <" + process.ID + "> not found")
 			os.Exit(-1)
@@ -535,10 +542,11 @@ var markSuccessful = &cobra.Command{
 			CheckError(err)
 		}
 
-		process, err := client.GetProcessByID(ProcessID, RuntimePrvKey, ServerHost, ServerPort)
+		client := client.CreateColoniesClient(ServerHost, ServerPort, true) // XXX: Insecure
+		process, err := client.GetProcessByID(ProcessID, RuntimePrvKey)
 		CheckError(err)
 
-		err = client.MarkSuccessful(process.ID, RuntimePrvKey, ServerHost, ServerPort)
+		err = client.MarkSuccessful(process.ID, RuntimePrvKey)
 		CheckError(err)
 
 		fmt.Println("Process with Id <" + process.ID + "> marked as successful")
@@ -565,10 +573,11 @@ var markFailed = &cobra.Command{
 			CheckError(err)
 		}
 
-		process, err := client.GetProcessByID(ProcessID, RuntimePrvKey, ServerHost, ServerPort)
+		client := client.CreateColoniesClient(ServerHost, ServerPort, true) // XXX: Insecure
+		process, err := client.GetProcessByID(ProcessID, RuntimePrvKey)
 		CheckError(err)
 
-		err = client.MarkFailed(process.ID, RuntimePrvKey, ServerHost, ServerPort)
+		err = client.MarkFailed(process.ID, RuntimePrvKey)
 		CheckError(err)
 
 		fmt.Println("Process with Id <" + process.ID + "> marked as failed")

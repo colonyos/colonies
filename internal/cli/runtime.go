@@ -85,7 +85,8 @@ var registerRuntimeCmd = &cobra.Command{
 			CheckError(err)
 		}
 
-		addedRuntime, err := client.AddRuntime(runtime, ColonyPrvKey, ServerHost, ServerPort)
+		client := client.CreateColoniesClient(ServerHost, ServerPort, true) // XXX: Insecure
+		addedRuntime, err := client.AddRuntime(runtime, ColonyPrvKey)
 		CheckError(err)
 
 		fmt.Println(addedRuntime.ID)
@@ -112,7 +113,8 @@ var lsRuntimesCmd = &cobra.Command{
 			CheckError(err)
 		}
 
-		runtimesFromServer, err := client.GetRuntimes(ColonyID, ColonyPrvKey, ServerHost, ServerPort)
+		client := client.CreateColoniesClient(ServerHost, ServerPort, true) // XXX: Insecure
+		runtimesFromServer, err := client.GetRuntimes(ColonyID, ColonyPrvKey)
 		CheckError(err)
 
 		if JSON {
@@ -170,10 +172,11 @@ var approveRuntimeCmd = &cobra.Command{
 			CheckError(err)
 		}
 
-		runtime, err := client.GetRuntime(RuntimeID, ColonyPrvKey, ServerHost, ServerPort)
+		client := client.CreateColoniesClient(ServerHost, ServerPort, true) // XXX: Insecure
+		runtime, err := client.GetRuntime(RuntimeID, ColonyPrvKey)
 		CheckError(err)
 
-		err = client.ApproveRuntime(runtime.ID, ColonyPrvKey, ServerHost, ServerPort)
+		err = client.ApproveRuntime(runtime.ID, ColonyPrvKey)
 		CheckError(err)
 
 		fmt.Println("Colony Runtime with Id <" + runtime.ID + "> is now approved")
@@ -200,10 +203,11 @@ var rejectRuntimeCmd = &cobra.Command{
 			CheckError(err)
 		}
 
-		runtime, err := client.GetRuntime(RuntimeID, ColonyPrvKey, ServerHost, ServerPort)
+		client := client.CreateColoniesClient(ServerHost, ServerPort, true) // XXX: Insecure
+		runtime, err := client.GetRuntime(RuntimeID, ColonyPrvKey)
 		CheckError(err)
 
-		err = client.RejectRuntime(runtime.ID, ColonyPrvKey, ServerHost, ServerPort)
+		err = client.RejectRuntime(runtime.ID, ColonyPrvKey)
 		CheckError(err)
 
 		fmt.Println("Colony Runtime with Id <" + runtime.ID + "> is now rejected")
