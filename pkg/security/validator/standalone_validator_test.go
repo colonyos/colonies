@@ -8,17 +8,17 @@ import (
 )
 
 func TestRequireRoot(t *testing.T) {
-	security := createValidatorTest(createOwnershipMock())
+	security := createTestValidator(createOwnershipMock())
 
-	rootPassword := "password"
-	assert.Nil(t, security.RequireRoot(rootPassword, rootPassword))
-	assert.NotNil(t, security.RequireRoot(rootPassword, ""))
-	assert.NotNil(t, security.RequireRoot(rootPassword, "invalid"))
+	serverID := core.GenerateRandomID()
+	assert.Nil(t, security.RequireServerOwner(serverID, serverID))
+	assert.NotNil(t, security.RequireServerOwner(serverID, ""))
+	assert.NotNil(t, security.RequireServerOwner(serverID, core.GenerateRandomID()))
 }
 
 func TestRequireColonyOwner(t *testing.T) {
 	ownership := createOwnershipMock()
-	security := createValidatorTest(ownership)
+	security := createTestValidator(ownership)
 
 	colonyID := core.GenerateRandomID()
 	ownership.addColony(colonyID)
@@ -28,7 +28,7 @@ func TestRequireColonyOwner(t *testing.T) {
 
 func TestRequireRuntimeMembership(t *testing.T) {
 	ownership := createOwnershipMock()
-	security := createValidatorTest(ownership)
+	security := createTestValidator(ownership)
 
 	colonyID := core.GenerateRandomID()
 	ownership.addColony(colonyID)

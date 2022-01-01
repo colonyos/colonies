@@ -76,7 +76,7 @@ func (colony *Colony) Equals(colony2 *Colony) bool {
 }
 
 func (colony *Colony) ToJSON() (string, error) {
-	jsonBytes, err := json.Marshal(colony)
+	jsonBytes, err := json.MarshalIndent(colony, "", "    ")
 	if err != nil {
 		return "", err
 	}

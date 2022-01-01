@@ -1,6 +1,7 @@
 package rpc
 
 import (
+	"colonies/pkg/core"
 	"encoding/json"
 )
 
@@ -14,6 +15,7 @@ type GetProcessMsg struct {
 func CreateGetProcessMsg(processID string) *GetProcessMsg {
 	msg := &GetProcessMsg{}
 	msg.RPC.Method = GetProcessMsgType
+	msg.RPC.Nonce = core.GenerateRandomID()
 	msg.ProcessID = processID
 
 	return msg
@@ -21,6 +23,15 @@ func CreateGetProcessMsg(processID string) *GetProcessMsg {
 
 func (msg *GetProcessMsg) ToJSON() (string, error) {
 	jsonBytes, err := json.Marshal(msg)
+	if err != nil {
+		return "", err
+	}
+
+	return string(jsonBytes), nil
+}
+
+func (msg *GetProcessMsg) ToJSONIndent() (string, error) {
+	jsonBytes, err := json.MarshalIndent(msg, "", "    ")
 	if err != nil {
 		return "", err
 	}

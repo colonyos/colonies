@@ -30,6 +30,8 @@ func init() {
 	registerRuntimeCmd.MarkFlagRequired("spec")
 
 	lsRuntimesCmd.Flags().BoolVarP(&JSON, "json", "", false, "Print JSON instead of tables")
+	lsRuntimesCmd.Flags().StringVarP(&RuntimeID, "runtimeid", "", "", "Runtime Id")
+	lsRuntimesCmd.Flags().StringVarP(&RuntimePrvKey, "runtimeprvkey", "", "", "Runtime private key")
 
 	approveRuntimeCmd.Flags().StringVarP(&ColonyPrvKey, "colonyprvkey", "", "", "Colony private key")
 	approveRuntimeCmd.Flags().StringVarP(&RuntimeID, "runtimeid", "", "", "Colony Runtime Id")
@@ -77,9 +79,6 @@ var registerRuntimeCmd = &cobra.Command{
 		runtime.SetID(runtimeID)
 		runtime.SetColonyID(ColonyID)
 
-		err = keychain.AddPrvKey(runtimeID, prvKey)
-		CheckError(err)
-
 		if ColonyPrvKey == "" {
 			ColonyPrvKey, err = keychain.GetPrvKey(ColonyID)
 			CheckError(err)
@@ -87,6 +86,9 @@ var registerRuntimeCmd = &cobra.Command{
 
 		client := client.CreateColoniesClient(ServerHost, ServerPort, true) // XXX: Insecure
 		addedRuntime, err := client.AddRuntime(runtime, ColonyPrvKey)
+		CheckError(err)
+
+		err = keychain.AddPrvKey(runtimeID, prvKey)
 		CheckError(err)
 
 		fmt.Println(addedRuntime.ID)
@@ -108,13 +110,16 @@ var lsRuntimesCmd = &cobra.Command{
 			CheckError(errors.New("Unknown Colony Id"))
 		}
 
-		if ColonyPrvKey == "" {
-			ColonyPrvKey, err = keychain.GetPrvKey(ColonyID)
+		if RuntimePrvKey == "" {
+			if RuntimeID == "" {
+				RuntimeID = os.Getenv("RUNTIMEID")
+			}
+			RuntimePrvKey, err = keychain.GetPrvKey(RuntimeID)
 			CheckError(err)
 		}
 
 		client := client.CreateColoniesClient(ServerHost, ServerPort, true) // XXX: Insecure
-		runtimesFromServer, err := client.GetRuntimes(ColonyID, ColonyPrvKey)
+		runtimesFromServer, err := client.GetRuntimes(ColonyID, RuntimePrvKey)
 		CheckError(err)
 
 		if JSON {
@@ -173,18 +178,15 @@ var approveRuntimeCmd = &cobra.Command{
 		}
 
 		client := client.CreateColoniesClient(ServerHost, ServerPort, true) // XXX: Insecure
-		runtime, err := client.GetRuntime(RuntimeID, ColonyPrvKey)
+		err = client.ApproveRuntime(RuntimeID, ColonyPrvKey)
 		CheckError(err)
 
-		err = client.ApproveRuntime(runtime.ID, ColonyPrvKey)
-		CheckError(err)
-
-		fmt.Println("Colony Runtime with Id <" + runtime.ID + "> is now approved")
+		fmt.Println("Colony Runtime with Id <" + RuntimeID + "> is now approved")
 	},
 }
 
 var rejectRuntimeCmd = &cobra.Command{
-	Use:   "rject",
+	Use:   "reject",
 	Short: "Reject a Colony Runtime",
 	Long:  "Reject a Colony Runtime",
 	Run: func(cmd *cobra.Command, args []string) {
@@ -204,12 +206,9 @@ var rejectRuntimeCmd = &cobra.Command{
 		}
 
 		client := client.CreateColoniesClient(ServerHost, ServerPort, true) // XXX: Insecure
-		runtime, err := client.GetRuntime(RuntimeID, ColonyPrvKey)
+		err = client.RejectRuntime(RuntimeID, ColonyPrvKey)
 		CheckError(err)
 
-		err = client.RejectRuntime(runtime.ID, ColonyPrvKey)
-		CheckError(err)
-
-		fmt.Println("Colony Runtime with Id <" + runtime.ID + "> is now rejected")
+		fmt.Println("Colony Runtime with Id <" + RuntimeID + "> is now rejected")
 	},
 }

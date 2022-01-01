@@ -10,8 +10,7 @@ import (
 )
 
 func TestAddColonySecurity(t *testing.T) {
-	rootPassword := "testapikey"
-	client, server, done := prepareTests(t, rootPassword)
+	client, server, serverPrvKey, done := prepareTests(t)
 
 	crypto := crypto.CreateCrypto()
 
@@ -26,7 +25,7 @@ func TestAddColonySecurity(t *testing.T) {
 	_, err = client.AddColony(colony, "invalid_api_key")
 	assert.NotNilf(t, err, "it should be possible to create a colony without correct api key")
 
-	_, err = client.AddColony(colony, rootPassword)
+	_, err = client.AddColony(colony, serverPrvKey)
 	assert.Nil(t, err)
 
 	server.Shutdown()
@@ -34,18 +33,18 @@ func TestAddColonySecurity(t *testing.T) {
 }
 
 func TestGetColoniesSecurity(t *testing.T) {
-	_, client, server, done := setupTestEnv1(t)
+	_, client, server, serverPrvKey, done := setupTestEnv1(t)
 
 	// The setup looks like this:
 	//   runtime1 is member of colony1
 	//   runtime2 is member of colony2
 
 	// Now, try to get colonies info using an invalid api
-	_, err := client.GetColonies("invalid-api-key")
+	_, err := client.GetColonies(core.GenerateRandomID())
 	assert.NotNil(t, err) // Should not work
 
 	// Now, try to get colonies info using an invalid api
-	_, err = client.GetColonies("secretpassword")
+	_, err = client.GetColonies(serverPrvKey)
 	assert.Nil(t, err) // Should work
 
 	server.Shutdown()
@@ -53,7 +52,7 @@ func TestGetColoniesSecurity(t *testing.T) {
 }
 
 func TestGetColonyByIDSecurity(t *testing.T) {
-	env, client, server, done := setupTestEnv1(t)
+	env, client, server, _, done := setupTestEnv1(t)
 
 	// The setup looks like this:
 	//   runtime1 is member of colony1
@@ -80,7 +79,7 @@ func TestGetColonyByIDSecurity(t *testing.T) {
 }
 
 func TestAddRuntimeSecurity(t *testing.T) {
-	env, client, server, done := setupTestEnv1(t)
+	env, client, server, _, done := setupTestEnv1(t)
 	runtime3, _, _ := generateRuntime(t, env.colony1ID)
 
 	// The setup looks like this:
@@ -101,7 +100,7 @@ func TestAddRuntimeSecurity(t *testing.T) {
 }
 
 func TestGetRuntimesByColonySecurity(t *testing.T) {
-	env, client, server, done := setupTestEnv1(t)
+	env, client, server, _, done := setupTestEnv1(t)
 
 	// The setup looks like this:
 	//   runtime1 is member of colony1
@@ -128,7 +127,7 @@ func TestGetRuntimesByColonySecurity(t *testing.T) {
 }
 
 func TestGetRuntimeSecurity(t *testing.T) {
-	env, client, server, done := setupTestEnv1(t)
+	env, client, server, _, done := setupTestEnv1(t)
 
 	// The setup looks like this:
 	//   runtime1 is member of colony1
@@ -155,7 +154,7 @@ func TestGetRuntimeSecurity(t *testing.T) {
 }
 
 func TestApproveRuntimeSecurity(t *testing.T) {
-	env, client, server, done := setupTestEnv1(t)
+	env, client, server, _, done := setupTestEnv1(t)
 	runtime3, _, _ := generateRuntime(t, env.colony1ID)
 
 	// The setup looks like this:
@@ -177,7 +176,7 @@ func TestApproveRuntimeSecurity(t *testing.T) {
 }
 
 func TestRejectRuntimeSecurity(t *testing.T) {
-	env, client, server, done := setupTestEnv1(t)
+	env, client, server, _, done := setupTestEnv1(t)
 	runtime3, _, _ := generateRuntime(t, env.colony1ID)
 
 	// The setup looks like this:
@@ -199,7 +198,7 @@ func TestRejectRuntimeSecurity(t *testing.T) {
 }
 
 func TestNonApprovedRuntime(t *testing.T) {
-	env, client, server, done := setupTestEnv1(t)
+	env, client, server, _, done := setupTestEnv1(t)
 
 	// The setup looks like this:
 	//   runtime1 is member of colony1
@@ -224,7 +223,7 @@ func TestNonApprovedRuntime(t *testing.T) {
 }
 
 func TestSubmitProcessSpecSecurity(t *testing.T) {
-	env, client, server, done := setupTestEnv1(t)
+	env, client, server, _, done := setupTestEnv1(t)
 
 	// The setup looks like this:
 	//   runtime1 is member of colony1
@@ -249,7 +248,7 @@ func TestSubmitProcessSpecSecurity(t *testing.T) {
 }
 
 func TestAssignProcessSecurity(t *testing.T) {
-	env, client, server, done := setupTestEnv1(t)
+	env, client, server, _, done := setupTestEnv1(t)
 
 	// The setup looks like this:
 	//   runtime1 is member of colony1
@@ -290,7 +289,7 @@ func TestAssignProcessSecurity(t *testing.T) {
 }
 
 func TestGetWaitingProcessesSecurity(t *testing.T) {
-	env, client, server, done := setupTestEnv1(t)
+	env, client, server, _, done := setupTestEnv1(t)
 
 	// The setup looks like this:
 	//   runtime1 is member of colony1
@@ -316,7 +315,7 @@ func TestGetWaitingProcessesSecurity(t *testing.T) {
 }
 
 func TestRunningProcessesSecurity(t *testing.T) {
-	env, client, server, done := setupTestEnv1(t)
+	env, client, server, _, done := setupTestEnv1(t)
 
 	// The setup looks like this:
 	//   runtime1 is member of colony1
@@ -340,7 +339,7 @@ func TestRunningProcessesSecurity(t *testing.T) {
 }
 
 func TestGetSuccessfulProcessesSecurity(t *testing.T) {
-	env, client, server, done := setupTestEnv1(t)
+	env, client, server, _, done := setupTestEnv1(t)
 
 	// The setup looks like this:
 	//   runtime1 is member of colony1
@@ -368,7 +367,7 @@ func TestGetSuccessfulProcessesSecurity(t *testing.T) {
 }
 
 func TestGetFailedProcessesSecurity(t *testing.T) {
-	env, client, server, done := setupTestEnv1(t)
+	env, client, server, _, done := setupTestEnv1(t)
 
 	// The setup looks like this:
 	//   runtime1 is member of colony1
@@ -396,7 +395,7 @@ func TestGetFailedProcessesSecurity(t *testing.T) {
 }
 
 func TestGetProcessSecurity(t *testing.T) {
-	env, client, server, done := setupTestEnv1(t)
+	env, client, server, _, done := setupTestEnv1(t)
 
 	// The setup looks like this:
 	//   runtime1 is member of colony1
@@ -417,7 +416,7 @@ func TestGetProcessSecurity(t *testing.T) {
 }
 
 func TestMarkSuccessfulSecurity(t *testing.T) {
-	env, client, server, done := setupTestEnv1(t)
+	env, client, server, _, done := setupTestEnv1(t)
 
 	// The setup looks like this:
 	//   runtime1 is member of colony1
@@ -449,7 +448,7 @@ func TestMarkSuccessfulSecurity(t *testing.T) {
 }
 
 func TestMarkFailedSecurity(t *testing.T) {
-	env, client, server, done := setupTestEnv1(t)
+	env, client, server, _, done := setupTestEnv1(t)
 
 	// The setup looks like this:
 	//   runtime1 is member of colony1
@@ -481,7 +480,7 @@ func TestMarkFailedSecurity(t *testing.T) {
 }
 
 func TestAddAttributeSecurity(t *testing.T) {
-	env, client, server, done := setupTestEnv1(t)
+	env, client, server, _, done := setupTestEnv1(t)
 
 	// The setup looks like this:
 	//   runtime1 is member of colony1
@@ -517,7 +516,7 @@ func TestAddAttributeSecurity(t *testing.T) {
 }
 
 func TestGetAttributeSecurity(t *testing.T) {
-	env, client, server, done := setupTestEnv1(t)
+	env, client, server, _, done := setupTestEnv1(t)
 
 	// The setup looks like this:
 	//   runtime1 is member of colony1
