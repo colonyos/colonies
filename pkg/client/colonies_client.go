@@ -44,20 +44,6 @@ func (client *ColoniesClient) checkStatusCode(statusCode int, jsonString string)
 	return nil
 }
 
-func (client *ColoniesClient) sendMessageNoSignature(jsonString string) (string, error) {
-	resp, err := client.restyClient.R().
-		SetBody(jsonString).
-		Post("https://" + client.host + ":" + strconv.Itoa(client.port) + "/api")
-
-	respBodyString := string(resp.Body())
-	err = client.checkStatusCode(resp.StatusCode(), respBodyString)
-	if err != nil {
-		return "", err
-	}
-
-	return respBodyString, nil
-}
-
 func (client *ColoniesClient) sendMessage(jsonString string, prvKey string) (string, error) {
 	signature, err := crypto.CreateCrypto().GenerateSignature(jsonString, prvKey)
 	resp, err := client.restyClient.R().
@@ -74,14 +60,14 @@ func (client *ColoniesClient) sendMessage(jsonString string, prvKey string) (str
 	return respBodyString, nil
 }
 
-func (client *ColoniesClient) AddColony(colony *core.Colony, rootPassword string) (*core.Colony, error) {
-	msg := rpc.CreateAddColonyMsg(rootPassword, colony)
+func (client *ColoniesClient) AddColony(colony *core.Colony, prvKey string) (*core.Colony, error) {
+	msg := rpc.CreateAddColonyMsg(colony)
 	jsonString, err := msg.ToJSON()
 	if err != nil {
 		return nil, err
 	}
 
-	respBodyString, err := client.sendMessageNoSignature(jsonString)
+	respBodyString, err := client.sendMessage(jsonString, prvKey)
 	if err != nil {
 		return nil, err
 	}
@@ -94,14 +80,14 @@ func (client *ColoniesClient) AddColony(colony *core.Colony, rootPassword string
 	return addedColony, nil
 }
 
-func (client *ColoniesClient) GetColonies(rootPassword string) ([]*core.Colony, error) {
-	msg := rpc.CreateGetColoniesMsg(rootPassword)
+func (client *ColoniesClient) GetColonies(prvKey string) ([]*core.Colony, error) {
+	msg := rpc.CreateGetColoniesMsg()
 	jsonString, err := msg.ToJSON()
 	if err != nil {
 		return nil, err
 	}
 
-	respBodyString, err := client.sendMessageNoSignature(jsonString)
+	respBodyString, err := client.sendMessage(jsonString, prvKey)
 	if err != nil {
 		return nil, err
 	}

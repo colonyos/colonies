@@ -21,8 +21,8 @@ func (standaloneCrypto *StandaloneCrypto) GeneratePrivateKey() (string, error) {
 	return identify.PrivateKeyAsHex(), nil
 }
 
-func (standaloneCrypto *StandaloneCrypto) GenerateID(privateKey string) (string, error) {
-	identify, err := crypto.CreateIdendityFromString(privateKey)
+func (standaloneCrypto *StandaloneCrypto) GenerateID(prvKey string) (string, error) {
+	identify, err := crypto.CreateIdendityFromString(prvKey)
 	if err != nil {
 		return "", nil
 	}

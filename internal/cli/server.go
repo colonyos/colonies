@@ -29,8 +29,8 @@ func init() {
 	serverCmd.MarkPersistentFlagRequired("tlskey")
 	serverCmd.PersistentFlags().IntVarP(&ServerPort, "port", "", 8080, "Server HTTP port")
 	serverCmd.MarkPersistentFlagRequired("port")
-	serverCmd.PersistentFlags().StringVarP(&RootPassword, "rootpassword", "", "", "Root password to the Colonies server")
-	serverCmd.MarkPersistentFlagRequired("rootpassword")
+	serverCmd.PersistentFlags().StringVarP(&ServerID, "serverid", "", "", "Colonies server Id")
+	serverCmd.MarkPersistentFlagRequired("serverid")
 }
 
 var serverCmd = &cobra.Command{
@@ -51,7 +51,7 @@ var serverStartCmd = &cobra.Command{
 			os.Exit(-1)
 		}
 		logging.Log().Info("Connecting to Colonies database, host: " + DBHost + ", port: " + strconv.Itoa(DBPort) + ", user: " + DBUser + ", password: " + "******************, name: " + DBName + ". prefix: " + DBPrefix)
-		server := server.CreateColoniesServer(db, ServerPort, RootPassword, TLSKey, TLSCert, Verbose)
+		server := server.CreateColoniesServer(db, ServerPort, ServerID, TLSKey, TLSCert, Verbose)
 		server.ServeForever()
 	},
 }

@@ -6,6 +6,7 @@ import (
 
 type RPC struct {
 	Method string `json:"method"`
+	Nonce  string `json:"nonce"`
 }
 
 func DetermineMsgType(jsonString string) string {

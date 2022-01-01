@@ -7,14 +7,12 @@ import (
 const GetColoniesMsgType = "GetColonies"
 
 type GetColoniesMsg struct {
-	RPC          RPC    `json:"rpc"`
-	RootPassword string `json:"rootpassword"`
+	RPC RPC `json:"rpc"`
 }
 
-func CreateGetColoniesMsg(rootPassword string) *GetColoniesMsg {
+func CreateGetColoniesMsg() *GetColoniesMsg {
 	msg := &GetColoniesMsg{}
 	msg.RPC.Method = GetColoniesMsgType
-	msg.RootPassword = rootPassword
 
 	return msg
 }

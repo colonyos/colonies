@@ -33,8 +33,6 @@ func init() {
 	getAttributeCmd.Flags().StringVarP(&RuntimeID, "runtimeid", "", "", "Runtime Id")
 	getAttributeCmd.Flags().StringVarP(&AttributeID, "attributeid", "", "", "Attribute Id")
 	getAttributeCmd.MarkFlagRequired("attributeid")
-	getAttributeCmd.Flags().StringVarP(&ProcessID, "processid", "", "", "Process Id")
-	getAttributeCmd.MarkFlagRequired("processid")
 }
 
 var attributeCmd = &cobra.Command{

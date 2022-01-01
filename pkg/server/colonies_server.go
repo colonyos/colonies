@@ -24,7 +24,7 @@ import (
 type ColoniesServer struct {
 	ginHandler        *gin.Engine
 	controller        *ColoniesController
-	rootPassword      string
+	serverID          string
 	tlsPrivateKeyPath string
 	tlsCertPath       string
 	port              int
@@ -33,7 +33,7 @@ type ColoniesServer struct {
 	validator         security.Validator
 }
 
-func CreateColoniesServer(db database.Database, port int, rootPassword string, tlsPrivateKeyPath string, tlsCertPath string, debug bool) *ColoniesServer {
+func CreateColoniesServer(db database.Database, port int, serverID string, tlsPrivateKeyPath string, tlsCertPath string, debug bool) *ColoniesServer {
 	if debug {
 		logrus.SetLevel(logrus.DebugLevel)
 	} else {
@@ -52,7 +52,7 @@ func CreateColoniesServer(db database.Database, port int, rootPassword string, t
 
 	server.httpServer = httpServer
 	server.controller = CreateColoniesController(db)
-	server.rootPassword = rootPassword
+	server.serverID = serverID
 	server.port = port
 	server.tlsPrivateKeyPath = tlsPrivateKeyPath
 	server.tlsCertPath = tlsCertPath
@@ -104,22 +104,18 @@ func (server *ColoniesServer) handleEndpointRequest(c *gin.Context) {
 	msgType := rpc.DetermineMsgType(jsonString)
 
 	recoveredID := ""
-	if msgType == rpc.GetColoniesMsgType || msgType == rpc.AddColonyMsgType {
-		// AddColony and GetColonies requires root password instead of signatures
-	} else {
-		signature := c.GetHeader("Signature")
-		recoveredID, err = server.crypto.RecoverID(jsonString, signature)
-		if server.handleError(c, err, http.StatusForbidden) {
-			return
-		}
+	signature := c.GetHeader("Signature")
+	recoveredID, err = server.crypto.RecoverID(jsonString, signature)
+	if server.handleError(c, err, http.StatusForbidden) {
+		return
 	}
 
 	switch msgType {
 	// Colony operations
 	case rpc.AddColonyMsgType:
-		server.handleAddColonyRequest(c, jsonString)
+		server.handleAddColonyRequest(c, recoveredID, jsonString)
 	case rpc.GetColoniesMsgType:
-		server.handleGetColoniesRequest(c, jsonString)
+		server.handleGetColoniesRequest(c, recoveredID, jsonString)
 	case rpc.GetColonyMsgType:
 		server.handleGetColonyRequest(c, recoveredID, jsonString)
 
@@ -169,7 +165,7 @@ func (server *ColoniesServer) handleError(c *gin.Context, err error, errorCode i
 		if err != nil {
 			logging.Log().Error(err)
 		}
-		c.String(http.StatusBadRequest, failureString)
+		c.String(errorCode, failureString)
 
 		return true
 	}
@@ -177,7 +173,7 @@ func (server *ColoniesServer) handleError(c *gin.Context, err error, errorCode i
 	return false
 }
 
-func (server *ColoniesServer) handleAddColonyRequest(c *gin.Context, jsonString string) {
+func (server *ColoniesServer) handleAddColonyRequest(c *gin.Context, recoveredID string, jsonString string) {
 	msg, err := rpc.CreateAddColonyMsgFromJSON(jsonString)
 	if server.handleError(c, err, http.StatusBadRequest) {
 		return
@@ -186,7 +182,7 @@ func (server *ColoniesServer) handleAddColonyRequest(c *gin.Context, jsonString 
 		server.handleError(c, errors.New("Failed to parse AddColonyMsg JSON"), http.StatusBadRequest)
 	}
 
-	err = server.validator.RequireRoot(msg.RootPassword, server.rootPassword)
+	err = server.validator.RequireServerOwner(recoveredID, server.serverID)
 	if server.handleError(c, err, http.StatusForbidden) {
 		return
 	}
@@ -207,7 +203,7 @@ func (server *ColoniesServer) handleAddColonyRequest(c *gin.Context, jsonString 
 	c.String(http.StatusOK, jsonString)
 }
 
-func (server *ColoniesServer) handleGetColoniesRequest(c *gin.Context, jsonString string) {
+func (server *ColoniesServer) handleGetColoniesRequest(c *gin.Context, recoveredID string, jsonString string) {
 	msg, err := rpc.CreateGetColoniesMsgFromJSON(jsonString)
 	if server.handleError(c, err, http.StatusBadRequest) {
 		return
@@ -216,7 +212,7 @@ func (server *ColoniesServer) handleGetColoniesRequest(c *gin.Context, jsonStrin
 		server.handleError(c, errors.New("Failed to parse GetColoniesMsg JSON"), http.StatusBadRequest)
 	}
 
-	err = server.validator.RequireRoot(msg.RootPassword, server.rootPassword)
+	err = server.validator.RequireServerOwner(recoveredID, server.serverID)
 	if server.handleError(c, err, http.StatusForbidden) {
 		return
 	}
@@ -509,7 +505,8 @@ func (server *ColoniesServer) handleGetProcessesRequest(c *gin.Context, recovere
 			return
 		}
 		if processes == nil {
-			server.handleError(c, errors.New("handleGetProcessesRequest (WAITING): processes is nil"), http.StatusInternalServerError)
+			server.handleError(c, errors.New("No waiting processes found"), http.StatusInternalServerError)
+			return
 		}
 		jsonString, err := core.ConvertProcessArrayToJSON(processes)
 		if server.handleError(c, err, http.StatusBadRequest) {
@@ -522,7 +519,8 @@ func (server *ColoniesServer) handleGetProcessesRequest(c *gin.Context, recovere
 			return
 		}
 		if processes == nil {
-			server.handleError(c, errors.New("handleGetProcessesRequest (RUNNING): processes is nil"), http.StatusInternalServerError)
+			server.handleError(c, errors.New("No running processes found"), http.StatusInternalServerError)
+			return
 		}
 		jsonString, err := core.ConvertProcessArrayToJSON(processes)
 		if server.handleError(c, err, http.StatusBadRequest) {
@@ -535,7 +533,8 @@ func (server *ColoniesServer) handleGetProcessesRequest(c *gin.Context, recovere
 			return
 		}
 		if processes == nil {
-			server.handleError(c, errors.New("handleGetProcessesRequest (SUCCESS): processes is nil"), http.StatusInternalServerError)
+			server.handleError(c, errors.New("No successful proceeses found"), http.StatusInternalServerError)
+			return
 		}
 		jsonString, err := core.ConvertProcessArrayToJSON(processes)
 		if server.handleError(c, err, http.StatusBadRequest) {
@@ -548,7 +547,8 @@ func (server *ColoniesServer) handleGetProcessesRequest(c *gin.Context, recovere
 			return
 		}
 		if processes == nil {
-			server.handleError(c, errors.New("handleGetProcessesRequest (FAILED): processes is nil"), http.StatusInternalServerError)
+			server.handleError(c, errors.New("No failed processes found"), http.StatusInternalServerError)
+			return
 		}
 		jsonString, err := core.ConvertProcessArrayToJSON(processes)
 		if server.handleError(c, err, http.StatusBadRequest) {
