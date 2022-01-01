@@ -2,6 +2,7 @@ package cli
 
 import (
 	"colonies/pkg/security"
+	"colonies/pkg/security/crypto"
 	"fmt"
 	"os"
 
@@ -9,11 +10,12 @@ import (
 )
 
 func init() {
-	keychainCmd.AddCommand(privateKeyCmd)
+	keychainCmd.AddCommand(getPrivateKeyCmd)
+	keychainCmd.AddCommand(genPrivateKeyCmd)
 	rootCmd.AddCommand(keychainCmd)
 
-	privateKeyCmd.Flags().StringVarP(&ID, "id", "", "", "Identity")
-	privateKeyCmd.MarkFlagRequired("id")
+	getPrivateKeyCmd.Flags().StringVarP(&ID, "id", "", "", "Identity")
+	getPrivateKeyCmd.MarkFlagRequired("id")
 }
 
 var keychainCmd = &cobra.Command{
@@ -22,8 +24,8 @@ var keychainCmd = &cobra.Command{
 	Long:  "Manage private keys",
 }
 
-var privateKeyCmd = &cobra.Command{
-	Use:   "privatekey",
+var getPrivateKeyCmd = &cobra.Command{
+	Use:   "get",
 	Short: "Get a private key for an identity",
 	Long:  "Get a private key for an identity",
 	Run: func(cmd *cobra.Command, args []string) {
@@ -36,5 +38,28 @@ var privateKeyCmd = &cobra.Command{
 			os.Exit(-1)
 		}
 		fmt.Println(privateKey)
+	},
+}
+
+var genPrivateKeyCmd = &cobra.Command{
+	Use:   "generate",
+	Short: "Generate a private key",
+	Long:  "Generate a private key",
+	Run: func(cmd *cobra.Command, args []string) {
+		keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
+		CheckError(err)
+
+		crypto := crypto.CreateCrypto()
+		prvKey, err := crypto.GeneratePrivateKey()
+		CheckError(err)
+
+		id, err := crypto.GenerateID(prvKey)
+		CheckError(err)
+
+		err = keychain.AddPrvKey(id, prvKey)
+		CheckError(err)
+
+		fmt.Println("Id: " + id)
+		fmt.Println("PrvKey: " + prvKey)
 	},
 }

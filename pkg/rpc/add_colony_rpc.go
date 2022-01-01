@@ -8,15 +8,13 @@ import (
 const AddColonyMsgType = "AddColony"
 
 type AddColonyMsg struct {
-	RPC          RPC          `json:"rpc"`
-	RootPassword string       `json:"rootpassword"`
-	Colony       *core.Colony `json:"colony"`
+	RPC    RPC          `json:"rpc"`
+	Colony *core.Colony `json:"colony"`
 }
 
-func CreateAddColonyMsg(rootPassword string, colony *core.Colony) *AddColonyMsg {
+func CreateAddColonyMsg(colony *core.Colony) *AddColonyMsg {
 	msg := &AddColonyMsg{}
 	msg.RPC.Method = AddColonyMsgType
-	msg.RootPassword = rootPassword
 	msg.Colony = colony
 
 	return msg

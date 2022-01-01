@@ -20,12 +20,14 @@ func init() {
 
 	colonyCmd.PersistentFlags().StringVarP(&ServerHost, "host", "", "localhost", "Server host")
 	colonyCmd.PersistentFlags().IntVarP(&ServerPort, "port", "", 8080, "Server HTTP port")
-	registerColonyCmd.Flags().StringVarP(&RootPassword, "rootpassword", "", "", "Root password to the Colonies server")
-	registerColonyCmd.MarkFlagRequired("rootpassword")
+	registerColonyCmd.Flags().StringVarP(&ServerID, "serverid", "", "", "Colonies server Id")
+	registerColonyCmd.MarkFlagRequired("serverid")
+	registerColonyCmd.Flags().StringVarP(&ServerPrvKey, "serverprvkey", "", "", "Colonies server private key")
 	registerColonyCmd.Flags().StringVarP(&SpecFile, "spec", "", "", "JSON specification of a Colony")
 	registerColonyCmd.MarkFlagRequired("spec")
 
-	lsColoniesCmd.Flags().StringVarP(&RootPassword, "rootpassword", "", "", "Root password to the Colonies server")
+	lsColoniesCmd.Flags().StringVarP(&ServerID, "serverid", "", "", "Colonies server Id")
+	lsColoniesCmd.Flags().StringVarP(&ServerPrvKey, "serverprvkey", "", "", "Colonies server private key")
 	lsColoniesCmd.Flags().BoolVarP(&JSON, "json", "", false, "Print JSON instead of tables")
 }
 
@@ -58,11 +60,16 @@ var registerColonyCmd = &cobra.Command{
 		CheckError(err)
 		colony.SetID(colonyID)
 
-		err = keychain.AddPrvKey(colonyID, prvKey)
-		CheckError(err)
+		if ServerPrvKey == "" {
+			ServerPrvKey, err = keychain.GetPrvKey(ServerID)
+			CheckError(err)
+		}
 
 		client := client.CreateColoniesClient(ServerHost, ServerPort, true) // XXX: Insecure
-		addedColony, err := client.AddColony(colony, RootPassword)
+		addedColony, err := client.AddColony(colony, ServerPrvKey)
+		CheckError(err)
+
+		err = keychain.AddPrvKey(colonyID, prvKey)
 		CheckError(err)
 
 		fmt.Println(addedColony.ID)
@@ -75,7 +82,16 @@ var lsColoniesCmd = &cobra.Command{
 	Long:  "List all Colonies",
 	Run: func(cmd *cobra.Command, args []string) {
 		client := client.CreateColoniesClient(ServerHost, ServerPort, true) // XXX: Insecure
-		coloniesFromServer, err := client.GetColonies(RootPassword)
+
+		keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
+		CheckError(err)
+
+		if ServerPrvKey == "" {
+			ServerPrvKey, err = keychain.GetPrvKey(ServerID)
+			CheckError(err)
+		}
+
+		coloniesFromServer, err := client.GetColonies(ServerPrvKey)
 		CheckError(err)
 
 		if JSON {

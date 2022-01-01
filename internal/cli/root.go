@@ -22,7 +22,8 @@ var TLSCert string
 var TLSKey string
 var ServerHost string
 var ServerPort int
-var RootPassword string
+var ServerID string
+var ServerPrvKey string
 var SpecFile string
 var Count int
 var ID string
@@ -56,7 +57,7 @@ func Execute() {
 
 func CheckError(err error) {
 	if err != nil {
-		fmt.Println(err)
+		fmt.Println(err.Error())
 		os.Exit(-1)
 	}
 }

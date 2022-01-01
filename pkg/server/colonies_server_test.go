@@ -10,8 +10,7 @@ import (
 )
 
 func TestAddColony(t *testing.T) {
-	rootPassword := "password"
-	client, server, done := prepareTests(t, rootPassword)
+	client, server, serverKey, done := prepareTests(t)
 
 	crypto := crypto.CreateCrypto()
 	colonyPrvKey, err := crypto.GeneratePrivateKey()
@@ -20,7 +19,7 @@ func TestAddColony(t *testing.T) {
 	assert.Nil(t, err)
 
 	colony := core.CreateColony(colonyID, "test_colony_name")
-	colonyAdded, err := client.AddColony(colony, rootPassword)
+	colonyAdded, err := client.AddColony(colony, serverKey)
 	assert.Nil(t, err)
 	assert.True(t, colony.Equals(colonyAdded))
 
@@ -29,8 +28,7 @@ func TestAddColony(t *testing.T) {
 }
 
 func TestGetColony(t *testing.T) {
-	rootPassword := "password"
-	client, server, done := prepareTests(t, rootPassword)
+	client, server, serverKey, done := prepareTests(t)
 
 	crypto := crypto.CreateCrypto()
 	colonyPrvKey, err := crypto.GeneratePrivateKey()
@@ -39,7 +37,7 @@ func TestGetColony(t *testing.T) {
 	assert.Nil(t, err)
 
 	colony := core.CreateColony(colonyID, "test_colony_name")
-	_, err = client.AddColony(colony, rootPassword)
+	_, err = client.AddColony(colony, serverKey)
 	assert.Nil(t, err)
 
 	runtime, _, runtimePrvKey := generateRuntime(t, colonyID)
@@ -58,8 +56,7 @@ func TestGetColony(t *testing.T) {
 }
 
 func TestGetColonies(t *testing.T) {
-	rootPassword := "password"
-	client, server, done := prepareTests(t, rootPassword)
+	client, server, serverPrvKey, done := prepareTests(t)
 
 	crypto := crypto.CreateCrypto()
 	prvKey1, err := crypto.GeneratePrivateKey()
@@ -67,7 +64,7 @@ func TestGetColonies(t *testing.T) {
 	colonyID1, err := crypto.GenerateID(prvKey1)
 	assert.Nil(t, err)
 	colony1 := core.CreateColony(colonyID1, "test_colony_name")
-	_, err = client.AddColony(colony1, rootPassword)
+	_, err = client.AddColony(colony1, serverPrvKey)
 	assert.Nil(t, err)
 
 	prvKey2, err := crypto.GeneratePrivateKey()
@@ -75,14 +72,14 @@ func TestGetColonies(t *testing.T) {
 	colonyID2, err := crypto.GenerateID(prvKey2)
 	assert.Nil(t, err)
 	colony2 := core.CreateColony(colonyID2, "test_colony_name")
-	_, err = client.AddColony(colony2, rootPassword)
+	_, err = client.AddColony(colony2, serverPrvKey)
 	assert.Nil(t, err)
 
 	var colonies []*core.Colony
 	colonies = append(colonies, colony1)
 	colonies = append(colonies, colony2)
 
-	coloniesFromServer, err := client.GetColonies(rootPassword)
+	coloniesFromServer, err := client.GetColonies(serverPrvKey)
 	assert.Nil(t, err)
 	assert.True(t, core.IsColonyArraysEqual(colonies, coloniesFromServer))
 
@@ -91,8 +88,7 @@ func TestGetColonies(t *testing.T) {
 }
 
 func TestAddRuntime(t *testing.T) {
-	rootPassword := "testapikey"
-	client, server, done := prepareTests(t, rootPassword)
+	client, server, serverPrvKey, done := prepareTests(t)
 
 	// Create a Colony
 	crypto := crypto.CreateCrypto()
@@ -104,7 +100,7 @@ func TestAddRuntime(t *testing.T) {
 
 	colony := core.CreateColony(colonyID, "test_colony_name")
 
-	_, err = client.AddColony(colony, rootPassword)
+	_, err = client.AddColony(colony, serverPrvKey)
 	assert.Nil(t, err)
 
 	// Create a runtime
@@ -141,8 +137,7 @@ func TestAddRuntime(t *testing.T) {
 }
 
 func TestGetRuntimes(t *testing.T) {
-	rootPassword := "password"
-	client, server, done := prepareTests(t, rootPassword)
+	client, server, serverPrvKey, done := prepareTests(t)
 
 	// Create a Colony
 	crypto := crypto.CreateCrypto()
@@ -153,7 +148,7 @@ func TestGetRuntimes(t *testing.T) {
 
 	colony := core.CreateColony(colonyID, "test_colony_name")
 
-	_, err = client.AddColony(colony, rootPassword)
+	_, err = client.AddColony(colony, serverPrvKey)
 	assert.Nil(t, err)
 
 	// Create a Runtime
@@ -206,7 +201,7 @@ func TestGetRuntimes(t *testing.T) {
 }
 
 func TestApproveRejectRuntime(t *testing.T) {
-	env, client, server, done := setupTestEnv2(t)
+	env, client, server, _, done := setupTestEnv2(t)
 
 	// Add an approved runtime to use for the test below
 	approvedRuntime, _, approvedRuntimePrvKey := generateRuntime(t, env.colonyID)
@@ -242,7 +237,7 @@ func TestApproveRejectRuntime(t *testing.T) {
 }
 
 func TestSubmitProcess(t *testing.T) {
-	env, client, server, done := setupTestEnv2(t)
+	env, client, server, _, done := setupTestEnv2(t)
 
 	in := make(map[string]string)
 	in["test_key_1"] = "test_value_1"
@@ -268,7 +263,7 @@ func TestSubmitProcess(t *testing.T) {
 }
 
 func TestAssignProcess(t *testing.T) {
-	env, client, server, done := setupTestEnv2(t)
+	env, client, server, _, done := setupTestEnv2(t)
 
 	processSpec1 := core.CreateProcessSpec(env.colonyID, []string{}, "test_runtime_type", -1, 3, 1000, 10, 1, make(map[string]string))
 	addedProcess1, err := client.SubmitProcessSpec(processSpec1, env.runtimePrvKey)
@@ -293,7 +288,7 @@ func TestAssignProcess(t *testing.T) {
 }
 
 func TestGetWaitingProcesses(t *testing.T) {
-	env, client, server, done := setupTestEnv2(t)
+	env, client, server, _, done := setupTestEnv2(t)
 
 	numberOfRunningProcesses := 20
 	for i := 0; i < numberOfRunningProcesses; i++ {
@@ -315,7 +310,7 @@ func TestGetWaitingProcesses(t *testing.T) {
 }
 
 func TestGetRunningProcesses(t *testing.T) {
-	env, client, server, done := setupTestEnv2(t)
+	env, client, server, _, done := setupTestEnv2(t)
 
 	numberOfRunningProcesses := 20
 	for i := 0; i < numberOfRunningProcesses; i++ {
@@ -339,7 +334,7 @@ func TestGetRunningProcesses(t *testing.T) {
 }
 
 func TestGetSuccessfulProcesses(t *testing.T) {
-	env, client, server, done := setupTestEnv2(t)
+	env, client, server, _, done := setupTestEnv2(t)
 
 	numberOfRunningProcesses := 20
 	for i := 0; i < numberOfRunningProcesses; i++ {
@@ -365,7 +360,7 @@ func TestGetSuccessfulProcesses(t *testing.T) {
 }
 
 func TestGetFailedProcesses(t *testing.T) {
-	env, client, server, done := setupTestEnv2(t)
+	env, client, server, _, done := setupTestEnv2(t)
 
 	numberOfRunningProcesses := 20
 	for i := 0; i < numberOfRunningProcesses; i++ {
@@ -391,7 +386,7 @@ func TestGetFailedProcesses(t *testing.T) {
 }
 
 func TestGetProcess(t *testing.T) {
-	env, client, server, done := setupTestEnv2(t)
+	env, client, server, _, done := setupTestEnv2(t)
 
 	processSpec := core.CreateProcessSpec(env.colonyID, []string{}, "test_runtime_type", -1, 3, 1000, 10, 1, make(map[string]string))
 	addedProcess, err := client.SubmitProcessSpec(processSpec, env.runtimePrvKey)
@@ -405,7 +400,7 @@ func TestGetProcess(t *testing.T) {
 }
 
 func TestMarkSuccessful(t *testing.T) {
-	env, client, server, done := setupTestEnv2(t)
+	env, client, server, _, done := setupTestEnv2(t)
 
 	processSpec := core.CreateProcessSpec(env.colonyID, []string{}, "test_runtime_type", -1, 3, 1000, 10, 1, make(map[string]string))
 	addedProcess, err := client.SubmitProcessSpec(processSpec, env.runtimePrvKey)
@@ -429,7 +424,7 @@ func TestMarkSuccessful(t *testing.T) {
 }
 
 func TestMarkFailed(t *testing.T) {
-	env, client, server, done := setupTestEnv2(t)
+	env, client, server, _, done := setupTestEnv2(t)
 
 	processSpec := core.CreateProcessSpec(env.colonyID, []string{}, "test_runtime_type", -1, 3, 1000, 10, 1, make(map[string]string))
 	addedProcess, err := client.SubmitProcessSpec(processSpec, env.runtimePrvKey)
@@ -453,7 +448,7 @@ func TestMarkFailed(t *testing.T) {
 }
 
 func TestAddGetAttributes(t *testing.T) {
-	env, client, server, done := setupTestEnv2(t)
+	env, client, server, _, done := setupTestEnv2(t)
 
 	processSpec := core.CreateProcessSpec(env.colonyID, []string{}, "test_runtime_type", -1, 3, 1000, 10, 1, make(map[string]string))
 	addedProcess, err := client.SubmitProcessSpec(processSpec, env.runtimePrvKey)
