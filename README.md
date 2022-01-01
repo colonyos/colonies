@@ -12,12 +12,33 @@ A core component of Colonies is a crypto identity protocol inspired by Bitcoin a
 
 The Colonies Server keeps track of these identities and applies several rules how runtimes are allowed to interact with each other. 
 
-1. Only the Colonies Server Owner may register a new Colony. **Requires rootpassword** specified when starting the Colonies Server. See example below.
-2. Only a Colony Owner may register/approve/disapprove/list/get info about Colony Runtimes in a Colony. **Requires a Colony Private key.**
-3. Only a Colony Runtime may submit/list/get info about a process. **Requires a Runtime Private Key.**
-4. Only a Colony Runtime may set/get/list attributes on a process. **Requires a Runtime Private Key.**
+1. Only the Colonies Server Owner can register a new Colony. **Requires the Server Private Key**.
+2. Only the Colonies Server Owner can list registered Colonies. **Requires the Server Private Key**.
+3. Only a Colony Owner can register a Colony Runtimes to a Colony. **Requires a Colony Private key.**
+4. Only a Colony Owner can approve/disapprove a Colony Runtimes member of a Colony. **Requires a Colony Private key.**
+5. Only a Colony Owner can list/get info about Colony Runtimes member of a Colony. **Requires a Colony Private key.**
+6. Any Colony Runtime member of a Colony can submit/get/list processes. **Requires a Runtime Private Key.**
+7. Only the Colony Runtime that was assigned a process can set attributes on that process. **Requires a Runtime Private Key.**
+8. Any Colony Runtime can get/list attributes on processes. **Requires a Runtime Private Key.**
 
-Note that the Colonies server does not store any crypto keys, but rather stores identites in a database and verifies that reconstructed identities obtained from RPC calls matches the identities stored in the database.
+Note that the Colonies server does not store any crypto keys, but rather stores identites in a database and verifies that reconstructed identities obtained from RPC calls match the identities stored in the database. This protocol works as following. Let's assume a Runtime client with Id *69383f17554afbf81594999eec96adbaa0fc6caace5f07990248b14167c41e8f* sends the following message to the Colony Server:
+
+```json
+{
+    "rpc": {
+        "method": "GetProcess",
+        "nonce": "3473e116d839228cf38f964392520e97af426ebc8cc6a0d1b708be05ded5eef9"
+    },
+    "processid": "bba9fc3a63cde17c1fb96f246873c34048fb6d47f2d0aab351d487dc2b30e0e7"
+}
+```
+
+Additionally, the client also generate a signature using the client's private key. The signature is sent togeather with the message to the server.
+```
+fddcb99aa2ced69771a4d177db0bf9449add1b82d4d41da3c6ef50f56cb487de17f9ab10835e4b23c3981c67382852e7eea2f28708105e06b7c19ec54032ad0001
+```
+
+When receiving the message, the server reconstructs the Id of the calling client using the received signature and message. This means that client Id (e.g. *69383f17554afbf81594999eec96adbaa0fc6caace5f07990248b14167c41e8f*) is never sent to the server, but rather derived by the server. The server will now check in the database if the reconstructed Runtime Id is a member of the colony where the requested process is running.
 
 ## Links
 * [Installation](docs/Installation.md)
