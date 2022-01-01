@@ -13,21 +13,21 @@ A core component of Colonies is a crypto identity protocol inspired by Bitcoin a
 The Colonies Server keeps track of these identities and applies several rules how runtimes are allowed to interact with each other. 
 
 1. Only the Colonies Server Owner can register a new Colony. 
-   - Credentials: Requires a valid Server Private Key.
-3. Only the Colonies Server Owner can list registered Colonies. 
-   - Credentials: Requires a valid Server Private Key.
-5. Only a Colony Owner can register a Colony Runtimes to a Colony. 
-   - Credentials: Requires a valid Colony Private key.
-7. Only a Colony Owner can approve/disapprove a Colony Runtimes member of a Colony. 
-   - Credentials: Requires a valid Colony Private key.
-9. Only a Colony Owner can list/get info about Colony Runtimes member of a Colony. 
-   - Credentials Requires a valid Colony Private key.
-11. Any Colony Runtime member of a Colony can submit/get/list processes. 
-   - Credentials: Requires a valid Runtime Private Key.
-13. Only the Colony Runtime that was assigned a process can set attributes on that process. 
-   - Credentials: Requires a valid Runtime Private Key.
-15. Any Colony Runtime can get/list attributes on processes. 
-   - Credentials: Requires a valid Runtime Private Key.
+   Credentials: Requires a valid Server Private Key.
+2. Only the Colonies Server Owner can list registered Colonies. 
+   Credentials: Requires a valid Server Private Key.
+3. Only a Colony Owner can register a Colony Runtimes to a Colony. 
+   Credentials: Requires a valid Colony Private key.
+4. Only a Colony Owner can approve/disapprove a Colony Runtimes member of a Colony. 
+   Credentials: Requires a valid Colony Private key.
+5. Only a Colony Owner can list/get info about Colony Runtimes member of a Colony. 
+   Credentials Requires a valid Colony Private key.
+6. Any Colony Runtime member of a Colony can submit/get/list processes. 
+   Credentials: Requires a valid Runtime Private Key.
+7. Only the Colony Runtime that was assigned a process can set attributes on that process. 
+   Credentials: Requires a valid Runtime Private Key.
+8. Any Colony Runtime can get/list attributes on processes. 
+   Credentials: Requires a valid Runtime Private Key.
 
 Note that the Colonies server does not store any crypto keys, but rather stores identites in a database and verifies that reconstructed identities obtained from RPC calls match the identities stored in the database. This protocol works as follows. Let's assume that a Runtime client has the following Id: 
 
