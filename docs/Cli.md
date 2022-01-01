@@ -20,6 +20,9 @@ Output:
 Note that root password of Colonies server is also required to list all colonies.
 ```console
 ./bin/colonies colony ls --serverid=9289dfccedf27392810b96968535530bb69f90afe7c35738e0e627f3810d943e 
+```
+Output:
+```
 +------------------------------------------------------------------+----------+
 |                                ID                                |   NAME   |
 +------------------------------------------------------------------+----------+
@@ -45,15 +48,17 @@ Only the colony owner is allowed to register a new Colony Runtime.
 ```console
 ./bin/colonies runtime register --colonyid 0f4f350d264d1cffdec0d62c723a7da8b730c6863365da75697fd26a6d79ccc5 --colonyprvkey d95c54b63ac7c9ba624445fd755998e14e6aa71a17a74889c6a1754be80bcf09 --spec ./examples/runtime.json
 ```
-
+Output:
+```
 The *colonyprvkey* is automatically obtained from the keychain if not specified. The *colonyid* can also be specified using an environmental variables.
+```
 
 ```console
 export COLONYID="0f4f350d264d1cffdec0d62c723a7da8b730c6863365da75697fd26a6d79ccc5"
 ./bin/colonies runtime register --spec ./examples/runtime.json
 ```
 Output:
-```console
+```
 4599f89a8afb7ecd9beec0b7861fab3bacba3a0e2dbe050e9f7584f3c9d7ac58
 ```
 
@@ -61,6 +66,9 @@ Output:
 ```console
 export RUNTIMEID="4599f89a8afb7ecd9beec0b7861fab3bacba3a0e2dbe050e9f7584f3c9d7ac58"
 ./bin/colonies runtime ls 
+```
+Output:
+```
 Runtime with Id <4599f89a8afb7ecd9beec0b7861fab3bacba3a0e2dbe050e9f7584f3c9d7ac58> is not approved
 ```
 
@@ -68,11 +76,17 @@ A Colony Runtime needs to be approved by the Colony Owner before it can execute 
 
 ```console
 ./bin/colonies runtime approve --runtimeid 4599f89a8afb7ecd9beec0b7861fab3bacba3a0e2dbe050e9f7584f3c9d7ac58 
+```
+Output:
+```
 Colony Runtime with Id <4599f89a8afb7ecd9beec0b7861fab3bacba3a0e2dbe050e9f7584f3c9d7ac58> is now approved
 ```
 
 ```console
 ./bin/colonies runtimes ls 
+```
+Output:
+```
 +------------------------------------------------------------------+------------+----------+
 |                                ID                                |    NAME    |  STATUS  |
 +------------------------------------------------------------------+------------+----------+
@@ -83,6 +97,9 @@ Colony Runtime with Id <4599f89a8afb7ecd9beec0b7861fab3bacba3a0e2dbe050e9f7584f3
 Similarly, a Colony Runtime can be rejected with the "rejected" command. 
 ```console
 ./bin/colonies runtime reject --runtimeid 4599f89a8afb7ecd9beec0b7861fab3bacba3a0e2dbe050e9f7584f3c9d7ac58 
+```
+Output:
+```
 Colony Runtime with Id <4599f89a8afb7ecd9beec0b7861fab3bacba3a0e2dbe050e9f7584f3c9d7ac58> is now rejected
 ```
 
@@ -112,7 +129,6 @@ To submit the process spec to the Colony, type:
 ```console
 ./bin/colonies process submit --spec ./examples/process_spec.json
 ```
-
 Output:
 ```
 7bdc97997db5ea59471b2165c0e5672a4fe8f9158d36ab547adb9710d26e5ae2
@@ -121,6 +137,9 @@ Output:
 ### Get info about a process
 ```console
 ./bin/colonies process get --processid 4e369a9eeaf4521cdfa79de81666a5980f30345464e5c61e8cfdf9380e7ba663 
+```
+Output:
+```
 Process:
 +-------------------+------------------------------------------------------------------+
 | ID                | 4e369a9eeaf4521cdfa79de81666a5980f30345464e5c61e8cfdf9380e7ba663 |
@@ -157,6 +176,9 @@ Attributes:
 ### List all waiting processes
 ```console
 ./bin/colonies process psw
+```
+Output:
+```
 +------------------------------------------------------------------+-----------------------------+
 |                                ID                                |       SUBMISSION TIME       |
 +------------------------------------------------------------------+-----------------------------+
@@ -172,12 +194,18 @@ Attributes:
 An assigned process will change state to Running.
 ```console
 ./bin/colonies process assign
+```
+Output:
+```
 Process with Id <5513617dc4407b6190959a07db2a39c6ad93771c7e8457391e2e64927214c258> was assigned to Runtime with Id <4599f89a8afb7ecd9beec0b7861fab3bacba3a0e2dbe050e9f7584f3c9d7ac58>
 ```
 
 ### List all running processes
 ```console
 ./bin/colonies process ps
+```
+Output:
+```
 +------------------------------------------------------------------+-----------------------------+
 |                                ID                                |         START TIME          |
 +------------------------------------------------------------------+-----------------------------+
@@ -192,6 +220,9 @@ Process with Id <5513617dc4407b6190959a07db2a39c6ad93771c7e8457391e2e64927214c25
 ### List all successful processes
 ```console
 ./bin/colonies process pss 
+```
+Output:
+```
 +------------------------------------------------------------------+-----------------------------+
 |                                ID                                |          END TIME           |
 +------------------------------------------------------------------+-----------------------------+
@@ -203,6 +234,9 @@ Process with Id <5513617dc4407b6190959a07db2a39c6ad93771c7e8457391e2e64927214c25
 ### List all failed processes
 ```console
 ./bin/colonies process psf 
+```
+Output:
+```
 +------------------------------------------------------------------+-----------------------------+
 |                                ID                                |          END TIME           |
 +------------------------------------------------------------------+-----------------------------+
@@ -222,6 +256,9 @@ Output:
 
 ```console
 ./bin/colonies process get --processid 5785eb8a57f22d73a99d5c5e5d073cf27f9ea4ba81bad1a72e5e4f226e647dc0
+```
+Output:
+```
 +-------------------+------------------------------------------------------------------+
 | ID                | 5785eb8a57f22d73a99d5c5e5d073cf27f9ea4ba81bad1a72e5e4f226e647dc0 |
 | IsAssigned        | False                                                            |
@@ -258,6 +295,9 @@ Attributes:
 ### Get attribute of a process 
 ```console
 ./bin/colonies attribute get --attributeid 7fcc3a10947e6a3c56fa5c59c14c7d13d32468ed899e12e9d1cb7589ef51a0e3 --processid 5785eb8a57f22d73a99d5c5e5d073cf27f9ea4ba81bad1a72e5e4f226e647dc0 
+```
+Output:
+```
 +---------------+------------------------------------------------------------------+
 | ID            | 7fcc3a10947e6a3c56fa5c59c14c7d13d32468ed899e12e9d1cb7589ef51a0e3 |
 | TargetID      | 5785eb8a57f22d73a99d5c5e5d073cf27f9ea4ba81bad1a72e5e4f226e647dc0 |
@@ -270,11 +310,17 @@ Attributes:
 ### Mark a process as successful
 ```console
 ./bin/colonies process successful --processid 5513617dc4407b6190959a07db2a39c6ad93771c7e8457391e2e64927214c258
+```
+Output:
+```
 Process with Id <5513617dc4407b6190959a07db2a39c6ad93771c7e8457391e2e64927214c258> marked as successful
 ```
 
 ### Mark a process as failed 
 ```console
 ./bin/colonies process failed --processid 7bdc97997db5ea59471b2165c0e5672a4fe8f9158d36ab547adb9710d26e5ae2
+```
+Output:
+```
 Process with Id <7bdc97997db5ea59471b2165c0e5672a4fe8f9158d36ab547adb9710d26e5ae2> marked as failed
 ```
