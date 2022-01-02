@@ -73,11 +73,8 @@ Needs to be signed by a valid Server Owner Private Key. Note that the message is
 ```
 
 #### Decoded payload
-
 ```json
-{
-  "timestamp": XXXXX
-}
+{}
 ```
 
 #### Decoded reply
@@ -280,7 +277,9 @@ Needs to be signed by a valid Colony Private Key.
 ```
 
 #### Decoded Reply
-None
+```json
+{}
+```
 
 ###  Reject Runtime 
 
@@ -305,7 +304,9 @@ Needs to be signed by a valid Colony Private Key.
 ```
 
 #### Decoded reply
-None
+```json
+{}
+```
 
 ## Process API
 
@@ -574,7 +575,9 @@ Needs to be signed by a valid Runtime Private Key. The Runtime ID needs to match
 ```
 
 #### Decoded reply
-None
+```json
+{}
+```
 
 ### Mark a Proceess as Failed 
 
@@ -599,7 +602,9 @@ Needs to be signed by a valid Runtime Private Key. The Runtime ID needs to match
 ```
 
 #### Decoded reply
-None
+```json
+{}
+```
 
 ###  Add Attribute to a Process 
 
