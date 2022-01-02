@@ -14,7 +14,7 @@ A Colony may consists of many different kinds of Colony Runtimes, e.g. a **Kuber
 * [Using the Colonies CLI tool](docs/CLI.md)
 * [HTTP RPC Protocol](docs/RPC.md)
 
-## Security principles
+# Security principles
 A core component of Colonies is a crypto identity protocol inspired by Bitcoin and Ethereum. Each Colony and Colony Runtime is assigned a *Digital Identity* that is verified by the Colonies server using a so-called [Implicit certificates](https://en.wikipedia.org/wiki/Implicit_certificate), which is implemented using [Elliptic-curve cryptography](https://en.wikipedia.org/wiki/Elliptic-curve_cryptography). This protocol makes it possible to reconstruct public-keys from signatures. Identities can then simply be calculated as cryptographic hashes (SHA3-256) of the reconstructed public-keys.
 
 The Colonies Server keeps track of these identities and applies several rules how runtimes are allowed to interact with each other. 
