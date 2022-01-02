@@ -6,10 +6,12 @@ import (
 	"colonies/pkg/scheduler"
 	"colonies/pkg/scheduler/basic"
 	"errors"
+	"fmt"
 	"strconv"
 )
 
-type processSubscribers struct {
+type subscribers struct {
+	processesSubscribers map[string]*processesSubscription // runtimeID -> processChangeSubscription
 }
 
 type command struct {
@@ -30,16 +32,21 @@ type command struct {
 }
 
 type ColoniesController struct {
-	db        database.Database
-	cmdQueue  chan *command
-	scheduler scheduler.Scheduler
+	db          database.Database
+	cmdQueue    chan *command
+	scheduler   scheduler.Scheduler
+	subscribers *subscribers
 }
 
 func CreateColoniesController(db database.Database) *ColoniesController {
 	controller := &ColoniesController{db: db}
 	controller.cmdQueue = make(chan *command)
+	controller.subscribers = &subscribers{}
+	controller.subscribers.processesSubscribers = make(map[string]*processesSubscription)
 	controller.scheduler = basic.CreateScheduler()
+
 	go controller.masterWorker()
+
 	return controller
 }
 
@@ -48,12 +55,35 @@ func (controller *ColoniesController) masterWorker() {
 		select {
 		case msg := <-controller.cmdQueue:
 			if msg.stop {
-				//logging.Log().Info("Stopping Colonies controller")
 				return
 			}
 			if msg.handler != nil {
 				msg.handler(msg)
 			}
+		}
+	}
+}
+
+func (controller *ColoniesController) SubscribeProcesses(runtimeID string, subscription *processesSubscription) error {
+	cmd := &command{errorChan: make(chan error, 1),
+		handler: func(cmd *command) {
+			controller.subscribers.processesSubscribers[runtimeID] = subscription
+			cmd.errorChan <- nil
+		}}
+	controller.cmdQueue <- cmd
+
+	return <-cmd.errorChan
+}
+
+func (controller *ColoniesController) sendProcessEvent(process *core.Process) {
+	for _, subscription := range controller.subscribers.processesSubscribers {
+		if subscription.runtimeType == process.ProcessSpec.Conditions.RuntimeType && subscription.state == process.Status {
+			jsonString, err := process.ToJSON()
+			if err != nil {
+				// TODO
+				fmt.Println(err)
+			}
+			subscription.wsConn.WriteMessage(subscription.wsMsgType, []byte(jsonString))
 		}
 	}
 }
@@ -242,6 +272,7 @@ func (controller *ColoniesController) AddProcess(process *core.Process) (*core.P
 				cmd.errorChan <- err
 				return
 			}
+			controller.sendProcessEvent(process)
 			cmd.processReplyChan <- addedProcess
 		}}
 

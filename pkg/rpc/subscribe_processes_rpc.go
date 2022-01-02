@@ -5,18 +5,22 @@ import (
 	"encoding/json"
 )
 
-const SubscribeProcessesType = "subscribeprocesses"
+const SubscribeProcessesMsgType = "subscribeprocesses"
 
 type SubscribeProcessesMsg struct {
-	RPC     RPC           `json:"rpc"`
-	Runtime *core.Runtime `json:"runtime"`
+	RPC         RPC    `json:"rpc"`
+	RuntimeType string `json:"runtimetype"`
+	State       int    `json:"state"`
+	Timeout     int    `json:"timeout"`
 }
 
-func CreateSubscribeProcessesMsg(runtime *core.Runtime) *SubscribeProcessesMsg {
+func CreateSubscribeProcessesMsg(runtimeType string, state int, timeout int) *SubscribeProcessesMsg {
 	msg := &SubscribeProcessesMsg{}
-	msg.RPC.Method = SubscribeProcessesType
+	msg.RPC.Method = SubscribeProcessesMsgType
 	msg.RPC.Nonce = core.GenerateRandomID()
-	msg.Runtime = runtime
+	msg.RuntimeType = runtimeType
+	msg.State = state
+	msg.Timeout = timeout
 
 	return msg
 }
