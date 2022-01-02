@@ -105,9 +105,16 @@ func (server *ColoniesServer) handleWSRequest(c *gin.Context) {
 			if server.handleError(c, err, http.StatusBadRequest) {
 				return
 			}
-
 			processSubcription := createProcessesSubscription(conn, wsMsgType, msg.RuntimeType, msg.Timeout, msg.State)
 			server.controller.SubscribeProcesses(recoveredID, processSubcription)
+
+		case rpc.SubscribeProcessMsgType:
+			msg, err := rpc.CreateSubscribeProcessMsgFromJSON(rpcMsg.DecodePayload())
+			if server.handleError(c, err, http.StatusBadRequest) {
+				return
+			}
+			processSubcription := createProcessSubscription(conn, wsMsgType, msg.ProcessID, msg.Timeout, msg.State)
+			server.controller.SubscribeProcess(recoveredID, processSubcription)
 		}
 	}
 }

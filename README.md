@@ -1,7 +1,7 @@
 [![codecov](https://codecov.io/gh/johankristianss/colonies/branch/main/graph/badge.svg?token=G32O1AO1YB)](https://codecov.io/gh/johankristianss/colonies)
 
 # What is Colonies? 
-Colonies is a generic framework for implementing next-generation distributed applications and systems. It can be used as a building block for grid computing or edge computing to implement a meta operating system.
+**Colonies** is a generic framework for implementing next-generation distributed applications and systems. It can be used as a building block for grid computing or edge computing (e.g. implement a meta operating system).
 
 A **Colony** is a collection of (geographically) distributed computers that can be controlled using a single API. A **Colony Runtime** receives intructions from the **Colonies Server** and is responsible for executing processes. The Colonies server works as a mediator, trying to match submitted processes specification to suitable runtimes. It also keep tracks of the history of all process execution and can re-assign a process to another runtime for example if it is not completed in time. 
 
