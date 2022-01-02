@@ -517,3 +517,9 @@ Needs to be signed by a valid Runtime Private Key.
     "value": "helloworld"
 }
 ```
+
+## Subscribe to processes
+```
+{
+5ade14894b94e33044578906448f56cb86fa6dca08657bf74d2e5c649b09cda535cb110e056b843310b31ebffdce56bf762950d652e89ea6ebb25bfee97f610300@{"rpc":{"method":"subscribeprocesses","nonce":"b0aa78c7b4a19270e0839aea22de45b53ff00522323c3a03f5af189f3968fac2"},"runtimetype":"test_runtime_type","state":0,"timeout":100}
+```
