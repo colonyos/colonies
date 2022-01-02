@@ -1,26 +1,47 @@
 # HTTP RPC protocol
-* Messages are POSTed to http://SERVERHOST:SERVERPORT/api 
-* It is expected that the signature is set as a HTTP Header named **Signature**.
-* If the HTTP status code is not 200 OK, Reply messages can also contain an error message formatted as below.
+The Colonies RPC messages has the following format:
+
 ```json
 {
-    "stats": "500",
-    "name": "something when wrong here"
+    "method": "addcolony",
+    "signature": "82f2ba6368d5c7d0e9bfa6a01a8fa4d4263113f9eedf235e3a4c7b1febcdc2914fe1f8727746b2f501ceec5736457f218fe3b1a469dd6071775c472a802aa81501",
+    "payload": "ewogICAgICBjb2xvbnlpZDogYWM4ZGM4OTQ5YWYzOTVmZDUxZWFkMzFkNTk4YjI1MmJkYTAyZjFmNmVlZDExYWNlN2ZjN2RjOGRkODVhYzMyZSwKICAgICAgbmFtZTogdGVzdF9jb2xvbnlfbmFtZQogIH0=",
+    "error": false
+}
+```
+
+* Messages are POSTed to http://host:port/api.
+* The *payload* attribute is an Base64 string containing JSON data as specified in the API description below.
+* The *signature* is calculated based on the Base64 payload data using a private key.
+* If the *error* attribute is true, then the payload will contain the following JSON data.
+* It assumed that SSL/TLS are used to prevent replay attacks.
+
+```json
+{
+    "errorcode": "500",
+    "msg": "something when wrong here"
 }
 ```
 
 ## Colony API
 ### Add Colony
-Needs to be signed by a valid Server Owner Private Key.
 
-#### Message
+#### RPC Message 
+Needs to be signed by a valid Server Owner Private Key.
 
 ```json
 {
-    "rpc": {
-        "method": "addcolony",
-        "nonce": "5681b8c0e9f966df9b51e37e351449ad50a315baf20023ce0d24666dad59b991"
-    },
+    "method": "addcolony",
+    "signature": "...",
+    "payload": "...",
+    "error": false
+}
+```
+
+#### Decoded payload 
+
+```json
+{
     "colony": {
         "colonyid": "6d61afe7914c63f28a4c97645ce6ab264c3ad3a0e46ebd1f3788e83053934e18",
         "name": "test_colony_name"
@@ -28,7 +49,8 @@ Needs to be signed by a valid Server Owner Private Key.
 }
 ```
 
-#### Reply 
+#### Decoded reply 
+
 ```json
 {
     "colonyid": "6d61afe7914c63f28a4c97645ce6ab264c3ad3a0e46ebd1f3788e83053934e18",
@@ -37,18 +59,29 @@ Needs to be signed by a valid Server Owner Private Key.
 ```
 
 ### List Colonies
-Needs to be signed by a valid Server Owner Private Key.
-#### Message
+
+#### RPC Message 
+Needs to be signed by a valid Server Owner Private Key. Note that the message is empty except for the timestamp field.
+
 ```json
 {
-    "rpc": {
-        "method": "getcolonies",
-        "nonce": "723c2f48b5654cf420cb259ef6e64d8f9168ea4a0ffd6d221f7e950d2d3c567c"
-    }
+    "method": "getcolonies",
+    "signature": "...",
+    "payload": "...",
+    "error": false
 }
 ```
 
-#### Reply
+#### Decoded payload
+
+```json
+{
+  "timestamp": XXXXX
+}
+```
+
+#### Decoded reply
+
 ```json
 [
     {
@@ -63,20 +96,29 @@ Needs to be signed by a valid Server Owner Private Key.
 ```
 
 ### Get Colony info
+
+#### RPC Message 
 Needs to be signed by a valid Runtime Private Key.
 
-#### Message
 ```json
 {
-    "rpc": {
-        "method": "getcolony",
-        "nonce": "ed8b9825e4ad9e0864b4a1d363f387aa5c9ff2e67db4c7eb8174246a83e66e44"
-    },
+    "method": "getcolony",
+    "signature": "...",
+    "payload": "...",
+    "error": false
+}
+```
+
+#### Decoded payload
+
+```json
+{
     "colonyid": "42beaae68830094a4b367b06ef293aca0473ae8cd893da43a50000c98c85c5d8"
 }
 ```
 
-#### Reply 
+#### Decoded reply
+
 ```json
 {
     "colonyid": "ac8dc8949af395fd51ead31d598b252bda02f1f6eed11ace7fc7dc8dd85ac32e",
@@ -86,15 +128,23 @@ Needs to be signed by a valid Runtime Private Key.
 
 ## Runtime API
 ### Add Runtime
+
+#### RPC Message 
 Needs to be signed by a valid Colony Private Key.
 
-#### Message
 ```json
 {
-    "rpc": {
-        "method": "addruntime",
-        "nonce": "4431c27e78c5bee01c92ffc176747af35a75662a66be8f2065eaf6ba41befc9d"
-    },
+    "method": "addruntime",
+    "signature": "...",
+    "payload": "...",
+    "error": false
+}
+```
+
+#### Decoded payload
+
+```json
+{
     "runtime": {
         "runtimeid": "38df5bbbcf0ccb438d2e4151638e3967bf28a5654af6a7e5acc590c0e49fae06",
         "runtimetype": "test_runtime_type",
@@ -110,7 +160,8 @@ Needs to be signed by a valid Colony Private Key.
 }
 ```
 
-#### Reply 
+#### Decoded reply
+
 ```json
 {
     "runtimeid": "38df5bbbcf0ccb438d2e4151638e3967bf28a5654af6a7e5acc590c0e49fae06",
@@ -127,20 +178,29 @@ Needs to be signed by a valid Colony Private Key.
 ```
 
 ### List Runtimes
+
+#### RPC Message 
 Needs to be signed by a valid Runtime Private Key.
 
-#### Message
 ```json
 {
-    "rpc": {
-        "method": "getruntimes",
-        "nonce": "70ecd5e900fff8a8360062530e2a30ee9d4b759e5bf8b99e6ae486ea02c0c42a"
-    },
+    "method": "getruntimes",
+    "signature": "...",
+    "payload": "...",
+    "error": false
+}
+```
+
+#### Decoded payload
+
+```json
+{
     "colonyid": "863e313bfd882fe7c0f13c14aff1f3f02ba763bcb48377e50d505289c81e47b6"
 }
 ```
 
-#### Reply 
+#### Decoded reply
+
 ```json
 [
     {
@@ -159,20 +219,29 @@ Needs to be signed by a valid Runtime Private Key.
 ```
 
 ###  Get Runtime info
+
+#### RPC Message 
 Needs to be signed by a valid Runtime Private Key.
 
-#### Message
 ```json
 {
-    "rpc": {
-        "method": "getruntime",
-        "nonce": "3c70ab9a74ef7f3bfe13136e9ee90d35cba67458b165a0e7cb0384fee5c41312"
-    },
+    "method": "getruntime",
+    "signature": "...",
+    "payload": "...",
+    "error": false
+}
+```
+
+#### Decoded payload
+
+```json
+{
     "runtimeid": "ed2aa78eabe3d1f6fd46ef1247199e9a12faf1a8f1bcba0db51265515c3f08e0"
 }
 ```
 
-#### Reply 
+#### Decoded reply
+
 ```json
 {
     "runtimeid": "ed2aa78eabe3d1f6fd46ef1247199e9a12faf1a8f1bcba0db51265515c3f08e0",
@@ -189,51 +258,75 @@ Needs to be signed by a valid Runtime Private Key.
 ```
 
 ### Approve Runtime 
+
+#### RPC Message 
 Needs to be signed by a valid Colony Private Key.
 
-#### Message
 ```json
 {
-    "rpc": {
-        "method": "approveruntime",
-        "nonce": "7065c7e7092b32a303c48e7fd0267bff71ac90a0dd165af971097c3ae94b4688"
-    },
+    "method": "approveruntime",
+    "signature": "...",
+    "payload": "...",
+    "error": false
+}
+```
+
+#### Decoded Payload
+
+```json
+{
     "runtimeid": "e40e2862e3a68e1c79af4e9475ef64fbf588e13619f4daa7183673b34e189c87"
 }
 ```
 
-#### Reply 
+#### Decoded Reply
 None
 
 ###  Reject Runtime 
+
+#### RPC Message 
 Needs to be signed by a valid Colony Private Key.
 
-#### Message
 ```json
 {
-    "rpc": {
-        "method": "rejectruntime",
-        "nonce": "c78a97436c2a8a37438f0d811882248ed0700b54ca46acd7791fa2f40c8f02ee"
-    },
+    "method": "rejectruntime",
+    "signature": "...",
+    "payload": "...",
+    "error": false
+}
+```
+
+#### Decoded payload
+
+```json
+{
     "runtimeid": "7804cea6a50f2a258ad815b0ed37b6b312c813bf7387cef04958971335faae21"
 }
 ```
 
-#### Reply 
+#### Decoded reply
 None
 
 ## Process API
 
 ### Submit Process Specification 
+
+#### RPC Message 
 Needs to be signed by a valid Runtime Private Key.
 
-#### Message
 ```json
 {
-    "rpc": {
-        "method": "submitprocessspec",
-        "nonce": "ea23df61613c540b05807b9fdccacbb05c80e62776bc640b46307eaef6b3bcde"
-    },
+    "method": "submitprocessspec",
+    "signature": "...",
+    "payload": "...",
+    "error": false
+}
+```
+
+#### Decoded payload
+
+```json
+{
     "spec": {
         "timeout": -1,
         "maxretries": 3,
@@ -252,7 +345,8 @@ Needs to be signed by a valid Runtime Private Key.
 }
 ```
 
-#### Reply 
+#### Decoded reply
+
 ```json
 {
     "processid": "2c0fd0407292538cb8dce3cb306f88b2ab7f3726d649e07502eb04344d9f7164",
@@ -292,20 +386,29 @@ Needs to be signed by a valid Runtime Private Key.
 ```
 
 ### Assign Process to a Runtime 
+
+#### RPC Message 
 Needs to be signed by a valid Runtime Private Key.
 
-#### Message
 ```json
 {
-    "rpc": {
-        "method": "assignprocessspec",
-        "nonce": "bcc4051c250db9f14d30c3ddba2e9eefded526ee49f255e4d1c1c9c0761dc145"
-    },
+    "method": "assignprocess",
+    "signature": "...",
+    "payload": "...",
+    "error": false
+}
+```
+
+#### Encoded payload
+
+```json
+{
     "colonyid": "326691e2b5fc0651b5d781393c7279ab3dc58c6627d0a7b2a09e9aa0e4a60950"
 }
 ```
 
-#### Reply 
+#### Decoded reply
+
 ```json
 {
     "processid": "68db01b27271168cb1011c1c54cc31a54f23eb7e5767e49bb34fb206591d2a65",
@@ -335,7 +438,20 @@ Needs to be signed by a valid Runtime Private Key.
 ```
 
 ###  List processes
+
+#### RPC Message 
 Needs to be signed by a valid Runtime Private Key.
+
+```json
+{
+    "method": "getprocesses",
+    "signature": "...",
+    "payload": "...",
+    "error": false
+}
+```
+
+#### Decoded payload
 
 The state attribute can have the following values:
 * 1 : Waiting 
@@ -343,20 +459,16 @@ The state attribute can have the following values:
 * 3 : Success 
 * 4 : Failed 
 
-#### Message
 ```json
 {
-    "rpc": {
-        "method": "getprocesses",
-        "nonce": "7ad27ab65779ceee8b6796489c3b349ecd51c68e44ed64ed37f3d2fde129d85e"
-    },
     "coloyid": "891f0c88e8a00cb103df472e4ece347a41eb0115e5c40f12d565bb24eb3fc71d",
     "count": 2,
     "state": 3 
 }
 ```
 
-#### Reply 
+#### Decoded reply 
+
 ```json
 [
     {
@@ -388,20 +500,29 @@ The state attribute can have the following values:
 ```
 
 ###  Get Process info
+
+#### RPC Message 
 Needs to be signed by a valid Runtime Private Key.
 
-#### Message
 ```json
 {
-    "rpc": {
-        "method": "getprocess",
-        "nonce": "0eed2d1bf222767d2b1c4f3807f0a38f775853d480fd5e3d64ddcd9d288f95d3"
-    },
+    "method": "getprocess",
+    "signature": "...",
+    "payload": "...",
+    "error": false
+}
+```
+
+#### Decoded payload 
+
+```json
+{
     "processid": "80a98f46c7a364fd33339a6fb2e6c5d8988384fdbf237b4012490c4658bbc9ce"
 }
 ```
 
-#### Reply 
+#### Decoded reply
+
 ```json
 {
     "processid": "80a98f46c7a364fd33339a6fb2e6c5d8988384fdbf237b4012490c4658bbc9ce",
@@ -431,47 +552,73 @@ Needs to be signed by a valid Runtime Private Key.
 ```
 
 ### Mark Process as Successful 
+
+#### RPC Message 
 Needs to be signed by a valid Runtime Private Key. The Runtime ID needs to match the RuntimeID assigned to the process.
 
-#### Message
 ```json
 {
-    "rpc": {
-        "method": "marksuccessful",
-        "nonce": "a9e695209156eb0f63c1077afc3e42c91d4b538abca4e654f6cfb7895390658e"
-    },
+    "method": "marksuccessful",
+    "signature": "...",
+    "payload": "...",
+    "error": false
+}
+```
+
+#### Decoded payload
+
+```json
+{
     "processid": "ed041355071d2ee6d0ec27b480e2e4c8006cf465ec408b57fcdaa5dac76af8e2"
 }
 ```
-#### Reply 
+
+#### Decoded reply
 None
 
 ### Mark a Proceess as Failed 
+
+#### RPC Message 
 Needs to be signed by a valid Runtime Private Key. The Runtime ID needs to match the RuntimeID assigned to the process.
 
-#### Message
 ```json
 {
-    "rpc": {
-        "method": "markfailed",
-        "nonce": "963058bab6cea72ddfe6b7ba6d265e9f6b4837ed4d937cae126e4084c3d0e4cf"
-    },
+    "method": "markfailed",
+    "signature": "...",
+    "payload": "...",
+    "error": false
+}
+```
+
+#### Decoded payload
+
+```json
+{
     "processid": "24f6d85804e2abde0c85a9e8aef8b308c44a72323565b14f11756d4997acf200"
 }
 ```
-#### Reply 
+
+#### Decoded reply
 None
 
 ###  Add Attribute to a Process 
+
+#### RPC Message 
 Needs to be signed by a valid Runtime Private Key. The Runtime ID needs to match the RuntimeID assigned to the process.
 
-#### Message
 ```json
 {
-    "rpc": {
-        "method": "addattribute",
-        "nonce": "0e1f50e74d171217e77cb0fcfd54656b65aba48c57fad055966b523ebc4196ed"
-    },
+    "method": "addattribute",
+    "signature": "...",
+    "payload": "...",
+    "error": false
+}
+```
+
+#### Decoded payload
+
+```json
+{
     "attribute": {
         "attributeid": "216e26cb089032d2f941454e7db5f3ae1591eeb43eb477c3f8ed545b96d4f690",
         "targetid": "c4775cab695da8a77b503bbe29df8ae39dafd1c7fed3275dac11b436c1724dbf",
@@ -482,7 +629,8 @@ Needs to be signed by a valid Runtime Private Key. The Runtime ID needs to match
 }
 ```
 
-#### Reply 
+#### Decoded reply
+
 ```json
 {
     "attributeid": "216e26cb089032d2f941454e7db5f3ae1591eeb43eb477c3f8ed545b96d4f690",
@@ -494,20 +642,29 @@ Needs to be signed by a valid Runtime Private Key. The Runtime ID needs to match
 ```
 
 ###  Get Attribute assigned to a Process 
+
+#### RPC Message 
 Needs to be signed by a valid Runtime Private Key.
 
-#### Message
 ```json
 {
-    "rpc": {
-        "method": "getattribute",
-        "nonce": "6e36ae66c79467899e88270e5854eb6fe15f3595446aebbf236620617e66fc30"
-    },
+    "method": "gettattribute",
+    "signature": "...",
+    "payload": "...",
+    "error": false
+}
+```
+
+#### Decoded payload 
+
+```json
+{
     "attributeid": "a1d8f3613e074a250c2fbab478a0e11eb40defee66bd9b6a6ceb96990f1486eb"
 }
 ```
 
-#### Reply 
+#### Decoded reply
+
 ```json
 {
     "attributeid": "a1d8f3613e074a250c2fbab478a0e11eb40defee66bd9b6a6ceb96990f1486eb",
@@ -516,10 +673,4 @@ Needs to be signed by a valid Runtime Private Key.
     "key": "result",
     "value": "helloworld"
 }
-```
-
-## Subscribe to processes
-```
-{
-5ade14894b94e33044578906448f56cb86fa6dca08657bf74d2e5c649b09cda535cb110e056b843310b31ebffdce56bf762950d652e89ea6ebb25bfee97f610300@{"rpc":{"method":"subscribeprocesses","nonce":"b0aa78c7b4a19270e0839aea22de45b53ff00522323c3a03f5af189f3968fac2"},"runtimetype":"test_runtime_type","state":0,"timeout":100}
 ```
