@@ -8,14 +8,11 @@ import (
 const AddRuntimeMsgType = "addruntime"
 
 type AddRuntimeMsg struct {
-	RPC     RPC           `json:"rpc"`
 	Runtime *core.Runtime `json:"runtime"`
 }
 
 func CreateAddRuntimeMsg(runtime *core.Runtime) *AddRuntimeMsg {
 	msg := &AddRuntimeMsg{}
-	msg.RPC.Method = AddRuntimeMsgType
-	msg.RPC.Nonce = core.GenerateRandomID()
 	msg.Runtime = runtime
 
 	return msg

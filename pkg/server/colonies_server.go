@@ -14,7 +14,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -69,13 +68,13 @@ func CreateColoniesServer(db database.Database, port int, serverID string, tlsPr
 
 func (server *ColoniesServer) setupRoutes() {
 	server.ginHandler.POST("/api", server.handleEndpointRequest)
-	server.ginHandler.GET("/pubsub", server.handleWebsocketRequest)
+	server.ginHandler.GET("/pubsub", server.handleWSRequest)
 }
 
-func (server *ColoniesServer) handleWebsocketRequest(c *gin.Context) {
+func (server *ColoniesServer) handleWSRequest(c *gin.Context) {
 	w := c.Writer
 	r := c.Request
-	var wsupgrader = websocket.Upgrader{} // use default options
+	var wsupgrader = websocket.Upgrader{}
 	var err error
 	var conn *websocket.Conn
 	conn, err = wsupgrader.Upgrade(w, r, nil)
@@ -86,26 +85,25 @@ func (server *ColoniesServer) handleWebsocketRequest(c *gin.Context) {
 
 	for {
 		wsMsgType, data, err := conn.ReadMessage()
-		if err != nil {
-			// TODO
-			fmt.Println(err)
+		if server.handleError(c, err, http.StatusBadRequest) {
+			return
 		}
-		split := strings.Split(string(data), "@") // TODO: Come up with a better solution to package both signature and the message
-		signature := split[0]
-		jsonString := split[1]
 
-		msgType := rpc.DetermineMsgType(jsonString)
-		recoveredID, err := server.parseSignature(jsonString, signature)
-		if err != nil {
-			// TODO
-			fmt.Println(err)
+		rpcMsg, err := rpc.CreateRPCMsgFromJSON(string(data))
+		if server.handleError(c, err, http.StatusBadRequest) {
+			return
 		}
-		switch msgType {
+
+		recoveredID, err := server.parseSignature(rpcMsg.Payload, rpcMsg.Signature)
+		if server.handleError(c, err, http.StatusForbidden) {
+			return
+		}
+
+		switch rpcMsg.Method {
 		case rpc.SubscribeProcessesMsgType:
-			msg, err := rpc.CreateSubscribeProcessesMsgFromJSON(jsonString)
-			if err != nil {
-				// TODO
-				fmt.Println(err)
+			msg, err := rpc.CreateSubscribeProcessesMsgFromJSON(rpcMsg.DecodePayload())
+			if server.handleError(c, err, http.StatusBadRequest) {
+				return
 			}
 
 			processSubcription := createProcessesSubscription(conn, wsMsgType, msg.RuntimeType, msg.Timeout, msg.State)
@@ -129,53 +127,56 @@ func (server *ColoniesServer) handleEndpointRequest(c *gin.Context) {
 		return
 	}
 
-	jsonString := string(jsonBytes)
-	msgType := rpc.DetermineMsgType(jsonString)
-	recoveredID, err := server.parseSignature(jsonString, c.GetHeader("Signature"))
+	rpcMsg, err := rpc.CreateRPCMsgFromJSON(string(jsonBytes))
+	if server.handleError(c, err, http.StatusBadRequest) {
+		return
+	}
+
+	recoveredID, err := server.parseSignature(rpcMsg.Payload, rpcMsg.Signature)
 	if server.handleError(c, err, http.StatusForbidden) {
 		return
 	}
 
-	switch msgType {
+	switch rpcMsg.Method {
 	// Colony operations
 	case rpc.AddColonyMsgType:
-		server.handleAddColonyRequest(c, recoveredID, jsonString)
+		server.handleAddColonyRequest(c, recoveredID, rpcMsg.DecodePayload())
 	case rpc.GetColoniesMsgType:
-		server.handleGetColoniesRequest(c, recoveredID, jsonString)
+		server.handleGetColoniesRequest(c, recoveredID, rpcMsg.DecodePayload())
 	case rpc.GetColonyMsgType:
-		server.handleGetColonyRequest(c, recoveredID, jsonString)
+		server.handleGetColonyRequest(c, recoveredID, rpcMsg.DecodePayload())
 
 	// Runtime operations
 	case rpc.AddRuntimeMsgType:
-		server.handleAddRuntimeRequest(c, recoveredID, jsonString)
+		server.handleAddRuntimeRequest(c, recoveredID, rpcMsg.DecodePayload())
 	case rpc.GetRuntimesMsgType:
-		server.handleGetRuntimesRequest(c, recoveredID, jsonString)
+		server.handleGetRuntimesRequest(c, recoveredID, rpcMsg.DecodePayload())
 	case rpc.GetRuntimeMsgType:
-		server.handleGetRuntimeRequest(c, recoveredID, jsonString)
+		server.handleGetRuntimeRequest(c, recoveredID, rpcMsg.DecodePayload())
 	case rpc.ApproveRuntimeMsgType:
-		server.handleApproveRuntimeRequest(c, recoveredID, jsonString)
+		server.handleApproveRuntimeRequest(c, recoveredID, rpcMsg.DecodePayload())
 	case rpc.RejectRuntimeMsgType:
-		server.handleRejectRuntimeRequest(c, recoveredID, jsonString)
+		server.handleRejectRuntimeRequest(c, recoveredID, rpcMsg.DecodePayload())
 
 	// Process operations
 	case rpc.SubmitProcessSpecMsgType:
-		server.handleSubmitProcessSpec(c, recoveredID, jsonString)
+		server.handleSubmitProcessSpec(c, recoveredID, rpcMsg.DecodePayload())
 	case rpc.AssignProcessMsgType:
-		server.handleAssignProcessRequest(c, recoveredID, jsonString)
+		server.handleAssignProcessRequest(c, recoveredID, rpcMsg.DecodePayload())
 	case rpc.GetProcessesMsgType:
-		server.handleGetProcessesRequest(c, recoveredID, jsonString)
+		server.handleGetProcessesRequest(c, recoveredID, rpcMsg.DecodePayload())
 	case rpc.GetProcessMsgType:
-		server.handleGetProcessRequest(c, recoveredID, jsonString)
+		server.handleGetProcessRequest(c, recoveredID, rpcMsg.DecodePayload())
 	case rpc.MarkSuccessfulMsgType:
-		server.handleMarkSuccessfulRequest(c, recoveredID, jsonString)
+		server.handleMarkSuccessfulRequest(c, recoveredID, rpcMsg.DecodePayload())
 	case rpc.MarkFailedMsgType:
-		server.handleMarkFailedRequest(c, recoveredID, jsonString)
+		server.handleMarkFailedRequest(c, recoveredID, rpcMsg.DecodePayload())
 
 	// Attribute operations
 	case rpc.AddAttributeMsgType:
-		server.handleAddAttributeRequest(c, recoveredID, jsonString)
+		server.handleAddAttributeRequest(c, recoveredID, rpcMsg.DecodePayload())
 	case rpc.GetAttributeMsgType:
-		server.handleGetAttributeRequest(c, recoveredID, jsonString)
+		server.handleGetAttributeRequest(c, recoveredID, rpcMsg.DecodePayload())
 	default:
 		if server.handleError(c, errors.New("Invalid RPC message type"), http.StatusForbidden) {
 			return

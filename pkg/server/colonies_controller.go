@@ -80,7 +80,7 @@ func (controller *ColoniesController) sendProcessEvent(process *core.Process) {
 		if subscription.runtimeType == process.ProcessSpec.Conditions.RuntimeType && subscription.state == process.Status {
 			jsonString, err := process.ToJSON()
 			if err != nil {
-				// TODO
+				// There is nothing we can do about this error except print it to server log
 				fmt.Println(err)
 			}
 			subscription.wsConn.WriteMessage(subscription.wsMsgType, []byte(jsonString))

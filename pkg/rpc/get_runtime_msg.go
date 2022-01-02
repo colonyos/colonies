@@ -1,21 +1,17 @@
 package rpc
 
 import (
-	"colonies/pkg/core"
 	"encoding/json"
 )
 
 const GetRuntimeMsgType = "getruntime"
 
 type GetRuntimeMsg struct {
-	RPC       RPC    `json:"rpc"`
 	RuntimeID string `json:"runtimeid"`
 }
 
 func CreateGetRuntimeMsg(runtimeID string) *GetRuntimeMsg {
 	msg := &GetRuntimeMsg{}
-	msg.RPC.Method = GetRuntimeMsgType
-	msg.RPC.Nonce = core.GenerateRandomID()
 	msg.RuntimeID = runtimeID
 
 	return msg
