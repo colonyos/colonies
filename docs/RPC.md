@@ -78,7 +78,7 @@ Needs to be signed by a valid Runtime Private Key.
 
 #### Reply 
 ```json
-reply: {
+{
     "colonyid": "ac8dc8949af395fd51ead31d598b252bda02f1f6eed11ace7fc7dc8dd85ac32e",
     "name": "test_colony_name"
 }
@@ -383,9 +383,8 @@ The state attribute can have the following values:
             },
             "env": {}
         }
-    },
-    ...
-  ]
+    }
+]
 ```
 
 ###  Get Process info
@@ -485,7 +484,7 @@ Needs to be signed by a valid Runtime Private Key. The Runtime ID needs to match
 
 #### Reply 
 ```json
-reply: {
+{
     "attributeid": "216e26cb089032d2f941454e7db5f3ae1591eeb43eb477c3f8ed545b96d4f690",
     "targetid": "c4775cab695da8a77b503bbe29df8ae39dafd1c7fed3275dac11b436c1724dbf",
     "attributetype": 1,
