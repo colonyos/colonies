@@ -15,6 +15,7 @@ type AddColonyMsg struct {
 func CreateAddColonyMsg(colony *core.Colony) *AddColonyMsg {
 	msg := &AddColonyMsg{}
 	msg.RPC.Method = AddColonyMsgType
+	msg.RPC.Nonce = core.GenerateRandomID()
 	msg.Colony = colony
 
 	return msg
@@ -22,6 +23,15 @@ func CreateAddColonyMsg(colony *core.Colony) *AddColonyMsg {
 
 func (msg *AddColonyMsg) ToJSON() (string, error) {
 	jsonBytes, err := json.Marshal(msg)
+	if err != nil {
+		return "", err
+	}
+
+	return string(jsonBytes), nil
+}
+
+func (msg *AddColonyMsg) ToJSONIndent() (string, error) {
+	jsonBytes, err := json.MarshalIndent(msg, "", "    ")
 	if err != nil {
 		return "", err
 	}

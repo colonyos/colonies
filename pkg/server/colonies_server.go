@@ -78,7 +78,9 @@ func (server *ColoniesServer) handleWebsocketRequest(c *gin.Context) {
 var wsupgrader = websocket.Upgrader{} // use default options
 
 func wshandler(w http.ResponseWriter, r *http.Request) {
-	conn, err := wsupgrader.Upgrade(w, r, nil)
+	var err error
+	var conn *websocket.Conn
+	conn, err = wsupgrader.Upgrade(w, r, nil)
 	if err != nil {
 		fmt.Println(err)
 		return

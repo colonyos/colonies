@@ -1,6 +1,7 @@
 package rpc
 
 import (
+	"colonies/pkg/core"
 	"encoding/json"
 )
 
@@ -14,6 +15,7 @@ type RejectRuntimeMsg struct {
 func CreateRejectRuntimeMsg(runtimeID string) *RejectRuntimeMsg {
 	msg := &RejectRuntimeMsg{}
 	msg.RPC.Method = RejectRuntimeMsgType
+	msg.RPC.Nonce = core.GenerateRandomID()
 	msg.RuntimeID = runtimeID
 
 	return msg
@@ -21,6 +23,15 @@ func CreateRejectRuntimeMsg(runtimeID string) *RejectRuntimeMsg {
 
 func (msg *RejectRuntimeMsg) ToJSON() (string, error) {
 	jsonBytes, err := json.Marshal(msg)
+	if err != nil {
+		return "", err
+	}
+
+	return string(jsonBytes), nil
+}
+
+func (msg *RejectRuntimeMsg) ToJSONIndent() (string, error) {
+	jsonBytes, err := json.MarshalIndent(msg, "", "    ")
 	if err != nil {
 		return "", err
 	}

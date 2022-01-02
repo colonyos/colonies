@@ -15,6 +15,7 @@ type AddRuntimeMsg struct {
 func CreateAddRuntimeMsg(runtime *core.Runtime) *AddRuntimeMsg {
 	msg := &AddRuntimeMsg{}
 	msg.RPC.Method = AddRuntimeMsgType
+	msg.RPC.Nonce = core.GenerateRandomID()
 	msg.Runtime = runtime
 
 	return msg
@@ -22,6 +23,15 @@ func CreateAddRuntimeMsg(runtime *core.Runtime) *AddRuntimeMsg {
 
 func (msg *AddRuntimeMsg) ToJSON() (string, error) {
 	jsonBytes, err := json.Marshal(msg)
+	if err != nil {
+		return "", err
+	}
+
+	return string(jsonBytes), nil
+}
+
+func (msg *AddRuntimeMsg) ToJSONIndent() (string, error) {
+	jsonBytes, err := json.MarshalIndent(msg, "", "    ")
 	if err != nil {
 		return "", err
 	}

@@ -1,6 +1,7 @@
 package rpc
 
 import (
+	"colonies/pkg/core"
 	"encoding/json"
 )
 
@@ -14,6 +15,7 @@ type GetAttributeMsg struct {
 func CreateGetAttributeMsg(attributeID string) *GetAttributeMsg {
 	msg := &GetAttributeMsg{}
 	msg.RPC.Method = GetAttributeMsgType
+	msg.RPC.Nonce = core.GenerateRandomID()
 	msg.AttributeID = attributeID
 
 	return msg
@@ -21,6 +23,15 @@ func CreateGetAttributeMsg(attributeID string) *GetAttributeMsg {
 
 func (msg *GetAttributeMsg) ToJSON() (string, error) {
 	jsonBytes, err := json.Marshal(msg)
+	if err != nil {
+		return "", err
+	}
+
+	return string(jsonBytes), nil
+}
+
+func (msg *GetAttributeMsg) ToJSONIndent() (string, error) {
+	jsonBytes, err := json.MarshalIndent(msg, "", "    ")
 	if err != nil {
 		return "", err
 	}

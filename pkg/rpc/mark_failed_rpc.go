@@ -1,6 +1,7 @@
 package rpc
 
 import (
+	"colonies/pkg/core"
 	"encoding/json"
 )
 
@@ -14,6 +15,7 @@ type MarkFailedMsg struct {
 func CreateMarkFailedMsg(processID string) *MarkFailedMsg {
 	msg := &MarkFailedMsg{}
 	msg.RPC.Method = MarkFailedMsgType
+	msg.RPC.Nonce = core.GenerateRandomID()
 	msg.ProcessID = processID
 
 	return msg
@@ -21,6 +23,15 @@ func CreateMarkFailedMsg(processID string) *MarkFailedMsg {
 
 func (msg *MarkFailedMsg) ToJSON() (string, error) {
 	jsonBytes, err := json.Marshal(msg)
+	if err != nil {
+		return "", err
+	}
+
+	return string(jsonBytes), nil
+}
+
+func (msg *MarkFailedMsg) ToJSONIndent() (string, error) {
+	jsonBytes, err := json.MarshalIndent(msg, "", "    ")
 	if err != nil {
 		return "", err
 	}

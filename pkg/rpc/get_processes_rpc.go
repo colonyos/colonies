@@ -1,6 +1,7 @@
 package rpc
 
 import (
+	"colonies/pkg/core"
 	"encoding/json"
 )
 
@@ -16,6 +17,7 @@ type GetProcessesMsg struct {
 func CreateGetProcessesMsg(colonyID string, count int, state int) *GetProcessesMsg {
 	msg := &GetProcessesMsg{}
 	msg.RPC.Method = GetProcessesMsgType
+	msg.RPC.Nonce = core.GenerateRandomID()
 	msg.ColonyID = colonyID
 	msg.Count = count
 	msg.State = state
@@ -25,6 +27,15 @@ func CreateGetProcessesMsg(colonyID string, count int, state int) *GetProcessesM
 
 func (msg *GetProcessesMsg) ToJSON() (string, error) {
 	jsonBytes, err := json.Marshal(msg)
+	if err != nil {
+		return "", err
+	}
+
+	return string(jsonBytes), nil
+}
+
+func (msg *GetProcessesMsg) ToJSONIndent() (string, error) {
+	jsonBytes, err := json.MarshalIndent(msg, "", "    ")
 	if err != nil {
 		return "", err
 	}

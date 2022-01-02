@@ -1,7 +1,6 @@
 package server
 
 import (
-	"colonies/internal/logging"
 	"colonies/pkg/core"
 	"colonies/pkg/database"
 	"colonies/pkg/scheduler"
@@ -9,6 +8,9 @@ import (
 	"errors"
 	"strconv"
 )
+
+type processSubscribers struct {
+}
 
 type command struct {
 	stop               bool
@@ -46,7 +48,7 @@ func (controller *ColoniesController) masterWorker() {
 		select {
 		case msg := <-controller.cmdQueue:
 			if msg.stop {
-				logging.Log().Info("Stopping Colonies controller")
+				//logging.Log().Info("Stopping Colonies controller")
 				return
 			}
 			if msg.handler != nil {

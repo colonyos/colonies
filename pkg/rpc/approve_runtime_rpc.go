@@ -1,6 +1,7 @@
 package rpc
 
 import (
+	"colonies/pkg/core"
 	"encoding/json"
 )
 
@@ -14,6 +15,7 @@ type ApproveRuntimeRPC struct {
 func CreateApproveRuntimeMsg(runtimeID string) *ApproveRuntimeRPC {
 	msg := &ApproveRuntimeRPC{}
 	msg.RPC.Method = ApproveRuntimeMsgType
+	msg.RPC.Nonce = core.GenerateRandomID()
 	msg.RuntimeID = runtimeID
 
 	return msg
@@ -21,6 +23,15 @@ func CreateApproveRuntimeMsg(runtimeID string) *ApproveRuntimeRPC {
 
 func (msg *ApproveRuntimeRPC) ToJSON() (string, error) {
 	jsonBytes, err := json.Marshal(msg)
+	if err != nil {
+		return "", err
+	}
+
+	return string(jsonBytes), nil
+}
+
+func (msg *ApproveRuntimeRPC) ToJSONIndent() (string, error) {
+	jsonBytes, err := json.MarshalIndent(msg, "", "    ")
 	if err != nil {
 		return "", err
 	}
