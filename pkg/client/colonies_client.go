@@ -132,6 +132,63 @@ func (client *ColoniesClient) SubscribeProcesses(runtimeType string,
 	return processChan, nil
 }
 
+func (client *ColoniesClient) SubscribeProcess(processID string,
+	state int,
+	timeout int,
+	prvKey string) (chan *core.Process, error) {
+	u := url.URL{Scheme: "wss", Host: client.host + ":" + strconv.Itoa(client.port), Path: "/pubsub"}
+
+	processChan := make(chan *core.Process)
+
+	interrupt := make(chan os.Signal, 1)
+	signal.Notify(interrupt, os.Interrupt)
+
+	dialer := *websocket.DefaultDialer
+	dialer.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+
+	conn, _, err := dialer.Dial(u.String(), nil)
+	if err != nil {
+		return processChan, err
+	}
+
+	msg := rpc.CreateSubscribeProcessMsg(processID, state, timeout)
+	jsonString, err := msg.ToJSON()
+	if err != nil {
+		return processChan, err
+	}
+
+	rpcMsg, err := rpc.CreateRPCMsg(rpc.SubscribeProcessMsgType, jsonString, prvKey)
+	if err != nil {
+		return processChan, err
+	}
+
+	jsonString, err = rpcMsg.ToJSON()
+	if err != nil {
+		return processChan, err
+	}
+
+	err = conn.WriteMessage(websocket.TextMessage, []byte(jsonString))
+	if err != nil {
+		return processChan, err
+	}
+
+	go func(conn *websocket.Conn) {
+		for {
+			_, jsonBytes, err := conn.ReadMessage()
+			if err != nil {
+				// TODO
+				fmt.Println(err)
+				continue
+			}
+			process, err := core.ConvertJSONToProcess(string(jsonBytes))
+			processChan <- process
+			// TODO: defer conn.Close()
+		}
+	}(conn)
+
+	return processChan, nil
+}
+
 func (client *ColoniesClient) AddColony(colony *core.Colony, prvKey string) (*core.Colony, error) {
 	msg := rpc.CreateAddColonyMsg(colony)
 	jsonString, err := msg.ToJSON()
