@@ -1,21 +1,17 @@
 package rpc
 
 import (
-	"colonies/pkg/core"
 	"encoding/json"
 )
 
 const MarkFailedMsgType = "markfailed"
 
 type MarkFailedMsg struct {
-	RPC       RPC    `json:"rpc"`
 	ProcessID string `json:"processid"`
 }
 
 func CreateMarkFailedMsg(processID string) *MarkFailedMsg {
 	msg := &MarkFailedMsg{}
-	msg.RPC.Method = MarkFailedMsgType
-	msg.RPC.Nonce = core.GenerateRandomID()
 	msg.ProcessID = processID
 
 	return msg

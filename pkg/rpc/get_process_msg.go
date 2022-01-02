@@ -1,21 +1,17 @@
 package rpc
 
 import (
-	"colonies/pkg/core"
 	"encoding/json"
 )
 
 const GetProcessMsgType = "getprocess"
 
 type GetProcessMsg struct {
-	RPC       RPC    `json:"rpc"`
 	ProcessID string `json:"processid"`
 }
 
 func CreateGetProcessMsg(processID string) *GetProcessMsg {
 	msg := &GetProcessMsg{}
-	msg.RPC.Method = GetProcessMsgType
-	msg.RPC.Nonce = core.GenerateRandomID()
 	msg.ProcessID = processID
 
 	return msg

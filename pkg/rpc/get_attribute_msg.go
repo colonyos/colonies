@@ -1,21 +1,17 @@
 package rpc
 
 import (
-	"colonies/pkg/core"
 	"encoding/json"
 )
 
 const GetAttributeMsgType = "getattribute"
 
 type GetAttributeMsg struct {
-	RPC         RPC    `json:"rpc"`
 	AttributeID string `json:"attributeid"`
 }
 
 func CreateGetAttributeMsg(attributeID string) *GetAttributeMsg {
 	msg := &GetAttributeMsg{}
-	msg.RPC.Method = GetAttributeMsgType
-	msg.RPC.Nonce = core.GenerateRandomID()
 	msg.AttributeID = attributeID
 
 	return msg

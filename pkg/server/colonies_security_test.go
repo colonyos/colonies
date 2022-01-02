@@ -405,10 +405,10 @@ func TestGetProcessSecurity(t *testing.T) {
 	addedProcess, err := client.SubmitProcessSpec(processSpec, env.runtime1PrvKey)
 	assert.Nil(t, err)
 
-	_, err = client.GetProcessByID(addedProcess.ID, env.runtime2PrvKey)
+	_, err = client.GetProcess(addedProcess.ID, env.runtime2PrvKey)
 	assert.NotNil(t, err) // Should not work
 
-	_, err = client.GetProcessByID(addedProcess.ID, env.runtime1PrvKey)
+	_, err = client.GetProcess(addedProcess.ID, env.runtime1PrvKey)
 	assert.Nil(t, err) // Should work
 
 	server.Shutdown()

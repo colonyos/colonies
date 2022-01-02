@@ -1,14 +1,12 @@
 package rpc
 
 import (
-	"colonies/pkg/core"
 	"encoding/json"
 )
 
 const GetProcessesMsgType = "getprocesses"
 
 type GetProcessesMsg struct {
-	RPC      RPC    `json:"rpc"`
 	ColonyID string `json:"coloyid"`
 	Count    int    `json:"count"`
 	State    int    `json:"state"`
@@ -16,8 +14,6 @@ type GetProcessesMsg struct {
 
 func CreateGetProcessesMsg(colonyID string, count int, state int) *GetProcessesMsg {
 	msg := &GetProcessesMsg{}
-	msg.RPC.Method = GetProcessesMsgType
-	msg.RPC.Nonce = core.GenerateRandomID()
 	msg.ColonyID = colonyID
 	msg.Count = count
 	msg.State = state
