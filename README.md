@@ -57,3 +57,5 @@ When receiving the message, the server reconstructs the Id of the calling client
 ## Links
 * [Installation](docs/Installation.md)
 * [Using the Colonies CLI tool](docs/Cli.md)
+
+[![codecov](https://codecov.io/gh/johankristianss/colonies/branch/main/graph/badge.svg?token=G32O1AO1YB)](https://codecov.io/gh/johankristianss/colonies)
