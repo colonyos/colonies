@@ -13,6 +13,10 @@ docker:
 push-image:
 	docker push $(IMAGE)
 
+coverage:
+	./buildtools/coverage.sh
+	./buildtools/codecov
+
 test:
 	@cd internal/crypto; grc go test -v
 	@cd pkg/core; grc go test -v
