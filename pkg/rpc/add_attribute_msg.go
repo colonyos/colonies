@@ -8,14 +8,11 @@ import (
 const AddAttributeMsgType = "addattribute"
 
 type AddAttributeMsg struct {
-	RPC       RPC             `json:"rpc"`
 	Attribute *core.Attribute `json:"attribute"`
 }
 
 func CreateAddAttributeMsg(attribute *core.Attribute) *AddAttributeMsg {
 	msg := &AddAttributeMsg{}
-	msg.RPC.Method = AddAttributeMsgType
-	msg.RPC.Nonce = core.GenerateRandomID()
 	msg.Attribute = attribute
 
 	return msg

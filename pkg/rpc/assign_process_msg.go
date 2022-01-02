@@ -1,21 +1,17 @@
 package rpc
 
 import (
-	"colonies/pkg/core"
 	"encoding/json"
 )
 
-const AssignProcessMsgType = "assignprocessspec"
+const AssignProcessMsgType = "assignprocess"
 
 type AssignProcessMsg struct {
-	RPC      RPC    `json:"rpc"`
 	ColonyID string `json:"colonyid"`
 }
 
 func CreateAssignProcessMsg(colonyID string) *AssignProcessMsg {
 	msg := &AssignProcessMsg{}
-	msg.RPC.Method = AssignProcessMsgType
-	msg.RPC.Nonce = core.GenerateRandomID()
 	msg.ColonyID = colonyID
 
 	return msg

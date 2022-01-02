@@ -1,21 +1,17 @@
 package rpc
 
 import (
-	"colonies/pkg/core"
 	"encoding/json"
 )
 
 const RejectRuntimeMsgType = "rejectruntime"
 
 type RejectRuntimeMsg struct {
-	RPC       RPC    `json:"rpc"`
 	RuntimeID string `json:"runtimeid"`
 }
 
 func CreateRejectRuntimeMsg(runtimeID string) *RejectRuntimeMsg {
 	msg := &RejectRuntimeMsg{}
-	msg.RPC.Method = RejectRuntimeMsgType
-	msg.RPC.Nonce = core.GenerateRandomID()
 	msg.RuntimeID = runtimeID
 
 	return msg

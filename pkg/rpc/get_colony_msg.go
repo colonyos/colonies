@@ -1,21 +1,17 @@
 package rpc
 
 import (
-	"colonies/pkg/core"
 	"encoding/json"
 )
 
 const GetColonyMsgType = "getcolony"
 
 type GetColonyMsg struct {
-	RPC      RPC    `json:"rpc"`
 	ColonyID string `json:"colonyid"`
 }
 
 func CreateGetColonyMsg(colonyID string) *GetColonyMsg {
 	msg := &GetColonyMsg{}
-	msg.RPC.Method = GetColonyMsgType
-	msg.RPC.Nonce = core.GenerateRandomID()
 	msg.ColonyID = colonyID
 
 	return msg

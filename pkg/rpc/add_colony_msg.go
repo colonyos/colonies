@@ -8,14 +8,11 @@ import (
 const AddColonyMsgType = "addcolony"
 
 type AddColonyMsg struct {
-	RPC    RPC          `json:"rpc"`
 	Colony *core.Colony `json:"colony"`
 }
 
 func CreateAddColonyMsg(colony *core.Colony) *AddColonyMsg {
 	msg := &AddColonyMsg{}
-	msg.RPC.Method = AddColonyMsgType
-	msg.RPC.Nonce = core.GenerateRandomID()
 	msg.Colony = colony
 
 	return msg

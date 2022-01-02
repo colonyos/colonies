@@ -1,21 +1,17 @@
 package rpc
 
 import (
-	"colonies/pkg/core"
 	"encoding/json"
 )
 
 const ApproveRuntimeMsgType = "approveruntime"
 
 type ApproveRuntimeRPC struct {
-	RPC       RPC    `json:"rpc"`
 	RuntimeID string `json:"runtimeid"`
 }
 
 func CreateApproveRuntimeMsg(runtimeID string) *ApproveRuntimeRPC {
 	msg := &ApproveRuntimeRPC{}
-	msg.RPC.Method = ApproveRuntimeMsgType
-	msg.RPC.Nonce = core.GenerateRandomID()
 	msg.RuntimeID = runtimeID
 
 	return msg

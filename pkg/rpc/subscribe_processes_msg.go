@@ -1,14 +1,12 @@
 package rpc
 
 import (
-	"colonies/pkg/core"
 	"encoding/json"
 )
 
 const SubscribeProcessesMsgType = "subscribeprocesses"
 
 type SubscribeProcessesMsg struct {
-	RPC         RPC    `json:"rpc"`
 	RuntimeType string `json:"runtimetype"`
 	State       int    `json:"state"`
 	Timeout     int    `json:"timeout"`
@@ -16,8 +14,6 @@ type SubscribeProcessesMsg struct {
 
 func CreateSubscribeProcessesMsg(runtimeType string, state int, timeout int) *SubscribeProcessesMsg {
 	msg := &SubscribeProcessesMsg{}
-	msg.RPC.Method = SubscribeProcessesMsgType
-	msg.RPC.Nonce = core.GenerateRandomID()
 	msg.RuntimeType = runtimeType
 	msg.State = state
 	msg.Timeout = timeout

@@ -3,7 +3,6 @@ package client
 import (
 	"colonies/pkg/core"
 	"colonies/pkg/rpc"
-	"colonies/pkg/security/crypto"
 	"crypto/tls"
 	"errors"
 	"fmt"
@@ -49,14 +48,17 @@ func (client *ColoniesClient) checkStatusCode(statusCode int, jsonString string)
 	return nil
 }
 
-func (client *ColoniesClient) sendMessage(jsonString string, prvKey string) (string, error) {
-	signature, err := crypto.CreateCrypto().GenerateSignature(jsonString, prvKey)
+func (client *ColoniesClient) sendMessage(method string, jsonString string, prvKey string) (string, error) {
+	rpcMsg, err := rpc.CreateRPCMsg(method, jsonString, prvKey)
+	if err != nil {
+		return "", err
+	}
+	jsonString, err = rpcMsg.ToJSON()
 	if err != nil {
 		return "", err
 	}
 
 	resp, err := client.restyClient.R().
-		SetHeader("Signature", signature).
 		SetBody(jsonString).
 		Post("https://" + client.host + ":" + strconv.Itoa(client.port) + "/api")
 
@@ -98,12 +100,17 @@ func (client *ColoniesClient) SubscribeProcesses(runtimeType string,
 		return processChan, err
 	}
 
-	signature, err := crypto.CreateCrypto().GenerateSignature(jsonString, prvKey)
+	rpcMsg, err := rpc.CreateRPCMsg(rpc.SubscribeProcessesMsgType, jsonString, prvKey)
 	if err != nil {
 		return processChan, err
 	}
 
-	err = conn.WriteMessage(websocket.TextMessage, []byte(signature+"@"+jsonString))
+	jsonString, err = rpcMsg.ToJSON()
+	if err != nil {
+		return processChan, err
+	}
+
+	err = conn.WriteMessage(websocket.TextMessage, []byte(jsonString))
 	if err != nil {
 		return processChan, err
 	}
@@ -132,7 +139,7 @@ func (client *ColoniesClient) AddColony(colony *core.Colony, prvKey string) (*co
 		return nil, err
 	}
 
-	respBodyString, err := client.sendMessage(jsonString, prvKey)
+	respBodyString, err := client.sendMessage(rpc.AddColonyMsgType, jsonString, prvKey)
 	if err != nil {
 		return nil, err
 	}
@@ -152,7 +159,7 @@ func (client *ColoniesClient) GetColonies(prvKey string) ([]*core.Colony, error)
 		return nil, err
 	}
 
-	respBodyString, err := client.sendMessage(jsonString, prvKey)
+	respBodyString, err := client.sendMessage(rpc.GetColoniesMsgType, jsonString, prvKey)
 	if err != nil {
 		return nil, err
 	}
@@ -167,7 +174,7 @@ func (client *ColoniesClient) GetColonyByID(colonyID string, prvKey string) (*co
 		return nil, err
 	}
 
-	respBodyString, err := client.sendMessage(jsonString, prvKey)
+	respBodyString, err := client.sendMessage(rpc.GetColonyMsgType, jsonString, prvKey)
 	if err != nil {
 		return nil, err
 	}
@@ -182,7 +189,7 @@ func (client *ColoniesClient) AddRuntime(runtime *core.Runtime, prvKey string) (
 		return nil, err
 	}
 
-	respBodyString, err := client.sendMessage(jsonString, prvKey)
+	respBodyString, err := client.sendMessage(rpc.AddRuntimeMsgType, jsonString, prvKey)
 	if err != nil {
 		return nil, err
 	}
@@ -197,7 +204,7 @@ func (client *ColoniesClient) GetRuntimes(colonyID string, prvKey string) ([]*co
 		return nil, err
 	}
 
-	respBodyString, err := client.sendMessage(jsonString, prvKey)
+	respBodyString, err := client.sendMessage(rpc.GetRuntimesMsgType, jsonString, prvKey)
 	if err != nil {
 		return nil, err
 	}
@@ -212,7 +219,7 @@ func (client *ColoniesClient) GetRuntime(runtimeID string, prvKey string) (*core
 		return nil, err
 	}
 
-	respBodyString, err := client.sendMessage(jsonString, prvKey)
+	respBodyString, err := client.sendMessage(rpc.GetRuntimeMsgType, jsonString, prvKey)
 	if err != nil {
 		return nil, err
 	}
@@ -227,7 +234,7 @@ func (client *ColoniesClient) ApproveRuntime(runtimeID string, prvKey string) er
 		return err
 	}
 
-	_, err = client.sendMessage(jsonString, prvKey)
+	_, err = client.sendMessage(rpc.ApproveRuntimeMsgType, jsonString, prvKey)
 	if err != nil {
 		return err
 	}
@@ -242,7 +249,7 @@ func (client *ColoniesClient) RejectRuntime(runtimeID string, prvKey string) err
 		return err
 	}
 
-	_, err = client.sendMessage(jsonString, prvKey)
+	_, err = client.sendMessage(rpc.RejectRuntimeMsgType, jsonString, prvKey)
 	if err != nil {
 		return err
 	}
@@ -257,7 +264,7 @@ func (client *ColoniesClient) SubmitProcessSpec(processSpec *core.ProcessSpec, p
 		return nil, err
 	}
 
-	respBodyString, err := client.sendMessage(jsonString, prvKey)
+	respBodyString, err := client.sendMessage(rpc.SubmitProcessSpecMsgType, jsonString, prvKey)
 	if err != nil {
 		return nil, err
 	}
@@ -272,7 +279,7 @@ func (client *ColoniesClient) AssignProcess(colonyID string, prvKey string) (*co
 		return nil, err
 	}
 
-	respBodyString, err := client.sendMessage(jsonString, prvKey)
+	respBodyString, err := client.sendMessage(rpc.AssignProcessMsgType, jsonString, prvKey)
 	if err != nil {
 		return nil, err
 	}
@@ -287,7 +294,7 @@ func (client *ColoniesClient) getProcesses(state int, colonyID string, count int
 		return nil, err
 	}
 
-	respBodyString, err := client.sendMessage(jsonString, prvKey)
+	respBodyString, err := client.sendMessage(rpc.GetProcessesMsgType, jsonString, prvKey)
 	if err != nil {
 		return nil, err
 	}
@@ -311,14 +318,14 @@ func (client *ColoniesClient) GetFailedProcesses(colonyID string, count int, prv
 	return client.getProcesses(core.FAILED, colonyID, count, prvKey)
 }
 
-func (client *ColoniesClient) GetProcessByID(processID string, prvKey string) (*core.Process, error) {
+func (client *ColoniesClient) GetProcess(processID string, prvKey string) (*core.Process, error) {
 	msg := rpc.CreateGetProcessMsg(processID)
 	jsonString, err := msg.ToJSON()
 	if err != nil {
 		return nil, err
 	}
 
-	respBodyString, err := client.sendMessage(jsonString, prvKey)
+	respBodyString, err := client.sendMessage(rpc.GetProcessMsgType, jsonString, prvKey)
 	if err != nil {
 		return nil, err
 	}
@@ -333,7 +340,7 @@ func (client *ColoniesClient) MarkSuccessful(processID string, prvKey string) er
 		return err
 	}
 
-	_, err = client.sendMessage(jsonString, prvKey)
+	_, err = client.sendMessage(rpc.MarkSuccessfulMsgType, jsonString, prvKey)
 	if err != nil {
 		return err
 	}
@@ -348,7 +355,7 @@ func (client *ColoniesClient) MarkFailed(processID string, prvKey string) error 
 		return err
 	}
 
-	_, err = client.sendMessage(jsonString, prvKey)
+	_, err = client.sendMessage(rpc.MarkFailedMsgType, jsonString, prvKey)
 	if err != nil {
 		return err
 	}
@@ -363,7 +370,7 @@ func (client *ColoniesClient) AddAttribute(attribute *core.Attribute, prvKey str
 		return nil, err
 	}
 
-	respBodyString, err := client.sendMessage(jsonString, prvKey)
+	respBodyString, err := client.sendMessage(rpc.AddAttributeMsgType, jsonString, prvKey)
 	if err != nil {
 		return nil, err
 	}
@@ -378,7 +385,7 @@ func (client *ColoniesClient) GetAttribute(attributeID string, prvKey string) (*
 		return nil, err
 	}
 
-	respBodyString, err := client.sendMessage(jsonString, prvKey)
+	respBodyString, err := client.sendMessage(rpc.GetAttributeMsgType, jsonString, prvKey)
 	if err != nil {
 		return nil, err
 	}

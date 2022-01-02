@@ -5,17 +5,14 @@ import (
 	"encoding/json"
 )
 
-const SubmitProcessSpecMsgType = "SubmitProcessSpec"
+const SubmitProcessSpecMsgType = "submitprocessspec"
 
 type SubmitProcessSpecMsg struct {
-	RPC         RPC               `json:"rpc"`
 	ProcessSpec *core.ProcessSpec `json:"spec"`
 }
 
 func CreateSubmitProcessSpecMsg(processSpec *core.ProcessSpec) *SubmitProcessSpecMsg {
 	msg := &SubmitProcessSpecMsg{}
-	msg.RPC.Method = SubmitProcessSpecMsgType
-	msg.RPC.Nonce = core.GenerateRandomID()
 	msg.ProcessSpec = processSpec
 
 	return msg

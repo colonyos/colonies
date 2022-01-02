@@ -1,21 +1,17 @@
 package rpc
 
 import (
-	"colonies/pkg/core"
 	"encoding/json"
 )
 
 const MarkSuccessfulMsgType = "marksuccessful"
 
 type MarkSuccesfulMsg struct {
-	RPC       RPC    `json:"rpc"`
 	ProcessID string `json:"processid"`
 }
 
 func CreateMarkSuccessfulMsg(processID string) *MarkSuccesfulMsg {
 	msg := &MarkSuccesfulMsg{}
-	msg.RPC.Method = MarkSuccessfulMsgType
-	msg.RPC.Nonce = core.GenerateRandomID()
 	msg.ProcessID = processID
 
 	return msg
