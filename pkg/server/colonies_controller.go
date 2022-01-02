@@ -11,7 +11,8 @@ import (
 )
 
 type subscribers struct {
-	processesSubscribers map[string]*processesSubscription // runtimeID -> processChangeSubscription
+	processesSubscribers map[string]*processesSubscription
+	processSubscribers   map[string]*processSubscription
 }
 
 type command struct {
@@ -43,6 +44,7 @@ func CreateColoniesController(db database.Database) *ColoniesController {
 	controller.cmdQueue = make(chan *command)
 	controller.subscribers = &subscribers{}
 	controller.subscribers.processesSubscribers = make(map[string]*processesSubscription)
+	controller.subscribers.processSubscribers = make(map[string]*processSubscription)
 	controller.scheduler = basic.CreateScheduler()
 
 	go controller.masterWorker()
@@ -75,9 +77,34 @@ func (controller *ColoniesController) SubscribeProcesses(runtimeID string, subsc
 	return <-cmd.errorChan
 }
 
+func (controller *ColoniesController) SubscribeProcess(runtimeID string, subscription *processSubscription) error {
+	cmd := &command{errorChan: make(chan error, 1),
+		handler: func(cmd *command) {
+			controller.subscribers.processSubscribers[runtimeID] = subscription
+			cmd.errorChan <- nil
+		}}
+	controller.cmdQueue <- cmd
+
+	return <-cmd.errorChan
+}
+
 func (controller *ColoniesController) sendProcessEvent(process *core.Process) {
 	for _, subscription := range controller.subscribers.processesSubscribers {
 		if subscription.runtimeType == process.ProcessSpec.Conditions.RuntimeType && subscription.state == process.Status {
+			jsonString, err := process.ToJSON()
+			if err != nil {
+				// There is nothing we can do about this error except print it to server log
+				fmt.Println(err)
+			}
+			subscription.wsConn.WriteMessage(subscription.wsMsgType, []byte(jsonString))
+		}
+	}
+}
+
+// XXX: Should it be possible to subscibe on core.WAITING?
+func (controller *ColoniesController) sendProcessChangeStateEvent(process *core.Process) {
+	for _, subscription := range controller.subscribers.processSubscribers {
+		if subscription.processID == process.ID && subscription.state == process.Status {
 			jsonString, err := process.ToJSON()
 			if err != nil {
 				// There is nothing we can do about this error except print it to server log
@@ -451,6 +478,7 @@ func (controller *ColoniesController) MarkSuccessful(processID string) error {
 				return
 			}
 			cmd.errorChan <- controller.db.MarkSuccessful(process)
+			controller.sendProcessChangeStateEvent(process)
 		}}
 
 	controller.cmdQueue <- cmd
@@ -466,6 +494,7 @@ func (controller *ColoniesController) MarkFailed(processID string) error {
 				return
 			}
 			cmd.errorChan <- controller.db.MarkFailed(process)
+			controller.sendProcessChangeStateEvent(process)
 		}}
 
 	controller.cmdQueue <- cmd
