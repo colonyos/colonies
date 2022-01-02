@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 )
 
-const ApproveRuntimeMsgType = "ApproveRuntime"
+const ApproveRuntimeMsgType = "approveruntime"
 
 type ApproveRuntimeRPC struct {
 	RPC       RPC    `json:"rpc"`

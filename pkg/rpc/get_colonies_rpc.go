@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 )
 
-const GetColoniesMsgType = "GetColonies"
+const GetColoniesMsgType = "getcolonies"
 
 type GetColoniesMsg struct {
 	RPC RPC `json:"rpc"`
