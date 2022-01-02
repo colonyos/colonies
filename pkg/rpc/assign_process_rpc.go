@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 )
 
-const AssignProcessMsgType = "AssignProcessSpec"
+const AssignProcessMsgType = "assignprocessspec"
 
 type AssignProcessMsg struct {
 	RPC      RPC    `json:"rpc"`

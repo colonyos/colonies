@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 )
 
-const SubscribeProcessesType = "SubscribeProcesses"
+const SubscribeProcessesType = "subscribeprocesses"
 
 type SubscribeProcessesMsg struct {
 	RPC     RPC           `json:"rpc"`
