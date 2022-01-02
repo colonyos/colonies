@@ -15,6 +15,7 @@ type SubscribeProcessesMsg struct {
 func CreateSubscribeProcessesMsg(runtime *core.Runtime) *SubscribeProcessesMsg {
 	msg := &SubscribeProcessesMsg{}
 	msg.RPC.Method = SubscribeProcessesType
+	msg.RPC.Nonce = core.GenerateRandomID()
 	msg.Runtime = runtime
 
 	return msg
@@ -22,6 +23,15 @@ func CreateSubscribeProcessesMsg(runtime *core.Runtime) *SubscribeProcessesMsg {
 
 func (msg *SubscribeProcessesMsg) ToJSON() (string, error) {
 	jsonBytes, err := json.Marshal(msg)
+	if err != nil {
+		return "", err
+	}
+
+	return string(jsonBytes), nil
+}
+
+func (msg *SubscribeProcessesMsg) ToJSONIndent() (string, error) {
+	jsonBytes, err := json.MarshalIndent(msg, "", "    ")
 	if err != nil {
 		return "", err
 	}

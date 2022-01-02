@@ -1,6 +1,7 @@
 package rpc
 
 import (
+	"colonies/pkg/core"
 	"encoding/json"
 )
 
@@ -14,6 +15,7 @@ type GetRuntimeMsg struct {
 func CreateGetRuntimeMsg(runtimeID string) *GetRuntimeMsg {
 	msg := &GetRuntimeMsg{}
 	msg.RPC.Method = GetRuntimeMsgType
+	msg.RPC.Nonce = core.GenerateRandomID()
 	msg.RuntimeID = runtimeID
 
 	return msg
@@ -21,6 +23,15 @@ func CreateGetRuntimeMsg(runtimeID string) *GetRuntimeMsg {
 
 func (msg *GetRuntimeMsg) ToJSON() (string, error) {
 	jsonBytes, err := json.Marshal(msg)
+	if err != nil {
+		return "", err
+	}
+
+	return string(jsonBytes), nil
+}
+
+func (msg *GetRuntimeMsg) ToJSONIndent() (string, error) {
+	jsonBytes, err := json.MarshalIndent(msg, "", "    ")
 	if err != nil {
 		return "", err
 	}
