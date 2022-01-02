@@ -231,7 +231,7 @@ Needs to be signed by a valid Runtime Private Key.
 ```json
 {
     "rpc": {
-        "method": "SubmitProcessSpec",
+        "method": "submitprocessspec",
         "nonce": "ea23df61613c540b05807b9fdccacbb05c80e62776bc640b46307eaef6b3bcde"
     },
     "spec": {
@@ -298,7 +298,7 @@ Needs to be signed by a valid Runtime Private Key.
 ```json
 {
     "rpc": {
-        "method": "AssignProcessSpec",
+        "method": "assignprocessspec",
         "nonce": "bcc4051c250db9f14d30c3ddba2e9eefded526ee49f255e4d1c1c9c0761dc145"
     },
     "colonyid": "326691e2b5fc0651b5d781393c7279ab3dc58c6627d0a7b2a09e9aa0e4a60950"
@@ -347,7 +347,7 @@ The state attribute can have the following values:
 ```json
 {
     "rpc": {
-        "method": "GetProcesses",
+        "method": "getprocesses",
         "nonce": "7ad27ab65779ceee8b6796489c3b349ecd51c68e44ed64ed37f3d2fde129d85e"
     },
     "coloyid": "891f0c88e8a00cb103df472e4ece347a41eb0115e5c40f12d565bb24eb3fc71d",
@@ -394,7 +394,7 @@ Needs to be signed by a valid Runtime Private Key.
 ```json
 {
     "rpc": {
-        "method": "GetProcess",
+        "method": "getprocess",
         "nonce": "0eed2d1bf222767d2b1c4f3807f0a38f775853d480fd5e3d64ddcd9d288f95d3"
     },
     "processid": "80a98f46c7a364fd33339a6fb2e6c5d8988384fdbf237b4012490c4658bbc9ce"
@@ -437,7 +437,7 @@ Needs to be signed by a valid Runtime Private Key. The Runtime ID needs to match
 ```json
 {
     "rpc": {
-        "method": "MarkSuccessful",
+        "method": "marksuccessful",
         "nonce": "a9e695209156eb0f63c1077afc3e42c91d4b538abca4e654f6cfb7895390658e"
     },
     "processid": "ed041355071d2ee6d0ec27b480e2e4c8006cf465ec408b57fcdaa5dac76af8e2"
@@ -453,7 +453,7 @@ Needs to be signed by a valid Runtime Private Key. The Runtime ID needs to match
 ```json
 {
     "rpc": {
-        "method": "MarkFailed",
+        "method": "markfailed",
         "nonce": "963058bab6cea72ddfe6b7ba6d265e9f6b4837ed4d937cae126e4084c3d0e4cf"
     },
     "processid": "24f6d85804e2abde0c85a9e8aef8b308c44a72323565b14f11756d4997acf200"
@@ -469,7 +469,7 @@ Needs to be signed by a valid Runtime Private Key. The Runtime ID needs to match
 ```json
 {
     "rpc": {
-        "method": "AddAttribute",
+        "method": "addattribute",
         "nonce": "0e1f50e74d171217e77cb0fcfd54656b65aba48c57fad055966b523ebc4196ed"
     },
     "attribute": {
@@ -500,7 +500,7 @@ Needs to be signed by a valid Runtime Private Key.
 ```json
 {
     "rpc": {
-        "method": "GetAttribute",
+        "method": "getattribute",
         "nonce": "6e36ae66c79467899e88270e5854eb6fe15f3595446aebbf236620617e66fc30"
     },
     "attributeid": "a1d8f3613e074a250c2fbab478a0e11eb40defee66bd9b6a6ceb96990f1486eb"

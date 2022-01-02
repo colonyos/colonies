@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 )
 
-const AddAttributeMsgType = "AddAttribute"
+const AddAttributeMsgType = "addattribute"
 
 type AddAttributeMsg struct {
 	RPC       RPC             `json:"rpc"`

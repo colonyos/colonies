@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 )
 
-const RejectRuntimeMsgType = "RejectRuntime"
+const RejectRuntimeMsgType = "rejectruntime"
 
 type RejectRuntimeMsg struct {
 	RPC       RPC    `json:"rpc"`

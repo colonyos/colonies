@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 )
 
-const MarkFailedMsgType = "MarkFailed"
+const MarkFailedMsgType = "markfailed"
 
 type MarkFailedMsg struct {
 	RPC       RPC    `json:"rpc"`

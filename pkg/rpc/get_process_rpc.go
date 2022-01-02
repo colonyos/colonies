@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 )
 
-const GetProcessMsgType = "GetProcess"
+const GetProcessMsgType = "getprocess"
 
 type GetProcessMsg struct {
 	RPC       RPC    `json:"rpc"`
