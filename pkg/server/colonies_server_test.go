@@ -479,3 +479,48 @@ func TestAddGetAttributes(t *testing.T) {
 	server.Shutdown()
 	<-done
 }
+
+func TestSubscribeProcesses(t *testing.T) {
+	env, client, server, _, done := setupTestEnv2(t)
+
+	// Create a runtime
+	crypto := crypto.CreateCrypto()
+	runtimePrvKey, err := crypto.GeneratePrivateKey()
+	assert.Nil(t, err)
+	runtimeID, err := crypto.GenerateID(runtimePrvKey)
+	assert.Nil(t, err)
+
+	runtimeType := "test_runtime_type"
+	name := "test_runtime_name"
+	cpu := "AMD Ryzen 9 5950X (32) @ 3.400GHz"
+	cores := 32
+	mem := 80326
+	gpu := "NVIDIA GeForce RTX 2080 Ti Rev. A"
+	gpus := 1
+
+	runtime := core.CreateRuntime(runtimeID, runtimeType, name, env.colonyID, cpu, cores, mem, gpu, gpus)
+	_, err = client.AddRuntime(runtime, env.colonyPrvKey)
+	assert.Nil(t, err)
+	err = client.ApproveRuntime(runtime.ID, env.colonyPrvKey)
+	assert.Nil(t, err)
+
+	processChan, err := client.SubscribeProcesses(runtimeType, core.WAITING, 100, runtimePrvKey)
+	assert.Nil(t, err)
+
+	waitForProcess := make(chan bool)
+	go func() {
+		<-processChan
+		waitForProcess <- true
+	}()
+
+	time.Sleep(1 * time.Second)
+
+	processSpec := core.CreateProcessSpec(env.colonyID, []string{}, "test_runtime_type", -1, 3, 1000, 10, 1, make(map[string]string))
+	addedProcess, err := client.SubmitProcessSpec(processSpec, env.runtimePrvKey)
+	assert.Nil(t, err)
+	assert.Equal(t, core.PENDING, addedProcess.Status)
+	<-waitForProcess
+
+	server.Shutdown()
+	<-done
+}

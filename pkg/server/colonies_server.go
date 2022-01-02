@@ -14,6 +14,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -68,16 +69,13 @@ func CreateColoniesServer(db database.Database, port int, serverID string, tlsPr
 
 func (server *ColoniesServer) setupRoutes() {
 	server.ginHandler.POST("/api", server.handleEndpointRequest)
-	server.ginHandler.GET("/events", server.handleWebsocketRequest)
+	server.ginHandler.GET("/pubsub", server.handleWebsocketRequest)
 }
 
 func (server *ColoniesServer) handleWebsocketRequest(c *gin.Context) {
-	wshandler(c.Writer, c.Request)
-}
-
-var wsupgrader = websocket.Upgrader{} // use default options
-
-func wshandler(w http.ResponseWriter, r *http.Request) {
+	w := c.Writer
+	r := c.Request
+	var wsupgrader = websocket.Upgrader{} // use default options
 	var err error
 	var conn *websocket.Conn
 	conn, err = wsupgrader.Upgrade(w, r, nil)
@@ -87,13 +85,42 @@ func wshandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	for {
-		t, msg, err := conn.ReadMessage()
+		wsMsgType, data, err := conn.ReadMessage()
 		if err != nil {
-			break
+			// TODO
+			fmt.Println(err)
 		}
-		fmt.Println("got " + string(msg))
-		conn.WriteMessage(t, msg)
+		split := strings.Split(string(data), "@") // TODO: Come up with a better solution to package both signature and the message
+		signature := split[0]
+		jsonString := split[1]
+
+		msgType := rpc.DetermineMsgType(jsonString)
+		recoveredID, err := server.parseSignature(jsonString, signature)
+		if err != nil {
+			// TODO
+			fmt.Println(err)
+		}
+		switch msgType {
+		case rpc.SubscribeProcessesMsgType:
+			msg, err := rpc.CreateSubscribeProcessesMsgFromJSON(jsonString)
+			if err != nil {
+				// TODO
+				fmt.Println(err)
+			}
+
+			processSubcription := createProcessesSubscription(conn, wsMsgType, msg.RuntimeType, msg.Timeout, msg.State)
+			server.controller.SubscribeProcesses(recoveredID, processSubcription)
+		}
 	}
+}
+
+func (server *ColoniesServer) parseSignature(jsonString string, signature string) (string, error) {
+	recoveredID, err := server.crypto.RecoverID(jsonString, signature)
+	if err != nil {
+		return "", err
+	}
+
+	return recoveredID, nil
 }
 
 func (server *ColoniesServer) handleEndpointRequest(c *gin.Context) {
@@ -101,13 +128,10 @@ func (server *ColoniesServer) handleEndpointRequest(c *gin.Context) {
 	if server.handleError(c, err, http.StatusBadRequest) {
 		return
 	}
+
 	jsonString := string(jsonBytes)
-
 	msgType := rpc.DetermineMsgType(jsonString)
-
-	recoveredID := ""
-	signature := c.GetHeader("Signature")
-	recoveredID, err = server.crypto.RecoverID(jsonString, signature)
+	recoveredID, err := server.parseSignature(jsonString, c.GetHeader("Signature"))
 	if server.handleError(c, err, http.StatusForbidden) {
 		return
 	}

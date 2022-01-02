@@ -19,7 +19,7 @@ type Process struct {
 	ID                string       `json:"processid"`
 	AssignedRuntimeID string       `json:"assignedruntimeid"`
 	IsAssigned        bool         `json:"isassigned"`
-	Status            int          `json:"status"`
+	Status            int          `json:"status"` // TODO: rename to state
 	SubmissionTime    time.Time    `json:"submissiontime"`
 	StartTime         time.Time    `json:"starttime"`
 	EndTime           time.Time    `json:"endtime"`

@@ -6,9 +6,14 @@ import (
 	"colonies/pkg/security/crypto"
 	"crypto/tls"
 	"errors"
+	"fmt"
+	"net/url"
+	"os"
+	"os/signal"
 	"strconv"
 
 	"github.com/go-resty/resty/v2"
+	"github.com/gorilla/websocket"
 )
 
 type ColoniesClient struct {
@@ -46,10 +51,18 @@ func (client *ColoniesClient) checkStatusCode(statusCode int, jsonString string)
 
 func (client *ColoniesClient) sendMessage(jsonString string, prvKey string) (string, error) {
 	signature, err := crypto.CreateCrypto().GenerateSignature(jsonString, prvKey)
+	if err != nil {
+		return "", err
+	}
+
 	resp, err := client.restyClient.R().
 		SetHeader("Signature", signature).
 		SetBody(jsonString).
 		Post("https://" + client.host + ":" + strconv.Itoa(client.port) + "/api")
+
+	if err != nil {
+		return "", err
+	}
 
 	respBodyString := string(resp.Body())
 	err = client.checkStatusCode(resp.StatusCode(), respBodyString)
@@ -58,6 +71,58 @@ func (client *ColoniesClient) sendMessage(jsonString string, prvKey string) (str
 	}
 
 	return respBodyString, nil
+}
+
+func (client *ColoniesClient) SubscribeProcesses(runtimeType string,
+	state int,
+	timeout int,
+	prvKey string) (chan *core.Process, error) {
+	u := url.URL{Scheme: "wss", Host: client.host + ":" + strconv.Itoa(client.port), Path: "/pubsub"}
+
+	processChan := make(chan *core.Process)
+
+	interrupt := make(chan os.Signal, 1)
+	signal.Notify(interrupt, os.Interrupt)
+
+	dialer := *websocket.DefaultDialer
+	dialer.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+
+	conn, _, err := dialer.Dial(u.String(), nil)
+	if err != nil {
+		return processChan, err
+	}
+
+	msg := rpc.CreateSubscribeProcessesMsg(runtimeType, state, timeout)
+	jsonString, err := msg.ToJSON()
+	if err != nil {
+		return processChan, err
+	}
+
+	signature, err := crypto.CreateCrypto().GenerateSignature(jsonString, prvKey)
+	if err != nil {
+		return processChan, err
+	}
+
+	err = conn.WriteMessage(websocket.TextMessage, []byte(signature+"@"+jsonString))
+	if err != nil {
+		return processChan, err
+	}
+
+	go func(conn *websocket.Conn) {
+		for {
+			_, jsonBytes, err := conn.ReadMessage()
+			if err != nil {
+				// TODO
+				fmt.Println(err)
+				continue
+			}
+			process, err := core.ConvertJSONToProcess(string(jsonBytes))
+			processChan <- process
+			// TODO: defer conn.Close()
+		}
+	}(conn)
+
+	return processChan, nil
 }
 
 func (client *ColoniesClient) AddColony(colony *core.Colony, prvKey string) (*core.Colony, error) {
