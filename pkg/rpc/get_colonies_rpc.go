@@ -1,6 +1,7 @@
 package rpc
 
 import (
+	"colonies/pkg/core"
 	"encoding/json"
 )
 
@@ -13,12 +14,22 @@ type GetColoniesMsg struct {
 func CreateGetColoniesMsg() *GetColoniesMsg {
 	msg := &GetColoniesMsg{}
 	msg.RPC.Method = GetColoniesMsgType
+	msg.RPC.Nonce = core.GenerateRandomID()
 
 	return msg
 }
 
 func (msg *GetColoniesMsg) ToJSON() (string, error) {
 	jsonBytes, err := json.Marshal(msg)
+	if err != nil {
+		return "", err
+	}
+
+	return string(jsonBytes), nil
+}
+
+func (msg *GetColoniesMsg) ToJSONIndent() (string, error) {
+	jsonBytes, err := json.MarshalIndent(msg, "", "    ")
 	if err != nil {
 		return "", err
 	}

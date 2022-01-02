@@ -15,6 +15,7 @@ type SubmitProcessSpecMsg struct {
 func CreateSubmitProcessSpecMsg(processSpec *core.ProcessSpec) *SubmitProcessSpecMsg {
 	msg := &SubmitProcessSpecMsg{}
 	msg.RPC.Method = SubmitProcessSpecMsgType
+	msg.RPC.Nonce = core.GenerateRandomID()
 	msg.ProcessSpec = processSpec
 
 	return msg
@@ -22,6 +23,15 @@ func CreateSubmitProcessSpecMsg(processSpec *core.ProcessSpec) *SubmitProcessSpe
 
 func (msg *SubmitProcessSpecMsg) ToJSON() (string, error) {
 	jsonBytes, err := json.Marshal(msg)
+	if err != nil {
+		return "", err
+	}
+
+	return string(jsonBytes), nil
+}
+
+func (msg *SubmitProcessSpecMsg) ToJSONIndent() (string, error) {
+	jsonBytes, err := json.MarshalIndent(msg, "", "    ")
 	if err != nil {
 		return "", err
 	}

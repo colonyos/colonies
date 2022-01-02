@@ -15,6 +15,7 @@ type AddAttributeMsg struct {
 func CreateAddAttributeMsg(attribute *core.Attribute) *AddAttributeMsg {
 	msg := &AddAttributeMsg{}
 	msg.RPC.Method = AddAttributeMsgType
+	msg.RPC.Nonce = core.GenerateRandomID()
 	msg.Attribute = attribute
 
 	return msg
@@ -22,6 +23,15 @@ func CreateAddAttributeMsg(attribute *core.Attribute) *AddAttributeMsg {
 
 func (msg *AddAttributeMsg) ToJSON() (string, error) {
 	jsonBytes, err := json.Marshal(msg)
+	if err != nil {
+		return "", err
+	}
+
+	return string(jsonBytes), nil
+}
+
+func (msg *AddAttributeMsg) ToJSONIndent() (string, error) {
+	jsonBytes, err := json.MarshalIndent(msg, "", "    ")
 	if err != nil {
 		return "", err
 	}
