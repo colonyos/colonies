@@ -12,6 +12,7 @@ A Colony may consists of many different kinds of Colony Runtimes, e.g. a **Kuber
 # Links
 * [Installation](docs/Installation.md)
 * [Using the Colonies CLI tool](docs/CLI.md)
+* [Tutorial](docs/Tutorial.md)
 * [HTTP RPC Protocol](docs/RPC.md)
 
 # Security principles
