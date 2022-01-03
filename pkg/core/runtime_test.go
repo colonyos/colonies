@@ -19,7 +19,7 @@ func TestCreateRuntime(t *testing.T) {
 
 	runtime := CreateRuntime(id, runtimeType, name, colonyID, cpu, cores, mem, gpu, gpus)
 
-	assert.Equal(t, PENDING, runtime.Status)
+	assert.Equal(t, PENDING, runtime.State)
 	assert.True(t, runtime.IsPending())
 	assert.False(t, runtime.IsApproved())
 	assert.False(t, runtime.IsRejected())

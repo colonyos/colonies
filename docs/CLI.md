@@ -88,7 +88,7 @@ Colony Runtime with Id <4599f89a8afb7ecd9beec0b7861fab3bacba3a0e2dbe050e9f7584f3
 Output:
 ```
 +------------------------------------------------------------------+------------+----------+
-|                                ID                                |    NAME    |  STATUS  |
+|                                ID                                |    NAME    |  STATE   |
 +------------------------------------------------------------------+------------+----------+
 | 4599f89a8afb7ecd9beec0b7861fab3bacba3a0e2dbe050e9f7584f3c9d7ac58 | my_runtime | Approved |
 +------------------------------------------------------------------+------------+----------+
@@ -145,7 +145,7 @@ Process:
 | ID                | 4e369a9eeaf4521cdfa79de81666a5980f30345464e5c61e8cfdf9380e7ba663 |
 | IsAssigned        | True                                                             |
 | AssignedRuntimeID | 4599f89a8afb7ecd9beec0b7861fab3bacba3a0e2dbe050e9f7584f3c9d7ac58 |
-| Status            | Running                                                          |
+| State             | Running                                                          |
 | SubmissionTime    | 2021-12-28T16:26:33.838548Z                                      |
 | StartTime         | 2021-12-28T17:05:12.228424Z                                      |
 | EndTime           | 0001-01-01T00:00:00Z                                             |
@@ -263,7 +263,7 @@ Output:
 | ID                | 5785eb8a57f22d73a99d5c5e5d073cf27f9ea4ba81bad1a72e5e4f226e647dc0 |
 | IsAssigned        | False                                                            |
 | AssignedRuntimeID | None                                                             |
-| Status            | Waiting                                                          |
+| State             | Waiting                                                          |
 | SubmissionTime    | 2021-12-28T17:40:45.749629Z                                      |
 | StartTime         | 0001-01-01T00:00:00Z                                             |
 | EndTime           | 0001-01-01T00:00:00Z                                             |

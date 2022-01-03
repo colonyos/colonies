@@ -19,7 +19,7 @@ type Process struct {
 	ID                string       `json:"processid"`
 	AssignedRuntimeID string       `json:"assignedruntimeid"`
 	IsAssigned        bool         `json:"isassigned"`
-	Status            int          `json:"status"` // TODO: rename to state
+	State             int          `json:"state"`
 	SubmissionTime    time.Time    `json:"submissiontime"`
 	StartTime         time.Time    `json:"starttime"`
 	EndTime           time.Time    `json:"endtime"`
@@ -37,7 +37,7 @@ func CreateProcess(processSpec *ProcessSpec) *Process {
 	var attributes []*Attribute
 
 	process := &Process{ID: id,
-		Status:      WAITING,
+		State:       WAITING,
 		IsAssigned:  false,
 		Attributes:  attributes,
 		ProcessSpec: processSpec,
@@ -50,7 +50,7 @@ func CreateProcessFromDB(processSpec *ProcessSpec,
 	id string,
 	assignedRuntimeID string,
 	isAssigned bool,
-	status int,
+	state int,
 	submissionTime time.Time,
 	startTime time.Time,
 	endTime time.Time,
@@ -60,7 +60,7 @@ func CreateProcessFromDB(processSpec *ProcessSpec,
 	return &Process{ID: id,
 		AssignedRuntimeID: assignedRuntimeID,
 		IsAssigned:        isAssigned,
-		Status:            status,
+		State:             state,
 		SubmissionTime:    submissionTime,
 		StartTime:         startTime,
 		EndTime:           endTime,
@@ -121,7 +121,7 @@ func (process *Process) Equals(process2 *Process) bool {
 	same := true
 	if process.ID != process2.ID &&
 		process.AssignedRuntimeID != process2.AssignedRuntimeID &&
-		process.Status != process2.Status &&
+		process.State != process2.State &&
 		process.IsAssigned != process2.IsAssigned &&
 		process.SubmissionTime != process2.SubmissionTime &&
 		process.StartTime != process2.StartTime &&
@@ -150,8 +150,8 @@ func (process *Process) Unassign() {
 	process.IsAssigned = false
 }
 
-func (process *Process) SetStatus(status int) {
-	process.Status = status
+func (process *Process) SetState(state int) {
+	process.State = state
 }
 
 func (process *Process) SetAssignedRuntimeID(runtimeID string) {

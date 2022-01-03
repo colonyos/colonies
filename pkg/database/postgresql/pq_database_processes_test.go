@@ -170,7 +170,7 @@ func TestAssign(t *testing.T) {
 	processFromDB, err := db.GetProcessByID(process.ID)
 	assert.Nil(t, err)
 
-	assert.Equal(t, core.WAITING, processFromDB.Status)
+	assert.Equal(t, core.WAITING, processFromDB.State)
 	assert.False(t, processFromDB.IsAssigned)
 
 	err = db.AssignRuntime(runtime.ID, process)
@@ -181,7 +181,7 @@ func TestAssign(t *testing.T) {
 
 	assert.True(t, processFromDB.IsAssigned)
 	assert.False(t, int64(processFromDB.StartTime.Sub(processFromDB.SubmissionTime)) < 0)
-	assert.Equal(t, core.RUNNING, processFromDB.Status)
+	assert.Equal(t, core.RUNNING, processFromDB.State)
 
 	err = db.UnassignRuntime(process)
 	assert.Nil(t, err)
@@ -207,7 +207,7 @@ func TestMarkSuccessful(t *testing.T) {
 	err = db.AddProcess(process)
 	assert.Nil(t, err)
 
-	assert.Equal(t, core.WAITING, process.Status)
+	assert.Equal(t, core.WAITING, process.State)
 
 	err = db.MarkSuccessful(process)
 	assert.NotNil(t, err) // Not possible to set waiting process to successfull
@@ -218,7 +218,7 @@ func TestMarkSuccessful(t *testing.T) {
 	processFromDB, err := db.GetProcessByID(process.ID)
 	assert.Nil(t, err)
 
-	assert.Equal(t, core.RUNNING, process.Status)
+	assert.Equal(t, core.RUNNING, process.State)
 
 	err = db.MarkSuccessful(process)
 	assert.Nil(t, err)
@@ -226,7 +226,7 @@ func TestMarkSuccessful(t *testing.T) {
 	processFromDB, err = db.GetProcessByID(process.ID)
 	assert.Nil(t, err)
 
-	assert.Equal(t, core.SUCCESS, processFromDB.Status)
+	assert.Equal(t, core.SUCCESS, processFromDB.State)
 
 	err = db.MarkFailed(process)
 	assert.NotNil(t, err) // Not possible to set successful process as failed
@@ -247,7 +247,7 @@ func TestMarkFailed(t *testing.T) {
 	err = db.AddProcess(process)
 	assert.Nil(t, err)
 
-	assert.Equal(t, core.WAITING, process.Status)
+	assert.Equal(t, core.WAITING, process.State)
 
 	err = db.MarkFailed(process)
 	assert.NotNil(t, err) // Not possible to set waiting process to failed
@@ -258,7 +258,7 @@ func TestMarkFailed(t *testing.T) {
 	processFromDB, err := db.GetProcessByID(process.ID)
 	assert.Nil(t, err)
 
-	assert.Equal(t, core.RUNNING, processFromDB.Status)
+	assert.Equal(t, core.RUNNING, processFromDB.State)
 
 	err = db.MarkFailed(process)
 	assert.Nil(t, err)
@@ -266,7 +266,7 @@ func TestMarkFailed(t *testing.T) {
 	processFromDB, err = db.GetProcessByID(process.ID)
 	assert.Nil(t, err)
 
-	assert.Equal(t, core.FAILED, processFromDB.Status)
+	assert.Equal(t, core.FAILED, processFromDB.State)
 
 	err = db.MarkFailed(process)
 	assert.NotNil(t, err) // Not possible to set successful process as failed
