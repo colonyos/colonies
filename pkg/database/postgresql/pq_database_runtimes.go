@@ -9,7 +9,7 @@ import (
 )
 
 func (db *PQDatabase) AddRuntime(runtime *core.Runtime) error {
-	sqlStatement := `INSERT INTO  ` + db.dbPrefix + `RUNTIMES (RUNTIME_ID, RUNTIME_TYPE, NAME, COLONY_ID, CPU, CORES, MEM, GPU, GPUS, STATUS) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`
+	sqlStatement := `INSERT INTO  ` + db.dbPrefix + `RUNTIMES (RUNTIME_ID, RUNTIME_TYPE, NAME, COLONY_ID, CPU, CORES, MEM, GPU, GPUS, STATE) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`
 	_, err := db.postgresql.Exec(sqlStatement, runtime.ID, runtime.RuntimeType, runtime.Name, runtime.ColonyID, runtime.CPU, runtime.Cores, runtime.Mem, runtime.GPU, runtime.GPUs, 0)
 	if err != nil {
 		return err
@@ -31,12 +31,12 @@ func (db *PQDatabase) parseRuntimes(rows *sql.Rows) ([]*core.Runtime, error) {
 		var mem int
 		var gpu string
 		var gpus int
-		var status int
-		if err := rows.Scan(&id, &runtimeType, &name, &colonyID, &cpu, &cores, &mem, &gpu, &gpus, &status); err != nil {
+		var state int
+		if err := rows.Scan(&id, &runtimeType, &name, &colonyID, &cpu, &cores, &mem, &gpu, &gpus, &state); err != nil {
 			return nil, err
 		}
 
-		runtime := core.CreateRuntimeFromDB(id, runtimeType, name, colonyID, cpu, cores, mem, gpu, gpus, status)
+		runtime := core.CreateRuntimeFromDB(id, runtimeType, name, colonyID, cpu, cores, mem, gpu, gpus, state)
 		runtimes = append(runtimes, runtime)
 	}
 
@@ -98,7 +98,7 @@ func (db *PQDatabase) GetRuntimesByColonyID(colonyID string) ([]*core.Runtime, e
 }
 
 func (db *PQDatabase) ApproveRuntime(runtime *core.Runtime) error {
-	sqlStatement := `UPDATE ` + db.dbPrefix + `RUNTIMES SET STATUS=1 WHERE RUNTIME_ID=$1`
+	sqlStatement := `UPDATE ` + db.dbPrefix + `RUNTIMES SET STATE=1 WHERE RUNTIME_ID=$1`
 	_, err := db.postgresql.Exec(sqlStatement, runtime.ID)
 	if err != nil {
 		return err
@@ -110,7 +110,7 @@ func (db *PQDatabase) ApproveRuntime(runtime *core.Runtime) error {
 }
 
 func (db *PQDatabase) RejectRuntime(runtime *core.Runtime) error {
-	sqlStatement := `UPDATE ` + db.dbPrefix + `RUNTIMES SET STATUS=2 WHERE RUNTIME_ID=$1`
+	sqlStatement := `UPDATE ` + db.dbPrefix + `RUNTIMES SET STATE=2 WHERE RUNTIME_ID=$1`
 	_, err := db.postgresql.Exec(sqlStatement, runtime.ID)
 	if err != nil {
 		return err

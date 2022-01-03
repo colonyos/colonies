@@ -152,7 +152,7 @@ Needs to be signed by a valid Colony Private Key.
         "mem": 80326,
         "gpu": "NVIDIA GeForce RTX 2080 Ti Rev. A",
         "gpus": 1,
-        "status": 0
+        "state": 0
     }
 }
 ```
@@ -170,7 +170,7 @@ Needs to be signed by a valid Colony Private Key.
     "mem": 80326,
     "gpu": "NVIDIA GeForce RTX 2080 Ti Rev. A",
     "gpus": 1,
-    "status": 0
+    "state": 0
 }
 ```
 
@@ -210,7 +210,7 @@ Needs to be signed by a valid Runtime Private Key.
         "mem": 80326,
         "gpu": "NVIDIA GeForce RTX 2080 Ti Rev. A",
         "gpus": 1,
-        "status": 1
+        "state": 1
     }
 ]
 ```
@@ -250,7 +250,7 @@ Needs to be signed by a valid Runtime Private Key.
     "mem": 80326,
     "gpu": "NVIDIA GeForce RTX 2080 Ti Rev. A",
     "gpus": 1,
-    "status": 2
+    "state": 2
 }
 ```
 
@@ -353,7 +353,7 @@ Needs to be signed by a valid Runtime Private Key.
     "processid": "2c0fd0407292538cb8dce3cb306f88b2ab7f3726d649e07502eb04344d9f7164",
     "assignedruntimeid": "",
     "isassigned": false,
-    "status": 0,
+    "state": 0,
     "submissiontime": "2022-01-02T11:58:30.017857Z",
     "starttime": "0001-01-01T00:00:00Z",
     "endtime": "0001-01-01T00:00:00Z",
@@ -415,7 +415,7 @@ Needs to be signed by a valid Runtime Private Key.
     "processid": "68db01b27271168cb1011c1c54cc31a54f23eb7e5767e49bb34fb206591d2a65",
     "assignedruntimeid": "d02274979e69d534202ca4cdcb3847c56e860d09039399feee6358b8c285d502",
     "isassigned": true,
-    "status": 1,
+    "state": 1,
     "submissiontime": "2022-01-02T12:01:41.751942Z",
     "starttime": "2022-01-02T12:01:41.756226473+01:00",
     "endtime": "0001-01-01T00:00:00Z",
@@ -476,7 +476,7 @@ The state attribute can have the following values:
         "processid": "88169d23b0828ed65f0a007e4be6bf9734358b9a64379d0c6e53a0496216db4c",
         "assignedruntimeid": "653c818113e878d704935e639371f72a3167d510008607c70176e8147adf7865",
         "isassigned": true,
-        "status": 3,
+        "state": 3,
         "submissiontime": "2022-01-02T12:04:21.647969Z",
         "starttime": "2022-01-02T12:04:21.657305Z",
         "endtime": "2022-01-02T12:04:21.661402Z",
@@ -529,7 +529,7 @@ Needs to be signed by a valid Runtime Private Key.
     "processid": "80a98f46c7a364fd33339a6fb2e6c5d8988384fdbf237b4012490c4658bbc9ce",
     "assignedruntimeid": "",
     "isassigned": false,
-    "status": 0,
+    "state": 0,
     "submissiontime": "2022-01-02T12:08:16.226133Z",
     "starttime": "0001-01-01T00:00:00Z",
     "endtime": "0001-01-01T00:00:00Z",

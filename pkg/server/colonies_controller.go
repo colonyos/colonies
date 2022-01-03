@@ -96,7 +96,7 @@ func (controller *coloniesController) subscribeProcess(runtimeID string, subscri
 			if err != nil {
 				cmd.errorChan <- err
 			}
-			if process.Status == subscription.state {
+			if process.State == subscription.state {
 				controller.wsWriteProcessChangeEvent(process, runtimeID, subscription)
 			}
 			cmd.errorChan <- nil
@@ -108,7 +108,7 @@ func (controller *coloniesController) subscribeProcess(runtimeID string, subscri
 
 func (controller *coloniesController) sendProcessesEvent(process *core.Process) {
 	for runtimeID, subscription := range controller.subscribers.processesSubscribers {
-		if subscription.runtimeType == process.ProcessSpec.Conditions.RuntimeType && subscription.state == process.Status {
+		if subscription.runtimeType == process.ProcessSpec.Conditions.RuntimeType && subscription.state == process.State {
 			jsonString, err := process.ToJSON()
 			if err != nil {
 				fmt.Println("Failed to parse JSON, removing process event subscriber with Runtime Id <" + runtimeID + ">")
@@ -138,7 +138,7 @@ func (controller *coloniesController) wsWriteProcessChangeEvent(process *core.Pr
 
 func (controller *coloniesController) sendProcessChangeStateEvent(process *core.Process) {
 	for runtimeID, subscription := range controller.subscribers.processSubscribers {
-		if subscription.processID == process.ID && subscription.state == process.Status {
+		if subscription.processID == process.ID && subscription.state == process.State {
 			controller.wsWriteProcessChangeEvent(process, runtimeID, subscription)
 		}
 	}

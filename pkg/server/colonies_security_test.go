@@ -489,7 +489,7 @@ func TestAddAttributeSecurity(t *testing.T) {
 	processSpec := core.CreateProcessSpec(env.colony1ID, []string{}, "test_runtime_type", -1, 3, 1000, 10, 1, make(map[string]string))
 	addedProcess, err := client.SubmitProcessSpec(processSpec, env.runtime1PrvKey)
 	assert.Nil(t, err)
-	assert.Equal(t, core.PENDING, addedProcess.Status)
+	assert.Equal(t, core.PENDING, addedProcess.State)
 
 	assignedProcess, err := client.AssignProcess(env.colony1ID, env.runtime1PrvKey)
 	assert.Nil(t, err)
@@ -525,7 +525,7 @@ func TestGetAttributeSecurity(t *testing.T) {
 	processSpec := core.CreateProcessSpec(env.colony1ID, []string{}, "test_runtime_type", -1, 3, 1000, 10, 1, make(map[string]string))
 	addedProcess, err := client.SubmitProcessSpec(processSpec, env.runtime1PrvKey)
 	assert.Nil(t, err)
-	assert.Equal(t, core.PENDING, addedProcess.Status)
+	assert.Equal(t, core.PENDING, addedProcess.State)
 
 	assignedProcess, err := client.AssignProcess(env.colony1ID, env.runtime1PrvKey)
 	assert.Nil(t, err)

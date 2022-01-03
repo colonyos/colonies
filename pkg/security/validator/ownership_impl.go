@@ -52,7 +52,7 @@ func (ownership *ownershipImpl) checkIfRuntimeIsValid(runtimeID string, colonyID
 		return errors.New("Runtime with Id <" + runtimeID + "> is not a member of Colony with Id <" + colonyID + ">, (Recovered Id and Colony Id missmatches)")
 	}
 
-	if runtime.Status != core.APPROVED {
+	if runtime.State != core.APPROVED {
 		return errors.New("Runtime with Id <" + runtimeID + "> is not approved")
 	}
 
