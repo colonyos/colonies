@@ -76,17 +76,17 @@ func (server *ColoniesServer) handleWSRequest(c *gin.Context) {
 	r := c.Request
 	var wsupgrader = websocket.Upgrader{}
 	var err error
-	var conn *websocket.Conn
-	conn, err = wsupgrader.Upgrade(w, r, nil)
+	var wsConn *websocket.Conn
+	wsConn, err = wsupgrader.Upgrade(w, r, nil)
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
 
 	for {
-		wsMsgType, data, err := conn.ReadMessage()
+		wsMsgType, data, err := wsConn.ReadMessage()
 		if err != nil {
-			continue
+			return
 		}
 
 		rpcMsg, err := rpc.CreateRPCMsgFromJSON(string(data))
@@ -105,7 +105,7 @@ func (server *ColoniesServer) handleWSRequest(c *gin.Context) {
 			if server.handleError(c, err, http.StatusBadRequest) {
 				return
 			}
-			processSubcription := createProcessesSubscription(conn, wsMsgType, msg.RuntimeType, msg.Timeout, msg.State)
+			processSubcription := createProcessesSubscription(wsConn, wsMsgType, msg.RuntimeType, msg.Timeout, msg.State)
 			server.controller.subscribeProcesses(recoveredID, processSubcription)
 
 		case rpc.SubscribeProcessMsgType:
@@ -113,7 +113,7 @@ func (server *ColoniesServer) handleWSRequest(c *gin.Context) {
 			if server.handleError(c, err, http.StatusBadRequest) {
 				return
 			}
-			processSubcription := createProcessSubscription(conn, wsMsgType, msg.ProcessID, msg.Timeout, msg.State)
+			processSubcription := createProcessSubscription(wsConn, wsMsgType, msg.ProcessID, msg.Timeout, msg.State)
 			server.controller.subscribeProcess(recoveredID, processSubcription)
 		}
 	}
