@@ -513,52 +513,6 @@ func TestSubscribeProcesses(t *testing.T) {
 	<-done
 }
 
-// Runtime 2 subscribes on process events and expects to receive an event when a new process is submitted
-// Server should have 1 subscriber
-// Runtime 1 submitts a new process
-// Runtime 2 receives an event
-// Runtime 2 closes subscription
-// Server should have 0 subscriber
-// func TestSubscribeProcessesClose(t *testing.T) {
-// 	env, client, server, _, done := setupTestEnv1(t)
-
-// 	runtimeType := "test_runtime_type"
-
-// 	assert.Equal(t, 0, server.numberOfProcessesSubscribers())
-// 	subscription, err := client.SubscribeProcesses(runtimeType, core.WAITING, 100, env.runtime2PrvKey)
-// 	assert.Nil(t, err)
-// 	time.Sleep(1 * time.Second)
-// 	assert.Equal(t, 1, server.numberOfProcessesSubscribers())
-
-// 	waitForProcess := make(chan error)
-// 	go func() {
-// 		select {
-// 		case <-subscription.ProcessChan:
-// 			waitForProcess <- nil
-// 		case err := <-subscription.ErrChan:
-// 			waitForProcess <- err
-// 		}
-// 	}()
-
-// 	time.Sleep(1 * time.Second)
-
-// 	processSpec := core.CreateProcessSpec(env.colony1ID, []string{}, runtimeType, -1, 3, 1000, 10, 1, make(map[string]string))
-// 	_, err = client.SubmitProcessSpec(processSpec, env.runtime1PrvKey)
-// 	assert.Nil(t, err)
-
-// 	err = <-waitForProcess
-// 	assert.Nil(t, err)
-
-// 	err = subscription.Close()
-// 	assert.Nil(t, err)
-
-// 	// time.Sleep(1 * time.Second)
-// 	// assert.Equal(t, 0, server.numberOfProcessesSubscribers())
-
-// 	server.Shutdown()
-// 	<-done
-// }
-
 // Runtime 1 submits a process
 // Runtime 2 subscribes on process events and expects to receive an event when the process finishes.
 // Runtime 1 gets assign the process
@@ -590,6 +544,50 @@ func TestSubscribeChangeStateProcess(t *testing.T) {
 
 	err = client.MarkSuccessful(assignedProcess.ID, env.runtime1PrvKey)
 	assert.Nil(t, err)
+
+	err = <-waitForProcess
+	assert.Nil(t, err)
+	server.Shutdown()
+	<-done
+}
+
+// Let change the order of the operations a bit, what about if the subscriber subscribes on an
+// process state change event, but that event has already occurred. Then, the subscriber would what forever.
+// The solution is to let the server send an event anyway if the wanted state is true already.
+//
+// Runtime 1 submits a process
+// Runtime 1 gets assign the process
+// Runtime 1 finish the process
+// Runtime 2 subscribes on process events and expects to receive an event when the process finishes.
+// Runtime 2 receives an event
+func TestSubscribeChangeStateProcess2(t *testing.T) {
+	env, client, server, _, done := setupTestEnv1(t)
+
+	processSpec := core.CreateProcessSpec(env.colony1ID, []string{}, "test_runtime_type", -1, 3, 1000, 10, 1, make(map[string]string))
+	addedProcess, err := client.SubmitProcessSpec(processSpec, env.runtime1PrvKey)
+	assert.Nil(t, err)
+	assert.Equal(t, core.PENDING, addedProcess.Status)
+
+	assignedProcess, err := client.AssignProcess(env.colony1ID, env.runtime1PrvKey)
+	assert.Nil(t, err)
+
+	err = client.MarkSuccessful(assignedProcess.ID, env.runtime1PrvKey)
+	assert.Nil(t, err)
+
+	time.Sleep(1 * time.Second)
+
+	subscription, err := client.SubscribeProcess(addedProcess.ID, core.SUCCESS, 100, env.runtime2PrvKey)
+	assert.Nil(t, err)
+
+	waitForProcess := make(chan error)
+	go func() {
+		select {
+		case <-subscription.ProcessChan:
+			waitForProcess <- nil
+		case err := <-subscription.ErrChan:
+			waitForProcess <- err
+		}
+	}()
 
 	err = <-waitForProcess
 	assert.Nil(t, err)
