@@ -13,8 +13,8 @@ The Colonies RPC messages has the following format:
 * Messages are POSTed to http://host:port/api.
 * The *payload* attribute is an Base64 string containing JSON data as specified in the API description below.
 * The *signature* is calculated based on the Base64 payload data using a private key.
+* [It](It) assumed that SSL/TLS are used to prevent replay attacks.
 * If the *error* attribute is true, then the payload will contain the following JSON data.
-* It assumed that SSL/TLS are used to prevent replay attacks.
 
 ```json
 {
