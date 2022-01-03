@@ -23,7 +23,7 @@ import (
 
 type ColoniesServer struct {
 	ginHandler        *gin.Engine
-	controller        *ColoniesController
+	controller        *coloniesController
 	serverID          string
 	tlsPrivateKeyPath string
 	tlsCertPath       string
@@ -51,7 +51,7 @@ func CreateColoniesServer(db database.Database, port int, serverID string, tlsPr
 	}
 
 	server.httpServer = httpServer
-	server.controller = CreateColoniesController(db)
+	server.controller = createColoniesController(db)
 	server.serverID = serverID
 	server.port = port
 	server.tlsPrivateKeyPath = tlsPrivateKeyPath
@@ -85,8 +85,8 @@ func (server *ColoniesServer) handleWSRequest(c *gin.Context) {
 
 	for {
 		wsMsgType, data, err := conn.ReadMessage()
-		if server.handleError(c, err, http.StatusBadRequest) {
-			return
+		if err != nil {
+			continue
 		}
 
 		rpcMsg, err := rpc.CreateRPCMsgFromJSON(string(data))
@@ -106,7 +106,7 @@ func (server *ColoniesServer) handleWSRequest(c *gin.Context) {
 				return
 			}
 			processSubcription := createProcessesSubscription(conn, wsMsgType, msg.RuntimeType, msg.Timeout, msg.State)
-			server.controller.SubscribeProcesses(recoveredID, processSubcription)
+			server.controller.subscribeProcesses(recoveredID, processSubcription)
 
 		case rpc.SubscribeProcessMsgType:
 			msg, err := rpc.CreateSubscribeProcessMsgFromJSON(rpcMsg.DecodePayload())
@@ -114,7 +114,7 @@ func (server *ColoniesServer) handleWSRequest(c *gin.Context) {
 				return
 			}
 			processSubcription := createProcessSubscription(conn, wsMsgType, msg.ProcessID, msg.Timeout, msg.State)
-			server.controller.SubscribeProcess(recoveredID, processSubcription)
+			server.controller.subscribeProcess(recoveredID, processSubcription)
 		}
 	}
 }
@@ -221,7 +221,7 @@ func (server *ColoniesServer) handleAddColonyRequest(c *gin.Context, recoveredID
 		return
 	}
 
-	addedColony, err := server.controller.AddColony(msg.Colony)
+	addedColony, err := server.controller.addColony(msg.Colony)
 	if server.handleError(c, err, http.StatusBadRequest) {
 		return
 	}
@@ -251,7 +251,7 @@ func (server *ColoniesServer) handleGetColoniesRequest(c *gin.Context, recovered
 		return
 	}
 
-	colonies, err := server.controller.GetColonies()
+	colonies, err := server.controller.getColonies()
 	if server.handleError(c, err, http.StatusBadRequest) {
 		return
 	}
@@ -281,7 +281,7 @@ func (server *ColoniesServer) handleGetColonyRequest(c *gin.Context, recoveredID
 		return
 	}
 
-	colony, err := server.controller.GetColonyByID(msg.ColonyID)
+	colony, err := server.controller.getColonyByID(msg.ColonyID)
 	if server.handleError(c, err, http.StatusBadRequest) {
 		return
 	}
@@ -311,7 +311,7 @@ func (server *ColoniesServer) handleAddRuntimeRequest(c *gin.Context, recoveredI
 		return
 	}
 
-	addedRuntime, err := server.controller.AddRuntime(msg.Runtime)
+	addedRuntime, err := server.controller.addRuntime(msg.Runtime)
 	if server.handleError(c, err, http.StatusBadRequest) {
 		return
 	}
@@ -341,7 +341,7 @@ func (server *ColoniesServer) handleGetRuntimesRequest(c *gin.Context, recovered
 		return
 	}
 
-	runtimes, err := server.controller.GetRuntimeByColonyID(msg.ColonyID)
+	runtimes, err := server.controller.getRuntimeByColonyID(msg.ColonyID)
 	if server.handleError(c, err, http.StatusBadRequest) {
 		return
 	}
@@ -366,7 +366,7 @@ func (server *ColoniesServer) handleGetRuntimeRequest(c *gin.Context, recoveredI
 		server.handleError(c, errors.New("Failed to parse GetRuntimeMsg JSON"), http.StatusBadRequest)
 	}
 
-	runtime, err := server.controller.GetRuntimeByID(msg.RuntimeID)
+	runtime, err := server.controller.getRuntimeByID(msg.RuntimeID)
 	if server.handleError(c, err, http.StatusBadRequest) {
 		return
 	}
@@ -396,7 +396,7 @@ func (server *ColoniesServer) handleApproveRuntimeRequest(c *gin.Context, recove
 		server.handleError(c, errors.New("Failed to parse ApproveRuntimeMsg JSON"), http.StatusBadRequest)
 	}
 
-	runtime, err := server.controller.GetRuntimeByID(msg.RuntimeID)
+	runtime, err := server.controller.getRuntimeByID(msg.RuntimeID)
 	if server.handleError(c, err, http.StatusBadRequest) {
 		return
 	}
@@ -409,7 +409,7 @@ func (server *ColoniesServer) handleApproveRuntimeRequest(c *gin.Context, recove
 		return
 	}
 
-	err = server.controller.ApproveRuntime(msg.RuntimeID)
+	err = server.controller.approveRuntime(msg.RuntimeID)
 	if server.handleError(c, err, http.StatusBadRequest) {
 		return
 	}
@@ -431,7 +431,7 @@ func (server *ColoniesServer) handleRejectRuntimeRequest(c *gin.Context, recover
 		server.handleError(c, errors.New("Failed to parse RejectRuntimeMsg JSON"), http.StatusBadRequest)
 	}
 
-	runtime, err := server.controller.GetRuntimeByID(msg.RuntimeID)
+	runtime, err := server.controller.getRuntimeByID(msg.RuntimeID)
 	if server.handleError(c, err, http.StatusBadRequest) {
 		return
 	}
@@ -444,7 +444,7 @@ func (server *ColoniesServer) handleRejectRuntimeRequest(c *gin.Context, recover
 		return
 	}
 
-	err = server.controller.RejectRuntime(msg.RuntimeID)
+	err = server.controller.rejectRuntime(msg.RuntimeID)
 	if server.handleError(c, err, http.StatusBadRequest) {
 		return
 	}
@@ -472,7 +472,7 @@ func (server *ColoniesServer) handleSubmitProcessSpec(c *gin.Context, recoveredI
 	}
 
 	process := core.CreateProcess(msg.ProcessSpec)
-	addedProcess, err := server.controller.AddProcess(process)
+	addedProcess, err := server.controller.addProcess(process)
 	if server.handleError(c, err, http.StatusBadRequest) {
 		return
 	}
@@ -502,7 +502,7 @@ func (server *ColoniesServer) handleAssignProcessRequest(c *gin.Context, recover
 		return
 	}
 
-	process, err := server.controller.AssignProcess(recoveredID, msg.ColonyID)
+	process, err := server.controller.assignProcess(recoveredID, msg.ColonyID)
 	if server.handleError(c, err, http.StatusBadRequest) {
 		return
 	}
@@ -534,7 +534,7 @@ func (server *ColoniesServer) handleGetProcessesRequest(c *gin.Context, recovere
 
 	switch msg.State {
 	case core.WAITING:
-		processes, err := server.controller.FindWaitingProcesses(msg.ColonyID, msg.Count)
+		processes, err := server.controller.findWaitingProcesses(msg.ColonyID, msg.Count)
 		if server.handleError(c, err, http.StatusBadRequest) {
 			return
 		}
@@ -548,7 +548,7 @@ func (server *ColoniesServer) handleGetProcessesRequest(c *gin.Context, recovere
 		}
 		c.String(http.StatusOK, jsonString)
 	case core.RUNNING:
-		processes, err := server.controller.FindRunningProcesses(msg.ColonyID, msg.Count)
+		processes, err := server.controller.findRunningProcesses(msg.ColonyID, msg.Count)
 		if server.handleError(c, err, http.StatusBadRequest) {
 			return
 		}
@@ -562,7 +562,7 @@ func (server *ColoniesServer) handleGetProcessesRequest(c *gin.Context, recovere
 		}
 		c.String(http.StatusOK, jsonString)
 	case core.SUCCESS:
-		processes, err := server.controller.FindSuccessfulProcesses(msg.ColonyID, msg.Count)
+		processes, err := server.controller.findSuccessfulProcesses(msg.ColonyID, msg.Count)
 		if server.handleError(c, err, http.StatusBadRequest) {
 			return
 		}
@@ -576,7 +576,7 @@ func (server *ColoniesServer) handleGetProcessesRequest(c *gin.Context, recovere
 		}
 		c.String(http.StatusOK, jsonString)
 	case core.FAILED:
-		processes, err := server.controller.FindFailedProcesses(msg.ColonyID, msg.Count)
+		processes, err := server.controller.findFailedProcesses(msg.ColonyID, msg.Count)
 		if server.handleError(c, err, http.StatusBadRequest) {
 			return
 		}
@@ -605,7 +605,7 @@ func (server *ColoniesServer) handleGetProcessRequest(c *gin.Context, recoveredI
 		server.handleError(c, errors.New("Failed to parse GetProcessMsg JSON"), http.StatusBadRequest)
 	}
 
-	process, err := server.controller.GetProcessByID(msg.ProcessID)
+	process, err := server.controller.getProcessByID(msg.ProcessID)
 	if server.handleError(c, err, http.StatusBadRequest) {
 		return
 	}
@@ -635,7 +635,7 @@ func (server *ColoniesServer) handleMarkSuccessfulRequest(c *gin.Context, recove
 		server.handleError(c, errors.New("Failed to parse MarkSuccessfulMsg JSON"), http.StatusBadRequest)
 	}
 
-	process, err := server.controller.GetProcessByID(msg.ProcessID)
+	process, err := server.controller.getProcessByID(msg.ProcessID)
 	if server.handleError(c, err, http.StatusBadRequest) {
 		return
 	}
@@ -653,7 +653,7 @@ func (server *ColoniesServer) handleMarkSuccessfulRequest(c *gin.Context, recove
 		server.handleError(c, err, http.StatusForbidden)
 	}
 
-	err = server.controller.MarkSuccessful(process.ID)
+	err = server.controller.markSuccessful(process.ID)
 	if server.handleError(c, err, http.StatusBadRequest) {
 		return
 	}
@@ -670,7 +670,7 @@ func (server *ColoniesServer) handleMarkFailedRequest(c *gin.Context, recoveredI
 		server.handleError(c, errors.New("Failed to parse MarkedFailedMsg JSON"), http.StatusBadRequest)
 	}
 
-	process, err := server.controller.GetProcessByID(msg.ProcessID)
+	process, err := server.controller.getProcessByID(msg.ProcessID)
 	if server.handleError(c, err, http.StatusBadRequest) {
 		return
 	}
@@ -688,7 +688,7 @@ func (server *ColoniesServer) handleMarkFailedRequest(c *gin.Context, recoveredI
 		server.handleError(c, err, http.StatusForbidden)
 	}
 
-	err = server.controller.MarkFailed(process.ID)
+	err = server.controller.markFailed(process.ID)
 	if server.handleError(c, err, http.StatusBadRequest) {
 		return
 	}
@@ -705,7 +705,7 @@ func (server *ColoniesServer) handleAddAttributeRequest(c *gin.Context, recovere
 		server.handleError(c, errors.New("Failed to parse AddAttributeMsg JSON"), http.StatusBadRequest)
 	}
 
-	process, err := server.controller.GetProcessByID(msg.Attribute.TargetID)
+	process, err := server.controller.getProcessByID(msg.Attribute.TargetID)
 	if server.handleError(c, err, http.StatusBadRequest) {
 		return
 	}
@@ -724,7 +724,7 @@ func (server *ColoniesServer) handleAddAttributeRequest(c *gin.Context, recovere
 		return
 	}
 
-	addedAttribute, err := server.controller.AddAttribute(msg.Attribute)
+	addedAttribute, err := server.controller.addAttribute(msg.Attribute)
 	if server.handleError(c, err, http.StatusBadRequest) {
 		return
 	}
@@ -749,7 +749,7 @@ func (server *ColoniesServer) handleGetAttributeRequest(c *gin.Context, recovere
 		server.handleError(c, errors.New("Failed to parse GetAttributeMsg JSON"), http.StatusBadRequest)
 	}
 
-	attribute, err := server.controller.GetAttribute(msg.AttributeID)
+	attribute, err := server.controller.getAttribute(msg.AttributeID)
 	if server.handleError(c, err, http.StatusBadRequest) {
 		return
 	}
@@ -757,7 +757,7 @@ func (server *ColoniesServer) handleGetAttributeRequest(c *gin.Context, recovere
 		server.handleError(c, errors.New("handleGetAttributeRequest: attribute is nil"), http.StatusInternalServerError)
 	}
 
-	process, err := server.controller.GetProcessByID(attribute.TargetID)
+	process, err := server.controller.getProcessByID(attribute.TargetID)
 	if server.handleError(c, err, http.StatusBadRequest) {
 		return
 	}
@@ -783,6 +783,14 @@ func (server *ColoniesServer) handleGetAttributeRequest(c *gin.Context, recovere
 	c.String(http.StatusOK, jsonString)
 }
 
+func (server *ColoniesServer) numberOfProcessesSubscribers() int {
+	return server.controller.numberOfProcessesSubscribers()
+}
+
+func (server *ColoniesServer) numberOfProcessSubscribers() int {
+	return server.controller.numberOfProcessSubscribers()
+}
+
 func (server *ColoniesServer) ServeForever() error {
 	if err := server.httpServer.ListenAndServeTLS(server.tlsCertPath, server.tlsPrivateKeyPath); err != nil && errors.Is(err, http.ErrServerClosed) {
 		return err
@@ -792,7 +800,7 @@ func (server *ColoniesServer) ServeForever() error {
 }
 
 func (server *ColoniesServer) Shutdown() {
-	server.controller.Stop()
+	server.controller.stop()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()

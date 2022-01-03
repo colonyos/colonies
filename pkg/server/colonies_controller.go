@@ -32,15 +32,15 @@ type command struct {
 	handler            func(cmd *command)
 }
 
-type ColoniesController struct {
+type coloniesController struct {
 	db          database.Database
 	cmdQueue    chan *command
 	scheduler   scheduler.Scheduler
 	subscribers *subscribers
 }
 
-func CreateColoniesController(db database.Database) *ColoniesController {
-	controller := &ColoniesController{db: db}
+func createColoniesController(db database.Database) *coloniesController {
+	controller := &coloniesController{db: db}
 	controller.cmdQueue = make(chan *command)
 	controller.subscribers = &subscribers{}
 	controller.subscribers.processesSubscribers = make(map[string]*processesSubscription)
@@ -52,7 +52,7 @@ func CreateColoniesController(db database.Database) *ColoniesController {
 	return controller
 }
 
-func (controller *ColoniesController) masterWorker() {
+func (controller *coloniesController) masterWorker() {
 	for {
 		select {
 		case msg := <-controller.cmdQueue:
@@ -66,7 +66,15 @@ func (controller *ColoniesController) masterWorker() {
 	}
 }
 
-func (controller *ColoniesController) SubscribeProcesses(runtimeID string, subscription *processesSubscription) error {
+func (controller *coloniesController) numberOfProcessesSubscribers() int {
+	return len(controller.subscribers.processesSubscribers)
+}
+
+func (controller *coloniesController) numberOfProcessSubscribers() int {
+	return len(controller.subscribers.processSubscribers)
+}
+
+func (controller *coloniesController) subscribeProcesses(runtimeID string, subscription *processesSubscription) error {
 	cmd := &command{errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
 			controller.subscribers.processesSubscribers[runtimeID] = subscription
@@ -77,7 +85,7 @@ func (controller *ColoniesController) SubscribeProcesses(runtimeID string, subsc
 	return <-cmd.errorChan
 }
 
-func (controller *ColoniesController) SubscribeProcess(runtimeID string, subscription *processSubscription) error {
+func (controller *coloniesController) subscribeProcess(runtimeID string, subscription *processSubscription) error {
 	cmd := &command{errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
 			controller.subscribers.processSubscribers[runtimeID] = subscription
@@ -88,34 +96,42 @@ func (controller *ColoniesController) SubscribeProcess(runtimeID string, subscri
 	return <-cmd.errorChan
 }
 
-func (controller *ColoniesController) sendProcessEvent(process *core.Process) {
-	for _, subscription := range controller.subscribers.processesSubscribers {
+func (controller *coloniesController) sendProcessEvent(process *core.Process) {
+	for runtimeID, subscription := range controller.subscribers.processesSubscribers {
 		if subscription.runtimeType == process.ProcessSpec.Conditions.RuntimeType && subscription.state == process.Status {
 			jsonString, err := process.ToJSON()
 			if err != nil {
-				// There is nothing we can do about this error except print it to server log
-				fmt.Println(err)
+				fmt.Println("Failed to parse JSON, removing process event subscriber with Runtime Id <" + runtimeID + ">")
+				delete(controller.subscribers.processesSubscribers, runtimeID)
 			}
-			subscription.wsConn.WriteMessage(subscription.wsMsgType, []byte(jsonString))
+			err = subscription.wsConn.WriteMessage(subscription.wsMsgType, []byte(jsonString))
+			if err != nil {
+				fmt.Println("Removing processes event subscriber with Runtime Id <" + runtimeID + ">")
+				delete(controller.subscribers.processesSubscribers, runtimeID)
+			}
 		}
 	}
 }
 
 // XXX: Should it be possible to subscibe on core.WAITING?
-func (controller *ColoniesController) sendProcessChangeStateEvent(process *core.Process) {
-	for _, subscription := range controller.subscribers.processSubscribers {
+func (controller *coloniesController) sendProcessChangeStateEvent(process *core.Process) {
+	for runtimeID, subscription := range controller.subscribers.processSubscribers {
 		if subscription.processID == process.ID && subscription.state == process.Status {
 			jsonString, err := process.ToJSON()
 			if err != nil {
-				// There is nothing we can do about this error except print it to server log
+				fmt.Println("Failed to parse JSON, removing process event subscriber with Runtime Id <" + runtimeID + ">")
 				fmt.Println(err)
 			}
-			subscription.wsConn.WriteMessage(subscription.wsMsgType, []byte(jsonString))
+			err = subscription.wsConn.WriteMessage(subscription.wsMsgType, []byte(jsonString))
+			if err != nil {
+				fmt.Println("Removing process event subscriber with Runtime Id <" + runtimeID + ">")
+				delete(controller.subscribers.processSubscribers, runtimeID)
+			}
 		}
 	}
 }
 
-func (controller *ColoniesController) GetColonies() ([]*core.Colony, error) {
+func (controller *coloniesController) getColonies() ([]*core.Colony, error) {
 	cmd := &command{coloniesReplyChan: make(chan []*core.Colony),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
@@ -137,7 +153,7 @@ func (controller *ColoniesController) GetColonies() ([]*core.Colony, error) {
 	}
 }
 
-func (controller *ColoniesController) GetColonyByID(colonyID string) (*core.Colony, error) {
+func (controller *coloniesController) getColonyByID(colonyID string) (*core.Colony, error) {
 	cmd := &command{colonyReplyChan: make(chan *core.Colony),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
@@ -158,7 +174,7 @@ func (controller *ColoniesController) GetColonyByID(colonyID string) (*core.Colo
 	}
 }
 
-func (controller *ColoniesController) AddColony(colony *core.Colony) (*core.Colony, error) {
+func (controller *coloniesController) addColony(colony *core.Colony) (*core.Colony, error) {
 	cmd := &command{colonyReplyChan: make(chan *core.Colony, 1),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
@@ -184,7 +200,7 @@ func (controller *ColoniesController) AddColony(colony *core.Colony) (*core.Colo
 	}
 }
 
-func (controller *ColoniesController) AddRuntime(runtime *core.Runtime) (*core.Runtime, error) {
+func (controller *coloniesController) addRuntime(runtime *core.Runtime) (*core.Runtime, error) {
 	cmd := &command{runtimeReplyChan: make(chan *core.Runtime, 1),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
@@ -210,7 +226,7 @@ func (controller *ColoniesController) AddRuntime(runtime *core.Runtime) (*core.R
 	}
 }
 
-func (controller *ColoniesController) GetRuntimeByID(runtimeID string) (*core.Runtime, error) {
+func (controller *coloniesController) getRuntimeByID(runtimeID string) (*core.Runtime, error) {
 	cmd := &command{runtimeReplyChan: make(chan *core.Runtime),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
@@ -231,7 +247,7 @@ func (controller *ColoniesController) GetRuntimeByID(runtimeID string) (*core.Ru
 	}
 }
 
-func (controller *ColoniesController) GetRuntimeByColonyID(colonyID string) ([]*core.Runtime, error) {
+func (controller *coloniesController) getRuntimeByColonyID(colonyID string) ([]*core.Runtime, error) {
 	cmd := &command{runtimesReplyChan: make(chan []*core.Runtime),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
@@ -255,7 +271,7 @@ func (controller *ColoniesController) GetRuntimeByColonyID(colonyID string) ([]*
 	return runtimes, nil
 }
 
-func (controller *ColoniesController) ApproveRuntime(runtimeID string) error {
+func (controller *coloniesController) approveRuntime(runtimeID string) error {
 	cmd := &command{errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
 			runtime, err := controller.db.GetRuntimeByID(runtimeID)
@@ -270,7 +286,7 @@ func (controller *ColoniesController) ApproveRuntime(runtimeID string) error {
 	return <-cmd.errorChan
 }
 
-func (controller *ColoniesController) RejectRuntime(runtimeID string) error {
+func (controller *coloniesController) rejectRuntime(runtimeID string) error {
 	cmd := &command{errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
 			runtime, err := controller.db.GetRuntimeByID(runtimeID)
@@ -285,7 +301,7 @@ func (controller *ColoniesController) RejectRuntime(runtimeID string) error {
 	return <-cmd.errorChan
 }
 
-func (controller *ColoniesController) AddProcess(process *core.Process) (*core.Process, error) {
+func (controller *coloniesController) addProcess(process *core.Process) (*core.Process, error) {
 	cmd := &command{processReplyChan: make(chan *core.Process, 1),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
@@ -312,7 +328,7 @@ func (controller *ColoniesController) AddProcess(process *core.Process) (*core.P
 	}
 }
 
-func (controller *ColoniesController) GetProcessByID(processID string) (*core.Process, error) {
+func (controller *coloniesController) getProcessByID(processID string) (*core.Process, error) {
 	cmd := &command{processReplyChan: make(chan *core.Process, 1),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
@@ -333,7 +349,7 @@ func (controller *ColoniesController) GetProcessByID(processID string) (*core.Pr
 	}
 }
 
-func (controller *ColoniesController) FindPrioritizedProcesses(runtimeID string, colonyID string, count int) ([]*core.Process, error) {
+func (controller *coloniesController) findPrioritizedProcesses(runtimeID string, colonyID string, count int) ([]*core.Process, error) {
 	cmd := &command{processesReplyChan: make(chan []*core.Process),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
@@ -361,7 +377,7 @@ func (controller *ColoniesController) FindPrioritizedProcesses(runtimeID string,
 	}
 }
 
-func (controller *ColoniesController) FindWaitingProcesses(colonyID string, count int) ([]*core.Process, error) {
+func (controller *coloniesController) findWaitingProcesses(colonyID string, count int) ([]*core.Process, error) {
 	cmd := &command{processesReplyChan: make(chan []*core.Process),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
@@ -388,7 +404,7 @@ func (controller *ColoniesController) FindWaitingProcesses(colonyID string, coun
 	}
 }
 
-func (controller *ColoniesController) FindRunningProcesses(colonyID string, count int) ([]*core.Process, error) {
+func (controller *coloniesController) findRunningProcesses(colonyID string, count int) ([]*core.Process, error) {
 	cmd := &command{processesReplyChan: make(chan []*core.Process),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
@@ -415,7 +431,7 @@ func (controller *ColoniesController) FindRunningProcesses(colonyID string, coun
 	}
 }
 
-func (controller *ColoniesController) FindSuccessfulProcesses(colonyID string, count int) ([]*core.Process, error) {
+func (controller *coloniesController) findSuccessfulProcesses(colonyID string, count int) ([]*core.Process, error) {
 	cmd := &command{processesReplyChan: make(chan []*core.Process),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
@@ -442,7 +458,7 @@ func (controller *ColoniesController) FindSuccessfulProcesses(colonyID string, c
 	}
 }
 
-func (controller *ColoniesController) FindFailedProcesses(colonyID string, count int) ([]*core.Process, error) {
+func (controller *coloniesController) findFailedProcesses(colonyID string, count int) ([]*core.Process, error) {
 	cmd := &command{processesReplyChan: make(chan []*core.Process),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
@@ -469,7 +485,7 @@ func (controller *ColoniesController) FindFailedProcesses(colonyID string, count
 	}
 }
 
-func (controller *ColoniesController) MarkSuccessful(processID string) error {
+func (controller *coloniesController) markSuccessful(processID string) error {
 	cmd := &command{errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
 			process, err := controller.db.GetProcessByID(processID)
@@ -485,7 +501,7 @@ func (controller *ColoniesController) MarkSuccessful(processID string) error {
 	return <-cmd.errorChan
 }
 
-func (controller *ColoniesController) MarkFailed(processID string) error {
+func (controller *coloniesController) markFailed(processID string) error {
 	cmd := &command{errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
 			process, err := controller.db.GetProcessByID(processID)
@@ -501,7 +517,7 @@ func (controller *ColoniesController) MarkFailed(processID string) error {
 	return <-cmd.errorChan
 }
 
-func (controller *ColoniesController) AssignProcess(runtimeID string, colonyID string) (*core.Process, error) {
+func (controller *coloniesController) assignProcess(runtimeID string, colonyID string) (*core.Process, error) {
 	cmd := &command{processReplyChan: make(chan *core.Process),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
@@ -543,11 +559,11 @@ func (controller *ColoniesController) AssignProcess(runtimeID string, colonyID s
 	}
 }
 
-func (controller *ColoniesController) Stop() {
+func (controller *coloniesController) stop() {
 	controller.cmdQueue <- &command{stop: true}
 }
 
-func (controller *ColoniesController) AddAttribute(attribute *core.Attribute) (*core.Attribute, error) {
+func (controller *coloniesController) addAttribute(attribute *core.Attribute) (*core.Attribute, error) {
 	cmd := &command{attributeReplyChan: make(chan *core.Attribute, 1),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
@@ -573,7 +589,7 @@ func (controller *ColoniesController) AddAttribute(attribute *core.Attribute) (*
 	}
 }
 
-func (controller *ColoniesController) GetAttribute(attributeID string) (*core.Attribute, error) {
+func (controller *coloniesController) getAttribute(attributeID string) (*core.Attribute, error) {
 	cmd := &command{attributeReplyChan: make(chan *core.Attribute, 1),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
