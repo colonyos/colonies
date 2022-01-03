@@ -1,5 +1,5 @@
-## Using the Colonies CLI tool 
-### Register a new Colony
+# Using the Colonies CLI tool 
+## Register a new Colony
 First, create a file named colony.json, and put the following content into it.
 ```json
 {
@@ -16,7 +16,7 @@ Output:
 0f4f350d264d1cffdec0d62c723a7da8b730c6863365da75697fd26a6d79ccc5
 ```
 
-### List all Colonies 
+## List all Colonies 
 Note that root password of Colonies server is also required to list all colonies.
 ```console
 ./bin/colonies colony ls --serverid=9289dfccedf27392810b96968535530bb69f90afe7c35738e0e627f3810d943e 
@@ -30,7 +30,7 @@ Output:
 +------------------------------------------------------------------+----------+
 ```
 
-### Register a new Colony Runtime 
+## Register a new Colony Runtime 
 Only the colony owner is allowed to register a new Colony Runtime. 
 
 ```json
@@ -62,7 +62,7 @@ Output:
 4599f89a8afb7ecd9beec0b7861fab3bacba3a0e2dbe050e9f7584f3c9d7ac58
 ```
 
-### List registered Colony Runtimes
+## List registered Colony Runtimes
 ```console
 export RUNTIMEID="4599f89a8afb7ecd9beec0b7861fab3bacba3a0e2dbe050e9f7584f3c9d7ac58"
 ./bin/colonies runtime ls 
@@ -103,7 +103,7 @@ Output:
 Colony Runtime with Id <4599f89a8afb7ecd9beec0b7861fab3bacba3a0e2dbe050e9f7584f3c9d7ac58> is now rejected
 ```
 
-### Submit a process to a Colony
+## Submit a process to a Colony
 First we need to create a process spec file. The conditions must match registered runtimes, e.g. the memory must be at least 1000 GiB.
 
 ```json
@@ -134,7 +134,7 @@ Output:
 7bdc97997db5ea59471b2165c0e5672a4fe8f9158d36ab547adb9710d26e5ae2
 ```
 
-### Get info about a process
+## Get info about a process
 ```console
 ./bin/colonies process get --processid 4e369a9eeaf4521cdfa79de81666a5980f30345464e5c61e8cfdf9380e7ba663 
 ```
@@ -173,7 +173,7 @@ Attributes:
 +------------------------------------------------------------------+----------+------------+------+
 ```
 
-### List all waiting processes
+## List all waiting processes
 ```console
 ./bin/colonies process psw
 ```
@@ -190,7 +190,7 @@ Output:
 +------------------------------------------------------------------+-----------------------------+
 ```
 
-### Assign a process to runtime 
+## Assign a process to runtime 
 An assigned process will change state to Running.
 ```console
 ./bin/colonies process assign
@@ -200,7 +200,7 @@ Output:
 Process with Id <5513617dc4407b6190959a07db2a39c6ad93771c7e8457391e2e64927214c258> was assigned to Runtime with Id <4599f89a8afb7ecd9beec0b7861fab3bacba3a0e2dbe050e9f7584f3c9d7ac58>
 ```
 
-### List all running processes
+## List all running processes
 ```console
 ./bin/colonies process ps
 ```
@@ -217,7 +217,7 @@ Output:
 +------------------------------------------------------------------+-----------------------------+
 ```
 
-### List all successful processes
+## List all successful processes
 ```console
 ./bin/colonies process pss 
 ```
@@ -231,7 +231,7 @@ Output:
 +------------------------------------------------------------------+-----------------------------+
 ```
 
-### List all failed processes
+## List all failed processes
 ```console
 ./bin/colonies process psf 
 ```
@@ -244,7 +244,7 @@ Output:
 +------------------------------------------------------------------+-----------------------------+
 ```
 
-### Add attribute to a running process 
+## Add attribute to a running process 
 ```console
 ./bin/colonies attribute add --key output --value helloworld --processid 5785eb8a57f22d73a99d5c5e5d073cf27f9ea4ba81bad1a72e5e4f226e647dc0 
 ```
@@ -292,7 +292,7 @@ Attributes:
 +------------------------------------------------------------------+------------+-------------+------+
 ```
 
-### Get attribute of a process 
+## Get attribute of a process 
 ```console
 ./bin/colonies attribute get --attributeid 7fcc3a10947e6a3c56fa5c59c14c7d13d32468ed899e12e9d1cb7589ef51a0e3 --processid 5785eb8a57f22d73a99d5c5e5d073cf27f9ea4ba81bad1a72e5e4f226e647dc0 
 ```
@@ -307,7 +307,7 @@ Output:
 +---------------+------------------------------------------------------------------+
 ```
 
-### Mark a process as successful
+## Mark a process as successful
 ```console
 ./bin/colonies process successful --processid 5513617dc4407b6190959a07db2a39c6ad93771c7e8457391e2e64927214c258
 ```
@@ -316,7 +316,7 @@ Output:
 Process with Id <5513617dc4407b6190959a07db2a39c6ad93771c7e8457391e2e64927214c258> marked as successful
 ```
 
-### Mark a process as failed 
+## Mark a process as failed 
 ```console
 ./bin/colonies process failed --processid 7bdc97997db5ea59471b2165c0e5672a4fe8f9158d36ab547adb9710d26e5ae2
 ```

@@ -47,3 +47,10 @@ It then sends the following message to the Colonies Server:
 ```
 
 When the server receives the message, it reconstructs the Id of the calling client using the enclosed signature and payload. This means that client Id (e.g. 82f2ba6368d5c7d0e9bfa6...) is never sent to the server but rather derived by the server from messages it receives. In the example above, the server checks in the database if the reconstructed Id is a server owner.
+
+# Running the Tests
+Follow the instructions at [Installation Guide](./docs/Installation.md) and setup a Postgresql server, then type:
+```console
+make test
+```json
+ 
