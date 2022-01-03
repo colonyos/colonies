@@ -89,6 +89,16 @@ func (controller *coloniesController) subscribeProcess(runtimeID string, subscri
 	cmd := &command{errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
 			controller.subscribers.processSubscribers[runtimeID] = subscription
+
+			// Send an event immediately if process already have the state the subscriber is looking for
+			// See unittest TestSubscribeChangeStateProcess2 for more info
+			process, err := controller.db.GetProcessByID(subscription.processID)
+			if err != nil {
+				cmd.errorChan <- err
+			}
+			if process.Status == subscription.state {
+				controller.wsWriteProcessChangeEvent(process, runtimeID, subscription)
+			}
 			cmd.errorChan <- nil
 		}}
 	controller.cmdQueue <- cmd
@@ -96,7 +106,7 @@ func (controller *coloniesController) subscribeProcess(runtimeID string, subscri
 	return <-cmd.errorChan
 }
 
-func (controller *coloniesController) sendProcessEvent(process *core.Process) {
+func (controller *coloniesController) sendProcessesEvent(process *core.Process) {
 	for runtimeID, subscription := range controller.subscribers.processesSubscribers {
 		if subscription.runtimeType == process.ProcessSpec.Conditions.RuntimeType && subscription.state == process.Status {
 			jsonString, err := process.ToJSON()
@@ -113,20 +123,23 @@ func (controller *coloniesController) sendProcessEvent(process *core.Process) {
 	}
 }
 
-// XXX: Should it be possible to subscibe on core.WAITING?
+func (controller *coloniesController) wsWriteProcessChangeEvent(process *core.Process, runtimeID string, subscription *processSubscription) {
+	jsonString, err := process.ToJSON()
+	if err != nil {
+		fmt.Println("Failed to parse JSON, removing process event subscriber with Runtime Id <" + runtimeID + ">")
+		delete(controller.subscribers.processSubscribers, runtimeID)
+	}
+	err = subscription.wsConn.WriteMessage(subscription.wsMsgType, []byte(jsonString))
+	if err != nil {
+		fmt.Println("Removing process event subscriber with Runtime Id <" + runtimeID + ">")
+		delete(controller.subscribers.processSubscribers, runtimeID)
+	}
+}
+
 func (controller *coloniesController) sendProcessChangeStateEvent(process *core.Process) {
 	for runtimeID, subscription := range controller.subscribers.processSubscribers {
 		if subscription.processID == process.ID && subscription.state == process.Status {
-			jsonString, err := process.ToJSON()
-			if err != nil {
-				fmt.Println("Failed to parse JSON, removing process event subscriber with Runtime Id <" + runtimeID + ">")
-				fmt.Println(err)
-			}
-			err = subscription.wsConn.WriteMessage(subscription.wsMsgType, []byte(jsonString))
-			if err != nil {
-				fmt.Println("Removing process event subscriber with Runtime Id <" + runtimeID + ">")
-				delete(controller.subscribers.processSubscribers, runtimeID)
-			}
+			controller.wsWriteProcessChangeEvent(process, runtimeID, subscription)
 		}
 	}
 }
@@ -315,7 +328,7 @@ func (controller *coloniesController) addProcess(process *core.Process) (*core.P
 				cmd.errorChan <- err
 				return
 			}
-			controller.sendProcessEvent(process)
+			controller.sendProcessesEvent(process)
 			cmd.processReplyChan <- addedProcess
 		}}
 

@@ -407,7 +407,7 @@ var getProcessCmd = &cobra.Command{
 		}
 
 		client := client.CreateColoniesClient(ServerHost, ServerPort, true) // XXX: Insecure
-		process, err := client.GetProcessByID(ProcessID, RuntimePrvKey)
+		process, err := client.GetProcess(ProcessID, RuntimePrvKey)
 		if process == nil {
 			fmt.Println("Process with Id <" + process.ID + "> not found")
 			os.Exit(-1)
@@ -543,7 +543,7 @@ var markSuccessful = &cobra.Command{
 		}
 
 		client := client.CreateColoniesClient(ServerHost, ServerPort, true) // XXX: Insecure
-		process, err := client.GetProcessByID(ProcessID, RuntimePrvKey)
+		process, err := client.GetProcess(ProcessID, RuntimePrvKey)
 		CheckError(err)
 
 		err = client.MarkSuccessful(process.ID, RuntimePrvKey)
@@ -574,7 +574,7 @@ var markFailed = &cobra.Command{
 		}
 
 		client := client.CreateColoniesClient(ServerHost, ServerPort, true) // XXX: Insecure
-		process, err := client.GetProcessByID(ProcessID, RuntimePrvKey)
+		process, err := client.GetProcess(ProcessID, RuntimePrvKey)
 		CheckError(err)
 
 		err = client.MarkFailed(process.ID, RuntimePrvKey)
