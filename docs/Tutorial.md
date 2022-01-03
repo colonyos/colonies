@@ -455,5 +455,6 @@ go run solver_sub.go dc99f66eb882813916135fc0f1d913c38b2ac0435f3e3fae60eb70b421a
 In another terminal type: 
 ```console
 go run generator_ret.go a7c4bd22e94010027b31bf669c766aed0e24d6e4e1da05511b56440238df108f 43
+```
 
 After the generator has finished the first terminal will print **433494437**.
