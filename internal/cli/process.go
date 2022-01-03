@@ -428,18 +428,18 @@ var getProcessCmd = &cobra.Command{
 			isAssigned = "True"
 		}
 
-		var status string
-		switch process.Status {
+		var state string
+		switch process.State {
 		case core.WAITING:
-			status = "Waiting"
+			state = "Waiting"
 		case core.RUNNING:
-			status = "Running"
+			state = "Running"
 		case core.SUCCESS:
-			status = "Successful"
+			state = "Successful"
 		case core.FAILED:
-			status = "Failed"
+			state = "Failed"
 		default:
-			status = "Unkown"
+			state = "Unkown"
 		}
 
 		fmt.Println("Process:")
@@ -448,7 +448,7 @@ var getProcessCmd = &cobra.Command{
 			[]string{"ID", process.ID},
 			[]string{"IsAssigned", isAssigned},
 			[]string{"AssignedRuntimeID", assignedRuntimeID},
-			[]string{"Status", status},
+			[]string{"State", state},
 			[]string{"SubmissionTime", process.SubmissionTime.Format(TimeLayout)},
 			[]string{"StartTime", process.StartTime.Format(TimeLayout)},
 			[]string{"EndTime", process.EndTime.Format(TimeLayout)},

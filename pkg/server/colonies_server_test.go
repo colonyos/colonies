@@ -124,8 +124,8 @@ func TestAddRuntime(t *testing.T) {
 	err = client.ApproveRuntime(runtime.ID, colonyPrvKey)
 	assert.Nil(t, err)
 
-	// Just to make the comparison below work, the status will change after it has been approved
-	addedRuntime.Status = core.APPROVED
+	// Just to make the comparison below work, the state will change after it has been approved
+	addedRuntime.State = core.APPROVED
 
 	runtimeFromServer, err := client.GetRuntime(runtimeID, runtimePrvKey)
 	assert.Nil(t, err)
@@ -184,9 +184,9 @@ func TestGetRuntimes(t *testing.T) {
 	err = client.ApproveRuntime(runtime2.ID, colonyPrvKey)
 	assert.Nil(t, err)
 
-	// Just to make the comparison below work, the status will change after it has been approved
-	runtime1.Status = core.APPROVED
-	runtime2.Status = core.APPROVED
+	// Just to make the comparison below work, the state will change after it has been approved
+	runtime1.State = core.APPROVED
+	runtime2.State = core.APPROVED
 
 	var runtimes []*core.Runtime
 	runtimes = append(runtimes, runtime1)
@@ -405,19 +405,19 @@ func TestMarkSuccessful(t *testing.T) {
 	processSpec := core.CreateProcessSpec(env.colonyID, []string{}, "test_runtime_type", -1, 3, 1000, 10, 1, make(map[string]string))
 	addedProcess, err := client.SubmitProcessSpec(processSpec, env.runtimePrvKey)
 	assert.Nil(t, err)
-	assert.Equal(t, core.PENDING, addedProcess.Status)
+	assert.Equal(t, core.PENDING, addedProcess.State)
 
 	assignedProcess, err := client.AssignProcess(env.colonyID, env.runtimePrvKey)
 	assert.Nil(t, err)
 
 	assignedProcessFromServer, err := client.GetProcess(assignedProcess.ID, env.runtimePrvKey)
-	assert.Equal(t, core.RUNNING, assignedProcessFromServer.Status)
+	assert.Equal(t, core.RUNNING, assignedProcessFromServer.State)
 
 	err = client.MarkSuccessful(assignedProcess.ID, env.runtimePrvKey)
 	assert.Nil(t, err)
 
 	assignedProcessFromServer, err = client.GetProcess(assignedProcess.ID, env.runtimePrvKey)
-	assert.Equal(t, core.SUCCESS, assignedProcessFromServer.Status)
+	assert.Equal(t, core.SUCCESS, assignedProcessFromServer.State)
 
 	server.Shutdown()
 	<-done
@@ -429,19 +429,19 @@ func TestMarkFailed(t *testing.T) {
 	processSpec := core.CreateProcessSpec(env.colonyID, []string{}, "test_runtime_type", -1, 3, 1000, 10, 1, make(map[string]string))
 	addedProcess, err := client.SubmitProcessSpec(processSpec, env.runtimePrvKey)
 	assert.Nil(t, err)
-	assert.Equal(t, core.PENDING, addedProcess.Status)
+	assert.Equal(t, core.PENDING, addedProcess.State)
 
 	assignedProcess, err := client.AssignProcess(env.colonyID, env.runtimePrvKey)
 	assert.Nil(t, err)
 
 	assignedProcessFromServer, err := client.GetProcess(assignedProcess.ID, env.runtimePrvKey)
-	assert.Equal(t, core.RUNNING, assignedProcessFromServer.Status)
+	assert.Equal(t, core.RUNNING, assignedProcessFromServer.State)
 
 	err = client.MarkFailed(assignedProcess.ID, env.runtimePrvKey)
 	assert.Nil(t, err)
 
 	assignedProcessFromServer, err = client.GetProcess(assignedProcess.ID, env.runtimePrvKey)
-	assert.Equal(t, core.FAILED, assignedProcessFromServer.Status)
+	assert.Equal(t, core.FAILED, assignedProcessFromServer.State)
 
 	server.Shutdown()
 	<-done
@@ -453,7 +453,7 @@ func TestAddGetAttributes(t *testing.T) {
 	processSpec := core.CreateProcessSpec(env.colonyID, []string{}, "test_runtime_type", -1, 3, 1000, 10, 1, make(map[string]string))
 	addedProcess, err := client.SubmitProcessSpec(processSpec, env.runtimePrvKey)
 	assert.Nil(t, err)
-	assert.Equal(t, core.PENDING, addedProcess.Status)
+	assert.Equal(t, core.PENDING, addedProcess.State)
 
 	assignedProcess, err := client.AssignProcess(env.colonyID, env.runtimePrvKey)
 	assert.Nil(t, err)
@@ -524,7 +524,7 @@ func TestSubscribeChangeStateProcess(t *testing.T) {
 	processSpec := core.CreateProcessSpec(env.colony1ID, []string{}, "test_runtime_type", -1, 3, 1000, 10, 1, make(map[string]string))
 	addedProcess, err := client.SubmitProcessSpec(processSpec, env.runtime1PrvKey)
 	assert.Nil(t, err)
-	assert.Equal(t, core.PENDING, addedProcess.Status)
+	assert.Equal(t, core.PENDING, addedProcess.State)
 
 	subscription, err := client.SubscribeProcess(addedProcess.ID, core.SUCCESS, 100, env.runtime2PrvKey)
 	assert.Nil(t, err)
@@ -566,7 +566,7 @@ func TestSubscribeChangeStateProcess2(t *testing.T) {
 	processSpec := core.CreateProcessSpec(env.colony1ID, []string{}, "test_runtime_type", -1, 3, 1000, 10, 1, make(map[string]string))
 	addedProcess, err := client.SubmitProcessSpec(processSpec, env.runtime1PrvKey)
 	assert.Nil(t, err)
-	assert.Equal(t, core.PENDING, addedProcess.Status)
+	assert.Equal(t, core.PENDING, addedProcess.State)
 
 	assignedProcess, err := client.AssignProcess(env.colony1ID, env.runtime1PrvKey)
 	assert.Nil(t, err)

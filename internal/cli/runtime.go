@@ -131,23 +131,23 @@ var lsRuntimesCmd = &cobra.Command{
 
 		var data [][]string
 		for _, runtime := range runtimesFromServer {
-			status := ""
-			switch runtime.Status {
+			state := ""
+			switch runtime.State {
 			case core.PENDING:
-				status = "Pending"
+				state = "Pending"
 			case core.APPROVED:
-				status = "Approved"
+				state = "Approved"
 			case core.REJECTED:
-				status = "Rejected"
+				state = "Rejected"
 			default:
-				status = "Unknown"
+				state = "Unknown"
 			}
 
-			data = append(data, []string{runtime.ID, runtime.Name, status})
+			data = append(data, []string{runtime.ID, runtime.Name, state})
 		}
 
 		table := tablewriter.NewWriter(os.Stdout)
-		table.SetHeader([]string{"ID", "Name", "Status"})
+		table.SetHeader([]string{"ID", "Name", "State"})
 
 		for _, v := range data {
 			table.Append(v)

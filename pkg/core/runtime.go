@@ -18,7 +18,7 @@ type Runtime struct {
 	Mem         int    `json:"mem"`
 	GPU         string `json:"gpu"`
 	GPUs        int    `json:"gpus"`
-	Status      int    `json:"status"`
+	State       int    `json:"state"`
 }
 
 func CreateRuntime(id string, runtimeType string, name string, colonyID string, cpu string, cores int, mem int, gpu string, gpus int) *Runtime {
@@ -31,12 +31,12 @@ func CreateRuntime(id string, runtimeType string, name string, colonyID string, 
 		Mem:         mem,
 		GPU:         gpu,
 		GPUs:        gpus,
-		Status:      PENDING}
+		State:       PENDING}
 }
 
-func CreateRuntimeFromDB(id string, runtimeType string, name string, colonyID string, cpu string, cores int, mem int, gpu string, gpus int, status int) *Runtime {
+func CreateRuntimeFromDB(id string, runtimeType string, name string, colonyID string, cpu string, cores int, mem int, gpu string, gpus int, state int) *Runtime {
 	runtime := CreateRuntime(id, runtimeType, name, colonyID, cpu, cores, mem, gpu, gpus)
-	runtime.Status = status
+	runtime.State = state
 	return runtime
 }
 
@@ -96,7 +96,7 @@ func (runtime *Runtime) Equals(runtime2 *Runtime) bool {
 		runtime.Mem == runtime2.Mem &&
 		runtime.GPU == runtime2.GPU &&
 		runtime.GPUs == runtime2.GPUs &&
-		runtime.Status == runtime2.Status {
+		runtime.State == runtime2.State {
 		return true
 	}
 
@@ -104,7 +104,7 @@ func (runtime *Runtime) Equals(runtime2 *Runtime) bool {
 }
 
 func (runtime *Runtime) IsApproved() bool {
-	if runtime.Status == APPROVED {
+	if runtime.State == APPROVED {
 		return true
 	}
 
@@ -112,7 +112,7 @@ func (runtime *Runtime) IsApproved() bool {
 }
 
 func (runtime *Runtime) IsRejected() bool {
-	if runtime.Status == REJECTED {
+	if runtime.State == REJECTED {
 		return true
 	}
 
@@ -120,7 +120,7 @@ func (runtime *Runtime) IsRejected() bool {
 }
 
 func (runtime *Runtime) IsPending() bool {
-	if runtime.Status == PENDING {
+	if runtime.State == PENDING {
 		return true
 	}
 
@@ -128,11 +128,11 @@ func (runtime *Runtime) IsPending() bool {
 }
 
 func (runtime *Runtime) Approve() {
-	runtime.Status = APPROVED
+	runtime.State = APPROVED
 }
 
 func (runtime *Runtime) Reject() {
-	runtime.Status = REJECTED
+	runtime.State = REJECTED
 }
 
 func (runtime *Runtime) SetID(id string) {
