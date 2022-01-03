@@ -5,10 +5,7 @@ import (
 	"colonies/pkg/rpc"
 	"crypto/tls"
 	"errors"
-	"fmt"
 	"net/url"
-	"os"
-	"os/signal"
 	"strconv"
 
 	"github.com/go-resty/resty/v2"
@@ -75,118 +72,114 @@ func (client *ColoniesClient) sendMessage(method string, jsonString string, prvK
 	return respBodyString, nil
 }
 
+func (client *ColoniesClient) establishWebSocketConn(jsonString string) (*websocket.Conn, error) {
+	u := url.URL{Scheme: "wss", Host: client.host + ":" + strconv.Itoa(client.port), Path: "/pubsub"}
+	dialer := *websocket.DefaultDialer
+	dialer.TLSClientConfig = &tls.Config{InsecureSkipVerify: true} // TODO: note insecure
+
+	wsConn, _, err := dialer.Dial(u.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	err = wsConn.WriteMessage(websocket.TextMessage, []byte(jsonString))
+	if err != nil {
+		return nil, err
+	}
+
+	return wsConn, nil
+}
+
 func (client *ColoniesClient) SubscribeProcesses(runtimeType string,
 	state int,
 	timeout int,
-	prvKey string) (chan *core.Process, error) {
-	u := url.URL{Scheme: "wss", Host: client.host + ":" + strconv.Itoa(client.port), Path: "/pubsub"}
-
-	processChan := make(chan *core.Process)
-
-	interrupt := make(chan os.Signal, 1)
-	signal.Notify(interrupt, os.Interrupt)
-
-	dialer := *websocket.DefaultDialer
-	dialer.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
-
-	conn, _, err := dialer.Dial(u.String(), nil)
-	if err != nil {
-		return processChan, err
-	}
+	prvKey string) (*ProcessSubscription, error) {
 
 	msg := rpc.CreateSubscribeProcessesMsg(runtimeType, state, timeout)
 	jsonString, err := msg.ToJSON()
 	if err != nil {
-		return processChan, err
+		return nil, err
 	}
 
 	rpcMsg, err := rpc.CreateRPCMsg(rpc.SubscribeProcessesMsgType, jsonString, prvKey)
 	if err != nil {
-		return processChan, err
+		return nil, err
 	}
 
 	jsonString, err = rpcMsg.ToJSON()
 	if err != nil {
-		return processChan, err
+		return nil, err
 	}
 
-	err = conn.WriteMessage(websocket.TextMessage, []byte(jsonString))
+	wsConn, err := client.establishWebSocketConn(jsonString)
 	if err != nil {
-		return processChan, err
+		return nil, err
 	}
 
-	go func(conn *websocket.Conn) {
+	subscription := createProcessSubscription(wsConn)
+	go func(subscription *ProcessSubscription) {
 		for {
-			_, jsonBytes, err := conn.ReadMessage()
+			_, jsonBytes, err := subscription.wsConn.ReadMessage()
 			if err != nil {
-				// TODO
-				fmt.Println(err)
+				subscription.ErrChan <- err
 				continue
 			}
 			process, err := core.ConvertJSONToProcess(string(jsonBytes))
-			processChan <- process
-			// TODO: defer conn.Close()
-		}
-	}(conn)
+			if err != nil {
+				subscription.ErrChan <- err
+				continue
+			}
 
-	return processChan, nil
+			subscription.ProcessChan <- process
+		}
+	}(subscription)
+
+	return subscription, nil
 }
 
 func (client *ColoniesClient) SubscribeProcess(processID string,
 	state int,
 	timeout int,
-	prvKey string) (chan *core.Process, error) {
-	u := url.URL{Scheme: "wss", Host: client.host + ":" + strconv.Itoa(client.port), Path: "/pubsub"}
-
-	processChan := make(chan *core.Process)
-
-	interrupt := make(chan os.Signal, 1)
-	signal.Notify(interrupt, os.Interrupt)
-
-	dialer := *websocket.DefaultDialer
-	dialer.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
-
-	conn, _, err := dialer.Dial(u.String(), nil)
-	if err != nil {
-		return processChan, err
-	}
-
+	prvKey string) (*ProcessSubscription, error) {
 	msg := rpc.CreateSubscribeProcessMsg(processID, state, timeout)
 	jsonString, err := msg.ToJSON()
 	if err != nil {
-		return processChan, err
+		return nil, err
 	}
 
 	rpcMsg, err := rpc.CreateRPCMsg(rpc.SubscribeProcessMsgType, jsonString, prvKey)
 	if err != nil {
-		return processChan, err
+		return nil, err
 	}
 
 	jsonString, err = rpcMsg.ToJSON()
 	if err != nil {
-		return processChan, err
+		return nil, err
 	}
 
-	err = conn.WriteMessage(websocket.TextMessage, []byte(jsonString))
+	wsConn, err := client.establishWebSocketConn(jsonString)
 	if err != nil {
-		return processChan, err
+		return nil, err
 	}
 
-	go func(conn *websocket.Conn) {
+	subscription := createProcessSubscription(wsConn)
+	go func(subscription *ProcessSubscription) {
 		for {
-			_, jsonBytes, err := conn.ReadMessage()
+			_, jsonBytes, err := subscription.wsConn.ReadMessage()
 			if err != nil {
-				// TODO
-				fmt.Println(err)
+				subscription.ErrChan <- err
 				continue
 			}
 			process, err := core.ConvertJSONToProcess(string(jsonBytes))
-			processChan <- process
-			// TODO: defer conn.Close()
+			if err != nil {
+				subscription.ErrChan <- err
+				continue
+			}
+			subscription.ProcessChan <- process
 		}
-	}(conn)
+	}(subscription)
 
-	return processChan, nil
+	return subscription, nil
 }
 
 func (client *ColoniesClient) AddColony(colony *core.Colony, prvKey string) (*core.Colony, error) {
