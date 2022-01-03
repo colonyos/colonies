@@ -480,98 +480,119 @@ func TestAddGetAttributes(t *testing.T) {
 	<-done
 }
 
+// Runtime 2 subscribes on process events and expects to receive an event when a new process is submitted
+// Runtime 1 submitts a new process
+// Runtime 2 receives an event
 func TestSubscribeProcesses(t *testing.T) {
-	env, client, server, _, done := setupTestEnv2(t)
-
-	// Create a runtime
-	crypto := crypto.CreateCrypto()
-	runtimePrvKey, err := crypto.GeneratePrivateKey()
-	assert.Nil(t, err)
-	runtimeID, err := crypto.GenerateID(runtimePrvKey)
-	assert.Nil(t, err)
+	env, client, server, _, done := setupTestEnv1(t)
 
 	runtimeType := "test_runtime_type"
-	name := "test_runtime_name"
-	cpu := "AMD Ryzen 9 5950X (32) @ 3.400GHz"
-	cores := 32
-	mem := 80326
-	gpu := "NVIDIA GeForce RTX 2080 Ti Rev. A"
-	gpus := 1
 
-	runtime := core.CreateRuntime(runtimeID, runtimeType, name, env.colonyID, cpu, cores, mem, gpu, gpus)
-	_, err = client.AddRuntime(runtime, env.colonyPrvKey)
-	assert.Nil(t, err)
-	err = client.ApproveRuntime(runtime.ID, env.colonyPrvKey)
+	subscription, err := client.SubscribeProcesses(runtimeType, core.WAITING, 100, env.runtime2PrvKey)
 	assert.Nil(t, err)
 
-	processChan, err := client.SubscribeProcesses(runtimeType, core.WAITING, 100, runtimePrvKey)
-	assert.Nil(t, err)
-
-	waitForProcess := make(chan bool)
+	waitForProcess := make(chan error)
 	go func() {
-		<-processChan
-		waitForProcess <- true
+		select {
+		case <-subscription.ProcessChan:
+			waitForProcess <- nil
+		case err := <-subscription.ErrChan:
+			waitForProcess <- err
+		}
 	}()
 
 	time.Sleep(1 * time.Second)
 
-	processSpec := core.CreateProcessSpec(env.colonyID, []string{}, "test_runtime_type", -1, 3, 1000, 10, 1, make(map[string]string))
-	addedProcess, err := client.SubmitProcessSpec(processSpec, env.runtimePrvKey)
+	processSpec := core.CreateProcessSpec(env.colony1ID, []string{}, runtimeType, -1, 3, 1000, 10, 1, make(map[string]string))
+	_, err = client.SubmitProcessSpec(processSpec, env.runtime1PrvKey)
 	assert.Nil(t, err)
-	assert.Equal(t, core.PENDING, addedProcess.Status)
-	<-waitForProcess
 
+	err = <-waitForProcess
+	assert.Nil(t, err)
 	server.Shutdown()
 	<-done
 }
 
+// Runtime 2 subscribes on process events and expects to receive an event when a new process is submitted
+// Server should have 1 subscriber
+// Runtime 1 submitts a new process
+// Runtime 2 receives an event
+// Runtime 2 closes subscription
+// Server should have 0 subscriber
+// func TestSubscribeProcessesClose(t *testing.T) {
+// 	env, client, server, _, done := setupTestEnv1(t)
+
+// 	runtimeType := "test_runtime_type"
+
+// 	assert.Equal(t, 0, server.numberOfProcessesSubscribers())
+// 	subscription, err := client.SubscribeProcesses(runtimeType, core.WAITING, 100, env.runtime2PrvKey)
+// 	assert.Nil(t, err)
+// 	time.Sleep(1 * time.Second)
+// 	assert.Equal(t, 1, server.numberOfProcessesSubscribers())
+
+// 	waitForProcess := make(chan error)
+// 	go func() {
+// 		select {
+// 		case <-subscription.ProcessChan:
+// 			waitForProcess <- nil
+// 		case err := <-subscription.ErrChan:
+// 			waitForProcess <- err
+// 		}
+// 	}()
+
+// 	time.Sleep(1 * time.Second)
+
+// 	processSpec := core.CreateProcessSpec(env.colony1ID, []string{}, runtimeType, -1, 3, 1000, 10, 1, make(map[string]string))
+// 	_, err = client.SubmitProcessSpec(processSpec, env.runtime1PrvKey)
+// 	assert.Nil(t, err)
+
+// 	err = <-waitForProcess
+// 	assert.Nil(t, err)
+
+// 	err = subscription.Close()
+// 	assert.Nil(t, err)
+
+// 	// time.Sleep(1 * time.Second)
+// 	// assert.Equal(t, 0, server.numberOfProcessesSubscribers())
+
+// 	server.Shutdown()
+// 	<-done
+// }
+
+// Runtime 1 submits a process
+// Runtime 2 subscribes on process events and expects to receive an event when the process finishes.
+// Runtime 1 gets assign the process
+// Runtime 1 finish the process
+// Runtime 2 receives an event
 func TestSubscribeChangeStateProcess(t *testing.T) {
-	env, client, server, _, done := setupTestEnv2(t)
+	env, client, server, _, done := setupTestEnv1(t)
 
-	// Create a runtime
-	crypto := crypto.CreateCrypto()
-	runtimePrvKey, err := crypto.GeneratePrivateKey()
-	assert.Nil(t, err)
-	runtimeID, err := crypto.GenerateID(runtimePrvKey)
-	assert.Nil(t, err)
-
-	runtimeType := "test_runtime_type"
-	name := "test_runtime_name"
-	cpu := "AMD Ryzen 9 5950X (32) @ 3.400GHz"
-	cores := 32
-	mem := 80326
-	gpu := "NVIDIA GeForce RTX 2080 Ti Rev. A"
-	gpus := 1
-
-	runtime := core.CreateRuntime(runtimeID, runtimeType, name, env.colonyID, cpu, cores, mem, gpu, gpus)
-	_, err = client.AddRuntime(runtime, env.colonyPrvKey)
-	assert.Nil(t, err)
-	err = client.ApproveRuntime(runtime.ID, env.colonyPrvKey)
-	assert.Nil(t, err)
-
-	time.Sleep(1 * time.Second)
-
-	processSpec := core.CreateProcessSpec(env.colonyID, []string{}, "test_runtime_type", -1, 3, 1000, 10, 1, make(map[string]string))
-	addedProcess, err := client.SubmitProcessSpec(processSpec, env.runtimePrvKey)
+	processSpec := core.CreateProcessSpec(env.colony1ID, []string{}, "test_runtime_type", -1, 3, 1000, 10, 1, make(map[string]string))
+	addedProcess, err := client.SubmitProcessSpec(processSpec, env.runtime1PrvKey)
 	assert.Nil(t, err)
 	assert.Equal(t, core.PENDING, addedProcess.Status)
 
-	processChan, err := client.SubscribeProcess(addedProcess.ID, core.SUCCESS, 100, runtimePrvKey)
+	subscription, err := client.SubscribeProcess(addedProcess.ID, core.SUCCESS, 100, env.runtime2PrvKey)
 	assert.Nil(t, err)
 
-	waitForProcess := make(chan bool)
+	waitForProcess := make(chan error)
 	go func() {
-		<-processChan
-		waitForProcess <- true
+		select {
+		case <-subscription.ProcessChan:
+			waitForProcess <- nil
+		case err := <-subscription.ErrChan:
+			waitForProcess <- err
+		}
 	}()
 
-	assignedProcess, err := client.AssignProcess(env.colonyID, env.runtimePrvKey)
+	assignedProcess, err := client.AssignProcess(env.colony1ID, env.runtime1PrvKey)
 	assert.Nil(t, err)
 
-	err = client.MarkSuccessful(assignedProcess.ID, env.runtimePrvKey)
+	err = client.MarkSuccessful(assignedProcess.ID, env.runtime1PrvKey)
 	assert.Nil(t, err)
 
-	<-waitForProcess
+	err = <-waitForProcess
+	assert.Nil(t, err)
 	server.Shutdown()
 	<-done
 }
