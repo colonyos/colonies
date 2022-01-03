@@ -52,5 +52,5 @@ When the server receives the message, it reconstructs the Id of the calling clie
 Follow the instructions at [Installation Guide](./docs/Installation.md) and setup a Postgresql server, then type:
 ```console
 make test
-```json
+```
  
