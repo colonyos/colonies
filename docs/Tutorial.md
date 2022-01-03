@@ -1,7 +1,7 @@
 # Tutorial
 In this we will develop two Runtimes in Golang. The first Runtime will generate pending process specifications containing an integer. The other Runtime will fetch these specifications and start the process where it calculates a Fibonacci number of the integer.
 
-## 1. Set up a Colonies server (see intructions here)
+## 1. Set up a Colonies server [(see intructions here)](./Installation.md)
 
 ## 2. Register a new Colony
 ```console
@@ -402,7 +402,7 @@ Attributes:
 
 Note the **result** value.
 
-## 11. Let the generator wait for the process to finish (generator_sub.go)package main
+## 11. Let the generator wait for the process to finish (generator_sub.go)
 
 This can be done with this additional code:
 ```go
