@@ -5,15 +5,17 @@ import (
 	"encoding/json"
 )
 
-const SubmitProcessSpecMsgType = "submitprocessspec"
+const SubmitProcessSpecPayloadType = "submitprocessespecmsg"
 
 type SubmitProcessSpecMsg struct {
 	ProcessSpec *core.ProcessSpec `json:"spec"`
+	MsgType     string            `json:"msgtype"`
 }
 
 func CreateSubmitProcessSpecMsg(processSpec *core.ProcessSpec) *SubmitProcessSpecMsg {
 	msg := &SubmitProcessSpecMsg{}
 	msg.ProcessSpec = processSpec
+	msg.MsgType = SubmitProcessSpecPayloadType
 
 	return msg
 }

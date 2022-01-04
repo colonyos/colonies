@@ -4,15 +4,17 @@ import (
 	"encoding/json"
 )
 
-const AssignProcessMsgType = "assignprocess"
+const AssignProcessPayloadType = "assignprocessmsg"
 
 type AssignProcessMsg struct {
 	ColonyID string `json:"colonyid"`
+	MsgType  string `json:"msgtype"`
 }
 
 func CreateAssignProcessMsg(colonyID string) *AssignProcessMsg {
 	msg := &AssignProcessMsg{}
 	msg.ColonyID = colonyID
+	msg.MsgType = AssignProcessPayloadType
 
 	return msg
 }

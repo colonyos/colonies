@@ -4,12 +4,13 @@ import (
 	"encoding/json"
 )
 
-const GetProcessesMsgType = "getprocesses"
+const GetProcessesPayloadType = "getprocessesmsg"
 
 type GetProcessesMsg struct {
 	ColonyID string `json:"coloyid"`
 	Count    int    `json:"count"`
 	State    int    `json:"state"`
+	MsgType  string `json:"msgtype"`
 }
 
 func CreateGetProcessesMsg(colonyID string, count int, state int) *GetProcessesMsg {
@@ -17,6 +18,7 @@ func CreateGetProcessesMsg(colonyID string, count int, state int) *GetProcessesM
 	msg.ColonyID = colonyID
 	msg.Count = count
 	msg.State = state
+	msg.MsgType = GetProcessesPayloadType
 
 	return msg
 }

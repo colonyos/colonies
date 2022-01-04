@@ -4,15 +4,17 @@ import (
 	"encoding/json"
 )
 
-const GetRuntimesMsgType = "getruntimes"
+const GetRuntimesPayloadType = "getruntimesmsg"
 
 type GetRuntimesMsg struct {
 	ColonyID string `json:"colonyid"`
+	MsgType  string `json:"msgtype"`
 }
 
 func CreateGetRuntimesMsg(colonyID string) *GetRuntimesMsg {
 	msg := &GetRuntimesMsg{}
 	msg.ColonyID = colonyID
+	msg.MsgType = GetRuntimesPayloadType
 
 	return msg
 }

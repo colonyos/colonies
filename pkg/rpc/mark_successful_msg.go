@@ -4,15 +4,17 @@ import (
 	"encoding/json"
 )
 
-const MarkSuccessfulMsgType = "marksuccessful"
+const MarkSuccessfulPayloadType = "marksuccessfulmsg"
 
 type MarkSuccesfulMsg struct {
 	ProcessID string `json:"processid"`
+	MsgType   string `json:"msgtype"`
 }
 
 func CreateMarkSuccessfulMsg(processID string) *MarkSuccesfulMsg {
 	msg := &MarkSuccesfulMsg{}
 	msg.ProcessID = processID
+	msg.MsgType = MarkSuccessfulPayloadType
 
 	return msg
 }
