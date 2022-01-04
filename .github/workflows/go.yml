@@ -8,13 +8,10 @@ on:
 
 jobs:
   # Label of the container job
-  container-job:
-    # Containers must run in Linux based operating systems
+  runner-job:
     runs-on: ubuntu-latest
-    # Docker Hub image that `container-job` executes in
-    container: node:10.18-jessie
 
-    # Service containers to run with `container-job`
+    # Service containers to run with `runner-job`
     services:
       # Label used to access the service container
       postgres:
@@ -32,7 +29,6 @@ jobs:
         ports:
           # Maps tcp port 5432 on service container to the host
           - 5432:5432
-
     steps:
     - uses: actions/checkout@v2
 
