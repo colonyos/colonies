@@ -84,7 +84,7 @@ func (server *ColoniesServer) handleWSRequest(c *gin.Context) {
 	}
 
 	for {
-		wsMsgType, data, err := wsConn.ReadMessage()
+		wsPayloadType, data, err := wsConn.ReadMessage()
 		if err != nil {
 			return
 		}
@@ -99,21 +99,31 @@ func (server *ColoniesServer) handleWSRequest(c *gin.Context) {
 			return
 		}
 
-		switch rpcMsg.Method {
-		case rpc.SubscribeProcessesMsgType:
+		switch rpcMsg.PayloadType {
+		case rpc.SubscribeProcessesPayloadType:
 			msg, err := rpc.CreateSubscribeProcessesMsgFromJSON(rpcMsg.DecodePayload())
 			if server.handleError(c, err, http.StatusBadRequest) {
 				return
 			}
-			processSubcription := createProcessesSubscription(wsConn, wsMsgType, msg.RuntimeType, msg.Timeout, msg.State)
+			if msg.MsgType != rpcMsg.PayloadType {
+				server.handleError(c, errors.New("MsgType does not match PayloadType"), http.StatusBadRequest)
+				return
+			}
+
+			processSubcription := createProcessesSubscription(wsConn, wsPayloadType, msg.RuntimeType, msg.Timeout, msg.State)
 			server.controller.subscribeProcesses(recoveredID, processSubcription)
 
-		case rpc.SubscribeProcessMsgType:
+		case rpc.SubscribeProcessPayloadType:
 			msg, err := rpc.CreateSubscribeProcessMsgFromJSON(rpcMsg.DecodePayload())
 			if server.handleError(c, err, http.StatusBadRequest) {
 				return
 			}
-			processSubcription := createProcessSubscription(wsConn, wsMsgType, msg.ProcessID, msg.Timeout, msg.State)
+			if msg.MsgType != rpcMsg.PayloadType {
+				server.handleError(c, errors.New("MsgType does not match PayloadType"), http.StatusBadRequest)
+				return
+			}
+
+			processSubcription := createProcessSubscription(wsConn, wsPayloadType, msg.ProcessID, msg.Timeout, msg.State)
 			server.controller.subscribeProcess(recoveredID, processSubcription)
 		}
 	}
@@ -144,46 +154,46 @@ func (server *ColoniesServer) handleEndpointRequest(c *gin.Context) {
 		return
 	}
 
-	switch rpcMsg.Method {
+	switch rpcMsg.PayloadType {
 	// Colony operations
-	case rpc.AddColonyMsgType:
-		server.handleAddColonyRequest(c, recoveredID, rpcMsg.DecodePayload())
-	case rpc.GetColoniesMsgType:
-		server.handleGetColoniesRequest(c, recoveredID, rpcMsg.DecodePayload())
-	case rpc.GetColonyMsgType:
-		server.handleGetColonyRequest(c, recoveredID, rpcMsg.DecodePayload())
+	case rpc.AddColonyPayloadType:
+		server.handleAddColonyRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+	case rpc.GetColoniesPayloadType:
+		server.handleGetColoniesRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+	case rpc.GetColonyPayloadType:
+		server.handleGetColonyRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 
 	// Runtime operations
-	case rpc.AddRuntimeMsgType:
-		server.handleAddRuntimeRequest(c, recoveredID, rpcMsg.DecodePayload())
-	case rpc.GetRuntimesMsgType:
-		server.handleGetRuntimesRequest(c, recoveredID, rpcMsg.DecodePayload())
-	case rpc.GetRuntimeMsgType:
-		server.handleGetRuntimeRequest(c, recoveredID, rpcMsg.DecodePayload())
-	case rpc.ApproveRuntimeMsgType:
-		server.handleApproveRuntimeRequest(c, recoveredID, rpcMsg.DecodePayload())
-	case rpc.RejectRuntimeMsgType:
-		server.handleRejectRuntimeRequest(c, recoveredID, rpcMsg.DecodePayload())
+	case rpc.AddRuntimePayloadType:
+		server.handleAddRuntimeRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+	case rpc.GetRuntimesPayloadType:
+		server.handleGetRuntimesRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+	case rpc.GetRuntimePayloadType:
+		server.handleGetRuntimeRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+	case rpc.ApproveRuntimePayloadType:
+		server.handleApproveRuntimeRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+	case rpc.RejectRuntimePayloadType:
+		server.handleRejectRuntimeRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 
 	// Process operations
-	case rpc.SubmitProcessSpecMsgType:
-		server.handleSubmitProcessSpec(c, recoveredID, rpcMsg.DecodePayload())
-	case rpc.AssignProcessMsgType:
-		server.handleAssignProcessRequest(c, recoveredID, rpcMsg.DecodePayload())
-	case rpc.GetProcessesMsgType:
-		server.handleGetProcessesRequest(c, recoveredID, rpcMsg.DecodePayload())
-	case rpc.GetProcessMsgType:
-		server.handleGetProcessRequest(c, recoveredID, rpcMsg.DecodePayload())
-	case rpc.MarkSuccessfulMsgType:
-		server.handleMarkSuccessfulRequest(c, recoveredID, rpcMsg.DecodePayload())
-	case rpc.MarkFailedMsgType:
-		server.handleMarkFailedRequest(c, recoveredID, rpcMsg.DecodePayload())
+	case rpc.SubmitProcessSpecPayloadType:
+		server.handleSubmitProcessSpec(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+	case rpc.AssignProcessPayloadType:
+		server.handleAssignProcessRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+	case rpc.GetProcessesPayloadType:
+		server.handleGetProcessesRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+	case rpc.GetProcessPayloadType:
+		server.handleGetProcessRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+	case rpc.MarkSuccessfulPayloadType:
+		server.handleMarkSuccessfulRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+	case rpc.MarkFailedPayloadType:
+		server.handleMarkFailedRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 
 	// Attribute operations
-	case rpc.AddAttributeMsgType:
-		server.handleAddAttributeRequest(c, recoveredID, rpcMsg.DecodePayload())
-	case rpc.GetAttributeMsgType:
-		server.handleGetAttributeRequest(c, recoveredID, rpcMsg.DecodePayload())
+	case rpc.AddAttributePayloadType:
+		server.handleAddAttributeRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+	case rpc.GetAttributePayloadType:
+		server.handleGetAttributeRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 	default:
 		if server.handleError(c, errors.New("Invalid RPC message type"), http.StatusForbidden) {
 			return
@@ -207,13 +217,17 @@ func (server *ColoniesServer) handleError(c *gin.Context, err error, errorCode i
 	return false
 }
 
-func (server *ColoniesServer) handleAddColonyRequest(c *gin.Context, recoveredID string, jsonString string) {
+func (server *ColoniesServer) handleAddColonyRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
 	msg, err := rpc.CreateAddColonyMsgFromJSON(jsonString)
 	if server.handleError(c, err, http.StatusBadRequest) {
 		return
 	}
 	if msg == nil {
 		server.handleError(c, errors.New("Failed to parse AddColonyMsg JSON"), http.StatusBadRequest)
+	}
+	if msg.MsgType != payloadType {
+		server.handleError(c, errors.New("MsgType does not match PayloadType"), http.StatusBadRequest)
+		return
 	}
 
 	err = server.validator.RequireServerOwner(recoveredID, server.serverID)
@@ -237,13 +251,17 @@ func (server *ColoniesServer) handleAddColonyRequest(c *gin.Context, recoveredID
 	c.String(http.StatusOK, jsonString)
 }
 
-func (server *ColoniesServer) handleGetColoniesRequest(c *gin.Context, recoveredID string, jsonString string) {
+func (server *ColoniesServer) handleGetColoniesRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
 	msg, err := rpc.CreateGetColoniesMsgFromJSON(jsonString)
 	if server.handleError(c, err, http.StatusBadRequest) {
 		return
 	}
 	if msg == nil {
 		server.handleError(c, errors.New("Failed to parse GetColoniesMsg JSON"), http.StatusBadRequest)
+	}
+	if msg.MsgType != payloadType {
+		server.handleError(c, errors.New("MsgType does not match PayloadType"), http.StatusBadRequest)
+		return
 	}
 
 	err = server.validator.RequireServerOwner(recoveredID, server.serverID)
@@ -267,13 +285,17 @@ func (server *ColoniesServer) handleGetColoniesRequest(c *gin.Context, recovered
 	c.String(http.StatusOK, jsonString)
 }
 
-func (server *ColoniesServer) handleGetColonyRequest(c *gin.Context, recoveredID, jsonString string) {
+func (server *ColoniesServer) handleGetColonyRequest(c *gin.Context, recoveredID, payloadType string, jsonString string) {
 	msg, err := rpc.CreateGetColonyMsgFromJSON(jsonString)
 	if server.handleError(c, err, http.StatusBadRequest) {
 		return
 	}
 	if msg == nil {
 		server.handleError(c, errors.New("Failed to parse GetColonyMsg JSON"), http.StatusBadRequest)
+	}
+	if msg.MsgType != payloadType {
+		server.handleError(c, errors.New("MsgType does not match PayloadType"), http.StatusBadRequest)
+		return
 	}
 
 	err = server.validator.RequireRuntimeMembership(recoveredID, msg.ColonyID)
@@ -297,13 +319,17 @@ func (server *ColoniesServer) handleGetColonyRequest(c *gin.Context, recoveredID
 	c.String(http.StatusOK, jsonString)
 }
 
-func (server *ColoniesServer) handleAddRuntimeRequest(c *gin.Context, recoveredID string, jsonString string) {
+func (server *ColoniesServer) handleAddRuntimeRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
 	msg, err := rpc.CreateAddRuntimeMsgFromJSON(jsonString)
 	if server.handleError(c, err, http.StatusBadRequest) {
 		return
 	}
 	if msg == nil {
 		server.handleError(c, errors.New("Failed to parse AddRuntimeMsg JSON"), http.StatusBadRequest)
+	}
+	if msg.MsgType != payloadType {
+		server.handleError(c, errors.New("MsgType does not match PayloadType"), http.StatusBadRequest)
+		return
 	}
 
 	err = server.validator.RequireColonyOwner(recoveredID, msg.Runtime.ColonyID)
@@ -327,13 +353,17 @@ func (server *ColoniesServer) handleAddRuntimeRequest(c *gin.Context, recoveredI
 	c.String(http.StatusOK, jsonString)
 }
 
-func (server *ColoniesServer) handleGetRuntimesRequest(c *gin.Context, recoveredID string, jsonString string) {
+func (server *ColoniesServer) handleGetRuntimesRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
 	msg, err := rpc.CreateGetRuntimesMsgFromJSON(jsonString)
 	if server.handleError(c, err, http.StatusBadRequest) {
 		return
 	}
 	if msg == nil {
 		server.handleError(c, errors.New("Failed to parse GetRuntimesMsg JSON"), http.StatusBadRequest)
+	}
+	if msg.MsgType != payloadType {
+		server.handleError(c, errors.New("MsgType does not match PayloadType"), http.StatusBadRequest)
+		return
 	}
 
 	err = server.validator.RequireRuntimeMembership(recoveredID, msg.ColonyID)
@@ -357,13 +387,17 @@ func (server *ColoniesServer) handleGetRuntimesRequest(c *gin.Context, recovered
 	c.String(http.StatusOK, jsonString)
 }
 
-func (server *ColoniesServer) handleGetRuntimeRequest(c *gin.Context, recoveredID string, jsonString string) {
+func (server *ColoniesServer) handleGetRuntimeRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
 	msg, err := rpc.CreateGetRuntimeMsgFromJSON(jsonString)
 	if server.handleError(c, err, http.StatusBadRequest) {
 		return
 	}
 	if msg == nil {
 		server.handleError(c, errors.New("Failed to parse GetRuntimeMsg JSON"), http.StatusBadRequest)
+	}
+	if msg.MsgType != payloadType {
+		server.handleError(c, errors.New("MsgType does not match PayloadType"), http.StatusBadRequest)
+		return
 	}
 
 	runtime, err := server.controller.getRuntimeByID(msg.RuntimeID)
@@ -387,13 +421,17 @@ func (server *ColoniesServer) handleGetRuntimeRequest(c *gin.Context, recoveredI
 	c.String(http.StatusOK, jsonString)
 }
 
-func (server *ColoniesServer) handleApproveRuntimeRequest(c *gin.Context, recoveredID string, jsonString string) {
+func (server *ColoniesServer) handleApproveRuntimeRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
 	msg, err := rpc.CreateApproveRuntimeMsgFromJSON(jsonString)
 	if server.handleError(c, err, http.StatusBadRequest) {
 		return
 	}
 	if msg == nil {
 		server.handleError(c, errors.New("Failed to parse ApproveRuntimeMsg JSON"), http.StatusBadRequest)
+	}
+	if msg.MsgType != payloadType {
+		server.handleError(c, errors.New("MsgType does not match PayloadType"), http.StatusBadRequest)
+		return
 	}
 
 	runtime, err := server.controller.getRuntimeByID(msg.RuntimeID)
@@ -422,13 +460,17 @@ func (server *ColoniesServer) handleApproveRuntimeRequest(c *gin.Context, recove
 	c.String(http.StatusOK, jsonString)
 }
 
-func (server *ColoniesServer) handleRejectRuntimeRequest(c *gin.Context, recoveredID string, jsonString string) {
+func (server *ColoniesServer) handleRejectRuntimeRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
 	msg, err := rpc.CreateRejectRuntimeMsgFromJSON(jsonString)
 	if server.handleError(c, err, http.StatusBadRequest) {
 		return
 	}
 	if msg == nil {
 		server.handleError(c, errors.New("Failed to parse RejectRuntimeMsg JSON"), http.StatusBadRequest)
+	}
+	if msg.MsgType != payloadType {
+		server.handleError(c, errors.New("MsgType does not match PayloadType"), http.StatusBadRequest)
+		return
 	}
 
 	runtime, err := server.controller.getRuntimeByID(msg.RuntimeID)
@@ -457,13 +499,17 @@ func (server *ColoniesServer) handleRejectRuntimeRequest(c *gin.Context, recover
 	c.String(http.StatusOK, jsonString)
 }
 
-func (server *ColoniesServer) handleSubmitProcessSpec(c *gin.Context, recoveredID string, jsonString string) {
+func (server *ColoniesServer) handleSubmitProcessSpec(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
 	msg, err := rpc.CreateSubmitProcessSpecMsgFromJSON(jsonString)
 	if server.handleError(c, err, http.StatusBadRequest) {
 		return
 	}
 	if msg == nil {
 		server.handleError(c, errors.New("Failed to parse SubmitRuntimeMsg JSON"), http.StatusBadRequest)
+	}
+	if msg.MsgType != payloadType {
+		server.handleError(c, errors.New("MsgType does not match PayloadType"), http.StatusBadRequest)
+		return
 	}
 
 	err = server.validator.RequireRuntimeMembership(recoveredID, msg.ProcessSpec.Conditions.ColonyID)
@@ -488,13 +534,17 @@ func (server *ColoniesServer) handleSubmitProcessSpec(c *gin.Context, recoveredI
 	c.String(http.StatusOK, jsonString)
 }
 
-func (server *ColoniesServer) handleAssignProcessRequest(c *gin.Context, recoveredID string, jsonString string) {
+func (server *ColoniesServer) handleAssignProcessRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
 	msg, err := rpc.CreateAssignProcessMsgFromJSON(jsonString)
 	if server.handleError(c, err, http.StatusBadRequest) {
 		return
 	}
 	if msg == nil {
 		server.handleError(c, errors.New("Failed to parse AssignRuntimeMsg JSON"), http.StatusBadRequest)
+	}
+	if msg.MsgType != payloadType {
+		server.handleError(c, errors.New("MsgType does not match PayloadType"), http.StatusBadRequest)
+		return
 	}
 
 	err = server.validator.RequireRuntimeMembership(recoveredID, msg.ColonyID)
@@ -518,13 +568,17 @@ func (server *ColoniesServer) handleAssignProcessRequest(c *gin.Context, recover
 	c.String(http.StatusOK, jsonString)
 }
 
-func (server *ColoniesServer) handleGetProcessesRequest(c *gin.Context, recoveredID string, jsonString string) {
+func (server *ColoniesServer) handleGetProcessesRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
 	msg, err := rpc.CreateGetProcessesMsgFromJSON(jsonString)
 	if server.handleError(c, err, http.StatusBadRequest) {
 		return
 	}
 	if msg == nil {
 		server.handleError(c, errors.New("Failed to parse GetProcessesMsg JSON"), http.StatusBadRequest)
+	}
+	if msg.MsgType != payloadType {
+		server.handleError(c, errors.New("MsgType does not match PayloadType"), http.StatusBadRequest)
+		return
 	}
 
 	err = server.validator.RequireRuntimeMembership(recoveredID, msg.ColonyID)
@@ -596,13 +650,17 @@ func (server *ColoniesServer) handleGetProcessesRequest(c *gin.Context, recovere
 	}
 }
 
-func (server *ColoniesServer) handleGetProcessRequest(c *gin.Context, recoveredID string, jsonString string) {
+func (server *ColoniesServer) handleGetProcessRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
 	msg, err := rpc.CreateGetProcessMsgFromJSON(jsonString)
 	if server.handleError(c, err, http.StatusBadRequest) {
 		return
 	}
 	if msg == nil {
 		server.handleError(c, errors.New("Failed to parse GetProcessMsg JSON"), http.StatusBadRequest)
+	}
+	if msg.MsgType != payloadType {
+		server.handleError(c, errors.New("MsgType does not match PayloadType"), http.StatusBadRequest)
+		return
 	}
 
 	process, err := server.controller.getProcessByID(msg.ProcessID)
@@ -626,13 +684,17 @@ func (server *ColoniesServer) handleGetProcessRequest(c *gin.Context, recoveredI
 	c.String(http.StatusOK, jsonString)
 }
 
-func (server *ColoniesServer) handleMarkSuccessfulRequest(c *gin.Context, recoveredID string, jsonString string) {
+func (server *ColoniesServer) handleMarkSuccessfulRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
 	msg, err := rpc.CreateMarkSuccessfulMsgFromJSON(jsonString)
 	if server.handleError(c, err, http.StatusBadRequest) {
 		return
 	}
 	if msg == nil {
 		server.handleError(c, errors.New("Failed to parse MarkSuccessfulMsg JSON"), http.StatusBadRequest)
+	}
+	if msg.MsgType != payloadType {
+		server.handleError(c, errors.New("MsgType does not match PayloadType"), http.StatusBadRequest)
+		return
 	}
 
 	process, err := server.controller.getProcessByID(msg.ProcessID)
@@ -661,13 +723,17 @@ func (server *ColoniesServer) handleMarkSuccessfulRequest(c *gin.Context, recove
 	c.String(http.StatusOK, "")
 }
 
-func (server *ColoniesServer) handleMarkFailedRequest(c *gin.Context, recoveredID string, jsonString string) {
+func (server *ColoniesServer) handleMarkFailedRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
 	msg, err := rpc.CreateMarkFailedMsgFromJSON(jsonString)
 	if server.handleError(c, err, http.StatusBadRequest) {
 		return
 	}
 	if msg == nil {
 		server.handleError(c, errors.New("Failed to parse MarkedFailedMsg JSON"), http.StatusBadRequest)
+	}
+	if msg.MsgType != payloadType {
+		server.handleError(c, errors.New("MsgType does not match PayloadType"), http.StatusBadRequest)
+		return
 	}
 
 	process, err := server.controller.getProcessByID(msg.ProcessID)
@@ -696,13 +762,17 @@ func (server *ColoniesServer) handleMarkFailedRequest(c *gin.Context, recoveredI
 	c.String(http.StatusOK, "")
 }
 
-func (server *ColoniesServer) handleAddAttributeRequest(c *gin.Context, recoveredID string, jsonString string) {
+func (server *ColoniesServer) handleAddAttributeRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
 	msg, err := rpc.CreateAddAttributeMsgFromJSON(jsonString)
 	if server.handleError(c, err, http.StatusBadRequest) {
 		return
 	}
 	if msg == nil {
 		server.handleError(c, errors.New("Failed to parse AddAttributeMsg JSON"), http.StatusBadRequest)
+	}
+	if msg.MsgType != payloadType {
+		server.handleError(c, errors.New("MsgType does not match PayloadType"), http.StatusBadRequest)
+		return
 	}
 
 	process, err := server.controller.getProcessByID(msg.Attribute.TargetID)
@@ -740,13 +810,17 @@ func (server *ColoniesServer) handleAddAttributeRequest(c *gin.Context, recovere
 	c.String(http.StatusOK, jsonString)
 }
 
-func (server *ColoniesServer) handleGetAttributeRequest(c *gin.Context, recoveredID string, jsonString string) {
+func (server *ColoniesServer) handleGetAttributeRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
 	msg, err := rpc.CreateGetAttributeMsgFromJSON(jsonString)
 	if server.handleError(c, err, http.StatusBadRequest) {
 		return
 	}
 	if msg == nil {
 		server.handleError(c, errors.New("Failed to parse GetAttributeMsg JSON"), http.StatusBadRequest)
+	}
+	if msg.MsgType != payloadType {
+		server.handleError(c, errors.New("MsgType does not match PayloadType"), http.StatusBadRequest)
+		return
 	}
 
 	attribute, err := server.controller.getAttribute(msg.AttributeID)

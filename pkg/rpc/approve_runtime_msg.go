@@ -4,15 +4,17 @@ import (
 	"encoding/json"
 )
 
-const ApproveRuntimeMsgType = "approveruntime"
+const ApproveRuntimePayloadType = "approveruntimemsg"
 
 type ApproveRuntimeRPC struct {
 	RuntimeID string `json:"runtimeid"`
+	MsgType   string `json:"msgtype"`
 }
 
 func CreateApproveRuntimeMsg(runtimeID string) *ApproveRuntimeRPC {
 	msg := &ApproveRuntimeRPC{}
 	msg.RuntimeID = runtimeID
+	msg.MsgType = ApproveRuntimePayloadType
 
 	return msg
 }

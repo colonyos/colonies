@@ -4,12 +4,13 @@ import (
 	"encoding/json"
 )
 
-const SubscribeProcessesMsgType = "subscribeprocesses"
+const SubscribeProcessesPayloadType = "subscribeprocessesmsg"
 
 type SubscribeProcessesMsg struct {
 	RuntimeType string `json:"runtimetype"`
 	State       int    `json:"state"`
 	Timeout     int    `json:"timeout"`
+	MsgType     string `json:"msgtype"`
 }
 
 func CreateSubscribeProcessesMsg(runtimeType string, state int, timeout int) *SubscribeProcessesMsg {
@@ -17,6 +18,7 @@ func CreateSubscribeProcessesMsg(runtimeType string, state int, timeout int) *Su
 	msg.RuntimeType = runtimeType
 	msg.State = state
 	msg.Timeout = timeout
+	msg.MsgType = SubscribeProcessesPayloadType
 
 	return msg
 }

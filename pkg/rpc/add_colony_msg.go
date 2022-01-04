@@ -5,15 +5,17 @@ import (
 	"encoding/json"
 )
 
-const AddColonyMsgType = "addcolony"
+const AddColonyPayloadType = "addcolonymsg"
 
 type AddColonyMsg struct {
-	Colony *core.Colony `json:"colony"`
+	Colony  *core.Colony `json:"colony"`
+	MsgType string       `json:"msgtype"`
 }
 
 func CreateAddColonyMsg(colony *core.Colony) *AddColonyMsg {
 	msg := &AddColonyMsg{}
 	msg.Colony = colony
+	msg.MsgType = AddColonyPayloadType
 
 	return msg
 }
