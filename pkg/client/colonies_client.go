@@ -32,19 +32,6 @@ func CreateColoniesClient(host string, port int, insecure bool) *ColoniesClient 
 	return client
 }
 
-func (client *ColoniesClient) checkStatusCode(statusCode int, jsonString string) error {
-	if statusCode != 200 {
-		failure, err := core.ConvertJSONToFailure(jsonString)
-		if err != nil {
-			return err
-		}
-
-		return errors.New(failure.Message)
-	}
-
-	return nil
-}
-
 func (client *ColoniesClient) sendMessage(method string, jsonString string, prvKey string) (string, error) {
 	rpcMsg, err := rpc.CreateRPCMsg(method, jsonString, prvKey)
 	if err != nil {
@@ -64,12 +51,21 @@ func (client *ColoniesClient) sendMessage(method string, jsonString string, prvK
 	}
 
 	respBodyString := string(resp.Body())
-	err = client.checkStatusCode(resp.StatusCode(), respBodyString)
+	rpcReplyMsg, err := rpc.CreateRPCReplyMsgFromJSON(respBodyString)
 	if err != nil {
 		return "", err
 	}
 
-	return respBodyString, nil
+	if rpcReplyMsg.Error {
+		failure, err := core.ConvertJSONToFailure(rpcReplyMsg.DecodePayload())
+		if err != nil {
+			return "", err
+		}
+
+		return "", errors.New(failure.Message)
+	}
+
+	return rpcReplyMsg.DecodePayload(), nil
 }
 
 func (client *ColoniesClient) establishWebSocketConn(jsonString string) (*websocket.Conn, error) {
@@ -124,7 +120,14 @@ func (client *ColoniesClient) SubscribeProcesses(runtimeType string,
 				subscription.ErrChan <- err
 				continue
 			}
-			process, err := core.ConvertJSONToProcess(string(jsonBytes))
+
+			rpcReplyMsg, err := rpc.CreateRPCReplyMsgFromJSON(string(jsonBytes))
+			if err != nil {
+				subscription.ErrChan <- err
+				continue
+			}
+
+			process, err := core.ConvertJSONToProcess(rpcReplyMsg.DecodePayload())
 			if err != nil {
 				subscription.ErrChan <- err
 				continue
@@ -170,7 +173,12 @@ func (client *ColoniesClient) SubscribeProcess(processID string,
 				subscription.ErrChan <- err
 				continue
 			}
-			process, err := core.ConvertJSONToProcess(string(jsonBytes))
+			rpcReplyMsg, err := rpc.CreateRPCReplyMsgFromJSON(string(jsonBytes))
+			if err != nil {
+				subscription.ErrChan <- err
+				continue
+			}
+			process, err := core.ConvertJSONToProcess(rpcReplyMsg.DecodePayload())
 			if err != nil {
 				subscription.ErrChan <- err
 				continue

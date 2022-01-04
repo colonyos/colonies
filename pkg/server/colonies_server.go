@@ -205,16 +205,37 @@ func (server *ColoniesServer) handleError(c *gin.Context, err error, errorCode i
 	if err != nil {
 		logging.Log().Warning(err)
 		failure := core.CreateFailure(errorCode, err.Error())
-		failureString, err := failure.ToJSON()
+		jsonString, err := failure.ToJSON()
 		if err != nil {
 			logging.Log().Error(err)
 		}
-		c.String(errorCode, failureString)
+		rpcReplyMsg, err := rpc.CreateRPCErrorReplyMsg(rpc.ErrorPayloadType, jsonString)
+		if err != nil {
+			logging.Log().Error(err)
+		}
+		rpcReplyMsgJSONString, err := rpcReplyMsg.ToJSON()
+		if err != nil {
+			logging.Log().Error(err)
+		}
 
+		c.String(errorCode, rpcReplyMsgJSONString)
 		return true
 	}
 
 	return false
+}
+
+func (server *ColoniesServer) sendReplyToClient(c *gin.Context, payloadType string, jsonString string) {
+	rpcReplyMsg, err := rpc.CreateRPCReplyMsg(payloadType, jsonString)
+	if server.handleError(c, err, http.StatusBadRequest) {
+		return
+	}
+	rpcReplyMsgJSONString, err := rpcReplyMsg.ToJSON()
+	if server.handleError(c, err, http.StatusBadRequest) {
+		return
+	}
+
+	c.String(http.StatusOK, rpcReplyMsgJSONString)
 }
 
 func (server *ColoniesServer) handleAddColonyRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
@@ -248,7 +269,7 @@ func (server *ColoniesServer) handleAddColonyRequest(c *gin.Context, recoveredID
 		return
 	}
 
-	c.String(http.StatusOK, jsonString)
+	server.sendReplyToClient(c, payloadType, jsonString)
 }
 
 func (server *ColoniesServer) handleGetColoniesRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
@@ -282,7 +303,7 @@ func (server *ColoniesServer) handleGetColoniesRequest(c *gin.Context, recovered
 		return
 	}
 
-	c.String(http.StatusOK, jsonString)
+	server.sendReplyToClient(c, payloadType, jsonString)
 }
 
 func (server *ColoniesServer) handleGetColonyRequest(c *gin.Context, recoveredID, payloadType string, jsonString string) {
@@ -316,7 +337,7 @@ func (server *ColoniesServer) handleGetColonyRequest(c *gin.Context, recoveredID
 		return
 	}
 
-	c.String(http.StatusOK, jsonString)
+	server.sendReplyToClient(c, payloadType, jsonString)
 }
 
 func (server *ColoniesServer) handleAddRuntimeRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
@@ -350,7 +371,7 @@ func (server *ColoniesServer) handleAddRuntimeRequest(c *gin.Context, recoveredI
 		return
 	}
 
-	c.String(http.StatusOK, jsonString)
+	server.sendReplyToClient(c, payloadType, jsonString)
 }
 
 func (server *ColoniesServer) handleGetRuntimesRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
@@ -384,7 +405,7 @@ func (server *ColoniesServer) handleGetRuntimesRequest(c *gin.Context, recovered
 		return
 	}
 
-	c.String(http.StatusOK, jsonString)
+	server.sendReplyToClient(c, payloadType, jsonString)
 }
 
 func (server *ColoniesServer) handleGetRuntimeRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
@@ -418,7 +439,7 @@ func (server *ColoniesServer) handleGetRuntimeRequest(c *gin.Context, recoveredI
 		return
 	}
 
-	c.String(http.StatusOK, jsonString)
+	server.sendReplyToClient(c, payloadType, jsonString)
 }
 
 func (server *ColoniesServer) handleApproveRuntimeRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
@@ -457,7 +478,7 @@ func (server *ColoniesServer) handleApproveRuntimeRequest(c *gin.Context, recove
 		return
 	}
 
-	c.String(http.StatusOK, jsonString)
+	server.sendReplyToClient(c, payloadType, jsonString)
 }
 
 func (server *ColoniesServer) handleRejectRuntimeRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
@@ -496,7 +517,7 @@ func (server *ColoniesServer) handleRejectRuntimeRequest(c *gin.Context, recover
 		return
 	}
 
-	c.String(http.StatusOK, jsonString)
+	server.sendReplyToClient(c, payloadType, jsonString)
 }
 
 func (server *ColoniesServer) handleSubmitProcessSpec(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
@@ -531,7 +552,7 @@ func (server *ColoniesServer) handleSubmitProcessSpec(c *gin.Context, recoveredI
 		return
 	}
 
-	c.String(http.StatusOK, jsonString)
+	server.sendReplyToClient(c, payloadType, jsonString)
 }
 
 func (server *ColoniesServer) handleAssignProcessRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
@@ -565,7 +586,7 @@ func (server *ColoniesServer) handleAssignProcessRequest(c *gin.Context, recover
 		return
 	}
 
-	c.String(http.StatusOK, jsonString)
+	server.sendReplyToClient(c, payloadType, jsonString)
 }
 
 func (server *ColoniesServer) handleGetProcessesRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
@@ -600,7 +621,7 @@ func (server *ColoniesServer) handleGetProcessesRequest(c *gin.Context, recovere
 		if server.handleError(c, err, http.StatusBadRequest) {
 			return
 		}
-		c.String(http.StatusOK, jsonString)
+		server.sendReplyToClient(c, payloadType, jsonString)
 	case core.RUNNING:
 		processes, err := server.controller.findRunningProcesses(msg.ColonyID, msg.Count)
 		if server.handleError(c, err, http.StatusBadRequest) {
@@ -614,7 +635,7 @@ func (server *ColoniesServer) handleGetProcessesRequest(c *gin.Context, recovere
 		if server.handleError(c, err, http.StatusBadRequest) {
 			return
 		}
-		c.String(http.StatusOK, jsonString)
+		server.sendReplyToClient(c, payloadType, jsonString)
 	case core.SUCCESS:
 		processes, err := server.controller.findSuccessfulProcesses(msg.ColonyID, msg.Count)
 		if server.handleError(c, err, http.StatusBadRequest) {
@@ -628,7 +649,7 @@ func (server *ColoniesServer) handleGetProcessesRequest(c *gin.Context, recovere
 		if server.handleError(c, err, http.StatusBadRequest) {
 			return
 		}
-		c.String(http.StatusOK, jsonString)
+		server.sendReplyToClient(c, payloadType, jsonString)
 	case core.FAILED:
 		processes, err := server.controller.findFailedProcesses(msg.ColonyID, msg.Count)
 		if server.handleError(c, err, http.StatusBadRequest) {
@@ -642,7 +663,7 @@ func (server *ColoniesServer) handleGetProcessesRequest(c *gin.Context, recovere
 		if server.handleError(c, err, http.StatusBadRequest) {
 			return
 		}
-		c.String(http.StatusOK, jsonString)
+		server.sendReplyToClient(c, payloadType, jsonString)
 	default:
 		err := errors.New("Invalid state")
 		server.handleError(c, err, http.StatusBadRequest)
@@ -681,7 +702,7 @@ func (server *ColoniesServer) handleGetProcessRequest(c *gin.Context, recoveredI
 		return
 	}
 
-	c.String(http.StatusOK, jsonString)
+	server.sendReplyToClient(c, payloadType, jsonString)
 }
 
 func (server *ColoniesServer) handleMarkSuccessfulRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
@@ -720,7 +741,7 @@ func (server *ColoniesServer) handleMarkSuccessfulRequest(c *gin.Context, recove
 		return
 	}
 
-	c.String(http.StatusOK, "")
+	server.sendReplyToClient(c, payloadType, jsonString)
 }
 
 func (server *ColoniesServer) handleMarkFailedRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
@@ -759,7 +780,7 @@ func (server *ColoniesServer) handleMarkFailedRequest(c *gin.Context, recoveredI
 		return
 	}
 
-	c.String(http.StatusOK, "")
+	server.sendReplyToClient(c, payloadType, jsonString)
 }
 
 func (server *ColoniesServer) handleAddAttributeRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
@@ -807,7 +828,7 @@ func (server *ColoniesServer) handleAddAttributeRequest(c *gin.Context, recovere
 		return
 	}
 
-	c.String(http.StatusOK, jsonString)
+	server.sendReplyToClient(c, payloadType, jsonString)
 }
 
 func (server *ColoniesServer) handleGetAttributeRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
@@ -854,7 +875,7 @@ func (server *ColoniesServer) handleGetAttributeRequest(c *gin.Context, recovere
 		return
 	}
 
-	c.String(http.StatusOK, jsonString)
+	server.sendReplyToClient(c, payloadType, jsonString)
 }
 
 func (server *ColoniesServer) numberOfProcessesSubscribers() int {
