@@ -4,15 +4,17 @@ import (
 	"encoding/json"
 )
 
-const MarkFailedMsgType = "markfailed"
+const MarkFailedPayloadType = "markfailedmsg"
 
 type MarkFailedMsg struct {
 	ProcessID string `json:"processid"`
+	MsgType   string `json:"msgtype"`
 }
 
 func CreateMarkFailedMsg(processID string) *MarkFailedMsg {
 	msg := &MarkFailedMsg{}
 	msg.ProcessID = processID
+	msg.MsgType = MarkFailedPayloadType
 
 	return msg
 }

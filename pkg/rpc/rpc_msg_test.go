@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestDetermineRPCMethod(t *testing.T) {
+func TestRPCMsg(t *testing.T) {
 	crypto := crypto.CreateCrypto()
 	prvKey, err := crypto.GeneratePrivateKey()
 	assert.Nil(t, err)

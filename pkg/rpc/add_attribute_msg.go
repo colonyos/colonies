@@ -5,15 +5,17 @@ import (
 	"encoding/json"
 )
 
-const AddAttributeMsgType = "addattribute"
+const AddAttributePayloadType = "addattributemsg"
 
 type AddAttributeMsg struct {
 	Attribute *core.Attribute `json:"attribute"`
+	MsgType   string          `json:"msgtype"`
 }
 
 func CreateAddAttributeMsg(attribute *core.Attribute) *AddAttributeMsg {
 	msg := &AddAttributeMsg{}
 	msg.Attribute = attribute
+	msg.MsgType = AddAttributePayloadType
 
 	return msg
 }

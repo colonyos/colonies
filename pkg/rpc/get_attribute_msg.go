@@ -4,15 +4,17 @@ import (
 	"encoding/json"
 )
 
-const GetAttributeMsgType = "getattribute"
+const GetAttributePayloadType = "getattributemsg"
 
 type GetAttributeMsg struct {
 	AttributeID string `json:"attributeid"`
+	MsgType     string `json:"msgtype"`
 }
 
 func CreateGetAttributeMsg(attributeID string) *GetAttributeMsg {
 	msg := &GetAttributeMsg{}
 	msg.AttributeID = attributeID
+	msg.MsgType = GetAttributePayloadType
 
 	return msg
 }

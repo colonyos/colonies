@@ -4,15 +4,17 @@ import (
 	"encoding/json"
 )
 
-const RejectRuntimeMsgType = "rejectruntime"
+const RejectRuntimePayloadType = "rejectruntimemsg"
 
 type RejectRuntimeMsg struct {
 	RuntimeID string `json:"runtimeid"`
+	MsgType   string `json:"msgtype"`
 }
 
 func CreateRejectRuntimeMsg(runtimeID string) *RejectRuntimeMsg {
 	msg := &RejectRuntimeMsg{}
 	msg.RuntimeID = runtimeID
+	msg.MsgType = RejectRuntimePayloadType
 
 	return msg
 }

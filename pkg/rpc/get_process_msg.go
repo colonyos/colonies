@@ -4,15 +4,17 @@ import (
 	"encoding/json"
 )
 
-const GetProcessMsgType = "getprocess"
+const GetProcessPayloadType = "getprocessmsg"
 
 type GetProcessMsg struct {
 	ProcessID string `json:"processid"`
+	MsgType   string `json:"msgtype"`
 }
 
 func CreateGetProcessMsg(processID string) *GetProcessMsg {
 	msg := &GetProcessMsg{}
 	msg.ProcessID = processID
+	msg.MsgType = GetProcessPayloadType
 
 	return msg
 }

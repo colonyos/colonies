@@ -4,13 +4,15 @@ import (
 	"encoding/json"
 )
 
-const GetColoniesMsgType = "getcolonies"
+const GetColoniesPayloadType = "getcoloniesmsg"
 
 type GetColoniesMsg struct {
+	MsgType string `json:"msgtype"`
 }
 
 func CreateGetColoniesMsg() *GetColoniesMsg {
 	msg := &GetColoniesMsg{}
+	msg.MsgType = GetColoniesPayloadType
 
 	return msg
 }
