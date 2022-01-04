@@ -27,3 +27,14 @@ test:
 	@cd pkg/security/validator; grc go test -v
 	@cd pkg/server; grc go test -v
 	@cd pkg/scheduler/basic; grc go test -v
+
+github_test:
+	@cd internal/crypto; go test -v
+	@cd pkg/core; go test -v
+	@cd pkg/database/postgresql; go test -v
+	@cd pkg/rpc; go test -v
+	@cd pkg/security; go test -v
+	@cd pkg/security/crypto; go test -v
+	@cd pkg/security/validator; go test -v
+	@cd pkg/server; go test -v
+	@cd pkg/scheduler/basic; go test -v
