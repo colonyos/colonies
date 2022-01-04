@@ -3,19 +3,28 @@ The Colonies RPC messages has the following format:
 
 ```json
 {
-    "method": "addcolony",
-    "signature": "82f2ba6368d5c7d0e9bfa6a01a8fa4d4263113f9eedf235e3a4c7b1febcdc2914fe1f8727746b2f501ceec5736457f218fe3b1a469dd6071775c472a802aa81501",
+    "payloadtype": "addcolonymsg",
     "payload": "ewogICAgICBjb2xvbnlpZDogYWM4ZGM4OTQ5YWYzOTVmZDUxZWFkMzFkNTk4YjI1MmJkYTAyZjFmNmVlZDExYWNlN2ZjN2RjOGRkODVhYzMyZSwKICAgICAgbmFtZTogdGVzdF9jb2xvbnlfbmFtZQogIH0=",
-    "error": false
+    "signature": "82f2ba6368d5c7d0e9bfa6a01a8fa4d4263113f9eedf235e3a4c7b1febcdc2914fe1f8727746b2f501ceec5736457f218fe3b1a469dd6071775c472a802aa81501",
 }
 ```
 
 * Messages are POSTed to http://host:port/api.
 * The *payload* attribute is an Base64 string containing JSON data as specified in the API description below.
 * The *signature* is calculated based on the Base64 payload data using a private key.
-* [It](It) assumed that SSL/TLS are used to prevent replay attacks.
-* If the *error* attribute is true, then the payload will contain the following JSON data.
+* It is assumed that SSL/TLS are used to prevent replay attacks.
+* Note that **payloadtype** and **msgtype** must match. The reason to duplicate this information is allow for introspection using structured parsning but at the same time sign the message so that the semantic of the RPC operation is kept in one message. Otherwise, an attacker would be able to change the payloadtype and keep the payload to trick the Colonies Server. 
 
+The Colonies Server will reply with a RPC reply message according to the following format:
+
+```json
+{
+    "payloadtype": "addcolonymsg",
+    "payload": "ewogICAgICBjb2xvbnlpZDogNmQ2MWFmZTc5MTRjNjNmMjhhNGM5NzY0NWNlNmFiMjY0YzNhZDNhMGU0NmViZDFmMzc4OGU4MzA1MzkzNGUxOCwKICAgICAgbmFtZTogdGVzdF9jb2xvbnlfbmFtZQogIH0=",
+}
+```
+
+If the **payloadtype** is set to **error**, then the payload will contain the following JSON data:
 ```json
 {
     "errorcode": "500",
@@ -23,25 +32,24 @@ The Colonies RPC messages has the following format:
 }
 ```
 
-## Colony API
-### Add Colony
-
-#### RPC Message 
-Needs to be signed by a valid Server Owner Private Key.
-
+Else it will contain the reply JSON data, e.g:
 ```json
 {
-    "method": "addcolony",
-    "signature": "...",
-    "payload": "...",
-    "error": false
+    "colonyid": "6d61afe7914c63f28a4c97645ce6ab264c3ad3a0e46ebd1f3788e83053934e18",
+    "name": "test_colony_name"
 }
 ```
 
-#### Decoded payload 
+## Colony API
 
+### Add Colony
+PayloadType: **addcolonymsg**
+Credentials: A valid Server Owner Private Key
+
+#### Payload 
 ```json
 {
+    "msgtype": "addcolonymsg",
     "colony": {
         "colonyid": "6d61afe7914c63f28a4c97645ce6ab264c3ad3a0e46ebd1f3788e83053934e18",
         "name": "test_colony_name"
@@ -49,8 +57,7 @@ Needs to be signed by a valid Server Owner Private Key.
 }
 ```
 
-#### Decoded reply 
-
+#### Reply 
 ```json
 {
     "colonyid": "6d61afe7914c63f28a4c97645ce6ab264c3ad3a0e46ebd1f3788e83053934e18",
@@ -59,26 +66,19 @@ Needs to be signed by a valid Server Owner Private Key.
 ```
 
 ### List Colonies
+PayloadType: **getcoloniesmsg**
+Credentials: A valid Server Owner Private Key
 
-#### RPC Message 
-Needs to be signed by a valid Server Owner Private Key. Note that the message is empty except for the timestamp field.
-
+#### Payload 
 ```json
 {
-    "method": "getcolonies",
-    "signature": "...",
+    "payloadtype": "getcoloniesmsg",
     "payload": "...",
-    "error": false
+    "signature": "...",
 }
 ```
 
-#### Decoded payload
-```json
-{}
-```
-
-#### Decoded reply
-
+#### Reply 
 ```json
 [
     {
@@ -93,29 +93,18 @@ Needs to be signed by a valid Server Owner Private Key. Note that the message is
 ```
 
 ### Get Colony info
+PayloadType: **getcolonymsg**
+Credentials: A valid Runtime Private Key
 
-#### RPC Message 
-Needs to be signed by a valid Runtime Private Key.
-
+#### Payload 
 ```json
 {
-    "method": "getcolony",
-    "signature": "...",
-    "payload": "...",
-    "error": false
-}
-```
-
-#### Decoded payload
-
-```json
-{
+    "msgtype": "getcolonymsg",
     "colonyid": "42beaae68830094a4b367b06ef293aca0473ae8cd893da43a50000c98c85c5d8"
 }
 ```
 
-#### Decoded reply
-
+#### Reply 
 ```json
 {
     "colonyid": "ac8dc8949af395fd51ead31d598b252bda02f1f6eed11ace7fc7dc8dd85ac32e",
@@ -124,24 +113,13 @@ Needs to be signed by a valid Runtime Private Key.
 ```
 
 ## Runtime API
-### Add Runtime
+PayloadType: **addruntimemsg**
+Credentials: A valid Colony Private Key
 
-#### RPC Message 
-Needs to be signed by a valid Colony Private Key.
-
+#### Payload 
 ```json
 {
-    "method": "addruntime",
-    "signature": "...",
-    "payload": "...",
-    "error": false
-}
-```
-
-#### Decoded payload
-
-```json
-{
+    "msgtype": "addruntimemsg",
     "runtime": {
         "runtimeid": "38df5bbbcf0ccb438d2e4151638e3967bf28a5654af6a7e5acc590c0e49fae06",
         "runtimetype": "test_runtime_type",
@@ -157,8 +135,7 @@ Needs to be signed by a valid Colony Private Key.
 }
 ```
 
-#### Decoded reply
-
+#### Reply 
 ```json
 {
     "runtimeid": "38df5bbbcf0ccb438d2e4151638e3967bf28a5654af6a7e5acc590c0e49fae06",
@@ -175,29 +152,18 @@ Needs to be signed by a valid Colony Private Key.
 ```
 
 ### List Runtimes
+PayloadType: **getruntimesmsg**
+Credentials: A valid Runtime Private Key
 
-#### RPC Message 
-Needs to be signed by a valid Runtime Private Key.
-
+#### Payload 
 ```json
 {
-    "method": "getruntimes",
-    "signature": "...",
-    "payload": "...",
-    "error": false
-}
-```
-
-#### Decoded payload
-
-```json
-{
+    "msgtype": "getruntimesmsg",
     "colonyid": "863e313bfd882fe7c0f13c14aff1f3f02ba763bcb48377e50d505289c81e47b6"
 }
 ```
 
-#### Decoded reply
-
+#### Reply 
 ```json
 [
     {
@@ -216,29 +182,18 @@ Needs to be signed by a valid Runtime Private Key.
 ```
 
 ###  Get Runtime info
+PayloadType: **getruntimemsg**
+Credentials: A valid Runtime Private Key
 
-#### RPC Message 
-Needs to be signed by a valid Runtime Private Key.
-
+#### Payload 
 ```json
 {
-    "method": "getruntime",
-    "signature": "...",
-    "payload": "...",
-    "error": false
-}
-```
-
-#### Decoded payload
-
-```json
-{
+    "msgtype": "getruntimemsg",
     "runtimeid": "ed2aa78eabe3d1f6fd46ef1247199e9a12faf1a8f1bcba0db51265515c3f08e0"
 }
 ```
 
-#### Decoded reply
-
+#### Reply 
 ```json
 {
     "runtimeid": "ed2aa78eabe3d1f6fd46ef1247199e9a12faf1a8f1bcba0db51265515c3f08e0",
@@ -255,55 +210,35 @@ Needs to be signed by a valid Runtime Private Key.
 ```
 
 ### Approve Runtime 
+PayloadType: **approveruntimemsg**
+Credentials: A valid Colony Private Key
 
-#### RPC Message 
-Needs to be signed by a valid Colony Private Key.
-
+#### Payload
 ```json
 {
-    "method": "approveruntime",
-    "signature": "...",
-    "payload": "...",
-    "error": false
-}
-```
-
-#### Decoded Payload
-
-```json
-{
+    "msgtype": "approveruntimemsg",
     "runtimeid": "e40e2862e3a68e1c79af4e9475ef64fbf588e13619f4daa7183673b34e189c87"
 }
 ```
 
-#### Decoded Reply
+#### Reply
 ```json
 {}
 ```
 
 ###  Reject Runtime 
+PayloadType: **rejectruntimemsg**
+Credentials: A valid Colony Private Key
 
-#### RPC Message 
-Needs to be signed by a valid Colony Private Key.
-
+#### Payload 
 ```json
 {
-    "method": "rejectruntime",
-    "signature": "...",
-    "payload": "...",
-    "error": false
-}
-```
-
-#### Decoded payload
-
-```json
-{
+    "msgtype": "rejectruntimemsg",
     "runtimeid": "7804cea6a50f2a258ad815b0ed37b6b312c813bf7387cef04958971335faae21"
 }
 ```
 
-#### Decoded reply
+#### Reply 
 ```json
 {}
 ```
@@ -311,23 +246,13 @@ Needs to be signed by a valid Colony Private Key.
 ## Process API
 
 ### Submit Process Specification 
+PayloadType: **submitprocessespecmsg**
+Credentials: A valid Runtime Private Key
 
-#### RPC Message 
-Needs to be signed by a valid Runtime Private Key.
-
+#### Payload 
 ```json
 {
-    "method": "submitprocessspec",
-    "signature": "...",
-    "payload": "...",
-    "error": false
-}
-```
-
-#### Decoded payload
-
-```json
-{
+    "msgtype": "submitprocessesspecmsg",
     "spec": {
         "timeout": -1,
         "maxretries": 3,
@@ -346,8 +271,7 @@ Needs to be signed by a valid Runtime Private Key.
 }
 ```
 
-#### Decoded reply
-
+#### Reply
 ```json
 {
     "processid": "2c0fd0407292538cb8dce3cb306f88b2ab7f3726d649e07502eb04344d9f7164",
@@ -387,29 +311,18 @@ Needs to be signed by a valid Runtime Private Key.
 ```
 
 ### Assign Process to a Runtime 
+PayloadType: **assignprocessmsg**
+Credentials: A valid Runtime Private Key
 
-#### RPC Message 
-Needs to be signed by a valid Runtime Private Key.
-
+#### Payload 
 ```json
 {
-    "method": "assignprocess",
-    "signature": "...",
-    "payload": "...",
-    "error": false
-}
-```
-
-#### Encoded payload
-
-```json
-{
+    "msgtype": "assignprocessmsg",
     "colonyid": "326691e2b5fc0651b5d781393c7279ab3dc58c6627d0a7b2a09e9aa0e4a60950"
 }
 ```
 
-#### Decoded reply
-
+#### Reply 
 ```json
 {
     "processid": "68db01b27271168cb1011c1c54cc31a54f23eb7e5767e49bb34fb206591d2a65",
@@ -439,21 +352,10 @@ Needs to be signed by a valid Runtime Private Key.
 ```
 
 ###  List processes
+PayloadType: **getprocessesmsg**
+Credentials: A valid Runtime Private Key
 
-#### RPC Message 
-Needs to be signed by a valid Runtime Private Key.
-
-```json
-{
-    "method": "getprocesses",
-    "signature": "...",
-    "payload": "...",
-    "error": false
-}
-```
-
-#### Decoded payload
-
+#### Payload 
 The state attribute can have the following values:
 * 1 : Waiting 
 * 2 : Running 
@@ -462,14 +364,14 @@ The state attribute can have the following values:
 
 ```json
 {
+    "msgtype": "getprocessesmsg",
     "coloyid": "891f0c88e8a00cb103df472e4ece347a41eb0115e5c40f12d565bb24eb3fc71d",
     "count": 2,
     "state": 3 
 }
 ```
 
-#### Decoded reply 
-
+#### Reply 
 ```json
 [
     {
@@ -501,29 +403,18 @@ The state attribute can have the following values:
 ```
 
 ###  Get Process info
+PayloadType: **getprocessmsg**
+Credentials: A valid Runtime Private Key
 
-#### RPC Message 
-Needs to be signed by a valid Runtime Private Key.
-
+#### Payload 
 ```json
 {
-    "method": "getprocess",
-    "signature": "...",
-    "payload": "...",
-    "error": false
-}
-```
-
-#### Decoded payload 
-
-```json
-{
+    "msgtype": "getprocessmsg",
     "processid": "80a98f46c7a364fd33339a6fb2e6c5d8988384fdbf237b4012490c4658bbc9ce"
 }
 ```
 
-#### Decoded reply
-
+#### Reply 
 ```json
 {
     "processid": "80a98f46c7a364fd33339a6fb2e6c5d8988384fdbf237b4012490c4658bbc9ce",
@@ -553,77 +444,47 @@ Needs to be signed by a valid Runtime Private Key.
 ```
 
 ### Mark Process as Successful 
+PayloadType: **marksuccessfulmsg**
+Credentials: A valid Runtime Private Key and the Runtime ID needs to match the RuntimeID assigned to the process
 
-#### RPC Message 
-Needs to be signed by a valid Runtime Private Key. The Runtime ID needs to match the RuntimeID assigned to the process.
-
+#### Payload 
 ```json
 {
-    "method": "marksuccessful",
-    "signature": "...",
-    "payload": "...",
-    "error": false
-}
-```
-
-#### Decoded payload
-
-```json
-{
+    "msgtype": "marksuccessfulmsg",
     "processid": "ed041355071d2ee6d0ec27b480e2e4c8006cf465ec408b57fcdaa5dac76af8e2"
 }
 ```
 
-#### Decoded reply
+#### Reply
 ```json
 {}
 ```
 
 ### Mark a Proceess as Failed 
+PayloadType: **markfailedmsg**
+Credentials: A valid Runtime Private Key and the Runtime ID needs to match the RuntimeID assigned to the process
 
-#### RPC Message 
-Needs to be signed by a valid Runtime Private Key. The Runtime ID needs to match the RuntimeID assigned to the process.
-
+#### Payload 
 ```json
 {
-    "method": "markfailed",
-    "signature": "...",
-    "payload": "...",
-    "error": false
-}
-```
-
-#### Decoded payload
-
-```json
-{
+    "msgtype": "markfailedfulmsg",
     "processid": "24f6d85804e2abde0c85a9e8aef8b308c44a72323565b14f11756d4997acf200"
 }
 ```
 
-#### Decoded reply
+#### Reply 
 ```json
 {}
 ```
 
 ###  Add Attribute to a Process 
+PayloadType: **addattributemsg**
+Credentials: A valid Runtime Private Key and the Runtime ID needs to match the RuntimeID assigned to the process
 
-#### RPC Message 
-Needs to be signed by a valid Runtime Private Key. The Runtime ID needs to match the RuntimeID assigned to the process.
-
+#### Payload 
 ```json
 {
-    "method": "addattribute",
-    "signature": "...",
-    "payload": "...",
-    "error": false
-}
-```
-
-#### Decoded payload
-
-```json
-{
+    "msgtype": "addattributemsg",
     "attribute": {
         "attributeid": "216e26cb089032d2f941454e7db5f3ae1591eeb43eb477c3f8ed545b96d4f690",
         "targetid": "c4775cab695da8a77b503bbe29df8ae39dafd1c7fed3275dac11b436c1724dbf",
@@ -634,8 +495,7 @@ Needs to be signed by a valid Runtime Private Key. The Runtime ID needs to match
 }
 ```
 
-#### Decoded reply
-
+#### Reply 
 ```json
 {
     "attributeid": "216e26cb089032d2f941454e7db5f3ae1591eeb43eb477c3f8ed545b96d4f690",
@@ -647,29 +507,18 @@ Needs to be signed by a valid Runtime Private Key. The Runtime ID needs to match
 ```
 
 ###  Get Attribute assigned to a Process 
+PayloadType: **getattributemsg**
+Credentials: A valid Runtime Private Key
 
-#### RPC Message 
-Needs to be signed by a valid Runtime Private Key.
-
+#### Payload 
 ```json
 {
-    "method": "gettattribute",
-    "signature": "...",
-    "payload": "...",
-    "error": false
-}
-```
-
-#### Decoded payload 
-
-```json
-{
+    "msgtype": "getattributemsg",
     "attributeid": "a1d8f3613e074a250c2fbab478a0e11eb40defee66bd9b6a6ceb96990f1486eb"
 }
 ```
 
-#### Decoded reply
-
+#### Reply 
 ```json
 {
     "attributeid": "a1d8f3613e074a250c2fbab478a0e11eb40defee66bd9b6a6ceb96990f1486eb",
