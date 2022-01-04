@@ -43,8 +43,8 @@ Else it will contain the reply JSON data, e.g:
 ## Colony API
 
 ### Add Colony
-PayloadType: **addcolonymsg**
-Credentials: A valid Server Owner Private Key
+* PayloadType: **addcolonymsg**
+* Credentials: A valid Server Owner Private Key
 
 #### Payload 
 ```json
@@ -66,8 +66,8 @@ Credentials: A valid Server Owner Private Key
 ```
 
 ### List Colonies
-PayloadType: **getcoloniesmsg**
-Credentials: A valid Server Owner Private Key
+* PayloadType: **getcoloniesmsg**
+* Credentials: A valid Server Owner Private Key
 
 #### Payload 
 ```json
@@ -93,8 +93,8 @@ Credentials: A valid Server Owner Private Key
 ```
 
 ### Get Colony info
-PayloadType: **getcolonymsg**
-Credentials: A valid Runtime Private Key
+* PayloadType: **getcolonymsg**
+* Credentials: A valid Runtime Private Key
 
 #### Payload 
 ```json
@@ -113,8 +113,8 @@ Credentials: A valid Runtime Private Key
 ```
 
 ## Runtime API
-PayloadType: **addruntimemsg**
-Credentials: A valid Colony Private Key
+* PayloadType: **addruntimemsg**
+* Credentials: A valid Colony Private Key
 
 #### Payload 
 ```json
@@ -152,8 +152,8 @@ Credentials: A valid Colony Private Key
 ```
 
 ### List Runtimes
-PayloadType: **getruntimesmsg**
-Credentials: A valid Runtime Private Key
+* PayloadType: **getruntimesmsg**
+* Credentials: A valid Runtime Private Key
 
 #### Payload 
 ```json
@@ -181,9 +181,9 @@ Credentials: A valid Runtime Private Key
 ]
 ```
 
-###  Get Runtime info
-PayloadType: **getruntimemsg**
-Credentials: A valid Runtime Private Key
+### Get Runtime info
+* PayloadType: **getruntimemsg**
+* Credentials: A valid Runtime Private Key
 
 #### Payload 
 ```json
@@ -210,8 +210,8 @@ Credentials: A valid Runtime Private Key
 ```
 
 ### Approve Runtime 
-PayloadType: **approveruntimemsg**
-Credentials: A valid Colony Private Key
+* PayloadType: **approveruntimemsg**
+* Credentials: A valid Colony Private Key
 
 #### Payload
 ```json
@@ -226,9 +226,9 @@ Credentials: A valid Colony Private Key
 {}
 ```
 
-###  Reject Runtime 
-PayloadType: **rejectruntimemsg**
-Credentials: A valid Colony Private Key
+### Reject Runtime 
+* PayloadType: **rejectruntimemsg**
+* Credentials: A valid Colony Private Key
 
 #### Payload 
 ```json
@@ -246,8 +246,8 @@ Credentials: A valid Colony Private Key
 ## Process API
 
 ### Submit Process Specification 
-PayloadType: **submitprocessespecmsg**
-Credentials: A valid Runtime Private Key
+* PayloadType: **submitprocessespecmsg**
+* Credentials: A valid Runtime Private Key
 
 #### Payload 
 ```json
@@ -311,8 +311,8 @@ Credentials: A valid Runtime Private Key
 ```
 
 ### Assign Process to a Runtime 
-PayloadType: **assignprocessmsg**
-Credentials: A valid Runtime Private Key
+* PayloadType: **assignprocessmsg**
+* Credentials: A valid Runtime Private Key
 
 #### Payload 
 ```json
@@ -351,9 +351,9 @@ Credentials: A valid Runtime Private Key
 }
 ```
 
-###  List processes
-PayloadType: **getprocessesmsg**
-Credentials: A valid Runtime Private Key
+### List processes
+* PayloadType: **getprocessesmsg**
+* Credentials: A valid Runtime Private Key
 
 #### Payload 
 The state attribute can have the following values:
@@ -402,9 +402,9 @@ The state attribute can have the following values:
 ]
 ```
 
-###  Get Process info
-PayloadType: **getprocessmsg**
-Credentials: A valid Runtime Private Key
+### Get Process info
+* PayloadType: **getprocessmsg**
+* Credentials: A valid Runtime Private Key
 
 #### Payload 
 ```json
@@ -444,8 +444,8 @@ Credentials: A valid Runtime Private Key
 ```
 
 ### Mark Process as Successful 
-PayloadType: **marksuccessfulmsg**
-Credentials: A valid Runtime Private Key and the Runtime ID needs to match the RuntimeID assigned to the process
+* PayloadType: **marksuccessfulmsg**
+* Credentials: A valid Runtime Private Key and the Runtime ID needs to match the RuntimeID assigned to the process
 
 #### Payload 
 ```json
@@ -461,8 +461,8 @@ Credentials: A valid Runtime Private Key and the Runtime ID needs to match the R
 ```
 
 ### Mark a Proceess as Failed 
-PayloadType: **markfailedmsg**
-Credentials: A valid Runtime Private Key and the Runtime ID needs to match the RuntimeID assigned to the process
+* PayloadType: **markfailedmsg**
+* Credentials: A valid Runtime Private Key and the Runtime ID needs to match the RuntimeID assigned to the process
 
 #### Payload 
 ```json
@@ -477,9 +477,9 @@ Credentials: A valid Runtime Private Key and the Runtime ID needs to match the R
 {}
 ```
 
-###  Add Attribute to a Process 
-PayloadType: **addattributemsg**
-Credentials: A valid Runtime Private Key and the Runtime ID needs to match the RuntimeID assigned to the process
+### Add Attribute to a Process 
+* PayloadType: **addattributemsg**
+* Credentials: A valid Runtime Private Key and the Runtime ID needs to match the RuntimeID assigned to the process
 
 #### Payload 
 ```json
@@ -506,9 +506,9 @@ Credentials: A valid Runtime Private Key and the Runtime ID needs to match the R
 }
 ```
 
-###  Get Attribute assigned to a Process 
-PayloadType: **getattributemsg**
-Credentials: A valid Runtime Private Key
+### Get Attribute assigned to a Process 
+* PayloadType: **getattributemsg**
+* Credentials: A valid Runtime Private Key
 
 #### Payload 
 ```json
@@ -526,5 +526,105 @@ Credentials: A valid Runtime Private Key
     "attributetype": 1,
     "key": "result",
     "value": "helloworld"
+}
+```
+
+### Subscribe Process Events
+* PayloadType: **subscribeprocessmsg**
+* Credentials: A valid Runtime Private Key
+* Comments: Receives an event when a process changes state. The payload needs to be sent over a websocket to: wss://host:port/pubsub
+
+#### Payload 
+The state attribute can have the following values:
+* 1 : Waiting 
+* 2 : Running 
+* 3 : Success 
+* 4 : Failed 
+
+```json
+{
+    "msgtype": "subscribeprocessmsg",
+    "processid": "80a98f46c7a364fd33339a6fb2e6c5d8988384fdbf237b4012490c4658bbc9ce",
+    "state": 1,
+    "timeout": -1
+}
+```
+
+#### Reply 
+```json
+{
+    "processid": "80a98f46c7a364fd33339a6fb2e6c5d8988384fdbf237b4012490c4658bbc9ce",
+    "assignedruntimeid": "",
+    "isassigned": false,
+    "state": 0,
+    "submissiontime": "2022-01-02T12:08:16.226133Z",
+    "starttime": "0001-01-01T00:00:00Z",
+    "endtime": "0001-01-01T00:00:00Z",
+    "deadline": "0001-01-01T00:00:00Z",
+    "retries": 0,
+    "attributes": null,
+    "spec": {
+        "timeout": -1,
+        "maxretries": 3,
+        "conditions": {
+            "colonyid": "ee193a3f4f3f93bfc87801cf1d01511c12c199cb80bfbf4955bb3d9d4638720d",
+            "runtimeids": [],
+            "runtimetype": "test_runtime_type",
+            "mem": 1000,
+            "cores": 10,
+            "gpus": 1
+        },
+        "env": {}
+    }
+}
+```
+
+### Subscribe Processes Events
+* PayloadType: **subscribeprocessesmsg**
+* Credentials: A valid Runtime Private Key
+* Comments: Receives an event when processes are added or change state. The payload needs to be sent over a websocket to: wss://host:port/pubsub
+
+#### Payload 
+The state attribute can have the following values:
+* 1 : Waiting 
+* 2 : Running 
+* 3 : Success 
+* 4 : Failed 
+
+```json
+{
+    "msgtype": "subscribeprocessesmsg",
+    "runtimetype": "test_runtime_type",
+    "state": 1,
+    "timeout": -1
+}
+```
+
+#### Reply 
+```json
+{
+    "processid": "80a98f46c7a364fd33339a6fb2e6c5d8988384fdbf237b4012490c4658bbc9ce",
+    "assignedruntimeid": "",
+    "isassigned": false,
+    "state": 0,
+    "submissiontime": "2022-01-02T12:08:16.226133Z",
+    "starttime": "0001-01-01T00:00:00Z",
+    "endtime": "0001-01-01T00:00:00Z",
+    "deadline": "0001-01-01T00:00:00Z",
+    "retries": 0,
+    "attributes": null,
+    "spec": {
+        "timeout": -1,
+        "maxretries": 3,
+        "conditions": {
+            "colonyid": "ee193a3f4f3f93bfc87801cf1d01511c12c199cb80bfbf4955bb3d9d4638720d",
+            "runtimeids": [],
+            "runtimetype": "test_runtime_type",
+            "mem": 1000,
+            "cores": 10,
+            "gpus": 1
+        },
+        "env": {}
+    }
 }
 ```
