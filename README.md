@@ -1,13 +1,16 @@
 [![codecov](https://codecov.io/gh/johankristianss/colonies/branch/main/graph/badge.svg?token=G32O1AO1YB)](https://codecov.io/gh/johankristianss/colonies)
 
 # What is Colonies? 
-**Colonies** is a generic framework for implementing next-generation distributed applications and systems. It can be used as a building block for grid computing or edge computing (e.g. implement a meta operating system).
-
-A **Colony** is a collection of (geographically) distributed computers that can be controlled using a single API. A **Colony Runtime** receives intructions from the **Colonies Server** and is responsible for executing processes. The Colonies server works as a mediator, trying to match submitted processes specification to runtimes. It keep tracks of process execution history and can re-assign processes if a runtime does not complete a process in time. All Remote Procedure Calls (RPC) to the Colonies server are done atomically. This means that two Runtimes cannot be assigned the same process. If a Runtime crashes during a RPC call, that call is consider invalid, thus keeping the database consistent.   
-
-A Colony may consists of many different kinds of Colony Runtimes, e.g. a **Kubernetes Colony Runtime**, **Docker Colony Runtime**, or a **Slurm Colony Runtime**. A Colony Runtime can also reside in IoT devices or smart phones, thus making it possible to deploy and manage applications that run across devices and servers. In this way, Colonies can be used to implement a *Cloud-of-Cloud* platform that combines many execution environments into a new virtual computing environment that can be controlled using an single unified API.
+**Colonies** is a generic framework for implementing next-generation distributed applications and systems. It can be used as a building block for grid computing or edge computing, e.g. implement a *meta operating system* or *cloud-of-cloud* platform that combines many execution environments into a new virtual computing environment that can be controlled using an single unified API.
 
 ![Colonies Architecture](docs/images/ColoniesArch.png?raw=true "Colonies Architecture")
+
+* A **Colony** is a trusted collection of (geographically) distributed computers.   
+* A **Colony Process** is a virtual software process. It contains meta information how to actually execute a process on a real operating system.
+* A **Colony Runtime** communicates with the Colonies **Colonies Server** and provides an virtual runtime environment for executing Colony Processes. 
+* The **Colonies Server** works as a mediator, trying to match submitted processes specification to Colony Runtimes. It keep tracks of execution history and can also re-assign a Colony Process if is not completed in time. All Remote Procedure Calls (RPC) to the Colonies server are done atomically. This means that two Runtimes cannot be assigned the same process. If a Runtime crashes during a RPC call, that call is consider invalid, thus keeping the Colonies Server consistent.   
+* A **Colony App** is an software that runs somewhere on the Internet. It is a running instance of a Colony Process. A Colony App can for example be an Android app running on a smart phone or an IoT application running a contraint device. A Colony App consists a of Colony Runtime for interacting with other Colony Apps. 
+* A **Colony Service** is Colony App that provide services to other Colony Apps or Colony Sevices. For example, a **Colony Kubernetes Service** makes it possible to execute Colony Processes on top of Kubernetes. A **Colony Slurm Services** provides a service to run Colony Processes on HPC supercomputers. Similar to a real-operating system a **Colony App** may spawn new Colony Processes.   
 
 # Links
 * [Installation](docs/Installation.md)
