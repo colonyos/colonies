@@ -12,7 +12,7 @@ jobs:
     # Containers must run in Linux based operating systems
     runs-on: ubuntu-latest
     # Docker Hub image that `container-job` executes in
-    container: ubuntu-latest 
+    container: node:10.18-jessie
 
     # Service containers to run with `container-job`
     services:
@@ -31,6 +31,7 @@ jobs:
           --health-retries 5
 
     steps:
+    - name: Check out repository code
     - uses: actions/checkout@v2
 
     - name: Set up Go
