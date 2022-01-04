@@ -1,5 +1,7 @@
 [![codecov](https://codecov.io/gh/johankristianss/colonies/branch/main/graph/badge.svg?token=G32O1AO1YB)](https://codecov.io/gh/johankristianss/colonies)
 
+[![Go](https://github.com/johankristianss/colonies/actions/workflows/go.yml/badge.svg)](https://github.com/johankristianss/colonies/actions/workflows/go.yml)
+
 # What is Colonies? 
 **Colonies** is a generic framework for implementing next-generation distributed applications and systems. It can be used as a building block for grid computing or edge computing, e.g. implement a *meta operating system* or *cloud-of-cloud* platform that combines many execution environments into a new virtual computing environment that can be controlled using an single unified API.
 
