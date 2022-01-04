@@ -1,5 +1,5 @@
 # Tutorial
-In this we will develop two Runtimes in Golang. The first Runtime will generate pending process specifications containing an integer. The other Runtime will fetch these specifications and start the process where it calculates a Fibonacci number of the integer.
+In this tutorial we will develop two Colony Apps in Golang. The first app generates a process specification containing an integer as an environment variable. The other apps fetches these specifications and start the process where it calculates a Fibonacci number of the integer.
 
 ## 1. Set up a Colonies server [(see intructions here)](./Installation.md)
 
