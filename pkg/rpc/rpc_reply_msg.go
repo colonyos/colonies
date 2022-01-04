@@ -5,16 +5,30 @@ import (
 	"encoding/json"
 )
 
+const ErrorPayloadType = "error"
+
 type RPCReplyMsg struct {
 	PayloadType string `json:"payloadtype"`
 	Payload     string `json:"payload"`
+	Error       bool   `json:"error"`
 }
 
-func CreateRPCReplyMsg(payloadType string, payload string, prvKey string) (*RPCMsg, error) {
-	msg := &RPCMsg{}
+func CreateRPCReplyMsg(payloadType string, payload string) (*RPCReplyMsg, error) {
+	msg := &RPCReplyMsg{}
 	msg.PayloadType = payloadType
 	msg.Payload = payload
 	msg.Payload = base64.StdEncoding.EncodeToString([]byte(payload))
+	msg.Error = false
+
+	return msg, nil
+}
+
+func CreateRPCErrorReplyMsg(payloadType string, payload string) (*RPCReplyMsg, error) {
+	msg := &RPCReplyMsg{}
+	msg.PayloadType = payloadType
+	msg.Payload = payload
+	msg.Payload = base64.StdEncoding.EncodeToString([]byte(payload))
+	msg.Error = true
 
 	return msg, nil
 }
