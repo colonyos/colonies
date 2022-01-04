@@ -3,6 +3,7 @@ package server
 import (
 	"colonies/pkg/core"
 	"colonies/pkg/database"
+	"colonies/pkg/rpc"
 	"colonies/pkg/scheduler"
 	"colonies/pkg/scheduler/basic"
 	"errors"
@@ -114,7 +115,18 @@ func (controller *coloniesController) sendProcessesEvent(process *core.Process) 
 				fmt.Println("Failed to parse JSON, removing process event subscriber with Runtime Id <" + runtimeID + ">")
 				delete(controller.subscribers.processesSubscribers, runtimeID)
 			}
-			err = subscription.wsConn.WriteMessage(subscription.wsMsgType, []byte(jsonString))
+			rpcReplyMsg, err := rpc.CreateRPCReplyMsg(rpc.SubscribeProcessPayloadType, jsonString)
+			if err != nil {
+				fmt.Println("Failed to create RPC reply message, removing process event subscriber with Runtime Id <" + runtimeID + ">")
+				delete(controller.subscribers.processSubscribers, runtimeID)
+			}
+
+			rpcReplyJSONString, err := rpcReplyMsg.ToJSON()
+			if err != nil {
+				fmt.Println("Failed to parse JSON, removing process event subscriber with Runtime Id <" + runtimeID + ">")
+				delete(controller.subscribers.processSubscribers, runtimeID)
+			}
+			err = subscription.wsConn.WriteMessage(subscription.wsMsgType, []byte(rpcReplyJSONString))
 			if err != nil {
 				fmt.Println("Removing processes event subscriber with Runtime Id <" + runtimeID + ">")
 				delete(controller.subscribers.processesSubscribers, runtimeID)
@@ -129,7 +141,20 @@ func (controller *coloniesController) wsWriteProcessChangeEvent(process *core.Pr
 		fmt.Println("Failed to parse JSON, removing process event subscriber with Runtime Id <" + runtimeID + ">")
 		delete(controller.subscribers.processSubscribers, runtimeID)
 	}
-	err = subscription.wsConn.WriteMessage(subscription.wsMsgType, []byte(jsonString))
+
+	rpcReplyMsg, err := rpc.CreateRPCReplyMsg(rpc.SubscribeProcessPayloadType, jsonString)
+	if err != nil {
+		fmt.Println("Failed to create RPC reply message, removing process event subscriber with Runtime Id <" + runtimeID + ">")
+		delete(controller.subscribers.processSubscribers, runtimeID)
+	}
+
+	rpcReplyJSONString, err := rpcReplyMsg.ToJSON()
+	if err != nil {
+		fmt.Println("Failed to parse JSON, removing process event subscriber with Runtime Id <" + runtimeID + ">")
+		delete(controller.subscribers.processSubscribers, runtimeID)
+	}
+
+	err = subscription.wsConn.WriteMessage(subscription.wsMsgType, []byte(rpcReplyJSONString))
 	if err != nil {
 		fmt.Println("Removing process event subscriber with Runtime Id <" + runtimeID + ">")
 		delete(controller.subscribers.processSubscribers, runtimeID)
