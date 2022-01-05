@@ -238,6 +238,21 @@ func (controller *coloniesController) addColony(colony *core.Colony) (*core.Colo
 	}
 }
 
+func (controller *coloniesController) deleteColony(colonyID string) error {
+	cmd := &command{errorChan: make(chan error, 1),
+		handler: func(cmd *command) {
+			err := controller.db.DeleteColonyByID(colonyID)
+			if err != nil {
+				cmd.errorChan <- err
+				return
+			}
+			cmd.errorChan <- nil
+		}}
+
+	controller.cmdQueue <- cmd
+	return <-cmd.errorChan
+}
+
 func (controller *coloniesController) addRuntime(runtime *core.Runtime) (*core.Runtime, error) {
 	cmd := &command{runtimeReplyChan: make(chan *core.Runtime, 1),
 		errorChan: make(chan error, 1),
