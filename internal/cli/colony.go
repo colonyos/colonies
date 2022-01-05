@@ -15,16 +15,24 @@ import (
 
 func init() {
 	colonyCmd.AddCommand(registerColonyCmd)
+	colonyCmd.AddCommand(unregisterColonyCmd)
 	colonyCmd.AddCommand(lsColoniesCmd)
 	rootCmd.AddCommand(colonyCmd)
 
 	colonyCmd.PersistentFlags().StringVarP(&ServerHost, "host", "", "localhost", "Server host")
 	colonyCmd.PersistentFlags().IntVarP(&ServerPort, "port", "", 8080, "Server HTTP port")
+
 	registerColonyCmd.Flags().StringVarP(&ServerID, "serverid", "", "", "Colonies server Id")
 	registerColonyCmd.MarkFlagRequired("serverid")
 	registerColonyCmd.Flags().StringVarP(&ServerPrvKey, "serverprvkey", "", "", "Colonies server private key")
 	registerColonyCmd.Flags().StringVarP(&SpecFile, "spec", "", "", "JSON specification of a Colony")
 	registerColonyCmd.MarkFlagRequired("spec")
+
+	unregisterColonyCmd.Flags().StringVarP(&ServerID, "serverid", "", "", "Colonies server Id")
+	unregisterColonyCmd.MarkFlagRequired("serverid")
+	unregisterColonyCmd.Flags().StringVarP(&ServerPrvKey, "serverprvkey", "", "", "Colonies server private key")
+	unregisterColonyCmd.Flags().StringVarP(&ColonyID, "colonyid", "", "", "Colony Id")
+	unregisterColonyCmd.MarkFlagRequired("colonyid")
 
 	lsColoniesCmd.Flags().StringVarP(&ServerID, "serverid", "", "", "Colonies server Id")
 	lsColoniesCmd.Flags().StringVarP(&ServerPrvKey, "serverprvkey", "", "", "Colonies server private key")
@@ -73,6 +81,27 @@ var registerColonyCmd = &cobra.Command{
 		CheckError(err)
 
 		fmt.Println(addedColony.ID)
+	},
+}
+
+var unregisterColonyCmd = &cobra.Command{
+	Use:   "unregister",
+	Short: "Unregister a Colony",
+	Long:  "Unregister a Colony",
+	Run: func(cmd *cobra.Command, args []string) {
+		keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
+		CheckError(err)
+
+		if ServerPrvKey == "" {
+			ServerPrvKey, err = keychain.GetPrvKey(ServerID)
+			CheckError(err)
+		}
+
+		client := client.CreateColoniesClient(ServerHost, ServerPort, true) // XXX: Insecure
+		err = client.DeleteColony(ColonyID, ServerPrvKey)
+		CheckError(err)
+
+		fmt.Println("Colony with Id <" + ColonyID + "> was successfully unregistered")
 	},
 }
 
