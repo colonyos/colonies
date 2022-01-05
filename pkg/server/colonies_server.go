@@ -158,6 +158,8 @@ func (server *ColoniesServer) handleEndpointRequest(c *gin.Context) {
 	// Colony operations
 	case rpc.AddColonyPayloadType:
 		server.handleAddColonyRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+	case rpc.DeleteColonyPayloadType:
+		server.handleDeleteColonyRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 	case rpc.GetColoniesPayloadType:
 		server.handleGetColoniesRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 	case rpc.GetColonyPayloadType:
@@ -238,6 +240,19 @@ func (server *ColoniesServer) sendReplyToClient(c *gin.Context, payloadType stri
 	c.String(http.StatusOK, rpcReplyMsgJSONString)
 }
 
+func (server *ColoniesServer) sendEmptyReplyToClient(c *gin.Context, payloadType string) {
+	rpcReplyMsg, err := rpc.CreateRPCReplyMsg(payloadType, "{}")
+	if server.handleError(c, err, http.StatusBadRequest) {
+		return
+	}
+	rpcReplyMsgJSONString, err := rpcReplyMsg.ToJSON()
+	if server.handleError(c, err, http.StatusBadRequest) {
+		return
+	}
+
+	c.String(http.StatusOK, rpcReplyMsgJSONString)
+}
+
 func (server *ColoniesServer) handleAddColonyRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
 	msg, err := rpc.CreateAddColonyMsgFromJSON(jsonString)
 	if server.handleError(c, err, http.StatusBadRequest) {
@@ -272,6 +287,32 @@ func (server *ColoniesServer) handleAddColonyRequest(c *gin.Context, recoveredID
 	server.sendReplyToClient(c, payloadType, jsonString)
 }
 
+func (server *ColoniesServer) handleDeleteColonyRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
+	msg, err := rpc.CreateDeleteColonyMsgFromJSON(jsonString)
+	if server.handleError(c, err, http.StatusBadRequest) {
+		return
+	}
+	if msg == nil {
+		server.handleError(c, errors.New("Failed to parse DeleteColonyMsg JSON"), http.StatusBadRequest)
+	}
+	if msg.MsgType != payloadType {
+		server.handleError(c, errors.New("MsgType does not match PayloadType"), http.StatusBadRequest)
+		return
+	}
+
+	err = server.validator.RequireServerOwner(recoveredID, server.serverID)
+	if server.handleError(c, err, http.StatusForbidden) {
+		return
+	}
+
+	err = server.controller.deleteColony(msg.ColonyID)
+	if server.handleError(c, err, http.StatusBadRequest) {
+		return
+	}
+
+	server.sendEmptyReplyToClient(c, payloadType)
+}
+
 func (server *ColoniesServer) handleGetColoniesRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
 	msg, err := rpc.CreateGetColoniesMsgFromJSON(jsonString)
 	if server.handleError(c, err, http.StatusBadRequest) {
@@ -293,9 +334,6 @@ func (server *ColoniesServer) handleGetColoniesRequest(c *gin.Context, recovered
 	colonies, err := server.controller.getColonies()
 	if server.handleError(c, err, http.StatusBadRequest) {
 		return
-	}
-	if colonies == nil {
-		server.handleError(c, errors.New("handleGetColoniesRequest: colonies is nil"), http.StatusInternalServerError)
 	}
 
 	jsonString, err = core.ConvertColonyArrayToJSON(colonies)
@@ -396,9 +434,6 @@ func (server *ColoniesServer) handleGetRuntimesRequest(c *gin.Context, recovered
 	if server.handleError(c, err, http.StatusBadRequest) {
 		return
 	}
-	if runtimes == nil {
-		server.handleError(c, errors.New("handleGetRuntimesRequest: runtimes is nil"), http.StatusInternalServerError)
-	}
 
 	jsonString, err = core.ConvertRuntimeArrayToJSON(runtimes)
 	if server.handleError(c, err, http.StatusBadRequest) {
@@ -473,12 +508,7 @@ func (server *ColoniesServer) handleApproveRuntimeRequest(c *gin.Context, recove
 		return
 	}
 
-	jsonString, err = runtime.ToJSON()
-	if server.handleError(c, err, http.StatusInternalServerError) {
-		return
-	}
-
-	server.sendReplyToClient(c, payloadType, jsonString)
+	server.sendEmptyReplyToClient(c, payloadType)
 }
 
 func (server *ColoniesServer) handleRejectRuntimeRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
@@ -512,12 +542,7 @@ func (server *ColoniesServer) handleRejectRuntimeRequest(c *gin.Context, recover
 		return
 	}
 
-	jsonString, err = runtime.ToJSON()
-	if server.handleError(c, err, http.StatusInternalServerError) {
-		return
-	}
-
-	server.sendReplyToClient(c, payloadType, jsonString)
+	server.sendEmptyReplyToClient(c, payloadType)
 }
 
 func (server *ColoniesServer) handleSubmitProcessSpec(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
@@ -613,10 +638,6 @@ func (server *ColoniesServer) handleGetProcessesRequest(c *gin.Context, recovere
 		if server.handleError(c, err, http.StatusBadRequest) {
 			return
 		}
-		if processes == nil {
-			server.handleError(c, errors.New("No waiting processes found"), http.StatusInternalServerError)
-			return
-		}
 		jsonString, err := core.ConvertProcessArrayToJSON(processes)
 		if server.handleError(c, err, http.StatusBadRequest) {
 			return
@@ -625,10 +646,6 @@ func (server *ColoniesServer) handleGetProcessesRequest(c *gin.Context, recovere
 	case core.RUNNING:
 		processes, err := server.controller.findRunningProcesses(msg.ColonyID, msg.Count)
 		if server.handleError(c, err, http.StatusBadRequest) {
-			return
-		}
-		if processes == nil {
-			server.handleError(c, errors.New("No running processes found"), http.StatusInternalServerError)
 			return
 		}
 		jsonString, err := core.ConvertProcessArrayToJSON(processes)
@@ -641,10 +658,6 @@ func (server *ColoniesServer) handleGetProcessesRequest(c *gin.Context, recovere
 		if server.handleError(c, err, http.StatusBadRequest) {
 			return
 		}
-		if processes == nil {
-			server.handleError(c, errors.New("No successful proceeses found"), http.StatusInternalServerError)
-			return
-		}
 		jsonString, err := core.ConvertProcessArrayToJSON(processes)
 		if server.handleError(c, err, http.StatusBadRequest) {
 			return
@@ -653,10 +666,6 @@ func (server *ColoniesServer) handleGetProcessesRequest(c *gin.Context, recovere
 	case core.FAILED:
 		processes, err := server.controller.findFailedProcesses(msg.ColonyID, msg.Count)
 		if server.handleError(c, err, http.StatusBadRequest) {
-			return
-		}
-		if processes == nil {
-			server.handleError(c, errors.New("No failed processes found"), http.StatusInternalServerError)
 			return
 		}
 		jsonString, err := core.ConvertProcessArrayToJSON(processes)
@@ -741,7 +750,7 @@ func (server *ColoniesServer) handleMarkSuccessfulRequest(c *gin.Context, recove
 		return
 	}
 
-	server.sendReplyToClient(c, payloadType, jsonString)
+	server.sendEmptyReplyToClient(c, payloadType)
 }
 
 func (server *ColoniesServer) handleMarkFailedRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
@@ -780,7 +789,7 @@ func (server *ColoniesServer) handleMarkFailedRequest(c *gin.Context, recoveredI
 		return
 	}
 
-	server.sendReplyToClient(c, payloadType, jsonString)
+	server.sendEmptyReplyToClient(c, payloadType)
 }
 
 func (server *ColoniesServer) handleAddAttributeRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {

@@ -32,6 +32,32 @@ func TestAddColonySecurity(t *testing.T) {
 	<-done
 }
 
+func TestDeleteColonySecurity(t *testing.T) {
+	client, server, serverPrvKey, done := prepareTests(t)
+
+	crypto := crypto.CreateCrypto()
+
+	privateKey, err := crypto.GeneratePrivateKey()
+	assert.Nil(t, err)
+
+	colonyID, err := crypto.GenerateID(privateKey)
+	assert.Nil(t, err)
+
+	colony := core.CreateColony(colonyID, "test_colony_name")
+
+	invalidPrivateKey, err := crypto.GeneratePrivateKey()
+	assert.Nil(t, err)
+
+	err = client.DeleteColony(colony.ID, invalidPrivateKey)
+	assert.NotNil(t, err)
+
+	err = client.DeleteColony(colony.ID, serverPrvKey)
+	assert.Nil(t, err)
+
+	server.Shutdown()
+	<-done
+}
+
 func TestGetColoniesSecurity(t *testing.T) {
 	_, client, server, serverPrvKey, done := setupTestEnv1(t)
 
