@@ -45,12 +45,12 @@ func (client *ColoniesClient) sendMessage(method string, jsonString string, prvK
 	resp, err := client.restyClient.R().
 		SetBody(jsonString).
 		Post("https://" + client.host + ":" + strconv.Itoa(client.port) + "/api")
-
 	if err != nil {
 		return "", err
 	}
 
 	respBodyString := string(resp.Body())
+
 	rpcReplyMsg, err := rpc.CreateRPCReplyMsgFromJSON(respBodyString)
 	if err != nil {
 		return "", err
@@ -86,11 +86,7 @@ func (client *ColoniesClient) establishWebSocketConn(jsonString string) (*websoc
 	return wsConn, nil
 }
 
-func (client *ColoniesClient) SubscribeProcesses(runtimeType string,
-	state int,
-	timeout int,
-	prvKey string) (*ProcessSubscription, error) {
-
+func (client *ColoniesClient) SubscribeProcesses(runtimeType string, state int, timeout int, prvKey string) (*ProcessSubscription, error) {
 	msg := rpc.CreateSubscribeProcessesMsg(runtimeType, state, timeout)
 	jsonString, err := msg.ToJSON()
 	if err != nil {
@@ -140,10 +136,7 @@ func (client *ColoniesClient) SubscribeProcesses(runtimeType string,
 	return subscription, nil
 }
 
-func (client *ColoniesClient) SubscribeProcess(processID string,
-	state int,
-	timeout int,
-	prvKey string) (*ProcessSubscription, error) {
+func (client *ColoniesClient) SubscribeProcess(processID string, state int, timeout int, prvKey string) (*ProcessSubscription, error) {
 	msg := rpc.CreateSubscribeProcessMsg(processID, state, timeout)
 	jsonString, err := msg.ToJSON()
 	if err != nil {
@@ -208,6 +201,21 @@ func (client *ColoniesClient) AddColony(colony *core.Colony, prvKey string) (*co
 	}
 
 	return addedColony, nil
+}
+
+func (client *ColoniesClient) DeleteColony(colonyID string, prvKey string) error {
+	msg := rpc.CreateDeleteColonyMsg(colonyID)
+	jsonString, err := msg.ToJSON()
+	if err != nil {
+		return err
+	}
+
+	_, err = client.sendMessage(rpc.DeleteColonyPayloadType, jsonString, prvKey)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (client *ColoniesClient) GetColonies(prvKey string) ([]*core.Colony, error) {

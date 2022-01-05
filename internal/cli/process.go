@@ -190,7 +190,7 @@ var listWaitingProcessesCmd = &cobra.Command{
 		CheckError(err)
 
 		if len(processes) == 0 {
-			fmt.Println("No Waiting Process found")
+			fmt.Println("No waiting processes found")
 		} else {
 			if JSON {
 				jsonString, err := core.ConvertProcessArrayToJSON(processes)
@@ -246,7 +246,7 @@ var listRunningProcessesCmd = &cobra.Command{
 		CheckError(err)
 
 		if len(processes) == 0 {
-			fmt.Println("No nunning process found")
+			fmt.Println("No running processes found")
 		} else {
 			if JSON {
 				jsonString, err := core.ConvertProcessArrayToJSON(processes)
@@ -301,7 +301,7 @@ var listSuccessfulProcessesCmd = &cobra.Command{
 		CheckError(err)
 
 		if len(processes) == 0 {
-			fmt.Println("No successful process found")
+			fmt.Println("No successful processes found")
 		} else {
 			if JSON {
 				jsonString, err := core.ConvertProcessArrayToJSON(processes)
@@ -356,7 +356,7 @@ var listFailedProcessesCmd = &cobra.Command{
 		CheckError(err)
 
 		if len(processes) == 0 {
-			fmt.Println("No failed process found")
+			fmt.Println("No failed processes found")
 		} else {
 			if JSON {
 				jsonString, err := core.ConvertProcessArrayToJSON(processes)
