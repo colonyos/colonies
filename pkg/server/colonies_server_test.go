@@ -10,7 +10,7 @@ import (
 )
 
 func TestAddColony(t *testing.T) {
-	client, server, serverKey, done := prepareTests(t)
+	client, server, serverPrvKey, done := prepareTests(t)
 
 	crypto := crypto.CreateCrypto()
 	colonyPrvKey, err := crypto.GeneratePrivateKey()
@@ -19,16 +19,45 @@ func TestAddColony(t *testing.T) {
 	assert.Nil(t, err)
 
 	colony := core.CreateColony(colonyID, "test_colony_name")
-	colonyAdded, err := client.AddColony(colony, serverKey)
+	addedColony, err := client.AddColony(colony, serverPrvKey)
 	assert.Nil(t, err)
-	assert.True(t, colony.Equals(colonyAdded))
+	assert.True(t, colony.Equals(addedColony))
+
+	server.Shutdown()
+	<-done
+}
+
+func TestDeleteColony(t *testing.T) {
+	client, server, serverPrvKey, done := prepareTests(t)
+
+	crypto := crypto.CreateCrypto()
+	colonyPrvKey, err := crypto.GeneratePrivateKey()
+	assert.Nil(t, err)
+	colonyID, err := crypto.GenerateID(colonyPrvKey)
+	assert.Nil(t, err)
+
+	colony := core.CreateColony(colonyID, "test_colony_name")
+	addedColony, err := client.AddColony(colony, serverPrvKey)
+	assert.Nil(t, err)
+	assert.True(t, colony.Equals(addedColony))
+
+	coloniesFromServer, err := client.GetColonies(serverPrvKey)
+	assert.Nil(t, err)
+	assert.Len(t, coloniesFromServer, 1)
+
+	err = client.DeleteColony(addedColony.ID, serverPrvKey)
+	assert.Nil(t, err)
+
+	coloniesFromServer, err = client.GetColonies(serverPrvKey)
+	assert.Nil(t, err)
+	assert.Len(t, coloniesFromServer, 0)
 
 	server.Shutdown()
 	<-done
 }
 
 func TestGetColony(t *testing.T) {
-	client, server, serverKey, done := prepareTests(t)
+	client, server, serverPrvKey, done := prepareTests(t)
 
 	crypto := crypto.CreateCrypto()
 	colonyPrvKey, err := crypto.GeneratePrivateKey()
@@ -37,7 +66,7 @@ func TestGetColony(t *testing.T) {
 	assert.Nil(t, err)
 
 	colony := core.CreateColony(colonyID, "test_colony_name")
-	_, err = client.AddColony(colony, serverKey)
+	_, err = client.AddColony(colony, serverPrvKey)
 	assert.Nil(t, err)
 
 	runtime, _, runtimePrvKey := generateRuntime(t, colonyID)
