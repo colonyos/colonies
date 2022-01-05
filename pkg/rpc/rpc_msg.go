@@ -4,6 +4,7 @@ import (
 	"colonies/pkg/security/crypto"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 )
 
 type RPCMsg struct {
@@ -19,7 +20,7 @@ func CreateRPCMsg(payloadType string, payload string, prvKey string) (*RPCMsg, e
 
 	signature, err := crypto.CreateCrypto().GenerateSignature(msg.Payload, prvKey)
 	if err != nil {
-		return nil, err
+		return nil, errors.New("Failed to generate signature")
 	}
 
 	msg.Signature = signature
