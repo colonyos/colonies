@@ -71,6 +71,25 @@ func (server *ColoniesServer) setupRoutes() {
 	server.ginHandler.GET("/pubsub", server.handleWSRequest)
 }
 
+func (server *ColoniesServer) sendWSErrorMsg(err error, errorCode int, wsConn *websocket.Conn, wsMsgType int) error {
+	rpcErrorReplyMSg, err := server.generateRPCErrorMsg(err, errorCode)
+	if err != nil {
+		return err
+	}
+
+	jsonString, err := rpcErrorReplyMSg.ToJSON()
+	if err != nil {
+		return err
+	}
+
+	err = wsConn.WriteMessage(wsMsgType, []byte(jsonString))
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (server *ColoniesServer) handleWSRequest(c *gin.Context) {
 	w := c.Writer
 	r := c.Request
@@ -84,46 +103,110 @@ func (server *ColoniesServer) handleWSRequest(c *gin.Context) {
 	}
 
 	for {
-		wsPayloadType, data, err := wsConn.ReadMessage()
+		wsMsgType, data, err := wsConn.ReadMessage()
 		if err != nil {
 			return
 		}
 
 		rpcMsg, err := rpc.CreateRPCMsgFromJSON(string(data))
-		if server.handleError(c, err, http.StatusBadRequest) {
+		if server.handleHTTPError(c, err, http.StatusBadRequest) {
 			return
 		}
 
 		recoveredID, err := server.parseSignature(rpcMsg.Payload, rpcMsg.Signature)
-		if server.handleError(c, err, http.StatusForbidden) {
+		if server.handleHTTPError(c, err, http.StatusForbidden) {
 			return
 		}
 
 		switch rpcMsg.PayloadType {
 		case rpc.SubscribeProcessesPayloadType:
 			msg, err := rpc.CreateSubscribeProcessesMsgFromJSON(rpcMsg.DecodePayload())
-			if server.handleError(c, err, http.StatusBadRequest) {
+			if server.handleHTTPError(c, err, http.StatusBadRequest) {
+				err := server.sendWSErrorMsg(err, http.StatusForbidden, wsConn, wsMsgType)
+				if err != nil {
+					logging.Log().Error(err)
+				}
 				return
 			}
 			if msg.MsgType != rpcMsg.PayloadType {
-				server.handleError(c, errors.New("MsgType does not match PayloadType"), http.StatusBadRequest)
+				err := server.sendWSErrorMsg(errors.New("msg.msgType does not match rpcMsg.PayloadType"), http.StatusForbidden, wsConn, wsMsgType)
+				if err != nil {
+					logging.Log().Error(err)
+				}
 				return
 			}
 
-			processSubcription := createProcessesSubscription(wsConn, wsPayloadType, msg.RuntimeType, msg.Timeout, msg.State)
+			runtime, err := server.controller.getRuntimeByID(recoveredID)
+			if err != nil {
+				err := server.sendWSErrorMsg(err, http.StatusForbidden, wsConn, wsMsgType)
+				if err != nil {
+					logging.Log().Error(err)
+				}
+				return
+			}
+			if runtime == nil {
+				err := server.sendWSErrorMsg(errors.New("runtime not found"), http.StatusForbidden, wsConn, wsMsgType)
+				if err != nil {
+					logging.Log().Error(err)
+				}
+				return
+			}
+
+			// This test is strictly not needed, since the request does not specifiy a colony, but is rather
+			// derived from the database
+			err = server.validator.RequireRuntimeMembership(recoveredID, runtime.ColonyID)
+			if err != nil {
+				err := server.sendWSErrorMsg(err, http.StatusForbidden, wsConn, wsMsgType)
+				if err != nil {
+					logging.Log().Error(err)
+				}
+				return
+			}
+
+			processSubcription := createProcessesSubscription(wsConn, wsMsgType, msg.RuntimeType, msg.Timeout, msg.State)
 			server.controller.subscribeProcesses(recoveredID, processSubcription)
 
 		case rpc.SubscribeProcessPayloadType:
 			msg, err := rpc.CreateSubscribeProcessMsgFromJSON(rpcMsg.DecodePayload())
-			if server.handleError(c, err, http.StatusBadRequest) {
+			if server.handleHTTPError(c, err, http.StatusBadRequest) {
 				return
 			}
 			if msg.MsgType != rpcMsg.PayloadType {
-				server.handleError(c, errors.New("MsgType does not match PayloadType"), http.StatusBadRequest)
+				err := server.sendWSErrorMsg(errors.New("msg.msgType does not match rpcMsg.PayloadType"), http.StatusForbidden, wsConn, wsMsgType)
+				if err != nil {
+					logging.Log().Error(err)
+				}
 				return
 			}
 
-			processSubcription := createProcessSubscription(wsConn, wsPayloadType, msg.ProcessID, msg.Timeout, msg.State)
+			runtime, err := server.controller.getRuntimeByID(recoveredID)
+			if err != nil {
+				err := server.sendWSErrorMsg(err, http.StatusForbidden, wsConn, wsMsgType)
+				if err != nil {
+					logging.Log().Error(err)
+				}
+				return
+			}
+			if runtime == nil {
+				err := server.sendWSErrorMsg(errors.New("runtime not found"), http.StatusForbidden, wsConn, wsMsgType)
+				if err != nil {
+					logging.Log().Error(err)
+				}
+				return
+			}
+
+			// This test is strictly not needed, since the request does not specifiy a colony, but is rather
+			// derived from the database
+			err = server.validator.RequireRuntimeMembership(recoveredID, runtime.ColonyID)
+			if err != nil {
+				err := server.sendWSErrorMsg(err, http.StatusForbidden, wsConn, wsMsgType)
+				if err != nil {
+					logging.Log().Error(err)
+				}
+				return
+			}
+
+			processSubcription := createProcessSubscription(wsConn, wsMsgType, msg.ProcessID, msg.Timeout, msg.State)
 			server.controller.subscribeProcess(recoveredID, processSubcription)
 		}
 	}
@@ -140,78 +223,87 @@ func (server *ColoniesServer) parseSignature(jsonString string, signature string
 
 func (server *ColoniesServer) handleEndpointRequest(c *gin.Context) {
 	jsonBytes, err := ioutil.ReadAll(c.Request.Body)
-	if server.handleError(c, err, http.StatusBadRequest) {
+	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
 
 	rpcMsg, err := rpc.CreateRPCMsgFromJSON(string(jsonBytes))
-	if server.handleError(c, err, http.StatusBadRequest) {
+	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
 
 	recoveredID, err := server.parseSignature(rpcMsg.Payload, rpcMsg.Signature)
-	if server.handleError(c, err, http.StatusForbidden) {
+	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		return
 	}
 
 	switch rpcMsg.PayloadType {
 	// Colony operations
 	case rpc.AddColonyPayloadType:
-		server.handleAddColonyRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+		server.handleAddColonyHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 	case rpc.DeleteColonyPayloadType:
-		server.handleDeleteColonyRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+		server.handleDeleteColonyHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 	case rpc.GetColoniesPayloadType:
-		server.handleGetColoniesRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+		server.handleGetColoniesHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 	case rpc.GetColonyPayloadType:
-		server.handleGetColonyRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+		server.handleGetColonyHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 
 	// Runtime operations
 	case rpc.AddRuntimePayloadType:
-		server.handleAddRuntimeRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+		server.handleAddRuntimeHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 	case rpc.GetRuntimesPayloadType:
-		server.handleGetRuntimesRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+		server.handleGetRuntimesHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 	case rpc.GetRuntimePayloadType:
-		server.handleGetRuntimeRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+		server.handleGetRuntimeHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 	case rpc.ApproveRuntimePayloadType:
-		server.handleApproveRuntimeRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+		server.handleApproveRuntimeHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 	case rpc.RejectRuntimePayloadType:
-		server.handleRejectRuntimeRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+		server.handleRejectRuntimeHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 
 	// Process operations
 	case rpc.SubmitProcessSpecPayloadType:
-		server.handleSubmitProcessSpec(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+		server.handleSubmitProcessSpecHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 	case rpc.AssignProcessPayloadType:
-		server.handleAssignProcessRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+		server.handleAssignProcessHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 	case rpc.GetProcessesPayloadType:
-		server.handleGetProcessesRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+		server.handleGetProcessesHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 	case rpc.GetProcessPayloadType:
-		server.handleGetProcessRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+		server.handleGetProcessHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 	case rpc.MarkSuccessfulPayloadType:
-		server.handleMarkSuccessfulRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+		server.handleMarkSuccessfulHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 	case rpc.MarkFailedPayloadType:
-		server.handleMarkFailedRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+		server.handleMarkFailedHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 
 	// Attribute operations
 	case rpc.AddAttributePayloadType:
-		server.handleAddAttributeRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+		server.handleAddAttributeHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 	case rpc.GetAttributePayloadType:
-		server.handleGetAttributeRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+		server.handleGetAttributeHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 	default:
-		if server.handleError(c, errors.New("Invalid RPC message type"), http.StatusForbidden) {
+		if server.handleHTTPError(c, errors.New("invalid rpcMsg.PayloadType"), http.StatusForbidden) {
 			return
 		}
 	}
 }
 
-func (server *ColoniesServer) handleError(c *gin.Context, err error, errorCode int) bool {
+func (server *ColoniesServer) generateRPCErrorMsg(err error, errorCode int) (*rpc.RPCReplyMsg, error) {
+	failure := core.CreateFailure(errorCode, err.Error())
+	jsonString, err := failure.ToJSON()
+	if err != nil {
+		return nil, err
+	}
+	rpcReplyMsg, err := rpc.CreateRPCErrorReplyMsg(rpc.ErrorPayloadType, jsonString)
+	if err != nil {
+		return nil, err
+	}
+
+	return rpcReplyMsg, nil
+}
+
+func (server *ColoniesServer) handleHTTPError(c *gin.Context, err error, errorCode int) bool {
 	if err != nil {
 		logging.Log().Warning(err)
-		failure := core.CreateFailure(errorCode, err.Error())
-		jsonString, err := failure.ToJSON()
-		if err != nil {
-			logging.Log().Error(err)
-		}
-		rpcReplyMsg, err := rpc.CreateRPCErrorReplyMsg(rpc.ErrorPayloadType, jsonString)
+		rpcReplyMsg, err := server.generateRPCErrorMsg(err, errorCode)
 		if err != nil {
 			logging.Log().Error(err)
 		}
@@ -227,664 +319,659 @@ func (server *ColoniesServer) handleError(c *gin.Context, err error, errorCode i
 	return false
 }
 
-func (server *ColoniesServer) sendReplyToClient(c *gin.Context, payloadType string, jsonString string) {
+func (server *ColoniesServer) sendHTTPReply(c *gin.Context, payloadType string, jsonString string) {
 	rpcReplyMsg, err := rpc.CreateRPCReplyMsg(payloadType, jsonString)
-	if server.handleError(c, err, http.StatusBadRequest) {
+	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
 	rpcReplyMsgJSONString, err := rpcReplyMsg.ToJSON()
-	if server.handleError(c, err, http.StatusBadRequest) {
+	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
 
 	c.String(http.StatusOK, rpcReplyMsgJSONString)
 }
 
-func (server *ColoniesServer) sendEmptyReplyToClient(c *gin.Context, payloadType string) {
+func (server *ColoniesServer) sendEmptyHTTPReply(c *gin.Context, payloadType string) {
 	rpcReplyMsg, err := rpc.CreateRPCReplyMsg(payloadType, "{}")
-	if server.handleError(c, err, http.StatusBadRequest) {
+	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
 	rpcReplyMsgJSONString, err := rpcReplyMsg.ToJSON()
-	if server.handleError(c, err, http.StatusBadRequest) {
+	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
 
 	c.String(http.StatusOK, rpcReplyMsgJSONString)
 }
 
-func (server *ColoniesServer) handleAddColonyRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
+func (server *ColoniesServer) handleAddColonyHTTPRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
 	msg, err := rpc.CreateAddColonyMsgFromJSON(jsonString)
-	if server.handleError(c, err, http.StatusBadRequest) {
+	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
 	if msg == nil {
-		server.handleError(c, errors.New("Failed to parse AddColonyMsg JSON"), http.StatusBadRequest)
+		server.handleHTTPError(c, errors.New("failed to parse JSON"), http.StatusBadRequest)
 	}
 	if msg.MsgType != payloadType {
-		server.handleError(c, errors.New("MsgType does not match PayloadType"), http.StatusBadRequest)
+		server.handleHTTPError(c, errors.New("msg.MsgType does not match payloadType"), http.StatusBadRequest)
 		return
 	}
 
 	err = server.validator.RequireServerOwner(recoveredID, server.serverID)
-	if server.handleError(c, err, http.StatusForbidden) {
+	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		return
 	}
 
 	addedColony, err := server.controller.addColony(msg.Colony)
-	if server.handleError(c, err, http.StatusBadRequest) {
+	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
 	if addedColony == nil {
-		server.handleError(c, errors.New("handleAddColonyRequest: addedColony is nil"), http.StatusInternalServerError)
+		server.handleHTTPError(c, errors.New("addedColony is nil"), http.StatusInternalServerError)
 	}
 
 	jsonString, err = addedColony.ToJSON()
-	if server.handleError(c, err, http.StatusInternalServerError) {
+	if server.handleHTTPError(c, err, http.StatusInternalServerError) {
 		return
 	}
 
-	server.sendReplyToClient(c, payloadType, jsonString)
+	server.sendHTTPReply(c, payloadType, jsonString)
 }
 
-func (server *ColoniesServer) handleDeleteColonyRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
+func (server *ColoniesServer) handleDeleteColonyHTTPRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
 	msg, err := rpc.CreateDeleteColonyMsgFromJSON(jsonString)
-	if server.handleError(c, err, http.StatusBadRequest) {
+	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
 	if msg == nil {
-		server.handleError(c, errors.New("Failed to parse DeleteColonyMsg JSON"), http.StatusBadRequest)
+		server.handleHTTPError(c, errors.New("failed to parse JSON"), http.StatusBadRequest)
 	}
 	if msg.MsgType != payloadType {
-		server.handleError(c, errors.New("MsgType does not match PayloadType"), http.StatusBadRequest)
+		server.handleHTTPError(c, errors.New("msg.MsgType does not match payloadType"), http.StatusBadRequest)
 		return
 	}
 
 	err = server.validator.RequireServerOwner(recoveredID, server.serverID)
-	if server.handleError(c, err, http.StatusForbidden) {
+	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		return
 	}
 
 	err = server.controller.deleteColony(msg.ColonyID)
-	if server.handleError(c, err, http.StatusBadRequest) {
+	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
 
-	server.sendEmptyReplyToClient(c, payloadType)
+	server.sendEmptyHTTPReply(c, payloadType)
 }
 
-func (server *ColoniesServer) handleGetColoniesRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
+func (server *ColoniesServer) handleGetColoniesHTTPRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
 	msg, err := rpc.CreateGetColoniesMsgFromJSON(jsonString)
-	if server.handleError(c, err, http.StatusBadRequest) {
+	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
 	if msg == nil {
-		server.handleError(c, errors.New("Failed to parse GetColoniesMsg JSON"), http.StatusBadRequest)
+		server.handleHTTPError(c, errors.New("failed to parse JSON"), http.StatusBadRequest)
 	}
 	if msg.MsgType != payloadType {
-		server.handleError(c, errors.New("MsgType does not match PayloadType"), http.StatusBadRequest)
+		server.handleHTTPError(c, errors.New("msg.MsgType does not match payloadType"), http.StatusBadRequest)
 		return
 	}
 
 	err = server.validator.RequireServerOwner(recoveredID, server.serverID)
-	if server.handleError(c, err, http.StatusForbidden) {
+	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		return
 	}
 
 	colonies, err := server.controller.getColonies()
-	if server.handleError(c, err, http.StatusBadRequest) {
+	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
 
 	jsonString, err = core.ConvertColonyArrayToJSON(colonies)
-	if server.handleError(c, err, http.StatusBadRequest) {
+	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
 
-	server.sendReplyToClient(c, payloadType, jsonString)
+	server.sendHTTPReply(c, payloadType, jsonString)
 }
 
-func (server *ColoniesServer) handleGetColonyRequest(c *gin.Context, recoveredID, payloadType string, jsonString string) {
+func (server *ColoniesServer) handleGetColonyHTTPRequest(c *gin.Context, recoveredID, payloadType string, jsonString string) {
 	msg, err := rpc.CreateGetColonyMsgFromJSON(jsonString)
-	if server.handleError(c, err, http.StatusBadRequest) {
+	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
 	if msg == nil {
-		server.handleError(c, errors.New("Failed to parse GetColonyMsg JSON"), http.StatusBadRequest)
+		server.handleHTTPError(c, errors.New("failed to parse JSON"), http.StatusBadRequest)
 	}
 	if msg.MsgType != payloadType {
-		server.handleError(c, errors.New("MsgType does not match PayloadType"), http.StatusBadRequest)
+		server.handleHTTPError(c, errors.New("msg.MsgType does not match payloadType"), http.StatusBadRequest)
 		return
 	}
 
 	err = server.validator.RequireRuntimeMembership(recoveredID, msg.ColonyID)
-	if server.handleError(c, err, http.StatusForbidden) {
+	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		return
 	}
 
 	colony, err := server.controller.getColonyByID(msg.ColonyID)
-	if server.handleError(c, err, http.StatusBadRequest) {
+	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
 	if colony == nil {
-		server.handleError(c, errors.New("handleGetColonyRequest: colony is nil"), http.StatusInternalServerError)
+		server.handleHTTPError(c, errors.New("colony is nil"), http.StatusInternalServerError)
 	}
 
 	jsonString, err = colony.ToJSON()
-	if server.handleError(c, err, http.StatusInternalServerError) {
+	if server.handleHTTPError(c, err, http.StatusInternalServerError) {
 		return
 	}
 
-	server.sendReplyToClient(c, payloadType, jsonString)
+	server.sendHTTPReply(c, payloadType, jsonString)
 }
 
-func (server *ColoniesServer) handleAddRuntimeRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
+func (server *ColoniesServer) handleAddRuntimeHTTPRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
 	msg, err := rpc.CreateAddRuntimeMsgFromJSON(jsonString)
-	if server.handleError(c, err, http.StatusBadRequest) {
+	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
 	if msg == nil {
-		server.handleError(c, errors.New("Failed to parse AddRuntimeMsg JSON"), http.StatusBadRequest)
+		server.handleHTTPError(c, errors.New("failed to parse JSON"), http.StatusBadRequest)
 	}
 	if msg.MsgType != payloadType {
-		server.handleError(c, errors.New("MsgType does not match PayloadType"), http.StatusBadRequest)
+		server.handleHTTPError(c, errors.New("msg.MsgType does not match payloadType"), http.StatusBadRequest)
 		return
 	}
 
 	err = server.validator.RequireColonyOwner(recoveredID, msg.Runtime.ColonyID)
-	if server.handleError(c, err, http.StatusForbidden) {
+	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		return
 	}
 
 	addedRuntime, err := server.controller.addRuntime(msg.Runtime)
-	if server.handleError(c, err, http.StatusBadRequest) {
+	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
 	if addedRuntime == nil {
-		server.handleError(c, errors.New("handleAddRuntimeRequest: addedRuntime is nil"), http.StatusInternalServerError)
+		server.handleHTTPError(c, errors.New("addedRuntime is nil"), http.StatusInternalServerError)
 	}
 
 	jsonString, err = addedRuntime.ToJSON()
-	if server.handleError(c, err, http.StatusInternalServerError) {
+	if server.handleHTTPError(c, err, http.StatusInternalServerError) {
 		return
 	}
 
-	server.sendReplyToClient(c, payloadType, jsonString)
+	server.sendHTTPReply(c, payloadType, jsonString)
 }
 
-func (server *ColoniesServer) handleGetRuntimesRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
+func (server *ColoniesServer) handleGetRuntimesHTTPRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
 	msg, err := rpc.CreateGetRuntimesMsgFromJSON(jsonString)
-	if server.handleError(c, err, http.StatusBadRequest) {
+	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
 	if msg == nil {
-		server.handleError(c, errors.New("Failed to parse GetRuntimesMsg JSON"), http.StatusBadRequest)
+		server.handleHTTPError(c, errors.New("failed to parse JSON"), http.StatusBadRequest)
 	}
 	if msg.MsgType != payloadType {
-		server.handleError(c, errors.New("MsgType does not match PayloadType"), http.StatusBadRequest)
+		server.handleHTTPError(c, errors.New("msg.MsgType does not match payloadType"), http.StatusBadRequest)
 		return
 	}
 
 	err = server.validator.RequireRuntimeMembership(recoveredID, msg.ColonyID)
-	if server.handleError(c, err, http.StatusForbidden) {
+	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		return
 	}
 
 	runtimes, err := server.controller.getRuntimeByColonyID(msg.ColonyID)
-	if server.handleError(c, err, http.StatusBadRequest) {
+	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
 
 	jsonString, err = core.ConvertRuntimeArrayToJSON(runtimes)
-	if server.handleError(c, err, http.StatusBadRequest) {
+	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
 
-	server.sendReplyToClient(c, payloadType, jsonString)
+	server.sendHTTPReply(c, payloadType, jsonString)
 }
 
-func (server *ColoniesServer) handleGetRuntimeRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
+func (server *ColoniesServer) handleGetRuntimeHTTPRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
 	msg, err := rpc.CreateGetRuntimeMsgFromJSON(jsonString)
-	if server.handleError(c, err, http.StatusBadRequest) {
+	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
 	if msg == nil {
-		server.handleError(c, errors.New("Failed to parse GetRuntimeMsg JSON"), http.StatusBadRequest)
+		server.handleHTTPError(c, errors.New("failed to parse JSON"), http.StatusBadRequest)
 	}
 	if msg.MsgType != payloadType {
-		server.handleError(c, errors.New("MsgType does not match PayloadType"), http.StatusBadRequest)
+		server.handleHTTPError(c, errors.New("msg.MsgType does not match payloadType"), http.StatusBadRequest)
 		return
 	}
 
 	runtime, err := server.controller.getRuntimeByID(msg.RuntimeID)
-	if server.handleError(c, err, http.StatusBadRequest) {
+	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
 	if runtime == nil {
-		server.handleError(c, errors.New("handleGetRuntimeRequest: runtime is nil"), http.StatusInternalServerError)
+		server.handleHTTPError(c, errors.New("runtime is nil"), http.StatusInternalServerError)
 	}
 
 	err = server.validator.RequireRuntimeMembership(recoveredID, runtime.ColonyID)
-	if server.handleError(c, err, http.StatusForbidden) {
+	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		return
 	}
 
 	jsonString, err = runtime.ToJSON()
-	if server.handleError(c, err, http.StatusInternalServerError) {
+	if server.handleHTTPError(c, err, http.StatusInternalServerError) {
 		return
 	}
 
-	server.sendReplyToClient(c, payloadType, jsonString)
+	server.sendHTTPReply(c, payloadType, jsonString)
 }
 
-func (server *ColoniesServer) handleApproveRuntimeRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
+func (server *ColoniesServer) handleApproveRuntimeHTTPRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
 	msg, err := rpc.CreateApproveRuntimeMsgFromJSON(jsonString)
-	if server.handleError(c, err, http.StatusBadRequest) {
+	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
 	if msg == nil {
-		server.handleError(c, errors.New("Failed to parse ApproveRuntimeMsg JSON"), http.StatusBadRequest)
+		server.handleHTTPError(c, errors.New("failed to parse JSON"), http.StatusBadRequest)
 	}
 	if msg.MsgType != payloadType {
-		server.handleError(c, errors.New("MsgType does not match PayloadType"), http.StatusBadRequest)
+		server.handleHTTPError(c, errors.New("msg.MsgType does not match payloadType"), http.StatusBadRequest)
 		return
 	}
 
 	runtime, err := server.controller.getRuntimeByID(msg.RuntimeID)
-	if server.handleError(c, err, http.StatusBadRequest) {
+	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
 	if runtime == nil {
-		server.handleError(c, errors.New("handleApproveColonyRequest: runtime is nil"), http.StatusInternalServerError)
+		server.handleHTTPError(c, errors.New("runtime is nil"), http.StatusInternalServerError)
 	}
 
 	err = server.validator.RequireColonyOwner(recoveredID, runtime.ColonyID)
-	if server.handleError(c, err, http.StatusForbidden) {
+	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		return
 	}
 
 	err = server.controller.approveRuntime(msg.RuntimeID)
-	if server.handleError(c, err, http.StatusBadRequest) {
+	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
 
-	server.sendEmptyReplyToClient(c, payloadType)
+	server.sendEmptyHTTPReply(c, payloadType)
 }
 
-func (server *ColoniesServer) handleRejectRuntimeRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
+func (server *ColoniesServer) handleRejectRuntimeHTTPRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
 	msg, err := rpc.CreateRejectRuntimeMsgFromJSON(jsonString)
-	if server.handleError(c, err, http.StatusBadRequest) {
+	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
 	if msg == nil {
-		server.handleError(c, errors.New("Failed to parse RejectRuntimeMsg JSON"), http.StatusBadRequest)
+		server.handleHTTPError(c, errors.New("failed to parse JSON"), http.StatusBadRequest)
 	}
 	if msg.MsgType != payloadType {
-		server.handleError(c, errors.New("MsgType does not match PayloadType"), http.StatusBadRequest)
+		server.handleHTTPError(c, errors.New("msg.MsgType does not match payloadType"), http.StatusBadRequest)
 		return
 	}
 
 	runtime, err := server.controller.getRuntimeByID(msg.RuntimeID)
-	if server.handleError(c, err, http.StatusBadRequest) {
+	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
 	if runtime == nil {
-		server.handleError(c, errors.New("handleRejectRuntimeRequest: runtime is nil"), http.StatusInternalServerError)
+		server.handleHTTPError(c, errors.New("runtime is nil"), http.StatusInternalServerError)
 	}
 
 	err = server.validator.RequireColonyOwner(recoveredID, runtime.ColonyID)
-	if server.handleError(c, err, http.StatusForbidden) {
+	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		return
 	}
 
 	err = server.controller.rejectRuntime(msg.RuntimeID)
-	if server.handleError(c, err, http.StatusBadRequest) {
+	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
 
-	server.sendEmptyReplyToClient(c, payloadType)
+	server.sendEmptyHTTPReply(c, payloadType)
 }
 
-func (server *ColoniesServer) handleSubmitProcessSpec(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
+func (server *ColoniesServer) handleSubmitProcessSpecHTTPRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
 	msg, err := rpc.CreateSubmitProcessSpecMsgFromJSON(jsonString)
-	if server.handleError(c, err, http.StatusBadRequest) {
+	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
 	if msg == nil {
-		server.handleError(c, errors.New("Failed to parse SubmitRuntimeMsg JSON"), http.StatusBadRequest)
+		server.handleHTTPError(c, errors.New("failed to parse JSON"), http.StatusBadRequest)
 	}
 	if msg.MsgType != payloadType {
-		server.handleError(c, errors.New("MsgType does not match PayloadType"), http.StatusBadRequest)
+		server.handleHTTPError(c, errors.New("msg.MsgType does not match payloadType"), http.StatusBadRequest)
 		return
 	}
 
 	err = server.validator.RequireRuntimeMembership(recoveredID, msg.ProcessSpec.Conditions.ColonyID)
-	if server.handleError(c, err, http.StatusForbidden) {
+	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		return
 	}
 
 	process := core.CreateProcess(msg.ProcessSpec)
 	addedProcess, err := server.controller.addProcess(process)
-	if server.handleError(c, err, http.StatusBadRequest) {
+	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
 	if addedProcess == nil {
-		server.handleError(c, errors.New("handleSubmitProcessSpecRequest: addedProcess is nil"), http.StatusInternalServerError)
+		server.handleHTTPError(c, errors.New("addedProcess is nil"), http.StatusInternalServerError)
 	}
 
 	jsonString, err = addedProcess.ToJSON()
-	if server.handleError(c, err, http.StatusInternalServerError) {
+	if server.handleHTTPError(c, err, http.StatusInternalServerError) {
 		return
 	}
 
-	server.sendReplyToClient(c, payloadType, jsonString)
+	server.sendHTTPReply(c, payloadType, jsonString)
 }
 
-func (server *ColoniesServer) handleAssignProcessRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
+func (server *ColoniesServer) handleAssignProcessHTTPRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
 	msg, err := rpc.CreateAssignProcessMsgFromJSON(jsonString)
-	if server.handleError(c, err, http.StatusBadRequest) {
+	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
 	if msg == nil {
-		server.handleError(c, errors.New("Failed to parse AssignRuntimeMsg JSON"), http.StatusBadRequest)
+		server.handleHTTPError(c, errors.New("failed to parse JSON"), http.StatusBadRequest)
 	}
 	if msg.MsgType != payloadType {
-		server.handleError(c, errors.New("MsgType does not match PayloadType"), http.StatusBadRequest)
+		server.handleHTTPError(c, errors.New("msg.msgType does not match payloadType"), http.StatusBadRequest)
 		return
 	}
 
 	err = server.validator.RequireRuntimeMembership(recoveredID, msg.ColonyID)
-	if server.handleError(c, err, http.StatusForbidden) {
+	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		return
 	}
 
 	process, err := server.controller.assignProcess(recoveredID, msg.ColonyID)
-	if server.handleError(c, err, http.StatusBadRequest) {
+	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
 	if process == nil {
-		server.handleError(c, errors.New("handleAssignRequest: process is nil"), http.StatusInternalServerError)
+		server.handleHTTPError(c, errors.New("process is nil"), http.StatusInternalServerError)
 	}
 
 	jsonString, err = process.ToJSON()
-	if server.handleError(c, err, http.StatusInternalServerError) {
+	if server.handleHTTPError(c, err, http.StatusInternalServerError) {
 		return
 	}
 
-	server.sendReplyToClient(c, payloadType, jsonString)
+	server.sendHTTPReply(c, payloadType, jsonString)
 }
 
-func (server *ColoniesServer) handleGetProcessesRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
+func (server *ColoniesServer) handleGetProcessesHTTPRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
 	msg, err := rpc.CreateGetProcessesMsgFromJSON(jsonString)
-	if server.handleError(c, err, http.StatusBadRequest) {
+	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
 	if msg == nil {
-		server.handleError(c, errors.New("Failed to parse GetProcessesMsg JSON"), http.StatusBadRequest)
+		server.handleHTTPError(c, errors.New("failed to parse JSON"), http.StatusBadRequest)
 	}
 	if msg.MsgType != payloadType {
-		server.handleError(c, errors.New("MsgType does not match PayloadType"), http.StatusBadRequest)
+		server.handleHTTPError(c, errors.New("msg.MsgType does not match payloadType"), http.StatusBadRequest)
 		return
 	}
 
 	err = server.validator.RequireRuntimeMembership(recoveredID, msg.ColonyID)
-	if server.handleError(c, err, http.StatusForbidden) {
+	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		return
 	}
 
 	switch msg.State {
 	case core.WAITING:
 		processes, err := server.controller.findWaitingProcesses(msg.ColonyID, msg.Count)
-		if server.handleError(c, err, http.StatusBadRequest) {
+		if server.handleHTTPError(c, err, http.StatusBadRequest) {
 			return
 		}
 		jsonString, err := core.ConvertProcessArrayToJSON(processes)
-		if server.handleError(c, err, http.StatusBadRequest) {
+		if server.handleHTTPError(c, err, http.StatusBadRequest) {
 			return
 		}
-		server.sendReplyToClient(c, payloadType, jsonString)
+		server.sendHTTPReply(c, payloadType, jsonString)
 	case core.RUNNING:
 		processes, err := server.controller.findRunningProcesses(msg.ColonyID, msg.Count)
-		if server.handleError(c, err, http.StatusBadRequest) {
+		if server.handleHTTPError(c, err, http.StatusBadRequest) {
 			return
 		}
 		jsonString, err := core.ConvertProcessArrayToJSON(processes)
-		if server.handleError(c, err, http.StatusBadRequest) {
+		if server.handleHTTPError(c, err, http.StatusBadRequest) {
 			return
 		}
-		server.sendReplyToClient(c, payloadType, jsonString)
+		server.sendHTTPReply(c, payloadType, jsonString)
 	case core.SUCCESS:
 		processes, err := server.controller.findSuccessfulProcesses(msg.ColonyID, msg.Count)
-		if server.handleError(c, err, http.StatusBadRequest) {
+		if server.handleHTTPError(c, err, http.StatusBadRequest) {
 			return
 		}
 		jsonString, err := core.ConvertProcessArrayToJSON(processes)
-		if server.handleError(c, err, http.StatusBadRequest) {
+		if server.handleHTTPError(c, err, http.StatusBadRequest) {
 			return
 		}
-		server.sendReplyToClient(c, payloadType, jsonString)
+		server.sendHTTPReply(c, payloadType, jsonString)
 	case core.FAILED:
 		processes, err := server.controller.findFailedProcesses(msg.ColonyID, msg.Count)
-		if server.handleError(c, err, http.StatusBadRequest) {
+		if server.handleHTTPError(c, err, http.StatusBadRequest) {
 			return
 		}
 		jsonString, err := core.ConvertProcessArrayToJSON(processes)
-		if server.handleError(c, err, http.StatusBadRequest) {
+		if server.handleHTTPError(c, err, http.StatusBadRequest) {
 			return
 		}
-		server.sendReplyToClient(c, payloadType, jsonString)
+		server.sendHTTPReply(c, payloadType, jsonString)
 	default:
-		err := errors.New("Invalid state")
-		server.handleError(c, err, http.StatusBadRequest)
+		err := errors.New("invalid msg.State")
+		server.handleHTTPError(c, err, http.StatusBadRequest)
 		return
 	}
 }
 
-func (server *ColoniesServer) handleGetProcessRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
+func (server *ColoniesServer) handleGetProcessHTTPRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
 	msg, err := rpc.CreateGetProcessMsgFromJSON(jsonString)
-	if server.handleError(c, err, http.StatusBadRequest) {
+	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
 	if msg == nil {
-		server.handleError(c, errors.New("Failed to parse GetProcessMsg JSON"), http.StatusBadRequest)
+		server.handleHTTPError(c, errors.New("failed to parse JSON"), http.StatusBadRequest)
 	}
 	if msg.MsgType != payloadType {
-		server.handleError(c, errors.New("MsgType does not match PayloadType"), http.StatusBadRequest)
+		server.handleHTTPError(c, errors.New("msg.MsgType does not match payloadType"), http.StatusBadRequest)
 		return
 	}
 
 	process, err := server.controller.getProcessByID(msg.ProcessID)
-	if server.handleError(c, err, http.StatusBadRequest) {
+	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
 	if process == nil {
-		server.handleError(c, errors.New("handleGetProcessRequest: process is nil"), http.StatusInternalServerError)
+		server.handleHTTPError(c, errors.New("process is nil"), http.StatusInternalServerError)
 	}
 
 	err = server.validator.RequireRuntimeMembership(recoveredID, process.ProcessSpec.Conditions.ColonyID)
-	if server.handleError(c, err, http.StatusForbidden) {
+	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		return
 	}
 
 	jsonString, err = process.ToJSON()
-	if server.handleError(c, err, http.StatusInternalServerError) {
+	if server.handleHTTPError(c, err, http.StatusInternalServerError) {
 		return
 	}
 
-	server.sendReplyToClient(c, payloadType, jsonString)
+	server.sendHTTPReply(c, payloadType, jsonString)
 }
 
-func (server *ColoniesServer) handleMarkSuccessfulRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
+func (server *ColoniesServer) handleMarkSuccessfulHTTPRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
 	msg, err := rpc.CreateMarkSuccessfulMsgFromJSON(jsonString)
-	if server.handleError(c, err, http.StatusBadRequest) {
+	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
 	if msg == nil {
-		server.handleError(c, errors.New("Failed to parse MarkSuccessfulMsg JSON"), http.StatusBadRequest)
+		server.handleHTTPError(c, errors.New("failed to parse JSON"), http.StatusBadRequest)
 	}
 	if msg.MsgType != payloadType {
-		server.handleError(c, errors.New("MsgType does not match PayloadType"), http.StatusBadRequest)
+		server.handleHTTPError(c, errors.New("msg.MsgType does not match payloadType"), http.StatusBadRequest)
 		return
 	}
 
 	process, err := server.controller.getProcessByID(msg.ProcessID)
-	if server.handleError(c, err, http.StatusBadRequest) {
+	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
 	if process == nil {
-		server.handleError(c, errors.New("handleMarkSuccessfulRequest: process is nil"), http.StatusInternalServerError)
+		server.handleHTTPError(c, errors.New("process is nil"), http.StatusInternalServerError)
 	}
 
 	err = server.validator.RequireRuntimeMembership(recoveredID, process.ProcessSpec.Conditions.ColonyID)
-	if server.handleError(c, err, http.StatusForbidden) {
+	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		return
 	}
 
 	if process.AssignedRuntimeID != recoveredID {
-		err := errors.New("Only Runtime with Id <" + process.AssignedRuntimeID + "> is allowed to mark process as failed")
-		server.handleError(c, err, http.StatusForbidden)
+		err := errors.New("only runtime with id <" + process.AssignedRuntimeID + "> is allowed to mark process as failed")
+		server.handleHTTPError(c, err, http.StatusForbidden)
 	}
 
 	err = server.controller.markSuccessful(process.ID)
-	if server.handleError(c, err, http.StatusBadRequest) {
+	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
 
-	server.sendEmptyReplyToClient(c, payloadType)
+	server.sendEmptyHTTPReply(c, payloadType)
 }
 
-func (server *ColoniesServer) handleMarkFailedRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
+func (server *ColoniesServer) handleMarkFailedHTTPRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
 	msg, err := rpc.CreateMarkFailedMsgFromJSON(jsonString)
-	if server.handleError(c, err, http.StatusBadRequest) {
+	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
 	if msg == nil {
-		server.handleError(c, errors.New("Failed to parse MarkedFailedMsg JSON"), http.StatusBadRequest)
+		server.handleHTTPError(c, errors.New("failed to parse JSON"), http.StatusBadRequest)
 	}
 	if msg.MsgType != payloadType {
-		server.handleError(c, errors.New("MsgType does not match PayloadType"), http.StatusBadRequest)
+		server.handleHTTPError(c, errors.New("msg.MsgType does not match payloadType"), http.StatusBadRequest)
 		return
 	}
 
 	process, err := server.controller.getProcessByID(msg.ProcessID)
-	if server.handleError(c, err, http.StatusBadRequest) {
+	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
 	if process == nil {
-		server.handleError(c, errors.New("handleMarkFailedRequest: process is nil"), http.StatusInternalServerError)
+		server.handleHTTPError(c, errors.New("process is nil"), http.StatusInternalServerError)
 	}
 
 	err = server.validator.RequireRuntimeMembership(recoveredID, process.ProcessSpec.Conditions.ColonyID)
-	if server.handleError(c, err, http.StatusForbidden) {
+	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		return
 	}
 
 	if process.AssignedRuntimeID != recoveredID {
-		err := errors.New("Only Runtime with Id <" + process.AssignedRuntimeID + "> is allowed to mark process as failed")
-		server.handleError(c, err, http.StatusForbidden)
+		err := errors.New("only runtime with Id <" + process.AssignedRuntimeID + "> is allowed to mark process as failed")
+		server.handleHTTPError(c, err, http.StatusForbidden)
 	}
 
 	err = server.controller.markFailed(process.ID)
-	if server.handleError(c, err, http.StatusBadRequest) {
+	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
 
-	server.sendEmptyReplyToClient(c, payloadType)
+	server.sendEmptyHTTPReply(c, payloadType)
 }
 
-func (server *ColoniesServer) handleAddAttributeRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
+func (server *ColoniesServer) handleAddAttributeHTTPRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
 	msg, err := rpc.CreateAddAttributeMsgFromJSON(jsonString)
-	if server.handleError(c, err, http.StatusBadRequest) {
+	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
 	if msg == nil {
-		server.handleError(c, errors.New("Failed to parse AddAttributeMsg JSON"), http.StatusBadRequest)
+		server.handleHTTPError(c, errors.New("failed to parse JSON"), http.StatusBadRequest)
 	}
 	if msg.MsgType != payloadType {
-		server.handleError(c, errors.New("MsgType does not match PayloadType"), http.StatusBadRequest)
+		server.handleHTTPError(c, errors.New("msg.MsgType does not match payloadType"), http.StatusBadRequest)
 		return
 	}
 
 	process, err := server.controller.getProcessByID(msg.Attribute.TargetID)
-	if server.handleError(c, err, http.StatusBadRequest) {
+	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
 	if process == nil {
-		server.handleError(c, errors.New("handleAddAttributeRequest: process is nil"), http.StatusInternalServerError)
+		server.handleHTTPError(c, errors.New("process is nil"), http.StatusInternalServerError)
 	}
 
 	err = server.validator.RequireRuntimeMembership(recoveredID, process.ProcessSpec.Conditions.ColonyID)
-	if server.handleError(c, err, http.StatusForbidden) {
+	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		return
 	}
 
 	if process.AssignedRuntimeID != recoveredID {
-		err := errors.New("Only Runtime with Id <" + process.AssignedRuntimeID + "> is allowed to set attributes")
-		server.handleError(c, err, http.StatusForbidden)
+		err := errors.New("only runtime with id <" + process.AssignedRuntimeID + "> is allowed to set attributes")
+		server.handleHTTPError(c, err, http.StatusForbidden)
 		return
 	}
 
 	addedAttribute, err := server.controller.addAttribute(msg.Attribute)
-	if server.handleError(c, err, http.StatusBadRequest) {
+	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
 	if addedAttribute == nil {
-		server.handleError(c, errors.New("handleAddAttributeRequest: addedAttribute is nil"), http.StatusInternalServerError)
+		server.handleHTTPError(c, errors.New("addedAttribute is nil"), http.StatusInternalServerError)
 	}
 
 	jsonString, err = addedAttribute.ToJSON()
-	if server.handleError(c, err, http.StatusInternalServerError) {
+	if server.handleHTTPError(c, err, http.StatusInternalServerError) {
 		return
 	}
 
-	server.sendReplyToClient(c, payloadType, jsonString)
+	server.sendHTTPReply(c, payloadType, jsonString)
 }
 
-func (server *ColoniesServer) handleGetAttributeRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
+func (server *ColoniesServer) handleGetAttributeHTTPRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
 	msg, err := rpc.CreateGetAttributeMsgFromJSON(jsonString)
-	if server.handleError(c, err, http.StatusBadRequest) {
+	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
 	if msg == nil {
-		server.handleError(c, errors.New("Failed to parse GetAttributeMsg JSON"), http.StatusBadRequest)
+		server.handleHTTPError(c, errors.New("failed to parse JSON"), http.StatusBadRequest)
 	}
 	if msg.MsgType != payloadType {
-		server.handleError(c, errors.New("MsgType does not match PayloadType"), http.StatusBadRequest)
+		server.handleHTTPError(c, errors.New("msg.MsgType does not match payloadType"), http.StatusBadRequest)
 		return
 	}
 
 	attribute, err := server.controller.getAttribute(msg.AttributeID)
-	if server.handleError(c, err, http.StatusBadRequest) {
+	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
 	if attribute == nil {
-		server.handleError(c, errors.New("handleGetAttributeRequest: attribute is nil"), http.StatusInternalServerError)
+		server.handleHTTPError(c, errors.New("attribute is nil"), http.StatusInternalServerError)
 	}
 
 	process, err := server.controller.getProcessByID(attribute.TargetID)
-	if server.handleError(c, err, http.StatusBadRequest) {
+	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
 	if process == nil {
-		server.handleError(c, errors.New("handleGetAttributeRequest: process is nil"), http.StatusInternalServerError)
+		server.handleHTTPError(c, errors.New("process is nil"), http.StatusInternalServerError)
 	}
 
 	err = server.validator.RequireRuntimeMembership(recoveredID, process.ProcessSpec.Conditions.ColonyID)
-	if server.handleError(c, err, http.StatusForbidden) {
+	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		return
-	}
-
-	if process.AssignedRuntimeID != recoveredID {
-		err := errors.New("Only Runtime with Id <" + process.AssignedRuntimeID + "> is allowed to set attributes")
-		server.handleError(c, err, http.StatusForbidden)
 	}
 
 	jsonString, err = attribute.ToJSON()
-	if server.handleError(c, err, http.StatusInternalServerError) {
+	if server.handleHTTPError(c, err, http.StatusInternalServerError) {
 		return
 	}
 
-	server.sendReplyToClient(c, payloadType, jsonString)
+	server.sendHTTPReply(c, payloadType, jsonString)
 }
 
 func (server *ColoniesServer) numberOfProcessesSubscribers() int {

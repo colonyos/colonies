@@ -123,6 +123,14 @@ func (client *ColoniesClient) SubscribeProcesses(runtimeType string, state int, 
 				continue
 			}
 
+			if rpcReplyMsg.Error {
+				failureMsg, err := core.ConvertJSONToFailure(rpcReplyMsg.DecodePayload())
+				if err != nil {
+					subscription.ErrChan <- err
+				}
+				subscription.ErrChan <- errors.New(failureMsg.Message)
+			}
+
 			process, err := core.ConvertJSONToProcess(rpcReplyMsg.DecodePayload())
 			if err != nil {
 				subscription.ErrChan <- err
@@ -171,6 +179,15 @@ func (client *ColoniesClient) SubscribeProcess(processID string, state int, time
 				subscription.ErrChan <- err
 				continue
 			}
+
+			if rpcReplyMsg.Error {
+				failureMsg, err := core.ConvertJSONToFailure(rpcReplyMsg.DecodePayload())
+				if err != nil {
+					subscription.ErrChan <- err
+				}
+				subscription.ErrChan <- errors.New(failureMsg.Message)
+			}
+
 			process, err := core.ConvertJSONToProcess(rpcReplyMsg.DecodePayload())
 			if err != nil {
 				subscription.ErrChan <- err
