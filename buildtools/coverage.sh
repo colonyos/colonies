@@ -3,10 +3,68 @@
 set -e
 echo "" > coverage.txt
 
-for d in $(go list ./... | grep -v vendor); do
-    go test -race -coverprofile=profile.out -covermode=atomic $d
-    if [ -f profile.out ]; then
-        cat profile.out >> coverage.txt
-        rm profile.out
-    fi
-done
+go test -race -coverprofile=profile.out -covermode=atomic ./internal/crypto 
+if [ -f profile.out ]; then
+  cat profile.out >> coverage.txt
+  rm profile.out
+fi
+go test -race -coverprofile=profile.out -covermode=atomic ./internal/cryptolib 
+if [ -f profile.out ]; then
+  cat profile.out >> coverage.txt
+  rm profile.out
+fi
+go test -race -coverprofile=profile.out -covermode=atomic ./pkg/client
+if [ -f profile.out ]; then
+  cat profile.out >> coverage.txt
+  rm profile.out
+fi
+go test -race -coverprofile=profile.out -covermode=atomic ./pkg/core
+if [ -f profile.out ]; then
+  cat profile.out >> coverage.txt
+  rm profile.out
+fi
+go test -race -coverprofile=profile.out -covermode=atomic ./pkg/database
+if [ -f profile.out ]; then
+  cat profile.out >> coverage.txt
+  rm profile.out
+fi
+go test -race -coverprofile=profile.out -covermode=atomic ./pkg/database/postgresql
+if [ -f profile.out ]; then
+  cat profile.out >> coverage.txt
+  rm profile.out
+fi
+go test -race -coverprofile=profile.out -covermode=atomic ./pkg/rpc
+if [ -f profile.out ]; then
+  cat profile.out >> coverage.txt
+  rm profile.out
+fi
+go test -race -coverprofile=profile.out -covermode=atomic ./pkg/scheduler
+if [ -f profile.out ]; then
+  cat profile.out >> coverage.txt
+  rm profile.out
+fi
+go test -race -coverprofile=profile.out -covermode=atomic ./pkg/scheduler/basic
+if [ -f profile.out ]; then
+  cat profile.out >> coverage.txt
+  rm profile.out
+fi
+go test -race -coverprofile=profile.out -covermode=atomic ./pkg/security
+if [ -f profile.out ]; then
+  cat profile.out >> coverage.txt
+  rm profile.out
+fi
+go test -race -coverprofile=profile.out -covermode=atomic ./pkg/security/crypto
+if [ -f profile.out ]; then
+  cat profile.out >> coverage.txt
+  rm profile.out
+fi
+go test -race -coverprofile=profile.out -covermode=atomic ./pkg/security/validator
+if [ -f profile.out ]; then
+  cat profile.out >> coverage.txt
+  rm profile.out
+fi
+go test -race -coverprofile=profile.out -covermode=atomic ./pkg/server
+if [ -f profile.out ]; then
+  cat profile.out >> coverage.txt
+  rm profile.out
+fi
