@@ -30,13 +30,13 @@ func (standaloneCrypto *StandaloneCrypto) GenerateID(prvKey string) (string, err
 	return identify.ID(), nil
 }
 
-func (standaloneCrypto *StandaloneCrypto) GenerateSignature(jsonString string, prvKey string) (string, error) {
+func (standaloneCrypto *StandaloneCrypto) GenerateSignature(data string, prvKey string) (string, error) {
 	idendity, err := crypto.CreateIdendityFromString(prvKey)
 	if err != nil {
 		return "", err
 	}
 
-	hash := crypto.GenerateHashFromString(jsonString)
+	hash := crypto.GenerateHashFromString(data)
 	signatureBytes, err := crypto.Sign(hash, idendity.PrivateKey())
 	if err != nil {
 		return "", err
@@ -49,12 +49,12 @@ func (standaloneCrypto *StandaloneCrypto) GenerateHash(data string) string {
 	return crypto.GenerateHash([]byte(data)).String()
 }
 
-func (standaloneCrypto *StandaloneCrypto) RecoverID(jsonString string, signature string) (string, error) {
+func (standaloneCrypto *StandaloneCrypto) RecoverID(data string, signature string) (string, error) {
 	signatureString, err := hex.DecodeString(signature)
 	if err != nil {
 		return "", err
 	}
 
-	hash := crypto.GenerateHashFromString(jsonString)
+	hash := crypto.GenerateHashFromString(data)
 	return crypto.RecoveredID(hash, []byte(signatureString))
 }
