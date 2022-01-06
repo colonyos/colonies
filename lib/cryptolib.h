@@ -68,7 +68,11 @@ typedef struct { void *data; GoInt len; GoInt cap; } GoSlice;
 extern "C" {
 #endif
 
-extern char* sign(char* cmsg, char* cprv);
+extern char* prvkey();
+extern char* id(char* cprvkey);
+extern char* sign(char* cmsg, char* cprvkey);
+extern char* hash(char* cmsg);
+extern char* recoverid(char* cmsg, char* csig);
 
 #ifdef __cplusplus
 }
