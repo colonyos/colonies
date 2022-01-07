@@ -363,6 +363,16 @@ func (server *ColoniesServer) handleAddColonyHTTPRequest(c *gin.Context, recover
 		return
 	}
 
+	if msg.Colony == nil {
+		server.handleHTTPError(c, errors.New("colony is nil"), http.StatusBadRequest)
+		return
+	}
+
+	if len(msg.Colony.ID) != 64 {
+		server.handleHTTPError(c, errors.New("invalid colony id length"), http.StatusBadRequest)
+		return
+	}
+
 	addedColony, err := server.controller.addColony(msg.Colony)
 	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
@@ -480,6 +490,10 @@ func (server *ColoniesServer) handleAddRuntimeHTTPRequest(c *gin.Context, recove
 	}
 	if msg.MsgType != payloadType {
 		server.handleHTTPError(c, errors.New("msg.MsgType does not match payloadType"), http.StatusBadRequest)
+		return
+	}
+	if msg.Runtime == nil {
+		server.handleHTTPError(c, errors.New("runtime is nil"), http.StatusBadRequest)
 		return
 	}
 
@@ -647,6 +661,10 @@ func (server *ColoniesServer) handleSubmitProcessSpecHTTPRequest(c *gin.Context,
 	}
 	if msg.MsgType != payloadType {
 		server.handleHTTPError(c, errors.New("msg.MsgType does not match payloadType"), http.StatusBadRequest)
+		return
+	}
+	if msg.ProcessSpec == nil {
+		server.handleHTTPError(c, errors.New("msg.ProcessSpec is nil"), http.StatusBadRequest)
 		return
 	}
 
@@ -894,6 +912,10 @@ func (server *ColoniesServer) handleAddAttributeHTTPRequest(c *gin.Context, reco
 	}
 	if msg.MsgType != payloadType {
 		server.handleHTTPError(c, errors.New("msg.MsgType does not match payloadType"), http.StatusBadRequest)
+		return
+	}
+	if msg.Attribute == nil {
+		server.handleHTTPError(c, errors.New("msg.Attribute is nil"), http.StatusBadRequest)
 		return
 	}
 
