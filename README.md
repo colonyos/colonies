@@ -1,4 +1,4 @@
-[![codecov](https://codecov.io/gh/johankristianss/colonies/branch/main/graph/badge.svg?token=G32O1AO1YB)](https://codecov.io/gh/johankristianss/colonies)
+[![codecov](https://codecov.io/gh/colonyos/colonies/branch/main/graph/badge.svg?token=1D4O2JVSJL)](https://codecov.io/gh/colonyos/colonies)
 
 [![Go](https://github.com/johankristianss/colonies/actions/workflows/go.yml/badge.svg)](https://github.com/johankristianss/colonies/actions/workflows/go.yml)
 
