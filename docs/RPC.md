@@ -443,14 +443,14 @@ The state attribute can have the following values:
 }
 ```
 
-### Mark Process as Successful 
-* PayloadType: **marksuccessfulmsg**
+### Close Process as Successful 
+* PayloadType: **closesuccessfulmsg**
 * Credentials: A valid Runtime Private Key and the Runtime ID needs to match the RuntimeID assigned to the process
 
 #### Payload 
 ```json
 {
-    "msgtype": "marksuccessfulmsg",
+    "msgtype": "closesuccessfulmsg",
     "processid": "ed041355071d2ee6d0ec27b480e2e4c8006cf465ec408b57fcdaa5dac76af8e2"
 }
 ```
@@ -460,14 +460,14 @@ The state attribute can have the following values:
 {}
 ```
 
-### Mark a Proceess as Failed 
-* PayloadType: **markfailedmsg**
+### Close a Proceess as Failed 
+* PayloadType: **closefailedmsg**
 * Credentials: A valid Runtime Private Key and the Runtime ID needs to match the RuntimeID assigned to the process
 
 #### Payload 
 ```json
 {
-    "msgtype": "markfailedfulmsg",
+    "msgtype": "closefailedfulmsg",
     "processid": "24f6d85804e2abde0c85a9e8aef8b308c44a72323565b14f11756d4997acf200"
 }
 ```

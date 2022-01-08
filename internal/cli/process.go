@@ -23,8 +23,8 @@ func init() {
 	processCmd.AddCommand(listFailedProcessesCmd)
 	processCmd.AddCommand(getProcessCmd)
 	processCmd.AddCommand(assignProcessCmd)
-	processCmd.AddCommand(markSuccessful)
-	processCmd.AddCommand(markFailed)
+	processCmd.AddCommand(closeSuccessful)
+	processCmd.AddCommand(closeFailed)
 	rootCmd.AddCommand(processCmd)
 
 	processCmd.PersistentFlags().StringVarP(&ServerHost, "host", "", "localhost", "Server host")
@@ -70,15 +70,15 @@ func init() {
 	assignProcessCmd.Flags().StringVarP(&RuntimeID, "runtimeid", "", "", "Runtime Id")
 	assignProcessCmd.Flags().StringVarP(&RuntimePrvKey, "runtimeprvkey", "", "", "Runtime private key")
 
-	markSuccessful.Flags().StringVarP(&RuntimeID, "runtimeid", "", "", "Runtime Id")
-	markSuccessful.Flags().StringVarP(&RuntimePrvKey, "runtimeprvkey", "", "", "Runtime private key")
-	markSuccessful.Flags().StringVarP(&ProcessID, "processid", "", "", "Process Id")
-	markSuccessful.MarkFlagRequired("processid")
+	closeSuccessful.Flags().StringVarP(&RuntimeID, "runtimeid", "", "", "Runtime Id")
+	closeSuccessful.Flags().StringVarP(&RuntimePrvKey, "runtimeprvkey", "", "", "Runtime private key")
+	closeSuccessful.Flags().StringVarP(&ProcessID, "processid", "", "", "Process Id")
+	closeSuccessful.MarkFlagRequired("processid")
 
-	markFailed.Flags().StringVarP(&RuntimeID, "runtimeid", "", "", "Runtime Id")
-	markFailed.Flags().StringVarP(&RuntimePrvKey, "runtimeprvkey", "", "", "Runtime private key")
-	markFailed.Flags().StringVarP(&ProcessID, "processid", "", "", "Process Id")
-	markFailed.MarkFlagRequired("processid")
+	closeFailed.Flags().StringVarP(&RuntimeID, "runtimeid", "", "", "Runtime Id")
+	closeFailed.Flags().StringVarP(&RuntimePrvKey, "runtimeprvkey", "", "", "Runtime private key")
+	closeFailed.Flags().StringVarP(&ProcessID, "processid", "", "", "Process Id")
+	closeFailed.MarkFlagRequired("processid")
 }
 
 var processCmd = &cobra.Command{
@@ -387,13 +387,6 @@ var getProcessCmd = &cobra.Command{
 		keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
 		CheckError(err)
 
-		if ColonyID == "" {
-			ColonyID = os.Getenv("COLONYID")
-		}
-		if ColonyID == "" {
-			CheckError(errors.New("Unknown Colony Id"))
-		}
-
 		if RuntimeID == "" {
 			RuntimeID = os.Getenv("RUNTIMEID")
 		}
@@ -409,7 +402,7 @@ var getProcessCmd = &cobra.Command{
 		client := client.CreateColoniesClient(ServerHost, ServerPort, true) // XXX: Insecure
 		process, err := client.GetProcess(ProcessID, RuntimePrvKey)
 		if process == nil {
-			fmt.Println("Process with Id <" + process.ID + "> not found")
+			fmt.Println("Process not found")
 			os.Exit(-1)
 		}
 
@@ -522,10 +515,10 @@ var getProcessCmd = &cobra.Command{
 	},
 }
 
-var markSuccessful = &cobra.Command{
+var closeSuccessful = &cobra.Command{
 	Use:   "successful",
-	Short: "Mark a Process as Successful",
-	Long:  "Mark a Process as Successful",
+	Short: "Close a Process as Successful",
+	Long:  "Close a Process as Successful",
 	Run: func(cmd *cobra.Command, args []string) {
 		keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
 		CheckError(err)
@@ -546,17 +539,17 @@ var markSuccessful = &cobra.Command{
 		process, err := client.GetProcess(ProcessID, RuntimePrvKey)
 		CheckError(err)
 
-		err = client.MarkSuccessful(process.ID, RuntimePrvKey)
+		err = client.CloseSuccessful(process.ID, RuntimePrvKey)
 		CheckError(err)
 
-		fmt.Println("Process with Id <" + process.ID + "> marked as successful")
+		fmt.Println("Process with Id <" + process.ID + "> closed as successful")
 	},
 }
 
-var markFailed = &cobra.Command{
+var closeFailed = &cobra.Command{
 	Use:   "failed",
-	Short: "Mark a Process as Failed",
-	Long:  "Mark a Process as Failed",
+	Short: "Close a Process as Failed",
+	Long:  "Close a Process as Failed",
 	Run: func(cmd *cobra.Command, args []string) {
 		keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
 		CheckError(err)
@@ -577,9 +570,9 @@ var markFailed = &cobra.Command{
 		process, err := client.GetProcess(ProcessID, RuntimePrvKey)
 		CheckError(err)
 
-		err = client.MarkFailed(process.ID, RuntimePrvKey)
+		err = client.CloseFailed(process.ID, RuntimePrvKey)
 		CheckError(err)
 
-		fmt.Println("Process with Id <" + process.ID + "> marked as failed")
+		fmt.Println("Process with Id <" + process.ID + "> closed as failed")
 	},
 }
