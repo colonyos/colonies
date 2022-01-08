@@ -538,7 +538,7 @@ func (controller *coloniesController) findFailedProcesses(colonyID string, count
 	}
 }
 
-func (controller *coloniesController) markSuccessful(processID string) error {
+func (controller *coloniesController) closeSuccessful(processID string) error {
 	cmd := &command{errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
 			process, err := controller.db.GetProcessByID(processID)
@@ -554,7 +554,7 @@ func (controller *coloniesController) markSuccessful(processID string) error {
 	return <-cmd.errorChan
 }
 
-func (controller *coloniesController) markFailed(processID string) error {
+func (controller *coloniesController) closeFailed(processID string) error {
 	cmd := &command{errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
 			process, err := controller.db.GetProcessByID(processID)
