@@ -17,6 +17,9 @@ coverage:
 	./buildtools/coverage.sh
 	./buildtools/codecov
 
+build_cryptolib_ubuntu_2020:
+	cd buildtools; ./build_cryptolib_ubuntu.sh 
+
 test:
 	@cd internal/crypto; grc go test -v
 	@cd pkg/core; grc go test -v
