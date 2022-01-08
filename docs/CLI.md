@@ -307,20 +307,20 @@ Output:
 +---------------+------------------------------------------------------------------+
 ```
 
-## Mark a process as successful
+## Close a process as successful
 ```console
 ./bin/colonies process successful --processid 5513617dc4407b6190959a07db2a39c6ad93771c7e8457391e2e64927214c258
 ```
 Output:
 ```
-Process with Id <5513617dc4407b6190959a07db2a39c6ad93771c7e8457391e2e64927214c258> marked as successful
+Process with Id <5513617dc4407b6190959a07db2a39c6ad93771c7e8457391e2e64927214c258> closed as successful
 ```
 
-## Mark a process as failed 
+## Close a process as failed 
 ```console
 ./bin/colonies process failed --processid 7bdc97997db5ea59471b2165c0e5672a4fe8f9158d36ab547adb9710d26e5ae2
 ```
 Output:
 ```
-Process with Id <7bdc97997db5ea59471b2165c0e5672a4fe8f9158d36ab547adb9710d26e5ae2> marked as failed
+Process with Id <7bdc97997db5ea59471b2165c0e5672a4fe8f9158d36ab547adb9710d26e5ae2> closed as failed
 ```

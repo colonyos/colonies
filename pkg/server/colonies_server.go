@@ -269,10 +269,10 @@ func (server *ColoniesServer) handleEndpointRequest(c *gin.Context) {
 		server.handleGetProcessesHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 	case rpc.GetProcessPayloadType:
 		server.handleGetProcessHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
-	case rpc.MarkSuccessfulPayloadType:
-		server.handleMarkSuccessfulHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
-	case rpc.MarkFailedPayloadType:
-		server.handleMarkFailedHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+	case rpc.CloseSuccessfulPayloadType:
+		server.handleCloseSuccessfulHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+	case rpc.CloseFailedPayloadType:
+		server.handleCloseFailedHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 
 	// Attribute operations
 	case rpc.AddAttributePayloadType:
@@ -824,8 +824,8 @@ func (server *ColoniesServer) handleGetProcessHTTPRequest(c *gin.Context, recove
 	server.sendHTTPReply(c, payloadType, jsonString)
 }
 
-func (server *ColoniesServer) handleMarkSuccessfulHTTPRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
-	msg, err := rpc.CreateMarkSuccessfulMsgFromJSON(jsonString)
+func (server *ColoniesServer) handleCloseSuccessfulHTTPRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
+	msg, err := rpc.CreateCloseSuccessfulMsgFromJSON(jsonString)
 	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
@@ -851,11 +851,11 @@ func (server *ColoniesServer) handleMarkSuccessfulHTTPRequest(c *gin.Context, re
 	}
 
 	if process.AssignedRuntimeID != recoveredID {
-		err := errors.New("only runtime with id <" + process.AssignedRuntimeID + "> is allowed to mark process as failed")
+		err := errors.New("not allowed to close process as successful")
 		server.handleHTTPError(c, err, http.StatusForbidden)
 	}
 
-	err = server.controller.markSuccessful(process.ID)
+	err = server.controller.closeSuccessful(process.ID)
 	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
@@ -863,8 +863,8 @@ func (server *ColoniesServer) handleMarkSuccessfulHTTPRequest(c *gin.Context, re
 	server.sendEmptyHTTPReply(c, payloadType)
 }
 
-func (server *ColoniesServer) handleMarkFailedHTTPRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
-	msg, err := rpc.CreateMarkFailedMsgFromJSON(jsonString)
+func (server *ColoniesServer) handleCloseFailedHTTPRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
+	msg, err := rpc.CreateCloseFailedMsgFromJSON(jsonString)
 	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
@@ -890,11 +890,11 @@ func (server *ColoniesServer) handleMarkFailedHTTPRequest(c *gin.Context, recove
 	}
 
 	if process.AssignedRuntimeID != recoveredID {
-		err := errors.New("only runtime with Id <" + process.AssignedRuntimeID + "> is allowed to mark process as failed")
+		err := errors.New("not allowed to close process as failed")
 		server.handleHTTPError(c, err, http.StatusForbidden)
 	}
 
-	err = server.controller.markFailed(process.ID)
+	err = server.controller.closeFailed(process.ID)
 	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
@@ -937,6 +937,8 @@ func (server *ColoniesServer) handleAddAttributeHTTPRequest(c *gin.Context, reco
 		server.handleHTTPError(c, err, http.StatusForbidden)
 		return
 	}
+
+	msg.Attribute.GenerateID()
 
 	addedAttribute, err := server.controller.addAttribute(msg.Attribute)
 	if server.handleHTTPError(c, err, http.StatusBadRequest) {
