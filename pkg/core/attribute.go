@@ -22,13 +22,14 @@ type Attribute struct {
 }
 
 func CreateAttribute(targetID string, attributeType int, key string, value string) *Attribute {
-	crypto := crypto.CreateCrypto()
-	id := crypto.GenerateHash(targetID + key + strconv.Itoa(attributeType))
-	return &Attribute{ID: id,
+	attribute := &Attribute{ID: "",
 		TargetID:      targetID,
 		AttributeType: attributeType,
 		Key:           key,
 		Value:         value}
+
+	attribute.GenerateID()
+	return attribute
 }
 
 func ConvertJSONToAttribute(jsonString string) (*Attribute, error) {
@@ -55,6 +56,11 @@ func IsAttributeArraysEqual(attributes1 []*Attribute, attributes2 []*Attribute) 
 	}
 
 	return false
+}
+
+func (attribute *Attribute) GenerateID() {
+	crypto := crypto.CreateCrypto()
+	attribute.ID = crypto.GenerateHash(attribute.TargetID + attribute.Key + strconv.Itoa(attribute.AttributeType))
 }
 
 func (attribute *Attribute) SetValue(value string) {
