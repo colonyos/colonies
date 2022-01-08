@@ -1,0 +1,11 @@
+FROM ubuntu:20.04
+
+ARG DEBIAN_FRONTEND=noninteractive
+ENV TZ=Europe/Stockholm
+
+RUN apt-get update; apt-get install -y build-essential wget ca-certificates 
+RUN wget https://go.dev/dl/go1.17.6.linux-amd64.tar.gz; tar -xzf go1.17.6.linux-amd64.tar.gz  
+ENV PATH="/go/bin:${PATH}"
+
+COPY . /build
+RUN cd /build; make 
