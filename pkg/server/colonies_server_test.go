@@ -372,7 +372,7 @@ func TestGetSuccessfulProcesses(t *testing.T) {
 		assert.Nil(t, err)
 		processFromServer, err := client.AssignProcess(env.colonyID, env.runtimePrvKey)
 		assert.Nil(t, err)
-		err = client.MarkSuccessful(processFromServer.ID, env.runtimePrvKey)
+		err = client.CloseSuccessful(processFromServer.ID, env.runtimePrvKey)
 		assert.Nil(t, err)
 	}
 
@@ -398,7 +398,7 @@ func TestGetFailedProcesses(t *testing.T) {
 		assert.Nil(t, err)
 		processFromServer, err := client.AssignProcess(env.colonyID, env.runtimePrvKey)
 		assert.Nil(t, err)
-		err = client.MarkFailed(processFromServer.ID, env.runtimePrvKey)
+		err = client.CloseFailed(processFromServer.ID, env.runtimePrvKey)
 		assert.Nil(t, err)
 	}
 
@@ -428,7 +428,7 @@ func TestGetProcess(t *testing.T) {
 	<-done
 }
 
-func TestMarkSuccessful(t *testing.T) {
+func TestCloseSuccessful(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 
 	processSpec := core.CreateProcessSpec(env.colonyID, []string{}, "test_runtime_type", -1, 3, 1000, 10, 1, make(map[string]string))
@@ -442,7 +442,7 @@ func TestMarkSuccessful(t *testing.T) {
 	assignedProcessFromServer, err := client.GetProcess(assignedProcess.ID, env.runtimePrvKey)
 	assert.Equal(t, core.RUNNING, assignedProcessFromServer.State)
 
-	err = client.MarkSuccessful(assignedProcess.ID, env.runtimePrvKey)
+	err = client.CloseSuccessful(assignedProcess.ID, env.runtimePrvKey)
 	assert.Nil(t, err)
 
 	assignedProcessFromServer, err = client.GetProcess(assignedProcess.ID, env.runtimePrvKey)
@@ -452,7 +452,7 @@ func TestMarkSuccessful(t *testing.T) {
 	<-done
 }
 
-func TestMarkFailed(t *testing.T) {
+func TestCloseFailed(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 
 	processSpec := core.CreateProcessSpec(env.colonyID, []string{}, "test_runtime_type", -1, 3, 1000, 10, 1, make(map[string]string))
@@ -466,7 +466,7 @@ func TestMarkFailed(t *testing.T) {
 	assignedProcessFromServer, err := client.GetProcess(assignedProcess.ID, env.runtimePrvKey)
 	assert.Equal(t, core.RUNNING, assignedProcessFromServer.State)
 
-	err = client.MarkFailed(assignedProcess.ID, env.runtimePrvKey)
+	err = client.CloseFailed(assignedProcess.ID, env.runtimePrvKey)
 	assert.Nil(t, err)
 
 	assignedProcessFromServer, err = client.GetProcess(assignedProcess.ID, env.runtimePrvKey)
@@ -571,7 +571,7 @@ func TestSubscribeChangeStateProcess(t *testing.T) {
 	assignedProcess, err := client.AssignProcess(env.colony1ID, env.runtime1PrvKey)
 	assert.Nil(t, err)
 
-	err = client.MarkSuccessful(assignedProcess.ID, env.runtime1PrvKey)
+	err = client.CloseSuccessful(assignedProcess.ID, env.runtime1PrvKey)
 	assert.Nil(t, err)
 
 	err = <-waitForProcess
@@ -600,7 +600,7 @@ func TestSubscribeChangeStateProcess2(t *testing.T) {
 	assignedProcess, err := client.AssignProcess(env.colony1ID, env.runtime1PrvKey)
 	assert.Nil(t, err)
 
-	err = client.MarkSuccessful(assignedProcess.ID, env.runtime1PrvKey)
+	err = client.CloseSuccessful(assignedProcess.ID, env.runtime1PrvKey)
 	assert.Nil(t, err)
 
 	time.Sleep(1 * time.Second)

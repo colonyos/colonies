@@ -378,7 +378,7 @@ func TestGetSuccessfulProcessesSecurity(t *testing.T) {
 		assert.Nil(t, err)
 		processFromServer, err := client.AssignProcess(env.colony1ID, env.runtime1PrvKey)
 		assert.Nil(t, err)
-		err = client.MarkSuccessful(processFromServer.ID, env.runtime1PrvKey)
+		err = client.CloseSuccessful(processFromServer.ID, env.runtime1PrvKey)
 		assert.Nil(t, err)
 	}
 
@@ -406,7 +406,7 @@ func TestGetFailedProcessesSecurity(t *testing.T) {
 		assert.Nil(t, err)
 		processFromServer, err := client.AssignProcess(env.colony1ID, env.runtime1PrvKey)
 		assert.Nil(t, err)
-		err = client.MarkFailed(processFromServer.ID, env.runtime1PrvKey)
+		err = client.CloseFailed(processFromServer.ID, env.runtime1PrvKey)
 		assert.Nil(t, err)
 	}
 
@@ -441,7 +441,7 @@ func TestGetProcessSecurity(t *testing.T) {
 	<-done
 }
 
-func TestMarkSuccessfulSecurity(t *testing.T) {
+func TestCloseSuccessfulSecurity(t *testing.T) {
 	env, client, server, _, done := setupTestEnv1(t)
 
 	// The setup looks like this:
@@ -454,10 +454,10 @@ func TestMarkSuccessfulSecurity(t *testing.T) {
 	processFromServer, err := client.AssignProcess(env.colony1ID, env.runtime1PrvKey)
 	assert.Nil(t, err)
 
-	err = client.MarkSuccessful(processFromServer.ID, env.runtime2PrvKey)
+	err = client.CloseSuccessful(processFromServer.ID, env.runtime2PrvKey)
 	assert.NotNil(t, err) // Should not work
 
-	err = client.MarkSuccessful(processFromServer.ID, env.runtime1PrvKey)
+	err = client.CloseSuccessful(processFromServer.ID, env.runtime1PrvKey)
 	assert.Nil(t, err) // Should work
 
 	// Add another runtime to colony1 and try to close the process statred by runtime1, it should not be possible
@@ -466,14 +466,14 @@ func TestMarkSuccessfulSecurity(t *testing.T) {
 	assert.Nil(t, err)
 	err = client.ApproveRuntime(runtime3.ID, env.colony1PrvKey)
 	assert.Nil(t, err)
-	err = client.MarkSuccessful(processFromServer.ID, runtime3PrvKey)
+	err = client.CloseSuccessful(processFromServer.ID, runtime3PrvKey)
 	assert.NotNil(t, err) // Should work
 
 	server.Shutdown()
 	<-done
 }
 
-func TestMarkFailedSecurity(t *testing.T) {
+func TestCloseFailedSecurity(t *testing.T) {
 	env, client, server, _, done := setupTestEnv1(t)
 
 	// The setup looks like this:
@@ -486,10 +486,10 @@ func TestMarkFailedSecurity(t *testing.T) {
 	processFromServer, err := client.AssignProcess(env.colony1ID, env.runtime1PrvKey)
 	assert.Nil(t, err)
 
-	err = client.MarkFailed(processFromServer.ID, env.runtime2PrvKey)
+	err = client.CloseFailed(processFromServer.ID, env.runtime2PrvKey)
 	assert.NotNil(t, err) // Should not work
 
-	err = client.MarkFailed(processFromServer.ID, env.runtime1PrvKey)
+	err = client.CloseFailed(processFromServer.ID, env.runtime1PrvKey)
 	assert.Nil(t, err) // Should work
 
 	// Add another runtime to colony1 and try to close the process started by runtime1, it should not be possible
@@ -498,7 +498,7 @@ func TestMarkFailedSecurity(t *testing.T) {
 	assert.Nil(t, err)
 	err = client.ApproveRuntime(runtime3.ID, env.colony1PrvKey)
 	assert.Nil(t, err)
-	err = client.MarkFailed(processFromServer.ID, runtime3PrvKey)
+	err = client.CloseFailed(processFromServer.ID, runtime3PrvKey)
 	assert.NotNil(t, err) // Should work
 
 	server.Shutdown()

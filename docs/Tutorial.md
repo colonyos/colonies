@@ -150,13 +150,13 @@ func main() {
             fmt.Println(fib.FibonacciBig(uint(nr)))
 
             // Close the process as Successful
-            client.MarkSuccessful(assignedProcess.ID, runtimePrvKey)
+            client.CloseSuccessful(assignedProcess.ID, runtimePrvKey)
             return
         }
     }
 
     // Close the process as Failed
-    client.MarkFailed(assignedProcess.ID, runtimePrvKey)
+    client.CloseFailed(assignedProcess.ID, runtimePrvKey)
 }
 ```
 
@@ -225,13 +225,13 @@ func main() {
                         fmt.Println(fib.FibonacciBig(uint(nr)))
 
                         // Close the process as Successful
-                        client.MarkSuccessful(assignedProcess.ID, runtimePrvKey)
+                        client.CloseSuccessful(assignedProcess.ID, runtimePrvKey)
                         continue
                     }
                 }
 
                 // Close the process as Failed
-                client.MarkFailed(assignedProcess.ID, runtimePrvKey)
+                client.CloseFailed(assignedProcess.ID, runtimePrvKey)
             case err := <-subscription.ErrChan:
                 fmt.Println(err)
             }
@@ -306,13 +306,13 @@ func main() {
             client.AddAttribute(attribute, runtimePrvKey)
 
             // Close the process as Successful
-            client.MarkSuccessful(assignedProcess.ID, runtimePrvKey)
+            client.CloseSuccessful(assignedProcess.ID, runtimePrvKey)
             return
         }
     }
 
     // Close the process as Failed
-    client.MarkFailed(assignedProcess.ID, runtimePrvKey)
+    client.CloseFailed(assignedProcess.ID, runtimePrvKey)
 }
 ```
 

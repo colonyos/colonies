@@ -4,22 +4,22 @@ import (
 	"encoding/json"
 )
 
-const MarkFailedPayloadType = "markfailedmsg"
+const CloseFailedPayloadType = "closefailedmsg"
 
-type MarkFailedMsg struct {
+type CloseFailedMsg struct {
 	ProcessID string `json:"processid"`
 	MsgType   string `json:"msgtype"`
 }
 
-func CreateMarkFailedMsg(processID string) *MarkFailedMsg {
-	msg := &MarkFailedMsg{}
+func CreateCloseFailedMsg(processID string) *CloseFailedMsg {
+	msg := &CloseFailedMsg{}
 	msg.ProcessID = processID
-	msg.MsgType = MarkFailedPayloadType
+	msg.MsgType = CloseFailedPayloadType
 
 	return msg
 }
 
-func (msg *MarkFailedMsg) ToJSON() (string, error) {
+func (msg *CloseFailedMsg) ToJSON() (string, error) {
 	jsonBytes, err := json.Marshal(msg)
 	if err != nil {
 		return "", err
@@ -28,7 +28,7 @@ func (msg *MarkFailedMsg) ToJSON() (string, error) {
 	return string(jsonBytes), nil
 }
 
-func (msg *MarkFailedMsg) ToJSONIndent() (string, error) {
+func (msg *CloseFailedMsg) ToJSONIndent() (string, error) {
 	jsonBytes, err := json.MarshalIndent(msg, "", "    ")
 	if err != nil {
 		return "", err
@@ -37,8 +37,8 @@ func (msg *MarkFailedMsg) ToJSONIndent() (string, error) {
 	return string(jsonBytes), nil
 }
 
-func CreateMarkFailedMsgFromJSON(jsonString string) (*MarkFailedMsg, error) {
-	var msg *MarkFailedMsg
+func CreateCloseFailedMsgFromJSON(jsonString string) (*CloseFailedMsg, error) {
+	var msg *CloseFailedMsg
 
 	err := json.Unmarshal([]byte(jsonString), &msg)
 	if err != nil {

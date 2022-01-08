@@ -416,14 +416,14 @@ func (client *ColoniesClient) GetProcess(processID string, prvKey string) (*core
 	return core.ConvertJSONToProcess(respBodyString)
 }
 
-func (client *ColoniesClient) MarkSuccessful(processID string, prvKey string) error {
-	msg := rpc.CreateMarkSuccessfulMsg(processID)
+func (client *ColoniesClient) CloseSuccessful(processID string, prvKey string) error {
+	msg := rpc.CreateCloseSuccessfulMsg(processID)
 	jsonString, err := msg.ToJSON()
 	if err != nil {
 		return err
 	}
 
-	_, err = client.sendMessage(rpc.MarkSuccessfulPayloadType, jsonString, prvKey)
+	_, err = client.sendMessage(rpc.CloseSuccessfulPayloadType, jsonString, prvKey)
 	if err != nil {
 		return err
 	}
@@ -431,14 +431,14 @@ func (client *ColoniesClient) MarkSuccessful(processID string, prvKey string) er
 	return nil
 }
 
-func (client *ColoniesClient) MarkFailed(processID string, prvKey string) error {
-	msg := rpc.CreateMarkFailedMsg(processID)
+func (client *ColoniesClient) CloseFailed(processID string, prvKey string) error {
+	msg := rpc.CreateCloseFailedMsg(processID)
 	jsonString, err := msg.ToJSON()
 	if err != nil {
 		return err
 	}
 
-	_, err = client.sendMessage(rpc.MarkFailedPayloadType, jsonString, prvKey)
+	_, err = client.sendMessage(rpc.CloseFailedPayloadType, jsonString, prvKey)
 	if err != nil {
 		return err
 	}
