@@ -6,6 +6,7 @@ IMAGE ?= registry.ice.ri.se/colonies
 build:
 	@CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o ./bin/colonies ./cmd/main.go
 	@go build -buildmode=c-shared -o ./lib/cryptolib.so ./internal/cryptolib/cryptolib.go
+	@GOOS=js GOARCH=wasm go build -o ./lib/cryptolib.wasm internal/cryptolib.wasm/cryptolib.go
 
 docker:
 	docker build -t $(IMAGE) .
