@@ -16,6 +16,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 	"github.com/sirupsen/logrus"
@@ -44,6 +45,7 @@ func CreateColoniesServer(db database.Database, port int, serverID string, tlsPr
 
 	server := &ColoniesServer{}
 	server.ginHandler = gin.Default()
+	server.ginHandler.Use(cors.Default())
 
 	httpServer := &http.Server{
 		Addr:    ":" + strconv.Itoa(port),
@@ -94,6 +96,7 @@ func (server *ColoniesServer) handleWSRequest(c *gin.Context) {
 	w := c.Writer
 	r := c.Request
 	var wsupgrader = websocket.Upgrader{}
+	wsupgrader.CheckOrigin = func(r *http.Request) bool { return true } // TODO: Insecure
 	var err error
 	var wsConn *websocket.Conn
 	wsConn, err = wsupgrader.Upgrade(w, r, nil)
@@ -107,6 +110,8 @@ func (server *ColoniesServer) handleWSRequest(c *gin.Context) {
 		if err != nil {
 			return
 		}
+
+		fmt.Println(string(data))
 
 		rpcMsg, err := rpc.CreateRPCMsgFromJSON(string(data))
 		if server.handleHTTPError(c, err, http.StatusBadRequest) {
@@ -925,6 +930,7 @@ func (server *ColoniesServer) handleAddAttributeHTTPRequest(c *gin.Context, reco
 	}
 	if process == nil {
 		server.handleHTTPError(c, errors.New("process is nil"), http.StatusInternalServerError)
+		return
 	}
 
 	err = server.validator.RequireRuntimeMembership(recoveredID, process.ProcessSpec.Conditions.ColonyID)
