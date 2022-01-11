@@ -5,6 +5,7 @@ import (
 	"colonies/pkg/rpc"
 	"crypto/tls"
 	"errors"
+	"fmt"
 	"net/url"
 	"strconv"
 
@@ -427,6 +428,8 @@ func (client *ColoniesClient) CloseSuccessful(processID string, prvKey string) e
 	if err != nil {
 		return err
 	}
+
+	fmt.Println("hejhopp")
 
 	return nil
 }
