@@ -1,10 +1,11 @@
 package rpc
 
 import (
-	"colonies/pkg/security/crypto"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+
+	"github.com/colonyos/colonies/pkg/security/crypto"
 )
 
 type RPCMsg struct {

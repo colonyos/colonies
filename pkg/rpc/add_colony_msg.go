@@ -1,8 +1,9 @@
 package rpc
 
 import (
-	"colonies/pkg/core"
 	"encoding/json"
+
+	"github.com/colonyos/colonies/pkg/core"
 )
 
 const AddColonyPayloadType = "addcolonymsg"

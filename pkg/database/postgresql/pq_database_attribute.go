@@ -1,9 +1,10 @@
 package postgresql
 
 import (
-	"colonies/pkg/core"
 	"database/sql"
 	"errors"
+
+	"github.com/colonyos/colonies/pkg/core"
 )
 
 func (db *PQDatabase) AddAttributes(attributes []*core.Attribute) error { // TODO: Unit tests

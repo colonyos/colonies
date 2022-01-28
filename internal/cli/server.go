@@ -1,13 +1,13 @@
 package cli
 
 import (
-	"colonies/internal/logging"
-	"colonies/pkg/database/postgresql"
-	"colonies/pkg/server"
 	"fmt"
 	"os"
 	"strconv"
 
+	"github.com/colonyos/colonies/internal/logging"
+	"github.com/colonyos/colonies/pkg/database/postgresql"
+	"github.com/colonyos/colonies/pkg/server"
 	"github.com/spf13/cobra"
 )
 

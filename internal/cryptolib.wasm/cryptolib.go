@@ -1,8 +1,9 @@
 package main
 
 import (
-	"colonies/pkg/security/crypto"
 	"syscall/js"
+
+	"github.com/colonyos/colonies/pkg/security/crypto"
 )
 
 func prvkey() js.Func {

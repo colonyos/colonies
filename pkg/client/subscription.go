@@ -1,8 +1,7 @@
 package client
 
 import (
-	"colonies/pkg/core"
-
+	"github.com/colonyos/colonies/pkg/core"
 	"github.com/gorilla/websocket"
 )
 

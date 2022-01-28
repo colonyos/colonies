@@ -1,9 +1,6 @@
 package cli
 
 import (
-	"colonies/pkg/client"
-	"colonies/pkg/core"
-	"colonies/pkg/security"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -11,6 +8,9 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/colonyos/colonies/pkg/client"
+	"github.com/colonyos/colonies/pkg/core"
+	"github.com/colonyos/colonies/pkg/security"
 	"github.com/kataras/tablewriter"
 	"github.com/spf13/cobra"
 )
