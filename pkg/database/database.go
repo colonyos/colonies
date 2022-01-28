@@ -1,6 +1,6 @@
 package database
 
-import "colonies/pkg/core"
+import "github.com/colonyos/colonies/pkg/core"
 
 type Database interface {
 	// Colony functions ...

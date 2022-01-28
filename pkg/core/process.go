@@ -1,9 +1,10 @@
 package core
 
 import (
-	"colonies/pkg/security/crypto"
 	"encoding/json"
 	"time"
+
+	"github.com/colonyos/colonies/pkg/security/crypto"
 
 	"github.com/google/uuid"
 )

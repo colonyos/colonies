@@ -2,8 +2,9 @@ package main
 
 import (
 	"C"
-	"colonies/pkg/security/crypto"
 	"fmt"
+
+	"github.com/colonyos/colonies/pkg/security/crypto"
 )
 
 //export prvkey

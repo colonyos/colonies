@@ -1,14 +1,15 @@
 package server
 
 import (
-	"colonies/pkg/core"
-	"colonies/pkg/database"
-	"colonies/pkg/rpc"
-	"colonies/pkg/scheduler"
-	"colonies/pkg/scheduler/basic"
 	"errors"
 	"fmt"
 	"strconv"
+
+	"github.com/colonyos/colonies/pkg/core"
+	"github.com/colonyos/colonies/pkg/database"
+	"github.com/colonyos/colonies/pkg/rpc"
+	"github.com/colonyos/colonies/pkg/scheduler"
+	"github.com/colonyos/colonies/pkg/scheduler/basic"
 )
 
 type subscribers struct {

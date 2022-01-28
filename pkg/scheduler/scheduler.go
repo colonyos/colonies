@@ -1,6 +1,6 @@
 package scheduler
 
-import "colonies/pkg/core"
+import "github.com/colonyos/colonies/pkg/core"
 
 type Scheduler interface {
 	Select(runtimeID string, candidates []*core.Process) (*core.Process, error)

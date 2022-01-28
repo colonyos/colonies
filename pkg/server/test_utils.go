@@ -1,13 +1,13 @@
 package server
 
 import (
-	"colonies/internal/logging"
-	"colonies/pkg/client"
-	"colonies/pkg/core"
-	"colonies/pkg/database/postgresql"
-	"colonies/pkg/security/crypto"
 	"testing"
 
+	"github.com/colonyos/colonies/internal/logging"
+	"github.com/colonyos/colonies/pkg/client"
+	"github.com/colonyos/colonies/pkg/core"
+	"github.com/colonyos/colonies/pkg/database/postgresql"
+	"github.com/colonyos/colonies/pkg/security/crypto"
 	"github.com/stretchr/testify/assert"
 )
 
