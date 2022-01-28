@@ -1,7 +1,7 @@
 package core
 
 import (
-	"colonies/pkg/security/crypto"
+	"github.com/colonyos/colonies/pkg/security/crypto"
 
 	"github.com/google/uuid"
 )

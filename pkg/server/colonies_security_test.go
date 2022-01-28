@@ -1,11 +1,11 @@
 package server
 
 import (
-	"colonies/pkg/core"
-	"colonies/pkg/security/crypto"
 	"testing"
 	"time"
 
+	"github.com/colonyos/colonies/pkg/core"
+	"github.com/colonyos/colonies/pkg/security/crypto"
 	"github.com/stretchr/testify/assert"
 )
 

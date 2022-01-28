@@ -1,10 +1,10 @@
 package postgresql
 
 import (
-	"colonies/pkg/core"
 	"testing"
 	"time"
 
+	"github.com/colonyos/colonies/pkg/core"
 	"github.com/stretchr/testify/assert"
 )
 

@@ -1,10 +1,11 @@
 package basic
 
 import (
-	"colonies/pkg/core"
 	"errors"
 	"fmt"
 	"sort"
+
+	"github.com/colonyos/colonies/pkg/core"
 )
 
 type bySubmissionTime []*core.Process
