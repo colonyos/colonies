@@ -1,8 +1,9 @@
 package validator
 
 import (
-	"colonies/pkg/database"
 	"errors"
+
+	"github.com/colonyos/colonies/pkg/database"
 )
 
 type StandaloneValidator struct {

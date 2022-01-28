@@ -1,9 +1,10 @@
 package validator
 
 import (
-	"colonies/pkg/core"
-	"colonies/pkg/database"
 	"errors"
+
+	"github.com/colonyos/colonies/pkg/core"
+	"github.com/colonyos/colonies/pkg/database"
 )
 
 type ownershipImpl struct {
