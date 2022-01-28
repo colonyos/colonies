@@ -1,13 +1,13 @@
 package client
 
 import (
-	"colonies/pkg/core"
-	"colonies/pkg/rpc"
 	"crypto/tls"
 	"errors"
 	"net/url"
 	"strconv"
 
+	"github.com/colonyos/colonies/pkg/core"
+	"github.com/colonyos/colonies/pkg/rpc"
 	"github.com/go-resty/resty/v2"
 	"github.com/gorilla/websocket"
 )

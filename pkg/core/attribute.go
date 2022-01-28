@@ -1,9 +1,10 @@
 package core
 
 import (
-	"colonies/pkg/security/crypto"
 	"encoding/json"
 	"strconv"
+
+	"github.com/colonyos/colonies/pkg/security/crypto"
 )
 
 const (

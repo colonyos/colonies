@@ -1,13 +1,6 @@
 package server
 
 import (
-	"colonies/internal/logging"
-	"colonies/pkg/core"
-	"colonies/pkg/database"
-	"colonies/pkg/rpc"
-	"colonies/pkg/security"
-	"colonies/pkg/security/crypto"
-	"colonies/pkg/security/validator"
 	"context"
 	"errors"
 	"fmt"
@@ -15,6 +8,14 @@ import (
 	"net/http"
 	"strconv"
 	"time"
+
+	"github.com/colonyos/colonies/internal/logging"
+	"github.com/colonyos/colonies/pkg/core"
+	"github.com/colonyos/colonies/pkg/database"
+	"github.com/colonyos/colonies/pkg/rpc"
+	"github.com/colonyos/colonies/pkg/security"
+	"github.com/colonyos/colonies/pkg/security/crypto"
+	"github.com/colonyos/colonies/pkg/security/validator"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"

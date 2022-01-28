@@ -1,9 +1,9 @@
 package rpc
 
 import (
-	"colonies/pkg/security/crypto"
 	"testing"
 
+	"github.com/colonyos/colonies/pkg/security/crypto"
 	"github.com/stretchr/testify/assert"
 )
 
