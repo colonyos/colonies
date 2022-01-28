@@ -1,9 +1,9 @@
 package validator
 
 import (
-	"colonies/pkg/core"
 	"testing"
 
+	"github.com/colonyos/colonies/pkg/core"
 	"github.com/stretchr/testify/assert"
 )
 

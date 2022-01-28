@@ -1,15 +1,15 @@
 package cli
 
 import (
-	"colonies/pkg/client"
-	"colonies/pkg/core"
-	"colonies/pkg/security"
-	"colonies/pkg/security/crypto"
 	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
 
+	"github.com/colonyos/colonies/pkg/client"
+	"github.com/colonyos/colonies/pkg/core"
+	"github.com/colonyos/colonies/pkg/security"
+	"github.com/colonyos/colonies/pkg/security/crypto"
 	"github.com/kataras/tablewriter"
 	"github.com/spf13/cobra"
 )

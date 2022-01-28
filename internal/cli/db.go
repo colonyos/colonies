@@ -2,12 +2,12 @@ package cli
 
 import (
 	"bufio"
-	"colonies/internal/logging"
-	"colonies/pkg/database/postgresql"
 	"fmt"
 	"os"
 	"strconv"
 
+	"github.com/colonyos/colonies/internal/logging"
+	"github.com/colonyos/colonies/pkg/database/postgresql"
 	"github.com/spf13/cobra"
 )
 

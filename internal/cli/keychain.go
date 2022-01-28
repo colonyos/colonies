@@ -1,11 +1,11 @@
 package cli
 
 import (
-	"colonies/pkg/security"
-	"colonies/pkg/security/crypto"
 	"fmt"
 	"os"
 
+	"github.com/colonyos/colonies/pkg/security"
+	"github.com/colonyos/colonies/pkg/security/crypto"
 	"github.com/spf13/cobra"
 )
 

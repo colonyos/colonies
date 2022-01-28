@@ -1,10 +1,10 @@
 package postgresql
 
 import (
-	"colonies/pkg/core"
 	"database/sql"
 	"errors"
 
+	"github.com/colonyos/colonies/pkg/core"
 	_ "github.com/lib/pq"
 )
 

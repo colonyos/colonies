@@ -1,8 +1,9 @@
 package crypto
 
 import (
-	"colonies/internal/crypto"
 	"encoding/hex"
+
+	"github.com/colonyos/colonies/internal/crypto"
 )
 
 type StandaloneCrypto struct {
