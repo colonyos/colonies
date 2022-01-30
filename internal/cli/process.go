@@ -516,7 +516,7 @@ var getProcessCmd = &cobra.Command{
 }
 
 var closeSuccessful = &cobra.Command{
-	Use:   "successful",
+	Use:   "close",
 	Short: "Close a Process as Successful",
 	Long:  "Close a Process as Successful",
 	Run: func(cmd *cobra.Command, args []string) {
@@ -547,7 +547,7 @@ var closeSuccessful = &cobra.Command{
 }
 
 var closeFailed = &cobra.Command{
-	Use:   "failed",
+	Use:   "fail",
 	Short: "Close a Process as Failed",
 	Long:  "Close a Process as Failed",
 	Run: func(cmd *cobra.Command, args []string) {

@@ -1,11 +1,12 @@
 package main
 
 import (
-	"colonies/pkg/client"
-	"colonies/pkg/core"
 	"fmt"
 	"os"
 	"strconv"
+
+	"github.com/colonyos/colonies/pkg/client"
+	"github.com/colonyos/colonies/pkg/core"
 
 	fib "github.com/t-pwk/go-fibonacci"
 )
@@ -40,13 +41,13 @@ func main() {
 						fmt.Println(fib.FibonacciBig(uint(nr)))
 
 						// Close the process as Successful
-						client.MarkSuccessful(assignedProcess.ID, runtimePrvKey)
+						client.CloseSuccessful(assignedProcess.ID, runtimePrvKey)
 						continue
 					}
 				}
 
 				// Close the process as Failed
-				client.MarkFailed(assignedProcess.ID, runtimePrvKey)
+				client.CloseFailed(assignedProcess.ID, runtimePrvKey)
 			case err := <-subscription.ErrChan:
 				fmt.Println(err)
 			}
