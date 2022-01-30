@@ -1,10 +1,11 @@
 package main
 
 import (
-	"colonies/pkg/client"
-	"colonies/pkg/core"
 	"fmt"
 	"os"
+
+	"github.com/colonyos/colonies/pkg/client"
+	"github.com/colonyos/colonies/pkg/core"
 )
 
 func main() {

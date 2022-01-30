@@ -34,6 +34,6 @@ func (validator *StandaloneValidator) RequireColonyOwner(recoveredID string, col
 	return validator.ownership.checkIfColonyExists(colonyID)
 }
 
-func (validator *StandaloneValidator) RequireRuntimeMembership(recoveredID string, colonyID string) error {
-	return validator.ownership.checkIfRuntimeIsValid(recoveredID, colonyID)
+func (validator *StandaloneValidator) RequireRuntimeMembership(recoveredID string, colonyID string, approved bool) error {
+	return validator.ownership.checkIfRuntimeIsValid(recoveredID, colonyID, approved)
 }

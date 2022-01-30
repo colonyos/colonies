@@ -230,19 +230,19 @@ func TestNonApprovedRuntime(t *testing.T) {
 	//   runtime1 is member of colony1
 	//   runtime2 is member of colony2
 
-	// Add another runtime to colony1 and try to close the process started by runtime1, it should not be possible
+	// Add another runtime to colony1 and list all runtimes, it should be possible
 	runtime3, _, runtime3PrvKey := generateRuntime(t, env.colony1ID)
 	_, err := client.AddRuntime(runtime3, env.colony1PrvKey)
 	assert.Nil(t, err)
 
 	_, err = client.GetRuntimes(env.colony1ID, runtime3PrvKey)
-	assert.NotNil(t, err) // Should not work, runtime not approved
+	assert.Nil(t, err) // Should work, runtime should be able to list all runtimes even if it is not approved
 
 	err = client.ApproveRuntime(runtime3.ID, env.colony1PrvKey)
 	assert.Nil(t, err)
 
 	_, err = client.GetRuntimes(env.colony1ID, runtime3PrvKey)
-	assert.Nil(t, err) // Should work
+	assert.Nil(t, err) // Should also work
 
 	server.Shutdown()
 	<-done

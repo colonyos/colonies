@@ -52,13 +52,15 @@ func (ownership *OwnershipMock) checkIfRuntimeBelongsToColony(runtimeID string, 
 	return nil
 }
 
-func (ownership *OwnershipMock) checkIfRuntimeIsValid(runtimeID string, colonyID string) error {
+func (ownership *OwnershipMock) checkIfRuntimeIsValid(runtimeID string, colonyID string, approved bool) error {
 	if ownership.runtimes[runtimeID] == "" {
 		return errors.New("Runtime does not exists")
 	}
 
-	if ownership.approvedRuntimes[runtimeID] == false {
-		return errors.New("Runtime is not approved")
+	if approved {
+		if ownership.approvedRuntimes[runtimeID] == false {
+			return errors.New("Runtime is not approved")
+		}
 	}
 
 	return nil
