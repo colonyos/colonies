@@ -42,3 +42,6 @@ github_test:
 	@cd pkg/security/validator; go test -v
 	@cd pkg/server; go test -v
 	@cd pkg/scheduler/basic; go test -v
+
+install:
+	cp ./bin/colonies /usr/local/bin
