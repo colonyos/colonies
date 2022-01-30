@@ -35,12 +35,13 @@ func TestRequireRuntimeMembership(t *testing.T) {
 	runtime1ID := core.GenerateRandomID()
 	runtime2ID := core.GenerateRandomID()
 	ownership.addRuntime(runtime1ID, colonyID)
-	assert.NotNil(t, security.RequireRuntimeMembership(runtime1ID, colonyID)) // Should not work, not approved
-	assert.NotNil(t, security.RequireRuntimeMembership(runtime2ID, colonyID)) // Should not work, not added or approved
+	assert.NotNil(t, security.RequireRuntimeMembership(runtime1ID, colonyID, true)) // Should not work, not approved
+	assert.Nil(t, security.RequireRuntimeMembership(runtime1ID, colonyID, false))   // Should work
+	assert.NotNil(t, security.RequireRuntimeMembership(runtime2ID, colonyID, true)) // Should not work, not added or approved
 
+	ownership.addRuntime(runtime2ID, colonyID)
 	ownership.approveRuntime(runtime1ID, colonyID)
-	ownership.approveRuntime(runtime2ID, colonyID)
 
-	assert.Nil(t, security.RequireRuntimeMembership(runtime1ID, colonyID))    // Should work
-	assert.NotNil(t, security.RequireRuntimeMembership(runtime2ID, colonyID)) // Should not work, not approved
+	assert.Nil(t, security.RequireRuntimeMembership(runtime1ID, colonyID, true))    // Should work
+	assert.NotNil(t, security.RequireRuntimeMembership(runtime2ID, colonyID, true)) // Should not work, not approved
 }
