@@ -30,7 +30,7 @@ func (ownership *ownershipImpl) checkIfColonyExists(colonyID string) error {
 	return nil
 }
 
-func (ownership *ownershipImpl) checkIfRuntimeIsValid(runtimeID string, colonyID string) error {
+func (ownership *ownershipImpl) checkIfRuntimeIsValid(runtimeID string, colonyID string, approved bool) error {
 	colony, err := ownership.db.GetColonyByID(colonyID)
 	if err != nil {
 		return err
@@ -53,8 +53,10 @@ func (ownership *ownershipImpl) checkIfRuntimeIsValid(runtimeID string, colonyID
 		return errors.New("Runtime with Id <" + runtimeID + "> is not a member of Colony with Id <" + colonyID + ">, (Recovered Id and Colony Id missmatches)")
 	}
 
-	if runtime.State != core.APPROVED {
-		return errors.New("Runtime with Id <" + runtimeID + "> is not approved")
+	if approved {
+		if runtime.State != core.APPROVED {
+			return errors.New("Runtime with Id <" + runtimeID + "> is not approved")
+		}
 	}
 
 	return nil

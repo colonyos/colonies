@@ -158,7 +158,7 @@ func (server *ColoniesServer) handleWSRequest(c *gin.Context) {
 
 			// This test is strictly not needed, since the request does not specifiy a colony, but is rather
 			// derived from the database
-			err = server.validator.RequireRuntimeMembership(recoveredID, runtime.ColonyID)
+			err = server.validator.RequireRuntimeMembership(recoveredID, runtime.ColonyID, true)
 			if err != nil {
 				err := server.sendWSErrorMsg(err, http.StatusForbidden, wsConn, wsMsgType)
 				if err != nil {
@@ -201,7 +201,7 @@ func (server *ColoniesServer) handleWSRequest(c *gin.Context) {
 
 			// This test is strictly not needed, since the request does not specifiy a colony, but is rather
 			// derived from the database
-			err = server.validator.RequireRuntimeMembership(recoveredID, runtime.ColonyID)
+			err = server.validator.RequireRuntimeMembership(recoveredID, runtime.ColonyID, true)
 			if err != nil {
 				err := server.sendWSErrorMsg(err, http.StatusForbidden, wsConn, wsMsgType)
 				if err != nil {
@@ -463,7 +463,7 @@ func (server *ColoniesServer) handleGetColonyHTTPRequest(c *gin.Context, recover
 		return
 	}
 
-	err = server.validator.RequireRuntimeMembership(recoveredID, msg.ColonyID)
+	err = server.validator.RequireRuntimeMembership(recoveredID, msg.ColonyID, true)
 	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		return
 	}
@@ -535,7 +535,7 @@ func (server *ColoniesServer) handleGetRuntimesHTTPRequest(c *gin.Context, recov
 		return
 	}
 
-	err = server.validator.RequireRuntimeMembership(recoveredID, msg.ColonyID)
+	err = server.validator.RequireRuntimeMembership(recoveredID, msg.ColonyID, false)
 	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		return
 	}
@@ -574,7 +574,7 @@ func (server *ColoniesServer) handleGetRuntimeHTTPRequest(c *gin.Context, recove
 		server.handleHTTPError(c, errors.New("runtime is nil"), http.StatusInternalServerError)
 	}
 
-	err = server.validator.RequireRuntimeMembership(recoveredID, runtime.ColonyID)
+	err = server.validator.RequireRuntimeMembership(recoveredID, runtime.ColonyID, true)
 	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		return
 	}
@@ -672,7 +672,7 @@ func (server *ColoniesServer) handleSubmitProcessSpecHTTPRequest(c *gin.Context,
 		return
 	}
 
-	err = server.validator.RequireRuntimeMembership(recoveredID, msg.ProcessSpec.Conditions.ColonyID)
+	err = server.validator.RequireRuntimeMembership(recoveredID, msg.ProcessSpec.Conditions.ColonyID, true)
 	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		return
 	}
@@ -707,7 +707,7 @@ func (server *ColoniesServer) handleAssignProcessHTTPRequest(c *gin.Context, rec
 		return
 	}
 
-	err = server.validator.RequireRuntimeMembership(recoveredID, msg.ColonyID)
+	err = server.validator.RequireRuntimeMembership(recoveredID, msg.ColonyID, true)
 	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		return
 	}
@@ -741,7 +741,7 @@ func (server *ColoniesServer) handleGetProcessesHTTPRequest(c *gin.Context, reco
 		return
 	}
 
-	err = server.validator.RequireRuntimeMembership(recoveredID, msg.ColonyID)
+	err = server.validator.RequireRuntimeMembership(recoveredID, msg.ColonyID, true)
 	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		return
 	}
@@ -815,7 +815,7 @@ func (server *ColoniesServer) handleGetProcessHTTPRequest(c *gin.Context, recove
 		server.handleHTTPError(c, errors.New("process is nil"), http.StatusInternalServerError)
 	}
 
-	err = server.validator.RequireRuntimeMembership(recoveredID, process.ProcessSpec.Conditions.ColonyID)
+	err = server.validator.RequireRuntimeMembership(recoveredID, process.ProcessSpec.Conditions.ColonyID, true)
 	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		return
 	}
@@ -849,7 +849,7 @@ func (server *ColoniesServer) handleCloseSuccessfulHTTPRequest(c *gin.Context, r
 		server.handleHTTPError(c, errors.New("process is nil"), http.StatusInternalServerError)
 	}
 
-	err = server.validator.RequireRuntimeMembership(recoveredID, process.ProcessSpec.Conditions.ColonyID)
+	err = server.validator.RequireRuntimeMembership(recoveredID, process.ProcessSpec.Conditions.ColonyID, true)
 	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		return
 	}
@@ -888,7 +888,7 @@ func (server *ColoniesServer) handleCloseFailedHTTPRequest(c *gin.Context, recov
 		server.handleHTTPError(c, errors.New("process is nil"), http.StatusInternalServerError)
 	}
 
-	err = server.validator.RequireRuntimeMembership(recoveredID, process.ProcessSpec.Conditions.ColonyID)
+	err = server.validator.RequireRuntimeMembership(recoveredID, process.ProcessSpec.Conditions.ColonyID, true)
 	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		return
 	}
@@ -932,7 +932,7 @@ func (server *ColoniesServer) handleAddAttributeHTTPRequest(c *gin.Context, reco
 		return
 	}
 
-	err = server.validator.RequireRuntimeMembership(recoveredID, process.ProcessSpec.Conditions.ColonyID)
+	err = server.validator.RequireRuntimeMembership(recoveredID, process.ProcessSpec.Conditions.ColonyID, true)
 	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		return
 	}
@@ -990,7 +990,7 @@ func (server *ColoniesServer) handleGetAttributeHTTPRequest(c *gin.Context, reco
 		server.handleHTTPError(c, errors.New("process is nil"), http.StatusInternalServerError)
 	}
 
-	err = server.validator.RequireRuntimeMembership(recoveredID, process.ProcessSpec.Conditions.ColonyID)
+	err = server.validator.RequireRuntimeMembership(recoveredID, process.ProcessSpec.Conditions.ColonyID, true)
 	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		return
 	}
