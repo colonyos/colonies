@@ -499,6 +499,38 @@ func TestDeleteProcessSecurity(t *testing.T) {
 	<-done
 }
 
+func TestGetProcessStatSecurity(t *testing.T) {
+	env, client, server, _, done := setupTestEnv1(t)
+
+	// The setup looks like this:
+	//   runtime1 is member of colony1
+	//   runtime2 is member of colony2
+
+	_, err := client.GetProcessStat(env.colony1ID, env.runtime2PrvKey)
+	assert.NotNil(t, err) // Should not work
+
+	_, err = client.GetProcessStat(env.colony2ID, env.runtime1PrvKey)
+	assert.NotNil(t, err) // Should not work
+
+	_, err = client.GetProcessStat(env.colony1ID, env.runtime1PrvKey)
+	assert.Nil(t, err) // Should work
+
+	_, err = client.GetProcessStat(env.colony2ID, env.runtime2PrvKey)
+	assert.Nil(t, err) // Should work
+
+	_, err = client.GetProcessStat(env.colony1ID, env.colony1PrvKey)
+	assert.Nil(t, err) // Should work
+
+	_, err = client.GetProcessStat(env.colony2ID, env.colony2PrvKey)
+	assert.Nil(t, err) // Should work
+
+	_, err = client.GetProcessStat(env.colony1ID, env.colony2PrvKey)
+	assert.NotNil(t, err) // Should not work
+
+	server.Shutdown()
+	<-done
+}
+
 func TestCloseSuccessfulSecurity(t *testing.T) {
 	env, client, server, _, done := setupTestEnv1(t)
 

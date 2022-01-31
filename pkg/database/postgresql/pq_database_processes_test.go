@@ -70,25 +70,25 @@ func TestDeleteProcesses(t *testing.T) {
 	err = db.AddProcess(process3)
 	assert.Nil(t, err)
 
-	numberOfProcesses, err := db.NumberOfWaitingProcesses()
+	numberOfProcesses, err := db.NrOfWaitingProcesses()
 	assert.Nil(t, err)
 	assert.Equal(t, 3, numberOfProcesses)
 
-	numberOfProcesses, err = db.NumberOfProcesses()
+	numberOfProcesses, err = db.NrOfProcesses()
 	assert.Nil(t, err)
 	assert.Equal(t, 3, numberOfProcesses)
 
 	err = db.DeleteProcessByID(process1.ID)
 	assert.Nil(t, err)
 
-	numberOfProcesses, err = db.NumberOfProcesses()
+	numberOfProcesses, err = db.NrOfProcesses()
 	assert.Nil(t, err)
 	assert.Equal(t, 2, numberOfProcesses)
 
 	err = db.DeleteAllProcesses()
 	assert.Nil(t, err)
 
-	numberOfProcesses, err = db.NumberOfProcesses()
+	numberOfProcesses, err = db.NrOfProcesses()
 	assert.Nil(t, err)
 	assert.Equal(t, 0, numberOfProcesses)
 }
@@ -309,19 +309,19 @@ func TestReset(t *testing.T) {
 	err = db.MarkFailed(process)
 	assert.Nil(t, err)
 
-	numberOfFailedProcesses, err := db.NumberOfFailedProcesses()
+	numberOfFailedProcesses, err := db.NrOfFailedProcesses()
 	assert.Equal(t, 3, numberOfFailedProcesses)
 
 	err = db.ResetProcess(process)
 	assert.Nil(t, err)
 
-	numberOfFailedProcesses, err = db.NumberOfFailedProcesses()
+	numberOfFailedProcesses, err = db.NrOfFailedProcesses()
 	assert.Equal(t, 2, numberOfFailedProcesses)
 
 	err = db.ResetAllProcesses(process)
 	assert.Nil(t, err)
 
-	numberOfFailedProcesses, err = db.NumberOfFailedProcesses()
+	numberOfFailedProcesses, err = db.NrOfFailedProcesses()
 	assert.Equal(t, 0, numberOfFailedProcesses)
 }
 
@@ -532,19 +532,19 @@ func TestFindProcessAssigned(t *testing.T) {
 	err = db.AddProcess(process2)
 	assert.Nil(t, err)
 
-	numberOfProcesses, err := db.NumberOfProcesses()
+	numberOfProcesses, err := db.NrOfProcesses()
 	assert.Nil(t, err)
 	assert.Equal(t, 2, numberOfProcesses)
 
-	numberOfRunningProcesses, err := db.NumberOfRunningProcesses()
+	numberOfRunningProcesses, err := db.NrOfRunningProcesses()
 	assert.Nil(t, err)
 	assert.Equal(t, 0, numberOfRunningProcesses)
 
-	numberOfSuccesfulProcesses, err := db.NumberOfSuccessfulProcesses()
+	numberOfSuccesfulProcesses, err := db.NrOfSuccessfulProcesses()
 	assert.Nil(t, err)
 	assert.Equal(t, 0, numberOfSuccesfulProcesses)
 
-	numberOfFailedProcesses, err := db.NumberOfFailedProcesses()
+	numberOfFailedProcesses, err := db.NrOfFailedProcesses()
 	assert.Nil(t, err)
 	assert.Equal(t, 0, numberOfFailedProcesses)
 
@@ -556,7 +556,7 @@ func TestFindProcessAssigned(t *testing.T) {
 	err = db.AssignRuntime(runtime1.ID, processsFromDB1[0])
 	assert.Nil(t, err)
 
-	numberOfRunningProcesses, err = db.NumberOfRunningProcesses()
+	numberOfRunningProcesses, err = db.NrOfRunningProcesses()
 	assert.Nil(t, err)
 	assert.Equal(t, 1, numberOfRunningProcesses)
 
@@ -567,7 +567,7 @@ func TestFindProcessAssigned(t *testing.T) {
 	err = db.AssignRuntime(runtime1.ID, processsFromDB2[0])
 	assert.Nil(t, err)
 
-	numberOfRunningProcesses, err = db.NumberOfRunningProcesses()
+	numberOfRunningProcesses, err = db.NrOfRunningProcesses()
 	assert.Nil(t, err)
 	assert.Equal(t, 2, numberOfRunningProcesses)
 
@@ -577,11 +577,11 @@ func TestFindProcessAssigned(t *testing.T) {
 	err = db.MarkFailed(processsFromDB2[0])
 	assert.Nil(t, err)
 
-	numberOfSuccesfulProcesses, err = db.NumberOfSuccessfulProcesses()
+	numberOfSuccesfulProcesses, err = db.NrOfSuccessfulProcesses()
 	assert.Nil(t, err)
 	assert.Equal(t, 1, numberOfSuccesfulProcesses)
 
-	numberOfFailedProcesses, err = db.NumberOfFailedProcesses()
+	numberOfFailedProcesses, err = db.NrOfFailedProcesses()
 	assert.Nil(t, err)
 	assert.Equal(t, 1, numberOfFailedProcesses)
 }
@@ -692,23 +692,23 @@ func TestFindWaitingProcesses(t *testing.T) {
 	}
 	assert.Equal(t, 10, counter)
 
-	numberOfProcesses, err := db.NumberOfProcesses()
+	numberOfProcesses, err := db.NrOfProcesses()
 	assert.Nil(t, err)
 	assert.Equal(t, 40, numberOfProcesses)
 
-	numberOfProcesses, err = db.NumberOfWaitingProcesses()
+	numberOfProcesses, err = db.NrOfWaitingProcesses()
 	assert.Nil(t, err)
 	assert.Equal(t, 10, numberOfProcesses)
 
-	numberOfProcesses, err = db.NumberOfRunningProcesses()
+	numberOfProcesses, err = db.NrOfRunningProcesses()
 	assert.Nil(t, err)
 	assert.Equal(t, 10, numberOfProcesses)
 
-	numberOfProcesses, err = db.NumberOfSuccessfulProcesses()
+	numberOfProcesses, err = db.NrOfSuccessfulProcesses()
 	assert.Nil(t, err)
 	assert.Equal(t, 10, numberOfProcesses)
 
-	numberOfProcesses, err = db.NumberOfFailedProcesses()
+	numberOfProcesses, err = db.NrOfFailedProcesses()
 	assert.Nil(t, err)
 	assert.Equal(t, 10, numberOfProcesses)
 }
