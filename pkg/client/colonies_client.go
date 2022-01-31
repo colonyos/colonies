@@ -416,6 +416,21 @@ func (client *ColoniesClient) GetFailedProcesses(colonyID string, count int, prv
 	return client.getProcesses(core.FAILED, colonyID, count, prvKey)
 }
 
+func (client *ColoniesClient) GetProcessStat(colonyID string, prvKey string) (*core.ProcessStat, error) {
+	msg := rpc.CreateGetProcessStatMsg(colonyID)
+	jsonString, err := msg.ToJSON()
+	if err != nil {
+		return nil, err
+	}
+
+	respBodyString, err := client.sendMessage(rpc.GetProcessStatPayloadType, jsonString, prvKey)
+	if err != nil {
+		return nil, err
+	}
+
+	return core.ConvertJSONToProcessStat(respBodyString)
+}
+
 func (client *ColoniesClient) GetProcess(processID string, prvKey string) (*core.Process, error) {
 	msg := rpc.CreateGetProcessMsg(processID)
 	jsonString, err := msg.ToJSON()
