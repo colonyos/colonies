@@ -22,6 +22,7 @@ func init() {
 	processCmd.AddCommand(listSuccessfulProcessesCmd)
 	processCmd.AddCommand(listFailedProcessesCmd)
 	processCmd.AddCommand(getProcessCmd)
+	processCmd.AddCommand(deleteProcessCmd)
 	processCmd.AddCommand(assignProcessCmd)
 	processCmd.AddCommand(closeSuccessful)
 	processCmd.AddCommand(closeFailed)
@@ -65,6 +66,12 @@ func init() {
 	getProcessCmd.Flags().StringVarP(&ProcessID, "processid", "", "", "Process Id")
 	getProcessCmd.MarkFlagRequired("processid")
 	getProcessCmd.Flags().BoolVarP(&JSON, "json", "", false, "Print JSON instead of tables")
+
+	deleteProcessCmd.Flags().StringVarP(&RuntimeID, "runtimeid", "", "", "Runtime Id")
+	deleteProcessCmd.Flags().StringVarP(&RuntimePrvKey, "runtimeprvkey", "", "", "Runtime private key")
+	deleteProcessCmd.Flags().StringVarP(&ColonyID, "colonyid", "", "", "Colony Id")
+	deleteProcessCmd.Flags().StringVarP(&ProcessID, "processid", "", "", "Process Id")
+	deleteProcessCmd.MarkFlagRequired("processid")
 
 	assignProcessCmd.Flags().StringVarP(&ColonyID, "colonyid", "", "", "Colony Id")
 	assignProcessCmd.Flags().StringVarP(&RuntimeID, "runtimeid", "", "", "Runtime Id")
@@ -512,6 +519,34 @@ var getProcessCmd = &cobra.Command{
 			attributeTable.Append(v)
 		}
 		attributeTable.Render()
+	},
+}
+
+var deleteProcessCmd = &cobra.Command{
+	Use:   "delete",
+	Short: "Delete a Process",
+	Long:  "Delete a Process",
+	Run: func(cmd *cobra.Command, args []string) {
+		keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
+		CheckError(err)
+
+		if RuntimeID == "" {
+			RuntimeID = os.Getenv("RUNTIMEID")
+		}
+		if RuntimeID == "" {
+			CheckError(errors.New("Unknown Runtime Id"))
+		}
+
+		if RuntimePrvKey == "" {
+			RuntimePrvKey, err = keychain.GetPrvKey(RuntimeID)
+			CheckError(err)
+		}
+
+		client := client.CreateColoniesClient(ServerHost, ServerPort, true) // XXX: Insecure
+		err = client.DeleteProcess(ProcessID, RuntimePrvKey)
+		CheckError(err)
+
+		fmt.Println("Process with Id <" + ProcessID + "> deleted")
 	},
 }
 

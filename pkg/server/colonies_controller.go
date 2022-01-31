@@ -355,6 +355,17 @@ func (controller *coloniesController) rejectRuntime(runtimeID string) error {
 	return <-cmd.errorChan
 }
 
+func (controller *coloniesController) deleteRuntime(runtimeID string) error {
+	cmd := &command{errorChan: make(chan error, 1),
+		handler: func(cmd *command) {
+			err := controller.db.DeleteRuntimeByID(runtimeID)
+			cmd.errorChan <- err
+		}}
+
+	controller.cmdQueue <- cmd
+	return <-cmd.errorChan
+}
+
 func (controller *coloniesController) addProcess(process *core.Process) (*core.Process, error) {
 	cmd := &command{processReplyChan: make(chan *core.Process, 1),
 		errorChan: make(chan error, 1),
@@ -537,6 +548,17 @@ func (controller *coloniesController) findFailedProcesses(colonyID string, count
 	case processes := <-cmd.processesReplyChan:
 		return processes, nil
 	}
+}
+
+func (controller *coloniesController) deleteProcess(processID string) error {
+	cmd := &command{errorChan: make(chan error, 1),
+		handler: func(cmd *command) {
+			err := controller.db.DeleteProcessByID(processID)
+			cmd.errorChan <- err
+		}}
+
+	controller.cmdQueue <- cmd
+	return <-cmd.errorChan
 }
 
 func (controller *coloniesController) closeSuccessful(processID string) error {
