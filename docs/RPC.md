@@ -243,6 +243,23 @@ Else it will contain the reply JSON data, e.g:
 {}
 ```
 
+### Delete Runtime 
+* PayloadType: **deleteruntimemsg**
+* Credentials: A valid Colony Private Key
+
+#### Payload 
+```json
+{
+    "msgtype": "deleteruntimemsg",
+    "runtimeid": "7804cea6a50f2a258ad815b0ed37b6b312c813bf7387cef04958971335faae21"
+}
+```
+
+#### Reply 
+```json
+{}
+```
+
 ## Process API
 
 ### Submit Process Specification 
@@ -441,6 +458,23 @@ The state attribute can have the following values:
         "env": {}
     }
 }
+```
+
+### Delete Process
+* PayloadType: **deleteprocessmsg**
+* Credentials: A valid Runtime Private Key
+
+#### Payload 
+```json
+{
+    "msgtype": "deleteprocessmsg",
+    "processid": "80a98f46c7a364fd33339a6fb2e6c5d8988384fdbf237b4012490c4658bbc9ce"
+}
+```
+
+#### Reply 
+```json
+{}
 ```
 
 ### Close Process as Successful 

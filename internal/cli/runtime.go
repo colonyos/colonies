@@ -19,6 +19,7 @@ func init() {
 	runtimeCmd.AddCommand(lsRuntimesCmd)
 	runtimeCmd.AddCommand(approveRuntimeCmd)
 	runtimeCmd.AddCommand(rejectRuntimeCmd)
+	runtimeCmd.AddCommand(deleteRuntimeCmd)
 	rootCmd.AddCommand(runtimeCmd)
 
 	runtimeCmd.PersistentFlags().StringVarP(&ColonyID, "colonyid", "", "", "Colony Id")
@@ -40,6 +41,10 @@ func init() {
 	rejectRuntimeCmd.Flags().StringVarP(&ColonyPrvKey, "colonyprvkey", "", "", "Colony private key")
 	rejectRuntimeCmd.Flags().StringVarP(&RuntimeID, "runtimeid", "", "", "Colony Runtime Id")
 	rejectRuntimeCmd.MarkFlagRequired("runtimeid")
+
+	deleteRuntimeCmd.Flags().StringVarP(&ColonyPrvKey, "colonyprvkey", "", "", "Colony private key")
+	deleteRuntimeCmd.Flags().StringVarP(&RuntimeID, "runtimeid", "", "", "Colony Runtime Id")
+	deleteRuntimeCmd.MarkFlagRequired("runtimeid")
 }
 
 var runtimeCmd = &cobra.Command{
@@ -114,13 +119,30 @@ var lsRuntimesCmd = &cobra.Command{
 			if RuntimeID == "" {
 				RuntimeID = os.Getenv("RUNTIMEID")
 			}
-			RuntimePrvKey, err = keychain.GetPrvKey(RuntimeID)
-			CheckError(err)
+			RuntimePrvKey, _ = keychain.GetPrvKey(RuntimeID)
+		}
+
+		if RuntimePrvKey == "" {
+			if RuntimeID == "" {
+				RuntimeID = os.Getenv("RUNTIMEID")
+			}
+			RuntimePrvKey, _ = keychain.GetPrvKey(RuntimeID)
 		}
 
 		client := client.CreateColoniesClient(ServerHost, ServerPort, true) // XXX: Insecure
 		runtimesFromServer, err := client.GetRuntimes(ColonyID, RuntimePrvKey)
-		CheckError(err)
+		if err != nil {
+			// Try ColonyPrvKey instead
+			if ColonyPrvKey == "" {
+				if ColonyID == "" {
+					ColonyID = os.Getenv("COLONYID")
+				}
+				ColonyPrvKey, err = keychain.GetPrvKey(ColonyID)
+				CheckError(err)
+			}
+			runtimesFromServer, err = client.GetRuntimes(ColonyID, ColonyPrvKey)
+			CheckError(err)
+		}
 
 		if JSON {
 			jsonString, err := core.ConvertRuntimeArrayToJSON(runtimesFromServer)
@@ -210,5 +232,33 @@ var rejectRuntimeCmd = &cobra.Command{
 		CheckError(err)
 
 		fmt.Println("Colony Runtime with Id <" + RuntimeID + "> is now rejected")
+	},
+}
+
+var deleteRuntimeCmd = &cobra.Command{
+	Use:   "unregister",
+	Short: "Unregister a Colony Runtime",
+	Long:  "Unregister a Colony Runtime",
+	Run: func(cmd *cobra.Command, args []string) {
+		keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
+		CheckError(err)
+
+		if ColonyID == "" {
+			ColonyID = os.Getenv("COLONYID")
+		}
+		if ColonyID == "" {
+			CheckError(errors.New("Unknown Colony Id"))
+		}
+
+		if ColonyPrvKey == "" {
+			ColonyPrvKey, err = keychain.GetPrvKey(ColonyID)
+			CheckError(err)
+		}
+
+		client := client.CreateColoniesClient(ServerHost, ServerPort, true) // XXX: Insecure
+		err = client.DeleteRuntime(RuntimeID, ColonyPrvKey)
+		CheckError(err)
+
+		fmt.Println("Colony Runtime with Id <" + RuntimeID + "> is now unregistered")
 	},
 }

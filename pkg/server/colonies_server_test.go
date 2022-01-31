@@ -265,6 +265,34 @@ func TestApproveRejectRuntime(t *testing.T) {
 	<-done
 }
 
+func TestDeleteRuntime(t *testing.T) {
+	env, client, server, _, done := setupTestEnv2(t)
+
+	runtime, _, runtimePrvKey := generateRuntime(t, env.colonyID)
+	_, err := client.AddRuntime(runtime, env.colonyPrvKey)
+	assert.Nil(t, err)
+	err = client.ApproveRuntime(runtime.ID, env.colonyPrvKey)
+	assert.Nil(t, err)
+
+	// Try to get it
+	runtimeFromServer, err := client.GetRuntime(runtime.ID, runtimePrvKey)
+	assert.Nil(t, err)
+	assert.NotNil(t, runtimeFromServer)
+	assert.True(t, runtime.ID == runtimeFromServer.ID)
+
+	// Now delete it
+	err = client.DeleteRuntime(runtime.ID, env.colonyPrvKey)
+	assert.Nil(t, err)
+
+	// Try to get it again, it should be gone
+	runtimeFromServer, err = client.GetRuntime(runtime.ID, runtimePrvKey)
+	assert.NotNil(t, err)
+	assert.Nil(t, runtimeFromServer)
+
+	server.Shutdown()
+	<-done
+}
+
 func TestSubmitProcess(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 
@@ -423,6 +451,27 @@ func TestGetProcess(t *testing.T) {
 
 	processFromServer, err := client.GetProcess(addedProcess.ID, env.runtimePrvKey)
 	assert.True(t, addedProcess.Equals(processFromServer))
+
+	server.Shutdown()
+	<-done
+}
+
+func TestDeleteProcess(t *testing.T) {
+	env, client, server, _, done := setupTestEnv2(t)
+
+	processSpec := core.CreateProcessSpec(env.colonyID, []string{}, "test_runtime_type", -1, 3, 1000, 10, 1, make(map[string]string))
+	addedProcess, err := client.SubmitProcessSpec(processSpec, env.runtimePrvKey)
+	assert.Nil(t, err)
+
+	processFromServer, err := client.GetProcess(addedProcess.ID, env.runtimePrvKey)
+	assert.True(t, addedProcess.Equals(processFromServer))
+
+	err = client.DeleteProcess(addedProcess.ID, env.runtimePrvKey)
+	assert.Nil(t, err)
+
+	processFromServer, err = client.GetProcess(addedProcess.ID, env.runtimePrvKey)
+	assert.NotNil(t, err)
+	assert.Nil(t, processFromServer)
 
 	server.Shutdown()
 	<-done
