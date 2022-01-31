@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -23,13 +24,11 @@ func init() {
 	colonyCmd.PersistentFlags().IntVarP(&ServerPort, "port", "", 8080, "Server HTTP port")
 
 	registerColonyCmd.Flags().StringVarP(&ServerID, "serverid", "", "", "Colonies server Id")
-	registerColonyCmd.MarkFlagRequired("serverid")
 	registerColonyCmd.Flags().StringVarP(&ServerPrvKey, "serverprvkey", "", "", "Colonies server private key")
 	registerColonyCmd.Flags().StringVarP(&SpecFile, "spec", "", "", "JSON specification of a Colony")
 	registerColonyCmd.MarkFlagRequired("spec")
 
 	unregisterColonyCmd.Flags().StringVarP(&ServerID, "serverid", "", "", "Colonies server Id")
-	unregisterColonyCmd.MarkFlagRequired("serverid")
 	unregisterColonyCmd.Flags().StringVarP(&ServerPrvKey, "serverprvkey", "", "", "Colonies server private key")
 	unregisterColonyCmd.Flags().StringVarP(&ColonyID, "colonyid", "", "", "Colony Id")
 	unregisterColonyCmd.MarkFlagRequired("colonyid")
@@ -68,6 +67,13 @@ var registerColonyCmd = &cobra.Command{
 		CheckError(err)
 		colony.SetID(colonyID)
 
+		if ServerID == "" {
+			ServerID = os.Getenv("SERVERID")
+		}
+		if ServerID == "" {
+			CheckError(errors.New("Unknown Server Id"))
+		}
+
 		if ServerPrvKey == "" {
 			ServerPrvKey, err = keychain.GetPrvKey(ServerID)
 			CheckError(err)
@@ -92,6 +98,13 @@ var unregisterColonyCmd = &cobra.Command{
 		keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
 		CheckError(err)
 
+		if ServerID == "" {
+			ServerID = os.Getenv("SERVERID")
+		}
+		if ServerID == "" {
+			CheckError(errors.New("Unknown Server Id"))
+		}
+
 		if ServerPrvKey == "" {
 			ServerPrvKey, err = keychain.GetPrvKey(ServerID)
 			CheckError(err)
@@ -114,6 +127,13 @@ var lsColoniesCmd = &cobra.Command{
 
 		keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
 		CheckError(err)
+
+		if ServerID == "" {
+			ServerID = os.Getenv("SERVERID")
+		}
+		if ServerID == "" {
+			CheckError(errors.New("Unknown Server Id"))
+		}
 
 		if ServerPrvKey == "" {
 			ServerPrvKey, err = keychain.GetPrvKey(ServerID)

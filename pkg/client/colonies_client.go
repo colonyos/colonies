@@ -340,6 +340,21 @@ func (client *ColoniesClient) RejectRuntime(runtimeID string, prvKey string) err
 	return nil
 }
 
+func (client *ColoniesClient) DeleteRuntime(runtimeID string, prvKey string) error {
+	msg := rpc.CreateDeleteRuntimeMsg(runtimeID)
+	jsonString, err := msg.ToJSON()
+	if err != nil {
+		return err
+	}
+
+	_, err = client.sendMessage(rpc.DeleteRuntimePayloadType, jsonString, prvKey)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (client *ColoniesClient) SubmitProcessSpec(processSpec *core.ProcessSpec, prvKey string) (*core.Process, error) {
 	msg := rpc.CreateSubmitProcessSpecMsg(processSpec)
 	jsonString, err := msg.ToJSON()
@@ -414,6 +429,21 @@ func (client *ColoniesClient) GetProcess(processID string, prvKey string) (*core
 	}
 
 	return core.ConvertJSONToProcess(respBodyString)
+}
+
+func (client *ColoniesClient) DeleteProcess(processID string, prvKey string) error {
+	msg := rpc.CreateDeleteProcessMsg(processID)
+	jsonString, err := msg.ToJSON()
+	if err != nil {
+		return err
+	}
+
+	_, err = client.sendMessage(rpc.DeleteProcessPayloadType, jsonString, prvKey)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (client *ColoniesClient) CloseSuccessful(processID string, prvKey string) error {
