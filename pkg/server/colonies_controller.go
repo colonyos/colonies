@@ -18,20 +18,21 @@ type subscribers struct {
 }
 
 type command struct {
-	stop               bool
-	errorChan          chan error
-	process            *core.Process
-	count              int
-	colony             *core.Colony
-	colonyID           string
-	colonyReplyChan    chan *core.Colony
-	coloniesReplyChan  chan []*core.Colony
-	processReplyChan   chan *core.Process
-	processesReplyChan chan []*core.Process
-	runtimeReplyChan   chan *core.Runtime
-	runtimesReplyChan  chan []*core.Runtime
-	attributeReplyChan chan *core.Attribute
-	handler            func(cmd *command)
+	stop                 bool
+	errorChan            chan error
+	process              *core.Process
+	count                int
+	colony               *core.Colony
+	colonyID             string
+	colonyReplyChan      chan *core.Colony
+	coloniesReplyChan    chan []*core.Colony
+	processReplyChan     chan *core.Process
+	processesReplyChan   chan []*core.Process
+	processStatReplyChan chan *core.ProcessStat
+	runtimeReplyChan     chan *core.Runtime
+	runtimesReplyChan    chan []*core.Runtime
+	attributeReplyChan   chan *core.Attribute
+	handler              func(cmd *command)
 }
 
 type coloniesController struct {
@@ -635,8 +636,41 @@ func (controller *coloniesController) assignProcess(runtimeID string, colonyID s
 	}
 }
 
-func (controller *coloniesController) stop() {
-	controller.cmdQueue <- &command{stop: true}
+func (controller *coloniesController) getProcessStat(colonyID string) (*core.ProcessStat, error) {
+	cmd := &command{processStatReplyChan: make(chan *core.ProcessStat),
+		errorChan: make(chan error, 1),
+		handler: func(cmd *command) {
+			waiting, err := controller.db.NrWaitingProcessesForColony(colonyID)
+			if err != nil {
+				cmd.errorChan <- err
+				return
+			}
+			running, err := controller.db.NrRunningProcessesForColony(colonyID)
+			if err != nil {
+				cmd.errorChan <- err
+				return
+			}
+			success, err := controller.db.NrSuccessfulProcessesForColony(colonyID)
+			if err != nil {
+				cmd.errorChan <- err
+				return
+			}
+			failed, err := controller.db.NrFailedProcessesForColony(colonyID)
+			if err != nil {
+				cmd.errorChan <- err
+				return
+			}
+
+			cmd.processStatReplyChan <- core.CreateProcessStat(waiting, running, success, failed)
+		}}
+
+	controller.cmdQueue <- cmd
+	select {
+	case err := <-cmd.errorChan:
+		return nil, err
+	case processStat := <-cmd.processStatReplyChan:
+		return processStat, nil
+	}
 }
 
 func (controller *coloniesController) addAttribute(attribute *core.Attribute) (*core.Attribute, error) {
@@ -684,4 +718,8 @@ func (controller *coloniesController) getAttribute(attributeID string) (*core.At
 	case attribute := <-cmd.attributeReplyChan:
 		return attribute, nil
 	}
+}
+
+func (controller *coloniesController) stop() {
+	controller.cmdQueue <- &command{stop: true}
 }
