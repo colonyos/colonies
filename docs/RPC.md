@@ -153,7 +153,7 @@ Else it will contain the reply JSON data, e.g:
 
 ### List Runtimes
 * PayloadType: **getruntimesmsg**
-* Credentials: A valid Runtime Private Key
+* Credentials: A valid Runtime or Colony Private Key
 
 #### Payload 
 ```json
@@ -370,7 +370,7 @@ Else it will contain the reply JSON data, e.g:
 
 ### List processes
 * PayloadType: **getprocessesmsg**
-* Credentials: A valid Runtime Private Key
+* Credentials: A valid Runtime or Colony Private Key
 
 #### Payload 
 The state attribute can have the following values:
@@ -510,6 +510,29 @@ The state attribute can have the following values:
 ```json
 {}
 ```
+
+### Process Statistics 
+* PayloadType: **getprocstatmsg**
+* Credentials: A valid Runtime or Colony Private Key
+
+#### Payload 
+```json
+{
+    "msgtype": "getprocstatmsg",
+    "colonyid": "326691e2b5fc0651b5d781393c7279ab3dc58c6627d0a7b2a09e9aa0e4a60950"
+}
+```
+
+#### Reply 
+```json
+{
+    "waiting": 1,
+    "running": 2,
+    "success": 3,
+    "failed": 4
+}
+```
+
 
 ### Add Attribute to a Process 
 * PayloadType: **addattributemsg**

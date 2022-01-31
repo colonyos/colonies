@@ -382,7 +382,7 @@ func (db *PQDatabase) MarkFailed(process *core.Process) error {
 	return nil
 }
 
-func (db *PQDatabase) NumberOfProcesses() (int, error) {
+func (db *PQDatabase) NrOfProcesses() (int, error) {
 	sqlStatement := `SELECT COUNT(*) FROM ` + db.dbPrefix + `PROCESSES`
 	rows, err := db.postgresql.Query(sqlStatement)
 	if err != nil {
@@ -420,18 +420,57 @@ func (db *PQDatabase) countProcesses(state int) (int, error) {
 	return count, nil
 }
 
-func (db *PQDatabase) NumberOfWaitingProcesses() (int, error) {
+func (db *PQDatabase) countProcessesForColony(state int, colonyID string) (int, error) {
+	sqlStatement := `SELECT COUNT(*) FROM ` + db.dbPrefix + `PROCESSES WHERE STATE=$1 AND TARGET_COLONY_ID=$2`
+	rows, err := db.postgresql.Query(sqlStatement, state, colonyID)
+	if err != nil {
+		return -1, err
+	}
+
+	defer rows.Close()
+
+	rows.Next()
+	var count int
+	err = rows.Scan(&count)
+	if err != nil {
+		return -1, err
+	}
+
+	return count, nil
+}
+
+func (db *PQDatabase) NrOfWaitingProcesses() (int, error) {
 	return db.countProcesses(core.WAITING)
 }
 
-func (db *PQDatabase) NumberOfRunningProcesses() (int, error) {
+func (db *PQDatabase) NrOfRunningProcesses() (int, error) {
 	return db.countProcesses(core.RUNNING)
 }
 
-func (db *PQDatabase) NumberOfSuccessfulProcesses() (int, error) {
+func (db *PQDatabase) NrOfSuccessfulProcesses() (int, error) {
 	return db.countProcesses(core.SUCCESS)
 }
 
-func (db *PQDatabase) NumberOfFailedProcesses() (int, error) {
+func (db *PQDatabase) NrOfFailedProcesses() (int, error) {
 	return db.countProcesses(core.FAILED)
+}
+
+// TODO: unittest
+func (db *PQDatabase) NrWaitingProcessesForColony(colonyID string) (int, error) {
+	return db.countProcessesForColony(core.WAITING, colonyID)
+}
+
+// TODO: unittest
+func (db *PQDatabase) NrRunningProcessesForColony(colonyID string) (int, error) {
+	return db.countProcessesForColony(core.RUNNING, colonyID)
+}
+
+// TODO: unittest
+func (db *PQDatabase) NrSuccessfulProcessesForColony(colonyID string) (int, error) {
+	return db.countProcessesForColony(core.SUCCESS, colonyID)
+}
+
+// TODO: unittest
+func (db *PQDatabase) NrFailedProcessesForColony(colonyID string) (int, error) {
+	return db.countProcessesForColony(core.FAILED, colonyID)
 }

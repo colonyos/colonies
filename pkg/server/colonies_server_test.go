@@ -442,6 +442,62 @@ func TestGetFailedProcesses(t *testing.T) {
 	<-done
 }
 
+func TestGetProcessStat(t *testing.T) {
+	env, client, server, _, done := setupTestEnv2(t)
+
+	// Waiting
+	numberOfWaitingProcesses := 5
+	for i := 0; i < numberOfWaitingProcesses; i++ {
+		processSpec := core.CreateProcessSpec(env.colonyID, []string{}, "test_runtime_type", -1, 3, 1000, 10, 1, make(map[string]string))
+		_, err := client.SubmitProcessSpec(processSpec, env.runtimePrvKey)
+		assert.Nil(t, err)
+	}
+
+	// Running
+	numberOfRunningProcesses := 6
+	for i := 0; i < numberOfRunningProcesses; i++ {
+		processSpec := core.CreateProcessSpec(env.colonyID, []string{}, "test_runtime_type", -1, 3, 1000, 10, 1, make(map[string]string))
+		_, err := client.SubmitProcessSpec(processSpec, env.runtimePrvKey)
+		assert.Nil(t, err)
+		_, err = client.AssignProcess(env.colonyID, env.runtimePrvKey)
+	}
+
+	// Successful
+	numberOfSuccessfulProcesses := 7
+	for i := 0; i < numberOfSuccessfulProcesses; i++ {
+		processSpec := core.CreateProcessSpec(env.colonyID, []string{}, "test_runtime_type", -1, 3, 1000, 10, 1, make(map[string]string))
+		_, err := client.SubmitProcessSpec(processSpec, env.runtimePrvKey)
+		assert.Nil(t, err)
+		processFromServer, err := client.AssignProcess(env.colonyID, env.runtimePrvKey)
+		assert.Nil(t, err)
+		err = client.CloseSuccessful(processFromServer.ID, env.runtimePrvKey)
+		assert.Nil(t, err)
+	}
+
+	// Failed
+	numberOfFailedProcesses := 8
+	for i := 0; i < numberOfFailedProcesses; i++ {
+		processSpec := core.CreateProcessSpec(env.colonyID, []string{}, "test_runtime_type", -1, 3, 1000, 10, 1, make(map[string]string))
+		_, err := client.SubmitProcessSpec(processSpec, env.runtimePrvKey)
+		assert.Nil(t, err)
+		processFromServer, err := client.AssignProcess(env.colonyID, env.runtimePrvKey)
+		assert.Nil(t, err)
+		err = client.CloseFailed(processFromServer.ID, env.runtimePrvKey)
+		assert.Nil(t, err)
+	}
+
+	stat, err := client.GetProcessStat(env.colonyID, env.runtimePrvKey)
+	assert.Nil(t, err)
+
+	assert.Equal(t, stat.Waiting, numberOfWaitingProcesses)
+	assert.Equal(t, stat.Running, numberOfRunningProcesses)
+	assert.Equal(t, stat.Success, numberOfSuccessfulProcesses)
+	assert.Equal(t, stat.Failed, numberOfFailedProcesses)
+
+	server.Shutdown()
+	<-done
+}
+
 func TestGetProcess(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 
