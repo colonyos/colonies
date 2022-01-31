@@ -263,6 +263,8 @@ func (server *ColoniesServer) handleEndpointRequest(c *gin.Context) {
 		server.handleApproveRuntimeHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 	case rpc.RejectRuntimePayloadType:
 		server.handleRejectRuntimeHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+	case rpc.DeleteRuntimePayloadType:
+		server.handleDeleteRuntimeHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 
 	// Process operations
 	case rpc.SubmitProcessSpecPayloadType:
@@ -273,6 +275,8 @@ func (server *ColoniesServer) handleEndpointRequest(c *gin.Context) {
 		server.handleGetProcessesHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 	case rpc.GetProcessPayloadType:
 		server.handleGetProcessHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+	case rpc.DeleteProcessPayloadType:
+		server.handleDeleteProcessHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 	case rpc.CloseSuccessfulPayloadType:
 		server.handleCloseSuccessfulHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 	case rpc.CloseFailedPayloadType:
@@ -356,6 +360,7 @@ func (server *ColoniesServer) handleAddColonyHTTPRequest(c *gin.Context, recover
 	}
 	if msg == nil {
 		server.handleHTTPError(c, errors.New("failed to parse JSON"), http.StatusBadRequest)
+		return
 	}
 	if msg.MsgType != payloadType {
 		server.handleHTTPError(c, errors.New("msg.MsgType does not match payloadType"), http.StatusBadRequest)
@@ -383,6 +388,7 @@ func (server *ColoniesServer) handleAddColonyHTTPRequest(c *gin.Context, recover
 	}
 	if addedColony == nil {
 		server.handleHTTPError(c, errors.New("addedColony is nil"), http.StatusInternalServerError)
+		return
 	}
 
 	jsonString, err = addedColony.ToJSON()
@@ -400,6 +406,7 @@ func (server *ColoniesServer) handleDeleteColonyHTTPRequest(c *gin.Context, reco
 	}
 	if msg == nil {
 		server.handleHTTPError(c, errors.New("failed to parse JSON"), http.StatusBadRequest)
+		return
 	}
 	if msg.MsgType != payloadType {
 		server.handleHTTPError(c, errors.New("msg.MsgType does not match payloadType"), http.StatusBadRequest)
@@ -426,6 +433,7 @@ func (server *ColoniesServer) handleGetColoniesHTTPRequest(c *gin.Context, recov
 	}
 	if msg == nil {
 		server.handleHTTPError(c, errors.New("failed to parse JSON"), http.StatusBadRequest)
+		return
 	}
 	if msg.MsgType != payloadType {
 		server.handleHTTPError(c, errors.New("msg.MsgType does not match payloadType"), http.StatusBadRequest)
@@ -457,6 +465,7 @@ func (server *ColoniesServer) handleGetColonyHTTPRequest(c *gin.Context, recover
 	}
 	if msg == nil {
 		server.handleHTTPError(c, errors.New("failed to parse JSON"), http.StatusBadRequest)
+		return
 	}
 	if msg.MsgType != payloadType {
 		server.handleHTTPError(c, errors.New("msg.MsgType does not match payloadType"), http.StatusBadRequest)
@@ -474,6 +483,7 @@ func (server *ColoniesServer) handleGetColonyHTTPRequest(c *gin.Context, recover
 	}
 	if colony == nil {
 		server.handleHTTPError(c, errors.New("colony is nil"), http.StatusInternalServerError)
+		return
 	}
 
 	jsonString, err = colony.ToJSON()
@@ -491,6 +501,7 @@ func (server *ColoniesServer) handleAddRuntimeHTTPRequest(c *gin.Context, recove
 	}
 	if msg == nil {
 		server.handleHTTPError(c, errors.New("failed to parse JSON"), http.StatusBadRequest)
+		return
 	}
 	if msg.MsgType != payloadType {
 		server.handleHTTPError(c, errors.New("msg.MsgType does not match payloadType"), http.StatusBadRequest)
@@ -512,6 +523,7 @@ func (server *ColoniesServer) handleAddRuntimeHTTPRequest(c *gin.Context, recove
 	}
 	if addedRuntime == nil {
 		server.handleHTTPError(c, errors.New("addedRuntime is nil"), http.StatusInternalServerError)
+		return
 	}
 
 	jsonString, err = addedRuntime.ToJSON()
@@ -529,6 +541,7 @@ func (server *ColoniesServer) handleGetRuntimesHTTPRequest(c *gin.Context, recov
 	}
 	if msg == nil {
 		server.handleHTTPError(c, errors.New("failed to parse JSON"), http.StatusBadRequest)
+		return
 	}
 	if msg.MsgType != payloadType {
 		server.handleHTTPError(c, errors.New("msg.MsgType does not match payloadType"), http.StatusBadRequest)
@@ -536,8 +549,11 @@ func (server *ColoniesServer) handleGetRuntimesHTTPRequest(c *gin.Context, recov
 	}
 
 	err = server.validator.RequireRuntimeMembership(recoveredID, msg.ColonyID, false)
-	if server.handleHTTPError(c, err, http.StatusForbidden) {
-		return
+	if err != nil {
+		err = server.validator.RequireColonyOwner(recoveredID, msg.ColonyID)
+		if server.handleHTTPError(c, err, http.StatusForbidden) {
+			return
+		}
 	}
 
 	runtimes, err := server.controller.getRuntimeByColonyID(msg.ColonyID)
@@ -560,6 +576,7 @@ func (server *ColoniesServer) handleGetRuntimeHTTPRequest(c *gin.Context, recove
 	}
 	if msg == nil {
 		server.handleHTTPError(c, errors.New("failed to parse JSON"), http.StatusBadRequest)
+		return
 	}
 	if msg.MsgType != payloadType {
 		server.handleHTTPError(c, errors.New("msg.MsgType does not match payloadType"), http.StatusBadRequest)
@@ -572,6 +589,7 @@ func (server *ColoniesServer) handleGetRuntimeHTTPRequest(c *gin.Context, recove
 	}
 	if runtime == nil {
 		server.handleHTTPError(c, errors.New("runtime is nil"), http.StatusInternalServerError)
+		return
 	}
 
 	err = server.validator.RequireRuntimeMembership(recoveredID, runtime.ColonyID, true)
@@ -594,6 +612,7 @@ func (server *ColoniesServer) handleApproveRuntimeHTTPRequest(c *gin.Context, re
 	}
 	if msg == nil {
 		server.handleHTTPError(c, errors.New("failed to parse JSON"), http.StatusBadRequest)
+		return
 	}
 	if msg.MsgType != payloadType {
 		server.handleHTTPError(c, errors.New("msg.MsgType does not match payloadType"), http.StatusBadRequest)
@@ -606,6 +625,7 @@ func (server *ColoniesServer) handleApproveRuntimeHTTPRequest(c *gin.Context, re
 	}
 	if runtime == nil {
 		server.handleHTTPError(c, errors.New("runtime is nil"), http.StatusInternalServerError)
+		return
 	}
 
 	err = server.validator.RequireColonyOwner(recoveredID, runtime.ColonyID)
@@ -628,6 +648,7 @@ func (server *ColoniesServer) handleRejectRuntimeHTTPRequest(c *gin.Context, rec
 	}
 	if msg == nil {
 		server.handleHTTPError(c, errors.New("failed to parse JSON"), http.StatusBadRequest)
+		return
 	}
 	if msg.MsgType != payloadType {
 		server.handleHTTPError(c, errors.New("msg.MsgType does not match payloadType"), http.StatusBadRequest)
@@ -640,6 +661,7 @@ func (server *ColoniesServer) handleRejectRuntimeHTTPRequest(c *gin.Context, rec
 	}
 	if runtime == nil {
 		server.handleHTTPError(c, errors.New("runtime is nil"), http.StatusInternalServerError)
+		return
 	}
 
 	err = server.validator.RequireColonyOwner(recoveredID, runtime.ColonyID)
@@ -655,6 +677,42 @@ func (server *ColoniesServer) handleRejectRuntimeHTTPRequest(c *gin.Context, rec
 	server.sendEmptyHTTPReply(c, payloadType)
 }
 
+func (server *ColoniesServer) handleDeleteRuntimeHTTPRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
+	msg, err := rpc.CreateDeleteRuntimeMsgFromJSON(jsonString)
+	if server.handleHTTPError(c, err, http.StatusBadRequest) {
+		return
+	}
+	if msg == nil {
+		server.handleHTTPError(c, errors.New("failed to parse JSON"), http.StatusBadRequest)
+		return
+	}
+	if msg.MsgType != payloadType {
+		server.handleHTTPError(c, errors.New("msg.MsgType does not match payloadType"), http.StatusBadRequest)
+		return
+	}
+
+	runtime, err := server.controller.getRuntimeByID(msg.RuntimeID)
+	if server.handleHTTPError(c, err, http.StatusBadRequest) {
+		return
+	}
+	if runtime == nil {
+		server.handleHTTPError(c, errors.New("runtime is nil"), http.StatusInternalServerError)
+		return
+	}
+
+	err = server.validator.RequireColonyOwner(recoveredID, runtime.ColonyID)
+	if server.handleHTTPError(c, err, http.StatusForbidden) {
+		return
+	}
+
+	err = server.controller.deleteRuntime(msg.RuntimeID)
+	if server.handleHTTPError(c, err, http.StatusBadRequest) {
+		return
+	}
+
+	server.sendEmptyHTTPReply(c, payloadType)
+}
+
 func (server *ColoniesServer) handleSubmitProcessSpecHTTPRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
 	msg, err := rpc.CreateSubmitProcessSpecMsgFromJSON(jsonString)
 	if server.handleHTTPError(c, err, http.StatusBadRequest) {
@@ -662,6 +720,7 @@ func (server *ColoniesServer) handleSubmitProcessSpecHTTPRequest(c *gin.Context,
 	}
 	if msg == nil {
 		server.handleHTTPError(c, errors.New("failed to parse JSON"), http.StatusBadRequest)
+		return
 	}
 	if msg.MsgType != payloadType {
 		server.handleHTTPError(c, errors.New("msg.MsgType does not match payloadType"), http.StatusBadRequest)
@@ -684,6 +743,7 @@ func (server *ColoniesServer) handleSubmitProcessSpecHTTPRequest(c *gin.Context,
 	}
 	if addedProcess == nil {
 		server.handleHTTPError(c, errors.New("addedProcess is nil"), http.StatusInternalServerError)
+		return
 	}
 
 	jsonString, err = addedProcess.ToJSON()
@@ -701,6 +761,7 @@ func (server *ColoniesServer) handleAssignProcessHTTPRequest(c *gin.Context, rec
 	}
 	if msg == nil {
 		server.handleHTTPError(c, errors.New("failed to parse JSON"), http.StatusBadRequest)
+		return
 	}
 	if msg.MsgType != payloadType {
 		server.handleHTTPError(c, errors.New("msg.msgType does not match payloadType"), http.StatusBadRequest)
@@ -718,6 +779,7 @@ func (server *ColoniesServer) handleAssignProcessHTTPRequest(c *gin.Context, rec
 	}
 	if process == nil {
 		server.handleHTTPError(c, errors.New("process is nil"), http.StatusInternalServerError)
+		return
 	}
 
 	jsonString, err = process.ToJSON()
@@ -735,6 +797,7 @@ func (server *ColoniesServer) handleGetProcessesHTTPRequest(c *gin.Context, reco
 	}
 	if msg == nil {
 		server.handleHTTPError(c, errors.New("failed to parse JSON"), http.StatusBadRequest)
+		return
 	}
 	if msg.MsgType != payloadType {
 		server.handleHTTPError(c, errors.New("msg.MsgType does not match payloadType"), http.StatusBadRequest)
@@ -801,6 +864,7 @@ func (server *ColoniesServer) handleGetProcessHTTPRequest(c *gin.Context, recove
 	}
 	if msg == nil {
 		server.handleHTTPError(c, errors.New("failed to parse JSON"), http.StatusBadRequest)
+		return
 	}
 	if msg.MsgType != payloadType {
 		server.handleHTTPError(c, errors.New("msg.MsgType does not match payloadType"), http.StatusBadRequest)
@@ -813,6 +877,7 @@ func (server *ColoniesServer) handleGetProcessHTTPRequest(c *gin.Context, recove
 	}
 	if process == nil {
 		server.handleHTTPError(c, errors.New("process is nil"), http.StatusInternalServerError)
+		return
 	}
 
 	err = server.validator.RequireRuntimeMembership(recoveredID, process.ProcessSpec.Conditions.ColonyID, true)
@@ -828,13 +893,14 @@ func (server *ColoniesServer) handleGetProcessHTTPRequest(c *gin.Context, recove
 	server.sendHTTPReply(c, payloadType, jsonString)
 }
 
-func (server *ColoniesServer) handleCloseSuccessfulHTTPRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
-	msg, err := rpc.CreateCloseSuccessfulMsgFromJSON(jsonString)
+func (server *ColoniesServer) handleDeleteProcessHTTPRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
+	msg, err := rpc.CreateDeleteProcessMsgFromJSON(jsonString)
 	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
 	if msg == nil {
 		server.handleHTTPError(c, errors.New("failed to parse JSON"), http.StatusBadRequest)
+		return
 	}
 	if msg.MsgType != payloadType {
 		server.handleHTTPError(c, errors.New("msg.MsgType does not match payloadType"), http.StatusBadRequest)
@@ -847,6 +913,43 @@ func (server *ColoniesServer) handleCloseSuccessfulHTTPRequest(c *gin.Context, r
 	}
 	if process == nil {
 		server.handleHTTPError(c, errors.New("process is nil"), http.StatusInternalServerError)
+		return
+	}
+
+	err = server.validator.RequireRuntimeMembership(recoveredID, process.ProcessSpec.Conditions.ColonyID, true)
+	if server.handleHTTPError(c, err, http.StatusForbidden) {
+		return
+	}
+
+	err = server.controller.deleteProcess(msg.ProcessID)
+	if server.handleHTTPError(c, err, http.StatusBadRequest) {
+		return
+	}
+
+	server.sendEmptyHTTPReply(c, payloadType)
+}
+
+func (server *ColoniesServer) handleCloseSuccessfulHTTPRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
+	msg, err := rpc.CreateCloseSuccessfulMsgFromJSON(jsonString)
+	if server.handleHTTPError(c, err, http.StatusBadRequest) {
+		return
+	}
+	if msg == nil {
+		server.handleHTTPError(c, errors.New("failed to parse JSON"), http.StatusBadRequest)
+		return
+	}
+	if msg.MsgType != payloadType {
+		server.handleHTTPError(c, errors.New("msg.MsgType does not match payloadType"), http.StatusBadRequest)
+		return
+	}
+
+	process, err := server.controller.getProcessByID(msg.ProcessID)
+	if server.handleHTTPError(c, err, http.StatusBadRequest) {
+		return
+	}
+	if process == nil {
+		server.handleHTTPError(c, errors.New("process is nil"), http.StatusInternalServerError)
+		return
 	}
 
 	err = server.validator.RequireRuntimeMembership(recoveredID, process.ProcessSpec.Conditions.ColonyID, true)
@@ -857,6 +960,7 @@ func (server *ColoniesServer) handleCloseSuccessfulHTTPRequest(c *gin.Context, r
 	if process.AssignedRuntimeID != recoveredID {
 		err := errors.New("not allowed to close process as successful")
 		server.handleHTTPError(c, err, http.StatusForbidden)
+		return
 	}
 
 	err = server.controller.closeSuccessful(process.ID)
@@ -874,6 +978,7 @@ func (server *ColoniesServer) handleCloseFailedHTTPRequest(c *gin.Context, recov
 	}
 	if msg == nil {
 		server.handleHTTPError(c, errors.New("failed to parse JSON"), http.StatusBadRequest)
+		return
 	}
 	if msg.MsgType != payloadType {
 		server.handleHTTPError(c, errors.New("msg.MsgType does not match payloadType"), http.StatusBadRequest)
@@ -886,6 +991,7 @@ func (server *ColoniesServer) handleCloseFailedHTTPRequest(c *gin.Context, recov
 	}
 	if process == nil {
 		server.handleHTTPError(c, errors.New("process is nil"), http.StatusInternalServerError)
+		return
 	}
 
 	err = server.validator.RequireRuntimeMembership(recoveredID, process.ProcessSpec.Conditions.ColonyID, true)
@@ -896,6 +1002,7 @@ func (server *ColoniesServer) handleCloseFailedHTTPRequest(c *gin.Context, recov
 	if process.AssignedRuntimeID != recoveredID {
 		err := errors.New("not allowed to close process as failed")
 		server.handleHTTPError(c, err, http.StatusForbidden)
+		return
 	}
 
 	err = server.controller.closeFailed(process.ID)
@@ -913,6 +1020,7 @@ func (server *ColoniesServer) handleAddAttributeHTTPRequest(c *gin.Context, reco
 	}
 	if msg == nil {
 		server.handleHTTPError(c, errors.New("failed to parse JSON"), http.StatusBadRequest)
+		return
 	}
 	if msg.MsgType != payloadType {
 		server.handleHTTPError(c, errors.New("msg.MsgType does not match payloadType"), http.StatusBadRequest)
@@ -951,6 +1059,7 @@ func (server *ColoniesServer) handleAddAttributeHTTPRequest(c *gin.Context, reco
 	}
 	if addedAttribute == nil {
 		server.handleHTTPError(c, errors.New("addedAttribute is nil"), http.StatusInternalServerError)
+		return
 	}
 
 	jsonString, err = addedAttribute.ToJSON()
@@ -968,6 +1077,7 @@ func (server *ColoniesServer) handleGetAttributeHTTPRequest(c *gin.Context, reco
 	}
 	if msg == nil {
 		server.handleHTTPError(c, errors.New("failed to parse JSON"), http.StatusBadRequest)
+		return
 	}
 	if msg.MsgType != payloadType {
 		server.handleHTTPError(c, errors.New("msg.MsgType does not match payloadType"), http.StatusBadRequest)
@@ -980,6 +1090,7 @@ func (server *ColoniesServer) handleGetAttributeHTTPRequest(c *gin.Context, reco
 	}
 	if attribute == nil {
 		server.handleHTTPError(c, errors.New("attribute is nil"), http.StatusInternalServerError)
+		return
 	}
 
 	process, err := server.controller.getProcessByID(attribute.TargetID)
@@ -988,6 +1099,7 @@ func (server *ColoniesServer) handleGetAttributeHTTPRequest(c *gin.Context, reco
 	}
 	if process == nil {
 		server.handleHTTPError(c, errors.New("process is nil"), http.StatusInternalServerError)
+		return
 	}
 
 	err = server.validator.RequireRuntimeMembership(recoveredID, process.ProcessSpec.Conditions.ColonyID, true)
