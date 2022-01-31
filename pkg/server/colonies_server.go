@@ -281,6 +281,8 @@ func (server *ColoniesServer) handleEndpointRequest(c *gin.Context) {
 		server.handleCloseSuccessfulHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 	case rpc.CloseFailedPayloadType:
 		server.handleCloseFailedHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+	case rpc.GetProcessStatPayloadType:
+		server.handleProcessStatHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 
 	// Attribute operations
 	case rpc.AddAttributePayloadType:
@@ -805,8 +807,11 @@ func (server *ColoniesServer) handleGetProcessesHTTPRequest(c *gin.Context, reco
 	}
 
 	err = server.validator.RequireRuntimeMembership(recoveredID, msg.ColonyID, true)
-	if server.handleHTTPError(c, err, http.StatusForbidden) {
-		return
+	if err != nil {
+		err = server.validator.RequireColonyOwner(recoveredID, msg.ColonyID)
+		if server.handleHTTPError(c, err, http.StatusForbidden) {
+			return
+		}
 	}
 
 	switch msg.State {
@@ -1011,6 +1016,41 @@ func (server *ColoniesServer) handleCloseFailedHTTPRequest(c *gin.Context, recov
 	}
 
 	server.sendEmptyHTTPReply(c, payloadType)
+}
+
+func (server *ColoniesServer) handleProcessStatHTTPRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
+	msg, err := rpc.CreateGetProcessStatMsgFromJSON(jsonString)
+	if server.handleHTTPError(c, err, http.StatusBadRequest) {
+		return
+	}
+	if msg == nil {
+		server.handleHTTPError(c, errors.New("failed to parse JSON"), http.StatusBadRequest)
+		return
+	}
+	if msg.MsgType != payloadType {
+		server.handleHTTPError(c, errors.New("msg.MsgType does not match payloadType"), http.StatusBadRequest)
+		return
+	}
+
+	err = server.validator.RequireRuntimeMembership(recoveredID, msg.ColonyID, true)
+	if err != nil {
+		err = server.validator.RequireColonyOwner(recoveredID, msg.ColonyID)
+		if server.handleHTTPError(c, err, http.StatusForbidden) {
+			return
+		}
+	}
+
+	stat, err := server.controller.getProcessStat(msg.ColonyID)
+	if server.handleHTTPError(c, err, http.StatusInternalServerError) {
+		return
+	}
+
+	jsonString, err = stat.ToJSON()
+	if server.handleHTTPError(c, err, http.StatusInternalServerError) {
+		return
+	}
+
+	server.sendHTTPReply(c, payloadType, jsonString)
 }
 
 func (server *ColoniesServer) handleAddAttributeHTTPRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {

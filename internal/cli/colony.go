@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"strconv"
 
 	"github.com/colonyos/colonies/pkg/client"
 	"github.com/colonyos/colonies/pkg/core"
@@ -18,6 +19,7 @@ func init() {
 	colonyCmd.AddCommand(registerColonyCmd)
 	colonyCmd.AddCommand(unregisterColonyCmd)
 	colonyCmd.AddCommand(lsColoniesCmd)
+	colonyCmd.AddCommand(statusCmd)
 	rootCmd.AddCommand(colonyCmd)
 
 	colonyCmd.PersistentFlags().StringVarP(&ServerHost, "host", "", "localhost", "Server host")
@@ -36,6 +38,10 @@ func init() {
 	lsColoniesCmd.Flags().StringVarP(&ServerID, "serverid", "", "", "Colonies server Id")
 	lsColoniesCmd.Flags().StringVarP(&ServerPrvKey, "serverprvkey", "", "", "Colonies server private key")
 	lsColoniesCmd.Flags().BoolVarP(&JSON, "json", "", false, "Print JSON instead of tables")
+
+	statusCmd.Flags().StringVarP(&ServerID, "serverid", "", "", "Colonies server Id")
+	statusCmd.Flags().StringVarP(&ServerPrvKey, "serverprvkey", "", "", "Colonies server private key")
+	statusCmd.Flags().StringVarP(&ColonyID, "colonyid", "", "", "Colony Id")
 }
 
 var colonyCmd = &cobra.Command{
@@ -163,5 +169,162 @@ var lsColoniesCmd = &cobra.Command{
 		}
 
 		table.Render()
+	},
+}
+
+var statusCmd = &cobra.Command{
+	Use:   "status",
+	Short: "Show status a Colony",
+	Long:  "Show status a Colony",
+	Run: func(cmd *cobra.Command, args []string) {
+		keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
+		CheckError(err)
+
+		if ColonyID == "" {
+			ColonyID = os.Getenv("COLONYID")
+		}
+		if ColonyID == "" {
+			CheckError(errors.New("Unknown Colony Id"))
+		}
+
+		if RuntimePrvKey == "" {
+			if RuntimeID == "" {
+				RuntimeID = os.Getenv("RUNTIMEID")
+			}
+			RuntimePrvKey, _ = keychain.GetPrvKey(RuntimeID)
+		}
+
+		if RuntimePrvKey == "" {
+			if RuntimeID == "" {
+				RuntimeID = os.Getenv("RUNTIMEID")
+			}
+			RuntimePrvKey, _ = keychain.GetPrvKey(RuntimeID)
+		}
+
+		client := client.CreateColoniesClient(ServerHost, ServerPort, true) // XXX: Insecure
+		runtimesFromServer, err := client.GetRuntimes(ColonyID, RuntimePrvKey)
+		if err != nil {
+			if ColonyPrvKey == "" {
+				if ColonyID == "" {
+					ColonyID = os.Getenv("COLONYID")
+				}
+				ColonyPrvKey, err = keychain.GetPrvKey(ColonyID)
+				CheckError(err)
+			}
+			runtimesFromServer, err = client.GetRuntimes(ColonyID, ColonyPrvKey)
+			CheckError(err)
+		}
+
+		processes, err := client.GetRunningProcesses(ColonyID, Count, RuntimePrvKey)
+		if err != nil {
+			if ColonyPrvKey == "" {
+				if ColonyID == "" {
+					ColonyID = os.Getenv("COLONYID")
+				}
+				ColonyPrvKey, err = keychain.GetPrvKey(ColonyID)
+				CheckError(err)
+			}
+			processes, err = client.GetRunningProcesses(ColonyID, Count, ColonyPrvKey)
+			CheckError(err)
+		}
+
+		stat, err := client.GetProcessStat(ColonyID, RuntimePrvKey)
+		if err != nil {
+			if ColonyPrvKey == "" {
+				if ColonyID == "" {
+					ColonyID = os.Getenv("COLONYID")
+				}
+				ColonyPrvKey, err = keychain.GetPrvKey(ColonyID)
+				CheckError(err)
+			}
+			stat, err = client.GetProcessStat(ColonyID, ColonyPrvKey)
+			CheckError(err)
+		}
+
+		fmt.Println("Process statistics:")
+		specData := [][]string{
+			[]string{"Waiting", strconv.Itoa(stat.Waiting)},
+			[]string{"Running", strconv.Itoa(stat.Running)},
+			[]string{"Successful", strconv.Itoa(stat.Success)},
+			[]string{"Failed", strconv.Itoa(stat.Failed)},
+		}
+		specTable := tablewriter.NewWriter(os.Stdout)
+		for _, v := range specData {
+			specTable.Append(v)
+		}
+		specTable.SetAlignment(tablewriter.ALIGN_LEFT)
+		specTable.Render()
+
+		runningRuntimes := make(map[string]bool)
+		for _, p := range processes {
+			runningRuntimes[p.AssignedRuntimeID] = true
+		}
+
+		cores := 0
+		for _, runtime := range runtimesFromServer {
+			cores += runtime.Cores
+		}
+
+		mem := 0
+		for _, runtime := range runtimesFromServer {
+			mem += runtime.Mem
+		}
+
+		gpus := 0
+		for _, runtime := range runtimesFromServer {
+			gpus += runtime.GPUs
+		}
+
+		fmt.Println()
+		fmt.Println("Total capacity:")
+		specData = [][]string{
+			[]string{"Runtimes", strconv.Itoa(len(runtimesFromServer))},
+			[]string{"Cores", strconv.Itoa(cores)},
+			[]string{"Memory", strconv.Itoa(mem) + " MiB"},
+			[]string{"GPUs", strconv.Itoa(gpus)},
+		}
+		specTable = tablewriter.NewWriter(os.Stdout)
+		for _, v := range specData {
+			specTable.Append(v)
+		}
+		specTable.SetAlignment(tablewriter.ALIGN_LEFT)
+		specTable.Render()
+
+		cores = 0
+		for _, runtime := range runtimesFromServer {
+			if !runningRuntimes[runtime.ID] {
+				cores += runtime.Cores
+			}
+		}
+
+		mem = 0
+		for _, runtime := range runtimesFromServer {
+			if !runningRuntimes[runtime.ID] {
+				mem += runtime.Mem
+			}
+		}
+
+		gpus = 0
+		for _, runtime := range runtimesFromServer {
+			if !runningRuntimes[runtime.ID] {
+				gpus += runtime.GPUs
+			}
+		}
+
+		fmt.Println()
+		fmt.Println("Available capacity:")
+		specData = [][]string{
+			[]string{"Runtimes", strconv.Itoa(len(runtimesFromServer) - len(runningRuntimes))},
+			[]string{"Cores", strconv.Itoa(cores)},
+			[]string{"Memory", strconv.Itoa(mem) + " MiB"},
+			[]string{"GPUs", strconv.Itoa(gpus)},
+		}
+		specTable = tablewriter.NewWriter(os.Stdout)
+		for _, v := range specData {
+			specTable.Append(v)
+		}
+		specTable.SetAlignment(tablewriter.ALIGN_LEFT)
+		specTable.Render()
+
 	},
 }
