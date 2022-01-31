@@ -36,11 +36,15 @@ type Database interface {
 	UnassignRuntime(process *core.Process) error
 	MarkSuccessful(process *core.Process) error
 	MarkFailed(process *core.Process) error
-	NumberOfProcesses() (int, error)
-	NumberOfWaitingProcesses() (int, error)
-	NumberOfRunningProcesses() (int, error)
-	NumberOfSuccessfulProcesses() (int, error)
-	NumberOfFailedProcesses() (int, error)
+	NrOfProcesses() (int, error)
+	NrOfWaitingProcesses() (int, error)
+	NrOfRunningProcesses() (int, error)
+	NrOfSuccessfulProcesses() (int, error)
+	NrOfFailedProcesses() (int, error)
+	NrWaitingProcessesForColony(colonyID string) (int, error)
+	NrRunningProcessesForColony(colonyID string) (int, error)
+	NrSuccessfulProcessesForColony(colonyID string) (int, error)
+	NrFailedProcessesForColony(colonyID string) (int, error)
 
 	// Attribute functions
 	AddAttribute(attribute *core.Attribute) error
