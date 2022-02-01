@@ -28,7 +28,7 @@ func (validator *StandaloneValidator) RequireServerOwner(recoveredID string, ser
 
 func (validator *StandaloneValidator) RequireColonyOwner(recoveredID string, colonyID string) error {
 	if recoveredID != colonyID {
-		return errors.New("RecoveredID does not match Colony with Id")
+		return errors.New("RecoveredID does not match Colony Id")
 	}
 
 	return validator.ownership.checkIfColonyExists(colonyID)
