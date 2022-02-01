@@ -139,7 +139,7 @@ func (db *PQDatabase) selectCandidate(candidates []*core.Process) *core.Process 
 }
 
 func (db *PQDatabase) FindWaitingProcesses(colonyID string, count int) ([]*core.Process, error) {
-	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `PROCESSES WHERE TARGET_COLONY_ID=$1 AND STATE=$2 ORDER BY SUBMISSION_TIME LIMIT $3`
+	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `PROCESSES WHERE TARGET_COLONY_ID=$1 AND STATE=$2 ORDER BY SUBMISSION_TIME DESC LIMIT $3`
 	rows, err := db.postgresql.Query(sqlStatement, colonyID, core.WAITING, count)
 	if err != nil {
 		return nil, err
@@ -155,7 +155,7 @@ func (db *PQDatabase) FindWaitingProcesses(colonyID string, count int) ([]*core.
 }
 
 func (db *PQDatabase) FindRunningProcesses(colonyID string, count int) ([]*core.Process, error) {
-	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `PROCESSES WHERE TARGET_COLONY_ID=$1 AND STATE=$2 ORDER BY START_TIME LIMIT $3`
+	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `PROCESSES WHERE TARGET_COLONY_ID=$1 AND STATE=$2 ORDER BY START_TIME DESC LIMIT $3`
 	rows, err := db.postgresql.Query(sqlStatement, colonyID, core.RUNNING, count)
 	if err != nil {
 		return nil, err
@@ -171,7 +171,7 @@ func (db *PQDatabase) FindRunningProcesses(colonyID string, count int) ([]*core.
 }
 
 func (db *PQDatabase) FindSuccessfulProcesses(colonyID string, count int) ([]*core.Process, error) {
-	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `PROCESSES WHERE TARGET_COLONY_ID=$1 AND STATE=$2 ORDER BY END_TIME LIMIT $3`
+	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `PROCESSES WHERE TARGET_COLONY_ID=$1 AND STATE=$2 ORDER BY END_TIME DESC LIMIT $3`
 	rows, err := db.postgresql.Query(sqlStatement, colonyID, core.SUCCESS, count)
 	if err != nil {
 		return nil, err
@@ -187,7 +187,7 @@ func (db *PQDatabase) FindSuccessfulProcesses(colonyID string, count int) ([]*co
 }
 
 func (db *PQDatabase) FindFailedProcesses(colonyID string, count int) ([]*core.Process, error) {
-	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `PROCESSES WHERE TARGET_COLONY_ID=$1 AND STATE=$2 ORDER BY END_TIME LIMIT $3`
+	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `PROCESSES WHERE TARGET_COLONY_ID=$1 AND STATE=$2 ORDER BY END_TIME DESC LIMIT $3`
 	rows, err := db.postgresql.Query(sqlStatement, colonyID, core.FAILED, count)
 	if err != nil {
 		return nil, err
