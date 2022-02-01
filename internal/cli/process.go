@@ -34,6 +34,7 @@ func init() {
 	submitProcessCmd.Flags().StringVarP(&RuntimeID, "runtimeid", "", "", "Runtime Id")
 	submitProcessCmd.Flags().StringVarP(&RuntimePrvKey, "runtimeprvkey", "", "", "Runtime private key")
 	submitProcessCmd.Flags().StringVarP(&SpecFile, "spec", "", "", "JSON specification of a Colony process")
+	submitProcessCmd.Flags().StringVarP(&ColonyID, "colonyid", "", "", "Colony Id")
 	submitProcessCmd.MarkFlagRequired("spec")
 
 	listWaitingProcessesCmd.Flags().StringVarP(&ColonyID, "colonyid", "", "", "Colony Id")
@@ -104,6 +105,17 @@ var submitProcessCmd = &cobra.Command{
 
 		processSpec, err := core.ConvertJSONToProcessSpec(string(jsonSpecBytes))
 		CheckError(err)
+
+		if processSpec.Conditions.ColonyID == "" {
+			if ColonyID == "" {
+				ColonyID = os.Getenv("COLONYID")
+			}
+			if ColonyID == "" {
+				CheckError(errors.New("Unknown Colony Id, please set COLONYID env variable or specify ColonyID in JSON file"))
+			}
+
+			processSpec.Conditions.ColonyID = ColonyID
+		}
 
 		keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
 		CheckError(err)
@@ -264,10 +276,10 @@ var listRunningProcessesCmd = &cobra.Command{
 
 			var data [][]string
 			for _, process := range processes {
-				data = append(data, []string{process.ID, process.StartTime.Format(TimeLayout)})
+				data = append(data, []string{process.ID, process.StartTime.Format(TimeLayout), process.ProcessSpec.Conditions.RuntimeType})
 			}
 			table := tablewriter.NewWriter(os.Stdout)
-			table.SetHeader([]string{"ID", "Start time"})
+			table.SetHeader([]string{"ID", "Start time", "Target Runtime"})
 			for _, v := range data {
 				table.Append(v)
 			}
@@ -319,10 +331,10 @@ var listSuccessfulProcessesCmd = &cobra.Command{
 
 			var data [][]string
 			for _, process := range processes {
-				data = append(data, []string{process.ID, process.EndTime.Format(TimeLayout)})
+				data = append(data, []string{process.ID, process.EndTime.Format(TimeLayout), process.ProcessSpec.Conditions.RuntimeType})
 			}
 			table := tablewriter.NewWriter(os.Stdout)
-			table.SetHeader([]string{"ID", "End time"})
+			table.SetHeader([]string{"ID", "End time", "Target Runtime"})
 			for _, v := range data {
 				table.Append(v)
 			}
