@@ -65,6 +65,24 @@ Else it will contain the reply JSON data, e.g:
 }
 ```
 
+### Delete Colony
+* PayloadType: **deletecolonymsg**
+* Credentials: A valid Server Owner Private Key
+
+#### Payload 
+```json
+{
+    "msgtype": "deletecolonymsg",
+    "colonyid": "6d61afe7914c63f28a4c97645ce6ab264c3ad3a0e46ebd1f3788e83053934e18"
+    }
+}
+```
+
+#### Reply 
+```json
+{}
+```
+
 ### List Colonies
 * PayloadType: **getcoloniesmsg**
 * Credentials: A valid Server Owner Private Key
@@ -374,10 +392,10 @@ Else it will contain the reply JSON data, e.g:
 
 #### Payload 
 The state attribute can have the following values:
-* 1 : Waiting 
-* 2 : Running 
-* 3 : Success 
-* 4 : Failed 
+* 0 : Waiting 
+* 1 : Running 
+* 2 : Success 
+* 3 : Failed 
 
 ```json
 {
