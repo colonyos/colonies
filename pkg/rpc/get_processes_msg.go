@@ -7,7 +7,7 @@ import (
 const GetProcessesPayloadType = "getprocessesmsg"
 
 type GetProcessesMsg struct {
-	ColonyID string `json:"coloyid"`
+	ColonyID string `json:"colonyid"`
 	Count    int    `json:"count"`
 	State    int    `json:"state"`
 	MsgType  string `json:"msgtype"`
