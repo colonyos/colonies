@@ -45,3 +45,4 @@ github_test:
 
 install:
 	cp ./bin/colonies /usr/local/bin
+	cp ./lib/cryptolib.so /usr/lib
