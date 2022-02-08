@@ -74,7 +74,6 @@ Else it will contain the reply JSON data, e.g:
 {
     "msgtype": "deletecolonymsg",
     "colonyid": "6d61afe7914c63f28a4c97645ce6ab264c3ad3a0e46ebd1f3788e83053934e18"
-    }
 }
 ```
 
@@ -519,7 +518,7 @@ The state attribute can have the following values:
 #### Payload 
 ```json
 {
-    "msgtype": "closefailedfulmsg",
+    "msgtype": "closefailedmsg",
     "processid": "24f6d85804e2abde0c85a9e8aef8b308c44a72323565b14f11756d4997acf200"
 }
 ```
