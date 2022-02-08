@@ -7,11 +7,13 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const DBName = "postgres"
 const DBPrefix = "PROD_"
 const KEYCHAIN_PATH = ".colonies"
 const TimeLayout = "2006-01-02 15:04:05"
+const DefaultDBPort = 5432
+const DefaultServerPort = 8080
 
+var DBName = "postgres"
 var Verbose bool
 var DBHost string
 var DBPort int
