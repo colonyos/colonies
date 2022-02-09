@@ -58,6 +58,8 @@ var registerRuntimeCmd = &cobra.Command{
 	Short: "Register a new Runtime",
 	Long:  "Register a new Runtime",
 	Run: func(cmd *cobra.Command, args []string) {
+		parseServerEnv()
+
 		jsonSpecBytes, err := ioutil.ReadFile(SpecFile)
 		CheckError(err)
 
@@ -105,6 +107,8 @@ var lsRuntimesCmd = &cobra.Command{
 	Short: "List all Runtimes available in a Colony",
 	Long:  "List all Runtimes available in a Colony",
 	Run: func(cmd *cobra.Command, args []string) {
+		parseServerEnv()
+
 		keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
 		CheckError(err)
 
@@ -184,6 +188,8 @@ var approveRuntimeCmd = &cobra.Command{
 	Short: "Approve a Colony Runtime",
 	Long:  "Approve a Colony Runtime",
 	Run: func(cmd *cobra.Command, args []string) {
+		parseServerEnv()
+
 		keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
 		CheckError(err)
 
@@ -212,6 +218,8 @@ var rejectRuntimeCmd = &cobra.Command{
 	Short: "Reject a Colony Runtime",
 	Long:  "Reject a Colony Runtime",
 	Run: func(cmd *cobra.Command, args []string) {
+		parseServerEnv()
+
 		keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
 		CheckError(err)
 
@@ -240,6 +248,8 @@ var deleteRuntimeCmd = &cobra.Command{
 	Short: "Unregister a Colony Runtime",
 	Long:  "Unregister a Colony Runtime",
 	Run: func(cmd *cobra.Command, args []string) {
+		parseServerEnv()
+
 		keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
 		CheckError(err)
 

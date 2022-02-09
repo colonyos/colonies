@@ -1,7 +1,7 @@
 all: build
 .PHONY: all build
 
-IMAGE ?= registry.ice.ri.se/colonies
+IMAGE ?= colonyos/colonies
 
 build:
 	@CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o ./bin/colonies ./cmd/main.go

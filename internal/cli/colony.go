@@ -22,8 +22,8 @@ func init() {
 	colonyCmd.AddCommand(statusCmd)
 	rootCmd.AddCommand(colonyCmd)
 
-	colonyCmd.PersistentFlags().StringVarP(&ServerHost, "host", "", "localhost", "Server host")
-	colonyCmd.PersistentFlags().IntVarP(&ServerPort, "port", "", 8080, "Server HTTP port")
+	colonyCmd.PersistentFlags().StringVarP(&ServerHost, "host", "", DefaultServerHost, "Server host")
+	colonyCmd.PersistentFlags().IntVarP(&ServerPort, "port", "", DefaultServerPort, "Server HTTP port")
 
 	registerColonyCmd.Flags().StringVarP(&ServerID, "serverid", "", "", "Colonies server Id")
 	registerColonyCmd.Flags().StringVarP(&ServerPrvKey, "serverprvkey", "", "", "Colonies server private key")
@@ -55,6 +55,8 @@ var registerColonyCmd = &cobra.Command{
 	Short: "Register a new Colony",
 	Long:  "Register a new Colony",
 	Run: func(cmd *cobra.Command, args []string) {
+		parseServerEnv()
+
 		jsonSpecBytes, err := ioutil.ReadFile(SpecFile)
 		CheckError(err)
 
@@ -101,6 +103,8 @@ var unregisterColonyCmd = &cobra.Command{
 	Short: "Unregister a Colony",
 	Long:  "Unregister a Colony",
 	Run: func(cmd *cobra.Command, args []string) {
+		parseServerEnv()
+
 		keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
 		CheckError(err)
 
@@ -129,6 +133,8 @@ var lsColoniesCmd = &cobra.Command{
 	Short: "List all Colonies",
 	Long:  "List all Colonies",
 	Run: func(cmd *cobra.Command, args []string) {
+		parseServerEnv()
+
 		client := client.CreateColoniesClient(ServerHost, ServerPort, true) // XXX: Insecure
 
 		keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
@@ -177,6 +183,8 @@ var statusCmd = &cobra.Command{
 	Short: "Show status a Colony",
 	Long:  "Show status a Colony",
 	Run: func(cmd *cobra.Command, args []string) {
+		parseServerEnv()
+
 		keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
 		CheckError(err)
 
