@@ -1,7 +1,7 @@
 #!/bin/bash
 
 export SERVERID="9289dfccedf27392810b96968535530bb69f90afe7c35738e0e627f3810d943e"
-export SERVERPORT="8080"
+export SERVERPORT="50051"
 export TLSCERT="../cert/cert.pem"
 export TLSKEY="../cert/cert.key"
 export DBHOST="10.0.0.240"
