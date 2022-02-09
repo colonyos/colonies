@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: colonies-deployment
+  labels:
+    app: colonies
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: colonies
+  template:
+     metadata:
+       labels:
+          app: colonies
+     spec:
+         containers:
+           - name: colonies
+             image: colonyos/colonies:latest 
+             imagePullPolicy: "Always"
+             lifecycle:
+                postStart:
+                  exec:
+                     command:
+                        ['colonies', 'database', 'create']
+             ports:
+               - containerPort: 50080
+                 hostPort: 50080
+             envFrom:
+               - configMapRef:
+                   name: colonies-config
+             resources:
+                limits:
+                  cpu: "2000m"
+                  memory: "12000Mi"
+                requests:
+                  cpu: "2000m"
+                  memory: "12000Mi"
+             volumeMounts:
+               - name: colonies-certs-tls
+                 mountPath: /run/secrets/tls
+                 readOnly: true
+         volumes:
+            - name: colonies-certs-tls
+              secret:
+                secretName: colonies-cert-tls

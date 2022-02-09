@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"time"
 
 	"github.com/colonyos/colonies/internal/logging"
 	"github.com/colonyos/colonies/pkg/database/postgresql"
@@ -16,14 +17,10 @@ func init() {
 	dbCmd.AddCommand(dbDropCmd)
 	rootCmd.AddCommand(dbCmd)
 
-	dbCmd.PersistentFlags().StringVarP(&DBHost, "dbhost", "", "localhost", "Colonies database host")
-	dbCmd.MarkPersistentFlagRequired("dbhost")
-	dbCmd.PersistentFlags().IntVarP(&DBPort, "dbport", "", 5432, "Colonies database port")
-	dbCmd.MarkPersistentFlagRequired("dbport")
+	dbCmd.PersistentFlags().StringVarP(&DBHost, "dbhost", "", DefaultDBHost, "Colonies database host")
+	dbCmd.PersistentFlags().IntVarP(&DBPort, "dbport", "", DefaultDBPort, "Colonies database port")
 	dbCmd.PersistentFlags().StringVarP(&DBUser, "dbuser", "", "", "Colonies database user")
-	dbCmd.MarkPersistentFlagRequired("dbuser")
 	dbCmd.PersistentFlags().StringVarP(&DBPassword, "dbpassword", "", "", "Colonies database password")
-	dbCmd.MarkPersistentFlagRequired("dbpassword")
 }
 
 var dbCmd = &cobra.Command{
@@ -32,19 +29,51 @@ var dbCmd = &cobra.Command{
 	Long:  "manage Colonies database",
 }
 
+func parseDBEnv() {
+	DBHostEnv := os.Getenv("DBHOST")
+	if DBHostEnv != "" {
+		DBHost = DBHostEnv
+	}
+
+	var err error
+	DBPortEnvStr := os.Getenv("DBPORT")
+	if DBPortEnvStr != "" {
+		DBPort, err = strconv.Atoi(DBPortEnvStr)
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(-1)
+		}
+	}
+
+	if DBUser == "" {
+		DBUser = os.Getenv("DBUSER")
+	}
+
+	if DBPassword == "" {
+		DBPassword = os.Getenv("DBPASSWORD")
+	}
+}
+
 var dbCreateCmd = &cobra.Command{
 	Use:   "create",
 	Short: "create a database",
 	Long:  "create a database",
 	Run: func(cmd *cobra.Command, args []string) {
-		db := postgresql.CreatePQDatabase(DBHost, DBPort, DBUser, DBPassword, DBName, DBPrefix)
-		err := db.Connect()
-		if err != nil {
-			fmt.Println("Failed to connect to database")
-			os.Exit(-1)
+		parseDBEnv()
+
+		var db *postgresql.PQDatabase
+		for {
+			db = postgresql.CreatePQDatabase(DBHost, DBPort, DBUser, DBPassword, DBName, DBPrefix)
+			err := db.Connect()
+			if err != nil {
+				fmt.Println("Failed to connect to database")
+				time.Sleep(1 * time.Second)
+			} else {
+				break
+			}
 		}
 		logging.Log().Info("Connecting to Colonies database, host: " + DBHost + ", port: " + strconv.Itoa(DBPort) + ", user: " + DBUser + ", password: " + "******************, name: " + DBName + ". prefix: " + DBPrefix)
-		err = db.Initialize()
+		err := db.Initialize()
 		if err != nil {
 			fmt.Println("Failed to create database")
 			os.Exit(-1)
@@ -58,6 +87,8 @@ var dbDropCmd = &cobra.Command{
 	Short: "drop the database",
 	Long:  "drop the database",
 	Run: func(cmd *cobra.Command, args []string) {
+		parseDBEnv()
+
 		fmt.Print("WARNING!!! Are you sure you want to drop the database? This operation cannot be undone! (YES,no): ")
 
 		reader := bufio.NewReader(os.Stdin)

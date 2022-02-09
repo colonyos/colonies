@@ -5,9 +5,12 @@ metadata:
   labels:
     app: colonies
 data:
-  SERVERID: 9289dfccedf27392810b96968535530bb69f90afe7c35738e0e627f3810d943e
-  SERVERPORT: 8080
-  POSTGRES_USER: postgres
-  POSTGRES_PASSWORD: rFcLGNkgsNtksg6Pgtn9CumL4xXBQ7
-  VERBOSE: true
-
+  SERVERID: "9289dfccedf27392810b96968535530bb69f90afe7c35738e0e627f3810d943e"
+  SERVERPORT: "50080"
+  DBHOST: "postgres"
+  DBPORT: "5432"
+  DBUSER: "postgres"
+  DBPASSWORD: "rFcLGNkgsNtksg6Pgtn9CumL4xXBQ7"
+  TLSCERT: "/run/secrets/tls/tls.crt"
+  TLSKEY: "/run/secrets/tls/tls.key"
+  VERBOSE: "true"
