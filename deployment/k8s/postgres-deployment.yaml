@@ -25,7 +25,7 @@ spec:
                    name: postgres-config
              volumeMounts:
                - mountPath: /var/lib/postgresql/data
-                 name: postgredb
+                 name: postgresdb
              resources:
                 limits:
                   cpu: "2000m"
@@ -34,6 +34,6 @@ spec:
                   cpu: "2000m"
                   memory: "14000Mi"
          volumes:
-           - name: postgredb
+           - name: postgresdb
              persistentVolumeClaim:
                claimName: local-path-pvc
