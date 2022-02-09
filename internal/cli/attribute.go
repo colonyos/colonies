@@ -46,6 +46,8 @@ var addAttributeCmd = &cobra.Command{
 	Short: "Add an attribute to a proces",
 	Long:  "Add an attribute to a process",
 	Run: func(cmd *cobra.Command, args []string) {
+		parseServerEnv()
+
 		keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
 		CheckError(err)
 
@@ -82,6 +84,8 @@ var getAttributeCmd = &cobra.Command{
 	Short: "Get an attribute of a proces",
 	Long:  "Get an attribute of a process",
 	Run: func(cmd *cobra.Command, args []string) {
+		parseServerEnv()
+
 		keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
 		CheckError(err)
 

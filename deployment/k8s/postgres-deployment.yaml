@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres-deployment
+  labels:
+    app: postgres
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+     metadata:
+       labels:
+          app: postgres
+     spec:
+         containers:
+           - name: timescaledb
+             image: timescale/timescaledb:latest-pg12
+             imagePullPolicy: "IfNotPresent"
+             ports:
+               - containerPort: 5432
+             envFrom:
+               - configMapRef:
+                   name: postgres-config
+             volumeMounts:
+               - mountPath: /var/lib/postgresql/data
+                 name: postgresdb
+             resources:
+                limits:
+                  cpu: "2000m"
+                  memory: "14000Mi"
+                requests:
+                  cpu: "2000m"
+                  memory: "14000Mi"
+         volumes:
+           - name: postgresdb
+             persistentVolumeClaim:
+               claimName: local-path-pvc

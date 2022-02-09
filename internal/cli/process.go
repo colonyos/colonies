@@ -100,6 +100,8 @@ var submitProcessCmd = &cobra.Command{
 	Short: "Submit a Process to a Colony",
 	Long:  "Submit a Process to a Colony",
 	Run: func(cmd *cobra.Command, args []string) {
+		parseServerEnv()
+
 		jsonSpecBytes, err := ioutil.ReadFile(SpecFile)
 		CheckError(err)
 
@@ -145,6 +147,8 @@ var assignProcessCmd = &cobra.Command{
 	Short: "Assign a Process to a Runtime",
 	Long:  "Assign a Process to a Runtime",
 	Run: func(cmd *cobra.Command, args []string) {
+		parseServerEnv()
+
 		keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
 		CheckError(err)
 
@@ -182,6 +186,8 @@ var listWaitingProcessesCmd = &cobra.Command{
 	Short: "List all Waiting Processes",
 	Long:  "List all Waiting Processes",
 	Run: func(cmd *cobra.Command, args []string) {
+		parseServerEnv()
+
 		keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
 		CheckError(err)
 
@@ -238,6 +244,8 @@ var listRunningProcessesCmd = &cobra.Command{
 	Short: "List all Running Processes",
 	Long:  "List all Running Processes",
 	Run: func(cmd *cobra.Command, args []string) {
+		parseServerEnv()
+
 		keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
 		CheckError(err)
 
@@ -293,6 +301,8 @@ var listSuccessfulProcessesCmd = &cobra.Command{
 	Short: "List all Successfull Processes",
 	Long:  "List all Successfull Processes",
 	Run: func(cmd *cobra.Command, args []string) {
+		parseServerEnv()
+
 		keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
 		CheckError(err)
 
@@ -348,6 +358,8 @@ var listFailedProcessesCmd = &cobra.Command{
 	Short: "List all Failed Processes",
 	Long:  "List all Failed Processes",
 	Run: func(cmd *cobra.Command, args []string) {
+		parseServerEnv()
+
 		keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
 		CheckError(err)
 
@@ -403,6 +415,8 @@ var getProcessCmd = &cobra.Command{
 	Short: "Get info about a Process",
 	Long:  "Get info about a Process",
 	Run: func(cmd *cobra.Command, args []string) {
+		parseServerEnv()
+
 		keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
 		CheckError(err)
 
@@ -539,6 +553,8 @@ var deleteProcessCmd = &cobra.Command{
 	Short: "Delete a Process",
 	Long:  "Delete a Process",
 	Run: func(cmd *cobra.Command, args []string) {
+		parseServerEnv()
+
 		keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
 		CheckError(err)
 
@@ -567,6 +583,8 @@ var closeSuccessful = &cobra.Command{
 	Short: "Close a Process as Successful",
 	Long:  "Close a Process as Successful",
 	Run: func(cmd *cobra.Command, args []string) {
+		parseServerEnv()
+
 		keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
 		CheckError(err)
 
@@ -598,6 +616,8 @@ var closeFailed = &cobra.Command{
 	Short: "Close a Process as Failed",
 	Long:  "Close a Process as Failed",
 	Run: func(cmd *cobra.Command, args []string) {
+		parseServerEnv()
+
 		keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
 		CheckError(err)
 
