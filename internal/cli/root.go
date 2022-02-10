@@ -14,6 +14,7 @@ const DefaultDBHost = "localhost"
 const DefaultDBPort = 5432
 const DefaultServerHost = "localhost"
 const DefaultServerPort = 50080
+const MaxAttributeLength = 70
 
 var DBName = "postgres"
 var Verbose bool
