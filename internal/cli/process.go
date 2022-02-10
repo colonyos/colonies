@@ -536,11 +536,25 @@ var getProcessCmd = &cobra.Command{
 			default:
 				attributeType = "Unknown"
 			}
-			attributeData = append(attributeData, []string{attribute.ID, attribute.Key, attribute.Value, attributeType})
+			var key string
+			if len(attribute.Key) > MaxAttributeLength {
+				key = attribute.Key[0:MaxAttributeLength] + "..."
+			} else {
+				key = attribute.Key
+			}
+
+			var value string
+			if len(attribute.Value) > MaxAttributeLength {
+				value = attribute.Value[0:MaxAttributeLength] + "..."
+			} else {
+				value = attribute.Value
+			}
+			attributeData = append(attributeData, []string{attribute.ID, key, value, attributeType})
 		}
 
 		attributeTable := tablewriter.NewWriter(os.Stdout)
 		attributeTable.SetHeader([]string{"ID", "Key", "Value", "Type"})
+		attributeTable.SetAlignment(tablewriter.ALIGN_LEFT)
 		for _, v := range attributeData {
 			attributeTable.Append(v)
 		}

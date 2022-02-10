@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"strconv"
 
 	"github.com/colonyos/colonies/pkg/client"
 	"github.com/colonyos/colonies/pkg/core"
@@ -169,11 +170,12 @@ var lsRuntimesCmd = &cobra.Command{
 				state = "Unknown"
 			}
 
-			data = append(data, []string{runtime.ID, runtime.Name, state})
+			data = append(data, []string{runtime.ID, runtime.Name, runtime.RuntimeType, state, strconv.Itoa(runtime.Cores), strconv.Itoa(runtime.Mem), strconv.Itoa(runtime.GPUs)})
 		}
 
 		table := tablewriter.NewWriter(os.Stdout)
-		table.SetHeader([]string{"ID", "Name", "State"})
+		table.SetHeader([]string{"ID", "Name", "Type", "State", "Cores", "Mem [MiB]", "GPUs"})
+		table.SetAlignment(tablewriter.ALIGN_LEFT)
 
 		for _, v := range data {
 			table.Append(v)
