@@ -18,7 +18,7 @@ func TestCreateProcess(t *testing.T) {
 	cores := 10
 	gpus := 1
 
-	processSpec := CreateProcessSpec(colonyID, []string{runtime1ID, runtime2ID}, runtimeType, timeout, maxRetries, mem, cores, gpus, make(map[string]string))
+	processSpec := CreateProcessSpec("test_image", "test_cmd", []string{"test_arg"}, []string{"test_volumes"}, []string{"test_ports"}, colonyID, []string{runtime1ID, runtime2ID}, runtimeType, timeout, maxRetries, mem, cores, gpus, make(map[string]string))
 	process := CreateProcess(processSpec)
 	assert.True(t, process.ProcessSpec.Equals(processSpec))
 }
@@ -34,7 +34,7 @@ func TestAssignProcess(t *testing.T) {
 	cores := 10
 	gpus := 1
 
-	processSpec := CreateProcessSpec(colonyID, []string{runtime1ID, runtime2ID}, runtimeType, timeout, maxRetries, mem, cores, gpus, make(map[string]string))
+	processSpec := CreateProcessSpec("test_image", "test_cmd", []string{"test_arg"}, []string{"test_volumes"}, []string{"test_ports"}, colonyID, []string{runtime1ID, runtime2ID}, runtimeType, timeout, maxRetries, mem, cores, gpus, make(map[string]string))
 	process := CreateProcess(processSpec)
 
 	assert.False(t, process.IsAssigned)
@@ -55,7 +55,7 @@ func TestTimeCalc(t *testing.T) {
 	cores := 10
 	gpus := 1
 
-	processSpec := CreateProcessSpec(colonyID, []string{}, runtimeType, timeout, maxRetries, mem, cores, gpus, make(map[string]string))
+	processSpec := CreateProcessSpec("test_image", "test_cmd", []string{"test_arg"}, []string{"test_volumes"}, []string{"test_ports"}, colonyID, []string{}, runtimeType, timeout, maxRetries, mem, cores, gpus, make(map[string]string))
 	process := CreateProcess(processSpec)
 	process.SetSubmissionTime(startTime)
 	process.SetStartTime(startTime.Add(1 * time.Second))
@@ -75,7 +75,7 @@ func TestProcessToJSON(t *testing.T) {
 	cores := 10
 	gpus := 1
 
-	processSpec := CreateProcessSpec(colonyID, []string{}, runtimeType, timeout, maxRetries, mem, cores, gpus, make(map[string]string))
+	processSpec := CreateProcessSpec("test_image", "test_cmd", []string{"test_arg"}, []string{"test_volumes"}, []string{"test_ports"}, colonyID, []string{}, runtimeType, timeout, maxRetries, mem, cores, gpus, make(map[string]string))
 	process := CreateProcess(processSpec)
 	process.SetSubmissionTime(startTime)
 	process.SetStartTime(startTime.Add(1 * time.Second))
@@ -114,7 +114,7 @@ func TestProcessArrayToJSON(t *testing.T) {
 	cores := 10
 	gpus := 1
 
-	processSpec1 := CreateProcessSpec(colonyID, []string{}, runtimeType, timeout, maxRetries, mem, cores, gpus, make(map[string]string))
+	processSpec1 := CreateProcessSpec("test_image", "test_cmd", []string{"test_arg"}, []string{"test_volumes"}, []string{"test_ports"}, colonyID, []string{}, runtimeType, timeout, maxRetries, mem, cores, gpus, make(map[string]string))
 	process1 := CreateProcess(processSpec1)
 	process1.SetSubmissionTime(startTime)
 	process1.SetStartTime(startTime.Add(1 * time.Second))
@@ -128,7 +128,7 @@ func TestProcessArrayToJSON(t *testing.T) {
 	attributes1 = append(attributes1, CreateAttribute(attribute3ID, OUT, "out_key_1", "out_value_1"))
 	process1.SetAttributes(attributes1)
 
-	processSpec2 := CreateProcessSpec(colonyID, []string{}, runtimeType, timeout, maxRetries, mem, cores, gpus, make(map[string]string))
+	processSpec2 := CreateProcessSpec("test_image", "test_cmd", []string{"test_arg"}, []string{"test_volumes"}, []string{"test_ports"}, colonyID, []string{}, runtimeType, timeout, maxRetries, mem, cores, gpus, make(map[string]string))
 	process2 := CreateProcess(processSpec2)
 	process2.SetSubmissionTime(startTime)
 	process2.SetStartTime(startTime.Add(1 * time.Second))

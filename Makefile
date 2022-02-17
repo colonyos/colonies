@@ -30,7 +30,7 @@ test:
 	@cd pkg/security/crypto; grc go test -v
 	@cd pkg/security/validator; grc go test -v
 	@cd pkg/server; grc go test -v
-	@cd pkg/scheduler/basic; grc go test -v
+	@cd pkg/planner/basic; grc go test -v
 
 github_test:
 	@cd internal/crypto; go test -v
@@ -41,7 +41,7 @@ github_test:
 	@cd pkg/security/crypto; go test -v
 	@cd pkg/security/validator; go test -v
 	@cd pkg/server; go test -v
-	@cd pkg/scheduler/basic; go test -v
+	@cd pkg/planner/basic; go test -v
 
 install:
 	cp ./bin/colonies /usr/local/bin
