@@ -18,8 +18,8 @@ func (db *PQDatabase) AddProcess(process *core.Process) error {
 
 	submissionTime := time.Now()
 
-	sqlStatement := `INSERT INTO  ` + db.dbPrefix + `PROCESSES (PROCESS_ID, TARGET_COLONY_ID, TARGET_RUNTIME_IDS, ASSIGNED_RUNTIME_ID, STATE, IS_ASSIGNED, RUNTIME_TYPE, SUBMISSION_TIME, START_TIME, END_TIME, DEADLINE, RETRIES, TIMEOUT, MAX_RETRIES, MEM, CORES, GPUs) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)`
-	_, err := db.postgresql.Exec(sqlStatement, process.ID, process.ProcessSpec.Conditions.ColonyID, pq.Array(targetRuntimeIDs), process.AssignedRuntimeID, process.State, process.IsAssigned, process.ProcessSpec.Conditions.RuntimeType, submissionTime, time.Time{}, time.Time{}, process.Deadline, 0, process.ProcessSpec.Timeout, process.ProcessSpec.MaxRetries, process.ProcessSpec.Conditions.Mem, process.ProcessSpec.Conditions.Cores, process.ProcessSpec.Conditions.GPUs)
+	sqlStatement := `INSERT INTO  ` + db.dbPrefix + `PROCESSES (PROCESS_ID, TARGET_COLONY_ID, TARGET_RUNTIME_IDS, ASSIGNED_RUNTIME_ID, STATE, IS_ASSIGNED, RUNTIME_TYPE, SUBMISSION_TIME, START_TIME, END_TIME, DEADLINE, RETRIES, IMAGE, CMD, ARGS, VOLUMES, PORTS, TIMEOUT, MAX_RETRIES, MEM, CORES, GPUs) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22)`
+	_, err := db.postgresql.Exec(sqlStatement, process.ID, process.ProcessSpec.Conditions.ColonyID, pq.Array(targetRuntimeIDs), process.AssignedRuntimeID, process.State, process.IsAssigned, process.ProcessSpec.Conditions.RuntimeType, submissionTime, time.Time{}, time.Time{}, process.Deadline, 0, process.ProcessSpec.Image, process.ProcessSpec.Cmd, pq.Array(process.ProcessSpec.Args), pq.Array(process.ProcessSpec.Volumes), pq.Array(process.ProcessSpec.Ports), process.ProcessSpec.Timeout, process.ProcessSpec.MaxRetries, process.ProcessSpec.Conditions.Mem, process.ProcessSpec.Conditions.Cores, process.ProcessSpec.Conditions.GPUs)
 	if err != nil {
 		return err
 	}
@@ -54,6 +54,11 @@ func (db *PQDatabase) parseProcesses(rows *sql.Rows) ([]*core.Process, error) {
 		var startTime time.Time
 		var endTime time.Time
 		var deadline time.Time
+		var image string
+		var cmd string
+		var args []string
+		var volumes []string
+		var ports []string
 		var timeout int
 		var retries int
 		var maxRetries int
@@ -61,7 +66,7 @@ func (db *PQDatabase) parseProcesses(rows *sql.Rows) ([]*core.Process, error) {
 		var cores int
 		var gpus int
 
-		if err := rows.Scan(&processID, &targetColonyID, pq.Array(&targetRuntimeIDs), &assignedRuntimeID, &state, &isAssigned, &runtimeType, &submissionTime, &startTime, &endTime, &deadline, &timeout, &retries, &maxRetries, &mem, &cores, &gpus); err != nil {
+		if err := rows.Scan(&processID, &targetColonyID, pq.Array(&targetRuntimeIDs), &assignedRuntimeID, &state, &isAssigned, &runtimeType, &submissionTime, &startTime, &endTime, &deadline, &image, &cmd, pq.Array(&args), pq.Array(&volumes), pq.Array(&ports), &timeout, &retries, &maxRetries, &mem, &cores, &gpus); err != nil {
 			return nil, err
 		}
 
@@ -85,7 +90,7 @@ func (db *PQDatabase) parseProcesses(rows *sql.Rows) ([]*core.Process, error) {
 			env[attribute.Key] = attribute.Value
 		}
 
-		processSpec := core.CreateProcessSpec(targetColonyID, targetRuntimeIDs, runtimeType, timeout, maxRetries, mem, cores, gpus, env)
+		processSpec := core.CreateProcessSpec(image, cmd, args, volumes, ports, targetColonyID, targetRuntimeIDs, runtimeType, timeout, maxRetries, mem, cores, gpus, env)
 		process := core.CreateProcessFromDB(processSpec, processID, assignedRuntimeID, isAssigned, state, submissionTime, startTime, endTime, deadline, retries, attributes)
 		processes = append(processes, process)
 	}

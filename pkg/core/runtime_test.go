@@ -2,6 +2,7 @@ package core
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -16,8 +17,10 @@ func TestCreateRuntime(t *testing.T) {
 	mem := 80326
 	gpu := "NVIDIA GeForce RTX 2080 Ti Rev. A"
 	gpus := 1
+	commissionTime := time.Now()
+	lastHeardFromTime := time.Now()
 
-	runtime := CreateRuntime(id, runtimeType, name, colonyID, cpu, cores, mem, gpu, gpus)
+	runtime := CreateRuntime(id, runtimeType, name, colonyID, cpu, cores, mem, gpu, gpus, commissionTime, lastHeardFromTime)
 
 	assert.Equal(t, PENDING, runtime.State)
 	assert.True(t, runtime.IsPending())
@@ -44,7 +47,10 @@ func TestSetRuntimeID(t *testing.T) {
 	mem := 80326
 	gpu := "NVIDIA GeForce RTX 2080 Ti Rev. A"
 	gpus := 1
-	runtime := CreateRuntime(id, runtimeType, name, colonyID, cpu, cores, mem, gpu, gpus)
+	commissionTime := time.Now()
+	lastHeardFromTime := time.Now()
+
+	runtime := CreateRuntime(id, runtimeType, name, colonyID, cpu, cores, mem, gpu, gpus, commissionTime, lastHeardFromTime)
 	runtime.SetID("test_runtimeid_set")
 
 	assert.Equal(t, runtime.ID, "test_runtimeid_set")
@@ -60,7 +66,10 @@ func TestSetColonyIDonRimtime(t *testing.T) {
 	mem := 80326
 	gpu := "NVIDIA GeForce RTX 2080 Ti Rev. A"
 	gpus := 1
-	runtime := CreateRuntime(id, runtimeType, name, colonyID, cpu, cores, mem, gpu, gpus)
+	commissionTime := time.Now()
+	lastHeardFromTime := time.Now()
+
+	runtime := CreateRuntime(id, runtimeType, name, colonyID, cpu, cores, mem, gpu, gpus, commissionTime, lastHeardFromTime)
 	runtime.SetColonyID("test_colonyid_set")
 
 	assert.Equal(t, runtime.ColonyID, "test_colonyid_set")
@@ -76,27 +85,29 @@ func TestRuntimeEquals(t *testing.T) {
 	mem := 80326
 	gpu := "NVIDIA GeForce RTX 2080 Ti Rev. A"
 	gpus := 1
+	commissionTime := time.Now()
+	lastHeardFromTime := time.Now()
 
-	runtime1 := CreateRuntime(id, runtimeType, name, colonyID, cpu, cores, mem, gpu, gpus)
+	runtime1 := CreateRuntime(id, runtimeType, name, colonyID, cpu, cores, mem, gpu, gpus, commissionTime, lastHeardFromTime)
 	assert.True(t, runtime1.Equals(runtime1))
 
-	runtime2 := CreateRuntime(id+"X", runtimeType, name, colonyID, cpu, cores, mem, gpu, gpus)
+	runtime2 := CreateRuntime(id+"X", runtimeType, name, colonyID, cpu, cores, mem, gpu, gpus, commissionTime, lastHeardFromTime)
 	assert.False(t, runtime2.Equals(runtime1))
-	runtime2 = CreateRuntime(id, runtimeType+"X", name, colonyID, cpu, cores, mem, gpu, gpus)
+	runtime2 = CreateRuntime(id, runtimeType+"X", name, colonyID, cpu, cores, mem, gpu, gpus, commissionTime, lastHeardFromTime)
 	assert.False(t, runtime2.Equals(runtime1))
-	runtime2 = CreateRuntime(id, runtimeType, name+"X", colonyID, cpu, cores, mem, gpu, gpus)
+	runtime2 = CreateRuntime(id, runtimeType, name+"X", colonyID, cpu, cores, mem, gpu, gpus, commissionTime, lastHeardFromTime)
 	assert.False(t, runtime2.Equals(runtime1))
-	runtime2 = CreateRuntime(id, runtimeType, name, colonyID+"X", cpu, cores, mem, gpu, gpus)
+	runtime2 = CreateRuntime(id, runtimeType, name, colonyID+"X", cpu, cores, mem, gpu, gpus, commissionTime, lastHeardFromTime)
 	assert.False(t, runtime2.Equals(runtime1))
-	runtime2 = CreateRuntime(id, runtimeType, name, colonyID, cpu+"X", cores, mem, gpu, gpus)
+	runtime2 = CreateRuntime(id, runtimeType, name, colonyID, cpu+"X", cores, mem, gpu, gpus, commissionTime, lastHeardFromTime)
 	assert.False(t, runtime2.Equals(runtime1))
-	runtime2 = CreateRuntime(id, runtimeType, name, colonyID, cpu, cores+1, mem, gpu, gpus)
+	runtime2 = CreateRuntime(id, runtimeType, name, colonyID, cpu, cores+1, mem, gpu, gpus, commissionTime, lastHeardFromTime)
 	assert.False(t, runtime2.Equals(runtime1))
-	runtime2 = CreateRuntime(id, runtimeType, name, colonyID, cpu, cores, mem+1, gpu, gpus)
+	runtime2 = CreateRuntime(id, runtimeType, name, colonyID, cpu, cores, mem+1, gpu, gpus, commissionTime, lastHeardFromTime)
 	assert.False(t, runtime2.Equals(runtime1))
-	runtime2 = CreateRuntime(id, runtimeType, name, colonyID, cpu, cores, mem, gpu+"X", gpus)
+	runtime2 = CreateRuntime(id, runtimeType, name, colonyID, cpu, cores, mem, gpu+"X", gpus, commissionTime, lastHeardFromTime)
 	assert.False(t, runtime2.Equals(runtime1))
-	runtime2 = CreateRuntime(id, runtimeType, name, colonyID, cpu, cores, mem, gpu, gpus+1)
+	runtime2 = CreateRuntime(id, runtimeType, name, colonyID, cpu, cores, mem, gpu, gpus+1, commissionTime, lastHeardFromTime)
 	assert.False(t, runtime2.Equals(runtime1))
 }
 
@@ -109,11 +120,13 @@ func TestIsRuntimeArraysEqual(t *testing.T) {
 	mem := 80326
 	gpu := "NVIDIA GeForce RTX 2080 Ti Rev. A"
 	gpus := 1
+	commissionTime := time.Now()
+	lastHeardFromTime := time.Now()
 
-	runtime1 := CreateRuntime(GenerateRandomID(), runtimeType, name, colonyID, cpu, cores, mem, gpu, gpus)
-	runtime2 := CreateRuntime(GenerateRandomID(), runtimeType, name, colonyID, cpu, cores, mem, gpu, gpus)
-	runtime3 := CreateRuntime(GenerateRandomID(), runtimeType, name, colonyID, cpu, cores, mem, gpu, gpus)
-	runtime4 := CreateRuntime(GenerateRandomID(), runtimeType, name, colonyID, cpu, cores, mem, gpu, gpus)
+	runtime1 := CreateRuntime(GenerateRandomID(), runtimeType, name, colonyID, cpu, cores, mem, gpu, gpus, commissionTime, lastHeardFromTime)
+	runtime2 := CreateRuntime(GenerateRandomID(), runtimeType, name, colonyID, cpu, cores, mem, gpu, gpus, commissionTime, lastHeardFromTime)
+	runtime3 := CreateRuntime(GenerateRandomID(), runtimeType, name, colonyID, cpu, cores, mem, gpu, gpus, commissionTime, lastHeardFromTime)
+	runtime4 := CreateRuntime(GenerateRandomID(), runtimeType, name, colonyID, cpu, cores, mem, gpu, gpus, commissionTime, lastHeardFromTime)
 
 	var runtimes1 []*Runtime
 	runtimes1 = append(runtimes1, runtime1)
@@ -142,7 +155,10 @@ func TestIsRuntimeArraysEqual(t *testing.T) {
 }
 
 func TestRuntimeToJSON(t *testing.T) {
-	runtime1 := CreateRuntime("1e1bfca6feb8a13df3cbbca1104f20b4b29c311724ee5f690356257108023fb", "test_runtime_type", "test_runtime_name", "e0a17fead699b3e3b3eec21a3ab0efad54224f6eb22f4550abe9f2a207440834", "AMD Ryzen 9 5950X (32) @ 3.400GHz", 32, 80326, "NVIDIA GeForce RTX 2080 Ti Rev. A", 1)
+	commissionTime := time.Now()
+	lastHeardFromTime := time.Now()
+
+	runtime1 := CreateRuntime("1e1bfca6feb8a13df3cbbca1104f20b4b29c311724ee5f690356257108023fb", "test_runtime_type", "test_runtime_name", "e0a17fead699b3e3b3eec21a3ab0efad54224f6eb22f4550abe9f2a207440834", "AMD Ryzen 9 5950X (32) @ 3.400GHz", 32, 80326, "NVIDIA GeForce RTX 2080 Ti Rev. A", 1, commissionTime, lastHeardFromTime)
 
 	jsonString, err := runtime1.ToJSON()
 	assert.Nil(t, err)
@@ -153,10 +169,12 @@ func TestRuntimeToJSON(t *testing.T) {
 }
 
 func TestRuntimeToJSONArray(t *testing.T) {
-	var runtimes1 []*Runtime
+	commissionTime := time.Now()
+	lastHeardFromTime := time.Now()
 
-	runtimes1 = append(runtimes1, CreateRuntime(GenerateRandomID(), "test_runtime_type", "test_runtime_name", "e0a17fead699b3e3b3eec21a3ab0efad54224f6eb22f4550abe9f2a207440834", "AMD Ryzen 9 5950X (32) @ 3.400GHz", 32, 80326, "NVIDIA GeForce RTX 2080 Ti Rev. A", 1))
-	runtimes1 = append(runtimes1, CreateRuntime(GenerateRandomID(), "test_runtime_type", "test_runtime_name", "e0a17fead699b3e3b3eec21a3ab0efad54224f6eb22f4550abe9f2a207440834", "AMD Ryzen 9 5950X (32) @ 3.400GHz", 32, 80326, "NVIDIA GeForce RTX 2080 Ti Rev. A", 1))
+	var runtimes1 []*Runtime
+	runtimes1 = append(runtimes1, CreateRuntime(GenerateRandomID(), "test_runtime_type", "test_runtime_name", "e0a17fead699b3e3b3eec21a3ab0efad54224f6eb22f4550abe9f2a207440834", "AMD Ryzen 9 5950X (32) @ 3.400GHz", 32, 80326, "NVIDIA GeForce RTX 2080 Ti Rev. A", 1, commissionTime, lastHeardFromTime))
+	runtimes1 = append(runtimes1, CreateRuntime(GenerateRandomID(), "test_runtime_type", "test_runtime_name", "e0a17fead699b3e3b3eec21a3ab0efad54224f6eb22f4550abe9f2a207440834", "AMD Ryzen 9 5950X (32) @ 3.400GHz", 32, 80326, "NVIDIA GeForce RTX 2080 Ti Rev. A", 1, commissionTime, lastHeardFromTime))
 
 	jsonString, err := ConvertRuntimeArrayToJSON(runtimes1)
 	assert.Nil(t, err)

@@ -7,9 +7,9 @@ import (
 
 	"github.com/colonyos/colonies/pkg/core"
 	"github.com/colonyos/colonies/pkg/database"
+	"github.com/colonyos/colonies/pkg/planner"
+	"github.com/colonyos/colonies/pkg/planner/basic"
 	"github.com/colonyos/colonies/pkg/rpc"
-	"github.com/colonyos/colonies/pkg/scheduler"
-	"github.com/colonyos/colonies/pkg/scheduler/basic"
 )
 
 type subscribers struct {
@@ -38,7 +38,7 @@ type command struct {
 type coloniesController struct {
 	db          database.Database
 	cmdQueue    chan *command
-	scheduler   scheduler.Scheduler
+	planner     planner.Planner
 	subscribers *subscribers
 }
 
@@ -48,7 +48,7 @@ func createColoniesController(db database.Database) *coloniesController {
 	controller.subscribers = &subscribers{}
 	controller.subscribers.processesSubscribers = make(map[string]*processesSubscription)
 	controller.subscribers.processSubscribers = make(map[string]*processSubscription)
-	controller.scheduler = basic.CreateScheduler()
+	controller.planner = basic.CreatePlanner()
 
 	go controller.masterWorker()
 
@@ -429,7 +429,7 @@ func (controller *coloniesController) findPrioritizedProcesses(runtimeID string,
 				cmd.errorChan <- err
 				return
 			}
-			prioritizedProcesses := controller.scheduler.Prioritize(runtimeID, processes, count)
+			prioritizedProcesses := controller.planner.Prioritize(runtimeID, processes, count)
 			cmd.processesReplyChan <- prioritizedProcesses
 		}}
 
@@ -614,7 +614,7 @@ func (controller *coloniesController) assignProcess(runtimeID string, colonyID s
 				cmd.errorChan <- err
 				return
 			}
-			selectedProcesses, err := controller.scheduler.Select(runtimeID, processes)
+			selectedProcesses, err := controller.planner.Select(runtimeID, processes)
 			if err != nil {
 				cmd.errorChan <- err
 				return

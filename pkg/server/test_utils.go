@@ -8,6 +8,7 @@ import (
 	"github.com/colonyos/colonies/pkg/core"
 	"github.com/colonyos/colonies/pkg/database/postgresql"
 	"github.com/colonyos/colonies/pkg/security/crypto"
+	"github.com/colonyos/colonies/pkg/utils"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -34,31 +35,23 @@ type testEnv2 struct {
 func setupTestEnv1(t *testing.T) (*testEnv1, *client.ColoniesClient, *ColoniesServer, string, chan bool) {
 	client, server, serverPrvKey, done := prepareTests(t)
 
-	crypto := crypto.CreateCrypto()
-
-	// Create a colony
-	colony1PrvKey, err := crypto.GeneratePrivateKey()
+	colony1, colony1PrvKey, err := utils.CreateTestColonyWithKey()
 	assert.Nil(t, err)
-	colony1ID, err := crypto.GenerateID(colony1PrvKey)
-	assert.Nil(t, err)
-	colony1 := core.CreateColony(colony1ID, "test_colony_name")
 	_, err = client.AddColony(colony1, serverPrvKey)
+	assert.Nil(t, err)
 
-	// Create a colony
-	colony2PrvKey, err := crypto.GeneratePrivateKey()
+	colony2, colony2PrvKey, err := utils.CreateTestColonyWithKey()
 	assert.Nil(t, err)
-	colony2ID, err := crypto.GenerateID(colony2PrvKey)
-	assert.Nil(t, err)
-	colony2 := core.CreateColony(colony2ID, "test_colony_name")
 	_, err = client.AddColony(colony2, serverPrvKey)
+	assert.Nil(t, err)
 
-	// Create a runtime
-	runtime1, runtime1ID, runtime1PrvKey := generateRuntime(t, colony1ID)
+	runtime1, runtime1PrvKey, err := utils.CreateTestRuntimeWithKey(colony1.ID)
+	assert.Nil(t, err)
 	_, err = client.AddRuntime(runtime1, colony1PrvKey)
 	assert.Nil(t, err)
 
-	// Create a runtime
-	runtime2, runtime2ID, runtime2PrvKey := generateRuntime(t, colony2ID)
+	runtime2, runtime2PrvKey, err := utils.CreateTestRuntimeWithKey(colony2.ID)
+	assert.Nil(t, err)
 	_, err = client.AddRuntime(runtime2, colony2PrvKey)
 	assert.Nil(t, err)
 
@@ -69,13 +62,13 @@ func setupTestEnv1(t *testing.T) (*testEnv1, *client.ColoniesClient, *ColoniesSe
 	assert.Nil(t, err)
 
 	env := &testEnv1{colony1PrvKey: colony1PrvKey,
-		colony1ID:      colony1ID,
+		colony1ID:      colony1.ID,
 		colony2PrvKey:  colony2PrvKey,
-		colony2ID:      colony2ID,
+		colony2ID:      colony2.ID,
 		runtime1PrvKey: runtime1PrvKey,
-		runtime1ID:     runtime1ID,
+		runtime1ID:     runtime1.ID,
 		runtime2PrvKey: runtime2PrvKey,
-		runtime2ID:     runtime2ID}
+		runtime2ID:     runtime2.ID}
 
 	return env, client, server, serverPrvKey, done
 }
@@ -83,68 +76,26 @@ func setupTestEnv1(t *testing.T) (*testEnv1, *client.ColoniesClient, *ColoniesSe
 func setupTestEnv2(t *testing.T) (*testEnv2, *client.ColoniesClient, *ColoniesServer, string, chan bool) {
 	client, server, serverPrvKey, done := prepareTests(t)
 
-	crypto := crypto.CreateCrypto()
-
-	// Create a Colony
-	colonyPrvKey, err := crypto.GeneratePrivateKey()
+	colony, colonyPrvKey, err := utils.CreateTestColonyWithKey()
 	assert.Nil(t, err)
-
-	colonyID, err := crypto.GenerateID(colonyPrvKey)
-	assert.Nil(t, err)
-
-	colony := core.CreateColony(colonyID, "test_colony_name")
-
 	_, err = client.AddColony(colony, serverPrvKey)
 	assert.Nil(t, err)
 
-	// Create a runtime
-	runtimePrvKey, err := crypto.GeneratePrivateKey()
-	assert.Nil(t, err)
-	runtimeID, err := crypto.GenerateID(runtimePrvKey)
-	assert.Nil(t, err)
-
-	name := "test_runtime_name"
-	runtimeType := "test_runtime_type"
-	cpu := "AMD Ryzen 9 5950X (32) @ 3.400GHz"
-	cores := 32
-	mem := 80326
-	gpu := "NVIDIA GeForce RTX 2080 Ti Rev. A"
-	gpus := 1
-
-	runtime := core.CreateRuntime(runtimeID, runtimeType, name, colonyID, cpu, cores, mem, gpu, gpus)
+	runtime, runtimePrvKey, err := utils.CreateTestRuntimeWithKey(colony.ID)
 	_, err = client.AddRuntime(runtime, colonyPrvKey)
 	assert.Nil(t, err)
 
 	err = client.ApproveRuntime(runtime.ID, colonyPrvKey)
 	assert.Nil(t, err)
 
-	env := &testEnv2{colonyID: colonyID,
+	env := &testEnv2{colonyID: colony.ID,
 		colony:        colony,
 		colonyPrvKey:  colonyPrvKey,
-		runtimeID:     runtimeID,
+		runtimeID:     runtime.ID,
 		runtime:       runtime,
 		runtimePrvKey: runtimePrvKey}
 
 	return env, client, server, serverPrvKey, done
-}
-
-func generateRuntime(t *testing.T, colonyID string) (*core.Runtime, string, string) {
-	crypto := crypto.CreateCrypto()
-
-	runtimePrvKey, err := crypto.GeneratePrivateKey()
-	assert.Nil(t, err)
-	runtimeID, err := crypto.GenerateID(runtimePrvKey)
-	assert.Nil(t, err)
-
-	runtimeType := "test_runtime_type"
-	name := "test_runtime_name"
-	cpu := "AMD Ryzen 9 5950X (32) @ 3.400GHz"
-	cores := 32
-	mem := 80326
-	gpu := "NVIDIA GeForce RTX 2080 Ti Rev. A"
-	gpus := 1
-
-	return core.CreateRuntime(runtimeID, runtimeType, name, colonyID, cpu, cores, mem, gpu, gpus), runtimeID, runtimePrvKey
 }
 
 func prepareTests(t *testing.T) (*client.ColoniesClient, *ColoniesServer, string, chan bool) {

@@ -3,14 +3,15 @@ package postgresql
 import (
 	"database/sql"
 	"errors"
+	"time"
 
 	"github.com/colonyos/colonies/pkg/core"
 	_ "github.com/lib/pq"
 )
 
 func (db *PQDatabase) AddRuntime(runtime *core.Runtime) error {
-	sqlStatement := `INSERT INTO  ` + db.dbPrefix + `RUNTIMES (RUNTIME_ID, RUNTIME_TYPE, NAME, COLONY_ID, CPU, CORES, MEM, GPU, GPUS, STATE) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`
-	_, err := db.postgresql.Exec(sqlStatement, runtime.ID, runtime.RuntimeType, runtime.Name, runtime.ColonyID, runtime.CPU, runtime.Cores, runtime.Mem, runtime.GPU, runtime.GPUs, 0)
+	sqlStatement := `INSERT INTO  ` + db.dbPrefix + `RUNTIMES (RUNTIME_ID, RUNTIME_TYPE, NAME, COLONY_ID, CPU, CORES, MEM, GPU, GPUS, STATE, COMMISSIONTIME, LASTHEARDFROM) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`
+	_, err := db.postgresql.Exec(sqlStatement, runtime.ID, runtime.RuntimeType, runtime.Name, runtime.ColonyID, runtime.CPU, runtime.Cores, runtime.Mem, runtime.GPU, runtime.GPUs, 0, runtime.CommissionTime.UTC(), runtime.LastHeardFromTime.UTC())
 	if err != nil {
 		return err
 	}
@@ -32,11 +33,13 @@ func (db *PQDatabase) parseRuntimes(rows *sql.Rows) ([]*core.Runtime, error) {
 		var gpu string
 		var gpus int
 		var state int
-		if err := rows.Scan(&id, &runtimeType, &name, &colonyID, &cpu, &cores, &mem, &gpu, &gpus, &state); err != nil {
+		var commissionTime time.Time
+		var lastHeardFromTime time.Time
+		if err := rows.Scan(&id, &runtimeType, &name, &colonyID, &cpu, &cores, &mem, &gpu, &gpus, &state, &commissionTime, &lastHeardFromTime); err != nil {
 			return nil, err
 		}
 
-		runtime := core.CreateRuntimeFromDB(id, runtimeType, name, colonyID, cpu, cores, mem, gpu, gpus, state)
+		runtime := core.CreateRuntimeFromDB(id, runtimeType, name, colonyID, cpu, cores, mem, gpu, gpus, state, commissionTime.UTC(), lastHeardFromTime.UTC())
 		runtimes = append(runtimes, runtime)
 	}
 
@@ -112,6 +115,18 @@ func (db *PQDatabase) ApproveRuntime(runtime *core.Runtime) error {
 func (db *PQDatabase) RejectRuntime(runtime *core.Runtime) error {
 	sqlStatement := `UPDATE ` + db.dbPrefix + `RUNTIMES SET STATE=2 WHERE RUNTIME_ID=$1`
 	_, err := db.postgresql.Exec(sqlStatement, runtime.ID)
+	if err != nil {
+		return err
+	}
+
+	runtime.Reject()
+
+	return nil
+}
+
+func (db *PQDatabase) MarkAlive(runtime *core.Runtime) error {
+	sqlStatement := `UPDATE ` + db.dbPrefix + `RUNTIMES SET LASTHEARDFROM=$1 WHERE RUNTIME_ID=$2`
+	_, err := db.postgresql.Exec(sqlStatement, time.Now().UTC(), runtime.ID)
 	if err != nil {
 		return err
 	}

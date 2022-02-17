@@ -16,9 +16,10 @@ func TestProcessSpecJSON(t *testing.T) {
 	mem := 1000
 	cores := 10
 	gpus := 1
-	in := make(map[string]string)
-	in["test_key"] = "test_value"
-	processSpec := CreateProcessSpec(colonyID, []string{runtime1ID, runtime2ID}, runtimeType, timeout, maxRetries, mem, cores, gpus, in)
+	env := make(map[string]string)
+	env["test_key"] = "test_value"
+
+	processSpec := CreateProcessSpec("test_image", "test_cmd", []string{"test_arg"}, []string{"test_volumes"}, []string{"test_ports"}, colonyID, []string{runtime1ID, runtime2ID}, runtimeType, timeout, maxRetries, mem, cores, gpus, env)
 
 	jsonString, err := processSpec.ToJSON()
 	assert.Nil(t, err)

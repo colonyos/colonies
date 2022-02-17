@@ -16,6 +16,7 @@ type Database interface {
 	GetRuntimesByColonyID(colonyID string) ([]*core.Runtime, error)
 	ApproveRuntime(runtime *core.Runtime) error
 	RejectRuntime(runtime *core.Runtime) error
+	MarkAlive(runtime *core.Runtime) error
 	DeleteRuntimeByID(runtimeID string) error
 	DeleteRuntimesByColonyID(colonyID string) error
 
