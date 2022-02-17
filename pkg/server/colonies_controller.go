@@ -608,6 +608,12 @@ func (controller *coloniesController) assignProcess(runtimeID string, colonyID s
 				return
 			}
 
+			err = controller.db.MarkAlive(runtime)
+			if err != nil {
+				cmd.errorChan <- err
+				return
+			}
+
 			var processes []*core.Process
 			processes, err = controller.db.FindUnassignedProcesses(colonyID, runtimeID, runtime.RuntimeType, 10)
 			if err != nil {
