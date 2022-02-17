@@ -11,7 +11,7 @@ func TestProcessSpecJSON(t *testing.T) {
 	runtimeType := "test_runtime_type"
 	runtime1ID := GenerateRandomID()
 	runtime2ID := GenerateRandomID()
-	timeout := -1
+	maxExecTime := -1
 	maxRetries := 3
 	mem := 1000
 	cores := 10
@@ -19,7 +19,7 @@ func TestProcessSpecJSON(t *testing.T) {
 	env := make(map[string]string)
 	env["test_key"] = "test_value"
 
-	processSpec := CreateProcessSpec("test_image", "test_cmd", []string{"test_arg"}, []string{"test_volumes"}, []string{"test_ports"}, colonyID, []string{runtime1ID, runtime2ID}, runtimeType, timeout, maxRetries, mem, cores, gpus, env)
+	processSpec := CreateProcessSpec("test_image", "test_cmd", []string{"test_arg"}, []string{"test_volumes"}, []string{"test_ports"}, colonyID, []string{runtime1ID, runtime2ID}, runtimeType, maxExecTime, maxRetries, mem, cores, gpus, env)
 
 	jsonString, err := processSpec.ToJSON()
 	assert.Nil(t, err)
@@ -28,7 +28,7 @@ func TestProcessSpecJSON(t *testing.T) {
 	assert.Nil(t, err)
 
 	assert.Equal(t, processSpec.Conditions.ColonyID, processSpec2.Conditions.ColonyID)
-	assert.Equal(t, processSpec.Timeout, processSpec2.Timeout)
+	assert.Equal(t, processSpec.MaxExecTime, processSpec2.MaxExecTime)
 	assert.Equal(t, processSpec.MaxRetries, processSpec2.MaxRetries)
 	assert.Equal(t, processSpec.Conditions.RuntimeIDs, processSpec2.Conditions.RuntimeIDs)
 	assert.Contains(t, processSpec.Conditions.RuntimeIDs, runtime1ID)
