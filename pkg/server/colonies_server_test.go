@@ -276,6 +276,34 @@ func TestAssignProcess(t *testing.T) {
 	<-done
 }
 
+func TestMarkAlive(t *testing.T) {
+	env, client, server, _, done := setupTestEnv2(t)
+
+	runtime, runtimePrvKey, err := utils.CreateTestRuntimeWithKey(env.colonyID)
+	assert.Nil(t, err)
+	_, err = client.AddRuntime(runtime, env.colonyPrvKey)
+	assert.Nil(t, err)
+	err = client.ApproveRuntime(runtime.ID, env.colonyPrvKey)
+	assert.Nil(t, err)
+
+	runtimeFromServer, err := client.GetRuntime(runtime.ID, runtimePrvKey)
+	assert.Nil(t, err)
+
+	time1 := runtimeFromServer.LastHeardFromTime
+	time.Sleep(1 * time.Second)
+
+	client.AssignProcess(env.colonyID, runtimePrvKey) // This will update the last heard from
+
+	runtimeFromServer, err = client.GetRuntime(runtime.ID, runtimePrvKey)
+	assert.Nil(t, err)
+	time2 := runtimeFromServer.LastHeardFromTime
+
+	assert.True(t, time1 != time2)
+
+	server.Shutdown()
+	<-done
+}
+
 func TestGetWaitingProcesses(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 
