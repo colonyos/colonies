@@ -688,3 +688,111 @@ func TestSubscribeChangeStateProcess2(t *testing.T) {
 	server.Shutdown()
 	<-done
 }
+
+func TestMaxExecTime(t *testing.T) {
+	env, client, server, _, done := setupTestEnv2(t)
+
+	processSpec := utils.CreateTestProcessSpec(env.colonyID)
+	processSpec.MaxExecTime = 1 // 1 second
+
+	for i := 0; i < 10; i++ {
+		_, err := client.SubmitProcessSpec(processSpec, env.runtimePrvKey)
+		assert.Nil(t, err)
+		_, err = client.AssignProcess(env.colonyID, env.runtimePrvKey)
+		assert.Nil(t, err)
+	}
+
+	// Wait for the process to time out
+	time.Sleep(5 * time.Second)
+
+	stat, err := client.GetProcessStat(env.colonyID, env.runtimePrvKey)
+	assert.Nil(t, err)
+	assert.Equal(t, stat.Waiting, 10)
+
+	server.Shutdown()
+	<-done
+}
+
+func TestMaxExecTimeUnlimtedMaxretries(t *testing.T) {
+	env, client, server, _, done := setupTestEnv2(t)
+
+	processSpec := utils.CreateTestProcessSpec(env.colonyID)
+	processSpec.MaxExecTime = 1 // 1 second
+	processSpec.MaxRetries = -1 // Unlimted number of retries
+
+	for i := 0; i < 10; i++ {
+		_, err := client.SubmitProcessSpec(processSpec, env.runtimePrvKey)
+		assert.Nil(t, err)
+		_, err = client.AssignProcess(env.colonyID, env.runtimePrvKey)
+		assert.Nil(t, err)
+	}
+
+	// Wait for the process to time out
+	time.Sleep(5 * time.Second)
+
+	stat, err := client.GetProcessStat(env.colonyID, env.runtimePrvKey)
+	assert.Nil(t, err)
+	assert.Equal(t, stat.Waiting, 10)
+
+	// Assign again
+	for i := 0; i < 10; i++ {
+		_, err = client.AssignProcess(env.colonyID, env.runtimePrvKey)
+		assert.Nil(t, err)
+	}
+
+	stat, err = client.GetProcessStat(env.colonyID, env.runtimePrvKey)
+	assert.Nil(t, err)
+	assert.Equal(t, stat.Running, 10)
+
+	// Wait for the process to time out
+	time.Sleep(5 * time.Second)
+
+	stat, err = client.GetProcessStat(env.colonyID, env.runtimePrvKey)
+	assert.Nil(t, err)
+	assert.Equal(t, stat.Waiting, 10)
+
+	server.Shutdown()
+	<-done
+}
+
+func TestMaxExecTimeMaxretries(t *testing.T) {
+	env, client, server, _, done := setupTestEnv2(t)
+
+	processSpec := utils.CreateTestProcessSpec(env.colonyID)
+	processSpec.MaxExecTime = 1 // 1 second
+	processSpec.MaxRetries = 1  // Max 1 retries
+
+	for i := 0; i < 10; i++ {
+		_, err := client.SubmitProcessSpec(processSpec, env.runtimePrvKey)
+		assert.Nil(t, err)
+		_, err = client.AssignProcess(env.colonyID, env.runtimePrvKey)
+		assert.Nil(t, err)
+	}
+
+	// Wait for the process to time out
+	time.Sleep(5 * time.Second)
+
+	stat, err := client.GetProcessStat(env.colonyID, env.runtimePrvKey)
+	assert.Nil(t, err)
+	assert.Equal(t, stat.Waiting, 10)
+
+	// Assign again
+	for i := 0; i < 10; i++ {
+		_, err = client.AssignProcess(env.colonyID, env.runtimePrvKey)
+		assert.Nil(t, err)
+	}
+
+	stat, err = client.GetProcessStat(env.colonyID, env.runtimePrvKey)
+	assert.Nil(t, err)
+	assert.Equal(t, stat.Running, 10)
+
+	// Wait for the process to time out
+	time.Sleep(5 * time.Second)
+
+	stat, err = client.GetProcessStat(env.colonyID, env.runtimePrvKey)
+	assert.Nil(t, err)
+	assert.Equal(t, stat.Failed, 10) // NOTE Failed!!
+
+	server.Shutdown()
+	<-done
+}
