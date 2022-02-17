@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"time"
 
 	"github.com/colonyos/colonies/pkg/core"
 	"github.com/colonyos/colonies/pkg/database"
@@ -11,6 +12,8 @@ import (
 	"github.com/colonyos/colonies/pkg/planner/basic"
 	"github.com/colonyos/colonies/pkg/rpc"
 )
+
+const TIMEOUT_RELEASE_INTERVALL = 1
 
 type subscribers struct {
 	processesSubscribers map[string]*processesSubscription
@@ -40,6 +43,8 @@ type coloniesController struct {
 	cmdQueue    chan *command
 	planner     planner.Planner
 	subscribers *subscribers
+	stopFlag    bool
+	debugFlag   bool
 }
 
 func createColoniesController(db database.Database) *coloniesController {
@@ -51,8 +56,48 @@ func createColoniesController(db database.Database) *coloniesController {
 	controller.planner = basic.CreatePlanner()
 
 	go controller.masterWorker()
+	go controller.timeoutChecker()
 
 	return controller
+}
+
+func (controller *coloniesController) timeoutChecker() {
+	for {
+		time.Sleep(TIMEOUT_RELEASE_INTERVALL * time.Second)
+
+		if controller.stopFlag {
+			return
+		}
+
+		processes, err := controller.db.FindAllRunningProcesses()
+		if err != nil {
+			fmt.Println(err)
+			continue
+		}
+		for _, process := range processes {
+			if time.Now().Unix() > process.Deadline.Unix() {
+				if process.Retries >= process.ProcessSpec.MaxRetries && process.ProcessSpec.MaxRetries > 0 {
+					err := controller.closeFailed(process.ID)
+					if err != nil {
+						fmt.Println("Max retries reached, but failed to *close* process with Id <" + process.ID + ">")
+						continue
+					}
+					if controller.debugFlag {
+						fmt.Println("Process with Id <" + process.ID + "> was *closed* as failed as max retires was reached")
+					}
+					continue
+				}
+
+				err := controller.unassignRuntime(process.ID)
+				if err != nil {
+					fmt.Println("Failed to *unassign* process with Id <" + process.ID + ">")
+				}
+				if controller.debugFlag {
+					fmt.Println("Process with Id <" + process.ID + "> was *unassign* as it did not complete in time")
+				}
+			}
+		}
+	}
 }
 
 func (controller *coloniesController) masterWorker() {
@@ -376,6 +421,16 @@ func (controller *coloniesController) addProcess(process *core.Process) (*core.P
 				cmd.errorChan <- err
 				return
 			}
+
+			maxExecTime := process.ProcessSpec.MaxExecTime
+			if maxExecTime > 0 {
+				err := controller.db.SetDeadline(process, time.Now().UTC().Add(time.Duration(maxExecTime)*time.Second))
+				if err != nil {
+					cmd.errorChan <- err
+					return
+				}
+			}
+
 			addedProcess, err := controller.db.GetProcessByID(process.ID)
 			if err != nil {
 				cmd.errorChan <- err
@@ -642,6 +697,22 @@ func (controller *coloniesController) assignProcess(runtimeID string, colonyID s
 	}
 }
 
+func (controller *coloniesController) unassignRuntime(processID string) error {
+	cmd := &command{errorChan: make(chan error, 1),
+		handler: func(cmd *command) {
+			process, err := controller.db.GetProcessByID(processID)
+			if err != nil {
+				cmd.errorChan <- err
+				return
+			}
+			cmd.errorChan <- controller.db.UnassignRuntime(process)
+			controller.sendProcessesEvent(process)
+		}}
+
+	controller.cmdQueue <- cmd
+	return <-cmd.errorChan
+}
+
 func (controller *coloniesController) getProcessStat(colonyID string) (*core.ProcessStat, error) {
 	cmd := &command{processStatReplyChan: make(chan *core.ProcessStat),
 		errorChan: make(chan error, 1),
@@ -727,5 +798,6 @@ func (controller *coloniesController) getAttribute(attributeID string) (*core.At
 }
 
 func (controller *coloniesController) stop() {
+	controller.stopFlag = true
 	controller.cmdQueue <- &command{stop: true}
 }

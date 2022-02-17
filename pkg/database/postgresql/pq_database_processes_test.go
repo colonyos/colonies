@@ -312,40 +312,27 @@ func TestReset(t *testing.T) {
 	assert.Equal(t, 0, numberOfFailedProcesses)
 }
 
-func TestFindUnassignedProcesses1(t *testing.T) {
+func TestSetDeadline(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
 
-	colony := core.CreateColony(core.GenerateRandomID(), "test_colony_name_1")
-	err = db.AddColony(colony)
+	colony := core.CreateColony(core.GenerateRandomID(), "test_colony_name")
+
+	runtime := utils.CreateTestRuntime(colony.ID)
+	err = db.AddRuntime(runtime)
 	assert.Nil(t, err)
 
-	runtime1 := utils.CreateTestRuntime(colony.ID)
-	err = db.AddRuntime(runtime1)
+	process := utils.CreateTestProcess(colony.ID)
+	err = db.AddProcess(process)
+	assert.Nil(t, err)
+	assert.Equal(t, process.Deadline, time.Time{})
+
+	err = db.SetDeadline(process, time.Now())
 	assert.Nil(t, err)
 
-	runtime2 := utils.CreateTestRuntime(colony.ID)
-	err = db.AddRuntime(runtime2)
+	processFromDB, err := db.GetProcessByID(process.ID)
 	assert.Nil(t, err)
-
-	process1 := utils.CreateTestProcess(colony.ID)
-	err = db.AddProcess(process1)
-	assert.Nil(t, err)
-
-	time.Sleep(50 * time.Millisecond)
-
-	process2 := utils.CreateTestProcess(colony.ID)
-	err = db.AddProcess(process2)
-	assert.Nil(t, err)
-
-	processsFromDB, err := db.FindUnassignedProcesses(colony.ID, runtime2.ID, runtime2.RuntimeType, 1)
-	assert.Nil(t, err)
-	assert.Len(t, processsFromDB, 1)
-	assert.Equal(t, process1.ID, processsFromDB[0].ID)
-
-	processsFromDB, err = db.FindUnassignedProcesses(colony.ID, runtime2.ID, runtime2.RuntimeType, 2)
-	assert.Nil(t, err)
-	assert.Len(t, processsFromDB, 2)
+	assert.NotEqual(t, processFromDB.Deadline, time.Time{})
 }
 
 func TestFindUnassignedProcesses2(t *testing.T) {
@@ -671,4 +658,58 @@ func TestFindWaitingProcesses(t *testing.T) {
 	numberOfProcesses, err = db.NrOfFailedProcesses()
 	assert.Nil(t, err)
 	assert.Equal(t, 10, numberOfProcesses)
+}
+
+func TestFindAllRunningProcesses(t *testing.T) {
+	db, err := PrepareTests()
+	assert.Nil(t, err)
+
+	colony1 := core.CreateColony(core.GenerateRandomID(), "test_colony_name_1")
+	err = db.AddColony(colony1)
+	assert.Nil(t, err)
+
+	colony2 := core.CreateColony(core.GenerateRandomID(), "test_colony_name_1")
+	err = db.AddColony(colony2)
+	assert.Nil(t, err)
+
+	runtime1 := utils.CreateTestRuntime(colony1.ID)
+	err = db.AddRuntime(runtime1)
+	assert.Nil(t, err)
+
+	runtime2 := utils.CreateTestRuntime(colony2.ID)
+	err = db.AddRuntime(runtime2)
+	assert.Nil(t, err)
+
+	// Create some waiting/unassigned processes
+	for i := 0; i < 10; i++ {
+		process := utils.CreateTestProcess(colony1.ID)
+		err = db.AddProcess(process)
+		assert.Nil(t, err)
+	}
+	for i := 0; i < 10; i++ {
+		process := utils.CreateTestProcess(colony2.ID)
+		err = db.AddProcess(process)
+		assert.Nil(t, err)
+	}
+
+	// Create some running processes
+	for i := 0; i < 10; i++ {
+		process := utils.CreateTestProcess(colony1.ID)
+		err = db.AddProcess(process)
+		assert.Nil(t, err)
+		err = db.AssignRuntime(runtime1.ID, process)
+		assert.Nil(t, err)
+	}
+	for i := 0; i < 10; i++ {
+		process := utils.CreateTestProcess(colony2.ID)
+		err = db.AddProcess(process)
+		assert.Nil(t, err)
+		err = db.AssignRuntime(runtime2.ID, process)
+		assert.Nil(t, err)
+	}
+
+	runningProcessIDsFromDB, err := db.FindAllRunningProcesses()
+	assert.Nil(t, err)
+
+	assert.Equal(t, len(runningProcessIDsFromDB), 20)
 }
