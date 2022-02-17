@@ -226,10 +226,10 @@ var listWaitingProcessesCmd = &cobra.Command{
 
 			var data [][]string
 			for _, process := range processes {
-				data = append(data, []string{process.ID, process.SubmissionTime.Format(TimeLayout)})
+				data = append(data, []string{process.ID, process.SubmissionTime.Format(TimeLayout), process.ProcessSpec.Conditions.RuntimeType})
 			}
 			table := tablewriter.NewWriter(os.Stdout)
-			table.SetHeader([]string{"ID", "Submission time"})
+			table.SetHeader([]string{"ID", "Submission Time", "Runtime Type Target"})
 			for _, v := range data {
 				table.Append(v)
 			}
@@ -488,28 +488,60 @@ var getProcessCmd = &cobra.Command{
 		processTable.SetAlignment(tablewriter.ALIGN_LEFT)
 		processTable.Render()
 
-		fmt.Println()
-		fmt.Println("Requirements:")
-
 		runtimeIDs := ""
 		for _, runtimeID := range process.ProcessSpec.Conditions.RuntimeIDs {
 			runtimeIDs += runtimeID + "\n"
 		}
 		runtimeIDs = strings.TrimSuffix(runtimeIDs, "\n")
-
 		if runtimeIDs == "" {
 			runtimeIDs = "None"
 		}
 
+		image := process.ProcessSpec.Image
+		if image == "" {
+			image = "None"
+		}
+
+		procCmd := process.ProcessSpec.Cmd
+		if procCmd == "" {
+			procCmd = "None"
+		}
+
+		procArgs := ""
+		for _, procArg := range process.ProcessSpec.Args {
+			procArgs += procArg + " "
+		}
+		if procArgs == "" {
+			procArgs = "None"
+		}
+
+		volumes := ""
+		for _, volume := range process.ProcessSpec.Volumes {
+			volumes += volume + " "
+		}
+		if volumes == "" {
+			volumes = "None"
+		}
+
+		ports := ""
+		for _, port := range process.ProcessSpec.Ports {
+			ports += port + " "
+		}
+		if ports == "" {
+			ports = "None"
+		}
+
+		fmt.Println()
+		fmt.Println("ProcessSpec:")
+
 		specData := [][]string{
-			[]string{"ColonyID", process.ProcessSpec.Conditions.ColonyID},
-			[]string{"RuntimeIDs", runtimeIDs},
-			[]string{"RuntimeType", process.ProcessSpec.Conditions.RuntimeType},
-			[]string{"Memory", strconv.Itoa(process.ProcessSpec.Conditions.Mem)},
-			[]string{"CPU Cores", strconv.Itoa(process.ProcessSpec.Conditions.Cores)},
-			[]string{"Number of GPUs", strconv.Itoa(process.ProcessSpec.Conditions.GPUs)},
-			[]string{"Max Exec Time", strconv.Itoa(process.ProcessSpec.MaxExecTime)},
-			[]string{"Max Retries", strconv.Itoa(process.ProcessSpec.MaxRetries)},
+			[]string{"Image", image},
+			[]string{"Cmd", procCmd},
+			[]string{"Args", procArgs},
+			[]string{"Volumes", volumes},
+			[]string{"Ports", ports},
+			[]string{"MaxExecTime", strconv.Itoa(process.ProcessSpec.MaxExecTime)},
+			[]string{"MaxRetries", strconv.Itoa(process.ProcessSpec.MaxRetries)},
 		}
 		specTable := tablewriter.NewWriter(os.Stdout)
 		for _, v := range specData {
@@ -517,6 +549,24 @@ var getProcessCmd = &cobra.Command{
 		}
 		specTable.SetAlignment(tablewriter.ALIGN_LEFT)
 		specTable.Render()
+
+		fmt.Println()
+		fmt.Println("Conditions:")
+
+		condData := [][]string{
+			[]string{"ColonyID", process.ProcessSpec.Conditions.ColonyID},
+			[]string{"RuntimeIDs", runtimeIDs},
+			[]string{"RuntimeType", process.ProcessSpec.Conditions.RuntimeType},
+			[]string{"Memory", strconv.Itoa(process.ProcessSpec.Conditions.Mem)},
+			[]string{"CPU Cores", strconv.Itoa(process.ProcessSpec.Conditions.Cores)},
+			[]string{"GPUs", strconv.Itoa(process.ProcessSpec.Conditions.GPUs)},
+		}
+		condTable := tablewriter.NewWriter(os.Stdout)
+		for _, v := range condData {
+			condTable.Append(v)
+		}
+		condTable.SetAlignment(tablewriter.ALIGN_LEFT)
+		condTable.Render()
 
 		fmt.Println()
 		fmt.Println("Attributes:")
