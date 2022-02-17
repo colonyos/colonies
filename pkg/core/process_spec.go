@@ -14,20 +14,20 @@ type Conditions struct {
 }
 
 type ProcessSpec struct {
-	Image      string            `json:"image"`
-	Cmd        string            `json:"cmd"`
-	Args       []string          `json:"args"`
-	Volumes    []string          `json:"volumes"`
-	Ports      []string          `json:"ports"`
-	Timeout    int               `json:"timeout"`
-	MaxRetries int               `json:"maxretries"`
-	Conditions Conditions        `json:"conditions"`
-	Env        map[string]string `json:"env"`
+	Image       string            `json:"image"`
+	Cmd         string            `json:"cmd"`
+	Args        []string          `json:"args"`
+	Volumes     []string          `json:"volumes"`
+	Ports       []string          `json:"ports"`
+	MaxExecTime int               `json:"maxexectime"`
+	MaxRetries  int               `json:"maxretries"`
+	Conditions  Conditions        `json:"conditions"`
+	Env         map[string]string `json:"env"`
 }
 
-func CreateProcessSpec(image string, cmd string, args []string, volumes []string, ports []string, colonyID string, runtimeIDs []string, runtimeType string, timeout int, maxRetries int, mem int, cores int, gpus int, env map[string]string) *ProcessSpec {
+func CreateProcessSpec(image string, cmd string, args []string, volumes []string, ports []string, colonyID string, runtimeIDs []string, runtimeType string, maxExecTime int, maxRetries int, mem int, cores int, gpus int, env map[string]string) *ProcessSpec {
 	conditions := Conditions{ColonyID: colonyID, RuntimeIDs: runtimeIDs, RuntimeType: runtimeType, Mem: mem, Cores: cores, GPUs: gpus}
-	return &ProcessSpec{Image: image, Cmd: cmd, Args: args, Volumes: volumes, Ports: ports, Timeout: timeout, MaxRetries: maxRetries, Conditions: conditions, Env: env}
+	return &ProcessSpec{Image: image, Cmd: cmd, Args: args, Volumes: volumes, Ports: ports, MaxExecTime: maxExecTime, MaxRetries: maxRetries, Conditions: conditions, Env: env}
 }
 
 func ConvertJSONToProcessSpec(jsonString string) (*ProcessSpec, error) {
@@ -46,7 +46,7 @@ func (processSpec *ProcessSpec) Equals(processSpec2 *ProcessSpec) bool {
 	same := true
 	if processSpec.Image != processSpec2.Image &&
 		processSpec.Cmd != processSpec2.Cmd &&
-		processSpec.Timeout != processSpec2.Timeout &&
+		processSpec.MaxExecTime != processSpec2.MaxExecTime &&
 		processSpec.MaxRetries != processSpec2.MaxRetries &&
 		processSpec.Conditions.ColonyID != processSpec2.Conditions.ColonyID &&
 		processSpec.Conditions.RuntimeType != processSpec2.Conditions.RuntimeType &&

@@ -1,6 +1,10 @@
 package database
 
-import "github.com/colonyos/colonies/pkg/core"
+import (
+	"time"
+
+	"github.com/colonyos/colonies/pkg/core"
+)
 
 type Database interface {
 	// Colony functions ...
@@ -26,12 +30,14 @@ type Database interface {
 	GetProcessByID(processID string) (*core.Process, error)
 	FindWaitingProcesses(colonyID string, count int) ([]*core.Process, error)
 	FindRunningProcesses(colonyID string, count int) ([]*core.Process, error)
+	FindAllRunningProcesses() ([]*core.Process, error)
 	FindSuccessfulProcesses(colonyID string, count int) ([]*core.Process, error)
 	FindFailedProcesses(colonyID string, count int) ([]*core.Process, error)
 	FindUnassignedProcesses(colonyID string, runtimeID string, runtimeType string, count int) ([]*core.Process, error)
 	DeleteProcessByID(processID string) error
 	DeleteAllProcesses() error
 	ResetProcess(process *core.Process) error
+	SetDeadline(process *core.Process, deadline time.Time) error
 	ResetAllProcesses(process *core.Process) error
 	AssignRuntime(runtimeID string, process *core.Process) error
 	UnassignRuntime(process *core.Process) error

@@ -508,8 +508,8 @@ var getProcessCmd = &cobra.Command{
 			[]string{"Memory", strconv.Itoa(process.ProcessSpec.Conditions.Mem)},
 			[]string{"CPU Cores", strconv.Itoa(process.ProcessSpec.Conditions.Cores)},
 			[]string{"Number of GPUs", strconv.Itoa(process.ProcessSpec.Conditions.GPUs)},
-			[]string{"Timeout", strconv.Itoa(process.ProcessSpec.Timeout)},
-			[]string{"Max retries", strconv.Itoa(process.ProcessSpec.MaxRetries)},
+			[]string{"Max Exec Time", strconv.Itoa(process.ProcessSpec.MaxExecTime)},
+			[]string{"Max Retries", strconv.Itoa(process.ProcessSpec.MaxRetries)},
 		}
 		specTable := tablewriter.NewWriter(os.Stdout)
 		for _, v := range specData {
