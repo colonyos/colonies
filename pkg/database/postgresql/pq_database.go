@@ -2,7 +2,9 @@ package postgresql
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
+	"os"
 
 	_ "github.com/lib/pq"
 )
@@ -22,7 +24,12 @@ func CreatePQDatabase(dbHost string, dbPort int, dbUser string, dbPassword strin
 }
 
 func (db *PQDatabase) Connect() error {
-	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable", db.dbHost, db.dbPort, db.dbUser, db.dbPassword, db.dbName)
+	tz := os.Getenv("TZ")
+	if tz == "" {
+		return errors.New("Timezon environmental variable missing, try e.g. export TZ=Europe/Stockholm")
+	}
+
+	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable TimeZone=%s", db.dbHost, db.dbPort, db.dbUser, db.dbPassword, db.dbName, tz)
 
 	postgresql, err := sql.Open("postgres", psqlInfo)
 	if err != nil {
@@ -101,13 +108,13 @@ func (db *PQDatabase) Initialize() error {
 		return err
 	}
 
-	sqlStatement = `CREATE TABLE ` + db.dbPrefix + `RUNTIMES (RUNTIME_ID TEXT PRIMARY KEY NOT NULL, RUNTIME_TYPE TEXT NOT NULL, NAME TEXT NOT NULL, COLONY_ID TEXT NOT NULL, CPU TEXT, CORES INTEGER, MEM INTEGER, GPU TEXT NOT NULL, GPUS INTEGER, STATE INTEGER, COMMISSIONTIME TIMESTAMP, LASTHEARDFROM TIMESTAMP)`
+	sqlStatement = `CREATE TABLE ` + db.dbPrefix + `RUNTIMES (RUNTIME_ID TEXT PRIMARY KEY NOT NULL, RUNTIME_TYPE TEXT NOT NULL, NAME TEXT NOT NULL, COLONY_ID TEXT NOT NULL, CPU TEXT, CORES INTEGER, MEM INTEGER, GPU TEXT NOT NULL, GPUS INTEGER, STATE INTEGER, COMMISSIONTIME TIMESTAMPTZ, LASTHEARDFROM TIMESTAMPTZ)`
 	_, err = db.postgresql.Exec(sqlStatement)
 	if err != nil {
 		return err
 	}
 
-	sqlStatement = `CREATE TABLE ` + db.dbPrefix + `PROCESSES (PROCESS_ID TEXT PRIMARY KEY NOT NULL, TARGET_COLONY_ID TEXT NOT NULL, TARGET_RUNTIME_IDS TEXT[], ASSIGNED_RUNTIME_ID TEXT, STATE INTEGER, IS_ASSIGNED BOOLEAN, RUNTIME_TYPE TEXT, SUBMISSION_TIME TIMESTAMP, START_TIME TIMESTAMP, END_TIME TIMESTAMP, DEADLINE TIMESTAMP, IMAGE TEXT, CMD TEXT, ARGS TEXT[], VOLUMES TEXT[], PORTS TEXT[], MAX_EXEC_TIME INTEGER, RETRIES INTEGER, MAX_RETRIES INTEGER, MEM INTEGER, CORES INTEGER, GPUS INTEGER)`
+	sqlStatement = `CREATE TABLE ` + db.dbPrefix + `PROCESSES (PROCESS_ID TEXT PRIMARY KEY NOT NULL, TARGET_COLONY_ID TEXT NOT NULL, TARGET_RUNTIME_IDS TEXT[], ASSIGNED_RUNTIME_ID TEXT, STATE INTEGER, IS_ASSIGNED BOOLEAN, RUNTIME_TYPE TEXT, SUBMISSION_TIME TIMESTAMPTZ, START_TIME TIMESTAMPTZ, END_TIME TIMESTAMPTZ, DEADLINE TIMESTAMPTZ, IMAGE TEXT, CMD TEXT, ARGS TEXT[], VOLUMES TEXT[], PORTS TEXT[], MAX_EXEC_TIME INTEGER, RETRIES INTEGER, MAX_RETRIES INTEGER, MEM INTEGER, CORES INTEGER, GPUS INTEGER)`
 	_, err = db.postgresql.Exec(sqlStatement)
 	if err != nil {
 		return err

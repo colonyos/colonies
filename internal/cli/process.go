@@ -479,6 +479,8 @@ var getProcessCmd = &cobra.Command{
 			[]string{"StartTime", process.StartTime.Format(TimeLayout)},
 			[]string{"EndTime", process.EndTime.Format(TimeLayout)},
 			[]string{"Deadline", process.Deadline.Format(TimeLayout)},
+			[]string{"WaitingTime", process.WaitingTime().String()},
+			[]string{"ProcessingTime", process.ProcessingTime().String()},
 			[]string{"Retries", strconv.Itoa(process.Retries)},
 		}
 		processTable := tablewriter.NewWriter(os.Stdout)

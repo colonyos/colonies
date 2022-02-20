@@ -6,6 +6,7 @@ require (
 	github.com/btcsuite/btcd v0.22.0-beta
 	github.com/gin-contrib/cors v1.3.1
 	github.com/gin-gonic/gin v1.7.7
+	github.com/go-playground/assert/v2 v2.0.1
 	github.com/go-resty/resty/v2 v2.7.0
 	github.com/google/uuid v1.3.0
 	github.com/gorilla/websocket v1.4.2

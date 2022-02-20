@@ -28,6 +28,8 @@ type Database interface {
 	AddProcess(process *core.Process) error
 	GetProcesses() ([]*core.Process, error)
 	GetProcessByID(processID string) (*core.Process, error)
+	FindProcessesForColony(colonyID string, seconds int, state int) ([]*core.Process, error)
+	FindProcessesForRuntime(colonyID string, runtimeID string, seconds int, state int) ([]*core.Process, error)
 	FindWaitingProcesses(colonyID string, count int) ([]*core.Process, error)
 	FindRunningProcesses(colonyID string, count int) ([]*core.Process, error)
 	FindAllRunningProcesses() ([]*core.Process, error)

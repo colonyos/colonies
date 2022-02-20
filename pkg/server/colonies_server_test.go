@@ -304,6 +304,70 @@ func TestMarkAlive(t *testing.T) {
 	<-done
 }
 
+func TestGetProcessHistForColony(t *testing.T) {
+	env, client, server, _, done := setupTestEnv2(t)
+
+	numberOfRunningProcesses := 20
+	for i := 0; i < numberOfRunningProcesses; i++ {
+		processSpec := utils.CreateTestProcessSpec(env.colonyID)
+		_, err := client.SubmitProcessSpec(processSpec, env.runtimePrvKey)
+		assert.Nil(t, err)
+	}
+
+	time.Sleep(1 * time.Second)
+
+	processSpec := utils.CreateTestProcessSpec(env.colonyID)
+	_, err := client.SubmitProcessSpec(processSpec, env.runtimePrvKey)
+	assert.Nil(t, err)
+
+	// Get processes for the 60 seconds
+	processesFromServer, err := client.GetProcessHistForColony(core.WAITING, env.colonyID, 60, env.runtimePrvKey)
+	assert.Nil(t, err)
+	assert.Len(t, processesFromServer, numberOfRunningProcesses+1)
+
+	// Get processes for the last second
+	processesFromServer, err = client.GetProcessHistForColony(core.WAITING, env.colonyID, 1, env.runtimePrvKey)
+	assert.Nil(t, err)
+	assert.Len(t, processesFromServer, 1)
+
+	server.Shutdown()
+	<-done
+}
+
+func TestGetProcessHistForRuntime(t *testing.T) {
+	env, client, server, _, done := setupTestEnv1(t)
+
+	numberOfRunningProcesses := 10
+	for i := 0; i < numberOfRunningProcesses; i++ {
+		processSpec := utils.CreateTestProcessSpec(env.colony1ID)
+		_, err := client.SubmitProcessSpec(processSpec, env.runtime1PrvKey)
+		assert.Nil(t, err)
+		_, err = client.AssignProcess(env.colony1ID, env.runtime1PrvKey)
+		assert.Nil(t, err)
+	}
+
+	time.Sleep(1 * time.Second)
+
+	processSpec := utils.CreateTestProcessSpec(env.colony1ID)
+	_, err := client.SubmitProcessSpec(processSpec, env.runtime1PrvKey)
+	assert.Nil(t, err)
+	_, err = client.AssignProcess(env.colony1ID, env.runtime1PrvKey)
+	assert.Nil(t, err)
+
+	// Get processes for the 60 seconds
+	processesFromServer, err := client.GetProcessHistForRuntime(core.RUNNING, env.colony1ID, env.runtime1ID, 60, env.runtime1PrvKey)
+	assert.Nil(t, err)
+	assert.Len(t, processesFromServer, numberOfRunningProcesses+1)
+
+	// Get processes for the last second
+	processesFromServer, err = client.GetProcessHistForRuntime(core.RUNNING, env.colony1ID, env.runtime1ID, 1, env.runtime1PrvKey)
+	assert.Nil(t, err)
+	assert.Len(t, processesFromServer, 1)
+
+	server.Shutdown()
+	<-done
+}
+
 func TestGetWaitingProcesses(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 

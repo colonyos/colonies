@@ -351,6 +351,70 @@ func TestAssignProcessSecurity(t *testing.T) {
 	<-done
 }
 
+func TestGetProcessHistForColonySecurity(t *testing.T) {
+	env, client, server, _, done := setupTestEnv1(t)
+
+	// The setup looks like this:
+	//   runtime1 is member of colony1
+	//   runtime2 is member of colony2
+
+	numberOfRunningProcesses := 2
+	for i := 0; i < numberOfRunningProcesses; i++ {
+		processSpec := utils.CreateTestProcessSpec(env.colony1ID)
+		_, err := client.SubmitProcessSpec(processSpec, env.runtime1PrvKey)
+		assert.Nil(t, err)
+		_, err = client.AssignProcess(env.colony1ID, env.runtime1PrvKey)
+		assert.Nil(t, err)
+	}
+
+	_, err := client.GetProcessHistForColony(core.RUNNING, env.colony1ID, 60, env.runtime2PrvKey)
+	assert.NotNil(t, err) // Should not work
+
+	_, err = client.GetProcessHistForColony(core.RUNNING, env.colony1ID, 60, env.colony2PrvKey)
+	assert.NotNil(t, err) // Should not work
+
+	_, err = client.GetProcessHistForColony(core.RUNNING, env.colony1ID, 60, env.runtime1PrvKey)
+	assert.Nil(t, err) // Should work
+
+	_, err = client.GetProcessHistForColony(core.RUNNING, env.colony1ID, 60, env.colony1PrvKey)
+	assert.Nil(t, err) // Should work
+
+	server.Shutdown()
+	<-done
+}
+
+func TestGetProcessHistForRuntimeSecurity(t *testing.T) {
+	env, client, server, _, done := setupTestEnv1(t)
+
+	// The setup looks like this:
+	//   runtime1 is member of colony1
+	//   runtime2 is member of colony2
+
+	numberOfRunningProcesses := 2
+	for i := 0; i < numberOfRunningProcesses; i++ {
+		processSpec := utils.CreateTestProcessSpec(env.colony1ID)
+		_, err := client.SubmitProcessSpec(processSpec, env.runtime1PrvKey)
+		assert.Nil(t, err)
+		_, err = client.AssignProcess(env.colony1ID, env.runtime1PrvKey)
+		assert.Nil(t, err)
+	}
+
+	_, err := client.GetProcessHistForRuntime(core.RUNNING, env.colony1ID, env.runtime1ID, 60, env.runtime2PrvKey)
+	assert.NotNil(t, err) // Should not work
+
+	_, err = client.GetProcessHistForRuntime(core.RUNNING, env.colony1ID, env.runtime1ID, 60, env.colony2PrvKey)
+	assert.NotNil(t, err) // Should not work
+
+	_, err = client.GetProcessHistForRuntime(core.RUNNING, env.colony1ID, env.runtime1ID, 60, env.runtime1PrvKey)
+	assert.Nil(t, err) // Should work
+
+	_, err = client.GetProcessHistForRuntime(core.RUNNING, env.colony1ID, env.runtime1ID, 60, env.colony1PrvKey)
+	assert.Nil(t, err) // Should work
+
+	server.Shutdown()
+	<-done
+}
+
 func TestGetWaitingProcessesSecurity(t *testing.T) {
 	env, client, server, _, done := setupTestEnv1(t)
 

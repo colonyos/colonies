@@ -11,6 +11,7 @@ import (
 	"github.com/colonyos/colonies/pkg/core"
 	"github.com/colonyos/colonies/pkg/security"
 	"github.com/colonyos/colonies/pkg/security/crypto"
+	"github.com/colonyos/colonies/pkg/utils"
 	"github.com/kataras/tablewriter"
 	"github.com/spf13/cobra"
 )
@@ -211,6 +212,7 @@ var statusCmd = &cobra.Command{
 
 		client := client.CreateColoniesClient(ServerHost, ServerPort, true) // XXX: Insecure
 		runtimesFromServer, err := client.GetRuntimes(ColonyID, RuntimePrvKey)
+		prvKey := RuntimePrvKey
 		if err != nil {
 			if ColonyPrvKey == "" {
 				if ColonyID == "" {
@@ -221,33 +223,19 @@ var statusCmd = &cobra.Command{
 			}
 			runtimesFromServer, err = client.GetRuntimes(ColonyID, ColonyPrvKey)
 			CheckError(err)
+			prvKey = ColonyPrvKey
 		}
 
-		processes, err := client.GetRunningProcesses(ColonyID, Count, RuntimePrvKey)
-		if err != nil {
-			if ColonyPrvKey == "" {
-				if ColonyID == "" {
-					ColonyID = os.Getenv("COLONYID")
-				}
-				ColonyPrvKey, err = keychain.GetPrvKey(ColonyID)
-				CheckError(err)
-			}
-			processes, err = client.GetRunningProcesses(ColonyID, Count, ColonyPrvKey)
-			CheckError(err)
-		}
+		processes60, err := client.GetProcessHistForColony(core.SUCCESS, ColonyID, 60, prvKey)
+		CheckError(err)
+		processes3600, err := client.GetProcessHistForColony(core.SUCCESS, ColonyID, 3600, prvKey)
+		CheckError(err)
+
+		processes, err := client.GetRunningProcesses(ColonyID, Count, prvKey)
+		CheckError(err)
 
 		stat, err := client.GetProcessStat(ColonyID, RuntimePrvKey)
-		if err != nil {
-			if ColonyPrvKey == "" {
-				if ColonyID == "" {
-					ColonyID = os.Getenv("COLONYID")
-				}
-				ColonyPrvKey, err = keychain.GetPrvKey(ColonyID)
-				CheckError(err)
-			}
-			stat, err = client.GetProcessStat(ColonyID, ColonyPrvKey)
-			CheckError(err)
-		}
+		CheckError(err)
 
 		fmt.Println("Process statistics:")
 		specData := [][]string{
@@ -255,6 +243,12 @@ var statusCmd = &cobra.Command{
 			[]string{"Running", strconv.Itoa(stat.Running)},
 			[]string{"Successful", strconv.Itoa(stat.Success)},
 			[]string{"Failed", strconv.Itoa(stat.Failed)},
+			[]string{"AvgWaitingTime (minute)", fmt.Sprintf("%f", utils.CalcAvgWaitingTime(processes60)) + "s"},
+			[]string{"AvgProcessingTime (minute)", fmt.Sprintf("%f", utils.CalcAvgProcessingTime(processes60)) + "s"},
+			[]string{"Utilization (minute)", fmt.Sprintf("%f", utils.CalcUtilization(processes60)) + "%"},
+			[]string{"AvgWaitingTime (hour)", fmt.Sprintf("%f", utils.CalcAvgWaitingTime(processes3600)) + "s"},
+			[]string{"AvgProcessingTime (hour)", fmt.Sprintf("%f", utils.CalcAvgProcessingTime(processes3600)) + "s"},
+			[]string{"Utilization (hour)", fmt.Sprintf("%f", utils.CalcUtilization(processes3600)) + "%"},
 		}
 		specTable := tablewriter.NewWriter(os.Stdout)
 		for _, v := range specData {
@@ -333,6 +327,5 @@ var statusCmd = &cobra.Command{
 		}
 		specTable.SetAlignment(tablewriter.ALIGN_LEFT)
 		specTable.Render()
-
 	},
 }
