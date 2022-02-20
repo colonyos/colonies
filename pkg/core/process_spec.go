@@ -39,6 +39,10 @@ func ConvertJSONToProcessSpec(jsonString string) (*ProcessSpec, error) {
 		return nil, err
 	}
 
+	if processSpec.MaxExecTime == 0 {
+		processSpec.MaxExecTime = -1
+	}
+
 	return processSpec, nil
 }
 

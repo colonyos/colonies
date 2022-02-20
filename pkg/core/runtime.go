@@ -63,7 +63,7 @@ func CreateRuntimeFromDB(id string,
 	state int,
 	commissionTime time.Time,
 	lastHeardFromTime time.Time) *Runtime {
-	runtime := CreateRuntime(id, runtimeType, name, colonyID, cpu, cores, mem, gpu, gpus, commissionTime.UTC(), lastHeardFromTime.UTC())
+	runtime := CreateRuntime(id, runtimeType, name, colonyID, cpu, cores, mem, gpu, gpus, commissionTime, lastHeardFromTime)
 	runtime.State = state
 	return runtime
 }

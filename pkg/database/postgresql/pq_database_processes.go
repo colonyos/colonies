@@ -3,6 +3,7 @@ package postgresql
 import (
 	"database/sql"
 	"errors"
+	"strconv"
 	"time"
 
 	"github.com/colonyos/colonies/pkg/core"
@@ -141,6 +142,38 @@ func (db *PQDatabase) selectCandidate(candidates []*core.Process) *core.Process 
 	} else {
 		return nil
 	}
+}
+
+func (db *PQDatabase) FindProcessesForColony(colonyID string, seconds int, state int) ([]*core.Process, error) {
+	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `PROCESSES WHERE TARGET_COLONY_ID=$1 AND STATE=$2 AND SUBMISSION_TIME BETWEEN NOW() - INTERVAL '1 seconds' * $3 AND NOW() ORDER BY SUBMISSION_TIME DESC`
+	rows, err := db.postgresql.Query(sqlStatement, colonyID, state, strconv.Itoa(seconds))
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	matches, err := db.parseProcesses(rows)
+	if err != nil {
+		return nil, err
+	}
+
+	return matches, nil
+}
+
+func (db *PQDatabase) FindProcessesForRuntime(colonyID string, runtimeID string, seconds int, state int) ([]*core.Process, error) {
+	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `PROCESSES WHERE TARGET_COLONY_ID=$1 AND ASSIGNED_RUNTIME_ID=$2 AND STATE=$3 AND SUBMISSION_TIME BETWEEN NOW() - INTERVAL '1 seconds' * $4 AND NOW() ORDER BY SUBMISSION_TIME DESC`
+	rows, err := db.postgresql.Query(sqlStatement, colonyID, runtimeID, state, strconv.Itoa(seconds))
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	matches, err := db.parseProcesses(rows)
+	if err != nil {
+		return nil, err
+	}
+
+	return matches, nil
 }
 
 func (db *PQDatabase) FindWaitingProcesses(colonyID string, count int) ([]*core.Process, error) {
@@ -329,8 +362,8 @@ func (db *PQDatabase) AssignRuntime(runtimeID string, process *core.Process) err
 func (db *PQDatabase) UnassignRuntime(process *core.Process) error {
 	endTime := time.Now()
 
-	sqlStatement := `UPDATE ` + db.dbPrefix + `PROCESSES SET IS_ASSIGNED=FALSE, END_TIME=$1, STATE=$2, RETRIES=$3 WHERE PROCESS_ID=$4`
-	_, err := db.postgresql.Exec(sqlStatement, endTime, core.WAITING, process.Retries+1, process.ID)
+	sqlStatement := `UPDATE ` + db.dbPrefix + `PROCESSES SET IS_ASSIGNED=FALSE, END_TIME=$1, STATE=$2, RETRIES=$3, ASSIGNED_RUNTIME_ID=$4 WHERE PROCESS_ID=$5`
+	_, err := db.postgresql.Exec(sqlStatement, endTime, core.WAITING, process.Retries+1, "", process.ID)
 	if err != nil {
 		return err
 	}
