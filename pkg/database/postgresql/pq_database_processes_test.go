@@ -713,3 +713,141 @@ func TestFindAllRunningProcesses(t *testing.T) {
 
 	assert.Equal(t, len(runningProcessIDsFromDB), 20)
 }
+
+func TestFindProcessesForRuntime(t *testing.T) {
+	db, err := PrepareTests()
+	assert.Nil(t, err)
+
+	colony1 := core.CreateColony(core.GenerateRandomID(), "test_colony_name_1")
+	err = db.AddColony(colony1)
+	assert.Nil(t, err)
+
+	colony2 := core.CreateColony(core.GenerateRandomID(), "test_colony_name_1")
+	err = db.AddColony(colony2)
+	assert.Nil(t, err)
+
+	runtime1 := utils.CreateTestRuntime(colony1.ID)
+	err = db.AddRuntime(runtime1)
+	assert.Nil(t, err)
+
+	runtime2 := utils.CreateTestRuntime(colony2.ID)
+	err = db.AddRuntime(runtime2)
+	assert.Nil(t, err)
+
+	// Create some waiting/unassigned processes
+	for i := 0; i < 10; i++ {
+		process := utils.CreateTestProcess(colony1.ID)
+		err = db.AddProcess(process)
+		assert.Nil(t, err)
+	}
+	for i := 0; i < 10; i++ {
+		process := utils.CreateTestProcess(colony2.ID)
+		err = db.AddProcess(process)
+		assert.Nil(t, err)
+	}
+
+	// Create some running processes
+	for i := 0; i < 10; i++ {
+		process := utils.CreateTestProcess(colony1.ID)
+		err = db.AddProcess(process)
+		assert.Nil(t, err)
+		err = db.AssignRuntime(runtime1.ID, process)
+		assert.Nil(t, err)
+		err = db.MarkSuccessful(process)
+		assert.Nil(t, err)
+	}
+	for i := 0; i < 20; i++ {
+		process := utils.CreateTestProcess(colony2.ID)
+		err = db.AddProcess(process)
+		assert.Nil(t, err)
+		err = db.AssignRuntime(runtime2.ID, process)
+		assert.Nil(t, err)
+		err = db.MarkSuccessful(process)
+		assert.Nil(t, err)
+	}
+
+	time.Sleep(1 * time.Second)
+
+	process := utils.CreateTestProcess(colony1.ID)
+	err = db.AddProcess(process)
+	assert.Nil(t, err)
+	err = db.AssignRuntime(runtime1.ID, process)
+	assert.Nil(t, err)
+	err = db.MarkSuccessful(process)
+	assert.Nil(t, err)
+
+	processesFromDB, err := db.FindProcessesForRuntime(colony1.ID, runtime1.ID, 60, core.SUCCESS) // last 60 seconds
+	assert.Nil(t, err)
+	assert.Equal(t, len(processesFromDB), 11)
+
+	processesFromDB, err = db.FindProcessesForRuntime(colony1.ID, runtime1.ID, 1, core.SUCCESS) // last second
+	assert.Nil(t, err)
+	assert.Equal(t, len(processesFromDB), 1)
+
+	processesFromDB, err = db.FindProcessesForRuntime(colony2.ID, runtime2.ID, 60, core.SUCCESS)
+	assert.Nil(t, err)
+	assert.Equal(t, len(processesFromDB), 20)
+}
+
+func TestFindProcessesForColony(t *testing.T) {
+	db, err := PrepareTests()
+	assert.Nil(t, err)
+
+	colony := core.CreateColony(core.GenerateRandomID(), "test_colony_name")
+	err = db.AddColony(colony)
+	assert.Nil(t, err)
+
+	runtime1 := utils.CreateTestRuntime(colony.ID)
+	err = db.AddRuntime(runtime1)
+	assert.Nil(t, err)
+
+	runtime2 := utils.CreateTestRuntime(colony.ID)
+	err = db.AddRuntime(runtime2)
+	assert.Nil(t, err)
+
+	// Create some waiting/unassigned processes
+	for i := 0; i < 20; i++ {
+		process := utils.CreateTestProcess(colony.ID)
+		err = db.AddProcess(process)
+		assert.Nil(t, err)
+	}
+
+	// Create some running processes
+	for i := 0; i < 10; i++ {
+		process := utils.CreateTestProcess(colony.ID)
+		err = db.AddProcess(process)
+		assert.Nil(t, err)
+		err = db.AssignRuntime(runtime1.ID, process)
+		assert.Nil(t, err)
+		err = db.MarkSuccessful(process)
+		assert.Nil(t, err)
+	}
+	for i := 0; i < 10; i++ {
+		process := utils.CreateTestProcess(colony.ID)
+		err = db.AddProcess(process)
+		assert.Nil(t, err)
+		err = db.AssignRuntime(runtime2.ID, process)
+		assert.Nil(t, err)
+		err = db.MarkSuccessful(process)
+		assert.Nil(t, err)
+	}
+
+	time.Sleep(1 * time.Second)
+
+	process := utils.CreateTestProcess(colony.ID)
+	err = db.AddProcess(process)
+	assert.Nil(t, err)
+	err = db.AssignRuntime(runtime1.ID, process)
+	assert.Nil(t, err)
+	err = db.MarkSuccessful(process)
+	assert.Nil(t, err)
+
+	processesFromDB, err := db.FindProcessesForColony(colony.ID, 60, core.SUCCESS) // last 60 seconds
+	assert.Nil(t, err)
+	assert.Equal(t, len(processesFromDB), 21)
+
+	processesFromDB, err = db.FindProcessesForColony(colony.ID, 1, core.SUCCESS) // last second
+	assert.Nil(t, err)
+	assert.Equal(t, len(processesFromDB), 1)
+
+}

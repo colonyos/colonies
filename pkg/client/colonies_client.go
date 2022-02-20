@@ -385,6 +385,36 @@ func (client *ColoniesClient) AssignProcess(colonyID string, prvKey string) (*co
 	return core.ConvertJSONToProcess(respBodyString)
 }
 
+func (client *ColoniesClient) GetProcessHistForColony(state int, colonyID string, seconds int, prvKey string) ([]*core.Process, error) {
+	msg := rpc.CreateGetProcessHistMsg(colonyID, "", seconds, state)
+	jsonString, err := msg.ToJSON()
+	if err != nil {
+		return nil, err
+	}
+
+	respBodyString, err := client.sendMessage(rpc.GetProcessHistPayloadType, jsonString, prvKey)
+	if err != nil {
+		return nil, err
+	}
+
+	return core.ConvertJSONToProcessArray(respBodyString)
+}
+
+func (client *ColoniesClient) GetProcessHistForRuntime(state int, colonyID string, runtimeID string, seconds int, prvKey string) ([]*core.Process, error) {
+	msg := rpc.CreateGetProcessHistMsg(colonyID, runtimeID, seconds, state)
+	jsonString, err := msg.ToJSON()
+	if err != nil {
+		return nil, err
+	}
+
+	respBodyString, err := client.sendMessage(rpc.GetProcessHistPayloadType, jsonString, prvKey)
+	if err != nil {
+		return nil, err
+	}
+
+	return core.ConvertJSONToProcessArray(respBodyString)
+}
+
 func (client *ColoniesClient) getProcesses(state int, colonyID string, count int, prvKey string) ([]*core.Process, error) {
 	msg := rpc.CreateGetProcessesMsg(colonyID, count, state)
 	jsonString, err := msg.ToJSON()
