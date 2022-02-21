@@ -32,13 +32,13 @@ func CalcAvgProcessingTime(processes []*core.Process) float64 {
 
 // This function assumes that the processes are sorted so that the oldest process is at index 0
 func CalcUtilization(processes []*core.Process) float64 {
+	if len(processes) == 0 {
+		return 0.0
+	}
+
 	sum := 0.0
 	for _, process := range processes {
 		sum += process.ProcessingTime().Seconds()
-	}
-
-	if len(processes) == 0 {
-		return 0.0
 	}
 
 	startTime := processes[0].SubmissionTime
@@ -46,4 +46,17 @@ func CalcUtilization(processes []*core.Process) float64 {
 	elapsedTime := endTime.Sub(startTime).Seconds()
 
 	return sum / elapsedTime
+}
+
+func CalcRetries(processes []*core.Process) int {
+	if len(processes) == 0 {
+		return 0
+	}
+
+	sum := 0
+	for _, process := range processes {
+		sum += process.Retries
+	}
+
+	return sum
 }
