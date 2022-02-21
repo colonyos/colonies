@@ -18,7 +18,7 @@ func init() {
 	rootCmd.AddCommand(attributeCmd)
 
 	attributeCmd.PersistentFlags().StringVarP(&ServerHost, "host", "", "localhost", "Server host")
-	attributeCmd.PersistentFlags().IntVarP(&ServerPort, "port", "", 8080, "Server HTTP port")
+	attributeCmd.PersistentFlags().IntVarP(&ServerPort, "port", "", 50080, "Server HTTP port")
 
 	addAttributeCmd.Flags().StringVarP(&Key, "key", "", "", "Key")
 	addAttributeCmd.MarkFlagRequired("key")
