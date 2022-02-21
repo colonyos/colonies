@@ -2,8 +2,10 @@ package postgresql
 
 import (
 	"testing"
+	"time"
 
 	"github.com/colonyos/colonies/pkg/core"
+	"github.com/colonyos/colonies/pkg/utils"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -15,9 +17,7 @@ func TestAddRuntime(t *testing.T) {
 	err = db.AddColony(colony)
 	assert.Nil(t, err)
 
-	runtimeID := core.GenerateRandomID()
-	runtime := core.CreateRuntime(runtimeID, "test_runtime_type", "test_runtime_name", colony.ID, "AMD Ryzen 9 5950X (32) @ 3.400GHz", 32, 80326, "NVIDIA GeForce RTX 2080 Ti Rev. A", 1)
-
+	runtime := utils.CreateTestRuntime(colony.ID)
 	err = db.AddRuntime(runtime)
 	assert.Nil(t, err)
 
@@ -40,13 +40,11 @@ func TestAddTwoRuntime(t *testing.T) {
 	err = db.AddColony(colony)
 	assert.Nil(t, err)
 
-	runtime1ID := core.GenerateRandomID()
-	runtime1 := core.CreateRuntime(runtime1ID, "test_runtime_type", "test_runtime_name", colony.ID, "AMD Ryzen 9 5950X (32) @ 3.400GHz", 32, 80326, "NVIDIA GeForce RTX 2080 Ti Rev. A", 1)
+	runtime1 := utils.CreateTestRuntime(colony.ID)
 	err = db.AddRuntime(runtime1)
 	assert.Nil(t, err)
 
-	runtime2ID := core.GenerateRandomID()
-	runtime2 := core.CreateRuntime(runtime2ID, "test_runtime_type", "test_runtime_name", colony.ID, "AMD Ryzen 9 5950X (32) @ 3.400GHz", 32, 80326, "NVIDIA GeForce RTX 2080 Ti Rev. A", 1)
+	runtime2 := utils.CreateTestRuntime(colony.ID)
 	err = db.AddRuntime(runtime2)
 	assert.Nil(t, err)
 
@@ -68,13 +66,11 @@ func TestGetRuntimeByID(t *testing.T) {
 	err = db.AddColony(colony)
 	assert.Nil(t, err)
 
-	runtime1ID := core.GenerateRandomID()
-	runtime1 := core.CreateRuntime(runtime1ID, "test_runtime_type", "test_runtime_name", colony.ID, "AMD Ryzen 9 5950X (32) @ 3.400GHz", 32, 80326, "NVIDIA GeForce RTX 2080 Ti Rev. A", 1)
+	runtime1 := utils.CreateTestRuntime(colony.ID)
 	err = db.AddRuntime(runtime1)
 	assert.Nil(t, err)
 
-	runtime2ID := core.GenerateRandomID()
-	runtime2 := core.CreateRuntime(runtime2ID, "test_runtime_type", "test_runtime_name", colony.ID, "AMD Ryzen 9 5950X (32) @ 3.400GHz", 32, 80326, "NVIDIA GeForce RTX 2080 Ti Rev. A", 1)
+	runtime2 := utils.CreateTestRuntime(colony.ID)
 	err = db.AddRuntime(runtime2)
 	assert.Nil(t, err)
 
@@ -97,18 +93,15 @@ func TestGetRuntimeByColonyID(t *testing.T) {
 	err = db.AddColony(colony2)
 	assert.Nil(t, err)
 
-	runtime1ID := core.GenerateRandomID()
-	runtime1 := core.CreateRuntime(runtime1ID, "test_runtime_type", "test_runtime_name", colony1.ID, "AMD Ryzen 9 5950X (32) @ 3.400GHz", 32, 80326, "NVIDIA GeForce RTX 2080 Ti Rev. A", 1)
+	runtime1 := utils.CreateTestRuntime(colony1.ID)
 	err = db.AddRuntime(runtime1)
 	assert.Nil(t, err)
 
-	runtime2ID := core.GenerateRandomID()
-	runtime2 := core.CreateRuntime(runtime2ID, "test_runtime_type", "test_runtime_name", colony1.ID, "AMD Ryzen 9 5950X (32) @ 3.400GHz", 32, 80326, "NVIDIA GeForce RTX 2080 Ti Rev. A", 1)
+	runtime2 := utils.CreateTestRuntime(colony1.ID)
 	err = db.AddRuntime(runtime2)
 	assert.Nil(t, err)
 
-	runtime3ID := core.GenerateRandomID()
-	runtime3 := core.CreateRuntime(runtime3ID, "test_runtime_type", "test_runtime_name", colony2.ID, "AMD Ryzen 9 5950X (32) @ 3.400GHz", 32, 80326, "NVIDIA GeForce RTX 2080 Ti Rev. A", 1)
+	runtime3 := utils.CreateTestRuntime(colony2.ID)
 	err = db.AddRuntime(runtime3)
 	assert.Nil(t, err)
 
@@ -121,6 +114,30 @@ func TestGetRuntimeByColonyID(t *testing.T) {
 	assert.True(t, core.IsRuntimeArraysEqual(runtimesColony1, runtimesColony1FromDB))
 }
 
+func TestMarkAlive(t *testing.T) {
+	db, err := PrepareTests()
+	assert.Nil(t, err)
+
+	colony := core.CreateColony(core.GenerateRandomID(), "test_colony_name")
+
+	err = db.AddColony(colony)
+	assert.Nil(t, err)
+
+	runtime := utils.CreateTestRuntime(colony.ID)
+	err = db.AddRuntime(runtime)
+	assert.Nil(t, err)
+
+	time.Sleep(3000 * time.Millisecond)
+
+	err = db.MarkAlive(runtime)
+	assert.Nil(t, err)
+
+	runtimeFromDB, err := db.GetRuntimeByID(runtime.ID)
+	assert.Nil(t, err)
+
+	assert.True(t, (runtimeFromDB.LastHeardFromTime.Unix()-runtime.LastHeardFromTime.Unix()) > 1)
+}
+
 func TestApproveRuntime(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
@@ -130,9 +147,7 @@ func TestApproveRuntime(t *testing.T) {
 	err = db.AddColony(colony)
 	assert.Nil(t, err)
 
-	runtimeID := core.GenerateRandomID()
-	runtime := core.CreateRuntime(runtimeID, "test_runtime_type", "test_runtime_name", colony.ID, "AMD Ryzen 9 5950X (32) @ 3.400GHz", 32, 80326, "NVIDIA GeForce RTX 2080 Ti Rev. A", 1)
-
+	runtime := utils.CreateTestRuntime(colony.ID)
 	err = db.AddRuntime(runtime)
 	assert.Nil(t, err)
 
@@ -172,21 +187,15 @@ func TestDeleteRuntimes(t *testing.T) {
 	err = db.AddColony(colony2)
 	assert.Nil(t, err)
 
-	runtime1ID := core.GenerateRandomID()
-	runtime1 := core.CreateRuntime(runtime1ID, "test_runtime_type", "test_runtime_name", colony1.ID, "AMD Ryzen 9 5950X (32) @ 3.400GHz", 32, 80326, "NVIDIA GeForce RTX 2080 Ti Rev. A", 1)
-
+	runtime1 := utils.CreateTestRuntime(colony1.ID)
 	err = db.AddRuntime(runtime1)
 	assert.Nil(t, err)
 
-	runtime2ID := core.GenerateRandomID()
-	runtime2 := core.CreateRuntime(runtime2ID, "test_runtime_type", "test_runtime_name", colony1.ID, "AMD Ryzen 9 5950X (32) @ 3.400GHz", 32, 80326, "NVIDIA GeForce RTX 2080 Ti Rev. A", 1)
-
+	runtime2 := utils.CreateTestRuntime(colony1.ID)
 	err = db.AddRuntime(runtime2)
 	assert.Nil(t, err)
 
-	runtime3ID := core.GenerateRandomID()
-	runtime3 := core.CreateRuntime(runtime3ID, "test_runtime_type", "test_runtime_name", colony2.ID, "AMD Ryzen 9 5950X (32) @ 3.400GHz", 32, 80326, "NVIDIA GeForce RTX 2080 Ti Rev. A", 1)
-
+	runtime3 := utils.CreateTestRuntime(colony2.ID)
 	err = db.AddRuntime(runtime3)
 	assert.Nil(t, err)
 

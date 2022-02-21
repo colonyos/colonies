@@ -22,26 +22,28 @@ build_cryptolib_ubuntu_2020:
 	cd buildtools; ./build_cryptolib_ubuntu.sh 
 
 test:
-	@cd internal/crypto; grc go test -v
-	@cd pkg/core; grc go test -v
-	@cd pkg/database/postgresql; grc go test -v
-	@cd pkg/rpc; grc go test -v
-	@cd pkg/security; grc go test -v
-	@cd pkg/security/crypto; grc go test -v
-	@cd pkg/security/validator; grc go test -v
-	@cd pkg/server; grc go test -v
-	@cd pkg/scheduler/basic; grc go test -v
+	@cd internal/crypto; grc go test -v --race
+	@cd pkg/core; grc go test -v --race
+	@cd pkg/database/postgresql; grc go test -v --race
+	@cd pkg/rpc; grc go test -v --race
+	@cd pkg/security; grc go test -v --race
+	@cd pkg/security/crypto; grc go test -v --race
+	@cd pkg/security/validator; grc go test -v --race
+	@cd pkg/server; grc go test -v --race
+	@cd pkg/planner/basic; grc go test -v --race
+	@cd pkg/utils; grc go test -v --race
 
-github_test:
-	@cd internal/crypto; go test -v
-	@cd pkg/core; go test -v
-	@cd pkg/database/postgresql; go test -v
-	@cd pkg/rpc; go test -v
-	@cd pkg/security; go test -v
-	@cd pkg/security/crypto; go test -v
-	@cd pkg/security/validator; go test -v
-	@cd pkg/server; go test -v
-	@cd pkg/scheduler/basic; go test -v
+github_test: 
+	@cd internal/crypto; go test -v --race
+	@cd pkg/core; go test -v --race
+	@cd pkg/database/postgresql; go test -v --race
+	@cd pkg/rpc; go test -v --race
+	@cd pkg/security; go test -v --race
+	@cd pkg/security/crypto; go test -v --race
+	@cd pkg/security/validator; go test -v --race
+	@cd pkg/server; go test -v --race
+	@cd pkg/planner/basic; go test -v --race
+	@cd pkg/utils; go test -v --race
 
 install:
 	cp ./bin/colonies /usr/local/bin

@@ -4,13 +4,17 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"sync"
+	"time"
 
 	"github.com/colonyos/colonies/pkg/core"
 	"github.com/colonyos/colonies/pkg/database"
+	"github.com/colonyos/colonies/pkg/planner"
+	"github.com/colonyos/colonies/pkg/planner/basic"
 	"github.com/colonyos/colonies/pkg/rpc"
-	"github.com/colonyos/colonies/pkg/scheduler"
-	"github.com/colonyos/colonies/pkg/scheduler/basic"
 )
+
+const TIMEOUT_RELEASE_INTERVALL = 1
 
 type subscribers struct {
 	processesSubscribers map[string]*processesSubscription
@@ -38,8 +42,11 @@ type command struct {
 type coloniesController struct {
 	db          database.Database
 	cmdQueue    chan *command
-	scheduler   scheduler.Scheduler
+	planner     planner.Planner
 	subscribers *subscribers
+	stopFlag    bool
+	debugFlag   bool
+	mutex       sync.Mutex
 }
 
 func createColoniesController(db database.Database) *coloniesController {
@@ -48,11 +55,56 @@ func createColoniesController(db database.Database) *coloniesController {
 	controller.subscribers = &subscribers{}
 	controller.subscribers.processesSubscribers = make(map[string]*processesSubscription)
 	controller.subscribers.processSubscribers = make(map[string]*processSubscription)
-	controller.scheduler = basic.CreateScheduler()
+	controller.planner = basic.CreatePlanner()
 
 	go controller.masterWorker()
+	go controller.timeoutChecker()
 
 	return controller
+}
+
+func (controller *coloniesController) timeoutChecker() {
+	for {
+		time.Sleep(TIMEOUT_RELEASE_INTERVALL * time.Second)
+
+		controller.mutex.Lock()
+		if controller.stopFlag {
+			return
+		}
+		controller.mutex.Unlock()
+
+		processes, err := controller.db.FindAllRunningProcesses()
+		if err != nil {
+			fmt.Println(err)
+			continue
+		}
+		for _, process := range processes {
+			if process.ProcessSpec.MaxExecTime == -1 {
+				continue
+			}
+			if time.Now().Unix() > process.Deadline.Unix() {
+				if process.Retries >= process.ProcessSpec.MaxRetries && process.ProcessSpec.MaxRetries > 0 {
+					err := controller.closeFailed(process.ID)
+					if err != nil {
+						fmt.Println("Max retries reached, but failed to *close* process with Id <" + process.ID + ">")
+						continue
+					}
+					if controller.debugFlag {
+						fmt.Println("Process with Id <" + process.ID + "> was *closed* as failed as max retires was reached")
+					}
+					continue
+				}
+
+				err := controller.unassignRuntime(process.ID)
+				if err != nil {
+					fmt.Println("Failed to *unassign* process with Id <" + process.ID + ">")
+				}
+				if controller.debugFlag {
+					fmt.Println("Process with Id <" + process.ID + "> was *unassign* as it did not complete in time")
+				}
+			}
+		}
+	}
 }
 
 func (controller *coloniesController) masterWorker() {
@@ -376,6 +428,7 @@ func (controller *coloniesController) addProcess(process *core.Process) (*core.P
 				cmd.errorChan <- err
 				return
 			}
+
 			addedProcess, err := controller.db.GetProcessByID(process.ID)
 			if err != nil {
 				cmd.errorChan <- err
@@ -415,6 +468,38 @@ func (controller *coloniesController) getProcessByID(processID string) (*core.Pr
 	}
 }
 
+func (controller *coloniesController) findProcessHistory(colonyID string, runtimeID string, seconds int, state int) ([]*core.Process, error) {
+	cmd := &command{processesReplyChan: make(chan []*core.Process),
+		errorChan: make(chan error, 1),
+		handler: func(cmd *command) {
+			var processes []*core.Process
+			var err error
+			if runtimeID == "" {
+				processes, err = controller.db.FindProcessesForColony(colonyID, seconds, state)
+				if err != nil {
+					cmd.errorChan <- err
+					return
+				}
+			} else {
+				processes, err = controller.db.FindProcessesForRuntime(colonyID, runtimeID, seconds, state)
+				if err != nil {
+					cmd.errorChan <- err
+					return
+				}
+			}
+			cmd.processesReplyChan <- processes
+		}}
+
+	controller.cmdQueue <- cmd
+	var processes []*core.Process
+	select {
+	case err := <-cmd.errorChan:
+		return processes, err
+	case processes := <-cmd.processesReplyChan:
+		return processes, nil
+	}
+}
+
 func (controller *coloniesController) findPrioritizedProcesses(runtimeID string, colonyID string, count int) ([]*core.Process, error) {
 	cmd := &command{processesReplyChan: make(chan []*core.Process),
 		errorChan: make(chan error, 1),
@@ -429,7 +514,7 @@ func (controller *coloniesController) findPrioritizedProcesses(runtimeID string,
 				cmd.errorChan <- err
 				return
 			}
-			prioritizedProcesses := controller.scheduler.Prioritize(runtimeID, processes, count)
+			prioritizedProcesses := controller.planner.Prioritize(runtimeID, processes, count)
 			cmd.processesReplyChan <- prioritizedProcesses
 		}}
 
@@ -608,23 +693,39 @@ func (controller *coloniesController) assignProcess(runtimeID string, colonyID s
 				return
 			}
 
+			err = controller.db.MarkAlive(runtime)
+			if err != nil {
+				cmd.errorChan <- err
+				return
+			}
+
 			var processes []*core.Process
 			processes, err = controller.db.FindUnassignedProcesses(colonyID, runtimeID, runtime.RuntimeType, 10)
 			if err != nil {
 				cmd.errorChan <- err
 				return
 			}
-			selectedProcesses, err := controller.scheduler.Select(runtimeID, processes)
+			selectedProcess, err := controller.planner.Select(runtimeID, processes)
 			if err != nil {
 				cmd.errorChan <- err
 				return
 			}
-			err = controller.db.AssignRuntime(runtimeID, selectedProcesses)
+			err = controller.db.AssignRuntime(runtimeID, selectedProcess)
 			if err != nil {
 				cmd.errorChan <- err
 				return
 			}
-			cmd.processReplyChan <- selectedProcesses
+
+			maxExecTime := selectedProcess.ProcessSpec.MaxExecTime
+			if maxExecTime > 0 {
+				err := controller.db.SetDeadline(selectedProcess, time.Now().Add(time.Duration(maxExecTime)*time.Second))
+				if err != nil {
+					cmd.errorChan <- err
+					return
+				}
+			}
+
+			cmd.processReplyChan <- selectedProcess
 		}}
 
 	controller.cmdQueue <- cmd
@@ -634,6 +735,22 @@ func (controller *coloniesController) assignProcess(runtimeID string, colonyID s
 	case processes := <-cmd.processReplyChan:
 		return processes, nil
 	}
+}
+
+func (controller *coloniesController) unassignRuntime(processID string) error {
+	cmd := &command{errorChan: make(chan error, 1),
+		handler: func(cmd *command) {
+			process, err := controller.db.GetProcessByID(processID)
+			if err != nil {
+				cmd.errorChan <- err
+				return
+			}
+			cmd.errorChan <- controller.db.UnassignRuntime(process)
+			controller.sendProcessesEvent(process)
+		}}
+
+	controller.cmdQueue <- cmd
+	return <-cmd.errorChan
 }
 
 func (controller *coloniesController) getProcessStat(colonyID string) (*core.ProcessStat, error) {
@@ -721,5 +838,8 @@ func (controller *coloniesController) getAttribute(attributeID string) (*core.At
 }
 
 func (controller *coloniesController) stop() {
+	controller.mutex.Lock()
+	controller.stopFlag = true
+	controller.mutex.Unlock()
 	controller.cmdQueue <- &command{stop: true}
 }

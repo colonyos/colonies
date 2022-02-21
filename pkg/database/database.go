@@ -1,6 +1,10 @@
 package database
 
-import "github.com/colonyos/colonies/pkg/core"
+import (
+	"time"
+
+	"github.com/colonyos/colonies/pkg/core"
+)
 
 type Database interface {
 	// Colony functions ...
@@ -16,6 +20,7 @@ type Database interface {
 	GetRuntimesByColonyID(colonyID string) ([]*core.Runtime, error)
 	ApproveRuntime(runtime *core.Runtime) error
 	RejectRuntime(runtime *core.Runtime) error
+	MarkAlive(runtime *core.Runtime) error
 	DeleteRuntimeByID(runtimeID string) error
 	DeleteRuntimesByColonyID(colonyID string) error
 
@@ -23,14 +28,18 @@ type Database interface {
 	AddProcess(process *core.Process) error
 	GetProcesses() ([]*core.Process, error)
 	GetProcessByID(processID string) (*core.Process, error)
+	FindProcessesForColony(colonyID string, seconds int, state int) ([]*core.Process, error)
+	FindProcessesForRuntime(colonyID string, runtimeID string, seconds int, state int) ([]*core.Process, error)
 	FindWaitingProcesses(colonyID string, count int) ([]*core.Process, error)
 	FindRunningProcesses(colonyID string, count int) ([]*core.Process, error)
+	FindAllRunningProcesses() ([]*core.Process, error)
 	FindSuccessfulProcesses(colonyID string, count int) ([]*core.Process, error)
 	FindFailedProcesses(colonyID string, count int) ([]*core.Process, error)
 	FindUnassignedProcesses(colonyID string, runtimeID string, runtimeType string, count int) ([]*core.Process, error)
 	DeleteProcessByID(processID string) error
 	DeleteAllProcesses() error
 	ResetProcess(process *core.Process) error
+	SetDeadline(process *core.Process, deadline time.Time) error
 	ResetAllProcesses(process *core.Process) error
 	AssignRuntime(runtimeID string, process *core.Process) error
 	UnassignRuntime(process *core.Process) error

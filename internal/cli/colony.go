@@ -11,6 +11,8 @@ import (
 	"github.com/colonyos/colonies/pkg/core"
 	"github.com/colonyos/colonies/pkg/security"
 	"github.com/colonyos/colonies/pkg/security/crypto"
+	"github.com/colonyos/colonies/pkg/server"
+	"github.com/colonyos/colonies/pkg/utils"
 	"github.com/kataras/tablewriter"
 	"github.com/spf13/cobra"
 )
@@ -211,6 +213,7 @@ var statusCmd = &cobra.Command{
 
 		client := client.CreateColoniesClient(ServerHost, ServerPort, true) // XXX: Insecure
 		runtimesFromServer, err := client.GetRuntimes(ColonyID, RuntimePrvKey)
+		prvKey := RuntimePrvKey
 		if err != nil {
 			if ColonyPrvKey == "" {
 				if ColonyID == "" {
@@ -221,33 +224,46 @@ var statusCmd = &cobra.Command{
 			}
 			runtimesFromServer, err = client.GetRuntimes(ColonyID, ColonyPrvKey)
 			CheckError(err)
+			prvKey = ColonyPrvKey
 		}
 
-		processes, err := client.GetRunningProcesses(ColonyID, Count, RuntimePrvKey)
-		if err != nil {
-			if ColonyPrvKey == "" {
-				if ColonyID == "" {
-					ColonyID = os.Getenv("COLONYID")
-				}
-				ColonyPrvKey, err = keychain.GetPrvKey(ColonyID)
-				CheckError(err)
-			}
-			processes, err = client.GetRunningProcesses(ColonyID, Count, ColonyPrvKey)
-			CheckError(err)
-		}
+		waitingProcesses600, err := client.GetProcessHistForColony(core.WAITING, ColonyID, 600, prvKey)
+		CheckError(err)
+		runningProcesses600, err := client.GetProcessHistForColony(core.RUNNING, ColonyID, 600, prvKey)
+		CheckError(err)
+		successfulProcesses600, err := client.GetProcessHistForColony(core.SUCCESS, ColonyID, 600, prvKey)
+		CheckError(err)
+		failedProcesses600, err := client.GetProcessHistForColony(core.FAILED, ColonyID, 600, prvKey)
+		CheckError(err)
+
+		var allProcesses600 []*core.Process
+		allProcesses600 = append(allProcesses600, waitingProcesses600...)
+		allProcesses600 = append(allProcesses600, runningProcesses600...)
+		allProcesses600 = append(allProcesses600, successfulProcesses600...)
+		allProcesses600 = append(allProcesses600, failedProcesses600...)
+		retries600 := utils.CalcRetries(allProcesses600)
+
+		waitingProcesses3600, err := client.GetProcessHistForColony(core.WAITING, ColonyID, 3600, prvKey)
+		CheckError(err)
+		runningProcesses3600, err := client.GetProcessHistForColony(core.RUNNING, ColonyID, 3600, prvKey)
+		CheckError(err)
+		successfulProcesses3600, err := client.GetProcessHistForColony(core.SUCCESS, ColonyID, 3600, prvKey)
+		CheckError(err)
+		failedProcesses3600, err := client.GetProcessHistForColony(core.FAILED, ColonyID, 3600, prvKey)
+		CheckError(err)
+
+		var allProcesses3600 []*core.Process
+		allProcesses3600 = append(allProcesses3600, waitingProcesses3600...)
+		allProcesses3600 = append(allProcesses3600, runningProcesses3600...)
+		allProcesses3600 = append(allProcesses3600, successfulProcesses3600...)
+		allProcesses3600 = append(allProcesses3600, failedProcesses3600...)
+		retries3600 := utils.CalcRetries(allProcesses3600)
+
+		processes, err := client.GetRunningProcesses(ColonyID, server.MAX_COUNT-1, prvKey)
+		CheckError(err)
 
 		stat, err := client.GetProcessStat(ColonyID, RuntimePrvKey)
-		if err != nil {
-			if ColonyPrvKey == "" {
-				if ColonyID == "" {
-					ColonyID = os.Getenv("COLONYID")
-				}
-				ColonyPrvKey, err = keychain.GetPrvKey(ColonyID)
-				CheckError(err)
-			}
-			stat, err = client.GetProcessStat(ColonyID, ColonyPrvKey)
-			CheckError(err)
-		}
+		CheckError(err)
 
 		fmt.Println("Process statistics:")
 		specData := [][]string{
@@ -255,6 +271,14 @@ var statusCmd = &cobra.Command{
 			[]string{"Running", strconv.Itoa(stat.Running)},
 			[]string{"Successful", strconv.Itoa(stat.Success)},
 			[]string{"Failed", strconv.Itoa(stat.Failed)},
+			[]string{"Retries (10 minutes)", strconv.Itoa(retries600)},
+			[]string{"Retries (1 hour)", strconv.Itoa(retries3600)},
+			[]string{"Utilization (10 minutes)", fmt.Sprintf("%f", utils.CalcUtilization(successfulProcesses600)) + "%"},
+			[]string{"Utilization (1 hour)", fmt.Sprintf("%f", utils.CalcUtilization(successfulProcesses3600)) + "%"},
+			[]string{"AvgWaitingTime (10 minutes)", fmt.Sprintf("%f", utils.CalcAvgWaitingTime(successfulProcesses600)) + "s"},
+			[]string{"AvgWaitingTime (1 hour)", fmt.Sprintf("%f", utils.CalcAvgWaitingTime(successfulProcesses3600)) + "s"},
+			[]string{"AvgProcessingTime (10 minutes)", fmt.Sprintf("%f", utils.CalcAvgProcessingTime(successfulProcesses600)) + "s"},
+			[]string{"AvgProcessingTime (1 hour)", fmt.Sprintf("%f", utils.CalcAvgProcessingTime(successfulProcesses3600)) + "s"},
 		}
 		specTable := tablewriter.NewWriter(os.Stdout)
 		for _, v := range specData {
@@ -333,6 +357,5 @@ var statusCmd = &cobra.Command{
 		}
 		specTable.SetAlignment(tablewriter.ALIGN_LEFT)
 		specTable.Render()
-
 	},
 }

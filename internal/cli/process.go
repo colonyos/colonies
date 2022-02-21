@@ -11,6 +11,7 @@ import (
 	"github.com/colonyos/colonies/pkg/client"
 	"github.com/colonyos/colonies/pkg/core"
 	"github.com/colonyos/colonies/pkg/security"
+	"github.com/colonyos/colonies/pkg/server"
 	"github.com/kataras/tablewriter"
 	"github.com/spf13/cobra"
 )
@@ -40,25 +41,25 @@ func init() {
 	listWaitingProcessesCmd.Flags().StringVarP(&ColonyID, "colonyid", "", "", "Colony Id")
 	listWaitingProcessesCmd.Flags().StringVarP(&RuntimeID, "runtimeid", "", "", "Runtime Id")
 	listWaitingProcessesCmd.Flags().StringVarP(&RuntimePrvKey, "runtimeprvkey", "", "", "Runtime private key")
-	listWaitingProcessesCmd.Flags().IntVarP(&Count, "count", "", 10, "Number of processes to list")
+	listWaitingProcessesCmd.Flags().IntVarP(&Count, "count", "", server.MAX_COUNT, "Number of processes to list")
 	listWaitingProcessesCmd.Flags().BoolVarP(&JSON, "json", "", false, "Print JSON instead of tables")
 
 	listRunningProcessesCmd.Flags().StringVarP(&ColonyID, "colonyid", "", "", "Colony Id")
 	listRunningProcessesCmd.Flags().StringVarP(&RuntimeID, "runtimeid", "", "", "Runtime Id")
 	listRunningProcessesCmd.Flags().StringVarP(&RuntimePrvKey, "runtimeprvkey", "", "", "Runtime private key")
-	listRunningProcessesCmd.Flags().IntVarP(&Count, "count", "", 10, "Number of processes to list")
+	listRunningProcessesCmd.Flags().IntVarP(&Count, "count", "", server.MAX_COUNT, "Number of processes to list")
 	listRunningProcessesCmd.Flags().BoolVarP(&JSON, "json", "", false, "Print JSON instead of tables")
 
 	listSuccessfulProcessesCmd.Flags().StringVarP(&ColonyID, "colonyid", "", "", "Colony Id")
 	listSuccessfulProcessesCmd.Flags().StringVarP(&RuntimeID, "runtimeid", "", "", "Runtime Id")
 	listSuccessfulProcessesCmd.Flags().StringVarP(&RuntimePrvKey, "runtimeprvkey", "", "", "Runtime private key")
-	listSuccessfulProcessesCmd.Flags().IntVarP(&Count, "count", "", 10, "Number of processes to list")
+	listSuccessfulProcessesCmd.Flags().IntVarP(&Count, "count", "", server.MAX_COUNT, "Number of processes to list")
 	listSuccessfulProcessesCmd.Flags().BoolVarP(&JSON, "json", "", false, "Print JSON instead of tables")
 
 	listFailedProcessesCmd.Flags().StringVarP(&ColonyID, "colonyid", "", "", "Colony Id")
 	listFailedProcessesCmd.Flags().StringVarP(&RuntimeID, "runtimeid", "", "", "Runtime Id")
 	listFailedProcessesCmd.Flags().StringVarP(&RuntimePrvKey, "runtimeprvkey", "", "", "Runtime private key")
-	listFailedProcessesCmd.Flags().IntVarP(&Count, "count", "", 10, "Number of processes to list")
+	listFailedProcessesCmd.Flags().IntVarP(&Count, "count", "", server.MAX_COUNT, "Number of processes to list")
 	listFailedProcessesCmd.Flags().BoolVarP(&JSON, "json", "", false, "Print JSON instead of tables")
 
 	getProcessCmd.Flags().StringVarP(&RuntimeID, "runtimeid", "", "", "Runtime Id")
@@ -226,10 +227,10 @@ var listWaitingProcessesCmd = &cobra.Command{
 
 			var data [][]string
 			for _, process := range processes {
-				data = append(data, []string{process.ID, process.SubmissionTime.Format(TimeLayout)})
+				data = append(data, []string{process.ID, process.SubmissionTime.Format(TimeLayout), process.ProcessSpec.Conditions.RuntimeType})
 			}
 			table := tablewriter.NewWriter(os.Stdout)
-			table.SetHeader([]string{"ID", "Submission time"})
+			table.SetHeader([]string{"ID", "Submission Time", "Runtime Type Target"})
 			for _, v := range data {
 				table.Append(v)
 			}
@@ -479,6 +480,8 @@ var getProcessCmd = &cobra.Command{
 			[]string{"StartTime", process.StartTime.Format(TimeLayout)},
 			[]string{"EndTime", process.EndTime.Format(TimeLayout)},
 			[]string{"Deadline", process.Deadline.Format(TimeLayout)},
+			[]string{"WaitingTime", process.WaitingTime().String()},
+			[]string{"ProcessingTime", process.ProcessingTime().String()},
 			[]string{"Retries", strconv.Itoa(process.Retries)},
 		}
 		processTable := tablewriter.NewWriter(os.Stdout)
@@ -488,28 +491,60 @@ var getProcessCmd = &cobra.Command{
 		processTable.SetAlignment(tablewriter.ALIGN_LEFT)
 		processTable.Render()
 
-		fmt.Println()
-		fmt.Println("Requirements:")
-
 		runtimeIDs := ""
 		for _, runtimeID := range process.ProcessSpec.Conditions.RuntimeIDs {
 			runtimeIDs += runtimeID + "\n"
 		}
 		runtimeIDs = strings.TrimSuffix(runtimeIDs, "\n")
-
 		if runtimeIDs == "" {
 			runtimeIDs = "None"
 		}
 
+		image := process.ProcessSpec.Image
+		if image == "" {
+			image = "None"
+		}
+
+		procCmd := process.ProcessSpec.Cmd
+		if procCmd == "" {
+			procCmd = "None"
+		}
+
+		procArgs := ""
+		for _, procArg := range process.ProcessSpec.Args {
+			procArgs += procArg + " "
+		}
+		if procArgs == "" {
+			procArgs = "None"
+		}
+
+		volumes := ""
+		for _, volume := range process.ProcessSpec.Volumes {
+			volumes += volume + " "
+		}
+		if volumes == "" {
+			volumes = "None"
+		}
+
+		ports := ""
+		for _, port := range process.ProcessSpec.Ports {
+			ports += port + " "
+		}
+		if ports == "" {
+			ports = "None"
+		}
+
+		fmt.Println()
+		fmt.Println("ProcessSpec:")
+
 		specData := [][]string{
-			[]string{"ColonyID", process.ProcessSpec.Conditions.ColonyID},
-			[]string{"RuntimeIDs", runtimeIDs},
-			[]string{"RuntimeType", process.ProcessSpec.Conditions.RuntimeType},
-			[]string{"Memory", strconv.Itoa(process.ProcessSpec.Conditions.Mem)},
-			[]string{"CPU Cores", strconv.Itoa(process.ProcessSpec.Conditions.Cores)},
-			[]string{"Number of GPUs", strconv.Itoa(process.ProcessSpec.Conditions.GPUs)},
-			[]string{"Timeout", strconv.Itoa(process.ProcessSpec.Timeout)},
-			[]string{"Max retries", strconv.Itoa(process.ProcessSpec.MaxRetries)},
+			[]string{"Image", image},
+			[]string{"Cmd", procCmd},
+			[]string{"Args", procArgs},
+			[]string{"Volumes", volumes},
+			[]string{"Ports", ports},
+			[]string{"MaxExecTime", strconv.Itoa(process.ProcessSpec.MaxExecTime)},
+			[]string{"MaxRetries", strconv.Itoa(process.ProcessSpec.MaxRetries)},
 		}
 		specTable := tablewriter.NewWriter(os.Stdout)
 		for _, v := range specData {
@@ -517,6 +552,24 @@ var getProcessCmd = &cobra.Command{
 		}
 		specTable.SetAlignment(tablewriter.ALIGN_LEFT)
 		specTable.Render()
+
+		fmt.Println()
+		fmt.Println("Conditions:")
+
+		condData := [][]string{
+			[]string{"ColonyID", process.ProcessSpec.Conditions.ColonyID},
+			[]string{"RuntimeIDs", runtimeIDs},
+			[]string{"RuntimeType", process.ProcessSpec.Conditions.RuntimeType},
+			[]string{"Memory", strconv.Itoa(process.ProcessSpec.Conditions.Mem)},
+			[]string{"CPU Cores", strconv.Itoa(process.ProcessSpec.Conditions.Cores)},
+			[]string{"GPUs", strconv.Itoa(process.ProcessSpec.Conditions.GPUs)},
+		}
+		condTable := tablewriter.NewWriter(os.Stdout)
+		for _, v := range condData {
+			condTable.Append(v)
+		}
+		condTable.SetAlignment(tablewriter.ALIGN_LEFT)
+		condTable.Render()
 
 		fmt.Println()
 		fmt.Println("Attributes:")

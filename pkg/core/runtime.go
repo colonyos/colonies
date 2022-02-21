@@ -1,6 +1,9 @@
 package core
 
-import "encoding/json"
+import (
+	"encoding/json"
+	"time"
+)
 
 const (
 	PENDING  int = 0
@@ -9,33 +12,58 @@ const (
 )
 
 type Runtime struct {
-	ID          string `json:"runtimeid"`
-	RuntimeType string `json:"runtimetype"`
-	Name        string `json:"name"`
-	ColonyID    string `json:"colonyid"`
-	CPU         string `json:"cpu"`
-	Cores       int    `json:"cores"`
-	Mem         int    `json:"mem"`
-	GPU         string `json:"gpu"`
-	GPUs        int    `json:"gpus"`
-	State       int    `json:"state"`
+	ID                string    `json:"runtimeid"`
+	RuntimeType       string    `json:"runtimetype"`
+	Name              string    `json:"name"`
+	ColonyID          string    `json:"colonyid"`
+	CPU               string    `json:"cpu"`
+	Cores             int       `json:"cores"`
+	Mem               int       `json:"mem"`
+	GPU               string    `json:"gpu"`
+	GPUs              int       `json:"gpus"`
+	State             int       `json:"state"`
+	CommissionTime    time.Time `json:"commissiontime"`
+	LastHeardFromTime time.Time `json:"lastheardfromtime"`
 }
 
-func CreateRuntime(id string, runtimeType string, name string, colonyID string, cpu string, cores int, mem int, gpu string, gpus int) *Runtime {
+func CreateRuntime(id string,
+	runtimeType string,
+	name string,
+	colonyID string,
+	cpu string,
+	cores int,
+	mem int,
+	gpu string,
+	gpus int,
+	commissionTime time.Time,
+	lastHeardFromTime time.Time) *Runtime {
 	return &Runtime{ID: id,
-		RuntimeType: runtimeType,
-		Name:        name,
-		ColonyID:    colonyID,
-		CPU:         cpu,
-		Cores:       cores,
-		Mem:         mem,
-		GPU:         gpu,
-		GPUs:        gpus,
-		State:       PENDING}
+		RuntimeType:       runtimeType,
+		Name:              name,
+		ColonyID:          colonyID,
+		CPU:               cpu,
+		Cores:             cores,
+		Mem:               mem,
+		GPU:               gpu,
+		GPUs:              gpus,
+		State:             PENDING,
+		CommissionTime:    commissionTime,
+		LastHeardFromTime: lastHeardFromTime}
 }
 
-func CreateRuntimeFromDB(id string, runtimeType string, name string, colonyID string, cpu string, cores int, mem int, gpu string, gpus int, state int) *Runtime {
-	runtime := CreateRuntime(id, runtimeType, name, colonyID, cpu, cores, mem, gpu, gpus)
+func CreateRuntimeFromDB(id string,
+	runtimeType string,
+	name string,
+	colonyID string,
+	cpu string,
+	cores int,
+	mem int,
+	gpu string,
+	gpus int,
+	state int,
+	commissionTime time.Time,
+	lastHeardFromTime time.Time) *Runtime {
+	runtime := CreateRuntime(id, runtimeType, name, colonyID, cpu, cores, mem, gpu, gpus, commissionTime, lastHeardFromTime)
 	runtime.State = state
 	return runtime
 }
@@ -96,7 +124,9 @@ func (runtime *Runtime) Equals(runtime2 *Runtime) bool {
 		runtime.Mem == runtime2.Mem &&
 		runtime.GPU == runtime2.GPU &&
 		runtime.GPUs == runtime2.GPUs &&
-		runtime.State == runtime2.State {
+		runtime.State == runtime2.State &&
+		runtime.CommissionTime.Unix() == runtime2.CommissionTime.Unix() &&
+		runtime.LastHeardFromTime.Unix() == runtime2.LastHeardFromTime.Unix() {
 		return true
 	}
 

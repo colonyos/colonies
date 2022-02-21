@@ -20,7 +20,7 @@ type Idendity struct {
 }
 
 func CreateIdendity() (*Idendity, error) {
-	mathrand.Seed(time.Now().UnixNano())
+	mathrand.Seed(time.Now().UnixNano()) // XXX Is this secure?
 	idendity := &Idendity{}
 
 	prv, err := ecdsa.GenerateKey(btcec.S256(), rand.Reader)
