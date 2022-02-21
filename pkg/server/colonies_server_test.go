@@ -557,6 +557,34 @@ func TestDeleteProcess(t *testing.T) {
 	<-done
 }
 
+func TestDeleteAllProcessesForColony(t *testing.T) {
+	env, client, server, _, done := setupTestEnv1(t)
+
+	processSpec1 := utils.CreateTestProcessSpec(env.colony1ID)
+	addedProcess1, err := client.SubmitProcessSpec(processSpec1, env.runtime1PrvKey)
+	assert.Nil(t, err)
+
+	processSpec2 := utils.CreateTestProcessSpec(env.colony2ID)
+	addedProcess2, err := client.SubmitProcessSpec(processSpec2, env.runtime2PrvKey)
+	assert.Nil(t, err)
+
+	processFromServer, err := client.GetProcess(addedProcess1.ID, env.runtime1PrvKey)
+	assert.True(t, addedProcess1.Equals(processFromServer))
+
+	err = client.DeleteAllProcesses(env.colony1ID, env.colony1PrvKey)
+	assert.Nil(t, err)
+
+	_, err = client.GetProcess(addedProcess1.ID, env.runtime1PrvKey)
+	assert.NotNil(t, err)
+
+	processFromServer, err = client.GetProcess(addedProcess2.ID, env.runtime2PrvKey)
+	assert.Nil(t, err)
+	assert.True(t, addedProcess2.Equals(processFromServer))
+
+	server.Shutdown()
+	<-done
+}
+
 func TestCloseSuccessful(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 
@@ -616,7 +644,7 @@ func TestAddGetAttributes(t *testing.T) {
 	assignedProcess, err := client.AssignProcess(env.colonyID, env.runtimePrvKey)
 	assert.Nil(t, err)
 
-	attribute := core.CreateAttribute(assignedProcess.ID, core.OUT, "result", "helloworld")
+	attribute := core.CreateAttribute(assignedProcess.ID, env.colonyID, core.OUT, "result", "helloworld")
 	addedAttribute, err := client.AddAttribute(attribute, env.runtimePrvKey)
 	assert.Nil(t, err)
 	assert.Equal(t, attribute.ID, addedAttribute.ID)

@@ -24,6 +24,7 @@ func init() {
 	processCmd.AddCommand(listFailedProcessesCmd)
 	processCmd.AddCommand(getProcessCmd)
 	processCmd.AddCommand(deleteProcessCmd)
+	processCmd.AddCommand(deleteAllProcessesCmd)
 	processCmd.AddCommand(assignProcessCmd)
 	processCmd.AddCommand(closeSuccessful)
 	processCmd.AddCommand(closeFailed)
@@ -74,6 +75,10 @@ func init() {
 	deleteProcessCmd.Flags().StringVarP(&ColonyID, "colonyid", "", "", "Colony Id")
 	deleteProcessCmd.Flags().StringVarP(&ProcessID, "processid", "", "", "Process Id")
 	deleteProcessCmd.MarkFlagRequired("processid")
+
+	deleteAllProcessesCmd.Flags().StringVarP(&RuntimeID, "runtimeid", "", "", "Runtime Id")
+	deleteAllProcessesCmd.Flags().StringVarP(&RuntimePrvKey, "runtimeprvkey", "", "", "Runtime private key")
+	deleteAllProcessesCmd.Flags().StringVarP(&ColonyID, "colonyid", "", "", "Colony Id")
 
 	assignProcessCmd.Flags().StringVarP(&ColonyID, "colonyid", "", "", "Colony Id")
 	assignProcessCmd.Flags().StringVarP(&RuntimeID, "runtimeid", "", "", "Runtime Id")
@@ -642,6 +647,36 @@ var deleteProcessCmd = &cobra.Command{
 		CheckError(err)
 
 		fmt.Println("Process with Id <" + ProcessID + "> deleted")
+	},
+}
+
+var deleteAllProcessesCmd = &cobra.Command{
+	Use:   "delete",
+	Short: "Delete all Processes for a Colony",
+	Long:  "Delete all Processes for a Colony",
+	Run: func(cmd *cobra.Command, args []string) {
+		parseServerEnv()
+
+		keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
+		CheckError(err)
+
+		if ColonyID == "" {
+			ColonyID = os.Getenv("COLONYID")
+		}
+		if ColonyID == "" {
+			CheckError(errors.New("Unknown Runtime Id"))
+		}
+
+		if RuntimePrvKey == "" {
+			RuntimePrvKey, err = keychain.GetPrvKey(RuntimeID)
+			CheckError(err)
+		}
+
+		client := client.CreateColoniesClient(ServerHost, ServerPort, true) // XXX: Insecure
+		err = client.DeleteAllProcesses(ColonyID, RuntimePrvKey)
+		CheckError(err)
+
+		fmt.Println("Deleted all processes for Colony <" + ColonyID + ">")
 	},
 }
 

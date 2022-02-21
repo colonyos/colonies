@@ -38,6 +38,7 @@ type Database interface {
 	FindUnassignedProcesses(colonyID string, runtimeID string, runtimeType string, count int) ([]*core.Process, error)
 	DeleteProcessByID(processID string) error
 	DeleteAllProcesses() error
+	DeleteAllProcessesForColony(colonyID string) error
 	ResetProcess(process *core.Process) error
 	SetDeadline(process *core.Process, deadline time.Time) error
 	ResetAllProcesses(process *core.Process) error
@@ -64,6 +65,7 @@ type Database interface {
 	GetAttributesByType(targetID string, attributeType int) ([]*core.Attribute, error)
 	UpdateAttribute(attribute *core.Attribute) error
 	DeleteAttributeByID(attributeID string) error
+	DeleteAllAttributesByColonyID(colonyID string) error
 	DeleteAttributesByProcessID(targetID string, attributeType int) error
 	DeleteAllAttributesByProcessID(targetID string) error
 	DeleteAllAttributes() error

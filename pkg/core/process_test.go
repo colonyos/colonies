@@ -87,12 +87,12 @@ func TestProcessToJSON(t *testing.T) {
 	attribute5ID := GenerateRandomID()
 	attribute6ID := GenerateRandomID()
 	var attributes []*Attribute
-	attributes = append(attributes, CreateAttribute(attribute1ID, IN, "in_key_1", "in_value_1"))
-	attributes = append(attributes, CreateAttribute(attribute2ID, IN, "in_key_2", "in_value_2"))
-	attributes = append(attributes, CreateAttribute(attribute3ID, ERR, "err_key_1", "err_value_1"))
-	attributes = append(attributes, CreateAttribute(attribute4ID, ERR, "err_key_2", "err_value_2"))
-	attributes = append(attributes, CreateAttribute(attribute5ID, OUT, "out_key_1", "out_value_1"))
-	attributes = append(attributes, CreateAttribute(attribute6ID, OUT, "out_key_2", "out_value_2"))
+	attributes = append(attributes, CreateAttribute(attribute1ID, GenerateRandomID(), IN, "in_key_1", "in_value_1"))
+	attributes = append(attributes, CreateAttribute(attribute2ID, GenerateRandomID(), IN, "in_key_2", "in_value_2"))
+	attributes = append(attributes, CreateAttribute(attribute3ID, GenerateRandomID(), ERR, "err_key_1", "err_value_1"))
+	attributes = append(attributes, CreateAttribute(attribute4ID, GenerateRandomID(), ERR, "err_key_2", "err_value_2"))
+	attributes = append(attributes, CreateAttribute(attribute5ID, GenerateRandomID(), OUT, "out_key_1", "out_value_1"))
+	attributes = append(attributes, CreateAttribute(attribute6ID, GenerateRandomID(), OUT, "out_key_2", "out_value_2"))
 	process.SetAttributes(attributes)
 
 	jsonString, err := process.ToJSON()
@@ -123,9 +123,9 @@ func TestProcessArrayToJSON(t *testing.T) {
 	attribute2ID := GenerateRandomID()
 	attribute3ID := GenerateRandomID()
 	var attributes1 []*Attribute
-	attributes1 = append(attributes1, CreateAttribute(attribute1ID, IN, "in_key_1", "in_value_1"))
-	attributes1 = append(attributes1, CreateAttribute(attribute2ID, ERR, "err_key_1", "err_value_1"))
-	attributes1 = append(attributes1, CreateAttribute(attribute3ID, OUT, "out_key_1", "out_value_1"))
+	attributes1 = append(attributes1, CreateAttribute(attribute1ID, GenerateRandomID(), IN, "in_key_1", "in_value_1"))
+	attributes1 = append(attributes1, CreateAttribute(attribute2ID, GenerateRandomID(), ERR, "err_key_1", "err_value_1"))
+	attributes1 = append(attributes1, CreateAttribute(attribute3ID, GenerateRandomID(), OUT, "out_key_1", "out_value_1"))
 	process1.SetAttributes(attributes1)
 
 	processSpec2 := CreateProcessSpec("test_image", "test_cmd", []string{"test_arg"}, []string{"test_volumes"}, []string{"test_ports"}, colonyID, []string{}, runtimeType, timeout, maxRetries, mem, cores, gpus, make(map[string]string))
@@ -137,9 +137,9 @@ func TestProcessArrayToJSON(t *testing.T) {
 	attribute5ID := GenerateRandomID()
 	attribute6ID := GenerateRandomID()
 	var attributes2 []*Attribute
-	attributes2 = append(attributes2, CreateAttribute(attribute4ID, IN, "in_key_1", "in_value_1"))
-	attributes2 = append(attributes2, CreateAttribute(attribute5ID, ERR, "err_key_1", "err_value_1"))
-	attributes2 = append(attributes2, CreateAttribute(attribute6ID, OUT, "out_key_1", "out_value_1"))
+	attributes2 = append(attributes2, CreateAttribute(attribute4ID, GenerateRandomID(), IN, "in_key_1", "in_value_1"))
+	attributes2 = append(attributes2, CreateAttribute(attribute5ID, GenerateRandomID(), ERR, "err_key_1", "err_value_1"))
+	attributes2 = append(attributes2, CreateAttribute(attribute6ID, GenerateRandomID(), OUT, "out_key_1", "out_value_1"))
 	process2.SetAttributes(attributes2)
 
 	var processes1 []*Process
