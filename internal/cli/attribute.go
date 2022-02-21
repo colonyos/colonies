@@ -70,7 +70,7 @@ var addAttributeCmd = &cobra.Command{
 			CheckError(err)
 		}
 
-		attribute := core.CreateAttribute(ProcessID, core.OUT, Key, Value)
+		attribute := core.CreateAttribute(ProcessID, ColonyID, core.OUT, Key, Value)
 		client := client.CreateColoniesClient(ServerHost, ServerPort, true) // XXX: Insecure
 		addedAttribute, err := client.AddAttribute(attribute, RuntimePrvKey)
 		CheckError(err)
