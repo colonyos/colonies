@@ -19,8 +19,8 @@ func (db *PQDatabase) AddAttributes(attributes []*core.Attribute) error { // TOD
 }
 
 func (db *PQDatabase) AddAttribute(attribute *core.Attribute) error {
-	sqlStatement := `INSERT INTO  ` + db.dbPrefix + `ATTRIBUTES (ATTRIBUTE_ID, KEY, VALUE, ATTRIBUTE_TYPE, TARGET_ID) VALUES ($1, $2, $3, $4, $5)`
-	_, err := db.postgresql.Exec(sqlStatement, attribute.ID, attribute.Key, attribute.Value, attribute.AttributeType, attribute.TargetID)
+	sqlStatement := `INSERT INTO  ` + db.dbPrefix + `ATTRIBUTES (ATTRIBUTE_ID, KEY, VALUE, ATTRIBUTE_TYPE, TARGET_ID, TARGET_COLONY_ID) VALUES ($1, $2, $3, $4, $5, $6)`
+	_, err := db.postgresql.Exec(sqlStatement, attribute.ID, attribute.Key, attribute.Value, attribute.AttributeType, attribute.TargetID, attribute.TargetColonyID)
 	if err != nil {
 		return err
 	}
@@ -35,13 +35,14 @@ func (db *PQDatabase) parseAttributes(rows *sql.Rows) ([]*core.Attribute, error)
 		var attributeID string
 		var key string
 		var value string
-		var processType int
+		var attributeType int
 		var targetID string
-		if err := rows.Scan(&attributeID, &key, &value, &processType, &targetID); err != nil {
+		var targetColonyID string
+		if err := rows.Scan(&attributeID, &key, &value, &attributeType, &targetID, &targetColonyID); err != nil {
 			return nil, err
 		}
 
-		attribute := core.CreateAttribute(targetID, processType, key, value)
+		attribute := core.CreateAttribute(targetID, targetColonyID, attributeType, key, value)
 		attributes = append(attributes, attribute)
 	}
 
@@ -137,6 +138,16 @@ func (db *PQDatabase) UpdateAttribute(attribute *core.Attribute) error {
 func (db *PQDatabase) DeleteAttributeByID(attributeID string) error {
 	sqlStatement := `DELETE FROM ` + db.dbPrefix + `ATTRIBUTES WHERE ATTRIBUTE_ID=$1`
 	_, err := db.postgresql.Exec(sqlStatement, attributeID)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (db *PQDatabase) DeleteAllAttributesByColonyID(colonyID string) error {
+	sqlStatement := `DELETE FROM ` + db.dbPrefix + `ATTRIBUTES WHERE TARGET_COLONY_ID=$1`
+	_, err := db.postgresql.Exec(sqlStatement, colonyID)
 	if err != nil {
 		return err
 	}

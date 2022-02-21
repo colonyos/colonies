@@ -548,6 +548,23 @@ The state attribute can have the following values:
 {}
 ```
 
+### Delete all Process
+* PayloadType: **deleteallprocessesmsg**
+* Credentials: A valid Colony Private Key
+
+#### Payload 
+```json
+{
+    "msgtype": "deleteallprocessesmsg",
+    "colonyid": "863e313bfd882fe7c0f13c14aff1f3f02ba763bcb48377e50d505289c81e47b6"
+}
+```
+
+#### Reply 
+```json
+{}
+```
+
 ### Close Process as Successful 
 * PayloadType: **closesuccessfulmsg**
 * Credentials: A valid Runtime Private Key and the Runtime ID needs to match the RuntimeID assigned to the process
