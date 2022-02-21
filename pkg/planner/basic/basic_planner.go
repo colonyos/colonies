@@ -22,22 +22,22 @@ func (c bySubmissionTime) Swap(i, j int) {
 	c[i], c[j] = c[j], c[i]
 }
 
-type BasicScheduler struct {
+type BasicPlanner struct {
 }
 
-func CreateScheduler() *BasicScheduler {
-	return &BasicScheduler{}
+func CreatePlanner() *BasicPlanner {
+	return &BasicPlanner{}
 }
 
-func (scheduler *BasicScheduler) printCandidates(candidates []*core.Process) {
+func (planner *BasicPlanner) printCandidates(candidates []*core.Process) {
 	for _, c := range candidates {
 		fmt.Println(c.ID)
 		fmt.Println(c.SubmissionTime)
 	}
 }
 
-func (scheduler *BasicScheduler) Select(runtimeID string, candidates []*core.Process) (*core.Process, error) {
-	prioritizedProcesses := scheduler.Prioritize(runtimeID, candidates, 1)
+func (planner *BasicPlanner) Select(runtimeID string, candidates []*core.Process) (*core.Process, error) {
+	prioritizedProcesses := planner.Prioritize(runtimeID, candidates, 1)
 	if len(prioritizedProcesses) < 1 {
 		return nil, errors.New("No processes can be selected")
 	}
@@ -53,7 +53,7 @@ func min(x, y int) int {
 	return y
 }
 
-func (scheduler *BasicScheduler) Prioritize(runtimeID string, candidates []*core.Process, count int) []*core.Process {
+func (planner *BasicPlanner) Prioritize(runtimeID string, candidates []*core.Process, count int) []*core.Process {
 	var prioritizedCandidates []*core.Process
 	if len(candidates) == 0 {
 		return prioritizedCandidates

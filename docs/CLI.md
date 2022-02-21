@@ -294,7 +294,7 @@ Attributes:
 
 ## Get attribute of a process 
 ```console
-./bin/colonies attribute get --attributeid 7fcc3a10947e6a3c56fa5c59c14c7d13d32468ed899e12e9d1cb7589ef51a0e3 --processid 5785eb8a57f22d73a99d5c5e5d073cf27f9ea4ba81bad1a72e5e4f226e647dc0 
+./bin/colonies attribute get --attributeid 7fcc3a10947e6a3c56fa5c59c14c7d13d32468ed899e12e9d1cb7589ef51a0e3
 ```
 Output:
 ```
@@ -309,7 +309,7 @@ Output:
 
 ## Close a process as successful
 ```console
-./bin/colonies process successful --processid 5513617dc4407b6190959a07db2a39c6ad93771c7e8457391e2e64927214c258
+./bin/colonies process close --processid 5513617dc4407b6190959a07db2a39c6ad93771c7e8457391e2e64927214c258
 ```
 Output:
 ```
@@ -318,7 +318,7 @@ Process with Id <5513617dc4407b6190959a07db2a39c6ad93771c7e8457391e2e64927214c25
 
 ## Close a process as failed 
 ```console
-./bin/colonies process failed --processid 7bdc97997db5ea59471b2165c0e5672a4fe8f9158d36ab547adb9710d26e5ae2
+./bin/colonies process fail --processid 7bdc97997db5ea59471b2165c0e5672a4fe8f9158d36ab547adb9710d26e5ae2
 ```
 Output:
 ```

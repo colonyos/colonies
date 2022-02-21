@@ -385,6 +385,60 @@ Else it will contain the reply JSON data, e.g:
 }
 ```
 
+### List process history
+* PayloadType: **getprocesshistmsg**
+* Credentials: A valid Runtime or Colony Private Key
+
+#### Payload 
+The state attribute can have the following values:
+* 0 : Waiting 
+* 1 : Running 
+* 2 : Success 
+* 3 : Failed 
+
+Note, all process will be returned for the entire colony if runtimeID is not specified.
+
+```json
+{
+    "msgtype": "getprocessesmsg",
+    "coloyid": "891f0c88e8a00cb103df472e4ece347a41eb0115e5c40f12d565bb24eb3fc71d",
+    "runtimeid": "",
+    "seconds": 100,
+    "state": 3 
+}
+```
+
+#### Reply 
+```json
+[
+    {
+        "processid": "88169d23b0828ed65f0a007e4be6bf9734358b9a64379d0c6e53a0496216db4c",
+        "assignedruntimeid": "653c818113e878d704935e639371f72a3167d510008607c70176e8147adf7865",
+        "isassigned": true,
+        "state": 3,
+        "submissiontime": "2022-01-02T12:04:21.647969Z",
+        "starttime": "2022-01-02T12:04:21.657305Z",
+        "endtime": "2022-01-02T12:04:21.661402Z",
+        "deadline": "0001-01-01T00:00:00Z",
+        "retries": 0,
+        "attributes": null,
+        "spec": {
+            "timeout": -1,
+            "maxretries": 3,
+            "conditions": {
+                "colonyid": "891f0c88e8a00cb103df472e4ece347a41eb0115e5c40f12d565bb24eb3fc71d",
+                "runtimeids": [],
+                "runtimetype": "test_runtime_type",
+                "mem": 1000,
+                "cores": 10,
+                "gpus": 1
+            },
+            "env": {}
+        }
+    }
+]
+```
+
 ### List processes
 * PayloadType: **getprocessesmsg**
 * Credentials: A valid Runtime or Colony Private Key

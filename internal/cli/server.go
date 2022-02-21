@@ -76,12 +76,25 @@ var serverStartCmd = &cobra.Command{
 		parseDBEnv()
 		parseServerEnv()
 
+		_, err := os.Stat(TLSKey)
+		if err != nil {
+			fmt.Println("Failed to load TLS Key: " + TLSKey)
+			os.Exit(-1)
+		}
+
+		_, err = os.Stat(TLSCert)
+		if err != nil {
+			fmt.Println("Failed to load TLS Cert: " + TLSCert)
+			os.Exit(-1)
+		}
+
 		var db *postgresql.PQDatabase
 		for {
 			db = postgresql.CreatePQDatabase(DBHost, DBPort, DBUser, DBPassword, DBName, DBPrefix)
 			err := db.Connect()
 			if err != nil {
 				fmt.Println("Failed to connect to database")
+				fmt.Println(err)
 				time.Sleep(1 * time.Second)
 			} else {
 				break
@@ -90,6 +103,13 @@ var serverStartCmd = &cobra.Command{
 
 		logging.Log().Info("Connecting to Colonies database, host: " + DBHost + ", port: " + strconv.Itoa(DBPort) + ", user: " + DBUser + ", password: " + "******************, name: " + DBName + ". prefix: " + DBPrefix)
 		server := server.CreateColoniesServer(db, ServerPort, ServerID, TLSKey, TLSCert, Verbose)
-		server.ServeForever()
+		for {
+			err := server.ServeForever()
+			if err != nil {
+				fmt.Println("Failed to start Colonies Server")
+				fmt.Println(err)
+				time.Sleep(1 * time.Second)
+			}
+		}
 	},
 }

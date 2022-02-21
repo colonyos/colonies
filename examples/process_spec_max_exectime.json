@@ -7,6 +7,8 @@
         "cores": 10,
         "gpus": 1
     },
+    "maxexectime": 10,
+    "maxretries": 3,
     "env": {
         "test_key": "test_value"
     }
