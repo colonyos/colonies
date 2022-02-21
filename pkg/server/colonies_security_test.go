@@ -569,6 +569,33 @@ func TestDeleteProcessSecurity(t *testing.T) {
 	<-done
 }
 
+func TestDeleteAllProcessSecurity(t *testing.T) {
+	env, client, server, _, done := setupTestEnv1(t)
+
+	// The setup looks like this:
+	//   runtime1 is member of colony1
+	//   runtime2 is member of colony2
+
+	processSpec := utils.CreateTestProcessSpec(env.colony1ID)
+	_, err := client.SubmitProcessSpec(processSpec, env.runtime1PrvKey)
+	assert.Nil(t, err)
+
+	err = client.DeleteAllProcesses(env.colony1ID, env.runtime2PrvKey)
+	assert.NotNil(t, err) // Should not work
+
+	err = client.DeleteAllProcesses(env.colony1ID, env.runtime1PrvKey)
+	assert.NotNil(t, err) // Should not work
+
+	err = client.DeleteAllProcesses(env.colony1ID, env.colony2PrvKey)
+	assert.NotNil(t, err) // Should not work
+
+	err = client.DeleteAllProcesses(env.colony1ID, env.colony1PrvKey)
+	assert.Nil(t, err) // Shoul dwork
+
+	server.Shutdown()
+	<-done
+}
+
 func TestGetProcessStatSecurity(t *testing.T) {
 	env, client, server, _, done := setupTestEnv1(t)
 
@@ -682,7 +709,7 @@ func TestAddAttributeSecurity(t *testing.T) {
 	assignedProcess, err := client.AssignProcess(env.colony1ID, env.runtime1PrvKey)
 	assert.Nil(t, err)
 
-	attribute := core.CreateAttribute(assignedProcess.ID, core.OUT, "result", "helloworld")
+	attribute := core.CreateAttribute(assignedProcess.ID, env.colony1ID, core.OUT, "result", "helloworld")
 	_, err = client.AddAttribute(attribute, env.runtime2PrvKey)
 	assert.NotNil(t, err) // Should not work
 
@@ -719,7 +746,7 @@ func TestGetAttributeSecurity(t *testing.T) {
 	assignedProcess, err := client.AssignProcess(env.colony1ID, env.runtime1PrvKey)
 	assert.Nil(t, err)
 
-	attribute := core.CreateAttribute(assignedProcess.ID, core.OUT, "result", "helloworld")
+	attribute := core.CreateAttribute(assignedProcess.ID, env.colony1ID, core.OUT, "result", "helloworld")
 	_, err = client.AddAttribute(attribute, env.runtime1PrvKey)
 	assert.Nil(t, err)
 
