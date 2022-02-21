@@ -13,4 +13,5 @@ data:
   DBPASSWORD: "rFcLGNkgsNtksg6Pgtn9CumL4xXBQ7"
   TLSCERT: "/run/secrets/tls/tls.crt"
   TLSKEY: "/run/secrets/tls/tls.key"
+  TZ: "Europe/Stockholm"
   VERBOSE: "true"

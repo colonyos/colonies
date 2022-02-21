@@ -177,11 +177,19 @@ func (process *Process) SetEndTime(endTime time.Time) {
 }
 
 func (process *Process) WaitingTime() time.Duration {
-	return process.StartTime.Sub(process.SubmissionTime)
+	if process.State == WAITING {
+		return time.Now().Sub(process.SubmissionTime)
+	} else {
+		return process.StartTime.Sub(process.SubmissionTime)
+	}
 }
 
 func (process *Process) ProcessingTime() time.Duration {
-	return process.EndTime.Sub(process.StartTime)
+	if process.State == RUNNING {
+		return time.Now().Sub(process.StartTime)
+	} else {
+		return process.EndTime.Sub(process.StartTime)
+	}
 }
 
 func (process *Process) ToJSON() (string, error) {
