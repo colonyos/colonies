@@ -651,7 +651,7 @@ var deleteProcessCmd = &cobra.Command{
 }
 
 var deleteAllProcessesCmd = &cobra.Command{
-	Use:   "delete",
+	Use:   "deleteall",
 	Short: "Delete all Processes for a Colony",
 	Long:  "Delete all Processes for a Colony",
 	Run: func(cmd *cobra.Command, args []string) {
