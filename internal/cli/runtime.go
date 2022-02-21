@@ -152,28 +152,56 @@ var lsRuntimesCmd = &cobra.Command{
 			prvKey = ColonyPrvKey
 		}
 
-		waitingTimes60 := make(map[string]float64)
-		processingTimes60 := make(map[string]float64)
-		utilizations60 := make(map[string]float64)
+		waitingTimes600 := make(map[string]float64)
+		processingTimes600 := make(map[string]float64)
+		utilizations600 := make(map[string]float64)
+		retries600 := make(map[string]int)
 		for _, runtime := range runtimesFromServer {
-			processes, err := client.GetProcessHistForRuntime(core.SUCCESS, ColonyID, runtime.ID, 60, prvKey)
+			var allProcesses []*core.Process
+			waitingProcesses, err := client.GetProcessHistForRuntime(core.WAITING, ColonyID, runtime.ID, 600, prvKey)
+			CheckError(err)
+			runningProcesses, err := client.GetProcessHistForRuntime(core.RUNNING, ColonyID, runtime.ID, 600, prvKey)
+			CheckError(err)
+			successfulProcesses, err := client.GetProcessHistForRuntime(core.SUCCESS, ColonyID, runtime.ID, 600, prvKey)
+			CheckError(err)
+			failedProcesses, err := client.GetProcessHistForRuntime(core.FAILED, ColonyID, runtime.ID, 600, prvKey)
 			CheckError(err)
 
-			waitingTimes60[runtime.ID] = utils.CalcAvgWaitingTime(processes)
-			processingTimes60[runtime.ID] = utils.CalcAvgProcessingTime(processes)
-			utilizations60[runtime.ID] = utils.CalcUtilization(processes)
+			allProcesses = append(allProcesses, waitingProcesses...)
+			allProcesses = append(allProcesses, runningProcesses...)
+			allProcesses = append(allProcesses, successfulProcesses...)
+			allProcesses = append(allProcesses, failedProcesses...)
+			retries600[runtime.ID] = utils.CalcRetries(allProcesses)
+
+			waitingTimes600[runtime.ID] = utils.CalcAvgWaitingTime(successfulProcesses)
+			processingTimes600[runtime.ID] = utils.CalcAvgProcessingTime(successfulProcesses)
+			utilizations600[runtime.ID] = utils.CalcUtilization(successfulProcesses)
 		}
 
 		waitingTimes3600 := make(map[string]float64)
 		processingTimes3600 := make(map[string]float64)
 		utilizations3600 := make(map[string]float64)
+		retries3600 := make(map[string]int)
 		for _, runtime := range runtimesFromServer {
-			processes, err := client.GetProcessHistForRuntime(core.SUCCESS, ColonyID, runtime.ID, 3600, prvKey)
+			var allProcesses []*core.Process
+			waitingProcesses, err := client.GetProcessHistForRuntime(core.WAITING, ColonyID, runtime.ID, 3600, prvKey)
+			CheckError(err)
+			runningProcesses, err := client.GetProcessHistForRuntime(core.RUNNING, ColonyID, runtime.ID, 3600, prvKey)
+			CheckError(err)
+			successfulProcesses, err := client.GetProcessHistForRuntime(core.SUCCESS, ColonyID, runtime.ID, 3600, prvKey)
+			CheckError(err)
+			failedProcesses, err := client.GetProcessHistForRuntime(core.FAILED, ColonyID, runtime.ID, 3600, prvKey)
 			CheckError(err)
 
-			waitingTimes3600[runtime.ID] = utils.CalcAvgWaitingTime(processes)
-			processingTimes3600[runtime.ID] = utils.CalcAvgProcessingTime(processes)
-			utilizations3600[runtime.ID] = utils.CalcUtilization(processes)
+			allProcesses = append(allProcesses, waitingProcesses...)
+			allProcesses = append(allProcesses, runningProcesses...)
+			allProcesses = append(allProcesses, successfulProcesses...)
+			allProcesses = append(allProcesses, failedProcesses...)
+			retries3600[runtime.ID] = utils.CalcRetries(allProcesses)
+
+			waitingTimes3600[runtime.ID] = utils.CalcAvgWaitingTime(successfulProcesses)
+			processingTimes3600[runtime.ID] = utils.CalcAvgProcessingTime(successfulProcesses)
+			utilizations3600[runtime.ID] = utils.CalcUtilization(successfulProcesses)
 		}
 
 		if JSON {
@@ -196,9 +224,9 @@ var lsRuntimesCmd = &cobra.Command{
 				state = "Unknown"
 			}
 
-			waitingTime60 := fmt.Sprintf("%f", waitingTimes60[runtime.ID])
-			processingTime60 := fmt.Sprintf("%f", processingTimes60[runtime.ID])
-			utilization60 := fmt.Sprintf("%f", utilizations60[runtime.ID])
+			waitingTime600 := fmt.Sprintf("%f", waitingTimes600[runtime.ID])
+			processingTime600 := fmt.Sprintf("%f", processingTimes600[runtime.ID])
+			utilization600 := fmt.Sprintf("%f", utilizations600[runtime.ID])
 
 			waitingTime3600 := fmt.Sprintf("%f", waitingTimes3600[runtime.ID])
 			processingTime3600 := fmt.Sprintf("%f", processingTimes3600[runtime.ID])
@@ -211,12 +239,14 @@ var lsRuntimesCmd = &cobra.Command{
 				[]string{"State", state},
 				[]string{"CommissionTime", runtime.CommissionTime.Format(TimeLayout)},
 				[]string{"LastHeardFrom", runtime.LastHeardFromTime.Format(TimeLayout)},
-				[]string{"AvgWaitingTime (minute)", waitingTime60 + "s"},
-				[]string{"AvgProcessingTime (minute)", processingTime60 + "s"},
-				[]string{"Utilization (minute)", utilization60 + "%"},
-				[]string{"AvgWaitingTime (hour)", waitingTime3600 + "s"},
-				[]string{"AvgProcessingTime (hour)", processingTime3600 + "s"},
-				[]string{"Utilization (hour)", utilization3600 + "%"},
+				[]string{"Retries (10 minutes)", strconv.Itoa(retries600[runtime.ID])},
+				[]string{"Retries (1 hour)", strconv.Itoa(retries3600[runtime.ID])},
+				[]string{"Utilization (10 minutes)", utilization600 + "%"},
+				[]string{"Utilization (1 hour)", utilization3600 + "%"},
+				[]string{"AvgWaitingTime (10 minutes)", waitingTime600 + "s"},
+				[]string{"AvgWaitingTime (1 hour)", waitingTime3600 + "s"},
+				[]string{"AvgProcessingTime (10 minutes)", processingTime600 + "s"},
+				[]string{"AvgProcessingTime (1 hour)", processingTime3600 + "s"},
 				[]string{"CPU", runtime.CPU},
 				[]string{"Cores", strconv.Itoa(runtime.Cores)},
 				[]string{"Mem [MiB]", strconv.Itoa(runtime.Mem)},

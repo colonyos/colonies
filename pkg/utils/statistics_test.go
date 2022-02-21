@@ -28,6 +28,7 @@ func TestCalcAvgTimes(t *testing.T) {
 	process1.SetStartTime(startTime.Add(2 * time.Second))
 	process1.SetEndTime(startTime.Add(3 * time.Second))
 	process1.SetState(core.SUCCESS)
+	process1.Retries = 3
 	processes = append(processes, process1)
 
 	process2 := core.CreateProcess(processSpec1)
@@ -35,6 +36,7 @@ func TestCalcAvgTimes(t *testing.T) {
 	process2.SetStartTime(startTime.Add(10 * time.Second))
 	process2.SetEndTime(startTime.Add(20 * time.Second))
 	process2.SetState(core.SUCCESS)
+	process2.Retries = 4
 	processes = append(processes, process2)
 
 	avgWaitTime := CalcAvgWaitingTime(processes)
@@ -51,4 +53,9 @@ func TestCalcAvgTimes(t *testing.T) {
 	assert.Equal(t, utilization > 0, true)
 	utilization = CalcUtilization(zeroProcesses)
 	assert.Equal(t, utilization, 0.0)
+
+	retries := CalcRetries(processes)
+	assert.Equal(t, retries, 7)
+	retries = CalcRetries(zeroProcesses)
+	assert.Equal(t, retries, 0)
 }
