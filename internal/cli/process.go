@@ -31,7 +31,7 @@ func init() {
 	rootCmd.AddCommand(processCmd)
 
 	processCmd.PersistentFlags().StringVarP(&ServerHost, "host", "", "localhost", "Server host")
-	processCmd.PersistentFlags().IntVarP(&ServerPort, "port", "", 8080, "Server HTTP port")
+	processCmd.PersistentFlags().IntVarP(&ServerPort, "port", "", 50080, "Server HTTP port")
 
 	submitProcessCmd.Flags().StringVarP(&RuntimeID, "runtimeid", "", "", "Runtime Id")
 	submitProcessCmd.Flags().StringVarP(&RuntimePrvKey, "runtimeprvkey", "", "", "Runtime private key")
@@ -664,19 +664,19 @@ var deleteAllProcessesCmd = &cobra.Command{
 			ColonyID = os.Getenv("COLONYID")
 		}
 		if ColonyID == "" {
-			CheckError(errors.New("Unknown Runtime Id"))
+			CheckError(errors.New("Unknown Colony Id"))
 		}
 
-		if RuntimePrvKey == "" {
-			RuntimePrvKey, err = keychain.GetPrvKey(RuntimeID)
+		if ColonyPrvKey == "" {
+			ColonyPrvKey, err = keychain.GetPrvKey(ColonyID)
 			CheckError(err)
 		}
 
 		client := client.CreateColoniesClient(ServerHost, ServerPort, true) // XXX: Insecure
-		err = client.DeleteAllProcesses(ColonyID, RuntimePrvKey)
+		err = client.DeleteAllProcesses(ColonyID, ColonyPrvKey)
 		CheckError(err)
 
-		fmt.Println("Deleted all processes for Colony <" + ColonyID + ">")
+		fmt.Println("Deleted all processes for Colony with Id <" + ColonyID + ">")
 	},
 }
 
