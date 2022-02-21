@@ -33,7 +33,7 @@ test:
 	@cd pkg/planner/basic; grc go test -v --race
 	@cd pkg/utils; grc go test -v --race
 
-github_test: export TZ=Europe/Stockholm
+github_test: 
 	@cd internal/crypto; go test -v --race
 	@cd pkg/core; go test -v --race
 	@cd pkg/database/postgresql; go test -v --race
