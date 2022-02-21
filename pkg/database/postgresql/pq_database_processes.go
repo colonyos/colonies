@@ -27,7 +27,7 @@ func (db *PQDatabase) AddProcess(process *core.Process) error {
 
 	// Convert Envs to Attributes
 	for key, value := range process.ProcessSpec.Env {
-		process.Attributes = append(process.Attributes, core.CreateAttribute(process.ID, core.ENV, key, value))
+		process.Attributes = append(process.Attributes, core.CreateAttribute(process.ID, process.ProcessSpec.Conditions.ColonyID, core.ENV, key, value))
 	}
 
 	err = db.AddAttributes(process.Attributes)
@@ -298,6 +298,21 @@ func (db *PQDatabase) DeleteAllProcesses() error {
 	}
 
 	err = db.DeleteAllAttributes()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (db *PQDatabase) DeleteAllProcessesForColony(colonyID string) error {
+	sqlStatement := `DELETE FROM ` + db.dbPrefix + `PROCESSES WHERE TARGET_COLONY_ID=$1`
+	_, err := db.postgresql.Exec(sqlStatement, colonyID)
+	if err != nil {
+		return err
+	}
+
+	err = db.DeleteAllAttributesByColonyID(colonyID)
 	if err != nil {
 		return err
 	}

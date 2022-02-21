@@ -89,17 +89,47 @@ func TestDeleteProcesses(t *testing.T) {
 	assert.Equal(t, 0, numberOfProcesses)
 }
 
+func TestDeleteAllProcessesByColony(t *testing.T) {
+	db, err := PrepareTests()
+	assert.Nil(t, err)
+
+	colony1ID := core.GenerateRandomID()
+	process1 := utils.CreateTestProcess(colony1ID)
+	err = db.AddProcess(process1)
+	assert.Nil(t, err)
+	attribute1 := core.CreateAttribute(process1.ID, colony1ID, core.IN, "test_key1", "test_value1")
+	err = db.AddAttribute(attribute1)
+	assert.Nil(t, err)
+
+	colony2ID := core.GenerateRandomID()
+	process2 := utils.CreateTestProcess(colony2ID)
+	err = db.AddProcess(process2)
+	assert.Nil(t, err)
+	attribute2 := core.CreateAttribute(process2.ID, colony2ID, core.IN, "test_key1", "test_value1")
+	err = db.AddAttribute(attribute2)
+	assert.Nil(t, err)
+
+	err = db.DeleteAllProcessesForColony(colony2ID)
+	assert.Nil(t, err)
+
+	attributeFromDB, err := db.GetAttribute(process1.ID, "test_key1", core.IN)
+	assert.Nil(t, err)
+	assert.NotNil(t, attributeFromDB)
+	attributeFromDB, err = db.GetAttribute(process2.ID, "test_key1", core.IN)
+	assert.Nil(t, err)
+	assert.Nil(t, attributeFromDB)
+}
+
 func TestDeleteAllProcessesAndAttributes(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
 
 	colonyID := core.GenerateRandomID()
-
 	process1 := utils.CreateTestProcess(colonyID)
 	err = db.AddProcess(process1)
 	assert.Nil(t, err)
 
-	attribute := core.CreateAttribute(process1.ID, core.IN, "test_key1", "test_value1")
+	attribute := core.CreateAttribute(process1.ID, colonyID, core.IN, "test_key1", "test_value1")
 	err = db.AddAttribute(attribute)
 	assert.Nil(t, err)
 
@@ -116,7 +146,6 @@ func TestDeleteProcessesAndAttributes(t *testing.T) {
 	assert.Nil(t, err)
 
 	colonyID := core.GenerateRandomID()
-
 	process1 := utils.CreateTestProcess(colonyID)
 	err = db.AddProcess(process1)
 	assert.Nil(t, err)
@@ -125,11 +154,11 @@ func TestDeleteProcessesAndAttributes(t *testing.T) {
 	err = db.AddProcess(process2)
 	assert.Nil(t, err)
 
-	attribute := core.CreateAttribute(process1.ID, core.IN, "test_key1", "test_value1")
+	attribute := core.CreateAttribute(process1.ID, colonyID, core.IN, "test_key1", "test_value1")
 	err = db.AddAttribute(attribute)
 	assert.Nil(t, err)
 
-	attribute = core.CreateAttribute(process2.ID, core.IN, "test_key2", "test_value2")
+	attribute = core.CreateAttribute(process2.ID, colonyID, core.IN, "test_key2", "test_value2")
 	err = db.AddAttribute(attribute)
 	assert.Nil(t, err)
 

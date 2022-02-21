@@ -647,6 +647,17 @@ func (controller *coloniesController) deleteProcess(processID string) error {
 	return <-cmd.errorChan
 }
 
+func (controller *coloniesController) deleteAllProcesses(colonyID string) error {
+	cmd := &command{errorChan: make(chan error, 1),
+		handler: func(cmd *command) {
+			err := controller.db.DeleteAllProcessesForColony(colonyID)
+			cmd.errorChan <- err
+		}}
+
+	controller.cmdQueue <- cmd
+	return <-cmd.errorChan
+}
+
 func (controller *coloniesController) closeSuccessful(processID string) error {
 	cmd := &command{errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
