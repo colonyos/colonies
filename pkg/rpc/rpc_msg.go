@@ -29,6 +29,14 @@ func CreateRPCMsg(payloadType string, payload string, prvKey string) (*RPCMsg, e
 	return msg, nil
 }
 
+func CreateInsecureRPCMsg(payloadType string, payload string) (*RPCMsg, error) {
+	msg := &RPCMsg{}
+	msg.PayloadType = payloadType
+	msg.Payload = base64.StdEncoding.EncodeToString([]byte(payload))
+
+	return msg, nil
+}
+
 func CreateRPCMsgFromJSON(jsonString string) (*RPCMsg, error) {
 	var msg *RPCMsg
 
