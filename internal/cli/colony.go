@@ -182,8 +182,8 @@ var lsColoniesCmd = &cobra.Command{
 
 var statusCmd = &cobra.Command{
 	Use:   "status",
-	Short: "Show status for a Colony",
-	Long:  "Show status for a Colony",
+	Short: "Show status about a Colony",
+	Long:  "Show status about a Colony",
 	Run: func(cmd *cobra.Command, args []string) {
 		parseServerEnv()
 
