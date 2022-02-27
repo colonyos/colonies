@@ -1,9 +1,9 @@
 {
-    "name": "my_runtime",
+    "name": "hal9000",
     "runtimetype": "my_runtime_type",
-    "cpu": "AMD Ryzen 9 5950X (32) @ 3.400GHz",
-    "cores": 32,
-    "mem": 80326,
-    "gpu": "NVIDIA GeForce RTX 2080 Ti Rev. A",
-    "gpus": 1
+    "cpu": "Illinois Automatic Computer",
+    "cores": 1000000,
+    "mem": 10000000,
+    "gpu": "ILLIAC III",
+    "gpus": 10000000
 }
