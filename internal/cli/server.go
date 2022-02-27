@@ -7,13 +7,17 @@ import (
 	"time"
 
 	"github.com/colonyos/colonies/internal/logging"
+	"github.com/colonyos/colonies/pkg/build"
+	"github.com/colonyos/colonies/pkg/client"
 	"github.com/colonyos/colonies/pkg/database/postgresql"
 	"github.com/colonyos/colonies/pkg/server"
+	"github.com/kataras/tablewriter"
 	"github.com/spf13/cobra"
 )
 
 func init() {
 	serverCmd.AddCommand(serverStartCmd)
+	serverCmd.AddCommand(serverStatusCmd)
 	rootCmd.AddCommand(serverCmd)
 
 	serverCmd.PersistentFlags().StringVarP(&DBHost, "dbhost", "", "", "Colonies database host")
@@ -24,6 +28,9 @@ func init() {
 	serverCmd.PersistentFlags().StringVarP(&TLSKey, "tlskey", "", "", "TLS key")
 	serverCmd.PersistentFlags().IntVarP(&ServerPort, "port", "", DefaultServerPort, "Server HTTP port")
 	serverCmd.PersistentFlags().StringVarP(&ServerID, "serverid", "", "", "Colonies server Id")
+
+	serverStatusCmd.PersistentFlags().StringVarP(&ServerHost, "host", "", "localhost", "Server host")
+	serverStatusCmd.PersistentFlags().IntVarP(&ServerPort, "port", "", 50080, "Server HTTP port")
 }
 
 var serverCmd = &cobra.Command{
@@ -66,6 +73,36 @@ func parseServerEnv() {
 	} else if VerboseEnv == "false" {
 		Verbose = false
 	}
+}
+
+var serverStatusCmd = &cobra.Command{
+	Use:   "status",
+	Short: "Show status about a Colonies server",
+	Long:  "Show status about a Colonies server",
+	Run: func(cmd *cobra.Command, args []string) {
+		parseDBEnv()
+		parseServerEnv()
+
+		client := client.CreateColoniesClient(ServerHost, ServerPort, true) // XXX: Insecure
+
+		serverBuildVersion, serverBuildTime, err := client.Version()
+		CheckError(err)
+
+		serverData := [][]string{
+			[]string{"Server Host", ServerHost},
+			[]string{"Server Port", strconv.Itoa(ServerPort)},
+			[]string{"CLI Version", build.BuildVersion},
+			[]string{"CLI BuildTime", build.BuildTime},
+			[]string{"Server Version", serverBuildVersion},
+			[]string{"Server BuildTime", serverBuildTime},
+		}
+		serverTable := tablewriter.NewWriter(os.Stdout)
+		for _, v := range serverData {
+			serverTable.Append(v)
+		}
+		serverTable.SetAlignment(tablewriter.ALIGN_LEFT)
+		serverTable.Render()
+	},
 }
 
 var serverStartCmd = &cobra.Command{
