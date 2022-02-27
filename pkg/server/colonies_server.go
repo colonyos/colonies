@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/colonyos/colonies/internal/logging"
+	"github.com/colonyos/colonies/pkg/build"
 	"github.com/colonyos/colonies/pkg/core"
 	"github.com/colonyos/colonies/pkg/database"
 	"github.com/colonyos/colonies/pkg/rpc"
@@ -236,6 +237,12 @@ func (server *ColoniesServer) handleEndpointRequest(c *gin.Context) {
 		return
 	}
 
+	// Version does not require a valid private key
+	if rpcMsg.PayloadType == rpc.VersionPayloadType {
+		server.handleVersionHTTPRequest(c, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+		return
+	}
+
 	recoveredID, err := server.parseSignature(rpcMsg.Payload, rpcMsg.Signature)
 	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		return
@@ -293,6 +300,7 @@ func (server *ColoniesServer) handleEndpointRequest(c *gin.Context) {
 		server.handleAddAttributeHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 	case rpc.GetAttributePayloadType:
 		server.handleGetAttributeHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+
 	default:
 		if server.handleHTTPError(c, errors.New("invalid rpcMsg.PayloadType"), http.StatusForbidden) {
 			return
@@ -1212,6 +1220,30 @@ func (server *ColoniesServer) handleGetAttributeHTTPRequest(c *gin.Context, reco
 	}
 
 	jsonString, err = attribute.ToJSON()
+	if server.handleHTTPError(c, err, http.StatusInternalServerError) {
+		return
+	}
+
+	server.sendHTTPReply(c, payloadType, jsonString)
+}
+
+func (server *ColoniesServer) handleVersionHTTPRequest(c *gin.Context, payloadType string, jsonString string) {
+	msg, err := rpc.CreateVersionMsgFromJSON(jsonString)
+	if server.handleHTTPError(c, err, http.StatusBadRequest) {
+		return
+	}
+	if msg == nil {
+		server.handleHTTPError(c, errors.New("failed to parse JSON"), http.StatusBadRequest)
+		return
+	}
+	if msg.MsgType != payloadType {
+		server.handleHTTPError(c, errors.New("msg.MsgType does not match payloadType"), http.StatusBadRequest)
+		return
+	}
+
+	versionMsg := rpc.CreateVersionMsg(build.BuildVersion, build.BuildTime)
+
+	jsonString, err = versionMsg.ToJSON()
 	if server.handleHTTPError(c, err, http.StatusInternalServerError) {
 		return
 	}

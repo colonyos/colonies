@@ -32,10 +32,19 @@ func CreateColoniesClient(host string, port int, insecure bool) *ColoniesClient 
 	return client
 }
 
-func (client *ColoniesClient) sendMessage(method string, jsonString string, prvKey string) (string, error) {
-	rpcMsg, err := rpc.CreateRPCMsg(method, jsonString, prvKey)
-	if err != nil {
-		return "", err
+func (client *ColoniesClient) sendMessage(method string, jsonString string, prvKey string, insecure bool) (string, error) {
+	var rpcMsg *rpc.RPCMsg
+	var err error
+	if insecure {
+		rpcMsg, err = rpc.CreateInsecureRPCMsg(method, jsonString)
+		if err != nil {
+			return "", err
+		}
+	} else {
+		rpcMsg, err = rpc.CreateRPCMsg(method, jsonString, prvKey)
+		if err != nil {
+			return "", err
+		}
 	}
 	jsonString, err = rpcMsg.ToJSON()
 	if err != nil {
@@ -207,7 +216,7 @@ func (client *ColoniesClient) AddColony(colony *core.Colony, prvKey string) (*co
 		return nil, err
 	}
 
-	respBodyString, err := client.sendMessage(rpc.AddColonyPayloadType, jsonString, prvKey)
+	respBodyString, err := client.sendMessage(rpc.AddColonyPayloadType, jsonString, prvKey, false)
 	if err != nil {
 		return nil, err
 	}
@@ -227,7 +236,7 @@ func (client *ColoniesClient) DeleteColony(colonyID string, prvKey string) error
 		return err
 	}
 
-	_, err = client.sendMessage(rpc.DeleteColonyPayloadType, jsonString, prvKey)
+	_, err = client.sendMessage(rpc.DeleteColonyPayloadType, jsonString, prvKey, false)
 	if err != nil {
 		return err
 	}
@@ -242,7 +251,7 @@ func (client *ColoniesClient) GetColonies(prvKey string) ([]*core.Colony, error)
 		return nil, err
 	}
 
-	respBodyString, err := client.sendMessage(rpc.GetColoniesPayloadType, jsonString, prvKey)
+	respBodyString, err := client.sendMessage(rpc.GetColoniesPayloadType, jsonString, prvKey, false)
 	if err != nil {
 		return nil, err
 	}
@@ -257,7 +266,7 @@ func (client *ColoniesClient) GetColonyByID(colonyID string, prvKey string) (*co
 		return nil, err
 	}
 
-	respBodyString, err := client.sendMessage(rpc.GetColonyPayloadType, jsonString, prvKey)
+	respBodyString, err := client.sendMessage(rpc.GetColonyPayloadType, jsonString, prvKey, false)
 	if err != nil {
 		return nil, err
 	}
@@ -272,7 +281,7 @@ func (client *ColoniesClient) AddRuntime(runtime *core.Runtime, prvKey string) (
 		return nil, err
 	}
 
-	respBodyString, err := client.sendMessage(rpc.AddRuntimePayloadType, jsonString, prvKey)
+	respBodyString, err := client.sendMessage(rpc.AddRuntimePayloadType, jsonString, prvKey, false)
 	if err != nil {
 		return nil, err
 	}
@@ -287,7 +296,7 @@ func (client *ColoniesClient) GetRuntimes(colonyID string, prvKey string) ([]*co
 		return nil, err
 	}
 
-	respBodyString, err := client.sendMessage(rpc.GetRuntimesPayloadType, jsonString, prvKey)
+	respBodyString, err := client.sendMessage(rpc.GetRuntimesPayloadType, jsonString, prvKey, false)
 	if err != nil {
 		return nil, err
 	}
@@ -302,7 +311,7 @@ func (client *ColoniesClient) GetRuntime(runtimeID string, prvKey string) (*core
 		return nil, err
 	}
 
-	respBodyString, err := client.sendMessage(rpc.GetRuntimePayloadType, jsonString, prvKey)
+	respBodyString, err := client.sendMessage(rpc.GetRuntimePayloadType, jsonString, prvKey, false)
 	if err != nil {
 		return nil, err
 	}
@@ -317,7 +326,7 @@ func (client *ColoniesClient) ApproveRuntime(runtimeID string, prvKey string) er
 		return err
 	}
 
-	_, err = client.sendMessage(rpc.ApproveRuntimePayloadType, jsonString, prvKey)
+	_, err = client.sendMessage(rpc.ApproveRuntimePayloadType, jsonString, prvKey, false)
 	if err != nil {
 		return err
 	}
@@ -332,7 +341,7 @@ func (client *ColoniesClient) RejectRuntime(runtimeID string, prvKey string) err
 		return err
 	}
 
-	_, err = client.sendMessage(rpc.RejectRuntimePayloadType, jsonString, prvKey)
+	_, err = client.sendMessage(rpc.RejectRuntimePayloadType, jsonString, prvKey, false)
 	if err != nil {
 		return err
 	}
@@ -347,7 +356,7 @@ func (client *ColoniesClient) DeleteRuntime(runtimeID string, prvKey string) err
 		return err
 	}
 
-	_, err = client.sendMessage(rpc.DeleteRuntimePayloadType, jsonString, prvKey)
+	_, err = client.sendMessage(rpc.DeleteRuntimePayloadType, jsonString, prvKey, false)
 	if err != nil {
 		return err
 	}
@@ -362,7 +371,7 @@ func (client *ColoniesClient) SubmitProcessSpec(processSpec *core.ProcessSpec, p
 		return nil, err
 	}
 
-	respBodyString, err := client.sendMessage(rpc.SubmitProcessSpecPayloadType, jsonString, prvKey)
+	respBodyString, err := client.sendMessage(rpc.SubmitProcessSpecPayloadType, jsonString, prvKey, false)
 	if err != nil {
 		return nil, err
 	}
@@ -377,7 +386,7 @@ func (client *ColoniesClient) AssignProcess(colonyID string, prvKey string) (*co
 		return nil, err
 	}
 
-	respBodyString, err := client.sendMessage(rpc.AssignProcessPayloadType, jsonString, prvKey)
+	respBodyString, err := client.sendMessage(rpc.AssignProcessPayloadType, jsonString, prvKey, false)
 	if err != nil {
 		return nil, err
 	}
@@ -392,7 +401,7 @@ func (client *ColoniesClient) GetProcessHistForColony(state int, colonyID string
 		return nil, err
 	}
 
-	respBodyString, err := client.sendMessage(rpc.GetProcessHistPayloadType, jsonString, prvKey)
+	respBodyString, err := client.sendMessage(rpc.GetProcessHistPayloadType, jsonString, prvKey, false)
 	if err != nil {
 		return nil, err
 	}
@@ -407,7 +416,7 @@ func (client *ColoniesClient) GetProcessHistForRuntime(state int, colonyID strin
 		return nil, err
 	}
 
-	respBodyString, err := client.sendMessage(rpc.GetProcessHistPayloadType, jsonString, prvKey)
+	respBodyString, err := client.sendMessage(rpc.GetProcessHistPayloadType, jsonString, prvKey, false)
 	if err != nil {
 		return nil, err
 	}
@@ -422,7 +431,7 @@ func (client *ColoniesClient) getProcesses(state int, colonyID string, count int
 		return nil, err
 	}
 
-	respBodyString, err := client.sendMessage(rpc.GetProcessesPayloadType, jsonString, prvKey)
+	respBodyString, err := client.sendMessage(rpc.GetProcessesPayloadType, jsonString, prvKey, false)
 	if err != nil {
 		return nil, err
 	}
@@ -453,7 +462,7 @@ func (client *ColoniesClient) GetProcessStat(colonyID string, prvKey string) (*c
 		return nil, err
 	}
 
-	respBodyString, err := client.sendMessage(rpc.GetProcessStatPayloadType, jsonString, prvKey)
+	respBodyString, err := client.sendMessage(rpc.GetProcessStatPayloadType, jsonString, prvKey, false)
 	if err != nil {
 		return nil, err
 	}
@@ -468,7 +477,7 @@ func (client *ColoniesClient) GetProcess(processID string, prvKey string) (*core
 		return nil, err
 	}
 
-	respBodyString, err := client.sendMessage(rpc.GetProcessPayloadType, jsonString, prvKey)
+	respBodyString, err := client.sendMessage(rpc.GetProcessPayloadType, jsonString, prvKey, false)
 	if err != nil {
 		return nil, err
 	}
@@ -483,7 +492,7 @@ func (client *ColoniesClient) DeleteProcess(processID string, prvKey string) err
 		return err
 	}
 
-	_, err = client.sendMessage(rpc.DeleteProcessPayloadType, jsonString, prvKey)
+	_, err = client.sendMessage(rpc.DeleteProcessPayloadType, jsonString, prvKey, false)
 	if err != nil {
 		return err
 	}
@@ -498,7 +507,7 @@ func (client *ColoniesClient) DeleteAllProcesses(colonyID string, prvKey string)
 		return err
 	}
 
-	_, err = client.sendMessage(rpc.DeleteAllProcessesPayloadType, jsonString, prvKey)
+	_, err = client.sendMessage(rpc.DeleteAllProcessesPayloadType, jsonString, prvKey, false)
 	if err != nil {
 		return err
 	}
@@ -513,7 +522,7 @@ func (client *ColoniesClient) CloseSuccessful(processID string, prvKey string) e
 		return err
 	}
 
-	_, err = client.sendMessage(rpc.CloseSuccessfulPayloadType, jsonString, prvKey)
+	_, err = client.sendMessage(rpc.CloseSuccessfulPayloadType, jsonString, prvKey, false)
 	if err != nil {
 		return err
 	}
@@ -528,7 +537,7 @@ func (client *ColoniesClient) CloseFailed(processID string, prvKey string) error
 		return err
 	}
 
-	_, err = client.sendMessage(rpc.CloseFailedPayloadType, jsonString, prvKey)
+	_, err = client.sendMessage(rpc.CloseFailedPayloadType, jsonString, prvKey, false)
 	if err != nil {
 		return err
 	}
@@ -543,7 +552,7 @@ func (client *ColoniesClient) AddAttribute(attribute *core.Attribute, prvKey str
 		return nil, err
 	}
 
-	respBodyString, err := client.sendMessage(rpc.AddAttributePayloadType, jsonString, prvKey)
+	respBodyString, err := client.sendMessage(rpc.AddAttributePayloadType, jsonString, prvKey, false)
 	if err != nil {
 		return nil, err
 	}
@@ -558,10 +567,30 @@ func (client *ColoniesClient) GetAttribute(attributeID string, prvKey string) (*
 		return nil, err
 	}
 
-	respBodyString, err := client.sendMessage(rpc.GetAttributePayloadType, jsonString, prvKey)
+	respBodyString, err := client.sendMessage(rpc.GetAttributePayloadType, jsonString, prvKey, false)
 	if err != nil {
 		return nil, err
 	}
 
 	return core.ConvertJSONToAttribute(respBodyString)
+}
+
+func (client *ColoniesClient) Version() (string, string, error) {
+	msg := rpc.CreateVersionMsg("", "")
+	jsonString, err := msg.ToJSON()
+	if err != nil {
+		return "", "", err
+	}
+
+	respBodyString, err := client.sendMessage(rpc.VersionPayloadType, jsonString, "", true)
+	if err != nil {
+		return "", "", err
+	}
+
+	version, err := rpc.CreateVersionMsgFromJSON(respBodyString)
+	if err != nil {
+		return "", "", err
+	}
+
+	return version.BuildVersion, version.BuildTime, nil
 }
