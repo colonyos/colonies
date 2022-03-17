@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"strconv"
@@ -110,18 +111,19 @@ var serverStartCmd = &cobra.Command{
 	Short: "Start a Colonies server",
 	Long:  "Start a Colonies server",
 	Run: func(cmd *cobra.Command, args []string) {
+		fmt.Println("Starting Colonies server, BuildVersion=", build.BuildVersion, " BuildVersion=", build.BuildTime)
 		parseDBEnv()
 		parseServerEnv()
 
 		_, err := os.Stat(TLSKey)
 		if err != nil {
-			fmt.Println("Failed to load TLS Key: " + TLSKey)
+			CheckError(errors.New("Failed to load TLS Key: " + TLSKey))
 			os.Exit(-1)
 		}
 
 		_, err = os.Stat(TLSCert)
 		if err != nil {
-			fmt.Println("Failed to load TLS Cert: " + TLSCert)
+			CheckError(errors.New("Failed to load TLS Cert: " + TLSCert))
 			os.Exit(-1)
 		}
 

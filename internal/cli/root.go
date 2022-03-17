@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/colonyos/colonies/pkg/build"
 	"github.com/spf13/cobra"
 )
 
@@ -62,7 +63,8 @@ func Execute() {
 
 func CheckError(err error) {
 	if err != nil {
-		fmt.Println(err.Error())
+		fmt.Println("BuildVersion: ", build.BuildVersion)
+		fmt.Println("Error: ", err.Error())
 		os.Exit(-1)
 	}
 }
