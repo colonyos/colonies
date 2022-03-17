@@ -54,7 +54,7 @@ The *colonyprvkey* is automatically obtained from the keychain if not specified.
 ```
 
 ```console
-export COLONYID="0f4f350d264d1cffdec0d62c723a7da8b730c6863365da75697fd26a6d79ccc5"
+export COLONIES_COLONYID="0f4f350d264d1cffdec0d62c723a7da8b730c6863365da75697fd26a6d79ccc5"
 ./bin/colonies runtime register --spec ./examples/runtime.json
 ```
 Output:
@@ -64,7 +64,7 @@ Output:
 
 ## List registered Colony Runtimes
 ```console
-export RUNTIMEID="4599f89a8afb7ecd9beec0b7861fab3bacba3a0e2dbe050e9f7584f3c9d7ac58"
+export COLONIES_RUNTIMEID="4599f89a8afb7ecd9beec0b7861fab3bacba3a0e2dbe050e9f7584f3c9d7ac58"
 ./bin/colonies runtime ls 
 ```
 Output:
