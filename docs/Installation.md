@@ -35,15 +35,15 @@ Or alternatively:
 
 ```console
 export TZ=Europe/Stockholm
-export SERVERID=9289dfccedf27392810b96968535530bb69f90afe7c35738e0e627f3810d943e
-export SERVERPORT=50080
-export DBHOST=localhost
-export DBUSER0postgres
-export DBPORT=5432
-export DBPASSWORD=rFcLGNkgsNtksg6Pgtn9CumL4xXBQ7
-export TLSCERT=...colonyos/colonies/cert/cert.pem
-export TLSKEY=...colonyos/colonies/cert/key.pem
-export VERBOSE=true
+export COLONIES_SERVERID=9289dfccedf27392810b96968535530bb69f90afe7c35738e0e627f3810d943e
+export COLONIES_SERVER_PORT=50080
+export COLONIES_DBHOST=localhost
+export COLONIES_DBUSER=postgres
+export COLONIES_DBPORT=5432
+export COLONIES_DBPASSWORD=rFcLGNkgsNtksg6Pgtn9CumL4xXBQ7
+export COLONOES_TLSCERT=...colonyos/colonies/cert/cert.pem
+export COLONIES_TLSKEY=...colonyos/colonies/cert/key.pem
+export COLONIES_VERBOSE=true
 
 ./bin/colonies server start
 ```

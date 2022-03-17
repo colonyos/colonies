@@ -41,12 +41,12 @@ var serverCmd = &cobra.Command{
 
 func parseServerEnv() {
 	var err error
-	ServerHostEnv := os.Getenv("SERVERHOST")
+	ServerHostEnv := os.Getenv("COLONIES_SERVER_HOST")
 	if ServerHostEnv != "" {
 		ServerHost = ServerHostEnv
 	}
 
-	ServerPortEnvStr := os.Getenv("SERVERPORT")
+	ServerPortEnvStr := os.Getenv("COLONIES_SERVER_PORT")
 	if ServerPortEnvStr != "" {
 		ServerPort, err = strconv.Atoi(ServerPortEnvStr)
 		if err != nil {
@@ -56,18 +56,18 @@ func parseServerEnv() {
 	}
 
 	if ServerID == "" {
-		ServerID = os.Getenv("SERVERID")
+		ServerID = os.Getenv("COLONIES_SERVERID")
 	}
 
 	if TLSKey == "" {
-		TLSKey = os.Getenv("TLSKEY")
+		TLSKey = os.Getenv("COLONIES_TLSKEY")
 	}
 
 	if TLSCert == "" {
-		TLSCert = os.Getenv("TLSCERT")
+		TLSCert = os.Getenv("COLONIES_TLSCERT")
 	}
 
-	VerboseEnv := os.Getenv("VERBOSE")
+	VerboseEnv := os.Getenv("COLONIES_VERBOSE")
 	if VerboseEnv == "true" {
 		Verbose = true
 	} else if VerboseEnv == "false" {
