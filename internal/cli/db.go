@@ -30,13 +30,13 @@ var dbCmd = &cobra.Command{
 }
 
 func parseDBEnv() {
-	DBHostEnv := os.Getenv("DBHOST")
+	DBHostEnv := os.Getenv("COLONIES_DBHOST")
 	if DBHostEnv != "" {
 		DBHost = DBHostEnv
 	}
 
 	var err error
-	DBPortEnvStr := os.Getenv("DBPORT")
+	DBPortEnvStr := os.Getenv("COLONIES_DBPORT")
 	if DBPortEnvStr != "" {
 		DBPort, err = strconv.Atoi(DBPortEnvStr)
 		if err != nil {
@@ -46,11 +46,11 @@ func parseDBEnv() {
 	}
 
 	if DBUser == "" {
-		DBUser = os.Getenv("DBUSER")
+		DBUser = os.Getenv("COLONIES_DBUSER")
 	}
 
 	if DBPassword == "" {
-		DBPassword = os.Getenv("DBPASSWORD")
+		DBPassword = os.Getenv("COLONIES_DBPASSWORD")
 	}
 }
 
