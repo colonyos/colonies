@@ -111,7 +111,7 @@ var serverStartCmd = &cobra.Command{
 	Short: "Start a Colonies server",
 	Long:  "Start a Colonies server",
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("Starting Colonies server, BuildVersion=", build.BuildVersion, " BuildVersion=", build.BuildTime)
+		fmt.Println("Starting Colonies server, BuildVersion=" + build.BuildVersion + " BuildVersion=" + build.BuildTime)
 		parseDBEnv()
 		parseServerEnv()
 
