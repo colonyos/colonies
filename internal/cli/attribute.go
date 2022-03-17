@@ -52,14 +52,14 @@ var addAttributeCmd = &cobra.Command{
 		CheckError(err)
 
 		if ColonyID == "" {
-			ColonyID = os.Getenv("COLONYID")
+			ColonyID = os.Getenv("COLONIES_COLONYID")
 		}
 		if ColonyID == "" {
 			CheckError(errors.New("Unknown Colony Id"))
 		}
 
 		if RuntimeID == "" {
-			RuntimeID = os.Getenv("RUNTIMEID")
+			RuntimeID = os.Getenv("COLONIES_RUNTIMEID")
 		}
 		if RuntimeID == "" {
 			CheckError(errors.New("Unknown Runtime Id"))
@@ -90,14 +90,14 @@ var getAttributeCmd = &cobra.Command{
 		CheckError(err)
 
 		if ColonyID == "" {
-			ColonyID = os.Getenv("COLONYID")
+			ColonyID = os.Getenv("COLONIES_COLONYID")
 		}
 		if ColonyID == "" {
 			CheckError(errors.New("Unknown Colony Id"))
 		}
 
 		if RuntimeID == "" {
-			RuntimeID = os.Getenv("RUNTIMEID")
+			RuntimeID = os.Getenv("COLONIES_RUNTIMEID")
 		}
 		if RuntimeID == "" {
 			CheckError(errors.New("Unknown Runtime Id"))

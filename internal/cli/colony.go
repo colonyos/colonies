@@ -29,6 +29,7 @@ func init() {
 
 	registerColonyCmd.Flags().StringVarP(&ServerID, "serverid", "", "", "Colonies server Id")
 	registerColonyCmd.Flags().StringVarP(&ServerPrvKey, "serverprvkey", "", "", "Colonies server private key")
+	registerColonyCmd.Flags().StringVarP(&ColonyPrvKey, "colonyprvkey", "", "", "Colony private key")
 	registerColonyCmd.Flags().StringVarP(&SpecFile, "spec", "", "", "JSON specification of a Colony")
 	registerColonyCmd.MarkFlagRequired("spec")
 
@@ -70,15 +71,23 @@ var registerColonyCmd = &cobra.Command{
 		keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
 		CheckError(err)
 
-		prvKey, err := crypto.GeneratePrivateKey()
-		CheckError(err)
+		var prvKey string
+		if ColonyPrvKey != "" {
+			prvKey = ColonyPrvKey
+			if len(prvKey) != 64 {
+				CheckError(errors.New("invalid private key length"))
+			}
+		} else {
+			prvKey, err = crypto.GeneratePrivateKey()
+			CheckError(err)
+		}
 
 		colonyID, err := crypto.GenerateID(prvKey)
 		CheckError(err)
 		colony.SetID(colonyID)
 
 		if ServerID == "" {
-			ServerID = os.Getenv("SERVERID")
+			ServerID = os.Getenv("COLONIES_SERVERID")
 		}
 		if ServerID == "" {
 			CheckError(errors.New("Unknown Server Id"))
@@ -111,7 +120,7 @@ var unregisterColonyCmd = &cobra.Command{
 		CheckError(err)
 
 		if ServerID == "" {
-			ServerID = os.Getenv("SERVERID")
+			ServerID = os.Getenv("COLONIES_SERVERID")
 		}
 		if ServerID == "" {
 			CheckError(errors.New("Unknown Server Id"))
@@ -143,7 +152,7 @@ var lsColoniesCmd = &cobra.Command{
 		CheckError(err)
 
 		if ServerID == "" {
-			ServerID = os.Getenv("SERVERID")
+			ServerID = os.Getenv("COLONIES_SERVERID")
 		}
 		if ServerID == "" {
 			CheckError(errors.New("Unknown Server Id"))
@@ -191,7 +200,7 @@ var statusCmd = &cobra.Command{
 		CheckError(err)
 
 		if ColonyID == "" {
-			ColonyID = os.Getenv("COLONYID")
+			ColonyID = os.Getenv("COLONIES_COLONYID")
 		}
 		if ColonyID == "" {
 			CheckError(errors.New("Unknown Colony Id"))
@@ -199,14 +208,14 @@ var statusCmd = &cobra.Command{
 
 		if RuntimePrvKey == "" {
 			if RuntimeID == "" {
-				RuntimeID = os.Getenv("RUNTIMEID")
+				RuntimeID = os.Getenv("COLONIES_RUNTIMEID")
 			}
 			RuntimePrvKey, _ = keychain.GetPrvKey(RuntimeID)
 		}
 
 		if RuntimePrvKey == "" {
 			if RuntimeID == "" {
-				RuntimeID = os.Getenv("RUNTIMEID")
+				RuntimeID = os.Getenv("COLONIES_RUNTIMEID")
 			}
 			RuntimePrvKey, _ = keychain.GetPrvKey(RuntimeID)
 		}
@@ -217,7 +226,7 @@ var statusCmd = &cobra.Command{
 		if err != nil {
 			if ColonyPrvKey == "" {
 				if ColonyID == "" {
-					ColonyID = os.Getenv("COLONYID")
+					ColonyID = os.Getenv("COLONIES_COLONYID")
 				}
 				ColonyPrvKey, err = keychain.GetPrvKey(ColonyID)
 				CheckError(err)
