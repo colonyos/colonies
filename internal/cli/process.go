@@ -116,7 +116,7 @@ var submitProcessCmd = &cobra.Command{
 
 		if processSpec.Conditions.ColonyID == "" {
 			if ColonyID == "" {
-				ColonyID = os.Getenv("COLONYID")
+				ColonyID = os.Getenv("COLONIES_COLONYID")
 			}
 			if ColonyID == "" {
 				CheckError(errors.New("Unknown Colony Id, please set COLONYID env variable or specify ColonyID in JSON file"))
@@ -129,7 +129,7 @@ var submitProcessCmd = &cobra.Command{
 		CheckError(err)
 
 		if RuntimeID == "" {
-			RuntimeID = os.Getenv("RUNTIMEID")
+			RuntimeID = os.Getenv("COLONIES_RUNTIMEID")
 		}
 		if RuntimeID == "" {
 			CheckError(errors.New("Unknown Runtime Id"))
@@ -159,14 +159,14 @@ var assignProcessCmd = &cobra.Command{
 		CheckError(err)
 
 		if ColonyID == "" {
-			ColonyID = os.Getenv("COLONYID")
+			ColonyID = os.Getenv("COLONIES_COLONYID")
 		}
 		if ColonyID == "" {
 			CheckError(errors.New("Unknown Colony Id"))
 		}
 
 		if RuntimeID == "" {
-			RuntimeID = os.Getenv("RUNTIMEID")
+			RuntimeID = os.Getenv("COLONIES_RUNTIMEID")
 		}
 		if RuntimeID == "" {
 			CheckError(errors.New("Unknown Runtime Id"))
@@ -198,14 +198,14 @@ var listWaitingProcessesCmd = &cobra.Command{
 		CheckError(err)
 
 		if ColonyID == "" {
-			ColonyID = os.Getenv("COLONYID")
+			ColonyID = os.Getenv("COLONIES_COLONYID")
 		}
 		if ColonyID == "" {
 			CheckError(errors.New("Unknown Colony Id"))
 		}
 
 		if RuntimeID == "" {
-			RuntimeID = os.Getenv("RUNTIMEID")
+			RuntimeID = os.Getenv("COLONIES_RUNTIMEID")
 		}
 		if RuntimeID == "" {
 			CheckError(errors.New("Unknown Runtime Id"))
@@ -256,14 +256,14 @@ var listRunningProcessesCmd = &cobra.Command{
 		CheckError(err)
 
 		if ColonyID == "" {
-			ColonyID = os.Getenv("COLONYID")
+			ColonyID = os.Getenv("COLONIES_COLONYID")
 		}
 		if ColonyID == "" {
 			CheckError(errors.New("Unknown Colony Id"))
 		}
 
 		if RuntimeID == "" {
-			RuntimeID = os.Getenv("RUNTIMEID")
+			RuntimeID = os.Getenv("COLONIES_RUNTIMEID")
 		}
 		if RuntimeID == "" {
 			CheckError(errors.New("Unknown Runtime Id"))
@@ -313,14 +313,14 @@ var listSuccessfulProcessesCmd = &cobra.Command{
 		CheckError(err)
 
 		if ColonyID == "" {
-			ColonyID = os.Getenv("COLONYID")
+			ColonyID = os.Getenv("COLONIES_COLONYID")
 		}
 		if ColonyID == "" {
 			CheckError(errors.New("Unknown Colony Id"))
 		}
 
 		if RuntimeID == "" {
-			RuntimeID = os.Getenv("RUNTIMEID")
+			RuntimeID = os.Getenv("COLONIES_RUNTIMEID")
 		}
 		if RuntimeID == "" {
 			CheckError(errors.New("Unknown Runtime Id"))
@@ -370,14 +370,14 @@ var listFailedProcessesCmd = &cobra.Command{
 		CheckError(err)
 
 		if ColonyID == "" {
-			ColonyID = os.Getenv("COLONYID")
+			ColonyID = os.Getenv("COLONIES_COLONYID")
 		}
 		if ColonyID == "" {
 			CheckError(errors.New("Unknown Colony Id"))
 		}
 
 		if RuntimeID == "" {
-			RuntimeID = os.Getenv("RUNTIMEID")
+			RuntimeID = os.Getenv("COLONIES_RUNTIMEID")
 		}
 		if RuntimeID == "" {
 			CheckError(errors.New("Unknown Runtime Id"))
@@ -427,7 +427,7 @@ var getProcessCmd = &cobra.Command{
 		CheckError(err)
 
 		if RuntimeID == "" {
-			RuntimeID = os.Getenv("RUNTIMEID")
+			RuntimeID = os.Getenv("COLONIES_RUNTIMEID")
 		}
 		if RuntimeID == "" {
 			CheckError(errors.New("Unknown Runtime Id"))
@@ -631,7 +631,7 @@ var deleteProcessCmd = &cobra.Command{
 		CheckError(err)
 
 		if RuntimeID == "" {
-			RuntimeID = os.Getenv("RUNTIMEID")
+			RuntimeID = os.Getenv("COLONIES_RUNTIMEID")
 		}
 		if RuntimeID == "" {
 			CheckError(errors.New("Unknown Runtime Id"))
@@ -661,7 +661,7 @@ var deleteAllProcessesCmd = &cobra.Command{
 		CheckError(err)
 
 		if ColonyID == "" {
-			ColonyID = os.Getenv("COLONYID")
+			ColonyID = os.Getenv("COLONIES_COLONYID")
 		}
 		if ColonyID == "" {
 			CheckError(errors.New("Unknown Colony Id"))
@@ -691,7 +691,7 @@ var closeSuccessful = &cobra.Command{
 		CheckError(err)
 
 		if RuntimeID == "" {
-			RuntimeID = os.Getenv("RUNTIMEID")
+			RuntimeID = os.Getenv("COLONIES_RUNTIMEID")
 		}
 		if RuntimeID == "" {
 			CheckError(errors.New("Unknown Runtime Id"))
@@ -724,7 +724,7 @@ var closeFailed = &cobra.Command{
 		CheckError(err)
 
 		if RuntimeID == "" {
-			RuntimeID = os.Getenv("RUNTIMEID")
+			RuntimeID = os.Getenv("COLONIES_RUNTIMEID")
 		}
 		if RuntimeID == "" {
 			CheckError(errors.New("Unknown Runtime Id"))

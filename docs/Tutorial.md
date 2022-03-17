@@ -14,7 +14,7 @@ Output:
 The output is the ColonyID, we'll need it later.
 
 ```console
-export COLONYID="50d74cb4c8306856a4c854089280c6be80353b36e6f61c41c435f8c87c9ec1cb"
+export COLONIES_COLONYID="50d74cb4c8306856a4c854089280c6be80353b36e6f61c41c435f8c87c9ec1cb"
 ```
 
 ## 3. Register a Runtime for Fibonacci Job Generator
