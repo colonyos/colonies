@@ -10,18 +10,37 @@ import (
 )
 
 func init() {
+	keychainCmd.AddCommand(addPrivateKeyCmd)
 	keychainCmd.AddCommand(getPrivateKeyCmd)
 	keychainCmd.AddCommand(genPrivateKeyCmd)
 	rootCmd.AddCommand(keychainCmd)
 
 	getPrivateKeyCmd.Flags().StringVarP(&ID, "id", "", "", "Identity")
 	getPrivateKeyCmd.MarkFlagRequired("id")
+
+	addPrivateKeyCmd.Flags().StringVarP(&ID, "id", "", "", "Identity")
+	addPrivateKeyCmd.MarkFlagRequired("id")
+	addPrivateKeyCmd.Flags().StringVarP(&PrvKey, "prvkey", "", "", "Private key")
+	addPrivateKeyCmd.MarkFlagRequired("prvkey")
 }
 
 var keychainCmd = &cobra.Command{
 	Use:   "keychain",
 	Short: "Manage private keys",
 	Long:  "Manage private keys",
+}
+
+var addPrivateKeyCmd = &cobra.Command{
+	Use:   "add",
+	Short: "Add a private key",
+	Long:  "Add a private key",
+	Run: func(cmd *cobra.Command, args []string) {
+		keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
+		CheckError(err)
+
+		err = keychain.AddPrvKey(ID, PrvKey)
+		CheckError(err)
+	},
 }
 
 var getPrivateKeyCmd = &cobra.Command{
