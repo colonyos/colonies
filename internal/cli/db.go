@@ -9,6 +9,7 @@ import (
 
 	"github.com/colonyos/colonies/internal/logging"
 	"github.com/colonyos/colonies/pkg/database/postgresql"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
@@ -39,10 +40,7 @@ func parseDBEnv() {
 	DBPortEnvStr := os.Getenv("COLONIES_DBPORT")
 	if DBPortEnvStr != "" {
 		DBPort, err = strconv.Atoi(DBPortEnvStr)
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(-1)
-		}
+		CheckError(err)
 	}
 
 	if DBUser == "" {
@@ -66,7 +64,7 @@ var dbCreateCmd = &cobra.Command{
 			db = postgresql.CreatePQDatabase(DBHost, DBPort, DBUser, DBPassword, DBName, DBPrefix)
 			err := db.Connect()
 			if err != nil {
-				fmt.Println("Failed to connect to database")
+				log.Warning("Failed to connect to database")
 				time.Sleep(1 * time.Second)
 			} else {
 				break
@@ -75,7 +73,7 @@ var dbCreateCmd = &cobra.Command{
 		logging.Log().Info("Connecting to Colonies database, host: " + DBHost + ", port: " + strconv.Itoa(DBPort) + ", user: " + DBUser + ", password: " + "******************, name: " + DBName + ". prefix: " + DBPrefix)
 		err := db.Initialize()
 		if err != nil {
-			fmt.Println("Failed to create database")
+			log.Warning("Failed to create database")
 			os.Exit(-1)
 		}
 		logging.Log().Info("Colonies database created")
@@ -97,19 +95,13 @@ var dbDropCmd = &cobra.Command{
 		if reply == "YES\n" {
 			db := postgresql.CreatePQDatabase(DBHost, DBPort, DBUser, DBPassword, DBName, DBPrefix)
 			err := db.Connect()
-			if err != nil {
-				fmt.Println("Failed to connect to database")
-				os.Exit(-1)
-			}
-			logging.Log().Info("Connecting to Colonies database, host: " + DBHost + ", port: " + strconv.Itoa(DBPort) + ", user: " + DBUser + ", password: " + "******************, name: " + DBName + ". prefix: " + DBPrefix)
+			CheckError(err)
+			log.Info("Connecting to Colonies database, host: " + DBHost + ", port: " + strconv.Itoa(DBPort) + ", user: " + DBUser + ", password: " + "******************, name: " + DBName + ". prefix: " + DBPrefix)
 			err = db.Drop()
-			if err != nil {
-				fmt.Println("Failed to drop database")
-				os.Exit(-1)
-			}
-			logging.Log().Info("Colonies database dropped")
+			CheckError(err)
+			log.Info("Colonies database dropped")
 		} else {
-			fmt.Println("Aborting ...")
+			log.Info("Aborting ...")
 		}
 	},
 }

@@ -1,0 +1,12 @@
+{
+  "conditions": {
+    "runtimetype": "worker"
+  },
+  "cmd": "sleep",
+  "args": [
+    "100"
+  ],
+  "env": {
+    "TEST": "testenv"
+  }
+}

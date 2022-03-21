@@ -13,6 +13,7 @@ import (
 	"github.com/colonyos/colonies/pkg/security/crypto"
 	"github.com/colonyos/colonies/pkg/utils"
 	"github.com/kataras/tablewriter"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
@@ -109,7 +110,7 @@ var registerRuntimeCmd = &cobra.Command{
 		err = keychain.AddPrvKey(runtimeID, prvKey)
 		CheckError(err)
 
-		fmt.Println(addedRuntime.ID)
+		log.WithFields(log.Fields{"runtimeID": addedRuntime.ID, "colonyID": ColonyID}).Info("Runtime registered")
 	},
 }
 
@@ -303,7 +304,7 @@ var approveRuntimeCmd = &cobra.Command{
 		err = client.ApproveRuntime(RuntimeID, ColonyPrvKey)
 		CheckError(err)
 
-		fmt.Println("Colony Runtime with Id <" + RuntimeID + "> is now approved")
+		log.WithFields(log.Fields{"runtimeID": RuntimeID, "colonyID": ColonyID}).Info("Runtime approved")
 	},
 }
 
@@ -333,7 +334,7 @@ var rejectRuntimeCmd = &cobra.Command{
 		err = client.RejectRuntime(RuntimeID, ColonyPrvKey)
 		CheckError(err)
 
-		fmt.Println("Colony Runtime with Id <" + RuntimeID + "> is now rejected")
+		log.WithFields(log.Fields{"runtimeID": RuntimeID, "colonyID": ColonyID}).Info("Runtime rejected")
 	},
 }
 
@@ -363,6 +364,6 @@ var deleteRuntimeCmd = &cobra.Command{
 		err = client.DeleteRuntime(RuntimeID, ColonyPrvKey)
 		CheckError(err)
 
-		fmt.Println("Colony Runtime with Id <" + RuntimeID + "> is now unregistered")
+		log.WithFields(log.Fields{"runtimeID": RuntimeID, "colonyID": ColonyID}).Info("Runtime unregistered")
 	},
 }
