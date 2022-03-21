@@ -1,11 +1,11 @@
 package cli
 
 import (
-	"fmt"
-	"os"
+	"errors"
 
 	"github.com/colonyos/colonies/pkg/security"
 	"github.com/colonyos/colonies/pkg/security/crypto"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
@@ -53,10 +53,9 @@ var getPrivateKeyCmd = &cobra.Command{
 
 		privateKey, err := keychain.GetPrvKey(ID)
 		if privateKey == "" {
-			fmt.Println("No private key found for identity <" + ID + ">")
-			os.Exit(-1)
+			CheckError(errors.New("No private key found for identity <" + ID + ">"))
 		}
-		fmt.Println(privateKey)
+		log.WithFields(log.Fields{"privateKey": privateKey}).Info("Private key found in keychain")
 	},
 }
 
@@ -78,7 +77,6 @@ var genPrivateKeyCmd = &cobra.Command{
 		err = keychain.AddPrvKey(id, prvKey)
 		CheckError(err)
 
-		fmt.Println("Id: " + id)
-		fmt.Println("PrvKey: " + prvKey)
+		log.WithFields(log.Fields{"ID": id, "privateKey": prvKey}).Info("Generated new private key and stored in keychain")
 	},
 }
