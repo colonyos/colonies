@@ -2,13 +2,13 @@ package cli
 
 import (
 	"errors"
-	"fmt"
 	"os"
 
 	"github.com/colonyos/colonies/pkg/client"
 	"github.com/colonyos/colonies/pkg/core"
 	"github.com/colonyos/colonies/pkg/security"
 	"github.com/kataras/tablewriter"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
@@ -75,7 +75,7 @@ var addAttributeCmd = &cobra.Command{
 		addedAttribute, err := client.AddAttribute(attribute, RuntimePrvKey)
 		CheckError(err)
 
-		fmt.Println(addedAttribute.ID)
+		log.WithFields(log.Fields{"attributeID": addedAttribute}).Info("Attribute added")
 	},
 }
 

@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/colonyos/colonies/pkg/build"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
@@ -15,7 +16,7 @@ const DefaultDBHost = "localhost"
 const DefaultDBPort = 5432
 const DefaultServerHost = "localhost"
 const DefaultServerPort = 50080
-const MaxAttributeLength = 70
+const MaxAttributeLength = 30
 
 var DBName = "postgres"
 var Verbose bool
@@ -34,8 +35,15 @@ var SpecFile string
 var Count int
 var ID string
 var PrvKey string
+var RuntimeName string
+var RuntimeType string
 var RuntimeID string
 var RuntimePrvKey string
+var CPU string
+var Cores int
+var Mem int
+var GPU string
+var GPUs int
 var ColonyPrvKey string
 var ColonyID string
 var ProcessID string
@@ -43,6 +51,8 @@ var Key string
 var Value string
 var AttributeID string
 var JSON bool
+var Wait bool
+var Output bool
 
 func init() {
 	rootCmd.PersistentFlags().BoolVarP(&Verbose, "verbose", "v", false, "verbose output")
@@ -63,8 +73,16 @@ func Execute() {
 
 func CheckError(err error) {
 	if err != nil {
-		fmt.Println("BuildVersion: ", build.BuildVersion)
-		fmt.Println("Error: ", err.Error())
+		log.WithFields(log.Fields{"err": err, "BuildVersion": build.BuildVersion, "BuildTime": build.BuildTime}).Error(err.Error())
 		os.Exit(-1)
 	}
+}
+
+func Args2String(args []string) string {
+	str := ""
+	for _, arg := range args {
+		str += arg + " "
+	}
+
+	return str[0 : len(str)-1]
 }

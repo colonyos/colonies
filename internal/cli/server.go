@@ -2,17 +2,16 @@ package cli
 
 import (
 	"errors"
-	"fmt"
 	"os"
 	"strconv"
 	"time"
 
-	"github.com/colonyos/colonies/internal/logging"
 	"github.com/colonyos/colonies/pkg/build"
 	"github.com/colonyos/colonies/pkg/client"
 	"github.com/colonyos/colonies/pkg/database/postgresql"
 	"github.com/colonyos/colonies/pkg/server"
 	"github.com/kataras/tablewriter"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
@@ -36,8 +35,8 @@ func init() {
 
 var serverCmd = &cobra.Command{
 	Use:   "server",
-	Short: "Manage a Colonies server",
-	Long:  "Manage a Colonies server",
+	Short: "Manage a Colonies Server",
+	Long:  "Manage a Colonies Server",
 }
 
 func parseServerEnv() {
@@ -50,10 +49,7 @@ func parseServerEnv() {
 	ServerPortEnvStr := os.Getenv("COLONIES_SERVER_PORT")
 	if ServerPortEnvStr != "" {
 		ServerPort, err = strconv.Atoi(ServerPortEnvStr)
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(-1)
-		}
+		CheckError(err)
 	}
 
 	if ServerID == "" {
@@ -78,8 +74,8 @@ func parseServerEnv() {
 
 var serverStatusCmd = &cobra.Command{
 	Use:   "status",
-	Short: "Show status about a Colonies server",
-	Long:  "Show status about a Colonies server",
+	Short: "Show status about a Colonies Server",
+	Long:  "Show status about a Colonies Server",
 	Run: func(cmd *cobra.Command, args []string) {
 		parseDBEnv()
 		parseServerEnv()
@@ -108,10 +104,10 @@ var serverStatusCmd = &cobra.Command{
 
 var serverStartCmd = &cobra.Command{
 	Use:   "start",
-	Short: "Start a Colonies server",
-	Long:  "Start a Colonies server",
+	Short: "Start a Colonies Server",
+	Long:  "Start a Colonies Server",
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("Starting Colonies server, BuildVersion=" + build.BuildVersion + " BuildVersion=" + build.BuildTime)
+		log.WithFields(log.Fields{"BuildVersion": build.BuildVersion, "BuildTime": build.BuildTime}).Info("Starting a Colonies Server")
 		parseDBEnv()
 		parseServerEnv()
 
@@ -132,21 +128,19 @@ var serverStartCmd = &cobra.Command{
 			db = postgresql.CreatePQDatabase(DBHost, DBPort, DBUser, DBPassword, DBName, DBPrefix)
 			err := db.Connect()
 			if err != nil {
-				fmt.Println("Failed to connect to database")
-				fmt.Println(err)
+				log.WithFields(log.Fields{"err": err}).Error("Failed to connect to PostgreSQL database")
 				time.Sleep(1 * time.Second)
 			} else {
 				break
 			}
 		}
 
-		logging.Log().Info("Connecting to Colonies database, host: " + DBHost + ", port: " + strconv.Itoa(DBPort) + ", user: " + DBUser + ", password: " + "******************, name: " + DBName + ". prefix: " + DBPrefix)
+		log.WithFields(log.Fields{"DBHost": DBHost, "DBPort": DBPort, "DBUser": DBUser, "DBPassword": "*******************", "DBName": DBName}).Info("Connecting to PostgreSQL database")
 		server := server.CreateColoniesServer(db, ServerPort, ServerID, TLSKey, TLSCert, Verbose)
 		for {
 			err := server.ServeForever()
 			if err != nil {
-				fmt.Println("Failed to start Colonies Server")
-				fmt.Println(err)
+				log.WithFields(log.Fields{"err": err}).Error("Failed to connect to Colonies Server")
 				time.Sleep(1 * time.Second)
 			}
 		}

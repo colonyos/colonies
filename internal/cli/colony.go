@@ -14,6 +14,7 @@ import (
 	"github.com/colonyos/colonies/pkg/server"
 	"github.com/colonyos/colonies/pkg/utils"
 	"github.com/kataras/tablewriter"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
@@ -105,7 +106,7 @@ var registerColonyCmd = &cobra.Command{
 		err = keychain.AddPrvKey(colonyID, prvKey)
 		CheckError(err)
 
-		fmt.Println(addedColony.ID)
+		log.WithFields(log.Fields{"colonyID": addedColony.ID}).Info("Colony registered")
 	},
 }
 
@@ -135,7 +136,7 @@ var unregisterColonyCmd = &cobra.Command{
 		err = client.DeleteColony(ColonyID, ServerPrvKey)
 		CheckError(err)
 
-		fmt.Println("Colony with Id <" + ColonyID + "> was successfully unregistered")
+		log.WithFields(log.Fields{"colonyID": ColonyID}).Info("Colony unregistered")
 	},
 }
 
