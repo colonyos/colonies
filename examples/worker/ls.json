@@ -1,0 +1,12 @@
+{
+  "conditions": {
+    "runtimetype": "worker"
+  },
+  "cmd": "ls",
+  "args": [
+    "-al"
+  ],
+  "env": {
+    "TEST": "testenv"
+  }
+}

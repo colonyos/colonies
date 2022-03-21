@@ -1,18 +1,21 @@
 package cli
 
 import (
+	"bufio"
 	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/colonyos/colonies/pkg/client"
 	"github.com/colonyos/colonies/pkg/core"
 	"github.com/colonyos/colonies/pkg/security"
 	"github.com/colonyos/colonies/pkg/server"
 	"github.com/kataras/tablewriter"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
@@ -37,6 +40,7 @@ func init() {
 	submitProcessCmd.Flags().StringVarP(&RuntimePrvKey, "runtimeprvkey", "", "", "Runtime private key")
 	submitProcessCmd.Flags().StringVarP(&SpecFile, "spec", "", "", "JSON specification of a Colony process")
 	submitProcessCmd.Flags().StringVarP(&ColonyID, "colonyid", "", "", "Colony Id")
+	submitProcessCmd.Flags().BoolVarP(&Wait, "wait", "", false, "Colony Id")
 	submitProcessCmd.MarkFlagRequired("spec")
 
 	listWaitingProcessesCmd.Flags().StringVarP(&ColonyID, "colonyid", "", "", "Colony Id")
@@ -69,6 +73,7 @@ func init() {
 	getProcessCmd.Flags().StringVarP(&ProcessID, "processid", "", "", "Process Id")
 	getProcessCmd.MarkFlagRequired("processid")
 	getProcessCmd.Flags().BoolVarP(&JSON, "json", "", false, "Print JSON instead of tables")
+	getProcessCmd.Flags().BoolVarP(&Output, "output", "", false, "Get process output")
 
 	deleteProcessCmd.Flags().StringVarP(&RuntimeID, "runtimeid", "", "", "Runtime Id")
 	deleteProcessCmd.Flags().StringVarP(&RuntimePrvKey, "runtimeprvkey", "", "", "Runtime private key")
@@ -144,7 +149,26 @@ var submitProcessCmd = &cobra.Command{
 		addedProcess, err := client.SubmitProcessSpec(processSpec, RuntimePrvKey)
 		CheckError(err)
 
-		fmt.Println(addedProcess.ID)
+		if Wait {
+			for {
+				processFromServer, err := client.GetProcess(addedProcess.ID, RuntimePrvKey)
+				CheckError(err)
+
+				if processFromServer.State == core.SUCCESS || processFromServer.State == core.FAILED {
+					for _, attribute := range processFromServer.Attributes {
+						if attribute.Key == "output" {
+							fmt.Print(attribute.Value)
+						}
+					}
+					os.Exit(0)
+				} else {
+					time.Sleep(500 * time.Millisecond)
+				}
+			}
+
+		} else {
+			log.WithFields(log.Fields{"processID": addedProcess.ID}).Info("Process submitted")
+		}
 	},
 }
 
@@ -180,9 +204,9 @@ var assignProcessCmd = &cobra.Command{
 		client := client.CreateColoniesClient(ServerHost, ServerPort, true) // XXX: Insecure
 		process, err := client.AssignProcess(ColonyID, RuntimePrvKey)
 		if err != nil {
-			fmt.Println("No process was assigned")
+			log.Warning("No process was assigned")
 		} else {
-			fmt.Println("Process with Id <" + process.ID + "> was assigned to Runtime with Id <" + RuntimeID + ">")
+			log.WithFields(log.Fields{"processID": process.ID, "runtimeID": RuntimeID}).Info("Assigned process to runtime")
 		}
 	},
 }
@@ -221,7 +245,7 @@ var listWaitingProcessesCmd = &cobra.Command{
 		CheckError(err)
 
 		if len(processes) == 0 {
-			fmt.Println("No waiting processes found")
+			log.Warning("No waiting processes found")
 		} else {
 			if JSON {
 				jsonString, err := core.ConvertProcessArrayToJSON(processes)
@@ -232,13 +256,14 @@ var listWaitingProcessesCmd = &cobra.Command{
 
 			var data [][]string
 			for _, process := range processes {
-				data = append(data, []string{process.ID, process.SubmissionTime.Format(TimeLayout), process.ProcessSpec.Conditions.RuntimeType})
+				data = append(data, []string{process.ID, process.ProcessSpec.Cmd, Args2String(process.ProcessSpec.Args), process.SubmissionTime.Format(TimeLayout), process.ProcessSpec.Conditions.RuntimeType})
 			}
 			table := tablewriter.NewWriter(os.Stdout)
-			table.SetHeader([]string{"ID", "Submission Time", "Runtime Type Target"})
+			table.SetHeader([]string{"ID", "Cmd", "Args", "Submission Time", "Runtime Type Target"})
 			for _, v := range data {
 				table.Append(v)
 			}
+			table.SetAlignment(tablewriter.ALIGN_LEFT)
 			table.Render()
 		}
 
@@ -279,7 +304,7 @@ var listRunningProcessesCmd = &cobra.Command{
 		CheckError(err)
 
 		if len(processes) == 0 {
-			fmt.Println("No running processes found")
+			log.Warning("No running processes found")
 		} else {
 			if JSON {
 				jsonString, err := core.ConvertProcessArrayToJSON(processes)
@@ -290,13 +315,14 @@ var listRunningProcessesCmd = &cobra.Command{
 
 			var data [][]string
 			for _, process := range processes {
-				data = append(data, []string{process.ID, process.StartTime.Format(TimeLayout), process.ProcessSpec.Conditions.RuntimeType})
+				data = append(data, []string{process.ID, process.ProcessSpec.Cmd, Args2String(process.ProcessSpec.Args), process.StartTime.Format(TimeLayout), process.ProcessSpec.Conditions.RuntimeType})
 			}
 			table := tablewriter.NewWriter(os.Stdout)
-			table.SetHeader([]string{"ID", "Start time", "Target Runtime"})
+			table.SetHeader([]string{"ID", "Cmd", "Args", "Start time", "Target Runtime"})
 			for _, v := range data {
 				table.Append(v)
 			}
+			table.SetAlignment(tablewriter.ALIGN_LEFT)
 			table.Render()
 		}
 	},
@@ -336,7 +362,7 @@ var listSuccessfulProcessesCmd = &cobra.Command{
 		CheckError(err)
 
 		if len(processes) == 0 {
-			fmt.Println("No successful processes found")
+			log.Warning("No successful processes found")
 		} else {
 			if JSON {
 				jsonString, err := core.ConvertProcessArrayToJSON(processes)
@@ -347,13 +373,14 @@ var listSuccessfulProcessesCmd = &cobra.Command{
 
 			var data [][]string
 			for _, process := range processes {
-				data = append(data, []string{process.ID, process.EndTime.Format(TimeLayout), process.ProcessSpec.Conditions.RuntimeType})
+				data = append(data, []string{process.ID, process.ProcessSpec.Cmd, Args2String(process.ProcessSpec.Args), process.EndTime.Format(TimeLayout), process.ProcessSpec.Conditions.RuntimeType})
 			}
 			table := tablewriter.NewWriter(os.Stdout)
-			table.SetHeader([]string{"ID", "End time", "Target Runtime"})
+			table.SetHeader([]string{"ID", "Cmd", "Args", "End time", "Target Runtime"})
 			for _, v := range data {
 				table.Append(v)
 			}
+			table.SetAlignment(tablewriter.ALIGN_LEFT)
 			table.Render()
 		}
 	},
@@ -393,7 +420,7 @@ var listFailedProcessesCmd = &cobra.Command{
 		CheckError(err)
 
 		if len(processes) == 0 {
-			fmt.Println("No failed processes found")
+			log.Warning("No failed processes found")
 		} else {
 			if JSON {
 				jsonString, err := core.ConvertProcessArrayToJSON(processes)
@@ -404,13 +431,14 @@ var listFailedProcessesCmd = &cobra.Command{
 
 			var data [][]string
 			for _, process := range processes {
-				data = append(data, []string{process.ID, process.EndTime.Format(TimeLayout)})
+				data = append(data, []string{process.ID, process.ProcessSpec.Cmd, Args2String(process.ProcessSpec.Args), process.EndTime.Format(TimeLayout)})
 			}
 			table := tablewriter.NewWriter(os.Stdout)
-			table.SetHeader([]string{"ID", "End time"})
+			table.SetHeader([]string{"ID", "Cmd", "Args", "End time"})
 			for _, v := range data {
 				table.Append(v)
 			}
+			table.SetAlignment(tablewriter.ALIGN_LEFT)
 			table.Render()
 		}
 	},
@@ -441,7 +469,7 @@ var getProcessCmd = &cobra.Command{
 		client := client.CreateColoniesClient(ServerHost, ServerPort, true) // XXX: Insecure
 		process, err := client.GetProcess(ProcessID, RuntimePrvKey)
 		if process == nil {
-			fmt.Println("Process not found")
+			log.Warning("Process not found")
 			os.Exit(-1)
 		}
 
@@ -472,6 +500,15 @@ var getProcessCmd = &cobra.Command{
 			state = "Failed"
 		default:
 			state = "Unkown"
+		}
+
+		if Output {
+			for _, attribute := range process.Attributes {
+				if attribute.Key == "output" {
+					fmt.Print(attribute.Value)
+				}
+			}
+			os.Exit(0)
 		}
 
 		fmt.Println("Process:")
@@ -646,7 +683,7 @@ var deleteProcessCmd = &cobra.Command{
 		err = client.DeleteProcess(ProcessID, RuntimePrvKey)
 		CheckError(err)
 
-		fmt.Println("Process with Id <" + ProcessID + "> deleted")
+		log.WithFields(log.Fields{"processID": ProcessID}).Info("Process deleted")
 	},
 }
 
@@ -672,11 +709,19 @@ var deleteAllProcessesCmd = &cobra.Command{
 			CheckError(err)
 		}
 
-		client := client.CreateColoniesClient(ServerHost, ServerPort, true) // XXX: Insecure
-		err = client.DeleteAllProcesses(ColonyID, ColonyPrvKey)
-		CheckError(err)
+		fmt.Print("WARNING!!! Are you sure you want to delete all process in the Colony This operation cannot be undone! (YES,no): ")
 
-		fmt.Println("Deleted all processes for Colony with Id <" + ColonyID + ">")
+		reader := bufio.NewReader(os.Stdin)
+		reply, _ := reader.ReadString('\n')
+		if reply == "YES\n" {
+			client := client.CreateColoniesClient(ServerHost, ServerPort, true) // XXX: Insecure
+			err = client.DeleteAllProcesses(ColonyID, ColonyPrvKey)
+			CheckError(err)
+
+			log.WithFields(log.Fields{"colonyID": ColonyID}).Info("Deleting all processes in Colony")
+		} else {
+			log.Info("Aborting ...")
+		}
 	},
 }
 
@@ -709,7 +754,7 @@ var closeSuccessful = &cobra.Command{
 		err = client.CloseSuccessful(process.ID, RuntimePrvKey)
 		CheckError(err)
 
-		fmt.Println("Process with Id <" + process.ID + "> closed as successful")
+		log.WithFields(log.Fields{"processID": process.ID}).Info("Process closed as Successful")
 	},
 }
 
@@ -742,6 +787,6 @@ var closeFailed = &cobra.Command{
 		err = client.CloseFailed(process.ID, RuntimePrvKey)
 		CheckError(err)
 
-		fmt.Println("Process with Id <" + process.ID + "> closed as failed")
+		log.WithFields(log.Fields{"processID": process.ID}).Info("Process closed as Failed")
 	},
 }
