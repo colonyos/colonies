@@ -152,9 +152,9 @@ var workerStartCmd = &cobra.Command{
 
 			output := ""
 			for {
-				tmp := make([]byte, 400)
+				tmp := make([]byte, 1)
 				_, err := stdout.Read(tmp)
-				fmt.Print(tmp)
+				fmt.Print(string(tmp))
 				if err != nil {
 					break
 				}
