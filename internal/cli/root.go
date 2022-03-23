@@ -53,6 +53,7 @@ var AttributeID string
 var JSON bool
 var Wait bool
 var Output bool
+var Full bool
 
 func init() {
 	rootCmd.PersistentFlags().BoolVarP(&Verbose, "verbose", "v", false, "verbose output")
@@ -79,6 +80,10 @@ func CheckError(err error) {
 }
 
 func Args2String(args []string) string {
+	if len(args) == 0 {
+		return ""
+	}
+
 	str := ""
 	for _, arg := range args {
 		str += arg + " "
