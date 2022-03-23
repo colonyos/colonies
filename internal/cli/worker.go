@@ -2,6 +2,7 @@ package cli
 
 import (
 	"bytes"
+	"fmt"
 	"strconv"
 	"time"
 
@@ -151,8 +152,9 @@ var workerStartCmd = &cobra.Command{
 
 			output := ""
 			for {
-				tmp := make([]byte, 10)
+				tmp := make([]byte, 400)
 				_, err := stdout.Read(tmp)
+				fmt.Print(tmp)
 				if err != nil {
 					break
 				}
