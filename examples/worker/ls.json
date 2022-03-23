@@ -1,6 +1,6 @@
 {
   "conditions": {
-    "runtimetype": "worker"
+    "runtimetype": "testworker"
   },
   "cmd": "ls",
   "args": [
