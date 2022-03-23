@@ -277,18 +277,19 @@ var statusCmd = &cobra.Command{
 
 		fmt.Println("Process statistics:")
 		specData := [][]string{
-			[]string{"Waiting", strconv.Itoa(stat.Waiting)},
-			[]string{"Running", strconv.Itoa(stat.Running)},
-			[]string{"Successful", strconv.Itoa(stat.Success)},
+			[]string{"Waiting processes", strconv.Itoa(stat.Waiting)},
+			[]string{"Running processes ", strconv.Itoa(stat.Running)},
+			[]string{"Successful processes", strconv.Itoa(stat.Success)},
+			[]string{"Runtimes", strconv.Itoa(len(runtimesFromServer))},
 			[]string{"Failed", strconv.Itoa(stat.Failed)},
 			[]string{"Retries (10 minutes)", strconv.Itoa(retries600)},
 			[]string{"Retries (1 hour)", strconv.Itoa(retries3600)},
 			[]string{"Utilization (10 minutes)", fmt.Sprintf("%f", utils.CalcUtilization(successfulProcesses600)) + "%"},
 			[]string{"Utilization (1 hour)", fmt.Sprintf("%f", utils.CalcUtilization(successfulProcesses3600)) + "%"},
-			[]string{"AvgWaitingTime (10 minutes)", fmt.Sprintf("%f", utils.CalcAvgWaitingTime(successfulProcesses600)) + "s"},
-			[]string{"AvgWaitingTime (1 hour)", fmt.Sprintf("%f", utils.CalcAvgWaitingTime(successfulProcesses3600)) + "s"},
-			[]string{"AvgProcessingTime (10 minutes)", fmt.Sprintf("%f", utils.CalcAvgProcessingTime(successfulProcesses600)) + "s"},
-			[]string{"AvgProcessingTime (1 hour)", fmt.Sprintf("%f", utils.CalcAvgProcessingTime(successfulProcesses3600)) + "s"},
+			[]string{"Avg waiting time (10 min)", fmt.Sprintf("%f", utils.CalcAvgWaitingTime(successfulProcesses600)) + "s"},
+			[]string{"Avg waiting time (1 h)", fmt.Sprintf("%f", utils.CalcAvgWaitingTime(successfulProcesses3600)) + "s"},
+			[]string{"Avg processing time (10 mi)", fmt.Sprintf("%f", utils.CalcAvgProcessingTime(successfulProcesses600)) + "s"},
+			[]string{"Avg processing time (1 h)", fmt.Sprintf("%f", utils.CalcAvgProcessingTime(successfulProcesses3600)) + "s"},
 		}
 		specTable := tablewriter.NewWriter(os.Stdout)
 		for _, v := range specData {
@@ -316,56 +317,5 @@ var statusCmd = &cobra.Command{
 		for _, runtime := range runtimesFromServer {
 			gpus += runtime.GPUs
 		}
-
-		fmt.Println()
-		fmt.Println("Total capacity:")
-		specData = [][]string{
-			[]string{"Runtimes", strconv.Itoa(len(runtimesFromServer))},
-			[]string{"Cores", strconv.Itoa(cores)},
-			[]string{"Memory", strconv.Itoa(mem) + " MiB"},
-			[]string{"GPUs", strconv.Itoa(gpus)},
-		}
-		specTable = tablewriter.NewWriter(os.Stdout)
-		for _, v := range specData {
-			specTable.Append(v)
-		}
-		specTable.SetAlignment(tablewriter.ALIGN_LEFT)
-		specTable.Render()
-
-		cores = 0
-		for _, runtime := range runtimesFromServer {
-			if !runningRuntimes[runtime.ID] {
-				cores += runtime.Cores
-			}
-		}
-
-		mem = 0
-		for _, runtime := range runtimesFromServer {
-			if !runningRuntimes[runtime.ID] {
-				mem += runtime.Mem
-			}
-		}
-
-		gpus = 0
-		for _, runtime := range runtimesFromServer {
-			if !runningRuntimes[runtime.ID] {
-				gpus += runtime.GPUs
-			}
-		}
-
-		fmt.Println()
-		fmt.Println("Available capacity:")
-		specData = [][]string{
-			[]string{"Runtimes", strconv.Itoa(len(runtimesFromServer) - len(runningRuntimes))},
-			[]string{"Cores", strconv.Itoa(cores)},
-			[]string{"Memory", strconv.Itoa(mem) + " MiB"},
-			[]string{"GPUs", strconv.Itoa(gpus)},
-		}
-		specTable = tablewriter.NewWriter(os.Stdout)
-		for _, v := range specData {
-			specTable.Append(v)
-		}
-		specTable.SetAlignment(tablewriter.ALIGN_LEFT)
-		specTable.Render()
 	},
 }
