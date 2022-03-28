@@ -54,6 +54,7 @@ var JSON bool
 var Wait bool
 var Output bool
 var Full bool
+var LogDir string
 
 func init() {
 	rootCmd.PersistentFlags().BoolVarP(&Verbose, "verbose", "v", false, "verbose output")
