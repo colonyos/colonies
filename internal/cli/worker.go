@@ -36,6 +36,7 @@ func init() {
 	workerStartCmd.Flags().IntVarP(&Mem, "mem", "", -1, "Memory [MiB]")
 	workerStartCmd.Flags().StringVarP(&GPU, "gpu", "", "", "GPU info")
 	workerStartCmd.Flags().IntVarP(&GPUs, "gpus", "", -1, "Number of GPUs")
+	workerStartCmd.Flags().StringVarP(&LogDir, "logdir", "", "", "Log directory")
 }
 
 var workerCmd = &cobra.Command{
@@ -68,6 +69,10 @@ var workerStartCmd = &cobra.Command{
 
 			ColonyPrvKey, err = keychain.GetPrvKey(ColonyID)
 			CheckError(err)
+		}
+
+		if LogDir == "" {
+			LogDir = os.Getenv("COLONIES_LOGDIR")
 		}
 
 		client := client.CreateColoniesClient(ServerHost, ServerPort, true) // XXX: Insecure
@@ -141,8 +146,8 @@ var workerStartCmd = &cobra.Command{
 
 			// Get output
 			stdout, err := cmd.StdoutPipe()
-			cmd.Stderr = cmd.Stdout
 			CheckError(err)
+			cmd.Stderr = cmd.Stdout
 
 			failure := false
 			if err = cmd.Start(); err != nil {
@@ -154,9 +159,16 @@ var workerStartCmd = &cobra.Command{
 			for {
 				tmp := make([]byte, 1)
 				_, err := stdout.Read(tmp)
-				fmt.Print(string(tmp))
 				if err != nil {
 					break
+				}
+				fmt.Print(string(tmp))
+				if LogDir != "" {
+					f, err := os.OpenFile(LogDir+"/"+assignedProcess.ID+".log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+					CheckError(err)
+					defer f.Close()
+					_, err = f.WriteString(string(tmp))
+					CheckError(err)
 				}
 				output += string(bytes.Trim(tmp, "\x00"))
 			}
