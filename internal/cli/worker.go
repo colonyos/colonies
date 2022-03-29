@@ -138,7 +138,9 @@ var workerStartCmd = &cobra.Command{
 			for _, attribute := range assignedProcess.Attributes {
 				cmd.Env = append(cmd.Env, attribute.Key+"="+attribute.Value)
 			}
+
 			cmd.Env = append(cmd.Env, "COLONIES_COLONYID="+ColonyID)
+			cmd.Env = append(cmd.Env, "COLONIES_PROCESSID="+assignedProcess.ID)
 			cmd.Env = append(cmd.Env, "COLONIES_SERVER_HOST="+ServerHost)
 			cmd.Env = append(cmd.Env, "COLONIES_SERVER_PORT="+strconv.Itoa(ServerPort))
 			cmd.Env = append(cmd.Env, "COLONIES_RUNTIMEID="+runtimeID)
