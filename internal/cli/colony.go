@@ -237,22 +237,6 @@ var statusCmd = &cobra.Command{
 			prvKey = ColonyPrvKey
 		}
 
-		waitingProcesses600, err := client.GetProcessHistForColony(core.WAITING, ColonyID, 600, prvKey)
-		CheckError(err)
-		runningProcesses600, err := client.GetProcessHistForColony(core.RUNNING, ColonyID, 600, prvKey)
-		CheckError(err)
-		successfulProcesses600, err := client.GetProcessHistForColony(core.SUCCESS, ColonyID, 600, prvKey)
-		CheckError(err)
-		failedProcesses600, err := client.GetProcessHistForColony(core.FAILED, ColonyID, 600, prvKey)
-		CheckError(err)
-
-		var allProcesses600 []*core.Process
-		allProcesses600 = append(allProcesses600, waitingProcesses600...)
-		allProcesses600 = append(allProcesses600, runningProcesses600...)
-		allProcesses600 = append(allProcesses600, successfulProcesses600...)
-		allProcesses600 = append(allProcesses600, failedProcesses600...)
-		retries600 := utils.CalcRetries(allProcesses600)
-
 		waitingProcesses3600, err := client.GetProcessHistForColony(core.WAITING, ColonyID, 3600, prvKey)
 		CheckError(err)
 		runningProcesses3600, err := client.GetProcessHistForColony(core.RUNNING, ColonyID, 3600, prvKey)
@@ -282,13 +266,9 @@ var statusCmd = &cobra.Command{
 			[]string{"Successful processes", strconv.Itoa(stat.Success)},
 			[]string{"Runtimes", strconv.Itoa(len(runtimesFromServer))},
 			[]string{"Failed", strconv.Itoa(stat.Failed)},
-			[]string{"Retries (10 minutes)", strconv.Itoa(retries600)},
 			[]string{"Retries (1 hour)", strconv.Itoa(retries3600)},
-			[]string{"Utilization (10 minutes)", fmt.Sprintf("%f", utils.CalcUtilization(successfulProcesses600)) + "%"},
 			[]string{"Utilization (1 hour)", fmt.Sprintf("%f", utils.CalcUtilization(successfulProcesses3600)) + "%"},
-			[]string{"Avg waiting time (10 min)", fmt.Sprintf("%f", utils.CalcAvgWaitingTime(successfulProcesses600)) + "s"},
 			[]string{"Avg waiting time (1 h)", fmt.Sprintf("%f", utils.CalcAvgWaitingTime(successfulProcesses3600)) + "s"},
-			[]string{"Avg processing time (10 mi)", fmt.Sprintf("%f", utils.CalcAvgProcessingTime(successfulProcesses600)) + "s"},
 			[]string{"Avg processing time (1 h)", fmt.Sprintf("%f", utils.CalcAvgProcessingTime(successfulProcesses3600)) + "s"},
 		}
 		specTable := tablewriter.NewWriter(os.Stdout)

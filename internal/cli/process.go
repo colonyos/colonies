@@ -431,10 +431,10 @@ var listFailedProcessesCmd = &cobra.Command{
 
 			var data [][]string
 			for _, process := range processes {
-				data = append(data, []string{process.ID, process.ProcessSpec.Cmd, Args2String(process.ProcessSpec.Args), process.EndTime.Format(TimeLayout)})
+				data = append(data, []string{process.ID, process.ProcessSpec.Cmd, Args2String(process.ProcessSpec.Args), process.EndTime.Format(TimeLayout), process.ProcessSpec.Conditions.RuntimeType})
 			}
 			table := tablewriter.NewWriter(os.Stdout)
-			table.SetHeader([]string{"ID", "Cmd", "Args", "End time"})
+			table.SetHeader([]string{"ID", "Cmd", "Args", "End time", "Target Runtime"})
 			for _, v := range data {
 				table.Append(v)
 			}
