@@ -99,7 +99,7 @@ func setupTestEnv2(t *testing.T) (*testEnv2, *client.ColoniesClient, *ColoniesSe
 }
 
 func prepareTests(t *testing.T) (*client.ColoniesClient, *ColoniesServer, string, chan bool) {
-	client := client.CreateColoniesClient(TESTHOST, TESTPORT, true)
+	client := client.CreateColoniesClient(TESTHOST, TESTPORT, true, true)
 
 	debug := false
 	if debug {
@@ -115,7 +115,7 @@ func prepareTests(t *testing.T) (*client.ColoniesClient, *ColoniesServer, string
 	serverID, err := crypto.GenerateID(serverPrvKey)
 	assert.Nil(t, err)
 
-	server := CreateColoniesServer(db, TESTPORT, serverID, "../../cert/key.pem", "../../cert/cert.pem", debug)
+	server := CreateColoniesServer(db, TESTPORT, serverID, true, "../../cert/key.pem", "../../cert/cert.pem", debug)
 	done := make(chan bool)
 
 	go func() {
