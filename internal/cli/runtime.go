@@ -104,7 +104,7 @@ var registerRuntimeCmd = &cobra.Command{
 			CheckError(err)
 		}
 
-		client := client.CreateColoniesClient(ServerHost, ServerPort, true) // XXX: Insecure
+		client := client.CreateColoniesClient(ServerHost, ServerPort, TLS, true) // XXX: Insecure
 		addedRuntime, err := client.AddRuntime(runtime, ColonyPrvKey)
 		CheckError(err)
 
@@ -146,7 +146,7 @@ var lsRuntimesCmd = &cobra.Command{
 			RuntimePrvKey, _ = keychain.GetPrvKey(RuntimeID)
 		}
 
-		client := client.CreateColoniesClient(ServerHost, ServerPort, true) // XXX: Insecure
+		client := client.CreateColoniesClient(ServerHost, ServerPort, TLS, true) // XXX: Insecure
 		runtimesFromServer, err := client.GetRuntimes(ColonyID, RuntimePrvKey)
 		prvKey := RuntimePrvKey
 		if err != nil {
@@ -318,7 +318,7 @@ var approveRuntimeCmd = &cobra.Command{
 			CheckError(err)
 		}
 
-		client := client.CreateColoniesClient(ServerHost, ServerPort, true) // XXX: Insecure
+		client := client.CreateColoniesClient(ServerHost, ServerPort, TLS, true) // XXX: Insecure
 		err = client.ApproveRuntime(RuntimeID, ColonyPrvKey)
 		CheckError(err)
 
@@ -348,7 +348,7 @@ var rejectRuntimeCmd = &cobra.Command{
 			CheckError(err)
 		}
 
-		client := client.CreateColoniesClient(ServerHost, ServerPort, true) // XXX: Insecure
+		client := client.CreateColoniesClient(ServerHost, ServerPort, TLS, true) // XXX: Insecure
 		err = client.RejectRuntime(RuntimeID, ColonyPrvKey)
 		CheckError(err)
 
@@ -378,7 +378,7 @@ var deleteRuntimeCmd = &cobra.Command{
 			CheckError(err)
 		}
 
-		client := client.CreateColoniesClient(ServerHost, ServerPort, true) // XXX: Insecure
+		client := client.CreateColoniesClient(ServerHost, ServerPort, TLS, true) // XXX: Insecure
 		err = client.DeleteRuntime(RuntimeID, ColonyPrvKey)
 		CheckError(err)
 

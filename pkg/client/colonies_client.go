@@ -16,14 +16,16 @@ type ColoniesClient struct {
 	restyClient *resty.Client
 	host        string
 	port        int
+	enableTLS   bool
 }
 
-func CreateColoniesClient(host string, port int, insecure bool) *ColoniesClient {
+func CreateColoniesClient(host string, port int, enableTLS bool, insecure bool) *ColoniesClient {
 	client := &ColoniesClient{}
 	client.restyClient = resty.New()
 
 	client.host = host
 	client.port = port
+	client.enableTLS = enableTLS
 
 	if insecure {
 		client.restyClient.SetTLSClientConfig(&tls.Config{InsecureSkipVerify: true})
@@ -51,9 +53,14 @@ func (client *ColoniesClient) sendMessage(method string, jsonString string, prvK
 		return "", err
 	}
 
+	protocol := "https"
+	if !client.enableTLS {
+		protocol = "http"
+	}
+
 	resp, err := client.restyClient.R().
 		SetBody(jsonString).
-		Post("https://" + client.host + ":" + strconv.Itoa(client.port) + "/api")
+		Post(protocol + "://" + client.host + ":" + strconv.Itoa(client.port) + "/api")
 	if err != nil {
 		return "", err
 	}

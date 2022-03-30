@@ -75,7 +75,7 @@ var workerStartCmd = &cobra.Command{
 			LogDir = os.Getenv("COLONIES_LOGDIR")
 		}
 
-		client := client.CreateColoniesClient(ServerHost, ServerPort, true) // XXX: Insecure
+		client := client.CreateColoniesClient(ServerHost, ServerPort, TLS, true) // XXX: Insecure
 
 		c := make(chan os.Signal)
 		signal.Notify(c, os.Interrupt, syscall.SIGTERM)
@@ -221,7 +221,7 @@ var workerUnregisterCmd = &cobra.Command{
 			CheckError(err)
 		}
 
-		client := client.CreateColoniesClient(ServerHost, ServerPort, true) // XXX: Insecure
+		client := client.CreateColoniesClient(ServerHost, ServerPort, TLS, true) // XXX: Insecure
 
 		unregisterRuntime(client)
 		os.Exit(0)

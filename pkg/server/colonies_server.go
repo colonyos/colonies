@@ -28,6 +28,7 @@ type ColoniesServer struct {
 	ginHandler        *gin.Engine
 	controller        *coloniesController
 	serverID          string
+	tls               bool
 	tlsPrivateKeyPath string
 	tlsCertPath       string
 	port              int
@@ -36,7 +37,7 @@ type ColoniesServer struct {
 	validator         security.Validator
 }
 
-func CreateColoniesServer(db database.Database, port int, serverID string, tlsPrivateKeyPath string, tlsCertPath string, debug bool) *ColoniesServer {
+func CreateColoniesServer(db database.Database, port int, serverID string, tls bool, tlsPrivateKeyPath string, tlsCertPath string, debug bool) *ColoniesServer {
 	if debug {
 		logrus.SetLevel(logrus.DebugLevel)
 	} else {
@@ -57,6 +58,7 @@ func CreateColoniesServer(db database.Database, port int, serverID string, tlsPr
 	server.httpServer = httpServer
 	server.controller = createColoniesController(db)
 	server.serverID = serverID
+	server.tls = tls
 	server.port = port
 	server.tlsPrivateKeyPath = tlsPrivateKeyPath
 	server.tlsCertPath = tlsCertPath
@@ -1260,8 +1262,14 @@ func (server *ColoniesServer) numberOfProcessSubscribers() int {
 }
 
 func (server *ColoniesServer) ServeForever() error {
-	if err := server.httpServer.ListenAndServeTLS(server.tlsCertPath, server.tlsPrivateKeyPath); err != nil && errors.Is(err, http.ErrServerClosed) {
-		return err
+	if server.tls {
+		if err := server.httpServer.ListenAndServeTLS(server.tlsCertPath, server.tlsPrivateKeyPath); err != nil && errors.Is(err, http.ErrServerClosed) {
+			return err
+		}
+	} else {
+		if err := server.httpServer.ListenAndServe(); err != nil && errors.Is(err, http.ErrServerClosed) {
+			return err
+		}
 	}
 
 	return nil
