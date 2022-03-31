@@ -85,9 +85,15 @@ func (client *ColoniesClient) sendMessage(method string, jsonString string, prvK
 }
 
 func (client *ColoniesClient) establishWebSocketConn(jsonString string) (*websocket.Conn, error) {
-	u := url.URL{Scheme: "wss", Host: client.host + ":" + strconv.Itoa(client.port), Path: "/pubsub"}
 	dialer := *websocket.DefaultDialer
-	dialer.TLSClientConfig = &tls.Config{InsecureSkipVerify: true} // TODO: note insecure
+	var u url.URL
+
+	if client.enableTLS {
+		u = url.URL{Scheme: "wss", Host: client.host + ":" + strconv.Itoa(client.port), Path: "/pubsub"}
+		dialer.TLSClientConfig = &tls.Config{InsecureSkipVerify: true} // TODO: note insecure
+	} else {
+		u = url.URL{Scheme: "ws", Host: client.host + ":" + strconv.Itoa(client.port), Path: "/pubsub"}
+	}
 
 	wsConn, _, err := dialer.Dial(u.String(), nil)
 	if err != nil {
