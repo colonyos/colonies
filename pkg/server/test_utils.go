@@ -32,6 +32,8 @@ type testEnv2 struct {
 	runtimePrvKey string
 }
 
+const EnableTLS = true
+
 func setupTestEnv1(t *testing.T) (*testEnv1, *client.ColoniesClient, *ColoniesServer, string, chan bool) {
 	client, server, serverPrvKey, done := prepareTests(t)
 
@@ -99,7 +101,7 @@ func setupTestEnv2(t *testing.T) (*testEnv2, *client.ColoniesClient, *ColoniesSe
 }
 
 func prepareTests(t *testing.T) (*client.ColoniesClient, *ColoniesServer, string, chan bool) {
-	client := client.CreateColoniesClient(TESTHOST, TESTPORT, true, true)
+	client := client.CreateColoniesClient(TESTHOST, TESTPORT, EnableTLS, true)
 
 	debug := false
 	if debug {
@@ -115,7 +117,7 @@ func prepareTests(t *testing.T) (*client.ColoniesClient, *ColoniesServer, string
 	serverID, err := crypto.GenerateID(serverPrvKey)
 	assert.Nil(t, err)
 
-	server := CreateColoniesServer(db, TESTPORT, serverID, true, "../../cert/key.pem", "../../cert/cert.pem", debug)
+	server := CreateColoniesServer(db, TESTPORT, serverID, EnableTLS, "../../cert/key.pem", "../../cert/cert.pem", debug)
 	done := make(chan bool)
 
 	go func() {
