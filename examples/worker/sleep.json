@@ -1,6 +1,6 @@
 {
   "conditions": {
-    "runtimetype": "worker"
+    "runtimetype": "myworkertype"
   },
   "cmd": "sleep",
   "args": [
