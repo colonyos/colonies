@@ -108,7 +108,7 @@ Attributes:
 # Links
 * [Installation](docs/Installation.md)
 * [Using the Colonies CLI tool](docs/CLI.md)
-* [Tutorial](docs/Tutorial.md)
+* [Tutorial (implement your own Colonies Worker using Golang SDK)](docs/Tutorial.md)
 * [HTTP RPC Protocol](docs/RPC.md)
 
 # Security principles
