@@ -3,16 +3,107 @@
 [![Go](https://github.com/johankristianss/colonies/actions/workflows/go.yml/badge.svg)](https://github.com/johankristianss/colonies/actions/workflows/go.yml)
 
 # What is Colonies? 
-**Colonies** is a generic framework for implementing next-generation distributed applications and systems. It can be used as a building block for grid computing or edge computing, e.g. implement a *meta operating system* or *cloud-of-cloud* platform that combines many execution environments into a new virtual computing environment that can be controlled using an single unified API.
+**Colonies** is a generic framework for implementing distributed applications and systems. It can be used as a building block for grid computing or edge computing, e.g. implement a *meta operating system* or *cloud-of-cloud* platform that combines many execution environments. The main use case of Colonies is to orchestrate workloads and establish trusted distributed compute environments across heterogeneous platforms such as multiple Kubernetes clusters, Edge severs or Android devices. 
 
-![Colonies Architecture](docs/images/ColoniesArch.png?raw=true "Colonies Architecture")
+A Colony is an abstract collection of compute workers operating under a single identity. A crypto-protocol ensure secure and zero-trust process execution by workers connected to arbitrary networks and infrastructures. This enables secure and seamless orchestration of complex machine learning workloads in compute continuums spanning devices, clouds and edge networks over the Internet. The picture below shows an high-level architecture.
 
-* A **Colony** is a trusted collection of (geographically) distributed computers.   
-* A **Colony Process** is a virtual software process. It contains meta information how to actually execute a process on a real operating system.
-* A **Colony Runtime** communicates with the Colonies **Colonies Server** and provides an virtual runtime environment for executing Colony Processes. 
-* The **Colonies Server** works as a mediator, trying to match submitted processes specification to Colony Runtimes. It keep tracks of execution history and can also re-assign a Colony Process if is not completed in time. All Remote Procedure Calls (RPC) to the Colonies server are done atomically. This means that two Runtimes cannot be assigned the same process. If a Runtime crashes during a RPC call, that call is consider invalid, thus keeping the Colonies Server consistent.   
-* A **Colony App** is an software that runs somewhere on the Internet. It is a running instance of a Colony Process. A Colony App can for example be an Android app running on a smart phone or an IoT application running a contraint device. A Colony App consists a of Colony Runtime for interacting with other Colony Apps. 
-* A **Colony Service** is Colony App that provide services to other Colony Apps or Colony Sevices. For example, a **Colony Kubernetes Service** makes it possible to execute Colony Processes on top of Kubernetes. A **Colony Slurm Services** provides a service to run Colony Processes on HPC supercomputers. Similar to a real-operating system a **Colony App** may spawn new Colony Processes.   
+![Colonies Architecture](docs/images/ColoniesArchFull.png?raw=true "Colonies Architecture")
+
+## Key features
+* **Batch processing and distributed RPC.** The Colonies Server maintains several prioritized job queues and keeps track of process statuses. Processes not finishing in time are automatically moved back to the job queue to be executed by another worker.  
+* **Pull-based orchestration.** Users (or workers) submit process specifications the Colonies Server. Colonies Workers connect to the Colonies Server and request processes to execute. A HTTP Long Polling/WebSocket protocol ensure that workers can reside anywhere on the Internet, even behind firewalls. The Colonies Server never establish connections directly to workers. 
+* **Built-in identity and trust management.** A crypto-protocol based on ECDSA (Elliptic Curve Digital Signature Algorithm) offers identity and trust management to enable Colonies Workers member of the same Colony to fully trust each other. Only authorized users or workers can submit process specifications or interact with other workers within a Colony.
+* **Decentralization.** A built-in Distributed Hash table (Kademlia) makes it possible to create federations of Colonies Servers to offer self-sovereignty and trust chains. Each Colonies Server can join a global overlay network of connected Colonies Servers on the Internet, similar to technologies like IPFS. 
+* **Implemented in Golang** with a standard PostgreSQL backend (backlog).
+* **SDK in Python, Julia, and Golang.**
+
+## Example of use cases
+* **Manage ML/AI workloads on Kubernetes.** Launch one or several Colonies Worker containers in a Kubernetes Pod. Then use Colonies to enable batch processing and launch processes inside Worker containers. Launching processes inside already started containers can be significantly more efficient than frameworks like Argo Workflows that launches new containers for each new task, especially when dealing with AI workflows consisting of huge containers (tens of gigabytes) or when a huge amount of data needs to be shuffled into memory to perform a certain computation.
+* **Grid computing.** Create "non-malicious" botnets and launch processes to perform computations at IoT devices, smart phones or cloud servers; all controlled from the Colonies Server.
+* **Manage complex workflows spanning multiple cloud/edge servers and devices**, e.g. setting up multimedia pipelines and ML inference servers running on multiple platforms connected to different networks.
+* **Manage HPC workflows**, e.g. submit and keep track of Slurm jobs.
+
+## Getting started example
+Start a Colonies Worker.
+```console
+$ colonies worker start --name myworker --type myworkertype
+```
+
+Example process specification (sleep.json):
+```json
+{
+  "conditions": {
+    "runtimetype": "myworker"
+  },
+  "cmd": "sleep",
+  "args": [
+    "100"
+  ],
+  "env": {
+    "TEST": "testenv"
+  }
+}
+```
+
+Submit sleep process specification. Will cause the Colonies Worker above to sleep for 100s. 
+```console
+$ colonies process submit --spec sleep.json
+```
+
+Check out running processes:
+```console
+$ colonies process ps
++------------------------------------------------------------------+-------+------+---------------------+----------------+
+|                                ID                                |  CMD  | ARGS |     START TIME      | TARGET RUNTIME |
++------------------------------------------------------------------+-------+------+---------------------+----------------+
+| 6681946db095e0dc2e0408b87e119c0d2ae4f691db6899b829161fc97f14a1d0 | sleep | 100  | 2022-04-05 16:40:01 | myworkertype   |
++------------------------------------------------------------------+-------+------+---------------------+----------------+
+```
+
+Check out process status: 
+```console
+$ colonies process get --processid 6681946db095e0dc2e0408b87e119c0d2ae4f691db6899b829161fc97f14a1d0
+Process:
++-------------------+------------------------------------------------------------------+
+| ID                | 6681946db095e0dc2e0408b87e119c0d2ae4f691db6899b829161fc97f14a1d0 |
+| IsAssigned        | True                                                             |
+| AssignedRuntimeID | 66f55dcb577ca6ed466ad5fcab868673bc1fc7d6ea7db71a0af4fea86035c431 |
+| State             | Running                                                          |
+| SubmissionTime    | 2022-04-05 16:40:00                                              |
+| StartTime         | 2022-04-05 16:40:01                                              |
+| EndTime           | 0001-01-01 01:12:12                                              |
+| Deadline          | 0001-01-01 01:12:12                                              |
+| WaitingTime       | 753.441ms                                                        |
+| ProcessingTime    | 1m23.585764152s                                                  |
+| Retries           | 0                                                                |
++-------------------+------------------------------------------------------------------+
+
+ProcessSpec:
++-------------+-------+
+| Cmd         | sleep |
+| Args        | 100   |
+| Volumes     | None  |
+| MaxExecTime | -1    |
+| MaxRetries  | 0     |
++-------------+-------+
+
+Conditions:
++-------------+------------------------------------------------------------------+
+| ColonyID    | 4787a5071856a4acf702b2ffcea422e3237a679c681314113d86139461290cf4 |
+| RuntimeIDs  | None                                                             |
+| RuntimeType | myworkertype                                                     |
+| Memory      | 0                                                                |
+| CPU Cores   | 0                                                                |
+| GPUs        | 0                                                                |
++-------------+------------------------------------------------------------------+
+
+Attributes:
++------------------------------------------------------------------+------+---------+------+
+|                                ID                                | KEY  |  VALUE  | TYPE |
++------------------------------------------------------------------+------+---------+------+
+| 2fe15f1b570c7328854f2374a69e45845ef5a40624ec06c287a51a5732485ecc | TEST | testenv | Env  |
++------------------------------------------------------------------+------+---------+------+
+```
 
 # Links
 * [Installation](docs/Installation.md)
@@ -57,4 +148,3 @@ Follow the instructions at [Installation Guide](./docs/Installation.md) and setu
 ```console
 make test
 ```
- 
