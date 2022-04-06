@@ -123,7 +123,7 @@ var workerStartCmd = &cobra.Command{
 		err = client.ApproveRuntime(runtimeID, ColonyPrvKey)
 		CheckError(err)
 
-		log.WithFields(log.Fields{"BuildVersion": build.BuildVersion, "BuildTime": build.BuildTime}).Info("Colonies Worker ready to serve")
+		log.WithFields(log.Fields{"BuildVersion": build.BuildVersion, "BuildTime": build.BuildTime, "ServerHost": ServerHost, "ServerPort": ServerPort}).Info("Colonies Worker ready to serve")
 		for {
 			assignedProcess, err := client.AssignProcess(ColonyID, runtimePrvKey)
 			if err != nil {
