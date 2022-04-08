@@ -74,7 +74,7 @@ var dbCreateCmd = &cobra.Command{
 		err := db.Initialize()
 		if err != nil {
 			log.Warning("Failed to create database")
-			os.Exit(-1)
+			os.Exit(0)
 		}
 		logging.Log().Info("Colonies database created")
 	},
