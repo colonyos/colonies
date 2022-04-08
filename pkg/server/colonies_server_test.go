@@ -152,6 +152,7 @@ func TestGetRuntimes(t *testing.T) {
 
 	runtimesFromServer, err := client.GetRuntimes(colony.ID, runtime1PrvKey)
 	assert.Nil(t, err)
+
 	assert.True(t, core.IsRuntimeArraysEqual(runtimes, runtimesFromServer))
 
 	server.Shutdown()
