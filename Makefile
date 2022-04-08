@@ -14,10 +14,10 @@ build:
 	@go build -buildmode=c-shared -o ./lib/cryptolib.so ./internal/cryptolib/cryptolib.go
 	@GOOS=js GOARCH=wasm go build -o ./lib/cryptolib.wasm internal/cryptolib.wasm/cryptolib.go
 
-docker:
+container:
 	docker build -t $(IMAGE) .
 
-push-image:
+push:
 	docker push $(IMAGE)
 
 coverage:
