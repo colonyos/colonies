@@ -1,7 +1,6 @@
 package server
 
 import (
-	"fmt"
 	"testing"
 	"time"
 
@@ -153,9 +152,6 @@ func TestGetRuntimes(t *testing.T) {
 
 	runtimesFromServer, err := client.GetRuntimes(colony.ID, runtime1PrvKey)
 	assert.Nil(t, err)
-
-	fmt.Println(runtimes)
-	fmt.Println(runtimesFromServer)
 
 	assert.True(t, core.IsRuntimeArraysEqual(runtimes, runtimesFromServer))
 
