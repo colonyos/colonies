@@ -50,7 +50,7 @@ func (db *PQDatabase) parseAttributes(rows *sql.Rows) ([]*core.Attribute, error)
 }
 
 func (db *PQDatabase) GetAttributeByID(attributeID string) (*core.Attribute, error) {
-	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `ATTRIBUTES where ATTRIBUTE_ID=$1`
+	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `ATTRIBUTES WHERE ATTRIBUTE_ID=$1`
 	rows, err := db.postgresql.Query(sqlStatement, attributeID)
 	if err != nil {
 		return nil, err
@@ -62,6 +62,7 @@ func (db *PQDatabase) GetAttributeByID(attributeID string) (*core.Attribute, err
 	if err != nil {
 		return nil, err
 	}
+
 	if len(attributes) > 1 {
 		return nil, errors.New("Expected attributes to be unique")
 	} else if len(attributes) == 0 {
@@ -72,7 +73,7 @@ func (db *PQDatabase) GetAttributeByID(attributeID string) (*core.Attribute, err
 }
 
 func (db *PQDatabase) GetAttribute(targetID string, key string, attributeType int) (*core.Attribute, error) {
-	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `ATTRIBUTES where TARGET_ID=$1 AND KEY=$2 AND ATTRIBUTE_TYPE=$3`
+	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `ATTRIBUTES WHERE TARGET_ID=$1 AND KEY=$2 AND ATTRIBUTE_TYPE=$3`
 	rows, err := db.postgresql.Query(sqlStatement, targetID, key, attributeType)
 	if err != nil {
 		return nil, err
@@ -94,7 +95,7 @@ func (db *PQDatabase) GetAttribute(targetID string, key string, attributeType in
 }
 
 func (db *PQDatabase) GetAttributes(targetID string) ([]*core.Attribute, error) {
-	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `ATTRIBUTES where TARGET_ID=$1`
+	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `ATTRIBUTES WHERE TARGET_ID=$1`
 	rows, err := db.postgresql.Query(sqlStatement, targetID)
 	if err != nil {
 		return nil, err
@@ -106,7 +107,7 @@ func (db *PQDatabase) GetAttributes(targetID string) ([]*core.Attribute, error) 
 }
 
 func (db *PQDatabase) GetAttributesByType(targetID string, attributeType int) ([]*core.Attribute, error) {
-	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `ATTRIBUTES where TARGET_ID=$1 AND ATTRIBUTE_TYPE=$2`
+	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `ATTRIBUTES WHERE TARGET_ID=$1 AND ATTRIBUTE_TYPE=$2`
 	rows, err := db.postgresql.Query(sqlStatement, targetID, attributeType)
 	if err != nil {
 		return nil, err
@@ -155,7 +156,7 @@ func (db *PQDatabase) DeleteAllAttributesByColonyID(colonyID string) error {
 	return nil
 }
 
-func (db *PQDatabase) DeleteAttributesByProcessID(targetID string, attributeType int) error {
+func (db *PQDatabase) DeleteAttributesByTargetID(targetID string, attributeType int) error {
 	sqlStatement := `DELETE FROM ` + db.dbPrefix + `ATTRIBUTES WHERE TARGET_ID=$1 AND ATTRIBUTE_TYPE=$2`
 	_, err := db.postgresql.Exec(sqlStatement, targetID, attributeType)
 	if err != nil {
@@ -165,7 +166,7 @@ func (db *PQDatabase) DeleteAttributesByProcessID(targetID string, attributeType
 	return nil
 }
 
-func (db *PQDatabase) DeleteAllAttributesByProcessID(targetID string) error {
+func (db *PQDatabase) DeleteAllAttributesByTargetID(targetID string) error {
 	sqlStatement := `DELETE FROM ` + db.dbPrefix + `ATTRIBUTES WHERE TARGET_ID=$1`
 	_, err := db.postgresql.Exec(sqlStatement, targetID)
 	if err != nil {

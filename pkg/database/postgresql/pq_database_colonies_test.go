@@ -12,6 +12,8 @@ func TestAddColony(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
 
+	defer db.Close()
+
 	colony := core.CreateColony(core.GenerateRandomID(), "test_colony_name")
 
 	err = db.AddColony(colony)
@@ -31,6 +33,8 @@ func TestAddColony(t *testing.T) {
 func TestAddTwoColonies(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
+
+	defer db.Close()
 
 	colony1 := core.CreateColony(core.GenerateRandomID(), "test_colony_name_1")
 	err = db.AddColony(colony1)
@@ -53,6 +57,8 @@ func TestGetColonyByID(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
 
+	defer db.Close()
+
 	colony1 := core.CreateColony(core.GenerateRandomID(), "test_colony_name_1")
 
 	err = db.AddColony(colony1)
@@ -74,6 +80,8 @@ func TestGetColonyByID(t *testing.T) {
 func TestDeleteColonies(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
+
+	defer db.Close()
 
 	colony1 := core.CreateColony(core.GenerateRandomID(), "test_colony_name_1")
 

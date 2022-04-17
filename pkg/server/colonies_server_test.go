@@ -1,6 +1,7 @@
 package server
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
@@ -106,6 +107,10 @@ func TestAddRuntime(t *testing.T) {
 	assert.Nil(t, err)
 	addedRuntime, err := client.AddRuntime(runtime, colonyPrvKey)
 	assert.Nil(t, err)
+	fmt.Println("runtime:")
+	fmt.Println(runtime)
+	fmt.Println("addedruntime:")
+	fmt.Println(addedRuntime)
 	assert.True(t, runtime.Equals(addedRuntime))
 	err = client.ApproveRuntime(runtime.ID, colonyPrvKey)
 	assert.Nil(t, err)

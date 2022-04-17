@@ -13,6 +13,8 @@ func TestAddRuntime(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
 
+	defer db.Close()
+
 	colony := core.CreateColony(core.GenerateRandomID(), "test_colony_name_1")
 	err = db.AddColony(colony)
 	assert.Nil(t, err)
@@ -34,6 +36,8 @@ func TestAddRuntime(t *testing.T) {
 func TestAddTwoRuntime(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
+
+	defer db.Close()
 
 	colony := core.CreateColony(core.GenerateRandomID(), "test_colony_name_1")
 
@@ -61,6 +65,8 @@ func TestGetRuntimeByID(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
 
+	defer db.Close()
+
 	colony := core.CreateColony(core.GenerateRandomID(), "test_colony_name_1")
 
 	err = db.AddColony(colony)
@@ -82,6 +88,8 @@ func TestGetRuntimeByID(t *testing.T) {
 func TestGetRuntimeByColonyID(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
+
+	defer db.Close()
 
 	colony1 := core.CreateColony(core.GenerateRandomID(), "test_colony_name_1")
 
@@ -118,6 +126,8 @@ func TestMarkAlive(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
 
+	defer db.Close()
+
 	colony := core.CreateColony(core.GenerateRandomID(), "test_colony_name")
 
 	err = db.AddColony(colony)
@@ -141,6 +151,8 @@ func TestMarkAlive(t *testing.T) {
 func TestApproveRuntime(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
+
+	defer db.Close()
 
 	colony := core.CreateColony(core.GenerateRandomID(), "test_colony_name")
 
@@ -176,6 +188,8 @@ func TestApproveRuntime(t *testing.T) {
 func TestDeleteRuntimes(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
+
+	defer db.Close()
 
 	colony1 := core.CreateColony(core.GenerateRandomID(), "test_colony_name_1")
 

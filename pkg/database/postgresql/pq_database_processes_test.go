@@ -13,6 +13,8 @@ func TestAddProcess(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
 
+	defer db.Close()
+
 	colonyID := core.GenerateRandomID()
 	runtime1ID := core.GenerateRandomID()
 	runtime2ID := core.GenerateRandomID()
@@ -32,6 +34,8 @@ func TestAddProcessWithEnv(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
 
+	defer db.Close()
+
 	env := make(map[string]string)
 	env["test_key_1"] = "test_value_1"
 	env["test_key_2"] = "test_value_2"
@@ -49,6 +53,8 @@ func TestAddProcessWithEnv(t *testing.T) {
 func TestDeleteProcesses(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
+
+	defer db.Close()
 
 	colonyID := core.GenerateRandomID()
 	runtime1ID := core.GenerateRandomID()
@@ -93,6 +99,8 @@ func TestDeleteAllProcessesByColony(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
 
+	defer db.Close()
+
 	colony1ID := core.GenerateRandomID()
 	process1 := utils.CreateTestProcess(colony1ID)
 	err = db.AddProcess(process1)
@@ -124,6 +132,8 @@ func TestDeleteAllProcessesAndAttributes(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
 
+	defer db.Close()
+
 	colonyID := core.GenerateRandomID()
 	process1 := utils.CreateTestProcess(colonyID)
 	err = db.AddProcess(process1)
@@ -144,6 +154,8 @@ func TestDeleteAllProcessesAndAttributes(t *testing.T) {
 func TestDeleteProcessesAndAttributes(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
+
+	defer db.Close()
 
 	colonyID := core.GenerateRandomID()
 	process1 := utils.CreateTestProcess(colonyID)
@@ -178,6 +190,8 @@ func TestAssign(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
 
+	defer db.Close()
+
 	colony := core.CreateColony(core.GenerateRandomID(), "test_colony_name")
 
 	runtime := utils.CreateTestRuntime(colony.ID)
@@ -196,6 +210,9 @@ func TestAssign(t *testing.T) {
 
 	err = db.AssignRuntime(runtime.ID, process)
 	assert.Nil(t, err)
+
+	err = db.AssignRuntime(runtime.ID, process)
+	assert.NotNil(t, err) // Should not work, already assigned
 
 	processFromDB, err = db.GetProcessByID(process.ID)
 	assert.Nil(t, err)
@@ -216,6 +233,8 @@ func TestAssign(t *testing.T) {
 func TestMarkSuccessful(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
+
+	defer db.Close()
 
 	colony := core.CreateColony(core.GenerateRandomID(), "test_colony_name")
 
@@ -256,6 +275,8 @@ func TestMarkFailed(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
 
+	defer db.Close()
+
 	colony := core.CreateColony(core.GenerateRandomID(), "test_colony_name")
 
 	runtime := utils.CreateTestRuntime(colony.ID)
@@ -294,6 +315,8 @@ func TestMarkFailed(t *testing.T) {
 func TestReset(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
+
+	defer db.Close()
 
 	colony := core.CreateColony(core.GenerateRandomID(), "test_colony_name")
 
@@ -345,6 +368,8 @@ func TestSetDeadline(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
 
+	defer db.Close()
+
 	colony := core.CreateColony(core.GenerateRandomID(), "test_colony_name")
 
 	runtime := utils.CreateTestRuntime(colony.ID)
@@ -367,6 +392,8 @@ func TestSetDeadline(t *testing.T) {
 func TestFindUnassignedProcesses2(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
+
+	defer db.Close()
 
 	colony := core.CreateColony(core.GenerateRandomID(), "test_colony_name_1")
 	err = db.AddColony(colony)
@@ -419,6 +446,8 @@ func TestFindUnassignedProcesses3(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
 
+	defer db.Close()
+
 	colony := core.CreateColony(core.GenerateRandomID(), "test_colony_name_1")
 	assert.Nil(t, err)
 	err = db.AddColony(colony)
@@ -459,6 +488,8 @@ func TestFindUnassignedProcesses4(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
 
+	defer db.Close()
+
 	colony := core.CreateColony(core.GenerateRandomID(), "test_colony_name_1")
 	assert.Nil(t, err)
 	err = db.AddColony(colony)
@@ -496,6 +527,8 @@ func TestFindUnassignedProcesses4(t *testing.T) {
 func TestFindProcessAssigned(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
+
+	defer db.Close()
 
 	colony := core.CreateColony(core.GenerateRandomID(), "test_colony_name_1")
 	err = db.AddColony(colony)
@@ -572,6 +605,8 @@ func TestFindProcessAssigned(t *testing.T) {
 func TestFindWaitingProcesses(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
+
+	defer db.Close()
 
 	colony := core.CreateColony(core.GenerateRandomID(), "test_colony_name_1")
 	err = db.AddColony(colony)
@@ -693,6 +728,8 @@ func TestFindAllRunningProcesses(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
 
+	defer db.Close()
+
 	colony1 := core.CreateColony(core.GenerateRandomID(), "test_colony_name_1")
 	err = db.AddColony(colony1)
 	assert.Nil(t, err)
@@ -746,6 +783,8 @@ func TestFindAllRunningProcesses(t *testing.T) {
 func TestFindProcessesForRuntime(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
+
+	defer db.Close()
 
 	colony1 := core.CreateColony(core.GenerateRandomID(), "test_colony_name_1")
 	err = db.AddColony(colony1)
@@ -822,6 +861,8 @@ func TestFindProcessesForColony(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
 
+	defer db.Close()
+
 	colony := core.CreateColony(core.GenerateRandomID(), "test_colony_name")
 	err = db.AddColony(colony)
 	assert.Nil(t, err)
@@ -878,5 +919,4 @@ func TestFindProcessesForColony(t *testing.T) {
 	processesFromDB, err = db.FindProcessesForColony(colony.ID, 1, core.SUCCESS) // last second
 	assert.Nil(t, err)
 	assert.Equal(t, len(processesFromDB), 1)
-
 }

@@ -118,10 +118,11 @@ func prepareTests(t *testing.T) (*client.ColoniesClient, *ColoniesServer, string
 	assert.Nil(t, err)
 
 	server := CreateColoniesServer(db, TESTPORT, serverID, EnableTLS, "../../cert/key.pem", "../../cert/cert.pem", debug)
-	done := make(chan bool)
 
+	done := make(chan bool)
 	go func() {
 		server.ServeForever()
+		db.Close()
 		done <- true
 	}()
 
