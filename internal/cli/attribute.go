@@ -43,7 +43,7 @@ var attributeCmd = &cobra.Command{
 
 var addAttributeCmd = &cobra.Command{
 	Use:   "add",
-	Short: "Add an attribute to a proces",
+	Short: "Add an attribute to a process",
 	Long:  "Add an attribute to a process",
 	Run: func(cmd *cobra.Command, args []string) {
 		parseServerEnv()
@@ -81,7 +81,7 @@ var addAttributeCmd = &cobra.Command{
 
 var getAttributeCmd = &cobra.Command{
 	Use:   "get",
-	Short: "Get an attribute of a proces",
+	Short: "Get an attribute of a process",
 	Long:  "Get an attribute of a process",
 	Run: func(cmd *cobra.Command, args []string) {
 		parseServerEnv()
