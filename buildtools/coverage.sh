@@ -33,12 +33,12 @@ if [ -f profile.out ]; then
   cat profile.out >> coverage.txt
   rm profile.out
 fi
-go test -race -coverprofile=profile.out -covermode=atomic ./pkg/scheduler
+go test -race -coverprofile=profile.out -covermode=atomic ./pkg/planner
 if [ -f profile.out ]; then
   cat profile.out >> coverage.txt
   rm profile.out
 fi
-go test -race -coverprofile=profile.out -covermode=atomic ./pkg/scheduler/basic
+go test -race -coverprofile=profile.out -covermode=atomic ./pkg/planner/basic
 if [ -f profile.out ]; then
   cat profile.out >> coverage.txt
   rm profile.out

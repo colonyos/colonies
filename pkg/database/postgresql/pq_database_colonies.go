@@ -3,12 +3,17 @@ package postgresql
 import (
 	"database/sql"
 	"errors"
+	"fmt"
 
 	"github.com/colonyos/colonies/pkg/core"
 	_ "github.com/lib/pq"
 )
 
 func (db *PQDatabase) AddColony(colony *core.Colony) error {
+	if colony == nil {
+		fmt.Println("ERROR: colony is pnil")
+	}
+
 	sqlStatement := `INSERT INTO  ` + db.dbPrefix + `COLONIES (COLONY_ID, NAME) VALUES ($1, $2)`
 	_, err := db.postgresql.Exec(sqlStatement, colony.ID, colony.Name)
 	if err != nil {

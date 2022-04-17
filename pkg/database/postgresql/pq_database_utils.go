@@ -6,6 +6,10 @@ import (
 )
 
 func PrepareTests() (*PQDatabase, error) {
+	return PrepareTestsWithPrefix("TEST_")
+}
+
+func PrepareTestsWithPrefix(prefix string) (*PQDatabase, error) {
 	log.SetOutput(ioutil.Discard)
 
 	dbHost := "localhost"
@@ -13,7 +17,7 @@ func PrepareTests() (*PQDatabase, error) {
 	dbUser := "postgres"
 	dbPassword := "rFcLGNkgsNtksg6Pgtn9CumL4xXBQ7"
 	dbName := "postgres"
-	dbPrefix := "TEST_"
+	dbPrefix := prefix
 
 	db := CreatePQDatabase(dbHost, dbPort, dbUser, dbPassword, dbName, dbPrefix)
 

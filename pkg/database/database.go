@@ -66,7 +66,7 @@ type Database interface {
 	UpdateAttribute(attribute *core.Attribute) error
 	DeleteAttributeByID(attributeID string) error
 	DeleteAllAttributesByColonyID(colonyID string) error
-	DeleteAttributesByProcessID(targetID string, attributeType int) error
-	DeleteAllAttributesByProcessID(targetID string) error
+	DeleteAttributesByTargetID(targetID string, attributeType int) error
+	DeleteAllAttributesByTargetID(targetID string) error
 	DeleteAllAttributes() error
 }

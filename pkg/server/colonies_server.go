@@ -789,7 +789,7 @@ func (server *ColoniesServer) handleAssignProcessHTTPRequest(c *gin.Context, rec
 		return
 	}
 
-	process, err := server.controller.assignProcess(recoveredID, msg.ColonyID)
+	process, err := server.controller.assignRuntime(recoveredID, msg.ColonyID)
 	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
