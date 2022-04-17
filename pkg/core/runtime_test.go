@@ -163,7 +163,10 @@ func TestRuntimeToJSON(t *testing.T) {
 	jsonString, err := runtime1.ToJSON()
 	assert.Nil(t, err)
 
-	runtime2, err := ConvertJSONToRuntime(jsonString)
+	runtime2, err := ConvertJSONToRuntime(jsonString + "error")
+	assert.NotNil(t, err)
+
+	runtime2, err = ConvertJSONToRuntime(jsonString)
 	assert.Nil(t, err)
 	assert.True(t, runtime2.Equals(runtime1))
 }
@@ -179,7 +182,10 @@ func TestRuntimeToJSONArray(t *testing.T) {
 	jsonString, err := ConvertRuntimeArrayToJSON(runtimes1)
 	assert.Nil(t, err)
 
-	runtimes2, err := ConvertJSONToRuntimeArray(jsonString)
+	runtimes2, err := ConvertJSONToRuntimeArray(jsonString + "error")
+	assert.NotNil(t, err)
+
+	runtimes2, err = ConvertJSONToRuntimeArray(jsonString)
 	assert.Nil(t, err)
 	assert.True(t, IsRuntimeArraysEqual(runtimes1, runtimes2))
 }

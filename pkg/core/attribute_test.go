@@ -74,6 +74,10 @@ func TestAttributeToJSON(t *testing.T) {
 	jsonString, err := attribute1.ToJSON()
 	assert.Nil(t, err)
 
-	attribute2, err := ConvertJSONToAttribute(jsonString)
+	attribute2, err := ConvertJSONToAttribute(jsonString + "error")
+	assert.NotNil(t, err)
+
+	attribute2, err = ConvertJSONToAttribute(jsonString)
+	assert.Nil(t, err)
 	assert.True(t, attribute2.Equals(attribute1))
 }

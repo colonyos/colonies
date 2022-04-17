@@ -28,7 +28,10 @@ func TestColonyToJSON(t *testing.T) {
 	jsonString, err := colony.ToJSON()
 	assert.Nil(t, err)
 
-	colony2, err := ConvertJSONToColony(jsonString)
+	colony2, err := ConvertJSONToColony(jsonString + "error")
+	assert.NotNil(t, err)
+
+	colony2, err = ConvertJSONToColony(jsonString)
 	assert.Nil(t, err)
 	assert.True(t, colony2.Equals(colony))
 }
@@ -86,7 +89,10 @@ func TestColonyToJSONArray(t *testing.T) {
 	jsonString, err := ConvertColonyArrayToJSON(colonies)
 	assert.Nil(t, err)
 
-	colonies2, err := ConvertJSONToColonyArray(jsonString)
+	colonies2, err := ConvertJSONToColonyArray(jsonString + "error")
+	assert.NotNil(t, err)
+
+	colonies2, err = ConvertJSONToColonyArray(jsonString)
 	assert.Nil(t, err)
 	assert.True(t, IsColonyArraysEqual(colonies, colonies2))
 }
