@@ -29,6 +29,14 @@ func (msg *DeleteProcessMsg) ToJSON() (string, error) {
 	return string(jsonBytes), nil
 }
 
+func (msg *DeleteProcessMsg) Equals(msg2 *DeleteProcessMsg) bool {
+	if msg.MsgType == msg2.MsgType && msg.ProcessID == msg2.ProcessID && msg.All == msg2.All {
+		return true
+	}
+
+	return false
+}
+
 func (msg *DeleteProcessMsg) ToJSONIndent() (string, error) {
 	jsonBytes, err := json.MarshalIndent(msg, "", "    ")
 	if err != nil {
