@@ -39,6 +39,14 @@ func (msg *SubmitProcessSpecMsg) ToJSONIndent() (string, error) {
 	return string(jsonBytes), nil
 }
 
+func (msg *SubmitProcessSpecMsg) Equals(msg2 *SubmitProcessSpecMsg) bool {
+	if msg.MsgType == msg2.MsgType && msg.ProcessSpec.Equals(msg2.ProcessSpec) {
+		return true
+	}
+
+	return false
+}
+
 func CreateSubmitProcessSpecMsgFromJSON(jsonString string) (*SubmitProcessSpecMsg, error) {
 	var msg *SubmitProcessSpecMsg
 
