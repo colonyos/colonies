@@ -28,6 +28,14 @@ func (msg *CloseFailedMsg) ToJSON() (string, error) {
 	return string(jsonBytes), nil
 }
 
+func (msg *CloseFailedMsg) Equals(msg2 *CloseFailedMsg) bool {
+	if msg.MsgType == msg2.MsgType && msg.ProcessID == msg2.ProcessID {
+		return true
+	}
+
+	return false
+}
+
 func (msg *CloseFailedMsg) ToJSONIndent() (string, error) {
 	jsonBytes, err := json.MarshalIndent(msg, "", "    ")
 	if err != nil {
