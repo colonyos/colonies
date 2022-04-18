@@ -124,9 +124,7 @@ func (runtime *Runtime) Equals(runtime2 *Runtime) bool {
 		runtime.Mem == runtime2.Mem &&
 		runtime.GPU == runtime2.GPU &&
 		runtime.GPUs == runtime2.GPUs &&
-		runtime.State == runtime2.State &&
-		runtime.CommissionTime.Unix() == runtime2.CommissionTime.Unix() &&
-		runtime.LastHeardFromTime.Unix() == runtime2.LastHeardFromTime.Unix() {
+		runtime.State == runtime2.State {
 		return true
 	}
 
