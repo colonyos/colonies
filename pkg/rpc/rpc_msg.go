@@ -71,3 +71,13 @@ func (msg *RPCMsg) ToJSONIndent() (string, error) {
 
 	return string(jsonBytes), nil
 }
+
+func (msg *RPCMsg) Equals(msg2 *RPCMsg) bool {
+	if msg.Signature == msg2.Signature &&
+		msg.PayloadType == msg2.PayloadType &&
+		msg.Payload == msg2.Payload {
+		return true
+	}
+
+	return false
+}
