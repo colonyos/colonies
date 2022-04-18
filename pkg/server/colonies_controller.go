@@ -75,7 +75,6 @@ func (controller *coloniesController) timeoutChecker() {
 
 		processes, err := controller.db.FindAllRunningProcesses()
 		if err != nil {
-			fmt.Println(err)
 			continue
 		}
 		for _, process := range processes {
@@ -690,7 +689,7 @@ func (controller *coloniesController) closeFailed(processID string) error {
 	return <-cmd.errorChan
 }
 
-func (controller *coloniesController) assignProcess(runtimeID string, colonyID string) (*core.Process, error) {
+func (controller *coloniesController) assignRuntime(runtimeID string, colonyID string) (*core.Process, error) {
 	cmd := &command{processReplyChan: make(chan *core.Process),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {

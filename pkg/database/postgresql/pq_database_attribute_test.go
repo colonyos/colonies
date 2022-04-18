@@ -11,6 +11,8 @@ func TestAddAttribute(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
 
+	defer db.Close()
+
 	processID := core.GenerateRandomID()
 	colonyID := core.GenerateRandomID()
 	attribute := core.CreateAttribute(processID, colonyID, core.IN, "test_key1", "test_value1")
@@ -26,6 +28,8 @@ func TestAddAttribute(t *testing.T) {
 func TestGetAttributes(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
+
+	defer db.Close()
 
 	processID := core.GenerateRandomID()
 	colonyID := core.GenerateRandomID()
@@ -73,6 +77,8 @@ func TestUpdateAttribute(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
 
+	defer db.Close()
+
 	processID := core.GenerateRandomID()
 	colonyID := core.GenerateRandomID()
 	attribute := core.CreateAttribute(processID, colonyID, core.IN, "test_key1", "test_value1")
@@ -102,6 +108,8 @@ func TestUpdateAttribute(t *testing.T) {
 func TestDeleteAttributes(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
+
+	defer db.Close()
 
 	processID1 := core.GenerateRandomID()
 	processID2 := core.GenerateRandomID()
@@ -149,7 +157,7 @@ func TestDeleteAttributes(t *testing.T) {
 
 	// Test DeleteAttributesByProcessID
 
-	err = db.DeleteAttributesByProcessID(processID1, core.IN)
+	err = db.DeleteAttributesByTargetID(processID1, core.IN)
 	assert.Nil(t, err)
 
 	attributeFromDB, err = db.GetAttributeByID(attribute1.ID)
@@ -178,7 +186,7 @@ func TestDeleteAttributes(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, attributeFromDB)
 
-	err = db.DeleteAllAttributesByProcessID(processID2)
+	err = db.DeleteAllAttributesByTargetID(processID2)
 	assert.Nil(t, err)
 
 	attributeFromDB, err = db.GetAttributeByID(attribute4.ID)
