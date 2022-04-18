@@ -282,7 +282,7 @@ func (db *PQDatabase) DeleteProcessByID(processID string) error {
 	}
 
 	// TODO test this code
-	err = db.DeleteAllAttributesByProcessID(processID)
+	err = db.DeleteAllAttributesByTargetID(processID)
 	if err != nil {
 		return err
 	}
@@ -358,10 +358,18 @@ func (db *PQDatabase) ResetAllProcesses(process *core.Process) error {
 }
 
 func (db *PQDatabase) AssignRuntime(runtimeID string, process *core.Process) error {
-	startTime := time.Now()
+	processFromDB, err := db.GetProcessByID(process.ID)
+	if err != nil {
+		return err
+	}
 
+	if processFromDB.IsAssigned {
+		return errors.New("Process already assigned")
+	}
+
+	startTime := time.Now()
 	sqlStatement := `UPDATE ` + db.dbPrefix + `PROCESSES SET IS_ASSIGNED=TRUE, START_TIME=$1, ASSIGNED_RUNTIME_ID=$2, STATE=$3 WHERE PROCESS_ID=$4`
-	_, err := db.postgresql.Exec(sqlStatement, startTime, runtimeID, core.RUNNING, process.ID)
+	_, err = db.postgresql.Exec(sqlStatement, startTime, runtimeID, core.RUNNING, process.ID)
 	if err != nil {
 		return err
 	}

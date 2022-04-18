@@ -11,7 +11,10 @@ func TestProcessStat(t *testing.T) {
 	jsonString, err := stat.ToJSON()
 	assert.Nil(t, err)
 
-	stat2, err := ConvertJSONToProcessStat(jsonString)
+	stat2, err := ConvertJSONToProcessStat(jsonString + "error")
+	assert.NotNil(t, err)
+
+	stat2, err = ConvertJSONToProcessStat(jsonString)
 	assert.Nil(t, err)
 	assert.True(t, stat.Equals(stat2))
 }

@@ -39,6 +39,14 @@ func (msg *AddAttributeMsg) ToJSONIndent() (string, error) {
 	return string(jsonBytes), nil
 }
 
+func (msg *AddAttributeMsg) Equals(msg2 *AddAttributeMsg) bool {
+	if msg.MsgType == msg2.MsgType && msg.Attribute.Equals(msg2.Attribute) {
+		return true
+	}
+
+	return false
+}
+
 func CreateAddAttributeMsgFromJSON(jsonString string) (*AddAttributeMsg, error) {
 	var msg *AddAttributeMsg
 

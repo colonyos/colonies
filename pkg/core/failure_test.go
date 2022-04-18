@@ -33,7 +33,10 @@ func TestFailureParseJSON(t *testing.T) {
 	failureJSON, err := failure1.ToJSON()
 	assert.Nil(t, err)
 
-	failure2, err := ConvertJSONToFailure(failureJSON)
+	failure2, err := ConvertJSONToFailure(failureJSON + "error")
+	assert.NotNil(t, err)
+
+	failure2, err = ConvertJSONToFailure(failureJSON)
 	assert.Nil(t, err)
 	assert.True(t, failure2.Equals(failure1))
 }
