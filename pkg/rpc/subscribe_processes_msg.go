@@ -41,6 +41,17 @@ func (msg *SubscribeProcessesMsg) ToJSONIndent() (string, error) {
 	return string(jsonBytes), nil
 }
 
+func (msg *SubscribeProcessesMsg) Equals(msg2 *SubscribeProcessesMsg) bool {
+	if msg.MsgType == msg2.MsgType &&
+		msg.RuntimeType == msg2.RuntimeType &&
+		msg.State == msg2.State &&
+		msg.Timeout == msg2.Timeout {
+		return true
+	}
+
+	return false
+}
+
 func CreateSubscribeProcessesMsgFromJSON(jsonString string) (*SubscribeProcessesMsg, error) {
 	var msg *SubscribeProcessesMsg
 

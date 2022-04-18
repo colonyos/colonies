@@ -37,6 +37,14 @@ func (msg *GetRuntimeMsg) ToJSONIndent() (string, error) {
 	return string(jsonBytes), nil
 }
 
+func (msg *GetRuntimeMsg) Equals(msg2 *GetRuntimeMsg) bool {
+	if msg.MsgType == msg2.MsgType && msg.RuntimeID == msg2.RuntimeID {
+		return true
+	}
+
+	return false
+}
+
 func CreateGetRuntimeMsgFromJSON(jsonString string) (*GetRuntimeMsg, error) {
 	var msg *GetRuntimeMsg
 
