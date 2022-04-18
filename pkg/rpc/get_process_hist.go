@@ -43,6 +43,18 @@ func (msg *GetProcessHistMsg) ToJSONIndent() (string, error) {
 	return string(jsonBytes), nil
 }
 
+func (msg *GetProcessHistMsg) Equals(msg2 *GetProcessHistMsg) bool {
+	if msg.MsgType == msg2.MsgType &&
+		msg.ColonyID == msg2.ColonyID &&
+		msg.RuntimeID == msg2.RuntimeID &&
+		msg.Seconds == msg2.Seconds &&
+		msg.State == msg2.State {
+		return true
+	}
+
+	return false
+}
+
 func CreateGetProcessHistMsgFromJSON(jsonString string) (*GetProcessHistMsg, error) {
 	var msg *GetProcessHistMsg
 

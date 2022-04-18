@@ -35,6 +35,14 @@ func (msg *GetColoniesMsg) ToJSONIndent() (string, error) {
 	return string(jsonBytes), nil
 }
 
+func (msg *GetColoniesMsg) Equals(msg2 *GetColoniesMsg) bool {
+	if msg.MsgType == msg2.MsgType {
+		return true
+	}
+
+	return false
+}
+
 func CreateGetColoniesMsgFromJSON(jsonString string) (*GetColoniesMsg, error) {
 	var msg *GetColoniesMsg
 
