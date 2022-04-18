@@ -67,3 +67,13 @@ func (msg *RPCReplyMsg) ToJSONIndent() (string, error) {
 
 	return string(jsonBytes), nil
 }
+
+func (msg *RPCReplyMsg) Equals(msg2 *RPCReplyMsg) bool {
+	if msg.PayloadType == msg2.PayloadType &&
+		msg.Payload == msg2.Payload &&
+		msg.Error == msg2.Error {
+		return true
+	}
+
+	return false
+}
