@@ -28,6 +28,14 @@ func (msg *DeleteColonyMsg) ToJSON() (string, error) {
 	return string(jsonBytes), nil
 }
 
+func (msg *DeleteColonyMsg) Equals(msg2 *DeleteColonyMsg) bool {
+	if msg.MsgType == msg2.MsgType && msg.ColonyID == msg2.ColonyID {
+		return true
+	}
+
+	return false
+}
+
 func (msg *DeleteColonyMsg) ToJSONIndent() (string, error) {
 	jsonBytes, err := json.MarshalIndent(msg, "", "    ")
 	if err != nil {

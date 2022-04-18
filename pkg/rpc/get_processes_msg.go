@@ -41,6 +41,17 @@ func (msg *GetProcessesMsg) ToJSONIndent() (string, error) {
 	return string(jsonBytes), nil
 }
 
+func (msg *GetProcessesMsg) Equals(msg2 *GetProcessesMsg) bool {
+	if msg.MsgType == msg2.MsgType &&
+		msg.ColonyID == msg2.ColonyID &&
+		msg.Count == msg2.Count &&
+		msg.State == msg2.State {
+		return true
+	}
+
+	return false
+}
+
 func CreateGetProcessesMsgFromJSON(jsonString string) (*GetProcessesMsg, error) {
 	var msg *GetProcessesMsg
 

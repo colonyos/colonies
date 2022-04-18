@@ -37,6 +37,14 @@ func (msg *RejectRuntimeMsg) ToJSONIndent() (string, error) {
 	return string(jsonBytes), nil
 }
 
+func (msg *RejectRuntimeMsg) Equals(msg2 *RejectRuntimeMsg) bool {
+	if msg.MsgType == msg2.MsgType && msg.RuntimeID == msg2.RuntimeID {
+		return true
+	}
+
+	return false
+}
+
 func CreateRejectRuntimeMsgFromJSON(jsonString string) (*RejectRuntimeMsg, error) {
 	var msg *RejectRuntimeMsg
 

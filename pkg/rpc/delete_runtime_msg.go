@@ -37,6 +37,14 @@ func (msg *DeleteRuntimeMsg) ToJSONIndent() (string, error) {
 	return string(jsonBytes), nil
 }
 
+func (msg *DeleteRuntimeMsg) Equals(msg2 *DeleteRuntimeMsg) bool {
+	if msg.MsgType == msg2.MsgType && msg.RuntimeID == msg2.RuntimeID {
+		return true
+	}
+
+	return false
+}
+
 func CreateDeleteRuntimeMsgFromJSON(jsonString string) (*DeleteRuntimeMsg, error) {
 	var msg *DeleteRuntimeMsg
 

@@ -37,6 +37,14 @@ func (msg *ApproveRuntimeRPC) ToJSONIndent() (string, error) {
 	return string(jsonBytes), nil
 }
 
+func (msg *ApproveRuntimeRPC) Equals(msg2 *ApproveRuntimeRPC) bool {
+	if msg.MsgType == msg2.MsgType && msg.RuntimeID == msg2.RuntimeID {
+		return true
+	}
+
+	return false
+}
+
 func CreateApproveRuntimeMsgFromJSON(jsonString string) (*ApproveRuntimeRPC, error) {
 	var msg *ApproveRuntimeRPC
 

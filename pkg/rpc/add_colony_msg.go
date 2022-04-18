@@ -39,6 +39,14 @@ func (msg *AddColonyMsg) ToJSONIndent() (string, error) {
 	return string(jsonBytes), nil
 }
 
+func (msg *AddColonyMsg) Equals(msg2 *AddColonyMsg) bool {
+	if msg.MsgType == msg2.MsgType && msg.Colony.Equals(msg2.Colony) {
+		return true
+	}
+
+	return false
+}
+
 func CreateAddColonyMsgFromJSON(jsonString string) (*AddColonyMsg, error) {
 	var msg *AddColonyMsg
 

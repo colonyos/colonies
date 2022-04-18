@@ -39,6 +39,16 @@ func (msg *VersionMsg) ToJSONIndent() (string, error) {
 	return string(jsonBytes), nil
 }
 
+func (msg *VersionMsg) Equals(msg2 *VersionMsg) bool {
+	if msg.MsgType == msg2.MsgType &&
+		msg.BuildVersion == msg2.BuildVersion &&
+		msg.BuildTime == msg2.BuildTime {
+		return true
+	}
+
+	return false
+}
+
 func CreateVersionMsgFromJSON(jsonString string) (*VersionMsg, error) {
 	var msg *VersionMsg
 

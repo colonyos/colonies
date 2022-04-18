@@ -24,7 +24,10 @@ func TestProcessSpecJSON(t *testing.T) {
 	jsonString, err := processSpec.ToJSON()
 	assert.Nil(t, err)
 
-	processSpec2, err := ConvertJSONToProcessSpec(jsonString)
+	processSpec2, err := ConvertJSONToProcessSpec(jsonString + "error")
+	assert.NotNil(t, err)
+
+	processSpec2, err = ConvertJSONToProcessSpec(jsonString)
 	assert.Nil(t, err)
 
 	assert.Equal(t, processSpec.Conditions.ColonyID, processSpec2.Conditions.ColonyID)
