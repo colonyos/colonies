@@ -37,6 +37,14 @@ func (msg *AssignProcessMsg) ToJSONIndent() (string, error) {
 	return string(jsonBytes), nil
 }
 
+func (msg *AssignProcessMsg) Equals(msg2 *AssignProcessMsg) bool {
+	if msg.MsgType == msg2.MsgType && msg.ColonyID == msg2.ColonyID {
+		return true
+	}
+
+	return false
+}
+
 func CreateAssignProcessMsgFromJSON(jsonString string) (*AssignProcessMsg, error) {
 	var msg *AssignProcessMsg
 

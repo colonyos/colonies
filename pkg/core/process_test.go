@@ -98,7 +98,10 @@ func TestProcessToJSON(t *testing.T) {
 	jsonString, err := process.ToJSON()
 	assert.Nil(t, err)
 
-	process2, err := ConvertJSONToProcess(jsonString)
+	process2, err := ConvertJSONToProcess(jsonString + "error")
+	assert.NotNil(t, err)
+
+	process2, err = ConvertJSONToProcess(jsonString)
 	assert.Nil(t, err)
 	assert.True(t, process.Equals(process2))
 }
@@ -148,7 +151,11 @@ func TestProcessArrayToJSON(t *testing.T) {
 
 	jsonString, err := ConvertProcessArrayToJSON(processes1)
 	assert.Nil(t, err)
-	processes2, err := ConvertJSONToProcessArray(jsonString)
+
+	processes2, err := ConvertJSONToProcessArray(jsonString + "error")
+	assert.NotNil(t, err)
+
+	processes2, err = ConvertJSONToProcessArray(jsonString)
 	assert.Nil(t, err)
 	assert.True(t, IsProcessArraysEqual(processes1, processes2))
 }
