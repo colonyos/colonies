@@ -36,6 +36,10 @@ func (msg *GetColoniesMsg) ToJSONIndent() (string, error) {
 }
 
 func (msg *GetColoniesMsg) Equals(msg2 *GetColoniesMsg) bool {
+	if msg2 == nil {
+		return false
+	}
+
 	if msg.MsgType == msg2.MsgType {
 		return true
 	}

@@ -38,6 +38,10 @@ func (msg *AssignProcessMsg) ToJSONIndent() (string, error) {
 }
 
 func (msg *AssignProcessMsg) Equals(msg2 *AssignProcessMsg) bool {
+	if msg2 == nil {
+		return false
+	}
+
 	if msg.MsgType == msg2.MsgType && msg.ColonyID == msg2.ColonyID {
 		return true
 	}

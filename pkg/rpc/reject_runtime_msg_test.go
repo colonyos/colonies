@@ -34,3 +34,9 @@ func TestRPCRejctRuntimeMsgIndent(t *testing.T) {
 
 	assert.True(t, msg.Equals(msg2))
 }
+
+func TestRPCRejctRuntimeMsgEquals(t *testing.T) {
+	msg := CreateRejectRuntimeMsg(core.GenerateRandomID())
+	assert.True(t, msg.Equals(msg))
+	assert.False(t, msg.Equals(nil))
+}

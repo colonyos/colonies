@@ -34,3 +34,9 @@ func TestRPCSubscribeProcessMsgIndent(t *testing.T) {
 
 	assert.True(t, msg.Equals(msg2))
 }
+
+func TestRPCSubscribeProcessMsgEquals(t *testing.T) {
+	msg := CreateSubscribeProcessMsg(core.GenerateRandomID(), 1, 2)
+	assert.True(t, msg.Equals(msg))
+	assert.False(t, msg.Equals(nil))
+}

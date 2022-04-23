@@ -28,6 +28,10 @@ func ConvertJSONToProcessStat(jsonString string) (*ProcessStat, error) {
 }
 
 func (stat *ProcessStat) Equals(stat2 *ProcessStat) bool {
+	if stat2 == nil {
+		return false
+	}
+
 	if stat.Waiting == stat2.Waiting && stat.Running == stat2.Running && stat.Success == stat2.Success && stat.Failed == stat2.Failed {
 		return true
 	}

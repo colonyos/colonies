@@ -38,3 +38,11 @@ func TestRPCAddColonyMsgIndent(t *testing.T) {
 
 	assert.True(t, msg.Equals(msg2))
 }
+
+func TestRPCAddColonyMsgEquals(t *testing.T) {
+	colony := core.CreateColony(core.GenerateRandomID(), "test_colony_name_1")
+
+	msg := CreateAddColonyMsg(colony)
+	assert.True(t, msg.Equals(msg))
+	assert.False(t, msg.Equals(nil))
+}

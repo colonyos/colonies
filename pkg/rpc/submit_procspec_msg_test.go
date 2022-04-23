@@ -50,3 +50,9 @@ func TestRPCSubmitProcessSpecMsgIndent(t *testing.T) {
 
 	assert.True(t, msg.Equals(msg2))
 }
+
+func TestRPCSubmitProcessSpecMsgEquals(t *testing.T) {
+	msg := CreateSubmitProcessSpecMsg(createProcessSpec())
+	assert.True(t, msg.Equals(msg))
+	assert.False(t, msg.Equals(nil))
+}

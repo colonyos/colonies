@@ -42,3 +42,13 @@ func TestRPCAddAttributeMsgIndent(t *testing.T) {
 
 	assert.True(t, msg.Equals(msg2))
 }
+
+func TestRPCAddAttributeMsgEquals(t *testing.T) {
+	key := "test_key"
+	value := "test_value"
+	attribute := core.CreateAttribute(core.GenerateRandomID(), core.GenerateRandomID(), core.OUT, key, value)
+
+	msg := CreateAddAttributeMsg(attribute)
+	assert.True(t, msg.Equals(msg))
+	assert.False(t, msg.Equals(nil))
+}

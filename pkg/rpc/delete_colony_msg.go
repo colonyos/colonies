@@ -29,6 +29,10 @@ func (msg *DeleteColonyMsg) ToJSON() (string, error) {
 }
 
 func (msg *DeleteColonyMsg) Equals(msg2 *DeleteColonyMsg) bool {
+	if msg2 == nil {
+		return false
+	}
+
 	if msg.MsgType == msg2.MsgType && msg.ColonyID == msg2.ColonyID {
 		return true
 	}

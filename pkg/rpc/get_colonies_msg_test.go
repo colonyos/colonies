@@ -33,3 +33,9 @@ func TestRPCGetColoniesMsgIndent(t *testing.T) {
 
 	assert.True(t, msg.Equals(msg2))
 }
+
+func TestRPCGetColoniesMsgEquals(t *testing.T) {
+	msg := CreateGetColoniesMsg()
+	assert.True(t, msg.Equals(msg))
+	assert.False(t, msg.Equals(nil))
+}

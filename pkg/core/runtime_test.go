@@ -109,6 +109,7 @@ func TestRuntimeEquals(t *testing.T) {
 	assert.False(t, runtime2.Equals(runtime1))
 	runtime2 = CreateRuntime(id, runtimeType, name, colonyID, cpu, cores, mem, gpu, gpus+1, commissionTime, lastHeardFromTime)
 	assert.False(t, runtime2.Equals(runtime1))
+	assert.False(t, runtime2.Equals(nil))
 }
 
 func TestIsRuntimeArraysEqual(t *testing.T) {
