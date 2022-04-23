@@ -29,6 +29,10 @@ func (msg *DeleteAllProcessesMsg) ToJSON() (string, error) {
 }
 
 func (msg *DeleteAllProcessesMsg) Equals(msg2 *DeleteAllProcessesMsg) bool {
+	if msg2 == nil {
+		return false
+	}
+
 	if msg.MsgType == msg2.MsgType && msg.ColonyID == msg2.ColonyID {
 		return true
 	}

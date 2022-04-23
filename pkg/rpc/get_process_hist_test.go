@@ -34,3 +34,9 @@ func TestRPCGetProcessHistMsgIndent(t *testing.T) {
 
 	assert.True(t, msg.Equals(msg2))
 }
+
+func TestRPCGetProcessHistMsgEquals(t *testing.T) {
+	msg := CreateGetProcessHistMsg(core.GenerateRandomID(), core.GenerateRandomID(), 1, 2)
+	assert.True(t, msg.Equals(msg))
+	assert.False(t, msg.Equals(nil))
+}

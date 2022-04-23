@@ -33,3 +33,9 @@ func TestRPCSubscribeProcessesMsgIndent(t *testing.T) {
 
 	assert.True(t, msg.Equals(msg2))
 }
+
+func TestRPCSubscribeProcessesMsgEquals(t *testing.T) {
+	msg := CreateSubscribeProcessesMsg("test_runtime_type", 1, 2)
+	assert.True(t, msg.Equals(msg))
+	assert.False(t, msg.Equals(nil))
+}

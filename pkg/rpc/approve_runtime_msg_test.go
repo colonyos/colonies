@@ -34,3 +34,9 @@ func TestRPCApproveRuntimeMsgIndent(t *testing.T) {
 
 	assert.True(t, msg.Equals(msg2))
 }
+
+func TestRPCApproveRuntimeMsgEquals(t *testing.T) {
+	msg := CreateApproveRuntimeMsg(core.GenerateRandomID())
+	assert.True(t, msg.Equals(msg))
+	assert.False(t, msg.Equals(nil))
+}

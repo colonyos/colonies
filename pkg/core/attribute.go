@@ -71,6 +71,10 @@ func (attribute *Attribute) SetValue(value string) {
 }
 
 func (attribute *Attribute) Equals(attribute2 *Attribute) bool {
+	if attribute2 == nil {
+		return false
+	}
+
 	if attribute.ID == attribute2.ID &&
 		attribute.TargetID == attribute2.TargetID &&
 		attribute.TargetColonyID == attribute2.TargetColonyID &&

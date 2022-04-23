@@ -47,6 +47,10 @@ func ConvertJSONToProcessSpec(jsonString string) (*ProcessSpec, error) {
 }
 
 func (processSpec *ProcessSpec) Equals(processSpec2 *ProcessSpec) bool {
+	if processSpec2 == nil {
+		return false
+	}
+
 	same := true
 	if processSpec.Image != processSpec2.Image &&
 		processSpec.Cmd != processSpec2.Cmd &&

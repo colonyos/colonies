@@ -44,7 +44,7 @@ func TestAssignProcess(t *testing.T) {
 	assert.False(t, process.IsAssigned)
 }
 
-func TestTimeCalc(t *testing.T) {
+func TestProcessTimeCalc(t *testing.T) {
 	startTime := time.Now()
 
 	colonyID := GenerateRandomID()
@@ -62,6 +62,26 @@ func TestTimeCalc(t *testing.T) {
 	process.SetEndTime(startTime.Add(4 * time.Second))
 	assert.False(t, process.WaitingTime() < 900000000 && process.WaitingTime() > 1200000000)
 	assert.False(t, process.WaitingTime() < 3000000000 && process.WaitingTime() > 4000000000)
+}
+
+func TestProcessEquals(t *testing.T) {
+	startTime := time.Now()
+
+	colonyID := GenerateRandomID()
+	runtimeType := "test_runtime_type"
+	timeout := -1
+	maxRetries := 3
+	mem := 1000
+	cores := 10
+	gpus := 1
+
+	processSpec := CreateProcessSpec("test_image", "test_cmd", []string{"test_arg"}, []string{"test_volumes"}, []string{"test_ports"}, colonyID, []string{}, runtimeType, timeout, maxRetries, mem, cores, gpus, make(map[string]string))
+	process := CreateProcess(processSpec)
+	process.SetSubmissionTime(startTime)
+	process.SetStartTime(startTime.Add(1 * time.Second))
+	process.SetEndTime(startTime.Add(4 * time.Second))
+	assert.True(t, process.Equals(process))
+	assert.False(t, process.Equals(nil))
 }
 
 func TestProcessToJSON(t *testing.T) {

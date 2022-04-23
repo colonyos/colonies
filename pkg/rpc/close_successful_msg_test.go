@@ -34,3 +34,9 @@ func TestRPCCloseSuccessfulMsgIndent(t *testing.T) {
 
 	assert.True(t, msg.Equals(msg2))
 }
+
+func TestRPCCloseSuccessfulMsgEquals(t *testing.T) {
+	msg := CreateCloseSuccessfulMsg(core.GenerateRandomID())
+	assert.True(t, msg.Equals(msg))
+	assert.False(t, msg.Equals(nil))
+}

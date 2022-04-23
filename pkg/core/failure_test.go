@@ -23,6 +23,7 @@ func TestFailureEquals(t *testing.T) {
 	assert.True(t, failure1.Equals(failure1))
 	assert.False(t, failure1.Equals(failure2))
 	assert.False(t, failure1.Equals(failure3))
+	assert.False(t, failure1.Equals(nil))
 }
 
 func TestFailureParseJSON(t *testing.T) {

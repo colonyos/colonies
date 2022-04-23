@@ -42,3 +42,22 @@ func TestProcessSpecJSON(t *testing.T) {
 	assert.Equal(t, processSpec.Conditions.GPUs, processSpec2.Conditions.GPUs)
 	assert.Equal(t, processSpec.Env, processSpec2.Env)
 }
+
+func TestProcessSpecEquals(t *testing.T) {
+	colonyID := GenerateRandomID()
+	runtimeType := "test_runtime_type"
+	runtime1ID := GenerateRandomID()
+	runtime2ID := GenerateRandomID()
+	maxExecTime := -1
+	maxRetries := 3
+	mem := 1000
+	cores := 10
+	gpus := 1
+	env := make(map[string]string)
+	env["test_key"] = "test_value"
+
+	processSpec := CreateProcessSpec("test_image", "test_cmd", []string{"test_arg"}, []string{"test_volumes"}, []string{"test_ports"}, colonyID, []string{runtime1ID, runtime2ID}, runtimeType, maxExecTime, maxRetries, mem, cores, gpus, env)
+
+	assert.True(t, processSpec.Equals(processSpec))
+	assert.False(t, processSpec.Equals(nil))
+}

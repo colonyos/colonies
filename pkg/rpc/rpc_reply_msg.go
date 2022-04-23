@@ -69,6 +69,10 @@ func (msg *RPCReplyMsg) ToJSONIndent() (string, error) {
 }
 
 func (msg *RPCReplyMsg) Equals(msg2 *RPCReplyMsg) bool {
+	if msg2 == nil {
+		return false
+	}
+
 	if msg.PayloadType == msg2.PayloadType &&
 		msg.Payload == msg2.Payload &&
 		msg.Error == msg2.Error {

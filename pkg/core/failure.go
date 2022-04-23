@@ -24,6 +24,10 @@ func ConvertJSONToFailure(jsonString string) (*Failure, error) {
 }
 
 func (failure *Failure) Equals(failure2 *Failure) bool {
+	if failure2 == nil {
+		return false
+	}
+
 	if failure.Status == failure2.Status &&
 		failure.Message == failure2.Message {
 		return true

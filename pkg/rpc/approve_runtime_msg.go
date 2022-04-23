@@ -38,6 +38,10 @@ func (msg *ApproveRuntimeRPC) ToJSONIndent() (string, error) {
 }
 
 func (msg *ApproveRuntimeRPC) Equals(msg2 *ApproveRuntimeRPC) bool {
+	if msg2 == nil {
+		return false
+	}
+
 	if msg.MsgType == msg2.MsgType && msg.RuntimeID == msg2.RuntimeID {
 		return true
 	}

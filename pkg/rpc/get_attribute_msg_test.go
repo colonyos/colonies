@@ -34,3 +34,9 @@ func TestRPCGetAttributeMsgIndent(t *testing.T) {
 
 	assert.True(t, msg.Equals(msg2))
 }
+
+func TestRPCGetAttributeMsgEquals(t *testing.T) {
+	msg := CreateGetAttributeMsg(core.GenerateRandomID())
+	assert.True(t, msg.Equals(msg))
+	assert.False(t, msg.Equals(nil))
+}

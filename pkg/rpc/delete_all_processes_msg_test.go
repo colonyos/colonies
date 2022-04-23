@@ -34,3 +34,9 @@ func TestRPCDeleteAllProcessesMsgIndent(t *testing.T) {
 
 	assert.True(t, msg.Equals(msg2))
 }
+
+func TestRPCDeleteAllProcessesMsgEquals(t *testing.T) {
+	msg := CreateDeleteAllProcessesMsg(core.GenerateRandomID())
+	assert.True(t, msg.Equals(msg))
+	assert.False(t, msg.Equals(nil))
+}

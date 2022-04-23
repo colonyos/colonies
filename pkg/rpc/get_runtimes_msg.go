@@ -38,6 +38,10 @@ func (msg *GetRuntimesMsg) ToJSONIndent() (string, error) {
 }
 
 func (msg *GetRuntimesMsg) Equals(msg2 *GetRuntimesMsg) bool {
+	if msg2 == nil {
+		return false
+	}
+
 	if msg.MsgType == msg2.MsgType && msg.ColonyID == msg2.ColonyID {
 		return true
 	}

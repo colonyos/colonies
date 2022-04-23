@@ -29,6 +29,10 @@ func (msg *CloseFailedMsg) ToJSON() (string, error) {
 }
 
 func (msg *CloseFailedMsg) Equals(msg2 *CloseFailedMsg) bool {
+	if msg2 == nil {
+		return false
+	}
+
 	if msg.MsgType == msg2.MsgType && msg.ProcessID == msg2.ProcessID {
 		return true
 	}

@@ -38,6 +38,10 @@ func (msg *DeleteRuntimeMsg) ToJSONIndent() (string, error) {
 }
 
 func (msg *DeleteRuntimeMsg) Equals(msg2 *DeleteRuntimeMsg) bool {
+	if msg2 == nil {
+		return false
+	}
+
 	if msg.MsgType == msg2.MsgType && msg.RuntimeID == msg2.RuntimeID {
 		return true
 	}

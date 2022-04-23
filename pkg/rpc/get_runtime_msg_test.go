@@ -34,3 +34,9 @@ func TestRPCGetRuntimesMsgIndent(t *testing.T) {
 
 	assert.True(t, msg.Equals(msg2))
 }
+
+func TestRPCGetRuntimesMsgEquals(t *testing.T) {
+	msg := CreateGetRuntimesMsg(core.GenerateRandomID())
+	assert.True(t, msg.Equals(msg))
+	assert.False(t, msg.Equals(nil))
+}
