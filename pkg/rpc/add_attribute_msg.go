@@ -40,6 +40,10 @@ func (msg *AddAttributeMsg) ToJSONIndent() (string, error) {
 }
 
 func (msg *AddAttributeMsg) Equals(msg2 *AddAttributeMsg) bool {
+	if msg2 == nil {
+		return false
+	}
+
 	if msg.MsgType == msg2.MsgType && msg.Attribute.Equals(msg2.Attribute) {
 		return true
 	}

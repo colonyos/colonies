@@ -115,6 +115,10 @@ func IsRuntimeArraysEqual(runtimes1 []*Runtime, runtimes2 []*Runtime) bool {
 }
 
 func (runtime *Runtime) Equals(runtime2 *Runtime) bool {
+	if runtime2 == nil {
+		return false
+	}
+
 	if runtime.ID == runtime2.ID &&
 		runtime.RuntimeType == runtime2.RuntimeType &&
 		runtime.Name == runtime2.Name &&

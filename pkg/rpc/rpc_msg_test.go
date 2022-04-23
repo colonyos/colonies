@@ -68,3 +68,10 @@ func TestRPCMsgInsecure(t *testing.T) {
 
 	assert.Equal(t, msg.DecodePayload(), "test_payload")
 }
+
+func TestRPCMsgEquals(t *testing.T) {
+	msg, err := CreateInsecureRPCMsg("test_method", "test_payload")
+	assert.Nil(t, err)
+	assert.True(t, msg.Equals(msg))
+	assert.False(t, msg.Equals(nil))
+}

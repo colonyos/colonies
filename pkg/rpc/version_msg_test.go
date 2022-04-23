@@ -33,3 +33,9 @@ func TestRPCVersionMsgIndent(t *testing.T) {
 
 	assert.True(t, msg.Equals(msg2))
 }
+
+func TestRPCVersionMsgEquals(t *testing.T) {
+	msg := CreateVersionMsg("build_version", "build_type")
+	assert.True(t, msg.Equals(msg))
+	assert.False(t, msg.Equals(nil))
+}

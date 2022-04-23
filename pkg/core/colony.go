@@ -67,6 +67,10 @@ func (colony *Colony) SetID(id string) {
 }
 
 func (colony *Colony) Equals(colony2 *Colony) bool {
+	if colony2 == nil {
+		return false
+	}
+
 	if colony.ID == colony2.ID &&
 		colony.Name == colony2.Name {
 		return true

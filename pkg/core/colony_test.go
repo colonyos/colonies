@@ -46,6 +46,7 @@ func TestColonyEquals(t *testing.T) {
 	assert.False(t, colony2.Equals(colony1))
 	colony2 = CreateColony(id, name+"X")
 	assert.False(t, colony2.Equals(colony1))
+	assert.False(t, colony2.Equals(nil))
 }
 
 func TestIsColonyArraysEqual(t *testing.T) {

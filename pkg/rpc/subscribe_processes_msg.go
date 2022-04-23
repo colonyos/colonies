@@ -42,6 +42,10 @@ func (msg *SubscribeProcessesMsg) ToJSONIndent() (string, error) {
 }
 
 func (msg *SubscribeProcessesMsg) Equals(msg2 *SubscribeProcessesMsg) bool {
+	if msg2 == nil {
+		return false
+	}
+
 	if msg.MsgType == msg2.MsgType &&
 		msg.RuntimeType == msg2.RuntimeType &&
 		msg.State == msg2.State &&

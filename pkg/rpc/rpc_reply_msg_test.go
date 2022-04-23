@@ -41,3 +41,10 @@ func TestRPCReplyMsgIndent(t *testing.T) {
 
 	assert.Equal(t, msg.DecodePayload(), "test_payload")
 }
+
+func TestRPCReplyMsgEquals(t *testing.T) {
+	msg, err := CreateRPCReplyMsg("test_method", "test_payload")
+	assert.Nil(t, err)
+	assert.True(t, msg.Equals(msg))
+	assert.False(t, msg.Equals(nil))
+}
