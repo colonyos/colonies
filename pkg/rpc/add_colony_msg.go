@@ -40,6 +40,10 @@ func (msg *AddColonyMsg) ToJSONIndent() (string, error) {
 }
 
 func (msg *AddColonyMsg) Equals(msg2 *AddColonyMsg) bool {
+	if msg2 == nil {
+		return false
+	}
+
 	if msg.MsgType == msg2.MsgType && msg.Colony.Equals(msg2.Colony) {
 		return true
 	}

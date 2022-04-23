@@ -30,6 +30,10 @@ func (msg *DeleteProcessMsg) ToJSON() (string, error) {
 }
 
 func (msg *DeleteProcessMsg) Equals(msg2 *DeleteProcessMsg) bool {
+	if msg2 == nil {
+		return false
+	}
+
 	if msg.MsgType == msg2.MsgType && msg.ProcessID == msg2.ProcessID && msg.All == msg2.All {
 		return true
 	}

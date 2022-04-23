@@ -40,6 +40,10 @@ func (msg *AddRuntimeMsg) ToJSONIndent() (string, error) {
 }
 
 func (msg *AddRuntimeMsg) Equals(msg2 *AddRuntimeMsg) bool {
+	if msg2 == nil {
+		return false
+	}
+
 	if msg.MsgType == msg2.MsgType && msg.Runtime.Equals(msg2.Runtime) {
 		return true
 	}

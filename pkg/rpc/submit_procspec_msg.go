@@ -40,6 +40,10 @@ func (msg *SubmitProcessSpecMsg) ToJSONIndent() (string, error) {
 }
 
 func (msg *SubmitProcessSpecMsg) Equals(msg2 *SubmitProcessSpecMsg) bool {
+	if msg2 == nil {
+		return false
+	}
+
 	if msg.MsgType == msg2.MsgType && msg.ProcessSpec.Equals(msg2.ProcessSpec) {
 		return true
 	}

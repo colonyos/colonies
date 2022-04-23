@@ -73,6 +73,10 @@ func (msg *RPCMsg) ToJSONIndent() (string, error) {
 }
 
 func (msg *RPCMsg) Equals(msg2 *RPCMsg) bool {
+	if msg2 == nil {
+		return false
+	}
+
 	if msg.Signature == msg2.Signature &&
 		msg.PayloadType == msg2.PayloadType &&
 		msg.Payload == msg2.Payload {

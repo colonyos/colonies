@@ -119,6 +119,10 @@ func IsProcessArraysEqual(processes1 []*Process, processes2 []*Process) bool {
 }
 
 func (process *Process) Equals(process2 *Process) bool {
+	if process2 == nil {
+		return false
+	}
+
 	same := true
 	if process.ID != process2.ID &&
 		process.AssignedRuntimeID != process2.AssignedRuntimeID &&
