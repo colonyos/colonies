@@ -124,14 +124,14 @@ func (process *Process) Equals(process2 *Process) bool {
 	}
 
 	same := true
-	if process.ID != process2.ID &&
-		process.AssignedRuntimeID != process2.AssignedRuntimeID &&
-		process.State != process2.State &&
-		process.IsAssigned != process2.IsAssigned &&
-		process.SubmissionTime != process2.SubmissionTime &&
-		process.StartTime != process2.StartTime &&
-		process.EndTime != process2.EndTime &&
-		process.Deadline != process2.Deadline &&
+	if process.ID != process2.ID ||
+		process.AssignedRuntimeID != process2.AssignedRuntimeID ||
+		process.State != process2.State ||
+		process.IsAssigned != process2.IsAssigned ||
+		process.SubmissionTime.Unix() != process2.SubmissionTime.Unix() ||
+		process.StartTime.Unix() != process2.StartTime.Unix() ||
+		process.EndTime.Unix() != process2.EndTime.Unix() ||
+		process.Deadline.Unix() != process2.Deadline.Unix() ||
 		process.Retries != process2.Retries {
 		same = false
 	}
