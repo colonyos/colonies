@@ -52,14 +52,14 @@ func (processSpec *ProcessSpec) Equals(processSpec2 *ProcessSpec) bool {
 	}
 
 	same := true
-	if processSpec.Image != processSpec2.Image &&
-		processSpec.Cmd != processSpec2.Cmd &&
-		processSpec.MaxExecTime != processSpec2.MaxExecTime &&
-		processSpec.MaxRetries != processSpec2.MaxRetries &&
-		processSpec.Conditions.ColonyID != processSpec2.Conditions.ColonyID &&
-		processSpec.Conditions.RuntimeType != processSpec2.Conditions.RuntimeType &&
-		processSpec.Conditions.Mem != processSpec2.Conditions.Mem &&
-		processSpec.Conditions.Cores != processSpec2.Conditions.Cores &&
+	if processSpec.Image != processSpec2.Image ||
+		processSpec.Cmd != processSpec2.Cmd ||
+		processSpec.MaxExecTime != processSpec2.MaxExecTime ||
+		processSpec.MaxRetries != processSpec2.MaxRetries ||
+		processSpec.Conditions.ColonyID != processSpec2.Conditions.ColonyID ||
+		processSpec.Conditions.RuntimeType != processSpec2.Conditions.RuntimeType ||
+		processSpec.Conditions.Mem != processSpec2.Conditions.Mem ||
+		processSpec.Conditions.Cores != processSpec2.Conditions.Cores ||
 		processSpec.Conditions.GPUs != processSpec2.Conditions.GPUs {
 		same = false
 	}
