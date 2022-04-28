@@ -4,8 +4,19 @@ import (
 	"testing"
 
 	"github.com/colonyos/colonies/pkg/core"
+	"github.com/colonyos/colonies/pkg/database/postgresql"
 	"github.com/stretchr/testify/assert"
 )
+
+func TestCreateStandaloneValidator(t *testing.T) {
+	db, err := postgresql.PrepareTests()
+	assert.Nil(t, err)
+
+	validator := CreateValidator(db)
+	assert.NotNil(t, validator)
+
+	db.Close()
+}
 
 func TestRequireRoot(t *testing.T) {
 	security := createTestValidator(createOwnershipMock())
