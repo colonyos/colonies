@@ -15,6 +15,7 @@ func (keychain *Keychain) ensureColoniesDirExists() error {
 	if err == nil {
 		return nil
 	}
+
 	if os.IsExist(err) {
 		info, err := os.Stat(keychain.dirName)
 		if err != nil {
@@ -25,6 +26,7 @@ func (keychain *Keychain) ensureColoniesDirExists() error {
 		}
 		return nil
 	}
+
 	return err
 }
 

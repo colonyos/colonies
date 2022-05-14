@@ -19,6 +19,7 @@ type ColoniesClient struct {
 	enableTLS   bool
 }
 
+// TODO: insecure mess!!!!
 func CreateColoniesClient(host string, port int, enableTLS bool, insecure bool) *ColoniesClient {
 	client := &ColoniesClient{}
 	client.restyClient = resty.New()

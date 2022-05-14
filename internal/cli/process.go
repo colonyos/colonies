@@ -259,7 +259,7 @@ var listWaitingProcessesCmd = &cobra.Command{
 				data = append(data, []string{process.ID, process.ProcessSpec.Cmd, Args2String(process.ProcessSpec.Args), process.SubmissionTime.Format(TimeLayout), process.ProcessSpec.Conditions.RuntimeType})
 			}
 			table := tablewriter.NewWriter(os.Stdout)
-			table.SetHeader([]string{"ID", "Cmd", "Args", "Submission Time", "Runtime Type Target"})
+			table.SetHeader([]string{"ID", "Cmd", "Args", "Submission Time", "Runtime Type"})
 			for _, v := range data {
 				table.Append(v)
 			}
@@ -318,7 +318,7 @@ var listRunningProcessesCmd = &cobra.Command{
 				data = append(data, []string{process.ID, process.ProcessSpec.Cmd, Args2String(process.ProcessSpec.Args), process.StartTime.Format(TimeLayout), process.ProcessSpec.Conditions.RuntimeType})
 			}
 			table := tablewriter.NewWriter(os.Stdout)
-			table.SetHeader([]string{"ID", "Cmd", "Args", "Start time", "Target Runtime"})
+			table.SetHeader([]string{"ID", "Cmd", "Args", "Start time", "Runtime Type"})
 			for _, v := range data {
 				table.Append(v)
 			}
@@ -376,7 +376,7 @@ var listSuccessfulProcessesCmd = &cobra.Command{
 				data = append(data, []string{process.ID, process.ProcessSpec.Cmd, Args2String(process.ProcessSpec.Args), process.EndTime.Format(TimeLayout), process.ProcessSpec.Conditions.RuntimeType})
 			}
 			table := tablewriter.NewWriter(os.Stdout)
-			table.SetHeader([]string{"ID", "Cmd", "Args", "End time", "Target Runtime"})
+			table.SetHeader([]string{"ID", "Cmd", "Args", "End time", "Runtime Type"})
 			for _, v := range data {
 				table.Append(v)
 			}
@@ -434,7 +434,7 @@ var listFailedProcessesCmd = &cobra.Command{
 				data = append(data, []string{process.ID, process.ProcessSpec.Cmd, Args2String(process.ProcessSpec.Args), process.EndTime.Format(TimeLayout), process.ProcessSpec.Conditions.RuntimeType})
 			}
 			table := tablewriter.NewWriter(os.Stdout)
-			table.SetHeader([]string{"ID", "Cmd", "Args", "End time", "Target Runtime"})
+			table.SetHeader([]string{"ID", "Cmd", "Args", "End time", "Runtime Type"})
 			for _, v := range data {
 				table.Append(v)
 			}
