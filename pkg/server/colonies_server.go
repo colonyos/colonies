@@ -790,6 +790,11 @@ func (server *ColoniesServer) handleAssignProcessHTTPRequest(c *gin.Context, rec
 	}
 
 	process, err := server.controller.assignRuntime(recoveredID, msg.ColonyID)
+	if err != nil {
+		if err.Error() == "No processes can be selected" {
+			return
+		}
+	}
 	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}

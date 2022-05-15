@@ -96,7 +96,7 @@ func (controller *coloniesController) timeoutChecker() {
 
 				err := controller.unassignRuntime(process.ID)
 				if err != nil {
-					fmt.Println("Failed to *unassign* process with Id <" + process.ID + ">")
+					fmt.Println("Failed to unassign process with Id <" + process.ID + ">")
 				}
 				if controller.debugFlag {
 					fmt.Println("Process with Id <" + process.ID + "> was *unassign* as it did not complete in time")
