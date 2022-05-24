@@ -267,8 +267,9 @@ var workerRegisterCmd = &cobra.Command{
 
 			if RuntimeName == "" {
 				RuntimeName = os.Getenv("COLONIES_RUNTIMENAME")
-				if os.Getenv("PODNAME") != "" {
-					RuntimeName += RuntimeName + "." + os.Getenv("PODNAME")
+				if os.Getenv("HOSTNAME") != "" {
+					RuntimeName += "."
+					RuntimeName += os.Getenv("HOSTNAME")
 				}
 			}
 
