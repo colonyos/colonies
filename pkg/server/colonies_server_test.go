@@ -862,7 +862,7 @@ func TestMaxExecTimeMaxretries(t *testing.T) {
 	}
 
 	// Wait for the process to time out
-	time.Sleep(5 * time.Second)
+	time.Sleep(10 * time.Second)
 
 	stat, err := client.GetProcessStat(env.colonyID, env.runtimePrvKey)
 	assert.Nil(t, err)
