@@ -1,6 +1,7 @@
 [![codecov](https://codecov.io/gh/colonyos/colonies/branch/main/graph/badge.svg?token=1D4O2JVSJL)](https://codecov.io/gh/colonyos/colonies)
-
 [![Go](https://github.com/colonyos/colonies/actions/workflows/go.yml/badge.svg)](https://github.com/colonyos/colonies/actions/workflows/go.yml)
+
+![ColonyOSLogo](docs/images/ColonyOsLogoNoShaddow.png?raw=true "ColonyOSLogo")
 
 # What is Colonies? 
 **Colonies** is a generic framework for implementing distributed applications and systems. It can be used as a building block for grid computing or edge computing, e.g. implement a *meta operating system* or *cloud-of-cloud* platform that combines many execution environments. The main use case of Colonies is to orchestrate workloads and establish trusted distributed compute environments across heterogeneous platforms such as multiple Kubernetes clusters, Edge severs or Android devices. 
@@ -8,6 +9,8 @@
 A Colony is an abstract collection of compute workers operating under a single identity. A crypto-protocol ensure secure and zero-trust process execution by workers connected to arbitrary networks and infrastructures. This enables secure and seamless orchestration of complex machine learning workloads in compute continuums spanning devices, clouds and edge networks over the Internet. The picture below shows an high-level architecture.
 
 ![Colonies Architecture](docs/images/ColoniesArchFull.png?raw=true "Colonies Architecture")
+
+More information can also be found [here](https://colonyos.io).
 
 ## Key features
 * **Batch processing and distributed RPC.** The Colonies Server maintains several prioritized job queues and keeps track of process statuses. Processes not finishing in time are automatically moved back to the job queue to be executed by another worker.  
@@ -21,19 +24,47 @@ A Colony is an abstract collection of compute workers operating under a single i
 * **Manage ML/AI workloads on Kubernetes.** Launch one or several Colonies Worker containers in a Kubernetes Pod. Then use Colonies to enable batch processing and launch processes inside Worker containers. Launching processes inside already started containers can be significantly more efficient than frameworks like Argo Workflows that launches new containers for each new task, especially when dealing with AI workflows consisting of huge containers (tens of gigabytes) or when a huge amount of data needs to be shuffled into memory to perform a certain computation.
 * **Grid computing.** Create "non-malicious" botnets and launch processes to perform computations at IoT devices, smart phones or cloud servers; all controlled from the Colonies Server.
 * **Manage complex workflows spanning multiple cloud/edge servers and devices**, e.g. setting up multimedia pipelines and ML inference servers running on multiple platforms connected to different networks.
-* **Manage HPC workflows**, e.g. submit and keep track of Slurm jobs.
 
 ## Getting started example
-Start a Colonies Worker.
+1. Install Colonies CLI tool.
 ```console
-$ colonies worker start --name myworker --type myworkertype
+wget https://github.com/colonyos/colonies/blob/main/bin/colonies?raw=true -O /bin/colonies
+chmod +x /bin/colonies
 ```
 
-Example process specification (sleep.json):
+2. Start a Colonies development server. The development server is for testing only. All data will be lost when restarting the server. Also note that all keys are well known and all data is sent over unencrypted HTTP.
+```console
+colonies dev
+```
+
+```console
+export COLONIES_SERVER_PROTOCOL="http"
+export COLONIES_SERVER_HOST="localhost"
+export COLONIES_SERVER_PORT="50080"
+export COLONIES_SERVERID="039231c7644e04b6895471dd5335cf332681c54e27f81fac54f9067b3f2c0103"
+export COLONIES_SERVERPRVKEY="fcc79953d8a751bf41db661592dc34d30004b1a651ffa0725b03ac227641499d"
+export COLONIES_COLONYID="4787a5071856a4acf702b2ffcea422e3237a679c681314113d86139461290cf4"
+export COLONIES_COLONYPRVKEY="ba949fa134981372d6da62b6a56f336ab4d843b22c02a4257dcf7d0d73097514"
+export COLONIES_RUNTIMEID="3fc05cf3df4b494e95d6a3d297a34f19938f7daa7422ab0d4f794454133341ac"
+export COLONIES_RUNTIMEPRVKEY="ddf7f7791208083b6a9ed975a72684f6406a269cfa36f1b1c32045c0a71fff05"
+```
+or 
+```console
+*source examples/devenv*
+```
+
+3. Start a Colonies Worker.
+Open another terminal (and *source examples/devenv*).
+
+```console
+colonies worker start --name myworker --type testworker --insecure
+```
+4. Submit a process specification to the worker.
+Example process specification (examples/sleep.json).  Will cause the Colonies Worker above to sleep for 100s. 
 ```json
 {
   "conditions": {
-    "runtimetype": "myworker"
+    "runtimetype": "testworker"
   },
   "cmd": "sleep",
   "args": [
@@ -45,14 +76,14 @@ Example process specification (sleep.json):
 }
 ```
 
-Submit sleep process specification. Will cause the Colonies Worker above to sleep for 100s. 
+Open another terminal (and *source examples/devenv*).
 ```console
-$ colonies process submit --spec sleep.json
+$ colonies process submit --spec sleep.json --insecure
 ```
 
 Check out running processes:
 ```console
-$ colonies process ps
+$ colonies process ps --insecure
 +------------------------------------------------------------------+-------+------+---------------------+----------------+
 |                                ID                                |  CMD  | ARGS |     START TIME      | TARGET RUNTIME |
 +------------------------------------------------------------------+-------+------+---------------------+----------------+
@@ -62,7 +93,7 @@ $ colonies process ps
 
 Check out process status: 
 ```console
-$ colonies process get --processid 6681946db095e0dc2e0408b87e119c0d2ae4f691db6899b829161fc97f14a1d0
+$ colonies process get --processid 6681946db095e0dc2e0408b87e119c0d2ae4f691db6899b829161fc97f14a1d0 --insecure
 Process:
 +-------------------+------------------------------------------------------------------+
 | ID                | 6681946db095e0dc2e0408b87e119c0d2ae4f691db6899b829161fc97f14a1d0 |
@@ -108,7 +139,7 @@ Attributes:
 # Links
 * [Installation](docs/Installation.md)
 * [Using the Colonies CLI tool](docs/CLI.md)
-* [Tutorial (implement your own Colonies Worker using Golang SDK)](docs/Tutorial.md)
+* [Tutorial (implement your own Colonies Worker using the Golang SDK)](docs/Tutorial.md)
 * [HTTP RPC Protocol](docs/RPC.md)
 
 # Security principles
@@ -125,7 +156,7 @@ The Colonies Server keeps track of these identities and applies several rules ho
 7. Only the Colony Runtime that was assigned a process can set attributes on that process. 
 8. Any Colony Runtime can get/list attributes on processes. 
 
-Note that the Colonies server does not store any crypto keys, but rather stores identites in a database and verifies that reconstructed identities obtained from RPC calls match the identities stored in the database. This protocol works as follows. Let's assume that a Runtime client has the following Id: 
+Note that the Colonies server does not store any crypto keys, but rather stores identites in a database and verifies that reconstructed identities obtained from RPC calls match the identities stored in the database. This protocol works as follows. Let's assume a Runtime client has the following Id: 
 
 ```
 69383f17554afbf81594999eec96adbaa0fc6caace5f07990248b14167c41e8f
