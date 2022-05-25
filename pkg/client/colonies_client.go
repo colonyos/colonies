@@ -13,22 +13,23 @@ import (
 )
 
 type ColoniesClient struct {
-	restyClient *resty.Client
-	host        string
-	port        int
-	enableTLS   bool
+	restyClient   *resty.Client
+	host          string
+	port          int
+	insecure      bool
+	skipTLSVerify bool
 }
 
-// TODO: insecure mess!!!!
-func CreateColoniesClient(host string, port int, enableTLS bool, insecure bool) *ColoniesClient {
+func CreateColoniesClient(host string, port int, insecure bool, skipTLSVerify bool) *ColoniesClient {
 	client := &ColoniesClient{}
 	client.restyClient = resty.New()
 
 	client.host = host
 	client.port = port
-	client.enableTLS = enableTLS
+	client.insecure = insecure
+	client.skipTLSVerify = skipTLSVerify
 
-	if insecure {
+	if skipTLSVerify {
 		client.restyClient.SetTLSClientConfig(&tls.Config{InsecureSkipVerify: true})
 	}
 
@@ -55,7 +56,7 @@ func (client *ColoniesClient) sendMessage(method string, jsonString string, prvK
 	}
 
 	protocol := "https"
-	if !client.enableTLS {
+	if client.insecure {
 		protocol = "http"
 	}
 
@@ -89,11 +90,13 @@ func (client *ColoniesClient) establishWebSocketConn(jsonString string) (*websoc
 	dialer := *websocket.DefaultDialer
 	var u url.URL
 
-	if client.enableTLS {
-		u = url.URL{Scheme: "wss", Host: client.host + ":" + strconv.Itoa(client.port), Path: "/pubsub"}
-		dialer.TLSClientConfig = &tls.Config{InsecureSkipVerify: true} // TODO: note insecure
-	} else {
+	if client.insecure {
 		u = url.URL{Scheme: "ws", Host: client.host + ":" + strconv.Itoa(client.port), Path: "/pubsub"}
+	} else {
+		u = url.URL{Scheme: "wss", Host: client.host + ":" + strconv.Itoa(client.port), Path: "/pubsub"}
+		if client.skipTLSVerify {
+			dialer.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+		}
 	}
 
 	wsConn, _, err := dialer.Dial(u.String(), nil)
