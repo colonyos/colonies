@@ -145,7 +145,7 @@ var submitProcessCmd = &cobra.Command{
 			CheckError(err)
 		}
 
-		client := client.CreateColoniesClient(ServerHost, ServerPort, TLS, true) // XXX: Insecure
+		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
 		addedProcess, err := client.SubmitProcessSpec(processSpec, RuntimePrvKey)
 		CheckError(err)
 
@@ -201,7 +201,7 @@ var assignProcessCmd = &cobra.Command{
 			CheckError(err)
 		}
 
-		client := client.CreateColoniesClient(ServerHost, ServerPort, TLS, true) // XXX: Insecure
+		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
 		process, err := client.AssignProcess(ColonyID, RuntimePrvKey)
 		if err != nil {
 			log.Warning("No process was assigned")
@@ -240,7 +240,7 @@ var listWaitingProcessesCmd = &cobra.Command{
 			CheckError(err)
 		}
 
-		client := client.CreateColoniesClient(ServerHost, ServerPort, TLS, true) // XXX: Insecure
+		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
 		processes, err := client.GetWaitingProcesses(ColonyID, Count, RuntimePrvKey)
 		CheckError(err)
 
@@ -299,7 +299,7 @@ var listRunningProcessesCmd = &cobra.Command{
 			CheckError(err)
 		}
 
-		client := client.CreateColoniesClient(ServerHost, ServerPort, TLS, true) // XXX: Insecure
+		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
 		processes, err := client.GetRunningProcesses(ColonyID, Count, RuntimePrvKey)
 		CheckError(err)
 
@@ -357,7 +357,7 @@ var listSuccessfulProcessesCmd = &cobra.Command{
 			CheckError(err)
 		}
 
-		client := client.CreateColoniesClient(ServerHost, ServerPort, TLS, true) // XXX: Insecure
+		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
 		processes, err := client.GetSuccessfulProcesses(ColonyID, Count, RuntimePrvKey)
 		CheckError(err)
 
@@ -415,7 +415,7 @@ var listFailedProcessesCmd = &cobra.Command{
 			CheckError(err)
 		}
 
-		client := client.CreateColoniesClient(ServerHost, ServerPort, TLS, true) // XXX: Insecure
+		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
 		processes, err := client.GetFailedProcesses(ColonyID, Count, RuntimePrvKey)
 		CheckError(err)
 
@@ -466,7 +466,7 @@ var getProcessCmd = &cobra.Command{
 			CheckError(err)
 		}
 
-		client := client.CreateColoniesClient(ServerHost, ServerPort, TLS, true) // XXX: Insecure
+		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
 		process, err := client.GetProcess(ProcessID, RuntimePrvKey)
 		if process == nil {
 			log.Warning("Process not found")
@@ -679,7 +679,7 @@ var deleteProcessCmd = &cobra.Command{
 			CheckError(err)
 		}
 
-		client := client.CreateColoniesClient(ServerHost, ServerPort, TLS, true) // XXX: Insecure
+		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
 		err = client.DeleteProcess(ProcessID, RuntimePrvKey)
 		CheckError(err)
 
@@ -714,7 +714,7 @@ var deleteAllProcessesCmd = &cobra.Command{
 		reader := bufio.NewReader(os.Stdin)
 		reply, _ := reader.ReadString('\n')
 		if reply == "YES\n" {
-			client := client.CreateColoniesClient(ServerHost, ServerPort, TLS, true) // XXX: Insecure
+			client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
 			err = client.DeleteAllProcesses(ColonyID, ColonyPrvKey)
 			CheckError(err)
 
@@ -747,7 +747,7 @@ var closeSuccessful = &cobra.Command{
 			CheckError(err)
 		}
 
-		client := client.CreateColoniesClient(ServerHost, ServerPort, TLS, true) // XXX: Insecure
+		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
 		process, err := client.GetProcess(ProcessID, RuntimePrvKey)
 		CheckError(err)
 
@@ -780,7 +780,7 @@ var closeFailed = &cobra.Command{
 			CheckError(err)
 		}
 
-		client := client.CreateColoniesClient(ServerHost, ServerPort, TLS, true) // XXX: Insecure
+		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
 		process, err := client.GetProcess(ProcessID, RuntimePrvKey)
 		CheckError(err)
 

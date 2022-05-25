@@ -25,7 +25,8 @@ var DBPort int
 var DBUser string
 var DBPassword string
 var BindAddr string
-var TLS bool
+var Insecure bool
+var SkipTLSVerify bool
 var TLSCert string
 var TLSKey string
 var ServerHost string
@@ -59,7 +60,8 @@ var LogDir string
 
 func init() {
 	rootCmd.PersistentFlags().BoolVarP(&Verbose, "verbose", "v", false, "verbose output")
-	rootCmd.PersistentFlags().BoolVarP(&TLS, "tls", "", true, "Enable/disable TLS")
+	rootCmd.PersistentFlags().BoolVarP(&Insecure, "insecure", "", false, "Disable TLS and use HTTP")
+	rootCmd.PersistentFlags().BoolVarP(&SkipTLSVerify, "skip-tls-verify", "", false, "Skip TLS certificate verification")
 }
 
 var rootCmd = &cobra.Command{
