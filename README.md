@@ -84,12 +84,12 @@ Example process specification (examples/sleep.json).  Will cause the Colonies Wo
 
 Open another terminal (and *source examples/devenv*).
 ```console
-$ colonies process submit --spec sleep.json --insecure
+colonies process submit --spec sleep.json --insecure
 ```
 
 Check out running processes:
 ```console
-$ colonies process ps --insecure
+colonies process ps --insecure
 +------------------------------------------------------------------+-------+------+---------------------+----------------+
 |                                ID                                |  CMD  | ARGS |     START TIME      | TARGET RUNTIME |
 +------------------------------------------------------------------+-------+------+---------------------+----------------+
@@ -99,7 +99,7 @@ $ colonies process ps --insecure
 
 Check out process status: 
 ```console
-$ colonies process get --processid 6681946db095e0dc2e0408b87e119c0d2ae4f691db6899b829161fc97f14a1d0 --insecure
+colonies process get --processid 6681946db095e0dc2e0408b87e119c0d2ae4f691db6899b829161fc97f14a1d0 --insecure
 Process:
 +-------------------+------------------------------------------------------------------+
 | ID                | 6681946db095e0dc2e0408b87e119c0d2ae4f691db6899b829161fc97f14a1d0 |
