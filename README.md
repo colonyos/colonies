@@ -1,7 +1,7 @@
 [![codecov](https://codecov.io/gh/colonyos/colonies/branch/main/graph/badge.svg?token=1D4O2JVSJL)](https://codecov.io/gh/colonyos/colonies)
 [![Go](https://github.com/colonyos/colonies/actions/workflows/go.yml/badge.svg)](https://github.com/colonyos/colonies/actions/workflows/go.yml)
 
-![ColonyOSLogo](docs/images/ColonyOsLogoNoShaddow.png?raw=true "ColonyOSLogo")
+![ColonyOSLogo](docs/images/ColonyOsLogoNoShaddow.png?raw=true "ColonyOSLogo" | width=200)
 
 # What is Colonies? 
 **Colonies** is a generic framework for implementing distributed applications and systems. It can be used as a building block for grid computing or edge computing, e.g. implement a *meta operating system* or *cloud-of-cloud* platform that combines many execution environments. The main use case of Colonies is to orchestrate workloads and establish trusted distributed compute environments across heterogeneous platforms such as multiple Kubernetes clusters, Edge severs or Android devices. 
@@ -20,8 +20,9 @@ More information can also be found [here](https://colonyos.io).
 * **Implemented in Golang** with a standard PostgreSQL backend (backlog).
 * **SDK in Python, Julia, and Golang.**
 
+https://argoproj.github.io/argo-workflows/
 ## Example of use cases
-* **Manage ML/AI workloads on Kubernetes.** Launch one or several Colonies Worker containers in a Kubernetes Pod. Then use Colonies to enable batch processing and launch processes inside Worker containers. Launching processes inside already started containers can be significantly more efficient than frameworks like Argo Workflows that launches new containers for each new task, especially when dealing with AI workflows consisting of huge containers (tens of gigabytes) or when a huge amount of data needs to be shuffled into memory to perform a certain computation.
+* **Manage ML/AI workloads on Kubernetes.** Launch one or several Colonies Worker containers in a Kubernetes Pod. Then use Colonies to enable batch processing and launch processes inside Worker containers. Launching processes inside already started containers can be significantly more efficient than frameworks like [Argo Workflows](https://argoproj.github.io/argo-workflows) that launches new containers for each new task, especially when dealing with AI workflows consisting of huge containers (tens of gigabytes) or when a huge amount of data needs to be shuffled into memory to perform a certain computation.
 * **Grid computing.** Create "non-malicious" botnets and launch processes to perform computations at IoT devices, smart phones or cloud servers; all controlled from the Colonies Server.
 * **Manage complex workflows spanning multiple cloud/edge servers and devices**, e.g. setting up multimedia pipelines and ML inference servers running on multiple platforms connected to different networks.
 
@@ -37,6 +38,8 @@ chmod +x /bin/colonies
 colonies dev
 ```
 
+You will have to add some environmental variables in order to use the server.
+
 ```console
 export COLONIES_SERVER_PROTOCOL="http"
 export COLONIES_SERVER_HOST="localhost"
@@ -50,7 +53,7 @@ export COLONIES_RUNTIMEPRVKEY="ddf7f7791208083b6a9ed975a72684f6406a269cfa36f1b1c
 ```
 or 
 ```console
-*source examples/devenv*
+source examples/devenv
 ```
 
 3. Start a Colonies Worker.
