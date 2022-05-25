@@ -33,6 +33,8 @@ type testEnv2 struct {
 }
 
 const EnableTLS = true
+const Insecure = false
+const SkipTLSVerify = true
 
 func setupTestEnv1(t *testing.T) (*testEnv1, *client.ColoniesClient, *ColoniesServer, string, chan bool) {
 	client, server, serverPrvKey, done := prepareTests(t)
@@ -101,7 +103,7 @@ func setupTestEnv2(t *testing.T) (*testEnv2, *client.ColoniesClient, *ColoniesSe
 }
 
 func prepareTests(t *testing.T) (*client.ColoniesClient, *ColoniesServer, string, chan bool) {
-	client := client.CreateColoniesClient(TESTHOST, TESTPORT, EnableTLS, true)
+	client := client.CreateColoniesClient(TESTHOST, TESTPORT, Insecure, SkipTLSVerify)
 
 	debug := false
 	if debug {

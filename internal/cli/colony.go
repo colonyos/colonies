@@ -99,7 +99,7 @@ var registerColonyCmd = &cobra.Command{
 			CheckError(err)
 		}
 
-		client := client.CreateColoniesClient(ServerHost, ServerPort, TLS, true) // XXX: Insecure
+		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
 		addedColony, err := client.AddColony(colony, ServerPrvKey)
 		CheckError(err)
 
@@ -132,7 +132,7 @@ var unregisterColonyCmd = &cobra.Command{
 			CheckError(err)
 		}
 
-		client := client.CreateColoniesClient(ServerHost, ServerPort, TLS, true) // XXX: Insecure
+		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
 		err = client.DeleteColony(ColonyID, ServerPrvKey)
 		CheckError(err)
 
@@ -147,7 +147,7 @@ var lsColoniesCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		parseServerEnv()
 
-		client := client.CreateColoniesClient(ServerHost, ServerPort, TLS, true) // XXX: Insecure
+		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
 
 		keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
 		CheckError(err)
@@ -221,7 +221,7 @@ var statusCmd = &cobra.Command{
 			RuntimePrvKey, _ = keychain.GetPrvKey(RuntimeID)
 		}
 
-		client := client.CreateColoniesClient(ServerHost, ServerPort, TLS, true) // XXX: Insecure
+		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
 		runtimesFromServer, err := client.GetRuntimes(ColonyID, RuntimePrvKey)
 		prvKey := RuntimePrvKey
 		if err != nil {

@@ -48,9 +48,6 @@ func init() {
 	workerRegisterCmd.Flags().IntVarP(&Mem, "mem", "", -1, "Memory [MiB]")
 	workerRegisterCmd.Flags().StringVarP(&GPU, "gpu", "", "", "GPU info")
 	workerRegisterCmd.Flags().IntVarP(&GPUs, "gpus", "", -1, "Number of GPUs")
-	workerRegisterCmd.Flags().IntVarP(&Count, "count", "", 1, "Number of identities to register")
-
-	workerUnregisterCmd.Flags().IntVarP(&Count, "count", "", 1, "Number of identities to unregister")
 }
 
 var workerCmd = &cobra.Command{
@@ -89,13 +86,13 @@ var workerStartCmd = &cobra.Command{
 			LogDir = os.Getenv("COLONIES_LOGDIR")
 		}
 
-		client := client.CreateColoniesClient(ServerHost, ServerPort, TLS, true) // XXX: Insecure
+		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
 
 		c := make(chan os.Signal)
 		signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 		go func() {
 			<-c
-			unregisterRuntime(client, 1)
+			unregisterRuntime(client)
 			os.Exit(0)
 		}()
 
@@ -245,57 +242,49 @@ var workerRegisterCmd = &cobra.Command{
 
 		crypto := crypto.CreateCrypto()
 
-		for i := 0; i < Count; i++ {
-			runtimePrvKey, err := crypto.GeneratePrivateKey()
-			CheckError(err)
-			runtimeID, err := crypto.GenerateID(runtimePrvKey)
-			CheckError(err)
+		runtimePrvKey, err := crypto.GeneratePrivateKey()
+		CheckError(err)
+		runtimeID, err := crypto.GenerateID(runtimePrvKey)
+		CheckError(err)
 
-			iStr := strconv.Itoa(i)
+		log.Info("Saving runtimeID to /tmp/runtimeid")
+		err = os.WriteFile("/tmp/runtimeid", []byte(runtimeID), 0644)
+		CheckError(err)
 
-			if Count == 1 {
-				iStr = ""
+		err = os.WriteFile("/tmp/runtimeprvkey", []byte(runtimePrvKey), 0644)
+		CheckError(err)
+		log.Info("Saving runtimePrvKey to /tmp/runtimeprvkey")
+
+		if RuntimeName == "" {
+			RuntimeName = os.Getenv("COLONIES_RUNTIMENAME")
+			if os.Getenv("HOSTNAME") != "" {
+				RuntimeName += "."
+				RuntimeName += os.Getenv("HOSTNAME")
 			}
-
-			log.Info("Saving runtimeID to /tmp/runtimeid" + iStr)
-			err = os.WriteFile("/tmp/runtimeid"+iStr, []byte(runtimeID), 0644)
-			CheckError(err)
-
-			err = os.WriteFile("/tmp/runtimeprvkey"+iStr, []byte(runtimePrvKey), 0644)
-			CheckError(err)
-			log.Info("Saving runtimePrvKey to /tmp/runtimeprvkey" + iStr)
-
-			if RuntimeName == "" {
-				RuntimeName = os.Getenv("COLONIES_RUNTIMENAME")
-				if os.Getenv("HOSTNAME") != "" {
-					RuntimeName += "."
-					RuntimeName += os.Getenv("HOSTNAME")
-				}
-			}
-
-			if RuntimeName == "" {
-				CheckError(errors.New("Runtime name not specified"))
-			}
-
-			if RuntimeType == "" {
-				RuntimeType = os.Getenv("COLONIES_RUNTIMETYPE")
-			}
-
-			if RuntimeType == "" {
-				CheckError(errors.New("Runtime type not specified"))
-			}
-
-			client := client.CreateColoniesClient(ServerHost, ServerPort, TLS, true) // XXX: Insecure
-
-			log.WithFields(log.Fields{"runtimeID": runtimeID, "runtimeName": RuntimeName, "runtimeType:": RuntimeType, "colonyID": ColonyID, "CPU": CPU, "Cores": Cores, "Mem": Mem, "GPU": GPU, "GPUs": GPUs}).Info("Register a new Runtime")
-			runtime := core.CreateRuntime(runtimeID, RuntimeType, RuntimeName, ColonyID, CPU, Cores, Mem, GPU, GPUs, time.Now(), time.Now())
-			_, err = client.AddRuntime(runtime, ColonyPrvKey)
-			CheckError(err)
-
-			log.WithFields(log.Fields{"runtimeID": runtimeID}).Info("Approving Runtime")
-			err = client.ApproveRuntime(runtimeID, ColonyPrvKey)
-			CheckError(err)
 		}
+
+		if RuntimeName == "" {
+			CheckError(errors.New("Runtime name not specified"))
+		}
+
+		if RuntimeType == "" {
+			RuntimeType = os.Getenv("COLONIES_RUNTIMETYPE")
+		}
+
+		if RuntimeType == "" {
+			CheckError(errors.New("Runtime type not specified"))
+		}
+
+		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
+
+		log.WithFields(log.Fields{"runtimeID": runtimeID, "runtimeName": RuntimeName, "runtimeType:": RuntimeType, "colonyID": ColonyID, "CPU": CPU, "Cores": Cores, "Mem": Mem, "GPU": GPU, "GPUs": GPUs}).Info("Register a new Runtime")
+		runtime := core.CreateRuntime(runtimeID, RuntimeType, RuntimeName, ColonyID, CPU, Cores, Mem, GPU, GPUs, time.Now(), time.Now())
+		_, err = client.AddRuntime(runtime, ColonyPrvKey)
+		CheckError(err)
+
+		log.WithFields(log.Fields{"runtimeID": runtimeID}).Info("Approving Runtime")
+		err = client.ApproveRuntime(runtimeID, ColonyPrvKey)
+		CheckError(err)
 	},
 }
 
@@ -325,30 +314,21 @@ var workerUnregisterCmd = &cobra.Command{
 			CheckError(err)
 		}
 
-		client := client.CreateColoniesClient(ServerHost, ServerPort, TLS, true) // XXX: Insecure
+		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
 
-		unregisterRuntime(client, Count)
+		unregisterRuntime(client)
 		os.Exit(0)
 	},
 }
 
-func unregisterRuntime(client *client.ColoniesClient, count int) {
-	fmt.Println(count)
-	for i := 0; i < count; i++ {
-		iStr := strconv.Itoa(i)
-		if count == 1 {
-			iStr = ""
-		}
+func unregisterRuntime(client *client.ColoniesClient) {
+	runtimeIDBytes, err := os.ReadFile("/tmp/runtimeid")
+	CheckError(err)
 
-		runtimeIDBytes, err := os.ReadFile("/tmp/runtimeid" + iStr)
-		CheckError(err)
+	runtimeID := string(runtimeIDBytes)
 
-		runtimeID := string(runtimeIDBytes)
+	err = client.DeleteRuntime(runtimeID, ColonyPrvKey)
+	CheckError(err)
 
-		err = client.DeleteRuntime(runtimeID, ColonyPrvKey)
-		CheckError(err)
-
-		log.WithFields(log.Fields{"runtimeID": runtimeID}).Info("Runtime unregistered")
-	}
-
+	log.WithFields(log.Fields{"runtimeID": runtimeID}).Info("Runtime unregistered")
 }
