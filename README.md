@@ -4,9 +4,12 @@
 ![ColonyOSLogo](docs/images/ColonyOsLogoNoShaddow2.png)
 
 # What is Colonies? 
-**Colonies** is a generic framework for implementing distributed applications and systems. It can be used as a building block for grid computing or edge computing, e.g. implement a *meta operating system* or *cloud-of-cloud* platform that combines many execution environments. The main use case of Colonies is to orchestrate workloads and establish trusted distributed compute environments across heterogeneous platforms such as multiple Kubernetes clusters, Edge severs or Android devices. 
-
-A Colony is an abstract collection of compute workers operating under a single identity. A crypto-protocol ensure secure and zero-trust process execution by workers connected to arbitrary networks and infrastructures. This enables secure and seamless orchestration of complex machine learning workloads in compute continuums spanning devices, clouds and edge networks over the Internet. The picture below shows an high-level architecture.
+* Colonies makes it possible to **orchestrate processes inside containers across platforms**. This is far more efficient than lauching a new container for each new job.
+* Colonies is designed to take **full advantage of Kubernetes**, e.g. fault tolerance and scalability. 
+* But it also complements Kubernetes and brings efficient, robust and fault tolerant **batch processing** to Kubernetes, typically needed by many AI workloads.
+* At the same time, Colonies is **lightweight** and does not require Kubernetes. It also runs in browsers, smart phones or IoT devices. This also makes it much easier to test and develop complex workflows before they are deployed on Kubernetes.
+* A crypto-protocol ensure secure and **zero-trust process execution**. This enables secure and seamless orchestration of complex machine learning workloads in a compute continuum spannig devices and compute clusters. 
+* Colonies is currently being used to build a novel [compute engine](https://www.rocksigma.com/) for automatic seismic processing in underground mines. 
 
 ![Colonies Architecture](docs/images/ColoniesArchFull.png?raw=true "Colonies Architecture")
 
