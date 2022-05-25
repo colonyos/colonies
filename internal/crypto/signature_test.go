@@ -17,7 +17,10 @@ func TestRecoveredID(t *testing.T) {
 	signatureBytes, err := Sign(hash, idendity.PrivateKey())
 	assert.Nil(t, err)
 
-	recoveredID, err := RecoveredID(hash, signatureBytes)
+	recoveredID, err := RecoveredID(hash, []byte(string(signatureBytes)+"too_large_signature"))
+	assert.NotNil(t, err)
+
+	recoveredID, err = RecoveredID(hash, signatureBytes)
 	assert.Nil(t, err)
 	assert.Equal(t, idendity.ID(), recoveredID)
 }
