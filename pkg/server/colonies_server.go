@@ -3,13 +3,11 @@ package server
 import (
 	"context"
 	"errors"
-	"fmt"
 	"io/ioutil"
 	"net/http"
 	"strconv"
 	"time"
 
-	"github.com/colonyos/colonies/internal/logging"
 	"github.com/colonyos/colonies/pkg/build"
 	"github.com/colonyos/colonies/pkg/core"
 	"github.com/colonyos/colonies/pkg/database"
@@ -21,7 +19,7 @@ import (
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
-	"github.com/sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 )
 
 type ColoniesServer struct {
@@ -39,11 +37,10 @@ type ColoniesServer struct {
 
 func CreateColoniesServer(db database.Database, port int, serverID string, tls bool, tlsPrivateKeyPath string, tlsCertPath string, debug bool) *ColoniesServer {
 	if debug {
-		logrus.SetLevel(logrus.DebugLevel)
+		log.SetLevel(log.DebugLevel)
 	} else {
 		gin.SetMode(gin.ReleaseMode)
 		gin.DefaultWriter = ioutil.Discard
-		logging.DisableDebug()
 	}
 
 	server := &ColoniesServer{}
@@ -67,7 +64,7 @@ func CreateColoniesServer(db database.Database, port int, serverID string, tls b
 
 	server.setupRoutes()
 
-	logging.Log().Info("Starting Colonies API server at port: " + strconv.Itoa(port))
+	log.WithFields(log.Fields{"Port": port}).Info("Starting Colonies server")
 
 	return server
 }
@@ -80,16 +77,19 @@ func (server *ColoniesServer) setupRoutes() {
 func (server *ColoniesServer) sendWSErrorMsg(err error, errorCode int, wsConn *websocket.Conn, wsMsgType int) error {
 	rpcErrorReplyMSg, err := server.generateRPCErrorMsg(err, errorCode)
 	if err != nil {
+		log.WithFields(log.Fields{"Error": err}).Error("Failed to call server.generateRPCErrorMsg()")
 		return err
 	}
 
 	jsonString, err := rpcErrorReplyMSg.ToJSON()
 	if err != nil {
+		log.WithFields(log.Fields{"Error": err}).Error("Failed to call rpcErrorReplyMSg.ToJSON()")
 		return err
 	}
 
 	err = wsConn.WriteMessage(wsMsgType, []byte(jsonString))
 	if err != nil {
+		log.WithFields(log.Fields{"Error": err}).Error("Failed to call wsConn.WriteMessage()")
 		return err
 	}
 
@@ -105,13 +105,14 @@ func (server *ColoniesServer) handleWSRequest(c *gin.Context) {
 	var wsConn *websocket.Conn
 	wsConn, err = wsupgrader.Upgrade(w, r, nil)
 	if err != nil {
-		fmt.Println(err)
+		log.WithFields(log.Fields{"Error": err}).Error("Failed to call wsupgrader.Upgrade()")
 		return
 	}
 
 	for {
 		wsMsgType, data, err := wsConn.ReadMessage()
 		if err != nil {
+			log.WithFields(log.Fields{"Error": err}).Error("Failed to call wsConn.ReadMessage()")
 			return
 		}
 
@@ -131,14 +132,16 @@ func (server *ColoniesServer) handleWSRequest(c *gin.Context) {
 			if server.handleHTTPError(c, err, http.StatusBadRequest) {
 				err := server.sendWSErrorMsg(err, http.StatusForbidden, wsConn, wsMsgType)
 				if err != nil {
-					logging.Log().Error(err)
+					log.WithFields(log.Fields{"Error": err}).Error("Failed to call server.sendWSErrorMsg()")
 				}
 				return
 			}
 			if msg.MsgType != rpcMsg.PayloadType {
-				err := server.sendWSErrorMsg(errors.New("msg.msgType does not match rpcMsg.PayloadType"), http.StatusForbidden, wsConn, wsMsgType)
+				errMsg := "msg.msgType does not match rpcMsg.PayloadType"
+				err := server.sendWSErrorMsg(errors.New(errMsg), http.StatusForbidden, wsConn, wsMsgType)
+				log.Info(errMsg)
 				if err != nil {
-					logging.Log().Error(err)
+					log.WithFields(log.Fields{"Error": err}).Error("Failed to call server.sendWSErrorMsg()")
 				}
 				return
 			}
@@ -147,25 +150,24 @@ func (server *ColoniesServer) handleWSRequest(c *gin.Context) {
 			if err != nil {
 				err := server.sendWSErrorMsg(err, http.StatusForbidden, wsConn, wsMsgType)
 				if err != nil {
-					logging.Log().Error(err)
+					log.WithFields(log.Fields{"Error": err}).Error("Failed to call server.sendWSErrorMsg()")
 				}
 				return
 			}
 			if runtime == nil {
 				err := server.sendWSErrorMsg(errors.New("runtime not found"), http.StatusForbidden, wsConn, wsMsgType)
 				if err != nil {
-					logging.Log().Error(err)
+					log.WithFields(log.Fields{"Error": err}).Error("Failed to call server.sendWSErrorMsg()")
 				}
 				return
 			}
 
-			// This test is strictly not needed, since the request does not specifiy a colony, but is rather
-			// derived from the database
+			// This test is strictly not needed, since the request does not specifiy a colony, but is rather derived from the database
 			err = server.validator.RequireRuntimeMembership(recoveredID, runtime.ColonyID, true)
 			if err != nil {
 				err := server.sendWSErrorMsg(err, http.StatusForbidden, wsConn, wsMsgType)
 				if err != nil {
-					logging.Log().Error(err)
+					log.WithFields(log.Fields{"Error": err}).Error("Failed to call server.sendWSErrorMsg()")
 				}
 				return
 			}
@@ -181,7 +183,7 @@ func (server *ColoniesServer) handleWSRequest(c *gin.Context) {
 			if msg.MsgType != rpcMsg.PayloadType {
 				err := server.sendWSErrorMsg(errors.New("msg.msgType does not match rpcMsg.PayloadType"), http.StatusForbidden, wsConn, wsMsgType)
 				if err != nil {
-					logging.Log().Error(err)
+					log.WithFields(log.Fields{"Error": err}).Error("Failed to call server.sendWSErrorMsg()")
 				}
 				return
 			}
@@ -190,14 +192,14 @@ func (server *ColoniesServer) handleWSRequest(c *gin.Context) {
 			if err != nil {
 				err := server.sendWSErrorMsg(err, http.StatusForbidden, wsConn, wsMsgType)
 				if err != nil {
-					logging.Log().Error(err)
+					log.WithFields(log.Fields{"Error": err}).Error("Failed to call server.sendWSErrorMsg()")
 				}
 				return
 			}
 			if runtime == nil {
 				err := server.sendWSErrorMsg(errors.New("runtime not found"), http.StatusForbidden, wsConn, wsMsgType)
 				if err != nil {
-					logging.Log().Error(err)
+					log.WithFields(log.Fields{"Error": err}).Error("Failed to call server.sendWSErrorMsg()")
 				}
 				return
 			}
@@ -208,7 +210,7 @@ func (server *ColoniesServer) handleWSRequest(c *gin.Context) {
 			if err != nil {
 				err := server.sendWSErrorMsg(err, http.StatusForbidden, wsConn, wsMsgType)
 				if err != nil {
-					logging.Log().Error(err)
+					log.WithFields(log.Fields{"Error": err}).Error("Failed to call server.sendWSErrorMsg()")
 				}
 				return
 			}
@@ -222,6 +224,7 @@ func (server *ColoniesServer) handleWSRequest(c *gin.Context) {
 func (server *ColoniesServer) parseSignature(jsonString string, signature string) (string, error) {
 	recoveredID, err := server.crypto.RecoverID(jsonString, signature)
 	if err != nil {
+		log.WithFields(log.Fields{"Error": err}).Error("Failed to call crypto.RecoverID()")
 		return "", err
 	}
 
@@ -304,7 +307,9 @@ func (server *ColoniesServer) handleEndpointRequest(c *gin.Context) {
 		server.handleGetAttributeHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 
 	default:
-		if server.handleHTTPError(c, errors.New("invalid rpcMsg.PayloadType"), http.StatusForbidden) {
+		errMsg := "invalid rpcMsg.PayloadType"
+		if server.handleHTTPError(c, errors.New(errMsg), http.StatusForbidden) {
+			log.Error(errMsg)
 			return
 		}
 	}
@@ -326,14 +331,14 @@ func (server *ColoniesServer) generateRPCErrorMsg(err error, errorCode int) (*rp
 
 func (server *ColoniesServer) handleHTTPError(c *gin.Context, err error, errorCode int) bool {
 	if err != nil {
-		logging.Log().Warning(err)
+		log.Error(err)
 		rpcReplyMsg, err := server.generateRPCErrorMsg(err, errorCode)
 		if err != nil {
-			logging.Log().Error(err)
+			log.WithFields(log.Fields{"Error": err}).Error("Failed to call server.generateRPCErrorMsg()")
 		}
 		rpcReplyMsgJSONString, err := rpcReplyMsg.ToJSON()
 		if err != nil {
-			logging.Log().Error(err)
+			log.WithFields(log.Fields{"Error": err}).Error("Failed to call pcReplyMsg.ToJSON()")
 		}
 
 		c.String(errorCode, rpcReplyMsgJSONString)
@@ -795,7 +800,7 @@ func (server *ColoniesServer) handleAssignProcessHTTPRequest(c *gin.Context, rec
 			return
 		}
 	}
-	if server.handleHTTPError(c, err, http.StatusBadRequest) {
+	if server.handleHTTPError(c, err, http.StatusNotFound) {
 		return
 	}
 	if process == nil {
@@ -1287,6 +1292,6 @@ func (server *ColoniesServer) Shutdown() {
 	defer cancel()
 
 	if err := server.httpServer.Shutdown(ctx); err != nil {
-		logging.Log().Warning("Server forced to shutdown:", err)
+		log.WithFields(log.Fields{"Error": err}).Warning("Colonies server forced to shutdown")
 	}
 }

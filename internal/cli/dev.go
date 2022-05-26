@@ -27,7 +27,7 @@ var devCmd = &cobra.Command{
 	Short: "Start a Colonies development server",
 	Long:  "Start a Colonies development server",
 	Run: func(cmd *cobra.Command, args []string) {
-		log.Info("Starting a Colonies development Server")
+		log.Info("Starting a Colonies development server")
 
 		log.Info("Creating BEMIS data dir")
 		coloniesPath := "/tmp/colonies"
@@ -42,7 +42,8 @@ var devCmd = &cobra.Command{
 		postgres := embeddedpostgres.NewDatabase(embeddedpostgres.DefaultConfig().
 			RuntimePath(coloniesPath + "/embedded-postgres-go/extracted").
 			BinariesPath(coloniesPath + "/embedded-postgres-go/extracted").
-			DataPath(coloniesPath + "/embedded-postgres-go/extracted/data"))
+			DataPath(coloniesPath + "/embedded-postgres-go/extracted/data").
+			Port(50070))
 		defer postgres.Stop()
 		err = postgres.Start()
 		CheckError(err)
@@ -57,7 +58,7 @@ var devCmd = &cobra.Command{
 		}()
 
 		log.Info("Connecting to PostgreSQL server")
-		coloniesDB := postgresql.CreatePQDatabase("localhost", 5432, "postgres", "postgres", DBName, DBPrefix)
+		coloniesDB := postgresql.CreatePQDatabase("localhost", 50070, "postgres", "postgres", DBName, DBPrefix)
 		err = coloniesDB.Connect()
 		CheckError(err)
 
@@ -86,11 +87,9 @@ var devCmd = &cobra.Command{
 		err = keychain.AddPrvKey(runtimeID, runtimePrvKey)
 		CheckError(err)
 
-		log.Info("Starting a Colonies server")
 		coloniesServer := server.CreateColoniesServer(coloniesDB, 50080, serverID, false, "", "", true)
 		go coloniesServer.ServeForever()
 
-		log.Info("Starting a Colonies client")
 		client := client.CreateColoniesClient("localhost", 50080, true, false)
 
 		log.Info("Register a Colony")

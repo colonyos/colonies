@@ -3,7 +3,6 @@ package server
 import (
 	"testing"
 
-	"github.com/colonyos/colonies/internal/logging"
 	"github.com/colonyos/colonies/pkg/client"
 	"github.com/colonyos/colonies/pkg/core"
 	"github.com/colonyos/colonies/pkg/database/postgresql"
@@ -106,10 +105,6 @@ func prepareTests(t *testing.T) (*client.ColoniesClient, *ColoniesServer, string
 	client := client.CreateColoniesClient(TESTHOST, TESTPORT, Insecure, SkipTLSVerify)
 
 	debug := false
-	if debug {
-		logging.DisableDebug()
-	}
-
 	db, err := postgresql.PrepareTests()
 	assert.Nil(t, err)
 
