@@ -468,6 +468,7 @@ var getProcessCmd = &cobra.Command{
 
 		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
 		process, err := client.GetProcess(ProcessID, RuntimePrvKey)
+		CheckError(err)
 		if process == nil {
 			log.Warning("Process not found")
 			os.Exit(-1)

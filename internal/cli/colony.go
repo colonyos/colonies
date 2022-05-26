@@ -167,6 +167,11 @@ var lsColoniesCmd = &cobra.Command{
 		coloniesFromServer, err := client.GetColonies(ServerPrvKey)
 		CheckError(err)
 
+		if len(coloniesFromServer) == 0 {
+			log.Warning("No colonies found")
+			os.Exit(0)
+		}
+
 		if JSON {
 			jsonString, err := core.ConvertColonyArrayToJSON(coloniesFromServer)
 			CheckError(err)
