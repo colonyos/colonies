@@ -7,7 +7,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/colonyos/colonies/internal/logging"
 	"github.com/colonyos/colonies/pkg/database/postgresql"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -64,19 +63,20 @@ var dbCreateCmd = &cobra.Command{
 			db = postgresql.CreatePQDatabase(DBHost, DBPort, DBUser, DBPassword, DBName, DBPrefix)
 			err := db.Connect()
 			if err != nil {
-				log.Warning("Failed to connect to database")
+				log.WithFields(log.Fields{"Error": err}).Error("Failed to call db.Connect(), retrying in 1 second ...")
 				time.Sleep(1 * time.Second)
 			} else {
 				break
 			}
 		}
-		logging.Log().Info("Connecting to Colonies database, host: " + DBHost + ", port: " + strconv.Itoa(DBPort) + ", user: " + DBUser + ", password: " + "******************, name: " + DBName + ". prefix: " + DBPrefix)
+
+		log.WithFields(log.Fields{"Host": DBHost, "Port": DBPort, "User": DBUser, "Password": "**********************", "Prefix": DBPrefix}).Error("Connecting to PostgreSQL database")
 		err := db.Initialize()
 		if err != nil {
 			log.Warning("Failed to create database")
 			os.Exit(0)
 		}
-		logging.Log().Info("Colonies database created")
+		log.Info("Colonies database created")
 	},
 }
 
