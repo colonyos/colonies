@@ -2,7 +2,6 @@ package server
 
 import (
 	"errors"
-	"fmt"
 	"strconv"
 	"sync"
 	"time"
@@ -12,6 +11,7 @@ import (
 	"github.com/colonyos/colonies/pkg/planner"
 	"github.com/colonyos/colonies/pkg/planner/basic"
 	"github.com/colonyos/colonies/pkg/rpc"
+	log "github.com/sirupsen/logrus"
 )
 
 const TIMEOUT_RELEASE_INTERVALL = 1
@@ -45,7 +45,6 @@ type coloniesController struct {
 	planner     planner.Planner
 	subscribers *subscribers
 	stopFlag    bool
-	debugFlag   bool
 	mutex       sync.Mutex
 }
 
@@ -82,25 +81,21 @@ func (controller *coloniesController) timeoutChecker() {
 				continue
 			}
 			if time.Now().Unix() > process.Deadline.Unix() {
-				if process.Retries >= process.ProcessSpec.MaxRetries && process.ProcessSpec.MaxRetries > 0 {
+				if process.Retries >= process.ProcessSpec.MaxRetries && process.ProcessSpec.MaxRetries > -1 {
 					err := controller.closeFailed(process.ID)
 					if err != nil {
-						fmt.Println("Max retries reached, but failed to *close* process with Id <" + process.ID + ">")
+						log.WithFields(log.Fields{"ProcessID": process.ID, "Error": err}).Info("Max retries reached, but failed to close process")
 						continue
 					}
-					if controller.debugFlag {
-						fmt.Println("Process with Id <" + process.ID + "> was *closed* as failed as max retires was reached")
-					}
+					log.WithFields(log.Fields{"ProcessID": process.ID, "Error": err}).Info("Process closed as *failed* as max retries reached")
 					continue
 				}
 
 				err := controller.unassignRuntime(process.ID)
 				if err != nil {
-					fmt.Println("Failed to unassign process with Id <" + process.ID + ">")
+					log.WithFields(log.Fields{"ProcessID": process.ID, "Error": err}).Error("Failed to unassign process")
 				}
-				if controller.debugFlag {
-					fmt.Println("Process with Id <" + process.ID + "> was *unassign* as it did not complete in time")
-				}
+				log.WithFields(log.Fields{"ProcessID": process.ID}).Info("Process was unassigned as it did not complete in time")
 			}
 		}
 	}
@@ -165,23 +160,23 @@ func (controller *coloniesController) sendProcessesEvent(process *core.Process) 
 		if subscription.runtimeType == process.ProcessSpec.Conditions.RuntimeType && subscription.state == process.State {
 			jsonString, err := process.ToJSON()
 			if err != nil {
-				fmt.Println("Failed to parse JSON, removing process event subscriber with Runtime Id <" + runtimeID + ">")
+				log.WithFields(log.Fields{"RuntimeID": runtimeID, "Error": err}).Info("Failed to parse JSON when removing processes event subscription")
 				delete(controller.subscribers.processesSubscribers, runtimeID)
 			}
 			rpcReplyMsg, err := rpc.CreateRPCReplyMsg(rpc.SubscribeProcessPayloadType, jsonString)
 			if err != nil {
-				fmt.Println("Failed to create RPC reply message, removing process event subscriber with Runtime Id <" + runtimeID + ">")
+				log.WithFields(log.Fields{"RuntimeID": runtimeID, "Error": err}).Info("Failed to create RPC reply message when removing processes event subscription")
 				delete(controller.subscribers.processSubscribers, runtimeID)
 			}
 
 			rpcReplyJSONString, err := rpcReplyMsg.ToJSON()
 			if err != nil {
-				fmt.Println("Failed to parse JSON, removing process event subscriber with Runtime Id <" + runtimeID + ">")
+				log.WithFields(log.Fields{"RuntimeID": runtimeID, "Error": err}).Info("Failed to generate JSON when removing processes event subcription")
 				delete(controller.subscribers.processSubscribers, runtimeID)
 			}
 			err = subscription.wsConn.WriteMessage(subscription.wsMsgType, []byte(rpcReplyJSONString))
 			if err != nil {
-				fmt.Println("Removing processes event subscriber with Runtime Id <" + runtimeID + ">")
+				log.WithFields(log.Fields{"RuntimeID": runtimeID, "Error": err}).Info("Removing processes event subcription")
 				delete(controller.subscribers.processesSubscribers, runtimeID)
 			}
 		}
@@ -191,25 +186,25 @@ func (controller *coloniesController) sendProcessesEvent(process *core.Process) 
 func (controller *coloniesController) wsWriteProcessChangeEvent(process *core.Process, runtimeID string, subscription *processSubscription) {
 	jsonString, err := process.ToJSON()
 	if err != nil {
-		fmt.Println("Failed to parse JSON, removing process event subscriber with Runtime Id <" + runtimeID + ">")
+		log.WithFields(log.Fields{"RuntimeID": runtimeID, "Error": err}).Info("Failed to parse JSON when removing process event subscription")
 		delete(controller.subscribers.processSubscribers, runtimeID)
 	}
 
 	rpcReplyMsg, err := rpc.CreateRPCReplyMsg(rpc.SubscribeProcessPayloadType, jsonString)
 	if err != nil {
-		fmt.Println("Failed to create RPC reply message, removing process event subscriber with Runtime Id <" + runtimeID + ">")
+		log.WithFields(log.Fields{"RuntimeID": runtimeID, "Error": err}).Info("Failed to create RPC reply message when removing process event subscription")
 		delete(controller.subscribers.processSubscribers, runtimeID)
 	}
 
 	rpcReplyJSONString, err := rpcReplyMsg.ToJSON()
 	if err != nil {
-		fmt.Println("Failed to parse JSON, removing process event subscriber with Runtime Id <" + runtimeID + ">")
+		log.WithFields(log.Fields{"RuntimeID": runtimeID, "Error": err}).Info("Failed to generate JSON when removing process event subcription")
 		delete(controller.subscribers.processSubscribers, runtimeID)
 	}
 
 	err = subscription.wsConn.WriteMessage(subscription.wsMsgType, []byte(rpcReplyJSONString))
 	if err != nil {
-		fmt.Println("Removing process event subscriber with Runtime Id <" + runtimeID + ">")
+		log.WithFields(log.Fields{"RuntimeID": runtimeID, "Error": err}).Info("Removing process event subcription")
 		delete(controller.subscribers.processSubscribers, runtimeID)
 	}
 }
