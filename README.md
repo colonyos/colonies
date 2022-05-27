@@ -20,7 +20,7 @@ More information can also be found [here](https://colonyos.io).
 * **Batch processing and distributed RPC.** The Colonies Server maintains several prioritized job queues and keeps track of process statuses. Processes not finishing in time are automatically moved back to the job queue to be executed by another worker.  
 * **Pull-based orchestration.** Users (or workers) submit process specifications the Colonies Server. Colonies workers connect to the Colonies Server and request processes to execute. A HTTP Long Polling/WebSocket protocol ensure that workers can reside anywhere on the Internet, even behind firewalls. The Colonies Server never establish connections directly to workers. 
 * **Built-in identity and trust management.** A crypto-protocol based on ECDSA (Elliptic Curve Digital Signature Algorithm) offers identity and trust management to enable Colonies workers member of the same Colony to fully trust each other. Only authorized users or workers can submit process specifications or interact with other workers within a Colony.
-* **Implemented in Golang** with a standard PostgreSQL backend (backlog).
+* **Implemented in Golang** with a standard PostgreSQL backend.
 * **SDK in Python, Julia, and Golang.**
 
 ## Example of use cases
@@ -44,6 +44,12 @@ colonies dev
 You will have to export some environmental variables in order to use the server.
 
 ```console
+export LANG=en_US.UTF-8
+export LANGUAGE=en_US.UTF-8
+export LC_ALL=en_US.UTF-8
+export LC_CTYPE=UTF-8
+export TZ=Europe/Stockholm
+
 export COLONIES_SERVER_PROTOCOL="http"
 export COLONIES_SERVER_HOST="localhost"
 export COLONIES_SERVER_PORT="50080"
