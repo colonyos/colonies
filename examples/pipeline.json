@@ -1,0 +1,47 @@
+[{
+	"name": "step1",
+	"pipelineid": "039231c7644e04b6895471dd5335cf332681c54e27f81fac54f9067b3f2c0103",
+	"conditions": {
+		"runtimetype": "testworker"
+	},
+	"cmd": "sleep",
+	"args": [
+		"5"
+	]
+}, {
+	"name": "step2",
+	"pipelineid": "039231c7644e04b6895471dd5335cf332681c54e27f81fac54f9067b3f2c0103",
+	"conditions": {
+		"runtimetype": "testworker",
+		"requires": [{
+			"name": "step1",
+			"id": "39231c7644e04b6895471dd5335cf332681c54e27f81fac54f9067b3f2c0103"
+		}]
+	},
+	"cmd": "sleep",
+	"args": [
+		"5"
+	]
+}, {
+	"name": "step3",
+	"pipelineid": "039231c7644e04b6895471dd5335cf332681c54e27f81fac54f9067b3f2c0103",
+	"conditions": {
+		"runtimetype": "testworker",
+		"requires": ["step1"]
+	},
+	"cmd": "sleep",
+	"args": [
+		"5"
+	]
+}, {
+	"name": "step4",
+	"pipelineid": "039231c7644e04b6895471dd5335cf332681c54e27f81fac54f9067b3f2c0103",
+	"conditions": {
+		"runtimetype": "testworker",
+		"requires": ["step2", "step3"]
+	},
+	"cmd": "sleep",
+	"args": [
+		"5"
+	]
+}]

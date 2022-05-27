@@ -28,6 +28,9 @@ type Process struct {
 	Retries           int          `json:"retries"`
 	Attributes        []*Attribute `json:"attributes"`
 	ProcessSpec       *ProcessSpec `json:"spec"`
+	WaitForParents    bool         `json:"waitforparents"`
+	Parents           []string     `json:"parents"`
+	Children          []string     `json:"children"`
 }
 
 func CreateProcess(processSpec *ProcessSpec) *Process {
@@ -194,6 +197,16 @@ func (process *Process) ProcessingTime() time.Duration {
 	} else {
 		return process.EndTime.Sub(process.StartTime)
 	}
+}
+
+// TODO: unit test
+func (process *Process) AddParent(parentID string) {
+	process.Parents = append(process.Parents, parentID)
+}
+
+// TODO: unit test
+func (process *Process) AddChild(childID string) {
+	process.Children = append(process.Children, childID)
 }
 
 func (process *Process) ToJSON() (string, error) {
