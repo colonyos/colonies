@@ -5,10 +5,11 @@
 
 # What is Colonies? 
 * **Colonies** makes it possible to **orchestrate processes inside containers**. This is far more efficient than lauching a new container for each new job.
+* **Colonies** is **fast**. Instead of using RAFT for distributed consensus, Colonies uses a standard PostgreSQL database for storing states and execution history.   
 * **Colonies** is designed to take **full advantage of Kubernetes**, e.g. fault tolerance and scalability. 
 * **Colonies** complements Kubernetes and brings efficient, robust and fault tolerant **batch processing** to Kubernetes, typically needed by many AI workloads.
 * **Colonies** is **lightweight** and works without Kubernetes. It runs in browsers, smart phones or IoT devices. This also makes it much easier to test and develop complex workflows before they are deployed on Kubernetes.
-* A crypto-protocol ensure secure and **zero-trust process execution**. This enables secure and seamless orchestration of complex machine learning workloads across plattforms in a compute continuum spannig devices and servers. 
+* A crypto-protocol ensure secure and **zero-trust process execution**. This enables secure and seamless orchestration of complex machine learning workloads across plattforms to create a compute continuum spannig devices and servers. 
 * **Colonies** is currently being used by [RockSigma AB](https://www.rocksigma.com) to build a novel compute engine for automatic seismic processing in underground mines. 
 
 ![Colonies Architecture](docs/images/ColoniesArchFull.png?raw=true "Colonies Architecture")
