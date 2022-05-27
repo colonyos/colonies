@@ -5,13 +5,14 @@ metadata:
   labels:
     app: colonies
 data:
-  COLONIES_SERVERID: "9289dfccedf27392810b96968535530bb69f90afe7c35738e0e627f3810d943e"
+  COLONIES_SERVERID: {{ .Values.ColoniesServerID | quote }}
   COLONIES_SERVER_PORT: "50070"
   COLONIES_DBHOST: "postgres"
   COLONIES_DBPORT: "5432"
   COLONIES_DBUSER: "postgres"
-  COLONIES_DBPASSWORD: "rFcLGNkgsNtksg6Pgtn9CumL4xXBQ7"
+  COLONIES_DBPASSWORD: {{ .Values.DBPassword | quote }}
+  COLONIES_TLS: "false"
   COLONIES_TLSCERT: "/run/secrets/tls/tls.crt"
   COLONIES_TLSKEY: "/run/secrets/tls/tls.key"
   COLONIES_VERBOSE: "true"
-  TZ: "Europe/Stockholm"
+  TZ: {{ .Values.Timezone | quote }}
