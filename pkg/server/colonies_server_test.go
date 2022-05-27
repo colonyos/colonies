@@ -253,6 +253,9 @@ func TestSubmitProcess(t *testing.T) {
 
 func TestAssignProcess(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
+	assignedProcess, err := client.AssignProcess(env.colonyID, env.runtimePrvKey)
+	assert.Nil(t, assignedProcess)
+	assert.NotNil(t, err)
 
 	processSpec1 := utils.CreateTestProcessSpec(env.colonyID)
 	addedProcess1, err := client.SubmitProcessSpec(processSpec1, env.runtimePrvKey)
@@ -264,7 +267,7 @@ func TestAssignProcess(t *testing.T) {
 	addedProcess2, err := client.SubmitProcessSpec(processSpec2, env.runtimePrvKey)
 	assert.Nil(t, err)
 
-	assignedProcess, err := client.AssignProcess(env.colonyID, env.runtimePrvKey)
+	assignedProcess, err = client.AssignProcess(env.colonyID, env.runtimePrvKey)
 	assert.Nil(t, err)
 	assert.Equal(t, addedProcess1.ID, assignedProcess.ID)
 

@@ -39,7 +39,7 @@ func (planner *BasicPlanner) printCandidates(candidates []*core.Process) {
 func (planner *BasicPlanner) Select(runtimeID string, candidates []*core.Process) (*core.Process, error) {
 	prioritizedProcesses := planner.Prioritize(runtimeID, candidates, 1)
 	if len(prioritizedProcesses) < 1 {
-		return nil, errors.New("No processes can be selected")
+		return nil, errors.New("No processes can be selected for runtime with Id <" + runtimeID + ">")
 	}
 
 	return prioritizedProcesses[0], nil

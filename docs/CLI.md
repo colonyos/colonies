@@ -1,4 +1,4 @@
-# Using the Colonies CLI tool 
+# Colonies CLI guide 
 ## Register a new Colony
 First, create a file named colony.json, and put the following content into it.
 ```json
