@@ -172,4 +172,4 @@ Attributes:
 +------------------------------------------------------------------+--------------+-------+------+
 ```
 
-See examples/generate_sub.go and examples/solver_pub.go for an event-driven generator and worker.
+See examples/generate_sub.go and examples/solver_pub.go for an event-driven version of the generator and worker.
