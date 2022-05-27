@@ -226,19 +226,3 @@ make test
 
 # New features under development 
 * **Decentralization.** A built-in Distributed Hash table (Kademlia) to make it possible to create federations of Colonies Servers to enable self-sovereignty and trust chains. Each Colonies Server can join a global overlay network of connected Colonies Servers on the Internet, similar to technologies like IPFS. 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
