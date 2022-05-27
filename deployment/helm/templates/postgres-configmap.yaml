@@ -6,4 +6,5 @@ metadata:
     app: postgres
 data:
   POSTGRES_USER: postgres
-  POSTGRES_PASSWORD: rFcLGNkgsNtksg6Pgtn9CumL4xXBQ7
+  POSTGRES_PASSWORD: {{ .Values.DBPassword | quote }}
+  TZ: {{ .Values.Timezone | quote }}

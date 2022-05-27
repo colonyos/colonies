@@ -1,0 +1,18 @@
+# General settings
+StorageClassName: longhorn
+Timezone: "Europe/Stockholm"
+
+# Colonies server settings
+ColoniesServerHostname: "colonies-dev.rocksigma.computer"
+ColoniesServerReplicas: 3
+ColoniesServerImage: "colonyos/colonies:latest"
+ColoniesServerID: "039231c7644e04b6895471dd5335cf332681c54e27f81fac54f9067b3f2c0103"
+ColoniesServerCPU: "3000m"
+ColoniesServerMemory: "10000Mi"
+
+# PostgreSQL settings
+DBImage: timescale/timescaledb:latest-pg12
+DBCPU: "3000m"
+DBMemory: "10000Mi"
+DBStorage: 10Gi
+DBPassword: "f3TeMqqx6Ds5zubDgd5C9tELv24xq4WKRypVq"
