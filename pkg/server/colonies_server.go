@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/colonyos/colonies/pkg/build"
@@ -331,7 +332,9 @@ func (server *ColoniesServer) generateRPCErrorMsg(err error, errorCode int) (*rp
 
 func (server *ColoniesServer) handleHTTPError(c *gin.Context, err error, errorCode int) bool {
 	if err != nil {
-		log.Error(err)
+		if !strings.HasPrefix(err.Error(), "No processes can be selected for runtime with Id") {
+			log.Error(err)
+		}
 		rpcReplyMsg, err := server.generateRPCErrorMsg(err, errorCode)
 		if err != nil {
 			log.WithFields(log.Fields{"Error": err}).Error("Failed to call server.generateRPCErrorMsg()")
@@ -795,11 +798,6 @@ func (server *ColoniesServer) handleAssignProcessHTTPRequest(c *gin.Context, rec
 	}
 
 	process, err := server.controller.assignRuntime(recoveredID, msg.ColonyID)
-	if err != nil {
-		if err.Error() == "No processes can be selected" {
-			return
-		}
-	}
 	if server.handleHTTPError(c, err, http.StatusNotFound) {
 		return
 	}
