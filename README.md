@@ -19,11 +19,9 @@ More information can also be found [here](https://colonyos.io).
 * **Batch processing and distributed RPC.** The Colonies Server maintains several prioritized job queues and keeps track of process statuses. Processes not finishing in time are automatically moved back to the job queue to be executed by another worker.  
 * **Pull-based orchestration.** Users (or workers) submit process specifications the Colonies Server. Colonies workers connect to the Colonies Server and request processes to execute. A HTTP Long Polling/WebSocket protocol ensure that workers can reside anywhere on the Internet, even behind firewalls. The Colonies Server never establish connections directly to workers. 
 * **Built-in identity and trust management.** A crypto-protocol based on ECDSA (Elliptic Curve Digital Signature Algorithm) offers identity and trust management to enable Colonies workers member of the same Colony to fully trust each other. Only authorized users or workers can submit process specifications or interact with other workers within a Colony.
-* **Decentralization.** A built-in Distributed Hash table (Kademlia) makes it possible to create federations of Colonies Servers to offer self-sovereignty and trust chains. Each Colonies Server can join a global overlay network of connected Colonies Servers on the Internet, similar to technologies like IPFS. 
 * **Implemented in Golang** with a standard PostgreSQL backend (backlog).
 * **SDK in Python, Julia, and Golang.**
 
-https://argoproj.github.io/argo-workflows/
 ## Example of use cases
 * **Manage ML/AI workloads on Kubernetes.** Launch one or several Colonies worker containers in a Kubernetes Pod. Then use Colonies to enable batch processing and launch processes inside worker containers. Launching processes inside already started containers can be significantly more efficient than frameworks like [Argo Workflows](https://argoproj.github.io/argo-workflows) that launches new containers for each new task, especially when dealing with AI workflows consisting of huge containers (tens of gigabytes) or when a huge amount of data needs to be shuffled into memory to perform a certain computation.
 * **Grid computing.** Create "non-malicious" botnets and launch processes to perform computations at IoT devices, smart phones or cloud servers; all controlled from the Colonies Server.
@@ -158,7 +156,7 @@ This mechanism thus offer a last line of defense against failures and enables ad
     "100"
   ],
   "maxexectime": 5,
-  "maxretries": 1,
+  "maxretries": 0,
   "env": {
     "TEST": "testenv"
   }
@@ -224,3 +222,22 @@ Follow the instructions at [Installation Guide](./docs/Installation.md) and setu
 ```console
 make test
 ```
+
+# New features under development 
+* **Decentralization.** A built-in Distributed Hash table (Kademlia) to make it possible to create federations of Colonies Servers to enable self-sovereignty and trust chains. Each Colonies Server can join a global overlay network of connected Colonies Servers on the Internet, similar to technologies like IPFS. 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
