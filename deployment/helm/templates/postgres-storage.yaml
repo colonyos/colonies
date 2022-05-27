@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: db-storage-pvc
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: {{ (.Values.StorageClassName) }}
+  resources:
+    requests:
+      storage: {{ (.Values.DBStorage) }} 
