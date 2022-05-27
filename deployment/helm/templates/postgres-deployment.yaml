@@ -16,7 +16,7 @@ spec:
      spec:
          containers:
            - name: timescaledb
-             image: timescale/timescaledb:latest-pg12
+             image: {{ (.Values.DBImage) }} 
              imagePullPolicy: "IfNotPresent"
              ports:
                - containerPort: 5432
@@ -24,16 +24,16 @@ spec:
                - configMapRef:
                    name: postgres-config
              volumeMounts:
-               - mountPath: /var/lib/postgresql/data
+               - mountPath: /var/lib/postgresql
                  name: postgresdb
              resources:
                 limits:
-                  cpu: "2000m"
-                  memory: "14000Mi"
+                  cpu: {{ (.Values.DBCPU | quote) }} 
+                  memory: {{ (.Values.DBMemory | quote) }}
                 requests:
-                  cpu: "2000m"
-                  memory: "14000Mi"
+                  cpu: {{ (.Values.DBCPU | quote) }} 
+                  memory: {{ (.Values.DBMemory | quote) }}
          volumes:
            - name: postgresdb
              persistentVolumeClaim:
-               claimName: local-path-pvc
+               claimName: db-storage-pvc
