@@ -1,12 +1,9 @@
 {
   "conditions": {
-    "runtimetype": "testworker"
+    "runtimetype": "cli"
   },
   "cmd": "ls",
   "args": [
     "-al"
-  ],
-  "env": {
-    "TEST": "testenv"
-  }
+  ]
 }

@@ -24,6 +24,24 @@ func (mock *processGraphStorageMock) GetProcessByID(processID string) (*Process,
 	return mock.processes[processID], nil
 }
 
+func (mock *processGraphStorageMock) SetProcessState(processID string, state int) error {
+	process := mock.processes[processID]
+	process.State = state
+
+	return nil
+}
+
+func (mock *processGraphStorageMock) SetWaitingForParents(processID string, waitingForParents bool) error {
+	process := mock.processes[processID]
+	process.WaitingForParents = waitingForParents
+
+	return nil
+}
+
+func (mock *processGraphStorageMock) SetProcessGraphState(processGraphID string, state int) error {
+	return nil
+}
+
 func createProcess() *Process {
 	colonyID := GenerateRandomID()
 	runtimeType := "test_runtime_type"
@@ -33,7 +51,7 @@ func createProcess() *Process {
 	cores := 10
 	gpus := 1
 
-	processSpec := CreateProcessSpec("test_image", "test_cmd", []string{"test_arg"}, []string{"test_volumes"}, []string{"test_ports"}, colonyID, []string{}, runtimeType, timeout, maxRetries, mem, cores, gpus, make(map[string]string))
+	processSpec := CreateProcessSpec("test_name", "test_image", "test_cmd", []string{"test_arg"}, []string{"test_volumes"}, []string{"test_ports"}, colonyID, []string{}, runtimeType, timeout, maxRetries, mem, cores, gpus, make(map[string]string), []string{}, 1)
 	process := CreateProcess(processSpec)
 
 	return process
@@ -420,7 +438,37 @@ func TestProcessGraphResolve(t *testing.T) {
 
 	err = graph.Resolve()
 	assert.Nil(t, err)
-
 	assert.Nil(t, err)
 	assert.True(t, graph.State == RUNNING)
+
+	process1.State = WAITING
+	process2.State = WAITING
+	process3.State = WAITING
+	process4.State = WAITING
+
+	err = graph.Resolve()
+	assert.Nil(t, err)
+	assert.Nil(t, err)
+	assert.True(t, graph.State == WAITING)
+
+	process1.State = WAITING
+	process2.State = FAILED
+	process3.State = WAITING
+	process4.State = WAITING
+
+	err = graph.Resolve()
+	assert.Nil(t, err)
+	assert.Nil(t, err)
+	assert.True(t, graph.State == FAILED)
+
+	process1.State = SUCCESS
+	process2.State = SUCCESS
+	process3.State = SUCCESS
+	process4.State = SUCCESS
+
+	err = graph.Resolve()
+	assert.Nil(t, err)
+
+	assert.Nil(t, err)
+	assert.True(t, graph.State == SUCCESS)
 }

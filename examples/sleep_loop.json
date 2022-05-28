@@ -1,14 +1,11 @@
 {
   "conditions": {
-    "runtimetype": "testworker"
+    "runtimetype": "cli"
   },
   "cmd": "sleep",
   "args": [
     "100"
   ],
   "maxexectime": 5,
-  "maxretries": 0,
-  "env": {
-    "TEST": "testenv"
-  }
+  "maxretries": 0
 }

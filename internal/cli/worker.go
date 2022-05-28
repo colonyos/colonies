@@ -32,6 +32,7 @@ func init() {
 	workerStartCmd.Flags().StringVarP(&ColonyPrvKey, "colonyprvkey", "", "", "Colony private key")
 	workerStartCmd.Flags().StringVarP(&RuntimeName, "name", "", "", "Runtime name")
 	workerStartCmd.Flags().StringVarP(&RuntimeType, "type", "", "", "Runtime type")
+	workerStartCmd.Flags().StringVarP(&RuntimeGroup, "group", "", "", "Runtime group")
 	workerStartCmd.Flags().StringVarP(&CPU, "cpu", "", "", "CPU info")
 	workerStartCmd.Flags().IntVarP(&Cores, "cores", "", -1, "Cores")
 	workerStartCmd.Flags().IntVarP(&Mem, "mem", "", -1, "Memory [MiB]")
@@ -43,6 +44,7 @@ func init() {
 	workerRegisterCmd.Flags().StringVarP(&ColonyPrvKey, "colonyprvkey", "", "", "Colony private key")
 	workerRegisterCmd.Flags().StringVarP(&RuntimeName, "name", "", "", "Runtime name")
 	workerRegisterCmd.Flags().StringVarP(&RuntimeType, "type", "", "", "Runtime type")
+	workerRegisterCmd.Flags().StringVarP(&RuntimeGroup, "group", "", "", "Runtime group")
 	workerRegisterCmd.Flags().StringVarP(&CPU, "cpu", "", "", "CPU info")
 	workerRegisterCmd.Flags().IntVarP(&Cores, "cores", "", -1, "Cores")
 	workerRegisterCmd.Flags().IntVarP(&Mem, "mem", "", -1, "Memory [MiB]")
@@ -115,6 +117,13 @@ var workerStartCmd = &cobra.Command{
 		if RuntimeName == "" {
 			CheckError(errors.New("Runtime name not specified"))
 		}
+		if RuntimeGroup == "" {
+			RuntimeGroup = os.Getenv("COLONIES_RUNTIMEGROUP")
+		}
+
+		if RuntimeGroup == "" {
+			CheckError(errors.New("Runtime group not specified"))
+		}
 
 		if RuntimeType == "" {
 			RuntimeType = os.Getenv("COLONIES_RUNTIMETYPE")
@@ -133,7 +142,7 @@ var workerStartCmd = &cobra.Command{
 		CheckError(err)
 
 		log.WithFields(log.Fields{"runtimeID": runtimeID, "runtimeName": RuntimeName, "runtimeType:": RuntimeType, "colonyID": ColonyID, "CPU": CPU, "Cores": Cores, "Mem": Mem, "GPU": GPU, "GPUs": GPUs}).Info("Register a new Runtime")
-		runtime := core.CreateRuntime(runtimeID, RuntimeType, RuntimeName, ColonyID, CPU, Cores, Mem, GPU, GPUs, time.Now(), time.Now())
+		runtime := core.CreateRuntime(runtimeID, RuntimeType, RuntimeName, RuntimeGroup, ColonyID, CPU, Cores, Mem, GPU, GPUs, time.Now(), time.Now())
 		_, err = client.AddRuntime(runtime, ColonyPrvKey)
 		CheckError(err)
 
@@ -160,8 +169,8 @@ var workerStartCmd = &cobra.Command{
 
 			cmd.Env = append(cmd.Env, "COLONIES_COLONYID="+ColonyID)
 			cmd.Env = append(cmd.Env, "COLONIES_PROCESSID="+assignedProcess.ID)
-			cmd.Env = append(cmd.Env, "COLONIES_SERVER_HOST="+ServerHost)
-			cmd.Env = append(cmd.Env, "COLONIES_SERVER_PORT="+strconv.Itoa(ServerPort))
+			cmd.Env = append(cmd.Env, "COLONIES_SERVERHOST="+ServerHost)
+			cmd.Env = append(cmd.Env, "COLONIES_SERVERPORT="+strconv.Itoa(ServerPort))
 			cmd.Env = append(cmd.Env, "COLONIES_RUNTIMEID="+runtimeID)
 			cmd.Env = append(cmd.Env, "COLONIES_RUNTIMEPRVKEY="+runtimePrvKey)
 
@@ -275,10 +284,18 @@ var workerRegisterCmd = &cobra.Command{
 			CheckError(errors.New("Runtime type not specified"))
 		}
 
+		if RuntimeGroup == "" {
+			RuntimeGroup = os.Getenv("COLONIES_RUNTIMEGROUP")
+		}
+
+		if RuntimeGroup == "" {
+			CheckError(errors.New("Runtime group not specified"))
+		}
+
 		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
 
 		log.WithFields(log.Fields{"runtimeID": runtimeID, "runtimeName": RuntimeName, "runtimeType:": RuntimeType, "colonyID": ColonyID, "CPU": CPU, "Cores": Cores, "Mem": Mem, "GPU": GPU, "GPUs": GPUs}).Info("Register a new Runtime")
-		runtime := core.CreateRuntime(runtimeID, RuntimeType, RuntimeName, ColonyID, CPU, Cores, Mem, GPU, GPUs, time.Now(), time.Now())
+		runtime := core.CreateRuntime(runtimeID, RuntimeType, RuntimeName, RuntimeGroup, ColonyID, CPU, Cores, Mem, GPU, GPUs, time.Now(), time.Now())
 		_, err = client.AddRuntime(runtime, ColonyPrvKey)
 		CheckError(err)
 

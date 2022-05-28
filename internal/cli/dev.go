@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 	"time"
 
@@ -29,7 +30,7 @@ var devCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Info("Starting a Colonies development server")
 
-		log.Info("Creating BEMIS data dir")
+		log.Info("Creating Colonies data dir")
 		coloniesPath := "/tmp/colonies"
 		err := os.Mkdir(coloniesPath, 0700)
 		if err != nil {
@@ -38,11 +39,20 @@ var devCmd = &cobra.Command{
 			CheckError(err)
 		}
 
+		dbHost := os.Getenv("COLONIES_DBHOST")
+		dbPort, err := strconv.Atoi(os.Getenv("COLONIES_DBPORT"))
+		CheckError(err)
+
+		dbUser := os.Getenv("COLONIES_DBUSER")
+		dbPassword := os.Getenv("COLONIES_DBPASSWORD")
+
 		log.Info("Starting an embedded PostgreSQL server")
 		postgres := embeddedpostgres.NewDatabase(embeddedpostgres.DefaultConfig().
 			RuntimePath(coloniesPath + "/embedded-postgres-go/extracted").
 			BinariesPath(coloniesPath + "/embedded-postgres-go/extracted").
 			DataPath(coloniesPath + "/embedded-postgres-go/extracted/data").
+			Username(dbUser).
+			Password(dbPassword).
 			Port(50070))
 		defer postgres.Stop()
 		err = postgres.Start()
@@ -58,7 +68,7 @@ var devCmd = &cobra.Command{
 		}()
 
 		log.Info("Connecting to PostgreSQL server")
-		coloniesDB := postgresql.CreatePQDatabase("localhost", 50070, "postgres", "postgres", DBName, DBPrefix)
+		coloniesDB := postgresql.CreatePQDatabase(dbHost, dbPort, dbUser, dbPassword, DBName, DBPrefix)
 		err = coloniesDB.Connect()
 		CheckError(err)
 
@@ -70,27 +80,30 @@ var devCmd = &cobra.Command{
 		CheckError(err)
 
 		log.Info("Adding a ServerId ")
-		serverID := "039231c7644e04b6895471dd5335cf332681c54e27f81fac54f9067b3f2c0103"
-		serverPrvKey := "fcc79953d8a751bf41db661592dc34d30004b1a651ffa0725b03ac227641499d"
+		serverID := os.Getenv("COLONIES_SERVERID")
+		serverPrvKey := os.Getenv("COLONIES_SERVERPRVKEY")
 		err = keychain.AddPrvKey(serverID, serverPrvKey)
 		CheckError(err)
 
 		log.Info("Adding a ColonyId")
-		colonyID := "4787a5071856a4acf702b2ffcea422e3237a679c681314113d86139461290cf4"
-		colonyPrvKey := "ba949fa134981372d6da62b6a56f336ab4d843b22c02a4257dcf7d0d73097514"
+		colonyID := os.Getenv("COLONIES_COLONYID")
+		colonyPrvKey := os.Getenv("COLONIES_COLONYPRVKEY")
 		err = keychain.AddPrvKey(colonyID, colonyPrvKey)
 		CheckError(err)
 
 		log.Info("Adding a RuntimeId")
-		runtimeID := "3fc05cf3df4b494e95d6a3d297a34f19938f7daa7422ab0d4f794454133341ac"
-		runtimePrvKey := "ddf7f7791208083b6a9ed975a72684f6406a269cfa36f1b1c32045c0a71fff05"
+		runtimeID := os.Getenv("COLONIES_RUNTIMEID")
+		runtimePrvKey := os.Getenv("COLONIES_RUNTIMEPRVKEY")
 		err = keychain.AddPrvKey(runtimeID, runtimePrvKey)
 		CheckError(err)
 
-		coloniesServer := server.CreateColoniesServer(coloniesDB, 50080, serverID, false, "", "", true)
+		coloniesServerPort, err := strconv.Atoi(os.Getenv("COLONIES_SERVERPORT"))
+		CheckError(err)
+
+		coloniesServer := server.CreateColoniesServer(coloniesDB, coloniesServerPort, serverID, false, "", "", true)
 		go coloniesServer.ServeForever()
 
-		client := client.CreateColoniesClient("localhost", 50080, true, false)
+		client := client.CreateColoniesClient(os.Getenv("COLONIES_SERVERHOST"), coloniesServerPort, true, false)
 
 		log.Info("Register a Colony")
 		colony := core.CreateColony(colonyID, "dev")
@@ -98,7 +111,11 @@ var devCmd = &cobra.Command{
 		CheckError(err)
 
 		log.Info("Registering a CLI runtime")
-		runtime := core.CreateRuntime(runtimeID, "cli", "cli", colonyID, "", 1, 0, "", 0, time.Now(), time.Now())
+
+		runtimeType := os.Getenv("COLONIES_RUNTIMETYPE")
+		runtimeGroup := os.Getenv("COLONIES_RUNTIMEGROUP")
+
+		runtime := core.CreateRuntime(runtimeID, runtimeType, "dev_runtime", runtimeGroup, colonyID, "", 1, 0, "", 0, time.Now(), time.Now())
 		_, err = client.AddRuntime(runtime, colonyPrvKey)
 		CheckError(err)
 
@@ -111,15 +128,26 @@ var devCmd = &cobra.Command{
 		fmt.Println()
 
 		log.Info("Add the following environmental variables to your shell:")
-		envStr := "export COLONIES_SERVER_PROTOCOL=\"http\"\n"
-		envStr += "export COLONIES_SERVER_HOST=\"localhost\"\n"
-		envStr += "export COLONIES_SERVER_PORT=\"50080\"\n"
+		envStr := "export LANG=en_US.UTF-8\n"
+		envStr += "export LANGUAGE=en_US.UTF-8\n"
+		envStr += "export LC_ALL=en_US.UTF-8\n"
+		envStr += "export LC_CTYPE=UTF-8\n"
+		envStr += "export TZ=Europe/Stockholm\n"
+		envStr += "export COLONIES_SERVERPROTOCOL=\"http\"\n"
+		envStr += "export COLONIES_SERVERHOST=\"localhost\"\n"
+		envStr += "export COLONIES_SERVERPORT=\"50080\"\n"
 		envStr += "export COLONIES_SERVERID=\"" + serverID + "\"\n"
 		envStr += "export COLONIES_SERVERPRVKEY=\"" + serverPrvKey + "\"\n"
+		envStr += "export COLONIES_DBHOST=\"localhost\"\n"
+		envStr += "export COLONIES_DBUSER=\"postgres\"\n"
+		envStr += "export COLONIES_DBPORT=\"50070\"\n"
+		envStr += "expoer COLONIES_DBPASSWORD=\"rFcLGNkgsNtksg6Pgtn9CumL4xXBQ7\"\n"
 		envStr += "export COLONIES_COLONYID=\"" + colonyID + "\"\n"
 		envStr += "export COLONIES_COLONYPRVKEY=\"" + colonyPrvKey + "\"\n"
 		envStr += "export COLONIES_RUNTIMEID=\"" + runtimeID + "\"\n"
 		envStr += "export COLONIES_RUNTIMEPRVKEY=\"" + runtimePrvKey + "\"\n"
+		envStr += "export COLONIES_RUNTIMETYPE=\"" + runtimeType + "\"\n"
+		envStr += "export COLONIES_RUNTIMEGROUP=\"" + runtimeGroup + "\"\n"
 
 		fmt.Println(envStr)
 

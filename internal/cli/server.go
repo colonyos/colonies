@@ -41,12 +41,12 @@ var serverCmd = &cobra.Command{
 
 func parseServerEnv() {
 	var err error
-	ServerHostEnv := os.Getenv("COLONIES_SERVER_HOST")
+	ServerHostEnv := os.Getenv("COLONIES_SERVERHOST")
 	if ServerHostEnv != "" {
 		ServerHost = ServerHostEnv
 	}
 
-	ServerPortEnvStr := os.Getenv("COLONIES_SERVER_PORT")
+	ServerPortEnvStr := os.Getenv("COLONIES_SERVERPORT")
 	if ServerPortEnvStr != "" {
 		ServerPort, err = strconv.Atoi(ServerPortEnvStr)
 		CheckError(err)

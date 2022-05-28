@@ -13,8 +13,8 @@ import (
 func main() {
 	colonyID := os.Getenv("COLONIES_COLONYID")
 	runtimePrvKey := os.Getenv("COLONIES_RUNTIMEPRVKEY")
-	coloniesHost := os.Getenv("COLONIES_SERVER_HOST")
-	coloniesPortStr := os.Getenv("COLONIES_SERVER_PORT")
+	coloniesHost := os.Getenv("COLONIES_SERVERHOST")
+	coloniesPortStr := os.Getenv("COLONIES_SERVERPORT")
 	coloniesPort, err := strconv.Atoi(coloniesPortStr)
 	if err != nil {
 		fmt.Println(err)

@@ -16,19 +16,18 @@ source examples/devenv
 func main() {
     colonyID := os.Getenv("COLONIES_COLONYID")
     runtimePrvKey := os.Getenv("COLONIES_RUNTIMEPRVKEY")
-    coloniesHost := os.Getenv("COLONIES_SERVER_HOST")
-    coloniesPortStr := os.Getenv("COLONIES_SERVER_PORT")
+    coloniesHost := os.Getenv("COLONIES_SERVERHOST")
+    coloniesPortStr := os.Getenv("COLONIES_SERVERPORT")
     coloniesPort, err := strconv.Atoi(coloniesPortStr)
     if err != nil {
         fmt.Println(err)
         os.Exit(-1)
     }
 
-    env := make(map[string]string)
-    env["fibonacciNum"] = os.Args[1]
-
-    // Let's use the cli runtime type since it's pre-registered at the Colonies dev server
-    processSpec := core.CreateProcessSpec("", "", []string{}, []string{}, []string{}, colonyID, []string{}, "cli", -1, 3, 1000, 10, 1, env)
+    processSpec := core.CreateEmptyProcessSpec()
+    processSpec.Conditions.ColonyID = colonyID
+    processSpec.Conditions.RuntimeType = os.Getenv("COLONIES_RUNTIME_TYPE")
+    processSpec.Env["fibonacciNum"] = os.Args[1]
 
     client := client.CreateColoniesClient(coloniesHost, coloniesPort, true, false)
     addedProcess, err := client.SubmitProcessSpec(processSpec, runtimePrvKey)
@@ -47,8 +46,8 @@ func main() {
 func main() {
     colonyID := os.Getenv("COLONIES_COLONYID")
     runtimePrvKey := os.Getenv("COLONIES_RUNTIMEPRVKEY")
-    coloniesHost := os.Getenv("COLONIES_SERVER_HOST")
-    coloniesPortStr := os.Getenv("COLONIES_SERVER_PORT")
+    coloniesHost := os.Getenv("COLONIES_SERVERHOST")
+    coloniesPortStr := os.Getenv("COLONIES_SERVERPORT")
     coloniesPort, err := strconv.Atoi(coloniesPortStr)
     if err != nil {
         fmt.Println(err)

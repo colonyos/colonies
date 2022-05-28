@@ -5,15 +5,18 @@ import (
 )
 
 type Conditions struct {
-	ColonyID    string   `json:"colonyid"`
-	RuntimeIDs  []string `json:"runtimeids"`
-	RuntimeType string   `json:"runtimetype"`
-	Mem         int      `json:"mem"`
-	Cores       int      `json:"cores"`
-	GPUs        int      `json:"gpus"`
+	ColonyID     string   `json:"colonyid"`
+	RuntimeIDs   []string `json:"runtimeids"`
+	RuntimeType  string   `json:"runtimetype"`
+	Mem          int      `json:"mem"`
+	Cores        int      `json:"cores"`
+	GPUs         int      `json:"gpus"`
+	Dependencies []string `json:"depends"`  // NEW
+	Priority     int      `json:"priority"` // NEW
 }
 
 type ProcessSpec struct {
+	Name        string            `json:"name"` // NEW
 	Image       string            `json:"image"`
 	Cmd         string            `json:"cmd"`
 	Args        []string          `json:"args"`
@@ -25,9 +28,16 @@ type ProcessSpec struct {
 	Env         map[string]string `json:"env"`
 }
 
-func CreateProcessSpec(image string, cmd string, args []string, volumes []string, ports []string, colonyID string, runtimeIDs []string, runtimeType string, maxExecTime int, maxRetries int, mem int, cores int, gpus int, env map[string]string) *ProcessSpec {
-	conditions := Conditions{ColonyID: colonyID, RuntimeIDs: runtimeIDs, RuntimeType: runtimeType, Mem: mem, Cores: cores, GPUs: gpus}
-	return &ProcessSpec{Image: image, Cmd: cmd, Args: args, Volumes: volumes, Ports: ports, MaxExecTime: maxExecTime, MaxRetries: maxRetries, Conditions: conditions, Env: env}
+// TODO: unit test
+func CreateEmptyProcessSpec() *ProcessSpec {
+	processSpec := &ProcessSpec{}
+	processSpec.Env = make(map[string]string)
+	return processSpec
+}
+
+func CreateProcessSpec(name string, image string, cmd string, args []string, volumes []string, ports []string, colonyID string, runtimeIDs []string, runtimeType string, maxExecTime int, maxRetries int, mem int, cores int, gpus int, env map[string]string, dependencies []string, priority int) *ProcessSpec {
+	conditions := Conditions{ColonyID: colonyID, RuntimeIDs: runtimeIDs, RuntimeType: runtimeType, Mem: mem, Cores: cores, GPUs: gpus, Priority: priority}
+	return &ProcessSpec{Name: name, Image: image, Cmd: cmd, Args: args, Volumes: volumes, Ports: ports, MaxExecTime: maxExecTime, MaxRetries: maxRetries, Conditions: conditions, Env: env}
 }
 
 func ConvertJSONToProcessSpec(jsonString string) (*ProcessSpec, error) {
@@ -52,7 +62,8 @@ func (processSpec *ProcessSpec) Equals(processSpec2 *ProcessSpec) bool {
 	}
 
 	same := true
-	if processSpec.Image != processSpec2.Image ||
+	if processSpec.Name != processSpec2.Name ||
+		processSpec.Image != processSpec2.Image ||
 		processSpec.Cmd != processSpec2.Cmd ||
 		processSpec.MaxExecTime != processSpec2.MaxExecTime ||
 		processSpec.MaxRetries != processSpec2.MaxRetries ||
@@ -132,6 +143,24 @@ func (processSpec *ProcessSpec) Equals(processSpec2 *ProcessSpec) bool {
 			}
 		}
 		if counter != len(processSpec.Conditions.RuntimeIDs) && counter != len(processSpec2.Conditions.RuntimeIDs) {
+			same = false
+		}
+	}
+
+	if processSpec.Conditions.Dependencies != nil && processSpec2.Conditions.Dependencies == nil {
+		same = false
+	} else if processSpec.Conditions.Dependencies == nil && processSpec2.Conditions.Dependencies != nil {
+		same = false
+	} else {
+		counter := 0
+		for _, dependency1 := range processSpec.Conditions.Dependencies {
+			for _, dependency2 := range processSpec2.Conditions.Dependencies {
+				if dependency1 == dependency2 {
+					counter++
+				}
+			}
+		}
+		if counter != len(processSpec.Conditions.Dependencies) && counter != len(processSpec2.Conditions.Dependencies) {
 			same = false
 		}
 	}

@@ -2,22 +2,40 @@ package core
 
 import (
 	"errors"
+	"time"
+
+	"github.com/colonyos/colonies/pkg/security/crypto"
+	"github.com/google/uuid"
 )
 
 type ProcessGraphStorage interface {
 	GetProcessByID(processID string) (*Process, error)
+	SetProcessState(processID string, state int) error
+	SetWaitingForParents(processID string, waitingForParent bool) error
+	SetProcessGraphState(processGraphID string, state int) error
 }
 
 type ProcessGraph struct {
-	storage ProcessGraphStorage
-	Root    string
-	State   int
+	storage          ProcessGraphStorage
+	Root             string            `json:"rootprocessid"`
+	ProcessGraphSpec *ProcessGraphSpec `json:"spec"`
+	State            int               `json:"state"`
+	ID               string            `json:"processgraphid"`
+	SubmissionTime   time.Time         `json:"submissiontime"`
+	EndTime          time.Time         `json:"endtime"`
+	RuntimeGroup     string            `json:"runtimegroup"`
 }
 
 func CreateProcessGraph(storage ProcessGraphStorage, rootProcessID string) (*ProcessGraph, error) {
 	graph := &ProcessGraph{}
 	graph.storage = storage
 	graph.Root = rootProcessID
+
+	uuid := uuid.New()
+	crypto := crypto.CreateCrypto()
+	id := crypto.GenerateHash(uuid.String())
+
+	graph.ID = id
 
 	return graph, nil
 }
@@ -55,10 +73,13 @@ func (graph *ProcessGraph) Resolve() error {
 			if parent.State == SUCCESS {
 				nrParentsFinished++
 			} else if parent.State == FAILED {
-				// Set all process in graph as failed
+				// Set all processes in the graph as failed if one process fails
 				err := graph.Iterate(func(process *Process) error {
 					process.State = FAILED
-					// TODO: update database
+					err = graph.storage.SetProcessState(process.ID, FAILED)
+					if err != nil {
+						return err
+					}
 					return nil
 				})
 				if err != nil {
@@ -68,7 +89,7 @@ func (graph *ProcessGraph) Resolve() error {
 		}
 		if nrParentsFinished == nrParents {
 			process.WaitingForParents = false
-			// TODO: update database
+			graph.storage.SetWaitingForParents(process.ID, false)
 		}
 		return nil
 	})
@@ -79,11 +100,11 @@ func (graph *ProcessGraph) Resolve() error {
 		graph.State = SUCCESS
 	} else if runningProcesses > 1 {
 		graph.State = RUNNING
-	} else if waitingProcesses > 1 {
+	} else {
 		graph.State = WAITING
 	}
 
-	// TODO: update database
+	graph.storage.SetProcessGraphState(graph.ID, graph.State)
 
 	return err
 }
