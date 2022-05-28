@@ -28,7 +28,7 @@ type Process struct {
 	Retries           int          `json:"retries"`
 	Attributes        []*Attribute `json:"attributes"`
 	ProcessSpec       *ProcessSpec `json:"spec"`
-	WaitForParents    bool         `json:"waitforparents"`
+	WaitingForParents bool         `json:"waitforparents"`
 	Parents           []string     `json:"parents"`
 	Children          []string     `json:"children"`
 }
