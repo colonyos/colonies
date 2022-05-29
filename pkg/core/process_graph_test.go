@@ -84,7 +84,13 @@ func TestProcessGraphGetRoot(t *testing.T) {
 	mock.addProcess(process3)
 	mock.addProcess(process4)
 
-	graph, err := CreateProcessGraph(mock, process1.ID)
+	workflowSpec := CreateWorkflowSpec(false)
+	workflowSpec.AddProcessSpec(process1.ProcessSpec)
+	workflowSpec.AddProcessSpec(process2.ProcessSpec)
+	workflowSpec.AddProcessSpec(process3.ProcessSpec)
+	workflowSpec.AddProcessSpec(process4.ProcessSpec)
+
+	graph, err := CreateProcessGraph(mock, process1.ID, workflowSpec)
 	assert.Nil(t, err)
 
 	root, err := graph.GetRoot(process1.ID)
@@ -134,7 +140,13 @@ func TestProcessGraphGetRootLoop(t *testing.T) {
 	mock.addProcess(process3)
 	mock.addProcess(process4)
 
-	graph, err := CreateProcessGraph(mock, process1.ID)
+	workflowSpec := CreateWorkflowSpec(false)
+	workflowSpec.AddProcessSpec(process1.ProcessSpec)
+	workflowSpec.AddProcessSpec(process2.ProcessSpec)
+	workflowSpec.AddProcessSpec(process3.ProcessSpec)
+	workflowSpec.AddProcessSpec(process4.ProcessSpec)
+
+	graph, err := CreateProcessGraph(mock, process1.ID, workflowSpec)
 	assert.Nil(t, err)
 
 	_, err = graph.GetRoot(process1.ID)
@@ -177,7 +189,13 @@ func TestProcessGraphIterate(t *testing.T) {
 	mock.addProcess(process3)
 	mock.addProcess(process4)
 
-	graph, err := CreateProcessGraph(mock, process1.ID)
+	workflowSpec := CreateWorkflowSpec(false)
+	workflowSpec.AddProcessSpec(process1.ProcessSpec)
+	workflowSpec.AddProcessSpec(process2.ProcessSpec)
+	workflowSpec.AddProcessSpec(process3.ProcessSpec)
+	workflowSpec.AddProcessSpec(process4.ProcessSpec)
+
+	graph, err := CreateProcessGraph(mock, process1.ID, workflowSpec)
 	assert.Nil(t, err)
 
 	visited := make(map[string]bool)
@@ -218,7 +236,13 @@ func TestProcessGraphIterate2(t *testing.T) {
 	mock.addProcess(process3)
 	mock.addProcess(process4)
 
-	graph, err := CreateProcessGraph(mock, process1.ID)
+	workflowSpec := CreateWorkflowSpec(false)
+	workflowSpec.AddProcessSpec(process1.ProcessSpec)
+	workflowSpec.AddProcessSpec(process2.ProcessSpec)
+	workflowSpec.AddProcessSpec(process3.ProcessSpec)
+	workflowSpec.AddProcessSpec(process4.ProcessSpec)
+
+	graph, err := CreateProcessGraph(mock, process1.ID, workflowSpec)
 	assert.Nil(t, err)
 
 	visited := make(map[string]bool)
@@ -240,7 +264,10 @@ func TestProcessGraphIterate3(t *testing.T) {
 	mock := createProcessGraphStorageMock()
 	mock.addProcess(process1)
 
-	graph, err := CreateProcessGraph(mock, process1.ID)
+	workflowSpec := CreateWorkflowSpec(false)
+	workflowSpec.AddProcessSpec(process1.ProcessSpec)
+
+	graph, err := CreateProcessGraph(mock, process1.ID, workflowSpec)
 	assert.Nil(t, err)
 
 	visited := make(map[string]bool)
@@ -289,7 +316,13 @@ func TestProcessGraphResolve(t *testing.T) {
 	process3.WaitingForParents = true
 	process4.WaitingForParents = true
 
-	graph, err := CreateProcessGraph(mock, process1.ID)
+	workflowSpec := CreateWorkflowSpec(false)
+	workflowSpec.AddProcessSpec(process1.ProcessSpec)
+	workflowSpec.AddProcessSpec(process2.ProcessSpec)
+	workflowSpec.AddProcessSpec(process3.ProcessSpec)
+	workflowSpec.AddProcessSpec(process4.ProcessSpec)
+
+	graph, err := CreateProcessGraph(mock, process1.ID, workflowSpec)
 	assert.Nil(t, err)
 
 	waiting, err := graph.WaitingProcesses()
@@ -471,4 +504,51 @@ func TestProcessGraphResolve(t *testing.T) {
 
 	assert.Nil(t, err)
 	assert.True(t, graph.State == SUCCESS)
+}
+
+func TestProcessGraphJSON(t *testing.T) {
+	process1 := createProcess()
+	process2 := createProcess()
+	process3 := createProcess()
+	process4 := createProcess()
+
+	//        process1
+	//          / \
+	//  process2   process3
+	//          \ /
+	//        process4
+
+	process1.AddChild(process2.ID)
+	process1.AddChild(process3.ID)
+	process2.AddParent(process1.ID)
+	process3.AddParent(process1.ID)
+	process2.AddChild(process4.ID)
+	process3.AddChild(process4.ID)
+	process4.AddParent(process2.ID)
+	process4.AddParent(process3.ID)
+
+	mock := createProcessGraphStorageMock()
+	mock.addProcess(process1)
+	mock.addProcess(process2)
+	mock.addProcess(process3)
+	mock.addProcess(process4)
+
+	workflowSpec := CreateWorkflowSpec(false)
+	workflowSpec.AddProcessSpec(process1.ProcessSpec)
+	workflowSpec.AddProcessSpec(process2.ProcessSpec)
+	workflowSpec.AddProcessSpec(process3.ProcessSpec)
+	workflowSpec.AddProcessSpec(process4.ProcessSpec)
+
+	graph, err := CreateProcessGraph(mock, process1.ID, workflowSpec)
+	assert.Nil(t, err)
+
+	jsonStr, err := graph.ToJSON()
+	assert.Nil(t, err)
+
+	graph2, err := ConvertJSONToProcessGraph(jsonStr, mock)
+	assert.Nil(t, err)
+	assert.True(t, graph.Equals(graph2))
+
+	graph2.WorkflowSpec.ProcessSpecs[0].Image = "image"
+	assert.False(t, graph.Equals(graph2))
 }

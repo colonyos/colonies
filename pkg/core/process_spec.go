@@ -11,12 +11,12 @@ type Conditions struct {
 	Mem          int      `json:"mem"`
 	Cores        int      `json:"cores"`
 	GPUs         int      `json:"gpus"`
-	Dependencies []string `json:"depends"`  // NEW
-	Priority     int      `json:"priority"` // NEW
+	Dependencies []string `json:"dependencies"`
+	Priority     int      `json:"priority"`
 }
 
 type ProcessSpec struct {
-	Name        string            `json:"name"` // NEW
+	Name        string            `json:"name"`
 	Image       string            `json:"image"`
 	Cmd         string            `json:"cmd"`
 	Args        []string          `json:"args"`
@@ -28,7 +28,6 @@ type ProcessSpec struct {
 	Env         map[string]string `json:"env"`
 }
 
-// TODO: unit test
 func CreateEmptyProcessSpec() *ProcessSpec {
 	processSpec := &ProcessSpec{}
 	processSpec.Env = make(map[string]string)
@@ -36,7 +35,7 @@ func CreateEmptyProcessSpec() *ProcessSpec {
 }
 
 func CreateProcessSpec(name string, image string, cmd string, args []string, volumes []string, ports []string, colonyID string, runtimeIDs []string, runtimeType string, maxExecTime int, maxRetries int, mem int, cores int, gpus int, env map[string]string, dependencies []string, priority int) *ProcessSpec {
-	conditions := Conditions{ColonyID: colonyID, RuntimeIDs: runtimeIDs, RuntimeType: runtimeType, Mem: mem, Cores: cores, GPUs: gpus, Priority: priority}
+	conditions := Conditions{ColonyID: colonyID, RuntimeIDs: runtimeIDs, RuntimeType: runtimeType, Mem: mem, Cores: cores, GPUs: gpus, Dependencies: dependencies, Priority: priority}
 	return &ProcessSpec{Name: name, Image: image, Cmd: cmd, Args: args, Volumes: volumes, Ports: ports, MaxExecTime: maxExecTime, MaxRetries: maxRetries, Conditions: conditions, Env: env}
 }
 
@@ -71,7 +70,8 @@ func (processSpec *ProcessSpec) Equals(processSpec2 *ProcessSpec) bool {
 		processSpec.Conditions.RuntimeType != processSpec2.Conditions.RuntimeType ||
 		processSpec.Conditions.Mem != processSpec2.Conditions.Mem ||
 		processSpec.Conditions.Cores != processSpec2.Conditions.Cores ||
-		processSpec.Conditions.GPUs != processSpec2.Conditions.GPUs {
+		processSpec.Conditions.GPUs != processSpec2.Conditions.GPUs ||
+		processSpec.Conditions.Priority != processSpec2.Conditions.Priority {
 		same = false
 	}
 
@@ -183,6 +183,10 @@ func (processSpec *ProcessSpec) Equals(processSpec2 *ProcessSpec) bool {
 	}
 
 	return same
+}
+
+func (processSpec *ProcessSpec) AddDependency(dependency string) {
+	processSpec.Conditions.Dependencies = append(processSpec.Conditions.Dependencies, dependency)
 }
 
 func (processSpec *ProcessSpec) ToJSON() (string, error) {

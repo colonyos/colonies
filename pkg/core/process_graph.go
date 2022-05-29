@@ -1,6 +1,7 @@
 package core
 
 import (
+	"encoding/json"
 	"errors"
 	"time"
 
@@ -16,20 +17,21 @@ type ProcessGraphStorage interface {
 }
 
 type ProcessGraph struct {
-	storage          ProcessGraphStorage
-	Root             string            `json:"rootprocessid"`
-	ProcessGraphSpec *ProcessGraphSpec `json:"spec"`
-	State            int               `json:"state"`
-	ID               string            `json:"processgraphid"`
-	SubmissionTime   time.Time         `json:"submissiontime"`
-	EndTime          time.Time         `json:"endtime"`
-	RuntimeGroup     string            `json:"runtimegroup"`
+	storage        ProcessGraphStorage
+	Root           string        `json:"rootprocessid"`
+	WorkflowSpec   *WorkflowSpec `json:"spec"`
+	State          int           `json:"state"`
+	ID             string        `json:"processgraphid"`
+	SubmissionTime time.Time     `json:"submissiontime"`
+	EndTime        time.Time     `json:"endtime"`
+	RuntimeGroup   string        `json:"runtimegroup"`
 }
 
-func CreateProcessGraph(storage ProcessGraphStorage, rootProcessID string) (*ProcessGraph, error) {
+func CreateProcessGraph(storage ProcessGraphStorage, rootProcessID string, workflowSpec *WorkflowSpec) (*ProcessGraph, error) {
 	graph := &ProcessGraph{}
 	graph.storage = storage
 	graph.Root = rootProcessID
+	graph.WorkflowSpec = workflowSpec
 
 	uuid := uuid.New()
 	crypto := crypto.CreateCrypto()
@@ -38,6 +40,17 @@ func CreateProcessGraph(storage ProcessGraphStorage, rootProcessID string) (*Pro
 	graph.ID = id
 
 	return graph, nil
+}
+
+func ConvertJSONToProcessGraph(jsonString string, storage ProcessGraphStorage) (*ProcessGraph, error) {
+	var processGraph *ProcessGraph
+	err := json.Unmarshal([]byte(jsonString), &processGraph)
+	if err != nil {
+		return nil, err
+	}
+
+	processGraph.storage = storage
+	return processGraph, nil
 }
 
 func (graph *ProcessGraph) Resolve() error {
@@ -233,4 +246,25 @@ func (graph *ProcessGraph) iterate(processID string, visited map[string]bool, vi
 	}
 
 	return nil
+}
+
+func (graph *ProcessGraph) Equals(graph2 *ProcessGraph) bool {
+	if graph.WorkflowSpec.Equals(graph2.WorkflowSpec) &&
+		graph.State == graph2.State &&
+		graph.ID == graph2.ID &&
+		graph.EndTime.Unix() == graph2.EndTime.Unix() &&
+		graph.RuntimeGroup == graph2.RuntimeGroup {
+		return true
+	}
+
+	return false
+}
+
+func (graph *ProcessGraph) ToJSON() (string, error) {
+	jsonBytes, err := json.MarshalIndent(graph, "", "    ")
+	if err != nil {
+		return "", err
+	}
+
+	return string(jsonBytes), nil
 }

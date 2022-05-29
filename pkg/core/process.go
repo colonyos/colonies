@@ -28,10 +28,10 @@ type Process struct {
 	Retries           int          `json:"retries"`
 	Attributes        []*Attribute `json:"attributes"`
 	ProcessSpec       *ProcessSpec `json:"spec"`
-	WaitingForParents bool         `json:"waitforparents"` // NEW
-	Parents           []string     `json:"parents"`        // NEW
-	Children          []string     `json:"children"`       // NEW
-	ProcessGraphID    string       `json:"processgraphid"` // NEW
+	WaitingForParents bool         `json:"waitforparents"`
+	Parents           []string     `json:"parents"`
+	Children          []string     `json:"children"`
+	ProcessGraphID    string       `json:"processgraphid"`
 }
 
 func CreateProcess(processSpec *ProcessSpec) *Process {
@@ -136,7 +136,9 @@ func (process *Process) Equals(process2 *Process) bool {
 		process.StartTime.Unix() != process2.StartTime.Unix() ||
 		process.EndTime.Unix() != process2.EndTime.Unix() ||
 		process.Deadline.Unix() != process2.Deadline.Unix() ||
-		process.Retries != process2.Retries {
+		process.Retries != process2.Retries ||
+		process.WaitingForParents != process2.WaitingForParents ||
+		process.ProcessGraphID != process2.ProcessGraphID {
 		same = false
 	}
 
@@ -148,6 +150,42 @@ func (process *Process) Equals(process2 *Process) bool {
 		same = false
 	}
 
+	if process.Parents != nil && process2.Parents == nil {
+		same = false
+	} else if process.Parents == nil && process2.Parents != nil {
+		same = false
+	} else {
+		counter := 0
+		for _, parent1 := range process.Parents {
+			for _, parent2 := range process.Parents {
+				if parent1 == parent2 {
+					counter++
+				}
+			}
+		}
+		if counter != len(process.Parents) && counter != len(process2.Parents) {
+			same = false
+		}
+	}
+
+	if process.Children != nil && process2.Children == nil {
+		same = false
+	} else if process.Children == nil && process2.Children != nil {
+		same = false
+	} else {
+		counter := 0
+		for _, child1 := range process.Children {
+			for _, child2 := range process.Children {
+				if child1 == child2 {
+					counter++
+				}
+			}
+		}
+		if counter != len(process.Children) && counter != len(process2.Children) {
+			same = false
+		}
+	}
+
 	return same
 }
 
@@ -157,6 +195,10 @@ func (process *Process) Assign() {
 
 func (process *Process) Unassign() {
 	process.IsAssigned = false
+}
+
+func (process *Process) SetProcessGraphID(processGraphID string) {
+	process.ProcessGraphID = processGraphID
 }
 
 func (process *Process) SetState(state int) {

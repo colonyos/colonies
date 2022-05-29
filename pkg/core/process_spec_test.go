@@ -6,6 +6,11 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestCreateEmptyProcessSpe(t *testing.T) {
+	processSpec := CreateEmptyProcessSpec()
+	assert.NotNil(t, processSpec)
+}
+
 func TestProcessSpecJSON(t *testing.T) {
 	colonyID := GenerateRandomID()
 	runtimeType := "test_runtime_type"
@@ -19,7 +24,7 @@ func TestProcessSpecJSON(t *testing.T) {
 	env := make(map[string]string)
 	env["test_key"] = "test_value"
 
-	processSpec := CreateProcessSpec("test_name", "test_image", "test_cmd", []string{"test_arg"}, []string{"test_volumes"}, []string{"test_ports"}, colonyID, []string{runtime1ID, runtime2ID}, runtimeType, maxExecTime, maxRetries, mem, cores, gpus, env, []string{}, 1)
+	processSpec := CreateProcessSpec("test_name", "test_image", "test_cmd", []string{"test_arg"}, []string{"test_volumes"}, []string{"test_ports"}, colonyID, []string{runtime1ID, runtime2ID}, runtimeType, maxExecTime, maxRetries, mem, cores, gpus, env, []string{"test_name2"}, 5)
 
 	jsonString, err := processSpec.ToJSON()
 	assert.Nil(t, err)

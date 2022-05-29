@@ -37,11 +37,8 @@ chmod +x /bin/colonies
 
 ### Start a Colonies development server
 The development server is for testing only. All data will be lost when restarting the server. Also note that all keys are well known and all data is sent over unencrypted HTTP.
-```console
-colonies dev
-```
 
-You will have to export some environmental variables in order to use the server.
+You will have to export some environmental variables in order to use the server. Add these variables to your shell.
 
 ```console
 export LANG=en_US.UTF-8
@@ -68,6 +65,11 @@ export COLONIES_RUNTIMEGROUP="local"
 or 
 ```console
 source examples/devenv
+```
+
+Now, start the development server. The development server will automatically add the keys from the environment (e.g. COLONIES_RUNTIMEPRVKEY) to the Colonies keychain.
+```console
+colonies dev
 ```
 
 ### Start a Colonies worker
@@ -235,5 +237,7 @@ Follow the instructions at [Installation Guide](./docs/Installation.md) and setu
 make test
 ```
 
-# New features under development 
-* **Decentralization.** A built-in Distributed Hash table (Kademlia) to make it possible to create federations of Colonies Servers to enable self-sovereignty and trust chains. Each Colonies Server can join a global overlay network of connected Colonies Servers on the Internet, similar to technologies like IPFS. 
+# Roadmap 1.0 release
+* **Cronjobs**
+* **DAG-based workflows**
+* **Improved support for Decentralization.** A built-in Distributed Hash table (Kademlia) to make it possible to create federations of Colonies Servers to enable self-sovereignty and trust chains. Each Colonies Server can join a global overlay network of connected Colonies Servers on the Internet, similar to technologies like IPFS. 

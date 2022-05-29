@@ -1,0 +1,63 @@
+package core
+
+import "encoding/json"
+
+type WorkflowSpec struct {
+	Group        bool           `json:"group"`
+	ProcessSpecs []*ProcessSpec `json:"processspecs"`
+}
+
+func CreateWorkflowSpec(group bool) *WorkflowSpec {
+	workflowSpec := &WorkflowSpec{Group: group}
+	return workflowSpec
+}
+
+func (workflowSpec *WorkflowSpec) AddProcessSpec(processSpec *ProcessSpec) {
+	workflowSpec.ProcessSpecs = append(workflowSpec.ProcessSpecs, processSpec)
+}
+
+func ConvertJSONToWorkflowSpec(jsonString string) (*WorkflowSpec, error) {
+	var workflowSpec *WorkflowSpec
+	err := json.Unmarshal([]byte(jsonString), &workflowSpec)
+	if err != nil {
+		return nil, err
+	}
+
+	return workflowSpec, nil
+}
+
+func (workflowSpec *WorkflowSpec) Equals(workflowSpec2 *WorkflowSpec) bool {
+	same := true
+	if workflowSpec.Group != workflowSpec2.Group {
+		same = false
+	}
+
+	if workflowSpec.ProcessSpecs != nil && workflowSpec2.ProcessSpecs == nil {
+		same = false
+	} else if workflowSpec.ProcessSpecs == nil && workflowSpec2.ProcessSpecs != nil {
+		same = false
+	} else {
+		counter := 0
+		for _, processSpec := range workflowSpec.ProcessSpecs {
+			for _, processSpec2 := range workflowSpec2.ProcessSpecs {
+				if processSpec.Equals(processSpec2) {
+					counter++
+				}
+			}
+		}
+		if counter != len(workflowSpec.ProcessSpecs) && counter != len(workflowSpec2.ProcessSpecs) {
+			same = false
+		}
+	}
+
+	return same
+}
+
+func (workflowSpec *WorkflowSpec) ToJSON() (string, error) {
+	jsonBytes, err := json.MarshalIndent(workflowSpec, "", "    ")
+	if err != nil {
+		return "", err
+	}
+
+	return string(jsonBytes), nil
+}

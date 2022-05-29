@@ -15,7 +15,7 @@ type Runtime struct {
 	ID                string    `json:"runtimeid"`
 	RuntimeType       string    `json:"runtimetype"`
 	Name              string    `json:"name"`
-	RuntimeGroup      string    `json:"runtimegroup"` // NEW
+	RuntimeGroup      string    `json:"runtimegroup"`
 	ColonyID          string    `json:"colonyid"`
 	CPU               string    `json:"cpu"`
 	Cores             int       `json:"cores"`

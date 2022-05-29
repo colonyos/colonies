@@ -123,8 +123,12 @@ func TestProcessToJSON(t *testing.T) {
 	cores := 10
 	gpus := 1
 
-	processSpec := CreateProcessSpec("test_name", "test_image", "test_cmd", []string{"test_arg"}, []string{"test_volumes"}, []string{"test_ports"}, colonyID, []string{}, runtimeType, timeout, maxRetries, mem, cores, gpus, make(map[string]string), []string{}, 1)
+	processSpec := CreateProcessSpec("test_name", "test_image", "test_cmd", []string{"test_arg"}, []string{"test_volumes"}, []string{"test_ports"}, colonyID, []string{}, runtimeType, timeout, maxRetries, mem, cores, gpus, make(map[string]string), []string{"test_name_2"}, 1)
 	process := CreateProcess(processSpec)
+	process.AddParent(GenerateRandomID())
+	process.AddParent(GenerateRandomID())
+	process.SetProcessGraphID(GenerateRandomID())
+	process.AddChild(GenerateRandomID())
 	process.SetSubmissionTime(startTime)
 	process.SetStartTime(startTime.Add(1 * time.Second))
 	process.SetEndTime(startTime.Add(4 * time.Second))

@@ -22,7 +22,7 @@ func main() {
 
 	processSpec := core.CreateEmptyProcessSpec()
 	processSpec.Conditions.ColonyID = colonyID
-	processSpec.Conditions.RuntimeType = os.Getenv("COLONIES_RUNTIME_TYPE")
+	processSpec.Conditions.RuntimeType = os.Getenv("COLONIES_RUNTIMETYPE")
 	processSpec.Env["fibonacciNum"] = os.Args[1]
 
 	client := client.CreateColoniesClient(coloniesHost, coloniesPort, true, false)
