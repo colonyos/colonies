@@ -3,12 +3,12 @@ package core
 import "encoding/json"
 
 type WorkflowSpec struct {
-	Group        bool           `json:"group"`
+	RuntimeGroup bool           `json:"runtimegroup"`
 	ProcessSpecs []*ProcessSpec `json:"processspecs"`
 }
 
-func CreateWorkflowSpec(group bool) *WorkflowSpec {
-	workflowSpec := &WorkflowSpec{Group: group}
+func CreateWorkflowSpec(runtimeGroup bool) *WorkflowSpec {
+	workflowSpec := &WorkflowSpec{RuntimeGroup: runtimeGroup}
 	return workflowSpec
 }
 
@@ -28,7 +28,7 @@ func ConvertJSONToWorkflowSpec(jsonString string) (*WorkflowSpec, error) {
 
 func (workflowSpec *WorkflowSpec) Equals(workflowSpec2 *WorkflowSpec) bool {
 	same := true
-	if workflowSpec.Group != workflowSpec2.Group {
+	if workflowSpec.RuntimeGroup != workflowSpec2.RuntimeGroup {
 		same = false
 	}
 

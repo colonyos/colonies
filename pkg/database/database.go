@@ -76,4 +76,16 @@ type Database interface {
 	AddProcessGraph(processGraph *core.ProcessGraph) error
 	GetProcessGraphByID(processGraphStorage core.ProcessGraphStorage, processGraphID string) (*core.ProcessGraph, error)
 	SetProcessGraphState(processGraphID string, state int) error
+	FindWaitingProcessGraphs(processGraphStorage core.ProcessGraphStorage, colonyID string, count int) ([]*core.ProcessGraph, error)
+	FindRunningProcessGraphs(processGraphStorage core.ProcessGraphStorage, colonyID string, count int) ([]*core.ProcessGraph, error)
+	FindSuccessfulProcessGraphs(processGraphStorage core.ProcessGraphStorage, colonyID string, count int) ([]*core.ProcessGraph, error)
+	FindFailedProcessGraphs(processGraphStorage core.ProcessGraphStorage, colonyID string, count int) ([]*core.ProcessGraph, error)
+	NrOfWaitingProcessGraphs() (int, error)
+	NrOfRunningProcessGraphs() (int, error)
+	NrOfSuccessfulProcessGraphs() (int, error)
+	NrOfFailedProcessGraphs() (int, error)
+	NrOfWaitingProcessGraphsForColony(colonyID string) (int, error)
+	NrOfRunningProcessGraphsForColony(colonyID string) (int, error)
+	NrOfSuccessfulProcessGraphsForColony(colonyID string) (int, error)
+	NrOfFailedProcessGraphsForColony(colonyID string) (int, error)
 }

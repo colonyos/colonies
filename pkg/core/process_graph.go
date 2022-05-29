@@ -19,6 +19,7 @@ type ProcessGraphStorage interface {
 type ProcessGraph struct {
 	storage        ProcessGraphStorage
 	ID             string    `json:"processgraphid"`
+	ColonyID       string    `json:"colonyid"`
 	Root           string    `json:"rootprocessid"`
 	State          int       `json:"state"`
 	SubmissionTime time.Time `json:"submissiontime"`
@@ -26,9 +27,10 @@ type ProcessGraph struct {
 	RuntimeGroup   string    `json:"runtimegroup"`
 }
 
-func CreateProcessGraph(storage ProcessGraphStorage, rootProcessID string) (*ProcessGraph, error) {
+func CreateProcessGraph(storage ProcessGraphStorage, colonyID string, rootProcessID string) (*ProcessGraph, error) {
 	graph := &ProcessGraph{}
 	graph.storage = storage
+	graph.ColonyID = colonyID
 	graph.Root = rootProcessID
 
 	uuid := uuid.New()
@@ -249,6 +251,7 @@ func (graph *ProcessGraph) iterate(processID string, visited map[string]bool, vi
 func (graph *ProcessGraph) Equals(graph2 *ProcessGraph) bool {
 	if graph.State == graph2.State &&
 		graph.ID == graph2.ID &&
+		graph.ColonyID == graph2.ColonyID &&
 		graph.EndTime.Unix() == graph2.EndTime.Unix() &&
 		graph.RuntimeGroup == graph2.RuntimeGroup {
 		return true

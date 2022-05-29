@@ -8,8 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func generateProcessGraph(t *testing.T, db *PQDatabase) *core.ProcessGraph {
-	colonyID := core.GenerateRandomID()
+func generateProcessGraph(t *testing.T, db *PQDatabase, colonyID string) *core.ProcessGraph {
 	process1 := utils.CreateTestProcess(colonyID)
 	process2 := utils.CreateTestProcess(colonyID)
 	process3 := utils.CreateTestProcess(colonyID)
@@ -39,8 +38,10 @@ func generateProcessGraph(t *testing.T, db *PQDatabase) *core.ProcessGraph {
 	err = db.AddProcess(process4)
 	assert.Nil(t, err)
 
-	graph, err := core.CreateProcessGraph(db, process1.ID)
+	graph, err := core.CreateProcessGraph(db, colonyID, process1.ID)
 	assert.Nil(t, err)
+
+	graph.RuntimeGroup = "local"
 
 	return graph
 }
@@ -50,7 +51,9 @@ func TestAddProcessGraph(t *testing.T) {
 	assert.Nil(t, err)
 	defer db.Close()
 
-	graph := generateProcessGraph(t, db)
+	colonyID := core.GenerateRandomID()
+
+	graph := generateProcessGraph(t, db, colonyID)
 
 	err = db.AddProcessGraph(graph)
 	assert.Nil(t, err)
@@ -65,7 +68,9 @@ func TestSetProcessGraphState(t *testing.T) {
 	assert.Nil(t, err)
 	defer db.Close()
 
-	graph := generateProcessGraph(t, db)
+	colonyID := core.GenerateRandomID()
+
+	graph := generateProcessGraph(t, db, colonyID)
 
 	err = db.AddProcessGraph(graph)
 	assert.Nil(t, err)
@@ -81,4 +86,94 @@ func TestSetProcessGraphState(t *testing.T) {
 	graph2, err = db.GetProcessGraphByID(db, graph.ID)
 	assert.Nil(t, err)
 	assert.True(t, graph2.State == core.FAILED)
+}
+
+func TestFindProcessGraphs(t *testing.T) {
+	db, err := PrepareTests()
+	assert.Nil(t, err)
+	defer db.Close()
+
+	var colonyID string
+	for j := 0; j < 2; j++ {
+		colonyID = core.GenerateRandomID()
+		for i := 0; i < 10; i++ {
+			graph := generateProcessGraph(t, db, colonyID)
+			err = db.AddProcessGraph(graph)
+			assert.Nil(t, err)
+			err = db.SetProcessGraphState(graph.ID, core.WAITING)
+			assert.Nil(t, err)
+		}
+
+		for i := 0; i < 9; i++ {
+			graph := generateProcessGraph(t, db, colonyID)
+			err = db.AddProcessGraph(graph)
+			assert.Nil(t, err)
+			err = db.SetProcessGraphState(graph.ID, core.RUNNING)
+			assert.Nil(t, err)
+		}
+
+		for i := 0; i < 8; i++ {
+			graph := generateProcessGraph(t, db, colonyID)
+			err = db.AddProcessGraph(graph)
+			assert.Nil(t, err)
+			err = db.SetProcessGraphState(graph.ID, core.FAILED)
+			assert.Nil(t, err)
+		}
+
+		for i := 0; i < 7; i++ {
+			graph := generateProcessGraph(t, db, colonyID)
+			err = db.AddProcessGraph(graph)
+			assert.Nil(t, err)
+			err = db.SetProcessGraphState(graph.ID, core.SUCCESS)
+			assert.Nil(t, err)
+		}
+	}
+
+	graphs, err := db.FindWaitingProcessGraphs(db, colonyID, 100)
+	assert.Nil(t, err)
+	assert.Len(t, graphs, 10)
+
+	graphs, err = db.FindRunningProcessGraphs(db, colonyID, 100)
+	assert.Nil(t, err)
+	assert.Len(t, graphs, 9)
+
+	graphs, err = db.FindFailedProcessGraphs(db, colonyID, 100)
+	assert.Nil(t, err)
+	assert.Len(t, graphs, 8)
+
+	graphs, err = db.FindSuccessfulProcessGraphs(db, colonyID, 100)
+	assert.Nil(t, err)
+	assert.Len(t, graphs, 7)
+
+	count, err := db.NrOfWaitingProcessGraphsForColony(colonyID)
+	assert.Nil(t, err)
+	assert.True(t, count == 10)
+
+	count, err = db.NrOfRunningProcessGraphsForColony(colonyID)
+	assert.Nil(t, err)
+	assert.True(t, count == 9)
+
+	count, err = db.NrOfFailedProcessGraphsForColony(colonyID)
+	assert.Nil(t, err)
+	assert.True(t, count == 8)
+
+	count, err = db.NrOfSuccessfulProcessGraphsForColony(colonyID)
+	assert.Nil(t, err)
+	assert.True(t, count == 7)
+
+	count, err = db.NrOfWaitingProcessGraphs()
+	assert.Nil(t, err)
+	assert.True(t, count == 10*2)
+
+	count, err = db.NrOfRunningProcessGraphs()
+	assert.Nil(t, err)
+	assert.True(t, count == 9*2)
+
+	count, err = db.NrOfFailedProcessGraphs()
+	assert.Nil(t, err)
+	assert.True(t, count == 8*2)
+
+	count, err = db.NrOfSuccessfulProcessGraphs()
+	assert.Nil(t, err)
+	assert.True(t, count == 7*2)
 }
