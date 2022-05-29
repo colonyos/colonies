@@ -364,6 +364,24 @@ func TestReset(t *testing.T) {
 	assert.Equal(t, 0, numberOfFailedProcesses)
 }
 
+func TestSetRuntimeGroup(t *testing.T) {
+	db, err := PrepareTests()
+	assert.Nil(t, err)
+
+	defer db.Close()
+
+	colony := core.CreateColony(core.GenerateRandomID(), "test_colony_name")
+	process := utils.CreateTestProcess(colony.ID)
+	err = db.AddProcess(process)
+	assert.Nil(t, err)
+
+	err = db.SetRuntimeGroup(process.ID, "global")
+	assert.Nil(t, err)
+	process2, err := db.GetProcessByID(process.ID)
+	assert.Nil(t, err)
+	assert.True(t, process2.ProcessSpec.Conditions.RuntimeGroup == "global")
+}
+
 func TestSetWaitingForParents(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)

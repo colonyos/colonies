@@ -41,6 +41,7 @@ type Database interface {
 	DeleteAllProcessesForColony(colonyID string) error
 	ResetProcess(process *core.Process) error
 	SetProcessState(processID string, state int) error
+	SetRuntimeGroup(processID string, runtimeGroup string) error
 	SetWaitingForParents(processID string, waitingForParent bool) error
 	SetDeadline(process *core.Process, deadline time.Time) error
 	ResetAllProcesses(process *core.Process) error
@@ -88,4 +89,5 @@ type Database interface {
 	NrOfRunningProcessGraphsForColony(colonyID string) (int, error)
 	NrOfSuccessfulProcessGraphsForColony(colonyID string) (int, error)
 	NrOfFailedProcessGraphsForColony(colonyID string) (int, error)
+	// TODO: Implement support deleting process graphs
 }

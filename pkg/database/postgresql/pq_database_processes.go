@@ -359,6 +359,16 @@ func (db *PQDatabase) SetWaitingForParents(processID string, waitingForParent bo
 	return nil
 }
 
+func (db *PQDatabase) SetRuntimeGroup(processID string, runtimeGroup string) error {
+	sqlStatement := `UPDATE ` + db.dbPrefix + `PROCESSES SET RUNTIME_GROUP=$1 WHERE PROCESS_ID=$2`
+	_, err := db.postgresql.Exec(sqlStatement, runtimeGroup, processID)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (db *PQDatabase) SetProcessState(processID string, state int) error {
 	sqlStatement := `UPDATE ` + db.dbPrefix + `PROCESSES SET STATE=$1 WHERE PROCESS_ID=$2`
 	_, err := db.postgresql.Exec(sqlStatement, state, processID)
