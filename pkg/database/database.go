@@ -24,7 +24,7 @@ type Database interface {
 	DeleteRuntimeByID(runtimeID string) error
 	DeleteRuntimesByColonyID(colonyID string) error
 
-	// process functions ...
+	// Process functions ...
 	AddProcess(process *core.Process) error
 	GetProcesses() ([]*core.Process, error)
 	GetProcessByID(processID string) (*core.Process, error)
@@ -40,6 +40,8 @@ type Database interface {
 	DeleteAllProcesses() error
 	DeleteAllProcessesForColony(colonyID string) error
 	ResetProcess(process *core.Process) error
+	SetProcessState(processID string, state int) error
+	SetWaitingForParents(processID string, waitingForParent bool) error
 	SetDeadline(process *core.Process, deadline time.Time) error
 	ResetAllProcesses(process *core.Process) error
 	AssignRuntime(runtimeID string, process *core.Process) error
@@ -69,4 +71,9 @@ type Database interface {
 	DeleteAttributesByTargetID(targetID string, attributeType int) error
 	DeleteAllAttributesByTargetID(targetID string) error
 	DeleteAllAttributes() error
+
+	// ProcessGraph functions
+	AddProcessGraph(processGraph *core.ProcessGraph) error
+	GetProcessGraphByID(processGraphStorage core.ProcessGraphStorage, processGraphID string) (*core.ProcessGraph, error)
+	SetProcessGraphState(processGraphID string, state int) error
 }

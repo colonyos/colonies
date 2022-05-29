@@ -364,6 +364,54 @@ func TestReset(t *testing.T) {
 	assert.Equal(t, 0, numberOfFailedProcesses)
 }
 
+func TestSetWaitingForParents(t *testing.T) {
+	db, err := PrepareTests()
+	assert.Nil(t, err)
+
+	defer db.Close()
+
+	colony := core.CreateColony(core.GenerateRandomID(), "test_colony_name")
+	process := utils.CreateTestProcess(colony.ID)
+	err = db.AddProcess(process)
+	assert.Nil(t, err)
+
+	err = db.SetWaitingForParents(process.ID, true)
+	assert.Nil(t, err)
+	process2, err := db.GetProcessByID(process.ID)
+	assert.Nil(t, err)
+	assert.True(t, process2.WaitingForParents)
+
+	err = db.SetWaitingForParents(process.ID, false)
+	assert.Nil(t, err)
+	process2, err = db.GetProcessByID(process.ID)
+	assert.Nil(t, err)
+	assert.False(t, process2.WaitingForParents)
+}
+
+func TestSetProcessState(t *testing.T) {
+	db, err := PrepareTests()
+	assert.Nil(t, err)
+
+	defer db.Close()
+
+	colony := core.CreateColony(core.GenerateRandomID(), "test_colony_name")
+	process := utils.CreateTestProcess(colony.ID)
+	err = db.AddProcess(process)
+	assert.Nil(t, err)
+
+	err = db.SetProcessState(process.ID, core.RUNNING)
+	assert.Nil(t, err)
+	process2, err := db.GetProcessByID(process.ID)
+	assert.Nil(t, err)
+	assert.Equal(t, process2.State, core.RUNNING)
+
+	err = db.SetProcessState(process.ID, core.FAILED)
+	assert.Nil(t, err)
+	process2, err = db.GetProcessByID(process.ID)
+	assert.Nil(t, err)
+	assert.Equal(t, process2.State, core.FAILED)
+}
+
 func TestSetDeadline(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
@@ -371,11 +419,6 @@ func TestSetDeadline(t *testing.T) {
 	defer db.Close()
 
 	colony := core.CreateColony(core.GenerateRandomID(), "test_colony_name")
-
-	runtime := utils.CreateTestRuntime(colony.ID)
-	err = db.AddRuntime(runtime)
-	assert.Nil(t, err)
-
 	process := utils.CreateTestProcess(colony.ID)
 	err = db.AddProcess(process)
 	assert.Nil(t, err)

@@ -18,20 +18,18 @@ type ProcessGraphStorage interface {
 
 type ProcessGraph struct {
 	storage        ProcessGraphStorage
-	Root           string        `json:"rootprocessid"`
-	WorkflowSpec   *WorkflowSpec `json:"spec"`
-	State          int           `json:"state"`
-	ID             string        `json:"processgraphid"`
-	SubmissionTime time.Time     `json:"submissiontime"`
-	EndTime        time.Time     `json:"endtime"`
-	RuntimeGroup   string        `json:"runtimegroup"`
+	ID             string    `json:"processgraphid"`
+	Root           string    `json:"rootprocessid"`
+	State          int       `json:"state"`
+	SubmissionTime time.Time `json:"submissiontime"`
+	EndTime        time.Time `json:"endtime"`
+	RuntimeGroup   string    `json:"runtimegroup"`
 }
 
-func CreateProcessGraph(storage ProcessGraphStorage, rootProcessID string, workflowSpec *WorkflowSpec) (*ProcessGraph, error) {
+func CreateProcessGraph(storage ProcessGraphStorage, rootProcessID string) (*ProcessGraph, error) {
 	graph := &ProcessGraph{}
 	graph.storage = storage
 	graph.Root = rootProcessID
-	graph.WorkflowSpec = workflowSpec
 
 	uuid := uuid.New()
 	crypto := crypto.CreateCrypto()
@@ -249,8 +247,7 @@ func (graph *ProcessGraph) iterate(processID string, visited map[string]bool, vi
 }
 
 func (graph *ProcessGraph) Equals(graph2 *ProcessGraph) bool {
-	if graph.WorkflowSpec.Equals(graph2.WorkflowSpec) &&
-		graph.State == graph2.State &&
+	if graph.State == graph2.State &&
 		graph.ID == graph2.ID &&
 		graph.EndTime.Unix() == graph2.EndTime.Unix() &&
 		graph.RuntimeGroup == graph2.RuntimeGroup {
