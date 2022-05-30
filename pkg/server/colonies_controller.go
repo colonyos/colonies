@@ -89,7 +89,7 @@ func (controller *coloniesController) timeoutChecker() {
 						log.WithFields(log.Fields{"ProcessID": process.ID, "Error": err}).Info("Max retries reached, but failed to close process")
 						continue
 					}
-					log.WithFields(log.Fields{"ProcessID": process.ID, "Error": err}).Info("Process closed as *failed* as max retries reached")
+					log.WithFields(log.Fields{"ProcessID": process.ID, "MaxExecTime": process.ProcessSpec.MaxExecTime, "MaxRetries": process.ProcessSpec.MaxRetries}).Info("Process closed as failed as max retries reached")
 					continue
 				}
 
@@ -97,7 +97,7 @@ func (controller *coloniesController) timeoutChecker() {
 				if err != nil {
 					log.WithFields(log.Fields{"ProcessID": process.ID, "Error": err}).Error("Failed to unassign process")
 				}
-				log.WithFields(log.Fields{"ProcessID": process.ID}).Info("Process was unassigned as it did not complete in time")
+				log.WithFields(log.Fields{"ProcessID": process.ID, "MaxExecTime": process.ProcessSpec.MaxExecTime, "MaxRetries": process.ProcessSpec.MaxRetries}).Info("Process was unassigned as it did not complete in time")
 			}
 		}
 	}
