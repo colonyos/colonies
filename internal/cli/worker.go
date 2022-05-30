@@ -54,8 +54,8 @@ func init() {
 
 var workerCmd = &cobra.Command{
 	Use:   "worker",
-	Short: "Manage a Colonies Worker",
-	Long:  "Manage a Colonies Worker",
+	Short: "Manage workers",
+	Long:  "Manage workers",
 }
 
 var workerStartCmd = &cobra.Command{
@@ -160,7 +160,7 @@ var workerStartCmd = &cobra.Command{
 			}
 
 			log.WithFields(log.Fields{"processID": assignedProcess.ID}).Info("Colonies Worker was assigned a process")
-			log.WithFields(log.Fields{"Cmd": assignedProcess.ProcessSpec.Cmd, "Args": assignedProcess.ProcessSpec.Args}).Info("Executing")
+			log.WithFields(log.Fields{"Cmd": assignedProcess.ProcessSpec.Cmd, "Args": assignedProcess.ProcessSpec.Args}).Info("Lauching process")
 			cmd := exec.Command(assignedProcess.ProcessSpec.Cmd, assignedProcess.ProcessSpec.Args...)
 			cmd.Env = os.Environ()
 			for _, attribute := range assignedProcess.Attributes {
@@ -214,10 +214,10 @@ var workerStartCmd = &cobra.Command{
 
 			if failure {
 				client.CloseFailed(assignedProcess.ID, runtimePrvKey)
-				log.WithFields(log.Fields{"processID": assignedProcess.ID}).Info("Closing process as Failed")
+				log.WithFields(log.Fields{"processID": assignedProcess.ID}).Info("Closing process as failed")
 			} else {
 				client.CloseSuccessful(assignedProcess.ID, runtimePrvKey)
-				log.WithFields(log.Fields{"processID": assignedProcess.ID}).Info("Closing process as Successful")
+				log.WithFields(log.Fields{"processID": assignedProcess.ID}).Info("Closing process as successful")
 			}
 		}
 	},
@@ -228,7 +228,7 @@ var workerRegisterCmd = &cobra.Command{
 	Short: "Register a Colonies Worker",
 	Long:  "Register a Colonies Worker",
 	Run: func(cmd *cobra.Command, args []string) {
-		log.WithFields(log.Fields{"BuildVersion": build.BuildVersion, "BuildTime": build.BuildTime}).Info("Registering a Colonies Worker")
+		log.WithFields(log.Fields{"BuildVersion": build.BuildVersion, "BuildTime": build.BuildTime}).Info("Registering a Colonies worker")
 		parseServerEnv()
 
 		if ColonyID == "" {
@@ -310,7 +310,7 @@ var workerUnregisterCmd = &cobra.Command{
 	Short: "Unregister an already started Colonies Worker",
 	Long:  "Unregister an already started Colonies Worker",
 	Run: func(cmd *cobra.Command, args []string) {
-		log.WithFields(log.Fields{"BuildVersion": build.BuildVersion, "BuildTime": build.BuildTime}).Info("Starting a Colonies Worker")
+		log.WithFields(log.Fields{"BuildVersion": build.BuildVersion, "BuildTime": build.BuildTime}).Info("Starting a Colonies worker")
 		parseServerEnv()
 
 		if ColonyID == "" {

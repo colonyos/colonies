@@ -35,8 +35,8 @@ func init() {
 
 var serverCmd = &cobra.Command{
 	Use:   "server",
-	Short: "Manage a Colonies Server",
-	Long:  "Manage a Colonies Server",
+	Short: "Manage a server",
+	Long:  "Manage a server",
 }
 
 func parseServerEnv() {

@@ -53,8 +53,8 @@ func init() {
 
 var runtimeCmd = &cobra.Command{
 	Use:   "runtime",
-	Short: "Manage Colony Runtimes",
-	Long:  "Manage Colony Runtimes",
+	Short: "Manage runtimes",
+	Long:  "Manage runtimes",
 }
 
 var registerRuntimeCmd = &cobra.Command{

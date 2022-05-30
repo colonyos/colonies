@@ -2,11 +2,13 @@ package server
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 
 	"github.com/colonyos/colonies/pkg/core"
 	"github.com/colonyos/colonies/pkg/rpc"
 	"github.com/gin-gonic/gin"
+	log "github.com/sirupsen/logrus"
 )
 
 func (server *ColoniesServer) handleSubmitWorkflowHTTPRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
@@ -49,6 +51,7 @@ func (server *ColoniesServer) handleSubmitWorkflowHTTPRequest(c *gin.Context, re
 			process.WaitForParents = true
 		}
 		process.ProcessGraphID = graph.ID
+		process.ProcessSpec.Conditions.ColonyID = msg.WorkflowSpec.ColonyID
 		processMap[process.ProcessSpec.Name] = process
 	}
 
@@ -68,6 +71,10 @@ func (server *ColoniesServer) handleSubmitWorkflowHTTPRequest(c *gin.Context, re
 	// Now, start all processes
 	for _, process := range processMap {
 		_, err := server.controller.addProcess(process)
+		log.WithFields(log.Fields{"ProcessID": process.ID}).Info("Submitting process")
+		jsonStr, _ := process.ToJSON()
+		fmt.Println(jsonStr)
+
 		if err != nil {
 			server.handleHTTPError(c, errors.New("failed to add process"), http.StatusInternalServerError)
 			return

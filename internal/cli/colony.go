@@ -50,8 +50,8 @@ func init() {
 
 var colonyCmd = &cobra.Command{
 	Use:   "colony",
-	Short: "Manage Colonies",
-	Long:  "Manage Colonies",
+	Short: "Manage colonies",
+	Long:  "Manage colonies",
 }
 
 var registerColonyCmd = &cobra.Command{

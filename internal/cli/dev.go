@@ -25,8 +25,8 @@ func init() {
 
 var devCmd = &cobra.Command{
 	Use:   "dev",
-	Short: "Start a Colonies development server",
-	Long:  "Start a Colonies development server",
+	Short: "Start a development server",
+	Long:  "Start a development server",
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Info("Starting a Colonies development server")
 
