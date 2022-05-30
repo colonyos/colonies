@@ -28,7 +28,7 @@ type Process struct {
 	Retries           int          `json:"retries"`
 	Attributes        []*Attribute `json:"attributes"`
 	ProcessSpec       *ProcessSpec `json:"spec"`
-	WaitingForParents bool         `json:"waitforparents"`
+	WaitForParents    bool         `json:"waitforparents"`
 	Parents           []string     `json:"parents"`
 	Children          []string     `json:"children"`
 	ProcessGraphID    string       `json:"processgraphid"`
@@ -137,7 +137,7 @@ func (process *Process) Equals(process2 *Process) bool {
 		process.EndTime.Unix() != process2.EndTime.Unix() ||
 		process.Deadline.Unix() != process2.Deadline.Unix() ||
 		process.Retries != process2.Retries ||
-		process.WaitingForParents != process2.WaitingForParents ||
+		process.WaitForParents != process2.WaitForParents ||
 		process.ProcessGraphID != process2.ProcessGraphID {
 		same = false
 	}

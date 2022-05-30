@@ -12,7 +12,7 @@ import (
 type ProcessGraphStorage interface {
 	GetProcessByID(processID string) (*Process, error)
 	SetProcessState(processID string, state int) error
-	SetWaitingForParents(processID string, waitingForParent bool) error
+	SetWaitForParents(processID string, waitForParent bool) error
 	SetProcessGraphState(processGraphID string, state int) error
 }
 
@@ -20,18 +20,16 @@ type ProcessGraph struct {
 	storage        ProcessGraphStorage
 	ID             string    `json:"processgraphid"`
 	ColonyID       string    `json:"colonyid"`
-	Root           string    `json:"rootprocessid"`
+	Roots          []string  `json:"rootprocessids"`
 	State          int       `json:"state"`
 	SubmissionTime time.Time `json:"submissiontime"`
 	EndTime        time.Time `json:"endtime"`
 	RuntimeGroup   string    `json:"runtimegroup"`
 }
 
-func CreateProcessGraph(storage ProcessGraphStorage, colonyID string, rootProcessID string) (*ProcessGraph, error) {
+func CreateProcessGraph(colonyID string) (*ProcessGraph, error) {
 	graph := &ProcessGraph{}
-	graph.storage = storage
 	graph.ColonyID = colonyID
-	graph.Root = rootProcessID
 
 	uuid := uuid.New()
 	crypto := crypto.CreateCrypto()
@@ -42,17 +40,35 @@ func CreateProcessGraph(storage ProcessGraphStorage, colonyID string, rootProces
 	return graph, nil
 }
 
-func ConvertJSONToProcessGraph(jsonString string, storage ProcessGraphStorage) (*ProcessGraph, error) {
+func ConvertJSONToProcessGraphWithStorage(jsonString string) (*ProcessGraph, error) {
 	var processGraph *ProcessGraph
 	err := json.Unmarshal([]byte(jsonString), &processGraph)
 	if err != nil {
 		return nil, err
 	}
 
-	processGraph.storage = storage
 	return processGraph, nil
 }
 
+func ConvertJSONToProcessGraph(jsonString string) (*ProcessGraph, error) {
+	var processGraph *ProcessGraph
+	err := json.Unmarshal([]byte(jsonString), &processGraph)
+	if err != nil {
+		return nil, err
+	}
+
+	return processGraph, nil
+}
+
+func (graph *ProcessGraph) AddRoot(processID string) {
+	graph.Roots = append(graph.Roots, processID)
+}
+
+func (graph *ProcessGraph) SetStorage(storage ProcessGraphStorage) {
+	graph.storage = storage
+}
+
+// Note: This function requires a working graph.storage reference
 func (graph *ProcessGraph) Resolve() error {
 	processes := 0
 	failedProcesses := 0
@@ -101,8 +117,8 @@ func (graph *ProcessGraph) Resolve() error {
 			}
 		}
 		if nrParentsFinished == nrParents {
-			process.WaitingForParents = false
-			graph.storage.SetWaitingForParents(process.ID, false)
+			process.WaitForParents = false
+			graph.storage.SetWaitForParents(process.ID, false)
 		}
 		return nil
 	})
@@ -122,21 +138,21 @@ func (graph *ProcessGraph) Resolve() error {
 	return err
 }
 
-func (graph *ProcessGraph) GetRoot(processID string) (*Process, error) {
+func (graph *ProcessGraph) GetRoot(childProcessID string) (*Process, error) {
 	visited := make(map[string]bool)
-	return graph.getRoot(processID, visited)
+	return graph.getRoot(childProcessID, visited)
 }
 
-func (graph *ProcessGraph) getRoot(processID string, visited map[string]bool) (*Process, error) {
-	process, err := graph.storage.GetProcessByID(processID)
+func (graph *ProcessGraph) getRoot(childProcessID string, visited map[string]bool) (*Process, error) {
+	process, err := graph.storage.GetProcessByID(childProcessID)
 	if err != nil {
 		return nil, err
 	}
-	if visited[processID] {
+	if visited[childProcessID] {
 		return nil, errors.New("loops are not allowed in process graphs")
 	}
 
-	visited[processID] = true
+	visited[childProcessID] = true
 
 	if len(process.Parents) == 0 {
 		return process, nil
@@ -158,7 +174,7 @@ func (graph *ProcessGraph) Processes() (int, error) {
 	return counter, err
 }
 
-func (graph *ProcessGraph) WaitingProcesses() (int, error) {
+func (graph *ProcessGraph) WaitProcesses() (int, error) {
 	counter := 0
 	err := graph.Iterate(func(process *Process) error {
 		if process.State == WAITING {
@@ -202,10 +218,10 @@ func (graph *ProcessGraph) FailedProcesses() (int, error) {
 	return counter, err
 }
 
-func (graph *ProcessGraph) WaitingForParents() (int, error) {
+func (graph *ProcessGraph) WaitForParents() (int, error) {
 	counter := 0
 	err := graph.Iterate(func(process *Process) error {
-		if process.WaitingForParents {
+		if process.WaitForParents {
 			counter++
 		}
 		return nil
@@ -215,7 +231,15 @@ func (graph *ProcessGraph) WaitingForParents() (int, error) {
 
 func (graph *ProcessGraph) Iterate(visitFunc func(process *Process) error) error {
 	visited := make(map[string]bool)
-	return graph.iterate(graph.Root, visited, visitFunc)
+	var err error
+	for _, root := range graph.Roots {
+		err = graph.iterate(root, visited, visitFunc)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func (graph *ProcessGraph) iterate(processID string, visited map[string]bool, visitFunc func(process *Process) error) error {

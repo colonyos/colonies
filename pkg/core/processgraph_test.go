@@ -31,9 +31,9 @@ func (mock *processGraphStorageMock) SetProcessState(processID string, state int
 	return nil
 }
 
-func (mock *processGraphStorageMock) SetWaitingForParents(processID string, waitingForParents bool) error {
+func (mock *processGraphStorageMock) SetWaitForParents(processID string, waitForParents bool) error {
 	process := mock.processes[processID]
-	process.WaitingForParents = waitingForParents
+	process.WaitForParents = waitForParents
 
 	return nil
 }
@@ -86,8 +86,12 @@ func TestProcessGraphGetRoot(t *testing.T) {
 
 	colonyID := GenerateRandomID()
 
-	graph, err := CreateProcessGraph(mock, colonyID, process1.ID)
+	graph, err := CreateProcessGraph(colonyID)
 	assert.Nil(t, err)
+
+	graph.storage = mock
+
+	graph.AddRoot(process1.ID)
 
 	root, err := graph.GetRoot(process1.ID)
 	assert.Nil(t, err)
@@ -138,8 +142,12 @@ func TestProcessGraphGetRootLoop(t *testing.T) {
 
 	colonyID := GenerateRandomID()
 
-	graph, err := CreateProcessGraph(mock, colonyID, process1.ID)
+	graph, err := CreateProcessGraph(colonyID)
 	assert.Nil(t, err)
+
+	graph.storage = mock
+
+	graph.AddRoot(process1.ID)
 
 	_, err = graph.GetRoot(process1.ID)
 	assert.NotNil(t, err)
@@ -183,8 +191,12 @@ func TestProcessGraphIterate(t *testing.T) {
 
 	colonyID := GenerateRandomID()
 
-	graph, err := CreateProcessGraph(mock, colonyID, process1.ID)
+	graph, err := CreateProcessGraph(colonyID)
 	assert.Nil(t, err)
+
+	graph.storage = mock
+
+	graph.AddRoot(process1.ID)
 
 	visited := make(map[string]bool)
 	err = graph.Iterate(func(process *Process) error {
@@ -226,8 +238,12 @@ func TestProcessGraphIterate2(t *testing.T) {
 
 	colonyID := GenerateRandomID()
 
-	graph, err := CreateProcessGraph(mock, colonyID, process1.ID)
+	graph, err := CreateProcessGraph(colonyID)
 	assert.Nil(t, err)
+
+	graph.storage = mock
+
+	graph.AddRoot(process1.ID)
 
 	visited := make(map[string]bool)
 	err = graph.Iterate(func(process *Process) error {
@@ -250,8 +266,12 @@ func TestProcessGraphIterate3(t *testing.T) {
 
 	colonyID := GenerateRandomID()
 
-	graph, err := CreateProcessGraph(mock, colonyID, process1.ID)
+	graph, err := CreateProcessGraph(colonyID)
 	assert.Nil(t, err)
+
+	graph.storage = mock
+
+	graph.AddRoot(process1.ID)
 
 	visited := make(map[string]bool)
 	err = graph.Iterate(func(process *Process) error {
@@ -261,6 +281,64 @@ func TestProcessGraphIterate3(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Len(t, visited, 1)
 	assert.True(t, visited[process1.ID])
+}
+
+func TestProcessGraphIterateMultipleRoots(t *testing.T) {
+	process1 := createProcess()
+	process2 := createProcess()
+	process3 := createProcess()
+	process4 := createProcess()
+	process5 := createProcess()
+	process6 := createProcess()
+
+	//        process1          process5
+	//          / \                 |
+	//  process2   process3     process6
+	//          \ /
+	//        process4
+
+	process1.AddChild(process2.ID)
+	process1.AddChild(process3.ID)
+	process2.AddParent(process1.ID)
+	process3.AddParent(process1.ID)
+	process2.AddChild(process4.ID)
+	process3.AddChild(process4.ID)
+	process4.AddParent(process2.ID)
+	process4.AddParent(process3.ID)
+	process6.AddParent(process5.ID)
+	process5.AddChild(process6.ID)
+
+	mock := createProcessGraphStorageMock()
+	mock.addProcess(process1)
+	mock.addProcess(process2)
+	mock.addProcess(process3)
+	mock.addProcess(process4)
+	mock.addProcess(process5)
+	mock.addProcess(process6)
+
+	colonyID := GenerateRandomID()
+
+	graph, err := CreateProcessGraph(colonyID)
+	assert.Nil(t, err)
+
+	graph.storage = mock
+
+	graph.AddRoot(process1.ID)
+	graph.AddRoot(process5.ID)
+
+	visited := make(map[string]bool)
+	err = graph.Iterate(func(process *Process) error {
+		visited[process.ID] = true
+		return nil
+	})
+	assert.Nil(t, err)
+	assert.Len(t, visited, 6)
+	assert.True(t, visited[process1.ID])
+	assert.True(t, visited[process2.ID])
+	assert.True(t, visited[process3.ID])
+	assert.True(t, visited[process4.ID])
+	assert.True(t, visited[process5.ID])
+	assert.True(t, visited[process6.ID])
 }
 
 func TestProcessGraphResolve(t *testing.T) {
@@ -295,20 +373,24 @@ func TestProcessGraphResolve(t *testing.T) {
 	process3.State = WAITING
 	process4.State = WAITING
 
-	process2.WaitingForParents = true
-	process3.WaitingForParents = true
-	process4.WaitingForParents = true
+	process2.WaitForParents = true
+	process3.WaitForParents = true
+	process4.WaitForParents = true
 
 	colonyID := GenerateRandomID()
 
-	graph, err := CreateProcessGraph(mock, colonyID, process1.ID)
+	graph, err := CreateProcessGraph(colonyID)
 	assert.Nil(t, err)
 
-	waiting, err := graph.WaitingProcesses()
+	graph.storage = mock
+
+	graph.AddRoot(process1.ID)
+
+	waiting, err := graph.WaitProcesses()
 	assert.Nil(t, err)
 	assert.True(t, waiting == 4)
 
-	waitingForParents, err := graph.WaitingForParents()
+	waitingForParents, err := graph.WaitForParents()
 	assert.Nil(t, err)
 	assert.True(t, waitingForParents == 3)
 
@@ -318,7 +400,7 @@ func TestProcessGraphResolve(t *testing.T) {
 	assert.Nil(t, err)
 
 	// Now only process4 should wait for parents
-	waitingForParents, err = graph.WaitingForParents()
+	waitingForParents, err = graph.WaitForParents()
 	assert.Nil(t, err)
 	assert.True(t, waitingForParents == 1)
 
@@ -328,7 +410,7 @@ func TestProcessGraphResolve(t *testing.T) {
 	assert.Nil(t, err)
 
 	// Process 4 still have to wait for process 3
-	waitingForParents, err = graph.WaitingForParents()
+	waitingForParents, err = graph.WaitForParents()
 	assert.Nil(t, err)
 	assert.True(t, waitingForParents == 1)
 
@@ -338,7 +420,7 @@ func TestProcessGraphResolve(t *testing.T) {
 	assert.Nil(t, err)
 
 	// Process 4 can now run
-	waitingForParents, err = graph.WaitingForParents()
+	waitingForParents, err = graph.WaitForParents()
 	assert.Nil(t, err)
 	assert.True(t, waitingForParents == 0)
 
@@ -348,9 +430,9 @@ func TestProcessGraphResolve(t *testing.T) {
 	process3.State = WAITING
 	process4.State = WAITING
 
-	process2.WaitingForParents = true
-	process3.WaitingForParents = true
-	process4.WaitingForParents = true
+	process2.WaitForParents = true
+	process3.WaitForParents = true
+	process4.WaitForParents = true
 
 	err = graph.Resolve()
 	assert.Nil(t, err)
@@ -366,9 +448,9 @@ func TestProcessGraphResolve(t *testing.T) {
 	process3.State = WAITING
 	process4.State = WAITING
 
-	process2.WaitingForParents = true
-	process3.WaitingForParents = true
-	process4.WaitingForParents = true
+	process2.WaitForParents = true
+	process3.WaitForParents = true
+	process4.WaitForParents = true
 
 	err = graph.Resolve()
 	assert.Nil(t, err)
@@ -384,9 +466,9 @@ func TestProcessGraphResolve(t *testing.T) {
 	process3.State = WAITING
 	process4.State = FAILED
 
-	process2.WaitingForParents = true
-	process3.WaitingForParents = true
-	process4.WaitingForParents = true
+	process2.WaitForParents = true
+	process3.WaitForParents = true
+	process4.WaitForParents = true
 
 	err = graph.Resolve()
 	assert.Nil(t, err)
@@ -402,9 +484,9 @@ func TestProcessGraphResolve(t *testing.T) {
 	process3.State = WAITING
 	process4.State = WAITING
 
-	process2.WaitingForParents = true
-	process3.WaitingForParents = true
-	process4.WaitingForParents = true
+	process2.WaitForParents = true
+	process3.WaitForParents = true
+	process4.WaitForParents = true
 
 	err = graph.Resolve()
 	assert.Nil(t, err)
@@ -420,9 +502,9 @@ func TestProcessGraphResolve(t *testing.T) {
 	process3.State = RUNNING
 	process4.State = WAITING
 
-	process2.WaitingForParents = false
-	process3.WaitingForParents = false
-	process4.WaitingForParents = true
+	process2.WaitForParents = false
+	process3.WaitForParents = false
+	process4.WaitForParents = true
 
 	err = graph.Resolve()
 	assert.Nil(t, err)
@@ -432,11 +514,11 @@ func TestProcessGraphResolve(t *testing.T) {
 	assert.Nil(t, err)
 	assert.True(t, processes == 4)
 
-	waitingProcesses, err := graph.WaitingProcesses()
+	waitingProcesses, err := graph.WaitProcesses()
 	assert.Nil(t, err)
 	assert.True(t, waitingProcesses == 1)
 
-	waitingForParents, err = graph.WaitingForParents()
+	waitingForParents, err = graph.WaitForParents()
 	assert.Nil(t, err)
 	assert.True(t, waitingForParents == 1)
 
@@ -485,6 +567,126 @@ func TestProcessGraphResolve(t *testing.T) {
 	assert.True(t, graph.State == SUCCESS)
 }
 
+func TestProcessGraphResolveMultipleRoots(t *testing.T) {
+	process1 := createProcess()
+	process2 := createProcess()
+	process3 := createProcess()
+	process4 := createProcess()
+	process5 := createProcess()
+	process6 := createProcess()
+
+	//        process1          process5
+	//          / \                 |
+	//  process2   process3     process6
+	//          \ /
+	//        process4
+
+	process1.AddChild(process2.ID)
+	process1.AddChild(process3.ID)
+	process2.AddParent(process1.ID)
+	process3.AddParent(process1.ID)
+	process2.AddChild(process4.ID)
+	process3.AddChild(process4.ID)
+	process4.AddParent(process2.ID)
+	process4.AddParent(process3.ID)
+	process6.AddParent(process5.ID)
+	process5.AddChild(process6.ID)
+
+	mock := createProcessGraphStorageMock()
+	mock.addProcess(process1)
+	mock.addProcess(process2)
+	mock.addProcess(process3)
+	mock.addProcess(process4)
+	mock.addProcess(process5)
+	mock.addProcess(process6)
+
+	process1.State = WAITING
+	process2.State = WAITING
+	process3.State = WAITING
+	process4.State = WAITING
+	process5.State = WAITING
+	process6.State = WAITING
+
+	process2.WaitForParents = true
+	process3.WaitForParents = true
+	process4.WaitForParents = true
+	process6.WaitForParents = true
+
+	colonyID := GenerateRandomID()
+
+	graph, err := CreateProcessGraph(colonyID)
+	assert.Nil(t, err)
+
+	graph.storage = mock
+
+	graph.AddRoot(process1.ID)
+	graph.AddRoot(process5.ID)
+
+	processes, err := graph.Processes()
+	assert.Nil(t, err)
+	assert.True(t, processes == 6)
+
+	waiting, err := graph.WaitProcesses()
+	assert.Nil(t, err)
+	assert.True(t, waiting == 6)
+
+	waitingForParents, err := graph.WaitForParents()
+	assert.Nil(t, err)
+	assert.True(t, waitingForParents == 4)
+
+	// Now, process1 finishes
+	process1.State = SUCCESS
+	err = graph.Resolve()
+	assert.Nil(t, err)
+
+	// Still process4 and process6 should wait for parents
+	waitingForParents, err = graph.WaitForParents()
+	assert.Nil(t, err)
+	assert.True(t, waitingForParents == 2)
+
+	// Now process 2 finishes
+	process2.State = SUCCESS
+	err = graph.Resolve()
+	assert.Nil(t, err)
+
+	// Still process4 and process6 should wait for parents
+	waitingForParents, err = graph.WaitForParents()
+	assert.Nil(t, err)
+	assert.True(t, waitingForParents == 2)
+
+	// Now process 3 finishes
+	process3.State = SUCCESS
+	err = graph.Resolve()
+	assert.Nil(t, err)
+
+	// process 4 can now run, but process 6 is still waiting for process 5
+	waitingForParents, err = graph.WaitForParents()
+	assert.Nil(t, err)
+	assert.True(t, waitingForParents == 1)
+
+	process4.State = SUCCESS
+	err = graph.Resolve()
+	assert.Nil(t, err)
+
+	// Now process 5 finishes
+	process5.State = SUCCESS
+	err = graph.Resolve()
+	assert.Nil(t, err)
+
+	// process 6 can now run
+	waitingForParents, err = graph.WaitForParents()
+	assert.Nil(t, err)
+	assert.True(t, waitingForParents == 0)
+
+	process6.State = SUCCESS
+	err = graph.Resolve()
+	assert.Nil(t, err)
+
+	//fmt.Println(graph.State)
+	//fmt.Println(SUCCESS)
+	assert.True(t, graph.State == SUCCESS)
+}
+
 func TestProcessGraphJSON(t *testing.T) {
 	process1 := createProcess()
 	process2 := createProcess()
@@ -514,15 +716,23 @@ func TestProcessGraphJSON(t *testing.T) {
 
 	colonyID := GenerateRandomID()
 
-	graph, err := CreateProcessGraph(mock, colonyID, process1.ID)
+	graph, err := CreateProcessGraph(colonyID)
 	assert.Nil(t, err)
+
+	graph.storage = mock
+
+	graph.AddRoot(process1.ID)
 
 	jsonStr, err := graph.ToJSON()
 	assert.Nil(t, err)
 
-	graph2, err := ConvertJSONToProcessGraph(jsonStr, mock)
+	graph2, err := ConvertJSONToProcessGraphWithStorage(jsonStr)
 	assert.Nil(t, err)
 	assert.True(t, graph.Equals(graph2))
+	assert.True(t, graph2.ColonyID == colonyID)
 
+	graph2, err = ConvertJSONToProcessGraph(jsonStr)
+	assert.Nil(t, err)
+	assert.True(t, graph.Equals(graph2))
 	assert.True(t, graph2.ColonyID == colonyID)
 }

@@ -592,6 +592,21 @@ func (client *ColoniesClient) GetAttribute(attributeID string, prvKey string) (*
 	return core.ConvertJSONToAttribute(respBodyString)
 }
 
+func (client *ColoniesClient) SubmitWorkflowSpec(workflowSpec *core.WorkflowSpec, prvKey string) (*core.ProcessGraph, error) {
+	msg := rpc.CreateSubmitWorkflowSpecMsg(workflowSpec)
+	jsonString, err := msg.ToJSON()
+	if err != nil {
+		return nil, err
+	}
+
+	respBodyString, err := client.sendMessage(rpc.SubmitWorkflowSpecPayloadType, jsonString, prvKey, false)
+	if err != nil {
+		return nil, err
+	}
+
+	return core.ConvertJSONToProcessGraph(respBodyString)
+}
+
 func (client *ColoniesClient) Version() (string, string, error) {
 	msg := rpc.CreateVersionMsg("", "")
 	jsonString, err := msg.ToJSON()

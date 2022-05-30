@@ -4,11 +4,12 @@ import "encoding/json"
 
 type WorkflowSpec struct {
 	RuntimeGroup bool           `json:"runtimegroup"`
+	ColonyID     string         `json:"colonyid"`
 	ProcessSpecs []*ProcessSpec `json:"processspecs"`
 }
 
-func CreateWorkflowSpec(runtimeGroup bool) *WorkflowSpec {
-	workflowSpec := &WorkflowSpec{RuntimeGroup: runtimeGroup}
+func CreateWorkflowSpec(colonyID string, runtimeGroup bool) *WorkflowSpec {
+	workflowSpec := &WorkflowSpec{ColonyID: colonyID, RuntimeGroup: runtimeGroup}
 	return workflowSpec
 }
 
@@ -28,6 +29,10 @@ func ConvertJSONToWorkflowSpec(jsonString string) (*WorkflowSpec, error) {
 
 func (workflowSpec *WorkflowSpec) Equals(workflowSpec2 *WorkflowSpec) bool {
 	same := true
+	if workflowSpec.ColonyID != workflowSpec2.ColonyID {
+		same = false
+	}
+
 	if workflowSpec.RuntimeGroup != workflowSpec2.RuntimeGroup {
 		same = false
 	}

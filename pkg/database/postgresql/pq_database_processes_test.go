@@ -393,17 +393,17 @@ func TestSetWaitingForParents(t *testing.T) {
 	err = db.AddProcess(process)
 	assert.Nil(t, err)
 
-	err = db.SetWaitingForParents(process.ID, true)
+	err = db.SetWaitForParents(process.ID, true)
 	assert.Nil(t, err)
 	process2, err := db.GetProcessByID(process.ID)
 	assert.Nil(t, err)
-	assert.True(t, process2.WaitingForParents)
+	assert.True(t, process2.WaitForParents)
 
-	err = db.SetWaitingForParents(process.ID, false)
+	err = db.SetWaitForParents(process.ID, false)
 	assert.Nil(t, err)
 	process2, err = db.GetProcessByID(process.ID)
 	assert.Nil(t, err)
-	assert.False(t, process2.WaitingForParents)
+	assert.False(t, process2.WaitForParents)
 }
 
 func TestSetProcessState(t *testing.T) {
@@ -448,6 +448,34 @@ func TestSetDeadline(t *testing.T) {
 	processFromDB, err := db.GetProcessByID(process.ID)
 	assert.Nil(t, err)
 	assert.NotEqual(t, processFromDB.Deadline, time.Time{})
+}
+
+func TestFindUnassignedProcesses1(t *testing.T) {
+	db, err := PrepareTests()
+	assert.Nil(t, err)
+
+	defer db.Close()
+
+	colony := core.CreateColony(core.GenerateRandomID(), "test_colony_name_1")
+	err = db.AddColony(colony)
+	assert.Nil(t, err)
+
+	runtime := utils.CreateTestRuntime(colony.ID)
+	err = db.AddRuntime(runtime)
+	assert.Nil(t, err)
+
+	process1 := utils.CreateTestProcess(colony.ID)
+	err = db.AddProcess(process1)
+	assert.Nil(t, err)
+
+	process2 := utils.CreateTestProcess(colony.ID)
+	process2.WaitForParents = true
+	err = db.AddProcess(process2)
+	assert.Nil(t, err)
+
+	processsFromDB, err := db.FindUnassignedProcesses(colony.ID, runtime.ID, runtime.RuntimeType, 100)
+	assert.Nil(t, err)
+	assert.Len(t, processsFromDB, 1)
 }
 
 func TestFindUnassignedProcesses2(t *testing.T) {

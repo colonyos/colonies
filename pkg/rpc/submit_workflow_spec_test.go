@@ -14,7 +14,7 @@ func createWorkflowSpec() *core.WorkflowSpec {
 	//          \ /
 	//         task4
 
-	workflowSpec := core.CreateWorkflowSpec(true)
+	workflowSpec := core.CreateWorkflowSpec(core.GenerateRandomID(), true)
 
 	processSpec1 := core.CreateEmptyProcessSpec()
 	processSpec1.Name = "task1"

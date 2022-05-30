@@ -38,8 +38,10 @@ func generateProcessGraph(t *testing.T, db *PQDatabase, colonyID string) *core.P
 	err = db.AddProcess(process4)
 	assert.Nil(t, err)
 
-	graph, err := core.CreateProcessGraph(db, colonyID, process1.ID)
+	graph, err := core.CreateProcessGraph(colonyID)
 	assert.Nil(t, err)
+
+	graph.AddRoot(process1.ID)
 
 	graph.RuntimeGroup = "local"
 
@@ -58,7 +60,7 @@ func TestAddProcessGraph(t *testing.T) {
 	err = db.AddProcessGraph(graph)
 	assert.Nil(t, err)
 
-	graph2, err := db.GetProcessGraphByID(db, graph.ID)
+	graph2, err := db.GetProcessGraphByID(graph.ID)
 	assert.Nil(t, err)
 	assert.True(t, graph.Equals(graph2))
 }
@@ -77,13 +79,13 @@ func TestSetProcessGraphState(t *testing.T) {
 
 	err = db.SetProcessGraphState(graph.ID, core.WAITING)
 	assert.Nil(t, err)
-	graph2, err := db.GetProcessGraphByID(db, graph.ID)
+	graph2, err := db.GetProcessGraphByID(graph.ID)
 	assert.Nil(t, err)
 	assert.True(t, graph2.State == core.WAITING)
 
 	err = db.SetProcessGraphState(graph.ID, core.FAILED)
 	assert.Nil(t, err)
-	graph2, err = db.GetProcessGraphByID(db, graph.ID)
+	graph2, err = db.GetProcessGraphByID(graph.ID)
 	assert.Nil(t, err)
 	assert.True(t, graph2.State == core.FAILED)
 }
@@ -129,19 +131,19 @@ func TestFindProcessGraphs(t *testing.T) {
 		}
 	}
 
-	graphs, err := db.FindWaitingProcessGraphs(db, colonyID, 100)
+	graphs, err := db.FindWaitingProcessGraphs(colonyID, 100)
 	assert.Nil(t, err)
 	assert.Len(t, graphs, 10)
 
-	graphs, err = db.FindRunningProcessGraphs(db, colonyID, 100)
+	graphs, err = db.FindRunningProcessGraphs(colonyID, 100)
 	assert.Nil(t, err)
 	assert.Len(t, graphs, 9)
 
-	graphs, err = db.FindFailedProcessGraphs(db, colonyID, 100)
+	graphs, err = db.FindFailedProcessGraphs(colonyID, 100)
 	assert.Nil(t, err)
 	assert.Len(t, graphs, 8)
 
-	graphs, err = db.FindSuccessfulProcessGraphs(db, colonyID, 100)
+	graphs, err = db.FindSuccessfulProcessGraphs(colonyID, 100)
 	assert.Nil(t, err)
 	assert.Len(t, graphs, 7)
 

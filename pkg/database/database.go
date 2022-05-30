@@ -42,7 +42,7 @@ type Database interface {
 	ResetProcess(process *core.Process) error
 	SetProcessState(processID string, state int) error
 	SetRuntimeGroup(processID string, runtimeGroup string) error
-	SetWaitingForParents(processID string, waitingForParent bool) error
+	SetWaitForParents(processID string, waitingForParent bool) error
 	SetDeadline(process *core.Process, deadline time.Time) error
 	ResetAllProcesses(process *core.Process) error
 	AssignRuntime(runtimeID string, process *core.Process) error
@@ -75,12 +75,12 @@ type Database interface {
 
 	// ProcessGraph functions
 	AddProcessGraph(processGraph *core.ProcessGraph) error
-	GetProcessGraphByID(processGraphStorage core.ProcessGraphStorage, processGraphID string) (*core.ProcessGraph, error)
+	GetProcessGraphByID(processGraphID string) (*core.ProcessGraph, error)
 	SetProcessGraphState(processGraphID string, state int) error
-	FindWaitingProcessGraphs(processGraphStorage core.ProcessGraphStorage, colonyID string, count int) ([]*core.ProcessGraph, error)
-	FindRunningProcessGraphs(processGraphStorage core.ProcessGraphStorage, colonyID string, count int) ([]*core.ProcessGraph, error)
-	FindSuccessfulProcessGraphs(processGraphStorage core.ProcessGraphStorage, colonyID string, count int) ([]*core.ProcessGraph, error)
-	FindFailedProcessGraphs(processGraphStorage core.ProcessGraphStorage, colonyID string, count int) ([]*core.ProcessGraph, error)
+	FindWaitingProcessGraphs(colonyID string, count int) ([]*core.ProcessGraph, error)
+	FindRunningProcessGraphs(colonyID string, count int) ([]*core.ProcessGraph, error)
+	FindSuccessfulProcessGraphs(colonyID string, count int) ([]*core.ProcessGraph, error)
+	FindFailedProcessGraphs(colonyID string, count int) ([]*core.ProcessGraph, error)
 	NrOfWaitingProcessGraphs() (int, error)
 	NrOfRunningProcessGraphs() (int, error)
 	NrOfSuccessfulProcessGraphs() (int, error)
@@ -89,5 +89,6 @@ type Database interface {
 	NrOfRunningProcessGraphsForColony(colonyID string) (int, error)
 	NrOfSuccessfulProcessGraphsForColony(colonyID string) (int, error)
 	NrOfFailedProcessGraphsForColony(colonyID string) (int, error)
+
 	// TODO: Implement support deleting process graphs
 }

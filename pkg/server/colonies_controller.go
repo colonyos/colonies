@@ -22,21 +22,22 @@ type subscribers struct {
 }
 
 type command struct {
-	stop                 bool
-	errorChan            chan error
-	process              *core.Process
-	count                int
-	colony               *core.Colony
-	colonyID             string
-	colonyReplyChan      chan *core.Colony
-	coloniesReplyChan    chan []*core.Colony
-	processReplyChan     chan *core.Process
-	processesReplyChan   chan []*core.Process
-	processStatReplyChan chan *core.ProcessStat
-	runtimeReplyChan     chan *core.Runtime
-	runtimesReplyChan    chan []*core.Runtime
-	attributeReplyChan   chan *core.Attribute
-	handler              func(cmd *command)
+	stop                  bool
+	errorChan             chan error
+	process               *core.Process
+	count                 int
+	colony                *core.Colony
+	colonyID              string
+	colonyReplyChan       chan *core.Colony
+	coloniesReplyChan     chan []*core.Colony
+	processReplyChan      chan *core.Process
+	processesReplyChan    chan []*core.Process
+	processGraphReplyChan chan *core.ProcessGraph
+	processStatReplyChan  chan *core.ProcessStat
+	runtimeReplyChan      chan *core.Runtime
+	runtimesReplyChan     chan []*core.Runtime
+	attributeReplyChan    chan *core.Attribute
+	handler               func(cmd *command)
 }
 
 type coloniesController struct {
@@ -441,6 +442,33 @@ func (controller *coloniesController) addProcess(process *core.Process) (*core.P
 	}
 }
 
+func (controller *coloniesController) addProcessGraph(processGraph *core.ProcessGraph) (*core.ProcessGraph, error) {
+	cmd := &command{processGraphReplyChan: make(chan *core.ProcessGraph, 1),
+		errorChan: make(chan error, 1),
+		handler: func(cmd *command) {
+			err := controller.db.AddProcessGraph(processGraph)
+			if err != nil {
+				cmd.errorChan <- err
+				return
+			}
+
+			addedProcessGraph, err := controller.db.GetProcessGraphByID(processGraph.ID)
+			if err != nil {
+				cmd.errorChan <- err
+				return
+			}
+			cmd.processGraphReplyChan <- addedProcessGraph
+		}}
+
+	controller.cmdQueue <- cmd
+	select {
+	case err := <-cmd.errorChan:
+		return nil, err
+	case processGraph := <-cmd.processGraphReplyChan:
+		return processGraph, nil
+	}
+}
+
 func (controller *coloniesController) getProcessByID(processID string) (*core.Process, error) {
 	cmd := &command{processReplyChan: make(chan *core.Process, 1),
 		errorChan: make(chan error, 1),
@@ -660,7 +688,29 @@ func (controller *coloniesController) closeSuccessful(processID string) error {
 				cmd.errorChan <- err
 				return
 			}
-			cmd.errorChan <- controller.db.MarkSuccessful(process)
+
+			err = controller.db.MarkSuccessful(process)
+			if err != nil {
+				cmd.errorChan <- err
+				return
+			}
+
+			if process.ProcessGraphID != "" {
+				log.WithFields(log.Fields{"ProcessGraph": process.ProcessGraphID}).Info("Resolving process graph")
+				processGraph, err := controller.db.GetProcessGraphByID(process.ProcessGraphID)
+				if err != nil {
+					cmd.errorChan <- err
+					return
+				}
+				processGraph.SetStorage(controller.db)
+				err = processGraph.Resolve()
+				if err != nil {
+					cmd.errorChan <- err
+					return
+				}
+			}
+
+			cmd.errorChan <- nil
 			controller.sendProcessChangeStateEvent(process)
 		}}
 
@@ -676,7 +726,29 @@ func (controller *coloniesController) closeFailed(processID string) error {
 				cmd.errorChan <- err
 				return
 			}
-			cmd.errorChan <- controller.db.MarkFailed(process)
+
+			err = controller.db.MarkFailed(process)
+			if err != nil {
+				cmd.errorChan <- err
+				return
+			}
+
+			if process.ProcessGraphID != "" {
+				log.WithFields(log.Fields{"ProcessGraph": process.ProcessGraphID}).Info("Resolving process graph, one process closed as failed")
+				processGraph, err := controller.db.GetProcessGraphByID(process.ProcessGraphID)
+				if err != nil {
+					cmd.errorChan <- err
+					return
+				}
+				processGraph.SetStorage(controller.db)
+				err = processGraph.Resolve()
+				if err != nil {
+					cmd.errorChan <- err
+					return
+				}
+			}
+
+			cmd.errorChan <- nil
 			controller.sendProcessChangeStateEvent(process)
 		}}
 
@@ -710,6 +782,7 @@ func (controller *coloniesController) assignRuntime(runtimeID string, colonyID s
 				cmd.errorChan <- err
 				return
 			}
+
 			selectedProcess, err := controller.planner.Select(runtimeID, processes)
 			if err != nil {
 				cmd.errorChan <- err
