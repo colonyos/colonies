@@ -19,8 +19,8 @@ func (db *PQDatabase) AddProcess(process *core.Process) error {
 
 	submissionTime := time.Now()
 
-	sqlStatement := `INSERT INTO  ` + db.dbPrefix + `PROCESSES (PROCESS_ID, TARGET_COLONY_ID, TARGET_RUNTIME_IDS, ASSIGNED_RUNTIME_ID, STATE, IS_ASSIGNED, RUNTIME_TYPE, SUBMISSION_TIME, START_TIME, END_TIME, DEADLINE, RETRIES, IMAGE, CMD, ARGS, VOLUMES, PORTS, MAX_EXEC_TIME, MAX_RETRIES, MEM, CORES, GPUs) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22)`
-	_, err := db.postgresql.Exec(sqlStatement, process.ID, process.ProcessSpec.Conditions.ColonyID, pq.Array(targetRuntimeIDs), process.AssignedRuntimeID, process.State, process.IsAssigned, process.ProcessSpec.Conditions.RuntimeType, submissionTime, time.Time{}, time.Time{}, process.Deadline, 0, process.ProcessSpec.Image, process.ProcessSpec.Cmd, pq.Array(process.ProcessSpec.Args), pq.Array(process.ProcessSpec.Volumes), pq.Array(process.ProcessSpec.Ports), process.ProcessSpec.MaxExecTime, process.ProcessSpec.MaxRetries, process.ProcessSpec.Conditions.Mem, process.ProcessSpec.Conditions.Cores, process.ProcessSpec.Conditions.GPUs)
+	sqlStatement := `INSERT INTO  ` + db.dbPrefix + `PROCESSES (PROCESS_ID, TARGET_COLONY_ID, TARGET_RUNTIME_IDS, ASSIGNED_RUNTIME_ID, RUNTIME_GROUP, STATE, IS_ASSIGNED, RUNTIME_TYPE, SUBMISSION_TIME, START_TIME, END_TIME, DEADLINE, RETRIES, NAME, IMAGE, CMD, ARGS, VOLUMES, PORTS, MAX_EXEC_TIME, MAX_RETRIES, MEM, CORES, GPUs, DEPENDENCIES, PRIORITY, WAIT_FOR_PARENTS, PARENTS, CHILDREN, PROCESS_GRAPH_ID) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30)`
+	_, err := db.postgresql.Exec(sqlStatement, process.ID, process.ProcessSpec.Conditions.ColonyID, pq.Array(targetRuntimeIDs), process.AssignedRuntimeID, process.ProcessSpec.Conditions.RuntimeGroup, process.State, process.IsAssigned, process.ProcessSpec.Conditions.RuntimeType, submissionTime, time.Time{}, time.Time{}, process.Deadline, 0, process.ProcessSpec.Name, process.ProcessSpec.Image, process.ProcessSpec.Cmd, pq.Array(process.ProcessSpec.Args), pq.Array(process.ProcessSpec.Volumes), pq.Array(process.ProcessSpec.Ports), process.ProcessSpec.MaxExecTime, process.ProcessSpec.MaxRetries, process.ProcessSpec.Conditions.Mem, process.ProcessSpec.Conditions.Cores, process.ProcessSpec.Conditions.GPUs, pq.Array(process.ProcessSpec.Conditions.Dependencies), process.ProcessSpec.Conditions.Priority, process.WaitForParents, pq.Array(process.Parents), pq.Array(process.Children), process.ProcessGraphID)
 	if err != nil {
 		return err
 	}
@@ -48,6 +48,7 @@ func (db *PQDatabase) parseProcesses(rows *sql.Rows) ([]*core.Process, error) {
 		var targetColonyID string
 		var targetRuntimeIDs []string
 		var assignedRuntimeID string
+		var runtimeGroup string
 		var state int
 		var isAssigned bool
 		var runtimeType string
@@ -55,6 +56,7 @@ func (db *PQDatabase) parseProcesses(rows *sql.Rows) ([]*core.Process, error) {
 		var startTime time.Time
 		var endTime time.Time
 		var deadline time.Time
+		var name string
 		var image string
 		var cmd string
 		var args []string
@@ -66,8 +68,14 @@ func (db *PQDatabase) parseProcesses(rows *sql.Rows) ([]*core.Process, error) {
 		var mem int
 		var cores int
 		var gpus int
+		var dependencies []string
+		var priority int
+		var waitForParent bool
+		var parents []string
+		var children []string
+		var processGraphID string
 
-		if err := rows.Scan(&processID, &targetColonyID, pq.Array(&targetRuntimeIDs), &assignedRuntimeID, &state, &isAssigned, &runtimeType, &submissionTime, &startTime, &endTime, &deadline, &image, &cmd, pq.Array(&args), pq.Array(&volumes), pq.Array(&ports), &maxExecTime, &retries, &maxRetries, &mem, &cores, &gpus); err != nil {
+		if err := rows.Scan(&processID, &targetColonyID, pq.Array(&targetRuntimeIDs), &assignedRuntimeID, &runtimeGroup, &state, &isAssigned, &runtimeType, &submissionTime, &startTime, &endTime, &deadline, &name, &image, &cmd, pq.Array(&args), pq.Array(&volumes), pq.Array(&ports), &maxExecTime, &retries, &maxRetries, &mem, &cores, &gpus, pq.Array(&dependencies), &priority, &waitForParent, pq.Array(&parents), pq.Array(&children), &processGraphID); err != nil {
 			return nil, err
 		}
 
@@ -91,9 +99,15 @@ func (db *PQDatabase) parseProcesses(rows *sql.Rows) ([]*core.Process, error) {
 			env[attribute.Key] = attribute.Value
 		}
 
-		processSpec := core.CreateProcessSpec(image, cmd, args, volumes, ports, targetColonyID, targetRuntimeIDs, runtimeType, maxExecTime, maxRetries, mem, cores, gpus, env)
+		processSpec := core.CreateProcessSpec(name, image, cmd, args, volumes, ports, targetColonyID, targetRuntimeIDs, runtimeType, maxExecTime, maxRetries, mem, cores, gpus, env, dependencies, priority)
 		process := core.CreateProcessFromDB(processSpec, processID, assignedRuntimeID, isAssigned, state, submissionTime, startTime, endTime, deadline, retries, attributes)
 		processes = append(processes, process)
+
+		process.ProcessSpec.Conditions.RuntimeGroup = runtimeGroup
+		process.WaitForParents = waitForParent
+		process.Parents = parents
+		process.Children = children
+		process.ProcessGraphID = processGraphID
 	}
 
 	return processes, nil
@@ -259,7 +273,7 @@ func (db *PQDatabase) FindFailedProcesses(colonyID string, count int) ([]*core.P
 func (db *PQDatabase) FindUnassignedProcesses(colonyID string, runtimeID string, runtimeType string, count int) ([]*core.Process, error) {
 	// Note: The @> function tests if an array is a subset of another array
 	// We need to do that since the TARGET_runtime_IDS can contains many IDs
-	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `PROCESSES WHERE RUNTIME_TYPE=$1 AND IS_ASSIGNED=FALSE AND TARGET_COLONY_ID=$2 AND (TARGET_runtime_IDS@>$3 OR TARGET_runtime_IDS@>$4) ORDER BY SUBMISSION_TIME LIMIT $5`
+	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `PROCESSES WHERE RUNTIME_TYPE=$1 AND IS_ASSIGNED=FALSE AND WAIT_FOR_PARENTS=FALSE AND TARGET_COLONY_ID=$2 AND (TARGET_runtime_IDS@>$3 OR TARGET_runtime_IDS@>$4) ORDER BY SUBMISSION_TIME LIMIT $5`
 	rows, err := db.postgresql.Query(sqlStatement, runtimeType, colonyID, pq.Array([]string{runtimeID}), pq.Array([]string{"*"}), count)
 	if err != nil {
 		return nil, err
@@ -331,6 +345,36 @@ func (db *PQDatabase) ResetProcess(process *core.Process) error {
 	process.SetEndTime(time.Time{})
 	process.SetAssignedRuntimeID("")
 	process.SetState(core.WAITING)
+
+	return nil
+}
+
+func (db *PQDatabase) SetWaitForParents(processID string, waitForParent bool) error {
+	sqlStatement := `UPDATE ` + db.dbPrefix + `PROCESSES SET WAIT_FOR_PARENTS=$1 WHERE PROCESS_ID=$2`
+	_, err := db.postgresql.Exec(sqlStatement, waitForParent, processID)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (db *PQDatabase) SetRuntimeGroup(processID string, runtimeGroup string) error {
+	sqlStatement := `UPDATE ` + db.dbPrefix + `PROCESSES SET RUNTIME_GROUP=$1 WHERE PROCESS_ID=$2`
+	_, err := db.postgresql.Exec(sqlStatement, runtimeGroup, processID)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (db *PQDatabase) SetProcessState(processID string, state int) error {
+	sqlStatement := `UPDATE ` + db.dbPrefix + `PROCESSES SET STATE=$1 WHERE PROCESS_ID=$2`
+	_, err := db.postgresql.Exec(sqlStatement, state, processID)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
