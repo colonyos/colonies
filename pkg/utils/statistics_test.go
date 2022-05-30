@@ -19,7 +19,7 @@ func TestCalcAvgTimes(t *testing.T) {
 	cores := 10
 	gpus := 1
 
-	processSpec1 := core.CreateProcessSpec("test_image", "test_cmd", []string{"test_arg"}, []string{"test_volumes"}, []string{"test_ports"}, colonyID, []string{}, runtimeType, timeout, maxRetries, mem, cores, gpus, make(map[string]string))
+	processSpec1 := core.CreateProcessSpec("test_name", "test_image", "test_cmd", []string{"test_arg"}, []string{"test_volumes"}, []string{"test_ports"}, colonyID, []string{}, runtimeType, timeout, maxRetries, mem, cores, gpus, make(map[string]string), []string{}, 1)
 
 	var zeroProcesses []*core.Process
 	var processes []*core.Process

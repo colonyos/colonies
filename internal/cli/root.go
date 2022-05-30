@@ -39,6 +39,7 @@ var ID string
 var PrvKey string
 var RuntimeName string
 var RuntimeType string
+var RuntimeGroup string
 var RuntimeID string
 var RuntimePrvKey string
 var CPU string

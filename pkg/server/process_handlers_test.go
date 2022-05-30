@@ -9,222 +9,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestAddColony(t *testing.T) {
-	client, server, serverPrvKey, done := prepareTests(t)
-
-	colony, _, err := utils.CreateTestColonyWithKey()
-	assert.Nil(t, err)
-	addedColony, err := client.AddColony(colony, serverPrvKey)
-	assert.Nil(t, err)
-	assert.True(t, colony.Equals(addedColony))
-
-	server.Shutdown()
-	<-done
-}
-
-func TestDeleteColony(t *testing.T) {
-	client, server, serverPrvKey, done := prepareTests(t)
-
-	colony, _, err := utils.CreateTestColonyWithKey()
-	assert.Nil(t, err)
-	addedColony, err := client.AddColony(colony, serverPrvKey)
-	assert.Nil(t, err)
-	assert.True(t, colony.Equals(addedColony))
-
-	coloniesFromServer, err := client.GetColonies(serverPrvKey)
-	assert.Nil(t, err)
-	assert.Len(t, coloniesFromServer, 1)
-
-	err = client.DeleteColony(addedColony.ID, serverPrvKey)
-	assert.Nil(t, err)
-
-	coloniesFromServer, err = client.GetColonies(serverPrvKey)
-	assert.Nil(t, err)
-	assert.Len(t, coloniesFromServer, 0)
-
-	server.Shutdown()
-	<-done
-}
-
-func TestGetColony(t *testing.T) {
-	client, server, serverPrvKey, done := prepareTests(t)
-
-	colony, colonyPrvKey, err := utils.CreateTestColonyWithKey()
-	assert.Nil(t, err)
-	_, err = client.AddColony(colony, serverPrvKey)
-	assert.Nil(t, err)
-
-	runtime, runtimePrvKey, err := utils.CreateTestRuntimeWithKey(colony.ID)
-	assert.Nil(t, err)
-	_, err = client.AddRuntime(runtime, colonyPrvKey)
-	assert.Nil(t, err)
-
-	err = client.ApproveRuntime(runtime.ID, colonyPrvKey)
-	assert.Nil(t, err)
-
-	colonyFromServer, err := client.GetColonyByID(colony.ID, runtimePrvKey)
-	assert.Nil(t, err)
-	assert.True(t, colony.Equals(colonyFromServer))
-
-	server.Shutdown()
-	<-done
-}
-
-func TestGetColonies(t *testing.T) {
-	client, server, serverPrvKey, done := prepareTests(t)
-
-	colony1, _, err := utils.CreateTestColonyWithKey()
-	assert.Nil(t, err)
-	_, err = client.AddColony(colony1, serverPrvKey)
-	assert.Nil(t, err)
-
-	colony2, _, err := utils.CreateTestColonyWithKey()
-	assert.Nil(t, err)
-	_, err = client.AddColony(colony2, serverPrvKey)
-	assert.Nil(t, err)
-
-	var colonies []*core.Colony
-	colonies = append(colonies, colony1)
-	colonies = append(colonies, colony2)
-
-	coloniesFromServer, err := client.GetColonies(serverPrvKey)
-	assert.Nil(t, err)
-	assert.True(t, core.IsColonyArraysEqual(colonies, coloniesFromServer))
-
-	server.Shutdown()
-	<-done
-}
-
-func TestAddRuntime(t *testing.T) {
-	client, server, serverPrvKey, done := prepareTests(t)
-
-	colony, colonyPrvKey, err := utils.CreateTestColonyWithKey()
-	_, err = client.AddColony(colony, serverPrvKey)
-	assert.Nil(t, err)
-
-	runtime, runtimePrvKey, err := utils.CreateTestRuntimeWithKey(colony.ID)
-	assert.Nil(t, err)
-	addedRuntime, err := client.AddRuntime(runtime, colonyPrvKey)
-	assert.Nil(t, err)
-	assert.True(t, runtime.Equals(addedRuntime))
-	err = client.ApproveRuntime(runtime.ID, colonyPrvKey)
-	assert.Nil(t, err)
-
-	// Just to make the comparison below work, the state will change after it has been approved
-	addedRuntime.State = core.APPROVED
-
-	runtimeFromServer, err := client.GetRuntime(runtime.ID, runtimePrvKey)
-	assert.Nil(t, err)
-	assert.NotNil(t, runtimeFromServer)
-	assert.True(t, addedRuntime.Equals(runtimeFromServer))
-
-	server.Shutdown()
-	<-done
-}
-
-func TestGetRuntimes(t *testing.T) {
-	client, server, serverPrvKey, done := prepareTests(t)
-
-	colony, colonyPrvKey, err := utils.CreateTestColonyWithKey()
-	assert.Nil(t, err)
-	_, err = client.AddColony(colony, serverPrvKey)
-	assert.Nil(t, err)
-
-	runtime1, runtime1PrvKey, err := utils.CreateTestRuntimeWithKey(colony.ID)
-	_, err = client.AddRuntime(runtime1, colonyPrvKey)
-	assert.Nil(t, err)
-	err = client.ApproveRuntime(runtime1.ID, colonyPrvKey)
-	assert.Nil(t, err)
-
-	runtime2, _, err := utils.CreateTestRuntimeWithKey(colony.ID)
-	_, err = client.AddRuntime(runtime2, colonyPrvKey)
-	assert.Nil(t, err)
-	err = client.ApproveRuntime(runtime2.ID, colonyPrvKey)
-	assert.Nil(t, err)
-
-	// Just to make the comparison below work, the state will change after it has been approved
-	runtime1.State = core.APPROVED
-	runtime2.State = core.APPROVED
-
-	var runtimes []*core.Runtime
-	runtimes = append(runtimes, runtime1)
-	runtimes = append(runtimes, runtime2)
-
-	runtimesFromServer, err := client.GetRuntimes(colony.ID, runtime1PrvKey)
-	assert.Nil(t, err)
-	assert.True(t, core.IsRuntimeArraysEqual(runtimes, runtimesFromServer))
-
-	server.Shutdown()
-	<-done
-}
-
-func TestApproveRejectRuntime(t *testing.T) {
-	env, client, server, _, done := setupTestEnv2(t)
-
-	// Add an approved runtime to use for the test below
-	approvedRuntime, approvedRuntimePrvKey, err := utils.CreateTestRuntimeWithKey(env.colonyID)
-	assert.Nil(t, err)
-	_, err = client.AddRuntime(approvedRuntime, env.colonyPrvKey)
-	assert.Nil(t, err)
-	err = client.ApproveRuntime(approvedRuntime.ID, env.colonyPrvKey)
-	assert.Nil(t, err)
-
-	testRuntime, _, err := utils.CreateTestRuntimeWithKey(env.colonyID)
-	assert.Nil(t, err)
-	_, err = client.AddRuntime(testRuntime, env.colonyPrvKey)
-	assert.Nil(t, err)
-
-	runtimeFromServer, err := client.GetRuntime(testRuntime.ID, approvedRuntimePrvKey)
-	assert.Nil(t, err)
-	assert.False(t, runtimeFromServer.IsApproved())
-
-	err = client.ApproveRuntime(testRuntime.ID, env.colonyPrvKey)
-	assert.Nil(t, err)
-
-	runtimeFromServer, err = client.GetRuntime(testRuntime.ID, approvedRuntimePrvKey)
-	assert.Nil(t, err)
-	assert.True(t, runtimeFromServer.IsApproved())
-
-	err = client.RejectRuntime(testRuntime.ID, env.colonyPrvKey)
-	assert.Nil(t, err)
-
-	runtimeFromServer, err = client.GetRuntime(testRuntime.ID, approvedRuntimePrvKey)
-	assert.Nil(t, err)
-	assert.False(t, runtimeFromServer.IsApproved())
-
-	server.Shutdown()
-	<-done
-}
-
-func TestDeleteRuntime(t *testing.T) {
-	env, client, server, _, done := setupTestEnv2(t)
-
-	runtime, runtimePrvKey, err := utils.CreateTestRuntimeWithKey(env.colonyID)
-	assert.Nil(t, err)
-	_, err = client.AddRuntime(runtime, env.colonyPrvKey)
-	assert.Nil(t, err)
-	err = client.ApproveRuntime(runtime.ID, env.colonyPrvKey)
-	assert.Nil(t, err)
-
-	// Try to get it
-	runtimeFromServer, err := client.GetRuntime(runtime.ID, runtimePrvKey)
-	assert.Nil(t, err)
-	assert.NotNil(t, runtimeFromServer)
-	assert.True(t, runtime.ID == runtimeFromServer.ID)
-
-	// Now delete it
-	err = client.DeleteRuntime(runtime.ID, env.colonyPrvKey)
-	assert.Nil(t, err)
-
-	// Try to get it again, it should be gone
-	runtimeFromServer, err = client.GetRuntime(runtime.ID, runtimePrvKey)
-	assert.NotNil(t, err)
-	assert.Nil(t, runtimeFromServer)
-
-	server.Shutdown()
-	<-done
-}
-
 func TestSubmitProcess(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 
@@ -636,39 +420,6 @@ func TestCloseFailed(t *testing.T) {
 	<-done
 }
 
-func TestAddGetAttributes(t *testing.T) {
-	env, client, server, _, done := setupTestEnv2(t)
-
-	processSpec := utils.CreateTestProcessSpec(env.colonyID)
-	addedProcess, err := client.SubmitProcessSpec(processSpec, env.runtimePrvKey)
-	assert.Nil(t, err)
-	assert.Equal(t, core.PENDING, addedProcess.State)
-
-	assignedProcess, err := client.AssignProcess(env.colonyID, env.runtimePrvKey)
-	assert.Nil(t, err)
-
-	attribute := core.CreateAttribute(assignedProcess.ID, env.colonyID, core.OUT, "result", "helloworld")
-	addedAttribute, err := client.AddAttribute(attribute, env.runtimePrvKey)
-	assert.Nil(t, err)
-	assert.Equal(t, attribute.ID, addedAttribute.ID)
-
-	assignedProcessFromServer, err := client.GetProcess(assignedProcess.ID, env.runtimePrvKey)
-
-	out := make(map[string]string)
-	for _, attribute := range assignedProcessFromServer.Attributes {
-		out[attribute.Key] = attribute.Value
-	}
-
-	assert.Equal(t, "helloworld", out["result"])
-
-	attributeFromServer, err := client.GetAttribute(attribute.ID, env.runtimePrvKey)
-	assert.Nil(t, err)
-	assert.Equal(t, attribute.ID, attributeFromServer.ID)
-
-	server.Shutdown()
-	<-done
-}
-
 // Runtime 2 subscribes on process events and expects to receive an event when a new process is submitted
 // Runtime 1 submitts a new process
 // Runtime 2 receives an event
@@ -865,7 +616,7 @@ func TestMaxExecTimeMaxretries(t *testing.T) {
 	}
 
 	// Wait for the process to time out
-	time.Sleep(20 * time.Second)
+	time.Sleep(10 * time.Second)
 
 	stat, err := client.GetProcessStat(env.colonyID, env.runtimePrvKey)
 	assert.Nil(t, err)
@@ -882,7 +633,7 @@ func TestMaxExecTimeMaxretries(t *testing.T) {
 	assert.Equal(t, stat.Running, 10)
 
 	// Wait for the process to time out
-	time.Sleep(5 * time.Second)
+	time.Sleep(10 * time.Second)
 
 	stat, err = client.GetProcessStat(env.colonyID, env.runtimePrvKey)
 	assert.Nil(t, err)
