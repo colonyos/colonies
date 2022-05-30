@@ -1,2 +1,2 @@
 #!/bin/bash
-kubectl delete namespace rocksigma-computer-colonies
+kubectl delete namespace colonyos-colonies 
