@@ -36,7 +36,7 @@ Or alternatively:
 ```console
 export TZ=Europe/Stockholm
 export COLONIES_SERVERID="9289dfccedf27392810b96968535530bb69f90afe7c35738e0e627f3810d943e"
-export COLONIES_SERVER_PORT=50080
+export COLONIES_SERVERPORT=50080
 export COLONIES_TLS true 
 export COLONIES_DBHOST=localhost
 export COLONIES_DBUSER=postgres

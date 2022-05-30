@@ -15,6 +15,7 @@ type Runtime struct {
 	ID                string    `json:"runtimeid"`
 	RuntimeType       string    `json:"runtimetype"`
 	Name              string    `json:"name"`
+	RuntimeGroup      string    `json:"runtimegroup"`
 	ColonyID          string    `json:"colonyid"`
 	CPU               string    `json:"cpu"`
 	Cores             int       `json:"cores"`
@@ -29,6 +30,7 @@ type Runtime struct {
 func CreateRuntime(id string,
 	runtimeType string,
 	name string,
+	runtimeGroup string,
 	colonyID string,
 	cpu string,
 	cores int,
@@ -40,6 +42,7 @@ func CreateRuntime(id string,
 	return &Runtime{ID: id,
 		RuntimeType:       runtimeType,
 		Name:              name,
+		RuntimeGroup:      runtimeGroup,
 		ColonyID:          colonyID,
 		CPU:               cpu,
 		Cores:             cores,
@@ -54,6 +57,7 @@ func CreateRuntime(id string,
 func CreateRuntimeFromDB(id string,
 	runtimeType string,
 	name string,
+	runtimeGroup string,
 	colonyID string,
 	cpu string,
 	cores int,
@@ -63,7 +67,7 @@ func CreateRuntimeFromDB(id string,
 	state int,
 	commissionTime time.Time,
 	lastHeardFromTime time.Time) *Runtime {
-	runtime := CreateRuntime(id, runtimeType, name, colonyID, cpu, cores, mem, gpu, gpus, commissionTime, lastHeardFromTime)
+	runtime := CreateRuntime(id, runtimeType, name, runtimeGroup, colonyID, cpu, cores, mem, gpu, gpus, commissionTime, lastHeardFromTime)
 	runtime.State = state
 	return runtime
 }
@@ -122,6 +126,7 @@ func (runtime *Runtime) Equals(runtime2 *Runtime) bool {
 	if runtime.ID == runtime2.ID &&
 		runtime.RuntimeType == runtime2.RuntimeType &&
 		runtime.Name == runtime2.Name &&
+		runtime.RuntimeGroup == runtime2.RuntimeGroup &&
 		runtime.ColonyID == runtime2.ColonyID &&
 		runtime.CPU == runtime2.CPU &&
 		runtime.Cores == runtime2.Cores &&

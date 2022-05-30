@@ -25,8 +25,8 @@ func init() {
 
 var dbCmd = &cobra.Command{
 	Use:   "database",
-	Short: "manage Colonies database",
-	Long:  "manage Colonies database",
+	Short: "Manage PostgreSQL database",
+	Long:  "Manage PostgreSQL database",
 }
 
 func parseDBEnv() {

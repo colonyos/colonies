@@ -3,7 +3,7 @@ StorageClassName: longhorn
 Timezone: "Europe/Stockholm"
 
 # Colonies server settings
-ColoniesServerHostname: "colonies-dev.rocksigma.computer"
+ColoniesServerHostname: "colonies-dev.colonyos.io"
 ColoniesServerReplicas: 3
 ColoniesServerImage: "colonyos/colonies:latest"
 ColoniesServerID: "039231c7644e04b6895471dd5335cf332681c54e27f81fac54f9067b3f2c0103"

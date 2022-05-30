@@ -35,18 +35,18 @@ func init() {
 
 var serverCmd = &cobra.Command{
 	Use:   "server",
-	Short: "Manage a Colonies Server",
-	Long:  "Manage a Colonies Server",
+	Short: "Manage a server",
+	Long:  "Manage a server",
 }
 
 func parseServerEnv() {
 	var err error
-	ServerHostEnv := os.Getenv("COLONIES_SERVER_HOST")
+	ServerHostEnv := os.Getenv("COLONIES_SERVERHOST")
 	if ServerHostEnv != "" {
 		ServerHost = ServerHostEnv
 	}
 
-	ServerPortEnvStr := os.Getenv("COLONIES_SERVER_PORT")
+	ServerPortEnvStr := os.Getenv("COLONIES_SERVERPORT")
 	if ServerPortEnvStr != "" {
 		ServerPort, err = strconv.Atoi(ServerPortEnvStr)
 		CheckError(err)

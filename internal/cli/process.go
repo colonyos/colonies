@@ -102,8 +102,8 @@ func init() {
 
 var processCmd = &cobra.Command{
 	Use:   "process",
-	Short: "Manage Colony Processes",
-	Long:  "Manage Colony Processes",
+	Short: "Manage processes",
+	Long:  "Manage processes",
 }
 
 var submitProcessCmd = &cobra.Command{
@@ -167,15 +167,15 @@ var submitProcessCmd = &cobra.Command{
 			}
 
 		} else {
-			log.WithFields(log.Fields{"processID": addedProcess.ID}).Info("Process submitted")
+			log.WithFields(log.Fields{"ProcessID": addedProcess.ID}).Info("Process submitted")
 		}
 	},
 }
 
 var assignProcessCmd = &cobra.Command{
 	Use:   "assign",
-	Short: "Assign a Process to a Runtime",
-	Long:  "Assign a Process to a Runtime",
+	Short: "Assign a process to a Runtime",
+	Long:  "Assign a process to a Runtime",
 	Run: func(cmd *cobra.Command, args []string) {
 		parseServerEnv()
 
@@ -213,8 +213,8 @@ var assignProcessCmd = &cobra.Command{
 
 var listWaitingProcessesCmd = &cobra.Command{
 	Use:   "psw",
-	Short: "List all Waiting Processes",
-	Long:  "List all Waiting Processes",
+	Short: "List all waiting processes",
+	Long:  "List all waiting processes",
 	Run: func(cmd *cobra.Command, args []string) {
 		parseServerEnv()
 
@@ -272,8 +272,8 @@ var listWaitingProcessesCmd = &cobra.Command{
 
 var listRunningProcessesCmd = &cobra.Command{
 	Use:   "ps",
-	Short: "List all Running Processes",
-	Long:  "List all Running Processes",
+	Short: "List all running processes",
+	Long:  "List all running processes",
 	Run: func(cmd *cobra.Command, args []string) {
 		parseServerEnv()
 
@@ -330,8 +330,8 @@ var listRunningProcessesCmd = &cobra.Command{
 
 var listSuccessfulProcessesCmd = &cobra.Command{
 	Use:   "pss",
-	Short: "List all Successfull Processes",
-	Long:  "List all Successfull Processes",
+	Short: "List all successfull processes",
+	Long:  "List all successfull processes",
 	Run: func(cmd *cobra.Command, args []string) {
 		parseServerEnv()
 
@@ -388,8 +388,8 @@ var listSuccessfulProcessesCmd = &cobra.Command{
 
 var listFailedProcessesCmd = &cobra.Command{
 	Use:   "psf",
-	Short: "List all Failed Processes",
-	Long:  "List all Failed Processes",
+	Short: "List all failed processes",
+	Long:  "List all failed processes",
 	Run: func(cmd *cobra.Command, args []string) {
 		parseServerEnv()
 
@@ -446,8 +446,8 @@ var listFailedProcessesCmd = &cobra.Command{
 
 var getProcessCmd = &cobra.Command{
 	Use:   "get",
-	Short: "Get info about a Process",
-	Long:  "Get info about a Process",
+	Short: "Get info about a process",
+	Long:  "Get info about a process",
 	Run: func(cmd *cobra.Command, args []string) {
 		parseServerEnv()
 
@@ -690,8 +690,8 @@ var deleteProcessCmd = &cobra.Command{
 
 var deleteAllProcessesCmd = &cobra.Command{
 	Use:   "deleteall",
-	Short: "Delete all Processes for a Colony",
-	Long:  "Delete all Processes for a Colony",
+	Short: "Delete all processes in a Colony",
+	Long:  "Delete all processes in a Colony",
 	Run: func(cmd *cobra.Command, args []string) {
 		parseServerEnv()
 
@@ -728,8 +728,8 @@ var deleteAllProcessesCmd = &cobra.Command{
 
 var closeSuccessful = &cobra.Command{
 	Use:   "close",
-	Short: "Close a Process as Successful",
-	Long:  "Close a Process as Successful",
+	Short: "Close a process as successful",
+	Long:  "Close a process as successful",
 	Run: func(cmd *cobra.Command, args []string) {
 		parseServerEnv()
 
@@ -761,8 +761,8 @@ var closeSuccessful = &cobra.Command{
 
 var closeFailed = &cobra.Command{
 	Use:   "fail",
-	Short: "Close a Process as Failed",
-	Long:  "Close a Process as Failed",
+	Short: "Close a process as failed",
+	Long:  "Close a process as failed",
 	Run: func(cmd *cobra.Command, args []string) {
 		parseServerEnv()
 

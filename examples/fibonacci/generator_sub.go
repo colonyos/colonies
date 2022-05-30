@@ -12,18 +12,18 @@ import (
 func main() {
 	colonyID := os.Getenv("COLONIES_COLONYID")
 	runtimePrvKey := os.Getenv("COLONIES_RUNTIMEPRVKEY")
-	coloniesHost := os.Getenv("COLONIES_SERVER_HOST")
-	coloniesPortStr := os.Getenv("COLONIES_SERVER_PORT")
+	coloniesHost := os.Getenv("COLONIES_SERVERHOST")
+	coloniesPortStr := os.Getenv("COLONIES_SERVERPORT")
 	coloniesPort, err := strconv.Atoi(coloniesPortStr)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(-1)
 	}
 
-	env := make(map[string]string)
-	env["fibonacciNum"] = os.Args[1]
-
-	processSpec := core.CreateProcessSpec("", "", []string{}, []string{}, []string{}, colonyID, []string{}, "cli", -1, 3, 1000, 10, 1, env)
+	processSpec := core.CreateEmptyProcessSpec()
+	processSpec.Conditions.ColonyID = colonyID
+	processSpec.Conditions.RuntimeType = os.Getenv("COLONIES_RUNTIMETYPE")
+	processSpec.Env["fibonacciNum"] = os.Args[1]
 
 	client := client.CreateColoniesClient(coloniesHost, coloniesPort, true, false)
 	addedProcess, err := client.SubmitProcessSpec(processSpec, runtimePrvKey)
@@ -39,7 +39,7 @@ func main() {
 
 	for _, attribute := range process.Attributes {
 		if attribute.Key == "result" {
-			fmt.Println("Process was completed, the last number in the Fibonacci serie " + env["fibonacciNum"] + "is " + attribute.Value)
+			fmt.Println("Process was completed, the last number in the Fibonacci serie " + processSpec.Env["fibonacciNum"] + " is " + attribute.Value)
 		}
 	}
 }

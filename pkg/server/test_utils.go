@@ -125,3 +125,45 @@ func prepareTests(t *testing.T) (*client.ColoniesClient, *ColoniesServer, string
 
 	return client, server, serverPrvKey, done
 }
+
+func generateDiamondtWorkflowSpec(colonyID string) *core.WorkflowSpec {
+	//         task1
+	//          / \
+	//     task2   task3
+	//          \ /
+	//         task4
+
+	workflowSpec := core.CreateWorkflowSpec(colonyID, true)
+
+	processSpec1 := core.CreateEmptyProcessSpec()
+	processSpec1.Name = "task1"
+	processSpec1.Conditions.ColonyID = colonyID
+	processSpec1.Conditions.RuntimeType = "test_runtime_type"
+
+	processSpec2 := core.CreateEmptyProcessSpec()
+	processSpec2.Name = "task2"
+	processSpec2.Conditions.ColonyID = colonyID
+	processSpec2.Conditions.RuntimeType = "test_runtime_type"
+
+	processSpec3 := core.CreateEmptyProcessSpec()
+	processSpec3.Name = "task3"
+	processSpec3.Conditions.ColonyID = colonyID
+	processSpec3.Conditions.RuntimeType = "test_runtime_type"
+
+	processSpec4 := core.CreateEmptyProcessSpec()
+	processSpec4.Name = "task4"
+	processSpec4.Conditions.ColonyID = colonyID
+	processSpec4.Conditions.RuntimeType = "test_runtime_type"
+
+	processSpec2.AddDependency("task1")
+	processSpec3.AddDependency("task1")
+	processSpec4.AddDependency("task2")
+	processSpec4.AddDependency("task3")
+
+	workflowSpec.AddProcessSpec(processSpec1)
+	workflowSpec.AddProcessSpec(processSpec2)
+	workflowSpec.AddProcessSpec(processSpec3)
+	workflowSpec.AddProcessSpec(processSpec4)
+
+	return workflowSpec
+}

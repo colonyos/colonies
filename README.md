@@ -19,6 +19,7 @@ More information can also be found [here](https://colonyos.io).
 ## Key features
 * **Batch processing and distributed RPC.** The Colonies Server maintains several prioritized job queues and keeps track of process statuses. Processes not finishing in time are automatically moved back to the job queue to be executed by another worker.  
 * **Pull-based orchestration.** Users (or workers) submit process specifications the Colonies Server. Colonies workers connect to the Colonies Server and request processes to execute. A HTTP Long Polling/WebSocket protocol ensure that workers can reside anywhere on the Internet, even behind firewalls. The Colonies Server never establish connections directly to workers. 
+* **Multi-step workflows** or **Directed Acyclic Graph (DAG)** to capture dependencies between tasks.
 * **Built-in identity and trust management.** A crypto-protocol based on ECDSA (Elliptic Curve Digital Signature Algorithm) offers identity and trust management to enable Colonies workers member of the same Colony to fully trust each other. Only authorized users or workers can submit process specifications or interact with other workers within a Colony.
 * **Implemented in Golang** with a standard PostgreSQL backend.
 * **SDK in Python, Julia, and Golang.**
@@ -37,11 +38,8 @@ chmod +x /bin/colonies
 
 ### Start a Colonies development server
 The development server is for testing only. All data will be lost when restarting the server. Also note that all keys are well known and all data is sent over unencrypted HTTP.
-```console
-colonies dev
-```
 
-You will have to export some environmental variables in order to use the server.
+You will have to export some environmental variables in order to use the server. Add these variables to your shell.
 
 ```console
 export LANG=en_US.UTF-8
@@ -49,20 +47,30 @@ export LANGUAGE=en_US.UTF-8
 export LC_ALL=en_US.UTF-8
 export LC_CTYPE=UTF-8
 export TZ=Europe/Stockholm
-
-export COLONIES_SERVER_PROTOCOL="http"
-export COLONIES_SERVER_HOST="localhost"
-export COLONIES_SERVER_PORT="50080"
+export COLONIES_SERVERPROTOCOL="http"
+export COLONIES_SERVERHOST="localhost"
+export COLONIES_SERVERPORT="50080"
 export COLONIES_SERVERID="039231c7644e04b6895471dd5335cf332681c54e27f81fac54f9067b3f2c0103"
 export COLONIES_SERVERPRVKEY="fcc79953d8a751bf41db661592dc34d30004b1a651ffa0725b03ac227641499d"
+export COLONIES_DBHOST="localhost"
+export COLONIES_DBUSER="postgres"
+export COLONIES_DBPORT="50070"
+expoer COLONIES_DBPASSWORD="rFcLGNkgsNtksg6Pgtn9CumL4xXBQ7"
 export COLONIES_COLONYID="4787a5071856a4acf702b2ffcea422e3237a679c681314113d86139461290cf4"
 export COLONIES_COLONYPRVKEY="ba949fa134981372d6da62b6a56f336ab4d843b22c02a4257dcf7d0d73097514"
 export COLONIES_RUNTIMEID="3fc05cf3df4b494e95d6a3d297a34f19938f7daa7422ab0d4f794454133341ac"
 export COLONIES_RUNTIMEPRVKEY="ddf7f7791208083b6a9ed975a72684f6406a269cfa36f1b1c32045c0a71fff05"
+export COLONIES_RUNTIMETYPE="cli"
+export COLONIES_RUNTIMEGROUP="local"
 ```
 or 
 ```console
 source examples/devenv
+```
+
+Now, start the development server. The development server will automatically add the keys from the environment (e.g. COLONIES_RUNTIMEPRVKEY) to the Colonies keychain.
+```console
+colonies dev
 ```
 
 ### Start a Colonies worker
@@ -230,5 +238,7 @@ Follow the instructions at [Installation Guide](./docs/Installation.md) and setu
 make test
 ```
 
-# New features under development 
-* **Decentralization.** A built-in Distributed Hash table (Kademlia) to make it possible to create federations of Colonies Servers to enable self-sovereignty and trust chains. Each Colonies Server can join a global overlay network of connected Colonies Servers on the Internet, similar to technologies like IPFS. 
+# Roadmap 1.0 release
+* **Cronjobs**
+* **DAG-based workflows**
+* **Improved support for Decentralization.** A built-in Distributed Hash table (Kademlia) to make it possible to create federations of Colonies Servers to enable self-sovereignty and trust chains. Each Colonies Server can join a global overlay network of connected Colonies Servers on the Internet, similar to technologies like IPFS. 
