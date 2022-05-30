@@ -2,7 +2,6 @@ package server
 
 import (
 	"errors"
-	"fmt"
 	"net/http"
 
 	"github.com/colonyos/colonies/pkg/core"
@@ -45,7 +44,6 @@ func (server *ColoniesServer) handleSubmitWorkflowHTTPRequest(c *gin.Context, re
 			process.WaitForParents = false
 			rootProcesses = append(rootProcesses, process)
 			graph.AddRoot(process.ID)
-			fmt.Println("adding root:", process.ID)
 		} else {
 			// The process has to wait for its parents
 			process.WaitForParents = true
@@ -92,9 +90,107 @@ func (server *ColoniesServer) handleSubmitWorkflowHTTPRequest(c *gin.Context, re
 }
 
 func (server *ColoniesServer) handleGetProcessGraphHTTPRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
-	//TODO
+	msg, err := rpc.CreateGetProcessGraphMsgFromJSON(jsonString)
+	if server.handleHTTPError(c, err, http.StatusBadRequest) {
+		return
+	}
+	if msg == nil {
+		server.handleHTTPError(c, errors.New("failed to parse JSON"), http.StatusBadRequest)
+		return
+	}
+	if msg.MsgType != payloadType {
+		server.handleHTTPError(c, errors.New("msg.MsgType does not match payloadType"), http.StatusBadRequest)
+		return
+	}
+
+	processGraph, err := server.controller.getProcessGraphByID(msg.ProcessGraphID)
+	if server.handleHTTPError(c, err, http.StatusBadRequest) {
+		return
+	}
+	if processGraph == nil {
+		server.handleHTTPError(c, errors.New("processGraph is nil"), http.StatusInternalServerError)
+		return
+	}
+
+	err = server.validator.RequireRuntimeMembership(recoveredID, processGraph.ColonyID, true)
+	if server.handleHTTPError(c, err, http.StatusForbidden) {
+		return
+	}
+
+	jsonString, err = processGraph.ToJSON()
+	if server.handleHTTPError(c, err, http.StatusInternalServerError) {
+		return
+	}
+
+	server.sendHTTPReply(c, payloadType, jsonString)
 }
 
 func (server *ColoniesServer) handleGetProcessGraphsHTTPRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
-	//TODO
+	msg, err := rpc.CreateGetProcessGraphsMsgFromJSON(jsonString)
+	if server.handleHTTPError(c, err, http.StatusBadRequest) {
+		return
+	}
+	if msg == nil {
+		server.handleHTTPError(c, errors.New("failed to parse JSON"), http.StatusBadRequest)
+		return
+	}
+	if msg.MsgType != payloadType {
+		server.handleHTTPError(c, errors.New("msg.MsgType does not match payloadType"), http.StatusBadRequest)
+		return
+	}
+
+	err = server.validator.RequireRuntimeMembership(recoveredID, msg.ColonyID, true)
+	if err != nil {
+		err = server.validator.RequireColonyOwner(recoveredID, msg.ColonyID)
+		if server.handleHTTPError(c, err, http.StatusForbidden) {
+			return
+		}
+	}
+
+	switch msg.State {
+	case core.WAITING:
+		graphs, err := server.controller.findWaitingProcessGraphs(msg.ColonyID, msg.Count)
+		if server.handleHTTPError(c, err, http.StatusBadRequest) {
+			return
+		}
+		jsonString, err := core.ConvertProcessGraphArrayToJSON(graphs)
+		if server.handleHTTPError(c, err, http.StatusBadRequest) {
+			return
+		}
+		server.sendHTTPReply(c, payloadType, jsonString)
+	case core.RUNNING:
+		graphs, err := server.controller.findRunningProcessGraphs(msg.ColonyID, msg.Count)
+		if server.handleHTTPError(c, err, http.StatusBadRequest) {
+			return
+		}
+		jsonString, err := core.ConvertProcessGraphArrayToJSON(graphs)
+		if server.handleHTTPError(c, err, http.StatusBadRequest) {
+			return
+		}
+		server.sendHTTPReply(c, payloadType, jsonString)
+	case core.SUCCESS:
+		graphs, err := server.controller.findSuccessfulProcessGraphs(msg.ColonyID, msg.Count)
+		if server.handleHTTPError(c, err, http.StatusBadRequest) {
+			return
+		}
+		jsonString, err := core.ConvertProcessGraphArrayToJSON(graphs)
+		if server.handleHTTPError(c, err, http.StatusBadRequest) {
+			return
+		}
+		server.sendHTTPReply(c, payloadType, jsonString)
+	case core.FAILED:
+		graphs, err := server.controller.findFailedProcessGraphs(msg.ColonyID, msg.Count)
+		if server.handleHTTPError(c, err, http.StatusBadRequest) {
+			return
+		}
+		jsonString, err := core.ConvertProcessGraphArrayToJSON(graphs)
+		if server.handleHTTPError(c, err, http.StatusBadRequest) {
+			return
+		}
+		server.sendHTTPReply(c, payloadType, jsonString)
+	default:
+		err := errors.New("invalid msg.State")
+		server.handleHTTPError(c, err, http.StatusBadRequest)
+		return
+	}
 }

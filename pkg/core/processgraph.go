@@ -60,6 +60,42 @@ func ConvertJSONToProcessGraph(jsonString string) (*ProcessGraph, error) {
 	return processGraph, nil
 }
 
+func ConvertProcessGraphArrayToJSON(processGraphs []*ProcessGraph) (string, error) {
+	jsonBytes, err := json.MarshalIndent(processGraphs, "", "    ")
+	if err != nil {
+		return "", err
+	}
+
+	return string(jsonBytes), nil
+}
+
+func ConvertJSONToProcessGraphArray(jsonString string) ([]*ProcessGraph, error) {
+	var processGraphs []*ProcessGraph
+	err := json.Unmarshal([]byte(jsonString), &processGraphs)
+	if err != nil {
+		return processGraphs, err
+	}
+
+	return processGraphs, nil
+}
+
+func IsProcessGraphArraysEqual(processGraphs1 []*ProcessGraph, processGraphs2 []*ProcessGraph) bool {
+	counter := 0
+	for _, processGraph1 := range processGraphs1 {
+		for _, processGraph2 := range processGraphs2 {
+			if processGraph1.Equals(processGraph2) {
+				counter++
+			}
+		}
+	}
+
+	if counter == len(processGraphs1) && counter == len(processGraphs2) {
+		return true
+	}
+
+	return false
+}
+
 func (graph *ProcessGraph) AddRoot(processID string) {
 	graph.Roots = append(graph.Roots, processID)
 }
@@ -127,7 +163,7 @@ func (graph *ProcessGraph) Resolve() error {
 		graph.State = FAILED
 	} else if successfulProcesses == processes {
 		graph.State = SUCCESS
-	} else if runningProcesses > 1 {
+	} else if runningProcesses >= 1 {
 		graph.State = RUNNING
 	} else {
 		graph.State = WAITING

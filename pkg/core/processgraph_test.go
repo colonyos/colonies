@@ -736,3 +736,23 @@ func TestProcessGraphJSON(t *testing.T) {
 	assert.True(t, graph.Equals(graph2))
 	assert.True(t, graph2.ColonyID == colonyID)
 }
+
+func TestProcessGraphArrayJSON(t *testing.T) {
+	var graphs []*ProcessGraph
+	colonyID := GenerateRandomID()
+
+	for i := 0; i < 10; i++ {
+		process1 := createProcess()
+		graph, err := CreateProcessGraph(colonyID)
+		assert.Nil(t, err)
+		graph.AddRoot(process1.ID)
+		graphs = append(graphs, graph)
+	}
+
+	jsonStr, err := ConvertProcessGraphArrayToJSON(graphs)
+	assert.Nil(t, err)
+
+	graphs2, err := ConvertJSONToProcessGraphArray(jsonStr)
+	assert.Nil(t, err)
+	assert.True(t, IsProcessGraphArraysEqual(graphs, graphs2))
+}

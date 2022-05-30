@@ -607,6 +607,52 @@ func (client *ColoniesClient) SubmitWorkflowSpec(workflowSpec *core.WorkflowSpec
 	return core.ConvertJSONToProcessGraph(respBodyString)
 }
 
+func (client *ColoniesClient) GetProcessGraph(processGraphID string, prvKey string) (*core.ProcessGraph, error) {
+	msg := rpc.CreateGetProcessGraphMsg(processGraphID)
+	jsonString, err := msg.ToJSON()
+	if err != nil {
+		return nil, err
+	}
+
+	respBodyString, err := client.sendMessage(rpc.GetProcessGraphPayloadType, jsonString, prvKey, false)
+	if err != nil {
+		return nil, err
+	}
+
+	return core.ConvertJSONToProcessGraph(respBodyString)
+}
+
+func (client *ColoniesClient) getProcessGraphs(state int, colonyID string, count int, prvKey string) ([]*core.ProcessGraph, error) {
+	msg := rpc.CreateGetProcessGraphsMsg(colonyID, count, state)
+	jsonString, err := msg.ToJSON()
+	if err != nil {
+		return nil, err
+	}
+
+	respBodyString, err := client.sendMessage(rpc.GetProcessGraphsPayloadType, jsonString, prvKey, false)
+	if err != nil {
+		return nil, err
+	}
+
+	return core.ConvertJSONToProcessGraphArray(respBodyString)
+}
+
+func (client *ColoniesClient) GetWaitingProcessGraphs(colonyID string, count int, prvKey string) ([]*core.ProcessGraph, error) {
+	return client.getProcessGraphs(core.WAITING, colonyID, count, prvKey)
+}
+
+func (client *ColoniesClient) GetRunningProcessGraphs(colonyID string, count int, prvKey string) ([]*core.ProcessGraph, error) {
+	return client.getProcessGraphs(core.RUNNING, colonyID, count, prvKey)
+}
+
+func (client *ColoniesClient) GetSuccessfulProcessGraphs(colonyID string, count int, prvKey string) ([]*core.ProcessGraph, error) {
+	return client.getProcessGraphs(core.SUCCESS, colonyID, count, prvKey)
+}
+
+func (client *ColoniesClient) GetFailedProcessGraphs(colonyID string, count int, prvKey string) ([]*core.ProcessGraph, error) {
+	return client.getProcessGraphs(core.FAILED, colonyID, count, prvKey)
+}
+
 func (client *ColoniesClient) Version() (string, string, error) {
 	msg := rpc.CreateVersionMsg("", "")
 	jsonString, err := msg.ToJSON()

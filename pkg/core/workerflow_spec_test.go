@@ -1,7 +1,6 @@
 package core
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -40,8 +39,6 @@ func TestWorkflowSpecJSON(t *testing.T) {
 
 	jsonStr, err := workflowSpec.ToJSON()
 	assert.Nil(t, err)
-
-	fmt.Println(jsonStr)
 
 	workflowSpec2, err := ConvertJSONToWorkflowSpec(jsonStr)
 	assert.Nil(t, err)

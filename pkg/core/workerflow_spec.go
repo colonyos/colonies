@@ -3,7 +3,7 @@ package core
 import "encoding/json"
 
 type WorkflowSpec struct {
-	RuntimeGroup bool           `json:"runtimegroup"`
+	RuntimeGroup bool           `json:"group"`
 	ColonyID     string         `json:"colonyid"`
 	ProcessSpecs []*ProcessSpec `json:"processspecs"`
 }

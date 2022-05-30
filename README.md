@@ -19,6 +19,7 @@ More information can also be found [here](https://colonyos.io).
 ## Key features
 * **Batch processing and distributed RPC.** The Colonies Server maintains several prioritized job queues and keeps track of process statuses. Processes not finishing in time are automatically moved back to the job queue to be executed by another worker.  
 * **Pull-based orchestration.** Users (or workers) submit process specifications the Colonies Server. Colonies workers connect to the Colonies Server and request processes to execute. A HTTP Long Polling/WebSocket protocol ensure that workers can reside anywhere on the Internet, even behind firewalls. The Colonies Server never establish connections directly to workers. 
+* **Multi-step workflows** or **Directed Acyclic Graph (DAG)** to capture dependencies between tasks.
 * **Built-in identity and trust management.** A crypto-protocol based on ECDSA (Elliptic Curve Digital Signature Algorithm) offers identity and trust management to enable Colonies workers member of the same Colony to fully trust each other. Only authorized users or workers can submit process specifications or interact with other workers within a Colony.
 * **Implemented in Golang** with a standard PostgreSQL backend.
 * **SDK in Python, Julia, and Golang.**
