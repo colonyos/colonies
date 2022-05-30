@@ -2,7 +2,6 @@ package server
 
 import (
 	"errors"
-	"fmt"
 	"net/http"
 
 	"github.com/colonyos/colonies/pkg/core"
@@ -72,8 +71,6 @@ func (server *ColoniesServer) handleSubmitWorkflowHTTPRequest(c *gin.Context, re
 	for _, process := range processMap {
 		_, err := server.controller.addProcess(process)
 		log.WithFields(log.Fields{"ProcessID": process.ID}).Info("Submitting process")
-		jsonStr, _ := process.ToJSON()
-		fmt.Println(jsonStr)
 
 		if err != nil {
 			server.handleHTTPError(c, errors.New("failed to add process"), http.StatusInternalServerError)
