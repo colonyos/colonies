@@ -32,6 +32,8 @@ type ProcessSpec struct {
 func CreateEmptyProcessSpec() *ProcessSpec {
 	processSpec := &ProcessSpec{}
 	processSpec.Env = make(map[string]string)
+	processSpec.MaxExecTime = -1
+	processSpec.MaxRetries = -1
 	return processSpec
 }
 
