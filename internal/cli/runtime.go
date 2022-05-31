@@ -103,7 +103,9 @@ var registerRuntimeCmd = &cobra.Command{
 			CheckError(err)
 		}
 
+		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Info("Starting a Colonies client")
 		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
+
 		addedRuntime, err := client.AddRuntime(runtime, ColonyPrvKey)
 		CheckError(err)
 
@@ -145,7 +147,9 @@ var lsRuntimesCmd = &cobra.Command{
 			RuntimePrvKey, _ = keychain.GetPrvKey(RuntimeID)
 		}
 
+		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Info("Starting a Colonies client")
 		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
+
 		runtimesFromServer, err := client.GetRuntimes(ColonyID, RuntimePrvKey)
 		if err != nil {
 			// Try ColonyPrvKey instead
@@ -248,7 +252,9 @@ var approveRuntimeCmd = &cobra.Command{
 			CheckError(err)
 		}
 
+		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Info("Starting a Colonies client")
 		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
+
 		err = client.ApproveRuntime(RuntimeID, ColonyPrvKey)
 		CheckError(err)
 
@@ -278,7 +284,9 @@ var rejectRuntimeCmd = &cobra.Command{
 			CheckError(err)
 		}
 
+		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Info("Starting a Colonies client")
 		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
+
 		err = client.RejectRuntime(RuntimeID, ColonyPrvKey)
 		CheckError(err)
 
@@ -307,8 +315,9 @@ var deleteRuntimeCmd = &cobra.Command{
 			ColonyPrvKey, err = keychain.GetPrvKey(ColonyID)
 			CheckError(err)
 		}
-
+		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Info("Starting a Colonies client")
 		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
+
 		err = client.DeleteRuntime(RuntimeID, ColonyPrvKey)
 		CheckError(err)
 

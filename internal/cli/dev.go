@@ -57,11 +57,6 @@ var devCmd = &cobra.Command{
 			envErr = true
 		}
 
-		if os.Getenv("COLONIES_SERVERPROTOCOL") == "" {
-			log.Error("COLONIES_SERVERPROTOCOL environmental variable missing, try export COLONIES_SERVERPROTOCOL=\"http\"")
-			envErr = true
-		}
-
 		if os.Getenv("COLONIES_SERVERHOST") == "" {
 			log.Error("COLONIES_SERVERHOST environmental variable missing, try export COLONIES_SERVERHOST=\"localhost\"")
 			envErr = true
@@ -135,7 +130,7 @@ var devCmd = &cobra.Command{
 			envProposal += "export LC_ALL=en_US.UTF-8\n"
 			envProposal += "export LC_CTYPE=UTF-8\n"
 			envProposal += "export TZ=Europe/Stockholm\n"
-			envProposal += "export COLONIES_SERVERPROTOCOL=\"http\"\n"
+			envProposal += "export COLONIES_TLS=\"false\"\n"
 			envProposal += "export COLONIES_SERVERHOST=\"localhost\"\n"
 			envProposal += "export COLONIES_SERVERPORT=\"50080\"\n"
 			envProposal += "export COLONIES_SERVERID=\"039231c7644e04b6895471dd5335cf332681c54e27f81fac54f9067b3f2c0103\"\n"
@@ -228,6 +223,8 @@ var devCmd = &cobra.Command{
 
 		coloniesServerHost := os.Getenv("COLONIES_SERVERHOST")
 		log.WithFields(log.Fields{"ColoniesServerHost": coloniesServerHost, "ColoniesServerPort": coloniesServerPort}).Info("Connecting to Colonies server")
+
+		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Info("Starting a Colonies client")
 		client := client.CreateColoniesClient(coloniesServerHost, coloniesServerPort, true, false)
 
 		log.WithFields(log.Fields{"ColonyID": colonyID}).Info("Registering a new Colony")
@@ -257,7 +254,7 @@ var devCmd = &cobra.Command{
 		envStr += "export LC_ALL=en_US.UTF-8\n"
 		envStr += "export LC_CTYPE=UTF-8\n"
 		envStr += "export TZ=Europe/Stockholm\n"
-		envStr += "export COLONIES_SERVERPROTOCOL=\"http\"\n"
+		envStr += "export COLONIES_TLS=\"false\"\n"
 		envStr += "export COLONIES_SERVERHOST=\"" + coloniesServerHost + " \"\n"
 		envStr += "export COLONIES_SERVERPORT=\"50080\"\n"
 		envStr += "export COLONIES_SERVERID=\"" + serverID + "\"\n"
