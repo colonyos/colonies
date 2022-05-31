@@ -4,9 +4,11 @@
 ![ColonyOSLogo](docs/images/ColonyOsLogoNoShaddow2.png)
 
 # What is Colonies?
-In short, Colonies is an **Employment Agency** for Internet-connected computers. Humans (or machines) submit job specifications to Colonies servers. Machines (so-called workers) connect to a Colonies server and search for suitable jobs. Each worker must have a valid Identity card and the Colonies server makes sure only authorized and qualified workers can connect and execute jobs.
+In short, Colonies is an **Employment Agency** for Internet-connected computers. 
+1. Humans (or machines) submit job specifications to Colonies servers. 
+2. Machines (so-called workers) connect to a Colonies server and search for suitable jobs. Each worker must have a valid Identity card and the Colonies server makes sure only authorized and qualified workers can connect and execute jobs.
 
-* **A Colonies worker can reside anywhere on the Internet, e.g. run inside a Kubernetes Pod, a smart phone, or embedded in a web page.
+* **A Colonies worker can reside anywhere on the Internet**, e.g. run inside a Kubernetes Pod, a smart phone, or embedded in a web page.
 * **Colonies** makes it possible to **orchestrate processes inside containers**. This is far more efficient than lauching a new container for each new job.
 * **Colonies** is **fast**. Instead of using RAFT for distributed consensus, Colonies uses a standard PostgreSQL database for storing states and execution history.   
 * **Colonies** is designed to take **full advantage of Kubernetes**, e.g. fault tolerance and scalability. 
