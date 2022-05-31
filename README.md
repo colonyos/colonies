@@ -4,7 +4,7 @@
 ![ColonyOSLogo](docs/images/ColonyOsLogoNoShaddow2.png)
 
 # What is Colonies?
-In short, Colonies is an **Employment Agency** for Internet-connected computers. Humans (or machines) submit job specifications to a Colonies server. The Colonies server keeps track of one or several Colonies, which are communities of machines. Machines (co-called workers) connect to the Colonies server and search for suitable jobs submitted to the Colony it is a member of. Each worker must have a valid identity to prove its membership and the Colonies server makes sure only authorized and qualified workers can connect and be assigned relevant jobs.
+In short, Colonies is an **Employment Agency** for Internet-connected computers. Humans (or machines) submit job specifications to a Colonies server. The Colonies server keeps track of one or several Colonies, which are communities of machines. Machines (co-called workers) connect to the Colonies server and search for suitable jobs in Colonies they are member of. Each worker must have a valid identity to prove its membership and the Colonies server makes sure only authorized and qualified workers can connect and be assigned relevant jobs.
 
 * A Colonies worker can **reside anywhere on the Internet**, e.g. inside a Kubernetes Pod, a smart phone, or embedded in a web page, enabling a compute continuum spannig devices, endge and cloud.
 * Colonies makes it possible to **orchestrate processes inside containers**. This is far more efficient than lauching a new container for each new job.
