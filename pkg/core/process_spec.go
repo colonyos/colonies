@@ -13,7 +13,6 @@ type Conditions struct {
 	Cores        int      `json:"cores"`
 	GPUs         int      `json:"gpus"`
 	Dependencies []string `json:"dependencies"`
-	Priority     int      `json:"priority"`
 }
 
 type ProcessSpec struct {
@@ -23,6 +22,7 @@ type ProcessSpec struct {
 	Args        []string          `json:"args"`
 	Volumes     []string          `json:"volumes"`
 	Ports       []string          `json:"ports"`
+	Priority    int               `json:"priority"`
 	MaxExecTime int               `json:"maxexectime"`
 	MaxRetries  int               `json:"maxretries"`
 	Conditions  Conditions        `json:"conditions"`
@@ -38,8 +38,8 @@ func CreateEmptyProcessSpec() *ProcessSpec {
 }
 
 func CreateProcessSpec(name string, image string, cmd string, args []string, volumes []string, ports []string, colonyID string, runtimeIDs []string, runtimeType string, maxExecTime int, maxRetries int, mem int, cores int, gpus int, env map[string]string, dependencies []string, priority int) *ProcessSpec {
-	conditions := Conditions{ColonyID: colonyID, RuntimeIDs: runtimeIDs, RuntimeType: runtimeType, Mem: mem, Cores: cores, GPUs: gpus, Dependencies: dependencies, Priority: priority}
-	return &ProcessSpec{Name: name, Image: image, Cmd: cmd, Args: args, Volumes: volumes, Ports: ports, MaxExecTime: maxExecTime, MaxRetries: maxRetries, Conditions: conditions, Env: env}
+	conditions := Conditions{ColonyID: colonyID, RuntimeIDs: runtimeIDs, RuntimeType: runtimeType, Mem: mem, Cores: cores, GPUs: gpus, Dependencies: dependencies}
+	return &ProcessSpec{Name: name, Image: image, Cmd: cmd, Args: args, Volumes: volumes, Ports: ports, MaxExecTime: maxExecTime, MaxRetries: maxRetries, Conditions: conditions, Env: env, Priority: priority}
 }
 
 func ConvertJSONToProcessSpec(jsonString string) (*ProcessSpec, error) {
@@ -75,7 +75,7 @@ func (processSpec *ProcessSpec) Equals(processSpec2 *ProcessSpec) bool {
 		processSpec.Conditions.Mem != processSpec2.Conditions.Mem ||
 		processSpec.Conditions.Cores != processSpec2.Conditions.Cores ||
 		processSpec.Conditions.GPUs != processSpec2.Conditions.GPUs ||
-		processSpec.Conditions.Priority != processSpec2.Conditions.Priority {
+		processSpec.Priority != processSpec2.Priority {
 		same = false
 	}
 

@@ -1,5 +1,4 @@
 {
-	"group": true,
 	"processspecs": [{
 			"name": "task1",
 			"cmd": "echo",

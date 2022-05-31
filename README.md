@@ -4,18 +4,16 @@
 ![ColonyOSLogo](docs/images/ColonyOsLogoNoShaddow2.png)
 
 # What is Colonies?
-In short, Colonies is an **Employment Agency** for Internet-connected computers. 
-1. Humans (or machines) submit job specifications to Colonies servers. 
-2. Machines (so-called workers) connect to a Colonies server and search for suitable jobs. Each worker must have a valid Identity card and the Colonies server makes sure only authorized and qualified workers can connect and execute jobs.
+In short, Colonies is an **Employment Agency** for Internet-connected computers. Humans (or machines) submit job specifications to Colonies servers. Machines (so-called workers) connect to a Colonies server and search for suitable jobs. Each worker must have a valid Identity card and the Colonies server makes sure only authorized and qualified workers can connect and execute jobs.
 
-* **A Colonies worker can reside anywhere on the Internet**, e.g. run inside a Kubernetes Pod, a smart phone, or embedded in a web page.
-* **Colonies** makes it possible to **orchestrate processes inside containers**. This is far more efficient than lauching a new container for each new job.
-* **Colonies** is **fast**. Instead of using RAFT for distributed consensus, Colonies uses a standard PostgreSQL database for storing states and execution history.   
-* **Colonies** is designed to take **full advantage of Kubernetes**, e.g. fault tolerance and scalability. 
-* **Colonies** complements Kubernetes and brings robust and fault tolerant **batch processing** to Kubernetes, typically needed by many AI workloads.
-* **Colonies** is **lightweight and works without Kubernetes**. It runs in browsers, smart phones or IoT devices. This also makes it much easier to test and develop complex workflows before they are deployed on Kubernetes.
-* A crypto-protocol ensure secure and **zero-trust process execution**. This enables secure and seamless orchestration of complex machine learning workloads across plattforms to create a compute continuum spannig devices and servers. 
-* **Colonies** is currently being used by [RockSigma AB](https://www.rocksigma.com) to build a novel compute engine for automatic seismic processing in underground mines. 
+* A Colonies worker can **reside anywhere on the Internet**, e.g. inside a Kubernetes Pod, a smart phone, or embedded in a web page, enabling a compute continuum spannig devices, endge and cloud.
+* Colonies makes it possible to **orchestrate processes inside containers**. This is far more efficient than lauching a new container for each new job.
+* Colonies is **fast**. Instead of using RAFT for distributed consensus, Colonies uses a standard PostgreSQL database for storing states and execution history.   
+* A Colonies server is stateless and designed to take **full advantage of Kubernetes**, e.g. fault tolerance and scalability. 
+* Colonies **complements Kubernetes** and brings robust and fault tolerant **batch processing** to Kubernetes, typically needed by many AI workloads.
+* Colonies is **lightweight and works without Kubernetes**. It runs in browsers, smart phones or IoT devices. This also makes it much easier to test and develop complex workflows before they are deployed on Kubernetes.
+* Colonies **builds on security**, a  built-in crypto-protocol ensure secure and **zero-trust process execution**. 
+* Colonies is currently being used by **[RockSigma AB](https://www.rocksigma.com)** to build a novel compute engine for automatic seismic processing in underground mines. 
 
 ![Colonies Architecture](docs/images/ColoniesArchFull.png?raw=true "Colonies Architecture")
 
@@ -32,7 +30,6 @@ More information can also be found [here](https://colonyos.io).
 ## Example of use cases
 * **Manage ML/AI workloads on Kubernetes.** Launch one or several Colonies worker containers in a Kubernetes Pod. Then use Colonies to enable batch processing and launch processes inside worker containers. Launching processes inside already started containers can be significantly more efficient than frameworks like [Argo Workflows](https://argoproj.github.io/argo-workflows) that launches new containers for each new job, especially when dealing with AI workflows consisting of huge containers (tens of gigabytes) or when a huge amount of data needs to be shuffled into memory to perform a certain computation.
 * **Grid computing.** Create "non-malicious" botnets and launch processes to perform computations at IoT devices, smart phones or cloud servers; all controlled from the Colonies Server.
-* **High-performance computing**. Create groups of workers to take advantage of data locality.
 * **Manage complex workflows spanning multiple cloud/edge servers and devices**, e.g. setting up multimedia pipelines and ML inference servers running on multiple platforms connected to different networks.
 
 ## Getting started example
@@ -235,7 +232,6 @@ It then sends the following message to the Colonies Server:
     "signature": "82f2ba6368d5c7d0e9bfa6a01a8fa4d4263113f9eedf235e3a4c7b1febcdc2914fe1f8727746b2f501ceec5736457f218fe3b1a469dd6071775c472a802aa81501",
 }
 ```
-
 When the server receives the message, it reconstructs the Id of the calling client using the enclosed signature and payload. This means that client Id (e.g. 82f2ba6368d5c7d0e9bfa6...) is never sent to the server but rather derived by the server from messages it receives. In the example above, the server checks in the database if the reconstructed Id is a server owner.
 
 # Running the Tests

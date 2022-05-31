@@ -11,8 +11,6 @@ import (
 	"github.com/colonyos/colonies/pkg/core"
 	"github.com/colonyos/colonies/pkg/security"
 	"github.com/colonyos/colonies/pkg/security/crypto"
-	"github.com/colonyos/colonies/pkg/server"
-	"github.com/colonyos/colonies/pkg/utils"
 	"github.com/kataras/tablewriter"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -112,8 +110,8 @@ var registerColonyCmd = &cobra.Command{
 
 var unregisterColonyCmd = &cobra.Command{
 	Use:   "unregister",
-	Short: "Unregister a Colony",
-	Long:  "Unregister a Colony",
+	Short: "Unregister a colony",
+	Long:  "Unregister a colony",
 	Run: func(cmd *cobra.Command, args []string) {
 		parseServerEnv()
 
@@ -142,8 +140,8 @@ var unregisterColonyCmd = &cobra.Command{
 
 var lsColoniesCmd = &cobra.Command{
 	Use:   "ls",
-	Short: "List all Colonies",
-	Long:  "List all Colonies",
+	Short: "List all colonies",
+	Long:  "List all colonies",
 	Run: func(cmd *cobra.Command, args []string) {
 		parseServerEnv()
 
@@ -197,8 +195,8 @@ var lsColoniesCmd = &cobra.Command{
 
 var statusCmd = &cobra.Command{
 	Use:   "status",
-	Short: "Show status about a Colony",
-	Long:  "Show status about a Colony",
+	Short: "Show status about a colony",
+	Long:  "Show status about a colony",
 	Run: func(cmd *cobra.Command, args []string) {
 		parseServerEnv()
 
@@ -228,7 +226,6 @@ var statusCmd = &cobra.Command{
 
 		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
 		runtimesFromServer, err := client.GetRuntimes(ColonyID, RuntimePrvKey)
-		prvKey := RuntimePrvKey
 		if err != nil {
 			if ColonyPrvKey == "" {
 				if ColonyID == "" {
@@ -239,27 +236,7 @@ var statusCmd = &cobra.Command{
 			}
 			runtimesFromServer, err = client.GetRuntimes(ColonyID, ColonyPrvKey)
 			CheckError(err)
-			prvKey = ColonyPrvKey
 		}
-
-		waitingProcesses3600, err := client.GetProcessHistForColony(core.WAITING, ColonyID, 3600, prvKey)
-		CheckError(err)
-		runningProcesses3600, err := client.GetProcessHistForColony(core.RUNNING, ColonyID, 3600, prvKey)
-		CheckError(err)
-		successfulProcesses3600, err := client.GetProcessHistForColony(core.SUCCESS, ColonyID, 3600, prvKey)
-		CheckError(err)
-		failedProcesses3600, err := client.GetProcessHistForColony(core.FAILED, ColonyID, 3600, prvKey)
-		CheckError(err)
-
-		var allProcesses3600 []*core.Process
-		allProcesses3600 = append(allProcesses3600, waitingProcesses3600...)
-		allProcesses3600 = append(allProcesses3600, runningProcesses3600...)
-		allProcesses3600 = append(allProcesses3600, successfulProcesses3600...)
-		allProcesses3600 = append(allProcesses3600, failedProcesses3600...)
-		retries3600 := utils.CalcRetries(allProcesses3600)
-
-		processes, err := client.GetRunningProcesses(ColonyID, server.MAX_COUNT-1, prvKey)
-		CheckError(err)
 
 		stat, err := client.GetProcessStat(ColonyID, RuntimePrvKey)
 		CheckError(err)
@@ -269,12 +246,8 @@ var statusCmd = &cobra.Command{
 			[]string{"Waiting processes", strconv.Itoa(stat.Waiting)},
 			[]string{"Running processes ", strconv.Itoa(stat.Running)},
 			[]string{"Successful processes", strconv.Itoa(stat.Success)},
-			[]string{"Runtimes", strconv.Itoa(len(runtimesFromServer))},
 			[]string{"Failed", strconv.Itoa(stat.Failed)},
-			[]string{"Retries (1 hour)", strconv.Itoa(retries3600)},
-			[]string{"Utilization (1 hour)", fmt.Sprintf("%f", utils.CalcUtilization(successfulProcesses3600)) + "%"},
-			[]string{"Avg waiting time (1 h)", fmt.Sprintf("%f", utils.CalcAvgWaitingTime(successfulProcesses3600)) + "s"},
-			[]string{"Avg processing time (1 h)", fmt.Sprintf("%f", utils.CalcAvgProcessingTime(successfulProcesses3600)) + "s"},
+			[]string{"Number of runtimes", strconv.Itoa(len(runtimesFromServer))},
 		}
 		specTable := tablewriter.NewWriter(os.Stdout)
 		for _, v := range specData {
@@ -282,25 +255,5 @@ var statusCmd = &cobra.Command{
 		}
 		specTable.SetAlignment(tablewriter.ALIGN_LEFT)
 		specTable.Render()
-
-		runningRuntimes := make(map[string]bool)
-		for _, p := range processes {
-			runningRuntimes[p.AssignedRuntimeID] = true
-		}
-
-		cores := 0
-		for _, runtime := range runtimesFromServer {
-			cores += runtime.Cores
-		}
-
-		mem := 0
-		for _, runtime := range runtimesFromServer {
-			mem += runtime.Mem
-		}
-
-		gpus := 0
-		for _, runtime := range runtimesFromServer {
-			gpus += runtime.GPUs
-		}
 	},
 }
