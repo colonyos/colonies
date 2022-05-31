@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"strconv"
@@ -35,6 +36,7 @@ type ColoniesServer struct {
 }
 
 func CreateColoniesServer(db database.Database, port int, serverID string, tls bool, tlsPrivateKeyPath string, tlsCertPath string, debug bool) *ColoniesServer {
+	fmt.Println(tls)
 	if debug {
 		log.SetLevel(log.DebugLevel)
 	} else {
@@ -238,7 +240,9 @@ func (server *ColoniesServer) sendEmptyHTTPReply(c *gin.Context, payloadType str
 
 func (server *ColoniesServer) ServeForever() error {
 	if server.tls {
+		fmt.Println("XXX")
 		if err := server.httpServer.ListenAndServeTLS(server.tlsCertPath, server.tlsPrivateKeyPath); err != nil && errors.Is(err, http.ErrServerClosed) {
+			fmt.Println(err)
 			return err
 		}
 	} else {

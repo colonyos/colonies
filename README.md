@@ -56,7 +56,7 @@ export LANGUAGE=en_US.UTF-8
 export LC_ALL=en_US.UTF-8
 export LC_CTYPE=UTF-8
 export TZ=Europe/Stockholm
-export COLONIES_SERVERPROTOCOL="http"
+export COLONIES_TLS="false"
 export COLONIES_SERVERHOST="localhost"
 export COLONIES_SERVERPORT="50080"
 export COLONIES_SERVERID="039231c7644e04b6895471dd5335cf332681c54e27f81fac54f9067b3f2c0103"
@@ -85,7 +85,7 @@ colonies dev
 Open another terminal (and *source examples/devenv*).
 
 ```console
-colonies worker start --name myworker --type testworker --insecure
+colonies worker start --name myworker --type testworker
 ```
 ## Submit a process specification
 Example process specification (see examples/sleep.json). The Colonies worker will pull the process specification from the Colonies dev server and start a *sleep* process. This will cause the worker above to sleep for 100s. The *env* array in the JSON below will automatically be exported as real environment variables in the sleep process.
@@ -106,12 +106,12 @@ Example process specification (see examples/sleep.json). The Colonies worker wil
 
 Open another terminal (and *source examples/devenv*).
 ```console
-colonies process submit --spec sleep.json --insecure
+colonies process submit --spec sleep.json
 ```
 
 Check out running processes:
 ```console
-colonies process ps --insecure
+colonies process ps
 +------------------------------------------------------------------+-------+------+---------------------+----------------+
 |                                ID                                |  CMD  | ARGS |     START TIME      | TARGET RUNTIME |
 +------------------------------------------------------------------+-------+------+---------------------+----------------+
@@ -121,7 +121,7 @@ colonies process ps --insecure
 
 Check out process status: 
 ```console
-colonies process get --processid 6681946db095e0dc2e0408b87e119c0d2ae4f691db6899b829161fc97f14a1d0 --insecure
+colonies process get --processid 6681946db095e0dc2e0408b87e119c0d2ae4f691db6899b829161fc97f14a1d0
 Process:
 +-------------------+------------------------------------------------------------------+
 | ID                | 6681946db095e0dc2e0408b87e119c0d2ae4f691db6899b829161fc97f14a1d0 |
@@ -189,10 +189,10 @@ This mechanism thus offer a last line of defense against failures and enables ad
 The process specification above will always result in failed Colonies processes as the the *sleep* process runs for exactly 100 seconds, but the process has to finish within 5 seconds. The *colonies process psf* command can be used to list all failed processes. 
 
 ```console
-colonies process pss  --insecure                                                                                    17:08:38
+colonies process pss
 WARN[0000] No successful processes found
 
-colonies process psf  --insecure 
+colonies process psf
 +------------------------------------------------------------------+-------+------+---------------------+--------------+
 |                                ID                                |  CMD  | ARGS |      END TIME       | RUNTIME TYPE |
 +------------------------------------------------------------------+-------+------+---------------------+--------------+
@@ -263,13 +263,13 @@ This workflow can be modelled as follows:
 ## Submit a workflow 
 Open another terminal (and *source examples/devenv*).
 ```console
-colonies workflow submit --spec examples/workflow.json --insecure
+colonies workflow submit --spec examples/workflow.json
 
 INFO[0000] Workflow submitted                            WorkflowID=8bc49205ae35e089b370c05cd2a110b84e72d5052c2ec3fb5bc4832274d9d1b1
 ```
 
 ```console
-colonies workflow get --workflowid 8bc49205ae35e089b370c05cd2a110b84e72d5052c2ec3fb5bc4832274d9d1b1 --insecure
+colonies workflow get --workflowid 8bc49205ae35e089b370c05cd2a110b84e72d5052c2ec3fb5bc4832274d9d1b1
 
 Workflow:
 +----------------+------------------------------------------------------------------+
@@ -329,7 +329,7 @@ Processes:
 
 ## Start a worker
 ```console
-colonies worker start --name myworker --type cli --insecure                                                           16:24:20
+colonies worker start --name myworker --type cli 
 
 INFO[0000] Starting a worker                             BuildTime="2022-05-31T13:43:22Z" BuildVersion=a153cbf
 INFO[0000] Saving runtimeID to /tmp/runtimeid

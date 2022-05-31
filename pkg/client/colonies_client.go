@@ -59,7 +59,6 @@ func (client *ColoniesClient) sendMessage(method string, jsonString string, prvK
 	if client.insecure {
 		protocol = "http"
 	}
-
 	resp, err := client.restyClient.R().
 		SetBody(jsonString).
 		Post(protocol + "://" + client.host + ":" + strconv.Itoa(client.port) + "/api")
