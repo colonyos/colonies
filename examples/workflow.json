@@ -1,9 +1,9 @@
 {
 	"processspecs": [{
-			"name": "task1",
+			"name": "task_a",
 			"cmd": "echo",
 			"args": [
-				"task1"
+				"task_a"
 			],
 			"conditions": {
                 "runtimetype": "cli",
@@ -11,36 +11,36 @@
 			}
 		},
 		{
-			"name": "task2",
+			"name": "task_b",
 			"cmd": "echo",
 			"args": [
-				"task2"
+				"task_b"
 			],
 			"conditions": {
                 "runtimetype": "cli",
-				"dependencies": ["task1"]
+				"dependencies": ["task_a"]
 			}
 		},
 		{
-			"name": "task3",
+			"name": "task_c",
 			"cmd": "echo",
 			"args": [
-				"task3"
+				"task_c"
 			],
 			"conditions": {
                 "runtimetype": "cli",
-				"dependencies": ["task1"]
+				"dependencies": ["task_a"]
 			}
 		},
 		{
-			"name": "task4",
+			"name": "task_d",
 			"cmd": "echo",
 			"args": [
-				"task4"
+				"task_d"
 			],
 			"conditions": {
                 "runtimetype": "cli",
-				"dependencies": ["task3", "task2"]
+				"dependencies": ["task_b", "task_c"]
 			}
 		}
 	]
