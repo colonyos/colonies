@@ -4,7 +4,7 @@
 ![ColonyOSLogo](docs/images/ColonyOsLogoNoShaddow2.png)
 
 # What is Colonies?
-In short, Colonies is an **Employment Agency** for Internet-connected computers. Humans (or machines) submit job specifications to Colonies servers. Machines (so-called workers) connect to a Colonies server and search for suitable jobs. Each worker must have a valid Identity card and the Colonies server makes sure only authorized and qualified workers can connect and execute jobs.
+In short, Colonies is an **Employment Agency** for Internet-connected computers. Humans (or machines) submit job specifications to a Colonies server. The Colonies server keeps track of one or several Colonies, which are communities of machines. Machines (co-called workers) connect to the Colonies server and search for suitable jobs submitted to the Colony it is a member of. Each worker must have a valid identity to prove its membership and the Colonies server makes sure only authorized and qualified workers can connect and be assigned relevant jobs.
 
 * A Colonies worker can **reside anywhere on the Internet**, e.g. inside a Kubernetes Pod, a smart phone, or embedded in a web page, enabling a compute continuum spannig devices, endge and cloud.
 * Colonies makes it possible to **orchestrate processes inside containers**. This is far more efficient than lauching a new container for each new job.
@@ -32,14 +32,20 @@ More information can also be found [here](https://colonyos.io).
 * **Grid computing.** Create "non-malicious" botnets and launch processes to perform computations at IoT devices, smart phones or cloud servers; all controlled from the Colonies Server.
 * **Manage complex workflows spanning multiple cloud/edge servers and devices**, e.g. setting up multimedia pipelines and ML inference servers running on multiple platforms connected to different networks.
 
-## Getting started example
-### Install Colonies CLI tool
+# Links
+* [Installation](docs/Installation.md)
+* [Using the Colonies CLI tool](docs/CLI.md)
+* [Tutorial (implement your own Colonies Worker using the Golang SDK)](docs/Tutorial.md)
+* [HTTP RPC Protocol](docs/RPC.md)
+
+# Getting started example
+## Install Colonies CLI tool
 ```console
 wget https://github.com/colonyos/colonies/blob/main/bin/colonies?raw=true -O /bin/colonies
 chmod +x /bin/colonies
 ```
 
-### Start a Colonies development server
+## Start a Colonies development server
 The development server is for testing only. All data will be lost when restarting the server. Also note that all keys are well known and all data is sent over unencrypted HTTP.
 
 You will have to export some environmental variables in order to use the server. Add these variables to your shell.
@@ -76,13 +82,13 @@ Now, start the development server. The development server will automatically add
 colonies dev
 ```
 
-### Start a Colonies worker
+## Start a Colonies worker
 Open another terminal (and *source examples/devenv*).
 
 ```console
 colonies worker start --name myworker --type testworker --insecure
 ```
-### Submit a process specification
+## Submit a process specification
 Example process specification (see examples/sleep.json). The Colonies worker will pull the process specification from the Colonies dev server and start a *sleep* process. This will cause the worker above to sleep for 100s. The *env* array in the JSON below will automatically be exported as real environment variables in the sleep process.
 ```json
 {
@@ -159,7 +165,7 @@ Attributes:
 +------------------------------------------------------------------+------+---------+------+
 ```
 
-### Submit a process specification with execution time constraint
+## Set execution time constraint
 The *maxecution* attribute specifies the maxiumum execution time in seconds before the process specification (job) is moved back to the queue. The *maxretries* attributes specifies how many times it may be moved back to the queue. Execution time constraint is an import feature of Colonies to implement robust workflows. If a worker crash, the job will automatically moved back to the queue and be executed by another worker. 
 
 This mechanism thus offer a last line of defense against failures and enables advanched software engineering disciplines such as [Chaos Engineering](https://en.wikipedia.org/wiki/Chaos_engineering). For example, a Chaos monkey may randomly kill worker pods in Kubernetes and Colonies guarantees that all jobs are eventually executed. 
@@ -197,11 +203,164 @@ colonies process psf  --insecure
 
 Note that setting *maxretries* to -1 instead if 0 will result in a loop, a job that can never succeed.
 
-# Links
-* [Installation](docs/Installation.md)
-* [Using the Colonies CLI tool](docs/CLI.md)
-* [Tutorial (implement your own Colonies Worker using the Golang SDK)](docs/Tutorial.md)
-* [HTTP RPC Protocol](docs/RPC.md)
+## Workflow
+A workflow is collection of named process specifications where some specifications may have dependencies to other specifications. Once submitted to the Colonies server, the Colonies server will create the corresponding processes and add the processes to the database (queue). It will also set dependencies between the processes which will then form a Directed Acyclic Graph (DAG). 
+
+![ProcessGraph](docs/images/ProcessGraph.png)
+
+The picture above depicts an example of a DAG. Task A has no depenecies and can thus start immediately. Task B and C have to wait for Task A to finish before they can start. Task D has to wait for Task B and C to finish. 
+
+This workflow can be modelled as follows:
+```json
+{
+    "processspecs": [{
+            "name": "task_a",
+            "cmd": "echo",
+            "args": [
+                "task1"
+            ],
+            "conditions": {
+                "runtimetype": "cli",
+                "dependencies": null
+            }
+        },
+        {
+            "name": "task_b",
+            "cmd": "echo",
+            "args": [
+                "task2"
+            ],
+            "conditions": {
+                "runtimetype": "cli",
+                "dependencies": ["task_a"]
+            }
+        },
+        {
+            "name": "task_c",
+            "cmd": "echo",
+            "args": [
+                "task3"
+            ],
+            "conditions": {
+                "runtimetype": "cli",
+                "dependencies": ["task_a"]
+            }
+        },
+        {
+            "name": "task_d",
+            "cmd": "echo",
+            "args": [
+                "task4"
+            ],
+            "conditions": {
+                "runtimetype": "cli",
+                "dependencies": ["task_b", "task_c"]
+            }
+        }
+    ]
+}
+```
+
+## Submit a workflow 
+Open another terminal (and *source examples/devenv*).
+```console
+colonies workflow submit --spec examples/workflow.json --insecure
+
+INFO[0000] Workflow submitted                            WorkflowID=8bc49205ae35e089b370c05cd2a110b84e72d5052c2ec3fb5bc4832274d9d1b1
+```
+
+```console
+colonies workflow get --workflowid 8bc49205ae35e089b370c05cd2a110b84e72d5052c2ec3fb5bc4832274d9d1b1 --insecure
+
+Workflow:
++----------------+------------------------------------------------------------------+
+| WorkflowID     | 8bc49205ae35e089b370c05cd2a110b84e72d5052c2ec3fb5bc4832274d9d1b1 |
+| ColonyID       | 8bc49205ae35e089b370c05cd2a110b84e72d5052c2ec3fb5bc4832274d9d1b1 |
+| State          | Waiting                                                          |
+| SubmissionTime | 2022-05-31 16:23:13                                              |
+| StartTime      | 0001-01-01 01:12:12                                              |
+| EndTime        | 0001-01-01 01:12:12                                              |
++----------------+------------------------------------------------------------------+
+
+Processes:
++-------------------+------------------------------------------------------------------+
+| Name              | task_a                                                           |
+| ProcessID         | 3a8e9299c76905c87f903b4fdcf4c5dbeb314659e2ed31d477dcb414e8fedf1f |
+| RuntimeType       | cli                                                              |
+| RuntimeGroup      |                                                                  |
+| Cmd               | echo                                                             |
+| Args              | task_a                                                           |
+| State             | Waiting                                                          |
+| WaitingForParents | false                                                            |
+| Dependencies      | None                                                             |
++-------------------+------------------------------------------------------------------+
+
++-------------------+------------------------------------------------------------------+
+| Name              | task_b                                                           |
+| ProcessID         | 5fd0611d57fc567ce7aa7984424b1de749c32b20b92668b4755ade6ca62e19c2 |
+| RuntimeType       | cli                                                              |
+| RuntimeGroup      |                                                                  |
+| Cmd               | echo                                                             |
+| Args              | task_b                                                           |
+| State             | Waiting                                                          |
+| WaitingForParents | true                                                             |
+| Dependencies      | task_a                                                           |
++-------------------+------------------------------------------------------------------+
+
++-------------------+------------------------------------------------------------------+
+| Name              | task_d                                                           |
+| ProcessID         | f46b7e84da0657cda3982282f5bef8b3c7429eff6b635cbce9bf93eb034e6705 |
+| RuntimeType       | cli                                                              |
+| RuntimeGroup      |                                                                  |
+| Cmd               | echo                                                             |
+| Args              | task_d                                                           |
+| State             | Waiting                                                          |
+| WaitingForParents | true                                                             |
+| Dependencies      | task_b task_c                                                    |
++-------------------+------------------------------------------------------------------+
+
++-------------------+------------------------------------------------------------------+
+| Name              | task_c                                                           |
+| ProcessID         | bf5d93190967539133063d357bcd5d446d3e4fce41a6d110926de12129a64156 |
+| RuntimeType       | cli                                                              |
+| RuntimeGroup      |                                                                  |
+| Cmd               | echo                                                             |
+| Args              | task_c                                                           |
+| State             | Waiting                                                          |
+| WaitingForParents | true                                                             |
+| Dependencies      | task_a                                                           |
++-------------------+------------------------------------------------------------------+
+```
+
+## Start a worker
+```console
+colonies worker start --name myworker --type cli --insecure                                                           16:24:20
+
+INFO[0000] Starting a worker                             BuildTime="2022-05-31T13:43:22Z" BuildVersion=a153cbf
+INFO[0000] Saving runtimeID to /tmp/runtimeid
+INFO[0000] Saving runtimePrvKey to /tmp/runtimeprvkey
+INFO[0000] Register a new Runtime                        CPU= Cores=-1 GPU= GPUs=-1 Mem=-1 colonyID=4787a5071856a4acf702b2ffcea422e3237a679c681314113d86139461290cf4 runtimeID=d709c23a58cb883817e0fe38ae20f3f539b7b7c4f607cc16e2b927eb3c123a34 runtimeName=myworker runtimeType:=cli
+INFO[0000] Approving Runtime                             runtimeID=d709c23a58cb883817e0fe38ae20f3f539b7b7c4f607cc16e2b927eb3c123a34
+INFO[0000] Worker now waiting for processes to be execute  BuildTime="2022-05-31T13:43:22Z" BuildVersion=a153cbf ServerHost=localhost ServerPort=50080
+INFO[0000] Worker was assigned a process                 processID=3a8e9299c76905c87f903b4fdcf4c5dbeb314659e2ed31d477dcb414e8fedf1f
+INFO[0000] Lauching process                              Args="[task_a]" Cmd=echo
+task_a
+INFO[0000] Closing process as successful                 processID=3a8e9299c76905c87f903b4fdcf4c5dbeb314659e2ed31d477dcb414e8fedf1f
+INFO[0000] Worker was assigned a process                 processID=5fd0611d57fc567ce7aa7984424b1de749c32b20b92668b4755ade6ca62e19c2
+INFO[0000] Lauching process                              Args="[task_b]" Cmd=echo
+task_b
+INFO[0000] Closing process as successful                 processID=5fd0611d57fc567ce7aa7984424b1de749c32b20b92668b4755ade6ca62e19c2
+INFO[0000] Worker was assigned a process                 processID=bf5d93190967539133063d357bcd5d446d3e4fce41a6d110926de12129a64156
+INFO[0000] Lauching process                              Args="[task_c]" Cmd=echo
+task_c
+INFO[0000] Closing process as successful                 processID=bf5d93190967539133063d357bcd5d446d3e4fce41a6d110926de12129a64156
+INFO[0000] Worker was assigned a process                 processID=f46b7e84da0657cda3982282f5bef8b3c7429eff6b635cbce9bf93eb034e6705
+INFO[0000] Lauching process                              Args="[task_d]" Cmd=echo
+task_d
+INFO[0000] Closing process as successful                 processID=f46b7e84da0657cda3982282f5bef8b3c7429eff6b635cbce9bf93eb034e6705
+```
+
+Note that the order the processes are executed. Also, try to start another worker and you will see that both workers will execute processes.
 
 # Security principles
 A core component of Colonies is a crypto identity protocol inspired by Bitcoin and Ethereum. Each Colony and Colony Runtime is assigned a *Digital Identity* that is verified by the Colonies server using a so-called [Implicit certificates](https://en.wikipedia.org/wiki/Implicit_certificate), which is implemented using [Elliptic-curve cryptography](https://en.wikipedia.org/wiki/Elliptic-curve_cryptography). This protocol makes it possible to reconstruct public-keys from signatures. Identities can then simply be calculated as cryptographic hashes (SHA3-256) of the reconstructed public-keys.
