@@ -86,6 +86,7 @@ var workerStartCmd = &cobra.Command{
 			LogDir = os.Getenv("COLONIES_LOGDIR")
 		}
 
+		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Info("Starting a Colonies client")
 		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
 
 		c := make(chan os.Signal)
@@ -275,6 +276,7 @@ var workerRegisterCmd = &cobra.Command{
 			CheckError(errors.New("Runtime type not specified"))
 		}
 
+		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Info("Starting a Colonies client")
 		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
 
 		log.WithFields(log.Fields{"runtimeID": runtimeID, "runtimeName": RuntimeName, "runtimeType:": RuntimeType, "colonyID": ColonyID, "CPU": CPU, "Cores": Cores, "Mem": Mem, "GPU": GPU, "GPUs": GPUs}).Info("Register a new Runtime")
@@ -314,6 +316,7 @@ var workerUnregisterCmd = &cobra.Command{
 			CheckError(err)
 		}
 
+		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Info("Starting a Colonies client")
 		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
 
 		unregisterRuntime(client)

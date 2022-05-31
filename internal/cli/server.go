@@ -2,6 +2,7 @@ package cli
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"strconv"
 	"time"
@@ -58,8 +59,10 @@ func parseServerEnv() {
 
 	TLSEnv := os.Getenv("COLONIES_TLS")
 	if TLSEnv == "true" {
+		UseTLS = true
 		Insecure = false
 	} else if TLSEnv == "false" {
+		UseTLS = false
 		Insecure = true
 	}
 
@@ -87,6 +90,7 @@ var serverStatusCmd = &cobra.Command{
 		parseDBEnv()
 		parseServerEnv()
 
+		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Info("Starting a Colonies client")
 		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
 
 		serverBuildVersion, serverBuildTime, err := client.Version()
@@ -118,9 +122,12 @@ var serverStartCmd = &cobra.Command{
 		parseDBEnv()
 		parseServerEnv()
 
+		fmt.Println(Insecure)
+
 		if !Insecure {
 			_, err := os.Stat(TLSKey)
 			if err != nil {
+				fmt.Println("XXXXXXX")
 				CheckError(errors.New("Failed to load TLS Key: " + TLSKey))
 				os.Exit(-1)
 			}
@@ -144,8 +151,8 @@ var serverStartCmd = &cobra.Command{
 			}
 		}
 
-		log.WithFields(log.Fields{"DBHost": DBHost, "DBPort": DBPort, "DBUser": DBUser, "DBPassword": "*******************", "DBName": DBName, "Insecure": Insecure}).Info("Connecting to PostgreSQL database")
-		server := server.CreateColoniesServer(db, ServerPort, ServerID, Insecure, TLSKey, TLSCert, Verbose)
+		log.WithFields(log.Fields{"DBHost": DBHost, "DBPort": DBPort, "DBUser": DBUser, "DBPassword": "*******************", "DBName": DBName, "UseTLS": UseTLS}).Info("Connecting to PostgreSQL database")
+		server := server.CreateColoniesServer(db, ServerPort, ServerID, UseTLS, TLSKey, TLSCert, Verbose)
 		for {
 			err := server.ServeForever()
 			if err != nil {
