@@ -127,11 +127,6 @@ var devCmd = &cobra.Command{
 			envErr = true
 		}
 
-		if os.Getenv("COLONIES_RUNTIMEGROUP") == "" {
-			log.Error("COLONIES_RUNTIMEGROUP environmental variable missing, try export COLONIES_RUNTIMEGROUP=\"local\"")
-			envErr = true
-		}
-
 		if envErr {
 			log.Error(envErr)
 			fmt.Println("\nExample of enironmental variables:")
@@ -154,7 +149,6 @@ var devCmd = &cobra.Command{
 			envProposal += "export COLONIES_RUNTIMEID=\"3fc05cf3df4b494e95d6a3d297a34f19938f7daa7422ab0d4f794454133341ac\"\n"
 			envProposal += "export COLONIES_RUNTIMEPRVKEY=\"ddf7f7791208083b6a9ed975a72684f6406a269cfa36f1b1c32045c0a71fff05\"\n"
 			envProposal += "export COLONIES_RUNTIMETYPE=\"cli\"\n"
-			envProposal += "export COLONIES_RUNTIMEGROUP=\"local\"\n"
 			fmt.Println(envProposal)
 			os.Exit(-1)
 		}
@@ -242,10 +236,9 @@ var devCmd = &cobra.Command{
 		CheckError(err)
 
 		runtimeType := os.Getenv("COLONIES_RUNTIMETYPE")
-		runtimeGroup := os.Getenv("COLONIES_RUNTIMEGROUP")
-		log.WithFields(log.Fields{"RuntimeID": runtimeID, "RuntimeType": runtimeType, "RuntimeGroup": runtimeGroup}).Info("Registering a new Runtime")
+		log.WithFields(log.Fields{"RuntimeID": runtimeID, "RuntimeType": runtimeType}).Info("Registering a new Runtime")
 
-		runtime := core.CreateRuntime(runtimeID, runtimeType, "dev_runtime", runtimeGroup, colonyID, "", 1, 0, "", 0, time.Now(), time.Now())
+		runtime := core.CreateRuntime(runtimeID, runtimeType, "dev_runtime", colonyID, "", 1, 0, "", 0, time.Now(), time.Now())
 		_, err = client.AddRuntime(runtime, colonyPrvKey)
 		CheckError(err)
 
@@ -278,7 +271,6 @@ var devCmd = &cobra.Command{
 		envStr += "export COLONIES_RUNTIMEID=\"" + runtimeID + "\"\n"
 		envStr += "export COLONIES_RUNTIMEPRVKEY=\"" + runtimePrvKey + "\"\n"
 		envStr += "export COLONIES_RUNTIMETYPE=\"" + runtimeType + "\"\n"
-		envStr += "export COLONIES_RUNTIMEGROUP=\"" + runtimeGroup + "\"\n"
 
 		fmt.Println(envStr)
 

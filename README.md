@@ -6,7 +6,7 @@
 # What is Colonies?
 In short, Colonies is an **Employment Agency** for Internet-connected computers. Humans (or machines) submit job specifications to a Colonies server. The Colonies server keeps track of one or several Colonies, which are communities of machines. Machines (co-called workers) connect to the Colonies server and search for suitable jobs in Colonies they are member of. Each worker must have a valid identity to prove its membership and the Colonies server makes sure only authorized and qualified workers can connect and be assigned relevant jobs.
 
-* A Colonies worker can **reside anywhere on the Internet**, e.g. inside a Kubernetes Pod, a smart phone, or embedded in a web page, enabling a compute continuum spannig devices, endge and cloud.
+* A Colonies worker can **reside anywhere on the Internet**, e.g. inside a Kubernetes Pod, a smart phone, or embedded in a web page, enabling a compute continuum spannig devices, edge and cloud.
 * Colonies makes it possible to **orchestrate processes inside containers**. This is far more efficient than lauching a new container for each new job.
 * Colonies is **fast**. Instead of using RAFT for distributed consensus, Colonies uses a standard PostgreSQL database for storing states and execution history.   
 * A Colonies server is stateless and designed to take **full advantage of Kubernetes**, e.g. fault tolerance and scalability. 
@@ -70,7 +70,6 @@ export COLONIES_COLONYPRVKEY="ba949fa134981372d6da62b6a56f336ab4d843b22c02a4257d
 export COLONIES_RUNTIMEID="3fc05cf3df4b494e95d6a3d297a34f19938f7daa7422ab0d4f794454133341ac"
 export COLONIES_RUNTIMEPRVKEY="ddf7f7791208083b6a9ed975a72684f6406a269cfa36f1b1c32045c0a71fff05"
 export COLONIES_RUNTIMETYPE="cli"
-export COLONIES_RUNTIMEGROUP="local"
 ```
 or 
 ```console
@@ -287,7 +286,6 @@ Processes:
 | Name              | task_a                                                           |
 | ProcessID         | 3a8e9299c76905c87f903b4fdcf4c5dbeb314659e2ed31d477dcb414e8fedf1f |
 | RuntimeType       | cli                                                              |
-| RuntimeGroup      |                                                                  |
 | Cmd               | echo                                                             |
 | Args              | task_a                                                           |
 | State             | Waiting                                                          |
@@ -299,7 +297,6 @@ Processes:
 | Name              | task_b                                                           |
 | ProcessID         | 5fd0611d57fc567ce7aa7984424b1de749c32b20b92668b4755ade6ca62e19c2 |
 | RuntimeType       | cli                                                              |
-| RuntimeGroup      |                                                                  |
 | Cmd               | echo                                                             |
 | Args              | task_b                                                           |
 | State             | Waiting                                                          |
@@ -311,7 +308,6 @@ Processes:
 | Name              | task_d                                                           |
 | ProcessID         | f46b7e84da0657cda3982282f5bef8b3c7429eff6b635cbce9bf93eb034e6705 |
 | RuntimeType       | cli                                                              |
-| RuntimeGroup      |                                                                  |
 | Cmd               | echo                                                             |
 | Args              | task_d                                                           |
 | State             | Waiting                                                          |
@@ -323,7 +319,6 @@ Processes:
 | Name              | task_c                                                           |
 | ProcessID         | bf5d93190967539133063d357bcd5d446d3e4fce41a6d110926de12129a64156 |
 | RuntimeType       | cli                                                              |
-| RuntimeGroup      |                                                                  |
 | Cmd               | echo                                                             |
 | Args              | task_c                                                           |
 | State             | Waiting                                                          |

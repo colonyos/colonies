@@ -185,7 +185,6 @@ var lsRuntimesCmd = &cobra.Command{
 					[]string{"Name", runtime.Name},
 					[]string{"ID", runtime.ID},
 					[]string{"Type", runtime.RuntimeType},
-					[]string{"Group", runtime.RuntimeGroup},
 					[]string{"ColonyID", runtime.ColonyID},
 					[]string{"State", state},
 					[]string{"CommissionTime", runtime.CommissionTime.Format(TimeLayout)},

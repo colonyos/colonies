@@ -429,7 +429,6 @@ var getWorkflowCmd = &cobra.Command{
 				[]string{"Name", process.ProcessSpec.Name},
 				[]string{"ProcessID", process.ID},
 				[]string{"RuntimeType", process.ProcessSpec.Conditions.RuntimeType},
-				[]string{"RuntimeGroup", process.ProcessSpec.Conditions.RuntimeGroup},
 				[]string{"Cmd", procCmd},
 				[]string{"Args", procArgs},
 				[]string{"State", State2String(process.State)},

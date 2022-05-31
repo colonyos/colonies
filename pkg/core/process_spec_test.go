@@ -26,8 +26,6 @@ func TestProcessSpecJSON(t *testing.T) {
 
 	processSpec := CreateProcessSpec("test_name", "test_image", "test_cmd", []string{"test_arg"}, []string{"test_volumes"}, []string{"test_ports"}, colonyID, []string{runtime1ID, runtime2ID}, runtimeType, maxExecTime, maxRetries, mem, cores, gpus, env, []string{"test_name2"}, 5)
 
-	processSpec.Conditions.RuntimeGroup = "local_group"
-
 	jsonString, err := processSpec.ToJSON()
 	assert.Nil(t, err)
 

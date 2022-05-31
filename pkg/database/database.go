@@ -41,7 +41,6 @@ type Database interface {
 	DeleteAllProcessesForColony(colonyID string) error
 	ResetProcess(process *core.Process) error
 	SetProcessState(processID string, state int) error
-	SetRuntimeGroup(processID string, runtimeGroup string) error
 	SetWaitForParents(processID string, waitingForParent bool) error
 	SetDeadline(process *core.Process, deadline time.Time) error
 	ResetAllProcesses(process *core.Process) error
