@@ -367,9 +367,9 @@ The Colonies server keeps track of these identities and applies several rules ho
 3. Only a colony owner can register a colony runtimes to a colony. 
 4. Only a colony owner can list/get info about colony.
 5. Only a colony owner can approve/disapprove a runtime.
-6. Any colony runtime of a colony can submit/get/list processes. 
-7. Only the colony runtime that was assigned a process can set attributes on that process. 
-8. Any colony runtime can get/list attributes on processes. 
+6. Any runtime member of a colony can submit/get/assign/list processes or workflows. 
+7. Only the runtime that was assigned a process can set attributes on that process and close it. 
+8. Any runtime can get/list attributes on processes. 
 
 Note that the Colonies server does not store any crypto keys, but rather stores identites in a database and verifies that reconstructed identities obtained from RPC calls match the identities stored in the database. This protocol works as follows. Let's assume a runtime client has the following Id: 
 
