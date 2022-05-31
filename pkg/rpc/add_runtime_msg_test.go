@@ -12,7 +12,6 @@ func createRuntime() *core.Runtime {
 	id := "1e1bfca6feb8a13df3cbbca1104f20b4b29c311724ee5f690356257108023fb"
 	runtimeType := "test_runtime_type"
 	name := "test_runtime_name"
-	runtimeGroup := "test_runtime_group"
 	colonyID := "e0a17fead699b3e3b3eec21a3ab0efad54224f6eb22f4550abe9f2a207440834"
 	cpu := "AMD Ryzen 9 5950X (32) @ 3.400GHz"
 	cores := 32
@@ -22,7 +21,7 @@ func createRuntime() *core.Runtime {
 	commissionTime := time.Now()
 	lastHeardFromTime := time.Now()
 
-	return core.CreateRuntime(id, runtimeType, name, runtimeGroup, colonyID, cpu, cores, mem, gpu, gpus, commissionTime, lastHeardFromTime)
+	return core.CreateRuntime(id, runtimeType, name, colonyID, cpu, cores, mem, gpu, gpus, commissionTime, lastHeardFromTime)
 }
 
 func TestRPCAddRuntimeMsg(t *testing.T) {

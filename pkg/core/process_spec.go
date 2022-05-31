@@ -8,7 +8,6 @@ type Conditions struct {
 	ColonyID     string   `json:"colonyid"`
 	RuntimeIDs   []string `json:"runtimeids"`
 	RuntimeType  string   `json:"runtimetype"`
-	RuntimeGroup string   `json:"runtimegroup"`
 	Mem          int      `json:"mem"`
 	Cores        int      `json:"cores"`
 	GPUs         int      `json:"gpus"`
@@ -71,7 +70,6 @@ func (processSpec *ProcessSpec) Equals(processSpec2 *ProcessSpec) bool {
 		processSpec.MaxRetries != processSpec2.MaxRetries ||
 		processSpec.Conditions.ColonyID != processSpec2.Conditions.ColonyID ||
 		processSpec.Conditions.RuntimeType != processSpec2.Conditions.RuntimeType ||
-		processSpec.Conditions.RuntimeGroup != processSpec2.Conditions.RuntimeGroup ||
 		processSpec.Conditions.Mem != processSpec2.Conditions.Mem ||
 		processSpec.Conditions.Cores != processSpec2.Conditions.Cores ||
 		processSpec.Conditions.GPUs != processSpec2.Conditions.GPUs ||
