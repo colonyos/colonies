@@ -158,10 +158,10 @@ var listWaitingWorkflowsCmd = &cobra.Command{
 
 			var data [][]string
 			for _, graph := range graphs {
-				data = append(data, []string{graph.ID, graph.RuntimeGroup, graph.SubmissionTime.Format(TimeLayout)})
+				data = append(data, []string{graph.ID, graph.SubmissionTime.Format(TimeLayout)})
 			}
 			table := tablewriter.NewWriter(os.Stdout)
-			table.SetHeader([]string{"ID", "Runtime Group", "Submission Time"})
+			table.SetHeader([]string{"ID", "Submission Time"})
 			for _, v := range data {
 				table.Append(v)
 			}
@@ -215,14 +215,12 @@ var listRunningWorkflowsCmd = &cobra.Command{
 				os.Exit(0)
 			}
 
-			// TODO StartTime instead of Submission time
-
 			var data [][]string
 			for _, graph := range graphs {
-				data = append(data, []string{graph.ID, graph.RuntimeGroup, graph.SubmissionTime.Format(TimeLayout)})
+				data = append(data, []string{graph.ID, graph.SubmissionTime.Format(TimeLayout)})
 			}
 			table := tablewriter.NewWriter(os.Stdout)
-			table.SetHeader([]string{"ID", "Runtime Group", "Submission Time"})
+			table.SetHeader([]string{"ID", "Submission Time"})
 			for _, v := range data {
 				table.Append(v)
 			}
@@ -278,10 +276,10 @@ var listSuccessfulWorkflowsCmd = &cobra.Command{
 
 			var data [][]string
 			for _, graph := range graphs {
-				data = append(data, []string{graph.ID, graph.RuntimeGroup, graph.EndTime.Format(TimeLayout)})
+				data = append(data, []string{graph.ID, graph.EndTime.Format(TimeLayout)})
 			}
 			table := tablewriter.NewWriter(os.Stdout)
-			table.SetHeader([]string{"ID", "Runtime Group", "End Time"})
+			table.SetHeader([]string{"ID", "End Time"})
 			for _, v := range data {
 				table.Append(v)
 			}
@@ -337,10 +335,10 @@ var listFailedWorkflowsCmd = &cobra.Command{
 
 			var data [][]string
 			for _, graph := range graphs {
-				data = append(data, []string{graph.ID, graph.RuntimeGroup, graph.EndTime.Format(TimeLayout)})
+				data = append(data, []string{graph.ID, graph.EndTime.Format(TimeLayout)})
 			}
 			table := tablewriter.NewWriter(os.Stdout)
-			table.SetHeader([]string{"ID", "Runtime Group", "End Time"})
+			table.SetHeader([]string{"ID", "End Time"})
 			for _, v := range data {
 				table.Append(v)
 			}
@@ -390,7 +388,6 @@ var getWorkflowCmd = &cobra.Command{
 			[]string{"WorkflowID", graph.ID},
 			[]string{"ColonyID", graph.ID},
 			[]string{"State", State2String(graph.State)},
-			[]string{"RuntimeGroup", graph.RuntimeGroup},
 			[]string{"SubmissionTime", graph.SubmissionTime.Format(TimeLayout)},
 			[]string{"StartTime", graph.StartTime.Format(TimeLayout)},
 			[]string{"EndTime", graph.EndTime.Format(TimeLayout)},

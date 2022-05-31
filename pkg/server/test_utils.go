@@ -133,7 +133,7 @@ func generateDiamondtWorkflowSpec(colonyID string) *core.WorkflowSpec {
 	//          \ /
 	//         task4
 
-	workflowSpec := core.CreateWorkflowSpec(colonyID, true)
+	workflowSpec := core.CreateWorkflowSpec(colonyID)
 
 	processSpec1 := core.CreateEmptyProcessSpec()
 	processSpec1.Name = "task1"
