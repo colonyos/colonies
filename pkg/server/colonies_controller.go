@@ -950,6 +950,7 @@ func (controller *coloniesController) assignRuntime(runtimeID string, colonyID s
 				cmd.errorChan <- err
 				return
 			}
+
 			err = controller.db.AssignRuntime(runtimeID, selectedProcess)
 			if err != nil {
 				cmd.errorChan <- err
@@ -964,6 +965,21 @@ func (controller *coloniesController) assignRuntime(runtimeID string, colonyID s
 					return
 				}
 			}
+
+			// XXX
+			// INFO[0244] Resolving processgraph (assigned)        ProcessGraph=46377fc054a0926509d63e4285e478950f3f0f2cc49a4a4766b6b789a0af343e
+			// panic: runtime error: invalid memory address or nil pointer dereference
+			// [signal SIGSEGV: segmentation violation code=0x1 addr=0x0 pc=0xa0dd3a]
+
+			// goroutine 32 [running]:
+			// github.com/colonyos/colonies/pkg/core.(*ProcessGraph).SetStorage(...)
+			//         /home/johan/dev/github/colonyos/colonies/pkg/core/processgraph.go:106
+			// github.com/colonyos/colonies/pkg/server.(*coloniesController).assignRuntime.func1(0xc000db42d0)
+			//         /home/johan/dev/github/colonyos/colonies/pkg/server/colonies_controller.go:975 +0x41a
+			// github.com/colonyos/colonies/pkg/server.(*coloniesController).masterWorker(0xc00042e280)
+			//         /home/johan/dev/github/colonyos/colonies/pkg/server/colonies_controller.go:114 +0x55
+			// created by github.com/colonyos/colonies/pkg/server.createColoniesController
+			//         /home/johan/dev/github/colonyos/colonies/pkg/server/colonies_controller.go:61 +0x185
 
 			if selectedProcess.ProcessGraphID != "" {
 				log.WithFields(log.Fields{"ProcessGraph": selectedProcess.ProcessGraphID}).Info("Resolving processgraph (assigned)")

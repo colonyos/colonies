@@ -1,0 +1,14 @@
+{
+	"processspecs": [{
+			"name": "task1",
+			"cmd": "echo",
+			"args": [
+				"task1"
+			],
+			"conditions": {
+                "runtimetype": "cli",
+				"dependencies": null
+			}
+		}
+	]
+}

@@ -13,7 +13,7 @@ func TestWorkflowSpecJSON(t *testing.T) {
 	//          \ /
 	//         task4
 
-	workflowSpec := CreateWorkflowSpec(GenerateRandomID(), true)
+	workflowSpec := CreateWorkflowSpec(GenerateRandomID())
 
 	processSpec1 := CreateEmptyProcessSpec()
 	processSpec1.Name = "task1"

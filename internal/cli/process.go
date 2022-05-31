@@ -108,8 +108,8 @@ var processCmd = &cobra.Command{
 
 var submitProcessCmd = &cobra.Command{
 	Use:   "submit",
-	Short: "Submit a Process to a Colony",
-	Long:  "Submit a Process to a Colony",
+	Short: "Submit a process to a colony",
+	Long:  "Submit a process to a colony",
 	Run: func(cmd *cobra.Command, args []string) {
 		parseServerEnv()
 
@@ -174,8 +174,8 @@ var submitProcessCmd = &cobra.Command{
 
 var assignProcessCmd = &cobra.Command{
 	Use:   "assign",
-	Short: "Assign a process to a Runtime",
-	Long:  "Assign a process to a Runtime",
+	Short: "Assign a process to a runtime",
+	Long:  "Assign a process to a runtime",
 	Run: func(cmd *cobra.Command, args []string) {
 		parseServerEnv()
 
@@ -504,6 +504,7 @@ var getProcessCmd = &cobra.Command{
 			[]string{"IsAssigned", isAssigned},
 			[]string{"AssignedRuntimeID", assignedRuntimeID},
 			[]string{"State", State2String(process.State)},
+			[]string{"Priority", strconv.Itoa(process.ProcessSpec.Priority)},
 			[]string{"SubmissionTime", process.SubmissionTime.Format(TimeLayout)},
 			[]string{"StartTime", process.StartTime.Format(TimeLayout)},
 			[]string{"EndTime", process.EndTime.Format(TimeLayout)},
@@ -645,8 +646,8 @@ var getProcessCmd = &cobra.Command{
 
 var deleteProcessCmd = &cobra.Command{
 	Use:   "delete",
-	Short: "Delete a Process",
-	Long:  "Delete a Process",
+	Short: "Delete a process",
+	Long:  "Delete a process",
 	Run: func(cmd *cobra.Command, args []string) {
 		parseServerEnv()
 
@@ -675,8 +676,8 @@ var deleteProcessCmd = &cobra.Command{
 
 var deleteAllProcessesCmd = &cobra.Command{
 	Use:   "deleteall",
-	Short: "Delete all processes in a Colony",
-	Long:  "Delete all processes in a Colony",
+	Short: "Delete all processes in a colony",
+	Long:  "Delete all processes in a colony",
 	Run: func(cmd *cobra.Command, args []string) {
 		parseServerEnv()
 
