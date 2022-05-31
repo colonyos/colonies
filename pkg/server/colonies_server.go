@@ -240,7 +240,6 @@ func (server *ColoniesServer) sendEmptyHTTPReply(c *gin.Context, payloadType str
 
 func (server *ColoniesServer) ServeForever() error {
 	if server.tls {
-		fmt.Println("XXX")
 		if err := server.httpServer.ListenAndServeTLS(server.tlsCertPath, server.tlsPrivateKeyPath); err != nil && errors.Is(err, http.ErrServerClosed) {
 			fmt.Println(err)
 			return err
