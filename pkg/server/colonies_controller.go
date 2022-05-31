@@ -655,24 +655,35 @@ func (controller *coloniesController) findFailedProcesses(colonyID string, count
 	}
 }
 
+func (controller *coloniesController) updateProcessGraph(graph *core.ProcessGraph) error {
+	graph.SetStorage(controller.db)
+	return graph.UpdateProcessIDs()
+}
+
 func (controller *coloniesController) getProcessGraphByID(processGraphID string) (*core.ProcessGraph, error) {
 	cmd := &command{processGraphReplyChan: make(chan *core.ProcessGraph, 1),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
-			processGraph, err := controller.db.GetProcessGraphByID(processGraphID)
+			graph, err := controller.db.GetProcessGraphByID(processGraphID)
 			if err != nil {
 				cmd.errorChan <- err
 				return
 			}
-			cmd.processGraphReplyChan <- processGraph
+			err = controller.updateProcessGraph(graph)
+			if err != nil {
+				cmd.errorChan <- err
+				return
+			}
+
+			cmd.processGraphReplyChan <- graph
 		}}
 
 	controller.cmdQueue <- cmd
 	select {
 	case err := <-cmd.errorChan:
 		return nil, err
-	case processGraph := <-cmd.processGraphReplyChan:
-		return processGraph, nil
+	case graph := <-cmd.processGraphReplyChan:
+		return graph, nil
 	}
 }
 
@@ -689,6 +700,14 @@ func (controller *coloniesController) findWaitingProcessGraphs(colonyID string, 
 				cmd.errorChan <- err
 				return
 			}
+			for _, graph := range graphs {
+				err = controller.updateProcessGraph(graph)
+				if err != nil {
+					cmd.errorChan <- err
+					return
+				}
+			}
+
 			cmd.processGraphsReplyChan <- graphs
 		}}
 
@@ -714,6 +733,13 @@ func (controller *coloniesController) findRunningProcessGraphs(colonyID string, 
 			if err != nil {
 				cmd.errorChan <- err
 				return
+			}
+			for _, graph := range graphs {
+				err = controller.updateProcessGraph(graph)
+				if err != nil {
+					cmd.errorChan <- err
+					return
+				}
 			}
 			cmd.processGraphsReplyChan <- graphs
 		}}
@@ -741,6 +767,13 @@ func (controller *coloniesController) findSuccessfulProcessGraphs(colonyID strin
 				cmd.errorChan <- err
 				return
 			}
+			for _, graph := range graphs {
+				err = controller.updateProcessGraph(graph)
+				if err != nil {
+					cmd.errorChan <- err
+					return
+				}
+			}
 			cmd.processGraphsReplyChan <- graphs
 		}}
 
@@ -766,6 +799,13 @@ func (controller *coloniesController) findFailedProcessGraphs(colonyID string, c
 			if err != nil {
 				cmd.errorChan <- err
 				return
+			}
+			for _, graph := range graphs {
+				err = controller.updateProcessGraph(graph)
+				if err != nil {
+					cmd.errorChan <- err
+					return
+				}
 			}
 			cmd.processGraphsReplyChan <- graphs
 		}}
