@@ -20,16 +20,16 @@ To simplify, Colonies is an **Employment Agency** for Internet-connected compute
 More information can also be found [here](https://colonyos.io).
 
 ## Key features
-* **Batch processing and distributed RPC.** The Colonies Server maintains several prioritized job queues and keeps track of process statuses. Processes not finishing in time are automatically moved back to the job queue to be executed by another worker.  
-* **Pull-based orchestration.** Users (or workers) submit process specifications the Colonies Server. Colonies workers connect to the Colonies Server and request processes to execute. A HTTP Long Polling/WebSocket protocol ensure that workers can reside anywhere on the Internet, even behind firewalls. The Colonies Server never establish connections directly to workers. 
+* **Batch processing and distributed RPC.** The Colonies server maintains several prioritized job queues and keeps track of process statuses. Processes not finishing in time are automatically moved back to the job queue to be executed by another worker.  
+* **Pull-based orchestration.** Users (or workers) submit process specifications the Colonies server. Colonies workers connect to the Colonies server and request processes to execute. A HTTP Long Polling/WebSocket protocol ensure that workers can reside anywhere on the Internet, even behind firewalls. The Colonies server never establish connections directly to workers. 
 * **Multi-step workflows** or **Directed Acyclic Graph (DAG)** to capture dependencies between jobs.
-* **Built-in identity and trust management.** A crypto-protocol based on ECDSA (Elliptic Curve Digital Signature Algorithm) offers identity and trust management to enable Colonies workers member of the same Colony to fully trust each other. Only authorized users or workers can submit process specifications or interact with other workers within a Colony.
+* **Built-in identity and trust management.** A crypto-protocol based on ECDSA (Elliptic Curve Digital Signature Algorithm) offers identity and trust management to enable Colonies workers member of the same colony to fully trust each other. Only authorized users or workers can submit process specifications or interact with other workers within a colony.
 * **Implemented in Golang** with a standard PostgreSQL backend.
 * **SDK in Python, Julia, and Golang.**
 
 ## Example of use cases
 * **Manage ML/AI workloads on Kubernetes.** Launch one or several Colonies worker containers in a Kubernetes Pod. Then use Colonies to enable batch processing and launch processes inside worker containers. Launching processes inside already started containers can be significantly more efficient than frameworks like [Argo Workflows](https://argoproj.github.io/argo-workflows) that launches new containers for each new job, especially when dealing with AI workflows consisting of huge containers (tens of gigabytes) or when a huge amount of data needs to be shuffled into memory to perform a certain computation.
-* **Grid computing.** Create "non-malicious" botnets and launch processes to perform computations at IoT devices, smart phones or cloud servers; all controlled from the Colonies Server.
+* **Grid computing.** Create "non-malicious" botnets and launch processes to perform computations at IoT devices, smart phones or cloud servers; all controlled from the Colonies server.
 * **Manage complex workflows spanning multiple cloud/edge servers and devices**, e.g. setting up multimedia pipelines and ML inference servers running on multiple platforms connected to different networks.
 
 # Links
@@ -164,7 +164,7 @@ Attributes:
 +------------------------------------------------------------------+------+---------+------+
 ```
 
-## Set execution time constraint
+## Execution time constraint
 The *maxecution* attribute specifies the maxiumum execution time in seconds before the process specification (job) is moved back to the queue. The *maxretries* attributes specifies how many times it may be moved back to the queue. Execution time constraint is an import feature of Colonies to implement robust workflows. If a worker crash, the job will automatically moved back to the queue and be executed by another worker. 
 
 This mechanism thus offer a last line of defense against failures and enables advanched software engineering disciplines such as [Chaos Engineering](https://en.wikipedia.org/wiki/Chaos_engineering). For example, a Chaos monkey may randomly kill worker pods in Kubernetes and Colonies guarantees that all jobs are eventually executed. 
@@ -358,26 +358,26 @@ INFO[0000] Closing process as successful                 processID=f46b7e84da065
 Note that the order the processes are executed. Also, try to start another worker and you will see that both workers will execute processes.
 
 # Security principles
-A core component of Colonies is a crypto identity protocol inspired by Bitcoin and Ethereum. Each Colony and Colony Runtime is assigned a *Digital Identity* that is verified by the Colonies server using a so-called [Implicit certificates](https://en.wikipedia.org/wiki/Implicit_certificate), which is implemented using [Elliptic-curve cryptography](https://en.wikipedia.org/wiki/Elliptic-curve_cryptography). This protocol makes it possible to reconstruct public-keys from signatures. Identities can then simply be calculated as cryptographic hashes (SHA3-256) of the reconstructed public-keys.
+A core component of Colonies is a crypto identity protocol inspired by Bitcoin and Ethereum. Each colony and colony runtime is assigned a *Digital Identity* that is verified by the Colonies server using a so-called [Implicit certificates](https://en.wikipedia.org/wiki/Implicit_certificate), which is implemented using [Elliptic-curve cryptography](https://en.wikipedia.org/wiki/Elliptic-curve_cryptography). This protocol makes it possible to reconstruct public-keys from signatures. Identities can then simply be calculated as cryptographic hashes (SHA3-256) of the reconstructed public-keys.
 
-The Colonies Server keeps track of these identities and applies several rules how runtimes are allowed to interact with each other. 
+The Colonies server keeps track of these identities and applies several rules how runtimes are allowed to interact with each other. 
 
-1. Only the Colonies Server Owner can register a new Colony. 
-2. Only the Colonies Server Owner can list registered Colonies. 
-3. Only a Colony Owner can register a Colony Runtimes to a Colony. 
-4. Only a Colony Owner can list/get info about Colony.
-5. Only a Colony Owner can approve/disapprove a Runtime.
-6. Any Colony Runtime of a Colony can submit/get/list processes. 
-7. Only the Colony Runtime that was assigned a process can set attributes on that process. 
-8. Any Colony Runtime can get/list attributes on processes. 
+1. Only the server owner can register a new colony. 
+2. Only the server owner can list registered colonies. 
+3. Only a colony owner can register a colony runtimes to a colony. 
+4. Only a colony owner can list/get info about colony.
+5. Only a colony owner can approve/disapprove a runtime.
+6. Any colony runtime of a colony can submit/get/list processes. 
+7. Only the colony runtime that was assigned a process can set attributes on that process. 
+8. Any colony runtime can get/list attributes on processes. 
 
-Note that the Colonies server does not store any crypto keys, but rather stores identites in a database and verifies that reconstructed identities obtained from RPC calls match the identities stored in the database. This protocol works as follows. Let's assume a Runtime client has the following Id: 
+Note that the Colonies server does not store any crypto keys, but rather stores identites in a database and verifies that reconstructed identities obtained from RPC calls match the identities stored in the database. This protocol works as follows. Let's assume a runtime client has the following Id: 
 
 ```
 69383f17554afbf81594999eec96adbaa0fc6caace5f07990248b14167c41e8f
 ```
 
-It then sends the following message to the Colonies Server:
+It then sends the following message to the Colonies server:
 
 ```json
 {
@@ -396,4 +396,4 @@ make test
 
 # Roadmap 1.0 release
 * Cronjobs/job generators
-* Built-in Distributed Hash table (Kademlia) to make it possible to create federations of Colonies servers to enable self-sovereignty and trust chains. Each Colonies Server can join a global overlay network of connected Colonies Servers on the Internet, similar to technologies like IPFS. 
+* Built-in Distributed Hash table (Kademlia) to make it possible to create federations of Colonies servers to enable self-sovereignty and trust chains. Each Colonies server can join a global overlay network of connected Colonies servers on the Internet, similar to technologies like IPFS. 
