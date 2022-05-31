@@ -3,12 +3,15 @@
 
 ![ColonyOSLogo](docs/images/ColonyOsLogoNoShaddow2.png)
 
-# What is Colonies? 
+# What is Colonies?
+In short, Colonies is an **Employment Agency** for Internet-connected computers. Humans (or machines) submit job specifications to Colonies servers. Machines (so-called workers) connect to a Colonies server and search for suitable jobs. Each worker must have a valid Identity card and the Colonies server makes sure only authorized and qualified workers can connect and execute jobs.
+
+* **A Colonies worker can reside anywhere on the Internet, e.g. run inside a Kubernetes Pod, a smart phone, or embedded in a web page.
 * **Colonies** makes it possible to **orchestrate processes inside containers**. This is far more efficient than lauching a new container for each new job.
 * **Colonies** is **fast**. Instead of using RAFT for distributed consensus, Colonies uses a standard PostgreSQL database for storing states and execution history.   
 * **Colonies** is designed to take **full advantage of Kubernetes**, e.g. fault tolerance and scalability. 
-* **Colonies** complements Kubernetes and brings efficient, robust and fault tolerant **batch processing** to Kubernetes, typically needed by many AI workloads.
-* **Colonies** is **lightweight** and works without Kubernetes. It runs in browsers, smart phones or IoT devices. This also makes it much easier to test and develop complex workflows before they are deployed on Kubernetes.
+* **Colonies** complements Kubernetes and brings robust and fault tolerant **batch processing** to Kubernetes, typically needed by many AI workloads.
+* **Colonies** is **lightweight and works without Kubernetes**. It runs in browsers, smart phones or IoT devices. This also makes it much easier to test and develop complex workflows before they are deployed on Kubernetes.
 * A crypto-protocol ensure secure and **zero-trust process execution**. This enables secure and seamless orchestration of complex machine learning workloads across plattforms to create a compute continuum spannig devices and servers. 
 * **Colonies** is currently being used by [RockSigma AB](https://www.rocksigma.com) to build a novel compute engine for automatic seismic processing in underground mines. 
 
@@ -19,14 +22,15 @@ More information can also be found [here](https://colonyos.io).
 ## Key features
 * **Batch processing and distributed RPC.** The Colonies Server maintains several prioritized job queues and keeps track of process statuses. Processes not finishing in time are automatically moved back to the job queue to be executed by another worker.  
 * **Pull-based orchestration.** Users (or workers) submit process specifications the Colonies Server. Colonies workers connect to the Colonies Server and request processes to execute. A HTTP Long Polling/WebSocket protocol ensure that workers can reside anywhere on the Internet, even behind firewalls. The Colonies Server never establish connections directly to workers. 
-* **Multi-step workflows** or **Directed Acyclic Graph (DAG)** to capture dependencies between tasks.
+* **Multi-step workflows** or **Directed Acyclic Graph (DAG)** to capture dependencies between jobs.
 * **Built-in identity and trust management.** A crypto-protocol based on ECDSA (Elliptic Curve Digital Signature Algorithm) offers identity and trust management to enable Colonies workers member of the same Colony to fully trust each other. Only authorized users or workers can submit process specifications or interact with other workers within a Colony.
 * **Implemented in Golang** with a standard PostgreSQL backend.
 * **SDK in Python, Julia, and Golang.**
 
 ## Example of use cases
-* **Manage ML/AI workloads on Kubernetes.** Launch one or several Colonies worker containers in a Kubernetes Pod. Then use Colonies to enable batch processing and launch processes inside worker containers. Launching processes inside already started containers can be significantly more efficient than frameworks like [Argo Workflows](https://argoproj.github.io/argo-workflows) that launches new containers for each new task, especially when dealing with AI workflows consisting of huge containers (tens of gigabytes) or when a huge amount of data needs to be shuffled into memory to perform a certain computation.
+* **Manage ML/AI workloads on Kubernetes.** Launch one or several Colonies worker containers in a Kubernetes Pod. Then use Colonies to enable batch processing and launch processes inside worker containers. Launching processes inside already started containers can be significantly more efficient than frameworks like [Argo Workflows](https://argoproj.github.io/argo-workflows) that launches new containers for each new job, especially when dealing with AI workflows consisting of huge containers (tens of gigabytes) or when a huge amount of data needs to be shuffled into memory to perform a certain computation.
 * **Grid computing.** Create "non-malicious" botnets and launch processes to perform computations at IoT devices, smart phones or cloud servers; all controlled from the Colonies Server.
+* **High-performance computing**. Create groups of workers to take advantage of data locality.
 * **Manage complex workflows spanning multiple cloud/edge servers and devices**, e.g. setting up multimedia pipelines and ML inference servers running on multiple platforms connected to different networks.
 
 ## Getting started example
@@ -239,6 +243,5 @@ make test
 ```
 
 # Roadmap 1.0 release
-* **Cronjobs**
-* **DAG-based workflows**
-* **Improved support for Decentralization.** A built-in Distributed Hash table (Kademlia) to make it possible to create federations of Colonies Servers to enable self-sovereignty and trust chains. Each Colonies Server can join a global overlay network of connected Colonies Servers on the Internet, similar to technologies like IPFS. 
+* Cronjobs/job generators
+* Built-in Distributed Hash table (Kademlia) to make it possible to create federations of Colonies servers to enable self-sovereignty and trust chains. Each Colonies Server can join a global overlay network of connected Colonies Servers on the Internet, similar to technologies like IPFS. 
