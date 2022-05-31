@@ -60,10 +60,10 @@ var workerCmd = &cobra.Command{
 
 var workerStartCmd = &cobra.Command{
 	Use:   "start",
-	Short: "Register and start a Colonies Worker",
-	Long:  "Register and start a Colonies Worker",
+	Short: "Register and start a worker",
+	Long:  "Register and start a worker",
 	Run: func(cmd *cobra.Command, args []string) {
-		log.WithFields(log.Fields{"BuildVersion": build.BuildVersion, "BuildTime": build.BuildTime}).Info("Starting a Colonies Worker")
+		log.WithFields(log.Fields{"BuildVersion": build.BuildVersion, "BuildTime": build.BuildTime}).Info("Starting a worker")
 		parseServerEnv()
 
 		if ColonyID == "" {
@@ -150,7 +150,7 @@ var workerStartCmd = &cobra.Command{
 		err = client.ApproveRuntime(runtimeID, ColonyPrvKey)
 		CheckError(err)
 
-		log.WithFields(log.Fields{"BuildVersion": build.BuildVersion, "BuildTime": build.BuildTime, "ServerHost": ServerHost, "ServerPort": ServerPort}).Info("Colonies Worker now waiting for processes to be execute")
+		log.WithFields(log.Fields{"BuildVersion": build.BuildVersion, "BuildTime": build.BuildTime, "ServerHost": ServerHost, "ServerPort": ServerPort}).Info("Worker now waiting for processes to be execute")
 
 		for {
 			assignedProcess, err := client.AssignProcess(ColonyID, runtimePrvKey)
@@ -159,7 +159,7 @@ var workerStartCmd = &cobra.Command{
 				continue
 			}
 
-			log.WithFields(log.Fields{"processID": assignedProcess.ID}).Info("Colonies Worker was assigned a process")
+			log.WithFields(log.Fields{"processID": assignedProcess.ID}).Info("Worker was assigned a process")
 			log.WithFields(log.Fields{"Cmd": assignedProcess.ProcessSpec.Cmd, "Args": assignedProcess.ProcessSpec.Args}).Info("Lauching process")
 			cmd := exec.Command(assignedProcess.ProcessSpec.Cmd, assignedProcess.ProcessSpec.Args...)
 			cmd.Env = os.Environ()
@@ -225,10 +225,10 @@ var workerStartCmd = &cobra.Command{
 
 var workerRegisterCmd = &cobra.Command{
 	Use:   "register",
-	Short: "Register a Colonies Worker",
-	Long:  "Register a Colonies Worker",
+	Short: "Register a worker",
+	Long:  "Register a worker",
 	Run: func(cmd *cobra.Command, args []string) {
-		log.WithFields(log.Fields{"BuildVersion": build.BuildVersion, "BuildTime": build.BuildTime}).Info("Registering a Colonies worker")
+		log.WithFields(log.Fields{"BuildVersion": build.BuildVersion, "BuildTime": build.BuildTime}).Info("Registering a worker")
 		parseServerEnv()
 
 		if ColonyID == "" {
@@ -307,10 +307,10 @@ var workerRegisterCmd = &cobra.Command{
 
 var workerUnregisterCmd = &cobra.Command{
 	Use:   "unregister",
-	Short: "Unregister an already started Colonies Worker",
-	Long:  "Unregister an already started Colonies Worker",
+	Short: "Unregister an already started worker",
+	Long:  "Unregister an already started worker",
 	Run: func(cmd *cobra.Command, args []string) {
-		log.WithFields(log.Fields{"BuildVersion": build.BuildVersion, "BuildTime": build.BuildTime}).Info("Starting a Colonies worker")
+		log.WithFields(log.Fields{"BuildVersion": build.BuildVersion, "BuildTime": build.BuildTime}).Info("Starting a worker")
 		parseServerEnv()
 
 		if ColonyID == "" {

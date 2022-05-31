@@ -11,8 +11,8 @@ import (
 )
 
 func (db *PQDatabase) AddProcessGraph(processGraph *core.ProcessGraph) error {
-	sqlStatement := `INSERT INTO  ` + db.dbPrefix + `PROCESSGRAPHS (PROCESSGRAPH_ID, TARGET_COLONY_ID, ROOTS, STATE, SUBMISSION_TIME, START_TIME, END_TIME, RUNTIME_GROUP) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`
-	_, err := db.postgresql.Exec(sqlStatement, processGraph.ID, processGraph.ColonyID, pq.Array(processGraph.Roots), processGraph.State, time.Now(), time.Time{}, time.Time{}, processGraph.RuntimeGroup)
+	sqlStatement := `INSERT INTO  ` + db.dbPrefix + `PROCESSGRAPHS (PROCESSGRAPH_ID, TARGET_COLONY_ID, ROOTS, STATE, SUBMISSION_TIME, START_TIME, END_TIME) VALUES ($1, $2, $3, $4, $5, $6, $7)`
+	_, err := db.postgresql.Exec(sqlStatement, processGraph.ID, processGraph.ColonyID, pq.Array(processGraph.Roots), processGraph.State, time.Now(), time.Time{}, time.Time{})
 	if err != nil {
 		fmt.Println(err)
 		return err
@@ -32,8 +32,7 @@ func (db *PQDatabase) parseProcessGraphs(rows *sql.Rows) ([]*core.ProcessGraph, 
 		var submissionTime time.Time
 		var startTime time.Time
 		var endTime time.Time
-		var runtimeGroup string
-		if err := rows.Scan(&processGraphID, &colonyID, pq.Array(&roots), &state, &submissionTime, &startTime, &endTime, &runtimeGroup); err != nil {
+		if err := rows.Scan(&processGraphID, &colonyID, pq.Array(&roots), &state, &submissionTime, &startTime, &endTime); err != nil {
 			return nil, err
 		}
 
@@ -44,7 +43,6 @@ func (db *PQDatabase) parseProcessGraphs(rows *sql.Rows) ([]*core.ProcessGraph, 
 		graph.SubmissionTime = submissionTime
 		graph.StartTime = startTime
 		graph.EndTime = endTime
-		graph.RuntimeGroup = runtimeGroup
 		if err != nil {
 			return graphs, err
 		}
@@ -85,10 +83,30 @@ func (db *PQDatabase) GetProcessGraphByID(processGraphID string) (*core.ProcessG
 }
 
 func (db *PQDatabase) SetProcessGraphState(processGraphID string, state int) error {
-	sqlStatement := `UPDATE ` + db.dbPrefix + `PROCESSGRAPHS SET STATE=$1 WHERE PROCESSGRAPH_ID=$2`
-	_, err := db.postgresql.Exec(sqlStatement, state, processGraphID)
+	graph, err := db.GetProcessGraphByID(processGraphID)
 	if err != nil {
 		return err
+	}
+
+	if graph.State == core.WAITING && state == core.RUNNING {
+		sqlStatement := `UPDATE ` + db.dbPrefix + `PROCESSGRAPHS SET START_TIME=$1, STATE=$2 WHERE PROCESSGRAPH_ID=$3`
+		_, err := db.postgresql.Exec(sqlStatement, time.Now(), state, processGraphID)
+		if err != nil {
+			return err
+		}
+	} else if state == core.SUCCESS || state == core.FAILED {
+		sqlStatement := `UPDATE ` + db.dbPrefix + `PROCESSGRAPHS SET END_TIME=$1, STATE=$2 WHERE PROCESSGRAPH_ID=$3`
+		_, err := db.postgresql.Exec(sqlStatement, time.Now(), state, processGraphID)
+		if err != nil {
+			return err
+		}
+	} else {
+		sqlStatement := `UPDATE ` + db.dbPrefix + `PROCESSGRAPHS SET STATE=$1 WHERE PROCESSGRAPH_ID=$2`
+		_, err := db.postgresql.Exec(sqlStatement, state, processGraphID)
+		if err != nil {
+			return err
+		}
+
 	}
 
 	return nil

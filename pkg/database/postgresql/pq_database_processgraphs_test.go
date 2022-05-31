@@ -43,8 +43,6 @@ func generateProcessGraph(t *testing.T, db *PQDatabase, colonyID string) *core.P
 
 	graph.AddRoot(process1.ID)
 
-	graph.RuntimeGroup = "local"
-
 	return graph
 }
 

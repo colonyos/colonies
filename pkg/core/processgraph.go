@@ -25,7 +25,6 @@ type ProcessGraph struct {
 	SubmissionTime time.Time `json:"submissiontime"`
 	StartTime      time.Time `json:"starttime"`
 	EndTime        time.Time `json:"endtime"`
-	RuntimeGroup   string    `json:"runtimegroup"`
 	ProcessIDs     []string  `json:"processids"`
 }
 
@@ -103,6 +102,12 @@ func (graph *ProcessGraph) AddRoot(processID string) {
 }
 
 func (graph *ProcessGraph) SetStorage(storage ProcessGraphStorage) {
+	// if graph == nil {
+	// 	fmt.Println("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXxERROR: graph is nil")
+	// }
+	// if storage == nil {
+	// 	fmt.Println("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXxERROR: storage is nil")
+	// }
 	graph.storage = storage
 }
 
@@ -320,8 +325,7 @@ func (graph *ProcessGraph) iterate(processID string, visited map[string]bool, vi
 func (graph *ProcessGraph) Equals(graph2 *ProcessGraph) bool {
 	if graph.State == graph2.State &&
 		graph.ID == graph2.ID &&
-		graph.ColonyID == graph2.ColonyID &&
-		graph.RuntimeGroup == graph2.RuntimeGroup {
+		graph.ColonyID == graph2.ColonyID {
 		return true
 	}
 

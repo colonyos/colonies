@@ -59,8 +59,8 @@ var runtimeCmd = &cobra.Command{
 
 var registerRuntimeCmd = &cobra.Command{
 	Use:   "register",
-	Short: "Register a new Runtime",
-	Long:  "Register a new Runtime",
+	Short: "Register a new runtime",
+	Long:  "Register a new runtime",
 	Run: func(cmd *cobra.Command, args []string) {
 		parseServerEnv()
 
@@ -116,8 +116,8 @@ var registerRuntimeCmd = &cobra.Command{
 
 var lsRuntimesCmd = &cobra.Command{
 	Use:   "ls",
-	Short: "List all Runtimes available in a Colony",
-	Long:  "List all Runtimes available in a Colony",
+	Short: "List all runtimes available in a colony",
+	Long:  "List all runtimes available in a colony",
 	Run: func(cmd *cobra.Command, args []string) {
 		parseServerEnv()
 
@@ -229,8 +229,8 @@ var lsRuntimesCmd = &cobra.Command{
 
 var approveRuntimeCmd = &cobra.Command{
 	Use:   "approve",
-	Short: "Approve a Colony Runtime",
-	Long:  "Approve a Colony Runtime",
+	Short: "Approve a colony runtime",
+	Long:  "Approve a colony runtime",
 	Run: func(cmd *cobra.Command, args []string) {
 		parseServerEnv()
 
@@ -289,8 +289,8 @@ var rejectRuntimeCmd = &cobra.Command{
 
 var deleteRuntimeCmd = &cobra.Command{
 	Use:   "unregister",
-	Short: "Unregister a Colony Runtime",
-	Long:  "Unregister a Colony Runtime",
+	Short: "Unregister a colony runtime",
+	Long:  "Unregister a colony runtime",
 	Run: func(cmd *cobra.Command, args []string) {
 		parseServerEnv()
 

@@ -35,8 +35,8 @@ func init() {
 
 var serverCmd = &cobra.Command{
 	Use:   "server",
-	Short: "Manage a server",
-	Long:  "Manage a server",
+	Short: "Manage production server",
+	Long:  "Manage production server",
 }
 
 func parseServerEnv() {
@@ -81,8 +81,8 @@ func parseServerEnv() {
 
 var serverStatusCmd = &cobra.Command{
 	Use:   "status",
-	Short: "Show status about a Colonies Server",
-	Long:  "Show status about a Colonies Server",
+	Short: "Show status about a production server",
+	Long:  "Show status about a production server",
 	Run: func(cmd *cobra.Command, args []string) {
 		parseDBEnv()
 		parseServerEnv()
@@ -111,8 +111,8 @@ var serverStatusCmd = &cobra.Command{
 
 var serverStartCmd = &cobra.Command{
 	Use:   "start",
-	Short: "Start a Colonies Server",
-	Long:  "Start a Colonies Server",
+	Short: "Start a production server",
+	Long:  "Start a production server",
 	Run: func(cmd *cobra.Command, args []string) {
 		log.WithFields(log.Fields{"BuildVersion": build.BuildVersion, "BuildTime": build.BuildTime}).Info("Starting a Colonies Server")
 		parseDBEnv()
