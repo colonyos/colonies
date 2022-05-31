@@ -105,7 +105,9 @@ var submitWorkflowCmd = &cobra.Command{
 			CheckError(err)
 		}
 
+		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Info("Starting a Colonies client")
 		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
+
 		graph, err := client.SubmitWorkflowSpec(workflowSpec, RuntimePrvKey)
 		CheckError(err)
 
@@ -142,7 +144,9 @@ var listWaitingWorkflowsCmd = &cobra.Command{
 			CheckError(err)
 		}
 
+		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Info("Starting a Colonies client")
 		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
+
 		graphs, err := client.GetWaitingProcessGraphs(ColonyID, Count, RuntimePrvKey)
 		CheckError(err)
 
@@ -201,7 +205,9 @@ var listRunningWorkflowsCmd = &cobra.Command{
 			CheckError(err)
 		}
 
+		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Info("Starting a Colonies client")
 		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
+
 		graphs, err := client.GetRunningProcessGraphs(ColonyID, Count, RuntimePrvKey)
 		CheckError(err)
 
@@ -260,7 +266,9 @@ var listSuccessfulWorkflowsCmd = &cobra.Command{
 			CheckError(err)
 		}
 
+		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Info("Starting a Colonies client")
 		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
+
 		graphs, err := client.GetSuccessfulProcessGraphs(ColonyID, Count, RuntimePrvKey)
 		CheckError(err)
 
@@ -319,7 +327,9 @@ var listFailedWorkflowsCmd = &cobra.Command{
 			CheckError(err)
 		}
 
+		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Info("Starting a Colonies client")
 		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
+
 		graphs, err := client.GetFailedProcessGraphs(ColonyID, Count, RuntimePrvKey)
 		CheckError(err)
 
@@ -371,7 +381,9 @@ var getWorkflowCmd = &cobra.Command{
 			CheckError(err)
 		}
 
+		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Info("Starting a Colonies client")
 		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
+
 		graph, err := client.GetProcessGraph(WorkflowID, RuntimePrvKey)
 		if err != nil {
 			log.WithFields(log.Fields{"WorkflowID": WorkflowID, "Error": err}).Error("Workflow not found")

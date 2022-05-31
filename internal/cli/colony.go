@@ -97,7 +97,9 @@ var registerColonyCmd = &cobra.Command{
 			CheckError(err)
 		}
 
+		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Info("Starting a Colonies client")
 		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
+
 		addedColony, err := client.AddColony(colony, ServerPrvKey)
 		CheckError(err)
 
@@ -130,7 +132,9 @@ var unregisterColonyCmd = &cobra.Command{
 			CheckError(err)
 		}
 
+		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Info("Starting a Colonies client")
 		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
+
 		err = client.DeleteColony(ColonyID, ServerPrvKey)
 		CheckError(err)
 
@@ -145,6 +149,7 @@ var lsColoniesCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		parseServerEnv()
 
+		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Info("Starting a Colonies client")
 		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
 
 		keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
@@ -224,7 +229,9 @@ var statusCmd = &cobra.Command{
 			RuntimePrvKey, _ = keychain.GetPrvKey(RuntimeID)
 		}
 
+		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Info("Starting a Colonies client")
 		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
+
 		runtimesFromServer, err := client.GetRuntimes(ColonyID, RuntimePrvKey)
 		if err != nil {
 			if ColonyPrvKey == "" {

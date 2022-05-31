@@ -28,6 +28,7 @@ var DBPassword string
 var BindAddr string
 var Insecure bool
 var SkipTLSVerify bool
+var UseTLS bool
 var TLSCert string
 var TLSKey string
 var ServerHost string
