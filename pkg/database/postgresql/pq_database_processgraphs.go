@@ -3,6 +3,7 @@ package postgresql
 import (
 	"database/sql"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/colonyos/colonies/pkg/core"
@@ -10,9 +11,10 @@ import (
 )
 
 func (db *PQDatabase) AddProcessGraph(processGraph *core.ProcessGraph) error {
-	sqlStatement := `INSERT INTO  ` + db.dbPrefix + `PROCESSGRAPHS (PROCESSGRAPH_ID, TARGET_COLONY_ID, ROOTS, STATE, SUBMISSION_TIME, END_TIME, RUNTIME_GROUP) VALUES ($1, $2, $3, $4, $5, $6, $7)`
-	_, err := db.postgresql.Exec(sqlStatement, processGraph.ID, processGraph.ColonyID, pq.Array(processGraph.Roots), processGraph.State, time.Now(), processGraph.EndTime, processGraph.RuntimeGroup)
+	sqlStatement := `INSERT INTO  ` + db.dbPrefix + `PROCESSGRAPHS (PROCESSGRAPH_ID, TARGET_COLONY_ID, ROOTS, STATE, SUBMISSION_TIME, START_TIME, END_TIME, RUNTIME_GROUP) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`
+	_, err := db.postgresql.Exec(sqlStatement, processGraph.ID, processGraph.ColonyID, pq.Array(processGraph.Roots), processGraph.State, time.Now(), time.Time{}, time.Time{}, processGraph.RuntimeGroup)
 	if err != nil {
+		fmt.Println(err)
 		return err
 	}
 
@@ -28,9 +30,10 @@ func (db *PQDatabase) parseProcessGraphs(rows *sql.Rows) ([]*core.ProcessGraph, 
 		var roots []string
 		var state int
 		var submissionTime time.Time
+		var startTime time.Time
 		var endTime time.Time
 		var runtimeGroup string
-		if err := rows.Scan(&processGraphID, &colonyID, pq.Array(&roots), &state, &submissionTime, &endTime, &runtimeGroup); err != nil {
+		if err := rows.Scan(&processGraphID, &colonyID, pq.Array(&roots), &state, &submissionTime, &startTime, &endTime, &runtimeGroup); err != nil {
 			return nil, err
 		}
 
@@ -39,6 +42,7 @@ func (db *PQDatabase) parseProcessGraphs(rows *sql.Rows) ([]*core.ProcessGraph, 
 		graph.ColonyID = colonyID
 		graph.State = state
 		graph.SubmissionTime = submissionTime
+		graph.StartTime = startTime
 		graph.EndTime = endTime
 		graph.RuntimeGroup = runtimeGroup
 		if err != nil {

@@ -330,8 +330,8 @@ var listRunningProcessesCmd = &cobra.Command{
 
 var listSuccessfulProcessesCmd = &cobra.Command{
 	Use:   "pss",
-	Short: "List all successfull processes",
-	Long:  "List all successfull processes",
+	Short: "List all successful processes",
+	Long:  "List all successful processes",
 	Run: func(cmd *cobra.Command, args []string) {
 		parseServerEnv()
 
@@ -468,9 +468,8 @@ var getProcessCmd = &cobra.Command{
 
 		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
 		process, err := client.GetProcess(ProcessID, RuntimePrvKey)
-		CheckError(err)
-		if process == nil {
-			log.Warning("Process not found")
+		if err != nil {
+			log.WithFields(log.Fields{"ProcessID": ProcessID, "Error": err}).Info("Process not found")
 			os.Exit(-1)
 		}
 
@@ -489,20 +488,6 @@ var getProcessCmd = &cobra.Command{
 			isAssigned = "True"
 		}
 
-		var state string
-		switch process.State {
-		case core.WAITING:
-			state = "Waiting"
-		case core.RUNNING:
-			state = "Running"
-		case core.SUCCESS:
-			state = "Successful"
-		case core.FAILED:
-			state = "Failed"
-		default:
-			state = "Unkown"
-		}
-
 		if Output {
 			for _, attribute := range process.Attributes {
 				if attribute.Key == "output" {
@@ -518,7 +503,7 @@ var getProcessCmd = &cobra.Command{
 			[]string{"ID", process.ID},
 			[]string{"IsAssigned", isAssigned},
 			[]string{"AssignedRuntimeID", assignedRuntimeID},
-			[]string{"State", state},
+			[]string{"State", State2String(process.State)},
 			[]string{"SubmissionTime", process.SubmissionTime.Format(TimeLayout)},
 			[]string{"StartTime", process.StartTime.Format(TimeLayout)},
 			[]string{"EndTime", process.EndTime.Format(TimeLayout)},

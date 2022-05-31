@@ -756,3 +756,38 @@ func TestProcessGraphArrayJSON(t *testing.T) {
 	assert.Nil(t, err)
 	assert.True(t, IsProcessGraphArraysEqual(graphs, graphs2))
 }
+
+func TestUpdateProcessIDs(t *testing.T) {
+	process1 := createProcess()
+	process2 := createProcess()
+	process3 := createProcess()
+
+	//  process1
+	//     |
+	//  process2
+	//     |
+	//  process3
+
+	process1.AddChild(process2.ID)
+	process2.AddParent(process1.ID)
+	process2.AddChild(process3.ID)
+	process3.AddParent(process2.ID)
+
+	mock := createProcessGraphStorageMock()
+	mock.addProcess(process1)
+	mock.addProcess(process2)
+	mock.addProcess(process3)
+
+	colonyID := GenerateRandomID()
+	graph, err := CreateProcessGraph(colonyID)
+	assert.Nil(t, err)
+
+	graph.storage = mock
+	graph.AddRoot(process1.ID)
+
+	assert.Len(t, graph.ProcessIDs, 0)
+
+	err = graph.UpdateProcessIDs()
+	assert.Nil(t, err)
+	assert.Len(t, graph.ProcessIDs, 3)
+}

@@ -23,8 +23,10 @@ type ProcessGraph struct {
 	Roots          []string  `json:"rootprocessids"`
 	State          int       `json:"state"`
 	SubmissionTime time.Time `json:"submissiontime"`
+	StartTime      time.Time `json:"starttime"`
 	EndTime        time.Time `json:"endtime"`
 	RuntimeGroup   string    `json:"runtimegroup"`
+	ProcessIDs     []string  `json:"processids"`
 }
 
 func CreateProcessGraph(colonyID string) (*ProcessGraph, error) {
@@ -265,6 +267,13 @@ func (graph *ProcessGraph) WaitForParents() (int, error) {
 	return counter, err
 }
 
+func (graph *ProcessGraph) UpdateProcessIDs() error {
+	return graph.Iterate(func(process *Process) error {
+		graph.ProcessIDs = append(graph.ProcessIDs, process.ID)
+		return nil
+	})
+}
+
 func (graph *ProcessGraph) Iterate(visitFunc func(process *Process) error) error {
 	visited := make(map[string]bool)
 	var err error
@@ -312,7 +321,6 @@ func (graph *ProcessGraph) Equals(graph2 *ProcessGraph) bool {
 	if graph.State == graph2.State &&
 		graph.ID == graph2.ID &&
 		graph.ColonyID == graph2.ColonyID &&
-		graph.EndTime.Unix() == graph2.EndTime.Unix() &&
 		graph.RuntimeGroup == graph2.RuntimeGroup {
 		return true
 	}
