@@ -34,7 +34,7 @@ type command struct {
 	processesReplyChan     chan []*core.Process
 	processGraphReplyChan  chan *core.ProcessGraph
 	processGraphsReplyChan chan []*core.ProcessGraph
-	processStatReplyChan   chan *core.ProcessStat
+	statisticsReplyChan    chan *core.Statistics
 	runtimeReplyChan       chan *core.Runtime
 	runtimesReplyChan      chan []*core.Runtime
 	attributeReplyChan     chan *core.Attribute
@@ -1024,40 +1024,77 @@ func (controller *coloniesController) unassignRuntime(processID string) error {
 	return <-cmd.errorChan
 }
 
-func (controller *coloniesController) getProcessStat(colonyID string) (*core.ProcessStat, error) {
-	cmd := &command{processStatReplyChan: make(chan *core.ProcessStat),
+func (controller *coloniesController) getColonyStatistics(colonyID string) (*core.Statistics, error) {
+	cmd := &command{statisticsReplyChan: make(chan *core.Statistics),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
-			waiting, err := controller.db.NrWaitingProcessesForColony(colonyID)
+			waiting, err := controller.db.CountWaitingProcessesForColony(colonyID)
 			if err != nil {
 				cmd.errorChan <- err
 				return
 			}
-			running, err := controller.db.NrRunningProcessesForColony(colonyID)
+			running, err := controller.db.CountRunningProcessesForColony(colonyID)
 			if err != nil {
 				cmd.errorChan <- err
 				return
 			}
-			success, err := controller.db.NrSuccessfulProcessesForColony(colonyID)
+			success, err := controller.db.CountSuccessfulProcessesForColony(colonyID)
 			if err != nil {
 				cmd.errorChan <- err
 				return
 			}
-			failed, err := controller.db.NrFailedProcessesForColony(colonyID)
+			failed, err := controller.db.CountFailedProcessesForColony(colonyID)
 			if err != nil {
 				cmd.errorChan <- err
 				return
 			}
 
-			cmd.processStatReplyChan <- core.CreateProcessStat(waiting, running, success, failed)
+			cmd.statisticsReplyChan <- core.CreateStatistics(waiting, running, success, failed)
 		}}
 
 	controller.cmdQueue <- cmd
 	select {
 	case err := <-cmd.errorChan:
 		return nil, err
-	case processStat := <-cmd.processStatReplyChan:
-		return processStat, nil
+	case stat := <-cmd.statisticsReplyChan:
+		return stat, nil
+	}
+}
+
+func (controller *coloniesController) getStatistics() (*core.Statistics, error) {
+	cmd := &command{statisticsReplyChan: make(chan *core.Statistics),
+		errorChan: make(chan error, 1),
+		handler: func(cmd *command) {
+			waiting, err := controller.db.CountWaitingProcesses()
+			if err != nil {
+				cmd.errorChan <- err
+				return
+			}
+			running, err := controller.db.CountRunningProcesses()
+			if err != nil {
+				cmd.errorChan <- err
+				return
+			}
+			success, err := controller.db.CountSuccessfulProcesses()
+			if err != nil {
+				cmd.errorChan <- err
+				return
+			}
+			failed, err := controller.db.CountFailedProcesses()
+			if err != nil {
+				cmd.errorChan <- err
+				return
+			}
+
+			cmd.statisticsReplyChan <- core.CreateStatistics(waiting, running, success, failed)
+		}}
+
+	controller.cmdQueue <- cmd
+	select {
+	case err := <-cmd.errorChan:
+		return nil, err
+	case stat := <-cmd.statisticsReplyChan:
+		return stat, nil
 	}
 }
 

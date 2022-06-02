@@ -503,7 +503,7 @@ func (db *PQDatabase) MarkFailed(process *core.Process) error {
 	return nil
 }
 
-func (db *PQDatabase) NrOfProcesses() (int, error) {
+func (db *PQDatabase) CountProcesses() (int, error) {
 	sqlStatement := `SELECT COUNT(*) FROM ` + db.dbPrefix + `PROCESSES`
 	rows, err := db.postgresql.Query(sqlStatement)
 	if err != nil {
@@ -560,38 +560,38 @@ func (db *PQDatabase) countProcessesForColony(state int, colonyID string) (int, 
 	return count, nil
 }
 
-func (db *PQDatabase) NrOfWaitingProcesses() (int, error) {
+func (db *PQDatabase) CountWaitingProcesses() (int, error) {
 	return db.countProcesses(core.WAITING)
 }
 
-func (db *PQDatabase) NrOfRunningProcesses() (int, error) {
+func (db *PQDatabase) CountRunningProcesses() (int, error) {
 	return db.countProcesses(core.RUNNING)
 }
 
-func (db *PQDatabase) NrOfSuccessfulProcesses() (int, error) {
+func (db *PQDatabase) CountSuccessfulProcesses() (int, error) {
 	return db.countProcesses(core.SUCCESS)
 }
 
-func (db *PQDatabase) NrOfFailedProcesses() (int, error) {
+func (db *PQDatabase) CountFailedProcesses() (int, error) {
 	return db.countProcesses(core.FAILED)
 }
 
 // TODO: unittest
-func (db *PQDatabase) NrWaitingProcessesForColony(colonyID string) (int, error) {
+func (db *PQDatabase) CountWaitingProcessesForColony(colonyID string) (int, error) {
 	return db.countProcessesForColony(core.WAITING, colonyID)
 }
 
 // TODO: unittest
-func (db *PQDatabase) NrRunningProcessesForColony(colonyID string) (int, error) {
+func (db *PQDatabase) CountRunningProcessesForColony(colonyID string) (int, error) {
 	return db.countProcessesForColony(core.RUNNING, colonyID)
 }
 
 // TODO: unittest
-func (db *PQDatabase) NrSuccessfulProcessesForColony(colonyID string) (int, error) {
+func (db *PQDatabase) CountSuccessfulProcessesForColony(colonyID string) (int, error) {
 	return db.countProcessesForColony(core.SUCCESS, colonyID)
 }
 
 // TODO: unittest
-func (db *PQDatabase) NrFailedProcessesForColony(colonyID string) (int, error) {
+func (db *PQDatabase) CountFailedProcessesForColony(colonyID string) (int, error) {
 	return db.countProcessesForColony(core.FAILED, colonyID)
 }

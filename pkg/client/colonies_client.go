@@ -471,19 +471,34 @@ func (client *ColoniesClient) GetFailedProcesses(colonyID string, count int, prv
 	return client.getProcesses(core.FAILED, colonyID, count, prvKey)
 }
 
-func (client *ColoniesClient) GetProcessStat(colonyID string, prvKey string) (*core.ProcessStat, error) {
-	msg := rpc.CreateGetProcessStatMsg(colonyID)
+func (client *ColoniesClient) ColonyStatistics(colonyID string, prvKey string) (*core.Statistics, error) {
+	msg := rpc.CreateGetColonyStatisticsMsg(colonyID)
 	jsonString, err := msg.ToJSON()
 	if err != nil {
 		return nil, err
 	}
 
-	respBodyString, err := client.sendMessage(rpc.GetProcessStatPayloadType, jsonString, prvKey, false)
+	respBodyString, err := client.sendMessage(rpc.GetColonyStatisticsPayloadType, jsonString, prvKey, false)
 	if err != nil {
 		return nil, err
 	}
 
-	return core.ConvertJSONToProcessStat(respBodyString)
+	return core.ConvertJSONToStatistics(respBodyString)
+}
+
+func (client *ColoniesClient) Statistics(prvKey string) (*core.Statistics, error) {
+	msg := rpc.CreateGetStatisticsMsg()
+	jsonString, err := msg.ToJSON()
+	if err != nil {
+		return nil, err
+	}
+
+	respBodyString, err := client.sendMessage(rpc.GetStatisiticsPayloadType, jsonString, prvKey, false)
+	if err != nil {
+		return nil, err
+	}
+
+	return core.ConvertJSONToStatistics(respBodyString)
 }
 
 func (client *ColoniesClient) GetProcess(processID string, prvKey string) (*core.Process, error) {
