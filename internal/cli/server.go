@@ -10,6 +10,7 @@ import (
 	"github.com/colonyos/colonies/pkg/build"
 	"github.com/colonyos/colonies/pkg/client"
 	"github.com/colonyos/colonies/pkg/database/postgresql"
+	"github.com/colonyos/colonies/pkg/security"
 	"github.com/colonyos/colonies/pkg/server"
 	"github.com/kataras/tablewriter"
 	log "github.com/sirupsen/logrus"
@@ -19,6 +20,7 @@ import (
 func init() {
 	serverCmd.AddCommand(serverStartCmd)
 	serverCmd.AddCommand(serverStatusCmd)
+	serverCmd.AddCommand(serverStatisticsCmd)
 	rootCmd.AddCommand(serverCmd)
 
 	serverCmd.PersistentFlags().StringVarP(&DBHost, "dbhost", "", "", "Colonies database host")
@@ -32,6 +34,9 @@ func init() {
 
 	serverStatusCmd.PersistentFlags().StringVarP(&ServerHost, "host", "", "localhost", "Server host")
 	serverStatusCmd.PersistentFlags().IntVarP(&ServerPort, "port", "", 50080, "Server HTTP port")
+
+	serverStatisticsCmd.Flags().StringVarP(&ServerID, "serverid", "", "", "Colonies server Id")
+	serverStatisticsCmd.Flags().StringVarP(&ServerPrvKey, "serverprvkey", "", "", "Colonies server private key")
 }
 
 var serverCmd = &cobra.Command{
@@ -160,5 +165,49 @@ var serverStartCmd = &cobra.Command{
 				time.Sleep(1 * time.Second)
 			}
 		}
+	},
+}
+
+var serverStatisticsCmd = &cobra.Command{
+	Use:   "stat",
+	Short: "Show server statistics",
+	Long:  "Show server statistics",
+	Run: func(cmd *cobra.Command, args []string) {
+		parseServerEnv()
+
+		keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
+		CheckError(err)
+
+		if ServerID == "" {
+			ServerID = os.Getenv("COLONIES_SERVERID")
+		}
+		if ServerID == "" {
+			CheckError(errors.New("Unknown Server Id"))
+		}
+
+		if ServerPrvKey == "" {
+			ServerPrvKey, err = keychain.GetPrvKey(ServerID)
+			CheckError(err)
+		}
+
+		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Info("Starting a Colonies client")
+		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
+
+		stat, err := client.Statistics(ServerPrvKey)
+		CheckError(err)
+
+		fmt.Println("Process statistics:")
+		specData := [][]string{
+			[]string{"Waiting processes", strconv.Itoa(stat.Waiting)},
+			[]string{"Running processes ", strconv.Itoa(stat.Running)},
+			[]string{"Successful processes", strconv.Itoa(stat.Success)},
+			[]string{"Failed processes", strconv.Itoa(stat.Failed)},
+		}
+		specTable := tablewriter.NewWriter(os.Stdout)
+		for _, v := range specData {
+			specTable.Append(v)
+		}
+		specTable.SetAlignment(tablewriter.ALIGN_LEFT)
+		specTable.Render()
 	},
 }
