@@ -217,14 +217,13 @@ var devCmd = &cobra.Command{
 
 		coloniesServerPort, err := strconv.Atoi(os.Getenv("COLONIES_SERVERPORT"))
 		CheckError(err)
+		log.WithFields(log.Fields{"Port": coloniesServerPort}).Info("Starting a Colonies server")
 
 		coloniesServer := server.CreateColoniesServer(coloniesDB, coloniesServerPort, serverID, false, "", "", true)
 		go coloniesServer.ServeForever()
 
 		coloniesServerHost := os.Getenv("COLONIES_SERVERHOST")
 		log.WithFields(log.Fields{"ColoniesServerHost": coloniesServerHost, "ColoniesServerPort": coloniesServerPort}).Info("Connecting to Colonies server")
-
-		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Info("Starting a Colonies client")
 		client := client.CreateColoniesClient(coloniesServerHost, coloniesServerPort, true, false)
 
 		log.WithFields(log.Fields{"ColonyID": colonyID}).Info("Registering a new Colony")
@@ -233,13 +232,13 @@ var devCmd = &cobra.Command{
 		CheckError(err)
 
 		runtimeType := os.Getenv("COLONIES_RUNTIMETYPE")
-		log.WithFields(log.Fields{"RuntimeID": runtimeID, "RuntimeType": runtimeType}).Info("Registering a new Runtime")
+		log.WithFields(log.Fields{"RuntimeID": runtimeID, "RuntimeType": runtimeType}).Info("Registering a new runtime")
 
 		runtime := core.CreateRuntime(runtimeID, runtimeType, "dev_runtime", colonyID, "", 1, 0, "", 0, time.Now(), time.Now())
 		_, err = client.AddRuntime(runtime, colonyPrvKey)
 		CheckError(err)
 
-		log.WithFields(log.Fields{"RuntimeID": runtimeID}).Info("Approving Runtime")
+		log.WithFields(log.Fields{"RuntimeID": runtimeID}).Info("Approving runtime")
 		log.Info("Approving CLI runtime")
 		err = client.ApproveRuntime(runtimeID, colonyPrvKey)
 		CheckError(err)
