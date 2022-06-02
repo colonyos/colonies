@@ -149,3 +149,39 @@ func (server *ColoniesServer) handleGetColonyHTTPRequest(c *gin.Context, recover
 
 	server.sendHTTPReply(c, payloadType, jsonString)
 }
+
+func (server *ColoniesServer) handleColonyStatisticsHTTPRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
+	msg, err := rpc.CreateGetColonyStatisticsMsgFromJSON(jsonString)
+	if server.handleHTTPError(c, err, http.StatusBadRequest) {
+		return
+	}
+	if msg == nil {
+		server.handleHTTPError(c, errors.New("failed to parse JSON"), http.StatusBadRequest)
+		return
+	}
+
+	if msg.MsgType != payloadType {
+		server.handleHTTPError(c, errors.New("msg.MsgType does not match payloadType"), http.StatusBadRequest)
+		return
+	}
+
+	err = server.validator.RequireRuntimeMembership(recoveredID, msg.ColonyID, true)
+	if err != nil {
+		err = server.validator.RequireColonyOwner(recoveredID, msg.ColonyID)
+		if server.handleHTTPError(c, err, http.StatusForbidden) {
+			return
+		}
+	}
+
+	stat, err := server.controller.getColonyStatistics(msg.ColonyID)
+	if server.handleHTTPError(c, err, http.StatusInternalServerError) {
+		return
+	}
+
+	jsonString, err = stat.ToJSON()
+	if server.handleHTTPError(c, err, http.StatusInternalServerError) {
+		return
+	}
+
+	server.sendHTTPReply(c, payloadType, jsonString)
+}
