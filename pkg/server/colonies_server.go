@@ -3,7 +3,6 @@ package server
 import (
 	"context"
 	"errors"
-	"fmt"
 	"io/ioutil"
 	"net/http"
 	"strconv"
@@ -36,7 +35,6 @@ type ColoniesServer struct {
 }
 
 func CreateColoniesServer(db database.Database, port int, serverID string, tls bool, tlsPrivateKeyPath string, tlsCertPath string, debug bool) *ColoniesServer {
-	fmt.Println(tls)
 	if debug {
 		log.SetLevel(log.DebugLevel)
 	} else {
@@ -108,7 +106,8 @@ func (server *ColoniesServer) handleEndpointRequest(c *gin.Context) {
 	}
 
 	switch rpcMsg.PayloadType {
-	// Colony operations
+
+	// Colony handlers
 	case rpc.AddColonyPayloadType:
 		server.handleAddColonyHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 	case rpc.DeleteColonyPayloadType:
@@ -118,7 +117,7 @@ func (server *ColoniesServer) handleEndpointRequest(c *gin.Context) {
 	case rpc.GetColonyPayloadType:
 		server.handleGetColonyHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 
-	// Runtime operations
+	// Runtime handlers
 	case rpc.AddRuntimePayloadType:
 		server.handleAddRuntimeHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 	case rpc.GetRuntimesPayloadType:
@@ -132,7 +131,7 @@ func (server *ColoniesServer) handleEndpointRequest(c *gin.Context) {
 	case rpc.DeleteRuntimePayloadType:
 		server.handleDeleteRuntimeHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 
-	// Process operations
+	// Process handlers
 	case rpc.SubmitProcessSpecPayloadType:
 		server.handleSubmitProcessSpecHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 	case rpc.AssignProcessPayloadType:
@@ -151,22 +150,26 @@ func (server *ColoniesServer) handleEndpointRequest(c *gin.Context) {
 		server.handleCloseSuccessfulHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 	case rpc.CloseFailedPayloadType:
 		server.handleCloseFailedHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
-	case rpc.GetProcessStatPayloadType:
-		server.handleProcessStatHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+	case rpc.GetColonyStatisticsPayloadType:
+		server.handleColonyStatisticsHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 
-	// Attribute operations
+	// Attribute handlers
 	case rpc.AddAttributePayloadType:
 		server.handleAddAttributeHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 	case rpc.GetAttributePayloadType:
 		server.handleGetAttributeHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 
-	// Workflow and processgraph operations
+	// Workflow and processgraph handlers
 	case rpc.SubmitWorkflowSpecPayloadType:
 		server.handleSubmitWorkflowHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 	case rpc.GetProcessGraphPayloadType:
 		server.handleGetProcessGraphHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 	case rpc.GetProcessGraphsPayloadType:
 		server.handleGetProcessGraphsHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+
+	// Server handlers
+	case rpc.GetStatisiticsPayloadType:
+		server.handleStatisticsHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 
 	default:
 		errMsg := "invalid rpcMsg.PayloadType"
@@ -241,7 +244,7 @@ func (server *ColoniesServer) sendEmptyHTTPReply(c *gin.Context, payloadType str
 func (server *ColoniesServer) ServeForever() error {
 	if server.tls {
 		if err := server.httpServer.ListenAndServeTLS(server.tlsCertPath, server.tlsPrivateKeyPath); err != nil && errors.Is(err, http.ErrServerClosed) {
-			fmt.Println(err)
+			log.Error(err)
 			return err
 		}
 	} else {

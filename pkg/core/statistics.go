@@ -4,21 +4,21 @@ import (
 	"encoding/json"
 )
 
-type ProcessStat struct {
+type Statistics struct {
 	Waiting int `json:"waiting"`
 	Running int `json:"running"`
 	Success int `json:"success"`
 	Failed  int `json:"failed"`
 }
 
-func CreateProcessStat(waiting int, running int, success int, failed int) *ProcessStat {
-	stat := &ProcessStat{Waiting: waiting, Running: running, Success: success, Failed: failed}
+func CreateStatistics(waiting int, running int, success int, failed int) *Statistics {
+	stat := &Statistics{Waiting: waiting, Running: running, Success: success, Failed: failed}
 
 	return stat
 }
 
-func ConvertJSONToProcessStat(jsonString string) (*ProcessStat, error) {
-	var stat *ProcessStat
+func ConvertJSONToStatistics(jsonString string) (*Statistics, error) {
+	var stat *Statistics
 	err := json.Unmarshal([]byte(jsonString), &stat)
 	if err != nil {
 		return nil, err
@@ -27,7 +27,7 @@ func ConvertJSONToProcessStat(jsonString string) (*ProcessStat, error) {
 	return stat, nil
 }
 
-func (stat *ProcessStat) Equals(stat2 *ProcessStat) bool {
+func (stat *Statistics) Equals(stat2 *Statistics) bool {
 	if stat2 == nil {
 		return false
 	}
@@ -39,7 +39,7 @@ func (stat *ProcessStat) Equals(stat2 *ProcessStat) bool {
 	return false
 }
 
-func (stat *ProcessStat) ToJSON() (string, error) {
+func (stat *Statistics) ToJSON() (string, error) {
 	jsonBytes, err := json.MarshalIndent(stat, "", "    ")
 	if err != nil {
 		return "", err

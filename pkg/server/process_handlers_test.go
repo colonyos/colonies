@@ -253,62 +253,6 @@ func TestGetFailedProcesses(t *testing.T) {
 	<-done
 }
 
-func TestGetProcessStat(t *testing.T) {
-	env, client, server, _, done := setupTestEnv2(t)
-
-	// Waiting
-	numberOfWaitingProcesses := 5
-	for i := 0; i < numberOfWaitingProcesses; i++ {
-		processSpec := utils.CreateTestProcessSpec(env.colonyID)
-		_, err := client.SubmitProcessSpec(processSpec, env.runtimePrvKey)
-		assert.Nil(t, err)
-	}
-
-	// Running
-	numberOfRunningProcesses := 6
-	for i := 0; i < numberOfRunningProcesses; i++ {
-		processSpec := utils.CreateTestProcessSpec(env.colonyID)
-		_, err := client.SubmitProcessSpec(processSpec, env.runtimePrvKey)
-		assert.Nil(t, err)
-		_, err = client.AssignProcess(env.colonyID, env.runtimePrvKey)
-	}
-
-	// Successful
-	numberOfSuccessfulProcesses := 7
-	for i := 0; i < numberOfSuccessfulProcesses; i++ {
-		processSpec := utils.CreateTestProcessSpec(env.colonyID)
-		_, err := client.SubmitProcessSpec(processSpec, env.runtimePrvKey)
-		assert.Nil(t, err)
-		processFromServer, err := client.AssignProcess(env.colonyID, env.runtimePrvKey)
-		assert.Nil(t, err)
-		err = client.CloseSuccessful(processFromServer.ID, env.runtimePrvKey)
-		assert.Nil(t, err)
-	}
-
-	// Failed
-	numberOfFailedProcesses := 8
-	for i := 0; i < numberOfFailedProcesses; i++ {
-		processSpec := utils.CreateTestProcessSpec(env.colonyID)
-		_, err := client.SubmitProcessSpec(processSpec, env.runtimePrvKey)
-		assert.Nil(t, err)
-		processFromServer, err := client.AssignProcess(env.colonyID, env.runtimePrvKey)
-		assert.Nil(t, err)
-		err = client.CloseFailed(processFromServer.ID, env.runtimePrvKey)
-		assert.Nil(t, err)
-	}
-
-	stat, err := client.GetProcessStat(env.colonyID, env.runtimePrvKey)
-	assert.Nil(t, err)
-
-	assert.Equal(t, stat.Waiting, numberOfWaitingProcesses)
-	assert.Equal(t, stat.Running, numberOfRunningProcesses)
-	assert.Equal(t, stat.Success, numberOfSuccessfulProcesses)
-	assert.Equal(t, stat.Failed, numberOfFailedProcesses)
-
-	server.Shutdown()
-	<-done
-}
-
 func TestGetProcess(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 
@@ -551,7 +495,7 @@ func TestMaxExecTime(t *testing.T) {
 	// Wait for the process to time out
 	time.Sleep(5 * time.Second)
 
-	stat, err := client.GetProcessStat(env.colonyID, env.runtimePrvKey)
+	stat, err := client.ColonyStatistics(env.colonyID, env.runtimePrvKey)
 	assert.Nil(t, err)
 	assert.Equal(t, stat.Waiting, 10)
 
@@ -576,7 +520,7 @@ func TestMaxExecTimeUnlimtedMaxretries(t *testing.T) {
 	// Wait for the process to time out
 	time.Sleep(5 * time.Second)
 
-	stat, err := client.GetProcessStat(env.colonyID, env.runtimePrvKey)
+	stat, err := client.ColonyStatistics(env.colonyID, env.runtimePrvKey)
 	assert.Nil(t, err)
 	assert.Equal(t, stat.Waiting, 10)
 
@@ -586,14 +530,14 @@ func TestMaxExecTimeUnlimtedMaxretries(t *testing.T) {
 		assert.Nil(t, err)
 	}
 
-	stat, err = client.GetProcessStat(env.colonyID, env.runtimePrvKey)
+	stat, err = client.ColonyStatistics(env.colonyID, env.runtimePrvKey)
 	assert.Nil(t, err)
 	assert.Equal(t, stat.Running, 10)
 
 	// Wait for the process to time out
 	time.Sleep(5 * time.Second)
 
-	stat, err = client.GetProcessStat(env.colonyID, env.runtimePrvKey)
+	stat, err = client.ColonyStatistics(env.colonyID, env.runtimePrvKey)
 	assert.Nil(t, err)
 	assert.Equal(t, stat.Waiting, 10)
 
@@ -618,7 +562,7 @@ func TestMaxExecTimeMaxretries(t *testing.T) {
 	// Wait for the process to time out
 	time.Sleep(20 * time.Second)
 
-	stat, err := client.GetProcessStat(env.colonyID, env.runtimePrvKey)
+	stat, err := client.ColonyStatistics(env.colonyID, env.runtimePrvKey)
 	assert.Nil(t, err)
 	assert.Equal(t, stat.Waiting, 10)
 
@@ -628,14 +572,14 @@ func TestMaxExecTimeMaxretries(t *testing.T) {
 		assert.Nil(t, err)
 	}
 
-	stat, err = client.GetProcessStat(env.colonyID, env.runtimePrvKey)
+	stat, err = client.ColonyStatistics(env.colonyID, env.runtimePrvKey)
 	assert.Nil(t, err)
 	assert.Equal(t, stat.Running, 10)
 
 	// Wait for the process to time out
 	time.Sleep(20 * time.Second)
 
-	stat, err = client.GetProcessStat(env.colonyID, env.runtimePrvKey)
+	stat, err = client.ColonyStatistics(env.colonyID, env.runtimePrvKey)
 	assert.Nil(t, err)
 	assert.Equal(t, stat.Failed, 10) // NOTE Failed!!
 

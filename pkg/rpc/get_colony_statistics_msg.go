@@ -4,22 +4,22 @@ import (
 	"encoding/json"
 )
 
-const GetProcessStatPayloadType = "getprocstatmsg"
+const GetColonyStatisticsPayloadType = "getcolonystatsmsg"
 
-type GetProcessStatMsg struct {
+type GetColonyStatisticsMsg struct {
 	ColonyID string `json:"colonyid"`
 	MsgType  string `json:"msgtype"`
 }
 
-func CreateGetProcessStatMsg(colonyID string) *GetProcessStatMsg {
-	msg := &GetProcessStatMsg{}
+func CreateGetColonyStatisticsMsg(colonyID string) *GetColonyStatisticsMsg {
+	msg := &GetColonyStatisticsMsg{}
 	msg.ColonyID = colonyID
-	msg.MsgType = GetProcessStatPayloadType
+	msg.MsgType = GetColonyStatisticsPayloadType
 
 	return msg
 }
 
-func (msg *GetProcessStatMsg) ToJSON() (string, error) {
+func (msg *GetColonyStatisticsMsg) ToJSON() (string, error) {
 	jsonBytes, err := json.Marshal(msg)
 	if err != nil {
 		return "", err
@@ -28,7 +28,7 @@ func (msg *GetProcessStatMsg) ToJSON() (string, error) {
 	return string(jsonBytes), nil
 }
 
-func (msg *GetProcessStatMsg) ToJSONIndent() (string, error) {
+func (msg *GetColonyStatisticsMsg) ToJSONIndent() (string, error) {
 	jsonBytes, err := json.MarshalIndent(msg, "", "    ")
 	if err != nil {
 		return "", err
@@ -37,7 +37,7 @@ func (msg *GetProcessStatMsg) ToJSONIndent() (string, error) {
 	return string(jsonBytes), nil
 }
 
-func (msg *GetProcessStatMsg) Equals(msg2 *GetProcessStatMsg) bool {
+func (msg *GetColonyStatisticsMsg) Equals(msg2 *GetColonyStatisticsMsg) bool {
 	if msg2 == nil {
 		return false
 	}
@@ -49,8 +49,8 @@ func (msg *GetProcessStatMsg) Equals(msg2 *GetProcessStatMsg) bool {
 	return false
 }
 
-func CreateGetProcessStatMsgFromJSON(jsonString string) (*GetProcessStatMsg, error) {
-	var msg *GetProcessStatMsg
+func CreateGetColonyStatisticsMsgFromJSON(jsonString string) (*GetColonyStatisticsMsg, error) {
+	var msg *GetColonyStatisticsMsg
 
 	err := json.Unmarshal([]byte(jsonString), &msg)
 	if err != nil {
