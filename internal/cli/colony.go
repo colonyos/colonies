@@ -20,7 +20,7 @@ func init() {
 	colonyCmd.AddCommand(registerColonyCmd)
 	colonyCmd.AddCommand(unregisterColonyCmd)
 	colonyCmd.AddCommand(lsColoniesCmd)
-	colonyCmd.AddCommand(statusCmd)
+	colonyCmd.AddCommand(colonyStatCmd)
 	rootCmd.AddCommand(colonyCmd)
 
 	colonyCmd.PersistentFlags().StringVarP(&ServerHost, "host", "", DefaultServerHost, "Server host")
@@ -41,9 +41,9 @@ func init() {
 	lsColoniesCmd.Flags().StringVarP(&ServerPrvKey, "serverprvkey", "", "", "Colonies server private key")
 	lsColoniesCmd.Flags().BoolVarP(&JSON, "json", "", false, "Print JSON instead of tables")
 
-	statusCmd.Flags().StringVarP(&ServerID, "serverid", "", "", "Colonies server Id")
-	statusCmd.Flags().StringVarP(&ServerPrvKey, "serverprvkey", "", "", "Colonies server private key")
-	statusCmd.Flags().StringVarP(&ColonyID, "colonyid", "", "", "Colony Id")
+	colonyStatCmd.Flags().StringVarP(&ServerID, "serverid", "", "", "Colonies server Id")
+	colonyStatCmd.Flags().StringVarP(&ServerPrvKey, "serverprvkey", "", "", "Colonies server private key")
+	colonyStatCmd.Flags().StringVarP(&ColonyID, "colonyid", "", "", "Colony Id")
 }
 
 var colonyCmd = &cobra.Command{
@@ -198,10 +198,10 @@ var lsColoniesCmd = &cobra.Command{
 	},
 }
 
-var statusCmd = &cobra.Command{
-	Use:   "status",
-	Short: "Show status about a colony",
-	Long:  "Show status about a colony",
+var colonyStatCmd = &cobra.Command{
+	Use:   "stat",
+	Short: "Show statistics about a colony",
+	Long:  "Show statistics about a colony",
 	Run: func(cmd *cobra.Command, args []string) {
 		parseServerEnv()
 
@@ -232,20 +232,7 @@ var statusCmd = &cobra.Command{
 		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Info("Starting a Colonies client")
 		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
 
-		runtimesFromServer, err := client.GetRuntimes(ColonyID, RuntimePrvKey)
-		if err != nil {
-			if ColonyPrvKey == "" {
-				if ColonyID == "" {
-					ColonyID = os.Getenv("COLONIES_COLONYID")
-				}
-				ColonyPrvKey, err = keychain.GetPrvKey(ColonyID)
-				CheckError(err)
-			}
-			runtimesFromServer, err = client.GetRuntimes(ColonyID, ColonyPrvKey)
-			CheckError(err)
-		}
-
-		stat, err := client.GetProcessStat(ColonyID, RuntimePrvKey)
+		stat, err := client.ColonyStatistics(ColonyID, RuntimePrvKey)
 		CheckError(err)
 
 		fmt.Println("Process statistics:")
@@ -253,8 +240,7 @@ var statusCmd = &cobra.Command{
 			[]string{"Waiting processes", strconv.Itoa(stat.Waiting)},
 			[]string{"Running processes ", strconv.Itoa(stat.Running)},
 			[]string{"Successful processes", strconv.Itoa(stat.Success)},
-			[]string{"Failed", strconv.Itoa(stat.Failed)},
-			[]string{"Number of runtimes", strconv.Itoa(len(runtimesFromServer))},
+			[]string{"Failed processes", strconv.Itoa(stat.Failed)},
 		}
 		specTable := tablewriter.NewWriter(os.Stdout)
 		for _, v := range specData {

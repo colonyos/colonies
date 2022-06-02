@@ -24,7 +24,7 @@ More information can also be found [here](https://colonyos.io).
 * **Pull-based orchestration.** Users (or workers) submit process specifications the Colonies server. Colonies workers connect to the Colonies server and request processes to execute. A HTTP Long Polling/WebSocket protocol ensure that workers can reside anywhere on the Internet, even behind firewalls. The Colonies server never establish connections directly to workers. 
 * **Multi-step workflows** or **Directed Acyclic Graph (DAG)** to capture dependencies between jobs.
 * **Built-in identity and trust management.** A crypto-protocol based on ECDSA (Elliptic Curve Digital Signature Algorithm) offers identity and trust management to enable Colonies workers member of the same colony to fully trust each other. Only authorized users or workers can submit process specifications or interact with other workers within a colony.
-* **Implemented in Golang** with a standard PostgreSQL backend.
+* **Implemented in Golang** with a standard PostgreSQL database.
 * **SDK in Python, Julia, and Golang.**
 
 ## Example of use cases
