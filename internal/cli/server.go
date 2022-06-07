@@ -127,12 +127,9 @@ var serverStartCmd = &cobra.Command{
 		parseDBEnv()
 		parseServerEnv()
 
-		fmt.Println(Insecure)
-
 		if !Insecure {
 			_, err := os.Stat(TLSKey)
 			if err != nil {
-				fmt.Println("XXXXXXX")
 				CheckError(errors.New("Failed to load TLS Key: " + TLSKey))
 				os.Exit(-1)
 			}

@@ -102,12 +102,6 @@ func (graph *ProcessGraph) AddRoot(processID string) {
 }
 
 func (graph *ProcessGraph) SetStorage(storage ProcessGraphStorage) {
-	// if graph == nil {
-	// 	fmt.Println("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXxERROR: graph is nil")
-	// }
-	// if storage == nil {
-	// 	fmt.Println("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXxERROR: storage is nil")
-	// }
 	graph.storage = storage
 }
 
