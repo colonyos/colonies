@@ -192,7 +192,7 @@ func (graph *ProcessGraph) getRoot(childProcessID string, visited map[string]boo
 		return nil, err
 	}
 	if visited[childProcessID] {
-		return nil, errors.New("loops are not allowed in process graphs")
+		return nil, errors.New("Loops are not allowed in process graphs")
 	}
 
 	visited[childProcessID] = true
