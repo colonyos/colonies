@@ -68,16 +68,16 @@ func (server *ColoniesServer) handleWSRequest(c *gin.Context) {
 			if server.handleHTTPError(c, err, http.StatusBadRequest) {
 				err := server.sendWSErrorMsg(err, http.StatusForbidden, wsConn, wsMsgType)
 				if err != nil {
-					log.WithFields(log.Fields{"Error": err}).Error("Failed to call server.sendWSErrorMsg()")
+					log.WithFields(log.Fields{"Error": err}).Error("Failed to subscribe to processes, failed to call server.sendWSErrorMsg()")
 				}
 				return
 			}
 			if msg.MsgType != rpcMsg.PayloadType {
-				errMsg := "msg.msgType does not match rpcMsg.PayloadType"
+				errMsg := "Failed to subscribe to processes, msg.msgType does not match rpcMsg.PayloadType"
 				err := server.sendWSErrorMsg(errors.New(errMsg), http.StatusForbidden, wsConn, wsMsgType)
 				log.Info(errMsg)
 				if err != nil {
-					log.WithFields(log.Fields{"Error": err}).Error("Failed to call server.sendWSErrorMsg()")
+					log.WithFields(log.Fields{"Error": err}).Error("Failed to subscribe to processes, failed to call server.sendWSErrorMsg()")
 				}
 				return
 			}
@@ -86,14 +86,14 @@ func (server *ColoniesServer) handleWSRequest(c *gin.Context) {
 			if err != nil {
 				err := server.sendWSErrorMsg(err, http.StatusForbidden, wsConn, wsMsgType)
 				if err != nil {
-					log.WithFields(log.Fields{"Error": err}).Error("Failed to call server.sendWSErrorMsg()")
+					log.WithFields(log.Fields{"Error": err}).Error("Failed to subscribe to processes, failed to call server.sendWSErrorMsg()")
 				}
 				return
 			}
 			if runtime == nil {
-				err := server.sendWSErrorMsg(errors.New("runtime not found"), http.StatusForbidden, wsConn, wsMsgType)
+				err := server.sendWSErrorMsg(errors.New("Failed to subscribe to processes, runtime not found"), http.StatusForbidden, wsConn, wsMsgType)
 				if err != nil {
-					log.WithFields(log.Fields{"Error": err}).Error("Failed to call server.sendWSErrorMsg()")
+					log.WithFields(log.Fields{"Error": err}).Error("Failed to subscribe to processes, failed to call server.sendWSErrorMsg()")
 				}
 				return
 			}
@@ -103,7 +103,7 @@ func (server *ColoniesServer) handleWSRequest(c *gin.Context) {
 			if err != nil {
 				err := server.sendWSErrorMsg(err, http.StatusForbidden, wsConn, wsMsgType)
 				if err != nil {
-					log.WithFields(log.Fields{"Error": err}).Error("Failed to call server.sendWSErrorMsg()")
+					log.WithFields(log.Fields{"Error": err}).Error("Failed to subscribe to processes, failed to call server.sendWSErrorMsg()")
 				}
 				return
 			}
@@ -117,9 +117,9 @@ func (server *ColoniesServer) handleWSRequest(c *gin.Context) {
 				return
 			}
 			if msg.MsgType != rpcMsg.PayloadType {
-				err := server.sendWSErrorMsg(errors.New("msg.msgType does not match rpcMsg.PayloadType"), http.StatusForbidden, wsConn, wsMsgType)
+				err := server.sendWSErrorMsg(errors.New("Failed to subscribe to process, msg.msgType does not match rpcMsg.PayloadType"), http.StatusForbidden, wsConn, wsMsgType)
 				if err != nil {
-					log.WithFields(log.Fields{"Error": err}).Error("Failed to call server.sendWSErrorMsg()")
+					log.WithFields(log.Fields{"Error": err}).Error("Failed to subscribe to process, failed to call server.sendWSErrorMsg()")
 				}
 				return
 			}
@@ -128,14 +128,14 @@ func (server *ColoniesServer) handleWSRequest(c *gin.Context) {
 			if err != nil {
 				err := server.sendWSErrorMsg(err, http.StatusForbidden, wsConn, wsMsgType)
 				if err != nil {
-					log.WithFields(log.Fields{"Error": err}).Error("Failed to call server.sendWSErrorMsg()")
+					log.WithFields(log.Fields{"Error": err}).Error("Failed to subscribe to process, Failed to call server.sendWSErrorMsg()")
 				}
 				return
 			}
 			if runtime == nil {
-				err := server.sendWSErrorMsg(errors.New("runtime not found"), http.StatusForbidden, wsConn, wsMsgType)
+				err := server.sendWSErrorMsg(errors.New("Failed to subscribe to process, runtime not found"), http.StatusForbidden, wsConn, wsMsgType)
 				if err != nil {
-					log.WithFields(log.Fields{"Error": err}).Error("Failed to call server.sendWSErrorMsg()")
+					log.WithFields(log.Fields{"Error": err}).Error("Failed to subscribe to process, failed to call server.sendWSErrorMsg()")
 				}
 				return
 			}
@@ -146,7 +146,7 @@ func (server *ColoniesServer) handleWSRequest(c *gin.Context) {
 			if err != nil {
 				err := server.sendWSErrorMsg(err, http.StatusForbidden, wsConn, wsMsgType)
 				if err != nil {
-					log.WithFields(log.Fields{"Error": err}).Error("Failed to call server.sendWSErrorMsg()")
+					log.WithFields(log.Fields{"Error": err}).Error("Failed to subscribe to process, failed to call server.sendWSErrorMsg()")
 				}
 				return
 			}

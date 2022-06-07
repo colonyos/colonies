@@ -498,13 +498,13 @@ func (controller *coloniesController) findProcessHistory(colonyID string, runtim
 			var processes []*core.Process
 			var err error
 			if runtimeID == "" {
-				processes, err = controller.db.FindProcessesForColony(colonyID, seconds, state)
+				processes, err = controller.db.FindProcessesByColonyID(colonyID, seconds, state)
 				if err != nil {
 					cmd.errorChan <- err
 					return
 				}
 			} else {
-				processes, err = controller.db.FindProcessesForRuntime(colonyID, runtimeID, seconds, state)
+				processes, err = controller.db.FindProcessesByRuntimeID(colonyID, runtimeID, seconds, state)
 				if err != nil {
 					cmd.errorChan <- err
 					return
@@ -928,7 +928,7 @@ func (controller *coloniesController) assignRuntime(runtimeID string, colonyID s
 				return
 			}
 			if runtime == nil {
-				cmd.errorChan <- errors.New("runtime with id <" + runtimeID + "> could not be found")
+				cmd.errorChan <- errors.New("Runtime with id <" + runtimeID + "> could not be found")
 				return
 			}
 
@@ -1028,28 +1028,63 @@ func (controller *coloniesController) getColonyStatistics(colonyID string) (*cor
 	cmd := &command{statisticsReplyChan: make(chan *core.Statistics),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
-			waiting, err := controller.db.CountWaitingProcessesForColony(colonyID)
+			colonies := 1
+			runtimes, err := controller.db.CountRuntimesByColonyID(colonyID)
 			if err != nil {
 				cmd.errorChan <- err
 				return
 			}
-			running, err := controller.db.CountRunningProcessesForColony(colonyID)
+			waitingProcesses, err := controller.db.CountWaitingProcessesByColonyID(colonyID)
 			if err != nil {
 				cmd.errorChan <- err
 				return
 			}
-			success, err := controller.db.CountSuccessfulProcessesForColony(colonyID)
+			runningProcesses, err := controller.db.CountRunningProcessesByColonyID(colonyID)
 			if err != nil {
 				cmd.errorChan <- err
 				return
 			}
-			failed, err := controller.db.CountFailedProcessesForColony(colonyID)
+			successProcesses, err := controller.db.CountSuccessfulProcessesByColonyID(colonyID)
+			if err != nil {
+				cmd.errorChan <- err
+				return
+			}
+			failedProcesses, err := controller.db.CountFailedProcessesByColonyID(colonyID)
+			if err != nil {
+				cmd.errorChan <- err
+				return
+			}
+			waitingWorkflows, err := controller.db.CountWaitingProcessGraphsByColonyID(colonyID)
+			if err != nil {
+				cmd.errorChan <- err
+				return
+			}
+			runningWorkflows, err := controller.db.CountRunningProcessGraphsByColonyID(colonyID)
+			if err != nil {
+				cmd.errorChan <- err
+				return
+			}
+			successWorkflows, err := controller.db.CountSuccessfulProcessGraphsByColonyID(colonyID)
+			if err != nil {
+				cmd.errorChan <- err
+				return
+			}
+			failedWorkflows, err := controller.db.CountFailedProcessGraphsByColonyID(colonyID)
 			if err != nil {
 				cmd.errorChan <- err
 				return
 			}
 
-			cmd.statisticsReplyChan <- core.CreateStatistics(waiting, running, success, failed)
+			cmd.statisticsReplyChan <- core.CreateStatistics(colonies,
+				runtimes,
+				waitingProcesses,
+				runningProcesses,
+				successProcesses,
+				failedProcesses,
+				waitingWorkflows,
+				runningWorkflows,
+				successWorkflows,
+				failedWorkflows)
 		}}
 
 	controller.cmdQueue <- cmd
@@ -1065,28 +1100,67 @@ func (controller *coloniesController) getStatistics() (*core.Statistics, error) 
 	cmd := &command{statisticsReplyChan: make(chan *core.Statistics),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
-			waiting, err := controller.db.CountWaitingProcesses()
+			colonies, err := controller.db.CountColonies()
 			if err != nil {
 				cmd.errorChan <- err
 				return
 			}
-			running, err := controller.db.CountRunningProcesses()
+			runtimes, err := controller.db.CountRuntimes()
 			if err != nil {
 				cmd.errorChan <- err
 				return
 			}
-			success, err := controller.db.CountSuccessfulProcesses()
+			waitingProcesses, err := controller.db.CountWaitingProcesses()
 			if err != nil {
 				cmd.errorChan <- err
 				return
 			}
-			failed, err := controller.db.CountFailedProcesses()
+			runningProcesses, err := controller.db.CountRunningProcesses()
+			if err != nil {
+				cmd.errorChan <- err
+				return
+			}
+			successProcesses, err := controller.db.CountSuccessfulProcesses()
+			if err != nil {
+				cmd.errorChan <- err
+				return
+			}
+			failedProcesses, err := controller.db.CountFailedProcesses()
+			if err != nil {
+				cmd.errorChan <- err
+				return
+			}
+			waitingWorkflows, err := controller.db.CountWaitingProcessGraphs()
+			if err != nil {
+				cmd.errorChan <- err
+				return
+			}
+			runningWorkflows, err := controller.db.CountRunningProcessGraphs()
+			if err != nil {
+				cmd.errorChan <- err
+				return
+			}
+			successWorkflows, err := controller.db.CountSuccessfulProcessGraphs()
+			if err != nil {
+				cmd.errorChan <- err
+				return
+			}
+			failedWorkflows, err := controller.db.CountFailedProcessGraphs()
 			if err != nil {
 				cmd.errorChan <- err
 				return
 			}
 
-			cmd.statisticsReplyChan <- core.CreateStatistics(waiting, running, success, failed)
+			cmd.statisticsReplyChan <- core.CreateStatistics(colonies,
+				runtimes,
+				waitingProcesses,
+				runningProcesses,
+				successProcesses,
+				failedProcesses,
+				waitingWorkflows,
+				runningWorkflows,
+				successWorkflows,
+				failedWorkflows)
 		}}
 
 	controller.cmdQueue <- cmd

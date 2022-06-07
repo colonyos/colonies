@@ -7,6 +7,7 @@ import (
 	"github.com/colonyos/colonies/pkg/build"
 	"github.com/colonyos/colonies/pkg/rpc"
 	"github.com/gin-gonic/gin"
+	log "github.com/sirupsen/logrus"
 )
 
 func (server *ColoniesServer) handleVersionHTTPRequest(c *gin.Context, payloadType string, jsonString string) {
@@ -15,11 +16,11 @@ func (server *ColoniesServer) handleVersionHTTPRequest(c *gin.Context, payloadTy
 		return
 	}
 	if msg == nil {
-		server.handleHTTPError(c, errors.New("failed to parse JSON"), http.StatusBadRequest)
+		server.handleHTTPError(c, errors.New("Failed to get server version, failed to parse JSON"), http.StatusBadRequest)
 		return
 	}
 	if msg.MsgType != payloadType {
-		server.handleHTTPError(c, errors.New("msg.MsgType does not match payloadType"), http.StatusBadRequest)
+		server.handleHTTPError(c, errors.New("Failed to get server version, msg.MsgType does not match payloadType"), http.StatusBadRequest)
 		return
 	}
 
@@ -30,6 +31,8 @@ func (server *ColoniesServer) handleVersionHTTPRequest(c *gin.Context, payloadTy
 		return
 	}
 
+	log.Info("Getting server version")
+
 	server.sendHTTPReply(c, payloadType, jsonString)
 }
 
@@ -39,11 +42,11 @@ func (server *ColoniesServer) handleStatisticsHTTPRequest(c *gin.Context, recove
 		return
 	}
 	if msg == nil {
-		server.handleHTTPError(c, errors.New("failed to parse JSON"), http.StatusBadRequest)
+		server.handleHTTPError(c, errors.New("Failed to get server version, failed to parse JSON"), http.StatusBadRequest)
 		return
 	}
 	if msg.MsgType != payloadType {
-		server.handleHTTPError(c, errors.New("msg.MsgType does not match payloadType"), http.StatusBadRequest)
+		server.handleHTTPError(c, errors.New("Failed to get server version, msg.MsgType does not match payloadType"), http.StatusBadRequest)
 		return
 	}
 
@@ -61,6 +64,8 @@ func (server *ColoniesServer) handleStatisticsHTTPRequest(c *gin.Context, recove
 	if server.handleHTTPError(c, err, http.StatusInternalServerError) {
 		return
 	}
+
+	//log.Info("Getting server statistics")
 
 	server.sendHTTPReply(c, payloadType, jsonString)
 }
