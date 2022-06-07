@@ -7,6 +7,7 @@ import (
 	"github.com/colonyos/colonies/pkg/core"
 	"github.com/colonyos/colonies/pkg/rpc"
 	"github.com/gin-gonic/gin"
+	log "github.com/sirupsen/logrus"
 )
 
 func (server *ColoniesServer) handleAddColonyHTTPRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
@@ -15,11 +16,11 @@ func (server *ColoniesServer) handleAddColonyHTTPRequest(c *gin.Context, recover
 		return
 	}
 	if msg == nil {
-		server.handleHTTPError(c, errors.New("failed to parse JSON"), http.StatusBadRequest)
+		server.handleHTTPError(c, errors.New("Failed to add colony, failed to parse JSON"), http.StatusBadRequest)
 		return
 	}
 	if msg.MsgType != payloadType {
-		server.handleHTTPError(c, errors.New("msg.MsgType does not match payloadType"), http.StatusBadRequest)
+		server.handleHTTPError(c, errors.New("Failed to add colony, msg.MsgType does not match payloadType"), http.StatusBadRequest)
 		return
 	}
 
@@ -29,12 +30,12 @@ func (server *ColoniesServer) handleAddColonyHTTPRequest(c *gin.Context, recover
 	}
 
 	if msg.Colony == nil {
-		server.handleHTTPError(c, errors.New("colony is nil"), http.StatusBadRequest)
+		server.handleHTTPError(c, errors.New("Failed to add colony, colony is nil"), http.StatusBadRequest)
 		return
 	}
 
 	if len(msg.Colony.ID) != 64 {
-		server.handleHTTPError(c, errors.New("invalid colony id length"), http.StatusBadRequest)
+		server.handleHTTPError(c, errors.New("Failed to add colony, invalid colony id length"), http.StatusBadRequest)
 		return
 	}
 
@@ -43,7 +44,7 @@ func (server *ColoniesServer) handleAddColonyHTTPRequest(c *gin.Context, recover
 		return
 	}
 	if addedColony == nil {
-		server.handleHTTPError(c, errors.New("addedColony is nil"), http.StatusInternalServerError)
+		server.handleHTTPError(c, errors.New("Failed to add colony, addedColony is nil"), http.StatusInternalServerError)
 		return
 	}
 
@@ -51,6 +52,8 @@ func (server *ColoniesServer) handleAddColonyHTTPRequest(c *gin.Context, recover
 	if server.handleHTTPError(c, err, http.StatusInternalServerError) {
 		return
 	}
+
+	log.WithFields(log.Fields{"ColonyID": addedColony.ID}).Info("Adding colony")
 
 	server.sendHTTPReply(c, payloadType, jsonString)
 }
@@ -61,11 +64,11 @@ func (server *ColoniesServer) handleDeleteColonyHTTPRequest(c *gin.Context, reco
 		return
 	}
 	if msg == nil {
-		server.handleHTTPError(c, errors.New("failed to parse JSON"), http.StatusBadRequest)
+		server.handleHTTPError(c, errors.New("Failed to delete colony, failed to parse JSON"), http.StatusBadRequest)
 		return
 	}
 	if msg.MsgType != payloadType {
-		server.handleHTTPError(c, errors.New("msg.MsgType does not match payloadType"), http.StatusBadRequest)
+		server.handleHTTPError(c, errors.New("Failed to delete colony, msg.MsgType does not match payloadType"), http.StatusBadRequest)
 		return
 	}
 
@@ -79,6 +82,8 @@ func (server *ColoniesServer) handleDeleteColonyHTTPRequest(c *gin.Context, reco
 		return
 	}
 
+	log.WithFields(log.Fields{"ColonyID": msg.ColonyID}).Info("Deleting colony")
+
 	server.sendEmptyHTTPReply(c, payloadType)
 }
 
@@ -88,11 +93,11 @@ func (server *ColoniesServer) handleGetColoniesHTTPRequest(c *gin.Context, recov
 		return
 	}
 	if msg == nil {
-		server.handleHTTPError(c, errors.New("failed to parse JSON"), http.StatusBadRequest)
+		server.handleHTTPError(c, errors.New("Failed to get colonies, failed to parse JSON"), http.StatusBadRequest)
 		return
 	}
 	if msg.MsgType != payloadType {
-		server.handleHTTPError(c, errors.New("msg.MsgType does not match payloadType"), http.StatusBadRequest)
+		server.handleHTTPError(c, errors.New("Failed to get colonies, msg.MsgType does not match payloadType"), http.StatusBadRequest)
 		return
 	}
 
@@ -111,6 +116,8 @@ func (server *ColoniesServer) handleGetColoniesHTTPRequest(c *gin.Context, recov
 		return
 	}
 
+	log.Info("Getting colonies")
+
 	server.sendHTTPReply(c, payloadType, jsonString)
 }
 
@@ -120,11 +127,11 @@ func (server *ColoniesServer) handleGetColonyHTTPRequest(c *gin.Context, recover
 		return
 	}
 	if msg == nil {
-		server.handleHTTPError(c, errors.New("failed to parse JSON"), http.StatusBadRequest)
+		server.handleHTTPError(c, errors.New("Failed to get colony, failed to parse JSON"), http.StatusBadRequest)
 		return
 	}
 	if msg.MsgType != payloadType {
-		server.handleHTTPError(c, errors.New("msg.MsgType does not match payloadType"), http.StatusBadRequest)
+		server.handleHTTPError(c, errors.New("Failed to get colony, msg.MsgType does not match payloadType"), http.StatusBadRequest)
 		return
 	}
 
@@ -138,7 +145,7 @@ func (server *ColoniesServer) handleGetColonyHTTPRequest(c *gin.Context, recover
 		return
 	}
 	if colony == nil {
-		server.handleHTTPError(c, errors.New("colony is nil"), http.StatusInternalServerError)
+		server.handleHTTPError(c, errors.New("Failed to get colony, colony is nil"), http.StatusInternalServerError)
 		return
 	}
 
@@ -146,6 +153,8 @@ func (server *ColoniesServer) handleGetColonyHTTPRequest(c *gin.Context, recover
 	if server.handleHTTPError(c, err, http.StatusInternalServerError) {
 		return
 	}
+
+	log.WithFields(log.Fields{"ColonyID": msg.ColonyID}).Info("Getting colony")
 
 	server.sendHTTPReply(c, payloadType, jsonString)
 }
@@ -156,12 +165,12 @@ func (server *ColoniesServer) handleColonyStatisticsHTTPRequest(c *gin.Context, 
 		return
 	}
 	if msg == nil {
-		server.handleHTTPError(c, errors.New("failed to parse JSON"), http.StatusBadRequest)
+		server.handleHTTPError(c, errors.New("Failed to get colony statistics, failed to parse JSON"), http.StatusBadRequest)
 		return
 	}
 
 	if msg.MsgType != payloadType {
-		server.handleHTTPError(c, errors.New("msg.MsgType does not match payloadType"), http.StatusBadRequest)
+		server.handleHTTPError(c, errors.New("Failed to get colony statistics, msg.MsgType does not match payloadType"), http.StatusBadRequest)
 		return
 	}
 
@@ -182,6 +191,8 @@ func (server *ColoniesServer) handleColonyStatisticsHTTPRequest(c *gin.Context, 
 	if server.handleHTTPError(c, err, http.StatusInternalServerError) {
 		return
 	}
+
+	log.WithFields(log.Fields{"ColonyID": msg.ColonyID}).Info("Getting colony statistics")
 
 	server.sendHTTPReply(c, payloadType, jsonString)
 }

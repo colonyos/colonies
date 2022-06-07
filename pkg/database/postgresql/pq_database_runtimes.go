@@ -143,6 +143,13 @@ func (db *PQDatabase) DeleteRuntimeByID(runtimeID string) error {
 		return err
 	}
 
+	// Move back the runtime currently running process back to the queue
+	sqlStatement = `UPDATE ` + db.dbPrefix + `PROCESSES SET IS_ASSIGNED=FALSE, START_TIME=$1, END_TIME=$2, ASSIGNED_RUNTIME_ID=$3, STATE=$4 WHERE ASSIGNED_RUNTIME_ID=$5 AND STATE=$6`
+	_, err = db.postgresql.Exec(sqlStatement, time.Time{}, time.Time{}, "", core.WAITING, runtimeID, core.RUNNING)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -153,5 +160,30 @@ func (db *PQDatabase) DeleteRuntimesByColonyID(colonyID string) error {
 		return err
 	}
 
+	// Move back the runtime currently running process back to the queue
+	sqlStatement = `UPDATE ` + db.dbPrefix + `PROCESSES SET IS_ASSIGNED=FALSE, START_TIME=$1, END_TIME=$2, ASSIGNED_RUNTIME_ID=$3, STATE=$4 WHERE TARGET_COLONY_ID=$5 AND STATE=$6`
+	_, err = db.postgresql.Exec(sqlStatement, time.Time{}, time.Time{}, "", core.WAITING, colonyID, core.RUNNING)
+	if err != nil {
+		return err
+	}
+
 	return nil
+}
+
+func (db *PQDatabase) CountRuntimes() (int, error) {
+	runtimes, err := db.GetRuntimes()
+	if err != nil {
+		return -1, err
+	}
+
+	return len(runtimes), nil
+}
+
+func (db *PQDatabase) CountRuntimesByColonyID(colonyID string) (int, error) {
+	runtimes, err := db.GetRuntimesByColonyID(colonyID)
+	if err != nil {
+		return -1, err
+	}
+
+	return len(runtimes), nil
 }

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"strconv"
+	"sync"
 	"time"
 
 	"errors"
@@ -21,6 +22,9 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
+
+var mutex sync.Mutex
+var registered bool
 
 func init() {
 	workerCmd.AddCommand(workerStartCmd)
@@ -89,14 +93,6 @@ var workerStartCmd = &cobra.Command{
 		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Info("Starting a Colonies client")
 		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
 
-		c := make(chan os.Signal)
-		signal.Notify(c, os.Interrupt, syscall.SIGTERM)
-		go func() {
-			<-c
-			unregisterRuntime(client)
-			os.Exit(0)
-		}()
-
 		crypto := crypto.CreateCrypto()
 		runtimePrvKey, err := crypto.GeneratePrivateKey()
 		CheckError(err)
@@ -142,10 +138,23 @@ var workerStartCmd = &cobra.Command{
 		err = client.ApproveRuntime(runtimeID, ColonyPrvKey)
 		CheckError(err)
 
+		var assignedProcess *core.Process
+		c := make(chan os.Signal)
+		signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+		go func() {
+			<-c
+			if assignedProcess != nil {
+				log.WithFields(log.Fields{"processID": assignedProcess.ID}).Info("Closing process as failed")
+				client.CloseFailed(assignedProcess.ID, runtimePrvKey)
+			}
+			unregisterRuntime(client)
+			os.Exit(0)
+		}()
+
 		log.WithFields(log.Fields{"BuildVersion": build.BuildVersion, "BuildTime": build.BuildTime, "ServerHost": ServerHost, "ServerPort": ServerPort}).Info("Worker now waiting for processes to be execute")
 
 		for {
-			assignedProcess, err := client.AssignProcess(ColonyID, runtimePrvKey)
+			assignedProcess, err = client.AssignProcess(ColonyID, runtimePrvKey)
 			if err != nil {
 				time.Sleep(1000 * time.Millisecond)
 				continue
@@ -205,11 +214,15 @@ var workerStartCmd = &cobra.Command{
 			}
 
 			if failure {
-				client.CloseFailed(assignedProcess.ID, runtimePrvKey)
 				log.WithFields(log.Fields{"processID": assignedProcess.ID}).Info("Closing process as failed")
+				if registered {
+					client.CloseFailed(assignedProcess.ID, runtimePrvKey)
+				}
 			} else {
-				client.CloseSuccessful(assignedProcess.ID, runtimePrvKey)
 				log.WithFields(log.Fields{"processID": assignedProcess.ID}).Info("Closing process as successful")
+				if registered {
+					client.CloseSuccessful(assignedProcess.ID, runtimePrvKey)
+				}
 			}
 		}
 	},
@@ -325,6 +338,13 @@ var workerUnregisterCmd = &cobra.Command{
 }
 
 func unregisterRuntime(client *client.ColoniesClient) {
+	if !registered {
+		return
+	}
+
+	mutex.Lock()
+	defer mutex.Unlock()
+
 	runtimeIDBytes, err := os.ReadFile("/tmp/runtimeid")
 	CheckError(err)
 

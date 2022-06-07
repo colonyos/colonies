@@ -67,6 +67,16 @@ var devCmd = &cobra.Command{
 			envErr = true
 		}
 
+		if os.Getenv("COLONIES_MONITORPORT") == "" {
+			log.Error("COLONIES_MONITORPORT environmental variable missing, try export COLONIES_MONITORPORT=\"21120\"")
+			envErr = true
+		}
+
+		if os.Getenv("COLONIES_MONITORINTERVALL") == "" {
+			log.Error("COLONIES_MONITORINTERVALL environmental variable missing, try export COLONIES_MONITORINTERVALL=\"1\"")
+			envErr = true
+		}
+
 		if os.Getenv("COLONIES_SERVERID") == "" {
 			log.Error("COLONIES_SERVERID environmental variable missing, try export COLONIES_SERVERID=\"039231c7644e04b6895471dd5335cf332681c54e27f81fac54f9067b3f2c0103\"")
 			envErr = true
@@ -133,6 +143,7 @@ var devCmd = &cobra.Command{
 			envProposal += "export COLONIES_TLS=\"false\"\n"
 			envProposal += "export COLONIES_SERVERHOST=\"localhost\"\n"
 			envProposal += "export COLONIES_SERVERPORT=\"50080\"\n"
+			envProposal += "export COLONIES_MONITORPORT=\"21120\"\n"
 			envProposal += "export COLONIES_SERVERID=\"039231c7644e04b6895471dd5335cf332681c54e27f81fac54f9067b3f2c0103\"\n"
 			envProposal += "export COLONIES_SERVERPRVKEY=\"fcc79953d8a751bf41db661592dc34d30004b1a651ffa0725b03ac227641499d\"\n"
 			envProposal += "export COLONIES_DBHOST=\"localhost\"\n"
@@ -243,6 +254,22 @@ var devCmd = &cobra.Command{
 		err = client.ApproveRuntime(runtimeID, colonyPrvKey)
 		CheckError(err)
 
+		monitorPortStr := os.Getenv("COLONIES_MONITORPORT")
+		monitorPort, err := strconv.Atoi(monitorPortStr)
+		CheckError(err)
+
+		intervallStr := os.Getenv("COLONIES_MONITORINTERVALL")
+		intervall, err := strconv.Atoi(intervallStr)
+		CheckError(err)
+
+		log.WithFields(log.Fields{
+			"Port":               monitorPort,
+			"ColoniesServerHost": coloniesServerHost,
+			"ColoniesServerPort": coloniesServerPort,
+			"PullIntervall":      intervall}).
+			Info("Starting Prometheus monitoring server")
+		server.CreateMonitoringServer(monitorPort, coloniesServerHost, coloniesServerPort, true, true, serverPrvKey, intervall)
+
 		wait := make(chan bool)
 
 		log.Info("Successfully started Colonies development server")
@@ -256,6 +283,8 @@ var devCmd = &cobra.Command{
 		envStr += "export COLONIES_TLS=\"false\"\n"
 		envStr += "export COLONIES_SERVERHOST=\"" + coloniesServerHost + " \"\n"
 		envStr += "export COLONIES_SERVERPORT=\"50080\"\n"
+		envStr += "export COLONIES_MONITORPORT=\"21120\"\n"
+		envStr += "export COLONIES_MONITORINTERVALL=\"1\"\n"
 		envStr += "export COLONIES_SERVERID=\"" + serverID + "\"\n"
 		envStr += "export COLONIES_SERVERPRVKEY=\"" + serverPrvKey + "\"\n"
 		envStr += "export COLONIES_DBHOST=\"localhost\"\n"

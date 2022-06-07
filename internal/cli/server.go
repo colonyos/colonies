@@ -198,10 +198,16 @@ var serverStatisticsCmd = &cobra.Command{
 
 		fmt.Println("Process statistics:")
 		specData := [][]string{
-			[]string{"Waiting processes", strconv.Itoa(stat.Waiting)},
-			[]string{"Running processes ", strconv.Itoa(stat.Running)},
-			[]string{"Successful processes", strconv.Itoa(stat.Success)},
-			[]string{"Failed processes", strconv.Itoa(stat.Failed)},
+			[]string{"Colonies", strconv.Itoa(stat.Colonies)},
+			[]string{"Runtimes", strconv.Itoa(stat.Runtimes)},
+			[]string{"Waiting processes", strconv.Itoa(stat.WaitingProcesses)},
+			[]string{"Running processes", strconv.Itoa(stat.RunningProcesses)},
+			[]string{"Successful processes", strconv.Itoa(stat.SuccessfulProcesses)},
+			[]string{"Failed processes", strconv.Itoa(stat.FailedProcesses)},
+			[]string{"Waiting workflows", strconv.Itoa(stat.WaitingWorkflows)},
+			[]string{"Running workflows ", strconv.Itoa(stat.RunningWorkflows)},
+			[]string{"Successful workflows", strconv.Itoa(stat.SuccessfulWorkflows)},
+			[]string{"Failed workflows", strconv.Itoa(stat.FailedWorkflows)},
 		}
 		specTable := tablewriter.NewWriter(os.Stdout)
 		for _, v := range specData {

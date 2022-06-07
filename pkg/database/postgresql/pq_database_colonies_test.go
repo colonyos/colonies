@@ -124,3 +124,30 @@ func TestDeleteColonies(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, runtimeFromDB) // Belongs to Colony 2 and should therefore not be deleted
 }
+
+func TestCountColonies(t *testing.T) {
+	db, err := PrepareTests()
+	assert.Nil(t, err)
+
+	defer db.Close()
+
+	coloniesCount, err := db.CountColonies()
+	assert.Nil(t, err)
+	assert.True(t, coloniesCount == 0)
+
+	colony := core.CreateColony(core.GenerateRandomID(), "test_colony_name")
+	err = db.AddColony(colony)
+	assert.Nil(t, err)
+
+	coloniesCount, err = db.CountColonies()
+	assert.Nil(t, err)
+	assert.True(t, coloniesCount == 1)
+
+	colony = core.CreateColony(core.GenerateRandomID(), "test_colony_name2")
+	err = db.AddColony(colony)
+	assert.Nil(t, err)
+
+	coloniesCount, err = db.CountColonies()
+	assert.Nil(t, err)
+	assert.True(t, coloniesCount == 2)
+}

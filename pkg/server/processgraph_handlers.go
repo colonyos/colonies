@@ -16,15 +16,15 @@ func (server *ColoniesServer) handleSubmitWorkflowHTTPRequest(c *gin.Context, re
 		return
 	}
 	if msg == nil {
-		server.handleHTTPError(c, errors.New("failed to parse JSON"), http.StatusBadRequest)
+		server.handleHTTPError(c, errors.New("Failed to submit workflow, failed to parse JSON"), http.StatusBadRequest)
 		return
 	}
 	if msg.MsgType != payloadType {
-		server.handleHTTPError(c, errors.New("msg.MsgType does not match payloadType"), http.StatusBadRequest)
+		server.handleHTTPError(c, errors.New("Failed to submit workflow, msg.MsgType does not match payloadType"), http.StatusBadRequest)
 		return
 	}
 	if msg.WorkflowSpec == nil {
-		server.handleHTTPError(c, errors.New("msg.WorkflowSpec is nil"), http.StatusBadRequest)
+		server.handleHTTPError(c, errors.New("Failed to submit workflow, msg.WorkflowSpec is nil"), http.StatusBadRequest)
 		return
 	}
 
@@ -34,6 +34,8 @@ func (server *ColoniesServer) handleSubmitWorkflowHTTPRequest(c *gin.Context, re
 	}
 
 	graph, err := core.CreateProcessGraph(msg.WorkflowSpec.ColonyID)
+
+	log.WithFields(log.Fields{"WorkflowID": graph.ID}).Info("Submitting workflow")
 
 	// Create all processes
 	processMap := make(map[string]*core.Process)
@@ -64,7 +66,7 @@ func (server *ColoniesServer) handleSubmitWorkflowHTTPRequest(c *gin.Context, re
 		for _, dependsOn := range process.ProcessSpec.Conditions.Dependencies {
 			parentProcess := processMap[dependsOn]
 			if parentProcess == nil {
-				server.handleHTTPError(c, errors.New("invalid dependencies, are you depending on a process spec name that does not exits?"), http.StatusBadRequest)
+				server.handleHTTPError(c, errors.New("Failed to submit workflow, invalid dependencies, are you depending on a process spec name that does not exits?"), http.StatusBadRequest)
 				return
 			}
 			process.AddParent(parentProcess.ID)
@@ -78,7 +80,7 @@ func (server *ColoniesServer) handleSubmitWorkflowHTTPRequest(c *gin.Context, re
 		log.WithFields(log.Fields{"ProcessID": process.ID}).Info("Submitting process")
 
 		if err != nil {
-			server.handleHTTPError(c, errors.New("failed to add process"), http.StatusInternalServerError)
+			server.handleHTTPError(c, errors.New("Failed to submit workflow, failed to add process"), http.StatusInternalServerError)
 			return
 		}
 	}
@@ -86,7 +88,7 @@ func (server *ColoniesServer) handleSubmitWorkflowHTTPRequest(c *gin.Context, re
 	// Finally, submit process graph
 	_, err = server.controller.addProcessGraph(graph)
 	if err != nil {
-		server.handleHTTPError(c, errors.New("failed to add process graph"), http.StatusInternalServerError)
+		server.handleHTTPError(c, errors.New("Failed to submit workflow, failed to add process graph"), http.StatusInternalServerError)
 		return
 	}
 
@@ -104,32 +106,34 @@ func (server *ColoniesServer) handleGetProcessGraphHTTPRequest(c *gin.Context, r
 		return
 	}
 	if msg == nil {
-		server.handleHTTPError(c, errors.New("failed to parse JSON"), http.StatusBadRequest)
+		server.handleHTTPError(c, errors.New("Failed to get process graph, failed to parse JSON"), http.StatusBadRequest)
 		return
 	}
 	if msg.MsgType != payloadType {
-		server.handleHTTPError(c, errors.New("msg.MsgType does not match payloadType"), http.StatusBadRequest)
+		server.handleHTTPError(c, errors.New("Failed to get process graph, msg.MsgType does not match payloadType"), http.StatusBadRequest)
 		return
 	}
 
-	processGraph, err := server.controller.getProcessGraphByID(msg.ProcessGraphID)
+	graph, err := server.controller.getProcessGraphByID(msg.ProcessGraphID)
 	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
-	if processGraph == nil {
-		server.handleHTTPError(c, errors.New("processGraph is nil"), http.StatusInternalServerError)
+	if graph == nil {
+		server.handleHTTPError(c, errors.New("Failed to get processgraph, graph is nil"), http.StatusInternalServerError)
 		return
 	}
 
-	err = server.validator.RequireRuntimeMembership(recoveredID, processGraph.ColonyID, true)
+	err = server.validator.RequireRuntimeMembership(recoveredID, graph.ColonyID, true)
 	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		return
 	}
 
-	jsonString, err = processGraph.ToJSON()
+	jsonString, err = graph.ToJSON()
 	if server.handleHTTPError(c, err, http.StatusInternalServerError) {
 		return
 	}
+
+	log.WithFields(log.Fields{"WorkflowID": graph.ID}).Info("Getting process graph")
 
 	server.sendHTTPReply(c, payloadType, jsonString)
 }
@@ -140,11 +144,11 @@ func (server *ColoniesServer) handleGetProcessGraphsHTTPRequest(c *gin.Context, 
 		return
 	}
 	if msg == nil {
-		server.handleHTTPError(c, errors.New("failed to parse JSON"), http.StatusBadRequest)
+		server.handleHTTPError(c, errors.New("Failed to get process graphs, failed to parse JSON"), http.StatusBadRequest)
 		return
 	}
 	if msg.MsgType != payloadType {
-		server.handleHTTPError(c, errors.New("msg.MsgType does not match payloadType"), http.StatusBadRequest)
+		server.handleHTTPError(c, errors.New("Failed to get process grpahs, msg.MsgType does not match payloadType"), http.StatusBadRequest)
 		return
 	}
 
@@ -155,6 +159,8 @@ func (server *ColoniesServer) handleGetProcessGraphsHTTPRequest(c *gin.Context, 
 			return
 		}
 	}
+
+	log.WithFields(log.Fields{"ColonyID": msg.ColonyID}).Info("Getting process graphs")
 
 	switch msg.State {
 	case core.WAITING:

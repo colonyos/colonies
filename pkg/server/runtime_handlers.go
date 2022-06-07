@@ -7,6 +7,7 @@ import (
 	"github.com/colonyos/colonies/pkg/core"
 	"github.com/colonyos/colonies/pkg/rpc"
 	"github.com/gin-gonic/gin"
+	log "github.com/sirupsen/logrus"
 )
 
 func (server *ColoniesServer) handleAddRuntimeHTTPRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
@@ -15,15 +16,15 @@ func (server *ColoniesServer) handleAddRuntimeHTTPRequest(c *gin.Context, recove
 		return
 	}
 	if msg == nil {
-		server.handleHTTPError(c, errors.New("failed to parse JSON"), http.StatusBadRequest)
+		server.handleHTTPError(c, errors.New("Failed to add runtime, failed to parse JSON"), http.StatusBadRequest)
 		return
 	}
 	if msg.MsgType != payloadType {
-		server.handleHTTPError(c, errors.New("msg.MsgType does not match payloadType"), http.StatusBadRequest)
+		server.handleHTTPError(c, errors.New("Failed to add runtime, msg.MsgType does not match payloadType"), http.StatusBadRequest)
 		return
 	}
 	if msg.Runtime == nil {
-		server.handleHTTPError(c, errors.New("runtime is nil"), http.StatusBadRequest)
+		server.handleHTTPError(c, errors.New("Failed to add runtime, runtime is nil"), http.StatusBadRequest)
 		return
 	}
 
@@ -37,7 +38,7 @@ func (server *ColoniesServer) handleAddRuntimeHTTPRequest(c *gin.Context, recove
 		return
 	}
 	if addedRuntime == nil {
-		server.handleHTTPError(c, errors.New("addedRuntime is nil"), http.StatusInternalServerError)
+		server.handleHTTPError(c, errors.New("Failed to add runtime, addedRuntime is nil"), http.StatusInternalServerError)
 		return
 	}
 
@@ -45,6 +46,8 @@ func (server *ColoniesServer) handleAddRuntimeHTTPRequest(c *gin.Context, recove
 	if server.handleHTTPError(c, err, http.StatusInternalServerError) {
 		return
 	}
+
+	log.WithFields(log.Fields{"ColonyID": msg.Runtime.ColonyID, "RuntimeID": addedRuntime.ID}).Info("Adding runtime")
 
 	server.sendHTTPReply(c, payloadType, jsonString)
 }
@@ -55,11 +58,11 @@ func (server *ColoniesServer) handleGetRuntimesHTTPRequest(c *gin.Context, recov
 		return
 	}
 	if msg == nil {
-		server.handleHTTPError(c, errors.New("failed to parse JSON"), http.StatusBadRequest)
+		server.handleHTTPError(c, errors.New("Failed to get runtimes, failed to parse JSON"), http.StatusBadRequest)
 		return
 	}
 	if msg.MsgType != payloadType {
-		server.handleHTTPError(c, errors.New("msg.MsgType does not match payloadType"), http.StatusBadRequest)
+		server.handleHTTPError(c, errors.New("Failed to get runtimes, msg.MsgType does not match payloadType"), http.StatusBadRequest)
 		return
 	}
 
@@ -81,6 +84,8 @@ func (server *ColoniesServer) handleGetRuntimesHTTPRequest(c *gin.Context, recov
 		return
 	}
 
+	log.WithFields(log.Fields{"ColonyID": msg.ColonyID}).Info("Getting runtimes")
+
 	server.sendHTTPReply(c, payloadType, jsonString)
 }
 
@@ -90,11 +95,11 @@ func (server *ColoniesServer) handleGetRuntimeHTTPRequest(c *gin.Context, recove
 		return
 	}
 	if msg == nil {
-		server.handleHTTPError(c, errors.New("failed to parse JSON"), http.StatusBadRequest)
+		server.handleHTTPError(c, errors.New("Failed to get runtime, failed to parse JSON"), http.StatusBadRequest)
 		return
 	}
 	if msg.MsgType != payloadType {
-		server.handleHTTPError(c, errors.New("msg.MsgType does not match payloadType"), http.StatusBadRequest)
+		server.handleHTTPError(c, errors.New("Failed to get runtime, msg.MsgType does not match payloadType"), http.StatusBadRequest)
 		return
 	}
 
@@ -103,7 +108,7 @@ func (server *ColoniesServer) handleGetRuntimeHTTPRequest(c *gin.Context, recove
 		return
 	}
 	if runtime == nil {
-		server.handleHTTPError(c, errors.New("runtime is nil"), http.StatusInternalServerError)
+		server.handleHTTPError(c, errors.New("Failed to get runtime, runtime is nil"), http.StatusInternalServerError)
 		return
 	}
 
@@ -117,6 +122,8 @@ func (server *ColoniesServer) handleGetRuntimeHTTPRequest(c *gin.Context, recove
 		return
 	}
 
+	log.WithFields(log.Fields{"RuntimeID": runtime.ID}).Info("Getting runtime")
+
 	server.sendHTTPReply(c, payloadType, jsonString)
 }
 
@@ -126,11 +133,11 @@ func (server *ColoniesServer) handleApproveRuntimeHTTPRequest(c *gin.Context, re
 		return
 	}
 	if msg == nil {
-		server.handleHTTPError(c, errors.New("failed to parse JSON"), http.StatusBadRequest)
+		server.handleHTTPError(c, errors.New("Failed to approve runtime, failed to parse JSON"), http.StatusBadRequest)
 		return
 	}
 	if msg.MsgType != payloadType {
-		server.handleHTTPError(c, errors.New("msg.MsgType does not match payloadType"), http.StatusBadRequest)
+		server.handleHTTPError(c, errors.New("Failed to approve runtime, msg.MsgType does not match payloadType"), http.StatusBadRequest)
 		return
 	}
 
@@ -139,7 +146,7 @@ func (server *ColoniesServer) handleApproveRuntimeHTTPRequest(c *gin.Context, re
 		return
 	}
 	if runtime == nil {
-		server.handleHTTPError(c, errors.New("runtime is nil"), http.StatusInternalServerError)
+		server.handleHTTPError(c, errors.New("Failed to approve runtime, runtime is nil"), http.StatusInternalServerError)
 		return
 	}
 
@@ -153,6 +160,8 @@ func (server *ColoniesServer) handleApproveRuntimeHTTPRequest(c *gin.Context, re
 		return
 	}
 
+	log.WithFields(log.Fields{"RuntimeID": runtime.ID}).Info("Approving runtime")
+
 	server.sendEmptyHTTPReply(c, payloadType)
 }
 
@@ -162,11 +171,11 @@ func (server *ColoniesServer) handleRejectRuntimeHTTPRequest(c *gin.Context, rec
 		return
 	}
 	if msg == nil {
-		server.handleHTTPError(c, errors.New("failed to parse JSON"), http.StatusBadRequest)
+		server.handleHTTPError(c, errors.New("Failed to reject runtime, failed to parse JSON"), http.StatusBadRequest)
 		return
 	}
 	if msg.MsgType != payloadType {
-		server.handleHTTPError(c, errors.New("msg.MsgType does not match payloadType"), http.StatusBadRequest)
+		server.handleHTTPError(c, errors.New("Failed to reject runtime, msg.MsgType does not match payloadType"), http.StatusBadRequest)
 		return
 	}
 
@@ -175,7 +184,7 @@ func (server *ColoniesServer) handleRejectRuntimeHTTPRequest(c *gin.Context, rec
 		return
 	}
 	if runtime == nil {
-		server.handleHTTPError(c, errors.New("runtime is nil"), http.StatusInternalServerError)
+		server.handleHTTPError(c, errors.New("Failed to reject runtime, runtime is nil"), http.StatusInternalServerError)
 		return
 	}
 
@@ -189,6 +198,8 @@ func (server *ColoniesServer) handleRejectRuntimeHTTPRequest(c *gin.Context, rec
 		return
 	}
 
+	log.WithFields(log.Fields{"RuntimeID": runtime.ID}).Info("Rejecting runtime")
+
 	server.sendEmptyHTTPReply(c, payloadType)
 }
 
@@ -198,11 +209,11 @@ func (server *ColoniesServer) handleDeleteRuntimeHTTPRequest(c *gin.Context, rec
 		return
 	}
 	if msg == nil {
-		server.handleHTTPError(c, errors.New("failed to parse JSON"), http.StatusBadRequest)
+		server.handleHTTPError(c, errors.New("Failed to delete runtime, failed to parse JSON"), http.StatusBadRequest)
 		return
 	}
 	if msg.MsgType != payloadType {
-		server.handleHTTPError(c, errors.New("msg.MsgType does not match payloadType"), http.StatusBadRequest)
+		server.handleHTTPError(c, errors.New("Failed to delete runtime, msg.MsgType does not match payloadType"), http.StatusBadRequest)
 		return
 	}
 
@@ -211,7 +222,7 @@ func (server *ColoniesServer) handleDeleteRuntimeHTTPRequest(c *gin.Context, rec
 		return
 	}
 	if runtime == nil {
-		server.handleHTTPError(c, errors.New("runtime is nil"), http.StatusInternalServerError)
+		server.handleHTTPError(c, errors.New("Failed to delete runtime, runtime is nil"), http.StatusInternalServerError)
 		return
 	}
 
@@ -224,6 +235,8 @@ func (server *ColoniesServer) handleDeleteRuntimeHTTPRequest(c *gin.Context, rec
 	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
+
+	log.WithFields(log.Fields{"RuntimeID": runtime.ID}).Info("Deleting runtime")
 
 	server.sendEmptyHTTPReply(c, payloadType)
 }

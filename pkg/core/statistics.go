@@ -5,14 +5,39 @@ import (
 )
 
 type Statistics struct {
-	Waiting int `json:"waiting"`
-	Running int `json:"running"`
-	Success int `json:"success"`
-	Failed  int `json:"failed"`
+	Colonies            int `json:"colonies"`
+	Runtimes            int `json:"runtimes"`
+	WaitingProcesses    int `json:"waitingprocesses"`
+	RunningProcesses    int `json:"runningprocesses"`
+	SuccessfulProcesses int `json:"successfulprocesses"`
+	FailedProcesses     int `json:"failedprocesses"`
+	WaitingWorkflows    int `json:"waitingworkflows"`
+	RunningWorkflows    int `json:"runningworkflows"`
+	SuccessfulWorkflows int `json:"successworkflows"`
+	FailedWorkflows     int `json:"failedworkflows"`
 }
 
-func CreateStatistics(waiting int, running int, success int, failed int) *Statistics {
-	stat := &Statistics{Waiting: waiting, Running: running, Success: success, Failed: failed}
+func CreateStatistics(colonies int,
+	runtimes int,
+	waitingProcesses int,
+	runningProcesses int,
+	successfulProcesses int,
+	failedProcesses int,
+	waitingWorkflows int,
+	runningWorkflows int,
+	successfulWorkflows int,
+	failedWorkflows int) *Statistics {
+	stat := &Statistics{
+		Colonies:            colonies,
+		Runtimes:            runtimes,
+		WaitingProcesses:    waitingProcesses,
+		RunningProcesses:    runningProcesses,
+		SuccessfulProcesses: successfulProcesses,
+		FailedProcesses:     failedProcesses,
+		WaitingWorkflows:    waitingWorkflows,
+		RunningWorkflows:    runningWorkflows,
+		SuccessfulWorkflows: successfulWorkflows,
+		FailedWorkflows:     failedWorkflows}
 
 	return stat
 }
@@ -32,7 +57,16 @@ func (stat *Statistics) Equals(stat2 *Statistics) bool {
 		return false
 	}
 
-	if stat.Waiting == stat2.Waiting && stat.Running == stat2.Running && stat.Success == stat2.Success && stat.Failed == stat2.Failed {
+	if stat.Colonies == stat2.Colonies &&
+		stat.Runtimes == stat2.Runtimes &&
+		stat.WaitingProcesses == stat2.WaitingProcesses &&
+		stat.RunningProcesses == stat2.RunningProcesses &&
+		stat.SuccessfulProcesses == stat2.SuccessfulProcesses &&
+		stat.FailedProcesses == stat2.FailedProcesses &&
+		stat.WaitingWorkflows == stat2.WaitingWorkflows &&
+		stat.RunningWorkflows == stat2.RunningWorkflows &&
+		stat.SuccessfulWorkflows == stat2.SuccessfulWorkflows &&
+		stat.FailedWorkflows == stat2.FailedWorkflows {
 		return true
 	}
 

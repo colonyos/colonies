@@ -33,6 +33,8 @@ var TLSCert string
 var TLSKey string
 var ServerHost string
 var ServerPort int
+var MonitorPort int
+var MonitorIntervall int
 var ServerID string
 var ServerPrvKey string
 var SpecFile string

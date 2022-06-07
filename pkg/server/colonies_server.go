@@ -36,7 +36,9 @@ type ColoniesServer struct {
 
 func CreateColoniesServer(db database.Database, port int, serverID string, tls bool, tlsPrivateKeyPath string, tlsCertPath string, debug bool) *ColoniesServer {
 	if debug {
-		log.SetLevel(log.DebugLevel)
+		//log.SetLevel(log.DebugLevel)
+		gin.SetMode(gin.ReleaseMode)
+		gin.DefaultWriter = ioutil.Discard
 	} else {
 		gin.SetMode(gin.ReleaseMode)
 		gin.DefaultWriter = ioutil.Discard
@@ -62,8 +64,6 @@ func CreateColoniesServer(db database.Database, port int, serverID string, tls b
 	server.validator = validator.CreateValidator(db)
 
 	server.setupRoutes()
-
-	log.WithFields(log.Fields{"Port": port}).Info("Starting Colonies server")
 
 	return server
 }

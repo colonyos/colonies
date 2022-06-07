@@ -497,7 +497,7 @@ func TestMaxExecTime(t *testing.T) {
 
 	stat, err := client.ColonyStatistics(env.colonyID, env.runtimePrvKey)
 	assert.Nil(t, err)
-	assert.Equal(t, stat.Waiting, 10)
+	assert.Equal(t, stat.WaitingProcesses, 10)
 
 	server.Shutdown()
 	<-done
@@ -522,7 +522,7 @@ func TestMaxExecTimeUnlimtedMaxretries(t *testing.T) {
 
 	stat, err := client.ColonyStatistics(env.colonyID, env.runtimePrvKey)
 	assert.Nil(t, err)
-	assert.Equal(t, stat.Waiting, 10)
+	assert.Equal(t, stat.WaitingProcesses, 10)
 
 	// Assign again
 	for i := 0; i < 10; i++ {
@@ -532,14 +532,14 @@ func TestMaxExecTimeUnlimtedMaxretries(t *testing.T) {
 
 	stat, err = client.ColonyStatistics(env.colonyID, env.runtimePrvKey)
 	assert.Nil(t, err)
-	assert.Equal(t, stat.Running, 10)
+	assert.Equal(t, stat.RunningProcesses, 10)
 
 	// Wait for the process to time out
 	time.Sleep(5 * time.Second)
 
 	stat, err = client.ColonyStatistics(env.colonyID, env.runtimePrvKey)
 	assert.Nil(t, err)
-	assert.Equal(t, stat.Waiting, 10)
+	assert.Equal(t, stat.WaitingProcesses, 10)
 
 	server.Shutdown()
 	<-done
@@ -564,7 +564,7 @@ func TestMaxExecTimeMaxretries(t *testing.T) {
 
 	stat, err := client.ColonyStatistics(env.colonyID, env.runtimePrvKey)
 	assert.Nil(t, err)
-	assert.Equal(t, stat.Waiting, 10)
+	assert.Equal(t, stat.WaitingProcesses, 10)
 
 	// Assign again
 	for i := 0; i < 10; i++ {
@@ -574,14 +574,14 @@ func TestMaxExecTimeMaxretries(t *testing.T) {
 
 	stat, err = client.ColonyStatistics(env.colonyID, env.runtimePrvKey)
 	assert.Nil(t, err)
-	assert.Equal(t, stat.Running, 10)
+	assert.Equal(t, stat.RunningProcesses, 10)
 
 	// Wait for the process to time out
 	time.Sleep(20 * time.Second)
 
 	stat, err = client.ColonyStatistics(env.colonyID, env.runtimePrvKey)
 	assert.Nil(t, err)
-	assert.Equal(t, stat.Failed, 10) // NOTE Failed!!
+	assert.Equal(t, stat.FailedProcesses, 10) // NOTE Failed!!
 
 	server.Shutdown()
 	<-done

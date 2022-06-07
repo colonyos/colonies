@@ -12,6 +12,7 @@ type Database interface {
 	GetColonies() ([]*core.Colony, error)
 	GetColonyByID(id string) (*core.Colony, error)
 	DeleteColonyByID(colonyID string) error
+	CountColonies() (int, error)
 
 	// Runtime functions ...
 	AddRuntime(runtime *core.Runtime) error
@@ -23,13 +24,15 @@ type Database interface {
 	MarkAlive(runtime *core.Runtime) error
 	DeleteRuntimeByID(runtimeID string) error
 	DeleteRuntimesByColonyID(colonyID string) error
+	CountRuntimes() (int, error)
+	CountRuntimesByColonyID(colonyID string) (int, error)
 
 	// Process functions ...
 	AddProcess(process *core.Process) error
 	GetProcesses() ([]*core.Process, error)
 	GetProcessByID(processID string) (*core.Process, error)
-	FindProcessesForColony(colonyID string, seconds int, state int) ([]*core.Process, error)
-	FindProcessesForRuntime(colonyID string, runtimeID string, seconds int, state int) ([]*core.Process, error)
+	FindProcessesByColonyID(colonyID string, seconds int, state int) ([]*core.Process, error)
+	FindProcessesByRuntimeID(colonyID string, runtimeID string, seconds int, state int) ([]*core.Process, error)
 	FindWaitingProcesses(colonyID string, count int) ([]*core.Process, error)
 	FindRunningProcesses(colonyID string, count int) ([]*core.Process, error)
 	FindAllRunningProcesses() ([]*core.Process, error)
@@ -53,10 +56,10 @@ type Database interface {
 	CountRunningProcesses() (int, error)
 	CountSuccessfulProcesses() (int, error)
 	CountFailedProcesses() (int, error)
-	CountWaitingProcessesForColony(colonyID string) (int, error)
-	CountRunningProcessesForColony(colonyID string) (int, error)
-	CountSuccessfulProcessesForColony(colonyID string) (int, error)
-	CountFailedProcessesForColony(colonyID string) (int, error)
+	CountWaitingProcessesByColonyID(colonyID string) (int, error)
+	CountRunningProcessesByColonyID(colonyID string) (int, error)
+	CountSuccessfulProcessesByColonyID(colonyID string) (int, error)
+	CountFailedProcessesByColonyID(colonyID string) (int, error)
 
 	// Attribute functions
 	AddAttribute(attribute *core.Attribute) error
@@ -80,14 +83,12 @@ type Database interface {
 	FindRunningProcessGraphs(colonyID string, count int) ([]*core.ProcessGraph, error)
 	FindSuccessfulProcessGraphs(colonyID string, count int) ([]*core.ProcessGraph, error)
 	FindFailedProcessGraphs(colonyID string, count int) ([]*core.ProcessGraph, error)
-	NrOfWaitingProcessGraphs() (int, error)
-	NrOfRunningProcessGraphs() (int, error)
-	NrOfSuccessfulProcessGraphs() (int, error)
-	NrOfFailedProcessGraphs() (int, error)
-	NrOfWaitingProcessGraphsForColony(colonyID string) (int, error)
-	NrOfRunningProcessGraphsForColony(colonyID string) (int, error)
-	NrOfSuccessfulProcessGraphsForColony(colonyID string) (int, error)
-	NrOfFailedProcessGraphsForColony(colonyID string) (int, error)
-
-	// TODO: Implement support deleting process graphs
+	CountWaitingProcessGraphs() (int, error)
+	CountRunningProcessGraphs() (int, error)
+	CountSuccessfulProcessGraphs() (int, error)
+	CountFailedProcessGraphs() (int, error)
+	CountWaitingProcessGraphsByColonyID(colonyID string) (int, error)
+	CountRunningProcessGraphsByColonyID(colonyID string) (int, error)
+	CountSuccessfulProcessGraphsByColonyID(colonyID string) (int, error)
+	CountFailedProcessGraphsByColonyID(colonyID string) (int, error)
 }

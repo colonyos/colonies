@@ -6,6 +6,7 @@ import (
 
 	"github.com/colonyos/colonies/pkg/rpc"
 	"github.com/gin-gonic/gin"
+	log "github.com/sirupsen/logrus"
 )
 
 func (server *ColoniesServer) handleAddAttributeHTTPRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
@@ -14,15 +15,15 @@ func (server *ColoniesServer) handleAddAttributeHTTPRequest(c *gin.Context, reco
 		return
 	}
 	if msg == nil {
-		server.handleHTTPError(c, errors.New("failed to parse JSON"), http.StatusBadRequest)
+		server.handleHTTPError(c, errors.New("Failed to add attribute, failed to parse JSON"), http.StatusBadRequest)
 		return
 	}
 	if msg.MsgType != payloadType {
-		server.handleHTTPError(c, errors.New("msg.MsgType does not match payloadType"), http.StatusBadRequest)
+		server.handleHTTPError(c, errors.New("Failed to add attribute, msg.MsgType does not match payloadType"), http.StatusBadRequest)
 		return
 	}
 	if msg.Attribute == nil {
-		server.handleHTTPError(c, errors.New("msg.Attribute is nil"), http.StatusBadRequest)
+		server.handleHTTPError(c, errors.New("Failed to add attribute, msg.Attribute is nil"), http.StatusBadRequest)
 		return
 	}
 
@@ -31,7 +32,7 @@ func (server *ColoniesServer) handleAddAttributeHTTPRequest(c *gin.Context, reco
 		return
 	}
 	if process == nil {
-		server.handleHTTPError(c, errors.New("process is nil"), http.StatusInternalServerError)
+		server.handleHTTPError(c, errors.New("Failed to add attribute, process is nil"), http.StatusInternalServerError)
 		return
 	}
 
@@ -41,7 +42,7 @@ func (server *ColoniesServer) handleAddAttributeHTTPRequest(c *gin.Context, reco
 	}
 
 	if process.AssignedRuntimeID != recoveredID {
-		err := errors.New("only runtime with id <" + process.AssignedRuntimeID + "> is allowed to set attributes")
+		err := errors.New("Failed to add attribute, only runtime with id <" + process.AssignedRuntimeID + "> is allowed to set attributes")
 		server.handleHTTPError(c, err, http.StatusForbidden)
 		return
 	}
@@ -53,7 +54,7 @@ func (server *ColoniesServer) handleAddAttributeHTTPRequest(c *gin.Context, reco
 		return
 	}
 	if addedAttribute == nil {
-		server.handleHTTPError(c, errors.New("addedAttribute is nil"), http.StatusInternalServerError)
+		server.handleHTTPError(c, errors.New("Failed to add attribute, addedAttribute is nil"), http.StatusInternalServerError)
 		return
 	}
 
@@ -61,6 +62,8 @@ func (server *ColoniesServer) handleAddAttributeHTTPRequest(c *gin.Context, reco
 	if server.handleHTTPError(c, err, http.StatusInternalServerError) {
 		return
 	}
+
+	log.WithFields(log.Fields{"AttributeID": msg.Attribute.ID}).Info("Adding attribute")
 
 	server.sendHTTPReply(c, payloadType, jsonString)
 }
@@ -71,11 +74,11 @@ func (server *ColoniesServer) handleGetAttributeHTTPRequest(c *gin.Context, reco
 		return
 	}
 	if msg == nil {
-		server.handleHTTPError(c, errors.New("failed to parse JSON"), http.StatusBadRequest)
+		server.handleHTTPError(c, errors.New("Failed to get attribute, failed to parse JSON"), http.StatusBadRequest)
 		return
 	}
 	if msg.MsgType != payloadType {
-		server.handleHTTPError(c, errors.New("msg.MsgType does not match payloadType"), http.StatusBadRequest)
+		server.handleHTTPError(c, errors.New("Failed to get attribute, msg.MsgType does not match payloadType"), http.StatusBadRequest)
 		return
 	}
 
@@ -84,7 +87,7 @@ func (server *ColoniesServer) handleGetAttributeHTTPRequest(c *gin.Context, reco
 		return
 	}
 	if attribute == nil {
-		server.handleHTTPError(c, errors.New("attribute is nil"), http.StatusInternalServerError)
+		server.handleHTTPError(c, errors.New("Failed to get attribute, attribute is nil"), http.StatusInternalServerError)
 		return
 	}
 
@@ -93,7 +96,7 @@ func (server *ColoniesServer) handleGetAttributeHTTPRequest(c *gin.Context, reco
 		return
 	}
 	if process == nil {
-		server.handleHTTPError(c, errors.New("process is nil"), http.StatusInternalServerError)
+		server.handleHTTPError(c, errors.New("Failed to get attribute, process is nil"), http.StatusInternalServerError)
 		return
 	}
 
@@ -106,6 +109,8 @@ func (server *ColoniesServer) handleGetAttributeHTTPRequest(c *gin.Context, reco
 	if server.handleHTTPError(c, err, http.StatusInternalServerError) {
 		return
 	}
+
+	log.WithFields(log.Fields{"AttributeID": msg.AttributeID}).Info("Getting attribute")
 
 	server.sendHTTPReply(c, payloadType, jsonString)
 }

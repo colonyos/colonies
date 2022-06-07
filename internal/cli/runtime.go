@@ -86,7 +86,7 @@ var registerRuntimeCmd = &cobra.Command{
 		if RuntimePrvKey != "" {
 			prvKey = RuntimePrvKey
 			if len(prvKey) != 64 {
-				CheckError(errors.New("invalid private key length"))
+				CheckError(errors.New("Invalid private key length"))
 			}
 		} else {
 			prvKey, err = crypto.GeneratePrivateKey()

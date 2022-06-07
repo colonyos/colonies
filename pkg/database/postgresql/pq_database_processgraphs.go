@@ -176,7 +176,7 @@ func (db *PQDatabase) FindFailedProcessGraphs(colonyID string, count int) ([]*co
 	return matches, nil
 }
 
-func (db *PQDatabase) countProcessGraphsForColony(state int, colonyID string) (int, error) {
+func (db *PQDatabase) countProcessGraphsByColonyID(state int, colonyID string) (int, error) {
 	sqlStatement := `SELECT COUNT(*) FROM ` + db.dbPrefix + `PROCESSGRAPHS WHERE STATE=$1 AND TARGET_COLONY_ID=$2`
 	rows, err := db.postgresql.Query(sqlStatement, state, colonyID)
 	if err != nil {
@@ -194,21 +194,20 @@ func (db *PQDatabase) countProcessGraphsForColony(state int, colonyID string) (i
 
 	return count, nil
 }
-
-func (db *PQDatabase) NrOfWaitingProcessGraphsForColony(colonyID string) (int, error) {
-	return db.countProcessGraphsForColony(core.WAITING, colonyID)
+func (db *PQDatabase) CountWaitingProcessGraphsByColonyID(colonyID string) (int, error) {
+	return db.countProcessGraphsByColonyID(core.WAITING, colonyID)
 }
 
-func (db *PQDatabase) NrOfRunningProcessGraphsForColony(colonyID string) (int, error) {
-	return db.countProcessGraphsForColony(core.RUNNING, colonyID)
+func (db *PQDatabase) CountRunningProcessGraphsByColonyID(colonyID string) (int, error) {
+	return db.countProcessGraphsByColonyID(core.RUNNING, colonyID)
 }
 
-func (db *PQDatabase) NrOfSuccessfulProcessGraphsForColony(colonyID string) (int, error) {
-	return db.countProcessGraphsForColony(core.SUCCESS, colonyID)
+func (db *PQDatabase) CountSuccessfulProcessGraphsByColonyID(colonyID string) (int, error) {
+	return db.countProcessGraphsByColonyID(core.SUCCESS, colonyID)
 }
 
-func (db *PQDatabase) NrOfFailedProcessGraphsForColony(colonyID string) (int, error) {
-	return db.countProcessGraphsForColony(core.FAILED, colonyID)
+func (db *PQDatabase) CountFailedProcessGraphsByColonyID(colonyID string) (int, error) {
+	return db.countProcessGraphsByColonyID(core.FAILED, colonyID)
 }
 
 func (db *PQDatabase) countProcessGraphs(state int) (int, error) {
@@ -230,18 +229,18 @@ func (db *PQDatabase) countProcessGraphs(state int) (int, error) {
 	return count, nil
 }
 
-func (db *PQDatabase) NrOfWaitingProcessGraphs() (int, error) {
+func (db *PQDatabase) CountWaitingProcessGraphs() (int, error) {
 	return db.countProcessGraphs(core.WAITING)
 }
 
-func (db *PQDatabase) NrOfRunningProcessGraphs() (int, error) {
+func (db *PQDatabase) CountRunningProcessGraphs() (int, error) {
 	return db.countProcessGraphs(core.RUNNING)
 }
 
-func (db *PQDatabase) NrOfSuccessfulProcessGraphs() (int, error) {
+func (db *PQDatabase) CountSuccessfulProcessGraphs() (int, error) {
 	return db.countProcessGraphs(core.SUCCESS)
 }
 
-func (db *PQDatabase) NrOfFailedProcessGraphs() (int, error) {
+func (db *PQDatabase) CountFailedProcessGraphs() (int, error) {
 	return db.countProcessGraphs(core.FAILED)
 }

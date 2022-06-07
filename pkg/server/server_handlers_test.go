@@ -54,10 +54,10 @@ func TestGetStatistics(t *testing.T) {
 	stat, err := client.Statistics(serverPrvKey)
 	assert.Nil(t, err)
 
-	assert.Equal(t, stat.Waiting, numberOfWaitingProcesses)
-	assert.Equal(t, stat.Running, numberOfRunningProcesses)
-	assert.Equal(t, stat.Success, numberOfSuccessfulProcesses)
-	assert.Equal(t, stat.Failed, numberOfFailedProcesses)
+	assert.Equal(t, stat.WaitingProcesses, numberOfWaitingProcesses)
+	assert.Equal(t, stat.RunningProcesses, numberOfRunningProcesses)
+	assert.Equal(t, stat.SuccessfulProcesses, numberOfSuccessfulProcesses)
+	assert.Equal(t, stat.FailedProcesses, numberOfFailedProcesses)
 
 	server.Shutdown()
 	<-done

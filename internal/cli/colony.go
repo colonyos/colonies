@@ -74,7 +74,7 @@ var registerColonyCmd = &cobra.Command{
 		if ColonyPrvKey != "" {
 			prvKey = ColonyPrvKey
 			if len(prvKey) != 64 {
-				CheckError(errors.New("invalid private key length"))
+				CheckError(errors.New("Invalid private key length"))
 			}
 		} else {
 			prvKey, err = crypto.GeneratePrivateKey()
@@ -237,10 +237,15 @@ var colonyStatCmd = &cobra.Command{
 
 		fmt.Println("Process statistics:")
 		specData := [][]string{
-			[]string{"Waiting processes", strconv.Itoa(stat.Waiting)},
-			[]string{"Running processes ", strconv.Itoa(stat.Running)},
-			[]string{"Successful processes", strconv.Itoa(stat.Success)},
-			[]string{"Failed processes", strconv.Itoa(stat.Failed)},
+			[]string{"Runtimes", strconv.Itoa(stat.Runtimes)},
+			[]string{"Waiting processes", strconv.Itoa(stat.WaitingProcesses)},
+			[]string{"Running processes", strconv.Itoa(stat.RunningProcesses)},
+			[]string{"Successful processes", strconv.Itoa(stat.SuccessfulProcesses)},
+			[]string{"Failed processes", strconv.Itoa(stat.FailedProcesses)},
+			[]string{"Waiting workflows", strconv.Itoa(stat.WaitingWorkflows)},
+			[]string{"Running workflows ", strconv.Itoa(stat.RunningWorkflows)},
+			[]string{"Successful workflows", strconv.Itoa(stat.SuccessfulWorkflows)},
+			[]string{"Failed workflows", strconv.Itoa(stat.FailedWorkflows)},
 		}
 		specTable := tablewriter.NewWriter(os.Stdout)
 		for _, v := range specData {
