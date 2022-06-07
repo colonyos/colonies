@@ -3,7 +3,6 @@ package postgresql
 import (
 	"database/sql"
 	"errors"
-	"fmt"
 	"time"
 
 	"github.com/colonyos/colonies/pkg/core"
@@ -14,7 +13,6 @@ func (db *PQDatabase) AddProcessGraph(processGraph *core.ProcessGraph) error {
 	sqlStatement := `INSERT INTO  ` + db.dbPrefix + `PROCESSGRAPHS (PROCESSGRAPH_ID, TARGET_COLONY_ID, ROOTS, STATE, SUBMISSION_TIME, START_TIME, END_TIME) VALUES ($1, $2, $3, $4, $5, $6, $7)`
 	_, err := db.postgresql.Exec(sqlStatement, processGraph.ID, processGraph.ColonyID, pq.Array(processGraph.Roots), processGraph.State, time.Now(), time.Time{}, time.Time{})
 	if err != nil {
-		fmt.Println(err)
 		return err
 	}
 

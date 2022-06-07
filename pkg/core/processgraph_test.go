@@ -681,9 +681,6 @@ func TestProcessGraphResolveMultipleRoots(t *testing.T) {
 	process6.State = SUCCESS
 	err = graph.Resolve()
 	assert.Nil(t, err)
-
-	//fmt.Println(graph.State)
-	//fmt.Println(SUCCESS)
 	assert.True(t, graph.State == SUCCESS)
 }
 
