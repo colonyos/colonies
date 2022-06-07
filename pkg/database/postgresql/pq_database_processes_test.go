@@ -851,7 +851,7 @@ func TestFindAllRunningProcesses(t *testing.T) {
 	assert.Equal(t, len(runningProcessIDsFromDB), 20)
 }
 
-func TestFindProcessesForRuntime(t *testing.T) {
+func TestFindProcessesByRuntimeID(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
 
@@ -915,20 +915,20 @@ func TestFindProcessesForRuntime(t *testing.T) {
 	err = db.MarkSuccessful(process)
 	assert.Nil(t, err)
 
-	processesFromDB, err := db.FindProcessesForRuntime(colony1.ID, runtime1.ID, 60, core.SUCCESS) // last 60 seconds
+	processesFromDB, err := db.FindProcessesByRuntimeID(colony1.ID, runtime1.ID, 60, core.SUCCESS) // last 60 seconds
 	assert.Nil(t, err)
 	assert.Equal(t, len(processesFromDB), 11)
 
-	processesFromDB, err = db.FindProcessesForRuntime(colony1.ID, runtime1.ID, 1, core.SUCCESS) // last second
+	processesFromDB, err = db.FindProcessesByRuntimeID(colony1.ID, runtime1.ID, 1, core.SUCCESS) // last second
 	assert.Nil(t, err)
 	assert.Equal(t, len(processesFromDB), 1)
 
-	processesFromDB, err = db.FindProcessesForRuntime(colony2.ID, runtime2.ID, 60, core.SUCCESS)
+	processesFromDB, err = db.FindProcessesByRuntimeID(colony2.ID, runtime2.ID, 60, core.SUCCESS)
 	assert.Nil(t, err)
 	assert.Equal(t, len(processesFromDB), 20)
 }
 
-func TestFindProcessesForColony(t *testing.T) {
+func TestFindProcessesByColonyID(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
 
@@ -983,11 +983,11 @@ func TestFindProcessesForColony(t *testing.T) {
 	err = db.MarkSuccessful(process)
 	assert.Nil(t, err)
 
-	processesFromDB, err := db.FindProcessesForColony(colony.ID, 60, core.SUCCESS) // last 60 seconds
+	processesFromDB, err := db.FindProcessesByColonyID(colony.ID, 60, core.SUCCESS) // last 60 seconds
 	assert.Nil(t, err)
 	assert.Equal(t, len(processesFromDB), 21)
 
-	processesFromDB, err = db.FindProcessesForColony(colony.ID, 1, core.SUCCESS) // last second
+	processesFromDB, err = db.FindProcessesByColonyID(colony.ID, 1, core.SUCCESS) // last second
 	assert.Nil(t, err)
 	assert.Equal(t, len(processesFromDB), 1)
 }

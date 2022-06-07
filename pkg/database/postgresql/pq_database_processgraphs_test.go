@@ -145,35 +145,35 @@ func TestFindProcessGraphs(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Len(t, graphs, 7)
 
-	count, err := db.NrOfWaitingProcessGraphsForColony(colonyID)
+	count, err := db.CountWaitingProcessGraphsByColonyID(colonyID)
 	assert.Nil(t, err)
 	assert.True(t, count == 10)
 
-	count, err = db.NrOfRunningProcessGraphsForColony(colonyID)
+	count, err = db.CountRunningProcessGraphsByColonyID(colonyID)
 	assert.Nil(t, err)
 	assert.True(t, count == 9)
 
-	count, err = db.NrOfFailedProcessGraphsForColony(colonyID)
+	count, err = db.CountFailedProcessGraphsByColonyID(colonyID)
 	assert.Nil(t, err)
 	assert.True(t, count == 8)
 
-	count, err = db.NrOfSuccessfulProcessGraphsForColony(colonyID)
+	count, err = db.CountSuccessfulProcessGraphsByColonyID(colonyID)
 	assert.Nil(t, err)
 	assert.True(t, count == 7)
 
-	count, err = db.NrOfWaitingProcessGraphs()
+	count, err = db.CountWaitingProcessGraphs()
 	assert.Nil(t, err)
 	assert.True(t, count == 10*2)
 
-	count, err = db.NrOfRunningProcessGraphs()
+	count, err = db.CountRunningProcessGraphs()
 	assert.Nil(t, err)
 	assert.True(t, count == 9*2)
 
-	count, err = db.NrOfFailedProcessGraphs()
+	count, err = db.CountFailedProcessGraphs()
 	assert.Nil(t, err)
 	assert.True(t, count == 8*2)
 
-	count, err = db.NrOfSuccessfulProcessGraphs()
+	count, err = db.CountSuccessfulProcessGraphs()
 	assert.Nil(t, err)
 	assert.True(t, count == 7*2)
 }

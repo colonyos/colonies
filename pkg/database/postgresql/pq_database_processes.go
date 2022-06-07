@@ -156,7 +156,7 @@ func (db *PQDatabase) selectCandidate(candidates []*core.Process) *core.Process 
 	}
 }
 
-func (db *PQDatabase) FindProcessesForColony(colonyID string, seconds int, state int) ([]*core.Process, error) {
+func (db *PQDatabase) FindProcessesByColonyID(colonyID string, seconds int, state int) ([]*core.Process, error) {
 	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `PROCESSES WHERE TARGET_COLONY_ID=$1 AND STATE=$2 AND SUBMISSION_TIME BETWEEN NOW() - INTERVAL '1 seconds' * $3 AND NOW() ORDER BY SUBMISSION_TIME DESC`
 	rows, err := db.postgresql.Query(sqlStatement, colonyID, state, strconv.Itoa(seconds))
 	if err != nil {
@@ -172,7 +172,7 @@ func (db *PQDatabase) FindProcessesForColony(colonyID string, seconds int, state
 	return matches, nil
 }
 
-func (db *PQDatabase) FindProcessesForRuntime(colonyID string, runtimeID string, seconds int, state int) ([]*core.Process, error) {
+func (db *PQDatabase) FindProcessesByRuntimeID(colonyID string, runtimeID string, seconds int, state int) ([]*core.Process, error) {
 	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `PROCESSES WHERE TARGET_COLONY_ID=$1 AND ASSIGNED_RUNTIME_ID=$2 AND STATE=$3 AND SUBMISSION_TIME BETWEEN NOW() - INTERVAL '1 seconds' * $4 AND NOW() ORDER BY SUBMISSION_TIME DESC`
 	rows, err := db.postgresql.Query(sqlStatement, colonyID, runtimeID, state, strconv.Itoa(seconds))
 	if err != nil {
@@ -541,7 +541,17 @@ func (db *PQDatabase) countProcesses(state int) (int, error) {
 	return count, nil
 }
 
-func (db *PQDatabase) countProcessesForColony(state int, colonyID string) (int, error) {
+// TODO: may be switch to pg_class to improve count performance?
+//
+// The basic SQL standard query to count the rows in a table is:
+// SELECT count(*) FROM table_name;
+// This can be rather slow because PostgreSQL has to check visibility for all rows, due to the MVCC model.
+// If you don't need an exact count, the current statistic from the catalog table pg_class might be good enough and is much faster to   retrieve for big tables.
+// SELECT reltuples AS estimate FROM pg_class WHERE relname = 'table_name';
+//
+// https://wiki.postgresql.org/wiki/Count_estimate
+
+func (db *PQDatabase) countProcessesByColonyID(state int, colonyID string) (int, error) {
 	sqlStatement := `SELECT COUNT(*) FROM ` + db.dbPrefix + `PROCESSES WHERE STATE=$1 AND TARGET_COLONY_ID=$2`
 	rows, err := db.postgresql.Query(sqlStatement, state, colonyID)
 	if err != nil {
@@ -576,22 +586,18 @@ func (db *PQDatabase) CountFailedProcesses() (int, error) {
 	return db.countProcesses(core.FAILED)
 }
 
-// TODO: unittest
-func (db *PQDatabase) CountWaitingProcessesForColony(colonyID string) (int, error) {
-	return db.countProcessesForColony(core.WAITING, colonyID)
+func (db *PQDatabase) CountWaitingProcessesByColonyID(colonyID string) (int, error) {
+	return db.countProcessesByColonyID(core.WAITING, colonyID)
 }
 
-// TODO: unittest
-func (db *PQDatabase) CountRunningProcessesForColony(colonyID string) (int, error) {
-	return db.countProcessesForColony(core.RUNNING, colonyID)
+func (db *PQDatabase) CountRunningProcessesByColonyID(colonyID string) (int, error) {
+	return db.countProcessesByColonyID(core.RUNNING, colonyID)
 }
 
-// TODO: unittest
-func (db *PQDatabase) CountSuccessfulProcessesForColony(colonyID string) (int, error) {
-	return db.countProcessesForColony(core.SUCCESS, colonyID)
+func (db *PQDatabase) CountSuccessfulProcessesByColonyID(colonyID string) (int, error) {
+	return db.countProcessesByColonyID(core.SUCCESS, colonyID)
 }
 
-// TODO: unittest
-func (db *PQDatabase) CountFailedProcessesForColony(colonyID string) (int, error) {
-	return db.countProcessesForColony(core.FAILED, colonyID)
+func (db *PQDatabase) CountFailedProcessesByColonyID(colonyID string) (int, error) {
+	return db.countProcessesByColonyID(core.FAILED, colonyID)
 }

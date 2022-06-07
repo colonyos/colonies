@@ -7,6 +7,7 @@ import (
 	"github.com/colonyos/colonies/pkg/core"
 	"github.com/colonyos/colonies/pkg/rpc"
 	"github.com/gin-gonic/gin"
+	log "github.com/sirupsen/logrus"
 )
 
 func (server *ColoniesServer) handleSubmitProcessSpecHTTPRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
@@ -15,15 +16,15 @@ func (server *ColoniesServer) handleSubmitProcessSpecHTTPRequest(c *gin.Context,
 		return
 	}
 	if msg == nil {
-		server.handleHTTPError(c, errors.New("failed to parse JSON"), http.StatusBadRequest)
+		server.handleHTTPError(c, errors.New("Failed to submit process spec, failed to parse JSON"), http.StatusBadRequest)
 		return
 	}
 	if msg.MsgType != payloadType {
-		server.handleHTTPError(c, errors.New("msg.MsgType does not match payloadType"), http.StatusBadRequest)
+		server.handleHTTPError(c, errors.New("Failed to submit process spec, msg.MsgType does not match payloadType"), http.StatusBadRequest)
 		return
 	}
 	if msg.ProcessSpec == nil {
-		server.handleHTTPError(c, errors.New("msg.ProcessSpec is nil"), http.StatusBadRequest)
+		server.handleHTTPError(c, errors.New("Failed to submit process spec, msg.ProcessSpec is nil"), http.StatusBadRequest)
 		return
 	}
 
@@ -38,7 +39,7 @@ func (server *ColoniesServer) handleSubmitProcessSpecHTTPRequest(c *gin.Context,
 		return
 	}
 	if addedProcess == nil {
-		server.handleHTTPError(c, errors.New("addedProcess is nil"), http.StatusInternalServerError)
+		server.handleHTTPError(c, errors.New("Failed to submit process spec, addedProcess is nil"), http.StatusInternalServerError)
 		return
 	}
 
@@ -46,6 +47,8 @@ func (server *ColoniesServer) handleSubmitProcessSpecHTTPRequest(c *gin.Context,
 	if server.handleHTTPError(c, err, http.StatusInternalServerError) {
 		return
 	}
+
+	log.WithFields(log.Fields{"ProcessID": process.ID}).Info("Submitting process")
 
 	server.sendHTTPReply(c, payloadType, jsonString)
 }
@@ -56,11 +59,11 @@ func (server *ColoniesServer) handleAssignProcessHTTPRequest(c *gin.Context, rec
 		return
 	}
 	if msg == nil {
-		server.handleHTTPError(c, errors.New("failed to parse JSON"), http.StatusBadRequest)
+		server.handleHTTPError(c, errors.New("Failed to assign process, failed to parse JSON"), http.StatusBadRequest)
 		return
 	}
 	if msg.MsgType != payloadType {
-		server.handleHTTPError(c, errors.New("msg.msgType does not match payloadType"), http.StatusBadRequest)
+		server.handleHTTPError(c, errors.New("Failed to assign process, msg.msgType does not match payloadType"), http.StatusBadRequest)
 		return
 	}
 
@@ -74,7 +77,7 @@ func (server *ColoniesServer) handleAssignProcessHTTPRequest(c *gin.Context, rec
 		return
 	}
 	if process == nil {
-		server.handleHTTPError(c, errors.New("process is nil"), http.StatusInternalServerError)
+		server.handleHTTPError(c, errors.New("Failed to assign process, process is nil"), http.StatusInternalServerError)
 		return
 	}
 
@@ -82,6 +85,8 @@ func (server *ColoniesServer) handleAssignProcessHTTPRequest(c *gin.Context, rec
 	if server.handleHTTPError(c, err, http.StatusInternalServerError) {
 		return
 	}
+
+	log.WithFields(log.Fields{"ProcessID": process.ID, "RuntimeID": process.AssignedRuntimeID}).Info("Assigning process")
 
 	server.sendHTTPReply(c, payloadType, jsonString)
 }
@@ -92,11 +97,11 @@ func (server *ColoniesServer) handleGetProcessHistHTTPRequest(c *gin.Context, re
 		return
 	}
 	if msg == nil {
-		server.handleHTTPError(c, errors.New("failed to parse JSON"), http.StatusBadRequest)
+		server.handleHTTPError(c, errors.New("Failed to get process history, failed to parse JSON"), http.StatusBadRequest)
 		return
 	}
 	if msg.MsgType != payloadType {
-		server.handleHTTPError(c, errors.New("msg.MsgType does not match payloadType"), http.StatusBadRequest)
+		server.handleHTTPError(c, errors.New("Failed to get process history, msg.MsgType does not match payloadType"), http.StatusBadRequest)
 		return
 	}
 
@@ -116,6 +121,14 @@ func (server *ColoniesServer) handleGetProcessHistHTTPRequest(c *gin.Context, re
 	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
+
+	log.WithFields(log.Fields{
+		"ColonyID":  msg.ColonyID,
+		"RuntimeID": msg.RuntimeID,
+		"Seconds":   msg.Seconds,
+		"State":     msg.State}).
+		Info("Finding process history")
+
 	server.sendHTTPReply(c, payloadType, jsonString)
 }
 
@@ -125,11 +138,11 @@ func (server *ColoniesServer) handleGetProcessesHTTPRequest(c *gin.Context, reco
 		return
 	}
 	if msg == nil {
-		server.handleHTTPError(c, errors.New("failed to parse JSON"), http.StatusBadRequest)
+		server.handleHTTPError(c, errors.New("Failed to get processes, failed to parse JSON"), http.StatusBadRequest)
 		return
 	}
 	if msg.MsgType != payloadType {
-		server.handleHTTPError(c, errors.New("msg.MsgType does not match payloadType"), http.StatusBadRequest)
+		server.handleHTTPError(c, errors.New("Failed to get processes, msg.MsgType does not match payloadType"), http.StatusBadRequest)
 		return
 	}
 
@@ -140,6 +153,8 @@ func (server *ColoniesServer) handleGetProcessesHTTPRequest(c *gin.Context, reco
 			return
 		}
 	}
+
+	log.WithFields(log.Fields{"ColonyID": msg.ColonyID, "Count": msg.Count}).Info("Getting processes")
 
 	switch msg.State {
 	case core.WAITING:
@@ -183,7 +198,7 @@ func (server *ColoniesServer) handleGetProcessesHTTPRequest(c *gin.Context, reco
 		}
 		server.sendHTTPReply(c, payloadType, jsonString)
 	default:
-		err := errors.New("invalid msg.State")
+		err := errors.New("Failed to get processes, invalid msg.State")
 		server.handleHTTPError(c, err, http.StatusBadRequest)
 		return
 	}
@@ -195,11 +210,11 @@ func (server *ColoniesServer) handleGetProcessHTTPRequest(c *gin.Context, recove
 		return
 	}
 	if msg == nil {
-		server.handleHTTPError(c, errors.New("failed to parse JSON"), http.StatusBadRequest)
+		server.handleHTTPError(c, errors.New("Failed to get process, failed to parse JSON"), http.StatusBadRequest)
 		return
 	}
 	if msg.MsgType != payloadType {
-		server.handleHTTPError(c, errors.New("msg.MsgType does not match payloadType"), http.StatusBadRequest)
+		server.handleHTTPError(c, errors.New("Failed to get process, msg.MsgType does not match payloadType"), http.StatusBadRequest)
 		return
 	}
 
@@ -208,7 +223,7 @@ func (server *ColoniesServer) handleGetProcessHTTPRequest(c *gin.Context, recove
 		return
 	}
 	if process == nil {
-		server.handleHTTPError(c, errors.New("process is nil"), http.StatusInternalServerError)
+		server.handleHTTPError(c, errors.New("Failed to get process, process is nil"), http.StatusInternalServerError)
 		return
 	}
 
@@ -222,6 +237,8 @@ func (server *ColoniesServer) handleGetProcessHTTPRequest(c *gin.Context, recove
 		return
 	}
 
+	log.WithFields(log.Fields{"ProcessID": process.ID}).Info("Getting process")
+
 	server.sendHTTPReply(c, payloadType, jsonString)
 }
 
@@ -231,11 +248,11 @@ func (server *ColoniesServer) handleDeleteProcessHTTPRequest(c *gin.Context, rec
 		return
 	}
 	if msg == nil {
-		server.handleHTTPError(c, errors.New("failed to parse JSON"), http.StatusBadRequest)
+		server.handleHTTPError(c, errors.New("Failed to delete process, failed to parse JSON"), http.StatusBadRequest)
 		return
 	}
 	if msg.MsgType != payloadType {
-		server.handleHTTPError(c, errors.New("msg.MsgType does not match payloadType"), http.StatusBadRequest)
+		server.handleHTTPError(c, errors.New("Failed to delete process, msg.MsgType does not match payloadType"), http.StatusBadRequest)
 		return
 	}
 
@@ -244,7 +261,7 @@ func (server *ColoniesServer) handleDeleteProcessHTTPRequest(c *gin.Context, rec
 		return
 	}
 	if process == nil {
-		server.handleHTTPError(c, errors.New("process is nil"), http.StatusInternalServerError)
+		server.handleHTTPError(c, errors.New("Failed to delete process, process is nil"), http.StatusInternalServerError)
 		return
 	}
 
@@ -258,6 +275,8 @@ func (server *ColoniesServer) handleDeleteProcessHTTPRequest(c *gin.Context, rec
 		return
 	}
 
+	log.WithFields(log.Fields{"ProcessID": process.ID}).Info("Deleting process")
+
 	server.sendEmptyHTTPReply(c, payloadType)
 }
 
@@ -267,11 +286,11 @@ func (server *ColoniesServer) handleDeleteAllProcessesHTTPRequest(c *gin.Context
 		return
 	}
 	if msg == nil {
-		server.handleHTTPError(c, errors.New("failed to parse JSON"), http.StatusBadRequest)
+		server.handleHTTPError(c, errors.New("Failed to delete all processes, failed to parse JSON"), http.StatusBadRequest)
 		return
 	}
 	if msg.MsgType != payloadType {
-		server.handleHTTPError(c, errors.New("msg.MsgType does not match payloadType"), http.StatusBadRequest)
+		server.handleHTTPError(c, errors.New("Failed to delete all processes, msg.MsgType does not match payloadType"), http.StatusBadRequest)
 		return
 	}
 
@@ -285,6 +304,8 @@ func (server *ColoniesServer) handleDeleteAllProcessesHTTPRequest(c *gin.Context
 		return
 	}
 
+	log.WithFields(log.Fields{"ColonyID": msg.ColonyID}).Info("Deleting all processes")
+
 	server.sendEmptyHTTPReply(c, payloadType)
 }
 
@@ -294,11 +315,11 @@ func (server *ColoniesServer) handleCloseSuccessfulHTTPRequest(c *gin.Context, r
 		return
 	}
 	if msg == nil {
-		server.handleHTTPError(c, errors.New("failed to parse JSON"), http.StatusBadRequest)
+		server.handleHTTPError(c, errors.New("Failed to close process as successful, failed to parse JSON"), http.StatusBadRequest)
 		return
 	}
 	if msg.MsgType != payloadType {
-		server.handleHTTPError(c, errors.New("msg.MsgType does not match payloadType"), http.StatusBadRequest)
+		server.handleHTTPError(c, errors.New("Failed to close process as successful, msg.MsgType does not match payloadType"), http.StatusBadRequest)
 		return
 	}
 
@@ -307,7 +328,7 @@ func (server *ColoniesServer) handleCloseSuccessfulHTTPRequest(c *gin.Context, r
 		return
 	}
 	if process == nil {
-		server.handleHTTPError(c, errors.New("process is nil"), http.StatusInternalServerError)
+		server.handleHTTPError(c, errors.New("Failed to close process as successful, process is nil"), http.StatusInternalServerError)
 		return
 	}
 
@@ -317,7 +338,7 @@ func (server *ColoniesServer) handleCloseSuccessfulHTTPRequest(c *gin.Context, r
 	}
 
 	if process.AssignedRuntimeID != recoveredID {
-		err := errors.New("not allowed to close process as successful")
+		err := errors.New("Failed to close process as successful, not allowed to close process")
 		server.handleHTTPError(c, err, http.StatusForbidden)
 		return
 	}
@@ -326,6 +347,8 @@ func (server *ColoniesServer) handleCloseSuccessfulHTTPRequest(c *gin.Context, r
 	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
+
+	log.WithFields(log.Fields{"ProcessID": process.ID}).Info("Close successful")
 
 	server.sendEmptyHTTPReply(c, payloadType)
 }
@@ -336,11 +359,11 @@ func (server *ColoniesServer) handleCloseFailedHTTPRequest(c *gin.Context, recov
 		return
 	}
 	if msg == nil {
-		server.handleHTTPError(c, errors.New("failed to parse JSON"), http.StatusBadRequest)
+		server.handleHTTPError(c, errors.New("Failed to close process as failed, failed to parse JSON"), http.StatusBadRequest)
 		return
 	}
 	if msg.MsgType != payloadType {
-		server.handleHTTPError(c, errors.New("msg.MsgType does not match payloadType"), http.StatusBadRequest)
+		server.handleHTTPError(c, errors.New("Failed to close process as failed, msg.MsgType does not match payloadType"), http.StatusBadRequest)
 		return
 	}
 
@@ -349,7 +372,7 @@ func (server *ColoniesServer) handleCloseFailedHTTPRequest(c *gin.Context, recov
 		return
 	}
 	if process == nil {
-		server.handleHTTPError(c, errors.New("process is nil"), http.StatusInternalServerError)
+		server.handleHTTPError(c, errors.New("Failed to close process as failed, process is nil"), http.StatusInternalServerError)
 		return
 	}
 
@@ -359,7 +382,7 @@ func (server *ColoniesServer) handleCloseFailedHTTPRequest(c *gin.Context, recov
 	}
 
 	if process.AssignedRuntimeID != recoveredID {
-		err := errors.New("not allowed to close process as failed")
+		err := errors.New("Failed to close process as failed, not allowed to close process")
 		server.handleHTTPError(c, err, http.StatusForbidden)
 		return
 	}
@@ -368,6 +391,8 @@ func (server *ColoniesServer) handleCloseFailedHTTPRequest(c *gin.Context, recov
 	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
+
+	log.WithFields(log.Fields{"ProcessID": process.ID}).Info("Close failed")
 
 	server.sendEmptyHTTPReply(c, payloadType)
 }

@@ -11,7 +11,7 @@ import (
 
 func (db *PQDatabase) AddColony(colony *core.Colony) error {
 	if colony == nil {
-		fmt.Println("ERROR: colony is pnil")
+		fmt.Println("ERROR: colony is nil")
 	}
 
 	sqlStatement := `INSERT INTO  ` + db.dbPrefix + `COLONIES (COLONY_ID, NAME) VALUES ($1, $2)`
@@ -90,4 +90,13 @@ func (db *PQDatabase) DeleteColonyByID(colonyID string) error {
 	}
 
 	return nil
+}
+
+func (db *PQDatabase) CountColonies() (int, error) {
+	colonies, err := db.GetColonies()
+	if err != nil {
+		return -1, err
+	}
+
+	return len(colonies), nil
 }
