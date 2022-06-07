@@ -2,6 +2,7 @@ package server
 
 import (
 	"net/http"
+	"strconv"
 
 	"time"
 
@@ -46,7 +47,7 @@ func CreateMonitoringServer(port int,
 
 	go func() {
 		http.Handle("/metrics", promhttp.Handler())
-		http.ListenAndServe(":2112", nil)
+		http.ListenAndServe(":"+strconv.Itoa(port), nil)
 	}()
 
 	go func() {

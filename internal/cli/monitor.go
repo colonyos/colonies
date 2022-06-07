@@ -36,10 +36,10 @@ var monitoringStartCmd = &cobra.Command{
 			CheckError(errors.New("Unknown Server Id"))
 		}
 
+		ServerPrvKey = os.Getenv("COLONIES_SERVERPRVKEY")
 		if ServerPrvKey == "" {
 			keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
 			CheckError(err)
-
 			ServerPrvKey, err = keychain.GetPrvKey(ServerID)
 			CheckError(err)
 		}
@@ -62,7 +62,8 @@ var monitoringStartCmd = &cobra.Command{
 			"Port":               MonitorPort,
 			"ColoniesServerHost": ServerHost,
 			"ColoniesServerPort": ServerPort,
-			"PullIntervall":      MonitorIntervall}).
+			"PullIntervall":      MonitorIntervall,
+			"Insecure":           Insecure}).
 			Info("Starting Prometheus monitoring server")
 		server.CreateMonitoringServer(MonitorPort, ServerHost, ServerPort, Insecure, SkipTLSVerify, ServerPrvKey, MonitorIntervall)
 	},

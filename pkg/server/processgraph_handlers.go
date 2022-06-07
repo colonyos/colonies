@@ -34,6 +34,11 @@ func (server *ColoniesServer) handleSubmitWorkflowHTTPRequest(c *gin.Context, re
 	}
 
 	graph, err := core.CreateProcessGraph(msg.WorkflowSpec.ColonyID)
+	_, err = server.controller.addProcessGraph(graph)
+	if err != nil {
+		server.handleHTTPError(c, errors.New("Failed to submit workflow, failed to add process graph"), http.StatusInternalServerError)
+		return
+	}
 
 	log.WithFields(log.Fields{"WorkflowID": graph.ID}).Info("Submitting workflow")
 
@@ -83,13 +88,6 @@ func (server *ColoniesServer) handleSubmitWorkflowHTTPRequest(c *gin.Context, re
 			server.handleHTTPError(c, errors.New("Failed to submit workflow, failed to add process"), http.StatusInternalServerError)
 			return
 		}
-	}
-
-	// Finally, submit process graph
-	_, err = server.controller.addProcessGraph(graph)
-	if err != nil {
-		server.handleHTTPError(c, errors.New("Failed to submit workflow, failed to add process graph"), http.StatusInternalServerError)
-		return
 	}
 
 	jsonString, err = graph.ToJSON()
