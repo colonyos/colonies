@@ -686,3 +686,33 @@ func (client *ColoniesClient) Version() (string, string, error) {
 
 	return version.BuildVersion, version.BuildTime, nil
 }
+
+func (client *ColoniesClient) DeleteProcessGraph(processGraphID string, prvKey string) error {
+	msg := rpc.CreateDeleteProcessGraphMsg(processGraphID)
+	jsonString, err := msg.ToJSON()
+	if err != nil {
+		return err
+	}
+
+	_, err = client.sendMessage(rpc.DeleteProcessGraphPayloadType, jsonString, prvKey, false)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (client *ColoniesClient) DeleteAllProcessGraphs(colonyID string, prvKey string) error {
+	msg := rpc.CreateDeleteAllProcessGraphsMsg(colonyID)
+	jsonString, err := msg.ToJSON()
+	if err != nil {
+		return err
+	}
+
+	_, err = client.sendMessage(rpc.DeleteAllProcessGraphsPayloadType, jsonString, prvKey, false)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}

@@ -105,7 +105,7 @@ func TestDeleteAllProcessesByColony(t *testing.T) {
 	process1 := utils.CreateTestProcess(colony1ID)
 	err = db.AddProcess(process1)
 	assert.Nil(t, err)
-	attribute1 := core.CreateAttribute(process1.ID, colony1ID, core.IN, "test_key1", "test_value1")
+	attribute1 := core.CreateAttribute(process1.ID, colony1ID, "", core.IN, "test_key1", "test_value1")
 	err = db.AddAttribute(attribute1)
 	assert.Nil(t, err)
 
@@ -113,11 +113,11 @@ func TestDeleteAllProcessesByColony(t *testing.T) {
 	process2 := utils.CreateTestProcess(colony2ID)
 	err = db.AddProcess(process2)
 	assert.Nil(t, err)
-	attribute2 := core.CreateAttribute(process2.ID, colony2ID, core.IN, "test_key1", "test_value1")
+	attribute2 := core.CreateAttribute(process2.ID, colony2ID, "", core.IN, "test_key1", "test_value1")
 	err = db.AddAttribute(attribute2)
 	assert.Nil(t, err)
 
-	err = db.DeleteAllProcessesForColony(colony2ID)
+	err = db.DeleteAllProcessesByColonyID(colony2ID)
 	assert.Nil(t, err)
 
 	attributeFromDB, err := db.GetAttribute(process1.ID, "test_key1", core.IN)
@@ -126,6 +126,125 @@ func TestDeleteAllProcessesByColony(t *testing.T) {
 	attributeFromDB, err = db.GetAttribute(process2.ID, "test_key1", core.IN)
 	assert.Nil(t, err)
 	assert.Nil(t, attributeFromDB)
+}
+
+func TestDeleteAllProcessesByProcessGraphID(t *testing.T) {
+	db, err := PrepareTests()
+	assert.Nil(t, err)
+
+	defer db.Close()
+
+	colonyID := core.GenerateRandomID()
+	processGraphID := core.GenerateRandomID()
+	process1 := utils.CreateTestProcess(colonyID)
+	process1.ProcessGraphID = processGraphID
+	err = db.AddProcess(process1)
+	assert.Nil(t, err)
+	attribute1 := core.CreateAttribute(process1.ID, colonyID, processGraphID, core.IN, "test_key1", "test_value1")
+	err = db.AddAttribute(attribute1)
+	assert.Nil(t, err)
+
+	process2 := utils.CreateTestProcess(colonyID)
+	process2.ProcessGraphID = processGraphID
+	err = db.AddProcess(process2)
+	assert.Nil(t, err)
+	attribute2 := core.CreateAttribute(process2.ID, colonyID, processGraphID, core.IN, "test_key1", "test_value1")
+	err = db.AddAttribute(attribute2)
+	assert.Nil(t, err)
+
+	process3 := utils.CreateTestProcess(colonyID)
+	err = db.AddProcess(process3)
+	assert.Nil(t, err)
+	attribute3 := core.CreateAttribute(process3.ID, colonyID, "", core.IN, "test_key1", "test_value1")
+	err = db.AddAttribute(attribute3)
+	assert.Nil(t, err)
+
+	processFromServer, err := db.GetProcessByID(process1.ID)
+	assert.Nil(t, err)
+	assert.NotNil(t, processFromServer)
+
+	processFromServer, err = db.GetProcessByID(process2.ID)
+	assert.Nil(t, err)
+	assert.NotNil(t, processFromServer)
+
+	processFromServer, err = db.GetProcessByID(process3.ID)
+	assert.Nil(t, err)
+	assert.NotNil(t, processFromServer)
+
+	err = db.DeleteAllProcessesByProcessGraphID(processGraphID)
+	assert.Nil(t, err)
+
+	processFromServer, err = db.GetProcessByID(process1.ID)
+	assert.Nil(t, err)
+	assert.Nil(t, processFromServer)
+
+	processFromServer, err = db.GetProcessByID(process2.ID)
+	assert.Nil(t, err)
+	assert.Nil(t, processFromServer)
+
+	processFromServer, err = db.GetProcessByID(process3.ID)
+	assert.Nil(t, err)
+	assert.NotNil(t, processFromServer)
+}
+
+func TestDeleteAllProcessesInProcessGraphsByColonyID(t *testing.T) {
+	db, err := PrepareTests()
+	assert.Nil(t, err)
+
+	defer db.Close()
+
+	colonyID := core.GenerateRandomID()
+	processGraphID1 := core.GenerateRandomID()
+	processGraphID2 := core.GenerateRandomID()
+	process1 := utils.CreateTestProcess(colonyID)
+	process1.ProcessGraphID = processGraphID1
+	err = db.AddProcess(process1)
+	assert.Nil(t, err)
+	attribute1 := core.CreateAttribute(process1.ID, colonyID, processGraphID1, core.IN, "test_key1", "test_value1")
+	err = db.AddAttribute(attribute1)
+	assert.Nil(t, err)
+
+	process2 := utils.CreateTestProcess(colonyID)
+	process2.ProcessGraphID = processGraphID2
+	err = db.AddProcess(process2)
+	assert.Nil(t, err)
+	attribute2 := core.CreateAttribute(process2.ID, colonyID, processGraphID2, core.IN, "test_key1", "test_value1")
+	err = db.AddAttribute(attribute2)
+	assert.Nil(t, err)
+
+	process3 := utils.CreateTestProcess(colonyID)
+	err = db.AddProcess(process3)
+	assert.Nil(t, err)
+	attribute3 := core.CreateAttribute(process3.ID, colonyID, "", core.IN, "test_key1", "test_value1")
+	err = db.AddAttribute(attribute3)
+	assert.Nil(t, err)
+
+	processFromServer, err := db.GetProcessByID(process1.ID)
+	assert.Nil(t, err)
+	assert.NotNil(t, processFromServer)
+
+	processFromServer, err = db.GetProcessByID(process2.ID)
+	assert.Nil(t, err)
+	assert.NotNil(t, processFromServer)
+
+	processFromServer, err = db.GetProcessByID(process3.ID)
+	assert.Nil(t, err)
+	assert.NotNil(t, processFromServer)
+
+	err = db.DeleteAllProcessesInProcessGraphsByColonyID(colonyID)
+	assert.Nil(t, err)
+
+	processFromServer, err = db.GetProcessByID(process1.ID)
+	assert.Nil(t, err)
+	assert.Nil(t, processFromServer)
+
+	processFromServer, err = db.GetProcessByID(process2.ID)
+	assert.Nil(t, err)
+	assert.Nil(t, processFromServer)
+
+	processFromServer, err = db.GetProcessByID(process3.ID)
+	assert.Nil(t, err)
+	assert.NotNil(t, processFromServer)
 }
 
 func TestDeleteAllProcessesAndAttributes(t *testing.T) {
@@ -139,7 +258,7 @@ func TestDeleteAllProcessesAndAttributes(t *testing.T) {
 	err = db.AddProcess(process1)
 	assert.Nil(t, err)
 
-	attribute := core.CreateAttribute(process1.ID, colonyID, core.IN, "test_key1", "test_value1")
+	attribute := core.CreateAttribute(process1.ID, colonyID, core.GenerateRandomID(), core.IN, "test_key1", "test_value1")
 	err = db.AddAttribute(attribute)
 	assert.Nil(t, err)
 
@@ -166,11 +285,11 @@ func TestDeleteProcessesAndAttributes(t *testing.T) {
 	err = db.AddProcess(process2)
 	assert.Nil(t, err)
 
-	attribute := core.CreateAttribute(process1.ID, colonyID, core.IN, "test_key1", "test_value1")
+	attribute := core.CreateAttribute(process1.ID, colonyID, "", core.IN, "test_key1", "test_value1")
 	err = db.AddAttribute(attribute)
 	assert.Nil(t, err)
 
-	attribute = core.CreateAttribute(process2.ID, colonyID, core.IN, "test_key2", "test_value2")
+	attribute = core.CreateAttribute(process2.ID, colonyID, "", core.IN, "test_key2", "test_value2")
 	err = db.AddAttribute(attribute)
 	assert.Nil(t, err)
 

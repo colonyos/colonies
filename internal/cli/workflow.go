@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"bufio"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -23,6 +24,8 @@ func init() {
 	workflowCmd.AddCommand(listSuccessfulWorkflowsCmd)
 	workflowCmd.AddCommand(listFailedWorkflowsCmd)
 	workflowCmd.AddCommand(getWorkflowCmd)
+	workflowCmd.AddCommand(deleteWorkflowCmd)
+	workflowCmd.AddCommand(deleteAllWorkflowsCmd)
 	rootCmd.AddCommand(workflowCmd)
 
 	submitWorkflowCmd.Flags().StringVarP(&RuntimeID, "runtimeid", "", "", "Runtime Id")
@@ -51,6 +54,16 @@ func init() {
 	listFailedWorkflowsCmd.Flags().StringVarP(&RuntimeID, "runtimeid", "", "", "Runtime Id")
 	listFailedWorkflowsCmd.Flags().StringVarP(&RuntimePrvKey, "runtimeprvkey", "", "", "Runtime private key")
 	listFailedWorkflowsCmd.Flags().IntVarP(&Count, "count", "", server.MAX_COUNT, "Number of workflows to list")
+
+	deleteWorkflowCmd.Flags().StringVarP(&RuntimeID, "runtimeid", "", "", "Runtime Id")
+	deleteWorkflowCmd.Flags().StringVarP(&RuntimePrvKey, "runtimeprvkey", "", "", "Runtime private key")
+	deleteWorkflowCmd.Flags().StringVarP(&ColonyID, "colonyid", "", "", "Colony Id")
+	deleteWorkflowCmd.Flags().StringVarP(&WorkflowID, "workflowid", "", "", "Workflow Id")
+	deleteWorkflowCmd.MarkFlagRequired("processid")
+
+	deleteAllWorkflowsCmd.Flags().StringVarP(&RuntimeID, "runtimeid", "", "", "Runtime Id")
+	deleteAllWorkflowsCmd.Flags().StringVarP(&RuntimePrvKey, "runtimeprvkey", "", "", "Runtime private key")
+	deleteAllWorkflowsCmd.Flags().StringVarP(&ColonyID, "colonyid", "", "", "Colony Id")
 
 	getWorkflowCmd.Flags().StringVarP(&RuntimeID, "runtimeid", "", "", "Runtime Id")
 	getWorkflowCmd.Flags().StringVarP(&RuntimePrvKey, "runtimeprvkey", "", "", "Runtime private key")
@@ -173,6 +186,80 @@ var listWaitingWorkflowsCmd = &cobra.Command{
 			table.Render()
 		}
 
+	},
+}
+
+var deleteWorkflowCmd = &cobra.Command{
+	Use:   "delete",
+	Short: "Delete a workflow",
+	Long:  "Delete a workflow",
+	Run: func(cmd *cobra.Command, args []string) {
+		parseServerEnv()
+
+		keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
+		CheckError(err)
+
+		if RuntimeID == "" {
+			RuntimeID = os.Getenv("COLONIES_RUNTIMEID")
+		}
+		if RuntimeID == "" {
+			CheckError(errors.New("Unknown Runtime Id"))
+		}
+
+		if RuntimePrvKey == "" {
+			RuntimePrvKey, err = keychain.GetPrvKey(RuntimeID)
+			CheckError(err)
+		}
+
+		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Info("Starting a Colonies client")
+		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
+
+		log.WithFields(log.Fields{"WorkflowID": WorkflowID}).Info("Processgraph deleted")
+
+		err = client.DeleteProcessGraph(WorkflowID, RuntimePrvKey)
+		CheckError(err)
+
+		log.WithFields(log.Fields{"WorkflowID": WorkflowID}).Info("Processgraph deleted")
+	},
+}
+
+var deleteAllWorkflowsCmd = &cobra.Command{
+	Use:   "deleteall",
+	Short: "Delete all workflows in a colony",
+	Long:  "Delete all workflows in a colony",
+	Run: func(cmd *cobra.Command, args []string) {
+		parseServerEnv()
+
+		keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
+		CheckError(err)
+
+		if ColonyID == "" {
+			ColonyID = os.Getenv("COLONIES_COLONYID")
+		}
+		if ColonyID == "" {
+			CheckError(errors.New("Unknown Colony Id"))
+		}
+
+		if ColonyPrvKey == "" {
+			ColonyPrvKey, err = keychain.GetPrvKey(ColonyID)
+			CheckError(err)
+		}
+
+		fmt.Print("WARNING!!! Are you sure you want to delete all workflows in the Colony This operation cannot be undone! (YES,no): ")
+
+		reader := bufio.NewReader(os.Stdin)
+		reply, _ := reader.ReadString('\n')
+		if reply == "YES\n" {
+			log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Info("Starting a Colonies client")
+			client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
+
+			err = client.DeleteAllProcessGraphs(ColonyID, ColonyPrvKey)
+			CheckError(err)
+
+			log.WithFields(log.Fields{"colonyID": ColonyID}).Info("Deleting all workflows in Colony")
+		} else {
+			log.Info("Aborting ...")
+		}
 	},
 }
 

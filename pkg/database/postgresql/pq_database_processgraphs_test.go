@@ -54,13 +54,82 @@ func TestAddProcessGraph(t *testing.T) {
 	colonyID := core.GenerateRandomID()
 
 	graph := generateProcessGraph(t, db, colonyID)
-
 	err = db.AddProcessGraph(graph)
 	assert.Nil(t, err)
 
-	graph2, err := db.GetProcessGraphByID(graph.ID)
+	graphFromDB, err := db.GetProcessGraphByID(graph.ID)
 	assert.Nil(t, err)
-	assert.True(t, graph.Equals(graph2))
+	assert.True(t, graph.Equals(graphFromDB))
+}
+
+func TestDeleteProcessGraphByID(t *testing.T) {
+	db, err := PrepareTests()
+	assert.Nil(t, err)
+	defer db.Close()
+
+	colonyID := core.GenerateRandomID()
+
+	graph1 := generateProcessGraph(t, db, colonyID)
+	err = db.AddProcessGraph(graph1)
+	assert.Nil(t, err)
+
+	graph2 := generateProcessGraph(t, db, colonyID)
+	err = db.AddProcessGraph(graph2)
+	assert.Nil(t, err)
+
+	graphFromDB, err := db.GetProcessGraphByID(graph1.ID)
+	assert.Nil(t, err)
+	assert.True(t, graphFromDB.Equals(graph1))
+
+	graphFromDB, err = db.GetProcessGraphByID(graph2.ID)
+	assert.Nil(t, err)
+	assert.True(t, graphFromDB.Equals(graph2))
+
+	err = db.DeleteProcessGraphByID(graph1.ID)
+	assert.Nil(t, err)
+
+	graphFromDB, err = db.GetProcessGraphByID(graph1.ID)
+	assert.Nil(t, err)
+	assert.Nil(t, graphFromDB)
+
+	graphFromDB, err = db.GetProcessGraphByID(graph2.ID)
+	assert.Nil(t, err)
+	assert.True(t, graphFromDB.Equals(graph2))
+}
+
+func TestDeleteAllProcessGraphsByColonyID(t *testing.T) {
+	db, err := PrepareTests()
+	assert.Nil(t, err)
+	defer db.Close()
+
+	colonyID := core.GenerateRandomID()
+
+	graph1 := generateProcessGraph(t, db, colonyID)
+	err = db.AddProcessGraph(graph1)
+	assert.Nil(t, err)
+
+	graph2 := generateProcessGraph(t, db, colonyID)
+	err = db.AddProcessGraph(graph2)
+	assert.Nil(t, err)
+
+	graphFromDB, err := db.GetProcessGraphByID(graph1.ID)
+	assert.Nil(t, err)
+	assert.True(t, graphFromDB.Equals(graph1))
+
+	graphFromDB, err = db.GetProcessGraphByID(graph2.ID)
+	assert.Nil(t, err)
+	assert.True(t, graphFromDB.Equals(graph2))
+
+	err = db.DeleteAllProcessGraphsByColonyID(colonyID)
+	assert.Nil(t, err)
+
+	graphFromDB, err = db.GetProcessGraphByID(graph1.ID)
+	assert.Nil(t, err)
+	assert.Nil(t, graphFromDB)
+
+	graphFromDB, err = db.GetProcessGraphByID(graph2.ID)
+	assert.Nil(t, err)
+	assert.Nil(t, graphFromDB)
 }
 
 func TestSetProcessGraphState(t *testing.T) {
@@ -71,7 +140,6 @@ func TestSetProcessGraphState(t *testing.T) {
 	colonyID := core.GenerateRandomID()
 
 	graph := generateProcessGraph(t, db, colonyID)
-
 	err = db.AddProcessGraph(graph)
 	assert.Nil(t, err)
 
