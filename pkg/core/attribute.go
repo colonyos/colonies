@@ -18,7 +18,7 @@ type Attribute struct {
 	ID                   string `json:"attributeid"`
 	TargetID             string `json:"targetid"`
 	TargetColonyID       string `json:"targetcolonyid"`
-	TargetProcessGraphID string `json:"targetprocessid"`
+	TargetProcessGraphID string `json:"targetprocessgraphid"`
 	AttributeType        int    `json:"attributetype"`
 	Key                  string `json:"key"`
 	Value                string `json:"value"`
