@@ -10,7 +10,7 @@ import (
 func TestRPCAddAttributeMsg(t *testing.T) {
 	key := "test_key"
 	value := "test_value"
-	attribute := core.CreateAttribute(core.GenerateRandomID(), core.GenerateRandomID(), core.OUT, key, value)
+	attribute := core.CreateAttribute(core.GenerateRandomID(), core.GenerateRandomID(), "", core.OUT, key, value)
 
 	msg := CreateAddAttributeMsg(attribute)
 	jsonString, err := msg.ToJSON()
@@ -28,7 +28,7 @@ func TestRPCAddAttributeMsg(t *testing.T) {
 func TestRPCAddAttributeMsgIndent(t *testing.T) {
 	key := "test_key"
 	value := "test_value"
-	attribute := core.CreateAttribute(core.GenerateRandomID(), core.GenerateRandomID(), core.OUT, key, value)
+	attribute := core.CreateAttribute(core.GenerateRandomID(), core.GenerateRandomID(), core.GenerateRandomID(), core.OUT, key, value)
 
 	msg := CreateAddAttributeMsg(attribute)
 	jsonString, err := msg.ToJSONIndent()
@@ -46,7 +46,7 @@ func TestRPCAddAttributeMsgIndent(t *testing.T) {
 func TestRPCAddAttributeMsgEquals(t *testing.T) {
 	key := "test_key"
 	value := "test_value"
-	attribute := core.CreateAttribute(core.GenerateRandomID(), core.GenerateRandomID(), core.OUT, key, value)
+	attribute := core.CreateAttribute(core.GenerateRandomID(), core.GenerateRandomID(), "", core.OUT, key, value)
 
 	msg := CreateAddAttributeMsg(attribute)
 	assert.True(t, msg.Equals(msg))

@@ -204,7 +204,7 @@ var workerStartCmd = &cobra.Command{
 				output += string(bytes.Trim(tmp, "\x00"))
 			}
 
-			attribute := core.CreateAttribute(assignedProcess.ID, ColonyID, core.OUT, "output", output)
+			attribute := core.CreateAttribute(assignedProcess.ID, ColonyID, "", core.OUT, "output", output)
 			client.AddAttribute(attribute, runtimePrvKey)
 
 			failure = false
