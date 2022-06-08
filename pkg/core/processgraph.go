@@ -159,6 +159,9 @@ func (graph *ProcessGraph) Resolve() error {
 		}
 		return nil
 	})
+	if err != nil {
+		return err
+	}
 
 	if failedProcesses > 1 {
 		graph.State = FAILED
@@ -276,6 +279,7 @@ func (graph *ProcessGraph) UpdateProcessIDs() error {
 func (graph *ProcessGraph) Iterate(visitFunc func(process *Process) error) error {
 	visited := make(map[string]bool)
 	var err error
+
 	for _, root := range graph.Roots {
 		err = graph.iterate(root, visited, visitFunc)
 		if err != nil {

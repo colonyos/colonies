@@ -227,6 +227,26 @@ func (db *PQDatabase) countProcessGraphs(state int) (int, error) {
 	return count, nil
 }
 
+func (db *PQDatabase) DeleteAllProcessGraphsByColonyID(colonyID string) error {
+	sqlStatement := `DELETE FROM ` + db.dbPrefix + `PROCESSGRAPHS WHERE TARGET_COLONY_ID=$1`
+	_, err := db.postgresql.Exec(sqlStatement, colonyID)
+	if err != nil {
+		return err
+	}
+
+	return db.DeleteAllProcessesInProcessGraphsByColonyID(colonyID)
+}
+
+func (db *PQDatabase) DeleteProcessGraphByID(processGraphID string) error {
+	sqlStatement := `DELETE FROM ` + db.dbPrefix + `PROCESSGRAPHS WHERE PROCESSGRAPH_ID=$1`
+	_, err := db.postgresql.Exec(sqlStatement, processGraphID)
+	if err != nil {
+		return err
+	}
+
+	return db.DeleteAllProcessesByProcessGraphID(processGraphID)
+}
+
 func (db *PQDatabase) CountWaitingProcessGraphs() (int, error) {
 	return db.countProcessGraphs(core.WAITING)
 }

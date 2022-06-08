@@ -669,6 +669,10 @@ func (controller *coloniesController) getProcessGraphByID(processGraphID string)
 				cmd.errorChan <- err
 				return
 			}
+			if graph == nil {
+				cmd.processGraphReplyChan <- nil
+				return
+			}
 			err = controller.updateProcessGraph(graph)
 			if err != nil {
 				cmd.errorChan <- err
@@ -834,7 +838,29 @@ func (controller *coloniesController) deleteProcess(processID string) error {
 func (controller *coloniesController) deleteAllProcesses(colonyID string) error {
 	cmd := &command{errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
-			err := controller.db.DeleteAllProcessesForColony(colonyID)
+			err := controller.db.DeleteAllProcessesByColonyID(colonyID)
+			cmd.errorChan <- err
+		}}
+
+	controller.cmdQueue <- cmd
+	return <-cmd.errorChan
+}
+
+func (controller *coloniesController) deleteProcessGraph(processID string) error {
+	cmd := &command{errorChan: make(chan error, 1),
+		handler: func(cmd *command) {
+			err := controller.db.DeleteProcessGraphByID(processID)
+			cmd.errorChan <- err
+		}}
+
+	controller.cmdQueue <- cmd
+	return <-cmd.errorChan
+}
+
+func (controller *coloniesController) deleteAllProcessGraphs(colonyID string) error {
+	cmd := &command{errorChan: make(chan error, 1),
+		handler: func(cmd *command) {
+			err := controller.db.DeleteAllProcessGraphsByColonyID(colonyID)
 			cmd.errorChan <- err
 		}}
 
@@ -975,13 +1001,14 @@ func (controller *coloniesController) assignRuntime(runtimeID string, colonyID s
 					return
 				}
 				if processGraph == nil {
-					errMsg := "Strange, processGraph is nil (should not be)"
+					errMsg := "Failed to resolve processgraph from controller, processGraph is nil (should not be)"
 					log.Error(errMsg)
-					cmd.errorChan <- errors.New(err)
+					cmd.errorChan <- errors.New(errMsg)
 				}
 				processGraph.SetStorage(controller.db)
 				err = processGraph.Resolve()
 				if err != nil {
+					log.Error(err)
 					cmd.errorChan <- err
 					return
 				}
