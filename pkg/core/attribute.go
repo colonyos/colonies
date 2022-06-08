@@ -15,21 +15,23 @@ const (
 )
 
 type Attribute struct {
-	ID             string `json:"attributeid"`
-	TargetID       string `json:"targetid"`
-	TargetColonyID string `json:"targetcolonyid"`
-	AttributeType  int    `json:"attributetype"`
-	Key            string `json:"key"`
-	Value          string `json:"value"`
+	ID                   string `json:"attributeid"`
+	TargetID             string `json:"targetid"`
+	TargetColonyID       string `json:"targetcolonyid"`
+	TargetProcessGraphID string `json:"targetprocessid"`
+	AttributeType        int    `json:"attributetype"`
+	Key                  string `json:"key"`
+	Value                string `json:"value"`
 }
 
-func CreateAttribute(targetID string, targetColonyID string, attributeType int, key string, value string) *Attribute {
+func CreateAttribute(targetID string, targetColonyID string, targetProcessGraphID string, attributeType int, key string, value string) *Attribute {
 	attribute := &Attribute{ID: "",
-		TargetID:       targetID,
-		TargetColonyID: targetColonyID,
-		AttributeType:  attributeType,
-		Key:            key,
-		Value:          value}
+		TargetID:             targetID,
+		TargetColonyID:       targetColonyID,
+		TargetProcessGraphID: targetProcessGraphID,
+		AttributeType:        attributeType,
+		Key:                  key,
+		Value:                value}
 
 	attribute.GenerateID()
 	return attribute
@@ -78,6 +80,7 @@ func (attribute *Attribute) Equals(attribute2 *Attribute) bool {
 	if attribute.ID == attribute2.ID &&
 		attribute.TargetID == attribute2.TargetID &&
 		attribute.TargetColonyID == attribute2.TargetColonyID &&
+		attribute.TargetProcessGraphID == attribute2.TargetProcessGraphID &&
 		attribute.AttributeType == attribute2.AttributeType &&
 		attribute.Key == attribute2.Key &&
 		attribute.Value == attribute2.Value {

@@ -34,13 +34,6 @@ func (server *ColoniesServer) handleSubmitWorkflowHTTPRequest(c *gin.Context, re
 	}
 
 	graph, err := core.CreateProcessGraph(msg.WorkflowSpec.ColonyID)
-	_, err = server.controller.addProcessGraph(graph)
-	if err != nil {
-		server.handleHTTPError(c, errors.New("Failed to submit workflow, failed to add process graph"), http.StatusInternalServerError)
-		return
-	}
-
-	log.WithFields(log.Fields{"WorkflowID": graph.ID}).Info("Submitting workflow")
 
 	// Create all processes
 	processMap := make(map[string]*core.Process)
@@ -65,6 +58,14 @@ func (server *ColoniesServer) handleSubmitWorkflowHTTPRequest(c *gin.Context, re
 		process.ProcessSpec.Conditions.ColonyID = msg.WorkflowSpec.ColonyID
 		processMap[process.ProcessSpec.Name] = process
 	}
+
+	_, err = server.controller.addProcessGraph(graph)
+	if err != nil {
+		server.handleHTTPError(c, errors.New("Failed to submit workflow, failed to add process graph"), http.StatusInternalServerError)
+		return
+	}
+
+	log.WithFields(log.Fields{"WorkflowID": graph.ID}).Info("Submitting workflow")
 
 	// Create dependencies
 	for _, process := range processMap {
@@ -104,11 +105,11 @@ func (server *ColoniesServer) handleGetProcessGraphHTTPRequest(c *gin.Context, r
 		return
 	}
 	if msg == nil {
-		server.handleHTTPError(c, errors.New("Failed to get process graph, failed to parse JSON"), http.StatusBadRequest)
+		server.handleHTTPError(c, errors.New("Failed to get processgraph, failed to parse JSON"), http.StatusBadRequest)
 		return
 	}
 	if msg.MsgType != payloadType {
-		server.handleHTTPError(c, errors.New("Failed to get process graph, msg.MsgType does not match payloadType"), http.StatusBadRequest)
+		server.handleHTTPError(c, errors.New("Failed to get processgraph, msg.MsgType does not match payloadType"), http.StatusBadRequest)
 		return
 	}
 
@@ -142,11 +143,11 @@ func (server *ColoniesServer) handleGetProcessGraphsHTTPRequest(c *gin.Context, 
 		return
 	}
 	if msg == nil {
-		server.handleHTTPError(c, errors.New("Failed to get process graphs, failed to parse JSON"), http.StatusBadRequest)
+		server.handleHTTPError(c, errors.New("Failed to get processgraphs, failed to parse JSON"), http.StatusBadRequest)
 		return
 	}
 	if msg.MsgType != payloadType {
-		server.handleHTTPError(c, errors.New("Failed to get process grpahs, msg.MsgType does not match payloadType"), http.StatusBadRequest)
+		server.handleHTTPError(c, errors.New("Failed to get processgraphs, msg.MsgType does not match payloadType"), http.StatusBadRequest)
 		return
 	}
 
@@ -158,7 +159,7 @@ func (server *ColoniesServer) handleGetProcessGraphsHTTPRequest(c *gin.Context, 
 		}
 	}
 
-	log.WithFields(log.Fields{"ColonyID": msg.ColonyID}).Info("Getting process graphs")
+	log.WithFields(log.Fields{"ColonyID": msg.ColonyID}).Info("Getting processgraphs")
 
 	switch msg.State {
 	case core.WAITING:
@@ -206,4 +207,71 @@ func (server *ColoniesServer) handleGetProcessGraphsHTTPRequest(c *gin.Context, 
 		server.handleHTTPError(c, err, http.StatusBadRequest)
 		return
 	}
+}
+
+func (server *ColoniesServer) handleDeleteProcessGraphHTTPRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
+	msg, err := rpc.CreateDeleteProcessGraphMsgFromJSON(jsonString)
+	if server.handleHTTPError(c, err, http.StatusBadRequest) {
+		return
+	}
+	if msg == nil {
+		server.handleHTTPError(c, errors.New("Failed to delete processgraph, failed to parse JSON"), http.StatusBadRequest)
+		return
+	}
+	if msg.MsgType != payloadType {
+		server.handleHTTPError(c, errors.New("Failed to delete processgraph, msg.MsgType does not match payloadType"), http.StatusBadRequest)
+		return
+	}
+
+	graph, err := server.controller.getProcessGraphByID(msg.ProcessGraphID)
+	if server.handleHTTPError(c, err, http.StatusBadRequest) {
+		return
+	}
+	if graph == nil {
+		server.handleHTTPError(c, errors.New("Failed to delete processgraph, graph is nil"), http.StatusInternalServerError)
+		return
+	}
+
+	err = server.validator.RequireRuntimeMembership(recoveredID, graph.ColonyID, true)
+	if server.handleHTTPError(c, err, http.StatusForbidden) {
+		return
+	}
+
+	err = server.controller.deleteProcessGraph(msg.ProcessGraphID)
+	if server.handleHTTPError(c, err, http.StatusBadRequest) {
+		return
+	}
+
+	log.WithFields(log.Fields{"ProcessGraphID": graph.ID}).Info("Deleting processgraph")
+
+	server.sendEmptyHTTPReply(c, payloadType)
+}
+
+func (server *ColoniesServer) handleDeleteAllProcessGraphsHTTPRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
+	msg, err := rpc.CreateDeleteAllProcessGraphsMsgFromJSON(jsonString)
+	if server.handleHTTPError(c, err, http.StatusBadRequest) {
+		return
+	}
+	if msg == nil {
+		server.handleHTTPError(c, errors.New("Failed to delete all processgraphs, failed to parse JSON"), http.StatusBadRequest)
+		return
+	}
+	if msg.MsgType != payloadType {
+		server.handleHTTPError(c, errors.New("Failed to delete all processgraphs, msg.MsgType does not match payloadType"), http.StatusBadRequest)
+		return
+	}
+
+	err = server.validator.RequireColonyOwner(recoveredID, msg.ColonyID)
+	if server.handleHTTPError(c, err, http.StatusForbidden) {
+		return
+	}
+
+	err = server.controller.deleteAllProcessGraphs(msg.ColonyID)
+	if server.handleHTTPError(c, err, http.StatusBadRequest) {
+		return
+	}
+
+	log.WithFields(log.Fields{"ColonyID": msg.ColonyID}).Info("Deleting all processgraphs")
+
+	server.sendEmptyHTTPReply(c, payloadType)
 }

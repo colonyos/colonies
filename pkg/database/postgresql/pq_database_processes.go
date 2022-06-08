@@ -19,7 +19,7 @@ func (db *PQDatabase) AddProcess(process *core.Process) error {
 
 	submissionTime := time.Now()
 
-	sqlStatement := `INSERT INTO  ` + db.dbPrefix + `PROCESSES (PROCESS_ID, TARGET_COLONY_ID, TARGET_RUNTIME_IDS, ASSIGNED_RUNTIME_ID, STATE, IS_ASSIGNED, RUNTIME_TYPE, SUBMISSION_TIME, START_TIME, END_TIME, DEADLINE, RETRIES, NAME, IMAGE, CMD, ARGS, VOLUMES, PORTS, MAX_EXEC_TIME, MAX_RETRIES, MEM, CORES, GPUs, DEPENDENCIES, PRIORITY, WAIT_FOR_PARENTS, PARENTS, CHILDREN, PROCESS_GRAPH_ID) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29)`
+	sqlStatement := `INSERT INTO  ` + db.dbPrefix + `PROCESSES (PROCESS_ID, TARGET_COLONY_ID, TARGET_RUNTIME_IDS, ASSIGNED_RUNTIME_ID, STATE, IS_ASSIGNED, RUNTIME_TYPE, SUBMISSION_TIME, START_TIME, END_TIME, DEADLINE, RETRIES, NAME, IMAGE, CMD, ARGS, VOLUMES, PORTS, MAX_EXEC_TIME, MAX_RETRIES, MEM, CORES, GPUs, DEPENDENCIES, PRIORITY, WAIT_FOR_PARENTS, PARENTS, CHILDREN, PROCESSGRAPH_ID) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29)`
 	_, err := db.postgresql.Exec(sqlStatement, process.ID, process.ProcessSpec.Conditions.ColonyID, pq.Array(targetRuntimeIDs), process.AssignedRuntimeID, process.State, process.IsAssigned, process.ProcessSpec.Conditions.RuntimeType, submissionTime, time.Time{}, time.Time{}, process.Deadline, 0, process.ProcessSpec.Name, process.ProcessSpec.Image, process.ProcessSpec.Cmd, pq.Array(process.ProcessSpec.Args), pq.Array(process.ProcessSpec.Volumes), pq.Array(process.ProcessSpec.Ports), process.ProcessSpec.MaxExecTime, process.ProcessSpec.MaxRetries, process.ProcessSpec.Conditions.Mem, process.ProcessSpec.Conditions.Cores, process.ProcessSpec.Conditions.GPUs, pq.Array(process.ProcessSpec.Conditions.Dependencies), process.ProcessSpec.Priority, process.WaitForParents, pq.Array(process.Parents), pq.Array(process.Children), process.ProcessGraphID)
 	if err != nil {
 		return err
@@ -27,7 +27,7 @@ func (db *PQDatabase) AddProcess(process *core.Process) error {
 
 	// Convert Envs to Attributes
 	for key, value := range process.ProcessSpec.Env {
-		process.Attributes = append(process.Attributes, core.CreateAttribute(process.ID, process.ProcessSpec.Conditions.ColonyID, core.ENV, key, value))
+		process.Attributes = append(process.Attributes, core.CreateAttribute(process.ID, process.ProcessSpec.Conditions.ColonyID, process.ProcessGraphID, core.ENV, key, value))
 	}
 
 	err = db.AddAttributes(process.Attributes)
@@ -317,7 +317,7 @@ func (db *PQDatabase) DeleteAllProcesses() error {
 	return nil
 }
 
-func (db *PQDatabase) DeleteAllProcessesForColony(colonyID string) error {
+func (db *PQDatabase) DeleteAllProcessesByColonyID(colonyID string) error {
 	sqlStatement := `DELETE FROM ` + db.dbPrefix + `PROCESSES WHERE TARGET_COLONY_ID=$1`
 	_, err := db.postgresql.Exec(sqlStatement, colonyID)
 	if err != nil {
@@ -325,6 +325,36 @@ func (db *PQDatabase) DeleteAllProcessesForColony(colonyID string) error {
 	}
 
 	err = db.DeleteAllAttributesByColonyID(colonyID)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (db *PQDatabase) DeleteAllProcessesByProcessGraphID(processGraphID string) error {
+	sqlStatement := `DELETE FROM ` + db.dbPrefix + `PROCESSES WHERE PROCESSGRAPH_ID=$1`
+	_, err := db.postgresql.Exec(sqlStatement, processGraphID)
+	if err != nil {
+		return err
+	}
+
+	err = db.DeleteAllAttributesByProcessGraphID(processGraphID)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (db *PQDatabase) DeleteAllProcessesInProcessGraphsByColonyID(colonyID string) error {
+	sqlStatement := `DELETE FROM ` + db.dbPrefix + `PROCESSES WHERE TARGET_COLONY_ID=$1 AND PROCESSGRAPH_ID!=$2`
+	_, err := db.postgresql.Exec(sqlStatement, colonyID, "")
+	if err != nil {
+		return err
+	}
+
+	err = db.DeleteAllAttributesInProcessGraphsByColonyID(colonyID)
 	if err != nil {
 		return err
 	}

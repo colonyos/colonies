@@ -23,7 +23,7 @@ func TestAddAttributeSecurity(t *testing.T) {
 	assignedProcess, err := client.AssignProcess(env.colony1ID, env.runtime1PrvKey)
 	assert.Nil(t, err)
 
-	attribute := core.CreateAttribute(assignedProcess.ID, env.colony1ID, core.OUT, "result", "helloworld")
+	attribute := core.CreateAttribute(assignedProcess.ID, env.colony1ID, "", core.OUT, "result", "helloworld")
 	_, err = client.AddAttribute(attribute, env.runtime2PrvKey)
 	assert.NotNil(t, err) // Should not work
 
@@ -60,7 +60,7 @@ func TestGetAttributeSecurity(t *testing.T) {
 	assignedProcess, err := client.AssignProcess(env.colony1ID, env.runtime1PrvKey)
 	assert.Nil(t, err)
 
-	attribute := core.CreateAttribute(assignedProcess.ID, env.colony1ID, core.OUT, "result", "helloworld")
+	attribute := core.CreateAttribute(assignedProcess.ID, env.colony1ID, "", core.OUT, "result", "helloworld")
 	_, err = client.AddAttribute(attribute, env.runtime1PrvKey)
 	assert.Nil(t, err)
 

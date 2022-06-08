@@ -166,6 +166,10 @@ func (server *ColoniesServer) handleEndpointRequest(c *gin.Context) {
 		server.handleGetProcessGraphHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 	case rpc.GetProcessGraphsPayloadType:
 		server.handleGetProcessGraphsHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+	case rpc.DeleteProcessGraphPayloadType:
+		server.handleDeleteProcessGraphHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+	case rpc.DeleteAllProcessGraphsPayloadType:
+		server.handleDeleteAllProcessGraphsHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 
 	// Server handlers
 	case rpc.GetStatisiticsPayloadType:

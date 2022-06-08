@@ -88,6 +88,16 @@ func (db *PQDatabase) DeleteColonyByID(colonyID string) error {
 		return err
 	}
 
+	err = db.DeleteAllProcessesByColonyID(colonyID)
+	if err != nil {
+		return err
+	}
+
+	err = db.DeleteAllProcessGraphsByColonyID(colonyID)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 

@@ -70,7 +70,7 @@ var addAttributeCmd = &cobra.Command{
 			CheckError(err)
 		}
 
-		attribute := core.CreateAttribute(ProcessID, ColonyID, core.OUT, Key, Value)
+		attribute := core.CreateAttribute(ProcessID, ColonyID, "", core.OUT, Key, Value)
 
 		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Info("Starting a Colonies client")
 		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)

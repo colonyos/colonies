@@ -41,7 +41,9 @@ type Database interface {
 	FindUnassignedProcesses(colonyID string, runtimeID string, runtimeType string, count int) ([]*core.Process, error)
 	DeleteProcessByID(processID string) error
 	DeleteAllProcesses() error
-	DeleteAllProcessesForColony(colonyID string) error
+	DeleteAllProcessesByColonyID(colonyID string) error
+	DeleteAllProcessesByProcessGraphID(processGraphID string) error
+	DeleteAllProcessesInProcessGraphsByColonyID(colonyID string) error
 	ResetProcess(process *core.Process) error
 	SetProcessState(processID string, state int) error
 	SetWaitForParents(processID string, waitingForParent bool) error
@@ -71,6 +73,8 @@ type Database interface {
 	UpdateAttribute(attribute *core.Attribute) error
 	DeleteAttributeByID(attributeID string) error
 	DeleteAllAttributesByColonyID(colonyID string) error
+	DeleteAllAttributesByProcessGraphID(processGraphID string) error
+	DeleteAllAttributesInProcessGraphsByColonyID(colonyID string) error
 	DeleteAttributesByTargetID(targetID string, attributeType int) error
 	DeleteAllAttributesByTargetID(targetID string) error
 	DeleteAllAttributes() error
@@ -83,6 +87,8 @@ type Database interface {
 	FindRunningProcessGraphs(colonyID string, count int) ([]*core.ProcessGraph, error)
 	FindSuccessfulProcessGraphs(colonyID string, count int) ([]*core.ProcessGraph, error)
 	FindFailedProcessGraphs(colonyID string, count int) ([]*core.ProcessGraph, error)
+	DeleteProcessGraphByID(processGraphID string) error
+	DeleteAllProcessGraphsByColonyID(colonyID string) error
 	CountWaitingProcessGraphs() (int, error)
 	CountRunningProcessGraphs() (int, error)
 	CountSuccessfulProcessGraphs() (int, error)

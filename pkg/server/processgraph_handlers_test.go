@@ -132,3 +132,72 @@ func TestGetProcessGraph(t *testing.T) {
 	server.Shutdown()
 	<-done
 }
+
+func TestDeleteProcessGraph(t *testing.T) {
+	env, client, server, _, done := setupTestEnv2(t)
+
+	diamond := generateDiamondtWorkflowSpec(env.colonyID)
+	submittedGraph1, err := client.SubmitWorkflowSpec(diamond, env.runtimePrvKey)
+	assert.Nil(t, err)
+	assert.NotNil(t, submittedGraph1)
+
+	diamond = generateDiamondtWorkflowSpec(env.colonyID)
+	submittedGraph2, err := client.SubmitWorkflowSpec(diamond, env.runtimePrvKey)
+	assert.Nil(t, err)
+	assert.NotNil(t, submittedGraph2)
+
+	graphFromServer, err := client.GetProcessGraph(submittedGraph1.ID, env.runtimePrvKey)
+	assert.Nil(t, err)
+	assert.True(t, submittedGraph1.ID == graphFromServer.ID)
+
+	graphFromServer, err = client.GetProcessGraph(submittedGraph2.ID, env.runtimePrvKey)
+	assert.Nil(t, err)
+	assert.True(t, submittedGraph2.ID == graphFromServer.ID)
+
+	err = client.DeleteProcessGraph(submittedGraph1.ID, env.runtimePrvKey)
+	assert.Nil(t, err)
+
+	graphFromServer, err = client.GetProcessGraph(submittedGraph1.ID, env.runtimePrvKey)
+	assert.NotNil(t, err)
+
+	graphFromServer, err = client.GetProcessGraph(submittedGraph2.ID, env.runtimePrvKey)
+	assert.Nil(t, err)
+	assert.True(t, submittedGraph2.ID == graphFromServer.ID)
+
+	server.Shutdown()
+	<-done
+}
+
+func TestDeleteAllProcessGraphs(t *testing.T) {
+	env, client, server, _, done := setupTestEnv2(t)
+
+	diamond := generateDiamondtWorkflowSpec(env.colonyID)
+	submittedGraph1, err := client.SubmitWorkflowSpec(diamond, env.runtimePrvKey)
+	assert.Nil(t, err)
+	assert.NotNil(t, submittedGraph1)
+
+	diamond = generateDiamondtWorkflowSpec(env.colonyID)
+	submittedGraph2, err := client.SubmitWorkflowSpec(diamond, env.runtimePrvKey)
+	assert.Nil(t, err)
+	assert.NotNil(t, submittedGraph2)
+
+	graphFromServer, err := client.GetProcessGraph(submittedGraph1.ID, env.runtimePrvKey)
+	assert.Nil(t, err)
+	assert.True(t, submittedGraph1.ID == graphFromServer.ID)
+
+	graphFromServer, err = client.GetProcessGraph(submittedGraph2.ID, env.runtimePrvKey)
+	assert.Nil(t, err)
+	assert.True(t, submittedGraph2.ID == graphFromServer.ID)
+
+	err = client.DeleteAllProcessGraphs(env.colonyID, env.colonyPrvKey)
+	assert.Nil(t, err)
+
+	graphFromServer, err = client.GetProcessGraph(submittedGraph1.ID, env.runtimePrvKey)
+	assert.NotNil(t, err)
+
+	graphFromServer, err = client.GetProcessGraph(submittedGraph2.ID, env.runtimePrvKey)
+	assert.NotNil(t, err)
+
+	server.Shutdown()
+	<-done
+}

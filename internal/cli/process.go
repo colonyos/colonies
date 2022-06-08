@@ -683,7 +683,7 @@ var deleteProcessCmd = &cobra.Command{
 		err = client.DeleteProcess(ProcessID, RuntimePrvKey)
 		CheckError(err)
 
-		log.WithFields(log.Fields{"processID": ProcessID}).Info("Process deleted")
+		log.WithFields(log.Fields{"ProcessID": ProcessID}).Info("Process deleted")
 	},
 }
 
@@ -720,7 +720,7 @@ var deleteAllProcessesCmd = &cobra.Command{
 			err = client.DeleteAllProcesses(ColonyID, ColonyPrvKey)
 			CheckError(err)
 
-			log.WithFields(log.Fields{"colonyID": ColonyID}).Info("Deleting all processes in Colony")
+			log.WithFields(log.Fields{"ColonyID": ColonyID}).Info("Deleting all processes in Colony")
 		} else {
 			log.Info("Aborting ...")
 		}
@@ -758,7 +758,7 @@ var closeSuccessful = &cobra.Command{
 		err = client.CloseSuccessful(process.ID, RuntimePrvKey)
 		CheckError(err)
 
-		log.WithFields(log.Fields{"processID": process.ID}).Info("Process closed as Successful")
+		log.WithFields(log.Fields{"ProcessID": process.ID}).Info("Process closed as Successful")
 	},
 }
 
@@ -793,6 +793,6 @@ var closeFailed = &cobra.Command{
 		err = client.CloseFailed(process.ID, RuntimePrvKey)
 		CheckError(err)
 
-		log.WithFields(log.Fields{"processID": process.ID}).Info("Process closed as Failed")
+		log.WithFields(log.Fields{"ProcessID": process.ID}).Info("Process closed as Failed")
 	},
 }
