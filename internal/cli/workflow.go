@@ -256,7 +256,7 @@ var deleteAllWorkflowsCmd = &cobra.Command{
 			err = client.DeleteAllProcessGraphs(ColonyID, ColonyPrvKey)
 			CheckError(err)
 
-			log.WithFields(log.Fields{"colonyID": ColonyID}).Info("Deleting all workflows in Colony")
+			log.WithFields(log.Fields{"ColonyID": ColonyID}).Info("Deleting all workflows in Colony")
 		} else {
 			log.Info("Aborting ...")
 		}

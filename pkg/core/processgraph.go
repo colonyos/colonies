@@ -7,6 +7,7 @@ import (
 
 	"github.com/colonyos/colonies/pkg/security/crypto"
 	"github.com/google/uuid"
+	log "github.com/sirupsen/logrus"
 )
 
 type ProcessGraphStorage interface {
@@ -114,6 +115,11 @@ func (graph *ProcessGraph) Resolve() error {
 	waitingProcesses := 0
 
 	err := graph.Iterate(func(process *Process) error {
+		if process == nil {
+			errMsg := "Failed to iterate processgraph, process is nil"
+			log.Error(errMsg)
+			return errors.New(errMsg)
+		}
 		nrParents := len(process.Parents)
 		nrParentsFinished := 0
 
@@ -295,6 +301,13 @@ func (graph *ProcessGraph) iterate(processID string, visited map[string]bool, vi
 	if err != nil {
 		return err
 	}
+
+	if process == nil {
+		errMsg := "Failed to iterate processgraph, process is nil"
+		log.Error(errMsg)
+		return errors.New(errMsg)
+	}
+
 	if visited[processID] {
 		return nil
 	}

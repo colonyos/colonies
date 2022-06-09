@@ -24,7 +24,6 @@ import (
 )
 
 var mutex sync.Mutex
-var registered bool
 
 func init() {
 	workerCmd.AddCommand(workerStartCmd)
@@ -129,12 +128,12 @@ var workerStartCmd = &cobra.Command{
 		err = os.WriteFile("/tmp/runtimeprvkey", []byte(runtimePrvKey), 0644)
 		CheckError(err)
 
-		log.WithFields(log.Fields{"runtimeID": runtimeID, "runtimeName": RuntimeName, "runtimeType:": RuntimeType, "colonyID": ColonyID, "CPU": CPU, "Cores": Cores, "Mem": Mem, "GPU": GPU, "GPUs": GPUs}).Info("Register a new Runtime")
+		log.WithFields(log.Fields{"RuntimeID": runtimeID, "RuntimeName": RuntimeName, "RuntimeType": RuntimeType, "ColonyID": ColonyID, "CPU": CPU, "Cores": Cores, "Mem": Mem, "GPU": GPU, "GPUs": GPUs}).Info("Register a new Runtime")
 		runtime := core.CreateRuntime(runtimeID, RuntimeType, RuntimeName, ColonyID, CPU, Cores, Mem, GPU, GPUs, time.Now(), time.Now())
 		_, err = client.AddRuntime(runtime, ColonyPrvKey)
 		CheckError(err)
 
-		log.WithFields(log.Fields{"runtimeID": runtimeID}).Info("Approving Runtime")
+		log.WithFields(log.Fields{"RuntimeID": runtimeID}).Info("Approving Runtime")
 		err = client.ApproveRuntime(runtimeID, ColonyPrvKey)
 		CheckError(err)
 
@@ -144,7 +143,7 @@ var workerStartCmd = &cobra.Command{
 		go func() {
 			<-c
 			if assignedProcess != nil {
-				log.WithFields(log.Fields{"processID": assignedProcess.ID}).Info("Closing process as failed")
+				log.WithFields(log.Fields{"ProcessID": assignedProcess.ID}).Info("Closing process as failed")
 				client.CloseFailed(assignedProcess.ID, runtimePrvKey)
 			}
 			unregisterRuntime(client)
@@ -215,14 +214,10 @@ var workerStartCmd = &cobra.Command{
 
 			if failure {
 				log.WithFields(log.Fields{"processID": assignedProcess.ID}).Info("Closing process as failed")
-				if registered {
-					client.CloseFailed(assignedProcess.ID, runtimePrvKey)
-				}
+				client.CloseFailed(assignedProcess.ID, runtimePrvKey)
 			} else {
 				log.WithFields(log.Fields{"processID": assignedProcess.ID}).Info("Closing process as successful")
-				if registered {
-					client.CloseSuccessful(assignedProcess.ID, runtimePrvKey)
-				}
+				client.CloseSuccessful(assignedProcess.ID, runtimePrvKey)
 			}
 		}
 	},
@@ -338,10 +333,6 @@ var workerUnregisterCmd = &cobra.Command{
 }
 
 func unregisterRuntime(client *client.ColoniesClient) {
-	if !registered {
-		return
-	}
-
 	mutex.Lock()
 	defer mutex.Unlock()
 
@@ -353,5 +344,5 @@ func unregisterRuntime(client *client.ColoniesClient) {
 	err = client.DeleteRuntime(runtimeID, ColonyPrvKey)
 	CheckError(err)
 
-	log.WithFields(log.Fields{"runtimeID": runtimeID}).Info("Runtime unregistered")
+	log.WithFields(log.Fields{"RuntimeID": runtimeID}).Info("Runtime unregistered")
 }
