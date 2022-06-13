@@ -66,5 +66,8 @@ var monitoringStartCmd = &cobra.Command{
 			"Insecure":           Insecure}).
 			Info("Starting Prometheus monitoring server")
 		server.CreateMonitoringServer(MonitorPort, ServerHost, ServerPort, Insecure, SkipTLSVerify, ServerPrvKey, MonitorIntervall)
+
+		wait := make(chan struct{})
+		<-wait
 	},
 }
