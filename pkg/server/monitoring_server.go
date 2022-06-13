@@ -290,7 +290,4 @@ func (server *MonitoringServer) registerGauges() {
 	)); err != nil {
 		log.WithFields(log.Fields{"Error": err}).Error("Failed to register Prometheus metrics")
 	}
-
-	wait := make(chan struct{})
-	<-wait
 }
