@@ -43,8 +43,6 @@ func CreateMonitoringServer(port int,
 	server.pullIntervall = pullIntervall
 	server.stat = nil
 
-	log.WithFields(log.Fields{"Port": port}).Info("Starting Monitoring server")
-
 	go func() {
 		http.Handle("/metrics", promhttp.Handler())
 		http.ListenAndServe(":"+strconv.Itoa(port), nil)
