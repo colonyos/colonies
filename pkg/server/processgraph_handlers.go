@@ -10,6 +10,71 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+func (server *ColoniesServer) createProcessGraph(workflowSpec *core.WorkflowSpec) (string, error) {
+	graph, err := core.CreateProcessGraph(workflowSpec.ColonyID)
+
+	// Create all processes
+	processMap := make(map[string]*core.Process)
+	var rootProcesses []*core.Process
+	for _, processSpec := range workflowSpec.ProcessSpecs {
+		if processSpec.MaxExecTime == 0 {
+			log.WithFields(log.Fields{"Name": processSpec.Name}).Warning("MaxExecTime was set to 0, resetting to -1")
+			processSpec.MaxExecTime = -1
+		}
+		process := core.CreateProcess(processSpec)
+		log.WithFields(log.Fields{"ProcessID": process.ID, "MaxExecTime": process.ProcessSpec.MaxExecTime, "MaxRetries": process.ProcessSpec.MaxRetries}).Info("Creating new process")
+		if len(processSpec.Conditions.Dependencies) == 0 {
+			// The process is a root process, let it start immediately
+			process.WaitForParents = false
+			rootProcesses = append(rootProcesses, process)
+			graph.AddRoot(process.ID)
+		} else {
+			// The process has to wait for its parents
+			process.WaitForParents = true
+		}
+		process.ProcessGraphID = graph.ID
+		process.ProcessSpec.Conditions.ColonyID = workflowSpec.ColonyID
+		processMap[process.ProcessSpec.Name] = process
+	}
+
+	_, err = server.controller.addProcessGraph(graph)
+	if err != nil {
+		msg := "Failed to submit workflow, failed to add process graph"
+		log.WithFields(log.Fields{"Error": err}).Info(msg)
+		return "", errors.New(msg)
+	}
+
+	log.WithFields(log.Fields{"WorkflowID": graph.ID}).Info("Submitting workflow")
+
+	// Create dependencies
+	for _, process := range processMap {
+		for _, dependsOn := range process.ProcessSpec.Conditions.Dependencies {
+			parentProcess := processMap[dependsOn]
+			if parentProcess == nil {
+				msg := "Failed to submit workflow, invalid dependencies, are you depending on a process spec name that does not exits?"
+				log.WithFields(log.Fields{"Error": err}).Info(msg)
+				return "", errors.New(msg)
+			}
+			process.AddParent(parentProcess.ID)
+			parentProcess.AddChild(process.ID)
+		}
+	}
+
+	// Now, start all processes
+	for _, process := range processMap {
+		_, err := server.controller.addProcess(process)
+		log.WithFields(log.Fields{"ProcessID": process.ID}).Info("Submitting process")
+
+		if err != nil {
+			msg := "Failed to submit workflow, failed to add process"
+			log.WithFields(log.Fields{"Error": err}).Info(msg)
+			return "", errors.New(msg)
+		}
+	}
+
+	return graph.ToJSON()
+}
+
 func (server *ColoniesServer) handleSubmitWorkflowHTTPRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
 	msg, err := rpc.CreateSubmitWorkflowSpecMsgFromJSON(jsonString)
 	if server.handleHTTPError(c, err, http.StatusBadRequest) {
@@ -33,65 +98,7 @@ func (server *ColoniesServer) handleSubmitWorkflowHTTPRequest(c *gin.Context, re
 		return
 	}
 
-	graph, err := core.CreateProcessGraph(msg.WorkflowSpec.ColonyID)
-
-	// Create all processes
-	processMap := make(map[string]*core.Process)
-	var rootProcesses []*core.Process
-	for _, processSpec := range msg.WorkflowSpec.ProcessSpecs {
-		if processSpec.MaxExecTime == 0 {
-			log.WithFields(log.Fields{"Name": processSpec.Name}).Warning("MaxExecTime was set to 0, resetting to -1")
-			processSpec.MaxExecTime = -1
-		}
-		process := core.CreateProcess(processSpec)
-		log.WithFields(log.Fields{"ProcessID": process.ID, "MaxExecTime": process.ProcessSpec.MaxExecTime, "MaxRetries": process.ProcessSpec.MaxRetries}).Info("Creating new process")
-		if len(processSpec.Conditions.Dependencies) == 0 {
-			// The process is a root process, let it start immediately
-			process.WaitForParents = false
-			rootProcesses = append(rootProcesses, process)
-			graph.AddRoot(process.ID)
-		} else {
-			// The process has to wait for its parents
-			process.WaitForParents = true
-		}
-		process.ProcessGraphID = graph.ID
-		process.ProcessSpec.Conditions.ColonyID = msg.WorkflowSpec.ColonyID
-		processMap[process.ProcessSpec.Name] = process
-	}
-
-	_, err = server.controller.addProcessGraph(graph)
-	if err != nil {
-		server.handleHTTPError(c, errors.New("Failed to submit workflow, failed to add process graph"), http.StatusInternalServerError)
-		return
-	}
-
-	log.WithFields(log.Fields{"WorkflowID": graph.ID}).Info("Submitting workflow")
-
-	// Create dependencies
-	for _, process := range processMap {
-		for _, dependsOn := range process.ProcessSpec.Conditions.Dependencies {
-			parentProcess := processMap[dependsOn]
-			if parentProcess == nil {
-				server.handleHTTPError(c, errors.New("Failed to submit workflow, invalid dependencies, are you depending on a process spec name that does not exits?"), http.StatusBadRequest)
-				return
-			}
-			process.AddParent(parentProcess.ID)
-			parentProcess.AddChild(process.ID)
-		}
-	}
-
-	// Now, start all processes
-	for _, process := range processMap {
-		_, err := server.controller.addProcess(process)
-		log.WithFields(log.Fields{"ProcessID": process.ID}).Info("Submitting process")
-
-		if err != nil {
-			server.handleHTTPError(c, errors.New("Failed to submit workflow, failed to add process"), http.StatusInternalServerError)
-			return
-		}
-	}
-
-	jsonString, err = graph.ToJSON()
+	jsonString, err = server.createProcessGraph(msg.WorkflowSpec)
 	if server.handleHTTPError(c, err, http.StatusInternalServerError) {
 		return
 	}

@@ -7,6 +7,9 @@ import (
 )
 
 type Database interface {
+	// General
+	Close()
+
 	// Colony functions ...
 	AddColony(colony *core.Colony) error
 	GetColonies() ([]*core.Colony, error)
@@ -97,4 +100,8 @@ type Database interface {
 	CountRunningProcessGraphsByColonyID(colonyID string) (int, error)
 	CountSuccessfulProcessGraphsByColonyID(colonyID string) (int, error)
 	CountFailedProcessGraphsByColonyID(colonyID string) (int, error)
+
+	// Distributed locking
+	Lock(timeout int) error
+	Unlock() error
 }

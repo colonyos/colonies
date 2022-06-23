@@ -230,7 +230,7 @@ var devCmd = &cobra.Command{
 		CheckError(err)
 		log.WithFields(log.Fields{"Port": coloniesServerPort}).Info("Starting a Colonies server")
 
-		coloniesServer := server.CreateColoniesServer(coloniesDB, coloniesServerPort, serverID, false, "", "", true)
+		coloniesServer := server.CreateColoniesServer(coloniesDB, coloniesServerPort, serverID, false, "", "", true, false)
 		go coloniesServer.ServeForever()
 
 		coloniesServerHost := os.Getenv("COLONIES_SERVERHOST")

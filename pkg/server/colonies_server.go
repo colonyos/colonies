@@ -32,9 +32,11 @@ type ColoniesServer struct {
 	httpServer        *http.Server
 	crypto            security.Crypto
 	validator         security.Validator
+	db                database.Database
+	isLeader          bool
 }
 
-func CreateColoniesServer(db database.Database, port int, serverID string, tls bool, tlsPrivateKeyPath string, tlsCertPath string, debug bool) *ColoniesServer {
+func CreateColoniesServer(db database.Database, port int, serverID string, tls bool, tlsPrivateKeyPath string, tlsCertPath string, debug bool, productionServer bool) *ColoniesServer {
 	if debug {
 		//log.SetLevel(log.DebugLevel)
 		gin.SetMode(gin.ReleaseMode)
@@ -48,9 +50,28 @@ func CreateColoniesServer(db database.Database, port int, serverID string, tls b
 	server.ginHandler = gin.Default()
 	server.ginHandler.Use(cors.Default())
 
+	server.db = db
+
 	httpServer := &http.Server{
 		Addr:    ":" + strconv.Itoa(port),
 		Handler: server.ginHandler,
+	}
+
+	if productionServer {
+		leaderChan := make(chan bool)
+		go tryBecomeLeader(leaderChan, 1000, db)
+
+		go func() {
+			for {
+				isLeader := <-leaderChan
+				if isLeader && !server.isLeader {
+					server.isLeader = true
+					log.Info("Became leader")
+				}
+			}
+		}()
+	} else {
+		server.isLeader = true
 	}
 
 	server.httpServer = httpServer
@@ -265,6 +286,7 @@ func (server *ColoniesServer) Shutdown() {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
+	defer server.db.Close()
 
 	if err := server.httpServer.Shutdown(ctx); err != nil {
 		log.WithFields(log.Fields{"Error": err}).Warning("Colonies server forced to shutdown")
