@@ -101,6 +101,15 @@ type Database interface {
 	CountSuccessfulProcessGraphsByColonyID(colonyID string) (int, error)
 	CountFailedProcessGraphsByColonyID(colonyID string) (int, error)
 
+	// Generator functions
+	AddGenerator(generator *core.Generator) error
+	GetGeneratorByID(generatorID string) (*core.Generator, error)
+	FindGeneratorsByColonyID(colonyID string, count int) ([]*core.Generator, error)
+	DeleteGeneratorByID(generatorID string) error
+	DeleteAllGeneratorsByColonyID(colonyID string) error
+	IncreaseCounter(generatorID string) error
+	ResetCounter(generatorID string) error
+
 	// Distributed locking
 	Lock(timeout int) error
 	Unlock() error
