@@ -107,8 +107,8 @@ type Database interface {
 	FindGeneratorsByColonyID(colonyID string, count int) ([]*core.Generator, error)
 	DeleteGeneratorByID(generatorID string) error
 	DeleteAllGeneratorsByColonyID(colonyID string) error
-	IncreaseCounter(generatorID string) error
-	ResetCounter(generatorID string) error
+	IncreaseGeneratorCounter(generatorID string) error
+	ResetGenerator(generatorID string) error
 
 	// Distributed locking
 	Lock(timeout int) error

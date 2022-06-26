@@ -2,6 +2,7 @@ package core
 
 import (
 	"encoding/json"
+	"time"
 
 	"github.com/colonyos/colonies/pkg/security/crypto"
 
@@ -9,13 +10,14 @@ import (
 )
 
 type Generator struct {
-	ID           string `json:"generatorid"`
-	ColonyID     string `json:"colonyid"`
-	Name         string `json:"name"`
-	WorkflowSpec string `json:"workflowspec"`
-	Trigger      int    `json:"trigger"`
-	Counter      int    `json:"counter"`
-	Timeout      int    `json:"timeout"`
+	ID           string    `json:"generatorid"`
+	ColonyID     string    `json:"colonyid"`
+	Name         string    `json:"name"`
+	WorkflowSpec string    `json:"workflowspec"`
+	Trigger      int       `json:"trigger"`
+	Counter      int       `json:"counter"`
+	Timeout      int       `json:"timeout"`
+	LastRun      time.Time `json:"lastrun"`
 }
 
 func CreateGenerator(colonyID string, name string, workflowSpec string, trigger int, counter int, timeout int) *Generator {
