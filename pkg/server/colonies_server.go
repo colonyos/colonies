@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/colonyos/colonies/pkg/core"
@@ -34,6 +35,7 @@ type ColoniesServer struct {
 	validator         security.Validator
 	db                database.Database
 	isLeader          bool
+	mutex             sync.Mutex
 }
 
 func CreateColoniesServer(db database.Database, port int, serverID string, tls bool, tlsPrivateKeyPath string, tlsCertPath string, debug bool, productionServer bool) *ColoniesServer {
@@ -65,6 +67,8 @@ func CreateColoniesServer(db database.Database, port int, serverID string, tls b
 			for {
 				isLeader := <-leaderChan
 				if isLeader && !server.isLeader {
+					server.mutex.Lock()
+					defer server.mutex.Unlock()
 					server.isLeader = true
 					log.Info("Became leader")
 				}
@@ -75,7 +79,7 @@ func CreateColoniesServer(db database.Database, port int, serverID string, tls b
 	}
 
 	server.httpServer = httpServer
-	server.controller = createColoniesController(db)
+	server.controller = createColoniesController(db, server)
 	server.serverID = serverID
 	server.tls = tls
 	server.port = port

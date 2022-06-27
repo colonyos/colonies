@@ -10,8 +10,9 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func (server *ColoniesServer) createProcessGraph(workflowSpec *core.WorkflowSpec) (string, error) {
-	graph, err := core.CreateProcessGraph(workflowSpec.ColonyID)
+// note, this function should only be called by the controller master worker go-routine to avoid race conditions
+func (server *ColoniesServer) createProcessGraph(workflowSpec *core.WorkflowSpec) (*core.ProcessGraph, error) {
+	processgraph, err := core.CreateProcessGraph(workflowSpec.ColonyID)
 
 	// Create all processes
 	processMap := make(map[string]*core.Process)
@@ -27,24 +28,24 @@ func (server *ColoniesServer) createProcessGraph(workflowSpec *core.WorkflowSpec
 			// The process is a root process, let it start immediately
 			process.WaitForParents = false
 			rootProcesses = append(rootProcesses, process)
-			graph.AddRoot(process.ID)
+			processgraph.AddRoot(process.ID)
 		} else {
 			// The process has to wait for its parents
 			process.WaitForParents = true
 		}
-		process.ProcessGraphID = graph.ID
+		process.ProcessGraphID = processgraph.ID
 		process.ProcessSpec.Conditions.ColonyID = workflowSpec.ColonyID
 		processMap[process.ProcessSpec.Name] = process
 	}
 
-	_, err = server.controller.addProcessGraph(graph)
+	err = server.controller.db.AddProcessGraph(processgraph)
 	if err != nil {
-		msg := "Failed to submit workflow, failed to add process graph"
+		msg := "Failed to submit workflow, failed to add processgraph"
 		log.WithFields(log.Fields{"Error": err}).Info(msg)
-		return "", errors.New(msg)
+		return nil, errors.New(msg)
 	}
 
-	log.WithFields(log.Fields{"WorkflowID": graph.ID}).Info("Submitting workflow")
+	log.WithFields(log.Fields{"ProcessGraphID": processgraph.ID}).Info("Submitting workflow")
 
 	// Create dependencies
 	for _, process := range processMap {
@@ -53,7 +54,7 @@ func (server *ColoniesServer) createProcessGraph(workflowSpec *core.WorkflowSpec
 			if parentProcess == nil {
 				msg := "Failed to submit workflow, invalid dependencies, are you depending on a process spec name that does not exits?"
 				log.WithFields(log.Fields{"Error": err}).Info(msg)
-				return "", errors.New(msg)
+				return nil, errors.New(msg)
 			}
 			process.AddParent(parentProcess.ID)
 			parentProcess.AddChild(process.ID)
@@ -62,17 +63,17 @@ func (server *ColoniesServer) createProcessGraph(workflowSpec *core.WorkflowSpec
 
 	// Now, start all processes
 	for _, process := range processMap {
-		_, err := server.controller.addProcess(process)
+		err := server.controller.db.AddProcess(process)
 		log.WithFields(log.Fields{"ProcessID": process.ID}).Info("Submitting process")
 
 		if err != nil {
 			msg := "Failed to submit workflow, failed to add process"
 			log.WithFields(log.Fields{"Error": err}).Info(msg)
-			return "", errors.New(msg)
+			return nil, errors.New(msg)
 		}
 	}
 
-	return graph.ToJSON()
+	return processgraph, nil
 }
 
 func (server *ColoniesServer) handleSubmitWorkflowHTTPRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
@@ -98,7 +99,12 @@ func (server *ColoniesServer) handleSubmitWorkflowHTTPRequest(c *gin.Context, re
 		return
 	}
 
-	jsonString, err = server.createProcessGraph(msg.WorkflowSpec)
+	processGraph, err := server.controller.submitWorkflowSpec(msg.WorkflowSpec)
+	if server.handleHTTPError(c, err, http.StatusInternalServerError) {
+		return
+	}
+
+	jsonString, err = processGraph.ToJSON()
 	if server.handleHTTPError(c, err, http.StatusInternalServerError) {
 		return
 	}
@@ -139,7 +145,7 @@ func (server *ColoniesServer) handleGetProcessGraphHTTPRequest(c *gin.Context, r
 		return
 	}
 
-	log.WithFields(log.Fields{"WorkflowID": graph.ID}).Info("Getting process graph")
+	log.WithFields(log.Fields{"ProcessGraphId": graph.ID}).Info("Getting processgraph")
 
 	server.sendHTTPReply(c, payloadType, jsonString)
 }
