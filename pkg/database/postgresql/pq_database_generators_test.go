@@ -4,29 +4,15 @@ import (
 	"testing"
 
 	"github.com/colonyos/colonies/pkg/core"
+	"github.com/colonyos/colonies/pkg/utils"
 	"github.com/stretchr/testify/assert"
 )
-
-func fakeGenerator(t *testing.T, colonyID string) *core.Generator {
-	workflowSpec := core.CreateWorkflowSpec(colonyID)
-	processSpec1 := core.CreateEmptyProcessSpec()
-	processSpec1.Name = "task1"
-	processSpec2 := core.CreateEmptyProcessSpec()
-	processSpec2.Name = "task2"
-	processSpec2.AddDependency("task1")
-	workflowSpec.AddProcessSpec(processSpec1)
-	workflowSpec.AddProcessSpec(processSpec2)
-	jsonStr, err := workflowSpec.ToJSON()
-	assert.Nil(t, err)
-	generator := core.CreateGenerator(colonyID, "test_genname", jsonStr, 10, 0, 10)
-	return generator
-}
 
 func TestAddGenerator(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
 
-	generator := fakeGenerator(t, core.GenerateRandomID())
+	generator := utils.FakeGenerator(t, core.GenerateRandomID())
 	err = db.AddGenerator(generator)
 	assert.Nil(t, err)
 
@@ -37,7 +23,7 @@ func TestGetGenerator(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
 
-	generator := fakeGenerator(t, core.GenerateRandomID())
+	generator := utils.FakeGenerator(t, core.GenerateRandomID())
 	err = db.AddGenerator(generator)
 	assert.Nil(t, err)
 
@@ -53,11 +39,11 @@ func TestFindGeneratorByColonyID(t *testing.T) {
 	assert.Nil(t, err)
 
 	colonyID := core.GenerateRandomID()
-	generator1 := fakeGenerator(t, colonyID)
+	generator1 := utils.FakeGenerator(t, colonyID)
 	err = db.AddGenerator(generator1)
 	assert.Nil(t, err)
 
-	generator2 := fakeGenerator(t, colonyID)
+	generator2 := utils.FakeGenerator(t, colonyID)
 	err = db.AddGenerator(generator2)
 	assert.Nil(t, err)
 
@@ -84,11 +70,11 @@ func TestDeleteGeneratorByID(t *testing.T) {
 	assert.Nil(t, err)
 
 	colonyID := core.GenerateRandomID()
-	generator1 := fakeGenerator(t, colonyID)
+	generator1 := utils.FakeGenerator(t, colonyID)
 	err = db.AddGenerator(generator1)
 	assert.Nil(t, err)
 
-	generator2 := fakeGenerator(t, colonyID)
+	generator2 := utils.FakeGenerator(t, colonyID)
 	err = db.AddGenerator(generator2)
 	assert.Nil(t, err)
 
@@ -115,16 +101,16 @@ func TestDeleteAllGeneratorsByColonyID(t *testing.T) {
 	assert.Nil(t, err)
 
 	colonyID1 := core.GenerateRandomID()
-	generator1 := fakeGenerator(t, colonyID1)
+	generator1 := utils.FakeGenerator(t, colonyID1)
 	err = db.AddGenerator(generator1)
 	assert.Nil(t, err)
 
-	generator2 := fakeGenerator(t, colonyID1)
+	generator2 := utils.FakeGenerator(t, colonyID1)
 	err = db.AddGenerator(generator2)
 	assert.Nil(t, err)
 
 	colonyID2 := core.GenerateRandomID()
-	generator3 := fakeGenerator(t, colonyID2)
+	generator3 := utils.FakeGenerator(t, colonyID2)
 	err = db.AddGenerator(generator3)
 	assert.Nil(t, err)
 
@@ -146,36 +132,6 @@ func TestDeleteAllGeneratorsByColonyID(t *testing.T) {
 	generatorFromDB, err = db.GetGeneratorByID(generator3.ID)
 	assert.Nil(t, err)
 	assert.NotNil(t, generatorFromDB)
-
-	defer db.Close()
-}
-
-func TestGeneratorLifeCycle(t *testing.T) {
-	db, err := PrepareTests()
-	assert.Nil(t, err)
-
-	colonyID1 := core.GenerateRandomID()
-	generator1 := fakeGenerator(t, colonyID1)
-	err = db.AddGenerator(generator1)
-	assert.Nil(t, err)
-
-	generatorFromDB, err := db.GetGeneratorByID(generator1.ID)
-	assert.Nil(t, err)
-	assert.True(t, generatorFromDB.Counter == 0)
-
-	err = db.IncreaseGeneratorCounter(generator1.ID)
-	assert.Nil(t, err)
-
-	generatorFromDB, err = db.GetGeneratorByID(generator1.ID)
-	assert.Nil(t, err)
-	assert.True(t, generatorFromDB.Counter == 1)
-
-	err = db.ResetGenerator(generator1.ID)
-	assert.Nil(t, err)
-
-	generatorFromDB, err = db.GetGeneratorByID(generator1.ID)
-	assert.Nil(t, err)
-	assert.True(t, generatorFromDB.Counter == 0)
 
 	defer db.Close()
 }

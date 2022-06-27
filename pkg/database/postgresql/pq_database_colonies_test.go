@@ -93,11 +93,11 @@ func TestDeleteColonies(t *testing.T) {
 	err = db.AddColony(colony2)
 	assert.Nil(t, err)
 
-	generator1 := fakeGenerator(t, colony1.ID)
+	generator1 := utils.FakeGenerator(t, colony1.ID)
 	err = db.AddGenerator(generator1)
 	assert.Nil(t, err)
 
-	generator2 := fakeGenerator(t, colony2.ID)
+	generator2 := utils.FakeGenerator(t, colony2.ID)
 	err = db.AddGenerator(generator2)
 	assert.Nil(t, err)
 

@@ -101,23 +101,3 @@ func (db *PQDatabase) DeleteAllGeneratorsByColonyID(colonyID string) error {
 
 	return nil
 }
-
-func (db *PQDatabase) IncreaseGeneratorCounter(generatorID string) error {
-	sqlStatement := `UPDATE ` + db.dbPrefix + `GENERATORS SET COUNTER=COUNTER+1 WHERE GENERATOR_ID=$1`
-	_, err := db.postgresql.Exec(sqlStatement, generatorID)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (db *PQDatabase) ResetGenerator(generatorID string) error {
-	sqlStatement := `UPDATE ` + db.dbPrefix + `GENERATORS SET COUNTER=0, LASTRUN=$1 WHERE GENERATOR_ID=$2`
-	_, err := db.postgresql.Exec(sqlStatement, time.Now(), generatorID)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
