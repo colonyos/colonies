@@ -27,7 +27,7 @@ func (server *ColoniesServer) handleAddAttributeHTTPRequest(c *gin.Context, reco
 		return
 	}
 
-	process, err := server.controller.getProcessByID(msg.Attribute.TargetID)
+	process, err := server.controller.getProcess(msg.Attribute.TargetID)
 	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
@@ -92,7 +92,7 @@ func (server *ColoniesServer) handleGetAttributeHTTPRequest(c *gin.Context, reco
 		return
 	}
 
-	process, err := server.controller.getProcessByID(attribute.TargetID)
+	process, err := server.controller.getProcess(attribute.TargetID)
 	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}

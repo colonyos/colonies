@@ -234,6 +234,27 @@ func (controller *coloniesController) addGenerator(generator *core.Generator) (*
 	}
 }
 
+func (controller *coloniesController) getGenerator(generatorID string) (*core.Generator, error) {
+	cmd := &command{generatorReplyChan: make(chan *core.Generator, 1),
+		errorChan: make(chan error, 1),
+		handler: func(cmd *command) {
+			generator, err := controller.db.GetGeneratorByID(generatorID)
+			if err != nil {
+				cmd.errorChan <- err
+				return
+			}
+			cmd.generatorReplyChan <- generator
+		}}
+
+	controller.cmdQueue <- cmd
+	select {
+	case err := <-cmd.errorChan:
+		return nil, err
+	case generator := <-cmd.generatorReplyChan:
+		return generator, nil
+	}
+}
+
 func (controller *coloniesController) deleteGenerator(generatorID string) error {
 	cmd := &command{errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
@@ -362,7 +383,7 @@ func (controller *coloniesController) getColonies() ([]*core.Colony, error) {
 	}
 }
 
-func (controller *coloniesController) getColonyByID(colonyID string) (*core.Colony, error) {
+func (controller *coloniesController) getColony(colonyID string) (*core.Colony, error) {
 	cmd := &command{colonyReplyChan: make(chan *core.Colony),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
@@ -450,7 +471,7 @@ func (controller *coloniesController) addRuntime(runtime *core.Runtime) (*core.R
 	}
 }
 
-func (controller *coloniesController) getRuntimeByID(runtimeID string) (*core.Runtime, error) {
+func (controller *coloniesController) getRuntime(runtimeID string) (*core.Runtime, error) {
 	cmd := &command{runtimeReplyChan: make(chan *core.Runtime),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
@@ -564,7 +585,7 @@ func (controller *coloniesController) addProcess(process *core.Process) (*core.P
 	}
 }
 
-func (controller *coloniesController) getProcessByID(processID string) (*core.Process, error) {
+func (controller *coloniesController) getProcess(processID string) (*core.Process, error) {
 	cmd := &command{processReplyChan: make(chan *core.Process, 1),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {

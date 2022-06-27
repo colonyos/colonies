@@ -667,26 +667,6 @@ func (client *ColoniesClient) GetFailedProcessGraphs(colonyID string, count int,
 	return client.getProcessGraphs(core.FAILED, colonyID, count, prvKey)
 }
 
-func (client *ColoniesClient) Version() (string, string, error) {
-	msg := rpc.CreateVersionMsg("", "")
-	jsonString, err := msg.ToJSON()
-	if err != nil {
-		return "", "", err
-	}
-
-	respBodyString, err := client.sendMessage(rpc.VersionPayloadType, jsonString, "", true)
-	if err != nil {
-		return "", "", err
-	}
-
-	version, err := rpc.CreateVersionMsgFromJSON(respBodyString)
-	if err != nil {
-		return "", "", err
-	}
-
-	return version.BuildVersion, version.BuildTime, nil
-}
-
 func (client *ColoniesClient) DeleteProcessGraph(processGraphID string, prvKey string) error {
 	msg := rpc.CreateDeleteProcessGraphMsg(processGraphID)
 	jsonString, err := msg.ToJSON()
@@ -715,4 +695,99 @@ func (client *ColoniesClient) DeleteAllProcessGraphs(colonyID string, prvKey str
 	}
 
 	return nil
+}
+
+func (client *ColoniesClient) AddGenerator(generator *core.Generator, prvKey string) (*core.Generator, error) {
+	msg := rpc.CreateAddGeneratorMsg(generator)
+	jsonString, err := msg.ToJSON()
+	if err != nil {
+		return nil, err
+	}
+
+	respBodyString, err := client.sendMessage(rpc.AddGeneratorPayloadType, jsonString, prvKey, false)
+	if err != nil {
+		return nil, err
+	}
+
+	return core.ConvertJSONToGenerator(respBodyString)
+}
+
+func (client *ColoniesClient) GetGenerator(generatorID string, prvKey string) (*core.Generator, error) {
+	msg := rpc.CreateGetGeneratorMsg(generatorID)
+	jsonString, err := msg.ToJSON()
+	if err != nil {
+		return nil, err
+	}
+
+	respBodyString, err := client.sendMessage(rpc.GetGeneratorPayloadType, jsonString, prvKey, false)
+	if err != nil {
+		return nil, err
+	}
+
+	return core.ConvertJSONToGenerator(respBodyString)
+}
+
+func (client *ColoniesClient) GetGenerators(colonyID string, count int, prvKey string) ([]*core.Generator, error) {
+	msg := rpc.CreateGetGeneratorsMsg(colonyID, count)
+	jsonString, err := msg.ToJSON()
+	if err != nil {
+		return nil, err
+	}
+
+	respBodyString, err := client.sendMessage(rpc.GetGeneratorsPayloadType, jsonString, prvKey, false)
+	if err != nil {
+		return nil, err
+	}
+
+	return core.ConvertJSONToGeneratorArray(respBodyString)
+}
+
+func (client *ColoniesClient) IncGenerator(generatorID string, prvKey string) (*core.Generator, error) {
+	msg := rpc.CreateIncGeneratorMsg(generatorID)
+	jsonString, err := msg.ToJSON()
+	if err != nil {
+		return nil, err
+	}
+
+	respBodyString, err := client.sendMessage(rpc.IncGeneratorPayloadType, jsonString, prvKey, false)
+	if err != nil {
+		return nil, err
+	}
+
+	return core.ConvertJSONToGenerator(respBodyString)
+}
+
+func (client *ColoniesClient) DeleteGenerator(generatorID string, prvKey string) error {
+	msg := rpc.CreateDeleteGeneratorMsg(generatorID)
+	jsonString, err := msg.ToJSON()
+	if err != nil {
+		return err
+	}
+
+	_, err = client.sendMessage(rpc.DeleteGeneratorPayloadType, jsonString, prvKey, false)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (client *ColoniesClient) Version() (string, string, error) {
+	msg := rpc.CreateVersionMsg("", "")
+	jsonString, err := msg.ToJSON()
+	if err != nil {
+		return "", "", err
+	}
+
+	respBodyString, err := client.sendMessage(rpc.VersionPayloadType, jsonString, "", true)
+	if err != nil {
+		return "", "", err
+	}
+
+	version, err := rpc.CreateVersionMsgFromJSON(respBodyString)
+	if err != nil {
+		return "", "", err
+	}
+
+	return version.BuildVersion, version.BuildTime, nil
 }

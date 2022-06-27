@@ -55,7 +55,7 @@ func TestColoniesControllerApproveRuntime(t *testing.T) {
 	err = controller.approveRuntime(runtime.ID)
 	assert.Nil(t, err)
 
-	runtimeFromController, err := controller.getRuntimeByID(runtime.ID)
+	runtimeFromController, err := controller.getRuntime(runtime.ID)
 	assert.Nil(t, err)
 	assert.True(t, runtimeFromController.IsApproved())
 	assert.False(t, runtime.IsApproved())
