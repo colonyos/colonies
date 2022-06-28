@@ -389,7 +389,7 @@ Generators automatically spawn workflows and can be used to create recurring wor
 
 1. The first trigger is a counter mechanism. A workflow is automatically submitted if the counter exceeds a trigger threshold (counter>=threshold). A third-party server may for example increase the counter (via the Colonies API) to indicate that new data has been added. 
 A new workflow will then automatically be triggered to process the newly added data when the threshold is exceeded.
-2. The second trigger is a timeout mechanism. A workflow is automatically triggered if a workflow has not run for a certain amount of time, even if counter<threshold. However, the counter needs to be greater than 1 (counter>1) for a workflow to be triggered. 
+2. The second trigger is a timeout mechanism. A workflow is automatically triggered if a workflow has not been generated for a certain amount of time, even if counter<threshold. However, the counter needs to be greater than 1 (counter>1) for a workflow to be triggered. 
 The rationale is that a workflow should only be triggered if new data has been added.
 
 Note if many Colonies servers run in a cluster and are connected to the same PostrgreSQL database, one of the Colonies server is then elected as a leader. Only the leader can execute generators. A new leader is automatically elected if the current leader becomes unavailable.
