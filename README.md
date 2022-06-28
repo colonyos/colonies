@@ -46,6 +46,7 @@ More information can also be found [here](https://colonyos.io).
 * **Batch processing and distributed RPC.** The Colonies server maintains several prioritized job queues and keeps track of process statuses. Processes not finishing in time are automatically moved back to the job queue to be executed by another worker.  
 * **Pull-based orchestration.** Users (or workers) submit process specifications the Colonies server. Colonies workers connect to the Colonies server and request processes to execute. A HTTP Long Polling/WebSocket protocol ensure that workers can reside anywhere on the Internet, even behind firewalls. The Colonies server never establish connections directly to workers. 
 * **Multi-step workflows** or **Directed Acyclic Graph (DAG)** to capture dependencies between jobs.
+* **Generators** to automatically spawn workflows based on external events or timeouts.
 * **Built-in identity and trust management.** A crypto-protocol based on ECDSA (Elliptic Curve Digital Signature Algorithm) offers identity and trust management to enable Colonies workers member of the same colony to fully trust each other. Only authorized users or workers can submit process specifications or interact with other workers within a colony.
 * **Implemented in Golang** with a standard PostgreSQL database.
 * **SDK in Python, Julia, and Golang.**
@@ -384,11 +385,14 @@ INFO[0000] Closing process as successful                 processID=f46b7e84da065
 Note that the order the processes are executed. Also, try to start another worker and you will see that both workers will execute processes.
 
 # Generators
-Generators automatically submit workflows and can be used to create recurrent workflows, for example workflows that automatically process data in a database once new data become available. In the current implementation, a workflow is automatically submitted by the Colonies server based on two triggers. 
-* The first trigger is a **counter** mechanism. A workflow is automatically submitted if the counter exceeds a trigger value. A third-party server may for exmaple increase the counter to indicate that new data has been added. A workflow will then automatically be triggered to process the added data.
-* The second trigger is a **timeout** mechanism. A workflow is automatically triggered if a workflow has not run for a certain amount of time. However, the counter needs be greater than one for a workflow to be triggered. The rational is that a workflow should only be triggered if new data has been added.
+Generators automatically spawn workflows and can be used to create recurring workflows, for example workflows that automatically process data in a database once new data becomes available. In the current implementation, new workflows are automatically submitted by the Colonies server based on two triggers:
 
-Note if many Colonies servers run in a cluster and are connected to the same PostrgreSQL database, one of the Colonies server are then elected as a leader. Only the leader can execute generators. A new leader is automatically elected if the current leader becomes unavailable.
+1. The first trigger is a counter mechanism. A workflow is automatically submitted if the counter exceeds a trigger threshold (counter>=threshold). A third-party server may for example increase the counter (via the Colonies API) to indicate that new data has been added. 
+A new workflow will then automatically be triggered to process the newly added data when the threshold is exceeded.
+2. The second trigger is a timeout mechanism. A workflow is automatically triggered if a workflow has not run for a certain amount of time, even if counter<threshold. However, the counter needs to be greater than 1 (counter>1) for a workflow to be triggered. 
+The rationale is that a workflow should only be triggered if new data has been added.
+
+Note if many Colonies servers run in a cluster and are connected to the same PostrgreSQL database, one of the Colonies server is then elected as a leader. Only the leader can execute generators. A new leader is automatically elected if the current leader becomes unavailable.
 
 ## Add a generator
 ```console
@@ -406,6 +410,7 @@ This will add a new generator that will automatically submit a workflow after 5 
 ```console
 colonies generator inc --generatorid 97cf378e0145fc5ff5e1c7bb8aa088f890e12cf66c87c543b2b90e2f4ee21390
 ```
+The command above will increase the counter for the specified generator.
 
 # Monitoring
 The Colonies server has built-in support for Prometheus instrumentation. The development server starts a montitoring server at the port specified by the **COLONIES_MONITORPORT** environmental variable. 
