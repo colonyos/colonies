@@ -114,7 +114,7 @@ func prepareTests(t *testing.T) (*client.ColoniesClient, *ColoniesServer, string
 	serverID, err := crypto.GenerateID(serverPrvKey)
 	assert.Nil(t, err)
 
-	server := CreateColoniesServer(db, TESTPORT, serverID, EnableTLS, "../../cert/key.pem", "../../cert/cert.pem", debug)
+	server := CreateColoniesServer(db, TESTPORT, serverID, EnableTLS, "../../cert/key.pem", "../../cert/cert.pem", debug, true)
 
 	done := make(chan bool)
 	go func() {

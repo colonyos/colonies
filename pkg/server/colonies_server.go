@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/colonyos/colonies/pkg/core"
@@ -32,13 +33,14 @@ type ColoniesServer struct {
 	httpServer        *http.Server
 	crypto            security.Crypto
 	validator         security.Validator
+	db                database.Database
+	isLeader          bool
+	mutex             sync.Mutex
 }
 
-func CreateColoniesServer(db database.Database, port int, serverID string, tls bool, tlsPrivateKeyPath string, tlsCertPath string, debug bool) *ColoniesServer {
+func CreateColoniesServer(db database.Database, port int, serverID string, tls bool, tlsPrivateKeyPath string, tlsCertPath string, debug bool, productionServer bool) *ColoniesServer {
 	if debug {
-		//log.SetLevel(log.DebugLevel)
-		gin.SetMode(gin.ReleaseMode)
-		gin.DefaultWriter = ioutil.Discard
+		log.SetLevel(log.DebugLevel)
 	} else {
 		gin.SetMode(gin.ReleaseMode)
 		gin.DefaultWriter = ioutil.Discard
@@ -48,13 +50,35 @@ func CreateColoniesServer(db database.Database, port int, serverID string, tls b
 	server.ginHandler = gin.Default()
 	server.ginHandler.Use(cors.Default())
 
+	server.db = db
+
 	httpServer := &http.Server{
 		Addr:    ":" + strconv.Itoa(port),
 		Handler: server.ginHandler,
 	}
 
+	if productionServer {
+		leaderChan := make(chan bool)
+		go tryBecomeLeader(leaderChan, 1000, db)
+
+		go func() {
+			for {
+				isLeader := <-leaderChan
+				if isLeader && !server.isLeader {
+					log.Info("Waiting for mutex to become leader")
+					server.mutex.Lock()
+					server.isLeader = true
+					server.mutex.Unlock()
+					log.Info("Got mutex, became leader")
+				}
+			}
+		}()
+	} else {
+		server.isLeader = true
+	}
+
 	server.httpServer = httpServer
-	server.controller = createColoniesController(db)
+	server.controller = createColoniesController(db, server)
 	server.serverID = serverID
 	server.tls = tls
 	server.port = port
@@ -171,6 +195,18 @@ func (server *ColoniesServer) handleEndpointRequest(c *gin.Context) {
 	case rpc.DeleteAllProcessGraphsPayloadType:
 		server.handleDeleteAllProcessGraphsHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 
+	// Generators handlers
+	case rpc.AddGeneratorPayloadType:
+		server.handleAddGeneratorHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+	case rpc.GetGeneratorPayloadType:
+		server.handleGetGeneratorHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+	case rpc.GetGeneratorsPayloadType:
+		server.handleGetGeneratorsHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+	case rpc.IncGeneratorPayloadType:
+		server.handleIncGeneratorHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+	case rpc.DeleteGeneratorPayloadType:
+		server.handleDeleteGeneratorHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+
 	// Server handlers
 	case rpc.GetStatisiticsPayloadType:
 		server.handleStatisticsHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
@@ -248,7 +284,6 @@ func (server *ColoniesServer) sendEmptyHTTPReply(c *gin.Context, payloadType str
 func (server *ColoniesServer) ServeForever() error {
 	if server.tls {
 		if err := server.httpServer.ListenAndServeTLS(server.tlsCertPath, server.tlsPrivateKeyPath); err != nil && errors.Is(err, http.ErrServerClosed) {
-			log.Error(err)
 			return err
 		}
 	} else {
@@ -265,6 +300,7 @@ func (server *ColoniesServer) Shutdown() {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
+	defer server.db.Close()
 
 	if err := server.httpServer.Shutdown(ctx); err != nil {
 		log.WithFields(log.Fields{"Error": err}).Warning("Colonies server forced to shutdown")
