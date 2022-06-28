@@ -82,7 +82,7 @@ func (server *ColoniesServer) handleWSRequest(c *gin.Context) {
 				return
 			}
 
-			runtime, err := server.controller.getRuntimeByID(recoveredID)
+			runtime, err := server.controller.getRuntime(recoveredID)
 			if err != nil {
 				err := server.sendWSErrorMsg(err, http.StatusForbidden, wsConn, wsMsgType)
 				if err != nil {
@@ -124,7 +124,7 @@ func (server *ColoniesServer) handleWSRequest(c *gin.Context) {
 				return
 			}
 
-			runtime, err := server.controller.getRuntimeByID(recoveredID)
+			runtime, err := server.controller.getRuntime(recoveredID)
 			if err != nil {
 				err := server.sendWSErrorMsg(err, http.StatusForbidden, wsConn, wsMsgType)
 				if err != nil {

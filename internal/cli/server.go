@@ -154,7 +154,7 @@ var serverStartCmd = &cobra.Command{
 		}
 
 		log.WithFields(log.Fields{"DBHost": DBHost, "DBPort": DBPort, "DBUser": DBUser, "DBPassword": "*******************", "DBName": DBName, "UseTLS": UseTLS}).Info("Connecting to PostgreSQL database")
-		server := server.CreateColoniesServer(db, ServerPort, ServerID, UseTLS, TLSKey, TLSCert, Verbose)
+		server := server.CreateColoniesServer(db, ServerPort, ServerID, UseTLS, TLSKey, TLSCert, Verbose, true)
 		for {
 			err := server.ServeForever()
 			if err != nil {

@@ -1,10 +1,12 @@
 package utils
 
 import (
+	"testing"
 	"time"
 
 	"github.com/colonyos/colonies/pkg/core"
 	"github.com/colonyos/colonies/pkg/security/crypto"
+	"github.com/stretchr/testify/assert"
 )
 
 func CreateTestProcess(colonyID string) *core.Process {
@@ -79,4 +81,19 @@ func CreateTestColonyWithKey() (*core.Colony, string, error) {
 		return nil, "", err
 	}
 	return core.CreateColony(colonyID, "test_colony_name"), colonyPrvKey, nil
+}
+
+func FakeGenerator(t *testing.T, colonyID string) *core.Generator {
+	workflowSpec := core.CreateWorkflowSpec(colonyID)
+	processSpec1 := CreateTestProcessSpec(colonyID)
+	processSpec1.Name = "task1"
+	processSpec2 := CreateTestProcessSpec(colonyID)
+	processSpec2.Name = "task2"
+	processSpec2.AddDependency("task1")
+	workflowSpec.AddProcessSpec(processSpec1)
+	workflowSpec.AddProcessSpec(processSpec2)
+	jsonStr, err := workflowSpec.ToJSON()
+	assert.Nil(t, err)
+	generator := core.CreateGenerator(colonyID, "test_genname", jsonStr, 10, 0, 1)
+	return generator
 }

@@ -140,7 +140,7 @@ func (server *ColoniesServer) handleGetColonyHTTPRequest(c *gin.Context, recover
 		return
 	}
 
-	colony, err := server.controller.getColonyByID(msg.ColonyID)
+	colony, err := server.controller.getColony(msg.ColonyID)
 	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}

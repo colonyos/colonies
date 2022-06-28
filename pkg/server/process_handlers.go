@@ -218,7 +218,7 @@ func (server *ColoniesServer) handleGetProcessHTTPRequest(c *gin.Context, recove
 		return
 	}
 
-	process, err := server.controller.getProcessByID(msg.ProcessID)
+	process, err := server.controller.getProcess(msg.ProcessID)
 	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
@@ -256,7 +256,7 @@ func (server *ColoniesServer) handleDeleteProcessHTTPRequest(c *gin.Context, rec
 		return
 	}
 
-	process, err := server.controller.getProcessByID(msg.ProcessID)
+	process, err := server.controller.getProcess(msg.ProcessID)
 	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
@@ -323,7 +323,7 @@ func (server *ColoniesServer) handleCloseSuccessfulHTTPRequest(c *gin.Context, r
 		return
 	}
 
-	process, err := server.controller.getProcessByID(msg.ProcessID)
+	process, err := server.controller.getProcess(msg.ProcessID)
 	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
@@ -367,7 +367,7 @@ func (server *ColoniesServer) handleCloseFailedHTTPRequest(c *gin.Context, recov
 		return
 	}
 
-	process, err := server.controller.getProcessByID(msg.ProcessID)
+	process, err := server.controller.getProcess(msg.ProcessID)
 	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
