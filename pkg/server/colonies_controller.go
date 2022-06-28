@@ -239,11 +239,7 @@ func (controller *coloniesController) getGenerator(generatorID string) (*core.Ge
 	cmd := &command{generatorReplyChan: make(chan *core.Generator, 1),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
-			generator, err := controller.db.GetGeneratorByID(generatorID)
-			if err != nil {
-				cmd.errorChan <- err
-				return
-			}
+			generator := controller.generatorEngine.getGenerator(generatorID)
 			cmd.generatorReplyChan <- generator
 		}}
 

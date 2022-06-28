@@ -86,6 +86,13 @@ func (engine *generatorEngine) submitWorkflow(state *state) {
 	}
 }
 
+func (engine *generatorEngine) getGenerator(generatorID string) *core.Generator {
+	if state, ok := engine.states[generatorID]; ok {
+		return state.generator
+	}
+	return nil
+}
+
 func (engine *generatorEngine) increaseCounter(generatorID string) error {
 	if state, ok := engine.states[generatorID]; ok {
 		state.generator.Counter++

@@ -383,6 +383,30 @@ INFO[0000] Closing process as successful                 processID=f46b7e84da065
 
 Note that the order the processes are executed. Also, try to start another worker and you will see that both workers will execute processes.
 
+# Generators
+Generators automatically submit workflows and can be used to create recurrent workflows, for example workflows that automatically process data in a database once new data become available. In the current implementation, a workflow is automatically submitted by the Colonies server based on two triggers. 
+* The first trigger is a **counter** mechanism. A workflow is automatically submitted if the counter exceeds a trigger value. A third-party server may for exmaple increase the counter to indicate that new data has been added. A workflow will then automatically be triggered to process the added data.
+* The second trigger is a **timeout** mechanism. A workflow is automatically triggered if a workflow has not run for a certain amount of time. However, the counter needs be greater than one for a workflow to be triggered. The rational is that a workflow should only be triggered if new data has been added.
+
+Note if many Colonies servers run in a cluster and are connected to the same PostrgreSQL database, one of the Colonies server are then elected as a leader. Only the leader can execute generators. A new leader is automatically elected if the current leader becomes unavailable.
+
+## Add a generator
+```console
+colonies generator add --spec examples/workflow.json --name testgenerator --timeout 5 --trigger 5
+```
+Output:
+```
+INFO[0000] Starting a Colonies client                    Insecure=true ServerHost=localhost ServerPort=50080
+INFO[0000] Generator added                               GeneratorID=97cf378e0145fc5ff5e1c7bb8aa088f890e12cf66c87c543b2b90e2f4ee21390
+```
+
+This will add a new generator that will automatically submit a workflow after 5 seconds assuming the counter has been increased by one, or of the counter exceeds 5.
+
+## Increase generator counter
+```console
+colonies generator inc --generatorid 97cf378e0145fc5ff5e1c7bb8aa088f890e12cf66c87c543b2b90e2f4ee21390
+```
+
 # Monitoring
 The Colonies server has built-in support for Prometheus instrumentation. The development server starts a montitoring server at the port specified by the **COLONIES_MONITORPORT** environmental variable. 
 

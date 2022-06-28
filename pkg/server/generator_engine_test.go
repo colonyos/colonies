@@ -22,6 +22,9 @@ func TestGeneratorEngineSyncStates(t *testing.T) {
 	engine.syncStatesFromDB()
 	assert.Len(t, engine.states, 1)
 
+	generatorFromEngine := engine.getGenerator(generator.ID)
+	assert.True(t, generator.Equals(generatorFromEngine))
+
 	generatorFromStates := engine.states[generator.ID]
 	assert.True(t, generatorFromStates.generator.Equals(generator))
 
