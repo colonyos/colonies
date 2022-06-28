@@ -14,7 +14,7 @@ func TestColoniesControllerAddColony(t *testing.T) {
 	defer db.Close()
 	assert.Nil(t, err)
 
-	controller := createColoniesController(db)
+	controller := createColoniesController(db, nil)
 
 	colony, _, err := utils.CreateTestColonyWithKey()
 	assert.Nil(t, err)
@@ -28,7 +28,7 @@ func TestColoniesControllerAddRuntime(t *testing.T) {
 	defer db.Close()
 	assert.Nil(t, err)
 
-	controller := createColoniesController(db)
+	controller := createColoniesController(db, nil)
 
 	runtime, _, err := utils.CreateTestRuntimeWithKey(core.GenerateRandomID())
 	assert.Nil(t, err)
@@ -43,7 +43,7 @@ func TestColoniesControllerApproveRuntime(t *testing.T) {
 	defer db.Close()
 	assert.Nil(t, err)
 
-	controller := createColoniesController(db)
+	controller := createColoniesController(db, nil)
 
 	runtime, _, err := utils.CreateTestRuntimeWithKey(core.GenerateRandomID())
 	assert.Nil(t, err)
@@ -55,7 +55,7 @@ func TestColoniesControllerApproveRuntime(t *testing.T) {
 	err = controller.approveRuntime(runtime.ID)
 	assert.Nil(t, err)
 
-	runtimeFromController, err := controller.getRuntimeByID(runtime.ID)
+	runtimeFromController, err := controller.getRuntime(runtime.ID)
 	assert.Nil(t, err)
 	assert.True(t, runtimeFromController.IsApproved())
 	assert.False(t, runtime.IsApproved())
@@ -66,7 +66,7 @@ func TestColoniesControllerAddProcess(t *testing.T) {
 	defer db.Close()
 	assert.Nil(t, err)
 
-	controller := createColoniesController(db)
+	controller := createColoniesController(db, nil)
 
 	colonyID := core.GenerateRandomID()
 
@@ -89,7 +89,7 @@ func TestColoniesControllerAssignRuntime(t *testing.T) {
 	defer db.Close()
 	assert.Nil(t, err)
 
-	controller := createColoniesController(db)
+	controller := createColoniesController(db, nil)
 
 	colonyID := core.GenerateRandomID()
 
@@ -117,8 +117,8 @@ func TestColoniesControllerAssignRuntimeConcurrency(t *testing.T) {
 
 	processCount := 100
 
-	controller1 := createColoniesController(db)
-	controller2 := createColoniesController(db)
+	controller1 := createColoniesController(db, nil)
+	controller2 := createColoniesController(db, nil)
 
 	colonyID := core.GenerateRandomID()
 

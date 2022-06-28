@@ -98,6 +98,11 @@ func (db *PQDatabase) DeleteColonyByID(colonyID string) error {
 		return err
 	}
 
+	err = db.DeleteAllGeneratorsByColonyID(colonyID)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
