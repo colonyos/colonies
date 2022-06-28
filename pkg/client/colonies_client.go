@@ -742,19 +742,19 @@ func (client *ColoniesClient) GetGenerators(colonyID string, count int, prvKey s
 	return core.ConvertJSONToGeneratorArray(respBodyString)
 }
 
-func (client *ColoniesClient) IncGenerator(generatorID string, prvKey string) (*core.Generator, error) {
+func (client *ColoniesClient) IncGenerator(generatorID string, prvKey string) error {
 	msg := rpc.CreateIncGeneratorMsg(generatorID)
 	jsonString, err := msg.ToJSON()
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	respBodyString, err := client.sendMessage(rpc.IncGeneratorPayloadType, jsonString, prvKey, false)
+	_, err = client.sendMessage(rpc.IncGeneratorPayloadType, jsonString, prvKey, false)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	return core.ConvertJSONToGenerator(respBodyString)
+	return nil
 }
 
 func (client *ColoniesClient) DeleteGenerator(generatorID string, prvKey string) error {

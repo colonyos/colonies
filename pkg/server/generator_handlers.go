@@ -4,6 +4,7 @@ import (
 	"errors"
 	"net/http"
 
+	"github.com/colonyos/colonies/pkg/core"
 	"github.com/colonyos/colonies/pkg/rpc"
 	"github.com/gin-gonic/gin"
 	log "github.com/sirupsen/logrus"
@@ -87,4 +88,118 @@ func (server *ColoniesServer) handleGetGeneratorHTTPRequest(c *gin.Context, reco
 	log.WithFields(log.Fields{"GeneratorID": generator.ID}).Info("Getting generator")
 
 	server.sendHTTPReply(c, payloadType, jsonString)
+}
+
+func (server *ColoniesServer) handleGetGeneratorsHTTPRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
+	msg, err := rpc.CreateGetGeneratorsMsgFromJSON(jsonString)
+	if server.handleHTTPError(c, err, http.StatusBadRequest) {
+		return
+	}
+	if msg == nil {
+		server.handleHTTPError(c, errors.New("Failed to get generators, failed to parse JSON"), http.StatusBadRequest)
+		return
+	}
+	if msg.MsgType != payloadType {
+		server.handleHTTPError(c, errors.New("Failed to get generators, msg.MsgType does not match payloadType"), http.StatusBadRequest)
+		return
+	}
+
+	err = server.validator.RequireRuntimeMembership(recoveredID, msg.ColonyID, true)
+	if server.handleHTTPError(c, err, http.StatusForbidden) {
+		return
+	}
+
+	generators, err := server.controller.getGenerators(msg.ColonyID, msg.Count)
+	if server.handleHTTPError(c, err, http.StatusBadRequest) {
+		return
+	}
+	if generators == nil {
+		server.handleHTTPError(c, errors.New("Failed to get generators, generators is nil"), http.StatusInternalServerError)
+		return
+	}
+
+	jsonString, err = core.ConvertGeneratorArrayToJSON(generators)
+	if server.handleHTTPError(c, err, http.StatusInternalServerError) {
+		return
+	}
+
+	log.WithFields(log.Fields{"ColonyID": msg.ColonyID, "Count": msg.Count}).Info("Getting generators")
+
+	server.sendHTTPReply(c, payloadType, jsonString)
+}
+
+func (server *ColoniesServer) handleIncGeneratorHTTPRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
+	msg, err := rpc.CreateIncGeneratorMsgFromJSON(jsonString)
+	if server.handleHTTPError(c, err, http.StatusBadRequest) {
+		return
+	}
+	if msg == nil {
+		server.handleHTTPError(c, errors.New("Failed to increment generator, failed to parse JSON"), http.StatusBadRequest)
+		return
+	}
+	if msg.MsgType != payloadType {
+		server.handleHTTPError(c, errors.New("Failed to increment generator, msg.MsgType does not match payloadType"), http.StatusBadRequest)
+		return
+	}
+
+	generator, err := server.controller.getGenerator(msg.GeneratorID)
+	if server.handleHTTPError(c, err, http.StatusBadRequest) {
+		return
+	}
+	if generator == nil {
+		server.handleHTTPError(c, errors.New("Failed to increment generator, generator is nil"), http.StatusInternalServerError)
+		return
+	}
+
+	err = server.validator.RequireRuntimeMembership(recoveredID, generator.ColonyID, true)
+	if server.handleHTTPError(c, err, http.StatusForbidden) {
+		return
+	}
+
+	err = server.controller.incGenerator(generator.ID)
+	if server.handleHTTPError(c, err, http.StatusInternalServerError) {
+		return
+	}
+
+	log.WithFields(log.Fields{"GeneratorID": generator.ID}).Info("Incrementing generator")
+
+	server.sendEmptyHTTPReply(c, payloadType)
+}
+
+func (server *ColoniesServer) handleDeleteGeneratorHTTPRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
+	msg, err := rpc.CreateDeleteGeneratorMsgFromJSON(jsonString)
+	if server.handleHTTPError(c, err, http.StatusBadRequest) {
+		return
+	}
+	if msg == nil {
+		server.handleHTTPError(c, errors.New("Failed to delete generator, failed to parse JSON"), http.StatusBadRequest)
+		return
+	}
+	if msg.MsgType != payloadType {
+		server.handleHTTPError(c, errors.New("Failed to delete generator, msg.MsgType does not match payloadType"), http.StatusBadRequest)
+		return
+	}
+
+	generator, err := server.controller.getGenerator(msg.GeneratorID)
+	if server.handleHTTPError(c, err, http.StatusBadRequest) {
+		return
+	}
+	if generator == nil {
+		server.handleHTTPError(c, errors.New("Failed to delete generator, generator is nil"), http.StatusInternalServerError)
+		return
+	}
+
+	err = server.validator.RequireRuntimeMembership(recoveredID, generator.ColonyID, true)
+	if server.handleHTTPError(c, err, http.StatusForbidden) {
+		return
+	}
+
+	err = server.controller.deleteGenerator(generator.ID)
+	if server.handleHTTPError(c, err, http.StatusInternalServerError) {
+		return
+	}
+
+	log.WithFields(log.Fields{"GeneratorID": generator.ID}).Info("Deleting generator")
+
+	server.sendEmptyHTTPReply(c, payloadType)
 }

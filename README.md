@@ -422,9 +422,6 @@ scrape_configs:
 ## Start a Prometheus and a Grafana server
 ```console
 docker run -p 9090:9090 -v /home/ubuntu/prometheus.yml:/etc/prometheus/prometheus.yml prom/prometheus
-```
-
-```console
 docker run -p 3000:3000 grafana/grafana-oss:latest-ubuntu
 ```
 

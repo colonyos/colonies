@@ -41,6 +41,7 @@ type command struct {
 	runtimesReplyChan      chan []*core.Runtime
 	attributeReplyChan     chan *core.Attribute
 	generatorReplyChan     chan *core.Generator
+	generatorsReplyChan    chan []*core.Generator
 	handler                func(cmd *command)
 }
 
@@ -88,7 +89,7 @@ func (controller *coloniesController) generatorTriggerLoop() {
 			var isLeader bool
 			controller.server.mutex.Lock()
 			isLeader = controller.server.isLeader
-			defer controller.server.mutex.Unlock()
+			controller.server.mutex.Unlock()
 
 			if isLeader {
 				if controller.generatorEngine != nil {
@@ -115,7 +116,7 @@ func (controller *coloniesController) generatorSyncLoop() {
 			var isLeader bool
 			controller.server.mutex.Lock()
 			isLeader = controller.server.isLeader
-			defer controller.server.mutex.Unlock()
+			controller.server.mutex.Unlock()
 
 			if isLeader {
 				if controller.generatorEngine != nil {
@@ -252,6 +253,46 @@ func (controller *coloniesController) getGenerator(generatorID string) (*core.Ge
 		return nil, err
 	case generator := <-cmd.generatorReplyChan:
 		return generator, nil
+	}
+}
+
+func (controller *coloniesController) getGenerators(colonyID string, count int) ([]*core.Generator, error) {
+	cmd := &command{generatorsReplyChan: make(chan []*core.Generator, 1),
+		errorChan: make(chan error, 1),
+		handler: func(cmd *command) {
+			generators, err := controller.db.FindGeneratorsByColonyID(colonyID, count)
+			if err != nil {
+				cmd.errorChan <- err
+				return
+			}
+			cmd.generatorsReplyChan <- generators
+		}}
+
+	controller.cmdQueue <- cmd
+	select {
+	case err := <-cmd.errorChan:
+		return nil, err
+	case generators := <-cmd.generatorsReplyChan:
+		return generators, nil
+	}
+}
+
+func (controller *coloniesController) incGenerator(generatorID string) error {
+	cmd := &command{errorChan: make(chan error, 1),
+		handler: func(cmd *command) {
+			generator, err := controller.db.GetGeneratorByID(generatorID)
+			if err != nil {
+				cmd.errorChan <- err
+				return
+			}
+			controller.generatorEngine.increaseCounter(generator.ID)
+			cmd.errorChan <- nil
+		}}
+
+	controller.cmdQueue <- cmd
+	select {
+	case err := <-cmd.errorChan:
+		return err
 	}
 }
 

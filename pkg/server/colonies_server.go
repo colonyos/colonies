@@ -40,9 +40,7 @@ type ColoniesServer struct {
 
 func CreateColoniesServer(db database.Database, port int, serverID string, tls bool, tlsPrivateKeyPath string, tlsCertPath string, debug bool, productionServer bool) *ColoniesServer {
 	if debug {
-		//log.SetLevel(log.DebugLevel)
-		gin.SetMode(gin.ReleaseMode)
-		gin.DefaultWriter = ioutil.Discard
+		log.SetLevel(log.DebugLevel)
 	} else {
 		gin.SetMode(gin.ReleaseMode)
 		gin.DefaultWriter = ioutil.Discard
@@ -67,10 +65,11 @@ func CreateColoniesServer(db database.Database, port int, serverID string, tls b
 			for {
 				isLeader := <-leaderChan
 				if isLeader && !server.isLeader {
+					log.Info("Waiting for mutex to become leader")
 					server.mutex.Lock()
-					defer server.mutex.Unlock()
 					server.isLeader = true
-					log.Info("Became leader")
+					server.mutex.Unlock()
+					log.Info("Got mutex, became leader")
 				}
 			}
 		}()
@@ -201,6 +200,12 @@ func (server *ColoniesServer) handleEndpointRequest(c *gin.Context) {
 		server.handleAddGeneratorHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 	case rpc.GetGeneratorPayloadType:
 		server.handleGetGeneratorHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+	case rpc.GetGeneratorsPayloadType:
+		server.handleGetGeneratorsHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+	case rpc.IncGeneratorPayloadType:
+		server.handleIncGeneratorHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+	case rpc.DeleteGeneratorPayloadType:
+		server.handleDeleteGeneratorHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 
 	// Server handlers
 	case rpc.GetStatisiticsPayloadType:
@@ -279,7 +284,6 @@ func (server *ColoniesServer) sendEmptyHTTPReply(c *gin.Context, payloadType str
 func (server *ColoniesServer) ServeForever() error {
 	if server.tls {
 		if err := server.httpServer.ListenAndServeTLS(server.tlsCertPath, server.tlsPrivateKeyPath); err != nil && errors.Is(err, http.ErrServerClosed) {
-			log.Error(err)
 			return err
 		}
 	} else {

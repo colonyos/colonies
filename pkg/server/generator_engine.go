@@ -2,7 +2,6 @@ package server
 
 import (
 	"errors"
-	"fmt"
 	"time"
 
 	"github.com/colonyos/colonies/pkg/core"
@@ -51,9 +50,10 @@ func (engine *generatorEngine) syncStatesFromDB() {
 					log.WithFields(log.Fields{"Error": err}).Error("Failed to parse workflow spec")
 				} else {
 					log.WithFields(log.Fields{"GeneratorId": generator.ID}).Info("Adding generator to engine and submitting workflow")
+					generator.LastRun = time.Now()
+					generator.Counter = 0
 					state := &state{generator: generator, workflowSpec: workflowSpec}
 					engine.states[generator.ID] = state
-					engine.submitWorkflow(state)
 				}
 			}
 			tempMap[generator.ID] = true
@@ -73,7 +73,6 @@ func (engine *generatorEngine) syncStatesFromDB() {
 
 func (engine *generatorEngine) submitWorkflow(state *state) {
 	if engine.server != nil {
-		fmt.Println("Submitting workflow")
 		state.generator.Counter = 0
 		state.generator.LastRun = time.Now()
 		_, err := engine.server.createProcessGraph(state.workflowSpec)
@@ -90,6 +89,7 @@ func (engine *generatorEngine) submitWorkflow(state *state) {
 func (engine *generatorEngine) increaseCounter(generatorID string) error {
 	if state, ok := engine.states[generatorID]; ok {
 		state.generator.Counter++
+		engine.triggerGenerators()
 	} else {
 		log.WithFields(log.Fields{
 			"GeneratorId": generatorID}).
@@ -104,18 +104,19 @@ func (engine *generatorEngine) triggerGenerators() {
 	for _, state := range engine.states {
 		now := time.Now()
 		deadline := state.generator.LastRun.Add(time.Duration(state.generator.Timeout) * time.Second)
-		fmt.Println(state.generator.Counter)
 		if state.generator.Counter > 0 && now.Unix() > deadline.Unix() {
 			log.WithFields(log.Fields{
 				"GeneratorId": state.generator.ID,
 				"Timeout":     state.generator.Timeout}).
 				Info("Generator timed out, submitting workflow")
+			engine.submitWorkflow(state)
 		}
 		if state.generator.Counter > state.generator.Trigger {
 			log.WithFields(log.Fields{
 				"GeneratorId": state.generator.ID,
 				"Timeout":     state.generator.Timeout}).
 				Info("Generator counter exceeded trigger value, submitting workflow")
+			engine.submitWorkflow(state)
 		}
 	}
 }
