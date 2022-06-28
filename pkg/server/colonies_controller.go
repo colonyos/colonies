@@ -15,6 +15,8 @@ import (
 )
 
 const TIMEOUT_RELEASE_INTERVALL = 1
+const TIMEOUT_GENERATOR_TRIGGER_INTERVALL = 1
+const TIMEOUT_GENERATOR_SYNC_INTERVALL = 10
 
 type subscribers struct {
 	processesSubscribers map[string]*processesSubscription
@@ -38,20 +40,27 @@ type command struct {
 	runtimeReplyChan       chan *core.Runtime
 	runtimesReplyChan      chan []*core.Runtime
 	attributeReplyChan     chan *core.Attribute
+	generatorReplyChan     chan *core.Generator
+	generatorsReplyChan    chan []*core.Generator
 	handler                func(cmd *command)
 }
 
 type coloniesController struct {
-	db          database.Database
-	cmdQueue    chan *command
-	planner     planner.Planner
-	subscribers *subscribers
-	stopFlag    bool
-	mutex       sync.Mutex
+	server          *ColoniesServer
+	db              database.Database
+	generatorEngine *generatorEngine
+	cmdQueue        chan *command
+	planner         planner.Planner
+	subscribers     *subscribers
+	stopFlag        bool
+	mutex           sync.Mutex
 }
 
-func createColoniesController(db database.Database) *coloniesController {
-	controller := &coloniesController{db: db}
+func createColoniesController(db database.Database, server *ColoniesServer) *coloniesController {
+	controller := &coloniesController{}
+	controller.server = server
+	controller.db = db
+	controller.generatorEngine = createGeneratorEngine(db, server)
 	controller.cmdQueue = make(chan *command)
 	controller.subscribers = &subscribers{}
 	controller.subscribers.processesSubscribers = make(map[string]*processesSubscription)
@@ -59,12 +68,68 @@ func createColoniesController(db database.Database) *coloniesController {
 	controller.planner = basic.CreatePlanner()
 
 	go controller.masterWorker()
-	go controller.timeoutChecker()
+	go controller.timeoutLoop()
+	go controller.generatorTriggerLoop()
+	go controller.generatorSyncLoop()
 
 	return controller
 }
 
-func (controller *coloniesController) timeoutChecker() {
+func (controller *coloniesController) generatorTriggerLoop() {
+	for {
+		time.Sleep(TIMEOUT_GENERATOR_TRIGGER_INTERVALL * time.Second)
+
+		controller.mutex.Lock()
+		if controller.stopFlag {
+			return
+		}
+		controller.mutex.Unlock()
+
+		if controller.server != nil {
+			var isLeader bool
+			controller.server.mutex.Lock()
+			isLeader = controller.server.isLeader
+			controller.server.mutex.Unlock()
+
+			if isLeader {
+				if controller.generatorEngine != nil {
+					controller.triggerGenerators()
+				} else {
+					log.Error("Generator engine is nil")
+				}
+			}
+		}
+	}
+}
+
+func (controller *coloniesController) generatorSyncLoop() {
+	for {
+		time.Sleep(TIMEOUT_GENERATOR_SYNC_INTERVALL * time.Second)
+
+		controller.mutex.Lock()
+		if controller.stopFlag {
+			return
+		}
+		controller.mutex.Unlock()
+
+		if controller.server != nil {
+			var isLeader bool
+			controller.server.mutex.Lock()
+			isLeader = controller.server.isLeader
+			controller.server.mutex.Unlock()
+
+			if isLeader {
+				if controller.generatorEngine != nil {
+					controller.syncGenerators()
+				} else {
+					log.Error("Generator engine is nil")
+				}
+			}
+		}
+	}
+}
+
+func (controller *coloniesController) timeoutLoop() {
 	for {
 		time.Sleep(TIMEOUT_RELEASE_INTERVALL * time.Second)
 
@@ -123,6 +188,120 @@ func (controller *coloniesController) numberOfProcessesSubscribers() int {
 
 func (controller *coloniesController) numberOfProcessSubscribers() int {
 	return len(controller.subscribers.processSubscribers)
+}
+
+func (controller *coloniesController) syncGenerators() {
+	cmd := &command{
+		handler: func(cmd *command) {
+			controller.generatorEngine.syncStatesFromDB()
+		}}
+
+	controller.cmdQueue <- cmd
+}
+
+func (controller *coloniesController) triggerGenerators() {
+	cmd := &command{
+		handler: func(cmd *command) {
+			controller.generatorEngine.triggerGenerators()
+		}}
+
+	controller.cmdQueue <- cmd
+}
+
+func (controller *coloniesController) addGenerator(generator *core.Generator) (*core.Generator, error) {
+	cmd := &command{generatorReplyChan: make(chan *core.Generator, 1),
+		errorChan: make(chan error, 1),
+		handler: func(cmd *command) {
+			err := controller.db.AddGenerator(generator)
+			if err != nil {
+				cmd.errorChan <- err
+				return
+			}
+			addedGenerator, err := controller.db.GetGeneratorByID(generator.ID)
+			if err != nil {
+				cmd.errorChan <- err
+				return
+			}
+			controller.generatorEngine.syncStatesFromDB()
+			cmd.generatorReplyChan <- addedGenerator
+		}}
+
+	controller.cmdQueue <- cmd
+	select {
+	case err := <-cmd.errorChan:
+		return nil, err
+	case addedGenerator := <-cmd.generatorReplyChan:
+		return addedGenerator, nil
+	}
+}
+
+func (controller *coloniesController) getGenerator(generatorID string) (*core.Generator, error) {
+	cmd := &command{generatorReplyChan: make(chan *core.Generator, 1),
+		errorChan: make(chan error, 1),
+		handler: func(cmd *command) {
+			generator := controller.generatorEngine.getGenerator(generatorID)
+			cmd.generatorReplyChan <- generator
+		}}
+
+	controller.cmdQueue <- cmd
+	select {
+	case err := <-cmd.errorChan:
+		return nil, err
+	case generator := <-cmd.generatorReplyChan:
+		return generator, nil
+	}
+}
+
+func (controller *coloniesController) getGenerators(colonyID string, count int) ([]*core.Generator, error) {
+	cmd := &command{generatorsReplyChan: make(chan []*core.Generator, 1),
+		errorChan: make(chan error, 1),
+		handler: func(cmd *command) {
+			generators, err := controller.db.FindGeneratorsByColonyID(colonyID, count)
+			if err != nil {
+				cmd.errorChan <- err
+				return
+			}
+			cmd.generatorsReplyChan <- generators
+		}}
+
+	controller.cmdQueue <- cmd
+	select {
+	case err := <-cmd.errorChan:
+		return nil, err
+	case generators := <-cmd.generatorsReplyChan:
+		return generators, nil
+	}
+}
+
+func (controller *coloniesController) incGenerator(generatorID string) error {
+	cmd := &command{errorChan: make(chan error, 1),
+		handler: func(cmd *command) {
+			generator, err := controller.db.GetGeneratorByID(generatorID)
+			if err != nil {
+				cmd.errorChan <- err
+				return
+			}
+			controller.generatorEngine.increaseCounter(generator.ID)
+			cmd.errorChan <- nil
+		}}
+
+	controller.cmdQueue <- cmd
+	select {
+	case err := <-cmd.errorChan:
+		return err
+	}
+}
+
+func (controller *coloniesController) deleteGenerator(generatorID string) error {
+	cmd := &command{errorChan: make(chan error, 1),
+		handler: func(cmd *command) {
+			err := controller.db.DeleteGeneratorByID(generatorID)
+			controller.generatorEngine.syncStatesFromDB()
+			cmd.errorChan <- err
+		}}
+
+	controller.cmdQueue <- cmd
+	return <-cmd.errorChan
 }
 
 func (controller *coloniesController) subscribeProcesses(runtimeID string, subscription *processesSubscription) error {
@@ -241,7 +420,7 @@ func (controller *coloniesController) getColonies() ([]*core.Colony, error) {
 	}
 }
 
-func (controller *coloniesController) getColonyByID(colonyID string) (*core.Colony, error) {
+func (controller *coloniesController) getColony(colonyID string) (*core.Colony, error) {
 	cmd := &command{colonyReplyChan: make(chan *core.Colony),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
@@ -329,7 +508,7 @@ func (controller *coloniesController) addRuntime(runtime *core.Runtime) (*core.R
 	}
 }
 
-func (controller *coloniesController) getRuntimeByID(runtimeID string) (*core.Runtime, error) {
+func (controller *coloniesController) getRuntime(runtimeID string) (*core.Runtime, error) {
 	cmd := &command{runtimeReplyChan: make(chan *core.Runtime),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
@@ -443,34 +622,7 @@ func (controller *coloniesController) addProcess(process *core.Process) (*core.P
 	}
 }
 
-func (controller *coloniesController) addProcessGraph(processGraph *core.ProcessGraph) (*core.ProcessGraph, error) {
-	cmd := &command{processGraphReplyChan: make(chan *core.ProcessGraph, 1),
-		errorChan: make(chan error, 1),
-		handler: func(cmd *command) {
-			err := controller.db.AddProcessGraph(processGraph)
-			if err != nil {
-				cmd.errorChan <- err
-				return
-			}
-
-			addedProcessGraph, err := controller.db.GetProcessGraphByID(processGraph.ID)
-			if err != nil {
-				cmd.errorChan <- err
-				return
-			}
-			cmd.processGraphReplyChan <- addedProcessGraph
-		}}
-
-	controller.cmdQueue <- cmd
-	select {
-	case err := <-cmd.errorChan:
-		return nil, err
-	case processGraph := <-cmd.processGraphReplyChan:
-		return processGraph, nil
-	}
-}
-
-func (controller *coloniesController) getProcessByID(processID string) (*core.Process, error) {
+func (controller *coloniesController) getProcess(processID string) (*core.Process, error) {
 	cmd := &command{processReplyChan: make(chan *core.Process, 1),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
@@ -658,6 +810,28 @@ func (controller *coloniesController) findFailedProcesses(colonyID string, count
 func (controller *coloniesController) updateProcessGraph(graph *core.ProcessGraph) error {
 	graph.SetStorage(controller.db)
 	return graph.UpdateProcessIDs()
+}
+
+func (controller *coloniesController) submitWorkflowSpec(workflowSpec *core.WorkflowSpec) (*core.ProcessGraph, error) {
+	cmd := &command{processGraphReplyChan: make(chan *core.ProcessGraph, 1),
+		errorChan: make(chan error, 1),
+		handler: func(cmd *command) {
+			addedProcessGraph, err := controller.server.createProcessGraph(workflowSpec)
+			if err != nil {
+				cmd.errorChan <- err
+				return
+			}
+
+			cmd.processGraphReplyChan <- addedProcessGraph
+		}}
+
+	controller.cmdQueue <- cmd
+	select {
+	case err := <-cmd.errorChan:
+		return nil, err
+	case processGraph := <-cmd.processGraphReplyChan:
+		return processGraph, nil
+	}
 }
 
 func (controller *coloniesController) getProcessGraphByID(processGraphID string) (*core.ProcessGraph, error) {

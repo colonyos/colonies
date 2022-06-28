@@ -62,6 +62,10 @@ var Wait bool
 var Output bool
 var Full bool
 var LogDir string
+var GeneratorID string
+var GeneratorName string
+var GeneratorTrigger int
+var GeneratorTimeout int
 
 func init() {
 	rootCmd.PersistentFlags().BoolVarP(&Verbose, "verbose", "v", false, "verbose output")

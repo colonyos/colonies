@@ -103,7 +103,7 @@ func (server *ColoniesServer) handleGetRuntimeHTTPRequest(c *gin.Context, recove
 		return
 	}
 
-	runtime, err := server.controller.getRuntimeByID(msg.RuntimeID)
+	runtime, err := server.controller.getRuntime(msg.RuntimeID)
 	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
@@ -141,7 +141,7 @@ func (server *ColoniesServer) handleApproveRuntimeHTTPRequest(c *gin.Context, re
 		return
 	}
 
-	runtime, err := server.controller.getRuntimeByID(msg.RuntimeID)
+	runtime, err := server.controller.getRuntime(msg.RuntimeID)
 	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
@@ -179,7 +179,7 @@ func (server *ColoniesServer) handleRejectRuntimeHTTPRequest(c *gin.Context, rec
 		return
 	}
 
-	runtime, err := server.controller.getRuntimeByID(msg.RuntimeID)
+	runtime, err := server.controller.getRuntime(msg.RuntimeID)
 	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
@@ -217,7 +217,7 @@ func (server *ColoniesServer) handleDeleteRuntimeHTTPRequest(c *gin.Context, rec
 		return
 	}
 
-	runtime, err := server.controller.getRuntimeByID(msg.RuntimeID)
+	runtime, err := server.controller.getRuntime(msg.RuntimeID)
 	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}

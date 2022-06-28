@@ -93,6 +93,14 @@ func TestDeleteColonies(t *testing.T) {
 	err = db.AddColony(colony2)
 	assert.Nil(t, err)
 
+	generator1 := utils.FakeGenerator(t, colony1.ID)
+	err = db.AddGenerator(generator1)
+	assert.Nil(t, err)
+
+	generator2 := utils.FakeGenerator(t, colony2.ID)
+	err = db.AddGenerator(generator2)
+	assert.Nil(t, err)
+
 	runtime1 := utils.CreateTestRuntime(colony1.ID)
 	err = db.AddRuntime(runtime1)
 	assert.Nil(t, err)
@@ -122,7 +130,15 @@ func TestDeleteColonies(t *testing.T) {
 
 	runtimeFromDB, err = db.GetRuntimeByID(runtime3.ID)
 	assert.Nil(t, err)
-	assert.NotNil(t, runtimeFromDB) // Belongs to Colony 2 and should therefore not be deleted
+	assert.NotNil(t, runtimeFromDB) // Belongs to Colony 2 and should therefore NOT be deleted
+
+	generatorFromDB, err := db.GetGeneratorByID(generator1.ID)
+	assert.Nil(t, err)
+	assert.Nil(t, generatorFromDB) // Should have been deleted
+
+	generatorFromDB, err = db.GetGeneratorByID(generator2.ID)
+	assert.Nil(t, err)
+	assert.NotNil(t, generatorFromDB) // Should NOT have been deleted
 }
 
 func TestCountColonies(t *testing.T) {
