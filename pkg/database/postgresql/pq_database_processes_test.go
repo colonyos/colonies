@@ -120,12 +120,10 @@ func TestDeleteAllProcessesByColony(t *testing.T) {
 	err = db.DeleteAllProcessesByColonyID(colony2ID)
 	assert.Nil(t, err)
 
-	attributeFromDB, err := db.GetAttribute(process1.ID, "test_key1", core.IN)
+	_, err = db.GetAttribute(process1.ID, "test_key1", core.IN)
 	assert.Nil(t, err)
-	assert.NotNil(t, attributeFromDB)
-	attributeFromDB, err = db.GetAttribute(process2.ID, "test_key1", core.IN)
-	assert.Nil(t, err)
-	assert.Nil(t, attributeFromDB)
+	_, err = db.GetAttribute(process2.ID, "test_key1", core.IN)
+	assert.NotNil(t, err)
 }
 
 func TestDeleteAllProcessesByProcessGraphID(t *testing.T) {
@@ -265,9 +263,8 @@ func TestDeleteAllProcessesAndAttributes(t *testing.T) {
 	err = db.DeleteAllProcesses()
 	assert.Nil(t, err)
 
-	attributeFromDB, err := db.GetAttribute(process1.ID, "test_key1", core.IN)
-	assert.Nil(t, err)
-	assert.Nil(t, attributeFromDB)
+	_, err = db.GetAttribute(process1.ID, "test_key1", core.IN)
+	assert.NotNil(t, err)
 }
 
 func TestDeleteProcessesAndAttributes(t *testing.T) {
@@ -296,11 +293,10 @@ func TestDeleteProcessesAndAttributes(t *testing.T) {
 	err = db.DeleteProcessByID(process1.ID)
 	assert.Nil(t, err)
 
-	attributeFromDB, err := db.GetAttribute(process1.ID, "test_key1", core.IN)
-	assert.Nil(t, err)
-	assert.Nil(t, attributeFromDB)
+	_, err = db.GetAttribute(process1.ID, "test_key1", core.IN)
+	assert.NotNil(t, err)
 
-	attributeFromDB, err = db.GetAttribute(process2.ID, "test_key2", core.IN)
+	attributeFromDB, err := db.GetAttribute(process2.ID, "test_key2", core.IN)
 	assert.Nil(t, err)
 	assert.NotNil(t, attributeFromDB) // Not deleted as it belongs to process 2
 }

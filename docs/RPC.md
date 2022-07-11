@@ -27,8 +27,8 @@ The Colonies Server will reply with a RPC reply message according to the followi
 If the **payloadtype** is set to **error**, then the payload will contain the following JSON data:
 ```json
 {
-    "errorcode": "500",
-    "msg": "something when wrong here"
+    "status": "500",
+    "message": "something when wrong here"
 }
 ```
 
