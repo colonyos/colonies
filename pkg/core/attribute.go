@@ -24,8 +24,13 @@ type Attribute struct {
 	Value                string `json:"value"`
 }
 
-func CreateAttribute(targetID string, targetColonyID string, targetProcessGraphID string, attributeType int, key string, value string) *Attribute {
-	attribute := &Attribute{ID: "",
+func CreateAttribute(targetID string,
+	targetColonyID string,
+	targetProcessGraphID string,
+	attributeType int,
+	key string,
+	value string) Attribute {
+	attribute := Attribute{ID: "",
 		TargetID:             targetID,
 		TargetColonyID:       targetColonyID,
 		TargetProcessGraphID: targetProcessGraphID,
@@ -37,17 +42,17 @@ func CreateAttribute(targetID string, targetColonyID string, targetProcessGraphI
 	return attribute
 }
 
-func ConvertJSONToAttribute(jsonString string) (*Attribute, error) {
-	var attribute *Attribute
+func ConvertJSONToAttribute(jsonString string) (Attribute, error) {
+	var attribute Attribute
 	err := json.Unmarshal([]byte(jsonString), &attribute)
 	if err != nil {
-		return nil, err
+		return attribute, err
 	}
 
 	return attribute, nil
 }
 
-func IsAttributeArraysEqual(attributes1 []*Attribute, attributes2 []*Attribute) bool {
+func IsAttributeArraysEqual(attributes1 []Attribute, attributes2 []Attribute) bool {
 	counter := 0
 	for _, attribute1 := range attributes1 {
 		for _, attribute2 := range attributes2 {
@@ -72,11 +77,7 @@ func (attribute *Attribute) SetValue(value string) {
 	attribute.Value = value
 }
 
-func (attribute *Attribute) Equals(attribute2 *Attribute) bool {
-	if attribute2 == nil {
-		return false
-	}
-
+func (attribute *Attribute) Equals(attribute2 Attribute) bool {
 	if attribute.ID == attribute2.ID &&
 		attribute.TargetID == attribute2.TargetID &&
 		attribute.TargetColonyID == attribute2.TargetColonyID &&
