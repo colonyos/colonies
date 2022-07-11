@@ -34,7 +34,7 @@ func TestCreateProcessFromDB(t *testing.T) {
 	cores := 10
 	gpus := 1
 
-	var attributes []*Attribute
+	var attributes []Attribute
 
 	processSpec := CreateProcessSpec("test_name", "test_image", "test_cmd", []string{"test_arg"}, []string{"test_volumes"}, []string{"test_ports"}, colonyID, []string{runtime1ID, runtime2ID}, runtimeType, timeout, maxRetries, mem, cores, gpus, make(map[string]string), []string{}, 1)
 	process := CreateProcessFromDB(processSpec, GenerateRandomID(), GenerateRandomID(), true, FAILED, time.Now(), time.Now(), time.Now(), time.Now(), 2, attributes)
@@ -138,7 +138,7 @@ func TestProcessToJSON(t *testing.T) {
 	attribute4ID := GenerateRandomID()
 	attribute5ID := GenerateRandomID()
 	attribute6ID := GenerateRandomID()
-	var attributes []*Attribute
+	var attributes []Attribute
 	attributes = append(attributes, CreateAttribute(attribute1ID, GenerateRandomID(), "", IN, "in_key_1", "in_value_1"))
 	attributes = append(attributes, CreateAttribute(attribute2ID, GenerateRandomID(), GenerateRandomID(), IN, "in_key_2", "in_value_2"))
 	attributes = append(attributes, CreateAttribute(attribute3ID, GenerateRandomID(), "", ERR, "err_key_1", "err_value_1"))
@@ -177,7 +177,7 @@ func TestProcessArrayToJSON(t *testing.T) {
 	attribute1ID := GenerateRandomID()
 	attribute2ID := GenerateRandomID()
 	attribute3ID := GenerateRandomID()
-	var attributes1 []*Attribute
+	var attributes1 []Attribute
 	attributes1 = append(attributes1, CreateAttribute(attribute1ID, GenerateRandomID(), "", IN, "in_key_1", "in_value_1"))
 	attributes1 = append(attributes1, CreateAttribute(attribute2ID, GenerateRandomID(), GenerateRandomID(), ERR, "err_key_1", "err_value_1"))
 	attributes1 = append(attributes1, CreateAttribute(attribute3ID, GenerateRandomID(), "", OUT, "out_key_1", "out_value_1"))
@@ -191,7 +191,7 @@ func TestProcessArrayToJSON(t *testing.T) {
 	attribute4ID := GenerateRandomID()
 	attribute5ID := GenerateRandomID()
 	attribute6ID := GenerateRandomID()
-	var attributes2 []*Attribute
+	var attributes2 []Attribute
 	attributes2 = append(attributes2, CreateAttribute(attribute4ID, GenerateRandomID(), "", IN, "in_key_1", "in_value_1"))
 	attributes2 = append(attributes2, CreateAttribute(attribute5ID, GenerateRandomID(), "", ERR, "err_key_1", "err_value_1"))
 	attributes2 = append(attributes2, CreateAttribute(attribute6ID, GenerateRandomID(), GenerateRandomID(), OUT, "out_key_1", "out_value_1"))
@@ -223,7 +223,7 @@ func TestProcessingTime(t *testing.T) {
 	cores := 10
 	gpus := 1
 
-	var attributes []*Attribute
+	var attributes []Attribute
 
 	processSpec := CreateProcessSpec("test_name", "test_image", "test_cmd", []string{"test_arg"}, []string{"test_volumes"}, []string{"test_ports"}, colonyID, []string{runtime1ID, runtime2ID}, runtimeType, timeout, maxRetries, mem, cores, gpus, make(map[string]string), []string{}, 1)
 	process := CreateProcessFromDB(processSpec, GenerateRandomID(), GenerateRandomID(), true, RUNNING, time.Time{}, time.Time{}, time.Time{}, time.Time{}, 2, attributes)

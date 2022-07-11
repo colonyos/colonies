@@ -39,7 +39,7 @@ type command struct {
 	statisticsReplyChan    chan *core.Statistics
 	runtimeReplyChan       chan *core.Runtime
 	runtimesReplyChan      chan []*core.Runtime
-	attributeReplyChan     chan *core.Attribute
+	attributeReplyChan     chan core.Attribute
 	generatorReplyChan     chan *core.Generator
 	generatorsReplyChan    chan []*core.Generator
 	handler                func(cmd *command)
@@ -1364,8 +1364,8 @@ func (controller *coloniesController) getStatistics() (*core.Statistics, error) 
 	}
 }
 
-func (controller *coloniesController) addAttribute(attribute *core.Attribute) (*core.Attribute, error) {
-	cmd := &command{attributeReplyChan: make(chan *core.Attribute, 1),
+func (controller *coloniesController) addAttribute(attribute core.Attribute) (core.Attribute, error) {
+	cmd := &command{attributeReplyChan: make(chan core.Attribute, 1),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
 			err := controller.db.AddAttribute(attribute)
@@ -1384,14 +1384,14 @@ func (controller *coloniesController) addAttribute(attribute *core.Attribute) (*
 	controller.cmdQueue <- cmd
 	select {
 	case err := <-cmd.errorChan:
-		return nil, err
+		return core.Attribute{}, err
 	case addedAttribute := <-cmd.attributeReplyChan:
 		return addedAttribute, nil
 	}
 }
 
-func (controller *coloniesController) getAttribute(attributeID string) (*core.Attribute, error) {
-	cmd := &command{attributeReplyChan: make(chan *core.Attribute, 1),
+func (controller *coloniesController) getAttribute(attributeID string) (core.Attribute, error) {
+	cmd := &command{attributeReplyChan: make(chan core.Attribute, 1),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
 			attribute, err := controller.db.GetAttributeByID(attributeID)
@@ -1405,7 +1405,7 @@ func (controller *coloniesController) getAttribute(attributeID string) (*core.At
 	controller.cmdQueue <- cmd
 	select {
 	case err := <-cmd.errorChan:
-		return nil, err
+		return core.Attribute{}, err
 	case attribute := <-cmd.attributeReplyChan:
 		return attribute, nil
 	}

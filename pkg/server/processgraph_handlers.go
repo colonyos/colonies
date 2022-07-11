@@ -22,7 +22,7 @@ func (server *ColoniesServer) createProcessGraph(workflowSpec *core.WorkflowSpec
 			log.WithFields(log.Fields{"Name": processSpec.Name}).Warning("MaxExecTime was set to 0, resetting to -1")
 			processSpec.MaxExecTime = -1
 		}
-		process := core.CreateProcess(processSpec)
+		process := core.CreateProcess(&processSpec)
 		log.WithFields(log.Fields{"ProcessID": process.ID, "MaxExecTime": process.ProcessSpec.MaxExecTime, "MaxRetries": process.ProcessSpec.MaxRetries}).Info("Creating new process")
 		if len(processSpec.Conditions.Dependencies) == 0 {
 			// The process is a root process, let it start immediately

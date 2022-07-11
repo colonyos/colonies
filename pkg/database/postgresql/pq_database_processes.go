@@ -83,6 +83,10 @@ func (db *PQDatabase) parseProcesses(rows *sql.Rows) ([]*core.Process, error) {
 			return nil, err
 		}
 
+		if len(attributes) == 0 {
+			attributes = make([]core.Attribute, 0)
+		}
+
 		if len(targetRuntimeIDs) == 1 && targetRuntimeIDs[0] == "*" {
 			targetRuntimeIDs = []string{}
 		}
@@ -98,13 +102,33 @@ func (db *PQDatabase) parseProcesses(rows *sql.Rows) ([]*core.Process, error) {
 			env[attribute.Key] = attribute.Value
 		}
 
+		if len(dependencies) == 0 {
+			dependencies = make([]string, 0)
+		}
+
+		if len(ports) == 0 {
+			ports = make([]string, 0)
+		}
+
+		if len(volumes) == 0 {
+			volumes = make([]string, 0)
+		}
+
 		processSpec := core.CreateProcessSpec(name, image, cmd, args, volumes, ports, targetColonyID, targetRuntimeIDs, runtimeType, maxExecTime, maxRetries, mem, cores, gpus, env, dependencies, priority)
 		process := core.CreateProcessFromDB(processSpec, processID, assignedRuntimeID, isAssigned, state, submissionTime, startTime, endTime, deadline, retries, attributes)
 		processes = append(processes, process)
 
 		process.WaitForParents = waitForParent
-		process.Parents = parents
-		process.Children = children
+		if len(parents) == 0 {
+			process.Parents = make([]string, 0)
+		} else {
+			process.Parents = parents
+		}
+		if len(children) == 0 {
+			process.Children = make([]string, 0)
+		} else {
+			process.Children = children
+		}
 		process.ProcessGraphID = processGraphID
 	}
 
