@@ -66,6 +66,11 @@ var GeneratorID string
 var GeneratorName string
 var GeneratorTrigger int
 var GeneratorTimeout int
+var Cmd string
+var Args []string
+var Env []string
+var MaxExecTime int
+var MaxRetries int
 
 func init() {
 	rootCmd.PersistentFlags().BoolVarP(&Verbose, "verbose", "v", false, "verbose output")

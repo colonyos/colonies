@@ -7,7 +7,7 @@ import (
 	"github.com/colonyos/colonies/pkg/core"
 )
 
-func (db *PQDatabase) AddAttributes(attributes []*core.Attribute) error { // TODO: Unit tests
+func (db *PQDatabase) AddAttributes(attributes []core.Attribute) error { // TODO: Unit tests
 	for _, attribute := range attributes {
 		err := db.AddAttribute(attribute)
 		if err != nil {
@@ -18,7 +18,7 @@ func (db *PQDatabase) AddAttributes(attributes []*core.Attribute) error { // TOD
 	return nil
 }
 
-func (db *PQDatabase) AddAttribute(attribute *core.Attribute) error {
+func (db *PQDatabase) AddAttribute(attribute core.Attribute) error {
 	sqlStatement := `INSERT INTO  ` + db.dbPrefix + `ATTRIBUTES (ATTRIBUTE_ID, KEY, VALUE, ATTRIBUTE_TYPE, TARGET_ID, TARGET_COLONY_ID, PROCESSGRAPH_ID) VALUES ($1, $2, $3, $4, $5, $6, $7)`
 	_, err := db.postgresql.Exec(sqlStatement, attribute.ID, attribute.Key, attribute.Value, attribute.AttributeType, attribute.TargetID, attribute.TargetColonyID, attribute.TargetProcessGraphID)
 	if err != nil {
@@ -28,8 +28,8 @@ func (db *PQDatabase) AddAttribute(attribute *core.Attribute) error {
 	return nil
 }
 
-func (db *PQDatabase) parseAttributes(rows *sql.Rows) ([]*core.Attribute, error) {
-	var attributes []*core.Attribute
+func (db *PQDatabase) parseAttributes(rows *sql.Rows) ([]core.Attribute, error) {
+	var attributes []core.Attribute
 
 	for rows.Next() {
 		var attributeID string
@@ -50,56 +50,56 @@ func (db *PQDatabase) parseAttributes(rows *sql.Rows) ([]*core.Attribute, error)
 	return attributes, nil
 }
 
-func (db *PQDatabase) GetAttributeByID(attributeID string) (*core.Attribute, error) {
+func (db *PQDatabase) GetAttributeByID(attributeID string) (core.Attribute, error) {
 	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `ATTRIBUTES WHERE ATTRIBUTE_ID=$1`
 	rows, err := db.postgresql.Query(sqlStatement, attributeID)
 	if err != nil {
-		return nil, err
+		return core.Attribute{}, err
 	}
 
 	defer rows.Close()
 
 	attributes, err := db.parseAttributes(rows)
 	if err != nil {
-		return nil, err
+		return core.Attribute{}, err
 	}
 
 	if len(attributes) > 1 {
-		return nil, errors.New("Expected attributes to be unique")
+		return core.Attribute{}, errors.New("Expected attributes to be unique")
 	} else if len(attributes) == 0 {
-		return nil, nil
+		return core.Attribute{}, errors.New("Attribute does not exists")
 	}
 
 	return attributes[0], nil
 }
 
-func (db *PQDatabase) GetAttribute(targetID string, key string, attributeType int) (*core.Attribute, error) {
+func (db *PQDatabase) GetAttribute(targetID string, key string, attributeType int) (core.Attribute, error) {
 	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `ATTRIBUTES WHERE TARGET_ID=$1 AND KEY=$2 AND ATTRIBUTE_TYPE=$3`
 	rows, err := db.postgresql.Query(sqlStatement, targetID, key, attributeType)
 	if err != nil {
-		return nil, err
+		return core.Attribute{}, err
 	}
 
 	defer rows.Close()
 
 	attributes, err := db.parseAttributes(rows)
 	if err != nil {
-		return nil, err
+		return core.Attribute{}, err
 	}
 	if len(attributes) > 1 {
-		return nil, errors.New("Expected attributes to be unique")
+		return core.Attribute{}, errors.New("Expected attributes to be unique")
 	} else if len(attributes) == 0 {
-		return nil, nil
+		return core.Attribute{}, errors.New("Attribute does not exists")
 	}
 
 	return attributes[0], nil
 }
 
-func (db *PQDatabase) GetAttributes(targetID string) ([]*core.Attribute, error) {
+func (db *PQDatabase) GetAttributes(targetID string) ([]core.Attribute, error) {
 	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `ATTRIBUTES WHERE TARGET_ID=$1`
 	rows, err := db.postgresql.Query(sqlStatement, targetID)
 	if err != nil {
-		return nil, err
+		return []core.Attribute{}, err
 	}
 
 	defer rows.Close()
@@ -107,11 +107,11 @@ func (db *PQDatabase) GetAttributes(targetID string) ([]*core.Attribute, error) 
 	return db.parseAttributes(rows)
 }
 
-func (db *PQDatabase) GetAttributesByType(targetID string, attributeType int) ([]*core.Attribute, error) {
+func (db *PQDatabase) GetAttributesByType(targetID string, attributeType int) ([]core.Attribute, error) {
 	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `ATTRIBUTES WHERE TARGET_ID=$1 AND ATTRIBUTE_TYPE=$2`
 	rows, err := db.postgresql.Query(sqlStatement, targetID, attributeType)
 	if err != nil {
-		return nil, err
+		return []core.Attribute{}, err
 	}
 
 	defer rows.Close()
@@ -119,13 +119,10 @@ func (db *PQDatabase) GetAttributesByType(targetID string, attributeType int) ([
 	return db.parseAttributes(rows)
 }
 
-func (db *PQDatabase) UpdateAttribute(attribute *core.Attribute) error {
-	existingAttribute, err := db.GetAttributeByID(attribute.ID)
+func (db *PQDatabase) UpdateAttribute(attribute core.Attribute) error {
+	_, err := db.GetAttributeByID(attribute.ID)
 	if err != nil {
 		return err
-	}
-	if existingAttribute == nil {
-		return errors.New("Attribute <" + attribute.ID + "> does not exists")
 	}
 
 	sqlStatement := `UPDATE ` + db.dbPrefix + `ATTRIBUTES SET ATTRIBUTE_ID=$1, VALUE=$2`

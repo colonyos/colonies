@@ -32,7 +32,6 @@ func TestIsAttributeEquals(t *testing.T) {
 	assert.False(t, attribute1.Equals(attribute4))
 	assert.False(t, attribute1.Equals(attribute5))
 	assert.False(t, attribute1.Equals(attribute6))
-	assert.False(t, attribute1.Equals(nil))
 }
 
 func TestIsAttributeArraysEqual(t *testing.T) {
@@ -41,22 +40,22 @@ func TestIsAttributeArraysEqual(t *testing.T) {
 	attribute3 := CreateAttribute(GenerateRandomID(), GenerateRandomID(), "", OUT, "test_key", "test_value")
 	attribute4 := CreateAttribute(GenerateRandomID(), GenerateRandomID(), GenerateRandomID(), OUT, "test_key", "test_value")
 
-	var attributes1 []*Attribute
+	var attributes1 []Attribute
 	attributes1 = append(attributes1, attribute1)
 	attributes1 = append(attributes1, attribute2)
 	attributes1 = append(attributes1, attribute3)
 
-	var attributes2 []*Attribute
+	var attributes2 []Attribute
 	attributes2 = append(attributes2, attribute2)
 	attributes2 = append(attributes2, attribute3)
 	attributes2 = append(attributes2, attribute1)
 
-	var attributes3 []*Attribute
+	var attributes3 []Attribute
 	attributes3 = append(attributes3, attribute2)
 	attributes3 = append(attributes3, attribute3)
 	attributes3 = append(attributes3, attribute4)
 
-	var attributes4 []*Attribute
+	var attributes4 []Attribute
 
 	assert.True(t, IsAttributeArraysEqual(attributes1, attributes1))
 	assert.True(t, IsAttributeArraysEqual(attributes1, attributes2))

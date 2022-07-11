@@ -17,21 +17,21 @@ const (
 )
 
 type Process struct {
-	ID                string       `json:"processid"`
-	AssignedRuntimeID string       `json:"assignedruntimeid"`
-	IsAssigned        bool         `json:"isassigned"`
-	State             int          `json:"state"`
-	SubmissionTime    time.Time    `json:"submissiontime"`
-	StartTime         time.Time    `json:"starttime"`
-	EndTime           time.Time    `json:"endtime"`
-	Deadline          time.Time    `json:"deadline"`
-	Retries           int          `json:"retries"`
-	Attributes        []*Attribute `json:"attributes"`
-	ProcessSpec       *ProcessSpec `json:"spec"`
-	WaitForParents    bool         `json:"waitforparents"`
-	Parents           []string     `json:"parents"`
-	Children          []string     `json:"children"`
-	ProcessGraphID    string       `json:"processgraphid"`
+	ID                string      `json:"processid"`
+	AssignedRuntimeID string      `json:"assignedruntimeid"`
+	IsAssigned        bool        `json:"isassigned"`
+	State             int         `json:"state"`
+	SubmissionTime    time.Time   `json:"submissiontime"`
+	StartTime         time.Time   `json:"starttime"`
+	EndTime           time.Time   `json:"endtime"`
+	Deadline          time.Time   `json:"deadline"`
+	Retries           int         `json:"retries"`
+	Attributes        []Attribute `json:"attributes"`
+	ProcessSpec       ProcessSpec `json:"spec"`
+	WaitForParents    bool        `json:"waitforparents"`
+	Parents           []string    `json:"parents"`
+	Children          []string    `json:"children"`
+	ProcessGraphID    string      `json:"processgraphid"`
 }
 
 func CreateProcess(processSpec *ProcessSpec) *Process {
@@ -39,13 +39,13 @@ func CreateProcess(processSpec *ProcessSpec) *Process {
 	crypto := crypto.CreateCrypto()
 	id := crypto.GenerateHash(uuid.String())
 
-	var attributes []*Attribute
+	var attributes []Attribute
 
 	process := &Process{ID: id,
 		State:       WAITING,
 		IsAssigned:  false,
 		Attributes:  attributes,
-		ProcessSpec: processSpec,
+		ProcessSpec: *processSpec,
 	}
 
 	return process
@@ -61,7 +61,7 @@ func CreateProcessFromDB(processSpec *ProcessSpec,
 	endTime time.Time,
 	deadline time.Time,
 	retries int,
-	attributes []*Attribute) *Process {
+	attributes []Attribute) *Process {
 	return &Process{ID: id,
 		AssignedRuntimeID: assignedRuntimeID,
 		IsAssigned:        isAssigned,
@@ -72,7 +72,7 @@ func CreateProcessFromDB(processSpec *ProcessSpec,
 		Deadline:          deadline,
 		Retries:           retries,
 		Attributes:        attributes,
-		ProcessSpec:       processSpec,
+		ProcessSpec:       *processSpec,
 	}
 }
 
@@ -146,44 +146,32 @@ func (process *Process) Equals(process2 *Process) bool {
 		same = false
 	}
 
-	if !process.ProcessSpec.Equals(process2.ProcessSpec) {
+	if !process.ProcessSpec.Equals(&process2.ProcessSpec) {
 		same = false
 	}
 
-	if process.Parents != nil && process2.Parents == nil {
-		same = false
-	} else if process.Parents == nil && process2.Parents != nil {
-		same = false
-	} else {
-		counter := 0
-		for _, parent1 := range process.Parents {
-			for _, parent2 := range process.Parents {
-				if parent1 == parent2 {
-					counter++
-				}
+	counter := 0
+	for _, parent1 := range process.Parents {
+		for _, parent2 := range process.Parents {
+			if parent1 == parent2 {
+				counter++
 			}
-		}
-		if counter != len(process.Parents) && counter != len(process2.Parents) {
-			same = false
 		}
 	}
+	if counter != len(process.Parents) && counter != len(process2.Parents) {
+		same = false
+	}
 
-	if process.Children != nil && process2.Children == nil {
-		same = false
-	} else if process.Children == nil && process2.Children != nil {
-		same = false
-	} else {
-		counter := 0
-		for _, child1 := range process.Children {
-			for _, child2 := range process.Children {
-				if child1 == child2 {
-					counter++
-				}
+	counter = 0
+	for _, child1 := range process.Children {
+		for _, child2 := range process.Children {
+			if child1 == child2 {
+				counter++
 			}
 		}
-		if counter != len(process.Children) && counter != len(process2.Children) {
-			same = false
-		}
+	}
+	if counter != len(process.Children) && counter != len(process2.Children) {
+		same = false
 	}
 
 	return same
@@ -210,7 +198,7 @@ func (process *Process) SetAssignedRuntimeID(runtimeID string) {
 	process.IsAssigned = true
 }
 
-func (process *Process) SetAttributes(attributes []*Attribute) {
+func (process *Process) SetAttributes(attributes []Attribute) {
 	process.Attributes = attributes
 }
 

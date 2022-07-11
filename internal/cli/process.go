@@ -21,6 +21,7 @@ import (
 
 func init() {
 	processCmd.AddCommand(submitProcessCmd)
+	processCmd.AddCommand(runProcessCmd)
 	processCmd.AddCommand(listWaitingProcessesCmd)
 	processCmd.AddCommand(listRunningProcessesCmd)
 	processCmd.AddCommand(listSuccessfulProcessesCmd)
@@ -42,6 +43,17 @@ func init() {
 	submitProcessCmd.Flags().StringVarP(&ColonyID, "colonyid", "", "", "Colony Id")
 	submitProcessCmd.Flags().BoolVarP(&Wait, "wait", "", false, "Colony Id")
 	submitProcessCmd.MarkFlagRequired("spec")
+
+	runProcessCmd.Flags().StringVarP(&RuntimeID, "runtimeid", "", "", "Runtime Id")
+	runProcessCmd.Flags().StringVarP(&RuntimePrvKey, "runtimeprvkey", "", "", "Runtime private key")
+	runProcessCmd.Flags().StringVarP(&RuntimeType, "runtimetype", "", "", "Target runtime type")
+	runProcessCmd.Flags().StringVarP(&ColonyID, "colonyid", "", "", "Colony Id")
+	runProcessCmd.Flags().StringVarP(&Cmd, "cmd", "", "", "Cmd")
+	runProcessCmd.Flags().StringSliceVarP(&Args, "args", "", make([]string, 0), "Arguments")
+	runProcessCmd.Flags().StringSliceVarP(&Env, "env", "", make([]string, 0), "Environment")
+	runProcessCmd.Flags().IntVarP(&MaxExecTime, "maxexectime", "", -1, "Maximum execution time in seconds before failing")
+	runProcessCmd.Flags().IntVarP(&MaxRetries, "maxretries", "", -1, "Maximum number of retries when failing")
+	runProcessCmd.Flags().BoolVarP(&Wait, "wait", "", false, "Colony Id")
 
 	listWaitingProcessesCmd.Flags().StringVarP(&ColonyID, "colonyid", "", "", "Colony Id")
 	listWaitingProcessesCmd.Flags().StringVarP(&RuntimeID, "runtimeid", "", "", "Runtime Id")
@@ -106,10 +118,92 @@ var processCmd = &cobra.Command{
 	Long:  "Manage processes",
 }
 
+var runProcessCmd = &cobra.Command{
+	Use:   "run",
+	Short: "Submit a process specification to a colony without a spec",
+	Long:  "Submit a process specification to a colony without a spec",
+	Run: func(cmd *cobra.Command, args []string) {
+		parseServerEnv()
+
+		env := make(map[string]string)
+		for _, v := range Env {
+			s := strings.Split(v, "=")
+			if len(s) != 2 {
+				CheckError(errors.New("Invalid key-value pair, try --env key1=value1,key2=value2 "))
+			}
+			key := s[0]
+			value := s[1]
+			env[key] = value
+		}
+
+		if ColonyID == "" {
+			ColonyID = os.Getenv("COLONIES_COLONYID")
+		}
+		if ColonyID == "" {
+			CheckError(errors.New("Unknown Colony Id, please set COLONYID env variable or specify ColonyID in JSON file"))
+		}
+
+		keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
+		CheckError(err)
+
+		if RuntimeID == "" {
+			RuntimeID = os.Getenv("COLONIES_RUNTIMEID")
+		}
+		if RuntimeID == "" {
+			CheckError(errors.New("Unknown Runtime Id"))
+		}
+
+		if RuntimePrvKey == "" {
+			RuntimePrvKey, err = keychain.GetPrvKey(RuntimeID)
+			CheckError(err)
+		}
+
+		if RuntimeType == "" {
+			CheckError(errors.New("Invalid Runtime Type"))
+		}
+
+		conditions := core.Conditions{ColonyID: ColonyID, RuntimeType: RuntimeType}
+		processSpec := core.ProcessSpec{
+			Cmd:         Cmd,
+			Args:        Args,
+			MaxExecTime: MaxExecTime,
+			MaxRetries:  MaxRetries,
+			Conditions:  conditions,
+			Env:         env}
+
+		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Info("Starting a Colonies client")
+		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
+
+		addedProcess, err := client.SubmitProcessSpec(&processSpec, RuntimePrvKey)
+		CheckError(err)
+
+		if Wait {
+			for {
+				processFromServer, err := client.GetProcess(addedProcess.ID, RuntimePrvKey)
+				CheckError(err)
+
+				if processFromServer.State == core.SUCCESS || processFromServer.State == core.FAILED {
+					for _, attribute := range processFromServer.Attributes {
+						if attribute.Key == "output" {
+							fmt.Print(attribute.Value)
+						}
+					}
+					os.Exit(0)
+				} else {
+					time.Sleep(500 * time.Millisecond)
+				}
+			}
+
+		} else {
+			log.WithFields(log.Fields{"ProcessID": addedProcess.ID}).Info("Process submitted")
+		}
+	},
+}
+
 var submitProcessCmd = &cobra.Command{
 	Use:   "submit",
-	Short: "Submit a process to a colony",
-	Long:  "Submit a process to a colony",
+	Short: "Submit a process specification to a colony",
+	Long:  "Submit a process specification to a colony",
 	Run: func(cmd *cobra.Command, args []string) {
 		parseServerEnv()
 

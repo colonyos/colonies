@@ -11,8 +11,8 @@ GOLDFLAGS += -X 'main.BuildTime=$(BUILDTIME)'
 
 build:
 	@CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w $(GOLDFLAGS)" -o ./bin/colonies ./cmd/main.go
-	@go build -buildmode=c-shared -o ./lib/cryptolib.so ./internal/cryptolib/cryptolib.go
-	@GOOS=js GOARCH=wasm go build -o ./lib/cryptolib.wasm internal/cryptolib.wasm/cryptolib.go
+	@go build -buildmode=c-shared -o ./lib/libcryptolib.so ./internal/cryptolib/cryptolib.go
+	@GOOS=js GOARCH=wasm go build -o ./lib/libcryptolib.wasm internal/cryptolib.wasm/cryptolib.go
 
 container:
 	docker build -t $(IMAGE) .
@@ -53,4 +53,4 @@ github_test:
 
 install:
 	cp ./bin/colonies /usr/local/bin
-	cp ./lib/cryptolib.so /usr/lib
+	cp ./lib/libcryptolib.so /usr/local/lib

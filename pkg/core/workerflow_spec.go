@@ -3,8 +3,8 @@ package core
 import "encoding/json"
 
 type WorkflowSpec struct {
-	ColonyID     string         `json:"colonyid"`
-	ProcessSpecs []*ProcessSpec `json:"processspecs"`
+	ColonyID     string        `json:"colonyid"`
+	ProcessSpecs []ProcessSpec `json:"processspecs"`
 }
 
 func CreateWorkflowSpec(colonyID string) *WorkflowSpec {
@@ -13,7 +13,7 @@ func CreateWorkflowSpec(colonyID string) *WorkflowSpec {
 }
 
 func (workflowSpec *WorkflowSpec) AddProcessSpec(processSpec *ProcessSpec) {
-	workflowSpec.ProcessSpecs = append(workflowSpec.ProcessSpecs, processSpec)
+	workflowSpec.ProcessSpecs = append(workflowSpec.ProcessSpecs, *processSpec)
 }
 
 func ConvertJSONToWorkflowSpec(jsonString string) (*WorkflowSpec, error) {
@@ -40,7 +40,7 @@ func (workflowSpec *WorkflowSpec) Equals(workflowSpec2 *WorkflowSpec) bool {
 		counter := 0
 		for _, processSpec := range workflowSpec.ProcessSpecs {
 			for _, processSpec2 := range workflowSpec2.ProcessSpecs {
-				if processSpec.Equals(processSpec2) {
+				if processSpec.Equals(&processSpec2) {
 					counter++
 				}
 			}

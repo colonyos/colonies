@@ -576,31 +576,31 @@ func (client *ColoniesClient) CloseFailed(processID string, prvKey string) error
 	return nil
 }
 
-func (client *ColoniesClient) AddAttribute(attribute *core.Attribute, prvKey string) (*core.Attribute, error) {
+func (client *ColoniesClient) AddAttribute(attribute core.Attribute, prvKey string) (core.Attribute, error) {
 	msg := rpc.CreateAddAttributeMsg(attribute)
 	jsonString, err := msg.ToJSON()
 	if err != nil {
-		return nil, err
+		return core.Attribute{}, err
 	}
 
 	respBodyString, err := client.sendMessage(rpc.AddAttributePayloadType, jsonString, prvKey, false)
 	if err != nil {
-		return nil, err
+		return core.Attribute{}, err
 	}
 
 	return core.ConvertJSONToAttribute(respBodyString)
 }
 
-func (client *ColoniesClient) GetAttribute(attributeID string, prvKey string) (*core.Attribute, error) {
+func (client *ColoniesClient) GetAttribute(attributeID string, prvKey string) (core.Attribute, error) {
 	msg := rpc.CreateGetAttributeMsg(attributeID)
 	jsonString, err := msg.ToJSON()
 	if err != nil {
-		return nil, err
+		return core.Attribute{}, err
 	}
 
 	respBodyString, err := client.sendMessage(rpc.GetAttributePayloadType, jsonString, prvKey, false)
 	if err != nil {
-		return nil, err
+		return core.Attribute{}, err
 	}
 
 	return core.ConvertJSONToAttribute(respBodyString)

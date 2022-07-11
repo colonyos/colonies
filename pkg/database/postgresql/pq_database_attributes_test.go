@@ -45,16 +45,16 @@ func TestGetAttributes(t *testing.T) {
 	err = db.AddAttribute(attribute3)
 	assert.Nil(t, err)
 
-	var allAttributes []*core.Attribute
+	var allAttributes []core.Attribute
 	allAttributes = append(allAttributes, attribute1)
 	allAttributes = append(allAttributes, attribute2)
 	allAttributes = append(allAttributes, attribute3)
 
-	var inAttributes []*core.Attribute
+	var inAttributes []core.Attribute
 	inAttributes = append(inAttributes, attribute1)
 	inAttributes = append(inAttributes, attribute2)
 
-	var errAttributes []*core.Attribute
+	var errAttributes []core.Attribute
 	errAttributes = append(errAttributes, attribute3)
 
 	attributesFromDB, err := db.GetAttributesByType(processID, core.IN)
@@ -151,22 +151,19 @@ func TestDeleteAttributes(t *testing.T) {
 	err = db.DeleteAttributeByID(attribute6.ID)
 	assert.Nil(t, err)
 
-	attributeFromDB, err = db.GetAttributeByID(attribute6.ID)
-	assert.Nil(t, err)
-	assert.Nil(t, attributeFromDB)
+	_, err = db.GetAttributeByID(attribute6.ID)
+	assert.NotNil(t, err)
 
 	// Test DeleteAttributesByProcessID
 
 	err = db.DeleteAttributesByTargetID(processID1, core.IN)
 	assert.Nil(t, err)
 
-	attributeFromDB, err = db.GetAttributeByID(attribute1.ID)
-	assert.Nil(t, err)
-	assert.Nil(t, attributeFromDB)
+	_, err = db.GetAttributeByID(attribute1.ID)
+	assert.NotNil(t, err)
 
-	attributeFromDB, err = db.GetAttributeByID(attribute2.ID)
-	assert.Nil(t, err)
-	assert.Nil(t, attributeFromDB)
+	_, err = db.GetAttributeByID(attribute2.ID)
+	assert.NotNil(t, err)
 
 	attributeFromDB, err = db.GetAttributeByID(attribute3.ID)
 	assert.Nil(t, err)
@@ -189,17 +186,14 @@ func TestDeleteAttributes(t *testing.T) {
 	err = db.DeleteAllAttributesByTargetID(processID2)
 	assert.Nil(t, err)
 
-	attributeFromDB, err = db.GetAttributeByID(attribute4.ID)
-	assert.Nil(t, err)
-	assert.Nil(t, attributeFromDB)
+	_, err = db.GetAttributeByID(attribute4.ID)
+	assert.NotNil(t, err)
 
-	attributeFromDB, err = db.GetAttributeByID(attribute5.ID)
-	assert.Nil(t, err)
-	assert.Nil(t, attributeFromDB)
+	_, err = db.GetAttributeByID(attribute5.ID)
+	assert.NotNil(t, err)
 
-	attributeFromDB, err = db.GetAttributeByID(attribute7.ID)
-	assert.Nil(t, err)
-	assert.Nil(t, attributeFromDB)
+	_, err = db.GetAttributeByID(attribute7.ID)
+	assert.NotNil(t, err)
 
 	// Test DeleteAllAttributes
 
@@ -210,9 +204,8 @@ func TestDeleteAttributes(t *testing.T) {
 	err = db.DeleteAllAttributes()
 	assert.Nil(t, err)
 
-	attributeFromDB, err = db.GetAttributeByID(attribute3.ID)
-	assert.Nil(t, err)
-	assert.Nil(t, attributeFromDB)
+	_, err = db.GetAttributeByID(attribute3.ID)
+	assert.NotNil(t, err)
 }
 
 func TestDeleteAllAttributesByProcessGraphID(t *testing.T) {

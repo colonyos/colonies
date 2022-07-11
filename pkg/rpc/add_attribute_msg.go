@@ -9,11 +9,11 @@ import (
 const AddAttributePayloadType = "addattributemsg"
 
 type AddAttributeMsg struct {
-	Attribute *core.Attribute `json:"attribute"`
-	MsgType   string          `json:"msgtype"`
+	Attribute core.Attribute `json:"attribute"`
+	MsgType   string         `json:"msgtype"`
 }
 
-func CreateAddAttributeMsg(attribute *core.Attribute) *AddAttributeMsg {
+func CreateAddAttributeMsg(attribute core.Attribute) *AddAttributeMsg {
 	msg := &AddAttributeMsg{}
 	msg.Attribute = attribute
 	msg.MsgType = AddAttributePayloadType

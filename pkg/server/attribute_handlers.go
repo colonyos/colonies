@@ -22,10 +22,6 @@ func (server *ColoniesServer) handleAddAttributeHTTPRequest(c *gin.Context, reco
 		server.handleHTTPError(c, errors.New("Failed to add attribute, msg.MsgType does not match payloadType"), http.StatusBadRequest)
 		return
 	}
-	if msg.Attribute == nil {
-		server.handleHTTPError(c, errors.New("Failed to add attribute, msg.Attribute is nil"), http.StatusBadRequest)
-		return
-	}
 
 	process, err := server.controller.getProcess(msg.Attribute.TargetID)
 	if server.handleHTTPError(c, err, http.StatusBadRequest) {
@@ -52,10 +48,6 @@ func (server *ColoniesServer) handleAddAttributeHTTPRequest(c *gin.Context, reco
 
 	addedAttribute, err := server.controller.addAttribute(msg.Attribute)
 	if server.handleHTTPError(c, err, http.StatusBadRequest) {
-		return
-	}
-	if addedAttribute == nil {
-		server.handleHTTPError(c, errors.New("Failed to add attribute, addedAttribute is nil"), http.StatusInternalServerError)
 		return
 	}
 
@@ -85,10 +77,6 @@ func (server *ColoniesServer) handleGetAttributeHTTPRequest(c *gin.Context, reco
 
 	attribute, err := server.controller.getAttribute(msg.AttributeID)
 	if server.handleHTTPError(c, err, http.StatusBadRequest) {
-		return
-	}
-	if attribute == nil {
-		server.handleHTTPError(c, errors.New("Failed to get attribute, attribute is nil"), http.StatusInternalServerError)
 		return
 	}
 
