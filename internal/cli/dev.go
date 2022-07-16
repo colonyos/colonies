@@ -230,8 +230,7 @@ var devCmd = &cobra.Command{
 		CheckError(err)
 		log.WithFields(log.Fields{"Port": coloniesServerPort}).Info("Starting a Colonies server")
 
-		debug := false
-		coloniesServer := server.CreateColoniesServer(coloniesDB, coloniesServerPort, serverID, false, "", "", debug, false)
+		coloniesServer := server.CreateColoniesServer(coloniesDB, coloniesServerPort, serverID, false, "", "", Verbose, false)
 		go coloniesServer.ServeForever()
 
 		coloniesServerHost := os.Getenv("COLONIES_SERVERHOST")
@@ -282,7 +281,7 @@ var devCmd = &cobra.Command{
 		envStr += "export LC_CTYPE=UTF-8\n"
 		envStr += "export TZ=Europe/Stockholm\n"
 		envStr += "export COLONIES_TLS=\"false\"\n"
-		envStr += "export COLONIES_SERVERHOST=\"" + coloniesServerHost + " \"\n"
+		envStr += "export COLONIES_SERVERHOST=\"" + coloniesServerHost + "\"\n"
 		envStr += "export COLONIES_SERVERPORT=\"50080\"\n"
 		envStr += "export COLONIES_MONITORPORT=\"21120\"\n"
 		envStr += "export COLONIES_MONITORINTERVALL=\"1\"\n"

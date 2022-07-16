@@ -72,8 +72,8 @@ func (server *ColoniesServer) handleAssignProcessHTTPRequest(c *gin.Context, rec
 		return
 	}
 
-	process, err := server.controller.assignRuntime(recoveredID, msg.ColonyID)
-	if server.handleHTTPError(c, err, http.StatusNotFound) {
+	process, err := server.controller.assignRuntime(recoveredID, msg.ColonyID, msg.Latest)
+	if server.handleHTTPError(c, err, http.StatusNoContent) {
 		return
 	}
 	if process == nil {
