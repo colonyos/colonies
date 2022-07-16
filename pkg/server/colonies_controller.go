@@ -689,7 +689,7 @@ func (controller *coloniesController) findPrioritizedProcesses(runtimeID string,
 				cmd.errorChan <- err
 				return
 			}
-			prioritizedProcesses := controller.planner.Prioritize(runtimeID, processes, count)
+			prioritizedProcesses := controller.planner.Prioritize(runtimeID, processes, count, false)
 			cmd.processesReplyChan <- prioritizedProcesses
 		}}
 
@@ -1118,7 +1118,7 @@ func (controller *coloniesController) closeFailed(processID string) error {
 	return <-cmd.errorChan
 }
 
-func (controller *coloniesController) assignRuntime(runtimeID string, colonyID string) (*core.Process, error) {
+func (controller *coloniesController) assignRuntime(runtimeID string, colonyID string, latest bool) (*core.Process, error) {
 	cmd := &command{processReplyChan: make(chan *core.Process),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
@@ -1139,13 +1139,13 @@ func (controller *coloniesController) assignRuntime(runtimeID string, colonyID s
 			}
 
 			var processes []*core.Process
-			processes, err = controller.db.FindUnassignedProcesses(colonyID, runtimeID, runtime.RuntimeType, 10)
+			processes, err = controller.db.FindUnassignedProcesses(colonyID, runtimeID, runtime.RuntimeType, 10, latest)
 			if err != nil {
 				cmd.errorChan <- err
 				return
 			}
 
-			selectedProcess, err := controller.planner.Select(runtimeID, processes)
+			selectedProcess, err := controller.planner.Select(runtimeID, processes, latest)
 			if err != nil {
 				cmd.errorChan <- err
 				return

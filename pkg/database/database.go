@@ -41,7 +41,7 @@ type Database interface {
 	FindAllRunningProcesses() ([]*core.Process, error)
 	FindSuccessfulProcesses(colonyID string, count int) ([]*core.Process, error)
 	FindFailedProcesses(colonyID string, count int) ([]*core.Process, error)
-	FindUnassignedProcesses(colonyID string, runtimeID string, runtimeType string, count int) ([]*core.Process, error)
+	FindUnassignedProcesses(colonyID string, runtimeID string, runtimeType string, count int, latest bool) ([]*core.Process, error)
 	DeleteProcessByID(processID string) error
 	DeleteAllProcesses() error
 	DeleteAllProcessesByColonyID(colonyID string) error

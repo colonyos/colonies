@@ -63,6 +63,27 @@ func TestAssignProcess(t *testing.T) {
 	<-done
 }
 
+func TestAssignLatestProcess(t *testing.T) {
+	env, client, server, _, done := setupTestEnv2(t)
+
+	processSpec1 := utils.CreateTestProcessSpec(env.colonyID)
+	_, err := client.SubmitProcessSpec(processSpec1, env.runtimePrvKey)
+	assert.Nil(t, err)
+
+	time.Sleep(50 * time.Millisecond)
+
+	processSpec2 := utils.CreateTestProcessSpecWithEnv(env.colonyID, make(map[string]string))
+	addedProcess2, err := client.SubmitProcessSpec(processSpec2, env.runtimePrvKey)
+	assert.Nil(t, err)
+
+	assignedProcess, err := client.AssignLatestProcess(env.colonyID, env.runtimePrvKey)
+	assert.Nil(t, err)
+	assert.Equal(t, addedProcess2.ID, assignedProcess.ID)
+
+	server.Shutdown()
+	<-done
+}
+
 func TestMarkAlive(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 

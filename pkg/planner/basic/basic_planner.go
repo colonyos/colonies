@@ -8,17 +8,31 @@ import (
 	"github.com/colonyos/colonies/pkg/core"
 )
 
-type bySubmissionTime []*core.Process
+type byOldestSubmissionTime []*core.Process
 
-func (c bySubmissionTime) Len() int {
+func (c byOldestSubmissionTime) Len() int {
 	return len(c)
 }
 
-func (c bySubmissionTime) Less(i, j int) bool {
+func (c byOldestSubmissionTime) Less(i, j int) bool {
 	return c[i].SubmissionTime.UnixNano() < c[j].SubmissionTime.UnixNano()
 }
 
-func (c bySubmissionTime) Swap(i, j int) {
+func (c byOldestSubmissionTime) Swap(i, j int) {
+	c[i], c[j] = c[j], c[i]
+}
+
+type byLatestSubmissionTime []*core.Process
+
+func (c byLatestSubmissionTime) Len() int {
+	return len(c)
+}
+
+func (c byLatestSubmissionTime) Less(i, j int) bool {
+	return c[i].SubmissionTime.UnixNano() > c[j].SubmissionTime.UnixNano()
+}
+
+func (c byLatestSubmissionTime) Swap(i, j int) {
 	c[i], c[j] = c[j], c[i]
 }
 
@@ -36,8 +50,8 @@ func (planner *BasicPlanner) printCandidates(candidates []*core.Process) {
 	}
 }
 
-func (planner *BasicPlanner) Select(runtimeID string, candidates []*core.Process) (*core.Process, error) {
-	prioritizedProcesses := planner.Prioritize(runtimeID, candidates, 1)
+func (planner *BasicPlanner) Select(runtimeID string, candidates []*core.Process, latest bool) (*core.Process, error) {
+	prioritizedProcesses := planner.Prioritize(runtimeID, candidates, 1, latest)
 	if len(prioritizedProcesses) < 1 {
 		return nil, errors.New("No processes can be selected for runtime with Id <" + runtimeID + ">")
 	}
@@ -53,7 +67,7 @@ func min(x, y int) int {
 	return y
 }
 
-func (planner *BasicPlanner) Prioritize(runtimeID string, candidates []*core.Process, count int) []*core.Process {
+func (planner *BasicPlanner) Prioritize(runtimeID string, candidates []*core.Process, count int, latest bool) []*core.Process {
 	var prioritizedCandidates []*core.Process
 	if len(candidates) == 0 {
 		return prioritizedCandidates
@@ -72,9 +86,13 @@ func (planner *BasicPlanner) Prioritize(runtimeID string, candidates []*core.Pro
 		}
 	}
 
-	// Ok, let's look for any process and pick the oldest process
-	c := bySubmissionTime(prioritizedCandidates)
-	sort.Sort(&c)
-
-	return c[:min(count, len(prioritizedCandidates))]
+	if latest {
+		c := byLatestSubmissionTime(prioritizedCandidates)
+		sort.Sort(&c)
+		return c[:min(count, len(prioritizedCandidates))]
+	} else {
+		c := byOldestSubmissionTime(prioritizedCandidates)
+		sort.Sort(&c)
+		return c[:min(count, len(prioritizedCandidates))]
+	}
 }
