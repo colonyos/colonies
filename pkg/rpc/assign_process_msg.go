@@ -8,8 +8,9 @@ const AssignProcessPayloadType = "assignprocessmsg"
 
 type AssignProcessMsg struct {
 	ColonyID string `json:"colonyid"`
-	MsgType  string `json:"msgtype"`
+	Latest   bool   `json:"latest"`
 	Timeout  int    `json:"timeout"`
+	MsgType  string `json:"msgtype"`
 }
 
 func CreateAssignProcessMsg(colonyID string) *AssignProcessMsg {
@@ -17,6 +18,7 @@ func CreateAssignProcessMsg(colonyID string) *AssignProcessMsg {
 	msg.ColonyID = colonyID
 	msg.MsgType = AssignProcessPayloadType
 	msg.Timeout = -1 // Not implemented yet
+	msg.Latest = false
 
 	return msg
 }

@@ -26,10 +26,15 @@ func TestSelectProcess(t *testing.T) {
 	candidates := []*core.Process{process1, process2, process3}
 
 	planner := CreatePlanner()
-	selectedProcess, err := planner.Select("runtimeid_1", candidates)
+	selectedProcess, err := planner.Select("runtimeid_1", candidates, false)
 	assert.Nil(t, err)
 	assert.NotNil(t, selectedProcess)
 	assert.Equal(t, selectedProcess.ID, process2.ID)
+
+	selectedProcess, err = planner.Select("runtimeid_1", candidates, true)
+	assert.Nil(t, err)
+	assert.NotNil(t, selectedProcess)
+	assert.Equal(t, selectedProcess.ID, process1.ID)
 }
 
 func TestSelectProcess2(t *testing.T) {
@@ -49,7 +54,7 @@ func TestSelectProcess2(t *testing.T) {
 	candidates := []*core.Process{process1, process2, process3}
 
 	planner := CreatePlanner()
-	selectedProcess, err := planner.Select("runtimeid_1", candidates)
+	selectedProcess, err := planner.Select("runtimeid_1", candidates, false)
 	assert.Nil(t, err)
 	assert.Equal(t, selectedProcess.ID, process1.ID)
 }
@@ -71,7 +76,7 @@ func TestSelectProcessSameSubmissionTimes(t *testing.T) {
 	candidates := []*core.Process{process1, process2, process3}
 
 	planner := CreatePlanner()
-	selectedProcess, err := planner.Select("runtimeid_1", candidates)
+	selectedProcess, err := planner.Select("runtimeid_1", candidates, false)
 	assert.Nil(t, err)
 	assert.Equal(t, selectedProcess.ID, process1.ID)
 }
@@ -80,7 +85,7 @@ func TestSelectProcessNoProcesss(t *testing.T) {
 	candidates := []*core.Process{}
 
 	planner := CreatePlanner()
-	selectedProcess, err := planner.Select("runtimeid_1", candidates)
+	selectedProcess, err := planner.Select("runtimeid_1", candidates, false)
 	assert.NotNil(t, err)
 	assert.Nil(t, selectedProcess)
 }
@@ -102,7 +107,7 @@ func TestSelectProccess5(t *testing.T) {
 	candidates := []*core.Process{process1, process2, process3}
 
 	planner := CreatePlanner()
-	selectedProcess, err := planner.Select("runtimeid_1", candidates)
+	selectedProcess, err := planner.Select("runtimeid_1", candidates, false)
 	assert.Nil(t, err)
 	assert.Equal(t, selectedProcess.ID, process3.ID)
 }
@@ -124,17 +129,23 @@ func TestPrioritize(t *testing.T) {
 	candidates := []*core.Process{process1, process2, process3}
 
 	planner := CreatePlanner()
-	prioritizedProcesses := planner.Prioritize("runtimeid_1", candidates, 3)
+	prioritizedProcesses := planner.Prioritize("runtimeid_1", candidates, 3, false)
 	assert.Len(t, prioritizedProcesses, 3)
 
 	assert.Equal(t, process2.ID, prioritizedProcesses[0].ID)
 	assert.Equal(t, process3.ID, prioritizedProcesses[1].ID)
 	assert.Equal(t, process1.ID, prioritizedProcesses[2].ID)
 
-	prioritizedProcesses = planner.Prioritize("runtimeid_1", candidates, 2)
+	prioritizedProcesses = planner.Prioritize("runtimeid_1", candidates, 2, false)
 	assert.Len(t, prioritizedProcesses, 2)
 
 	assert.Equal(t, process2.ID, prioritizedProcesses[0].ID)
+	assert.Equal(t, process3.ID, prioritizedProcesses[1].ID)
+
+	prioritizedProcesses = planner.Prioritize("runtimeid_1", candidates, 2, true)
+	assert.Len(t, prioritizedProcesses, 2)
+
+	assert.Equal(t, process1.ID, prioritizedProcesses[0].ID)
 	assert.Equal(t, process3.ID, prioritizedProcesses[1].ID)
 }
 
@@ -157,6 +168,6 @@ func TestPrioritize2(t *testing.T) {
 	// In the scenario above, there is only possible proceess that runtimeid_2 can get, hence we should get 1 process
 	// altought we are asking for 3 processes, this basically tests the min function in basic_planner.go
 	planner := CreatePlanner()
-	prioritizedProcesses := planner.Prioritize("runtimeid_2", candidates, 3)
+	prioritizedProcesses := planner.Prioritize("runtimeid_2", candidates, 3, false)
 	assert.Len(t, prioritizedProcesses, 1)
 }
