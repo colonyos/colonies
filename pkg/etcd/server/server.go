@@ -1,41 +1,68 @@
-package main
+package server
 
 import (
-	"flag"
-	"fmt"
 	"log"
 	"net/url"
+	"strconv"
 	"time"
 
-	"github.com/davecgh/go-spew/spew"
 	"go.etcd.io/etcd/server/v3/embed"
 )
 
-func main() {
-	var nameFlag = flag.String("name", "", "give a name")
-	var serverPortFlag = flag.String("serverport", "", "give a name")
-	var clientPortFlag = flag.String("clientport", "", "give a name")
-	flag.Parse()
+type Node struct {
+	Name     string
+	Host     string
+	Port     int // Etcd efault typically 2379
+	PeerPort int // Etcd efault typically 2380
+}
 
-	name := string(*nameFlag)
-	serverPort := string(*serverPortFlag)
-	clientPort := string(*clientPortFlag)
+type Cluster struct {
+	Nodes []Node
+}
 
-	fmt.Println(name)
-	fmt.Println(serverPort)
-	fmt.Println(clientPort)
+type EtcdServer struct {
+	cluster  Cluster
+	thisNode Node
+	stop     chan bool
+	etcd     *embed.Etcd
+}
 
+func (cluster *Cluster) AddNode(node Node) {
+	cluster.Nodes = append(cluster.Nodes, node)
+}
+
+func CreateEtcdServer(thisNode Node, cluster Cluster) *EtcdServer {
+	return &EtcdServer{thisNode: thisNode, cluster: cluster, stop: make(chan bool, 1)}
+}
+
+func (cluster Cluster) buildInitialClusterStr() string {
+	var str string
+	for _, node := range cluster.Nodes {
+		str += node.Name + "=" + "http://" + node.Host + ":" + strconv.Itoa(node.PeerPort) + ","
+	}
+
+	if len(str) > 1 {
+		return str[0 : len(str)-1]
+	}
+
+	return ""
+}
+
+func (server *EtcdServer) Start() chan bool {
 	cfg := embed.NewConfig()
 	cfg.LogLevel = "fatal"
-	//cfg.LogLevel = "debug"
-	cfg.Dir = name + "default.etcd"
+	name := server.thisNode.Name
+	cfg.Dir = name + ".etcd"
 	cfg.Name = name
 	cfg.Logger = "zap"
 
-	DefaultInitialAdvertisePeerURLs := "http://localhost:" + serverPort
-	DefaultListenPeerURLs := "http://localhost:" + serverPort
-	DefaultAdvertiseClientURLs := "http://localhost:" + clientPort
-	DefaultListenClientURLs := "http://localhost:" + clientPort
+	peerPort := strconv.Itoa(server.thisNode.PeerPort)
+	port := strconv.Itoa(server.thisNode.Port)
+
+	DefaultInitialAdvertisePeerURLs := "http://" + server.thisNode.Host + ":" + peerPort
+	DefaultListenPeerURLs := "http://" + server.thisNode.Host + ":" + peerPort
+	DefaultAdvertiseClientURLs := "http://" + server.thisNode.Host + ":" + port
+	DefaultListenClientURLs := "http://" + server.thisNode.Host + ":" + port
 
 	lpurl, _ := url.Parse(DefaultListenPeerURLs)           // --listen-peer-urls http://127.0.0.1:12380
 	apurl, _ := url.Parse(DefaultInitialAdvertisePeerURLs) // --initial-advertise-peer-urls http://127.0.0.1:12380
@@ -47,28 +74,47 @@ func main() {
 	cfg.APUrls = []url.URL{*apurl}
 	cfg.ACUrls = []url.URL{*acurl}
 	cfg.InitialCluster = cfg.InitialClusterFromName(cfg.Name)
-	cfg.InitialCluster = "s1=http://localhost:2380,s2=http://localhost:23800,s3=http://localhost:33800"
+	cfg.InitialCluster = server.cluster.buildInitialClusterStr()
 	cfg.InitialClusterToken = "etcd-cluster-1"
 
-	fmt.Println(cfg.ClusterState)
+	ready := make(chan bool)
 
-	e, err := embed.StartEtcd(cfg)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer e.Close()
-	select {
-	case <-e.Server.ReadyNotify():
-		log.Printf("Server is ready!")
-		for {
-			//	spew.Dump(e.Server.Cluster())
-			spew.Dump(e.Server.ID())
-			spew.Dump(e.Server.Leader())
-			time.Sleep(1 * time.Second)
+	go func() {
+		etcd, err := embed.StartEtcd(cfg)
+		if err != nil {
+			log.Fatal(err)
 		}
-	case <-time.After(60 * time.Second):
-		e.Server.Stop() // trigger a shutdown
-		log.Printf("Server took too long to start!")
+		defer etcd.Close()
+		server.etcd = etcd
+		for {
+			select {
+			case <-server.stop:
+				etcd.Server.Stop()
+				return
+			case <-etcd.Server.ReadyNotify():
+				log.Printf("Server is ready!")
+				ready <- true
+			case <-time.After(60 * time.Second):
+				etcd.Server.Stop() // trigger a shutdown
+				log.Printf("Server took too long to start!")
+			}
+			log.Fatal(<-etcd.Err())
+		}
+	}()
+
+	return ready
+}
+
+func (server *EtcdServer) Stop() {
+	server.stop <- true
+}
+
+func (server *EtcdServer) Leader() string {
+	leader := server.etcd.Server.Leader()
+	for _, member := range server.etcd.Server.Cluster().Members() {
+		if member.ID == leader {
+			return member.Name
+		}
 	}
-	log.Fatal(<-e.Err())
+	return ""
 }
