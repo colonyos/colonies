@@ -91,20 +91,20 @@ func (server *EtcdServer) Start() {
 			log.WithFields(log.Fields{"Name": server.thisNode.Name,
 				"Host":     server.thisNode.Host,
 				"Port":     server.thisNode.Port,
-				"PeerPort": server.thisNode.PeerPort}).Info("Etcd server is ready")
+				"PeerPort": server.thisNode.PeerPort}).Info("EtcdServer is ready")
 			server.ready <- true
 			<-server.stop
 			etcd.Server.Stop()
 			log.WithFields(log.Fields{"Name": server.thisNode.Name,
 				"Host":     server.thisNode.Host,
 				"Port":     server.thisNode.Port,
-				"PeerPort": server.thisNode.PeerPort}).Info("Etcd server stopped")
+				"PeerPort": server.thisNode.PeerPort}).Info("EtcdServer stopped")
 			server.stopped <- true
 		case <-time.After(60 * time.Second):
 			log.WithFields(log.Fields{"Name": server.thisNode.Name,
 				"Host":     server.thisNode.Host,
 				"Port":     server.thisNode.Port,
-				"PeerPort": server.thisNode.PeerPort}).Error("Etcd server took too long time to start")
+				"PeerPort": server.thisNode.PeerPort}).Error("EtcdServer took too long time to start")
 			etcd.Server.Stop()
 			log.Fatal(<-etcd.Err())
 		}

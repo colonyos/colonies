@@ -26,16 +26,19 @@
 - [Running the tests](#running-the-tests)
 
 # What is Colonies?
-To simplify, Colonies is an **Employment Agency** for Internet-connected computers. Humans (or machines) submit job specifications to a Colonies server. The Colonies server keeps track of one or several Colonies, which are communities of machines. Machines (co-called workers) connect to the Colonies server and search for suitable jobs in Colonies they are member of. Each worker must have a valid identity to prove its membership and the Colonies server makes sure only authorized and qualified workers can connect and be assigned relevant jobs.
+Colonies is like an **Employment Agency** for Internet-connected computers. Humans (or machines) submit job specifications to a Colonies server, which manage one or several Colonies. A Colony is like a community of interconnected machines. Machines (so-called workers) connect to the Colonies server and search for suitable jobs in the Colony they are member of. Each worker must have a valid identity to prove its membership and the Colonies server makes sure only authorized and qualified workers can connect and be assigned relevant jobs.
 
-* A Colonies worker can **reside anywhere on the Internet**, e.g. inside a Kubernetes Pod, a smart phone, or embedded in a web page, enabling a compute continuum spannig devices, edge and cloud.
+* Colonies workers can **run anywhere on the Internet**, e.g. inside a Kubernetes Pod, a smart phone, or embedded in a web page, enabling a compute continuum spannig devices, edge and cloud.
+* Colonies is **fast**. It uses a standard PostgreSQL database for storing states and execution history.   
+* Colonies support high-availability deployments. A built-in [Etcd](https://etcd.io/) server makes it possible run a cluster of Colonies servers.
+* Colonies **builds on security**, a built-in crypto-protocol ensure secure and **zero-trust process execution**. 
+
+# What is it good at?
+* Distributed computing, e.g. handle AI workloads or building IoT plattforms.
 * Colonies makes it possible to **orchestrate processes inside containers**. This is far more efficient than lauching a new container for each new job.
-* Colonies is **fast**. Instead of using RAFT for distributed consensus, Colonies uses a standard PostgreSQL database for storing states and execution history.   
-* A Colonies server is stateless and designed to take **full advantage of Kubernetes**, e.g. fault tolerance and scalability. 
-* Colonies **complements Kubernetes** and brings robust and fault tolerant **batch processing** to Kubernetes, typically needed by many AI workloads.
 * Colonies is **lightweight and works without Kubernetes**. It runs in browsers, smart phones or IoT devices. This also makes it much easier to test and develop complex workflows before they are deployed on Kubernetes.
-* Colonies **builds on security**, a  built-in crypto-protocol ensure secure and **zero-trust process execution**. 
-* Colonies is currently being used by **[RockSigma AB](https://www.rocksigma.com)** to build a novel compute engine for automatic seismic processing in underground mines. 
+* Colonies **complements Kubernetes** and brings robust and fault tolerant **batch processing** to Kubernetes, typically needed by many AI workloads.
+* Colonies is currently being used by **[RockSigma AB](https://www.rocksigma.com)** to build a compute engine for automatic seismic processing in underground mines. 
 
 ## Design 
 ![Colonies Architecture](docs/images/ColoniesArchFull.png?raw=true "Colonies Architecture")
@@ -49,7 +52,7 @@ More information can also be found [here](https://colonyos.io).
 * **Generators** to automatically spawn workflows based on external events or timeouts.
 * **Built-in identity and trust management.** A crypto-protocol based on ECDSA (Elliptic Curve Digital Signature Algorithm) offers identity and trust management to enable Colonies workers member of the same colony to fully trust each other. Only authorized users or workers can submit process specifications or interact with other workers within a colony.
 * **Implemented in Golang** with a standard PostgreSQL database.
-* **SDK in Python, Julia, and Golang.**
+* **SDK in Python, Haskell, Julia, and Golang.**
 
 ## Example of use cases
 * **Manage ML/AI workloads on Kubernetes.** Launch one or several Colonies worker containers in a Kubernetes Pod. Then use Colonies to enable batch processing and launch processes inside worker containers. Launching processes inside already started containers can be significantly more efficient than frameworks like [Argo Workflows](https://argoproj.github.io/argo-workflows) that launches new containers for each new job, especially when dealing with AI workflows consisting of huge containers (tens of gigabytes) or when a huge amount of data needs to be shuffled into memory to perform a certain computation.

@@ -6,6 +6,7 @@ import (
 	"github.com/colonyos/colonies/pkg/client"
 	"github.com/colonyos/colonies/pkg/core"
 	"github.com/colonyos/colonies/pkg/database/postgresql"
+	"github.com/colonyos/colonies/pkg/etcd"
 	"github.com/colonyos/colonies/pkg/security/crypto"
 	"github.com/colonyos/colonies/pkg/utils"
 	"github.com/stretchr/testify/assert"
@@ -114,7 +115,11 @@ func prepareTests(t *testing.T) (*client.ColoniesClient, *ColoniesServer, string
 	serverID, err := crypto.GenerateID(serverPrvKey)
 	assert.Nil(t, err)
 
-	server := CreateColoniesServer(db, TESTPORT, serverID, EnableTLS, "../../cert/key.pem", "../../cert/cert.pem", debug, true)
+	node := etcd.Node{Name: "etcd", Host: "localhost", Port: 24100, PeerPort: 23100}
+	cluster := etcd.Cluster{}
+	cluster.AddNode(node)
+
+	server := CreateColoniesServer(db, TESTPORT, serverID, EnableTLS, "../../cert/key.pem", "../../cert/cert.pem", debug, true, node, cluster)
 
 	done := make(chan bool)
 	go func() {

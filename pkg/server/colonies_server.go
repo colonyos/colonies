@@ -12,6 +12,7 @@ import (
 
 	"github.com/colonyos/colonies/pkg/core"
 	"github.com/colonyos/colonies/pkg/database"
+	"github.com/colonyos/colonies/pkg/etcd"
 	"github.com/colonyos/colonies/pkg/rpc"
 	"github.com/colonyos/colonies/pkg/security"
 	"github.com/colonyos/colonies/pkg/security/crypto"
@@ -36,9 +37,21 @@ type ColoniesServer struct {
 	db                database.Database
 	isLeader          bool
 	mutex             sync.Mutex
+	thisNode          etcd.Node
+	cluster           etcd.Cluster
+	etcdServer        *etcd.EtcdServer
 }
 
-func CreateColoniesServer(db database.Database, port int, serverID string, tls bool, tlsPrivateKeyPath string, tlsCertPath string, debug bool, productionServer bool) *ColoniesServer {
+func CreateColoniesServer(db database.Database,
+	port int,
+	serverID string,
+	tls bool,
+	tlsPrivateKeyPath string,
+	tlsCertPath string,
+	debug bool,
+	productionServer bool,
+	thisNode etcd.Node,
+	cluster etcd.Cluster) *ColoniesServer {
 	if debug {
 		log.SetLevel(log.DebugLevel)
 	} else {
@@ -56,6 +69,12 @@ func CreateColoniesServer(db database.Database, port int, serverID string, tls b
 		Addr:    ":" + strconv.Itoa(port),
 		Handler: server.ginHandler,
 	}
+
+	server.thisNode = thisNode
+	server.cluster = cluster
+	server.etcdServer = etcd.CreateEtcdServer(server.thisNode, server.cluster, ".")
+	server.etcdServer.Start()
+	server.etcdServer.WaitToStart()
 
 	if productionServer {
 		leaderChan := make(chan bool)
@@ -297,6 +316,8 @@ func (server *ColoniesServer) ServeForever() error {
 
 func (server *ColoniesServer) Shutdown() {
 	server.controller.stop()
+	server.etcdServer.Stop()
+	server.etcdServer.WaitToStop()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -305,4 +326,5 @@ func (server *ColoniesServer) Shutdown() {
 	if err := server.httpServer.Shutdown(ctx); err != nil {
 		log.WithFields(log.Fields{"Error": err}).Warning("Colonies server forced to shutdown")
 	}
+
 }

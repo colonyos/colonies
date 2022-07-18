@@ -129,7 +129,7 @@ var runProcessCmd = &cobra.Command{
 		for _, v := range Env {
 			s := strings.Split(v, "=")
 			if len(s) != 2 {
-				CheckError(errors.New("Invalid key-value pair, try --env key1=value1,key2=value2 "))
+				CheckError(errors.New("Invalid key-value pair, try e.g. --env key1=value1,key2=value2 "))
 			}
 			key := s[0]
 			value := s[1]
