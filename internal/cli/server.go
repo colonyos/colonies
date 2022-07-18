@@ -35,12 +35,13 @@ func init() {
 	serverCmd.PersistentFlags().StringVarP(&ServerID, "serverid", "", "", "Colonies server Id")
 	serverCmd.PersistentFlags().StringVarP(&EtcdName, "etcdname", "", "etcd", "Etcd name")
 	serverCmd.PersistentFlags().StringVarP(&EtcdHost, "etcdhost", "", "0.0.0.0", "Etcd host name")
-	serverCmd.PersistentFlags().IntVarP(&EtcdPort, "etcdport", "", 2379, "Etcd port")
+	serverCmd.PersistentFlags().IntVarP(&EtcdClientPort, "etcdclientport", "", 2379, "Etcd port")
 	serverCmd.PersistentFlags().IntVarP(&EtcdPeerPort, "etcdpeerport", "", 2380, "Etcd peer port")
-	serverCmd.PersistentFlags().StringSliceVarP(&EtcdCluster, "etcdcluster", "", make([]string, 0), "EtcdCluster")
+	serverCmd.PersistentFlags().StringSliceVarP(&EtcdCluster, "initial-cluster", "", make([]string, 0), "EtcdCluster")
+	serverCmd.PersistentFlags().StringVarP(&EtcdDataDir, "etcddatadir", "", "", "Etcd data dir")
 
 	serverStatusCmd.PersistentFlags().StringVarP(&ServerHost, "host", "", "localhost", "Server host")
-	serverStatusCmd.PersistentFlags().IntVarP(&ServerPort, "port", "", 50080, "Server HTTP port")
+	serverStatusCmd.PersistentFlags().IntVarP(&ServerPort, "port", "", -1, "Server HTTP port")
 
 	serverStatisticsCmd.Flags().StringVarP(&ServerID, "serverid", "", "", "Colonies server Id")
 	serverStatisticsCmd.Flags().StringVarP(&ServerPrvKey, "serverprvkey", "", "", "Colonies server private key")
@@ -161,7 +162,7 @@ var serverStartCmd = &cobra.Command{
 				break
 			}
 		}
-		node := etcd.Node{Name: EtcdName, Host: EtcdHost, Port: EtcdPort, PeerPort: EtcdPeerPort}
+		node := etcd.Node{Name: EtcdName, Host: EtcdHost, ClientPort: EtcdClientPort, PeerPort: EtcdPeerPort}
 		cluster := etcd.Cluster{}
 
 		if len(EtcdCluster) > 0 {
@@ -188,6 +189,11 @@ var serverStartCmd = &cobra.Command{
 			cluster.AddNode(node)
 		}
 
+		if EtcdDataDir == "" {
+			EtcdDataDir = "/tmp/colonies/prod/etcd"
+			log.Warning("EtcdDataDir not specified, setting it to " + EtcdDataDir)
+		}
+
 		log.WithFields(log.Fields{
 			"BuildVersion": build.BuildVersion,
 			"BuildTime":    build.BuildTime,
@@ -195,9 +201,8 @@ var serverStartCmd = &cobra.Command{
 			"Verbose":      Verbose,
 			"UseTLS":       UseTLS,
 			"ServerID":     ServerID,
-		}).
-			Info("Starting a Colonies Server")
-		server := server.CreateColoniesServer(db, ServerPort, ServerID, UseTLS, TLSKey, TLSCert, Verbose, true, node, cluster)
+		}).Info("Starting a Colonies Server")
+		server := server.CreateColoniesServer(db, ServerPort, ServerID, UseTLS, TLSKey, TLSCert, Verbose, true, node, cluster, EtcdDataDir)
 		for {
 			err := server.ServeForever()
 			if err != nil {

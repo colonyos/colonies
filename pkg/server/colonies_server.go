@@ -5,6 +5,7 @@ import (
 	"errors"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 	"sync"
@@ -51,7 +52,8 @@ func CreateColoniesServer(db database.Database,
 	debug bool,
 	productionServer bool,
 	thisNode etcd.Node,
-	cluster etcd.Cluster) *ColoniesServer {
+	cluster etcd.Cluster,
+	etcdDataPath string) *ColoniesServer {
 	if debug {
 		log.SetLevel(log.DebugLevel)
 	} else {
@@ -72,7 +74,7 @@ func CreateColoniesServer(db database.Database,
 
 	server.thisNode = thisNode
 	server.cluster = cluster
-	server.etcdServer = etcd.CreateEtcdServer(server.thisNode, server.cluster, ".")
+	server.etcdServer = etcd.CreateEtcdServer(server.thisNode, server.cluster, etcdDataPath)
 	server.etcdServer.Start()
 	server.etcdServer.WaitToStart()
 
@@ -229,6 +231,8 @@ func (server *ColoniesServer) handleEndpointRequest(c *gin.Context) {
 	// Server handlers
 	case rpc.GetStatisiticsPayloadType:
 		server.handleStatisticsHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+	case rpc.GetClusterPayloadType:
+		server.handleGetClusterHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 
 	default:
 		errMsg := "invalid rpcMsg.PayloadType"
@@ -318,6 +322,7 @@ func (server *ColoniesServer) Shutdown() {
 	server.controller.stop()
 	server.etcdServer.Stop()
 	server.etcdServer.WaitToStop()
+	os.RemoveAll(server.etcdServer.StorageDir())
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()

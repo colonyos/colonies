@@ -35,7 +35,7 @@ func init() {
 	rootCmd.AddCommand(processCmd)
 
 	processCmd.PersistentFlags().StringVarP(&ServerHost, "host", "", "localhost", "Server host")
-	processCmd.PersistentFlags().IntVarP(&ServerPort, "port", "", 50080, "Server HTTP port")
+	processCmd.PersistentFlags().IntVarP(&ServerPort, "port", "", -1, "Server HTTP port")
 
 	submitProcessCmd.Flags().StringVarP(&RuntimeID, "runtimeid", "", "", "Runtime Id")
 	submitProcessCmd.Flags().StringVarP(&RuntimePrvKey, "runtimeprvkey", "", "", "Runtime private key")

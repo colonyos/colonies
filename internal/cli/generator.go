@@ -24,7 +24,7 @@ func init() {
 	rootCmd.AddCommand(generatorCmd)
 
 	generatorCmd.PersistentFlags().StringVarP(&ServerHost, "host", "", "localhost", "Server host")
-	generatorCmd.PersistentFlags().IntVarP(&ServerPort, "port", "", 50080, "Server HTTP port")
+	generatorCmd.PersistentFlags().IntVarP(&ServerPort, "port", "", -1, "Server HTTP port")
 
 	addGeneratorCmd.Flags().StringVarP(&RuntimeID, "runtimeid", "", "", "Runtime Id")
 	addGeneratorCmd.Flags().StringVarP(&RuntimePrvKey, "runtimeprvkey", "", "", "Runtime private key")

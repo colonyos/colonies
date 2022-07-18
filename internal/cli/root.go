@@ -72,9 +72,10 @@ var MaxExecTime int
 var MaxRetries int
 var EtcdName string
 var EtcdHost string
-var EtcdPort int
+var EtcdClientPort int
 var EtcdPeerPort int
 var EtcdCluster []string
+var EtcdDataDir string
 
 func init() {
 	rootCmd.PersistentFlags().BoolVarP(&Verbose, "verbose", "v", false, "verbose output")

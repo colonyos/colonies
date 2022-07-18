@@ -8,10 +8,10 @@ import (
 )
 
 func TestCreateEtcdCluster(t *testing.T) {
-	node1 := Node{Name: "etcd1", Host: "localhost", Port: 24100, PeerPort: 23100}
-	node2 := Node{Name: "etcd2", Host: "localhost", Port: 24200, PeerPort: 23200}
-	node3 := Node{Name: "etcd3", Host: "localhost", Port: 24300, PeerPort: 23300}
-	node4 := Node{Name: "etcd4", Host: "localhost", Port: 24400, PeerPort: 23400}
+	node1 := Node{Name: "etcd1", Host: "localhost", ClientPort: 24100, PeerPort: 23100}
+	node2 := Node{Name: "etcd2", Host: "localhost", ClientPort: 24200, PeerPort: 23200}
+	node3 := Node{Name: "etcd3", Host: "localhost", ClientPort: 24300, PeerPort: 23300}
+	node4 := Node{Name: "etcd4", Host: "localhost", ClientPort: 24400, PeerPort: 23400}
 	cluster := Cluster{}
 	cluster.AddNode(node1)
 	cluster.AddNode(node2)
@@ -48,6 +48,9 @@ func TestCreateEtcdCluster(t *testing.T) {
 	assert.Len(t, nodes3, 4)
 	nodes4 := server1.Members()
 	assert.Len(t, nodes4, 4)
+
+	currentCluster := server4.CurrentCluster()
+	assert.Len(t, currentCluster.Nodes, 4)
 
 	server1.Stop()
 	server2.Stop()

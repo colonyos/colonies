@@ -62,3 +62,15 @@ func TestGetStatistics(t *testing.T) {
 	server.Shutdown()
 	<-done
 }
+
+func TestGetClusterInfo(t *testing.T) {
+	_, client, server, serverPrvKey, done := setupTestEnv2(t)
+
+	cluster, err := client.GetClusterInfo(serverPrvKey)
+	assert.Nil(t, err)
+	assert.Len(t, cluster.Nodes, 1)
+	assert.Equal(t, cluster.Nodes[0], cluster.Leader) // Since we only have one EtcdServer
+
+	server.Shutdown()
+	<-done
+}

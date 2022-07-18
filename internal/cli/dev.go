@@ -231,11 +231,11 @@ var devCmd = &cobra.Command{
 		CheckError(err)
 		log.WithFields(log.Fields{"Port": coloniesServerPort}).Info("Starting a Colonies server")
 
-		node := etcd.Node{Name: "etcd", Host: "localhost", Port: 2379, PeerPort: 2380}
+		node := etcd.Node{Name: "dev", Host: "localhost", ClientPort: 2379, PeerPort: 2380}
 		cluster := etcd.Cluster{}
 		cluster.AddNode(node)
 
-		coloniesServer := server.CreateColoniesServer(coloniesDB, coloniesServerPort, serverID, false, "", "", Verbose, false, node, cluster)
+		coloniesServer := server.CreateColoniesServer(coloniesDB, coloniesServerPort, serverID, false, "", "", Verbose, false, node, cluster, "/tmp/colonies/dev/etcd")
 		go coloniesServer.ServeForever()
 
 		coloniesServerHost := os.Getenv("COLONIES_SERVERHOST")

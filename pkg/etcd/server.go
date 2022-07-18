@@ -15,33 +15,33 @@ type EtcdServer struct {
 	ready    chan bool
 	stop     chan bool
 	stopped  chan bool
-	path     string
+	dataPath string
 	etcd     *embed.Etcd
 	cfg      *embed.Config
 }
 
-func CreateEtcdServer(thisNode Node, cluster Cluster, path string) *EtcdServer {
+func CreateEtcdServer(thisNode Node, cluster Cluster, dataPath string) *EtcdServer {
 	server := &EtcdServer{thisNode: thisNode,
-		cluster: cluster,
-		ready:   make(chan bool, 1),
-		stop:    make(chan bool, 1),
-		stopped: make(chan bool, 1),
-		path:    path}
+		cluster:  cluster,
+		ready:    make(chan bool, 1),
+		stop:     make(chan bool, 1),
+		stopped:  make(chan bool, 1),
+		dataPath: dataPath}
 
 	cfg := embed.NewConfig()
 	cfg.LogLevel = "fatal"
 	name := server.thisNode.Name
-	cfg.Dir = server.path + "/" + name + ".etcd"
+	cfg.Dir = server.dataPath + "/" + name + ".etcd"
 	cfg.Name = name
 	cfg.Logger = "zap"
 
 	peerPort := strconv.Itoa(server.thisNode.PeerPort)
-	port := strconv.Itoa(server.thisNode.Port)
+	clientPort := strconv.Itoa(server.thisNode.ClientPort)
 
 	initialAdvertisePeerURLs := "http://" + server.thisNode.Host + ":" + peerPort
-	listenPeerURLs := "http://" + server.thisNode.Host + ":" + peerPort
-	advertiseClientURLs := "http://" + server.thisNode.Host + ":" + port
-	listenClientURLs := "http://" + server.thisNode.Host + ":" + port
+	listenPeerURLs := "http://0.0.0.0:" + peerPort
+	advertiseClientURLs := "http://" + server.thisNode.Host + ":" + clientPort
+	listenClientURLs := "http://0.0.0.0:" + clientPort
 
 	lpurl, _ := url.Parse(listenPeerURLs)
 	apurl, _ := url.Parse(initialAdvertisePeerURLs)
@@ -88,23 +88,29 @@ func (server *EtcdServer) Start() {
 		server.etcd = etcd
 		select {
 		case <-etcd.Server.ReadyNotify():
-			log.WithFields(log.Fields{"Name": server.thisNode.Name,
-				"Host":     server.thisNode.Host,
-				"Port":     server.thisNode.Port,
-				"PeerPort": server.thisNode.PeerPort}).Info("EtcdServer is ready")
+			log.WithFields(log.Fields{
+				"Name":       server.thisNode.Name,
+				"Host":       server.thisNode.Host,
+				"DataPath":   server.dataPath,
+				"ClientPort": server.thisNode.ClientPort,
+				"PeerPort":   server.thisNode.PeerPort}).Info("EtcdServer is ready")
 			server.ready <- true
 			<-server.stop
 			etcd.Server.Stop()
-			log.WithFields(log.Fields{"Name": server.thisNode.Name,
-				"Host":     server.thisNode.Host,
-				"Port":     server.thisNode.Port,
-				"PeerPort": server.thisNode.PeerPort}).Info("EtcdServer stopped")
+			log.WithFields(log.Fields{
+				"Name":       server.thisNode.Name,
+				"Host":       server.thisNode.Host,
+				"DataPath":   server.dataPath,
+				"ClientPort": server.thisNode.ClientPort,
+				"PeerPort":   server.thisNode.PeerPort}).Info("EtcdServer stopped")
 			server.stopped <- true
-		case <-time.After(60 * time.Second):
-			log.WithFields(log.Fields{"Name": server.thisNode.Name,
-				"Host":     server.thisNode.Host,
-				"Port":     server.thisNode.Port,
-				"PeerPort": server.thisNode.PeerPort}).Error("EtcdServer took too long time to start")
+		case <-time.After(600 * time.Second):
+			log.WithFields(log.Fields{
+				"Name":       server.thisNode.Name,
+				"Host":       server.thisNode.Host,
+				"DataPath":   server.dataPath,
+				"ClientPort": server.thisNode.ClientPort,
+				"PeerPort":   server.thisNode.PeerPort}).Error("EtcdServer took too long time to start")
 			etcd.Server.Stop()
 			log.Fatal(<-etcd.Err())
 		}
@@ -145,4 +151,19 @@ func (server *EtcdServer) Members() []Node {
 	}
 
 	return nodes
+}
+
+func (server *EtcdServer) CurrentCluster() Cluster {
+	nodes := server.Members()
+	leader := server.Leader()
+
+	var leaderNode Node
+	for _, node := range nodes {
+		if node.Name == leader {
+			leaderNode = node
+			break
+		}
+	}
+
+	return Cluster{Nodes: nodes, Leader: leaderNode}
 }
