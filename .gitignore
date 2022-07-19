@@ -8,3 +8,4 @@ pkg/security/*.sw*
 pkg/logging/*.sw*
 pkg/client/*.sw*
 pkg/cmd/*.sw*
+*.etcd
