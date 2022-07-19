@@ -36,11 +36,11 @@ type ColoniesServer struct {
 	crypto            security.Crypto
 	validator         security.Validator
 	db                database.Database
-	isLeader          bool
 	mutex             sync.Mutex
 	thisNode          etcd.Node
 	cluster           etcd.Cluster
 	etcdServer        *etcd.EtcdServer
+	leader            bool
 }
 
 func CreateColoniesServer(db database.Database,
@@ -50,7 +50,6 @@ func CreateColoniesServer(db database.Database,
 	tlsPrivateKeyPath string,
 	tlsCertPath string,
 	debug bool,
-	productionServer bool,
 	thisNode etcd.Node,
 	cluster etcd.Cluster,
 	etcdDataPath string) *ColoniesServer {
@@ -77,26 +76,7 @@ func CreateColoniesServer(db database.Database,
 	server.etcdServer = etcd.CreateEtcdServer(server.thisNode, server.cluster, etcdDataPath)
 	server.etcdServer.Start()
 	server.etcdServer.WaitToStart()
-
-	if productionServer {
-		leaderChan := make(chan bool)
-		go tryBecomeLeader(leaderChan, 1000, db)
-
-		go func() {
-			for {
-				isLeader := <-leaderChan
-				if isLeader && !server.isLeader {
-					log.Info("Waiting for mutex to become leader")
-					server.mutex.Lock()
-					server.isLeader = true
-					server.mutex.Unlock()
-					log.Info("Got mutex, became leader")
-				}
-			}
-		}()
-	} else {
-		server.isLeader = true
-	}
+	server.leader = false
 
 	server.httpServer = httpServer
 	server.controller = createColoniesController(db, server)
@@ -111,6 +91,21 @@ func CreateColoniesServer(db database.Database,
 	server.setupRoutes()
 
 	return server
+}
+
+func (server *ColoniesServer) isLeader() bool {
+	areWeLeader := server.etcdServer.Leader() == server.thisNode.Name
+	if areWeLeader && !server.leader {
+		log.Info("Colonies server came leader")
+		server.leader = true
+	}
+
+	if !areWeLeader && server.leader {
+		log.Info("Colonies server is no longer a leader")
+		server.leader = false
+	}
+
+	return areWeLeader
 }
 
 func (server *ColoniesServer) setupRoutes() {

@@ -202,7 +202,7 @@ var serverStartCmd = &cobra.Command{
 			"UseTLS":       UseTLS,
 			"ServerID":     ServerID,
 		}).Info("Starting a Colonies Server")
-		server := server.CreateColoniesServer(db, ServerPort, ServerID, UseTLS, TLSKey, TLSCert, Verbose, true, node, cluster, EtcdDataDir)
+		server := server.CreateColoniesServer(db, ServerPort, ServerID, UseTLS, TLSKey, TLSCert, Verbose, node, cluster, EtcdDataDir)
 		for {
 			err := server.ServeForever()
 			if err != nil {

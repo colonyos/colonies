@@ -235,7 +235,7 @@ var devCmd = &cobra.Command{
 		cluster := etcd.Cluster{}
 		cluster.AddNode(node)
 
-		coloniesServer := server.CreateColoniesServer(coloniesDB, coloniesServerPort, serverID, false, "", "", Verbose, false, node, cluster, "/tmp/colonies/dev/etcd")
+		coloniesServer := server.CreateColoniesServer(coloniesDB, coloniesServerPort, serverID, false, "", "", Verbose, node, cluster, "/tmp/colonies/dev/etcd")
 		go coloniesServer.ServeForever()
 
 		coloniesServerHost := os.Getenv("COLONIES_SERVERHOST")
