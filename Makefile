@@ -51,7 +51,7 @@ github_test:
 	@cd pkg/server; go test -v --race
 	@cd pkg/planner/basic; go test -v --race
 	@cd pkg/utils; go test -v --race
-	@cd pkg/etcd; grc go test -v --race
+	@cd pkg/etcd; go test -v --race
 
 install:
 	cp ./bin/colonies /usr/local/bin

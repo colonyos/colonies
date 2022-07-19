@@ -5,10 +5,12 @@
 
 # Table of content 
 - [What is Colonies?](#what-is-colonies-)
-  * [Design](#design)
-  * [Key features](#key-features)
-  * [Example of use cases](#example-of-use-cases)
+  * [What is it good at?](#what-is-it-good-at-)
+  * [What about Kubernetes and container-native workflow engines?](#what-about-kubernetes-and-container-native-workflow-engines-)
+  * [Current users](#current-users)
 - [Links](#links)
+- [Design](#design)
+  * [Key features](#key-features)
 - [Getting started](#getting-started)
   * [Installation](#installation)
   * [Development server](#development-server)
@@ -18,6 +20,9 @@
   * [Workflow](#workflow)
   * [Submit a workflow](#submit-a-workflow)
   * [Start a worker](#start-a-worker-1)
+- [Generators](#generators)
+  * [Add a generator](#add-a-generator)
+  * [Increase generator counter](#increase-generator-counter)
 - [Monitoring](#monitoring)
   * [Prometheus configuration](#prometheus-configuration)
   * [Start a Prometheus and a Grafana server](#start-a-prometheus-and-a-grafana-server)
@@ -26,21 +31,34 @@
 - [Running the tests](#running-the-tests)
 
 # What is Colonies?
-Colonies is like an **Employment Agency** for Internet-connected computers. Humans (or machines) submit job specifications to a Colonies server, which manage one or several Colonies. A Colony is like a community of interconnected machines. Machines (so-called workers) connect to the Colonies server and search for suitable jobs in the Colony they are member of. Each worker must have a valid identity to prove its membership and the Colonies server makes sure only authorized and qualified workers can connect and be assigned relevant jobs.
+Colonies is an **Employment Agency** for Internet-connected computers. Humans (or machines) submit job specifications to a Colonies server, which manage one or several Colonies. A Colony is like a community of machines (so-called workers), which connect to the Colonies server and search for suitable jobs in the Colony they are member of. Each worker must have a valid identity to prove its membership and the Colonies server makes sure only authorized and qualified workers can connect and be assigned relevant jobs.
 
 * Colonies workers can **run anywhere on the Internet**, e.g. inside a Kubernetes Pod, a smart phone, or embedded in a web page, enabling a compute continuum spannig devices, edge and cloud.
-* Colonies is **fast**. It uses a standard PostgreSQL database for storing states and execution history.   
-* Colonies support high-availability deployments. A built-in [Etcd](https://etcd.io/) server makes it possible run a cluster of Colonies servers.
-* Colonies **builds on security**, a built-in crypto-protocol ensure secure and **zero-trust process execution**. 
+* Colonies is **fast**. It uses a standard PostgreSQL database for storing states and execution history. 
+* Colonies support **high-availability deployments**. A built-in [Etcd](https://etcd.io/) server makes it possible run a cluster of Colonies servers.
+* A built-in crypto-protocol ensures **secure** and **zero-trust process execution**. 
 
-# What is it good at?
-* Distributed computing, e.g. handle AI workloads or building IoT plattforms.
-* Colonies makes it possible to **orchestrate processes inside containers**. This is far more efficient than lauching a new container for each new job.
-* Colonies is **lightweight and works without Kubernetes**. It runs in browsers, smart phones or IoT devices. This also makes it much easier to test and develop complex workflows before they are deployed on Kubernetes.
+## What is it good at?
+* Distributed Computing, e.g. manage ML/AI workloads on Kubernetes. Launch one or several Colonies worker containers in a Kubernetes Pod. Then use Colonies to enable batch processing and launch processes inside worker containers.
+* Distributed RPC, e.g. build overlay networks to manage workflows spanning multiple cloud/edge servers and devices.
+* Grid computing, e.g. use Colonies as an overlay network and launch processes to perform computations at IoT devices, smart phones or cloud servers, all controlled from a single interface.
+
+## What about Kubernetes and container-native workflow engines? 
+* Colonies makes it possible to **orchestrate processes inside containers**. This is far more efficient than lauching a new container for each new job. Launching processes inside already started containers can be significantly more efficient than frameworks like [Argo Workflows](https://argoproj.github.io/argo-workflows) that launches new containers for each new job, especially when dealing with AI workflows consisting of huge containers (tens of gigabytes) or when a huge amount of data needs to be shuffled into memory to perform a certain computation.
 * Colonies **complements Kubernetes** and brings robust and fault tolerant **batch processing** to Kubernetes, typically needed by many AI workloads.
+* Colonies is **lightweight and does not require Kubernetes**. It runs in browsers, smart phones or IoT devices. This also makes it much easier to test and develop complex workflows before they are deployed on Kubernetes.
+
+## Current users
 * Colonies is currently being used by **[RockSigma AB](https://www.rocksigma.com)** to build a compute engine for automatic seismic processing in underground mines. 
 
-## Design 
+# Links
+* [Installation](docs/Installation.md)
+* [Using the Colonies CLI tool](docs/CLI.md)
+* [High-availability deployment](docs/CLI.md)
+* [Tutorial (implement your own Colonies Worker using the Golang SDK)](docs/Tutorial.md)
+* [HTTP RPC Protocol](docs/RPC.md)
+
+# Design 
 ![Colonies Architecture](docs/images/ColoniesArchFull.png?raw=true "Colonies Architecture")
 
 More information can also be found [here](https://colonyos.io).
@@ -53,17 +71,6 @@ More information can also be found [here](https://colonyos.io).
 * **Built-in identity and trust management.** A crypto-protocol based on ECDSA (Elliptic Curve Digital Signature Algorithm) offers identity and trust management to enable Colonies workers member of the same colony to fully trust each other. Only authorized users or workers can submit process specifications or interact with other workers within a colony.
 * **Implemented in Golang** with a standard PostgreSQL database.
 * **SDK in Python, Haskell, Julia, and Golang.**
-
-## Example of use cases
-* **Manage ML/AI workloads on Kubernetes.** Launch one or several Colonies worker containers in a Kubernetes Pod. Then use Colonies to enable batch processing and launch processes inside worker containers. Launching processes inside already started containers can be significantly more efficient than frameworks like [Argo Workflows](https://argoproj.github.io/argo-workflows) that launches new containers for each new job, especially when dealing with AI workflows consisting of huge containers (tens of gigabytes) or when a huge amount of data needs to be shuffled into memory to perform a certain computation.
-* **Grid computing.** Create "non-malicious" botnets and launch processes to perform computations at IoT devices, smart phones or cloud servers; all controlled from the Colonies server.
-* **Manage complex workflows spanning multiple cloud/edge servers and devices**, e.g. setting up multimedia pipelines and ML inference servers running on multiple platforms connected to different networks.
-
-# Links
-* [Installation](docs/Installation.md)
-* [Using the Colonies CLI tool](docs/CLI.md)
-* [Tutorial (implement your own Colonies Worker using the Golang SDK)](docs/Tutorial.md)
-* [HTTP RPC Protocol](docs/RPC.md)
 
 # Getting started
 ## Installation
