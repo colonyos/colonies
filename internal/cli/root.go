@@ -16,7 +16,6 @@ const TimeLayout = "2006-01-02 15:04:05"
 const DefaultDBHost = "localhost"
 const DefaultDBPort = 5432
 const DefaultServerHost = "localhost"
-const DefaultServerPort = 50080
 const MaxAttributeLength = 30
 
 var DBName = "postgres"
@@ -71,6 +70,12 @@ var Args []string
 var Env []string
 var MaxExecTime int
 var MaxRetries int
+var EtcdName string
+var EtcdHost string
+var EtcdClientPort int
+var EtcdPeerPort int
+var EtcdCluster []string
+var EtcdDataDir string
 
 func init() {
 	rootCmd.PersistentFlags().BoolVarP(&Verbose, "verbose", "v", false, "verbose output")

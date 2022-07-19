@@ -5,11 +5,13 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/colonyos/colonies/pkg/build"
 	"github.com/colonyos/colonies/pkg/client"
 	"github.com/colonyos/colonies/pkg/database/postgresql"
+	"github.com/colonyos/colonies/pkg/etcd"
 	"github.com/colonyos/colonies/pkg/security"
 	"github.com/colonyos/colonies/pkg/server"
 	"github.com/kataras/tablewriter"
@@ -29,11 +31,17 @@ func init() {
 	serverCmd.PersistentFlags().StringVarP(&DBPassword, "dbpassword", "", "", "Colonies database password")
 	serverCmd.PersistentFlags().StringVarP(&TLSCert, "tlscert", "", "", "TLS certificate")
 	serverCmd.PersistentFlags().StringVarP(&TLSKey, "tlskey", "", "", "TLS key")
-	serverCmd.PersistentFlags().IntVarP(&ServerPort, "port", "", DefaultServerPort, "Server HTTP port")
+	serverCmd.PersistentFlags().IntVarP(&ServerPort, "port", "", -1, "Server HTTP port")
 	serverCmd.PersistentFlags().StringVarP(&ServerID, "serverid", "", "", "Colonies server Id")
+	serverCmd.PersistentFlags().StringVarP(&EtcdName, "etcdname", "", "etcd", "Etcd name")
+	serverCmd.PersistentFlags().StringVarP(&EtcdHost, "etcdhost", "", "0.0.0.0", "Etcd host name")
+	serverCmd.PersistentFlags().IntVarP(&EtcdClientPort, "etcdclientport", "", 2379, "Etcd port")
+	serverCmd.PersistentFlags().IntVarP(&EtcdPeerPort, "etcdpeerport", "", 2380, "Etcd peer port")
+	serverCmd.PersistentFlags().StringSliceVarP(&EtcdCluster, "initial-cluster", "", make([]string, 0), "EtcdCluster")
+	serverCmd.PersistentFlags().StringVarP(&EtcdDataDir, "etcddatadir", "", "", "Etcd data dir")
 
 	serverStatusCmd.PersistentFlags().StringVarP(&ServerHost, "host", "", "localhost", "Server host")
-	serverStatusCmd.PersistentFlags().IntVarP(&ServerPort, "port", "", 50080, "Server HTTP port")
+	serverStatusCmd.PersistentFlags().IntVarP(&ServerPort, "port", "", -1, "Server HTTP port")
 
 	serverStatisticsCmd.Flags().StringVarP(&ServerID, "serverid", "", "", "Colonies server Id")
 	serverStatisticsCmd.Flags().StringVarP(&ServerPrvKey, "serverprvkey", "", "", "Colonies server private key")
@@ -54,8 +62,10 @@ func parseServerEnv() {
 
 	ServerPortEnvStr := os.Getenv("COLONIES_SERVERPORT")
 	if ServerPortEnvStr != "" {
-		ServerPort, err = strconv.Atoi(ServerPortEnvStr)
-		CheckError(err)
+		if ServerPort == -1 {
+			ServerPort, err = strconv.Atoi(ServerPortEnvStr)
+			CheckError(err)
+		}
 	}
 
 	if ServerID == "" {
@@ -123,7 +133,6 @@ var serverStartCmd = &cobra.Command{
 	Short: "Start a production server",
 	Long:  "Start a production server",
 	Run: func(cmd *cobra.Command, args []string) {
-		log.WithFields(log.Fields{"BuildVersion": build.BuildVersion, "BuildTime": build.BuildTime}).Info("Starting a Colonies Server")
 		parseDBEnv()
 		parseServerEnv()
 
@@ -141,6 +150,7 @@ var serverStartCmd = &cobra.Command{
 			}
 		}
 
+		log.WithFields(log.Fields{"DBHost": DBHost, "DBPort": DBPort, "DBUser": DBUser, "DBPassword": "*******************", "DBName": DBName, "UseTLS": UseTLS}).Info("Connecting to PostgreSQL database")
 		var db *postgresql.PQDatabase
 		for {
 			db = postgresql.CreatePQDatabase(DBHost, DBPort, DBUser, DBPassword, DBName, DBPrefix)
@@ -152,9 +162,47 @@ var serverStartCmd = &cobra.Command{
 				break
 			}
 		}
+		node := etcd.Node{Name: EtcdName, Host: EtcdHost, ClientPort: EtcdClientPort, PeerPort: EtcdPeerPort}
+		cluster := etcd.Cluster{}
 
-		log.WithFields(log.Fields{"DBHost": DBHost, "DBPort": DBPort, "DBUser": DBUser, "DBPassword": "*******************", "DBName": DBName, "UseTLS": UseTLS}).Info("Connecting to PostgreSQL database")
-		server := server.CreateColoniesServer(db, ServerPort, ServerID, UseTLS, TLSKey, TLSCert, Verbose, true)
+		if len(EtcdCluster) > 0 {
+			// Parse EtcdCluster flag
+			errMsg := "Invalid cluster, try e.g. --etcdcluster server1=localhost:23100,server2=localhost:23101"
+			for _, s := range EtcdCluster {
+				split1 := strings.Split(s, "=")
+				if len(split1) != 2 {
+					CheckError(errors.New(errMsg))
+				}
+				name := split1[0]
+				split2 := strings.Split(split1[1], ":")
+				if len(split2) != 2 {
+					CheckError(errors.New(errMsg))
+				}
+				host := split2[0]
+				portStr := split2[1]
+				port, err := strconv.Atoi(portStr)
+				CheckError(err)
+				node := etcd.Node{Name: name, Host: host, PeerPort: port}
+				cluster.AddNode(node)
+			}
+		} else {
+			cluster.AddNode(node)
+		}
+
+		if EtcdDataDir == "" {
+			EtcdDataDir = "/tmp/colonies/prod/etcd"
+			log.Warning("EtcdDataDir not specified, setting it to " + EtcdDataDir)
+		}
+
+		log.WithFields(log.Fields{
+			"BuildVersion": build.BuildVersion,
+			"BuildTime":    build.BuildTime,
+			"ServerPort":   ServerPort,
+			"Verbose":      Verbose,
+			"UseTLS":       UseTLS,
+			"ServerID":     ServerID,
+		}).Info("Starting a Colonies Server")
+		server := server.CreateColoniesServer(db, ServerPort, ServerID, UseTLS, TLSKey, TLSCert, Verbose, node, cluster, EtcdDataDir)
 		for {
 			err := server.ServeForever()
 			if err != nil {

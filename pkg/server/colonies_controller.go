@@ -88,7 +88,7 @@ func (controller *coloniesController) generatorTriggerLoop() {
 		if controller.server != nil {
 			var isLeader bool
 			controller.server.mutex.Lock()
-			isLeader = controller.server.isLeader
+			isLeader = controller.server.isLeader()
 			controller.server.mutex.Unlock()
 
 			if isLeader {
@@ -115,7 +115,7 @@ func (controller *coloniesController) generatorSyncLoop() {
 		if controller.server != nil {
 			var isLeader bool
 			controller.server.mutex.Lock()
-			isLeader = controller.server.isLeader
+			isLeader = controller.server.isLeader()
 			controller.server.mutex.Unlock()
 
 			if isLeader {

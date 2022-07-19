@@ -65,7 +65,33 @@ func (server *ColoniesServer) handleStatisticsHTTPRequest(c *gin.Context, recove
 		return
 	}
 
-	//log.Info("Getting server statistics")
+	server.sendHTTPReply(c, payloadType, jsonString)
+}
+
+func (server *ColoniesServer) handleGetClusterHTTPRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
+	msg, err := rpc.CreateGetClusterMsgFromJSON(jsonString)
+	if server.handleHTTPError(c, err, http.StatusBadRequest) {
+		return
+	}
+	if msg == nil {
+		server.handleHTTPError(c, errors.New("Failed to get cluster info, failed to parse JSON"), http.StatusBadRequest)
+		return
+	}
+	if msg.MsgType != payloadType {
+		server.handleHTTPError(c, errors.New("Failed to get cluster info, msg.MsgType does not match payloadType"), http.StatusBadRequest)
+		return
+	}
+
+	err = server.validator.RequireServerOwner(recoveredID, server.serverID)
+	if server.handleHTTPError(c, err, http.StatusForbidden) {
+		return
+	}
+
+	cluster := server.etcdServer.CurrentCluster()
+	jsonString, err = cluster.ToJSON()
+	if server.handleHTTPError(c, err, http.StatusInternalServerError) {
+		return
+	}
 
 	server.sendHTTPReply(c, payloadType, jsonString)
 }
