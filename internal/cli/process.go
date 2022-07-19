@@ -627,10 +627,12 @@ var getProcessCmd = &cobra.Command{
 			[]string{"SubmissionTime", process.SubmissionTime.Format(TimeLayout)},
 			[]string{"StartTime", process.StartTime.Format(TimeLayout)},
 			[]string{"EndTime", process.EndTime.Format(TimeLayout)},
-			[]string{"Deadline", process.Deadline.Format(TimeLayout)},
+			[]string{"WaitDeadline", process.WaitDeadline.Format(TimeLayout)},
+			[]string{"ExecDeadline", process.ExecDeadline.Format(TimeLayout)},
 			[]string{"WaitingTime", process.WaitingTime().String()},
 			[]string{"ProcessingTime", process.ProcessingTime().String()},
 			[]string{"Retries", strconv.Itoa(process.Retries)},
+			[]string{"ErrorMsg", process.ErrorMsg},
 		}
 		processTable := tablewriter.NewWriter(os.Stdout)
 		for _, v := range processData {
@@ -675,6 +677,7 @@ var getProcessCmd = &cobra.Command{
 			[]string{"Args", procArgs},
 			[]string{"MaxExecTime", strconv.Itoa(process.ProcessSpec.MaxExecTime)},
 			[]string{"MaxRetries", strconv.Itoa(process.ProcessSpec.MaxRetries)},
+			[]string{"Priority", strconv.Itoa(process.ProcessSpec.Priority)},
 		}
 		specTable := tablewriter.NewWriter(os.Stdout)
 		for _, v := range specData {
@@ -879,7 +882,7 @@ var closeFailed = &cobra.Command{
 		process, err := client.GetProcess(ProcessID, RuntimePrvKey)
 		CheckError(err)
 
-		err = client.CloseFailed(process.ID, RuntimePrvKey)
+		err = client.CloseFailed(process.ID, "Closed by user", RuntimePrvKey)
 		CheckError(err)
 
 		log.WithFields(log.Fields{"ProcessID": process.ID}).Info("Process closed as Failed")

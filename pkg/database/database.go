@@ -39,6 +39,7 @@ type Database interface {
 	FindWaitingProcesses(colonyID string, count int) ([]*core.Process, error)
 	FindRunningProcesses(colonyID string, count int) ([]*core.Process, error)
 	FindAllRunningProcesses() ([]*core.Process, error)
+	FindAllWaitingProcesses() ([]*core.Process, error)
 	FindSuccessfulProcesses(colonyID string, count int) ([]*core.Process, error)
 	FindFailedProcesses(colonyID string, count int) ([]*core.Process, error)
 	FindUnassignedProcesses(colonyID string, runtimeID string, runtimeType string, count int, latest bool) ([]*core.Process, error)
@@ -50,12 +51,13 @@ type Database interface {
 	ResetProcess(process *core.Process) error
 	SetProcessState(processID string, state int) error
 	SetWaitForParents(processID string, waitingForParent bool) error
-	SetDeadline(process *core.Process, deadline time.Time) error
+	SetWaitDeadline(process *core.Process, waitDeadline time.Time) error
+	SetExecDeadline(process *core.Process, execDeadline time.Time) error
 	ResetAllProcesses(process *core.Process) error
 	AssignRuntime(runtimeID string, process *core.Process) error
 	UnassignRuntime(process *core.Process) error
 	MarkSuccessful(process *core.Process) error
-	MarkFailed(process *core.Process) error
+	MarkFailed(process *core.Process, errorMsg string) error
 	CountProcesses() (int, error)
 	CountWaitingProcesses() (int, error)
 	CountRunningProcesses() (int, error)

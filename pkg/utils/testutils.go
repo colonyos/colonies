@@ -14,7 +14,7 @@ func CreateTestProcess(colonyID string) *core.Process {
 }
 
 func CreateTestProcessSpec(colonyID string) *core.ProcessSpec {
-	return core.CreateProcessSpec("test_name", "test_image", "test_func", []string{"test_arg"}, colonyID, []string{}, "test_runtime_type", -1, 3, 1000, 10, 1, make(map[string]string), []string{}, 1)
+	return core.CreateProcessSpec("test_name", "test_image", "test_func", []string{"test_arg"}, colonyID, []string{}, "test_runtime_type", -1, -1, 3, 1000, 10, 1, make(map[string]string), []string{}, 1)
 }
 
 func CreateTestProcessWithType(colonyID string, runtimeType string) *core.Process {
@@ -22,7 +22,7 @@ func CreateTestProcessWithType(colonyID string, runtimeType string) *core.Proces
 }
 
 func CreateTestProcessSpecWithType(colonyID string, runtimeType string) *core.ProcessSpec {
-	return core.CreateProcessSpec("test_name", "test_image", "test_func", []string{"test_arg"}, colonyID, []string{}, runtimeType, -1, 3, 1000, 10, 1, make(map[string]string), []string{}, 1)
+	return core.CreateProcessSpec("test_name", "test_image", "test_func", []string{"test_arg"}, colonyID, []string{}, runtimeType, -1, -1, 3, 1000, 10, 1, make(map[string]string), []string{}, 1)
 }
 
 func CreateTestProcessWithEnv(colonyID string, env map[string]string) *core.Process {
@@ -30,7 +30,7 @@ func CreateTestProcessWithEnv(colonyID string, env map[string]string) *core.Proc
 }
 
 func CreateTestProcessSpecWithEnv(colonyID string, env map[string]string) *core.ProcessSpec {
-	return core.CreateProcessSpec("test_name", "test_image", "test_func", []string{"test_arg"}, colonyID, []string{}, "test_runtime_type", -1, 3, 1000, 10, 1, env, []string{}, 1)
+	return core.CreateProcessSpec("test_name", "test_image", "test_func", []string{"test_arg"}, colonyID, []string{}, "test_runtime_type", -1, -1, 3, 1000, 10, 1, env, []string{}, 1)
 }
 
 func CreateTestProcessWithTargets(colonyID string, targetRuntimeIDs []string) *core.Process {
@@ -38,7 +38,7 @@ func CreateTestProcessWithTargets(colonyID string, targetRuntimeIDs []string) *c
 }
 
 func CreateTestProcessSpecWithTargets(colonyID string, targetRuntimeIDs []string) *core.ProcessSpec {
-	return core.CreateProcessSpec("test_name", "test_image", "test_func", []string{"test_arg"}, colonyID, targetRuntimeIDs, "test_runtime_type", -1, 3, 1000, 10, 1, make(map[string]string), []string{}, 1)
+	return core.CreateProcessSpec("test_name", "test_image", "test_func", []string{"test_arg"}, colonyID, targetRuntimeIDs, "test_runtime_type", -1, -1, 3, 1000, 10, 1, make(map[string]string), []string{}, 1)
 }
 
 func CreateTestRuntime(colonyID string) *core.Runtime {

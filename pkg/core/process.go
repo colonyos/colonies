@@ -24,7 +24,9 @@ type Process struct {
 	SubmissionTime    time.Time   `json:"submissiontime"`
 	StartTime         time.Time   `json:"starttime"`
 	EndTime           time.Time   `json:"endtime"`
-	Deadline          time.Time   `json:"deadline"`
+	WaitDeadline      time.Time   `json:"waitdeadline"`
+	ExecDeadline      time.Time   `json:"execdeadline"`
+	ErrorMsg          string      `json:"errormsg"`
 	Retries           int         `json:"retries"`
 	Attributes        []Attribute `json:"attributes"`
 	ProcessSpec       ProcessSpec `json:"spec"`
@@ -59,7 +61,9 @@ func CreateProcessFromDB(processSpec *ProcessSpec,
 	submissionTime time.Time,
 	startTime time.Time,
 	endTime time.Time,
-	deadline time.Time,
+	waitDeadline time.Time,
+	execDeadline time.Time,
+	errorMsg string,
 	retries int,
 	attributes []Attribute) *Process {
 	return &Process{ID: id,
@@ -69,7 +73,9 @@ func CreateProcessFromDB(processSpec *ProcessSpec,
 		SubmissionTime:    submissionTime,
 		StartTime:         startTime,
 		EndTime:           endTime,
-		Deadline:          deadline,
+		WaitDeadline:      waitDeadline,
+		ExecDeadline:      execDeadline,
+		ErrorMsg:          errorMsg,
 		Retries:           retries,
 		Attributes:        attributes,
 		ProcessSpec:       *processSpec,
@@ -135,7 +141,9 @@ func (process *Process) Equals(process2 *Process) bool {
 		process.SubmissionTime.Unix() != process2.SubmissionTime.Unix() ||
 		process.StartTime.Unix() != process2.StartTime.Unix() ||
 		process.EndTime.Unix() != process2.EndTime.Unix() ||
-		process.Deadline.Unix() != process2.Deadline.Unix() ||
+		process.WaitDeadline.Unix() != process2.WaitDeadline.Unix() ||
+		process.ExecDeadline.Unix() != process2.ExecDeadline.Unix() ||
+		process.ErrorMsg != process2.ErrorMsg ||
 		process.Retries != process2.Retries ||
 		process.WaitForParents != process2.WaitForParents ||
 		process.ProcessGraphID != process2.ProcessGraphID {

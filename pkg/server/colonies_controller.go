@@ -147,9 +147,9 @@ func (controller *coloniesController) timeoutLoop() {
 			if process.ProcessSpec.MaxExecTime == -1 {
 				continue
 			}
-			if time.Now().Unix() > process.Deadline.Unix() {
+			if time.Now().Unix() > process.ExecDeadline.Unix() {
 				if process.Retries >= process.ProcessSpec.MaxRetries && process.ProcessSpec.MaxRetries > -1 {
-					err := controller.closeFailed(process.ID)
+					err := controller.closeFailed(process.ID, "Maximum execution time limit exceeded")
 					if err != nil {
 						log.WithFields(log.Fields{"ProcessID": process.ID, "Error": err}).Info("Max retries reached, but failed to close process")
 						continue
@@ -163,6 +163,24 @@ func (controller *coloniesController) timeoutLoop() {
 					log.WithFields(log.Fields{"ProcessID": process.ID, "Error": err}).Error("Failed to unassign process")
 				}
 				log.WithFields(log.Fields{"ProcessID": process.ID, "MaxExecTime": process.ProcessSpec.MaxExecTime, "MaxRetries": process.ProcessSpec.MaxRetries}).Info("Process was unassigned as it did not complete in time")
+			}
+		}
+
+		processes, err = controller.db.FindAllWaitingProcesses()
+		if err != nil {
+			continue
+		}
+		for _, process := range processes {
+			if process.ProcessSpec.MaxWaitTime == -1 {
+				continue
+			}
+			if time.Now().Unix() > process.WaitDeadline.Unix() {
+				err := controller.closeFailed(process.ID, "Maximum waiting time limit exceeded")
+				if err != nil {
+					log.WithFields(log.Fields{"ProcessID": process.ID, "Error": err}).Info("Max waiting time reached, but failed to close process")
+					continue
+				}
+				log.WithFields(log.Fields{"ProcessID": process.ID, "MaxWaitTime": process.ProcessSpec.MaxWaitTime}).Info("Process closed as failed as maximum waiting time limit exceeded")
 			}
 		}
 	}
@@ -602,6 +620,15 @@ func (controller *coloniesController) addProcess(process *core.Process) (*core.P
 			if err != nil {
 				cmd.errorChan <- err
 				return
+			}
+
+			maxWaitTime := process.ProcessSpec.MaxWaitTime
+			if maxWaitTime > 0 {
+				err := controller.db.SetWaitDeadline(process, time.Now().Add(time.Duration(maxWaitTime)*time.Second))
+				if err != nil {
+					cmd.errorChan <- err
+					return
+				}
 			}
 
 			addedProcess, err := controller.db.GetProcessByID(process.ID)
@@ -1080,7 +1107,7 @@ func (controller *coloniesController) closeSuccessful(processID string) error {
 	return <-cmd.errorChan
 }
 
-func (controller *coloniesController) closeFailed(processID string) error {
+func (controller *coloniesController) closeFailed(processID string, errorMsg string) error {
 	cmd := &command{errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
 			process, err := controller.db.GetProcessByID(processID)
@@ -1089,7 +1116,7 @@ func (controller *coloniesController) closeFailed(processID string) error {
 				return
 			}
 
-			err = controller.db.MarkFailed(process)
+			err = controller.db.MarkFailed(process, errorMsg)
 			if err != nil {
 				cmd.errorChan <- err
 				return
@@ -1159,7 +1186,7 @@ func (controller *coloniesController) assignRuntime(runtimeID string, colonyID s
 
 			maxExecTime := selectedProcess.ProcessSpec.MaxExecTime
 			if maxExecTime > 0 {
-				err := controller.db.SetDeadline(selectedProcess, time.Now().Add(time.Duration(maxExecTime)*time.Second))
+				err := controller.db.SetExecDeadline(selectedProcess, time.Now().Add(time.Duration(maxExecTime)*time.Second))
 				if err != nil {
 					cmd.errorChan <- err
 					return

@@ -20,6 +20,7 @@ type ProcessSpec struct {
 	Func        string            `json:"func"`
 	Args        []string          `json:"args"`
 	Priority    int               `json:"priority"`
+	MaxWaitTime int               `json:"maxwaittime"`
 	MaxExecTime int               `json:"maxexectime"`
 	MaxRetries  int               `json:"maxretries"`
 	Conditions  Conditions        `json:"conditions"`
@@ -35,9 +36,9 @@ func CreateEmptyProcessSpec() *ProcessSpec {
 	return processSpec
 }
 
-func CreateProcessSpec(name string, image string, fn string, args []string, colonyID string, runtimeIDs []string, runtimeType string, maxExecTime int, maxRetries int, mem int, cores int, gpus int, env map[string]string, dependencies []string, priority int) *ProcessSpec {
+func CreateProcessSpec(name string, image string, fn string, args []string, colonyID string, runtimeIDs []string, runtimeType string, maxWaitTime int, maxExecTime int, maxRetries int, mem int, cores int, gpus int, env map[string]string, dependencies []string, priority int) *ProcessSpec {
 	conditions := Conditions{ColonyID: colonyID, RuntimeIDs: runtimeIDs, RuntimeType: runtimeType, Mem: mem, Cores: cores, GPUs: gpus, Dependencies: dependencies}
-	return &ProcessSpec{Name: name, Image: image, Func: fn, Args: args, MaxExecTime: maxExecTime, MaxRetries: maxRetries, Conditions: conditions, Env: env, Priority: priority}
+	return &ProcessSpec{Name: name, Image: image, Func: fn, Args: args, MaxWaitTime: maxWaitTime, MaxExecTime: maxExecTime, MaxRetries: maxRetries, Conditions: conditions, Env: env, Priority: priority}
 }
 
 func ConvertJSONToProcessSpec(jsonString string) (*ProcessSpec, error) {
@@ -47,6 +48,10 @@ func ConvertJSONToProcessSpec(jsonString string) (*ProcessSpec, error) {
 	err := json.Unmarshal([]byte(jsonString), &processSpec)
 	if err != nil {
 		return nil, err
+	}
+
+	if processSpec.MaxWaitTime == 0 {
+		processSpec.MaxWaitTime = -1
 	}
 
 	if processSpec.MaxExecTime == 0 {
@@ -65,6 +70,7 @@ func (processSpec *ProcessSpec) Equals(processSpec2 *ProcessSpec) bool {
 	if processSpec.Name != processSpec2.Name ||
 		processSpec.Image != processSpec2.Image ||
 		processSpec.Func != processSpec2.Func ||
+		processSpec.MaxWaitTime != processSpec2.MaxWaitTime ||
 		processSpec.MaxExecTime != processSpec2.MaxExecTime ||
 		processSpec.MaxRetries != processSpec2.MaxRetries ||
 		processSpec.Conditions.ColonyID != processSpec2.Conditions.ColonyID ||

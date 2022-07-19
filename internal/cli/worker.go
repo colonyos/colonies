@@ -144,7 +144,7 @@ var workerStartCmd = &cobra.Command{
 			<-c
 			if assignedProcess != nil {
 				log.WithFields(log.Fields{"ProcessID": assignedProcess.ID}).Info("Closing process as failed")
-				client.CloseFailed(assignedProcess.ID, runtimePrvKey)
+				client.CloseFailed(assignedProcess.ID, "SIGTERM", runtimePrvKey)
 			}
 			unregisterRuntime(client)
 			os.Exit(0)
@@ -214,7 +214,7 @@ var workerStartCmd = &cobra.Command{
 
 			if failure {
 				log.WithFields(log.Fields{"processID": assignedProcess.ID}).Info("Closing process as failed")
-				client.CloseFailed(assignedProcess.ID, runtimePrvKey)
+				client.CloseFailed(assignedProcess.ID, "Process failed", runtimePrvKey)
 			} else {
 				log.WithFields(log.Fields{"processID": assignedProcess.ID}).Info("Closing process as successful")
 				client.CloseSuccessful(assignedProcess.ID, runtimePrvKey)

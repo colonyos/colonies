@@ -232,7 +232,7 @@ func TestGetFailedProcessesSecurity(t *testing.T) {
 		assert.Nil(t, err)
 		processFromServer, err := client.AssignProcess(env.colony1ID, env.runtime1PrvKey)
 		assert.Nil(t, err)
-		err = client.CloseFailed(processFromServer.ID, env.runtime1PrvKey)
+		err = client.CloseFailed(processFromServer.ID, "error", env.runtime1PrvKey)
 		assert.Nil(t, err)
 	}
 
@@ -367,10 +367,10 @@ func TestCloseFailedSecurity(t *testing.T) {
 	processFromServer, err := client.AssignProcess(env.colony1ID, env.runtime1PrvKey)
 	assert.Nil(t, err)
 
-	err = client.CloseFailed(processFromServer.ID, env.runtime2PrvKey)
+	err = client.CloseFailed(processFromServer.ID, "error", env.runtime2PrvKey)
 	assert.NotNil(t, err) // Should not work
 
-	err = client.CloseFailed(processFromServer.ID, env.runtime1PrvKey)
+	err = client.CloseFailed(processFromServer.ID, "error", env.runtime1PrvKey)
 	assert.Nil(t, err) // Should work
 
 	// Add another runtime to colony1 and try to close the process started by runtime1, it should not be possible
@@ -380,7 +380,7 @@ func TestCloseFailedSecurity(t *testing.T) {
 	assert.Nil(t, err)
 	err = client.ApproveRuntime(runtime3.ID, env.colony1PrvKey)
 	assert.Nil(t, err)
-	err = client.CloseFailed(processFromServer.ID, runtime3PrvKey)
+	err = client.CloseFailed(processFromServer.ID, "error", runtime3PrvKey)
 	assert.NotNil(t, err) // Should work
 
 	server.Shutdown()

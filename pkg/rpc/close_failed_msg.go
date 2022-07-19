@@ -9,12 +9,14 @@ const CloseFailedPayloadType = "closefailedmsg"
 type CloseFailedMsg struct {
 	ProcessID string `json:"processid"`
 	MsgType   string `json:"msgtype"`
+	ErrorMsg  string `json:"errmsg"`
 }
 
-func CreateCloseFailedMsg(processID string) *CloseFailedMsg {
+func CreateCloseFailedMsg(processID string, errorMsg string) *CloseFailedMsg {
 	msg := &CloseFailedMsg{}
 	msg.ProcessID = processID
 	msg.MsgType = CloseFailedPayloadType
+	msg.ErrorMsg = errorMsg
 
 	return msg
 }
@@ -33,7 +35,7 @@ func (msg *CloseFailedMsg) Equals(msg2 *CloseFailedMsg) bool {
 		return false
 	}
 
-	if msg.MsgType == msg2.MsgType && msg.ProcessID == msg2.ProcessID {
+	if msg.MsgType == msg2.MsgType && msg.ProcessID == msg2.ProcessID && msg.ErrorMsg == msg2.ErrorMsg {
 		return true
 	}
 

@@ -12,6 +12,7 @@ func createProcessSpec() *core.ProcessSpec {
 	runtimeType := "test_runtime_type"
 	runtime1ID := core.GenerateRandomID()
 	runtime2ID := core.GenerateRandomID()
+	maxWaitTime := -1
 	maxExecTime := -1
 	maxRetries := 3
 	mem := 1000
@@ -20,7 +21,7 @@ func createProcessSpec() *core.ProcessSpec {
 	env := make(map[string]string)
 	env["test_key"] = "test_value"
 
-	return core.CreateProcessSpec("test_name", "test_image", "test_func", []string{"test_arg"}, colonyID, []string{runtime1ID, runtime2ID}, runtimeType, maxExecTime, maxRetries, mem, cores, gpus, env, []string{}, 1)
+	return core.CreateProcessSpec("test_name", "test_image", "test_func", []string{"test_arg"}, colonyID, []string{runtime1ID, runtime2ID}, runtimeType, maxWaitTime, maxExecTime, maxRetries, mem, cores, gpus, env, []string{}, 1)
 }
 
 func TestRPCSubmitProcessSpecMsg(t *testing.T) {
