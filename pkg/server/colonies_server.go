@@ -5,6 +5,7 @@ import (
 	"errors"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 	"sync"
@@ -12,6 +13,7 @@ import (
 
 	"github.com/colonyos/colonies/pkg/core"
 	"github.com/colonyos/colonies/pkg/database"
+	"github.com/colonyos/colonies/pkg/etcd"
 	"github.com/colonyos/colonies/pkg/rpc"
 	"github.com/colonyos/colonies/pkg/security"
 	"github.com/colonyos/colonies/pkg/security/crypto"
@@ -34,11 +36,23 @@ type ColoniesServer struct {
 	crypto            security.Crypto
 	validator         security.Validator
 	db                database.Database
-	isLeader          bool
 	mutex             sync.Mutex
+	thisNode          etcd.Node
+	cluster           etcd.Cluster
+	etcdServer        *etcd.EtcdServer
+	leader            bool
 }
 
-func CreateColoniesServer(db database.Database, port int, serverID string, tls bool, tlsPrivateKeyPath string, tlsCertPath string, debug bool, productionServer bool) *ColoniesServer {
+func CreateColoniesServer(db database.Database,
+	port int,
+	serverID string,
+	tls bool,
+	tlsPrivateKeyPath string,
+	tlsCertPath string,
+	debug bool,
+	thisNode etcd.Node,
+	cluster etcd.Cluster,
+	etcdDataPath string) *ColoniesServer {
 	if debug {
 		log.SetLevel(log.DebugLevel)
 	} else {
@@ -57,25 +71,12 @@ func CreateColoniesServer(db database.Database, port int, serverID string, tls b
 		Handler: server.ginHandler,
 	}
 
-	if productionServer {
-		leaderChan := make(chan bool)
-		go tryBecomeLeader(leaderChan, 1000, db)
-
-		go func() {
-			for {
-				isLeader := <-leaderChan
-				if isLeader && !server.isLeader {
-					log.Info("Waiting for mutex to become leader")
-					server.mutex.Lock()
-					server.isLeader = true
-					server.mutex.Unlock()
-					log.Info("Got mutex, became leader")
-				}
-			}
-		}()
-	} else {
-		server.isLeader = true
-	}
+	server.thisNode = thisNode
+	server.cluster = cluster
+	server.etcdServer = etcd.CreateEtcdServer(server.thisNode, server.cluster, etcdDataPath)
+	server.etcdServer.Start()
+	server.etcdServer.WaitToStart()
+	server.leader = false
 
 	server.httpServer = httpServer
 	server.controller = createColoniesController(db, server)
@@ -90,6 +91,21 @@ func CreateColoniesServer(db database.Database, port int, serverID string, tls b
 	server.setupRoutes()
 
 	return server
+}
+
+func (server *ColoniesServer) isLeader() bool {
+	areWeLeader := server.etcdServer.Leader() == server.thisNode.Name
+	if areWeLeader && !server.leader {
+		log.Info("Colonies server came leader")
+		server.leader = true
+	}
+
+	if !areWeLeader && server.leader {
+		log.Info("Colonies server is no longer a leader")
+		server.leader = false
+	}
+
+	return areWeLeader
 }
 
 func (server *ColoniesServer) setupRoutes() {
@@ -210,6 +226,8 @@ func (server *ColoniesServer) handleEndpointRequest(c *gin.Context) {
 	// Server handlers
 	case rpc.GetStatisiticsPayloadType:
 		server.handleStatisticsHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+	case rpc.GetClusterPayloadType:
+		server.handleGetClusterHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 
 	default:
 		errMsg := "invalid rpcMsg.PayloadType"
@@ -297,6 +315,9 @@ func (server *ColoniesServer) ServeForever() error {
 
 func (server *ColoniesServer) Shutdown() {
 	server.controller.stop()
+	server.etcdServer.Stop()
+	server.etcdServer.WaitToStop()
+	os.RemoveAll(server.etcdServer.StorageDir())
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -305,4 +326,5 @@ func (server *ColoniesServer) Shutdown() {
 	if err := server.httpServer.Shutdown(ctx); err != nil {
 		log.WithFields(log.Fields{"Error": err}).Warning("Colonies server forced to shutdown")
 	}
+
 }

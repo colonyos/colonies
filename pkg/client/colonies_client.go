@@ -7,6 +7,7 @@ import (
 	"strconv"
 
 	"github.com/colonyos/colonies/pkg/core"
+	"github.com/colonyos/colonies/pkg/etcd"
 	"github.com/colonyos/colonies/pkg/rpc"
 	"github.com/go-resty/resty/v2"
 	"github.com/gorilla/websocket"
@@ -807,4 +808,19 @@ func (client *ColoniesClient) Version() (string, string, error) {
 	}
 
 	return version.BuildVersion, version.BuildTime, nil
+}
+
+func (client *ColoniesClient) GetClusterInfo(prvKey string) (*etcd.Cluster, error) {
+	msg := rpc.CreateGetClusterMsg()
+	jsonString, err := msg.ToJSON()
+	if err != nil {
+		return nil, err
+	}
+
+	respBodyString, err := client.sendMessage(rpc.GetClusterPayloadType, jsonString, prvKey, false)
+	if err != nil {
+		return nil, err
+	}
+
+	return etcd.ConvertJSONToCluster(respBodyString)
 }
