@@ -503,9 +503,9 @@ var getWorkflowCmd = &cobra.Command{
 			process, err := client.GetProcess(processID, RuntimePrvKey)
 			CheckError(err)
 
-			procCmd := process.ProcessSpec.Cmd
-			if procCmd == "" {
-				procCmd = "None"
+			procFunc := process.ProcessSpec.Func
+			if procFunc == "" {
+				procFunc = "None"
 			}
 
 			procArgs := ""
@@ -528,7 +528,7 @@ var getWorkflowCmd = &cobra.Command{
 				[]string{"Name", process.ProcessSpec.Name},
 				[]string{"ProcessID", process.ID},
 				[]string{"RuntimeType", process.ProcessSpec.Conditions.RuntimeType},
-				[]string{"Cmd", procCmd},
+				[]string{"Func", procFunc},
 				[]string{"Args", procArgs},
 				[]string{"State", State2String(process.State)},
 				[]string{"WaitingForParents", strconv.FormatBool(process.WaitForParents)},
