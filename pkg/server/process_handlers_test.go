@@ -258,7 +258,7 @@ func TestGetFailedProcesses(t *testing.T) {
 		assert.Nil(t, err)
 		processFromServer, err := client.AssignProcess(env.colonyID, env.runtimePrvKey)
 		assert.Nil(t, err)
-		err = client.CloseFailed(processFromServer.ID, env.runtimePrvKey)
+		err = client.CloseFailed(processFromServer.ID, "error", env.runtimePrvKey)
 		assert.Nil(t, err)
 	}
 
@@ -375,11 +375,12 @@ func TestCloseFailed(t *testing.T) {
 	assignedProcessFromServer, err := client.GetProcess(assignedProcess.ID, env.runtimePrvKey)
 	assert.Equal(t, core.RUNNING, assignedProcessFromServer.State)
 
-	err = client.CloseFailed(assignedProcess.ID, env.runtimePrvKey)
+	err = client.CloseFailed(assignedProcess.ID, "error", env.runtimePrvKey)
 	assert.Nil(t, err)
 
-	assignedProcessFromServer, err = client.GetProcess(assignedProcess.ID, env.runtimePrvKey)
-	assert.Equal(t, core.FAILED, assignedProcessFromServer.State)
+	processFromServer, err := client.GetProcess(assignedProcess.ID, env.runtimePrvKey)
+	assert.Equal(t, processFromServer.State, core.FAILED)
+	assert.Equal(t, processFromServer.ErrorMsg, "error")
 
 	server.Shutdown()
 	<-done
@@ -496,6 +497,26 @@ func TestSubscribeChangeStateProcess2(t *testing.T) {
 
 	err = <-waitForProcess
 	assert.Nil(t, err)
+	server.Shutdown()
+	<-done
+}
+
+func TestMaxWaitTime(t *testing.T) {
+	env, client, server, _, done := setupTestEnv2(t)
+
+	processSpec := utils.CreateTestProcessSpec(env.colonyID)
+	processSpec.MaxWaitTime = 1 // 1 second
+
+	_, err := client.SubmitProcessSpec(processSpec, env.runtimePrvKey)
+	assert.Nil(t, err)
+
+	// Wait for the process to time out
+	time.Sleep(5 * time.Second)
+
+	stat, err := client.ColonyStatistics(env.colonyID, env.runtimePrvKey)
+	assert.Nil(t, err)
+	assert.Equal(t, stat.FailedProcesses, 1)
+
 	server.Shutdown()
 	<-done
 }
