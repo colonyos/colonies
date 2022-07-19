@@ -144,10 +144,8 @@ Process:
 ProcessSpec:
 +-------------+------+
 | Image       | None |
-| Cmd         | None |
+| Func        | None |
 | Args        | None |
-| Volumes     | None |
-| Ports       | None |
 | MaxExecTime | -1   |
 | MaxRetries  | 3    |
 +-------------+------+

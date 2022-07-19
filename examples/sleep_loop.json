@@ -1,11 +1,11 @@
 {
-  "conditions": {
-    "runtimetype": "testworker"
-  },
-  "cmd": "sleep",
-  "args": [
-    "100"
-  ],
-  "maxexectime": 5,
-  "maxretries": 0
+    "conditions": {
+        "runtimetype": "testworker"
+    },
+    "func": "sleep",
+    "args": [
+        "100"
+    ],
+    "maxexectime": 5,
+    "maxretries": 0
 }
