@@ -35,7 +35,7 @@ func init() {
 	rootCmd.AddCommand(processCmd)
 
 	processCmd.PersistentFlags().StringVarP(&ServerHost, "host", "", "localhost", "Server host")
-	processCmd.PersistentFlags().IntVarP(&ServerPort, "port", "", 50080, "Server HTTP port")
+	processCmd.PersistentFlags().IntVarP(&ServerPort, "port", "", -1, "Server HTTP port")
 
 	submitProcessCmd.Flags().StringVarP(&RuntimeID, "runtimeid", "", "", "Runtime Id")
 	submitProcessCmd.Flags().StringVarP(&RuntimePrvKey, "runtimeprvkey", "", "", "Runtime private key")
@@ -129,7 +129,7 @@ var runProcessCmd = &cobra.Command{
 		for _, v := range Env {
 			s := strings.Split(v, "=")
 			if len(s) != 2 {
-				CheckError(errors.New("Invalid key-value pair, try --env key1=value1,key2=value2 "))
+				CheckError(errors.New("Invalid key-value pair, try e.g. --env key1=value1,key2=value2 "))
 			}
 			key := s[0]
 			value := s[1]
