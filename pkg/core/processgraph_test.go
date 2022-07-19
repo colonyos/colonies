@@ -51,7 +51,7 @@ func createProcess() *Process {
 	cores := 10
 	gpus := 1
 
-	processSpec := CreateProcessSpec("test_name", "test_image", "test_cmd", []string{"test_arg"}, []string{"test_volumes"}, []string{"test_ports"}, colonyID, []string{}, runtimeType, timeout, maxRetries, mem, cores, gpus, make(map[string]string), []string{}, 1)
+	processSpec := CreateProcessSpec("test_name", "test_image", "test_func", []string{"test_arg"}, colonyID, []string{}, runtimeType, timeout, maxRetries, mem, cores, gpus, make(map[string]string), []string{}, 1)
 	process := CreateProcess(processSpec)
 
 	return process

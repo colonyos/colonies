@@ -159,9 +159,9 @@ var workerStartCmd = &cobra.Command{
 				continue
 			}
 
-			log.WithFields(log.Fields{"processID": assignedProcess.ID}).Info("Worker was assigned a process")
-			log.WithFields(log.Fields{"Cmd": assignedProcess.ProcessSpec.Cmd, "Args": assignedProcess.ProcessSpec.Args}).Info("Lauching process")
-			cmd := exec.Command(assignedProcess.ProcessSpec.Cmd, assignedProcess.ProcessSpec.Args...)
+			log.WithFields(log.Fields{"ProcessID": assignedProcess.ID}).Info("Worker was assigned a process")
+			log.WithFields(log.Fields{"Func": assignedProcess.ProcessSpec.Func, "Args": assignedProcess.ProcessSpec.Args}).Info("Lauching process")
+			cmd := exec.Command(assignedProcess.ProcessSpec.Func, assignedProcess.ProcessSpec.Args...)
 			cmd.Env = os.Environ()
 			for _, attribute := range assignedProcess.Attributes {
 				cmd.Env = append(cmd.Env, attribute.Key+"="+attribute.Value)

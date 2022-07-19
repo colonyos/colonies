@@ -48,7 +48,7 @@ func init() {
 	runProcessCmd.Flags().StringVarP(&RuntimePrvKey, "runtimeprvkey", "", "", "Runtime private key")
 	runProcessCmd.Flags().StringVarP(&RuntimeType, "runtimetype", "", "", "Target runtime type")
 	runProcessCmd.Flags().StringVarP(&ColonyID, "colonyid", "", "", "Colony Id")
-	runProcessCmd.Flags().StringVarP(&Cmd, "cmd", "", "", "Cmd")
+	runProcessCmd.Flags().StringVarP(&Func, "func", "", "", "Remote function to call")
 	runProcessCmd.Flags().StringSliceVarP(&Args, "args", "", make([]string, 0), "Arguments")
 	runProcessCmd.Flags().StringSliceVarP(&Env, "env", "", make([]string, 0), "Environment")
 	runProcessCmd.Flags().IntVarP(&MaxExecTime, "maxexectime", "", -1, "Maximum execution time in seconds before failing")
@@ -165,7 +165,7 @@ var runProcessCmd = &cobra.Command{
 
 		conditions := core.Conditions{ColonyID: ColonyID, RuntimeType: RuntimeType}
 		processSpec := core.ProcessSpec{
-			Cmd:         Cmd,
+			Func:        Func,
 			Args:        Args,
 			MaxExecTime: MaxExecTime,
 			MaxRetries:  MaxRetries,
@@ -368,10 +368,10 @@ var listWaitingProcessesCmd = &cobra.Command{
 
 			var data [][]string
 			for _, process := range processes {
-				data = append(data, []string{process.ID, process.ProcessSpec.Cmd, Args2String(process.ProcessSpec.Args), process.SubmissionTime.Format(TimeLayout), process.ProcessSpec.Conditions.RuntimeType})
+				data = append(data, []string{process.ID, process.ProcessSpec.Func, Args2String(process.ProcessSpec.Args), process.SubmissionTime.Format(TimeLayout), process.ProcessSpec.Conditions.RuntimeType})
 			}
 			table := tablewriter.NewWriter(os.Stdout)
-			table.SetHeader([]string{"ID", "Cmd", "Args", "Submission Time", "Runtime Type"})
+			table.SetHeader([]string{"ID", "Func", "Args", "Submission Time", "Runtime Type"})
 			for _, v := range data {
 				table.Append(v)
 			}
@@ -429,7 +429,7 @@ var listRunningProcessesCmd = &cobra.Command{
 
 			var data [][]string
 			for _, process := range processes {
-				data = append(data, []string{process.ID, process.ProcessSpec.Cmd, Args2String(process.ProcessSpec.Args), process.StartTime.Format(TimeLayout), process.ProcessSpec.Conditions.RuntimeType})
+				data = append(data, []string{process.ID, process.ProcessSpec.Func, Args2String(process.ProcessSpec.Args), process.StartTime.Format(TimeLayout), process.ProcessSpec.Conditions.RuntimeType})
 			}
 			table := tablewriter.NewWriter(os.Stdout)
 			table.SetHeader([]string{"ID", "Cmd", "Args", "Start time", "Runtime Type"})
@@ -489,10 +489,10 @@ var listSuccessfulProcessesCmd = &cobra.Command{
 
 			var data [][]string
 			for _, process := range processes {
-				data = append(data, []string{process.ID, process.ProcessSpec.Cmd, Args2String(process.ProcessSpec.Args), process.EndTime.Format(TimeLayout), process.ProcessSpec.Conditions.RuntimeType})
+				data = append(data, []string{process.ID, process.ProcessSpec.Func, Args2String(process.ProcessSpec.Args), process.EndTime.Format(TimeLayout), process.ProcessSpec.Conditions.RuntimeType})
 			}
 			table := tablewriter.NewWriter(os.Stdout)
-			table.SetHeader([]string{"ID", "Cmd", "Args", "End time", "Runtime Type"})
+			table.SetHeader([]string{"ID", "Func", "Args", "End time", "Runtime Type"})
 			for _, v := range data {
 				table.Append(v)
 			}
@@ -549,10 +549,10 @@ var listFailedProcessesCmd = &cobra.Command{
 
 			var data [][]string
 			for _, process := range processes {
-				data = append(data, []string{process.ID, process.ProcessSpec.Cmd, Args2String(process.ProcessSpec.Args), process.EndTime.Format(TimeLayout), process.ProcessSpec.Conditions.RuntimeType})
+				data = append(data, []string{process.ID, process.ProcessSpec.Func, Args2String(process.ProcessSpec.Args), process.EndTime.Format(TimeLayout), process.ProcessSpec.Conditions.RuntimeType})
 			}
 			table := tablewriter.NewWriter(os.Stdout)
-			table.SetHeader([]string{"ID", "Cmd", "Args", "End time", "Runtime Type"})
+			table.SetHeader([]string{"ID", "Func", "Args", "End time", "Runtime Type"})
 			for _, v := range data {
 				table.Append(v)
 			}
@@ -653,9 +653,9 @@ var getProcessCmd = &cobra.Command{
 			image = "None"
 		}
 
-		procCmd := process.ProcessSpec.Cmd
-		if procCmd == "" {
-			procCmd = "None"
+		procFunc := process.ProcessSpec.Func
+		if procFunc == "" {
+			procFunc = "None"
 		}
 
 		procArgs := ""
@@ -666,31 +666,13 @@ var getProcessCmd = &cobra.Command{
 			procArgs = "None"
 		}
 
-		volumes := ""
-		for _, volume := range process.ProcessSpec.Volumes {
-			volumes += volume + " "
-		}
-		if volumes == "" {
-			volumes = "None"
-		}
-
-		ports := ""
-		for _, port := range process.ProcessSpec.Ports {
-			ports += port + " "
-		}
-		if ports == "" {
-			ports = "None"
-		}
-
 		fmt.Println()
 		fmt.Println("ProcessSpec:")
 
 		specData := [][]string{
 			[]string{"Image", image},
-			[]string{"Cmd", procCmd},
+			[]string{"Func", procFunc},
 			[]string{"Args", procArgs},
-			[]string{"Volumes", volumes},
-			[]string{"Ports", ports},
 			[]string{"MaxExecTime", strconv.Itoa(process.ProcessSpec.MaxExecTime)},
 			[]string{"MaxRetries", strconv.Itoa(process.ProcessSpec.MaxRetries)},
 		}

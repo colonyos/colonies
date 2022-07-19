@@ -1,9 +1,9 @@
 {
-  "conditions": {
-    "runtimetype": "cli"
-  },
-  "cmd": "ls",
-  "args": [
-    "-al"
-  ]
+    "conditions": {
+        "runtimetype": "cli"
+    },
+    "func": "ls",
+    "args": [
+        "-al"
+    ]
 }

@@ -1,47 +1,55 @@
 {
-	"processspecs": [{
-			"name": "task_a",
-			"cmd": "echo",
-			"args": [
-				"task_a"
-			],
-			"conditions": {
+    "processspecs": [
+        {
+            "name": "task_a",
+            "func": "echo",
+            "args": [
+                "task_a"
+            ],
+            "conditions": {
                 "runtimetype": "cli",
-				"dependencies": null
-			}
-		},
-		{
-			"name": "task_b",
-			"cmd": "echo",
-			"args": [
-				"task_b"
-			],
-			"conditions": {
+                "dependencies": null
+            }
+        },
+        {
+            "name": "task_b",
+            "func": "echo",
+            "args": [
+                "task_b"
+            ],
+            "conditions": {
                 "runtimetype": "cli",
-				"dependencies": ["task_a"]
-			}
-		},
-		{
-			"name": "task_c",
-			"cmd": "echo",
-			"args": [
-				"task_c"
-			],
-			"conditions": {
+                "dependencies": [
+                    "task_a"
+                ]
+            }
+        },
+        {
+            "name": "task_c",
+            "func": "echo",
+            "args": [
+                "task_c"
+            ],
+            "conditions": {
                 "runtimetype": "cli",
-				"dependencies": ["task_a"]
-			}
-		},
-		{
-			"name": "task_d",
-			"cmd": "echo",
-			"args": [
-				"task_d"
-			],
-			"conditions": {
+                "dependencies": [
+                    "task_a"
+                ]
+            }
+        },
+        {
+            "name": "task_d",
+            "func": "echo",
+            "args": [
+                "task_d"
+            ],
+            "conditions": {
                 "runtimetype": "cli",
-				"dependencies": ["task_b", "task_c"]
-			}
-		}
-	]
+                "dependencies": [
+                    "task_b",
+                    "task_c"
+                ]
+            }
+        }
+    ]
 }

@@ -17,10 +17,8 @@ type Conditions struct {
 type ProcessSpec struct {
 	Name        string            `json:"name"`
 	Image       string            `json:"image"`
-	Cmd         string            `json:"cmd"`
+	Func        string            `json:"func"`
 	Args        []string          `json:"args"`
-	Volumes     []string          `json:"volumes"`
-	Ports       []string          `json:"ports"`
 	Priority    int               `json:"priority"`
 	MaxExecTime int               `json:"maxexectime"`
 	MaxRetries  int               `json:"maxretries"`
@@ -32,16 +30,14 @@ func CreateEmptyProcessSpec() *ProcessSpec {
 	processSpec := &ProcessSpec{}
 	processSpec.Env = make(map[string]string)
 	processSpec.Args = make([]string, 0)
-	processSpec.Volumes = make([]string, 0)
-	processSpec.Ports = make([]string, 0)
 	processSpec.MaxExecTime = -1
 	processSpec.MaxRetries = -1
 	return processSpec
 }
 
-func CreateProcessSpec(name string, image string, cmd string, args []string, volumes []string, ports []string, colonyID string, runtimeIDs []string, runtimeType string, maxExecTime int, maxRetries int, mem int, cores int, gpus int, env map[string]string, dependencies []string, priority int) *ProcessSpec {
+func CreateProcessSpec(name string, image string, fn string, args []string, colonyID string, runtimeIDs []string, runtimeType string, maxExecTime int, maxRetries int, mem int, cores int, gpus int, env map[string]string, dependencies []string, priority int) *ProcessSpec {
 	conditions := Conditions{ColonyID: colonyID, RuntimeIDs: runtimeIDs, RuntimeType: runtimeType, Mem: mem, Cores: cores, GPUs: gpus, Dependencies: dependencies}
-	return &ProcessSpec{Name: name, Image: image, Cmd: cmd, Args: args, Volumes: volumes, Ports: ports, MaxExecTime: maxExecTime, MaxRetries: maxRetries, Conditions: conditions, Env: env, Priority: priority}
+	return &ProcessSpec{Name: name, Image: image, Func: fn, Args: args, MaxExecTime: maxExecTime, MaxRetries: maxRetries, Conditions: conditions, Env: env, Priority: priority}
 }
 
 func ConvertJSONToProcessSpec(jsonString string) (*ProcessSpec, error) {
@@ -68,7 +64,7 @@ func (processSpec *ProcessSpec) Equals(processSpec2 *ProcessSpec) bool {
 	same := true
 	if processSpec.Name != processSpec2.Name ||
 		processSpec.Image != processSpec2.Image ||
-		processSpec.Cmd != processSpec2.Cmd ||
+		processSpec.Func != processSpec2.Func ||
 		processSpec.MaxExecTime != processSpec2.MaxExecTime ||
 		processSpec.MaxRetries != processSpec2.MaxRetries ||
 		processSpec.Conditions.ColonyID != processSpec2.Conditions.ColonyID ||
@@ -94,42 +90,6 @@ func (processSpec *ProcessSpec) Equals(processSpec2 *ProcessSpec) bool {
 			}
 		}
 		if counter != len(processSpec.Args) && counter != len(processSpec2.Args) {
-			same = false
-		}
-	}
-
-	if processSpec.Volumes != nil && processSpec2.Volumes == nil {
-		same = false
-	} else if processSpec.Volumes == nil && processSpec2.Volumes != nil {
-		same = false
-	} else {
-		counter := 0
-		for _, arg1 := range processSpec.Volumes {
-			for _, arg2 := range processSpec2.Volumes {
-				if arg1 == arg2 {
-					counter++
-				}
-			}
-		}
-		if counter != len(processSpec.Volumes) && counter != len(processSpec2.Volumes) {
-			same = false
-		}
-	}
-
-	if processSpec.Ports != nil && processSpec2.Ports == nil {
-		same = false
-	} else if processSpec.Ports == nil && processSpec2.Ports != nil {
-		same = false
-	} else {
-		counter := 0
-		for _, arg1 := range processSpec.Ports {
-			for _, arg2 := range processSpec2.Ports {
-				if arg1 == arg2 {
-					counter++
-				}
-			}
-		}
-		if counter != len(processSpec.Ports) && counter != len(processSpec2.Ports) {
 			same = false
 		}
 	}
