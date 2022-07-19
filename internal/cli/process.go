@@ -100,6 +100,7 @@ func init() {
 	assignProcessCmd.Flags().StringVarP(&ColonyID, "colonyid", "", "", "Colony Id")
 	assignProcessCmd.Flags().StringVarP(&RuntimeID, "runtimeid", "", "", "Runtime Id")
 	assignProcessCmd.Flags().StringVarP(&RuntimePrvKey, "runtimeprvkey", "", "", "Runtime private key")
+	assignProcessCmd.Flags().BoolVarP(&Latest, "latest", "", false, "Try to assign the latest process in the queue")
 
 	closeSuccessful.Flags().StringVarP(&RuntimeID, "runtimeid", "", "", "Runtime Id")
 	closeSuccessful.Flags().StringVarP(&RuntimePrvKey, "runtimeprvkey", "", "", "Runtime private key")
@@ -300,12 +301,24 @@ var assignProcessCmd = &cobra.Command{
 		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Info("Starting a Colonies client")
 		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
 
-		process, err := client.AssignProcess(ColonyID, RuntimePrvKey)
-		if err != nil {
-			log.Warning("No process was assigned")
+		fmt.Println(Latest)
+
+		if Latest {
+			process, err := client.AssignLatestProcess(ColonyID, RuntimePrvKey)
+			if err != nil {
+				log.Warning("No process was assigned")
+			} else {
+				log.WithFields(log.Fields{"processID": process.ID, "runtimeID": RuntimeID}).Info("Assigned process to runtime (latest)")
+			}
 		} else {
-			log.WithFields(log.Fields{"processID": process.ID, "runtimeID": RuntimeID}).Info("Assigned process to runtime")
+			process, err := client.AssignProcess(ColonyID, RuntimePrvKey)
+			if err != nil {
+				log.Warning("No process was assigned")
+			} else {
+				log.WithFields(log.Fields{"processID": process.ID, "runtimeID": RuntimeID}).Info("Assigned process to runtime (oldest)")
+			}
 		}
+
 	},
 }
 

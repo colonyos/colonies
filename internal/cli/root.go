@@ -76,6 +76,7 @@ var EtcdClientPort int
 var EtcdPeerPort int
 var EtcdCluster []string
 var EtcdDataDir string
+var Latest bool
 
 func init() {
 	rootCmd.PersistentFlags().BoolVarP(&Verbose, "verbose", "v", false, "verbose output")
