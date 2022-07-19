@@ -39,7 +39,7 @@ Colonies is an **Employment Agency** for Internet-connected computers. Humans (o
 * A built-in crypto-protocol ensures **secure** and **zero-trust process execution**. 
 
 ## What is it good at?
-* Distributed Computing, e.g. manage ML/AI workloads on Kubernetes. Launch one or several Colonies worker containers in a Kubernetes Pod. Then use Colonies to enable batch processing and launch processes inside worker containers.
+* Distributed computing, e.g. manage ML/AI workloads on Kubernetes. Launch one or several Colonies worker containers in a Kubernetes Pod. Then use Colonies to enable batch processing and launch processes inside worker containers.
 * Distributed RPC, e.g. build overlay networks to manage workflows spanning multiple cloud/edge servers and devices.
 * Grid computing, e.g. use Colonies as an overlay network and launch processes to perform computations at IoT devices, smart phones or cloud servers, all controlled from a single interface.
 
@@ -54,7 +54,7 @@ Colonies is an **Employment Agency** for Internet-connected computers. Humans (o
 # Links
 * [Installation](docs/Installation.md)
 * [Using the Colonies CLI tool](docs/CLI.md)
-* [High-availability deployment](docs/CLI.md)
+* [High-availability deployment](docs/HADeployment.md)
 * [Tutorial (implement your own Colonies Worker using the Golang SDK)](docs/Tutorial.md)
 * [HTTP RPC Protocol](docs/RPC.md)
 
