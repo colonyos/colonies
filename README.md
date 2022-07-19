@@ -122,16 +122,16 @@ colonies dev
 Open another terminal (and *source examples/devenv*).
 
 ```console
-colonies worker start --name myworker --type testworker
+colonies worker start --name myworker --type cli 
 ```
 ## Submit a process specification
 Example process specification (see examples/sleep.json). The Colonies worker will pull the process specification from the Colonies dev server and start a *sleep* process. This will cause the worker above to sleep for 100s. The *env* array in the JSON below will automatically be exported as real environment variables in the sleep process.
 ```json
 {
   "conditions": {
-    "runtimetype": "testworker"
+    "runtimetype": "cli"
   },
-  "cmd": "sleep",
+  "func": "sleep",
   "args": [
     "100"
   ],
@@ -150,9 +150,9 @@ Check out running processes:
 ```console
 colonies process ps
 +------------------------------------------------------------------+-------+------+---------------------+----------------+
-|                                ID                                |  CMD  | ARGS |     START TIME      | TARGET RUNTIME |
+| ID                                                               | FUNC  | ARGS | START TIME          | TARGET RUNTIME |
 +------------------------------------------------------------------+-------+------+---------------------+----------------+
-| 6681946db095e0dc2e0408b87e119c0d2ae4f691db6899b829161fc97f14a1d0 | sleep | 100  | 2022-04-05 16:40:01 | testworker     |
+| 6681946db095e0dc2e0408b87e119c0d2ae4f691db6899b829161fc97f14a1d0 | sleep | 100 | 2022-04-05 16:40:01 | cli |
 +------------------------------------------------------------------+-------+------+---------------------+----------------+
 ```
 
@@ -176,9 +176,8 @@ Process:
 
 ProcessSpec:
 +-------------+-------+
-| Cmd         | sleep |
+| Func        | sleep |
 | Args        | 100   |
-| Volumes     | None  |
 | MaxExecTime | -1    |
 | MaxRetries  | 0     |
 +-------------+-------+
@@ -187,7 +186,7 @@ Conditions:
 +-------------+------------------------------------------------------------------+
 | ColonyID    | 4787a5071856a4acf702b2ffcea422e3237a679c681314113d86139461290cf4 |
 | RuntimeIDs  | None                                                             |
-| RuntimeType | testworker                                                       |
+| RuntimeType | cli                                                              |
 | Memory      | 0                                                                |
 | CPU Cores   | 0                                                                |
 | GPUs        | 0                                                                |
@@ -209,9 +208,9 @@ This mechanism thus offer a last line of defense against failures and enables ad
 ```json
 {
   "conditions": {
-    "runtimetype": "testworker"
+    "runtimetype": "cli"
   },
-  "cmd": "sleep",
+  "func": "sleep",
   "args": [
     "100"
   ],
@@ -231,9 +230,9 @@ WARN[0000] No successful processes found
 
 colonies process psf
 +------------------------------------------------------------------+-------+------+---------------------+--------------+
-|                                ID                                |  CMD  | ARGS |      END TIME       | RUNTIME TYPE |
+| ID                                                               | FUNC  | ARGS | END TIME            | RUNTIME TYPE |
 +------------------------------------------------------------------+-------+------+---------------------+--------------+
-| 61789512c006fc132534d73d2ce5fd4a162f9b849548fcfe300bc5b8defa6400 | sleep | 100  | 2022-05-26 17:06:24 | testworker   |
+| 61789512c006fc132534d73d2ce5fd4a162f9b849548fcfe300bc5b8defa6400 | sleep | 100  | 2022-05-26 17:06:24 | cli          |
 +------------------------------------------------------------------+-------+------+---------------------+--------------+
 ```
 
@@ -251,7 +250,7 @@ This workflow can be modelled as follows:
 {
     "processspecs": [{
             "name": "task_a",
-            "cmd": "echo",
+            "func": "echo",
             "args": [
                 "task1"
             ],
@@ -262,7 +261,7 @@ This workflow can be modelled as follows:
         },
         {
             "name": "task_b",
-            "cmd": "echo",
+            "func": "echo",
             "args": [
                 "task2"
             ],
@@ -273,7 +272,7 @@ This workflow can be modelled as follows:
         },
         {
             "name": "task_c",
-            "cmd": "echo",
+            "func": "echo",
             "args": [
                 "task3"
             ],
@@ -284,7 +283,7 @@ This workflow can be modelled as follows:
         },
         {
             "name": "task_d",
-            "cmd": "echo",
+            "func": "echo",
             "args": [
                 "task4"
             ],
@@ -323,7 +322,7 @@ Processes:
 | Name              | task_a                                                           |
 | ProcessID         | 3a8e9299c76905c87f903b4fdcf4c5dbeb314659e2ed31d477dcb414e8fedf1f |
 | RuntimeType       | cli                                                              |
-| Cmd               | echo                                                             |
+| Func              | echo                                                             |
 | Args              | task_a                                                           |
 | State             | Waiting                                                          |
 | WaitingForParents | false                                                            |
@@ -334,7 +333,7 @@ Processes:
 | Name              | task_b                                                           |
 | ProcessID         | 5fd0611d57fc567ce7aa7984424b1de749c32b20b92668b4755ade6ca62e19c2 |
 | RuntimeType       | cli                                                              |
-| Cmd               | echo                                                             |
+| Func              | echo                                                             |
 | Args              | task_b                                                           |
 | State             | Waiting                                                          |
 | WaitingForParents | true                                                             |
@@ -345,7 +344,7 @@ Processes:
 | Name              | task_d                                                           |
 | ProcessID         | f46b7e84da0657cda3982282f5bef8b3c7429eff6b635cbce9bf93eb034e6705 |
 | RuntimeType       | cli                                                              |
-| Cmd               | echo                                                             |
+| Func              | echo                                                             |
 | Args              | task_d                                                           |
 | State             | Waiting                                                          |
 | WaitingForParents | true                                                             |
@@ -356,7 +355,7 @@ Processes:
 | Name              | task_c                                                           |
 | ProcessID         | bf5d93190967539133063d357bcd5d446d3e4fce41a6d110926de12129a64156 |
 | RuntimeType       | cli                                                              |
-| Cmd               | echo                                                             |
+| Func              | echo                                                             |
 | Args              | task_c                                                           |
 | State             | Waiting                                                          |
 | WaitingForParents | true                                                             |
@@ -375,19 +374,19 @@ INFO[0000] Register a new Runtime                        CPU= Cores=-1 GPU= GPUs
 INFO[0000] Approving Runtime                             runtimeID=d709c23a58cb883817e0fe38ae20f3f539b7b7c4f607cc16e2b927eb3c123a34
 INFO[0000] Worker now waiting for processes to be execute  BuildTime="2022-05-31T13:43:22Z" BuildVersion=a153cbf ServerHost=localhost ServerPort=50080
 INFO[0000] Worker was assigned a process                 processID=3a8e9299c76905c87f903b4fdcf4c5dbeb314659e2ed31d477dcb414e8fedf1f
-INFO[0000] Lauching process                              Args="[task_a]" Cmd=echo
+INFO[0000] Lauching process                              Args="[task_a]" Func=echo
 task_a
 INFO[0000] Closing process as successful                 processID=3a8e9299c76905c87f903b4fdcf4c5dbeb314659e2ed31d477dcb414e8fedf1f
 INFO[0000] Worker was assigned a process                 processID=5fd0611d57fc567ce7aa7984424b1de749c32b20b92668b4755ade6ca62e19c2
-INFO[0000] Lauching process                              Args="[task_b]" Cmd=echo
+INFO[0000] Lauching process                              Args="[task_b]" Func=echo
 task_b
 INFO[0000] Closing process as successful                 processID=5fd0611d57fc567ce7aa7984424b1de749c32b20b92668b4755ade6ca62e19c2
 INFO[0000] Worker was assigned a process                 processID=bf5d93190967539133063d357bcd5d446d3e4fce41a6d110926de12129a64156
-INFO[0000] Lauching process                              Args="[task_c]" Cmd=echo
+INFO[0000] Lauching process                              Args="[task_c]" Func=echo
 task_c
 INFO[0000] Closing process as successful                 processID=bf5d93190967539133063d357bcd5d446d3e4fce41a6d110926de12129a64156
 INFO[0000] Worker was assigned a process                 processID=f46b7e84da0657cda3982282f5bef8b3c7429eff6b635cbce9bf93eb034e6705
-INFO[0000] Lauching process                              Args="[task_d]" Cmd=echo
+INFO[0000] Lauching process                              Args="[task_d]" Func=echo
 task_d
 INFO[0000] Closing process as successful                 processID=f46b7e84da0657cda3982282f5bef8b3c7429eff6b635cbce9bf93eb034e6705
 ```
