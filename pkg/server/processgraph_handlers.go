@@ -63,7 +63,9 @@ func (server *ColoniesServer) createProcessGraph(workflowSpec *core.WorkflowSpec
 
 	// Now, start all processes
 	for _, process := range processMap {
-		err := server.controller.db.AddProcess(process)
+		// This function is called from the controller, so it OK to use the database layer directly, in fact
+		// we will cause a deadlock if we call controller.addProcess
+		_, err := server.controller.addProcessAndSetWaitingDeadline(process)
 		log.WithFields(log.Fields{"ProcessID": process.ID}).Info("Submitting process")
 
 		if err != nil {

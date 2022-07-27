@@ -15,13 +15,10 @@ func createProcessSpec() *core.ProcessSpec {
 	maxWaitTime := -1
 	maxExecTime := -1
 	maxRetries := 3
-	mem := 1000
-	cores := 10
-	gpus := 1
 	env := make(map[string]string)
 	env["test_key"] = "test_value"
 
-	return core.CreateProcessSpec("test_name", "test_image", "test_func", []string{"test_arg"}, colonyID, []string{runtime1ID, runtime2ID}, runtimeType, maxWaitTime, maxExecTime, maxRetries, mem, cores, gpus, env, []string{}, 1)
+	return core.CreateProcessSpec("test_name", "test_func", []string{"test_arg"}, colonyID, []string{runtime1ID, runtime2ID}, runtimeType, maxWaitTime, maxExecTime, maxRetries, env, []string{}, 1)
 }
 
 func TestRPCSubmitProcessSpecMsg(t *testing.T) {

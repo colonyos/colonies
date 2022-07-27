@@ -32,7 +32,7 @@
 - [Running the tests](#running-the-tests)
 
 # What is Colonies?
-**A Colony is like a Honey Bee Colony, but for computers**. A Colony is a trusted community of remotely connected computer programs (so-called workers) organized as a single unit to perform execution of various tasks. It is a platform for **distributed intelligence** and provides a zero-trust infrastructure for worker communication across Internet as well as task execution coordination within a Colony.
+**A Colony is like a Bee Colony, but for computer software**. A Colony is a trusted community of remotely connected computer programs (so-called workers) organized as a single unit to perform execution of various tasks. It is a platform for **distributed intelligence** and provides a zero-trust infrastructure for worker communication across Internet as well as task execution coordination within a Colony.
 
 * Humans (or workers) submit task specifications to a Colony via a Colonies server, which manage one or several Colonies. 
 * Colonies workers connect to the Colonies server and search for suitable task to execute. Each worker must have a valid identity (like a passport) to prove its Colony membership and the Colonies server makes sure only authorized and qualified workers can connect and be assigned relevant tasks. 
