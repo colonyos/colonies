@@ -128,6 +128,8 @@ func TestGetProcessHistForColony(t *testing.T) {
 	_, err := client.SubmitProcessSpec(processSpec, env.runtimePrvKey)
 	assert.Nil(t, err)
 
+	time.Sleep(1 * time.Second)
+
 	// Get processes for the 60 seconds
 	processesFromServer, err := client.GetProcessHistForColony(core.WAITING, env.colonyID, 60, env.runtimePrvKey)
 	assert.Nil(t, err)
@@ -161,6 +163,8 @@ func TestGetProcessHistForRuntime(t *testing.T) {
 	assert.Nil(t, err)
 	_, err = client.AssignProcess(env.colony1ID, env.runtime1PrvKey)
 	assert.Nil(t, err)
+
+	time.Sleep(1 * time.Second)
 
 	// Get processes for the 60 seconds
 	processesFromServer, err := client.GetProcessHistForRuntime(core.RUNNING, env.colony1ID, env.runtime1ID, 60, env.runtime1PrvKey)
