@@ -139,7 +139,7 @@ func TestGetColonyStatistics(t *testing.T) {
 		assert.Nil(t, err)
 	}
 
-	time.Sleep(1 * time.Second)
+	time.Sleep(10 * time.Second)
 
 	stat, err := client.ColonyStatistics(env.colonyID, env.runtimePrvKey)
 	assert.Nil(t, err)
