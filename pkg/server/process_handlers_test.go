@@ -601,9 +601,12 @@ func TestMaxExecTimeMaxretries(t *testing.T) {
 		assert.Nil(t, err)
 	}
 
-	// Wait for the process to time out
-	time.Sleep(20 * time.Second)
+	// We should now have 10 running processes
 
+	// Wait for the process to time out
+	time.Sleep(5 * time.Second)
+
+	// We should now have 10 waiting processes
 	stat, err := client.ColonyStatistics(env.colonyID, env.runtimePrvKey)
 	assert.Nil(t, err)
 	assert.Equal(t, stat.WaitingProcesses, 10)
@@ -614,13 +617,15 @@ func TestMaxExecTimeMaxretries(t *testing.T) {
 		assert.Nil(t, err)
 	}
 
+	// We should now have 10 running processes
 	stat, err = client.ColonyStatistics(env.colonyID, env.runtimePrvKey)
 	assert.Nil(t, err)
 	assert.Equal(t, stat.RunningProcesses, 10)
 
 	// Wait for the process to time out
-	time.Sleep(20 * time.Second)
+	time.Sleep(5 * time.Second)
 
+	// We should now have 10 failed processes since max retries reached
 	stat, err = client.ColonyStatistics(env.colonyID, env.runtimePrvKey)
 	assert.Nil(t, err)
 	assert.Equal(t, stat.FailedProcesses, 10) // NOTE Failed!!
