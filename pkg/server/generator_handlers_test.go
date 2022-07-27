@@ -53,11 +53,12 @@ func TestAddGeneratorCounter(t *testing.T) {
 		for i := 0; i < 70; i++ {
 			err = client.IncGenerator(generator.ID, env.runtimePrvKey)
 			assert.Nil(t, err)
-			time.Sleep(60 * time.Millisecond)
 		}
 		doneInc <- true
 	}()
 	<-doneInc
+
+	time.Sleep(3 * time.Second)
 
 	graphs, err := client.GetWaitingProcessGraphs(colonyID, 100, env.runtimePrvKey)
 	assert.Nil(t, err)
