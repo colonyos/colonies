@@ -171,8 +171,8 @@ func TestGetProcessHistForRuntime(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Len(t, processesFromServer, numberOfRunningProcesses+1)
 
-	// Get processes for the last second
-	processesFromServer, err = client.GetProcessHistForRuntime(core.RUNNING, env.colony1ID, env.runtime1ID, 1, env.runtime1PrvKey)
+	// Get processes for the last 2 seconds
+	processesFromServer, err = client.GetProcessHistForRuntime(core.RUNNING, env.colony1ID, env.runtime1ID, 2, env.runtime1PrvKey)
 	assert.Nil(t, err)
 	assert.Len(t, processesFromServer, 1)
 
