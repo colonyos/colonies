@@ -595,7 +595,7 @@ func TestMaxExecTimeMaxretries(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 
 	processSpec := utils.CreateTestProcessSpec(env.colonyID)
-	processSpec.MaxExecTime = 2 // 1 second
+	processSpec.MaxExecTime = 3 // 1 second
 	processSpec.MaxRetries = 1  // Max 1 retries
 
 	for i := 0; i < 10; i++ {
@@ -621,7 +621,7 @@ func TestMaxExecTimeMaxretries(t *testing.T) {
 		assert.Nil(t, err)
 	}
 
-	time.Sleep(1 * time.Second)
+	time.Sleep(2 * time.Second)
 
 	// We should now have 10 running processes
 	stat, err = client.ColonyStatistics(env.colonyID, env.runtimePrvKey)
