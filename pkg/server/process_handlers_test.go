@@ -136,7 +136,7 @@ func TestGetProcessHistForColony(t *testing.T) {
 	assert.Len(t, processesFromServer, numberOfRunningProcesses+1)
 
 	// Get processes for the last second
-	processesFromServer, err = client.GetProcessHistForColony(core.WAITING, env.colonyID, 1, env.runtimePrvKey)
+	processesFromServer, err = client.GetProcessHistForColony(core.WAITING, env.colonyID, 2, env.runtimePrvKey)
 	assert.Nil(t, err)
 	assert.Len(t, processesFromServer, 1)
 
