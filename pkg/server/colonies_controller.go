@@ -171,7 +171,7 @@ func (controller *coloniesController) timeoutLoop() {
 			continue
 		}
 		for _, process := range processes {
-			if process.ProcessSpec.MaxWaitTime == -1 {
+			if process.ProcessSpec.MaxWaitTime == -1 || process.ProcessSpec.MaxWaitTime == 0 {
 				continue
 			}
 			if time.Now().Unix() > process.WaitDeadline.Unix() {
