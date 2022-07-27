@@ -96,7 +96,7 @@ func CreateColoniesServer(db database.Database,
 func (server *ColoniesServer) isLeader() bool {
 	areWeLeader := server.etcdServer.Leader() == server.thisNode.Name
 	if areWeLeader && !server.leader {
-		log.Info("Colonies server came leader")
+		log.Info("Colonies server became leader")
 		server.leader = true
 	}
 

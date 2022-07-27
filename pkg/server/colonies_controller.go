@@ -171,7 +171,7 @@ func (controller *coloniesController) timeoutLoop() {
 			continue
 		}
 		for _, process := range processes {
-			if process.ProcessSpec.MaxWaitTime == -1 {
+			if process.ProcessSpec.MaxWaitTime == -1 || process.ProcessSpec.MaxWaitTime == 0 {
 				continue
 			}
 			if time.Now().Unix() > process.WaitDeadline.Unix() {
@@ -612,31 +612,39 @@ func (controller *coloniesController) deleteRuntime(runtimeID string) error {
 	return <-cmd.errorChan
 }
 
+func (controller *coloniesController) addProcessAndSetWaitingDeadline(process *core.Process) (*core.Process, error) {
+	err := controller.db.AddProcess(process)
+	if err != nil {
+		return nil, err
+	}
+
+	maxWaitTime := process.ProcessSpec.MaxWaitTime
+	if maxWaitTime > 0 {
+		err := controller.db.SetWaitDeadline(process, time.Now().Add(time.Duration(maxWaitTime)*time.Second))
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	addedProcess, err := controller.db.GetProcessByID(process.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	return addedProcess, nil
+}
+
 func (controller *coloniesController) addProcess(process *core.Process) (*core.Process, error) {
 	cmd := &command{processReplyChan: make(chan *core.Process, 1),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
-			err := controller.db.AddProcess(process)
+			addedProcess, err := controller.addProcessAndSetWaitingDeadline(process)
 			if err != nil {
 				cmd.errorChan <- err
 				return
 			}
 
-			maxWaitTime := process.ProcessSpec.MaxWaitTime
-			if maxWaitTime > 0 {
-				err := controller.db.SetWaitDeadline(process, time.Now().Add(time.Duration(maxWaitTime)*time.Second))
-				if err != nil {
-					cmd.errorChan <- err
-					return
-				}
-			}
-
-			addedProcess, err := controller.db.GetProcessByID(process.ID)
-			if err != nil {
-				cmd.errorChan <- err
-				return
-			}
-			controller.sendProcessesEvent(process)
+			controller.sendProcessesEvent(addedProcess)
 			cmd.processReplyChan <- addedProcess
 		}}
 

@@ -8,15 +8,11 @@ type Conditions struct {
 	ColonyID     string   `json:"colonyid"`
 	RuntimeIDs   []string `json:"runtimeids"`
 	RuntimeType  string   `json:"runtimetype"`
-	Mem          int      `json:"mem"`
-	Cores        int      `json:"cores"`
-	GPUs         int      `json:"gpus"`
 	Dependencies []string `json:"dependencies"`
 }
 
 type ProcessSpec struct {
 	Name        string            `json:"name"`
-	Image       string            `json:"image"`
 	Func        string            `json:"func"`
 	Args        []string          `json:"args"`
 	Priority    int               `json:"priority"`
@@ -36,9 +32,9 @@ func CreateEmptyProcessSpec() *ProcessSpec {
 	return processSpec
 }
 
-func CreateProcessSpec(name string, image string, fn string, args []string, colonyID string, runtimeIDs []string, runtimeType string, maxWaitTime int, maxExecTime int, maxRetries int, mem int, cores int, gpus int, env map[string]string, dependencies []string, priority int) *ProcessSpec {
-	conditions := Conditions{ColonyID: colonyID, RuntimeIDs: runtimeIDs, RuntimeType: runtimeType, Mem: mem, Cores: cores, GPUs: gpus, Dependencies: dependencies}
-	return &ProcessSpec{Name: name, Image: image, Func: fn, Args: args, MaxWaitTime: maxWaitTime, MaxExecTime: maxExecTime, MaxRetries: maxRetries, Conditions: conditions, Env: env, Priority: priority}
+func CreateProcessSpec(name string, fn string, args []string, colonyID string, runtimeIDs []string, runtimeType string, maxWaitTime int, maxExecTime int, maxRetries int, env map[string]string, dependencies []string, priority int) *ProcessSpec {
+	conditions := Conditions{ColonyID: colonyID, RuntimeIDs: runtimeIDs, RuntimeType: runtimeType, Dependencies: dependencies}
+	return &ProcessSpec{Name: name, Func: fn, Args: args, MaxWaitTime: maxWaitTime, MaxExecTime: maxExecTime, MaxRetries: maxRetries, Conditions: conditions, Env: env, Priority: priority}
 }
 
 func ConvertJSONToProcessSpec(jsonString string) (*ProcessSpec, error) {
@@ -68,16 +64,12 @@ func (processSpec *ProcessSpec) Equals(processSpec2 *ProcessSpec) bool {
 
 	same := true
 	if processSpec.Name != processSpec2.Name ||
-		processSpec.Image != processSpec2.Image ||
 		processSpec.Func != processSpec2.Func ||
 		processSpec.MaxWaitTime != processSpec2.MaxWaitTime ||
 		processSpec.MaxExecTime != processSpec2.MaxExecTime ||
 		processSpec.MaxRetries != processSpec2.MaxRetries ||
 		processSpec.Conditions.ColonyID != processSpec2.Conditions.ColonyID ||
 		processSpec.Conditions.RuntimeType != processSpec2.Conditions.RuntimeType ||
-		processSpec.Conditions.Mem != processSpec2.Conditions.Mem ||
-		processSpec.Conditions.Cores != processSpec2.Conditions.Cores ||
-		processSpec.Conditions.GPUs != processSpec2.Conditions.GPUs ||
 		processSpec.Priority != processSpec2.Priority {
 		same = false
 	}

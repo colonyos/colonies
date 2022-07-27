@@ -650,11 +650,6 @@ var getProcessCmd = &cobra.Command{
 			runtimeIDs = "None"
 		}
 
-		image := process.ProcessSpec.Image
-		if image == "" {
-			image = "None"
-		}
-
 		procFunc := process.ProcessSpec.Func
 		if procFunc == "" {
 			procFunc = "None"
@@ -672,7 +667,6 @@ var getProcessCmd = &cobra.Command{
 		fmt.Println("ProcessSpec:")
 
 		specData := [][]string{
-			[]string{"Image", image},
 			[]string{"Func", procFunc},
 			[]string{"Args", procArgs},
 			[]string{"MaxExecTime", strconv.Itoa(process.ProcessSpec.MaxExecTime)},
@@ -693,9 +687,6 @@ var getProcessCmd = &cobra.Command{
 			[]string{"ColonyID", process.ProcessSpec.Conditions.ColonyID},
 			[]string{"RuntimeIDs", runtimeIDs},
 			[]string{"RuntimeType", process.ProcessSpec.Conditions.RuntimeType},
-			[]string{"Memory", strconv.Itoa(process.ProcessSpec.Conditions.Mem)},
-			[]string{"CPU Cores", strconv.Itoa(process.ProcessSpec.Conditions.Cores)},
-			[]string{"GPUs", strconv.Itoa(process.ProcessSpec.Conditions.GPUs)},
 		}
 		condTable := tablewriter.NewWriter(os.Stdout)
 		for _, v := range condData {

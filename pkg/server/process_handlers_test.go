@@ -128,13 +128,15 @@ func TestGetProcessHistForColony(t *testing.T) {
 	_, err := client.SubmitProcessSpec(processSpec, env.runtimePrvKey)
 	assert.Nil(t, err)
 
+	time.Sleep(1 * time.Second)
+
 	// Get processes for the 60 seconds
 	processesFromServer, err := client.GetProcessHistForColony(core.WAITING, env.colonyID, 60, env.runtimePrvKey)
 	assert.Nil(t, err)
 	assert.Len(t, processesFromServer, numberOfRunningProcesses+1)
 
 	// Get processes for the last second
-	processesFromServer, err = client.GetProcessHistForColony(core.WAITING, env.colonyID, 1, env.runtimePrvKey)
+	processesFromServer, err = client.GetProcessHistForColony(core.WAITING, env.colonyID, 2, env.runtimePrvKey)
 	assert.Nil(t, err)
 	assert.Len(t, processesFromServer, 1)
 
@@ -162,13 +164,15 @@ func TestGetProcessHistForRuntime(t *testing.T) {
 	_, err = client.AssignProcess(env.colony1ID, env.runtime1PrvKey)
 	assert.Nil(t, err)
 
+	time.Sleep(1 * time.Second)
+
 	// Get processes for the 60 seconds
 	processesFromServer, err := client.GetProcessHistForRuntime(core.RUNNING, env.colony1ID, env.runtime1ID, 60, env.runtime1PrvKey)
 	assert.Nil(t, err)
 	assert.Len(t, processesFromServer, numberOfRunningProcesses+1)
 
-	// Get processes for the last second
-	processesFromServer, err = client.GetProcessHistForRuntime(core.RUNNING, env.colony1ID, env.runtime1ID, 1, env.runtime1PrvKey)
+	// Get processes for the last 2 seconds
+	processesFromServer, err = client.GetProcessHistForRuntime(core.RUNNING, env.colony1ID, env.runtime1ID, 2, env.runtime1PrvKey)
 	assert.Nil(t, err)
 	assert.Len(t, processesFromServer, 1)
 
@@ -535,7 +539,7 @@ func TestMaxExecTime(t *testing.T) {
 	}
 
 	// Wait for the process to time out
-	time.Sleep(5 * time.Second)
+	time.Sleep(20 * time.Second)
 
 	stat, err := client.ColonyStatistics(env.colonyID, env.runtimePrvKey)
 	assert.Nil(t, err)
@@ -560,7 +564,7 @@ func TestMaxExecTimeUnlimtedMaxretries(t *testing.T) {
 	}
 
 	// Wait for the process to time out
-	time.Sleep(5 * time.Second)
+	time.Sleep(20 * time.Second)
 
 	stat, err := client.ColonyStatistics(env.colonyID, env.runtimePrvKey)
 	assert.Nil(t, err)
@@ -577,7 +581,7 @@ func TestMaxExecTimeUnlimtedMaxretries(t *testing.T) {
 	assert.Equal(t, stat.RunningProcesses, 10)
 
 	// Wait for the process to time out
-	time.Sleep(5 * time.Second)
+	time.Sleep(20 * time.Second)
 
 	stat, err = client.ColonyStatistics(env.colonyID, env.runtimePrvKey)
 	assert.Nil(t, err)
@@ -591,7 +595,7 @@ func TestMaxExecTimeMaxretries(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 
 	processSpec := utils.CreateTestProcessSpec(env.colonyID)
-	processSpec.MaxExecTime = 1 // 1 second
+	processSpec.MaxExecTime = 3 // 3 seconds
 	processSpec.MaxRetries = 1  // Max 1 retries
 
 	for i := 0; i < 10; i++ {
@@ -601,9 +605,12 @@ func TestMaxExecTimeMaxretries(t *testing.T) {
 		assert.Nil(t, err)
 	}
 
+	// We should now have 10 running processes
+
 	// Wait for the process to time out
 	time.Sleep(20 * time.Second)
 
+	// We should now have 10 waiting processes
 	stat, err := client.ColonyStatistics(env.colonyID, env.runtimePrvKey)
 	assert.Nil(t, err)
 	assert.Equal(t, stat.WaitingProcesses, 10)
@@ -614,6 +621,9 @@ func TestMaxExecTimeMaxretries(t *testing.T) {
 		assert.Nil(t, err)
 	}
 
+	time.Sleep(2 * time.Second)
+
+	// We should now have 10 running processes
 	stat, err = client.ColonyStatistics(env.colonyID, env.runtimePrvKey)
 	assert.Nil(t, err)
 	assert.Equal(t, stat.RunningProcesses, 10)
@@ -621,6 +631,7 @@ func TestMaxExecTimeMaxretries(t *testing.T) {
 	// Wait for the process to time out
 	time.Sleep(20 * time.Second)
 
+	// We should now have 10 failed processes since max retries reached
 	stat, err = client.ColonyStatistics(env.colonyID, env.runtimePrvKey)
 	assert.Nil(t, err)
 	assert.Equal(t, stat.FailedProcesses, 10) // NOTE Failed!!

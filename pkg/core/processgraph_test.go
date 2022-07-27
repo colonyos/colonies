@@ -48,11 +48,8 @@ func createProcess() *Process {
 	maxWaitTime := -1
 	maxExecTime := -1
 	maxRetries := 3
-	mem := 1000
-	cores := 10
-	gpus := 1
 
-	processSpec := CreateProcessSpec("test_name", "test_image", "test_func", []string{"test_arg"}, colonyID, []string{}, runtimeType, maxWaitTime, maxExecTime, maxRetries, mem, cores, gpus, make(map[string]string), []string{}, 1)
+	processSpec := CreateProcessSpec("test_name", "test_func", []string{"test_arg"}, colonyID, []string{}, runtimeType, maxWaitTime, maxExecTime, maxRetries, make(map[string]string), []string{}, 1)
 	process := CreateProcess(processSpec)
 
 	return process
