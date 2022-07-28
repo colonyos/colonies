@@ -539,7 +539,7 @@ func TestMaxExecTime(t *testing.T) {
 	}
 
 	// Wait for the process to time out
-	time.Sleep(20 * time.Second)
+	time.Sleep(30 * time.Second)
 
 	stat, err := client.ColonyStatistics(env.colonyID, env.runtimePrvKey)
 	assert.Nil(t, err)
