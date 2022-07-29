@@ -156,11 +156,3 @@ func (server *ColoniesServer) handleWSRequest(c *gin.Context) {
 		}
 	}
 }
-
-func (server *ColoniesServer) numberOfProcessesSubscribers() int {
-	return server.controller.numberOfProcessesSubscribers()
-}
-
-func (server *ColoniesServer) numberOfProcessSubscribers() int {
-	return server.controller.numberOfProcessSubscribers()
-}

@@ -10,18 +10,12 @@ import (
 	"github.com/colonyos/colonies/pkg/database"
 	"github.com/colonyos/colonies/pkg/planner"
 	"github.com/colonyos/colonies/pkg/planner/basic"
-	"github.com/colonyos/colonies/pkg/rpc"
 	log "github.com/sirupsen/logrus"
 )
 
 const TIMEOUT_RELEASE_INTERVALL = 1
 const TIMEOUT_GENERATOR_TRIGGER_INTERVALL = 1
 const TIMEOUT_GENERATOR_SYNC_INTERVALL = 10
-
-type subscribers struct {
-	processesSubscribers map[string]*processesSubscription
-	processSubscribers   map[string]*processSubscription
-}
 
 type command struct {
 	stop                   bool
@@ -51,7 +45,7 @@ type coloniesController struct {
 	generatorEngine *generatorEngine
 	cmdQueue        chan *command
 	planner         planner.Planner
-	subscribers     *subscribers
+	wsSubCtrl       *wsSubscriptionController
 	stopFlag        bool
 	mutex           sync.Mutex
 }
@@ -62,9 +56,7 @@ func createColoniesController(db database.Database, server *ColoniesServer) *col
 	controller.db = db
 	controller.generatorEngine = createGeneratorEngine(db, server)
 	controller.cmdQueue = make(chan *command)
-	controller.subscribers = &subscribers{}
-	controller.subscribers.processesSubscribers = make(map[string]*processesSubscription)
-	controller.subscribers.processSubscribers = make(map[string]*processSubscription)
+	controller.wsSubCtrl = createWSSubscriptionController()
 	controller.planner = basic.CreatePlanner()
 
 	go controller.masterWorker()
@@ -75,153 +67,18 @@ func createColoniesController(db database.Database, server *ColoniesServer) *col
 	return controller
 }
 
-func (controller *coloniesController) generatorTriggerLoop() {
-	for {
-		time.Sleep(TIMEOUT_GENERATOR_TRIGGER_INTERVALL * time.Second)
-
-		controller.mutex.Lock()
-		if controller.stopFlag {
-			return
-		}
-		controller.mutex.Unlock()
-
-		if controller.server != nil {
-			var isLeader bool
-			controller.server.mutex.Lock()
-			isLeader = controller.server.isLeader()
-			controller.server.mutex.Unlock()
-
-			if isLeader {
-				if controller.generatorEngine != nil {
-					controller.triggerGenerators()
-				} else {
-					log.Error("Generator engine is nil")
-				}
-			}
-		}
-	}
-}
-
-func (controller *coloniesController) generatorSyncLoop() {
-	for {
-		time.Sleep(TIMEOUT_GENERATOR_SYNC_INTERVALL * time.Second)
-
-		controller.mutex.Lock()
-		if controller.stopFlag {
-			return
-		}
-		controller.mutex.Unlock()
-
-		if controller.server != nil {
-			var isLeader bool
-			controller.server.mutex.Lock()
-			isLeader = controller.server.isLeader()
-			controller.server.mutex.Unlock()
-
-			if isLeader {
-				if controller.generatorEngine != nil {
-					controller.syncGenerators()
-				} else {
-					log.Error("Generator engine is nil")
-				}
-			}
-		}
-	}
-}
-
-func (controller *coloniesController) timeoutLoop() {
-	for {
-		time.Sleep(TIMEOUT_RELEASE_INTERVALL * time.Second)
-
-		controller.mutex.Lock()
-		if controller.stopFlag {
-			return
-		}
-		controller.mutex.Unlock()
-
-		processes, err := controller.db.FindAllRunningProcesses()
-		if err != nil {
-			continue
-		}
-		for _, process := range processes {
-			if process.ProcessSpec.MaxExecTime == -1 {
-				continue
-			}
-			if time.Now().Unix() > process.ExecDeadline.Unix() {
-				if process.Retries >= process.ProcessSpec.MaxRetries && process.ProcessSpec.MaxRetries > -1 {
-					err := controller.closeFailed(process.ID, "Maximum execution time limit exceeded")
-					if err != nil {
-						log.WithFields(log.Fields{"ProcessID": process.ID, "Error": err}).Info("Max retries reached, but failed to close process")
-						continue
-					}
-					log.WithFields(log.Fields{"ProcessID": process.ID, "MaxExecTime": process.ProcessSpec.MaxExecTime, "MaxRetries": process.ProcessSpec.MaxRetries}).Info("Process closed as failed as max retries reached")
-					continue
-				}
-
-				err := controller.unassignRuntime(process.ID)
-				if err != nil {
-					log.WithFields(log.Fields{"ProcessID": process.ID, "Error": err}).Error("Failed to unassign process")
-				}
-				log.WithFields(log.Fields{"ProcessID": process.ID, "MaxExecTime": process.ProcessSpec.MaxExecTime, "MaxRetries": process.ProcessSpec.MaxRetries}).Info("Process was unassigned as it did not complete in time")
-			}
-		}
-
-		processes, err = controller.db.FindAllWaitingProcesses()
-		if err != nil {
-			continue
-		}
-		for _, process := range processes {
-			if process.ProcessSpec.MaxWaitTime == -1 || process.ProcessSpec.MaxWaitTime == 0 {
-				continue
-			}
-			if time.Now().Unix() > process.WaitDeadline.Unix() {
-				err := controller.closeFailed(process.ID, "Maximum waiting time limit exceeded")
-				if err != nil {
-					log.WithFields(log.Fields{"ProcessID": process.ID, "Error": err}).Info("Max waiting time reached, but failed to close process")
-					continue
-				}
-				log.WithFields(log.Fields{"ProcessID": process.ID, "MaxWaitTime": process.ProcessSpec.MaxWaitTime}).Info("Process closed as failed as maximum waiting time limit exceeded")
-			}
-		}
-	}
-}
-
-func (controller *coloniesController) masterWorker() {
-	for {
-		select {
-		case msg := <-controller.cmdQueue:
-			if msg.stop {
-				return
-			}
-			if msg.handler != nil {
-				msg.handler(msg)
-			}
-		}
-	}
-}
-
-func (controller *coloniesController) numberOfProcessesSubscribers() int {
-	return len(controller.subscribers.processesSubscribers)
-}
-
-func (controller *coloniesController) numberOfProcessSubscribers() int {
-	return len(controller.subscribers.processSubscribers)
-}
-
 func (controller *coloniesController) syncGenerators() {
-	cmd := &command{
-		handler: func(cmd *command) {
-			controller.generatorEngine.syncStatesFromDB()
-		}}
+	cmd := &command{handler: func(cmd *command) {
+		controller.generatorEngine.syncStatesFromDB()
+	}}
 
 	controller.cmdQueue <- cmd
 }
 
 func (controller *coloniesController) triggerGenerators() {
-	cmd := &command{
-		handler: func(cmd *command) {
-			controller.generatorEngine.triggerGenerators()
-		}}
+	cmd := &command{handler: func(cmd *command) {
+		controller.generatorEngine.triggerGenerators()
+	}}
 
 	controller.cmdQueue <- cmd
 }
@@ -325,7 +182,7 @@ func (controller *coloniesController) deleteGenerator(generatorID string) error 
 func (controller *coloniesController) subscribeProcesses(runtimeID string, subscription *processesSubscription) error {
 	cmd := &command{errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
-			controller.subscribers.processesSubscribers[runtimeID] = subscription
+			controller.wsSubCtrl.addProcessesSubscriber(runtimeID, subscription)
 			cmd.errorChan <- nil
 		}}
 	controller.cmdQueue <- cmd
@@ -336,84 +193,17 @@ func (controller *coloniesController) subscribeProcesses(runtimeID string, subsc
 func (controller *coloniesController) subscribeProcess(runtimeID string, subscription *processSubscription) error {
 	cmd := &command{errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
-			controller.subscribers.processSubscribers[runtimeID] = subscription
-
-			// Send an event immediately if process already have the state the subscriber is looking for
-			// See unittest TestSubscribeChangeStateProcess2 for more info
 			process, err := controller.db.GetProcessByID(subscription.processID)
 			if err != nil {
 				cmd.errorChan <- err
 			}
-			if process.State == subscription.state {
-				controller.wsWriteProcessChangeEvent(process, runtimeID, subscription)
-			}
+
+			controller.wsSubCtrl.addProcessSubscriber(runtimeID, subscription, process)
 			cmd.errorChan <- nil
 		}}
 	controller.cmdQueue <- cmd
 
 	return <-cmd.errorChan
-}
-
-func (controller *coloniesController) sendProcessesEvent(process *core.Process) {
-	for runtimeID, subscription := range controller.subscribers.processesSubscribers {
-		if subscription.runtimeType == process.ProcessSpec.Conditions.RuntimeType && subscription.state == process.State {
-			jsonString, err := process.ToJSON()
-			if err != nil {
-				log.WithFields(log.Fields{"RuntimeID": runtimeID, "Error": err}).Info("Failed to parse JSON when removing processes event subscription")
-				delete(controller.subscribers.processesSubscribers, runtimeID)
-			}
-			rpcReplyMsg, err := rpc.CreateRPCReplyMsg(rpc.SubscribeProcessPayloadType, jsonString)
-			if err != nil {
-				log.WithFields(log.Fields{"RuntimeID": runtimeID, "Error": err}).Info("Failed to create RPC reply message when removing processes event subscription")
-				delete(controller.subscribers.processSubscribers, runtimeID)
-			}
-
-			rpcReplyJSONString, err := rpcReplyMsg.ToJSON()
-			if err != nil {
-				log.WithFields(log.Fields{"RuntimeID": runtimeID, "Error": err}).Info("Failed to generate JSON when removing processes event subcription")
-				delete(controller.subscribers.processSubscribers, runtimeID)
-			}
-			err = subscription.wsConn.WriteMessage(subscription.wsMsgType, []byte(rpcReplyJSONString))
-			if err != nil {
-				log.WithFields(log.Fields{"RuntimeID": runtimeID, "Error": err}).Info("Removing processes event subcription")
-				delete(controller.subscribers.processesSubscribers, runtimeID)
-			}
-		}
-	}
-}
-
-func (controller *coloniesController) wsWriteProcessChangeEvent(process *core.Process, runtimeID string, subscription *processSubscription) {
-	jsonString, err := process.ToJSON()
-	if err != nil {
-		log.WithFields(log.Fields{"RuntimeID": runtimeID, "Error": err}).Info("Failed to parse JSON when removing process event subscription")
-		delete(controller.subscribers.processSubscribers, runtimeID)
-	}
-
-	rpcReplyMsg, err := rpc.CreateRPCReplyMsg(rpc.SubscribeProcessPayloadType, jsonString)
-	if err != nil {
-		log.WithFields(log.Fields{"RuntimeID": runtimeID, "Error": err}).Info("Failed to create RPC reply message when removing process event subscription")
-		delete(controller.subscribers.processSubscribers, runtimeID)
-	}
-
-	rpcReplyJSONString, err := rpcReplyMsg.ToJSON()
-	if err != nil {
-		log.WithFields(log.Fields{"RuntimeID": runtimeID, "Error": err}).Info("Failed to generate JSON when removing process event subcription")
-		delete(controller.subscribers.processSubscribers, runtimeID)
-	}
-
-	err = subscription.wsConn.WriteMessage(subscription.wsMsgType, []byte(rpcReplyJSONString))
-	if err != nil {
-		log.WithFields(log.Fields{"RuntimeID": runtimeID, "Error": err}).Info("Removing process event subcription")
-		delete(controller.subscribers.processSubscribers, runtimeID)
-	}
-}
-
-func (controller *coloniesController) sendProcessChangeStateEvent(process *core.Process) {
-	for runtimeID, subscription := range controller.subscribers.processSubscribers {
-		if subscription.processID == process.ID && subscription.state == process.State {
-			controller.wsWriteProcessChangeEvent(process, runtimeID, subscription)
-		}
-	}
 }
 
 func (controller *coloniesController) getColonies() ([]*core.Colony, error) {
@@ -644,7 +434,7 @@ func (controller *coloniesController) addProcess(process *core.Process) (*core.P
 				return
 			}
 
-			controller.sendProcessesEvent(addedProcess)
+			controller.wsSubCtrl.sendProcessesEvent(addedProcess)
 			cmd.processReplyChan <- addedProcess
 		}}
 
@@ -1108,7 +898,7 @@ func (controller *coloniesController) closeSuccessful(processID string) error {
 			}
 
 			cmd.errorChan <- nil
-			controller.sendProcessChangeStateEvent(process)
+			controller.wsSubCtrl.sendProcessChangeStateEvent(process)
 		}}
 
 	controller.cmdQueue <- cmd
@@ -1146,7 +936,7 @@ func (controller *coloniesController) closeFailed(processID string, errorMsg str
 			}
 
 			cmd.errorChan <- nil
-			controller.sendProcessChangeStateEvent(process)
+			controller.wsSubCtrl.sendProcessChangeStateEvent(process)
 		}}
 
 	controller.cmdQueue <- cmd
@@ -1244,7 +1034,7 @@ func (controller *coloniesController) unassignRuntime(processID string) error {
 				return
 			}
 			cmd.errorChan <- controller.db.UnassignRuntime(process)
-			controller.sendProcessesEvent(process)
+			controller.wsSubCtrl.sendProcessesEvent(process)
 		}}
 
 	controller.cmdQueue <- cmd
