@@ -40,7 +40,7 @@ The long-term vision is to create a global peer-to-peer network connecting many 
 * Humans (or workers) submit task specifications to a Colony via a Colonies server, which manage one or several Colonies. 
 * Colonies workers connect to the Colonies server and search for suitable tasks to execute. Each worker must have a valid identity (like a passport) to prove its Colony membership and the Colonies server makes sure only authorized and qualified workers can connect and be assigned relevant tasks. 
 * Colonies workers can **reside anywhere on the Internet**, e.g. a server, inside a Kubernetes Pod, a smart phone app, or embedded in a web page, thus enabling a compute continuum spanning devices, edge and cloud.
-* If worker fails to complete a task in time, the task will be re-assigned to another worker. This fail-safe mechanism ensures that all tasks are eventually completed. This also makes it possible to apply **Chaos Engineering**, e.g. randomly kill workers to test the overall stability of the system.  
+* If a worker fails to complete a task in time, the task will be re-assigned to another worker. This fail-safe mechanism ensures that all tasks are eventually completed. This also makes it possible to apply **Chaos Engineering**, e.g. randomly kill workers to test the overall stability of the system.  
 
 ## What is it good at?
 * **Distributed computing**. Manage ML/AI workloads on Kubernetes. Form a Colony by deploying one or several Colonies workers in Kubernetes Pods. Then use Colonies to enable batch processing and launch processes inside worker containers.
@@ -194,9 +194,6 @@ Conditions:
 | ColonyID    | 4787a5071856a4acf702b2ffcea422e3237a679c681314113d86139461290cf4 |
 | RuntimeIDs  | None                                                             |
 | RuntimeType | cli                                                              |
-| Memory      | 0                                                                |
-| CPU Cores   | 0                                                                |
-| GPUs        | 0                                                                |
 +-------------+------------------------------------------------------------------+
 
 Attributes:
