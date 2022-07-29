@@ -6,27 +6,40 @@ import (
 	"time"
 
 	"github.com/colonyos/colonies/pkg/core"
+	"github.com/colonyos/colonies/pkg/utils"
 	"github.com/stretchr/testify/assert"
 )
 
+type retValues struct {
+	process *core.Process
+	err     error
+}
+
 func TestEventHandler(t *testing.T) {
+	process := utils.CreateTestProcess(core.GenerateRandomID())
+	process.ProcessSpec.Conditions.RuntimeType = "test_runtime_type"
+	process.State = core.WAITING
+
 	ctx, cancelCtx := context.WithTimeout(context.Background(), 3000*time.Millisecond)
 	defer cancelCtx()
 
 	handler := createEventHandler()
-	errChan := make(chan error)
+	retChan := make(chan retValues)
 	go func() {
-		errChan <- handler.wait("test_runtime_type", core.WAITING, ctx)
+		process, err := handler.waitForProcess("test_runtime_type", core.WAITING, "", ctx)
+		retChan <- retValues{process: process, err: err}
 	}()
 	time.Sleep(100 * time.Millisecond)
 	go func() {
-		handler.signal("test_runtime_type", core.WAITING)
+		handler.signal(process)
 	}()
-	err := <-errChan
-	assert.Nil(t, err) // OK
-	allListeners, listeners := handler.numberOfListeners("test_runtime_type", core.WAITING)
+	retVal := <-retChan
+	assert.Nil(t, retVal.err) // OK
+	assert.True(t, process.Equals(retVal.process))
+	allListeners, listeners, processIDs := handler.numberOfListeners("test_runtime_type", core.WAITING)
 	assert.Equal(t, allListeners, 0)
 	assert.Equal(t, listeners, 0)
+	assert.Equal(t, processIDs, 0)
 }
 
 func TestEventHandlerTimeout(t *testing.T) {
@@ -34,15 +47,17 @@ func TestEventHandlerTimeout(t *testing.T) {
 	defer cancelCtx()
 
 	handler := createEventHandler()
-	errChan := make(chan error)
+	retChan := make(chan retValues)
 	go func() {
-		errChan <- handler.wait("test_runtime_type", core.WAITING, ctx)
+		process, err := handler.waitForProcess("test_runtime_type", core.WAITING, "", ctx)
+		retChan <- retValues{process: process, err: err}
 	}()
-	err := <-errChan
-	assert.NotNil(t, err) // Will timeout
-	allListeners, listeners := handler.numberOfListeners("test_runtime_type", core.WAITING)
+	retVal := <-retChan
+	assert.NotNil(t, retVal.err) // Not OK, will timeout
+	allListeners, listeners, processIDs := handler.numberOfListeners("test_runtime_type", core.WAITING)
 	assert.Equal(t, allListeners, 0)
 	assert.Equal(t, listeners, 0)
+	assert.Equal(t, processIDs, 0)
 }
 
 func TestEventHandlerStop(t *testing.T) {
@@ -65,19 +80,24 @@ func TestEventHandlerTimeout2(t *testing.T) {
 	defer cancelCtx()
 
 	handler := createEventHandler()
-	errChan := make(chan error)
+	retChan := make(chan retValues)
 	go func() {
-		errChan <- handler.wait("test_runtime_type", core.WAITING, ctx)
+		process, err := handler.waitForProcess("test_runtime_type", core.WAITING, "", ctx)
+		retChan <- retValues{process: process, err: err}
 	}()
 	time.Sleep(100 * time.Millisecond)
 	go func() {
-		handler.signal("test_runtime_type2", core.WAITING) // NOTE: we are signaling to another target
+		process := utils.CreateTestProcess(core.GenerateRandomID())
+		process.ProcessSpec.Conditions.RuntimeType = "test_runtime_type2" // NOTE: we are signaling to another target
+		process.State = core.WAITING
+		handler.signal(process)
 	}()
-	err := <-errChan
-	assert.NotNil(t, err) // Will timeout
-	allListeners, listeners := handler.numberOfListeners("test_runtime_type", core.WAITING)
+	retVal := <-retChan
+	assert.NotNil(t, retVal.err) // Not OK, will timeout
+	allListeners, listeners, processIDs := handler.numberOfListeners("test_runtime_type", core.WAITING)
 	assert.Equal(t, allListeners, 0)
 	assert.Equal(t, listeners, 0)
+	assert.Equal(t, processIDs, 0)
 }
 
 func TestEventHandlerTimeout3(t *testing.T) {
@@ -85,54 +105,239 @@ func TestEventHandlerTimeout3(t *testing.T) {
 	defer cancelCtx()
 
 	handler := createEventHandler()
-	errChan := make(chan error)
+	retChan := make(chan retValues)
 	go func() {
-		errChan <- handler.wait("test_runtime_type", core.WAITING, ctx)
+		process, err := handler.waitForProcess("test_runtime_type", core.WAITING, "", ctx)
+		retChan <- retValues{process: process, err: err}
 	}()
 	time.Sleep(100 * time.Millisecond)
 	go func() {
-		handler.signal("test_runtime_type", core.RUNNING) // NOTE: we are signaling to another target
+		process := utils.CreateTestProcess(core.GenerateRandomID())
+		process.ProcessSpec.Conditions.RuntimeType = "test_runtime_type"
+		process.State = core.RUNNING // NOTE: we are signaling to another target
+		handler.signal(process)
 	}()
-	err := <-errChan
-	assert.NotNil(t, err) // Will timeout
-	allListeners, listeners := handler.numberOfListeners("test_runtime_type", core.WAITING)
+	retVal := <-retChan
+	assert.NotNil(t, retVal.err) // Not OK, will timeout
+	allListeners, listeners, processIDs := handler.numberOfListeners("test_runtime_type", core.WAITING)
 	assert.Equal(t, allListeners, 0)
 	assert.Equal(t, listeners, 0)
+	assert.Equal(t, processIDs, 0)
 }
 
 func TestEventHandlerMany(t *testing.T) {
+	process := utils.CreateTestProcess(core.GenerateRandomID())
+	process.ProcessSpec.Conditions.RuntimeType = "test_runtime_type"
+	process.State = core.WAITING
+
 	ctx, cancelCtx := context.WithTimeout(context.Background(), 2000*time.Millisecond)
 	defer cancelCtx()
 
 	handler := createEventHandler()
 
-	var errChans []chan error
+	var retChans []chan retValues
 
 	for i := 0; i < 10; i++ {
-		errChan := make(chan error)
-		errChans = append(errChans, errChan)
+		retChan := make(chan retValues)
+		retChans = append(retChans, retChan)
 		go func() {
-			errChan <- handler.wait("test_runtime_type", core.WAITING, ctx)
+			process, err := handler.waitForProcess("test_runtime_type", core.WAITING, "", ctx)
+			retChan <- retValues{process: process, err: err}
 		}()
 	}
 
 	go func() {
-		errChan := make(chan error)
-		errChan <- handler.wait("test_runtime_type2", core.WAITING, ctx)
+		handler.waitForProcess("test_runtime_type2", core.WAITING, "", ctx)
 	}()
 
 	time.Sleep(1000 * time.Millisecond)
 
 	go func() {
-		handler.signal("test_runtime_type", core.WAITING)
+		handler.signal(process)
 	}()
 
 	// Wait for listers
-	for _, errChan := range errChans {
-		err := <-errChan
-		assert.Nil(t, err) // OK
+	for _, retChan := range retChans {
+		retVal := <-retChan
+		assert.Nil(t, retVal.err) // OK
+		assert.True(t, process.Equals(retVal.process))
 	}
-	allListeners, listeners := handler.numberOfListeners("test_runtime_type", core.WAITING)
+	allListeners, listeners, processIDs := handler.numberOfListeners("test_runtime_type", core.WAITING)
 	assert.Equal(t, allListeners, 1) // Note 1, as test_runtime_type2 was never signaled
 	assert.Equal(t, listeners, 0)
+	assert.Equal(t, processIDs, 0)
+}
+
+func TestEventHandlerUpdate(t *testing.T) {
+	process := utils.CreateTestProcess(core.GenerateRandomID())
+	process.ProcessSpec.Conditions.RuntimeType = "test_runtime_type"
+	process.State = core.WAITING
+
+	ctx, cancelCtx := context.WithTimeout(context.Background(), 3000*time.Millisecond)
+	defer cancelCtx()
+
+	handler := createEventHandler()
+	retChan := make(chan retValues)
+	go func() {
+		process, err := handler.waitForProcess("test_runtime_type", core.WAITING, process.ID, ctx)
+		retChan <- retValues{process: process, err: err}
+	}()
+	time.Sleep(100 * time.Millisecond)
+	go func() {
+		handler.signal(process)
+	}()
+	retVal := <-retChan
+	assert.Nil(t, retVal.err) // OK
+	assert.True(t, process.Equals(retVal.process))
+	allListeners, listeners, processIDs := handler.numberOfListeners("test_runtime_type", core.WAITING)
+	assert.Equal(t, allListeners, 0)
+	assert.Equal(t, listeners, 0)
+	assert.Equal(t, processIDs, 0)
+}
+
+func TestEventHandlerUpdateTimeout(t *testing.T) {
+	process := utils.CreateTestProcess(core.GenerateRandomID())
+	process.ProcessSpec.Conditions.RuntimeType = "test_runtime_type"
+	process.State = core.WAITING
+
+	ctx, cancelCtx := context.WithTimeout(context.Background(), 3000*time.Millisecond)
+	defer cancelCtx()
+
+	handler := createEventHandler()
+	retChan := make(chan retValues)
+	go func() {
+		// Wait for another process with random ID, i.e. we will time out
+		process, err := handler.waitForProcess("test_runtime_type", core.WAITING, core.GenerateRandomID(), ctx)
+		retChan <- retValues{process: process, err: err}
+	}()
+	time.Sleep(100 * time.Millisecond)
+	go func() {
+		handler.signal(process)
+	}()
+	retVal := <-retChan
+	assert.NotNil(t, retVal.err) // OK
+	allListeners, listeners, processIDs := handler.numberOfListeners("test_runtime_type", core.WAITING)
+	assert.Equal(t, allListeners, 0)
+	assert.Equal(t, listeners, 0)
+	assert.Equal(t, processIDs, 0)
+}
+
+func TestEventHandlerSubscribe(t *testing.T) {
+	process := utils.CreateTestProcess(core.GenerateRandomID())
+	process.ProcessSpec.Conditions.RuntimeType = "test_runtime_type"
+	process.State = core.WAITING
+	ctx, cancelCtx := context.WithTimeout(context.Background(), 3000*time.Millisecond)
+	defer cancelCtx()
+
+	retChan := make(chan retValues)
+	handler := createEventHandler()
+	processChan, errChan := handler.subscribe("test_runtime_type", core.WAITING, "", ctx)
+	go func() {
+		select {
+		case err := <-errChan:
+			retChan <- retValues{process: nil, err: err}
+		case process := <-processChan:
+			retChan <- retValues{process: process, err: nil}
+		}
+	}()
+	time.Sleep(100 * time.Millisecond)
+	handler.signal(process)
+	retVal := <-retChan
+	assert.Nil(t, retVal.err)
+	assert.True(t, retVal.process.Equals(process))
+}
+
+func TestEventHandlerSubscribeCancel(t *testing.T) {
+	process := utils.CreateTestProcess(core.GenerateRandomID())
+	process.ProcessSpec.Conditions.RuntimeType = "test_runtime_type"
+	process.State = core.WAITING
+	ctx, cancelCtx := context.WithTimeout(context.Background(), 3000*time.Millisecond)
+
+	retChan := make(chan retValues)
+	handler := createEventHandler()
+	processChan, errChan := handler.subscribe("test_runtime_type", core.WAITING, "", ctx) // Subscribe to all processes
+	go func() {
+		select {
+		case err := <-errChan:
+			retChan <- retValues{process: nil, err: err}
+		case process := <-processChan:
+			retChan <- retValues{process: process, err: nil}
+		}
+	}()
+	time.Sleep(100 * time.Millisecond)
+	cancelCtx()
+	retVal := <-retChan
+	assert.NotNil(t, retVal.err) // Timeout
+}
+
+func TestEventHandlerSubscribeTimeout(t *testing.T) {
+	process := utils.CreateTestProcess(core.GenerateRandomID())
+	process.ProcessSpec.Conditions.RuntimeType = "test_runtime_type"
+	process.State = core.WAITING
+	ctx, cancelCtx := context.WithTimeout(context.Background(), 3000*time.Millisecond)
+	defer cancelCtx()
+
+	retChan := make(chan retValues)
+	handler := createEventHandler()
+	processChan, errChan := handler.subscribe("test_runtime_type", core.WAITING, "", ctx) // Subscribe to all processes
+	go func() {
+		select {
+		case err := <-errChan:
+			retChan <- retValues{process: nil, err: err}
+		case process := <-processChan:
+			retChan <- retValues{process: process, err: nil}
+		}
+	}()
+	time.Sleep(100 * time.Millisecond)
+	retVal := <-retChan
+	assert.NotNil(t, retVal.err) // Timeout
+}
+
+func TestEventHandlerSubscribeProcessID(t *testing.T) {
+	process := utils.CreateTestProcess(core.GenerateRandomID())
+	process.ProcessSpec.Conditions.RuntimeType = "test_runtime_type"
+	process.State = core.WAITING
+	ctx, cancelCtx := context.WithTimeout(context.Background(), 3000*time.Millisecond)
+	defer cancelCtx()
+
+	retChan := make(chan retValues)
+	handler := createEventHandler()
+	processChan, errChan := handler.subscribe("test_runtime_type", core.WAITING, process.ID, ctx)
+	go func() {
+		select {
+		case err := <-errChan:
+			retChan <- retValues{process: nil, err: err}
+		case process := <-processChan:
+			retChan <- retValues{process: process, err: nil}
+		}
+	}()
+	time.Sleep(100 * time.Millisecond)
+	handler.signal(process)
+	retVal := <-retChan
+	assert.Nil(t, retVal.err)
+	assert.True(t, retVal.process.Equals(process))
+}
+
+func TestEventHandlerSubscribeProcessIDFailed(t *testing.T) {
+	process := utils.CreateTestProcess(core.GenerateRandomID())
+	process.ProcessSpec.Conditions.RuntimeType = "test_runtime_type"
+	process.State = core.WAITING
+	ctx, cancelCtx := context.WithTimeout(context.Background(), 3000*time.Millisecond)
+	defer cancelCtx()
+
+	retChan := make(chan retValues)
+	handler := createEventHandler()
+	processChan, errChan := handler.subscribe("test_runtime_type", core.WAITING, core.GenerateRandomID(), ctx)
+	go func() {
+		select {
+		case err := <-errChan:
+			retChan <- retValues{process: nil, err: err}
+		case process := <-processChan:
+			retChan <- retValues{process: process, err: nil}
+		}
+	}()
+	time.Sleep(100 * time.Millisecond)
+	handler.signal(process)
+	retVal := <-retChan
+	assert.NotNil(t, retVal.err) // Not OK, will timeout
 }

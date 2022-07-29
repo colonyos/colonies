@@ -219,3 +219,20 @@ func TestProcessingTime(t *testing.T) {
 	processingTime = int64(process.ProcessingTime())
 	assert.True(t, processingTime == 0)
 }
+
+func TestProcessClone(t *testing.T) {
+	colonyID := GenerateRandomID()
+	runtimeType := "test_runtime_type"
+	maxWaitTime := -1
+	maxExecTime := -1
+	maxRetries := 3
+
+	processSpec := CreateProcessSpec("test_name", "test_func", []string{"test_arg"}, colonyID, []string{}, runtimeType, maxWaitTime, maxExecTime, maxRetries, make(map[string]string), []string{}, 1)
+	process := CreateProcess(processSpec)
+
+	processClone := process.Clone()
+	processClone.ID = GenerateRandomID()
+	processClone.ProcessSpec.Func = "test_func2"
+
+	assert.False(t, processClone.Equals(process))
+}
