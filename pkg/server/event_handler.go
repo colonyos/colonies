@@ -4,16 +4,19 @@ import (
 	"context"
 	"errors"
 	"strconv"
+	"sync"
 )
 
 type eventHandler struct {
 	listeners map[string]map[string]chan struct{}
 	msgQueue  chan *message
 	idCounter int
+	stopped   bool
+	mutex     sync.Mutex
 }
 
 type message struct {
-	stop    bool
+	stop    bool // Just for testing purposes
 	handler func(msg *message)
 	reply   chan replyMessage
 }
@@ -21,25 +24,38 @@ type message struct {
 type replyMessage struct {
 	c            chan struct{}
 	listenerID   string
-	allListeners int // Just for testing purposes
-	listeners    int // Just for testing purposes
+	allListeners int  // Just for testing purposes
+	listeners    int  // Just for testing purposes
+	stopped      bool // Just for testing purposes
 }
 
 func createEventHandler() *eventHandler {
-	eventHandler := &eventHandler{}
-	eventHandler.listeners = make(map[string]map[string]chan struct{})
-	eventHandler.msgQueue = make(chan *message)
+	handler := &eventHandler{}
+	handler.listeners = make(map[string]map[string]chan struct{})
+	handler.msgQueue = make(chan *message)
 
-	go eventHandler.masterWorker()
+	handler.mutex.Lock()
+	handler.stopped = true
+	handler.mutex.Unlock()
 
-	return eventHandler
+	// Start master worker
+	go handler.masterWorker()
+
+	return handler
 }
 
 func (handler *eventHandler) masterWorker() {
+	handler.mutex.Lock()
+	handler.stopped = false
+	handler.mutex.Unlock()
+
 	for {
 		select {
 		case msg := <-handler.msgQueue:
 			if msg.stop {
+				handler.mutex.Lock()
+				handler.stopped = true
+				handler.mutex.Unlock()
 				return
 			}
 			if msg.handler != nil {
@@ -119,6 +135,10 @@ func (handler *eventHandler) wait(runtimeType string, state int, ctx context.Con
 	}
 }
 
+func (handler *eventHandler) stop() {
+	handler.msgQueue <- &message{stop: true}
+}
+
 func (handler *eventHandler) numberOfListeners(runtimeType string, state int) (int, int) { // Just for testing purposes
 	msg := &message{reply: make(chan replyMessage, 1), handler: func(msg *message) {
 		allListeners := len(handler.listeners)
@@ -131,4 +151,10 @@ func (handler *eventHandler) numberOfListeners(runtimeType string, state int) (i
 	r := <-msg.reply
 
 	return r.allListeners, r.listeners
+}
+
+func (handler *eventHandler) hasStopped() bool { // Just for testing purposes
+	handler.mutex.Lock()
+	defer handler.mutex.Unlock()
+	return handler.stopped
 }

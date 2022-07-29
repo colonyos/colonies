@@ -45,6 +45,21 @@ func TestEventHandlerTimeout(t *testing.T) {
 	assert.Equal(t, listeners, 0)
 }
 
+func TestEventHandlerStop(t *testing.T) {
+	handler := createEventHandler()
+
+	handler.stop()
+
+	stopped := false
+	for {
+		stopped = handler.hasStopped()
+		if stopped {
+			break
+		}
+	}
+	assert.True(t, stopped)
+}
+
 func TestEventHandlerTimeout2(t *testing.T) {
 	ctx, cancelCtx := context.WithTimeout(context.Background(), 3000*time.Millisecond)
 	defer cancelCtx()
