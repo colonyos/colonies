@@ -115,30 +115,17 @@ func TestMarkAlive(t *testing.T) {
 func TestGetProcessHistForColony(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 
-	numberOfRunningProcesses := 20
+	numberOfRunningProcesses := 3
 	for i := 0; i < numberOfRunningProcesses; i++ {
 		processSpec := utils.CreateTestProcessSpec(env.colonyID)
 		_, err := client.SubmitProcessSpec(processSpec, env.runtimePrvKey)
 		assert.Nil(t, err)
 	}
 
-	time.Sleep(1 * time.Second)
-
-	processSpec := utils.CreateTestProcessSpec(env.colonyID)
-	_, err := client.SubmitProcessSpec(processSpec, env.runtimePrvKey)
-	assert.Nil(t, err)
-
-	time.Sleep(1 * time.Second)
-
-	// Get processes for the 60 seconds
+	// Get processes for the last 60 seconds
 	processesFromServer, err := client.GetProcessHistForColony(core.WAITING, env.colonyID, 60, env.runtimePrvKey)
 	assert.Nil(t, err)
-	assert.Len(t, processesFromServer, numberOfRunningProcesses+1)
-
-	// Get processes for the last second
-	processesFromServer, err = client.GetProcessHistForColony(core.WAITING, env.colonyID, 2, env.runtimePrvKey)
-	assert.Nil(t, err)
-	assert.Len(t, processesFromServer, 1)
+	assert.Len(t, processesFromServer, numberOfRunningProcesses)
 
 	server.Shutdown()
 	<-done

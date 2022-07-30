@@ -2,7 +2,6 @@ package server
 
 import (
 	"testing"
-	"time"
 
 	"github.com/colonyos/colonies/pkg/core"
 	"github.com/colonyos/colonies/pkg/utils"
@@ -99,7 +98,7 @@ func TestGetColonyStatistics(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 
 	// Waiting
-	numberOfWaitingProcesses := 5
+	numberOfWaitingProcesses := 2
 	for i := 0; i < numberOfWaitingProcesses; i++ {
 		processSpec := utils.CreateTestProcessSpec(env.colonyID)
 		_, err := client.SubmitProcessSpec(processSpec, env.runtimePrvKey)
@@ -107,7 +106,7 @@ func TestGetColonyStatistics(t *testing.T) {
 	}
 
 	// Running
-	numberOfRunningProcesses := 6
+	numberOfRunningProcesses := 3
 	for i := 0; i < numberOfRunningProcesses; i++ {
 		processSpec := utils.CreateTestProcessSpec(env.colonyID)
 		_, err := client.SubmitProcessSpec(processSpec, env.runtimePrvKey)
@@ -116,7 +115,7 @@ func TestGetColonyStatistics(t *testing.T) {
 	}
 
 	// Successful
-	numberOfSuccessfulProcesses := 7
+	numberOfSuccessfulProcesses := 1
 	for i := 0; i < numberOfSuccessfulProcesses; i++ {
 		processSpec := utils.CreateTestProcessSpec(env.colonyID)
 		_, err := client.SubmitProcessSpec(processSpec, env.runtimePrvKey)
@@ -128,7 +127,7 @@ func TestGetColonyStatistics(t *testing.T) {
 	}
 
 	// Failed
-	numberOfFailedProcesses := 8
+	numberOfFailedProcesses := 2
 	for i := 0; i < numberOfFailedProcesses; i++ {
 		processSpec := utils.CreateTestProcessSpec(env.colonyID)
 		_, err := client.SubmitProcessSpec(processSpec, env.runtimePrvKey)
@@ -138,8 +137,6 @@ func TestGetColonyStatistics(t *testing.T) {
 		err = client.CloseFailed(processFromServer.ID, "error", env.runtimePrvKey)
 		assert.Nil(t, err)
 	}
-
-	time.Sleep(10 * time.Second)
 
 	stat, err := client.ColonyStatistics(env.colonyID, env.runtimePrvKey)
 	assert.Nil(t, err)
