@@ -396,11 +396,12 @@ func TestMaxWaitTime(t *testing.T) {
 	processSpec := utils.CreateTestProcessSpec(env.colonyID)
 	processSpec.MaxWaitTime = 1 // 1 second
 
-	_, err := client.SubmitProcessSpec(processSpec, env.runtimePrvKey)
+	process, err := client.SubmitProcessSpec(processSpec, env.runtimePrvKey)
 	assert.Nil(t, err)
 
-	// Wait for the process to time out
-	time.Sleep(5 * time.Second)
+	var processes []*core.Process
+	processes = append(processes, process)
+	waitForProcesses(t, server, processes, core.FAILED)
 
 	stat, err := client.ColonyStatistics(env.colonyID, env.runtimePrvKey)
 	assert.Nil(t, err)
@@ -416,111 +417,110 @@ func TestMaxExecTime(t *testing.T) {
 	processSpec := utils.CreateTestProcessSpec(env.colonyID)
 	processSpec.MaxExecTime = 1 // 1 second
 
-	for i := 0; i < 10; i++ {
+	numberOfProcesses := 10
+	var processes []*core.Process
+	for i := 0; i < numberOfProcesses; i++ {
 		_, err := client.SubmitProcessSpec(processSpec, env.runtimePrvKey)
 		assert.Nil(t, err)
-		_, err = client.AssignProcess(env.colonyID, env.runtimePrvKey)
+		process, err := client.AssignProcess(env.colonyID, env.runtimePrvKey)
 		assert.Nil(t, err)
+		processes = append(processes, process)
 	}
 
-	// Wait for the process to time out
-	time.Sleep(30 * time.Second)
+	waitForProcesses(t, server, processes, core.WAITING)
 
 	stat, err := client.ColonyStatistics(env.colonyID, env.runtimePrvKey)
 	assert.Nil(t, err)
-	assert.Equal(t, stat.WaitingProcesses, 10)
+	assert.Equal(t, stat.WaitingProcesses, numberOfProcesses)
 
 	server.Shutdown()
 	<-done
 }
 
-// TODO: rewrite this test and use new new EventHandler
-func TestMaxExecTimeUnlimtedMaxretries(t *testing.T) {
+func TestMaxExecTimeUnlimtedMaxRetries(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 
 	processSpec := utils.CreateTestProcessSpec(env.colonyID)
 	processSpec.MaxExecTime = 1 // 1 second
 	processSpec.MaxRetries = -1 // Unlimted number of retries
 
-	for i := 0; i < 10; i++ {
+	numberOfProcesses := 10
+	var processes []*core.Process
+	for i := 0; i < numberOfProcesses; i++ {
 		_, err := client.SubmitProcessSpec(processSpec, env.runtimePrvKey)
 		assert.Nil(t, err)
-		_, err = client.AssignProcess(env.colonyID, env.runtimePrvKey)
+		process, err := client.AssignProcess(env.colonyID, env.runtimePrvKey)
 		assert.Nil(t, err)
+		processes = append(processes, process)
 	}
 
-	// Wait for the process to time out
-	time.Sleep(20 * time.Second)
+	waitForProcesses(t, server, processes, core.WAITING)
 
 	stat, err := client.ColonyStatistics(env.colonyID, env.runtimePrvKey)
 	assert.Nil(t, err)
-	assert.Equal(t, stat.WaitingProcesses, 10)
+	assert.Equal(t, stat.WaitingProcesses, numberOfProcesses)
 
 	// Assign again
-	for i := 0; i < 10; i++ {
+	for i := 0; i < numberOfProcesses; i++ {
 		_, err = client.AssignProcess(env.colonyID, env.runtimePrvKey)
 		assert.Nil(t, err)
 	}
 
 	stat, err = client.ColonyStatistics(env.colonyID, env.runtimePrvKey)
 	assert.Nil(t, err)
-	assert.Equal(t, stat.RunningProcesses, 10)
+	assert.Equal(t, stat.RunningProcesses, numberOfProcesses)
 
-	// Wait for the process to time out
-	time.Sleep(20 * time.Second)
+	waitForProcesses(t, server, processes, core.WAITING)
 
 	stat, err = client.ColonyStatistics(env.colonyID, env.runtimePrvKey)
 	assert.Nil(t, err)
-	assert.Equal(t, stat.WaitingProcesses, 10)
+	assert.Equal(t, stat.WaitingProcesses, numberOfProcesses)
 
 	server.Shutdown()
 	<-done
 }
 
-func TestMaxExecTimeMaxretries(t *testing.T) {
+func TestMaxExecTimeMaxRetries(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 
 	processSpec := utils.CreateTestProcessSpec(env.colonyID)
 	processSpec.MaxExecTime = 3 // 3 seconds
 	processSpec.MaxRetries = 1  // Max 1 retries
 
-	for i := 0; i < 10; i++ {
+	numberOfProcesses := 10
+	var processes []*core.Process
+	for i := 0; i < numberOfProcesses; i++ {
 		_, err := client.SubmitProcessSpec(processSpec, env.runtimePrvKey)
 		assert.Nil(t, err)
-		_, err = client.AssignProcess(env.colonyID, env.runtimePrvKey)
+		process, err := client.AssignProcess(env.colonyID, env.runtimePrvKey)
 		assert.Nil(t, err)
+		processes = append(processes, process)
 	}
 
-	// We should now have 10 running processes
-
-	// Wait for the process to time out
-	time.Sleep(20 * time.Second)
+	waitForProcesses(t, server, processes, core.WAITING)
 
 	// We should now have 10 waiting processes
 	stat, err := client.ColonyStatistics(env.colonyID, env.runtimePrvKey)
 	assert.Nil(t, err)
-	assert.Equal(t, stat.WaitingProcesses, 10)
+	assert.Equal(t, stat.WaitingProcesses, numberOfProcesses)
 
 	// Assign again
-	for i := 0; i < 10; i++ {
+	for i := 0; i < numberOfProcesses; i++ {
 		_, err = client.AssignProcess(env.colonyID, env.runtimePrvKey)
 		assert.Nil(t, err)
 	}
 
-	time.Sleep(2 * time.Second)
-
 	// We should now have 10 running processes
 	stat, err = client.ColonyStatistics(env.colonyID, env.runtimePrvKey)
 	assert.Nil(t, err)
-	assert.Equal(t, stat.RunningProcesses, 10)
+	assert.Equal(t, stat.RunningProcesses, numberOfProcesses)
 
-	// Wait for the process to time out
-	time.Sleep(20 * time.Second)
+	waitForProcesses(t, server, processes, core.FAILED)
 
 	// We should now have 10 failed processes since max retries reached
 	stat, err = client.ColonyStatistics(env.colonyID, env.runtimePrvKey)
 	assert.Nil(t, err)
-	assert.Equal(t, stat.FailedProcesses, 10) // NOTE Failed!!
+	assert.Equal(t, stat.FailedProcesses, numberOfProcesses) // NOTE Failed!!
 
 	server.Shutdown()
 	<-done

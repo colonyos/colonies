@@ -151,7 +151,7 @@ func (server *ColoniesServer) handleWSRequest(c *gin.Context) {
 				return
 			}
 
-			processSubcription := createProcessSubscription(wsConn, wsMsgType, msg.ProcessID, msg.Timeout, msg.State)
+			processSubcription := createProcessSubscription(wsConn, wsMsgType, msg.ProcessID, msg.RuntimeType, msg.Timeout, msg.State)
 			server.controller.subscribeProcess(recoveredID, processSubcription)
 		}
 	}

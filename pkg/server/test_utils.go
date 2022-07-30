@@ -1,7 +1,10 @@
 package server
 
 import (
+	"context"
+	"fmt"
 	"testing"
+	"time"
 
 	"github.com/colonyos/colonies/pkg/client"
 	"github.com/colonyos/colonies/pkg/core"
@@ -170,4 +173,23 @@ func generateDiamondtWorkflowSpec(colonyID string) *core.WorkflowSpec {
 	workflowSpec.AddProcessSpec(processSpec4)
 
 	return workflowSpec
+}
+
+func waitForProcesses(t *testing.T, server *ColoniesServer, processes []*core.Process, state int) {
+	ctx, cancelCtx := context.WithTimeout(context.Background(), 100*time.Second)
+	defer cancelCtx()
+	wait := make(chan error)
+	for _, process := range processes {
+		go func(process *core.Process) {
+			_, err := server.controller.eventHandler.waitForProcess(process.ProcessSpec.Conditions.RuntimeType, state, process.ID, ctx)
+			fmt.Println(process.ID, " state:", process.State)
+			wait <- err
+		}(process)
+	}
+
+	var err error
+	for i := 0; i < len(processes); i++ {
+		err = <-wait
+		assert.Nil(t, err)
+	}
 }

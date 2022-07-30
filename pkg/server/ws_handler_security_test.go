@@ -44,7 +44,7 @@ func TestSubscribeChangeStateProcessSecurity(t *testing.T) {
 	invalidPrivateKey, err := crypto.GeneratePrivateKey()
 	assert.Nil(t, err)
 
-	subscription, err := client.SubscribeProcess(core.GenerateRandomID(), core.WAITING, 100, invalidPrivateKey)
+	subscription, err := client.SubscribeProcess(core.GenerateRandomID(), "test_runtime_type", core.WAITING, 100, invalidPrivateKey)
 	assert.Nil(t, err)
 
 	waitForProcess := make(chan error)

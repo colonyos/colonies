@@ -170,8 +170,8 @@ func (client *ColoniesClient) SubscribeProcesses(runtimeType string, state int, 
 	return subscription, nil
 }
 
-func (client *ColoniesClient) SubscribeProcess(processID string, state int, timeout int, prvKey string) (*ProcessSubscription, error) {
-	msg := rpc.CreateSubscribeProcessMsg(processID, state, timeout)
+func (client *ColoniesClient) SubscribeProcess(processID string, runtimeType string, state int, timeout int, prvKey string) (*ProcessSubscription, error) {
+	msg := rpc.CreateSubscribeProcessMsg(processID, runtimeType, state, timeout)
 	jsonString, err := msg.ToJSON()
 	if err != nil {
 		return nil, err

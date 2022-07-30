@@ -55,7 +55,11 @@ func TestSubscribeChangeStateProcess(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, core.PENDING, addedProcess.State)
 
-	subscription, err := client.SubscribeProcess(addedProcess.ID, core.SUCCESS, 100, env.runtime2PrvKey)
+	subscription, err := client.SubscribeProcess(addedProcess.ID,
+		addedProcess.ProcessSpec.Conditions.RuntimeType,
+		core.SUCCESS,
+		100,
+		env.runtime2PrvKey)
 	assert.Nil(t, err)
 
 	waitForProcess := make(chan error)
@@ -105,7 +109,11 @@ func TestSubscribeChangeStateProcess2(t *testing.T) {
 
 	time.Sleep(1 * time.Second)
 
-	subscription, err := client.SubscribeProcess(addedProcess.ID, core.SUCCESS, 100, env.runtime2PrvKey)
+	subscription, err := client.SubscribeProcess(addedProcess.ID,
+		addedProcess.ProcessSpec.Conditions.RuntimeType,
+		core.SUCCESS,
+		100,
+		env.runtime2PrvKey)
 	assert.Nil(t, err)
 
 	waitForProcess := make(chan error)

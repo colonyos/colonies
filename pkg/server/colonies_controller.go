@@ -46,6 +46,7 @@ type coloniesController struct {
 	cmdQueue        chan *command
 	planner         planner.Planner
 	wsSubCtrl       *wsSubscriptionController
+	eventHandler    *eventHandler
 	stopFlag        bool
 	mutex           sync.Mutex
 }
@@ -55,9 +56,11 @@ func createColoniesController(db database.Database, server *ColoniesServer) *col
 	controller.server = server
 	controller.db = db
 	controller.generatorEngine = createGeneratorEngine(db, server)
-	controller.cmdQueue = make(chan *command)
-	controller.wsSubCtrl = createWSSubscriptionController()
+	controller.eventHandler = createEventHandler()
+	controller.wsSubCtrl = createWSSubscriptionController(controller.eventHandler)
 	controller.planner = basic.CreatePlanner()
+
+	controller.cmdQueue = make(chan *command)
 
 	go controller.masterWorker()
 	go controller.timeoutLoop()
@@ -179,7 +182,7 @@ func (controller *coloniesController) deleteGenerator(generatorID string) error 
 	return <-cmd.errorChan
 }
 
-func (controller *coloniesController) subscribeProcesses(runtimeID string, subscription *processesSubscription) error {
+func (controller *coloniesController) subscribeProcesses(runtimeID string, subscription *subscription) error {
 	cmd := &command{errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
 			controller.wsSubCtrl.addProcessesSubscriber(runtimeID, subscription)
@@ -190,7 +193,7 @@ func (controller *coloniesController) subscribeProcesses(runtimeID string, subsc
 	return <-cmd.errorChan
 }
 
-func (controller *coloniesController) subscribeProcess(runtimeID string, subscription *processSubscription) error {
+func (controller *coloniesController) subscribeProcess(runtimeID string, subscription *subscription) error {
 	cmd := &command{errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
 			process, err := controller.db.GetProcessByID(subscription.processID)
@@ -198,7 +201,7 @@ func (controller *coloniesController) subscribeProcess(runtimeID string, subscri
 				cmd.errorChan <- err
 			}
 
-			controller.wsSubCtrl.addProcessSubscriber(runtimeID, subscription, process)
+			controller.wsSubCtrl.addProcessSubscriber(runtimeID, process, subscription)
 			cmd.errorChan <- nil
 		}}
 	controller.cmdQueue <- cmd
@@ -434,7 +437,7 @@ func (controller *coloniesController) addProcess(process *core.Process) (*core.P
 				return
 			}
 
-			controller.wsSubCtrl.sendProcessesEvent(addedProcess)
+			controller.eventHandler.signal(addedProcess)
 			cmd.processReplyChan <- addedProcess
 		}}
 
@@ -898,7 +901,7 @@ func (controller *coloniesController) closeSuccessful(processID string) error {
 			}
 
 			cmd.errorChan <- nil
-			controller.wsSubCtrl.sendProcessChangeStateEvent(process)
+			controller.eventHandler.signal(process)
 		}}
 
 	controller.cmdQueue <- cmd
@@ -936,7 +939,7 @@ func (controller *coloniesController) closeFailed(processID string, errorMsg str
 			}
 
 			cmd.errorChan <- nil
-			controller.wsSubCtrl.sendProcessChangeStateEvent(process)
+			controller.eventHandler.signal(process)
 		}}
 
 	controller.cmdQueue <- cmd
@@ -1034,7 +1037,7 @@ func (controller *coloniesController) unassignRuntime(processID string) error {
 				return
 			}
 			cmd.errorChan <- controller.db.UnassignRuntime(process)
-			controller.wsSubCtrl.sendProcessesEvent(process)
+			controller.eventHandler.signal(process)
 		}}
 
 	controller.cmdQueue <- cmd
@@ -1241,4 +1244,5 @@ func (controller *coloniesController) stop() {
 	controller.stopFlag = true
 	controller.mutex.Unlock()
 	controller.cmdQueue <- &command{stop: true}
+	controller.eventHandler.stop()
 }

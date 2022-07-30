@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"time"
 
 	"github.com/colonyos/colonies/pkg/core"
@@ -9,131 +10,136 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-type processesSubscription struct {
-	wsConn              *websocket.Conn
-	wsMsgType           int
-	subscriptionTimeout time.Time
-	runtimeType         string
-	state               int
-}
-
-type processSubscription struct {
-	wsConn              *websocket.Conn
-	wsMsgType           int
-	subscriptionTimeout time.Time
-	processID           string
-	state               int
+type subscription struct {
+	wsConn      *websocket.Conn
+	wsMsgType   int
+	timeout     int
+	runtimeType string
+	state       int
+	processID   string
 }
 
 type wsSubscriptionController struct {
-	processesSubscribers map[string]*processesSubscription
-	processSubscribers   map[string]*processSubscription
+	eventHandler *eventHandler
 }
 
 // Used by ColoniesServer
-func createProcessSubscription(wsConn *websocket.Conn, wsMsgType int, processID string, timeout int, state int) *processSubscription {
-	return &processSubscription{wsConn: wsConn,
-		wsMsgType:           wsMsgType,
-		subscriptionTimeout: time.Now(),
-		processID:           processID,
-		state:               state}
+func createSubscription(wsConn *websocket.Conn, wsMsgType int, processID string, runtimeType string, state int, timeout int) *subscription {
+	return &subscription{wsConn: wsConn,
+		wsMsgType:   wsMsgType,
+		timeout:     timeout,
+		processID:   processID,
+		runtimeType: runtimeType,
+		state:       state}
 }
 
 // Used by ColoniesServer
-func createProcessesSubscription(wsConn *websocket.Conn, wsMsgType int, runtimeType string, timeout int, state int) *processesSubscription {
-	return &processesSubscription{wsConn: wsConn,
-		wsMsgType:           wsMsgType,
-		subscriptionTimeout: time.Now(),
-		runtimeType:         runtimeType,
-		state:               state}
+func createProcessesSubscription(wsConn *websocket.Conn, wsMsgType int, runtimeType string, timeout int, state int) *subscription {
+	return &subscription{wsConn: wsConn,
+		wsMsgType:   wsMsgType,
+		timeout:     timeout,
+		runtimeType: runtimeType,
+		state:       state}
+}
+
+func createProcessSubscription(wsConn *websocket.Conn, wsMsgType int, processID string, runtimeType string, timeout int, state int) *subscription {
+	return &subscription{wsConn: wsConn,
+		wsMsgType:   wsMsgType,
+		timeout:     timeout,
+		processID:   processID,
+		runtimeType: runtimeType,
+		state:       state}
 }
 
 // Used by coloniesController
-func createWSSubscriptionController() *wsSubscriptionController {
+func createWSSubscriptionController(eventHandler *eventHandler) *wsSubscriptionController {
 	wsSubCtrl := &wsSubscriptionController{}
-	wsSubCtrl.processesSubscribers = make(map[string]*processesSubscription)
-	wsSubCtrl.processSubscribers = make(map[string]*processSubscription)
+	wsSubCtrl.eventHandler = eventHandler
 
 	return wsSubCtrl
 }
 
-// Used by coloniesController
-func (wsSubCtrl *wsSubscriptionController) addProcessesSubscriber(runtimeID string, subscription *processesSubscription) {
-	wsSubCtrl.processesSubscribers[runtimeID] = subscription
+func (wsSubCtrl *wsSubscriptionController) sendProcessToWS(runtimeID string,
+	process *core.Process,
+	wsConn *websocket.Conn,
+	wsMsgType int,
+	cancel func()) {
+	jsonString, err := process.ToJSON()
+	if err != nil {
+		log.WithFields(log.Fields{
+			"RuntimeID":   runtimeID,
+			"RuntimeType": process.ProcessSpec.Conditions.RuntimeType,
+			"State":       process.State,
+			"Err":         err}).
+			Error("Failed to create Process JSON when subscribing to processes")
+		cancel()
+	}
+	rpcReplyMsg, err := rpc.CreateRPCReplyMsg(rpc.SubscribeProcessPayloadType, jsonString)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"RuntimeID":   runtimeID,
+			"RuntimeType": process.ProcessSpec.Conditions.RuntimeType,
+			"State":       process.State,
+			"Err":         err}).
+			Error("Failed to create RPCReplyMsg when subscribing to processes")
+		cancel()
+	}
+	rpcReplyJSONString, err := rpcReplyMsg.ToJSON()
+	if err != nil {
+		log.WithFields(log.Fields{
+			"RuntimeID":   runtimeID,
+			"RuntimeType": process.ProcessSpec.Conditions.RuntimeType,
+			"State":       process.State,
+			"Err":         err}).
+			Error("Failed to create RPCReplyMsg JSON when subscribing to processes")
+		cancel()
+	}
+	err = wsConn.WriteMessage(wsMsgType, []byte(rpcReplyJSONString))
+	if err != nil {
+		log.WithFields(log.Fields{
+			"RuntimeID":   runtimeID,
+			"RuntimeType": process.ProcessSpec.Conditions.RuntimeType,
+			"State":       process.State,
+			"Err":         err}).
+			Error("Failed to write RPCReplyMsg JSON to WS when subscribing to processes")
+		cancel()
+	}
 }
 
 // Used by coloniesController
-func (wsSubCtrl *wsSubscriptionController) addProcessSubscriber(runtimeID string, subscription *processSubscription, process *core.Process) {
-	wsSubCtrl.processSubscribers[runtimeID] = subscription
+func (wsSubCtrl *wsSubscriptionController) subscribe(runtimeID string, processID string, subscription *subscription) {
+	go func() {
+		ctx, cancelCtx := context.WithTimeout(context.Background(), time.Duration(subscription.timeout)*time.Second)
+		defer cancelCtx()
+
+		processChan, errChan := wsSubCtrl.eventHandler.subscribe(subscription.runtimeType, subscription.state, processID, ctx)
+		for {
+			select {
+			case err := <-errChan:
+				log.WithFields(log.Fields{
+					"RuntimeID":   runtimeID,
+					"RuntimeType": subscription.runtimeType,
+					"State":       subscription.state,
+					"Err":         err}).
+					Error("Failed to subscribe to processes")
+				return // This will kill the go-routine, also note all cancelCtx will result in an err to errChan
+			case process := <-processChan:
+				wsSubCtrl.sendProcessToWS(runtimeID, process, subscription.wsConn, subscription.wsMsgType, func() { cancelCtx() })
+			}
+		}
+	}()
+}
+
+func (wsSubCtrl *wsSubscriptionController) addProcessesSubscriber(runtimeID string, subscription *subscription) {
+	wsSubCtrl.subscribe(runtimeID, "", subscription)
+}
+
+func (wsSubCtrl *wsSubscriptionController) addProcessSubscriber(runtimeID string, process *core.Process, subscription *subscription) {
+	wsSubCtrl.subscribe(runtimeID, process.ID, subscription)
 
 	// Send an event immediately if process already have the state the subscriber is looking for
 	// See unittest TestSubscribeChangeStateProcess2 for more info
 	if process.State == subscription.state {
-		wsSubCtrl.wsWriteProcessChangeEvent(process, runtimeID, subscription)
-	}
-}
-
-// Used by coloniesController
-func (wsSubCtrl *wsSubscriptionController) sendProcessesEvent(process *core.Process) {
-	for runtimeID, subscription := range wsSubCtrl.processesSubscribers {
-		if subscription.runtimeType == process.ProcessSpec.Conditions.RuntimeType && subscription.state == process.State {
-			jsonString, err := process.ToJSON()
-			if err != nil {
-				log.WithFields(log.Fields{"RuntimeID": runtimeID, "Error": err}).Info("Failed to parse JSON when removing processes event subscription")
-				delete(wsSubCtrl.processesSubscribers, runtimeID)
-			}
-			rpcReplyMsg, err := rpc.CreateRPCReplyMsg(rpc.SubscribeProcessPayloadType, jsonString)
-			if err != nil {
-				log.WithFields(log.Fields{"RuntimeID": runtimeID, "Error": err}).Info("Failed to create RPC reply message when removing processes event subscription")
-				delete(wsSubCtrl.processSubscribers, runtimeID)
-			}
-
-			rpcReplyJSONString, err := rpcReplyMsg.ToJSON()
-			if err != nil {
-				log.WithFields(log.Fields{"RuntimeID": runtimeID, "Error": err}).Info("Failed to generate JSON when removing processes event subcription")
-				delete(wsSubCtrl.processSubscribers, runtimeID)
-			}
-			err = subscription.wsConn.WriteMessage(subscription.wsMsgType, []byte(rpcReplyJSONString))
-			if err != nil {
-				log.WithFields(log.Fields{"RuntimeID": runtimeID, "Error": err}).Info("Removing processes event subcription")
-				delete(wsSubCtrl.processesSubscribers, runtimeID)
-			}
-		}
-	}
-}
-
-// Used by coloniesController
-func (wsSubCtrl *wsSubscriptionController) sendProcessChangeStateEvent(process *core.Process) {
-	for runtimeID, subscription := range wsSubCtrl.processSubscribers {
-		if subscription.processID == process.ID && subscription.state == process.State {
-			wsSubCtrl.wsWriteProcessChangeEvent(process, runtimeID, subscription)
-		}
-	}
-}
-
-// Used by subscriptionController internally
-func (wsSubCtrl *wsSubscriptionController) wsWriteProcessChangeEvent(process *core.Process, runtimeID string, subscription *processSubscription) {
-	jsonString, err := process.ToJSON()
-	if err != nil {
-		log.WithFields(log.Fields{"RuntimeID": runtimeID, "Error": err}).Info("Failed to parse JSON when removing process event subscription")
-		delete(wsSubCtrl.processSubscribers, runtimeID)
-	}
-
-	rpcReplyMsg, err := rpc.CreateRPCReplyMsg(rpc.SubscribeProcessPayloadType, jsonString)
-	if err != nil {
-		log.WithFields(log.Fields{"RuntimeID": runtimeID, "Error": err}).Info("Failed to create RPC reply message when removing process event subscription")
-		delete(wsSubCtrl.processSubscribers, runtimeID)
-	}
-
-	rpcReplyJSONString, err := rpcReplyMsg.ToJSON()
-	if err != nil {
-		log.WithFields(log.Fields{"RuntimeID": runtimeID, "Error": err}).Info("Failed to generate JSON when removing process event subcription")
-		delete(wsSubCtrl.processSubscribers, runtimeID)
-	}
-
-	err = subscription.wsConn.WriteMessage(subscription.wsMsgType, []byte(rpcReplyJSONString))
-	if err != nil {
-		log.WithFields(log.Fields{"RuntimeID": runtimeID, "Error": err}).Info("Removing process event subcription")
-		delete(wsSubCtrl.processesSubscribers, runtimeID)
+		wsSubCtrl.sendProcessToWS(runtimeID, process, subscription.wsConn, subscription.wsMsgType, func() {})
 	}
 }
