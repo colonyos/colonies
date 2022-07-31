@@ -2,14 +2,13 @@ package server
 
 import (
 	"context"
-	"fmt"
 	"testing"
 	"time"
 
 	"github.com/colonyos/colonies/pkg/client"
+	"github.com/colonyos/colonies/pkg/cluster"
 	"github.com/colonyos/colonies/pkg/core"
 	"github.com/colonyos/colonies/pkg/database/postgresql"
-	"github.com/colonyos/colonies/pkg/etcd"
 	"github.com/colonyos/colonies/pkg/security/crypto"
 	"github.com/colonyos/colonies/pkg/utils"
 	"github.com/stretchr/testify/assert"
@@ -118,10 +117,10 @@ func prepareTests(t *testing.T) (*client.ColoniesClient, *ColoniesServer, string
 	serverID, err := crypto.GenerateID(serverPrvKey)
 	assert.Nil(t, err)
 
-	node := etcd.Node{Name: "etcd", Host: "localhost", ClientPort: 24100, PeerPort: 23100}
-	cluster := etcd.Cluster{}
-	cluster.AddNode(node)
-	server := CreateColoniesServer(db, TESTPORT, serverID, EnableTLS, "../../cert/key.pem", "../../cert/cert.pem", debug, node, cluster, "/tmp/colonies/etcd")
+	node := cluster.Node{Name: "etcd", Host: "localhost", EtcdClientPort: 24100, EtcdPeerPort: 23100, RelayPort: 25100, APIPort: TESTPORT}
+	clusterConfig := cluster.Config{}
+	clusterConfig.AddNode(node)
+	server := CreateColoniesServer(db, TESTPORT, serverID, EnableTLS, "../../cert/key.pem", "../../cert/cert.pem", debug, node, clusterConfig, "/tmp/colonies/etcd")
 
 	done := make(chan bool)
 	go func() {
@@ -182,7 +181,6 @@ func waitForProcesses(t *testing.T, server *ColoniesServer, processes []*core.Pr
 	for _, process := range processes {
 		go func(process *core.Process) {
 			_, err := server.controller.eventHandler.waitForProcess(process.ProcessSpec.Conditions.RuntimeType, state, process.ID, ctx)
-			fmt.Println(process.ID, " state:", process.State)
 			wait <- err
 		}(process)
 	}

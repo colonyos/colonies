@@ -76,6 +76,7 @@ var EtcdClientPort int
 var EtcdPeerPort int
 var EtcdCluster []string
 var EtcdDataDir string
+var RelayPort int
 var Latest bool
 
 func init() {
