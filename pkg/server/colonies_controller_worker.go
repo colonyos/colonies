@@ -6,21 +6,36 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+func (controller *coloniesController) isLeader() bool {
+	areWeLeader := controller.etcdServer.Leader() == controller.thisNode.Name
+	if areWeLeader && !controller.leader {
+		log.Info("ColoniesServer became leader")
+		controller.leader = true
+	}
+
+	if !areWeLeader && controller.leader {
+		log.Info("ColoniesServer is no longer a leader")
+		controller.leader = false
+	}
+
+	return areWeLeader
+}
+
 func (controller *coloniesController) generatorTriggerLoop() {
 	for {
 		time.Sleep(TIMEOUT_GENERATOR_TRIGGER_INTERVALL * time.Second)
 
-		controller.mutex.Lock()
+		controller.stopMutex.Lock()
 		if controller.stopFlag {
 			return
 		}
-		controller.mutex.Unlock()
+		controller.stopMutex.Unlock()
 
 		if controller.server != nil {
 			var isLeader bool
-			controller.server.mutex.Lock()
-			isLeader = controller.server.isLeader()
-			controller.server.mutex.Unlock()
+			controller.leaderMutex.Lock()
+			isLeader = controller.isLeader()
+			controller.leaderMutex.Unlock()
 
 			if isLeader {
 				if controller.generatorEngine != nil {
@@ -37,17 +52,17 @@ func (controller *coloniesController) generatorSyncLoop() {
 	for {
 		time.Sleep(TIMEOUT_GENERATOR_SYNC_INTERVALL * time.Second)
 
-		controller.mutex.Lock()
+		controller.stopMutex.Lock()
 		if controller.stopFlag {
 			return
 		}
-		controller.mutex.Unlock()
+		controller.stopMutex.Unlock()
 
 		if controller.server != nil {
 			var isLeader bool
-			controller.server.mutex.Lock()
-			isLeader = controller.server.isLeader()
-			controller.server.mutex.Unlock()
+			controller.leaderMutex.Lock()
+			isLeader = controller.isLeader()
+			controller.leaderMutex.Unlock()
 
 			if isLeader {
 				if controller.generatorEngine != nil {
@@ -64,11 +79,11 @@ func (controller *coloniesController) timeoutLoop() {
 	for {
 		time.Sleep(TIMEOUT_RELEASE_INTERVALL * time.Second)
 
-		controller.mutex.Lock()
+		controller.stopMutex.Lock()
 		if controller.stopFlag {
 			return
 		}
-		controller.mutex.Unlock()
+		controller.stopMutex.Unlock()
 
 		processes, err := controller.db.FindAllRunningProcesses()
 		if err != nil {

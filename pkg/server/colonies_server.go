@@ -5,10 +5,8 @@ import (
 	"errors"
 	"io/ioutil"
 	"net/http"
-	"os"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/colonyos/colonies/pkg/cluster"
@@ -36,11 +34,6 @@ type ColoniesServer struct {
 	crypto            security.Crypto
 	validator         security.Validator
 	db                database.Database
-	mutex             sync.Mutex
-	thisNode          cluster.Node
-	clusterConfig     cluster.Config
-	etcdServer        *cluster.EtcdServer
-	leader            bool
 }
 
 func CreateColoniesServer(db database.Database,
@@ -71,15 +64,8 @@ func CreateColoniesServer(db database.Database,
 		Handler: server.ginHandler,
 	}
 
-	server.thisNode = thisNode
-	server.clusterConfig = clusterConfig
-	server.etcdServer = cluster.CreateEtcdServer(server.thisNode, server.clusterConfig, etcdDataPath)
-	server.etcdServer.Start()
-	server.etcdServer.WaitToStart()
-	server.leader = false
-
 	server.httpServer = httpServer
-	server.controller = createColoniesController(db, server)
+	server.controller = createColoniesController(db, thisNode, clusterConfig, etcdDataPath)
 	server.serverID = serverID
 	server.tls = tls
 	server.port = port
@@ -91,21 +77,6 @@ func CreateColoniesServer(db database.Database,
 	server.setupRoutes()
 
 	return server
-}
-
-func (server *ColoniesServer) isLeader() bool {
-	areWeLeader := server.etcdServer.Leader() == server.thisNode.Name
-	if areWeLeader && !server.leader {
-		log.Info("Colonies server became leader")
-		server.leader = true
-	}
-
-	if !areWeLeader && server.leader {
-		log.Info("Colonies server is no longer a leader")
-		server.leader = false
-	}
-
-	return areWeLeader
 }
 
 func (server *ColoniesServer) setupRoutes() {
@@ -316,16 +287,13 @@ func (server *ColoniesServer) ServeForever() error {
 
 func (server *ColoniesServer) Shutdown() {
 	server.controller.stop()
-	server.etcdServer.Stop()
-	server.etcdServer.WaitToStop()
-	os.RemoveAll(server.etcdServer.StorageDir())
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	defer server.db.Close()
 
 	if err := server.httpServer.Shutdown(ctx); err != nil {
-		log.WithFields(log.Fields{"Error": err}).Warning("Colonies server forced to shutdown")
+		log.WithFields(log.Fields{"Error": err}).Warning("ColoniesServer forced to shutdown")
 	}
 
 }

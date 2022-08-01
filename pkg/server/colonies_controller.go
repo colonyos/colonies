@@ -2,10 +2,12 @@ package server
 
 import (
 	"errors"
+	"os"
 	"strconv"
 	"sync"
 	"time"
 
+	"github.com/colonyos/colonies/pkg/cluster"
 	"github.com/colonyos/colonies/pkg/core"
 	"github.com/colonyos/colonies/pkg/database"
 	"github.com/colonyos/colonies/pkg/planner"
@@ -46,17 +48,31 @@ type coloniesController struct {
 	cmdQueue        chan *command
 	planner         planner.Planner
 	wsSubCtrl       *wsSubscriptionController
+	relayServer     *cluster.RelayServer
 	eventHandler    *eventHandler
 	stopFlag        bool
-	mutex           sync.Mutex
+	stopMutex       sync.Mutex
+	leaderMutex     sync.Mutex
+	thisNode        cluster.Node
+	clusterConfig   cluster.Config
+	etcdServer      *cluster.EtcdServer
+	leader          bool
 }
 
-func createColoniesController(db database.Database, server *ColoniesServer) *coloniesController {
+func createColoniesController(db database.Database, thisNode cluster.Node, clusterConfig cluster.Config, etcdDataPath string) *coloniesController {
 	controller := &coloniesController{}
-	controller.server = server
 	controller.db = db
-	controller.generatorEngine = createGeneratorEngine(db, server)
-	controller.eventHandler = createEventHandler()
+
+	controller.thisNode = thisNode
+	controller.clusterConfig = clusterConfig
+	controller.etcdServer = cluster.CreateEtcdServer(controller.thisNode, controller.clusterConfig, etcdDataPath)
+	controller.etcdServer.Start()
+	controller.etcdServer.WaitToStart()
+	controller.leader = false
+
+	controller.generatorEngine = createGeneratorEngine(db, controller)
+	controller.relayServer = cluster.CreateRelayServer(controller.thisNode, controller.clusterConfig)
+	controller.eventHandler = createEventHandler(controller.relayServer)
 	controller.wsSubCtrl = createWSSubscriptionController(controller.eventHandler)
 	controller.planner = basic.CreatePlanner()
 
@@ -640,11 +656,78 @@ func (controller *coloniesController) updateProcessGraph(graph *core.ProcessGrap
 	return graph.UpdateProcessIDs()
 }
 
+func (controller *coloniesController) createProcessGraph(workflowSpec *core.WorkflowSpec) (*core.ProcessGraph, error) {
+	processgraph, err := core.CreateProcessGraph(workflowSpec.ColonyID)
+
+	// Create all processes
+	processMap := make(map[string]*core.Process)
+	var rootProcesses []*core.Process
+	for _, processSpec := range workflowSpec.ProcessSpecs {
+		if processSpec.MaxExecTime == 0 {
+			log.WithFields(log.Fields{"Name": processSpec.Name}).Warning("MaxExecTime was set to 0, resetting to -1")
+			processSpec.MaxExecTime = -1
+		}
+		process := core.CreateProcess(&processSpec)
+		log.WithFields(log.Fields{"ProcessID": process.ID, "MaxExecTime": process.ProcessSpec.MaxExecTime, "MaxRetries": process.ProcessSpec.MaxRetries}).Info("Creating new process")
+		if len(processSpec.Conditions.Dependencies) == 0 {
+			// The process is a root process, let it start immediately
+			process.WaitForParents = false
+			rootProcesses = append(rootProcesses, process)
+			processgraph.AddRoot(process.ID)
+		} else {
+			// The process has to wait for its parents
+			process.WaitForParents = true
+		}
+		process.ProcessGraphID = processgraph.ID
+		process.ProcessSpec.Conditions.ColonyID = workflowSpec.ColonyID
+		processMap[process.ProcessSpec.Name] = process
+	}
+
+	err = controller.db.AddProcessGraph(processgraph)
+	if err != nil {
+		msg := "Failed to submit workflow, failed to add processgraph"
+		log.WithFields(log.Fields{"Error": err}).Info(msg)
+		return nil, errors.New(msg)
+	}
+
+	log.WithFields(log.Fields{"ProcessGraphID": processgraph.ID}).Info("Submitting workflow")
+
+	// Create dependencies
+	for _, process := range processMap {
+		for _, dependsOn := range process.ProcessSpec.Conditions.Dependencies {
+			parentProcess := processMap[dependsOn]
+			if parentProcess == nil {
+				msg := "Failed to submit workflow, invalid dependencies, are you depending on a process spec name that does not exits?"
+				log.WithFields(log.Fields{"Error": err}).Info(msg)
+				return nil, errors.New(msg)
+			}
+			process.AddParent(parentProcess.ID)
+			parentProcess.AddChild(process.ID)
+		}
+	}
+
+	// Now, start all processes
+	for _, process := range processMap {
+		// This function is called from the controller, so it OK to use the database layer directly, in fact
+		// we will cause a deadlock if we call controller.addProcess
+		_, err := controller.addProcessAndSetWaitingDeadline(process)
+		log.WithFields(log.Fields{"ProcessID": process.ID}).Info("Submitting process")
+
+		if err != nil {
+			msg := "Failed to submit workflow, failed to add process"
+			log.WithFields(log.Fields{"Error": err}).Info(msg)
+			return nil, errors.New(msg)
+		}
+	}
+
+	return processgraph, nil
+}
+
 func (controller *coloniesController) submitWorkflowSpec(workflowSpec *core.WorkflowSpec) (*core.ProcessGraph, error) {
 	cmd := &command{processGraphReplyChan: make(chan *core.ProcessGraph, 1),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
-			addedProcessGraph, err := controller.server.createProcessGraph(workflowSpec)
+			addedProcessGraph, err := controller.createProcessGraph(workflowSpec)
 			if err != nil {
 				cmd.errorChan <- err
 				return
@@ -1240,9 +1323,13 @@ func (controller *coloniesController) getAttribute(attributeID string) (core.Att
 }
 
 func (controller *coloniesController) stop() {
-	controller.mutex.Lock()
+	controller.stopMutex.Lock()
 	controller.stopFlag = true
-	controller.mutex.Unlock()
+	controller.stopMutex.Unlock()
 	controller.cmdQueue <- &command{stop: true}
 	controller.eventHandler.stop()
+	controller.relayServer.Shutdown()
+	controller.etcdServer.Stop()
+	controller.etcdServer.WaitToStop()
+	os.RemoveAll(controller.etcdServer.StorageDir())
 }

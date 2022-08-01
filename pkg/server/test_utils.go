@@ -8,6 +8,7 @@ import (
 	"github.com/colonyos/colonies/pkg/client"
 	"github.com/colonyos/colonies/pkg/cluster"
 	"github.com/colonyos/colonies/pkg/core"
+	"github.com/colonyos/colonies/pkg/database"
 	"github.com/colonyos/colonies/pkg/database/postgresql"
 	"github.com/colonyos/colonies/pkg/security/crypto"
 	"github.com/colonyos/colonies/pkg/utils"
@@ -130,6 +131,20 @@ func prepareTests(t *testing.T) (*client.ColoniesClient, *ColoniesServer, string
 	}()
 
 	return client, server, serverPrvKey, done
+}
+
+func createTestColoniesController(db database.Database) *coloniesController {
+	node := cluster.Node{Name: "etcd", Host: "localhost", EtcdClientPort: 24100, EtcdPeerPort: 23100, RelayPort: 25100, APIPort: TESTPORT}
+	clusterConfig := cluster.Config{}
+	clusterConfig.AddNode(node)
+	return createColoniesController(db, node, clusterConfig, "/tmp/colonies/etcd")
+}
+
+func createTestColoniesController2(db database.Database) *coloniesController {
+	node := cluster.Node{Name: "etcd2", Host: "localhost", EtcdClientPort: 26100, EtcdPeerPort: 27100, RelayPort: 28100, APIPort: TESTPORT}
+	clusterConfig := cluster.Config{}
+	clusterConfig.AddNode(node)
+	return createColoniesController(db, node, clusterConfig, "/tmp/colonies/etcd")
 }
 
 func generateDiamondtWorkflowSpec(colonyID string) *core.WorkflowSpec {

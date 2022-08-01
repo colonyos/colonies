@@ -1,10 +1,12 @@
 package cluster
 
 import (
+	"context"
 	"errors"
 	"io/ioutil"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -88,4 +90,14 @@ func (server *RelayServer) Broadcast(msg []byte) error {
 
 func (server *RelayServer) Receive() chan []byte {
 	return server.incoming
+}
+
+func (server *RelayServer) Shutdown() { // TODO: unittest
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	if err := server.httpServer.Shutdown(ctx); err != nil {
+		log.WithFields(log.Fields{"Error": err}).Warning("RelayServer forced to shutdown")
+	}
+
 }

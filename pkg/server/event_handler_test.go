@@ -23,7 +23,7 @@ func TestEventHandler(t *testing.T) {
 	ctx, cancelCtx := context.WithTimeout(context.Background(), 3000*time.Millisecond)
 	defer cancelCtx()
 
-	handler := createEventHandler()
+	handler := createEventHandler(nil)
 	retChan := make(chan retValues)
 	go func() {
 		process, err := handler.waitForProcess("test_runtime_type", core.WAITING, "", ctx)
@@ -46,7 +46,7 @@ func TestEventHandlerTimeout(t *testing.T) {
 	ctx, cancelCtx := context.WithTimeout(context.Background(), 1*time.Millisecond)
 	defer cancelCtx()
 
-	handler := createEventHandler()
+	handler := createEventHandler(nil)
 	retChan := make(chan retValues)
 	go func() {
 		process, err := handler.waitForProcess("test_runtime_type", core.WAITING, "", ctx)
@@ -61,7 +61,7 @@ func TestEventHandlerTimeout(t *testing.T) {
 }
 
 func TestEventHandlerStop(t *testing.T) {
-	handler := createEventHandler()
+	handler := createEventHandler(nil)
 
 	handler.stop()
 
@@ -79,7 +79,7 @@ func TestEventHandlerTimeout2(t *testing.T) {
 	ctx, cancelCtx := context.WithTimeout(context.Background(), 3000*time.Millisecond)
 	defer cancelCtx()
 
-	handler := createEventHandler()
+	handler := createEventHandler(nil)
 	retChan := make(chan retValues)
 	go func() {
 		process, err := handler.waitForProcess("test_runtime_type", core.WAITING, "", ctx)
@@ -104,7 +104,7 @@ func TestEventHandlerTimeout3(t *testing.T) {
 	ctx, cancelCtx := context.WithTimeout(context.Background(), 3000*time.Millisecond)
 	defer cancelCtx()
 
-	handler := createEventHandler()
+	handler := createEventHandler(nil)
 	retChan := make(chan retValues)
 	go func() {
 		process, err := handler.waitForProcess("test_runtime_type", core.WAITING, "", ctx)
@@ -133,7 +133,7 @@ func TestEventHandlerMany(t *testing.T) {
 	ctx, cancelCtx := context.WithTimeout(context.Background(), 2000*time.Millisecond)
 	defer cancelCtx()
 
-	handler := createEventHandler()
+	handler := createEventHandler(nil)
 
 	var retChans []chan retValues
 
@@ -176,7 +176,7 @@ func TestEventHandlerUpdate(t *testing.T) {
 	ctx, cancelCtx := context.WithTimeout(context.Background(), 3000*time.Millisecond)
 	defer cancelCtx()
 
-	handler := createEventHandler()
+	handler := createEventHandler(nil)
 	retChan := make(chan retValues)
 	go func() {
 		process, err := handler.waitForProcess("test_runtime_type", core.WAITING, process.ID, ctx)
@@ -203,7 +203,7 @@ func TestEventHandlerUpdateTimeout(t *testing.T) {
 	ctx, cancelCtx := context.WithTimeout(context.Background(), 3000*time.Millisecond)
 	defer cancelCtx()
 
-	handler := createEventHandler()
+	handler := createEventHandler(nil)
 	retChan := make(chan retValues)
 	go func() {
 		// Wait for another process with random ID, i.e. we will time out
@@ -230,7 +230,7 @@ func TestEventHandlerSubscribe(t *testing.T) {
 	defer cancelCtx()
 
 	retChan := make(chan retValues)
-	handler := createEventHandler()
+	handler := createEventHandler(nil)
 	processChan, errChan := handler.subscribe("test_runtime_type", core.WAITING, "", ctx)
 	go func() {
 		select {
@@ -254,7 +254,7 @@ func TestEventHandlerSubscribeCancel(t *testing.T) {
 	ctx, cancelCtx := context.WithTimeout(context.Background(), 3000*time.Millisecond)
 
 	retChan := make(chan retValues)
-	handler := createEventHandler()
+	handler := createEventHandler(nil)
 	processChan, errChan := handler.subscribe("test_runtime_type", core.WAITING, "", ctx) // Subscribe to all processes
 	go func() {
 		select {
@@ -278,7 +278,7 @@ func TestEventHandlerSubscribeTimeout(t *testing.T) {
 	defer cancelCtx()
 
 	retChan := make(chan retValues)
-	handler := createEventHandler()
+	handler := createEventHandler(nil)
 	processChan, errChan := handler.subscribe("test_runtime_type", core.WAITING, "", ctx) // Subscribe to all processes
 	go func() {
 		select {
@@ -301,7 +301,7 @@ func TestEventHandlerSubscribeProcessID(t *testing.T) {
 	defer cancelCtx()
 
 	retChan := make(chan retValues)
-	handler := createEventHandler()
+	handler := createEventHandler(nil)
 	processChan, errChan := handler.subscribe("test_runtime_type", core.WAITING, process.ID, ctx)
 	go func() {
 		select {
@@ -326,7 +326,7 @@ func TestEventHandlerSubscribeProcessIDFailed(t *testing.T) {
 	defer cancelCtx()
 
 	retChan := make(chan retValues)
-	handler := createEventHandler()
+	handler := createEventHandler(nil)
 	processChan, errChan := handler.subscribe("test_runtime_type", core.WAITING, core.GenerateRandomID(), ctx)
 	go func() {
 		select {

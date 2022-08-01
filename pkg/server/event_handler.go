@@ -6,16 +6,18 @@ import (
 	"strconv"
 	"sync"
 
+	"github.com/colonyos/colonies/pkg/cluster"
 	"github.com/colonyos/colonies/pkg/core"
 )
 
 type eventHandler struct {
-	listeners  map[string]map[string]chan *core.Process
-	processIDs map[string]string
-	msgQueue   chan *message
-	idCounter  int
-	stopped    bool
-	mutex      sync.Mutex
+	listeners   map[string]map[string]chan *core.Process
+	processIDs  map[string]string
+	msgQueue    chan *message
+	idCounter   int
+	stopped     bool
+	mutex       sync.Mutex
+	relayServer *cluster.RelayServer
 }
 
 type message struct {
@@ -33,11 +35,12 @@ type replyMessage struct {
 	stopped      bool // Just for testing purposes
 }
 
-func createEventHandler() *eventHandler {
+func createEventHandler(relayServer *cluster.RelayServer) *eventHandler {
 	handler := &eventHandler{}
 	handler.listeners = make(map[string]map[string]chan *core.Process)
 	handler.processIDs = make(map[string]string)
 	handler.msgQueue = make(chan *message)
+	handler.relayServer = relayServer
 
 	handler.mutex.Lock()
 	handler.stopped = true
