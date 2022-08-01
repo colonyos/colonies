@@ -396,9 +396,10 @@ func (client *ColoniesClient) SubmitProcessSpec(processSpec *core.ProcessSpec, p
 	return core.ConvertJSONToProcess(respBodyString)
 }
 
-func (client *ColoniesClient) AssignProcess(colonyID string, prvKey string) (*core.Process, error) {
+func (client *ColoniesClient) AssignProcess(colonyID string, timeout int, prvKey string) (*core.Process, error) {
 	msg := rpc.CreateAssignProcessMsg(colonyID)
 	msg.Latest = false
+	msg.Timeout = timeout
 	jsonString, err := msg.ToJSON()
 	if err != nil {
 		return nil, err
@@ -412,9 +413,10 @@ func (client *ColoniesClient) AssignProcess(colonyID string, prvKey string) (*co
 	return core.ConvertJSONToProcess(respBodyString)
 }
 
-func (client *ColoniesClient) AssignLatestProcess(colonyID string, prvKey string) (*core.Process, error) {
+func (client *ColoniesClient) AssignLatestProcess(colonyID string, timeout int, prvKey string) (*core.Process, error) {
 	msg := rpc.CreateAssignProcessMsg(colonyID)
 	msg.Latest = true
+	msg.Timeout = timeout
 	jsonString, err := msg.ToJSON()
 	if err != nil {
 		return nil, err

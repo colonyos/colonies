@@ -8,16 +8,19 @@ import (
 
 	"github.com/colonyos/colonies/pkg/cluster"
 	"github.com/colonyos/colonies/pkg/core"
+	log "github.com/sirupsen/logrus"
 )
 
 type eventHandler struct {
-	listeners   map[string]map[string]chan *core.Process
-	processIDs  map[string]string
-	msgQueue    chan *message
-	idCounter   int
-	stopped     bool
-	mutex       sync.Mutex
-	relayServer *cluster.RelayServer
+	listeners         map[string]map[string]chan *core.Process
+	processIDs        map[string]string
+	msgQueue          chan *message
+	idCounter         int
+	stopped           bool
+	mutex             sync.Mutex
+	relayServer       *cluster.RelayServer
+	relayChan         chan []byte
+	stopRelayListener chan struct{}
 }
 
 type message struct {
@@ -49,7 +52,30 @@ func createEventHandler(relayServer *cluster.RelayServer) *eventHandler {
 	// Start master worker
 	go handler.masterWorker()
 
+	if relayServer != nil {
+		handler.stopRelayListener = make(chan struct{})
+		handler.relayChan = relayServer.Receive()
+		go handler.relayListener()
+	}
+
 	return handler
+}
+
+func (handler *eventHandler) relayListener() {
+	for {
+		select {
+		case msg := <-handler.relayChan:
+			process, err := core.ConvertJSONToProcess(string(msg))
+			if err != nil {
+				log.WithFields(log.Fields{"Error": err}).Warning("relayListener received invalid process JSON")
+			} else {
+				handler.signal(process)
+			}
+		case <-handler.stopRelayListener:
+			return
+		}
+	}
+
 }
 
 func (handler *eventHandler) masterWorker() {
@@ -105,7 +131,7 @@ func (handler *eventHandler) unregister(runtimeType string, state int, listenerI
 	}
 }
 
-func (handler *eventHandler) signal(process *core.Process) {
+func (handler *eventHandler) signal(process *core.Process) error {
 	msg := &message{reply: make(chan replyMessage, 1), handler: func(msg *message) {
 		t := handler.target(process.ProcessSpec.Conditions.RuntimeType, process.State)
 		if _, ok := handler.listeners[t]; ok {
@@ -120,7 +146,19 @@ func (handler *eventHandler) signal(process *core.Process) {
 			}
 		}
 	}}
+
 	handler.msgQueue <- msg // Send the message to the masterworker
+
+	// broadcast the msg to the relayServer
+	if handler.relayServer != nil {
+		jsonStr, err := process.ToJSON()
+		if err != nil {
+			return err
+		}
+		handler.relayServer.Broadcast([]byte(jsonStr))
+	}
+
+	return nil
 }
 
 func (handler *eventHandler) waitForProcess(runtimeType string, state int, processID string, ctx context.Context) (*core.Process, error) {
@@ -190,6 +228,10 @@ func (handler *eventHandler) subscribe(runtimeType string, state int, processID 
 
 func (handler *eventHandler) stop() {
 	handler.msgQueue <- &message{stop: true}
+	if handler.relayServer != nil {
+		handler.stopRelayListener <- struct{}{}
+		handler.relayServer.Shutdown()
+	}
 }
 
 func (handler *eventHandler) numberOfListeners(runtimeType string, state int) (int, int, int) { // Just for testing purposes

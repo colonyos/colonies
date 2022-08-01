@@ -78,6 +78,7 @@ var EtcdCluster []string
 var EtcdDataDir string
 var RelayPort int
 var Latest bool
+var Timeout int
 
 func init() {
 	rootCmd.PersistentFlags().BoolVarP(&Verbose, "verbose", "v", false, "verbose output")

@@ -20,6 +20,10 @@ func TestRelayServer(t *testing.T) {
 	relayServer2 := CreateRelayServer(node2, config)
 	relayServer3 := CreateRelayServer(node3, config)
 
+	defer relayServer1.Shutdown()
+	defer relayServer2.Shutdown()
+	defer relayServer3.Shutdown()
+
 	incomingRelayServer1 := relayServer1.Receive()
 	incomingRelayServer2 := relayServer2.Receive()
 	incomingRelayServer3 := relayServer3.Receive()

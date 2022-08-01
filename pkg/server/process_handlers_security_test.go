@@ -52,23 +52,23 @@ func TestAssignProcessSecurity(t *testing.T) {
 	assert.Nil(t, err)
 
 	// Now try to assign a process from colony2 using runtime1 credentials
-	_, err = client.AssignProcess(env.colony2ID, env.runtime1PrvKey)
+	_, err = client.AssignProcess(env.colony2ID, -1, env.runtime1PrvKey)
 	assert.NotNil(t, err) // Should not work
 
 	// Now try to assign a process from colony2 using runtime1 credentials
-	_, err = client.AssignProcess(env.colony1ID, env.runtime2PrvKey)
+	_, err = client.AssignProcess(env.colony1ID, -1, env.runtime2PrvKey)
 	assert.NotNil(t, err) // Should not work
 
 	// Now try to assign a process from colony2 using runtime1 credentials
-	_, err = client.AssignProcess(env.colony1ID, env.runtime1PrvKey)
+	_, err = client.AssignProcess(env.colony1ID, -1, env.runtime1PrvKey)
 	assert.Nil(t, err) // Should work
 
 	// Now try to assign a process from colony2 using colony1 credentials
-	_, err = client.AssignProcess(env.colony1ID, env.colony1PrvKey)
+	_, err = client.AssignProcess(env.colony1ID, -1, env.colony1PrvKey)
 	assert.NotNil(t, err) // Should not work, only runtimes are allowed
 
 	// Now try to assign a process from colony2 using colony1 credentials
-	_, err = client.AssignProcess(env.colony1ID, env.colony2PrvKey)
+	_, err = client.AssignProcess(env.colony1ID, -1, env.colony2PrvKey)
 	assert.NotNil(t, err) // Should not work, only runtimes are allowed, also invalid credentials are used
 
 	server.Shutdown()
@@ -87,7 +87,7 @@ func TestGetProcessHistForColonySecurity(t *testing.T) {
 		processSpec := utils.CreateTestProcessSpec(env.colony1ID)
 		_, err := client.SubmitProcessSpec(processSpec, env.runtime1PrvKey)
 		assert.Nil(t, err)
-		_, err = client.AssignProcess(env.colony1ID, env.runtime1PrvKey)
+		_, err = client.AssignProcess(env.colony1ID, -1, env.runtime1PrvKey)
 		assert.Nil(t, err)
 	}
 
@@ -119,7 +119,7 @@ func TestGetProcessHistForRuntimeSecurity(t *testing.T) {
 		processSpec := utils.CreateTestProcessSpec(env.colony1ID)
 		_, err := client.SubmitProcessSpec(processSpec, env.runtime1PrvKey)
 		assert.Nil(t, err)
-		_, err = client.AssignProcess(env.colony1ID, env.runtime1PrvKey)
+		_, err = client.AssignProcess(env.colony1ID, -1, env.runtime1PrvKey)
 		assert.Nil(t, err)
 	}
 
@@ -151,7 +151,7 @@ func TestGetWaitingProcessesSecurity(t *testing.T) {
 		processSpec := utils.CreateTestProcessSpec(env.colony1ID)
 		_, err := client.SubmitProcessSpec(processSpec, env.runtime1PrvKey)
 		assert.Nil(t, err)
-		_, err = client.AssignProcess(env.colony1ID, env.runtime1PrvKey)
+		_, err = client.AssignProcess(env.colony1ID, -1, env.runtime1PrvKey)
 		assert.Nil(t, err)
 	}
 
@@ -201,7 +201,7 @@ func TestGetSuccessfulProcessesSecurity(t *testing.T) {
 		processSpec := utils.CreateTestProcessSpec(env.colony1ID)
 		_, err := client.SubmitProcessSpec(processSpec, env.runtime1PrvKey)
 		assert.Nil(t, err)
-		processFromServer, err := client.AssignProcess(env.colony1ID, env.runtime1PrvKey)
+		processFromServer, err := client.AssignProcess(env.colony1ID, -1, env.runtime1PrvKey)
 		assert.Nil(t, err)
 		err = client.CloseSuccessful(processFromServer.ID, env.runtime1PrvKey)
 		assert.Nil(t, err)
@@ -229,7 +229,7 @@ func TestGetFailedProcessesSecurity(t *testing.T) {
 		processSpec := utils.CreateTestProcessSpec(env.colony1ID)
 		_, err := client.SubmitProcessSpec(processSpec, env.runtime1PrvKey)
 		assert.Nil(t, err)
-		processFromServer, err := client.AssignProcess(env.colony1ID, env.runtime1PrvKey)
+		processFromServer, err := client.AssignProcess(env.colony1ID, -1, env.runtime1PrvKey)
 		assert.Nil(t, err)
 		err = client.CloseFailed(processFromServer.ID, "error", env.runtime1PrvKey)
 		assert.Nil(t, err)
@@ -330,7 +330,7 @@ func TestCloseSuccessfulSecurity(t *testing.T) {
 	processSpec := utils.CreateTestProcessSpec(env.colony1ID)
 	_, err := client.SubmitProcessSpec(processSpec, env.runtime1PrvKey)
 	assert.Nil(t, err)
-	processFromServer, err := client.AssignProcess(env.colony1ID, env.runtime1PrvKey)
+	processFromServer, err := client.AssignProcess(env.colony1ID, -1, env.runtime1PrvKey)
 	assert.Nil(t, err)
 
 	err = client.CloseSuccessful(processFromServer.ID, env.runtime2PrvKey)
@@ -363,7 +363,7 @@ func TestCloseFailedSecurity(t *testing.T) {
 	processSpec := utils.CreateTestProcessSpec(env.colony1ID)
 	_, err := client.SubmitProcessSpec(processSpec, env.runtime1PrvKey)
 	assert.Nil(t, err)
-	processFromServer, err := client.AssignProcess(env.colony1ID, env.runtime1PrvKey)
+	processFromServer, err := client.AssignProcess(env.colony1ID, -1, env.runtime1PrvKey)
 	assert.Nil(t, err)
 
 	err = client.CloseFailed(processFromServer.ID, "error", env.runtime2PrvKey)

@@ -140,7 +140,7 @@ Example process specification (see examples/sleep.json). The Colonies worker wil
   },
   "func": "sleep",
   "args": [
-    "100"
+    "3"
   ],
   "env": {
     "TEST": "testenv"
@@ -153,13 +153,18 @@ Open another terminal (and *source examples/devenv*).
 colonies process submit --spec sleep.json
 ```
 
+Alternatively,
+```console
+colonies process run --func sleep --args 3 --runtimetype cli  
+```
+
 Check out running processes:
 ```console
 colonies process ps
 +------------------------------------------------------------------+-------+------+---------------------+----------------+
 | ID                                                               | FUNC  | ARGS | START TIME          | TARGET RUNTIME |
 +------------------------------------------------------------------+-------+------+---------------------+----------------+
-| 6681946db095e0dc2e0408b87e119c0d2ae4f691db6899b829161fc97f14a1d0 | sleep | 100 | 2022-04-05 16:40:01 | cli |
+| 6681946db095e0dc2e0408b87e119c0d2ae4f691db6899b829161fc97f14a1d0 | sleep | 3    | 2022-04-05 16:40:01 | cli            |
 +------------------------------------------------------------------+-------+------+---------------------+----------------+
 ```
 
@@ -184,7 +189,7 @@ Process:
 ProcessSpec:
 +-------------+-------+
 | Func        | sleep |
-| Args        | 100   |
+| Args        | 3     |
 | MaxExecTime | -1    |
 | MaxRetries  | 0     |
 +-------------+-------+

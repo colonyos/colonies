@@ -37,7 +37,7 @@ func TestSubmitProcess(t *testing.T) {
 
 func TestAssignProcess(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
-	assignedProcess, err := client.AssignProcess(env.colonyID, env.runtimePrvKey)
+	assignedProcess, err := client.AssignProcess(env.colonyID, -1, env.runtimePrvKey)
 	assert.Nil(t, assignedProcess)
 	assert.NotNil(t, err)
 
@@ -51,11 +51,11 @@ func TestAssignProcess(t *testing.T) {
 	addedProcess2, err := client.SubmitProcessSpec(processSpec2, env.runtimePrvKey)
 	assert.Nil(t, err)
 
-	assignedProcess, err = client.AssignProcess(env.colonyID, env.runtimePrvKey)
+	assignedProcess, err = client.AssignProcess(env.colonyID, -1, env.runtimePrvKey)
 	assert.Nil(t, err)
 	assert.Equal(t, addedProcess1.ID, assignedProcess.ID)
 
-	assignedProcess, err = client.AssignProcess(env.colonyID, env.runtimePrvKey)
+	assignedProcess, err = client.AssignProcess(env.colonyID, -1, env.runtimePrvKey)
 	assert.Nil(t, err)
 	assert.Equal(t, addedProcess2.ID, assignedProcess.ID)
 
@@ -76,7 +76,7 @@ func TestAssignLatestProcess(t *testing.T) {
 	addedProcess2, err := client.SubmitProcessSpec(processSpec2, env.runtimePrvKey)
 	assert.Nil(t, err)
 
-	assignedProcess, err := client.AssignLatestProcess(env.colonyID, env.runtimePrvKey)
+	assignedProcess, err := client.AssignLatestProcess(env.colonyID, -1, env.runtimePrvKey)
 	assert.Nil(t, err)
 	assert.Equal(t, addedProcess2.ID, assignedProcess.ID)
 
@@ -100,7 +100,7 @@ func TestMarkAlive(t *testing.T) {
 	time1 := runtimeFromServer.LastHeardFromTime
 	time.Sleep(1 * time.Second)
 
-	client.AssignProcess(env.colonyID, runtimePrvKey) // This will update the last heard from
+	client.AssignProcess(env.colonyID, -1, runtimePrvKey) // This will update the last heard from
 
 	runtimeFromServer, err = client.GetRuntime(runtime.ID, runtimePrvKey)
 	assert.Nil(t, err)
@@ -139,7 +139,7 @@ func TestGetProcessHistForRuntime(t *testing.T) {
 		processSpec := utils.CreateTestProcessSpec(env.colony1ID)
 		_, err := client.SubmitProcessSpec(processSpec, env.runtime1PrvKey)
 		assert.Nil(t, err)
-		_, err = client.AssignProcess(env.colony1ID, env.runtime1PrvKey)
+		_, err = client.AssignProcess(env.colony1ID, -1, env.runtime1PrvKey)
 		assert.Nil(t, err)
 	}
 
@@ -148,7 +148,7 @@ func TestGetProcessHistForRuntime(t *testing.T) {
 	processSpec := utils.CreateTestProcessSpec(env.colony1ID)
 	_, err := client.SubmitProcessSpec(processSpec, env.runtime1PrvKey)
 	assert.Nil(t, err)
-	_, err = client.AssignProcess(env.colony1ID, env.runtime1PrvKey)
+	_, err = client.AssignProcess(env.colony1ID, -1, env.runtime1PrvKey)
 	assert.Nil(t, err)
 
 	time.Sleep(1 * time.Second)
@@ -197,7 +197,7 @@ func TestGetRunningProcesses(t *testing.T) {
 		processSpec := utils.CreateTestProcessSpec(env.colonyID)
 		_, err := client.SubmitProcessSpec(processSpec, env.runtimePrvKey)
 		assert.Nil(t, err)
-		_, err = client.AssignProcess(env.colonyID, env.runtimePrvKey)
+		_, err = client.AssignProcess(env.colonyID, -1, env.runtimePrvKey)
 		assert.Nil(t, err)
 	}
 
@@ -221,7 +221,7 @@ func TestGetSuccessfulProcesses(t *testing.T) {
 		processSpec := utils.CreateTestProcessSpec(env.colonyID)
 		_, err := client.SubmitProcessSpec(processSpec, env.runtimePrvKey)
 		assert.Nil(t, err)
-		processFromServer, err := client.AssignProcess(env.colonyID, env.runtimePrvKey)
+		processFromServer, err := client.AssignProcess(env.colonyID, -1, env.runtimePrvKey)
 		assert.Nil(t, err)
 		err = client.CloseSuccessful(processFromServer.ID, env.runtimePrvKey)
 		assert.Nil(t, err)
@@ -247,7 +247,7 @@ func TestGetFailedProcesses(t *testing.T) {
 		processSpec := utils.CreateTestProcessSpec(env.colonyID)
 		_, err := client.SubmitProcessSpec(processSpec, env.runtimePrvKey)
 		assert.Nil(t, err)
-		processFromServer, err := client.AssignProcess(env.colonyID, env.runtimePrvKey)
+		processFromServer, err := client.AssignProcess(env.colonyID, -1, env.runtimePrvKey)
 		assert.Nil(t, err)
 		err = client.CloseFailed(processFromServer.ID, "error", env.runtimePrvKey)
 		assert.Nil(t, err)
@@ -336,7 +336,7 @@ func TestCloseSuccessful(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, core.PENDING, addedProcess.State)
 
-	assignedProcess, err := client.AssignProcess(env.colonyID, env.runtimePrvKey)
+	assignedProcess, err := client.AssignProcess(env.colonyID, -1, env.runtimePrvKey)
 	assert.Nil(t, err)
 
 	assignedProcessFromServer, err := client.GetProcess(assignedProcess.ID, env.runtimePrvKey)
@@ -360,7 +360,7 @@ func TestCloseFailed(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, core.PENDING, addedProcess.State)
 
-	assignedProcess, err := client.AssignProcess(env.colonyID, env.runtimePrvKey)
+	assignedProcess, err := client.AssignProcess(env.colonyID, -1, env.runtimePrvKey)
 	assert.Nil(t, err)
 
 	assignedProcessFromServer, err := client.GetProcess(assignedProcess.ID, env.runtimePrvKey)
@@ -409,7 +409,7 @@ func TestMaxExecTime(t *testing.T) {
 	for i := 0; i < numberOfProcesses; i++ {
 		_, err := client.SubmitProcessSpec(processSpec, env.runtimePrvKey)
 		assert.Nil(t, err)
-		process, err := client.AssignProcess(env.colonyID, env.runtimePrvKey)
+		process, err := client.AssignProcess(env.colonyID, -1, env.runtimePrvKey)
 		assert.Nil(t, err)
 		processes = append(processes, process)
 	}
@@ -436,7 +436,7 @@ func TestMaxExecTimeUnlimtedMaxRetries(t *testing.T) {
 	for i := 0; i < numberOfProcesses; i++ {
 		_, err := client.SubmitProcessSpec(processSpec, env.runtimePrvKey)
 		assert.Nil(t, err)
-		process, err := client.AssignProcess(env.colonyID, env.runtimePrvKey)
+		process, err := client.AssignProcess(env.colonyID, -1, env.runtimePrvKey)
 		assert.Nil(t, err)
 		processes = append(processes, process)
 	}
@@ -449,7 +449,7 @@ func TestMaxExecTimeUnlimtedMaxRetries(t *testing.T) {
 
 	// Assign again
 	for i := 0; i < numberOfProcesses; i++ {
-		_, err = client.AssignProcess(env.colonyID, env.runtimePrvKey)
+		_, err = client.AssignProcess(env.colonyID, -1, env.runtimePrvKey)
 		assert.Nil(t, err)
 	}
 
@@ -479,7 +479,7 @@ func TestMaxExecTimeMaxRetries(t *testing.T) {
 	for i := 0; i < numberOfProcesses; i++ {
 		_, err := client.SubmitProcessSpec(processSpec, env.runtimePrvKey)
 		assert.Nil(t, err)
-		process, err := client.AssignProcess(env.colonyID, env.runtimePrvKey)
+		process, err := client.AssignProcess(env.colonyID, -1, env.runtimePrvKey)
 		assert.Nil(t, err)
 		processes = append(processes, process)
 	}
@@ -493,7 +493,7 @@ func TestMaxExecTimeMaxRetries(t *testing.T) {
 
 	// Assign again
 	for i := 0; i < numberOfProcesses; i++ {
-		_, err = client.AssignProcess(env.colonyID, env.runtimePrvKey)
+		_, err = client.AssignProcess(env.colonyID, -1, env.runtimePrvKey)
 		assert.Nil(t, err)
 	}
 

@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/colonyos/colonies/pkg/cluster"
 	"github.com/colonyos/colonies/pkg/core"
 	"github.com/colonyos/colonies/pkg/utils"
 	"github.com/stretchr/testify/assert"
@@ -340,4 +341,66 @@ func TestEventHandlerSubscribeProcessIDFailed(t *testing.T) {
 	handler.signal(process)
 	retVal := <-retChan
 	assert.NotNil(t, retVal.err) // Not OK, will timeout
+}
+
+func TestEventHandleRelayServer(t *testing.T) {
+	node1 := cluster.Node{Name: "etcd1", Host: "localhost", EtcdClientPort: 24100, EtcdPeerPort: 23100, RelayPort: 25100, APIPort: 26100}
+	node2 := cluster.Node{Name: "etcd2", Host: "localhost", EtcdClientPort: 24200, EtcdPeerPort: 23200, RelayPort: 25200, APIPort: 26200}
+	node3 := cluster.Node{Name: "etcd3", Host: "localhost", EtcdClientPort: 24300, EtcdPeerPort: 23300, RelayPort: 25300, APIPort: 26300}
+
+	config := cluster.Config{}
+	config.AddNode(node1)
+	config.AddNode(node2)
+	config.AddNode(node3)
+
+	relayServer1 := cluster.CreateRelayServer(node1, config)
+	relayServer2 := cluster.CreateRelayServer(node2, config)
+	relayServer3 := cluster.CreateRelayServer(node3, config)
+
+	handler1 := createEventHandler(relayServer1)
+	handler2 := createEventHandler(relayServer2)
+	handler3 := createEventHandler(relayServer3)
+
+	retChan1 := make(chan retValues)
+	go func() {
+		ctx, cancelCtx := context.WithTimeout(context.Background(), 3000*time.Millisecond)
+		defer cancelCtx()
+		process, err := handler1.waitForProcess("test_runtime_type", core.WAITING, "", ctx)
+		retChan1 <- retValues{process: process, err: err}
+	}()
+
+	retChan2 := make(chan retValues)
+	go func() {
+		ctx, cancelCtx := context.WithTimeout(context.Background(), 3000*time.Millisecond)
+		defer cancelCtx()
+		process, err := handler2.waitForProcess("test_runtime_type", core.WAITING, "", ctx)
+		retChan2 <- retValues{process: process, err: err}
+	}()
+
+	retChan3 := make(chan retValues)
+	go func() {
+		ctx, cancelCtx := context.WithTimeout(context.Background(), 3000*time.Millisecond)
+		defer cancelCtx()
+		process, err := handler3.waitForProcess("test_runtime_type", core.WAITING, "", ctx)
+		retChan3 <- retValues{process: process, err: err}
+	}()
+
+	time.Sleep(100 * time.Millisecond)
+
+	process := utils.CreateTestProcess(core.GenerateRandomID())
+	process.ProcessSpec.Conditions.RuntimeType = "test_runtime_type"
+	process.State = core.WAITING
+	go func() {
+		handler3.signal(process)
+	}()
+
+	retVal1 := <-retChan1
+	assert.True(t, process.Equals(retVal1.process))
+	assert.Nil(t, retVal1.err)
+	retVal2 := <-retChan2
+	assert.Nil(t, retVal2.err)
+	assert.True(t, process.Equals(retVal2.process))
+	retVal3 := <-retChan3
+	assert.Nil(t, retVal3.err)
+	assert.True(t, process.Equals(retVal3.process))
 }
