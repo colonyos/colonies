@@ -305,14 +305,14 @@ var assignProcessCmd = &cobra.Command{
 		if Latest {
 			process, err := client.AssignLatestProcess(ColonyID, Timeout, RuntimePrvKey)
 			if err != nil {
-				log.Warning("No process was assigned")
+				log.Warning(err)
 			} else {
 				log.WithFields(log.Fields{"processID": process.ID, "runtimeID": RuntimeID}).Info("Assigned process to runtime (latest)")
 			}
 		} else {
 			process, err := client.AssignProcess(ColonyID, Timeout, RuntimePrvKey)
 			if err != nil {
-				log.Warning("No process was assigned")
+				log.Warning(err)
 			} else {
 				log.WithFields(log.Fields{"processID": process.ID, "runtimeID": RuntimeID}).Info("Assigned process to runtime (oldest)")
 			}

@@ -103,7 +103,7 @@ func (server *ColoniesServer) handleAssignProcessHTTPRequest(c *gin.Context, rec
 		}
 	}
 
-	if server.handleHTTPError(c, assignErr, http.StatusNoContent) {
+	if server.handleHTTPError(c, assignErr, http.StatusOK) {
 		log.WithFields(log.Fields{"RuntimeID": recoveredID, "ColonyID": msg.ColonyID}).Info("No process can be assigned")
 		return
 	}

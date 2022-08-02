@@ -63,6 +63,62 @@ func TestAssignProcess(t *testing.T) {
 	<-done
 }
 
+func TestAssignProcessWithTimeout(t *testing.T) {
+	env, client, server, _, done := setupTestEnv2(t)
+
+	addedProcessChan := make(chan *core.Process)
+	go func() {
+		time.Sleep(1 * time.Second)
+		processSpec := utils.CreateTestProcessSpec(env.colonyID)
+		addedProcess, err := client.SubmitProcessSpec(processSpec, env.runtimePrvKey)
+		assert.Nil(t, err)
+		addedProcessChan <- addedProcess
+	}()
+
+	// This function call will block for 60 seconds or until the Go-routine above submits a process spec
+	assignProcess, err := client.AssignProcess(env.colonyID, 60, env.runtimePrvKey)
+	assert.Nil(t, err)
+
+	addedProcess := <-addedProcessChan
+	assert.Equal(t, addedProcess.ID, assignProcess.ID)
+
+	server.Shutdown()
+	<-done
+}
+
+func TestAssignLatestProcessWithTimeout(t *testing.T) {
+	env, client, server, _, done := setupTestEnv2(t)
+
+	addedProcessChan := make(chan *core.Process)
+	go func() {
+		time.Sleep(1 * time.Second)
+		processSpec := utils.CreateTestProcessSpec(env.colonyID)
+		addedProcess, err := client.SubmitProcessSpec(processSpec, env.runtimePrvKey)
+		assert.Nil(t, err)
+		addedProcessChan <- addedProcess
+	}()
+
+	// This function call will block for 60 seconds or until the Go-routine above submits a process spec
+	assignProcess, err := client.AssignLatestProcess(env.colonyID, 60, env.runtimePrvKey)
+	assert.Nil(t, err)
+
+	addedProcess := <-addedProcessChan
+	assert.Equal(t, addedProcess.ID, assignProcess.ID)
+
+	server.Shutdown()
+	<-done
+}
+
+func TestAssignProcessWithTimeoutFail(t *testing.T) {
+	env, client, server, _, done := setupTestEnv2(t)
+
+	_, err := client.AssignProcess(env.colonyID, 1, env.runtimePrvKey)
+	assert.NotNil(t, err)
+
+	server.Shutdown()
+	<-done
+}
+
 func TestAssignLatestProcess(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 
