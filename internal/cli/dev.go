@@ -12,6 +12,7 @@ import (
 	"github.com/colonyos/colonies/pkg/cluster"
 	"github.com/colonyos/colonies/pkg/core"
 	"github.com/colonyos/colonies/pkg/database/postgresql"
+	"github.com/colonyos/colonies/pkg/monitoring"
 	"github.com/colonyos/colonies/pkg/server"
 	embeddedpostgres "github.com/fergusstrange/embedded-postgres"
 
@@ -273,7 +274,7 @@ var devCmd = &cobra.Command{
 			"ColoniesServerPort": coloniesServerPort,
 			"PullIntervall":      intervall}).
 			Info("Starting Prometheus monitoring server")
-		server.CreateMonitoringServer(monitorPort, coloniesServerHost, coloniesServerPort, true, true, serverPrvKey, intervall)
+		monitoring.CreateMonitoringServer(monitorPort, coloniesServerHost, coloniesServerPort, true, true, serverPrvKey, intervall)
 
 		wait := make(chan bool)
 

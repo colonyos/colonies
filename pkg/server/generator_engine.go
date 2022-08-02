@@ -65,7 +65,9 @@ func (engine *generatorEngine) syncStatesFromDB() {
 				log.WithFields(log.Fields{
 					"GeneratorId": generator.ID}).
 					Info("Deleting generator from engine")
-				delete(engine.states, generator.ID)
+				if colony.ID == generator.ColonyID {
+					delete(engine.states, generator.ID)
+				}
 			}
 		}
 	}

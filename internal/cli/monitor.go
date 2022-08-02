@@ -5,8 +5,8 @@ import (
 	"os"
 	"strconv"
 
+	"github.com/colonyos/colonies/pkg/monitoring"
 	"github.com/colonyos/colonies/pkg/security"
-	"github.com/colonyos/colonies/pkg/server"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -65,7 +65,7 @@ var monitoringStartCmd = &cobra.Command{
 			"PullIntervall":      MonitorIntervall,
 			"Insecure":           Insecure}).
 			Info("Starting Prometheus monitoring server")
-		server.CreateMonitoringServer(MonitorPort, ServerHost, ServerPort, Insecure, SkipTLSVerify, ServerPrvKey, MonitorIntervall)
+		monitoring.CreateMonitoringServer(MonitorPort, ServerHost, ServerPort, Insecure, SkipTLSVerify, ServerPrvKey, MonitorIntervall)
 
 		wait := make(chan struct{})
 		<-wait
