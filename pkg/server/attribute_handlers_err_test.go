@@ -52,7 +52,7 @@ func TestGetAttributesErr(t *testing.T) {
 
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
-	server.handleAddAttributeHTTPRequest(c, "", msg.MsgType, jsonString+"error")
+	server.handleGetAttributeHTTPRequest(c, "", msg.MsgType, jsonString+"error")
 
 	b, err := ioutil.ReadAll(w.Body)
 	assert.Nil(t, err)
@@ -63,7 +63,7 @@ func TestGetAttributesErr(t *testing.T) {
 	msg2 := rpc.CreateGetAttributeMsg(core.GenerateRandomID())
 	msg2.MsgType = "invalid_msg_type"
 	jsonString, err = msg2.ToJSON()
-	server.handleAddAttributeHTTPRequest(c, "", msg.MsgType, jsonString)
+	server.handleGetAttributeHTTPRequest(c, "", msg.MsgType, jsonString)
 
 	b, err = ioutil.ReadAll(w.Body)
 	assert.Nil(t, err)
