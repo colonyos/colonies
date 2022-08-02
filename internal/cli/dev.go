@@ -9,9 +9,9 @@ import (
 	"time"
 
 	"github.com/colonyos/colonies/pkg/client"
+	"github.com/colonyos/colonies/pkg/cluster"
 	"github.com/colonyos/colonies/pkg/core"
 	"github.com/colonyos/colonies/pkg/database/postgresql"
-	"github.com/colonyos/colonies/pkg/etcd"
 	"github.com/colonyos/colonies/pkg/server"
 	embeddedpostgres "github.com/fergusstrange/embedded-postgres"
 
@@ -231,11 +231,11 @@ var devCmd = &cobra.Command{
 		CheckError(err)
 		log.WithFields(log.Fields{"Port": coloniesServerPort}).Info("Starting a Colonies server")
 
-		node := etcd.Node{Name: "dev", Host: "localhost", ClientPort: 2379, PeerPort: 2380}
-		cluster := etcd.Cluster{}
-		cluster.AddNode(node)
+		node := cluster.Node{Name: "dev", Host: "localhost", APIPort: coloniesServerPort, EtcdClientPort: 2379, EtcdPeerPort: 2380, RelayPort: 2381}
+		clusterConfig := cluster.Config{}
+		clusterConfig.AddNode(node)
 
-		coloniesServer := server.CreateColoniesServer(coloniesDB, coloniesServerPort, serverID, false, "", "", Verbose, node, cluster, "/tmp/colonies/dev/etcd")
+		coloniesServer := server.CreateColoniesServer(coloniesDB, coloniesServerPort, serverID, false, "", "", Verbose, node, clusterConfig, "/tmp/colonies/dev/etcd")
 		go coloniesServer.ServeForever()
 
 		coloniesServerHost := os.Getenv("COLONIES_SERVERHOST")
