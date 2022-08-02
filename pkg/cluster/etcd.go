@@ -1,4 +1,4 @@
-package etcd
+package cluster
 
 import (
 	"net/url"
@@ -11,7 +11,7 @@ import (
 
 type EtcdServer struct {
 	thisNode Node
-	cluster  Cluster
+	config   Config
 	ready    chan bool
 	stop     chan bool
 	stopped  chan bool
@@ -20,9 +20,9 @@ type EtcdServer struct {
 	cfg      *embed.Config
 }
 
-func CreateEtcdServer(thisNode Node, cluster Cluster, dataPath string) *EtcdServer {
+func CreateEtcdServer(thisNode Node, config Config, dataPath string) *EtcdServer {
 	server := &EtcdServer{thisNode: thisNode,
-		cluster:  cluster,
+		config:   config,
 		ready:    make(chan bool, 1),
 		stop:     make(chan bool, 1),
 		stopped:  make(chan bool, 1),
@@ -35,8 +35,8 @@ func CreateEtcdServer(thisNode Node, cluster Cluster, dataPath string) *EtcdServ
 	cfg.Name = name
 	cfg.Logger = "zap"
 
-	peerPort := strconv.Itoa(server.thisNode.PeerPort)
-	clientPort := strconv.Itoa(server.thisNode.ClientPort)
+	peerPort := strconv.Itoa(server.thisNode.EtcdPeerPort)
+	clientPort := strconv.Itoa(server.thisNode.EtcdClientPort)
 
 	initialAdvertisePeerURLs := "http://" + server.thisNode.Host + ":" + peerPort
 	listenPeerURLs := "http://0.0.0.0:" + peerPort
@@ -63,8 +63,8 @@ func CreateEtcdServer(thisNode Node, cluster Cluster, dataPath string) *EtcdServ
 
 func (server *EtcdServer) buildInitialClusterStr() string {
 	var str string
-	for _, node := range server.cluster.Nodes {
-		str += node.Name + "=" + "http://" + node.Host + ":" + strconv.Itoa(node.PeerPort) + ","
+	for _, node := range server.config.Nodes {
+		str += node.Name + "=" + "http://" + node.Host + ":" + strconv.Itoa(node.EtcdPeerPort) + ","
 	}
 
 	if len(str) > 1 {
@@ -89,28 +89,28 @@ func (server *EtcdServer) Start() {
 		select {
 		case <-etcd.Server.ReadyNotify():
 			log.WithFields(log.Fields{
-				"Name":       server.thisNode.Name,
-				"Host":       server.thisNode.Host,
-				"DataPath":   server.dataPath,
-				"ClientPort": server.thisNode.ClientPort,
-				"PeerPort":   server.thisNode.PeerPort}).Info("EtcdServer is ready")
+				"Name":           server.thisNode.Name,
+				"Host":           server.thisNode.Host,
+				"DataPath":       server.dataPath,
+				"EtcdClientPort": server.thisNode.EtcdClientPort,
+				"EtcdPeerPort":   server.thisNode.EtcdPeerPort}).Info("EtcdServer is ready")
 			server.ready <- true
 			<-server.stop
 			etcd.Server.Stop()
 			log.WithFields(log.Fields{
-				"Name":       server.thisNode.Name,
-				"Host":       server.thisNode.Host,
-				"DataPath":   server.dataPath,
-				"ClientPort": server.thisNode.ClientPort,
-				"PeerPort":   server.thisNode.PeerPort}).Info("EtcdServer stopped")
+				"Name":           server.thisNode.Name,
+				"Host":           server.thisNode.Host,
+				"DataPath":       server.dataPath,
+				"EtcdClientPort": server.thisNode.EtcdClientPort,
+				"EtcPeerPort":    server.thisNode.EtcdPeerPort}).Info("EtcdServer stopped")
 			server.stopped <- true
 		case <-time.After(600 * time.Second):
 			log.WithFields(log.Fields{
-				"Name":       server.thisNode.Name,
-				"Host":       server.thisNode.Host,
-				"DataPath":   server.dataPath,
-				"ClientPort": server.thisNode.ClientPort,
-				"PeerPort":   server.thisNode.PeerPort}).Error("EtcdServer took too long time to start")
+				"Name":           server.thisNode.Name,
+				"Host":           server.thisNode.Host,
+				"DataPath":       server.dataPath,
+				"EtcdClientPort": server.thisNode.EtcdClientPort,
+				"EtcdPeerPort":   server.thisNode.EtcdPeerPort}).Error("EtcdServer took too long time to start")
 			etcd.Server.Stop()
 			log.Fatal(<-etcd.Err())
 		}
@@ -142,7 +142,7 @@ func (server *EtcdServer) Leader() string {
 func (server *EtcdServer) Members() []Node {
 	var nodes []Node
 	for _, member := range server.etcd.Server.Cluster().Members() {
-		for _, node := range server.cluster.Nodes {
+		for _, node := range server.config.Nodes {
 			if node.Name == member.Name {
 				nodes = append(nodes, node)
 			}
@@ -153,7 +153,7 @@ func (server *EtcdServer) Members() []Node {
 	return nodes
 }
 
-func (server *EtcdServer) CurrentCluster() Cluster {
+func (server *EtcdServer) CurrentCluster() Config {
 	nodes := server.Members()
 	leader := server.Leader()
 
@@ -165,5 +165,5 @@ func (server *EtcdServer) CurrentCluster() Cluster {
 		}
 	}
 
-	return Cluster{Nodes: nodes, Leader: leaderNode}
+	return Config{Nodes: nodes, Leader: leaderNode}
 }

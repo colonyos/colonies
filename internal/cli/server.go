@@ -10,8 +10,8 @@ import (
 
 	"github.com/colonyos/colonies/pkg/build"
 	"github.com/colonyos/colonies/pkg/client"
+	"github.com/colonyos/colonies/pkg/cluster"
 	"github.com/colonyos/colonies/pkg/database/postgresql"
-	"github.com/colonyos/colonies/pkg/etcd"
 	"github.com/colonyos/colonies/pkg/security"
 	"github.com/colonyos/colonies/pkg/server"
 	"github.com/kataras/tablewriter"
@@ -37,7 +37,8 @@ func init() {
 	serverCmd.PersistentFlags().StringVarP(&EtcdHost, "etcdhost", "", "0.0.0.0", "Etcd host name")
 	serverCmd.PersistentFlags().IntVarP(&EtcdClientPort, "etcdclientport", "", 2379, "Etcd port")
 	serverCmd.PersistentFlags().IntVarP(&EtcdPeerPort, "etcdpeerport", "", 2380, "Etcd peer port")
-	serverCmd.PersistentFlags().StringSliceVarP(&EtcdCluster, "initial-cluster", "", make([]string, 0), "EtcdCluster")
+	serverCmd.PersistentFlags().IntVarP(&RelayPort, "relayport", "", 2381, "Colonies server relay port")
+	serverCmd.PersistentFlags().StringSliceVarP(&EtcdCluster, "initial-cluster", "", make([]string, 0), "Cluster config, e.g. --etcdcluster server1=localhost:peerport:relayport:apiport,server2=localhost:peerport:relayport:apiport")
 	serverCmd.PersistentFlags().StringVarP(&EtcdDataDir, "etcddatadir", "", "", "Etcd data dir")
 
 	serverStatusCmd.PersistentFlags().StringVarP(&ServerHost, "host", "", "localhost", "Server host")
@@ -162,12 +163,13 @@ var serverStartCmd = &cobra.Command{
 				break
 			}
 		}
-		node := etcd.Node{Name: EtcdName, Host: EtcdHost, ClientPort: EtcdClientPort, PeerPort: EtcdPeerPort}
-		cluster := etcd.Cluster{}
+
+		node := cluster.Node{Name: EtcdName, Host: EtcdHost, APIPort: ServerPort, EtcdClientPort: EtcdClientPort, EtcdPeerPort: EtcdPeerPort, RelayPort: RelayPort}
+		clusterConfig := cluster.Config{}
 
 		if len(EtcdCluster) > 0 {
 			// Parse EtcdCluster flag
-			errMsg := "Invalid cluster, try e.g. --etcdcluster server1=localhost:23100,server2=localhost:23101"
+			errMsg := "Invalid cluster, try e.g. --etcdcluster server1=localhost:23100:25100:26100,server2=localhost:23101:25101:26101"
 			for _, s := range EtcdCluster {
 				split1 := strings.Split(s, "=")
 				if len(split1) != 2 {
@@ -175,18 +177,24 @@ var serverStartCmd = &cobra.Command{
 				}
 				name := split1[0]
 				split2 := strings.Split(split1[1], ":")
-				if len(split2) != 2 {
+				if len(split2) != 4 {
 					CheckError(errors.New(errMsg))
 				}
 				host := split2[0]
-				portStr := split2[1]
-				port, err := strconv.Atoi(portStr)
+				portStr1 := split2[1]
+				etcPeerPort, err := strconv.Atoi(portStr1)
 				CheckError(err)
-				node := etcd.Node{Name: name, Host: host, PeerPort: port}
-				cluster.AddNode(node)
+				portStr2 := split2[2]
+				relayPort, err := strconv.Atoi(portStr2)
+				CheckError(err)
+				portStr3 := split2[3]
+				apiPort, err := strconv.Atoi(portStr3)
+				CheckError(err)
+				node := cluster.Node{Name: name, Host: host, EtcdClientPort: EtcdClientPort, EtcdPeerPort: etcPeerPort, RelayPort: relayPort, APIPort: apiPort}
+				clusterConfig.AddNode(node)
 			}
 		} else {
-			cluster.AddNode(node)
+			clusterConfig.AddNode(node)
 		}
 
 		if EtcdDataDir == "" {
@@ -202,7 +210,7 @@ var serverStartCmd = &cobra.Command{
 			"UseTLS":       UseTLS,
 			"ServerID":     ServerID,
 		}).Info("Starting a Colonies Server")
-		server := server.CreateColoniesServer(db, ServerPort, ServerID, UseTLS, TLSKey, TLSCert, Verbose, node, cluster, EtcdDataDir)
+		server := server.CreateColoniesServer(db, ServerPort, ServerID, UseTLS, TLSKey, TLSCert, Verbose, node, clusterConfig, EtcdDataDir)
 		for {
 			err := server.ServeForever()
 			if err != nil {

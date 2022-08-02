@@ -3,6 +3,7 @@ package cli
 import (
 	"errors"
 	"os"
+	"strconv"
 
 	"github.com/colonyos/colonies/pkg/client"
 	"github.com/colonyos/colonies/pkg/security"
@@ -57,10 +58,16 @@ var clusterInfoCmd = &cobra.Command{
 
 		var data [][]string
 		for _, node := range cluster.Nodes {
-			data = append(data, []string{node.Name, node.Host, isLeader(cluster.Leader.Name, node.Name)})
+			data = append(data, []string{node.Name,
+				node.Host,
+				strconv.Itoa(node.APIPort),
+				strconv.Itoa(node.EtcdClientPort),
+				strconv.Itoa(node.EtcdPeerPort),
+				strconv.Itoa(node.RelayPort),
+				isLeader(cluster.Leader.Name, node.Name)})
 		}
 		table := tablewriter.NewWriter(os.Stdout)
-		table.SetHeader([]string{"Name", "Host", "Leader"})
+		table.SetHeader([]string{"Name", "Host", "APIPort", "EtcdClientPort", "EtcdPeerPort", "RelayPort", "Leader"})
 		for _, v := range data {
 			table.Append(v)
 		}

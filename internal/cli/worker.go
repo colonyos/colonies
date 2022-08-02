@@ -34,13 +34,14 @@ func init() {
 	workerStartCmd.Flags().StringVarP(&ColonyID, "colonyid", "", "", "Colony Id")
 	workerStartCmd.Flags().StringVarP(&ColonyPrvKey, "colonyprvkey", "", "", "Colony private key")
 	workerStartCmd.Flags().StringVarP(&RuntimeName, "name", "", "", "Runtime name")
-	workerStartCmd.Flags().StringVarP(&RuntimeType, "type", "", "", "Runtime type")
+	workerStartCmd.Flags().StringVarP(&RuntimeType, "runtimetype", "", "", "Runtime type")
 	workerStartCmd.Flags().StringVarP(&CPU, "cpu", "", "", "CPU info")
 	workerStartCmd.Flags().IntVarP(&Cores, "cores", "", -1, "Cores")
 	workerStartCmd.Flags().IntVarP(&Mem, "mem", "", -1, "Memory [MiB]")
 	workerStartCmd.Flags().StringVarP(&GPU, "gpu", "", "", "GPU info")
 	workerStartCmd.Flags().IntVarP(&GPUs, "gpus", "", -1, "Number of GPUs")
 	workerStartCmd.Flags().StringVarP(&LogDir, "logdir", "", "", "Log directory")
+	workerStartCmd.Flags().IntVarP(&Timeout, "timeout", "", 100, "Max time to wait for a process assignment")
 
 	workerRegisterCmd.Flags().StringVarP(&ColonyID, "colonyid", "", "", "Colony Id")
 	workerRegisterCmd.Flags().StringVarP(&ColonyPrvKey, "colonyprvkey", "", "", "Colony private key")
@@ -153,10 +154,9 @@ var workerStartCmd = &cobra.Command{
 		log.WithFields(log.Fields{"BuildVersion": build.BuildVersion, "BuildTime": build.BuildTime, "ServerHost": ServerHost, "ServerPort": ServerPort}).Info("Worker now waiting for processes to be execute")
 
 		for {
-			assignedProcess, err = client.AssignProcess(ColonyID, runtimePrvKey)
+			assignedProcess, err = client.AssignProcess(ColonyID, Timeout, runtimePrvKey)
 			if err != nil {
-				time.Sleep(1000 * time.Millisecond)
-				continue
+				continue // Try again
 			}
 
 			log.WithFields(log.Fields{"ProcessID": assignedProcess.ID}).Info("Worker was assigned a process")
