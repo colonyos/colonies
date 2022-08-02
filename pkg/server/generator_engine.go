@@ -17,14 +17,14 @@ type state struct {
 }
 
 type generatorEngine struct {
-	server *ColoniesServer
-	db     database.Database
-	states map[string]*state
+	controller *coloniesController
+	db         database.Database
+	states     map[string]*state
 }
 
-func createGeneratorEngine(db database.Database, server *ColoniesServer) *generatorEngine {
+func createGeneratorEngine(db database.Database, controller *coloniesController) *generatorEngine {
 	engine := &generatorEngine{}
-	engine.server = server
+	engine.controller = controller
 	engine.db = db
 	engine.states = make(map[string]*state)
 
@@ -72,17 +72,17 @@ func (engine *generatorEngine) syncStatesFromDB() {
 }
 
 func (engine *generatorEngine) submitWorkflow(state *state) {
-	if engine.server != nil {
+	if engine.controller != nil {
 		state.generator.Counter = 0
 		state.generator.LastRun = time.Now()
-		_, err := engine.server.createProcessGraph(state.workflowSpec)
+		_, err := engine.controller.createProcessGraph(state.workflowSpec)
 		if err != nil {
 			log.WithFields(log.Fields{
 				"Error": err}).
 				Error("Failed to create processgraph")
 		}
 	} else {
-		log.Error("Failed to submit workflow in generator engine as server is nil")
+		log.Error("Failed to submit workflow in generator engine as coloniesController is nil")
 	}
 }
 

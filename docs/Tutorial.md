@@ -3,7 +3,7 @@ In this tutorial we will develop a Colony worker using the Golang SDK. The worke
 
 ## 1. Set up a Colonies development server
 ```console
-console dev
+colonies dev
 ```
 ## 2. Environmental variables
 ```console
@@ -56,7 +56,7 @@ func main() {
 
     // Ask the Colonies server to assign a process to this Runtime
     client := client.CreateColoniesClient(coloniesHost, coloniesPort, true, false)
-    assignedProcess, err := client.AssignProcess(colonyID, runtimePrvKey)
+    assignedProcess, err := client.AssignProcess(colonyID, 100, runtimePrvKey) // Max wait 100 seconds for assignment request
     if err != nil {
         fmt.Println(err)
         return
@@ -71,7 +71,7 @@ func main() {
             fibonacci := fib.FibonacciBig(uint(nr))
             fmt.Println("Result: The last number in the Fibonacci serie " + attribute.Value + " is " + fibonacci.String())
 
-            attribute := core.CreateAttribute(assignedProcess.ID, colonyID, core.OUT, "result", fibonacci.String())
+            attribute := core.CreateAttribute(assignedProcess.ID, colonyID, "", core.OUT, "result", fibonacci.String())
             client.AddAttribute(attribute, runtimePrvKey)
 
             // Close the process as Successful
@@ -81,7 +81,7 @@ func main() {
     }
 
     // Close the process as Failed
-    client.CloseFailed(assignedProcess.ID, runtimePrvKey)
+    client.CloseFailed(assignedProcess.ID, "invalid args", runtimePrvKey)
 }
 ```
 

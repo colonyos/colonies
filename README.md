@@ -40,7 +40,7 @@ The long-term vision is to create a global peer-to-peer network connecting many 
 * Humans (or workers) submit task specifications to a Colony via a Colonies server, which manage one or several Colonies. 
 * Colonies workers connect to the Colonies server and search for suitable tasks to execute. Each worker must have a valid identity (like a passport) to prove its Colony membership and the Colonies server makes sure only authorized and qualified workers can connect and be assigned relevant tasks. 
 * Colonies workers can **reside anywhere on the Internet**, e.g. a server, inside a Kubernetes Pod, a smart phone app, or embedded in a web page, thus enabling a compute continuum spanning devices, edge and cloud.
-* If worker fails to complete a task in time, the task will be re-assigned to another worker. This fail-safe mechanism ensures that all tasks are eventually completed. This also makes it possible to apply **Chaos Engineering**, e.g. randomly kill workers to test the overall stability of the system.  
+* If a worker fails to complete a task in time, the task will be re-assigned to another worker. This fail-safe mechanism ensures that all tasks are eventually completed. This also makes it possible to apply **Chaos Engineering**, e.g. randomly kill workers to test the overall stability of the system.  
 
 ## What is it good at?
 * **Distributed computing**. Manage ML/AI workloads on Kubernetes. Form a Colony by deploying one or several Colonies workers in Kubernetes Pods. Then use Colonies to enable batch processing and launch processes inside worker containers.
@@ -140,7 +140,7 @@ Example process specification (see examples/sleep.json). The Colonies worker wil
   },
   "func": "sleep",
   "args": [
-    "100"
+    "3"
   ],
   "env": {
     "TEST": "testenv"
@@ -153,13 +153,18 @@ Open another terminal (and *source examples/devenv*).
 colonies process submit --spec sleep.json
 ```
 
+Alternatively,
+```console
+colonies process run --func sleep --args 3 --runtimetype cli  
+```
+
 Check out running processes:
 ```console
 colonies process ps
 +------------------------------------------------------------------+-------+------+---------------------+----------------+
 | ID                                                               | FUNC  | ARGS | START TIME          | TARGET RUNTIME |
 +------------------------------------------------------------------+-------+------+---------------------+----------------+
-| 6681946db095e0dc2e0408b87e119c0d2ae4f691db6899b829161fc97f14a1d0 | sleep | 100 | 2022-04-05 16:40:01 | cli |
+| 6681946db095e0dc2e0408b87e119c0d2ae4f691db6899b829161fc97f14a1d0 | sleep | 3    | 2022-04-05 16:40:01 | cli            |
 +------------------------------------------------------------------+-------+------+---------------------+----------------+
 ```
 
@@ -184,7 +189,7 @@ Process:
 ProcessSpec:
 +-------------+-------+
 | Func        | sleep |
-| Args        | 100   |
+| Args        | 3     |
 | MaxExecTime | -1    |
 | MaxRetries  | 0     |
 +-------------+-------+
@@ -194,9 +199,6 @@ Conditions:
 | ColonyID    | 4787a5071856a4acf702b2ffcea422e3237a679c681314113d86139461290cf4 |
 | RuntimeIDs  | None                                                             |
 | RuntimeType | cli                                                              |
-| Memory      | 0                                                                |
-| CPU Cores   | 0                                                                |
-| GPUs        | 0                                                                |
 +-------------+------------------------------------------------------------------+
 
 Attributes:

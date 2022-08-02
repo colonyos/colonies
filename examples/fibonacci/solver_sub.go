@@ -35,7 +35,7 @@ func main() {
 		for {
 			select {
 			case <-subscription.ProcessChan:
-				assignedProcess, err := client.AssignProcess(colonyID, runtimePrvKey)
+				assignedProcess, err := client.AssignProcess(colonyID, -1, runtimePrvKey)
 				if err != nil {
 					fmt.Println(err)
 					continue
@@ -51,7 +51,7 @@ func main() {
 						fmt.Println("We were assigned process " + assignedProcess.ID)
 						fmt.Println("Result: The last number in the Fibonacci serie " + attribute.Value + " is " + fibonacci.String())
 
-						attribute := core.CreateAttribute(assignedProcess.ID, colonyID, core.OUT, "result", fibonacci.String())
+						attribute := core.CreateAttribute(assignedProcess.ID, colonyID, "", core.OUT, "result", fibonacci.String())
 						client.AddAttribute(attribute, runtimePrvKey)
 
 						// Close the process as Successful

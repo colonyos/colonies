@@ -14,7 +14,8 @@ func TestColoniesControllerAddColony(t *testing.T) {
 	defer db.Close()
 	assert.Nil(t, err)
 
-	controller := createColoniesController(db, nil)
+	controller := createTestColoniesController(db)
+	defer controller.stop()
 
 	colony, _, err := utils.CreateTestColonyWithKey()
 	assert.Nil(t, err)
@@ -28,7 +29,8 @@ func TestColoniesControllerAddRuntime(t *testing.T) {
 	defer db.Close()
 	assert.Nil(t, err)
 
-	controller := createColoniesController(db, nil)
+	controller := createTestColoniesController(db)
+	defer controller.stop()
 
 	runtime, _, err := utils.CreateTestRuntimeWithKey(core.GenerateRandomID())
 	assert.Nil(t, err)
@@ -43,7 +45,8 @@ func TestColoniesControllerApproveRuntime(t *testing.T) {
 	defer db.Close()
 	assert.Nil(t, err)
 
-	controller := createColoniesController(db, nil)
+	controller := createTestColoniesController(db)
+	defer controller.stop()
 
 	runtime, _, err := utils.CreateTestRuntimeWithKey(core.GenerateRandomID())
 	assert.Nil(t, err)
@@ -66,7 +69,8 @@ func TestColoniesControllerAddProcess(t *testing.T) {
 	defer db.Close()
 	assert.Nil(t, err)
 
-	controller := createColoniesController(db, nil)
+	controller := createTestColoniesController(db)
+	defer controller.stop()
 
 	colonyID := core.GenerateRandomID()
 
@@ -89,7 +93,8 @@ func TestColoniesControllerAssignRuntime(t *testing.T) {
 	defer db.Close()
 	assert.Nil(t, err)
 
-	controller := createColoniesController(db, nil)
+	controller := createTestColoniesController(db)
+	defer controller.stop()
 
 	colonyID := core.GenerateRandomID()
 
@@ -117,8 +122,10 @@ func TestColoniesControllerAssignRuntimeConcurrency(t *testing.T) {
 
 	processCount := 100
 
-	controller1 := createColoniesController(db, nil)
-	controller2 := createColoniesController(db, nil)
+	controller1 := createTestColoniesController(db)
+	defer controller1.stop()
+	controller2 := createTestColoniesController2(db)
+	defer controller2.stop()
 
 	colonyID := core.GenerateRandomID()
 

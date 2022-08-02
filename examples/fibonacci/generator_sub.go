@@ -34,7 +34,9 @@ func main() {
 	fmt.Println("Submitted a new process to the Colonies server with Id <" + addedProcess.ID + ">")
 	fmt.Println("Waiting for process to be computed ...")
 
-	subscription, _ := client.SubscribeProcess(addedProcess.ID, core.SUCCESS, 100, runtimePrvKey)
+	fmt.Println(os.Getenv("COLONIES_RUNTIMETYPE"))
+
+	subscription, _ := client.SubscribeProcess(addedProcess.ID, os.Getenv("COLONIES_RUNTIMETYPE"), core.SUCCESS, 100, runtimePrvKey)
 	process := <-subscription.ProcessChan
 
 	for _, attribute := range process.Attributes {

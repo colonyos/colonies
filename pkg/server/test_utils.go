@@ -1,12 +1,15 @@
 package server
 
 import (
+	"context"
 	"testing"
+	"time"
 
 	"github.com/colonyos/colonies/pkg/client"
+	"github.com/colonyos/colonies/pkg/cluster"
 	"github.com/colonyos/colonies/pkg/core"
+	"github.com/colonyos/colonies/pkg/database"
 	"github.com/colonyos/colonies/pkg/database/postgresql"
-	"github.com/colonyos/colonies/pkg/etcd"
 	"github.com/colonyos/colonies/pkg/security/crypto"
 	"github.com/colonyos/colonies/pkg/utils"
 	"github.com/stretchr/testify/assert"
@@ -115,10 +118,10 @@ func prepareTests(t *testing.T) (*client.ColoniesClient, *ColoniesServer, string
 	serverID, err := crypto.GenerateID(serverPrvKey)
 	assert.Nil(t, err)
 
-	node := etcd.Node{Name: "etcd", Host: "localhost", ClientPort: 24100, PeerPort: 23100}
-	cluster := etcd.Cluster{}
-	cluster.AddNode(node)
-	server := CreateColoniesServer(db, TESTPORT, serverID, EnableTLS, "../../cert/key.pem", "../../cert/cert.pem", debug, node, cluster, "/tmp/colonies/etcd")
+	node := cluster.Node{Name: "etcd", Host: "localhost", EtcdClientPort: 24100, EtcdPeerPort: 23100, RelayPort: 25100, APIPort: TESTPORT}
+	clusterConfig := cluster.Config{}
+	clusterConfig.AddNode(node)
+	server := CreateColoniesServer(db, TESTPORT, serverID, EnableTLS, "../../cert/key.pem", "../../cert/cert.pem", debug, node, clusterConfig, "/tmp/colonies/etcd")
 
 	done := make(chan bool)
 	go func() {
@@ -128,6 +131,20 @@ func prepareTests(t *testing.T) (*client.ColoniesClient, *ColoniesServer, string
 	}()
 
 	return client, server, serverPrvKey, done
+}
+
+func createTestColoniesController(db database.Database) *coloniesController {
+	node := cluster.Node{Name: "etcd", Host: "localhost", EtcdClientPort: 24100, EtcdPeerPort: 23100, RelayPort: 25100, APIPort: TESTPORT}
+	clusterConfig := cluster.Config{}
+	clusterConfig.AddNode(node)
+	return createColoniesController(db, node, clusterConfig, "/tmp/colonies/etcd")
+}
+
+func createTestColoniesController2(db database.Database) *coloniesController {
+	node := cluster.Node{Name: "etcd2", Host: "localhost", EtcdClientPort: 26100, EtcdPeerPort: 27100, RelayPort: 28100, APIPort: TESTPORT}
+	clusterConfig := cluster.Config{}
+	clusterConfig.AddNode(node)
+	return createColoniesController(db, node, clusterConfig, "/tmp/colonies/etcd")
 }
 
 func generateDiamondtWorkflowSpec(colonyID string) *core.WorkflowSpec {
@@ -170,4 +187,22 @@ func generateDiamondtWorkflowSpec(colonyID string) *core.WorkflowSpec {
 	workflowSpec.AddProcessSpec(processSpec4)
 
 	return workflowSpec
+}
+
+func waitForProcesses(t *testing.T, server *ColoniesServer, processes []*core.Process, state int) {
+	ctx, cancelCtx := context.WithTimeout(context.Background(), 100*time.Second)
+	defer cancelCtx()
+	wait := make(chan error)
+	for _, process := range processes {
+		go func(process *core.Process) {
+			_, err := server.controller.eventHandler.waitForProcess(process.ProcessSpec.Conditions.RuntimeType, state, process.ID, ctx)
+			wait <- err
+		}(process)
+	}
+
+	var err error
+	for i := 0; i < len(processes); i++ {
+		err = <-wait
+		assert.Nil(t, err)
+	}
 }

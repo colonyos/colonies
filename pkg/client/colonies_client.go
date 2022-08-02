@@ -6,8 +6,8 @@ import (
 	"net/url"
 	"strconv"
 
+	"github.com/colonyos/colonies/pkg/cluster"
 	"github.com/colonyos/colonies/pkg/core"
-	"github.com/colonyos/colonies/pkg/etcd"
 	"github.com/colonyos/colonies/pkg/rpc"
 	"github.com/go-resty/resty/v2"
 	"github.com/gorilla/websocket"
@@ -170,8 +170,8 @@ func (client *ColoniesClient) SubscribeProcesses(runtimeType string, state int, 
 	return subscription, nil
 }
 
-func (client *ColoniesClient) SubscribeProcess(processID string, state int, timeout int, prvKey string) (*ProcessSubscription, error) {
-	msg := rpc.CreateSubscribeProcessMsg(processID, state, timeout)
+func (client *ColoniesClient) SubscribeProcess(processID string, runtimeType string, state int, timeout int, prvKey string) (*ProcessSubscription, error) {
+	msg := rpc.CreateSubscribeProcessMsg(processID, runtimeType, state, timeout)
 	jsonString, err := msg.ToJSON()
 	if err != nil {
 		return nil, err
@@ -396,9 +396,10 @@ func (client *ColoniesClient) SubmitProcessSpec(processSpec *core.ProcessSpec, p
 	return core.ConvertJSONToProcess(respBodyString)
 }
 
-func (client *ColoniesClient) AssignProcess(colonyID string, prvKey string) (*core.Process, error) {
+func (client *ColoniesClient) AssignProcess(colonyID string, timeout int, prvKey string) (*core.Process, error) {
 	msg := rpc.CreateAssignProcessMsg(colonyID)
 	msg.Latest = false
+	msg.Timeout = timeout
 	jsonString, err := msg.ToJSON()
 	if err != nil {
 		return nil, err
@@ -412,9 +413,10 @@ func (client *ColoniesClient) AssignProcess(colonyID string, prvKey string) (*co
 	return core.ConvertJSONToProcess(respBodyString)
 }
 
-func (client *ColoniesClient) AssignLatestProcess(colonyID string, prvKey string) (*core.Process, error) {
+func (client *ColoniesClient) AssignLatestProcess(colonyID string, timeout int, prvKey string) (*core.Process, error) {
 	msg := rpc.CreateAssignProcessMsg(colonyID)
 	msg.Latest = true
+	msg.Timeout = timeout
 	jsonString, err := msg.ToJSON()
 	if err != nil {
 		return nil, err
@@ -810,7 +812,7 @@ func (client *ColoniesClient) Version() (string, string, error) {
 	return version.BuildVersion, version.BuildTime, nil
 }
 
-func (client *ColoniesClient) GetClusterInfo(prvKey string) (*etcd.Cluster, error) {
+func (client *ColoniesClient) GetClusterInfo(prvKey string) (*cluster.Config, error) {
 	msg := rpc.CreateGetClusterMsg()
 	jsonString, err := msg.ToJSON()
 	if err != nil {
@@ -822,5 +824,5 @@ func (client *ColoniesClient) GetClusterInfo(prvKey string) (*etcd.Cluster, erro
 		return nil, err
 	}
 
-	return etcd.ConvertJSONToCluster(respBodyString)
+	return cluster.ConvertJSONToConfig(respBodyString)
 }

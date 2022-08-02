@@ -63,3 +63,8 @@ if [ -f profile.out ]; then
   cat profile.out >> coverage.txt
   rm profile.out
 fi
+go test -race -coverprofile=profile.out -covermode=atomic ./pkg/cluster
+if [ -f profile.out ]; then
+  cat profile.out >> coverage.txt
+  rm profile.out
+fi

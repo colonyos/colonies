@@ -254,3 +254,9 @@ func (process *Process) ToJSON() (string, error) {
 
 	return string(jsonBytes), nil
 }
+
+func (process *Process) Clone() *Process {
+	processCopy := new(Process)
+	*processCopy = *process
+	return processCopy
+}

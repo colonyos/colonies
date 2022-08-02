@@ -11,7 +11,7 @@ import (
 func TestGeneratorEngineSyncStates(t *testing.T) {
 	env, _, server, _, done := setupTestEnv2(t)
 
-	engine := createGeneratorEngine(server.db, server)
+	engine := createGeneratorEngine(server.db, server.controller)
 	assert.Len(t, engine.states, 0)
 
 	colonyID := env.colonyID
@@ -40,7 +40,7 @@ func TestGeneratorEngineSyncStates(t *testing.T) {
 func TestGeneratorEngineTriggerByTimeout(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 
-	engine := createGeneratorEngine(server.db, server)
+	engine := createGeneratorEngine(server.db, server.controller)
 	assert.Len(t, engine.states, 0)
 
 	colonyID := env.colonyID
@@ -67,7 +67,7 @@ func TestGeneratorEngineTriggerByTimeout(t *testing.T) {
 func TestGeneratorEngineTriggerByCounter(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 
-	engine := createGeneratorEngine(server.db, server)
+	engine := createGeneratorEngine(server.db, server.controller)
 	assert.Len(t, engine.states, 0)
 
 	colonyID := env.colonyID

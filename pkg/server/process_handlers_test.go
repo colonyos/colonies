@@ -37,7 +37,7 @@ func TestSubmitProcess(t *testing.T) {
 
 func TestAssignProcess(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
-	assignedProcess, err := client.AssignProcess(env.colonyID, env.runtimePrvKey)
+	assignedProcess, err := client.AssignProcess(env.colonyID, -1, env.runtimePrvKey)
 	assert.Nil(t, assignedProcess)
 	assert.NotNil(t, err)
 
@@ -51,13 +51,69 @@ func TestAssignProcess(t *testing.T) {
 	addedProcess2, err := client.SubmitProcessSpec(processSpec2, env.runtimePrvKey)
 	assert.Nil(t, err)
 
-	assignedProcess, err = client.AssignProcess(env.colonyID, env.runtimePrvKey)
+	assignedProcess, err = client.AssignProcess(env.colonyID, -1, env.runtimePrvKey)
 	assert.Nil(t, err)
 	assert.Equal(t, addedProcess1.ID, assignedProcess.ID)
 
-	assignedProcess, err = client.AssignProcess(env.colonyID, env.runtimePrvKey)
+	assignedProcess, err = client.AssignProcess(env.colonyID, -1, env.runtimePrvKey)
 	assert.Nil(t, err)
 	assert.Equal(t, addedProcess2.ID, assignedProcess.ID)
+
+	server.Shutdown()
+	<-done
+}
+
+func TestAssignProcessWithTimeout(t *testing.T) {
+	env, client, server, _, done := setupTestEnv2(t)
+
+	addedProcessChan := make(chan *core.Process)
+	go func() {
+		time.Sleep(1 * time.Second)
+		processSpec := utils.CreateTestProcessSpec(env.colonyID)
+		addedProcess, err := client.SubmitProcessSpec(processSpec, env.runtimePrvKey)
+		assert.Nil(t, err)
+		addedProcessChan <- addedProcess
+	}()
+
+	// This function call will block for 60 seconds or until the Go-routine above submits a process spec
+	assignProcess, err := client.AssignProcess(env.colonyID, 60, env.runtimePrvKey)
+	assert.Nil(t, err)
+
+	addedProcess := <-addedProcessChan
+	assert.Equal(t, addedProcess.ID, assignProcess.ID)
+
+	server.Shutdown()
+	<-done
+}
+
+func TestAssignLatestProcessWithTimeout(t *testing.T) {
+	env, client, server, _, done := setupTestEnv2(t)
+
+	addedProcessChan := make(chan *core.Process)
+	go func() {
+		time.Sleep(1 * time.Second)
+		processSpec := utils.CreateTestProcessSpec(env.colonyID)
+		addedProcess, err := client.SubmitProcessSpec(processSpec, env.runtimePrvKey)
+		assert.Nil(t, err)
+		addedProcessChan <- addedProcess
+	}()
+
+	// This function call will block for 60 seconds or until the Go-routine above submits a process spec
+	assignProcess, err := client.AssignLatestProcess(env.colonyID, 60, env.runtimePrvKey)
+	assert.Nil(t, err)
+
+	addedProcess := <-addedProcessChan
+	assert.Equal(t, addedProcess.ID, assignProcess.ID)
+
+	server.Shutdown()
+	<-done
+}
+
+func TestAssignProcessWithTimeoutFail(t *testing.T) {
+	env, client, server, _, done := setupTestEnv2(t)
+
+	_, err := client.AssignProcess(env.colonyID, 1, env.runtimePrvKey)
+	assert.NotNil(t, err)
 
 	server.Shutdown()
 	<-done
@@ -76,7 +132,7 @@ func TestAssignLatestProcess(t *testing.T) {
 	addedProcess2, err := client.SubmitProcessSpec(processSpec2, env.runtimePrvKey)
 	assert.Nil(t, err)
 
-	assignedProcess, err := client.AssignLatestProcess(env.colonyID, env.runtimePrvKey)
+	assignedProcess, err := client.AssignLatestProcess(env.colonyID, -1, env.runtimePrvKey)
 	assert.Nil(t, err)
 	assert.Equal(t, addedProcess2.ID, assignedProcess.ID)
 
@@ -100,7 +156,7 @@ func TestMarkAlive(t *testing.T) {
 	time1 := runtimeFromServer.LastHeardFromTime
 	time.Sleep(1 * time.Second)
 
-	client.AssignProcess(env.colonyID, runtimePrvKey) // This will update the last heard from
+	client.AssignProcess(env.colonyID, -1, runtimePrvKey) // This will update the last heard from
 
 	runtimeFromServer, err = client.GetRuntime(runtime.ID, runtimePrvKey)
 	assert.Nil(t, err)
@@ -115,30 +171,17 @@ func TestMarkAlive(t *testing.T) {
 func TestGetProcessHistForColony(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 
-	numberOfRunningProcesses := 20
+	numberOfRunningProcesses := 3
 	for i := 0; i < numberOfRunningProcesses; i++ {
 		processSpec := utils.CreateTestProcessSpec(env.colonyID)
 		_, err := client.SubmitProcessSpec(processSpec, env.runtimePrvKey)
 		assert.Nil(t, err)
 	}
 
-	time.Sleep(1 * time.Second)
-
-	processSpec := utils.CreateTestProcessSpec(env.colonyID)
-	_, err := client.SubmitProcessSpec(processSpec, env.runtimePrvKey)
-	assert.Nil(t, err)
-
-	time.Sleep(1 * time.Second)
-
-	// Get processes for the 60 seconds
+	// Get processes for the last 60 seconds
 	processesFromServer, err := client.GetProcessHistForColony(core.WAITING, env.colonyID, 60, env.runtimePrvKey)
 	assert.Nil(t, err)
-	assert.Len(t, processesFromServer, numberOfRunningProcesses+1)
-
-	// Get processes for the last second
-	processesFromServer, err = client.GetProcessHistForColony(core.WAITING, env.colonyID, 2, env.runtimePrvKey)
-	assert.Nil(t, err)
-	assert.Len(t, processesFromServer, 1)
+	assert.Len(t, processesFromServer, numberOfRunningProcesses)
 
 	server.Shutdown()
 	<-done
@@ -152,7 +195,7 @@ func TestGetProcessHistForRuntime(t *testing.T) {
 		processSpec := utils.CreateTestProcessSpec(env.colony1ID)
 		_, err := client.SubmitProcessSpec(processSpec, env.runtime1PrvKey)
 		assert.Nil(t, err)
-		_, err = client.AssignProcess(env.colony1ID, env.runtime1PrvKey)
+		_, err = client.AssignProcess(env.colony1ID, -1, env.runtime1PrvKey)
 		assert.Nil(t, err)
 	}
 
@@ -161,7 +204,7 @@ func TestGetProcessHistForRuntime(t *testing.T) {
 	processSpec := utils.CreateTestProcessSpec(env.colony1ID)
 	_, err := client.SubmitProcessSpec(processSpec, env.runtime1PrvKey)
 	assert.Nil(t, err)
-	_, err = client.AssignProcess(env.colony1ID, env.runtime1PrvKey)
+	_, err = client.AssignProcess(env.colony1ID, -1, env.runtime1PrvKey)
 	assert.Nil(t, err)
 
 	time.Sleep(1 * time.Second)
@@ -210,7 +253,7 @@ func TestGetRunningProcesses(t *testing.T) {
 		processSpec := utils.CreateTestProcessSpec(env.colonyID)
 		_, err := client.SubmitProcessSpec(processSpec, env.runtimePrvKey)
 		assert.Nil(t, err)
-		_, err = client.AssignProcess(env.colonyID, env.runtimePrvKey)
+		_, err = client.AssignProcess(env.colonyID, -1, env.runtimePrvKey)
 		assert.Nil(t, err)
 	}
 
@@ -234,7 +277,7 @@ func TestGetSuccessfulProcesses(t *testing.T) {
 		processSpec := utils.CreateTestProcessSpec(env.colonyID)
 		_, err := client.SubmitProcessSpec(processSpec, env.runtimePrvKey)
 		assert.Nil(t, err)
-		processFromServer, err := client.AssignProcess(env.colonyID, env.runtimePrvKey)
+		processFromServer, err := client.AssignProcess(env.colonyID, -1, env.runtimePrvKey)
 		assert.Nil(t, err)
 		err = client.CloseSuccessful(processFromServer.ID, env.runtimePrvKey)
 		assert.Nil(t, err)
@@ -260,7 +303,7 @@ func TestGetFailedProcesses(t *testing.T) {
 		processSpec := utils.CreateTestProcessSpec(env.colonyID)
 		_, err := client.SubmitProcessSpec(processSpec, env.runtimePrvKey)
 		assert.Nil(t, err)
-		processFromServer, err := client.AssignProcess(env.colonyID, env.runtimePrvKey)
+		processFromServer, err := client.AssignProcess(env.colonyID, -1, env.runtimePrvKey)
 		assert.Nil(t, err)
 		err = client.CloseFailed(processFromServer.ID, "error", env.runtimePrvKey)
 		assert.Nil(t, err)
@@ -349,7 +392,7 @@ func TestCloseSuccessful(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, core.PENDING, addedProcess.State)
 
-	assignedProcess, err := client.AssignProcess(env.colonyID, env.runtimePrvKey)
+	assignedProcess, err := client.AssignProcess(env.colonyID, -1, env.runtimePrvKey)
 	assert.Nil(t, err)
 
 	assignedProcessFromServer, err := client.GetProcess(assignedProcess.ID, env.runtimePrvKey)
@@ -373,7 +416,7 @@ func TestCloseFailed(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, core.PENDING, addedProcess.State)
 
-	assignedProcess, err := client.AssignProcess(env.colonyID, env.runtimePrvKey)
+	assignedProcess, err := client.AssignProcess(env.colonyID, -1, env.runtimePrvKey)
 	assert.Nil(t, err)
 
 	assignedProcessFromServer, err := client.GetProcess(assignedProcess.ID, env.runtimePrvKey)
@@ -390,132 +433,18 @@ func TestCloseFailed(t *testing.T) {
 	<-done
 }
 
-// Runtime 2 subscribes on process events and expects to receive an event when a new process is submitted
-// Runtime 1 submitts a new process
-// Runtime 2 receives an event
-func TestSubscribeProcesses(t *testing.T) {
-	env, client, server, _, done := setupTestEnv1(t)
-
-	runtimeType := "test_runtime_type"
-
-	subscription, err := client.SubscribeProcesses(runtimeType, core.WAITING, 100, env.runtime2PrvKey)
-	assert.Nil(t, err)
-
-	waitForProcess := make(chan error)
-	go func() {
-		select {
-		case <-subscription.ProcessChan:
-			waitForProcess <- nil
-		case err := <-subscription.ErrChan:
-			waitForProcess <- err
-		}
-	}()
-
-	time.Sleep(1 * time.Second)
-
-	processSpec := utils.CreateTestProcessSpec(env.colony1ID)
-	_, err = client.SubmitProcessSpec(processSpec, env.runtime1PrvKey)
-	assert.Nil(t, err)
-
-	err = <-waitForProcess
-	assert.Nil(t, err)
-	server.Shutdown()
-	<-done
-}
-
-// Runtime 1 submits a process
-// Runtime 2 subscribes on process events and expects to receive an event when the process finishes.
-// Runtime 1 gets assign the process
-// Runtime 1 finish the process
-// Runtime 2 receives an event
-func TestSubscribeChangeStateProcess(t *testing.T) {
-	env, client, server, _, done := setupTestEnv1(t)
-
-	processSpec := utils.CreateTestProcessSpec(env.colony1ID)
-	addedProcess, err := client.SubmitProcessSpec(processSpec, env.runtime1PrvKey)
-	assert.Nil(t, err)
-	assert.Equal(t, core.PENDING, addedProcess.State)
-
-	subscription, err := client.SubscribeProcess(addedProcess.ID, core.SUCCESS, 100, env.runtime2PrvKey)
-	assert.Nil(t, err)
-
-	waitForProcess := make(chan error)
-	go func() {
-		select {
-		case <-subscription.ProcessChan:
-			waitForProcess <- nil
-		case err := <-subscription.ErrChan:
-			waitForProcess <- err
-		}
-	}()
-
-	assignedProcess, err := client.AssignProcess(env.colony1ID, env.runtime1PrvKey)
-	assert.Nil(t, err)
-
-	err = client.CloseSuccessful(assignedProcess.ID, env.runtime1PrvKey)
-	assert.Nil(t, err)
-
-	err = <-waitForProcess
-	assert.Nil(t, err)
-	server.Shutdown()
-	<-done
-}
-
-// Let change the order of the operations a bit, what about if the subscriber subscribes on an
-// process state change event, but that event has already occurred. Then, the subscriber would what forever.
-// The solution is to let the server send an event anyway if the wanted state is true already.
-//
-// Runtime 1 submits a process
-// Runtime 1 gets assign the process
-// Runtime 1 finish the process
-// Runtime 2 subscribes on process events and expects to receive an event when the process finishes.
-// Runtime 2 receives an event
-func TestSubscribeChangeStateProcess2(t *testing.T) {
-	env, client, server, _, done := setupTestEnv1(t)
-
-	processSpec := utils.CreateTestProcessSpec(env.colony1ID)
-	addedProcess, err := client.SubmitProcessSpec(processSpec, env.runtime1PrvKey)
-	assert.Nil(t, err)
-	assert.Equal(t, core.PENDING, addedProcess.State)
-
-	assignedProcess, err := client.AssignProcess(env.colony1ID, env.runtime1PrvKey)
-	assert.Nil(t, err)
-
-	err = client.CloseSuccessful(assignedProcess.ID, env.runtime1PrvKey)
-	assert.Nil(t, err)
-
-	time.Sleep(1 * time.Second)
-
-	subscription, err := client.SubscribeProcess(addedProcess.ID, core.SUCCESS, 100, env.runtime2PrvKey)
-	assert.Nil(t, err)
-
-	waitForProcess := make(chan error)
-	go func() {
-		select {
-		case <-subscription.ProcessChan:
-			waitForProcess <- nil
-		case err := <-subscription.ErrChan:
-			waitForProcess <- err
-		}
-	}()
-
-	err = <-waitForProcess
-	assert.Nil(t, err)
-	server.Shutdown()
-	<-done
-}
-
 func TestMaxWaitTime(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 
 	processSpec := utils.CreateTestProcessSpec(env.colonyID)
 	processSpec.MaxWaitTime = 1 // 1 second
 
-	_, err := client.SubmitProcessSpec(processSpec, env.runtimePrvKey)
+	process, err := client.SubmitProcessSpec(processSpec, env.runtimePrvKey)
 	assert.Nil(t, err)
 
-	// Wait for the process to time out
-	time.Sleep(5 * time.Second)
+	var processes []*core.Process
+	processes = append(processes, process)
+	waitForProcesses(t, server, processes, core.FAILED)
 
 	stat, err := client.ColonyStatistics(env.colonyID, env.runtimePrvKey)
 	assert.Nil(t, err)
@@ -531,110 +460,110 @@ func TestMaxExecTime(t *testing.T) {
 	processSpec := utils.CreateTestProcessSpec(env.colonyID)
 	processSpec.MaxExecTime = 1 // 1 second
 
-	for i := 0; i < 10; i++ {
+	numberOfProcesses := 10
+	var processes []*core.Process
+	for i := 0; i < numberOfProcesses; i++ {
 		_, err := client.SubmitProcessSpec(processSpec, env.runtimePrvKey)
 		assert.Nil(t, err)
-		_, err = client.AssignProcess(env.colonyID, env.runtimePrvKey)
+		process, err := client.AssignProcess(env.colonyID, -1, env.runtimePrvKey)
 		assert.Nil(t, err)
+		processes = append(processes, process)
 	}
 
-	// Wait for the process to time out
-	time.Sleep(30 * time.Second)
+	waitForProcesses(t, server, processes, core.WAITING)
 
 	stat, err := client.ColonyStatistics(env.colonyID, env.runtimePrvKey)
 	assert.Nil(t, err)
-	assert.Equal(t, stat.WaitingProcesses, 10)
+	assert.Equal(t, stat.WaitingProcesses, numberOfProcesses)
 
 	server.Shutdown()
 	<-done
 }
 
-func TestMaxExecTimeUnlimtedMaxretries(t *testing.T) {
+func TestMaxExecTimeUnlimtedMaxRetries(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 
 	processSpec := utils.CreateTestProcessSpec(env.colonyID)
 	processSpec.MaxExecTime = 1 // 1 second
 	processSpec.MaxRetries = -1 // Unlimted number of retries
 
-	for i := 0; i < 10; i++ {
+	numberOfProcesses := 10
+	var processes []*core.Process
+	for i := 0; i < numberOfProcesses; i++ {
 		_, err := client.SubmitProcessSpec(processSpec, env.runtimePrvKey)
 		assert.Nil(t, err)
-		_, err = client.AssignProcess(env.colonyID, env.runtimePrvKey)
+		process, err := client.AssignProcess(env.colonyID, -1, env.runtimePrvKey)
 		assert.Nil(t, err)
+		processes = append(processes, process)
 	}
 
-	// Wait for the process to time out
-	time.Sleep(20 * time.Second)
+	waitForProcesses(t, server, processes, core.WAITING)
 
 	stat, err := client.ColonyStatistics(env.colonyID, env.runtimePrvKey)
 	assert.Nil(t, err)
-	assert.Equal(t, stat.WaitingProcesses, 10)
+	assert.Equal(t, stat.WaitingProcesses, numberOfProcesses)
 
 	// Assign again
-	for i := 0; i < 10; i++ {
-		_, err = client.AssignProcess(env.colonyID, env.runtimePrvKey)
+	for i := 0; i < numberOfProcesses; i++ {
+		_, err = client.AssignProcess(env.colonyID, -1, env.runtimePrvKey)
 		assert.Nil(t, err)
 	}
 
 	stat, err = client.ColonyStatistics(env.colonyID, env.runtimePrvKey)
 	assert.Nil(t, err)
-	assert.Equal(t, stat.RunningProcesses, 10)
+	assert.Equal(t, stat.RunningProcesses, numberOfProcesses)
 
-	// Wait for the process to time out
-	time.Sleep(20 * time.Second)
+	waitForProcesses(t, server, processes, core.WAITING)
 
 	stat, err = client.ColonyStatistics(env.colonyID, env.runtimePrvKey)
 	assert.Nil(t, err)
-	assert.Equal(t, stat.WaitingProcesses, 10)
+	assert.Equal(t, stat.WaitingProcesses, numberOfProcesses)
 
 	server.Shutdown()
 	<-done
 }
 
-func TestMaxExecTimeMaxretries(t *testing.T) {
+func TestMaxExecTimeMaxRetries(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 
 	processSpec := utils.CreateTestProcessSpec(env.colonyID)
 	processSpec.MaxExecTime = 3 // 3 seconds
 	processSpec.MaxRetries = 1  // Max 1 retries
 
-	for i := 0; i < 10; i++ {
+	numberOfProcesses := 10
+	var processes []*core.Process
+	for i := 0; i < numberOfProcesses; i++ {
 		_, err := client.SubmitProcessSpec(processSpec, env.runtimePrvKey)
 		assert.Nil(t, err)
-		_, err = client.AssignProcess(env.colonyID, env.runtimePrvKey)
+		process, err := client.AssignProcess(env.colonyID, -1, env.runtimePrvKey)
 		assert.Nil(t, err)
+		processes = append(processes, process)
 	}
 
-	// We should now have 10 running processes
-
-	// Wait for the process to time out
-	time.Sleep(20 * time.Second)
+	waitForProcesses(t, server, processes, core.WAITING)
 
 	// We should now have 10 waiting processes
 	stat, err := client.ColonyStatistics(env.colonyID, env.runtimePrvKey)
 	assert.Nil(t, err)
-	assert.Equal(t, stat.WaitingProcesses, 10)
+	assert.Equal(t, stat.WaitingProcesses, numberOfProcesses)
 
 	// Assign again
-	for i := 0; i < 10; i++ {
-		_, err = client.AssignProcess(env.colonyID, env.runtimePrvKey)
+	for i := 0; i < numberOfProcesses; i++ {
+		_, err = client.AssignProcess(env.colonyID, -1, env.runtimePrvKey)
 		assert.Nil(t, err)
 	}
-
-	time.Sleep(2 * time.Second)
 
 	// We should now have 10 running processes
 	stat, err = client.ColonyStatistics(env.colonyID, env.runtimePrvKey)
 	assert.Nil(t, err)
-	assert.Equal(t, stat.RunningProcesses, 10)
+	assert.Equal(t, stat.RunningProcesses, numberOfProcesses)
 
-	// Wait for the process to time out
-	time.Sleep(20 * time.Second)
+	waitForProcesses(t, server, processes, core.FAILED)
 
 	// We should now have 10 failed processes since max retries reached
 	stat, err = client.ColonyStatistics(env.colonyID, env.runtimePrvKey)
 	assert.Nil(t, err)
-	assert.Equal(t, stat.FailedProcesses, 10) // NOTE Failed!!
+	assert.Equal(t, stat.FailedProcesses, numberOfProcesses) // NOTE Failed!!
 
 	server.Shutdown()
 	<-done

@@ -1,8 +1,10 @@
 package server
 
 import (
+	"context"
 	"errors"
 	"net/http"
+	"time"
 
 	"github.com/colonyos/colonies/pkg/core"
 	"github.com/colonyos/colonies/pkg/rpc"
@@ -72,8 +74,37 @@ func (server *ColoniesServer) handleAssignProcessHTTPRequest(c *gin.Context, rec
 		return
 	}
 
-	process, err := server.controller.assignRuntime(recoveredID, msg.ColonyID, msg.Latest)
-	if server.handleHTTPError(c, err, http.StatusNoContent) {
+	if msg.Timeout == 0 {
+		server.handleHTTPError(c, errors.New("Invalid timeout value, timeout cannot be zero"), http.StatusBadRequest)
+		return
+	}
+
+	process, assignErr := server.controller.assignRuntime(recoveredID, msg.ColonyID, msg.Latest)
+	if assignErr != nil {
+		if msg.Timeout > 0 {
+			ctx, cancelCtx := context.WithTimeout(context.Background(), time.Duration(msg.Timeout)*time.Second)
+			defer cancelCtx()
+			runtime, err := server.controller.getRuntime(recoveredID)
+			if server.handleHTTPError(c, err, http.StatusBadRequest) {
+				return
+			}
+
+			// Wait for a new process to be submitted to a ColoniesServer in the cluster
+			log.WithFields(log.Fields{
+				"RuntimeType": runtime.RuntimeType,
+				"RuntimeID":   recoveredID,
+				"ColonyID":    msg.ColonyID,
+				"Timeout":     msg.Timeout}).
+				Info("Waiting for processes")
+			server.controller.eventHandler.waitForProcess(runtime.RuntimeType, core.WAITING, "", ctx)
+
+			// Try again! Note there is no guarantees we was assigned as process since multiple workers competes getting jobs
+			process, assignErr = server.controller.assignRuntime(recoveredID, msg.ColonyID, msg.Latest)
+		}
+	}
+
+	if server.handleHTTPError(c, assignErr, http.StatusOK) {
+		log.WithFields(log.Fields{"RuntimeID": recoveredID, "ColonyID": msg.ColonyID}).Info("No process can be assigned")
 		return
 	}
 	if process == nil {
