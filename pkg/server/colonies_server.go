@@ -5,15 +5,13 @@ import (
 	"errors"
 	"io/ioutil"
 	"net/http"
-	"os"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
+	"github.com/colonyos/colonies/pkg/cluster"
 	"github.com/colonyos/colonies/pkg/core"
 	"github.com/colonyos/colonies/pkg/database"
-	"github.com/colonyos/colonies/pkg/etcd"
 	"github.com/colonyos/colonies/pkg/rpc"
 	"github.com/colonyos/colonies/pkg/security"
 	"github.com/colonyos/colonies/pkg/security/crypto"
@@ -36,11 +34,6 @@ type ColoniesServer struct {
 	crypto            security.Crypto
 	validator         security.Validator
 	db                database.Database
-	mutex             sync.Mutex
-	thisNode          etcd.Node
-	cluster           etcd.Cluster
-	etcdServer        *etcd.EtcdServer
-	leader            bool
 }
 
 func CreateColoniesServer(db database.Database,
@@ -50,8 +43,8 @@ func CreateColoniesServer(db database.Database,
 	tlsPrivateKeyPath string,
 	tlsCertPath string,
 	debug bool,
-	thisNode etcd.Node,
-	cluster etcd.Cluster,
+	thisNode cluster.Node,
+	clusterConfig cluster.Config,
 	etcdDataPath string) *ColoniesServer {
 	if debug {
 		log.SetLevel(log.DebugLevel)
@@ -71,15 +64,8 @@ func CreateColoniesServer(db database.Database,
 		Handler: server.ginHandler,
 	}
 
-	server.thisNode = thisNode
-	server.cluster = cluster
-	server.etcdServer = etcd.CreateEtcdServer(server.thisNode, server.cluster, etcdDataPath)
-	server.etcdServer.Start()
-	server.etcdServer.WaitToStart()
-	server.leader = false
-
 	server.httpServer = httpServer
-	server.controller = createColoniesController(db, server)
+	server.controller = createColoniesController(db, thisNode, clusterConfig, etcdDataPath)
 	server.serverID = serverID
 	server.tls = tls
 	server.port = port
@@ -91,21 +77,6 @@ func CreateColoniesServer(db database.Database,
 	server.setupRoutes()
 
 	return server
-}
-
-func (server *ColoniesServer) isLeader() bool {
-	areWeLeader := server.etcdServer.Leader() == server.thisNode.Name
-	if areWeLeader && !server.leader {
-		log.Info("Colonies server became leader")
-		server.leader = true
-	}
-
-	if !areWeLeader && server.leader {
-		log.Info("Colonies server is no longer a leader")
-		server.leader = false
-	}
-
-	return areWeLeader
 }
 
 func (server *ColoniesServer) setupRoutes() {
@@ -126,6 +97,7 @@ func (server *ColoniesServer) parseSignature(jsonString string, signature string
 func (server *ColoniesServer) handleEndpointRequest(c *gin.Context) {
 	jsonBytes, err := ioutil.ReadAll(c.Request.Body)
 	if server.handleHTTPError(c, err, http.StatusBadRequest) {
+		log.WithFields(log.Fields{"Error": err}).Error("Bad request")
 		return
 	}
 
@@ -315,16 +287,13 @@ func (server *ColoniesServer) ServeForever() error {
 
 func (server *ColoniesServer) Shutdown() {
 	server.controller.stop()
-	server.etcdServer.Stop()
-	server.etcdServer.WaitToStop()
-	os.RemoveAll(server.etcdServer.StorageDir())
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	defer server.db.Close()
 
 	if err := server.httpServer.Shutdown(ctx); err != nil {
-		log.WithFields(log.Fields{"Error": err}).Warning("Colonies server forced to shutdown")
+		log.WithFields(log.Fields{"Error": err}).Warning("ColoniesServer forced to shutdown")
 	}
 
 }
