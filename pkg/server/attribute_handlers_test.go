@@ -33,6 +33,9 @@ func TestAddGetAttributes(t *testing.T) {
 
 	assert.Equal(t, "helloworld", out["result"])
 
+	_, err = client.GetAttribute(core.GenerateRandomID(), env.runtimePrvKey)
+	assert.NotNil(t, err) // Will not work, invalid target
+
 	attributeFromServer, err := client.GetAttribute(attribute.ID, env.runtimePrvKey)
 	assert.Nil(t, err)
 	assert.Equal(t, attribute.ID, attributeFromServer.ID)

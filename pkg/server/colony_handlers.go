@@ -12,13 +12,12 @@ import (
 
 func (server *ColoniesServer) handleAddColonyHTTPRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
 	msg, err := rpc.CreateAddColonyMsgFromJSON(jsonString)
-	if server.handleHTTPError(c, err, http.StatusBadRequest) {
-		return
+	if err != nil {
+		if server.handleHTTPError(c, errors.New("Failed to add colony, invalid JSON"), http.StatusBadRequest) {
+			return
+		}
 	}
-	if msg == nil {
-		server.handleHTTPError(c, errors.New("Failed to add colony, failed to parse JSON"), http.StatusBadRequest)
-		return
-	}
+
 	if msg.MsgType != payloadType {
 		server.handleHTTPError(c, errors.New("Failed to add colony, msg.MsgType does not match payloadType"), http.StatusBadRequest)
 		return
@@ -43,6 +42,7 @@ func (server *ColoniesServer) handleAddColonyHTTPRequest(c *gin.Context, recover
 	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
+
 	if addedColony == nil {
 		server.handleHTTPError(c, errors.New("Failed to add colony, addedColony is nil"), http.StatusInternalServerError)
 		return
@@ -60,13 +60,12 @@ func (server *ColoniesServer) handleAddColonyHTTPRequest(c *gin.Context, recover
 
 func (server *ColoniesServer) handleDeleteColonyHTTPRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
 	msg, err := rpc.CreateDeleteColonyMsgFromJSON(jsonString)
-	if server.handleHTTPError(c, err, http.StatusBadRequest) {
-		return
+	if err != nil {
+		if server.handleHTTPError(c, errors.New("Failed to delete colony, invalid JSON"), http.StatusBadRequest) {
+			return
+		}
 	}
-	if msg == nil {
-		server.handleHTTPError(c, errors.New("Failed to delete colony, failed to parse JSON"), http.StatusBadRequest)
-		return
-	}
+
 	if msg.MsgType != payloadType {
 		server.handleHTTPError(c, errors.New("Failed to delete colony, msg.MsgType does not match payloadType"), http.StatusBadRequest)
 		return
@@ -89,13 +88,12 @@ func (server *ColoniesServer) handleDeleteColonyHTTPRequest(c *gin.Context, reco
 
 func (server *ColoniesServer) handleGetColoniesHTTPRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
 	msg, err := rpc.CreateGetColoniesMsgFromJSON(jsonString)
-	if server.handleHTTPError(c, err, http.StatusBadRequest) {
-		return
+	if err != nil {
+		if server.handleHTTPError(c, errors.New("Failed to get colonies, invalid JSON"), http.StatusBadRequest) {
+			return
+		}
 	}
-	if msg == nil {
-		server.handleHTTPError(c, errors.New("Failed to get colonies, failed to parse JSON"), http.StatusBadRequest)
-		return
-	}
+
 	if msg.MsgType != payloadType {
 		server.handleHTTPError(c, errors.New("Failed to get colonies, msg.MsgType does not match payloadType"), http.StatusBadRequest)
 		return
@@ -123,13 +121,12 @@ func (server *ColoniesServer) handleGetColoniesHTTPRequest(c *gin.Context, recov
 
 func (server *ColoniesServer) handleGetColonyHTTPRequest(c *gin.Context, recoveredID, payloadType string, jsonString string) {
 	msg, err := rpc.CreateGetColonyMsgFromJSON(jsonString)
-	if server.handleHTTPError(c, err, http.StatusBadRequest) {
-		return
+	if err != nil {
+		if server.handleHTTPError(c, errors.New("Failed to get colony, invalid JSON"), http.StatusBadRequest) {
+			return
+		}
 	}
-	if msg == nil {
-		server.handleHTTPError(c, errors.New("Failed to get colony, failed to parse JSON"), http.StatusBadRequest)
-		return
-	}
+
 	if msg.MsgType != payloadType {
 		server.handleHTTPError(c, errors.New("Failed to get colony, msg.MsgType does not match payloadType"), http.StatusBadRequest)
 		return
@@ -161,12 +158,10 @@ func (server *ColoniesServer) handleGetColonyHTTPRequest(c *gin.Context, recover
 
 func (server *ColoniesServer) handleColonyStatisticsHTTPRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
 	msg, err := rpc.CreateGetColonyStatisticsMsgFromJSON(jsonString)
-	if server.handleHTTPError(c, err, http.StatusBadRequest) {
-		return
-	}
-	if msg == nil {
-		server.handleHTTPError(c, errors.New("Failed to get colony statistics, failed to parse JSON"), http.StatusBadRequest)
-		return
+	if err != nil {
+		if server.handleHTTPError(c, errors.New("Failed to get colony statistics, invalid JSON"), http.StatusBadRequest) {
+			return
+		}
 	}
 
 	if msg.MsgType != payloadType {

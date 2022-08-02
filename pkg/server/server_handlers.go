@@ -12,13 +12,12 @@ import (
 
 func (server *ColoniesServer) handleVersionHTTPRequest(c *gin.Context, payloadType string, jsonString string) {
 	msg, err := rpc.CreateVersionMsgFromJSON(jsonString)
-	if server.handleHTTPError(c, err, http.StatusBadRequest) {
-		return
+	if err != nil {
+		if server.handleHTTPError(c, errors.New("Failed to get server version, invalid JSON"), http.StatusBadRequest) {
+			return
+		}
 	}
-	if msg == nil {
-		server.handleHTTPError(c, errors.New("Failed to get server version, failed to parse JSON"), http.StatusBadRequest)
-		return
-	}
+
 	if msg.MsgType != payloadType {
 		server.handleHTTPError(c, errors.New("Failed to get server version, msg.MsgType does not match payloadType"), http.StatusBadRequest)
 		return
@@ -38,13 +37,12 @@ func (server *ColoniesServer) handleVersionHTTPRequest(c *gin.Context, payloadTy
 
 func (server *ColoniesServer) handleStatisticsHTTPRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
 	msg, err := rpc.CreateGetStatisticsMsgFromJSON(jsonString)
-	if server.handleHTTPError(c, err, http.StatusBadRequest) {
-		return
+	if err != nil {
+		if server.handleHTTPError(c, errors.New("Failed to get statistics, invalid JSON"), http.StatusBadRequest) {
+			return
+		}
 	}
-	if msg == nil {
-		server.handleHTTPError(c, errors.New("Failed to get server version, failed to parse JSON"), http.StatusBadRequest)
-		return
-	}
+
 	if msg.MsgType != payloadType {
 		server.handleHTTPError(c, errors.New("Failed to get server version, msg.MsgType does not match payloadType"), http.StatusBadRequest)
 		return
@@ -70,13 +68,12 @@ func (server *ColoniesServer) handleStatisticsHTTPRequest(c *gin.Context, recove
 
 func (server *ColoniesServer) handleGetClusterHTTPRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
 	msg, err := rpc.CreateGetClusterMsgFromJSON(jsonString)
-	if server.handleHTTPError(c, err, http.StatusBadRequest) {
-		return
+	if err != nil {
+		if server.handleHTTPError(c, errors.New("Failed to get cluster info, invalid JSON"), http.StatusBadRequest) {
+			return
+		}
 	}
-	if msg == nil {
-		server.handleHTTPError(c, errors.New("Failed to get cluster info, failed to parse JSON"), http.StatusBadRequest)
-		return
-	}
+
 	if msg.MsgType != payloadType {
 		server.handleHTTPError(c, errors.New("Failed to get cluster info, msg.MsgType does not match payloadType"), http.StatusBadRequest)
 		return

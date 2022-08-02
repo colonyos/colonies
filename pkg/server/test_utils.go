@@ -10,6 +10,7 @@ import (
 	"github.com/colonyos/colonies/pkg/core"
 	"github.com/colonyos/colonies/pkg/database"
 	"github.com/colonyos/colonies/pkg/database/postgresql"
+	"github.com/colonyos/colonies/pkg/rpc"
 	"github.com/colonyos/colonies/pkg/security/crypto"
 	"github.com/colonyos/colonies/pkg/utils"
 	"github.com/stretchr/testify/assert"
@@ -205,4 +206,10 @@ func waitForProcesses(t *testing.T, server *ColoniesServer, processes []*core.Pr
 		err = <-wait
 		assert.Nil(t, err)
 	}
+}
+
+func verifyRPCReplyMsgHasErr(t *testing.T, b []byte) {
+	rpcReplyMsg, err := rpc.CreateRPCReplyMsgFromJSON(string(b))
+	assert.Nil(t, err)
+	assert.True(t, rpcReplyMsg.Error)
 }
