@@ -14,13 +14,12 @@ import (
 
 func (server *ColoniesServer) handleSubmitProcessSpecHTTPRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
 	msg, err := rpc.CreateSubmitProcessSpecMsgFromJSON(jsonString)
-	if server.handleHTTPError(c, err, http.StatusBadRequest) {
-		return
+	if err != nil {
+		if server.handleHTTPError(c, errors.New("Failed to submit process, invalid JSON"), http.StatusBadRequest) {
+			return
+		}
 	}
-	if msg == nil {
-		server.handleHTTPError(c, errors.New("Failed to submit process spec, failed to parse JSON"), http.StatusBadRequest)
-		return
-	}
+
 	if msg.MsgType != payloadType {
 		server.handleHTTPError(c, errors.New("Failed to submit process spec, msg.MsgType does not match payloadType"), http.StatusBadRequest)
 		return
@@ -57,13 +56,12 @@ func (server *ColoniesServer) handleSubmitProcessSpecHTTPRequest(c *gin.Context,
 
 func (server *ColoniesServer) handleAssignProcessHTTPRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
 	msg, err := rpc.CreateAssignProcessMsgFromJSON(jsonString)
-	if server.handleHTTPError(c, err, http.StatusBadRequest) {
-		return
+	if err != nil {
+		if server.handleHTTPError(c, errors.New("Failed to assign process, invalid JSON"), http.StatusBadRequest) {
+			return
+		}
 	}
-	if msg == nil {
-		server.handleHTTPError(c, errors.New("Failed to assign process, failed to parse JSON"), http.StatusBadRequest)
-		return
-	}
+
 	if msg.MsgType != payloadType {
 		server.handleHTTPError(c, errors.New("Failed to assign process, msg.msgType does not match payloadType"), http.StatusBadRequest)
 		return
@@ -124,13 +122,12 @@ func (server *ColoniesServer) handleAssignProcessHTTPRequest(c *gin.Context, rec
 
 func (server *ColoniesServer) handleGetProcessHistHTTPRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
 	msg, err := rpc.CreateGetProcessHistMsgFromJSON(jsonString)
-	if server.handleHTTPError(c, err, http.StatusBadRequest) {
-		return
+	if err != nil {
+		if server.handleHTTPError(c, errors.New("Failed to get process hist, invalid JSON"), http.StatusBadRequest) {
+			return
+		}
 	}
-	if msg == nil {
-		server.handleHTTPError(c, errors.New("Failed to get process history, failed to parse JSON"), http.StatusBadRequest)
-		return
-	}
+
 	if msg.MsgType != payloadType {
 		server.handleHTTPError(c, errors.New("Failed to get process history, msg.MsgType does not match payloadType"), http.StatusBadRequest)
 		return
@@ -165,13 +162,12 @@ func (server *ColoniesServer) handleGetProcessHistHTTPRequest(c *gin.Context, re
 
 func (server *ColoniesServer) handleGetProcessesHTTPRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
 	msg, err := rpc.CreateGetProcessesMsgFromJSON(jsonString)
-	if server.handleHTTPError(c, err, http.StatusBadRequest) {
-		return
+	if err != nil {
+		if server.handleHTTPError(c, errors.New("Failed to get processes, invalid JSON"), http.StatusBadRequest) {
+			return
+		}
 	}
-	if msg == nil {
-		server.handleHTTPError(c, errors.New("Failed to get processes, failed to parse JSON"), http.StatusBadRequest)
-		return
-	}
+
 	if msg.MsgType != payloadType {
 		server.handleHTTPError(c, errors.New("Failed to get processes, msg.MsgType does not match payloadType"), http.StatusBadRequest)
 		return
@@ -237,13 +233,12 @@ func (server *ColoniesServer) handleGetProcessesHTTPRequest(c *gin.Context, reco
 
 func (server *ColoniesServer) handleGetProcessHTTPRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
 	msg, err := rpc.CreateGetProcessMsgFromJSON(jsonString)
-	if server.handleHTTPError(c, err, http.StatusBadRequest) {
-		return
+	if err != nil {
+		if server.handleHTTPError(c, errors.New("Failed to get process, invalid JSON"), http.StatusBadRequest) {
+			return
+		}
 	}
-	if msg == nil {
-		server.handleHTTPError(c, errors.New("Failed to get process, failed to parse JSON"), http.StatusBadRequest)
-		return
-	}
+
 	if msg.MsgType != payloadType {
 		server.handleHTTPError(c, errors.New("Failed to get process, msg.MsgType does not match payloadType"), http.StatusBadRequest)
 		return
@@ -275,13 +270,12 @@ func (server *ColoniesServer) handleGetProcessHTTPRequest(c *gin.Context, recove
 
 func (server *ColoniesServer) handleDeleteProcessHTTPRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
 	msg, err := rpc.CreateDeleteProcessMsgFromJSON(jsonString)
-	if server.handleHTTPError(c, err, http.StatusBadRequest) {
-		return
+	if err != nil {
+		if server.handleHTTPError(c, errors.New("Failed to delete process, invalid JSON"), http.StatusBadRequest) {
+			return
+		}
 	}
-	if msg == nil {
-		server.handleHTTPError(c, errors.New("Failed to delete process, failed to parse JSON"), http.StatusBadRequest)
-		return
-	}
+
 	if msg.MsgType != payloadType {
 		server.handleHTTPError(c, errors.New("Failed to delete process, msg.MsgType does not match payloadType"), http.StatusBadRequest)
 		return
@@ -313,13 +307,12 @@ func (server *ColoniesServer) handleDeleteProcessHTTPRequest(c *gin.Context, rec
 
 func (server *ColoniesServer) handleDeleteAllProcessesHTTPRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
 	msg, err := rpc.CreateDeleteAllProcessesMsgFromJSON(jsonString)
-	if server.handleHTTPError(c, err, http.StatusBadRequest) {
-		return
+	if err != nil {
+		if server.handleHTTPError(c, errors.New("Failed to delete all processes, invalid JSON"), http.StatusBadRequest) {
+			return
+		}
 	}
-	if msg == nil {
-		server.handleHTTPError(c, errors.New("Failed to delete all processes, failed to parse JSON"), http.StatusBadRequest)
-		return
-	}
+
 	if msg.MsgType != payloadType {
 		server.handleHTTPError(c, errors.New("Failed to delete all processes, msg.MsgType does not match payloadType"), http.StatusBadRequest)
 		return
@@ -342,13 +335,12 @@ func (server *ColoniesServer) handleDeleteAllProcessesHTTPRequest(c *gin.Context
 
 func (server *ColoniesServer) handleCloseSuccessfulHTTPRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
 	msg, err := rpc.CreateCloseSuccessfulMsgFromJSON(jsonString)
-	if server.handleHTTPError(c, err, http.StatusBadRequest) {
-		return
+	if err != nil {
+		if server.handleHTTPError(c, errors.New("Failed to close successful, invalid JSON"), http.StatusBadRequest) {
+			return
+		}
 	}
-	if msg == nil {
-		server.handleHTTPError(c, errors.New("Failed to close process as successful, failed to parse JSON"), http.StatusBadRequest)
-		return
-	}
+
 	if msg.MsgType != payloadType {
 		server.handleHTTPError(c, errors.New("Failed to close process as successful, msg.MsgType does not match payloadType"), http.StatusBadRequest)
 		return
@@ -386,13 +378,12 @@ func (server *ColoniesServer) handleCloseSuccessfulHTTPRequest(c *gin.Context, r
 
 func (server *ColoniesServer) handleCloseFailedHTTPRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
 	msg, err := rpc.CreateCloseFailedMsgFromJSON(jsonString)
-	if server.handleHTTPError(c, err, http.StatusBadRequest) {
-		return
+	if err != nil {
+		if server.handleHTTPError(c, errors.New("Failed to close failed, invalid JSON"), http.StatusBadRequest) {
+			return
+		}
 	}
-	if msg == nil {
-		server.handleHTTPError(c, errors.New("Failed to close process as failed, failed to parse JSON"), http.StatusBadRequest)
-		return
-	}
+
 	if msg.MsgType != payloadType {
 		server.handleHTTPError(c, errors.New("Failed to close process as failed, msg.MsgType does not match payloadType"), http.StatusBadRequest)
 		return

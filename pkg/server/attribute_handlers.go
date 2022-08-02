@@ -11,13 +11,12 @@ import (
 
 func (server *ColoniesServer) handleAddAttributeHTTPRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
 	msg, err := rpc.CreateAddAttributeMsgFromJSON(jsonString)
-	if server.handleHTTPError(c, err, http.StatusBadRequest) {
-		return
+	if err != nil {
+		if server.handleHTTPError(c, errors.New("Failed to add attribute, invalid JSON"), http.StatusBadRequest) {
+			return
+		}
 	}
-	if msg == nil {
-		server.handleHTTPError(c, errors.New("Failed to add attribute, failed to parse JSON"), http.StatusBadRequest)
-		return
-	}
+
 	if msg.MsgType != payloadType {
 		server.handleHTTPError(c, errors.New("Failed to add attribute, msg.MsgType does not match payloadType"), http.StatusBadRequest)
 		return
@@ -63,13 +62,12 @@ func (server *ColoniesServer) handleAddAttributeHTTPRequest(c *gin.Context, reco
 
 func (server *ColoniesServer) handleGetAttributeHTTPRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
 	msg, err := rpc.CreateGetAttributeMsgFromJSON(jsonString)
-	if server.handleHTTPError(c, err, http.StatusBadRequest) {
-		return
+	if err != nil {
+		if server.handleHTTPError(c, errors.New("Failed to get attribute, invalid JSON"), http.StatusBadRequest) {
+			return
+		}
 	}
-	if msg == nil {
-		server.handleHTTPError(c, errors.New("Failed to get attribute, failed to parse JSON"), http.StatusBadRequest)
-		return
-	}
+
 	if msg.MsgType != payloadType {
 		server.handleHTTPError(c, errors.New("Failed to get attribute, msg.MsgType does not match payloadType"), http.StatusBadRequest)
 		return
