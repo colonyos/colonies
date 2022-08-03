@@ -2,7 +2,6 @@ package reliability
 
 import (
 	"testing"
-	"time"
 
 	"github.com/colonyos/colonies/pkg/client"
 	"github.com/colonyos/colonies/pkg/core"
@@ -69,22 +68,6 @@ func TestReliability(t *testing.T) {
 	}
 }
 
-func waitForProcessGraphs(t *testing.T, c *client.ColoniesClient, colonyID string, generatorID string, runtimePrvKey string, threshold int) int {
-	var graphs []*core.ProcessGraph
-	var err error
-	retries := 40
-	for i := 0; i < retries; i++ {
-		graphs, err = c.GetWaitingProcessGraphs(colonyID, 100, runtimePrvKey)
-		assert.Nil(t, err)
-		err = c.IncGenerator(generatorID, runtimePrvKey)
-		if len(graphs) > threshold {
-			break
-		}
-		time.Sleep(1 * time.Second)
-	}
-	return len(graphs)
-}
-
 func TestGeneratorReliability(t *testing.T) {
 	db, err := postgresql.PrepareTests()
 	defer db.Close()
@@ -127,7 +110,7 @@ func TestGeneratorReliability(t *testing.T) {
 	graphs, err = c.GetWaitingProcessGraphs(colony.ID, 100, runtimePrvKey)
 	assert.Len(t, graphs, 0) // Since we have not triggered any generator yet
 
-	nrOfgraphs := waitForProcessGraphs(t, c, colony.ID, generator.ID, runtimePrvKey, 1)
+	nrOfgraphs := server.WaitForProcessGraphs(t, c, colony.ID, generator.ID, runtimePrvKey, 1)
 	assert.Greater(t, nrOfgraphs, 1) // Ok we got a generator
 
 	// The leader is reponsible for the generator engine
@@ -159,7 +142,7 @@ func TestGeneratorReliability(t *testing.T) {
 		c = client.CreateColoniesClient("localhost", selectedServer.Node.APIPort, true, true) // Connect to another server
 	}
 
-	nrOfgraphs2 := waitForProcessGraphs(t, c, colony.ID, generator.ID, runtimePrvKey, nrOfgraphs)
+	nrOfgraphs2 := server.WaitForProcessGraphs(t, c, colony.ID, generator.ID, runtimePrvKey, nrOfgraphs)
 	log.WithFields(log.Fields{"nrOfgraphs": nrOfgraphs, "nrOfgraphs2": nrOfgraphs2}).Info("Done waiting for processgraphs")
 	assert.Greater(t, nrOfgraphs2, nrOfgraphs)
 
