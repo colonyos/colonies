@@ -812,6 +812,17 @@ func (client *ColoniesClient) Version() (string, string, error) {
 	return version.BuildVersion, version.BuildTime, nil
 }
 
+func (client *ColoniesClient) CheckHealth() error {
+	protocol := "https"
+	if client.insecure {
+		protocol = "http"
+	}
+	_, err := client.restyClient.R().
+		Get(protocol + "://" + client.host + ":" + strconv.Itoa(client.port) + "/health")
+
+	return err
+}
+
 func (client *ColoniesClient) GetClusterInfo(prvKey string) (*cluster.Config, error) {
 	msg := rpc.CreateGetClusterMsg()
 	jsonString, err := msg.ToJSON()

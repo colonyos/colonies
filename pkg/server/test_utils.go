@@ -2,6 +2,9 @@ package server
 
 import (
 	"context"
+	"fmt"
+	"os"
+	"strconv"
 	"testing"
 	"time"
 
@@ -13,6 +16,7 @@ import (
 	"github.com/colonyos/colonies/pkg/rpc"
 	"github.com/colonyos/colonies/pkg/security/crypto"
 	"github.com/colonyos/colonies/pkg/utils"
+	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -107,6 +111,7 @@ func setupTestEnv2(t *testing.T) (*testEnv2, *client.ColoniesClient, *ColoniesSe
 }
 
 func prepareTests(t *testing.T) (*client.ColoniesClient, *ColoniesServer, string, chan bool) {
+	os.RemoveAll("/tmp/colonies")
 	client := client.CreateColoniesClient(TESTHOST, TESTPORT, Insecure, SkipTLSVerify)
 
 	debug := false
@@ -212,4 +217,92 @@ func verifyRPCReplyMsgHasErr(t *testing.T, b []byte) {
 	rpcReplyMsg, err := rpc.CreateRPCReplyMsgFromJSON(string(b))
 	assert.Nil(t, err)
 	assert.True(t, rpcReplyMsg.Error)
+}
+
+// Cluster testing
+
+type ServerInfo struct {
+	ServerID     string
+	ServerPrvKey string
+	Server       *ColoniesServer
+	Node         cluster.Node
+	Done         chan struct{}
+}
+
+func StartCluster(t *testing.T, db database.Database, size int) []ServerInfo {
+	os.RemoveAll("/tmp/colonies")
+
+	clusterConfig := cluster.Config{}
+	for i := 0; i < size; i++ {
+		node := cluster.Node{
+			Name:           "etcd" + strconv.Itoa(i),
+			Host:           "localhost",
+			EtcdClientPort: 21000 + i,
+			EtcdPeerPort:   22000 + i,
+			RelayPort:      23000 + i,
+			APIPort:        24000 + i}
+		clusterConfig.AddNode(node)
+	}
+
+	crypto := crypto.CreateCrypto()
+	serverPrvKey, err := crypto.GeneratePrivateKey()
+	assert.Nil(t, err)
+	serverID, err := crypto.GenerateID(serverPrvKey)
+	assert.Nil(t, err)
+
+	sChan := make(chan ServerInfo)
+	for i, node := range clusterConfig.Nodes {
+		go func(i int, node cluster.Node) {
+			log.WithFields(log.Fields{"APIPort": node.APIPort}).Info("Starting ColoniesServer")
+			server := CreateColoniesServer(db, node.APIPort, serverID, false, "", "", false, node, clusterConfig, "/tmp/colonies/etcd"+strconv.Itoa(i))
+			done := make(chan struct{})
+			s := ServerInfo{ServerID: serverID, ServerPrvKey: serverPrvKey, Server: server, Node: node, Done: done}
+			go func(i int) {
+				log.Info("ColoniesServer serving")
+				server.ServeForever()
+				log.Info("ColoniesServer stopped")
+				done <- struct{}{}
+			}(i)
+			sChan <- s
+		}(i, node)
+	}
+
+	var servers []ServerInfo
+	for range clusterConfig.Nodes {
+		s := <-sChan
+		servers = append(servers, s)
+	}
+
+	return servers
+}
+
+func WaitForCluster(t *testing.T, cluster []ServerInfo) {
+	serverReady := 0
+	for {
+		for _, s := range cluster {
+			client := client.CreateColoniesClient("localhost", s.Node.APIPort, true, true)
+			err := client.CheckHealth()
+			if err == nil {
+				serverReady++
+			} else {
+				time.Sleep(50 * time.Millisecond)
+				fmt.Println(err)
+			}
+			if serverReady == len(cluster) {
+				return
+			}
+		}
+	}
+}
+
+func WaitForServerToDie(t *testing.T, s ServerInfo) {
+	for {
+		c := client.CreateColoniesClient("localhost", s.Node.APIPort, true, true)
+		err := c.CheckHealth()
+		if err != nil {
+			return
+		} else {
+			time.Sleep(50 * time.Millisecond)
+		}
+	}
 }

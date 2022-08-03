@@ -80,7 +80,8 @@ func CreateColoniesServer(db database.Database,
 }
 
 func (server *ColoniesServer) setupRoutes() {
-	server.ginHandler.POST("/api", server.handleEndpointRequest)
+	server.ginHandler.POST("/api", server.handleAPIRequest)
+	server.ginHandler.GET("/health", server.handleHealthRequest)
 	server.ginHandler.GET("/pubsub", server.handleWSRequest)
 }
 
@@ -94,7 +95,11 @@ func (server *ColoniesServer) parseSignature(jsonString string, signature string
 	return recoveredID, nil
 }
 
-func (server *ColoniesServer) handleEndpointRequest(c *gin.Context) {
+func (server *ColoniesServer) handleHealthRequest(c *gin.Context) {
+	c.String(http.StatusOK, "")
+}
+
+func (server *ColoniesServer) handleAPIRequest(c *gin.Context) {
 	jsonBytes, err := ioutil.ReadAll(c.Request.Body)
 	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		log.WithFields(log.Fields{"Error": err}).Error("Bad request")
@@ -118,7 +123,6 @@ func (server *ColoniesServer) handleEndpointRequest(c *gin.Context) {
 	}
 
 	switch rpcMsg.PayloadType {
-
 	// Colony handlers
 	case rpc.AddColonyPayloadType:
 		server.handleAddColonyHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
@@ -290,7 +294,6 @@ func (server *ColoniesServer) Shutdown() {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	defer server.db.Close()
 
 	if err := server.httpServer.Shutdown(ctx); err != nil {
 		log.WithFields(log.Fields{"Error": err}).Warning("ColoniesServer forced to shutdown")
