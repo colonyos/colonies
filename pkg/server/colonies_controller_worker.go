@@ -9,16 +9,26 @@ import (
 func (controller *coloniesController) isLeader() bool {
 	areWeLeader := controller.etcdServer.Leader() == controller.thisNode.Name
 	if areWeLeader && !controller.leader {
-		log.Info("ColoniesServer became leader")
+		log.WithFields(log.Fields{"EtcdNode": controller.thisNode.Name}).Info("ColoniesServer became leader")
 		controller.leader = true
 	}
 
 	if !areWeLeader && controller.leader {
-		log.Info("ColoniesServer is no longer a leader")
+		log.WithFields(log.Fields{"EtcdNode": controller.thisNode.Name}).Info("ColoniesServer is no longer leader")
 		controller.leader = false
 	}
 
 	return areWeLeader
+}
+
+func (controller *coloniesController) tryBecomeLeader() bool {
+	var isLeader bool
+	controller.leaderMutex.Lock()
+	isLeader = controller.isLeader()
+	log.WithFields(log.Fields{"EtcdNode": controller.thisNode.Name, "IsLeader": isLeader}).Info("Colonies server try become leader")
+	controller.leaderMutex.Unlock()
+
+	return isLeader
 }
 
 func (controller *coloniesController) generatorTriggerLoop() {
@@ -31,18 +41,12 @@ func (controller *coloniesController) generatorTriggerLoop() {
 		}
 		controller.stopMutex.Unlock()
 
-		if controller.server != nil {
-			var isLeader bool
-			controller.leaderMutex.Lock()
-			isLeader = controller.isLeader()
-			controller.leaderMutex.Unlock()
-
-			if isLeader {
-				if controller.generatorEngine != nil {
-					controller.triggerGenerators()
-				} else {
-					log.Error("Generator engine is nil")
-				}
+		isLeader := controller.tryBecomeLeader()
+		if isLeader {
+			if controller.generatorEngine != nil {
+				controller.triggerGenerators()
+			} else {
+				log.Error("Generator engine is nil")
 			}
 		}
 	}
@@ -58,19 +62,10 @@ func (controller *coloniesController) generatorSyncLoop() {
 		}
 		controller.stopMutex.Unlock()
 
-		if controller.server != nil {
-			var isLeader bool
-			controller.leaderMutex.Lock()
-			isLeader = controller.isLeader()
-			controller.leaderMutex.Unlock()
-
-			if isLeader {
-				if controller.generatorEngine != nil {
-					controller.syncGenerators()
-				} else {
-					log.Error("Generator engine is nil")
-				}
-			}
+		if controller.generatorEngine != nil {
+			controller.syncGenerators()
+		} else {
+			log.Error("Generator engine is nil")
 		}
 	}
 }

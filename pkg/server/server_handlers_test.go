@@ -74,3 +74,12 @@ func TestGetClusterInfo(t *testing.T) {
 	server.Shutdown()
 	<-done
 }
+
+func TestCheckHealth(t *testing.T) {
+	_, client, server, _, done := setupTestEnv2(t)
+
+	assert.Nil(t, client.CheckHealth())
+
+	server.Shutdown()
+	<-done
+}

@@ -19,7 +19,11 @@ func TestAddGetAttributes(t *testing.T) {
 	assignedProcess, err := client.AssignProcess(env.colonyID, -1, env.runtimePrvKey)
 	assert.Nil(t, err)
 
-	attribute := core.CreateAttribute(assignedProcess.ID, env.colonyID, "", core.OUT, "result", "helloworld")
+	attribute := core.CreateAttribute(core.GenerateRandomID(), env.colonyID, "", core.OUT, "result", "helloworld")
+	_, err = client.AddAttribute(attribute, env.runtimePrvKey)
+	assert.NotNil(t, err)
+
+	attribute = core.CreateAttribute(assignedProcess.ID, env.colonyID, "", core.OUT, "result", "helloworld")
 	addedAttribute, err := client.AddAttribute(attribute, env.runtimePrvKey)
 	assert.Nil(t, err)
 	assert.Equal(t, attribute.ID, addedAttribute.ID)
