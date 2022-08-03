@@ -160,7 +160,9 @@ func TestGeneratorReliability(t *testing.T) {
 		selectedServer := runningCluster[selectServerIndex]
 		c = client.CreateColoniesClient("localhost", selectedServer.Node.APIPort, true, true) // Connect to another server
 	}
+
 	nrOfgraphs2 := waitForProcessGraphs(t, c, colony.ID, generator.ID, runtimePrvKey, nrOfgraphs)
+	log.WithFields(log.Fields{"nrOfgraphs": nrOfgraphs, "nrOfgraphs2": nrOfgraphs2}).Info("Done waiting for processgraphs")
 	assert.Greater(t, nrOfgraphs2, nrOfgraphs)
 
 	// Kill the remaining servers, this will also end the test
