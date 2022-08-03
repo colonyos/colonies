@@ -28,6 +28,7 @@ build_cryptolib_ubuntu_2020:
 	cd buildtools; ./build_cryptolib_ubuntu.sh 
 
 test:
+	@cd tests/reliability; grc go test -v --race
 	@cd internal/crypto; grc go test -v --race
 	@cd pkg/core; grc go test -v --race
 	@cd pkg/database/postgresql; grc go test -v --race
@@ -39,9 +40,9 @@ test:
 	@cd pkg/planner/basic; grc go test -v --race
 	@cd pkg/utils; grc go test -v --race
 	@cd pkg/cluster; grc go test -v --race
-	@cd tests/reliability; grc go test -v --race
 
 github_test: 
+	@cd tests/reliability; go test -v --race
 	@cd internal/crypto; go test -v --race
 	@cd pkg/core; go test -v --race
 	@cd pkg/database/postgresql; go test -v --race
@@ -53,7 +54,6 @@ github_test:
 	@cd pkg/planner/basic; go test -v --race
 	@cd pkg/utils; go test -v --race
 	@cd pkg/cluster; go test -v --race
-	@cd tests/reliability; go test -v --race
 
 install:
 	cp ./bin/colonies /usr/local/bin

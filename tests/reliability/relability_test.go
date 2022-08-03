@@ -1,7 +1,6 @@
 package reliability
 
 import (
-	"fmt"
 	"testing"
 	"time"
 
@@ -136,7 +135,6 @@ func TestGeneratorReliability(t *testing.T) {
 	clusterInfo, err := c.GetClusterInfo(selectedServer.ServerPrvKey)
 	assert.Nil(t, err)
 	leaderName := clusterInfo.Leader.Name
-	fmt.Println("leader is", leaderName)
 
 	// Ok, now we now who name of the leader, find out which server that is
 	var leaderS server.ServerInfo

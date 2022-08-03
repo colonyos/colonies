@@ -58,6 +58,7 @@ func (engine *generatorEngine) syncStatesFromDB() {
 			}
 			tempMap[generator.ID] = true
 		}
+
 		// Delete state objects from states not found on db
 		for _, state := range engine.states {
 			generator := state.generator

@@ -25,6 +25,7 @@ func (controller *coloniesController) tryBecomeLeader() bool {
 	var isLeader bool
 	controller.leaderMutex.Lock()
 	isLeader = controller.isLeader()
+	log.WithFields(log.Fields{"EtcdNode": controller.thisNode.Name, "IsLeader": isLeader}).Info("Colonies server try become leader")
 	controller.leaderMutex.Unlock()
 
 	return isLeader
@@ -61,13 +62,10 @@ func (controller *coloniesController) generatorSyncLoop() {
 		}
 		controller.stopMutex.Unlock()
 
-		isLeader := controller.tryBecomeLeader()
-		if isLeader {
-			if controller.generatorEngine != nil {
-				controller.syncGenerators()
-			} else {
-				log.Error("Generator engine is nil")
-			}
+		if controller.generatorEngine != nil {
+			controller.syncGenerators()
+		} else {
+			log.Error("Generator engine is nil")
 		}
 	}
 }
