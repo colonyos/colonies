@@ -128,7 +128,7 @@ func TestGeneratorReliability(t *testing.T) {
 	}
 	log.Info("ColoniesServer Leader is ", leaderS.Node.Name, " kill it")
 
-	// Now kill server 1
+	// Now kill leader server
 	leaderS.Server.Shutdown()
 	server.WaitForServerToDie(t, leaderS)
 	log.Info("ColoniesServer Leader is ", leaderS.Node.Name, " is dead")
