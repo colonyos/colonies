@@ -313,3 +313,19 @@ func WaitForServerToDie(t *testing.T, s ServerInfo) {
 		}
 	}
 }
+
+func WaitForProcessGraphs(t *testing.T, c *client.ColoniesClient, colonyID string, generatorID string, runtimePrvKey string, threshold int) int {
+	var graphs []*core.ProcessGraph
+	var err error
+	retries := 40
+	for i := 0; i < retries; i++ {
+		graphs, err = c.GetWaitingProcessGraphs(colonyID, 100, runtimePrvKey)
+		assert.Nil(t, err)
+		err = c.IncGenerator(generatorID, runtimePrvKey)
+		if len(graphs) > threshold {
+			break
+		}
+		time.Sleep(1 * time.Second)
+	}
+	return len(graphs)
+}
