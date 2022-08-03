@@ -17,7 +17,7 @@ import (
 
 const TIMEOUT_RELEASE_INTERVALL = 1
 const TIMEOUT_GENERATOR_TRIGGER_INTERVALL = 1
-const TIMEOUT_GENERATOR_SYNC_INTERVALL = 10
+const TIMEOUT_GENERATOR_SYNC_INTERVALL = 1
 
 type command struct {
 	stop                   bool
@@ -42,7 +42,6 @@ type command struct {
 }
 
 type coloniesController struct {
-	server          *ColoniesServer
 	db              database.Database
 	generatorEngine *generatorEngine
 	cmdQueue        chan *command
@@ -62,7 +61,6 @@ type coloniesController struct {
 func createColoniesController(db database.Database, thisNode cluster.Node, clusterConfig cluster.Config, etcdDataPath string) *coloniesController {
 	controller := &coloniesController{}
 	controller.db = db
-
 	controller.thisNode = thisNode
 	controller.clusterConfig = clusterConfig
 	controller.etcdServer = cluster.CreateEtcdServer(controller.thisNode, controller.clusterConfig, etcdDataPath)
@@ -78,6 +76,7 @@ func createColoniesController(db database.Database, thisNode cluster.Node, clust
 
 	controller.cmdQueue = make(chan *command)
 
+	controller.tryBecomeLeader()
 	go controller.masterWorker()
 	go controller.timeoutLoop()
 	go controller.generatorTriggerLoop()

@@ -24,9 +24,6 @@ type RelayServer struct {
 }
 
 func CreateRelayServer(thisNode Node, clusterConfig Config) *RelayServer {
-	gin.SetMode(gin.ReleaseMode)
-	gin.DefaultWriter = ioutil.Discard
-
 	server := &RelayServer{}
 	server.ginHandler = gin.Default()
 	server.ginHandler.Use(cors.Default())
