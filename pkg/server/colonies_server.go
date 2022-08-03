@@ -42,16 +42,9 @@ func CreateColoniesServer(db database.Database,
 	tls bool,
 	tlsPrivateKeyPath string,
 	tlsCertPath string,
-	debug bool,
 	thisNode cluster.Node,
 	clusterConfig cluster.Config,
 	etcdDataPath string) *ColoniesServer {
-	if debug {
-		log.SetLevel(log.DebugLevel)
-	} else {
-		gin.SetMode(gin.ReleaseMode)
-		gin.DefaultWriter = ioutil.Discard
-	}
 
 	server := &ColoniesServer{}
 	server.ginHandler = gin.Default()

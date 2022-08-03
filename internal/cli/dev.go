@@ -2,6 +2,7 @@ package cli
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
 	"os/signal"
 	"strconv"
@@ -15,6 +16,7 @@ import (
 	"github.com/colonyos/colonies/pkg/monitoring"
 	"github.com/colonyos/colonies/pkg/server"
 	embeddedpostgres "github.com/fergusstrange/embedded-postgres"
+	"github.com/gin-gonic/gin"
 
 	"github.com/colonyos/colonies/pkg/security"
 	log "github.com/sirupsen/logrus"
@@ -161,7 +163,7 @@ var devCmd = &cobra.Command{
 			os.Exit(-1)
 		}
 
-		coloniesPath := "/tmp/colonies"
+		coloniesPath := "/tmp/coloniesdev/"
 		log.WithFields(log.Fields{"Path": coloniesPath}).Info("Creating Colonies data directory, this directory will be deleted every time the development server is restarted")
 		err := os.Mkdir(coloniesPath, 0700)
 		if err != nil {
@@ -236,7 +238,14 @@ var devCmd = &cobra.Command{
 		clusterConfig := cluster.Config{}
 		clusterConfig.AddNode(node)
 
-		coloniesServer := server.CreateColoniesServer(coloniesDB, coloniesServerPort, serverID, false, "", "", Verbose, node, clusterConfig, "/tmp/colonies/dev/etcd")
+		if Verbose {
+			log.SetLevel(log.DebugLevel)
+		} else {
+			gin.SetMode(gin.ReleaseMode)
+			gin.DefaultWriter = ioutil.Discard
+		}
+
+		coloniesServer := server.CreateColoniesServer(coloniesDB, coloniesServerPort, serverID, false, "", "", node, clusterConfig, "/tmp/coloniesdev/dev/etcd")
 		go coloniesServer.ServeForever()
 
 		coloniesServerHost := os.Getenv("COLONIES_SERVERHOST")

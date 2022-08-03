@@ -17,7 +17,7 @@ import (
 
 const TIMEOUT_RELEASE_INTERVALL = 1
 const TIMEOUT_GENERATOR_TRIGGER_INTERVALL = 1
-const TIMEOUT_GENERATOR_SYNC_INTERVALL = 10
+const TIMEOUT_GENERATOR_SYNC_INTERVALL = 1
 
 type command struct {
 	stop                   bool

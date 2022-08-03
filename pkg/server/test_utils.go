@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"strconv"
 	"testing"
@@ -16,6 +17,7 @@ import (
 	"github.com/colonyos/colonies/pkg/rpc"
 	"github.com/colonyos/colonies/pkg/security/crypto"
 	"github.com/colonyos/colonies/pkg/utils"
+	"github.com/gin-gonic/gin"
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 )
@@ -45,6 +47,8 @@ const Insecure = false
 const SkipTLSVerify = true
 
 func setupTestEnv1(t *testing.T) (*testEnv1, *client.ColoniesClient, *ColoniesServer, string, chan bool) {
+	gin.SetMode(gin.ReleaseMode)
+	gin.DefaultWriter = ioutil.Discard
 	client, server, serverPrvKey, done := prepareTests(t)
 
 	colony1, colony1PrvKey, err := utils.CreateTestColonyWithKey()
@@ -86,6 +90,8 @@ func setupTestEnv1(t *testing.T) (*testEnv1, *client.ColoniesClient, *ColoniesSe
 }
 
 func setupTestEnv2(t *testing.T) (*testEnv2, *client.ColoniesClient, *ColoniesServer, string, chan bool) {
+	gin.SetMode(gin.ReleaseMode)
+	gin.DefaultWriter = ioutil.Discard
 	client, server, serverPrvKey, done := prepareTests(t)
 
 	colony, colonyPrvKey, err := utils.CreateTestColonyWithKey()
@@ -114,7 +120,6 @@ func prepareTests(t *testing.T) (*client.ColoniesClient, *ColoniesServer, string
 	os.RemoveAll("/tmp/colonies")
 	client := client.CreateColoniesClient(TESTHOST, TESTPORT, Insecure, SkipTLSVerify)
 
-	debug := false
 	db, err := postgresql.PrepareTests()
 	assert.Nil(t, err)
 
@@ -127,7 +132,7 @@ func prepareTests(t *testing.T) (*client.ColoniesClient, *ColoniesServer, string
 	node := cluster.Node{Name: "etcd", Host: "localhost", EtcdClientPort: 24100, EtcdPeerPort: 23100, RelayPort: 25100, APIPort: TESTPORT}
 	clusterConfig := cluster.Config{}
 	clusterConfig.AddNode(node)
-	server := CreateColoniesServer(db, TESTPORT, serverID, EnableTLS, "../../cert/key.pem", "../../cert/cert.pem", debug, node, clusterConfig, "/tmp/colonies/etcd")
+	server := CreateColoniesServer(db, TESTPORT, serverID, EnableTLS, "../../cert/key.pem", "../../cert/cert.pem", node, clusterConfig, "/tmp/colonies/etcd")
 
 	done := make(chan bool)
 	go func() {
@@ -231,6 +236,8 @@ type ServerInfo struct {
 
 func StartCluster(t *testing.T, db database.Database, size int) []ServerInfo {
 	os.RemoveAll("/tmp/colonies")
+	gin.SetMode(gin.ReleaseMode)
+	gin.DefaultWriter = ioutil.Discard
 
 	clusterConfig := cluster.Config{}
 	for i := 0; i < size; i++ {
@@ -254,7 +261,7 @@ func StartCluster(t *testing.T, db database.Database, size int) []ServerInfo {
 	for i, node := range clusterConfig.Nodes {
 		go func(i int, node cluster.Node) {
 			log.WithFields(log.Fields{"APIPort": node.APIPort}).Info("Starting ColoniesServer")
-			server := CreateColoniesServer(db, node.APIPort, serverID, false, "", "", false, node, clusterConfig, "/tmp/colonies/etcd"+strconv.Itoa(i))
+			server := CreateColoniesServer(db, node.APIPort, serverID, false, "", "", node, clusterConfig, "/tmp/colonies/etcd"+strconv.Itoa(i))
 			done := make(chan struct{})
 			s := ServerInfo{ServerID: serverID, ServerPrvKey: serverPrvKey, Server: server, Node: node, Done: done}
 			go func(i int) {
