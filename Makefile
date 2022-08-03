@@ -39,7 +39,7 @@ test:
 	@cd pkg/planner/basic; grc go test -v --race
 	@cd pkg/utils; grc go test -v --race
 	@cd pkg/cluster; grc go test -v --race
-	@cd pkg/tests/reliability; grc go test -v --race
+	@cd tests/reliability; grc go test -v --race
 
 github_test: 
 	@cd internal/crypto; go test -v --race
@@ -53,7 +53,7 @@ github_test:
 	@cd pkg/planner/basic; go test -v --race
 	@cd pkg/utils; go test -v --race
 	@cd pkg/cluster; go test -v --race
-	@cd pkg/tests/reliability; go test -v --race
+	@cd tests/reliability; go test -v --race
 
 install:
 	cp ./bin/colonies /usr/local/bin
