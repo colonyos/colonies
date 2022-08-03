@@ -58,6 +58,7 @@ func (engine *generatorEngine) syncStatesFromDB() {
 			}
 			tempMap[generator.ID] = true
 		}
+
 		// Delete state objects from states not found on db
 		for _, state := range engine.states {
 			generator := state.generator
@@ -113,6 +114,9 @@ func (engine *generatorEngine) triggerGenerators() {
 	for _, state := range engine.states {
 		now := time.Now()
 		deadline := state.generator.LastRun.Add(time.Duration(state.generator.Timeout) * time.Second)
+
+		// Note: The reasons we are using && in the if statement below, is that generator should not be trigger unless
+		// the counter has been increased. This is to avoid triggering generators if no data has been added
 		if state.generator.Counter > 0 && now.Unix() > deadline.Unix() {
 			log.WithFields(log.Fields{
 				"GeneratorId": state.generator.ID,
@@ -120,7 +124,7 @@ func (engine *generatorEngine) triggerGenerators() {
 				Info("Generator timed out, submitting workflow")
 			engine.submitWorkflow(state)
 		}
-		if state.generator.Counter > state.generator.Trigger {
+		if state.generator.Counter >= state.generator.Trigger {
 			log.WithFields(log.Fields{
 				"GeneratorId": state.generator.ID,
 				"Timeout":     state.generator.Timeout}).

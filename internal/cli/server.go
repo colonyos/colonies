@@ -3,6 +3,7 @@ package cli
 import (
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"strconv"
 	"strings"
@@ -14,6 +15,7 @@ import (
 	"github.com/colonyos/colonies/pkg/database/postgresql"
 	"github.com/colonyos/colonies/pkg/security"
 	"github.com/colonyos/colonies/pkg/server"
+	"github.com/gin-gonic/gin"
 	"github.com/kataras/tablewriter"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -210,7 +212,15 @@ var serverStartCmd = &cobra.Command{
 			"UseTLS":       UseTLS,
 			"ServerID":     ServerID,
 		}).Info("Starting a Colonies Server")
-		server := server.CreateColoniesServer(db, ServerPort, ServerID, UseTLS, TLSKey, TLSCert, Verbose, node, clusterConfig, EtcdDataDir)
+
+		if Verbose {
+			log.SetLevel(log.DebugLevel)
+		} else {
+			gin.SetMode(gin.ReleaseMode)
+			gin.DefaultWriter = ioutil.Discard
+		}
+
+		server := server.CreateColoniesServer(db, ServerPort, ServerID, UseTLS, TLSKey, TLSCert, node, clusterConfig, EtcdDataDir)
 		for {
 			err := server.ServeForever()
 			if err != nil {
