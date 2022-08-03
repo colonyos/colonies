@@ -52,7 +52,7 @@ func TestGetClusterInfoSecurity(t *testing.T) {
 	assert.NotNil(t, err) // Should not work
 
 	_, err = client.GetClusterInfo(serverPrvKey)
-	assert.Nil(t, err) // Should not work
+	assert.Nil(t, err) // Should work
 
 	server.Shutdown()
 	<-done
