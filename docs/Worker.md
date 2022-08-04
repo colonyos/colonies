@@ -91,49 +91,49 @@ Note the **timeout** argument. The worker must specify how long time it is willi
 
 Also note that there is no guarantee that the AssignProcess function actually returns a process even if the function has not timed out. Another worker might have been quicker and was assigned the process.
 
-Julia worker example:
+### Julia worker example
 ```julia
-    while true
-        try
-            process = ColonyRuntime.assignprocess(client, timeout, colonyid, prvkey)
-            execute(process)
-            ColonyRuntime.closeprocess(client, process.processid, true, prvkey)
-        catch err
-            # ignore, just re-try
-        end
+while true
+    try
+        process = ColonyRuntime.assignprocess(client, timeout, colonyid, prvkey)
+        execute(process)
+        ColonyRuntime.closeprocess(client, process.processid, true, prvkey)
+    catch err
+        # ignore, just re-try
     end
+end
 end
 ```
 
-Javascript worker example: 
+### Javascript worker example
 ```javascript
-      function assign() {
-          runtime.assign(colonyid, runtime_prvkey).then((process, err) => {
-              if err !== undefined {
-                  execute(process)
-                  runtime.close_process(process.processid, true, prvkey)
-              }
-          }) 
-      } 
+function assign() {
+    runtime.assign(colonyid, runtime_prvkey).then((process, err) => {
+        if err !== undefined {
+            execute(process)
+            runtime.close_process(process.processid, true, prvkey)
+        }
+    }) 
+} 
 
-      runtime.load().then(() => {
-        runtime.subscribe_processes(runtime_type, 0, prvkey, function(processes) {
-           assign()
-        })
-      });
+runtime.load().then(() => {
+  runtime.subscribe_processes(runtime_type, 0, prvkey, function(processes) {
+     assign()
+  })
+});
 ```
 
 In Javascript it might be useful to use Colonies pubsub websocket protocol to avoid blocking the browser main thread.
 
-# Python worker example:
+### Python worker example
 ```python
-    while True:
-       try
-           process = client.assign_process(colonyid, timeout, prvkey)
-           execute(process)
-           client.close_process(process.processid, prvkey)
-        except: 
-           pass  # just ignore
+while True:
+   try
+       process = client.assign_process(colonyid, timeout, prvkey)
+       execute(process)
+       client.close_process(process.processid, prvkey)
+    except: 
+       pass  # just ignore
        
 ```
 
@@ -142,13 +142,12 @@ In Javascript it might be useful to use Colonies pubsub websocket protocol to av
 As Colony contains all registered workers (runtimes), it is possible to use it for service discovery, e.g. search for a particular worker and submit a process specification directly to it.   
 
 ```go
-    runtimes, err := client.GetRuntime(colonyID, prvKey)
-    for _, runtime := range runtimes {
-        if runtime.Name == "videocam" {
-             condition := &Condition{RuntimeID: []{runtime.ID}, ColonyID: colonyID}
-             processSpec := &ProcessSpec{Condition: condition, Func: "turn_on_video", Args: []{arg}, MaxExecTime: 1, MaxRetries: 3}
-             err := client.SubmitProcessSpec(processSpec, prvKey)
-        }
+runtimes, err := client.GetRuntime(colonyID, prvKey)
+for _, runtime := range runtimes {
+    if runtime.Name == "videocam" {
+         condition := &Condition{RuntimeID: []{runtime.ID}, ColonyID: colonyID}
+         processSpec := &ProcessSpec{Condition: condition, Func: "turn_on_video", Args: []{arg}, MaxExecTime: 1, MaxRetries: 3}
+         err := client.SubmitProcessSpec(processSpec, prvKey)
     }
 }
 ```
