@@ -25,7 +25,6 @@ func (controller *coloniesController) tryBecomeLeader() bool {
 	var isLeader bool
 	controller.leaderMutex.Lock()
 	isLeader = controller.isLeader()
-	log.WithFields(log.Fields{"EtcdNode": controller.thisNode.Name, "IsLeader": isLeader}).Info("Colonies server try become leader")
 	controller.leaderMutex.Unlock()
 
 	return isLeader
