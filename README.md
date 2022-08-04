@@ -59,10 +59,17 @@ The long-term vision is to create a global peer-to-peer network connecting many 
 
 # Links
 * [Installation](docs/Installation.md)
+* [How to implement a Colonies Worker](docs/Worker.md)
+* [Tutorial (implement Fibonacci Worker in Go)](docs/Tutorial.md)
 * [Using the Colonies CLI tool](docs/CLI.md)
 * [High-availability deployment](docs/HADeployment.md)
-* [Tutorial (implement your own Colonies Worker using the Golang SDK)](docs/Tutorial.md)
-* [HTTP RPC Protocol](docs/RPC.md)
+* [HTTP RPC protocol](docs/RPC.md)
+* [Golang Colonies SDK](https://github.com/colonyos/colonies/tree/main/pkg/client)
+* [Julia Colonies SDK](https://github.com/colonyos/ColonyRuntime.jl)
+* [JavaScript Colonies SDK](https://github.com/colonyos/colonyruntime.js)
+* [Python Colonies SDK](https://github.com/colonyos/pyruntime)
+* [Haskell Colonies SDK](https://github.com/colonyos/haskellrt)
+* [Kubernetes Helm charts](https://github.com/colonyos/helm)
 
 # Design 
 ![Colonies Architecture](docs/images/ColoniesArchFull.png?raw=true "Colonies Architecture")
