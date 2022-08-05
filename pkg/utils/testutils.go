@@ -42,15 +42,15 @@ func CreateTestProcessSpecWithTargets(colonyID string, targetRuntimeIDs []string
 }
 
 func CreateTestRuntime(colonyID string) *core.Runtime {
-	return core.CreateRuntime(core.GenerateRandomID(), "test_runtime_type", "test_runtime_name", colonyID, "AMD Ryzen 9 5950X (32) @ 3.400GHz", 32, 80326, "NVIDIA GeForce RTX 2080 Ti Rev. A", 1, time.Now(), time.Now())
+	return core.CreateRuntime(core.GenerateRandomID(), "test_runtime_type", core.GenerateRandomID(), colonyID, "AMD Ryzen 9 5950X (32) @ 3.400GHz", 32, 80326, "NVIDIA GeForce RTX 2080 Ti Rev. A", 1, time.Now(), time.Now())
 }
 
 func CreateTestRuntimeWithType(colonyID string, runtimeType string) *core.Runtime {
-	return core.CreateRuntime(core.GenerateRandomID(), runtimeType, "test_runtime_name", colonyID, "AMD Ryzen 9 5950X (32) @ 3.400GHz", 32, 80326, "NVIDIA GeForce RTX 2080 Ti Rev. A", 1, time.Now(), time.Now())
+	return core.CreateRuntime(core.GenerateRandomID(), runtimeType, core.GenerateRandomID(), colonyID, "AMD Ryzen 9 5950X (32) @ 3.400GHz", 32, 80326, "NVIDIA GeForce RTX 2080 Ti Rev. A", 1, time.Now(), time.Now())
 }
 
 func CreateTestRuntimeWithID(colonyID string, runtimeID string) *core.Runtime {
-	return core.CreateRuntime(runtimeID, "test_runtime_type", "test_runtime_name", colonyID, "AMD Ryzen 9 5950X (32) @ 3.400GHz", 32, 80326, "NVIDIA GeForce RTX 2080 Ti Rev. A", 1, time.Now(), time.Now())
+	return core.CreateRuntime(runtimeID, "test_runtime_type", core.GenerateRandomID(), colonyID, "AMD Ryzen 9 5950X (32) @ 3.400GHz", 32, 80326, "NVIDIA GeForce RTX 2080 Ti Rev. A", 1, time.Now(), time.Now())
 }
 
 func CreateTestRuntimeWithKey(colonyID string) (*core.Runtime, string, error) {
@@ -65,7 +65,7 @@ func CreateTestRuntimeWithKey(colonyID string) (*core.Runtime, string, error) {
 		return nil, "", err
 	}
 
-	return core.CreateRuntime(runtimeID, "test_runtime_type", "test_runtime_name", colonyID, "AMD Ryzen 9 5950X (32) @ 3.400GHz", 32, 80326, "NVIDIA GeForce RTX 2080 Ti Rev. A", 1, time.Now(), time.Now()), runtimePrvKey, nil
+	return core.CreateRuntime(runtimeID, "test_runtime_type", core.GenerateRandomID(), colonyID, "AMD Ryzen 9 5950X (32) @ 3.400GHz", 32, 80326, "NVIDIA GeForce RTX 2080 Ti Rev. A", 1, time.Now(), time.Now()), runtimePrvKey, nil
 }
 
 func CreateTestColonyWithKey() (*core.Colony, string, error) {
