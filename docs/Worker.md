@@ -8,13 +8,13 @@ A process specification can either be created by using the Colonies SDK availabl
 
 ```json
 {
-  "conditions": {
-    "runtimetype": "cli"
-  },
-  "func": "sleep",
-  "args": [
-    "3"
-  ]
+    "conditions": {
+        "runtimetype": "cli"
+    },
+    "func": "sleep",
+    "args": [
+        "3"
+    ]
 }
 ```
 
@@ -29,16 +29,16 @@ A process can either be closes as successful or failed. A process may automatica
 
 ```json
 {
-  "conditions": {
-    "runtimetype": "cli"
-  },
-  "func": "sleep",
-  "args": [
-    "3"
-  ],
-  "maxwaittime": 10,
-  "maxexectime": 5,
-  "maxretries": 3
+    "conditions": {
+        "runtimetype": "cli"
+    },
+    "func": "sleep",
+    "args": [
+        "3"
+    ],
+    "maxwaittime": 10,
+    "maxexectime": 5,
+    "maxretries": 3
 }
 ```
 
@@ -51,16 +51,16 @@ In the JSON example above, the sleep process must be completed in 5 seconds. Thi
 ##  
 ```json
 {
-  "conditions": {
-    "runtimetype": "cli"
-  },
-  "func": "sleep",
-  "args": [
-    "3"
-  ],
-  "env": {
-    "TEST": "testenv"
-  }
+    "conditions": {
+        "runtimetype": "cli"
+    },
+    "func": "sleep",
+    "args": [
+        "3"
+    ],
+    "env": {
+        "TEST": "testenv"
+    }
 }
 ```
 
@@ -108,22 +108,34 @@ end
 ### Javascript worker example
 ```javascript
 function assign() {
-    runtime.assign(colonyid, runtime_prvkey).then((process, err) => {
-        if err !== undefined {
-            execute(process)
-            runtime.close_process(process.processid, true, prvkey)
-        }
-    }) 
+    runtime.assignLatest(colonyid, runtime_prvkey)
+    .then((process) => {
+        execute(process)
+        runtime.closeProcess(process.processid, true, runtime_prvkey)
+    })
+    .catch((err) => {
+        console.log(err) 
+    })
 } 
 
-runtime.load().then(() => {
-  runtime.subscribe_processes(runtime_type, 0, prvkey, function(processes) {
-     assign()
-  })
-});
+function subscribe() {
+    runtime.subscribeProcesses("cli", 3, 0, runtime_prvkey, (process) => {
+       assign()        
+    })
+    .catch(() => {
+         setTimeout(() => {
+             assign()
+             subscribe()
+         },2000);
+    })
+}
 ```
 
-In Javascript it might be useful to use Colonies pubsub websocket protocol to avoid blocking the browser main thread.
+In Javascript it might be useful to use Colonies pubsub protocol to avoid blocking the browser main thread. Note the **assign_latest**. Sometimes, we might only me interest in the latest submitted process spec, for example if we are synchronizing a state like turning on or off a lamp and the lamp worker became online after some process specs were submitted. In this case, it is important to set the **maxwaittime** attribute when submitting process specs to avoid polluting the queue with processes that are never executed. An alternative solution would be do call the assign function recursively until the queue is empty. 
+
+Also note the timeout mechanism. This needed to handle gracefully server errors. For example, if a Colonies server instance in Kubernetes dies, the code above will just re-subscribe to another instance.
+
+See Colonies [JavaScript SDK](https://github.com/colonyos/colonyruntime.js) for a working example.
 
 ### Python worker example
 ```python
@@ -150,4 +162,15 @@ for _, runtime := range runtimes {
          err := client.SubmitProcessSpec(processSpec, prvKey)
     }
 }
+```
+
+Resolving runtimes by name can also be done using the Colonies CLI.
+
+```console
+colonies runtime resolve --targetname videocam 
+```
+
+Output:
+```console
+3fc05cf3df4b494e95d6a3d297a34f19938f7daa7422ab0d4f794454133341ac
 ```

@@ -83,6 +83,7 @@ More information can also be found [here](https://colonyos.io).
 * **Pull-based orchestration.** Users (or workers) submit process specifications the Colonies server. Colonies workers connect to the Colonies server and request processes to execute. A HTTP Long Polling/WebSocket protocol ensure that workers can reside anywhere on the Internet, even behind firewalls. The Colonies server never establish connections directly to workers. 
 * **Multi-step workflows** or **Directed Acyclic Graph (DAG)** to capture dependencies between jobs.
 * **Generators** to automatically spawn new workflows based on external events or timeouts.
+* **Traceability**, full history can be stored for auditing.
 * **Implemented in Golang** with a standard PostgreSQL database.
 * **SDK in Python, Haskell, Julia, and Golang.**
 
