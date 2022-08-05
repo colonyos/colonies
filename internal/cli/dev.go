@@ -258,9 +258,10 @@ var devCmd = &cobra.Command{
 		CheckError(err)
 
 		runtimeType := os.Getenv("COLONIES_RUNTIMETYPE")
-		log.WithFields(log.Fields{"RuntimeID": runtimeID, "RuntimeType": runtimeType}).Info("Registering a new runtime")
+		runtimeName := "myruntime"
+		log.WithFields(log.Fields{"RuntimeID": runtimeID, "RuntimeType": runtimeType, "RuntimeName": runtimeName}).Info("Registering a new runtime")
 
-		runtime := core.CreateRuntime(runtimeID, runtimeType, "dev_runtime", colonyID, "", 1, 0, "", 0, time.Now(), time.Now())
+		runtime := core.CreateRuntime(runtimeID, runtimeType, runtimeName, colonyID, "", 1, 0, "", 0, time.Now(), time.Now())
 		_, err = client.AddRuntime(runtime, colonyPrvKey)
 		CheckError(err)
 
