@@ -46,11 +46,13 @@ func init() {
 
 	runProcessCmd.Flags().StringVarP(&RuntimeID, "runtimeid", "", "", "Runtime Id")
 	runProcessCmd.Flags().StringVarP(&RuntimePrvKey, "runtimeprvkey", "", "", "Runtime private key")
-	runProcessCmd.Flags().StringVarP(&RuntimeType, "runtimetype", "", "", "Target runtime type")
+	runProcessCmd.Flags().StringVarP(&TargetRuntimeType, "targettype", "", "", "Target runtime type")
+	runProcessCmd.Flags().StringVarP(&TargetRuntimeID, "targetid", "", "", "Target runtime Id")
 	runProcessCmd.Flags().StringVarP(&ColonyID, "colonyid", "", "", "Colony Id")
 	runProcessCmd.Flags().StringVarP(&Func, "func", "", "", "Remote function to call")
 	runProcessCmd.Flags().StringSliceVarP(&Args, "args", "", make([]string, 0), "Arguments")
 	runProcessCmd.Flags().StringSliceVarP(&Env, "env", "", make([]string, 0), "Environment")
+	runProcessCmd.Flags().IntVarP(&MaxWaitTime, "maxwaittime", "", -1, "Maximum queue wait time")
 	runProcessCmd.Flags().IntVarP(&MaxExecTime, "maxexectime", "", -1, "Maximum execution time in seconds before failing")
 	runProcessCmd.Flags().IntVarP(&MaxRetries, "maxretries", "", -1, "Maximum number of retries when failing")
 	runProcessCmd.Flags().BoolVarP(&Wait, "wait", "", false, "Colony Id")
@@ -160,14 +162,23 @@ var runProcessCmd = &cobra.Command{
 			CheckError(err)
 		}
 
-		if RuntimeType == "" {
-			CheckError(errors.New("Invalid Runtime Type"))
+		if TargetRuntimeType == "" && TargetRuntimeID == "" {
+			CheckError(errors.New("Target Runtime Type or Target Runtime ID must be specified"))
 		}
 
-		conditions := core.Conditions{ColonyID: ColonyID, RuntimeType: RuntimeType}
+		var conditions core.Conditions
+		if TargetRuntimeType != "" {
+			conditions = core.Conditions{ColonyID: ColonyID, RuntimeType: TargetRuntimeType}
+		} else {
+			conditions = core.Conditions{ColonyID: ColonyID, RuntimeIDs: []string{TargetRuntimeID}}
+		}
+
+		fmt.Println(conditions)
+
 		processSpec := core.ProcessSpec{
 			Func:        Func,
 			Args:        Args,
+			MaxWaitTime: MaxWaitTime,
 			MaxExecTime: MaxExecTime,
 			MaxRetries:  MaxRetries,
 			Conditions:  conditions,
