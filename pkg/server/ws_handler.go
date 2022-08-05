@@ -48,7 +48,6 @@ func (server *ColoniesServer) handleWSRequest(c *gin.Context) {
 	for {
 		wsMsgType, data, err := wsConn.ReadMessage()
 		if err != nil {
-			log.WithFields(log.Fields{"Error": err}).Error("Failed to call wsConn.ReadMessage()")
 			return
 		}
 
