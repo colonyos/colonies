@@ -41,9 +41,12 @@ var Count int
 var ID string
 var PrvKey string
 var RuntimeName string
-var RuntimeType string
 var RuntimeID string
+var RuntimeType string
 var RuntimePrvKey string
+var TargetRuntimeID string
+var TargetRuntimeType string
+var TargetRuntimeName string
 var WorkflowID string
 var CPU string
 var Cores int
@@ -68,6 +71,7 @@ var GeneratorTimeout int
 var Func string
 var Args []string
 var Env []string
+var MaxWaitTime int
 var MaxExecTime int
 var MaxRetries int
 var EtcdName string
