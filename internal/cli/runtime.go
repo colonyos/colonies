@@ -22,6 +22,7 @@ func init() {
 	runtimeCmd.AddCommand(approveRuntimeCmd)
 	runtimeCmd.AddCommand(rejectRuntimeCmd)
 	runtimeCmd.AddCommand(deleteRuntimeCmd)
+	runtimeCmd.AddCommand(resolveRuntimeCmd)
 	rootCmd.AddCommand(runtimeCmd)
 
 	runtimeCmd.PersistentFlags().StringVarP(&ColonyID, "colonyid", "", "", "Colony Id")
@@ -43,12 +44,16 @@ func init() {
 	approveRuntimeCmd.MarkFlagRequired("runtimeid")
 
 	rejectRuntimeCmd.Flags().StringVarP(&ColonyPrvKey, "colonyprvkey", "", "", "Colony private key")
-	rejectRuntimeCmd.Flags().StringVarP(&RuntimeID, "runtimeid", "", "", "Colony Runtime Id")
+	rejectRuntimeCmd.Flags().StringVarP(&RuntimeID, "runtimeid", "", "", "Runtime Id")
 	rejectRuntimeCmd.MarkFlagRequired("runtimeid")
 
 	deleteRuntimeCmd.Flags().StringVarP(&ColonyPrvKey, "colonyprvkey", "", "", "Colony private key")
-	deleteRuntimeCmd.Flags().StringVarP(&RuntimeID, "runtimeid", "", "", "Colony Runtime Id")
+	deleteRuntimeCmd.Flags().StringVarP(&RuntimeID, "runtimeid", "", "", "Runtime Id")
 	deleteRuntimeCmd.MarkFlagRequired("runtimeid")
+
+	resolveRuntimeCmd.Flags().StringVarP(&RuntimePrvKey, "runtimeprvkey", "", "", "Runtime private key")
+	resolveRuntimeCmd.Flags().StringVarP(&TargetRuntimeName, "targetname", "", "", "Target runtime Id")
+	resolveRuntimeCmd.MarkFlagRequired("runtimeid")
 }
 
 var runtimeCmd = &cobra.Command{
@@ -322,5 +327,54 @@ var deleteRuntimeCmd = &cobra.Command{
 		CheckError(err)
 
 		log.WithFields(log.Fields{"runtimeID": RuntimeID, "colonyID": ColonyID}).Info("Runtime unregistered")
+	},
+}
+
+var resolveRuntimeCmd = &cobra.Command{
+	Use:   "resolve",
+	Short: "Resolve runtime Id",
+	Long:  "Resolve runtime Id",
+	Run: func(cmd *cobra.Command, args []string) {
+		parseServerEnv()
+
+		if ColonyID == "" {
+			ColonyID = os.Getenv("COLONIES_COLONYID")
+		}
+		if ColonyID == "" {
+			CheckError(errors.New("Unknown Colony Id, please set COLONYID env variable or specify ColonyID in JSON file"))
+		}
+
+		keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
+		CheckError(err)
+
+		if RuntimeID == "" {
+			RuntimeID = os.Getenv("COLONIES_RUNTIMEID")
+		}
+		if RuntimeID == "" {
+			CheckError(errors.New("Unknown Runtime Id"))
+		}
+
+		if RuntimePrvKey == "" {
+			RuntimePrvKey, err = keychain.GetPrvKey(RuntimeID)
+			CheckError(err)
+		}
+
+		if TargetRuntimeName == "" {
+			CheckError(errors.New("Target Runtime Name must be specified"))
+		}
+
+		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
+
+		runtimes, err := client.GetRuntimes(ColonyID, RuntimePrvKey)
+		CheckError(err)
+
+		for _, runtime := range runtimes {
+			if runtime.Name == TargetRuntimeName {
+				fmt.Println(runtime.ID)
+				os.Exit(0)
+			}
+		}
+
+		log.WithFields(log.Fields{"ColonyId": ColonyID, "TargetRuntimeName": TargetRuntimeName}).Error("No such runtime found")
 	},
 }
