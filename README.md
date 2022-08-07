@@ -11,76 +11,26 @@ A Colony is a trusted community of remotely connected computer programs (so-call
 Simple helloworld worker in JavaScript:
 ```javascript
 let colonyid = "4787a5071856a4acf702b2ffcea422e3237a679c681314113d86139461290cf4"
-let runtimeid = "3fc05cf3df4b494e95d6a3d297a34f19938f7daa7422ab0d4f794454133341ac"
 let prvkey = "ddf7f7791208083b6a9ed975a72684f6406a269cfa36f1b1c32045c0a71fff05"
 
-runtime.assign(colonyid, prvkey)
-.then((process) => {
+runtime.assign(colonyid, prvkey).then((process) => {
     if process.spec.func == "helloworld" {
         let attr = {
             targetid: process.processid,
             targetcolonyid: colonyid,
-            attributetype: output,
-            key: "result",
+            key: "output",
             value: "helloworld"
         } 
         runtime.addAttribute(attr, prvkey)
         runtime.closeProcess(process.processid, true, prvkey)
     }
 })
-.catch((err) => {
-})
 ```
 
-Submit a process using Colonies CLI:
+Submit a process:
 ```console
-$ colonies process run --func helloworld --targettype cli
-INFO[0000] Process submitted                             ProcessID=082c734838674d771452eb979d6fd3d05367ecf0cf4046a2254a56d5f32b3ef7
-```
-
-Lookup the result:
-```console
-$ colonies process get --processid 082c734838674d771452eb979d6fd3d05367ecf0cf4046a2254a56d5f32b3ef7
-Process:
-+-------------------+------------------------------------------------------------------+
-| ID                | 082c734838674d771452eb979d6fd3d05367ecf0cf4046a2254a56d5f32b3ef7 |
-| IsAssigned        | True                                                             |
-| AssignedRuntimeID | 3fc05cf3df4b494e95d6a3d297a34f19938f7daa7422ab0d4f794454133341ac |
-| State             | Successful                                                       |
-| Priority          | 0                                                                |
-| SubmissionTime    | 2022-08-07 10:27:24                                              |
-| StartTime         | 2022-08-07 10:27:24                                              |
-| EndTime           | 2022-08-07 10:27:24                                              |
-| WaitDeadline      | 2022-08-07 10:28:24                                              |
-| ExecDeadline      | 0001-01-01 01:12:12                                              |
-| WaitingTime       | 14.258ms                                                         |
-| ProcessingTime    | 11.502ms                                                         |
-| Retries           | 0                                                                |
-| ErrorMsg          |                                                                  |
-+-------------------+------------------------------------------------------------------+
-
-ProcessSpec:
-+-------------+--------------+
-| Func        | setLampState |
-| Args        | on           |
-| MaxExecTime | -1           |
-| MaxRetries  | -1           |
-| Priority    | 0            |
-+-------------+--------------+
-
-Conditions:
-+-------------+------------------------------------------------------------------+
-| ColonyID    | 4787a5071856a4acf702b2ffcea422e3237a679c681314113d86139461290cf4 |
-| RuntimeIDs  | None                                                             |
-| RuntimeType | cli                                                              |
-+-------------+------------------------------------------------------------------+
-
-Attributes:
-+------------------------------------------------------------------+--------+------------+------+
-|                                ID                                |  KEY   |   VALUE    | TYPE |
-+------------------------------------------------------------------+--------+------------+------+
-| c6c1563a3fd6db649b820bad180b253eb317c6b0e9b4408580b4d8c9b948c33d | result | helloworld | Out  |
-+------------------------------------------------------------------+--------+------------+------+
+$ colonies process run --func helloworld --targettype cli --wait
+helloworld
 ```
 
 ## How does it work?
