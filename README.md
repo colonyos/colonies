@@ -27,23 +27,24 @@ runtime.assign(colonyid, prvkey).then((process) => {
 })
 ```
 
-Submit a process:
+Submit a process spec from another machine:
 ```console
 $ colonies process run --func helloworld --targettype cli --wait
 helloworld
 ```
 
 ## How does it work?
-* Humans (or workers) submit task specifications to a Colony via a Colonies server, which manage one or several Colonies. 
-* Colonies workers connect to the Colonies server and search for suitable tasks to execute. Each worker must have a valid identity (like a passport) to prove its Colony membership and the Colonies server makes sure only authorized and qualified workers can connect and be assigned relevant tasks. 
+* Humans (or workers) submit process specs to a Colony via a Colonies server.
+* Colonies workers connect to the Colonies server and **search for suitable tasks to execute**. Each worker must have a **valid identity** (like a passport) to prove its Colony membership and the Colonies server makes sure only authorized and qualified workers can connect and be assigned processes. 
 * Colonies workers can **reside anywhere on the Internet**, e.g. a server, inside a Kubernetes Pod, a smart phone app, or embedded in a web page, thus enabling a compute continuum spanning devices, edge and cloud.
-* If a worker fails to complete a task in time, the task will be re-assigned to another worker. This fail-safe mechanism ensures that all tasks are eventually completed. This also makes it possible to apply **Chaos Engineering**, e.g. randomly kill workers to test the overall stability of the system.  
+* If a worker fails to complete a task in time, the task **will be re-assigned to another worker**. This fail-safe mechanism ensures that all tasks are eventually completed. This also makes it possible to apply **Chaos Engineering**, e.g. randomly kill workers to test the overall stability of the system.  
 
 ## What is it good at?
 * **Distributed computing**. Manage ML/AI workloads on Kubernetes. Form a Colony by deploying one or several Colonies workers in Kubernetes Pods. Then use Colonies to enable batch processing and launch processes inside worker containers.
 * **Distributed RPC**. Use Colonies to build overlay networks to manage workflows spanning multiple cloud/edge servers and devices.
 * **Grid computing**. Use Colonies as a control server where geographically dispersed workers perform computations.
-* **Meta operating systems** for the next-generation IoT, Edge computing and High-Performance Computing (HPC). Use Colonies to integrate various systems together, e.g. a Slurm worker could train a neural network at a super-computer, which are then automatically deployed by another worker to an Edge server or IoT device. Colonies makes it possible to handle these kinds of heterogeneous systems as a single unit to establish a compute continuum across many different systems and platforms.     
+* **Serverless computing**. Use Colonies as a building block for serverless computing.
+* **Meta operating systems**. Use Colonies to integrate various systems together, e.g. a Slurm worker could train a neural network at a super-computer, which are then automatically deployed by another worker to an Edge server or IoT device. Colonies makes it possible to handle these kinds of heterogeneous systems as a single unit to establish a compute continuum across many different systems and platforms.     
 
 ## What about Kubernetes and container-native workflow engines?
 * Colonies makes it possible to **orchestrate processes inside containers**. This is far more efficient than launching a new container for each new job like [Argo Workflows](https://argoproj.github.io/argo-workflows). This is especially important when dealing with AI workflows consisting of huge containers (tens of gigabytes) or when a large amount of data needs to be shuffled into memory.
