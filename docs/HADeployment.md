@@ -7,6 +7,19 @@ The Colonies server uses 3 internal ports.
 
 Note: For security reasons, only API port should be exposed externally on the Internet.
 
+# RAFT/Etcd requirements 
+| Colonies Server Replicas | Majority | Failure Tolerance |
+|:------------------------:|:--------:|:-----------------:|
+|            1             |    1     |         0         |
+|            2             |    2     |         0         |
+|            3             |    2     |         1         |
+|            4             |    3     |         1         |
+|            5             |    3     |         2         |
+|            6             |    4     |         2         |
+|            7             |    4     |         3         |
+|            8             |    5     |         3         |
+|            9             |    5     |         4         |
+
 # Tutorial
 Start 3 terminals and run the following command.Note that you first need to setup a PostgreSQL database and export the following environmental variables.
 
