@@ -1,2 +1,2 @@
 # Design 
-![Colonies Architecture](docs/images/ColoniesArchFull.png?raw=true "Colonies Architecture")
+![Colonies Architecture](images/ColoniesArchFull.png?raw=true "Colonies Architecture")
