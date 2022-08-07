@@ -78,13 +78,13 @@ Output:
 
 ```console
 INFO[0000] Starting a Colonies client                    Insecure=true ServerHost=localhost ServerPort=50080
-+---------+-----------+--------+
-|  NAME   |   HOST    | LEADER |
-+---------+-----------+--------+
-| server1 | localhost | False  |
-| server2 | localhost | False  |
-| server3 | localhost | True   |
-+---------+-----------+--------+
++---------+-----------+---------+----------------+--------------+-----------+--------+
+|  NAME   |   HOST    | APIPORT | ETCDCLIENTPORT | ETCDPEERPORT | RELAYPORT | LEADER |
++---------+-----------+---------+----------------+--------------+-----------+--------+
+| server1 | localhost | 50080   | 23100          | 24100        | 25100     | False  |
+| server2 | localhost | 50081   | 23100          | 24101        | 25101     | False  |
+| server3 | localhost | 50082   | 23100          | 24102        | 25102     | True   |
++---------+-----------+---------+----------------+--------------+-----------+--------+
 ```
 
 ## Kill the leader 
