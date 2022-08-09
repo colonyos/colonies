@@ -679,6 +679,7 @@ var getProcessCmd = &cobra.Command{
 		specData := [][]string{
 			[]string{"Func", procFunc},
 			[]string{"Args", procArgs},
+			[]string{"MaxWaitTime", strconv.Itoa(process.ProcessSpec.MaxWaitTime)},
 			[]string{"MaxExecTime", strconv.Itoa(process.ProcessSpec.MaxExecTime)},
 			[]string{"MaxRetries", strconv.Itoa(process.ProcessSpec.MaxRetries)},
 			[]string{"Priority", strconv.Itoa(process.ProcessSpec.Priority)},
