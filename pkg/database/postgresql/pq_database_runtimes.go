@@ -3,6 +3,7 @@ package postgresql
 import (
 	"database/sql"
 	"errors"
+	"strings"
 	"time"
 
 	"github.com/colonyos/colonies/pkg/core"
@@ -13,6 +14,9 @@ func (db *PQDatabase) AddRuntime(runtime *core.Runtime) error {
 	sqlStatement := `INSERT INTO  ` + db.dbPrefix + `RUNTIMES (RUNTIME_ID, RUNTIME_TYPE, NAME, COLONY_ID, CPU, CORES, MEM, GPU, GPUS, STATE, COMMISSIONTIME, LASTHEARDFROM) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`
 	_, err := db.postgresql.Exec(sqlStatement, runtime.ID, runtime.RuntimeType, runtime.Name, runtime.ColonyID, runtime.CPU, runtime.Cores, runtime.Mem, runtime.GPU, runtime.GPUs, 0, time.Now(), runtime.LastHeardFromTime)
 	if err != nil {
+		if strings.HasPrefix(err.Error(), "pq: duplicate key value violates unique constraint") {
+			return errors.New("Runtime name has to be unique")
+		}
 		return err
 	}
 
