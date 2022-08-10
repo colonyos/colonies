@@ -29,6 +29,10 @@ runtime.assign(colonyid, prvkey).then((process) => {
 
 Submit a process spec from another machine:
 ```console
+export COLONIES_SERVERHOST="localhost"
+export COLONIES_SERVERPORT="50080"
+export COLONIES_RUNTIMEPRVKEY="ddf7f7791208083b6a9ed975a72684f6406a269cfa36f1b1c32045c0a71fff05"
+
 $ colonies process run --func helloworld --targettype cli --wait
 helloworld
 ```
@@ -77,6 +81,7 @@ helloworld
 * [Security design](docs/Security.md)
 ## SDKs
 * [Golang Colonies SDK](https://github.com/colonyos/colonies/tree/main/pkg/client)
+* [Rust Colonies SDK](https://github.com/colonyos/rustrt)
 * [Julia Colonies SDK](https://github.com/colonyos/ColonyRuntime.jl)
 * [JavaScript Colonies SDK](https://github.com/colonyos/colonyruntime.js)
 * [Python Colonies SDK](https://github.com/colonyos/pyruntime)
