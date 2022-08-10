@@ -29,10 +29,6 @@ runtime.assign(colonyid, prvkey).then((process) => {
 
 Submit a process spec from another machine:
 ```console
-export COLONIES_SERVERHOST="localhost"
-export COLONIES_SERVERPORT="50080"
-export COLONIES_RUNTIMEPRVKEY="ddf7f7791208083b6a9ed975a72684f6406a269cfa36f1b1c32045c0a71fff05"
-
 $ colonies process run --func helloworld --targettype cli --wait
 helloworld
 ```
@@ -72,7 +68,7 @@ helloworld
 * [Getting started](docs/GettingStarted.md)
 * [How to implement a Colonies worker](docs/Worker.md)
 * [How to implement a FibonacciwWorker in Go)](docs/GoTutorial.md)
-* [How to create workflows DAGs)](docs/Workflows.md)
+* [How to create workflows DAGs](docs/Workflows.md)
 * [How to use generators](docs/Generators.md)
 * [How to use the Colonies CLI](docs/CLI.md)
 ## Design
