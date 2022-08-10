@@ -66,11 +66,11 @@ helloworld
 * [Installation](docs/Installation.md)
 ## Guides
 * [Getting started](docs/GettingStarted.md)
-* [How to implement a Colonies Worker](docs/Worker.md)
-* [How to implement a Fibonacci Worker in Go)](docs/GoTutorial.md)
+* [How to implement a Colonies worker](docs/Worker.md)
+* [How to implement a FibonacciwWorker in Go)](docs/GoTutorial.md)
 * [How to create workflows DAGs)](docs/Workflows.md)
 * [How to use generators](docs/Generators.md)
-* [How to use the Colonies CLI tool](docs/CLI.md)
+* [How to use the Colonies CLI](docs/CLI.md)
 ## Design
 * [Overall design](docs/Design.md)
 * [HTTP RPC protocol](docs/RPC.md)
@@ -83,7 +83,7 @@ helloworld
 * [Haskell Colonies SDK](https://github.com/colonyos/haskellrt)
 ## Deployment
 * [High-availability deployment](docs/HADeployment.md)
-* [Grafana/Prometheus Monitoring](docs/Monitoring.md)
+* [Grafana/Prometheus monitoring](docs/Monitoring.md)
 * [Kubernetes Helm charts](https://github.com/colonyos/helm)
 
 More information can also be found [here](https://colonyos.io).

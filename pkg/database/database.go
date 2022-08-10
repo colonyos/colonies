@@ -110,6 +110,14 @@ type Database interface {
 	DeleteGeneratorByID(generatorID string) error
 	DeleteAllGeneratorsByColonyID(colonyID string) error
 
+	// Cron functions
+	AddCron(cron *core.Cron) error
+	UpdateCron(cronID string, nextRun time.Time, lastRun time.Time, lastProcessGraphID string, successfulRuns int, failedRuns int) error
+	GetCronByID(cronID string) (*core.Cron, error)
+	FindCronsByColonyID(colonyID string, count int) ([]*core.Cron, error)
+	DeleteCronByID(cronID string) error
+	DeleteAllCronsByColonyID(colonyID string) error
+
 	// Distributed locking
 	Lock(timeout int) error
 	Unlock() error
