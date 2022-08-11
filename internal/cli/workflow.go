@@ -446,6 +446,72 @@ var listFailedWorkflowsCmd = &cobra.Command{
 	},
 }
 
+func printGraf(client *client.ColoniesClient, graph *core.ProcessGraph) {
+	fmt.Println("Workflow:")
+	workflowData := [][]string{
+		[]string{"WorkflowID", graph.ID},
+		[]string{"ColonyID", graph.ID},
+		[]string{"State", State2String(graph.State)},
+		[]string{"SubmissionTime", graph.SubmissionTime.Format(TimeLayout)},
+		[]string{"StartTime", graph.StartTime.Format(TimeLayout)},
+		[]string{"EndTime", graph.EndTime.Format(TimeLayout)},
+	}
+	workflowTable := tablewriter.NewWriter(os.Stdout)
+	for _, v := range workflowData {
+		workflowTable.Append(v)
+	}
+	workflowTable.SetAlignment(tablewriter.ALIGN_LEFT)
+	workflowTable.Render()
+
+	fmt.Println("\nProcesses:")
+	for i, processID := range graph.ProcessIDs {
+		process, err := client.GetProcess(processID, RuntimePrvKey)
+		CheckError(err)
+
+		procFunc := process.ProcessSpec.Func
+		if procFunc == "" {
+			procFunc = "None"
+		}
+
+		procArgs := ""
+		for _, procArg := range process.ProcessSpec.Args {
+			procArgs += procArg + " "
+		}
+		if procArgs == "" {
+			procArgs = "None"
+		}
+
+		dependencies := ""
+		for _, dependency := range process.ProcessSpec.Conditions.Dependencies {
+			dependencies += dependency + " "
+		}
+		if dependencies == "" {
+			dependencies = "None"
+		}
+
+		processData := [][]string{
+			[]string{"Name", process.ProcessSpec.Name},
+			[]string{"ProcessID", process.ID},
+			[]string{"RuntimeType", process.ProcessSpec.Conditions.RuntimeType},
+			[]string{"Func", procFunc},
+			[]string{"Args", procArgs},
+			[]string{"State", State2String(process.State)},
+			[]string{"WaitingForParents", strconv.FormatBool(process.WaitForParents)},
+			[]string{"Dependencies", dependencies},
+		}
+		processTable := tablewriter.NewWriter(os.Stdout)
+		for _, v := range processData {
+			processTable.Append(v)
+		}
+		processTable.SetAlignment(tablewriter.ALIGN_LEFT)
+		processTable.Render()
+
+		if i < len(graph.ProcessIDs)-1 {
+			fmt.Println()
+		}
+	}
+}
+
 var getWorkflowCmd = &cobra.Command{
 	Use:   "get",
 	Short: "Get info about a workflow",
@@ -482,68 +548,6 @@ var getWorkflowCmd = &cobra.Command{
 			os.Exit(0)
 		}
 
-		fmt.Println("Workflow:")
-		workflowData := [][]string{
-			[]string{"WorkflowID", graph.ID},
-			[]string{"ColonyID", graph.ID},
-			[]string{"State", State2String(graph.State)},
-			[]string{"SubmissionTime", graph.SubmissionTime.Format(TimeLayout)},
-			[]string{"StartTime", graph.StartTime.Format(TimeLayout)},
-			[]string{"EndTime", graph.EndTime.Format(TimeLayout)},
-		}
-		workflowTable := tablewriter.NewWriter(os.Stdout)
-		for _, v := range workflowData {
-			workflowTable.Append(v)
-		}
-		workflowTable.SetAlignment(tablewriter.ALIGN_LEFT)
-		workflowTable.Render()
-
-		fmt.Println("\nProcesses:")
-		for i, processID := range graph.ProcessIDs {
-			process, err := client.GetProcess(processID, RuntimePrvKey)
-			CheckError(err)
-
-			procFunc := process.ProcessSpec.Func
-			if procFunc == "" {
-				procFunc = "None"
-			}
-
-			procArgs := ""
-			for _, procArg := range process.ProcessSpec.Args {
-				procArgs += procArg + " "
-			}
-			if procArgs == "" {
-				procArgs = "None"
-			}
-
-			dependencies := ""
-			for _, dependency := range process.ProcessSpec.Conditions.Dependencies {
-				dependencies += dependency + " "
-			}
-			if dependencies == "" {
-				dependencies = "None"
-			}
-
-			processData := [][]string{
-				[]string{"Name", process.ProcessSpec.Name},
-				[]string{"ProcessID", process.ID},
-				[]string{"RuntimeType", process.ProcessSpec.Conditions.RuntimeType},
-				[]string{"Func", procFunc},
-				[]string{"Args", procArgs},
-				[]string{"State", State2String(process.State)},
-				[]string{"WaitingForParents", strconv.FormatBool(process.WaitForParents)},
-				[]string{"Dependencies", dependencies},
-			}
-			processTable := tablewriter.NewWriter(os.Stdout)
-			for _, v := range processData {
-				processTable.Append(v)
-			}
-			processTable.SetAlignment(tablewriter.ALIGN_LEFT)
-			processTable.Render()
-
-			if i < len(graph.ProcessIDs)-1 {
-				fmt.Println()
-			}
-		}
+		printGraf(client, graph)
 	},
 }
