@@ -2,6 +2,7 @@ package cli
 
 import (
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"strconv"
@@ -246,6 +247,7 @@ var getGeneratorCmd = &cobra.Command{
 			os.Exit(0)
 		}
 
+		fmt.Println("Workflow:")
 		generatorData := [][]string{
 			[]string{"Id", generator.ID},
 			[]string{"Name", generator.Name},
@@ -259,7 +261,18 @@ var getGeneratorCmd = &cobra.Command{
 			generatorTable.Append(v)
 		}
 		generatorTable.SetAlignment(tablewriter.ALIGN_LEFT)
+		generatorTable.SetAutoWrapText(false)
 		generatorTable.Render()
+
+		fmt.Println()
+		fmt.Println("WorkflowSpec:")
+		workflowSpec, err := core.ConvertJSONToWorkflowSpec(generator.WorkflowSpec)
+		CheckError(err)
+		for i, procesSpec := range workflowSpec.ProcessSpecs {
+			fmt.Println()
+			fmt.Println("ProcessSpec " + strconv.Itoa(i) + ":")
+			printProcessSpec(&procesSpec)
+		}
 	},
 }
 
