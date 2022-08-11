@@ -8,7 +8,6 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/colonyos/colonies/pkg/client"
 	"github.com/colonyos/colonies/pkg/core"
@@ -122,6 +121,30 @@ var processCmd = &cobra.Command{
 	Long:  "Manage processes",
 }
 
+func wait(client *client.ColoniesClient, process *core.Process) {
+	for {
+		subscription, err := client.SubscribeProcess(process.ID,
+			process.ProcessSpec.Conditions.RuntimeType,
+			core.SUCCESS,
+			100,
+			RuntimePrvKey)
+		CheckError(err)
+
+		select {
+		case process := <-subscription.ProcessChan:
+			for _, attribute := range process.Attributes {
+				if attribute.Key == "output" {
+					fmt.Print(attribute.Value)
+				}
+			}
+			os.Exit(0)
+		case err := <-subscription.ErrChan:
+			CheckError(err)
+		}
+	}
+
+}
+
 var runProcessCmd = &cobra.Command{
 	Use:   "run",
 	Short: "Submit a process specification to a colony without a spec",
@@ -191,22 +214,7 @@ var runProcessCmd = &cobra.Command{
 		CheckError(err)
 
 		if Wait {
-			for {
-				processFromServer, err := client.GetProcess(addedProcess.ID, RuntimePrvKey)
-				CheckError(err)
-
-				if processFromServer.State == core.SUCCESS || processFromServer.State == core.FAILED {
-					for _, attribute := range processFromServer.Attributes {
-						if attribute.Key == "output" {
-							fmt.Print(attribute.Value)
-						}
-					}
-					os.Exit(0)
-				} else {
-					time.Sleep(500 * time.Millisecond)
-				}
-			}
-
+			wait(client, addedProcess)
 		} else {
 			log.WithFields(log.Fields{"ProcessID": addedProcess.ID}).Info("Process submitted")
 		}
@@ -259,22 +267,7 @@ var submitProcessCmd = &cobra.Command{
 		CheckError(err)
 
 		if Wait {
-			for {
-				processFromServer, err := client.GetProcess(addedProcess.ID, RuntimePrvKey)
-				CheckError(err)
-
-				if processFromServer.State == core.SUCCESS || processFromServer.State == core.FAILED {
-					for _, attribute := range processFromServer.Attributes {
-						if attribute.Key == "output" {
-							fmt.Print(attribute.Value)
-						}
-					}
-					os.Exit(0)
-				} else {
-					time.Sleep(500 * time.Millisecond)
-				}
-			}
-
+			wait(client, addedProcess)
 		} else {
 			log.WithFields(log.Fields{"ProcessID": addedProcess.ID}).Info("Process submitted")
 		}
@@ -572,6 +565,69 @@ var listFailedProcessesCmd = &cobra.Command{
 	},
 }
 
+func printProcessSpec(processSpec *core.ProcessSpec) {
+	runtimeIDs := ""
+	for _, runtimeID := range processSpec.Conditions.RuntimeIDs {
+		runtimeIDs += runtimeID + "\n"
+	}
+	runtimeIDs = strings.TrimSuffix(runtimeIDs, "\n")
+	if runtimeIDs == "" {
+		runtimeIDs = "None"
+	}
+
+	procFunc := processSpec.Func
+	if procFunc == "" {
+		procFunc = "None"
+	}
+
+	procArgs := ""
+	for _, procArg := range processSpec.Args {
+		procArgs += procArg + " "
+	}
+	if procArgs == "" {
+		procArgs = "None"
+	}
+
+	specData := [][]string{
+		[]string{"Func", procFunc},
+		[]string{"Args", procArgs},
+		[]string{"MaxWaitTime", strconv.Itoa(processSpec.MaxWaitTime)},
+		[]string{"MaxExecTime", strconv.Itoa(processSpec.MaxExecTime)},
+		[]string{"MaxRetries", strconv.Itoa(processSpec.MaxRetries)},
+		[]string{"Priority", strconv.Itoa(processSpec.Priority)},
+	}
+	specTable := tablewriter.NewWriter(os.Stdout)
+	for _, v := range specData {
+		specTable.Append(v)
+	}
+	specTable.SetAlignment(tablewriter.ALIGN_LEFT)
+	specTable.Render()
+
+	fmt.Println()
+	fmt.Println("Conditions:")
+
+	dep := ""
+	for _, s := range processSpec.Conditions.Dependencies {
+		dep += s + " "
+	}
+	if len(dep) > 0 {
+		dep = dep[:len(dep)-1]
+	}
+
+	condData := [][]string{
+		[]string{"ColonyID", processSpec.Conditions.ColonyID},
+		[]string{"RuntimeIDs", runtimeIDs},
+		[]string{"RuntimeType", processSpec.Conditions.RuntimeType},
+		[]string{"Dependencies", dep},
+	}
+	condTable := tablewriter.NewWriter(os.Stdout)
+	for _, v := range condData {
+		condTable.Append(v)
+	}
+	condTable.SetAlignment(tablewriter.ALIGN_LEFT)
+	condTable.Render()
+}
+
 var getProcessCmd = &cobra.Command{
 	Use:   "get",
 	Short: "Get info about a process",
@@ -651,60 +707,9 @@ var getProcessCmd = &cobra.Command{
 		processTable.SetAlignment(tablewriter.ALIGN_LEFT)
 		processTable.Render()
 
-		runtimeIDs := ""
-		for _, runtimeID := range process.ProcessSpec.Conditions.RuntimeIDs {
-			runtimeIDs += runtimeID + "\n"
-		}
-		runtimeIDs = strings.TrimSuffix(runtimeIDs, "\n")
-		if runtimeIDs == "" {
-			runtimeIDs = "None"
-		}
-
-		procFunc := process.ProcessSpec.Func
-		if procFunc == "" {
-			procFunc = "None"
-		}
-
-		procArgs := ""
-		for _, procArg := range process.ProcessSpec.Args {
-			procArgs += procArg + " "
-		}
-		if procArgs == "" {
-			procArgs = "None"
-		}
-
 		fmt.Println()
 		fmt.Println("ProcessSpec:")
-
-		specData := [][]string{
-			[]string{"Func", procFunc},
-			[]string{"Args", procArgs},
-			[]string{"MaxWaitTime", strconv.Itoa(process.ProcessSpec.MaxWaitTime)},
-			[]string{"MaxExecTime", strconv.Itoa(process.ProcessSpec.MaxExecTime)},
-			[]string{"MaxRetries", strconv.Itoa(process.ProcessSpec.MaxRetries)},
-			[]string{"Priority", strconv.Itoa(process.ProcessSpec.Priority)},
-		}
-		specTable := tablewriter.NewWriter(os.Stdout)
-		for _, v := range specData {
-			specTable.Append(v)
-		}
-		specTable.SetAlignment(tablewriter.ALIGN_LEFT)
-		specTable.Render()
-
-		fmt.Println()
-		fmt.Println("Conditions:")
-
-		condData := [][]string{
-			[]string{"ColonyID", process.ProcessSpec.Conditions.ColonyID},
-			[]string{"RuntimeIDs", runtimeIDs},
-			[]string{"RuntimeType", process.ProcessSpec.Conditions.RuntimeType},
-		}
-		condTable := tablewriter.NewWriter(os.Stdout)
-		for _, v := range condData {
-			condTable.Append(v)
-		}
-		condTable.SetAlignment(tablewriter.ALIGN_LEFT)
-		condTable.Render()
+		printProcessSpec(&process.ProcessSpec)
 
 		fmt.Println()
 		fmt.Println("Attributes:")
