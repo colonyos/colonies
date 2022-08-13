@@ -192,6 +192,10 @@ func (server *ColoniesServer) handleAPIRequest(c *gin.Context) {
 	case rpc.DeleteGeneratorPayloadType:
 		server.handleDeleteGeneratorHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 
+		// Generators handlers
+	case rpc.AddCronPayloadType:
+		server.handleAddCronHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+
 	// Server handlers
 	case rpc.GetStatisiticsPayloadType:
 		server.handleStatisticsHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())

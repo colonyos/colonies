@@ -14,7 +14,7 @@ func TestAddCron(t *testing.T) {
 
 	defer db.Close()
 
-	cron := core.CreateCron(core.GenerateRandomID(), "test_name", "* * * * * *", "workflow")
+	cron := core.CreateCron(core.GenerateRandomID(), "test_name", "* * * * * *", 0, false, "workflow")
 
 	err = db.AddCron(cron)
 	assert.Nil(t, err)
@@ -32,7 +32,7 @@ func TestUpdateCron(t *testing.T) {
 	defer db.Close()
 
 	colonyID := core.GenerateRandomID()
-	cron := core.CreateCron(colonyID, "test_name", "* * * * * *", "workflow")
+	cron := core.CreateCron(colonyID, "test_name", "* * * * * *", 100, true, "workflow")
 
 	err = db.AddCron(cron)
 	assert.Nil(t, err)
@@ -43,6 +43,8 @@ func TestUpdateCron(t *testing.T) {
 	assert.Equal(t, cronFromDB.ColonyID, colonyID)
 	assert.Equal(t, cronFromDB.Name, "test_name")
 	assert.Equal(t, cronFromDB.CronExpression, "* * * * * *")
+	assert.Equal(t, cronFromDB.Intervall, 100)
+	assert.Equal(t, cronFromDB.Random, true)
 	assert.Equal(t, cronFromDB.WorkflowSpec, "workflow")
 	assert.Equal(t, cronFromDB.LastProcessGraphID, "")
 	assert.Equal(t, cronFromDB.SuccessfulRuns, 0)
@@ -75,9 +77,9 @@ func TestFindCronsByColonyID(t *testing.T) {
 	colonyID1 := core.GenerateRandomID()
 	colonyID2 := core.GenerateRandomID()
 
-	cron1 := core.CreateCron(colonyID1, "test_name1", "* * * * * *", "workflow1")
-	cron2 := core.CreateCron(colonyID2, "test_name2", "* * * * * *", "workflow2")
-	cron3 := core.CreateCron(colonyID2, "test_name3", "* * * * * *", "workflow3")
+	cron1 := core.CreateCron(colonyID1, "test_name1", "* * * * * *", 0, false, "workflow1")
+	cron2 := core.CreateCron(colonyID2, "test_name2", "* * * * * *", 0, false, "workflow2")
+	cron3 := core.CreateCron(colonyID2, "test_name3", "* * * * * *", 0, false, "workflow3")
 
 	err = db.AddCron(cron1)
 	assert.Nil(t, err)
@@ -105,7 +107,7 @@ func TestDeleteCronByID(t *testing.T) {
 
 	defer db.Close()
 
-	cron := core.CreateCron(core.GenerateRandomID(), "test_name", "* * * * * *", "workflow")
+	cron := core.CreateCron(core.GenerateRandomID(), "test_name", "* * * * * *", 0, false, "workflow")
 	err = db.AddCron(cron)
 	assert.Nil(t, err)
 
@@ -130,9 +132,9 @@ func TestDeleteAllCronsByID(t *testing.T) {
 	colonyID1 := core.GenerateRandomID()
 	colonyID2 := core.GenerateRandomID()
 
-	cron1 := core.CreateCron(colonyID1, "test_name1", "* * * * * *", "workflow1")
-	cron2 := core.CreateCron(colonyID2, "test_name2", "* * * * * *", "workflow2")
-	cron3 := core.CreateCron(colonyID2, "test_name3", "* * * * * *", "workflow3")
+	cron1 := core.CreateCron(colonyID1, "test_name1", "* * * * * *", 0, false, "workflow1")
+	cron2 := core.CreateCron(colonyID2, "test_name2", "* * * * * *", 0, false, "workflow2")
+	cron3 := core.CreateCron(colonyID2, "test_name3", "* * * * * *", 0, false, "workflow3")
 
 	err = db.AddCron(cron1)
 	assert.Nil(t, err)

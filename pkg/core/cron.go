@@ -13,6 +13,8 @@ type Cron struct {
 	ColonyID           string    `json:"colonyid"`
 	Name               string    `json:"name"`
 	CronExpression     string    `json:"cronexpression"`
+	Intervall          int       `json:"intervall"`
+	Random             bool      `json:"random"`
 	NextRun            time.Time `json:"nextrun"`
 	LastRun            time.Time `json:"lastrun"`
 	WorkflowSpec       string    `json:"workflowspec"`
@@ -21,12 +23,12 @@ type Cron struct {
 	FailedRuns         int       `json:"failedruns"`
 }
 
-func CreateCron(colonyID string, name string, cronExpression string, workflowSpec string) *Cron {
+func CreateCron(colonyID string, name string, cronExpression string, intervall int, random bool, workflowSpec string) *Cron {
 	uuid := uuid.New()
 	crypto := crypto.CreateCrypto()
 	id := crypto.GenerateHash(uuid.String())
 
-	return &Cron{ID: id, ColonyID: colonyID, Name: name, CronExpression: cronExpression, NextRun: time.Time{}, LastRun: time.Time{}, WorkflowSpec: workflowSpec}
+	return &Cron{ID: id, ColonyID: colonyID, Name: name, CronExpression: cronExpression, Intervall: intervall, Random: random, NextRun: time.Time{}, LastRun: time.Time{}, WorkflowSpec: workflowSpec}
 }
 
 func ConvertJSONToCron(jsonString string) (*Cron, error) {
@@ -89,6 +91,8 @@ func (cron *Cron) Equals(cron2 *Cron) bool {
 		cron.ColonyID != cron2.ColonyID ||
 		cron.Name != cron2.Name ||
 		cron.CronExpression != cron2.CronExpression ||
+		cron.Intervall != cron2.Intervall ||
+		cron.Random != cron2.Random ||
 		cron.NextRun.Unix() != cron2.NextRun.Unix() ||
 		cron.LastRun.Unix() != cron2.LastRun.Unix() ||
 		cron.WorkflowSpec != cron2.WorkflowSpec ||

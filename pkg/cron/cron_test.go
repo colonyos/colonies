@@ -1,6 +1,7 @@
 package cron
 
 import (
+	"fmt"
 	"math/rand"
 	"testing"
 	"time"
@@ -9,7 +10,6 @@ import (
 )
 
 func TestCronNext(t *testing.T) {
-	//cronExpr := "1 * * * * *"
 	cronExpr := "* * 8 * * *"
 	nextTime, err := Next(cronExpr)
 	assert.Nil(t, err)
@@ -19,13 +19,14 @@ func TestCronNext(t *testing.T) {
 }
 
 func TestCronRandom(t *testing.T) {
-	rand.Seed(time.Now().UTC().UnixNano())
-	cronExpr := "* * 8 * * *" // random time between now and 08:00
-	nextTime, err := Random(cronExpr)
+	rand.Seed(time.Now().UnixNano())
+	nextTime, err := Random(60 * 60 * 24 * 7) // random time the coming week
 	assert.Nil(t, err)
 	diff := nextTime.Sub(time.Now())
 	assert.True(t, diff.Milliseconds() >= 0)
 
-	nextTime2, err := Random(cronExpr)
+	fmt.Println(nextTime)
+
+	nextTime2, err := Random(60 * 60 * 24 * 7) // random time the coming week
 	assert.NotEqual(t, nextTime, nextTime2)
 }

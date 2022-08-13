@@ -17,22 +17,12 @@ func Next(cronExpr string) (time.Time, error) {
 	return p.Next(now), nil
 }
 
-func Random(cronExpr string) (time.Time, error) {
-	parser := NewParser(Second | Minute | Hour | Dom | Month | Dow | Descriptor)
-
-	p, err := parser.Parse(cronExpr)
-	if err != nil {
-		return time.Time{}, err
-	}
-
+func Random(intervall int) (time.Time, error) {
 	now := time.Now()
-	nextTime := p.Next(now)
-	diff := nextTime.Sub(time.Now()).Milliseconds()
-
 	min := 00
-	max := int(diff)
+	max := intervall
 	randomDiff := rand.Intn(max-min) + min
-	now = now.Add(time.Duration(randomDiff * int(time.Millisecond)))
+	next := now.Add(time.Duration(randomDiff * int(time.Second)))
 
-	return now, nil
+	return next, nil
 }

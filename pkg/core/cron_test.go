@@ -7,7 +7,7 @@ import (
 )
 
 func TestCreateCron(t *testing.T) {
-	cron := CreateCron(GenerateRandomID(), "test_name", "* * * * * *", "workflow")
+	cron := CreateCron(GenerateRandomID(), "test_name", "* * * * * *", 0, false, "workflow")
 	assert.Len(t, cron.ID, 64)
 	assert.Equal(t, cron.Name, "test_name")
 	assert.Equal(t, cron.CronExpression, "* * * * * *")
@@ -15,9 +15,9 @@ func TestCreateCron(t *testing.T) {
 }
 
 func TestIsCronEquals(t *testing.T) {
-	cron1 := CreateCron(GenerateRandomID(), "test_name1", "* * * * * *", "workflow1")
-	cron2 := CreateCron(GenerateRandomID(), "test_name2", "* * * * * *", "workflow2")
-	cron3 := CreateCron(GenerateRandomID(), "test_name3", "* * * * * *", "workflow3")
+	cron1 := CreateCron(GenerateRandomID(), "test_name1", "* * * * * *", 0, false, "workflow1")
+	cron2 := CreateCron(GenerateRandomID(), "test_name2", "* * * * * *", 0, false, "workflow2")
+	cron3 := CreateCron(GenerateRandomID(), "test_name3", "* * * * * *", 0, false, "workflow3")
 
 	assert.True(t, cron1.Equals(cron1))
 	assert.False(t, cron1.Equals(cron2))
@@ -25,11 +25,11 @@ func TestIsCronEquals(t *testing.T) {
 }
 
 func TestIsCronArraysEquals(t *testing.T) {
-	cron1 := CreateCron(GenerateRandomID(), "test_name1", "* * * * * *", "workflow1")
-	cron2 := CreateCron(GenerateRandomID(), "test_name2", "* * * * * *", "workflow2")
-	cron3 := CreateCron(GenerateRandomID(), "test_name3", "* * * * * *", "workflow3")
-	cron4 := CreateCron(GenerateRandomID(), "test_name4", "* * * * * *", "workflow4")
-	cron5 := CreateCron(GenerateRandomID(), "test_name5", "* * * * * *", "workflow5")
+	cron1 := CreateCron(GenerateRandomID(), "test_name1", "* * * * * *", 0, false, "workflow1")
+	cron2 := CreateCron(GenerateRandomID(), "test_name2", "* * * * * *", 0, false, "workflow2")
+	cron3 := CreateCron(GenerateRandomID(), "test_name3", "* * * * * *", 0, false, "workflow3")
+	cron4 := CreateCron(GenerateRandomID(), "test_name4", "* * * * * *", 0, false, "workflow4")
+	cron5 := CreateCron(GenerateRandomID(), "test_name5", "* * * * * *", 0, false, "workflow5")
 
 	var crons1 []*Cron
 	var crons2 []*Cron
@@ -55,7 +55,7 @@ func TestIsCronArraysEquals(t *testing.T) {
 }
 
 func TestCronToJSON(t *testing.T) {
-	cron := CreateCron(GenerateRandomID(), "test_name1", "* * * * * *", "workflow1")
+	cron := CreateCron(GenerateRandomID(), "test_name1", "* * * * * *", 0, false, "workflow1")
 	jsonStr, err := cron.ToJSON()
 	assert.Nil(t, err)
 
@@ -65,9 +65,9 @@ func TestCronToJSON(t *testing.T) {
 }
 
 func TestCronArrayToJSON(t *testing.T) {
-	cron1 := CreateCron(GenerateRandomID(), "test_name1", "* * * * * *", "workflow1")
-	cron2 := CreateCron(GenerateRandomID(), "test_name2", "* * * * * *", "workflow2")
-	cron3 := CreateCron(GenerateRandomID(), "test_name3", "* * * * * *", "workflow3")
+	cron1 := CreateCron(GenerateRandomID(), "test_name1", "* * * * * *", 0, false, "workflow1")
+	cron2 := CreateCron(GenerateRandomID(), "test_name2", "* * * * * *", 0, false, "workflow2")
+	cron3 := CreateCron(GenerateRandomID(), "test_name3", "* * * * * *", 0, false, "workflow3")
 
 	var crons []*Cron
 	crons = append(crons, cron1)
