@@ -8,7 +8,7 @@ import (
 )
 
 func TestRPCAddCronMsg(t *testing.T) {
-	cron := core.CreateCron(core.GenerateRandomID(), "test_name", "* * * * * *", "workflow")
+	cron := core.CreateCron(core.GenerateRandomID(), "test_name1", "* * * * * *", 0, false, "workflow1")
 	msg := CreateAddCronMsg(cron)
 	jsonString, err := msg.ToJSON()
 	assert.Nil(t, err)
@@ -23,7 +23,7 @@ func TestRPCAddCronMsg(t *testing.T) {
 }
 
 func TestRPCAddCronMsgIndent(t *testing.T) {
-	cron := core.CreateCron(core.GenerateRandomID(), "test_name", "* * * * * *", "workflow")
+	cron := core.CreateCron(core.GenerateRandomID(), "test_name1", "* * * * * *", 0, false, "workflow1")
 	msg := CreateAddCronMsg(cron)
 	jsonString, err := msg.ToJSONIndent()
 	assert.Nil(t, err)
@@ -38,7 +38,7 @@ func TestRPCAddCronMsgIndent(t *testing.T) {
 }
 
 func TestRPCAddCronMsgEquals(t *testing.T) {
-	cron := core.CreateCron(core.GenerateRandomID(), "test_name", "* * * * * *", "workflow")
+	cron := core.CreateCron(core.GenerateRandomID(), "test_name1", "* * * * * *", 0, false, "workflow1")
 	msg := CreateAddCronMsg(cron)
 	assert.True(t, msg.Equals(msg))
 	assert.False(t, msg.Equals(nil))

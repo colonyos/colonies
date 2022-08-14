@@ -38,6 +38,8 @@ type command struct {
 	attributeReplyChan     chan core.Attribute
 	generatorReplyChan     chan *core.Generator
 	generatorsReplyChan    chan []*core.Generator
+	cronReplyChan          chan *core.Cron
+	cronsReplyChan         chan []*core.Cron
 	handler                func(cmd *command)
 }
 
@@ -190,6 +192,107 @@ func (controller *coloniesController) deleteGenerator(generatorID string) error 
 		handler: func(cmd *command) {
 			err := controller.db.DeleteGeneratorByID(generatorID)
 			controller.generatorEngine.syncStatesFromDB()
+			cmd.errorChan <- err
+		}}
+
+	controller.cmdQueue <- cmd
+	return <-cmd.errorChan
+}
+
+func (controller *coloniesController) addCron(cron *core.Cron) (*core.Cron, error) {
+	cmd := &command{cronReplyChan: make(chan *core.Cron, 1),
+		errorChan: make(chan error, 1),
+		handler: func(cmd *command) {
+			err := controller.db.AddCron(cron)
+			if err != nil {
+				cmd.errorChan <- err
+				return
+			}
+			addedCron, err := controller.db.GetCronByID(cron.ID)
+			if err != nil {
+				cmd.errorChan <- err
+				return
+			}
+			cmd.cronReplyChan <- addedCron
+		}}
+
+	controller.cmdQueue <- cmd
+	select {
+	case err := <-cmd.errorChan:
+		return nil, err
+	case addedCron := <-cmd.cronReplyChan:
+		return addedCron, nil
+	}
+}
+
+func (controller *coloniesController) getCron(cronID string) (*core.Cron, error) {
+	cmd := &command{cronReplyChan: make(chan *core.Cron, 1),
+		errorChan: make(chan error, 1),
+		handler: func(cmd *command) {
+			cron, err := controller.db.GetCronByID(cronID)
+			if err != nil {
+				cmd.errorChan <- err
+				return
+			}
+			cmd.cronReplyChan <- cron
+		}}
+
+	controller.cmdQueue <- cmd
+	select {
+	case err := <-cmd.errorChan:
+		return nil, err
+	case cron := <-cmd.cronReplyChan:
+		return cron, nil
+	}
+}
+
+func (controller *coloniesController) getCrons(colonyID string, count int) ([]*core.Cron, error) {
+	cmd := &command{cronsReplyChan: make(chan []*core.Cron, 1),
+		errorChan: make(chan error, 1),
+		handler: func(cmd *command) {
+			crons, err := controller.db.FindCronsByColonyID(colonyID, count)
+			if err != nil {
+				cmd.errorChan <- err
+				return
+			}
+			cmd.cronsReplyChan <- crons
+		}}
+
+	controller.cmdQueue <- cmd
+	select {
+	case err := <-cmd.errorChan:
+		return nil, err
+	case crons := <-cmd.cronsReplyChan:
+		return crons, nil
+	}
+}
+
+// TODO
+func (controller *coloniesController) runCron(cronID string) (*core.Cron, error) {
+	cmd := &command{cronReplyChan: make(chan *core.Cron, 1),
+		errorChan: make(chan error, 1),
+		handler: func(cmd *command) {
+			cron, err := controller.db.GetCronByID(cronID)
+			if err != nil {
+				cmd.errorChan <- err
+				return
+			}
+			cmd.cronReplyChan <- cron
+		}}
+
+	controller.cmdQueue <- cmd
+	select {
+	case err := <-cmd.errorChan:
+		return nil, err
+	case cron := <-cmd.cronReplyChan:
+		return cron, nil
+	}
+}
+
+func (controller *coloniesController) deleteCron(cronID string) error {
+	cmd := &command{errorChan: make(chan error, 1),
+		handler: func(cmd *command) {
+			err := controller.db.DeleteCronByID(cronID)
 			cmd.errorChan <- err
 		}}
 

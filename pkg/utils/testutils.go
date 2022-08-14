@@ -97,3 +97,18 @@ func FakeGenerator(t *testing.T, colonyID string) *core.Generator {
 	generator := core.CreateGenerator(colonyID, "test_genname", jsonStr, 10, 0, 1)
 	return generator
 }
+
+func FakeCron(t *testing.T, colonyID string) *core.Cron {
+	workflowSpec := core.CreateWorkflowSpec(colonyID)
+	processSpec1 := CreateTestProcessSpec(colonyID)
+	processSpec1.Name = "task1"
+	processSpec2 := CreateTestProcessSpec(colonyID)
+	processSpec2.Name = "task2"
+	processSpec2.AddDependency("task1")
+	workflowSpec.AddProcessSpec(processSpec1)
+	workflowSpec.AddProcessSpec(processSpec2)
+	jsonStr, err := workflowSpec.ToJSON()
+	assert.Nil(t, err)
+	cron := core.CreateCron(colonyID, "test_cron1", "1 * * * * *", 0, false, jsonStr)
+	return cron
+}

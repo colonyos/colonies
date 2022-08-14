@@ -23,7 +23,7 @@ func (server *ColoniesServer) handleAddGeneratorHTTPRequest(c *gin.Context, reco
 		return
 	}
 	if msg.Generator == nil {
-		server.handleHTTPError(c, errors.New("Failed to add generator, msg.ProcessSpec is nil"), http.StatusBadRequest)
+		server.handleHTTPError(c, errors.New("Failed to add generator, msg.Generator is nil"), http.StatusBadRequest)
 		return
 	}
 
