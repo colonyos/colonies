@@ -2,6 +2,7 @@ package core
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -80,4 +81,12 @@ func TestCronArrayToJSON(t *testing.T) {
 	crons2, err := ConvertJSONToCronArray(jsonStr)
 	assert.Nil(t, err)
 	assert.True(t, IsCronArraysEqual(crons, crons2))
+}
+
+func TestCronHasExpire(t *testing.T) {
+	cron := CreateCron(GenerateRandomID(), "test_name", "* * * * * *", 0, false, "workflow")
+	cron.NextRun = time.Now().Add(-100 * time.Second)
+	assert.True(t, cron.HasExpired())
+	cron.NextRun = time.Now().Add(100 * time.Second)
+	assert.False(t, cron.HasExpired())
 }

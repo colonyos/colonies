@@ -89,12 +89,29 @@ func (db *PQDatabase) FindCronsByColonyID(colonyID string, count int) ([]*core.C
 	}
 	defer rows.Close()
 
-	generators, err := db.parseCrons(rows)
+	crons, err := db.parseCrons(rows)
 	if err != nil {
 		return nil, err
 	}
 
-	return generators, nil
+	return crons, nil
+}
+
+func (db *PQDatabase) FindAllCrons() ([]*core.Cron, error) {
+	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `CRONS`
+	rows, err := db.postgresql.Query(sqlStatement)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	crons, err := db.parseCrons(rows)
+	if err != nil {
+		return nil, err
+	}
+
+	return crons, nil
+
 }
 
 func (db *PQDatabase) DeleteCronByID(cronID string) error {

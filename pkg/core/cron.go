@@ -113,3 +113,11 @@ func (cron *Cron) ToJSON() (string, error) {
 
 	return string(jsonBytes), nil
 }
+
+func (cron *Cron) HasExpired() bool {
+	now := time.Now()
+	if now.Sub(cron.NextRun) > 0 {
+		return true
+	}
+	return false
+}

@@ -101,6 +101,31 @@ func TestFindCronsByColonyID(t *testing.T) {
 	assert.Len(t, crons, 1)
 }
 
+func TestFindAllCrons(t *testing.T) {
+	db, err := PrepareTests()
+	assert.Nil(t, err)
+
+	defer db.Close()
+
+	colonyID1 := core.GenerateRandomID()
+	colonyID2 := core.GenerateRandomID()
+
+	cron1 := core.CreateCron(colonyID1, "test_name1", "* * * * * *", 0, false, "workflow1")
+	cron2 := core.CreateCron(colonyID2, "test_name2", "* * * * * *", 0, false, "workflow2")
+	cron3 := core.CreateCron(colonyID2, "test_name3", "* * * * * *", 0, false, "workflow3")
+
+	err = db.AddCron(cron1)
+	assert.Nil(t, err)
+	err = db.AddCron(cron2)
+	assert.Nil(t, err)
+	err = db.AddCron(cron3)
+	assert.Nil(t, err)
+
+	crons, err := db.FindAllCrons()
+	assert.Nil(t, err)
+	assert.Len(t, crons, 3)
+}
+
 func TestDeleteCronByID(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)

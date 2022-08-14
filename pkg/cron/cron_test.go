@@ -1,7 +1,6 @@
 package cron
 
 import (
-	"fmt"
 	"math/rand"
 	"testing"
 	"time"
@@ -24,8 +23,6 @@ func TestCronRandom(t *testing.T) {
 	assert.Nil(t, err)
 	diff := nextTime.Sub(time.Now())
 	assert.True(t, diff.Milliseconds() >= 0)
-
-	fmt.Println(nextTime)
 
 	nextTime2, err := Random(60 * 60 * 24 * 7) // random time the coming week
 	assert.NotEqual(t, nextTime, nextTime2)

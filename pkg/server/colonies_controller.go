@@ -9,6 +9,7 @@ import (
 
 	"github.com/colonyos/colonies/pkg/cluster"
 	"github.com/colonyos/colonies/pkg/core"
+	cronlib "github.com/colonyos/colonies/pkg/cron"
 	"github.com/colonyos/colonies/pkg/database"
 	"github.com/colonyos/colonies/pkg/planner"
 	"github.com/colonyos/colonies/pkg/planner/basic"
@@ -18,6 +19,7 @@ import (
 const TIMEOUT_RELEASE_INTERVALL = 1
 const TIMEOUT_GENERATOR_TRIGGER_INTERVALL = 1
 const TIMEOUT_GENERATOR_SYNC_INTERVALL = 1
+const TIMEOUT_CRON_TRIGGER_INTERVALL = 1
 
 type command struct {
 	stop                   bool
@@ -82,6 +84,7 @@ func createColoniesController(db database.Database, thisNode cluster.Node, clust
 	go controller.masterWorker()
 	go controller.timeoutLoop()
 	go controller.generatorTriggerLoop()
+	go controller.cronTriggerLoop()
 	go controller.generatorSyncLoop()
 
 	return controller
@@ -98,6 +101,50 @@ func (controller *coloniesController) syncGenerators() {
 func (controller *coloniesController) triggerGenerators() {
 	cmd := &command{handler: func(cmd *command) {
 		controller.generatorEngine.triggerGenerators()
+	}}
+
+	controller.cmdQueue <- cmd
+}
+
+func (controller *coloniesController) triggerCrons() {
+	cmd := &command{handler: func(cmd *command) {
+		crons, err := controller.db.FindAllCrons()
+		if err != nil {
+			log.WithFields(log.Fields{"Error": err}).Error("Failed getting all crons")
+			return
+		}
+		for _, cron := range crons {
+			if cron.HasExpired() {
+				workflowSpec, err := core.ConvertJSONToWorkflowSpec(cron.WorkflowSpec)
+				if err != nil {
+					log.WithFields(log.Fields{"Error": err}).Error("Failed to parsing WorkflowSpec")
+				}
+				processGraph, err := controller.createProcessGraph(workflowSpec)
+				if err != nil {
+					log.WithFields(log.Fields{"Error": err}).Error("Failed to parse workflow spec")
+				}
+
+				nextRun := time.Time{}
+				// Now, calculate time for the next run
+				if cron.Intervall > 0 && cron.Random {
+					nextRun, err = cronlib.Random(cron.Intervall)
+					if err != nil {
+						log.WithFields(log.Fields{"Error": err}).Error("Failed generate random next run")
+					}
+				} else {
+					nextRun, err = cronlib.Next(cron.CronExpression)
+					if err != nil {
+						log.WithFields(log.Fields{"Error": err}).Error("Failed generate next run based on cron expression")
+					}
+				}
+
+				// TODO: remove successfulRuns and failedRuns
+				// TODO: when adding a cron, try to parse the workflow and cron expr so that we don't add something broken
+				// TODO: maybe do the same with Generators.
+
+				controller.db.UpdateCron(cron.ID, nextRun, time.Now(), processGraph.ID, -1, -1)
+			}
+		}
 	}}
 
 	controller.cmdQueue <- cmd
