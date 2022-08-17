@@ -106,6 +106,24 @@ func (controller *coloniesController) triggerGenerators() {
 	controller.cmdQueue <- cmd
 }
 
+func (controller *coloniesController) calcNextRun(cron *core.Cron) time.Time {
+	nextRun := time.Time{}
+	var err error
+	if cron.Intervall > 0 && cron.Random {
+		nextRun, err = cronlib.Random(cron.Intervall)
+		if err != nil {
+			log.WithFields(log.Fields{"Error": err}).Error("Failed generate random next run")
+		}
+	} else {
+		nextRun, err = cronlib.Next(cron.CronExpression)
+		if err != nil {
+			log.WithFields(log.Fields{"Error": err}).Error("Failed generate next run based on cron expression")
+		}
+	}
+
+	return nextRun
+}
+
 func (controller *coloniesController) triggerCrons() {
 	cmd := &command{handler: func(cmd *command) {
 		crons, err := controller.db.FindAllCrons()
@@ -114,6 +132,12 @@ func (controller *coloniesController) triggerCrons() {
 			return
 		}
 		for _, cron := range crons {
+			t := time.Time{}
+			if t.Unix() == cron.NextRun.Unix() { // This if-statement will be true the first time the cron is evaluted
+				nextRun := controller.calcNextRun(cron)
+				controller.db.UpdateCron(cron.ID, nextRun, time.Now(), "")
+				cron.NextRun = nextRun
+			}
 			if cron.HasExpired() {
 				workflowSpec, err := core.ConvertJSONToWorkflowSpec(cron.WorkflowSpec)
 				if err != nil {
@@ -124,25 +148,9 @@ func (controller *coloniesController) triggerCrons() {
 					log.WithFields(log.Fields{"Error": err}).Error("Failed to parse workflow spec")
 				}
 
-				nextRun := time.Time{}
-				// Now, calculate time for the next run
-				if cron.Intervall > 0 && cron.Random {
-					nextRun, err = cronlib.Random(cron.Intervall)
-					if err != nil {
-						log.WithFields(log.Fields{"Error": err}).Error("Failed generate random next run")
-					}
-				} else {
-					nextRun, err = cronlib.Next(cron.CronExpression)
-					if err != nil {
-						log.WithFields(log.Fields{"Error": err}).Error("Failed generate next run based on cron expression")
-					}
-				}
+				nextRun := controller.calcNextRun(cron)
 
-				// TODO: remove successfulRuns and failedRuns
-				// TODO: when adding a cron, try to parse the workflow and cron expr so that we don't add something broken
-				// TODO: maybe do the same with Generators.
-
-				controller.db.UpdateCron(cron.ID, nextRun, time.Now(), processGraph.ID, -1, -1)
+				controller.db.UpdateCron(cron.ID, nextRun, time.Now(), processGraph.ID)
 			}
 		}
 	}}

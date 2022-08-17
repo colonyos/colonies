@@ -19,8 +19,6 @@ type Cron struct {
 	LastRun            time.Time `json:"lastrun"`
 	WorkflowSpec       string    `json:"workflowspec"`
 	LastProcessGraphID string    `json:"lastprocessgraphid"`
-	SuccessfulRuns     int       `json:"successfulruns"`
-	FailedRuns         int       `json:"failedruns"`
 }
 
 func CreateCron(colonyID string, name string, cronExpression string, intervall int, random bool, workflowSpec string) *Cron {
@@ -96,9 +94,7 @@ func (cron *Cron) Equals(cron2 *Cron) bool {
 		cron.NextRun.Unix() != cron2.NextRun.Unix() ||
 		cron.LastRun.Unix() != cron2.LastRun.Unix() ||
 		cron.WorkflowSpec != cron2.WorkflowSpec ||
-		cron.LastProcessGraphID != cron2.LastProcessGraphID ||
-		cron.SuccessfulRuns != cron2.SuccessfulRuns ||
-		cron.FailedRuns != cron2.FailedRuns {
+		cron.LastProcessGraphID != cron2.LastProcessGraphID {
 		same = false
 	}
 

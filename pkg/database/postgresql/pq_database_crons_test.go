@@ -47,10 +47,8 @@ func TestUpdateCron(t *testing.T) {
 	assert.Equal(t, cronFromDB.Random, true)
 	assert.Equal(t, cronFromDB.WorkflowSpec, "workflow")
 	assert.Equal(t, cronFromDB.LastProcessGraphID, "")
-	assert.Equal(t, cronFromDB.SuccessfulRuns, 0)
-	assert.Equal(t, cronFromDB.FailedRuns, 0)
 
-	err = db.UpdateCron(cron.ID, time.Now(), time.Time{}, core.GenerateRandomID(), 3, 2)
+	err = db.UpdateCron(cron.ID, time.Now(), time.Time{}, core.GenerateRandomID())
 	assert.Nil(t, err)
 
 	cronFromDB, err = db.GetCronByID(cron.ID)
@@ -58,10 +56,8 @@ func TestUpdateCron(t *testing.T) {
 	assert.Greater(t, cronFromDB.NextRun.Unix(), time.Time{}.Unix())
 	assert.Equal(t, cronFromDB.LastRun.Unix(), time.Time{}.Unix())
 	assert.NotEqual(t, cronFromDB.LastProcessGraphID, "")
-	assert.Equal(t, cronFromDB.SuccessfulRuns, 3)
-	assert.Equal(t, cronFromDB.FailedRuns, 2)
 
-	err = db.UpdateCron(cron.ID, time.Now(), time.Now(), core.GenerateRandomID(), 3, 2)
+	err = db.UpdateCron(cron.ID, time.Now(), time.Now(), core.GenerateRandomID())
 	assert.Nil(t, err)
 	cronFromDB, err = db.GetCronByID(cron.ID)
 	assert.Nil(t, err)

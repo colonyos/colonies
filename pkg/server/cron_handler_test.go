@@ -19,6 +19,18 @@ func TestAddCron(t *testing.T) {
 	assert.Nil(t, err)
 	assert.True(t, addedCron.Equals(cronFromServer))
 
+	cron = utils.FakeCron(t, env.colonyID)
+	cron.WorkflowSpec = "error"
+	addedCron, err = client.AddCron(cron, env.runtimePrvKey)
+	assert.NotNil(t, err)
+	assert.Nil(t, addedCron)
+
+	cron = utils.FakeCron(t, env.colonyID)
+	cron.CronExpression = "error"
+	addedCron, err = client.AddCron(cron, env.runtimePrvKey)
+	assert.NotNil(t, err)
+	assert.Nil(t, addedCron)
+
 	server.Shutdown()
 	<-done
 }

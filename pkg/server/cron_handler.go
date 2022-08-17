@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/colonyos/colonies/pkg/core"
+	cronlib "github.com/colonyos/colonies/pkg/cron"
 	"github.com/colonyos/colonies/pkg/rpc"
 	"github.com/gin-gonic/gin"
 	log "github.com/sirupsen/logrus"
@@ -29,6 +30,16 @@ func (server *ColoniesServer) handleAddCronHTTPRequest(c *gin.Context, recovered
 
 	err = server.validator.RequireRuntimeMembership(recoveredID, msg.Cron.ColonyID, true)
 	if server.handleHTTPError(c, err, http.StatusForbidden) {
+		return
+	}
+
+	// Validate that workflow and cron expression is valid
+	_, err = core.ConvertJSONToWorkflowSpec(msg.Cron.WorkflowSpec)
+	if server.handleHTTPError(c, err, http.StatusBadRequest) {
+		return
+	}
+	_, err = cronlib.Next(msg.Cron.CronExpression)
+	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
 

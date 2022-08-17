@@ -12,9 +12,15 @@ func TestAddGeneratorTimeout(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 
 	colonyID := env.colonyID
-	generator := utils.FakeGenerator(t, colonyID)
 
+	generator := utils.FakeGenerator(t, colonyID)
+	generator.WorkflowSpec = "error"
 	addedGenerator, err := client.AddGenerator(generator, env.runtimePrvKey)
+	assert.NotNil(t, err)
+	assert.Nil(t, addedGenerator)
+
+	generator = utils.FakeGenerator(t, colonyID)
+	addedGenerator, err = client.AddGenerator(generator, env.runtimePrvKey)
 	assert.Nil(t, err)
 	assert.NotNil(t, addedGenerator)
 
@@ -42,8 +48,8 @@ func TestAddGeneratorCounter(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 
 	colonyID := env.colonyID
-	generator := utils.FakeGenerator(t, colonyID)
 
+	generator := utils.FakeGenerator(t, colonyID)
 	addedGenerator, err := client.AddGenerator(generator, env.runtimePrvKey)
 	assert.Nil(t, err)
 	assert.NotNil(t, addedGenerator)
@@ -72,8 +78,8 @@ func TestGetGenerator(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 
 	colonyID := env.colonyID
-	generator := utils.FakeGenerator(t, colonyID)
 
+	generator := utils.FakeGenerator(t, colonyID)
 	_, err := client.AddGenerator(generator, env.runtimePrvKey)
 	assert.Nil(t, err)
 
@@ -89,6 +95,7 @@ func TestGetGenerators(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 
 	colonyID := env.colonyID
+
 	generator1 := utils.FakeGenerator(t, colonyID)
 	_, err := client.AddGenerator(generator1, env.runtimePrvKey)
 	assert.Nil(t, err)
@@ -136,8 +143,8 @@ func TestDeleteGenerator(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 
 	colonyID := env.colonyID
-	generator := utils.FakeGenerator(t, colonyID)
 
+	generator := utils.FakeGenerator(t, colonyID)
 	addedGenerator, err := client.AddGenerator(generator, env.runtimePrvKey)
 	assert.Nil(t, err)
 	assert.NotNil(t, addedGenerator)
