@@ -11,17 +11,46 @@ func TestAddCron(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 
 	cron := utils.FakeCron(t, env.colonyID)
+	cron.Intervall = 2
+
 	addedCron, err := client.AddCron(cron, env.runtimePrvKey)
 	assert.Nil(t, err)
 	assert.NotNil(t, addedCron)
 
-	cronFromServer, err := client.GetCron(cron.ID, env.runtimePrvKey)
+	// If the cron is successful, there should be a process we can assign
+	process, err := client.AssignProcess(env.colonyID, 100, env.runtimePrvKey)
 	assert.Nil(t, err)
-	assert.True(t, addedCron.Equals(cronFromServer))
+	assert.NotNil(t, process)
 
-	cron = utils.FakeCron(t, env.colonyID)
+	server.Shutdown()
+	<-done
+}
+
+func TestAddCronWithCronExpr(t *testing.T) {
+	env, client, server, _, done := setupTestEnv2(t)
+
+	cron := utils.FakeCron(t, env.colonyID)
+	cron.CronExpression = "0/1 * * * * *" // every second
+
+	addedCron, err := client.AddCron(cron, env.runtimePrvKey)
+	assert.Nil(t, err)
+	assert.NotNil(t, addedCron)
+
+	// If the cron is successful, there should be a process we can assign
+	process, err := client.AssignProcess(env.colonyID, 100, env.runtimePrvKey)
+	assert.Nil(t, err)
+	assert.NotNil(t, process)
+
+	server.Shutdown()
+	<-done
+}
+
+func TestAddCronFail(t *testing.T) {
+	env, client, server, _, done := setupTestEnv2(t)
+
+	cron := utils.FakeCron(t, env.colonyID)
 	cron.WorkflowSpec = "error"
-	addedCron, err = client.AddCron(cron, env.runtimePrvKey)
+	addedCron, err := client.AddCron(cron, env.runtimePrvKey)
 	assert.NotNil(t, err)
 	assert.Nil(t, addedCron)
 
@@ -30,6 +59,24 @@ func TestAddCron(t *testing.T) {
 	addedCron, err = client.AddCron(cron, env.runtimePrvKey)
 	assert.NotNil(t, err)
 	assert.Nil(t, addedCron)
+
+	server.Shutdown()
+	<-done
+}
+
+func TestGetCron(t *testing.T) {
+	env, client, server, _, done := setupTestEnv2(t)
+
+	cron := utils.FakeCron(t, env.colonyID)
+	cron.Intervall = 2
+
+	addedCron, err := client.AddCron(cron, env.runtimePrvKey)
+	assert.Nil(t, err)
+	assert.NotNil(t, addedCron)
+
+	cronFromServer, err := client.GetCron(cron.ID, env.runtimePrvKey)
+	assert.Nil(t, err)
+	assert.True(t, addedCron.Equals(cronFromServer))
 
 	server.Shutdown()
 	<-done
@@ -90,5 +137,22 @@ func TestDeleteCron(t *testing.T) {
 }
 
 func TestRunCron(t *testing.T) {
-	// TODO
+	env, client, server, _, done := setupTestEnv2(t)
+
+	cron := utils.FakeCron(t, env.colonyID)
+	cron.Intervall = 1000 // Will be triggered in 1000 seconds
+
+	addedCron, err := client.AddCron(cron, env.runtimePrvKey)
+	assert.Nil(t, err)
+	assert.NotNil(t, addedCron)
+
+	_, err = client.RunCron(addedCron.ID, env.runtimePrvKey)
+
+	// If the cron is successful, there should be a process we can assign
+	process, err := client.AssignProcess(env.colonyID, 10, env.runtimePrvKey)
+	assert.Nil(t, err)
+	assert.NotNil(t, process)
+
+	server.Shutdown()
+	<-done
 }

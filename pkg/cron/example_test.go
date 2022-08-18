@@ -9,7 +9,9 @@ import (
 
 func TestCronExample(t *testing.T) {
 	// https://www.freeformatter.com/cron-expression-generator-quartz.html
-	expression := "59 3 15 * * MON"
+	//expression := "59 3 15 * * MON"
+	//expression := "0/60 * * * * *"
+	expression := "0/1 * * * * *"
 
 	parser := NewParser(Second | Minute | Hour | Dom | Month | Dow | Descriptor)
 

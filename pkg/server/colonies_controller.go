@@ -109,7 +109,12 @@ func (controller *coloniesController) triggerGenerators() {
 func (controller *coloniesController) calcNextRun(cron *core.Cron) time.Time {
 	nextRun := time.Time{}
 	var err error
-	if cron.Intervall > 0 && cron.Random {
+	if cron.Intervall > 0 {
+		nextRun, err = cronlib.NextIntervall(cron.Intervall)
+		if err != nil {
+			log.WithFields(log.Fields{"Error": err}).Error("Failed generate random next run")
+		}
+	} else if cron.Intervall > 0 && cron.Random {
 		nextRun, err = cronlib.Random(cron.Intervall)
 		if err != nil {
 			log.WithFields(log.Fields{"Error": err}).Error("Failed generate random next run")
@@ -122,6 +127,21 @@ func (controller *coloniesController) calcNextRun(cron *core.Cron) time.Time {
 	}
 
 	return nextRun
+}
+
+func (controller *coloniesController) startCron(cron *core.Cron) {
+	workflowSpec, err := core.ConvertJSONToWorkflowSpec(cron.WorkflowSpec)
+	if err != nil {
+		log.WithFields(log.Fields{"Error": err}).Error("Failed to parsing WorkflowSpec")
+	}
+	processGraph, err := controller.createProcessGraph(workflowSpec)
+	if err != nil {
+		log.WithFields(log.Fields{"Error": err}).Error("Failed to parse workflow spec")
+	}
+
+	nextRun := controller.calcNextRun(cron)
+
+	controller.db.UpdateCron(cron.ID, nextRun, time.Now(), processGraph.ID)
 }
 
 func (controller *coloniesController) triggerCrons() {
@@ -139,18 +159,7 @@ func (controller *coloniesController) triggerCrons() {
 				cron.NextRun = nextRun
 			}
 			if cron.HasExpired() {
-				workflowSpec, err := core.ConvertJSONToWorkflowSpec(cron.WorkflowSpec)
-				if err != nil {
-					log.WithFields(log.Fields{"Error": err}).Error("Failed to parsing WorkflowSpec")
-				}
-				processGraph, err := controller.createProcessGraph(workflowSpec)
-				if err != nil {
-					log.WithFields(log.Fields{"Error": err}).Error("Failed to parse workflow spec")
-				}
-
-				nextRun := controller.calcNextRun(cron)
-
-				controller.db.UpdateCron(cron.ID, nextRun, time.Now(), processGraph.ID)
+				controller.startCron(cron)
 			}
 		}
 	}}
@@ -322,7 +331,6 @@ func (controller *coloniesController) getCrons(colonyID string, count int) ([]*c
 	}
 }
 
-// TODO
 func (controller *coloniesController) runCron(cronID string) (*core.Cron, error) {
 	cmd := &command{cronReplyChan: make(chan *core.Cron, 1),
 		errorChan: make(chan error, 1),
@@ -332,6 +340,7 @@ func (controller *coloniesController) runCron(cronID string) (*core.Cron, error)
 				cmd.errorChan <- err
 				return
 			}
+			controller.startCron(cron)
 			cmd.cronReplyChan <- cron
 		}}
 
@@ -867,8 +876,9 @@ func (controller *coloniesController) createProcessGraph(workflowSpec *core.Work
 	for _, process := range processMap {
 		// This function is called from the controller, so it OK to use the database layer directly, in fact
 		// we will cause a deadlock if we call controller.addProcess
-		_, err := controller.addProcessAndSetWaitingDeadline(process)
-		log.WithFields(log.Fields{"ProcessID": process.ID}).Info("Submitting process")
+		addedProcess, err := controller.addProcessAndSetWaitingDeadline(process)
+		log.WithFields(log.Fields{"ProcessID": process.ID}).Info("Submitting process part of processgraph")
+		controller.eventHandler.signal(addedProcess)
 
 		if err != nil {
 			msg := "Failed to submit workflow, failed to add process"

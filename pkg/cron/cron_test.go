@@ -17,6 +17,14 @@ func TestCronNext(t *testing.T) {
 	assert.True(t, diff.Milliseconds() >= 0)
 }
 
+func TestCronNextInternvall(t *testing.T) {
+	nextTime, err := NextIntervall(10)
+	assert.Nil(t, err)
+
+	diff := nextTime.Sub(time.Now())
+	assert.True(t, diff.Milliseconds() >= 0)
+}
+
 func TestCronRandom(t *testing.T) {
 	rand.Seed(time.Now().UnixNano())
 	nextTime, err := Random(60 * 60 * 24 * 7) // random time the coming week
