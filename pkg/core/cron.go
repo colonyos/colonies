@@ -3,9 +3,6 @@ package core
 import (
 	"encoding/json"
 	"time"
-
-	"github.com/colonyos/colonies/pkg/security/crypto"
-	"github.com/google/uuid"
 )
 
 type Cron struct {
@@ -22,11 +19,7 @@ type Cron struct {
 }
 
 func CreateCron(colonyID string, name string, cronExpression string, intervall int, random bool, workflowSpec string) *Cron {
-	uuid := uuid.New()
-	crypto := crypto.CreateCrypto()
-	id := crypto.GenerateHash(uuid.String())
-
-	return &Cron{ID: id, ColonyID: colonyID, Name: name, CronExpression: cronExpression, Intervall: intervall, Random: random, NextRun: time.Time{}, LastRun: time.Time{}, WorkflowSpec: workflowSpec}
+	return &Cron{ColonyID: colonyID, Name: name, CronExpression: cronExpression, Intervall: intervall, Random: random, NextRun: time.Time{}, LastRun: time.Time{}, WorkflowSpec: workflowSpec}
 }
 
 func ConvertJSONToCron(jsonString string) (*Cron, error) {

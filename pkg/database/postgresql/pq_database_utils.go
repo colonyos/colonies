@@ -3,6 +3,8 @@ package postgresql
 import (
 	"io/ioutil"
 	"log"
+	"math/rand"
+	"time"
 )
 
 func PrepareTests() (*PQDatabase, error) {
@@ -11,6 +13,8 @@ func PrepareTests() (*PQDatabase, error) {
 
 func PrepareTestsWithPrefix(prefix string) (*PQDatabase, error) {
 	log.SetOutput(ioutil.Discard)
+
+	rand.Seed(time.Now().UTC().UnixNano())
 
 	dbHost := "localhost"
 	dbPort := 5432

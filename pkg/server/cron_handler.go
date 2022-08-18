@@ -43,6 +43,7 @@ func (server *ColoniesServer) handleAddCronHTTPRequest(c *gin.Context, recovered
 		return
 	}
 
+	msg.Cron.ID = core.GenerateRandomID()
 	addedCron, err := server.controller.addCron(msg.Cron)
 	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return

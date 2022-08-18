@@ -39,16 +39,16 @@ func TestGetGeneratorSecurity(t *testing.T) {
 	colonyID := env.colony1ID
 	generator := utils.FakeGenerator(t, colonyID)
 
-	_, err := client.AddGenerator(generator, env.runtime1PrvKey)
+	addedGenerator, err := client.AddGenerator(generator, env.runtime1PrvKey)
 	assert.Nil(t, err)
 
-	_, err = client.GetGenerator(generator.ID, env.runtime2PrvKey)
+	_, err = client.GetGenerator(addedGenerator.ID, env.runtime2PrvKey)
 	assert.NotNil(t, err)
-	_, err = client.GetGenerator(generator.ID, env.colony1PrvKey)
+	_, err = client.GetGenerator(addedGenerator.ID, env.colony1PrvKey)
 	assert.NotNil(t, err)
-	_, err = client.GetGenerator(generator.ID, env.colony2PrvKey)
+	_, err = client.GetGenerator(addedGenerator.ID, env.colony2PrvKey)
 	assert.NotNil(t, err)
-	_, err = client.GetGenerator(generator.ID, env.runtime1PrvKey)
+	_, err = client.GetGenerator(addedGenerator.ID, env.runtime1PrvKey)
 	assert.Nil(t, err)
 
 	server.Shutdown()
@@ -91,16 +91,16 @@ func TestIncGeneratorSecurity(t *testing.T) {
 	colonyID := env.colony1ID
 	generator := utils.FakeGenerator(t, colonyID)
 
-	_, err := client.AddGenerator(generator, env.runtime1PrvKey)
+	addedGenerator, err := client.AddGenerator(generator, env.runtime1PrvKey)
 	assert.Nil(t, err)
 
-	err = client.IncGenerator(generator.ID, env.runtime2PrvKey)
+	err = client.IncGenerator(addedGenerator.ID, env.runtime2PrvKey)
 	assert.NotNil(t, err)
-	err = client.IncGenerator(generator.ID, env.colony1PrvKey)
+	err = client.IncGenerator(addedGenerator.ID, env.colony1PrvKey)
 	assert.NotNil(t, err)
-	err = client.IncGenerator(generator.ID, env.colony2PrvKey)
+	err = client.IncGenerator(addedGenerator.ID, env.colony2PrvKey)
 	assert.NotNil(t, err)
-	err = client.IncGenerator(generator.ID, env.runtime1PrvKey)
+	err = client.IncGenerator(addedGenerator.ID, env.runtime1PrvKey)
 	assert.Nil(t, err)
 
 	server.Shutdown()
@@ -117,16 +117,16 @@ func TestDeleteGeneratorSecurity(t *testing.T) {
 	colonyID := env.colony1ID
 	generator := utils.FakeGenerator(t, colonyID)
 
-	_, err := client.AddGenerator(generator, env.runtime1PrvKey)
+	addedGenerator, err := client.AddGenerator(generator, env.runtime1PrvKey)
 	assert.Nil(t, err)
 
-	err = client.DeleteGenerator(generator.ID, env.runtime2PrvKey)
+	err = client.DeleteGenerator(addedGenerator.ID, env.runtime2PrvKey)
 	assert.NotNil(t, err)
-	err = client.DeleteGenerator(generator.ID, env.colony1PrvKey)
+	err = client.DeleteGenerator(addedGenerator.ID, env.colony1PrvKey)
 	assert.NotNil(t, err)
-	err = client.DeleteGenerator(generator.ID, env.colony2PrvKey)
+	err = client.DeleteGenerator(addedGenerator.ID, env.colony2PrvKey)
 	assert.NotNil(t, err)
-	err = client.DeleteGenerator(generator.ID, env.runtime1PrvKey)
+	err = client.DeleteGenerator(addedGenerator.ID, env.runtime1PrvKey)
 	assert.Nil(t, err)
 
 	server.Shutdown()

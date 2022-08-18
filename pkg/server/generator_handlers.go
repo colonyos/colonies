@@ -38,6 +38,7 @@ func (server *ColoniesServer) handleAddGeneratorHTTPRequest(c *gin.Context, reco
 		return
 	}
 
+	msg.Generator.ID = core.GenerateRandomID()
 	addedGenerator, err := server.controller.addGenerator(msg.Generator)
 	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return

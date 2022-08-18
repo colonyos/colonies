@@ -94,18 +94,22 @@ func TestDeleteColonies(t *testing.T) {
 	assert.Nil(t, err)
 
 	generator1 := utils.FakeGenerator(t, colony1.ID)
+	generator1.ID = core.GenerateRandomID()
 	err = db.AddGenerator(generator1)
 	assert.Nil(t, err)
 
 	generator2 := utils.FakeGenerator(t, colony2.ID)
+	generator2.ID = core.GenerateRandomID()
 	err = db.AddGenerator(generator2)
 	assert.Nil(t, err)
 
 	cron1 := utils.FakeCron(t, colony1.ID)
+	cron1.ID = core.GenerateRandomID()
 	err = db.AddCron(cron1)
 	assert.Nil(t, err)
 
 	cron2 := utils.FakeCron(t, colony2.ID)
+	cron2.ID = core.GenerateRandomID()
 	err = db.AddCron(cron2)
 	assert.Nil(t, err)
 

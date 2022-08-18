@@ -110,7 +110,7 @@ func TestGeneratorReliability(t *testing.T) {
 	graphs, err = c.GetWaitingProcessGraphs(colony.ID, 100, runtimePrvKey)
 	assert.Len(t, graphs, 0) // Since we have not triggered any generator yet
 
-	nrOfgraphs := server.WaitForProcessGraphs(t, c, colony.ID, generator.ID, runtimePrvKey, 1)
+	nrOfgraphs := server.WaitForProcessGraphs(t, c, colony.ID, addedGenerator.ID, runtimePrvKey, 1)
 	assert.Greater(t, nrOfgraphs, 1) // Ok we got a generator
 
 	// The leader is reponsible for the generator engine
@@ -142,7 +142,7 @@ func TestGeneratorReliability(t *testing.T) {
 		c = client.CreateColoniesClient("localhost", selectedServer.Node.APIPort, true, true) // Connect to another server
 	}
 
-	nrOfgraphs2 := server.WaitForProcessGraphs(t, c, colony.ID, generator.ID, runtimePrvKey, nrOfgraphs)
+	nrOfgraphs2 := server.WaitForProcessGraphs(t, c, colony.ID, addedGenerator.ID, runtimePrvKey, nrOfgraphs)
 	log.WithFields(log.Fields{"nrOfgraphs": nrOfgraphs, "nrOfgraphs2": nrOfgraphs2}).Info("Done waiting for processgraphs")
 	assert.Greater(t, nrOfgraphs2, nrOfgraphs)
 

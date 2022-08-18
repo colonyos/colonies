@@ -3,10 +3,6 @@ package core
 import (
 	"encoding/json"
 	"time"
-
-	"github.com/colonyos/colonies/pkg/security/crypto"
-
-	"github.com/google/uuid"
 )
 
 type Generator struct {
@@ -21,12 +17,7 @@ type Generator struct {
 }
 
 func CreateGenerator(colonyID string, name string, workflowSpec string, trigger int, counter int, timeout int) *Generator {
-	uuid := uuid.New()
-	crypto := crypto.CreateCrypto()
-	id := crypto.GenerateHash(uuid.String())
-
 	generator := &Generator{
-		ID:           id,
 		ColonyID:     colonyID,
 		Name:         name,
 		WorkflowSpec: workflowSpec,

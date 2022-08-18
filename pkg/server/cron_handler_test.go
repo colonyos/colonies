@@ -74,7 +74,7 @@ func TestGetCron(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, addedCron)
 
-	cronFromServer, err := client.GetCron(cron.ID, env.runtimePrvKey)
+	cronFromServer, err := client.GetCron(addedCron.ID, env.runtimePrvKey)
 	assert.Nil(t, err)
 	assert.True(t, addedCron.Equals(cronFromServer))
 
@@ -125,10 +125,10 @@ func TestDeleteCron(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, addedCron)
 
-	err = client.DeleteCron(cron.ID, env.runtimePrvKey)
+	err = client.DeleteCron(addedCron.ID, env.runtimePrvKey)
 	assert.Nil(t, err)
 
-	cronFromServer, err := client.GetCron(cron.ID, env.runtimePrvKey)
+	cronFromServer, err := client.GetCron(addedCron.ID, env.runtimePrvKey)
 	assert.NotNil(t, err)
 	assert.Nil(t, cronFromServer)
 
