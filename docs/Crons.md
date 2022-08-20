@@ -57,18 +57,7 @@ INFO[0000] Starting a Colonies client                    Insecure=true ServerHos
 INFO[0000] Cron added                                    CronID=e2c81ec5b2ab75c2290cf195310105f1e8f5f1b733b70973f843dc2adb7708ac
 ```
 
-### Add a another cron, spawn a new workflow on Christmas
-```console
-colonies cron add --name christmas_cron --cron "0 0 15 24 12 *" --spec examples/christmas_workflow.json 
-```
-
-Output:
-```console
-INFO[0000] Starting a Colonies client                    Insecure=true ServerHost=localhost ServerPort=50080
-INFO[0000] Cron added                                    CronID 5509ae48af5ecbd6d3b395ae2cd8c5bf0ad9ef7d83a5abb4328acea090c62b66
-```
-
-The workflow below consists of two processes. The first process (generate_date) stores the current time to a file (/tmp/currentdate). The seconds process (print_date), which can not start before first process has finished, printed the /tmp/currentdate file to standard out.
+The submitted workflow consists of two processes. The first process (generate_date) stores the current time to a file (/tmp/currentdate). The seconds process (print_date), which can not start before first process has finished, printed the /tmp/currentdate file to standard out.
 
 ```json
 [
@@ -98,6 +87,17 @@ The workflow below consists of two processes. The first process (generate_date) 
         }
     }
 ]
+```
+
+### Spawn a new workflow on Christmas
+```console
+colonies cron add --name christmas_cron --cron "0 0 15 24 12 *" --spec examples/christmas_workflow.json 
+```
+
+Output:
+```console
+INFO[0000] Starting a Colonies client                    Insecure=true ServerHost=localhost ServerPort=50080
+INFO[0000] Cron added                                    CronID 5509ae48af5ecbd6d3b395ae2cd8c5bf0ad9ef7d83a5abb4328acea090c62b66
 ```
 
 ## Getting info about a cron 
