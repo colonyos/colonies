@@ -1,4 +1,4 @@
-# Cron process
+# Using cron to spawn workflows
 Generators are particularly useful when there is a sequence of incoming data, and a workflow should be spawned when there is a certain amount of samples. For example, assume there is new sensor data generated every second, and a workflow should be generated when there are 100 sensor data samples.
 
 While it is possible to set a timeout on generators, they require at least one sample before a workflow spec is spawned. That is, the counter of the generator must be increased at least once to indicate that there is new data to process.
