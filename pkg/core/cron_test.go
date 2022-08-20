@@ -1,6 +1,7 @@
 package core
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
@@ -58,6 +59,8 @@ func TestCronToJSON(t *testing.T) {
 	cron := CreateCron(GenerateRandomID(), "test_name1", "* * * * * *", 0, false, "workflow1")
 	jsonStr, err := cron.ToJSON()
 	assert.Nil(t, err)
+
+	fmt.Println(jsonStr)
 
 	cron2, err := ConvertJSONToCron(jsonStr)
 	assert.Nil(t, err)

@@ -109,13 +109,13 @@ func (controller *coloniesController) triggerGenerators() {
 func (controller *coloniesController) calcNextRun(cron *core.Cron) time.Time {
 	nextRun := time.Time{}
 	var err error
-	if cron.Intervall > 0 {
-		nextRun, err = cronlib.NextIntervall(cron.Intervall)
+	if cron.Interval > 0 {
+		nextRun, err = cronlib.NextIntervall(cron.Interval)
 		if err != nil {
 			log.WithFields(log.Fields{"Error": err}).Error("Failed generate random next run")
 		}
-	} else if cron.Intervall > 0 && cron.Random {
-		nextRun, err = cronlib.Random(cron.Intervall)
+	} else if cron.Interval > 0 && cron.Random {
+		nextRun, err = cronlib.Random(cron.Interval)
 		if err != nil {
 			log.WithFields(log.Fields{"Error": err}).Error("Failed generate random next run")
 		}
@@ -155,7 +155,7 @@ func (controller *coloniesController) triggerCrons() {
 			t := time.Time{}
 			if t.Unix() == cron.NextRun.Unix() { // This if-statement will be true the first time the cron is evaluted
 				nextRun := controller.calcNextRun(cron)
-				controller.db.UpdateCron(cron.ID, nextRun, time.Now(), "")
+				controller.db.UpdateCron(cron.ID, nextRun, time.Time{}, "")
 				cron.NextRun = nextRun
 			}
 			if cron.HasExpired() {

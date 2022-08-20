@@ -38,9 +38,23 @@ func (server *ColoniesServer) handleAddCronHTTPRequest(c *gin.Context, recovered
 	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
-	_, err = cronlib.Next(msg.Cron.CronExpression)
-	if server.handleHTTPError(c, err, http.StatusBadRequest) {
-		return
+
+	if msg.Cron.Interval == 0 {
+		if server.handleHTTPError(c, errors.New("Cron interval must be -1 (disabled) or larger than 0"), http.StatusBadRequest) {
+			return
+		}
+	}
+
+	if msg.Cron.Interval == -1 {
+		_, err = cronlib.Next(msg.Cron.CronExpression)
+		if server.handleHTTPError(c, err, http.StatusBadRequest) {
+			return
+		}
+		if msg.Cron.Random {
+			if server.handleHTTPError(c, errors.New("Random cron is only supported when specifying intervals"), http.StatusBadRequest) {
+				return
+			}
+		}
 	}
 
 	msg.Cron.ID = core.GenerateRandomID()

@@ -45,7 +45,7 @@ func TestUpdateCron(t *testing.T) {
 	assert.Equal(t, cronFromDB.ColonyID, colonyID)
 	assert.Equal(t, cronFromDB.Name, "test_name")
 	assert.Equal(t, cronFromDB.CronExpression, "* * * * * *")
-	assert.Equal(t, cronFromDB.Intervall, 100)
+	assert.Equal(t, cronFromDB.Interval, 100)
 	assert.Equal(t, cronFromDB.Random, true)
 	assert.Equal(t, cronFromDB.WorkflowSpec, "workflow")
 	assert.Equal(t, cronFromDB.LastProcessGraphID, "")
