@@ -286,5 +286,5 @@ Output:
 
 ## Delete a cron
 ```console
-go run cmd/main.go cron delete --cronid  ba6e938289b8e33c399678f9b812af0c3602a36704841965c2dc8c672efc1834 
+colonies cron delete --cronid  ba6e938289b8e33c399678f9b812af0c3602a36704841965c2dc8c672efc1834 
 ```
