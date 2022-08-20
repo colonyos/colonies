@@ -109,6 +109,6 @@ func FakeCron(t *testing.T, colonyID string) *core.Cron {
 	workflowSpec.AddProcessSpec(processSpec2)
 	jsonStr, err := workflowSpec.ToJSON()
 	assert.Nil(t, err)
-	cron := core.CreateCron(colonyID, "test_cron1", "1 * * * * *", 0, false, jsonStr)
+	cron := core.CreateCron(colonyID, "test_cron1", "1 * * * * *", -1, false, jsonStr)
 	return cron
 }
