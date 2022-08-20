@@ -9,8 +9,8 @@ import (
 )
 
 func (db *PQDatabase) AddCron(cron *core.Cron) error {
-	sqlStatement := `INSERT INTO  ` + db.dbPrefix + `CRONS (CRON_ID, COLONY_ID, NAME, CRON_EXPR, NEXT_RUN, LAST_RUN, WORKFLOW_SPEC, LAST_PROCESSGRAPH_ID, SUCCESSFUL_RUNS, FAILED_RUNS) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`
-	_, err := db.postgresql.Exec(sqlStatement, cron.ID, cron.ColonyID, cron.Name, cron.CronExpression, cron.NextRun, cron.LastRun, cron.WorkflowSpec, cron.LastProcessGraphID, cron.SuccessfulRuns, cron.FailedRuns)
+	sqlStatement := `INSERT INTO  ` + db.dbPrefix + `CRONS (CRON_ID, COLONY_ID, NAME, CRON_EXPR, INTERVALL, RANDOM, NEXT_RUN, LAST_RUN, WORKFLOW_SPEC, LAST_PROCESSGRAPH_ID) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`
+	_, err := db.postgresql.Exec(sqlStatement, cron.ID, cron.ColonyID, cron.Name, cron.CronExpression, cron.Interval, cron.Random, cron.NextRun, cron.LastRun, cron.WorkflowSpec, cron.LastProcessGraphID)
 	if err != nil {
 		return err
 	}
@@ -18,9 +18,9 @@ func (db *PQDatabase) AddCron(cron *core.Cron) error {
 	return nil
 }
 
-func (db *PQDatabase) UpdateCron(cronID string, nextRun time.Time, lastRun time.Time, lastProcessGraphID string, successfulRuns int, failedRuns int) error {
-	sqlStatement := `UPDATE  ` + db.dbPrefix + `CRONS SET NEXT_RUN=$1, LAST_RUN=$2, LAST_PROCESSGRAPH_ID=$3, SUCCESSFUL_RUNS=$4, FAILED_RUNS=$5 WHERE CRON_ID=$6`
-	_, err := db.postgresql.Exec(sqlStatement, nextRun, lastRun, lastProcessGraphID, successfulRuns, failedRuns, cronID)
+func (db *PQDatabase) UpdateCron(cronID string, nextRun time.Time, lastRun time.Time, lastProcessGraphID string) error {
+	sqlStatement := `UPDATE  ` + db.dbPrefix + `CRONS SET NEXT_RUN=$1, LAST_RUN=$2, LAST_PROCESSGRAPH_ID=$3 WHERE CRON_ID=$4`
+	_, err := db.postgresql.Exec(sqlStatement, nextRun, lastRun, lastProcessGraphID, cronID)
 	if err != nil {
 		return err
 	}
@@ -36,18 +36,18 @@ func (db *PQDatabase) parseCrons(rows *sql.Rows) ([]*core.Cron, error) {
 		var colonyID string
 		var name string
 		var cronExpr string
+		var interval int
+		var random bool
 		var nextRun time.Time
 		var lastRun time.Time
 		var workflowSpec string
 		var lastProcessGraphID string
-		var successfulRuns int
-		var failedRuns int
 
-		if err := rows.Scan(&cronID, &colonyID, &name, &cronExpr, &nextRun, &lastRun, &workflowSpec, &lastProcessGraphID, &successfulRuns, &failedRuns); err != nil {
+		if err := rows.Scan(&cronID, &colonyID, &name, &cronExpr, &interval, &random, &nextRun, &lastRun, &workflowSpec, &lastProcessGraphID); err != nil {
 			return nil, err
 		}
 
-		cron := &core.Cron{ID: cronID, ColonyID: colonyID, Name: name, CronExpression: cronExpr, NextRun: nextRun, LastRun: lastRun, WorkflowSpec: workflowSpec, LastProcessGraphID: lastProcessGraphID, SuccessfulRuns: successfulRuns, FailedRuns: failedRuns}
+		cron := &core.Cron{ID: cronID, ColonyID: colonyID, Name: name, CronExpression: cronExpr, Interval: interval, Random: random, NextRun: nextRun, LastRun: lastRun, WorkflowSpec: workflowSpec, LastProcessGraphID: lastProcessGraphID}
 
 		crons = append(crons, cron)
 	}
@@ -87,12 +87,29 @@ func (db *PQDatabase) FindCronsByColonyID(colonyID string, count int) ([]*core.C
 	}
 	defer rows.Close()
 
-	generators, err := db.parseCrons(rows)
+	crons, err := db.parseCrons(rows)
 	if err != nil {
 		return nil, err
 	}
 
-	return generators, nil
+	return crons, nil
+}
+
+func (db *PQDatabase) FindAllCrons() ([]*core.Cron, error) {
+	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `CRONS`
+	rows, err := db.postgresql.Query(sqlStatement)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	crons, err := db.parseCrons(rows)
+	if err != nil {
+		return nil, err
+	}
+
+	return crons, nil
+
 }
 
 func (db *PQDatabase) DeleteCronByID(cronID string) error {

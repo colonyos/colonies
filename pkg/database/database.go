@@ -112,9 +112,10 @@ type Database interface {
 
 	// Cron functions
 	AddCron(cron *core.Cron) error
-	UpdateCron(cronID string, nextRun time.Time, lastRun time.Time, lastProcessGraphID string, successfulRuns int, failedRuns int) error
+	UpdateCron(cronID string, nextRun time.Time, lastRun time.Time, lastProcessGraphID string) error
 	GetCronByID(cronID string) (*core.Cron, error)
 	FindCronsByColonyID(colonyID string, count int) ([]*core.Cron, error)
+	FindAllCrons() ([]*core.Cron, error)
 	DeleteCronByID(cronID string) error
 	DeleteAllCronsByColonyID(colonyID string) error
 

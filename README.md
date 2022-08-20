@@ -70,6 +70,7 @@ helloworld
 * [How to implement a FibonacciwWorker in Go](docs/GoTutorial.md)
 * [How to create workflows DAGs](docs/Workflows.md)
 * [How to use generators](docs/Generators.md)
+* [How to use crons](docs/Crons.md)
 * [How to use the Colonies CLI](docs/CLI.md)
 ## Design
 * [Overall design](docs/Design.md)
