@@ -3,7 +3,9 @@ package cli
 import (
 	"bytes"
 	"fmt"
+	"net/url"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -156,12 +158,27 @@ var workerStartCmd = &cobra.Command{
 		for {
 			assignedProcess, err = client.AssignProcess(ColonyID, Timeout, runtimePrvKey)
 			if err != nil {
-				continue // Try again
+				switch err.(type) {
+				case *url.Error:
+					fmt.Println("Connection error, trying to reconnect ...")
+					time.Sleep(2 * time.Second)
+					continue
+				default:
+					if strings.HasPrefix(err.Error(), "No processes can be selected for runtime with Id") {
+						continue
+					} else {
+						CheckError(err)
+					}
+				}
 			}
 
 			log.WithFields(log.Fields{"ProcessID": assignedProcess.ID}).Info("Worker was assigned a process")
 			log.WithFields(log.Fields{"Func": assignedProcess.ProcessSpec.Func, "Args": assignedProcess.ProcessSpec.Args}).Info("Lauching process")
-			cmd := exec.Command(assignedProcess.ProcessSpec.Func, assignedProcess.ProcessSpec.Args...)
+			execCmd := assignedProcess.ProcessSpec.Args
+			execCmd = append([]string{assignedProcess.ProcessSpec.Func}, execCmd...)
+			execCmdStr := strings.Join(execCmd[:], " ")
+
+			cmd := exec.Command("sh", "-c", execCmdStr)
 			cmd.Env = os.Environ()
 			for _, attribute := range assignedProcess.Attributes {
 				cmd.Env = append(cmd.Env, attribute.Key+"="+attribute.Value)

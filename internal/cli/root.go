@@ -83,6 +83,11 @@ var EtcdDataDir string
 var RelayPort int
 var Latest bool
 var Timeout int
+var CronID string
+var CronName string
+var CronExpr string
+var CronIntervall int
+var CronRandom bool
 
 func init() {
 	rootCmd.PersistentFlags().BoolVarP(&Verbose, "verbose", "v", false, "verbose output")
