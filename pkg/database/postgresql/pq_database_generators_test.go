@@ -13,6 +13,7 @@ func TestAddGenerator(t *testing.T) {
 	assert.Nil(t, err)
 
 	generator := utils.FakeGenerator(t, core.GenerateRandomID())
+	generator.ID = core.GenerateRandomID()
 	err = db.AddGenerator(generator)
 	assert.Nil(t, err)
 
@@ -24,6 +25,7 @@ func TestGetGenerator(t *testing.T) {
 	assert.Nil(t, err)
 
 	generator := utils.FakeGenerator(t, core.GenerateRandomID())
+	generator.ID = core.GenerateRandomID()
 	err = db.AddGenerator(generator)
 	assert.Nil(t, err)
 
@@ -40,10 +42,12 @@ func TestFindGeneratorByColonyID(t *testing.T) {
 
 	colonyID := core.GenerateRandomID()
 	generator1 := utils.FakeGenerator(t, colonyID)
+	generator1.ID = core.GenerateRandomID()
 	err = db.AddGenerator(generator1)
 	assert.Nil(t, err)
 
 	generator2 := utils.FakeGenerator(t, colonyID)
+	generator2.ID = core.GenerateRandomID()
 	err = db.AddGenerator(generator2)
 	assert.Nil(t, err)
 
@@ -71,10 +75,12 @@ func TestDeleteGeneratorByID(t *testing.T) {
 
 	colonyID := core.GenerateRandomID()
 	generator1 := utils.FakeGenerator(t, colonyID)
+	generator1.ID = core.GenerateRandomID()
 	err = db.AddGenerator(generator1)
 	assert.Nil(t, err)
 
 	generator2 := utils.FakeGenerator(t, colonyID)
+	generator2.ID = core.GenerateRandomID()
 	err = db.AddGenerator(generator2)
 	assert.Nil(t, err)
 
@@ -102,10 +108,12 @@ func TestDeleteAllGeneratorsByColonyID(t *testing.T) {
 
 	colonyID1 := core.GenerateRandomID()
 	generator1 := utils.FakeGenerator(t, colonyID1)
+	generator1.ID = core.GenerateRandomID()
 	err = db.AddGenerator(generator1)
 	assert.Nil(t, err)
 
 	generator2 := utils.FakeGenerator(t, colonyID1)
+	generator2.ID = core.GenerateRandomID()
 	err = db.AddGenerator(generator2)
 	assert.Nil(t, err)
 

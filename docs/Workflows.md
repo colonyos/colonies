@@ -7,53 +7,59 @@ The picture above depicts an example of a DAG. Task A has no depenecies and can 
 
 This workflow can be modelled as follows:
 ```json
-{
-    "processspecs": [{
-            "name": "task_a",
-            "func": "echo",
-            "args": [
-                "task1"
-            ],
-            "conditions": {
-                "runtimetype": "cli",
-                "dependencies": null
-            }
-        },
-        {
-            "name": "task_b",
-            "func": "echo",
-            "args": [
-                "task2"
-            ],
-            "conditions": {
-                "runtimetype": "cli",
-                "dependencies": ["task_a"]
-            }
-        },
-        {
-            "name": "task_c",
-            "func": "echo",
-            "args": [
-                "task3"
-            ],
-            "conditions": {
-                "runtimetype": "cli",
-                "dependencies": ["task_a"]
-            }
-        },
-        {
-            "name": "task_d",
-            "func": "echo",
-            "args": [
-                "task4"
-            ],
-            "conditions": {
-                "runtimetype": "cli",
-                "dependencies": ["task_b", "task_c"]
-            }
+[
+    {
+        "name": "task_a",
+        "func": "echo",
+        "args": [
+            "task1"
+        ],
+        "conditions": {
+            "runtimetype": "cli",
+            "dependencies": null
         }
-    ]
-}
+    },
+    {
+        "name": "task_b",
+        "func": "echo",
+        "args": [
+            "task2"
+        ],
+        "conditions": {
+            "runtimetype": "cli",
+            "dependencies": [
+                "task_a"
+            ]
+        }
+    },
+    {
+        "name": "task_c",
+        "func": "echo",
+        "args": [
+            "task3"
+        ],
+        "conditions": {
+            "runtimetype": "cli",
+            "dependencies": [
+                "task_a"
+            ]
+        }
+    },
+    {
+        "name": "task_d",
+        "func": "echo",
+        "args": [
+            "task4"
+        ],
+        "conditions": {
+            "runtimetype": "cli",
+            "dependencies": [
+                "task_b",
+                "task_c"
+            ]
+        }
+    }
+]
 ```
 
 ## Submit a workflow 

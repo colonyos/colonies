@@ -12,16 +12,22 @@ func TestAddGeneratorTimeout(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 
 	colonyID := env.colonyID
-	generator := utils.FakeGenerator(t, colonyID)
 
+	generator := utils.FakeGenerator(t, colonyID)
+	generator.WorkflowSpec = "error"
 	addedGenerator, err := client.AddGenerator(generator, env.runtimePrvKey)
+	assert.NotNil(t, err)
+	assert.Nil(t, addedGenerator)
+
+	generator = utils.FakeGenerator(t, colonyID)
+	addedGenerator, err = client.AddGenerator(generator, env.runtimePrvKey)
 	assert.Nil(t, err)
 	assert.NotNil(t, addedGenerator)
 
 	doneInc := make(chan bool)
 	go func() {
 		for i := 0; i < 15; i++ {
-			err = client.IncGenerator(generator.ID, env.runtimePrvKey)
+			err = client.IncGenerator(addedGenerator.ID, env.runtimePrvKey)
 			assert.Nil(t, err)
 			time.Sleep(500 * time.Millisecond)
 
@@ -42,8 +48,8 @@ func TestAddGeneratorCounter(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 
 	colonyID := env.colonyID
-	generator := utils.FakeGenerator(t, colonyID)
 
+	generator := utils.FakeGenerator(t, colonyID)
 	addedGenerator, err := client.AddGenerator(generator, env.runtimePrvKey)
 	assert.Nil(t, err)
 	assert.NotNil(t, addedGenerator)
@@ -51,7 +57,7 @@ func TestAddGeneratorCounter(t *testing.T) {
 	doneInc := make(chan bool)
 	go func() {
 		for i := 0; i < 70; i++ {
-			err = client.IncGenerator(generator.ID, env.runtimePrvKey)
+			err = client.IncGenerator(addedGenerator.ID, env.runtimePrvKey)
 			assert.Nil(t, err)
 		}
 		doneInc <- true
@@ -72,14 +78,14 @@ func TestGetGenerator(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 
 	colonyID := env.colonyID
+
 	generator := utils.FakeGenerator(t, colonyID)
-
-	_, err := client.AddGenerator(generator, env.runtimePrvKey)
+	addedGenerator, err := client.AddGenerator(generator, env.runtimePrvKey)
 	assert.Nil(t, err)
 
-	generatorFromServer, err := client.GetGenerator(generator.ID, env.runtimePrvKey)
+	generatorFromServer, err := client.GetGenerator(addedGenerator.ID, env.runtimePrvKey)
 	assert.Nil(t, err)
-	assert.True(t, generatorFromServer.Equals(generator))
+	assert.Equal(t, generatorFromServer.ID, addedGenerator.ID)
 
 	server.Shutdown()
 	<-done
@@ -89,16 +95,17 @@ func TestGetGenerators(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 
 	colonyID := env.colonyID
+
 	generator1 := utils.FakeGenerator(t, colonyID)
-	_, err := client.AddGenerator(generator1, env.runtimePrvKey)
+	addedGenerator1, err := client.AddGenerator(generator1, env.runtimePrvKey)
 	assert.Nil(t, err)
 
 	generator2 := utils.FakeGenerator(t, colonyID)
-	_, err = client.AddGenerator(generator2, env.runtimePrvKey)
+	addedGenerator2, err := client.AddGenerator(generator2, env.runtimePrvKey)
 	assert.Nil(t, err)
 
 	generator3 := utils.FakeGenerator(t, colonyID)
-	_, err = client.AddGenerator(generator3, env.runtimePrvKey)
+	addedGenerator3, err := client.AddGenerator(generator3, env.runtimePrvKey)
 	assert.Nil(t, err)
 
 	generatorsFromServer, err := client.GetGenerators(colonyID, 100, env.runtimePrvKey)
@@ -109,13 +116,13 @@ func TestGetGenerators(t *testing.T) {
 	generator2Found := false
 	generator3Found := false
 	for _, generator := range generatorsFromServer {
-		if generator.Equals(generator1) {
+		if generator.ID == addedGenerator1.ID {
 			generator1Found = true
 		}
-		if generator.Equals(generator2) {
+		if generator.ID == addedGenerator2.ID {
 			generator2Found = true
 		}
-		if generator.Equals(generator3) {
+		if generator.ID == addedGenerator3.ID {
 			generator3Found = true
 		}
 	}
@@ -136,16 +143,16 @@ func TestDeleteGenerator(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 
 	colonyID := env.colonyID
-	generator := utils.FakeGenerator(t, colonyID)
 
+	generator := utils.FakeGenerator(t, colonyID)
 	addedGenerator, err := client.AddGenerator(generator, env.runtimePrvKey)
 	assert.Nil(t, err)
 	assert.NotNil(t, addedGenerator)
 
-	err = client.IncGenerator(generator.ID, env.runtimePrvKey)
+	err = client.IncGenerator(addedGenerator.ID, env.runtimePrvKey)
 	assert.Nil(t, err)
 
-	err = client.DeleteGenerator(generator.ID, env.runtimePrvKey)
+	err = client.DeleteGenerator(addedGenerator.ID, env.runtimePrvKey)
 	assert.Nil(t, err)
 
 	time.Sleep(2 * time.Second)

@@ -192,6 +192,18 @@ func (server *ColoniesServer) handleAPIRequest(c *gin.Context) {
 	case rpc.DeleteGeneratorPayloadType:
 		server.handleDeleteGeneratorHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 
+	// Cron handlers
+	case rpc.AddCronPayloadType:
+		server.handleAddCronHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+	case rpc.GetCronPayloadType:
+		server.handleGetCronHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+	case rpc.GetCronsPayloadType:
+		server.handleGetCronsHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+	case rpc.RunCronPayloadType:
+		server.handleRunCronHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+	case rpc.DeleteCronPayloadType:
+		server.handleDeleteCronHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+
 	// Server handlers
 	case rpc.GetStatisiticsPayloadType:
 		server.handleStatisticsHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())

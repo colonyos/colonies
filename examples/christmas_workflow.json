@@ -1,0 +1,13 @@
+[
+    {
+        "name": "santa_is_coming",
+        "func": "echo",
+        "args": [
+            "HU HU HU"
+        ],
+        "conditions": {
+            "runtimetype": "cli",
+            "dependencies": []
+        }
+    }
+]

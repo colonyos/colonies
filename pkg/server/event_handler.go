@@ -69,7 +69,7 @@ func (handler *eventHandler) relayListener() {
 			if err != nil {
 				log.WithFields(log.Fields{"Error": err}).Warning("relayListener received invalid process JSON")
 			} else {
-				handler.signal(process)
+				handler.signalNoRelay(process)
 			}
 		case <-handler.stopRelayListener:
 			return
@@ -131,7 +131,7 @@ func (handler *eventHandler) unregister(runtimeType string, state int, listenerI
 	}
 }
 
-func (handler *eventHandler) signal(process *core.Process) error {
+func (handler *eventHandler) sendSignal(process *core.Process) {
 	msg := &message{reply: make(chan replyMessage, 1), handler: func(msg *message) {
 		t := handler.target(process.ProcessSpec.Conditions.RuntimeType, process.State)
 		if _, ok := handler.listeners[t]; ok {
@@ -148,17 +148,25 @@ func (handler *eventHandler) signal(process *core.Process) error {
 	}}
 
 	handler.msgQueue <- msg // Send the message to the masterworker
+}
+
+func (handler *eventHandler) signalNoRelay(process *core.Process) {
+	handler.sendSignal(process)
+}
+
+func (handler *eventHandler) signal(process *core.Process) {
+	handler.sendSignal(process)
 
 	// broadcast the msg to the relayServer
-	if handler.relayServer != nil {
-		jsonStr, err := process.ToJSON()
-		if err != nil {
-			return err
+	go func() {
+		if handler.relayServer != nil {
+			jsonStr, err := process.ToJSON()
+			if err != nil {
+				log.WithFields(log.Fields{"Error": err}).Error("Failed to parse JSON in signal")
+			}
+			handler.relayServer.Broadcast([]byte(jsonStr))
 		}
-		handler.relayServer.Broadcast([]byte(jsonStr))
-	}
-
-	return nil
+	}()
 }
 
 func (handler *eventHandler) waitForProcess(runtimeType string, state int, processID string, ctx context.Context) (*core.Process, error) {
