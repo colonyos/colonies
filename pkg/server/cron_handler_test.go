@@ -11,7 +11,7 @@ func TestAddCron(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 
 	cron := utils.FakeCron(t, env.colonyID)
-	cron.Intervall = 2
+	cron.Interval = 2
 
 	addedCron, err := client.AddCron(cron, env.runtimePrvKey)
 	assert.Nil(t, err)
@@ -68,7 +68,7 @@ func TestGetCron(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 
 	cron := utils.FakeCron(t, env.colonyID)
-	cron.Intervall = 2
+	cron.Interval = 2
 
 	addedCron, err := client.AddCron(cron, env.runtimePrvKey)
 	assert.Nil(t, err)
@@ -140,7 +140,7 @@ func TestRunCron(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 
 	cron := utils.FakeCron(t, env.colonyID)
-	cron.Intervall = 1000 // Will be triggered in 1000 seconds
+	cron.Interval = 1000 // Will be triggered in 1000 seconds
 
 	addedCron, err := client.AddCron(cron, env.runtimePrvKey)
 	assert.Nil(t, err)
