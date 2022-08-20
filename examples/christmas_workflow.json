@@ -1,9 +1,9 @@
 [
     {
-        "name": "task1",
+        "name": "santa_is_coming",
         "func": "echo",
         "args": [
-            "task1"
+            "HU HU HU"
         ],
         "conditions": {
             "runtimetype": "cli",

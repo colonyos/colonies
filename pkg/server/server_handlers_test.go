@@ -7,6 +7,21 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+// TODO: sometimes we get these errors:
+//
+// server_handlers_test.go:57:
+//     	Error Trace:	server_handlers_test.go:57
+//     	Error:      	Not equal:
+//     	            	expected: 6
+//     	            	actual  : 5
+//     	Test:       	TestGetStatistics
+// server_handlers_test.go:59:
+//     	Error Trace:	server_handlers_test.go:59
+//     	Error:      	Not equal:
+//     	            	expected: 6
+//     	            	actual  : 7
+//     	Test:       	TestGetStatistics
+
 func TestGetStatistics(t *testing.T) {
 	env, client, server, serverPrvKey, done := setupTestEnv2(t)
 

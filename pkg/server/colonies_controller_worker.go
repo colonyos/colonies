@@ -51,6 +51,23 @@ func (controller *coloniesController) generatorTriggerLoop() {
 	}
 }
 
+func (controller *coloniesController) cronTriggerLoop() {
+	for {
+		time.Sleep(TIMEOUT_CRON_TRIGGER_INTERVALL * time.Second)
+
+		controller.stopMutex.Lock()
+		if controller.stopFlag {
+			return
+		}
+		controller.stopMutex.Unlock()
+
+		isLeader := controller.tryBecomeLeader()
+		if isLeader {
+			controller.triggerCrons()
+		}
+	}
+}
+
 func (controller *coloniesController) generatorSyncLoop() {
 	for {
 		time.Sleep(TIMEOUT_GENERATOR_SYNC_INTERVALL * time.Second)

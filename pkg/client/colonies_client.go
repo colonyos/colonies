@@ -792,6 +792,81 @@ func (client *ColoniesClient) DeleteGenerator(generatorID string, prvKey string)
 	return nil
 }
 
+func (client *ColoniesClient) AddCron(cron *core.Cron, prvKey string) (*core.Cron, error) {
+	msg := rpc.CreateAddCronMsg(cron)
+	jsonString, err := msg.ToJSON()
+	if err != nil {
+		return nil, err
+	}
+
+	respBodyString, err := client.sendMessage(rpc.AddCronPayloadType, jsonString, prvKey, false)
+	if err != nil {
+		return nil, err
+	}
+
+	return core.ConvertJSONToCron(respBodyString)
+}
+
+func (client *ColoniesClient) GetCron(cronID string, prvKey string) (*core.Cron, error) {
+	msg := rpc.CreateGetCronMsg(cronID)
+	jsonString, err := msg.ToJSON()
+	if err != nil {
+		return nil, err
+	}
+
+	respBodyString, err := client.sendMessage(rpc.GetCronPayloadType, jsonString, prvKey, false)
+	if err != nil {
+		return nil, err
+	}
+
+	return core.ConvertJSONToCron(respBodyString)
+}
+
+func (client *ColoniesClient) GetCrons(colonyID string, count int, prvKey string) ([]*core.Cron, error) {
+	msg := rpc.CreateGetCronsMsg(colonyID, count)
+	jsonString, err := msg.ToJSON()
+	if err != nil {
+		return nil, err
+	}
+
+	respBodyString, err := client.sendMessage(rpc.GetCronsPayloadType, jsonString, prvKey, false)
+	if err != nil {
+		return nil, err
+	}
+
+	return core.ConvertJSONToCronArray(respBodyString)
+}
+
+func (client *ColoniesClient) RunCron(cronID string, prvKey string) (*core.Cron, error) {
+	msg := rpc.CreateRunCronMsg(cronID)
+	jsonString, err := msg.ToJSON()
+	if err != nil {
+		return nil, err
+	}
+
+	respBodyString, err := client.sendMessage(rpc.RunCronPayloadType, jsonString, prvKey, false)
+	if err != nil {
+		return nil, err
+	}
+
+	return core.ConvertJSONToCron(respBodyString)
+}
+
+func (client *ColoniesClient) DeleteCron(cronID string, prvKey string) error {
+	msg := rpc.CreateDeleteCronMsg(cronID)
+	jsonString, err := msg.ToJSON()
+	if err != nil {
+		return err
+	}
+
+	_, err = client.sendMessage(rpc.DeleteCronPayloadType, jsonString, prvKey, false)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (client *ColoniesClient) Version() (string, string, error) {
 	msg := rpc.CreateVersionMsg("", "")
 	jsonString, err := msg.ToJSON()

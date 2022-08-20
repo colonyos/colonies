@@ -3,9 +3,6 @@ package core
 import (
 	"encoding/json"
 	"time"
-
-	"github.com/colonyos/colonies/pkg/security/crypto"
-	"github.com/google/uuid"
 )
 
 type Cron struct {
@@ -13,20 +10,16 @@ type Cron struct {
 	ColonyID           string    `json:"colonyid"`
 	Name               string    `json:"name"`
 	CronExpression     string    `json:"cronexpression"`
+	Interval           int       `json:"interval"`
+	Random             bool      `json:"random"`
 	NextRun            time.Time `json:"nextrun"`
 	LastRun            time.Time `json:"lastrun"`
 	WorkflowSpec       string    `json:"workflowspec"`
 	LastProcessGraphID string    `json:"lastprocessgraphid"`
-	SuccessfulRuns     int       `json:"successfulruns"`
-	FailedRuns         int       `json:"failedruns"`
 }
 
-func CreateCron(colonyID string, name string, cronExpression string, workflowSpec string) *Cron {
-	uuid := uuid.New()
-	crypto := crypto.CreateCrypto()
-	id := crypto.GenerateHash(uuid.String())
-
-	return &Cron{ID: id, ColonyID: colonyID, Name: name, CronExpression: cronExpression, NextRun: time.Time{}, LastRun: time.Time{}, WorkflowSpec: workflowSpec}
+func CreateCron(colonyID string, name string, cronExpression string, interval int, random bool, workflowSpec string) *Cron {
+	return &Cron{ColonyID: colonyID, Name: name, CronExpression: cronExpression, Interval: interval, Random: random, NextRun: time.Time{}, LastRun: time.Time{}, WorkflowSpec: workflowSpec}
 }
 
 func ConvertJSONToCron(jsonString string) (*Cron, error) {
@@ -89,12 +82,12 @@ func (cron *Cron) Equals(cron2 *Cron) bool {
 		cron.ColonyID != cron2.ColonyID ||
 		cron.Name != cron2.Name ||
 		cron.CronExpression != cron2.CronExpression ||
+		cron.Interval != cron2.Interval ||
+		cron.Random != cron2.Random ||
 		cron.NextRun.Unix() != cron2.NextRun.Unix() ||
 		cron.LastRun.Unix() != cron2.LastRun.Unix() ||
 		cron.WorkflowSpec != cron2.WorkflowSpec ||
-		cron.LastProcessGraphID != cron2.LastProcessGraphID ||
-		cron.SuccessfulRuns != cron2.SuccessfulRuns ||
-		cron.FailedRuns != cron2.FailedRuns {
+		cron.LastProcessGraphID != cron2.LastProcessGraphID {
 		same = false
 	}
 
@@ -108,4 +101,12 @@ func (cron *Cron) ToJSON() (string, error) {
 	}
 
 	return string(jsonBytes), nil
+}
+
+func (cron *Cron) HasExpired() bool {
+	now := time.Now()
+	if now.Sub(cron.NextRun) > 0 {
+		return true
+	}
+	return false
 }

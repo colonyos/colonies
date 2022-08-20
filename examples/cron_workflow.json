@@ -1,0 +1,27 @@
+[
+    {
+        "name": "generate_date",
+        "func": "date",
+        "args": [
+            ">",
+            "/tmp/currentdate"
+        ],
+        "conditions": {
+            "runtimetype": "cli",
+            "dependencies": []
+        }
+    },
+    {
+        "name": "print_date",
+        "func": "cat",
+        "args": [
+            "/tmp/currentdate"
+        ],
+        "conditions": {
+            "runtimetype": "cli",
+            "dependencies": [
+                "generate_date"
+            ]
+        }
+    }
+]

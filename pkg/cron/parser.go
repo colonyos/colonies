@@ -87,7 +87,7 @@ func NewParser(options ParseOption) Parser {
 // It accepts crontab specs and features configured by NewParser.
 func (p Parser) Parse(spec string) (Schedule, error) {
 	if len(spec) == 0 {
-		return nil, fmt.Errorf("empty spec string")
+		return nil, fmt.Errorf("empty cron expression string")
 	}
 
 	// Extract timezone if present

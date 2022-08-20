@@ -1,0 +1,29 @@
+[
+    {
+        "name": "generate_date",
+        "func": "date",
+        "args": [
+            ">",
+            "/tmp/currentdate"
+        ],
+        "conditions": {
+            "runtimetype": "cli",
+            "dependencies": []
+        },
+        "maxwaittime": 3
+    },
+    {
+        "name": "print_date",
+        "func": "cat",
+        "args": [
+            "/tmp/currentdate"
+        ],
+        "conditions": {
+            "runtimetype": "cli",
+            "dependencies": [
+                "generate_date"
+            ]
+        },
+        "maxwaittime": 5
+    }
+]

@@ -76,7 +76,8 @@ var addGeneratorCmd = &cobra.Command{
 		jsonSpecBytes, err := ioutil.ReadFile(SpecFile)
 		CheckError(err)
 
-		workflowSpec, err := core.ConvertJSONToWorkflowSpec(string(jsonSpecBytes))
+		jsonStr := "{\"processspecs\":" + string(jsonSpecBytes) + "}"
+		workflowSpec, err := core.ConvertJSONToWorkflowSpec(jsonStr)
 		CheckError(err)
 
 		if workflowSpec.ColonyID == "" {
@@ -247,7 +248,7 @@ var getGeneratorCmd = &cobra.Command{
 			os.Exit(0)
 		}
 
-		fmt.Println("Workflow:")
+		fmt.Println("Generator:")
 		generatorData := [][]string{
 			[]string{"Id", generator.ID},
 			[]string{"Name", generator.Name},
@@ -310,7 +311,7 @@ var getGeneratorsCmd = &cobra.Command{
 
 		generators, err := client.GetGenerators(ColonyID, Count, RuntimePrvKey)
 		if generators == nil {
-			log.WithFields(log.Fields{"ColonyId": ColonyID}).Error("No generators found")
+			log.WithFields(log.Fields{"ColonyId": ColonyID}).Info("No generators found")
 			os.Exit(0)
 		}
 

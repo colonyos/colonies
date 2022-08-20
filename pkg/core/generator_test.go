@@ -18,6 +18,7 @@ func TestCreateGenerator(t *testing.T) {
 	jsonStr, err := workflowSpec.ToJSON()
 	assert.Nil(t, err)
 	generator := CreateGenerator(GenerateRandomID(), "test_genname", jsonStr, 10, 0, 10)
+	generator.ID = GenerateRandomID()
 	jsonStr, err = generator.ToJSON()
 	assert.Nil(t, err)
 
@@ -43,9 +44,11 @@ func TestCreateGeneratorSpecArray(t *testing.T) {
 	jsonStr, err := workflowSpec1.ToJSON()
 	assert.Nil(t, err)
 	generator1 := CreateGenerator(GenerateRandomID(), "test_genname1", jsonStr, 10, 0, 10)
+	generator1.ID = GenerateRandomID()
 	arr = append(arr, generator1)
 
 	generator2 := CreateGenerator(GenerateRandomID(), "test_genname2", jsonStr, 10, 0, 10)
+	generator2.ID = GenerateRandomID()
 	assert.Nil(t, err)
 	arr = append(arr, generator2)
 
