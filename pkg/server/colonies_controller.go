@@ -18,7 +18,6 @@ import (
 
 const TIMEOUT_RELEASE_INTERVALL = 1
 const TIMEOUT_GENERATOR_TRIGGER_INTERVALL = 1
-const TIMEOUT_GENERATOR_SYNC_INTERVALL = 1
 const TIMEOUT_CRON_TRIGGER_INTERVALL = 1
 
 type command struct {
@@ -46,20 +45,19 @@ type command struct {
 }
 
 type coloniesController struct {
-	db              database.Database
-	generatorEngine *generatorEngine
-	cmdQueue        chan *command
-	planner         planner.Planner
-	wsSubCtrl       *wsSubscriptionController
-	relayServer     *cluster.RelayServer
-	eventHandler    *eventHandler
-	stopFlag        bool
-	stopMutex       sync.Mutex
-	leaderMutex     sync.Mutex
-	thisNode        cluster.Node
-	clusterConfig   cluster.Config
-	etcdServer      *cluster.EtcdServer
-	leader          bool
+	db            database.Database
+	cmdQueue      chan *command
+	planner       planner.Planner
+	wsSubCtrl     *wsSubscriptionController
+	relayServer   *cluster.RelayServer
+	eventHandler  *eventHandler
+	stopFlag      bool
+	stopMutex     sync.Mutex
+	leaderMutex   sync.Mutex
+	thisNode      cluster.Node
+	clusterConfig cluster.Config
+	etcdServer    *cluster.EtcdServer
+	leader        bool
 }
 
 func createColoniesController(db database.Database, thisNode cluster.Node, clusterConfig cluster.Config, etcdDataPath string) *coloniesController {
@@ -72,7 +70,6 @@ func createColoniesController(db database.Database, thisNode cluster.Node, clust
 	controller.etcdServer.WaitToStart()
 	controller.leader = false
 
-	controller.generatorEngine = createGeneratorEngine(db, controller)
 	controller.relayServer = cluster.CreateRelayServer(controller.thisNode, controller.clusterConfig)
 	controller.eventHandler = createEventHandler(controller.relayServer)
 	controller.wsSubCtrl = createWSSubscriptionController(controller.eventHandler)
@@ -85,22 +82,58 @@ func createColoniesController(db database.Database, thisNode cluster.Node, clust
 	go controller.timeoutLoop()
 	go controller.generatorTriggerLoop()
 	go controller.cronTriggerLoop()
-	go controller.generatorSyncLoop()
 
 	return controller
 }
 
-func (controller *coloniesController) syncGenerators() {
-	cmd := &command{handler: func(cmd *command) {
-		controller.generatorEngine.syncStatesFromDB()
-	}}
+func (controller *coloniesController) submitWorkflow(generator *core.Generator) {
+	workflowSpec, err := core.ConvertJSONToWorkflowSpec(generator.WorkflowSpec)
+	if err != nil {
+		log.WithFields(log.Fields{"Error": err}).Error("Failed to parse workflow spec")
+		return
+	}
 
-	controller.cmdQueue <- cmd
+	_, err = controller.createProcessGraph(workflowSpec)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"Error": err}).
+			Error("Failed to create processgraph")
+		return
+	}
+
+	err = controller.db.MarkGeneratorRun(generator.ID)
+	if err != nil {
+		log.WithFields(log.Fields{"Error": err}).Error("Failed mark generator as run")
+	}
 }
 
 func (controller *coloniesController) triggerGenerators() {
 	cmd := &command{handler: func(cmd *command) {
-		controller.generatorEngine.triggerGenerators()
+		generatorsFromDB, err := controller.db.FindAllGenerators()
+		if err != nil {
+			log.WithFields(log.Fields{"Error": err}).Error("Failed get all generators from db")
+			return
+		}
+		for _, generator := range generatorsFromDB {
+			now := time.Now()
+			deadline := generator.LastRun.Add(time.Duration(generator.Timeout) * time.Second)
+			if now.Unix() > deadline.Unix() && generator.Timeout > 0 {
+				log.WithFields(log.Fields{
+					"GeneratorId": generator.ID,
+					"Timeout":     generator.Timeout}).
+					Info("Generator timed out, submitting workflow")
+				controller.submitWorkflow(generator)
+			} else if generator.Counter >= generator.Trigger {
+				counter := generator.Counter
+				// It is very likely that counter > trigger, so we need to split it up.
+
+				log.WithFields(log.Fields{
+					"GeneratorId": generator.ID,
+					"Timeout":     generator.Timeout}).
+					Info("Generator threshold reached, submitting workflow")
+				controller.submitWorkflow(generator)
+			}
+		}
 	}}
 
 	controller.cmdQueue <- cmd
@@ -181,7 +214,6 @@ func (controller *coloniesController) addGenerator(generator *core.Generator) (*
 				cmd.errorChan <- err
 				return
 			}
-			controller.generatorEngine.syncStatesFromDB()
 			cmd.generatorReplyChan <- addedGenerator
 		}}
 
@@ -198,7 +230,11 @@ func (controller *coloniesController) getGenerator(generatorID string) (*core.Ge
 	cmd := &command{generatorReplyChan: make(chan *core.Generator, 1),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
-			generator := controller.generatorEngine.getGenerator(generatorID)
+			generator, err := controller.db.GetGeneratorByID(generatorID)
+			if err != nil {
+				cmd.errorChan <- err
+				return
+			}
 			cmd.generatorReplyChan <- generator
 		}}
 
@@ -232,16 +268,10 @@ func (controller *coloniesController) getGenerators(colonyID string, count int) 
 	}
 }
 
-func (controller *coloniesController) incGenerator(generatorID string) error {
+func (controller *coloniesController) addGeneratorArg(generatorID string, arg string) error {
 	cmd := &command{errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
-			generator, err := controller.db.GetGeneratorByID(generatorID)
-			if err != nil {
-				cmd.errorChan <- err
-				return
-			}
-			controller.generatorEngine.increaseCounter(generator.ID)
-			cmd.errorChan <- nil
+			cmd.errorChan <- controller.db.AddGeneratorArg(generatorID, arg)
 		}}
 
 	controller.cmdQueue <- cmd
@@ -254,9 +284,7 @@ func (controller *coloniesController) incGenerator(generatorID string) error {
 func (controller *coloniesController) deleteGenerator(generatorID string) error {
 	cmd := &command{errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
-			err := controller.db.DeleteGeneratorByID(generatorID)
-			controller.generatorEngine.syncStatesFromDB()
-			cmd.errorChan <- err
+			cmd.errorChan <- controller.db.DeleteGeneratorByID(generatorID)
 		}}
 
 	controller.cmdQueue <- cmd

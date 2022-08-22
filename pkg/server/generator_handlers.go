@@ -132,8 +132,8 @@ func (server *ColoniesServer) handleGetGeneratorsHTTPRequest(c *gin.Context, rec
 	server.sendHTTPReply(c, payloadType, jsonString)
 }
 
-func (server *ColoniesServer) handleIncGeneratorHTTPRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
-	msg, err := rpc.CreateIncGeneratorMsgFromJSON(jsonString)
+func (server *ColoniesServer) handleAddArgGeneratorHTTPRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
+	msg, err := rpc.CreateAddArgGeneratorMsgFromJSON(jsonString)
 	if err != nil {
 		if server.handleHTTPError(c, errors.New("Failed to inc generator, invalid JSON"), http.StatusBadRequest) {
 			return
@@ -159,12 +159,12 @@ func (server *ColoniesServer) handleIncGeneratorHTTPRequest(c *gin.Context, reco
 		return
 	}
 
-	err = server.controller.incGenerator(generator.ID)
+	err = server.controller.addGeneratorArg(generator.ID, msg.Arg)
 	if server.handleHTTPError(c, err, http.StatusInternalServerError) {
 		return
 	}
 
-	log.WithFields(log.Fields{"GeneratorID": generator.ID}).Info("Incrementing generator")
+	log.WithFields(log.Fields{"GeneratorID": generator.ID, "Arg": msg.Arg}).Info("Adding arg to generator")
 
 	server.sendEmptyHTTPReply(c, payloadType)
 }

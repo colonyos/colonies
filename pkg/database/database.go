@@ -105,8 +105,11 @@ type Database interface {
 
 	// Generator functions
 	AddGenerator(generator *core.Generator) error
+	AddGeneratorArg(generatorID string, arg string) error
+	MarkGeneratorRun(generatorID string) error
 	GetGeneratorByID(generatorID string) (*core.Generator, error)
 	FindGeneratorsByColonyID(colonyID string, count int) ([]*core.Generator, error)
+	FindAllGenerators() ([]*core.Generator, error)
 	DeleteGeneratorByID(generatorID string) error
 	DeleteAllGeneratorsByColonyID(colonyID string) error
 

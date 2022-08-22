@@ -322,7 +322,7 @@ func WaitForProcessGraphs(t *testing.T, c *client.ColoniesClient, colonyID strin
 		graphs, err = c.GetWaitingProcessGraphs(colonyID, 100, runtimePrvKey)
 		assert.Nil(t, err)
 		if generatorID != "" {
-			c.IncGenerator(generatorID, runtimePrvKey)
+			c.AddArgToGenerator(generatorID, "arg", runtimePrvKey)
 		}
 		if len(graphs) > threshold {
 			break

@@ -27,7 +27,7 @@ func TestAddGeneratorTimeout(t *testing.T) {
 	doneInc := make(chan bool)
 	go func() {
 		for i := 0; i < 15; i++ {
-			err = client.IncGenerator(addedGenerator.ID, env.runtimePrvKey)
+			err = client.AddArgToGenerator(addedGenerator.ID, "arg", env.runtimePrvKey)
 			assert.Nil(t, err)
 			time.Sleep(500 * time.Millisecond)
 
@@ -49,7 +49,9 @@ func TestAddGeneratorCounter(t *testing.T) {
 
 	colonyID := env.colonyID
 
+	// trigger = 10 and timeout = -1
 	generator := utils.FakeGenerator(t, colonyID)
+	generator.Timeout = -1
 	addedGenerator, err := client.AddGenerator(generator, env.runtimePrvKey)
 	assert.Nil(t, err)
 	assert.NotNil(t, addedGenerator)
@@ -57,18 +59,18 @@ func TestAddGeneratorCounter(t *testing.T) {
 	doneInc := make(chan bool)
 	go func() {
 		for i := 0; i < 70; i++ {
-			err = client.IncGenerator(addedGenerator.ID, env.runtimePrvKey)
+			err = client.AddArgToGenerator(addedGenerator.ID, "arg", env.runtimePrvKey)
 			assert.Nil(t, err)
 		}
 		doneInc <- true
 	}()
 	<-doneInc
 
-	time.Sleep(3 * time.Second)
+	time.Sleep(20 * time.Second)
 
 	graphs, err := client.GetWaitingProcessGraphs(colonyID, 100, env.runtimePrvKey)
 	assert.Nil(t, err)
-	assert.True(t, len(graphs) > 3)
+	assert.Len(t, graphs, 3)
 
 	server.Shutdown()
 	<-done
@@ -149,7 +151,7 @@ func TestDeleteGenerator(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, addedGenerator)
 
-	err = client.IncGenerator(addedGenerator.ID, env.runtimePrvKey)
+	err = client.AddArgToGenerator(addedGenerator.ID, "arg", env.runtimePrvKey)
 	assert.Nil(t, err)
 
 	err = client.DeleteGenerator(addedGenerator.ID, env.runtimePrvKey)

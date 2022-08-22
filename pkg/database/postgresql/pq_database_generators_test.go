@@ -36,7 +36,42 @@ func TestGetGenerator(t *testing.T) {
 	defer db.Close()
 }
 
-func TestFindGeneratorByColonyID(t *testing.T) {
+func TestAddGeneratorArg(t *testing.T) {
+	db, err := PrepareTests()
+	assert.Nil(t, err)
+
+	generator := utils.FakeGenerator(t, core.GenerateRandomID())
+	generator.ID = core.GenerateRandomID()
+	err = db.AddGenerator(generator)
+	assert.Nil(t, err)
+
+	err = db.AddGeneratorArg(generator.ID, "arg0")
+	assert.Nil(t, err)
+	err = db.AddGeneratorArg(generator.ID, "arg1")
+	assert.Nil(t, err)
+
+	generatorFromDB, err := db.GetGeneratorByID(generator.ID)
+	assert.Nil(t, err)
+	assert.Len(t, generatorFromDB.Args, 2)
+	assert.Equal(t, generatorFromDB.Args[0], "arg0")
+	assert.Equal(t, generatorFromDB.Args[1], "arg1")
+	assert.Equal(t, generatorFromDB.Counter, 2)
+
+	lastRun := generatorFromDB.LastRun.Unix()
+
+	err = db.MarkGeneratorRun(generator.ID)
+	assert.Nil(t, err)
+
+	generatorFromDB, err = db.GetGeneratorByID(generator.ID)
+	assert.Nil(t, err)
+	assert.Len(t, generatorFromDB.Args, 0)
+	assert.Equal(t, generatorFromDB.Counter, 0)
+	assert.Greater(t, generatorFromDB.LastRun.Unix(), lastRun)
+
+	defer db.Close()
+}
+
+func TestFindGeneratorsByColonyID(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
 
@@ -65,6 +100,29 @@ func TestFindGeneratorByColonyID(t *testing.T) {
 		}
 	}
 	assert.True(t, count == 2)
+
+	defer db.Close()
+}
+
+func TestFindAllGenerators(t *testing.T) {
+	db, err := PrepareTests()
+	assert.Nil(t, err)
+
+	colonyID1 := core.GenerateRandomID()
+	generator1 := utils.FakeGenerator(t, colonyID1)
+	generator1.ID = core.GenerateRandomID()
+	err = db.AddGenerator(generator1)
+	assert.Nil(t, err)
+
+	colonyID2 := core.GenerateRandomID()
+	generator2 := utils.FakeGenerator(t, colonyID2)
+	generator2.ID = core.GenerateRandomID()
+	err = db.AddGenerator(generator2)
+	assert.Nil(t, err)
+
+	generatorsFromDB, err := db.FindAllGenerators()
+	assert.Nil(t, err)
+	assert.Len(t, generatorsFromDB, 2)
 
 	defer db.Close()
 }

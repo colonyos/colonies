@@ -14,6 +14,7 @@ type Generator struct {
 	Counter      int       `json:"counter"`
 	Timeout      int       `json:"timeout"`
 	LastRun      time.Time `json:"lastrun"`
+	Args         []string  `json:"args"`
 }
 
 func CreateGenerator(colonyID string, name string, workflowSpec string, trigger int, counter int, timeout int) *Generator {
@@ -92,6 +93,17 @@ func (generator *Generator) Equals(generator2 *Generator) bool {
 		generator.Trigger != generator2.Trigger ||
 		generator.Counter != generator2.Counter ||
 		generator.Timeout != generator2.Timeout {
+		same = false
+	}
+	counter := 0
+	for _, arg1 := range generator.Args {
+		for _, arg2 := range generator2.Args {
+			if arg1 == arg2 {
+				counter++
+			}
+		}
+	}
+	if counter != len(generator.Args) && counter != len(generator2.Args) {
 		same = false
 	}
 
