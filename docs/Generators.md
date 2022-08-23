@@ -1,5 +1,5 @@
 # Generators
-Generators receive data (strings) from clients (via API) and automatically spawn workflows when number of calls exceed a threshold. Data is then available as argument to the Colonies process.
+Generators receive data (strings) from clients (via API) and automatically spawn workflows when number of calls exceed a threshold. Data is then available as an argument to the Colonies process.
 
 ## Start a Colonies server
 ```console
