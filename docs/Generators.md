@@ -49,7 +49,7 @@ Notice that a workflow is spawn after the last pack call. In the worker terminal
 ```console
 INFO[0312] Worker was assigned a process                 ProcessID=3806424831e78001fd7157a387ca9ab414ef908f0649eeed7e9fee691438db01
 INFO[0312] Lauching process                              Args="[hello1 hello2 hello3 hello4 hello5]" Func=echo
-hello hello1 hello2 hello3 hello4
+hello1 hello2 hello3 hello4 hello5
 INFO[0312] Closing process as successful                 processID=3806424831e78001fd7157a387ca9ab414ef908f0649eeed7e9fee691438db01
 ```
 
