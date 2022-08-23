@@ -762,14 +762,14 @@ func (client *ColoniesClient) GetGenerators(colonyID string, count int, prvKey s
 	return core.ConvertJSONToGeneratorArray(respBodyString)
 }
 
-func (client *ColoniesClient) IncGenerator(generatorID string, prvKey string) error {
-	msg := rpc.CreateIncGeneratorMsg(generatorID)
+func (client *ColoniesClient) AddArgToGenerator(generatorID string, arg string, prvKey string) error {
+	msg := rpc.CreateAddArgGeneratorMsg(generatorID, arg)
 	jsonString, err := msg.ToJSON()
 	if err != nil {
 		return err
 	}
 
-	_, err = client.sendMessage(rpc.IncGeneratorPayloadType, jsonString, prvKey, false)
+	_, err = client.sendMessage(rpc.AddArgGeneratorPayloadType, jsonString, prvKey, false)
 	if err != nil {
 		return err
 	}

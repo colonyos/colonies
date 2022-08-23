@@ -94,7 +94,7 @@ func FakeGenerator(t *testing.T, colonyID string) *core.Generator {
 	workflowSpec.AddProcessSpec(processSpec2)
 	jsonStr, err := workflowSpec.ToJSON()
 	assert.Nil(t, err)
-	generator := core.CreateGenerator(colonyID, "test_genname", jsonStr, 10, 0, 1)
+	generator := core.CreateGenerator(colonyID, "test_genname", jsonStr, 10)
 	return generator
 }
 

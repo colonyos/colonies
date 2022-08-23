@@ -81,7 +81,7 @@ func TestGetGeneratorsSecurity(t *testing.T) {
 	<-done
 }
 
-func TestIncGeneratorSecurity(t *testing.T) {
+func TestAddArgGeneratorSecurity(t *testing.T) {
 	env, client, server, _, done := setupTestEnv1(t)
 
 	// The setup looks like this:
@@ -94,13 +94,13 @@ func TestIncGeneratorSecurity(t *testing.T) {
 	addedGenerator, err := client.AddGenerator(generator, env.runtime1PrvKey)
 	assert.Nil(t, err)
 
-	err = client.IncGenerator(addedGenerator.ID, env.runtime2PrvKey)
+	err = client.AddArgToGenerator(addedGenerator.ID, "arg", env.runtime2PrvKey)
 	assert.NotNil(t, err)
-	err = client.IncGenerator(addedGenerator.ID, env.colony1PrvKey)
+	err = client.AddArgToGenerator(addedGenerator.ID, "arg", env.colony1PrvKey)
 	assert.NotNil(t, err)
-	err = client.IncGenerator(addedGenerator.ID, env.colony2PrvKey)
+	err = client.AddArgToGenerator(addedGenerator.ID, "arg", env.colony2PrvKey)
 	assert.NotNil(t, err)
-	err = client.IncGenerator(addedGenerator.ID, env.runtime1PrvKey)
+	err = client.AddArgToGenerator(addedGenerator.ID, "arg", env.runtime1PrvKey)
 	assert.Nil(t, err)
 
 	server.Shutdown()

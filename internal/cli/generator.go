@@ -18,7 +18,7 @@ import (
 
 func init() {
 	generatorCmd.AddCommand(addGeneratorCmd)
-	generatorCmd.AddCommand(incGeneratorCmd)
+	generatorCmd.AddCommand(packGeneratorCmd)
 	generatorCmd.AddCommand(delGeneratorCmd)
 	generatorCmd.AddCommand(getGeneratorCmd)
 	generatorCmd.AddCommand(getGeneratorsCmd)
@@ -36,13 +36,13 @@ func init() {
 	addGeneratorCmd.MarkFlagRequired("name")
 	addGeneratorCmd.Flags().IntVarP(&GeneratorTrigger, "trigger", "", -1, "Trigger")
 	addGeneratorCmd.MarkFlagRequired("trigger")
-	addGeneratorCmd.Flags().IntVarP(&GeneratorTimeout, "timeout", "", -1, "Timeout")
-	addGeneratorCmd.MarkFlagRequired("timeout")
 
-	incGeneratorCmd.Flags().StringVarP(&RuntimeID, "runtimeid", "", "", "Runtime Id")
-	incGeneratorCmd.Flags().StringVarP(&RuntimePrvKey, "runtimeprvkey", "", "", "Runtime private key")
-	incGeneratorCmd.Flags().StringVarP(&GeneratorID, "generatorid", "", "", "Generator Id")
-	incGeneratorCmd.MarkFlagRequired("generatorid")
+	packGeneratorCmd.Flags().StringVarP(&RuntimeID, "runtimeid", "", "", "Runtime Id")
+	packGeneratorCmd.Flags().StringVarP(&RuntimePrvKey, "runtimeprvkey", "", "", "Runtime private key")
+	packGeneratorCmd.Flags().StringVarP(&GeneratorID, "generatorid", "", "", "Generator Id")
+	packGeneratorCmd.MarkFlagRequired("generatorid")
+	packGeneratorCmd.Flags().StringVarP(&Data, "data", "", "", "Data to add/pack generator with")
+	packGeneratorCmd.MarkFlagRequired("data")
 
 	delGeneratorCmd.Flags().StringVarP(&RuntimeID, "runtimeid", "", "", "Runtime Id")
 	delGeneratorCmd.Flags().StringVarP(&RuntimePrvKey, "runtimeprvkey", "", "", "Runtime private key")
@@ -135,17 +135,17 @@ var addGeneratorCmd = &cobra.Command{
 			CheckError(errors.New("Generator trigger not specified"))
 		}
 
-		generator := core.CreateGenerator(ColonyID, GeneratorName, workflowSpecJSON, GeneratorTrigger, 0, GeneratorTimeout)
+		generator := core.CreateGenerator(ColonyID, GeneratorName, workflowSpecJSON, GeneratorTrigger)
 		addedGenerator, err := client.AddGenerator(generator, RuntimePrvKey)
 
 		log.WithFields(log.Fields{"GeneratorID": addedGenerator.ID}).Info("Generator added")
 	},
 }
 
-var incGeneratorCmd = &cobra.Command{
-	Use:   "inc",
-	Short: "Increment a generator",
-	Long:  "Increment a generator",
+var packGeneratorCmd = &cobra.Command{
+	Use:   "pack",
+	Short: "Add data to a generator",
+	Long:  "Add data to a generator",
 	Run: func(cmd *cobra.Command, args []string) {
 		parseServerEnv()
 
@@ -171,9 +171,9 @@ var incGeneratorCmd = &cobra.Command{
 			CheckError(errors.New("Generator Id not specified"))
 		}
 
-		err = client.IncGenerator(GeneratorID, RuntimePrvKey)
+		err = client.AddArgToGenerator(GeneratorID, Data, RuntimePrvKey)
 
-		log.WithFields(log.Fields{"GeneratorID": GeneratorID}).Info("Incrementing generator")
+		log.WithFields(log.Fields{"GeneratorID": GeneratorID, "Data": Data}).Info("Packing generator with data")
 	},
 }
 
@@ -253,8 +253,6 @@ var getGeneratorCmd = &cobra.Command{
 			[]string{"Id", generator.ID},
 			[]string{"Name", generator.Name},
 			[]string{"Trigger", strconv.Itoa(generator.Trigger)},
-			[]string{"Counter", strconv.Itoa(generator.Counter)},
-			[]string{"Timeout", strconv.Itoa(generator.Timeout)},
 			[]string{"Lastrun", generator.LastRun.Format(TimeLayout)},
 		}
 		generatorTable := tablewriter.NewWriter(os.Stdout)

@@ -42,11 +42,7 @@ func (controller *coloniesController) generatorTriggerLoop() {
 
 		isLeader := controller.tryBecomeLeader()
 		if isLeader {
-			if controller.generatorEngine != nil {
-				controller.triggerGenerators()
-			} else {
-				log.Error("Generator engine is nil")
-			}
+			controller.triggerGenerators()
 		}
 	}
 }
@@ -64,24 +60,6 @@ func (controller *coloniesController) cronTriggerLoop() {
 		isLeader := controller.tryBecomeLeader()
 		if isLeader {
 			controller.triggerCrons()
-		}
-	}
-}
-
-func (controller *coloniesController) generatorSyncLoop() {
-	for {
-		time.Sleep(TIMEOUT_GENERATOR_SYNC_INTERVALL * time.Second)
-
-		controller.stopMutex.Lock()
-		if controller.stopFlag {
-			return
-		}
-		controller.stopMutex.Unlock()
-
-		if controller.generatorEngine != nil {
-			controller.syncGenerators()
-		} else {
-			log.Error("Generator engine is nil")
 		}
 	}
 }
