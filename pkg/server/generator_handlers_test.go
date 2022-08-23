@@ -1,6 +1,7 @@
 package server
 
 import (
+	"strconv"
 	"testing"
 	"time"
 
@@ -8,69 +9,32 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestAddGeneratorTimeout(t *testing.T) {
-	env, client, server, _, done := setupTestEnv2(t)
-
-	colonyID := env.colonyID
-
-	generator := utils.FakeGenerator(t, colonyID)
-	generator.WorkflowSpec = "error"
-	addedGenerator, err := client.AddGenerator(generator, env.runtimePrvKey)
-	assert.NotNil(t, err)
-	assert.Nil(t, addedGenerator)
-
-	generator = utils.FakeGenerator(t, colonyID)
-	addedGenerator, err = client.AddGenerator(generator, env.runtimePrvKey)
-	assert.Nil(t, err)
-	assert.NotNil(t, addedGenerator)
-
-	doneInc := make(chan bool)
-	go func() {
-		for i := 0; i < 15; i++ {
-			err = client.AddArgToGenerator(addedGenerator.ID, "arg", env.runtimePrvKey)
-			assert.Nil(t, err)
-			time.Sleep(500 * time.Millisecond)
-
-		}
-		doneInc <- true
-	}()
-	<-doneInc
-
-	graphs, err := client.GetWaitingProcessGraphs(colonyID, 100, env.runtimePrvKey)
-	assert.Nil(t, err)
-	assert.True(t, len(graphs) > 2)
-
-	server.Shutdown()
-	<-done
-}
-
 func TestAddGeneratorCounter(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 
 	colonyID := env.colonyID
 
-	// trigger = 10 and timeout = -1
 	generator := utils.FakeGenerator(t, colonyID)
-	generator.Timeout = -1
+	generator.Trigger = 10
 	addedGenerator, err := client.AddGenerator(generator, env.runtimePrvKey)
 	assert.Nil(t, err)
 	assert.NotNil(t, addedGenerator)
 
 	doneInc := make(chan bool)
 	go func() {
-		for i := 0; i < 70; i++ {
-			err = client.AddArgToGenerator(addedGenerator.ID, "arg", env.runtimePrvKey)
+		for i := 0; i < 73; i++ {
+			err = client.AddArgToGenerator(addedGenerator.ID, "arg"+strconv.Itoa(i), env.runtimePrvKey)
 			assert.Nil(t, err)
 		}
 		doneInc <- true
 	}()
 	<-doneInc
 
-	time.Sleep(20 * time.Second)
+	WaitForProcessGraphs(t, client, colonyID, addedGenerator.ID, env.runtimePrvKey, 7)
 
 	graphs, err := client.GetWaitingProcessGraphs(colonyID, 100, env.runtimePrvKey)
 	assert.Nil(t, err)
-	assert.Len(t, graphs, 3)
+	assert.Len(t, graphs, 7)
 
 	server.Shutdown()
 	<-done
@@ -150,9 +114,6 @@ func TestDeleteGenerator(t *testing.T) {
 	addedGenerator, err := client.AddGenerator(generator, env.runtimePrvKey)
 	assert.Nil(t, err)
 	assert.NotNil(t, addedGenerator)
-
-	err = client.AddArgToGenerator(addedGenerator.ID, "arg", env.runtimePrvKey)
-	assert.Nil(t, err)
 
 	err = client.DeleteGenerator(addedGenerator.ID, env.runtimePrvKey)
 	assert.Nil(t, err)

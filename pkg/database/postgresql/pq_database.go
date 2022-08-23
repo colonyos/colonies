@@ -86,6 +86,12 @@ func (db *PQDatabase) Drop() error {
 		return err
 	}
 
+	sqlStatement = `DROP TABLE ` + db.dbPrefix + `GENERATORARGS`
+	_, err = db.postgresql.Exec(sqlStatement)
+	if err != nil {
+		return err
+	}
+
 	sqlStatement = `DROP TABLE ` + db.dbPrefix + `CRONS`
 	_, err = db.postgresql.Exec(sqlStatement)
 	if err != nil {
@@ -150,7 +156,13 @@ func (db *PQDatabase) Initialize() error {
 		return err
 	}
 
-	sqlStatement = `CREATE TABLE ` + db.dbPrefix + `GENERATORS (GENERATOR_ID TEXT PRIMARY KEY NOT NULL, COLONY_ID TEXT NOT NULL, NAME TEXT NOT NULL, WORKFLOW_SPEC TEXT NOT NULL, TRIGGER INTEGER, COUNTER INTEGER, TIMEOUT INTEGER, LASTRUN TIMESTAMPTZ, ARGS TEXT[])`
+	sqlStatement = `CREATE TABLE ` + db.dbPrefix + `GENERATORS (GENERATOR_ID TEXT PRIMARY KEY NOT NULL, COLONY_ID TEXT NOT NULL, NAME TEXT NOT NULL, WORKFLOW_SPEC TEXT NOT NULL, TRIGGER INTEGER, LASTRUN TIMESTAMPTZ)`
+	_, err = db.postgresql.Exec(sqlStatement)
+	if err != nil {
+		return err
+	}
+
+	sqlStatement = `CREATE TABLE ` + db.dbPrefix + `GENERATORARGS (GENERATORARG_ID TEXT PRIMARY KEY NOT NULL, GENERATOR_ID TEXT NOT NULL, COLONY_ID TEXT NOT NULL, ARG TEXT NOT NULL)`
 	_, err = db.postgresql.Exec(sqlStatement)
 	if err != nil {
 		return err

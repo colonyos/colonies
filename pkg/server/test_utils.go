@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io/ioutil"
+	"math/rand"
 	"os"
 	"strconv"
 	"testing"
@@ -47,6 +48,8 @@ const Insecure = false
 const SkipTLSVerify = true
 
 func setupTestEnv1(t *testing.T) (*testEnv1, *client.ColoniesClient, *ColoniesServer, string, chan bool) {
+	rand.Seed(time.Now().UTC().UnixNano())
+
 	gin.SetMode(gin.ReleaseMode)
 	gin.DefaultWriter = ioutil.Discard
 	client, server, serverPrvKey, done := prepareTests(t)
@@ -90,6 +93,8 @@ func setupTestEnv1(t *testing.T) (*testEnv1, *client.ColoniesClient, *ColoniesSe
 }
 
 func setupTestEnv2(t *testing.T) (*testEnv2, *client.ColoniesClient, *ColoniesServer, string, chan bool) {
+	rand.Seed(time.Now().UTC().UnixNano())
+
 	gin.SetMode(gin.ReleaseMode)
 	gin.DefaultWriter = ioutil.Discard
 	client, server, serverPrvKey, done := prepareTests(t)
@@ -321,10 +326,7 @@ func WaitForProcessGraphs(t *testing.T, c *client.ColoniesClient, colonyID strin
 	for i := 0; i < retries; i++ {
 		graphs, err = c.GetWaitingProcessGraphs(colonyID, 100, runtimePrvKey)
 		assert.Nil(t, err)
-		if generatorID != "" {
-			c.AddArgToGenerator(generatorID, "arg", runtimePrvKey)
-		}
-		if len(graphs) > threshold {
+		if len(graphs) >= threshold {
 			break
 		}
 

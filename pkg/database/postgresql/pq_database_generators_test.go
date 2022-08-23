@@ -36,7 +36,7 @@ func TestGetGenerator(t *testing.T) {
 	defer db.Close()
 }
 
-func TestAddGeneratorArg(t *testing.T) {
+func TestSetGeneratorLastRun(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
 
@@ -45,27 +45,18 @@ func TestAddGeneratorArg(t *testing.T) {
 	err = db.AddGenerator(generator)
 	assert.Nil(t, err)
 
-	err = db.AddGeneratorArg(generator.ID, "arg0")
-	assert.Nil(t, err)
-	err = db.AddGeneratorArg(generator.ID, "arg1")
-	assert.Nil(t, err)
-
 	generatorFromDB, err := db.GetGeneratorByID(generator.ID)
 	assert.Nil(t, err)
-	assert.Len(t, generatorFromDB.Args, 2)
-	assert.Equal(t, generatorFromDB.Args[0], "arg0")
-	assert.Equal(t, generatorFromDB.Args[1], "arg1")
-	assert.Equal(t, generatorFromDB.Counter, 2)
+	assert.True(t, generator.Equals(generatorFromDB))
 
 	lastRun := generatorFromDB.LastRun.Unix()
 
-	err = db.MarkGeneratorRun(generator.ID)
+	err = db.SetGeneratorLastRun(generator.ID)
 	assert.Nil(t, err)
 
 	generatorFromDB, err = db.GetGeneratorByID(generator.ID)
 	assert.Nil(t, err)
-	assert.Len(t, generatorFromDB.Args, 0)
-	assert.Equal(t, generatorFromDB.Counter, 0)
+
 	assert.Greater(t, generatorFromDB.LastRun.Unix(), lastRun)
 
 	defer db.Close()
@@ -146,6 +137,14 @@ func TestDeleteGeneratorByID(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, generatorFromDB)
 
+	generatorArg := core.CreateGeneratorArg(generator1.ID, colonyID, "arg")
+	err = db.AddGeneratorArg(generatorArg)
+	assert.Nil(t, err)
+
+	count, err := db.CountGeneratorArgs(generator1.ID)
+	assert.Nil(t, err)
+	assert.Equal(t, count, 1)
+
 	err = db.DeleteGeneratorByID(generator1.ID)
 	assert.Nil(t, err)
 
@@ -156,6 +155,10 @@ func TestDeleteGeneratorByID(t *testing.T) {
 	generatorFromDB, err = db.GetGeneratorByID(generator2.ID)
 	assert.Nil(t, err)
 	assert.NotNil(t, generatorFromDB)
+
+	count, err = db.CountGeneratorArgs(generator1.ID)
+	assert.Nil(t, err)
+	assert.Equal(t, count, 0)
 
 	defer db.Close()
 }
@@ -180,6 +183,20 @@ func TestDeleteAllGeneratorsByColonyID(t *testing.T) {
 	err = db.AddGenerator(generator3)
 	assert.Nil(t, err)
 
+	generatorArg := core.CreateGeneratorArg(generator1.ID, colonyID1, "arg")
+	err = db.AddGeneratorArg(generatorArg)
+	assert.Nil(t, err)
+	generatorArg = core.CreateGeneratorArg(generator2.ID, colonyID1, "arg")
+	err = db.AddGeneratorArg(generatorArg)
+	assert.Nil(t, err)
+	generatorArg = core.CreateGeneratorArg(generator3.ID, colonyID2, "arg")
+	err = db.AddGeneratorArg(generatorArg)
+	assert.Nil(t, err)
+
+	count, err := db.CountGeneratorArgs(generator1.ID)
+	assert.Nil(t, err)
+	assert.Equal(t, count, 1)
+
 	generatorFromDB, err := db.GetGeneratorByID(generator1.ID)
 	assert.Nil(t, err)
 	assert.NotNil(t, generatorFromDB)
@@ -198,6 +215,18 @@ func TestDeleteAllGeneratorsByColonyID(t *testing.T) {
 	generatorFromDB, err = db.GetGeneratorByID(generator3.ID)
 	assert.Nil(t, err)
 	assert.NotNil(t, generatorFromDB)
+
+	count, err = db.CountGeneratorArgs(generator1.ID)
+	assert.Nil(t, err)
+	assert.Equal(t, count, 0)
+
+	count, err = db.CountGeneratorArgs(generator2.ID)
+	assert.Nil(t, err)
+	assert.Equal(t, count, 0)
+
+	count, err = db.CountGeneratorArgs(generator3.ID)
+	assert.Nil(t, err)
+	assert.Equal(t, count, 1)
 
 	defer db.Close()
 }

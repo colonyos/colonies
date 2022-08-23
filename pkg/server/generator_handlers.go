@@ -159,7 +159,7 @@ func (server *ColoniesServer) handleAddArgGeneratorHTTPRequest(c *gin.Context, r
 		return
 	}
 
-	err = server.controller.addGeneratorArg(generator.ID, msg.Arg)
+	err = server.controller.addGeneratorArg(generator.ID, generator.ColonyID, msg.Arg)
 	if server.handleHTTPError(c, err, http.StatusInternalServerError) {
 		return
 	}

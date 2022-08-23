@@ -93,7 +93,19 @@ func (controller *coloniesController) submitWorkflow(generator *core.Generator) 
 		return
 	}
 
-	_, err = controller.createProcessGraph(workflowSpec)
+	generatorArgs, err := controller.db.GetGeneratorArgs(generator.ID, generator.Trigger)
+	var args []string
+	for _, generatorArg := range generatorArgs {
+		args = append(args, generatorArg.Arg)
+	}
+
+	log.WithFields(log.Fields{
+		"GeneratorId": generator.ID,
+		"Trigger":     generator.Trigger,
+		"Args":        args}).
+		Info("Generator submitting workflow")
+
+	_, err = controller.createProcessGraph(workflowSpec, args)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"Error": err}).
@@ -101,7 +113,12 @@ func (controller *coloniesController) submitWorkflow(generator *core.Generator) 
 		return
 	}
 
-	err = controller.db.MarkGeneratorRun(generator.ID)
+	// Now it safe to remove the args since they are now attached to a process graph
+	for _, generatorArg := range generatorArgs {
+		controller.db.DeleteGeneratorArgByID(generatorArg.ID)
+	}
+
+	err = controller.db.SetGeneratorLastRun(generator.ID)
 	if err != nil {
 		log.WithFields(log.Fields{"Error": err}).Error("Failed mark generator as run")
 	}
@@ -115,23 +132,20 @@ func (controller *coloniesController) triggerGenerators() {
 			return
 		}
 		for _, generator := range generatorsFromDB {
-			now := time.Now()
-			deadline := generator.LastRun.Add(time.Duration(generator.Timeout) * time.Second)
-			if now.Unix() > deadline.Unix() && generator.Timeout > 0 {
-				log.WithFields(log.Fields{
-					"GeneratorId": generator.ID,
-					"Timeout":     generator.Timeout}).
-					Info("Generator timed out, submitting workflow")
-				controller.submitWorkflow(generator)
-			} else if generator.Counter >= generator.Trigger {
-				counter := generator.Counter
-				// It is very likely that counter > trigger, so we need to split it up.
-
-				log.WithFields(log.Fields{
-					"GeneratorId": generator.ID,
-					"Timeout":     generator.Timeout}).
-					Info("Generator threshold reached, submitting workflow")
-				controller.submitWorkflow(generator)
+			counter, err := controller.db.CountGeneratorArgs(generator.ID)
+			if err != nil {
+				log.WithFields(log.Fields{"Error": err}).Error("Failed count generator args from db")
+				continue
+			}
+			if counter >= generator.Trigger {
+				timesToSubmit := counter / generator.Trigger
+				for i := 0; i < timesToSubmit; i++ {
+					log.WithFields(log.Fields{
+						"GeneratorId": generator.ID,
+						"Counter":     counter}).
+						Info("Generator threshold reached, submitting workflow")
+					controller.submitWorkflow(generator)
+				}
 			}
 		}
 	}}
@@ -167,7 +181,7 @@ func (controller *coloniesController) startCron(cron *core.Cron) {
 	if err != nil {
 		log.WithFields(log.Fields{"Error": err}).Error("Failed to parsing WorkflowSpec")
 	}
-	processGraph, err := controller.createProcessGraph(workflowSpec)
+	processGraph, err := controller.createProcessGraph(workflowSpec, []string{})
 	if err != nil {
 		log.WithFields(log.Fields{"Error": err}).Error("Failed to parse workflow spec")
 	}
@@ -268,10 +282,11 @@ func (controller *coloniesController) getGenerators(colonyID string, count int) 
 	}
 }
 
-func (controller *coloniesController) addGeneratorArg(generatorID string, arg string) error {
+func (controller *coloniesController) addGeneratorArg(generatorID string, colonyID, arg string) error {
 	cmd := &command{errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
-			cmd.errorChan <- controller.db.AddGeneratorArg(generatorID, arg)
+			generatorArg := core.CreateGeneratorArg(generatorID, colonyID, arg)
+			cmd.errorChan <- controller.db.AddGeneratorArg(generatorArg)
 		}}
 
 	controller.cmdQueue <- cmd
@@ -850,7 +865,7 @@ func (controller *coloniesController) updateProcessGraph(graph *core.ProcessGrap
 	return graph.UpdateProcessIDs()
 }
 
-func (controller *coloniesController) createProcessGraph(workflowSpec *core.WorkflowSpec) (*core.ProcessGraph, error) {
+func (controller *coloniesController) createProcessGraph(workflowSpec *core.WorkflowSpec, args []string) (*core.ProcessGraph, error) {
 	processgraph, err := core.CreateProcessGraph(workflowSpec.ColonyID)
 
 	// Create all processes
@@ -866,6 +881,11 @@ func (controller *coloniesController) createProcessGraph(workflowSpec *core.Work
 		if len(processSpec.Conditions.Dependencies) == 0 {
 			// The process is a root process, let it start immediately
 			process.WaitForParents = false
+			if len(args) > 0 {
+				// TODO: May be we should not overwrite the args
+				// This will only happen when using Generators
+				process.ProcessSpec.Args = args
+			}
 			rootProcesses = append(rootProcesses, process)
 			processgraph.AddRoot(process.ID)
 		} else {
@@ -922,7 +942,7 @@ func (controller *coloniesController) submitWorkflowSpec(workflowSpec *core.Work
 	cmd := &command{processGraphReplyChan: make(chan *core.ProcessGraph, 1),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
-			addedProcessGraph, err := controller.createProcessGraph(workflowSpec)
+			addedProcessGraph, err := controller.createProcessGraph(workflowSpec, []string{})
 			if err != nil {
 				cmd.errorChan <- err
 				return

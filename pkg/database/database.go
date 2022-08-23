@@ -105,13 +105,20 @@ type Database interface {
 
 	// Generator functions
 	AddGenerator(generator *core.Generator) error
-	AddGeneratorArg(generatorID string, arg string) error
-	MarkGeneratorRun(generatorID string) error
+	SetGeneratorLastRun(generatorID string) error
 	GetGeneratorByID(generatorID string) (*core.Generator, error)
 	FindGeneratorsByColonyID(colonyID string, count int) ([]*core.Generator, error)
 	FindAllGenerators() ([]*core.Generator, error)
 	DeleteGeneratorByID(generatorID string) error
 	DeleteAllGeneratorsByColonyID(colonyID string) error
+
+	// Generator args functions
+	AddGeneratorArg(generatorArg *core.GeneratorArg) error
+	GetGeneratorArgs(generatorID string, count int) ([]*core.GeneratorArg, error)
+	CountGeneratorArgs(generatorID string) (int, error)
+	DeleteGeneratorArgByID(generatorArgsID string) error
+	DeleteAllGeneratorArgsByGeneratorID(generatorID string) error
+	DeleteAllGeneratorArgsByColonyID(generatorID string) error
 
 	// Cron functions
 	AddCron(cron *core.Cron) error

@@ -6,12 +6,11 @@ import (
 	"time"
 
 	"github.com/colonyos/colonies/pkg/core"
-	"github.com/lib/pq"
 )
 
 func (db *PQDatabase) AddGenerator(generator *core.Generator) error {
-	sqlStatement := `INSERT INTO  ` + db.dbPrefix + `GENERATORS (GENERATOR_ID, COLONY_ID, NAME, WORKFLOW_SPEC, TRIGGER, COUNTER, TIMEOUT, LASTRUN, ARGS) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`
-	_, err := db.postgresql.Exec(sqlStatement, generator.ID, generator.ColonyID, generator.Name, generator.WorkflowSpec, generator.Trigger, generator.Counter, generator.Timeout, time.Time{}, pq.Array(generator.Args))
+	sqlStatement := `INSERT INTO  ` + db.dbPrefix + `GENERATORS (GENERATOR_ID, COLONY_ID, NAME, WORKFLOW_SPEC, TRIGGER, LASTRUN) VALUES ($1, $2, $3, $4, $5, $6)`
+	_, err := db.postgresql.Exec(sqlStatement, generator.ID, generator.ColonyID, generator.Name, generator.WorkflowSpec, generator.Trigger, time.Time{})
 	if err != nil {
 		return err
 	}
@@ -28,16 +27,12 @@ func (db *PQDatabase) parseGenerators(rows *sql.Rows) ([]*core.Generator, error)
 		var name string
 		var workflowSpec string
 		var trigger int
-		var counter int
-		var timeout int
 		var lastRun time.Time
-		var args []string
-		if err := rows.Scan(&generatorID, &colonyID, &name, &workflowSpec, &trigger, &counter, &timeout, &lastRun, pq.Array(&args)); err != nil {
+		if err := rows.Scan(&generatorID, &colonyID, &name, &workflowSpec, &trigger, &lastRun); err != nil {
 			return nil, err
 		}
 
-		generator := &core.Generator{ID: generatorID, ColonyID: colonyID, Name: name, WorkflowSpec: workflowSpec, Trigger: trigger, Counter: counter, Timeout: timeout, LastRun: lastRun}
-		generator.Args = args
+		generator := &core.Generator{ID: generatorID, ColonyID: colonyID, Name: name, WorkflowSpec: workflowSpec, Trigger: trigger, LastRun: lastRun}
 
 		generators = append(generators, generator)
 	}
@@ -69,33 +64,14 @@ func (db *PQDatabase) GetGeneratorByID(generatorID string) (*core.Generator, err
 	return generators[0], nil
 }
 
-func (db *PQDatabase) AddGeneratorArg(generatorID string, arg string) error {
+func (db *PQDatabase) SetGeneratorLastRun(generatorID string) error {
 	generator, err := db.GetGeneratorByID(generatorID)
 	if err != nil {
 		return err
 	}
 
-	generator.Args = append(generator.Args, arg)
-	counter := generator.Counter + 1
-	sqlStatement := `UPDATE  ` + db.dbPrefix + `GENERATORS SET ARGS=$1, COUNTER=$2 WHERE GENERATOR_ID=$3`
-	_, err = db.postgresql.Exec(sqlStatement, pq.Array(generator.Args), counter, generator.ID)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (db *PQDatabase) MarkGeneratorRun(generatorID string) error {
-	generator, err := db.GetGeneratorByID(generatorID)
-	if err != nil {
-		return err
-	}
-
-	args := []string{}
-	counter := 0
-	sqlStatement := `UPDATE  ` + db.dbPrefix + `GENERATORS SET ARGS=$1, COUNTER=$2, LASTRUN=$3 WHERE GENERATOR_ID=$4`
-	_, err = db.postgresql.Exec(sqlStatement, pq.Array(args), counter, time.Now(), generator.ID)
+	sqlStatement := `UPDATE  ` + db.dbPrefix + `GENERATORS SET LASTRUN=$1 WHERE GENERATOR_ID=$2`
+	_, err = db.postgresql.Exec(sqlStatement, time.Now(), generator.ID)
 	if err != nil {
 		return err
 	}
@@ -142,7 +118,7 @@ func (db *PQDatabase) DeleteGeneratorByID(generatorID string) error {
 		return err
 	}
 
-	return nil
+	return db.DeleteAllGeneratorArgsByGeneratorID(generatorID)
 }
 
 func (db *PQDatabase) DeleteAllGeneratorsByColonyID(colonyID string) error {
@@ -152,5 +128,5 @@ func (db *PQDatabase) DeleteAllGeneratorsByColonyID(colonyID string) error {
 		return err
 	}
 
-	return nil
+	return db.DeleteAllGeneratorArgsByColonyID(colonyID)
 }
