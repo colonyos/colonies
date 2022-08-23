@@ -11,19 +11,15 @@ type Generator struct {
 	Name         string    `json:"name"`
 	WorkflowSpec string    `json:"workflowspec"`
 	Trigger      int       `json:"trigger"`
-	Counter      int       `json:"counter"`
-	Timeout      int       `json:"timeout"`
 	LastRun      time.Time `json:"lastrun"`
 }
 
-func CreateGenerator(colonyID string, name string, workflowSpec string, trigger int, counter int, timeout int) *Generator {
+func CreateGenerator(colonyID string, name string, workflowSpec string, trigger int) *Generator {
 	generator := &Generator{
 		ColonyID:     colonyID,
 		Name:         name,
 		WorkflowSpec: workflowSpec,
 		Trigger:      trigger,
-		Counter:      counter,
-		Timeout:      timeout,
 	}
 
 	return generator
@@ -89,9 +85,7 @@ func (generator *Generator) Equals(generator2 *Generator) bool {
 		generator.ColonyID != generator2.ColonyID ||
 		generator.Name != generator2.Name ||
 		generator.WorkflowSpec != generator2.WorkflowSpec ||
-		generator.Trigger != generator2.Trigger ||
-		generator.Counter != generator2.Counter ||
-		generator.Timeout != generator2.Timeout {
+		generator.Trigger != generator2.Trigger {
 		same = false
 	}
 

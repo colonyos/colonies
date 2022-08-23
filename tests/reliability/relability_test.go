@@ -99,8 +99,7 @@ func TestGeneratorReliability(t *testing.T) {
 
 	// Start a generator
 	generator := utils.FakeGenerator(t, colony.ID)
-	generator.Timeout = 1    // Every 1 seconds
-	generator.Trigger = 1000 // A very high number since we want to trigger generators only by time
+	generator.Trigger = 1
 	addedGenerator, err := c.AddGenerator(generator, runtimePrvKey)
 	assert.Nil(t, err)
 	assert.NotNil(t, addedGenerator)
@@ -110,8 +109,10 @@ func TestGeneratorReliability(t *testing.T) {
 	graphs, err = c.GetWaitingProcessGraphs(colony.ID, 100, runtimePrvKey)
 	assert.Len(t, graphs, 0) // Since we have not triggered any generator yet
 
+	c.AddArgToGenerator(addedGenerator.ID, "arg", runtimePrvKey)
+
 	nrOfgraphs := server.WaitForProcessGraphs(t, c, colony.ID, addedGenerator.ID, runtimePrvKey, 1)
-	assert.Greater(t, nrOfgraphs, 1) // Ok we got a generator
+	assert.Equal(t, nrOfgraphs, 1) // Ok we got a generator
 
 	// The leader is reponsible for the generator engine
 	// Find out who the leader is, and then kill it
@@ -142,9 +143,11 @@ func TestGeneratorReliability(t *testing.T) {
 		c = client.CreateColoniesClient("localhost", selectedServer.Node.APIPort, true, true) // Connect to another server
 	}
 
-	nrOfgraphs2 := server.WaitForProcessGraphs(t, c, colony.ID, addedGenerator.ID, runtimePrvKey, nrOfgraphs)
-	log.WithFields(log.Fields{"nrOfgraphs": nrOfgraphs, "nrOfgraphs2": nrOfgraphs2}).Info("Done waiting for processgraphs")
-	assert.Greater(t, nrOfgraphs2, nrOfgraphs)
+	c.AddArgToGenerator(addedGenerator.ID, "arg", runtimePrvKey)
+
+	nrOfgraphs = server.WaitForProcessGraphs(t, c, colony.ID, addedGenerator.ID, runtimePrvKey, 2)
+	log.WithFields(log.Fields{"nrOfgraphs": nrOfgraphs}).Info("Done waiting for processgraphs")
+	assert.Equal(t, nrOfgraphs, 2)
 
 	// Kill the remaining servers, this will also end the test
 	for _, s := range runningCluster {
@@ -200,7 +203,7 @@ func TestCronReliability(t *testing.T) {
 	assert.Len(t, graphs, 0) // Since we have not triggered any cron yet
 
 	nrOfgraphs := server.WaitForProcessGraphs(t, c, colony.ID, "", runtimePrvKey, 1)
-	assert.Greater(t, nrOfgraphs, 1) // Ok we got a cron
+	assert.Equal(t, nrOfgraphs, 1) // Ok we got a cron
 
 	// The leader is reponsible for the generator engine
 	// Find out who the leader is, and then kill it
@@ -233,7 +236,7 @@ func TestCronReliability(t *testing.T) {
 
 	nrOfgraphs2 := server.WaitForProcessGraphs(t, c, colony.ID, "", runtimePrvKey, nrOfgraphs)
 	log.WithFields(log.Fields{"nrOfgraphs": nrOfgraphs, "nrOfgraphs2": nrOfgraphs2}).Info("Done waiting for processgraphs")
-	assert.Greater(t, nrOfgraphs2, nrOfgraphs)
+	assert.Equal(t, nrOfgraphs2, nrOfgraphs)
 
 	// Kill the remaining servers, this will also end the test
 	for _, s := range runningCluster {
