@@ -187,8 +187,8 @@ func (server *ColoniesServer) handleAPIRequest(c *gin.Context) {
 		server.handleGetGeneratorHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 	case rpc.GetGeneratorsPayloadType:
 		server.handleGetGeneratorsHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
-	case rpc.AddArgGeneratorPayloadType:
-		server.handleAddArgGeneratorHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+	case rpc.PackGeneratorPayloadType:
+		server.handlePackGeneratorHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 	case rpc.DeleteGeneratorPayloadType:
 		server.handleDeleteGeneratorHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 
