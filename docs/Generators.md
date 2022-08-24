@@ -37,14 +37,14 @@ colonies worker start --name generator_worker --runtimetype cli --timeout 100 -v
 
 ## Send data to the Generator 
 ```console
-colonies generator pack --generatorid f3a433d0a428ddd21fba2b82659db40dfc4e70771a29e2a19743ad80033749d7 --data hello1
-colonies generator pack --generatorid f3a433d0a428ddd21fba2b82659db40dfc4e70771a29e2a19743ad80033749d7 --data hello2
-colonies generator pack --generatorid f3a433d0a428ddd21fba2b82659db40dfc4e70771a29e2a19743ad80033749d7 --data hello3
-colonies generator pack --generatorid f3a433d0a428ddd21fba2b82659db40dfc4e70771a29e2a19743ad80033749d7 --data hello4
-colonies generator pack --generatorid f3a433d0a428ddd21fba2b82659db40dfc4e70771a29e2a19743ad80033749d7 --data hello5
+colonies generator pack --generatorid f3a433d0a428ddd21fba2b82659db40dfc4e70771a29e2a19743ad80033749d7 --arg hello1
+colonies generator pack --generatorid f3a433d0a428ddd21fba2b82659db40dfc4e70771a29e2a19743ad80033749d7 --arg hello2
+colonies generator pack --generatorid f3a433d0a428ddd21fba2b82659db40dfc4e70771a29e2a19743ad80033749d7 --arg hello3
+colonies generator pack --generatorid f3a433d0a428ddd21fba2b82659db40dfc4e70771a29e2a19743ad80033749d7 --arg hello4
+colonies generator pack --generatorid f3a433d0a428ddd21fba2b82659db40dfc4e70771a29e2a19743ad80033749d7 --arg hello5
 ```
 
-Notice that a workflow is spawn after the last pack call. In the worker terminal we can see:
+Notice that a workflow is spawn after the last pack call, as number of pack calls > trigger. In the worker terminal we can see:
 
 ```console
 INFO[0312] Worker was assigned a process                 ProcessID=3806424831e78001fd7157a387ca9ab414ef908f0649eeed7e9fee691438db01

@@ -282,7 +282,7 @@ func (controller *coloniesController) getGenerators(colonyID string, count int) 
 	}
 }
 
-func (controller *coloniesController) addGeneratorArg(generatorID string, colonyID, arg string) error {
+func (controller *coloniesController) packGenerator(generatorID string, colonyID, arg string) error {
 	cmd := &command{errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
 			generatorArg := core.CreateGeneratorArg(generatorID, colonyID, arg)
