@@ -69,7 +69,7 @@ var GeneratorName string
 var GeneratorTrigger int
 var GeneratorTimeout int
 var Func string
-var Data string
+var Arg string
 var Args []string
 var Env []string
 var MaxWaitTime int

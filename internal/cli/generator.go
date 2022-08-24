@@ -41,8 +41,8 @@ func init() {
 	packGeneratorCmd.Flags().StringVarP(&RuntimePrvKey, "runtimeprvkey", "", "", "Runtime private key")
 	packGeneratorCmd.Flags().StringVarP(&GeneratorID, "generatorid", "", "", "Generator Id")
 	packGeneratorCmd.MarkFlagRequired("generatorid")
-	packGeneratorCmd.Flags().StringVarP(&Data, "data", "", "", "Data to add/pack generator with")
-	packGeneratorCmd.MarkFlagRequired("data")
+	packGeneratorCmd.Flags().StringVarP(&Arg, "arg", "", "", "Arg to pack to generator")
+	packGeneratorCmd.MarkFlagRequired("arg")
 
 	delGeneratorCmd.Flags().StringVarP(&RuntimeID, "runtimeid", "", "", "Runtime Id")
 	delGeneratorCmd.Flags().StringVarP(&RuntimePrvKey, "runtimeprvkey", "", "", "Runtime private key")
@@ -144,8 +144,8 @@ var addGeneratorCmd = &cobra.Command{
 
 var packGeneratorCmd = &cobra.Command{
 	Use:   "pack",
-	Short: "Add data to a generator",
-	Long:  "Add data to a generator",
+	Short: "Pack arg to a generator",
+	Long:  "Pack arg to a generator",
 	Run: func(cmd *cobra.Command, args []string) {
 		parseServerEnv()
 
@@ -171,9 +171,10 @@ var packGeneratorCmd = &cobra.Command{
 			CheckError(errors.New("Generator Id not specified"))
 		}
 
-		err = client.AddArgToGenerator(GeneratorID, Data, RuntimePrvKey)
+		err = client.PackGenerator(GeneratorID, Arg, RuntimePrvKey)
+		CheckError(err)
 
-		log.WithFields(log.Fields{"GeneratorID": GeneratorID, "Data": Data}).Info("Packing generator with data")
+		log.WithFields(log.Fields{"GeneratorID": GeneratorID, "Arg": Arg}).Info("Packing arg to generator")
 	},
 }
 
