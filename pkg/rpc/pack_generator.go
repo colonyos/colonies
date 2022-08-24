@@ -4,24 +4,24 @@ import (
 	"encoding/json"
 )
 
-const AddArgGeneratorPayloadType = "addarggeneratormsg"
+const PackGeneratorPayloadType = "packgeneratormsg"
 
-type AddArgGeneratorMsg struct {
+type PackGeneratorMsg struct {
 	GeneratorID string `json:"generatorid"`
 	Arg         string `json:"arg"`
 	MsgType     string `json:"msgtype"`
 }
 
-func CreateAddArgGeneratorMsg(generatorID string, arg string) *AddArgGeneratorMsg {
-	msg := &AddArgGeneratorMsg{}
+func CreatePackGeneratorMsg(generatorID string, arg string) *PackGeneratorMsg {
+	msg := &PackGeneratorMsg{}
 	msg.GeneratorID = generatorID
 	msg.Arg = arg
-	msg.MsgType = AddArgGeneratorPayloadType
+	msg.MsgType = PackGeneratorPayloadType
 
 	return msg
 }
 
-func (msg *AddArgGeneratorMsg) ToJSON() (string, error) {
+func (msg *PackGeneratorMsg) ToJSON() (string, error) {
 	jsonBytes, err := json.Marshal(msg)
 	if err != nil {
 		return "", err
@@ -30,7 +30,7 @@ func (msg *AddArgGeneratorMsg) ToJSON() (string, error) {
 	return string(jsonBytes), nil
 }
 
-func (msg *AddArgGeneratorMsg) ToJSONIndent() (string, error) {
+func (msg *PackGeneratorMsg) ToJSONIndent() (string, error) {
 	jsonBytes, err := json.MarshalIndent(msg, "", "    ")
 	if err != nil {
 		return "", err
@@ -39,7 +39,7 @@ func (msg *AddArgGeneratorMsg) ToJSONIndent() (string, error) {
 	return string(jsonBytes), nil
 }
 
-func (msg *AddArgGeneratorMsg) Equals(msg2 *AddArgGeneratorMsg) bool {
+func (msg *PackGeneratorMsg) Equals(msg2 *PackGeneratorMsg) bool {
 	if msg2 == nil {
 		return false
 	}
@@ -51,8 +51,8 @@ func (msg *AddArgGeneratorMsg) Equals(msg2 *AddArgGeneratorMsg) bool {
 	return false
 }
 
-func CreateAddArgGeneratorMsgFromJSON(jsonString string) (*AddArgGeneratorMsg, error) {
-	var msg *AddArgGeneratorMsg
+func CreatePackGeneratorMsgFromJSON(jsonString string) (*PackGeneratorMsg, error) {
+	var msg *PackGeneratorMsg
 
 	err := json.Unmarshal([]byte(jsonString), &msg)
 	if err != nil {

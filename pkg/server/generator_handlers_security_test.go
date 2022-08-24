@@ -94,13 +94,13 @@ func TestAddArgGeneratorSecurity(t *testing.T) {
 	addedGenerator, err := client.AddGenerator(generator, env.runtime1PrvKey)
 	assert.Nil(t, err)
 
-	err = client.AddArgToGenerator(addedGenerator.ID, "arg", env.runtime2PrvKey)
+	err = client.PackGenerator(addedGenerator.ID, "arg", env.runtime2PrvKey)
 	assert.NotNil(t, err)
-	err = client.AddArgToGenerator(addedGenerator.ID, "arg", env.colony1PrvKey)
+	err = client.PackGenerator(addedGenerator.ID, "arg", env.colony1PrvKey)
 	assert.NotNil(t, err)
-	err = client.AddArgToGenerator(addedGenerator.ID, "arg", env.colony2PrvKey)
+	err = client.PackGenerator(addedGenerator.ID, "arg", env.colony2PrvKey)
 	assert.NotNil(t, err)
-	err = client.AddArgToGenerator(addedGenerator.ID, "arg", env.runtime1PrvKey)
+	err = client.PackGenerator(addedGenerator.ID, "arg", env.runtime1PrvKey)
 	assert.Nil(t, err)
 
 	server.Shutdown()

@@ -23,7 +23,7 @@ func TestAddGeneratorCounter(t *testing.T) {
 	doneInc := make(chan bool)
 	go func() {
 		for i := 0; i < 73; i++ {
-			err = client.AddArgToGenerator(addedGenerator.ID, "arg"+strconv.Itoa(i), env.runtimePrvKey)
+			err = client.PackGenerator(addedGenerator.ID, "arg"+strconv.Itoa(i), env.runtimePrvKey)
 			assert.Nil(t, err)
 		}
 		doneInc <- true
