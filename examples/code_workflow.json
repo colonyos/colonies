@@ -1,0 +1,14 @@
+[
+    {
+        "name": "task_a",
+        "code": "examplecode",
+        "func": "echo",
+        "args": [
+            "task_a"
+        ],
+        "conditions": {
+            "runtimetype": "cli",
+            "dependencies": []
+        }
+    }
+]
