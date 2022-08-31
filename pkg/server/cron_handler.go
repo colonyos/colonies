@@ -72,7 +72,7 @@ func (server *ColoniesServer) handleAddCronHTTPRequest(c *gin.Context, recovered
 		return
 	}
 
-	log.WithFields(log.Fields{"CronID": addedCron.ID}).Info("Adding cron")
+	log.WithFields(log.Fields{"CronID": addedCron.ID}).Debug("Adding cron")
 
 	server.sendHTTPReply(c, payloadType, jsonString)
 }
@@ -109,7 +109,7 @@ func (server *ColoniesServer) handleGetCronHTTPRequest(c *gin.Context, recovered
 		return
 	}
 
-	log.WithFields(log.Fields{"CronID": cron.ID}).Info("Getting cron")
+	log.WithFields(log.Fields{"CronID": cron.ID}).Debug("Getting cron")
 
 	server.sendHTTPReply(c, payloadType, jsonString)
 }
@@ -146,7 +146,7 @@ func (server *ColoniesServer) handleGetCronsHTTPRequest(c *gin.Context, recovere
 		return
 	}
 
-	log.WithFields(log.Fields{"ColonyID": msg.ColonyID, "Count": msg.Count}).Info("Getting crons")
+	log.WithFields(log.Fields{"ColonyID": msg.ColonyID, "Count": msg.Count}).Debug("Getting crons")
 
 	server.sendHTTPReply(c, payloadType, jsonString)
 }
@@ -183,7 +183,7 @@ func (server *ColoniesServer) handleRunCronHTTPRequest(c *gin.Context, recovered
 		return
 	}
 
-	log.WithFields(log.Fields{"CronID": cron.ID}).Info("Running cron")
+	log.WithFields(log.Fields{"CronID": cron.ID}).Debug("Running cron")
 
 	server.sendHTTPReply(c, payloadType, jsonString)
 }
@@ -220,7 +220,7 @@ func (server *ColoniesServer) handleDeleteCronHTTPRequest(c *gin.Context, recove
 		return
 	}
 
-	log.WithFields(log.Fields{"CronID": cron.ID}).Info("Deleting cron")
+	log.WithFields(log.Fields{"CronID": cron.ID}).Debug("Deleting cron")
 
 	server.sendEmptyHTTPReply(c, payloadType)
 }
