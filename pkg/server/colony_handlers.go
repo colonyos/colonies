@@ -53,7 +53,7 @@ func (server *ColoniesServer) handleAddColonyHTTPRequest(c *gin.Context, recover
 		return
 	}
 
-	log.WithFields(log.Fields{"ColonyID": addedColony.ID}).Info("Adding colony")
+	log.WithFields(log.Fields{"ColonyID": addedColony.ID}).Debug("Adding colony")
 
 	server.sendHTTPReply(c, payloadType, jsonString)
 }
@@ -81,7 +81,7 @@ func (server *ColoniesServer) handleDeleteColonyHTTPRequest(c *gin.Context, reco
 		return
 	}
 
-	log.WithFields(log.Fields{"ColonyID": msg.ColonyID}).Info("Deleting colony")
+	log.WithFields(log.Fields{"ColonyID": msg.ColonyID}).Debug("Deleting colony")
 
 	server.sendEmptyHTTPReply(c, payloadType)
 }
@@ -114,7 +114,7 @@ func (server *ColoniesServer) handleGetColoniesHTTPRequest(c *gin.Context, recov
 		return
 	}
 
-	log.Info("Getting colonies")
+	log.Debug("Getting colonies")
 
 	server.sendHTTPReply(c, payloadType, jsonString)
 }
@@ -151,7 +151,7 @@ func (server *ColoniesServer) handleGetColonyHTTPRequest(c *gin.Context, recover
 		return
 	}
 
-	log.WithFields(log.Fields{"ColonyID": msg.ColonyID}).Info("Getting colony")
+	log.WithFields(log.Fields{"ColonyID": msg.ColonyID}).Debug("Getting colony")
 
 	server.sendHTTPReply(c, payloadType, jsonString)
 }
@@ -187,7 +187,7 @@ func (server *ColoniesServer) handleColonyStatisticsHTTPRequest(c *gin.Context, 
 		return
 	}
 
-	log.WithFields(log.Fields{"ColonyID": msg.ColonyID}).Info("Getting colony statistics")
+	log.WithFields(log.Fields{"ColonyID": msg.ColonyID}).Debug("Getting colony statistics")
 
 	server.sendHTTPReply(c, payloadType, jsonString)
 }
