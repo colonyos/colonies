@@ -30,7 +30,7 @@ func (server *ColoniesServer) handleVersionHTTPRequest(c *gin.Context, payloadTy
 		return
 	}
 
-	log.Info("Getting server version")
+	log.Debug("Getting server version")
 
 	server.sendHTTPReply(c, payloadType, jsonString)
 }

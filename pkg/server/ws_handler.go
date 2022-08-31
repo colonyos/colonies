@@ -74,7 +74,7 @@ func (server *ColoniesServer) handleWSRequest(c *gin.Context) {
 			if msg.MsgType != rpcMsg.PayloadType {
 				errMsg := "Failed to subscribe to processes, msg.msgType does not match rpcMsg.PayloadType"
 				err := server.sendWSErrorMsg(errors.New(errMsg), http.StatusForbidden, wsConn, wsMsgType)
-				log.Info(errMsg)
+				log.Error(errMsg)
 				if err != nil {
 					log.WithFields(log.Fields{"Error": err}).Error("Failed to subscribe to processes, failed to call server.sendWSErrorMsg()")
 				}
