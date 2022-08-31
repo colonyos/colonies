@@ -103,7 +103,7 @@ func (controller *coloniesController) submitWorkflow(generator *core.Generator) 
 		"GeneratorId": generator.ID,
 		"Trigger":     generator.Trigger,
 		"Args":        args}).
-		Info("Generator submitting workflow")
+		Debug("Generator submitting workflow")
 
 	_, err = controller.createProcessGraph(workflowSpec, args)
 	if err != nil {
@@ -187,7 +187,6 @@ func (controller *coloniesController) startCron(cron *core.Cron) {
 	}
 
 	nextRun := controller.calcNextRun(cron)
-
 	controller.db.UpdateCron(cron.ID, nextRun, time.Now(), processGraph.ID)
 }
 
@@ -206,6 +205,7 @@ func (controller *coloniesController) triggerCrons() {
 				cron.NextRun = nextRun
 			}
 			if cron.HasExpired() {
+				log.WithFields(log.Fields{"CronId": cron.ID}).Error("Triggering cron workflow")
 				controller.startCron(cron)
 			}
 		}
@@ -877,7 +877,7 @@ func (controller *coloniesController) createProcessGraph(workflowSpec *core.Work
 			processSpec.MaxExecTime = -1
 		}
 		process := core.CreateProcess(&processSpec)
-		log.WithFields(log.Fields{"ProcessID": process.ID, "MaxExecTime": process.ProcessSpec.MaxExecTime, "MaxRetries": process.ProcessSpec.MaxRetries}).Info("Creating new process")
+		log.WithFields(log.Fields{"ProcessID": process.ID, "MaxExecTime": process.ProcessSpec.MaxExecTime, "MaxRetries": process.ProcessSpec.MaxRetries}).Debug("Creating new process")
 		if len(processSpec.Conditions.Dependencies) == 0 {
 			// The process is a root process, let it start immediately
 			process.WaitForParents = false
@@ -900,11 +900,11 @@ func (controller *coloniesController) createProcessGraph(workflowSpec *core.Work
 	err = controller.db.AddProcessGraph(processgraph)
 	if err != nil {
 		msg := "Failed to submit workflow, failed to add processgraph"
-		log.WithFields(log.Fields{"Error": err}).Info(msg)
+		log.WithFields(log.Fields{"Error": err}).Error(msg)
 		return nil, errors.New(msg)
 	}
 
-	log.WithFields(log.Fields{"ProcessGraphID": processgraph.ID}).Info("Submitting workflow")
+	log.WithFields(log.Fields{"ProcessGraphID": processgraph.ID}).Debug("Submitting workflow")
 
 	// Create dependencies
 	for _, process := range processMap {
@@ -912,7 +912,7 @@ func (controller *coloniesController) createProcessGraph(workflowSpec *core.Work
 			parentProcess := processMap[dependsOn]
 			if parentProcess == nil {
 				msg := "Failed to submit workflow, invalid dependencies, are you depending on a process spec name that does not exits?"
-				log.WithFields(log.Fields{"Error": err}).Info(msg)
+				log.WithFields(log.Fields{"Error": err}).Error(msg)
 				return nil, errors.New(msg)
 			}
 			process.AddParent(parentProcess.ID)
@@ -925,12 +925,12 @@ func (controller *coloniesController) createProcessGraph(workflowSpec *core.Work
 		// This function is called from the controller, so it OK to use the database layer directly, in fact
 		// we will cause a deadlock if we call controller.addProcess
 		addedProcess, err := controller.addProcessAndSetWaitingDeadline(process)
-		log.WithFields(log.Fields{"ProcessID": process.ID}).Info("Submitting process part of processgraph")
+		log.WithFields(log.Fields{"ProcessID": process.ID}).Debug("Submitting process part of processgraph")
 		controller.eventHandler.signal(addedProcess)
 
 		if err != nil {
 			msg := "Failed to submit workflow, failed to add process"
-			log.WithFields(log.Fields{"Error": err}).Info(msg)
+			log.WithFields(log.Fields{"Error": err}).Error(msg)
 			return nil, errors.New(msg)
 		}
 	}
@@ -1184,7 +1184,7 @@ func (controller *coloniesController) closeSuccessful(processID string) error {
 			}
 
 			if process.ProcessGraphID != "" {
-				log.WithFields(log.Fields{"ProcessGraph": process.ProcessGraphID}).Info("Resolving processgraph (close successful)")
+				log.WithFields(log.Fields{"ProcessGraph": process.ProcessGraphID}).Debug("Resolving processgraph (close successful)")
 				processGraph, err := controller.db.GetProcessGraphByID(process.ProcessGraphID)
 				if err != nil {
 					cmd.errorChan <- err
@@ -1222,7 +1222,7 @@ func (controller *coloniesController) closeFailed(processID string, errorMsg str
 			}
 
 			if process.ProcessGraphID != "" {
-				log.WithFields(log.Fields{"ProcessGraph": process.ProcessGraphID}).Info("Resolving processgraph (close failed)")
+				log.WithFields(log.Fields{"ProcessGraph": process.ProcessGraphID}).Debug("Resolving processgraph (close failed)")
 				processGraph, err := controller.db.GetProcessGraphByID(process.ProcessGraphID)
 				if err != nil {
 					cmd.errorChan <- err
@@ -1293,7 +1293,7 @@ func (controller *coloniesController) assignRuntime(runtimeID string, colonyID s
 			}
 
 			if selectedProcess.ProcessGraphID != "" {
-				log.WithFields(log.Fields{"ProcessGraph": selectedProcess.ProcessGraphID}).Info("Resolving processgraph (assigned)")
+				log.WithFields(log.Fields{"ProcessGraph": selectedProcess.ProcessGraphID}).Debug("Resolving processgraph (assigned)")
 				processGraph, err := controller.db.GetProcessGraphByID(selectedProcess.ProcessGraphID)
 				if err != nil {
 					log.Error(err)
