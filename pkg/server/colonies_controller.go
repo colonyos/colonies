@@ -205,7 +205,7 @@ func (controller *coloniesController) triggerCrons() {
 				cron.NextRun = nextRun
 			}
 			if cron.HasExpired() {
-				log.WithFields(log.Fields{"CronId": cron.ID}).Error("Triggering cron workflow")
+				log.WithFields(log.Fields{"CronId": cron.ID}).Info("Triggering cron workflow")
 				controller.startCron(cron)
 			}
 		}
