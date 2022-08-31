@@ -47,7 +47,7 @@ func (server *ColoniesServer) handleAddRuntimeHTTPRequest(c *gin.Context, recove
 		return
 	}
 
-	log.WithFields(log.Fields{"ColonyID": msg.Runtime.ColonyID, "RuntimeID": addedRuntime.ID}).Info("Adding runtime")
+	log.WithFields(log.Fields{"ColonyID": msg.Runtime.ColonyID, "RuntimeID": addedRuntime.ID}).Debug("Adding runtime")
 
 	server.sendHTTPReply(c, payloadType, jsonString)
 }
@@ -83,7 +83,7 @@ func (server *ColoniesServer) handleGetRuntimesHTTPRequest(c *gin.Context, recov
 		return
 	}
 
-	log.WithFields(log.Fields{"ColonyID": msg.ColonyID}).Info("Getting runtimes")
+	log.WithFields(log.Fields{"ColonyID": msg.ColonyID}).Debug("Getting runtimes")
 
 	server.sendHTTPReply(c, payloadType, jsonString)
 }
@@ -120,7 +120,7 @@ func (server *ColoniesServer) handleGetRuntimeHTTPRequest(c *gin.Context, recove
 		return
 	}
 
-	log.WithFields(log.Fields{"RuntimeID": runtime.ID}).Info("Getting runtime")
+	log.WithFields(log.Fields{"RuntimeID": runtime.ID}).Debug("Getting runtime")
 
 	server.sendHTTPReply(c, payloadType, jsonString)
 }
@@ -157,7 +157,7 @@ func (server *ColoniesServer) handleApproveRuntimeHTTPRequest(c *gin.Context, re
 		return
 	}
 
-	log.WithFields(log.Fields{"RuntimeID": runtime.ID}).Info("Approving runtime")
+	log.WithFields(log.Fields{"RuntimeID": runtime.ID}).Debug("Approving runtime")
 
 	server.sendEmptyHTTPReply(c, payloadType)
 }
@@ -194,7 +194,7 @@ func (server *ColoniesServer) handleRejectRuntimeHTTPRequest(c *gin.Context, rec
 		return
 	}
 
-	log.WithFields(log.Fields{"RuntimeID": runtime.ID}).Info("Rejecting runtime")
+	log.WithFields(log.Fields{"RuntimeID": runtime.ID}).Debug("Rejecting runtime")
 
 	server.sendEmptyHTTPReply(c, payloadType)
 }

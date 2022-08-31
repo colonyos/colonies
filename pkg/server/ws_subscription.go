@@ -121,7 +121,7 @@ func (wsSubCtrl *wsSubscriptionController) subscribe(runtimeID string, processID
 					"RuntimeType": subscription.runtimeType,
 					"State":       subscription.state,
 					"Err":         err}).
-					Info("Subscriber timed out")
+					Debug("Subscriber timed out")
 				subscription.wsConn.Close()
 				return // This will kill the go-routine, also note all cancelCtx will result in an err to errChan
 			case process := <-processChan:
