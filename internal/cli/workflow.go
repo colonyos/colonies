@@ -89,7 +89,8 @@ var submitWorkflowCmd = &cobra.Command{
 		jsonSpecBytes, err := ioutil.ReadFile(SpecFile)
 		CheckError(err)
 
-		workflowSpec, err := core.ConvertJSONToWorkflowSpec(string(jsonSpecBytes))
+		jsonStr := "{\"processspecs\":" + string(jsonSpecBytes) + "}"
+		workflowSpec, err := core.ConvertJSONToWorkflowSpec(jsonStr)
 		CheckError(err)
 
 		if workflowSpec.ColonyID == "" {
