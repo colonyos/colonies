@@ -662,7 +662,9 @@ func (controller *coloniesController) addProcess(process *core.Process) (*core.P
 				return
 			}
 
-			controller.eventHandler.signal(addedProcess)
+			if !addedProcess.WaitForParents {
+				controller.eventHandler.signal(addedProcess)
+			}
 			cmd.processReplyChan <- addedProcess
 		}}
 
@@ -926,7 +928,9 @@ func (controller *coloniesController) createProcessGraph(workflowSpec *core.Work
 		// we will cause a deadlock if we call controller.addProcess
 		addedProcess, err := controller.addProcessAndSetWaitingDeadline(process)
 		log.WithFields(log.Fields{"ProcessID": process.ID}).Debug("Submitting process part of processgraph")
-		controller.eventHandler.signal(addedProcess)
+		if !addedProcess.WaitForParents {
+			controller.eventHandler.signal(addedProcess)
+		}
 
 		if err != nil {
 			msg := "Failed to submit workflow, failed to add process"
@@ -1196,14 +1200,48 @@ func (controller *coloniesController) closeSuccessful(processID string) error {
 					cmd.errorChan <- err
 					return
 				}
+
+				// This is process is now closed. This means that children processes can now execute, assuming all their parents are closed successfully
+				err = controller.notifyChildren(process)
+				if err != nil {
+					cmd.errorChan <- err
+					return
+				}
 			}
 
-			cmd.errorChan <- nil
 			controller.eventHandler.signal(process)
+			cmd.errorChan <- nil
 		}}
 
 	controller.cmdQueue <- cmd
 	return <-cmd.errorChan
+}
+
+func (controller *coloniesController) notifyChildren(process *core.Process) error {
+	// First check if parent processes are completed
+	counter := 0
+	for _, parentProcessID := range process.Parents {
+		parentProcess, err := controller.db.GetProcessByID(parentProcessID)
+		if err != nil {
+			return err
+		}
+		if parentProcess.State == core.SUCCESS {
+			counter++
+		}
+	}
+
+	// Notiify children of parents are completed
+	if counter == len(process.Parents) {
+		for _, childProcessID := range process.Children {
+			childProcess, err := controller.db.GetProcessByID(childProcessID)
+			if err != nil {
+				return err
+			}
+			controller.eventHandler.signal(childProcess)
+		}
+	}
+
+	return nil
 }
 
 func (controller *coloniesController) closeFailed(processID string, errorMsg string) error {
@@ -1234,10 +1272,11 @@ func (controller *coloniesController) closeFailed(processID string, errorMsg str
 					cmd.errorChan <- err
 					return
 				}
+
 			}
 
-			cmd.errorChan <- nil
 			controller.eventHandler.signal(process)
+			cmd.errorChan <- nil
 		}}
 
 	controller.cmdQueue <- cmd
