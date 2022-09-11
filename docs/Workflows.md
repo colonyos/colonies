@@ -131,7 +131,7 @@ Processes:
 
 ## Start a worker
 ```console
-colonies worker start --name myworker --type cli 
+colonies worker start --name myworker --runtimetype cli 
 
 INFO[0000] Starting a worker                             BuildTime="2022-05-31T13:43:22Z" BuildVersion=a153cbf
 INFO[0000] Saving runtimeID to /tmp/runtimeid

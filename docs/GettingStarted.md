@@ -26,7 +26,7 @@ export COLONIES_SERVERPRVKEY="fcc79953d8a751bf41db661592dc34d30004b1a651ffa0725b
 export COLONIES_DBHOST="localhost"
 export COLONIES_DBUSER="postgres"
 export COLONIES_DBPORT="50070"
-expoer COLONIES_DBPASSWORD="rFcLGNkgsNtksg6Pgtn9CumL4xXBQ7"
+export COLONIES_DBPASSWORD="rFcLGNkgsNtksg6Pgtn9CumL4xXBQ7"
 export COLONIES_COLONYID="4787a5071856a4acf702b2ffcea422e3237a679c681314113d86139461290cf4"
 export COLONIES_COLONYPRVKEY="ba949fa134981372d6da62b6a56f336ab4d843b22c02a4257dcf7d0d73097514"
 export COLONIES_RUNTIMEID="3fc05cf3df4b494e95d6a3d297a34f19938f7daa7422ab0d4f794454133341ac"
@@ -48,7 +48,7 @@ colonies dev
 Open another terminal (and *source examples/devenv*).
 
 ```console
-colonies worker start --name myworker --type cli 
+colonies worker start --name myworker --runtimetype cli 
 ```
 ## Submit a process specification
 Example process specification (see examples/sleep.json). The Colonies worker will pull the process specification from the Colonies dev server and start a *sleep* process. This will cause the worker above to sleep for 100s. The *env* array in the JSON below will automatically be exported as real environment variables in the sleep process.
