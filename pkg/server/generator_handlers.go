@@ -95,6 +95,43 @@ func (server *ColoniesServer) handleGetGeneratorHTTPRequest(c *gin.Context, reco
 	server.sendHTTPReply(c, payloadType, jsonString)
 }
 
+func (server *ColoniesServer) handleResolveGeneratorHTTPRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
+	msg, err := rpc.CreateResolveGeneratorMsgFromJSON(jsonString)
+	if err != nil {
+		if server.handleHTTPError(c, errors.New("Failed to resolve generator, invalid JSON"), http.StatusBadRequest) {
+			return
+		}
+	}
+
+	if msg.MsgType != payloadType {
+		server.handleHTTPError(c, errors.New("Failed to resolve generator, msg.MsgType does not match payloadType"), http.StatusBadRequest)
+		return
+	}
+
+	generator, err := server.controller.resolveGenerator(msg.GeneratorName)
+	if server.handleHTTPError(c, err, http.StatusBadRequest) {
+		return
+	}
+	if generator == nil {
+		server.handleHTTPError(c, errors.New("Failed to resolve generator, generator is nil"), http.StatusInternalServerError)
+		return
+	}
+
+	err = server.validator.RequireRuntimeMembership(recoveredID, generator.ColonyID, true)
+	if server.handleHTTPError(c, err, http.StatusForbidden) {
+		return
+	}
+
+	jsonString, err = generator.ToJSON()
+	if server.handleHTTPError(c, err, http.StatusInternalServerError) {
+		return
+	}
+
+	log.WithFields(log.Fields{"GeneratorID": generator.ID, "GeneratorName": generator.Name}).Debug("Resolving generator")
+
+	server.sendHTTPReply(c, payloadType, jsonString)
+}
+
 func (server *ColoniesServer) handleGetGeneratorsHTTPRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
 	msg, err := rpc.CreateGetGeneratorsMsgFromJSON(jsonString)
 	if err != nil {

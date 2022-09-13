@@ -57,6 +57,24 @@ func TestGetGenerator(t *testing.T) {
 	<-done
 }
 
+func TestResolveGenerator(t *testing.T) {
+	env, client, server, _, done := setupTestEnv2(t)
+
+	colonyID := env.colonyID
+
+	generator := utils.FakeGenerator(t, colonyID)
+	generator.Name = "test_generator_name"
+	addedGenerator, err := client.AddGenerator(generator, env.runtimePrvKey)
+	assert.Nil(t, err)
+
+	generatorFromServer, err := client.ResolveGenerator("test_generator_name", env.runtimePrvKey)
+	assert.Nil(t, err)
+	assert.Equal(t, generatorFromServer.ID, addedGenerator.ID)
+
+	server.Shutdown()
+	<-done
+}
+
 func TestGetGenerators(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 
