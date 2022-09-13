@@ -55,6 +55,32 @@ func TestGetGeneratorSecurity(t *testing.T) {
 	<-done
 }
 
+func TestResolveGeneratorSecurity(t *testing.T) {
+	env, client, server, _, done := setupTestEnv1(t)
+
+	// The setup looks like this:
+	//   runtime1 is member of colony1
+	//   runtime2 is member of colony2
+
+	colonyID := env.colony1ID
+	generator := utils.FakeGenerator(t, colonyID)
+
+	addedGenerator, err := client.AddGenerator(generator, env.runtime1PrvKey)
+	assert.Nil(t, err)
+
+	_, err = client.ResolveGenerator(addedGenerator.Name, env.runtime2PrvKey)
+	assert.NotNil(t, err)
+	_, err = client.ResolveGenerator(addedGenerator.Name, env.colony1PrvKey)
+	assert.NotNil(t, err)
+	_, err = client.ResolveGenerator(addedGenerator.Name, env.colony2PrvKey)
+	assert.NotNil(t, err)
+	_, err = client.ResolveGenerator(addedGenerator.Name, env.runtime1PrvKey)
+	assert.Nil(t, err)
+
+	server.Shutdown()
+	<-done
+}
+
 func TestGetGeneratorsSecurity(t *testing.T) {
 	env, client, server, _, done := setupTestEnv1(t)
 

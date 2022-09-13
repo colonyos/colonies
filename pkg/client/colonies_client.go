@@ -71,7 +71,7 @@ func (client *ColoniesClient) sendMessage(method string, jsonString string, prvK
 
 	rpcReplyMsg, err := rpc.CreateRPCReplyMsgFromJSON(respBodyString)
 	if err != nil {
-		return "", err
+		return "", errors.New("Expected a valid Colonies RPC message, but got this: " + respBodyString)
 	}
 
 	if rpcReplyMsg.Error {
@@ -740,6 +740,21 @@ func (client *ColoniesClient) GetGenerator(generatorID string, prvKey string) (*
 	}
 
 	respBodyString, err := client.sendMessage(rpc.GetGeneratorPayloadType, jsonString, prvKey, false)
+	if err != nil {
+		return nil, err
+	}
+
+	return core.ConvertJSONToGenerator(respBodyString)
+}
+
+func (client *ColoniesClient) ResolveGenerator(generatorName string, prvKey string) (*core.Generator, error) {
+	msg := rpc.CreateResolveGeneratorMsg(generatorName)
+	jsonString, err := msg.ToJSON()
+	if err != nil {
+		return nil, err
+	}
+
+	respBodyString, err := client.sendMessage(rpc.ResolveGeneratorPayloadType, jsonString, prvKey, false)
 	if err != nil {
 		return nil, err
 	}
