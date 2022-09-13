@@ -261,6 +261,27 @@ func (controller *coloniesController) getGenerator(generatorID string) (*core.Ge
 	}
 }
 
+func (controller *coloniesController) resolveGenerator(generatorName string) (*core.Generator, error) {
+	cmd := &command{generatorReplyChan: make(chan *core.Generator, 1),
+		errorChan: make(chan error, 1),
+		handler: func(cmd *command) {
+			generator, err := controller.db.GetGeneratorByName(generatorName)
+			if err != nil {
+				cmd.errorChan <- err
+				return
+			}
+			cmd.generatorReplyChan <- generator
+		}}
+
+	controller.cmdQueue <- cmd
+	select {
+	case err := <-cmd.errorChan:
+		return nil, err
+	case generator := <-cmd.generatorReplyChan:
+		return generator, nil
+	}
+}
+
 func (controller *coloniesController) getGenerators(colonyID string, count int) ([]*core.Generator, error) {
 	cmd := &command{generatorsReplyChan: make(chan []*core.Generator, 1),
 		errorChan: make(chan error, 1),

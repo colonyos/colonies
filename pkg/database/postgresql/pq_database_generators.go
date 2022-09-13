@@ -64,6 +64,30 @@ func (db *PQDatabase) GetGeneratorByID(generatorID string) (*core.Generator, err
 	return generators[0], nil
 }
 
+func (db *PQDatabase) GetGeneratorByName(name string) (*core.Generator, error) {
+	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `GENERATORS WHERE NAME=$1`
+	rows, err := db.postgresql.Query(sqlStatement, name)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	generators, err := db.parseGenerators(rows)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(generators) > 1 {
+		return nil, errors.New("Expected one generator, generator name should be unique")
+	}
+
+	if len(generators) == 0 {
+		return nil, nil
+	}
+
+	return generators[0], nil
+}
+
 func (db *PQDatabase) SetGeneratorLastRun(generatorID string) error {
 	generator, err := db.GetGeneratorByID(generatorID)
 	if err != nil {
