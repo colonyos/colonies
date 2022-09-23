@@ -213,7 +213,7 @@ func (server *ColoniesServer) handleAPIRequest(c *gin.Context) {
 		server.handleGetClusterHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 
 	default:
-		errMsg := "invalid rpcMsg.PayloadType"
+		errMsg := "invalid rpcMsg.PayloadType, " + rpcMsg.PayloadType
 		if server.handleHTTPError(c, errors.New(errMsg), http.StatusForbidden) {
 			log.Error(errMsg)
 			return
