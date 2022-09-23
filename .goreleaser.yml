@@ -1,0 +1,5 @@
+# .goreleaser.yml
+builds:
+- 
+  main: ./cmd
+  binary: colonies
