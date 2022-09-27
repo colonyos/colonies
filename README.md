@@ -64,6 +64,8 @@ helloworld
 # More information
 ## Installation
 * [Installation](docs/Installation.md)
+## Presentations
+* [Process Orchestration with ColonyOS](docs/Colonies.pptx)
 ## Guides
 * [Getting started](docs/GettingStarted.md)
 * [How to implement a Colonies worker](docs/Worker.md)
