@@ -68,6 +68,7 @@ var GeneratorTimeout int
 var Func string
 var Arg string
 var Args []string
+var Results []string
 var Env []string
 var MaxWaitTime int
 var MaxExecTime int

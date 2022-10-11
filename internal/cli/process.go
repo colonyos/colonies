@@ -29,7 +29,7 @@ func init() {
 	processCmd.AddCommand(deleteProcessCmd)
 	processCmd.AddCommand(deleteAllProcessesCmd)
 	processCmd.AddCommand(assignProcessCmd)
-	processCmd.AddCommand(closeSuccessful)
+	processCmd.AddCommand(closeSuccessfulCmd)
 	processCmd.AddCommand(closeFailed)
 	rootCmd.AddCommand(processCmd)
 
@@ -104,10 +104,11 @@ func init() {
 	assignProcessCmd.Flags().IntVarP(&Timeout, "timeout", "", 100, "Max time to wait for a process assignment")
 	assignProcessCmd.Flags().BoolVarP(&Latest, "latest", "", false, "Try to assign the latest process in the queue")
 
-	closeSuccessful.Flags().StringVarP(&RuntimeID, "runtimeid", "", "", "Runtime Id")
-	closeSuccessful.Flags().StringVarP(&RuntimePrvKey, "runtimeprvkey", "", "", "Runtime private key")
-	closeSuccessful.Flags().StringVarP(&ProcessID, "processid", "", "", "Process Id")
-	closeSuccessful.MarkFlagRequired("processid")
+	closeSuccessfulCmd.Flags().StringSliceVarP(&Results, "results", "", make([]string, 0), "Results")
+	closeSuccessfulCmd.Flags().StringVarP(&RuntimeID, "runtimeid", "", "", "Runtime Id")
+	closeSuccessfulCmd.Flags().StringVarP(&RuntimePrvKey, "runtimeprvkey", "", "", "Runtime private key")
+	closeSuccessfulCmd.Flags().StringVarP(&ProcessID, "processid", "", "", "Process Id")
+	closeSuccessfulCmd.MarkFlagRequired("processid")
 
 	closeFailed.Flags().StringVarP(&RuntimeID, "runtimeid", "", "", "Runtime Id")
 	closeFailed.Flags().StringVarP(&RuntimePrvKey, "runtimeprvkey", "", "", "Runtime private key")
@@ -195,8 +196,6 @@ var runProcessCmd = &cobra.Command{
 		} else {
 			conditions = core.Conditions{ColonyID: ColonyID, RuntimeIDs: []string{TargetRuntimeID}}
 		}
-
-		fmt.Println(conditions)
 
 		processSpec := core.ProcessSpec{
 			Func:        Func,
@@ -827,7 +826,7 @@ var deleteAllProcessesCmd = &cobra.Command{
 	},
 }
 
-var closeSuccessful = &cobra.Command{
+var closeSuccessfulCmd = &cobra.Command{
 	Use:   "close",
 	Short: "Close a process as successful",
 	Long:  "Close a process as successful",
@@ -855,8 +854,15 @@ var closeSuccessful = &cobra.Command{
 		process, err := client.GetProcess(ProcessID, RuntimePrvKey)
 		CheckError(err)
 
-		err = client.Close(process.ID, RuntimePrvKey)
-		CheckError(err)
+		if len(Results) > 0 {
+			fmt.Println("-------------")
+			fmt.Println(Results)
+			err = client.CloseWithResults(process.ID, Results, RuntimePrvKey)
+			CheckError(err)
+		} else {
+			err = client.Close(process.ID, RuntimePrvKey)
+			CheckError(err)
+		}
 
 		log.WithFields(log.Fields{"ProcessID": process.ID}).Info("Process closed as Successful")
 	},
