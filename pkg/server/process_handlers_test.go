@@ -305,7 +305,7 @@ func TestGetFailedProcesses(t *testing.T) {
 		assert.Nil(t, err)
 		processFromServer, err := client.AssignProcess(env.colonyID, -1, env.runtimePrvKey)
 		assert.Nil(t, err)
-		err = client.Fail(processFromServer.ID, "error", env.runtimePrvKey)
+		err = client.Fail(processFromServer.ID, []string{"error"}, env.runtimePrvKey)
 		assert.Nil(t, err)
 	}
 
@@ -449,12 +449,13 @@ func TestCloseFailed(t *testing.T) {
 	assignedProcessFromServer, err := client.GetProcess(assignedProcess.ID, env.runtimePrvKey)
 	assert.Equal(t, core.RUNNING, assignedProcessFromServer.State)
 
-	err = client.Fail(assignedProcess.ID, "error", env.runtimePrvKey)
+	err = client.Fail(assignedProcess.ID, []string{"error"}, env.runtimePrvKey)
 	assert.Nil(t, err)
 
 	processFromServer, err := client.GetProcess(assignedProcess.ID, env.runtimePrvKey)
 	assert.Equal(t, processFromServer.State, core.FAILED)
-	assert.Equal(t, processFromServer.ErrorMsg, "error")
+	assert.Len(t, processFromServer.Errors, 1)
+	assert.Equal(t, processFromServer.Errors[0], "error")
 
 	server.Shutdown()
 	<-done

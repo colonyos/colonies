@@ -69,6 +69,7 @@ var Func string
 var Arg string
 var Args []string
 var Results []string
+var Errors []string
 var Env []string
 var MaxWaitTime int
 var MaxExecTime int

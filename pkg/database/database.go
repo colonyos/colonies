@@ -50,6 +50,7 @@ type Database interface {
 	DeleteAllProcessesInProcessGraphsByColonyID(colonyID string) error
 	ResetProcess(process *core.Process) error
 	SetResults(processID string, results []string) error
+	SetErrors(processID string, errs []string) error
 	SetProcessState(processID string, state int) error
 	SetWaitForParents(processID string, waitingForParent bool) error
 	SetWaitDeadline(process *core.Process, waitDeadline time.Time) error
@@ -58,7 +59,7 @@ type Database interface {
 	AssignRuntime(runtimeID string, process *core.Process) error
 	UnassignRuntime(process *core.Process) error
 	MarkSuccessful(process *core.Process) error
-	MarkFailed(process *core.Process, errorMsg string) error
+	MarkFailed(process *core.Process, errs []string) error
 	CountProcesses() (int, error)
 	CountWaitingProcesses() (int, error)
 	CountRunningProcesses() (int, error)

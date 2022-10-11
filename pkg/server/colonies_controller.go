@@ -1269,7 +1269,7 @@ func (controller *coloniesController) notifyChildren(process *core.Process) erro
 	return nil
 }
 
-func (controller *coloniesController) closeFailed(processID string, errorMsg string) error {
+func (controller *coloniesController) closeFailed(processID string, errs []string) error {
 	cmd := &command{errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
 			process, err := controller.db.GetProcessByID(processID)
@@ -1278,7 +1278,7 @@ func (controller *coloniesController) closeFailed(processID string, errorMsg str
 				return
 			}
 
-			err = controller.db.MarkFailed(process, errorMsg)
+			err = controller.db.MarkFailed(process, errs)
 			if err != nil {
 				cmd.errorChan <- err
 				return

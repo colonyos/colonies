@@ -134,7 +134,7 @@ func TestGetColonyStatistics(t *testing.T) {
 		assert.Nil(t, err)
 		processFromServer, err := client.AssignProcess(env.colonyID, -1, env.runtimePrvKey)
 		assert.Nil(t, err)
-		err = client.Fail(processFromServer.ID, "error", env.runtimePrvKey)
+		err = client.Fail(processFromServer.ID, []string{"error"}, env.runtimePrvKey)
 		assert.Nil(t, err)
 	}
 

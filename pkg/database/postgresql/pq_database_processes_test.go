@@ -382,7 +382,7 @@ func TestMarkSuccessful(t *testing.T) {
 
 	assert.Equal(t, core.SUCCESS, processFromDB.State)
 
-	err = db.MarkFailed(process, "error")
+	err = db.MarkFailed(process, []string{"error"})
 	assert.NotNil(t, err) // Not possible to set successful process as failed
 }
 
@@ -412,15 +412,15 @@ func TestMarkFailed(t *testing.T) {
 
 	assert.Equal(t, core.RUNNING, processFromDB.State)
 
-	err = db.MarkFailed(process, "error")
+	err = db.MarkFailed(process, []string{"error"})
 	assert.Nil(t, err)
 
 	processFromDB, err = db.GetProcessByID(process.ID)
 	assert.Nil(t, err)
-	assert.Equal(t, processFromDB.ErrorMsg, "error")
+	assert.Equal(t, processFromDB.Errors, []string{"error"})
 	assert.Equal(t, core.FAILED, processFromDB.State)
 
-	err = db.MarkFailed(process, "error")
+	err = db.MarkFailed(process, []string{"error"})
 	assert.NotNil(t, err) // Not possible to set failed process as failed
 }
 
@@ -441,7 +441,7 @@ func TestReset(t *testing.T) {
 	assert.Nil(t, err)
 	err = db.AssignRuntime(runtime.ID, process)
 	assert.Nil(t, err)
-	err = db.MarkFailed(process, "error")
+	err = db.MarkFailed(process, []string{"error"})
 	assert.Nil(t, err)
 
 	process = utils.CreateTestProcess(colony.ID)
@@ -449,7 +449,7 @@ func TestReset(t *testing.T) {
 	assert.Nil(t, err)
 	err = db.AssignRuntime(runtime.ID, process)
 	assert.Nil(t, err)
-	err = db.MarkFailed(process, "error")
+	err = db.MarkFailed(process, []string{"error"})
 	assert.Nil(t, err)
 
 	process = utils.CreateTestProcess(colony.ID)
@@ -457,7 +457,7 @@ func TestReset(t *testing.T) {
 	assert.Nil(t, err)
 	err = db.AssignRuntime(runtime.ID, process)
 	assert.Nil(t, err)
-	err = db.MarkFailed(process, "error")
+	err = db.MarkFailed(process, []string{"error"})
 	assert.Nil(t, err)
 
 	numberOfFailedProcesses, err := db.CountFailedProcesses()
@@ -597,14 +597,15 @@ func TestSetErrorMsg(t *testing.T) {
 	process := utils.CreateTestProcess(colony.ID)
 	err = db.AddProcess(process)
 	assert.Nil(t, err)
-	assert.Equal(t, process.ErrorMsg, "")
+	assert.Len(t, process.Errors, 0)
 
-	err = db.SetErrorMsg(process, "error")
+	err = db.SetErrors(process.ID, []string{"error"})
 	assert.Nil(t, err)
 
 	processFromDB, err := db.GetProcessByID(process.ID)
 	assert.Nil(t, err)
-	assert.Equal(t, processFromDB.ErrorMsg, "error")
+	assert.Len(t, processFromDB.Errors, 1)
+	assert.Equal(t, processFromDB.Errors[0], "error")
 }
 
 func TestFindUnassignedProcesses1(t *testing.T) {
@@ -892,7 +893,7 @@ func TestFindProcessAssigned(t *testing.T) {
 	err = db.MarkSuccessful(processsFromDB1[0])
 	assert.Nil(t, err)
 
-	err = db.MarkFailed(processsFromDB2[0], "error")
+	err = db.MarkFailed(processsFromDB2[0], []string{"error"})
 	assert.Nil(t, err)
 
 	numberOfSuccesfulProcesses, err = db.CountSuccessfulProcesses()
@@ -965,7 +966,7 @@ func TestFindWaitingProcesses(t *testing.T) {
 		assert.Nil(t, err)
 		err = db.AssignRuntime(runtime.ID, process)
 		assert.Nil(t, err)
-		err = db.MarkFailed(process, "error")
+		err = db.MarkFailed(process, []string{"error"})
 		assert.Nil(t, err)
 		failedProcessIDs[process.ID] = true
 	}

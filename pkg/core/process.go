@@ -26,7 +26,6 @@ type Process struct {
 	EndTime           time.Time   `json:"endtime"`
 	WaitDeadline      time.Time   `json:"waitdeadline"`
 	ExecDeadline      time.Time   `json:"execdeadline"`
-	ErrorMsg          string      `json:"errormsg"`
 	Retries           int         `json:"retries"`
 	Attributes        []Attribute `json:"attributes"`
 	ProcessSpec       ProcessSpec `json:"spec"`
@@ -35,6 +34,7 @@ type Process struct {
 	Children          []string    `json:"children"`
 	ProcessGraphID    string      `json:"processgraphid"`
 	Results           []string    `json:"results"`
+	Errors            []string    `json:"errors"`
 }
 
 func CreateProcess(processSpec *ProcessSpec) *Process {
@@ -64,7 +64,7 @@ func CreateProcessFromDB(processSpec *ProcessSpec,
 	endTime time.Time,
 	waitDeadline time.Time,
 	execDeadline time.Time,
-	errorMsg string,
+	errors []string,
 	retries int,
 	attributes []Attribute) *Process {
 	return &Process{ID: id,
@@ -76,7 +76,7 @@ func CreateProcessFromDB(processSpec *ProcessSpec,
 		EndTime:           endTime,
 		WaitDeadline:      waitDeadline,
 		ExecDeadline:      execDeadline,
-		ErrorMsg:          errorMsg,
+		Errors:            errors,
 		Retries:           retries,
 		Attributes:        attributes,
 		ProcessSpec:       *processSpec,
@@ -144,10 +144,21 @@ func (process *Process) Equals(process2 *Process) bool {
 		process.EndTime.Unix() != process2.EndTime.Unix() ||
 		process.WaitDeadline.Unix() != process2.WaitDeadline.Unix() ||
 		process.ExecDeadline.Unix() != process2.ExecDeadline.Unix() ||
-		process.ErrorMsg != process2.ErrorMsg ||
 		process.Retries != process2.Retries ||
 		process.WaitForParents != process2.WaitForParents ||
 		process.ProcessGraphID != process2.ProcessGraphID {
+		same = false
+	}
+
+	counter := 0
+	for _, r1 := range process.Results {
+		for _, r2 := range process2.Results {
+			if r1 == r2 {
+				counter++
+			}
+		}
+	}
+	if counter != len(process.Results) && counter != len(process2.Results) {
 		same = false
 	}
 
@@ -159,7 +170,7 @@ func (process *Process) Equals(process2 *Process) bool {
 		same = false
 	}
 
-	counter := 0
+	counter = 0
 	for _, parent1 := range process.Parents {
 		for _, parent2 := range process2.Parents {
 			if parent1 == parent2 {

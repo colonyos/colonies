@@ -30,7 +30,7 @@ func init() {
 	processCmd.AddCommand(deleteAllProcessesCmd)
 	processCmd.AddCommand(assignProcessCmd)
 	processCmd.AddCommand(closeSuccessfulCmd)
-	processCmd.AddCommand(closeFailed)
+	processCmd.AddCommand(closeFailedCmd)
 	rootCmd.AddCommand(processCmd)
 
 	processCmd.PersistentFlags().StringVarP(&ServerHost, "host", "", "localhost", "Server host")
@@ -110,10 +110,11 @@ func init() {
 	closeSuccessfulCmd.Flags().StringVarP(&ProcessID, "processid", "", "", "Process Id")
 	closeSuccessfulCmd.MarkFlagRequired("processid")
 
-	closeFailed.Flags().StringVarP(&RuntimeID, "runtimeid", "", "", "Runtime Id")
-	closeFailed.Flags().StringVarP(&RuntimePrvKey, "runtimeprvkey", "", "", "Runtime private key")
-	closeFailed.Flags().StringVarP(&ProcessID, "processid", "", "", "Process Id")
-	closeFailed.MarkFlagRequired("processid")
+	closeFailedCmd.Flags().StringSliceVarP(&Errors, "errors", "", make([]string, 0), "Errors")
+	closeFailedCmd.Flags().StringVarP(&RuntimeID, "runtimeid", "", "", "Runtime Id")
+	closeFailedCmd.Flags().StringVarP(&RuntimePrvKey, "runtimeprvkey", "", "", "Runtime private key")
+	closeFailedCmd.Flags().StringVarP(&ProcessID, "processid", "", "", "Process Id")
+	closeFailedCmd.MarkFlagRequired("processid")
 }
 
 var processCmd = &cobra.Command{
@@ -697,7 +698,7 @@ var getProcessCmd = &cobra.Command{
 			[]string{"WaitingTime", process.WaitingTime().String()},
 			[]string{"ProcessingTime", process.ProcessingTime().String()},
 			[]string{"Retries", strconv.Itoa(process.Retries)},
-			[]string{"ErrorMsg", process.ErrorMsg},
+			[]string{"Errors", StrArr2Str(process.Errors)},
 			[]string{"Results", StrArr2Str(process.Results)},
 		}
 		processTable := tablewriter.NewWriter(os.Stdout)
@@ -713,45 +714,49 @@ var getProcessCmd = &cobra.Command{
 
 		fmt.Println()
 		fmt.Println("Attributes:")
+		if len(process.Attributes) > 0 {
 
-		var attributeData [][]string
-		for _, attribute := range process.Attributes {
-			var attributeType string
-			switch attribute.AttributeType {
-			case core.IN:
-				attributeType = "In"
-			case core.OUT:
-				attributeType = "Out"
-			case core.ERR:
-				attributeType = "Err"
-			case core.ENV:
-				attributeType = "Env"
-			default:
-				attributeType = "Unknown"
-			}
-			var key string
-			if len(attribute.Key) > MaxAttributeLength {
-				key = attribute.Key[0:MaxAttributeLength] + "..."
-			} else {
-				key = attribute.Key
+			var attributeData [][]string
+			for _, attribute := range process.Attributes {
+				var attributeType string
+				switch attribute.AttributeType {
+				case core.IN:
+					attributeType = "In"
+				case core.OUT:
+					attributeType = "Out"
+				case core.ERR:
+					attributeType = "Err"
+				case core.ENV:
+					attributeType = "Env"
+				default:
+					attributeType = "Unknown"
+				}
+				var key string
+				if len(attribute.Key) > MaxAttributeLength {
+					key = attribute.Key[0:MaxAttributeLength] + "..."
+				} else {
+					key = attribute.Key
+				}
+
+				var value string
+				if len(attribute.Value) > MaxAttributeLength {
+					value = attribute.Value[0:MaxAttributeLength] + "..."
+				} else {
+					value = attribute.Value
+				}
+				attributeData = append(attributeData, []string{attribute.ID, key, value, attributeType})
 			}
 
-			var value string
-			if len(attribute.Value) > MaxAttributeLength {
-				value = attribute.Value[0:MaxAttributeLength] + "..."
-			} else {
-				value = attribute.Value
+			attributeTable := tablewriter.NewWriter(os.Stdout)
+			attributeTable.SetHeader([]string{"ID", "Key", "Value", "Type"})
+			attributeTable.SetAlignment(tablewriter.ALIGN_LEFT)
+			for _, v := range attributeData {
+				attributeTable.Append(v)
 			}
-			attributeData = append(attributeData, []string{attribute.ID, key, value, attributeType})
+			attributeTable.Render()
+		} else {
+			fmt.Println("No attributes found")
 		}
-
-		attributeTable := tablewriter.NewWriter(os.Stdout)
-		attributeTable.SetHeader([]string{"ID", "Key", "Value", "Type"})
-		attributeTable.SetAlignment(tablewriter.ALIGN_LEFT)
-		for _, v := range attributeData {
-			attributeTable.Append(v)
-		}
-		attributeTable.Render()
 	},
 }
 
@@ -868,7 +873,7 @@ var closeSuccessfulCmd = &cobra.Command{
 	},
 }
 
-var closeFailed = &cobra.Command{
+var closeFailedCmd = &cobra.Command{
 	Use:   "fail",
 	Short: "Close a process as failed",
 	Long:  "Close a process as failed",
@@ -896,7 +901,11 @@ var closeFailed = &cobra.Command{
 		process, err := client.GetProcess(ProcessID, RuntimePrvKey)
 		CheckError(err)
 
-		err = client.Fail(process.ID, "Closed by user", RuntimePrvKey)
+		if len(Errors) == 0 {
+			Errors = []string{"No errors specified"}
+		}
+
+		err = client.Fail(process.ID, Errors, RuntimePrvKey)
 		CheckError(err)
 
 		log.WithFields(log.Fields{"ProcessID": process.ID}).Info("Process closed as Failed")

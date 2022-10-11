@@ -8,7 +8,7 @@ import (
 )
 
 func TestRPCCloseFailedMsg(t *testing.T) {
-	msg := CreateCloseFailedMsg(core.GenerateRandomID(), "error")
+	msg := CreateCloseFailedMsg(core.GenerateRandomID(), []string{"error"})
 	jsonString, err := msg.ToJSON()
 	assert.Nil(t, err)
 
@@ -22,7 +22,7 @@ func TestRPCCloseFailedMsg(t *testing.T) {
 }
 
 func TestRPCCloseFailedMsgIndent(t *testing.T) {
-	msg := CreateCloseFailedMsg(core.GenerateRandomID(), "error")
+	msg := CreateCloseFailedMsg(core.GenerateRandomID(), []string{"error"})
 	jsonString, err := msg.ToJSONIndent()
 	assert.Nil(t, err)
 
@@ -36,7 +36,7 @@ func TestRPCCloseFailedMsgIndent(t *testing.T) {
 }
 
 func TestRPCCloseFailedMsgEquals(t *testing.T) {
-	msg := CreateCloseFailedMsg(core.GenerateRandomID(), "error")
+	msg := CreateCloseFailedMsg(core.GenerateRandomID(), []string{"error"})
 	assert.True(t, msg.Equals(msg))
 	assert.False(t, msg.Equals(nil))
 }

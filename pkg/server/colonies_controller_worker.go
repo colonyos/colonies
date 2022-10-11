@@ -84,7 +84,7 @@ func (controller *coloniesController) timeoutLoop() {
 			}
 			if time.Now().Unix() > process.ExecDeadline.Unix() {
 				if process.Retries >= process.ProcessSpec.MaxRetries && process.ProcessSpec.MaxRetries > -1 {
-					err := controller.closeFailed(process.ID, "Maximum execution time limit exceeded")
+					err := controller.closeFailed(process.ID, []string{"Maximum execution time limit exceeded"})
 					if err != nil {
 						log.WithFields(log.Fields{"ProcessID": process.ID, "Error": err}).Info("Max retries reached, but failed to close process")
 						continue
@@ -110,7 +110,7 @@ func (controller *coloniesController) timeoutLoop() {
 				continue
 			}
 			if time.Now().Unix() > process.WaitDeadline.Unix() {
-				err := controller.closeFailed(process.ID, "Maximum waiting time limit exceeded")
+				err := controller.closeFailed(process.ID, []string{"Maximum waiting time limit exceeded"})
 				if err != nil {
 					log.WithFields(log.Fields{"ProcessID": process.ID, "Error": err}).Info("Max waiting time reached, but failed to close process")
 					continue

@@ -423,7 +423,7 @@ func (server *ColoniesServer) handleCloseFailedHTTPRequest(c *gin.Context, recov
 		return
 	}
 
-	err = server.controller.closeFailed(process.ID, msg.ErrorMsg)
+	err = server.controller.closeFailed(process.ID, msg.Errors)
 	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		log.WithFields(log.Fields{"Err": err}).Info("Failed to close process as failed")
 		server.handleHTTPError(c, err, http.StatusInternalServerError)

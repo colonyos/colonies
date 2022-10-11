@@ -106,7 +106,7 @@ func TestSubmitWorkflowSpecFailed(t *testing.T) {
 
 	assignedProcess1, err := client.AssignProcess(env.colonyID, -1, env.runtimePrvKey)
 	assert.Nil(t, err)
-	err = client.Fail(assignedProcess1.ID, "error", env.runtimePrvKey)
+	err = client.Fail(assignedProcess1.ID, []string{"error"}, env.runtimePrvKey)
 	assert.Nil(t, err)
 
 	graphs, err := client.GetFailedProcessGraphs(env.colonyID, 100, env.runtimePrvKey)
