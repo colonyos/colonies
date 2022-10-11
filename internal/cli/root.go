@@ -4,9 +4,6 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/colonyos/colonies/pkg/build"
-	"github.com/colonyos/colonies/pkg/core"
-	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
@@ -107,42 +104,4 @@ func Execute() {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
-}
-
-func CheckError(err error) {
-	if err != nil {
-		log.WithFields(log.Fields{"err": err, "BuildVersion": build.BuildVersion, "BuildTime": build.BuildTime}).Error(err.Error())
-		os.Exit(-1)
-	}
-}
-
-func Args2String(args []string) string {
-	if len(args) == 0 {
-		return ""
-	}
-
-	str := ""
-	for _, arg := range args {
-		str += arg + " "
-	}
-
-	return str[0 : len(str)-1]
-}
-
-func State2String(state int) string {
-	var stateStr string
-	switch state {
-	case core.WAITING:
-		stateStr = "Waiting"
-	case core.RUNNING:
-		stateStr = "Running"
-	case core.SUCCESS:
-		stateStr = "Successful"
-	case core.FAILED:
-		stateStr = "Failed"
-	default:
-		stateStr = "Unkown"
-	}
-
-	return stateStr
 }

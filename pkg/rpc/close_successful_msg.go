@@ -7,8 +7,9 @@ import (
 const CloseSuccessfulPayloadType = "closesuccessfulmsg"
 
 type CloseSuccessfulMsg struct {
-	ProcessID string `json:"processid"`
-	MsgType   string `json:"msgtype"`
+	ProcessID string   `json:"processid"`
+	MsgType   string   `json:"msgtype"`
+	Results   []string `json:"results"`
 }
 
 func CreateCloseSuccessfulMsg(processID string) *CloseSuccessfulMsg {
@@ -35,6 +36,18 @@ func (msg *CloseSuccessfulMsg) Equals(msg2 *CloseSuccessfulMsg) bool {
 
 	if msg.MsgType == msg2.MsgType && msg.ProcessID == msg2.ProcessID {
 		return true
+	}
+
+	counter := 0
+	for _, r1 := range msg.Results {
+		for _, r2 := range msg2.Results {
+			if r1 == r2 {
+				counter++
+			}
+		}
+	}
+	if counter != len(msg.Results) && counter != len(msg2.Results) {
+		return false
 	}
 
 	return false

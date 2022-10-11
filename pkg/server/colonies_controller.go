@@ -1193,13 +1193,17 @@ func (controller *coloniesController) deleteAllProcessGraphs(colonyID string) er
 	return <-cmd.errorChan
 }
 
-func (controller *coloniesController) closeSuccessful(processID string) error {
+func (controller *coloniesController) closeSuccessful(processID string, results []string) error {
 	cmd := &command{errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
 			process, err := controller.db.GetProcessByID(processID)
 			if err != nil {
 				cmd.errorChan <- err
 				return
+			}
+
+			if len(results) > 0 {
+				err = controller.db.SetResults(processID, results)
 			}
 
 			err = controller.db.MarkSuccessful(process)

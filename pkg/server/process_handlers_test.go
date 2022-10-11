@@ -279,7 +279,7 @@ func TestGetSuccessfulProcesses(t *testing.T) {
 		assert.Nil(t, err)
 		processFromServer, err := client.AssignProcess(env.colonyID, -1, env.runtimePrvKey)
 		assert.Nil(t, err)
-		err = client.CloseSuccessful(processFromServer.ID, env.runtimePrvKey)
+		err = client.Close(processFromServer.ID, env.runtimePrvKey)
 		assert.Nil(t, err)
 	}
 
@@ -305,7 +305,7 @@ func TestGetFailedProcesses(t *testing.T) {
 		assert.Nil(t, err)
 		processFromServer, err := client.AssignProcess(env.colonyID, -1, env.runtimePrvKey)
 		assert.Nil(t, err)
-		err = client.CloseFailed(processFromServer.ID, "error", env.runtimePrvKey)
+		err = client.Fail(processFromServer.ID, "error", env.runtimePrvKey)
 		assert.Nil(t, err)
 	}
 
@@ -398,11 +398,38 @@ func TestCloseSuccessful(t *testing.T) {
 	assignedProcessFromServer, err := client.GetProcess(assignedProcess.ID, env.runtimePrvKey)
 	assert.Equal(t, core.RUNNING, assignedProcessFromServer.State)
 
-	err = client.CloseSuccessful(assignedProcess.ID, env.runtimePrvKey)
+	err = client.Close(assignedProcess.ID, env.runtimePrvKey)
 	assert.Nil(t, err)
 
 	assignedProcessFromServer, err = client.GetProcess(assignedProcess.ID, env.runtimePrvKey)
+	assert.Nil(t, err)
 	assert.Equal(t, core.SUCCESS, assignedProcessFromServer.State)
+
+	server.Shutdown()
+	<-done
+}
+
+func TestCloseSuccessfulWithResults(t *testing.T) {
+	env, client, server, _, done := setupTestEnv2(t)
+
+	processSpec := utils.CreateTestProcessSpec(env.colonyID)
+	_, err := client.SubmitProcessSpec(processSpec, env.runtimePrvKey)
+	assert.Nil(t, err)
+
+	assignedProcess, err := client.AssignProcess(env.colonyID, -1, env.runtimePrvKey)
+	assert.Nil(t, err)
+
+	results := []string{"result1", "result2"}
+
+	err = client.CloseWithResults(assignedProcess.ID, results, env.runtimePrvKey)
+	assert.Nil(t, err)
+
+	processFromServer, err := client.GetProcess(assignedProcess.ID, env.runtimePrvKey)
+	assert.Nil(t, err)
+
+	assert.Len(t, processFromServer.Results, 2)
+	assert.Equal(t, processFromServer.Results[0], "result1")
+	assert.Equal(t, processFromServer.Results[1], "result2")
 
 	server.Shutdown()
 	<-done
@@ -422,7 +449,7 @@ func TestCloseFailed(t *testing.T) {
 	assignedProcessFromServer, err := client.GetProcess(assignedProcess.ID, env.runtimePrvKey)
 	assert.Equal(t, core.RUNNING, assignedProcessFromServer.State)
 
-	err = client.CloseFailed(assignedProcess.ID, "error", env.runtimePrvKey)
+	err = client.Fail(assignedProcess.ID, "error", env.runtimePrvKey)
 	assert.Nil(t, err)
 
 	processFromServer, err := client.GetProcess(assignedProcess.ID, env.runtimePrvKey)

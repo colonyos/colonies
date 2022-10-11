@@ -34,6 +34,7 @@ type Process struct {
 	Parents           []string    `json:"parents"`
 	Children          []string    `json:"children"`
 	ProcessGraphID    string      `json:"processgraphid"`
+	Results           []string    `json:"results"`
 }
 
 func CreateProcess(processSpec *ProcessSpec) *Process {
@@ -160,7 +161,7 @@ func (process *Process) Equals(process2 *Process) bool {
 
 	counter := 0
 	for _, parent1 := range process.Parents {
-		for _, parent2 := range process.Parents {
+		for _, parent2 := range process2.Parents {
 			if parent1 == parent2 {
 				counter++
 			}
@@ -172,13 +173,25 @@ func (process *Process) Equals(process2 *Process) bool {
 
 	counter = 0
 	for _, child1 := range process.Children {
-		for _, child2 := range process.Children {
+		for _, child2 := range process2.Children {
 			if child1 == child2 {
 				counter++
 			}
 		}
 	}
 	if counter != len(process.Children) && counter != len(process2.Children) {
+		same = false
+	}
+
+	counter = 0
+	for _, r1 := range process.Results {
+		for _, r2 := range process2.Results {
+			if r1 == r2 {
+				counter++
+			}
+		}
+	}
+	if counter != len(process.Results) && counter != len(process2.Results) {
 		same = false
 	}
 

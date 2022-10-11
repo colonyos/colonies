@@ -42,12 +42,12 @@ func main() {
 			attribute := core.CreateAttribute(assignedProcess.ID, colonyID, "", core.OUT, "result", fibonacci.String())
 			client.AddAttribute(attribute, runtimePrvKey)
 
-			// Close the process as Successful
-			client.CloseSuccessful(assignedProcess.ID, runtimePrvKey)
+			// Close the process as successful
+			client.Close(assignedProcess.ID, runtimePrvKey)
 			return
 		}
 	}
 
-	// Close the process as Failed
-	client.CloseFailed(assignedProcess.ID, "invalid arg", runtimePrvKey)
+	// Close the process as failed
+	client.Fail(assignedProcess.ID, "invalid arg", runtimePrvKey)
 }

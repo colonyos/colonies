@@ -44,7 +44,7 @@ func TestSubmitWorkflowSpec(t *testing.T) {
 	assert.Len(t, graphs, 1)
 
 	// Close task1
-	err = client.CloseSuccessful(assignedProcess1.ID, env.runtimePrvKey)
+	err = client.Close(assignedProcess1.ID, env.runtimePrvKey)
 	assert.Nil(t, err)
 
 	assignedProcess2, err := client.AssignProcess(env.colonyID, -1, env.runtimePrvKey)
@@ -60,11 +60,11 @@ func TestSubmitWorkflowSpec(t *testing.T) {
 	assert.NotNil(t, err) // Note error
 
 	// Close task2
-	err = client.CloseSuccessful(assignedProcess2.ID, env.runtimePrvKey)
+	err = client.Close(assignedProcess2.ID, env.runtimePrvKey)
 	assert.Nil(t, err)
 
 	// Close task3
-	err = client.CloseSuccessful(assignedProcess3.ID, env.runtimePrvKey)
+	err = client.Close(assignedProcess3.ID, env.runtimePrvKey)
 	assert.Nil(t, err)
 
 	// Now it should be possible to assign task4 to a worker
@@ -73,7 +73,7 @@ func TestSubmitWorkflowSpec(t *testing.T) {
 	assert.True(t, assignedProcess4.ProcessSpec.Name == "task4")
 
 	// Close task4
-	err = client.CloseSuccessful(assignedProcess4.ID, env.runtimePrvKey)
+	err = client.Close(assignedProcess4.ID, env.runtimePrvKey)
 	assert.Nil(t, err)
 
 	graphs, err = client.GetWaitingProcessGraphs(env.colonyID, 100, env.runtimePrvKey)
@@ -106,7 +106,7 @@ func TestSubmitWorkflowSpecFailed(t *testing.T) {
 
 	assignedProcess1, err := client.AssignProcess(env.colonyID, -1, env.runtimePrvKey)
 	assert.Nil(t, err)
-	err = client.CloseFailed(assignedProcess1.ID, "error", env.runtimePrvKey)
+	err = client.Fail(assignedProcess1.ID, "error", env.runtimePrvKey)
 	assert.Nil(t, err)
 
 	graphs, err := client.GetFailedProcessGraphs(env.colonyID, 100, env.runtimePrvKey)

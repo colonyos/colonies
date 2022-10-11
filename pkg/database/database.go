@@ -49,6 +49,7 @@ type Database interface {
 	DeleteAllProcessesByProcessGraphID(processGraphID string) error
 	DeleteAllProcessesInProcessGraphsByColonyID(colonyID string) error
 	ResetProcess(process *core.Process) error
+	SetResults(processID string, results []string) error
 	SetProcessState(processID string, state int) error
 	SetWaitForParents(processID string, waitingForParent bool) error
 	SetWaitDeadline(process *core.Process, waitDeadline time.Time) error

@@ -374,7 +374,7 @@ func (server *ColoniesServer) handleCloseSuccessfulHTTPRequest(c *gin.Context, r
 		return
 	}
 
-	err = server.controller.closeSuccessful(process.ID)
+	err = server.controller.closeSuccessful(process.ID, msg.Results)
 	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		log.WithFields(log.Fields{"Err": err}).Info("Failed to close process as successful")
 		server.handleHTTPError(c, err, http.StatusInternalServerError)

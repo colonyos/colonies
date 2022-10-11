@@ -83,7 +83,7 @@ for {
     }
     
     execute(process)
-    client.CloseSuccessful(process.ID, prvKey)
+    client.Close(process.ID, prvKey)
 }
 ```
 

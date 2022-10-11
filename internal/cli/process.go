@@ -371,7 +371,7 @@ var listWaitingProcessesCmd = &cobra.Command{
 
 			var data [][]string
 			for _, process := range processes {
-				data = append(data, []string{process.ID, process.ProcessSpec.Func, Args2String(process.ProcessSpec.Args), process.SubmissionTime.Format(TimeLayout), process.ProcessSpec.Conditions.RuntimeType})
+				data = append(data, []string{process.ID, process.ProcessSpec.Func, StrArr2Str(process.ProcessSpec.Args), process.SubmissionTime.Format(TimeLayout), process.ProcessSpec.Conditions.RuntimeType})
 			}
 			table := tablewriter.NewWriter(os.Stdout)
 			table.SetHeader([]string{"ID", "Func", "Args", "Submission Time", "Runtime Type"})
@@ -432,7 +432,7 @@ var listRunningProcessesCmd = &cobra.Command{
 
 			var data [][]string
 			for _, process := range processes {
-				data = append(data, []string{process.ID, process.ProcessSpec.Func, Args2String(process.ProcessSpec.Args), process.StartTime.Format(TimeLayout), process.ProcessSpec.Conditions.RuntimeType})
+				data = append(data, []string{process.ID, process.ProcessSpec.Func, StrArr2Str(process.ProcessSpec.Args), process.StartTime.Format(TimeLayout), process.ProcessSpec.Conditions.RuntimeType})
 			}
 			table := tablewriter.NewWriter(os.Stdout)
 			table.SetHeader([]string{"ID", "Cmd", "Args", "Start time", "Runtime Type"})
@@ -492,7 +492,7 @@ var listSuccessfulProcessesCmd = &cobra.Command{
 
 			var data [][]string
 			for _, process := range processes {
-				data = append(data, []string{process.ID, process.ProcessSpec.Func, Args2String(process.ProcessSpec.Args), process.EndTime.Format(TimeLayout), process.ProcessSpec.Conditions.RuntimeType})
+				data = append(data, []string{process.ID, process.ProcessSpec.Func, StrArr2Str(process.ProcessSpec.Args), process.EndTime.Format(TimeLayout), process.ProcessSpec.Conditions.RuntimeType})
 			}
 			table := tablewriter.NewWriter(os.Stdout)
 			table.SetHeader([]string{"ID", "Func", "Args", "End time", "Runtime Type"})
@@ -552,7 +552,7 @@ var listFailedProcessesCmd = &cobra.Command{
 
 			var data [][]string
 			for _, process := range processes {
-				data = append(data, []string{process.ID, process.ProcessSpec.Func, Args2String(process.ProcessSpec.Args), process.EndTime.Format(TimeLayout), process.ProcessSpec.Conditions.RuntimeType})
+				data = append(data, []string{process.ID, process.ProcessSpec.Func, StrArr2Str(process.ProcessSpec.Args), process.EndTime.Format(TimeLayout), process.ProcessSpec.Conditions.RuntimeType})
 			}
 			table := tablewriter.NewWriter(os.Stdout)
 			table.SetHeader([]string{"ID", "Func", "Args", "End time", "Runtime Type"})
@@ -699,6 +699,7 @@ var getProcessCmd = &cobra.Command{
 			[]string{"ProcessingTime", process.ProcessingTime().String()},
 			[]string{"Retries", strconv.Itoa(process.Retries)},
 			[]string{"ErrorMsg", process.ErrorMsg},
+			[]string{"Results", StrArr2Str(process.Results)},
 		}
 		processTable := tablewriter.NewWriter(os.Stdout)
 		for _, v := range processData {
@@ -854,7 +855,7 @@ var closeSuccessful = &cobra.Command{
 		process, err := client.GetProcess(ProcessID, RuntimePrvKey)
 		CheckError(err)
 
-		err = client.CloseSuccessful(process.ID, RuntimePrvKey)
+		err = client.Close(process.ID, RuntimePrvKey)
 		CheckError(err)
 
 		log.WithFields(log.Fields{"ProcessID": process.ID}).Info("Process closed as Successful")
@@ -889,7 +890,7 @@ var closeFailed = &cobra.Command{
 		process, err := client.GetProcess(ProcessID, RuntimePrvKey)
 		CheckError(err)
 
-		err = client.CloseFailed(process.ID, "Closed by user", RuntimePrvKey)
+		err = client.Fail(process.ID, "Closed by user", RuntimePrvKey)
 		CheckError(err)
 
 		log.WithFields(log.Fields{"ProcessID": process.ID}).Info("Process closed as Failed")

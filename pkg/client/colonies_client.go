@@ -566,7 +566,7 @@ func (client *ColoniesClient) DeleteAllProcesses(colonyID string, prvKey string)
 	return nil
 }
 
-func (client *ColoniesClient) CloseSuccessful(processID string, prvKey string) error {
+func (client *ColoniesClient) Close(processID string, prvKey string) error {
 	msg := rpc.CreateCloseSuccessfulMsg(processID)
 	jsonString, err := msg.ToJSON()
 	if err != nil {
@@ -581,7 +581,23 @@ func (client *ColoniesClient) CloseSuccessful(processID string, prvKey string) e
 	return nil
 }
 
-func (client *ColoniesClient) CloseFailed(processID string, errorMsg string, prvKey string) error {
+func (client *ColoniesClient) CloseWithResults(processID string, results []string, prvKey string) error {
+	msg := rpc.CreateCloseSuccessfulMsg(processID)
+	msg.Results = results
+	jsonString, err := msg.ToJSON()
+	if err != nil {
+		return err
+	}
+
+	_, err = client.sendMessage(rpc.CloseSuccessfulPayloadType, jsonString, prvKey, false)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (client *ColoniesClient) Fail(processID string, errorMsg string, prvKey string) error {
 	msg := rpc.CreateCloseFailedMsg(processID, errorMsg)
 	jsonString, err := msg.ToJSON()
 	if err != nil {
