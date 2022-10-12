@@ -175,7 +175,7 @@ func (controller *coloniesController) submitWorkflow(generator *core.Generator) 
 		"Args":        args}).
 		Debug("Generator submitting workflow")
 
-	_, err = controller.createProcessGraph(workflowSpec, args)
+	_, err = controller.createProcessGraph(workflowSpec, args, []string{})
 	if err != nil {
 		log.WithFields(log.Fields{
 			"Error": err}).

@@ -88,6 +88,8 @@ func TestProcessEquals(t *testing.T) {
 	process1.SetSubmissionTime(startTime)
 	process1.SetStartTime(startTime.Add(1 * time.Second))
 	process1.SetEndTime(startTime.Add(4 * time.Second))
+	process1.Input = []string{"input1"}
+	process1.Output = []string{"output1"}
 	assert.True(t, process1.Equals(process1))
 	assert.False(t, process1.Equals(nil))
 

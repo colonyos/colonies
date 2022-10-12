@@ -86,7 +86,7 @@ func init() {
 	getProcessCmd.Flags().StringVarP(&ProcessID, "processid", "", "", "Process Id")
 	getProcessCmd.MarkFlagRequired("processid")
 	getProcessCmd.Flags().BoolVarP(&JSON, "json", "", false, "Print JSON instead of tables")
-	getProcessCmd.Flags().BoolVarP(&Output, "output", "", false, "Get process output")
+	getProcessCmd.Flags().BoolVarP(&PrintOutput, "out", "", false, "Print process output")
 
 	deleteProcessCmd.Flags().StringVarP(&RuntimeID, "runtimeid", "", "", "Runtime Id")
 	deleteProcessCmd.Flags().StringVarP(&RuntimePrvKey, "runtimeprvkey", "", "", "Runtime private key")
@@ -104,7 +104,7 @@ func init() {
 	assignProcessCmd.Flags().IntVarP(&Timeout, "timeout", "", 100, "Max time to wait for a process assignment")
 	assignProcessCmd.Flags().BoolVarP(&Latest, "latest", "", false, "Try to assign the latest process in the queue")
 
-	closeSuccessfulCmd.Flags().StringSliceVarP(&Results, "results", "", make([]string, 0), "Results")
+	closeSuccessfulCmd.Flags().StringSliceVarP(&Output, "out", "", make([]string, 0), "Output")
 	closeSuccessfulCmd.Flags().StringVarP(&RuntimeID, "runtimeid", "", "", "Runtime Id")
 	closeSuccessfulCmd.Flags().StringVarP(&RuntimePrvKey, "runtimeprvkey", "", "", "Runtime private key")
 	closeSuccessfulCmd.Flags().StringVarP(&ProcessID, "processid", "", "", "Process Id")
@@ -673,12 +673,8 @@ var getProcessCmd = &cobra.Command{
 			isAssigned = "True"
 		}
 
-		if Output {
-			for _, attribute := range process.Attributes {
-				if attribute.Key == "output" {
-					fmt.Print(attribute.Value)
-				}
-			}
+		if PrintOutput {
+			fmt.Println(StrArr2Str(process.Output))
 			os.Exit(0)
 		}
 
@@ -699,7 +695,7 @@ var getProcessCmd = &cobra.Command{
 			[]string{"ProcessingTime", process.ProcessingTime().String()},
 			[]string{"Retries", strconv.Itoa(process.Retries)},
 			[]string{"Errors", StrArr2Str(process.Errors)},
-			[]string{"Results", StrArr2Str(process.Results)},
+			[]string{"Output", StrArr2Str(process.Output)},
 		}
 		processTable := tablewriter.NewWriter(os.Stdout)
 		for _, v := range processData {
@@ -859,10 +855,8 @@ var closeSuccessfulCmd = &cobra.Command{
 		process, err := client.GetProcess(ProcessID, RuntimePrvKey)
 		CheckError(err)
 
-		if len(Results) > 0 {
-			fmt.Println("-------------")
-			fmt.Println(Results)
-			err = client.CloseWithResults(process.ID, Results, RuntimePrvKey)
+		if len(Output) > 0 {
+			err = client.CloseWithOutput(process.ID, Output, RuntimePrvKey)
 			CheckError(err)
 		} else {
 			err = client.Close(process.ID, RuntimePrvKey)

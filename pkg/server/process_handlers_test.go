@@ -409,7 +409,7 @@ func TestCloseSuccessful(t *testing.T) {
 	<-done
 }
 
-func TestCloseSuccessfulWithResults(t *testing.T) {
+func TestCloseSuccessfulWithOutput(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 
 	processSpec := utils.CreateTestProcessSpec(env.colonyID)
@@ -419,17 +419,16 @@ func TestCloseSuccessfulWithResults(t *testing.T) {
 	assignedProcess, err := client.AssignProcess(env.colonyID, -1, env.runtimePrvKey)
 	assert.Nil(t, err)
 
-	results := []string{"result1", "result2"}
-
-	err = client.CloseWithResults(assignedProcess.ID, results, env.runtimePrvKey)
+	output := []string{"result1", "result2"}
+	err = client.CloseWithOutput(assignedProcess.ID, output, env.runtimePrvKey)
 	assert.Nil(t, err)
 
 	processFromServer, err := client.GetProcess(assignedProcess.ID, env.runtimePrvKey)
 	assert.Nil(t, err)
 
-	assert.Len(t, processFromServer.Results, 2)
-	assert.Equal(t, processFromServer.Results[0], "result1")
-	assert.Equal(t, processFromServer.Results[1], "result2")
+	assert.Len(t, processFromServer.Output, 2)
+	assert.Equal(t, processFromServer.Output[0], "result1")
+	assert.Equal(t, processFromServer.Output[1], "result2")
 
 	server.Shutdown()
 	<-done

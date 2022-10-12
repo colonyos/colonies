@@ -89,7 +89,7 @@ func (server *ColoniesServer) handleAssignProcessHTTPRequest(c *gin.Context, rec
 		"Timeout":     msg.Timeout}).
 		Debug("Waiting for processes")
 
-	process, assignErr := server.controller.assignRuntime(recoveredID, msg.ColonyID, msg.Latest)
+	process, assignErr := server.controller.assign(recoveredID, msg.ColonyID, msg.Latest)
 	if assignErr != nil {
 		if msg.Timeout > 0 {
 			ctx, cancelCtx := context.WithTimeout(c.Request.Context(), time.Duration(msg.Timeout)*time.Second)
@@ -99,7 +99,7 @@ func (server *ColoniesServer) handleAssignProcessHTTPRequest(c *gin.Context, rec
 			server.controller.eventHandler.waitForProcess(runtime.RuntimeType, core.WAITING, "", ctx)
 
 			// Try again! Note there is no guarantees we was assigned as process since multiple workers competes getting jobs
-			process, assignErr = server.controller.assignRuntime(recoveredID, msg.ColonyID, msg.Latest)
+			process, assignErr = server.controller.assign(recoveredID, msg.ColonyID, msg.Latest)
 		}
 	}
 
@@ -374,7 +374,7 @@ func (server *ColoniesServer) handleCloseSuccessfulHTTPRequest(c *gin.Context, r
 		return
 	}
 
-	err = server.controller.closeSuccessful(process.ID, msg.Results)
+	err = server.controller.closeSuccessful(process.ID, msg.Output)
 	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		log.WithFields(log.Fields{"Err": err}).Info("Failed to close process as successful")
 		server.handleHTTPError(c, err, http.StatusInternalServerError)

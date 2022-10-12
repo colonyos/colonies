@@ -58,7 +58,7 @@ var Value string
 var AttributeID string
 var JSON bool
 var Wait bool
-var Output bool
+var PrintOutput bool
 var Full bool
 var LogDir string
 var GeneratorID string
@@ -68,7 +68,7 @@ var GeneratorTimeout int
 var Func string
 var Arg string
 var Args []string
-var Results []string
+var Output []string
 var Errors []string
 var Env []string
 var MaxWaitTime int

@@ -49,7 +49,8 @@ type Database interface {
 	DeleteAllProcessesByProcessGraphID(processGraphID string) error
 	DeleteAllProcessesInProcessGraphsByColonyID(colonyID string) error
 	ResetProcess(process *core.Process) error
-	SetResults(processID string, results []string) error
+	SetInput(processID string, output []string) error
+	SetOutput(processID string, output []string) error
 	SetErrors(processID string, errs []string) error
 	SetProcessState(processID string, state int) error
 	SetWaitForParents(processID string, waitingForParent bool) error

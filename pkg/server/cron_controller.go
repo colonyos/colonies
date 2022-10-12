@@ -147,7 +147,28 @@ func (controller *coloniesController) startCron(cron *core.Cron) {
 	if err != nil {
 		log.WithFields(log.Fields{"Error": err}).Error("Failed to parsing WorkflowSpec")
 	}
-	processGraph, err := controller.createProcessGraph(workflowSpec, []string{})
+
+	rootInput := []string{}
+
+	// Pick all outputs from the leaves of the previos processgraph, and
+	// then use it as input to the root process in the next processgraph
+	if cron.PrevProcessGraphID != "" {
+		processgraph, err := controller.db.GetProcessGraphByID(cron.PrevProcessGraphID)
+		if err != nil && processgraph != nil {
+			leafIDs, err := processgraph.Leaves()
+			if err != nil {
+				for _, leafID := range leafIDs {
+					leaf, err := controller.db.GetProcessByID(leafID)
+					if err != nil {
+						rootInput = append(rootInput, leaf.Output...)
+					}
+				}
+
+			}
+		}
+	}
+
+	processGraph, err := controller.createProcessGraph(workflowSpec, []string{}, rootInput)
 	if err != nil {
 		log.WithFields(log.Fields{"Error": err}).Error("Failed to parse workflow spec")
 	}

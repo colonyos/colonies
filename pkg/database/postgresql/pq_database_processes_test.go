@@ -544,7 +544,7 @@ func TestSetWaitDeadline(t *testing.T) {
 	assert.NotEqual(t, processFromDB.WaitDeadline, time.Time{})
 }
 
-func TestResults(t *testing.T) {
+func TestSetInput(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
 
@@ -555,16 +555,39 @@ func TestResults(t *testing.T) {
 	err = db.AddProcess(process)
 	assert.Nil(t, err)
 
-	results := []string{"result1", "result2"}
-	err = db.SetResults(process.ID, results)
+	input := []string{"result1", "result2"}
+	err = db.SetInput(process.ID, input)
 	assert.Nil(t, err)
 
 	processFromDB, err := db.GetProcessByID(process.ID)
 	assert.Nil(t, err)
 
-	assert.Len(t, processFromDB.Results, 2)
-	assert.Equal(t, processFromDB.Results[0], "result1")
-	assert.Equal(t, processFromDB.Results[1], "result2")
+	assert.Len(t, processFromDB.Input, 2)
+	assert.Equal(t, processFromDB.Input[0], "result1")
+	assert.Equal(t, processFromDB.Input[1], "result2")
+}
+
+func TestSetOutput(t *testing.T) {
+	db, err := PrepareTests()
+	assert.Nil(t, err)
+
+	defer db.Close()
+
+	colony := core.CreateColony(core.GenerateRandomID(), "test_colony_name")
+	process := utils.CreateTestProcess(colony.ID)
+	err = db.AddProcess(process)
+	assert.Nil(t, err)
+
+	output := []string{"result1", "result2"}
+	err = db.SetOutput(process.ID, output)
+	assert.Nil(t, err)
+
+	processFromDB, err := db.GetProcessByID(process.ID)
+	assert.Nil(t, err)
+
+	assert.Len(t, processFromDB.Output, 2)
+	assert.Equal(t, processFromDB.Output[0], "result1")
+	assert.Equal(t, processFromDB.Output[1], "result2")
 }
 
 func TestSetExecDeadline(t *testing.T) {

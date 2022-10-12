@@ -33,7 +33,8 @@ type Process struct {
 	Parents           []string    `json:"parents"`
 	Children          []string    `json:"children"`
 	ProcessGraphID    string      `json:"processgraphid"`
-	Results           []string    `json:"results"`
+	Input             []string    `json:"in"`
+	Output            []string    `json:"out"`
 	Errors            []string    `json:"errors"`
 }
 
@@ -150,24 +151,56 @@ func (process *Process) Equals(process2 *Process) bool {
 		same = false
 	}
 
+	if !same {
+		return false
+	}
+
 	counter := 0
-	for _, r1 := range process.Results {
-		for _, r2 := range process2.Results {
+	for _, r1 := range process.Output {
+		for _, r2 := range process2.Output {
 			if r1 == r2 {
 				counter++
 			}
 		}
 	}
-	if counter != len(process.Results) && counter != len(process2.Results) {
+	if counter != len(process.Output) && counter != len(process2.Output) {
 		same = false
+	}
+
+	if !same {
+		return false
+	}
+
+	counter = 0
+	for _, r1 := range process.Input {
+		for _, r2 := range process2.Input {
+			if r1 == r2 {
+				counter++
+			}
+		}
+	}
+	if counter != len(process.Input) && counter != len(process2.Input) {
+		same = false
+	}
+
+	if !same {
+		return false
 	}
 
 	if !IsAttributeArraysEqual(process.Attributes, process2.Attributes) {
 		same = false
 	}
 
+	if !same {
+		return false
+	}
+
 	if !process.ProcessSpec.Equals(&process2.ProcessSpec) {
 		same = false
+	}
+
+	if !same {
+		return false
 	}
 
 	counter = 0
@@ -182,6 +215,10 @@ func (process *Process) Equals(process2 *Process) bool {
 		same = false
 	}
 
+	if !same {
+		return false
+	}
+
 	counter = 0
 	for _, child1 := range process.Children {
 		for _, child2 := range process2.Children {
@@ -194,15 +231,19 @@ func (process *Process) Equals(process2 *Process) bool {
 		same = false
 	}
 
+	if !same {
+		return false
+	}
+
 	counter = 0
-	for _, r1 := range process.Results {
-		for _, r2 := range process2.Results {
+	for _, r1 := range process.Output {
+		for _, r2 := range process2.Output {
 			if r1 == r2 {
 				counter++
 			}
 		}
 	}
-	if counter != len(process.Results) && counter != len(process2.Results) {
+	if counter != len(process.Output) && counter != len(process2.Output) {
 		same = false
 	}
 

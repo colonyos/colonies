@@ -220,9 +220,6 @@ var workerStartCmd = &cobra.Command{
 				output += string(bytes.Trim(tmp, "\x00"))
 			}
 
-			attribute := core.CreateAttribute(assignedProcess.ID, ColonyID, "", core.OUT, "output", output)
-			client.AddAttribute(attribute, runtimePrvKey)
-
 			failure = false
 			if err = cmd.Wait(); err != nil {
 				log.Error(err)
@@ -231,10 +228,10 @@ var workerStartCmd = &cobra.Command{
 
 			if failure {
 				log.WithFields(log.Fields{"processID": assignedProcess.ID}).Info("Closing process as failed")
-				client.Fail(assignedProcess.ID, []string{"Process failed"}, runtimePrvKey)
+				client.Fail(assignedProcess.ID, []string{output}, runtimePrvKey)
 			} else {
 				log.WithFields(log.Fields{"processID": assignedProcess.ID}).Info("Closing process as successful")
-				client.Close(assignedProcess.ID, runtimePrvKey)
+				client.CloseWithOutput(assignedProcess.ID, []string{output}, runtimePrvKey)
 			}
 		}
 	},

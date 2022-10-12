@@ -545,7 +545,7 @@ func (controller *coloniesController) updateProcessGraph(graph *core.ProcessGrap
 	return graph.UpdateProcessIDs()
 }
 
-func (controller *coloniesController) createProcessGraph(workflowSpec *core.WorkflowSpec, args []string) (*core.ProcessGraph, error) {
+func (controller *coloniesController) createProcessGraph(workflowSpec *core.WorkflowSpec, args []string, rootInput []string) (*core.ProcessGraph, error) {
 	processgraph, err := core.CreateProcessGraph(workflowSpec.ColonyID)
 	if err != nil {
 		log.WithFields(log.Fields{"Error": err}).Error("Failed to create processgraph")
@@ -570,7 +570,11 @@ func (controller *coloniesController) createProcessGraph(workflowSpec *core.Work
 				// This will only happen when using Generators
 				process.ProcessSpec.Args = args
 			}
+			if len(rootInput) > 0 {
+				process.Input = rootInput
+			}
 			rootProcesses = append(rootProcesses, process)
+
 			processgraph.AddRoot(process.ID)
 		} else {
 			// The process has to wait for its parents
@@ -628,7 +632,7 @@ func (controller *coloniesController) submitWorkflowSpec(workflowSpec *core.Work
 	cmd := &command{processGraphReplyChan: make(chan *core.ProcessGraph, 1),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
-			addedProcessGraph, err := controller.createProcessGraph(workflowSpec, []string{})
+			addedProcessGraph, err := controller.createProcessGraph(workflowSpec, []string{}, []string{})
 			if err != nil {
 				cmd.errorChan <- err
 				return
@@ -854,7 +858,7 @@ func (controller *coloniesController) deleteAllProcessGraphs(colonyID string) er
 	return <-cmd.errorChan
 }
 
-func (controller *coloniesController) closeSuccessful(processID string, results []string) error {
+func (controller *coloniesController) closeSuccessful(processID string, output []string) error {
 	cmd := &command{errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
 			process, err := controller.db.GetProcessByID(processID)
@@ -863,8 +867,8 @@ func (controller *coloniesController) closeSuccessful(processID string, results 
 				return
 			}
 
-			if len(results) > 0 {
-				err = controller.db.SetResults(processID, results)
+			if len(output) > 0 {
+				err = controller.db.SetOutput(processID, output)
 			}
 
 			err = controller.db.MarkSuccessful(process)
@@ -969,7 +973,7 @@ func (controller *coloniesController) closeFailed(processID string, errs []strin
 	return <-cmd.errorChan
 }
 
-func (controller *coloniesController) assignRuntime(runtimeID string, colonyID string, latest bool) (*core.Process, error) {
+func (controller *coloniesController) assign(runtimeID string, colonyID string, latest bool) (*core.Process, error) {
 	cmd := &command{processReplyChan: make(chan *core.Process),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
@@ -1037,6 +1041,20 @@ func (controller *coloniesController) assignRuntime(runtimeID string, colonyID s
 					cmd.errorChan <- err
 					return
 				}
+
+				// Now, we need to collect the output from the parents and use ut as our input
+				output := []string{}
+				for _, parentID := range selectedProcess.Parents {
+					parentProcess, err := controller.db.GetProcessByID(parentID)
+					if err != nil {
+						log.Error(err)
+						cmd.errorChan <- err
+						return
+					}
+					output = append(output, parentProcess.Output...)
+				}
+				controller.db.SetInput(selectedProcess.ID, output)
+				selectedProcess.Input = output
 			}
 
 			cmd.processReplyChan <- selectedProcess
