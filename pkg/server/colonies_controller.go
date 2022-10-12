@@ -547,6 +547,10 @@ func (controller *coloniesController) updateProcessGraph(graph *core.ProcessGrap
 
 func (controller *coloniesController) createProcessGraph(workflowSpec *core.WorkflowSpec, args []string) (*core.ProcessGraph, error) {
 	processgraph, err := core.CreateProcessGraph(workflowSpec.ColonyID)
+	if err != nil {
+		log.WithFields(log.Fields{"Error": err}).Error("Failed to create processgraph")
+		return nil, err
+	}
 
 	// Create all processes
 	processMap := make(map[string]*core.Process)
@@ -579,7 +583,7 @@ func (controller *coloniesController) createProcessGraph(workflowSpec *core.Work
 
 	err = controller.db.AddProcessGraph(processgraph)
 	if err != nil {
-		msg := "Failed to submit workflow, failed to add processgraph"
+		msg := "Failed to create processgraph, failed to add processgraph"
 		log.WithFields(log.Fields{"Error": err}).Error(msg)
 		return nil, errors.New(msg)
 	}
