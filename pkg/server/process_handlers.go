@@ -92,7 +92,7 @@ func (server *ColoniesServer) handleAssignProcessHTTPRequest(c *gin.Context, rec
 	process, assignErr := server.controller.assignRuntime(recoveredID, msg.ColonyID, msg.Latest)
 	if assignErr != nil {
 		if msg.Timeout > 0 {
-			ctx, cancelCtx := context.WithTimeout(context.Background(), time.Duration(msg.Timeout)*time.Second)
+			ctx, cancelCtx := context.WithTimeout(c.Request.Context(), time.Duration(msg.Timeout)*time.Second)
 			defer cancelCtx()
 
 			// Wait for a new process to be submitted to a ColoniesServer in the cluster
