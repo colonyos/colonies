@@ -567,6 +567,27 @@ func TestSetInput(t *testing.T) {
 	assert.Equal(t, processFromDB.Input[1], "result2")
 }
 
+func TestSetInput2(t *testing.T) {
+	db, err := PrepareTests()
+	assert.Nil(t, err)
+
+	defer db.Close()
+
+	colony := core.CreateColony(core.GenerateRandomID(), "test_colony_name")
+	process := utils.CreateTestProcess(colony.ID)
+	input := []string{"result1", "result2"}
+	process.Input = input
+	err = db.AddProcess(process)
+	assert.Nil(t, err)
+
+	processFromDB, err := db.GetProcessByID(process.ID)
+	assert.Nil(t, err)
+
+	assert.Len(t, processFromDB.Input, 2)
+	assert.Equal(t, processFromDB.Input[0], "result1")
+	assert.Equal(t, processFromDB.Input[1], "result2")
+}
+
 func TestSetOutput(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)

@@ -4,62 +4,9 @@
 ![ColonyOSLogo](docs/images/ColonyOsLogoNoShaddow2.png)
 
 # What is Colonies?
-**A Colony is like a Bee Colony, but for computer software**. 
+Colonies is a **Process Orchestration** framework for managing AI/ML workloads across heterogeneous computing platforms. It provides a meta-layer where complex workflows can be described and managed as **meta-processes** independently on their implementation and where they are executed. AI applications can then be broken down into composable functions executed by remote workers anywhere on the Internet, enabling a compute continuum spanning devices, cloud, edge, and HPC. A build-in zero-trust protocol makes it possible to organize remote workers as a single unit called a **Colony**, thus making it possible for users to keep control even if workloads are spread out and executed on many different platforms at the same time. 
 
-A Colony is a trusted community of remotely connected computer programs (so-called workers) organized as a single unit to perform execution of various tasks. It is a platform for **process automation** and **distributed intelligence** and provides a **zero-trust infrastructure** for worker communication and task execution coordination within a Colony. The long-term vision is to create a global peer-to-peer network connecting many independent **self-sovereign** Colonies across the Internet. 
-
-Simple helloworld worker in JavaScript:
-```javascript
-let colonyid = "4787a5071856a4acf702b2ffcea422e3237a679c681314113d86139461290cf4"
-let prvkey = "ddf7f7791208083b6a9ed975a72684f6406a269cfa36f1b1c32045c0a71fff05"
-
-runtime.assign(colonyid, prvkey).then((process) => {
-    if process.spec.func == "helloworld" {
-        let attr = {
-            targetid: process.processid,
-            targetcolonyid: colonyid,
-            key: "output",
-            value: "helloworld"
-        } 
-        runtime.addAttribute(attr, prvkey)
-        runtime.closeProcess(process.processid, true, prvkey)
-    }
-})
-```
-
-Submit a process spec from another machine:
-```console
-$ colonies process run --func helloworld --targettype cli --wait
-helloworld
-```
-
-## How does it work?
-* Humans (or workers) submit process specs to a Colony via a Colonies server.
-* Colonies workers connect to the Colonies server and **search for suitable tasks to execute**. Each worker must have a **valid identity** (like a passport) to prove its Colony membership and the Colonies server makes sure only authorized and qualified workers can connect and be assigned processes. 
-* Colonies workers can **reside anywhere on the Internet**, e.g. a server, inside a Kubernetes Pod, a smart phone app, or embedded in a web page, thus enabling a compute continuum spanning devices, edge and cloud.
-* If a worker fails to complete a task in time, the task **will be re-assigned to another worker**. This fail-safe mechanism ensures that all tasks are eventually completed. This also makes it possible to apply **Chaos Engineering**, e.g. randomly kill workers to test the overall stability of the system.  
-
-## What is it good at?
-* **Distributed computing**. Manage ML/AI workloads on Kubernetes. Form a Colony by deploying one or several Colonies workers in Kubernetes Pods. Then use Colonies to enable batch processing and launch processes inside worker containers.
-* **Distributed RPC**. Use Colonies to build overlay networks to manage workflows spanning multiple cloud/edge servers and devices.
-* **Grid computing**. Use Colonies as a control server where geographically dispersed workers perform computations.
-* **Serverless computing**. Use Colonies as a building block for serverless computing.
-* **Meta operating systems**. Use Colonies to integrate various systems together, e.g. a Slurm worker could train a neural network at a super-computer, which are then automatically deployed by another worker to an Edge server or IoT device. Colonies makes it possible to handle these kinds of heterogeneous systems as a single unit to establish a compute continuum across many different systems and platforms.     
-
-## What about Kubernetes and container-native workflow engines?
-* Colonies makes it possible to **orchestrate processes inside containers**. This is far more efficient than launching a new container for each new job like [Argo Workflows](https://argoproj.github.io/argo-workflows). This is especially important when dealing with AI workflows consisting of huge containers (tens of gigabytes) or when a large amount of data needs to be shuffled into memory.
-* Colonies **complements Kubernetes** and brings robust and fault tolerant **batch processing** to Kubernetes, typically needed by many AI workloads.
-* At the same time, Colonies is **lightweight and does not require Kubernetes**. It runs in browsers, smart phones or IoT devices. This also makes it much easier to develop and test complex workflows before they are deployed on Kubernetes.
-* Most existing frameworks are not built on top of a crypto-protocol, which makes them hard to use in an overlay across platforms and untrusted networks. 
-
-## Key features
-* Colonies is based on [Etcd](https://etcd.io/) and is **scalable** and **robust**. 
-* A built-in crypto-protocol ECDSA (Elliptic Curve Digital Signature Algorithm) provides identity management and **secure** and **zero-trust process execution**.
-* **Robust batch processing and distributed RPC.** Processes not finishing in time are automatically moved back to the job queue to be executed by another worker.  
-* **Pull-based orchestration.** Users (or workers) submit process specifications the Colonies server. Colonies workers connect to the Colonies server and request processes to execute. A HTTP Long Polling/WebSocket protocol ensure that workers can reside anywhere on the Internet, even behind firewalls. The Colonies server never establish connections directly to workers. 
-* **Multi-step workflows** or **Directed Acyclic Graph (DAG)** to capture dependencies between jobs.
-* **Generators** to automatically spawn new workflows based on external events or timeouts.
-* **Traceability**, full process execution history can be stored and used for auditing.
+![MetaOS](docs/images/meta-os.png)
 
 # More information
 ## Installation
@@ -67,6 +14,7 @@ helloworld
 ## Presentations
 * [Process Orchestration with ColonyOS](docs/Colonies.pptx)
 ## Guides
+* [Introduction](docs/Introduction.md)
 * [Getting started](docs/GettingStarted.md)
 * [How to implement a Colonies worker](docs/Worker.md)
 * [How to implement a FibonacciwWorker in Go](docs/GoTutorial.md)

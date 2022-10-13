@@ -149,17 +149,17 @@ func (controller *coloniesController) startCron(cron *core.Cron) {
 	}
 
 	rootInput := []string{}
-
 	// Pick all outputs from the leaves of the previos processgraph, and
 	// then use it as input to the root process in the next processgraph
 	if cron.PrevProcessGraphID != "" {
-		processgraph, err := controller.db.GetProcessGraphByID(cron.PrevProcessGraphID)
-		if err != nil && processgraph != nil {
-			leafIDs, err := processgraph.Leaves()
-			if err != nil {
+		processGraph, err := controller.db.GetProcessGraphByID(cron.PrevProcessGraphID)
+		if err == nil && processGraph != nil {
+			processGraph.SetStorage(controller.db)
+			leafIDs, err := processGraph.Leaves()
+			if err == nil {
 				for _, leafID := range leafIDs {
 					leaf, err := controller.db.GetProcessByID(leafID)
-					if err != nil {
+					if err == nil {
 						rootInput = append(rootInput, leaf.Output...)
 					}
 				}
@@ -190,6 +190,7 @@ func (controller *coloniesController) triggerCrons() {
 				nextRun := controller.calcNextRun(cron)
 				controller.db.UpdateCron(cron.ID, nextRun, time.Time{}, "")
 				cron.NextRun = nextRun
+				continue
 			}
 			if cron.HasExpired() {
 				processgraph, err := controller.db.GetProcessGraphByID(cron.PrevProcessGraphID)

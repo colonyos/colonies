@@ -1,6 +1,7 @@
 package server
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
@@ -70,9 +71,81 @@ func TestAddCronWaitForPrevProcessGraph(t *testing.T) {
 
 	stat, err := client.ColonyStatistics(env.colonyID, env.runtimePrvKey)
 	assert.Nil(t, err)
-
+	assert.Equal(t, stat.WaitingWorkflows, 1)
 	assert.Equal(t, stat.SuccessfulWorkflows, 1)
 	assert.Equal(t, stat.WaitingWorkflows, 1)
+
+	server.Shutdown()
+	<-done
+}
+
+func TestAddCronInputOutput(t *testing.T) {
+	env, client, server, _, done := setupTestEnv2(t)
+
+	cron := utils.FakeSingleCron(t, env.colonyID)
+	cron.Interval = 1
+	cron.WaitForPrevProcessGraph = true
+
+	addedCron, err := client.AddCron(cron, env.runtimePrvKey)
+	assert.Nil(t, err)
+	assert.NotNil(t, addedCron)
+
+	process, err := client.AssignProcess(env.colonyID, 100, env.runtimePrvKey)
+	assert.Nil(t, err)
+	assert.NotNil(t, process)
+	err = client.CloseWithOutput(process.ID, []string{"result_cron1"}, env.runtimePrvKey)
+	fmt.Println(process.ID)
+
+	process, err = client.AssignProcess(env.colonyID, 100, env.runtimePrvKey)
+	assert.Nil(t, err)
+	assert.NotNil(t, process)
+	assert.Len(t, process.Input, 1)
+	assert.Equal(t, process.Input[0], "result_cron1")
+
+	stat, err := client.ColonyStatistics(env.colonyID, env.runtimePrvKey)
+	assert.Nil(t, err)
+	assert.Equal(t, stat.WaitingWorkflows, 0)
+	assert.Equal(t, stat.RunningWorkflows, 1)
+	assert.Equal(t, stat.SuccessfulWorkflows, 1)
+
+	server.Shutdown()
+	<-done
+}
+
+func TestAddCronInputOutput2(t *testing.T) {
+	env, client, server, _, done := setupTestEnv2(t)
+
+	cron := utils.FakeCron(t, env.colonyID)
+	cron.Interval = 1
+	cron.WaitForPrevProcessGraph = true
+
+	addedCron, err := client.AddCron(cron, env.runtimePrvKey)
+	assert.Nil(t, err)
+	assert.NotNil(t, addedCron)
+
+	process, err := client.AssignProcess(env.colonyID, 100, env.runtimePrvKey)
+	assert.Nil(t, err)
+	assert.NotNil(t, process)
+	err = client.Close(process.ID, env.runtimePrvKey)
+	assert.Nil(t, err)
+
+	process, err = client.AssignProcess(env.colonyID, 100, env.runtimePrvKey)
+	assert.Nil(t, err)
+	assert.NotNil(t, process)
+	err = client.CloseWithOutput(process.ID, []string{"result_cron1"}, env.runtimePrvKey)
+	fmt.Println(process.ID)
+
+	process, err = client.AssignProcess(env.colonyID, 100, env.runtimePrvKey)
+	assert.Nil(t, err)
+	assert.NotNil(t, process)
+	assert.Len(t, process.Input, 1)
+	assert.Equal(t, process.Input[0], "result_cron1")
+
+	stat, err := client.ColonyStatistics(env.colonyID, env.runtimePrvKey)
+	assert.Nil(t, err)
+	assert.Equal(t, stat.WaitingWorkflows, 0)
+	assert.Equal(t, stat.RunningWorkflows, 1)
+	assert.Equal(t, stat.SuccessfulWorkflows, 1)
 
 	server.Shutdown()
 	<-done

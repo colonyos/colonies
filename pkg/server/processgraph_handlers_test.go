@@ -148,8 +148,14 @@ func TestSubmitWorkflowSpecWithInputOutput(t *testing.T) {
 	assignedProcess4, err := client.AssignProcess(env.colonyID, -1, env.runtimePrvKey)
 	assert.Nil(t, err)
 	assert.Len(t, assignedProcess4.Input, 2)
-	assert.Equal(t, assignedProcess4.Input[0], "output_task2")
-	assert.Equal(t, assignedProcess4.Input[1], "output_task3")
+
+	ok := false
+	if assignedProcess4.Input[0] == "output_task2" && assignedProcess4.Input[1] == "output_task3" {
+		ok = true
+	} else if assignedProcess4.Input[0] == "output_task3" && assignedProcess4.Input[1] == "output_task2" {
+		ok = true
+	}
+	assert.True(t, ok)
 
 	// Close task4
 	err = client.Close(assignedProcess4.ID, env.runtimePrvKey)

@@ -107,6 +107,7 @@ func (db *PQDatabase) parseProcesses(rows *sql.Rows) ([]*core.Process, error) {
 
 		processSpec := core.CreateProcessSpec(name, fn, args, targetColonyID, targetRuntimeIDs, runtimeType, maxWaitTime, maxExecTime, maxRetries, env, dependencies, priority)
 		process := core.CreateProcessFromDB(processSpec, processID, assignedRuntimeID, isAssigned, state, submissionTime, startTime, endTime, waitDeadline, execDeadline, errs, retries, attributes)
+
 		process.Input = input
 		process.Output = output
 		processes = append(processes, process)

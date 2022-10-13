@@ -566,12 +566,14 @@ func (controller *coloniesController) createProcessGraph(workflowSpec *core.Work
 			// The process is a root process, let it start immediately
 			process.WaitForParents = false
 			if len(args) > 0 {
-				// TODO: May be we should not overwrite the args
-				// This will only happen when using Generators
+				// NOTE, overwrite the args, this will only happen when using Generators
 				process.ProcessSpec.Args = args
 			}
 			if len(rootInput) > 0 {
 				process.Input = rootInput
+				if err != nil {
+					return nil, err
+				}
 			}
 			rootProcesses = append(rootProcesses, process)
 
@@ -1053,8 +1055,10 @@ func (controller *coloniesController) assign(runtimeID string, colonyID string, 
 					}
 					output = append(output, parentProcess.Output...)
 				}
-				controller.db.SetInput(selectedProcess.ID, output)
-				selectedProcess.Input = output
+				if len(selectedProcess.Parents) > 0 {
+					controller.db.SetInput(selectedProcess.ID, output)
+					selectedProcess.Input = output
+				}
 			}
 
 			cmd.processReplyChan <- selectedProcess
