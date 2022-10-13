@@ -44,7 +44,7 @@ func TestSubmitWorkflowSpec(t *testing.T) {
 	assert.Len(t, graphs, 1)
 
 	// Close task1
-	err = client.CloseSuccessful(assignedProcess1.ID, env.runtimePrvKey)
+	err = client.Close(assignedProcess1.ID, env.runtimePrvKey)
 	assert.Nil(t, err)
 
 	assignedProcess2, err := client.AssignProcess(env.colonyID, -1, env.runtimePrvKey)
@@ -60,11 +60,11 @@ func TestSubmitWorkflowSpec(t *testing.T) {
 	assert.NotNil(t, err) // Note error
 
 	// Close task2
-	err = client.CloseSuccessful(assignedProcess2.ID, env.runtimePrvKey)
+	err = client.Close(assignedProcess2.ID, env.runtimePrvKey)
 	assert.Nil(t, err)
 
 	// Close task3
-	err = client.CloseSuccessful(assignedProcess3.ID, env.runtimePrvKey)
+	err = client.Close(assignedProcess3.ID, env.runtimePrvKey)
 	assert.Nil(t, err)
 
 	// Now it should be possible to assign task4 to a worker
@@ -73,7 +73,7 @@ func TestSubmitWorkflowSpec(t *testing.T) {
 	assert.True(t, assignedProcess4.ProcessSpec.Name == "task4")
 
 	// Close task4
-	err = client.CloseSuccessful(assignedProcess4.ID, env.runtimePrvKey)
+	err = client.Close(assignedProcess4.ID, env.runtimePrvKey)
 	assert.Nil(t, err)
 
 	graphs, err = client.GetWaitingProcessGraphs(env.colonyID, 100, env.runtimePrvKey)
@@ -96,6 +96,75 @@ func TestSubmitWorkflowSpec(t *testing.T) {
 	<-done
 }
 
+func TestSubmitWorkflowSpecWithInputOutput(t *testing.T) {
+	//         task1
+	//          / \
+	//     task2   task3
+	//          \ /
+	//         task4
+
+	env, client, server, _, done := setupTestEnv2(t)
+
+	diamond := generateDiamondtWorkflowSpec(env.colonyID)
+	submittedGraph, err := client.SubmitWorkflowSpec(diamond, env.runtimePrvKey)
+	assert.Nil(t, err)
+	assert.NotNil(t, submittedGraph)
+
+	graphs, err := client.GetWaitingProcessGraphs(env.colonyID, 100, env.runtimePrvKey)
+	assert.Nil(t, err)
+	assert.Len(t, graphs, 1)
+
+	processes, err := client.GetWaitingProcesses(env.colonyID, 100, env.runtimePrvKey)
+	assert.Nil(t, err)
+	assert.Len(t, processes, 4)
+
+	assignedProcess1, err := client.AssignProcess(env.colonyID, -1, env.runtimePrvKey)
+	assert.Nil(t, err)
+	assert.True(t, assignedProcess1.ProcessSpec.Name == "task1")
+
+	// Close task1
+	err = client.CloseWithOutput(assignedProcess1.ID, []string{"output_task1"}, env.runtimePrvKey)
+	assert.Nil(t, err)
+
+	assignedProcess2, err := client.AssignProcess(env.colonyID, -1, env.runtimePrvKey)
+	assert.Nil(t, err)
+	assert.Len(t, assignedProcess2.Input, 1)
+	assert.Equal(t, assignedProcess2.Input[0], "output_task1")
+
+	assignedProcess3, err := client.AssignProcess(env.colonyID, -1, env.runtimePrvKey)
+	assert.Nil(t, err)
+	assert.Len(t, assignedProcess3.Input, 1)
+	assert.Equal(t, assignedProcess3.Input[0], "output_task1")
+
+	// Close task2
+	err = client.CloseWithOutput(assignedProcess2.ID, []string{"output_task2"}, env.runtimePrvKey)
+	assert.Nil(t, err)
+
+	// Close task3
+	err = client.CloseWithOutput(assignedProcess3.ID, []string{"output_task3"}, env.runtimePrvKey)
+	assert.Nil(t, err)
+
+	// Now it should be possible to assign task4 to a worker
+	assignedProcess4, err := client.AssignProcess(env.colonyID, -1, env.runtimePrvKey)
+	assert.Nil(t, err)
+	assert.Len(t, assignedProcess4.Input, 2)
+
+	ok := false
+	if assignedProcess4.Input[0] == "output_task2" && assignedProcess4.Input[1] == "output_task3" {
+		ok = true
+	} else if assignedProcess4.Input[0] == "output_task3" && assignedProcess4.Input[1] == "output_task2" {
+		ok = true
+	}
+	assert.True(t, ok)
+
+	// Close task4
+	err = client.Close(assignedProcess4.ID, env.runtimePrvKey)
+	assert.Nil(t, err)
+
+	server.Shutdown()
+	<-done
+}
+
 func TestSubmitWorkflowSpecFailed(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 
@@ -106,7 +175,7 @@ func TestSubmitWorkflowSpecFailed(t *testing.T) {
 
 	assignedProcess1, err := client.AssignProcess(env.colonyID, -1, env.runtimePrvKey)
 	assert.Nil(t, err)
-	err = client.CloseFailed(assignedProcess1.ID, "error", env.runtimePrvKey)
+	err = client.Fail(assignedProcess1.ID, []string{"error"}, env.runtimePrvKey)
 	assert.Nil(t, err)
 
 	graphs, err := client.GetFailedProcessGraphs(env.colonyID, 100, env.runtimePrvKey)
