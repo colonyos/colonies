@@ -9,8 +9,8 @@ import (
 )
 
 func (db *PQDatabase) AddCron(cron *core.Cron) error {
-	sqlStatement := `INSERT INTO  ` + db.dbPrefix + `CRONS (CRON_ID, COLONY_ID, NAME, CRON_EXPR, INTERVALL, RANDOM, NEXT_RUN, LAST_RUN, WORKFLOW_SPEC, LAST_PROCESSGRAPH_ID) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`
-	_, err := db.postgresql.Exec(sqlStatement, cron.ID, cron.ColonyID, cron.Name, cron.CronExpression, cron.Interval, cron.Random, cron.NextRun, cron.LastRun, cron.WorkflowSpec, cron.LastProcessGraphID)
+	sqlStatement := `INSERT INTO  ` + db.dbPrefix + `CRONS (CRON_ID, COLONY_ID, NAME, CRON_EXPR, INTERVALL, RANDOM, NEXT_RUN, LAST_RUN, WORKFLOW_SPEC, PREV_PROCESSGRAPH_ID, WAIT_FOR_PREV_PROCESSGRAPH) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`
+	_, err := db.postgresql.Exec(sqlStatement, cron.ID, cron.ColonyID, cron.Name, cron.CronExpression, cron.Interval, cron.Random, cron.NextRun, cron.LastRun, cron.WorkflowSpec, cron.PrevProcessGraphID, cron.WaitForPrevProcessGraph)
 	if err != nil {
 		return err
 	}
@@ -19,7 +19,7 @@ func (db *PQDatabase) AddCron(cron *core.Cron) error {
 }
 
 func (db *PQDatabase) UpdateCron(cronID string, nextRun time.Time, lastRun time.Time, lastProcessGraphID string) error {
-	sqlStatement := `UPDATE  ` + db.dbPrefix + `CRONS SET NEXT_RUN=$1, LAST_RUN=$2, LAST_PROCESSGRAPH_ID=$3 WHERE CRON_ID=$4`
+	sqlStatement := `UPDATE  ` + db.dbPrefix + `CRONS SET NEXT_RUN=$1, LAST_RUN=$2, PREV_PROCESSGRAPH_ID=$3 WHERE CRON_ID=$4`
 	_, err := db.postgresql.Exec(sqlStatement, nextRun, lastRun, lastProcessGraphID, cronID)
 	if err != nil {
 		return err
@@ -41,13 +41,14 @@ func (db *PQDatabase) parseCrons(rows *sql.Rows) ([]*core.Cron, error) {
 		var nextRun time.Time
 		var lastRun time.Time
 		var workflowSpec string
-		var lastProcessGraphID string
+		var prevProcessGraphID string
+		var waitForPrevProcessGraph bool
 
-		if err := rows.Scan(&cronID, &colonyID, &name, &cronExpr, &interval, &random, &nextRun, &lastRun, &workflowSpec, &lastProcessGraphID); err != nil {
+		if err := rows.Scan(&cronID, &colonyID, &name, &cronExpr, &interval, &random, &nextRun, &lastRun, &workflowSpec, &prevProcessGraphID, &waitForPrevProcessGraph); err != nil {
 			return nil, err
 		}
 
-		cron := &core.Cron{ID: cronID, ColonyID: colonyID, Name: name, CronExpression: cronExpr, Interval: interval, Random: random, NextRun: nextRun, LastRun: lastRun, WorkflowSpec: workflowSpec, LastProcessGraphID: lastProcessGraphID}
+		cron := &core.Cron{ID: cronID, ColonyID: colonyID, Name: name, CronExpression: cronExpr, Interval: interval, Random: random, NextRun: nextRun, LastRun: lastRun, WorkflowSpec: workflowSpec, PrevProcessGraphID: prevProcessGraphID, WaitForPrevProcessGraph: waitForPrevProcessGraph}
 
 		crons = append(crons, cron)
 	}

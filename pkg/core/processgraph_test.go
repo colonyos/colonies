@@ -786,3 +786,90 @@ func TestUpdateProcessIDs(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Len(t, graph.ProcessIDs, 3)
 }
+
+func TestProcessGraphGetLeaves(t *testing.T) {
+	process1 := createProcess()
+	process2 := createProcess()
+	process3 := createProcess()
+	process4 := createProcess()
+
+	//        process1
+	//          / \
+	//  process2   process3
+	//          \ /
+	//        process4
+
+	process1.AddChild(process2.ID)
+	process1.AddChild(process3.ID)
+	process2.AddParent(process1.ID)
+	process3.AddParent(process1.ID)
+	process2.AddChild(process4.ID)
+	process3.AddChild(process4.ID)
+	process4.AddParent(process2.ID)
+	process4.AddParent(process3.ID)
+
+	mock := createProcessGraphStorageMock()
+	mock.addProcess(process1)
+	mock.addProcess(process2)
+	mock.addProcess(process3)
+	mock.addProcess(process4)
+
+	colonyID := GenerateRandomID()
+
+	graph, err := CreateProcessGraph(colonyID)
+	assert.Nil(t, err)
+
+	graph.storage = mock
+
+	graph.AddRoot(process1.ID)
+
+	leaves, err := graph.Leaves()
+	assert.Nil(t, err)
+	assert.Len(t, leaves, 1)
+	assert.Equal(t, leaves[0], process4.ID)
+}
+
+func TestProcessGraphGetLeaves2(t *testing.T) {
+	process1 := createProcess()
+	process2 := createProcess()
+	process3 := createProcess()
+	process4 := createProcess()
+	process5 := createProcess()
+
+	//        process1
+	//          / \
+	//  process2   process3
+	//     |           |
+	//  process4   process5
+
+	process1.AddChild(process2.ID)
+	process1.AddChild(process3.ID)
+	process2.AddParent(process1.ID)
+	process3.AddParent(process1.ID)
+	process2.AddChild(process4.ID)
+	process3.AddChild(process5.ID)
+	process4.AddParent(process2.ID)
+	process5.AddParent(process3.ID)
+
+	mock := createProcessGraphStorageMock()
+	mock.addProcess(process1)
+	mock.addProcess(process2)
+	mock.addProcess(process3)
+	mock.addProcess(process4)
+	mock.addProcess(process5)
+
+	colonyID := GenerateRandomID()
+
+	graph, err := CreateProcessGraph(colonyID)
+	assert.Nil(t, err)
+
+	graph.storage = mock
+
+	graph.AddRoot(process1.ID)
+
+	leaves, err := graph.Leaves()
+	assert.Nil(t, err)
+	assert.Len(t, leaves, 2)
+	assert.Equal(t, leaves[0], process4.ID)
+	assert.Equal(t, leaves[1], process5.ID)
+}

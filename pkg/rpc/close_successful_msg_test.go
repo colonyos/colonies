@@ -21,6 +21,21 @@ func TestRPCCloseSuccessfulMsg(t *testing.T) {
 	assert.True(t, msg.Equals(msg2))
 }
 
+func TestRPCCloseSuccessfulMsgWithResult(t *testing.T) {
+	msg := CreateCloseSuccessfulMsg(core.GenerateRandomID())
+	msg.Output = []string{"result1", "result2"}
+	jsonString, err := msg.ToJSON()
+	assert.Nil(t, err)
+
+	msg2, err := CreateCloseSuccessfulMsgFromJSON(jsonString + "error")
+	assert.NotNil(t, err)
+
+	msg2, err = CreateCloseSuccessfulMsgFromJSON(jsonString)
+	assert.Nil(t, err)
+
+	assert.True(t, msg.Equals(msg2))
+}
+
 func TestRPCCloseSuccessfulMsgIndent(t *testing.T) {
 	msg := CreateCloseSuccessfulMsg(core.GenerateRandomID())
 	jsonString, err := msg.ToJSONIndent()
