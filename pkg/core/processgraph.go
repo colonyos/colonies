@@ -211,6 +211,18 @@ func (graph *ProcessGraph) getRoot(childProcessID string, visited map[string]boo
 	return nil, nil
 }
 
+func (graph *ProcessGraph) Leaves() ([]string, error) {
+	var leafs []string
+
+	err := graph.Iterate(func(process *Process) error {
+		if len(process.Children) == 0 {
+			leafs = append(leafs, process.ID)
+		}
+		return nil
+	})
+	return leafs, err
+}
+
 func (graph *ProcessGraph) Processes() (int, error) {
 	counter := 0
 	err := graph.Iterate(func(process *Process) error {

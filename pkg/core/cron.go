@@ -6,20 +6,21 @@ import (
 )
 
 type Cron struct {
-	ID                 string    `json:"cronid"`
-	ColonyID           string    `json:"colonyid"`
-	Name               string    `json:"name"`
-	CronExpression     string    `json:"cronexpression"`
-	Interval           int       `json:"interval"`
-	Random             bool      `json:"random"`
-	NextRun            time.Time `json:"nextrun"`
-	LastRun            time.Time `json:"lastrun"`
-	WorkflowSpec       string    `json:"workflowspec"`
-	LastProcessGraphID string    `json:"lastprocessgraphid"`
+	ID                      string    `json:"cronid"`
+	ColonyID                string    `json:"colonyid"`
+	Name                    string    `json:"name"`
+	CronExpression          string    `json:"cronexpression"`
+	Interval                int       `json:"interval"`
+	Random                  bool      `json:"random"`
+	NextRun                 time.Time `json:"nextrun"`
+	LastRun                 time.Time `json:"lastrun"`
+	WorkflowSpec            string    `json:"workflowspec"`
+	PrevProcessGraphID      string    `json:"prevprocessgraphid"`
+	WaitForPrevProcessGraph bool      `json:"waitforprevprocessgraph"`
 }
 
 func CreateCron(colonyID string, name string, cronExpression string, interval int, random bool, workflowSpec string) *Cron {
-	return &Cron{ColonyID: colonyID, Name: name, CronExpression: cronExpression, Interval: interval, Random: random, NextRun: time.Time{}, LastRun: time.Time{}, WorkflowSpec: workflowSpec}
+	return &Cron{ColonyID: colonyID, Name: name, CronExpression: cronExpression, Interval: interval, Random: random, NextRun: time.Time{}, LastRun: time.Time{}, WorkflowSpec: workflowSpec, WaitForPrevProcessGraph: false}
 }
 
 func ConvertJSONToCron(jsonString string) (*Cron, error) {
@@ -87,7 +88,8 @@ func (cron *Cron) Equals(cron2 *Cron) bool {
 		cron.NextRun.Unix() != cron2.NextRun.Unix() ||
 		cron.LastRun.Unix() != cron2.LastRun.Unix() ||
 		cron.WorkflowSpec != cron2.WorkflowSpec ||
-		cron.LastProcessGraphID != cron2.LastProcessGraphID {
+		cron.PrevProcessGraphID != cron2.PrevProcessGraphID ||
+		cron.WaitForPrevProcessGraph != cron2.WaitForPrevProcessGraph {
 		same = false
 	}
 

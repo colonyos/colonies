@@ -50,7 +50,7 @@ func TestGetStatistics(t *testing.T) {
 		assert.Nil(t, err)
 		processFromServer, err := client.AssignProcess(env.colonyID, -1, env.runtimePrvKey)
 		assert.Nil(t, err)
-		err = client.CloseSuccessful(processFromServer.ID, env.runtimePrvKey)
+		err = client.Close(processFromServer.ID, env.runtimePrvKey)
 		assert.Nil(t, err)
 	}
 
@@ -62,7 +62,7 @@ func TestGetStatistics(t *testing.T) {
 		assert.Nil(t, err)
 		processFromServer, err := client.AssignProcess(env.colonyID, -1, env.runtimePrvKey)
 		assert.Nil(t, err)
-		err = client.CloseFailed(processFromServer.ID, "error", env.runtimePrvKey)
+		err = client.Fail(processFromServer.ID, []string{"error"}, env.runtimePrvKey)
 		assert.Nil(t, err)
 	}
 

@@ -112,3 +112,14 @@ func FakeCron(t *testing.T, colonyID string) *core.Cron {
 	cron := core.CreateCron(colonyID, "test_cron1"+core.GenerateRandomID(), "1 * * * * *", -1, false, jsonStr)
 	return cron
 }
+
+func FakeSingleCron(t *testing.T, colonyID string) *core.Cron {
+	workflowSpec := core.CreateWorkflowSpec(colonyID)
+	processSpec := CreateTestProcessSpec(colonyID)
+	processSpec.Name = "task1"
+	workflowSpec.AddProcessSpec(processSpec)
+	jsonStr, err := workflowSpec.ToJSON()
+	assert.Nil(t, err)
+	cron := core.CreateCron(colonyID, "test_cron1"+core.GenerateRandomID(), "1 * * * * *", -1, false, jsonStr)
+	return cron
+}

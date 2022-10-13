@@ -9,7 +9,6 @@ import (
 
 	"github.com/colonyos/colonies/pkg/cluster"
 	"github.com/colonyos/colonies/pkg/core"
-	cronlib "github.com/colonyos/colonies/pkg/cron"
 	"github.com/colonyos/colonies/pkg/database"
 	"github.com/colonyos/colonies/pkg/planner"
 	"github.com/colonyos/colonies/pkg/planner/basic"
@@ -84,348 +83,6 @@ func createColoniesController(db database.Database, thisNode cluster.Node, clust
 	go controller.cronTriggerLoop()
 
 	return controller
-}
-
-func (controller *coloniesController) submitWorkflow(generator *core.Generator) {
-	workflowSpec, err := core.ConvertJSONToWorkflowSpec(generator.WorkflowSpec)
-	if err != nil {
-		log.WithFields(log.Fields{"Error": err}).Error("Failed to parse workflow spec")
-		return
-	}
-
-	generatorArgs, err := controller.db.GetGeneratorArgs(generator.ID, generator.Trigger)
-	var args []string
-	for _, generatorArg := range generatorArgs {
-		args = append(args, generatorArg.Arg)
-	}
-
-	log.WithFields(log.Fields{
-		"GeneratorId": generator.ID,
-		"Trigger":     generator.Trigger,
-		"Args":        args}).
-		Debug("Generator submitting workflow")
-
-	_, err = controller.createProcessGraph(workflowSpec, args)
-	if err != nil {
-		log.WithFields(log.Fields{
-			"Error": err}).
-			Error("Failed to create processgraph")
-		return
-	}
-
-	// Now it safe to remove the args since they are now attached to a process graph
-	for _, generatorArg := range generatorArgs {
-		controller.db.DeleteGeneratorArgByID(generatorArg.ID)
-	}
-
-	err = controller.db.SetGeneratorLastRun(generator.ID)
-	if err != nil {
-		log.WithFields(log.Fields{"Error": err}).Error("Failed mark generator as run")
-	}
-}
-
-func (controller *coloniesController) triggerGenerators() {
-	cmd := &command{handler: func(cmd *command) {
-		generatorsFromDB, err := controller.db.FindAllGenerators()
-		if err != nil {
-			log.WithFields(log.Fields{"Error": err}).Error("Failed get all generators from db")
-			return
-		}
-		for _, generator := range generatorsFromDB {
-			counter, err := controller.db.CountGeneratorArgs(generator.ID)
-			if err != nil {
-				log.WithFields(log.Fields{"Error": err}).Error("Failed count generator args from db")
-				continue
-			}
-			if counter >= generator.Trigger {
-				timesToSubmit := counter / generator.Trigger
-				for i := 0; i < timesToSubmit; i++ {
-					log.WithFields(log.Fields{
-						"GeneratorId": generator.ID,
-						"Counter":     counter}).
-						Info("Generator threshold reached, submitting workflow")
-					controller.submitWorkflow(generator)
-				}
-			}
-		}
-	}}
-
-	controller.cmdQueue <- cmd
-}
-
-func (controller *coloniesController) calcNextRun(cron *core.Cron) time.Time {
-	nextRun := time.Time{}
-	var err error
-	if cron.Interval > 0 {
-		nextRun, err = cronlib.NextIntervall(cron.Interval)
-		if err != nil {
-			log.WithFields(log.Fields{"Error": err}).Error("Failed generate random next run")
-		}
-	} else if cron.Interval > 0 && cron.Random {
-		nextRun, err = cronlib.Random(cron.Interval)
-		if err != nil {
-			log.WithFields(log.Fields{"Error": err}).Error("Failed generate random next run")
-		}
-	} else {
-		nextRun, err = cronlib.Next(cron.CronExpression)
-		if err != nil {
-			log.WithFields(log.Fields{"Error": err}).Error("Failed generate next run based on cron expression")
-		}
-	}
-
-	return nextRun
-}
-
-func (controller *coloniesController) startCron(cron *core.Cron) {
-	workflowSpec, err := core.ConvertJSONToWorkflowSpec(cron.WorkflowSpec)
-	if err != nil {
-		log.WithFields(log.Fields{"Error": err}).Error("Failed to parsing WorkflowSpec")
-	}
-	processGraph, err := controller.createProcessGraph(workflowSpec, []string{})
-	if err != nil {
-		log.WithFields(log.Fields{"Error": err}).Error("Failed to parse workflow spec")
-	}
-
-	nextRun := controller.calcNextRun(cron)
-	controller.db.UpdateCron(cron.ID, nextRun, time.Now(), processGraph.ID)
-}
-
-func (controller *coloniesController) triggerCrons() {
-	cmd := &command{handler: func(cmd *command) {
-		crons, err := controller.db.FindAllCrons()
-		if err != nil {
-			log.WithFields(log.Fields{"Error": err}).Error("Failed getting all crons")
-			return
-		}
-		for _, cron := range crons {
-			t := time.Time{}
-			if t.Unix() == cron.NextRun.Unix() { // This if-statement will be true the first time the cron is evaluted
-				nextRun := controller.calcNextRun(cron)
-				controller.db.UpdateCron(cron.ID, nextRun, time.Time{}, "")
-				cron.NextRun = nextRun
-			}
-			if cron.HasExpired() {
-				log.WithFields(log.Fields{"CronId": cron.ID}).Info("Triggering cron workflow")
-				controller.startCron(cron)
-			}
-		}
-	}}
-
-	controller.cmdQueue <- cmd
-}
-
-func (controller *coloniesController) addGenerator(generator *core.Generator) (*core.Generator, error) {
-	cmd := &command{generatorReplyChan: make(chan *core.Generator, 1),
-		errorChan: make(chan error, 1),
-		handler: func(cmd *command) {
-			err := controller.db.AddGenerator(generator)
-			if err != nil {
-				cmd.errorChan <- err
-				return
-			}
-			addedGenerator, err := controller.db.GetGeneratorByID(generator.ID)
-			if err != nil {
-				cmd.errorChan <- err
-				return
-			}
-			cmd.generatorReplyChan <- addedGenerator
-		}}
-
-	controller.cmdQueue <- cmd
-	select {
-	case err := <-cmd.errorChan:
-		return nil, err
-	case addedGenerator := <-cmd.generatorReplyChan:
-		return addedGenerator, nil
-	}
-}
-
-func (controller *coloniesController) getGenerator(generatorID string) (*core.Generator, error) {
-	cmd := &command{generatorReplyChan: make(chan *core.Generator, 1),
-		errorChan: make(chan error, 1),
-		handler: func(cmd *command) {
-			generator, err := controller.db.GetGeneratorByID(generatorID)
-			if err != nil {
-				cmd.errorChan <- err
-				return
-			}
-			cmd.generatorReplyChan <- generator
-		}}
-
-	controller.cmdQueue <- cmd
-	select {
-	case err := <-cmd.errorChan:
-		return nil, err
-	case generator := <-cmd.generatorReplyChan:
-		return generator, nil
-	}
-}
-
-func (controller *coloniesController) resolveGenerator(generatorName string) (*core.Generator, error) {
-	cmd := &command{generatorReplyChan: make(chan *core.Generator, 1),
-		errorChan: make(chan error, 1),
-		handler: func(cmd *command) {
-			generator, err := controller.db.GetGeneratorByName(generatorName)
-			if err != nil {
-				cmd.errorChan <- err
-				return
-			}
-			cmd.generatorReplyChan <- generator
-		}}
-
-	controller.cmdQueue <- cmd
-	select {
-	case err := <-cmd.errorChan:
-		return nil, err
-	case generator := <-cmd.generatorReplyChan:
-		return generator, nil
-	}
-}
-
-func (controller *coloniesController) getGenerators(colonyID string, count int) ([]*core.Generator, error) {
-	cmd := &command{generatorsReplyChan: make(chan []*core.Generator, 1),
-		errorChan: make(chan error, 1),
-		handler: func(cmd *command) {
-			generators, err := controller.db.FindGeneratorsByColonyID(colonyID, count)
-			if err != nil {
-				cmd.errorChan <- err
-				return
-			}
-			cmd.generatorsReplyChan <- generators
-		}}
-
-	controller.cmdQueue <- cmd
-	select {
-	case err := <-cmd.errorChan:
-		return nil, err
-	case generators := <-cmd.generatorsReplyChan:
-		return generators, nil
-	}
-}
-
-func (controller *coloniesController) packGenerator(generatorID string, colonyID, arg string) error {
-	cmd := &command{errorChan: make(chan error, 1),
-		handler: func(cmd *command) {
-			generatorArg := core.CreateGeneratorArg(generatorID, colonyID, arg)
-			cmd.errorChan <- controller.db.AddGeneratorArg(generatorArg)
-		}}
-
-	controller.cmdQueue <- cmd
-	select {
-	case err := <-cmd.errorChan:
-		return err
-	}
-}
-
-func (controller *coloniesController) deleteGenerator(generatorID string) error {
-	cmd := &command{errorChan: make(chan error, 1),
-		handler: func(cmd *command) {
-			cmd.errorChan <- controller.db.DeleteGeneratorByID(generatorID)
-		}}
-
-	controller.cmdQueue <- cmd
-	return <-cmd.errorChan
-}
-
-func (controller *coloniesController) addCron(cron *core.Cron) (*core.Cron, error) {
-	cmd := &command{cronReplyChan: make(chan *core.Cron, 1),
-		errorChan: make(chan error, 1),
-		handler: func(cmd *command) {
-			err := controller.db.AddCron(cron)
-			if err != nil {
-				cmd.errorChan <- err
-				return
-			}
-			addedCron, err := controller.db.GetCronByID(cron.ID)
-			if err != nil {
-				cmd.errorChan <- err
-				return
-			}
-			cmd.cronReplyChan <- addedCron
-		}}
-
-	controller.cmdQueue <- cmd
-	select {
-	case err := <-cmd.errorChan:
-		return nil, err
-	case addedCron := <-cmd.cronReplyChan:
-		return addedCron, nil
-	}
-}
-
-func (controller *coloniesController) getCron(cronID string) (*core.Cron, error) {
-	cmd := &command{cronReplyChan: make(chan *core.Cron, 1),
-		errorChan: make(chan error, 1),
-		handler: func(cmd *command) {
-			cron, err := controller.db.GetCronByID(cronID)
-			if err != nil {
-				cmd.errorChan <- err
-				return
-			}
-			cmd.cronReplyChan <- cron
-		}}
-
-	controller.cmdQueue <- cmd
-	select {
-	case err := <-cmd.errorChan:
-		return nil, err
-	case cron := <-cmd.cronReplyChan:
-		return cron, nil
-	}
-}
-
-func (controller *coloniesController) getCrons(colonyID string, count int) ([]*core.Cron, error) {
-	cmd := &command{cronsReplyChan: make(chan []*core.Cron, 1),
-		errorChan: make(chan error, 1),
-		handler: func(cmd *command) {
-			crons, err := controller.db.FindCronsByColonyID(colonyID, count)
-			if err != nil {
-				cmd.errorChan <- err
-				return
-			}
-			cmd.cronsReplyChan <- crons
-		}}
-
-	controller.cmdQueue <- cmd
-	select {
-	case err := <-cmd.errorChan:
-		return nil, err
-	case crons := <-cmd.cronsReplyChan:
-		return crons, nil
-	}
-}
-
-func (controller *coloniesController) runCron(cronID string) (*core.Cron, error) {
-	cmd := &command{cronReplyChan: make(chan *core.Cron, 1),
-		errorChan: make(chan error, 1),
-		handler: func(cmd *command) {
-			cron, err := controller.db.GetCronByID(cronID)
-			if err != nil {
-				cmd.errorChan <- err
-				return
-			}
-			controller.startCron(cron)
-			cmd.cronReplyChan <- cron
-		}}
-
-	controller.cmdQueue <- cmd
-	select {
-	case err := <-cmd.errorChan:
-		return nil, err
-	case cron := <-cmd.cronReplyChan:
-		return cron, nil
-	}
-}
-
-func (controller *coloniesController) deleteCron(cronID string) error {
-	cmd := &command{errorChan: make(chan error, 1),
-		handler: func(cmd *command) {
-			err := controller.db.DeleteCronByID(cronID)
-			cmd.errorChan <- err
-		}}
-
-	controller.cmdQueue <- cmd
-	return <-cmd.errorChan
 }
 
 func (controller *coloniesController) subscribeProcesses(runtimeID string, subscription *subscription) error {
@@ -888,8 +545,12 @@ func (controller *coloniesController) updateProcessGraph(graph *core.ProcessGrap
 	return graph.UpdateProcessIDs()
 }
 
-func (controller *coloniesController) createProcessGraph(workflowSpec *core.WorkflowSpec, args []string) (*core.ProcessGraph, error) {
+func (controller *coloniesController) createProcessGraph(workflowSpec *core.WorkflowSpec, args []string, rootInput []string) (*core.ProcessGraph, error) {
 	processgraph, err := core.CreateProcessGraph(workflowSpec.ColonyID)
+	if err != nil {
+		log.WithFields(log.Fields{"Error": err}).Error("Failed to create processgraph")
+		return nil, err
+	}
 
 	// Create all processes
 	processMap := make(map[string]*core.Process)
@@ -905,11 +566,17 @@ func (controller *coloniesController) createProcessGraph(workflowSpec *core.Work
 			// The process is a root process, let it start immediately
 			process.WaitForParents = false
 			if len(args) > 0 {
-				// TODO: May be we should not overwrite the args
-				// This will only happen when using Generators
+				// NOTE, overwrite the args, this will only happen when using Generators
 				process.ProcessSpec.Args = args
 			}
+			if len(rootInput) > 0 {
+				process.Input = rootInput
+				if err != nil {
+					return nil, err
+				}
+			}
 			rootProcesses = append(rootProcesses, process)
+
 			processgraph.AddRoot(process.ID)
 		} else {
 			// The process has to wait for its parents
@@ -922,7 +589,7 @@ func (controller *coloniesController) createProcessGraph(workflowSpec *core.Work
 
 	err = controller.db.AddProcessGraph(processgraph)
 	if err != nil {
-		msg := "Failed to submit workflow, failed to add processgraph"
+		msg := "Failed to create processgraph, failed to add processgraph"
 		log.WithFields(log.Fields{"Error": err}).Error(msg)
 		return nil, errors.New(msg)
 	}
@@ -967,7 +634,7 @@ func (controller *coloniesController) submitWorkflowSpec(workflowSpec *core.Work
 	cmd := &command{processGraphReplyChan: make(chan *core.ProcessGraph, 1),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
-			addedProcessGraph, err := controller.createProcessGraph(workflowSpec, []string{})
+			addedProcessGraph, err := controller.createProcessGraph(workflowSpec, []string{}, []string{})
 			if err != nil {
 				cmd.errorChan <- err
 				return
@@ -1193,13 +860,17 @@ func (controller *coloniesController) deleteAllProcessGraphs(colonyID string) er
 	return <-cmd.errorChan
 }
 
-func (controller *coloniesController) closeSuccessful(processID string) error {
+func (controller *coloniesController) closeSuccessful(processID string, output []string) error {
 	cmd := &command{errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
 			process, err := controller.db.GetProcessByID(processID)
 			if err != nil {
 				cmd.errorChan <- err
 				return
+			}
+
+			if len(output) > 0 {
+				err = controller.db.SetOutput(processID, output)
 			}
 
 			err = controller.db.MarkSuccessful(process)
@@ -1265,7 +936,7 @@ func (controller *coloniesController) notifyChildren(process *core.Process) erro
 	return nil
 }
 
-func (controller *coloniesController) closeFailed(processID string, errorMsg string) error {
+func (controller *coloniesController) closeFailed(processID string, errs []string) error {
 	cmd := &command{errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
 			process, err := controller.db.GetProcessByID(processID)
@@ -1274,7 +945,7 @@ func (controller *coloniesController) closeFailed(processID string, errorMsg str
 				return
 			}
 
-			err = controller.db.MarkFailed(process, errorMsg)
+			err = controller.db.MarkFailed(process, errs)
 			if err != nil {
 				cmd.errorChan <- err
 				return
@@ -1304,7 +975,7 @@ func (controller *coloniesController) closeFailed(processID string, errorMsg str
 	return <-cmd.errorChan
 }
 
-func (controller *coloniesController) assignRuntime(runtimeID string, colonyID string, latest bool) (*core.Process, error) {
+func (controller *coloniesController) assign(runtimeID string, colonyID string, latest bool) (*core.Process, error) {
 	cmd := &command{processReplyChan: make(chan *core.Process),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
@@ -1371,6 +1042,22 @@ func (controller *coloniesController) assignRuntime(runtimeID string, colonyID s
 					log.Error(err)
 					cmd.errorChan <- err
 					return
+				}
+
+				// Now, we need to collect the output from the parents and use ut as our input
+				output := []string{}
+				for _, parentID := range selectedProcess.Parents {
+					parentProcess, err := controller.db.GetProcessByID(parentID)
+					if err != nil {
+						log.Error(err)
+						cmd.errorChan <- err
+						return
+					}
+					output = append(output, parentProcess.Output...)
+				}
+				if len(selectedProcess.Parents) > 0 {
+					controller.db.SetInput(selectedProcess.ID, output)
+					selectedProcess.Input = output
 				}
 			}
 

@@ -30,40 +30,6 @@ func (controller *coloniesController) tryBecomeLeader() bool {
 	return isLeader
 }
 
-func (controller *coloniesController) generatorTriggerLoop() {
-	for {
-		time.Sleep(TIMEOUT_GENERATOR_TRIGGER_INTERVALL * time.Second)
-
-		controller.stopMutex.Lock()
-		if controller.stopFlag {
-			return
-		}
-		controller.stopMutex.Unlock()
-
-		isLeader := controller.tryBecomeLeader()
-		if isLeader {
-			controller.triggerGenerators()
-		}
-	}
-}
-
-func (controller *coloniesController) cronTriggerLoop() {
-	for {
-		time.Sleep(TIMEOUT_CRON_TRIGGER_INTERVALL * time.Second)
-
-		controller.stopMutex.Lock()
-		if controller.stopFlag {
-			return
-		}
-		controller.stopMutex.Unlock()
-
-		isLeader := controller.tryBecomeLeader()
-		if isLeader {
-			controller.triggerCrons()
-		}
-	}
-}
-
 func (controller *coloniesController) timeoutLoop() {
 	for {
 		time.Sleep(TIMEOUT_RELEASE_INTERVALL * time.Second)
@@ -84,7 +50,7 @@ func (controller *coloniesController) timeoutLoop() {
 			}
 			if time.Now().Unix() > process.ExecDeadline.Unix() {
 				if process.Retries >= process.ProcessSpec.MaxRetries && process.ProcessSpec.MaxRetries > -1 {
-					err := controller.closeFailed(process.ID, "Maximum execution time limit exceeded")
+					err := controller.closeFailed(process.ID, []string{"Maximum execution time limit exceeded"})
 					if err != nil {
 						log.WithFields(log.Fields{"ProcessID": process.ID, "Error": err}).Info("Max retries reached, but failed to close process")
 						continue
@@ -110,7 +76,7 @@ func (controller *coloniesController) timeoutLoop() {
 				continue
 			}
 			if time.Now().Unix() > process.WaitDeadline.Unix() {
-				err := controller.closeFailed(process.ID, "Maximum waiting time limit exceeded")
+				err := controller.closeFailed(process.ID, []string{"Maximum waiting time limit exceeded"})
 				if err != nil {
 					log.WithFields(log.Fields{"ProcessID": process.ID, "Error": err}).Info("Max waiting time reached, but failed to close process")
 					continue

@@ -33,7 +33,7 @@ func TestCreateProcessFromDB(t *testing.T) {
 	var attributes []Attribute
 
 	processSpec := CreateProcessSpec("test_name", "test_func", []string{"test_arg"}, colonyID, []string{runtime1ID, runtime2ID}, runtimeType, maxWaitTime, maxExecTime, maxRetries, make(map[string]string), []string{}, 1)
-	process := CreateProcessFromDB(processSpec, GenerateRandomID(), GenerateRandomID(), true, FAILED, time.Now(), time.Now(), time.Now(), time.Now(), time.Now(), "errormsg", 2, attributes)
+	process := CreateProcessFromDB(processSpec, GenerateRandomID(), GenerateRandomID(), true, FAILED, time.Now(), time.Now(), time.Now(), time.Now(), time.Now(), []string{"errormsg"}, 2, attributes)
 	assert.True(t, process.Equals(process))
 }
 
@@ -88,6 +88,8 @@ func TestProcessEquals(t *testing.T) {
 	process1.SetSubmissionTime(startTime)
 	process1.SetStartTime(startTime.Add(1 * time.Second))
 	process1.SetEndTime(startTime.Add(4 * time.Second))
+	process1.Input = []string{"input1"}
+	process1.Output = []string{"output1"}
 	assert.True(t, process1.Equals(process1))
 	assert.False(t, process1.Equals(nil))
 
@@ -210,7 +212,7 @@ func TestProcessingTime(t *testing.T) {
 	var attributes []Attribute
 
 	processSpec := CreateProcessSpec("test_name", "test_func", []string{"test_arg"}, colonyID, []string{runtime1ID, runtime2ID}, runtimeType, maxWaitTime, maxExecTime, maxRetries, make(map[string]string), []string{}, 1)
-	process := CreateProcessFromDB(processSpec, GenerateRandomID(), GenerateRandomID(), true, RUNNING, time.Time{}, time.Time{}, time.Time{}, time.Time{}, time.Time{}, "errormsg", 2, attributes)
+	process := CreateProcessFromDB(processSpec, GenerateRandomID(), GenerateRandomID(), true, RUNNING, time.Time{}, time.Time{}, time.Time{}, time.Time{}, time.Time{}, []string{"errormsg"}, 2, attributes)
 
 	processingTime := int64(process.ProcessingTime())
 	assert.True(t, processingTime > 0)

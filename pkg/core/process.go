@@ -26,7 +26,6 @@ type Process struct {
 	EndTime           time.Time   `json:"endtime"`
 	WaitDeadline      time.Time   `json:"waitdeadline"`
 	ExecDeadline      time.Time   `json:"execdeadline"`
-	ErrorMsg          string      `json:"errormsg"`
 	Retries           int         `json:"retries"`
 	Attributes        []Attribute `json:"attributes"`
 	ProcessSpec       ProcessSpec `json:"spec"`
@@ -34,6 +33,9 @@ type Process struct {
 	Parents           []string    `json:"parents"`
 	Children          []string    `json:"children"`
 	ProcessGraphID    string      `json:"processgraphid"`
+	Input             []string    `json:"in"`
+	Output            []string    `json:"out"`
+	Errors            []string    `json:"errors"`
 }
 
 func CreateProcess(processSpec *ProcessSpec) *Process {
@@ -63,7 +65,7 @@ func CreateProcessFromDB(processSpec *ProcessSpec,
 	endTime time.Time,
 	waitDeadline time.Time,
 	execDeadline time.Time,
-	errorMsg string,
+	errors []string,
 	retries int,
 	attributes []Attribute) *Process {
 	return &Process{ID: id,
@@ -75,7 +77,7 @@ func CreateProcessFromDB(processSpec *ProcessSpec,
 		EndTime:           endTime,
 		WaitDeadline:      waitDeadline,
 		ExecDeadline:      execDeadline,
-		ErrorMsg:          errorMsg,
+		Errors:            errors,
 		Retries:           retries,
 		Attributes:        attributes,
 		ProcessSpec:       *processSpec,
@@ -143,24 +145,67 @@ func (process *Process) Equals(process2 *Process) bool {
 		process.EndTime.Unix() != process2.EndTime.Unix() ||
 		process.WaitDeadline.Unix() != process2.WaitDeadline.Unix() ||
 		process.ExecDeadline.Unix() != process2.ExecDeadline.Unix() ||
-		process.ErrorMsg != process2.ErrorMsg ||
 		process.Retries != process2.Retries ||
 		process.WaitForParents != process2.WaitForParents ||
 		process.ProcessGraphID != process2.ProcessGraphID {
 		same = false
 	}
 
+	if !same {
+		return false
+	}
+
+	counter := 0
+	for _, r1 := range process.Output {
+		for _, r2 := range process2.Output {
+			if r1 == r2 {
+				counter++
+			}
+		}
+	}
+	if counter != len(process.Output) && counter != len(process2.Output) {
+		same = false
+	}
+
+	if !same {
+		return false
+	}
+
+	counter = 0
+	for _, r1 := range process.Input {
+		for _, r2 := range process2.Input {
+			if r1 == r2 {
+				counter++
+			}
+		}
+	}
+	if counter != len(process.Input) && counter != len(process2.Input) {
+		same = false
+	}
+
+	if !same {
+		return false
+	}
+
 	if !IsAttributeArraysEqual(process.Attributes, process2.Attributes) {
 		same = false
+	}
+
+	if !same {
+		return false
 	}
 
 	if !process.ProcessSpec.Equals(&process2.ProcessSpec) {
 		same = false
 	}
 
-	counter := 0
+	if !same {
+		return false
+	}
+
+	counter = 0
 	for _, parent1 := range process.Parents {
-		for _, parent2 := range process.Parents {
+		for _, parent2 := range process2.Parents {
 			if parent1 == parent2 {
 				counter++
 			}
@@ -170,15 +215,35 @@ func (process *Process) Equals(process2 *Process) bool {
 		same = false
 	}
 
+	if !same {
+		return false
+	}
+
 	counter = 0
 	for _, child1 := range process.Children {
-		for _, child2 := range process.Children {
+		for _, child2 := range process2.Children {
 			if child1 == child2 {
 				counter++
 			}
 		}
 	}
 	if counter != len(process.Children) && counter != len(process2.Children) {
+		same = false
+	}
+
+	if !same {
+		return false
+	}
+
+	counter = 0
+	for _, r1 := range process.Output {
+		for _, r2 := range process2.Output {
+			if r1 == r2 {
+				counter++
+			}
+		}
+	}
+	if counter != len(process.Output) && counter != len(process2.Output) {
 		same = false
 	}
 
