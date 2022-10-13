@@ -4,7 +4,10 @@
 ![ColonyOSLogo](docs/images/ColonyOsLogoNoShaddow2.png)
 
 # What is Colonies?
-Colonies is a **Process Orchestration** framework for managing AI/ML workloads across heterogeneous computing platforms. It provides a meta-layer where complex workflows can be described and managed as **meta-processes** independently on their implementation and where they are executed. AI applications can then be broken down into composable functions executed by remote workers anywhere on the Internet, enabling a compute continuum spanning devices, cloud, edge, and HPC. A build-in zero-trust protocol makes it possible to organize remote workers as a single unit called a **Colony**, thus making it possible for users to keep control even if workloads are spread out and executed on many different platforms at the same time. 
+Colonies is a **Process Orchestration** framework for managing AI/ML workloads across heterogeneous computing platforms. 
+* It provides a meta-layer where complex workflows can be described and managed as **meta-processes** independently on their implementation and where they are executed. 
+* AI applications can then be broken down into composable functions executed by remote workers anywhere on the Internet, enabling a compute continuum spanning devices, cloud, edge, and HPC. 
+* A build-in zero-trust protocol makes it possible to organize remote workers as a single unit called a **Colony**, thus making it possible for users to keep control even if workloads are spread out and executed on many different platforms at the same time. 
 
 ![MetaOS](docs/images/meta-os.png)
 

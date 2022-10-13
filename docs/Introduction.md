@@ -1,3 +1,5 @@
+# Introduction
+
 ## How does it work?
 * Humans (or workers) submit process specs to a Colony via a Colonies server.
 * Colonies workers connect to the Colonies server and **search for suitable tasks to execute**. Each worker must have a **valid identity** (like a passport) to prove its Colony membership and the Colonies server makes sure only authorized and qualified workers can connect and be assigned processes. 
