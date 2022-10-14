@@ -169,7 +169,7 @@ func (graph *ProcessGraph) Resolve() error {
 		return err
 	}
 
-	if failedProcesses > 1 {
+	if failedProcesses >= 1 {
 		graph.State = FAILED
 	} else if successfulProcesses == processes {
 		graph.State = SUCCESS
