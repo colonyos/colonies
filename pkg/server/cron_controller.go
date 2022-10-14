@@ -196,16 +196,20 @@ func (controller *coloniesController) triggerCrons() {
 				processgraph, err := controller.db.GetProcessGraphByID(cron.PrevProcessGraphID)
 				if err != nil {
 					log.WithFields(log.Fields{"Error": err, "PrevProcessGraphID": cron.PrevProcessGraphID}).Error("Failed getting all crons")
-					return
+					continue
 				}
-				if !cron.WaitForPrevProcessGraph || processgraph == nil {
-					log.WithFields(log.Fields{"CronId": cron.ID}).Debug("Triggering cron workflow")
+				if processgraph == nil {
 					controller.startCron(cron)
-				} else {
+					continue
+				}
+				if cron.WaitForPrevProcessGraph {
 					if processgraph.State == core.SUCCESS || processgraph.State == core.FAILED {
-						log.WithFields(log.Fields{"CronId": cron.ID}).Debug("Triggering cron workflow")
+						log.WithFields(log.Fields{"CronId": cron.ID}).Info("Triggering cron workflow")
 						controller.startCron(cron)
 					}
+				} else {
+					log.WithFields(log.Fields{"CronId": cron.ID}).Debug("Triggering cron workflow")
+					controller.startCron(cron)
 				}
 			}
 		}

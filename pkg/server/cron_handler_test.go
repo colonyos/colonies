@@ -79,6 +79,58 @@ func TestAddCronWaitForPrevProcessGraph(t *testing.T) {
 	<-done
 }
 
+func TestAddCronWaitForPrevProcessGraphFail(t *testing.T) {
+	env, client, server, _, done := setupTestEnv2(t)
+
+	cron := utils.FakeSingleCron(t, env.colonyID)
+	cron.Interval = 1
+	cron.WaitForPrevProcessGraph = true
+
+	addedCron, err := client.AddCron(cron, env.runtimePrvKey)
+	assert.Nil(t, err)
+	assert.NotNil(t, addedCron)
+
+	// Wait for 5 seconds, we should only have 1 cron workflow since WaitForPrevProcessGraph is true
+	time.Sleep(5 * time.Second)
+
+	processes, err := client.GetWaitingProcesses(env.colonyID, 100, env.runtimePrvKey)
+	assert.Nil(t, err)
+	assert.Len(t, processes, 1)
+
+	firstProcessID := processes[0]
+
+	processgraphs, err := client.GetWaitingProcessGraphs(env.colonyID, 100, env.runtimePrvKey)
+	assert.Nil(t, err)
+	assert.Len(t, processgraphs, 1)
+
+	// Now assign a the cron process, then a new cron should be triggered
+	process, err := client.AssignProcess(env.colonyID, 100, env.runtimePrvKey)
+	assert.Nil(t, err)
+	assert.NotNil(t, process)
+	err = client.Fail(process.ID, []string{""}, env.runtimePrvKey)
+	assert.Nil(t, err)
+
+	time.Sleep(5 * time.Second)
+
+	processes, err = client.GetWaitingProcesses(env.colonyID, 100, env.runtimePrvKey)
+	assert.Nil(t, err)
+	assert.Len(t, processes, 1)
+
+	secondProcessID := processes[0]
+
+	assert.NotEqual(t, firstProcessID, secondProcessID)
+
+	stat, err := client.ColonyStatistics(env.colonyID, env.runtimePrvKey)
+	assert.Nil(t, err)
+	assert.Equal(t, stat.WaitingWorkflows, 1)
+	assert.Equal(t, stat.SuccessfulWorkflows, 0)
+	assert.Equal(t, stat.FailedWorkflows, 1)
+	assert.Equal(t, stat.WaitingWorkflows, 1)
+
+	server.Shutdown()
+	<-done
+}
+
 func TestAddCronInputOutput(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 
