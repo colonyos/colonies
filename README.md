@@ -5,11 +5,16 @@
 
 # What is Colonies?
 Colonies is a **Process Orchestration** framework for managing AI/ML workloads across heterogeneous computing platforms. 
-* It provides a meta-layer where complex workflows can be described and managed as **meta-processes** independently on their implementation and where they are executed. 
-* AI applications can then be broken down into composable functions executed by remote workers anywhere on the Internet, enabling a compute continuum spanning devices, cloud, edge, and HPC. 
-* A build-in zero-trust protocol makes it possible to organize remote workers as a single unit called a **Colony**, thus making it possible for users to keep control even if workloads are spread out and executed on many different platforms at the same time. 
+    
+Colonies provides functionality to establish trusted distributed computing environments, process management, and functionality to orchestrate workloads. It is a building block to implement a [Meta-Operating System](https://en.wikipedia.org/wiki/Meta-system"), an overlay built on top of existing operating systems and platforms to create *compute continuums spanning devices, webapps, clouds, and edge and HPC platforms*.
+
+The core idea of Colonies is to split up complex workloads in two layers, a **Meta-layer** and an **Execution-layer**.
 
 ![MetaOS](docs/images/meta-os.png)
+
+* The **Meta-layer** makes it possible to describe and manage complex workflows as **meta-processes** independently of implementation and execution environment.
+* The **Execution-layer** provides a serverless computing environment where developers can implement workers capable of executing certain types of meta-processes. AI applications can then be broken down into composable functions executed by remote workers anywhere on the Internet.
+* A build-in [zero-trust](https://en.wikipedia.org/wiki/Zero_trust_security_model) protocol makes it possible to organize remote workers as a single unit called a **Colony**, thus making it possible for users to keep control even if workloads are spread out and executed on many different platforms at the same time. 
 
 # More information
 ## Installation
