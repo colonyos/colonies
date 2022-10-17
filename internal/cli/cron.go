@@ -37,6 +37,7 @@ func init() {
 	addCronCmd.Flags().StringVarP(&CronExpr, "cron", "", "", "Cron expression")
 	addCronCmd.Flags().IntVarP(&CronIntervall, "interval", "", -1, "Interval in seconds")
 	addCronCmd.Flags().BoolVarP(&CronRandom, "random", "", false, "Schedule a random cron, intervall must be specified")
+	addCronCmd.Flags().BoolVarP(&WaitForPrevProcessGraph, "waitprevious", "", false, "Wait for previous processgrah to finish bore schedule a new workflow")
 
 	delCronCmd.Flags().StringVarP(&RuntimeID, "runtimeid", "", "", "Runtime Id")
 	delCronCmd.Flags().StringVarP(&RuntimePrvKey, "runtimeprvkey", "", "", "Runtime private key")
@@ -131,6 +132,14 @@ var addCronCmd = &cobra.Command{
 		}
 
 		cron := core.CreateCron(ColonyID, CronName, CronExpr, CronIntervall, CronRandom, workflowSpecJSON)
+
+		if WaitForPrevProcessGraph {
+			log.Info("Waiting for previous processgraph to finish")
+			cron.WaitForPrevProcessGraph = true
+		} else {
+			log.Info("Will not wait for previous processgraph to finish")
+		}
+
 		addedCron, err := client.AddCron(cron, RuntimePrvKey)
 		CheckError(err)
 
