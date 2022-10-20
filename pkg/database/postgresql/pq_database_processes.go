@@ -308,11 +308,11 @@ func (db *PQDatabase) FindUnassignedProcesses(colonyID string, runtimeID string,
 	// Note: The @> function tests if an array is a subset of another array
 	// We need to do that since the TARGET_runtime_IDS can contains many IDs
 	if latest {
-		sqlStatement = `SELECT * FROM ` + db.dbPrefix + `PROCESSES WHERE RUNTIME_TYPE=$1 AND IS_ASSIGNED=FALSE AND WAIT_FOR_PARENTS=FALSE AND TARGET_COLONY_ID=$2 AND (TARGET_runtime_IDS@>$3 OR TARGET_runtime_IDS@>$4) ORDER BY SUBMISSION_TIME DESC LIMIT $5`
+		sqlStatement = `SELECT * FROM ` + db.dbPrefix + `PROCESSES WHERE STATE=$1 AND RUNTIME_TYPE=$2 AND IS_ASSIGNED=FALSE AND WAIT_FOR_PARENTS=FALSE AND TARGET_COLONY_ID=$3 AND (TARGET_runtime_IDS@>$4 OR TARGET_runtime_IDS@>$5) ORDER BY SUBMISSION_TIME DESC LIMIT $6`
 	} else {
-		sqlStatement = `SELECT * FROM ` + db.dbPrefix + `PROCESSES WHERE RUNTIME_TYPE=$1 AND IS_ASSIGNED=FALSE AND WAIT_FOR_PARENTS=FALSE AND TARGET_COLONY_ID=$2 AND (TARGET_runtime_IDS@>$3 OR TARGET_runtime_IDS@>$4) ORDER BY SUBMISSION_TIME LIMIT $5`
+		sqlStatement = `SELECT * FROM ` + db.dbPrefix + `PROCESSES WHERE STATE=$1 AND RUNTIME_TYPE=$2 AND IS_ASSIGNED=FALSE AND WAIT_FOR_PARENTS=FALSE AND TARGET_COLONY_ID=$3 AND (TARGET_runtime_IDS@>$4 OR TARGET_runtime_IDS@>$5) ORDER BY SUBMISSION_TIME LIMIT $6`
 	}
-	rows, err := db.postgresql.Query(sqlStatement, runtimeType, colonyID, pq.Array([]string{runtimeID}), pq.Array([]string{"*"}), count)
+	rows, err := db.postgresql.Query(sqlStatement, core.WAITING, runtimeType, colonyID, pq.Array([]string{runtimeID}), pq.Array([]string{"*"}), count)
 	if err != nil {
 		return nil, err
 	}
