@@ -83,7 +83,7 @@ func init() {
 	getProcessCmd.Flags().StringVarP(&RuntimeID, "runtimeid", "", "", "Runtime Id")
 	getProcessCmd.Flags().StringVarP(&RuntimePrvKey, "runtimeprvkey", "", "", "Runtime private key")
 	getProcessCmd.Flags().StringVarP(&ColonyID, "colonyid", "", "", "Colony Id")
-	getProcessCmd.Flags().StringVarP(&ProcessID, "processid", "", "", "Process Id")
+	getProcessCmd.Flags().StringVarP(&ProcessID, "processid", "p", "", "Process Id")
 	getProcessCmd.MarkFlagRequired("processid")
 	getProcessCmd.Flags().BoolVarP(&JSON, "json", "", false, "Print JSON instead of tables")
 	getProcessCmd.Flags().BoolVarP(&PrintOutput, "out", "", false, "Print process output")
@@ -107,13 +107,13 @@ func init() {
 	closeSuccessfulCmd.Flags().StringSliceVarP(&Output, "out", "", make([]string, 0), "Output")
 	closeSuccessfulCmd.Flags().StringVarP(&RuntimeID, "runtimeid", "", "", "Runtime Id")
 	closeSuccessfulCmd.Flags().StringVarP(&RuntimePrvKey, "runtimeprvkey", "", "", "Runtime private key")
-	closeSuccessfulCmd.Flags().StringVarP(&ProcessID, "processid", "", "", "Process Id")
+	closeSuccessfulCmd.Flags().StringVarP(&ProcessID, "processid", "p", "", "Process Id")
 	closeSuccessfulCmd.MarkFlagRequired("processid")
 
 	closeFailedCmd.Flags().StringSliceVarP(&Errors, "errors", "", make([]string, 0), "Errors")
 	closeFailedCmd.Flags().StringVarP(&RuntimeID, "runtimeid", "", "", "Runtime Id")
 	closeFailedCmd.Flags().StringVarP(&RuntimePrvKey, "runtimeprvkey", "", "", "Runtime private key")
-	closeFailedCmd.Flags().StringVarP(&ProcessID, "processid", "", "", "Process Id")
+	closeFailedCmd.Flags().StringVarP(&ProcessID, "processid", "p", "", "Process Id")
 	closeFailedCmd.MarkFlagRequired("processid")
 }
 

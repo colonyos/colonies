@@ -3,7 +3,6 @@ package core
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"time"
 
 	"github.com/colonyos/colonies/pkg/security/crypto"
@@ -43,7 +42,7 @@ type Node struct {
 	ID       string   `json:"id"`
 	Data     Data     `json:"data"`
 	Position Position `json:"position"`
-	Type     string   `json:"output"`
+	Type     string   `json:"type"`
 	Style    Style    `json:"style"`
 }
 
@@ -65,6 +64,8 @@ type ProcessGraph struct {
 func CreateProcessGraph(colonyID string) (*ProcessGraph, error) {
 	graph := &ProcessGraph{}
 	graph.ColonyID = colonyID
+	graph.Edges = make([]Edge, 0)
+	graph.Nodes = make([]Node, 0)
 
 	uuid := uuid.New()
 	crypto := crypto.CreateCrypto()
@@ -281,7 +282,7 @@ func (graph *ProcessGraph) calcNodes() error {
 		t := ""
 		if len(process.Parents) == 0 {
 			t = "input"
-		} else {
+		} else if len(process.Children) == 0 {
 			t = "output"
 		}
 
@@ -521,13 +522,11 @@ func (graph *ProcessGraph) Equals(graph2 *ProcessGraph) bool {
 func (graph *ProcessGraph) ToJSON() (string, error) {
 	err := graph.calcNodes()
 	if err != nil {
-		fmt.Println("EEEEEEEEEEEEEEEEEEEEERROR 1")
 		return "", err
 	}
 
 	err = graph.calcEdges()
 	if err != nil {
-		fmt.Println("EEEEEEEEEEEEEEEEEEE EERROR 2")
 		return "", err
 	}
 
