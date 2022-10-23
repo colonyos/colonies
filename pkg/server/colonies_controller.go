@@ -1081,6 +1081,14 @@ func (controller *coloniesController) unassignRuntime(processID string) error {
 				cmd.errorChan <- err
 				return
 			}
+			maxWaitTime := process.ProcessSpec.MaxWaitTime
+			if maxWaitTime > 0 {
+				err := controller.db.SetWaitDeadline(process, time.Now().Add(time.Duration(maxWaitTime)*time.Second))
+				if err != nil {
+					cmd.errorChan <- err
+					return
+				}
+			}
 			cmd.errorChan <- controller.db.UnassignRuntime(process)
 			controller.eventHandler.signal(process)
 		}}
