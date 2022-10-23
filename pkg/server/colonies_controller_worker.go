@@ -59,7 +59,8 @@ func (controller *coloniesController) timeoutLoop() {
 					continue
 				}
 
-				err := controller.unassignRuntime(process.ID)
+				//err := controller.unassignRuntime(process.ID)
+				err := controller.resetProcess(process.ID)
 				if err != nil {
 					log.WithFields(log.Fields{"ProcessID": process.ID, "Error": err}).Error("Failed to unassign process")
 				}

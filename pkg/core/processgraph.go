@@ -17,6 +17,39 @@ type ProcessGraphStorage interface {
 	SetProcessGraphState(processGraphID string, state int) error
 }
 
+type Edge struct {
+	/*  id: '1-2', source: '1', target: '2', markerEnd: {
+	▎  10         type: MarkerType.ArrowClosed,
+	▎  11     } */
+
+	ID     string `json:"id"`
+	Source string `json:"source"`
+	Target string `json:"target"`
+	Type   string `json:"target"`
+}
+
+type Position struct {
+	X int `json:"x"`
+	Y int `json:"y"`
+}
+
+type Data struct {
+	Label string `json:"label"`
+}
+
+type Nodes struct {
+	//        id: '2',
+	// ▎           data: { label: 'World' },
+	// ▎           position: { x: 100, y: 100 },
+	// ▎           type: 'output',
+	// ▎       },
+
+	ID       string   `json:"id"`
+	Data     Data     `json:"data"`
+	Position Position `json:"position"`
+	Type     string   `json:"output"`
+}
+
 type ProcessGraph struct {
 	storage        ProcessGraphStorage
 	ID             string    `json:"processgraphid"`
@@ -27,6 +60,7 @@ type ProcessGraph struct {
 	StartTime      time.Time `json:"starttime"`
 	EndTime        time.Time `json:"endtime"`
 	ProcessIDs     []string  `json:"processids"`
+	Nodes          []string  `json:"nodes"`
 }
 
 func CreateProcessGraph(colonyID string) (*ProcessGraph, error) {
@@ -36,7 +70,6 @@ func CreateProcessGraph(colonyID string) (*ProcessGraph, error) {
 	uuid := uuid.New()
 	crypto := crypto.CreateCrypto()
 	id := crypto.GenerateHash(uuid.String())
-
 	graph.ID = id
 
 	return graph, nil
@@ -106,7 +139,11 @@ func (graph *ProcessGraph) SetStorage(storage ProcessGraphStorage) {
 	graph.storage = storage
 }
 
-// Note: This function requires a working graph.storage reference
+func (graph *ProcessGraph) calcNodes() error {
+
+	return nil
+}
+
 func (graph *ProcessGraph) Resolve() error {
 	processes := 0
 	failedProcesses := 0
