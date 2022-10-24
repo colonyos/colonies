@@ -17,6 +17,35 @@ type ProcessGraphStorage interface {
 	SetProcessGraphState(processGraphID string, state int) error
 }
 
+type Edge struct {
+	ID       string `json:"id"`
+	Source   string `json:"source"`
+	Target   string `json:"target"`
+	Animated bool   `json:"animated"`
+}
+
+type Position struct {
+	X int `json:"x"`
+	Y int `json:"y"`
+}
+
+type Data struct {
+	Label string `json:"label"`
+}
+
+type Style struct {
+	Color      string `json:"color"`
+	Background string `json:"background"`
+}
+
+type Node struct {
+	ID       string   `json:"id"`
+	Data     Data     `json:"data"`
+	Position Position `json:"position"`
+	Type     string   `json:"type"`
+	Style    Style    `json:"style"`
+}
+
 type ProcessGraph struct {
 	storage        ProcessGraphStorage
 	ID             string    `json:"processgraphid"`
@@ -27,17 +56,23 @@ type ProcessGraph struct {
 	StartTime      time.Time `json:"starttime"`
 	EndTime        time.Time `json:"endtime"`
 	ProcessIDs     []string  `json:"processids"`
+	Nodes          []Node    `json:"nodes"`
+	Edges          []Edge    `json:"edges"`
+	nodesMap       map[string]*Node
 }
 
 func CreateProcessGraph(colonyID string) (*ProcessGraph, error) {
 	graph := &ProcessGraph{}
 	graph.ColonyID = colonyID
+	graph.Edges = make([]Edge, 0)
+	graph.Nodes = make([]Node, 0)
 
 	uuid := uuid.New()
 	crypto := crypto.CreateCrypto()
 	id := crypto.GenerateHash(uuid.String())
-
 	graph.ID = id
+
+	graph.nodesMap = make(map[string]*Node)
 
 	return graph, nil
 }
@@ -106,7 +141,6 @@ func (graph *ProcessGraph) SetStorage(storage ProcessGraphStorage) {
 	graph.storage = storage
 }
 
-// Note: This function requires a working graph.storage reference
 func (graph *ProcessGraph) Resolve() error {
 	processes := 0
 	failedProcesses := 0
@@ -186,29 +220,159 @@ func (graph *ProcessGraph) Resolve() error {
 
 func (graph *ProcessGraph) GetRoot(childProcessID string) (*Process, error) {
 	visited := make(map[string]bool)
-	return graph.getRoot(childProcessID, visited)
+	process, _, err := graph.getRoot(childProcessID, 0, visited)
+	return process, err
 }
 
-func (graph *ProcessGraph) getRoot(childProcessID string, visited map[string]bool) (*Process, error) {
+func (graph *ProcessGraph) Depth(childProcessID string) (int, error) {
+	visited := make(map[string]bool)
+	_, counter, err := graph.getRoot(childProcessID, 0, visited)
+	return counter, err
+}
+
+func (graph *ProcessGraph) calcEdges() error {
+	if graph.storage == nil {
+		return nil
+	}
+	err := graph.Iterate(func(process *Process) error {
+		for _, child := range process.Children {
+			id := process.ID + "-" + child
+			source := process.ID
+			target := child
+			animated := false
+			if process.State == RUNNING {
+				animated = true
+			}
+			edge := Edge{ID: id, Source: source, Target: target, Animated: animated}
+			graph.Edges = append(graph.Edges, edge)
+		}
+
+		return nil
+	})
+
+	return err
+}
+
+func (graph *ProcessGraph) calcNodes() error {
+	if graph.storage == nil {
+		return nil
+	}
+
+	paddingsPerLevel := make(map[int]int)
+	nodesPerDepth := make(map[int][]*Node)
+
+	boxwidth := 150
+	padding := 50
+
+	err := graph.Iterate(func(process *Process) error {
+		depth, err := graph.Depth(process.ID)
+		if err != nil {
+			return err
+		}
+		w, ok := paddingsPerLevel[depth]
+		if ok {
+			w = paddingsPerLevel[depth] + boxwidth + padding
+			paddingsPerLevel[depth] = w
+		} else {
+			paddingsPerLevel[depth] = 0
+		}
+
+		x := w
+		y := depth * 80
+		t := ""
+		if len(process.Parents) == 0 {
+			t = "input"
+		} else if len(process.Children) == 0 {
+			t = "output"
+		}
+
+		background := "#eee8d8"
+		switch process.State {
+		case WAITING:
+			background = "#eee8d8"
+		case RUNNING:
+			background = "#4689cd"
+		case SUCCESS:
+			background = "#92d050"
+		case FAILED:
+			background = "#cb4239"
+		}
+
+		style := Style{Background: background}
+		node := &Node{ID: process.ID, Data: Data{Label: process.ProcessSpec.Name}, Position: Position{X: x, Y: y}, Type: t, Style: style}
+		graph.nodesMap[process.ID] = node
+		nodesPerDepth[depth] = append(nodesPerDepth[depth], node)
+		return nil
+	})
+
+	maxWidth := 0
+	for depth := range nodesPerDepth {
+		paddingThisLevel, ok := paddingsPerLevel[depth]
+		if ok {
+			widthThisLevel := 0
+			if paddingThisLevel == 0 {
+				widthThisLevel = boxwidth
+			} else {
+				nrOfNodes := paddingThisLevel / (boxwidth + padding)
+				widthThisLevel = nrOfNodes*boxwidth + paddingThisLevel
+			}
+			if widthThisLevel > maxWidth {
+				maxWidth = widthThisLevel
+			}
+		}
+	}
+
+	targetCenterPoint := maxWidth / 2
+
+	for depth, nodes := range nodesPerDepth {
+		paddingThisLevel, ok := paddingsPerLevel[depth]
+		if ok {
+			widthThisLevel := 0
+			if paddingThisLevel == 0 {
+				widthThisLevel = boxwidth
+			} else {
+				nrOfNodes := paddingThisLevel / (boxwidth + padding)
+				widthThisLevel = nrOfNodes*boxwidth + paddingThisLevel
+			}
+
+			if widthThisLevel < maxWidth {
+				centerPoint := widthThisLevel / 2
+				diff := targetCenterPoint - centerPoint
+				for _, node := range nodes {
+					node.Position.X = node.Position.X + diff
+				}
+			}
+
+		}
+	}
+
+	for _, node := range graph.nodesMap {
+		graph.Nodes = append(graph.Nodes, *node)
+	}
+
+	return err
+}
+
+func (graph *ProcessGraph) getRoot(childProcessID string, counter int, visited map[string]bool) (*Process, int, error) {
 	process, err := graph.storage.GetProcessByID(childProcessID)
 	if err != nil {
-		return nil, err
+		return nil, -1, err
 	}
 	if visited[childProcessID] {
-		return nil, errors.New("Loops are not allowed in process graphs")
+		return nil, -1, errors.New("Loops are not allowed in process graphs")
 	}
 
 	visited[childProcessID] = true
 
 	if len(process.Parents) == 0 {
-		return process, nil
+		return process, counter, nil
 	} else {
 		for _, childProcessID := range process.Parents {
-			return graph.getRoot(childProcessID, visited)
+			return graph.getRoot(childProcessID, counter+1, visited)
 		}
 	}
 
-	return nil, nil
+	return nil, counter, nil
 }
 
 func (graph *ProcessGraph) Leaves() ([]string, error) {
@@ -356,6 +520,16 @@ func (graph *ProcessGraph) Equals(graph2 *ProcessGraph) bool {
 }
 
 func (graph *ProcessGraph) ToJSON() (string, error) {
+	err := graph.calcNodes()
+	if err != nil {
+		return "", err
+	}
+
+	err = graph.calcEdges()
+	if err != nil {
+		return "", err
+	}
+
 	jsonBytes, err := json.MarshalIndent(graph, "", "    ")
 	if err != nil {
 		return "", err
