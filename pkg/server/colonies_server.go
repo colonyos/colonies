@@ -238,8 +238,9 @@ func (server *ColoniesServer) generateRPCErrorMsg(err error, errorCode int) (*rp
 func (server *ColoniesServer) handleHTTPError(c *gin.Context, err error, errorCode int) bool {
 	if err != nil {
 		if !strings.HasPrefix(err.Error(), "No processes can be selected for runtime with Id") {
-			log.Error(err)
+			log.Debug(err)
 		}
+
 		rpcReplyMsg, err := server.generateRPCErrorMsg(err, errorCode)
 		if err != nil {
 			log.WithFields(log.Fields{"Error": err}).Error("Failed to call server.generateRPCErrorMsg()")

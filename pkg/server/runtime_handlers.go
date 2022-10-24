@@ -231,7 +231,7 @@ func (server *ColoniesServer) handleDeleteRuntimeHTTPRequest(c *gin.Context, rec
 		return
 	}
 
-	log.WithFields(log.Fields{"RuntimeID": runtime.ID}).Info("Deleting runtime")
+	log.WithFields(log.Fields{"RuntimeID": runtime.ID}).Debug("Deleting runtime")
 
 	server.sendEmptyHTTPReply(c, payloadType)
 }

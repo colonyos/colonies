@@ -9,12 +9,12 @@ import (
 func (controller *coloniesController) isLeader() bool {
 	areWeLeader := controller.etcdServer.Leader() == controller.thisNode.Name
 	if areWeLeader && !controller.leader {
-		log.WithFields(log.Fields{"EtcdNode": controller.thisNode.Name}).Info("ColoniesServer became leader")
+		log.WithFields(log.Fields{"EtcdNode": controller.thisNode.Name}).Debug("ColoniesServer became leader")
 		controller.leader = true
 	}
 
 	if !areWeLeader && controller.leader {
-		log.WithFields(log.Fields{"EtcdNode": controller.thisNode.Name}).Info("ColoniesServer is no longer leader")
+		log.WithFields(log.Fields{"EtcdNode": controller.thisNode.Name}).Debug("ColoniesServer is no longer leader")
 		controller.leader = false
 	}
 
@@ -52,10 +52,10 @@ func (controller *coloniesController) timeoutLoop() {
 				if process.Retries >= process.ProcessSpec.MaxRetries && process.ProcessSpec.MaxRetries > -1 {
 					err := controller.closeFailed(process.ID, []string{"Maximum execution time limit exceeded"})
 					if err != nil {
-						log.WithFields(log.Fields{"ProcessID": process.ID, "Error": err}).Info("Max retries reached, but failed to close process")
+						log.WithFields(log.Fields{"ProcessID": process.ID, "Error": err}).Debug("Max retries reached, but failed to close process")
 						continue
 					}
-					log.WithFields(log.Fields{"ProcessID": process.ID, "MaxExecTime": process.ProcessSpec.MaxExecTime, "MaxRetries": process.ProcessSpec.MaxRetries}).Info("Process closed as failed as max retries reached")
+					log.WithFields(log.Fields{"ProcessID": process.ID, "MaxExecTime": process.ProcessSpec.MaxExecTime, "MaxRetries": process.ProcessSpec.MaxRetries}).Debug("Process closed as failed as max retries reached")
 					continue
 				}
 
@@ -63,7 +63,7 @@ func (controller *coloniesController) timeoutLoop() {
 				if err != nil {
 					log.WithFields(log.Fields{"ProcessID": process.ID, "Error": err}).Error("Failed to unassign process")
 				}
-				log.WithFields(log.Fields{"ProcessID": process.ID, "MaxExecTime": process.ProcessSpec.MaxExecTime, "MaxRetries": process.ProcessSpec.MaxRetries}).Info("Process was unassigned as it did not complete in time")
+				log.WithFields(log.Fields{"ProcessID": process.ID, "MaxExecTime": process.ProcessSpec.MaxExecTime, "MaxRetries": process.ProcessSpec.MaxRetries}).Debug("Process was unassigned as it did not complete in time")
 			}
 		}
 
@@ -78,10 +78,10 @@ func (controller *coloniesController) timeoutLoop() {
 			if time.Now().Unix() > process.WaitDeadline.Unix() {
 				err := controller.closeFailed(process.ID, []string{"Maximum waiting time limit exceeded"})
 				if err != nil {
-					log.WithFields(log.Fields{"ProcessID": process.ID, "Error": err}).Info("Max waiting time reached, but failed to close process")
+					log.WithFields(log.Fields{"ProcessID": process.ID, "Error": err}).Debug("Max waiting time reached, but failed to close process")
 					continue
 				}
-				log.WithFields(log.Fields{"ProcessID": process.ID, "MaxWaitTime": process.ProcessSpec.MaxWaitTime}).Info("Process closed as failed as maximum waiting time limit exceeded")
+				log.WithFields(log.Fields{"ProcessID": process.ID, "MaxWaitTime": process.ProcessSpec.MaxWaitTime}).Debug("Process closed as failed as maximum waiting time limit exceeded")
 			}
 		}
 	}

@@ -1,0 +1,188 @@
+[
+    {
+        "name": "analyze_aoi",
+        "func": "sleep",
+        "args": [
+            "10"
+        ],
+        "conditions": {
+            "runtimetype": "cli",
+            "dependencies": []
+        }
+    },
+    {
+        "name": "create_odc_dataset",
+        "func": "sleep",
+        "args": [
+            "4"
+        ],
+        "conditions": {
+            "runtimetype": "cli",
+            "dependencies": [
+                "analyze_aoi"
+            ]
+        }
+    },
+    {
+        "name": "provision_hpc_vega",
+        "func": "sleep",
+        "args": [
+            "3"
+        ],
+        "conditions": {
+            "runtimetype": "cli",
+            "dependencies": [
+                "analyze_aoi"
+            ]
+        }
+    },
+    {
+        "name": "upload_dataset_to_hpc",
+        "func": "sleep",
+        "args": [
+            "1"
+        ],
+        "conditions": {
+            "runtimetype": "cli",
+            "dependencies": [
+                "create_odc_dataset",
+                "provision_hpc_vega"
+            ]
+        }
+    },
+    {
+        "name": "install_slurm_manager",
+        "func": "sleep",
+        "args": [
+            "1"
+        ],
+        "conditions": {
+            "runtimetype": "cli",
+            "dependencies": [
+                "provision_hpc_vega"
+            ]
+        }
+    },
+    {
+        "name": "start_dask_workers",
+        "func": "sleep",
+        "args": [
+            "5"
+        ],
+        "conditions": {
+            "runtimetype": "cli",
+            "dependencies": [
+                "install_slurm_manager",
+                "upload_dataset_to_hpc"
+            ]
+        }
+    },
+    {
+        "name": "dask_worker_1",
+        "func": "sleep",
+        "args": [
+            "1"
+        ],
+        "conditions": {
+            "runtimetype": "cli",
+            "dependencies": [
+                "start_dask_workers"
+            ]
+        }
+    },
+    {
+        "name": "dask_worker_2",
+        "func": "sleep",
+        "args": [
+            "1"
+        ],
+        "conditions": {
+            "runtimetype": "cli",
+            "dependencies": [
+                "start_dask_workers"
+            ]
+        }
+    },
+    {
+        "name": "dask_worker_3",
+        "func": "sleep",
+        "args": [
+            "1"
+        ],
+        "conditions": {
+            "runtimetype": "cli",
+            "dependencies": [
+                "start_dask_workers"
+            ]
+        }
+    },
+    {
+        "name": "dask_worker_4",
+        "func": "sleep",
+        "args": [
+            "1"
+        ],
+        "conditions": {
+            "runtimetype": "cli",
+            "dependencies": [
+                "start_dask_workers"
+            ]
+        }
+    },
+    {
+        "name": "dask_worker_5",
+        "func": "sleep",
+        "args": [
+            "1"
+        ],
+        "conditions": {
+            "runtimetype": "cli",
+            "dependencies": [
+                "start_dask_workers"
+            ]
+        }
+    },
+    {
+        "name": "analyze_dataset",
+        "func": "sleep",
+        "args": [
+            "10"
+        ],
+        "conditions": {
+            "runtimetype": "cli",
+            "dependencies": [
+                "dask_worker_1",
+                "dask_worker_2",
+                "dask_worker_3",
+                "dask_worker_4",
+                "dask_worker_5"
+            ]
+        }
+    },
+    {
+        "name": "upload_result_to_db",
+        "func": "sleep",
+        "args": [
+            "1"
+        ],
+        "conditions": {
+            "runtimetype": "cli",
+            "dependencies": [
+                "analyze_dataset"
+            ]
+        }
+    },
+    {
+        "name": "notify_user",
+        "func": "sleep",
+        "args": [
+            "1"
+        ],
+        "conditions": {
+            "runtimetype": "cli",
+            "dependencies": [
+                "upload_result_to_db"
+            ]
+        }
+    }
+]

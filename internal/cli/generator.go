@@ -137,6 +137,7 @@ var addGeneratorCmd = &cobra.Command{
 
 		generator := core.CreateGenerator(ColonyID, GeneratorName, workflowSpecJSON, GeneratorTrigger)
 		addedGenerator, err := client.AddGenerator(generator, RuntimePrvKey)
+		CheckError(err)
 
 		log.WithFields(log.Fields{"GeneratorID": addedGenerator.ID}).Info("Generator added")
 	},

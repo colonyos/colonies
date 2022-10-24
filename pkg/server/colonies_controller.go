@@ -557,7 +557,7 @@ func (controller *coloniesController) createProcessGraph(workflowSpec *core.Work
 	var rootProcesses []*core.Process
 	for _, processSpec := range workflowSpec.ProcessSpecs {
 		if processSpec.MaxExecTime == 0 {
-			log.WithFields(log.Fields{"Name": processSpec.Name}).Warning("MaxExecTime was set to 0, resetting to -1")
+			log.WithFields(log.Fields{"Name": processSpec.Name}).Debug("MaxExecTime was set to 0, resetting to -1")
 			processSpec.MaxExecTime = -1
 		}
 		process := core.CreateProcess(&processSpec)
@@ -893,7 +893,8 @@ func (controller *coloniesController) closeSuccessful(processID string, output [
 					return
 				}
 
-				// This is process is now closed. This means that children processes can now execute, assuming all their parents are closed successfully
+				// This is process is now closed. This means that children processes can now execute,
+				// assuming all their parents are closed successfully
 				err = controller.notifyChildren(process)
 				if err != nil {
 					cmd.errorChan <- err

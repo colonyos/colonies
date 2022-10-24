@@ -313,8 +313,8 @@ func (graph *ProcessGraph) calcNodes() error {
 			if paddingThisLevel == 0 {
 				widthThisLevel = boxwidth
 			} else {
-				nrOfNodes := paddingThisLevel / (boxwidth + padding)
-				widthThisLevel = nrOfNodes*boxwidth + paddingThisLevel
+				nrOfNodes := paddingThisLevel/(boxwidth+padding) + 1
+				widthThisLevel = (nrOfNodes * boxwidth) + (padding * (nrOfNodes - 1))
 			}
 			if widthThisLevel > maxWidth {
 				maxWidth = widthThisLevel
@@ -331,8 +331,8 @@ func (graph *ProcessGraph) calcNodes() error {
 			if paddingThisLevel == 0 {
 				widthThisLevel = boxwidth
 			} else {
-				nrOfNodes := paddingThisLevel / (boxwidth + padding)
-				widthThisLevel = nrOfNodes*boxwidth + paddingThisLevel
+				nrOfNodes := paddingThisLevel/(boxwidth+padding) + 1
+				widthThisLevel = (nrOfNodes * boxwidth) + (padding * (nrOfNodes - 1))
 			}
 
 			if widthThisLevel < maxWidth {

@@ -289,32 +289,6 @@ var devCmd = &cobra.Command{
 		wait := make(chan bool)
 
 		log.Info("Successfully started Colonies development server")
-
-		log.Info("Add the following environmental variables to your shell:")
-		envStr := "export LANG=en_US.UTF-8\n"
-		envStr += "export LANGUAGE=en_US.UTF-8\n"
-		envStr += "export LC_ALL=en_US.UTF-8\n"
-		envStr += "export LC_CTYPE=UTF-8\n"
-		envStr += "export TZ=Europe/Stockholm\n"
-		envStr += "export COLONIES_TLS=\"false\"\n"
-		envStr += "export COLONIES_SERVERHOST=\"" + coloniesServerHost + "\"\n"
-		envStr += "export COLONIES_SERVERPORT=\"50080\"\n"
-		envStr += "export COLONIES_MONITORPORT=\"21120\"\n"
-		envStr += "export COLONIES_MONITORINTERVALL=\"1\"\n"
-		envStr += "export COLONIES_SERVERID=\"" + serverID + "\"\n"
-		envStr += "export COLONIES_SERVERPRVKEY=\"" + serverPrvKey + "\"\n"
-		envStr += "export COLONIES_DBHOST=\"localhost\"\n"
-		envStr += "export COLONIES_DBUSER=\"postgres\"\n"
-		envStr += "export COLONIES_DBPORT=\"50070\"\n"
-		envStr += "export COLONIES_DBPASSWORD=\"rFcLGNkgsNtksg6Pgtn9CumL4xXBQ7\"\n"
-		envStr += "export COLONIES_COLONYID=\"" + colonyID + "\"\n"
-		envStr += "export COLONIES_COLONYPRVKEY=\"" + colonyPrvKey + "\"\n"
-		envStr += "export COLONIES_RUNTIMEID=\"" + runtimeID + "\"\n"
-		envStr += "export COLONIES_RUNTIMEPRVKEY=\"" + runtimePrvKey + "\"\n"
-		envStr += "export COLONIES_RUNTIMETYPE=\"" + runtimeType + "\"\n"
-
-		fmt.Println(envStr)
-
 		log.Info("Press ctrl+c to exit")
 		<-wait
 	},

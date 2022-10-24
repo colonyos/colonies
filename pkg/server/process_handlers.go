@@ -119,7 +119,7 @@ func (server *ColoniesServer) handleAssignProcessHTTPRequest(c *gin.Context, rec
 		return
 	}
 
-	log.WithFields(log.Fields{"ProcessID": process.ID, "RuntimeID": process.AssignedRuntimeID}).Info("Assigning process")
+	log.WithFields(log.Fields{"ProcessID": process.ID, "RuntimeID": process.AssignedRuntimeID}).Debug("Assigning process")
 
 	server.sendHTTPReply(c, payloadType, jsonString)
 }
@@ -376,12 +376,12 @@ func (server *ColoniesServer) handleCloseSuccessfulHTTPRequest(c *gin.Context, r
 
 	err = server.controller.closeSuccessful(process.ID, msg.Output)
 	if server.handleHTTPError(c, err, http.StatusBadRequest) {
-		log.WithFields(log.Fields{"Err": err}).Info("Failed to close process as successful")
+		log.WithFields(log.Fields{"Err": err}).Debug("Failed to close process as successful")
 		server.handleHTTPError(c, err, http.StatusInternalServerError)
 		return
 	}
 
-	log.WithFields(log.Fields{"ProcessID": process.ID}).Info("Close successful")
+	log.WithFields(log.Fields{"ProcessID": process.ID}).Debug("Close successful")
 
 	server.sendEmptyHTTPReply(c, payloadType)
 }
@@ -425,12 +425,12 @@ func (server *ColoniesServer) handleCloseFailedHTTPRequest(c *gin.Context, recov
 
 	err = server.controller.closeFailed(process.ID, msg.Errors)
 	if server.handleHTTPError(c, err, http.StatusBadRequest) {
-		log.WithFields(log.Fields{"Err": err}).Info("Failed to close process as failed")
+		log.WithFields(log.Fields{"Err": err}).Debug("Failed to close process as failed")
 		server.handleHTTPError(c, err, http.StatusInternalServerError)
 		return
 	}
 
-	log.WithFields(log.Fields{"ProcessID": process.ID}).Info("Close failed")
+	log.WithFields(log.Fields{"ProcessID": process.ID}).Debug("Close failed")
 
 	server.sendEmptyHTTPReply(c, payloadType)
 }

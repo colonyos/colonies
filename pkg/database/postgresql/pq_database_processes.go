@@ -130,7 +130,7 @@ func (db *PQDatabase) parseProcesses(rows *sql.Rows) ([]*core.Process, error) {
 }
 
 func (db *PQDatabase) GetProcesses() ([]*core.Process, error) {
-	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `PROCESSES`
+	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `PROCESSES ORDER BY SUBMISSION_TIME DESC`
 	rows, err := db.postgresql.Query(sqlStatement)
 	if err != nil {
 		return nil, err
@@ -175,7 +175,7 @@ func (db *PQDatabase) selectCandidate(candidates []*core.Process) *core.Process 
 }
 
 func (db *PQDatabase) FindProcessesByColonyID(colonyID string, seconds int, state int) ([]*core.Process, error) {
-	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `PROCESSES WHERE TARGET_COLONY_ID=$1 AND STATE=$2 AND SUBMISSION_TIME BETWEEN NOW() - INTERVAL '1 seconds' * $3 AND NOW() ORDER BY SUBMISSION_TIME DESC`
+	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `PROCESSES WHERE TARGET_COLONY_ID=$1 AND STATE=$2 AND SUBMISSION_TIME BETWEEN NOW() - INTERVAL '1 seconds' * $3 AND NOW() ORDER BY SUBMISSION_TIME ASC`
 	rows, err := db.postgresql.Query(sqlStatement, colonyID, state, strconv.Itoa(seconds))
 	if err != nil {
 		return nil, err
@@ -191,7 +191,7 @@ func (db *PQDatabase) FindProcessesByColonyID(colonyID string, seconds int, stat
 }
 
 func (db *PQDatabase) FindProcessesByRuntimeID(colonyID string, runtimeID string, seconds int, state int) ([]*core.Process, error) {
-	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `PROCESSES WHERE TARGET_COLONY_ID=$1 AND ASSIGNED_RUNTIME_ID=$2 AND STATE=$3 AND SUBMISSION_TIME BETWEEN NOW() - INTERVAL '1 seconds' * $4 AND NOW() ORDER BY SUBMISSION_TIME DESC`
+	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `PROCESSES WHERE TARGET_COLONY_ID=$1 AND ASSIGNED_RUNTIME_ID=$2 AND STATE=$3 AND SUBMISSION_TIME BETWEEN NOW() - INTERVAL '1 seconds' * $4 AND NOW() ORDER BY SUBMISSION_TIME ASC`
 	rows, err := db.postgresql.Query(sqlStatement, colonyID, runtimeID, state, strconv.Itoa(seconds))
 	if err != nil {
 		return nil, err
@@ -207,7 +207,7 @@ func (db *PQDatabase) FindProcessesByRuntimeID(colonyID string, runtimeID string
 }
 
 func (db *PQDatabase) FindWaitingProcesses(colonyID string, count int) ([]*core.Process, error) {
-	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `PROCESSES WHERE TARGET_COLONY_ID=$1 AND STATE=$2 ORDER BY SUBMISSION_TIME DESC LIMIT $3`
+	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `PROCESSES WHERE TARGET_COLONY_ID=$1 AND STATE=$2 ORDER BY SUBMISSION_TIME ASC LIMIT $3`
 	rows, err := db.postgresql.Query(sqlStatement, colonyID, core.WAITING, count)
 	if err != nil {
 		return nil, err
@@ -223,7 +223,7 @@ func (db *PQDatabase) FindWaitingProcesses(colonyID string, count int) ([]*core.
 }
 
 func (db *PQDatabase) FindRunningProcesses(colonyID string, count int) ([]*core.Process, error) {
-	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `PROCESSES WHERE TARGET_COLONY_ID=$1 AND STATE=$2 ORDER BY START_TIME DESC LIMIT $3`
+	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `PROCESSES WHERE TARGET_COLONY_ID=$1 AND STATE=$2 ORDER BY START_TIME ASC LIMIT $3`
 	rows, err := db.postgresql.Query(sqlStatement, colonyID, core.RUNNING, count)
 	if err != nil {
 		return nil, err
@@ -239,7 +239,7 @@ func (db *PQDatabase) FindRunningProcesses(colonyID string, count int) ([]*core.
 }
 
 func (db *PQDatabase) FindAllRunningProcesses() ([]*core.Process, error) {
-	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `PROCESSES WHERE STATE=$1 ORDER BY START_TIME DESC`
+	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `PROCESSES WHERE STATE=$1 ORDER BY START_TIME ASC`
 	rows, err := db.postgresql.Query(sqlStatement, core.RUNNING)
 	if err != nil {
 		return nil, err
