@@ -1,6 +1,0 @@
-apiVersion: v1
-name: rocksigma-colonies
-description: A helm chart for deploying Colonies 
-type: application
-version: 0.0.1
-appVersion: 0.0.1

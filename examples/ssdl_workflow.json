@@ -1,8 +1,10 @@
 [
     {
         "name": "analyze_aoi",
-        "func": "analyze_aoi",
-        "args": [],
+        "func": "sleep",
+        "args": [
+            "10"
+        ],
         "conditions": {
             "runtimetype": "cli",
             "dependencies": []
@@ -10,8 +12,10 @@
     },
     {
         "name": "create_odc_dataset",
-        "func": "create_odc_dataset",
-        "args": [],
+        "func": "sleep",
+        "args": [
+            "4"
+        ],
         "conditions": {
             "runtimetype": "cli",
             "dependencies": [
@@ -21,8 +25,10 @@
     },
     {
         "name": "provision_hpc_vega",
-        "func": "provision_hpc_vega",
-        "args": [],
+        "func": "sleep",
+        "args": [
+            "3"
+        ],
         "conditions": {
             "runtimetype": "cli",
             "dependencies": [
@@ -32,8 +38,10 @@
     },
     {
         "name": "upload_dataset_to_hpc",
-        "func": "upload_dataset_to_hpc",
-        "args": [],
+        "func": "sleep",
+        "args": [
+            "1"
+        ],
         "conditions": {
             "runtimetype": "cli",
             "dependencies": [
@@ -44,8 +52,10 @@
     },
     {
         "name": "install_slurm_manager",
-        "func": "install_slurm_manager",
-        "args": [],
+        "func": "sleep",
+        "args": [
+            "1"
+        ],
         "conditions": {
             "runtimetype": "cli",
             "dependencies": [
@@ -55,8 +65,10 @@
     },
     {
         "name": "start_dask_workers",
-        "func": "start_dask_workers",
-        "args": [],
+        "func": "sleep",
+        "args": [
+            "5"
+        ],
         "conditions": {
             "runtimetype": "cli",
             "dependencies": [
@@ -67,8 +79,10 @@
     },
     {
         "name": "dask_worker_1",
-        "func": "dask_worker_1",
-        "args": [],
+        "func": "sleep",
+        "args": [
+            "1"
+        ],
         "conditions": {
             "runtimetype": "cli",
             "dependencies": [
@@ -78,8 +92,49 @@
     },
     {
         "name": "dask_worker_2",
-        "func": "dask_worker_2",
-        "args": [],
+        "func": "sleep",
+        "args": [
+            "1"
+        ],
+        "conditions": {
+            "runtimetype": "cli",
+            "dependencies": [
+                "start_dask_workers"
+            ]
+        }
+    },
+    {
+        "name": "dask_worker_3",
+        "func": "sleep",
+        "args": [
+            "1"
+        ],
+        "conditions": {
+            "runtimetype": "cli",
+            "dependencies": [
+                "start_dask_workers"
+            ]
+        }
+    },
+    {
+        "name": "dask_worker_4",
+        "func": "sleep",
+        "args": [
+            "1"
+        ],
+        "conditions": {
+            "runtimetype": "cli",
+            "dependencies": [
+                "start_dask_workers"
+            ]
+        }
+    },
+    {
+        "name": "dask_worker_5",
+        "func": "sleep",
+        "args": [
+            "1"
+        ],
         "conditions": {
             "runtimetype": "cli",
             "dependencies": [
@@ -89,20 +144,27 @@
     },
     {
         "name": "analyze_dataset",
-        "func": "analyzse_dataset",
-        "args": [],
+        "func": "sleep",
+        "args": [
+            "10"
+        ],
         "conditions": {
             "runtimetype": "cli",
             "dependencies": [
                 "dask_worker_1",
-                "dask_worker_2"
+                "dask_worker_2",
+                "dask_worker_3",
+                "dask_worker_4",
+                "dask_worker_5"
             ]
         }
     },
     {
         "name": "upload_result_to_db",
-        "func": "upload_result_to_db",
-        "args": [],
+        "func": "sleep",
+        "args": [
+            "1"
+        ],
         "conditions": {
             "runtimetype": "cli",
             "dependencies": [
@@ -112,8 +174,10 @@
     },
     {
         "name": "notify_user",
-        "func": "notify_user",
-        "args": [],
+        "func": "sleep",
+        "args": [
+            "1"
+        ],
         "conditions": {
             "runtimetype": "cli",
             "dependencies": [

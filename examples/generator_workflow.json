@@ -1,6 +1,6 @@
 [
     {
-        "name": "task_a",
+        "name": "generator_example",
         "func": "echo",
         "args": [],
         "conditions": {
