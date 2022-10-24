@@ -11,7 +11,7 @@ const (
 	IN  int = 0
 	OUT     = 1
 	ERR     = 2
-	ENV     = 4
+	ENV     = 3
 )
 
 type Attribute struct {
