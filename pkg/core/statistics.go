@@ -13,7 +13,7 @@ type Statistics struct {
 	FailedProcesses     int `json:"failedprocesses"`
 	WaitingWorkflows    int `json:"waitingworkflows"`
 	RunningWorkflows    int `json:"runningworkflows"`
-	SuccessfulWorkflows int `json:"successworkflows"`
+	SuccessfulWorkflows int `json:"successfulworkflows"`
 	FailedWorkflows     int `json:"failedworkflows"`
 }
 

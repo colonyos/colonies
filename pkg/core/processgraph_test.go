@@ -108,6 +108,104 @@ func TestProcessGraphGetRoot(t *testing.T) {
 	assert.Equal(t, root.ID, process1.ID)
 }
 
+func TestProcessGraphCalcEdgesNodes(t *testing.T) {
+	process1 := createProcess()
+	process2 := createProcess()
+	process3 := createProcess()
+	process4 := createProcess()
+
+	//        process1
+	//          / \
+	//  process2   process3
+	//          \ /
+	//        process4
+
+	process1.AddChild(process2.ID)
+	process1.AddChild(process3.ID)
+	process2.AddParent(process1.ID)
+	process3.AddParent(process1.ID)
+	process2.AddChild(process4.ID)
+	process3.AddChild(process4.ID)
+	process4.AddParent(process2.ID)
+	process4.AddParent(process3.ID)
+
+	mock := createProcessGraphStorageMock()
+	mock.addProcess(process1)
+	mock.addProcess(process2)
+	mock.addProcess(process3)
+	mock.addProcess(process4)
+
+	colonyID := GenerateRandomID()
+
+	graph, err := CreateProcessGraph(colonyID)
+	assert.Nil(t, err)
+
+	graph.storage = mock
+
+	graph.AddRoot(process1.ID)
+
+	err = graph.calcEdges()
+	assert.Nil(t, err)
+
+	err = graph.calcNodes()
+	assert.Nil(t, err)
+
+	// TODO: Finish this test
+}
+
+func TestProcessGraphDepth(t *testing.T) {
+	process1 := createProcess()
+	process2 := createProcess()
+	process3 := createProcess()
+	process4 := createProcess()
+
+	//        process1
+	//          / \
+	//  process2   process3
+	//          \ /
+	//        process4
+
+	process1.AddChild(process2.ID)
+	process1.AddChild(process3.ID)
+	process2.AddParent(process1.ID)
+	process3.AddParent(process1.ID)
+	process2.AddChild(process4.ID)
+	process3.AddChild(process4.ID)
+	process4.AddParent(process2.ID)
+	process4.AddParent(process3.ID)
+
+	mock := createProcessGraphStorageMock()
+	mock.addProcess(process1)
+	mock.addProcess(process2)
+	mock.addProcess(process3)
+	mock.addProcess(process4)
+
+	colonyID := GenerateRandomID()
+
+	graph, err := CreateProcessGraph(colonyID)
+	assert.Nil(t, err)
+
+	graph.storage = mock
+
+	graph.AddRoot(process1.ID)
+
+	depth, err := graph.Depth(process1.ID)
+	assert.Nil(t, err)
+	assert.Equal(t, depth, 0)
+
+	depth, err = graph.Depth(process2.ID)
+	assert.Nil(t, err)
+	assert.Equal(t, depth, 1)
+
+	depth, err = graph.Depth(process3.ID)
+	assert.Nil(t, err)
+	assert.Equal(t, depth, 1)
+
+	depth, err = graph.Depth(process4.ID)
+	assert.Nil(t, err)
+	assert.Equal(t, depth, 2)
+}
+
 func TestProcessGraphGetRootLoop(t *testing.T) {
 	process1 := createProcess()
 	process2 := createProcess()

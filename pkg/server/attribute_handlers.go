@@ -4,6 +4,7 @@ import (
 	"errors"
 	"net/http"
 
+	"github.com/colonyos/colonies/pkg/core"
 	"github.com/colonyos/colonies/pkg/rpc"
 	"github.com/gin-gonic/gin"
 	log "github.com/sirupsen/logrus"
@@ -33,6 +34,12 @@ func (server *ColoniesServer) handleAddAttributeHTTPRequest(c *gin.Context, reco
 
 	err = server.validator.RequireRuntimeMembership(recoveredID, process.ProcessSpec.Conditions.ColonyID, true)
 	if server.handleHTTPError(c, err, http.StatusForbidden) {
+		return
+	}
+
+	if process.State != core.RUNNING {
+		err := errors.New("Failed to add attribute, process is not running")
+		server.handleHTTPError(c, err, http.StatusForbidden)
 		return
 	}
 

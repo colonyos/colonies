@@ -403,12 +403,14 @@ func (db *PQDatabase) DeleteAllProcessesInProcessGraphsByColonyID(colonyID strin
 }
 
 func (db *PQDatabase) ResetProcess(process *core.Process) error {
-	sqlStatement := `UPDATE ` + db.dbPrefix + `PROCESSES SET IS_ASSIGNED=FALSE, START_TIME=$1, END_TIME=$2, ASSIGNED_RUNTIME_ID=$3, STATE=$4 WHERE PROCESS_ID=$5`
-	_, err := db.postgresql.Exec(sqlStatement, time.Time{}, time.Time{}, "", core.WAITING, process.ID)
+	submissionTime := time.Now()
+	sqlStatement := `UPDATE ` + db.dbPrefix + `PROCESSES SET IS_ASSIGNED=FALSE, SUBMISSION_TIME=$1, START_TIME=$2, END_TIME=$3, ASSIGNED_RUNTIME_ID=$4, STATE=$5 WHERE PROCESS_ID=$6`
+	_, err := db.postgresql.Exec(sqlStatement, submissionTime, time.Time{}, time.Time{}, "", core.WAITING, process.ID)
 	if err != nil {
 		return err
 	}
 
+	process.SetSubmissionTime(submissionTime)
 	process.SetStartTime(time.Time{})
 	process.SetEndTime(time.Time{})
 	process.SetAssignedRuntimeID("")
