@@ -1,0 +1,6 @@
+{
+    "conditions": {
+        "runtimetype": "cli"
+    },
+    "func": "sayhello"
+}
