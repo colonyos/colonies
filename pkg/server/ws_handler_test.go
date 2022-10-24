@@ -99,7 +99,7 @@ func TestSubscribeChangeStateProcess2(t *testing.T) {
 	processSpec := utils.CreateTestProcessSpec(env.colony1ID)
 	addedProcess, err := client.SubmitProcessSpec(processSpec, env.runtime1PrvKey)
 	assert.Nil(t, err)
-	assert.Equal(t, core.PENDING, addedProcess.State)
+	assert.Equal(t, core.WAITING, addedProcess.State)
 
 	assignedProcess, err := client.AssignProcess(env.colony1ID, -1, env.runtime1PrvKey)
 	assert.Nil(t, err)
@@ -107,7 +107,7 @@ func TestSubscribeChangeStateProcess2(t *testing.T) {
 	err = client.Close(assignedProcess.ID, env.runtime1PrvKey)
 	assert.Nil(t, err)
 
-	time.Sleep(1 * time.Second)
+	time.Sleep(5 * time.Second)
 
 	subscription, err := client.SubscribeProcess(addedProcess.ID,
 		addedProcess.ProcessSpec.Conditions.RuntimeType,
