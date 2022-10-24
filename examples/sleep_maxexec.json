@@ -1,0 +1,11 @@
+{
+    "conditions": {
+        "runtimetype": "cli"
+    },
+    "func": "sleep",
+    "args": [
+        "10"
+    ],
+    "maxretries": 3,
+    "maxexectime": 30
+}
