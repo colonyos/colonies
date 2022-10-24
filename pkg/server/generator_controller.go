@@ -52,7 +52,7 @@ func (controller *coloniesController) triggerGenerators() {
 					log.WithFields(log.Fields{
 						"GeneratorId": generator.ID,
 						"Counter":     counter}).
-						Info("Generator threshold reached, submitting workflow")
+						Debug("Generator threshold reached, submitting workflow")
 					controller.submitWorkflow(generator)
 				}
 			}
