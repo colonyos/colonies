@@ -1,0 +1,124 @@
+[
+    {
+        "name": "analyze_aoi",
+        "func": "analyze_aoi",
+        "args": [],
+        "conditions": {
+            "runtimetype": "cli",
+            "dependencies": []
+        }
+    },
+    {
+        "name": "create_odc_dataset",
+        "func": "create_odc_dataset",
+        "args": [],
+        "conditions": {
+            "runtimetype": "cli",
+            "dependencies": [
+                "analyze_aoi"
+            ]
+        }
+    },
+    {
+        "name": "provision_hpc_vega",
+        "func": "provision_hpc_vega",
+        "args": [],
+        "conditions": {
+            "runtimetype": "cli",
+            "dependencies": [
+                "analyze_aoi"
+            ]
+        }
+    },
+    {
+        "name": "upload_dataset_to_hpc",
+        "func": "upload_dataset_to_hpc",
+        "args": [],
+        "conditions": {
+            "runtimetype": "cli",
+            "dependencies": [
+                "create_odc_dataset",
+                "provision_hpc_vega"
+            ]
+        }
+    },
+    {
+        "name": "install_slurm_manager",
+        "func": "install_slurm_manager",
+        "args": [],
+        "conditions": {
+            "runtimetype": "cli",
+            "dependencies": [
+                "provision_hpc_vega"
+            ]
+        }
+    },
+    {
+        "name": "start_dask_workers",
+        "func": "start_dask_workers",
+        "args": [],
+        "conditions": {
+            "runtimetype": "cli",
+            "dependencies": [
+                "install_slurm_manager",
+                "upload_dataset_to_hpc"
+            ]
+        }
+    },
+    {
+        "name": "dask_worker_1",
+        "func": "dask_worker_1",
+        "args": [],
+        "conditions": {
+            "runtimetype": "cli",
+            "dependencies": [
+                "start_dask_workers"
+            ]
+        }
+    },
+    {
+        "name": "dask_worker_2",
+        "func": "dask_worker_2",
+        "args": [],
+        "conditions": {
+            "runtimetype": "cli",
+            "dependencies": [
+                "start_dask_workers"
+            ]
+        }
+    },
+    {
+        "name": "analyze_dataset",
+        "func": "analyzse_dataset",
+        "args": [],
+        "conditions": {
+            "runtimetype": "cli",
+            "dependencies": [
+                "dask_worker_1",
+                "dask_worker_2"
+            ]
+        }
+    },
+    {
+        "name": "upload_result_to_db",
+        "func": "upload_result_to_db",
+        "args": [],
+        "conditions": {
+            "runtimetype": "cli",
+            "dependencies": [
+                "analyze_dataset"
+            ]
+        }
+    },
+    {
+        "name": "notify_user",
+        "func": "notify_user",
+        "args": [],
+        "conditions": {
+            "runtimetype": "cli",
+            "dependencies": [
+                "upload_result_to_db"
+            ]
+        }
+    }
+]
