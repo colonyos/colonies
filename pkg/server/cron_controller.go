@@ -204,7 +204,7 @@ func (controller *coloniesController) triggerCrons() {
 				}
 				if cron.WaitForPrevProcessGraph {
 					if processgraph.State == core.SUCCESS || processgraph.State == core.FAILED {
-						log.WithFields(log.Fields{"CronId": cron.ID}).Info("Triggering cron workflow")
+						log.WithFields(log.Fields{"CronId": cron.ID}).Debug("Triggering cron workflow")
 						controller.startCron(cron)
 					}
 				} else {

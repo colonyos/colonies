@@ -6,7 +6,7 @@
     "args": [
         "100"
     ],
-    "maxwaittime": 20,
-    "maxexectime": 5,
+    "maxwaittime": 30,
+    "maxexectime": 30,
     "maxretries": 3
 }
