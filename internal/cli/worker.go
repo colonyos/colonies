@@ -44,6 +44,8 @@ func init() {
 	workerStartCmd.Flags().IntVarP(&GPUs, "gpus", "", -1, "Number of GPUs")
 	workerStartCmd.Flags().StringVarP(&LogDir, "logdir", "", "", "Log directory")
 	workerStartCmd.Flags().IntVarP(&Timeout, "timeout", "", 100, "Max time to wait for a process assignment")
+	workerStartCmd.Flags().Float64VarP(&Long, "long", "", 0, "Longitude")
+	workerStartCmd.Flags().Float64VarP(&Lat, "lat", "", 0, "Latitude")
 
 	workerRegisterCmd.Flags().StringVarP(&ColonyID, "colonyid", "", "", "Colony Id")
 	workerRegisterCmd.Flags().StringVarP(&ColonyPrvKey, "colonyprvkey", "", "", "Colony private key")
@@ -131,8 +133,10 @@ var workerStartCmd = &cobra.Command{
 		err = os.WriteFile("/tmp/runtimeprvkey", []byte(runtimePrvKey), 0644)
 		CheckError(err)
 
-		log.WithFields(log.Fields{"RuntimeID": runtimeID, "RuntimeName": RuntimeName, "RuntimeType": RuntimeType, "ColonyID": ColonyID, "CPU": CPU, "Cores": Cores, "Mem": Mem, "GPU": GPU, "GPUs": GPUs}).Info("Register a new Runtime")
+		log.WithFields(log.Fields{"RuntimeID": runtimeID, "RuntimeName": RuntimeName, "RuntimeType": RuntimeType, "ColonyID": ColonyID, "CPU": CPU, "Cores": Cores, "Mem": Mem, "GPU": GPU, "GPUs": GPUs, "Long": Long, "Lat": Lat}).Info("Register a new Runtime")
 		runtime := core.CreateRuntime(runtimeID, RuntimeType, RuntimeName, ColonyID, CPU, Cores, Mem, GPU, GPUs, time.Now(), time.Now())
+		runtime.Location.Long = Long
+		runtime.Location.Lat = Lat
 		_, err = client.AddRuntime(runtime, ColonyPrvKey)
 		CheckError(err)
 

@@ -4,7 +4,7 @@
     },
     "func": "sleep",
     "args": [
-        "100"
+        "20"
     ],
     "maxwaittime": 30,
     "maxexectime": 30,
