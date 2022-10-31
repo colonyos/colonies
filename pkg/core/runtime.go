@@ -11,6 +11,11 @@ const (
 	REJECTED     = 2
 )
 
+type Location struct {
+	Long float64 `json:"long"`
+	Lat  float64 `json:"lat"`
+}
+
 type Runtime struct {
 	ID                string    `json:"runtimeid"`
 	RuntimeType       string    `json:"runtimetype"`
@@ -24,6 +29,7 @@ type Runtime struct {
 	State             int       `json:"state"`
 	CommissionTime    time.Time `json:"commissiontime"`
 	LastHeardFromTime time.Time `json:"lastheardfromtime"`
+	Location          Location  `json:"location"`
 }
 
 func CreateRuntime(id string,
