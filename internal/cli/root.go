@@ -89,6 +89,8 @@ var CronExpr string
 var CronIntervall int
 var CronRandom bool
 var WaitForPrevProcessGraph bool
+var Long float64
+var Lat float64
 
 func init() {
 	rootCmd.PersistentFlags().BoolVarP(&Verbose, "verbose", "v", false, "verbose output")
