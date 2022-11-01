@@ -13,8 +13,8 @@ The core idea of Colonies is to split up complex workloads in two layers, a **Me
 ![MetaOS](docs/images/meta-os.png)
 
 * The **Meta-layer** makes it possible to describe and manage complex workflows as **meta-processes** independently of implementation and execution environment.
-* The **Execution-layer** provides a serverless computing environment where developers can implement workers capable of executing certain types of meta-processes. AI applications can then be broken down into composable functions executed by remote workers anywhere on the Internet.
-* A build-in [zero-trust](https://en.wikipedia.org/wiki/Zero_trust_security_model) protocol makes it possible to organize remote workers as a single unit called a **Colony**, thus making it possible for users to keep control even if workloads are spread out and executed on many different platforms at the same time. 
+* The **Execution-layer** provides a [serverless computing](https://en.wikipedia.org/wiki/Serverless_computing) environment where developers can implement workers capable of executing certain types of meta-processes. AI applications can then be broken down into composable functions executed by remote workers anywhere on the Internet.
+* A build-in **[zero-trust](https://en.wikipedia.org/wiki/Zero_trust_security_model)** protocol makes it possible to organize remote workers as a single unit called a **Colony**, thus making it possible for users to keep control even if workloads are spread out and executed on many different platforms at the same time. 
 
 Below are some screenshots from the [Colonies Dashboard](https://github.com/colonyos/dashboard):
 ![Dashboard](docs/images/dashboard1.png)
