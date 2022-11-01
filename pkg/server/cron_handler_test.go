@@ -1,7 +1,6 @@
 package server
 
 import (
-	"fmt"
 	"testing"
 	"time"
 
@@ -146,7 +145,6 @@ func TestAddCronInputOutput(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, process)
 	err = client.CloseWithOutput(process.ID, []string{"result_cron1"}, env.runtimePrvKey)
-	fmt.Println(process.ID)
 
 	process, err = client.AssignProcess(env.colonyID, 100, env.runtimePrvKey)
 	assert.Nil(t, err)
@@ -185,7 +183,6 @@ func TestAddCronInputOutput2(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, process)
 	err = client.CloseWithOutput(process.ID, []string{"result_cron1"}, env.runtimePrvKey)
-	fmt.Println(process.ID)
 
 	process, err = client.AssignProcess(env.colonyID, 100, env.runtimePrvKey)
 	assert.Nil(t, err)

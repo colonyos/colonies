@@ -353,6 +353,7 @@ var listWaitingProcessesCmd = &cobra.Command{
 			RuntimePrvKey, err = keychain.GetPrvKey(RuntimeID)
 			CheckError(err)
 		}
+
 		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Info("Starting a Colonies client")
 		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
 

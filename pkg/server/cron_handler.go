@@ -34,7 +34,12 @@ func (server *ColoniesServer) handleAddCronHTTPRequest(c *gin.Context, recovered
 	}
 
 	// Validate that workflow and cron expression is valid
-	_, err = core.ConvertJSONToWorkflowSpec(msg.Cron.WorkflowSpec)
+	workflowSpec, err := core.ConvertJSONToWorkflowSpec(msg.Cron.WorkflowSpec)
+	if server.handleHTTPError(c, err, http.StatusBadRequest) {
+		return
+	}
+
+	err = VerifyWorkflowSpec(workflowSpec)
 	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}

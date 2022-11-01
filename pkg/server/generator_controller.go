@@ -179,7 +179,7 @@ func (controller *coloniesController) submitWorkflow(generator *core.Generator) 
 	if err != nil {
 		log.WithFields(log.Fields{
 			"Error": err}).
-			Error("Failed to create processgraph")
+			Error("Failed to create generator processgraph")
 		return
 	}
 

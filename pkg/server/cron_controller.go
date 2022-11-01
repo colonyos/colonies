@@ -146,6 +146,7 @@ func (controller *coloniesController) startCron(cron *core.Cron) {
 	workflowSpec, err := core.ConvertJSONToWorkflowSpec(cron.WorkflowSpec)
 	if err != nil {
 		log.WithFields(log.Fields{"Error": err}).Error("Failed to parsing WorkflowSpec")
+		return
 	}
 
 	rootInput := []string{}
@@ -170,7 +171,8 @@ func (controller *coloniesController) startCron(cron *core.Cron) {
 
 	processGraph, err := controller.createProcessGraph(workflowSpec, []string{}, rootInput)
 	if err != nil {
-		log.WithFields(log.Fields{"Error": err}).Error("Failed to parse workflow spec")
+		log.WithFields(log.Fields{"Error": err, "CronId": cron.ID}).Error("Failed to create cron processgraph")
+		return
 	}
 
 	nextRun := controller.calcNextRun(cron)

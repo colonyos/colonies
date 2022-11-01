@@ -33,7 +33,12 @@ func (server *ColoniesServer) handleAddGeneratorHTTPRequest(c *gin.Context, reco
 	}
 
 	// Validate that workflow is valid
-	_, err = core.ConvertJSONToWorkflowSpec(msg.Generator.WorkflowSpec)
+	workflowSpec, err := core.ConvertJSONToWorkflowSpec(msg.Generator.WorkflowSpec)
+	if server.handleHTTPError(c, err, http.StatusBadRequest) {
+		return
+	}
+
+	err = VerifyWorkflowSpec(workflowSpec)
 	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
