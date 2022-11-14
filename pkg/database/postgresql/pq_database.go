@@ -98,30 +98,6 @@ func (db *PQDatabase) Drop() error {
 		return err
 	}
 
-	sqlStatement = `DROP INDEX PROCESSES_INDEX1`
-	_, err = db.postgresql.Exec(sqlStatement)
-	if err != nil {
-		return err
-	}
-
-	sqlStatement = `DROP INDEX PROCESSES_INDEX2`
-	_, err = db.postgresql.Exec(sqlStatement)
-	if err != nil {
-		return err
-	}
-
-	sqlStatement = `DROP INDEX PROCESSES_INDEX3`
-	_, err = db.postgresql.Exec(sqlStatement)
-	if err != nil {
-		return err
-	}
-
-	sqlStatement = `DROP INDEX PROCESSES_INDEX4`
-	_, err = db.postgresql.Exec(sqlStatement)
-	if err != nil {
-		return err
-	}
-
 	return nil
 }
 
@@ -174,25 +150,31 @@ func (db *PQDatabase) Initialize() error {
 		return err
 	}
 
-	sqlStatement = `CREATE INDEX PROCESSES_INDEX1_` + db.dbPrefix + ` ON ` + db.dbPrefix + `PROCESSES (TARGET_COLONY_ID, STATE, SUBMISSION_TIME)`
+	sqlStatement = `CREATE INDEX ` + db.dbPrefix + `PROCESSES_INDEX1 ON ` + db.dbPrefix + `PROCESSES (TARGET_COLONY_ID, STATE, SUBMISSION_TIME)`
 	_, err = db.postgresql.Exec(sqlStatement)
 	if err != nil {
 		return err
 	}
 
-	sqlStatement = `CREATE INDEX PROCESSES_INDEX2_` + db.dbPrefix + ` ON ` + db.dbPrefix + `PROCESSES (TARGET_COLONY_ID, STATE, START_TIME)`
+	sqlStatement = `CREATE INDEX ` + db.dbPrefix + `PROCESSES_INDEX2 ON ` + db.dbPrefix + `PROCESSES (TARGET_COLONY_ID, STATE, START_TIME)`
 	_, err = db.postgresql.Exec(sqlStatement)
 	if err != nil {
 		return err
 	}
 
-	sqlStatement = `CREATE INDEX PROCESSES_INDEX3_` + db.dbPrefix + ` ON ` + db.dbPrefix + `PROCESSES (TARGET_COLONY_ID, STATE, END_TIME)`
+	sqlStatement = `CREATE INDEX ` + db.dbPrefix + `PROCESSES_INDEX3 ON ` + db.dbPrefix + `PROCESSES (TARGET_COLONY_ID, STATE, END_TIME)`
 	_, err = db.postgresql.Exec(sqlStatement)
 	if err != nil {
 		return err
 	}
 
-	sqlStatement = `CREATE INDEX PROCESSES_INDEX4_` + db.dbPrefix + ` ON ` + db.dbPrefix + `PROCESSES (IS_ASSIGNED, START_TIME, ASSIGNED_RUNTIME_ID, STATE, PROCESS_ID)`
+	sqlStatement = `CREATE INDEX ` + db.dbPrefix + `PROCESSES_INDEX4 ON ` + db.dbPrefix + `PROCESSES (IS_ASSIGNED, START_TIME, ASSIGNED_RUNTIME_ID, STATE, PROCESS_ID)`
+	_, err = db.postgresql.Exec(sqlStatement)
+	if err != nil {
+		return err
+	}
+
+	sqlStatement = `CREATE INDEX ` + db.dbPrefix + `PROCESSES_INDEX5 ON ` + db.dbPrefix + `PROCESSES (IS_ASSIGNED, START_TIME, ASSIGNED_RUNTIME_ID, STATE, PROCESS_ID)`
 	_, err = db.postgresql.Exec(sqlStatement)
 	if err != nil {
 		return err

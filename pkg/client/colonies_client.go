@@ -657,6 +657,21 @@ func (client *ColoniesClient) SubmitWorkflowSpec(workflowSpec *core.WorkflowSpec
 	return core.ConvertJSONToProcessGraph(respBodyString)
 }
 
+func (client *ColoniesClient) AddChild(processGraphID string, processID string, processSpec *core.ProcessSpec, prvKey string) (*core.Process, error) {
+	msg := rpc.CreateAddChildMsg(processGraphID, processID, processSpec)
+	jsonString, err := msg.ToJSON()
+	if err != nil {
+		return nil, err
+	}
+
+	respBodyString, err := client.sendMessage(rpc.AddChildPayloadType, jsonString, prvKey, false)
+	if err != nil {
+		return nil, err
+	}
+
+	return core.ConvertJSONToProcess(respBodyString)
+}
+
 func (client *ColoniesClient) GetProcessGraph(processGraphID string, prvKey string) (*core.ProcessGraph, error) {
 	msg := rpc.CreateGetProcessGraphMsg(processGraphID)
 	jsonString, err := msg.ToJSON()
@@ -942,4 +957,19 @@ func (client *ColoniesClient) GetClusterInfo(prvKey string) (*cluster.Config, er
 	}
 
 	return cluster.ConvertJSONToConfig(respBodyString)
+}
+
+func (client *ColoniesClient) ResetDatabase(prvKey string) error {
+	msg := rpc.CreateResetDatabaseMsg()
+	jsonString, err := msg.ToJSON()
+	if err != nil {
+		return err
+	}
+
+	_, err = client.sendMessage(rpc.ResetDatabasePayloadType, jsonString, prvKey, false)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
