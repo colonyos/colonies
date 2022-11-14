@@ -9,6 +9,8 @@ import (
 type Database interface {
 	// General
 	Close()
+	Initialize() error
+	Drop() error
 
 	// Colony functions ...
 	AddColony(colony *core.Colony) error
@@ -53,6 +55,8 @@ type Database interface {
 	SetOutput(processID string, output []string) error
 	SetErrors(processID string, errs []string) error
 	SetProcessState(processID string, state int) error
+	SetParents(processID string, parents []string) error
+	SetChildren(processID string, children []string) error
 	SetWaitForParents(processID string, waitingForParent bool) error
 	SetWaitDeadline(process *core.Process, waitDeadline time.Time) error
 	SetExecDeadline(process *core.Process, execDeadline time.Time) error
