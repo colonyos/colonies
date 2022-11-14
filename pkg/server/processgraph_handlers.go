@@ -215,3 +215,45 @@ func (server *ColoniesServer) handleDeleteAllProcessGraphsHTTPRequest(c *gin.Con
 
 	server.sendEmptyHTTPReply(c, payloadType)
 }
+
+func (server *ColoniesServer) handleAddChildHTTPRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
+	msg, err := rpc.CreateAddChildMsgFromJSON(jsonString)
+	if err != nil {
+		if server.handleHTTPError(c, errors.New("Failed to add child to processgraph, invalid JSON"), http.StatusBadRequest) {
+			return
+		}
+	}
+
+	if msg.MsgType != payloadType {
+		server.handleHTTPError(c, errors.New("Failed to add child to processgraph, msg.MsgType does not match payloadType"), http.StatusBadRequest)
+		return
+	}
+	if msg.ProcessSpec == nil {
+		server.handleHTTPError(c, errors.New("Failed to add child to processgraph, msg.ProcessSpec is nil"), http.StatusBadRequest)
+		return
+	}
+
+	err = server.validator.RequireRuntimeMembership(recoveredID, msg.ProcessSpec.Conditions.ColonyID, true)
+	if server.handleHTTPError(c, err, http.StatusForbidden) {
+		return
+	}
+
+	process := core.CreateProcess(msg.ProcessSpec)
+	addedProcess, err := server.controller.addChild(msg.ProcessGraphID, msg.ProcessID, process, recoveredID)
+	if server.handleHTTPError(c, err, http.StatusBadRequest) {
+		return
+	}
+	if addedProcess == nil {
+		server.handleHTTPError(c, errors.New("Failed to submit process spec, addedProcess is nil"), http.StatusInternalServerError)
+		return
+	}
+
+	jsonString, err = addedProcess.ToJSON()
+	if server.handleHTTPError(c, err, http.StatusInternalServerError) {
+		return
+	}
+
+	log.WithFields(log.Fields{"ProcessGraphID": msg.ProcessGraphID, "ParentProcessID": msg.ProcessID, "ProcessID": process.ID}).Debug("Adding child process")
+
+	server.sendHTTPReply(c, payloadType, jsonString)
+}
