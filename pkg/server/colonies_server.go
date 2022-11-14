@@ -179,6 +179,8 @@ func (server *ColoniesServer) handleAPIRequest(c *gin.Context) {
 		server.handleDeleteProcessGraphHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 	case rpc.DeleteAllProcessGraphsPayloadType:
 		server.handleDeleteAllProcessGraphsHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+	case rpc.AddChildPayloadType:
+		server.handleAddChildHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 
 	// Generators handlers
 	case rpc.AddGeneratorPayloadType:
@@ -211,6 +213,8 @@ func (server *ColoniesServer) handleAPIRequest(c *gin.Context) {
 		server.handleStatisticsHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 	case rpc.GetClusterPayloadType:
 		server.handleGetClusterHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+	case rpc.ResetDatabasePayloadType:
+		server.handleResetDatabaseHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 
 	default:
 		errMsg := "invalid rpcMsg.PayloadType, " + rpcMsg.PayloadType

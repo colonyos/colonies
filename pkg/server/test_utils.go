@@ -205,6 +205,38 @@ func generateDiamondtWorkflowSpec(colonyID string) *core.WorkflowSpec {
 	return workflowSpec
 }
 
+func generateTreeWorkflowSpec(colonyID string) *core.WorkflowSpec {
+	//         task1
+	//          / \
+	//     task2   task3
+
+	workflowSpec := core.CreateWorkflowSpec(colonyID)
+
+	processSpec1 := core.CreateEmptyProcessSpec()
+	processSpec1.Name = "task1"
+	processSpec1.Conditions.ColonyID = colonyID
+	processSpec1.Conditions.RuntimeType = "test_runtime_type"
+
+	processSpec2 := core.CreateEmptyProcessSpec()
+	processSpec2.Name = "task2"
+	processSpec2.Conditions.ColonyID = colonyID
+	processSpec2.Conditions.RuntimeType = "test_runtime_type"
+
+	processSpec3 := core.CreateEmptyProcessSpec()
+	processSpec3.Name = "task3"
+	processSpec3.Conditions.ColonyID = colonyID
+	processSpec3.Conditions.RuntimeType = "test_runtime_type"
+
+	processSpec2.AddDependency("task1")
+	processSpec3.AddDependency("task1")
+
+	workflowSpec.AddProcessSpec(processSpec1)
+	workflowSpec.AddProcessSpec(processSpec2)
+	workflowSpec.AddProcessSpec(processSpec3)
+
+	return workflowSpec
+}
+
 func waitForProcesses(t *testing.T, server *ColoniesServer, processes []*core.Process, state int) {
 	ctx, cancelCtx := context.WithTimeout(context.Background(), 100*time.Second)
 	defer cancelCtx()

@@ -500,6 +500,52 @@ func TestSetWaitingForParents(t *testing.T) {
 	assert.False(t, process2.WaitForParents)
 }
 
+func TestSetParents(t *testing.T) {
+	db, err := PrepareTests()
+	assert.Nil(t, err)
+
+	defer db.Close()
+
+	colony := core.CreateColony(core.GenerateRandomID(), "test_colony_name")
+	process := utils.CreateTestProcess(colony.ID)
+	err = db.AddProcess(process)
+	assert.Nil(t, err)
+	assert.Len(t, process.Parents, 0)
+
+	parent := core.GenerateRandomID()
+	parents := []string{parent}
+
+	err = db.SetParents(process.ID, parents)
+	assert.Nil(t, err)
+	processFromDB, err := db.GetProcessByID(process.ID)
+	assert.Nil(t, err)
+	assert.Len(t, processFromDB.Parents, 1)
+	assert.Equal(t, parent, processFromDB.Parents[0])
+}
+
+func TestSetChildren(t *testing.T) {
+	db, err := PrepareTests()
+	assert.Nil(t, err)
+
+	defer db.Close()
+
+	colony := core.CreateColony(core.GenerateRandomID(), "test_colony_name")
+	process := utils.CreateTestProcess(colony.ID)
+	err = db.AddProcess(process)
+	assert.Nil(t, err)
+	assert.Len(t, process.Children, 0)
+
+	child := core.GenerateRandomID()
+	children := []string{child}
+
+	err = db.SetChildren(process.ID, children)
+	assert.Nil(t, err)
+	processFromDB, err := db.GetProcessByID(process.ID)
+	assert.Nil(t, err)
+	assert.Len(t, processFromDB.Children, 1)
+	assert.Equal(t, child, processFromDB.Children[0])
+}
+
 func TestSetProcessState(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)

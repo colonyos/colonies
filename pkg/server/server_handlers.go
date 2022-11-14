@@ -92,3 +92,33 @@ func (server *ColoniesServer) handleGetClusterHTTPRequest(c *gin.Context, recove
 
 	server.sendHTTPReply(c, payloadType, jsonString)
 }
+
+func (server *ColoniesServer) handleResetDatabaseHTTPRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
+	msg, err := rpc.CreateResetDatabaseMsgFromJSON(jsonString)
+	if err != nil {
+		if server.handleHTTPError(c, errors.New("Failed to get cluster info, invalid JSON"), http.StatusBadRequest) {
+			return
+		}
+	}
+
+	if msg.MsgType != payloadType {
+		server.handleHTTPError(c, errors.New("Failed to get cluster info, msg.MsgType does not match payloadType"), http.StatusBadRequest)
+		return
+	}
+
+	err = server.validator.RequireServerOwner(recoveredID, server.serverID)
+	if server.handleHTTPError(c, err, http.StatusForbidden) {
+		return
+	}
+
+	err = server.controller.resetDatabase()
+	if err != nil {
+		if server.handleHTTPError(c, errors.New("Failed to reset database"), http.StatusInternalServerError) {
+			return
+		}
+	}
+
+	log.Warning("Database is reset")
+
+	server.sendEmptyHTTPReply(c, payloadType)
+}

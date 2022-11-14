@@ -355,6 +355,57 @@ func (controller *coloniesController) addProcess(process *core.Process) (*core.P
 	}
 }
 
+func (controller *coloniesController) addChild(processGraphID string, parentProcessID string, process *core.Process, runtimeID string) (*core.Process, error) {
+	cmd := &command{processReplyChan: make(chan *core.Process, 1),
+		errorChan: make(chan error, 1),
+		handler: func(cmd *command) {
+			parentProcess, err := controller.db.GetProcessByID(parentProcessID)
+			if err != nil {
+				cmd.errorChan <- err
+				return
+			}
+
+			if parentProcess.State != core.RUNNING {
+				cmd.errorChan <- errors.New("Process with Id " + parentProcessID + " is not running")
+				return
+			}
+
+			if parentProcess.AssignedRuntimeID != runtimeID {
+				cmd.errorChan <- errors.New("Process with Id " + parentProcessID + " is not assigned to runtime with Id " + runtimeID)
+				return
+			}
+
+			if parentProcess.ProcessGraphID == "" {
+				cmd.errorChan <- errors.New("Process with Id " + parentProcessID + " does not belong to a processgraph")
+				return
+			}
+
+			process.Parents = []string{parentProcess.ID}
+			addedProcess, err := controller.addProcessAndSetWaitingDeadline(process)
+			if err != nil {
+				cmd.errorChan <- err
+				return
+			}
+
+			parentsChildren := parentProcess.Children
+			parentsChildren = append(parentsChildren, process.ID)
+			controller.db.SetChildren(parentProcessID, parentsChildren)
+
+			if !addedProcess.WaitForParents {
+				controller.eventHandler.signal(addedProcess)
+			}
+			cmd.processReplyChan <- addedProcess
+		}}
+
+	controller.cmdQueue <- cmd
+	select {
+	case err := <-cmd.errorChan:
+		return nil, err
+	case process := <-cmd.processReplyChan:
+		return process, nil
+	}
+}
+
 func (controller *coloniesController) getProcess(processID string) (*core.Process, error) {
 	cmd := &command{processReplyChan: make(chan *core.Process, 1),
 		errorChan: make(chan error, 1),
@@ -1316,6 +1367,22 @@ func (controller *coloniesController) getAttribute(attributeID string) (core.Att
 	case attribute := <-cmd.attributeReplyChan:
 		return attribute, nil
 	}
+}
+
+func (controller *coloniesController) resetDatabase() error {
+	cmd := &command{errorChan: make(chan error, 1),
+		handler: func(cmd *command) {
+			err := controller.db.Drop()
+			if err != nil {
+				cmd.errorChan <- err
+				return
+			}
+			err = controller.db.Initialize()
+			cmd.errorChan <- err
+		}}
+
+	controller.cmdQueue <- cmd
+	return <-cmd.errorChan
 }
 
 func (controller *coloniesController) stop() {
