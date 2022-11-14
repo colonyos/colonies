@@ -3,6 +3,7 @@ package server
 import (
 	"testing"
 
+	"github.com/colonyos/colonies/pkg/utils"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -91,6 +92,69 @@ func TestSubmitWorkflowSpec(t *testing.T) {
 	graphs, err = client.GetFailedProcessGraphs(env.colonyID, 100, env.runtimePrvKey)
 	assert.Nil(t, err)
 	assert.Len(t, graphs, 0)
+
+	server.Shutdown()
+	<-done
+}
+
+func TestAddChild(t *testing.T) {
+	//         task1
+	//          / \
+	//     task2   task3
+
+	env, client, server, _, done := setupTestEnv2(t)
+
+	diamond := generateTreeWorkflowSpec(env.colonyID)
+	submittedGraph, err := client.SubmitWorkflowSpec(diamond, env.runtimePrvKey)
+	assert.Nil(t, err)
+	assert.NotNil(t, submittedGraph)
+
+	assignedProcess, err := client.AssignProcess(env.colonyID, -1, env.runtimePrvKey)
+	assert.Nil(t, err)
+	assert.True(t, assignedProcess.ProcessSpec.Name == "task1")
+
+	// Add task5 to task1
+	childProcessSpec := utils.CreateTestProcessSpec(env.colonyID)
+	childProcessSpec.Name = "task5"
+	_, err = client.AddChild(assignedProcess.ProcessGraphID, assignedProcess.ID, childProcessSpec, env.runtimePrvKey)
+	assert.Nil(t, err)
+	err = client.Close(assignedProcess.ID, env.runtimePrvKey)
+	assert.Nil(t, err)
+
+	var names []string
+	assignedProcess, err = client.AssignProcess(env.colonyID, -1, env.runtimePrvKey)
+	assert.Nil(t, err)
+	names = append(names, assignedProcess.ProcessSpec.Name)
+	err = client.Close(assignedProcess.ID, env.runtimePrvKey)
+	assert.Nil(t, err)
+
+	assignedProcess, err = client.AssignProcess(env.colonyID, -1, env.runtimePrvKey)
+	assert.Nil(t, err)
+	names = append(names, assignedProcess.ProcessSpec.Name)
+	err = client.Close(assignedProcess.ID, env.runtimePrvKey)
+	assert.Nil(t, err)
+
+	assignedProcess, err = client.AssignProcess(env.colonyID, -1, env.runtimePrvKey)
+	assert.Nil(t, err)
+	names = append(names, assignedProcess.ProcessSpec.Name)
+	err = client.Close(assignedProcess.ID, env.runtimePrvKey)
+	assert.Nil(t, err)
+
+	counter := 0
+	for _, name := range names {
+		if name == "task2" {
+			counter++
+		}
+		if name == "task3" {
+			counter++
+		}
+		if name == "task5" {
+			counter++
+		}
+	}
+
+	assert.Len(t, names, 3)
+	assert.Equal(t, counter, 3)
 
 	server.Shutdown()
 	<-done

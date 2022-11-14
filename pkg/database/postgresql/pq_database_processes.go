@@ -308,9 +308,9 @@ func (db *PQDatabase) FindUnassignedProcesses(colonyID string, runtimeID string,
 	// Note: The @> function tests if an array is a subset of another array
 	// We need to do that since the TARGET_runtime_IDS can contains many IDs
 	if latest {
-		sqlStatement = `SELECT * FROM ` + db.dbPrefix + `PROCESSES WHERE STATE=$1 AND RUNTIME_TYPE=$2 AND IS_ASSIGNED=FALSE AND WAIT_FOR_PARENTS=FALSE AND TARGET_COLONY_ID=$3 AND (TARGET_runtime_IDS@>$4 OR TARGET_runtime_IDS@>$5) ORDER BY SUBMISSION_TIME DESC LIMIT $6`
+		sqlStatement = `SELECT * FROM ` + db.dbPrefix + `PROCESSES WHERE STATE=$1 AND RUNTIME_TYPE=$2 AND IS_ASSIGNED=FALSE AND WAIT_FOR_PARENTS=FALSE AND TARGET_COLONY_ID=$3 AND (TARGET_RUNTIME_IDS@>$4 OR TARGET_runtime_IDS@>$5) ORDER BY SUBMISSION_TIME DESC LIMIT $6`
 	} else {
-		sqlStatement = `SELECT * FROM ` + db.dbPrefix + `PROCESSES WHERE STATE=$1 AND RUNTIME_TYPE=$2 AND IS_ASSIGNED=FALSE AND WAIT_FOR_PARENTS=FALSE AND TARGET_COLONY_ID=$3 AND (TARGET_runtime_IDS@>$4 OR TARGET_runtime_IDS@>$5) ORDER BY SUBMISSION_TIME LIMIT $6`
+		sqlStatement = `SELECT * FROM ` + db.dbPrefix + `PROCESSES WHERE STATE=$1 AND RUNTIME_TYPE=$2 AND IS_ASSIGNED=FALSE AND WAIT_FOR_PARENTS=FALSE AND TARGET_COLONY_ID=$3 AND (TARGET_RUNTIME_IDS@>$4 OR TARGET_runtime_IDS@>$5) ORDER BY SUBMISSION_TIME LIMIT $6`
 	}
 	rows, err := db.postgresql.Query(sqlStatement, core.WAITING, runtimeType, colonyID, pq.Array([]string{runtimeID}), pq.Array([]string{"*"}), count)
 	if err != nil {
@@ -422,6 +422,26 @@ func (db *PQDatabase) ResetProcess(process *core.Process) error {
 func (db *PQDatabase) SetWaitForParents(processID string, waitForParent bool) error {
 	sqlStatement := `UPDATE ` + db.dbPrefix + `PROCESSES SET WAIT_FOR_PARENTS=$1 WHERE PROCESS_ID=$2`
 	_, err := db.postgresql.Exec(sqlStatement, waitForParent, processID)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (db *PQDatabase) SetParents(processID string, parents []string) error {
+	sqlStatement := `UPDATE ` + db.dbPrefix + `PROCESSES SET PARENTS=$1 WHERE PROCESS_ID=$2`
+	_, err := db.postgresql.Exec(sqlStatement, pq.Array(parents), processID)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (db *PQDatabase) SetChildren(processID string, children []string) error {
+	sqlStatement := `UPDATE ` + db.dbPrefix + `PROCESSES SET CHILDREN=$1 WHERE PROCESS_ID=$2`
+	_, err := db.postgresql.Exec(sqlStatement, pq.Array(children), processID)
 	if err != nil {
 		return err
 	}
