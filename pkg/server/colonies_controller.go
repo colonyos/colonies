@@ -381,6 +381,7 @@ func (controller *coloniesController) addChild(processGraphID string, parentProc
 			}
 
 			process.Parents = []string{parentProcess.ID}
+			process.ProcessGraphID = processGraphID
 			addedProcess, err := controller.addProcessAndSetWaitingDeadline(process)
 			if err != nil {
 				cmd.errorChan <- err
