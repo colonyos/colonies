@@ -237,6 +237,18 @@ func generateTreeWorkflowSpec(colonyID string) *core.WorkflowSpec {
 	return workflowSpec
 }
 
+func generateSingleWorkflowSpec(colonyID string) *core.WorkflowSpec {
+	workflowSpec := core.CreateWorkflowSpec(colonyID)
+	processSpec1 := core.CreateEmptyProcessSpec()
+	processSpec1.Name = "task1"
+	processSpec1.Conditions.ColonyID = colonyID
+	processSpec1.Conditions.RuntimeType = "test_runtime_type"
+
+	workflowSpec.AddProcessSpec(processSpec1)
+
+	return workflowSpec
+}
+
 func waitForProcesses(t *testing.T, server *ColoniesServer, processes []*core.Process, state int) {
 	ctx, cancelCtx := context.WithTimeout(context.Background(), 100*time.Second)
 	defer cancelCtx()

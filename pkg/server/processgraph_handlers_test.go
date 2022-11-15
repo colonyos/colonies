@@ -2,7 +2,9 @@ package server
 
 import (
 	"testing"
+	"time"
 
+	"github.com/colonyos/colonies/pkg/core"
 	"github.com/colonyos/colonies/pkg/utils"
 	"github.com/stretchr/testify/assert"
 )
@@ -19,8 +21,8 @@ func TestSubmitWorkflowSpec(t *testing.T) {
 
 	env, client, server, _, done := setupTestEnv2(t)
 
-	diamond := generateDiamondtWorkflowSpec(env.colonyID)
-	submittedGraph, err := client.SubmitWorkflowSpec(diamond, env.runtimePrvKey)
+	wf := generateDiamondtWorkflowSpec(env.colonyID)
+	submittedGraph, err := client.SubmitWorkflowSpec(wf, env.runtimePrvKey)
 	assert.Nil(t, err)
 	assert.NotNil(t, submittedGraph)
 
@@ -97,6 +99,40 @@ func TestSubmitWorkflowSpec(t *testing.T) {
 	<-done
 }
 
+func TestProcessGraphFailed(t *testing.T) {
+	// This is workflow we are going to test. Task2 and Task3 cannot be assigned before Task1 is closed as successful.
+	// Task4 cannot be assigned until both Task2 and Task3 is closed as successful.
+	//
+	//         task1
+	//          / \
+	//     task2   task3
+	//          \ /
+	//         task4
+
+	env, client, server, _, done := setupTestEnv2(t)
+
+	wf := generateDiamondtWorkflowSpec(env.colonyID)
+	submittedGraph, err := client.SubmitWorkflowSpec(wf, env.runtimePrvKey)
+	assert.Nil(t, err)
+
+	assignedProcess, err := client.AssignProcess(env.colonyID, -1, env.runtimePrvKey)
+	assert.Nil(t, err)
+
+	// Close task1
+	err = client.Fail(assignedProcess.ID, []string{}, env.runtimePrvKey)
+	assert.Nil(t, err)
+
+	assignedProcess, err = client.AssignProcess(env.colonyID, -1, env.runtimePrvKey)
+	assert.NotNil(t, err) // Error, all processes in the entire graph will fail, i.e no processes can be selected for runtime with Id
+
+	processGraph, err := client.GetProcessGraph(submittedGraph.ID, env.runtimePrvKey)
+	assert.Nil(t, err)
+	assert.Equal(t, processGraph.State, core.FAILED)
+
+	server.Shutdown()
+	<-done
+}
+
 func TestAddChild(t *testing.T) {
 	//         task1
 	//          / \
@@ -104,8 +140,8 @@ func TestAddChild(t *testing.T) {
 
 	env, client, server, _, done := setupTestEnv2(t)
 
-	diamond := generateTreeWorkflowSpec(env.colonyID)
-	submittedGraph, err := client.SubmitWorkflowSpec(diamond, env.runtimePrvKey)
+	wf := generateTreeWorkflowSpec(env.colonyID)
+	submittedGraph, err := client.SubmitWorkflowSpec(wf, env.runtimePrvKey)
 	assert.Nil(t, err)
 	assert.NotNil(t, submittedGraph)
 
@@ -155,6 +191,49 @@ func TestAddChild(t *testing.T) {
 
 	assert.Len(t, names, 3)
 	assert.Equal(t, counter, 3)
+
+	server.Shutdown()
+	<-done
+}
+
+func TestAddChildMaxWaitBug(t *testing.T) {
+	env, client, server, _, done := setupTestEnv2(t)
+
+	wf := generateSingleWorkflowSpec(env.colonyID)
+	submittedGraph, err := client.SubmitWorkflowSpec(wf, env.runtimePrvKey)
+	assert.Nil(t, err)
+	assert.NotNil(t, submittedGraph)
+
+	assignedProcess, err := client.AssignProcess(env.colonyID, -1, env.runtimePrvKey)
+	assert.Nil(t, err)
+
+	processGraph, err := client.GetProcessGraph(submittedGraph.ID, env.runtimePrvKey)
+
+	// Add task2 to task1
+	childProcessSpec := utils.CreateTestProcessSpec(env.colonyID)
+	childProcessSpec.MaxWaitTime = 1
+	childProcessSpec.Name = "task2"
+	_, err = client.AddChild(assignedProcess.ProcessGraphID, assignedProcess.ID, childProcessSpec, env.runtimePrvKey)
+	assert.Nil(t, err)
+
+	// Add task3 to task1
+	childProcessSpec = utils.CreateTestProcessSpec(env.colonyID)
+	childProcessSpec.MaxWaitTime = 1
+	childProcessSpec.Name = "task3"
+	_, err = client.AddChild(assignedProcess.ProcessGraphID, assignedProcess.ID, childProcessSpec, env.runtimePrvKey)
+	assert.Nil(t, err)
+
+	processGraph, err = client.GetProcessGraph(submittedGraph.ID, env.runtimePrvKey)
+
+	err = client.Close(assignedProcess.ID, env.runtimePrvKey)
+	assert.Nil(t, err)
+
+	// Wait the task2 and task3 to timeout
+	time.Sleep(5 * time.Second)
+
+	processGraph, err = client.GetProcessGraph(submittedGraph.ID, env.runtimePrvKey)
+	assert.Nil(t, err)
+	assert.Equal(t, processGraph.State, core.FAILED)
 
 	server.Shutdown()
 	<-done
