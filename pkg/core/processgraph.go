@@ -207,7 +207,7 @@ func (graph *ProcessGraph) Resolve() error {
 		graph.State = FAILED
 	} else if successfulProcesses == processes {
 		graph.State = SUCCESS
-	} else if runningProcesses >= 1 {
+	} else if successfulProcesses > 0 || runningProcesses >= 1 {
 		graph.State = RUNNING
 	} else {
 		graph.State = WAITING
