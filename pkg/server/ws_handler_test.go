@@ -1,6 +1,7 @@
 package server
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
@@ -47,7 +48,7 @@ func TestSubscribeProcesses(t *testing.T) {
 // Runtime 1 gets assign the process
 // Runtime 1 finish the process
 // Runtime 2 receives an event
-func TestSubscribeChangeStateProcess(t *testing.T) {
+func TestSubscribeChangeStateProcessDEBUG(t *testing.T) {
 	env, client, server, _, done := setupTestEnv1(t)
 
 	processSpec := utils.CreateTestProcessSpec(env.colony1ID)
@@ -55,6 +56,7 @@ func TestSubscribeChangeStateProcess(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, core.PENDING, addedProcess.State)
 
+	fmt.Println("submitting process done")
 	subscription, err := client.SubscribeProcess(addedProcess.ID,
 		addedProcess.ProcessSpec.Conditions.RuntimeType,
 		core.SUCCESS,
@@ -62,10 +64,13 @@ func TestSubscribeChangeStateProcess(t *testing.T) {
 		env.runtime2PrvKey)
 	assert.Nil(t, err)
 
+	fmt.Println("subscribe process done")
+
 	waitForProcess := make(chan error)
 	go func() {
 		select {
 		case <-subscription.ProcessChan:
+			fmt.Println("XXXXXXXXXXXXX")
 			waitForProcess <- nil
 		case err := <-subscription.ErrChan:
 			waitForProcess <- err
@@ -74,9 +79,11 @@ func TestSubscribeChangeStateProcess(t *testing.T) {
 
 	assignedProcess, err := client.AssignProcess(env.colony1ID, -1, env.runtime1PrvKey)
 	assert.Nil(t, err)
+	fmt.Println("assign done")
 
 	err = client.Close(assignedProcess.ID, env.runtime1PrvKey)
 	assert.Nil(t, err)
+	fmt.Println("close done")
 
 	err = <-waitForProcess
 	assert.Nil(t, err)
@@ -85,7 +92,7 @@ func TestSubscribeChangeStateProcess(t *testing.T) {
 }
 
 // Let change the order of the operations a bit, what about if the subscriber subscribes on an
-// process state change event, but that event has already occurred. Then, the subscriber would what forever.
+// process state change event, but that event has already occurred? Then, the subscriber would what forever.
 // The solution is to let the server send an event anyway if the wanted state is true already.
 //
 // Runtime 1 submits a process

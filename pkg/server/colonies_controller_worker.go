@@ -75,6 +75,7 @@ func (controller *coloniesController) timeoutLoop() {
 			if process.ProcessSpec.MaxWaitTime == -1 || process.ProcessSpec.MaxWaitTime == 0 {
 				continue
 			}
+
 			if time.Now().Unix() > process.WaitDeadline.Unix() {
 				err := controller.closeFailed(process.ID, []string{"Maximum waiting time limit exceeded"})
 				if err != nil {
@@ -95,7 +96,7 @@ func (controller *coloniesController) masterWorker() {
 				return
 			}
 			if msg.handler != nil {
-				msg.handler(msg)
+				go msg.handler(msg)
 			}
 		}
 	}

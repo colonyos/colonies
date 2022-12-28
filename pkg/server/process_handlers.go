@@ -98,7 +98,7 @@ func (server *ColoniesServer) handleAssignProcessHTTPRequest(c *gin.Context, rec
 			// Wait for a new process to be submitted to a ColoniesServer in the cluster
 			server.controller.eventHandler.waitForProcess(runtime.RuntimeType, core.WAITING, "", ctx)
 
-			// Try again! Note there is no guarantees we was assigned as process since multiple workers competes getting jobs
+			// Try again! Note there is no guarantees we was assigned a process since multiple workers competes getting jobs
 			process, assignErr = server.controller.assign(recoveredID, msg.ColonyID, msg.Latest)
 		}
 	}
@@ -363,6 +363,15 @@ func (server *ColoniesServer) handleCloseSuccessfulHTTPRequest(c *gin.Context, r
 
 	err = server.validator.RequireRuntimeMembership(recoveredID, process.ProcessSpec.Conditions.ColonyID, true)
 	if server.handleHTTPError(c, err, http.StatusForbidden) {
+		log.Error(err)
+		return
+	}
+
+	if process.AssignedRuntimeID == "" {
+		errmsg := "Failed to close process as successful, process is not assigned"
+		log.Error(errmsg)
+		err := errors.New(errmsg)
+		server.handleHTTPError(c, err, http.StatusForbidden)
 		return
 	}
 
@@ -412,6 +421,14 @@ func (server *ColoniesServer) handleCloseFailedHTTPRequest(c *gin.Context, recov
 
 	err = server.validator.RequireRuntimeMembership(recoveredID, process.ProcessSpec.Conditions.ColonyID, true)
 	if server.handleHTTPError(c, err, http.StatusForbidden) {
+		return
+	}
+
+	if process.AssignedRuntimeID == "" {
+		errmsg := "Failed to close process as failed, process is not assigned"
+		log.Error(errmsg)
+		err := errors.New(errmsg)
+		server.handleHTTPError(c, err, http.StatusForbidden)
 		return
 	}
 

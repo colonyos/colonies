@@ -404,10 +404,21 @@ func (db *PQDatabase) DeleteAllProcessesInProcessGraphsByColonyID(colonyID strin
 
 func (db *PQDatabase) ResetProcess(process *core.Process) error {
 	submissionTime := time.Now()
-	sqlStatement := `UPDATE ` + db.dbPrefix + `PROCESSES SET IS_ASSIGNED=FALSE, SUBMISSION_TIME=$1, START_TIME=$2, END_TIME=$3, ASSIGNED_RUNTIME_ID=$4, STATE=$5 WHERE PROCESS_ID=$6`
-	_, err := db.postgresql.Exec(sqlStatement, submissionTime, time.Time{}, time.Time{}, "", core.WAITING, process.ID)
-	if err != nil {
-		return err
+
+	maxWaitTime := process.ProcessSpec.MaxWaitTime
+	if maxWaitTime > 0 {
+		deadline := time.Now().Add(time.Duration(maxWaitTime) * time.Second)
+		sqlStatement := `UPDATE ` + db.dbPrefix + `PROCESSES SET IS_ASSIGNED=FALSE, SUBMISSION_TIME=$1, START_TIME=$2, END_TIME=$3, ASSIGNED_RUNTIME_ID=$4, STATE=$5, WAIT_DEADLINE=$6 WHERE PROCESS_ID=$7`
+		_, err := db.postgresql.Exec(sqlStatement, submissionTime, time.Time{}, time.Time{}, "", core.WAITING, deadline, process.ID)
+		if err != nil {
+			return err
+		}
+	} else {
+		sqlStatement := `UPDATE ` + db.dbPrefix + `PROCESSES SET IS_ASSIGNED=FALSE, SUBMISSION_TIME=$1, START_TIME=$2, END_TIME=$3, ASSIGNED_RUNTIME_ID=$4, STATE=$5 WHERE PROCESS_ID=$6`
+		_, err := db.postgresql.Exec(sqlStatement, submissionTime, time.Time{}, time.Time{}, "", core.WAITING, process.ID)
+		if err != nil {
+			return err
+		}
 	}
 
 	process.SetSubmissionTime(submissionTime)
@@ -534,10 +545,19 @@ func (db *PQDatabase) AssignRuntime(runtimeID string, process *core.Process) err
 	}
 
 	startTime := time.Now()
-	sqlStatement := `UPDATE ` + db.dbPrefix + `PROCESSES SET IS_ASSIGNED=TRUE, START_TIME=$1, ASSIGNED_RUNTIME_ID=$2, STATE=$3 WHERE PROCESS_ID=$4`
-	_, err = db.postgresql.Exec(sqlStatement, startTime, runtimeID, core.RUNNING, process.ID)
-	if err != nil {
-		return err
+	if process.ProcessSpec.MaxExecTime > 0 {
+		deadline := time.Now().Add(time.Duration(process.ProcessSpec.MaxExecTime) * time.Second)
+		sqlStatement := `UPDATE ` + db.dbPrefix + `PROCESSES SET IS_ASSIGNED=TRUE, START_TIME=$1, ASSIGNED_RUNTIME_ID=$2, STATE=$3, EXEC_DEADLINE=$4 WHERE PROCESS_ID=$5`
+		_, err = db.postgresql.Exec(sqlStatement, startTime, runtimeID, core.RUNNING, deadline, process.ID)
+		if err != nil {
+			return err
+		}
+	} else {
+		sqlStatement := `UPDATE ` + db.dbPrefix + `PROCESSES SET IS_ASSIGNED=TRUE, START_TIME=$1, ASSIGNED_RUNTIME_ID=$2, STATE=$3 WHERE PROCESS_ID=$4`
+		_, err = db.postgresql.Exec(sqlStatement, startTime, runtimeID, core.RUNNING, process.ID)
+		if err != nil {
+			return err
+		}
 	}
 
 	process.SetStartTime(startTime)
@@ -551,10 +571,21 @@ func (db *PQDatabase) AssignRuntime(runtimeID string, process *core.Process) err
 func (db *PQDatabase) UnassignRuntime(process *core.Process) error {
 	endTime := time.Now()
 
-	sqlStatement := `UPDATE ` + db.dbPrefix + `PROCESSES SET IS_ASSIGNED=FALSE, END_TIME=$1, STATE=$2, RETRIES=$3, ASSIGNED_RUNTIME_ID=$4 WHERE PROCESS_ID=$5`
-	_, err := db.postgresql.Exec(sqlStatement, endTime, core.WAITING, process.Retries+1, "", process.ID)
-	if err != nil {
-		return err
+	maxWaitTime := process.ProcessSpec.MaxWaitTime
+	if maxWaitTime > 0 {
+		deadline := time.Now().Add(time.Duration(maxWaitTime) * time.Second)
+
+		sqlStatement := `UPDATE ` + db.dbPrefix + `PROCESSES SET IS_ASSIGNED=FALSE, END_TIME=$1, STATE=$2, RETRIES=$3, ASSIGNED_RUNTIME_ID=$4, WAIT_DEADLINE=$5 WHERE PROCESS_ID=$6`
+		_, err := db.postgresql.Exec(sqlStatement, endTime, core.WAITING, process.Retries+1, "", deadline, process.ID)
+		if err != nil {
+			return err
+		}
+	} else {
+		sqlStatement := `UPDATE ` + db.dbPrefix + `PROCESSES SET IS_ASSIGNED=FALSE, END_TIME=$1, STATE=$2, RETRIES=$3, ASSIGNED_RUNTIME_ID=$4 WHERE PROCESS_ID=$5`
+		_, err := db.postgresql.Exec(sqlStatement, endTime, core.WAITING, process.Retries+1, "", process.ID)
+		if err != nil {
+			return err
+		}
 	}
 
 	process.SetEndTime(endTime)
@@ -564,7 +595,12 @@ func (db *PQDatabase) UnassignRuntime(process *core.Process) error {
 	return nil
 }
 
-func (db *PQDatabase) MarkSuccessful(process *core.Process) error {
+func (db *PQDatabase) MarkSuccessful(processID string) error {
+	process, err := db.GetProcessByID(processID)
+	if err != nil {
+		return err
+	}
+
 	if process.State == core.FAILED {
 		return errors.New("Tried to set failed process as completed")
 	}
@@ -573,16 +609,11 @@ func (db *PQDatabase) MarkSuccessful(process *core.Process) error {
 		return errors.New("Tried to set waiting process as completed without being running")
 	}
 
-	processFromDB, err := db.GetProcessByID(process.ID)
-	if err != nil {
-		return err
-	}
-
-	if processFromDB.State == core.FAILED {
+	if process.State == core.FAILED {
 		return errors.New("Tried to set failed process (from db) as successful")
 	}
 
-	if processFromDB.State == core.WAITING {
+	if process.State == core.WAITING {
 		return errors.New("Tried to set waiting process (from db) as successful without being running")
 	}
 
@@ -600,8 +631,12 @@ func (db *PQDatabase) MarkSuccessful(process *core.Process) error {
 	return nil
 }
 
-func (db *PQDatabase) MarkFailed(process *core.Process, errs []string) error {
+func (db *PQDatabase) MarkFailed(processID string, errs []string) error {
 	endTime := time.Now()
+	process, err := db.GetProcessByID(processID)
+	if err != nil {
+		return err
+	}
 
 	if process.State == core.SUCCESS {
 		return errors.New("Tried to set successful process as failed")
@@ -611,16 +646,11 @@ func (db *PQDatabase) MarkFailed(process *core.Process, errs []string) error {
 		return errors.New("Tried to set failed process as failed")
 	}
 
-	processFromDB, err := db.GetProcessByID(process.ID)
-	if err != nil {
-		return err
-	}
-
-	if processFromDB.State == core.SUCCESS {
+	if process.State == core.SUCCESS {
 		return errors.New("Tried to set successful (from db) as failed")
 	}
 
-	if processFromDB.State == core.FAILED {
+	if process.State == core.FAILED {
 		return errors.New("Tried to set failed (from db) as failed")
 	}
 

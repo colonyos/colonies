@@ -2,10 +2,10 @@ package server
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"strconv"
 	"sync"
-	"time"
 
 	"github.com/colonyos/colonies/pkg/cluster"
 	"github.com/colonyos/colonies/pkg/core"
@@ -308,18 +308,10 @@ func (controller *coloniesController) deleteRuntime(runtimeID string) error {
 	return <-cmd.errorChan
 }
 
-func (controller *coloniesController) addProcessAndSetWaitingDeadline(process *core.Process) (*core.Process, error) {
+func (controller *coloniesController) addProcessToDB(process *core.Process) (*core.Process, error) {
 	err := controller.db.AddProcess(process)
 	if err != nil {
 		return nil, err
-	}
-
-	maxWaitTime := process.ProcessSpec.MaxWaitTime
-	if maxWaitTime > 0 {
-		err := controller.db.SetWaitDeadline(process, time.Now().Add(time.Duration(maxWaitTime)*time.Second))
-		if err != nil {
-			return nil, err
-		}
 	}
 
 	addedProcess, err := controller.db.GetProcessByID(process.ID)
@@ -334,7 +326,7 @@ func (controller *coloniesController) addProcess(process *core.Process) (*core.P
 	cmd := &command{processReplyChan: make(chan *core.Process, 1),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
-			addedProcess, err := controller.addProcessAndSetWaitingDeadline(process)
+			addedProcess, err := controller.addProcessToDB(process)
 			if err != nil {
 				cmd.errorChan <- err
 				return
@@ -382,7 +374,7 @@ func (controller *coloniesController) addChild(processGraphID string, parentProc
 
 			process.Parents = []string{parentProcess.ID}
 			process.ProcessGraphID = processGraphID
-			addedProcess, err := controller.addProcessAndSetWaitingDeadline(process)
+			addedProcess, err := controller.addProcessToDB(process)
 			if err != nil {
 				cmd.errorChan <- err
 				return
@@ -666,16 +658,15 @@ func (controller *coloniesController) createProcessGraph(workflowSpec *core.Work
 	for _, process := range processMap {
 		// This function is called from the controller, so it OK to use the database layer directly, in fact
 		// we will cause a deadlock if we call controller.addProcess
-		addedProcess, err := controller.addProcessAndSetWaitingDeadline(process)
 		log.WithFields(log.Fields{"ProcessID": process.ID}).Debug("Submitting process part of processgraph")
-		if !addedProcess.WaitForParents {
-			controller.eventHandler.signal(addedProcess)
-		}
-
+		addedProcess, err := controller.addProcessToDB(process)
 		if err != nil {
 			msg := "Failed to submit workflow, failed to add process"
 			log.WithFields(log.Fields{"Error": err}).Error(msg)
 			return nil, errors.New(msg)
+		}
+		if !addedProcess.WaitForParents {
+			controller.eventHandler.signal(addedProcess)
 		}
 	}
 
@@ -925,7 +916,7 @@ func (controller *coloniesController) closeSuccessful(processID string, output [
 				err = controller.db.SetOutput(processID, output)
 			}
 
-			err = controller.db.MarkSuccessful(process)
+			err = controller.db.MarkSuccessful(processID)
 			if err != nil {
 				cmd.errorChan <- err
 				return
@@ -955,6 +946,7 @@ func (controller *coloniesController) closeSuccessful(processID string, output [
 			}
 
 			controller.eventHandler.signal(process)
+			fmt.Println("close successful sending event done")
 			cmd.errorChan <- nil
 		}}
 
@@ -992,13 +984,13 @@ func (controller *coloniesController) notifyChildren(process *core.Process) erro
 func (controller *coloniesController) closeFailed(processID string, errs []string) error {
 	cmd := &command{errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
-			process, err := controller.db.GetProcessByID(processID)
+			err := controller.db.MarkFailed(processID, errs)
 			if err != nil {
 				cmd.errorChan <- err
 				return
 			}
 
-			err = controller.db.MarkFailed(process, errs)
+			process, err := controller.db.GetProcessByID(processID)
 			if err != nil {
 				cmd.errorChan <- err
 				return
@@ -1067,15 +1059,6 @@ func (controller *coloniesController) assign(runtimeID string, colonyID string, 
 				return
 			}
 
-			maxExecTime := selectedProcess.ProcessSpec.MaxExecTime
-			if maxExecTime > 0 {
-				err := controller.db.SetExecDeadline(selectedProcess, time.Now().Add(time.Duration(maxExecTime)*time.Second))
-				if err != nil {
-					cmd.errorChan <- err
-					return
-				}
-			}
-
 			if selectedProcess.ProcessGraphID != "" {
 				log.WithFields(log.Fields{"ProcessGraph": selectedProcess.ProcessGraphID}).Debug("Resolving processgraph (assigned)")
 				processGraph, err := controller.db.GetProcessGraphByID(selectedProcess.ProcessGraphID)
@@ -1134,14 +1117,7 @@ func (controller *coloniesController) unassignRuntime(processID string) error {
 				cmd.errorChan <- err
 				return
 			}
-			maxWaitTime := process.ProcessSpec.MaxWaitTime
-			if maxWaitTime > 0 {
-				err := controller.db.SetWaitDeadline(process, time.Now().Add(time.Duration(maxWaitTime)*time.Second))
-				if err != nil {
-					cmd.errorChan <- err
-					return
-				}
-			}
+
 			cmd.errorChan <- controller.db.UnassignRuntime(process)
 			controller.eventHandler.signal(process)
 		}}
@@ -1157,14 +1133,6 @@ func (controller *coloniesController) resetProcess(processID string) error {
 			if err != nil {
 				cmd.errorChan <- err
 				return
-			}
-			maxWaitTime := process.ProcessSpec.MaxWaitTime
-			if maxWaitTime > 0 {
-				err := controller.db.SetWaitDeadline(process, time.Now().Add(time.Duration(maxWaitTime)*time.Second))
-				if err != nil {
-					cmd.errorChan <- err
-					return
-				}
 			}
 
 			cmd.errorChan <- controller.db.ResetProcess(process)
