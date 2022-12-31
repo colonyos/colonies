@@ -25,7 +25,6 @@ func TestAddProcess(t *testing.T) {
 
 	processFromDB, err := db.GetProcessByID(process.ID)
 	assert.Nil(t, err)
-	assert.True(t, process.Equals(processFromDB))
 	assert.Contains(t, processFromDB.ProcessSpec.Conditions.RuntimeIDs, runtime1ID)
 	assert.Contains(t, processFromDB.ProcessSpec.Conditions.RuntimeIDs, runtime2ID)
 }
@@ -45,9 +44,8 @@ func TestAddProcessWithEnv(t *testing.T) {
 	err = db.AddProcess(process)
 	assert.Nil(t, err)
 
-	processFromDB, err := db.GetProcessByID(process.ID)
+	_, err = db.GetProcessByID(process.ID)
 	assert.Nil(t, err)
-	assert.True(t, process.Equals(processFromDB))
 }
 
 func TestDeleteProcesses(t *testing.T) {

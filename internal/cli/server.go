@@ -98,6 +98,22 @@ func parseServerEnv() {
 	} else if VerboseEnv == "false" {
 		Verbose = false
 	}
+
+	CronPeriodCheckerEnvStr := os.Getenv("COLONIES_CRON_CHECKER_PERIOD")
+	if CronPeriodCheckerEnvStr != "" {
+		CronCheckerPeriod, err = strconv.Atoi(CronPeriodCheckerEnvStr)
+		CheckError(err)
+	} else {
+		CronCheckerPeriod = server.CRON_TRIGGER_PERIOD
+	}
+
+	GeneratorPeriodCheckerEnvStr := os.Getenv("COLONIES_GENERATOR_CHECKER_PERIOD")
+	if GeneratorPeriodCheckerEnvStr != "" {
+		GeneratorCheckerPeriod, err = strconv.Atoi(GeneratorPeriodCheckerEnvStr)
+		CheckError(err)
+	} else {
+		GeneratorCheckerPeriod = server.GENERATOR_TRIGGER_PERIOD
+	}
 }
 
 var serverStatusCmd = &cobra.Command{
@@ -220,7 +236,18 @@ var serverStartCmd = &cobra.Command{
 			gin.DefaultWriter = ioutil.Discard
 		}
 
-		server := server.CreateColoniesServer(db, ServerPort, ServerID, UseTLS, TLSKey, TLSCert, node, clusterConfig, EtcdDataDir)
+		server := server.CreateColoniesServer(db,
+			ServerPort,
+			ServerID,
+			UseTLS,
+			TLSKey,
+			TLSCert,
+			node,
+			clusterConfig,
+			EtcdDataDir,
+			GeneratorCheckerPeriod,
+			CronCheckerPeriod)
+
 		for {
 			err := server.ServeForever()
 			if err != nil {

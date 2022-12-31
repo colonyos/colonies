@@ -234,6 +234,22 @@ var devCmd = &cobra.Command{
 		CheckError(err)
 		log.WithFields(log.Fields{"Port": coloniesServerPort}).Info("Starting a Colonies server")
 
+		CronPeriodCheckerEnvStr := os.Getenv("COLONIES_CRON_CHECKER_PERIOD")
+		if CronPeriodCheckerEnvStr != "" {
+			CronCheckerPeriod, err = strconv.Atoi(CronPeriodCheckerEnvStr)
+			CheckError(err)
+		} else {
+			CronCheckerPeriod = server.CRON_TRIGGER_PERIOD
+		}
+
+		GeneratorPeriodCheckerEnvStr := os.Getenv("COLONIES_GENERATOR_CHECKER_PERIOD")
+		if GeneratorPeriodCheckerEnvStr != "" {
+			GeneratorCheckerPeriod, err = strconv.Atoi(GeneratorPeriodCheckerEnvStr)
+			CheckError(err)
+		} else {
+			GeneratorCheckerPeriod = server.GENERATOR_TRIGGER_PERIOD
+		}
+
 		node := cluster.Node{Name: "dev", Host: "localhost", APIPort: coloniesServerPort, EtcdClientPort: 2379, EtcdPeerPort: 2380, RelayPort: 2381}
 		clusterConfig := cluster.Config{}
 		clusterConfig.AddNode(node)
@@ -245,7 +261,18 @@ var devCmd = &cobra.Command{
 			gin.DefaultWriter = ioutil.Discard
 		}
 
-		coloniesServer := server.CreateColoniesServer(coloniesDB, coloniesServerPort, serverID, false, "", "", node, clusterConfig, "/tmp/coloniesdev/dev/etcd")
+		coloniesServer := server.CreateColoniesServer(coloniesDB,
+			coloniesServerPort,
+			serverID,
+			false,
+			"",
+			"",
+			node,
+			clusterConfig,
+			"/tmp/coloniesdev/dev/etcd",
+			GeneratorCheckerPeriod,
+			CronCheckerPeriod)
+
 		go coloniesServer.ServeForever()
 
 		coloniesServerHost := os.Getenv("COLONIES_SERVERHOST")

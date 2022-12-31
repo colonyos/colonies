@@ -2,7 +2,6 @@ package server
 
 import (
 	"errors"
-	"fmt"
 	"os"
 	"strconv"
 	"sync"
@@ -14,10 +13,6 @@ import (
 	"github.com/colonyos/colonies/pkg/planner/basic"
 	log "github.com/sirupsen/logrus"
 )
-
-const TIMEOUT_RELEASE_INTERVALL = 1
-const TIMEOUT_GENERATOR_TRIGGER_INTERVALL = 1
-const TIMEOUT_CRON_TRIGGER_INTERVALL = 1
 
 type command struct {
 	stop                   bool
@@ -44,22 +39,30 @@ type command struct {
 }
 
 type coloniesController struct {
-	db            database.Database
-	cmdQueue      chan *command
-	planner       planner.Planner
-	wsSubCtrl     *wsSubscriptionController
-	relayServer   *cluster.RelayServer
-	eventHandler  *eventHandler
-	stopFlag      bool
-	stopMutex     sync.Mutex
-	leaderMutex   sync.Mutex
-	thisNode      cluster.Node
-	clusterConfig cluster.Config
-	etcdServer    *cluster.EtcdServer
-	leader        bool
+	db              database.Database
+	cmdQueue        chan *command
+	planner         planner.Planner
+	wsSubCtrl       *wsSubscriptionController
+	relayServer     *cluster.RelayServer
+	eventHandler    *eventHandler
+	stopFlag        bool
+	stopMutex       sync.Mutex
+	leaderMutex     sync.Mutex
+	thisNode        cluster.Node
+	clusterConfig   cluster.Config
+	etcdServer      *cluster.EtcdServer
+	leader          bool
+	generatorPeriod int
+	cronPeriod      int
 }
 
-func createColoniesController(db database.Database, thisNode cluster.Node, clusterConfig cluster.Config, etcdDataPath string) *coloniesController {
+func createColoniesController(db database.Database,
+	thisNode cluster.Node,
+	clusterConfig cluster.Config,
+	etcdDataPath string,
+	generatorPeriod int,
+	cronPeriod int) *coloniesController {
+
 	controller := &coloniesController{}
 	controller.db = db
 	controller.thisNode = thisNode
@@ -68,6 +71,8 @@ func createColoniesController(db database.Database, thisNode cluster.Node, clust
 	controller.etcdServer.Start()
 	controller.etcdServer.WaitToStart()
 	controller.leader = false
+	controller.generatorPeriod = generatorPeriod
+	controller.cronPeriod = cronPeriod
 
 	controller.relayServer = cluster.CreateRelayServer(controller.thisNode, controller.clusterConfig)
 	controller.eventHandler = createEventHandler(controller.relayServer)
@@ -945,8 +950,9 @@ func (controller *coloniesController) closeSuccessful(processID string, output [
 				}
 			}
 
+			process.State = core.SUCCESS
+
 			controller.eventHandler.signal(process)
-			fmt.Println("close successful sending event done")
 			cmd.errorChan <- nil
 		}}
 
@@ -1011,6 +1017,8 @@ func (controller *coloniesController) closeFailed(processID string, errs []strin
 				}
 
 			}
+
+			process.State = core.FAILED
 
 			controller.eventHandler.signal(process)
 			cmd.errorChan <- nil

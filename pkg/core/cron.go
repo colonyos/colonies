@@ -17,6 +17,7 @@ type Cron struct {
 	WorkflowSpec            string    `json:"workflowspec"`
 	PrevProcessGraphID      string    `json:"prevprocessgraphid"`
 	WaitForPrevProcessGraph bool      `json:"waitforprevprocessgraph"`
+	CheckerPeriod           int       `json:"checkerperiod"`
 }
 
 func CreateCron(colonyID string, name string, cronExpression string, interval int, random bool, workflowSpec string) *Cron {
@@ -89,7 +90,8 @@ func (cron *Cron) Equals(cron2 *Cron) bool {
 		cron.LastRun.Unix() != cron2.LastRun.Unix() ||
 		cron.WorkflowSpec != cron2.WorkflowSpec ||
 		cron.PrevProcessGraphID != cron2.PrevProcessGraphID ||
-		cron.WaitForPrevProcessGraph != cron2.WaitForPrevProcessGraph {
+		cron.WaitForPrevProcessGraph != cron2.WaitForPrevProcessGraph ||
+		cron.CheckerPeriod != cron2.CheckerPeriod {
 		same = false
 	}
 

@@ -148,7 +148,7 @@ func (controller *coloniesController) packGenerator(generatorID string, colonyID
 
 func (controller *coloniesController) generatorTriggerLoop() {
 	for {
-		time.Sleep(TIMEOUT_GENERATOR_TRIGGER_INTERVALL * time.Second)
+		time.Sleep(time.Duration(controller.generatorPeriod) * time.Millisecond)
 
 		controller.stopMutex.Lock()
 		if controller.stopFlag {

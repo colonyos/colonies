@@ -1,7 +1,6 @@
 package server
 
 import (
-	"fmt"
 	"testing"
 	"time"
 
@@ -48,7 +47,7 @@ func TestSubscribeProcesses(t *testing.T) {
 // Runtime 1 gets assign the process
 // Runtime 1 finish the process
 // Runtime 2 receives an event
-func TestSubscribeChangeStateProcessDEBUG(t *testing.T) {
+func TestSubscribeChangeStateProcess(t *testing.T) {
 	env, client, server, _, done := setupTestEnv1(t)
 
 	processSpec := utils.CreateTestProcessSpec(env.colony1ID)
@@ -56,7 +55,6 @@ func TestSubscribeChangeStateProcessDEBUG(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, core.PENDING, addedProcess.State)
 
-	fmt.Println("submitting process done")
 	subscription, err := client.SubscribeProcess(addedProcess.ID,
 		addedProcess.ProcessSpec.Conditions.RuntimeType,
 		core.SUCCESS,
@@ -64,13 +62,10 @@ func TestSubscribeChangeStateProcessDEBUG(t *testing.T) {
 		env.runtime2PrvKey)
 	assert.Nil(t, err)
 
-	fmt.Println("subscribe process done")
-
 	waitForProcess := make(chan error)
 	go func() {
 		select {
 		case <-subscription.ProcessChan:
-			fmt.Println("XXXXXXXXXXXXX")
 			waitForProcess <- nil
 		case err := <-subscription.ErrChan:
 			waitForProcess <- err
@@ -79,11 +74,9 @@ func TestSubscribeChangeStateProcessDEBUG(t *testing.T) {
 
 	assignedProcess, err := client.AssignProcess(env.colony1ID, -1, env.runtime1PrvKey)
 	assert.Nil(t, err)
-	fmt.Println("assign done")
 
 	err = client.Close(assignedProcess.ID, env.runtime1PrvKey)
 	assert.Nil(t, err)
-	fmt.Println("close done")
 
 	err = <-waitForProcess
 	assert.Nil(t, err)

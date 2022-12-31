@@ -32,7 +32,7 @@ func (controller *coloniesController) tryBecomeLeader() bool {
 
 func (controller *coloniesController) timeoutLoop() {
 	for {
-		time.Sleep(TIMEOUT_RELEASE_INTERVALL * time.Second)
+		time.Sleep(RELEASE_PERIOD * time.Second)
 
 		controller.stopMutex.Lock()
 		if controller.stopFlag {

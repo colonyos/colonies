@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"strconv"
@@ -44,8 +45,9 @@ func CreateColoniesServer(db database.Database,
 	tlsCertPath string,
 	thisNode cluster.Node,
 	clusterConfig cluster.Config,
-	etcdDataPath string) *ColoniesServer {
-
+	etcdDataPath string,
+	generatorPeriod int,
+	cronPeriod int) *ColoniesServer {
 	server := &ColoniesServer{}
 	server.ginHandler = gin.Default()
 	server.ginHandler.Use(cors.Default())
@@ -58,7 +60,7 @@ func CreateColoniesServer(db database.Database,
 	}
 
 	server.httpServer = httpServer
-	server.controller = createColoniesController(db, thisNode, clusterConfig, etcdDataPath)
+	server.controller = createColoniesController(db, thisNode, clusterConfig, etcdDataPath, generatorPeriod, cronPeriod)
 	server.serverID = serverID
 	server.tls = tls
 	server.port = port
@@ -93,11 +95,13 @@ func (server *ColoniesServer) handleHealthRequest(c *gin.Context) {
 }
 
 func (server *ColoniesServer) handleAPIRequest(c *gin.Context) {
+	fmt.Println("HANDLE API REQUEST 1")
 	jsonBytes, err := ioutil.ReadAll(c.Request.Body)
 	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		log.WithFields(log.Fields{"Error": err}).Error("Bad request")
 		return
 	}
+	fmt.Println("HANDLE API REQUEST 2")
 
 	rpcMsg, err := rpc.CreateRPCMsgFromJSON(string(jsonBytes))
 	if server.handleHTTPError(c, err, http.StatusBadRequest) {
@@ -114,6 +118,7 @@ func (server *ColoniesServer) handleAPIRequest(c *gin.Context) {
 	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		return
 	}
+	fmt.Println("HANDLE API REQUEST 3")
 
 	switch rpcMsg.PayloadType {
 	// Colony handlers
@@ -223,6 +228,7 @@ func (server *ColoniesServer) handleAPIRequest(c *gin.Context) {
 			return
 		}
 	}
+	fmt.Println("HANDLE API REQUEST 4 DONE")
 }
 
 func (server *ColoniesServer) generateRPCErrorMsg(err error, errorCode int) (*rpc.RPCReplyMsg, error) {

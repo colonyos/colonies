@@ -65,6 +65,7 @@ var GeneratorID string
 var GeneratorName string
 var GeneratorTrigger int
 var GeneratorTimeout int
+var GeneratorCheckerPeriod int
 var Func string
 var Arg string
 var Args []string
@@ -87,6 +88,7 @@ var CronID string
 var CronName string
 var CronExpr string
 var CronIntervall int
+var CronCheckerPeriod int
 var CronRandom bool
 var WaitForPrevProcessGraph bool
 var Long float64
