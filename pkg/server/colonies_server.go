@@ -3,7 +3,6 @@ package server
 import (
 	"context"
 	"errors"
-	"fmt"
 	"io/ioutil"
 	"net/http"
 	"strconv"
@@ -35,6 +34,7 @@ type ColoniesServer struct {
 	crypto            security.Crypto
 	validator         security.Validator
 	db                database.Database
+	exclusiveAssign   bool
 }
 
 func CreateColoniesServer(db database.Database,
@@ -47,7 +47,8 @@ func CreateColoniesServer(db database.Database,
 	clusterConfig cluster.Config,
 	etcdDataPath string,
 	generatorPeriod int,
-	cronPeriod int) *ColoniesServer {
+	cronPeriod int,
+	exclusiveAssign bool) *ColoniesServer {
 	server := &ColoniesServer{}
 	server.ginHandler = gin.Default()
 	server.ginHandler.Use(cors.Default())
@@ -68,6 +69,24 @@ func CreateColoniesServer(db database.Database,
 	server.tlsCertPath = tlsCertPath
 	server.crypto = crypto.CreateCrypto()
 	server.validator = validator.CreateValidator(db)
+	server.exclusiveAssign = exclusiveAssign
+
+	log.WithFields(log.Fields{"Port": port,
+		"ServerID":          serverID,
+		"TLS":               tls,
+		"TLSPrivateKeyPath": tlsPrivateKeyPath,
+		"TLSCertPath":       tlsCertPath,
+		"APIPort":           thisNode.APIPort,
+		"EtcdClientPort":    thisNode.EtcdClientPort,
+		"EtcdPeerPort":      thisNode.EtcdPeerPort,
+		"EtcdDataPath":      etcdDataPath,
+		"Host":              thisNode.Host,
+		"RelayPort":         thisNode.RelayPort,
+		"Name":              thisNode.Name,
+		"GeneratorPeriod":   generatorPeriod,
+		"CronPeriod":        cronPeriod,
+		"exclusiveAssign":   exclusiveAssign}).
+		Info("Starting Colonies server")
 
 	server.setupRoutes()
 
@@ -95,13 +114,11 @@ func (server *ColoniesServer) handleHealthRequest(c *gin.Context) {
 }
 
 func (server *ColoniesServer) handleAPIRequest(c *gin.Context) {
-	fmt.Println("HANDLE API REQUEST 1")
 	jsonBytes, err := ioutil.ReadAll(c.Request.Body)
 	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		log.WithFields(log.Fields{"Error": err}).Error("Bad request")
 		return
 	}
-	fmt.Println("HANDLE API REQUEST 2")
 
 	rpcMsg, err := rpc.CreateRPCMsgFromJSON(string(jsonBytes))
 	if server.handleHTTPError(c, err, http.StatusBadRequest) {
@@ -118,7 +135,6 @@ func (server *ColoniesServer) handleAPIRequest(c *gin.Context) {
 	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		return
 	}
-	fmt.Println("HANDLE API REQUEST 3")
 
 	switch rpcMsg.PayloadType {
 	// Colony handlers
@@ -149,7 +165,7 @@ func (server *ColoniesServer) handleAPIRequest(c *gin.Context) {
 	case rpc.SubmitProcessSpecPayloadType:
 		server.handleSubmitProcessSpecHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 	case rpc.AssignProcessPayloadType:
-		server.handleAssignProcessHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+		server.handleAssignProcessHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload(), string(jsonBytes))
 	case rpc.GetProcessHistPayloadType:
 		server.handleGetProcessHistHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 	case rpc.GetProcessesPayloadType:
@@ -228,7 +244,6 @@ func (server *ColoniesServer) handleAPIRequest(c *gin.Context) {
 			return
 		}
 	}
-	fmt.Println("HANDLE API REQUEST 4 DONE")
 }
 
 func (server *ColoniesServer) generateRPCErrorMsg(err error, errorCode int) (*rpc.RPCReplyMsg, error) {
@@ -316,5 +331,4 @@ func (server *ColoniesServer) Shutdown() {
 	if err := server.httpServer.Shutdown(ctx); err != nil {
 		log.WithFields(log.Fields{"Error": err}).Warning("ColoniesServer forced to shutdown")
 	}
-
 }

@@ -250,6 +250,14 @@ var devCmd = &cobra.Command{
 			GeneratorCheckerPeriod = server.GENERATOR_TRIGGER_PERIOD
 		}
 
+		ExclusiveAssignEnvStr := os.Getenv("COLONIES_EXCLUSIVE_ASSIGN")
+		if ExclusiveAssignEnvStr != "" {
+			ExclusiveAssign, err = strconv.ParseBool(ExclusiveAssignEnvStr)
+			CheckError(err)
+		} else {
+			ExclusiveAssign = false
+		}
+
 		node := cluster.Node{Name: "dev", Host: "localhost", APIPort: coloniesServerPort, EtcdClientPort: 2379, EtcdPeerPort: 2380, RelayPort: 2381}
 		clusterConfig := cluster.Config{}
 		clusterConfig.AddNode(node)
@@ -271,7 +279,8 @@ var devCmd = &cobra.Command{
 			clusterConfig,
 			"/tmp/coloniesdev/dev/etcd",
 			GeneratorCheckerPeriod,
-			CronCheckerPeriod)
+			CronCheckerPeriod,
+			ExclusiveAssign)
 
 		go coloniesServer.ServeForever()
 

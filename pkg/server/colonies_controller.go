@@ -48,6 +48,7 @@ type coloniesController struct {
 	stopFlag        bool
 	stopMutex       sync.Mutex
 	leaderMutex     sync.Mutex
+	assignMutex     sync.Mutex
 	thisNode        cluster.Node
 	clusterConfig   cluster.Config
 	etcdServer      *cluster.EtcdServer
@@ -1032,19 +1033,24 @@ func (controller *coloniesController) assign(runtimeID string, colonyID string, 
 	cmd := &command{processReplyChan: make(chan *core.Process),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
+			controller.assignMutex.Lock()
+
 			runtime, err := controller.db.GetRuntimeByID(runtimeID)
 			if err != nil {
 				cmd.errorChan <- err
+				controller.assignMutex.Unlock()
 				return
 			}
 			if runtime == nil {
 				cmd.errorChan <- errors.New("Runtime with id <" + runtimeID + "> could not be found")
+				controller.assignMutex.Unlock()
 				return
 			}
 
 			err = controller.db.MarkAlive(runtime)
 			if err != nil {
 				cmd.errorChan <- err
+				controller.assignMutex.Unlock()
 				return
 			}
 
@@ -1052,20 +1058,25 @@ func (controller *coloniesController) assign(runtimeID string, colonyID string, 
 			processes, err = controller.db.FindUnassignedProcesses(colonyID, runtimeID, runtime.RuntimeType, 10, latest)
 			if err != nil {
 				cmd.errorChan <- err
+				controller.assignMutex.Unlock()
 				return
 			}
 
 			selectedProcess, err := controller.planner.Select(runtimeID, processes, latest)
 			if err != nil {
 				cmd.errorChan <- err
+				controller.assignMutex.Unlock()
 				return
 			}
 
 			err = controller.db.AssignRuntime(runtimeID, selectedProcess)
 			if err != nil {
 				cmd.errorChan <- err
+				controller.assignMutex.Unlock()
 				return
 			}
+
+			controller.assignMutex.Unlock()
 
 			if selectedProcess.ProcessGraphID != "" {
 				log.WithFields(log.Fields{"ProcessGraph": selectedProcess.ProcessGraphID}).Debug("Resolving processgraph (assigned)")

@@ -114,6 +114,14 @@ func parseServerEnv() {
 	} else {
 		GeneratorCheckerPeriod = server.GENERATOR_TRIGGER_PERIOD
 	}
+
+	ExclusiveAssignEnvStr := os.Getenv("COLONIES_EXCLUSIVE_ASSIGN")
+	if ExclusiveAssignEnvStr != "" {
+		ExclusiveAssign, err = strconv.ParseBool(ExclusiveAssignEnvStr)
+		CheckError(err)
+	} else {
+		ExclusiveAssign = false
+	}
 }
 
 var serverStatusCmd = &cobra.Command{
@@ -246,7 +254,8 @@ var serverStartCmd = &cobra.Command{
 			clusterConfig,
 			EtcdDataDir,
 			GeneratorCheckerPeriod,
-			CronCheckerPeriod)
+			CronCheckerPeriod,
+			ExclusiveAssign)
 
 		for {
 			err := server.ServeForever()

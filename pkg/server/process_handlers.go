@@ -3,10 +3,10 @@ package server
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net/http"
 	"time"
 
+	"github.com/colonyos/colonies/pkg/client"
 	"github.com/colonyos/colonies/pkg/core"
 	"github.com/colonyos/colonies/pkg/rpc"
 	"github.com/gin-gonic/gin"
@@ -55,7 +55,28 @@ func (server *ColoniesServer) handleSubmitProcessSpecHTTPRequest(c *gin.Context,
 	server.sendHTTPReply(c, payloadType, jsonString)
 }
 
-func (server *ColoniesServer) handleAssignProcessHTTPRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
+func (server *ColoniesServer) handleAssignProcessHTTPRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string, originalRequest string) {
+	var err error
+	if server.exclusiveAssign && !server.controller.isLeader() {
+		// Find out qho is the leader
+		leader := server.controller.etcdServer.CurrentCluster().Leader
+		leaderHost := leader.Host
+		leaderPort := leader.APIPort
+		insecure := !server.tls
+
+		log.WithFields(log.Fields{"LeaderHost": leaderHost, "LeaderPort": leaderPort}).Info("Redirecting request to leader")
+		client := client.CreateColoniesClient(leaderHost, leaderPort, insecure, true)
+
+		jsonReplyString, err := client.SendRawMessage(string(originalRequest), insecure)
+		if server.handleHTTPError(c, err, http.StatusInternalServerError) {
+			log.WithFields(log.Fields{"Error": err}).Error("Failed to send raw message to leader")
+			return
+		}
+
+		c.String(http.StatusOK, jsonReplyString)
+		return
+	}
+
 	msg, err := rpc.CreateAssignProcessMsgFromJSON(jsonString)
 	if err != nil {
 		if server.handleHTTPError(c, errors.New("Failed to assign process, invalid JSON"), http.StatusBadRequest) {
@@ -92,15 +113,12 @@ func (server *ColoniesServer) handleAssignProcessHTTPRequest(c *gin.Context, rec
 
 	process, assignErr := server.controller.assign(recoveredID, msg.ColonyID, msg.Latest)
 	if assignErr != nil {
-		fmt.Println("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX timeout", msg.Timeout)
 		if msg.Timeout > 0 {
 			ctx, cancelCtx := context.WithTimeout(c.Request.Context(), time.Duration(msg.Timeout)*time.Second)
 			defer cancelCtx()
 
 			// Wait for a new process to be submitted to a ColoniesServer in the cluster
-			fmt.Println("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX WAITFORPROCESS")
 			server.controller.eventHandler.waitForProcess(runtime.RuntimeType, core.WAITING, "", ctx)
-			fmt.Println("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX DONE WAITFORPROCESS")
 
 			// Try again! Note there is no guarantees we was assigned a process since multiple workers competes getting jobs
 			process, assignErr = server.controller.assign(recoveredID, msg.ColonyID, msg.Latest)
