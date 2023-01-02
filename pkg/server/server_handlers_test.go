@@ -40,6 +40,7 @@ func TestGetStatistics(t *testing.T) {
 		_, err := client.SubmitProcessSpec(processSpec, env.runtimePrvKey)
 		assert.Nil(t, err)
 		_, err = client.AssignProcess(env.colonyID, -1, env.runtimePrvKey)
+		assert.Nil(t, err)
 	}
 
 	// Successful

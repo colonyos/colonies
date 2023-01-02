@@ -109,7 +109,7 @@ func (handler *eventHandler) register(runtimeType string, state int, processID s
 		handler.listeners[t] = make(map[string]chan *core.Process)
 	}
 
-	c := make(chan *core.Process)
+	c := make(chan *core.Process, 100)
 	listenerID := strconv.Itoa(handler.idCounter)
 	handler.listeners[t][listenerID] = c
 	if processID != "" {
@@ -132,7 +132,7 @@ func (handler *eventHandler) unregister(runtimeType string, state int, listenerI
 }
 
 func (handler *eventHandler) sendSignal(process *core.Process) {
-	msg := &message{reply: make(chan replyMessage, 1), handler: func(msg *message) {
+	msg := &message{reply: make(chan replyMessage, 100), handler: func(msg *message) {
 		t := handler.target(process.ProcessSpec.Conditions.RuntimeType, process.State)
 		if _, ok := handler.listeners[t]; ok {
 			for listenerID, c := range handler.listeners[t] {
@@ -171,7 +171,7 @@ func (handler *eventHandler) signal(process *core.Process) {
 
 func (handler *eventHandler) waitForProcess(runtimeType string, state int, processID string, ctx context.Context) (*core.Process, error) {
 	// Register
-	msg := &message{reply: make(chan replyMessage, 1), handler: func(msg *message) {
+	msg := &message{reply: make(chan replyMessage, 100), handler: func(msg *message) {
 		listenerID, c := handler.register(runtimeType, state, processID)
 		r := replyMessage{processChan: c, listenerID: listenerID}
 		msg.reply <- r
@@ -183,7 +183,7 @@ func (handler *eventHandler) waitForProcess(runtimeType string, state int, proce
 
 	// Unregister
 	defer func() {
-		msg := &message{reply: make(chan replyMessage, 1), handler: func(msg *message) {
+		msg := &message{reply: make(chan replyMessage, 100), handler: func(msg *message) {
 			handler.unregister(runtimeType, state, r.listenerID)
 		}}
 		handler.msgQueue <- msg
@@ -201,7 +201,7 @@ func (handler *eventHandler) waitForProcess(runtimeType string, state int, proce
 
 func (handler *eventHandler) subscribe(runtimeType string, state int, processID string, ctx context.Context) (chan *core.Process, chan error) {
 	// Register
-	msg := &message{reply: make(chan replyMessage, 1), handler: func(msg *message) {
+	msg := &message{reply: make(chan replyMessage, 100), handler: func(msg *message) {
 		listenerID, c := handler.register(runtimeType, state, processID)
 		r := replyMessage{processChan: c, listenerID: listenerID}
 		msg.reply <- r
@@ -211,7 +211,7 @@ func (handler *eventHandler) subscribe(runtimeType string, state int, processID 
 	// Wait for the masterworker to execute the handler code
 	r := <-msg.reply
 
-	processChan := make(chan *core.Process)
+	processChan := make(chan *core.Process, 100)
 	errChan := make(chan error)
 
 	go func() {
@@ -219,7 +219,7 @@ func (handler *eventHandler) subscribe(runtimeType string, state int, processID 
 			select {
 			case <-ctx.Done():
 				// Unregister
-				msg := &message{reply: make(chan replyMessage, 1), handler: func(msg *message) {
+				msg := &message{reply: make(chan replyMessage, 100), handler: func(msg *message) {
 					handler.unregister(runtimeType, state, r.listenerID)
 				}}
 				handler.msgQueue <- msg
@@ -243,7 +243,7 @@ func (handler *eventHandler) stop() {
 }
 
 func (handler *eventHandler) numberOfListeners(runtimeType string, state int) (int, int, int) { // Just for testing purposes
-	msg := &message{reply: make(chan replyMessage, 1), handler: func(msg *message) {
+	msg := &message{reply: make(chan replyMessage, 100), handler: func(msg *message) {
 		allListeners := len(handler.listeners)
 		processIDs := len(handler.processIDs)
 		listeners := len(handler.listeners[handler.target(runtimeType, state)])

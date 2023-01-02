@@ -58,13 +58,11 @@ type Database interface {
 	SetParents(processID string, parents []string) error
 	SetChildren(processID string, children []string) error
 	SetWaitForParents(processID string, waitingForParent bool) error
-	SetWaitDeadline(process *core.Process, waitDeadline time.Time) error
-	SetExecDeadline(process *core.Process, execDeadline time.Time) error
 	ResetAllProcesses(process *core.Process) error
 	AssignRuntime(runtimeID string, process *core.Process) error
 	UnassignRuntime(process *core.Process) error
-	MarkSuccessful(process *core.Process) error
-	MarkFailed(process *core.Process, errs []string) error
+	MarkSuccessful(processID string) error
+	MarkFailed(processID string, errs []string) error
 	CountProcesses() (int, error)
 	CountWaitingProcesses() (int, error)
 	CountRunningProcesses() (int, error)

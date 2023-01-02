@@ -4,6 +4,7 @@ import (
 	"errors"
 	"io/ioutil"
 	"os"
+	"strings"
 )
 
 type Keychain struct {
@@ -58,7 +59,7 @@ func (keychain *Keychain) GetPrvKey(id string) (string, error) {
 		return "", err
 	}
 
-	return string(prvKeyBytes), nil
+	return strings.Trim(strings.Trim(string(prvKeyBytes), "\n"), " "), nil
 }
 
 func (keychain *Keychain) Remove() error {
