@@ -150,7 +150,7 @@ func (controller *coloniesController) startCron(cron *core.Cron) {
 	}
 
 	rootInput := []string{}
-	// Pick all outputs from the leaves of the previos processgraph, and
+	// Pick all outputs from the leaves of the previous processgraph and
 	// then use it as input to the root process in the next processgraph
 	if cron.PrevProcessGraphID != "" {
 		processGraph, err := controller.db.GetProcessGraphByID(cron.PrevProcessGraphID)
@@ -222,7 +222,7 @@ func (controller *coloniesController) triggerCrons() {
 
 func (controller *coloniesController) cronTriggerLoop() {
 	for {
-		time.Sleep(TIMEOUT_CRON_TRIGGER_INTERVALL * time.Second)
+		time.Sleep(time.Duration(controller.cronPeriod) * time.Millisecond)
 
 		controller.stopMutex.Lock()
 		if controller.stopFlag {

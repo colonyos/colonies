@@ -230,6 +230,7 @@ var getCronCmd = &cobra.Command{
 			[]string{"LastRun", cron.LastRun.Format(TimeLayout)},
 			[]string{"PrevProcessGraphID", cron.PrevProcessGraphID},
 			[]string{"WaitForPrevProcessGraph", strconv.FormatBool(cron.WaitForPrevProcessGraph)},
+			[]string{"CheckerPeriod", strconv.Itoa(cron.CheckerPeriod)},
 		}
 		generatorTable := tablewriter.NewWriter(os.Stdout)
 		for _, v := range generatorData {
