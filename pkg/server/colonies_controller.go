@@ -5,7 +5,6 @@ import (
 	"os"
 	"strconv"
 	"sync"
-	"time"
 
 	"github.com/colonyos/colonies/pkg/cluster"
 	"github.com/colonyos/colonies/pkg/core"
@@ -14,10 +13,6 @@ import (
 	"github.com/colonyos/colonies/pkg/planner/basic"
 	log "github.com/sirupsen/logrus"
 )
-
-const TIMEOUT_RELEASE_INTERVALL = 1
-const TIMEOUT_GENERATOR_TRIGGER_INTERVALL = 1
-const TIMEOUT_CRON_TRIGGER_INTERVALL = 1
 
 type command struct {
 	stop                   bool
@@ -44,22 +39,31 @@ type command struct {
 }
 
 type coloniesController struct {
-	db            database.Database
-	cmdQueue      chan *command
-	planner       planner.Planner
-	wsSubCtrl     *wsSubscriptionController
-	relayServer   *cluster.RelayServer
-	eventHandler  *eventHandler
-	stopFlag      bool
-	stopMutex     sync.Mutex
-	leaderMutex   sync.Mutex
-	thisNode      cluster.Node
-	clusterConfig cluster.Config
-	etcdServer    *cluster.EtcdServer
-	leader        bool
+	db              database.Database
+	cmdQueue        chan *command
+	planner         planner.Planner
+	wsSubCtrl       *wsSubscriptionController
+	relayServer     *cluster.RelayServer
+	eventHandler    *eventHandler
+	stopFlag        bool
+	stopMutex       sync.Mutex
+	leaderMutex     sync.Mutex
+	assignMutex     sync.Mutex
+	thisNode        cluster.Node
+	clusterConfig   cluster.Config
+	etcdServer      *cluster.EtcdServer
+	leader          bool
+	generatorPeriod int
+	cronPeriod      int
 }
 
-func createColoniesController(db database.Database, thisNode cluster.Node, clusterConfig cluster.Config, etcdDataPath string) *coloniesController {
+func createColoniesController(db database.Database,
+	thisNode cluster.Node,
+	clusterConfig cluster.Config,
+	etcdDataPath string,
+	generatorPeriod int,
+	cronPeriod int) *coloniesController {
+
 	controller := &coloniesController{}
 	controller.db = db
 	controller.thisNode = thisNode
@@ -68,6 +72,8 @@ func createColoniesController(db database.Database, thisNode cluster.Node, clust
 	controller.etcdServer.Start()
 	controller.etcdServer.WaitToStart()
 	controller.leader = false
+	controller.generatorPeriod = generatorPeriod
+	controller.cronPeriod = cronPeriod
 
 	controller.relayServer = cluster.CreateRelayServer(controller.thisNode, controller.clusterConfig)
 	controller.eventHandler = createEventHandler(controller.relayServer)
@@ -308,18 +314,10 @@ func (controller *coloniesController) deleteRuntime(runtimeID string) error {
 	return <-cmd.errorChan
 }
 
-func (controller *coloniesController) addProcessAndSetWaitingDeadline(process *core.Process) (*core.Process, error) {
+func (controller *coloniesController) addProcessToDB(process *core.Process) (*core.Process, error) {
 	err := controller.db.AddProcess(process)
 	if err != nil {
 		return nil, err
-	}
-
-	maxWaitTime := process.ProcessSpec.MaxWaitTime
-	if maxWaitTime > 0 {
-		err := controller.db.SetWaitDeadline(process, time.Now().Add(time.Duration(maxWaitTime)*time.Second))
-		if err != nil {
-			return nil, err
-		}
 	}
 
 	addedProcess, err := controller.db.GetProcessByID(process.ID)
@@ -334,7 +332,7 @@ func (controller *coloniesController) addProcess(process *core.Process) (*core.P
 	cmd := &command{processReplyChan: make(chan *core.Process, 1),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
-			addedProcess, err := controller.addProcessAndSetWaitingDeadline(process)
+			addedProcess, err := controller.addProcessToDB(process)
 			if err != nil {
 				cmd.errorChan <- err
 				return
@@ -382,7 +380,7 @@ func (controller *coloniesController) addChild(processGraphID string, parentProc
 
 			process.Parents = []string{parentProcess.ID}
 			process.ProcessGraphID = processGraphID
-			addedProcess, err := controller.addProcessAndSetWaitingDeadline(process)
+			addedProcess, err := controller.addProcessToDB(process)
 			if err != nil {
 				cmd.errorChan <- err
 				return
@@ -666,16 +664,15 @@ func (controller *coloniesController) createProcessGraph(workflowSpec *core.Work
 	for _, process := range processMap {
 		// This function is called from the controller, so it OK to use the database layer directly, in fact
 		// we will cause a deadlock if we call controller.addProcess
-		addedProcess, err := controller.addProcessAndSetWaitingDeadline(process)
 		log.WithFields(log.Fields{"ProcessID": process.ID}).Debug("Submitting process part of processgraph")
-		if !addedProcess.WaitForParents {
-			controller.eventHandler.signal(addedProcess)
-		}
-
+		addedProcess, err := controller.addProcessToDB(process)
 		if err != nil {
 			msg := "Failed to submit workflow, failed to add process"
 			log.WithFields(log.Fields{"Error": err}).Error(msg)
 			return nil, errors.New(msg)
+		}
+		if !addedProcess.WaitForParents {
+			controller.eventHandler.signal(addedProcess)
 		}
 	}
 
@@ -925,7 +922,7 @@ func (controller *coloniesController) closeSuccessful(processID string, output [
 				err = controller.db.SetOutput(processID, output)
 			}
 
-			err = controller.db.MarkSuccessful(process)
+			err = controller.db.MarkSuccessful(processID)
 			if err != nil {
 				cmd.errorChan <- err
 				return
@@ -953,6 +950,8 @@ func (controller *coloniesController) closeSuccessful(processID string, output [
 					return
 				}
 			}
+
+			process.State = core.SUCCESS
 
 			controller.eventHandler.signal(process)
 			cmd.errorChan <- nil
@@ -992,13 +991,13 @@ func (controller *coloniesController) notifyChildren(process *core.Process) erro
 func (controller *coloniesController) closeFailed(processID string, errs []string) error {
 	cmd := &command{errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
-			process, err := controller.db.GetProcessByID(processID)
+			err := controller.db.MarkFailed(processID, errs)
 			if err != nil {
 				cmd.errorChan <- err
 				return
 			}
 
-			err = controller.db.MarkFailed(process, errs)
+			process, err := controller.db.GetProcessByID(processID)
 			if err != nil {
 				cmd.errorChan <- err
 				return
@@ -1020,6 +1019,8 @@ func (controller *coloniesController) closeFailed(processID string, errs []strin
 
 			}
 
+			process.State = core.FAILED
+
 			controller.eventHandler.signal(process)
 			cmd.errorChan <- nil
 		}}
@@ -1032,19 +1033,24 @@ func (controller *coloniesController) assign(runtimeID string, colonyID string, 
 	cmd := &command{processReplyChan: make(chan *core.Process),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
+			controller.assignMutex.Lock()
+
 			runtime, err := controller.db.GetRuntimeByID(runtimeID)
 			if err != nil {
 				cmd.errorChan <- err
+				controller.assignMutex.Unlock()
 				return
 			}
 			if runtime == nil {
 				cmd.errorChan <- errors.New("Runtime with id <" + runtimeID + "> could not be found")
+				controller.assignMutex.Unlock()
 				return
 			}
 
 			err = controller.db.MarkAlive(runtime)
 			if err != nil {
 				cmd.errorChan <- err
+				controller.assignMutex.Unlock()
 				return
 			}
 
@@ -1052,29 +1058,25 @@ func (controller *coloniesController) assign(runtimeID string, colonyID string, 
 			processes, err = controller.db.FindUnassignedProcesses(colonyID, runtimeID, runtime.RuntimeType, 10, latest)
 			if err != nil {
 				cmd.errorChan <- err
+				controller.assignMutex.Unlock()
 				return
 			}
 
 			selectedProcess, err := controller.planner.Select(runtimeID, processes, latest)
 			if err != nil {
 				cmd.errorChan <- err
+				controller.assignMutex.Unlock()
 				return
 			}
 
 			err = controller.db.AssignRuntime(runtimeID, selectedProcess)
 			if err != nil {
 				cmd.errorChan <- err
+				controller.assignMutex.Unlock()
 				return
 			}
 
-			maxExecTime := selectedProcess.ProcessSpec.MaxExecTime
-			if maxExecTime > 0 {
-				err := controller.db.SetExecDeadline(selectedProcess, time.Now().Add(time.Duration(maxExecTime)*time.Second))
-				if err != nil {
-					cmd.errorChan <- err
-					return
-				}
-			}
+			controller.assignMutex.Unlock()
 
 			if selectedProcess.ProcessGraphID != "" {
 				log.WithFields(log.Fields{"ProcessGraph": selectedProcess.ProcessGraphID}).Debug("Resolving processgraph (assigned)")
@@ -1134,14 +1136,7 @@ func (controller *coloniesController) unassignRuntime(processID string) error {
 				cmd.errorChan <- err
 				return
 			}
-			maxWaitTime := process.ProcessSpec.MaxWaitTime
-			if maxWaitTime > 0 {
-				err := controller.db.SetWaitDeadline(process, time.Now().Add(time.Duration(maxWaitTime)*time.Second))
-				if err != nil {
-					cmd.errorChan <- err
-					return
-				}
-			}
+
 			cmd.errorChan <- controller.db.UnassignRuntime(process)
 			controller.eventHandler.signal(process)
 		}}
@@ -1157,14 +1152,6 @@ func (controller *coloniesController) resetProcess(processID string) error {
 			if err != nil {
 				cmd.errorChan <- err
 				return
-			}
-			maxWaitTime := process.ProcessSpec.MaxWaitTime
-			if maxWaitTime > 0 {
-				err := controller.db.SetWaitDeadline(process, time.Now().Add(time.Duration(maxWaitTime)*time.Second))
-				if err != nil {
-					cmd.errorChan <- err
-					return
-				}
 			}
 
 			cmd.errorChan <- controller.db.ResetProcess(process)

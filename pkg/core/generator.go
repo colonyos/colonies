@@ -6,12 +6,14 @@ import (
 )
 
 type Generator struct {
-	ID           string    `json:"generatorid"`
-	ColonyID     string    `json:"colonyid"`
-	Name         string    `json:"name"`
-	WorkflowSpec string    `json:"workflowspec"`
-	Trigger      int       `json:"trigger"`
-	LastRun      time.Time `json:"lastrun"`
+	ID            string    `json:"generatorid"`
+	ColonyID      string    `json:"colonyid"`
+	Name          string    `json:"name"`
+	WorkflowSpec  string    `json:"workflowspec"`
+	Trigger       int       `json:"trigger"`
+	LastRun       time.Time `json:"lastrun"`
+	QueueSize     int       `json:"queuesize"`
+	CheckerPeriod int       `json:"checkerperiod"`
 }
 
 func CreateGenerator(colonyID string, name string, workflowSpec string, trigger int) *Generator {
@@ -85,7 +87,9 @@ func (generator *Generator) Equals(generator2 *Generator) bool {
 		generator.ColonyID != generator2.ColonyID ||
 		generator.Name != generator2.Name ||
 		generator.WorkflowSpec != generator2.WorkflowSpec ||
-		generator.Trigger != generator2.Trigger {
+		generator.Trigger != generator2.Trigger ||
+		generator.CheckerPeriod != generator2.CheckerPeriod ||
+		generator.QueueSize != generator2.QueueSize {
 		same = false
 	}
 

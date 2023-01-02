@@ -90,6 +90,13 @@ func (server *ColoniesServer) handleGetGeneratorHTTPRequest(c *gin.Context, reco
 		return
 	}
 
+	generator.CheckerPeriod = server.controller.generatorPeriod
+	queueSize, err := server.db.CountGeneratorArgs(generator.ID)
+	if server.handleHTTPError(c, err, http.StatusInternalServerError) {
+		return
+	}
+	generator.QueueSize = queueSize
+
 	jsonString, err = generator.ToJSON()
 	if server.handleHTTPError(c, err, http.StatusInternalServerError) {
 		return

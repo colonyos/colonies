@@ -52,6 +52,8 @@ func setupTestEnv1(t *testing.T) (*testEnv1, *client.ColoniesClient, *ColoniesSe
 
 	gin.SetMode(gin.ReleaseMode)
 	gin.DefaultWriter = ioutil.Discard
+	//log.SetLevel(log.DebugLevel)
+
 	client, server, serverPrvKey, done := prepareTests(t)
 
 	colony1, colony1PrvKey, err := utils.CreateTestColonyWithKey()
@@ -97,6 +99,7 @@ func setupTestEnv2(t *testing.T) (*testEnv2, *client.ColoniesClient, *ColoniesSe
 
 	gin.SetMode(gin.ReleaseMode)
 	gin.DefaultWriter = ioutil.Discard
+	//log.SetLevel(log.DebugLevel)
 	client, server, serverPrvKey, done := prepareTests(t)
 
 	colony, colonyPrvKey, err := utils.CreateTestColonyWithKey()
@@ -137,7 +140,7 @@ func prepareTests(t *testing.T) (*client.ColoniesClient, *ColoniesServer, string
 	node := cluster.Node{Name: "etcd", Host: "localhost", EtcdClientPort: 24100, EtcdPeerPort: 23100, RelayPort: 25100, APIPort: TESTPORT}
 	clusterConfig := cluster.Config{}
 	clusterConfig.AddNode(node)
-	server := CreateColoniesServer(db, TESTPORT, serverID, EnableTLS, "../../cert/key.pem", "../../cert/cert.pem", node, clusterConfig, "/tmp/colonies/etcd")
+	server := CreateColoniesServer(db, TESTPORT, serverID, EnableTLS, "../../cert/key.pem", "../../cert/cert.pem", node, clusterConfig, "/tmp/colonies/etcd", GENERATOR_TRIGGER_PERIOD, CRON_TRIGGER_PERIOD, true)
 
 	done := make(chan bool)
 	go func() {
@@ -153,14 +156,14 @@ func createTestColoniesController(db database.Database) *coloniesController {
 	node := cluster.Node{Name: "etcd", Host: "localhost", EtcdClientPort: 24100, EtcdPeerPort: 23100, RelayPort: 25100, APIPort: TESTPORT}
 	clusterConfig := cluster.Config{}
 	clusterConfig.AddNode(node)
-	return createColoniesController(db, node, clusterConfig, "/tmp/colonies/etcd")
+	return createColoniesController(db, node, clusterConfig, "/tmp/colonies/etcd", GENERATOR_TRIGGER_PERIOD, CRON_TRIGGER_PERIOD)
 }
 
 func createTestColoniesController2(db database.Database) *coloniesController {
 	node := cluster.Node{Name: "etcd2", Host: "localhost", EtcdClientPort: 26100, EtcdPeerPort: 27100, RelayPort: 28100, APIPort: TESTPORT}
 	clusterConfig := cluster.Config{}
 	clusterConfig.AddNode(node)
-	return createColoniesController(db, node, clusterConfig, "/tmp/colonies/etcd")
+	return createColoniesController(db, node, clusterConfig, "/tmp/colonies/etcd", GENERATOR_TRIGGER_PERIOD, CRON_TRIGGER_PERIOD)
 }
 
 func generateDiamondtWorkflowSpec(colonyID string) *core.WorkflowSpec {
@@ -310,7 +313,7 @@ func StartCluster(t *testing.T, db database.Database, size int) []ServerInfo {
 	for i, node := range clusterConfig.Nodes {
 		go func(i int, node cluster.Node) {
 			log.WithFields(log.Fields{"APIPort": node.APIPort}).Info("Starting ColoniesServer")
-			server := CreateColoniesServer(db, node.APIPort, serverID, false, "", "", node, clusterConfig, "/tmp/colonies/etcd"+strconv.Itoa(i))
+			server := CreateColoniesServer(db, node.APIPort, serverID, false, "", "", node, clusterConfig, "/tmp/colonies/etcd"+strconv.Itoa(i), GENERATOR_TRIGGER_PERIOD, CRON_TRIGGER_PERIOD, true)
 			done := make(chan struct{})
 			s := ServerInfo{ServerID: serverID, ServerPrvKey: serverPrvKey, Server: server, Node: node, Done: done}
 			go func(i int) {

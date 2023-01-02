@@ -129,7 +129,14 @@ func (controller *coloniesController) packGenerator(generatorID string, colonyID
 	cmd := &command{errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
 			generatorArg := core.CreateGeneratorArg(generatorID, colonyID, arg)
-			cmd.errorChan <- controller.db.AddGeneratorArg(generatorArg)
+			err := controller.db.AddGeneratorArg(generatorArg)
+			if err != nil {
+				log.WithFields(log.Fields{"Error": err}).Error("Failed add generator args")
+				cmd.errorChan <- err
+			}
+			count, err := controller.db.CountGeneratorArgs(generatorID)
+			log.WithFields(log.Fields{"Arg": arg, "Count": count, "GeneratorId": generatorID}).Debug("Added args to generator")
+			cmd.errorChan <- nil
 		}}
 
 	controller.cmdQueue <- cmd
@@ -141,7 +148,7 @@ func (controller *coloniesController) packGenerator(generatorID string, colonyID
 
 func (controller *coloniesController) generatorTriggerLoop() {
 	for {
-		time.Sleep(TIMEOUT_GENERATOR_TRIGGER_INTERVALL * time.Second)
+		time.Sleep(time.Duration(controller.generatorPeriod) * time.Millisecond)
 
 		controller.stopMutex.Lock()
 		if controller.stopFlag {
@@ -185,7 +192,21 @@ func (controller *coloniesController) submitWorkflow(generator *core.Generator) 
 
 	// Now it safe to remove the args since they are now attached to a process graph
 	for _, generatorArg := range generatorArgs {
-		controller.db.DeleteGeneratorArgByID(generatorArg.ID)
+		count, err := controller.db.CountGeneratorArgs(generator.ID)
+		log.WithFields(log.Fields{
+			"GeneratorId": generator.ID,
+			"Trigger":     generator.Trigger,
+			"Count":       count,
+			"Arg":         generatorArg.Arg}).
+			Debug("Deleting generator arg")
+
+		err = controller.db.DeleteGeneratorArgByID(generatorArg.ID)
+		if err != nil {
+			log.WithFields(log.Fields{
+				"Error": err}).
+				Error("Failed to delete generator arg")
+			return
+		}
 	}
 
 	err = controller.db.SetGeneratorLastRun(generator.ID)

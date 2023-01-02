@@ -1,7 +1,6 @@
 package server
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/colonyos/colonies/pkg/utils"
@@ -142,7 +141,6 @@ func TestAddChildSecurity(t *testing.T) {
 	assert.Nil(t, err)
 
 	parentProcessID := processGraph.Roots[0]
-	fmt.Println(parentProcessID)
 
 	childProcessSpec := utils.CreateTestProcessSpec(env.colony2ID)
 	childProcessSpec.Name = "task5"

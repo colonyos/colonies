@@ -56,6 +56,7 @@ func TestIsCronArraysEquals(t *testing.T) {
 
 func TestCronToJSON(t *testing.T) {
 	cron := CreateCron(GenerateRandomID(), "test_name1", "* * * * * *", 0, false, "workflow1")
+	cron.CheckerPeriod = 100
 	jsonStr, err := cron.ToJSON()
 	assert.Nil(t, err)
 

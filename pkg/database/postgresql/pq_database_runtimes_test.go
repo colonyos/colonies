@@ -263,7 +263,7 @@ func TestDeleteRuntimeMoveBackToQueue(t *testing.T) {
 	assert.Nil(t, err)
 	assert.True(t, count == 0)
 
-	err = db.MarkSuccessful(process4)
+	err = db.MarkSuccessful(process4.ID)
 	assert.Nil(t, err)
 
 	err = db.DeleteRuntimeByID(runtime1.ID)
@@ -368,7 +368,7 @@ func TestDeleteRuntimesMoveBackToQueue(t *testing.T) {
 	assert.Nil(t, err)
 	assert.True(t, count == 0)
 
-	err = db.MarkSuccessful(process4)
+	err = db.MarkSuccessful(process4.ID)
 	assert.Nil(t, err)
 
 	err = db.DeleteRuntimesByColonyID(colony.ID)

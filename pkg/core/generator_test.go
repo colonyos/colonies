@@ -19,6 +19,8 @@ func TestCreateGenerator(t *testing.T) {
 	assert.Nil(t, err)
 	generator := CreateGenerator(GenerateRandomID(), "test_genname", jsonStr, 10)
 	generator.ID = GenerateRandomID()
+	generator.QueueSize = 100
+	generator.CheckerPeriod = 200
 	jsonStr, err = generator.ToJSON()
 	assert.Nil(t, err)
 

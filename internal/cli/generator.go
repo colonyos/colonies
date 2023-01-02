@@ -256,6 +256,8 @@ var getGeneratorCmd = &cobra.Command{
 			[]string{"Name", generator.Name},
 			[]string{"Trigger", strconv.Itoa(generator.Trigger)},
 			[]string{"Lastrun", generator.LastRun.Format(TimeLayout)},
+			[]string{"CheckerPeriod", strconv.Itoa(generator.CheckerPeriod)},
+			[]string{"QueueSize", strconv.Itoa(generator.QueueSize)},
 		}
 		generatorTable := tablewriter.NewWriter(os.Stdout)
 		for _, v := range generatorData {
