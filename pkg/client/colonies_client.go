@@ -37,6 +37,21 @@ func CreateColoniesClient(host string, port int, insecure bool, skipTLSVerify bo
 	return client
 }
 
+func (client *ColoniesClient) SendRawMessage(jsonString string, insecure bool) (string, error) {
+	protocol := "https"
+	if client.insecure {
+		protocol = "http"
+	}
+	resp, err := client.restyClient.R().
+		SetBody(jsonString).
+		Post(protocol + "://" + client.host + ":" + strconv.Itoa(client.port) + "/api")
+	if err != nil {
+		return "", err
+	}
+
+	return string(resp.Body()), nil
+}
+
 func (client *ColoniesClient) sendMessage(method string, jsonString string, prvKey string, insecure bool) (string, error) {
 	var rpcMsg *rpc.RPCMsg
 	var err error

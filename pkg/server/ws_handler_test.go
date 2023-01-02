@@ -85,7 +85,7 @@ func TestSubscribeChangeStateProcess(t *testing.T) {
 }
 
 // Let change the order of the operations a bit, what about if the subscriber subscribes on an
-// process state change event, but that event has already occurred. Then, the subscriber would what forever.
+// process state change event, but that event has already occurred? Then, the subscriber would what forever.
 // The solution is to let the server send an event anyway if the wanted state is true already.
 //
 // Runtime 1 submits a process
