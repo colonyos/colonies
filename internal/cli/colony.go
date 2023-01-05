@@ -20,7 +20,7 @@ func init() {
 	colonyCmd.AddCommand(registerColonyCmd)
 	colonyCmd.AddCommand(unregisterColonyCmd)
 	colonyCmd.AddCommand(lsColoniesCmd)
-	colonyCmd.AddCommand(colonyStatCmd)
+	colonyCmd.AddCommand(colonyStatsCmd)
 	rootCmd.AddCommand(colonyCmd)
 
 	colonyCmd.PersistentFlags().StringVarP(&ServerHost, "host", "", DefaultServerHost, "Server host")
@@ -41,9 +41,9 @@ func init() {
 	lsColoniesCmd.Flags().StringVarP(&ServerPrvKey, "serverprvkey", "", "", "Colonies server private key")
 	lsColoniesCmd.Flags().BoolVarP(&JSON, "json", "", false, "Print JSON instead of tables")
 
-	colonyStatCmd.Flags().StringVarP(&ServerID, "serverid", "", "", "Colonies server Id")
-	colonyStatCmd.Flags().StringVarP(&ServerPrvKey, "serverprvkey", "", "", "Colonies server private key")
-	colonyStatCmd.Flags().StringVarP(&ColonyID, "colonyid", "", "", "Colony Id")
+	colonyStatsCmd.Flags().StringVarP(&ServerID, "serverid", "", "", "Colonies server Id")
+	colonyStatsCmd.Flags().StringVarP(&ServerPrvKey, "serverprvkey", "", "", "Colonies server private key")
+	colonyStatsCmd.Flags().StringVarP(&ColonyID, "colonyid", "", "", "Colony Id")
 }
 
 var colonyCmd = &cobra.Command{
@@ -198,8 +198,8 @@ var lsColoniesCmd = &cobra.Command{
 	},
 }
 
-var colonyStatCmd = &cobra.Command{
-	Use:   "stat",
+var colonyStatsCmd = &cobra.Command{
+	Use:   "stats",
 	Short: "Show statistics about a colony",
 	Long:  "Show statistics about a colony",
 	Run: func(cmd *cobra.Command, args []string) {
