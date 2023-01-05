@@ -7,10 +7,11 @@
 Colonies is a **Process Orchestration** framework for managing AI/ML workloads across heterogeneous computing platforms. 
 
 ## Key features
-* Colonies makes it possible to implement a *loosely decoupled* workflow architecture spanning many platforms and infrastructures. All coordination is managed by Colonies servers and developers can focus on implementing Colonies workers based on a **Function-as-a-Service (FaaS)** event-driven execution model. Complex workflows are automatically broken down into events (process assignments) that is received by the workers. The system can then easily scale just by deploying more workers. Failed processes are automatically re-assigned to other workers. 
-* Colonies function a distributed ledger and contains full execution history. Traceability allows developers to keep track of the system and more easily debug their services.  
+* Colonies makes it possible to implement a **loosely decoupled** workflow architecture spanning many platforms and infrastructures. All coordination is managed by Colonies servers and developers can focus on implementing Colonies workers based on a **Function-as-a-Service (FaaS)** event-driven execution model. 
+* Complex workflows are automatically broken down into events (process assignments) that is received by the workers. The system can then easily scale just by deploying more workers. Failed processes are automatically re-assigned to other workers. 
+* Colonies function a **distributed ledger** and contains full execution history. Traceability allows developers to keep track of the system and more easily debug their services.  
 * Colonies integrates well with Kubernetes and offers a more powerful alternative than traditional message-broker worker queues, e.g RabbitMQ worker queues.   
-* Colonies provides functionality to establish trusted distributed computing environments and is a building block for a [Meta-Operating System](https://en.wikipedia.org/wiki/Meta-system"), an overlay built on top of existing operating systems and platforms to create *compute continuums spanning devices, webapps, clouds, and edge and HPC platforms*.
+* Colonies provides functionality to establish **trusted distributed computing environments** and is a building block for a [Meta-Operating System](https://en.wikipedia.org/wiki/Meta-system"), an overlay built on top of existing operating systems and platforms to create *compute continuums spanning devices, webapps, clouds, and edge and HPC platforms*.
 
 ## Design
 The core idea of Colonies is to split up complex workloads in two layers, a **Meta-layer** and an **Execution-layer**.
