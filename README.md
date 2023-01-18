@@ -4,7 +4,7 @@
 ![ColonyOSLogo](docs/images/ColonyOsLogoNoShaddow2.png)
 
 # What is Colonies?
-Colonies is a **Process Orchestration** framework for managing AI/ML workloads across heterogeneous computing platforms. 
+Colonies is a **distributed serverless FaaS framework** for process orchestration and managing AI/ML workloads across heterogeneous computing platforms such public clouds, edge servers as well as web apps or IoT devices.
 
 ## Key features
 * Colonies makes it possible to implement a **loosely decoupled** workflow architecture spanning many platforms and infrastructures. All coordination is managed by Colonies servers and developers can focus on implementing Colonies workers based on a **Function-as-a-Service (FaaS)** event-driven execution model. 
