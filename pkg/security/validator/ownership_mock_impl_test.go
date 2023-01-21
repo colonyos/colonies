@@ -21,46 +21,46 @@ func TestCheckIfColonyExistsMock(t *testing.T) {
 	assert.Nil(t, err)
 }
 
-func TestCheckIfRuntimeBelongsToColonyMock(t *testing.T) {
+func TestCheckIfExecutorBelongsToColonyMock(t *testing.T) {
 	ownership := createOwnershipMock()
 
 	colony := core.CreateColony(core.GenerateRandomID(), "test_colony_name_1")
 	ownership.addColony(colony.ID)
 
-	runtime := utils.CreateTestRuntime(colony.ID)
-	ownership.addRuntime(runtime.ID, colony.ID)
+	executor := utils.CreateTestExecutor(colony.ID)
+	ownership.addExecutor(executor.ID, colony.ID)
 
-	assert.Nil(t, ownership.checkIfRuntimeBelongsToColony(runtime.ID, colony.ID))
-	assert.NotNil(t, ownership.checkIfRuntimeBelongsToColony(core.GenerateRandomID(), colony.ID))
-	assert.NotNil(t, ownership.checkIfRuntimeBelongsToColony(runtime.ID, core.GenerateRandomID()))
-	assert.NotNil(t, ownership.checkIfRuntimeBelongsToColony(core.GenerateRandomID(), core.GenerateRandomID()))
+	assert.Nil(t, ownership.checkIfExecutorBelongsToColony(executor.ID, colony.ID))
+	assert.NotNil(t, ownership.checkIfExecutorBelongsToColony(core.GenerateRandomID(), colony.ID))
+	assert.NotNil(t, ownership.checkIfExecutorBelongsToColony(executor.ID, core.GenerateRandomID()))
+	assert.NotNil(t, ownership.checkIfExecutorBelongsToColony(core.GenerateRandomID(), core.GenerateRandomID()))
 }
 
-func TestCheckIfRuntimeIsValidMock(t *testing.T) {
+func TestCheckIfExecutorIsValidMock(t *testing.T) {
 	ownership := createOwnershipMock()
 
 	colony := core.CreateColony(core.GenerateRandomID(), "test_colony_name_1")
 	ownership.addColony(colony.ID)
 
-	runtime := utils.CreateTestRuntime(colony.ID)
-	ownership.addRuntime(runtime.ID, colony.ID)
+	executor := utils.CreateTestExecutor(colony.ID)
+	ownership.addExecutor(executor.ID, colony.ID)
 
-	approvedRuntime := utils.CreateTestRuntime(colony.ID)
-	ownership.addRuntime(approvedRuntime.ID, colony.ID)
-	ownership.approveRuntime(approvedRuntime.ID, colony.ID)
+	approvedExecutor := utils.CreateTestExecutor(colony.ID)
+	ownership.addExecutor(approvedExecutor.ID, colony.ID)
+	ownership.approveExecutor(approvedExecutor.ID, colony.ID)
 
-	err := ownership.checkIfRuntimeIsValid(runtime.ID, colony.ID, false)
+	err := ownership.checkIfExecutorIsValid(executor.ID, colony.ID, false)
 	assert.Nil(t, err)
-	err = ownership.checkIfRuntimeIsValid(runtime.ID, colony.ID, true)
+	err = ownership.checkIfExecutorIsValid(executor.ID, colony.ID, true)
 	assert.NotNil(t, err)
-	err = ownership.checkIfRuntimeIsValid(core.GenerateRandomID(), colony.ID, true)
+	err = ownership.checkIfExecutorIsValid(core.GenerateRandomID(), colony.ID, true)
 	assert.NotNil(t, err)
-	err = ownership.checkIfRuntimeIsValid(runtime.ID, core.GenerateRandomID(), true)
+	err = ownership.checkIfExecutorIsValid(executor.ID, core.GenerateRandomID(), true)
 	assert.NotNil(t, err)
-	err = ownership.checkIfRuntimeIsValid(core.GenerateRandomID(), core.GenerateRandomID(), true)
+	err = ownership.checkIfExecutorIsValid(core.GenerateRandomID(), core.GenerateRandomID(), true)
 	assert.NotNil(t, err)
-	err = ownership.checkIfRuntimeIsValid(approvedRuntime.ID, colony.ID, true)
+	err = ownership.checkIfExecutorIsValid(approvedExecutor.ID, colony.ID, true)
 	assert.Nil(t, err)
-	err = ownership.checkIfRuntimeIsValid(approvedRuntime.ID, colony.ID, false)
+	err = ownership.checkIfExecutorIsValid(approvedExecutor.ID, colony.ID, false)
 	assert.Nil(t, err)
 }

@@ -109,7 +109,7 @@ func (server *MonitoringServer) registerGauges() {
 					Error("Failed to fetch Colonies server statistics (stat is nil)")
 				return -1.0
 			}
-			return float64(server.stat.Runtimes)
+			return float64(server.stat.Executors)
 		},
 	)); err != nil {
 		log.WithFields(log.Fields{"Error": err}).Error("Failed to register Prometheus metrics")

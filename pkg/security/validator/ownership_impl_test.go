@@ -29,7 +29,7 @@ func TestCheckIfColonyExists(t *testing.T) {
 	defer db.Close()
 }
 
-func TestCheckIfRuntimeIsValid(t *testing.T) {
+func TestCheckIfExecutorIsValid(t *testing.T) {
 	db, err := postgresql.PrepareTests()
 	assert.Nil(t, err)
 
@@ -40,29 +40,29 @@ func TestCheckIfRuntimeIsValid(t *testing.T) {
 	err = db.AddColony(colony)
 	assert.Nil(t, err)
 
-	runtime := utils.CreateTestRuntime(colony.ID)
-	err = db.AddRuntime(runtime)
+	executor := utils.CreateTestExecutor(colony.ID)
+	err = db.AddExecutor(executor)
 	assert.Nil(t, err)
 
-	approvedRuntime := utils.CreateTestRuntime(colony.ID)
-	err = db.AddRuntime(approvedRuntime)
+	approvedExecutor := utils.CreateTestExecutor(colony.ID)
+	err = db.AddExecutor(approvedExecutor)
 	assert.Nil(t, err)
-	err = db.ApproveRuntime(approvedRuntime)
+	err = db.ApproveExecutor(approvedExecutor)
 	assert.Nil(t, err)
 
-	err = ownership.checkIfRuntimeIsValid(runtime.ID, colony.ID, false)
+	err = ownership.checkIfExecutorIsValid(executor.ID, colony.ID, false)
 	assert.Nil(t, err)
-	err = ownership.checkIfRuntimeIsValid(runtime.ID, colony.ID, true)
+	err = ownership.checkIfExecutorIsValid(executor.ID, colony.ID, true)
 	assert.NotNil(t, err)
-	err = ownership.checkIfRuntimeIsValid(core.GenerateRandomID(), colony.ID, true)
+	err = ownership.checkIfExecutorIsValid(core.GenerateRandomID(), colony.ID, true)
 	assert.NotNil(t, err)
-	err = ownership.checkIfRuntimeIsValid(runtime.ID, core.GenerateRandomID(), true)
+	err = ownership.checkIfExecutorIsValid(executor.ID, core.GenerateRandomID(), true)
 	assert.NotNil(t, err)
-	err = ownership.checkIfRuntimeIsValid(core.GenerateRandomID(), core.GenerateRandomID(), true)
+	err = ownership.checkIfExecutorIsValid(core.GenerateRandomID(), core.GenerateRandomID(), true)
 	assert.NotNil(t, err)
-	err = ownership.checkIfRuntimeIsValid(approvedRuntime.ID, colony.ID, true)
+	err = ownership.checkIfExecutorIsValid(approvedExecutor.ID, colony.ID, true)
 	assert.Nil(t, err)
-	err = ownership.checkIfRuntimeIsValid(approvedRuntime.ID, colony.ID, false)
+	err = ownership.checkIfExecutorIsValid(approvedExecutor.ID, colony.ID, false)
 	assert.Nil(t, err)
 
 	defer db.Close()

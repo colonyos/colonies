@@ -16,17 +16,17 @@ func TestAddProcess(t *testing.T) {
 	defer db.Close()
 
 	colonyID := core.GenerateRandomID()
-	runtime1ID := core.GenerateRandomID()
-	runtime2ID := core.GenerateRandomID()
+	executor1ID := core.GenerateRandomID()
+	executor2ID := core.GenerateRandomID()
 
-	process := utils.CreateTestProcessWithTargets(colonyID, []string{runtime1ID, runtime2ID})
+	process := utils.CreateTestProcessWithTargets(colonyID, []string{executor1ID, executor2ID})
 	err = db.AddProcess(process)
 	assert.Nil(t, err)
 
 	processFromDB, err := db.GetProcessByID(process.ID)
 	assert.Nil(t, err)
-	assert.Contains(t, processFromDB.ProcessSpec.Conditions.RuntimeIDs, runtime1ID)
-	assert.Contains(t, processFromDB.ProcessSpec.Conditions.RuntimeIDs, runtime2ID)
+	assert.Contains(t, processFromDB.ProcessSpec.Conditions.ExecutorIDs, executor1ID)
+	assert.Contains(t, processFromDB.ProcessSpec.Conditions.ExecutorIDs, executor2ID)
 }
 
 func TestAddProcessWithEnv(t *testing.T) {
@@ -55,18 +55,18 @@ func TestDeleteProcesses(t *testing.T) {
 	defer db.Close()
 
 	colonyID := core.GenerateRandomID()
-	runtime1ID := core.GenerateRandomID()
-	runtime2ID := core.GenerateRandomID()
+	executor1ID := core.GenerateRandomID()
+	executor2ID := core.GenerateRandomID()
 
-	process1 := utils.CreateTestProcessWithTargets(colonyID, []string{runtime1ID, runtime2ID})
+	process1 := utils.CreateTestProcessWithTargets(colonyID, []string{executor1ID, executor2ID})
 	err = db.AddProcess(process1)
 	assert.Nil(t, err)
 
-	process2 := utils.CreateTestProcessWithTargets(colonyID, []string{runtime1ID, runtime2ID})
+	process2 := utils.CreateTestProcessWithTargets(colonyID, []string{executor1ID, executor2ID})
 	err = db.AddProcess(process2)
 	assert.Nil(t, err)
 
-	process3 := utils.CreateTestProcessWithTargets(colonyID, []string{runtime1ID, runtime2ID})
+	process3 := utils.CreateTestProcessWithTargets(colonyID, []string{executor1ID, executor2ID})
 	err = db.AddProcess(process3)
 	assert.Nil(t, err)
 
@@ -307,8 +307,8 @@ func TestAssign(t *testing.T) {
 
 	colony := core.CreateColony(core.GenerateRandomID(), "test_colony_name")
 
-	runtime := utils.CreateTestRuntime(colony.ID)
-	err = db.AddRuntime(runtime)
+	executor := utils.CreateTestExecutor(colony.ID)
+	err = db.AddExecutor(executor)
 	assert.Nil(t, err)
 
 	process := utils.CreateTestProcess(colony.ID)
@@ -321,10 +321,10 @@ func TestAssign(t *testing.T) {
 	assert.Equal(t, core.WAITING, processFromDB.State)
 	assert.False(t, processFromDB.IsAssigned)
 
-	err = db.AssignRuntime(runtime.ID, process)
+	err = db.Assign(executor.ID, process)
 	assert.Nil(t, err)
 
-	err = db.AssignRuntime(runtime.ID, process)
+	err = db.Assign(executor.ID, process)
 	assert.NotNil(t, err) // Should not work, already assigned
 
 	processFromDB, err = db.GetProcessByID(process.ID)
@@ -334,7 +334,7 @@ func TestAssign(t *testing.T) {
 	assert.False(t, int64(processFromDB.StartTime.Sub(processFromDB.SubmissionTime)) < 0)
 	assert.Equal(t, core.RUNNING, processFromDB.State)
 
-	err = db.UnassignRuntime(process)
+	err = db.Unassign(process)
 	assert.Nil(t, err)
 
 	processFromDB, err = db.GetProcessByID(process.ID)
@@ -351,8 +351,8 @@ func TestMarkSuccessful(t *testing.T) {
 
 	colony := core.CreateColony(core.GenerateRandomID(), "test_colony_name")
 
-	runtime := utils.CreateTestRuntime(colony.ID)
-	err = db.AddRuntime(runtime)
+	executor := utils.CreateTestExecutor(colony.ID)
+	err = db.AddExecutor(executor)
 	assert.Nil(t, err)
 
 	process := utils.CreateTestProcess(colony.ID)
@@ -364,7 +364,7 @@ func TestMarkSuccessful(t *testing.T) {
 	err = db.MarkSuccessful(process.ID)
 	assert.NotNil(t, err) // Not possible to set waiting process to successfull
 
-	err = db.AssignRuntime(runtime.ID, process)
+	err = db.Assign(executor.ID, process)
 	assert.Nil(t, err)
 
 	processFromDB, err := db.GetProcessByID(process.ID)
@@ -392,8 +392,8 @@ func TestMarkFailed(t *testing.T) {
 
 	colony := core.CreateColony(core.GenerateRandomID(), "test_colony_name")
 
-	runtime := utils.CreateTestRuntime(colony.ID)
-	err = db.AddRuntime(runtime)
+	executor := utils.CreateTestExecutor(colony.ID)
+	err = db.AddExecutor(executor)
 	assert.Nil(t, err)
 
 	process := utils.CreateTestProcess(colony.ID)
@@ -402,7 +402,7 @@ func TestMarkFailed(t *testing.T) {
 
 	assert.Equal(t, core.WAITING, process.State)
 
-	err = db.AssignRuntime(runtime.ID, process)
+	err = db.Assign(executor.ID, process)
 	assert.Nil(t, err)
 
 	processFromDB, err := db.GetProcessByID(process.ID)
@@ -430,14 +430,14 @@ func TestReset(t *testing.T) {
 
 	colony := core.CreateColony(core.GenerateRandomID(), "test_colony_name")
 
-	runtime := utils.CreateTestRuntime(colony.ID)
-	err = db.AddRuntime(runtime)
+	executor := utils.CreateTestExecutor(colony.ID)
+	err = db.AddExecutor(executor)
 	assert.Nil(t, err)
 
 	process := utils.CreateTestProcess(colony.ID)
 	err = db.AddProcess(process)
 	assert.Nil(t, err)
-	err = db.AssignRuntime(runtime.ID, process)
+	err = db.Assign(executor.ID, process)
 	assert.Nil(t, err)
 	err = db.MarkFailed(process.ID, []string{"error"})
 	assert.Nil(t, err)
@@ -445,7 +445,7 @@ func TestReset(t *testing.T) {
 	process = utils.CreateTestProcess(colony.ID)
 	err = db.AddProcess(process)
 	assert.Nil(t, err)
-	err = db.AssignRuntime(runtime.ID, process)
+	err = db.Assign(executor.ID, process)
 	assert.Nil(t, err)
 	err = db.MarkFailed(process.ID, []string{"error"})
 	assert.Nil(t, err)
@@ -453,7 +453,7 @@ func TestReset(t *testing.T) {
 	process = utils.CreateTestProcess(colony.ID)
 	err = db.AddProcess(process)
 	assert.Nil(t, err)
-	err = db.AssignRuntime(runtime.ID, process)
+	err = db.Assign(executor.ID, process)
 	assert.Nil(t, err)
 	err = db.MarkFailed(process.ID, []string{"error"})
 	assert.Nil(t, err)
@@ -706,8 +706,8 @@ func TestFindUnassignedProcesses1(t *testing.T) {
 	err = db.AddColony(colony)
 	assert.Nil(t, err)
 
-	runtime := utils.CreateTestRuntime(colony.ID)
-	err = db.AddRuntime(runtime)
+	executor := utils.CreateTestExecutor(colony.ID)
+	err = db.AddExecutor(executor)
 	assert.Nil(t, err)
 
 	process1 := utils.CreateTestProcess(colony.ID)
@@ -719,7 +719,7 @@ func TestFindUnassignedProcesses1(t *testing.T) {
 	err = db.AddProcess(process2)
 	assert.Nil(t, err)
 
-	processsFromDB, err := db.FindUnassignedProcesses(colony.ID, runtime.ID, runtime.RuntimeType, 100, false)
+	processsFromDB, err := db.FindUnassignedProcesses(colony.ID, executor.ID, executor.Type, 100, false)
 	assert.Nil(t, err)
 	assert.Len(t, processsFromDB, 1)
 }
@@ -734,12 +734,12 @@ func TestFindUnassignedProcesses2(t *testing.T) {
 	err = db.AddColony(colony)
 	assert.Nil(t, err)
 
-	runtime1 := utils.CreateTestRuntime(colony.ID)
-	err = db.AddRuntime(runtime1)
+	executor1 := utils.CreateTestExecutor(colony.ID)
+	err = db.AddExecutor(executor1)
 	assert.Nil(t, err)
 
-	runtime2 := utils.CreateTestRuntime(colony.ID)
-	err = db.AddRuntime(runtime2)
+	executor2 := utils.CreateTestExecutor(colony.ID)
+	err = db.AddExecutor(executor2)
 	assert.Nil(t, err)
 
 	process1 := utils.CreateTestProcess(colony.ID)
@@ -748,17 +748,17 @@ func TestFindUnassignedProcesses2(t *testing.T) {
 
 	time.Sleep(50 * time.Millisecond)
 
-	process2 := utils.CreateTestProcessWithTargets(colony.ID, []string{runtime2.ID})
+	process2 := utils.CreateTestProcessWithTargets(colony.ID, []string{executor2.ID})
 	err = db.AddProcess(process2)
 	assert.Nil(t, err)
 
-	process3 := utils.CreateTestProcessWithTargets(colony.ID, []string{runtime2.ID})
+	process3 := utils.CreateTestProcessWithTargets(colony.ID, []string{executor2.ID})
 	err = db.AddProcess(process3)
 	assert.Nil(t, err)
 
 	time.Sleep(50 * time.Millisecond)
 
-	processsFromDB, err := db.FindUnassignedProcesses(colony.ID, runtime2.ID, runtime2.RuntimeType, 2, false)
+	processsFromDB, err := db.FindUnassignedProcesses(colony.ID, executor2.ID, executor2.Type, 2, false)
 	assert.Nil(t, err)
 	assert.Len(t, processsFromDB, 2)
 
@@ -776,7 +776,7 @@ func TestFindUnassignedProcesses2(t *testing.T) {
 	assert.Equal(t, 2, counter)
 }
 
-// Test that the order of targetRuntimeIDs strings does not matter
+// Test that the order of targetExecutorIDs strings does not matter
 func TestFindUnassignedProcesses3(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
@@ -788,37 +788,37 @@ func TestFindUnassignedProcesses3(t *testing.T) {
 	err = db.AddColony(colony)
 	assert.Nil(t, err)
 
-	runtime1 := utils.CreateTestRuntime(colony.ID)
-	err = db.AddRuntime(runtime1)
+	executor1 := utils.CreateTestExecutor(colony.ID)
+	err = db.AddExecutor(executor1)
 	assert.Nil(t, err)
 
-	runtime2 := utils.CreateTestRuntime(colony.ID)
-	err = db.AddRuntime(runtime2)
+	executor2 := utils.CreateTestExecutor(colony.ID)
+	err = db.AddExecutor(executor2)
 	assert.Nil(t, err)
 
-	process1 := utils.CreateTestProcessWithTargets(colony.ID, []string{runtime1.ID, runtime2.ID})
+	process1 := utils.CreateTestProcessWithTargets(colony.ID, []string{executor1.ID, executor2.ID})
 	err = db.AddProcess(process1)
 	assert.Nil(t, err)
 
 	time.Sleep(50 * time.Millisecond)
 
-	process2 := utils.CreateTestProcessWithTargets(colony.ID, []string{runtime1.ID, runtime2.ID})
+	process2 := utils.CreateTestProcessWithTargets(colony.ID, []string{executor1.ID, executor2.ID})
 	err = db.AddProcess(process2)
 	assert.Nil(t, err)
 
-	processsFromDB, err := db.FindUnassignedProcesses(colony.ID, runtime1.ID, runtime1.RuntimeType, 1, false)
+	processsFromDB, err := db.FindUnassignedProcesses(colony.ID, executor1.ID, executor1.Type, 1, false)
 	assert.Nil(t, err)
 
 	assert.Len(t, processsFromDB, 1)
 	assert.Equal(t, process1.ID, processsFromDB[0].ID)
 
-	processsFromDB, err = db.FindUnassignedProcesses(colony.ID, runtime2.ID, runtime2.RuntimeType, 1, false)
+	processsFromDB, err = db.FindUnassignedProcesses(colony.ID, executor2.ID, executor2.Type, 1, false)
 	assert.Nil(t, err)
 	assert.Len(t, processsFromDB, 1)
 	assert.Equal(t, process1.ID, processsFromDB[0].ID)
 }
 
-// Test that runtime type matching is working
+// Test that executor type matching is working
 func TestFindUnassignedProcesses4(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
@@ -830,30 +830,30 @@ func TestFindUnassignedProcesses4(t *testing.T) {
 	err = db.AddColony(colony)
 	assert.Nil(t, err)
 
-	runtime1 := utils.CreateTestRuntimeWithType(colony.ID, "test_runtime_type_1")
-	err = db.AddRuntime(runtime1)
+	executor1 := utils.CreateTestExecutorWithType(colony.ID, "test_executor_type_1")
+	err = db.AddExecutor(executor1)
 	assert.Nil(t, err)
 
-	runtime2 := utils.CreateTestRuntimeWithType(colony.ID, "test_runtime_type_2")
-	err = db.AddRuntime(runtime2)
+	executor2 := utils.CreateTestExecutorWithType(colony.ID, "test_executor_type_2")
+	err = db.AddExecutor(executor2)
 	assert.Nil(t, err)
 
-	process1 := utils.CreateTestProcessWithType(colony.ID, "test_runtime_type_1")
+	process1 := utils.CreateTestProcessWithType(colony.ID, "test_executor_type_1")
 	err = db.AddProcess(process1)
 	assert.Nil(t, err)
 
 	time.Sleep(50 * time.Millisecond)
 
-	process2 := utils.CreateTestProcessWithType(colony.ID, "test_runtime_type_2")
+	process2 := utils.CreateTestProcessWithType(colony.ID, "test_executor_type_2")
 	err = db.AddProcess(process2)
 	assert.Nil(t, err)
 
-	processsFromDB, err := db.FindUnassignedProcesses(colony.ID, runtime1.ID, runtime1.RuntimeType, 1, false)
+	processsFromDB, err := db.FindUnassignedProcesses(colony.ID, executor1.ID, executor1.Type, 1, false)
 	assert.Nil(t, err)
 	assert.Len(t, processsFromDB, 1)
 	assert.Equal(t, process1.ID, processsFromDB[0].ID)
 
-	processsFromDB, err = db.FindUnassignedProcesses(colony.ID, runtime2.ID, runtime2.RuntimeType, 1, false)
+	processsFromDB, err = db.FindUnassignedProcesses(colony.ID, executor2.ID, executor2.Type, 1, false)
 	assert.Nil(t, err)
 	assert.Len(t, processsFromDB, 1)
 	assert.Equal(t, process2.ID, processsFromDB[0].ID)
@@ -869,8 +869,8 @@ func TestFindUnassignedProcessesOldest(t *testing.T) {
 	err = db.AddColony(colony)
 	assert.Nil(t, err)
 
-	runtime := utils.CreateTestRuntime(colony.ID)
-	err = db.AddRuntime(runtime)
+	executor := utils.CreateTestExecutor(colony.ID)
+	err = db.AddExecutor(executor)
 	assert.Nil(t, err)
 
 	process1 := utils.CreateTestProcess(colony.ID)
@@ -882,7 +882,7 @@ func TestFindUnassignedProcessesOldest(t *testing.T) {
 	err = db.AddProcess(process2)
 	assert.Nil(t, err)
 
-	processsFromDB, err := db.FindUnassignedProcesses(colony.ID, runtime.ID, runtime.RuntimeType, 100, false)
+	processsFromDB, err := db.FindUnassignedProcesses(colony.ID, executor.ID, executor.Type, 100, false)
 	assert.Nil(t, err)
 	assert.Len(t, processsFromDB, 1)
 	assert.Equal(t, processsFromDB[0].ID, process1.ID)
@@ -898,8 +898,8 @@ func TestFindUnassignedProcessesLatest(t *testing.T) {
 	err = db.AddColony(colony)
 	assert.Nil(t, err)
 
-	runtime := utils.CreateTestRuntime(colony.ID)
-	err = db.AddRuntime(runtime)
+	executor := utils.CreateTestExecutor(colony.ID)
+	err = db.AddExecutor(executor)
 	assert.Nil(t, err)
 
 	process1 := utils.CreateTestProcess(colony.ID)
@@ -910,7 +910,7 @@ func TestFindUnassignedProcessesLatest(t *testing.T) {
 	err = db.AddProcess(process2)
 	assert.Nil(t, err)
 
-	processsFromDB, err := db.FindUnassignedProcesses(colony.ID, runtime.ID, runtime.RuntimeType, 1, true)
+	processsFromDB, err := db.FindUnassignedProcesses(colony.ID, executor.ID, executor.Type, 1, true)
 	assert.Nil(t, err)
 	assert.Equal(t, processsFromDB[0].ID, process2.ID)
 }
@@ -925,8 +925,8 @@ func TestFindProcessAssigned(t *testing.T) {
 	err = db.AddColony(colony)
 	assert.Nil(t, err)
 
-	runtime := utils.CreateTestRuntime(colony.ID)
-	err = db.AddRuntime(runtime)
+	executor := utils.CreateTestExecutor(colony.ID)
+	err = db.AddExecutor(executor)
 	assert.Nil(t, err)
 
 	process1 := utils.CreateTestProcess(colony.ID)
@@ -955,23 +955,23 @@ func TestFindProcessAssigned(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, 0, numberOfFailedProcesses)
 
-	processsFromDB1, err := db.FindUnassignedProcesses(colony.ID, runtime.ID, runtime.RuntimeType, 1, false)
+	processsFromDB1, err := db.FindUnassignedProcesses(colony.ID, executor.ID, executor.Type, 1, false)
 	assert.Nil(t, err)
 	assert.Equal(t, process1.ID, processsFromDB1[0].ID)
 	assert.Len(t, processsFromDB1, 1)
 
-	err = db.AssignRuntime(runtime.ID, processsFromDB1[0])
+	err = db.Assign(executor.ID, processsFromDB1[0])
 	assert.Nil(t, err)
 
 	numberOfRunningProcesses, err = db.CountRunningProcesses()
 	assert.Nil(t, err)
 	assert.Equal(t, 1, numberOfRunningProcesses)
 
-	processsFromDB2, err := db.FindUnassignedProcesses(colony.ID, runtime.ID, runtime.RuntimeType, 1, false)
+	processsFromDB2, err := db.FindUnassignedProcesses(colony.ID, executor.ID, executor.Type, 1, false)
 	assert.Nil(t, err)
 	assert.Equal(t, process2.ID, processsFromDB2[0].ID)
 
-	err = db.AssignRuntime(runtime.ID, processsFromDB2[0])
+	err = db.Assign(executor.ID, processsFromDB2[0])
 	assert.Nil(t, err)
 
 	numberOfRunningProcesses, err = db.CountRunningProcesses()
@@ -1003,8 +1003,8 @@ func TestFindWaitingProcesses(t *testing.T) {
 	err = db.AddColony(colony)
 	assert.Nil(t, err)
 
-	runtime := utils.CreateTestRuntime(colony.ID)
-	err = db.AddRuntime(runtime)
+	executor := utils.CreateTestExecutor(colony.ID)
+	err = db.AddExecutor(executor)
 	assert.Nil(t, err)
 
 	// Create some waiting/unassigned processes
@@ -1024,7 +1024,7 @@ func TestFindWaitingProcesses(t *testing.T) {
 		process := utils.CreateTestProcess(colony.ID)
 		err = db.AddProcess(process)
 		assert.Nil(t, err)
-		err = db.AssignRuntime(runtime.ID, process)
+		err = db.Assign(executor.ID, process)
 		assert.Nil(t, err)
 		runningProcessIDs[process.ID] = true
 	}
@@ -1037,7 +1037,7 @@ func TestFindWaitingProcesses(t *testing.T) {
 		process := utils.CreateTestProcess(colony.ID)
 		err = db.AddProcess(process)
 		assert.Nil(t, err)
-		err = db.AssignRuntime(runtime.ID, process)
+		err = db.Assign(executor.ID, process)
 		assert.Nil(t, err)
 		err = db.MarkSuccessful(process.ID)
 		assert.Nil(t, err)
@@ -1052,7 +1052,7 @@ func TestFindWaitingProcesses(t *testing.T) {
 		process := utils.CreateTestProcess(colony.ID)
 		err = db.AddProcess(process)
 		assert.Nil(t, err)
-		err = db.AssignRuntime(runtime.ID, process)
+		err = db.Assign(executor.ID, process)
 		assert.Nil(t, err)
 		err = db.MarkFailed(process.ID, []string{"error"})
 		assert.Nil(t, err)
@@ -1129,12 +1129,12 @@ func TestFindAllProcesses(t *testing.T) {
 	err = db.AddColony(colony2)
 	assert.Nil(t, err)
 
-	runtime1 := utils.CreateTestRuntime(colony1.ID)
-	err = db.AddRuntime(runtime1)
+	executor1 := utils.CreateTestExecutor(colony1.ID)
+	err = db.AddExecutor(executor1)
 	assert.Nil(t, err)
 
-	runtime2 := utils.CreateTestRuntime(colony2.ID)
-	err = db.AddRuntime(runtime2)
+	executor2 := utils.CreateTestExecutor(colony2.ID)
+	err = db.AddExecutor(executor2)
 	assert.Nil(t, err)
 
 	// Create some waiting/unassigned processes
@@ -1154,14 +1154,14 @@ func TestFindAllProcesses(t *testing.T) {
 		process := utils.CreateTestProcess(colony1.ID)
 		err = db.AddProcess(process)
 		assert.Nil(t, err)
-		err = db.AssignRuntime(runtime1.ID, process)
+		err = db.Assign(executor1.ID, process)
 		assert.Nil(t, err)
 	}
 	for i := 0; i < 5; i++ {
 		process := utils.CreateTestProcess(colony2.ID)
 		err = db.AddProcess(process)
 		assert.Nil(t, err)
-		err = db.AssignRuntime(runtime2.ID, process)
+		err = db.Assign(executor2.ID, process)
 		assert.Nil(t, err)
 	}
 
@@ -1174,7 +1174,7 @@ func TestFindAllProcesses(t *testing.T) {
 	assert.Equal(t, len(waitingProcessIDsFromDB), 20)
 }
 
-func TestFindProcessesByRuntimeID(t *testing.T) {
+func TestFindProcessesByExecutorID(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
 
@@ -1188,12 +1188,12 @@ func TestFindProcessesByRuntimeID(t *testing.T) {
 	err = db.AddColony(colony2)
 	assert.Nil(t, err)
 
-	runtime1 := utils.CreateTestRuntime(colony1.ID)
-	err = db.AddRuntime(runtime1)
+	executor1 := utils.CreateTestExecutor(colony1.ID)
+	err = db.AddExecutor(executor1)
 	assert.Nil(t, err)
 
-	runtime2 := utils.CreateTestRuntime(colony2.ID)
-	err = db.AddRuntime(runtime2)
+	executor2 := utils.CreateTestExecutor(colony2.ID)
+	err = db.AddExecutor(executor2)
 	assert.Nil(t, err)
 
 	// Create some waiting/unassigned processes
@@ -1213,7 +1213,7 @@ func TestFindProcessesByRuntimeID(t *testing.T) {
 		process := utils.CreateTestProcess(colony1.ID)
 		err = db.AddProcess(process)
 		assert.Nil(t, err)
-		err = db.AssignRuntime(runtime1.ID, process)
+		err = db.Assign(executor1.ID, process)
 		assert.Nil(t, err)
 		err = db.MarkSuccessful(process.ID)
 		assert.Nil(t, err)
@@ -1222,7 +1222,7 @@ func TestFindProcessesByRuntimeID(t *testing.T) {
 		process := utils.CreateTestProcess(colony2.ID)
 		err = db.AddProcess(process)
 		assert.Nil(t, err)
-		err = db.AssignRuntime(runtime2.ID, process)
+		err = db.Assign(executor2.ID, process)
 		assert.Nil(t, err)
 		err = db.MarkSuccessful(process.ID)
 		assert.Nil(t, err)
@@ -1233,20 +1233,20 @@ func TestFindProcessesByRuntimeID(t *testing.T) {
 	process := utils.CreateTestProcess(colony1.ID)
 	err = db.AddProcess(process)
 	assert.Nil(t, err)
-	err = db.AssignRuntime(runtime1.ID, process)
+	err = db.Assign(executor1.ID, process)
 	assert.Nil(t, err)
 	err = db.MarkSuccessful(process.ID)
 	assert.Nil(t, err)
 
-	processesFromDB, err := db.FindProcessesByRuntimeID(colony1.ID, runtime1.ID, 60, core.SUCCESS) // last 60 seconds
+	processesFromDB, err := db.FindProcessesByExecutorID(colony1.ID, executor1.ID, 60, core.SUCCESS) // last 60 seconds
 	assert.Nil(t, err)
 	assert.Equal(t, len(processesFromDB), 11)
 
-	processesFromDB, err = db.FindProcessesByRuntimeID(colony1.ID, runtime1.ID, 1, core.SUCCESS) // last second
+	processesFromDB, err = db.FindProcessesByExecutorID(colony1.ID, executor1.ID, 1, core.SUCCESS) // last second
 	assert.Nil(t, err)
 	assert.Equal(t, len(processesFromDB), 1)
 
-	processesFromDB, err = db.FindProcessesByRuntimeID(colony2.ID, runtime2.ID, 60, core.SUCCESS)
+	processesFromDB, err = db.FindProcessesByExecutorID(colony2.ID, executor2.ID, 60, core.SUCCESS)
 	assert.Nil(t, err)
 	assert.Equal(t, len(processesFromDB), 20)
 }
@@ -1261,12 +1261,12 @@ func TestFindProcessesByColonyID(t *testing.T) {
 	err = db.AddColony(colony)
 	assert.Nil(t, err)
 
-	runtime1 := utils.CreateTestRuntime(colony.ID)
-	err = db.AddRuntime(runtime1)
+	executor1 := utils.CreateTestExecutor(colony.ID)
+	err = db.AddExecutor(executor1)
 	assert.Nil(t, err)
 
-	runtime2 := utils.CreateTestRuntime(colony.ID)
-	err = db.AddRuntime(runtime2)
+	executor2 := utils.CreateTestExecutor(colony.ID)
+	err = db.AddExecutor(executor2)
 	assert.Nil(t, err)
 
 	// Create some waiting/unassigned processes
@@ -1281,7 +1281,7 @@ func TestFindProcessesByColonyID(t *testing.T) {
 		process := utils.CreateTestProcess(colony.ID)
 		err = db.AddProcess(process)
 		assert.Nil(t, err)
-		err = db.AssignRuntime(runtime1.ID, process)
+		err = db.Assign(executor1.ID, process)
 		assert.Nil(t, err)
 		err = db.MarkSuccessful(process.ID)
 		assert.Nil(t, err)
@@ -1290,7 +1290,7 @@ func TestFindProcessesByColonyID(t *testing.T) {
 		process := utils.CreateTestProcess(colony.ID)
 		err = db.AddProcess(process)
 		assert.Nil(t, err)
-		err = db.AssignRuntime(runtime2.ID, process)
+		err = db.Assign(executor2.ID, process)
 		assert.Nil(t, err)
 		err = db.MarkSuccessful(process.ID)
 		assert.Nil(t, err)
@@ -1301,7 +1301,7 @@ func TestFindProcessesByColonyID(t *testing.T) {
 	process := utils.CreateTestProcess(colony.ID)
 	err = db.AddProcess(process)
 	assert.Nil(t, err)
-	err = db.AssignRuntime(runtime1.ID, process)
+	err = db.Assign(executor1.ID, process)
 	assert.Nil(t, err)
 	err = db.MarkSuccessful(process.ID)
 	assert.Nil(t, err)
