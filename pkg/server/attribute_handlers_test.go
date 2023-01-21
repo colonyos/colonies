@@ -12,23 +12,23 @@ func TestAddGetAttributes(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 
 	processSpec := utils.CreateTestProcessSpec(env.colonyID)
-	addedProcess, err := client.SubmitProcessSpec(processSpec, env.runtimePrvKey)
+	addedProcess, err := client.SubmitProcessSpec(processSpec, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.Equal(t, core.PENDING, addedProcess.State)
 
-	assignedProcess, err := client.AssignProcess(env.colonyID, -1, env.runtimePrvKey)
+	assignedProcess, err := client.AssignProcess(env.colonyID, -1, env.executorPrvKey)
 	assert.Nil(t, err)
 
 	attribute := core.CreateAttribute(core.GenerateRandomID(), env.colonyID, "", core.OUT, "result", "helloworld")
-	_, err = client.AddAttribute(attribute, env.runtimePrvKey)
+	_, err = client.AddAttribute(attribute, env.executorPrvKey)
 	assert.NotNil(t, err)
 
 	attribute = core.CreateAttribute(assignedProcess.ID, env.colonyID, "", core.OUT, "result", "helloworld")
-	addedAttribute, err := client.AddAttribute(attribute, env.runtimePrvKey)
+	addedAttribute, err := client.AddAttribute(attribute, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.Equal(t, attribute.ID, addedAttribute.ID)
 
-	assignedProcessFromServer, err := client.GetProcess(assignedProcess.ID, env.runtimePrvKey)
+	assignedProcessFromServer, err := client.GetProcess(assignedProcess.ID, env.executorPrvKey)
 
 	out := make(map[string]string)
 	for _, attribute := range assignedProcessFromServer.Attributes {
@@ -37,10 +37,10 @@ func TestAddGetAttributes(t *testing.T) {
 
 	assert.Equal(t, "helloworld", out["result"])
 
-	_, err = client.GetAttribute(core.GenerateRandomID(), env.runtimePrvKey)
+	_, err = client.GetAttribute(core.GenerateRandomID(), env.executorPrvKey)
 	assert.NotNil(t, err) // Will not work, invalid target
 
-	attributeFromServer, err := client.GetAttribute(attribute.ID, env.runtimePrvKey)
+	attributeFromServer, err := client.GetAttribute(attribute.ID, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.Equal(t, attribute.ID, attributeFromServer.ID)
 

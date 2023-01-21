@@ -6,7 +6,7 @@
             "HU HU HU"
         ],
         "conditions": {
-            "runtimetype": "cli",
+            "executortype": "cli",
             "dependencies": []
         }
     }

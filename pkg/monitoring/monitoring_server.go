@@ -96,8 +96,8 @@ func (server *MonitoringServer) registerGauges() {
 	if err := prometheus.Register(prometheus.NewGaugeFunc(
 		prometheus.GaugeOpts{
 			Subsystem: "colonies",
-			Name:      "server_runtimes",
-			Help:      "Number of runtimes",
+			Name:      "server_executors",
+			Help:      "Number of executors",
 		},
 		func() float64 {
 			if server.stat == nil {

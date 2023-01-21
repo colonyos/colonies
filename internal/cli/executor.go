@@ -17,52 +17,52 @@ import (
 )
 
 func init() {
-	runtimeCmd.AddCommand(registerRuntimeCmd)
-	runtimeCmd.AddCommand(lsRuntimesCmd)
-	runtimeCmd.AddCommand(approveRuntimeCmd)
-	runtimeCmd.AddCommand(rejectRuntimeCmd)
-	runtimeCmd.AddCommand(deleteRuntimeCmd)
-	runtimeCmd.AddCommand(resolveRuntimeCmd)
-	rootCmd.AddCommand(runtimeCmd)
+	executorCmd.AddCommand(registerExecutorCmd)
+	executorCmd.AddCommand(lsExecutorsCmd)
+	executorCmd.AddCommand(approveExecutorCmd)
+	executorCmd.AddCommand(rejectExecutorCmd)
+	executorCmd.AddCommand(deleteExecutorCmd)
+	executorCmd.AddCommand(resolveExecutorCmd)
+	rootCmd.AddCommand(executorCmd)
 
-	runtimeCmd.PersistentFlags().StringVarP(&ColonyID, "colonyid", "", "", "Colony Id")
-	runtimeCmd.PersistentFlags().StringVarP(&ServerHost, "host", "", "localhost", "Server host")
-	runtimeCmd.PersistentFlags().IntVarP(&ServerPort, "port", "", -1, "Server HTTP port")
+	executorCmd.PersistentFlags().StringVarP(&ColonyID, "colonyid", "", "", "Colony Id")
+	executorCmd.PersistentFlags().StringVarP(&ServerHost, "host", "", "localhost", "Server host")
+	executorCmd.PersistentFlags().IntVarP(&ServerPort, "port", "", -1, "Server HTTP port")
 
-	registerRuntimeCmd.Flags().StringVarP(&ColonyPrvKey, "colonyprvkey", "", "", "Colony private key")
-	registerRuntimeCmd.Flags().StringVarP(&RuntimePrvKey, "runtimeprvkey", "", "", "Runtime private key")
-	registerRuntimeCmd.Flags().StringVarP(&SpecFile, "spec", "", "", "JSON specification of a Colony Runtime")
-	registerRuntimeCmd.MarkFlagRequired("spec")
+	registerExecutorCmd.Flags().StringVarP(&ColonyPrvKey, "colonyprvkey", "", "", "Colony private key")
+	registerExecutorCmd.Flags().StringVarP(&ExecutorPrvKey, "executorprvkey", "", "", "Executor private key")
+	registerExecutorCmd.Flags().StringVarP(&SpecFile, "spec", "", "", "JSON specification of a Colony Executor")
+	registerExecutorCmd.MarkFlagRequired("spec")
 
-	lsRuntimesCmd.Flags().BoolVarP(&JSON, "json", "", false, "Print JSON instead of tables")
-	lsRuntimesCmd.Flags().BoolVarP(&Full, "full", "", false, "Print detail info")
-	lsRuntimesCmd.Flags().StringVarP(&RuntimeID, "runtimeid", "", "", "Runtime Id")
-	lsRuntimesCmd.Flags().StringVarP(&RuntimePrvKey, "runtimeprvkey", "", "", "Runtime private key")
+	lsExecutorsCmd.Flags().BoolVarP(&JSON, "json", "", false, "Print JSON instead of tables")
+	lsExecutorsCmd.Flags().BoolVarP(&Full, "full", "", false, "Print detail info")
+	lsExecutorsCmd.Flags().StringVarP(&ExecutorID, "executorid", "", "", "Executor Id")
+	lsExecutorsCmd.Flags().StringVarP(&ExecutorPrvKey, "executorprvkey", "", "", "Executor private key")
 
-	approveRuntimeCmd.Flags().StringVarP(&ColonyPrvKey, "colonyprvkey", "", "", "Colony private key")
-	approveRuntimeCmd.Flags().StringVarP(&RuntimeID, "runtimeid", "", "", "Colony Runtime Id")
-	approveRuntimeCmd.MarkFlagRequired("runtimeid")
+	approveExecutorCmd.Flags().StringVarP(&ColonyPrvKey, "colonyprvkey", "", "", "Colony private key")
+	approveExecutorCmd.Flags().StringVarP(&ExecutorID, "executorid", "", "", "Colony Executor Id")
+	approveExecutorCmd.MarkFlagRequired("executorid")
 
-	rejectRuntimeCmd.Flags().StringVarP(&ColonyPrvKey, "colonyprvkey", "", "", "Colony private key")
-	rejectRuntimeCmd.Flags().StringVarP(&RuntimeID, "runtimeid", "", "", "Runtime Id")
-	rejectRuntimeCmd.MarkFlagRequired("runtimeid")
+	rejectExecutorCmd.Flags().StringVarP(&ColonyPrvKey, "colonyprvkey", "", "", "Colony private key")
+	rejectExecutorCmd.Flags().StringVarP(&ExecutorID, "executorid", "", "", "Executor Id")
+	rejectExecutorCmd.MarkFlagRequired("executorid")
 
-	deleteRuntimeCmd.Flags().StringVarP(&ColonyPrvKey, "colonyprvkey", "", "", "Colony private key")
-	deleteRuntimeCmd.Flags().StringVarP(&RuntimeID, "runtimeid", "", "", "Runtime Id")
-	deleteRuntimeCmd.MarkFlagRequired("runtimeid")
+	deleteExecutorCmd.Flags().StringVarP(&ColonyPrvKey, "colonyprvkey", "", "", "Colony private key")
+	deleteExecutorCmd.Flags().StringVarP(&ExecutorID, "executorid", "", "", "Executor Id")
+	deleteExecutorCmd.MarkFlagRequired("executorid")
 
-	resolveRuntimeCmd.Flags().StringVarP(&RuntimePrvKey, "runtimeprvkey", "", "", "Runtime private key")
-	resolveRuntimeCmd.Flags().StringVarP(&TargetRuntimeName, "targetname", "", "", "Target runtime Id")
-	resolveRuntimeCmd.MarkFlagRequired("runtimeid")
+	resolveExecutorCmd.Flags().StringVarP(&ExecutorPrvKey, "executorprvkey", "", "", "Executor private key")
+	resolveExecutorCmd.Flags().StringVarP(&TargetExecutorName, "targetname", "", "", "Target executor Id")
+	resolveExecutorCmd.MarkFlagRequired("executorid")
 }
 
-var runtimeCmd = &cobra.Command{
+var executorCmd = &cobra.Command{
 	Use:   "executor",
 	Short: "Manage executors",
 	Long:  "Manage executors",
 }
 
-var registerRuntimeCmd = &cobra.Command{
+var registerExecutorCmd = &cobra.Command{
 	Use:   "register",
 	Short: "Register a new executor",
 	Long:  "Register a new executor",
@@ -73,13 +73,13 @@ var registerRuntimeCmd = &cobra.Command{
 		CheckError(err)
 
 		if ColonyID == "" {
-			ColonyID = os.Getenv("COLONIES_COLONYID")
+			ColonyID = os.Getenv("COLONIES_COLONY_ID")
 		}
 		if ColonyID == "" {
 			CheckError(errors.New("Unknown Colony Id"))
 		}
 
-		runtime, err := core.ConvertJSONToRuntime(string(jsonSpecBytes))
+		executor, err := core.ConvertJSONToExecutor(string(jsonSpecBytes))
 		CheckError(err)
 
 		keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
@@ -88,8 +88,8 @@ var registerRuntimeCmd = &cobra.Command{
 		crypto := crypto.CreateCrypto()
 
 		var prvKey string
-		if RuntimePrvKey != "" {
-			prvKey = RuntimePrvKey
+		if ExecutorPrvKey != "" {
+			prvKey = ExecutorPrvKey
 			if len(prvKey) != 64 {
 				CheckError(errors.New("Invalid private key length"))
 			}
@@ -98,10 +98,10 @@ var registerRuntimeCmd = &cobra.Command{
 			CheckError(err)
 		}
 
-		runtimeID, err := crypto.GenerateID(prvKey)
+		executorID, err := crypto.GenerateID(prvKey)
 		CheckError(err)
-		runtime.SetID(runtimeID)
-		runtime.SetColonyID(ColonyID)
+		executor.SetID(executorID)
+		executor.SetColonyID(ColonyID)
 
 		if ColonyPrvKey == "" {
 			ColonyPrvKey, err = keychain.GetPrvKey(ColonyID)
@@ -111,20 +111,20 @@ var registerRuntimeCmd = &cobra.Command{
 		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Info("Starting a Colonies client")
 		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
 
-		addedRuntime, err := client.AddRuntime(runtime, ColonyPrvKey)
+		addedExecutor, err := client.AddExecutor(executor, ColonyPrvKey)
 		CheckError(err)
 
-		err = keychain.AddPrvKey(runtimeID, prvKey)
+		err = keychain.AddPrvKey(executorID, prvKey)
 		CheckError(err)
 
-		log.WithFields(log.Fields{"runtimeID": addedRuntime.ID, "colonyID": ColonyID}).Info("Runtime registered")
+		log.WithFields(log.Fields{"executorID": addedExecutor.ID, "colonyID": ColonyID}).Info("Executor registered")
 	},
 }
 
-var lsRuntimesCmd = &cobra.Command{
+var lsExecutorsCmd = &cobra.Command{
 	Use:   "ls",
-	Short: "List all runtimes available in a colony",
-	Long:  "List all runtimes available in a colony",
+	Short: "List all executors available in a colony",
+	Long:  "List all executors available in a colony",
 	Run: func(cmd *cobra.Command, args []string) {
 		parseServerEnv()
 
@@ -132,54 +132,54 @@ var lsRuntimesCmd = &cobra.Command{
 		CheckError(err)
 
 		if ColonyID == "" {
-			ColonyID = os.Getenv("COLONIES_COLONYID")
+			ColonyID = os.Getenv("COLONIES_COLONY_ID")
 		}
 		if ColonyID == "" {
 			CheckError(errors.New("Unknown Colony Id"))
 		}
 
-		if RuntimePrvKey == "" {
-			if RuntimeID == "" {
-				RuntimeID = os.Getenv("COLONIES_RUNTIMEID")
+		if ExecutorPrvKey == "" {
+			if ExecutorID == "" {
+				ExecutorID = os.Getenv("COLONIES_EXECUTOR_ID")
 			}
-			RuntimePrvKey, _ = keychain.GetPrvKey(RuntimeID)
+			ExecutorPrvKey, _ = keychain.GetPrvKey(ExecutorID)
 		}
 
-		if RuntimePrvKey == "" {
-			if RuntimeID == "" {
-				RuntimeID = os.Getenv("COLONIES_RUNTIMEID")
+		if ExecutorPrvKey == "" {
+			if ExecutorID == "" {
+				ExecutorID = os.Getenv("COLONIES_EXECUTOR_ID")
 			}
-			RuntimePrvKey, _ = keychain.GetPrvKey(RuntimeID)
+			ExecutorPrvKey, _ = keychain.GetPrvKey(ExecutorID)
 		}
 
 		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Info("Starting a Colonies client")
 		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
 
-		runtimesFromServer, err := client.GetRuntimes(ColonyID, RuntimePrvKey)
+		executorsFromServer, err := client.GetExecutors(ColonyID, ExecutorPrvKey)
 		if err != nil {
 			// Try ColonyPrvKey instead
 			if ColonyPrvKey == "" {
 				if ColonyID == "" {
-					ColonyID = os.Getenv("COLONIES_COLONYID")
+					ColonyID = os.Getenv("COLONIES_COLONY_ID")
 				}
 				ColonyPrvKey, err = keychain.GetPrvKey(ColonyID)
 				CheckError(err)
 			}
-			runtimesFromServer, err = client.GetRuntimes(ColonyID, ColonyPrvKey)
+			executorsFromServer, err = client.GetExecutors(ColonyID, ColonyPrvKey)
 			CheckError(err)
 		}
 
 		if Full {
 			if JSON {
-				jsonString, err := core.ConvertRuntimeArrayToJSON(runtimesFromServer)
+				jsonString, err := core.ConvertExecutorArrayToJSON(executorsFromServer)
 				CheckError(err)
 				fmt.Println(jsonString)
 				os.Exit(0)
 			}
 
-			for counter, runtime := range runtimesFromServer {
+			for counter, executor := range executorsFromServer {
 				state := ""
-				switch runtime.State {
+				switch executor.State {
 				case core.PENDING:
 					state = "Pending"
 				case core.APPROVED:
@@ -190,36 +190,36 @@ var lsRuntimesCmd = &cobra.Command{
 					state = "Unknown"
 				}
 
-				runtimeData := [][]string{
-					[]string{"Name", runtime.Name},
-					[]string{"ID", runtime.ID},
-					[]string{"Type", runtime.RuntimeType},
-					[]string{"ColonyID", runtime.ColonyID},
+				executorData := [][]string{
+					[]string{"Name", executor.Name},
+					[]string{"ID", executor.ID},
+					[]string{"Type", executor.Type},
+					[]string{"ColonyID", executor.ColonyID},
 					[]string{"State", state},
-					[]string{"CommissionTime", runtime.CommissionTime.Format(TimeLayout)},
-					[]string{"LastHeardFrom", runtime.LastHeardFromTime.Format(TimeLayout)},
-					[]string{"CPU", runtime.CPU},
-					[]string{"Cores", strconv.Itoa(runtime.Cores)},
-					[]string{"Mem [MiB]", strconv.Itoa(runtime.Mem)},
-					[]string{"GPU", runtime.GPU},
-					[]string{"GPUs", strconv.Itoa(runtime.GPUs)},
+					[]string{"CommissionTime", executor.CommissionTime.Format(TimeLayout)},
+					[]string{"LastHeardFrom", executor.LastHeardFromTime.Format(TimeLayout)},
+					[]string{"CPU", executor.CPU},
+					[]string{"Cores", strconv.Itoa(executor.Cores)},
+					[]string{"Mem [MiB]", strconv.Itoa(executor.Mem)},
+					[]string{"GPU", executor.GPU},
+					[]string{"GPUs", strconv.Itoa(executor.GPUs)},
 				}
 
-				runtimeTable := tablewriter.NewWriter(os.Stdout)
-				for _, v := range runtimeData {
-					runtimeTable.Append(v)
+				executorTable := tablewriter.NewWriter(os.Stdout)
+				for _, v := range executorData {
+					executorTable.Append(v)
 				}
-				runtimeTable.SetAlignment(tablewriter.ALIGN_LEFT)
-				runtimeTable.Render()
+				executorTable.SetAlignment(tablewriter.ALIGN_LEFT)
+				executorTable.Render()
 
-				if counter != len(runtimesFromServer)-1 {
+				if counter != len(executorsFromServer)-1 {
 					fmt.Println()
 				}
 			}
 		} else {
 			var data [][]string
-			for _, runtime := range runtimesFromServer {
-				data = append(data, []string{runtime.ID, runtime.Name, runtime.RuntimeType})
+			for _, executor := range executorsFromServer {
+				data = append(data, []string{executor.ID, executor.Name, executor.Type})
 			}
 
 			table := tablewriter.NewWriter(os.Stdout)
@@ -235,10 +235,10 @@ var lsRuntimesCmd = &cobra.Command{
 	},
 }
 
-var approveRuntimeCmd = &cobra.Command{
+var approveExecutorCmd = &cobra.Command{
 	Use:   "approve",
-	Short: "Approve a colony runtime",
-	Long:  "Approve a colony runtime",
+	Short: "Approve a colony executor",
+	Long:  "Approve a colony executor",
 	Run: func(cmd *cobra.Command, args []string) {
 		parseServerEnv()
 
@@ -246,7 +246,7 @@ var approveRuntimeCmd = &cobra.Command{
 		CheckError(err)
 
 		if ColonyID == "" {
-			ColonyID = os.Getenv("COLONIES_COLONYID")
+			ColonyID = os.Getenv("COLONIES_COLONY_ID")
 		}
 		if ColonyID == "" {
 			CheckError(errors.New("Unknown Colony Id"))
@@ -260,17 +260,17 @@ var approveRuntimeCmd = &cobra.Command{
 		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Info("Starting a Colonies client")
 		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
 
-		err = client.ApproveRuntime(RuntimeID, ColonyPrvKey)
+		err = client.ApproveExecutor(ExecutorID, ColonyPrvKey)
 		CheckError(err)
 
-		log.WithFields(log.Fields{"runtimeID": RuntimeID, "colonyID": ColonyID}).Info("Runtime approved")
+		log.WithFields(log.Fields{"executorID": ExecutorID, "colonyID": ColonyID}).Info("Executor approved")
 	},
 }
 
-var rejectRuntimeCmd = &cobra.Command{
+var rejectExecutorCmd = &cobra.Command{
 	Use:   "reject",
-	Short: "Reject a Colony Runtime",
-	Long:  "Reject a Colony Runtime",
+	Short: "Reject a executor",
+	Long:  "Reject a executor",
 	Run: func(cmd *cobra.Command, args []string) {
 		parseServerEnv()
 
@@ -278,7 +278,7 @@ var rejectRuntimeCmd = &cobra.Command{
 		CheckError(err)
 
 		if ColonyID == "" {
-			ColonyID = os.Getenv("COLONIES_COLONYID")
+			ColonyID = os.Getenv("COLONIES_COLONY_ID")
 		}
 		if ColonyID == "" {
 			CheckError(errors.New("Unknown Colony Id"))
@@ -292,17 +292,17 @@ var rejectRuntimeCmd = &cobra.Command{
 		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Info("Starting a Colonies client")
 		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
 
-		err = client.RejectRuntime(RuntimeID, ColonyPrvKey)
+		err = client.RejectExecutor(ExecutorID, ColonyPrvKey)
 		CheckError(err)
 
-		log.WithFields(log.Fields{"runtimeID": RuntimeID, "colonyID": ColonyID}).Info("Runtime rejected")
+		log.WithFields(log.Fields{"executorID": ExecutorID, "colonyID": ColonyID}).Info("Executor rejected")
 	},
 }
 
-var deleteRuntimeCmd = &cobra.Command{
+var deleteExecutorCmd = &cobra.Command{
 	Use:   "unregister",
-	Short: "Unregister a colony runtime",
-	Long:  "Unregister a colony runtime",
+	Short: "Unregister a colony executor",
+	Long:  "Unregister a colony executor",
 	Run: func(cmd *cobra.Command, args []string) {
 		parseServerEnv()
 
@@ -310,7 +310,7 @@ var deleteRuntimeCmd = &cobra.Command{
 		CheckError(err)
 
 		if ColonyID == "" {
-			ColonyID = os.Getenv("COLONIES_COLONYID")
+			ColonyID = os.Getenv("COLONIES_COLONY_ID")
 		}
 		if ColonyID == "" {
 			CheckError(errors.New("Unknown Colony Id"))
@@ -323,22 +323,22 @@ var deleteRuntimeCmd = &cobra.Command{
 		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Info("Starting a Colonies client")
 		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
 
-		err = client.DeleteRuntime(RuntimeID, ColonyPrvKey)
+		err = client.DeleteExecutor(ExecutorID, ColonyPrvKey)
 		CheckError(err)
 
-		log.WithFields(log.Fields{"runtimeID": RuntimeID, "colonyID": ColonyID}).Info("Runtime unregistered")
+		log.WithFields(log.Fields{"executorID": ExecutorID, "colonyID": ColonyID}).Info("Executor unregistered")
 	},
 }
 
-var resolveRuntimeCmd = &cobra.Command{
+var resolveExecutorCmd = &cobra.Command{
 	Use:   "resolve",
-	Short: "Resolve runtime Id",
-	Long:  "Resolve runtime Id",
+	Short: "Resolve executor Id",
+	Long:  "Resolve executor Id",
 	Run: func(cmd *cobra.Command, args []string) {
 		parseServerEnv()
 
 		if ColonyID == "" {
-			ColonyID = os.Getenv("COLONIES_COLONYID")
+			ColonyID = os.Getenv("COLONIES_COLONY_ID")
 		}
 		if ColonyID == "" {
 			CheckError(errors.New("Unknown Colony Id, please set COLONYID env variable or specify ColonyID in JSON file"))
@@ -347,34 +347,34 @@ var resolveRuntimeCmd = &cobra.Command{
 		keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
 		CheckError(err)
 
-		if RuntimeID == "" {
-			RuntimeID = os.Getenv("COLONIES_RUNTIMEID")
+		if ExecutorID == "" {
+			ExecutorID = os.Getenv("COLONIES_EXECUTOR_ID")
 		}
-		if RuntimeID == "" {
-			CheckError(errors.New("Unknown Runtime Id"))
+		if ExecutorID == "" {
+			CheckError(errors.New("Unknown Executor Id"))
 		}
 
-		if RuntimePrvKey == "" {
-			RuntimePrvKey, err = keychain.GetPrvKey(RuntimeID)
+		if ExecutorPrvKey == "" {
+			ExecutorPrvKey, err = keychain.GetPrvKey(ExecutorID)
 			CheckError(err)
 		}
 
-		if TargetRuntimeName == "" {
-			CheckError(errors.New("Target Runtime Name must be specified"))
+		if TargetExecutorName == "" {
+			CheckError(errors.New("Target Executor Name must be specified"))
 		}
 
 		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
 
-		runtimes, err := client.GetRuntimes(ColonyID, RuntimePrvKey)
+		executors, err := client.GetExecutors(ColonyID, ExecutorPrvKey)
 		CheckError(err)
 
-		for _, runtime := range runtimes {
-			if runtime.Name == TargetRuntimeName {
-				fmt.Println(runtime.ID)
+		for _, executor := range executors {
+			if executor.Name == TargetExecutorName {
+				fmt.Println(executor.ID)
 				os.Exit(0)
 			}
 		}
 
-		log.WithFields(log.Fields{"ColonyId": ColonyID, "TargetRuntimeName": TargetRuntimeName}).Error("No such runtime found")
+		log.WithFields(log.Fields{"ColonyId": ColonyID, "TargetExecutorName": TargetExecutorName}).Error("No such executor found")
 	},
 }

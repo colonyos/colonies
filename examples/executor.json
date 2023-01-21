@@ -1,6 +1,6 @@
 {
     "name": "hal9000",
-    "runtimetype": "my_runtime_type",
+    "executortype": "my_executor_type",
     "cpu": "Illinois Automatic Computer",
     "cores": 1000000,
     "mem": 10000000,

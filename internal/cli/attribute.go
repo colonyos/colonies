@@ -27,10 +27,10 @@ func init() {
 	addAttributeCmd.Flags().StringVarP(&ProcessID, "processid", "", "", "Process Id")
 	addAttributeCmd.MarkFlagRequired("processid")
 	addAttributeCmd.Flags().StringVarP(&ColonyID, "colonyid", "", "", "Colony Id")
-	addAttributeCmd.Flags().StringVarP(&RuntimeID, "runtimeid", "", "", "Runtime Id")
+	addAttributeCmd.Flags().StringVarP(&ExecutorID, "executorid", "", "", "Executor Id")
 
 	getAttributeCmd.Flags().StringVarP(&ColonyID, "colonyid", "", "", "Colony Id")
-	getAttributeCmd.Flags().StringVarP(&RuntimeID, "runtimeid", "", "", "Runtime Id")
+	getAttributeCmd.Flags().StringVarP(&ExecutorID, "executorid", "", "", "Executor Id")
 	getAttributeCmd.Flags().StringVarP(&AttributeID, "attributeid", "", "", "Attribute Id")
 	getAttributeCmd.MarkFlagRequired("attributeid")
 }
@@ -52,21 +52,21 @@ var addAttributeCmd = &cobra.Command{
 		CheckError(err)
 
 		if ColonyID == "" {
-			ColonyID = os.Getenv("COLONIES_COLONYID")
+			ColonyID = os.Getenv("COLONIES_COLONY_ID")
 		}
 		if ColonyID == "" {
 			CheckError(errors.New("Unknown Colony Id"))
 		}
 
-		if RuntimeID == "" {
-			RuntimeID = os.Getenv("COLONIES_RUNTIMEID")
+		if ExecutorID == "" {
+			ExecutorID = os.Getenv("COLONIES_EXECUTOR_ID")
 		}
-		if RuntimeID == "" {
-			CheckError(errors.New("Unknown Runtime Id"))
+		if ExecutorID == "" {
+			CheckError(errors.New("Unknown Executor Id"))
 		}
 
-		if RuntimePrvKey == "" {
-			RuntimePrvKey, err = keychain.GetPrvKey(RuntimeID)
+		if ExecutorPrvKey == "" {
+			ExecutorPrvKey, err = keychain.GetPrvKey(ExecutorID)
 			CheckError(err)
 		}
 
@@ -75,7 +75,7 @@ var addAttributeCmd = &cobra.Command{
 		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Info("Starting a Colonies client")
 		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
 
-		addedAttribute, err := client.AddAttribute(attribute, RuntimePrvKey)
+		addedAttribute, err := client.AddAttribute(attribute, ExecutorPrvKey)
 		CheckError(err)
 
 		log.WithFields(log.Fields{"attributeID": addedAttribute.ID}).Info("Attribute added")
@@ -93,28 +93,28 @@ var getAttributeCmd = &cobra.Command{
 		CheckError(err)
 
 		if ColonyID == "" {
-			ColonyID = os.Getenv("COLONIES_COLONYID")
+			ColonyID = os.Getenv("COLONIES_COLONY_ID")
 		}
 		if ColonyID == "" {
 			CheckError(errors.New("Unknown Colony Id"))
 		}
 
-		if RuntimeID == "" {
-			RuntimeID = os.Getenv("COLONIES_RUNTIMEID")
+		if ExecutorID == "" {
+			ExecutorID = os.Getenv("COLONIES_EXECUTOR_ID")
 		}
-		if RuntimeID == "" {
-			CheckError(errors.New("Unknown Runtime Id"))
+		if ExecutorID == "" {
+			CheckError(errors.New("Unknown Executor Id"))
 		}
 
-		if RuntimePrvKey == "" {
-			RuntimePrvKey, err = keychain.GetPrvKey(RuntimeID)
+		if ExecutorPrvKey == "" {
+			ExecutorPrvKey, err = keychain.GetPrvKey(ExecutorID)
 			CheckError(err)
 		}
 
 		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Info("Starting a Colonies client")
 		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
 
-		attribute, err := client.GetAttribute(AttributeID, RuntimePrvKey)
+		attribute, err := client.GetAttribute(AttributeID, ExecutorPrvKey)
 		CheckError(err)
 
 		var attributeType string

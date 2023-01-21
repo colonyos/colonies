@@ -81,7 +81,7 @@ func (server *ColoniesServer) handleWSRequest(c *gin.Context) {
 				return
 			}
 
-			runtime, err := server.controller.getRuntime(recoveredID)
+			executor, err := server.controller.getExecutor(recoveredID)
 			if err != nil {
 				err := server.sendWSErrorMsg(err, http.StatusForbidden, wsConn, wsMsgType)
 				if err != nil {
@@ -89,8 +89,8 @@ func (server *ColoniesServer) handleWSRequest(c *gin.Context) {
 				}
 				return
 			}
-			if runtime == nil {
-				err := server.sendWSErrorMsg(errors.New("Failed to subscribe to processes, runtime not found"), http.StatusForbidden, wsConn, wsMsgType)
+			if executor == nil {
+				err := server.sendWSErrorMsg(errors.New("Failed to subscribe to processes, executor not found"), http.StatusForbidden, wsConn, wsMsgType)
 				if err != nil {
 					log.WithFields(log.Fields{"Error": err}).Error("Failed to subscribe to processes, failed to call server.sendWSErrorMsg()")
 				}
@@ -98,7 +98,7 @@ func (server *ColoniesServer) handleWSRequest(c *gin.Context) {
 			}
 
 			// This test is strictly not needed, since the request does not specifiy a colony, but is rather derived from the database
-			err = server.validator.RequireRuntimeMembership(recoveredID, runtime.ColonyID, true)
+			err = server.validator.RequireExecutorMembership(recoveredID, executor.ColonyID, true)
 			if err != nil {
 				err := server.sendWSErrorMsg(err, http.StatusForbidden, wsConn, wsMsgType)
 				if err != nil {
@@ -107,7 +107,7 @@ func (server *ColoniesServer) handleWSRequest(c *gin.Context) {
 				return
 			}
 
-			processSubcription := createProcessesSubscription(wsConn, wsMsgType, msg.RuntimeType, msg.Timeout, msg.State)
+			processSubcription := createProcessesSubscription(wsConn, wsMsgType, msg.ExecutorType, msg.Timeout, msg.State)
 			server.controller.subscribeProcesses(recoveredID, processSubcription)
 
 		case rpc.SubscribeProcessPayloadType:
@@ -123,7 +123,7 @@ func (server *ColoniesServer) handleWSRequest(c *gin.Context) {
 				return
 			}
 
-			runtime, err := server.controller.getRuntime(recoveredID)
+			executor, err := server.controller.getExecutor(recoveredID)
 			if err != nil {
 				err := server.sendWSErrorMsg(err, http.StatusForbidden, wsConn, wsMsgType)
 				if err != nil {
@@ -131,8 +131,8 @@ func (server *ColoniesServer) handleWSRequest(c *gin.Context) {
 				}
 				return
 			}
-			if runtime == nil {
-				err := server.sendWSErrorMsg(errors.New("Failed to subscribe to process, runtime not found"), http.StatusForbidden, wsConn, wsMsgType)
+			if executor == nil {
+				err := server.sendWSErrorMsg(errors.New("Failed to subscribe to process, executor not found"), http.StatusForbidden, wsConn, wsMsgType)
 				if err != nil {
 					log.WithFields(log.Fields{"Error": err}).Error("Failed to subscribe to process, failed to call server.sendWSErrorMsg()")
 				}
@@ -141,7 +141,7 @@ func (server *ColoniesServer) handleWSRequest(c *gin.Context) {
 
 			// This test is strictly not needed, since the request does not specifiy a colony, but is rather
 			// derived from the database
-			err = server.validator.RequireRuntimeMembership(recoveredID, runtime.ColonyID, true)
+			err = server.validator.RequireExecutorMembership(recoveredID, executor.ColonyID, true)
 			if err != nil {
 				err := server.sendWSErrorMsg(err, http.StatusForbidden, wsConn, wsMsgType)
 				if err != nil {
@@ -150,7 +150,7 @@ func (server *ColoniesServer) handleWSRequest(c *gin.Context) {
 				return
 			}
 
-			processSubcription := createProcessSubscription(wsConn, wsMsgType, msg.ProcessID, msg.RuntimeType, msg.Timeout, msg.State)
+			processSubcription := createProcessSubscription(wsConn, wsMsgType, msg.ProcessID, msg.ExecutorType, msg.Timeout, msg.State)
 			server.controller.subscribeProcess(recoveredID, processSubcription)
 		}
 	}

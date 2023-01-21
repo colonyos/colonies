@@ -33,7 +33,7 @@ colonies dev
 ```json
 {
     "conditions": {
-        "runtimetype": "cli"
+        "executortype": "cli"
     },
     "func": "echo sayhello"
 }
@@ -45,7 +45,7 @@ colonies process submit --spec sayhello.json
 
 ### Start a Unix worker (executes functions as Unix commands)
 ```console
-colonies worker start --name testworker --runtimetype cli 
+colonies worker start --name testworker --executortype cli 
 
 INFO[0000] Lauching process                              Args="[]" Func="echo sayhello"
 sayhello
@@ -80,9 +80,9 @@ Below are some screenshots from the [Colonies Dashboard](https://github.com/colo
 ## SDKs
 * [Golang Colonies SDK](https://github.com/colonyos/colonies/tree/main/pkg/client)
 * [Rust Colonies SDK](https://github.com/colonyos/rustrt)
-* [Julia Colonies SDK](https://github.com/colonyos/ColonyRuntime.jl)
-* [JavaScript Colonies SDK](https://github.com/colonyos/colonyruntime.js)
-* [Python Colonies SDK](https://github.com/colonyos/pyruntime)
+* [Julia Colonies SDK](https://github.com/colonyos/ColonyExecutor.jl)
+* [JavaScript Colonies SDK](https://github.com/colonyos/colonyexecutor.js)
+* [Python Colonies SDK](https://github.com/colonyos/pyexecutor)
 * [Haskell Colonies SDK](https://github.com/colonyos/haskellrt)
 ## Deployment
 * [High-availability deployment](docs/HADeployment.md)
