@@ -28,11 +28,6 @@ import (
 var mutex sync.Mutex
 
 func init() {
-	workerCmd.AddCommand(workerStartCmd)
-	workerCmd.AddCommand(workerRegisterCmd)
-	workerCmd.AddCommand(workerUnregisterCmd)
-	rootCmd.AddCommand(workerCmd)
-
 	workerStartCmd.Flags().StringVarP(&ColonyID, "colonyid", "", "", "Colony Id")
 	workerStartCmd.Flags().StringVarP(&ColonyPrvKey, "colonyprvkey", "", "", "Colony private key")
 	workerStartCmd.Flags().StringVarP(&ExecutorName, "name", "", "", "Executor name")
@@ -58,18 +53,12 @@ func init() {
 	workerRegisterCmd.Flags().IntVarP(&GPUs, "gpus", "", -1, "Number of GPUs")
 }
 
-var workerCmd = &cobra.Command{
-	Use:   "worker",
-	Short: "Manage workers",
-	Long:  "Manage workers",
-}
-
 var workerStartCmd = &cobra.Command{
 	Use:   "start",
-	Short: "Register and start a worker",
-	Long:  "Register and start a worker",
+	Short: "Register and start a local Unix process executor",
+	Long:  "Register and start a local Unix process executor",
 	Run: func(cmd *cobra.Command, args []string) {
-		log.WithFields(log.Fields{"BuildVersion": build.BuildVersion, "BuildTime": build.BuildTime}).Info("Starting a worker")
+		log.WithFields(log.Fields{"BuildVersion": build.BuildVersion, "BuildTime": build.BuildTime}).Info("Starting a local executor running Unix processes")
 		parseServerEnv()
 
 		if ColonyID == "" {

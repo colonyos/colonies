@@ -23,6 +23,9 @@ func init() {
 	executorCmd.AddCommand(rejectExecutorCmd)
 	executorCmd.AddCommand(deleteExecutorCmd)
 	executorCmd.AddCommand(resolveExecutorCmd)
+	executorCmd.AddCommand(workerStartCmd)
+	executorCmd.AddCommand(workerRegisterCmd)
+	executorCmd.AddCommand(workerUnregisterCmd)
 	rootCmd.AddCommand(executorCmd)
 
 	executorCmd.PersistentFlags().StringVarP(&ColonyID, "colonyid", "", "", "Colony Id")
