@@ -185,6 +185,7 @@ var devCmd = &cobra.Command{
 			BinariesPath(coloniesPath + "/embedded-postgres-go/extracted").
 			DataPath(coloniesPath + "/embedded-postgres-go/extracted/data").
 			Username(dbUser).
+            Version(embeddedpostgres.V14).
 			Password(dbPassword).
 			Port(50070))
 		defer postgres.Stop()
