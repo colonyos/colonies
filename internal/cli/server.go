@@ -58,12 +58,12 @@ var serverCmd = &cobra.Command{
 
 func parseServerEnv() {
 	var err error
-	ServerHostEnv := os.Getenv("COLONIES_SERVERHOST")
+	ServerHostEnv := os.Getenv("COLONIES_SERVER_HOST")
 	if ServerHostEnv != "" {
 		ServerHost = ServerHostEnv
 	}
 
-	ServerPortEnvStr := os.Getenv("COLONIES_SERVERPORT")
+	ServerPortEnvStr := os.Getenv("COLONIES_SERVER_PORT")
 	if ServerPortEnvStr != "" {
 		if ServerPort == -1 {
 			ServerPort, err = strconv.Atoi(ServerPortEnvStr)
@@ -72,7 +72,7 @@ func parseServerEnv() {
 	}
 
 	if ServerID == "" {
-		ServerID = os.Getenv("COLONIES_SERVERID")
+		ServerID = os.Getenv("COLONIES_SERVER_ID")
 	}
 
 	TLSEnv := os.Getenv("COLONIES_TLS")
@@ -278,7 +278,7 @@ var serverStatisticsCmd = &cobra.Command{
 		CheckError(err)
 
 		if ServerID == "" {
-			ServerID = os.Getenv("COLONIES_SERVERID")
+			ServerID = os.Getenv("COLONIES_SERVER_ID")
 		}
 		if ServerID == "" {
 			CheckError(errors.New("Unknown Server Id"))
@@ -298,7 +298,7 @@ var serverStatisticsCmd = &cobra.Command{
 		fmt.Println("Process statistics:")
 		specData := [][]string{
 			[]string{"Colonies", strconv.Itoa(stat.Colonies)},
-			[]string{"Runtimes", strconv.Itoa(stat.Runtimes)},
+			[]string{"Executors", strconv.Itoa(stat.Executors)},
 			[]string{"Waiting processes", strconv.Itoa(stat.WaitingProcesses)},
 			[]string{"Running processes", strconv.Itoa(stat.RunningProcesses)},
 			[]string{"Successful processes", strconv.Itoa(stat.SuccessfulProcesses)},

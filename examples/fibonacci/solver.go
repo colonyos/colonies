@@ -12,19 +12,19 @@ import (
 )
 
 func main() {
-	colonyID := os.Getenv("COLONIES_COLONYID")
-	runtimePrvKey := os.Getenv("COLONIES_RUNTIMEPRVKEY")
-	coloniesHost := os.Getenv("COLONIES_SERVERHOST")
-	coloniesPortStr := os.Getenv("COLONIES_SERVERPORT")
+	colonyID := os.Getenv("COLONIES_COLONY_ID")
+	executorPrvKey := os.Getenv("COLONIES_EXECUTOR_PRVKEY")
+	coloniesHost := os.Getenv("COLONIES_SERVER_HOST")
+	coloniesPortStr := os.Getenv("COLONIES_SERVER_PORT")
 	coloniesPort, err := strconv.Atoi(coloniesPortStr)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(-1)
 	}
 
-	// Ask the Colonies server to assign a process to this Runtime
+	// Ask the Colonies server to assign a process to this executor
 	client := client.CreateColoniesClient(coloniesHost, coloniesPort, true, false)
-	assignedProcess, err := client.AssignProcess(colonyID, 100, runtimePrvKey) // Max wait 100 seconds for assignment request
+	assignedProcess, err := client.AssignProcess(colonyID, 100, executorPrvKey) // Max wait 100 seconds for assignment request
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -40,14 +40,14 @@ func main() {
 			fmt.Println("Result: The last number in the Fibonacci serie " + attribute.Value + " is " + fibonacci.String())
 
 			attribute := core.CreateAttribute(assignedProcess.ID, colonyID, "", core.OUT, "result", fibonacci.String())
-			client.AddAttribute(attribute, runtimePrvKey)
+			client.AddAttribute(attribute, executorPrvKey)
 
 			// Close the process as successful
-			client.Close(assignedProcess.ID, runtimePrvKey)
+			client.Close(assignedProcess.ID, executorPrvKey)
 			return
 		}
 	}
 
 	// Close the process as failed
-	client.Fail(assignedProcess.ID, "invalid arg", runtimePrvKey)
+	client.Fail(assignedProcess.ID, "invalid arg", executorPrvKey)
 }

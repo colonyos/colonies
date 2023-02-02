@@ -11,18 +11,18 @@ func TestAddCronSecurity(t *testing.T) {
 	env, client, server, _, done := setupTestEnv1(t)
 
 	// The setup looks like this:
-	//   runtime1 is member of colony1
-	//   runtime2 is member of colony2
+	//   executor1 is member of colony1
+	//   executor2 is member of colony2
 
 	cron := utils.FakeCron(t, env.colony1ID)
 
-	_, err := client.AddCron(cron, env.runtime2PrvKey)
+	_, err := client.AddCron(cron, env.executor2PrvKey)
 	assert.NotNil(t, err)
 	_, err = client.AddCron(cron, env.colony1PrvKey)
 	assert.NotNil(t, err)
 	_, err = client.AddCron(cron, env.colony2PrvKey)
 	assert.NotNil(t, err)
-	_, err = client.AddCron(cron, env.runtime1PrvKey)
+	_, err = client.AddCron(cron, env.executor1PrvKey)
 	assert.Nil(t, err)
 
 	server.Shutdown()
@@ -33,20 +33,20 @@ func TestGetCronSecurity(t *testing.T) {
 	env, client, server, _, done := setupTestEnv1(t)
 
 	// The setup looks like this:
-	//   runtime1 is member of colony1
-	//   runtime2 is member of colony2
+	//   executor1 is member of colony1
+	//   executor2 is member of colony2
 
 	cron := utils.FakeCron(t, env.colony1ID)
-	addedCron, err := client.AddCron(cron, env.runtime1PrvKey)
+	addedCron, err := client.AddCron(cron, env.executor1PrvKey)
 	assert.Nil(t, err)
 
-	_, err = client.GetCron(addedCron.ID, env.runtime2PrvKey)
+	_, err = client.GetCron(addedCron.ID, env.executor2PrvKey)
 	assert.NotNil(t, err)
 	_, err = client.GetCron(addedCron.ID, env.colony1PrvKey)
 	assert.NotNil(t, err)
 	_, err = client.GetCron(addedCron.ID, env.colony2PrvKey)
 	assert.NotNil(t, err)
-	_, err = client.GetCron(addedCron.ID, env.runtime1PrvKey)
+	_, err = client.GetCron(addedCron.ID, env.executor1PrvKey)
 	assert.Nil(t, err)
 
 	server.Shutdown()
@@ -57,20 +57,20 @@ func TestGetCronsSecurity(t *testing.T) {
 	env, client, server, _, done := setupTestEnv1(t)
 
 	// The setup looks like this:
-	//   runtime1 is member of colony1
-	//   runtime2 is member of colony2
+	//   executor1 is member of colony1
+	//   executor2 is member of colony2
 
 	cron := utils.FakeCron(t, env.colony1ID)
-	_, err := client.AddCron(cron, env.runtime1PrvKey)
+	_, err := client.AddCron(cron, env.executor1PrvKey)
 	assert.Nil(t, err)
 
-	_, err = client.GetCrons(env.colony1ID, 100, env.runtime2PrvKey)
+	_, err = client.GetCrons(env.colony1ID, 100, env.executor2PrvKey)
 	assert.NotNil(t, err)
 	_, err = client.GetCrons(env.colony1ID, 100, env.colony1PrvKey)
 	assert.NotNil(t, err)
 	_, err = client.GetCrons(env.colony1ID, 100, env.colony2PrvKey)
 	assert.NotNil(t, err)
-	_, err = client.GetCrons(env.colony1ID, 100, env.runtime1PrvKey)
+	_, err = client.GetCrons(env.colony1ID, 100, env.executor1PrvKey)
 	assert.Nil(t, err)
 
 	server.Shutdown()
@@ -81,20 +81,20 @@ func TestRunCronSecurity(t *testing.T) {
 	env, client, server, _, done := setupTestEnv1(t)
 
 	// The setup looks like this:
-	//   runtime1 is member of colony1
-	//   runtime2 is member of colony2
+	//   executor1 is member of colony1
+	//   executor2 is member of colony2
 
 	cron := utils.FakeCron(t, env.colony1ID)
-	addedCron, err := client.AddCron(cron, env.runtime1PrvKey)
+	addedCron, err := client.AddCron(cron, env.executor1PrvKey)
 	assert.Nil(t, err)
 
-	_, err = client.RunCron(addedCron.ID, env.runtime2PrvKey)
+	_, err = client.RunCron(addedCron.ID, env.executor2PrvKey)
 	assert.NotNil(t, err)
 	_, err = client.RunCron(addedCron.ID, env.colony1PrvKey)
 	assert.NotNil(t, err)
 	_, err = client.RunCron(addedCron.ID, env.colony2PrvKey)
 	assert.NotNil(t, err)
-	_, err = client.RunCron(addedCron.ID, env.runtime1PrvKey)
+	_, err = client.RunCron(addedCron.ID, env.executor1PrvKey)
 	assert.Nil(t, err)
 
 	server.Shutdown()
@@ -105,20 +105,20 @@ func TestDeleteCronSecurity(t *testing.T) {
 	env, client, server, _, done := setupTestEnv1(t)
 
 	// The setup looks like this:
-	//   runtime1 is member of colony1
-	//   runtime2 is member of colony2
+	//   executor1 is member of colony1
+	//   executor2 is member of colony2
 
 	cron := utils.FakeCron(t, env.colony1ID)
-	addedCron, err := client.AddCron(cron, env.runtime1PrvKey)
+	addedCron, err := client.AddCron(cron, env.executor1PrvKey)
 	assert.Nil(t, err)
 
-	err = client.DeleteCron(addedCron.ID, env.runtime2PrvKey)
+	err = client.DeleteCron(addedCron.ID, env.executor2PrvKey)
 	assert.NotNil(t, err)
 	err = client.DeleteCron(addedCron.ID, env.colony1PrvKey)
 	assert.NotNil(t, err)
 	err = client.DeleteCron(addedCron.ID, env.colony2PrvKey)
 	assert.NotNil(t, err)
-	err = client.DeleteCron(addedCron.ID, env.runtime1PrvKey)
+	err = client.DeleteCron(addedCron.ID, env.executor1PrvKey)
 	assert.Nil(t, err)
 
 	server.Shutdown()

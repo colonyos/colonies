@@ -36,11 +36,11 @@ func TestReliability(t *testing.T) {
 	assert.Nil(t, err)
 	colony, err = c.AddColony(colony, selectedServer.ServerPrvKey)
 	assert.Nil(t, err)
-	runtime, runtimePrvKey, err := utils.CreateTestRuntimeWithKey(colony.ID)
+	executor, executorPrvKey, err := utils.CreateTestExecutorWithKey(colony.ID)
 	assert.Nil(t, err)
-	_, err = c.AddRuntime(runtime, colonyPrvKey)
-	err = c.ApproveRuntime(runtime.ID, colonyPrvKey)
-	_, err = c.GetColonyByID(colony.ID, runtimePrvKey)
+	_, err = c.AddExecutor(executor, colonyPrvKey)
+	err = c.ApproveExecutor(executor.ID, colonyPrvKey)
+	_, err = c.GetColonyByID(colony.ID, executorPrvKey)
 	assert.Nil(t, err)
 
 	// Now kill server 1
@@ -48,7 +48,7 @@ func TestReliability(t *testing.T) {
 	server.WaitForServerToDie(t, runningCluster[0])
 	log.Info("Server ", selectServerIndex, " is dead now")
 
-	_, err = c.GetColonyByID(colony.ID, runtimePrvKey)
+	_, err = c.GetColonyByID(colony.ID, executorPrvKey)
 	assert.NotNil(t, err) // Will not work, server is DEAD
 
 	// Connect to another server in the cluster and try again
@@ -56,7 +56,7 @@ func TestReliability(t *testing.T) {
 	selectedServer = runningCluster[selectServerIndex]
 	c = client.CreateColoniesClient("localhost", selectedServer.Node.APIPort, true, true)
 
-	_, err = c.GetColonyByID(colony.ID, runtimePrvKey)
+	_, err = c.GetColonyByID(colony.ID, executorPrvKey)
 	assert.Nil(t, err) // Should work
 
 	// Kill the remaining servers, this will also end the test
@@ -92,26 +92,26 @@ func TestGeneratorReliability(t *testing.T) {
 	assert.Nil(t, err)
 	colony, err = c.AddColony(colony, selectedServer.ServerPrvKey)
 	assert.Nil(t, err)
-	runtime, runtimePrvKey, err := utils.CreateTestRuntimeWithKey(colony.ID)
+	executor, executorPrvKey, err := utils.CreateTestExecutorWithKey(colony.ID)
 	assert.Nil(t, err)
-	_, err = c.AddRuntime(runtime, colonyPrvKey)
-	err = c.ApproveRuntime(runtime.ID, colonyPrvKey)
+	_, err = c.AddExecutor(executor, colonyPrvKey)
+	err = c.ApproveExecutor(executor.ID, colonyPrvKey)
 
 	// Start a generator
 	generator := utils.FakeGenerator(t, colony.ID)
 	generator.Trigger = 1
-	addedGenerator, err := c.AddGenerator(generator, runtimePrvKey)
+	addedGenerator, err := c.AddGenerator(generator, executorPrvKey)
 	assert.Nil(t, err)
 	assert.NotNil(t, addedGenerator)
 
 	// Test that the generator works, we need to wait 1 second
 	var graphs []*core.ProcessGraph
-	graphs, err = c.GetWaitingProcessGraphs(colony.ID, 100, runtimePrvKey)
+	graphs, err = c.GetWaitingProcessGraphs(colony.ID, 100, executorPrvKey)
 	assert.Len(t, graphs, 0) // Since we have not triggered any generator yet
 
-	c.PackGenerator(addedGenerator.ID, "arg", runtimePrvKey)
+	c.PackGenerator(addedGenerator.ID, "arg", executorPrvKey)
 
-	nrOfgraphs := server.WaitForProcessGraphs(t, c, colony.ID, addedGenerator.ID, runtimePrvKey, 1)
+	nrOfgraphs := server.WaitForProcessGraphs(t, c, colony.ID, addedGenerator.ID, executorPrvKey, 1)
 	assert.Equal(t, nrOfgraphs, 1) // Ok we got a generator
 
 	// The leader is reponsible for the generator engine
@@ -143,9 +143,9 @@ func TestGeneratorReliability(t *testing.T) {
 		c = client.CreateColoniesClient("localhost", selectedServer.Node.APIPort, true, true) // Connect to another server
 	}
 
-	c.PackGenerator(addedGenerator.ID, "arg", runtimePrvKey)
+	c.PackGenerator(addedGenerator.ID, "arg", executorPrvKey)
 
-	nrOfgraphs = server.WaitForProcessGraphs(t, c, colony.ID, addedGenerator.ID, runtimePrvKey, 2)
+	nrOfgraphs = server.WaitForProcessGraphs(t, c, colony.ID, addedGenerator.ID, executorPrvKey, 2)
 	log.WithFields(log.Fields{"nrOfgraphs": nrOfgraphs}).Info("Done waiting for processgraphs")
 	assert.Equal(t, nrOfgraphs, 2)
 
@@ -185,24 +185,24 @@ func TestCronReliability(t *testing.T) {
 	assert.Nil(t, err)
 	colony, err = c.AddColony(colony, selectedServer.ServerPrvKey)
 	assert.Nil(t, err)
-	runtime, runtimePrvKey, err := utils.CreateTestRuntimeWithKey(colony.ID)
+	executor, executorPrvKey, err := utils.CreateTestExecutorWithKey(colony.ID)
 	assert.Nil(t, err)
-	_, err = c.AddRuntime(runtime, colonyPrvKey)
-	err = c.ApproveRuntime(runtime.ID, colonyPrvKey)
+	_, err = c.AddExecutor(executor, colonyPrvKey)
+	err = c.ApproveExecutor(executor.ID, colonyPrvKey)
 
 	// Start a cron
 	cron := utils.FakeCron(t, colony.ID)
 	cron.CronExpression = "0/1 * * * * *" // every second
-	addedCron, err := c.AddCron(cron, runtimePrvKey)
+	addedCron, err := c.AddCron(cron, executorPrvKey)
 	assert.Nil(t, err)
 	assert.NotNil(t, addedCron)
 
 	// Test that the cron works, we need to wait 1 second
 	var graphs []*core.ProcessGraph
-	graphs, err = c.GetWaitingProcessGraphs(colony.ID, 100, runtimePrvKey)
+	graphs, err = c.GetWaitingProcessGraphs(colony.ID, 100, executorPrvKey)
 	assert.Len(t, graphs, 0) // Since we have not triggered any cron yet
 
-	nrOfgraphs := server.WaitForProcessGraphs(t, c, colony.ID, "", runtimePrvKey, 1)
+	nrOfgraphs := server.WaitForProcessGraphs(t, c, colony.ID, "", executorPrvKey, 1)
 	assert.Equal(t, nrOfgraphs, 1) // Ok we got a cron
 
 	// The leader is reponsible for the generator engine
@@ -234,7 +234,7 @@ func TestCronReliability(t *testing.T) {
 		c = client.CreateColoniesClient("localhost", selectedServer.Node.APIPort, true, true) // Connect to another server
 	}
 
-	nrOfgraphs2 := server.WaitForProcessGraphs(t, c, colony.ID, "", runtimePrvKey, 2)
+	nrOfgraphs2 := server.WaitForProcessGraphs(t, c, colony.ID, "", executorPrvKey, 2)
 	log.WithFields(log.Fields{"nrOfgraphs": nrOfgraphs, "nrOfgraphs2": nrOfgraphs2}).Info("Done waiting for processgraphs")
 	assert.Equal(t, nrOfgraphs2, 2)
 

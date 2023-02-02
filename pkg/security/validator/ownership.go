@@ -2,5 +2,5 @@ package validator
 
 type ownership interface {
 	checkIfColonyExists(colonyID string) error
-	checkIfRuntimeIsValid(runtimeID string, colonyID string, approved bool) error
+	checkIfExecutorIsValid(executorID string, colonyID string, approved bool) error
 }

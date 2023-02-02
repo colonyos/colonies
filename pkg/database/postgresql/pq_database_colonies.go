@@ -77,7 +77,7 @@ func (db *PQDatabase) GetColonyByID(id string) (*core.Colony, error) {
 }
 
 func (db *PQDatabase) DeleteColonyByID(colonyID string) error {
-	err := db.DeleteRuntimesByColonyID(colonyID)
+	err := db.DeleteExecutorsByColonyID(colonyID)
 	if err != nil {
 		return err
 	}

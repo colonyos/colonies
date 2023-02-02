@@ -19,32 +19,32 @@ type Database interface {
 	DeleteColonyByID(colonyID string) error
 	CountColonies() (int, error)
 
-	// Runtime functions ...
-	AddRuntime(runtime *core.Runtime) error
-	GetRuntimes() ([]*core.Runtime, error)
-	GetRuntimeByID(runtimeID string) (*core.Runtime, error)
-	GetRuntimesByColonyID(colonyID string) ([]*core.Runtime, error)
-	ApproveRuntime(runtime *core.Runtime) error
-	RejectRuntime(runtime *core.Runtime) error
-	MarkAlive(runtime *core.Runtime) error
-	DeleteRuntimeByID(runtimeID string) error
-	DeleteRuntimesByColonyID(colonyID string) error
-	CountRuntimes() (int, error)
-	CountRuntimesByColonyID(colonyID string) (int, error)
+	// Executor functions ...
+	AddExecutor(executor *core.Executor) error
+	GetExecutors() ([]*core.Executor, error)
+	GetExecutorByID(executorID string) (*core.Executor, error)
+	GetExecutorsByColonyID(colonyID string) ([]*core.Executor, error)
+	ApproveExecutor(executor *core.Executor) error
+	RejectExecutor(executor *core.Executor) error
+	MarkAlive(executor *core.Executor) error
+	DeleteExecutorByID(executorID string) error
+	DeleteExecutorsByColonyID(colonyID string) error
+	CountExecutors() (int, error)
+	CountExecutorsByColonyID(colonyID string) (int, error)
 
 	// Process functions ...
 	AddProcess(process *core.Process) error
 	GetProcesses() ([]*core.Process, error)
 	GetProcessByID(processID string) (*core.Process, error)
 	FindProcessesByColonyID(colonyID string, seconds int, state int) ([]*core.Process, error)
-	FindProcessesByRuntimeID(colonyID string, runtimeID string, seconds int, state int) ([]*core.Process, error)
+	FindProcessesByExecutorID(colonyID string, executorID string, seconds int, state int) ([]*core.Process, error)
 	FindWaitingProcesses(colonyID string, count int) ([]*core.Process, error)
 	FindRunningProcesses(colonyID string, count int) ([]*core.Process, error)
 	FindAllRunningProcesses() ([]*core.Process, error)
 	FindAllWaitingProcesses() ([]*core.Process, error)
 	FindSuccessfulProcesses(colonyID string, count int) ([]*core.Process, error)
 	FindFailedProcesses(colonyID string, count int) ([]*core.Process, error)
-	FindUnassignedProcesses(colonyID string, runtimeID string, runtimeType string, count int, latest bool) ([]*core.Process, error)
+	FindUnassignedProcesses(colonyID string, executorID string, executorType string, count int, latest bool) ([]*core.Process, error)
 	DeleteProcessByID(processID string) error
 	DeleteAllProcesses() error
 	DeleteAllProcessesByColonyID(colonyID string) error
@@ -59,8 +59,8 @@ type Database interface {
 	SetChildren(processID string, children []string) error
 	SetWaitForParents(processID string, waitingForParent bool) error
 	ResetAllProcesses(process *core.Process) error
-	AssignRuntime(runtimeID string, process *core.Process) error
-	UnassignRuntime(process *core.Process) error
+	Assign(executorID string, process *core.Process) error
+	Unassign(process *core.Process) error
 	MarkSuccessful(processID string) error
 	MarkFailed(processID string, errs []string) error
 	CountProcesses() (int, error)

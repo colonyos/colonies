@@ -86,7 +86,7 @@ var registerColonyCmd = &cobra.Command{
 		colony.SetID(colonyID)
 
 		if ServerID == "" {
-			ServerID = os.Getenv("COLONIES_SERVERID")
+			ServerID = os.Getenv("COLONIES_SERVER_ID")
 		}
 		if ServerID == "" {
 			CheckError(errors.New("Unknown Server Id"))
@@ -121,7 +121,7 @@ var unregisterColonyCmd = &cobra.Command{
 		CheckError(err)
 
 		if ServerID == "" {
-			ServerID = os.Getenv("COLONIES_SERVERID")
+			ServerID = os.Getenv("COLONIES_SERVER_ID")
 		}
 		if ServerID == "" {
 			CheckError(errors.New("Unknown Server Id"))
@@ -156,7 +156,7 @@ var lsColoniesCmd = &cobra.Command{
 		CheckError(err)
 
 		if ServerID == "" {
-			ServerID = os.Getenv("COLONIES_SERVERID")
+			ServerID = os.Getenv("COLONIES_SERVER_ID")
 		}
 		if ServerID == "" {
 			CheckError(errors.New("Unknown Server Id"))
@@ -209,35 +209,35 @@ var colonyStatsCmd = &cobra.Command{
 		CheckError(err)
 
 		if ColonyID == "" {
-			ColonyID = os.Getenv("COLONIES_COLONYID")
+			ColonyID = os.Getenv("COLONIES_COLONY_ID")
 		}
 		if ColonyID == "" {
 			CheckError(errors.New("Unknown Colony Id"))
 		}
 
-		if RuntimePrvKey == "" {
-			if RuntimeID == "" {
-				RuntimeID = os.Getenv("COLONIES_RUNTIMEID")
+		if ExecutorPrvKey == "" {
+			if ExecutorID == "" {
+				ExecutorID = os.Getenv("COLONIES_EXECUTOR_ID")
 			}
-			RuntimePrvKey, _ = keychain.GetPrvKey(RuntimeID)
+			ExecutorPrvKey, _ = keychain.GetPrvKey(ExecutorID)
 		}
 
-		if RuntimePrvKey == "" {
-			if RuntimeID == "" {
-				RuntimeID = os.Getenv("COLONIES_RUNTIMEID")
+		if ExecutorPrvKey == "" {
+			if ExecutorID == "" {
+				ExecutorID = os.Getenv("COLONIES_EXECUTOR_ID")
 			}
-			RuntimePrvKey, _ = keychain.GetPrvKey(RuntimeID)
+			ExecutorPrvKey, _ = keychain.GetPrvKey(ExecutorID)
 		}
 
 		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Info("Starting a Colonies client")
 		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
 
-		stat, err := client.ColonyStatistics(ColonyID, RuntimePrvKey)
+		stat, err := client.ColonyStatistics(ColonyID, ExecutorPrvKey)
 		CheckError(err)
 
 		fmt.Println("Process statistics:")
 		specData := [][]string{
-			[]string{"Runtimes", strconv.Itoa(stat.Runtimes)},
+			[]string{"Executors", strconv.Itoa(stat.Executors)},
 			[]string{"Waiting processes", strconv.Itoa(stat.WaitingProcesses)},
 			[]string{"Running processes", strconv.Itoa(stat.RunningProcesses)},
 			[]string{"Successful processes", strconv.Itoa(stat.SuccessfulProcesses)},

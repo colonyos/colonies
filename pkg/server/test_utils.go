@@ -24,23 +24,23 @@ import (
 )
 
 type testEnv1 struct {
-	colony1PrvKey  string
-	colony1ID      string
-	colony2PrvKey  string
-	colony2ID      string
-	runtime1PrvKey string
-	runtime1ID     string
-	runtime2PrvKey string
-	runtime2ID     string
+	colony1PrvKey   string
+	colony1ID       string
+	colony2PrvKey   string
+	colony2ID       string
+	executor1PrvKey string
+	executor1ID     string
+	executor2PrvKey string
+	executor2ID     string
 }
 
 type testEnv2 struct {
-	colonyID      string
-	colony        *core.Colony
-	colonyPrvKey  string
-	runtimeID     string
-	runtime       *core.Runtime
-	runtimePrvKey string
+	colonyID       string
+	colony         *core.Colony
+	colonyPrvKey   string
+	executorID     string
+	executor       *core.Executor
+	executorPrvKey string
 }
 
 const EnableTLS = true
@@ -66,30 +66,30 @@ func setupTestEnv1(t *testing.T) (*testEnv1, *client.ColoniesClient, *ColoniesSe
 	_, err = client.AddColony(colony2, serverPrvKey)
 	assert.Nil(t, err)
 
-	runtime1, runtime1PrvKey, err := utils.CreateTestRuntimeWithKey(colony1.ID)
+	executor1, executor1PrvKey, err := utils.CreateTestExecutorWithKey(colony1.ID)
 	assert.Nil(t, err)
-	_, err = client.AddRuntime(runtime1, colony1PrvKey)
-	assert.Nil(t, err)
-
-	runtime2, runtime2PrvKey, err := utils.CreateTestRuntimeWithKey(colony2.ID)
-	assert.Nil(t, err)
-	_, err = client.AddRuntime(runtime2, colony2PrvKey)
+	_, err = client.AddExecutor(executor1, colony1PrvKey)
 	assert.Nil(t, err)
 
-	err = client.ApproveRuntime(runtime1.ID, colony1PrvKey)
+	executor2, executor2PrvKey, err := utils.CreateTestExecutorWithKey(colony2.ID)
+	assert.Nil(t, err)
+	_, err = client.AddExecutor(executor2, colony2PrvKey)
 	assert.Nil(t, err)
 
-	err = client.ApproveRuntime(runtime2.ID, colony2PrvKey)
+	err = client.ApproveExecutor(executor1.ID, colony1PrvKey)
+	assert.Nil(t, err)
+
+	err = client.ApproveExecutor(executor2.ID, colony2PrvKey)
 	assert.Nil(t, err)
 
 	env := &testEnv1{colony1PrvKey: colony1PrvKey,
-		colony1ID:      colony1.ID,
-		colony2PrvKey:  colony2PrvKey,
-		colony2ID:      colony2.ID,
-		runtime1PrvKey: runtime1PrvKey,
-		runtime1ID:     runtime1.ID,
-		runtime2PrvKey: runtime2PrvKey,
-		runtime2ID:     runtime2.ID}
+		colony1ID:       colony1.ID,
+		colony2PrvKey:   colony2PrvKey,
+		colony2ID:       colony2.ID,
+		executor1PrvKey: executor1PrvKey,
+		executor1ID:     executor1.ID,
+		executor2PrvKey: executor2PrvKey,
+		executor2ID:     executor2.ID}
 
 	return env, client, server, serverPrvKey, done
 }
@@ -107,19 +107,19 @@ func setupTestEnv2(t *testing.T) (*testEnv2, *client.ColoniesClient, *ColoniesSe
 	_, err = client.AddColony(colony, serverPrvKey)
 	assert.Nil(t, err)
 
-	runtime, runtimePrvKey, err := utils.CreateTestRuntimeWithKey(colony.ID)
-	_, err = client.AddRuntime(runtime, colonyPrvKey)
+	executor, executorPrvKey, err := utils.CreateTestExecutorWithKey(colony.ID)
+	_, err = client.AddExecutor(executor, colonyPrvKey)
 	assert.Nil(t, err)
 
-	err = client.ApproveRuntime(runtime.ID, colonyPrvKey)
+	err = client.ApproveExecutor(executor.ID, colonyPrvKey)
 	assert.Nil(t, err)
 
 	env := &testEnv2{colonyID: colony.ID,
-		colony:        colony,
-		colonyPrvKey:  colonyPrvKey,
-		runtimeID:     runtime.ID,
-		runtime:       runtime,
-		runtimePrvKey: runtimePrvKey}
+		colony:         colony,
+		colonyPrvKey:   colonyPrvKey,
+		executorID:     executor.ID,
+		executor:       executor,
+		executorPrvKey: executorPrvKey}
 
 	return env, client, server, serverPrvKey, done
 }
@@ -178,22 +178,22 @@ func generateDiamondtWorkflowSpec(colonyID string) *core.WorkflowSpec {
 	processSpec1 := core.CreateEmptyProcessSpec()
 	processSpec1.Name = "task1"
 	processSpec1.Conditions.ColonyID = colonyID
-	processSpec1.Conditions.RuntimeType = "test_runtime_type"
+	processSpec1.Conditions.ExecutorType = "test_executor_type"
 
 	processSpec2 := core.CreateEmptyProcessSpec()
 	processSpec2.Name = "task2"
 	processSpec2.Conditions.ColonyID = colonyID
-	processSpec2.Conditions.RuntimeType = "test_runtime_type"
+	processSpec2.Conditions.ExecutorType = "test_executor_type"
 
 	processSpec3 := core.CreateEmptyProcessSpec()
 	processSpec3.Name = "task3"
 	processSpec3.Conditions.ColonyID = colonyID
-	processSpec3.Conditions.RuntimeType = "test_runtime_type"
+	processSpec3.Conditions.ExecutorType = "test_executor_type"
 
 	processSpec4 := core.CreateEmptyProcessSpec()
 	processSpec4.Name = "task4"
 	processSpec4.Conditions.ColonyID = colonyID
-	processSpec4.Conditions.RuntimeType = "test_runtime_type"
+	processSpec4.Conditions.ExecutorType = "test_executor_type"
 
 	processSpec2.AddDependency("task1")
 	processSpec3.AddDependency("task1")
@@ -218,17 +218,17 @@ func generateTreeWorkflowSpec(colonyID string) *core.WorkflowSpec {
 	processSpec1 := core.CreateEmptyProcessSpec()
 	processSpec1.Name = "task1"
 	processSpec1.Conditions.ColonyID = colonyID
-	processSpec1.Conditions.RuntimeType = "test_runtime_type"
+	processSpec1.Conditions.ExecutorType = "test_executor_type"
 
 	processSpec2 := core.CreateEmptyProcessSpec()
 	processSpec2.Name = "task2"
 	processSpec2.Conditions.ColonyID = colonyID
-	processSpec2.Conditions.RuntimeType = "test_runtime_type"
+	processSpec2.Conditions.ExecutorType = "test_executor_type"
 
 	processSpec3 := core.CreateEmptyProcessSpec()
 	processSpec3.Name = "task3"
 	processSpec3.Conditions.ColonyID = colonyID
-	processSpec3.Conditions.RuntimeType = "test_runtime_type"
+	processSpec3.Conditions.ExecutorType = "test_executor_type"
 
 	processSpec2.AddDependency("task1")
 	processSpec3.AddDependency("task1")
@@ -245,7 +245,7 @@ func generateSingleWorkflowSpec(colonyID string) *core.WorkflowSpec {
 	processSpec1 := core.CreateEmptyProcessSpec()
 	processSpec1.Name = "task1"
 	processSpec1.Conditions.ColonyID = colonyID
-	processSpec1.Conditions.RuntimeType = "test_runtime_type"
+	processSpec1.Conditions.ExecutorType = "test_executor_type"
 
 	workflowSpec.AddProcessSpec(processSpec1)
 
@@ -258,7 +258,7 @@ func waitForProcesses(t *testing.T, server *ColoniesServer, processes []*core.Pr
 	wait := make(chan error)
 	for _, process := range processes {
 		go func(process *core.Process) {
-			_, err := server.controller.eventHandler.waitForProcess(process.ProcessSpec.Conditions.RuntimeType, state, process.ID, ctx)
+			_, err := server.controller.eventHandler.waitForProcess(process.ProcessSpec.Conditions.ExecutorType, state, process.ID, ctx)
 			wait <- err
 		}(process)
 	}
@@ -366,12 +366,12 @@ func WaitForServerToDie(t *testing.T, s ServerInfo) {
 	}
 }
 
-func WaitForProcessGraphs(t *testing.T, c *client.ColoniesClient, colonyID string, generatorID string, runtimePrvKey string, threshold int) int {
+func WaitForProcessGraphs(t *testing.T, c *client.ColoniesClient, colonyID string, generatorID string, executorPrvKey string, threshold int) int {
 	var graphs []*core.ProcessGraph
 	var err error
 	retries := 40
 	for i := 0; i < retries; i++ {
-		graphs, err = c.GetWaitingProcessGraphs(colonyID, 100, runtimePrvKey)
+		graphs, err = c.GetWaitingProcessGraphs(colonyID, 100, executorPrvKey)
 		assert.Nil(t, err)
 		if len(graphs) >= threshold {
 			break

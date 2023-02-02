@@ -10,10 +10,10 @@ import (
 )
 
 func main() {
-	colonyID := os.Getenv("COLONIES_COLONYID")
-	runtimePrvKey := os.Getenv("COLONIES_RUNTIMEPRVKEY")
-	coloniesHost := os.Getenv("COLONIES_SERVERHOST")
-	coloniesPortStr := os.Getenv("COLONIES_SERVERPORT")
+	colonyID := os.Getenv("COLONIES_COLONY_ID")
+	executorPrvKey := os.Getenv("COLONIES_EXECUTOR_PRVKEY")
+	coloniesHost := os.Getenv("COLONIES_SERVER_HOST")
+	coloniesPortStr := os.Getenv("COLONIES_SERVER_PORT")
 	coloniesPort, err := strconv.Atoi(coloniesPortStr)
 	if err != nil {
 		fmt.Println(err)
@@ -22,11 +22,11 @@ func main() {
 
 	processSpec := core.CreateEmptyProcessSpec()
 	processSpec.Conditions.ColonyID = colonyID
-	processSpec.Conditions.RuntimeType = os.Getenv("COLONIES_RUNTIMETYPE")
+	processSpec.Conditions.ExecutorType = os.Getenv("COLONIES_EXECUTOR_TYPE")
 	processSpec.Env["fibonacciNum"] = os.Args[1]
 
 	client := client.CreateColoniesClient(coloniesHost, coloniesPort, true, false)
-	addedProcess, err := client.SubmitProcessSpec(processSpec, runtimePrvKey)
+	addedProcess, err := client.SubmitProcessSpec(processSpec, executorPrvKey)
 	if err != nil {
 		fmt.Println(err)
 		return

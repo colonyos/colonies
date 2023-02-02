@@ -52,19 +52,19 @@ func TestExclusiveAssign(t *testing.T) {
 	_, err = client.AddColony(colony1, runningCluster[testServerIndex].ServerPrvKey)
 	assert.Nil(t, err)
 
-	runtime1, runtime1PrvKey, err := utils.CreateTestRuntimeWithKey(colony1.ID)
+	executor1, executor1PrvKey, err := utils.CreateTestExecutorWithKey(colony1.ID)
 	assert.Nil(t, err)
-	_, err = client.AddRuntime(runtime1, colony1PrvKey)
+	_, err = client.AddExecutor(executor1, colony1PrvKey)
 	assert.Nil(t, err)
 
-	err = client.ApproveRuntime(runtime1.ID, colony1PrvKey)
+	err = client.ApproveExecutor(executor1.ID, colony1PrvKey)
 	assert.Nil(t, err)
 
 	processSpec1 := utils.CreateTestProcessSpec(colony1.ID)
-	addedProcess1, err := client.SubmitProcessSpec(processSpec1, runtime1PrvKey)
+	addedProcess1, err := client.SubmitProcessSpec(processSpec1, executor1PrvKey)
 	assert.Nil(t, err)
 
-	assignedProcess, err := client.AssignProcess(colony1.ID, -1, runtime1PrvKey)
+	assignedProcess, err := client.AssignProcess(colony1.ID, -1, executor1PrvKey)
 	assert.Nil(t, err)
 	assert.Equal(t, assignedProcess.ID, addedProcess1.ID)
 

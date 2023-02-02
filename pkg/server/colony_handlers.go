@@ -132,7 +132,7 @@ func (server *ColoniesServer) handleGetColonyHTTPRequest(c *gin.Context, recover
 		return
 	}
 
-	err = server.validator.RequireRuntimeMembership(recoveredID, msg.ColonyID, true)
+	err = server.validator.RequireExecutorMembership(recoveredID, msg.ColonyID, true)
 	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		return
 	}
@@ -169,7 +169,7 @@ func (server *ColoniesServer) handleColonyStatisticsHTTPRequest(c *gin.Context, 
 		return
 	}
 
-	err = server.validator.RequireRuntimeMembership(recoveredID, msg.ColonyID, true)
+	err = server.validator.RequireExecutorMembership(recoveredID, msg.ColonyID, true)
 	if err != nil {
 		err = server.validator.RequireColonyOwner(recoveredID, msg.ColonyID)
 		if server.handleHTTPError(c, err, http.StatusForbidden) {

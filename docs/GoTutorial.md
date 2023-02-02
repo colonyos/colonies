@@ -14,10 +14,10 @@ source examples/devenv
 ## 3. Fibonacci Job Generator code (examples/generator.go)
 ```go
 func main() {
-    colonyID := os.Getenv("COLONIES_COLONYID")
-    runtimePrvKey := os.Getenv("COLONIES_RUNTIMEPRVKEY")
-    coloniesHost := os.Getenv("COLONIES_SERVERHOST")
-    coloniesPortStr := os.Getenv("COLONIES_SERVERPORT")
+    colonyID := os.Getenv("COLONIES_COLONY_ID")
+    executorPrvKey := os.Getenv("COLONIES_EXECUTOR_PRVKEY")
+    coloniesHost := os.Getenv("COLONIES_SERVER_HOST")
+    coloniesPortStr := os.Getenv("COLONIES_SERVER_PORT")
     coloniesPort, err := strconv.Atoi(coloniesPortStr)
     if err != nil {
         fmt.Println(err)
@@ -26,11 +26,11 @@ func main() {
 
     processSpec := core.CreateEmptyProcessSpec()
     processSpec.Conditions.ColonyID = colonyID
-    processSpec.Conditions.RuntimeType = os.Getenv("COLONIES_RUNTIME_TYPE")
+    processSpec.Conditions.ExecutorType = os.Getenv("COLONIES_EXECUTOR_TYPE")
     processSpec.Env["fibonacciNum"] = os.Args[1]
 
     client := client.CreateColoniesClient(coloniesHost, coloniesPort, true, false)
-    addedProcess, err := client.SubmitProcessSpec(processSpec, runtimePrvKey)
+    addedProcess, err := client.SubmitProcessSpec(processSpec, executorPrvKey)
     if err != nil {
         fmt.Println(err)
         return
@@ -44,19 +44,19 @@ func main() {
 ## 6. Fibonacci Solver worker code (examples/solver.go) 
 ```go
 func main() {
-    colonyID := os.Getenv("COLONIES_COLONYID")
-    runtimePrvKey := os.Getenv("COLONIES_RUNTIMEPRVKEY")
-    coloniesHost := os.Getenv("COLONIES_SERVERHOST")
-    coloniesPortStr := os.Getenv("COLONIES_SERVERPORT")
+    colonyID := os.Getenv("COLONIES_COLONY_ID")
+    executorPrvKey := os.Getenv("COLONIES_EXECUTOR_PRVKEY")
+    coloniesHost := os.Getenv("COLONIES_SERVER_HOST")
+    coloniesPortStr := os.Getenv("COLONIES_SERVER_PORT")
     coloniesPort, err := strconv.Atoi(coloniesPortStr)
     if err != nil {
         fmt.Println(err)
         os.Exit(-1)
     }
 
-    // Ask the Colonies server to assign a process to this Runtime
+    // Ask the Colonies server to assign a process to this executor 
     client := client.CreateColoniesClient(coloniesHost, coloniesPort, true, false)
-    assignedProcess, err := client.AssignProcess(colonyID, 100, runtimePrvKey) // Max wait 100 seconds for assignment request
+    assignedProcess, err := client.AssignProcess(colonyID, 100, executorPrvKey) // Max wait 100 seconds for assignment request
     if err != nil {
         fmt.Println(err)
         return
@@ -72,16 +72,16 @@ func main() {
             fmt.Println("Result: The last number in the Fibonacci serie " + attribute.Value + " is " + fibonacci.String())
 
             attribute := core.CreateAttribute(assignedProcess.ID, colonyID, "", core.OUT, "result", fibonacci.String())
-            client.AddAttribute(attribute, runtimePrvKey)
+            client.AddAttribute(attribute, executorPrvKey)
 
             // Close the process as successful
-            client.Close(assignedProcess.ID, runtimePrvKey)
+            client.Close(assignedProcess.ID, executorPrvKey)
             return
         }
     }
 
     // Close the process as failed
-    client.Fail(assignedProcess.ID, "invalid args", runtimePrvKey)
+    client.Fail(assignedProcess.ID, "invalid args", executorPrvKey)
 }
 ```
 
@@ -127,19 +127,19 @@ colonies process get --processid 705abd98cb2f801aa4c0a357c367ea8a5cc89a51d24aaad
 
 ```
 Process:
-+-------------------+------------------------------------------------------------------+
-| ID                | 705abd98cb2f801aa4c0a357c367ea8a5cc89a51d24aaadbca89abbb4be00b7e |
-| IsAssigned        | True                                                             |
-| AssignedRuntimeID | 3fc05cf3df4b494e95d6a3d297a34f19938f7daa7422ab0d4f794454133341ac |
-| State             | Successful                                                       |
-| SubmissionTime    | 2022-05-27 14:10:03                                              |
-| StartTime         | 2022-05-27 14:12:41                                              |
-| EndTime           | 2022-05-27 14:12:41                                              |
-| Deadline          | 0001-01-01 01:12:12                                              |
-| WaitingTime       | 2m37.735526s                                                     |
-| ProcessingTime    | 9.11ms                                                           |
-| Retries           | 0                                                                |
-+-------------------+------------------------------------------------------------------+
++---------------------+------------------------------------------------------------------+
+| ID                  | 705abd98cb2f801aa4c0a357c367ea8a5cc89a51d24aaadbca89abbb4be00b7e |
+| IsAssigned          | True                                                             |
+| AssignedExecutorID  | 3fc05cf3df4b494e95d6a3d297a34f19938f7daa7422ab0d4f794454133341ac |
+| State               | Successful                                                       |
+| SubmissionTime      | 2022-05-27 14:10:03                                              |
+| StartTime           | 2022-05-27 14:12:41                                              |
+| EndTime             | 2022-05-27 14:12:41                                              |
+| Deadline            | 0001-01-01 01:12:12                                              |
+| WaitingTime         | 2m37.735526s                                                     |
+| ProcessingTime      | 9.11ms                                                           |
+| Retries             | 0                                                                |
++---------------------+------------------------------------------------------------------+
 
 ProcessSpec:
 +-------------+------+
@@ -151,14 +151,14 @@ ProcessSpec:
 +-------------+------+
 
 Conditions:
-+-------------+------------------------------------------------------------------+
-| ColonyID    | 4787a5071856a4acf702b2ffcea422e3237a679c681314113d86139461290cf4 |
-| RuntimeIDs  | None                                                             |
-| RuntimeType | cli                                                              |
-| Memory      | 1000                                                             |
-| CPU Cores   | 10                                                               |
-| GPUs        | 1                                                                |
-+-------------+------------------------------------------------------------------+
++--------------+------------------------------------------------------------------+
+| ColonyID     | 4787a5071856a4acf702b2ffcea422e3237a679c681314113d86139461290cf4 |
+| ExecutorIDs  | None                                                             |
+| ExecutorType | cli                                                              |
+| Memory       | 1000                                                             |
+| CPU Cores    | 10                                                               |
+| GPUs         | 1                                                                |
++--------------+------------------------------------------------------------------+
 
 Attributes:
 +------------------------------------------------------------------+--------------+-------+------+

@@ -6,7 +6,7 @@
             "task1"
         ],
         "conditions": {
-            "runtimetype": "cli",
+            "executortype": "cli",
             "dependencies": []
         }
     }

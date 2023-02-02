@@ -28,45 +28,45 @@ func init() {
 	workflowCmd.AddCommand(deleteAllWorkflowsCmd)
 	rootCmd.AddCommand(workflowCmd)
 
-	submitWorkflowCmd.Flags().StringVarP(&RuntimeID, "runtimeid", "", "", "Runtime Id")
-	submitWorkflowCmd.Flags().StringVarP(&RuntimePrvKey, "runtimeprvkey", "", "", "Runtime private key")
+	submitWorkflowCmd.Flags().StringVarP(&ExecutorID, "executorid", "", "", "Executor Id")
+	submitWorkflowCmd.Flags().StringVarP(&ExecutorPrvKey, "executorprvkey", "", "", "Executor private key")
 	submitWorkflowCmd.Flags().StringVarP(&SpecFile, "spec", "", "", "JSON specification of a Colony workflow")
 	submitWorkflowCmd.Flags().StringVarP(&ColonyID, "colonyid", "", "", "Colony Id")
 	submitWorkflowCmd.Flags().BoolVarP(&Wait, "wait", "", false, "Colony Id")
 	submitWorkflowCmd.MarkFlagRequired("spec")
 
 	listWaitingWorkflowsCmd.Flags().StringVarP(&ColonyID, "colonyid", "", "", "Colony Id")
-	listWaitingWorkflowsCmd.Flags().StringVarP(&RuntimeID, "runtimeid", "", "", "Runtime Id")
-	listWaitingWorkflowsCmd.Flags().StringVarP(&RuntimePrvKey, "runtimeprvkey", "", "", "Runtime private key")
+	listWaitingWorkflowsCmd.Flags().StringVarP(&ExecutorID, "executorid", "", "", "Executor Id")
+	listWaitingWorkflowsCmd.Flags().StringVarP(&ExecutorPrvKey, "executorprvkey", "", "", "Executor private key")
 	listWaitingWorkflowsCmd.Flags().IntVarP(&Count, "count", "", server.MAX_COUNT, "Number of workflows to list")
 
 	listRunningWorkflowsCmd.Flags().StringVarP(&ColonyID, "colonyid", "", "", "Colony Id")
-	listRunningWorkflowsCmd.Flags().StringVarP(&RuntimeID, "runtimeid", "", "", "Runtime Id")
-	listRunningWorkflowsCmd.Flags().StringVarP(&RuntimePrvKey, "runtimeprvkey", "", "", "Runtime private key")
+	listRunningWorkflowsCmd.Flags().StringVarP(&ExecutorID, "executorid", "", "", "Executor Id")
+	listRunningWorkflowsCmd.Flags().StringVarP(&ExecutorPrvKey, "executorprvkey", "", "", "Executor private key")
 	listRunningWorkflowsCmd.Flags().IntVarP(&Count, "count", "", server.MAX_COUNT, "Number of workflows to list")
 
 	listSuccessfulWorkflowsCmd.Flags().StringVarP(&ColonyID, "colonyid", "", "", "Colony Id")
-	listSuccessfulWorkflowsCmd.Flags().StringVarP(&RuntimeID, "runtimeid", "", "", "Runtime Id")
-	listSuccessfulWorkflowsCmd.Flags().StringVarP(&RuntimePrvKey, "runtimeprvkey", "", "", "Runtime private key")
+	listSuccessfulWorkflowsCmd.Flags().StringVarP(&ExecutorID, "executorid", "", "", "Executor Id")
+	listSuccessfulWorkflowsCmd.Flags().StringVarP(&ExecutorPrvKey, "executorprvkey", "", "", "Executor private key")
 	listSuccessfulWorkflowsCmd.Flags().IntVarP(&Count, "count", "", server.MAX_COUNT, "Number of workflows to list")
 
 	listFailedWorkflowsCmd.Flags().StringVarP(&ColonyID, "colonyid", "", "", "Colony Id")
-	listFailedWorkflowsCmd.Flags().StringVarP(&RuntimeID, "runtimeid", "", "", "Runtime Id")
-	listFailedWorkflowsCmd.Flags().StringVarP(&RuntimePrvKey, "runtimeprvkey", "", "", "Runtime private key")
+	listFailedWorkflowsCmd.Flags().StringVarP(&ExecutorID, "executorid", "", "", "Executor Id")
+	listFailedWorkflowsCmd.Flags().StringVarP(&ExecutorPrvKey, "executorprvkey", "", "", "Executor private key")
 	listFailedWorkflowsCmd.Flags().IntVarP(&Count, "count", "", server.MAX_COUNT, "Number of workflows to list")
 
-	deleteWorkflowCmd.Flags().StringVarP(&RuntimeID, "runtimeid", "", "", "Runtime Id")
-	deleteWorkflowCmd.Flags().StringVarP(&RuntimePrvKey, "runtimeprvkey", "", "", "Runtime private key")
+	deleteWorkflowCmd.Flags().StringVarP(&ExecutorID, "executorid", "", "", "Executor Id")
+	deleteWorkflowCmd.Flags().StringVarP(&ExecutorPrvKey, "executorprvkey", "", "", "Executor private key")
 	deleteWorkflowCmd.Flags().StringVarP(&ColonyID, "colonyid", "", "", "Colony Id")
 	deleteWorkflowCmd.Flags().StringVarP(&WorkflowID, "workflowid", "", "", "Workflow Id")
 	deleteWorkflowCmd.MarkFlagRequired("processid")
 
-	deleteAllWorkflowsCmd.Flags().StringVarP(&RuntimeID, "runtimeid", "", "", "Runtime Id")
-	deleteAllWorkflowsCmd.Flags().StringVarP(&RuntimePrvKey, "runtimeprvkey", "", "", "Runtime private key")
+	deleteAllWorkflowsCmd.Flags().StringVarP(&ExecutorID, "executorid", "", "", "Executor Id")
+	deleteAllWorkflowsCmd.Flags().StringVarP(&ExecutorPrvKey, "executorprvkey", "", "", "Executor private key")
 	deleteAllWorkflowsCmd.Flags().StringVarP(&ColonyID, "colonyid", "", "", "Colony Id")
 
-	getWorkflowCmd.Flags().StringVarP(&RuntimeID, "runtimeid", "", "", "Runtime Id")
-	getWorkflowCmd.Flags().StringVarP(&RuntimePrvKey, "runtimeprvkey", "", "", "Runtime private key")
+	getWorkflowCmd.Flags().StringVarP(&ExecutorID, "executorid", "", "", "Executor Id")
+	getWorkflowCmd.Flags().StringVarP(&ExecutorPrvKey, "executorprvkey", "", "", "Executor private key")
 	getWorkflowCmd.Flags().StringVarP(&ColonyID, "colonyid", "", "", "Colony Id")
 	getWorkflowCmd.Flags().StringVarP(&WorkflowID, "workflowid", "", "", "Workflow Id")
 	getWorkflowCmd.MarkFlagRequired("workflowid")
@@ -95,7 +95,7 @@ var submitWorkflowCmd = &cobra.Command{
 
 		if workflowSpec.ColonyID == "" {
 			if ColonyID == "" {
-				ColonyID = os.Getenv("COLONIES_COLONYID")
+				ColonyID = os.Getenv("COLONIES_COLONY_ID")
 			}
 			if ColonyID == "" {
 				CheckError(errors.New("Unknown Colony Id, please set COLONYID env variable or specify ColonyID in JSON file"))
@@ -107,22 +107,22 @@ var submitWorkflowCmd = &cobra.Command{
 		keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
 		CheckError(err)
 
-		if RuntimeID == "" {
-			RuntimeID = os.Getenv("COLONIES_RUNTIMEID")
+		if ExecutorID == "" {
+			ExecutorID = os.Getenv("COLONIES_EXECUTOR_ID")
 		}
-		if RuntimeID == "" {
-			CheckError(errors.New("Unknown Runtime Id"))
+		if ExecutorID == "" {
+			CheckError(errors.New("Unknown Executor Id"))
 		}
 
-		if RuntimePrvKey == "" {
-			RuntimePrvKey, err = keychain.GetPrvKey(RuntimeID)
+		if ExecutorPrvKey == "" {
+			ExecutorPrvKey, err = keychain.GetPrvKey(ExecutorID)
 			CheckError(err)
 		}
 
 		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Info("Starting a Colonies client")
 		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
 
-		graph, err := client.SubmitWorkflowSpec(workflowSpec, RuntimePrvKey)
+		graph, err := client.SubmitWorkflowSpec(workflowSpec, ExecutorPrvKey)
 		CheckError(err)
 
 		log.WithFields(log.Fields{"WorkflowID": graph.ID}).Info("Workflow submitted")
@@ -140,28 +140,28 @@ var listWaitingWorkflowsCmd = &cobra.Command{
 		CheckError(err)
 
 		if ColonyID == "" {
-			ColonyID = os.Getenv("COLONIES_COLONYID")
+			ColonyID = os.Getenv("COLONIES_COLONY_ID")
 		}
 		if ColonyID == "" {
 			CheckError(errors.New("Unknown Colony Id"))
 		}
 
-		if RuntimeID == "" {
-			RuntimeID = os.Getenv("COLONIES_RUNTIMEID")
+		if ExecutorID == "" {
+			ExecutorID = os.Getenv("COLONIES_EXECUTOR_ID")
 		}
-		if RuntimeID == "" {
-			CheckError(errors.New("Unknown Runtime Id"))
+		if ExecutorID == "" {
+			CheckError(errors.New("Unknown Executor Id"))
 		}
 
-		if RuntimePrvKey == "" {
-			RuntimePrvKey, err = keychain.GetPrvKey(RuntimeID)
+		if ExecutorPrvKey == "" {
+			ExecutorPrvKey, err = keychain.GetPrvKey(ExecutorID)
 			CheckError(err)
 		}
 
 		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Info("Starting a Colonies client")
 		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
 
-		graphs, err := client.GetWaitingProcessGraphs(ColonyID, Count, RuntimePrvKey)
+		graphs, err := client.GetWaitingProcessGraphs(ColonyID, Count, ExecutorPrvKey)
 		CheckError(err)
 
 		if len(graphs) == 0 {
@@ -200,15 +200,15 @@ var deleteWorkflowCmd = &cobra.Command{
 		keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
 		CheckError(err)
 
-		if RuntimeID == "" {
-			RuntimeID = os.Getenv("COLONIES_RUNTIMEID")
+		if ExecutorID == "" {
+			ExecutorID = os.Getenv("COLONIES_EXECUTOR_ID")
 		}
-		if RuntimeID == "" {
-			CheckError(errors.New("Unknown Runtime Id"))
+		if ExecutorID == "" {
+			CheckError(errors.New("Unknown Executor Id"))
 		}
 
-		if RuntimePrvKey == "" {
-			RuntimePrvKey, err = keychain.GetPrvKey(RuntimeID)
+		if ExecutorPrvKey == "" {
+			ExecutorPrvKey, err = keychain.GetPrvKey(ExecutorID)
 			CheckError(err)
 		}
 
@@ -217,7 +217,7 @@ var deleteWorkflowCmd = &cobra.Command{
 
 		log.WithFields(log.Fields{"WorkflowID": WorkflowID}).Info("ProcessGraph deleted")
 
-		err = client.DeleteProcessGraph(WorkflowID, RuntimePrvKey)
+		err = client.DeleteProcessGraph(WorkflowID, ExecutorPrvKey)
 		CheckError(err)
 
 		log.WithFields(log.Fields{"WorkflowID": WorkflowID}).Info("ProcessGraph deleted")
@@ -235,7 +235,7 @@ var deleteAllWorkflowsCmd = &cobra.Command{
 		CheckError(err)
 
 		if ColonyID == "" {
-			ColonyID = os.Getenv("COLONIES_COLONYID")
+			ColonyID = os.Getenv("COLONIES_COLONY_ID")
 		}
 		if ColonyID == "" {
 			CheckError(errors.New("Unknown Colony Id"))
@@ -275,28 +275,28 @@ var listRunningWorkflowsCmd = &cobra.Command{
 		CheckError(err)
 
 		if ColonyID == "" {
-			ColonyID = os.Getenv("COLONIES_COLONYID")
+			ColonyID = os.Getenv("COLONIES_COLONY_ID")
 		}
 		if ColonyID == "" {
 			CheckError(errors.New("Unknown Colony Id"))
 		}
 
-		if RuntimeID == "" {
-			RuntimeID = os.Getenv("COLONIES_RUNTIMEID")
+		if ExecutorID == "" {
+			ExecutorID = os.Getenv("COLONIES_EXECUTOR_ID")
 		}
-		if RuntimeID == "" {
-			CheckError(errors.New("Unknown Runtime Id"))
+		if ExecutorID == "" {
+			CheckError(errors.New("Unknown Executor Id"))
 		}
 
-		if RuntimePrvKey == "" {
-			RuntimePrvKey, err = keychain.GetPrvKey(RuntimeID)
+		if ExecutorPrvKey == "" {
+			ExecutorPrvKey, err = keychain.GetPrvKey(ExecutorID)
 			CheckError(err)
 		}
 
 		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Info("Starting a Colonies client")
 		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
 
-		graphs, err := client.GetRunningProcessGraphs(ColonyID, Count, RuntimePrvKey)
+		graphs, err := client.GetRunningProcessGraphs(ColonyID, Count, ExecutorPrvKey)
 		CheckError(err)
 
 		if len(graphs) == 0 {
@@ -336,28 +336,28 @@ var listSuccessfulWorkflowsCmd = &cobra.Command{
 		CheckError(err)
 
 		if ColonyID == "" {
-			ColonyID = os.Getenv("COLONIES_COLONYID")
+			ColonyID = os.Getenv("COLONIES_COLONY_ID")
 		}
 		if ColonyID == "" {
 			CheckError(errors.New("Unknown Colony Id"))
 		}
 
-		if RuntimeID == "" {
-			RuntimeID = os.Getenv("COLONIES_RUNTIMEID")
+		if ExecutorID == "" {
+			ExecutorID = os.Getenv("COLONIES_EXECUTOR_ID")
 		}
-		if RuntimeID == "" {
-			CheckError(errors.New("Unknown Runtime Id"))
+		if ExecutorID == "" {
+			CheckError(errors.New("Unknown Executor Id"))
 		}
 
-		if RuntimePrvKey == "" {
-			RuntimePrvKey, err = keychain.GetPrvKey(RuntimeID)
+		if ExecutorPrvKey == "" {
+			ExecutorPrvKey, err = keychain.GetPrvKey(ExecutorID)
 			CheckError(err)
 		}
 
 		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Info("Starting a Colonies client")
 		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
 
-		graphs, err := client.GetSuccessfulProcessGraphs(ColonyID, Count, RuntimePrvKey)
+		graphs, err := client.GetSuccessfulProcessGraphs(ColonyID, Count, ExecutorPrvKey)
 		CheckError(err)
 
 		if len(graphs) == 0 {
@@ -397,28 +397,28 @@ var listFailedWorkflowsCmd = &cobra.Command{
 		CheckError(err)
 
 		if ColonyID == "" {
-			ColonyID = os.Getenv("COLONIES_COLONYID")
+			ColonyID = os.Getenv("COLONIES_COLONY_ID")
 		}
 		if ColonyID == "" {
 			CheckError(errors.New("Unknown Colony Id"))
 		}
 
-		if RuntimeID == "" {
-			RuntimeID = os.Getenv("COLONIES_RUNTIMEID")
+		if ExecutorID == "" {
+			ExecutorID = os.Getenv("COLONIES_EXECUTOR_ID")
 		}
-		if RuntimeID == "" {
-			CheckError(errors.New("Unknown Runtime Id"))
+		if ExecutorID == "" {
+			CheckError(errors.New("Unknown Executor Id"))
 		}
 
-		if RuntimePrvKey == "" {
-			RuntimePrvKey, err = keychain.GetPrvKey(RuntimeID)
+		if ExecutorPrvKey == "" {
+			ExecutorPrvKey, err = keychain.GetPrvKey(ExecutorID)
 			CheckError(err)
 		}
 
 		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Info("Starting a Colonies client")
 		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
 
-		graphs, err := client.GetFailedProcessGraphs(ColonyID, Count, RuntimePrvKey)
+		graphs, err := client.GetFailedProcessGraphs(ColonyID, Count, ExecutorPrvKey)
 		CheckError(err)
 
 		if len(graphs) == 0 {
@@ -466,7 +466,7 @@ func printGraf(client *client.ColoniesClient, graph *core.ProcessGraph) {
 
 	fmt.Println("\nProcesses:")
 	for i, processID := range graph.ProcessIDs {
-		process, err := client.GetProcess(processID, RuntimePrvKey)
+		process, err := client.GetProcess(processID, ExecutorPrvKey)
 		CheckError(err)
 
 		procFunc := process.ProcessSpec.Func
@@ -493,7 +493,7 @@ func printGraf(client *client.ColoniesClient, graph *core.ProcessGraph) {
 		processData := [][]string{
 			[]string{"Name", process.ProcessSpec.Name},
 			[]string{"ProcessID", process.ID},
-			[]string{"RuntimeType", process.ProcessSpec.Conditions.RuntimeType},
+			[]string{"ExecutorType", process.ProcessSpec.Conditions.ExecutorType},
 			[]string{"Func", procFunc},
 			[]string{"Args", procArgs},
 			[]string{"State", State2String(process.State)},
@@ -523,22 +523,22 @@ var getWorkflowCmd = &cobra.Command{
 		keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
 		CheckError(err)
 
-		if RuntimeID == "" {
-			RuntimeID = os.Getenv("COLONIES_RUNTIMEID")
+		if ExecutorID == "" {
+			ExecutorID = os.Getenv("COLONIES_EXECUTOR_ID")
 		}
-		if RuntimeID == "" {
-			CheckError(errors.New("Unknown Runtime Id"))
+		if ExecutorID == "" {
+			CheckError(errors.New("Unknown Executor Id"))
 		}
 
-		if RuntimePrvKey == "" {
-			RuntimePrvKey, err = keychain.GetPrvKey(RuntimeID)
+		if ExecutorPrvKey == "" {
+			ExecutorPrvKey, err = keychain.GetPrvKey(ExecutorID)
 			CheckError(err)
 		}
 
 		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Info("Starting a Colonies client")
 		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
 
-		graph, err := client.GetProcessGraph(WorkflowID, RuntimePrvKey)
+		graph, err := client.GetProcessGraph(WorkflowID, ExecutorPrvKey)
 		if err != nil {
 			log.WithFields(log.Fields{"WorkflowID": WorkflowID, "Error": err}).Error("Workflow not found")
 			os.Exit(-1)
