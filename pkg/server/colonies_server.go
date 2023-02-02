@@ -147,19 +147,19 @@ func (server *ColoniesServer) handleAPIRequest(c *gin.Context) {
 	case rpc.GetColonyPayloadType:
 		server.handleGetColonyHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 
-	// Runtime handlers
-	case rpc.AddRuntimePayloadType:
-		server.handleAddRuntimeHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
-	case rpc.GetRuntimesPayloadType:
-		server.handleGetRuntimesHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
-	case rpc.GetRuntimePayloadType:
-		server.handleGetRuntimeHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
-	case rpc.ApproveRuntimePayloadType:
-		server.handleApproveRuntimeHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
-	case rpc.RejectRuntimePayloadType:
-		server.handleRejectRuntimeHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
-	case rpc.DeleteRuntimePayloadType:
-		server.handleDeleteRuntimeHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+	// Executor handlers
+	case rpc.AddExecutorPayloadType:
+		server.handleAddExecutorHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+	case rpc.GetExecutorsPayloadType:
+		server.handleGetExecutorsHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+	case rpc.GetExecutorPayloadType:
+		server.handleGetExecutorHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+	case rpc.ApproveExecutorPayloadType:
+		server.handleApproveExecutorHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+	case rpc.RejectExecutorPayloadType:
+		server.handleRejectExecutorHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+	case rpc.DeleteExecutorPayloadType:
+		server.handleDeleteExecutorHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 
 	// Process handlers
 	case rpc.SubmitProcessSpecPayloadType:
@@ -262,7 +262,7 @@ func (server *ColoniesServer) generateRPCErrorMsg(err error, errorCode int) (*rp
 
 func (server *ColoniesServer) handleHTTPError(c *gin.Context, err error, errorCode int) bool {
 	if err != nil {
-		if !strings.HasPrefix(err.Error(), "No processes can be selected for runtime with Id") {
+		if !strings.HasPrefix(err.Error(), "No processes can be selected for executor with Id") {
 			log.Debug(err)
 		}
 

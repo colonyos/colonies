@@ -17,25 +17,25 @@ const (
 )
 
 type Process struct {
-	ID                string      `json:"processid"`
-	AssignedRuntimeID string      `json:"assignedruntimeid"`
-	IsAssigned        bool        `json:"isassigned"`
-	State             int         `json:"state"`
-	SubmissionTime    time.Time   `json:"submissiontime"`
-	StartTime         time.Time   `json:"starttime"`
-	EndTime           time.Time   `json:"endtime"`
-	WaitDeadline      time.Time   `json:"waitdeadline"`
-	ExecDeadline      time.Time   `json:"execdeadline"`
-	Retries           int         `json:"retries"`
-	Attributes        []Attribute `json:"attributes"`
-	ProcessSpec       ProcessSpec `json:"spec"`
-	WaitForParents    bool        `json:"waitforparents"`
-	Parents           []string    `json:"parents"`
-	Children          []string    `json:"children"`
-	ProcessGraphID    string      `json:"processgraphid"`
-	Input             []string    `json:"in"`
-	Output            []string    `json:"out"`
-	Errors            []string    `json:"errors"`
+	ID                 string      `json:"processid"`
+	AssignedExecutorID string      `json:"assignedexecutorid"`
+	IsAssigned         bool        `json:"isassigned"`
+	State              int         `json:"state"`
+	SubmissionTime     time.Time   `json:"submissiontime"`
+	StartTime          time.Time   `json:"starttime"`
+	EndTime            time.Time   `json:"endtime"`
+	WaitDeadline       time.Time   `json:"waitdeadline"`
+	ExecDeadline       time.Time   `json:"execdeadline"`
+	Retries            int         `json:"retries"`
+	Attributes         []Attribute `json:"attributes"`
+	ProcessSpec        ProcessSpec `json:"spec"`
+	WaitForParents     bool        `json:"waitforparents"`
+	Parents            []string    `json:"parents"`
+	Children           []string    `json:"children"`
+	ProcessGraphID     string      `json:"processgraphid"`
+	Input              []string    `json:"in"`
+	Output             []string    `json:"out"`
+	Errors             []string    `json:"errors"`
 }
 
 func CreateProcess(processSpec *ProcessSpec) *Process {
@@ -57,7 +57,7 @@ func CreateProcess(processSpec *ProcessSpec) *Process {
 
 func CreateProcessFromDB(processSpec *ProcessSpec,
 	id string,
-	assignedRuntimeID string,
+	assignedExecutorID string,
 	isAssigned bool,
 	state int,
 	submissionTime time.Time,
@@ -69,18 +69,18 @@ func CreateProcessFromDB(processSpec *ProcessSpec,
 	retries int,
 	attributes []Attribute) *Process {
 	return &Process{ID: id,
-		AssignedRuntimeID: assignedRuntimeID,
-		IsAssigned:        isAssigned,
-		State:             state,
-		SubmissionTime:    submissionTime,
-		StartTime:         startTime,
-		EndTime:           endTime,
-		WaitDeadline:      waitDeadline,
-		ExecDeadline:      execDeadline,
-		Errors:            errors,
-		Retries:           retries,
-		Attributes:        attributes,
-		ProcessSpec:       *processSpec,
+		AssignedExecutorID: assignedExecutorID,
+		IsAssigned:         isAssigned,
+		State:              state,
+		SubmissionTime:     submissionTime,
+		StartTime:          startTime,
+		EndTime:            endTime,
+		WaitDeadline:       waitDeadline,
+		ExecDeadline:       execDeadline,
+		Errors:             errors,
+		Retries:            retries,
+		Attributes:         attributes,
+		ProcessSpec:        *processSpec,
 	}
 }
 
@@ -137,7 +137,7 @@ func (process *Process) Equals(process2 *Process) bool {
 
 	same := true
 	if process.ID != process2.ID ||
-		process.AssignedRuntimeID != process2.AssignedRuntimeID ||
+		process.AssignedExecutorID != process2.AssignedExecutorID ||
 		process.State != process2.State ||
 		process.IsAssigned != process2.IsAssigned ||
 		process.SubmissionTime.Unix() != process2.SubmissionTime.Unix() ||
@@ -266,8 +266,8 @@ func (process *Process) SetState(state int) {
 	process.State = state
 }
 
-func (process *Process) SetAssignedRuntimeID(runtimeID string) {
-	process.AssignedRuntimeID = runtimeID
+func (process *Process) SetAssignedExecutorID(executorID string) {
+	process.AssignedExecutorID = executorID
 	process.IsAssigned = true
 }
 

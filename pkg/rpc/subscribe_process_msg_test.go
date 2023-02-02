@@ -8,7 +8,7 @@ import (
 )
 
 func TestRPCSubscribeProcessMsg(t *testing.T) {
-	msg := CreateSubscribeProcessMsg(core.GenerateRandomID(), "test_runtime_type", 1, 2)
+	msg := CreateSubscribeProcessMsg(core.GenerateRandomID(), "test_executor_type", 1, 2)
 	jsonString, err := msg.ToJSON()
 	assert.Nil(t, err)
 
@@ -22,7 +22,7 @@ func TestRPCSubscribeProcessMsg(t *testing.T) {
 }
 
 func TestRPCSubscribeProcessMsgIndent(t *testing.T) {
-	msg := CreateSubscribeProcessMsg(core.GenerateRandomID(), "test_runtime_type", 1, 2)
+	msg := CreateSubscribeProcessMsg(core.GenerateRandomID(), "test_executor_type", 1, 2)
 	jsonString, err := msg.ToJSONIndent()
 	assert.Nil(t, err)
 
@@ -36,7 +36,7 @@ func TestRPCSubscribeProcessMsgIndent(t *testing.T) {
 }
 
 func TestRPCSubscribeProcessMsgEquals(t *testing.T) {
-	msg := CreateSubscribeProcessMsg(core.GenerateRandomID(), "test_runtime_type", 1, 2)
+	msg := CreateSubscribeProcessMsg(core.GenerateRandomID(), "test_executor_type", 1, 2)
 	assert.True(t, msg.Equals(msg))
 	assert.False(t, msg.Equals(nil))
 }

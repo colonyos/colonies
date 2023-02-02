@@ -53,15 +53,15 @@ func TestGetColony(t *testing.T) {
 	_, err = client.AddColony(colony, serverPrvKey)
 	assert.Nil(t, err)
 
-	runtime, runtimePrvKey, err := utils.CreateTestRuntimeWithKey(colony.ID)
+	executor, executorPrvKey, err := utils.CreateTestExecutorWithKey(colony.ID)
 	assert.Nil(t, err)
-	_, err = client.AddRuntime(runtime, colonyPrvKey)
-	assert.Nil(t, err)
-
-	err = client.ApproveRuntime(runtime.ID, colonyPrvKey)
+	_, err = client.AddExecutor(executor, colonyPrvKey)
 	assert.Nil(t, err)
 
-	colonyFromServer, err := client.GetColonyByID(colony.ID, runtimePrvKey)
+	err = client.ApproveExecutor(executor.ID, colonyPrvKey)
+	assert.Nil(t, err)
+
+	colonyFromServer, err := client.GetColonyByID(colony.ID, executorPrvKey)
 	assert.Nil(t, err)
 	assert.True(t, colony.Equals(colonyFromServer))
 
@@ -101,7 +101,7 @@ func TestGetColonyStatistics(t *testing.T) {
 	numberOfWaitingProcesses := 2
 	for i := 0; i < numberOfWaitingProcesses; i++ {
 		processSpec := utils.CreateTestProcessSpec(env.colonyID)
-		_, err := client.SubmitProcessSpec(processSpec, env.runtimePrvKey)
+		_, err := client.SubmitProcessSpec(processSpec, env.executorPrvKey)
 		assert.Nil(t, err)
 	}
 
@@ -109,20 +109,20 @@ func TestGetColonyStatistics(t *testing.T) {
 	numberOfRunningProcesses := 3
 	for i := 0; i < numberOfRunningProcesses; i++ {
 		processSpec := utils.CreateTestProcessSpec(env.colonyID)
-		_, err := client.SubmitProcessSpec(processSpec, env.runtimePrvKey)
+		_, err := client.SubmitProcessSpec(processSpec, env.executorPrvKey)
 		assert.Nil(t, err)
-		_, err = client.AssignProcess(env.colonyID, -1, env.runtimePrvKey)
+		_, err = client.AssignProcess(env.colonyID, -1, env.executorPrvKey)
 	}
 
 	// Successful
 	numberOfSuccessfulProcesses := 1
 	for i := 0; i < numberOfSuccessfulProcesses; i++ {
 		processSpec := utils.CreateTestProcessSpec(env.colonyID)
-		_, err := client.SubmitProcessSpec(processSpec, env.runtimePrvKey)
+		_, err := client.SubmitProcessSpec(processSpec, env.executorPrvKey)
 		assert.Nil(t, err)
-		processFromServer, err := client.AssignProcess(env.colonyID, -1, env.runtimePrvKey)
+		processFromServer, err := client.AssignProcess(env.colonyID, -1, env.executorPrvKey)
 		assert.Nil(t, err)
-		err = client.Close(processFromServer.ID, env.runtimePrvKey)
+		err = client.Close(processFromServer.ID, env.executorPrvKey)
 		assert.Nil(t, err)
 	}
 
@@ -130,15 +130,15 @@ func TestGetColonyStatistics(t *testing.T) {
 	numberOfFailedProcesses := 2
 	for i := 0; i < numberOfFailedProcesses; i++ {
 		processSpec := utils.CreateTestProcessSpec(env.colonyID)
-		_, err := client.SubmitProcessSpec(processSpec, env.runtimePrvKey)
+		_, err := client.SubmitProcessSpec(processSpec, env.executorPrvKey)
 		assert.Nil(t, err)
-		processFromServer, err := client.AssignProcess(env.colonyID, -1, env.runtimePrvKey)
+		processFromServer, err := client.AssignProcess(env.colonyID, -1, env.executorPrvKey)
 		assert.Nil(t, err)
-		err = client.Fail(processFromServer.ID, []string{"error"}, env.runtimePrvKey)
+		err = client.Fail(processFromServer.ID, []string{"error"}, env.executorPrvKey)
 		assert.Nil(t, err)
 	}
 
-	stat, err := client.ColonyStatistics(env.colonyID, env.runtimePrvKey)
+	stat, err := client.ColonyStatistics(env.colonyID, env.executorPrvKey)
 	assert.Nil(t, err)
 
 	assert.Equal(t, stat.WaitingProcesses, numberOfWaitingProcesses)

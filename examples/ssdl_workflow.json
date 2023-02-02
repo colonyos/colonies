@@ -6,7 +6,7 @@
             "15"
         ],
         "conditions": {
-            "runtimetype": "cli",
+            "executortype": "cli",
             "dependencies": []
         }
     },
@@ -17,7 +17,7 @@
             "10"
         ],
         "conditions": {
-            "runtimetype": "cli",
+            "executortype": "cli",
             "dependencies": [
                 "analyze_aoi"
             ]
@@ -30,7 +30,7 @@
             "3"
         ],
         "conditions": {
-            "runtimetype": "cli",
+            "executortype": "cli",
             "dependencies": [
                 "analyze_aoi"
             ]
@@ -43,7 +43,7 @@
             "10"
         ],
         "conditions": {
-            "runtimetype": "cli",
+            "executortype": "cli",
             "dependencies": [
                 "create_odc_dataset",
                 "provision_hpc_vega"
@@ -57,7 +57,7 @@
             "10"
         ],
         "conditions": {
-            "runtimetype": "cli",
+            "executortype": "cli",
             "dependencies": [
                 "provision_hpc_vega"
             ]
@@ -70,7 +70,7 @@
             "5"
         ],
         "conditions": {
-            "runtimetype": "cli",
+            "executortype": "cli",
             "dependencies": [
                 "install_slurm_manager",
                 "upload_dataset_to_hpc"
@@ -84,7 +84,7 @@
             "1"
         ],
         "conditions": {
-            "runtimetype": "cli",
+            "executortype": "cli",
             "dependencies": [
                 "start_dask_workers"
             ]
@@ -97,7 +97,7 @@
             "1"
         ],
         "conditions": {
-            "runtimetype": "cli",
+            "executortype": "cli",
             "dependencies": [
                 "start_dask_workers"
             ]
@@ -110,7 +110,7 @@
             "1"
         ],
         "conditions": {
-            "runtimetype": "cli",
+            "executortype": "cli",
             "dependencies": [
                 "start_dask_workers"
             ]
@@ -123,7 +123,7 @@
             "1"
         ],
         "conditions": {
-            "runtimetype": "cli",
+            "executortype": "cli",
             "dependencies": [
                 "start_dask_workers"
             ]
@@ -136,7 +136,7 @@
             "1"
         ],
         "conditions": {
-            "runtimetype": "cli",
+            "executortype": "cli",
             "dependencies": [
                 "start_dask_workers"
             ]
@@ -149,7 +149,7 @@
             "10"
         ],
         "conditions": {
-            "runtimetype": "cli",
+            "executortype": "cli",
             "dependencies": [
                 "dask_worker_1",
                 "dask_worker_2",
@@ -166,7 +166,7 @@
             "1"
         ],
         "conditions": {
-            "runtimetype": "cli",
+            "executortype": "cli",
             "dependencies": [
                 "analyze_dataset"
             ]
@@ -179,7 +179,7 @@
             "1"
         ],
         "conditions": {
-            "runtimetype": "cli",
+            "executortype": "cli",
             "dependencies": [
                 "upload_result_to_db"
             ]

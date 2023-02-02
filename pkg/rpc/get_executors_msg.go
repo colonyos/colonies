@@ -4,22 +4,22 @@ import (
 	"encoding/json"
 )
 
-const GetRuntimesPayloadType = "getruntimesmsg"
+const GetExecutorsPayloadType = "getexecutorsmsg"
 
-type GetRuntimesMsg struct {
+type GetExecutorsMsg struct {
 	ColonyID string `json:"colonyid"`
 	MsgType  string `json:"msgtype"`
 }
 
-func CreateGetRuntimesMsg(colonyID string) *GetRuntimesMsg {
-	msg := &GetRuntimesMsg{}
+func CreateGetExecutorsMsg(colonyID string) *GetExecutorsMsg {
+	msg := &GetExecutorsMsg{}
 	msg.ColonyID = colonyID
-	msg.MsgType = GetRuntimesPayloadType
+	msg.MsgType = GetExecutorsPayloadType
 
 	return msg
 }
 
-func (msg *GetRuntimesMsg) ToJSON() (string, error) {
+func (msg *GetExecutorsMsg) ToJSON() (string, error) {
 	jsonBytes, err := json.Marshal(msg)
 	if err != nil {
 		return "", err
@@ -28,7 +28,7 @@ func (msg *GetRuntimesMsg) ToJSON() (string, error) {
 	return string(jsonBytes), nil
 }
 
-func (msg *GetRuntimesMsg) ToJSONIndent() (string, error) {
+func (msg *GetExecutorsMsg) ToJSONIndent() (string, error) {
 	jsonBytes, err := json.MarshalIndent(msg, "", "    ")
 	if err != nil {
 		return "", err
@@ -37,7 +37,7 @@ func (msg *GetRuntimesMsg) ToJSONIndent() (string, error) {
 	return string(jsonBytes), nil
 }
 
-func (msg *GetRuntimesMsg) Equals(msg2 *GetRuntimesMsg) bool {
+func (msg *GetExecutorsMsg) Equals(msg2 *GetExecutorsMsg) bool {
 	if msg2 == nil {
 		return false
 	}
@@ -49,8 +49,8 @@ func (msg *GetRuntimesMsg) Equals(msg2 *GetRuntimesMsg) bool {
 	return false
 }
 
-func CreateGetRuntimesMsgFromJSON(jsonString string) (*GetRuntimesMsg, error) {
-	var msg *GetRuntimesMsg
+func CreateGetExecutorsMsgFromJSON(jsonString string) (*GetExecutorsMsg, error) {
+	var msg *GetExecutorsMsg
 
 	err := json.Unmarshal([]byte(jsonString), &msg)
 	if err != nil {

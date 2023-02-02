@@ -9,15 +9,15 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// Runtime 2 subscribes on process events and expects to receive an event when a new process is submitted
-// Runtime 1 submitts a new process
-// Runtime 2 receives an event
+// Executor 2 subscribes on process events and expects to receive an event when a new process is submitted
+// Executor 1 submitts a new process
+// Executor 2 receives an event
 func TestSubscribeProcesses(t *testing.T) {
 	env, client, server, _, done := setupTestEnv1(t)
 
-	runtimeType := "test_runtime_type"
+	executorType := "test_executor_type"
 
-	subscription, err := client.SubscribeProcesses(runtimeType, core.WAITING, 100, env.runtime2PrvKey)
+	subscription, err := client.SubscribeProcesses(executorType, core.WAITING, 100, env.executor2PrvKey)
 	assert.Nil(t, err)
 
 	waitForProcess := make(chan error)
@@ -33,7 +33,7 @@ func TestSubscribeProcesses(t *testing.T) {
 	time.Sleep(1 * time.Second)
 
 	processSpec := utils.CreateTestProcessSpec(env.colony1ID)
-	_, err = client.SubmitProcessSpec(processSpec, env.runtime1PrvKey)
+	_, err = client.SubmitProcessSpec(processSpec, env.executor1PrvKey)
 	assert.Nil(t, err)
 
 	err = <-waitForProcess
@@ -42,24 +42,24 @@ func TestSubscribeProcesses(t *testing.T) {
 	<-done
 }
 
-// Runtime 1 submits a process
-// Runtime 2 subscribes on process events and expects to receive an event when the process finishes.
-// Runtime 1 gets assign the process
-// Runtime 1 finish the process
-// Runtime 2 receives an event
+// Executor 1 submits a process
+// Executor 2 subscribes on process events and expects to receive an event when the process finishes.
+// Executor 1 gets assign the process
+// Executor 1 finish the process
+// Executor 2 receives an event
 func TestSubscribeChangeStateProcess(t *testing.T) {
 	env, client, server, _, done := setupTestEnv1(t)
 
 	processSpec := utils.CreateTestProcessSpec(env.colony1ID)
-	addedProcess, err := client.SubmitProcessSpec(processSpec, env.runtime1PrvKey)
+	addedProcess, err := client.SubmitProcessSpec(processSpec, env.executor1PrvKey)
 	assert.Nil(t, err)
 	assert.Equal(t, core.PENDING, addedProcess.State)
 
 	subscription, err := client.SubscribeProcess(addedProcess.ID,
-		addedProcess.ProcessSpec.Conditions.RuntimeType,
+		addedProcess.ProcessSpec.Conditions.ExecutorType,
 		core.SUCCESS,
 		100,
-		env.runtime2PrvKey)
+		env.executor2PrvKey)
 	assert.Nil(t, err)
 
 	waitForProcess := make(chan error)
@@ -72,10 +72,10 @@ func TestSubscribeChangeStateProcess(t *testing.T) {
 		}
 	}()
 
-	assignedProcess, err := client.AssignProcess(env.colony1ID, -1, env.runtime1PrvKey)
+	assignedProcess, err := client.AssignProcess(env.colony1ID, -1, env.executor1PrvKey)
 	assert.Nil(t, err)
 
-	err = client.Close(assignedProcess.ID, env.runtime1PrvKey)
+	err = client.Close(assignedProcess.ID, env.executor1PrvKey)
 	assert.Nil(t, err)
 
 	err = <-waitForProcess
@@ -88,32 +88,32 @@ func TestSubscribeChangeStateProcess(t *testing.T) {
 // process state change event, but that event has already occurred? Then, the subscriber would what forever.
 // The solution is to let the server send an event anyway if the wanted state is true already.
 //
-// Runtime 1 submits a process
-// Runtime 1 gets assign the process
-// Runtime 1 finish the process
-// Runtime 2 subscribes on process events and expects to receive an event when the process finishes.
-// Runtime 2 receives an event
+// Executor 1 submits a process
+// Executor 1 gets assign the process
+// Executor 1 finish the process
+// Executor 2 subscribes on process events and expects to receive an event when the process finishes.
+// Executor 2 receives an event
 func TestSubscribeChangeStateProcess2(t *testing.T) {
 	env, client, server, _, done := setupTestEnv1(t)
 
 	processSpec := utils.CreateTestProcessSpec(env.colony1ID)
-	addedProcess, err := client.SubmitProcessSpec(processSpec, env.runtime1PrvKey)
+	addedProcess, err := client.SubmitProcessSpec(processSpec, env.executor1PrvKey)
 	assert.Nil(t, err)
 	assert.Equal(t, core.WAITING, addedProcess.State)
 
-	assignedProcess, err := client.AssignProcess(env.colony1ID, -1, env.runtime1PrvKey)
+	assignedProcess, err := client.AssignProcess(env.colony1ID, -1, env.executor1PrvKey)
 	assert.Nil(t, err)
 
-	err = client.Close(assignedProcess.ID, env.runtime1PrvKey)
+	err = client.Close(assignedProcess.ID, env.executor1PrvKey)
 	assert.Nil(t, err)
 
 	time.Sleep(5 * time.Second)
 
 	subscription, err := client.SubscribeProcess(addedProcess.ID,
-		addedProcess.ProcessSpec.Conditions.RuntimeType,
+		addedProcess.ProcessSpec.Conditions.ExecutorType,
 		core.SUCCESS,
 		100,
-		env.runtime2PrvKey)
+		env.executor2PrvKey)
 	assert.Nil(t, err)
 
 	waitForProcess := make(chan error)

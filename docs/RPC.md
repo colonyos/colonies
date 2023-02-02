@@ -111,7 +111,7 @@ Else it will contain the reply JSON data, e.g:
 
 ### Get Colony info
 * PayloadType: **getcolonymsg**
-* Credentials: A valid Runtime Private Key
+* Credentials: A valid Exectutor Private Key
 
 #### Payload 
 ```json
@@ -129,18 +129,18 @@ Else it will contain the reply JSON data, e.g:
 }
 ```
 
-## Runtime API
-* PayloadType: **addruntimemsg**
+## Executor API
+* PayloadType: **addexecutormsg**
 * Credentials: A valid Colony Private Key
 
 #### Payload 
 ```json
 {
-    "msgtype": "addruntimemsg",
-    "runtime": {
-        "runtimeid": "38df5bbbcf0ccb438d2e4151638e3967bf28a5654af6a7e5acc590c0e49fae06",
-        "runtimetype": "test_runtime_type",
-        "name": "test_runtime_name",
+    "msgtype": "addexecutormsg",
+    "executor": {
+        "executorid": "38df5bbbcf0ccb438d2e4151638e3967bf28a5654af6a7e5acc590c0e49fae06",
+        "executortype": "test_executor_type",
+        "name": "test_executor_name",
         "colonyid": "405acc69052cf19ce23ddd238b73c74bfd78c65cf6ef57613b870470a26d6f95",
         "cpu": "AMD Ryzen 9 5950X (32) @ 3.400GHz",
         "cores": 32,
@@ -155,9 +155,9 @@ Else it will contain the reply JSON data, e.g:
 #### Reply 
 ```json
 {
-    "runtimeid": "38df5bbbcf0ccb438d2e4151638e3967bf28a5654af6a7e5acc590c0e49fae06",
-    "runtimetype": "test_runtime_type",
-    "name": "test_runtime_name",
+    "executorid": "38df5bbbcf0ccb438d2e4151638e3967bf28a5654af6a7e5acc590c0e49fae06",
+    "executortype": "test_executor_type",
+    "name": "test_executor_name",
     "colonyid": "405acc69052cf19ce23ddd238b73c74bfd78c65cf6ef57613b870470a26d6f95",
     "cpu": "AMD Ryzen 9 5950X (32) @ 3.400GHz",
     "cores": 32,
@@ -168,14 +168,14 @@ Else it will contain the reply JSON data, e.g:
 }
 ```
 
-### List Runtimes
-* PayloadType: **getruntimesmsg**
-* Credentials: A valid Runtime or Colony Private Key
+### List Executors
+* PayloadType: **getexecutorsmsg**
+* Credentials: A valid Executor or Colony Private Key
 
 #### Payload 
 ```json
 {
-    "msgtype": "getruntimesmsg",
+    "msgtype": "getexecutorsmsg",
     "colonyid": "863e313bfd882fe7c0f13c14aff1f3f02ba763bcb48377e50d505289c81e47b6"
 }
 ```
@@ -184,9 +184,9 @@ Else it will contain the reply JSON data, e.g:
 ```json
 [
     {
-        "runtimeid": "9525365b67efdbbf37bc1fa7628c7e75bafd2f298cd26f75500bc1364b2c4c1c",
-        "runtimetype": "test_runtime_type",
-        "name": "test_runtime_name",
+        "executorid": "9525365b67efdbbf37bc1fa7628c7e75bafd2f298cd26f75500bc1364b2c4c1c",
+        "executortype": "test_executor_type",
+        "name": "test_executor_name",
         "colonyid": "863e313bfd882fe7c0f13c14aff1f3f02ba763bcb48377e50d505289c81e47b6",
         "cpu": "AMD Ryzen 9 5950X (32) @ 3.400GHz",
         "cores": 32,
@@ -198,24 +198,24 @@ Else it will contain the reply JSON data, e.g:
 ]
 ```
 
-### Get Runtime info
-* PayloadType: **getruntimemsg**
-* Credentials: A valid Runtime Private Key
+### Get Executor info
+* PayloadType: **getexecutormsg**
+* Credentials: A valid Executor Private Key
 
 #### Payload 
 ```json
 {
-    "msgtype": "getruntimemsg",
-    "runtimeid": "ed2aa78eabe3d1f6fd46ef1247199e9a12faf1a8f1bcba0db51265515c3f08e0"
+    "msgtype": "getexecutormsg",
+    "executorid": "ed2aa78eabe3d1f6fd46ef1247199e9a12faf1a8f1bcba0db51265515c3f08e0"
 }
 ```
 
 #### Reply 
 ```json
 {
-    "runtimeid": "ed2aa78eabe3d1f6fd46ef1247199e9a12faf1a8f1bcba0db51265515c3f08e0",
-    "runtimetype": "test_runtime_type",
-    "name": "test_runtime_name",
+    "executorid": "ed2aa78eabe3d1f6fd46ef1247199e9a12faf1a8f1bcba0db51265515c3f08e0",
+    "executortype": "test_executor_type",
+    "name": "test_executor_name",
     "colonyid": "85ae85e8b6fafddfab1a381ea86a5d7f55e818df6cad8a10e5986d87c57b0683",
     "cpu": "AMD Ryzen 9 5950X (32) @ 3.400GHz",
     "cores": 32,
@@ -226,15 +226,15 @@ Else it will contain the reply JSON data, e.g:
 }
 ```
 
-### Approve Runtime 
-* PayloadType: **approveruntimemsg**
+### Approve Executor 
+* PayloadType: **approveexecutormsg**
 * Credentials: A valid Colony Private Key
 
 #### Payload
 ```json
 {
-    "msgtype": "approveruntimemsg",
-    "runtimeid": "e40e2862e3a68e1c79af4e9475ef64fbf588e13619f4daa7183673b34e189c87"
+    "msgtype": "approveexecutormsg",
+    "executorid": "e40e2862e3a68e1c79af4e9475ef64fbf588e13619f4daa7183673b34e189c87"
 }
 ```
 
@@ -243,15 +243,15 @@ Else it will contain the reply JSON data, e.g:
 {}
 ```
 
-### Reject Runtime 
-* PayloadType: **rejectruntimemsg**
+### Reject Executor 
+* PayloadType: **rejectexecutormsg**
 * Credentials: A valid Colony Private Key
 
 #### Payload 
 ```json
 {
-    "msgtype": "rejectruntimemsg",
-    "runtimeid": "7804cea6a50f2a258ad815b0ed37b6b312c813bf7387cef04958971335faae21"
+    "msgtype": "rejectexecutormsg",
+    "executorid": "7804cea6a50f2a258ad815b0ed37b6b312c813bf7387cef04958971335faae21"
 }
 ```
 
@@ -260,15 +260,15 @@ Else it will contain the reply JSON data, e.g:
 {}
 ```
 
-### Delete Runtime 
-* PayloadType: **deleteruntimemsg**
+### Delete Executor 
+* PayloadType: **deleteexecutormsg**
 * Credentials: A valid Colony Private Key
 
 #### Payload 
 ```json
 {
-    "msgtype": "deleteruntimemsg",
-    "runtimeid": "7804cea6a50f2a258ad815b0ed37b6b312c813bf7387cef04958971335faae21"
+    "msgtype": "deleteexecutormsg",
+    "executorid": "7804cea6a50f2a258ad815b0ed37b6b312c813bf7387cef04958971335faae21"
 }
 ```
 
@@ -281,7 +281,7 @@ Else it will contain the reply JSON data, e.g:
 
 ### Submit Process Specification 
 * PayloadType: **submitprocessespecmsg**
-* Credentials: A valid Runtime Private Key
+* Credentials: A valid Executor Private Key
 
 #### Payload 
 ```json
@@ -292,8 +292,8 @@ Else it will contain the reply JSON data, e.g:
         "maxretries": 3,
         "conditions": {
             "colonyid": "2de470e10b87dc261c05f6b2da45d0802044208d6c617a056f4824d958710827",
-            "runtimeids": [],
-            "runtimetype": "test_runtime_type",
+            "executorids": [],
+            "executortype": "test_executor_type",
             "mem": 1000,
             "cores": 10,
             "gpus": 1
@@ -309,7 +309,7 @@ Else it will contain the reply JSON data, e.g:
 ```json
 {
     "processid": "2c0fd0407292538cb8dce3cb306f88b2ab7f3726d649e07502eb04344d9f7164",
-    "assignedruntimeid": "",
+    "assignedexecutorid": "",
     "isassigned": false,
     "state": 0,
     "submissiontime": "2022-01-02T11:58:30.017857Z",
@@ -331,8 +331,8 @@ Else it will contain the reply JSON data, e.g:
         "maxretries": 3,
         "conditions": {
             "colonyid": "2de470e10b87dc261c05f6b2da45d0802044208d6c617a056f4824d958710827",
-            "runtimeids": [],
-            "runtimetype": "test_runtime_type",
+            "executorids": [],
+            "executortype": "test_executor_type",
             "mem": 1000,
             "cores": 10,
             "gpus": 1
@@ -344,9 +344,9 @@ Else it will contain the reply JSON data, e.g:
 }
 ```
 
-### Assign Process to a Runtime 
+### Assign Process to a Executor 
 * PayloadType: **assignprocessmsg**
-* Credentials: A valid Runtime Private Key
+* Credentials: A valid Executor Private Key
 
 #### Payload 
 ```json
@@ -360,7 +360,7 @@ Else it will contain the reply JSON data, e.g:
 ```json
 {
     "processid": "68db01b27271168cb1011c1c54cc31a54f23eb7e5767e49bb34fb206591d2a65",
-    "assignedruntimeid": "d02274979e69d534202ca4cdcb3847c56e860d09039399feee6358b8c285d502",
+    "assignedexecutorid": "d02274979e69d534202ca4cdcb3847c56e860d09039399feee6358b8c285d502",
     "isassigned": true,
     "state": 1,
     "submissiontime": "2022-01-02T12:01:41.751942Z",
@@ -374,8 +374,8 @@ Else it will contain the reply JSON data, e.g:
         "maxretries": 3,
         "conditions": {
             "colonyid": "326691e2b5fc0651b5d781393c7279ab3dc58c6627d0a7b2a09e9aa0e4a60950",
-            "runtimeids": [],
-            "runtimetype": "test_runtime_type",
+            "executorids": [],
+            "executortype": "test_executor_type",
             "mem": 1000,
             "cores": 10,
             "gpus": 1
@@ -387,7 +387,7 @@ Else it will contain the reply JSON data, e.g:
 
 ### List process history
 * PayloadType: **getprocesshistmsg**
-* Credentials: A valid Runtime or Colony Private Key
+* Credentials: A valid Executor or Colony Private Key
 
 #### Payload 
 The state attribute can have the following values:
@@ -396,13 +396,13 @@ The state attribute can have the following values:
 * 2 : Success 
 * 3 : Failed 
 
-Note, all process will be returned for the entire colony if runtimeID is not specified.
+Note, all process will be returned for the entire colony if executorID is not specified.
 
 ```json
 {
     "msgtype": "getprocessesmsg",
     "coloyid": "891f0c88e8a00cb103df472e4ece347a41eb0115e5c40f12d565bb24eb3fc71d",
-    "runtimeid": "",
+    "executorid": "",
     "seconds": 100,
     "state": 3 
 }
@@ -413,7 +413,7 @@ Note, all process will be returned for the entire colony if runtimeID is not spe
 [
     {
         "processid": "88169d23b0828ed65f0a007e4be6bf9734358b9a64379d0c6e53a0496216db4c",
-        "assignedruntimeid": "653c818113e878d704935e639371f72a3167d510008607c70176e8147adf7865",
+        "assignedexecutorid": "653c818113e878d704935e639371f72a3167d510008607c70176e8147adf7865",
         "isassigned": true,
         "state": 3,
         "submissiontime": "2022-01-02T12:04:21.647969Z",
@@ -427,8 +427,8 @@ Note, all process will be returned for the entire colony if runtimeID is not spe
             "maxretries": 3,
             "conditions": {
                 "colonyid": "891f0c88e8a00cb103df472e4ece347a41eb0115e5c40f12d565bb24eb3fc71d",
-                "runtimeids": [],
-                "runtimetype": "test_runtime_type",
+                "executorids": [],
+                "executortype": "test_executor_type",
                 "mem": 1000,
                 "cores": 10,
                 "gpus": 1
@@ -441,7 +441,7 @@ Note, all process will be returned for the entire colony if runtimeID is not spe
 
 ### List processes
 * PayloadType: **getprocessesmsg**
-* Credentials: A valid Runtime or Colony Private Key
+* Credentials: A valid Executor or Colony Private Key
 
 #### Payload 
 The state attribute can have the following values:
@@ -464,7 +464,7 @@ The state attribute can have the following values:
 [
     {
         "processid": "88169d23b0828ed65f0a007e4be6bf9734358b9a64379d0c6e53a0496216db4c",
-        "assignedruntimeid": "653c818113e878d704935e639371f72a3167d510008607c70176e8147adf7865",
+        "assignedexecutorid": "653c818113e878d704935e639371f72a3167d510008607c70176e8147adf7865",
         "isassigned": true,
         "state": 3,
         "submissiontime": "2022-01-02T12:04:21.647969Z",
@@ -478,8 +478,8 @@ The state attribute can have the following values:
             "maxretries": 3,
             "conditions": {
                 "colonyid": "891f0c88e8a00cb103df472e4ece347a41eb0115e5c40f12d565bb24eb3fc71d",
-                "runtimeids": [],
-                "runtimetype": "test_runtime_type",
+                "executorids": [],
+                "executortype": "test_executor_type",
                 "mem": 1000,
                 "cores": 10,
                 "gpus": 1
@@ -492,7 +492,7 @@ The state attribute can have the following values:
 
 ### Get Process info
 * PayloadType: **getprocessmsg**
-* Credentials: A valid Runtime Private Key
+* Credentials: A valid Executor Private Key
 
 #### Payload 
 ```json
@@ -506,7 +506,7 @@ The state attribute can have the following values:
 ```json
 {
     "processid": "80a98f46c7a364fd33339a6fb2e6c5d8988384fdbf237b4012490c4658bbc9ce",
-    "assignedruntimeid": "",
+    "assignedexecutorid": "",
     "isassigned": false,
     "state": 0,
     "submissiontime": "2022-01-02T12:08:16.226133Z",
@@ -520,8 +520,8 @@ The state attribute can have the following values:
         "maxretries": 3,
         "conditions": {
             "colonyid": "ee193a3f4f3f93bfc87801cf1d01511c12c199cb80bfbf4955bb3d9d4638720d",
-            "runtimeids": [],
-            "runtimetype": "test_runtime_type",
+            "executorids": [],
+            "executortype": "test_executor_type",
             "mem": 1000,
             "cores": 10,
             "gpus": 1
@@ -533,7 +533,7 @@ The state attribute can have the following values:
 
 ### Delete Process
 * PayloadType: **deleteprocessmsg**
-* Credentials: A valid Runtime Private Key
+* Credentials: A valid Executor Private Key
 
 #### Payload 
 ```json
@@ -567,7 +567,7 @@ The state attribute can have the following values:
 
 ### Close Process as Successful 
 * PayloadType: **closesuccessfulmsg**
-* Credentials: A valid Runtime Private Key and the Runtime ID needs to match the RuntimeID assigned to the process
+* Credentials: A valid Executor Private Key and the Executor ID needs to match the ExecutorID assigned to the process
 
 #### Payload 
 ```json
@@ -584,7 +584,7 @@ The state attribute can have the following values:
 
 ### Close a Proceess as Failed 
 * PayloadType: **closefailedmsg**
-* Credentials: A valid Runtime Private Key and the Runtime ID needs to match the RuntimeID assigned to the process
+* Credentials: A valid Executor Private Key and the Executor ID needs to match the ExecutorID assigned to the process
 
 #### Payload 
 ```json
@@ -601,7 +601,7 @@ The state attribute can have the following values:
 
 ### Process Statistics 
 * PayloadType: **getprocstatmsg**
-* Credentials: A valid Runtime or Colony Private Key
+* Credentials: A valid Executor or Colony Private Key
 
 #### Payload 
 ```json
@@ -624,7 +624,7 @@ The state attribute can have the following values:
 
 ### Add Attribute to a Process 
 * PayloadType: **addattributemsg**
-* Credentials: A valid Runtime Private Key and the Runtime ID needs to match the RuntimeID assigned to the process
+* Credentials: A valid Executor Private Key and the Executor ID needs to match the ExecutorID assigned to the process
 
 #### Payload 
 ```json
@@ -653,7 +653,7 @@ The state attribute can have the following values:
 
 ### Get Attribute assigned to a Process 
 * PayloadType: **getattributemsg**
-* Credentials: A valid Runtime Private Key
+* Credentials: A valid Executor  Private Key
 
 #### Payload 
 ```json
@@ -676,7 +676,7 @@ The state attribute can have the following values:
 
 ### Subscribe Process Events
 * PayloadType: **subscribeprocessmsg**
-* Credentials: A valid Runtime Private Key
+* Credentials: A valid Executor Private Key
 * Comments: Receives an event when a process changes state. The payload needs to be sent over a websocket to: wss://host:port/pubsub
 
 #### Payload 
@@ -699,7 +699,7 @@ The state attribute can have the following values:
 ```json
 {
     "processid": "80a98f46c7a364fd33339a6fb2e6c5d8988384fdbf237b4012490c4658bbc9ce",
-    "assignedruntimeid": "",
+    "assignedexecutorid": "",
     "isassigned": false,
     "state": 0,
     "submissiontime": "2022-01-02T12:08:16.226133Z",
@@ -713,8 +713,8 @@ The state attribute can have the following values:
         "maxretries": 3,
         "conditions": {
             "colonyid": "ee193a3f4f3f93bfc87801cf1d01511c12c199cb80bfbf4955bb3d9d4638720d",
-            "runtimeids": [],
-            "runtimetype": "test_runtime_type",
+            "executorssids": [],
+            "executortype": "test_executor_type",
             "mem": 1000,
             "cores": 10,
             "gpus": 1
@@ -726,7 +726,7 @@ The state attribute can have the following values:
 
 ### Subscribe Processes Events
 * PayloadType: **subscribeprocessesmsg**
-* Credentials: A valid Runtime Private Key
+* Credentials: A valid Executor Private Key
 * Comments: Receives an event when processes are added or change state. The payload needs to be sent over a websocket to: wss://host:port/pubsub
 
 #### Payload 
@@ -739,7 +739,7 @@ The state attribute can have the following values:
 ```json
 {
     "msgtype": "subscribeprocessesmsg",
-    "runtimetype": "test_runtime_type",
+    "executortype": "test_executor_type",
     "state": 1,
     "timeout": -1
 }
@@ -749,7 +749,7 @@ The state attribute can have the following values:
 ```json
 {
     "processid": "80a98f46c7a364fd33339a6fb2e6c5d8988384fdbf237b4012490c4658bbc9ce",
-    "assignedruntimeid": "",
+    "assignedexecutorid": "",
     "isassigned": false,
     "state": 0,
     "submissiontime": "2022-01-02T12:08:16.226133Z",
@@ -763,8 +763,8 @@ The state attribute can have the following values:
         "maxretries": 3,
         "conditions": {
             "colonyid": "ee193a3f4f3f93bfc87801cf1d01511c12c199cb80bfbf4955bb3d9d4638720d",
-            "runtimeids": [],
-            "runtimetype": "test_runtime_type",
+            "executorids": [],
+            "executortype": "test_executor_type",
             "mem": 1000,
             "cores": 10,
             "gpus": 1

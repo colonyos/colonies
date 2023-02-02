@@ -6,7 +6,7 @@
             "task_a"
         ],
         "conditions": {
-            "runtimetype": "cli",
+            "executortype": "cli",
             "dependencies": []
         }
     },
@@ -17,7 +17,7 @@
             "task_a"
         ],
         "conditions": {
-            "runtimetype": "cli",
+            "executortype": "cli",
             "dependencies": []
         }
     },
@@ -28,7 +28,7 @@
             "task_b"
         ],
         "conditions": {
-            "runtimetype": "cli",
+            "executortype": "cli",
             "dependencies": [
                 "task_a",
                 "task_e"
@@ -42,7 +42,7 @@
             "task_c"
         ],
         "conditions": {
-            "runtimetype": "cli",
+            "executortype": "cli",
             "dependencies": [
                 "task_a"
             ]
@@ -55,7 +55,7 @@
             "task_d"
         ],
         "conditions": {
-            "runtimetype": "cli",
+            "executortype": "cli",
             "dependencies": [
                 "task_b",
                 "task_c"

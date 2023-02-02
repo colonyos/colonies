@@ -24,7 +24,7 @@ func TestColoniesControllerAddColony(t *testing.T) {
 	assert.True(t, colony.Equals(addedColony))
 }
 
-func TestColoniesControllerAddRuntime(t *testing.T) {
+func TestColoniesControllerAddExecutor(t *testing.T) {
 	db, err := postgresql.PrepareTestsWithPrefix("TEST_2")
 	defer db.Close()
 	assert.Nil(t, err)
@@ -32,15 +32,15 @@ func TestColoniesControllerAddRuntime(t *testing.T) {
 	controller := createTestColoniesController(db)
 	defer controller.stop()
 
-	runtime, _, err := utils.CreateTestRuntimeWithKey(core.GenerateRandomID())
+	executor, _, err := utils.CreateTestExecutorWithKey(core.GenerateRandomID())
 	assert.Nil(t, err)
 
-	addedRuntime, err := controller.addRuntime(runtime)
+	addedExecutor, err := controller.addExecutor(executor)
 	assert.Nil(t, err)
-	assert.True(t, runtime.Equals(addedRuntime))
+	assert.True(t, executor.Equals(addedExecutor))
 }
 
-func TestColoniesControllerApproveRuntime(t *testing.T) {
+func TestColoniesControllerApproveExecutor(t *testing.T) {
 	db, err := postgresql.PrepareTestsWithPrefix("TEST_2")
 	defer db.Close()
 	assert.Nil(t, err)
@@ -48,20 +48,20 @@ func TestColoniesControllerApproveRuntime(t *testing.T) {
 	controller := createTestColoniesController(db)
 	defer controller.stop()
 
-	runtime, _, err := utils.CreateTestRuntimeWithKey(core.GenerateRandomID())
+	executor, _, err := utils.CreateTestExecutorWithKey(core.GenerateRandomID())
 	assert.Nil(t, err)
 
-	addedRuntime, err := controller.addRuntime(runtime)
+	addedExecutor, err := controller.addExecutor(executor)
 	assert.Nil(t, err)
-	assert.True(t, runtime.Equals(addedRuntime))
+	assert.True(t, executor.Equals(addedExecutor))
 
-	err = controller.approveRuntime(runtime.ID)
+	err = controller.approveExecutor(executor.ID)
 	assert.Nil(t, err)
 
-	runtimeFromController, err := controller.getRuntime(runtime.ID)
+	executorFromController, err := controller.getExecutor(executor.ID)
 	assert.Nil(t, err)
-	assert.True(t, runtimeFromController.IsApproved())
-	assert.False(t, runtime.IsApproved())
+	assert.True(t, executorFromController.IsApproved())
+	assert.False(t, executor.IsApproved())
 }
 
 func TestColoniesControllerAddProcess(t *testing.T) {
@@ -74,10 +74,10 @@ func TestColoniesControllerAddProcess(t *testing.T) {
 
 	colonyID := core.GenerateRandomID()
 
-	runtime, _, err := utils.CreateTestRuntimeWithKey(colonyID)
+	executor, _, err := utils.CreateTestExecutorWithKey(colonyID)
 	assert.Nil(t, err)
 
-	_, err = controller.addRuntime(runtime)
+	_, err = controller.addExecutor(executor)
 	assert.Nil(t, err)
 
 	processSpec := utils.CreateTestProcessSpecWithEnv(colonyID, make(map[string]string))
@@ -88,7 +88,7 @@ func TestColoniesControllerAddProcess(t *testing.T) {
 	assert.True(t, process.ID == addedProcess.ID)
 }
 
-func TestColoniesControllerAssignRuntime(t *testing.T) {
+func TestColoniesControllerAssignExecutor(t *testing.T) {
 	db, err := postgresql.PrepareTestsWithPrefix("TEST_2")
 	defer db.Close()
 	assert.Nil(t, err)
@@ -98,10 +98,10 @@ func TestColoniesControllerAssignRuntime(t *testing.T) {
 
 	colonyID := core.GenerateRandomID()
 
-	runtime, _, err := utils.CreateTestRuntimeWithKey(colonyID)
+	executor, _, err := utils.CreateTestExecutorWithKey(colonyID)
 	assert.Nil(t, err)
 
-	_, err = controller.addRuntime(runtime)
+	_, err = controller.addExecutor(executor)
 	assert.Nil(t, err)
 
 	processSpec := utils.CreateTestProcessSpecWithEnv(colonyID, make(map[string]string))
@@ -109,13 +109,13 @@ func TestColoniesControllerAssignRuntime(t *testing.T) {
 	_, err = controller.addProcess(process)
 	assert.Nil(t, err)
 
-	assignedProcess, err := controller.assign(runtime.ID, colonyID, false)
+	assignedProcess, err := controller.assign(executor.ID, colonyID, false)
 	assert.Nil(t, err)
 	assert.True(t, process.ID == assignedProcess.ID)
 }
 
 // notest
-func TestColoniesControllerAssignRuntimeConcurrency(t *testing.T) {
+func TestColoniesControllerAssignExecutorConcurrency(t *testing.T) {
 	db, err := postgresql.PrepareTestsWithPrefix("TEST_2")
 	defer db.Close()
 	assert.Nil(t, err)
@@ -129,14 +129,14 @@ func TestColoniesControllerAssignRuntimeConcurrency(t *testing.T) {
 
 	colonyID := core.GenerateRandomID()
 
-	runtime1, _, err := utils.CreateTestRuntimeWithKey(colonyID)
+	executor1, _, err := utils.CreateTestExecutorWithKey(colonyID)
 	assert.Nil(t, err)
-	_, err = controller1.addRuntime(runtime1)
+	_, err = controller1.addExecutor(executor1)
 	assert.Nil(t, err)
 
-	runtime2, _, err := utils.CreateTestRuntimeWithKey(colonyID)
+	executor2, _, err := utils.CreateTestExecutorWithKey(colonyID)
 	assert.Nil(t, err)
-	_, err = controller1.addRuntime(runtime2)
+	_, err = controller1.addExecutor(executor2)
 	assert.Nil(t, err)
 
 	for i := 0; i < processCount; i++ {
@@ -150,7 +150,7 @@ func TestColoniesControllerAssignRuntimeConcurrency(t *testing.T) {
 
 	go func() {
 		for {
-			_, err := controller1.assign(runtime1.ID, colonyID, false)
+			_, err := controller1.assign(executor1.ID, colonyID, false)
 			if err == nil {
 				countChan <- 1
 			}
@@ -158,12 +158,12 @@ func TestColoniesControllerAssignRuntimeConcurrency(t *testing.T) {
 	}()
 
 	// Since we are using two different controller there should be an error: "Process already assigned"
-	// That can happen if two runtime clients manage to be assigned the same process
+	// That can happen if two executor clients manage to be assigned the same process
 	// A simple solution is just that the second clients gets an error
 
 	go func() {
 		for {
-			_, err := controller2.assign(runtime2.ID, colonyID, false)
+			_, err := controller2.assign(executor2.ID, colonyID, false)
 			if err == nil {
 				countChan <- 1
 			}

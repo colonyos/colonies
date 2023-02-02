@@ -19,7 +19,7 @@ func TestStatistics(t *testing.T) {
 	assert.True(t, stat.Equals(stat2))
 
 	assert.True(t, stat2.Colonies == 1)
-	assert.True(t, stat2.Runtimes == 2)
+	assert.True(t, stat2.Executors == 2)
 	assert.True(t, stat2.WaitingProcesses == 3)
 	assert.True(t, stat2.RunningProcesses == 4)
 	assert.True(t, stat2.SuccessfulProcesses == 5)

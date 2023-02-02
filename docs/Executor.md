@@ -1,7 +1,7 @@
 # How to implement a Colonies Worker? 
 The primary purpose of a worker is either to submit **process specifications** or **execute processes**. A process specification defines a process that should be executed in the future. Note that a Colonies process is generic concept and is not the same thing as an operating system process. A process is simply a series of computations or activities that produce some kind of result. It can be almost anything, for example turning on a lamp, training a neural network, serving a statistical model, dispatching a drone etc. 
 
-A Colonies worker needs to implement a runtime environment in order to execute processes. To do so, it needs to interact with a Colonies server using the Colonies API. Every worker must have a valid runtime id and a corresponding runtime private key. The private key is used to sign all messages sent to the Colonies server. The server derives the runtime id from the signatures and then check if the worker is a member of the colony it tries to interact with.
+A Colonies executor needs to interact with a Colonies server using the Colonies API. Every worker must have a valid executor id and a corresponding executor private key. The private key is used to sign all messages sent to the Colonies server. The server derives the executor id from the signatures and then check if the worker is a member of the colony it tries to interact with.
 
 ## Submitting a process specification
 A process specification can either be created by using the Colonies SDK available in Go, Python, Haskell, JavaScript or Julia, or by defining a JSON file as below and then submit it using the Colonies CLI. 
@@ -9,7 +9,7 @@ A process specification can either be created by using the Colonies SDK availabl
 ```json
 {
     "conditions": {
-        "runtimetype": "cli"
+        "executortype": "cli"
     },
     "func": "sleep",
     "args": [
@@ -18,7 +18,7 @@ A process specification can either be created by using the Colonies SDK availabl
 }
 ```
 
-The condition attribute defines constraints or requirements on the workers. The **runtimetype** attribute defines which worker types are eligible to execute a process. Note that there can be many workers of the same runtime type. In this case, multiple workers *compete* executing processes. This is very useful for scaling computations beyond a single machine. It is also possible to directly specify an array of runtime IDs to more precisely control which worker should execute a process.   
+The condition attribute defines constraints or requirements on the workers. The **executortype** attribute defines which worker types are eligible to execute a process. Note that there can be many workers of the same executor type. In this case, multiple workers *compete* executing processes. This is very useful for scaling computations beyond a single machine. It is also possible to directly specify an array of executor IDs to more precisely control which worker should execute a process.   
 
 
 The **func** attribute defines a function that should be executed by a worker. A worker might be capable of executing many functions. The **args** defines the arguments to the function. Note that it is up to the worker to interpret how to execute a particular process. After a worker has completed executing a function, it typically sets one or several output **attributes** on the process containing the result and then closes the process. As every process has an unique ID, other workers can then look up the process to retrieve the result. 
@@ -30,7 +30,7 @@ A process can either be closes as successful or failed. A process may automatica
 ```json
 {
     "conditions": {
-        "runtimetype": "cli"
+        "executortype": "cli"
     },
     "func": "sleep",
     "args": [
@@ -52,7 +52,7 @@ In the JSON example above, the sleep process must be completed in 5 seconds. Thi
 ```json
 {
     "conditions": {
-        "runtimetype": "cli"
+        "executortype": "cli"
     },
     "func": "sleep",
     "args": [
@@ -95,9 +95,9 @@ Also note that there is no guarantee that the AssignProcess function actually re
 ```julia
 while true
     try
-        process = ColonyRuntime.assignprocess(client, timeout, colonyid, prvkey)
+        process = ColonyExecutor.assign(client, timeout, colonyid, prvkey)
         execute(process)
-        ColonyRuntime.closeprocess(client, process.processid, true, prvkey)
+        ColonyExecutor.close(client, process.processid, true, prvkey)
     catch err
         # ignore, just re-try
     end
@@ -108,10 +108,10 @@ end
 ### Javascript worker example
 ```javascript
 function assign() {
-    runtime.assignLatest(colonyid, runtime_prvkey)
+    executor.assignLatest(colonyid, executor_prvkey)
     .then((process) => {
         execute(process)
-        runtime.closeProcess(process.processid, true, runtime_prvkey)
+        executor.closeProcess(process.processid, true, executor_prvkey)
     })
     .catch((err) => {
         console.log(err) 
@@ -119,7 +119,7 @@ function assign() {
 } 
 
 function subscribe() {
-    runtime.subscribeProcesses("cli", 3, 0, runtime_prvkey, (process) => {
+    executor.subscribeProcesses("cli", 3, 0, executor_prvkey, (process) => {
        assign()        
     })
     .catch(() => {
@@ -135,7 +135,7 @@ In Javascript it might be useful to use Colonies pubsub protocol to avoid blocki
 
 Also note the timeout mechanism. This needed to handle gracefully server errors. For example, if a Colonies server instance in Kubernetes dies, the code above will just re-subscribe to another instance.
 
-See Colonies [JavaScript SDK](https://github.com/colonyos/colonyruntime.js) for a working example.
+See Colonies [JavaScript SDK](https://github.com/colonyos/colonyexecutor.js) for a working example.
 
 ### Python worker example
 ```python
@@ -151,23 +151,23 @@ while True:
 
 
 ## Service discovery
-As Colony contains all registered workers (runtimes), it is possible to use it for service discovery, e.g. search for a particular worker and submit a process specification directly to it.   
+As Colony contains all registered executors, it is possible to use it for service discovery, e.g. search for a particular worker and submit a process specification directly to it.   
 
 ```go
-runtimes, err := client.GetRuntime(colonyID, prvKey)
-for _, runtime := range runtimes {
-    if runtime.Name == "videocam" {
-         condition := &Condition{RuntimeID: []{runtime.ID}, ColonyID: colonyID}
+executors, err := client.GetExecutors(colonyID, prvKey)
+for _, executor := range executors {
+    if executor.Name == "videocam" {
+         condition := &Condition{ExecutorID: []{executor.ID}, ColonyID: colonyID}
          processSpec := &ProcessSpec{Condition: condition, Func: "turn_on_video", Args: []{arg}, MaxExecTime: 1, MaxRetries: 3}
          err := client.SubmitProcessSpec(processSpec, prvKey)
     }
 }
 ```
 
-Resolving runtimes by name can also be done using the Colonies CLI.
+Resolving executors by name can also be done using the Colonies CLI.
 
 ```console
-colonies runtime resolve --targetname videocam 
+colonies executor resolve --targetname videocam 
 ```
 
 Output:

@@ -12,12 +12,12 @@ func TestCalcAvgTimes(t *testing.T) {
 	startTime := time.Now()
 
 	colonyID := core.GenerateRandomID()
-	runtimeType := "test_runtime_type"
+	executorType := "test_executor_type"
 	maxWaitTime := -1
 	maxExecTime := -1
 	maxRetries := 3
 
-	processSpec1 := core.CreateProcessSpec("test_name", "test_func", []string{"test_arg"}, colonyID, []string{}, runtimeType, maxWaitTime, maxExecTime, maxRetries, make(map[string]string), []string{}, 1)
+	processSpec1 := core.CreateProcessSpec("test_name", "test_func", []string{"test_arg"}, colonyID, []string{}, executorType, maxWaitTime, maxExecTime, maxRetries, make(map[string]string), []string{}, 1)
 
 	var zeroProcesses []*core.Process
 	var processes []*core.Process

@@ -13,21 +13,21 @@ func TestSubmitProcessSpecSecurity(t *testing.T) {
 	env, client, server, _, done := setupTestEnv1(t)
 
 	// The setup looks like this:
-	//   runtime1 is member of colony1
-	//   runtime2 is member of colony2
+	//   executor1 is member of colony1
+	//   executor2 is member of colony2
 
 	processSpec1 := utils.CreateTestProcessSpec(env.colony1ID)
-	_, err := client.SubmitProcessSpec(processSpec1, env.runtime1PrvKey)
+	_, err := client.SubmitProcessSpec(processSpec1, env.executor1PrvKey)
 	assert.Nil(t, err)
 
-	_, err = client.SubmitProcessSpec(processSpec1, env.runtime2PrvKey)
+	_, err = client.SubmitProcessSpec(processSpec1, env.executor2PrvKey)
 	assert.NotNil(t, err) // Should not work, runtiume2 is not member of colony1
 
 	processSpec2 := utils.CreateTestProcessSpec(env.colony2ID)
-	_, err = client.SubmitProcessSpec(processSpec2, env.runtime2PrvKey)
+	_, err = client.SubmitProcessSpec(processSpec2, env.executor2PrvKey)
 	assert.Nil(t, err)
 
-	_, err = client.SubmitProcessSpec(processSpec2, env.runtime1PrvKey)
+	_, err = client.SubmitProcessSpec(processSpec2, env.executor1PrvKey)
 	assert.NotNil(t, err) // Should not work, runtiume1 is not member of colony2
 
 	server.Shutdown()
@@ -38,38 +38,38 @@ func TestAssignProcessSecurity(t *testing.T) {
 	env, client, server, _, done := setupTestEnv1(t)
 
 	// The setup looks like this:
-	//   runtime1 is member of colony1
-	//   runtime2 is member of colony2
+	//   executor1 is member of colony1
+	//   executor2 is member of colony2
 
 	processSpec1 := utils.CreateTestProcessSpec(env.colony1ID)
-	_, err := client.SubmitProcessSpec(processSpec1, env.runtime1PrvKey)
+	_, err := client.SubmitProcessSpec(processSpec1, env.executor1PrvKey)
 	assert.Nil(t, err)
 
 	time.Sleep(50 * time.Millisecond)
 
 	processSpec2 := utils.CreateTestProcessSpec(env.colony2ID)
-	_, err = client.SubmitProcessSpec(processSpec2, env.runtime2PrvKey)
+	_, err = client.SubmitProcessSpec(processSpec2, env.executor2PrvKey)
 	assert.Nil(t, err)
 
-	// Now try to assign a process from colony2 using runtime1 credentials
-	_, err = client.AssignProcess(env.colony2ID, -1, env.runtime1PrvKey)
+	// Now try to assign a process from colony2 using executor1 credentials
+	_, err = client.AssignProcess(env.colony2ID, -1, env.executor1PrvKey)
 	assert.NotNil(t, err) // Should not work
 
-	// Now try to assign a process from colony2 using runtime1 credentials
-	_, err = client.AssignProcess(env.colony1ID, -1, env.runtime2PrvKey)
+	// Now try to assign a process from colony2 using executor1 credentials
+	_, err = client.AssignProcess(env.colony1ID, -1, env.executor2PrvKey)
 	assert.NotNil(t, err) // Should not work
 
-	// Now try to assign a process from colony2 using runtime1 credentials
-	_, err = client.AssignProcess(env.colony1ID, -1, env.runtime1PrvKey)
+	// Now try to assign a process from colony2 using executor1 credentials
+	_, err = client.AssignProcess(env.colony1ID, -1, env.executor1PrvKey)
 	assert.Nil(t, err) // Should work
 
 	// Now try to assign a process from colony2 using colony1 credentials
 	_, err = client.AssignProcess(env.colony1ID, -1, env.colony1PrvKey)
-	assert.NotNil(t, err) // Should not work, only runtimes are allowed
+	assert.NotNil(t, err) // Should not work, only executors are allowed
 
 	// Now try to assign a process from colony2 using colony1 credentials
 	_, err = client.AssignProcess(env.colony1ID, -1, env.colony2PrvKey)
-	assert.NotNil(t, err) // Should not work, only runtimes are allowed, also invalid credentials are used
+	assert.NotNil(t, err) // Should not work, only executors are allowed, also invalid credentials are used
 
 	server.Shutdown()
 	<-done
@@ -79,25 +79,25 @@ func TestGetProcessHistForColonySecurity(t *testing.T) {
 	env, client, server, _, done := setupTestEnv1(t)
 
 	// The setup looks like this:
-	//   runtime1 is member of colony1
-	//   runtime2 is member of colony2
+	//   executor1 is member of colony1
+	//   executor2 is member of colony2
 
 	numberOfRunningProcesses := 2
 	for i := 0; i < numberOfRunningProcesses; i++ {
 		processSpec := utils.CreateTestProcessSpec(env.colony1ID)
-		_, err := client.SubmitProcessSpec(processSpec, env.runtime1PrvKey)
+		_, err := client.SubmitProcessSpec(processSpec, env.executor1PrvKey)
 		assert.Nil(t, err)
-		_, err = client.AssignProcess(env.colony1ID, -1, env.runtime1PrvKey)
+		_, err = client.AssignProcess(env.colony1ID, -1, env.executor1PrvKey)
 		assert.Nil(t, err)
 	}
 
-	_, err := client.GetProcessHistForColony(core.RUNNING, env.colony1ID, 60, env.runtime2PrvKey)
+	_, err := client.GetProcessHistForColony(core.RUNNING, env.colony1ID, 60, env.executor2PrvKey)
 	assert.NotNil(t, err) // Should not work
 
 	_, err = client.GetProcessHistForColony(core.RUNNING, env.colony1ID, 60, env.colony2PrvKey)
 	assert.NotNil(t, err) // Should not work
 
-	_, err = client.GetProcessHistForColony(core.RUNNING, env.colony1ID, 60, env.runtime1PrvKey)
+	_, err = client.GetProcessHistForColony(core.RUNNING, env.colony1ID, 60, env.executor1PrvKey)
 	assert.Nil(t, err) // Should work
 
 	_, err = client.GetProcessHistForColony(core.RUNNING, env.colony1ID, 60, env.colony1PrvKey)
@@ -107,32 +107,32 @@ func TestGetProcessHistForColonySecurity(t *testing.T) {
 	<-done
 }
 
-func TestGetProcessHistForRuntimeSecurity(t *testing.T) {
+func TestGetProcessHistForExecutorSecurity(t *testing.T) {
 	env, client, server, _, done := setupTestEnv1(t)
 
 	// The setup looks like this:
-	//   runtime1 is member of colony1
-	//   runtime2 is member of colony2
+	//   executor1 is member of colony1
+	//   executor2 is member of colony2
 
 	numberOfRunningProcesses := 2
 	for i := 0; i < numberOfRunningProcesses; i++ {
 		processSpec := utils.CreateTestProcessSpec(env.colony1ID)
-		_, err := client.SubmitProcessSpec(processSpec, env.runtime1PrvKey)
+		_, err := client.SubmitProcessSpec(processSpec, env.executor1PrvKey)
 		assert.Nil(t, err)
-		_, err = client.AssignProcess(env.colony1ID, -1, env.runtime1PrvKey)
+		_, err = client.AssignProcess(env.colony1ID, -1, env.executor1PrvKey)
 		assert.Nil(t, err)
 	}
 
-	_, err := client.GetProcessHistForRuntime(core.RUNNING, env.colony1ID, env.runtime1ID, 60, env.runtime2PrvKey)
+	_, err := client.GetProcessHistForExecutor(core.RUNNING, env.colony1ID, env.executor1ID, 60, env.executor2PrvKey)
 	assert.NotNil(t, err) // Should not work
 
-	_, err = client.GetProcessHistForRuntime(core.RUNNING, env.colony1ID, env.runtime1ID, 60, env.colony2PrvKey)
+	_, err = client.GetProcessHistForExecutor(core.RUNNING, env.colony1ID, env.executor1ID, 60, env.colony2PrvKey)
 	assert.NotNil(t, err) // Should not work
 
-	_, err = client.GetProcessHistForRuntime(core.RUNNING, env.colony1ID, env.runtime1ID, 60, env.runtime1PrvKey)
+	_, err = client.GetProcessHistForExecutor(core.RUNNING, env.colony1ID, env.executor1ID, 60, env.executor1PrvKey)
 	assert.Nil(t, err) // Should work
 
-	_, err = client.GetProcessHistForRuntime(core.RUNNING, env.colony1ID, env.runtime1ID, 60, env.colony1PrvKey)
+	_, err = client.GetProcessHistForExecutor(core.RUNNING, env.colony1ID, env.executor1ID, 60, env.colony1PrvKey)
 	assert.Nil(t, err) // Should work
 
 	server.Shutdown()
@@ -143,22 +143,22 @@ func TestGetWaitingProcessesSecurity(t *testing.T) {
 	env, client, server, _, done := setupTestEnv1(t)
 
 	// The setup looks like this:
-	//   runtime1 is member of colony1
-	//   runtime2 is member of colony2
+	//   executor1 is member of colony1
+	//   executor2 is member of colony2
 
 	numberOfRunningProcesses := 2
 	for i := 0; i < numberOfRunningProcesses; i++ {
 		processSpec := utils.CreateTestProcessSpec(env.colony1ID)
-		_, err := client.SubmitProcessSpec(processSpec, env.runtime1PrvKey)
+		_, err := client.SubmitProcessSpec(processSpec, env.executor1PrvKey)
 		assert.Nil(t, err)
-		_, err = client.AssignProcess(env.colony1ID, -1, env.runtime1PrvKey)
+		_, err = client.AssignProcess(env.colony1ID, -1, env.executor1PrvKey)
 		assert.Nil(t, err)
 	}
 
-	_, err := client.GetRunningProcesses(env.colony1ID, numberOfRunningProcesses, env.runtime2PrvKey)
+	_, err := client.GetRunningProcesses(env.colony1ID, numberOfRunningProcesses, env.executor2PrvKey)
 	assert.NotNil(t, err) // Should not work
 
-	_, err = client.GetRunningProcesses(env.colony1ID, numberOfRunningProcesses, env.runtime1PrvKey)
+	_, err = client.GetRunningProcesses(env.colony1ID, numberOfRunningProcesses, env.executor1PrvKey)
 	assert.Nil(t, err) // Should work
 
 	server.Shutdown()
@@ -169,20 +169,20 @@ func TestGetRunningProcessesSecurity(t *testing.T) {
 	env, client, server, _, done := setupTestEnv1(t)
 
 	// The setup looks like this:
-	//   runtime1 is member of colony1
-	//   runtime2 is member of colony2
+	//   executor1 is member of colony1
+	//   executor2 is member of colony2
 
 	numberOfRunningProcesses := 2
 	for i := 0; i < numberOfRunningProcesses; i++ {
 		processSpec := utils.CreateTestProcessSpec(env.colony1ID)
-		_, err := client.SubmitProcessSpec(processSpec, env.runtime1PrvKey)
+		_, err := client.SubmitProcessSpec(processSpec, env.executor1PrvKey)
 		assert.Nil(t, err)
 	}
 
-	_, err := client.GetWaitingProcesses(env.colony1ID, numberOfRunningProcesses, env.runtime2PrvKey)
+	_, err := client.GetWaitingProcesses(env.colony1ID, numberOfRunningProcesses, env.executor2PrvKey)
 	assert.NotNil(t, err) // Should not work
 
-	_, err = client.GetWaitingProcesses(env.colony1ID, numberOfRunningProcesses, env.runtime1PrvKey)
+	_, err = client.GetWaitingProcesses(env.colony1ID, numberOfRunningProcesses, env.executor1PrvKey)
 	assert.Nil(t, err) // Should work
 
 	server.Shutdown()
@@ -193,24 +193,24 @@ func TestGetSuccessfulProcessesSecurity(t *testing.T) {
 	env, client, server, _, done := setupTestEnv1(t)
 
 	// The setup looks like this:
-	//   runtime1 is member of colony1
-	//   runtime2 is member of colony2
+	//   executor1 is member of colony1
+	//   executor2 is member of colony2
 
 	numberOfRunningProcesses := 2
 	for i := 0; i < numberOfRunningProcesses; i++ {
 		processSpec := utils.CreateTestProcessSpec(env.colony1ID)
-		_, err := client.SubmitProcessSpec(processSpec, env.runtime1PrvKey)
+		_, err := client.SubmitProcessSpec(processSpec, env.executor1PrvKey)
 		assert.Nil(t, err)
-		processFromServer, err := client.AssignProcess(env.colony1ID, -1, env.runtime1PrvKey)
+		processFromServer, err := client.AssignProcess(env.colony1ID, -1, env.executor1PrvKey)
 		assert.Nil(t, err)
-		err = client.Close(processFromServer.ID, env.runtime1PrvKey)
+		err = client.Close(processFromServer.ID, env.executor1PrvKey)
 		assert.Nil(t, err)
 	}
 
-	_, err := client.GetSuccessfulProcesses(env.colony1ID, numberOfRunningProcesses, env.runtime2PrvKey)
+	_, err := client.GetSuccessfulProcesses(env.colony1ID, numberOfRunningProcesses, env.executor2PrvKey)
 	assert.NotNil(t, err) // Should not work
 
-	_, err = client.GetSuccessfulProcesses(env.colony1ID, numberOfRunningProcesses, env.runtime1PrvKey)
+	_, err = client.GetSuccessfulProcesses(env.colony1ID, numberOfRunningProcesses, env.executor1PrvKey)
 	assert.Nil(t, err) // Should work
 
 	server.Shutdown()
@@ -221,24 +221,24 @@ func TestGetFailedProcessesSecurity(t *testing.T) {
 	env, client, server, _, done := setupTestEnv1(t)
 
 	// The setup looks like this:
-	//   runtime1 is member of colony1
-	//   runtime2 is member of colony2
+	//   executor1 is member of colony1
+	//   executor2 is member of colony2
 
 	numberOfRunningProcesses := 2
 	for i := 0; i < numberOfRunningProcesses; i++ {
 		processSpec := utils.CreateTestProcessSpec(env.colony1ID)
-		_, err := client.SubmitProcessSpec(processSpec, env.runtime1PrvKey)
+		_, err := client.SubmitProcessSpec(processSpec, env.executor1PrvKey)
 		assert.Nil(t, err)
-		processFromServer, err := client.AssignProcess(env.colony1ID, -1, env.runtime1PrvKey)
+		processFromServer, err := client.AssignProcess(env.colony1ID, -1, env.executor1PrvKey)
 		assert.Nil(t, err)
-		err = client.Fail(processFromServer.ID, []string{"error"}, env.runtime1PrvKey)
+		err = client.Fail(processFromServer.ID, []string{"error"}, env.executor1PrvKey)
 		assert.Nil(t, err)
 	}
 
-	_, err := client.GetFailedProcesses(env.colony1ID, numberOfRunningProcesses, env.runtime2PrvKey)
+	_, err := client.GetFailedProcesses(env.colony1ID, numberOfRunningProcesses, env.executor2PrvKey)
 	assert.NotNil(t, err) // Should not work
 
-	_, err = client.GetFailedProcesses(env.colony1ID, numberOfRunningProcesses, env.runtime1PrvKey)
+	_, err = client.GetFailedProcesses(env.colony1ID, numberOfRunningProcesses, env.executor1PrvKey)
 	assert.Nil(t, err) // Should work
 
 	server.Shutdown()
@@ -249,17 +249,17 @@ func TestGetProcessSecurity(t *testing.T) {
 	env, client, server, _, done := setupTestEnv1(t)
 
 	// The setup looks like this:
-	//   runtime1 is member of colony1
-	//   runtime2 is member of colony2
+	//   executor1 is member of colony1
+	//   executor2 is member of colony2
 
 	processSpec := utils.CreateTestProcessSpec(env.colony1ID)
-	addedProcess, err := client.SubmitProcessSpec(processSpec, env.runtime1PrvKey)
+	addedProcess, err := client.SubmitProcessSpec(processSpec, env.executor1PrvKey)
 	assert.Nil(t, err)
 
-	_, err = client.GetProcess(addedProcess.ID, env.runtime2PrvKey)
+	_, err = client.GetProcess(addedProcess.ID, env.executor2PrvKey)
 	assert.NotNil(t, err) // Should not work
 
-	_, err = client.GetProcess(addedProcess.ID, env.runtime1PrvKey)
+	_, err = client.GetProcess(addedProcess.ID, env.executor1PrvKey)
 	assert.Nil(t, err) // Should work
 
 	server.Shutdown()
@@ -270,14 +270,14 @@ func TestDeleteProcessSecurity(t *testing.T) {
 	env, client, server, _, done := setupTestEnv1(t)
 
 	// The setup looks like this:
-	//   runtime1 is member of colony1
-	//   runtime2 is member of colony2
+	//   executor1 is member of colony1
+	//   executor2 is member of colony2
 
 	processSpec := utils.CreateTestProcessSpec(env.colony1ID)
-	addedProcess, err := client.SubmitProcessSpec(processSpec, env.runtime1PrvKey)
+	addedProcess, err := client.SubmitProcessSpec(processSpec, env.executor1PrvKey)
 	assert.Nil(t, err)
 
-	err = client.DeleteProcess(addedProcess.ID, env.runtime2PrvKey)
+	err = client.DeleteProcess(addedProcess.ID, env.executor2PrvKey)
 	assert.NotNil(t, err) // Should not work
 
 	err = client.DeleteProcess(addedProcess.ID, env.colony1PrvKey)
@@ -286,7 +286,7 @@ func TestDeleteProcessSecurity(t *testing.T) {
 	err = client.DeleteProcess(addedProcess.ID, env.colony2PrvKey)
 	assert.NotNil(t, err) // Should not work
 
-	err = client.DeleteProcess(addedProcess.ID, env.runtime1PrvKey)
+	err = client.DeleteProcess(addedProcess.ID, env.executor1PrvKey)
 	assert.Nil(t, err) // Should work
 
 	server.Shutdown()
@@ -297,17 +297,17 @@ func TestDeleteAllProcessSecurity(t *testing.T) {
 	env, client, server, _, done := setupTestEnv1(t)
 
 	// The setup looks like this:
-	//   runtime1 is member of colony1
-	//   runtime2 is member of colony2
+	//   executor1 is member of colony1
+	//   executor2 is member of colony2
 
 	processSpec := utils.CreateTestProcessSpec(env.colony1ID)
-	_, err := client.SubmitProcessSpec(processSpec, env.runtime1PrvKey)
+	_, err := client.SubmitProcessSpec(processSpec, env.executor1PrvKey)
 	assert.Nil(t, err)
 
-	err = client.DeleteAllProcesses(env.colony1ID, env.runtime2PrvKey)
+	err = client.DeleteAllProcesses(env.colony1ID, env.executor2PrvKey)
 	assert.NotNil(t, err) // Should not work
 
-	err = client.DeleteAllProcesses(env.colony1ID, env.runtime1PrvKey)
+	err = client.DeleteAllProcesses(env.colony1ID, env.executor1PrvKey)
 	assert.NotNil(t, err) // Should not work
 
 	err = client.DeleteAllProcesses(env.colony1ID, env.colony2PrvKey)
@@ -324,29 +324,29 @@ func TestCloseSuccessfulSecurity(t *testing.T) {
 	env, client, server, _, done := setupTestEnv1(t)
 
 	// The setup looks like this:
-	//   runtime1 is member of colony1
-	//   runtime2 is member of colony2
+	//   executor1 is member of colony1
+	//   executor2 is member of colony2
 
 	processSpec := utils.CreateTestProcessSpec(env.colony1ID)
-	_, err := client.SubmitProcessSpec(processSpec, env.runtime1PrvKey)
+	_, err := client.SubmitProcessSpec(processSpec, env.executor1PrvKey)
 	assert.Nil(t, err)
-	processFromServer, err := client.AssignProcess(env.colony1ID, -1, env.runtime1PrvKey)
+	processFromServer, err := client.AssignProcess(env.colony1ID, -1, env.executor1PrvKey)
 	assert.Nil(t, err)
 
-	err = client.Close(processFromServer.ID, env.runtime2PrvKey)
+	err = client.Close(processFromServer.ID, env.executor2PrvKey)
 	assert.NotNil(t, err) // Should not work
 
-	err = client.Close(processFromServer.ID, env.runtime1PrvKey)
+	err = client.Close(processFromServer.ID, env.executor1PrvKey)
 	assert.Nil(t, err) // Should work
 
-	// Add another runtime to colony1 and try to close the process statred by runtime1, it should not be possible
-	runtime3, runtime3PrvKey, err := utils.CreateTestRuntimeWithKey(env.colony1ID)
+	// Add another executor to colony1 and try to close the process statred by executor1, it should not be possible
+	executor3, executor3PrvKey, err := utils.CreateTestExecutorWithKey(env.colony1ID)
 	assert.Nil(t, err)
-	_, err = client.AddRuntime(runtime3, env.colony1PrvKey)
+	_, err = client.AddExecutor(executor3, env.colony1PrvKey)
 	assert.Nil(t, err)
-	err = client.ApproveRuntime(runtime3.ID, env.colony1PrvKey)
+	err = client.ApproveExecutor(executor3.ID, env.colony1PrvKey)
 	assert.Nil(t, err)
-	err = client.Close(processFromServer.ID, runtime3PrvKey)
+	err = client.Close(processFromServer.ID, executor3PrvKey)
 	assert.NotNil(t, err) // Should work
 
 	server.Shutdown()
@@ -357,29 +357,29 @@ func TestCloseFailedSecurity(t *testing.T) {
 	env, client, server, _, done := setupTestEnv1(t)
 
 	// The setup looks like this:
-	//   runtime1 is member of colony1
-	//   runtime2 is member of colony2
+	//   executor1 is member of colony1
+	//   executor2 is member of colony2
 
 	processSpec := utils.CreateTestProcessSpec(env.colony1ID)
-	_, err := client.SubmitProcessSpec(processSpec, env.runtime1PrvKey)
+	_, err := client.SubmitProcessSpec(processSpec, env.executor1PrvKey)
 	assert.Nil(t, err)
-	processFromServer, err := client.AssignProcess(env.colony1ID, -1, env.runtime1PrvKey)
+	processFromServer, err := client.AssignProcess(env.colony1ID, -1, env.executor1PrvKey)
 	assert.Nil(t, err)
 
-	err = client.Fail(processFromServer.ID, []string{"error"}, env.runtime2PrvKey)
+	err = client.Fail(processFromServer.ID, []string{"error"}, env.executor2PrvKey)
 	assert.NotNil(t, err) // Should not work
 
-	err = client.Fail(processFromServer.ID, []string{"error"}, env.runtime1PrvKey)
+	err = client.Fail(processFromServer.ID, []string{"error"}, env.executor1PrvKey)
 	assert.Nil(t, err) // Should work
 
-	// Add another runtime to colony1 and try to close the process started by runtime1, it should not be possible
-	runtime3, runtime3PrvKey, err := utils.CreateTestRuntimeWithKey(env.colony1ID)
+	// Add another executor to colony1 and try to close the process started by executor1, it should not be possible
+	executor3, executor3PrvKey, err := utils.CreateTestExecutorWithKey(env.colony1ID)
 	assert.Nil(t, err)
-	_, err = client.AddRuntime(runtime3, env.colony1PrvKey)
+	_, err = client.AddExecutor(executor3, env.colony1PrvKey)
 	assert.Nil(t, err)
-	err = client.ApproveRuntime(runtime3.ID, env.colony1PrvKey)
+	err = client.ApproveExecutor(executor3.ID, env.colony1PrvKey)
 	assert.Nil(t, err)
-	err = client.Fail(processFromServer.ID, []string{"error"}, runtime3PrvKey)
+	err = client.Fail(processFromServer.ID, []string{"error"}, executor3PrvKey)
 	assert.NotNil(t, err) // Should work
 
 	server.Shutdown()

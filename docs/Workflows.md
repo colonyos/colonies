@@ -15,7 +15,7 @@ This workflow can be modelled as follows:
             "task1"
         ],
         "conditions": {
-            "runtimetype": "cli",
+            "executortype": "cli",
             "dependencies": null
         }
     },
@@ -26,7 +26,7 @@ This workflow can be modelled as follows:
             "task2"
         ],
         "conditions": {
-            "runtimetype": "cli",
+            "executortype": "cli",
             "dependencies": [
                 "task_a"
             ]
@@ -39,7 +39,7 @@ This workflow can be modelled as follows:
             "task3"
         ],
         "conditions": {
-            "runtimetype": "cli",
+            "executortype": "cli",
             "dependencies": [
                 "task_a"
             ]
@@ -52,7 +52,7 @@ This workflow can be modelled as follows:
             "task4"
         ],
         "conditions": {
-            "runtimetype": "cli",
+            "executortype": "cli",
             "dependencies": [
                 "task_b",
                 "task_c"
@@ -87,7 +87,7 @@ Processes:
 +-------------------+------------------------------------------------------------------+
 | Name              | task_a                                                           |
 | ProcessID         | 3a8e9299c76905c87f903b4fdcf4c5dbeb314659e2ed31d477dcb414e8fedf1f |
-| RuntimeType       | cli                                                              |
+| ExecutorType      | cli                                                              |
 | Func              | echo                                                             |
 | Args              | task_a                                                           |
 | State             | Waiting                                                          |
@@ -98,7 +98,7 @@ Processes:
 +-------------------+------------------------------------------------------------------+
 | Name              | task_b                                                           |
 | ProcessID         | 5fd0611d57fc567ce7aa7984424b1de749c32b20b92668b4755ade6ca62e19c2 |
-| RuntimeType       | cli                                                              |
+| ExecutorType      | cli                                                              |
 | Func              | echo                                                             |
 | Args              | task_b                                                           |
 | State             | Waiting                                                          |
@@ -109,7 +109,7 @@ Processes:
 +-------------------+------------------------------------------------------------------+
 | Name              | task_d                                                           |
 | ProcessID         | f46b7e84da0657cda3982282f5bef8b3c7429eff6b635cbce9bf93eb034e6705 |
-| RuntimeType       | cli                                                              |
+| ExecutorType      | cli                                                              |
 | Func              | echo                                                             |
 | Args              | task_d                                                           |
 | State             | Waiting                                                          |
@@ -120,7 +120,7 @@ Processes:
 +-------------------+------------------------------------------------------------------+
 | Name              | task_c                                                           |
 | ProcessID         | bf5d93190967539133063d357bcd5d446d3e4fce41a6d110926de12129a64156 |
-| RuntimeType       | cli                                                              |
+| ExecutorType      | cli                                                              |
 | Func              | echo                                                             |
 | Args              | task_c                                                           |
 | State             | Waiting                                                          |
@@ -131,13 +131,13 @@ Processes:
 
 ## Start a worker
 ```console
-colonies worker start --name myworker --runtimetype cli 
+colonies worker start --name myworker --executortype cli 
 
 INFO[0000] Starting a worker                             BuildTime="2022-05-31T13:43:22Z" BuildVersion=a153cbf
-INFO[0000] Saving runtimeID to /tmp/runtimeid
-INFO[0000] Saving runtimePrvKey to /tmp/runtimeprvkey
-INFO[0000] Register a new Runtime                        CPU= Cores=-1 GPU= GPUs=-1 Mem=-1 colonyID=4787a5071856a4acf702b2ffcea422e3237a679c681314113d86139461290cf4 runtimeID=d709c23a58cb883817e0fe38ae20f3f539b7b7c4f607cc16e2b927eb3c123a34 runtimeName=myworker runtimeType:=cli
-INFO[0000] Approving Runtime                             runtimeID=d709c23a58cb883817e0fe38ae20f3f539b7b7c4f607cc16e2b927eb3c123a34
+INFO[0000] Saving executorID to /tmp/executorid
+INFO[0000] Saving executorPrvKey to /tmp/executorprvkey
+INFO[0000] Register a new Executor                       CPU= Cores=-1 GPU= GPUs=-1 Mem=-1 colonyID=4787a5071856a4acf702b2ffcea422e3237a679c681314113d86139461290cf4 executorID=d709c23a58cb883817e0fe38ae20f3f539b7b7c4f607cc16e2b927eb3c123a34 executorName=myworker executorType=cli
+INFO[0000] Approving Executor                            executorID=d709c23a58cb883817e0fe38ae20f3f539b7b7c4f607cc16e2b927eb3c123a34
 INFO[0000] Worker now waiting for processes to be execute  BuildTime="2022-05-31T13:43:22Z" BuildVersion=a153cbf ServerHost=localhost ServerPort=50080
 INFO[0000] Worker was assigned a process                 processID=3a8e9299c76905c87f903b4fdcf4c5dbeb314659e2ed31d477dcb414e8fedf1f
 INFO[0000] Lauching process                              Args="[task_a]" Func=echo

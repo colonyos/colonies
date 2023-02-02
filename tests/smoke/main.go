@@ -33,20 +33,20 @@ func checkError(err error) {
 	}
 }
 
-func submitProcess(client *client.ColoniesClient, colonyID string, runtimePrvKey string) {
+func submitProcess(client *client.ColoniesClient, colonyID string, executorPrvKey string) {
 	processSpec := core.ProcessSpec{
 		Func:        "test_func",
 		Args:        []string{"arg1"},
 		MaxWaitTime: 100,
 		MaxExecTime: 2,
 		MaxRetries:  10,
-		Conditions:  core.Conditions{ColonyID: colonyID, RuntimeType: "bemisworker"},
+		Conditions:  core.Conditions{ColonyID: colonyID, ExecutorType: "bemisworker"},
 		Env:         make(map[string]string)}
 
-	client.SubmitProcessSpec(&processSpec, runtimePrvKey)
+	client.SubmitProcessSpec(&processSpec, executorPrvKey)
 }
 
-func startCron(client *client.ColoniesClient, colonyID string, runtimePrvKey string) {
+func startCron(client *client.ColoniesClient, colonyID string, executorPrvKey string) {
 	processSpec1 := core.ProcessSpec{
 		Name:        "cron_task1",
 		Func:        "cron_test_func",
@@ -54,7 +54,7 @@ func startCron(client *client.ColoniesClient, colonyID string, runtimePrvKey str
 		MaxWaitTime: -1,
 		MaxExecTime: 2,
 		MaxRetries:  10,
-		Conditions:  core.Conditions{ColonyID: colonyID, RuntimeType: "bemisworker"},
+		Conditions:  core.Conditions{ColonyID: colonyID, ExecutorType: "bemisworker"},
 		Env:         make(map[string]string)}
 
 	processSpec2 := core.ProcessSpec{
@@ -64,7 +64,7 @@ func startCron(client *client.ColoniesClient, colonyID string, runtimePrvKey str
 		MaxWaitTime: -1,
 		MaxExecTime: 2,
 		MaxRetries:  30,
-		Conditions:  core.Conditions{ColonyID: colonyID, RuntimeType: "bemisworker"},
+		Conditions:  core.Conditions{ColonyID: colonyID, ExecutorType: "bemisworker"},
 		Env:         make(map[string]string)}
 
 	workflowSpec := core.CreateWorkflowSpec(colonyID)
@@ -75,11 +75,11 @@ func startCron(client *client.ColoniesClient, colonyID string, runtimePrvKey str
 	checkError(err)
 
 	cron := core.CreateCron(colonyID, "test_cron1"+core.GenerateRandomID(), "1 * * * * *", -1, false, jsonStr)
-	_, err = client.AddCron(cron, runtimePrvKey)
+	_, err = client.AddCron(cron, executorPrvKey)
 	checkError(err)
 }
 
-func startGenerator(client *client.ColoniesClient, colonyID string, runtimePrvKey string) {
+func startGenerator(client *client.ColoniesClient, colonyID string, executorPrvKey string) {
 	processSpec1 := core.ProcessSpec{
 		Name:        "gen_task1",
 		Func:        "gen_test_func",
@@ -87,7 +87,7 @@ func startGenerator(client *client.ColoniesClient, colonyID string, runtimePrvKe
 		MaxWaitTime: -1,
 		MaxExecTime: 2,
 		MaxRetries:  10,
-		Conditions:  core.Conditions{ColonyID: colonyID, RuntimeType: "bemisworker"},
+		Conditions:  core.Conditions{ColonyID: colonyID, ExecutorType: "bemisworker"},
 		Env:         make(map[string]string)}
 
 	processSpec2 := core.ProcessSpec{
@@ -97,7 +97,7 @@ func startGenerator(client *client.ColoniesClient, colonyID string, runtimePrvKe
 		MaxWaitTime: -1,
 		MaxExecTime: 2,
 		MaxRetries:  30,
-		Conditions:  core.Conditions{ColonyID: colonyID, RuntimeType: "bemisworker"},
+		Conditions:  core.Conditions{ColonyID: colonyID, ExecutorType: "bemisworker"},
 		Env:         make(map[string]string)}
 
 	workflowSpec := core.CreateWorkflowSpec(colonyID)
@@ -108,51 +108,51 @@ func startGenerator(client *client.ColoniesClient, colonyID string, runtimePrvKe
 	checkError(err)
 	generator := core.CreateGenerator(colonyID, "test_genname"+core.GenerateRandomID(), jsonStr, 10)
 
-	generator, err = client.AddGenerator(generator, runtimePrvKey)
+	generator, err = client.AddGenerator(generator, executorPrvKey)
 	checkError(err)
 
 	go func() {
 		for {
-			client.PackGenerator(generator.ID, randStringRunes(10), runtimePrvKey)
+			client.PackGenerator(generator.ID, randStringRunes(10), executorPrvKey)
 		}
 	}()
 }
 
 func startWorker(client *client.ColoniesClient, colonyID string, colonyPrvKey string) {
 	crypto := crypto.CreateCrypto()
-	runtimePrvKey, err := crypto.GeneratePrivateKey()
+	executorPrvKey, err := crypto.GeneratePrivateKey()
 	checkError(err)
-	runtimeID, err := crypto.GenerateID(runtimePrvKey)
-	checkError(err)
-
-	runtime := core.CreateRuntime(runtimeID, "bemisworker", core.GenerateRandomID(), colonyID, "AMD Ryzen 9 5950X (32) @ 3.400GHz", 32, 80326, "NVIDIA GeForce RTX 2080 Ti Rev. A", 1, time.Now(), time.Now())
-
-	runtime.Location.Long = 65.6120464058654 + rand.Float64()
-	runtime.Location.Lat = 22.132275667285477 + rand.Float64()
-
-	_, err = client.AddRuntime(runtime, colonyPrvKey)
+	executorID, err := crypto.GenerateID(executorPrvKey)
 	checkError(err)
 
-	err = client.ApproveRuntime(runtimeID, colonyPrvKey)
+	executor := core.CreateExecutor(executorID, "bemisworker", core.GenerateRandomID(), colonyID, "AMD Ryzen 9 5950X (32) @ 3.400GHz", 32, 80326, "NVIDIA GeForce RTX 2080 Ti Rev. A", 1, time.Now(), time.Now())
+
+	executor.Location.Long = 65.6120464058654 + rand.Float64()
+	executor.Location.Lat = 22.132275667285477 + rand.Float64()
+
+	_, err = client.AddExecutor(executor, colonyPrvKey)
+	checkError(err)
+
+	err = client.ApproveExecutor(executorID, colonyPrvKey)
 	checkError(err)
 
 	go func() {
 		for {
-			assignedProcess, err := client.AssignProcess(colonyID, 10, runtimePrvKey)
+			assignedProcess, err := client.AssignProcess(colonyID, 10, executorPrvKey)
 			if err == nil {
 				time.Sleep(time.Duration(rand.Intn(300)) * time.Millisecond)
-				client.Close(assignedProcess.ID, runtimePrvKey)
+				client.Close(assignedProcess.ID, executorPrvKey)
 			}
 		}
 	}()
 }
 
 func main() {
-	colonyID := os.Getenv("COLONIES_COLONYID")
-	colonyPrvKey := os.Getenv("COLONIES_COLONYPRVKEY")
+	colonyID := os.Getenv("COLONIES_COLONY_ID")
+	colonyPrvKey := os.Getenv("COLONIES_COLONY_PRVKEY")
 
-	serverHost := os.Getenv("COLONIES_SERVERHOST")
-	serverPortEnvStr := os.Getenv("COLONIES_SERVERPORT")
+	serverHost := os.Getenv("COLONIES_SERVER_HOST")
+	serverPortEnvStr := os.Getenv("COLONIES_SERVER_PORT")
 	serverPort := -1
 	var err error
 	if serverPortEnvStr != "" {
@@ -168,7 +168,7 @@ func main() {
 		insecure = true
 	}
 
-	runtimePrvKey := os.Getenv("COLONIES_RUNTIMEPRVKEY")
+	executorPrvKey := os.Getenv("COLONIES_EXECUTOR_PRVKEY")
 
 	client := client.CreateColoniesClient(serverHost, serverPort, insecure, true)
 
@@ -176,8 +176,8 @@ func main() {
 		startWorker(client, colonyID, colonyPrvKey)
 	}
 
-	startGenerator(client, colonyID, runtimePrvKey)
-	startCron(client, colonyID, runtimePrvKey)
+	startGenerator(client, colonyID, executorPrvKey)
+	startCron(client, colonyID, executorPrvKey)
 
 	//start := time.Now().UnixNano()
 	for i := 0; i < 100000000; i++ {
@@ -186,7 +186,7 @@ func main() {
 		// start = time.Now().UnixNano()
 		//fmt.Println(i, " ", delta)
 
-		submitProcess(client, colonyID, runtimePrvKey)
+		submitProcess(client, colonyID, executorPrvKey)
 	}
 
 	done := make(chan struct{})

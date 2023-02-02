@@ -14,15 +14,15 @@ func CreateTestProcess(colonyID string) *core.Process {
 }
 
 func CreateTestProcessSpec(colonyID string) *core.ProcessSpec {
-	return core.CreateProcessSpec("test_name", "test_func", []string{"test_arg"}, colonyID, []string{}, "test_runtime_type", 1000, 100, 1, make(map[string]string), []string{}, 1)
+	return core.CreateProcessSpec("test_name", "test_func", []string{"test_arg"}, colonyID, []string{}, "test_executor_type", 1000, 100, 1, make(map[string]string), []string{}, 1)
 }
 
-func CreateTestProcessWithType(colonyID string, runtimeType string) *core.Process {
-	return core.CreateProcess(CreateTestProcessSpecWithType(colonyID, runtimeType))
+func CreateTestProcessWithType(colonyID string, executorType string) *core.Process {
+	return core.CreateProcess(CreateTestProcessSpecWithType(colonyID, executorType))
 }
 
-func CreateTestProcessSpecWithType(colonyID string, runtimeType string) *core.ProcessSpec {
-	return core.CreateProcessSpec("test_name", "test_func", []string{"test_arg"}, colonyID, []string{}, runtimeType, 1000, 100, 1, make(map[string]string), []string{}, 1)
+func CreateTestProcessSpecWithType(colonyID string, executorType string) *core.ProcessSpec {
+	return core.CreateProcessSpec("test_name", "test_func", []string{"test_arg"}, colonyID, []string{}, executorType, 1000, 100, 1, make(map[string]string), []string{}, 1)
 }
 
 func CreateTestProcessWithEnv(colonyID string, env map[string]string) *core.Process {
@@ -30,42 +30,42 @@ func CreateTestProcessWithEnv(colonyID string, env map[string]string) *core.Proc
 }
 
 func CreateTestProcessSpecWithEnv(colonyID string, env map[string]string) *core.ProcessSpec {
-	return core.CreateProcessSpec("test_name", "test_func", []string{"test_arg"}, colonyID, []string{}, "test_runtime_type", 1000, 100, 1, env, []string{}, 1)
+	return core.CreateProcessSpec("test_name", "test_func", []string{"test_arg"}, colonyID, []string{}, "test_executor_type", 1000, 100, 1, env, []string{}, 1)
 }
 
-func CreateTestProcessWithTargets(colonyID string, targetRuntimeIDs []string) *core.Process {
-	return core.CreateProcess(CreateTestProcessSpecWithTargets(colonyID, targetRuntimeIDs))
+func CreateTestProcessWithTargets(colonyID string, targetExecutorIDs []string) *core.Process {
+	return core.CreateProcess(CreateTestProcessSpecWithTargets(colonyID, targetExecutorIDs))
 }
 
-func CreateTestProcessSpecWithTargets(colonyID string, targetRuntimeIDs []string) *core.ProcessSpec {
-	return core.CreateProcessSpec("test_name", "test_func", []string{"test_arg"}, colonyID, targetRuntimeIDs, "test_runtime_type", 1000, 100, 1, make(map[string]string), []string{}, 1)
+func CreateTestProcessSpecWithTargets(colonyID string, targetExecutorIDs []string) *core.ProcessSpec {
+	return core.CreateProcessSpec("test_name", "test_func", []string{"test_arg"}, colonyID, targetExecutorIDs, "test_executor_type", 1000, 100, 1, make(map[string]string), []string{}, 1)
 }
 
-func CreateTestRuntime(colonyID string) *core.Runtime {
-	return core.CreateRuntime(core.GenerateRandomID(), "test_runtime_type", core.GenerateRandomID(), colonyID, "AMD Ryzen 9 5950X (32) @ 3.400GHz", 32, 80326, "NVIDIA GeForce RTX 2080 Ti Rev. A", 1, time.Now(), time.Now())
+func CreateTestExecutor(colonyID string) *core.Executor {
+	return core.CreateExecutor(core.GenerateRandomID(), "test_executor_type", core.GenerateRandomID(), colonyID, "AMD Ryzen 9 5950X (32) @ 3.400GHz", 32, 80326, "NVIDIA GeForce RTX 2080 Ti Rev. A", 1, time.Now(), time.Now())
 }
 
-func CreateTestRuntimeWithType(colonyID string, runtimeType string) *core.Runtime {
-	return core.CreateRuntime(core.GenerateRandomID(), runtimeType, core.GenerateRandomID(), colonyID, "AMD Ryzen 9 5950X (32) @ 3.400GHz", 32, 80326, "NVIDIA GeForce RTX 2080 Ti Rev. A", 1, time.Now(), time.Now())
+func CreateTestExecutorWithType(colonyID string, executorType string) *core.Executor {
+	return core.CreateExecutor(core.GenerateRandomID(), executorType, core.GenerateRandomID(), colonyID, "AMD Ryzen 9 5950X (32) @ 3.400GHz", 32, 80326, "NVIDIA GeForce RTX 2080 Ti Rev. A", 1, time.Now(), time.Now())
 }
 
-func CreateTestRuntimeWithID(colonyID string, runtimeID string) *core.Runtime {
-	return core.CreateRuntime(runtimeID, "test_runtime_type", core.GenerateRandomID(), colonyID, "AMD Ryzen 9 5950X (32) @ 3.400GHz", 32, 80326, "NVIDIA GeForce RTX 2080 Ti Rev. A", 1, time.Now(), time.Now())
+func CreateTestExecutorWithID(colonyID string, executorID string) *core.Executor {
+	return core.CreateExecutor(executorID, "test_executor_type", core.GenerateRandomID(), colonyID, "AMD Ryzen 9 5950X (32) @ 3.400GHz", 32, 80326, "NVIDIA GeForce RTX 2080 Ti Rev. A", 1, time.Now(), time.Now())
 }
 
-func CreateTestRuntimeWithKey(colonyID string) (*core.Runtime, string, error) {
+func CreateTestExecutorWithKey(colonyID string) (*core.Executor, string, error) {
 	crypto := crypto.CreateCrypto()
-	runtimePrvKey, err := crypto.GeneratePrivateKey()
+	executorPrvKey, err := crypto.GeneratePrivateKey()
 	if err != nil {
 		return nil, "", err
 	}
 
-	runtimeID, err := crypto.GenerateID(runtimePrvKey)
+	executorID, err := crypto.GenerateID(executorPrvKey)
 	if err != nil {
 		return nil, "", err
 	}
 
-	return core.CreateRuntime(runtimeID, "test_runtime_type", core.GenerateRandomID(), colonyID, "AMD Ryzen 9 5950X (32) @ 3.400GHz", 32, 80326, "NVIDIA GeForce RTX 2080 Ti Rev. A", 1, time.Now(), time.Now()), runtimePrvKey, nil
+	return core.CreateExecutor(executorID, "test_executor_type", core.GenerateRandomID(), colonyID, "AMD Ryzen 9 5950X (32) @ 3.400GHz", 32, 80326, "NVIDIA GeForce RTX 2080 Ti Rev. A", 1, time.Now(), time.Now()), executorPrvKey, nil
 }
 
 func CreateTestColonyWithKey() (*core.Colony, string, error) {

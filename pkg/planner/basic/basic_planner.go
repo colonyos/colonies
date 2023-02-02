@@ -50,10 +50,10 @@ func (planner *BasicPlanner) printCandidates(candidates []*core.Process) {
 	}
 }
 
-func (planner *BasicPlanner) Select(runtimeID string, candidates []*core.Process, latest bool) (*core.Process, error) {
-	prioritizedProcesses := planner.Prioritize(runtimeID, candidates, 1, latest)
+func (planner *BasicPlanner) Select(executorID string, candidates []*core.Process, latest bool) (*core.Process, error) {
+	prioritizedProcesses := planner.Prioritize(executorID, candidates, 1, latest)
 	if len(prioritizedProcesses) < 1 {
-		return nil, errors.New("No processes can be selected for runtime with Id <" + runtimeID + ">")
+		return nil, errors.New("No processes can be selected for executor with Id <" + executorID + ">")
 	}
 
 	return prioritizedProcesses[0], nil
@@ -67,19 +67,19 @@ func min(x, y int) int {
 	return y
 }
 
-func (planner *BasicPlanner) Prioritize(runtimeID string, candidates []*core.Process, count int, latest bool) []*core.Process {
+func (planner *BasicPlanner) Prioritize(executorID string, candidates []*core.Process, count int, latest bool) []*core.Process {
 	var prioritizedCandidates []*core.Process
 	if len(candidates) == 0 {
 		return prioritizedCandidates
 	}
 
-	// First, check if there is process candidate target this specific runtime
+	// First, check if there is process candidate target this specific executor
 	for _, candidate := range candidates {
-		if len(candidate.ProcessSpec.Conditions.RuntimeIDs) == 0 {
+		if len(candidate.ProcessSpec.Conditions.ExecutorIDs) == 0 {
 			prioritizedCandidates = append(prioritizedCandidates, candidate)
 		} else {
-			for _, targetRuntimeID := range candidate.ProcessSpec.Conditions.RuntimeIDs {
-				if targetRuntimeID == runtimeID {
+			for _, targetExecutorID := range candidate.ProcessSpec.Conditions.ExecutorIDs {
+				if targetExecutorID == executorID {
 					prioritizedCandidates = append(prioritizedCandidates, candidate)
 				}
 			}

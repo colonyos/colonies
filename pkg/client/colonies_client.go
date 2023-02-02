@@ -127,8 +127,8 @@ func (client *ColoniesClient) establishWebSocketConn(jsonString string) (*websoc
 	return wsConn, nil
 }
 
-func (client *ColoniesClient) SubscribeProcesses(runtimeType string, state int, timeout int, prvKey string) (*ProcessSubscription, error) {
-	msg := rpc.CreateSubscribeProcessesMsg(runtimeType, state, timeout)
+func (client *ColoniesClient) SubscribeProcesses(executorType string, state int, timeout int, prvKey string) (*ProcessSubscription, error) {
+	msg := rpc.CreateSubscribeProcessesMsg(executorType, state, timeout)
 	jsonString, err := msg.ToJSON()
 	if err != nil {
 		return nil, err
@@ -185,8 +185,8 @@ func (client *ColoniesClient) SubscribeProcesses(runtimeType string, state int, 
 	return subscription, nil
 }
 
-func (client *ColoniesClient) SubscribeProcess(processID string, runtimeType string, state int, timeout int, prvKey string) (*ProcessSubscription, error) {
-	msg := rpc.CreateSubscribeProcessMsg(processID, runtimeType, state, timeout)
+func (client *ColoniesClient) SubscribeProcess(processID string, executorType string, state int, timeout int, prvKey string) (*ProcessSubscription, error) {
+	msg := rpc.CreateSubscribeProcessMsg(processID, executorType, state, timeout)
 	jsonString, err := msg.ToJSON()
 	if err != nil {
 		return nil, err
@@ -306,74 +306,59 @@ func (client *ColoniesClient) GetColonyByID(colonyID string, prvKey string) (*co
 	return core.ConvertJSONToColony(respBodyString)
 }
 
-func (client *ColoniesClient) AddRuntime(runtime *core.Runtime, prvKey string) (*core.Runtime, error) {
-	msg := rpc.CreateAddRuntimeMsg(runtime)
+func (client *ColoniesClient) AddExecutor(executor *core.Executor, prvKey string) (*core.Executor, error) {
+	msg := rpc.CreateAddExecutorMsg(executor)
 	jsonString, err := msg.ToJSON()
 	if err != nil {
 		return nil, err
 	}
 
-	respBodyString, err := client.sendMessage(rpc.AddRuntimePayloadType, jsonString, prvKey, false)
+	respBodyString, err := client.sendMessage(rpc.AddExecutorPayloadType, jsonString, prvKey, false)
 	if err != nil {
 		return nil, err
 	}
 
-	return core.ConvertJSONToRuntime(respBodyString)
+	return core.ConvertJSONToExecutor(respBodyString)
 }
 
-func (client *ColoniesClient) GetRuntimes(colonyID string, prvKey string) ([]*core.Runtime, error) {
-	msg := rpc.CreateGetRuntimesMsg(colonyID)
+func (client *ColoniesClient) GetExecutors(colonyID string, prvKey string) ([]*core.Executor, error) {
+	msg := rpc.CreateGetExecutorsMsg(colonyID)
 	jsonString, err := msg.ToJSON()
 	if err != nil {
 		return nil, err
 	}
 
-	respBodyString, err := client.sendMessage(rpc.GetRuntimesPayloadType, jsonString, prvKey, false)
+	respBodyString, err := client.sendMessage(rpc.GetExecutorsPayloadType, jsonString, prvKey, false)
 	if err != nil {
 		return nil, err
 	}
 
-	return core.ConvertJSONToRuntimeArray(respBodyString)
+	return core.ConvertJSONToExecutorArray(respBodyString)
 }
 
-func (client *ColoniesClient) GetRuntime(runtimeID string, prvKey string) (*core.Runtime, error) {
-	msg := rpc.CreateGetRuntimeMsg(runtimeID)
+func (client *ColoniesClient) GetExecutor(executorID string, prvKey string) (*core.Executor, error) {
+	msg := rpc.CreateGetExecutorMsg(executorID)
 	jsonString, err := msg.ToJSON()
 	if err != nil {
 		return nil, err
 	}
 
-	respBodyString, err := client.sendMessage(rpc.GetRuntimePayloadType, jsonString, prvKey, false)
+	respBodyString, err := client.sendMessage(rpc.GetExecutorPayloadType, jsonString, prvKey, false)
 	if err != nil {
 		return nil, err
 	}
 
-	return core.ConvertJSONToRuntime(respBodyString)
+	return core.ConvertJSONToExecutor(respBodyString)
 }
 
-func (client *ColoniesClient) ApproveRuntime(runtimeID string, prvKey string) error {
-	msg := rpc.CreateApproveRuntimeMsg(runtimeID)
+func (client *ColoniesClient) ApproveExecutor(executorID string, prvKey string) error {
+	msg := rpc.CreateApproveExecutorMsg(executorID)
 	jsonString, err := msg.ToJSON()
 	if err != nil {
 		return err
 	}
 
-	_, err = client.sendMessage(rpc.ApproveRuntimePayloadType, jsonString, prvKey, false)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (client *ColoniesClient) RejectRuntime(runtimeID string, prvKey string) error {
-	msg := rpc.CreateRejectRuntimeMsg(runtimeID)
-	jsonString, err := msg.ToJSON()
-	if err != nil {
-		return err
-	}
-
-	_, err = client.sendMessage(rpc.RejectRuntimePayloadType, jsonString, prvKey, false)
+	_, err = client.sendMessage(rpc.ApproveExecutorPayloadType, jsonString, prvKey, false)
 	if err != nil {
 		return err
 	}
@@ -381,14 +366,29 @@ func (client *ColoniesClient) RejectRuntime(runtimeID string, prvKey string) err
 	return nil
 }
 
-func (client *ColoniesClient) DeleteRuntime(runtimeID string, prvKey string) error {
-	msg := rpc.CreateDeleteRuntimeMsg(runtimeID)
+func (client *ColoniesClient) RejectExecutor(executorID string, prvKey string) error {
+	msg := rpc.CreateRejectExecutorMsg(executorID)
 	jsonString, err := msg.ToJSON()
 	if err != nil {
 		return err
 	}
 
-	_, err = client.sendMessage(rpc.DeleteRuntimePayloadType, jsonString, prvKey, false)
+	_, err = client.sendMessage(rpc.RejectExecutorPayloadType, jsonString, prvKey, false)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (client *ColoniesClient) DeleteExecutor(executorID string, prvKey string) error {
+	msg := rpc.CreateDeleteExecutorMsg(executorID)
+	jsonString, err := msg.ToJSON()
+	if err != nil {
+		return err
+	}
+
+	_, err = client.sendMessage(rpc.DeleteExecutorPayloadType, jsonString, prvKey, false)
 	if err != nil {
 		return err
 	}
@@ -460,8 +460,8 @@ func (client *ColoniesClient) GetProcessHistForColony(state int, colonyID string
 	return core.ConvertJSONToProcessArray(respBodyString)
 }
 
-func (client *ColoniesClient) GetProcessHistForRuntime(state int, colonyID string, runtimeID string, seconds int, prvKey string) ([]*core.Process, error) {
-	msg := rpc.CreateGetProcessHistMsg(colonyID, runtimeID, seconds, state)
+func (client *ColoniesClient) GetProcessHistForExecutor(state int, colonyID string, executorID string, seconds int, prvKey string) ([]*core.Process, error) {
+	msg := rpc.CreateGetProcessHistMsg(colonyID, executorID, seconds, state)
 	jsonString, err := msg.ToJSON()
 	if err != nil {
 		return nil, err

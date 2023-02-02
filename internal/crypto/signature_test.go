@@ -146,8 +146,6 @@ func TestInterop(t *testing.T) {
 	// fmt.Println("digest: " + hash.String())
 	// fmt.Println("signature: " + string(signatureStr))
 
-	// The signatures below were obtains from ColonyRuntime.jl
-
 	signatureHex := "997eca36736d465e0e8d64e6d657ff4c939c8f5cad4272797ea0fe372bfd8d0953d21b3d06ded5dd80aee8cfa3a9be7ce615ce690eb64184fe15962943fe541300"
 	signatureBytes, err := hex.DecodeString(signatureHex)
 	recoveredID, err := RecoveredID(hash, signatureBytes)

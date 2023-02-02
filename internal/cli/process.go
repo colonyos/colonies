@@ -36,17 +36,17 @@ func init() {
 	processCmd.PersistentFlags().StringVarP(&ServerHost, "host", "", "localhost", "Server host")
 	processCmd.PersistentFlags().IntVarP(&ServerPort, "port", "", -1, "Server HTTP port")
 
-	submitProcessCmd.Flags().StringVarP(&RuntimeID, "runtimeid", "", "", "Runtime Id")
-	submitProcessCmd.Flags().StringVarP(&RuntimePrvKey, "runtimeprvkey", "", "", "Runtime private key")
+	submitProcessCmd.Flags().StringVarP(&ExecutorID, "executorid", "", "", "Executor Id")
+	submitProcessCmd.Flags().StringVarP(&ExecutorPrvKey, "executorprvkey", "", "", "Executor private key")
 	submitProcessCmd.Flags().StringVarP(&SpecFile, "spec", "", "", "JSON specification of a Colony process")
 	submitProcessCmd.Flags().StringVarP(&ColonyID, "colonyid", "", "", "Colony Id")
 	submitProcessCmd.Flags().BoolVarP(&Wait, "wait", "", false, "Colony Id")
 	submitProcessCmd.MarkFlagRequired("spec")
 
-	runProcessCmd.Flags().StringVarP(&RuntimeID, "runtimeid", "", "", "Runtime Id")
-	runProcessCmd.Flags().StringVarP(&RuntimePrvKey, "runtimeprvkey", "", "", "Runtime private key")
-	runProcessCmd.Flags().StringVarP(&TargetRuntimeType, "targettype", "", "", "Target runtime type")
-	runProcessCmd.Flags().StringVarP(&TargetRuntimeID, "targetid", "", "", "Target runtime Id")
+	runProcessCmd.Flags().StringVarP(&ExecutorID, "executorid", "", "", "Executor Id")
+	runProcessCmd.Flags().StringVarP(&ExecutorPrvKey, "executorprvkey", "", "", "Executor private key")
+	runProcessCmd.Flags().StringVarP(&TargetExecutorType, "targettype", "", "", "Target executor type")
+	runProcessCmd.Flags().StringVarP(&TargetExecutorID, "targetid", "", "", "Target executor Id")
 	runProcessCmd.Flags().StringVarP(&ColonyID, "colonyid", "", "", "Colony Id")
 	runProcessCmd.Flags().StringVarP(&Func, "func", "", "", "Remote function to call")
 	runProcessCmd.Flags().StringSliceVarP(&Args, "args", "", make([]string, 0), "Arguments")
@@ -57,62 +57,62 @@ func init() {
 	runProcessCmd.Flags().BoolVarP(&Wait, "wait", "", false, "Colony Id")
 
 	listWaitingProcessesCmd.Flags().StringVarP(&ColonyID, "colonyid", "", "", "Colony Id")
-	listWaitingProcessesCmd.Flags().StringVarP(&RuntimeID, "runtimeid", "", "", "Runtime Id")
-	listWaitingProcessesCmd.Flags().StringVarP(&RuntimePrvKey, "runtimeprvkey", "", "", "Runtime private key")
+	listWaitingProcessesCmd.Flags().StringVarP(&ExecutorID, "executorid", "", "", "Executor Id")
+	listWaitingProcessesCmd.Flags().StringVarP(&ExecutorPrvKey, "executorprvkey", "", "", "Executor private key")
 	listWaitingProcessesCmd.Flags().IntVarP(&Count, "count", "", server.MAX_COUNT, "Number of processes to list")
 	listWaitingProcessesCmd.Flags().BoolVarP(&JSON, "json", "", false, "Print JSON instead of tables")
 
 	listRunningProcessesCmd.Flags().StringVarP(&ColonyID, "colonyid", "", "", "Colony Id")
-	listRunningProcessesCmd.Flags().StringVarP(&RuntimeID, "runtimeid", "", "", "Runtime Id")
-	listRunningProcessesCmd.Flags().StringVarP(&RuntimePrvKey, "runtimeprvkey", "", "", "Runtime private key")
+	listRunningProcessesCmd.Flags().StringVarP(&ExecutorID, "executorid", "", "", "Executor Id")
+	listRunningProcessesCmd.Flags().StringVarP(&ExecutorPrvKey, "executorprvkey", "", "", "Executor private key")
 	listRunningProcessesCmd.Flags().IntVarP(&Count, "count", "", server.MAX_COUNT, "Number of processes to list")
 	listRunningProcessesCmd.Flags().BoolVarP(&JSON, "json", "", false, "Print JSON instead of tables")
 
 	listSuccessfulProcessesCmd.Flags().StringVarP(&ColonyID, "colonyid", "", "", "Colony Id")
-	listSuccessfulProcessesCmd.Flags().StringVarP(&RuntimeID, "runtimeid", "", "", "Runtime Id")
-	listSuccessfulProcessesCmd.Flags().StringVarP(&RuntimePrvKey, "runtimeprvkey", "", "", "Runtime private key")
+	listSuccessfulProcessesCmd.Flags().StringVarP(&ExecutorID, "executorid", "", "", "Executor Id")
+	listSuccessfulProcessesCmd.Flags().StringVarP(&ExecutorPrvKey, "executorprvkey", "", "", "Executor private key")
 	listSuccessfulProcessesCmd.Flags().IntVarP(&Count, "count", "", server.MAX_COUNT, "Number of processes to list")
 	listSuccessfulProcessesCmd.Flags().BoolVarP(&JSON, "json", "", false, "Print JSON instead of tables")
 
 	listFailedProcessesCmd.Flags().StringVarP(&ColonyID, "colonyid", "", "", "Colony Id")
-	listFailedProcessesCmd.Flags().StringVarP(&RuntimeID, "runtimeid", "", "", "Runtime Id")
-	listFailedProcessesCmd.Flags().StringVarP(&RuntimePrvKey, "runtimeprvkey", "", "", "Runtime private key")
+	listFailedProcessesCmd.Flags().StringVarP(&ExecutorID, "executorid", "", "", "Executor Id")
+	listFailedProcessesCmd.Flags().StringVarP(&ExecutorPrvKey, "executorprvkey", "", "", "Executor private key")
 	listFailedProcessesCmd.Flags().IntVarP(&Count, "count", "", server.MAX_COUNT, "Number of processes to list")
 	listFailedProcessesCmd.Flags().BoolVarP(&JSON, "json", "", false, "Print JSON instead of tables")
 
-	getProcessCmd.Flags().StringVarP(&RuntimeID, "runtimeid", "", "", "Runtime Id")
-	getProcessCmd.Flags().StringVarP(&RuntimePrvKey, "runtimeprvkey", "", "", "Runtime private key")
+	getProcessCmd.Flags().StringVarP(&ExecutorID, "executorid", "", "", "Executor Id")
+	getProcessCmd.Flags().StringVarP(&ExecutorPrvKey, "executorprvkey", "", "", "Executor private key")
 	getProcessCmd.Flags().StringVarP(&ColonyID, "colonyid", "", "", "Colony Id")
 	getProcessCmd.Flags().StringVarP(&ProcessID, "processid", "p", "", "Process Id")
 	getProcessCmd.MarkFlagRequired("processid")
 	getProcessCmd.Flags().BoolVarP(&JSON, "json", "", false, "Print JSON instead of tables")
 	getProcessCmd.Flags().BoolVarP(&PrintOutput, "out", "", false, "Print process output")
 
-	deleteProcessCmd.Flags().StringVarP(&RuntimeID, "runtimeid", "", "", "Runtime Id")
-	deleteProcessCmd.Flags().StringVarP(&RuntimePrvKey, "runtimeprvkey", "", "", "Runtime private key")
+	deleteProcessCmd.Flags().StringVarP(&ExecutorID, "executorid", "", "", "Executor Id")
+	deleteProcessCmd.Flags().StringVarP(&ExecutorPrvKey, "executorprvkey", "", "", "Executor private key")
 	deleteProcessCmd.Flags().StringVarP(&ColonyID, "colonyid", "", "", "Colony Id")
 	deleteProcessCmd.Flags().StringVarP(&ProcessID, "processid", "", "", "Process Id")
 	deleteProcessCmd.MarkFlagRequired("processid")
 
-	deleteAllProcessesCmd.Flags().StringVarP(&RuntimeID, "runtimeid", "", "", "Runtime Id")
-	deleteAllProcessesCmd.Flags().StringVarP(&RuntimePrvKey, "runtimeprvkey", "", "", "Runtime private key")
+	deleteAllProcessesCmd.Flags().StringVarP(&ExecutorID, "executorid", "", "", "Executor Id")
+	deleteAllProcessesCmd.Flags().StringVarP(&ExecutorPrvKey, "executorprvkey", "", "", "Executor private key")
 	deleteAllProcessesCmd.Flags().StringVarP(&ColonyID, "colonyid", "", "", "Colony Id")
 
 	assignProcessCmd.Flags().StringVarP(&ColonyID, "colonyid", "", "", "Colony Id")
-	assignProcessCmd.Flags().StringVarP(&RuntimeID, "runtimeid", "", "", "Runtime Id")
-	assignProcessCmd.Flags().StringVarP(&RuntimePrvKey, "runtimeprvkey", "", "", "Runtime private key")
+	assignProcessCmd.Flags().StringVarP(&ExecutorID, "executorid", "", "", "Executor Id")
+	assignProcessCmd.Flags().StringVarP(&ExecutorPrvKey, "executorprvkey", "", "", "Executor private key")
 	assignProcessCmd.Flags().IntVarP(&Timeout, "timeout", "", 100, "Max time to wait for a process assignment")
 	assignProcessCmd.Flags().BoolVarP(&Latest, "latest", "", false, "Try to assign the latest process in the queue")
 
 	closeSuccessfulCmd.Flags().StringSliceVarP(&Output, "out", "", make([]string, 0), "Output")
-	closeSuccessfulCmd.Flags().StringVarP(&RuntimeID, "runtimeid", "", "", "Runtime Id")
-	closeSuccessfulCmd.Flags().StringVarP(&RuntimePrvKey, "runtimeprvkey", "", "", "Runtime private key")
+	closeSuccessfulCmd.Flags().StringVarP(&ExecutorID, "executorid", "", "", "Executor Id")
+	closeSuccessfulCmd.Flags().StringVarP(&ExecutorPrvKey, "executorprvkey", "", "", "Executor private key")
 	closeSuccessfulCmd.Flags().StringVarP(&ProcessID, "processid", "p", "", "Process Id")
 	closeSuccessfulCmd.MarkFlagRequired("processid")
 
 	closeFailedCmd.Flags().StringSliceVarP(&Errors, "errors", "", make([]string, 0), "Errors")
-	closeFailedCmd.Flags().StringVarP(&RuntimeID, "runtimeid", "", "", "Runtime Id")
-	closeFailedCmd.Flags().StringVarP(&RuntimePrvKey, "runtimeprvkey", "", "", "Runtime private key")
+	closeFailedCmd.Flags().StringVarP(&ExecutorID, "executorid", "", "", "Executor Id")
+	closeFailedCmd.Flags().StringVarP(&ExecutorPrvKey, "executorprvkey", "", "", "Executor private key")
 	closeFailedCmd.Flags().StringVarP(&ProcessID, "processid", "p", "", "Process Id")
 	closeFailedCmd.MarkFlagRequired("processid")
 }
@@ -126,10 +126,10 @@ var processCmd = &cobra.Command{
 func wait(client *client.ColoniesClient, process *core.Process) {
 	for {
 		subscription, err := client.SubscribeProcess(process.ID,
-			process.ProcessSpec.Conditions.RuntimeType,
+			process.ProcessSpec.Conditions.ExecutorType,
 			core.SUCCESS,
 			100,
-			RuntimePrvKey)
+			ExecutorPrvKey)
 		CheckError(err)
 
 		select {
@@ -166,7 +166,7 @@ var runProcessCmd = &cobra.Command{
 		}
 
 		if ColonyID == "" {
-			ColonyID = os.Getenv("COLONIES_COLONYID")
+			ColonyID = os.Getenv("COLONIES_COLONY_ID")
 		}
 		if ColonyID == "" {
 			CheckError(errors.New("Unknown Colony Id, please set COLONYID env variable or specify ColonyID in JSON file"))
@@ -175,27 +175,27 @@ var runProcessCmd = &cobra.Command{
 		keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
 		CheckError(err)
 
-		if RuntimeID == "" {
-			RuntimeID = os.Getenv("COLONIES_RUNTIMEID")
+		if ExecutorID == "" {
+			ExecutorID = os.Getenv("COLONIES_EXECUTOR_ID")
 		}
-		if RuntimeID == "" {
-			CheckError(errors.New("Unknown Runtime Id"))
+		if ExecutorID == "" {
+			CheckError(errors.New("Unknown Executor Id"))
 		}
 
-		if RuntimePrvKey == "" {
-			RuntimePrvKey, err = keychain.GetPrvKey(RuntimeID)
+		if ExecutorPrvKey == "" {
+			ExecutorPrvKey, err = keychain.GetPrvKey(ExecutorID)
 			CheckError(err)
 		}
 
-		if TargetRuntimeType == "" && TargetRuntimeID == "" {
-			CheckError(errors.New("Target Runtime Type or Target Runtime ID must be specified"))
+		if TargetExecutorType == "" && TargetExecutorID == "" {
+			CheckError(errors.New("Target Executor Type or Target Executor ID must be specified"))
 		}
 
 		var conditions core.Conditions
-		if TargetRuntimeType != "" {
-			conditions = core.Conditions{ColonyID: ColonyID, RuntimeType: TargetRuntimeType}
+		if TargetExecutorType != "" {
+			conditions = core.Conditions{ColonyID: ColonyID, ExecutorType: TargetExecutorType}
 		} else {
-			conditions = core.Conditions{ColonyID: ColonyID, RuntimeIDs: []string{TargetRuntimeID}}
+			conditions = core.Conditions{ColonyID: ColonyID, ExecutorIDs: []string{TargetExecutorID}}
 		}
 
 		processSpec := core.ProcessSpec{
@@ -210,7 +210,7 @@ var runProcessCmd = &cobra.Command{
 		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Info("Starting a Colonies client")
 		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
 
-		addedProcess, err := client.SubmitProcessSpec(&processSpec, RuntimePrvKey)
+		addedProcess, err := client.SubmitProcessSpec(&processSpec, ExecutorPrvKey)
 		CheckError(err)
 
 		if Wait {
@@ -236,7 +236,7 @@ var submitProcessCmd = &cobra.Command{
 
 		if processSpec.Conditions.ColonyID == "" {
 			if ColonyID == "" {
-				ColonyID = os.Getenv("COLONIES_COLONYID")
+				ColonyID = os.Getenv("COLONIES_COLONY_ID")
 			}
 			if ColonyID == "" {
 				CheckError(errors.New("Unknown Colony Id, please set COLONYID env variable or specify ColonyID in JSON file"))
@@ -248,22 +248,22 @@ var submitProcessCmd = &cobra.Command{
 		keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
 		CheckError(err)
 
-		if RuntimeID == "" {
-			RuntimeID = os.Getenv("COLONIES_RUNTIMEID")
+		if ExecutorID == "" {
+			ExecutorID = os.Getenv("COLONIES_EXECUTOR_ID")
 		}
-		if RuntimeID == "" {
-			CheckError(errors.New("Unknown Runtime Id"))
+		if ExecutorID == "" {
+			CheckError(errors.New("Unknown Executor Id"))
 		}
 
-		if RuntimePrvKey == "" {
-			RuntimePrvKey, err = keychain.GetPrvKey(RuntimeID)
+		if ExecutorPrvKey == "" {
+			ExecutorPrvKey, err = keychain.GetPrvKey(ExecutorID)
 			CheckError(err)
 		}
 
 		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Info("Starting a Colonies client")
 		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
 
-		addedProcess, err := client.SubmitProcessSpec(processSpec, RuntimePrvKey)
+		addedProcess, err := client.SubmitProcessSpec(processSpec, ExecutorPrvKey)
 		CheckError(err)
 
 		if Wait {
@@ -276,8 +276,8 @@ var submitProcessCmd = &cobra.Command{
 
 var assignProcessCmd = &cobra.Command{
 	Use:   "assign",
-	Short: "Assign a process to a runtime",
-	Long:  "Assign a process to a runtime",
+	Short: "Assign a process to a executor",
+	Long:  "Assign a process to a executor",
 	Run: func(cmd *cobra.Command, args []string) {
 		parseServerEnv()
 
@@ -285,21 +285,21 @@ var assignProcessCmd = &cobra.Command{
 		CheckError(err)
 
 		if ColonyID == "" {
-			ColonyID = os.Getenv("COLONIES_COLONYID")
+			ColonyID = os.Getenv("COLONIES_COLONY_ID")
 		}
 		if ColonyID == "" {
 			CheckError(errors.New("Unknown Colony Id"))
 		}
 
-		if RuntimeID == "" {
-			RuntimeID = os.Getenv("COLONIES_RUNTIMEID")
+		if ExecutorID == "" {
+			ExecutorID = os.Getenv("COLONIES_EXECUTOR_ID")
 		}
-		if RuntimeID == "" {
-			CheckError(errors.New("Unknown Runtime Id"))
+		if ExecutorID == "" {
+			CheckError(errors.New("Unknown Executor Id"))
 		}
 
-		if RuntimePrvKey == "" {
-			RuntimePrvKey, err = keychain.GetPrvKey(RuntimeID)
+		if ExecutorPrvKey == "" {
+			ExecutorPrvKey, err = keychain.GetPrvKey(ExecutorID)
 			CheckError(err)
 		}
 
@@ -307,18 +307,18 @@ var assignProcessCmd = &cobra.Command{
 		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
 
 		if Latest {
-			process, err := client.AssignLatestProcess(ColonyID, Timeout, RuntimePrvKey)
+			process, err := client.AssignLatestProcess(ColonyID, Timeout, ExecutorPrvKey)
 			if err != nil {
 				log.Warning(err)
 			} else {
-				log.WithFields(log.Fields{"processID": process.ID, "runtimeID": RuntimeID}).Info("Assigned process to runtime (latest)")
+				log.WithFields(log.Fields{"processID": process.ID, "executorID": ExecutorID}).Info("Assigned process to executor (latest)")
 			}
 		} else {
-			process, err := client.AssignProcess(ColonyID, Timeout, RuntimePrvKey)
+			process, err := client.AssignProcess(ColonyID, Timeout, ExecutorPrvKey)
 			if err != nil {
 				log.Warning(err)
 			} else {
-				log.WithFields(log.Fields{"processID": process.ID, "runtimeID": RuntimeID}).Info("Assigned process to runtime (oldest)")
+				log.WithFields(log.Fields{"processID": process.ID, "executorID": ExecutorID}).Info("Assigned process to executor (oldest)")
 			}
 		}
 
@@ -336,28 +336,28 @@ var listWaitingProcessesCmd = &cobra.Command{
 		CheckError(err)
 
 		if ColonyID == "" {
-			ColonyID = os.Getenv("COLONIES_COLONYID")
+			ColonyID = os.Getenv("COLONIES_COLONY_ID")
 		}
 		if ColonyID == "" {
 			CheckError(errors.New("Unknown Colony Id"))
 		}
 
-		if RuntimeID == "" {
-			RuntimeID = os.Getenv("COLONIES_RUNTIMEID")
+		if ExecutorID == "" {
+			ExecutorID = os.Getenv("COLONIES_EXECUTOR_ID")
 		}
-		if RuntimeID == "" {
-			CheckError(errors.New("Unknown Runtime Id"))
+		if ExecutorID == "" {
+			CheckError(errors.New("Unknown Executor Id"))
 		}
 
-		if RuntimePrvKey == "" {
-			RuntimePrvKey, err = keychain.GetPrvKey(RuntimeID)
+		if ExecutorPrvKey == "" {
+			ExecutorPrvKey, err = keychain.GetPrvKey(ExecutorID)
 			CheckError(err)
 		}
 
 		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Info("Starting a Colonies client")
 		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
 
-		processes, err := client.GetWaitingProcesses(ColonyID, Count, RuntimePrvKey)
+		processes, err := client.GetWaitingProcesses(ColonyID, Count, ExecutorPrvKey)
 		CheckError(err)
 
 		if len(processes) == 0 {
@@ -372,10 +372,10 @@ var listWaitingProcessesCmd = &cobra.Command{
 
 			var data [][]string
 			for _, process := range processes {
-				data = append(data, []string{process.ID, process.ProcessSpec.Func, StrArr2Str(process.ProcessSpec.Args), process.SubmissionTime.Format(TimeLayout), process.ProcessSpec.Conditions.RuntimeType})
+				data = append(data, []string{process.ID, process.ProcessSpec.Func, StrArr2Str(process.ProcessSpec.Args), process.SubmissionTime.Format(TimeLayout), process.ProcessSpec.Conditions.ExecutorType})
 			}
 			table := tablewriter.NewWriter(os.Stdout)
-			table.SetHeader([]string{"ID", "Func", "Args", "Submission Time", "Runtime Type"})
+			table.SetHeader([]string{"ID", "Func", "Args", "Submission Time", "Executor Type"})
 			for _, v := range data {
 				table.Append(v)
 			}
@@ -397,28 +397,28 @@ var listRunningProcessesCmd = &cobra.Command{
 		CheckError(err)
 
 		if ColonyID == "" {
-			ColonyID = os.Getenv("COLONIES_COLONYID")
+			ColonyID = os.Getenv("COLONIES_COLONY_ID")
 		}
 		if ColonyID == "" {
 			CheckError(errors.New("Unknown Colony Id"))
 		}
 
-		if RuntimeID == "" {
-			RuntimeID = os.Getenv("COLONIES_RUNTIMEID")
+		if ExecutorID == "" {
+			ExecutorID = os.Getenv("COLONIES_EXECUTOR_ID")
 		}
-		if RuntimeID == "" {
-			CheckError(errors.New("Unknown Runtime Id"))
+		if ExecutorID == "" {
+			CheckError(errors.New("Unknown Executor Id"))
 		}
 
-		if RuntimePrvKey == "" {
-			RuntimePrvKey, err = keychain.GetPrvKey(RuntimeID)
+		if ExecutorPrvKey == "" {
+			ExecutorPrvKey, err = keychain.GetPrvKey(ExecutorID)
 			CheckError(err)
 		}
 
 		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Info("Starting a Colonies client")
 		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
 
-		processes, err := client.GetRunningProcesses(ColonyID, Count, RuntimePrvKey)
+		processes, err := client.GetRunningProcesses(ColonyID, Count, ExecutorPrvKey)
 		CheckError(err)
 
 		if len(processes) == 0 {
@@ -433,10 +433,10 @@ var listRunningProcessesCmd = &cobra.Command{
 
 			var data [][]string
 			for _, process := range processes {
-				data = append(data, []string{process.ID, process.ProcessSpec.Func, StrArr2Str(process.ProcessSpec.Args), process.StartTime.Format(TimeLayout), process.ProcessSpec.Conditions.RuntimeType})
+				data = append(data, []string{process.ID, process.ProcessSpec.Func, StrArr2Str(process.ProcessSpec.Args), process.StartTime.Format(TimeLayout), process.ProcessSpec.Conditions.ExecutorType})
 			}
 			table := tablewriter.NewWriter(os.Stdout)
-			table.SetHeader([]string{"ID", "Cmd", "Args", "Start time", "Runtime Type"})
+			table.SetHeader([]string{"ID", "Cmd", "Args", "Start time", "Executor Type"})
 			for _, v := range data {
 				table.Append(v)
 			}
@@ -457,28 +457,28 @@ var listSuccessfulProcessesCmd = &cobra.Command{
 		CheckError(err)
 
 		if ColonyID == "" {
-			ColonyID = os.Getenv("COLONIES_COLONYID")
+			ColonyID = os.Getenv("COLONIES_COLONY_ID")
 		}
 		if ColonyID == "" {
 			CheckError(errors.New("Unknown Colony Id"))
 		}
 
-		if RuntimeID == "" {
-			RuntimeID = os.Getenv("COLONIES_RUNTIMEID")
+		if ExecutorID == "" {
+			ExecutorID = os.Getenv("COLONIES_EXECUTOR_ID")
 		}
-		if RuntimeID == "" {
-			CheckError(errors.New("Unknown Runtime Id"))
+		if ExecutorID == "" {
+			CheckError(errors.New("Unknown Executor Id"))
 		}
 
-		if RuntimePrvKey == "" {
-			RuntimePrvKey, err = keychain.GetPrvKey(RuntimeID)
+		if ExecutorPrvKey == "" {
+			ExecutorPrvKey, err = keychain.GetPrvKey(ExecutorID)
 			CheckError(err)
 		}
 
 		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Info("Starting a Colonies client")
 		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
 
-		processes, err := client.GetSuccessfulProcesses(ColonyID, Count, RuntimePrvKey)
+		processes, err := client.GetSuccessfulProcesses(ColonyID, Count, ExecutorPrvKey)
 		CheckError(err)
 
 		if len(processes) == 0 {
@@ -493,10 +493,10 @@ var listSuccessfulProcessesCmd = &cobra.Command{
 
 			var data [][]string
 			for _, process := range processes {
-				data = append(data, []string{process.ID, process.ProcessSpec.Func, StrArr2Str(process.ProcessSpec.Args), process.EndTime.Format(TimeLayout), process.ProcessSpec.Conditions.RuntimeType})
+				data = append(data, []string{process.ID, process.ProcessSpec.Func, StrArr2Str(process.ProcessSpec.Args), process.EndTime.Format(TimeLayout), process.ProcessSpec.Conditions.ExecutorType})
 			}
 			table := tablewriter.NewWriter(os.Stdout)
-			table.SetHeader([]string{"ID", "Func", "Args", "End time", "Runtime Type"})
+			table.SetHeader([]string{"ID", "Func", "Args", "End time", "Executor Type"})
 			for _, v := range data {
 				table.Append(v)
 			}
@@ -517,28 +517,28 @@ var listFailedProcessesCmd = &cobra.Command{
 		CheckError(err)
 
 		if ColonyID == "" {
-			ColonyID = os.Getenv("COLONIES_COLONYID")
+			ColonyID = os.Getenv("COLONIES_COLONY_ID")
 		}
 		if ColonyID == "" {
 			CheckError(errors.New("Unknown Colony Id"))
 		}
 
-		if RuntimeID == "" {
-			RuntimeID = os.Getenv("COLONIES_RUNTIMEID")
+		if ExecutorID == "" {
+			ExecutorID = os.Getenv("COLONIES_EXECUTOR_ID")
 		}
-		if RuntimeID == "" {
-			CheckError(errors.New("Unknown Runtime Id"))
+		if ExecutorID == "" {
+			CheckError(errors.New("Unknown Executor Id"))
 		}
 
-		if RuntimePrvKey == "" {
-			RuntimePrvKey, err = keychain.GetPrvKey(RuntimeID)
+		if ExecutorPrvKey == "" {
+			ExecutorPrvKey, err = keychain.GetPrvKey(ExecutorID)
 			CheckError(err)
 		}
 
 		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Info("Starting a Colonies client")
 		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
 
-		processes, err := client.GetFailedProcesses(ColonyID, Count, RuntimePrvKey)
+		processes, err := client.GetFailedProcesses(ColonyID, Count, ExecutorPrvKey)
 		CheckError(err)
 
 		if len(processes) == 0 {
@@ -553,10 +553,10 @@ var listFailedProcessesCmd = &cobra.Command{
 
 			var data [][]string
 			for _, process := range processes {
-				data = append(data, []string{process.ID, process.ProcessSpec.Func, StrArr2Str(process.ProcessSpec.Args), process.EndTime.Format(TimeLayout), process.ProcessSpec.Conditions.RuntimeType})
+				data = append(data, []string{process.ID, process.ProcessSpec.Func, StrArr2Str(process.ProcessSpec.Args), process.EndTime.Format(TimeLayout), process.ProcessSpec.Conditions.ExecutorType})
 			}
 			table := tablewriter.NewWriter(os.Stdout)
-			table.SetHeader([]string{"ID", "Func", "Args", "End time", "Runtime Type"})
+			table.SetHeader([]string{"ID", "Func", "Args", "End time", "Executor Type"})
 			for _, v := range data {
 				table.Append(v)
 			}
@@ -567,13 +567,13 @@ var listFailedProcessesCmd = &cobra.Command{
 }
 
 func printProcessSpec(processSpec *core.ProcessSpec) {
-	runtimeIDs := ""
-	for _, runtimeID := range processSpec.Conditions.RuntimeIDs {
-		runtimeIDs += runtimeID + "\n"
+	executorIDs := ""
+	for _, executorID := range processSpec.Conditions.ExecutorIDs {
+		executorIDs += executorID + "\n"
 	}
-	runtimeIDs = strings.TrimSuffix(runtimeIDs, "\n")
-	if runtimeIDs == "" {
-		runtimeIDs = "None"
+	executorIDs = strings.TrimSuffix(executorIDs, "\n")
+	if executorIDs == "" {
+		executorIDs = "None"
 	}
 
 	procFunc := processSpec.Func
@@ -617,8 +617,8 @@ func printProcessSpec(processSpec *core.ProcessSpec) {
 
 	condData := [][]string{
 		[]string{"ColonyID", processSpec.Conditions.ColonyID},
-		[]string{"RuntimeIDs", runtimeIDs},
-		[]string{"RuntimeType", processSpec.Conditions.RuntimeType},
+		[]string{"ExecutorIDs", executorIDs},
+		[]string{"ExecutorType", processSpec.Conditions.ExecutorType},
 		[]string{"Dependencies", dep},
 	}
 	condTable := tablewriter.NewWriter(os.Stdout)
@@ -639,21 +639,21 @@ var getProcessCmd = &cobra.Command{
 		keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
 		CheckError(err)
 
-		if RuntimeID == "" {
-			RuntimeID = os.Getenv("COLONIES_RUNTIMEID")
+		if ExecutorID == "" {
+			ExecutorID = os.Getenv("COLONIES_EXECUTOR_ID")
 		}
-		if RuntimeID == "" {
-			CheckError(errors.New("Unknown Runtime Id"))
+		if ExecutorID == "" {
+			CheckError(errors.New("Unknown Executor Id"))
 		}
 
-		if RuntimePrvKey == "" {
-			RuntimePrvKey, err = keychain.GetPrvKey(RuntimeID)
+		if ExecutorPrvKey == "" {
+			ExecutorPrvKey, err = keychain.GetPrvKey(ExecutorID)
 			CheckError(err)
 		}
 		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Info("Starting a Colonies client")
 		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
 
-		process, err := client.GetProcess(ProcessID, RuntimePrvKey)
+		process, err := client.GetProcess(ProcessID, ExecutorPrvKey)
 		if err != nil {
 			log.WithFields(log.Fields{"ProcessID": ProcessID, "Error": err}).Info("Process not found")
 			os.Exit(-1)
@@ -664,9 +664,9 @@ var getProcessCmd = &cobra.Command{
 			os.Exit(0)
 		}
 
-		assignedRuntimeID := "None"
-		if process.AssignedRuntimeID != "" {
-			assignedRuntimeID = process.AssignedRuntimeID
+		assignedExecutorID := "None"
+		if process.AssignedExecutorID != "" {
+			assignedExecutorID = process.AssignedExecutorID
 		}
 
 		isAssigned := "False"
@@ -684,7 +684,7 @@ var getProcessCmd = &cobra.Command{
 		processData := [][]string{
 			[]string{"ID", process.ID},
 			[]string{"IsAssigned", isAssigned},
-			[]string{"AssignedRuntimeID", assignedRuntimeID},
+			[]string{"AssignedExecutorID", assignedExecutorID},
 			[]string{"State", State2String(process.State)},
 			[]string{"Priority", strconv.Itoa(process.ProcessSpec.Priority)},
 			[]string{"SubmissionTime", process.SubmissionTime.Format(TimeLayout)},
@@ -767,21 +767,21 @@ var deleteProcessCmd = &cobra.Command{
 		keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
 		CheckError(err)
 
-		if RuntimeID == "" {
-			RuntimeID = os.Getenv("COLONIES_RUNTIMEID")
+		if ExecutorID == "" {
+			ExecutorID = os.Getenv("COLONIES_EXECUTOR_ID")
 		}
-		if RuntimeID == "" {
-			CheckError(errors.New("Unknown Runtime Id"))
+		if ExecutorID == "" {
+			CheckError(errors.New("Unknown Executor Id"))
 		}
 
-		if RuntimePrvKey == "" {
-			RuntimePrvKey, err = keychain.GetPrvKey(RuntimeID)
+		if ExecutorPrvKey == "" {
+			ExecutorPrvKey, err = keychain.GetPrvKey(ExecutorID)
 			CheckError(err)
 		}
 		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Info("Starting a Colonies client")
 		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
 
-		err = client.DeleteProcess(ProcessID, RuntimePrvKey)
+		err = client.DeleteProcess(ProcessID, ExecutorPrvKey)
 		CheckError(err)
 
 		log.WithFields(log.Fields{"ProcessID": ProcessID}).Info("Process deleted")
@@ -799,7 +799,7 @@ var deleteAllProcessesCmd = &cobra.Command{
 		CheckError(err)
 
 		if ColonyID == "" {
-			ColonyID = os.Getenv("COLONIES_COLONYID")
+			ColonyID = os.Getenv("COLONIES_COLONY_ID")
 		}
 		if ColonyID == "" {
 			CheckError(errors.New("Unknown Colony Id"))
@@ -838,29 +838,29 @@ var closeSuccessfulCmd = &cobra.Command{
 		keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
 		CheckError(err)
 
-		if RuntimeID == "" {
-			RuntimeID = os.Getenv("COLONIES_RUNTIMEID")
+		if ExecutorID == "" {
+			ExecutorID = os.Getenv("COLONIES_EXECUTOR_ID")
 		}
-		if RuntimeID == "" {
-			CheckError(errors.New("Unknown Runtime Id"))
+		if ExecutorID == "" {
+			CheckError(errors.New("Unknown Executor Id"))
 		}
 
-		if RuntimePrvKey == "" {
-			RuntimePrvKey, err = keychain.GetPrvKey(RuntimeID)
+		if ExecutorPrvKey == "" {
+			ExecutorPrvKey, err = keychain.GetPrvKey(ExecutorID)
 			CheckError(err)
 		}
 
 		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Info("Starting a Colonies client")
 		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
 
-		process, err := client.GetProcess(ProcessID, RuntimePrvKey)
+		process, err := client.GetProcess(ProcessID, ExecutorPrvKey)
 		CheckError(err)
 
 		if len(Output) > 0 {
-			err = client.CloseWithOutput(process.ID, Output, RuntimePrvKey)
+			err = client.CloseWithOutput(process.ID, Output, ExecutorPrvKey)
 			CheckError(err)
 		} else {
-			err = client.Close(process.ID, RuntimePrvKey)
+			err = client.Close(process.ID, ExecutorPrvKey)
 			CheckError(err)
 		}
 
@@ -878,29 +878,29 @@ var closeFailedCmd = &cobra.Command{
 		keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
 		CheckError(err)
 
-		if RuntimeID == "" {
-			RuntimeID = os.Getenv("COLONIES_RUNTIMEID")
+		if ExecutorID == "" {
+			ExecutorID = os.Getenv("COLONIES_EXECUTOR_ID")
 		}
-		if RuntimeID == "" {
-			CheckError(errors.New("Unknown Runtime Id"))
+		if ExecutorID == "" {
+			CheckError(errors.New("Unknown Executor Id"))
 		}
 
-		if RuntimePrvKey == "" {
-			RuntimePrvKey, err = keychain.GetPrvKey(RuntimeID)
+		if ExecutorPrvKey == "" {
+			ExecutorPrvKey, err = keychain.GetPrvKey(ExecutorID)
 			CheckError(err)
 		}
 
 		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Info("Starting a Colonies client")
 		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
 
-		process, err := client.GetProcess(ProcessID, RuntimePrvKey)
+		process, err := client.GetProcess(ProcessID, ExecutorPrvKey)
 		CheckError(err)
 
 		if len(Errors) == 0 {
 			Errors = []string{"No errors specified"}
 		}
 
-		err = client.Fail(process.ID, Errors, RuntimePrvKey)
+		err = client.Fail(process.ID, Errors, ExecutorPrvKey)
 		CheckError(err)
 
 		log.WithFields(log.Fields{"ProcessID": process.ID}).Info("Process closed as Failed")

@@ -30,13 +30,13 @@ var monitoringStartCmd = &cobra.Command{
 		parseServerEnv()
 
 		if ServerID == "" {
-			ServerID = os.Getenv("COLONIES_SERVERID")
+			ServerID = os.Getenv("COLONIES_SERVER_ID")
 		}
 		if ServerID == "" {
 			CheckError(errors.New("Unknown Server Id"))
 		}
 
-		ServerPrvKey = os.Getenv("COLONIES_SERVERPRVKEY")
+		ServerPrvKey = os.Getenv("COLONIES_SERVER_PRVKEY")
 		if ServerPrvKey == "" {
 			keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
 			CheckError(err)
@@ -44,14 +44,14 @@ var monitoringStartCmd = &cobra.Command{
 			CheckError(err)
 		}
 
-		MonitorPortEnvStr := os.Getenv("COLONIES_MONITORPORT")
+		MonitorPortEnvStr := os.Getenv("COLONIES_MONITOR_PORT")
 		if MonitorPortEnvStr == "" {
 			CheckError(errors.New("COLONIES_MONITORPORT environmental variable not set"))
 		}
 		MonitorPort, err := strconv.Atoi(MonitorPortEnvStr)
 		CheckError(err)
 
-		IntervallEnvStr := os.Getenv("COLONIES_MONITORINTERVALL")
+		IntervallEnvStr := os.Getenv("COLONIES_MONITOR_INTERVALL")
 		if IntervallEnvStr == "" {
 			CheckError(errors.New("COLONIES_MONITORINTERVALL environmental variable not set"))
 		}

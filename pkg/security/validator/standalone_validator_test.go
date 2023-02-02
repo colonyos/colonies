@@ -37,22 +37,22 @@ func TestRequireColonyOwner(t *testing.T) {
 	assert.NotNil(t, security.RequireColonyOwner(core.GenerateRandomID(), colonyID))
 }
 
-func TestRequireRuntimeMembership(t *testing.T) {
+func TestRequireExecutorMembership(t *testing.T) {
 	ownership := createOwnershipMock()
 	security := createTestValidator(ownership)
 
 	colonyID := core.GenerateRandomID()
 	ownership.addColony(colonyID)
-	runtime1ID := core.GenerateRandomID()
-	runtime2ID := core.GenerateRandomID()
-	ownership.addRuntime(runtime1ID, colonyID)
-	assert.NotNil(t, security.RequireRuntimeMembership(runtime1ID, colonyID, true)) // Should not work, not approved
-	assert.Nil(t, security.RequireRuntimeMembership(runtime1ID, colonyID, false))   // Should work
-	assert.NotNil(t, security.RequireRuntimeMembership(runtime2ID, colonyID, true)) // Should not work, not added or approved
+	executor1ID := core.GenerateRandomID()
+	executor2ID := core.GenerateRandomID()
+	ownership.addExecutor(executor1ID, colonyID)
+	assert.NotNil(t, security.RequireExecutorMembership(executor1ID, colonyID, true)) // Should not work, not approved
+	assert.Nil(t, security.RequireExecutorMembership(executor1ID, colonyID, false))   // Should work
+	assert.NotNil(t, security.RequireExecutorMembership(executor2ID, colonyID, true)) // Should not work, not added or approved
 
-	ownership.addRuntime(runtime2ID, colonyID)
-	ownership.approveRuntime(runtime1ID, colonyID)
+	ownership.addExecutor(executor2ID, colonyID)
+	ownership.approveExecutor(executor1ID, colonyID)
 
-	assert.Nil(t, security.RequireRuntimeMembership(runtime1ID, colonyID, true))    // Should work
-	assert.NotNil(t, security.RequireRuntimeMembership(runtime2ID, colonyID, true)) // Should not work, not approved
+	assert.Nil(t, security.RequireExecutorMembership(executor1ID, colonyID, true))    // Should work
+	assert.NotNil(t, security.RequireExecutorMembership(executor2ID, colonyID, true)) // Should not work, not approved
 }

@@ -7,7 +7,7 @@ import (
 )
 
 func TestRPCSubscribeProcessesMsg(t *testing.T) {
-	msg := CreateSubscribeProcessesMsg("test_runtime_type", 1, 2)
+	msg := CreateSubscribeProcessesMsg("test_executor_type", 1, 2)
 	jsonString, err := msg.ToJSON()
 	assert.Nil(t, err)
 
@@ -21,7 +21,7 @@ func TestRPCSubscribeProcessesMsg(t *testing.T) {
 }
 
 func TestRPCSubscribeProcessesMsgIndent(t *testing.T) {
-	msg := CreateSubscribeProcessesMsg("test_runtime_type", 1, 2)
+	msg := CreateSubscribeProcessesMsg("test_executor_type", 1, 2)
 	jsonString, err := msg.ToJSONIndent()
 	assert.Nil(t, err)
 
@@ -35,7 +35,7 @@ func TestRPCSubscribeProcessesMsgIndent(t *testing.T) {
 }
 
 func TestRPCSubscribeProcessesMsgEquals(t *testing.T) {
-	msg := CreateSubscribeProcessesMsg("test_runtime_type", 1, 2)
+	msg := CreateSubscribeProcessesMsg("test_executor_type", 1, 2)
 	assert.True(t, msg.Equals(msg))
 	assert.False(t, msg.Equals(nil))
 }

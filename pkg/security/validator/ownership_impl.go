@@ -30,7 +30,7 @@ func (ownership *ownershipImpl) checkIfColonyExists(colonyID string) error {
 	return nil
 }
 
-func (ownership *ownershipImpl) checkIfRuntimeIsValid(runtimeID string, colonyID string, approved bool) error {
+func (ownership *ownershipImpl) checkIfExecutorIsValid(executorID string, colonyID string, approved bool) error {
 	colony, err := ownership.db.GetColonyByID(colonyID)
 	if err != nil {
 		return err
@@ -40,22 +40,22 @@ func (ownership *ownershipImpl) checkIfRuntimeIsValid(runtimeID string, colonyID
 		return errors.New("Colony <" + colonyID + "> does not exists")
 	}
 
-	runtime, err := ownership.db.GetRuntimeByID(runtimeID)
+	executor, err := ownership.db.GetExecutorByID(executorID)
 	if err != nil {
 		return err
 	}
 
-	if runtime == nil {
-		return errors.New("Runtime with Id <" + runtimeID + "> is not a member of Colony with Id <" + colonyID + "> (Runtime does not exist)")
+	if executor == nil {
+		return errors.New("Executor with Id <" + executorID + "> is not a member of Colony with Id <" + colonyID + "> (Executor does not exist)")
 	}
 
-	if runtime.ColonyID != colonyID {
-		return errors.New("Runtime with Id <" + runtimeID + "> is not a member of Colony with Id <" + colonyID + ">, (Recovered Id and Colony Id missmatches)")
+	if executor.ColonyID != colonyID {
+		return errors.New("Executor with Id <" + executorID + "> is not a member of Colony with Id <" + colonyID + ">, (Recovered Id and Colony Id missmatches)")
 	}
 
 	if approved {
-		if runtime.State != core.APPROVED {
-			return errors.New("Runtime with Id <" + runtimeID + "> is not approved")
+		if executor.State != core.APPROVED {
+			return errors.New("Executor with Id <" + executorID + "> is not approved")
 		}
 	}
 

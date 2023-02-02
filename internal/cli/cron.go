@@ -27,8 +27,8 @@ func init() {
 	cronCmd.PersistentFlags().StringVarP(&ServerHost, "host", "", "localhost", "Server host")
 	cronCmd.PersistentFlags().IntVarP(&ServerPort, "port", "", -1, "Server HTTP port")
 
-	addCronCmd.Flags().StringVarP(&RuntimeID, "runtimeid", "", "", "Runtime Id")
-	addCronCmd.Flags().StringVarP(&RuntimePrvKey, "runtimeprvkey", "", "", "Runtime private key")
+	addCronCmd.Flags().StringVarP(&ExecutorID, "executorid", "", "", "Executor Id")
+	addCronCmd.Flags().StringVarP(&ExecutorPrvKey, "executorprvkey", "", "", "Executor private key")
 	addCronCmd.Flags().StringVarP(&SpecFile, "spec", "", "", "JSON specification of a Colony workflow")
 	addCronCmd.MarkFlagRequired("spec")
 	addCronCmd.Flags().StringVarP(&ColonyID, "colonyid", "", "", "Colony Id")
@@ -39,23 +39,23 @@ func init() {
 	addCronCmd.Flags().BoolVarP(&CronRandom, "random", "", false, "Schedule a random cron, intervall must be specified")
 	addCronCmd.Flags().BoolVarP(&WaitForPrevProcessGraph, "waitprevious", "", false, "Wait for previous processgrah to finish bore schedule a new workflow")
 
-	delCronCmd.Flags().StringVarP(&RuntimeID, "runtimeid", "", "", "Runtime Id")
-	delCronCmd.Flags().StringVarP(&RuntimePrvKey, "runtimeprvkey", "", "", "Runtime private key")
+	delCronCmd.Flags().StringVarP(&ExecutorID, "executorid", "", "", "Executor Id")
+	delCronCmd.Flags().StringVarP(&ExecutorPrvKey, "executorprvkey", "", "", "Executor private key")
 	delCronCmd.Flags().StringVarP(&CronID, "cronid", "", "", "Cron Id")
 	delCronCmd.MarkFlagRequired("cronid")
 
-	getCronCmd.Flags().StringVarP(&RuntimeID, "runtimeid", "", "", "Runtime Id")
-	getCronCmd.Flags().StringVarP(&RuntimePrvKey, "runtimeprvkey", "", "", "Runtime private key")
+	getCronCmd.Flags().StringVarP(&ExecutorID, "executorid", "", "", "Executor Id")
+	getCronCmd.Flags().StringVarP(&ExecutorPrvKey, "executorprvkey", "", "", "Executor private key")
 	getCronCmd.Flags().StringVarP(&CronID, "cronid", "", "", "Cron Id")
 	getCronCmd.MarkFlagRequired("cronid")
 
-	getCronsCmd.Flags().StringVarP(&RuntimeID, "runtimeid", "", "", "Runtime Id")
-	getCronsCmd.Flags().StringVarP(&RuntimePrvKey, "runtimeprvkey", "", "", "Runtime private key")
+	getCronsCmd.Flags().StringVarP(&ExecutorID, "executorid", "", "", "Executor Id")
+	getCronsCmd.Flags().StringVarP(&ExecutorPrvKey, "executorprvkey", "", "", "Executor private key")
 	getCronsCmd.Flags().StringVarP(&ColonyID, "colonyid", "", "", "Colony Id")
 	getCronsCmd.Flags().IntVarP(&Count, "count", "", server.MAX_COUNT, "Number of crons to list")
 
-	runCronCmd.Flags().StringVarP(&RuntimeID, "runtimeid", "", "", "Runtime Id")
-	runCronCmd.Flags().StringVarP(&RuntimePrvKey, "runtimeprvkey", "", "", "Runtime private key")
+	runCronCmd.Flags().StringVarP(&ExecutorID, "executorid", "", "", "Executor Id")
+	runCronCmd.Flags().StringVarP(&ExecutorPrvKey, "executorprvkey", "", "", "Executor private key")
 	runCronCmd.Flags().StringVarP(&CronID, "cronid", "", "", "Cron Id")
 	runCronCmd.MarkFlagRequired("cronid")
 }
@@ -82,7 +82,7 @@ var addCronCmd = &cobra.Command{
 
 		if workflowSpec.ColonyID == "" {
 			if ColonyID == "" {
-				ColonyID = os.Getenv("COLONIES_COLONYID")
+				ColonyID = os.Getenv("COLONIES_COLONY_ID")
 			}
 			if ColonyID == "" {
 				CheckError(errors.New("Unknown Colony Id, please set COLONYID env variable or specify ColonyID in JSON file"))
@@ -96,7 +96,7 @@ var addCronCmd = &cobra.Command{
 
 		if workflowSpec.ColonyID == "" {
 			if ColonyID == "" {
-				ColonyID = os.Getenv("COLONIES_COLONYID")
+				ColonyID = os.Getenv("COLONIES_COLONY_ID")
 			}
 			if ColonyID == "" {
 				CheckError(errors.New("Unknown Colony Id, please set COLONYID env variable or specify ColonyID in JSON file"))
@@ -108,15 +108,15 @@ var addCronCmd = &cobra.Command{
 		keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
 		CheckError(err)
 
-		if RuntimeID == "" {
-			RuntimeID = os.Getenv("COLONIES_RUNTIMEID")
+		if ExecutorID == "" {
+			ExecutorID = os.Getenv("COLONIES_EXECUTOR_ID")
 		}
-		if RuntimeID == "" {
-			CheckError(errors.New("Unknown Runtime Id"))
+		if ExecutorID == "" {
+			CheckError(errors.New("Unknown Executor Id"))
 		}
 
-		if RuntimePrvKey == "" {
-			RuntimePrvKey, err = keychain.GetPrvKey(RuntimeID)
+		if ExecutorPrvKey == "" {
+			ExecutorPrvKey, err = keychain.GetPrvKey(ExecutorID)
 			CheckError(err)
 		}
 
@@ -140,7 +140,7 @@ var addCronCmd = &cobra.Command{
 			log.Info("Will not wait for previous processgraph to finish")
 		}
 
-		addedCron, err := client.AddCron(cron, RuntimePrvKey)
+		addedCron, err := client.AddCron(cron, ExecutorPrvKey)
 		CheckError(err)
 
 		log.WithFields(log.Fields{"CronID": addedCron.ID}).Info("Cron added")
@@ -157,15 +157,15 @@ var delCronCmd = &cobra.Command{
 		keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
 		CheckError(err)
 
-		if RuntimeID == "" {
-			RuntimeID = os.Getenv("COLONIES_RUNTIMEID")
+		if ExecutorID == "" {
+			ExecutorID = os.Getenv("COLONIES_EXECUTOR_ID")
 		}
-		if RuntimeID == "" {
-			CheckError(errors.New("Unknown Runtime Id"))
+		if ExecutorID == "" {
+			CheckError(errors.New("Unknown Executor Id"))
 		}
 
-		if RuntimePrvKey == "" {
-			RuntimePrvKey, err = keychain.GetPrvKey(RuntimeID)
+		if ExecutorPrvKey == "" {
+			ExecutorPrvKey, err = keychain.GetPrvKey(ExecutorID)
 			CheckError(err)
 		}
 
@@ -176,7 +176,7 @@ var delCronCmd = &cobra.Command{
 			CheckError(errors.New("Cron Id not specified"))
 		}
 
-		err = client.DeleteCron(CronID, RuntimePrvKey)
+		err = client.DeleteCron(CronID, ExecutorPrvKey)
 		CheckError(err)
 
 		log.WithFields(log.Fields{"CronId": CronID}).Info("Deleting cron")
@@ -193,15 +193,15 @@ var getCronCmd = &cobra.Command{
 		keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
 		CheckError(err)
 
-		if RuntimeID == "" {
-			RuntimeID = os.Getenv("COLONIES_RUNTIMEID")
+		if ExecutorID == "" {
+			ExecutorID = os.Getenv("COLONIES_EXECUTOR_ID")
 		}
-		if RuntimeID == "" {
-			CheckError(errors.New("Unknown Runtime Id"))
+		if ExecutorID == "" {
+			CheckError(errors.New("Unknown Executor Id"))
 		}
 
-		if RuntimePrvKey == "" {
-			RuntimePrvKey, err = keychain.GetPrvKey(RuntimeID)
+		if ExecutorPrvKey == "" {
+			ExecutorPrvKey, err = keychain.GetPrvKey(ExecutorID)
 			CheckError(err)
 		}
 
@@ -212,7 +212,7 @@ var getCronCmd = &cobra.Command{
 			CheckError(errors.New("Cron Id not specified"))
 		}
 
-		cron, err := client.GetCron(CronID, RuntimePrvKey)
+		cron, err := client.GetCron(CronID, ExecutorPrvKey)
 		if cron == nil {
 			log.WithFields(log.Fields{"CronId": CronID}).Error("Cron not found")
 			os.Exit(0)
@@ -263,28 +263,28 @@ var getCronsCmd = &cobra.Command{
 		CheckError(err)
 
 		if ColonyID == "" {
-			ColonyID = os.Getenv("COLONIES_COLONYID")
+			ColonyID = os.Getenv("COLONIES_COLONY_ID")
 		}
 		if ColonyID == "" {
 			CheckError(errors.New("Unknown Colony Id"))
 		}
 
-		if RuntimeID == "" {
-			RuntimeID = os.Getenv("COLONIES_RUNTIMEID")
+		if ExecutorID == "" {
+			ExecutorID = os.Getenv("COLONIES_EXECUTOR_ID")
 		}
-		if RuntimeID == "" {
-			CheckError(errors.New("Unknown Runtime Id"))
+		if ExecutorID == "" {
+			CheckError(errors.New("Unknown Executor Id"))
 		}
 
-		if RuntimePrvKey == "" {
-			RuntimePrvKey, err = keychain.GetPrvKey(RuntimeID)
+		if ExecutorPrvKey == "" {
+			ExecutorPrvKey, err = keychain.GetPrvKey(ExecutorID)
 			CheckError(err)
 		}
 
 		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Info("Starting a Colonies client")
 		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
 
-		crons, err := client.GetCrons(ColonyID, Count, RuntimePrvKey)
+		crons, err := client.GetCrons(ColonyID, Count, ExecutorPrvKey)
 		if crons == nil {
 			log.WithFields(log.Fields{"ColonyId": ColonyID}).Info("No crons found")
 			os.Exit(0)
@@ -314,15 +314,15 @@ var runCronCmd = &cobra.Command{
 		keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
 		CheckError(err)
 
-		if RuntimeID == "" {
-			RuntimeID = os.Getenv("COLONIES_RUNTIMEID")
+		if ExecutorID == "" {
+			ExecutorID = os.Getenv("COLONIES_EXECUTOR_ID")
 		}
-		if RuntimeID == "" {
-			CheckError(errors.New("Unknown Runtime Id"))
+		if ExecutorID == "" {
+			CheckError(errors.New("Unknown Executor Id"))
 		}
 
-		if RuntimePrvKey == "" {
-			RuntimePrvKey, err = keychain.GetPrvKey(RuntimeID)
+		if ExecutorPrvKey == "" {
+			ExecutorPrvKey, err = keychain.GetPrvKey(ExecutorID)
 			CheckError(err)
 		}
 
@@ -333,7 +333,7 @@ var runCronCmd = &cobra.Command{
 			CheckError(errors.New("Cron Id not specified"))
 		}
 
-		_, err = client.RunCron(CronID, RuntimePrvKey)
+		_, err = client.RunCron(CronID, ExecutorPrvKey)
 		CheckError(err)
 
 		log.WithFields(log.Fields{"CronID": CronID}).Info("Running cron")

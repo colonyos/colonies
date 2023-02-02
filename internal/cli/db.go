@@ -32,29 +32,29 @@ func init() {
 
 var dbCmd = &cobra.Command{
 	Use:   "database",
-	Short: "Manage PostgreSQL database",
-	Long:  "Manage PostgreSQL database",
+	Short: "Manage internal database",
+	Long:  "Manage internal database",
 }
 
 func parseDBEnv() {
-	DBHostEnv := os.Getenv("COLONIES_DBHOST")
+	DBHostEnv := os.Getenv("COLONIES_DB_HOST")
 	if DBHostEnv != "" {
 		DBHost = DBHostEnv
 	}
 
 	var err error
-	DBPortEnvStr := os.Getenv("COLONIES_DBPORT")
+	DBPortEnvStr := os.Getenv("COLONIES_DB_PORT")
 	if DBPortEnvStr != "" {
 		DBPort, err = strconv.Atoi(DBPortEnvStr)
 		CheckError(err)
 	}
 
 	if DBUser == "" {
-		DBUser = os.Getenv("COLONIES_DBUSER")
+		DBUser = os.Getenv("COLONIES_DB_USER")
 	}
 
 	if DBPassword == "" {
-		DBPassword = os.Getenv("COLONIES_DBPASSWORD")
+		DBPassword = os.Getenv("COLONIES_DB_PASSWORD")
 	}
 }
 
@@ -125,7 +125,7 @@ var dbResetCmd = &cobra.Command{
 		CheckError(err)
 
 		if ServerID == "" {
-			ServerID = os.Getenv("COLONIES_SERVERID")
+			ServerID = os.Getenv("COLONIES_SERVER_ID")
 		}
 		if ServerID == "" {
 			CheckError(errors.New("Unknown Server Id"))

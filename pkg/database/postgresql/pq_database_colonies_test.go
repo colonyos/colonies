@@ -113,16 +113,16 @@ func TestDeleteColonies(t *testing.T) {
 	err = db.AddCron(cron2)
 	assert.Nil(t, err)
 
-	runtime1 := utils.CreateTestRuntime(colony1.ID)
-	err = db.AddRuntime(runtime1)
+	executor1 := utils.CreateTestExecutor(colony1.ID)
+	err = db.AddExecutor(executor1)
 	assert.Nil(t, err)
 
-	runtime2 := utils.CreateTestRuntime(colony1.ID)
-	err = db.AddRuntime(runtime2)
+	executor2 := utils.CreateTestExecutor(colony1.ID)
+	err = db.AddExecutor(executor2)
 	assert.Nil(t, err)
 
-	runtime3 := utils.CreateTestRuntime(colony2.ID)
-	err = db.AddRuntime(runtime3)
+	executor3 := utils.CreateTestExecutor(colony2.ID)
+	err = db.AddExecutor(executor3)
 	assert.Nil(t, err)
 
 	err = db.DeleteColonyByID(colony1.ID)
@@ -132,17 +132,17 @@ func TestDeleteColonies(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Nil(t, colonyFromDB)
 
-	runtimeFromDB, err := db.GetRuntimeByID(runtime1.ID)
+	executorFromDB, err := db.GetExecutorByID(executor1.ID)
 	assert.Nil(t, err)
-	assert.Nil(t, runtimeFromDB)
+	assert.Nil(t, executorFromDB)
 
-	runtimeFromDB, err = db.GetRuntimeByID(runtime2.ID)
+	executorFromDB, err = db.GetExecutorByID(executor2.ID)
 	assert.Nil(t, err)
-	assert.Nil(t, runtimeFromDB)
+	assert.Nil(t, executorFromDB)
 
-	runtimeFromDB, err = db.GetRuntimeByID(runtime3.ID)
+	executorFromDB, err = db.GetExecutorByID(executor3.ID)
 	assert.Nil(t, err)
-	assert.NotNil(t, runtimeFromDB) // Belongs to Colony 2 and should therefore NOT be deleted
+	assert.NotNil(t, executorFromDB) // Belongs to Colony 2 and should therefore NOT be deleted
 
 	generatorFromDB, err := db.GetGeneratorByID(generator1.ID)
 	assert.Nil(t, err)

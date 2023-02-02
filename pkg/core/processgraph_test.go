@@ -44,12 +44,12 @@ func (mock *processGraphStorageMock) SetProcessGraphState(processGraphID string,
 
 func createProcess() *Process {
 	colonyID := GenerateRandomID()
-	runtimeType := "test_runtime_type"
+	executorType := "test_executor_type"
 	maxWaitTime := -1
 	maxExecTime := -1
 	maxRetries := 3
 
-	processSpec := CreateProcessSpec("test_name", "test_func", []string{"test_arg"}, colonyID, []string{}, runtimeType, maxWaitTime, maxExecTime, maxRetries, make(map[string]string), []string{}, 1)
+	processSpec := CreateProcessSpec("test_name", "test_func", []string{"test_arg"}, colonyID, []string{}, executorType, maxWaitTime, maxExecTime, maxRetries, make(map[string]string), []string{}, 1)
 	process := CreateProcess(processSpec)
 
 	return process

@@ -7,7 +7,7 @@
             "/tmp/currentdate"
         ],
         "conditions": {
-            "runtimetype": "cli",
+            "executortype": "cli",
             "dependencies": []
         },
         "maxwaittime": 3
@@ -19,7 +19,7 @@
             "/tmp/currentdate"
         ],
         "conditions": {
-            "runtimetype": "cli",
+            "executortype": "cli",
             "dependencies": [
                 "generate_date"
             ]
