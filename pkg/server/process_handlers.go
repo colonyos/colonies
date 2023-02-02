@@ -30,7 +30,7 @@ func (server *ColoniesServer) handleSubmitProcessSpecHTTPRequest(c *gin.Context,
 		return
 	}
 
-	err = server.validator.RequireRuntimeMembership(recoveredID, msg.ProcessSpec.Conditions.ColonyID, true)
+	err = server.validator.RequireExecutorMembership(recoveredID, msg.ProcessSpec.Conditions.ColonyID, true)
 	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		return
 	}
@@ -89,7 +89,7 @@ func (server *ColoniesServer) handleAssignProcessHTTPRequest(c *gin.Context, rec
 		return
 	}
 
-	err = server.validator.RequireRuntimeMembership(recoveredID, msg.ColonyID, true)
+	err = server.validator.RequireExecutorMembership(recoveredID, msg.ColonyID, true)
 	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		return
 	}
@@ -99,16 +99,16 @@ func (server *ColoniesServer) handleAssignProcessHTTPRequest(c *gin.Context, rec
 		return
 	}
 
-	runtime, err := server.controller.getRuntime(recoveredID)
+	executor, err := server.controller.getExecutor(recoveredID)
 	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
 
 	log.WithFields(log.Fields{
-		"RuntimeType": runtime.RuntimeType,
-		"RuntimeID":   recoveredID,
-		"ColonyID":    msg.ColonyID,
-		"Timeout":     msg.Timeout}).
+		"ExecutorType": executor.Type,
+		"ExecutorID":   recoveredID,
+		"ColonyID":     msg.ColonyID,
+		"Timeout":      msg.Timeout}).
 		Debug("Waiting for processes")
 
 	process, assignErr := server.controller.assign(recoveredID, msg.ColonyID, msg.Latest)
@@ -118,7 +118,7 @@ func (server *ColoniesServer) handleAssignProcessHTTPRequest(c *gin.Context, rec
 			defer cancelCtx()
 
 			// Wait for a new process to be submitted to a ColoniesServer in the cluster
-			server.controller.eventHandler.waitForProcess(runtime.RuntimeType, core.WAITING, "", ctx)
+			server.controller.eventHandler.waitForProcess(executor.Type, core.WAITING, "", ctx)
 
 			// Try again! Note there is no guarantees we was assigned a process since multiple workers competes getting jobs
 			process, assignErr = server.controller.assign(recoveredID, msg.ColonyID, msg.Latest)
@@ -126,7 +126,7 @@ func (server *ColoniesServer) handleAssignProcessHTTPRequest(c *gin.Context, rec
 	}
 
 	if server.handleHTTPError(c, assignErr, http.StatusNotFound) {
-		log.WithFields(log.Fields{"RuntimeID": recoveredID, "ColonyID": msg.ColonyID}).Debug("No process can be assigned")
+		log.WithFields(log.Fields{"ExecutorID": recoveredID, "ColonyID": msg.ColonyID}).Debug("No process can be assigned")
 		return
 	}
 	if process == nil {
@@ -141,7 +141,7 @@ func (server *ColoniesServer) handleAssignProcessHTTPRequest(c *gin.Context, rec
 		return
 	}
 
-	log.WithFields(log.Fields{"ProcessID": process.ID, "RuntimeID": process.AssignedRuntimeID}).Debug("Assigning process")
+	log.WithFields(log.Fields{"ProcessID": process.ID, "ExecutorID": process.AssignedExecutorID}).Debug("Assigning process")
 
 	server.sendHTTPReply(c, payloadType, jsonString)
 }
@@ -159,7 +159,7 @@ func (server *ColoniesServer) handleGetProcessHistHTTPRequest(c *gin.Context, re
 		return
 	}
 
-	err = server.validator.RequireRuntimeMembership(recoveredID, msg.ColonyID, true)
+	err = server.validator.RequireExecutorMembership(recoveredID, msg.ColonyID, true)
 	if err != nil {
 		err = server.validator.RequireColonyOwner(recoveredID, msg.ColonyID)
 		if server.handleHTTPError(c, err, http.StatusForbidden) {
@@ -167,7 +167,7 @@ func (server *ColoniesServer) handleGetProcessHistHTTPRequest(c *gin.Context, re
 		}
 	}
 
-	processes, err := server.controller.findProcessHistory(msg.ColonyID, msg.RuntimeID, msg.Seconds, msg.State)
+	processes, err := server.controller.findProcessHistory(msg.ColonyID, msg.ExecutorID, msg.Seconds, msg.State)
 	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
@@ -177,10 +177,10 @@ func (server *ColoniesServer) handleGetProcessHistHTTPRequest(c *gin.Context, re
 	}
 
 	log.WithFields(log.Fields{
-		"ColonyID":  msg.ColonyID,
-		"RuntimeID": msg.RuntimeID,
-		"Seconds":   msg.Seconds,
-		"State":     msg.State}).
+		"ColonyID":   msg.ColonyID,
+		"ExecutorID": msg.ExecutorID,
+		"Seconds":    msg.Seconds,
+		"State":      msg.State}).
 		Debug("Finding process history")
 
 	server.sendHTTPReply(c, payloadType, jsonString)
@@ -199,7 +199,7 @@ func (server *ColoniesServer) handleGetProcessesHTTPRequest(c *gin.Context, reco
 		return
 	}
 
-	err = server.validator.RequireRuntimeMembership(recoveredID, msg.ColonyID, true)
+	err = server.validator.RequireExecutorMembership(recoveredID, msg.ColonyID, true)
 	if err != nil {
 		err = server.validator.RequireColonyOwner(recoveredID, msg.ColonyID)
 		if server.handleHTTPError(c, err, http.StatusForbidden) {
@@ -279,7 +279,7 @@ func (server *ColoniesServer) handleGetProcessHTTPRequest(c *gin.Context, recove
 		return
 	}
 
-	err = server.validator.RequireRuntimeMembership(recoveredID, process.ProcessSpec.Conditions.ColonyID, true)
+	err = server.validator.RequireExecutorMembership(recoveredID, process.ProcessSpec.Conditions.ColonyID, true)
 	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		return
 	}
@@ -316,7 +316,7 @@ func (server *ColoniesServer) handleDeleteProcessHTTPRequest(c *gin.Context, rec
 		return
 	}
 
-	err = server.validator.RequireRuntimeMembership(recoveredID, process.ProcessSpec.Conditions.ColonyID, true)
+	err = server.validator.RequireExecutorMembership(recoveredID, process.ProcessSpec.Conditions.ColonyID, true)
 	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		return
 	}
@@ -383,13 +383,13 @@ func (server *ColoniesServer) handleCloseSuccessfulHTTPRequest(c *gin.Context, r
 		return
 	}
 
-	err = server.validator.RequireRuntimeMembership(recoveredID, process.ProcessSpec.Conditions.ColonyID, true)
+	err = server.validator.RequireExecutorMembership(recoveredID, process.ProcessSpec.Conditions.ColonyID, true)
 	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		log.Error(err)
 		return
 	}
 
-	if process.AssignedRuntimeID == "" {
+	if process.AssignedExecutorID == "" {
 		errmsg := "Failed to close process as successful, process is not assigned"
 		log.Error(errmsg)
 		err := errors.New(errmsg)
@@ -397,7 +397,7 @@ func (server *ColoniesServer) handleCloseSuccessfulHTTPRequest(c *gin.Context, r
 		return
 	}
 
-	if process.AssignedRuntimeID != recoveredID {
+	if process.AssignedExecutorID != recoveredID {
 		errmsg := "Failed to close process as successful, not allowed to close process as successful"
 		log.Error(errmsg)
 		err := errors.New(errmsg)
@@ -441,12 +441,12 @@ func (server *ColoniesServer) handleCloseFailedHTTPRequest(c *gin.Context, recov
 		return
 	}
 
-	err = server.validator.RequireRuntimeMembership(recoveredID, process.ProcessSpec.Conditions.ColonyID, true)
+	err = server.validator.RequireExecutorMembership(recoveredID, process.ProcessSpec.Conditions.ColonyID, true)
 	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		return
 	}
 
-	if process.AssignedRuntimeID == "" {
+	if process.AssignedExecutorID == "" {
 		errmsg := "Failed to close process as failed, process is not assigned"
 		log.Error(errmsg)
 		err := errors.New(errmsg)
@@ -454,7 +454,7 @@ func (server *ColoniesServer) handleCloseFailedHTTPRequest(c *gin.Context, recov
 		return
 	}
 
-	if process.AssignedRuntimeID != recoveredID {
+	if process.AssignedExecutorID != recoveredID {
 		errmsg := "Failed to close process as failed, not allowed to close process as failed"
 		log.Error(errmsg)
 		err := errors.New(errmsg)

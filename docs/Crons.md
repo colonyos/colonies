@@ -66,7 +66,7 @@ The submitted workflow consists of two processes. The first process (generate_da
             "/tmp/currentdate"
         ],
         "conditions": {
-            "runtimetype": "cli",
+            "executortype": "cli",
             "dependencies": []
         }
     },
@@ -77,7 +77,7 @@ The submitted workflow consists of two processes. The first process (generate_da
             "/tmp/currentdate"
         ],
         "conditions": {
-            "runtimetype": "cli",
+            "executortype": "cli",
             "dependencies": [
                 "generate_date"
             ]
@@ -133,8 +133,8 @@ ProcessSpec 0:
 Conditions:
 +--------------+------+
 | ColonyID     |      |
-| RuntimeIDs   | None |
-| RuntimeType  | cli  |
+| ExecutorIDs  | None |
+| ExecutorType | cli  |
 | Dependencies |      |
 +--------------+------+
 
@@ -151,8 +151,8 @@ ProcessSpec 1:
 Conditions:
 +--------------+---------------+
 | ColonyID     |               |
-| RuntimeIDs   | None          |
-| RuntimeType  | cli           |
+| ExecutorIDs  | None          |
+| ExecutorType | cli           |
 | Dependencies | generate_date |
 +--------------+---------------+
 ```
@@ -194,23 +194,23 @@ colonies process psw
 Output:
 ```console
 INFO[0000] Starting a Colonies client                    Insecure=true ServerHost=localhost ServerPort=50080
-+------------------------------------------------------------------+------+--------------------+---------------------+--------------+
-|                                ID                                | FUNC |        ARGS        |   SUBMISSION TIME   | RUNTIME TYPE |
-+------------------------------------------------------------------+------+--------------------+---------------------+--------------+
-| b8a92460b765c66df7e3d81094c6f23ba0c93482699264b7bf1ca81e3d09c6ae | cat  | /tmp/currentdate   | 2022-08-20 20:34:35 | cli          |
-| 91f852ca62bf302fdd7d9dc76632e2e230c3dac98af79c8ea05ea755106e44c1 | date | > /tmp/currentdate | 2022-08-20 20:34:35 | cli          |
-| 8688d619854fd3a100ecb8527a2983905976577bde2017f772f34cec1fc42e44 | echo | HU HU HU           | 2022-08-20 20:34:33 | cli          |
-| 4a853216f8f08a6cecc6b3bf8ac2190ce92cb51d7113f0b2a585c5eed0883c12 | cat  | /tmp/currentdate   | 2022-08-20 20:34:30 | cli          |
-| bc5ddcf740cabab6608bc9e2a6cb02035d87bf101fb15bd1ec96d6b683308cfd | date | > /tmp/currentdate | 2022-08-20 20:34:30 | cli          |
-| 67894f91a94b09e48cae77b87ce6cbfb0032ab982967b9acfdc4f5a7de6ddac7 | cat  | /tmp/currentdate   | 2022-08-20 20:34:25 | cli          |
-| 529426e0fa32bc1cc42bc3b7cf1d93662cc75054aec997b6cdd201b5043fc2a0 | date | > /tmp/currentdate | 2022-08-20 20:34:25 | cli          |
-| 2e0d66a5fb9bab78b2bc48c795ed348c688844a8a79c3afb4445afc68192f1cf | cat  | /tmp/currentdate   | 2022-08-20 20:34:20 | cli          |
-| d4f2fd7d7a0b97b7aa6f604446b38d284cbfa95510a7a598307549bc4d1bf8e6 | date | > /tmp/currentdate | 2022-08-20 20:34:20 | cli          |
-| 224eaabe55544f72abfd647a511cc6bfb4c45d7e8e0594432bab2b84e034fc2c | cat  | /tmp/currentdate   | 2022-08-20 20:34:15 | cli          |
-| 01f52fe8809f77c063696717f902ad4558b8c886448c490bd88b989d25fc9cfe | date | > /tmp/currentdate | 2022-08-20 20:34:15 | cli          |
-| 700ced47f81e8bf7d1f848072e1d0641b066c9934800ba749c08280fe3252bfd | cat  | /tmp/currentdate   | 2022-08-20 20:34:10 | cli          |
-| b71731d6179bdd68e095c0f15de55dc8cecffd9d7cba4941fd87e7ca5a6eeffb | date | > /tmp/currentdate | 2022-08-20 20:34:10 | cli          |
-+------------------------------------------------------------------+------+--------------------+---------------------+--------------+
++------------------------------------------------------------------+------+--------------------+---------------------+---------------+
+|                                ID                                | FUNC |        ARGS        |   SUBMISSION TIME   | EXECUTOR TYPE |
++------------------------------------------------------------------+------+--------------------+---------------------+---------------+
+| b8a92460b765c66df7e3d81094c6f23ba0c93482699264b7bf1ca81e3d09c6ae | cat  | /tmp/currentdate   | 2022-08-20 20:34:35 | cli           |
+| 91f852ca62bf302fdd7d9dc76632e2e230c3dac98af79c8ea05ea755106e44c1 | date | > /tmp/currentdate | 2022-08-20 20:34:35 | cli           |
+| 8688d619854fd3a100ecb8527a2983905976577bde2017f772f34cec1fc42e44 | echo | HU HU HU           | 2022-08-20 20:34:33 | cli           |
+| 4a853216f8f08a6cecc6b3bf8ac2190ce92cb51d7113f0b2a585c5eed0883c12 | cat  | /tmp/currentdate   | 2022-08-20 20:34:30 | cli           |
+| bc5ddcf740cabab6608bc9e2a6cb02035d87bf101fb15bd1ec96d6b683308cfd | date | > /tmp/currentdate | 2022-08-20 20:34:30 | cli           |
+| 67894f91a94b09e48cae77b87ce6cbfb0032ab982967b9acfdc4f5a7de6ddac7 | cat  | /tmp/currentdate   | 2022-08-20 20:34:25 | cli           |
+| 529426e0fa32bc1cc42bc3b7cf1d93662cc75054aec997b6cdd201b5043fc2a0 | date | > /tmp/currentdate | 2022-08-20 20:34:25 | cli           |
+| 2e0d66a5fb9bab78b2bc48c795ed348c688844a8a79c3afb4445afc68192f1cf | cat  | /tmp/currentdate   | 2022-08-20 20:34:20 | cli           |
+| d4f2fd7d7a0b97b7aa6f604446b38d284cbfa95510a7a598307549bc4d1bf8e6 | date | > /tmp/currentdate | 2022-08-20 20:34:20 | cli           |
+| 224eaabe55544f72abfd647a511cc6bfb4c45d7e8e0594432bab2b84e034fc2c | cat  | /tmp/currentdate   | 2022-08-20 20:34:15 | cli           |
+| 01f52fe8809f77c063696717f902ad4558b8c886448c490bd88b989d25fc9cfe | date | > /tmp/currentdate | 2022-08-20 20:34:15 | cli           |
+| 700ced47f81e8bf7d1f848072e1d0641b066c9934800ba749c08280fe3252bfd | cat  | /tmp/currentdate   | 2022-08-20 20:34:10 | cli           |
+| b71731d6179bdd68e095c0f15de55dc8cecffd9d7cba4941fd87e7ca5a6eeffb | date | > /tmp/currentdate | 2022-08-20 20:34:10 | cli           |
++------------------------------------------------------------------+------+--------------------+---------------------+---------------+
 ```
 
 The waiting queue will just keep on increasing if there are no workers executing the processes. However, we can set **MaxWaitingTime** on the process spec so that processes are automatically removed if not executed after a certain amount of time. In the example below, they will be removed after 3 seconds if not executed.
@@ -225,7 +225,7 @@ The waiting queue will just keep on increasing if there are no workers executing
             "/tmp/currentdate"
         ],
         "conditions": {
-            "runtimetype": "cli",
+            "executortype": "cli",
             "dependencies": []
         },
         "maxwaittime": 3
@@ -237,7 +237,7 @@ The waiting queue will just keep on increasing if there are no workers executing
             "/tmp/currentdate"
         ],
         "conditions": {
-            "runtimetype": "cli",
+            "executortype": "cli",
             "dependencies": [
                 "generate_date"
             ]

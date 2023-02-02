@@ -30,13 +30,13 @@ Output:
 +------------------------------------------------------------------+----------+
 ```
 
-## Register a new Colony Runtime 
-Only the colony owner is allowed to register a new Colony Runtime. 
+## Register a new Colony Executor 
+Only the colony owner is allowed to register a new Colony Executor. 
 
 ```json
 {
-    "name": "my_runtime",
-    "runtimetype": "my_runtime_type",
+    "name": "my_executor",
+    "executortype": "my_executor_type",
     "cpu": "AMD Ryzen 9 5950X (32) @ 3.400GHz",
     "cores": 32,
     "mem": 80326,
@@ -46,7 +46,7 @@ Only the colony owner is allowed to register a new Colony Runtime.
 ```
 
 ```console
-./bin/colonies runtime register --colonyid 0f4f350d264d1cffdec0d62c723a7da8b730c6863365da75697fd26a6d79ccc5 --colonyprvkey d95c54b63ac7c9ba624445fd755998e14e6aa71a17a74889c6a1754be80bcf09 --spec ./examples/runtime.json
+./bin/colonies executor register --colonyid 0f4f350d264d1cffdec0d62c723a7da8b730c6863365da75697fd26a6d79ccc5 --colonyprvkey d95c54b63ac7c9ba624445fd755998e14e6aa71a17a74889c6a1754be80bcf09 --spec ./examples/executor.json
 ```
 Output:
 ```
@@ -55,63 +55,63 @@ The *colonyprvkey* is automatically obtained from the keychain if not specified.
 
 ```console
 export COLONIES_COLONYID="0f4f350d264d1cffdec0d62c723a7da8b730c6863365da75697fd26a6d79ccc5"
-./bin/colonies runtime register --spec ./examples/runtime.json
+./bin/colonies executor register --spec ./examples/executor.json
 ```
 Output:
 ```
 4599f89a8afb7ecd9beec0b7861fab3bacba3a0e2dbe050e9f7584f3c9d7ac58
 ```
 
-## List registered Colony Runtimes
+## List registered Colony Executors
 ```console
-export COLONIES_RUNTIMEID="4599f89a8afb7ecd9beec0b7861fab3bacba3a0e2dbe050e9f7584f3c9d7ac58"
-./bin/colonies runtime ls 
+export COLONIES_EXECUTOR_ID="4599f89a8afb7ecd9beec0b7861fab3bacba3a0e2dbe050e9f7584f3c9d7ac58"
+./bin/colonies executor ls 
 ```
 Output:
 ```
-Runtime with Id <4599f89a8afb7ecd9beec0b7861fab3bacba3a0e2dbe050e9f7584f3c9d7ac58> is not approved
+Executor with Id <4599f89a8afb7ecd9beec0b7861fab3bacba3a0e2dbe050e9f7584f3c9d7ac58> is not approved
 ```
 
-A Colony Runtime needs to be approved by the Colony Owner before it can execute processes. As before, the Colony Owner's private key is automatically fetched from the keychain.
+A Colony Executor needs to be approved by the Colony Owner before it can execute processes. As before, the Colony Owner's private key is automatically fetched from the keychain.
 
 ```console
-./bin/colonies runtime approve --runtimeid 4599f89a8afb7ecd9beec0b7861fab3bacba3a0e2dbe050e9f7584f3c9d7ac58 
+./bin/colonies executor approve --executorid 4599f89a8afb7ecd9beec0b7861fab3bacba3a0e2dbe050e9f7584f3c9d7ac58 
 ```
 Output:
 ```
-Colony Runtime with Id <4599f89a8afb7ecd9beec0b7861fab3bacba3a0e2dbe050e9f7584f3c9d7ac58> is now approved
+Colony Executor with Id <4599f89a8afb7ecd9beec0b7861fab3bacba3a0e2dbe050e9f7584f3c9d7ac58> is now approved
 ```
 
 ```console
-./bin/colonies runtimes ls 
+./bin/colonies executor ls 
 ```
 Output:
 ```
-+------------------------------------------------------------------+------------+----------+
-|                                ID                                |    NAME    |  STATE   |
-+------------------------------------------------------------------+------------+----------+
-| 4599f89a8afb7ecd9beec0b7861fab3bacba3a0e2dbe050e9f7584f3c9d7ac58 | my_runtime | Approved |
-+------------------------------------------------------------------+------------+----------+
++------------------------------------------------------------------+-------------+----------+
+|                                ID                                |    NAME     |  STATE   |
++------------------------------------------------------------------+-------------+----------+
+| 4599f89a8afb7ecd9beec0b7861fab3bacba3a0e2dbe050e9f7584f3c9d7ac58 | my_executor | Approved |
++------------------------------------------------------------------+-------------+----------+
 ```
 
-Similarly, a Colony Runtime can be rejected with the "rejected" command. 
+Similarly, a Colony Executor can be rejected with the "rejected" command. 
 ```console
-./bin/colonies runtime reject --runtimeid 4599f89a8afb7ecd9beec0b7861fab3bacba3a0e2dbe050e9f7584f3c9d7ac58 
+./bin/colonies executor reject --executorid 4599f89a8afb7ecd9beec0b7861fab3bacba3a0e2dbe050e9f7584f3c9d7ac58 
 ```
 Output:
 ```
-Colony Runtime with Id <4599f89a8afb7ecd9beec0b7861fab3bacba3a0e2dbe050e9f7584f3c9d7ac58> is now rejected
+Colony Executor with Id <4599f89a8afb7ecd9beec0b7861fab3bacba3a0e2dbe050e9f7584f3c9d7ac58> is now rejected
 ```
 
 ## Submit a process to a Colony
-First we need to create a process spec file. The conditions must match registered runtimes, e.g. the memory must be at least 1000 GiB.
+First we need to create a process spec file. The conditions must match registered executors, e.g. the memory must be at least 1000 GiB.
 
 ```json
 {
      "conditions": {
          "colonyid": "0f4f350d264d1cffdec0d62c723a7da8b730c6863365da75697fd26a6d79ccc5",
-         "runtimeids": [],
-         "runtimetype": "my_runtime_type",
+         "executorids": [],
+         "exectuortype": "my_executor_type",
          "mem": 1000,
          "cores": 10,
          "gpus": 1
@@ -141,23 +141,23 @@ Output:
 Output:
 ```
 Process:
-+-------------------+------------------------------------------------------------------+
-| ID                | 4e369a9eeaf4521cdfa79de81666a5980f30345464e5c61e8cfdf9380e7ba663 |
-| IsAssigned        | True                                                             |
-| AssignedRuntimeID | 4599f89a8afb7ecd9beec0b7861fab3bacba3a0e2dbe050e9f7584f3c9d7ac58 |
-| State             | Running                                                          |
-| SubmissionTime    | 2021-12-28T16:26:33.838548Z                                      |
-| StartTime         | 2021-12-28T17:05:12.228424Z                                      |
-| EndTime           | 0001-01-01T00:00:00Z                                             |
-| Deadline          | 0001-01-01T00:00:00Z                                             |
-| Retries           | 0                                                                |
-+-------------------+------------------------------------------------------------------+
++--------------------+------------------------------------------------------------------+
+| ID                 | 4e369a9eeaf4521cdfa79de81666a5980f30345464e5c61e8cfdf9380e7ba663 |
+| IsAssigned         | True                                                             |
+| AssignedExecutorID | 4599f89a8afb7ecd9beec0b7861fab3bacba3a0e2dbe050e9f7584f3c9d7ac58 |
+| State              | Running                                                          |
+| SubmissionTime     | 2021-12-28T16:26:33.838548Z                                      |
+| StartTime          | 2021-12-28T17:05:12.228424Z                                      |
+| EndTime            | 0001-01-01T00:00:00Z                                             |
+| Deadline           | 0001-01-01T00:00:00Z                                             |
+| Retries            | 0                                                                |
++--------------------+------------------------------------------------------------------+
 
 Requirements:
 +----------------+------------------------------------------------------------------+
 | ColonyID       | 0f4f350d264d1cffdec0d62c723a7da8b730c6863365da75697fd26a6d79ccc5 |
-| RuntimeIDs     | None                                                             |
-| RuntimeType    | my_runtime_type                                                  |
+| ExecutorIDs    | None                                                             |
+| ExecutorType   | my_executor_type                                                |
 | Memory         | 1000                                                             |
 | CPU Cores      | 10                                                               |
 | Number of GPUs | 1                                                                |
@@ -190,14 +190,14 @@ Output:
 +------------------------------------------------------------------+-----------------------------+
 ```
 
-## Assign a process to runtime 
+## Assign a process to executor 
 An assigned process will change state to Running.
 ```console
 ./bin/colonies process assign
 ```
 Output:
 ```
-Process with Id <5513617dc4407b6190959a07db2a39c6ad93771c7e8457391e2e64927214c258> was assigned to Runtime with Id <4599f89a8afb7ecd9beec0b7861fab3bacba3a0e2dbe050e9f7584f3c9d7ac58>
+Process with Id <5513617dc4407b6190959a07db2a39c6ad93771c7e8457391e2e64927214c258> was assigned to Executor with Id <4599f89a8afb7ecd9beec0b7861fab3bacba3a0e2dbe050e9f7584f3c9d7ac58>
 ```
 
 ## List all running processes
@@ -259,23 +259,23 @@ Output:
 ```
 Output:
 ```
-+-------------------+------------------------------------------------------------------+
-| ID                | 5785eb8a57f22d73a99d5c5e5d073cf27f9ea4ba81bad1a72e5e4f226e647dc0 |
-| IsAssigned        | False                                                            |
-| AssignedRuntimeID | None                                                             |
-| State             | Waiting                                                          |
-| SubmissionTime    | 2021-12-28T17:40:45.749629Z                                      |
-| StartTime         | 0001-01-01T00:00:00Z                                             |
-| EndTime           | 0001-01-01T00:00:00Z                                             |
-| Deadline          | 0001-01-01T00:00:00Z                                             |
-| Retries           | 0                                                                |
-+-------------------+------------------------------------------------------------------+
++--------------------+------------------------------------------------------------------+
+| ID                 | 5785eb8a57f22d73a99d5c5e5d073cf27f9ea4ba81bad1a72e5e4f226e647dc0 |
+| IsAssigned         | False                                                            |
+| AssignedExecutorID | None                                                             |
+| State              | Waiting                                                          |
+| SubmissionTime     | 2021-12-28T17:40:45.749629Z                                      |
+| StartTime          | 0001-01-01T00:00:00Z                                             |
+| EndTime            | 0001-01-01T00:00:00Z                                             |
+| Deadline           | 0001-01-01T00:00:00Z                                             |
+| Retries            | 0                                                                |
++--------------------+------------------------------------------------------------------+
 
 Requirements:
 +----------------+------------------------------------------------------------------+
 | ColonyID       | 0f4f350d264d1cffdec0d62c723a7da8b730c6863365da75697fd26a6d79ccc5 |
-| RuntimeIDs     | None                                                             |
-| RuntimeType    | my_runtime_type                                                  |
+| ExecutorIDs    | None                                                             |
+| ExecutorType   | my_executor_type                                                 |
 | Memory         | 1000                                                             |
 | CPU Cores      | 10                                                               |
 | Number of GPUs | 1                                                                |

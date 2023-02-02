@@ -8,34 +8,34 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestAddRuntime(t *testing.T) {
+func TestAddExecutor(t *testing.T) {
 	client, server, serverPrvKey, done := prepareTests(t)
 
 	colony, colonyPrvKey, err := utils.CreateTestColonyWithKey()
 	_, err = client.AddColony(colony, serverPrvKey)
 	assert.Nil(t, err)
 
-	runtime, runtimePrvKey, err := utils.CreateTestRuntimeWithKey(colony.ID)
+	executor, executorPrvKey, err := utils.CreateTestExecutorWithKey(colony.ID)
 	assert.Nil(t, err)
-	addedRuntime, err := client.AddRuntime(runtime, colonyPrvKey)
+	addedExecutor, err := client.AddExecutor(executor, colonyPrvKey)
 	assert.Nil(t, err)
-	assert.True(t, runtime.Equals(addedRuntime))
-	err = client.ApproveRuntime(runtime.ID, colonyPrvKey)
+	assert.True(t, executor.Equals(addedExecutor))
+	err = client.ApproveExecutor(executor.ID, colonyPrvKey)
 	assert.Nil(t, err)
 
 	// Just to make the comparison below work, the state will change after it has been approved
-	addedRuntime.State = core.APPROVED
+	addedExecutor.State = core.APPROVED
 
-	runtimeFromServer, err := client.GetRuntime(runtime.ID, runtimePrvKey)
+	executorFromServer, err := client.GetExecutor(executor.ID, executorPrvKey)
 	assert.Nil(t, err)
-	assert.NotNil(t, runtimeFromServer)
-	assert.True(t, addedRuntime.Equals(runtimeFromServer))
+	assert.NotNil(t, executorFromServer)
+	assert.True(t, addedExecutor.Equals(executorFromServer))
 
 	server.Shutdown()
 	<-done
 }
 
-func TestGetRuntimes(t *testing.T) {
+func TestGetExecutors(t *testing.T) {
 	client, server, serverPrvKey, done := prepareTests(t)
 
 	colony, colonyPrvKey, err := utils.CreateTestColonyWithKey()
@@ -43,96 +43,96 @@ func TestGetRuntimes(t *testing.T) {
 	_, err = client.AddColony(colony, serverPrvKey)
 	assert.Nil(t, err)
 
-	runtime1, runtime1PrvKey, err := utils.CreateTestRuntimeWithKey(colony.ID)
-	_, err = client.AddRuntime(runtime1, colonyPrvKey)
+	executor1, executor1PrvKey, err := utils.CreateTestExecutorWithKey(colony.ID)
+	_, err = client.AddExecutor(executor1, colonyPrvKey)
 	assert.Nil(t, err)
-	err = client.ApproveRuntime(runtime1.ID, colonyPrvKey)
+	err = client.ApproveExecutor(executor1.ID, colonyPrvKey)
 	assert.Nil(t, err)
 
-	runtime2, _, err := utils.CreateTestRuntimeWithKey(colony.ID)
-	_, err = client.AddRuntime(runtime2, colonyPrvKey)
+	executor2, _, err := utils.CreateTestExecutorWithKey(colony.ID)
+	_, err = client.AddExecutor(executor2, colonyPrvKey)
 	assert.Nil(t, err)
-	err = client.ApproveRuntime(runtime2.ID, colonyPrvKey)
+	err = client.ApproveExecutor(executor2.ID, colonyPrvKey)
 	assert.Nil(t, err)
 
 	// Just to make the comparison below work, the state will change after it has been approved
-	runtime1.State = core.APPROVED
-	runtime2.State = core.APPROVED
+	executor1.State = core.APPROVED
+	executor2.State = core.APPROVED
 
-	var runtimes []*core.Runtime
-	runtimes = append(runtimes, runtime1)
-	runtimes = append(runtimes, runtime2)
+	var executors []*core.Executor
+	executors = append(executors, executor1)
+	executors = append(executors, executor2)
 
-	runtimesFromServer, err := client.GetRuntimes(colony.ID, runtime1PrvKey)
+	executorsFromServer, err := client.GetExecutors(colony.ID, executor1PrvKey)
 	assert.Nil(t, err)
-	assert.True(t, core.IsRuntimeArraysEqual(runtimes, runtimesFromServer))
+	assert.True(t, core.IsExecutorArraysEqual(executors, executorsFromServer))
 
 	server.Shutdown()
 	<-done
 }
 
-func TestApproveRejectRuntime(t *testing.T) {
+func TestApproveRejectExecutor(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 
-	// Add an approved runtime to use for the test below
-	approvedRuntime, approvedRuntimePrvKey, err := utils.CreateTestRuntimeWithKey(env.colonyID)
+	// Add an approved eecutor to use for the test below
+	approvedExecutor, approvedExecutorPrvKey, err := utils.CreateTestExecutorWithKey(env.colonyID)
 	assert.Nil(t, err)
-	_, err = client.AddRuntime(approvedRuntime, env.colonyPrvKey)
+	_, err = client.AddExecutor(approvedExecutor, env.colonyPrvKey)
 	assert.Nil(t, err)
-	err = client.ApproveRuntime(approvedRuntime.ID, env.colonyPrvKey)
-	assert.Nil(t, err)
-
-	testRuntime, _, err := utils.CreateTestRuntimeWithKey(env.colonyID)
-	assert.Nil(t, err)
-	_, err = client.AddRuntime(testRuntime, env.colonyPrvKey)
+	err = client.ApproveExecutor(approvedExecutor.ID, env.colonyPrvKey)
 	assert.Nil(t, err)
 
-	runtimeFromServer, err := client.GetRuntime(testRuntime.ID, approvedRuntimePrvKey)
+	testExecutor, _, err := utils.CreateTestExecutorWithKey(env.colonyID)
 	assert.Nil(t, err)
-	assert.False(t, runtimeFromServer.IsApproved())
-
-	err = client.ApproveRuntime(testRuntime.ID, env.colonyPrvKey)
+	_, err = client.AddExecutor(testExecutor, env.colonyPrvKey)
 	assert.Nil(t, err)
 
-	runtimeFromServer, err = client.GetRuntime(testRuntime.ID, approvedRuntimePrvKey)
+	eecutorFromServer, err := client.GetExecutor(testExecutor.ID, approvedExecutorPrvKey)
 	assert.Nil(t, err)
-	assert.True(t, runtimeFromServer.IsApproved())
+	assert.False(t, eecutorFromServer.IsApproved())
 
-	err = client.RejectRuntime(testRuntime.ID, env.colonyPrvKey)
+	err = client.ApproveExecutor(testExecutor.ID, env.colonyPrvKey)
 	assert.Nil(t, err)
 
-	runtimeFromServer, err = client.GetRuntime(testRuntime.ID, approvedRuntimePrvKey)
+	eecutorFromServer, err = client.GetExecutor(testExecutor.ID, approvedExecutorPrvKey)
 	assert.Nil(t, err)
-	assert.False(t, runtimeFromServer.IsApproved())
+	assert.True(t, eecutorFromServer.IsApproved())
+
+	err = client.RejectExecutor(testExecutor.ID, env.colonyPrvKey)
+	assert.Nil(t, err)
+
+	eecutorFromServer, err = client.GetExecutor(testExecutor.ID, approvedExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.False(t, eecutorFromServer.IsApproved())
 
 	server.Shutdown()
 	<-done
 }
 
-func TestDeleteRuntime(t *testing.T) {
+func TestDeleteExecutor(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 
-	runtime, runtimePrvKey, err := utils.CreateTestRuntimeWithKey(env.colonyID)
+	executor, executorPrvKey, err := utils.CreateTestExecutorWithKey(env.colonyID)
 	assert.Nil(t, err)
-	_, err = client.AddRuntime(runtime, env.colonyPrvKey)
+	_, err = client.AddExecutor(executor, env.colonyPrvKey)
 	assert.Nil(t, err)
-	err = client.ApproveRuntime(runtime.ID, env.colonyPrvKey)
+	err = client.ApproveExecutor(executor.ID, env.colonyPrvKey)
 	assert.Nil(t, err)
 
 	// Try to get it
-	runtimeFromServer, err := client.GetRuntime(runtime.ID, runtimePrvKey)
+	executorFromServer, err := client.GetExecutor(executor.ID, executorPrvKey)
 	assert.Nil(t, err)
-	assert.NotNil(t, runtimeFromServer)
-	assert.True(t, runtime.ID == runtimeFromServer.ID)
+	assert.NotNil(t, executorFromServer)
+	assert.True(t, executor.ID == executorFromServer.ID)
 
 	// Now delete it
-	err = client.DeleteRuntime(runtime.ID, env.colonyPrvKey)
+	err = client.DeleteExecutor(executor.ID, env.colonyPrvKey)
 	assert.Nil(t, err)
 
 	// Try to get it again, it should be gone
-	runtimeFromServer, err = client.GetRuntime(runtime.ID, runtimePrvKey)
+	executorFromServer, err = client.GetExecutor(executor.ID, executorPrvKey)
 	assert.NotNil(t, err)
-	assert.Nil(t, runtimeFromServer)
+	assert.Nil(t, executorFromServer)
 
 	server.Shutdown()
 	<-done

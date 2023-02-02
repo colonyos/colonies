@@ -6,8 +6,8 @@ import (
 
 type Conditions struct {
 	ColonyID     string   `json:"colonyid"`
-	RuntimeIDs   []string `json:"runtimeids"`
-	RuntimeType  string   `json:"runtimetype"`
+	ExecutorIDs  []string `json:"executorids"`
+	ExecutorType string   `json:"executortype"`
 	Dependencies []string `json:"dependencies"`
 }
 
@@ -32,8 +32,8 @@ func CreateEmptyProcessSpec() *ProcessSpec {
 	return processSpec
 }
 
-func CreateProcessSpec(name string, fn string, args []string, colonyID string, runtimeIDs []string, runtimeType string, maxWaitTime int, maxExecTime int, maxRetries int, env map[string]string, dependencies []string, priority int) *ProcessSpec {
-	conditions := Conditions{ColonyID: colonyID, RuntimeIDs: runtimeIDs, RuntimeType: runtimeType, Dependencies: dependencies}
+func CreateProcessSpec(name string, fn string, args []string, colonyID string, executorIDs []string, executorType string, maxWaitTime int, maxExecTime int, maxRetries int, env map[string]string, dependencies []string, priority int) *ProcessSpec {
+	conditions := Conditions{ColonyID: colonyID, ExecutorIDs: executorIDs, ExecutorType: executorType, Dependencies: dependencies}
 	return &ProcessSpec{Name: name, Func: fn, Args: args, MaxWaitTime: maxWaitTime, MaxExecTime: maxExecTime, MaxRetries: maxRetries, Conditions: conditions, Env: env, Priority: priority}
 }
 
@@ -69,7 +69,7 @@ func (processSpec *ProcessSpec) Equals(processSpec2 *ProcessSpec) bool {
 		processSpec.MaxExecTime != processSpec2.MaxExecTime ||
 		processSpec.MaxRetries != processSpec2.MaxRetries ||
 		processSpec.Conditions.ColonyID != processSpec2.Conditions.ColonyID ||
-		processSpec.Conditions.RuntimeType != processSpec2.Conditions.RuntimeType ||
+		processSpec.Conditions.ExecutorType != processSpec2.Conditions.ExecutorType ||
 		processSpec.Priority != processSpec2.Priority {
 		same = false
 	}
@@ -92,20 +92,20 @@ func (processSpec *ProcessSpec) Equals(processSpec2 *ProcessSpec) bool {
 		}
 	}
 
-	if processSpec.Conditions.RuntimeIDs != nil && processSpec2.Conditions.RuntimeIDs == nil {
+	if processSpec.Conditions.ExecutorIDs != nil && processSpec2.Conditions.ExecutorIDs == nil {
 		same = false
-	} else if processSpec.Conditions.RuntimeIDs == nil && processSpec2.Conditions.RuntimeIDs != nil {
+	} else if processSpec.Conditions.ExecutorIDs == nil && processSpec2.Conditions.ExecutorIDs != nil {
 		same = false
 	} else {
 		counter := 0
-		for _, targetRuntimeID1 := range processSpec.Conditions.RuntimeIDs {
-			for _, targetRuntimeID2 := range processSpec2.Conditions.RuntimeIDs {
-				if targetRuntimeID1 == targetRuntimeID2 {
+		for _, targetExecutorID1 := range processSpec.Conditions.ExecutorIDs {
+			for _, targetExecutorID2 := range processSpec2.Conditions.ExecutorIDs {
+				if targetExecutorID1 == targetExecutorID2 {
 					counter++
 				}
 			}
 		}
-		if counter != len(processSpec.Conditions.RuntimeIDs) && counter != len(processSpec2.Conditions.RuntimeIDs) {
+		if counter != len(processSpec.Conditions.ExecutorIDs) && counter != len(processSpec2.Conditions.ExecutorIDs) {
 			same = false
 		}
 	}

@@ -28,15 +28,10 @@ import (
 var mutex sync.Mutex
 
 func init() {
-	workerCmd.AddCommand(workerStartCmd)
-	workerCmd.AddCommand(workerRegisterCmd)
-	workerCmd.AddCommand(workerUnregisterCmd)
-	rootCmd.AddCommand(workerCmd)
-
 	workerStartCmd.Flags().StringVarP(&ColonyID, "colonyid", "", "", "Colony Id")
 	workerStartCmd.Flags().StringVarP(&ColonyPrvKey, "colonyprvkey", "", "", "Colony private key")
-	workerStartCmd.Flags().StringVarP(&RuntimeName, "name", "", "", "Runtime name")
-	workerStartCmd.Flags().StringVarP(&RuntimeType, "runtimetype", "", "", "Runtime type")
+	workerStartCmd.Flags().StringVarP(&ExecutorName, "name", "", "", "Executor name")
+	workerStartCmd.Flags().StringVarP(&ExecutorType, "executortype", "", "", "Executor type")
 	workerStartCmd.Flags().StringVarP(&CPU, "cpu", "", "", "CPU info")
 	workerStartCmd.Flags().IntVarP(&Cores, "cores", "", -1, "Cores")
 	workerStartCmd.Flags().IntVarP(&Mem, "mem", "", -1, "Memory [MiB]")
@@ -49,8 +44,8 @@ func init() {
 
 	workerRegisterCmd.Flags().StringVarP(&ColonyID, "colonyid", "", "", "Colony Id")
 	workerRegisterCmd.Flags().StringVarP(&ColonyPrvKey, "colonyprvkey", "", "", "Colony private key")
-	workerRegisterCmd.Flags().StringVarP(&RuntimeName, "name", "", "", "Runtime name")
-	workerRegisterCmd.Flags().StringVarP(&RuntimeType, "type", "", "", "Runtime type")
+	workerRegisterCmd.Flags().StringVarP(&ExecutorName, "name", "", "", "Executor name")
+	workerRegisterCmd.Flags().StringVarP(&ExecutorType, "type", "", "", "Executor type")
 	workerRegisterCmd.Flags().StringVarP(&CPU, "cpu", "", "", "CPU info")
 	workerRegisterCmd.Flags().IntVarP(&Cores, "cores", "", -1, "Cores")
 	workerRegisterCmd.Flags().IntVarP(&Mem, "mem", "", -1, "Memory [MiB]")
@@ -58,29 +53,23 @@ func init() {
 	workerRegisterCmd.Flags().IntVarP(&GPUs, "gpus", "", -1, "Number of GPUs")
 }
 
-var workerCmd = &cobra.Command{
-	Use:   "worker",
-	Short: "Manage workers",
-	Long:  "Manage workers",
-}
-
 var workerStartCmd = &cobra.Command{
 	Use:   "start",
-	Short: "Register and start a worker",
-	Long:  "Register and start a worker",
+	Short: "Register and start a local Unix process executor",
+	Long:  "Register and start a local Unix process executor",
 	Run: func(cmd *cobra.Command, args []string) {
-		log.WithFields(log.Fields{"BuildVersion": build.BuildVersion, "BuildTime": build.BuildTime}).Info("Starting a worker")
+		log.WithFields(log.Fields{"BuildVersion": build.BuildVersion, "BuildTime": build.BuildTime}).Info("Starting a local executor running Unix processes")
 		parseServerEnv()
 
 		if ColonyID == "" {
-			ColonyID = os.Getenv("COLONIES_COLONYID")
+			ColonyID = os.Getenv("COLONIES_COLONY_ID")
 		}
 		if ColonyID == "" {
 			CheckError(errors.New("Unknown Colony Id"))
 		}
 
 		if ColonyPrvKey == "" {
-			ColonyPrvKey = os.Getenv("COLONIES_COLONYPRVKEY")
+			ColonyPrvKey = os.Getenv("COLONIES_COLONY_PRVKEY")
 		}
 		if ColonyPrvKey == "" {
 			keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
@@ -98,50 +87,50 @@ var workerStartCmd = &cobra.Command{
 		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
 
 		crypto := crypto.CreateCrypto()
-		runtimePrvKey, err := crypto.GeneratePrivateKey()
+		executorPrvKey, err := crypto.GeneratePrivateKey()
 		CheckError(err)
-		runtimeID, err := crypto.GenerateID(runtimePrvKey)
-		CheckError(err)
-
-		err = os.WriteFile("/tmp/runtimeid", []byte(runtimeID), 0644)
+		executorID, err := crypto.GenerateID(executorPrvKey)
 		CheckError(err)
 
-		err = os.WriteFile("/tmp/runtimeprvkey", []byte(runtimePrvKey), 0644)
+		err = os.WriteFile("/tmp/executorid", []byte(executorID), 0644)
 		CheckError(err)
 
-		if RuntimeName == "" {
-			RuntimeName = os.Getenv("COLONIES_RUNTIMENAME")
+		err = os.WriteFile("/tmp/executorprvkey", []byte(executorPrvKey), 0644)
+		CheckError(err)
+
+		if ExecutorName == "" {
+			ExecutorName = os.Getenv("COLONIES_EXECUTOR_NAME")
 		}
 
-		if RuntimeName == "" {
-			CheckError(errors.New("Runtime name not specified"))
+		if ExecutorName == "" {
+			CheckError(errors.New("Executor name not specified"))
 		}
 
-		if RuntimeType == "" {
-			RuntimeType = os.Getenv("COLONIES_RUNTIMETYPE")
+		if ExecutorType == "" {
+			ExecutorType = os.Getenv("COLONIES_EXECUTOR_TYPE")
 		}
 
-		if RuntimeType == "" {
-			CheckError(errors.New("Runtime type not specified"))
+		if ExecutorType == "" {
+			CheckError(errors.New("Executor type not specified"))
 		}
 
-		log.Info("Saving runtimeID to /tmp/runtimeid")
-		err = os.WriteFile("/tmp/runtimeid", []byte(runtimeID), 0644)
+		log.Info("Saving executorID to /tmp/executorid")
+		err = os.WriteFile("/tmp/executorid", []byte(executorID), 0644)
 		CheckError(err)
 
-		log.Info("Saving runtimePrvKey to /tmp/runtimeprvkey")
-		err = os.WriteFile("/tmp/runtimeprvkey", []byte(runtimePrvKey), 0644)
+		log.Info("Saving executorPrvKey to /tmp/executorprvkey")
+		err = os.WriteFile("/tmp/executorprvkey", []byte(executorPrvKey), 0644)
 		CheckError(err)
 
-		log.WithFields(log.Fields{"RuntimeID": runtimeID, "RuntimeName": RuntimeName, "RuntimeType": RuntimeType, "ColonyID": ColonyID, "CPU": CPU, "Cores": Cores, "Mem": Mem, "GPU": GPU, "GPUs": GPUs, "Long": Long, "Lat": Lat}).Info("Register a new Runtime")
-		runtime := core.CreateRuntime(runtimeID, RuntimeType, RuntimeName, ColonyID, CPU, Cores, Mem, GPU, GPUs, time.Now(), time.Now())
-		runtime.Location.Long = Long
-		runtime.Location.Lat = Lat
-		_, err = client.AddRuntime(runtime, ColonyPrvKey)
+		log.WithFields(log.Fields{"ExecutorID": executorID, "ExecutorName": ExecutorName, "ExecutorType": ExecutorType, "ColonyID": ColonyID, "CPU": CPU, "Cores": Cores, "Mem": Mem, "GPU": GPU, "GPUs": GPUs, "Long": Long, "Lat": Lat}).Info("Register a new Executor")
+		executor := core.CreateExecutor(executorID, ExecutorType, ExecutorName, ColonyID, CPU, Cores, Mem, GPU, GPUs, time.Now(), time.Now())
+		executor.Location.Long = Long
+		executor.Location.Lat = Lat
+		_, err = client.AddExecutor(executor, ColonyPrvKey)
 		CheckError(err)
 
-		log.WithFields(log.Fields{"RuntimeID": runtimeID}).Info("Approving Runtime")
-		err = client.ApproveRuntime(runtimeID, ColonyPrvKey)
+		log.WithFields(log.Fields{"ExecutorID": executorID}).Info("Approving Executor")
+		err = client.ApproveExecutor(executorID, ColonyPrvKey)
 		CheckError(err)
 
 		var assignedProcess *core.Process
@@ -151,16 +140,16 @@ var workerStartCmd = &cobra.Command{
 			<-c
 			if assignedProcess != nil {
 				log.WithFields(log.Fields{"ProcessID": assignedProcess.ID}).Info("Closing process as failed")
-				client.Fail(assignedProcess.ID, []string{"SIGTERM"}, runtimePrvKey)
+				client.Fail(assignedProcess.ID, []string{"SIGTERM"}, executorPrvKey)
 			}
-			unregisterRuntime(client)
+			unregisterExecutor(client)
 			os.Exit(0)
 		}()
 
 		log.WithFields(log.Fields{"BuildVersion": build.BuildVersion, "BuildTime": build.BuildTime, "ServerHost": ServerHost, "ServerPort": ServerPort}).Info("Worker now waiting for processes to be execute")
 
 		for {
-			assignedProcess, err = client.AssignProcess(ColonyID, Timeout, runtimePrvKey)
+			assignedProcess, err = client.AssignProcess(ColonyID, Timeout, executorPrvKey)
 			if err != nil {
 				switch err.(type) {
 				case *url.Error:
@@ -168,7 +157,7 @@ var workerStartCmd = &cobra.Command{
 					time.Sleep(2 * time.Second)
 					continue
 				default:
-					if strings.HasPrefix(err.Error(), "No processes can be selected for runtime with Id") {
+					if strings.HasPrefix(err.Error(), "No processes can be selected for executor with Id") {
 						continue
 					} else {
 						CheckError(err)
@@ -188,12 +177,12 @@ var workerStartCmd = &cobra.Command{
 				cmd.Env = append(cmd.Env, attribute.Key+"="+attribute.Value)
 			}
 
-			cmd.Env = append(cmd.Env, "COLONIES_COLONYID="+ColonyID)
-			cmd.Env = append(cmd.Env, "COLONIES_PROCESSID="+assignedProcess.ID)
-			cmd.Env = append(cmd.Env, "COLONIES_SERVERHOST="+ServerHost)
-			cmd.Env = append(cmd.Env, "COLONIES_SERVERPORT="+strconv.Itoa(ServerPort))
-			cmd.Env = append(cmd.Env, "COLONIES_RUNTIMEID="+runtimeID)
-			cmd.Env = append(cmd.Env, "COLONIES_RUNTIMEPRVKEY="+runtimePrvKey)
+			cmd.Env = append(cmd.Env, "COLONIES_COLONY_ID="+ColonyID)
+			cmd.Env = append(cmd.Env, "COLONIES_PROCESS_ID="+assignedProcess.ID)
+			cmd.Env = append(cmd.Env, "COLONIES_SERVER_HOST="+ServerHost)
+			cmd.Env = append(cmd.Env, "COLONIES_SERVER_PORT="+strconv.Itoa(ServerPort))
+			cmd.Env = append(cmd.Env, "COLONIES_EXECUTOR_ID="+executorID)
+			cmd.Env = append(cmd.Env, "COLONIES_EXECUTOR_PRVKEY="+executorPrvKey)
 
 			// Get output
 			stdout, err := cmd.StdoutPipe()
@@ -232,10 +221,10 @@ var workerStartCmd = &cobra.Command{
 
 			if failure {
 				log.WithFields(log.Fields{"processID": assignedProcess.ID}).Info("Closing process as failed")
-				client.Fail(assignedProcess.ID, []string{output}, runtimePrvKey)
+				client.Fail(assignedProcess.ID, []string{output}, executorPrvKey)
 			} else {
 				log.WithFields(log.Fields{"processID": assignedProcess.ID}).Info("Closing process as successful")
-				client.CloseWithOutput(assignedProcess.ID, []string{output}, runtimePrvKey)
+				client.CloseWithOutput(assignedProcess.ID, []string{output}, executorPrvKey)
 			}
 		}
 	},
@@ -250,14 +239,14 @@ var workerRegisterCmd = &cobra.Command{
 		parseServerEnv()
 
 		if ColonyID == "" {
-			ColonyID = os.Getenv("COLONIES_COLONYID")
+			ColonyID = os.Getenv("COLONIES_COLONY_ID")
 		}
 		if ColonyID == "" {
 			CheckError(errors.New("Unknown Colony Id"))
 		}
 
 		if ColonyPrvKey == "" {
-			ColonyPrvKey = os.Getenv("COLONIES_COLONYPRVKEY")
+			ColonyPrvKey = os.Getenv("COLONIES_COLONY_PRVKEY")
 		}
 		if ColonyPrvKey == "" {
 			keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
@@ -269,49 +258,49 @@ var workerRegisterCmd = &cobra.Command{
 
 		crypto := crypto.CreateCrypto()
 
-		runtimePrvKey, err := crypto.GeneratePrivateKey()
+		executorPrvKey, err := crypto.GeneratePrivateKey()
 		CheckError(err)
-		runtimeID, err := crypto.GenerateID(runtimePrvKey)
-		CheckError(err)
-
-		log.Info("Saving runtimeID to /tmp/runtimeid")
-		err = os.WriteFile("/tmp/runtimeid", []byte(runtimeID), 0644)
+		executorID, err := crypto.GenerateID(executorPrvKey)
 		CheckError(err)
 
-		err = os.WriteFile("/tmp/runtimeprvkey", []byte(runtimePrvKey), 0644)
+		log.Info("Saving executorID to /tmp/executorid")
+		err = os.WriteFile("/tmp/executorid", []byte(executorID), 0644)
 		CheckError(err)
-		log.Info("Saving runtimePrvKey to /tmp/runtimeprvkey")
 
-		if RuntimeName == "" {
-			RuntimeName = os.Getenv("COLONIES_RUNTIMENAME")
+		err = os.WriteFile("/tmp/executorprvkey", []byte(executorPrvKey), 0644)
+		CheckError(err)
+		log.Info("Saving executorPrvKey to /tmp/executorprvkey")
+
+		if ExecutorName == "" {
+			ExecutorName = os.Getenv("COLONIES_EXECUTOR_NAME")
 			if os.Getenv("HOSTNAME") != "" {
-				RuntimeName += "."
-				RuntimeName += os.Getenv("HOSTNAME")
+				ExecutorName += "."
+				ExecutorName += os.Getenv("HOSTNAME")
 			}
 		}
 
-		if RuntimeName == "" {
-			CheckError(errors.New("Runtime name not specified"))
+		if ExecutorName == "" {
+			CheckError(errors.New("Executor name not specified"))
 		}
 
-		if RuntimeType == "" {
-			RuntimeType = os.Getenv("COLONIES_RUNTIMETYPE")
+		if ExecutorType == "" {
+			ExecutorType = os.Getenv("COLONIES_EXECUTOR_TYPE")
 		}
 
-		if RuntimeType == "" {
-			CheckError(errors.New("Runtime type not specified"))
+		if ExecutorType == "" {
+			CheckError(errors.New("Executor type not specified"))
 		}
 
 		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Info("Starting a Colonies client")
 		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
 
-		log.WithFields(log.Fields{"runtimeID": runtimeID, "runtimeName": RuntimeName, "runtimeType:": RuntimeType, "colonyID": ColonyID, "CPU": CPU, "Cores": Cores, "Mem": Mem, "GPU": GPU, "GPUs": GPUs}).Info("Register a new Runtime")
-		runtime := core.CreateRuntime(runtimeID, RuntimeType, RuntimeName, ColonyID, CPU, Cores, Mem, GPU, GPUs, time.Now(), time.Now())
-		_, err = client.AddRuntime(runtime, ColonyPrvKey)
+		log.WithFields(log.Fields{"executorID": executorID, "executorName": ExecutorName, "executorType:": ExecutorType, "colonyID": ColonyID, "CPU": CPU, "Cores": Cores, "Mem": Mem, "GPU": GPU, "GPUs": GPUs}).Info("Register a new Executor")
+		executor := core.CreateExecutor(executorID, ExecutorType, ExecutorName, ColonyID, CPU, Cores, Mem, GPU, GPUs, time.Now(), time.Now())
+		_, err = client.AddExecutor(executor, ColonyPrvKey)
 		CheckError(err)
 
-		log.WithFields(log.Fields{"runtimeID": runtimeID}).Info("Approving Runtime")
-		err = client.ApproveRuntime(runtimeID, ColonyPrvKey)
+		log.WithFields(log.Fields{"executorID": executorID}).Info("Approving Executor")
+		err = client.ApproveExecutor(executorID, ColonyPrvKey)
 		CheckError(err)
 	},
 }
@@ -325,14 +314,14 @@ var workerUnregisterCmd = &cobra.Command{
 		parseServerEnv()
 
 		if ColonyID == "" {
-			ColonyID = os.Getenv("COLONIES_COLONYID")
+			ColonyID = os.Getenv("COLONIES_COLONY_ID")
 		}
 		if ColonyID == "" {
 			CheckError(errors.New("Unknown Colony Id"))
 		}
 
 		if ColonyPrvKey == "" {
-			ColonyPrvKey = os.Getenv("COLONIES_COLONYPRVKEY")
+			ColonyPrvKey = os.Getenv("COLONIES_COLONY_PRVKEY")
 		}
 		if ColonyPrvKey == "" {
 			keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
@@ -345,22 +334,22 @@ var workerUnregisterCmd = &cobra.Command{
 		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Info("Starting a Colonies client")
 		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
 
-		unregisterRuntime(client)
+		unregisterExecutor(client)
 		os.Exit(0)
 	},
 }
 
-func unregisterRuntime(client *client.ColoniesClient) {
+func unregisterExecutor(client *client.ColoniesClient) {
 	mutex.Lock()
 	defer mutex.Unlock()
 
-	runtimeIDBytes, err := os.ReadFile("/tmp/runtimeid")
+	executorIDBytes, err := os.ReadFile("/tmp/executorid")
 	CheckError(err)
 
-	runtimeID := string(runtimeIDBytes)
+	executorID := string(executorIDBytes)
 
-	err = client.DeleteRuntime(runtimeID, ColonyPrvKey)
+	err = client.DeleteExecutor(executorID, ColonyPrvKey)
 	CheckError(err)
 
-	log.WithFields(log.Fields{"RuntimeID": runtimeID}).Info("Runtime unregistered")
+	log.WithFields(log.Fields{"ExecutorID": executorID}).Info("Executor unregistered")
 }

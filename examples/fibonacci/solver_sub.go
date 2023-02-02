@@ -11,10 +11,10 @@ import (
 )
 
 func main() {
-	colonyID := os.Getenv("COLONIES_COLONYID")
-	runtimePrvKey := os.Getenv("COLONIES_RUNTIMEPRVKEY")
-	coloniesHost := os.Getenv("COLONIES_SERVERHOST")
-	coloniesPortStr := os.Getenv("COLONIES_SERVERPORT")
+	colonyID := os.Getenv("COLONIES_COLONY_ID")
+	executorPrvKey := os.Getenv("COLONIES_EXECUTOR_PRVKEY")
+	coloniesHost := os.Getenv("COLONIES_SERVER_HOST")
+	coloniesPortStr := os.Getenv("COLONIES_SERVER_PORT")
 	coloniesPort, err := strconv.Atoi(coloniesPortStr)
 	if err != nil {
 		fmt.Println(err)
@@ -24,7 +24,7 @@ func main() {
 	client := client.CreateColoniesClient(coloniesHost, coloniesPort, true, false)
 
 	// Subscribe for new processes
-	subscription, err := client.SubscribeProcesses("cli", core.WAITING, 100, runtimePrvKey)
+	subscription, err := client.SubscribeProcesses("cli", core.WAITING, 100, executorPrvKey)
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -35,7 +35,7 @@ func main() {
 		for {
 			select {
 			case <-subscription.ProcessChan:
-				assignedProcess, err := client.AssignProcess(colonyID, -1, runtimePrvKey)
+				assignedProcess, err := client.AssignProcess(colonyID, -1, executorPrvKey)
 				if err != nil {
 					fmt.Println(err)
 					continue
@@ -52,10 +52,10 @@ func main() {
 						fmt.Println("Result: The last number in the Fibonacci serie " + attribute.Value + " is " + fibonacci.String())
 
 						attribute := core.CreateAttribute(assignedProcess.ID, colonyID, "", core.OUT, "result", fibonacci.String())
-						client.AddAttribute(attribute, runtimePrvKey)
+						client.AddAttribute(attribute, executorPrvKey)
 
 						// Close the process as Successful
-						client.CloseSuccessful(assignedProcess.ID, runtimePrvKey)
+						client.Close(assignedProcess.ID, executorPrvKey)
 						continue
 					}
 				}
