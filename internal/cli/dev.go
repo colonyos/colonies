@@ -61,78 +61,78 @@ var devCmd = &cobra.Command{
 			envErr = true
 		}
 
-		if os.Getenv("COLONIES_SERVERHOST") == "" {
-			log.Error("COLONIES_SERVERHOST environmental variable missing, try export COLONIES_SERVERHOST=\"localhost\"")
+		if os.Getenv("COLONIES_SERVER_HOST") == "" {
+			log.Error("COLONIES_SERVER_HOST environmental variable missing, try export COLONIES_SERVER_HOST=\"localhost\"")
 			envErr = true
 		}
 
-		if os.Getenv("COLONIES_SERVERPORT") == "" {
-			log.Error("COLONIES_SERVERPORT environmental variable missing, try export COLONIES_SERVERPORT=\"50080\"")
+		if os.Getenv("COLONIES_SERVER_PORT") == "" {
+			log.Error("COLONIES_SERVER_PORT environmental variable missing, try export COLONIES_SERVER_PORT=\"50080\"")
 			envErr = true
 		}
 
-		if os.Getenv("COLONIES_MONITORPORT") == "" {
-			log.Error("COLONIES_MONITORPORT environmental variable missing, try export COLONIES_MONITORPORT=\"21120\"")
+		if os.Getenv("COLONIES_MONITOR_PORT") == "" {
+			log.Error("COLONIES_MONITOR_PORT environmental variable missing, try export COLONIES_MONITOR_PORT=\"21120\"")
 			envErr = true
 		}
 
-		if os.Getenv("COLONIES_MONITORINTERVALL") == "" {
-			log.Error("COLONIES_MONITORINTERVALL environmental variable missing, try export COLONIES_MONITORINTERVALL=\"1\"")
+		if os.Getenv("COLONIES_MONITOR_INTERVALL") == "" {
+			log.Error("COLONIES_MONITOR_INTERVALL environmental variable missing, try export COLONIES_MONITOR_INTERVALL=\"1\"")
 			envErr = true
 		}
 
-		if os.Getenv("COLONIES_SERVERID") == "" {
-			log.Error("COLONIES_SERVERID environmental variable missing, try export COLONIES_SERVERID=\"039231c7644e04b6895471dd5335cf332681c54e27f81fac54f9067b3f2c0103\"")
+		if os.Getenv("COLONIES_SERVER_ID") == "" {
+			log.Error("COLONIES_SERVER_ID environmental variable missing, try export COLONIES_SERVER_ID=\"039231c7644e04b6895471dd5335cf332681c54e27f81fac54f9067b3f2c0103\"")
 			envErr = true
 		}
 
-		if os.Getenv("COLONIES_SERVERPRVKEY") == "" {
-			log.Error("COLONIES_SERVERPRVKEY environmental variable missing, try export COLONIES_SERVERPRVKEY=\"fcc79953d8a751bf41db661592dc34d30004b1a651ffa0725b03ac227641499d\"")
+		if os.Getenv("COLONIES_SERVER_PRVKEY") == "" {
+			log.Error("COLONIES_SERVER_PRVKEY environmental variable missing, try export COLONIES_SERVER_PRVKEY=\"fcc79953d8a751bf41db661592dc34d30004b1a651ffa0725b03ac227641499d\"")
 			envErr = true
 		}
 
-		if os.Getenv("COLONIES_DBHOST") == "" {
-			log.Error("COLONIES_DBHOST environmental variable missing, try export COLONIES_DBHOST=\"localhost\"")
+		if os.Getenv("COLONIES_DB_HOST") == "" {
+			log.Error("COLONIES_DB_HOST environmental variable missing, try export COLONIES_DB_HOST=\"localhost\"")
 			envErr = true
 		}
 
-		if os.Getenv("COLONIES_DBUSER") == "" {
-			log.Error("COLONIES_DBUSER environmental variable missing, try export COLONIES_DBUSER=\"postgres\"")
+		if os.Getenv("COLONIES_DB_USER") == "" {
+			log.Error("COLONIES_DB_USER environmental variable missing, try export COLONIES_DB_USER=\"postgres\"")
 			envErr = true
 		}
 
-		if os.Getenv("COLONIES_DBPORT") == "" {
-			log.Error("COLONIES_DBPORT environmental variable missing, try export COLONIES_DBPORT=\"50070\"")
+		if os.Getenv("COLONIES_DB_PORT") == "" {
+			log.Error("COLONIES_DB_PORT environmental variable missing, try export COLONIES_DB_PORT=\"50070\"")
 			envErr = true
 		}
 
-		if os.Getenv("COLONIES_DBPASSWORD") == "" {
-			log.Error("COLONIES_DBPASSWORD environmental variable missing, try export COLONIES_DBPASSWORD=\"rFcLGNkgsNtksg6Pgtn9CumL4xXBQ7\"")
+		if os.Getenv("COLONIES_DB_PASSWORD") == "" {
+			log.Error("COLONIES_DB_PASSWORD environmental variable missing, try export COLONIES_DB_PASSWORD=\"rFcLGNkgsNtksg6Pgtn9CumL4xXBQ7\"")
 			envErr = true
 		}
 
-		if os.Getenv("COLONIES_COLONYID") == "" {
-			log.Error("COLONIES_COLONYID environmental variable missing, try export COLONIES_COLONYID=\"4787a5071856a4acf702b2ffcea422e3237a679c681314113d86139461290cf4\"")
+		if os.Getenv("COLONIES_COLONY_ID") == "" {
+			log.Error("COLONIES_COLONY_ID environmental variable missing, try export COLONIES_COLONY_ID=\"4787a5071856a4acf702b2ffcea422e3237a679c681314113d86139461290cf4\"")
 			envErr = true
 		}
 
-		if os.Getenv("COLONIES_COLONYPRVKEY") == "" {
-			log.Error("COLONIES_COLONYPRVKEY environmental variable missing, try export COLONIES_COLONYPRVKEY=\"ba949fa134981372d6da62b6a56f336ab4d843b22c02a4257dcf7d0d73097514\"")
+		if os.Getenv("COLONIES_COLONY_PRVKEY") == "" {
+			log.Error("COLONIES_COLONY_PRVKEY environmental variable missing, try export COLONIES_COLONY_PRVKEY=\"ba949fa134981372d6da62b6a56f336ab4d843b22c02a4257dcf7d0d73097514\"")
 			envErr = true
 		}
 
-		if os.Getenv("COLONIES_RUNTIMEID") == "" {
-			log.Error("COLONIES_RUNTIMEID environmental variable missing, try export COLONIES_RUNTIMEID=\"3fc05cf3df4b494e95d6a3d297a34f19938f7daa7422ab0d4f794454133341ac\"")
+		if os.Getenv("COLONIES_EXECUTOR_ID") == "" {
+			log.Error("COLONIES_EXECUTOR_ID environmental variable missing, try export COLONIES_EXECUTOR_ID=\"3fc05cf3df4b494e95d6a3d297a34f19938f7daa7422ab0d4f794454133341ac\"")
 			envErr = true
 		}
 
-		if os.Getenv("COLONIES_RUNTIMEPRVKEY") == "" {
-			log.Error("COLONIES_RUNTIMEPRVKEY environmental variable missing, try export COLONIES_RUNTIMEPRVKEY=\"ddf7f7791208083b6a9ed975a72684f6406a269cfa36f1b1c32045c0a71fff05\"")
+		if os.Getenv("COLONIES_EXECUTOR_PRVKEY") == "" {
+			log.Error("COLONIES_EXECUTOR_PRVKEY environmental variable missing, try export COLONIES_EXECUTOR_PRVKEY=\"ddf7f7791208083b6a9ed975a72684f6406a269cfa36f1b1c32045c0a71fff05\"")
 			envErr = true
 		}
 
-		if os.Getenv("COLONIES_RUNTIMETYPE") == "" {
-			log.Error("COLONIES_RUNTIMETYPE environmental variable missing, try export COLONIES_RUNTIMETYPE=\"cli\"")
+		if os.Getenv("COLONIES_EXECUTOR_TYPE") == "" {
+			log.Error("COLONIES_EXECUTOR_TYPE environmental variable missing, try export COLONIES_EXECUTOR_TYPE=\"cli\"")
 			envErr = true
 		}
 
@@ -145,20 +145,20 @@ var devCmd = &cobra.Command{
 			envProposal += "export LC_CTYPE=UTF-8\n"
 			envProposal += "export TZ=Europe/Stockholm\n"
 			envProposal += "export COLONIES_TLS=\"false\"\n"
-			envProposal += "export COLONIES_SERVERHOST=\"localhost\"\n"
-			envProposal += "export COLONIES_SERVERPORT=\"50080\"\n"
-			envProposal += "export COLONIES_MONITORPORT=\"21120\"\n"
-			envProposal += "export COLONIES_SERVERID=\"039231c7644e04b6895471dd5335cf332681c54e27f81fac54f9067b3f2c0103\"\n"
-			envProposal += "export COLONIES_SERVERPRVKEY=\"fcc79953d8a751bf41db661592dc34d30004b1a651ffa0725b03ac227641499d\"\n"
-			envProposal += "export COLONIES_DBHOST=\"localhost\"\n"
-			envProposal += "export COLONIES_DBUSER=\"postgres\"\n"
-			envProposal += "export COLONIES_DBPORT=\"50070\"\n"
-			envProposal += "export COLONIES_DBPASSWORD=\"rFcLGNkgsNtksg6Pgtn9CumL4xXBQ7\"\n"
-			envProposal += "export COLONIES_COLONYID=\"4787a5071856a4acf702b2ffcea422e3237a679c681314113d86139461290cf4\"\n"
-			envProposal += "export COLONIES_COLONYPRVKEY=\"ba949fa134981372d6da62b6a56f336ab4d843b22c02a4257dcf7d0d73097514\"\n"
-			envProposal += "export COLONIES_RUNTIMEID=\"3fc05cf3df4b494e95d6a3d297a34f19938f7daa7422ab0d4f794454133341ac\"\n"
-			envProposal += "export COLONIES_RUNTIMEPRVKEY=\"ddf7f7791208083b6a9ed975a72684f6406a269cfa36f1b1c32045c0a71fff05\"\n"
-			envProposal += "export COLONIES_RUNTIMETYPE=\"cli\"\n"
+			envProposal += "export COLONIES_SERVER_HOST=\"localhost\"\n"
+			envProposal += "export COLONIES_SERVER_PORT=\"50080\"\n"
+			envProposal += "export COLONIES_MONITOR_PORT=\"21120\"\n"
+			envProposal += "export COLONIES_SERVER_ID=\"039231c7644e04b6895471dd5335cf332681c54e27f81fac54f9067b3f2c0103\"\n"
+			envProposal += "export COLONIES_SERVER_PRVKEY=\"fcc79953d8a751bf41db661592dc34d30004b1a651ffa0725b03ac227641499d\"\n"
+			envProposal += "export COLONIES_DB_HOST=\"localhost\"\n"
+			envProposal += "export COLONIES_DB_USER=\"postgres\"\n"
+			envProposal += "export COLONIES_DB_PORT=\"50070\"\n"
+			envProposal += "export COLONIES_DB_PASSWORD=\"rFcLGNkgsNtksg6Pgtn9CumL4xXBQ7\"\n"
+			envProposal += "export COLONIES_COLONY_ID=\"4787a5071856a4acf702b2ffcea422e3237a679c681314113d86139461290cf4\"\n"
+			envProposal += "export COLONIES_COLONY_PRVKEY=\"ba949fa134981372d6da62b6a56f336ab4d843b22c02a4257dcf7d0d73097514\"\n"
+			envProposal += "export COLONIES_EXECUTOR_ID=\"3fc05cf3df4b494e95d6a3d297a34f19938f7daa7422ab0d4f794454133341ac\"\n"
+			envProposal += "export COLONIES_EXECUTOR_PRVKEY=\"ddf7f7791208083b6a9ed975a72684f6406a269cfa36f1b1c32045c0a71fff05\"\n"
+			envProposal += "export COLONIES_EXECUTOR_TYPE=\"cli\"\n"
 			fmt.Println(envProposal)
 			os.Exit(-1)
 		}
@@ -172,12 +172,12 @@ var devCmd = &cobra.Command{
 			CheckError(err)
 		}
 
-		dbHost := os.Getenv("COLONIES_DBHOST")
-		dbPort, err := strconv.Atoi(os.Getenv("COLONIES_DBPORT"))
+		dbHost := os.Getenv("COLONIES_DB_HOST")
+		dbPort, err := strconv.Atoi(os.Getenv("COLONIES_DB_PORT"))
 		CheckError(err)
 
-		dbUser := os.Getenv("COLONIES_DBUSER")
-		dbPassword := os.Getenv("COLONIES_DBPASSWORD")
+		dbUser := os.Getenv("COLONIES_DB_USER")
+		dbPassword := os.Getenv("COLONIES_DB_PASSWORD")
 
 		log.WithFields(log.Fields{"DBHost": dbHost, "DBPort": dbPort, "DBUser": dbUser, "DBPassword": dbPassword, "DBName": DBName}).Info("Starting embedded PostgreSQL server")
 		postgres := embeddedpostgres.NewDatabase(embeddedpostgres.DefaultConfig().
@@ -212,25 +212,25 @@ var devCmd = &cobra.Command{
 		keychain, err := security.CreateKeychain(".colonies")
 		CheckError(err)
 
-		serverID := os.Getenv("COLONIES_SERVERID")
-		serverPrvKey := os.Getenv("COLONIES_SERVERPRVKEY")
+		serverID := os.Getenv("COLONIES_SERVER_ID")
+		serverPrvKey := os.Getenv("COLONIES_SERVER_PRVKEY")
 		log.WithFields(log.Fields{"ServerId": serverID, "ServerPrvKey": serverPrvKey}).Info("Adding a ServerId to keychain")
 		err = keychain.AddPrvKey(serverID, serverPrvKey)
 		CheckError(err)
 
-		colonyID := os.Getenv("COLONIES_COLONYID")
-		colonyPrvKey := os.Getenv("COLONIES_COLONYPRVKEY")
+		colonyID := os.Getenv("COLONIES_COLONY_ID")
+		colonyPrvKey := os.Getenv("COLONIES_COLONY_PRVKEY")
 		log.WithFields(log.Fields{"ColonyId": colonyID, "ColonyPrvKey": colonyPrvKey}).Info("Adding a ColonyId to keychain")
 		err = keychain.AddPrvKey(colonyID, colonyPrvKey)
 		CheckError(err)
 
-		runtimeID := os.Getenv("COLONIES_RUNTIMEID")
-		runtimePrvKey := os.Getenv("COLONIES_RUNTIMEPRVKEY")
-		log.WithFields(log.Fields{"RuntimeId": runtimeID, "RuntimePrvKey": runtimePrvKey}).Info("Adding a RuntimeId to keychain")
-		err = keychain.AddPrvKey(runtimeID, runtimePrvKey)
+		executorID := os.Getenv("COLONIES_EXECUTOR_ID")
+		executorPrvKey := os.Getenv("COLONIES_EXECUTOR_PRVKEY")
+		log.WithFields(log.Fields{"ExecutorId": executorID, "ExecutorPrvKey": executorPrvKey}).Info("Adding a ExecutorId to keychain")
+		err = keychain.AddPrvKey(executorID, executorPrvKey)
 		CheckError(err)
 
-		coloniesServerPort, err := strconv.Atoi(os.Getenv("COLONIES_SERVERPORT"))
+		coloniesServerPort, err := strconv.Atoi(os.Getenv("COLONIES_SERVER_PORT"))
 		CheckError(err)
 		log.WithFields(log.Fields{"Port": coloniesServerPort}).Info("Starting a Colonies server")
 
@@ -284,7 +284,7 @@ var devCmd = &cobra.Command{
 
 		go coloniesServer.ServeForever()
 
-		coloniesServerHost := os.Getenv("COLONIES_SERVERHOST")
+		coloniesServerHost := os.Getenv("COLONIES_SERVER_HOST")
 		log.WithFields(log.Fields{"ColoniesServerHost": coloniesServerHost, "ColoniesServerPort": coloniesServerPort}).Info("Connecting to Colonies server")
 		client := client.CreateColoniesClient(coloniesServerHost, coloniesServerPort, true, false)
 
@@ -293,24 +293,24 @@ var devCmd = &cobra.Command{
 		_, err = client.AddColony(colony, serverPrvKey)
 		CheckError(err)
 
-		runtimeType := os.Getenv("COLONIES_RUNTIMETYPE")
-		runtimeName := "myruntime"
-		log.WithFields(log.Fields{"RuntimeID": runtimeID, "RuntimeType": runtimeType, "RuntimeName": runtimeName}).Info("Registering a new runtime")
+		executorType := os.Getenv("COLONIES_EXECUTOR_TYPE")
+		executorName := "myexecutor"
+		log.WithFields(log.Fields{"ExecutorID": executorID, "ExecutorType": executorType, "ExecutorName": executorName}).Info("Registering a new executor")
 
-		runtime := core.CreateRuntime(runtimeID, runtimeType, runtimeName, colonyID, "", 1, 0, "", 0, time.Now(), time.Now())
-		_, err = client.AddRuntime(runtime, colonyPrvKey)
+		executor := core.CreateExecutor(executorID, executorType, executorName, colonyID, "", 1, 0, "", 0, time.Now(), time.Now())
+		_, err = client.AddExecutor(executor, colonyPrvKey)
 		CheckError(err)
 
-		log.WithFields(log.Fields{"RuntimeID": runtimeID}).Info("Approving runtime")
-		log.Info("Approving CLI runtime")
-		err = client.ApproveRuntime(runtimeID, colonyPrvKey)
+		log.WithFields(log.Fields{"ExecutorID": executorID}).Info("Approving executor")
+		log.Info("Approving CLI executor")
+		err = client.ApproveExecutor(executorID, colonyPrvKey)
 		CheckError(err)
 
-		monitorPortStr := os.Getenv("COLONIES_MONITORPORT")
+		monitorPortStr := os.Getenv("COLONIES_MONITOR_PORT")
 		monitorPort, err := strconv.Atoi(monitorPortStr)
 		CheckError(err)
 
-		intervallStr := os.Getenv("COLONIES_MONITORINTERVALL")
+		intervallStr := os.Getenv("COLONIES_MONITOR_INTERVALL")
 		intervall, err := strconv.Atoi(intervallStr)
 		CheckError(err)
 

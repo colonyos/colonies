@@ -7,15 +7,15 @@ import (
 const SubscribeProcessesPayloadType = "subscribeprocessesmsg"
 
 type SubscribeProcessesMsg struct {
-	RuntimeType string `json:"runtimetype"`
-	State       int    `json:"state"`
-	Timeout     int    `json:"timeout"`
-	MsgType     string `json:"msgtype"`
+	ExecutorType string `json:"executortype"`
+	State        int    `json:"state"`
+	Timeout      int    `json:"timeout"`
+	MsgType      string `json:"msgtype"`
 }
 
-func CreateSubscribeProcessesMsg(runtimeType string, state int, timeout int) *SubscribeProcessesMsg {
+func CreateSubscribeProcessesMsg(executorType string, state int, timeout int) *SubscribeProcessesMsg {
 	msg := &SubscribeProcessesMsg{}
-	msg.RuntimeType = runtimeType
+	msg.ExecutorType = executorType
 	msg.State = state
 	msg.Timeout = timeout
 	msg.MsgType = SubscribeProcessesPayloadType
@@ -47,7 +47,7 @@ func (msg *SubscribeProcessesMsg) Equals(msg2 *SubscribeProcessesMsg) bool {
 	}
 
 	if msg.MsgType == msg2.MsgType &&
-		msg.RuntimeType == msg2.RuntimeType &&
+		msg.ExecutorType == msg2.ExecutorType &&
 		msg.State == msg2.State &&
 		msg.Timeout == msg2.Timeout {
 		return true

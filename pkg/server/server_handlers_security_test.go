@@ -10,13 +10,13 @@ func TestGetStatisticsSecurity(t *testing.T) {
 	env, client, server, serverPrvKey, done := setupTestEnv1(t)
 
 	// The setup looks like this:
-	//   runtime1 is member of colony1
-	//   runtime2 is member of colony2
+	//   executor1 is member of colony1
+	//   executor2 is member of colony2
 
-	_, err := client.Statistics(env.runtime1PrvKey)
+	_, err := client.Statistics(env.executor1PrvKey)
 	assert.NotNil(t, err) // Should not work
 
-	_, err = client.Statistics(env.runtime2PrvKey)
+	_, err = client.Statistics(env.executor2PrvKey)
 	assert.NotNil(t, err) // Should not work
 
 	_, err = client.Statistics(env.colony1PrvKey)
@@ -36,13 +36,13 @@ func TestGetClusterInfoSecurity(t *testing.T) {
 	env, client, server, serverPrvKey, done := setupTestEnv1(t)
 
 	// The setup looks like this:
-	//   runtime1 is member of colony1
-	//   runtime2 is member of colony2
+	//   executor1 is member of colony1
+	//   executor2 is member of colony2
 
-	_, err := client.GetClusterInfo(env.runtime1PrvKey)
+	_, err := client.GetClusterInfo(env.executor1PrvKey)
 	assert.NotNil(t, err) // Should not work
 
-	_, err = client.GetClusterInfo(env.runtime2PrvKey)
+	_, err = client.GetClusterInfo(env.executor2PrvKey)
 	assert.NotNil(t, err) // Should not work
 
 	_, err = client.GetClusterInfo(env.colony1PrvKey)
@@ -62,13 +62,13 @@ func TestGetResetDatabaseSecurity(t *testing.T) {
 	env, client, server, serverPrvKey, done := setupTestEnv1(t)
 
 	// The setup looks like this:
-	//   runtime1 is member of colony1
-	//   runtime2 is member of colony2
+	//   executor1 is member of colony1
+	//   executor2 is member of colony2
 
-	err := client.ResetDatabase(env.runtime1PrvKey)
+	err := client.ResetDatabase(env.executor1PrvKey)
 	assert.NotNil(t, err) // Should not work
 
-	err = client.ResetDatabase(env.runtime2PrvKey)
+	err = client.ResetDatabase(env.executor2PrvKey)
 	assert.NotNil(t, err) // Should not work
 
 	err = client.ResetDatabase(env.colony1PrvKey)

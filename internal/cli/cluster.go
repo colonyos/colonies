@@ -24,8 +24,8 @@ func init() {
 
 var clusterCmd = &cobra.Command{
 	Use:   "cluster",
-	Short: "Manage Colonies clusters",
-	Long:  "Manage Colonies clusters",
+	Short: "Manage clusters",
+	Long:  "Manage clusters",
 }
 
 var clusterInfoCmd = &cobra.Command{
@@ -39,7 +39,7 @@ var clusterInfoCmd = &cobra.Command{
 		CheckError(err)
 
 		if ServerID == "" {
-			ServerID = os.Getenv("COLONIES_SERVERID")
+			ServerID = os.Getenv("COLONIES_SERVER_ID")
 		}
 		if ServerID == "" {
 			CheckError(errors.New("Unknown Server Id"))

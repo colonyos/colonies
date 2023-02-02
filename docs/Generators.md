@@ -23,7 +23,7 @@ The workflow just echo the args. It look like this:
         "func": "echo",
         "args": [],
         "conditions": {
-            "runtimetype": "cli",
+            "executortype": "cli",
             "dependencies": []
         }
     }
@@ -32,7 +32,7 @@ The workflow just echo the args. It look like this:
 
 ## Start a worker executing the workflows spawn by the generator, i.e. run the Unix echo command.
 ```console
-colonies worker start --name generator_worker --runtimetype cli --timeout 100 -v 
+colonies worker start --name generator_worker --executortype cli --timeout 100 -v 
 ```
 
 ## Send data to the Generator 
@@ -61,22 +61,22 @@ colonies process get --processid 3806424831e78001fd7157a387ca9ab414ef908f0649eee
 Output:
 ```console
 Process:
-+-------------------+------------------------------------------------------------------+
-| ID                | 3806424831e78001fd7157a387ca9ab414ef908f0649eeed7e9fee691438db01 |
-| IsAssigned        | True                                                             |
-| AssignedRuntimeID | eeefa45d65b75c6ec3e11fedd2b120909607da830bade4f1953e55ccbad417c1 |
-| State             | Successful                                                       |
-| Priority          | 0                                                                |
-| SubmissionTime    | 2022-08-23 22:19:14                                              |
-| StartTime         | 2022-08-23 22:19:14                                              |
-| EndTime           | 2022-08-23 22:19:14                                              |
-| WaitDeadline      | 0001-01-01 01:12:12                                              |
-| ExecDeadline      | 0001-01-01 01:12:12                                              |
-| WaitingTime       | 9.712ms                                                          |
-| ProcessingTime    | 12.305ms                                                         |
-| Retries           | 0                                                                |
-| ErrorMsg          |                                                                  |
-+-------------------+------------------------------------------------------------------+
++--------------------+------------------------------------------------------------------+
+| ID                 | 3806424831e78001fd7157a387ca9ab414ef908f0649eeed7e9fee691438db01 |
+| IsAssigned         | True                                                             |
+| AssignedExecutorID | eeefa45d65b75c6ec3e11fedd2b120909607da830bade4f1953e55ccbad417c1 |
+| State              | Successful                                                       |
+| Priority           | 0                                                                |
+| SubmissionTime     | 2022-08-23 22:19:14                                              |
+| StartTime          | 2022-08-23 22:19:14                                              |
+| EndTime            | 2022-08-23 22:19:14                                              |
+| WaitDeadline       | 0001-01-01 01:12:12                                              |
+| ExecDeadline       | 0001-01-01 01:12:12                                              |
+| WaitingTime        | 9.712ms                                                          |
+| ProcessingTime     | 12.305ms                                                         |
+| Retries            | 0                                                                |
+| ErrorMsg           |                                                                  |
++--------------------+------------------------------------------------------------------+
 
 ProcessSpec:
 +-------------+--------------------------------+
@@ -92,8 +92,8 @@ ProcessSpec:
 Conditions:
 +--------------+------------------------------------------------------------------+
 | ColonyID     | 4787a5071856a4acf702b2ffcea422e3237a679c681314113d86139461290cf4 |
-| RuntimeIDs   | None                                                             |
-| RuntimeType  | cli                                                              |
+| ExecutorIDs  | None                                                             |
+| ExecutorType | cli                                                              |
 | Dependencies |                                                                  |
 +--------------+------------------------------------------------------------------+
 

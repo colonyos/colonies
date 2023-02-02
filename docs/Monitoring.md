@@ -45,7 +45,7 @@ Log in into Grafana (http://localhost:3000) and add the Prometheus server as a n
 ## Metrics
 The following metrics are exported:
 - colonies_server_colonites
-- colonies_server_runtimes
+- colonies_server_executors
 - colonies_server_processes_waiting
 - colonies_server_processes_running
 - colonies_server_processes_successful

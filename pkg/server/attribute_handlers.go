@@ -32,7 +32,7 @@ func (server *ColoniesServer) handleAddAttributeHTTPRequest(c *gin.Context, reco
 		return
 	}
 
-	err = server.validator.RequireRuntimeMembership(recoveredID, process.ProcessSpec.Conditions.ColonyID, true)
+	err = server.validator.RequireExecutorMembership(recoveredID, process.ProcessSpec.Conditions.ColonyID, true)
 	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		return
 	}
@@ -43,8 +43,8 @@ func (server *ColoniesServer) handleAddAttributeHTTPRequest(c *gin.Context, reco
 		return
 	}
 
-	if process.AssignedRuntimeID != recoveredID {
-		err := errors.New("Failed to add attribute, only runtime with id <" + process.AssignedRuntimeID + "> is allowed to set attributes")
+	if process.AssignedExecutorID != recoveredID {
+		err := errors.New("Failed to add attribute, only executor with id <" + process.AssignedExecutorID + "> is allowed to set attributes")
 		server.handleHTTPError(c, err, http.StatusForbidden)
 		return
 	}
@@ -94,7 +94,7 @@ func (server *ColoniesServer) handleGetAttributeHTTPRequest(c *gin.Context, reco
 		return
 	}
 
-	err = server.validator.RequireRuntimeMembership(recoveredID, process.ProcessSpec.Conditions.ColonyID, true)
+	err = server.validator.RequireExecutorMembership(recoveredID, process.ProcessSpec.Conditions.ColonyID, true)
 	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		return
 	}
