@@ -17,9 +17,9 @@ type Location struct {
 }
 
 type Executor struct {
-	ID                string    `json:"id"`
-	Type       string    `json:"type"`
-	Name              string    `json:"name"`
+	ID                string    `json:"executorid"`
+	Type              string    `json:"executortype"`
+	Name              string    `json:"executorname"`
 	ColonyID          string    `json:"colonyid"`
 	CPU               string    `json:"cpu"`
 	Cores             int       `json:"cores"`
@@ -44,7 +44,7 @@ func CreateExecutor(id string,
 	commissionTime time.Time,
 	lastHeardFromTime time.Time) *Executor {
 	return &Executor{ID: id,
-		Type:       executorType,
+		Type:              executorType,
 		Name:              name,
 		ColonyID:          colonyID,
 		CPU:               cpu,
@@ -170,7 +170,7 @@ func (executor *Executor) Approve() {
 }
 
 func (executor *Executor) Reject() {
-executor.State = REJECTED
+	executor.State = REJECTED
 }
 
 func (executor *Executor) SetID(id string) {
