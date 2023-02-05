@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"strconv"
 
 	"github.com/colonyos/colonies/pkg/client"
 	"github.com/colonyos/colonies/pkg/core"
@@ -201,11 +200,6 @@ var lsExecutorsCmd = &cobra.Command{
 					[]string{"State", state},
 					[]string{"CommissionTime", executor.CommissionTime.Format(TimeLayout)},
 					[]string{"LastHeardFrom", executor.LastHeardFromTime.Format(TimeLayout)},
-					[]string{"CPU", executor.CPU},
-					[]string{"Cores", strconv.Itoa(executor.Cores)},
-					[]string{"Mem [MiB]", strconv.Itoa(executor.Mem)},
-					[]string{"GPU", executor.GPU},
-					[]string{"GPUs", strconv.Itoa(executor.GPUs)},
 				}
 
 				executorTable := tablewriter.NewWriter(os.Stdout)

@@ -13,15 +13,10 @@ func createExecutor() *core.Executor {
 	executorType := "test_executor_type"
 	name := "test_executor_name"
 	colonyID := "e0a17fead699b3e3b3eec21a3ab0efad54224f6eb22f4550abe9f2a207440834"
-	cpu := "AMD Ryzen 9 5950X (32) @ 3.400GHz"
-	cores := 32
-	mem := 80326
-	gpu := "NVIDIA GeForce RTX 2080 Ti Rev. A"
-	gpus := 1
 	commissionTime := time.Now()
 	lastHeardFromTime := time.Now()
 
-	return core.CreateExecutor(id, executorType, name, colonyID, cpu, cores, mem, gpu, gpus, commissionTime, lastHeardFromTime)
+	return core.CreateExecutor(id, executorType, name, colonyID, commissionTime, lastHeardFromTime)
 }
 
 func TestRPCAddExecutorMsg(t *testing.T) {
