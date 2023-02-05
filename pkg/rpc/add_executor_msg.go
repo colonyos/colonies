@@ -9,13 +9,13 @@ import (
 const AddExecutorPayloadType = "addexecutormsg"
 
 type AddExecutorMsg struct {
-	Executor *core.Executor `json:"execuor"`
-	MsgType string        `json:"msgtype"`
+	Executor *core.Executor `json:"executor"`
+	MsgType  string         `json:"msgtype"`
 }
 
 func CreateAddExecutorMsg(executor *core.Executor) *AddExecutorMsg {
 	msg := &AddExecutorMsg{}
-	msg.Executor = executor 
+	msg.Executor = executor
 	msg.MsgType = AddExecutorPayloadType
 
 	return msg

@@ -42,15 +42,15 @@ func CreateTestProcessSpecWithTargets(colonyID string, targetExecutorIDs []strin
 }
 
 func CreateTestExecutor(colonyID string) *core.Executor {
-	return core.CreateExecutor(core.GenerateRandomID(), "test_executor_type", core.GenerateRandomID(), colonyID, "AMD Ryzen 9 5950X (32) @ 3.400GHz", 32, 80326, "NVIDIA GeForce RTX 2080 Ti Rev. A", 1, time.Now(), time.Now())
+	return core.CreateExecutor(core.GenerateRandomID(), "test_executor_type", core.GenerateRandomID(), colonyID, time.Now(), time.Now())
 }
 
 func CreateTestExecutorWithType(colonyID string, executorType string) *core.Executor {
-	return core.CreateExecutor(core.GenerateRandomID(), executorType, core.GenerateRandomID(), colonyID, "AMD Ryzen 9 5950X (32) @ 3.400GHz", 32, 80326, "NVIDIA GeForce RTX 2080 Ti Rev. A", 1, time.Now(), time.Now())
+	return core.CreateExecutor(core.GenerateRandomID(), executorType, core.GenerateRandomID(), colonyID, time.Now(), time.Now())
 }
 
 func CreateTestExecutorWithID(colonyID string, executorID string) *core.Executor {
-	return core.CreateExecutor(executorID, "test_executor_type", core.GenerateRandomID(), colonyID, "AMD Ryzen 9 5950X (32) @ 3.400GHz", 32, 80326, "NVIDIA GeForce RTX 2080 Ti Rev. A", 1, time.Now(), time.Now())
+	return core.CreateExecutor(executorID, "test_executor_type", core.GenerateRandomID(), colonyID, time.Now(), time.Now())
 }
 
 func CreateTestExecutorWithKey(colonyID string) (*core.Executor, string, error) {
@@ -65,7 +65,7 @@ func CreateTestExecutorWithKey(colonyID string) (*core.Executor, string, error) 
 		return nil, "", err
 	}
 
-	return core.CreateExecutor(executorID, "test_executor_type", core.GenerateRandomID(), colonyID, "AMD Ryzen 9 5950X (32) @ 3.400GHz", 32, 80326, "NVIDIA GeForce RTX 2080 Ti Rev. A", 1, time.Now(), time.Now()), executorPrvKey, nil
+	return core.CreateExecutor(executorID, "test_executor_type", core.GenerateRandomID(), colonyID, time.Now(), time.Now()), executorPrvKey, nil
 }
 
 func CreateTestColonyWithKey() (*core.Colony, string, error) {

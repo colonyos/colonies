@@ -11,8 +11,8 @@ import (
 )
 
 func (db *PQDatabase) AddExecutor(executor *core.Executor) error {
-	sqlStatement := `INSERT INTO  ` + db.dbPrefix + `RUNTIMES (RUNTIME_ID, RUNTIME_TYPE, NAME, COLONY_ID, CPU, CORES, MEM, GPU, GPUS, STATE, COMMISSIONTIME, LASTHEARDFROM, LONG, LAT) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)`
-	_, err := db.postgresql.Exec(sqlStatement, executor.ID, executor.Type, executor.Name, executor.ColonyID, executor.CPU, executor.Cores, executor.Mem, executor.GPU, executor.GPUs, 0, time.Now(), executor.LastHeardFromTime, executor.Location.Long, executor.Location.Lat)
+	sqlStatement := `INSERT INTO  ` + db.dbPrefix + `RUNTIMES (RUNTIME_ID, RUNTIME_TYPE, NAME, COLONY_ID, STATE, COMMISSIONTIME, LASTHEARDFROM, LONG, LAT) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`
+	_, err := db.postgresql.Exec(sqlStatement, executor.ID, executor.Type, executor.Name, executor.ColonyID, 0, time.Now(), executor.LastHeardFromTime, executor.Location.Long, executor.Location.Lat)
 	if err != nil {
 		if strings.HasPrefix(err.Error(), "pq: duplicate key value violates unique constraint") {
 			return errors.New("Executor name must be unique")
@@ -31,21 +31,16 @@ func (db *PQDatabase) parseExecutors(rows *sql.Rows) ([]*core.Executor, error) {
 		var executorType string
 		var name string
 		var colonyID string
-		var cpu string
-		var cores int
-		var mem int
-		var gpu string
-		var gpus int
 		var state int
 		var commissionTime time.Time
 		var lastHeardFromTime time.Time
 		var long float64
 		var lat float64
-		if err := rows.Scan(&id, &executorType, &name, &colonyID, &cpu, &cores, &mem, &gpu, &gpus, &state, &commissionTime, &lastHeardFromTime, &long, &lat); err != nil {
+		if err := rows.Scan(&id, &executorType, &name, &colonyID, &state, &commissionTime, &lastHeardFromTime, &long, &lat); err != nil {
 			return nil, err
 		}
 
-		executor := core.CreateExecutorFromDB(id, executorType, name, colonyID, cpu, cores, mem, gpu, gpus, state, commissionTime, lastHeardFromTime)
+		executor := core.CreateExecutorFromDB(id, executorType, name, colonyID, state, commissionTime, lastHeardFromTime)
 		executor.Location.Long = long
 		executor.Location.Lat = lat
 		executors = append(executors, executor)

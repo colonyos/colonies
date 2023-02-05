@@ -185,7 +185,7 @@ var devCmd = &cobra.Command{
 			BinariesPath(coloniesPath + "/embedded-postgres-go/extracted").
 			DataPath(coloniesPath + "/embedded-postgres-go/extracted/data").
 			Username(dbUser).
-            Version(embeddedpostgres.V14).
+			Version(embeddedpostgres.V14).
 			Password(dbPassword).
 			Port(50070))
 		defer postgres.Stop()
@@ -298,7 +298,7 @@ var devCmd = &cobra.Command{
 		executorName := "myexecutor"
 		log.WithFields(log.Fields{"ExecutorID": executorID, "ExecutorType": executorType, "ExecutorName": executorName}).Info("Registering a new executor")
 
-		executor := core.CreateExecutor(executorID, executorType, executorName, colonyID, "", 1, 0, "", 0, time.Now(), time.Now())
+		executor := core.CreateExecutor(executorID, executorType, executorName, colonyID, time.Now(), time.Now())
 		_, err = client.AddExecutor(executor, colonyPrvKey)
 		CheckError(err)
 
