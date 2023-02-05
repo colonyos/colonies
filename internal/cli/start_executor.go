@@ -122,8 +122,8 @@ var workerStartCmd = &cobra.Command{
 		err = os.WriteFile("/tmp/executorprvkey", []byte(executorPrvKey), 0644)
 		CheckError(err)
 
-		log.WithFields(log.Fields{"ExecutorID": executorID, "ExecutorName": ExecutorName, "ExecutorType": ExecutorType, "ColonyID": ColonyID, "CPU": CPU, "Cores": Cores, "Mem": Mem, "GPU": GPU, "GPUs": GPUs, "Long": Long, "Lat": Lat}).Info("Register a new Executor")
-		executor := core.CreateExecutor(executorID, ExecutorType, ExecutorName, ColonyID, CPU, Cores, Mem, GPU, GPUs, time.Now(), time.Now())
+		log.WithFields(log.Fields{"ExecutorID": executorID, "ExecutorName": ExecutorName, "ExecutorType": ExecutorType, "ColonyID": ColonyID, "Long": Long, "Lat": Lat}).Info("Register a new Executor")
+		executor := core.CreateExecutor(executorID, ExecutorType, ExecutorName, ColonyID, time.Now(), time.Now())
 		executor.Location.Long = Long
 		executor.Location.Lat = Lat
 		_, err = client.AddExecutor(executor, ColonyPrvKey)
@@ -294,8 +294,8 @@ var workerRegisterCmd = &cobra.Command{
 		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Info("Starting a Colonies client")
 		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
 
-		log.WithFields(log.Fields{"executorID": executorID, "executorName": ExecutorName, "executorType:": ExecutorType, "colonyID": ColonyID, "CPU": CPU, "Cores": Cores, "Mem": Mem, "GPU": GPU, "GPUs": GPUs}).Info("Register a new Executor")
-		executor := core.CreateExecutor(executorID, ExecutorType, ExecutorName, ColonyID, CPU, Cores, Mem, GPU, GPUs, time.Now(), time.Now())
+		log.WithFields(log.Fields{"executorID": executorID, "executorName": ExecutorName, "executorType:": ExecutorType, "colonyID": ColonyID}).Info("Register a new Executor")
+		executor := core.CreateExecutor(executorID, ExecutorType, ExecutorName, ColonyID, time.Now(), time.Now())
 		_, err = client.AddExecutor(executor, ColonyPrvKey)
 		CheckError(err)
 

@@ -50,6 +50,9 @@ func CreateProcess(processSpec *ProcessSpec) *Process {
 		IsAssigned:  false,
 		Attributes:  attributes,
 		ProcessSpec: *processSpec,
+		Input:       make([]string, 0),
+		Output:      make([]string, 0),
+		Errors:      make([]string, 0),
 	}
 
 	return process
