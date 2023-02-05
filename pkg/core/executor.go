@@ -16,60 +16,48 @@ type Location struct {
 	Lat  float64 `json:"lat"`
 }
 
+type Function struct {
+	Name string   `json:"funcname"`
+	Args []string `json:"args"`
+}
+
 type Executor struct {
-	ID                string    `json:"id"`
-	Type       string    `json:"type"`
-	Name              string    `json:"name"`
-	ColonyID          string    `json:"colonyid"`
-	CPU               string    `json:"cpu"`
-	Cores             int       `json:"cores"`
-	Mem               int       `json:"mem"`
-	GPU               string    `json:"gpu"`
-	GPUs              int       `json:"gpus"`
-	State             int       `json:"state"`
-	CommissionTime    time.Time `json:"commissiontime"`
-	LastHeardFromTime time.Time `json:"lastheardfromtime"`
-	Location          Location  `json:"location"`
+	ID                string     `json:"executorid"`
+	Type              string     `json:"executortype"`
+	Name              string     `json:"executorname"`
+	ColonyID          string     `json:"colonyid"`
+	State             int        `json:"state"`
+	CommissionTime    time.Time  `json:"commissiontime"`
+	LastHeardFromTime time.Time  `json:"lastheardfromtime"`
+	Location          Location   `json:"location"`
+	Functions         []Function `json:"functions"`
 }
 
 func CreateExecutor(id string,
 	executorType string,
 	name string,
 	colonyID string,
-	cpu string,
-	cores int,
-	mem int,
-	gpu string,
-	gpus int,
 	commissionTime time.Time,
 	lastHeardFromTime time.Time) *Executor {
 	return &Executor{ID: id,
-		Type:       executorType,
+		Type:              executorType,
 		Name:              name,
 		ColonyID:          colonyID,
-		CPU:               cpu,
-		Cores:             cores,
-		Mem:               mem,
-		GPU:               gpu,
-		GPUs:              gpus,
 		State:             PENDING,
 		CommissionTime:    commissionTime,
-		LastHeardFromTime: lastHeardFromTime}
+		LastHeardFromTime: lastHeardFromTime,
+		Functions:         make([]Function, 0),
+	}
 }
 
 func CreateExecutorFromDB(id string,
 	executorType string,
 	name string,
 	colonyID string,
-	cpu string,
-	cores int,
-	mem int,
-	gpu string,
-	gpus int,
 	state int,
 	commissionTime time.Time,
 	lastHeardFromTime time.Time) *Executor {
-	executor := CreateExecutor(id, executorType, name, colonyID, cpu, cores, mem, gpu, gpus, commissionTime, lastHeardFromTime)
+	executor := CreateExecutor(id, executorType, name, colonyID, commissionTime, lastHeardFromTime)
 	executor.State = state
 	return executor
 }
@@ -129,11 +117,6 @@ func (executor *Executor) Equals(executor2 *Executor) bool {
 		executor.Type == executor2.Type &&
 		executor.Name == executor2.Name &&
 		executor.ColonyID == executor2.ColonyID &&
-		executor.CPU == executor2.CPU &&
-		executor.Cores == executor2.Cores &&
-		executor.Mem == executor2.Mem &&
-		executor.GPU == executor2.GPU &&
-		executor.GPUs == executor2.GPUs &&
 		executor.State == executor2.State {
 		return true
 	}
@@ -170,7 +153,7 @@ func (executor *Executor) Approve() {
 }
 
 func (executor *Executor) Reject() {
-executor.State = REJECTED
+	executor.State = REJECTED
 }
 
 func (executor *Executor) SetID(id string) {
