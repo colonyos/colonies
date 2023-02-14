@@ -1,5 +1,5 @@
 # Tutorial
-In this tutorial we will develop a Colony worker using the Golang SDK. The worker calculates the last number in a given Fibonacci serie.
+In this tutorial we will develop a Colonies Executor using the Golang SDK. The executor calculates the last number in a given Fibonacci serie.
 
 ## 1. Set up a Colonies development server
 ```console
@@ -41,7 +41,7 @@ func main() {
 ```
 
 
-## 6. Fibonacci Solver worker code (examples/solver.go) 
+## 6. Fibonacci Solver executor code (examples/solver.go) 
 ```go
 func main() {
     colonyID := os.Getenv("COLONIES_COLONY_ID")
@@ -169,4 +169,4 @@ Attributes:
 +------------------------------------------------------------------+--------------+-------+------+
 ```
 
-See examples/generate_sub.go and examples/solver_pub.go for an event-driven version of the generator and worker.
+See examples/generate_sub.go and examples/solver_pub.go for an event-driven version of the generator and executor.

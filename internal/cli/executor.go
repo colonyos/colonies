@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"time"
 
 	"github.com/colonyos/colonies/pkg/client"
 	"github.com/colonyos/colonies/pkg/core"
@@ -17,24 +18,28 @@ import (
 
 func init() {
 	executorCmd.AddCommand(registerExecutorCmd)
+	executorCmd.AddCommand(unregisterExecutorCmd)
 	executorCmd.AddCommand(lsExecutorsCmd)
 	executorCmd.AddCommand(approveExecutorCmd)
 	executorCmd.AddCommand(rejectExecutorCmd)
-	executorCmd.AddCommand(deleteExecutorCmd)
 	executorCmd.AddCommand(resolveExecutorCmd)
-	executorCmd.AddCommand(workerStartCmd)
-	executorCmd.AddCommand(workerRegisterCmd)
-	executorCmd.AddCommand(workerUnregisterCmd)
+	executorCmd.AddCommand(osExecutorCmd)
 	rootCmd.AddCommand(executorCmd)
 
 	executorCmd.PersistentFlags().StringVarP(&ColonyID, "colonyid", "", "", "Colony Id")
 	executorCmd.PersistentFlags().StringVarP(&ServerHost, "host", "", "localhost", "Server host")
 	executorCmd.PersistentFlags().IntVarP(&ServerPort, "port", "", -1, "Server HTTP port")
 
+	registerExecutorCmd.Flags().StringVarP(&ColonyID, "colonyid", "", "", "Colony Id")
 	registerExecutorCmd.Flags().StringVarP(&ColonyPrvKey, "colonyprvkey", "", "", "Colony private key")
 	registerExecutorCmd.Flags().StringVarP(&ExecutorPrvKey, "executorprvkey", "", "", "Executor private key")
-	registerExecutorCmd.Flags().StringVarP(&SpecFile, "spec", "", "", "JSON specification of a Colony Executor")
-	registerExecutorCmd.MarkFlagRequired("spec")
+	registerExecutorCmd.Flags().StringVarP(&SpecFile, "spec", "", "", "JSON specification of an executor")
+	registerExecutorCmd.Flags().StringVarP(&ExecutorName, "name", "", "", "Executor name")
+	registerExecutorCmd.Flags().StringVarP(&ExecutorType, "type", "", "", "Executor type")
+	registerExecutorCmd.Flags().BoolVarP(&Approve, "approve", "", false, "Also, approve the added executor")
+
+	unregisterExecutorCmd.Flags().StringVarP(&ColonyPrvKey, "colonyprvkey", "", "", "Colony private key")
+	unregisterExecutorCmd.Flags().StringVarP(&ExecutorID, "executorid", "", "", "Executor Id")
 
 	lsExecutorsCmd.Flags().BoolVarP(&JSON, "json", "", false, "Print JSON instead of tables")
 	lsExecutorsCmd.Flags().BoolVarP(&Full, "full", "", false, "Print detail info")
@@ -49,12 +54,8 @@ func init() {
 	rejectExecutorCmd.Flags().StringVarP(&ExecutorID, "executorid", "", "", "Executor Id")
 	rejectExecutorCmd.MarkFlagRequired("executorid")
 
-	deleteExecutorCmd.Flags().StringVarP(&ColonyPrvKey, "colonyprvkey", "", "", "Colony private key")
-	deleteExecutorCmd.Flags().StringVarP(&ExecutorID, "executorid", "", "", "Executor Id")
-	deleteExecutorCmd.MarkFlagRequired("executorid")
-
 	resolveExecutorCmd.Flags().StringVarP(&ExecutorPrvKey, "executorprvkey", "", "", "Executor private key")
-	resolveExecutorCmd.Flags().StringVarP(&TargetExecutorName, "targetname", "", "", "Target executor Id")
+	resolveExecutorCmd.Flags().StringVarP(&TargetExecutorName, "executorname", "", "", "Executor name to resolve Id for")
 	resolveExecutorCmd.MarkFlagRequired("executorid")
 }
 
@@ -71,9 +72,6 @@ var registerExecutorCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		parseServerEnv()
 
-		jsonSpecBytes, err := ioutil.ReadFile(SpecFile)
-		CheckError(err)
-
 		if ColonyID == "" {
 			ColonyID = os.Getenv("COLONIES_COLONY_ID")
 		}
@@ -81,27 +79,54 @@ var registerExecutorCmd = &cobra.Command{
 			CheckError(errors.New("Unknown Colony Id"))
 		}
 
-		executor, err := core.ConvertJSONToExecutor(string(jsonSpecBytes))
+		crypto := crypto.CreateCrypto()
+		var executorPrvKey string
+		var err error
+		if ExecutorPrvKey != "" {
+			executorPrvKey = ExecutorPrvKey
+			if len(executorPrvKey) != 64 {
+				CheckError(errors.New("Invalid private key length"))
+			}
+		} else {
+			executorPrvKey, err = crypto.GeneratePrivateKey()
+			CheckError(err)
+		}
+
+		executorID, err := crypto.GenerateID(executorPrvKey)
 		CheckError(err)
+
+		var executor *core.Executor
+		if SpecFile != "" {
+			jsonSpecBytes, err := ioutil.ReadFile(SpecFile)
+			CheckError(err)
+			executor, err = core.ConvertJSONToExecutor(string(jsonSpecBytes))
+			CheckError(err)
+		} else {
+			if ExecutorName == "" {
+				ExecutorName = os.Getenv("COLONIES_EXECUTOR_NAME")
+				if os.Getenv("HOSTNAME") != "" {
+					ExecutorName += "."
+					ExecutorName += os.Getenv("HOSTNAME")
+				}
+			}
+
+			if ExecutorName == "" {
+				CheckError(errors.New("Executor name not specified"))
+			}
+
+			if ExecutorType == "" {
+				ExecutorType = os.Getenv("COLONIES_EXECUTOR_TYPE")
+			}
+
+			if ExecutorType == "" {
+				CheckError(errors.New("Executor type not specified"))
+			}
+			executor = core.CreateExecutor(executorID, ExecutorType, ExecutorName, ColonyID, time.Now(), time.Now())
+		}
 
 		keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
 		CheckError(err)
 
-		crypto := crypto.CreateCrypto()
-
-		var prvKey string
-		if ExecutorPrvKey != "" {
-			prvKey = ExecutorPrvKey
-			if len(prvKey) != 64 {
-				CheckError(errors.New("Invalid private key length"))
-			}
-		} else {
-			prvKey, err = crypto.GeneratePrivateKey()
-			CheckError(err)
-		}
-
-		executorID, err := crypto.GenerateID(prvKey)
-		CheckError(err)
 		executor.SetID(executorID)
 		executor.SetColonyID(ColonyID)
 
@@ -116,10 +141,63 @@ var registerExecutorCmd = &cobra.Command{
 		addedExecutor, err := client.AddExecutor(executor, ColonyPrvKey)
 		CheckError(err)
 
-		err = keychain.AddPrvKey(executorID, prvKey)
+		err = keychain.AddPrvKey(executorID, executorPrvKey)
 		CheckError(err)
 
-		log.WithFields(log.Fields{"executorID": addedExecutor.ID, "colonyID": ColonyID}).Info("Executor registered")
+		log.Info("Saving executor Id to /tmp/executorid")
+		err = os.WriteFile("/tmp/executorid", []byte(executorID), 0644)
+		CheckError(err)
+
+		err = os.WriteFile("/tmp/executorprvkey", []byte(executorPrvKey), 0644)
+		CheckError(err)
+		log.Info("Saving executor prvKey to /tmp/executorprvkey")
+
+		if Approve {
+			log.WithFields(log.Fields{"executorID": executorID}).Info("Approving Executor")
+			err = client.ApproveExecutor(executorID, ColonyPrvKey)
+			CheckError(err)
+		}
+
+		log.WithFields(log.Fields{"executorName": executor.Name, "executorType": executor.Type, "executorID": addedExecutor.ID, "colonyID": ColonyID}).Info("Executor registered")
+	},
+}
+
+var unregisterExecutorCmd = &cobra.Command{
+	Use:   "unregister",
+	Short: "Unregister a colony executor",
+	Long:  "Unregister a colony executor",
+	Run: func(cmd *cobra.Command, args []string) {
+		parseServerEnv()
+
+		if ColonyID == "" {
+			ColonyID = os.Getenv("COLONIES_COLONY_ID")
+		}
+		if ColonyID == "" {
+			CheckError(errors.New("Unknown Colony Id"))
+		}
+
+		if ColonyPrvKey == "" {
+			ColonyPrvKey = os.Getenv("COLONIES_COLONY_PRVKEY")
+		}
+		if ColonyPrvKey == "" {
+			keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
+			CheckError(err)
+
+			ColonyPrvKey, err = keychain.GetPrvKey(ColonyID)
+			CheckError(err)
+		}
+
+		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Info("Starting a Colonies client")
+		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
+
+		if ExecutorID != "" {
+			err := client.DeleteExecutor(ExecutorID, ColonyPrvKey)
+			CheckError(err)
+		} else {
+			unregisterExecutorFromTmp(client)
+		}
+
+		log.WithFields(log.Fields{"executorID": ExecutorID, "colonyID": ColonyID}).Info("Executor unregistered")
 	},
 }
 
@@ -296,35 +374,17 @@ var rejectExecutorCmd = &cobra.Command{
 	},
 }
 
-var deleteExecutorCmd = &cobra.Command{
-	Use:   "unregister",
-	Short: "Unregister a colony executor",
-	Long:  "Unregister a colony executor",
-	Run: func(cmd *cobra.Command, args []string) {
-		parseServerEnv()
+func unregisterExecutorFromTmp(client *client.ColoniesClient) {
+	mutex.Lock()
+	defer mutex.Unlock()
 
-		keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
-		CheckError(err)
+	executorIDBytes, err := os.ReadFile("/tmp/executorid")
+	CheckError(err)
 
-		if ColonyID == "" {
-			ColonyID = os.Getenv("COLONIES_COLONY_ID")
-		}
-		if ColonyID == "" {
-			CheckError(errors.New("Unknown Colony Id"))
-		}
+	executorID := string(executorIDBytes)
 
-		if ColonyPrvKey == "" {
-			ColonyPrvKey, err = keychain.GetPrvKey(ColonyID)
-			CheckError(err)
-		}
-		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Info("Starting a Colonies client")
-		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
-
-		err = client.DeleteExecutor(ExecutorID, ColonyPrvKey)
-		CheckError(err)
-
-		log.WithFields(log.Fields{"executorID": ExecutorID, "colonyID": ColonyID}).Info("Executor unregistered")
-	},
+	err = client.DeleteExecutor(executorID, ColonyPrvKey)
+	CheckError(err)
 }
 
 var resolveExecutorCmd = &cobra.Command{

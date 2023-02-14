@@ -24,8 +24,8 @@ var monitoringCmd = &cobra.Command{
 
 var monitoringStartCmd = &cobra.Command{
 	Use:   "start",
-	Short: "Register and start a worker",
-	Long:  "Register and start a worker",
+	Short: "Start a monitoring server",
+	Long:  "Start a monitoring server",
 	Run: func(cmd *cobra.Command, args []string) {
 		parseServerEnv()
 

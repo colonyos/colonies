@@ -64,7 +64,7 @@
         }
     },
     {
-        "name": "start_dask_workers",
+        "name": "start_dask_executors",
         "func": "sleep",
         "args": [
             "5"
@@ -78,7 +78,7 @@
         }
     },
     {
-        "name": "dask_worker_1",
+        "name": "dask_executor_1",
         "func": "sleep",
         "args": [
             "1"
@@ -86,12 +86,12 @@
         "conditions": {
             "executortype": "cli",
             "dependencies": [
-                "start_dask_workers"
+                "start_dask_executors"
             ]
         }
     },
     {
-        "name": "dask_worker_2",
+        "name": "dask_executor_2",
         "func": "sleep",
         "args": [
             "1"
@@ -99,12 +99,12 @@
         "conditions": {
             "executortype": "cli",
             "dependencies": [
-                "start_dask_workers"
+                "start_dask_executors"
             ]
         }
     },
     {
-        "name": "dask_worker_3",
+        "name": "dask_executor_3",
         "func": "sleep",
         "args": [
             "1"
@@ -112,12 +112,12 @@
         "conditions": {
             "executortype": "cli",
             "dependencies": [
-                "start_dask_workers"
+                "start_dask_executors"
             ]
         }
     },
     {
-        "name": "dask_worker_4",
+        "name": "dask_executor_4",
         "func": "sleep",
         "args": [
             "1"
@@ -125,12 +125,12 @@
         "conditions": {
             "executortype": "cli",
             "dependencies": [
-                "start_dask_workers"
+                "start_dask_executors"
             ]
         }
     },
     {
-        "name": "dask_worker_5",
+        "name": "dask_executor_5",
         "func": "sleep",
         "args": [
             "1"
@@ -138,7 +138,7 @@
         "conditions": {
             "executortype": "cli",
             "dependencies": [
-                "start_dask_workers"
+                "start_dask_executors"
             ]
         }
     },
@@ -151,11 +151,11 @@
         "conditions": {
             "executortype": "cli",
             "dependencies": [
-                "dask_worker_1",
-                "dask_worker_2",
-                "dask_worker_3",
-                "dask_worker_4",
-                "dask_worker_5"
+                "dask_executor_1",
+                "dask_executor_2",
+                "dask_executor_3",
+                "dask_executor_4",
+                "dask_executor_5"
             ]
         }
     },

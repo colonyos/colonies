@@ -70,7 +70,7 @@ func TestSubmitWorkflowSpec(t *testing.T) {
 	err = client.Close(assignedProcess3.ID, env.executorPrvKey)
 	assert.Nil(t, err)
 
-	// Now it should be possible to assign task4 to a worker
+	// Now it should be possible to assign task4 to an executor
 	assignedProcess4, err := client.AssignProcess(env.colonyID, -1, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.True(t, assignedProcess4.ProcessSpec.Name == "task4")
@@ -287,7 +287,7 @@ func TestSubmitWorkflowSpecWithInputOutput(t *testing.T) {
 	err = client.CloseWithOutput(assignedProcess3.ID, []string{"output_task3"}, env.executorPrvKey)
 	assert.Nil(t, err)
 
-	// Now it should be possible to assign task4 to a worker
+	// Now it should be possible to assign task4 to an executor
 	assignedProcess4, err := client.AssignProcess(env.colonyID, -1, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.Len(t, assignedProcess4.Input, 2)

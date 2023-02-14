@@ -44,14 +44,14 @@ Now, start the development server. The development server will automatically add
 colonies dev
 ```
 
-## Start a worker
+## Start an executor 
 Open another terminal (and *source examples/devenv*).
 
 ```console
-colonies worker start --name myworker --executortype cli 
+colonies  executor os start --executorname my_executor --executortype cli 
 ```
 ## Submit a process specification
-Example process specification (see examples/sleep.json). The Colonies worker will pull the process specification from the Colonies dev server and start a *sleep* process. This will cause the worker above to sleep for 100s. The *env* array in the JSON below will automatically be exported as real environment variables in the sleep process.
+Example process specification (see examples/sleep.json). The Colonies Executor will pull the process specification from the Colonies dev server and start a *sleep* process. This will cause the executor above to sleep for 100s. The *env* array in the JSON below will automatically be exported as real environment variables in the sleep process.
 ```json
 {
   "conditions": {
@@ -129,9 +129,9 @@ Attributes:
 ```
 
 ## Execution time constraints
-The *maxecution* attribute specifies the maxiumum execution time in seconds before the process specification (job) is moved back to the queue. The *maxretries* attributes specifies how many times it may be moved back to the queue. Execution time constraint is an import feature of Colonies to implement robust workflows. If a worker crash, the job will automatically moved back to the queue and be executed by another worker. 
+The *maxecution* attribute specifies the maxiumum execution time in seconds before the process specification (job) is moved back to the queue. The *maxretries* attributes specifies how many times it may be moved back to the queue. Execution time constraint is an import feature of Colonies to implement robust workflows. If a executor crash, the process will automatically moved back to the queue and be executed by another executor. 
 
-This mechanism thus offer a last line of defense against failures and enables advanched software engineering disciplines such as [Chaos Engineering](https://en.wikipedia.org/wiki/Chaos_engineering). For example, a Chaos monkey may randomly kill worker pods in Kubernetes and Colonies guarantees that all jobs are eventually executed. 
+This mechanism thus offer a last line of defense against failures and enables advanched software engineering disciplines such as [Chaos Engineering](https://en.wikipedia.org/wiki/Chaos_engineering). For example, a Chaos monkey may randomly kill executor pods in Kubernetes and Colonies guarantees that all jobs are eventually executed. 
 
 ```json
 {

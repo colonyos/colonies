@@ -120,7 +120,7 @@ func (server *ColoniesServer) handleAssignProcessHTTPRequest(c *gin.Context, rec
 			// Wait for a new process to be submitted to a ColoniesServer in the cluster
 			server.controller.eventHandler.waitForProcess(executor.Type, core.WAITING, "", ctx)
 
-			// Try again! Note there is no guarantees we was assigned a process since multiple workers competes getting jobs
+			// Try again! Note there is no guarantees we was assigned a process since multiple executors competes getting jobs
 			process, assignErr = server.controller.assign(recoveredID, msg.ColonyID, msg.Latest)
 		}
 	}

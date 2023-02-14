@@ -213,7 +213,7 @@ INFO[0000] Starting a Colonies client                    Insecure=true ServerHos
 +------------------------------------------------------------------+------+--------------------+---------------------+---------------+
 ```
 
-The waiting queue will just keep on increasing if there are no workers executing the processes. However, we can set **MaxWaitingTime** on the process spec so that processes are automatically removed if not executed after a certain amount of time. In the example below, they will be removed after 3 seconds if not executed.
+The waiting queue will just keep on increasing if there are no executors executing the processes. However, we can set **MaxWaitingTime** on the process spec so that processes are automatically removed if not executed after a certain amount of time. In the example below, they will be removed after 3 seconds if not executed.
 
 ```json
 [

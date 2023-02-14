@@ -4,7 +4,7 @@
 ![ColonyOSLogo](docs/images/ColonyOsLogoNoShaddow2.png)
 
 # What is Colonies?
-Colonies is a **distributed serverless FaaS framework** for process orchestration and managing AI/ML workloads across heterogeneous computing platforms such public clouds, edge servers as well as web apps or IoT devices.
+Colonies is a framework for managing AI/ML workloads across heterogeneous computing platforms, e.g. public clouds, edge servers as well as web apps or IoT devices. It can be used a building block to implement a **distributed FaaS framework** or a **meta-operating system**.
 
 ## Key features
 * Users submit specifications of functions (or workflows) to the Colonies server they want to run. These functions will then be executed by **Executors**, which are computer programs residing anywhere on the Internet.
@@ -44,15 +44,15 @@ colonies dev
 colonies process submit --spec sayhello.json 
 ```
 
-### Start a Unix worker (executes functions as Unix commands)
+### Start a OS executor (executes functions as Unix commands)
 ```console
-colonies worker start --name testworker --executortype cli 
+colonies executor os start --name testexecutor --executortype cli 
 
 INFO[0000] Lauching process                              Args="[]" Func="echo sayhello"
 sayhello
 ```
 
-See [this guide](docs/Worker.md) how to implement workers in Python, Julia, Go, and JavaScript.
+See [this guide](docs/Executor.md) how to implement executors in Python, Julia, Go, and JavaScript.
 
 ## Dashboard screenshots
 Below are some screenshots from the [Colonies Dashboard](https://github.com/colonyos/dashboard):
@@ -68,7 +68,7 @@ Below are some screenshots from the [Colonies Dashboard](https://github.com/colo
 ## Guides
 * [Introduction](docs/Introduction.md)
 * [Getting started](docs/GettingStarted.md)
-* [How to implement a Colonies executor](docs/Worker.md)
+* [How to implement a Colonies executor](docs/Executor.md)
 * [How to implement a Fibonacci executor in Go](docs/GoTutorial.md)
 * [How to create workflows DAGs](docs/Workflows.md)
 * [How to use generators](docs/Generators.md)
