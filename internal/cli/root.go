@@ -45,11 +45,6 @@ var TargetExecutorID string
 var TargetExecutorType string
 var TargetExecutorName string
 var WorkflowID string
-var CPU string
-var Cores int
-var Mem int
-var GPU string
-var GPUs int
 var ColonyPrvKey string
 var ColonyID string
 var ProcessID string
@@ -94,6 +89,7 @@ var WaitForPrevProcessGraph bool
 var Long float64
 var Lat float64
 var ExclusiveAssign bool
+var Approve bool
 
 func init() {
 	rootCmd.PersistentFlags().BoolVarP(&Verbose, "verbose", "v", false, "verbose output")

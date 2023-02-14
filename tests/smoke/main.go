@@ -40,7 +40,7 @@ func submitProcess(client *client.ColoniesClient, colonyID string, executorPrvKe
 		MaxWaitTime: 100,
 		MaxExecTime: 2,
 		MaxRetries:  10,
-		Conditions:  core.Conditions{ColonyID: colonyID, ExecutorType: "bemisworker"},
+		Conditions:  core.Conditions{ColonyID: colonyID, ExecutorType: "bemisexecutor"},
 		Env:         make(map[string]string)}
 
 	client.SubmitProcessSpec(&processSpec, executorPrvKey)
@@ -54,7 +54,7 @@ func startCron(client *client.ColoniesClient, colonyID string, executorPrvKey st
 		MaxWaitTime: -1,
 		MaxExecTime: 2,
 		MaxRetries:  10,
-		Conditions:  core.Conditions{ColonyID: colonyID, ExecutorType: "bemisworker"},
+		Conditions:  core.Conditions{ColonyID: colonyID, ExecutorType: "bemisexecutor"},
 		Env:         make(map[string]string)}
 
 	processSpec2 := core.ProcessSpec{
@@ -64,7 +64,7 @@ func startCron(client *client.ColoniesClient, colonyID string, executorPrvKey st
 		MaxWaitTime: -1,
 		MaxExecTime: 2,
 		MaxRetries:  30,
-		Conditions:  core.Conditions{ColonyID: colonyID, ExecutorType: "bemisworker"},
+		Conditions:  core.Conditions{ColonyID: colonyID, ExecutorType: "bemisexecutor"},
 		Env:         make(map[string]string)}
 
 	workflowSpec := core.CreateWorkflowSpec(colonyID)
@@ -87,7 +87,7 @@ func startGenerator(client *client.ColoniesClient, colonyID string, executorPrvK
 		MaxWaitTime: -1,
 		MaxExecTime: 2,
 		MaxRetries:  10,
-		Conditions:  core.Conditions{ColonyID: colonyID, ExecutorType: "bemisworker"},
+		Conditions:  core.Conditions{ColonyID: colonyID, ExecutorType: "bemisexecutor"},
 		Env:         make(map[string]string)}
 
 	processSpec2 := core.ProcessSpec{
@@ -97,7 +97,7 @@ func startGenerator(client *client.ColoniesClient, colonyID string, executorPrvK
 		MaxWaitTime: -1,
 		MaxExecTime: 2,
 		MaxRetries:  30,
-		Conditions:  core.Conditions{ColonyID: colonyID, ExecutorType: "bemisworker"},
+		Conditions:  core.Conditions{ColonyID: colonyID, ExecutorType: "bemisexecutor"},
 		Env:         make(map[string]string)}
 
 	workflowSpec := core.CreateWorkflowSpec(colonyID)
@@ -118,14 +118,14 @@ func startGenerator(client *client.ColoniesClient, colonyID string, executorPrvK
 	}()
 }
 
-func startWorker(client *client.ColoniesClient, colonyID string, colonyPrvKey string) {
+func startExecutor(client *client.ColoniesClient, colonyID string, colonyPrvKey string) {
 	crypto := crypto.CreateCrypto()
 	executorPrvKey, err := crypto.GeneratePrivateKey()
 	checkError(err)
 	executorID, err := crypto.GenerateID(executorPrvKey)
 	checkError(err)
 
-	executor := core.CreateExecutor(executorID, "bemisworker", core.GenerateRandomID(), colonyID, "AMD Ryzen 9 5950X (32) @ 3.400GHz", 32, 80326, "NVIDIA GeForce RTX 2080 Ti Rev. A", 1, time.Now(), time.Now())
+	executor := core.CreateExecutor(executorID, "bemisexecutor", core.GenerateRandomID(), colonyID, time.Now(), time.Now())
 
 	executor.Location.Long = 65.6120464058654 + rand.Float64()
 	executor.Location.Lat = 22.132275667285477 + rand.Float64()
@@ -173,7 +173,7 @@ func main() {
 	client := client.CreateColoniesClient(serverHost, serverPort, insecure, true)
 
 	for i := 0; i < 20; i++ {
-		startWorker(client, colonyID, colonyPrvKey)
+		startExecutor(client, colonyID, colonyPrvKey)
 	}
 
 	startGenerator(client, colonyID, executorPrvKey)

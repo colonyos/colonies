@@ -1,5 +1,5 @@
 {
-    "name": "ice-worker",
+    "executorname": "ice-executor",
     "executortype": "cli",
     "location": {
         "long": 65.61204640586546,
