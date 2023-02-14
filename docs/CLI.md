@@ -19,7 +19,7 @@ Output:
 ## List all Colonies 
 Note that root password of Colonies server is also required to list all colonies.
 ```console
-./bin/colonies colony ls --serverid=9289dfccedf27392810b96968535530bb69f90afe7c35738e0e627f3810d943e 
+./bin/colonies colony ls --serverid=039231c7644e04b6895471dd5335cf332681c54e27f81fac54f9067b3f2c0103
 ```
 Output:
 ```
@@ -35,13 +35,8 @@ Only the colony owner is allowed to register a new Colony Executor.
 
 ```json
 {
-    "name": "my_executor",
+    "executorname": "my_executor",
     "executortype": "my_executor_type",
-    "cpu": "AMD Ryzen 9 5950X (32) @ 3.400GHz",
-    "cores": 32,
-    "mem": 80326,
-    "gpu": "NVIDIA GeForce RTX 2080 Ti Rev. A",
-    "gpus": 1
 }
 ```
 
@@ -50,17 +45,30 @@ Only the colony owner is allowed to register a new Colony Executor.
 ```
 Output:
 ```
-The *colonyprvkey* is automatically obtained from the keychain if not specified. The *colonyid* can also be specified using an environmental variables.
+The *colonyprvkey* is automatically obtained from the keychain or environmental variable (COLONIES_COLONY_PRVKEY) if not specified. The *colonyid* can also be specified using an environmental variables.
 ```
 
 ```console
-export COLONIES_COLONYID="0f4f350d264d1cffdec0d62c723a7da8b730c6863365da75697fd26a6d79ccc5"
+export COLONIES_COLONY_ID="0f4f350d264d1cffdec0d62c723a7da8b730c6863365da75697fd26a6d79ccc5"
 ./bin/colonies executor register --spec ./examples/executor.json
 ```
 Output:
 ```
 4599f89a8afb7ecd9beec0b7861fab3bacba3a0e2dbe050e9f7584f3c9d7ac58
 ```
+ 
+It is also possible to register an executor without specifying a spec file.
+```console
+./bin/colonies executor register --name test_executor --type my_executor 
+```
+
+It is also possible to set the following environmental variables to leave out the name or type flag.
+```console
+export COLONIES_EXECUTOR_NAME="test_executor"
+COLONIES_EXECUTOR_TYPE="my_executor"
+```
+
+If HOSTNAME is set, then executor name will be set to COLONIES_EXECUTOR_NAME.HOSTNAME.
 
 ## List registered Colony Executors
 ```console
@@ -92,6 +100,11 @@ Output:
 +------------------------------------------------------------------+-------------+----------+
 | 4599f89a8afb7ecd9beec0b7861fab3bacba3a0e2dbe050e9f7584f3c9d7ac58 | my_executor | Approved |
 +------------------------------------------------------------------+-------------+----------+
+```
+
+Note that it is possible to automatically approve an executor by passing the --approve flag to the register command.
+```console
+./bin/colonies executor register --name test_executor --type my_executor --approve
 ```
 
 Similarly, a Colony Executor can be rejected with the "rejected" command. 
