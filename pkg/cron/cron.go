@@ -17,17 +17,17 @@ func Next(cronExpr string) (time.Time, error) {
 	return p.Next(now), nil
 }
 
-func NextIntervall(intervall int) (time.Time, error) {
+func NextInterval(interval int) (time.Time, error) {
 	now := time.Now()
-	next := now.Add(time.Duration(intervall * int(time.Second)))
+	next := now.Add(time.Duration(interval * int(time.Second)))
 
 	return next, nil
 }
 
-func Random(intervall int) (time.Time, error) {
+func Random(interval int) (time.Time, error) {
 	now := time.Now()
 	min := 00
-	max := intervall
+	max := interval
 	randomDiff := rand.Intn(max-min) + min
 	next := now.Add(time.Duration(randomDiff * int(time.Second)))
 

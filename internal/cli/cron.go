@@ -35,8 +35,8 @@ func init() {
 	addCronCmd.Flags().StringVarP(&CronName, "name", "", "", "Cron name")
 	addCronCmd.MarkFlagRequired("name")
 	addCronCmd.Flags().StringVarP(&CronExpr, "cron", "", "", "Cron expression")
-	addCronCmd.Flags().IntVarP(&CronIntervall, "interval", "", -1, "Interval in seconds")
-	addCronCmd.Flags().BoolVarP(&CronRandom, "random", "", false, "Schedule a random cron, intervall must be specified")
+	addCronCmd.Flags().IntVarP(&CronInterval, "interval", "", -1, "Interval in seconds")
+	addCronCmd.Flags().BoolVarP(&CronRandom, "random", "", false, "Schedule a random cron, interval must be specified")
 	addCronCmd.Flags().BoolVarP(&WaitForPrevProcessGraph, "waitprevious", "", false, "Wait for previous processgrah to finish bore schedule a new workflow")
 
 	delCronCmd.Flags().StringVarP(&ExecutorID, "executorid", "", "", "Executor Id")
@@ -127,11 +127,11 @@ var addCronCmd = &cobra.Command{
 			CheckError(errors.New("Cron name not specified"))
 		}
 
-		if CronIntervall == -1 && CronExpr == "-1" {
-			CheckError(errors.New("Cron expression or intervall must be specified"))
+		if CronInterval == -1 && CronExpr == "-1" {
+			CheckError(errors.New("Cron expression or interval must be specified"))
 		}
 
-		cron := core.CreateCron(ColonyID, CronName, CronExpr, CronIntervall, CronRandom, workflowSpecJSON)
+		cron := core.CreateCron(ColonyID, CronName, CronExpr, CronInterval, CronRandom, workflowSpecJSON)
 
 		if WaitForPrevProcessGraph {
 			log.Info("Waiting for previous processgraph to finish")
