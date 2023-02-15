@@ -124,19 +124,24 @@ var registerExecutorCmd = &cobra.Command{
 			executor = core.CreateExecutor(executorID, ExecutorType, ExecutorName, ColonyID, time.Now(), time.Now())
 		}
 
-		keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
-		CheckError(err)
-
 		executor.SetID(executorID)
 		executor.SetColonyID(ColonyID)
 
+		keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
+		CheckError(err)
+
+		fmt.Println("111111111111111111111 ColonyPrvKey:", ColonyPrvKey)
 		if ColonyPrvKey == "" {
+			fmt.Println("1111111111111111111112 ColonyPrvKey:", ColonyPrvKey)
 			ColonyPrvKey = os.Getenv("COLONIES_COLONY_PRVKEY")
 		}
 		if ColonyPrvKey == "" {
+			fmt.Println("1111111111111111111113 ColonyPrvKey:", ColonyPrvKey)
 			ColonyPrvKey, err = keychain.GetPrvKey(ColonyID)
 			CheckError(err)
 		}
+
+		fmt.Println("fffffffffffffffffff")
 
 		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Info("Starting a Colonies client")
 		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
