@@ -30,7 +30,7 @@ var TLSKey string
 var ServerHost string
 var ServerPort int
 var MonitorPort int
-var MonitorIntervall int
+var MonitorInterval int
 var ServerID string
 var ServerPrvKey string
 var SpecFile string
@@ -82,7 +82,7 @@ var Timeout int
 var CronID string
 var CronName string
 var CronExpr string
-var CronIntervall int
+var CronInterval int
 var CronCheckerPeriod int
 var CronRandom bool
 var WaitForPrevProcessGraph bool

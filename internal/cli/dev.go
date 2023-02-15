@@ -76,8 +76,8 @@ var devCmd = &cobra.Command{
 			envErr = true
 		}
 
-		if os.Getenv("COLONIES_MONITOR_INTERVALL") == "" {
-			log.Error("COLONIES_MONITOR_INTERVALL environmental variable missing, try export COLONIES_MONITOR_INTERVALL=\"1\"")
+		if os.Getenv("COLONIES_MONITOR_INTERVAL") == "" {
+			log.Error("COLONIES_MONITOR_INTERVAL environmental variable missing, try export COLONIES_MONITOR_INTERVAL=\"1\"")
 			envErr = true
 		}
 
@@ -311,17 +311,17 @@ var devCmd = &cobra.Command{
 		monitorPort, err := strconv.Atoi(monitorPortStr)
 		CheckError(err)
 
-		intervallStr := os.Getenv("COLONIES_MONITOR_INTERVALL")
-		intervall, err := strconv.Atoi(intervallStr)
+		intervalStr := os.Getenv("COLONIES_MONITOR_INTERVAL")
+		interval, err := strconv.Atoi(intervalStr)
 		CheckError(err)
 
 		log.WithFields(log.Fields{
 			"Port":               monitorPort,
 			"ColoniesServerHost": coloniesServerHost,
 			"ColoniesServerPort": coloniesServerPort,
-			"PullIntervall":      intervall}).
+			"PullInterval":       interval}).
 			Info("Starting Prometheus monitoring server")
-		monitoring.CreateMonitoringServer(monitorPort, coloniesServerHost, coloniesServerPort, true, true, serverPrvKey, intervall)
+		monitoring.CreateMonitoringServer(monitorPort, coloniesServerHost, coloniesServerPort, true, true, serverPrvKey, interval)
 
 		wait := make(chan bool)
 
