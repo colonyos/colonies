@@ -104,14 +104,15 @@ var registerExecutorCmd = &cobra.Command{
 		} else {
 			if ExecutorName == "" {
 				ExecutorName = os.Getenv("COLONIES_EXECUTOR_NAME")
-				if os.Getenv("HOSTNAME") != "" {
-					ExecutorName += "."
-					ExecutorName += os.Getenv("HOSTNAME")
-				}
 			}
 
 			if ExecutorName == "" {
 				CheckError(errors.New("Executor name not specified"))
+			}
+
+			if os.Getenv("HOSTNAME") != "" {
+				ExecutorName += "."
+				ExecutorName += os.Getenv("HOSTNAME")
 			}
 
 			if ExecutorType == "" {

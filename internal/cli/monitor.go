@@ -51,21 +51,21 @@ var monitoringStartCmd = &cobra.Command{
 		MonitorPort, err := strconv.Atoi(MonitorPortEnvStr)
 		CheckError(err)
 
-		IntervallEnvStr := os.Getenv("COLONIES_MONITOR_INTERVALL")
-		if IntervallEnvStr == "" {
-			CheckError(errors.New("COLONIES_MONITORINTERVALL environmental variable not set"))
+		IntervalEnvStr := os.Getenv("COLONIES_MONITOR_INTERVAL")
+		if IntervalEnvStr == "" {
+			CheckError(errors.New("COLONIES_MONITOR_INTERVAL environmental variable not set"))
 		}
-		MonitorIntervall, err = strconv.Atoi(IntervallEnvStr)
+		MonitorInterval, err = strconv.Atoi(IntervalEnvStr)
 		CheckError(err)
 
 		log.WithFields(log.Fields{
 			"Port":               MonitorPort,
 			"ColoniesServerHost": ServerHost,
 			"ColoniesServerPort": ServerPort,
-			"PullIntervall":      MonitorIntervall,
+			"PullInterval":       MonitorInterval,
 			"Insecure":           Insecure}).
 			Info("Starting Prometheus monitoring server")
-		monitoring.CreateMonitoringServer(MonitorPort, ServerHost, ServerPort, Insecure, SkipTLSVerify, ServerPrvKey, MonitorIntervall)
+		monitoring.CreateMonitoringServer(MonitorPort, ServerHost, ServerPort, Insecure, SkipTLSVerify, ServerPrvKey, MonitorInterval)
 
 		wait := make(chan struct{})
 		<-wait

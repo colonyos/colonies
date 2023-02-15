@@ -123,7 +123,7 @@ func (controller *coloniesController) calcNextRun(cron *core.Cron) time.Time {
 	nextRun := time.Time{}
 	var err error
 	if cron.Interval > 0 {
-		nextRun, err = cronlib.NextIntervall(cron.Interval)
+		nextRun, err = cronlib.NextInterval(cron.Interval)
 		if err != nil {
 			log.WithFields(log.Fields{"Error": err}).Error("Failed generate random next run")
 		}

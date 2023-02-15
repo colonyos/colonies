@@ -18,7 +18,7 @@ func TestCronNext(t *testing.T) {
 }
 
 func TestCronNextInternvall(t *testing.T) {
-	nextTime, err := NextIntervall(10)
+	nextTime, err := NextInterval(10)
 	assert.Nil(t, err)
 
 	diff := nextTime.Sub(time.Now())
