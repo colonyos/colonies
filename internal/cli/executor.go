@@ -131,6 +131,9 @@ var registerExecutorCmd = &cobra.Command{
 		executor.SetColonyID(ColonyID)
 
 		if ColonyPrvKey == "" {
+			ColonyPrvKey = os.Getenv("COLONIES_COLONY_PRVKEY")
+		}
+		if ColonyPrvKey == "" {
 			ColonyPrvKey, err = keychain.GetPrvKey(ColonyID)
 			CheckError(err)
 		}
