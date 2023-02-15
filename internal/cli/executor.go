@@ -70,6 +70,7 @@ var registerExecutorCmd = &cobra.Command{
 	Short: "Register a new executor",
 	Long:  "Register a new executor",
 	Run: func(cmd *cobra.Command, args []string) {
+		fmt.Println("XXXXXXXXXXXXXXXXXXXXXXXX register")
 		parseServerEnv()
 
 		if ColonyID == "" {
