@@ -22,7 +22,7 @@ type MonitoringServer struct {
 	insecure               bool
 	skipTLSVerify          bool
 	stat                   *core.Statistics
-	pullIntervall          int
+	pullInterval           int
 }
 
 func CreateMonitoringServer(port int,
@@ -31,7 +31,7 @@ func CreateMonitoringServer(port int,
 	insecure bool,
 	skipTLSVerify bool,
 	serverPrvKey string,
-	pullIntervall int) *MonitoringServer {
+	pullInterval int) *MonitoringServer {
 	server := &MonitoringServer{}
 
 	server.coloniesClient = client.CreateColoniesClient(coloniesServerHost, coloniesServerPort, insecure, skipTLSVerify)
@@ -40,7 +40,7 @@ func CreateMonitoringServer(port int,
 	server.coloniesServerPort = coloniesServerPort
 	server.insecure = insecure
 	server.skipTLSVerify = skipTLSVerify
-	server.pullIntervall = pullIntervall
+	server.pullInterval = pullInterval
 	server.stat = nil
 
 	go func() {
@@ -51,7 +51,7 @@ func CreateMonitoringServer(port int,
 	go func() {
 		for {
 			server.stat = server.fetchStat()
-			time.Sleep(time.Duration(server.pullIntervall) * time.Second)
+			time.Sleep(time.Duration(server.pullInterval) * time.Second)
 		}
 	}()
 
