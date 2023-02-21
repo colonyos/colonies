@@ -11,7 +11,7 @@ import (
 )
 
 func (db *PQDatabase) AddExecutor(executor *core.Executor) error {
-	sqlStatement := `INSERT INTO  ` + db.dbPrefix + `RUNTIMES (RUNTIME_ID, RUNTIME_TYPE, NAME, COLONY_ID, STATE, COMMISSIONTIME, LASTHEARDFROM, LONG, LAT) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`
+	sqlStatement := `INSERT INTO  ` + db.dbPrefix + `EXECUTORS (EXECUTOR_ID, EXECUTOR_TYPE, NAME, COLONY_ID, STATE, COMMISSIONTIME, LASTHEARDFROM, LONG, LAT) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`
 	_, err := db.postgresql.Exec(sqlStatement, executor.ID, executor.Type, executor.Name, executor.ColonyID, 0, time.Now(), executor.LastHeardFromTime, executor.Location.Long, executor.Location.Lat)
 	if err != nil {
 		if strings.HasPrefix(err.Error(), "pq: duplicate key value violates unique constraint") {
@@ -50,7 +50,7 @@ func (db *PQDatabase) parseExecutors(rows *sql.Rows) ([]*core.Executor, error) {
 }
 
 func (db *PQDatabase) GetExecutors() ([]*core.Executor, error) {
-	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `RUNTIMES`
+	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `EXECUTORS`
 	rows, err := db.postgresql.Query(sqlStatement)
 	if err != nil {
 		return nil, err
@@ -62,7 +62,7 @@ func (db *PQDatabase) GetExecutors() ([]*core.Executor, error) {
 }
 
 func (db *PQDatabase) GetExecutorByID(executorID string) (*core.Executor, error) {
-	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `RUNTIMES WHERE RUNTIME_ID=$1`
+	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `EXECUTORS WHERE EXECUTOR_ID=$1`
 	rows, err := db.postgresql.Query(sqlStatement, executorID)
 	if err != nil {
 		return nil, err
@@ -87,7 +87,7 @@ func (db *PQDatabase) GetExecutorByID(executorID string) (*core.Executor, error)
 }
 
 func (db *PQDatabase) GetExecutorsByColonyID(colonyID string) ([]*core.Executor, error) {
-	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `RUNTIMES WHERE COLONY_ID=$1`
+	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `EXECUTORS WHERE COLONY_ID=$1`
 	rows, err := db.postgresql.Query(sqlStatement, colonyID)
 	if err != nil {
 		return nil, err
@@ -104,7 +104,7 @@ func (db *PQDatabase) GetExecutorsByColonyID(colonyID string) ([]*core.Executor,
 }
 
 func (db *PQDatabase) ApproveExecutor(executor *core.Executor) error {
-	sqlStatement := `UPDATE ` + db.dbPrefix + `RUNTIMES SET STATE=1 WHERE RUNTIME_ID=$1`
+	sqlStatement := `UPDATE ` + db.dbPrefix + `EXECUTORS SET STATE=1 WHERE EXECUTOR_ID=$1`
 	_, err := db.postgresql.Exec(sqlStatement, executor.ID)
 	if err != nil {
 		return err
@@ -116,7 +116,7 @@ func (db *PQDatabase) ApproveExecutor(executor *core.Executor) error {
 }
 
 func (db *PQDatabase) RejectExecutor(executor *core.Executor) error {
-	sqlStatement := `UPDATE ` + db.dbPrefix + `RUNTIMES SET STATE=2 WHERE RUNTIME_ID=$1`
+	sqlStatement := `UPDATE ` + db.dbPrefix + `EXECUTORS SET STATE=2 WHERE EXECUTOR_ID=$1`
 	_, err := db.postgresql.Exec(sqlStatement, executor.ID)
 	if err != nil {
 		return err
@@ -128,7 +128,7 @@ func (db *PQDatabase) RejectExecutor(executor *core.Executor) error {
 }
 
 func (db *PQDatabase) MarkAlive(executor *core.Executor) error {
-	sqlStatement := `UPDATE ` + db.dbPrefix + `RUNTIMES SET LASTHEARDFROM=$1 WHERE RUNTIME_ID=$2`
+	sqlStatement := `UPDATE ` + db.dbPrefix + `EXECUTORS SET LASTHEARDFROM=$1 WHERE EXECUTOR_ID=$2`
 	_, err := db.postgresql.Exec(sqlStatement, time.Now(), executor.ID)
 	if err != nil {
 		return err
@@ -138,14 +138,14 @@ func (db *PQDatabase) MarkAlive(executor *core.Executor) error {
 }
 
 func (db *PQDatabase) DeleteExecutorByID(executorID string) error {
-	sqlStatement := `DELETE FROM ` + db.dbPrefix + `RUNTIMES WHERE RUNTIME_ID=$1`
+	sqlStatement := `DELETE FROM ` + db.dbPrefix + `EXECUTORS WHERE EXECUTOR_ID=$1`
 	_, err := db.postgresql.Exec(sqlStatement, executorID)
 	if err != nil {
 		return err
 	}
 
 	// Move back the executor currently running process back to the queue
-	sqlStatement = `UPDATE ` + db.dbPrefix + `PROCESSES SET IS_ASSIGNED=FALSE, START_TIME=$1, END_TIME=$2, ASSIGNED_RUNTIME_ID=$3, STATE=$4 WHERE ASSIGNED_RUNTIME_ID=$5 AND STATE=$6`
+	sqlStatement = `UPDATE ` + db.dbPrefix + `PROCESSES SET IS_ASSIGNED=FALSE, START_TIME=$1, END_TIME=$2, ASSIGNED_EXECUTOR_ID=$3, STATE=$4 WHERE ASSIGNED_EXECUTOR_ID=$5 AND STATE=$6`
 	_, err = db.postgresql.Exec(sqlStatement, time.Time{}, time.Time{}, "", core.WAITING, executorID, core.RUNNING)
 	if err != nil {
 		return err
@@ -155,14 +155,14 @@ func (db *PQDatabase) DeleteExecutorByID(executorID string) error {
 }
 
 func (db *PQDatabase) DeleteExecutorsByColonyID(colonyID string) error {
-	sqlStatement := `DELETE FROM ` + db.dbPrefix + `RUNTIMES WHERE COLONY_ID=$1`
+	sqlStatement := `DELETE FROM ` + db.dbPrefix + `EXECUTORS WHERE COLONY_ID=$1`
 	_, err := db.postgresql.Exec(sqlStatement, colonyID)
 	if err != nil {
 		return err
 	}
 
 	// Move back the executor currently running process back to the queue
-	sqlStatement = `UPDATE ` + db.dbPrefix + `PROCESSES SET IS_ASSIGNED=FALSE, START_TIME=$1, END_TIME=$2, ASSIGNED_RUNTIME_ID=$3, STATE=$4 WHERE TARGET_COLONY_ID=$5 AND STATE=$6`
+	sqlStatement = `UPDATE ` + db.dbPrefix + `PROCESSES SET IS_ASSIGNED=FALSE, START_TIME=$1, END_TIME=$2, ASSIGNED_EXECUTOR_ID=$3, STATE=$4 WHERE TARGET_COLONY_ID=$5 AND STATE=$6`
 	_, err = db.postgresql.Exec(sqlStatement, time.Time{}, time.Time{}, "", core.WAITING, colonyID, core.RUNNING)
 	if err != nil {
 		return err
