@@ -25,7 +25,7 @@ func (db *PQDatabase) AddProcess(process *core.Process) error {
 		deadline = time.Now().Add(time.Duration(maxWaitTime) * time.Second)
 	}
 
-	sqlStatement := `INSERT INTO  ` + db.dbPrefix + `PROCESSES (PROCESS_ID, TARGET_COLONY_ID, TARGET_RUNTIME_IDS, ASSIGNED_RUNTIME_ID, STATE, IS_ASSIGNED, RUNTIME_TYPE, SUBMISSION_TIME, START_TIME, END_TIME, WAIT_DEADLINE, EXEC_DEADLINE, ERRORS, RETRIES, NAME, FUNC, ARGS, MAX_WAIT_TIME, MAX_EXEC_TIME, MAX_RETRIES, DEPENDENCIES, PRIORITY, WAIT_FOR_PARENTS, PARENTS, CHILDREN, PROCESSGRAPH_ID, INPUT, OUTPUT) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28)`
+	sqlStatement := `INSERT INTO  ` + db.dbPrefix + `PROCESSES (PROCESS_ID, TARGET_COLONY_ID, TARGET_EXECUTOR_IDS, ASSIGNED_EXECUTOR_ID, STATE, IS_ASSIGNED, EXECUTOR_TYPE, SUBMISSION_TIME, START_TIME, END_TIME, WAIT_DEADLINE, EXEC_DEADLINE, ERRORS, RETRIES, NAME, FUNC, ARGS, MAX_WAIT_TIME, MAX_EXEC_TIME, MAX_RETRIES, DEPENDENCIES, PRIORITY, WAIT_FOR_PARENTS, PARENTS, CHILDREN, PROCESSGRAPH_ID, INPUT, OUTPUT) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28)`
 	_, err := db.postgresql.Exec(sqlStatement, process.ID, process.ProcessSpec.Conditions.ColonyID, pq.Array(targetExecutorIDs), process.AssignedExecutorID, process.State, process.IsAssigned, process.ProcessSpec.Conditions.ExecutorType, submissionTime, time.Time{}, time.Time{}, deadline, process.ExecDeadline, pq.Array(process.Errors), 0, process.ProcessSpec.Name, process.ProcessSpec.Func, pq.Array(process.ProcessSpec.Args), process.ProcessSpec.MaxWaitTime, process.ProcessSpec.MaxExecTime, process.ProcessSpec.MaxRetries, pq.Array(process.ProcessSpec.Conditions.Dependencies), process.ProcessSpec.Priority, process.WaitForParents, pq.Array(process.Parents), pq.Array(process.Children), process.ProcessGraphID, pq.Array(process.Input), pq.Array(process.Output))
 	if err != nil {
 		return err
@@ -197,7 +197,7 @@ func (db *PQDatabase) FindProcessesByColonyID(colonyID string, seconds int, stat
 }
 
 func (db *PQDatabase) FindProcessesByExecutorID(colonyID string, executorID string, seconds int, state int) ([]*core.Process, error) {
-	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `PROCESSES WHERE TARGET_COLONY_ID=$1 AND ASSIGNED_RUNTIME_ID=$2 AND STATE=$3 AND SUBMISSION_TIME BETWEEN NOW() - INTERVAL '1 seconds' * $4 AND NOW() ORDER BY SUBMISSION_TIME ASC`
+	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `PROCESSES WHERE TARGET_COLONY_ID=$1 AND ASSIGNED_EXECUTOR_ID=$2 AND STATE=$3 AND SUBMISSION_TIME BETWEEN NOW() - INTERVAL '1 seconds' * $4 AND NOW() ORDER BY SUBMISSION_TIME ASC`
 	rows, err := db.postgresql.Query(sqlStatement, colonyID, executorID, state, strconv.Itoa(seconds))
 	if err != nil {
 		return nil, err
@@ -312,11 +312,11 @@ func (db *PQDatabase) FindUnassignedProcesses(colonyID string, executorID string
 	var sqlStatement string
 
 	// Note: The @> function tests if an array is a subset of another array
-	// We need to do that since the TARGET_RUNTIME_IDS can contains many IDs
+	// We need to do that since the TARGET_EXECUTOR_IDS can contains many IDs
 	if latest {
-		sqlStatement = `SELECT * FROM ` + db.dbPrefix + `PROCESSES WHERE STATE=$1 AND RUNTIME_TYPE=$2 AND IS_ASSIGNED=FALSE AND WAIT_FOR_PARENTS=FALSE AND TARGET_COLONY_ID=$3 AND (TARGET_RUNTIME_IDS@>$4 OR TARGET_RUNTIME_IDS@>$5) ORDER BY SUBMISSION_TIME DESC LIMIT $6`
+		sqlStatement = `SELECT * FROM ` + db.dbPrefix + `PROCESSES WHERE STATE=$1 AND EXECUTOR_TYPE=$2 AND IS_ASSIGNED=FALSE AND WAIT_FOR_PARENTS=FALSE AND TARGET_COLONY_ID=$3 AND (TARGET_EXECUTOR_IDS@>$4 OR TARGET_EXECUTOR_IDS@>$5) ORDER BY SUBMISSION_TIME DESC LIMIT $6`
 	} else {
-		sqlStatement = `SELECT * FROM ` + db.dbPrefix + `PROCESSES WHERE STATE=$1 AND RUNTIME_TYPE=$2 AND IS_ASSIGNED=FALSE AND WAIT_FOR_PARENTS=FALSE AND TARGET_COLONY_ID=$3 AND (TARGET_RUNTIME_IDS@>$4 OR TARGET_RUNTIME_IDS@>$5) ORDER BY SUBMISSION_TIME LIMIT $6`
+		sqlStatement = `SELECT * FROM ` + db.dbPrefix + `PROCESSES WHERE STATE=$1 AND EXECUTOR_TYPE=$2 AND IS_ASSIGNED=FALSE AND WAIT_FOR_PARENTS=FALSE AND TARGET_COLONY_ID=$3 AND (TARGET_EXECUTOR_IDS@>$4 OR TARGET_EXECUTOR_IDS@>$5) ORDER BY SUBMISSION_TIME LIMIT $6`
 	}
 	rows, err := db.postgresql.Query(sqlStatement, core.WAITING, executorType, colonyID, pq.Array([]string{executorID}), pq.Array([]string{"*"}), count)
 	if err != nil {
@@ -414,13 +414,13 @@ func (db *PQDatabase) ResetProcess(process *core.Process) error {
 	maxWaitTime := process.ProcessSpec.MaxWaitTime
 	if maxWaitTime > 0 {
 		deadline := time.Now().Add(time.Duration(maxWaitTime) * time.Second)
-		sqlStatement := `UPDATE ` + db.dbPrefix + `PROCESSES SET IS_ASSIGNED=FALSE, SUBMISSION_TIME=$1, START_TIME=$2, END_TIME=$3, ASSIGNED_RUNTIME_ID=$4, STATE=$5, WAIT_DEADLINE=$6 WHERE PROCESS_ID=$7`
+		sqlStatement := `UPDATE ` + db.dbPrefix + `PROCESSES SET IS_ASSIGNED=FALSE, SUBMISSION_TIME=$1, START_TIME=$2, END_TIME=$3, ASSIGNED_EXECUTOR_ID=$4, STATE=$5, WAIT_DEADLINE=$6 WHERE PROCESS_ID=$7`
 		_, err := db.postgresql.Exec(sqlStatement, submissionTime, time.Time{}, time.Time{}, "", core.WAITING, deadline, process.ID)
 		if err != nil {
 			return err
 		}
 	} else {
-		sqlStatement := `UPDATE ` + db.dbPrefix + `PROCESSES SET IS_ASSIGNED=FALSE, SUBMISSION_TIME=$1, START_TIME=$2, END_TIME=$3, ASSIGNED_RUNTIME_ID=$4, STATE=$5 WHERE PROCESS_ID=$6`
+		sqlStatement := `UPDATE ` + db.dbPrefix + `PROCESSES SET IS_ASSIGNED=FALSE, SUBMISSION_TIME=$1, START_TIME=$2, END_TIME=$3, ASSIGNED_EXECUTOR_ID=$4, STATE=$5 WHERE PROCESS_ID=$6`
 		_, err := db.postgresql.Exec(sqlStatement, submissionTime, time.Time{}, time.Time{}, "", core.WAITING, process.ID)
 		if err != nil {
 			return err
@@ -531,7 +531,7 @@ func (db *PQDatabase) SetWaitDeadline(process *core.Process, waitDeadline time.T
 }
 
 func (db *PQDatabase) ResetAllProcesses(process *core.Process) error {
-	sqlStatement := `UPDATE ` + db.dbPrefix + `PROCESSES SET IS_ASSIGNED=FALSE, START_TIME=$1, END_TIME=$2, ASSIGNED_RUNTIME_ID=$3, STATE=$4`
+	sqlStatement := `UPDATE ` + db.dbPrefix + `PROCESSES SET IS_ASSIGNED=FALSE, START_TIME=$1, END_TIME=$2, ASSIGNED_EXECUTOR_ID=$3, STATE=$4`
 	_, err := db.postgresql.Exec(sqlStatement, time.Time{}, time.Time{}, "", core.WAITING)
 	if err != nil {
 		return err
@@ -553,13 +553,13 @@ func (db *PQDatabase) Assign(executorID string, process *core.Process) error {
 	startTime := time.Now()
 	if process.ProcessSpec.MaxExecTime > 0 {
 		deadline := time.Now().Add(time.Duration(process.ProcessSpec.MaxExecTime) * time.Second)
-		sqlStatement := `UPDATE ` + db.dbPrefix + `PROCESSES SET IS_ASSIGNED=TRUE, START_TIME=$1, ASSIGNED_RUNTIME_ID=$2, STATE=$3, EXEC_DEADLINE=$4 WHERE PROCESS_ID=$5`
+		sqlStatement := `UPDATE ` + db.dbPrefix + `PROCESSES SET IS_ASSIGNED=TRUE, START_TIME=$1, ASSIGNED_EXECUTOR_ID=$2, STATE=$3, EXEC_DEADLINE=$4 WHERE PROCESS_ID=$5`
 		_, err = db.postgresql.Exec(sqlStatement, startTime, executorID, core.RUNNING, deadline, process.ID)
 		if err != nil {
 			return err
 		}
 	} else {
-		sqlStatement := `UPDATE ` + db.dbPrefix + `PROCESSES SET IS_ASSIGNED=TRUE, START_TIME=$1, ASSIGNED_RUNTIME_ID=$2, STATE=$3 WHERE PROCESS_ID=$4`
+		sqlStatement := `UPDATE ` + db.dbPrefix + `PROCESSES SET IS_ASSIGNED=TRUE, START_TIME=$1, ASSIGNED_EXECUTOR_ID=$2, STATE=$3 WHERE PROCESS_ID=$4`
 		_, err = db.postgresql.Exec(sqlStatement, startTime, executorID, core.RUNNING, process.ID)
 		if err != nil {
 			return err
@@ -581,13 +581,13 @@ func (db *PQDatabase) Unassign(process *core.Process) error {
 	if maxWaitTime > 0 {
 		deadline := time.Now().Add(time.Duration(maxWaitTime) * time.Second)
 
-		sqlStatement := `UPDATE ` + db.dbPrefix + `PROCESSES SET IS_ASSIGNED=FALSE, END_TIME=$1, STATE=$2, RETRIES=$3, ASSIGNED_RUNTIME_ID=$4, WAIT_DEADLINE=$5 WHERE PROCESS_ID=$6`
+		sqlStatement := `UPDATE ` + db.dbPrefix + `PROCESSES SET IS_ASSIGNED=FALSE, END_TIME=$1, STATE=$2, RETRIES=$3, ASSIGNED_EXECUTOR_ID=$4, WAIT_DEADLINE=$5 WHERE PROCESS_ID=$6`
 		_, err := db.postgresql.Exec(sqlStatement, endTime, core.WAITING, process.Retries+1, "", deadline, process.ID)
 		if err != nil {
 			return err
 		}
 	} else {
-		sqlStatement := `UPDATE ` + db.dbPrefix + `PROCESSES SET IS_ASSIGNED=FALSE, END_TIME=$1, STATE=$2, RETRIES=$3, ASSIGNED_RUNTIME_ID=$4 WHERE PROCESS_ID=$5`
+		sqlStatement := `UPDATE ` + db.dbPrefix + `PROCESSES SET IS_ASSIGNED=FALSE, END_TIME=$1, STATE=$2, RETRIES=$3, ASSIGNED_EXECUTOR_ID=$4 WHERE PROCESS_ID=$5`
 		_, err := db.postgresql.Exec(sqlStatement, endTime, core.WAITING, process.Retries+1, "", process.ID)
 		if err != nil {
 			return err
