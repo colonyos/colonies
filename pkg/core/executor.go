@@ -16,21 +16,15 @@ type Location struct {
 	Lat  float64 `json:"lat"`
 }
 
-type Function struct {
-	Name string   `json:"funcname"`
-	Args []string `json:"args"`
-}
-
 type Executor struct {
-	ID                string     `json:"executorid"`
-	Type              string     `json:"executortype"`
-	Name              string     `json:"executorname"`
-	ColonyID          string     `json:"colonyid"`
-	State             int        `json:"state"`
-	CommissionTime    time.Time  `json:"commissiontime"`
-	LastHeardFromTime time.Time  `json:"lastheardfromtime"`
-	Location          Location   `json:"location"`
-	Functions         []Function `json:"functions"`
+	ID                string    `json:"executorid"`
+	Type              string    `json:"executortype"`
+	Name              string    `json:"executorname"`
+	ColonyID          string    `json:"colonyid"`
+	State             int       `json:"state"`
+	CommissionTime    time.Time `json:"commissiontime"`
+	LastHeardFromTime time.Time `json:"lastheardfromtime"`
+	Location          Location  `json:"location"`
 }
 
 func CreateExecutor(id string,
@@ -46,7 +40,6 @@ func CreateExecutor(id string,
 		State:             PENDING,
 		CommissionTime:    commissionTime,
 		LastHeardFromTime: lastHeardFromTime,
-		Functions:         make([]Function, 0),
 	}
 }
 

@@ -137,6 +137,7 @@ func (server *ColoniesServer) handleAPIRequest(c *gin.Context) {
 	}
 
 	switch rpcMsg.PayloadType {
+
 	// Colony handlers
 	case rpc.AddColonyPayloadType:
 		server.handleAddColonyHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
@@ -160,6 +161,10 @@ func (server *ColoniesServer) handleAPIRequest(c *gin.Context) {
 		server.handleRejectExecutorHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 	case rpc.DeleteExecutorPayloadType:
 		server.handleDeleteExecutorHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+
+		//Function handlers
+	case rpc.RegisterFunctionPayloadType:
+		server.handleRegisterFunctionHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 
 	// Process handlers
 	case rpc.SubmitProcessSpecPayloadType:
