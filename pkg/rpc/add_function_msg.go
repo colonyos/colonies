@@ -6,22 +6,22 @@ import (
 	"github.com/colonyos/colonies/pkg/core"
 )
 
-const AddExecutorPayloadType = "addexecutormsg"
+const AddFunctionPayloadType = "addfunctionmsg"
 
-type AddExecutorMsg struct {
-	Executor *core.Executor `json:"executor"`
+type AddFunctionMsg struct {
+	Function *core.Function `json:"function"`
 	MsgType  string         `json:"msgtype"`
 }
 
-func CreateAddExecutorMsg(executor *core.Executor) *AddExecutorMsg {
-	msg := &AddExecutorMsg{}
-	msg.Executor = executor
-	msg.MsgType = AddExecutorPayloadType
+func CreateAddFunctionMsg(function *core.Function) *AddFunctionMsg {
+	msg := &AddFunctionMsg{}
+	msg.Function = function
+	msg.MsgType = AddFunctionPayloadType
 
 	return msg
 }
 
-func (msg *AddExecutorMsg) ToJSON() (string, error) {
+func (msg *AddFunctionMsg) ToJSON() (string, error) {
 	jsonBytes, err := json.Marshal(msg)
 	if err != nil {
 		return "", err
@@ -30,7 +30,7 @@ func (msg *AddExecutorMsg) ToJSON() (string, error) {
 	return string(jsonBytes), nil
 }
 
-func (msg *AddExecutorMsg) ToJSONIndent() (string, error) {
+func (msg *AddFunctionMsg) ToJSONIndent() (string, error) {
 	jsonBytes, err := json.MarshalIndent(msg, "", "    ")
 	if err != nil {
 		return "", err
@@ -39,20 +39,20 @@ func (msg *AddExecutorMsg) ToJSONIndent() (string, error) {
 	return string(jsonBytes), nil
 }
 
-func (msg *AddExecutorMsg) Equals(msg2 *AddExecutorMsg) bool {
+func (msg *AddFunctionMsg) Equals(msg2 *AddFunctionMsg) bool {
 	if msg2 == nil {
 		return false
 	}
 
-	if msg.MsgType == msg2.MsgType && msg.Executor.Equals(msg2.Executor) {
+	if msg.MsgType == msg2.MsgType && msg.Function.Equals(msg2.Function) {
 		return true
 	}
 
 	return false
 }
 
-func CreateAddExecutorMsgFromJSON(jsonString string) (*AddExecutorMsg, error) {
-	var msg *AddExecutorMsg
+func CreateAddFunctionMsgFromJSON(jsonString string) (*AddFunctionMsg, error) {
+	var msg *AddFunctionMsg
 
 	err := json.Unmarshal([]byte(jsonString), &msg)
 	if err != nil {

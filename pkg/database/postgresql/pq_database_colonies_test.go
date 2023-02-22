@@ -117,12 +117,24 @@ func TestDeleteColonies(t *testing.T) {
 	err = db.AddExecutor(executor1)
 	assert.Nil(t, err)
 
+	function := core.Function{FunctionID: core.GenerateRandomID(), ExecutorID: executor1.ID, ColonyID: colony1.ID, Name: "testfunc", Desc: "unit test function", AvgWaitTime: 1.1, AvgExecTime: 0.1, Args: []string{"arg1"}}
+	err = db.AddFunction(function)
+	assert.Nil(t, err)
+
 	executor2 := utils.CreateTestExecutor(colony1.ID)
 	err = db.AddExecutor(executor2)
 	assert.Nil(t, err)
 
+	function = core.Function{FunctionID: core.GenerateRandomID(), ExecutorID: executor2.ID, ColonyID: colony1.ID, Name: "testfunc", Desc: "unit test function", AvgWaitTime: 1.1, AvgExecTime: 0.1, Args: []string{"arg1"}}
+	err = db.AddFunction(function)
+	assert.Nil(t, err)
+
 	executor3 := utils.CreateTestExecutor(colony2.ID)
 	err = db.AddExecutor(executor3)
+	assert.Nil(t, err)
+
+	function = core.Function{FunctionID: core.GenerateRandomID(), ExecutorID: executor3.ID, ColonyID: colony2.ID, Name: "testfunc", Desc: "unit test function", AvgWaitTime: 1.1, AvgExecTime: 0.1, Args: []string{"arg1"}}
+	err = db.AddFunction(function)
 	assert.Nil(t, err)
 
 	err = db.DeleteColonyByID(colony1.ID)
@@ -159,6 +171,12 @@ func TestDeleteColonies(t *testing.T) {
 	cronFromDB, err = db.GetCronByID(cron2.ID)
 	assert.Nil(t, err)
 	assert.NotNil(t, cronFromDB) // Should NOT have been deleted
+
+	functions, err := db.GetFunctionsByColonyID(colony1.ID)
+	assert.Len(t, functions, 0)
+
+	functions, err = db.GetFunctionsByColonyID(colony2.ID)
+	assert.Len(t, functions, 1)
 }
 
 func TestCountColonies(t *testing.T) {

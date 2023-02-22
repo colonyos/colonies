@@ -3,20 +3,33 @@ package core
 import "encoding/json"
 
 type Function struct {
-	ID   string   `json:"funcid"`
-	Name string   `json:"funcname"`
-	Desc string   `json:"funcdesc"`
-	Args []string `json:"args"`
+	FunctionID  string   `json:"functionid"`
+	ExecutorID  string   `json:"executorid"`
+	ColonyID    string   `json:"colonyid"`
+	Name        string   `json:"name"`
+	Desc        string   `json:"desc"`
+	AvgWaitTime float64  `json:"avgwaittime"`
+	AvgExecTime float64  `json:"avgexectime"`
+	Args        []string `json:"args"`
 }
 
-func CreateFunction(id string,
+func CreateFunction(functionID string,
+	executorID string,
+	colonyID string,
 	name string,
 	desc string,
+	avgWaitTime float64,
+	avgExecTime float64,
 	args []string) Function {
-	return Function{ID: id,
-		Name: name,
-		Desc: desc,
-		Args: args,
+	return Function{
+		FunctionID:  functionID,
+		ExecutorID:  executorID,
+		ColonyID:    colonyID,
+		Name:        name,
+		Desc:        desc,
+		AvgWaitTime: avgWaitTime,
+		AvgExecTime: avgExecTime,
+		Args:        args,
 	}
 }
 
@@ -71,7 +84,13 @@ func (function *Function) Equals(function2 *Function) bool {
 		return false
 	}
 
-	if function.ID != function2.ID || function.Name != function2.Name || function.Desc != function2.Desc {
+	if function.FunctionID != function2.FunctionID ||
+		function.ExecutorID != function2.ExecutorID ||
+		function.ColonyID != function2.ColonyID ||
+		function.Name != function2.Name ||
+		function.Desc != function2.Desc ||
+		function.AvgWaitTime != function2.AvgWaitTime ||
+		function.AvgExecTime != function2.AvgExecTime {
 		return false
 	}
 
@@ -87,7 +106,7 @@ func (function *Function) Equals(function2 *Function) bool {
 		return false
 	}
 
-	return false
+	return true
 }
 
 func (function *Function) ToJSON() (string, error) {

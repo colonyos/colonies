@@ -163,8 +163,8 @@ func (server *ColoniesServer) handleAPIRequest(c *gin.Context) {
 		server.handleDeleteExecutorHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 
 		//Function handlers
-	case rpc.RegisterFunctionPayloadType:
-		server.handleRegisterFunctionHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+	// case rpc.RegisterFunctionPayloadType:
+	// 	server.handleRegisterFunctionHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 
 	// Process handlers
 	case rpc.SubmitProcessSpecPayloadType:

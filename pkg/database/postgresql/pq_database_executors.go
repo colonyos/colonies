@@ -151,6 +151,11 @@ func (db *PQDatabase) DeleteExecutorByID(executorID string) error {
 		return err
 	}
 
+	err = db.DeleteFunctionsByExecutorID(executorID)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -164,6 +169,11 @@ func (db *PQDatabase) DeleteExecutorsByColonyID(colonyID string) error {
 	// Move back the executor currently running process back to the queue
 	sqlStatement = `UPDATE ` + db.dbPrefix + `PROCESSES SET IS_ASSIGNED=FALSE, START_TIME=$1, END_TIME=$2, ASSIGNED_EXECUTOR_ID=$3, STATE=$4 WHERE TARGET_COLONY_ID=$5 AND STATE=$6`
 	_, err = db.postgresql.Exec(sqlStatement, time.Time{}, time.Time{}, "", core.WAITING, colonyID, core.RUNNING)
+	if err != nil {
+		return err
+	}
+
+	err = db.DeleteFunctionsByColonyID(colonyID)
 	if err != nil {
 		return err
 	}

@@ -200,8 +200,16 @@ func TestDeleteExecutorMoveBackToQueue(t *testing.T) {
 	err = db.AddExecutor(executor1)
 	assert.Nil(t, err)
 
+	function := core.Function{FunctionID: core.GenerateRandomID(), ExecutorID: executor1.ID, ColonyID: colony.ID, Name: "testfunc3", Desc: "unit test function", AvgWaitTime: 1.1, AvgExecTime: 0.1, Args: []string{"arg1"}}
+	err = db.AddFunction(function)
+	assert.Nil(t, err)
+
 	executor2 := utils.CreateTestExecutor(colony.ID)
 	err = db.AddExecutor(executor2)
+	assert.Nil(t, err)
+
+	function = core.Function{FunctionID: core.GenerateRandomID(), ExecutorID: executor2.ID, ColonyID: colony.ID, Name: "testfunc3", Desc: "unit test function", AvgWaitTime: 1.1, AvgExecTime: 0.1, Args: []string{"arg1"}}
+	err = db.AddFunction(function)
 	assert.Nil(t, err)
 
 	env := make(map[string]string)
@@ -266,8 +274,14 @@ func TestDeleteExecutorMoveBackToQueue(t *testing.T) {
 	err = db.MarkSuccessful(process4.ID)
 	assert.Nil(t, err)
 
+	functions, err := db.GetFunctionsByColonyID(colony.ID)
+	assert.Len(t, functions, 2)
+
 	err = db.DeleteExecutorByID(executor1.ID)
 	assert.Nil(t, err)
+
+	functions, err = db.GetFunctionsByColonyID(colony.ID)
+	assert.Len(t, functions, 1)
 
 	processFromDB, err = db.GetProcessByID(process1.ID)
 	assert.Nil(t, err)
@@ -415,13 +429,31 @@ func TestDeleteExecutors(t *testing.T) {
 	err = db.AddExecutor(executor1)
 	assert.Nil(t, err)
 
+	function := core.Function{FunctionID: core.GenerateRandomID(), ExecutorID: executor1.ID, ColonyID: colony1.ID, Name: "testfunc3", Desc: "unit test function", AvgWaitTime: 1.1, AvgExecTime: 0.1, Args: []string{"arg1"}}
+	err = db.AddFunction(function)
+	assert.Nil(t, err)
+
 	executor2 := utils.CreateTestExecutor(colony1.ID)
 	err = db.AddExecutor(executor2)
+	assert.Nil(t, err)
+
+	function = core.Function{FunctionID: core.GenerateRandomID(), ExecutorID: executor2.ID, ColonyID: colony1.ID, Name: "testfunc3", Desc: "unit test function", AvgWaitTime: 1.1, AvgExecTime: 0.1, Args: []string{"arg1"}}
+	err = db.AddFunction(function)
 	assert.Nil(t, err)
 
 	executor3 := utils.CreateTestExecutor(colony2.ID)
 	err = db.AddExecutor(executor3)
 	assert.Nil(t, err)
+
+	function = core.Function{FunctionID: core.GenerateRandomID(), ExecutorID: executor3.ID, ColonyID: colony2.ID, Name: "testfunc3", Desc: "unit test function", AvgWaitTime: 1.1, AvgExecTime: 0.1, Args: []string{"arg1"}}
+	err = db.AddFunction(function)
+	assert.Nil(t, err)
+
+	functions, err := db.GetFunctionsByColonyID(colony1.ID)
+	assert.Len(t, functions, 2)
+
+	functions, err = db.GetFunctionsByColonyID(colony2.ID)
+	assert.Len(t, functions, 1)
 
 	err = db.DeleteExecutorByID(executor2.ID)
 	assert.Nil(t, err)
@@ -451,6 +483,12 @@ func TestDeleteExecutors(t *testing.T) {
 	executorFromDB, err = db.GetExecutorByID(executor3.ID)
 	assert.Nil(t, err)
 	assert.NotNil(t, executorFromDB)
+
+	functions, err = db.GetFunctionsByColonyID(colony1.ID)
+	assert.Len(t, functions, 0)
+
+	functions, err = db.GetFunctionsByColonyID(colony2.ID)
+	assert.Len(t, functions, 1)
 }
 
 func TestCountExecutors(t *testing.T) {
@@ -513,4 +551,5 @@ func TestCountExectorsByColonyID(t *testing.T) {
 	executorCount, err = db.CountExecutorsByColonyID(colony2.ID)
 	assert.Nil(t, err)
 	assert.True(t, executorCount == 1)
+
 }
