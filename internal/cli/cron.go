@@ -62,14 +62,14 @@ func init() {
 
 var cronCmd = &cobra.Command{
 	Use:   "cron",
-	Short: "Manage cron processes",
-	Long:  "Manage cron processes",
+	Short: "Manage cron",
+	Long:  "Manage cron",
 }
 
 var addCronCmd = &cobra.Command{
 	Use:   "add",
-	Short: "Add a generator to a Colony",
-	Long:  "Add a generator to a Colony",
+	Short: "Add a cron",
+	Long:  "Add a cron",
 	Run: func(cmd *cobra.Command, args []string) {
 		parseServerEnv()
 
@@ -254,8 +254,8 @@ var getCronCmd = &cobra.Command{
 
 var getCronsCmd = &cobra.Command{
 	Use:   "ls",
-	Short: "List all crons in a colony",
-	Long:  "List all crons in a colony",
+	Short: "List all crons",
+	Long:  "List all crons",
 	Run: func(cmd *cobra.Command, args []string) {
 		parseServerEnv()
 

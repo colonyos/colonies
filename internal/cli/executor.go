@@ -17,8 +17,8 @@ import (
 )
 
 func init() {
-	executorCmd.AddCommand(registerExecutorCmd)
-	executorCmd.AddCommand(unregisterExecutorCmd)
+	executorCmd.AddCommand(addExecutorCmd)
+	executorCmd.AddCommand(removeExecutorCmd)
 	executorCmd.AddCommand(lsExecutorsCmd)
 	executorCmd.AddCommand(approveExecutorCmd)
 	executorCmd.AddCommand(rejectExecutorCmd)
@@ -30,16 +30,16 @@ func init() {
 	executorCmd.PersistentFlags().StringVarP(&ServerHost, "host", "", "localhost", "Server host")
 	executorCmd.PersistentFlags().IntVarP(&ServerPort, "port", "", -1, "Server HTTP port")
 
-	registerExecutorCmd.Flags().StringVarP(&ColonyID, "colonyid", "", "", "Colony Id")
-	registerExecutorCmd.Flags().StringVarP(&ColonyPrvKey, "colonyprvkey", "", "", "Colony private key")
-	registerExecutorCmd.Flags().StringVarP(&ExecutorPrvKey, "executorprvkey", "", "", "Executor private key")
-	registerExecutorCmd.Flags().StringVarP(&SpecFile, "spec", "", "", "JSON specification of an executor")
-	registerExecutorCmd.Flags().StringVarP(&ExecutorName, "name", "", "", "Executor name")
-	registerExecutorCmd.Flags().StringVarP(&ExecutorType, "type", "", "", "Executor type")
-	registerExecutorCmd.Flags().BoolVarP(&Approve, "approve", "", false, "Also, approve the added executor")
+	addExecutorCmd.Flags().StringVarP(&ColonyID, "colonyid", "", "", "Colony Id")
+	addExecutorCmd.Flags().StringVarP(&ColonyPrvKey, "colonyprvkey", "", "", "Colony private key")
+	addExecutorCmd.Flags().StringVarP(&ExecutorPrvKey, "executorprvkey", "", "", "Executor private key")
+	addExecutorCmd.Flags().StringVarP(&SpecFile, "spec", "", "", "JSON specification of an executor")
+	addExecutorCmd.Flags().StringVarP(&ExecutorName, "name", "", "", "Executor name")
+	addExecutorCmd.Flags().StringVarP(&ExecutorType, "type", "", "", "Executor type")
+	addExecutorCmd.Flags().BoolVarP(&Approve, "approve", "", false, "Also, approve the added executor")
 
-	unregisterExecutorCmd.Flags().StringVarP(&ColonyPrvKey, "colonyprvkey", "", "", "Colony private key")
-	unregisterExecutorCmd.Flags().StringVarP(&ExecutorID, "executorid", "", "", "Executor Id")
+	removeExecutorCmd.Flags().StringVarP(&ColonyPrvKey, "colonyprvkey", "", "", "Colony private key")
+	removeExecutorCmd.Flags().StringVarP(&ExecutorID, "executorid", "", "", "Executor Id")
 
 	lsExecutorsCmd.Flags().BoolVarP(&JSON, "json", "", false, "Print JSON instead of tables")
 	lsExecutorsCmd.Flags().BoolVarP(&Full, "full", "", false, "Print detail info")
@@ -65,10 +65,10 @@ var executorCmd = &cobra.Command{
 	Long:  "Manage executors",
 }
 
-var registerExecutorCmd = &cobra.Command{
-	Use:   "register",
-	Short: "Register a new executor",
-	Long:  "Register a new executor",
+var addExecutorCmd = &cobra.Command{
+	Use:   "add",
+	Short: "Add a new executor",
+	Long:  "Add a new executor",
 	Run: func(cmd *cobra.Command, args []string) {
 		parseServerEnv()
 
@@ -157,19 +157,19 @@ var registerExecutorCmd = &cobra.Command{
 		log.Info("Saving executor prvKey to /tmp/executorprvkey")
 
 		if Approve {
-			log.WithFields(log.Fields{"executorID": executorID}).Info("Approving Executor")
+			log.WithFields(log.Fields{"ExecutorID": executorID}).Info("Approving Executor")
 			err = client.ApproveExecutor(executorID, ColonyPrvKey)
 			CheckError(err)
 		}
 
-		log.WithFields(log.Fields{"executorName": executor.Name, "executorType": executor.Type, "executorID": addedExecutor.ID, "colonyID": ColonyID}).Info("Executor registered")
+		log.WithFields(log.Fields{"ExecutorName": executor.Name, "ExecutorType": executor.Type, "ExecutorID": addedExecutor.ID, "ColonyID": ColonyID}).Info("Executor added")
 	},
 }
 
-var unregisterExecutorCmd = &cobra.Command{
-	Use:   "unregister",
-	Short: "Unregister a colony executor",
-	Long:  "Unregister a colony executor",
+var removeExecutorCmd = &cobra.Command{
+	Use:   "remove",
+	Short: "Remove an executor",
+	Long:  "Remove an executor",
 	Run: func(cmd *cobra.Command, args []string) {
 		parseServerEnv()
 
@@ -198,17 +198,17 @@ var unregisterExecutorCmd = &cobra.Command{
 			err := client.DeleteExecutor(ExecutorID, ColonyPrvKey)
 			CheckError(err)
 		} else {
-			unregisterExecutorFromTmp(client)
+			removeExecutorFromTmp(client)
 		}
 
-		log.WithFields(log.Fields{"executorID": ExecutorID, "colonyID": ColonyID}).Info("Executor unregistered")
+		log.WithFields(log.Fields{"ExecutorID": ExecutorID, "ColonyID": ColonyID}).Info("Executor removed")
 	},
 }
 
 var lsExecutorsCmd = &cobra.Command{
 	Use:   "ls",
-	Short: "List all executors available in a colony",
-	Long:  "List all executors available in a colony",
+	Short: "List all executors",
+	Long:  "List all executors",
 	Run: func(cmd *cobra.Command, args []string) {
 		parseServerEnv()
 
@@ -316,8 +316,8 @@ var lsExecutorsCmd = &cobra.Command{
 
 var approveExecutorCmd = &cobra.Command{
 	Use:   "approve",
-	Short: "Approve a colony executor",
-	Long:  "Approve a colony executor",
+	Short: "Approve an executor",
+	Long:  "Approve an executor",
 	Run: func(cmd *cobra.Command, args []string) {
 		parseServerEnv()
 
@@ -342,14 +342,14 @@ var approveExecutorCmd = &cobra.Command{
 		err = client.ApproveExecutor(ExecutorID, ColonyPrvKey)
 		CheckError(err)
 
-		log.WithFields(log.Fields{"executorID": ExecutorID, "colonyID": ColonyID}).Info("Executor approved")
+		log.WithFields(log.Fields{"ExecutorID": ExecutorID, "ColonyID": ColonyID}).Info("Executor approved")
 	},
 }
 
 var rejectExecutorCmd = &cobra.Command{
 	Use:   "reject",
-	Short: "Reject a executor",
-	Long:  "Reject a executor",
+	Short: "Reject an executor",
+	Long:  "Reject an executor",
 	Run: func(cmd *cobra.Command, args []string) {
 		parseServerEnv()
 
@@ -374,11 +374,11 @@ var rejectExecutorCmd = &cobra.Command{
 		err = client.RejectExecutor(ExecutorID, ColonyPrvKey)
 		CheckError(err)
 
-		log.WithFields(log.Fields{"executorID": ExecutorID, "colonyID": ColonyID}).Info("Executor rejected")
+		log.WithFields(log.Fields{"ExecutorID": ExecutorID, "ColonyID": ColonyID}).Info("Executor rejected")
 	},
 }
 
-func unregisterExecutorFromTmp(client *client.ColoniesClient) {
+func removeExecutorFromTmp(client *client.ColoniesClient) {
 	mutex.Lock()
 	defer mutex.Unlock()
 
