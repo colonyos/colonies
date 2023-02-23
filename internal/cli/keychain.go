@@ -45,8 +45,8 @@ var addPrivateKeyCmd = &cobra.Command{
 
 var getPrivateKeyCmd = &cobra.Command{
 	Use:   "get",
-	Short: "Get a private key for an identity",
-	Long:  "Get a private key for an identity",
+	Short: "Get a private key for an Id",
+	Long:  "Get a private key for an Id",
 	Run: func(cmd *cobra.Command, args []string) {
 		keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
 		CheckError(err)
@@ -55,7 +55,7 @@ var getPrivateKeyCmd = &cobra.Command{
 		if privateKey == "" {
 			CheckError(errors.New("No private key found for identity <" + ID + ">"))
 		}
-		log.WithFields(log.Fields{"privateKey": privateKey}).Info("Private key found in keychain")
+		log.WithFields(log.Fields{"PrvKey": privateKey}).Info("Private key found in keychain")
 	},
 }
 
@@ -77,6 +77,6 @@ var genPrivateKeyCmd = &cobra.Command{
 		err = keychain.AddPrvKey(id, prvKey)
 		CheckError(err)
 
-		log.WithFields(log.Fields{"ID": id, "privateKey": prvKey}).Info("Generated new private key and stored in keychain")
+		log.WithFields(log.Fields{"Id": id, "PrvKey": prvKey}).Info("Generated new private key and stored in keychain")
 	},
 }

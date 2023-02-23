@@ -41,7 +41,7 @@ func State2String(state int) string {
 
 func CheckError(err error) {
 	if err != nil {
-		log.WithFields(log.Fields{"err": err, "BuildVersion": build.BuildVersion, "BuildTime": build.BuildTime}).Error(err.Error())
+		log.WithFields(log.Fields{"Error": err, "BuildVersion": build.BuildVersion, "BuildTime": build.BuildTime}).Error(err.Error())
 		os.Exit(-1)
 	}
 }

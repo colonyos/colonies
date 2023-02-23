@@ -101,7 +101,7 @@ func (server *ColoniesServer) handleGetProcessGraphsHTTPRequest(c *gin.Context, 
 		return
 	}
 
-	log.WithFields(log.Fields{"ColonyID": msg.ColonyID}).Debug("Getting processgraphs")
+	log.WithFields(log.Fields{"ColonyId": msg.ColonyID}).Debug("Getting processgraphs")
 
 	switch msg.State {
 	case core.WAITING:
@@ -183,7 +183,7 @@ func (server *ColoniesServer) handleDeleteProcessGraphHTTPRequest(c *gin.Context
 		return
 	}
 
-	log.WithFields(log.Fields{"ProcessGraphID": graph.ID}).Debug("Deleting processgraph")
+	log.WithFields(log.Fields{"ProcessGraphId": graph.ID}).Debug("Deleting processgraph")
 
 	server.sendEmptyHTTPReply(c, payloadType)
 }
@@ -211,7 +211,7 @@ func (server *ColoniesServer) handleDeleteAllProcessGraphsHTTPRequest(c *gin.Con
 		return
 	}
 
-	log.WithFields(log.Fields{"ColonyID": msg.ColonyID}).Debug("Deleting all processgraphs")
+	log.WithFields(log.Fields{"ColonyId": msg.ColonyID}).Debug("Deleting all processgraphs")
 
 	server.sendEmptyHTTPReply(c, payloadType)
 }
@@ -253,7 +253,7 @@ func (server *ColoniesServer) handleAddChildHTTPRequest(c *gin.Context, recovere
 		return
 	}
 
-	log.WithFields(log.Fields{"ProcessGraphID": msg.ProcessGraphID, "ParentProcessID": msg.ProcessID, "ProcessID": process.ID}).Debug("Adding child process")
+	log.WithFields(log.Fields{"ProcessGraphId": msg.ProcessGraphID, "ParentProcessID": msg.ProcessID, "ProcessID": process.ID}).Debug("Adding child process")
 
 	server.sendHTTPReply(c, payloadType, jsonString)
 }

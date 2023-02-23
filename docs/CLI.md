@@ -7,9 +7,9 @@ First, create a file named colony.json, and put the following content into it.
 }
 ```
 
-Then use the colonies tool to register the colony. The id of the colony will be returned if the command is successful. Note that the root password is required for this operation.
+Then use the Colonies CLI to register the colony. The id of the colony will be returned if the command is successful. Note that the root password is required for this operation.
 ```console
-./bin/colonies colony register --serverid=9289dfccedf27392810b96968535530bb69f90afe7c35738e0e627f3810d943e --spec ./examples/colony.json
+./bin/colonies colony add --serverid=9289dfccedf27392810b96968535530bb69f90afe7c35738e0e627f3810d943e --spec ./examples/colony.json
 ```
 Output: 
 ```
@@ -30,8 +30,8 @@ Output:
 +------------------------------------------------------------------+----------+
 ```
 
-## Register a new Colony Executor 
-Only the colony owner is allowed to register a new Colony Executor. 
+## Add a new Executor 
+Only the colony owner is allowed to add a new executor. 
 
 ```json
 {
@@ -41,7 +41,7 @@ Only the colony owner is allowed to register a new Colony Executor.
 ```
 
 ```console
-./bin/colonies executor register --colonyid 0f4f350d264d1cffdec0d62c723a7da8b730c6863365da75697fd26a6d79ccc5 --colonyprvkey d95c54b63ac7c9ba624445fd755998e14e6aa71a17a74889c6a1754be80bcf09 --spec ./examples/executor.json
+./bin/colonies executor add --colonyid 0f4f350d264d1cffdec0d62c723a7da8b730c6863365da75697fd26a6d79ccc5 --colonyprvkey d95c54b63ac7c9ba624445fd755998e14e6aa71a17a74889c6a1754be80bcf09 --spec ./examples/executor.json
 ```
 Output:
 ```
@@ -50,16 +50,16 @@ The *colonyprvkey* is automatically obtained from the keychain or environmental 
 
 ```console
 export COLONIES_COLONY_ID="0f4f350d264d1cffdec0d62c723a7da8b730c6863365da75697fd26a6d79ccc5"
-./bin/colonies executor register --spec ./examples/executor.json
+./bin/colonies executor add --spec ./examples/executor.json
 ```
 Output:
 ```
 4599f89a8afb7ecd9beec0b7861fab3bacba3a0e2dbe050e9f7584f3c9d7ac58
 ```
  
-It is also possible to register an executor without specifying a spec file.
+It is also possible to add an executor without specifying a spec file.
 ```console
-./bin/colonies executor register --name test_executor --type my_executor 
+./bin/colonies executor add --name test_executor --type my_executor 
 ```
 
 It is also possible to set the following environmental variables to leave out the name or type flag.
@@ -70,7 +70,7 @@ COLONIES_EXECUTOR_TYPE="my_executor"
 
 If HOSTNAME is set, then executor name will be set to COLONIES_EXECUTOR_NAME.HOSTNAME.
 
-## List registered Colony Executors
+## List registered Executors
 ```console
 export COLONIES_EXECUTOR_ID="4599f89a8afb7ecd9beec0b7861fab3bacba3a0e2dbe050e9f7584f3c9d7ac58"
 ./bin/colonies executor ls 
@@ -102,9 +102,9 @@ Output:
 +------------------------------------------------------------------+-------------+----------+
 ```
 
-Note that it is possible to automatically approve an executor by passing the --approve flag to the register command.
+Note that it is possible to automatically approve an executor by passing the --approve flag to the add command.
 ```console
-./bin/colonies executor register --name test_executor --type my_executor --approve
+./bin/colonies executor add --name test_executor --type my_executor --approve
 ```
 
 Similarly, a Colony Executor can be rejected with the "rejected" command. 
@@ -117,7 +117,7 @@ Colony Executor with Id <4599f89a8afb7ecd9beec0b7861fab3bacba3a0e2dbe050e9f7584f
 ```
 
 ## Submit a process to a Colony
-First we need to create a process spec file. The conditions must match registered executors, e.g. the memory must be at least 1000 GiB.
+First we need to create a process spec file. 
 
 ```json
 {

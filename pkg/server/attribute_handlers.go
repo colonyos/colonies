@@ -62,7 +62,7 @@ func (server *ColoniesServer) handleAddAttributeHTTPRequest(c *gin.Context, reco
 		return
 	}
 
-	log.WithFields(log.Fields{"AttributeID": msg.Attribute.ID}).Debug("Adding attribute")
+	log.WithFields(log.Fields{"AttributeId": msg.Attribute.ID}).Debug("Adding attribute")
 
 	server.sendHTTPReply(c, payloadType, jsonString)
 }
@@ -104,7 +104,7 @@ func (server *ColoniesServer) handleGetAttributeHTTPRequest(c *gin.Context, reco
 		return
 	}
 
-	log.WithFields(log.Fields{"AttributeID": msg.AttributeID}).Debug("Getting attribute")
+	log.WithFields(log.Fields{"AttributeId": msg.AttributeID}).Debug("Getting attribute")
 
 	server.sendHTTPReply(c, payloadType, jsonString)
 }

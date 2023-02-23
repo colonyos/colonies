@@ -149,8 +149,8 @@ func wait(client *client.ColoniesClient, process *core.Process) {
 
 var runProcessCmd = &cobra.Command{
 	Use:   "run",
-	Short: "Submit a process specification to a colony without a spec",
-	Long:  "Submit a process specification to a colony without a spec",
+	Short: "Submit a process specification without a spec",
+	Long:  "Submit a process specification without a spec",
 	Run: func(cmd *cobra.Command, args []string) {
 		parseServerEnv()
 
@@ -223,8 +223,8 @@ var runProcessCmd = &cobra.Command{
 
 var submitProcessCmd = &cobra.Command{
 	Use:   "submit",
-	Short: "Submit a process specification to a colony",
-	Long:  "Submit a process specification to a colony",
+	Short: "Submit a process specification",
+	Long:  "Submit a process specification",
 	Run: func(cmd *cobra.Command, args []string) {
 		parseServerEnv()
 
@@ -311,14 +311,14 @@ var assignProcessCmd = &cobra.Command{
 			if err != nil {
 				log.Warning(err)
 			} else {
-				log.WithFields(log.Fields{"processID": process.ID, "executorID": ExecutorID}).Info("Assigned process to executor (latest)")
+				log.WithFields(log.Fields{"ProcessID": process.ID, "ExecutorID": ExecutorID}).Info("Assigned process to executor (latest)")
 			}
 		} else {
 			process, err := client.AssignProcess(ColonyID, Timeout, ExecutorPrvKey)
 			if err != nil {
 				log.Warning(err)
 			} else {
-				log.WithFields(log.Fields{"processID": process.ID, "executorID": ExecutorID}).Info("Assigned process to executor (oldest)")
+				log.WithFields(log.Fields{"ProcessID": process.ID, "ExecutorID": ExecutorID}).Info("Assigned process to executor (oldest)")
 			}
 		}
 
@@ -790,8 +790,8 @@ var deleteProcessCmd = &cobra.Command{
 
 var deleteAllProcessesCmd = &cobra.Command{
 	Use:   "deleteall",
-	Short: "Delete all processes in a colony",
-	Long:  "Delete all processes in a colony",
+	Short: "Delete all processes",
+	Long:  "Delete all processes",
 	Run: func(cmd *cobra.Command, args []string) {
 		parseServerEnv()
 
