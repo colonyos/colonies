@@ -20,8 +20,8 @@ func CreateFunction(functionID string,
 	desc string,
 	avgWaitTime float64,
 	avgExecTime float64,
-	args []string) Function {
-	return Function{
+	args []string) *Function {
+	return &Function{
 		FunctionID:  functionID,
 		ExecutorID:  executorID,
 		ColonyID:    colonyID,
@@ -43,8 +43,8 @@ func ConvertJSONToFunction(jsonString string) (*Function, error) {
 	return function, nil
 }
 
-func ConvertJSONToFunctionArray(jsonString string) ([]Function, error) {
-	var functions []Function
+func ConvertJSONToFunctionArray(jsonString string) ([]*Function, error) {
+	var functions []*Function
 	err := json.Unmarshal([]byte(jsonString), &functions)
 	if err != nil {
 		return functions, err
@@ -53,7 +53,7 @@ func ConvertJSONToFunctionArray(jsonString string) ([]Function, error) {
 	return functions, nil
 }
 
-func ConvertFunctionArrayToJSON(functions []Function) (string, error) {
+func ConvertFunctionArrayToJSON(functions []*Function) (string, error) {
 	jsonBytes, err := json.MarshalIndent(functions, "", "    ")
 	if err != nil {
 		return "", err
@@ -62,11 +62,11 @@ func ConvertFunctionArrayToJSON(functions []Function) (string, error) {
 	return string(jsonBytes), nil
 }
 
-func IsFunctionArraysEqual(functions1 []Function, functions2 []Function) bool {
+func IsFunctionArraysEqual(functions1 []*Function, functions2 []*Function) bool {
 	counter := 0
 	for _, function1 := range functions1 {
 		for _, function2 := range functions2 {
-			if function1.Equals(&function2) {
+			if function1.Equals(function2) {
 				counter++
 			}
 		}

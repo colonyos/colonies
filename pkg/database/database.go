@@ -33,10 +33,12 @@ type Database interface {
 	CountExecutorsByColonyID(colonyID string) (int, error)
 
 	// Function functions ...
-	AddFunction(function core.Function) error
-	GetFunctionsByExecutorID(executorID string) ([]core.Function, error)
-	GetFunctionsByColonyID(colonyID string) ([]core.Function, error)
+	AddFunction(function *core.Function) error
+	GetFunctionByID(functionID string) (*core.Function, error)
+	GetFunctionsByExecutorID(executorID string) ([]*core.Function, error)
+	GetFunctionsByColonyID(colonyID string) ([]*core.Function, error)
 	UpdateFunctionTimes(executorID string, name string, avgWaitTime float64, avgExecTime float64) error
+	DeleteFunctionByID(functionID string) error
 	DeleteFunctionByName(executorID string, name string) error
 	DeleteFunctionsByExecutorID(executorID string) error
 	DeleteFunctionsByColonyID(colonyID string) error
