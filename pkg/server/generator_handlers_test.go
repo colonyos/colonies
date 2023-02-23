@@ -9,6 +9,14 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+// TEST ERROR
+// time="2023-02-22T22:06:06+01:00" level=error msg="Failed to iterate processgraph, process is nil"
+//
+//	test_utils.go:375:
+//	    	Error Trace:	test_utils.go:375
+//	    	            				generator_handlers_test.go:33
+//	    	Error:      	Expected nil, but got: &errors.errorString{s:"Failed to iterate processgraph, process is nil"}
+//	    	Test:       	TestAddGeneratorCounter
 func TestAddGeneratorCounter(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 
