@@ -85,7 +85,7 @@ func CreateColoniesServer(db database.Database,
 		"Name":              thisNode.Name,
 		"GeneratorPeriod":   generatorPeriod,
 		"CronPeriod":        cronPeriod,
-		"exclusiveAssign":   exclusiveAssign}).
+		"ExclusiveAssign":   exclusiveAssign}).
 		Info("Starting Colonies server")
 
 	server.setupRoutes()
@@ -162,9 +162,13 @@ func (server *ColoniesServer) handleAPIRequest(c *gin.Context) {
 	case rpc.DeleteExecutorPayloadType:
 		server.handleDeleteExecutorHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 
-		//Function handlers
-	// case rpc.RegisterFunctionPayloadType:
-	// 	server.handleRegisterFunctionHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+	//Function handlers
+	case rpc.AddFunctionPayloadType:
+		server.handleAddFunctionHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+	case rpc.GetFunctionsPayloadType:
+		server.handleGetFunctionsHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+	case rpc.DeleteFunctionPayloadType:
+		server.handleDeleteFunctionHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 
 	// Process handlers
 	case rpc.SubmitProcessSpecPayloadType:
