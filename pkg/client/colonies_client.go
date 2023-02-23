@@ -928,6 +928,51 @@ func (client *ColoniesClient) DeleteCron(cronID string, prvKey string) error {
 	return nil
 }
 
+func (client *ColoniesClient) AddFunction(function *core.Function, prvKey string) (*core.Function, error) {
+	msg := rpc.CreateAddFunctionMsg(function)
+	jsonString, err := msg.ToJSON()
+	if err != nil {
+		return nil, err
+	}
+
+	respBodyString, err := client.sendMessage(rpc.AddFunctionPayloadType, jsonString, prvKey, false)
+	if err != nil {
+		return nil, err
+	}
+
+	return core.ConvertJSONToFunction(respBodyString)
+}
+
+func (client *ColoniesClient) GetFunctions(executorID string, prvKey string) ([]*core.Function, error) {
+	msg := rpc.CreateGetFunctionsMsg(executorID)
+	jsonString, err := msg.ToJSON()
+	if err != nil {
+		return nil, err
+	}
+
+	respBodyString, err := client.sendMessage(rpc.GetFunctionsPayloadType, jsonString, prvKey, false)
+	if err != nil {
+		return nil, err
+	}
+
+	return core.ConvertJSONToFunctionArray(respBodyString)
+}
+
+func (client *ColoniesClient) DeleteFunction(functionID string, prvKey string) error {
+	msg := rpc.CreateDeleteFunctionMsg(functionID)
+	jsonString, err := msg.ToJSON()
+	if err != nil {
+		return err
+	}
+
+	_, err = client.sendMessage(rpc.DeleteFunctionPayloadType, jsonString, prvKey, false)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (client *ColoniesClient) Version() (string, string, error) {
 	msg := rpc.CreateVersionMsg("", "")
 	jsonString, err := msg.ToJSON()

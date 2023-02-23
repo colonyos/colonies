@@ -52,7 +52,7 @@ func (server *ColoniesServer) handleAddAttributeHTTPRequest(c *gin.Context, reco
 	msg.Attribute.GenerateID()
 	msg.Attribute.TargetProcessGraphID = process.ProcessGraphID
 
-	addedAttribute, err := server.controller.addAttribute(msg.Attribute)
+	addedAttribute, err := server.controller.addAttribute(&msg.Attribute)
 	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
