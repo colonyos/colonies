@@ -197,7 +197,7 @@ func (controller *coloniesController) triggerCrons() {
 			if cron.HasExpired() {
 				processgraph, err := controller.db.GetProcessGraphByID(cron.PrevProcessGraphID)
 				if err != nil {
-					log.WithFields(log.Fields{"Error": err, "PrevProcessGraphID": cron.PrevProcessGraphID}).Error("Failed getting all crons")
+					log.WithFields(log.Fields{"Error": err, "PrevProcessGraphId": cron.PrevProcessGraphID}).Error("Failed getting all crons")
 					continue
 				}
 				if processgraph == nil {

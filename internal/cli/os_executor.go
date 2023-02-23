@@ -47,8 +47,8 @@ var osExecutorCmd = &cobra.Command{
 
 var executorStartCmd = &cobra.Command{
 	Use:   "start",
-	Short: "Register and start a local Unix process executor",
-	Long:  "Register and start a local Unix process executor",
+	Short: "Add and start a local Unix process executor",
+	Long:  "Add and start a local Unix process executor",
 	Run: func(cmd *cobra.Command, args []string) {
 		log.WithFields(log.Fields{"BuildVersion": build.BuildVersion, "BuildTime": build.BuildTime}).Info("Starting a local executor running Unix processes")
 		parseServerEnv()
@@ -114,14 +114,14 @@ var executorStartCmd = &cobra.Command{
 		err = os.WriteFile("/tmp/executorprvkey", []byte(executorPrvKey), 0644)
 		CheckError(err)
 
-		log.WithFields(log.Fields{"ExecutorID": executorID, "ExecutorName": ExecutorName, "ExecutorType": ExecutorType, "ColonyID": ColonyID, "Long": Long, "Lat": Lat}).Info("Register a new Executor")
+		log.WithFields(log.Fields{"ExecutorID": executorID, "ExecutorName": ExecutorName, "ExecutorType": ExecutorType, "ColonyID": ColonyID, "Long": Long, "Lat": Lat}).Info("Added a new executor")
 		executor := core.CreateExecutor(executorID, ExecutorType, ExecutorName, ColonyID, time.Now(), time.Now())
 		executor.Location.Long = Long
 		executor.Location.Lat = Lat
 		_, err = client.AddExecutor(executor, ColonyPrvKey)
 		CheckError(err)
 
-		log.WithFields(log.Fields{"ExecutorID": executorID}).Info("Approving Executor")
+		log.WithFields(log.Fields{"ExecutorID": executorID}).Info("Approving executor")
 		err = client.ApproveExecutor(executorID, ColonyPrvKey)
 		CheckError(err)
 
@@ -134,7 +134,7 @@ var executorStartCmd = &cobra.Command{
 				log.WithFields(log.Fields{"ProcessID": assignedProcess.ID}).Info("Closing process as failed")
 				client.Fail(assignedProcess.ID, []string{"SIGTERM"}, executorPrvKey)
 			}
-			unregisterExecutorFromTmp(client)
+			removeExecutorFromTmp(client)
 			os.Exit(0)
 		}()
 
@@ -212,10 +212,10 @@ var executorStartCmd = &cobra.Command{
 			}
 
 			if failure {
-				log.WithFields(log.Fields{"processID": assignedProcess.ID}).Info("Closing process as failed")
+				log.WithFields(log.Fields{"ProcessID": assignedProcess.ID}).Info("Closing process as failed")
 				client.Fail(assignedProcess.ID, []string{output}, executorPrvKey)
 			} else {
-				log.WithFields(log.Fields{"processID": assignedProcess.ID}).Info("Closing process as successful")
+				log.WithFields(log.Fields{"ProcessID": assignedProcess.ID}).Info("Closing process as successful")
 				client.CloseWithOutput(assignedProcess.ID, []string{output}, executorPrvKey)
 			}
 		}

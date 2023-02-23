@@ -70,7 +70,7 @@ func (wsSubCtrl *wsSubscriptionController) sendProcessToWS(executorID string,
 			"ExecutorID":   executorID,
 			"ExecutorType": process.ProcessSpec.Conditions.ExecutorType,
 			"State":        process.State,
-			"Err":          err}).
+			"Error":        err}).
 			Error("Failed to create Process JSON when subscribing to processes")
 		cancel()
 	}
@@ -80,7 +80,7 @@ func (wsSubCtrl *wsSubscriptionController) sendProcessToWS(executorID string,
 			"ExecutorID":   executorID,
 			"ExecutorType": process.ProcessSpec.Conditions.ExecutorType,
 			"State":        process.State,
-			"Err":          err}).
+			"Error":        err}).
 			Error("Failed to create RPCReplyMsg when subscribing to processes")
 		cancel()
 	}
@@ -90,7 +90,7 @@ func (wsSubCtrl *wsSubscriptionController) sendProcessToWS(executorID string,
 			"ExecutorID":   executorID,
 			"ExecutorType": process.ProcessSpec.Conditions.ExecutorType,
 			"State":        process.State,
-			"Err":          err}).
+			"Error":        err}).
 			Error("Failed to create RPCReplyMsg JSON when subscribing to processes")
 		cancel()
 	}
@@ -100,7 +100,7 @@ func (wsSubCtrl *wsSubscriptionController) sendProcessToWS(executorID string,
 			"ExecutorID":   executorID,
 			"ExecutorType": process.ProcessSpec.Conditions.ExecutorType,
 			"State":        process.State,
-			"Err":          err}).
+			"Error":        err}).
 			Error("Failed to write RPCReplyMsg JSON to WS when subscribing to processes")
 		cancel()
 	}
@@ -120,7 +120,7 @@ func (wsSubCtrl *wsSubscriptionController) subscribe(executorID string, processI
 					"ExecutorID":   executorID,
 					"ExecutorType": subscription.executorType,
 					"State":        subscription.state,
-					"Err":          err}).
+					"Error":        err}).
 					Debug("Subscriber timed out")
 				subscription.wsConn.Close()
 				return // This will kill the go-routine, also note all cancelCtx will result in an err to errChan

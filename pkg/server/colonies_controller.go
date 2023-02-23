@@ -611,7 +611,7 @@ func (controller *coloniesController) createProcessGraph(workflowSpec *core.Work
 			processSpec.MaxExecTime = -1
 		}
 		process := core.CreateProcess(&processSpec)
-		log.WithFields(log.Fields{"ProcessID": process.ID, "MaxExecTime": process.ProcessSpec.MaxExecTime, "MaxRetries": process.ProcessSpec.MaxRetries}).Debug("Creating new process")
+		log.WithFields(log.Fields{"ProcessId": process.ID, "MaxExecTime": process.ProcessSpec.MaxExecTime, "MaxRetries": process.ProcessSpec.MaxRetries}).Debug("Creating new process")
 		if len(processSpec.Conditions.Dependencies) == 0 {
 			// The process is a root process, let it start immediately
 			process.WaitForParents = false
@@ -644,7 +644,7 @@ func (controller *coloniesController) createProcessGraph(workflowSpec *core.Work
 		return nil, errors.New(msg)
 	}
 
-	log.WithFields(log.Fields{"ProcessGraphID": processgraph.ID}).Debug("Submitting workflow")
+	log.WithFields(log.Fields{"ProcessGraphId": processgraph.ID}).Debug("Submitting workflow")
 
 	// Create dependencies
 	for _, process := range processMap {
@@ -664,7 +664,7 @@ func (controller *coloniesController) createProcessGraph(workflowSpec *core.Work
 	for _, process := range processMap {
 		// This function is called from the controller, so it OK to use the database layer directly, in fact
 		// we will cause a deadlock if we call controller.addProcess
-		log.WithFields(log.Fields{"ProcessID": process.ID}).Debug("Submitting process part of processgraph")
+		log.WithFields(log.Fields{"ProcessId": process.ID}).Debug("Submitting process part of processgraph")
 		addedProcess, err := controller.addProcessToDB(process)
 		if err != nil {
 			msg := "Failed to submit workflow, failed to add process"
@@ -929,7 +929,7 @@ func (controller *coloniesController) closeSuccessful(processID string, output [
 			}
 
 			if process.ProcessGraphID != "" {
-				log.WithFields(log.Fields{"ProcessGraph": process.ProcessGraphID}).Debug("Resolving processgraph (close successful)")
+				log.WithFields(log.Fields{"ProcessGraphId": process.ProcessGraphID}).Debug("Resolving processgraph (close successful)")
 				processGraph, err := controller.db.GetProcessGraphByID(process.ProcessGraphID)
 				if err != nil {
 					cmd.errorChan <- err
@@ -1004,7 +1004,7 @@ func (controller *coloniesController) closeFailed(processID string, errs []strin
 			}
 
 			if process.ProcessGraphID != "" {
-				log.WithFields(log.Fields{"ProcessGraph": process.ProcessGraphID}).Debug("Resolving processgraph (close failed)")
+				log.WithFields(log.Fields{"ProcessGraphId": process.ProcessGraphID}).Debug("Resolving processgraph (close failed)")
 				processGraph, err := controller.db.GetProcessGraphByID(process.ProcessGraphID)
 				if err != nil {
 					cmd.errorChan <- err
@@ -1042,7 +1042,7 @@ func (controller *coloniesController) assign(executorID string, colonyID string,
 				return
 			}
 			if executor == nil {
-				cmd.errorChan <- errors.New("Executor with id <" + executorID + "> could not be found")
+				cmd.errorChan <- errors.New("Executor with Id <" + executorID + "> could not be found")
 				controller.assignMutex.Unlock()
 				return
 			}
@@ -1079,7 +1079,7 @@ func (controller *coloniesController) assign(executorID string, colonyID string,
 			controller.assignMutex.Unlock()
 
 			if selectedProcess.ProcessGraphID != "" {
-				log.WithFields(log.Fields{"ProcessGraph": selectedProcess.ProcessGraphID}).Debug("Resolving processgraph (assigned)")
+				log.WithFields(log.Fields{"ProcessGraphId": selectedProcess.ProcessGraphID}).Debug("Resolving processgraph (assigned)")
 				processGraph, err := controller.db.GetProcessGraphByID(selectedProcess.ProcessGraphID)
 				if err != nil {
 					log.Error(err)
