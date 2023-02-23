@@ -68,8 +68,8 @@ var generatorCmd = &cobra.Command{
 
 var addGeneratorCmd = &cobra.Command{
 	Use:   "add",
-	Short: "Add a generator to a Colony",
-	Long:  "Add a generator to a Colony",
+	Short: "Add a generator",
+	Long:  "Add a generator",
 	Run: func(cmd *cobra.Command, args []string) {
 		parseServerEnv()
 
@@ -281,8 +281,8 @@ var getGeneratorCmd = &cobra.Command{
 
 var getGeneratorsCmd = &cobra.Command{
 	Use:   "ls",
-	Short: "List all generators in a colony",
-	Long:  "List all generators in a colony",
+	Short: "List all generators",
+	Long:  "List all generators",
 	Run: func(cmd *cobra.Command, args []string) {
 		parseServerEnv()
 

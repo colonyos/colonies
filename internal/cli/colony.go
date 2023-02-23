@@ -17,8 +17,8 @@ import (
 )
 
 func init() {
-	colonyCmd.AddCommand(registerColonyCmd)
-	colonyCmd.AddCommand(unregisterColonyCmd)
+	colonyCmd.AddCommand(addColonyCmd)
+	colonyCmd.AddCommand(removeColonyCmd)
 	colonyCmd.AddCommand(lsColoniesCmd)
 	colonyCmd.AddCommand(colonyStatsCmd)
 	rootCmd.AddCommand(colonyCmd)
@@ -26,16 +26,16 @@ func init() {
 	colonyCmd.PersistentFlags().StringVarP(&ServerHost, "host", "", DefaultServerHost, "Server host")
 	colonyCmd.PersistentFlags().IntVarP(&ServerPort, "port", "", -1, "Server HTTP port")
 
-	registerColonyCmd.Flags().StringVarP(&ServerID, "serverid", "", "", "Colonies server Id")
-	registerColonyCmd.Flags().StringVarP(&ServerPrvKey, "serverprvkey", "", "", "Colonies server private key")
-	registerColonyCmd.Flags().StringVarP(&ColonyPrvKey, "colonyprvkey", "", "", "Colony private key")
-	registerColonyCmd.Flags().StringVarP(&SpecFile, "spec", "", "", "JSON specification of a Colony")
-	registerColonyCmd.MarkFlagRequired("spec")
+	addColonyCmd.Flags().StringVarP(&ServerID, "serverid", "", "", "Colonies server Id")
+	addColonyCmd.Flags().StringVarP(&ServerPrvKey, "serverprvkey", "", "", "Colonies server private key")
+	addColonyCmd.Flags().StringVarP(&ColonyPrvKey, "colonyprvkey", "", "", "Colony private key")
+	addColonyCmd.Flags().StringVarP(&SpecFile, "spec", "", "", "JSON specification of a Colony")
+	addColonyCmd.MarkFlagRequired("spec")
 
-	unregisterColonyCmd.Flags().StringVarP(&ServerID, "serverid", "", "", "Colonies server Id")
-	unregisterColonyCmd.Flags().StringVarP(&ServerPrvKey, "serverprvkey", "", "", "Colonies server private key")
-	unregisterColonyCmd.Flags().StringVarP(&ColonyID, "colonyid", "", "", "Colony Id")
-	unregisterColonyCmd.MarkFlagRequired("colonyid")
+	removeColonyCmd.Flags().StringVarP(&ServerID, "serverid", "", "", "Colonies server Id")
+	removeColonyCmd.Flags().StringVarP(&ServerPrvKey, "serverprvkey", "", "", "Colonies server private key")
+	removeColonyCmd.Flags().StringVarP(&ColonyID, "colonyid", "", "", "Colony Id")
+	removeColonyCmd.MarkFlagRequired("colonyid")
 
 	lsColoniesCmd.Flags().StringVarP(&ServerID, "serverid", "", "", "Colonies server Id")
 	lsColoniesCmd.Flags().StringVarP(&ServerPrvKey, "serverprvkey", "", "", "Colonies server private key")
@@ -52,10 +52,10 @@ var colonyCmd = &cobra.Command{
 	Long:  "Manage colonies",
 }
 
-var registerColonyCmd = &cobra.Command{
-	Use:   "register",
-	Short: "Register a new Colony",
-	Long:  "Register a new Colony",
+var addColonyCmd = &cobra.Command{
+	Use:   "add",
+	Short: "Add a new colony",
+	Long:  "Add a new colony",
 	Run: func(cmd *cobra.Command, args []string) {
 		parseServerEnv()
 
@@ -106,14 +106,14 @@ var registerColonyCmd = &cobra.Command{
 		err = keychain.AddPrvKey(colonyID, prvKey)
 		CheckError(err)
 
-		log.WithFields(log.Fields{"colonyID": addedColony.ID}).Info("Colony registered")
+		log.WithFields(log.Fields{"ColonyID": addedColony.ID}).Info("Colony added")
 	},
 }
 
-var unregisterColonyCmd = &cobra.Command{
-	Use:   "unregister",
-	Short: "Unregister a colony",
-	Long:  "Unregister a colony",
+var removeColonyCmd = &cobra.Command{
+	Use:   "remove",
+	Short: "Remove a colony",
+	Long:  "Remove a colony",
 	Run: func(cmd *cobra.Command, args []string) {
 		parseServerEnv()
 
@@ -138,7 +138,7 @@ var unregisterColonyCmd = &cobra.Command{
 		err = client.DeleteColony(ColonyID, ServerPrvKey)
 		CheckError(err)
 
-		log.WithFields(log.Fields{"colonyID": ColonyID}).Info("Colony unregistered")
+		log.WithFields(log.Fields{"ColonyID": ColonyID}).Info("Colony removed")
 	},
 }
 

@@ -52,18 +52,18 @@ func (controller *coloniesController) timeoutLoop() {
 				if process.Retries >= process.ProcessSpec.MaxRetries && process.ProcessSpec.MaxRetries > -1 {
 					err := controller.closeFailed(process.ID, []string{"Maximum execution time limit exceeded"})
 					if err != nil {
-						log.WithFields(log.Fields{"ProcessID": process.ID, "Error": err}).Debug("Max retries reached, but failed to close process")
+						log.WithFields(log.Fields{"ProcessId": process.ID, "Error": err}).Debug("Max retries reached, but failed to close process")
 						continue
 					}
-					log.WithFields(log.Fields{"ProcessID": process.ID, "MaxExecTime": process.ProcessSpec.MaxExecTime, "MaxRetries": process.ProcessSpec.MaxRetries}).Debug("Process closed as failed as max retries reached")
+					log.WithFields(log.Fields{"ProcessId": process.ID, "MaxExecTime": process.ProcessSpec.MaxExecTime, "MaxRetries": process.ProcessSpec.MaxRetries}).Debug("Process closed as failed as max retries reached")
 					continue
 				}
 
 				err := controller.unassignExecutor(process.ID)
 				if err != nil {
-					log.WithFields(log.Fields{"ProcessID": process.ID, "Error": err}).Error("Failed to unassign process")
+					log.WithFields(log.Fields{"ProcessId": process.ID, "Error": err}).Error("Failed to unassign process")
 				}
-				log.WithFields(log.Fields{"ProcessID": process.ID, "MaxExecTime": process.ProcessSpec.MaxExecTime, "MaxRetries": process.ProcessSpec.MaxRetries}).Debug("Process was unassigned as it did not complete in time")
+				log.WithFields(log.Fields{"ProcessId": process.ID, "MaxExecTime": process.ProcessSpec.MaxExecTime, "MaxRetries": process.ProcessSpec.MaxRetries}).Debug("Process was unassigned as it did not complete in time")
 			}
 		}
 
@@ -79,10 +79,10 @@ func (controller *coloniesController) timeoutLoop() {
 			if time.Now().Unix() > process.WaitDeadline.Unix() {
 				err := controller.closeFailed(process.ID, []string{"Maximum waiting time limit exceeded"})
 				if err != nil {
-					log.WithFields(log.Fields{"ProcessID": process.ID, "Error": err}).Debug("Max waiting time reached, but failed to close process")
+					log.WithFields(log.Fields{"ProcessId": process.ID, "Error": err}).Debug("Max waiting time reached, but failed to close process")
 					continue
 				}
-				log.WithFields(log.Fields{"ProcessID": process.ID, "MaxWaitTime": process.ProcessSpec.MaxWaitTime}).Debug("Process closed as failed as maximum waiting time limit exceeded")
+				log.WithFields(log.Fields{"ProcessId": process.ID, "MaxWaitTime": process.ProcessSpec.MaxWaitTime}).Debug("Process closed as failed as maximum waiting time limit exceeded")
 			}
 		}
 	}
