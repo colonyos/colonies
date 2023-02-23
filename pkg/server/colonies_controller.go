@@ -30,11 +30,13 @@ type command struct {
 	statisticsReplyChan    chan *core.Statistics
 	executorReplyChan      chan *core.Executor
 	executorsReplyChan     chan []*core.Executor
-	attributeReplyChan     chan core.Attribute
+	attributeReplyChan     chan *core.Attribute
 	generatorReplyChan     chan *core.Generator
 	generatorsReplyChan    chan []*core.Generator
 	cronReplyChan          chan *core.Cron
 	cronsReplyChan         chan []*core.Cron
+	functionReplyChan      chan *core.Function
+	functionsReplyChan     chan []*core.Function
 	handler                func(cmd *command)
 }
 
@@ -1310,11 +1312,11 @@ func (controller *coloniesController) getStatistics() (*core.Statistics, error) 
 	}
 }
 
-func (controller *coloniesController) addAttribute(attribute core.Attribute) (core.Attribute, error) {
-	cmd := &command{attributeReplyChan: make(chan core.Attribute, 1),
+func (controller *coloniesController) addAttribute(attribute *core.Attribute) (*core.Attribute, error) {
+	cmd := &command{attributeReplyChan: make(chan *core.Attribute, 1),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
-			err := controller.db.AddAttribute(attribute)
+			err := controller.db.AddAttribute(*attribute)
 			if err != nil {
 				cmd.errorChan <- err
 				return
@@ -1324,20 +1326,20 @@ func (controller *coloniesController) addAttribute(attribute core.Attribute) (co
 				cmd.errorChan <- err
 				return
 			}
-			cmd.attributeReplyChan <- addedAttribute
+			cmd.attributeReplyChan <- &addedAttribute
 		}}
 
 	controller.cmdQueue <- cmd
 	select {
 	case err := <-cmd.errorChan:
-		return core.Attribute{}, err
+		return nil, err
 	case addedAttribute := <-cmd.attributeReplyChan:
 		return addedAttribute, nil
 	}
 }
 
-func (controller *coloniesController) getAttribute(attributeID string) (core.Attribute, error) {
-	cmd := &command{attributeReplyChan: make(chan core.Attribute, 1),
+func (controller *coloniesController) getAttribute(attributeID string) (*core.Attribute, error) {
+	cmd := &command{attributeReplyChan: make(chan *core.Attribute, 1),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
 			attribute, err := controller.db.GetAttributeByID(attributeID)
@@ -1345,16 +1347,99 @@ func (controller *coloniesController) getAttribute(attributeID string) (core.Att
 				cmd.errorChan <- err
 				return
 			}
-			cmd.attributeReplyChan <- attribute
+			cmd.attributeReplyChan <- &attribute
 		}}
 
 	controller.cmdQueue <- cmd
 	select {
 	case err := <-cmd.errorChan:
-		return core.Attribute{}, err
+		return nil, err
 	case attribute := <-cmd.attributeReplyChan:
 		return attribute, nil
 	}
+}
+
+func (controller *coloniesController) addFunction(function *core.Function) (*core.Function, error) {
+	cmd := &command{functionReplyChan: make(chan *core.Function, 1),
+		errorChan: make(chan error, 1),
+		handler: func(cmd *command) {
+			err := controller.db.AddFunction(function)
+			if err != nil {
+				cmd.errorChan <- err
+				return
+			}
+			addedFunction, err := controller.db.GetFunctionByID(function.FunctionID)
+			if err != nil {
+				cmd.errorChan <- err
+				return
+			}
+			cmd.functionReplyChan <- addedFunction
+		}}
+
+	controller.cmdQueue <- cmd
+	select {
+	case err := <-cmd.errorChan:
+		return nil, err
+	case addedFunction := <-cmd.functionReplyChan:
+		return addedFunction, nil
+	}
+}
+
+func (controller *coloniesController) getFunctionByExecutorID(executorID string) ([]*core.Function, error) {
+	cmd := &command{functionsReplyChan: make(chan []*core.Function, 1),
+		errorChan: make(chan error, 1),
+		handler: func(cmd *command) {
+			functions, err := controller.db.GetFunctionsByExecutorID(executorID)
+			if err != nil {
+				cmd.errorChan <- err
+				return
+			}
+			cmd.functionsReplyChan <- functions
+		}}
+
+	controller.cmdQueue <- cmd
+	select {
+	case err := <-cmd.errorChan:
+		return nil, err
+	case functions := <-cmd.functionsReplyChan:
+		return functions, nil
+	}
+}
+
+func (controller *coloniesController) getFunctionByID(functionID string) (*core.Function, error) {
+	cmd := &command{functionReplyChan: make(chan *core.Function, 1),
+		errorChan: make(chan error, 1),
+		handler: func(cmd *command) {
+			function, err := controller.db.GetFunctionByID(functionID)
+			if err != nil {
+				cmd.errorChan <- err
+				return
+			}
+			cmd.functionReplyChan <- function
+		}}
+
+	controller.cmdQueue <- cmd
+	select {
+	case err := <-cmd.errorChan:
+		return nil, err
+	case function := <-cmd.functionReplyChan:
+		return function, nil
+	}
+}
+
+func (controller *coloniesController) deleteFunction(functionID string) error {
+	cmd := &command{errorChan: make(chan error, 1),
+		handler: func(cmd *command) {
+			err := controller.db.DeleteFunctionByID(functionID)
+			if err != nil {
+				cmd.errorChan <- err
+				return
+			}
+			cmd.errorChan <- nil
+		}}
+
+	controller.cmdQueue <- cmd
+	return <-cmd.errorChan
 }
 
 func (controller *coloniesController) resetDatabase() error {

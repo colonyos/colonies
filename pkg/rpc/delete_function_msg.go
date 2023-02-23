@@ -7,13 +7,13 @@ import (
 const DeleteFunctionPayloadType = "deletefunctionmsg"
 
 type DeleteFunctionMsg struct {
-	Name    string `json:"name"`
-	MsgType string `json:"msgtype"`
+	FunctionID string `json:"functionid"`
+	MsgType    string `json:"msgtype"`
 }
 
-func CreateDeleteFunctionMsg(name string) *DeleteFunctionMsg {
+func CreateDeleteFunctionMsg(functionID string) *DeleteFunctionMsg {
 	msg := &DeleteFunctionMsg{}
-	msg.Name = name
+	msg.FunctionID = functionID
 	msg.MsgType = DeleteFunctionPayloadType
 
 	return msg
@@ -42,7 +42,7 @@ func (msg *DeleteFunctionMsg) Equals(msg2 *DeleteFunctionMsg) bool {
 		return false
 	}
 
-	if msg.MsgType == msg2.MsgType && msg.Name == msg2.Name {
+	if msg.MsgType == msg2.MsgType && msg.FunctionID == msg2.FunctionID {
 		return true
 	}
 
