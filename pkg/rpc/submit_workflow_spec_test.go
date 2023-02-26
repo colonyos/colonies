@@ -17,16 +17,16 @@ func createWorkflowSpec() *core.WorkflowSpec {
 	workflowSpec := core.CreateWorkflowSpec(core.GenerateRandomID())
 
 	funcSpec1 := core.CreateEmptyFunctionSpec()
-	funcSpec1.Name = "task1"
+	funcSpec1.NodeName = "task1"
 
 	funcSpec2 := core.CreateEmptyFunctionSpec()
-	funcSpec2.Name = "task2"
+	funcSpec2.NodeName = "task2"
 
 	funcSpec3 := core.CreateEmptyFunctionSpec()
-	funcSpec3.Name = "task3"
+	funcSpec3.NodeName = "task3"
 
 	funcSpec4 := core.CreateEmptyFunctionSpec()
-	funcSpec4.Name = "task4"
+	funcSpec4.NodeName = "task4"
 
 	funcSpec2.AddDependency("task1")
 	funcSpec3.AddDependency("task1")

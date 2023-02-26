@@ -234,7 +234,7 @@ func TestProcessClone(t *testing.T) {
 
 	processClone := process.Clone()
 	processClone.ID = GenerateRandomID()
-	processClone.FunctionSpec.Func = "test_func2"
+	processClone.FunctionSpec.FuncName = "test_func2"
 
 	assert.False(t, processClone.Equals(process))
 }

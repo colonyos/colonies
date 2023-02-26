@@ -12,8 +12,8 @@ type Conditions struct {
 }
 
 type FunctionSpec struct {
-	Name        string            `json:"name"`
-	Func        string            `json:"func"`
+	NodeName    string            `json:"nodename"`
+	FuncName    string            `json:"funcname"`
 	Args        []string          `json:"args"`
 	Priority    int               `json:"priority"`
 	MaxWaitTime int               `json:"maxwaittime"`
@@ -32,9 +32,9 @@ func CreateEmptyFunctionSpec() *FunctionSpec {
 	return funcSpec
 }
 
-func CreateFunctionSpec(name string, fn string, args []string, colonyID string, executorIDs []string, executorType string, maxWaitTime int, maxExecTime int, maxRetries int, env map[string]string, dependencies []string, priority int) *FunctionSpec {
+func CreateFunctionSpec(nodeName string, funcName string, args []string, colonyID string, executorIDs []string, executorType string, maxWaitTime int, maxExecTime int, maxRetries int, env map[string]string, dependencies []string, priority int) *FunctionSpec {
 	conditions := Conditions{ColonyID: colonyID, ExecutorIDs: executorIDs, ExecutorType: executorType, Dependencies: dependencies}
-	return &FunctionSpec{Name: name, Func: fn, Args: args, MaxWaitTime: maxWaitTime, MaxExecTime: maxExecTime, MaxRetries: maxRetries, Conditions: conditions, Env: env, Priority: priority}
+	return &FunctionSpec{NodeName: nodeName, FuncName: funcName, Args: args, MaxWaitTime: maxWaitTime, MaxExecTime: maxExecTime, MaxRetries: maxRetries, Conditions: conditions, Env: env, Priority: priority}
 }
 
 func ConvertJSONToFunctionSpec(jsonString string) (*FunctionSpec, error) {
@@ -63,8 +63,8 @@ func (funcSpec *FunctionSpec) Equals(funcSpec2 *FunctionSpec) bool {
 	}
 
 	same := true
-	if funcSpec.Name != funcSpec2.Name ||
-		funcSpec.Func != funcSpec2.Func ||
+	if funcSpec.NodeName != funcSpec2.NodeName ||
+		funcSpec.FuncName != funcSpec2.FuncName ||
 		funcSpec.MaxWaitTime != funcSpec2.MaxWaitTime ||
 		funcSpec.MaxExecTime != funcSpec2.MaxExecTime ||
 		funcSpec.MaxRetries != funcSpec2.MaxRetries ||
