@@ -469,7 +469,7 @@ func printGraf(client *client.ColoniesClient, graph *core.ProcessGraph) {
 		process, err := client.GetProcess(processID, ExecutorPrvKey)
 		CheckError(err)
 
-		f := process.FunctionSpec.Func
+		f := process.FunctionSpec.FuncName
 		if f == "" {
 			f = "None"
 		}
@@ -491,7 +491,7 @@ func printGraf(client *client.ColoniesClient, graph *core.ProcessGraph) {
 		}
 
 		processData := [][]string{
-			[]string{"Name", process.FunctionSpec.Name},
+			[]string{"NodeName", process.FunctionSpec.NodeName},
 			[]string{"ProcessID", process.ID},
 			[]string{"ExecutorType", process.FunctionSpec.Conditions.ExecutorType},
 			[]string{"Func", f},

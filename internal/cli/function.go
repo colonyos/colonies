@@ -28,7 +28,7 @@ func init() {
 	execFuncCmd.Flags().StringVarP(&TargetExecutorType, "targettype", "", "", "Target executor type")
 	execFuncCmd.Flags().StringVarP(&TargetExecutorID, "targetid", "", "", "Target executor Id")
 	execFuncCmd.Flags().StringVarP(&ColonyID, "colonyid", "", "", "Colony Id")
-	execFuncCmd.Flags().StringVarP(&Func, "func", "", "", "Remote function to call")
+	execFuncCmd.Flags().StringVarP(&FuncName, "func", "", "", "Remote function to call")
 	execFuncCmd.Flags().StringSliceVarP(&Args, "args", "", make([]string, 0), "Arguments")
 	execFuncCmd.Flags().StringSliceVarP(&Env, "env", "", make([]string, 0), "Environment")
 	execFuncCmd.Flags().IntVarP(&MaxWaitTime, "maxwaittime", "", -1, "Maximum queue wait time")
@@ -164,7 +164,7 @@ var execFuncCmd = &cobra.Command{
 		}
 
 		funcSpec := core.FunctionSpec{
-			Func:        Func,
+			FuncName:    FuncName,
 			Args:        Args,
 			MaxWaitTime: MaxWaitTime,
 			MaxExecTime: MaxExecTime,
