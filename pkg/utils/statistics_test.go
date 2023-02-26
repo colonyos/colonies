@@ -17,7 +17,7 @@ func TestCalcAvgTimes(t *testing.T) {
 	maxExecTime := -1
 	maxRetries := 3
 
-	funcSpec1 := core.CreateFunctionSpec("test_name", "test_func", []string{"test_arg"}, colonyID, []string{}, executorType, maxWaitTime, maxExecTime, maxRetries, make(map[string]string), []string{}, 1)
+	funcSpec1 := core.CreateFunctionSpec("test_name", "test_func", []string{"test_arg"}, colonyID, []string{}, executorType, maxWaitTime, maxExecTime, maxRetries, make(map[string]string), []string{}, 1, "test_label")
 
 	var zeroProcesses []*core.Process
 	var processes []*core.Process

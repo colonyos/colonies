@@ -158,7 +158,7 @@ var executorStartCmd = &cobra.Command{
 			}
 
 			log.WithFields(log.Fields{"ProcessID": assignedProcess.ID}).Info("Executor was assigned a process")
-			log.WithFields(log.Fields{"Func": assignedProcess.FunctionSpec.FuncName, "Args": assignedProcess.FunctionSpec.Args}).Info("Lauching process")
+			log.WithFields(log.Fields{"FuncName": assignedProcess.FunctionSpec.FuncName, "Args": assignedProcess.FunctionSpec.Args}).Info("Lauching process")
 			execCmd := assignedProcess.FunctionSpec.Args
 			execCmd = append([]string{assignedProcess.FunctionSpec.FuncName}, execCmd...)
 			execCmdStr := strings.Join(execCmd[:], " ")

@@ -7,7 +7,7 @@
 Colonies is a framework for managing AI/ML workloads across heterogeneous computing platforms, e.g. public clouds, edge servers as well as web apps or IoT devices. It can be used a building block to implement a **distributed FaaS framework** or a **meta-operating system**.
 
 ## Key features
-* Users submit specifications of functions (or workflows) to the Colonies server they want to run. These functions will then be executed by **Executors**, which are computer programs residing anywhere on the Internet.
+* Users submit function specifications to the Colonies server they want to run. These functions will then be executed by **Executors**, which are computer programs residing anywhere on the Internet.
 * Colonies makes it possible to implement a **loosely decoupled** workflow architecture spanning many platforms and infrastructures. All coordination is managed by Colonies servers and developers can focus on implementing **Executors** based on a **Function-as-a-Service (FaaS)** event-driven execution model. 
 * Complex workflows are automatically broken down into events (process assignments) that is received by the Executors. The system can then easily scale just by deploying more Executors. Failed processes are automatically re-assigned to other Executors. 
 * Colonies function a **distributed ledger** and contains full execution history. Traceability allows developers to keep track of the system and more easily debug their services.  
@@ -36,12 +36,12 @@ colonies dev
     "conditions": {
         "executortype": "cli"
     },
-    "func": "echo sayhello"
+    "funcname": "echo sayhello"
 }
 ```
 
 ```console
-colonies process submit --spec sayhello.json 
+colonies function submit --spec sayhello.json 
 ```
 
 ### Start a OS executor (executes functions as Unix commands)
