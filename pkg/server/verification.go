@@ -8,13 +8,13 @@ import (
 
 func VerifyWorkflowSpec(workflowSpec *core.WorkflowSpec) error {
 	processMap := make(map[string]*core.Process)
-	for _, processSpec := range workflowSpec.ProcessSpecs {
-		process := core.CreateProcess(&processSpec)
-		processMap[process.ProcessSpec.Name] = process
+	for _, funcSpec := range workflowSpec.FunctionSpecs {
+		process := core.CreateProcess(&funcSpec)
+		processMap[process.FunctionSpec.NodeName] = process
 	}
 
 	for _, process := range processMap {
-		for _, dependsOn := range process.ProcessSpec.Conditions.Dependencies {
+		for _, dependsOn := range process.FunctionSpec.Conditions.Dependencies {
 			parentProcess := processMap[dependsOn]
 			if parentProcess == nil {
 				msg := "Failed to submit workflow, invalid dependencies, are you depending on a process spec name that does not exits?"

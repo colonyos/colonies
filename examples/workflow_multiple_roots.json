@@ -1,7 +1,7 @@
 [
     {
-        "name": "task_a",
-        "func": "echo",
+        "nodename": "task_a",
+        "funcname": "echo",
         "args": [
             "task_a"
         ],
@@ -11,8 +11,8 @@
         }
     },
     {
-        "name": "task_e",
-        "func": "echo",
+        "nodename": "task_e",
+        "funcname": "echo",
         "args": [
             "task_a"
         ],
@@ -22,8 +22,8 @@
         }
     },
     {
-        "name": "task_b",
-        "func": "echo",
+        "nodename": "task_b",
+        "funcname": "echo",
         "args": [
             "task_b"
         ],
@@ -36,8 +36,8 @@
         }
     },
     {
-        "name": "task_c",
-        "func": "echo",
+        "nodename": "task_c",
+        "funcname": "echo",
         "args": [
             "task_c"
         ],
@@ -49,8 +49,8 @@
         }
     },
     {
-        "name": "task_d",
-        "func": "echo",
+        "nodename": "task_d",
+        "funcname": "echo",
         "args": [
             "task_d"
         ],

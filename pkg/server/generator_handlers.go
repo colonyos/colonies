@@ -58,7 +58,7 @@ func (server *ColoniesServer) handleAddGeneratorHTTPRequest(c *gin.Context, reco
 		return
 	}
 
-	log.WithFields(log.Fields{"GeneratorID": addedGenerator.ID}).Debug("Adding generator")
+	log.WithFields(log.Fields{"GeneratorId": addedGenerator.ID}).Debug("Adding generator")
 
 	server.sendHTTPReply(c, payloadType, jsonString)
 }
@@ -102,7 +102,7 @@ func (server *ColoniesServer) handleGetGeneratorHTTPRequest(c *gin.Context, reco
 		return
 	}
 
-	log.WithFields(log.Fields{"GeneratorID": generator.ID}).Debug("Getting generator")
+	log.WithFields(log.Fields{"GeneratorId": generator.ID}).Debug("Getting generator")
 
 	server.sendHTTPReply(c, payloadType, jsonString)
 }
@@ -139,7 +139,7 @@ func (server *ColoniesServer) handleResolveGeneratorHTTPRequest(c *gin.Context, 
 		return
 	}
 
-	log.WithFields(log.Fields{"GeneratorID": generator.ID, "GeneratorName": generator.Name}).Debug("Resolving generator")
+	log.WithFields(log.Fields{"GeneratorId": generator.ID, "GeneratorName": generator.Name}).Debug("Resolving generator")
 
 	server.sendHTTPReply(c, payloadType, jsonString)
 }
@@ -176,7 +176,7 @@ func (server *ColoniesServer) handleGetGeneratorsHTTPRequest(c *gin.Context, rec
 		return
 	}
 
-	log.WithFields(log.Fields{"ColonyID": msg.ColonyID, "Count": msg.Count}).Debug("Getting generators")
+	log.WithFields(log.Fields{"ColonyId": msg.ColonyID, "Count": msg.Count}).Debug("Getting generators")
 
 	server.sendHTTPReply(c, payloadType, jsonString)
 }
@@ -213,7 +213,7 @@ func (server *ColoniesServer) handlePackGeneratorHTTPRequest(c *gin.Context, rec
 		return
 	}
 
-	log.WithFields(log.Fields{"GeneratorID": generator.ID, "Arg": msg.Arg}).Debug("Adding arg to generator")
+	log.WithFields(log.Fields{"GeneratorId": generator.ID, "Arg": msg.Arg}).Debug("Adding arg to generator")
 
 	server.sendEmptyHTTPReply(c, payloadType)
 }
@@ -250,7 +250,7 @@ func (server *ColoniesServer) handleDeleteGeneratorHTTPRequest(c *gin.Context, r
 		return
 	}
 
-	log.WithFields(log.Fields{"GeneratorID": generator.ID}).Debug("Deleting generator")
+	log.WithFields(log.Fields{"GeneratorId": generator.ID}).Debug("Deleting generator")
 
 	server.sendEmptyHTTPReply(c, payloadType)
 }

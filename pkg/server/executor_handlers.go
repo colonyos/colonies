@@ -47,7 +47,7 @@ func (server *ColoniesServer) handleAddExecutorHTTPRequest(c *gin.Context, recov
 		return
 	}
 
-	log.WithFields(log.Fields{"ColonyID": msg.Executor.ColonyID, "ExecutorID": addedExecutor.ID}).Debug("Adding executor")
+	log.WithFields(log.Fields{"ColonyId": msg.Executor.ColonyID, "ExecutorId": addedExecutor.ID}).Debug("Adding executor")
 
 	server.sendHTTPReply(c, payloadType, jsonString)
 }
@@ -83,7 +83,7 @@ func (server *ColoniesServer) handleGetExecutorsHTTPRequest(c *gin.Context, reco
 		return
 	}
 
-	log.WithFields(log.Fields{"ColonyID": msg.ColonyID}).Debug("Getting executors")
+	log.WithFields(log.Fields{"ColonyId": msg.ColonyID}).Debug("Getting executors")
 
 	server.sendHTTPReply(c, payloadType, jsonString)
 }
@@ -120,7 +120,7 @@ func (server *ColoniesServer) handleGetExecutorHTTPRequest(c *gin.Context, recov
 		return
 	}
 
-	log.WithFields(log.Fields{"ExecutorID": executor.ID}).Debug("Getting executor")
+	log.WithFields(log.Fields{"ExecutorId": executor.ID}).Debug("Getting executor")
 
 	server.sendHTTPReply(c, payloadType, jsonString)
 }
@@ -157,7 +157,7 @@ func (server *ColoniesServer) handleApproveExecutorHTTPRequest(c *gin.Context, r
 		return
 	}
 
-	log.WithFields(log.Fields{"ExecutorID": executor.ID}).Debug("Approving executor")
+	log.WithFields(log.Fields{"ExecutorId": executor.ID}).Debug("Approving executor")
 
 	server.sendEmptyHTTPReply(c, payloadType)
 }
@@ -194,7 +194,7 @@ func (server *ColoniesServer) handleRejectExecutorHTTPRequest(c *gin.Context, re
 		return
 	}
 
-	log.WithFields(log.Fields{"ExecutorID": executor.ID}).Debug("Rejecting executor")
+	log.WithFields(log.Fields{"ExecutorId": executor.ID}).Debug("Rejecting executor")
 
 	server.sendEmptyHTTPReply(c, payloadType)
 }
@@ -231,7 +231,7 @@ func (server *ColoniesServer) handleDeleteExecutorHTTPRequest(c *gin.Context, re
 		return
 	}
 
-	log.WithFields(log.Fields{"ExecutorID": executor.ID}).Debug("Deleting executor")
+	log.WithFields(log.Fields{"ExecutorId": executor.ID}).Debug("Deleting executor")
 
 	server.sendEmptyHTTPReply(c, payloadType)
 }

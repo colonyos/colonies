@@ -101,7 +101,7 @@ func (server *ColoniesServer) handleGetProcessGraphsHTTPRequest(c *gin.Context, 
 		return
 	}
 
-	log.WithFields(log.Fields{"ColonyID": msg.ColonyID}).Debug("Getting processgraphs")
+	log.WithFields(log.Fields{"ColonyId": msg.ColonyID}).Debug("Getting processgraphs")
 
 	switch msg.State {
 	case core.WAITING:
@@ -183,7 +183,7 @@ func (server *ColoniesServer) handleDeleteProcessGraphHTTPRequest(c *gin.Context
 		return
 	}
 
-	log.WithFields(log.Fields{"ProcessGraphID": graph.ID}).Debug("Deleting processgraph")
+	log.WithFields(log.Fields{"ProcessGraphId": graph.ID}).Debug("Deleting processgraph")
 
 	server.sendEmptyHTTPReply(c, payloadType)
 }
@@ -211,7 +211,7 @@ func (server *ColoniesServer) handleDeleteAllProcessGraphsHTTPRequest(c *gin.Con
 		return
 	}
 
-	log.WithFields(log.Fields{"ColonyID": msg.ColonyID}).Debug("Deleting all processgraphs")
+	log.WithFields(log.Fields{"ColonyId": msg.ColonyID}).Debug("Deleting all processgraphs")
 
 	server.sendEmptyHTTPReply(c, payloadType)
 }
@@ -228,17 +228,17 @@ func (server *ColoniesServer) handleAddChildHTTPRequest(c *gin.Context, recovere
 		server.handleHTTPError(c, errors.New("Failed to add child to processgraph, msg.MsgType does not match payloadType"), http.StatusBadRequest)
 		return
 	}
-	if msg.ProcessSpec == nil {
-		server.handleHTTPError(c, errors.New("Failed to add child to processgraph, msg.ProcessSpec is nil"), http.StatusBadRequest)
+	if msg.FunctionSpec == nil {
+		server.handleHTTPError(c, errors.New("Failed to add child to processgraph, msg.FunctionSpec is nil"), http.StatusBadRequest)
 		return
 	}
 
-	err = server.validator.RequireExecutorMembership(recoveredID, msg.ProcessSpec.Conditions.ColonyID, true)
+	err = server.validator.RequireExecutorMembership(recoveredID, msg.FunctionSpec.Conditions.ColonyID, true)
 	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		return
 	}
 
-	process := core.CreateProcess(msg.ProcessSpec)
+	process := core.CreateProcess(msg.FunctionSpec)
 	addedProcess, err := server.controller.addChild(msg.ProcessGraphID, msg.ProcessID, process, recoveredID)
 	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
@@ -253,7 +253,7 @@ func (server *ColoniesServer) handleAddChildHTTPRequest(c *gin.Context, recovere
 		return
 	}
 
-	log.WithFields(log.Fields{"ProcessGraphID": msg.ProcessGraphID, "ParentProcessID": msg.ProcessID, "ProcessID": process.ID}).Debug("Adding child process")
+	log.WithFields(log.Fields{"ProcessGraphId": msg.ProcessGraphID, "ParentProcessID": msg.ProcessID, "ProcessID": process.ID}).Debug("Adding child process")
 
 	server.sendHTTPReply(c, payloadType, jsonString)
 }

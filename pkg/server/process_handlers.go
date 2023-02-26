@@ -13,8 +13,8 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func (server *ColoniesServer) handleSubmitProcessSpecHTTPRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
-	msg, err := rpc.CreateSubmitProcessSpecMsgFromJSON(jsonString)
+func (server *ColoniesServer) handleSubmitHTTPRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
+	msg, err := rpc.CreateSubmitFunctionSpecMsgFromJSON(jsonString)
 	if err != nil {
 		if server.handleHTTPError(c, errors.New("Failed to submit process, invalid JSON"), http.StatusBadRequest) {
 			return
@@ -25,17 +25,17 @@ func (server *ColoniesServer) handleSubmitProcessSpecHTTPRequest(c *gin.Context,
 		server.handleHTTPError(c, errors.New("Failed to submit process spec, msg.MsgType does not match payloadType"), http.StatusBadRequest)
 		return
 	}
-	if msg.ProcessSpec == nil {
-		server.handleHTTPError(c, errors.New("Failed to submit process spec, msg.ProcessSpec is nil"), http.StatusBadRequest)
+	if msg.FunctionSpec == nil {
+		server.handleHTTPError(c, errors.New("Failed to submit process spec, msg.FunctionSpec is nil"), http.StatusBadRequest)
 		return
 	}
 
-	err = server.validator.RequireExecutorMembership(recoveredID, msg.ProcessSpec.Conditions.ColonyID, true)
+	err = server.validator.RequireExecutorMembership(recoveredID, msg.FunctionSpec.Conditions.ColonyID, true)
 	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		return
 	}
 
-	process := core.CreateProcess(msg.ProcessSpec)
+	process := core.CreateProcess(msg.FunctionSpec)
 	addedProcess, err := server.controller.addProcess(process)
 	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
@@ -50,7 +50,7 @@ func (server *ColoniesServer) handleSubmitProcessSpecHTTPRequest(c *gin.Context,
 		return
 	}
 
-	log.WithFields(log.Fields{"ProcessID": process.ID}).Debug("Submitting process")
+	log.WithFields(log.Fields{"ProcessId": process.ID}).Debug("Submitting process")
 
 	server.sendHTTPReply(c, payloadType, jsonString)
 }
@@ -106,8 +106,8 @@ func (server *ColoniesServer) handleAssignProcessHTTPRequest(c *gin.Context, rec
 
 	log.WithFields(log.Fields{
 		"ExecutorType": executor.Type,
-		"ExecutorID":   recoveredID,
-		"ColonyID":     msg.ColonyID,
+		"ExecutorId":   recoveredID,
+		"ColonyId":     msg.ColonyID,
 		"Timeout":      msg.Timeout}).
 		Debug("Waiting for processes")
 
@@ -126,7 +126,7 @@ func (server *ColoniesServer) handleAssignProcessHTTPRequest(c *gin.Context, rec
 	}
 
 	if server.handleHTTPError(c, assignErr, http.StatusNotFound) {
-		log.WithFields(log.Fields{"ExecutorID": recoveredID, "ColonyID": msg.ColonyID}).Debug("No process can be assigned")
+		log.WithFields(log.Fields{"ExecutorId": recoveredID, "ColonyId": msg.ColonyID}).Debug("No process can be assigned")
 		return
 	}
 	if process == nil {
@@ -141,7 +141,7 @@ func (server *ColoniesServer) handleAssignProcessHTTPRequest(c *gin.Context, rec
 		return
 	}
 
-	log.WithFields(log.Fields{"ProcessID": process.ID, "ExecutorID": process.AssignedExecutorID}).Debug("Assigning process")
+	log.WithFields(log.Fields{"ProcessId": process.ID, "ExecutorId": process.AssignedExecutorID}).Debug("Assigning process")
 
 	server.sendHTTPReply(c, payloadType, jsonString)
 }
@@ -177,8 +177,8 @@ func (server *ColoniesServer) handleGetProcessHistHTTPRequest(c *gin.Context, re
 	}
 
 	log.WithFields(log.Fields{
-		"ColonyID":   msg.ColonyID,
-		"ExecutorID": msg.ExecutorID,
+		"ColonyId":   msg.ColonyID,
+		"ExecutorId": msg.ExecutorID,
 		"Seconds":    msg.Seconds,
 		"State":      msg.State}).
 		Debug("Finding process history")
@@ -207,7 +207,7 @@ func (server *ColoniesServer) handleGetProcessesHTTPRequest(c *gin.Context, reco
 		}
 	}
 
-	log.WithFields(log.Fields{"ColonyID": msg.ColonyID, "Count": msg.Count}).Debug("Getting processes")
+	log.WithFields(log.Fields{"ColonyId": msg.ColonyID, "Count": msg.Count}).Debug("Getting processes")
 
 	switch msg.State {
 	case core.WAITING:
@@ -279,7 +279,7 @@ func (server *ColoniesServer) handleGetProcessHTTPRequest(c *gin.Context, recove
 		return
 	}
 
-	err = server.validator.RequireExecutorMembership(recoveredID, process.ProcessSpec.Conditions.ColonyID, true)
+	err = server.validator.RequireExecutorMembership(recoveredID, process.FunctionSpec.Conditions.ColonyID, true)
 	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		return
 	}
@@ -289,7 +289,7 @@ func (server *ColoniesServer) handleGetProcessHTTPRequest(c *gin.Context, recove
 		return
 	}
 
-	log.WithFields(log.Fields{"ProcessID": process.ID}).Debug("Getting process")
+	log.WithFields(log.Fields{"ProcessId": process.ID}).Debug("Getting process")
 
 	server.sendHTTPReply(c, payloadType, jsonString)
 }
@@ -316,7 +316,7 @@ func (server *ColoniesServer) handleDeleteProcessHTTPRequest(c *gin.Context, rec
 		return
 	}
 
-	err = server.validator.RequireExecutorMembership(recoveredID, process.ProcessSpec.Conditions.ColonyID, true)
+	err = server.validator.RequireExecutorMembership(recoveredID, process.FunctionSpec.Conditions.ColonyID, true)
 	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		return
 	}
@@ -326,7 +326,7 @@ func (server *ColoniesServer) handleDeleteProcessHTTPRequest(c *gin.Context, rec
 		return
 	}
 
-	log.WithFields(log.Fields{"ProcessID": process.ID}).Debug("Deleting process")
+	log.WithFields(log.Fields{"ProcessId": process.ID}).Debug("Deleting process")
 
 	server.sendEmptyHTTPReply(c, payloadType)
 }
@@ -354,7 +354,7 @@ func (server *ColoniesServer) handleDeleteAllProcessesHTTPRequest(c *gin.Context
 		return
 	}
 
-	log.WithFields(log.Fields{"ColonyID": msg.ColonyID}).Debug("Deleting all processes")
+	log.WithFields(log.Fields{"ColonyId": msg.ColonyID}).Debug("Deleting all processes")
 
 	server.sendEmptyHTTPReply(c, payloadType)
 }
@@ -383,7 +383,7 @@ func (server *ColoniesServer) handleCloseSuccessfulHTTPRequest(c *gin.Context, r
 		return
 	}
 
-	err = server.validator.RequireExecutorMembership(recoveredID, process.ProcessSpec.Conditions.ColonyID, true)
+	err = server.validator.RequireExecutorMembership(recoveredID, process.FunctionSpec.Conditions.ColonyID, true)
 	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		log.Error(err)
 		return
@@ -405,14 +405,14 @@ func (server *ColoniesServer) handleCloseSuccessfulHTTPRequest(c *gin.Context, r
 		return
 	}
 
-	err = server.controller.closeSuccessful(process.ID, msg.Output)
+	err = server.controller.closeSuccessful(process.ID, recoveredID, msg.Output)
 	if server.handleHTTPError(c, err, http.StatusBadRequest) {
-		log.WithFields(log.Fields{"Err": err}).Debug("Failed to close process as successful")
+		log.WithFields(log.Fields{"Error": err}).Debug("Failed to close process as successful")
 		server.handleHTTPError(c, err, http.StatusInternalServerError)
 		return
 	}
 
-	log.WithFields(log.Fields{"ProcessID": process.ID}).Debug("Close successful")
+	log.WithFields(log.Fields{"ProcessId": process.ID}).Debug("Close successful")
 
 	server.sendEmptyHTTPReply(c, payloadType)
 }
@@ -441,7 +441,7 @@ func (server *ColoniesServer) handleCloseFailedHTTPRequest(c *gin.Context, recov
 		return
 	}
 
-	err = server.validator.RequireExecutorMembership(recoveredID, process.ProcessSpec.Conditions.ColonyID, true)
+	err = server.validator.RequireExecutorMembership(recoveredID, process.FunctionSpec.Conditions.ColonyID, true)
 	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		return
 	}
@@ -464,12 +464,12 @@ func (server *ColoniesServer) handleCloseFailedHTTPRequest(c *gin.Context, recov
 
 	err = server.controller.closeFailed(process.ID, msg.Errors)
 	if server.handleHTTPError(c, err, http.StatusBadRequest) {
-		log.WithFields(log.Fields{"Err": err}).Debug("Failed to close process as failed")
+		log.WithFields(log.Fields{"Error": err}).Debug("Failed to close process as failed")
 		server.handleHTTPError(c, err, http.StatusInternalServerError)
 		return
 	}
 
-	log.WithFields(log.Fields{"ProcessID": process.ID}).Debug("Close failed")
+	log.WithFields(log.Fields{"ProcessId": process.ID}).Debug("Close failed")
 
 	server.sendEmptyHTTPReply(c, payloadType)
 }

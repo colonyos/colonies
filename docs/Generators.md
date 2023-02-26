@@ -78,15 +78,15 @@ Process:
 | ErrorMsg           |                                                                  |
 +--------------------+------------------------------------------------------------------+
 
-ProcessSpec:
+FunctionSpec:
 +-------------+--------------------------------+
-| Func        | echo                           |
-| Args        | hello1 hello2 hello3 hello4    |
-|             | hello5                         |
-| MaxWaitTime | 0                              |
-| MaxExecTime | -1                             |
-| MaxRetries  | 0                              |
-| Priority    | 0                              |
+| FuncName    | echo                        |
+| Args        | hello1 hello2 hello3 hello4 |
+|             | hello5                      |
+| MaxWaitTime | 0                           |
+| MaxExecTime | -1                          |
+| MaxRetries  | 0                           |
+| Priority    | 0                           |
 +-------------+--------------------------------+
 
 Conditions:
