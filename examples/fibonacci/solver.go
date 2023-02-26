@@ -24,7 +24,7 @@ func main() {
 
 	// Ask the Colonies server to assign a process to this executor
 	client := client.CreateColoniesClient(coloniesHost, coloniesPort, true, false)
-	assignedProcess, err := client.AssignProcess(colonyID, 100, executorPrvKey) // Max wait 100 seconds for assignment request
+	assignedProcess, err := client.Assign(colonyID, 100, executorPrvKey) // Max wait 100 seconds for assignment request
 	if err != nil {
 		fmt.Println(err)
 		return

@@ -175,35 +175,35 @@ func generateDiamondtWorkflowSpec(colonyID string) *core.WorkflowSpec {
 
 	workflowSpec := core.CreateWorkflowSpec(colonyID)
 
-	processSpec1 := core.CreateEmptyProcessSpec()
-	processSpec1.Name = "task1"
-	processSpec1.Conditions.ColonyID = colonyID
-	processSpec1.Conditions.ExecutorType = "test_executor_type"
+	funcSpec1 := core.CreateEmptyFunctionSpec()
+	funcSpec1.Name = "task1"
+	funcSpec1.Conditions.ColonyID = colonyID
+	funcSpec1.Conditions.ExecutorType = "test_executor_type"
 
-	processSpec2 := core.CreateEmptyProcessSpec()
-	processSpec2.Name = "task2"
-	processSpec2.Conditions.ColonyID = colonyID
-	processSpec2.Conditions.ExecutorType = "test_executor_type"
+	funcSpec2 := core.CreateEmptyFunctionSpec()
+	funcSpec2.Name = "task2"
+	funcSpec2.Conditions.ColonyID = colonyID
+	funcSpec2.Conditions.ExecutorType = "test_executor_type"
 
-	processSpec3 := core.CreateEmptyProcessSpec()
-	processSpec3.Name = "task3"
-	processSpec3.Conditions.ColonyID = colonyID
-	processSpec3.Conditions.ExecutorType = "test_executor_type"
+	funcSpec3 := core.CreateEmptyFunctionSpec()
+	funcSpec3.Name = "task3"
+	funcSpec3.Conditions.ColonyID = colonyID
+	funcSpec3.Conditions.ExecutorType = "test_executor_type"
 
-	processSpec4 := core.CreateEmptyProcessSpec()
-	processSpec4.Name = "task4"
-	processSpec4.Conditions.ColonyID = colonyID
-	processSpec4.Conditions.ExecutorType = "test_executor_type"
+	funcSpec4 := core.CreateEmptyFunctionSpec()
+	funcSpec4.Name = "task4"
+	funcSpec4.Conditions.ColonyID = colonyID
+	funcSpec4.Conditions.ExecutorType = "test_executor_type"
 
-	processSpec2.AddDependency("task1")
-	processSpec3.AddDependency("task1")
-	processSpec4.AddDependency("task2")
-	processSpec4.AddDependency("task3")
+	funcSpec2.AddDependency("task1")
+	funcSpec3.AddDependency("task1")
+	funcSpec4.AddDependency("task2")
+	funcSpec4.AddDependency("task3")
 
-	workflowSpec.AddProcessSpec(processSpec1)
-	workflowSpec.AddProcessSpec(processSpec2)
-	workflowSpec.AddProcessSpec(processSpec3)
-	workflowSpec.AddProcessSpec(processSpec4)
+	workflowSpec.AddFunctionSpec(funcSpec1)
+	workflowSpec.AddFunctionSpec(funcSpec2)
+	workflowSpec.AddFunctionSpec(funcSpec3)
+	workflowSpec.AddFunctionSpec(funcSpec4)
 
 	return workflowSpec
 }
@@ -215,39 +215,39 @@ func generateTreeWorkflowSpec(colonyID string) *core.WorkflowSpec {
 
 	workflowSpec := core.CreateWorkflowSpec(colonyID)
 
-	processSpec1 := core.CreateEmptyProcessSpec()
-	processSpec1.Name = "task1"
-	processSpec1.Conditions.ColonyID = colonyID
-	processSpec1.Conditions.ExecutorType = "test_executor_type"
+	funcSpec1 := core.CreateEmptyFunctionSpec()
+	funcSpec1.Name = "task1"
+	funcSpec1.Conditions.ColonyID = colonyID
+	funcSpec1.Conditions.ExecutorType = "test_executor_type"
 
-	processSpec2 := core.CreateEmptyProcessSpec()
-	processSpec2.Name = "task2"
-	processSpec2.Conditions.ColonyID = colonyID
-	processSpec2.Conditions.ExecutorType = "test_executor_type"
+	funcSpec2 := core.CreateEmptyFunctionSpec()
+	funcSpec2.Name = "task2"
+	funcSpec2.Conditions.ColonyID = colonyID
+	funcSpec2.Conditions.ExecutorType = "test_executor_type"
 
-	processSpec3 := core.CreateEmptyProcessSpec()
-	processSpec3.Name = "task3"
-	processSpec3.Conditions.ColonyID = colonyID
-	processSpec3.Conditions.ExecutorType = "test_executor_type"
+	funcSpec3 := core.CreateEmptyFunctionSpec()
+	funcSpec3.Name = "task3"
+	funcSpec3.Conditions.ColonyID = colonyID
+	funcSpec3.Conditions.ExecutorType = "test_executor_type"
 
-	processSpec2.AddDependency("task1")
-	processSpec3.AddDependency("task1")
+	funcSpec2.AddDependency("task1")
+	funcSpec3.AddDependency("task1")
 
-	workflowSpec.AddProcessSpec(processSpec1)
-	workflowSpec.AddProcessSpec(processSpec2)
-	workflowSpec.AddProcessSpec(processSpec3)
+	workflowSpec.AddFunctionSpec(funcSpec1)
+	workflowSpec.AddFunctionSpec(funcSpec2)
+	workflowSpec.AddFunctionSpec(funcSpec3)
 
 	return workflowSpec
 }
 
 func generateSingleWorkflowSpec(colonyID string) *core.WorkflowSpec {
 	workflowSpec := core.CreateWorkflowSpec(colonyID)
-	processSpec1 := core.CreateEmptyProcessSpec()
-	processSpec1.Name = "task1"
-	processSpec1.Conditions.ColonyID = colonyID
-	processSpec1.Conditions.ExecutorType = "test_executor_type"
+	funcSpec1 := core.CreateEmptyFunctionSpec()
+	funcSpec1.Name = "task1"
+	funcSpec1.Conditions.ColonyID = colonyID
+	funcSpec1.Conditions.ExecutorType = "test_executor_type"
 
-	workflowSpec.AddProcessSpec(processSpec1)
+	workflowSpec.AddFunctionSpec(funcSpec1)
 
 	return workflowSpec
 }
@@ -258,7 +258,7 @@ func waitForProcesses(t *testing.T, server *ColoniesServer, processes []*core.Pr
 	wait := make(chan error)
 	for _, process := range processes {
 		go func(process *core.Process) {
-			_, err := server.controller.eventHandler.waitForProcess(process.ProcessSpec.Conditions.ExecutorType, state, process.ID, ctx)
+			_, err := server.controller.eventHandler.waitForProcess(process.FunctionSpec.Conditions.ExecutorType, state, process.ID, ctx)
 			wait <- err
 		}(process)
 	}

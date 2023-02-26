@@ -163,7 +163,7 @@ var execFuncCmd = &cobra.Command{
 			conditions = core.Conditions{ColonyID: ColonyID, ExecutorIDs: []string{TargetExecutorID}}
 		}
 
-		processSpec := core.ProcessSpec{
+		funcSpec := core.FunctionSpec{
 			Func:        Func,
 			Args:        Args,
 			MaxWaitTime: MaxWaitTime,
@@ -175,7 +175,7 @@ var execFuncCmd = &cobra.Command{
 		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Info("Starting a Colonies client")
 		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
 
-		addedProcess, err := client.SubmitProcessSpec(&processSpec, ExecutorPrvKey)
+		addedProcess, err := client.Submit(&funcSpec, ExecutorPrvKey)
 		CheckError(err)
 
 		if Wait {

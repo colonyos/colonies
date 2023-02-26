@@ -171,8 +171,8 @@ func (server *ColoniesServer) handleAPIRequest(c *gin.Context) {
 		server.handleDeleteFunctionHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 
 	// Process handlers
-	case rpc.SubmitProcessSpecPayloadType:
-		server.handleSubmitProcessSpecHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+	case rpc.SubmitFunctionSpecPayloadType:
+		server.handleSubmitHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 	case rpc.AssignProcessPayloadType:
 		server.handleAssignProcessHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload(), string(jsonBytes))
 	case rpc.GetProcessHistPayloadType:

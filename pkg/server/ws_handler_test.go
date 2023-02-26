@@ -32,8 +32,8 @@ func TestSubscribeProcesses(t *testing.T) {
 
 	time.Sleep(1 * time.Second)
 
-	processSpec := utils.CreateTestProcessSpec(env.colony1ID)
-	_, err = client.SubmitProcessSpec(processSpec, env.executor1PrvKey)
+	funcSpec := utils.CreateTestFunctionSpec(env.colony1ID)
+	_, err = client.Submit(funcSpec, env.executor1PrvKey)
 	assert.Nil(t, err)
 
 	err = <-waitForProcess
@@ -50,13 +50,13 @@ func TestSubscribeProcesses(t *testing.T) {
 func TestSubscribeChangeStateProcess(t *testing.T) {
 	env, client, server, _, done := setupTestEnv1(t)
 
-	processSpec := utils.CreateTestProcessSpec(env.colony1ID)
-	addedProcess, err := client.SubmitProcessSpec(processSpec, env.executor1PrvKey)
+	funcSpec := utils.CreateTestFunctionSpec(env.colony1ID)
+	addedProcess, err := client.Submit(funcSpec, env.executor1PrvKey)
 	assert.Nil(t, err)
 	assert.Equal(t, core.PENDING, addedProcess.State)
 
 	subscription, err := client.SubscribeProcess(addedProcess.ID,
-		addedProcess.ProcessSpec.Conditions.ExecutorType,
+		addedProcess.FunctionSpec.Conditions.ExecutorType,
 		core.SUCCESS,
 		100,
 		env.executor2PrvKey)
@@ -72,7 +72,7 @@ func TestSubscribeChangeStateProcess(t *testing.T) {
 		}
 	}()
 
-	assignedProcess, err := client.AssignProcess(env.colony1ID, -1, env.executor1PrvKey)
+	assignedProcess, err := client.Assign(env.colony1ID, -1, env.executor1PrvKey)
 	assert.Nil(t, err)
 
 	err = client.Close(assignedProcess.ID, env.executor1PrvKey)
@@ -96,12 +96,12 @@ func TestSubscribeChangeStateProcess(t *testing.T) {
 func TestSubscribeChangeStateProcess2(t *testing.T) {
 	env, client, server, _, done := setupTestEnv1(t)
 
-	processSpec := utils.CreateTestProcessSpec(env.colony1ID)
-	addedProcess, err := client.SubmitProcessSpec(processSpec, env.executor1PrvKey)
+	funcSpec := utils.CreateTestFunctionSpec(env.colony1ID)
+	addedProcess, err := client.Submit(funcSpec, env.executor1PrvKey)
 	assert.Nil(t, err)
 	assert.Equal(t, core.WAITING, addedProcess.State)
 
-	assignedProcess, err := client.AssignProcess(env.colony1ID, -1, env.executor1PrvKey)
+	assignedProcess, err := client.Assign(env.colony1ID, -1, env.executor1PrvKey)
 	assert.Nil(t, err)
 
 	err = client.Close(assignedProcess.ID, env.executor1PrvKey)
@@ -110,7 +110,7 @@ func TestSubscribeChangeStateProcess2(t *testing.T) {
 	time.Sleep(5 * time.Second)
 
 	subscription, err := client.SubscribeProcess(addedProcess.ID,
-		addedProcess.ProcessSpec.Conditions.ExecutorType,
+		addedProcess.FunctionSpec.Conditions.ExecutorType,
 		core.SUCCESS,
 		100,
 		env.executor2PrvKey)

@@ -34,7 +34,7 @@ func checkError(err error) {
 }
 
 func submitProcess(client *client.ColoniesClient, colonyID string, executorPrvKey string) {
-	processSpec := core.ProcessSpec{
+	funcSpec := core.FunctionSpec{
 		Func:        "test_func",
 		Args:        []string{"arg1"},
 		MaxWaitTime: 100,
@@ -43,11 +43,11 @@ func submitProcess(client *client.ColoniesClient, colonyID string, executorPrvKe
 		Conditions:  core.Conditions{ColonyID: colonyID, ExecutorType: "bemisexecutor"},
 		Env:         make(map[string]string)}
 
-	client.SubmitProcessSpec(&processSpec, executorPrvKey)
+	client.Submit(&funcSpec, executorPrvKey)
 }
 
 func startCron(client *client.ColoniesClient, colonyID string, executorPrvKey string) {
-	processSpec1 := core.ProcessSpec{
+	funcSpec1 := core.FunctionSpec{
 		Name:        "cron_task1",
 		Func:        "cron_test_func",
 		Args:        []string{"arg1"},
@@ -57,7 +57,7 @@ func startCron(client *client.ColoniesClient, colonyID string, executorPrvKey st
 		Conditions:  core.Conditions{ColonyID: colonyID, ExecutorType: "bemisexecutor"},
 		Env:         make(map[string]string)}
 
-	processSpec2 := core.ProcessSpec{
+	funcSpec2 := core.FunctionSpec{
 		Name:        "cron_task2",
 		Func:        "cron_test_func",
 		Args:        []string{"arg1"},
@@ -68,9 +68,9 @@ func startCron(client *client.ColoniesClient, colonyID string, executorPrvKey st
 		Env:         make(map[string]string)}
 
 	workflowSpec := core.CreateWorkflowSpec(colonyID)
-	processSpec2.AddDependency("cron_task1")
-	workflowSpec.AddProcessSpec(&processSpec1)
-	workflowSpec.AddProcessSpec(&processSpec2)
+	funcSpec2.AddDependency("cron_task1")
+	workflowSpec.AddFunctionSpec(&funcSpec1)
+	workflowSpec.AddFunctionSpec(&funcSpec2)
 	jsonStr, err := workflowSpec.ToJSON()
 	checkError(err)
 
@@ -80,7 +80,7 @@ func startCron(client *client.ColoniesClient, colonyID string, executorPrvKey st
 }
 
 func startGenerator(client *client.ColoniesClient, colonyID string, executorPrvKey string) {
-	processSpec1 := core.ProcessSpec{
+	funcSpec1 := core.FunctionSpec{
 		Name:        "gen_task1",
 		Func:        "gen_test_func",
 		Args:        []string{"arg1"},
@@ -90,7 +90,7 @@ func startGenerator(client *client.ColoniesClient, colonyID string, executorPrvK
 		Conditions:  core.Conditions{ColonyID: colonyID, ExecutorType: "bemisexecutor"},
 		Env:         make(map[string]string)}
 
-	processSpec2 := core.ProcessSpec{
+	funcSpec2 := core.FunctionSpec{
 		Name:        "gen_task2",
 		Func:        "gen_test_func",
 		Args:        []string{"arg1"},
@@ -101,9 +101,9 @@ func startGenerator(client *client.ColoniesClient, colonyID string, executorPrvK
 		Env:         make(map[string]string)}
 
 	workflowSpec := core.CreateWorkflowSpec(colonyID)
-	processSpec2.AddDependency("gen_task1")
-	workflowSpec.AddProcessSpec(&processSpec1)
-	workflowSpec.AddProcessSpec(&processSpec2)
+	funcSpec2.AddDependency("gen_task1")
+	workflowSpec.AddFunctionSpec(&funcSpec1)
+	workflowSpec.AddFunctionSpec(&funcSpec2)
 	jsonStr, err := workflowSpec.ToJSON()
 	checkError(err)
 	generator := core.CreateGenerator(colonyID, "test_genname"+core.GenerateRandomID(), jsonStr, 10)
@@ -138,7 +138,7 @@ func startExecutor(client *client.ColoniesClient, colonyID string, colonyPrvKey 
 
 	go func() {
 		for {
-			assignedProcess, err := client.AssignProcess(colonyID, 10, executorPrvKey)
+			assignedProcess, err := client.Assign(colonyID, 10, executorPrvKey)
 			if err == nil {
 				time.Sleep(time.Duration(rand.Intn(300)) * time.Millisecond)
 				client.Close(assignedProcess.ID, executorPrvKey)

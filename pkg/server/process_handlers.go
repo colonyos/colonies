@@ -13,8 +13,8 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func (server *ColoniesServer) handleSubmitProcessSpecHTTPRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
-	msg, err := rpc.CreateSubmitProcessSpecMsgFromJSON(jsonString)
+func (server *ColoniesServer) handleSubmitHTTPRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
+	msg, err := rpc.CreateSubmitFunctionSpecMsgFromJSON(jsonString)
 	if err != nil {
 		if server.handleHTTPError(c, errors.New("Failed to submit process, invalid JSON"), http.StatusBadRequest) {
 			return
@@ -25,17 +25,17 @@ func (server *ColoniesServer) handleSubmitProcessSpecHTTPRequest(c *gin.Context,
 		server.handleHTTPError(c, errors.New("Failed to submit process spec, msg.MsgType does not match payloadType"), http.StatusBadRequest)
 		return
 	}
-	if msg.ProcessSpec == nil {
-		server.handleHTTPError(c, errors.New("Failed to submit process spec, msg.ProcessSpec is nil"), http.StatusBadRequest)
+	if msg.FunctionSpec == nil {
+		server.handleHTTPError(c, errors.New("Failed to submit process spec, msg.FunctionSpec is nil"), http.StatusBadRequest)
 		return
 	}
 
-	err = server.validator.RequireExecutorMembership(recoveredID, msg.ProcessSpec.Conditions.ColonyID, true)
+	err = server.validator.RequireExecutorMembership(recoveredID, msg.FunctionSpec.Conditions.ColonyID, true)
 	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		return
 	}
 
-	process := core.CreateProcess(msg.ProcessSpec)
+	process := core.CreateProcess(msg.FunctionSpec)
 	addedProcess, err := server.controller.addProcess(process)
 	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
@@ -279,7 +279,7 @@ func (server *ColoniesServer) handleGetProcessHTTPRequest(c *gin.Context, recove
 		return
 	}
 
-	err = server.validator.RequireExecutorMembership(recoveredID, process.ProcessSpec.Conditions.ColonyID, true)
+	err = server.validator.RequireExecutorMembership(recoveredID, process.FunctionSpec.Conditions.ColonyID, true)
 	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		return
 	}
@@ -316,7 +316,7 @@ func (server *ColoniesServer) handleDeleteProcessHTTPRequest(c *gin.Context, rec
 		return
 	}
 
-	err = server.validator.RequireExecutorMembership(recoveredID, process.ProcessSpec.Conditions.ColonyID, true)
+	err = server.validator.RequireExecutorMembership(recoveredID, process.FunctionSpec.Conditions.ColonyID, true)
 	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		return
 	}
@@ -383,7 +383,7 @@ func (server *ColoniesServer) handleCloseSuccessfulHTTPRequest(c *gin.Context, r
 		return
 	}
 
-	err = server.validator.RequireExecutorMembership(recoveredID, process.ProcessSpec.Conditions.ColonyID, true)
+	err = server.validator.RequireExecutorMembership(recoveredID, process.FunctionSpec.Conditions.ColonyID, true)
 	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		log.Error(err)
 		return
@@ -441,7 +441,7 @@ func (server *ColoniesServer) handleCloseFailedHTTPRequest(c *gin.Context, recov
 		return
 	}
 
-	err = server.validator.RequireExecutorMembership(recoveredID, process.ProcessSpec.Conditions.ColonyID, true)
+	err = server.validator.RequireExecutorMembership(recoveredID, process.FunctionSpec.Conditions.ColonyID, true)
 	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		return
 	}

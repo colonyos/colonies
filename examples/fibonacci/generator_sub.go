@@ -20,13 +20,13 @@ func main() {
 		os.Exit(-1)
 	}
 
-	processSpec := core.CreateEmptyProcessSpec()
-	processSpec.Conditions.ColonyID = colonyID
-	processSpec.Conditions.ExecutorType = os.Getenv("COLONIES_EXECUTOR_TYPE")
-	processSpec.Env["fibonacciNum"] = os.Args[1]
+	funcSpec := core.CreateEmptyFunctionSpec()
+	funcSpec.Conditions.ColonyID = colonyID
+	funcSpec.Conditions.ExecutorType = os.Getenv("COLONIES_EXECUTOR_TYPE")
+	funcSpec.Env["fibonacciNum"] = os.Args[1]
 
 	client := client.CreateColoniesClient(coloniesHost, coloniesPort, true, false)
-	addedProcess, err := client.SubmitProcessSpec(processSpec, executorPrvKey)
+	addedProcess, err := client.Submit(funcSpec, executorPrvKey)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -41,7 +41,7 @@ func main() {
 
 	for _, attribute := range process.Attributes {
 		if attribute.Key == "result" {
-			fmt.Println("Process was completed, the last number in the Fibonacci serie " + processSpec.Env["fibonacciNum"] + " is " + attribute.Value)
+			fmt.Println("Process was completed, the last number in the Fibonacci serie " + funcSpec.Env["fibonacciNum"] + " is " + attribute.Value)
 		}
 	}
 }

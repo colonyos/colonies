@@ -244,10 +244,10 @@ var getCronCmd = &cobra.Command{
 		fmt.Println("WorkflowSpec:")
 		workflowSpec, err := core.ConvertJSONToWorkflowSpec(cron.WorkflowSpec)
 		CheckError(err)
-		for i, procesSpec := range workflowSpec.ProcessSpecs {
+		for i, funcSpec := range workflowSpec.FunctionSpecs {
 			fmt.Println()
-			fmt.Println("ProcessSpec " + strconv.Itoa(i) + ":")
-			printProcessSpec(&procesSpec)
+			fmt.Println("FunctionSpec " + strconv.Itoa(i) + ":")
+			printFunctionSpec(&funcSpec)
 		}
 	},
 }

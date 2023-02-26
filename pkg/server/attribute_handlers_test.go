@@ -11,12 +11,12 @@ import (
 func TestAddGetAttributes(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 
-	processSpec := utils.CreateTestProcessSpec(env.colonyID)
-	addedProcess, err := client.SubmitProcessSpec(processSpec, env.executorPrvKey)
+	funcSpec := utils.CreateTestFunctionSpec(env.colonyID)
+	addedProcess, err := client.Submit(funcSpec, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.Equal(t, core.PENDING, addedProcess.State)
 
-	assignedProcess, err := client.AssignProcess(env.colonyID, -1, env.executorPrvKey)
+	assignedProcess, err := client.Assign(env.colonyID, -1, env.executorPrvKey)
 	assert.Nil(t, err)
 
 	attribute := core.CreateAttribute(core.GenerateRandomID(), env.colonyID, "", core.OUT, "result", "helloworld")

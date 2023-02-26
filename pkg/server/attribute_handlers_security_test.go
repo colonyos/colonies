@@ -15,12 +15,12 @@ func TestAddAttributeSecurity(t *testing.T) {
 	//   executor1 is member of colony1
 	//   executor2 is member of colony2
 
-	processSpec := utils.CreateTestProcessSpec(env.colony1ID)
-	addedProcess, err := client.SubmitProcessSpec(processSpec, env.executor1PrvKey)
+	funcSpec := utils.CreateTestFunctionSpec(env.colony1ID)
+	addedProcess, err := client.Submit(funcSpec, env.executor1PrvKey)
 	assert.Nil(t, err)
 	assert.Equal(t, core.PENDING, addedProcess.State)
 
-	assignedProcess, err := client.AssignProcess(env.colony1ID, -1, env.executor1PrvKey)
+	assignedProcess, err := client.Assign(env.colony1ID, -1, env.executor1PrvKey)
 	assert.Nil(t, err)
 
 	attribute := core.CreateAttribute(assignedProcess.ID, env.colony1ID, "", core.OUT, "result", "helloworld")
@@ -52,12 +52,12 @@ func TestGetAttributeSecurity(t *testing.T) {
 	//   executor1 is member of colony1
 	//   executor2 is member of colony2
 
-	processSpec := utils.CreateTestProcessSpec(env.colony1ID)
-	addedProcess, err := client.SubmitProcessSpec(processSpec, env.executor1PrvKey)
+	funcSpec := utils.CreateTestFunctionSpec(env.colony1ID)
+	addedProcess, err := client.Submit(funcSpec, env.executor1PrvKey)
 	assert.Nil(t, err)
 	assert.Equal(t, core.PENDING, addedProcess.State)
 
-	assignedProcess, err := client.AssignProcess(env.colony1ID, -1, env.executor1PrvKey)
+	assignedProcess, err := client.Assign(env.colony1ID, -1, env.executor1PrvKey)
 	assert.Nil(t, err)
 
 	attribute := core.CreateAttribute(assignedProcess.ID, env.colony1ID, "", core.OUT, "result", "helloworld")

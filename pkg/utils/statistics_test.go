@@ -17,11 +17,11 @@ func TestCalcAvgTimes(t *testing.T) {
 	maxExecTime := -1
 	maxRetries := 3
 
-	processSpec1 := core.CreateProcessSpec("test_name", "test_func", []string{"test_arg"}, colonyID, []string{}, executorType, maxWaitTime, maxExecTime, maxRetries, make(map[string]string), []string{}, 1)
+	funcSpec1 := core.CreateFunctionSpec("test_name", "test_func", []string{"test_arg"}, colonyID, []string{}, executorType, maxWaitTime, maxExecTime, maxRetries, make(map[string]string), []string{}, 1)
 
 	var zeroProcesses []*core.Process
 	var processes []*core.Process
-	process1 := core.CreateProcess(processSpec1)
+	process1 := core.CreateProcess(funcSpec1)
 	process1.SetSubmissionTime(startTime)
 	process1.SetStartTime(startTime.Add(2 * time.Second))
 	process1.SetEndTime(startTime.Add(3 * time.Second))
@@ -29,7 +29,7 @@ func TestCalcAvgTimes(t *testing.T) {
 	process1.Retries = 3
 	processes = append(processes, process1)
 
-	process2 := core.CreateProcess(processSpec1)
+	process2 := core.CreateProcess(funcSpec1)
 	process2.SetSubmissionTime(startTime)
 	process2.SetStartTime(startTime.Add(10 * time.Second))
 	process2.SetEndTime(startTime.Add(20 * time.Second))

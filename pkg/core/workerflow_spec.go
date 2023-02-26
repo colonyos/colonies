@@ -3,8 +3,8 @@ package core
 import "encoding/json"
 
 type WorkflowSpec struct {
-	ColonyID     string        `json:"colonyid"`
-	ProcessSpecs []ProcessSpec `json:"processspecs"`
+	ColonyID      string         `json:"colonyid"`
+	FunctionSpecs []FunctionSpec `json:"functionspecs"`
 }
 
 func CreateWorkflowSpec(colonyID string) *WorkflowSpec {
@@ -12,8 +12,8 @@ func CreateWorkflowSpec(colonyID string) *WorkflowSpec {
 	return workflowSpec
 }
 
-func (workflowSpec *WorkflowSpec) AddProcessSpec(processSpec *ProcessSpec) {
-	workflowSpec.ProcessSpecs = append(workflowSpec.ProcessSpecs, *processSpec)
+func (workflowSpec *WorkflowSpec) AddFunctionSpec(funcSpec *FunctionSpec) {
+	workflowSpec.FunctionSpecs = append(workflowSpec.FunctionSpecs, *funcSpec)
 }
 
 func ConvertJSONToWorkflowSpec(jsonString string) (*WorkflowSpec, error) {
@@ -32,20 +32,20 @@ func (workflowSpec *WorkflowSpec) Equals(workflowSpec2 *WorkflowSpec) bool {
 		same = false
 	}
 
-	if workflowSpec.ProcessSpecs != nil && workflowSpec2.ProcessSpecs == nil {
+	if workflowSpec.FunctionSpecs != nil && workflowSpec2.FunctionSpecs == nil {
 		same = false
-	} else if workflowSpec.ProcessSpecs == nil && workflowSpec2.ProcessSpecs != nil {
+	} else if workflowSpec.FunctionSpecs == nil && workflowSpec2.FunctionSpecs != nil {
 		same = false
 	} else {
 		counter := 0
-		for _, processSpec := range workflowSpec.ProcessSpecs {
-			for _, processSpec2 := range workflowSpec2.ProcessSpecs {
-				if processSpec.Equals(&processSpec2) {
+		for _, funcSpec := range workflowSpec.FunctionSpecs {
+			for _, funcSpec2 := range workflowSpec2.FunctionSpecs {
+				if funcSpec.Equals(&funcSpec2) {
 					counter++
 				}
 			}
 		}
-		if counter != len(workflowSpec.ProcessSpecs) && counter != len(workflowSpec2.ProcessSpecs) {
+		if counter != len(workflowSpec.FunctionSpecs) && counter != len(workflowSpec2.FunctionSpecs) {
 			same = false
 		}
 	}

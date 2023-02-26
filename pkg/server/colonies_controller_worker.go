@@ -45,17 +45,17 @@ func (controller *coloniesController) timeoutLoop() {
 			continue
 		}
 		for _, process := range processes {
-			if process.ProcessSpec.MaxExecTime == -1 {
+			if process.FunctionSpec.MaxExecTime == -1 {
 				continue
 			}
 			if time.Now().Unix() > process.ExecDeadline.Unix() {
-				if process.Retries >= process.ProcessSpec.MaxRetries && process.ProcessSpec.MaxRetries > -1 {
+				if process.Retries >= process.FunctionSpec.MaxRetries && process.FunctionSpec.MaxRetries > -1 {
 					err := controller.closeFailed(process.ID, []string{"Maximum execution time limit exceeded"})
 					if err != nil {
 						log.WithFields(log.Fields{"ProcessId": process.ID, "Error": err}).Debug("Max retries reached, but failed to close process")
 						continue
 					}
-					log.WithFields(log.Fields{"ProcessId": process.ID, "MaxExecTime": process.ProcessSpec.MaxExecTime, "MaxRetries": process.ProcessSpec.MaxRetries}).Debug("Process closed as failed as max retries reached")
+					log.WithFields(log.Fields{"ProcessId": process.ID, "MaxExecTime": process.FunctionSpec.MaxExecTime, "MaxRetries": process.FunctionSpec.MaxRetries}).Debug("Process closed as failed as max retries reached")
 					continue
 				}
 
@@ -63,7 +63,7 @@ func (controller *coloniesController) timeoutLoop() {
 				if err != nil {
 					log.WithFields(log.Fields{"ProcessId": process.ID, "Error": err}).Error("Failed to unassign process")
 				}
-				log.WithFields(log.Fields{"ProcessId": process.ID, "MaxExecTime": process.ProcessSpec.MaxExecTime, "MaxRetries": process.ProcessSpec.MaxRetries}).Debug("Process was unassigned as it did not complete in time")
+				log.WithFields(log.Fields{"ProcessId": process.ID, "MaxExecTime": process.FunctionSpec.MaxExecTime, "MaxRetries": process.FunctionSpec.MaxRetries}).Debug("Process was unassigned as it did not complete in time")
 			}
 		}
 
@@ -72,7 +72,7 @@ func (controller *coloniesController) timeoutLoop() {
 			continue
 		}
 		for _, process := range processes {
-			if process.ProcessSpec.MaxWaitTime == -1 || process.ProcessSpec.MaxWaitTime == 0 {
+			if process.FunctionSpec.MaxWaitTime == -1 || process.FunctionSpec.MaxWaitTime == 0 {
 				continue
 			}
 
@@ -82,7 +82,7 @@ func (controller *coloniesController) timeoutLoop() {
 					log.WithFields(log.Fields{"ProcessId": process.ID, "Error": err}).Debug("Max waiting time reached, but failed to close process")
 					continue
 				}
-				log.WithFields(log.Fields{"ProcessId": process.ID, "MaxWaitTime": process.ProcessSpec.MaxWaitTime}).Debug("Process closed as failed as maximum waiting time limit exceeded")
+				log.WithFields(log.Fields{"ProcessId": process.ID, "MaxWaitTime": process.FunctionSpec.MaxWaitTime}).Debug("Process closed as failed as maximum waiting time limit exceeded")
 			}
 		}
 	}

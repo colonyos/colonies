@@ -228,17 +228,17 @@ func (server *ColoniesServer) handleAddChildHTTPRequest(c *gin.Context, recovere
 		server.handleHTTPError(c, errors.New("Failed to add child to processgraph, msg.MsgType does not match payloadType"), http.StatusBadRequest)
 		return
 	}
-	if msg.ProcessSpec == nil {
-		server.handleHTTPError(c, errors.New("Failed to add child to processgraph, msg.ProcessSpec is nil"), http.StatusBadRequest)
+	if msg.FunctionSpec == nil {
+		server.handleHTTPError(c, errors.New("Failed to add child to processgraph, msg.FunctionSpec is nil"), http.StatusBadRequest)
 		return
 	}
 
-	err = server.validator.RequireExecutorMembership(recoveredID, msg.ProcessSpec.Conditions.ColonyID, true)
+	err = server.validator.RequireExecutorMembership(recoveredID, msg.FunctionSpec.Conditions.ColonyID, true)
 	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		return
 	}
 
-	process := core.CreateProcess(msg.ProcessSpec)
+	process := core.CreateProcess(msg.FunctionSpec)
 	addedProcess, err := server.controller.addChild(msg.ProcessGraphID, msg.ProcessID, process, recoveredID)
 	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return

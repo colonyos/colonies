@@ -8,7 +8,7 @@ import (
 )
 
 func TestRPCAddChildMsg(t *testing.T) {
-	msg := CreateAddChildMsg(core.GenerateRandomID(), core.GenerateRandomID(), createProcessSpec())
+	msg := CreateAddChildMsg(core.GenerateRandomID(), core.GenerateRandomID(), createFunctionSpec())
 	jsonString, err := msg.ToJSON()
 	assert.Nil(t, err)
 
@@ -22,7 +22,7 @@ func TestRPCAddChildMsg(t *testing.T) {
 }
 
 func TestRPCAddChildMsgIndent(t *testing.T) {
-	msg := CreateAddChildMsg(core.GenerateRandomID(), core.GenerateRandomID(), createProcessSpec())
+	msg := CreateAddChildMsg(core.GenerateRandomID(), core.GenerateRandomID(), createFunctionSpec())
 	jsonString, err := msg.ToJSONIndent()
 	assert.Nil(t, err)
 
@@ -36,7 +36,7 @@ func TestRPCAddChildMsgIndent(t *testing.T) {
 }
 
 func TestRPCAddChildMsgEquals(t *testing.T) {
-	msg := CreateAddChildMsg(core.GenerateRandomID(), core.GenerateRandomID(), createProcessSpec())
+	msg := CreateAddChildMsg(core.GenerateRandomID(), core.GenerateRandomID(), createFunctionSpec())
 	assert.True(t, msg.Equals(msg))
 	assert.False(t, msg.Equals(nil))
 }
