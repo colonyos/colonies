@@ -1006,7 +1006,7 @@ func (controller *coloniesController) closeSuccessful(processID string, executor
 				}
 
 				controller.db.UpdateFunctionStats(function.ExecutorID,
-					function.Name,
+					function.FuncName,
 					function.Counter+1,
 					minWaitTime,
 					maxWaitTime,
