@@ -6,7 +6,7 @@ type Function struct {
 	FunctionID  string   `json:"functionid"`
 	ExecutorID  string   `json:"executorid"`
 	ColonyID    string   `json:"colonyid"`
-	FuncName    string   `json:"name"`
+	FuncName    string   `json:"funcname"`
 	Desc        string   `json:"desc"`
 	Counter     int      `json:"counter"`
 	MinWaitTime float64  `json:"minwaittime"`
