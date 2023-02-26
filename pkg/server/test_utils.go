@@ -176,22 +176,22 @@ func generateDiamondtWorkflowSpec(colonyID string) *core.WorkflowSpec {
 	workflowSpec := core.CreateWorkflowSpec(colonyID)
 
 	funcSpec1 := core.CreateEmptyFunctionSpec()
-	funcSpec1.Name = "task1"
+	funcSpec1.NodeName = "task1"
 	funcSpec1.Conditions.ColonyID = colonyID
 	funcSpec1.Conditions.ExecutorType = "test_executor_type"
 
 	funcSpec2 := core.CreateEmptyFunctionSpec()
-	funcSpec2.Name = "task2"
+	funcSpec2.NodeName = "task2"
 	funcSpec2.Conditions.ColonyID = colonyID
 	funcSpec2.Conditions.ExecutorType = "test_executor_type"
 
 	funcSpec3 := core.CreateEmptyFunctionSpec()
-	funcSpec3.Name = "task3"
+	funcSpec3.NodeName = "task3"
 	funcSpec3.Conditions.ColonyID = colonyID
 	funcSpec3.Conditions.ExecutorType = "test_executor_type"
 
 	funcSpec4 := core.CreateEmptyFunctionSpec()
-	funcSpec4.Name = "task4"
+	funcSpec4.NodeName = "task4"
 	funcSpec4.Conditions.ColonyID = colonyID
 	funcSpec4.Conditions.ExecutorType = "test_executor_type"
 
@@ -216,17 +216,17 @@ func generateTreeWorkflowSpec(colonyID string) *core.WorkflowSpec {
 	workflowSpec := core.CreateWorkflowSpec(colonyID)
 
 	funcSpec1 := core.CreateEmptyFunctionSpec()
-	funcSpec1.Name = "task1"
+	funcSpec1.NodeName = "task1"
 	funcSpec1.Conditions.ColonyID = colonyID
 	funcSpec1.Conditions.ExecutorType = "test_executor_type"
 
 	funcSpec2 := core.CreateEmptyFunctionSpec()
-	funcSpec2.Name = "task2"
+	funcSpec2.NodeName = "task2"
 	funcSpec2.Conditions.ColonyID = colonyID
 	funcSpec2.Conditions.ExecutorType = "test_executor_type"
 
 	funcSpec3 := core.CreateEmptyFunctionSpec()
-	funcSpec3.Name = "task3"
+	funcSpec3.NodeName = "task3"
 	funcSpec3.Conditions.ColonyID = colonyID
 	funcSpec3.Conditions.ExecutorType = "test_executor_type"
 
@@ -243,7 +243,7 @@ func generateTreeWorkflowSpec(colonyID string) *core.WorkflowSpec {
 func generateSingleWorkflowSpec(colonyID string) *core.WorkflowSpec {
 	workflowSpec := core.CreateWorkflowSpec(colonyID)
 	funcSpec1 := core.CreateEmptyFunctionSpec()
-	funcSpec1.Name = "task1"
+	funcSpec1.NodeName = "task1"
 	funcSpec1.Conditions.ColonyID = colonyID
 	funcSpec1.Conditions.ExecutorType = "test_executor_type"
 

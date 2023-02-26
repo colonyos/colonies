@@ -610,7 +610,7 @@ func (controller *coloniesController) createProcessGraph(workflowSpec *core.Work
 	var rootProcesses []*core.Process
 	for _, funcSpec := range workflowSpec.FunctionSpecs {
 		if funcSpec.MaxExecTime == 0 {
-			log.WithFields(log.Fields{"Name": funcSpec.Name}).Debug("MaxExecTime was set to 0, resetting to -1")
+			log.WithFields(log.Fields{"NodeName": funcSpec.NodeName}).Debug("MaxExecTime was set to 0, resetting to -1")
 			funcSpec.MaxExecTime = -1
 		}
 		process := core.CreateProcess(&funcSpec)
@@ -637,7 +637,7 @@ func (controller *coloniesController) createProcessGraph(workflowSpec *core.Work
 		}
 		process.ProcessGraphID = processgraph.ID
 		process.FunctionSpec.Conditions.ColonyID = workflowSpec.ColonyID
-		processMap[process.FunctionSpec.Name] = process
+		processMap[process.FunctionSpec.NodeName] = process
 	}
 
 	err = controller.db.AddProcessGraph(processgraph)
@@ -956,7 +956,7 @@ func (controller *coloniesController) closeSuccessful(processID string, executor
 
 			process.State = core.SUCCESS
 
-			function, err := controller.db.GetFunctionsByExecutorIDAndName(executorID, process.FunctionSpec.Name)
+			function, err := controller.db.GetFunctionsByExecutorIDAndName(executorID, process.FunctionSpec.NodeName)
 			if err != nil {
 				cmd.errorChan <- err
 				return
