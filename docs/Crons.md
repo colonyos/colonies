@@ -59,8 +59,8 @@ The submitted workflow consists of two processes. The first process (generate_da
 ```json
 [
     {
-        "name": "generate_date",
-        "func": "date",
+        "nodename": "generate_date",
+        "funcname": "date",
         "args": [
             ">",
             "/tmp/currentdate"
@@ -71,8 +71,8 @@ The submitted workflow consists of two processes. The first process (generate_da
         }
     },
     {
-        "name": "print_date",
-        "func": "cat",
+        "nodename": "print_date",
+        "funcname": "cat",
         "args": [
             "/tmp/currentdate"
         ],
@@ -122,12 +122,12 @@ WorkflowSpec:
 
 FunctionSpec 0:
 +-------------+---------------------+
-| Func        | date                |
-| Args        | > /tmp/currentdate  |
-| MaxWaitTime | 0                   |
-| MaxExecTime | 0                   |
-| MaxRetries  | 0                   |
-| Priority    | 0                   |
+| FuncName    | date               |
+| Args        | > /tmp/currentdate |
+| MaxWaitTime | 0                  |
+| MaxExecTime | 0                  |
+| MaxRetries  | 0                  |
+| Priority    | 0                  |
 +-------------+---------------------+
 
 Conditions:
@@ -140,12 +140,12 @@ Conditions:
 
 FunctionSpec 1:
 +-------------+-------------------+
-| Func        | cat               |
-| Args        | /tmp/currentdate  |
-| MaxWaitTime | 0                 |
-| MaxExecTime | 0                 |
-| MaxRetries  | 0                 |
-| Priority    | 0                 |
+| FuncName    | cat              |
+| Args        | /tmp/currentdate |
+| MaxWaitTime | 0                |
+| MaxExecTime | 0                |
+| MaxRetries  | 0                |
+| Priority    | 0                |
 +-------------+-------------------+
 
 Conditions:
@@ -218,8 +218,8 @@ The waiting queue will just keep on increasing if there are no executors executi
 ```json
 [
     {
-        "name": "generate_date",
-        "func": "date",
+        "nodename": "generate_date",
+        "funcname": "date",
         "args": [
             ">",
             "/tmp/currentdate"
@@ -231,8 +231,8 @@ The waiting queue will just keep on increasing if there are no executors executi
         "maxwaittime": 3
     },
     {
-        "name": "print_date",
-        "func": "cat",
+        "nodename": "print_date",
+        "funcname": "cat",
         "args": [
             "/tmp/currentdate"
         ],

@@ -1,7 +1,7 @@
 [
     {
-        "name": "analyze_aoi",
-        "func": "sleep",
+        "nodename": "analyze_aoi",
+        "funcname": "sleep",
         "args": [
             "15"
         ],
@@ -11,8 +11,8 @@
         }
     },
     {
-        "name": "create_odc_dataset",
-        "func": "sleep",
+        "nodename": "create_odc_dataset",
+        "funcname": "sleep",
         "args": [
             "10"
         ],
@@ -24,8 +24,8 @@
         }
     },
     {
-        "name": "provision_hpc_vega",
-        "func": "sleep",
+        "nodename": "provision_hpc_vega",
+        "funcname": "sleep",
         "args": [
             "3"
         ],
@@ -37,8 +37,8 @@
         }
     },
     {
-        "name": "upload_dataset_to_hpc",
-        "func": "sleep",
+        "noddename": "upload_dataset_to_hpc",
+        "funcname": "sleep",
         "args": [
             "10"
         ],
@@ -51,8 +51,8 @@
         }
     },
     {
-        "name": "install_slurm_manager",
-        "func": "sleep",
+        "nodename": "install_slurm_manager",
+        "funcname": "sleep",
         "args": [
             "10"
         ],
@@ -64,8 +64,8 @@
         }
     },
     {
-        "name": "start_dask_executors",
-        "func": "sleep",
+        "nodename": "start_dask_executors",
+        "funcname": "sleep",
         "args": [
             "5"
         ],
@@ -78,8 +78,8 @@
         }
     },
     {
-        "name": "dask_executor_1",
-        "func": "sleep",
+        "nodename": "dask_executor_1",
+        "funcname": "sleep",
         "args": [
             "1"
         ],
@@ -91,8 +91,8 @@
         }
     },
     {
-        "name": "dask_executor_2",
-        "func": "sleep",
+        "nodename": "dask_executor_2",
+        "funcname": "sleep",
         "args": [
             "1"
         ],
@@ -104,8 +104,8 @@
         }
     },
     {
-        "name": "dask_executor_3",
-        "func": "sleep",
+        "nodename": "dask_executor_3",
+        "funcname": "sleep",
         "args": [
             "1"
         ],
@@ -117,8 +117,8 @@
         }
     },
     {
-        "name": "dask_executor_4",
-        "func": "sleep",
+        "nodename": "dask_executor_4",
+        "funcname": "sleep",
         "args": [
             "1"
         ],
@@ -130,8 +130,8 @@
         }
     },
     {
-        "name": "dask_executor_5",
-        "func": "sleep",
+        "nodename": "dask_executor_5",
+        "funcname": "sleep",
         "args": [
             "1"
         ],
@@ -143,8 +143,8 @@
         }
     },
     {
-        "name": "analyze_dataset",
-        "func": "sleep",
+        "nodename": "analyze_dataset",
+        "funcname": "sleep",
         "args": [
             "10"
         ],
@@ -160,8 +160,8 @@
         }
     },
     {
-        "name": "upload_result_to_db",
-        "func": "sleep",
+        "nodename": "upload_result_to_db",
+        "funcname": "sleep",
         "args": [
             "1"
         ],
@@ -173,8 +173,8 @@
         }
     },
     {
-        "name": "notify_user",
-        "func": "sleep",
+        "nodename": "notify_user",
+        "funcname": "sleep",
         "args": [
             "1"
         ],

@@ -1,7 +1,7 @@
 [
     {
-        "name": "santa_is_coming",
-        "func": "echo",
+        "nodename": "santa_is_coming",
+        "funcname": "echo",
         "args": [
             "HU HU HU"
         ],

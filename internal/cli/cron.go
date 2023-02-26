@@ -76,7 +76,7 @@ var addCronCmd = &cobra.Command{
 		jsonSpecBytes, err := ioutil.ReadFile(SpecFile)
 		CheckError(err)
 
-		jsonStr := "{\"processspecs\":" + string(jsonSpecBytes) + "}"
+		jsonStr := "{\"functionspecs\":" + string(jsonSpecBytes) + "}"
 		workflowSpec, err := core.ConvertJSONToWorkflowSpec(jsonStr)
 		CheckError(err)
 

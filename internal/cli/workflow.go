@@ -89,7 +89,7 @@ var submitWorkflowCmd = &cobra.Command{
 		jsonSpecBytes, err := ioutil.ReadFile(SpecFile)
 		CheckError(err)
 
-		jsonStr := "{\"processspecs\":" + string(jsonSpecBytes) + "}"
+		jsonStr := "{\"functionspecs\":" + string(jsonSpecBytes) + "}"
 		workflowSpec, err := core.ConvertJSONToWorkflowSpec(jsonStr)
 		CheckError(err)
 
@@ -494,7 +494,7 @@ func printGraf(client *client.ColoniesClient, graph *core.ProcessGraph) {
 			[]string{"NodeName", process.FunctionSpec.NodeName},
 			[]string{"ProcessID", process.ID},
 			[]string{"ExecutorType", process.FunctionSpec.Conditions.ExecutorType},
-			[]string{"Func", f},
+			[]string{"FuncName", f},
 			[]string{"Args", procArgs},
 			[]string{"State", State2String(process.State)},
 			[]string{"WaitingForParents", strconv.FormatBool(process.WaitForParents)},
