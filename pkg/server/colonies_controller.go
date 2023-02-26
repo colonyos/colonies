@@ -956,7 +956,7 @@ func (controller *coloniesController) closeSuccessful(processID string, executor
 
 			process.State = core.SUCCESS
 
-			function, err := controller.db.GetFunctionsByExecutorIDAndName(executorID, process.FunctionSpec.NodeName)
+			function, err := controller.db.GetFunctionsByExecutorIDAndName(executorID, process.FunctionSpec.FuncName)
 			if err != nil {
 				cmd.errorChan <- err
 				return
