@@ -284,7 +284,7 @@ var listWaitingProcessesCmd = &cobra.Command{
 
 			var data [][]string
 			for _, process := range processes {
-				data = append(data, []string{process.ID, process.FunctionSpec.Func, StrArr2Str(process.FunctionSpec.Args), process.SubmissionTime.Format(TimeLayout), process.FunctionSpec.Conditions.ExecutorType})
+				data = append(data, []string{process.ID, process.FunctionSpec.FuncName, StrArr2Str(process.FunctionSpec.Args), process.SubmissionTime.Format(TimeLayout), process.FunctionSpec.Conditions.ExecutorType})
 			}
 			table := tablewriter.NewWriter(os.Stdout)
 			table.SetHeader([]string{"ID", "Func", "Args", "Submission Time", "Executor Type"})
@@ -345,10 +345,10 @@ var listRunningProcessesCmd = &cobra.Command{
 
 			var data [][]string
 			for _, process := range processes {
-				data = append(data, []string{process.ID, process.FunctionSpec.Func, StrArr2Str(process.FunctionSpec.Args), process.StartTime.Format(TimeLayout), process.FunctionSpec.Conditions.ExecutorType})
+				data = append(data, []string{process.ID, process.FunctionSpec.FuncName, StrArr2Str(process.FunctionSpec.Args), process.StartTime.Format(TimeLayout), process.FunctionSpec.Conditions.ExecutorType})
 			}
 			table := tablewriter.NewWriter(os.Stdout)
-			table.SetHeader([]string{"ID", "Cmd", "Args", "Start time", "Executor Type"})
+			table.SetHeader([]string{"ID", "FuncName", "Args", "Start time", "Executor Type"})
 			for _, v := range data {
 				table.Append(v)
 			}
@@ -405,10 +405,10 @@ var listSuccessfulProcessesCmd = &cobra.Command{
 
 			var data [][]string
 			for _, process := range processes {
-				data = append(data, []string{process.ID, process.FunctionSpec.Func, StrArr2Str(process.FunctionSpec.Args), process.EndTime.Format(TimeLayout), process.FunctionSpec.Conditions.ExecutorType})
+				data = append(data, []string{process.ID, process.FunctionSpec.FuncName, StrArr2Str(process.FunctionSpec.Args), process.EndTime.Format(TimeLayout), process.FunctionSpec.Conditions.ExecutorType})
 			}
 			table := tablewriter.NewWriter(os.Stdout)
-			table.SetHeader([]string{"ID", "Func", "Args", "End time", "Executor Type"})
+			table.SetHeader([]string{"ID", "FuncName", "Args", "End time", "Executor Type"})
 			for _, v := range data {
 				table.Append(v)
 			}
@@ -465,10 +465,10 @@ var listFailedProcessesCmd = &cobra.Command{
 
 			var data [][]string
 			for _, process := range processes {
-				data = append(data, []string{process.ID, process.FunctionSpec.Func, StrArr2Str(process.FunctionSpec.Args), process.EndTime.Format(TimeLayout), process.FunctionSpec.Conditions.ExecutorType})
+				data = append(data, []string{process.ID, process.FunctionSpec.FuncName, StrArr2Str(process.FunctionSpec.Args), process.EndTime.Format(TimeLayout), process.FunctionSpec.Conditions.ExecutorType})
 			}
 			table := tablewriter.NewWriter(os.Stdout)
-			table.SetHeader([]string{"ID", "Func", "Args", "End time", "Executor Type"})
+			table.SetHeader([]string{"ID", "FuncName", "Args", "End time", "Executor Type"})
 			for _, v := range data {
 				table.Append(v)
 			}
@@ -488,7 +488,7 @@ func printFunctionSpec(funcSpec *core.FunctionSpec) {
 		executorIDs = "None"
 	}
 
-	procFunc := funcSpec.Func
+	procFunc := funcSpec.FuncName
 	if procFunc == "" {
 		procFunc = "None"
 	}
