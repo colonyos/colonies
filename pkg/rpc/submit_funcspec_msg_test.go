@@ -18,7 +18,7 @@ func createFunctionSpec() *core.FunctionSpec {
 	env := make(map[string]string)
 	env["test_key"] = "test_value"
 
-	return core.CreateFunctionSpec("test_name", "test_func", []string{"test_arg"}, colonyID, []string{executor1ID, executor2ID}, executorType, maxWaitTime, maxExecTime, maxRetries, env, []string{}, 1)
+	return core.CreateFunctionSpec("test_name", "test_func", []string{"test_arg"}, colonyID, []string{executor1ID, executor2ID}, executorType, maxWaitTime, maxExecTime, maxRetries, env, []string{}, 1, "test_label")
 }
 
 func TestRPCSubmitFunctionSpecMsg(t *testing.T) {

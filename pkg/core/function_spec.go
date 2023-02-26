@@ -12,15 +12,17 @@ type Conditions struct {
 }
 
 type FunctionSpec struct {
-	NodeName    string            `json:"nodename"`
-	FuncName    string            `json:"funcname"`
-	Args        []string          `json:"args"`
-	Priority    int               `json:"priority"`
-	MaxWaitTime int               `json:"maxwaittime"`
-	MaxExecTime int               `json:"maxexectime"`
-	MaxRetries  int               `json:"maxretries"`
-	Conditions  Conditions        `json:"conditions"`
-	Env         map[string]string `json:"env"`
+	NodeName     string            `json:"nodename"`
+	FuncName     string            `json:"funcname"`
+	Args         []string          `json:"args"`
+	Priority     int               `json:"priority"`
+	PriorityTime int               `json:"prioritytime"`
+	MaxWaitTime  int               `json:"maxwaittime"`
+	MaxExecTime  int               `json:"maxexectime"`
+	MaxRetries   int               `json:"maxretries"`
+	Conditions   Conditions        `json:"conditions"`
+	Label        string            `json:"label"`
+	Env          map[string]string `json:"env"`
 }
 
 func CreateEmptyFunctionSpec() *FunctionSpec {
@@ -32,9 +34,9 @@ func CreateEmptyFunctionSpec() *FunctionSpec {
 	return funcSpec
 }
 
-func CreateFunctionSpec(nodeName string, funcName string, args []string, colonyID string, executorIDs []string, executorType string, maxWaitTime int, maxExecTime int, maxRetries int, env map[string]string, dependencies []string, priority int) *FunctionSpec {
+func CreateFunctionSpec(nodeName string, funcName string, args []string, colonyID string, executorIDs []string, executorType string, maxWaitTime int, maxExecTime int, maxRetries int, env map[string]string, dependencies []string, priority int, label string) *FunctionSpec {
 	conditions := Conditions{ColonyID: colonyID, ExecutorIDs: executorIDs, ExecutorType: executorType, Dependencies: dependencies}
-	return &FunctionSpec{NodeName: nodeName, FuncName: funcName, Args: args, MaxWaitTime: maxWaitTime, MaxExecTime: maxExecTime, MaxRetries: maxRetries, Conditions: conditions, Env: env, Priority: priority}
+	return &FunctionSpec{NodeName: nodeName, FuncName: funcName, Args: args, MaxWaitTime: maxWaitTime, MaxExecTime: maxExecTime, MaxRetries: maxRetries, Conditions: conditions, Env: env, Priority: priority, Label: label}
 }
 
 func ConvertJSONToFunctionSpec(jsonString string) (*FunctionSpec, error) {
@@ -70,7 +72,9 @@ func (funcSpec *FunctionSpec) Equals(funcSpec2 *FunctionSpec) bool {
 		funcSpec.MaxRetries != funcSpec2.MaxRetries ||
 		funcSpec.Conditions.ColonyID != funcSpec2.Conditions.ColonyID ||
 		funcSpec.Conditions.ExecutorType != funcSpec2.Conditions.ExecutorType ||
-		funcSpec.Priority != funcSpec2.Priority {
+		funcSpec.PriorityTime != funcSpec2.PriorityTime ||
+		funcSpec.Priority != funcSpec2.Priority ||
+		funcSpec.Label != funcSpec2.Label {
 		same = false
 	}
 
