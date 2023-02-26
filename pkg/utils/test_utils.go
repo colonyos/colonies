@@ -86,9 +86,9 @@ func CreateTestColonyWithKey() (*core.Colony, string, error) {
 func FakeGenerator(t *testing.T, colonyID string) *core.Generator {
 	workflowSpec := core.CreateWorkflowSpec(colonyID)
 	funcSpec1 := CreateTestFunctionSpec(colonyID)
-	funcSpec1.Name = "task1"
+	funcSpec1.NodeName = "task1"
 	funcSpec2 := CreateTestFunctionSpec(colonyID)
-	funcSpec2.Name = "task2"
+	funcSpec2.NodeName = "task2"
 	funcSpec2.AddDependency("task1")
 	workflowSpec.AddFunctionSpec(funcSpec1)
 	workflowSpec.AddFunctionSpec(funcSpec2)
@@ -101,7 +101,7 @@ func FakeGenerator(t *testing.T, colonyID string) *core.Generator {
 func FakeGeneratorSingleProcess(t *testing.T, colonyID string) *core.Generator {
 	workflowSpec := core.CreateWorkflowSpec(colonyID)
 	funcSpec1 := CreateTestFunctionSpec(colonyID)
-	funcSpec1.Name = "task1"
+	funcSpec1.NodeName = "task1"
 	workflowSpec.AddFunctionSpec(funcSpec1)
 	jsonStr, err := workflowSpec.ToJSON()
 	assert.Nil(t, err)
@@ -112,9 +112,9 @@ func FakeGeneratorSingleProcess(t *testing.T, colonyID string) *core.Generator {
 func FakeCron(t *testing.T, colonyID string) *core.Cron {
 	workflowSpec := core.CreateWorkflowSpec(colonyID)
 	funcSpec1 := CreateTestFunctionSpec(colonyID)
-	funcSpec1.Name = "task1"
+	funcSpec1.NodeName = "task1"
 	funcSpec2 := CreateTestFunctionSpec(colonyID)
-	funcSpec2.Name = "task2"
+	funcSpec2.NodeName = "task2"
 	funcSpec2.AddDependency("task1")
 	workflowSpec.AddFunctionSpec(funcSpec1)
 	workflowSpec.AddFunctionSpec(funcSpec2)
@@ -127,7 +127,7 @@ func FakeCron(t *testing.T, colonyID string) *core.Cron {
 func FakeSingleCron(t *testing.T, colonyID string) *core.Cron {
 	workflowSpec := core.CreateWorkflowSpec(colonyID)
 	funcSpec := CreateTestFunctionSpec(colonyID)
-	funcSpec.Name = "task1"
+	funcSpec.NodeName = "task1"
 	workflowSpec.AddFunctionSpec(funcSpec)
 	jsonStr, err := workflowSpec.ToJSON()
 	assert.Nil(t, err)

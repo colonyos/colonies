@@ -9,9 +9,9 @@ import (
 func TestCreateGenerator(t *testing.T) {
 	workflowSpec := CreateWorkflowSpec(GenerateRandomID())
 	funcSpec1 := CreateEmptyFunctionSpec()
-	funcSpec1.Name = "task1"
+	funcSpec1.NodeName = "task1"
 	funcSpec2 := CreateEmptyFunctionSpec()
-	funcSpec2.Name = "task2"
+	funcSpec2.NodeName = "task2"
 	funcSpec2.AddDependency("task1")
 	workflowSpec.AddFunctionSpec(funcSpec1)
 	workflowSpec.AddFunctionSpec(funcSpec2)
@@ -37,9 +37,9 @@ func TestCreateGeneratorSpecArray(t *testing.T) {
 	var arr []*Generator
 	workflowSpec1 := CreateWorkflowSpec(GenerateRandomID())
 	funcSpec1 := CreateEmptyFunctionSpec()
-	funcSpec1.Name = "task1"
+	funcSpec1.NodeName = "task1"
 	funcSpec2 := CreateEmptyFunctionSpec()
-	funcSpec2.Name = "task2"
+	funcSpec2.NodeName = "task2"
 	funcSpec2.AddDependency("task1")
 	workflowSpec1.AddFunctionSpec(funcSpec1)
 	workflowSpec1.AddFunctionSpec(funcSpec2)

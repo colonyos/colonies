@@ -16,16 +16,16 @@ func TestWorkflowSpecJSON(t *testing.T) {
 	workflowSpec := CreateWorkflowSpec(GenerateRandomID())
 
 	funcSpec1 := CreateEmptyFunctionSpec()
-	funcSpec1.Name = "task1"
+	funcSpec1.NodeName = "task1"
 
 	funcSpec2 := CreateEmptyFunctionSpec()
-	funcSpec2.Name = "task2"
+	funcSpec2.NodeName = "task2"
 
 	funcSpec3 := CreateEmptyFunctionSpec()
-	funcSpec3.Name = "task3"
+	funcSpec3.NodeName = "task3"
 
 	funcSpec4 := CreateEmptyFunctionSpec()
-	funcSpec4.Name = "task4"
+	funcSpec4.NodeName = "task4"
 
 	funcSpec2.AddDependency("task1")
 	funcSpec3.AddDependency("task1")
