@@ -9,7 +9,7 @@ import (
 const AddFunctionPayloadType = "addfunctionmsg"
 
 type AddFunctionMsg struct {
-	Function *core.Function `json:"function"`
+	Function *core.Function `json:"fun"`
 	MsgType  string         `json:"msgtype"`
 }
 
