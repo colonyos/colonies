@@ -9,8 +9,8 @@ This workflow can be modelled as follows:
 ```json
 [
     {
-        "name": "task_a",
-        "func": "echo",
+        "nodename": "task_a",
+        "funcname": "echo",
         "args": [
             "task1"
         ],
@@ -20,8 +20,8 @@ This workflow can be modelled as follows:
         }
     },
     {
-        "name": "task_b",
-        "func": "echo",
+        "nodename": "task_b",
+        "funcname": "echo",
         "args": [
             "task2"
         ],
@@ -33,8 +33,8 @@ This workflow can be modelled as follows:
         }
     },
     {
-        "name": "task_c",
-        "func": "echo",
+        "nodename": "task_c",
+        "funcname": "echo",
         "args": [
             "task3"
         ],
@@ -46,8 +46,8 @@ This workflow can be modelled as follows:
         }
     },
     {
-        "name": "task_d",
-        "func": "echo",
+        "nodename": "task_d",
+        "funcname": "echo",
         "args": [
             "task4"
         ],
@@ -85,10 +85,10 @@ Workflow:
 
 Processes:
 +-------------------+------------------------------------------------------------------+
-| Name              | task_a                                                           |
+| NodeName          | task_a                                                           |
 | ProcessID         | 3a8e9299c76905c87f903b4fdcf4c5dbeb314659e2ed31d477dcb414e8fedf1f |
 | ExecutorType      | cli                                                              |
-| Func              | echo                                                             |
+| FuncName          | echo                                                             |
 | Args              | task_a                                                           |
 | State             | Waiting                                                          |
 | WaitingForParents | false                                                            |
@@ -96,10 +96,10 @@ Processes:
 +-------------------+------------------------------------------------------------------+
 
 +-------------------+------------------------------------------------------------------+
-| Name              | task_b                                                           |
+| NodeName          | task_b                                                           |
 | ProcessID         | 5fd0611d57fc567ce7aa7984424b1de749c32b20b92668b4755ade6ca62e19c2 |
 | ExecutorType      | cli                                                              |
-| Func              | echo                                                             |
+| FuncName          | echo                                                             |
 | Args              | task_b                                                           |
 | State             | Waiting                                                          |
 | WaitingForParents | true                                                             |
@@ -107,10 +107,10 @@ Processes:
 +-------------------+------------------------------------------------------------------+
 
 +-------------------+------------------------------------------------------------------+
-| Name              | task_d                                                           |
+| NodeName          | task_d                                                           |
 | ProcessID         | f46b7e84da0657cda3982282f5bef8b3c7429eff6b635cbce9bf93eb034e6705 |
 | ExecutorType      | cli                                                              |
-| Func              | echo                                                             |
+| FuncName          | echo                                                             |
 | Args              | task_d                                                           |
 | State             | Waiting                                                          |
 | WaitingForParents | true                                                             |
@@ -118,10 +118,10 @@ Processes:
 +-------------------+------------------------------------------------------------------+
 
 +-------------------+------------------------------------------------------------------+
-| Name              | task_c                                                           |
+| NodeName          | task_c                                                           |
 | ProcessID         | bf5d93190967539133063d357bcd5d446d3e4fce41a6d110926de12129a64156 |
 | ExecutorType      | cli                                                              |
-| Func              | echo                                                             |
+| FuncName          | echo                                                             |
 | Args              | task_c                                                           |
 | State             | Waiting                                                          |
 | WaitingForParents | true                                                             |

@@ -2,5 +2,5 @@
     "conditions": {
         "executortype": "cli"
     },
-    "func": "echo sayhello"
+    "funcname": "echo sayhello"
 }

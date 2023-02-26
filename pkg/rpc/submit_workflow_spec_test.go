@@ -16,27 +16,27 @@ func createWorkflowSpec() *core.WorkflowSpec {
 
 	workflowSpec := core.CreateWorkflowSpec(core.GenerateRandomID())
 
-	processSpec1 := core.CreateEmptyProcessSpec()
-	processSpec1.Name = "task1"
+	funcSpec1 := core.CreateEmptyFunctionSpec()
+	funcSpec1.NodeName = "task1"
 
-	processSpec2 := core.CreateEmptyProcessSpec()
-	processSpec2.Name = "task2"
+	funcSpec2 := core.CreateEmptyFunctionSpec()
+	funcSpec2.NodeName = "task2"
 
-	processSpec3 := core.CreateEmptyProcessSpec()
-	processSpec3.Name = "task3"
+	funcSpec3 := core.CreateEmptyFunctionSpec()
+	funcSpec3.NodeName = "task3"
 
-	processSpec4 := core.CreateEmptyProcessSpec()
-	processSpec4.Name = "task4"
+	funcSpec4 := core.CreateEmptyFunctionSpec()
+	funcSpec4.NodeName = "task4"
 
-	processSpec2.AddDependency("task1")
-	processSpec3.AddDependency("task1")
-	processSpec4.AddDependency("task2")
-	processSpec4.AddDependency("task3")
+	funcSpec2.AddDependency("task1")
+	funcSpec3.AddDependency("task1")
+	funcSpec4.AddDependency("task2")
+	funcSpec4.AddDependency("task3")
 
-	workflowSpec.AddProcessSpec(processSpec1)
-	workflowSpec.AddProcessSpec(processSpec2)
-	workflowSpec.AddProcessSpec(processSpec3)
-	workflowSpec.AddProcessSpec(processSpec4)
+	workflowSpec.AddFunctionSpec(funcSpec1)
+	workflowSpec.AddFunctionSpec(funcSpec2)
+	workflowSpec.AddFunctionSpec(funcSpec3)
+	workflowSpec.AddFunctionSpec(funcSpec4)
 
 	return workflowSpec
 }

@@ -1,0 +1,7 @@
+{
+    "funcname": "helloworld",
+    "desc": "Hello world example",
+    "args": [
+        "alice"
+    ]
+}
