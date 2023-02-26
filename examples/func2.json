@@ -1,5 +1,5 @@
 {
-    "name": "helloworld2",
+    "funcname": "helloworld2",
     "desc": "Hello world example",
     "args": [
         "alice"

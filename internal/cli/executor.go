@@ -265,7 +265,7 @@ func printExecutor(client *client.ColoniesClient, executor *core.Executor) {
 				funcArgs = "None"
 			}
 			funcData := [][]string{
-				[]string{"Name", function.Name},
+				[]string{"FuncName", function.FuncName},
 				[]string{"Args", funcArgs},
 				[]string{"Counter", strconv.Itoa(function.Counter)},
 				[]string{"MinWaitTime", fmt.Sprintf("%f s", function.MinWaitTime)},

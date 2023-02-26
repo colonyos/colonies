@@ -10,11 +10,11 @@ import (
 func TestAddFunction(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 
-	function1 := &core.Function{ExecutorID: env.executorID, ColonyID: env.colonyID, Name: "testfunc1", Desc: "unit test function", AvgWaitTime: 1.1, AvgExecTime: 0.1, Args: []string{"arg1"}}
+	function1 := &core.Function{ExecutorID: env.executorID, ColonyID: env.colonyID, FuncName: "testfunc1", Desc: "unit test function", AvgWaitTime: 1.1, AvgExecTime: 0.1, Args: []string{"arg1"}}
 
 	addedFunction1, err := client.AddFunction(function1, env.executorPrvKey)
 	assert.Nil(t, err)
-	assert.Equal(t, function1.Name, addedFunction1.Name)
+	assert.Equal(t, function1.FuncName, addedFunction1.FuncName)
 
 	_, err = client.AddFunction(function1, env.executorPrvKey)
 	assert.NotNil(t, err)
@@ -26,12 +26,12 @@ func TestAddFunction(t *testing.T) {
 func TestGetFunctions(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 
-	function1 := &core.Function{ExecutorID: env.executorID, ColonyID: env.colonyID, Name: "testfunc1", Desc: "unit test function", AvgWaitTime: 1.1, AvgExecTime: 0.1, Args: []string{"arg1"}}
+	function1 := &core.Function{ExecutorID: env.executorID, ColonyID: env.colonyID, FuncName: "testfunc1", Desc: "unit test function", AvgWaitTime: 1.1, AvgExecTime: 0.1, Args: []string{"arg1"}}
 
 	_, err := client.AddFunction(function1, env.executorPrvKey)
 	assert.Nil(t, err)
 
-	function2 := &core.Function{ExecutorID: env.executorID, ColonyID: env.colonyID, Name: "testfunc2", Desc: "unit test function", AvgWaitTime: 1.1, AvgExecTime: 0.1, Args: []string{"arg1"}}
+	function2 := &core.Function{ExecutorID: env.executorID, ColonyID: env.colonyID, FuncName: "testfunc2", Desc: "unit test function", AvgWaitTime: 1.1, AvgExecTime: 0.1, Args: []string{"arg1"}}
 
 	_, err = client.AddFunction(function2, env.executorPrvKey)
 	assert.Nil(t, err)
@@ -41,7 +41,7 @@ func TestGetFunctions(t *testing.T) {
 
 	counter := 0
 	for _, function := range functions {
-		if function.Name == function1.Name || function.Name == function2.Name {
+		if function.FuncName == function1.FuncName || function.FuncName == function2.FuncName {
 			counter++
 		}
 	}
@@ -55,12 +55,12 @@ func TestGetFunctions(t *testing.T) {
 func TestDeleteFunction(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 
-	function1 := &core.Function{ExecutorID: env.executorID, ColonyID: env.colonyID, Name: "testfunc1", Desc: "unit test function", AvgWaitTime: 1.1, AvgExecTime: 0.1, Args: []string{"arg1"}}
+	function1 := &core.Function{ExecutorID: env.executorID, ColonyID: env.colonyID, FuncName: "testfunc1", Desc: "unit test function", AvgWaitTime: 1.1, AvgExecTime: 0.1, Args: []string{"arg1"}}
 
 	addedFunction1, err := client.AddFunction(function1, env.executorPrvKey)
 	assert.Nil(t, err)
 
-	function2 := &core.Function{ExecutorID: env.executorID, ColonyID: env.colonyID, Name: "testfunc2", Desc: "unit test function", AvgWaitTime: 1.1, AvgExecTime: 0.1, Args: []string{"arg1"}}
+	function2 := &core.Function{ExecutorID: env.executorID, ColonyID: env.colonyID, FuncName: "testfunc2", Desc: "unit test function", AvgWaitTime: 1.1, AvgExecTime: 0.1, Args: []string{"arg1"}}
 
 	_, err = client.AddFunction(function2, env.executorPrvKey)
 	assert.Nil(t, err)

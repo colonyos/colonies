@@ -6,7 +6,7 @@ type Function struct {
 	FunctionID  string   `json:"functionid"`
 	ExecutorID  string   `json:"executorid"`
 	ColonyID    string   `json:"colonyid"`
-	Name        string   `json:"name"`
+	FuncName    string   `json:"name"`
 	Desc        string   `json:"desc"`
 	Counter     int      `json:"counter"`
 	MinWaitTime float64  `json:"minwaittime"`
@@ -21,7 +21,7 @@ type Function struct {
 func CreateFunction(functionID string,
 	executorID string,
 	colonyID string,
-	name string,
+	funcName string,
 	desc string,
 	counter int,
 	minWaitTime float64,
@@ -35,7 +35,7 @@ func CreateFunction(functionID string,
 		FunctionID:  functionID,
 		ExecutorID:  executorID,
 		ColonyID:    colonyID,
-		Name:        name,
+		FuncName:    funcName,
 		Desc:        desc,
 		Counter:     counter,
 		MinWaitTime: minWaitTime,
@@ -102,7 +102,7 @@ func (function *Function) Equals(function2 *Function) bool {
 	if function.FunctionID != function2.FunctionID ||
 		function.ExecutorID != function2.ExecutorID ||
 		function.ColonyID != function2.ColonyID ||
-		function.Name != function2.Name ||
+		function.FuncName != function2.FuncName ||
 		function.Desc != function2.Desc ||
 		function.Counter != function2.Counter ||
 		function.MinWaitTime != function2.MinWaitTime ||
