@@ -112,7 +112,7 @@ var processCmd = &cobra.Command{
 func wait(client *client.ColoniesClient, process *core.Process) {
 	for {
 		subscription, err := client.SubscribeProcess(process.ID,
-			process.ProcessSpec.Conditions.ExecutorType,
+			process.FunctionSpec.Conditions.ExecutorType,
 			core.SUCCESS,
 			100,
 			ExecutorPrvKey)
@@ -143,10 +143,10 @@ var submitProcessCmd = &cobra.Command{
 		jsonSpecBytes, err := ioutil.ReadFile(SpecFile)
 		CheckError(err)
 
-		processSpec, err := core.ConvertJSONToProcessSpec(string(jsonSpecBytes))
+		funcSpec, err := core.ConvertJSONToFunctionSpec(string(jsonSpecBytes))
 		CheckError(err)
 
-		if processSpec.Conditions.ColonyID == "" {
+		if funcSpec.Conditions.ColonyID == "" {
 			if ColonyID == "" {
 				ColonyID = os.Getenv("COLONIES_COLONY_ID")
 			}
@@ -154,7 +154,7 @@ var submitProcessCmd = &cobra.Command{
 				CheckError(errors.New("Unknown Colony Id, please set COLONYID env variable or specify ColonyID in JSON file"))
 			}
 
-			processSpec.Conditions.ColonyID = ColonyID
+			funcSpec.Conditions.ColonyID = ColonyID
 		}
 
 		keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
@@ -175,7 +175,7 @@ var submitProcessCmd = &cobra.Command{
 		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Info("Starting a Colonies client")
 		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
 
-		addedProcess, err := client.SubmitProcessSpec(processSpec, ExecutorPrvKey)
+		addedProcess, err := client.Submit(funcSpec, ExecutorPrvKey)
 		CheckError(err)
 
 		if Wait {
@@ -226,7 +226,7 @@ var assignProcessCmd = &cobra.Command{
 				log.WithFields(log.Fields{"ProcessID": process.ID, "ExecutorID": ExecutorID}).Info("Assigned process to executor (latest)")
 			}
 		} else {
-			process, err := client.AssignProcess(ColonyID, Timeout, ExecutorPrvKey)
+			process, err := client.Assign(ColonyID, Timeout, ExecutorPrvKey)
 			if err != nil {
 				log.Warning(err)
 			} else {
@@ -284,7 +284,7 @@ var listWaitingProcessesCmd = &cobra.Command{
 
 			var data [][]string
 			for _, process := range processes {
-				data = append(data, []string{process.ID, process.ProcessSpec.Func, StrArr2Str(process.ProcessSpec.Args), process.SubmissionTime.Format(TimeLayout), process.ProcessSpec.Conditions.ExecutorType})
+				data = append(data, []string{process.ID, process.FunctionSpec.Func, StrArr2Str(process.FunctionSpec.Args), process.SubmissionTime.Format(TimeLayout), process.FunctionSpec.Conditions.ExecutorType})
 			}
 			table := tablewriter.NewWriter(os.Stdout)
 			table.SetHeader([]string{"ID", "Func", "Args", "Submission Time", "Executor Type"})
@@ -345,7 +345,7 @@ var listRunningProcessesCmd = &cobra.Command{
 
 			var data [][]string
 			for _, process := range processes {
-				data = append(data, []string{process.ID, process.ProcessSpec.Func, StrArr2Str(process.ProcessSpec.Args), process.StartTime.Format(TimeLayout), process.ProcessSpec.Conditions.ExecutorType})
+				data = append(data, []string{process.ID, process.FunctionSpec.Func, StrArr2Str(process.FunctionSpec.Args), process.StartTime.Format(TimeLayout), process.FunctionSpec.Conditions.ExecutorType})
 			}
 			table := tablewriter.NewWriter(os.Stdout)
 			table.SetHeader([]string{"ID", "Cmd", "Args", "Start time", "Executor Type"})
@@ -405,7 +405,7 @@ var listSuccessfulProcessesCmd = &cobra.Command{
 
 			var data [][]string
 			for _, process := range processes {
-				data = append(data, []string{process.ID, process.ProcessSpec.Func, StrArr2Str(process.ProcessSpec.Args), process.EndTime.Format(TimeLayout), process.ProcessSpec.Conditions.ExecutorType})
+				data = append(data, []string{process.ID, process.FunctionSpec.Func, StrArr2Str(process.FunctionSpec.Args), process.EndTime.Format(TimeLayout), process.FunctionSpec.Conditions.ExecutorType})
 			}
 			table := tablewriter.NewWriter(os.Stdout)
 			table.SetHeader([]string{"ID", "Func", "Args", "End time", "Executor Type"})
@@ -465,7 +465,7 @@ var listFailedProcessesCmd = &cobra.Command{
 
 			var data [][]string
 			for _, process := range processes {
-				data = append(data, []string{process.ID, process.ProcessSpec.Func, StrArr2Str(process.ProcessSpec.Args), process.EndTime.Format(TimeLayout), process.ProcessSpec.Conditions.ExecutorType})
+				data = append(data, []string{process.ID, process.FunctionSpec.Func, StrArr2Str(process.FunctionSpec.Args), process.EndTime.Format(TimeLayout), process.FunctionSpec.Conditions.ExecutorType})
 			}
 			table := tablewriter.NewWriter(os.Stdout)
 			table.SetHeader([]string{"ID", "Func", "Args", "End time", "Executor Type"})
@@ -478,9 +478,9 @@ var listFailedProcessesCmd = &cobra.Command{
 	},
 }
 
-func printProcessSpec(processSpec *core.ProcessSpec) {
+func printFunctionSpec(funcSpec *core.FunctionSpec) {
 	executorIDs := ""
-	for _, executorID := range processSpec.Conditions.ExecutorIDs {
+	for _, executorID := range funcSpec.Conditions.ExecutorIDs {
 		executorIDs += executorID + "\n"
 	}
 	executorIDs = strings.TrimSuffix(executorIDs, "\n")
@@ -488,13 +488,13 @@ func printProcessSpec(processSpec *core.ProcessSpec) {
 		executorIDs = "None"
 	}
 
-	procFunc := processSpec.Func
+	procFunc := funcSpec.Func
 	if procFunc == "" {
 		procFunc = "None"
 	}
 
 	procArgs := ""
-	for _, procArg := range processSpec.Args {
+	for _, procArg := range funcSpec.Args {
 		procArgs += procArg + " "
 	}
 	if procArgs == "" {
@@ -504,10 +504,10 @@ func printProcessSpec(processSpec *core.ProcessSpec) {
 	specData := [][]string{
 		[]string{"Func", procFunc},
 		[]string{"Args", procArgs},
-		[]string{"MaxWaitTime", strconv.Itoa(processSpec.MaxWaitTime)},
-		[]string{"MaxExecTime", strconv.Itoa(processSpec.MaxExecTime)},
-		[]string{"MaxRetries", strconv.Itoa(processSpec.MaxRetries)},
-		[]string{"Priority", strconv.Itoa(processSpec.Priority)},
+		[]string{"MaxWaitTime", strconv.Itoa(funcSpec.MaxWaitTime)},
+		[]string{"MaxExecTime", strconv.Itoa(funcSpec.MaxExecTime)},
+		[]string{"MaxRetries", strconv.Itoa(funcSpec.MaxRetries)},
+		[]string{"Priority", strconv.Itoa(funcSpec.Priority)},
 	}
 	specTable := tablewriter.NewWriter(os.Stdout)
 	for _, v := range specData {
@@ -520,7 +520,7 @@ func printProcessSpec(processSpec *core.ProcessSpec) {
 	fmt.Println("Conditions:")
 
 	dep := ""
-	for _, s := range processSpec.Conditions.Dependencies {
+	for _, s := range funcSpec.Conditions.Dependencies {
 		dep += s + " "
 	}
 	if len(dep) > 0 {
@@ -528,9 +528,9 @@ func printProcessSpec(processSpec *core.ProcessSpec) {
 	}
 
 	condData := [][]string{
-		[]string{"ColonyID", processSpec.Conditions.ColonyID},
+		[]string{"ColonyID", funcSpec.Conditions.ColonyID},
 		[]string{"ExecutorIDs", executorIDs},
-		[]string{"ExecutorType", processSpec.Conditions.ExecutorType},
+		[]string{"ExecutorType", funcSpec.Conditions.ExecutorType},
 		[]string{"Dependencies", dep},
 	}
 	condTable := tablewriter.NewWriter(os.Stdout)
@@ -598,7 +598,7 @@ var getProcessCmd = &cobra.Command{
 			[]string{"IsAssigned", isAssigned},
 			[]string{"AssignedExecutorID", assignedExecutorID},
 			[]string{"State", State2String(process.State)},
-			[]string{"Priority", strconv.Itoa(process.ProcessSpec.Priority)},
+			[]string{"Priority", strconv.Itoa(process.FunctionSpec.Priority)},
 			[]string{"SubmissionTime", process.SubmissionTime.Format(TimeLayout)},
 			[]string{"StartTime", process.StartTime.Format(TimeLayout)},
 			[]string{"EndTime", process.EndTime.Format(TimeLayout)},
@@ -618,8 +618,8 @@ var getProcessCmd = &cobra.Command{
 		processTable.Render()
 
 		fmt.Println()
-		fmt.Println("ProcessSpec:")
-		printProcessSpec(&process.ProcessSpec)
+		fmt.Println("FunctionSpec:")
+		printFunctionSpec(&process.FunctionSpec)
 
 		fmt.Println()
 		fmt.Println("Attributes:")

@@ -68,7 +68,7 @@ func (wsSubCtrl *wsSubscriptionController) sendProcessToWS(executorID string,
 	if err != nil {
 		log.WithFields(log.Fields{
 			"ExecutorID":   executorID,
-			"ExecutorType": process.ProcessSpec.Conditions.ExecutorType,
+			"ExecutorType": process.FunctionSpec.Conditions.ExecutorType,
 			"State":        process.State,
 			"Error":        err}).
 			Error("Failed to create Process JSON when subscribing to processes")
@@ -78,7 +78,7 @@ func (wsSubCtrl *wsSubscriptionController) sendProcessToWS(executorID string,
 	if err != nil {
 		log.WithFields(log.Fields{
 			"ExecutorID":   executorID,
-			"ExecutorType": process.ProcessSpec.Conditions.ExecutorType,
+			"ExecutorType": process.FunctionSpec.Conditions.ExecutorType,
 			"State":        process.State,
 			"Error":        err}).
 			Error("Failed to create RPCReplyMsg when subscribing to processes")
@@ -88,7 +88,7 @@ func (wsSubCtrl *wsSubscriptionController) sendProcessToWS(executorID string,
 	if err != nil {
 		log.WithFields(log.Fields{
 			"ExecutorID":   executorID,
-			"ExecutorType": process.ProcessSpec.Conditions.ExecutorType,
+			"ExecutorType": process.FunctionSpec.Conditions.ExecutorType,
 			"State":        process.State,
 			"Error":        err}).
 			Error("Failed to create RPCReplyMsg JSON when subscribing to processes")
@@ -98,7 +98,7 @@ func (wsSubCtrl *wsSubscriptionController) sendProcessToWS(executorID string,
 	if err != nil {
 		log.WithFields(log.Fields{
 			"ExecutorID":   executorID,
-			"ExecutorType": process.ProcessSpec.Conditions.ExecutorType,
+			"ExecutorType": process.FunctionSpec.Conditions.ExecutorType,
 			"State":        process.State,
 			"Error":        err}).
 			Error("Failed to write RPCReplyMsg JSON to WS when subscribing to processes")

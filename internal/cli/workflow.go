@@ -469,13 +469,13 @@ func printGraf(client *client.ColoniesClient, graph *core.ProcessGraph) {
 		process, err := client.GetProcess(processID, ExecutorPrvKey)
 		CheckError(err)
 
-		procFunc := process.ProcessSpec.Func
-		if procFunc == "" {
-			procFunc = "None"
+		f := process.FunctionSpec.Func
+		if f == "" {
+			f = "None"
 		}
 
 		procArgs := ""
-		for _, procArg := range process.ProcessSpec.Args {
+		for _, procArg := range process.FunctionSpec.Args {
 			procArgs += procArg + " "
 		}
 		if procArgs == "" {
@@ -483,7 +483,7 @@ func printGraf(client *client.ColoniesClient, graph *core.ProcessGraph) {
 		}
 
 		dependencies := ""
-		for _, dependency := range process.ProcessSpec.Conditions.Dependencies {
+		for _, dependency := range process.FunctionSpec.Conditions.Dependencies {
 			dependencies += dependency + " "
 		}
 		if dependencies == "" {
@@ -491,10 +491,10 @@ func printGraf(client *client.ColoniesClient, graph *core.ProcessGraph) {
 		}
 
 		processData := [][]string{
-			[]string{"Name", process.ProcessSpec.Name},
+			[]string{"Name", process.FunctionSpec.Name},
 			[]string{"ProcessID", process.ID},
-			[]string{"ExecutorType", process.ProcessSpec.Conditions.ExecutorType},
-			[]string{"Func", procFunc},
+			[]string{"ExecutorType", process.FunctionSpec.Conditions.ExecutorType},
+			[]string{"Func", f},
 			[]string{"Args", procArgs},
 			[]string{"State", State2String(process.State)},
 			[]string{"WaitingForParents", strconv.FormatBool(process.WaitForParents)},
