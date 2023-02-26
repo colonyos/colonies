@@ -10,7 +10,7 @@ func VerifyWorkflowSpec(workflowSpec *core.WorkflowSpec) error {
 	processMap := make(map[string]*core.Process)
 	for _, funcSpec := range workflowSpec.FunctionSpecs {
 		process := core.CreateProcess(&funcSpec)
-		processMap[process.FunctionSpec.Name] = process
+		processMap[process.FunctionSpec.NodeName] = process
 	}
 
 	for _, process := range processMap {

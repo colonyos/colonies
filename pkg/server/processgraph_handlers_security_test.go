@@ -143,7 +143,7 @@ func TestAddChildSecurity(t *testing.T) {
 	parentProcessID := processGraph.Roots[0]
 
 	childFunctionSpec := utils.CreateTestFunctionSpec(env.colony2ID)
-	childFunctionSpec.Name = "task5"
+	childFunctionSpec.NodeName = "task5"
 
 	_, err = client.AddChild(processGraph.ID, parentProcessID, childFunctionSpec, env.executor1PrvKey)
 	assert.NotNil(t, err) // Error, executor1 not member of member of colony2

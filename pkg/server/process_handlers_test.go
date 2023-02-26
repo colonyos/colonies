@@ -416,7 +416,7 @@ func TestCloseSuccessfulWithFunctions(t *testing.T) {
 	_, err := client.Submit(funcSpec, env.executorPrvKey)
 	assert.Nil(t, err)
 
-	function := &core.Function{ColonyID: env.colonyID, ExecutorID: env.executorID, FuncName: funcSpec.Name, Args: []string{}}
+	function := &core.Function{ColonyID: env.colonyID, ExecutorID: env.executorID, FuncName: funcSpec.FuncName, Args: []string{}}
 	_, err = client.AddFunction(function, env.executorPrvKey)
 	assert.Nil(t, err)
 

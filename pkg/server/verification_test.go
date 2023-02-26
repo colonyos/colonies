@@ -11,8 +11,8 @@ func TestVerifyWorkflowSpec(t *testing.T) {
 	colonyID := core.GenerateRandomID()
 
 	funcSpec1 := core.FunctionSpec{
-		Name:        "gen_task1",
-		Func:        "gen_test_func",
+		NodeName:    "gen_task1",
+		FuncName:    "gen_test_func",
 		Args:        []string{"arg1"},
 		MaxWaitTime: -1,
 		MaxExecTime: 2,
@@ -21,8 +21,8 @@ func TestVerifyWorkflowSpec(t *testing.T) {
 		Env:         make(map[string]string)}
 
 	funcSpec2 := core.FunctionSpec{
-		Name:        "gen_task2",
-		Func:        "gen_test_func",
+		NodeName:    "gen_task2",
+		FuncName:    "gen_test_func",
 		Args:        []string{"arg1"},
 		MaxWaitTime: -1,
 		MaxExecTime: 2,
@@ -39,8 +39,8 @@ func TestVerifyWorkflowSpec(t *testing.T) {
 	assert.NotNil(t, err)
 
 	funcSpec1 = core.FunctionSpec{
-		Name:        "gen_task1",
-		Func:        "gen_test_func",
+		NodeName:    "gen_task1",
+		FuncName:    "gen_test_func",
 		Args:        []string{"arg1"},
 		MaxWaitTime: -1,
 		MaxExecTime: 2,
@@ -49,8 +49,8 @@ func TestVerifyWorkflowSpec(t *testing.T) {
 		Env:         make(map[string]string)}
 
 	funcSpec2 = core.FunctionSpec{
-		Name:        "gen_task2",
-		Func:        "gen_test_func",
+		NodeName:    "gen_task2",
+		FuncName:    "gen_test_func",
 		Args:        []string{"arg1"},
 		MaxWaitTime: -1,
 		MaxExecTime: 2,

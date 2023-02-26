@@ -36,7 +36,7 @@ func TestSubmitWorkflowSpec(t *testing.T) {
 
 	assignedProcess1, err := client.Assign(env.colonyID, -1, env.executorPrvKey)
 	assert.Nil(t, err)
-	assert.True(t, assignedProcess1.FunctionSpec.Name == "task1")
+	assert.True(t, assignedProcess1.FunctionSpec.NodeName == "task1")
 
 	// We cannot be assigned more tasks until task1 is closed
 	_, err = client.Assign(env.colonyID, -1, env.executorPrvKey)
@@ -52,11 +52,11 @@ func TestSubmitWorkflowSpec(t *testing.T) {
 
 	assignedProcess2, err := client.Assign(env.colonyID, -1, env.executorPrvKey)
 	assert.Nil(t, err)
-	assert.True(t, assignedProcess2.FunctionSpec.Name == "task2" || assignedProcess2.FunctionSpec.Name == "task3")
+	assert.True(t, assignedProcess2.FunctionSpec.NodeName == "task2" || assignedProcess2.FunctionSpec.NodeName == "task3")
 
 	assignedProcess3, err := client.Assign(env.colonyID, -1, env.executorPrvKey)
 	assert.Nil(t, err)
-	assert.True(t, assignedProcess3.FunctionSpec.Name == "task2" || assignedProcess3.FunctionSpec.Name == "task3")
+	assert.True(t, assignedProcess3.FunctionSpec.NodeName == "task2" || assignedProcess3.FunctionSpec.NodeName == "task3")
 
 	// We cannot be assigned more tasks (task4 is left) until task2 and task3 finish
 	_, err = client.Assign(env.colonyID, -1, env.executorPrvKey)
@@ -73,7 +73,7 @@ func TestSubmitWorkflowSpec(t *testing.T) {
 	// Now it should be possible to assign task4 to an executor
 	assignedProcess4, err := client.Assign(env.colonyID, -1, env.executorPrvKey)
 	assert.Nil(t, err)
-	assert.True(t, assignedProcess4.FunctionSpec.Name == "task4")
+	assert.True(t, assignedProcess4.FunctionSpec.NodeName == "task4")
 
 	// Close task4
 	err = client.Close(assignedProcess4.ID, env.executorPrvKey)
@@ -147,11 +147,11 @@ func TestAddChild(t *testing.T) {
 
 	assignedProcess, err := client.Assign(env.colonyID, -1, env.executorPrvKey)
 	assert.Nil(t, err)
-	assert.True(t, assignedProcess.FunctionSpec.Name == "task1")
+	assert.True(t, assignedProcess.FunctionSpec.NodeName == "task1")
 
 	// Add task5 to task1
 	childFunctionSpec := utils.CreateTestFunctionSpec(env.colonyID)
-	childFunctionSpec.Name = "task5"
+	childFunctionSpec.NodeName = "task5"
 	_, err = client.AddChild(assignedProcess.ProcessGraphID, assignedProcess.ID, childFunctionSpec, env.executorPrvKey)
 	assert.Nil(t, err)
 	err = client.Close(assignedProcess.ID, env.executorPrvKey)
@@ -160,19 +160,19 @@ func TestAddChild(t *testing.T) {
 	var names []string
 	assignedProcess, err = client.Assign(env.colonyID, -1, env.executorPrvKey)
 	assert.Nil(t, err)
-	names = append(names, assignedProcess.FunctionSpec.Name)
+	names = append(names, assignedProcess.FunctionSpec.NodeName)
 	err = client.Close(assignedProcess.ID, env.executorPrvKey)
 	assert.Nil(t, err)
 
 	assignedProcess, err = client.Assign(env.colonyID, -1, env.executorPrvKey)
 	assert.Nil(t, err)
-	names = append(names, assignedProcess.FunctionSpec.Name)
+	names = append(names, assignedProcess.FunctionSpec.NodeName)
 	err = client.Close(assignedProcess.ID, env.executorPrvKey)
 	assert.Nil(t, err)
 
 	assignedProcess, err = client.Assign(env.colonyID, -1, env.executorPrvKey)
 	assert.Nil(t, err)
-	names = append(names, assignedProcess.FunctionSpec.Name)
+	names = append(names, assignedProcess.FunctionSpec.NodeName)
 	err = client.Close(assignedProcess.ID, env.executorPrvKey)
 	assert.Nil(t, err)
 
@@ -212,14 +212,14 @@ func TestAddChildMaxWaitBug(t *testing.T) {
 	// Add task2 to task1
 	childFunctionSpec := utils.CreateTestFunctionSpec(env.colonyID)
 	childFunctionSpec.MaxWaitTime = 1
-	childFunctionSpec.Name = "task2"
+	childFunctionSpec.NodeName = "task2"
 	_, err = client.AddChild(assignedProcess.ProcessGraphID, assignedProcess.ID, childFunctionSpec, env.executorPrvKey)
 	assert.Nil(t, err)
 
 	// Add task3 to task1
 	childFunctionSpec = utils.CreateTestFunctionSpec(env.colonyID)
 	childFunctionSpec.MaxWaitTime = 1
-	childFunctionSpec.Name = "task3"
+	childFunctionSpec.NodeName = "task3"
 	_, err = client.AddChild(assignedProcess.ProcessGraphID, assignedProcess.ID, childFunctionSpec, env.executorPrvKey)
 	assert.Nil(t, err)
 
@@ -263,7 +263,7 @@ func TestSubmitWorkflowSpecWithInputOutput(t *testing.T) {
 
 	assignedProcess1, err := client.Assign(env.colonyID, -1, env.executorPrvKey)
 	assert.Nil(t, err)
-	assert.True(t, assignedProcess1.FunctionSpec.Name == "task1")
+	assert.True(t, assignedProcess1.FunctionSpec.NodeName == "task1")
 
 	// Close task1
 	err = client.CloseWithOutput(assignedProcess1.ID, []string{"output_task1"}, env.executorPrvKey)
