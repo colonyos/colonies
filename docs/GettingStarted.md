@@ -69,12 +69,12 @@ Example process specification (see examples/sleep.json). The Colonies Executor w
 
 Open another terminal (and *source examples/devenv*).
 ```console
-colonies process submit --spec sleep.json
+colonies function submit --spec sleep.json
 ```
 
 Alternatively,
 ```console
-colonies process run --func sleep --args 3 --executortype cli  
+colonies function exec --func sleep --args 3 --targettype cli  
 ```
 
 Check out running processes:

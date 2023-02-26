@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"strconv"
 	"strings"
@@ -19,7 +18,6 @@ import (
 )
 
 func init() {
-	processCmd.AddCommand(submitProcessCmd)
 	processCmd.AddCommand(listWaitingProcessesCmd)
 	processCmd.AddCommand(listRunningProcessesCmd)
 	processCmd.AddCommand(listSuccessfulProcessesCmd)
@@ -34,13 +32,6 @@ func init() {
 
 	processCmd.PersistentFlags().StringVarP(&ServerHost, "host", "", "localhost", "Server host")
 	processCmd.PersistentFlags().IntVarP(&ServerPort, "port", "", -1, "Server HTTP port")
-
-	submitProcessCmd.Flags().StringVarP(&ExecutorID, "executorid", "", "", "Executor Id")
-	submitProcessCmd.Flags().StringVarP(&ExecutorPrvKey, "executorprvkey", "", "", "Executor private key")
-	submitProcessCmd.Flags().StringVarP(&SpecFile, "spec", "", "", "JSON specification of a process")
-	submitProcessCmd.Flags().StringVarP(&ColonyID, "colonyid", "", "", "Colony Id")
-	submitProcessCmd.Flags().BoolVarP(&Wait, "wait", "", false, "Colony Id")
-	submitProcessCmd.MarkFlagRequired("spec")
 
 	listWaitingProcessesCmd.Flags().StringVarP(&ColonyID, "colonyid", "", "", "Colony Id")
 	listWaitingProcessesCmd.Flags().StringVarP(&ExecutorID, "executorid", "", "", "Executor Id")
@@ -131,59 +122,6 @@ func wait(client *client.ColoniesClient, process *core.Process) {
 		}
 	}
 
-}
-
-var submitProcessCmd = &cobra.Command{
-	Use:   "submit",
-	Short: "Submit a process specification",
-	Long:  "Submit a process specification",
-	Run: func(cmd *cobra.Command, args []string) {
-		parseServerEnv()
-
-		jsonSpecBytes, err := ioutil.ReadFile(SpecFile)
-		CheckError(err)
-
-		funcSpec, err := core.ConvertJSONToFunctionSpec(string(jsonSpecBytes))
-		CheckError(err)
-
-		if funcSpec.Conditions.ColonyID == "" {
-			if ColonyID == "" {
-				ColonyID = os.Getenv("COLONIES_COLONY_ID")
-			}
-			if ColonyID == "" {
-				CheckError(errors.New("Unknown Colony Id, please set COLONYID env variable or specify ColonyID in JSON file"))
-			}
-
-			funcSpec.Conditions.ColonyID = ColonyID
-		}
-
-		keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
-		CheckError(err)
-
-		if ExecutorID == "" {
-			ExecutorID = os.Getenv("COLONIES_EXECUTOR_ID")
-		}
-		if ExecutorID == "" {
-			CheckError(errors.New("Unknown Executor Id"))
-		}
-
-		if ExecutorPrvKey == "" {
-			ExecutorPrvKey, err = keychain.GetPrvKey(ExecutorID)
-			CheckError(err)
-		}
-
-		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Info("Starting a Colonies client")
-		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
-
-		addedProcess, err := client.Submit(funcSpec, ExecutorPrvKey)
-		CheckError(err)
-
-		if Wait {
-			wait(client, addedProcess)
-		} else {
-			log.WithFields(log.Fields{"ProcessID": addedProcess.ID}).Info("Process submitted")
-		}
-	},
 }
 
 var assignProcessCmd = &cobra.Command{
