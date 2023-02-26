@@ -38,6 +38,15 @@ func (server *ColoniesServer) handleAddFunctionHTTPRequest(c *gin.Context, recov
 		}
 	}
 
+	functions, err := server.controller.getFunctionByExecutorID(msg.Function.ExecutorID)
+	for _, function := range functions {
+		if function.Name == msg.Function.Name {
+			if server.handleHTTPError(c, errors.New("Function already exists"), http.StatusForbidden) {
+				return
+			}
+		}
+	}
+
 	msg.Function.FunctionID = core.GenerateRandomID()
 	addedFunction, err := server.controller.addFunction(msg.Function)
 	if server.handleHTTPError(c, err, http.StatusForbidden) {

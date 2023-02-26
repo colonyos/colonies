@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestAddFunctions(t *testing.T) {
+func TestAddFunction(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 
 	function1 := &core.Function{ExecutorID: env.executorID, ColonyID: env.colonyID, Name: "testfunc1", Desc: "unit test function", AvgWaitTime: 1.1, AvgExecTime: 0.1, Args: []string{"arg1"}}
@@ -15,6 +15,9 @@ func TestAddFunctions(t *testing.T) {
 	addedFunction1, err := client.AddFunction(function1, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.Equal(t, function1.Name, addedFunction1.Name)
+
+	_, err = client.AddFunction(function1, env.executorPrvKey)
+	assert.NotNil(t, err)
 
 	server.Shutdown()
 	<-done

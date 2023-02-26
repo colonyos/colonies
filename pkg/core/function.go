@@ -8,6 +8,11 @@ type Function struct {
 	ColonyID    string   `json:"colonyid"`
 	Name        string   `json:"name"`
 	Desc        string   `json:"desc"`
+	Counter     int      `json:"counter"`
+	MinWaitTime float64  `json:"minwaittime"`
+	MaxWaitTime float64  `json:"maxwaittime"`
+	MinExecTime float64  `json:"minexectime"`
+	MaxExecTime float64  `json:"maxexectime"`
 	AvgWaitTime float64  `json:"avgwaittime"`
 	AvgExecTime float64  `json:"avgexectime"`
 	Args        []string `json:"args"`
@@ -18,6 +23,11 @@ func CreateFunction(functionID string,
 	colonyID string,
 	name string,
 	desc string,
+	counter int,
+	minWaitTime float64,
+	maxWaitTime float64,
+	minExecTime float64,
+	maxExecTime float64,
 	avgWaitTime float64,
 	avgExecTime float64,
 	args []string) *Function {
@@ -27,6 +37,11 @@ func CreateFunction(functionID string,
 		ColonyID:    colonyID,
 		Name:        name,
 		Desc:        desc,
+		Counter:     counter,
+		MinWaitTime: minWaitTime,
+		MaxWaitTime: maxWaitTime,
+		MinExecTime: minExecTime,
+		MaxExecTime: maxExecTime,
 		AvgWaitTime: avgWaitTime,
 		AvgExecTime: avgExecTime,
 		Args:        args,
@@ -89,6 +104,11 @@ func (function *Function) Equals(function2 *Function) bool {
 		function.ColonyID != function2.ColonyID ||
 		function.Name != function2.Name ||
 		function.Desc != function2.Desc ||
+		function.Counter != function2.Counter ||
+		function.MinWaitTime != function2.MinWaitTime ||
+		function.MaxWaitTime != function2.MaxWaitTime ||
+		function.MinExecTime != function2.MinExecTime ||
+		function.MaxExecTime != function2.MaxExecTime ||
 		function.AvgWaitTime != function2.AvgWaitTime ||
 		function.AvgExecTime != function2.AvgExecTime {
 		return false

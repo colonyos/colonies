@@ -11,8 +11,8 @@ import (
 )
 
 func (db *PQDatabase) AddExecutor(executor *core.Executor) error {
-	sqlStatement := `INSERT INTO  ` + db.dbPrefix + `EXECUTORS (EXECUTOR_ID, EXECUTOR_TYPE, NAME, COLONY_ID, STATE, COMMISSIONTIME, LASTHEARDFROM, LONG, LAT) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`
-	_, err := db.postgresql.Exec(sqlStatement, executor.ID, executor.Type, executor.Name, executor.ColonyID, 0, time.Now(), executor.LastHeardFromTime, executor.Location.Long, executor.Location.Lat)
+	sqlStatement := `INSERT INTO  ` + db.dbPrefix + `EXECUTORS (EXECUTOR_ID, EXECUTOR_TYPE, NAME, COLONY_ID, STATE, REQUIRE_FUNC_REG, COMMISSIONTIME, LASTHEARDFROM, LONG, LAT) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`
+	_, err := db.postgresql.Exec(sqlStatement, executor.ID, executor.Type, executor.Name, executor.ColonyID, 0, executor.RequireFuncReg, time.Now(), executor.LastHeardFromTime, executor.Location.Long, executor.Location.Lat)
 	if err != nil {
 		if strings.HasPrefix(err.Error(), "pq: duplicate key value violates unique constraint") {
 			return errors.New("Executor name must be unique")
@@ -32,15 +32,16 @@ func (db *PQDatabase) parseExecutors(rows *sql.Rows) ([]*core.Executor, error) {
 		var name string
 		var colonyID string
 		var state int
+		var requireRunReg bool
 		var commissionTime time.Time
 		var lastHeardFromTime time.Time
 		var long float64
 		var lat float64
-		if err := rows.Scan(&id, &executorType, &name, &colonyID, &state, &commissionTime, &lastHeardFromTime, &long, &lat); err != nil {
+		if err := rows.Scan(&id, &executorType, &name, &colonyID, &state, &requireRunReg, &commissionTime, &lastHeardFromTime, &long, &lat); err != nil {
 			return nil, err
 		}
 
-		executor := core.CreateExecutorFromDB(id, executorType, name, colonyID, state, commissionTime, lastHeardFromTime)
+		executor := core.CreateExecutorFromDB(id, executorType, name, colonyID, state, requireRunReg, commissionTime, lastHeardFromTime)
 		executor.Location.Long = long
 		executor.Location.Lat = lat
 		executors = append(executors, executor)

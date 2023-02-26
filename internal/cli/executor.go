@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/colonyos/colonies/pkg/client"
@@ -20,6 +21,7 @@ func init() {
 	executorCmd.AddCommand(addExecutorCmd)
 	executorCmd.AddCommand(removeExecutorCmd)
 	executorCmd.AddCommand(lsExecutorsCmd)
+	executorCmd.AddCommand(getExecutorCmd)
 	executorCmd.AddCommand(approveExecutorCmd)
 	executorCmd.AddCommand(rejectExecutorCmd)
 	executorCmd.AddCommand(resolveExecutorCmd)
@@ -45,6 +47,10 @@ func init() {
 	lsExecutorsCmd.Flags().BoolVarP(&Full, "full", "", false, "Print detail info")
 	lsExecutorsCmd.Flags().StringVarP(&ExecutorID, "executorid", "", "", "Executor Id")
 	lsExecutorsCmd.Flags().StringVarP(&ExecutorPrvKey, "executorprvkey", "", "", "Executor private key")
+
+	getExecutorCmd.Flags().StringVarP(&TargetExecutorID, "targetid", "", "", "Target executor Id")
+	getExecutorCmd.Flags().StringVarP(&ExecutorID, "executorid", "", "", "Executor Id")
+	getExecutorCmd.Flags().StringVarP(&ExecutorPrvKey, "executorprvkey", "", "", "Executor private key")
 
 	approveExecutorCmd.Flags().StringVarP(&ColonyPrvKey, "colonyprvkey", "", "", "Colony private key")
 	approveExecutorCmd.Flags().StringVarP(&ExecutorID, "executorid", "", "", "Colony Executor Id")
@@ -205,6 +211,83 @@ var removeExecutorCmd = &cobra.Command{
 	},
 }
 
+func printExecutor(client *client.ColoniesClient, executor *core.Executor) {
+	state := ""
+	switch executor.State {
+	case core.PENDING:
+		state = "Pending"
+	case core.APPROVED:
+		state = "Approved"
+	case core.REJECTED:
+		state = "Rejected"
+	default:
+		state = "Unknown"
+	}
+
+	requireFuncRegStr := "False"
+	if executor.RequireFuncReg {
+		requireFuncRegStr = "True"
+	}
+
+	executorData := [][]string{
+		[]string{"Name", executor.Name},
+		[]string{"ID", executor.ID},
+		[]string{"Type", executor.Type},
+		[]string{"ColonyID", executor.ColonyID},
+		[]string{"State", state},
+		[]string{"RequireFuncRegistration", requireFuncRegStr},
+		[]string{"CommissionTime", executor.CommissionTime.Format(TimeLayout)},
+		[]string{"LastHeardFrom", executor.LastHeardFromTime.Format(TimeLayout)},
+	}
+
+	executorTable := tablewriter.NewWriter(os.Stdout)
+	for _, v := range executorData {
+		executorTable.Append(v)
+	}
+	executorTable.SetAlignment(tablewriter.ALIGN_LEFT)
+	executorTable.Render()
+
+	functions, err := client.GetFunctions(executor.ID, ExecutorPrvKey)
+	CheckError(err)
+
+	fmt.Println()
+	fmt.Println("Functions:")
+
+	if len(functions) == 0 {
+		fmt.Println("No functions found")
+	} else {
+		for innerCounter, function := range functions {
+			funcArgs := ""
+			for _, funcArg := range function.Args {
+				funcArgs += funcArg + " "
+			}
+			if funcArgs == "" {
+				funcArgs = "None"
+			}
+			funcData := [][]string{
+				[]string{"Name", function.Name},
+				[]string{"Args", funcArgs},
+				[]string{"Counter", strconv.Itoa(function.Counter)},
+				[]string{"MinWaitTime", fmt.Sprintf("%f s", function.MinWaitTime)},
+				[]string{"MaxWaitTime", fmt.Sprintf("%f s", function.MaxWaitTime)},
+				[]string{"MinExecTime", fmt.Sprintf("%f s", function.MinExecTime)},
+				[]string{"MaxExecTime", fmt.Sprintf("%f s", function.MaxExecTime)},
+				[]string{"AvgWaitTime", fmt.Sprintf("%f s", function.AvgWaitTime)},
+				[]string{"AvgExecTime", fmt.Sprintf("%f s", function.AvgExecTime)},
+			}
+			funcTable := tablewriter.NewWriter(os.Stdout)
+			for _, v := range funcData {
+				funcTable.Append(v)
+			}
+			funcTable.SetAlignment(tablewriter.ALIGN_LEFT)
+			funcTable.Render()
+			if innerCounter != len(functions)-1 {
+				fmt.Println()
+			}
+		}
+	}
+}
+
 var lsExecutorsCmd = &cobra.Command{
 	Use:   "ls",
 	Short: "List all executors",
@@ -262,37 +345,13 @@ var lsExecutorsCmd = &cobra.Command{
 			}
 
 			for counter, executor := range executorsFromServer {
-				state := ""
-				switch executor.State {
-				case core.PENDING:
-					state = "Pending"
-				case core.APPROVED:
-					state = "Approved"
-				case core.REJECTED:
-					state = "Rejected"
-				default:
-					state = "Unknown"
-				}
-
-				executorData := [][]string{
-					[]string{"Name", executor.Name},
-					[]string{"ID", executor.ID},
-					[]string{"Type", executor.Type},
-					[]string{"ColonyID", executor.ColonyID},
-					[]string{"State", state},
-					[]string{"CommissionTime", executor.CommissionTime.Format(TimeLayout)},
-					[]string{"LastHeardFrom", executor.LastHeardFromTime.Format(TimeLayout)},
-				}
-
-				executorTable := tablewriter.NewWriter(os.Stdout)
-				for _, v := range executorData {
-					executorTable.Append(v)
-				}
-				executorTable.SetAlignment(tablewriter.ALIGN_LEFT)
-				executorTable.Render()
+				printExecutor(client, executor)
 
 				if counter != len(executorsFromServer)-1 {
 					fmt.Println()
+					fmt.Println("==============================================================================================")
+					fmt.Println()
+				} else {
 				}
 			}
 		} else {
@@ -311,6 +370,58 @@ var lsExecutorsCmd = &cobra.Command{
 			table.Render()
 
 		}
+	},
+}
+
+var getExecutorCmd = &cobra.Command{
+	Use:   "get",
+	Short: "Get info about an executor",
+	Long:  "Get info about an executor",
+	Run: func(cmd *cobra.Command, args []string) {
+		parseServerEnv()
+
+		keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
+		CheckError(err)
+
+		if ColonyID == "" {
+			ColonyID = os.Getenv("COLONIES_COLONY_ID")
+		}
+		if ColonyID == "" {
+			CheckError(errors.New("Unknown Colony Id"))
+		}
+
+		if ExecutorPrvKey == "" {
+			if ExecutorID == "" {
+				ExecutorID = os.Getenv("COLONIES_EXECUTOR_ID")
+			}
+			ExecutorPrvKey, _ = keychain.GetPrvKey(ExecutorID)
+		}
+
+		if ExecutorPrvKey == "" {
+			if ExecutorID == "" {
+				ExecutorID = os.Getenv("COLONIES_EXECUTOR_ID")
+			}
+			ExecutorPrvKey, _ = keychain.GetPrvKey(ExecutorID)
+		}
+
+		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Info("Starting a Colonies client")
+		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
+
+		executorFromServer, err := client.GetExecutor(TargetExecutorID, ExecutorPrvKey)
+		if err != nil {
+			// Try ColonyPrvKey instead
+			if ColonyPrvKey == "" {
+				if ColonyID == "" {
+					ColonyID = os.Getenv("COLONIES_COLONY_ID")
+				}
+				ColonyPrvKey, err = keychain.GetPrvKey(ColonyID)
+				CheckError(err)
+			}
+			executorFromServer, err = client.GetExecutor(TargetExecutorID, ColonyPrvKey)
+			CheckError(err)
+		}
+
+		printExecutor(client, executorFromServer)
 	},
 }
 

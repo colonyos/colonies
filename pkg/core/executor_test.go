@@ -74,6 +74,9 @@ func TestExecutorEquals(t *testing.T) {
 	assert.False(t, executor2.Equals(executor1))
 	executor2 = CreateExecutor(id, executorType, name, colonyID+"X", commissionTime, lastHeardFromTime)
 	assert.False(t, executor2.Equals(executor1))
+	executor2 = CreateExecutor(id, executorType, name, colonyID, commissionTime, lastHeardFromTime)
+	executor2.RequireFuncReg = true
+	assert.False(t, executor2.Equals(executor1))
 }
 
 func TestIsExecutorArraysEqual(t *testing.T) {

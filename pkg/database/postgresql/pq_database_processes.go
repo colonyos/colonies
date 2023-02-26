@@ -601,26 +601,26 @@ func (db *PQDatabase) Unassign(process *core.Process) error {
 	return nil
 }
 
-func (db *PQDatabase) MarkSuccessful(processID string) error {
+func (db *PQDatabase) MarkSuccessful(processID string) (float64, float64, error) {
 	process, err := db.GetProcessByID(processID)
 	if err != nil {
-		return err
+		return 0.0, 0.0, err
 	}
 
 	if process.State == core.FAILED {
-		return errors.New("Tried to set failed process as completed")
+		return 0.0, 0.0, errors.New("Tried to set failed process as completed")
 	}
 
 	if process.State == core.WAITING {
-		return errors.New("Tried to set waiting process as completed without being running")
+		return 0.0, 0.0, errors.New("Tried to set waiting process as completed without being running")
 	}
 
 	if process.State == core.FAILED {
-		return errors.New("Tried to set failed process (from db) as successful")
+		return 0.0, 0.0, errors.New("Tried to set failed process (from db) as successful")
 	}
 
 	if process.State == core.WAITING {
-		return errors.New("Tried to set waiting process (from db) as successful without being running")
+		return 0.0, 0.0, errors.New("Tried to set waiting process (from db) as successful without being running")
 	}
 
 	endTime := time.Now()
@@ -628,13 +628,13 @@ func (db *PQDatabase) MarkSuccessful(processID string) error {
 	sqlStatement := `UPDATE ` + db.dbPrefix + `PROCESSES SET END_TIME=$1, STATE=$2 WHERE PROCESS_ID=$3`
 	_, err = db.postgresql.Exec(sqlStatement, endTime, core.SUCCESS, process.ID)
 	if err != nil {
-		return err
+		return 0.0, 0.0, err
 	}
 
 	process.SetEndTime(endTime)
 	process.SetState(core.SUCCESS)
 
-	return nil
+	return process.WaitingTime().Seconds(), process.ProcessingTime().Seconds(), nil
 }
 
 func (db *PQDatabase) MarkFailed(processID string, errs []string) error {
