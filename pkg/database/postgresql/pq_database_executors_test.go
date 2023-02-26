@@ -271,7 +271,7 @@ func TestDeleteExecutorMoveBackToQueue(t *testing.T) {
 	assert.Nil(t, err)
 	assert.True(t, count == 0)
 
-	err = db.MarkSuccessful(process4.ID)
+	_, _, err = db.MarkSuccessful(process4.ID)
 	assert.Nil(t, err)
 
 	functions, err := db.GetFunctionsByColonyID(colony.ID)
@@ -382,7 +382,7 @@ func TestDeleteExecutorsMoveBackToQueue(t *testing.T) {
 	assert.Nil(t, err)
 	assert.True(t, count == 0)
 
-	err = db.MarkSuccessful(process4.ID)
+	_, _, err = db.MarkSuccessful(process4.ID)
 	assert.Nil(t, err)
 
 	err = db.DeleteExecutorsByColonyID(colony.ID)

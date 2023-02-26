@@ -409,6 +409,47 @@ func TestCloseSuccessful(t *testing.T) {
 	<-done
 }
 
+func TestCloseSuccessfulWithFunctions(t *testing.T) {
+	env, client, server, _, done := setupTestEnv2(t)
+
+	processSpec := utils.CreateTestProcessSpec(env.colonyID)
+	_, err := client.SubmitProcessSpec(processSpec, env.executorPrvKey)
+	assert.Nil(t, err)
+
+	function := &core.Function{ColonyID: env.colonyID, ExecutorID: env.executorID, Name: processSpec.Name, Args: []string{}}
+	_, err = client.AddFunction(function, env.executorPrvKey)
+	assert.Nil(t, err)
+
+	assignedProcess, err := client.AssignProcess(env.colonyID, -1, env.executorPrvKey)
+	assert.Nil(t, err)
+
+	time.Sleep(100 * time.Millisecond)
+
+	assignedProcessFromServer, err := client.GetProcess(assignedProcess.ID, env.executorPrvKey)
+	assert.Equal(t, core.RUNNING, assignedProcessFromServer.State)
+
+	err = client.Close(assignedProcess.ID, env.executorPrvKey)
+	assert.Nil(t, err)
+
+	assignedProcessFromServer, err = client.GetProcess(assignedProcess.ID, env.executorPrvKey)
+	assert.Nil(t, err)
+	assert.Equal(t, core.SUCCESS, assignedProcessFromServer.State)
+
+	functions, err := client.GetFunctions(env.executorID, env.executorPrvKey)
+	assert.Nil(t, err)
+	assert.Len(t, functions, 1)
+	assert.Equal(t, functions[0].Counter, 1)
+	assert.Greater(t, functions[0].MinWaitTime, 0.0)
+	assert.Greater(t, functions[0].MaxWaitTime, 0.0)
+	assert.Greater(t, functions[0].MinExecTime, 0.0)
+	assert.Greater(t, functions[0].MaxExecTime, 0.0)
+	assert.Greater(t, functions[0].AvgWaitTime, 0.0)
+	assert.Greater(t, functions[0].AvgExecTime, 0.0)
+
+	server.Shutdown()
+	<-done
+}
+
 func TestCloseSuccessfulWithOutput(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 

@@ -22,6 +22,7 @@ type Executor struct {
 	Name              string    `json:"executorname"`
 	ColonyID          string    `json:"colonyid"`
 	State             int       `json:"state"`
+	RequireFuncReg    bool      `json:"requirefuncreg"`
 	CommissionTime    time.Time `json:"commissiontime"`
 	LastHeardFromTime time.Time `json:"lastheardfromtime"`
 	Location          Location  `json:"location"`
@@ -38,6 +39,7 @@ func CreateExecutor(id string,
 		Name:              name,
 		ColonyID:          colonyID,
 		State:             PENDING,
+		RequireFuncReg:    false,
 		CommissionTime:    commissionTime,
 		LastHeardFromTime: lastHeardFromTime,
 	}
@@ -48,10 +50,12 @@ func CreateExecutorFromDB(id string,
 	name string,
 	colonyID string,
 	state int,
+	requireFuncReg bool,
 	commissionTime time.Time,
 	lastHeardFromTime time.Time) *Executor {
 	executor := CreateExecutor(id, executorType, name, colonyID, commissionTime, lastHeardFromTime)
 	executor.State = state
+	executor.RequireFuncReg = requireFuncReg
 	return executor
 }
 
@@ -110,7 +114,8 @@ func (executor *Executor) Equals(executor2 *Executor) bool {
 		executor.Type == executor2.Type &&
 		executor.Name == executor2.Name &&
 		executor.ColonyID == executor2.ColonyID &&
-		executor.State == executor2.State {
+		executor.State == executor2.State &&
+		executor.RequireFuncReg == executor2.RequireFuncReg {
 		return true
 	}
 

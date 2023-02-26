@@ -2,6 +2,7 @@ package server
 
 import (
 	"errors"
+	"math"
 	"os"
 	"strconv"
 	"sync"
@@ -911,7 +912,7 @@ func (controller *coloniesController) deleteAllProcessGraphs(colonyID string) er
 	return <-cmd.errorChan
 }
 
-func (controller *coloniesController) closeSuccessful(processID string, output []string) error {
+func (controller *coloniesController) closeSuccessful(processID string, executorID string, output []string) error {
 	cmd := &command{errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
 			process, err := controller.db.GetProcessByID(processID)
@@ -924,7 +925,7 @@ func (controller *coloniesController) closeSuccessful(processID string, output [
 				err = controller.db.SetOutput(processID, output)
 			}
 
-			err = controller.db.MarkSuccessful(processID)
+			waitingTime, processingTime, err := controller.db.MarkSuccessful(processID)
 			if err != nil {
 				cmd.errorChan <- err
 				return
@@ -954,6 +955,66 @@ func (controller *coloniesController) closeSuccessful(processID string, output [
 			}
 
 			process.State = core.SUCCESS
+
+			function, err := controller.db.GetFunctionsByExecutorIDAndName(executorID, process.ProcessSpec.Name)
+			if err != nil {
+				cmd.errorChan <- err
+				return
+			}
+
+			if function != nil {
+				process, err = controller.db.GetProcessByID(processID)
+				if err != nil {
+					cmd.errorChan <- err
+					return
+				}
+				minWaitTime := 0.0
+				if function.MinWaitTime > 0 {
+					minWaitTime = math.Min(function.MinWaitTime, waitingTime)
+				} else {
+					minWaitTime = waitingTime
+				}
+				maxWaitTime := 0.0
+				if function.MaxWaitTime > 0 {
+					maxWaitTime = math.Max(function.MinWaitTime, waitingTime)
+				} else {
+					maxWaitTime = waitingTime
+				}
+				minExecTime := 0.0
+				if function.MinExecTime > 0 {
+					minExecTime = math.Min(function.MinWaitTime, processingTime)
+				} else {
+					minExecTime = processingTime
+				}
+				maxExecTime := 0.0
+				if function.MaxExecTime > 0 {
+					maxExecTime = math.Max(function.MinExecTime, processingTime)
+				} else {
+					maxExecTime = processingTime
+				}
+				avgWaitTime := 0.0
+				if function.AvgWaitTime > 0.0 {
+					avgWaitTime = (function.AvgWaitTime + waitingTime) / 2
+				} else {
+					avgWaitTime = waitingTime
+				}
+				avgExecTime := 0.0
+				if function.AvgExecTime > 0.0 {
+					avgExecTime = (function.AvgExecTime + processingTime) / 2
+				} else {
+					avgExecTime = processingTime
+				}
+
+				controller.db.UpdateFunctionStats(function.ExecutorID,
+					function.Name,
+					function.Counter+1,
+					minWaitTime,
+					maxWaitTime,
+					minExecTime,
+					maxExecTime,
+					avgWaitTime,
+					avgExecTime)
+			}
 
 			controller.eventHandler.signal(process)
 			cmd.errorChan <- nil
