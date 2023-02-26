@@ -58,7 +58,7 @@ func TestGetFunctionsSecurity(t *testing.T) {
 	//   executor2 is member of colony2
 
 	function1 := &core.Function{ExecutorID: env.executor1ID, ColonyID: env.colony1ID, Name: "testfunc1", Desc: "unit test function", AvgWaitTime: 1.1, AvgExecTime: 0.1, Args: []string{"arg1"}}
-	function2 := &core.Function{ExecutorID: env.executor1ID, ColonyID: env.colony1ID, Name: "testfunc1", Desc: "unit test function", AvgWaitTime: 1.1, AvgExecTime: 0.1, Args: []string{"arg1"}}
+	function2 := &core.Function{ExecutorID: env.executor1ID, ColonyID: env.colony1ID, Name: "testfunc2", Desc: "unit test function", AvgWaitTime: 1.1, AvgExecTime: 0.1, Args: []string{"arg1"}}
 
 	_, err := client.AddFunction(function1, env.executor1PrvKey)
 	assert.Nil(t, err)

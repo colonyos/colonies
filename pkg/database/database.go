@@ -37,7 +37,8 @@ type Database interface {
 	GetFunctionByID(functionID string) (*core.Function, error)
 	GetFunctionsByExecutorID(executorID string) ([]*core.Function, error)
 	GetFunctionsByColonyID(colonyID string) ([]*core.Function, error)
-	UpdateFunctionTimes(executorID string, name string, avgWaitTime float64, avgExecTime float64) error
+	GetFunctionsByExecutorIDAndName(executorID string, name string) (*core.Function, error)
+	UpdateFunctionStats(executorID string, name string, counter int, minWaitTime float64, maxWaitTime float64, minExecTime float64, maxExecTime float64, avgWaitTime float64, avgExecTime float64) error
 	DeleteFunctionByID(functionID string) error
 	DeleteFunctionByName(executorID string, name string) error
 	DeleteFunctionsByExecutorID(executorID string) error
@@ -73,7 +74,7 @@ type Database interface {
 	ResetAllProcesses(process *core.Process) error
 	Assign(executorID string, process *core.Process) error
 	Unassign(process *core.Process) error
-	MarkSuccessful(processID string) error
+	MarkSuccessful(processID string) (float64, float64, error)
 	MarkFailed(processID string, errs []string) error
 	CountProcesses() (int, error)
 	CountWaitingProcesses() (int, error)
