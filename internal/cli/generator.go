@@ -68,15 +68,15 @@ var generatorCmd = &cobra.Command{
 
 var addGeneratorCmd = &cobra.Command{
 	Use:   "add",
-	Short: "Add a generator to a Colony",
-	Long:  "Add a generator to a Colony",
+	Short: "Add a generator",
+	Long:  "Add a generator",
 	Run: func(cmd *cobra.Command, args []string) {
 		parseServerEnv()
 
 		jsonSpecBytes, err := ioutil.ReadFile(SpecFile)
 		CheckError(err)
 
-		jsonStr := "{\"processspecs\":" + string(jsonSpecBytes) + "}"
+		jsonStr := "{\"functionspecs\":" + string(jsonSpecBytes) + "}"
 		workflowSpec, err := core.ConvertJSONToWorkflowSpec(jsonStr)
 		CheckError(err)
 
@@ -271,18 +271,18 @@ var getGeneratorCmd = &cobra.Command{
 		fmt.Println("WorkflowSpec:")
 		workflowSpec, err := core.ConvertJSONToWorkflowSpec(generator.WorkflowSpec)
 		CheckError(err)
-		for i, procesSpec := range workflowSpec.ProcessSpecs {
+		for i, funcSpec := range workflowSpec.FunctionSpecs {
 			fmt.Println()
-			fmt.Println("ProcessSpec " + strconv.Itoa(i) + ":")
-			printProcessSpec(&procesSpec)
+			fmt.Println("FunctionSpec " + strconv.Itoa(i) + ":")
+			printFunctionSpec(&funcSpec)
 		}
 	},
 }
 
 var getGeneratorsCmd = &cobra.Command{
 	Use:   "ls",
-	Short: "List all generators in a colony",
-	Long:  "List all generators in a colony",
+	Short: "List all generators",
+	Long:  "List all generators",
 	Run: func(cmd *cobra.Command, args []string) {
 		parseServerEnv()
 

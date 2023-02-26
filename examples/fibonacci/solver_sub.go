@@ -35,7 +35,7 @@ func main() {
 		for {
 			select {
 			case <-subscription.ProcessChan:
-				assignedProcess, err := client.AssignProcess(colonyID, -1, executorPrvKey)
+				assignedProcess, err := client.Assign(colonyID, -1, executorPrvKey)
 				if err != nil {
 					fmt.Println(err)
 					continue

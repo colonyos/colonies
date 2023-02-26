@@ -78,7 +78,7 @@ var addAttributeCmd = &cobra.Command{
 		addedAttribute, err := client.AddAttribute(attribute, ExecutorPrvKey)
 		CheckError(err)
 
-		log.WithFields(log.Fields{"attributeID": addedAttribute.ID}).Info("Attribute added")
+		log.WithFields(log.Fields{"AttributeID": addedAttribute.ID}).Info("Attribute added")
 	},
 }
 

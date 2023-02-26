@@ -18,7 +18,7 @@ type retValues struct {
 
 func TestEventHandler(t *testing.T) {
 	process := utils.CreateTestProcess(core.GenerateRandomID())
-	process.ProcessSpec.Conditions.ExecutorType = "test_executor_type"
+	process.FunctionSpec.Conditions.ExecutorType = "test_executor_type"
 	process.State = core.WAITING
 
 	ctx, cancelCtx := context.WithTimeout(context.Background(), 3000*time.Millisecond)
@@ -89,7 +89,7 @@ func TestEventHandlerTimeout2(t *testing.T) {
 	time.Sleep(100 * time.Millisecond)
 	go func() {
 		process := utils.CreateTestProcess(core.GenerateRandomID())
-		process.ProcessSpec.Conditions.ExecutorType = "test_executor_type2" // NOTE: we are signaling to another target
+		process.FunctionSpec.Conditions.ExecutorType = "test_executor_type2" // NOTE: we are signaling to another target
 		process.State = core.WAITING
 		handler.signal(process)
 	}()
@@ -114,7 +114,7 @@ func TestEventHandlerTimeout3(t *testing.T) {
 	time.Sleep(100 * time.Millisecond)
 	go func() {
 		process := utils.CreateTestProcess(core.GenerateRandomID())
-		process.ProcessSpec.Conditions.ExecutorType = "test_executor_type"
+		process.FunctionSpec.Conditions.ExecutorType = "test_executor_type"
 		process.State = core.RUNNING // NOTE: we are signaling to another target
 		handler.signal(process)
 	}()
@@ -128,7 +128,7 @@ func TestEventHandlerTimeout3(t *testing.T) {
 
 func TestEventHandlerMany(t *testing.T) {
 	process := utils.CreateTestProcess(core.GenerateRandomID())
-	process.ProcessSpec.Conditions.ExecutorType = "test_executor_type"
+	process.FunctionSpec.Conditions.ExecutorType = "test_executor_type"
 	process.State = core.WAITING
 
 	ctx, cancelCtx := context.WithTimeout(context.Background(), 2000*time.Millisecond)
@@ -171,7 +171,7 @@ func TestEventHandlerMany(t *testing.T) {
 
 func TestEventHandlerUpdate(t *testing.T) {
 	process := utils.CreateTestProcess(core.GenerateRandomID())
-	process.ProcessSpec.Conditions.ExecutorType = "test_executor_type"
+	process.FunctionSpec.Conditions.ExecutorType = "test_executor_type"
 	process.State = core.WAITING
 
 	ctx, cancelCtx := context.WithTimeout(context.Background(), 3000*time.Millisecond)
@@ -198,7 +198,7 @@ func TestEventHandlerUpdate(t *testing.T) {
 
 func TestEventHandlerUpdateTimeout(t *testing.T) {
 	process := utils.CreateTestProcess(core.GenerateRandomID())
-	process.ProcessSpec.Conditions.ExecutorType = "test_executor_type"
+	process.FunctionSpec.Conditions.ExecutorType = "test_executor_type"
 	process.State = core.WAITING
 
 	ctx, cancelCtx := context.WithTimeout(context.Background(), 3000*time.Millisecond)
@@ -225,7 +225,7 @@ func TestEventHandlerUpdateTimeout(t *testing.T) {
 
 func TestEventHandlerSubscribe(t *testing.T) {
 	process := utils.CreateTestProcess(core.GenerateRandomID())
-	process.ProcessSpec.Conditions.ExecutorType = "test_executor_type"
+	process.FunctionSpec.Conditions.ExecutorType = "test_executor_type"
 	process.State = core.WAITING
 	ctx, cancelCtx := context.WithTimeout(context.Background(), 3000*time.Millisecond)
 	defer cancelCtx()
@@ -250,7 +250,7 @@ func TestEventHandlerSubscribe(t *testing.T) {
 
 func TestEventHandlerSubscribeCancel(t *testing.T) {
 	process := utils.CreateTestProcess(core.GenerateRandomID())
-	process.ProcessSpec.Conditions.ExecutorType = "test_executor_type"
+	process.FunctionSpec.Conditions.ExecutorType = "test_executor_type"
 	process.State = core.WAITING
 	ctx, cancelCtx := context.WithTimeout(context.Background(), 3000*time.Millisecond)
 
@@ -273,7 +273,7 @@ func TestEventHandlerSubscribeCancel(t *testing.T) {
 
 func TestEventHandlerSubscribeTimeout(t *testing.T) {
 	process := utils.CreateTestProcess(core.GenerateRandomID())
-	process.ProcessSpec.Conditions.ExecutorType = "test_executor_type"
+	process.FunctionSpec.Conditions.ExecutorType = "test_executor_type"
 	process.State = core.WAITING
 	ctx, cancelCtx := context.WithTimeout(context.Background(), 3000*time.Millisecond)
 	defer cancelCtx()
@@ -296,7 +296,7 @@ func TestEventHandlerSubscribeTimeout(t *testing.T) {
 
 func TestEventHandlerSubscribeProcessID(t *testing.T) {
 	process := utils.CreateTestProcess(core.GenerateRandomID())
-	process.ProcessSpec.Conditions.ExecutorType = "test_executor_type"
+	process.FunctionSpec.Conditions.ExecutorType = "test_executor_type"
 	process.State = core.WAITING
 	ctx, cancelCtx := context.WithTimeout(context.Background(), 3000*time.Millisecond)
 	defer cancelCtx()
@@ -321,7 +321,7 @@ func TestEventHandlerSubscribeProcessID(t *testing.T) {
 
 func TestEventHandlerSubscribeProcessIDFailed(t *testing.T) {
 	process := utils.CreateTestProcess(core.GenerateRandomID())
-	process.ProcessSpec.Conditions.ExecutorType = "test_executor_type"
+	process.FunctionSpec.Conditions.ExecutorType = "test_executor_type"
 	process.State = core.WAITING
 	ctx, cancelCtx := context.WithTimeout(context.Background(), 3000*time.Millisecond)
 	defer cancelCtx()
@@ -388,7 +388,7 @@ func TestEventHandleRelayServer(t *testing.T) {
 	time.Sleep(100 * time.Millisecond)
 
 	process := utils.CreateTestProcess(core.GenerateRandomID())
-	process.ProcessSpec.Conditions.ExecutorType = "test_executor_type"
+	process.FunctionSpec.Conditions.ExecutorType = "test_executor_type"
 	process.State = core.WAITING
 	go func() {
 		handler3.signal(process)

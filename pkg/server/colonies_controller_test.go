@@ -80,8 +80,8 @@ func TestColoniesControllerAddProcess(t *testing.T) {
 	_, err = controller.addExecutor(executor)
 	assert.Nil(t, err)
 
-	processSpec := utils.CreateTestProcessSpecWithEnv(colonyID, make(map[string]string))
-	process := core.CreateProcess(processSpec)
+	funcSpec := utils.CreateTestFunctionSpecWithEnv(colonyID, make(map[string]string))
+	process := core.CreateProcess(funcSpec)
 
 	addedProcess, err := controller.addProcess(process)
 	assert.Nil(t, err)
@@ -104,8 +104,8 @@ func TestColoniesControllerAssignExecutor(t *testing.T) {
 	_, err = controller.addExecutor(executor)
 	assert.Nil(t, err)
 
-	processSpec := utils.CreateTestProcessSpecWithEnv(colonyID, make(map[string]string))
-	process := core.CreateProcess(processSpec)
+	funcSpec := utils.CreateTestFunctionSpecWithEnv(colonyID, make(map[string]string))
+	process := core.CreateProcess(funcSpec)
 	_, err = controller.addProcess(process)
 	assert.Nil(t, err)
 
@@ -140,8 +140,8 @@ func TestColoniesControllerAssignExecutorConcurrency(t *testing.T) {
 	assert.Nil(t, err)
 
 	for i := 0; i < processCount; i++ {
-		processSpec := utils.CreateTestProcessSpecWithEnv(colonyID, make(map[string]string))
-		process := core.CreateProcess(processSpec)
+		funcSpec := utils.CreateTestFunctionSpecWithEnv(colonyID, make(map[string]string))
+		process := core.CreateProcess(funcSpec)
 		_, err = controller1.addProcess(process)
 		assert.Nil(t, err)
 	}
