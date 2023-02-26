@@ -120,7 +120,7 @@ Cron:
 
 WorkflowSpec:
 
-ProcessSpec 0:
+FunctionSpec 0:
 +-------------+---------------------+
 | Func        | date                |
 | Args        | > /tmp/currentdate  |
@@ -138,7 +138,7 @@ Conditions:
 | Dependencies |      |
 +--------------+------+
 
-ProcessSpec 1:
+FunctionSpec 1:
 +-------------+-------------------+
 | Func        | cat               |
 | Args        | /tmp/currentdate  |

@@ -271,10 +271,10 @@ var getGeneratorCmd = &cobra.Command{
 		fmt.Println("WorkflowSpec:")
 		workflowSpec, err := core.ConvertJSONToWorkflowSpec(generator.WorkflowSpec)
 		CheckError(err)
-		for i, procesSpec := range workflowSpec.ProcessSpecs {
+		for i, funcSpec := range workflowSpec.FunctionSpecs {
 			fmt.Println()
-			fmt.Println("ProcessSpec " + strconv.Itoa(i) + ":")
-			printProcessSpec(&procesSpec)
+			fmt.Println("FunctionSpec " + strconv.Itoa(i) + ":")
+			printFunctionSpec(&funcSpec)
 		}
 	},
 }

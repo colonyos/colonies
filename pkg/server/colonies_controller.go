@@ -608,19 +608,19 @@ func (controller *coloniesController) createProcessGraph(workflowSpec *core.Work
 	// Create all processes
 	processMap := make(map[string]*core.Process)
 	var rootProcesses []*core.Process
-	for _, processSpec := range workflowSpec.ProcessSpecs {
-		if processSpec.MaxExecTime == 0 {
-			log.WithFields(log.Fields{"Name": processSpec.Name}).Debug("MaxExecTime was set to 0, resetting to -1")
-			processSpec.MaxExecTime = -1
+	for _, funcSpec := range workflowSpec.FunctionSpecs {
+		if funcSpec.MaxExecTime == 0 {
+			log.WithFields(log.Fields{"Name": funcSpec.Name}).Debug("MaxExecTime was set to 0, resetting to -1")
+			funcSpec.MaxExecTime = -1
 		}
-		process := core.CreateProcess(&processSpec)
-		log.WithFields(log.Fields{"ProcessId": process.ID, "MaxExecTime": process.ProcessSpec.MaxExecTime, "MaxRetries": process.ProcessSpec.MaxRetries}).Debug("Creating new process")
-		if len(processSpec.Conditions.Dependencies) == 0 {
+		process := core.CreateProcess(&funcSpec)
+		log.WithFields(log.Fields{"ProcessId": process.ID, "MaxExecTime": process.FunctionSpec.MaxExecTime, "MaxRetries": process.FunctionSpec.MaxRetries}).Debug("Creating new process")
+		if len(funcSpec.Conditions.Dependencies) == 0 {
 			// The process is a root process, let it start immediately
 			process.WaitForParents = false
 			if len(args) > 0 {
 				// NOTE, overwrite the args, this will only happen when using Generators
-				process.ProcessSpec.Args = args
+				process.FunctionSpec.Args = args
 			}
 			if len(rootInput) > 0 {
 				process.Input = rootInput
@@ -636,8 +636,8 @@ func (controller *coloniesController) createProcessGraph(workflowSpec *core.Work
 			process.WaitForParents = true
 		}
 		process.ProcessGraphID = processgraph.ID
-		process.ProcessSpec.Conditions.ColonyID = workflowSpec.ColonyID
-		processMap[process.ProcessSpec.Name] = process
+		process.FunctionSpec.Conditions.ColonyID = workflowSpec.ColonyID
+		processMap[process.FunctionSpec.Name] = process
 	}
 
 	err = controller.db.AddProcessGraph(processgraph)
@@ -651,7 +651,7 @@ func (controller *coloniesController) createProcessGraph(workflowSpec *core.Work
 
 	// Create dependencies
 	for _, process := range processMap {
-		for _, dependsOn := range process.ProcessSpec.Conditions.Dependencies {
+		for _, dependsOn := range process.FunctionSpec.Conditions.Dependencies {
 			parentProcess := processMap[dependsOn]
 			if parentProcess == nil {
 				msg := "Failed to submit workflow, invalid dependencies, are you depending on a process spec name that does not exits?"
@@ -956,7 +956,7 @@ func (controller *coloniesController) closeSuccessful(processID string, executor
 
 			process.State = core.SUCCESS
 
-			function, err := controller.db.GetFunctionsByExecutorIDAndName(executorID, process.ProcessSpec.Name)
+			function, err := controller.db.GetFunctionsByExecutorIDAndName(executorID, process.FunctionSpec.Name)
 			if err != nil {
 				cmd.errorChan <- err
 				return

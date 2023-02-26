@@ -76,7 +76,7 @@ In case of an error, the executor should keep calling the assign method until it
 Golang executor example:
 ```go
 for {
-    process, err := client.AssignProcess(colonyID, timeout, prvKey)
+    process, err := client.Assign(colonyID, timeout, prvKey)
     if err!=nil {
         continue
     }
@@ -86,9 +86,9 @@ for {
 }
 ```
 
-Note the **timeout** argument. The executor must specify how long time it is willing to wait for process. That is, how long time the **AssignProcess** function should block. The timeout should be set to at least 1 second to prevent overloading the Colonies with too many assign requests.
+Note the **timeout** argument. The executor must specify how long time it is willing to wait for process. That is, how long time the **Assign** function should block. The timeout should be set to at least 1 second to prevent overloading the Colonies with too many assign requests.
 
-Also note that there is no guarantee that the AssignProcess function actually returns a process even if the function has not timed out. Another executor might have been quicker and was assigned the process.
+Also note that there is no guarantee that the Assign function actually returns a process even if the function has not timed out. Another executor might have been quicker and was assigned the process.
 
 ### Julia executor example
 ```julia
@@ -157,8 +157,8 @@ executors, err := client.GetExecutors(colonyID, prvKey)
 for _, executor := range executors {
     if executor.Name == "videocam" {
          condition := &Condition{ExecutorID: []{executor.ID}, ColonyID: colonyID}
-         processSpec := &ProcessSpec{Condition: condition, Func: "turn_on_video", Args: []{arg}, MaxExecTime: 1, MaxRetries: 3}
-         err := client.SubmitProcessSpec(processSpec, prvKey)
+         funcSpec := &FunctionSpec{Condition: condition, Func: "turn_on_video", Args: []{arg}, MaxExecTime: 1, MaxRetries: 3}
+         err := client.Submit(funcSpec, prvKey)
     }
 }
 ```
