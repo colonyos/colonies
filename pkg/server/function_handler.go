@@ -40,7 +40,7 @@ func (server *ColoniesServer) handleAddFunctionHTTPRequest(c *gin.Context, recov
 
 	functions, err := server.controller.getFunctionByExecutorID(msg.Function.ExecutorID)
 	for _, function := range functions {
-		if function.Name == msg.Function.Name {
+		if function.FuncName == msg.Function.FuncName {
 			if server.handleHTTPError(c, errors.New("Function already exists"), http.StatusForbidden) {
 				return
 			}
@@ -58,7 +58,7 @@ func (server *ColoniesServer) handleAddFunctionHTTPRequest(c *gin.Context, recov
 		return
 	}
 
-	log.WithFields(log.Fields{"FunctionId": addedFunction.FunctionID, "ExecutorId": addedFunction.ExecutorID, "ColonyID": addedFunction.ColonyID, "Name": addedFunction.Name}).Debug("Adding function")
+	log.WithFields(log.Fields{"FunctionId": addedFunction.FunctionID, "ExecutorId": addedFunction.ExecutorID, "ColonyID": addedFunction.ColonyID, "FuncName": addedFunction.FuncName}).Debug("Adding function")
 
 	server.sendHTTPReply(c, payloadType, jsonString)
 }
