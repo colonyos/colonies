@@ -2,6 +2,7 @@ package server
 
 import (
 	"errors"
+	"math"
 	"os"
 	"strconv"
 	"sync"
@@ -30,11 +31,13 @@ type command struct {
 	statisticsReplyChan    chan *core.Statistics
 	executorReplyChan      chan *core.Executor
 	executorsReplyChan     chan []*core.Executor
-	attributeReplyChan     chan core.Attribute
+	attributeReplyChan     chan *core.Attribute
 	generatorReplyChan     chan *core.Generator
 	generatorsReplyChan    chan []*core.Generator
 	cronReplyChan          chan *core.Cron
 	cronsReplyChan         chan []*core.Cron
+	functionReplyChan      chan *core.Function
+	functionsReplyChan     chan []*core.Function
 	handler                func(cmd *command)
 }
 
@@ -605,19 +608,19 @@ func (controller *coloniesController) createProcessGraph(workflowSpec *core.Work
 	// Create all processes
 	processMap := make(map[string]*core.Process)
 	var rootProcesses []*core.Process
-	for _, processSpec := range workflowSpec.ProcessSpecs {
-		if processSpec.MaxExecTime == 0 {
-			log.WithFields(log.Fields{"Name": processSpec.Name}).Debug("MaxExecTime was set to 0, resetting to -1")
-			processSpec.MaxExecTime = -1
+	for _, funcSpec := range workflowSpec.FunctionSpecs {
+		if funcSpec.MaxExecTime == 0 {
+			log.WithFields(log.Fields{"NodeName": funcSpec.NodeName}).Debug("MaxExecTime was set to 0, resetting to -1")
+			funcSpec.MaxExecTime = -1
 		}
-		process := core.CreateProcess(&processSpec)
-		log.WithFields(log.Fields{"ProcessID": process.ID, "MaxExecTime": process.ProcessSpec.MaxExecTime, "MaxRetries": process.ProcessSpec.MaxRetries}).Debug("Creating new process")
-		if len(processSpec.Conditions.Dependencies) == 0 {
+		process := core.CreateProcess(&funcSpec)
+		log.WithFields(log.Fields{"ProcessId": process.ID, "MaxExecTime": process.FunctionSpec.MaxExecTime, "MaxRetries": process.FunctionSpec.MaxRetries}).Debug("Creating new process")
+		if len(funcSpec.Conditions.Dependencies) == 0 {
 			// The process is a root process, let it start immediately
 			process.WaitForParents = false
 			if len(args) > 0 {
 				// NOTE, overwrite the args, this will only happen when using Generators
-				process.ProcessSpec.Args = args
+				process.FunctionSpec.Args = args
 			}
 			if len(rootInput) > 0 {
 				process.Input = rootInput
@@ -633,8 +636,8 @@ func (controller *coloniesController) createProcessGraph(workflowSpec *core.Work
 			process.WaitForParents = true
 		}
 		process.ProcessGraphID = processgraph.ID
-		process.ProcessSpec.Conditions.ColonyID = workflowSpec.ColonyID
-		processMap[process.ProcessSpec.Name] = process
+		process.FunctionSpec.Conditions.ColonyID = workflowSpec.ColonyID
+		processMap[process.FunctionSpec.NodeName] = process
 	}
 
 	err = controller.db.AddProcessGraph(processgraph)
@@ -644,11 +647,11 @@ func (controller *coloniesController) createProcessGraph(workflowSpec *core.Work
 		return nil, errors.New(msg)
 	}
 
-	log.WithFields(log.Fields{"ProcessGraphID": processgraph.ID}).Debug("Submitting workflow")
+	log.WithFields(log.Fields{"ProcessGraphId": processgraph.ID}).Debug("Submitting workflow")
 
 	// Create dependencies
 	for _, process := range processMap {
-		for _, dependsOn := range process.ProcessSpec.Conditions.Dependencies {
+		for _, dependsOn := range process.FunctionSpec.Conditions.Dependencies {
 			parentProcess := processMap[dependsOn]
 			if parentProcess == nil {
 				msg := "Failed to submit workflow, invalid dependencies, are you depending on a process spec name that does not exits?"
@@ -664,7 +667,7 @@ func (controller *coloniesController) createProcessGraph(workflowSpec *core.Work
 	for _, process := range processMap {
 		// This function is called from the controller, so it OK to use the database layer directly, in fact
 		// we will cause a deadlock if we call controller.addProcess
-		log.WithFields(log.Fields{"ProcessID": process.ID}).Debug("Submitting process part of processgraph")
+		log.WithFields(log.Fields{"ProcessId": process.ID}).Debug("Submitting process part of processgraph")
 		addedProcess, err := controller.addProcessToDB(process)
 		if err != nil {
 			msg := "Failed to submit workflow, failed to add process"
@@ -909,7 +912,7 @@ func (controller *coloniesController) deleteAllProcessGraphs(colonyID string) er
 	return <-cmd.errorChan
 }
 
-func (controller *coloniesController) closeSuccessful(processID string, output []string) error {
+func (controller *coloniesController) closeSuccessful(processID string, executorID string, output []string) error {
 	cmd := &command{errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
 			process, err := controller.db.GetProcessByID(processID)
@@ -922,14 +925,14 @@ func (controller *coloniesController) closeSuccessful(processID string, output [
 				err = controller.db.SetOutput(processID, output)
 			}
 
-			err = controller.db.MarkSuccessful(processID)
+			waitingTime, processingTime, err := controller.db.MarkSuccessful(processID)
 			if err != nil {
 				cmd.errorChan <- err
 				return
 			}
 
 			if process.ProcessGraphID != "" {
-				log.WithFields(log.Fields{"ProcessGraph": process.ProcessGraphID}).Debug("Resolving processgraph (close successful)")
+				log.WithFields(log.Fields{"ProcessGraphId": process.ProcessGraphID}).Debug("Resolving processgraph (close successful)")
 				processGraph, err := controller.db.GetProcessGraphByID(process.ProcessGraphID)
 				if err != nil {
 					cmd.errorChan <- err
@@ -952,6 +955,66 @@ func (controller *coloniesController) closeSuccessful(processID string, output [
 			}
 
 			process.State = core.SUCCESS
+
+			function, err := controller.db.GetFunctionsByExecutorIDAndName(executorID, process.FunctionSpec.FuncName)
+			if err != nil {
+				cmd.errorChan <- err
+				return
+			}
+
+			if function != nil {
+				process, err = controller.db.GetProcessByID(processID)
+				if err != nil {
+					cmd.errorChan <- err
+					return
+				}
+				minWaitTime := 0.0
+				if function.MinWaitTime > 0 {
+					minWaitTime = math.Min(function.MinWaitTime, waitingTime)
+				} else {
+					minWaitTime = waitingTime
+				}
+				maxWaitTime := 0.0
+				if function.MaxWaitTime > 0 {
+					maxWaitTime = math.Max(function.MinWaitTime, waitingTime)
+				} else {
+					maxWaitTime = waitingTime
+				}
+				minExecTime := 0.0
+				if function.MinExecTime > 0 {
+					minExecTime = math.Min(function.MinWaitTime, processingTime)
+				} else {
+					minExecTime = processingTime
+				}
+				maxExecTime := 0.0
+				if function.MaxExecTime > 0 {
+					maxExecTime = math.Max(function.MinExecTime, processingTime)
+				} else {
+					maxExecTime = processingTime
+				}
+				avgWaitTime := 0.0
+				if function.AvgWaitTime > 0.0 {
+					avgWaitTime = (function.AvgWaitTime + waitingTime) / 2
+				} else {
+					avgWaitTime = waitingTime
+				}
+				avgExecTime := 0.0
+				if function.AvgExecTime > 0.0 {
+					avgExecTime = (function.AvgExecTime + processingTime) / 2
+				} else {
+					avgExecTime = processingTime
+				}
+
+				controller.db.UpdateFunctionStats(function.ExecutorID,
+					function.FuncName,
+					function.Counter+1,
+					minWaitTime,
+					maxWaitTime,
+					minExecTime,
+					maxExecTime,
+					avgWaitTime,
+					avgExecTime)
+			}
 
 			controller.eventHandler.signal(process)
 			cmd.errorChan <- nil
@@ -1004,7 +1067,7 @@ func (controller *coloniesController) closeFailed(processID string, errs []strin
 			}
 
 			if process.ProcessGraphID != "" {
-				log.WithFields(log.Fields{"ProcessGraph": process.ProcessGraphID}).Debug("Resolving processgraph (close failed)")
+				log.WithFields(log.Fields{"ProcessGraphId": process.ProcessGraphID}).Debug("Resolving processgraph (close failed)")
 				processGraph, err := controller.db.GetProcessGraphByID(process.ProcessGraphID)
 				if err != nil {
 					cmd.errorChan <- err
@@ -1042,7 +1105,7 @@ func (controller *coloniesController) assign(executorID string, colonyID string,
 				return
 			}
 			if executor == nil {
-				cmd.errorChan <- errors.New("Executor with id <" + executorID + "> could not be found")
+				cmd.errorChan <- errors.New("Executor with Id <" + executorID + "> could not be found")
 				controller.assignMutex.Unlock()
 				return
 			}
@@ -1079,7 +1142,7 @@ func (controller *coloniesController) assign(executorID string, colonyID string,
 			controller.assignMutex.Unlock()
 
 			if selectedProcess.ProcessGraphID != "" {
-				log.WithFields(log.Fields{"ProcessGraph": selectedProcess.ProcessGraphID}).Debug("Resolving processgraph (assigned)")
+				log.WithFields(log.Fields{"ProcessGraphId": selectedProcess.ProcessGraphID}).Debug("Resolving processgraph (assigned)")
 				processGraph, err := controller.db.GetProcessGraphByID(selectedProcess.ProcessGraphID)
 				if err != nil {
 					log.Error(err)
@@ -1310,11 +1373,11 @@ func (controller *coloniesController) getStatistics() (*core.Statistics, error) 
 	}
 }
 
-func (controller *coloniesController) addAttribute(attribute core.Attribute) (core.Attribute, error) {
-	cmd := &command{attributeReplyChan: make(chan core.Attribute, 1),
+func (controller *coloniesController) addAttribute(attribute *core.Attribute) (*core.Attribute, error) {
+	cmd := &command{attributeReplyChan: make(chan *core.Attribute, 1),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
-			err := controller.db.AddAttribute(attribute)
+			err := controller.db.AddAttribute(*attribute)
 			if err != nil {
 				cmd.errorChan <- err
 				return
@@ -1324,20 +1387,20 @@ func (controller *coloniesController) addAttribute(attribute core.Attribute) (co
 				cmd.errorChan <- err
 				return
 			}
-			cmd.attributeReplyChan <- addedAttribute
+			cmd.attributeReplyChan <- &addedAttribute
 		}}
 
 	controller.cmdQueue <- cmd
 	select {
 	case err := <-cmd.errorChan:
-		return core.Attribute{}, err
+		return nil, err
 	case addedAttribute := <-cmd.attributeReplyChan:
 		return addedAttribute, nil
 	}
 }
 
-func (controller *coloniesController) getAttribute(attributeID string) (core.Attribute, error) {
-	cmd := &command{attributeReplyChan: make(chan core.Attribute, 1),
+func (controller *coloniesController) getAttribute(attributeID string) (*core.Attribute, error) {
+	cmd := &command{attributeReplyChan: make(chan *core.Attribute, 1),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
 			attribute, err := controller.db.GetAttributeByID(attributeID)
@@ -1345,16 +1408,99 @@ func (controller *coloniesController) getAttribute(attributeID string) (core.Att
 				cmd.errorChan <- err
 				return
 			}
-			cmd.attributeReplyChan <- attribute
+			cmd.attributeReplyChan <- &attribute
 		}}
 
 	controller.cmdQueue <- cmd
 	select {
 	case err := <-cmd.errorChan:
-		return core.Attribute{}, err
+		return nil, err
 	case attribute := <-cmd.attributeReplyChan:
 		return attribute, nil
 	}
+}
+
+func (controller *coloniesController) addFunction(function *core.Function) (*core.Function, error) {
+	cmd := &command{functionReplyChan: make(chan *core.Function, 1),
+		errorChan: make(chan error, 1),
+		handler: func(cmd *command) {
+			err := controller.db.AddFunction(function)
+			if err != nil {
+				cmd.errorChan <- err
+				return
+			}
+			addedFunction, err := controller.db.GetFunctionByID(function.FunctionID)
+			if err != nil {
+				cmd.errorChan <- err
+				return
+			}
+			cmd.functionReplyChan <- addedFunction
+		}}
+
+	controller.cmdQueue <- cmd
+	select {
+	case err := <-cmd.errorChan:
+		return nil, err
+	case addedFunction := <-cmd.functionReplyChan:
+		return addedFunction, nil
+	}
+}
+
+func (controller *coloniesController) getFunctionByExecutorID(executorID string) ([]*core.Function, error) {
+	cmd := &command{functionsReplyChan: make(chan []*core.Function, 1),
+		errorChan: make(chan error, 1),
+		handler: func(cmd *command) {
+			functions, err := controller.db.GetFunctionsByExecutorID(executorID)
+			if err != nil {
+				cmd.errorChan <- err
+				return
+			}
+			cmd.functionsReplyChan <- functions
+		}}
+
+	controller.cmdQueue <- cmd
+	select {
+	case err := <-cmd.errorChan:
+		return nil, err
+	case functions := <-cmd.functionsReplyChan:
+		return functions, nil
+	}
+}
+
+func (controller *coloniesController) getFunctionByID(functionID string) (*core.Function, error) {
+	cmd := &command{functionReplyChan: make(chan *core.Function, 1),
+		errorChan: make(chan error, 1),
+		handler: func(cmd *command) {
+			function, err := controller.db.GetFunctionByID(functionID)
+			if err != nil {
+				cmd.errorChan <- err
+				return
+			}
+			cmd.functionReplyChan <- function
+		}}
+
+	controller.cmdQueue <- cmd
+	select {
+	case err := <-cmd.errorChan:
+		return nil, err
+	case function := <-cmd.functionReplyChan:
+		return function, nil
+	}
+}
+
+func (controller *coloniesController) deleteFunction(functionID string) error {
+	cmd := &command{errorChan: make(chan error, 1),
+		handler: func(cmd *command) {
+			err := controller.db.DeleteFunctionByID(functionID)
+			if err != nil {
+				cmd.errorChan <- err
+				return
+			}
+			cmd.errorChan <- nil
+		}}
+
+	controller.cmdQueue <- cmd
+	return <-cmd.errorChan
 }
 
 func (controller *coloniesController) resetDatabase() error {

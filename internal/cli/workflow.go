@@ -81,15 +81,15 @@ var workflowCmd = &cobra.Command{
 
 var submitWorkflowCmd = &cobra.Command{
 	Use:   "submit",
-	Short: "Submit a workflow to a Colony",
-	Long:  "Submit a workflow to a Colony",
+	Short: "Submit a workflow",
+	Long:  "Submit a workflow",
 	Run: func(cmd *cobra.Command, args []string) {
 		parseServerEnv()
 
 		jsonSpecBytes, err := ioutil.ReadFile(SpecFile)
 		CheckError(err)
 
-		jsonStr := "{\"processspecs\":" + string(jsonSpecBytes) + "}"
+		jsonStr := "{\"functionspecs\":" + string(jsonSpecBytes) + "}"
 		workflowSpec, err := core.ConvertJSONToWorkflowSpec(jsonStr)
 		CheckError(err)
 
@@ -226,8 +226,8 @@ var deleteWorkflowCmd = &cobra.Command{
 
 var deleteAllWorkflowsCmd = &cobra.Command{
 	Use:   "deleteall",
-	Short: "Delete all workflows in a colony",
-	Long:  "Delete all workflows in a colony",
+	Short: "Delete all workflows",
+	Long:  "Delete all workflows",
 	Run: func(cmd *cobra.Command, args []string) {
 		parseServerEnv()
 
@@ -469,13 +469,13 @@ func printGraf(client *client.ColoniesClient, graph *core.ProcessGraph) {
 		process, err := client.GetProcess(processID, ExecutorPrvKey)
 		CheckError(err)
 
-		procFunc := process.ProcessSpec.Func
-		if procFunc == "" {
-			procFunc = "None"
+		f := process.FunctionSpec.FuncName
+		if f == "" {
+			f = "None"
 		}
 
 		procArgs := ""
-		for _, procArg := range process.ProcessSpec.Args {
+		for _, procArg := range process.FunctionSpec.Args {
 			procArgs += procArg + " "
 		}
 		if procArgs == "" {
@@ -483,7 +483,7 @@ func printGraf(client *client.ColoniesClient, graph *core.ProcessGraph) {
 		}
 
 		dependencies := ""
-		for _, dependency := range process.ProcessSpec.Conditions.Dependencies {
+		for _, dependency := range process.FunctionSpec.Conditions.Dependencies {
 			dependencies += dependency + " "
 		}
 		if dependencies == "" {
@@ -491,10 +491,10 @@ func printGraf(client *client.ColoniesClient, graph *core.ProcessGraph) {
 		}
 
 		processData := [][]string{
-			[]string{"Name", process.ProcessSpec.Name},
+			[]string{"NodeName", process.FunctionSpec.NodeName},
 			[]string{"ProcessID", process.ID},
-			[]string{"ExecutorType", process.ProcessSpec.Conditions.ExecutorType},
-			[]string{"Func", procFunc},
+			[]string{"ExecutorType", process.FunctionSpec.Conditions.ExecutorType},
+			[]string{"FuncName", f},
 			[]string{"Args", procArgs},
 			[]string{"State", State2String(process.State)},
 			[]string{"WaitingForParents", strconv.FormatBool(process.WaitForParents)},

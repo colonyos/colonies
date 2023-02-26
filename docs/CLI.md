@@ -7,9 +7,9 @@ First, create a file named colony.json, and put the following content into it.
 }
 ```
 
-Then use the colonies tool to register the colony. The id of the colony will be returned if the command is successful. Note that the root password is required for this operation.
+Then use the Colonies CLI to register the colony. The id of the colony will be returned if the command is successful. Note that the root password is required for this operation.
 ```console
-./bin/colonies colony register --serverid=9289dfccedf27392810b96968535530bb69f90afe7c35738e0e627f3810d943e --spec ./examples/colony.json
+colonies colony add --serverid=9289dfccedf27392810b96968535530bb69f90afe7c35738e0e627f3810d943e --spec ./examples/colony.json
 ```
 Output: 
 ```
@@ -19,7 +19,7 @@ Output:
 ## List all Colonies 
 Note that root password of Colonies server is also required to list all colonies.
 ```console
-./bin/colonies colony ls --serverid=039231c7644e04b6895471dd5335cf332681c54e27f81fac54f9067b3f2c0103
+colonies colony ls --serverid=039231c7644e04b6895471dd5335cf332681c54e27f81fac54f9067b3f2c0103
 ```
 Output:
 ```
@@ -30,8 +30,8 @@ Output:
 +------------------------------------------------------------------+----------+
 ```
 
-## Register a new Colony Executor 
-Only the colony owner is allowed to register a new Colony Executor. 
+## Add a new Executor 
+Only the colony owner is allowed to add a new executor. 
 
 ```json
 {
@@ -41,7 +41,7 @@ Only the colony owner is allowed to register a new Colony Executor.
 ```
 
 ```console
-./bin/colonies executor register --colonyid 0f4f350d264d1cffdec0d62c723a7da8b730c6863365da75697fd26a6d79ccc5 --colonyprvkey d95c54b63ac7c9ba624445fd755998e14e6aa71a17a74889c6a1754be80bcf09 --spec ./examples/executor.json
+colonies executor add --colonyid 0f4f350d264d1cffdec0d62c723a7da8b730c6863365da75697fd26a6d79ccc5 --colonyprvkey d95c54b63ac7c9ba624445fd755998e14e6aa71a17a74889c6a1754be80bcf09 --spec ./examples/executor.json
 ```
 Output:
 ```
@@ -50,16 +50,16 @@ The *colonyprvkey* is automatically obtained from the keychain or environmental 
 
 ```console
 export COLONIES_COLONY_ID="0f4f350d264d1cffdec0d62c723a7da8b730c6863365da75697fd26a6d79ccc5"
-./bin/colonies executor register --spec ./examples/executor.json
+colonies executor add --spec ./examples/executor.json
 ```
 Output:
 ```
 4599f89a8afb7ecd9beec0b7861fab3bacba3a0e2dbe050e9f7584f3c9d7ac58
 ```
  
-It is also possible to register an executor without specifying a spec file.
+It is also possible to add an executor without specifying a spec file.
 ```console
-./bin/colonies executor register --name test_executor --type my_executor 
+colonies executor add --name test_executor --type my_executor 
 ```
 
 It is also possible to set the following environmental variables to leave out the name or type flag.
@@ -70,10 +70,10 @@ COLONIES_EXECUTOR_TYPE="my_executor"
 
 If HOSTNAME is set, then executor name will be set to COLONIES_EXECUTOR_NAME.HOSTNAME.
 
-## List registered Colony Executors
+## List registered Executors
 ```console
 export COLONIES_EXECUTOR_ID="4599f89a8afb7ecd9beec0b7861fab3bacba3a0e2dbe050e9f7584f3c9d7ac58"
-./bin/colonies executor ls 
+colonies executor ls 
 ```
 Output:
 ```
@@ -83,7 +83,7 @@ Executor with Id <4599f89a8afb7ecd9beec0b7861fab3bacba3a0e2dbe050e9f7584f3c9d7ac
 A Colony Executor needs to be approved by the Colony Owner before it can execute processes. As before, the Colony Owner's private key is automatically fetched from the keychain.
 
 ```console
-./bin/colonies executor approve --executorid 4599f89a8afb7ecd9beec0b7861fab3bacba3a0e2dbe050e9f7584f3c9d7ac58 
+colonies executor approve --executorid 4599f89a8afb7ecd9beec0b7861fab3bacba3a0e2dbe050e9f7584f3c9d7ac58 
 ```
 Output:
 ```
@@ -91,7 +91,7 @@ Colony Executor with Id <4599f89a8afb7ecd9beec0b7861fab3bacba3a0e2dbe050e9f7584f
 ```
 
 ```console
-./bin/colonies executor ls 
+colonies executor ls 
 ```
 Output:
 ```
@@ -102,22 +102,22 @@ Output:
 +------------------------------------------------------------------+-------------+----------+
 ```
 
-Note that it is possible to automatically approve an executor by passing the --approve flag to the register command.
+Note that it is possible to automatically approve an executor by passing the --approve flag to the add command.
 ```console
-./bin/colonies executor register --name test_executor --type my_executor --approve
+colonies executor add --name test_executor --type my_executor --approve
 ```
 
 Similarly, a Colony Executor can be rejected with the "rejected" command. 
 ```console
-./bin/colonies executor reject --executorid 4599f89a8afb7ecd9beec0b7861fab3bacba3a0e2dbe050e9f7584f3c9d7ac58 
+colonies executor reject --executorid 4599f89a8afb7ecd9beec0b7861fab3bacba3a0e2dbe050e9f7584f3c9d7ac58 
 ```
 Output:
 ```
 Colony Executor with Id <4599f89a8afb7ecd9beec0b7861fab3bacba3a0e2dbe050e9f7584f3c9d7ac58> is now rejected
 ```
 
-## Submit a process to a Colony
-First we need to create a process spec file. The conditions must match registered executors, e.g. the memory must be at least 1000 GiB.
+## Submit a function to a Colony
+First we need to create a function spec file. 
 
 ```json
 {
@@ -125,9 +125,6 @@ First we need to create a process spec file. The conditions must match registere
          "colonyid": "0f4f350d264d1cffdec0d62c723a7da8b730c6863365da75697fd26a6d79ccc5",
          "executorids": [],
          "exectuortype": "my_executor_type",
-         "mem": 1000,
-         "cores": 10,
-         "gpus": 1
      },
      "env": {
          "test_key": "test_value"
@@ -140,7 +137,7 @@ First we need to create a process spec file. The conditions must match registere
 To submit the process spec to the Colony, type:
 
 ```console
-./bin/colonies process submit --spec ./examples/process_spec.json
+colonies function submit --spec ./examples/process_spec.json
 ```
 Output:
 ```
@@ -149,7 +146,7 @@ Output:
 
 ## Get info about a process
 ```console
-./bin/colonies process get --processid 4e369a9eeaf4521cdfa79de81666a5980f30345464e5c61e8cfdf9380e7ba663 
+colonies process get --processid 4e369a9eeaf4521cdfa79de81666a5980f30345464e5c61e8cfdf9380e7ba663 
 ```
 Output:
 ```
@@ -188,7 +185,7 @@ Attributes:
 
 ## List all waiting processes
 ```console
-./bin/colonies process psw
+colonies process psw
 ```
 Output:
 ```
@@ -206,7 +203,7 @@ Output:
 ## Assign a process to executor 
 An assigned process will change state to Running.
 ```console
-./bin/colonies process assign
+colonies process assign
 ```
 Output:
 ```
@@ -215,7 +212,7 @@ Process with Id <5513617dc4407b6190959a07db2a39c6ad93771c7e8457391e2e64927214c25
 
 ## List all running processes
 ```console
-./bin/colonies process ps
+colonies process ps
 ```
 Output:
 ```
@@ -232,7 +229,7 @@ Output:
 
 ## List all successful processes
 ```console
-./bin/colonies process pss 
+colonies process pss 
 ```
 Output:
 ```
@@ -259,7 +256,7 @@ Output:
 
 ## Add attribute to a running process 
 ```console
-./bin/colonies attribute add --key output --value helloworld --processid 5785eb8a57f22d73a99d5c5e5d073cf27f9ea4ba81bad1a72e5e4f226e647dc0 
+colonies attribute add --key output --value helloworld --processid 5785eb8a57f22d73a99d5c5e5d073cf27f9ea4ba81bad1a72e5e4f226e647dc0 
 ```
 
 Output:
@@ -268,7 +265,7 @@ Output:
 ```
 
 ```console
-./bin/colonies process get --processid 5785eb8a57f22d73a99d5c5e5d073cf27f9ea4ba81bad1a72e5e4f226e647dc0
+colonies process get --processid 5785eb8a57f22d73a99d5c5e5d073cf27f9ea4ba81bad1a72e5e4f226e647dc0
 ```
 Output:
 ```
@@ -307,7 +304,7 @@ Attributes:
 
 ## Get attribute of a process 
 ```console
-./bin/colonies attribute get --attributeid 7fcc3a10947e6a3c56fa5c59c14c7d13d32468ed899e12e9d1cb7589ef51a0e3
+colonies attribute get --attributeid 7fcc3a10947e6a3c56fa5c59c14c7d13d32468ed899e12e9d1cb7589ef51a0e3
 ```
 Output:
 ```
@@ -322,7 +319,7 @@ Output:
 
 ## Close a process as successful
 ```console
-./bin/colonies process close --processid 5513617dc4407b6190959a07db2a39c6ad93771c7e8457391e2e64927214c258
+colonies process close --processid 5513617dc4407b6190959a07db2a39c6ad93771c7e8457391e2e64927214c258
 ```
 Output:
 ```
@@ -331,7 +328,7 @@ Process with Id <5513617dc4407b6190959a07db2a39c6ad93771c7e8457391e2e64927214c25
 
 ## Close a process as failed 
 ```console
-./bin/colonies process fail --processid 7bdc97997db5ea59471b2165c0e5672a4fe8f9158d36ab547adb9710d26e5ae2
+colonies process fail --processid 7bdc97997db5ea59471b2165c0e5672a4fe8f9158d36ab547adb9710d26e5ae2
 ```
 Output:
 ```

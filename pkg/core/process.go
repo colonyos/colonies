@@ -17,28 +17,28 @@ const (
 )
 
 type Process struct {
-	ID                 string      `json:"processid"`
-	AssignedExecutorID string      `json:"assignedexecutorid"`
-	IsAssigned         bool        `json:"isassigned"`
-	State              int         `json:"state"`
-	SubmissionTime     time.Time   `json:"submissiontime"`
-	StartTime          time.Time   `json:"starttime"`
-	EndTime            time.Time   `json:"endtime"`
-	WaitDeadline       time.Time   `json:"waitdeadline"`
-	ExecDeadline       time.Time   `json:"execdeadline"`
-	Retries            int         `json:"retries"`
-	Attributes         []Attribute `json:"attributes"`
-	ProcessSpec        ProcessSpec `json:"spec"`
-	WaitForParents     bool        `json:"waitforparents"`
-	Parents            []string    `json:"parents"`
-	Children           []string    `json:"children"`
-	ProcessGraphID     string      `json:"processgraphid"`
-	Input              []string    `json:"in"`
-	Output             []string    `json:"out"`
-	Errors             []string    `json:"errors"`
+	ID                 string       `json:"processid"`
+	AssignedExecutorID string       `json:"assignedexecutorid"`
+	IsAssigned         bool         `json:"isassigned"`
+	State              int          `json:"state"`
+	SubmissionTime     time.Time    `json:"submissiontime"`
+	StartTime          time.Time    `json:"starttime"`
+	EndTime            time.Time    `json:"endtime"`
+	WaitDeadline       time.Time    `json:"waitdeadline"`
+	ExecDeadline       time.Time    `json:"execdeadline"`
+	Retries            int          `json:"retries"`
+	Attributes         []Attribute  `json:"attributes"`
+	FunctionSpec       FunctionSpec `json:"spec"`
+	WaitForParents     bool         `json:"waitforparents"`
+	Parents            []string     `json:"parents"`
+	Children           []string     `json:"children"`
+	ProcessGraphID     string       `json:"processgraphid"`
+	Input              []string     `json:"in"`
+	Output             []string     `json:"out"`
+	Errors             []string     `json:"errors"`
 }
 
-func CreateProcess(processSpec *ProcessSpec) *Process {
+func CreateProcess(funcSpec *FunctionSpec) *Process {
 	uuid := uuid.New()
 	crypto := crypto.CreateCrypto()
 	id := crypto.GenerateHash(uuid.String())
@@ -46,19 +46,19 @@ func CreateProcess(processSpec *ProcessSpec) *Process {
 	var attributes []Attribute
 
 	process := &Process{ID: id,
-		State:       WAITING,
-		IsAssigned:  false,
-		Attributes:  attributes,
-		ProcessSpec: *processSpec,
-		Input:       make([]string, 0),
-		Output:      make([]string, 0),
-		Errors:      make([]string, 0),
+		State:        WAITING,
+		IsAssigned:   false,
+		Attributes:   attributes,
+		FunctionSpec: *funcSpec,
+		Input:        make([]string, 0),
+		Output:       make([]string, 0),
+		Errors:       make([]string, 0),
 	}
 
 	return process
 }
 
-func CreateProcessFromDB(processSpec *ProcessSpec,
+func CreateProcessFromDB(funcSpec *FunctionSpec,
 	id string,
 	assignedExecutorID string,
 	isAssigned bool,
@@ -83,7 +83,7 @@ func CreateProcessFromDB(processSpec *ProcessSpec,
 		Errors:             errors,
 		Retries:            retries,
 		Attributes:         attributes,
-		ProcessSpec:        *processSpec,
+		FunctionSpec:       *funcSpec,
 	}
 }
 
@@ -198,7 +198,7 @@ func (process *Process) Equals(process2 *Process) bool {
 		return false
 	}
 
-	if !process.ProcessSpec.Equals(&process2.ProcessSpec) {
+	if !process.FunctionSpec.Equals(&process2.FunctionSpec) {
 		same = false
 	}
 

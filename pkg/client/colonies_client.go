@@ -396,14 +396,14 @@ func (client *ColoniesClient) DeleteExecutor(executorID string, prvKey string) e
 	return nil
 }
 
-func (client *ColoniesClient) SubmitProcessSpec(processSpec *core.ProcessSpec, prvKey string) (*core.Process, error) {
-	msg := rpc.CreateSubmitProcessSpecMsg(processSpec)
+func (client *ColoniesClient) Submit(funcSpec *core.FunctionSpec, prvKey string) (*core.Process, error) {
+	msg := rpc.CreateSubmitFunctionSpecMsg(funcSpec)
 	jsonString, err := msg.ToJSON()
 	if err != nil {
 		return nil, err
 	}
 
-	respBodyString, err := client.sendMessage(rpc.SubmitProcessSpecPayloadType, jsonString, prvKey, false)
+	respBodyString, err := client.sendMessage(rpc.SubmitFunctionSpecPayloadType, jsonString, prvKey, false)
 	if err != nil {
 		return nil, err
 	}
@@ -411,7 +411,7 @@ func (client *ColoniesClient) SubmitProcessSpec(processSpec *core.ProcessSpec, p
 	return core.ConvertJSONToProcess(respBodyString)
 }
 
-func (client *ColoniesClient) AssignProcess(colonyID string, timeout int, prvKey string) (*core.Process, error) {
+func (client *ColoniesClient) Assign(colonyID string, timeout int, prvKey string) (*core.Process, error) {
 	msg := rpc.CreateAssignProcessMsg(colonyID)
 	msg.Latest = false
 	msg.Timeout = timeout
@@ -672,8 +672,8 @@ func (client *ColoniesClient) SubmitWorkflowSpec(workflowSpec *core.WorkflowSpec
 	return core.ConvertJSONToProcessGraph(respBodyString)
 }
 
-func (client *ColoniesClient) AddChild(processGraphID string, processID string, processSpec *core.ProcessSpec, prvKey string) (*core.Process, error) {
-	msg := rpc.CreateAddChildMsg(processGraphID, processID, processSpec)
+func (client *ColoniesClient) AddChild(processGraphID string, processID string, funcSpec *core.FunctionSpec, prvKey string) (*core.Process, error) {
+	msg := rpc.CreateAddChildMsg(processGraphID, processID, funcSpec)
 	jsonString, err := msg.ToJSON()
 	if err != nil {
 		return nil, err
@@ -921,6 +921,51 @@ func (client *ColoniesClient) DeleteCron(cronID string, prvKey string) error {
 	}
 
 	_, err = client.sendMessage(rpc.DeleteCronPayloadType, jsonString, prvKey, false)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (client *ColoniesClient) AddFunction(function *core.Function, prvKey string) (*core.Function, error) {
+	msg := rpc.CreateAddFunctionMsg(function)
+	jsonString, err := msg.ToJSON()
+	if err != nil {
+		return nil, err
+	}
+
+	respBodyString, err := client.sendMessage(rpc.AddFunctionPayloadType, jsonString, prvKey, false)
+	if err != nil {
+		return nil, err
+	}
+
+	return core.ConvertJSONToFunction(respBodyString)
+}
+
+func (client *ColoniesClient) GetFunctions(executorID string, prvKey string) ([]*core.Function, error) {
+	msg := rpc.CreateGetFunctionsMsg(executorID)
+	jsonString, err := msg.ToJSON()
+	if err != nil {
+		return nil, err
+	}
+
+	respBodyString, err := client.sendMessage(rpc.GetFunctionsPayloadType, jsonString, prvKey, false)
+	if err != nil {
+		return nil, err
+	}
+
+	return core.ConvertJSONToFunctionArray(respBodyString)
+}
+
+func (client *ColoniesClient) DeleteFunction(functionID string, prvKey string) error {
+	msg := rpc.CreateDeleteFunctionMsg(functionID)
+	jsonString, err := msg.ToJSON()
+	if err != nil {
+		return err
+	}
+
+	_, err = client.sendMessage(rpc.DeleteFunctionPayloadType, jsonString, prvKey, false)
 	if err != nil {
 		return err
 	}

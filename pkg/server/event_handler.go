@@ -133,7 +133,7 @@ func (handler *eventHandler) unregister(executorType string, state int, listener
 
 func (handler *eventHandler) sendSignal(process *core.Process) {
 	msg := &message{reply: make(chan replyMessage, 100), handler: func(msg *message) {
-		t := handler.target(process.ProcessSpec.Conditions.ExecutorType, process.State)
+		t := handler.target(process.FunctionSpec.Conditions.ExecutorType, process.State)
 		if _, ok := handler.listeners[t]; ok {
 			for listenerID, c := range handler.listeners[t] {
 				if processID, ok := handler.processIDs[listenerID]; ok {

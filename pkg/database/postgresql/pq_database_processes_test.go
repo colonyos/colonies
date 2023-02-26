@@ -25,8 +25,8 @@ func TestAddProcess(t *testing.T) {
 
 	processFromDB, err := db.GetProcessByID(process.ID)
 	assert.Nil(t, err)
-	assert.Contains(t, processFromDB.ProcessSpec.Conditions.ExecutorIDs, executor1ID)
-	assert.Contains(t, processFromDB.ProcessSpec.Conditions.ExecutorIDs, executor2ID)
+	assert.Contains(t, processFromDB.FunctionSpec.Conditions.ExecutorIDs, executor1ID)
+	assert.Contains(t, processFromDB.FunctionSpec.Conditions.ExecutorIDs, executor2ID)
 }
 
 func TestAddProcessWithEnv(t *testing.T) {
@@ -361,7 +361,7 @@ func TestMarkSuccessful(t *testing.T) {
 
 	assert.Equal(t, core.WAITING, process.State)
 
-	err = db.MarkSuccessful(process.ID)
+	_, _, err = db.MarkSuccessful(process.ID)
 	assert.NotNil(t, err) // Not possible to set waiting process to successfull
 
 	err = db.Assign(executor.ID, process)
@@ -372,7 +372,7 @@ func TestMarkSuccessful(t *testing.T) {
 
 	assert.Equal(t, core.RUNNING, process.State)
 
-	err = db.MarkSuccessful(process.ID)
+	_, _, err = db.MarkSuccessful(process.ID)
 	assert.Nil(t, err)
 
 	processFromDB, err = db.GetProcessByID(process.ID)
@@ -978,7 +978,7 @@ func TestFindProcessAssigned(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, 2, numberOfRunningProcesses)
 
-	err = db.MarkSuccessful(processsFromDB1[0].ID)
+	_, _, err = db.MarkSuccessful(processsFromDB1[0].ID)
 	assert.Nil(t, err)
 
 	err = db.MarkFailed(processsFromDB2[0].ID, []string{"error"})
@@ -1039,7 +1039,7 @@ func TestFindWaitingProcesses(t *testing.T) {
 		assert.Nil(t, err)
 		err = db.Assign(executor.ID, process)
 		assert.Nil(t, err)
-		err = db.MarkSuccessful(process.ID)
+		_, _, err = db.MarkSuccessful(process.ID)
 		assert.Nil(t, err)
 		successfulProcessIDs[process.ID] = true
 	}
@@ -1215,7 +1215,7 @@ func TestFindProcessesByExecutorID(t *testing.T) {
 		assert.Nil(t, err)
 		err = db.Assign(executor1.ID, process)
 		assert.Nil(t, err)
-		err = db.MarkSuccessful(process.ID)
+		_, _, err = db.MarkSuccessful(process.ID)
 		assert.Nil(t, err)
 	}
 	for i := 0; i < 20; i++ {
@@ -1224,7 +1224,7 @@ func TestFindProcessesByExecutorID(t *testing.T) {
 		assert.Nil(t, err)
 		err = db.Assign(executor2.ID, process)
 		assert.Nil(t, err)
-		err = db.MarkSuccessful(process.ID)
+		_, _, err = db.MarkSuccessful(process.ID)
 		assert.Nil(t, err)
 	}
 
@@ -1235,7 +1235,7 @@ func TestFindProcessesByExecutorID(t *testing.T) {
 	assert.Nil(t, err)
 	err = db.Assign(executor1.ID, process)
 	assert.Nil(t, err)
-	err = db.MarkSuccessful(process.ID)
+	_, _, err = db.MarkSuccessful(process.ID)
 	assert.Nil(t, err)
 
 	processesFromDB, err := db.FindProcessesByExecutorID(colony1.ID, executor1.ID, 60, core.SUCCESS) // last 60 seconds
@@ -1283,7 +1283,7 @@ func TestFindProcessesByColonyID(t *testing.T) {
 		assert.Nil(t, err)
 		err = db.Assign(executor1.ID, process)
 		assert.Nil(t, err)
-		err = db.MarkSuccessful(process.ID)
+		_, _, err = db.MarkSuccessful(process.ID)
 		assert.Nil(t, err)
 	}
 	for i := 0; i < 10; i++ {
@@ -1292,7 +1292,7 @@ func TestFindProcessesByColonyID(t *testing.T) {
 		assert.Nil(t, err)
 		err = db.Assign(executor2.ID, process)
 		assert.Nil(t, err)
-		err = db.MarkSuccessful(process.ID)
+		_, _, err = db.MarkSuccessful(process.ID)
 		assert.Nil(t, err)
 	}
 
@@ -1303,7 +1303,7 @@ func TestFindProcessesByColonyID(t *testing.T) {
 	assert.Nil(t, err)
 	err = db.Assign(executor1.ID, process)
 	assert.Nil(t, err)
-	err = db.MarkSuccessful(process.ID)
+	_, _, err = db.MarkSuccessful(process.ID)
 	assert.Nil(t, err)
 
 	processesFromDB, err := db.FindProcessesByColonyID(colony.ID, 60, core.SUCCESS) // last 60 seconds

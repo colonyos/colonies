@@ -1,7 +1,7 @@
 [
     {
-        "name": "generator_example",
-        "func": "echo",
+        "nodename": "generator_example",
+        "funcname": "echo",
         "args": [],
         "conditions": {
             "executortype": "cli",

@@ -299,7 +299,7 @@ func (graph *ProcessGraph) calcNodes() error {
 		}
 
 		style := Style{Background: background}
-		node := &Node{ID: process.ID, Data: Data{Label: process.ProcessSpec.Name}, Position: Position{X: x, Y: y}, Type: t, Style: style}
+		node := &Node{ID: process.ID, Data: Data{Label: process.FunctionSpec.NodeName}, Position: Position{X: x, Y: y}, Type: t, Style: style}
 		graph.nodesMap[process.ID] = node
 		nodesPerDepth[depth] = append(nodesPerDepth[depth], node)
 		return nil

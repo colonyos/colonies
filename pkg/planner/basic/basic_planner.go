@@ -75,10 +75,10 @@ func (planner *BasicPlanner) Prioritize(executorID string, candidates []*core.Pr
 
 	// First, check if there is process candidate target this specific executor
 	for _, candidate := range candidates {
-		if len(candidate.ProcessSpec.Conditions.ExecutorIDs) == 0 {
+		if len(candidate.FunctionSpec.Conditions.ExecutorIDs) == 0 {
 			prioritizedCandidates = append(prioritizedCandidates, candidate)
 		} else {
-			for _, targetExecutorID := range candidate.ProcessSpec.Conditions.ExecutorIDs {
+			for _, targetExecutorID := range candidate.FunctionSpec.Conditions.ExecutorIDs {
 				if targetExecutorID == executorID {
 					prioritizedCandidates = append(prioritizedCandidates, candidate)
 				}

@@ -183,7 +183,7 @@ var serverStartCmd = &cobra.Command{
 			db = postgresql.CreatePQDatabase(DBHost, DBPort, DBUser, DBPassword, DBName, DBPrefix)
 			err := db.Connect()
 			if err != nil {
-				log.WithFields(log.Fields{"err": err}).Error("Failed to connect to PostgreSQL database")
+				log.WithFields(log.Fields{"Error": err}).Error("Failed to connect to PostgreSQL database")
 				time.Sleep(1 * time.Second)
 			} else {
 				break
@@ -260,7 +260,7 @@ var serverStartCmd = &cobra.Command{
 		for {
 			err := server.ServeForever()
 			if err != nil {
-				log.WithFields(log.Fields{"err": err}).Error("Failed to connect to Colonies Server")
+				log.WithFields(log.Fields{"Error": err}).Error("Failed to connect to Colonies Server")
 				time.Sleep(1 * time.Second)
 			}
 		}

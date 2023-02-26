@@ -1,7 +1,7 @@
 [
     {
-        "name": "generate_date",
-        "func": "date",
+        "nodename": "generate_date",
+        "funcname": "date",
         "args": [
             ">",
             "/tmp/currentdate"
@@ -12,8 +12,8 @@
         }
     },
     {
-        "name": "print_date",
-        "func": "cat",
+        "nodename": "print_date",
+        "funcname": "cat",
         "args": [
             "/tmp/currentdate"
         ],

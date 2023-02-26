@@ -19,7 +19,7 @@ func TestAddCronDebug(t *testing.T) {
 	assert.NotNil(t, addedCron)
 
 	// If the cron is successful, there should be a process we can assign
-	process, err := client.AssignProcess(env.colonyID, 100, env.executorPrvKey)
+	process, err := client.Assign(env.colonyID, 100, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.NotNil(t, process)
 
@@ -52,7 +52,7 @@ func TestAddCronWaitForPrevProcessGraph(t *testing.T) {
 	assert.Len(t, processgraphs, 1)
 
 	// Now assign a the cron process, then a new cron should be triggered
-	process, err := client.AssignProcess(env.colonyID, 100, env.executorPrvKey)
+	process, err := client.Assign(env.colonyID, 100, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.NotNil(t, process)
 	err = client.Close(process.ID, env.executorPrvKey)
@@ -103,7 +103,7 @@ func TestAddCronWaitForPrevProcessGraphFail(t *testing.T) {
 	assert.Len(t, processgraphs, 1)
 
 	// Now assign a the cron process, then a new cron should be triggered
-	process, err := client.AssignProcess(env.colonyID, 100, env.executorPrvKey)
+	process, err := client.Assign(env.colonyID, 100, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.NotNil(t, process)
 	err = client.Fail(process.ID, []string{""}, env.executorPrvKey)
@@ -141,12 +141,12 @@ func TestAddCronInputOutput(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, addedCron)
 
-	process, err := client.AssignProcess(env.colonyID, 100, env.executorPrvKey)
+	process, err := client.Assign(env.colonyID, 100, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.NotNil(t, process)
 	err = client.CloseWithOutput(process.ID, []string{"result_cron1"}, env.executorPrvKey)
 
-	process, err = client.AssignProcess(env.colonyID, 100, env.executorPrvKey)
+	process, err = client.Assign(env.colonyID, 100, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.NotNil(t, process)
 	assert.Len(t, process.Input, 1)
@@ -173,18 +173,18 @@ func TestAddCronInputOutput2(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, addedCron)
 
-	process, err := client.AssignProcess(env.colonyID, 100, env.executorPrvKey)
+	process, err := client.Assign(env.colonyID, 100, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.NotNil(t, process)
 	err = client.Close(process.ID, env.executorPrvKey)
 	assert.Nil(t, err)
 
-	process, err = client.AssignProcess(env.colonyID, 100, env.executorPrvKey)
+	process, err = client.Assign(env.colonyID, 100, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.NotNil(t, process)
 	err = client.CloseWithOutput(process.ID, []string{"result_cron1"}, env.executorPrvKey)
 
-	process, err = client.AssignProcess(env.colonyID, 100, env.executorPrvKey)
+	process, err = client.Assign(env.colonyID, 100, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.NotNil(t, process)
 	assert.Len(t, process.Input, 1)
@@ -211,7 +211,7 @@ func TestAddCronWithCronExpr(t *testing.T) {
 	assert.NotNil(t, addedCron)
 
 	// If the cron is successful, there should be a process we can assign
-	process, err := client.AssignProcess(env.colonyID, 100, env.executorPrvKey)
+	process, err := client.Assign(env.colonyID, 100, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.NotNil(t, process)
 
@@ -323,7 +323,7 @@ func TestRunCron(t *testing.T) {
 	_, err = client.RunCron(addedCron.ID, env.executorPrvKey)
 
 	// If the cron is successful, there should be a process we can assign
-	process, err := client.AssignProcess(env.colonyID, 10, env.executorPrvKey)
+	process, err := client.Assign(env.colonyID, 10, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.NotNil(t, process)
 

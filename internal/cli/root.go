@@ -61,7 +61,7 @@ var GeneratorName string
 var GeneratorTrigger int
 var GeneratorTimeout int
 var GeneratorCheckerPeriod int
-var Func string
+var FuncName string
 var Arg string
 var Args []string
 var Output []string

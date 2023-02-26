@@ -8,13 +8,13 @@ import (
 
 func TestCreateGenerator(t *testing.T) {
 	workflowSpec := CreateWorkflowSpec(GenerateRandomID())
-	processSpec1 := CreateEmptyProcessSpec()
-	processSpec1.Name = "task1"
-	processSpec2 := CreateEmptyProcessSpec()
-	processSpec2.Name = "task2"
-	processSpec2.AddDependency("task1")
-	workflowSpec.AddProcessSpec(processSpec1)
-	workflowSpec.AddProcessSpec(processSpec2)
+	funcSpec1 := CreateEmptyFunctionSpec()
+	funcSpec1.NodeName = "task1"
+	funcSpec2 := CreateEmptyFunctionSpec()
+	funcSpec2.NodeName = "task2"
+	funcSpec2.AddDependency("task1")
+	workflowSpec.AddFunctionSpec(funcSpec1)
+	workflowSpec.AddFunctionSpec(funcSpec2)
 	jsonStr, err := workflowSpec.ToJSON()
 	assert.Nil(t, err)
 	generator := CreateGenerator(GenerateRandomID(), "test_genname", jsonStr, 10)
@@ -36,13 +36,13 @@ func TestCreateGenerator(t *testing.T) {
 func TestCreateGeneratorSpecArray(t *testing.T) {
 	var arr []*Generator
 	workflowSpec1 := CreateWorkflowSpec(GenerateRandomID())
-	processSpec1 := CreateEmptyProcessSpec()
-	processSpec1.Name = "task1"
-	processSpec2 := CreateEmptyProcessSpec()
-	processSpec2.Name = "task2"
-	processSpec2.AddDependency("task1")
-	workflowSpec1.AddProcessSpec(processSpec1)
-	workflowSpec1.AddProcessSpec(processSpec2)
+	funcSpec1 := CreateEmptyFunctionSpec()
+	funcSpec1.NodeName = "task1"
+	funcSpec2 := CreateEmptyFunctionSpec()
+	funcSpec2.NodeName = "task2"
+	funcSpec2.AddDependency("task1")
+	workflowSpec1.AddFunctionSpec(funcSpec1)
+	workflowSpec1.AddFunctionSpec(funcSpec2)
 	jsonStr, err := workflowSpec1.ToJSON()
 	assert.Nil(t, err)
 	generator1 := CreateGenerator(GenerateRandomID(), "test_genname1", jsonStr, 10)

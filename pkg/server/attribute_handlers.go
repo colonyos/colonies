@@ -32,7 +32,7 @@ func (server *ColoniesServer) handleAddAttributeHTTPRequest(c *gin.Context, reco
 		return
 	}
 
-	err = server.validator.RequireExecutorMembership(recoveredID, process.ProcessSpec.Conditions.ColonyID, true)
+	err = server.validator.RequireExecutorMembership(recoveredID, process.FunctionSpec.Conditions.ColonyID, true)
 	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		return
 	}
@@ -52,7 +52,7 @@ func (server *ColoniesServer) handleAddAttributeHTTPRequest(c *gin.Context, reco
 	msg.Attribute.GenerateID()
 	msg.Attribute.TargetProcessGraphID = process.ProcessGraphID
 
-	addedAttribute, err := server.controller.addAttribute(msg.Attribute)
+	addedAttribute, err := server.controller.addAttribute(&msg.Attribute)
 	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
@@ -62,7 +62,7 @@ func (server *ColoniesServer) handleAddAttributeHTTPRequest(c *gin.Context, reco
 		return
 	}
 
-	log.WithFields(log.Fields{"AttributeID": msg.Attribute.ID}).Debug("Adding attribute")
+	log.WithFields(log.Fields{"AttributeId": msg.Attribute.ID}).Debug("Adding attribute")
 
 	server.sendHTTPReply(c, payloadType, jsonString)
 }
@@ -94,7 +94,7 @@ func (server *ColoniesServer) handleGetAttributeHTTPRequest(c *gin.Context, reco
 		return
 	}
 
-	err = server.validator.RequireExecutorMembership(recoveredID, process.ProcessSpec.Conditions.ColonyID, true)
+	err = server.validator.RequireExecutorMembership(recoveredID, process.FunctionSpec.Conditions.ColonyID, true)
 	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		return
 	}
@@ -104,7 +104,7 @@ func (server *ColoniesServer) handleGetAttributeHTTPRequest(c *gin.Context, reco
 		return
 	}
 
-	log.WithFields(log.Fields{"AttributeID": msg.AttributeID}).Debug("Getting attribute")
+	log.WithFields(log.Fields{"AttributeId": msg.AttributeID}).Debug("Getting attribute")
 
 	server.sendHTTPReply(c, payloadType, jsonString)
 }

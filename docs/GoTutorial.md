@@ -24,13 +24,13 @@ func main() {
         os.Exit(-1)
     }
 
-    processSpec := core.CreateEmptyProcessSpec()
-    processSpec.Conditions.ColonyID = colonyID
-    processSpec.Conditions.ExecutorType = os.Getenv("COLONIES_EXECUTOR_TYPE")
-    processSpec.Env["fibonacciNum"] = os.Args[1]
+    funcSpec := core.CreateEmptyFunctionSpec()
+    funcSpec.Conditions.ColonyID = colonyID
+    funcSpec.Conditions.ExecutorType = os.Getenv("COLONIES_EXECUTOR_TYPE")
+    funcSpec.Env["fibonacciNum"] = os.Args[1]
 
     client := client.CreateColoniesClient(coloniesHost, coloniesPort, true, false)
-    addedProcess, err := client.SubmitProcessSpec(processSpec, executorPrvKey)
+    addedProcess, err := client.Submit(funcSpec, executorPrvKey)
     if err != nil {
         fmt.Println(err)
         return
@@ -56,7 +56,7 @@ func main() {
 
     // Ask the Colonies server to assign a process to this executor 
     client := client.CreateColoniesClient(coloniesHost, coloniesPort, true, false)
-    assignedProcess, err := client.AssignProcess(colonyID, 100, executorPrvKey) // Max wait 100 seconds for assignment request
+    assignedProcess, err := client.Assign(colonyID, 100, executorPrvKey) // Max wait 100 seconds for assignment request
     if err != nil {
         fmt.Println(err)
         return
@@ -141,9 +141,8 @@ Process:
 | Retries             | 0                                                                |
 +---------------------+------------------------------------------------------------------+
 
-ProcessSpec:
+FunctionSpec:
 +-------------+------+
-| Image       | None |
 | Func        | None |
 | Args        | None |
 | MaxExecTime | -1   |
