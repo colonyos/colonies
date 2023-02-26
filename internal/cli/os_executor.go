@@ -141,7 +141,7 @@ var executorStartCmd = &cobra.Command{
 		log.WithFields(log.Fields{"BuildVersion": build.BuildVersion, "BuildTime": build.BuildTime, "ServerHost": ServerHost, "ServerPort": ServerPort}).Info("Executor now waiting for processes to be execute")
 
 		for {
-			assignedProcess, err = client.AssignProcess(ColonyID, Timeout, executorPrvKey)
+			assignedProcess, err = client.Assign(ColonyID, Timeout, executorPrvKey)
 			if err != nil {
 				switch err.(type) {
 				case *url.Error:
@@ -158,9 +158,9 @@ var executorStartCmd = &cobra.Command{
 			}
 
 			log.WithFields(log.Fields{"ProcessID": assignedProcess.ID}).Info("Executor was assigned a process")
-			log.WithFields(log.Fields{"Func": assignedProcess.ProcessSpec.Func, "Args": assignedProcess.ProcessSpec.Args}).Info("Lauching process")
-			execCmd := assignedProcess.ProcessSpec.Args
-			execCmd = append([]string{assignedProcess.ProcessSpec.Func}, execCmd...)
+			log.WithFields(log.Fields{"Func": assignedProcess.FunctionSpec.Func, "Args": assignedProcess.FunctionSpec.Args}).Info("Lauching process")
+			execCmd := assignedProcess.FunctionSpec.Args
+			execCmd = append([]string{assignedProcess.FunctionSpec.Func}, execCmd...)
 			execCmdStr := strings.Join(execCmd[:], " ")
 
 			cmd := exec.Command("sh", "-c", execCmdStr)

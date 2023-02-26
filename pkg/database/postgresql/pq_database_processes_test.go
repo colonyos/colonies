@@ -25,8 +25,8 @@ func TestAddProcess(t *testing.T) {
 
 	processFromDB, err := db.GetProcessByID(process.ID)
 	assert.Nil(t, err)
-	assert.Contains(t, processFromDB.ProcessSpec.Conditions.ExecutorIDs, executor1ID)
-	assert.Contains(t, processFromDB.ProcessSpec.Conditions.ExecutorIDs, executor2ID)
+	assert.Contains(t, processFromDB.FunctionSpec.Conditions.ExecutorIDs, executor1ID)
+	assert.Contains(t, processFromDB.FunctionSpec.Conditions.ExecutorIDs, executor2ID)
 }
 
 func TestAddProcessWithEnv(t *testing.T) {

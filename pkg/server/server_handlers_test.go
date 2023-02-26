@@ -28,28 +28,28 @@ func TestGetStatistics(t *testing.T) {
 	// Waiting
 	numberOfWaitingProcesses := 5
 	for i := 0; i < numberOfWaitingProcesses; i++ {
-		processSpec := utils.CreateTestProcessSpec(env.colonyID)
-		_, err := client.SubmitProcessSpec(processSpec, env.executorPrvKey)
+		funcSpec := utils.CreateTestFunctionSpec(env.colonyID)
+		_, err := client.Submit(funcSpec, env.executorPrvKey)
 		assert.Nil(t, err)
 	}
 
 	// Running
 	numberOfRunningProcesses := 6
 	for i := 0; i < numberOfRunningProcesses; i++ {
-		processSpec := utils.CreateTestProcessSpec(env.colonyID)
-		_, err := client.SubmitProcessSpec(processSpec, env.executorPrvKey)
+		funcSpec := utils.CreateTestFunctionSpec(env.colonyID)
+		_, err := client.Submit(funcSpec, env.executorPrvKey)
 		assert.Nil(t, err)
-		_, err = client.AssignProcess(env.colonyID, -1, env.executorPrvKey)
+		_, err = client.Assign(env.colonyID, -1, env.executorPrvKey)
 		assert.Nil(t, err)
 	}
 
 	// Successful
 	numberOfSuccessfulProcesses := 7
 	for i := 0; i < numberOfSuccessfulProcesses; i++ {
-		processSpec := utils.CreateTestProcessSpec(env.colonyID)
-		_, err := client.SubmitProcessSpec(processSpec, env.executorPrvKey)
+		funcSpec := utils.CreateTestFunctionSpec(env.colonyID)
+		_, err := client.Submit(funcSpec, env.executorPrvKey)
 		assert.Nil(t, err)
-		processFromServer, err := client.AssignProcess(env.colonyID, -1, env.executorPrvKey)
+		processFromServer, err := client.Assign(env.colonyID, -1, env.executorPrvKey)
 		assert.Nil(t, err)
 		err = client.Close(processFromServer.ID, env.executorPrvKey)
 		assert.Nil(t, err)
@@ -58,10 +58,10 @@ func TestGetStatistics(t *testing.T) {
 	// Failed
 	numberOfFailedProcesses := 8
 	for i := 0; i < numberOfFailedProcesses; i++ {
-		processSpec := utils.CreateTestProcessSpec(env.colonyID)
-		_, err := client.SubmitProcessSpec(processSpec, env.executorPrvKey)
+		funcSpec := utils.CreateTestFunctionSpec(env.colonyID)
+		_, err := client.Submit(funcSpec, env.executorPrvKey)
 		assert.Nil(t, err)
-		processFromServer, err := client.AssignProcess(env.colonyID, -1, env.executorPrvKey)
+		processFromServer, err := client.Assign(env.colonyID, -1, env.executorPrvKey)
 		assert.Nil(t, err)
 		err = client.Fail(processFromServer.ID, []string{"error"}, env.executorPrvKey)
 		assert.Nil(t, err)

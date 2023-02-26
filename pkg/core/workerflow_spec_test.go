@@ -15,27 +15,27 @@ func TestWorkflowSpecJSON(t *testing.T) {
 
 	workflowSpec := CreateWorkflowSpec(GenerateRandomID())
 
-	processSpec1 := CreateEmptyProcessSpec()
-	processSpec1.Name = "task1"
+	funcSpec1 := CreateEmptyFunctionSpec()
+	funcSpec1.Name = "task1"
 
-	processSpec2 := CreateEmptyProcessSpec()
-	processSpec2.Name = "task2"
+	funcSpec2 := CreateEmptyFunctionSpec()
+	funcSpec2.Name = "task2"
 
-	processSpec3 := CreateEmptyProcessSpec()
-	processSpec3.Name = "task3"
+	funcSpec3 := CreateEmptyFunctionSpec()
+	funcSpec3.Name = "task3"
 
-	processSpec4 := CreateEmptyProcessSpec()
-	processSpec4.Name = "task4"
+	funcSpec4 := CreateEmptyFunctionSpec()
+	funcSpec4.Name = "task4"
 
-	processSpec2.AddDependency("task1")
-	processSpec3.AddDependency("task1")
-	processSpec4.AddDependency("task2")
-	processSpec4.AddDependency("task3")
+	funcSpec2.AddDependency("task1")
+	funcSpec3.AddDependency("task1")
+	funcSpec4.AddDependency("task2")
+	funcSpec4.AddDependency("task3")
 
-	workflowSpec.AddProcessSpec(processSpec1)
-	workflowSpec.AddProcessSpec(processSpec2)
-	workflowSpec.AddProcessSpec(processSpec3)
-	workflowSpec.AddProcessSpec(processSpec4)
+	workflowSpec.AddFunctionSpec(funcSpec1)
+	workflowSpec.AddFunctionSpec(funcSpec2)
+	workflowSpec.AddFunctionSpec(funcSpec3)
+	workflowSpec.AddFunctionSpec(funcSpec4)
 
 	jsonStr, err := workflowSpec.ToJSON()
 	assert.Nil(t, err)

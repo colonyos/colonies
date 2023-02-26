@@ -24,7 +24,7 @@ func TestAddGeneratorCounter(t *testing.T) {
 			fmt.Println(err)
 			continue
 		}
-		fmt.Println("Args", process.ProcessSpec.Args)
+		fmt.Println("Args", process.FunctionSpec.Args)
 		fmt.Println("AssignedExecutorID", process.AssignedExecutorID)
 		fmt.Println("Closing ProcessID", process.ID)
 		fmt.Println("My ExecutorID", env.executorID)
