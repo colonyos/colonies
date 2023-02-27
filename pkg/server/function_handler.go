@@ -38,7 +38,7 @@ func (server *ColoniesServer) handleAddFunctionHTTPRequest(c *gin.Context, recov
 		}
 	}
 
-	functions, err := server.controller.getFunctionByExecutorID(msg.Function.ExecutorID)
+	functions, err := server.controller.getFunctionsByExecutorID(msg.Function.ExecutorID)
 	for _, function := range functions {
 		if function.FuncName == msg.Function.FuncName {
 			if server.handleHTTPError(c, errors.New("Function already exists"), http.StatusForbidden) {
@@ -76,12 +76,7 @@ func (server *ColoniesServer) handleGetFunctionsHTTPRequest(c *gin.Context, reco
 		return
 	}
 
-	if msg.ExecutorID == "" {
-		server.handleHTTPError(c, errors.New("Failed to get functions, msg.ExecutorID is empty"), http.StatusBadRequest)
-		return
-	}
-
-	executor, err := server.controller.db.GetExecutorByID(msg.ExecutorID)
+	executor, err := server.controller.db.GetExecutorByID(recoveredID)
 	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		return
 	}
@@ -91,8 +86,25 @@ func (server *ColoniesServer) handleGetFunctionsHTTPRequest(c *gin.Context, reco
 		return
 	}
 
-	functions, err := server.controller.getFunctionByExecutorID(msg.ExecutorID)
-	if server.handleHTTPError(c, err, http.StatusForbidden) {
+	if msg.ExecutorID != "" && msg.ColonyID != "" {
+		server.handleHTTPError(c, errors.New("Both msg.ExecutorID and msg.ColonyID set, choose one"), http.StatusBadRequest)
+		return
+	}
+
+	var functions []*core.Function
+
+	if msg.ExecutorID != "" {
+		functions, err = server.controller.getFunctionsByExecutorID(msg.ExecutorID)
+		if server.handleHTTPError(c, err, http.StatusForbidden) {
+			return
+		}
+	} else if msg.ColonyID != "" {
+		functions, err = server.controller.getFunctionsByColonyID(msg.ColonyID)
+		if server.handleHTTPError(c, err, http.StatusForbidden) {
+			return
+		}
+	} else {
+		server.handleHTTPError(c, errors.New("msg.ExecutorID not msg.ColonyID are set, choose one"), http.StatusBadRequest)
 		return
 	}
 

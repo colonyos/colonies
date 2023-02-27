@@ -41,6 +41,7 @@ var ExecutorName string
 var ExecutorID string
 var ExecutorType string
 var ExecutorPrvKey string
+var FunctionID string
 var TargetExecutorID string
 var TargetExecutorType string
 var TargetExecutorName string

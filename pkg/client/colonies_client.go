@@ -943,8 +943,23 @@ func (client *ColoniesClient) AddFunction(function *core.Function, prvKey string
 	return core.ConvertJSONToFunction(respBodyString)
 }
 
-func (client *ColoniesClient) GetFunctions(executorID string, prvKey string) ([]*core.Function, error) {
-	msg := rpc.CreateGetFunctionsMsg(executorID)
+func (client *ColoniesClient) GetFunctionsByExecutorID(executorID string, prvKey string) ([]*core.Function, error) {
+	msg := rpc.CreateGetFunctionsByExecutorIDMsg(executorID)
+	jsonString, err := msg.ToJSON()
+	if err != nil {
+		return nil, err
+	}
+
+	respBodyString, err := client.sendMessage(rpc.GetFunctionsPayloadType, jsonString, prvKey, false)
+	if err != nil {
+		return nil, err
+	}
+
+	return core.ConvertJSONToFunctionArray(respBodyString)
+}
+
+func (client *ColoniesClient) GetFunctionsByColonyID(colonyID string, prvKey string) ([]*core.Function, error) {
+	msg := rpc.CreateGetFunctionsByColonyIDMsg(colonyID)
 	jsonString, err := msg.ToJSON()
 	if err != nil {
 		return nil, err
