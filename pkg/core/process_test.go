@@ -33,7 +33,7 @@ func TestCreateProcessFromDB(t *testing.T) {
 	var attributes []Attribute
 
 	funcSpec := CreateFunctionSpec("test_name", "test_func", []string{"test_arg"}, colonyID, []string{executor1ID, executor2ID}, executorType, maxWaitTime, maxExecTime, maxRetries, make(map[string]string), []string{}, 1, "test_label")
-	process := CreateProcessFromDB(funcSpec, GenerateRandomID(), GenerateRandomID(), true, FAILED, time.Now(), time.Now(), time.Now(), time.Now(), time.Now(), []string{"errormsg"}, 2, attributes)
+	process := CreateProcessFromDB(funcSpec, GenerateRandomID(), GenerateRandomID(), true, FAILED, 2.0, time.Now(), time.Now(), time.Now(), time.Now(), time.Now(), []string{"errormsg"}, 2, attributes)
 	assert.True(t, process.Equals(process))
 }
 
@@ -212,7 +212,7 @@ func TestProcessingTime(t *testing.T) {
 	var attributes []Attribute
 
 	funcSpec := CreateFunctionSpec("test_name", "test_func", []string{"test_arg"}, colonyID, []string{executor1ID, executor2ID}, executorType, maxWaitTime, maxExecTime, maxRetries, make(map[string]string), []string{}, 1, "test_label")
-	process := CreateProcessFromDB(funcSpec, GenerateRandomID(), GenerateRandomID(), true, RUNNING, time.Time{}, time.Time{}, time.Time{}, time.Time{}, time.Time{}, []string{"errormsg"}, 2, attributes)
+	process := CreateProcessFromDB(funcSpec, GenerateRandomID(), GenerateRandomID(), true, RUNNING, 2.0, time.Time{}, time.Time{}, time.Time{}, time.Time{}, time.Time{}, []string{"errormsg"}, 2, attributes)
 
 	processingTime := int64(process.ProcessingTime())
 	assert.True(t, processingTime > 0)
