@@ -12,17 +12,16 @@ type Conditions struct {
 }
 
 type FunctionSpec struct {
-	NodeName     string            `json:"nodename"`
-	FuncName     string            `json:"funcname"`
-	Args         []string          `json:"args"`
-	Priority     int               `json:"priority"`
-	PriorityTime int               `json:"prioritytime"`
-	MaxWaitTime  int               `json:"maxwaittime"`
-	MaxExecTime  int               `json:"maxexectime"`
-	MaxRetries   int               `json:"maxretries"`
-	Conditions   Conditions        `json:"conditions"`
-	Label        string            `json:"label"`
-	Env          map[string]string `json:"env"`
+	NodeName    string            `json:"nodename"`
+	FuncName    string            `json:"funcname"`
+	Args        []string          `json:"args"`
+	Priority    int               `json:"priority"`
+	MaxWaitTime int               `json:"maxwaittime"`
+	MaxExecTime int               `json:"maxexectime"`
+	MaxRetries  int               `json:"maxretries"`
+	Conditions  Conditions        `json:"conditions"`
+	Label       string            `json:"label"`
+	Env         map[string]string `json:"env"`
 }
 
 func CreateEmptyFunctionSpec() *FunctionSpec {
@@ -72,7 +71,6 @@ func (funcSpec *FunctionSpec) Equals(funcSpec2 *FunctionSpec) bool {
 		funcSpec.MaxRetries != funcSpec2.MaxRetries ||
 		funcSpec.Conditions.ColonyID != funcSpec2.Conditions.ColonyID ||
 		funcSpec.Conditions.ExecutorType != funcSpec2.Conditions.ExecutorType ||
-		funcSpec.PriorityTime != funcSpec2.PriorityTime ||
 		funcSpec.Priority != funcSpec2.Priority ||
 		funcSpec.Label != funcSpec2.Label {
 		same = false
