@@ -23,7 +23,6 @@ func TestFunctionSpecJSON(t *testing.T) {
 	env["test_key"] = "test_value"
 
 	funcSpec := CreateFunctionSpec("test_name", "test_func", []string{"test_arg"}, colonyID, []string{executor1ID, executor2ID}, executorType, maxWaitTime, maxExecTime, maxRetries, env, []string{"test_name2"}, 5, "test_label")
-	funcSpec.PriorityTime = 50
 
 	jsonString, err := funcSpec.ToJSON()
 	assert.Nil(t, err)
