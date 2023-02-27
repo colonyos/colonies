@@ -1446,11 +1446,32 @@ func (controller *coloniesController) addFunction(function *core.Function) (*cor
 	}
 }
 
-func (controller *coloniesController) getFunctionByExecutorID(executorID string) ([]*core.Function, error) {
+func (controller *coloniesController) getFunctionsByExecutorID(executorID string) ([]*core.Function, error) {
 	cmd := &command{functionsReplyChan: make(chan []*core.Function, 1),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
 			functions, err := controller.db.GetFunctionsByExecutorID(executorID)
+			if err != nil {
+				cmd.errorChan <- err
+				return
+			}
+			cmd.functionsReplyChan <- functions
+		}}
+
+	controller.cmdQueue <- cmd
+	select {
+	case err := <-cmd.errorChan:
+		return nil, err
+	case functions := <-cmd.functionsReplyChan:
+		return functions, nil
+	}
+}
+
+func (controller *coloniesController) getFunctionsByColonyID(colonyID string) ([]*core.Function, error) {
+	cmd := &command{functionsReplyChan: make(chan []*core.Function, 1),
+		errorChan: make(chan error, 1),
+		handler: func(cmd *command) {
+			functions, err := controller.db.GetFunctionsByColonyID(colonyID)
 			if err != nil {
 				cmd.errorChan <- err
 				return
