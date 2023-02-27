@@ -976,19 +976,19 @@ func (controller *coloniesController) closeSuccessful(processID string, executor
 				}
 				maxWaitTime := 0.0
 				if function.MaxWaitTime > 0 {
-					maxWaitTime = math.Max(function.MinWaitTime, waitingTime)
+					maxWaitTime = math.Max(function.MaxWaitTime, waitingTime)
 				} else {
 					maxWaitTime = waitingTime
 				}
 				minExecTime := 0.0
 				if function.MinExecTime > 0 {
-					minExecTime = math.Min(function.MinWaitTime, processingTime)
+					minExecTime = math.Min(function.MinExecTime, processingTime)
 				} else {
 					minExecTime = processingTime
 				}
 				maxExecTime := 0.0
 				if function.MaxExecTime > 0 {
-					maxExecTime = math.Max(function.MinExecTime, processingTime)
+					maxExecTime = math.Max(function.MaxExecTime, processingTime)
 				} else {
 					maxExecTime = processingTime
 				}
