@@ -21,6 +21,7 @@ type Process struct {
 	AssignedExecutorID string       `json:"assignedexecutorid"`
 	IsAssigned         bool         `json:"isassigned"`
 	State              int          `json:"state"`
+	PriorityTime       int          `json:"prioritytime"`
 	SubmissionTime     time.Time    `json:"submissiontime"`
 	StartTime          time.Time    `json:"starttime"`
 	EndTime            time.Time    `json:"endtime"`
@@ -63,6 +64,7 @@ func CreateProcessFromDB(funcSpec *FunctionSpec,
 	assignedExecutorID string,
 	isAssigned bool,
 	state int,
+	priorityTime int,
 	submissionTime time.Time,
 	startTime time.Time,
 	endTime time.Time,
@@ -75,6 +77,7 @@ func CreateProcessFromDB(funcSpec *FunctionSpec,
 		AssignedExecutorID: assignedExecutorID,
 		IsAssigned:         isAssigned,
 		State:              state,
+		PriorityTime:       priorityTime,
 		SubmissionTime:     submissionTime,
 		StartTime:          startTime,
 		EndTime:            endTime,
@@ -142,6 +145,7 @@ func (process *Process) Equals(process2 *Process) bool {
 	if process.ID != process2.ID ||
 		process.AssignedExecutorID != process2.AssignedExecutorID ||
 		process.State != process2.State ||
+		process.PriorityTime != process2.PriorityTime ||
 		process.IsAssigned != process2.IsAssigned ||
 		process.SubmissionTime.Unix() != process2.SubmissionTime.Unix() ||
 		process.StartTime.Unix() != process2.StartTime.Unix() ||

@@ -270,9 +270,9 @@ func printExecutor(client *client.ColoniesClient, executor *core.Executor) {
 				[]string{"Counter", strconv.Itoa(function.Counter)},
 				[]string{"MinWaitTime", fmt.Sprintf("%f s", function.MinWaitTime)},
 				[]string{"MaxWaitTime", fmt.Sprintf("%f s", function.MaxWaitTime)},
+				[]string{"AvgWaitTime", fmt.Sprintf("%f s", function.AvgWaitTime)},
 				[]string{"MinExecTime", fmt.Sprintf("%f s", function.MinExecTime)},
 				[]string{"MaxExecTime", fmt.Sprintf("%f s", function.MaxExecTime)},
-				[]string{"AvgWaitTime", fmt.Sprintf("%f s", function.AvgWaitTime)},
 				[]string{"AvgExecTime", fmt.Sprintf("%f s", function.AvgExecTime)},
 			}
 			funcTable := tablewriter.NewWriter(os.Stdout)

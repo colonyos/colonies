@@ -64,7 +64,7 @@ func (server *ColoniesServer) handleAssignProcessHTTPRequest(c *gin.Context, rec
 		leaderPort := leader.APIPort
 		insecure := !server.tls
 
-		log.WithFields(log.Fields{"LeaderHost": leaderHost, "LeaderPort": leaderPort}).Info("Redirecting request to leader")
+		log.WithFields(log.Fields{"LeaderHost": leaderHost, "LeaderPort": leaderPort}).Debug("Redirecting request to leader")
 		client := client.CreateColoniesClient(leaderHost, leaderPort, insecure, true)
 
 		jsonReplyString, err := client.SendRawMessage(string(originalRequest), insecure)
