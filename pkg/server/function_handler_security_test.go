@@ -1,6 +1,7 @@
 package server
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/colonyos/colonies/pkg/core"
@@ -65,16 +66,17 @@ func TestGetFunctionsSecurity(t *testing.T) {
 	_, err = client.AddFunction(function2, env.executor1PrvKey)
 	assert.Nil(t, err)
 
-	_, err = client.GetFunctions(env.executor1ID, env.executor2PrvKey)
+	_, err = client.GetFunctionsByExecutorID(env.executor1ID, env.executor2PrvKey)
+	fmt.Println(err)
 	assert.NotNil(t, err) // Should not work
 
-	_, err = client.GetFunctions(env.executor1ID, env.colony1PrvKey)
+	_, err = client.GetFunctionsByExecutorID(env.executor1ID, env.colony1PrvKey)
 	assert.NotNil(t, err) // Should not work
 
-	_, err = client.GetFunctions(env.executor1ID, env.colony2PrvKey)
+	_, err = client.GetFunctionsByExecutorID(env.executor1ID, env.colony2PrvKey)
 	assert.NotNil(t, err) // Should not work
 
-	_, err = client.GetFunctions(env.executor1ID, env.executor1PrvKey)
+	_, err = client.GetFunctionsByExecutorID(env.executor1ID, env.executor1PrvKey)
 	assert.Nil(t, err)
 
 	server.Shutdown()
