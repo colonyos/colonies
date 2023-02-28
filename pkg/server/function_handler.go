@@ -76,9 +76,15 @@ func (server *ColoniesServer) handleGetFunctionsHTTPRequest(c *gin.Context, reco
 		return
 	}
 
-	executor, err := server.controller.db.GetExecutorByID(recoveredID)
+	executor, err := server.controller.db.GetExecutorByID(msg.ExecutorID)
 	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		return
+	}
+
+	if executor == nil {
+		if server.handleHTTPError(c, errors.New("Executor not found"), http.StatusForbidden) {
+			return
+		}
 	}
 
 	err = server.validator.RequireExecutorMembership(recoveredID, executor.ColonyID, true)
