@@ -229,6 +229,8 @@ func printExecutor(client *client.ColoniesClient, executor *core.Executor) {
 		requireFuncRegStr = "True"
 	}
 
+	fmt.Println("Executor:")
+
 	executorData := [][]string{
 		[]string{"Name", executor.Name},
 		[]string{"ID", executor.ID},
@@ -247,7 +249,7 @@ func printExecutor(client *client.ColoniesClient, executor *core.Executor) {
 	executorTable.SetAlignment(tablewriter.ALIGN_LEFT)
 	executorTable.Render()
 
-	functions, err := client.GetFunctions(executor.ID, ExecutorPrvKey)
+	functions, err := client.GetFunctionsByExecutorID(executor.ID, ExecutorPrvKey)
 	CheckError(err)
 
 	fmt.Println()
@@ -266,6 +268,7 @@ func printExecutor(client *client.ColoniesClient, executor *core.Executor) {
 			}
 			funcData := [][]string{
 				[]string{"FuncName", function.FuncName},
+				[]string{"FunctionId", function.FunctionID},
 				[]string{"Args", funcArgs},
 				[]string{"Counter", strconv.Itoa(function.Counter)},
 				[]string{"MinWaitTime", fmt.Sprintf("%f s", function.MinWaitTime)},
