@@ -76,42 +76,40 @@ func (server *ColoniesServer) handleGetFunctionsHTTPRequest(c *gin.Context, reco
 		return
 	}
 
-	executor, err := server.controller.db.GetExecutorByID(msg.ExecutorID)
-	if server.handleHTTPError(c, err, http.StatusForbidden) {
-		return
-	}
-
-	if executor == nil {
-		if server.handleHTTPError(c, errors.New("Executor not found"), http.StatusForbidden) {
-			return
-		}
-	}
-
-	err = server.validator.RequireExecutorMembership(recoveredID, executor.ColonyID, true)
-	if server.handleHTTPError(c, err, http.StatusForbidden) {
-		return
-	}
+	var functions []*core.Function
 
 	if msg.ExecutorID != "" && msg.ColonyID != "" {
 		server.handleHTTPError(c, errors.New("Both msg.ExecutorID and msg.ColonyID set, choose one"), http.StatusBadRequest)
 		return
 	}
 
-	var functions []*core.Function
-
-	if msg.ExecutorID != "" {
-		functions, err = server.controller.getFunctionsByExecutorID(msg.ExecutorID)
+	if msg.ColonyID != "" {
+		err = server.validator.RequireExecutorMembership(recoveredID, msg.ColonyID, true)
 		if server.handleHTTPError(c, err, http.StatusForbidden) {
 			return
 		}
-	} else if msg.ColonyID != "" {
 		functions, err = server.controller.getFunctionsByColonyID(msg.ColonyID)
 		if server.handleHTTPError(c, err, http.StatusForbidden) {
 			return
 		}
-	} else {
-		server.handleHTTPError(c, errors.New("msg.ExecutorID not msg.ColonyID are set, choose one"), http.StatusBadRequest)
-		return
+	} else if msg.ExecutorID != "" {
+		targetExecutor, err := server.controller.db.GetExecutorByID(msg.ExecutorID)
+		if server.handleHTTPError(c, err, http.StatusForbidden) {
+			return
+		}
+		if targetExecutor == nil {
+			if server.handleHTTPError(c, errors.New("Executor not found"), http.StatusForbidden) {
+				return
+			}
+		}
+		err = server.validator.RequireExecutorMembership(recoveredID, targetExecutor.ColonyID, true)
+		if server.handleHTTPError(c, err, http.StatusForbidden) {
+			return
+		}
+		functions, err = server.controller.getFunctionsByExecutorID(msg.ExecutorID)
+		if server.handleHTTPError(c, err, http.StatusForbidden) {
+			return
+		}
 	}
 
 	jsonString, err = core.ConvertFunctionArrayToJSON(functions)
