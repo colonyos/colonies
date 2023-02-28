@@ -435,7 +435,7 @@ func TestCloseSuccessfulWithFunctions(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, core.SUCCESS, assignedProcessFromServer.State)
 
-	functions, err := client.GetFunctions(env.executorID, env.executorPrvKey)
+	functions, err := client.GetFunctionsByExecutorID(env.executorID, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.Len(t, functions, 1)
 	assert.Equal(t, functions[0].Counter, 1)
