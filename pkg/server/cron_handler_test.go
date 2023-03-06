@@ -27,6 +27,33 @@ func TestAddCronDebug(t *testing.T) {
 	<-done
 }
 
+func TestFailCron(t *testing.T) {
+	env, client, server, _, done := setupTestEnv2(t)
+
+	cron := utils.FakeCron(t, env.colonyID)
+	cron.Interval = 2
+
+	addedCron, err := client.AddCron(cron, env.executorPrvKey)
+	assert.Nil(t, err)
+	assert.NotNil(t, addedCron)
+
+	// If the cron is successful, there should be a process we can assign
+	process, err := client.Assign(env.colonyID, 100, env.executorPrvKey)
+	assert.Nil(t, err)
+	assert.NotNil(t, process)
+
+	err = client.Fail(process.ID, []string{}, env.executorPrvKey)
+	assert.Nil(t, err)
+
+	// Cron should still generate a cron workflow even if the last process fails
+	process, err = client.Assign(env.colonyID, 100, env.executorPrvKey)
+	assert.Nil(t, err)
+	assert.NotNil(t, process)
+
+	server.Shutdown()
+	<-done
+}
+
 func TestAddCronWaitForPrevProcessGraph(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 
