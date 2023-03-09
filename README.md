@@ -17,7 +17,7 @@ Colonies is a framework for managing AI/ML workloads across heterogeneous comput
 ## Design
 The core idea of Colonies is to split up complex workloads in two layers, a **Meta-layer** and an **Execution-layer**.
 
-![MetaOS](docs/images/meta-os.png)
+![MetaOS](docs/images/arch.png)
 
 * The **Meta-layer** makes it possible to describe and manage complex workflows independently of implementation and execution environment.
 * The **Execution-layer** provides a [serverless computing](https://en.wikipedia.org/wiki/Serverless_computing) environment where developers can implement Executors implementing different functions. AI applications can then be broken down into composable functions executed by remote Executors anywhere on the Internet.
