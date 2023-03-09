@@ -8,7 +8,7 @@ Colonies is a framework for managing AI/ML workloads across heterogeneous comput
 
 ## Key features
 * Users submit function specifications to the Colonies server they want to run. These functions will then be executed by **Executors**, which are computer programs residing anywhere on the Internet.
-* Colonies makes it possible to implement a **loosely decoupled** workflow architecture spanning many platforms and infrastructures. All coordination is managed by Colonies servers and developers can focus on implementing **Executors** based on a **Function-as-a-Service (FaaS)** event-driven execution model. 
+* Colonies makes it possible to implement a **loosely decoupled** workflow architecture spanning many platforms and infrastructures. All coordination is managed by Colonies servers and developers can focus on implementing **Executors** and develop applications based on a **Function-as-a-Service (FaaS)** event-driven execution model. 
 * Complex workflows are automatically broken down into events (process assignments) that is received by the Executors. The system can then easily scale just by deploying more Executors. Failed processes are automatically re-assigned to other Executors. 
 * Colonies function a **distributed ledger** and contains full execution history. Traceability allows developers to keep track of the system and more easily debug their services.  
 * Colonies integrates well with Kubernetes and offers a more powerful alternative than traditional message-broker worker queues, e.g RabbitMQ worker queues.   
