@@ -37,7 +37,7 @@
         }
     },
     {
-        "namename": "task_d",
+        "nodename": "task_d",
         "funcname": "echo",
         "args": [
             "task_d"

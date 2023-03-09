@@ -475,7 +475,7 @@ func printGraf(client *client.ColoniesClient, graph *core.ProcessGraph) {
 		}
 
 		procArgs := ""
-		for _, procArg := range process.FunctionSpec.Args {
+		for _, procArg := range IfArr2StringArr(process.FunctionSpec.Args) {
 			procArgs += procArg + " "
 		}
 		if procArgs == "" {

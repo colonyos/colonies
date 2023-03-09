@@ -171,7 +171,9 @@ func TestAddCronInputOutput(t *testing.T) {
 	process, err := client.Assign(env.colonyID, 100, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.NotNil(t, process)
-	err = client.CloseWithOutput(process.ID, []string{"result_cron1"}, env.executorPrvKey)
+	output := make([]interface{}, 1)
+	output[0] = "result_cron1"
+	err = client.CloseWithOutput(process.ID, output, env.executorPrvKey)
 
 	process, err = client.Assign(env.colonyID, 100, env.executorPrvKey)
 	assert.Nil(t, err)
@@ -209,7 +211,9 @@ func TestAddCronInputOutput2(t *testing.T) {
 	process, err = client.Assign(env.colonyID, 100, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.NotNil(t, process)
-	err = client.CloseWithOutput(process.ID, []string{"result_cron1"}, env.executorPrvKey)
+	output := make([]interface{}, 1)
+	output[0] = "result_cron1"
+	err = client.CloseWithOutput(process.ID, output, env.executorPrvKey)
 
 	process, err = client.Assign(env.colonyID, 100, env.executorPrvKey)
 	assert.Nil(t, err)

@@ -460,7 +460,9 @@ func TestCloseSuccessfulWithOutput(t *testing.T) {
 	assignedProcess, err := client.Assign(env.colonyID, -1, env.executorPrvKey)
 	assert.Nil(t, err)
 
-	output := []string{"result1", "result2"}
+	output := make([]interface{}, 2)
+	output[0] = "result1"
+	output[1] = "result2"
 	err = client.CloseWithOutput(assignedProcess.ID, output, env.executorPrvKey)
 	assert.Nil(t, err)
 

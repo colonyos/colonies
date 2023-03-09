@@ -1,0 +1,9 @@
+{
+    "conditions": {
+        "executortype": "edge"
+    },
+    "funcname": "say",
+    "args": [
+        "Hello Johan!"
+    ]
+}

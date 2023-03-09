@@ -17,26 +17,26 @@ const (
 )
 
 type Process struct {
-	ID                 string       `json:"processid"`
-	AssignedExecutorID string       `json:"assignedexecutorid"`
-	IsAssigned         bool         `json:"isassigned"`
-	State              int          `json:"state"`
-	PriorityTime       int          `json:"prioritytime"`
-	SubmissionTime     time.Time    `json:"submissiontime"`
-	StartTime          time.Time    `json:"starttime"`
-	EndTime            time.Time    `json:"endtime"`
-	WaitDeadline       time.Time    `json:"waitdeadline"`
-	ExecDeadline       time.Time    `json:"execdeadline"`
-	Retries            int          `json:"retries"`
-	Attributes         []Attribute  `json:"attributes"`
-	FunctionSpec       FunctionSpec `json:"spec"`
-	WaitForParents     bool         `json:"waitforparents"`
-	Parents            []string     `json:"parents"`
-	Children           []string     `json:"children"`
-	ProcessGraphID     string       `json:"processgraphid"`
-	Input              []string     `json:"in"`
-	Output             []string     `json:"out"`
-	Errors             []string     `json:"errors"`
+	ID                 string        `json:"processid"`
+	AssignedExecutorID string        `json:"assignedexecutorid"`
+	IsAssigned         bool          `json:"isassigned"`
+	State              int           `json:"state"`
+	PriorityTime       int64         `json:"prioritytime"`
+	SubmissionTime     time.Time     `json:"submissiontime"`
+	StartTime          time.Time     `json:"starttime"`
+	EndTime            time.Time     `json:"endtime"`
+	WaitDeadline       time.Time     `json:"waitdeadline"`
+	ExecDeadline       time.Time     `json:"execdeadline"`
+	Retries            int           `json:"retries"`
+	Attributes         []Attribute   `json:"attributes"`
+	FunctionSpec       FunctionSpec  `json:"spec"`
+	WaitForParents     bool          `json:"waitforparents"`
+	Parents            []string      `json:"parents"`
+	Children           []string      `json:"children"`
+	ProcessGraphID     string        `json:"processgraphid"`
+	Input              []interface{} `json:"in"`
+	Output             []interface{} `json:"out"`
+	Errors             []string      `json:"errors"`
 }
 
 func CreateProcess(funcSpec *FunctionSpec) *Process {
@@ -51,8 +51,8 @@ func CreateProcess(funcSpec *FunctionSpec) *Process {
 		IsAssigned:   false,
 		Attributes:   attributes,
 		FunctionSpec: *funcSpec,
-		Input:        make([]string, 0),
-		Output:       make([]string, 0),
+		Input:        make([]interface{}, 0),
+		Output:       make([]interface{}, 0),
 		Errors:       make([]string, 0),
 	}
 
@@ -64,7 +64,7 @@ func CreateProcessFromDB(funcSpec *FunctionSpec,
 	assignedExecutorID string,
 	isAssigned bool,
 	state int,
-	priorityTime int,
+	priorityTime int64,
 	submissionTime time.Time,
 	startTime time.Time,
 	endTime time.Time,
@@ -284,6 +284,8 @@ func (process *Process) SetAttributes(attributes []Attribute) {
 
 func (process *Process) SetSubmissionTime(submissionTime time.Time) {
 	process.SubmissionTime = submissionTime
+	dt := 60 * 60 * 24 * 365 * 100 // 100 year
+	process.PriorityTime = int64(process.FunctionSpec.Priority)*int64(dt) + submissionTime.Unix()
 }
 
 func (process *Process) SetStartTime(startTime time.Time) {

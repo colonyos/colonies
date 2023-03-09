@@ -596,7 +596,7 @@ func (client *ColoniesClient) Close(processID string, prvKey string) error {
 	return nil
 }
 
-func (client *ColoniesClient) CloseWithOutput(processID string, output []string, prvKey string) error {
+func (client *ColoniesClient) CloseWithOutput(processID string, output []interface{}, prvKey string) error {
 	msg := rpc.CreateCloseSuccessfulMsg(processID)
 	msg.Output = output
 	jsonString, err := msg.ToJSON()

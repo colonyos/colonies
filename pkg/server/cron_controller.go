@@ -149,7 +149,7 @@ func (controller *coloniesController) startCron(cron *core.Cron) {
 		return
 	}
 
-	rootInput := []string{}
+	var rootInput []interface{}
 	// Pick all outputs from the leaves of the previous processgraph and
 	// then use it as input to the root process in the next processgraph
 	if cron.PrevProcessGraphID != "" {
@@ -169,7 +169,7 @@ func (controller *coloniesController) startCron(cron *core.Cron) {
 		}
 	}
 
-	processGraph, err := controller.createProcessGraph(workflowSpec, []string{}, rootInput)
+	processGraph, err := controller.createProcessGraph(workflowSpec, make([]interface{}, 0), rootInput)
 	if err != nil {
 		log.WithFields(log.Fields{"Error": err, "CronId": cron.ID}).Error("Failed to create cron processgraph")
 		return

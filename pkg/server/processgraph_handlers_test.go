@@ -266,7 +266,9 @@ func TestSubmitWorkflowSpecWithInputOutput(t *testing.T) {
 	assert.True(t, assignedProcess1.FunctionSpec.NodeName == "task1")
 
 	// Close task1
-	err = client.CloseWithOutput(assignedProcess1.ID, []string{"output_task1"}, env.executorPrvKey)
+	output := make([]interface{}, 1)
+	output[0] = "output_task1"
+	err = client.CloseWithOutput(assignedProcess1.ID, output, env.executorPrvKey)
 	assert.Nil(t, err)
 
 	assignedProcess2, err := client.Assign(env.colonyID, -1, env.executorPrvKey)
@@ -280,11 +282,15 @@ func TestSubmitWorkflowSpecWithInputOutput(t *testing.T) {
 	assert.Equal(t, assignedProcess3.Input[0], "output_task1")
 
 	// Close task2
-	err = client.CloseWithOutput(assignedProcess2.ID, []string{"output_task2"}, env.executorPrvKey)
+	output = make([]interface{}, 1)
+	output[0] = "output_task2"
+	err = client.CloseWithOutput(assignedProcess2.ID, output, env.executorPrvKey)
 	assert.Nil(t, err)
 
 	// Close task3
-	err = client.CloseWithOutput(assignedProcess3.ID, []string{"output_task3"}, env.executorPrvKey)
+	output = make([]interface{}, 1)
+	output[0] = "output_task3"
+	err = client.CloseWithOutput(assignedProcess3.ID, output, env.executorPrvKey)
 	assert.Nil(t, err)
 
 	// Now it should be possible to assign task4 to an executor

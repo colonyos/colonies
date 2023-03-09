@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -16,6 +17,8 @@ import (
 func (server *ColoniesServer) handleSubmitHTTPRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
 	msg, err := rpc.CreateSubmitFunctionSpecMsgFromJSON(jsonString)
 	if err != nil {
+		log.Warning(err)
+		fmt.Println(err)
 		if server.handleHTTPError(c, errors.New("Failed to submit process, invalid JSON"), http.StatusBadRequest) {
 			return
 		}

@@ -222,7 +222,7 @@ var listWaitingProcessesCmd = &cobra.Command{
 
 			var data [][]string
 			for _, process := range processes {
-				data = append(data, []string{process.ID, process.FunctionSpec.FuncName, StrArr2Str(process.FunctionSpec.Args), process.SubmissionTime.Format(TimeLayout), process.FunctionSpec.Conditions.ExecutorType})
+				data = append(data, []string{process.ID, process.FunctionSpec.FuncName, StrArr2Str(IfArr2StringArr(process.FunctionSpec.Args)), process.SubmissionTime.Format(TimeLayout), process.FunctionSpec.Conditions.ExecutorType})
 			}
 			table := tablewriter.NewWriter(os.Stdout)
 			table.SetHeader([]string{"ID", "Func", "Args", "Submission Time", "Executor Type"})
@@ -283,7 +283,7 @@ var listRunningProcessesCmd = &cobra.Command{
 
 			var data [][]string
 			for _, process := range processes {
-				data = append(data, []string{process.ID, process.FunctionSpec.FuncName, StrArr2Str(process.FunctionSpec.Args), process.StartTime.Format(TimeLayout), process.FunctionSpec.Conditions.ExecutorType})
+				data = append(data, []string{process.ID, process.FunctionSpec.FuncName, StrArr2Str(IfArr2StringArr(process.FunctionSpec.Args)), process.StartTime.Format(TimeLayout), process.FunctionSpec.Conditions.ExecutorType})
 			}
 			table := tablewriter.NewWriter(os.Stdout)
 			table.SetHeader([]string{"ID", "FuncName", "Args", "Start time", "Executor Type"})
@@ -343,7 +343,7 @@ var listSuccessfulProcessesCmd = &cobra.Command{
 
 			var data [][]string
 			for _, process := range processes {
-				data = append(data, []string{process.ID, process.FunctionSpec.FuncName, StrArr2Str(process.FunctionSpec.Args), process.EndTime.Format(TimeLayout), process.FunctionSpec.Conditions.ExecutorType})
+				data = append(data, []string{process.ID, process.FunctionSpec.FuncName, StrArr2Str(IfArr2StringArr(process.FunctionSpec.Args)), process.EndTime.Format(TimeLayout), process.FunctionSpec.Conditions.ExecutorType})
 			}
 			table := tablewriter.NewWriter(os.Stdout)
 			table.SetHeader([]string{"ID", "FuncName", "Args", "End time", "Executor Type"})
@@ -403,7 +403,7 @@ var listFailedProcessesCmd = &cobra.Command{
 
 			var data [][]string
 			for _, process := range processes {
-				data = append(data, []string{process.ID, process.FunctionSpec.FuncName, StrArr2Str(process.FunctionSpec.Args), process.EndTime.Format(TimeLayout), process.FunctionSpec.Conditions.ExecutorType})
+				data = append(data, []string{process.ID, process.FunctionSpec.FuncName, StrArr2Str(IfArr2StringArr(process.FunctionSpec.Args)), process.EndTime.Format(TimeLayout), process.FunctionSpec.Conditions.ExecutorType})
 			}
 			table := tablewriter.NewWriter(os.Stdout)
 			table.SetHeader([]string{"ID", "FuncName", "Args", "End time", "Executor Type"})
@@ -432,7 +432,7 @@ func printFunctionSpec(funcSpec *core.FunctionSpec) {
 	}
 
 	procArgs := ""
-	for _, procArg := range funcSpec.Args {
+	for _, procArg := range IfArr2StringArr(funcSpec.Args) {
 		procArgs += procArg + " "
 	}
 	if procArgs == "" {
@@ -525,7 +525,7 @@ var getProcessCmd = &cobra.Command{
 		}
 
 		if PrintOutput {
-			fmt.Println(StrArr2Str(process.Output))
+			fmt.Println(StrArr2Str(IfArr2StringArr(process.Output)))
 			os.Exit(0)
 		}
 
@@ -546,7 +546,7 @@ var getProcessCmd = &cobra.Command{
 			[]string{"ProcessingTime", process.ProcessingTime().String()},
 			[]string{"Retries", strconv.Itoa(process.Retries)},
 			[]string{"Errors", StrArr2Str(process.Errors)},
-			[]string{"Output", StrArr2Str(process.Output)},
+			[]string{"Output", StrArr2Str(IfArr2StringArr(process.Output))},
 		}
 		processTable := tablewriter.NewWriter(os.Stdout)
 		for _, v := range processData {
@@ -707,7 +707,11 @@ var closeSuccessfulCmd = &cobra.Command{
 		CheckError(err)
 
 		if len(Output) > 0 {
-			err = client.CloseWithOutput(process.ID, Output, ExecutorPrvKey)
+			outputIf := make([]interface{}, len(Output))
+			for k, v := range Output {
+				outputIf[k] = v
+			}
+			err = client.CloseWithOutput(process.ID, outputIf, ExecutorPrvKey)
 			CheckError(err)
 		} else {
 			err = client.Close(process.ID, ExecutorPrvKey)

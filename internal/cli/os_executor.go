@@ -159,7 +159,8 @@ var executorStartCmd = &cobra.Command{
 
 			log.WithFields(log.Fields{"ProcessID": assignedProcess.ID}).Info("Executor was assigned a process")
 			log.WithFields(log.Fields{"FuncName": assignedProcess.FunctionSpec.FuncName, "Args": assignedProcess.FunctionSpec.Args}).Info("Lauching process")
-			execCmd := assignedProcess.FunctionSpec.Args
+
+			execCmd := IfArr2StringArr(assignedProcess.FunctionSpec.Args)
 			execCmd = append([]string{assignedProcess.FunctionSpec.FuncName}, execCmd...)
 			execCmdStr := strings.Join(execCmd[:], " ")
 
@@ -216,7 +217,9 @@ var executorStartCmd = &cobra.Command{
 				client.Fail(assignedProcess.ID, []string{output}, executorPrvKey)
 			} else {
 				log.WithFields(log.Fields{"ProcessID": assignedProcess.ID}).Info("Closing process as successful")
-				client.CloseWithOutput(assignedProcess.ID, []string{output}, executorPrvKey)
+				ifArr := make([]interface{}, 1)
+				ifArr[0] = output
+				client.CloseWithOutput(assignedProcess.ID, ifArr, executorPrvKey)
 			}
 		}
 	},
