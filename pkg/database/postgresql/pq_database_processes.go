@@ -47,6 +47,8 @@ func (db *PQDatabase) AddProcess(process *core.Process) error {
 	}
 	outJSONArrStr := []string{string(outJSON)}
 
+	process.SetSubmissionTime(submissionTime)
+
 	_, err = db.postgresql.Exec(sqlStatement, process.ID, process.FunctionSpec.Conditions.ColonyID, pq.Array(targetExecutorIDs), process.AssignedExecutorID, process.State, process.IsAssigned, process.FunctionSpec.Conditions.ExecutorType, submissionTime, time.Time{}, time.Time{}, deadline, process.ExecDeadline, pq.Array(process.Errors), 0, process.FunctionSpec.NodeName, process.FunctionSpec.FuncName, pq.Array(argsJSONArrStr), process.FunctionSpec.MaxWaitTime, process.FunctionSpec.MaxExecTime, process.FunctionSpec.MaxRetries, pq.Array(process.FunctionSpec.Conditions.Dependencies), process.FunctionSpec.Priority, process.PriorityTime, process.WaitForParents, pq.Array(process.Parents), pq.Array(process.Children), process.ProcessGraphID, pq.Array(inJSONArrStr), pq.Array(outJSONArrStr), process.FunctionSpec.Label)
 	if err != nil {
 		return err
@@ -61,8 +63,6 @@ func (db *PQDatabase) AddProcess(process *core.Process) error {
 	if err != nil {
 		return err
 	}
-
-	process.SetSubmissionTime(submissionTime)
 
 	return nil
 }
@@ -353,9 +353,9 @@ func (db *PQDatabase) FindUnassignedProcesses(colonyID string, executorID string
 	// Note: The @> function tests if an array is a subset of another array
 	// We need to do that since the TARGET_EXECUTOR_IDS can contains many IDs
 	if latest {
-		sqlStatement = `SELECT * FROM ` + db.dbPrefix + `PROCESSES WHERE STATE=$1 AND EXECUTOR_TYPE=$2 AND IS_ASSIGNED=FALSE AND WAIT_FOR_PARENTS=FALSE AND TARGET_COLONY_ID=$3 AND (TARGET_EXECUTOR_IDS@>$4 OR TARGET_EXECUTOR_IDS@>$5) ORDER BY SUBMISSION_TIME DESC LIMIT $6`
+		sqlStatement = `SELECT * FROM ` + db.dbPrefix + `PROCESSES WHERE STATE=$1 AND EXECUTOR_TYPE=$2 AND IS_ASSIGNED=FALSE AND WAIT_FOR_PARENTS=FALSE AND TARGET_COLONY_ID=$3 AND (TARGET_EXECUTOR_IDS@>$4 OR TARGET_EXECUTOR_IDS@>$5) ORDER BY PRIORITYTIME DESC LIMIT $6`
 	} else {
-		sqlStatement = `SELECT * FROM ` + db.dbPrefix + `PROCESSES WHERE STATE=$1 AND EXECUTOR_TYPE=$2 AND IS_ASSIGNED=FALSE AND WAIT_FOR_PARENTS=FALSE AND TARGET_COLONY_ID=$3 AND (TARGET_EXECUTOR_IDS@>$4 OR TARGET_EXECUTOR_IDS@>$5) ORDER BY SUBMISSION_TIME LIMIT $6`
+		sqlStatement = `SELECT * FROM ` + db.dbPrefix + `PROCESSES WHERE STATE=$1 AND EXECUTOR_TYPE=$2 AND IS_ASSIGNED=FALSE AND WAIT_FOR_PARENTS=FALSE AND TARGET_COLONY_ID=$3 AND (TARGET_EXECUTOR_IDS@>$4 OR TARGET_EXECUTOR_IDS@>$5) ORDER BY PRIORITYTIME LIMIT $6`
 	}
 	rows, err := db.postgresql.Query(sqlStatement, core.WAITING, executorType, colonyID, pq.Array([]string{executorID}), pq.Array([]string{"*"}), count)
 	if err != nil {
