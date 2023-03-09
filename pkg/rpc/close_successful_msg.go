@@ -7,9 +7,9 @@ import (
 const CloseSuccessfulPayloadType = "closesuccessfulmsg"
 
 type CloseSuccessfulMsg struct {
-	ProcessID string   `json:"processid"`
-	MsgType   string   `json:"msgtype"`
-	Output    []string `json:"out"`
+	ProcessID string        `json:"processid"`
+	MsgType   string        `json:"msgtype"`
+	Output    []interface{} `json:"out"`
 }
 
 func CreateCloseSuccessfulMsg(processID string) *CloseSuccessfulMsg {

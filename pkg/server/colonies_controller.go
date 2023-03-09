@@ -598,7 +598,7 @@ func (controller *coloniesController) updateProcessGraph(graph *core.ProcessGrap
 	return graph.UpdateProcessIDs()
 }
 
-func (controller *coloniesController) createProcessGraph(workflowSpec *core.WorkflowSpec, args []string, rootInput []string) (*core.ProcessGraph, error) {
+func (controller *coloniesController) createProcessGraph(workflowSpec *core.WorkflowSpec, args []interface{}, rootInput []interface{}) (*core.ProcessGraph, error) {
 	processgraph, err := core.CreateProcessGraph(workflowSpec.ColonyID)
 	if err != nil {
 		log.WithFields(log.Fields{"Error": err}).Error("Failed to create processgraph")
@@ -620,10 +620,19 @@ func (controller *coloniesController) createProcessGraph(workflowSpec *core.Work
 			process.WaitForParents = false
 			if len(args) > 0 {
 				// NOTE, overwrite the args, this will only happen when using Generators
-				process.FunctionSpec.Args = args
+				argsif := make([]interface{}, len(args))
+				for v, k := range args {
+					argsif[v] = k
+				}
+				process.FunctionSpec.Args = argsif
 			}
+
 			if len(rootInput) > 0 {
-				process.Input = rootInput
+				rootInputIf := make([]interface{}, len(rootInput))
+				for k, v := range rootInput {
+					rootInputIf[k] = v
+				}
+				process.Input = rootInputIf
 				if err != nil {
 					return nil, err
 				}
@@ -654,7 +663,7 @@ func (controller *coloniesController) createProcessGraph(workflowSpec *core.Work
 		for _, dependsOn := range process.FunctionSpec.Conditions.Dependencies {
 			parentProcess := processMap[dependsOn]
 			if parentProcess == nil {
-				msg := "Failed to submit workflow, invalid dependencies, are you depending on a process spec name that does not exits?"
+				msg := "Failed to submit workflow, invalid dependencies, are you depending on a nodename that does not exits?"
 				log.WithFields(log.Fields{"Error": err}).Error(msg)
 				return nil, errors.New(msg)
 			}
@@ -686,7 +695,7 @@ func (controller *coloniesController) submitWorkflowSpec(workflowSpec *core.Work
 	cmd := &command{processGraphReplyChan: make(chan *core.ProcessGraph, 1),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
-			addedProcessGraph, err := controller.createProcessGraph(workflowSpec, []string{}, []string{})
+			addedProcessGraph, err := controller.createProcessGraph(workflowSpec, make([]interface{}, 0), make([]interface{}, 0))
 			if err != nil {
 				cmd.errorChan <- err
 				return
@@ -912,7 +921,7 @@ func (controller *coloniesController) deleteAllProcessGraphs(colonyID string) er
 	return <-cmd.errorChan
 }
 
-func (controller *coloniesController) closeSuccessful(processID string, executorID string, output []string) error {
+func (controller *coloniesController) closeSuccessful(processID string, executorID string, output []interface{}) error {
 	cmd := &command{errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
 			process, err := controller.db.GetProcessByID(processID)
@@ -1163,7 +1172,7 @@ func (controller *coloniesController) assign(executorID string, colonyID string,
 				}
 
 				// Now, we need to collect the output from the parents and use ut as our input
-				output := []string{}
+				var output []interface{}
 				for _, parentID := range selectedProcess.Parents {
 					parentProcess, err := controller.db.GetProcessByID(parentID)
 					if err != nil {

@@ -10,10 +10,13 @@ import (
 func TestVerifyWorkflowSpec(t *testing.T) {
 	colonyID := core.GenerateRandomID()
 
+	argsif := make([]interface{}, 1)
+	argsif[0] = "arg1"
+
 	funcSpec1 := core.FunctionSpec{
 		NodeName:    "gen_task1",
 		FuncName:    "gen_test_func",
-		Args:        []string{"arg1"},
+		Args:        argsif,
 		MaxWaitTime: -1,
 		MaxExecTime: 2,
 		MaxRetries:  10,
@@ -23,7 +26,7 @@ func TestVerifyWorkflowSpec(t *testing.T) {
 	funcSpec2 := core.FunctionSpec{
 		NodeName:    "gen_task2",
 		FuncName:    "gen_test_func",
-		Args:        []string{"arg1"},
+		Args:        argsif,
 		MaxWaitTime: -1,
 		MaxExecTime: 2,
 		MaxRetries:  30,
@@ -41,7 +44,7 @@ func TestVerifyWorkflowSpec(t *testing.T) {
 	funcSpec1 = core.FunctionSpec{
 		NodeName:    "gen_task1",
 		FuncName:    "gen_test_func",
-		Args:        []string{"arg1"},
+		Args:        argsif,
 		MaxWaitTime: -1,
 		MaxExecTime: 2,
 		MaxRetries:  10,
@@ -51,7 +54,7 @@ func TestVerifyWorkflowSpec(t *testing.T) {
 	funcSpec2 = core.FunctionSpec{
 		NodeName:    "gen_task2",
 		FuncName:    "gen_test_func",
-		Args:        []string{"arg1"},
+		Args:        argsif,
 		MaxWaitTime: -1,
 		MaxExecTime: 2,
 		MaxRetries:  30,

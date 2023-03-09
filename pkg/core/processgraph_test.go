@@ -49,7 +49,10 @@ func createProcess() *Process {
 	maxExecTime := -1
 	maxRetries := 3
 
-	functionSpec := CreateFunctionSpec("test_name", "test_func", []string{"test_arg"}, colonyID, []string{}, executorType, maxWaitTime, maxExecTime, maxRetries, make(map[string]string), []string{}, 1, "testlabel")
+	args := make([]interface{}, 1)
+	args[0] = "test_arg"
+
+	functionSpec := CreateFunctionSpec("test_name", "test_func", args, colonyID, []string{}, executorType, maxWaitTime, maxExecTime, maxRetries, make(map[string]string), []string{}, 1, "testlabel")
 	process := CreateProcess(functionSpec)
 
 	return process
