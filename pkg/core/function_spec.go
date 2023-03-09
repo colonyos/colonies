@@ -14,7 +14,7 @@ type Conditions struct {
 type FunctionSpec struct {
 	NodeName    string            `json:"nodename"`
 	FuncName    string            `json:"funcname"`
-	Args        []string          `json:"args"`
+	Args        []interface{}     `json:"args"`
 	Priority    int               `json:"priority"`
 	MaxWaitTime int               `json:"maxwaittime"`
 	MaxExecTime int               `json:"maxexectime"`
@@ -27,15 +27,20 @@ type FunctionSpec struct {
 func CreateEmptyFunctionSpec() *FunctionSpec {
 	funcSpec := &FunctionSpec{}
 	funcSpec.Env = make(map[string]string)
-	funcSpec.Args = make([]string, 0)
+	funcSpec.Args = make([]interface{}, 0)
 	funcSpec.MaxExecTime = -1
 	funcSpec.MaxRetries = -1
 	return funcSpec
 }
 
-func CreateFunctionSpec(nodeName string, funcName string, args []string, colonyID string, executorIDs []string, executorType string, maxWaitTime int, maxExecTime int, maxRetries int, env map[string]string, dependencies []string, priority int, label string) *FunctionSpec {
+func CreateFunctionSpec(nodeName string, funcName string, args []interface{}, colonyID string, executorIDs []string, executorType string, maxWaitTime int, maxExecTime int, maxRetries int, env map[string]string, dependencies []string, priority int, label string) *FunctionSpec {
+	argsif := make([]interface{}, len(args))
+	for k, v := range args {
+		argsif[k] = v
+	}
+
 	conditions := Conditions{ColonyID: colonyID, ExecutorIDs: executorIDs, ExecutorType: executorType, Dependencies: dependencies}
-	return &FunctionSpec{NodeName: nodeName, FuncName: funcName, Args: args, MaxWaitTime: maxWaitTime, MaxExecTime: maxExecTime, MaxRetries: maxRetries, Conditions: conditions, Env: env, Priority: priority, Label: label}
+	return &FunctionSpec{NodeName: nodeName, FuncName: funcName, Args: argsif, MaxWaitTime: maxWaitTime, MaxExecTime: maxExecTime, MaxRetries: maxRetries, Conditions: conditions, Env: env, Priority: priority, Label: label}
 }
 
 func ConvertJSONToFunctionSpec(jsonString string) (*FunctionSpec, error) {

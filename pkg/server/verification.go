@@ -17,7 +17,7 @@ func VerifyWorkflowSpec(workflowSpec *core.WorkflowSpec) error {
 		for _, dependsOn := range process.FunctionSpec.Conditions.Dependencies {
 			parentProcess := processMap[dependsOn]
 			if parentProcess == nil {
-				msg := "Failed to submit workflow, invalid dependencies, are you depending on a process spec name that does not exits?"
+				msg := "Failed to submit workflow, invalid dependencies, are you depending on a nodename that does not exits?"
 				return errors.New(msg)
 			}
 		}

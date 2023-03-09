@@ -23,7 +23,9 @@ func TestRPCCloseSuccessfulMsg(t *testing.T) {
 
 func TestRPCCloseSuccessfulMsgWithResult(t *testing.T) {
 	msg := CreateCloseSuccessfulMsg(core.GenerateRandomID())
-	msg.Output = []string{"result1", "result2"}
+	msg.Output = make([]interface{}, 2)
+	msg.Output[0] = "result1"
+	msg.Output[1] = "result2"
 	jsonString, err := msg.ToJSON()
 	assert.Nil(t, err)
 

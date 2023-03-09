@@ -64,8 +64,8 @@ type Database interface {
 	DeleteAllProcessesByProcessGraphID(processGraphID string) error
 	DeleteAllProcessesInProcessGraphsByColonyID(colonyID string) error
 	ResetProcess(process *core.Process) error
-	SetInput(processID string, output []string) error
-	SetOutput(processID string, output []string) error
+	SetInput(processID string, output []interface{}) error
+	SetOutput(processID string, output []interface{}) error
 	SetErrors(processID string, errs []string) error
 	SetProcessState(processID string, state int) error
 	SetParents(processID string, parents []string) error

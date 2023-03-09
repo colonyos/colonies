@@ -37,7 +37,7 @@
         }
     },
     {
-        "noddename": "upload_dataset_to_hpc",
+        "nodename": "upload_dataset_to_hpc",
         "funcname": "sleep",
         "args": [
             "10"

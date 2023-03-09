@@ -228,7 +228,7 @@ var listFuncCmd = &cobra.Command{
 			fmt.Println("Function:")
 
 			funcData := [][]string{
-				[]string{"FuncName", funcName},
+				[]string{"FuncName", funcName + "(...)"},
 				[]string{"Args", s.args},
 				[]string{"Calls", strconv.Itoa(s.callsCounter)},
 				[]string{"Served by", strconv.Itoa(s.executorCounter) + " executors"},
@@ -364,9 +364,14 @@ var execFuncCmd = &cobra.Command{
 			conditions = core.Conditions{ColonyID: ColonyID, ExecutorIDs: []string{TargetExecutorID}}
 		}
 
+		argsif := make([]interface{}, len(Args))
+		for k, v := range Args {
+			argsif[k] = v
+		}
+
 		funcSpec := core.FunctionSpec{
 			FuncName:    FuncName,
-			Args:        Args,
+			Args:        argsif,
 			MaxWaitTime: MaxWaitTime,
 			MaxExecTime: MaxExecTime,
 			MaxRetries:  MaxRetries,

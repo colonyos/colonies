@@ -1,6 +1,7 @@
 package postgresql
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
@@ -599,7 +600,9 @@ func TestSetInput(t *testing.T) {
 	err = db.AddProcess(process)
 	assert.Nil(t, err)
 
-	input := []string{"result1", "result2"}
+	input := make([]interface{}, 2)
+	input[0] = "result1"
+	input[1] = "result2"
 	err = db.SetInput(process.ID, input)
 	assert.Nil(t, err)
 
@@ -619,7 +622,9 @@ func TestSetInput2(t *testing.T) {
 
 	colony := core.CreateColony(core.GenerateRandomID(), "test_colony_name")
 	process := utils.CreateTestProcess(colony.ID)
-	input := []string{"result1", "result2"}
+	input := make([]interface{}, 2)
+	input[0] = "result1"
+	input[1] = "result2"
 	process.Input = input
 	err = db.AddProcess(process)
 	assert.Nil(t, err)
@@ -643,7 +648,9 @@ func TestSetOutput(t *testing.T) {
 	err = db.AddProcess(process)
 	assert.Nil(t, err)
 
-	output := []string{"result1", "result2"}
+	output := make([]interface{}, 2)
+	output[0] = "result1"
+	output[1] = "result2"
 	err = db.SetOutput(process.ID, output)
 	assert.Nil(t, err)
 
@@ -909,6 +916,12 @@ func TestFindUnassignedProcessesLatest(t *testing.T) {
 	process2 := utils.CreateTestProcess(colony.ID)
 	err = db.AddProcess(process2)
 	assert.Nil(t, err)
+
+	process2FromDB, err := db.GetProcessByID(process2.ID)
+
+	fmt.Println("--------------")
+	fmt.Println(process2FromDB.PriorityTime)
+	fmt.Println("--------------")
 
 	processsFromDB, err := db.FindUnassignedProcesses(colony.ID, executor.ID, executor.Type, 1, true)
 	assert.Nil(t, err)
