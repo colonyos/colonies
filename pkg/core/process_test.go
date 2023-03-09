@@ -187,7 +187,7 @@ func TestPriorityTime(t *testing.T) {
 	process1 := CreateProcess(funcSpec1)
 	process1.SetSubmissionTime(startTime)
 
-	assert.Equal(t, int64(process1.PriorityTime), int64(7936230645))
+	assert.Equal(t, int64(process1.PriorityTime), int64(1628857845000000100))
 }
 
 func TestProcessArrayToJSON(t *testing.T) {
