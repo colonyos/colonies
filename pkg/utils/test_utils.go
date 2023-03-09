@@ -14,7 +14,9 @@ func CreateTestProcess(colonyID string) *core.Process {
 }
 
 func CreateTestFunctionSpec(colonyID string) *core.FunctionSpec {
-	return core.CreateFunctionSpec("test_name", "test_func", []string{"test_arg"}, colonyID, []string{}, "test_executor_type", 1000, 100, 1, make(map[string]string), []string{}, 1, "test_label")
+	args := make([]interface{}, 1)
+	args[0] = "test_arg"
+	return core.CreateFunctionSpec("test_name", "test_func", args, colonyID, []string{}, "test_executor_type", 1000, 100, 1, make(map[string]string), []string{}, 1, "test_label")
 }
 
 func CreateTestProcessWithType(colonyID string, executorType string) *core.Process {
@@ -22,7 +24,9 @@ func CreateTestProcessWithType(colonyID string, executorType string) *core.Proce
 }
 
 func CreateTestFunctionSpecWithType(colonyID string, executorType string) *core.FunctionSpec {
-	return core.CreateFunctionSpec("test_name", "test_func", []string{"test_arg"}, colonyID, []string{}, executorType, 1000, 100, 1, make(map[string]string), []string{}, 1, "test_label")
+	args := make([]interface{}, 1)
+	args[0] = "test_arg"
+	return core.CreateFunctionSpec("test_name", "test_func", args, colonyID, []string{}, executorType, 1000, 100, 1, make(map[string]string), []string{}, 1, "test_label")
 }
 
 func CreateTestProcessWithEnv(colonyID string, env map[string]string) *core.Process {
@@ -30,7 +34,9 @@ func CreateTestProcessWithEnv(colonyID string, env map[string]string) *core.Proc
 }
 
 func CreateTestFunctionSpecWithEnv(colonyID string, env map[string]string) *core.FunctionSpec {
-	return core.CreateFunctionSpec("test_name", "test_func", []string{"test_arg"}, colonyID, []string{}, "test_executor_type", 1000, 100, 1, env, []string{}, 1, "test_label")
+	args := make([]interface{}, 1)
+	args[0] = "test_arg"
+	return core.CreateFunctionSpec("test_name", "test_func", args, colonyID, []string{}, "test_executor_type", 1000, 100, 1, env, []string{}, 1, "test_label")
 }
 
 func CreateTestProcessWithTargets(colonyID string, targetExecutorIDs []string) *core.Process {
@@ -38,7 +44,9 @@ func CreateTestProcessWithTargets(colonyID string, targetExecutorIDs []string) *
 }
 
 func CreateTestFunctionSpecWithTargets(colonyID string, targetExecutorIDs []string) *core.FunctionSpec {
-	return core.CreateFunctionSpec("test_name", "test_func", []string{"test_arg"}, colonyID, targetExecutorIDs, "test_executor_type", 1000, 100, 1, make(map[string]string), []string{}, 1, "test_label")
+	args := make([]interface{}, 1)
+	args[0] = "test_arg"
+	return core.CreateFunctionSpec("test_name", "test_func", args, colonyID, targetExecutorIDs, "test_executor_type", 1000, 100, 1, make(map[string]string), []string{}, 1, "test_label")
 }
 
 func CreateTestExecutor(colonyID string) *core.Executor {
