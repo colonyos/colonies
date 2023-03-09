@@ -2,9 +2,19 @@ package server
 
 import (
 	"errors"
+	"strconv"
 
 	"github.com/colonyos/colonies/pkg/core"
 )
+
+func VerifyFunctionSpec(funcSpec *core.FunctionSpec) error {
+	if funcSpec.Priority < MIN_PRIORITY || funcSpec.Priority > MAX_PRIORITY {
+		msg := "Failed to submit function spec, priority outside range [" + strconv.Itoa(MIN_PRIORITY) + ", " + strconv.Itoa(MAX_PRIORITY) + "]"
+		return errors.New(msg)
+	}
+
+	return nil
+}
 
 func VerifyWorkflowSpec(workflowSpec *core.WorkflowSpec) error {
 	processMap := make(map[string]*core.Process)

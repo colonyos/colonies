@@ -38,6 +38,11 @@ func (server *ColoniesServer) handleSubmitHTTPRequest(c *gin.Context, recoveredI
 		return
 	}
 
+	err = VerifyFunctionSpec(msg.FunctionSpec)
+	if server.handleHTTPError(c, err, http.StatusBadRequest) {
+		return
+	}
+
 	process := core.CreateProcess(msg.FunctionSpec)
 	addedProcess, err := server.controller.addProcess(process)
 	if server.handleHTTPError(c, err, http.StatusBadRequest) {
