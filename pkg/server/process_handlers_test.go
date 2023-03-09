@@ -35,6 +35,24 @@ func TestSubmitProcess(t *testing.T) {
 	<-done
 }
 
+func TestSubmitProcessInvalidPriority(t *testing.T) {
+	env, client, server, _, done := setupTestEnv2(t)
+
+	in := make(map[string]string)
+	in["test_key_1"] = "test_value_1"
+	funcSpec := utils.CreateTestFunctionSpecWithEnv(env.colonyID, in)
+	funcSpec.Priority = MIN_PRIORITY - 100
+	_, err := client.Submit(funcSpec, env.executorPrvKey)
+	assert.NotNil(t, err)
+
+	funcSpec.Priority = MAX_PRIORITY + 100
+	_, err = client.Submit(funcSpec, env.executorPrvKey)
+	assert.NotNil(t, err)
+
+	server.Shutdown()
+	<-done
+}
+
 func TestAssignProcess(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 	assignedProcess, err := client.Assign(env.colonyID, -1, env.executorPrvKey)
