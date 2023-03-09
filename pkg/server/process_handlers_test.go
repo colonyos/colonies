@@ -140,6 +140,89 @@ func TestAssignLatestProcess(t *testing.T) {
 	<-done
 }
 
+func TestAssignProcessNoPriority(t *testing.T) {
+	env, client, server, _, done := setupTestEnv2(t)
+	assignedProcess, err := client.Assign(env.colonyID, -1, env.executorPrvKey)
+	assert.Nil(t, assignedProcess)
+	assert.NotNil(t, err)
+
+	funcSpec1 := utils.CreateTestFunctionSpec(env.colonyID)
+	funcSpec1.Priority = 0
+	addedProcess1, err := client.Submit(funcSpec1, env.executorPrvKey)
+	assert.Nil(t, err)
+
+	funcSpec2 := utils.CreateTestFunctionSpecWithEnv(env.colonyID, make(map[string]string))
+	funcSpec2.Priority = 0
+	addedProcess2, err := client.Submit(funcSpec2, env.executorPrvKey)
+	assert.Nil(t, err)
+
+	funcSpec3 := utils.CreateTestFunctionSpecWithEnv(env.colonyID, make(map[string]string))
+	funcSpec3.Priority = 0
+	addedProcess3, err := client.Submit(funcSpec3, env.executorPrvKey)
+	assert.Nil(t, err)
+
+	assignedProcess, err = client.Assign(env.colonyID, -1, env.executorPrvKey)
+	assert.Nil(t, err)
+	assert.Equal(t, addedProcess1.ID, assignedProcess.ID)
+
+	assignedProcess, err = client.Assign(env.colonyID, -1, env.executorPrvKey)
+	assert.Nil(t, err)
+	assert.Equal(t, addedProcess2.ID, assignedProcess.ID)
+
+	assignedProcess, err = client.Assign(env.colonyID, -1, env.executorPrvKey)
+	assert.Nil(t, err)
+	assert.Equal(t, addedProcess3.ID, assignedProcess.ID)
+
+	server.Shutdown()
+	<-done
+}
+
+func TestAssignProcessPriority(t *testing.T) {
+	env, client, server, _, done := setupTestEnv2(t)
+	assignedProcess, err := client.Assign(env.colonyID, -1, env.executorPrvKey)
+	assert.Nil(t, assignedProcess)
+	assert.NotNil(t, err)
+
+	funcSpec1 := utils.CreateTestFunctionSpec(env.colonyID)
+	funcSpec1.Priority = 1
+	addedProcess1, err := client.Submit(funcSpec1, env.executorPrvKey)
+	assert.Nil(t, err)
+
+	funcSpec2 := utils.CreateTestFunctionSpecWithEnv(env.colonyID, make(map[string]string))
+	funcSpec2.Priority = 2
+	addedProcess2, err := client.Submit(funcSpec2, env.executorPrvKey)
+	assert.Nil(t, err)
+
+	funcSpec3 := utils.CreateTestFunctionSpecWithEnv(env.colonyID, make(map[string]string))
+	funcSpec3.Priority = 5
+	addedProcess3, err := client.Submit(funcSpec3, env.executorPrvKey)
+	assert.Nil(t, err)
+
+	funcSpec4 := utils.CreateTestFunctionSpecWithEnv(env.colonyID, make(map[string]string))
+	funcSpec4.Priority = 5
+	addedProcess4, err := client.Submit(funcSpec4, env.executorPrvKey)
+	assert.Nil(t, err)
+
+	assignedProcess, err = client.Assign(env.colonyID, -1, env.executorPrvKey)
+	assert.Nil(t, err)
+	assert.Equal(t, addedProcess3.ID, assignedProcess.ID)
+
+	assignedProcess, err = client.Assign(env.colonyID, -1, env.executorPrvKey)
+	assert.Nil(t, err)
+	assert.Equal(t, addedProcess4.ID, assignedProcess.ID)
+
+	assignedProcess, err = client.Assign(env.colonyID, -1, env.executorPrvKey)
+	assert.Nil(t, err)
+	assert.Equal(t, addedProcess2.ID, assignedProcess.ID)
+
+	assignedProcess, err = client.Assign(env.colonyID, -1, env.executorPrvKey)
+	assert.Nil(t, err)
+	assert.Equal(t, addedProcess1.ID, assignedProcess.ID)
+
+	server.Shutdown()
+	<-done
+}
+
 func TestMarkAlive(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 
