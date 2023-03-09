@@ -15,7 +15,7 @@ func (c byOldestSubmissionTime) Len() int {
 }
 
 func (c byOldestSubmissionTime) Less(i, j int) bool {
-	return c[i].SubmissionTime.UnixNano() < c[j].SubmissionTime.UnixNano()
+	return c[i].PriorityTime < c[j].PriorityTime
 }
 
 func (c byOldestSubmissionTime) Swap(i, j int) {
@@ -29,7 +29,7 @@ func (c byLatestSubmissionTime) Len() int {
 }
 
 func (c byLatestSubmissionTime) Less(i, j int) bool {
-	return c[i].SubmissionTime.UnixNano() > c[j].SubmissionTime.UnixNano()
+	return c[i].PriorityTime > c[j].PriorityTime
 }
 
 func (c byLatestSubmissionTime) Swap(i, j int) {

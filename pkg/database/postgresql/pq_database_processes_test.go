@@ -1,7 +1,6 @@
 package postgresql
 
 import (
-	"fmt"
 	"testing"
 	"time"
 
@@ -917,15 +916,9 @@ func TestFindUnassignedProcessesLatest(t *testing.T) {
 	err = db.AddProcess(process2)
 	assert.Nil(t, err)
 
-	process2FromDB, err := db.GetProcessByID(process2.ID)
-
-	fmt.Println("--------------")
-	fmt.Println(process2FromDB.PriorityTime)
-	fmt.Println("--------------")
-
-	processsFromDB, err := db.FindUnassignedProcesses(colony.ID, executor.ID, executor.Type, 1, true)
+	processFromDB, err := db.FindUnassignedProcesses(colony.ID, executor.ID, executor.Type, 1, true)
 	assert.Nil(t, err)
-	assert.Equal(t, processsFromDB[0].ID, process2.ID)
+	assert.Equal(t, processFromDB[0].ID, process2.ID)
 }
 
 func TestFindProcessAssigned(t *testing.T) {
