@@ -285,8 +285,9 @@ func (process *Process) SetAttributes(attributes []Attribute) {
 // -50000 - 50000
 func (process *Process) SetSubmissionTime(submissionTime time.Time) {
 	process.SubmissionTime = submissionTime
-	dt := -1000000000 * 60 * 60 * 24
-	process.PriorityTime = int64(process.FunctionSpec.Priority)*int64(dt) + submissionTime.UnixNano()
+	var dt int64
+	dt = -1000000000 * 60 * 60 * 24
+	process.PriorityTime = int64(process.FunctionSpec.Priority)*dt + submissionTime.UnixNano()
 }
 
 func (process *Process) SetStartTime(startTime time.Time) {
