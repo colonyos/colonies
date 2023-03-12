@@ -239,7 +239,7 @@ func (server *ColoniesServer) handleAddChildHTTPRequest(c *gin.Context, recovere
 	}
 
 	process := core.CreateProcess(msg.FunctionSpec)
-	addedProcess, err := server.controller.addChild(msg.ProcessGraphID, msg.ProcessID, process, recoveredID)
+	addedProcess, err := server.controller.addChild(msg.ProcessGraphID, msg.ParentProcessID, msg.ChildProcessID, process, recoveredID, msg.Insert)
 	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
@@ -253,7 +253,12 @@ func (server *ColoniesServer) handleAddChildHTTPRequest(c *gin.Context, recovere
 		return
 	}
 
-	log.WithFields(log.Fields{"ProcessGraphId": msg.ProcessGraphID, "ParentProcessID": msg.ProcessID, "ProcessID": process.ID}).Debug("Adding child process")
+	log.WithFields(log.Fields{
+		"ProcessGraphId":  msg.ProcessGraphID,
+		"ParentProcessID": msg.ParentProcessID,
+		"ChildProcessID":  msg.ChildProcessID,
+		"ProcessID":       process.ID}).
+		Debug("Adding child process")
 
 	server.sendHTTPReply(c, payloadType, jsonString)
 }

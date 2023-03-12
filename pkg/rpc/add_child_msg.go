@@ -9,17 +9,21 @@ import (
 const AddChildPayloadType = "addchildmsg"
 
 type AddChildMsg struct {
-	ProcessGraphID string             `json:"processgraphid"`
-	ProcessID      string             `json:"processid"`
-	FunctionSpec   *core.FunctionSpec `json:"spec"`
-	MsgType        string             `json:"msgtype"`
+	ProcessGraphID  string             `json:"processgraphid"`
+	ParentProcessID string             `json:"parentprocessid"`
+	ChildProcessID  string             `json:"childprocessid"`
+	FunctionSpec    *core.FunctionSpec `json:"spec"`
+	Insert          bool               `json:"insert"`
+	MsgType         string             `json:"msgtype"`
 }
 
-func CreateAddChildMsg(processGraphID string, processID string, funcSpec *core.FunctionSpec) *AddChildMsg {
+func CreateAddChildMsg(processGraphID string, parentProcessID string, childProcessID string, funcSpec *core.FunctionSpec, insert bool) *AddChildMsg {
 	msg := &AddChildMsg{}
 	msg.ProcessGraphID = processGraphID
-	msg.ProcessID = processID
+	msg.ParentProcessID = parentProcessID
+	msg.ChildProcessID = childProcessID
 	msg.FunctionSpec = funcSpec
+	msg.Insert = insert
 	msg.MsgType = AddChildPayloadType
 
 	return msg
@@ -48,7 +52,11 @@ func (msg *AddChildMsg) Equals(msg2 *AddChildMsg) bool {
 		return false
 	}
 
-	if msg.MsgType == msg2.MsgType && msg.ProcessGraphID == msg2.ProcessGraphID && msg.ProcessID == msg2.ProcessID && msg.FunctionSpec.Equals(msg2.FunctionSpec) {
+	if msg.MsgType == msg2.MsgType &&
+		msg.ProcessGraphID == msg2.ProcessGraphID &&
+		msg.ParentProcessID == msg2.ParentProcessID &&
+		msg.ChildProcessID == msg2.ChildProcessID &&
+		msg.FunctionSpec.Equals(msg2.FunctionSpec) {
 		return true
 	}
 

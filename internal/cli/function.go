@@ -210,7 +210,7 @@ var listFuncCmd = &cobra.Command{
 				}
 			} else {
 				statsMap[function.FuncName] = statsEntry{
-					args:            StrArr2Str(function.Args),
+					args:            StrArr2StrWithCommas(function.Args),
 					callsCounter:    function.Counter,
 					executorCounter: 1,
 					minWaitTime:     function.MinWaitTime,
@@ -228,8 +228,7 @@ var listFuncCmd = &cobra.Command{
 			fmt.Println("Function:")
 
 			funcData := [][]string{
-				[]string{"FuncName", funcName + "(...)"},
-				[]string{"Args", s.args},
+				[]string{"FuncName", funcName + "(" + s.args + ")"},
 				[]string{"Calls", strconv.Itoa(s.callsCounter)},
 				[]string{"Served by", strconv.Itoa(s.executorCounter) + " executors"},
 				[]string{"MinWaitTime", fmt.Sprintf("%f s", s.minWaitTime)},

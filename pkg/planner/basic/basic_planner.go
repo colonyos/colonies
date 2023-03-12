@@ -8,31 +8,31 @@ import (
 	"github.com/colonyos/colonies/pkg/core"
 )
 
-type byOldestSubmissionTime []*core.Process
+type byLowestPriorityTime []*core.Process
 
-func (c byOldestSubmissionTime) Len() int {
+func (c byLowestPriorityTime) Len() int {
 	return len(c)
 }
 
-func (c byOldestSubmissionTime) Less(i, j int) bool {
+func (c byLowestPriorityTime) Less(i, j int) bool {
 	return c[i].PriorityTime < c[j].PriorityTime
 }
 
-func (c byOldestSubmissionTime) Swap(i, j int) {
+func (c byLowestPriorityTime) Swap(i, j int) {
 	c[i], c[j] = c[j], c[i]
 }
 
-type byLatestSubmissionTime []*core.Process
+type byHigestPriorityTime []*core.Process
 
-func (c byLatestSubmissionTime) Len() int {
+func (c byHigestPriorityTime) Len() int {
 	return len(c)
 }
 
-func (c byLatestSubmissionTime) Less(i, j int) bool {
+func (c byHigestPriorityTime) Less(i, j int) bool {
 	return c[i].PriorityTime > c[j].PriorityTime
 }
 
-func (c byLatestSubmissionTime) Swap(i, j int) {
+func (c byHigestPriorityTime) Swap(i, j int) {
 	c[i], c[j] = c[j], c[i]
 }
 
@@ -46,7 +46,7 @@ func CreatePlanner() *BasicPlanner {
 func (planner *BasicPlanner) printCandidates(candidates []*core.Process) {
 	for _, c := range candidates {
 		fmt.Println(c.ID)
-		fmt.Println(c.SubmissionTime)
+		fmt.Println(c.PriorityTime)
 	}
 }
 
@@ -87,11 +87,11 @@ func (planner *BasicPlanner) Prioritize(executorID string, candidates []*core.Pr
 	}
 
 	if latest {
-		c := byLatestSubmissionTime(prioritizedCandidates)
+		c := byHigestPriorityTime(prioritizedCandidates)
 		sort.Sort(&c)
 		return c[:min(count, len(prioritizedCandidates))]
 	} else {
-		c := byOldestSubmissionTime(prioritizedCandidates)
+		c := byLowestPriorityTime(prioritizedCandidates)
 		sort.Sort(&c)
 		return c[:min(count, len(prioritizedCandidates))]
 	}

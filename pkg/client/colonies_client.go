@@ -672,8 +672,8 @@ func (client *ColoniesClient) SubmitWorkflowSpec(workflowSpec *core.WorkflowSpec
 	return core.ConvertJSONToProcessGraph(respBodyString)
 }
 
-func (client *ColoniesClient) AddChild(processGraphID string, processID string, funcSpec *core.FunctionSpec, prvKey string) (*core.Process, error) {
-	msg := rpc.CreateAddChildMsg(processGraphID, processID, funcSpec)
+func (client *ColoniesClient) AddChild(processGraphID string, parentProcessID string, childProcessID string, funcSpec *core.FunctionSpec, insert bool, prvKey string) (*core.Process, error) {
+	msg := rpc.CreateAddChildMsg(processGraphID, parentProcessID, childProcessID, funcSpec, insert)
 	jsonString, err := msg.ToJSON()
 	if err != nil {
 		return nil, err
