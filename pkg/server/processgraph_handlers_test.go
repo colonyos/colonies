@@ -152,7 +152,7 @@ func TestAddChild(t *testing.T) {
 	// Add task5 to task1
 	childFunctionSpec := utils.CreateTestFunctionSpec(env.colonyID)
 	childFunctionSpec.NodeName = "task5"
-	_, err = client.AddChild(assignedProcess.ProcessGraphID, assignedProcess.ID, childFunctionSpec, env.executorPrvKey)
+	_, err = client.AddChild(assignedProcess.ProcessGraphID, assignedProcess.ID, "", childFunctionSpec, false, env.executorPrvKey)
 	assert.Nil(t, err)
 	err = client.Close(assignedProcess.ID, env.executorPrvKey)
 	assert.Nil(t, err)
@@ -213,14 +213,14 @@ func TestAddChildMaxWaitBug(t *testing.T) {
 	childFunctionSpec := utils.CreateTestFunctionSpec(env.colonyID)
 	childFunctionSpec.MaxWaitTime = 1
 	childFunctionSpec.NodeName = "task2"
-	_, err = client.AddChild(assignedProcess.ProcessGraphID, assignedProcess.ID, childFunctionSpec, env.executorPrvKey)
+	_, err = client.AddChild(assignedProcess.ProcessGraphID, assignedProcess.ID, "", childFunctionSpec, false, env.executorPrvKey)
 	assert.Nil(t, err)
 
 	// Add task3 to task1
 	childFunctionSpec = utils.CreateTestFunctionSpec(env.colonyID)
 	childFunctionSpec.MaxWaitTime = 1
 	childFunctionSpec.NodeName = "task3"
-	_, err = client.AddChild(assignedProcess.ProcessGraphID, assignedProcess.ID, childFunctionSpec, env.executorPrvKey)
+	_, err = client.AddChild(assignedProcess.ProcessGraphID, assignedProcess.ID, "", childFunctionSpec, false, env.executorPrvKey)
 	assert.Nil(t, err)
 
 	processGraph, err = client.GetProcessGraph(submittedGraph.ID, env.executorPrvKey)
