@@ -51,7 +51,6 @@ type coloniesController struct {
 	stopFlag        bool
 	stopMutex       sync.Mutex
 	leaderMutex     sync.Mutex
-	assignMutex     sync.Mutex
 	thisNode        cluster.Node
 	clusterConfig   cluster.Config
 	etcdServer      *cluster.EtcdServer
@@ -356,7 +355,13 @@ func (controller *coloniesController) addProcess(process *core.Process) (*core.P
 	}
 }
 
-func (controller *coloniesController) addChild(processGraphID string, parentProcessID string, process *core.Process, executorID string) (*core.Process, error) {
+func (controller *coloniesController) addChild(
+	processGraphID string,
+	parentProcessID string,
+	childProcessID string,
+	process *core.Process,
+	executorID string,
+	insert bool) (*core.Process, error) {
 	cmd := &command{processReplyChan: make(chan *core.Process, 1),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
@@ -389,9 +394,42 @@ func (controller *coloniesController) addChild(processGraphID string, parentProc
 				return
 			}
 
-			parentsChildren := parentProcess.Children
-			parentsChildren = append(parentsChildren, process.ID)
-			controller.db.SetChildren(parentProcessID, parentsChildren)
+			if insert {
+				parentsChildren := parentProcess.Children
+				controller.db.SetChildren(process.ID, parentsChildren)
+				controller.db.SetChildren(parentProcessID, []string{process.ID})
+				for _, parentsChildID := range parentsChildren {
+					parentChild, err := controller.db.GetProcessByID(parentsChildID)
+					if err != nil {
+						cmd.errorChan <- err
+						return
+					}
+					parentChildParents := parentChild.Parents
+					var newParents []string
+					for _, p := range parentChildParents {
+						if p != parentProcessID {
+							newParents = append(newParents, p)
+						}
+					}
+					newParents = append(newParents, process.ID)
+					controller.db.SetParents(parentsChildID, newParents)
+				}
+			} else {
+				parentsChildren := parentProcess.Children
+				parentsChildren = append(parentsChildren, process.ID)
+				controller.db.SetChildren(parentProcessID, parentsChildren)
+				if childProcessID != "" {
+					controller.db.SetChildren(process.ID, []string{childProcessID})
+					childProcess, err := controller.db.GetProcessByID(childProcessID)
+					if err != nil {
+						cmd.errorChan <- err
+						return
+					}
+					newParents := childProcess.Parents
+					newParents = append(newParents, process.ID)
+					controller.db.SetParents(childProcessID, newParents)
+				}
+			}
 
 			if !addedProcess.WaitForParents {
 				controller.eventHandler.signal(addedProcess)
@@ -607,7 +645,8 @@ func (controller *coloniesController) createProcessGraph(workflowSpec *core.Work
 
 	// Create all processes
 	processMap := make(map[string]*core.Process)
-	var rootProcesses []*core.Process
+	//var rootProcesses []*core.Process
+	var processIDs []string
 	for _, funcSpec := range workflowSpec.FunctionSpecs {
 		if funcSpec.MaxExecTime == 0 {
 			log.WithFields(log.Fields{"NodeName": funcSpec.NodeName}).Debug("MaxExecTime was set to 0, resetting to -1")
@@ -637,18 +676,20 @@ func (controller *coloniesController) createProcessGraph(workflowSpec *core.Work
 					return nil, err
 				}
 			}
-			rootProcesses = append(rootProcesses, process)
+			//rootProcesses = append(rootProcesses, process)
 
 			processgraph.AddRoot(process.ID)
 		} else {
 			// The process has to wait for its parents
 			process.WaitForParents = true
 		}
+		processIDs = append(processIDs, process.ID)
 		process.ProcessGraphID = processgraph.ID
 		process.FunctionSpec.Conditions.ColonyID = workflowSpec.ColonyID
 		processMap[process.FunctionSpec.NodeName] = process
 	}
 
+	processgraph.ProcessIDs = processIDs
 	err = controller.db.AddProcessGraph(processgraph)
 	if err != nil {
 		msg := "Failed to create processgraph, failed to add processgraph"
@@ -1105,24 +1146,19 @@ func (controller *coloniesController) assign(executorID string, colonyID string,
 	cmd := &command{processReplyChan: make(chan *core.Process),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
-			controller.assignMutex.Lock()
-
 			executor, err := controller.db.GetExecutorByID(executorID)
 			if err != nil {
 				cmd.errorChan <- err
-				controller.assignMutex.Unlock()
 				return
 			}
 			if executor == nil {
 				cmd.errorChan <- errors.New("Executor with Id <" + executorID + "> could not be found")
-				controller.assignMutex.Unlock()
 				return
 			}
 
 			err = controller.db.MarkAlive(executor)
 			if err != nil {
 				cmd.errorChan <- err
-				controller.assignMutex.Unlock()
 				return
 			}
 
@@ -1130,25 +1166,20 @@ func (controller *coloniesController) assign(executorID string, colonyID string,
 			processes, err = controller.db.FindUnassignedProcesses(colonyID, executorID, executor.Type, 10, latest)
 			if err != nil {
 				cmd.errorChan <- err
-				controller.assignMutex.Unlock()
 				return
 			}
 
 			selectedProcess, err := controller.planner.Select(executorID, processes, latest)
 			if err != nil {
 				cmd.errorChan <- err
-				controller.assignMutex.Unlock()
 				return
 			}
 
 			err = controller.db.Assign(executorID, selectedProcess)
 			if err != nil {
 				cmd.errorChan <- err
-				controller.assignMutex.Unlock()
 				return
 			}
-
-			controller.assignMutex.Unlock()
 
 			if selectedProcess.ProcessGraphID != "" {
 				log.WithFields(log.Fields{"ProcessGraphId": selectedProcess.ProcessGraphID}).Debug("Resolving processgraph (assigned)")

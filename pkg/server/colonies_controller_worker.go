@@ -96,7 +96,7 @@ func (controller *coloniesController) masterWorker() {
 				return
 			}
 			if msg.handler != nil {
-				go msg.handler(msg)
+				msg.handler(msg)
 			}
 		}
 	}
