@@ -252,7 +252,7 @@ func (db *PQDatabase) FindProcessesByExecutorID(colonyID string, executorID stri
 }
 
 func (db *PQDatabase) FindWaitingProcesses(colonyID string, count int) ([]*core.Process, error) {
-	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `PROCESSES WHERE TARGET_COLONY_ID=$1 AND STATE=$2 ORDER BY SUBMISSION_TIME ASC LIMIT $3`
+	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `PROCESSES WHERE TARGET_COLONY_ID=$1 AND STATE=$2 ORDER BY PRIORITYTIME LIMIT $3`
 	rows, err := db.postgresql.Query(sqlStatement, colonyID, core.WAITING, count)
 	if err != nil {
 		return nil, err
@@ -300,7 +300,7 @@ func (db *PQDatabase) FindAllRunningProcesses() ([]*core.Process, error) {
 }
 
 func (db *PQDatabase) FindAllWaitingProcesses() ([]*core.Process, error) {
-	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `PROCESSES WHERE STATE=$1 ORDER BY START_TIME DESC`
+	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `PROCESSES WHERE STATE=$1 ORDER BY PRIORITYTIME`
 	rows, err := db.postgresql.Query(sqlStatement, core.WAITING)
 	if err != nil {
 		return nil, err
