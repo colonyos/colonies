@@ -88,15 +88,37 @@ func (controller *coloniesController) timeoutLoop() {
 	}
 }
 
-func (controller *coloniesController) masterWorker() {
+func (controller *coloniesController) blockingCmdQueueWorker() {
 	for {
 		select {
-		case msg := <-controller.cmdQueue:
-			if msg.stop {
+		case cmd := <-controller.blockingCmdQueue:
+			if cmd.stop {
 				return
 			}
-			if msg.handler != nil {
-				msg.handler(msg)
+			if cmd.handler != nil {
+				if cmd.threaded {
+					go cmd.handler(cmd)
+				} else {
+					cmd.handler(cmd)
+				}
+			}
+		}
+	}
+}
+
+func (controller *coloniesController) cmdQueueWorker() {
+	for {
+		select {
+		case cmd := <-controller.cmdQueue:
+			if cmd.stop {
+				return
+			}
+			if cmd.handler != nil {
+				if cmd.threaded {
+					go cmd.handler(cmd)
+				} else {
+					cmd.handler(cmd)
+				}
 			}
 		}
 	}

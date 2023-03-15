@@ -21,12 +21,12 @@ func init() {
 	rootCmd.AddCommand(functionCmd)
 	functionCmd.AddCommand(execFuncCmd)
 	functionCmd.AddCommand(submitFunctionSpecCmd)
-	functionCmd.AddCommand(addFuncCmd)
+	functionCmd.AddCommand(registerFuncCmd)
 	functionCmd.AddCommand(removeFuncCmd)
 	functionCmd.AddCommand(listFuncCmd)
 
-	addFuncCmd.Flags().StringVarP(&SpecFile, "spec", "", "", "JSON specification of a function")
-	addFuncCmd.MarkFlagRequired("spec")
+	registerFuncCmd.Flags().StringVarP(&SpecFile, "spec", "", "", "JSON specification of a function")
+	registerFuncCmd.MarkFlagRequired("spec")
 
 	submitFunctionSpecCmd.Flags().StringVarP(&ExecutorID, "executorid", "", "", "Executor Id")
 	submitFunctionSpecCmd.Flags().StringVarP(&ExecutorPrvKey, "executorprvkey", "", "", "Executor private key")
@@ -59,8 +59,8 @@ var functionCmd = &cobra.Command{
 	Long:  "Manage functions",
 }
 
-var addFuncCmd = &cobra.Command{
-	Use:   "add",
+var registerFuncCmd = &cobra.Command{
+	Use:   "register",
 	Short: "Register a function to an executor",
 	Long:  "Register a function to an executor",
 	Run: func(cmd *cobra.Command, args []string) {
