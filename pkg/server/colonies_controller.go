@@ -38,25 +38,27 @@ type command struct {
 	cronsReplyChan         chan []*core.Cron
 	functionReplyChan      chan *core.Function
 	functionsReplyChan     chan []*core.Function
+	threaded               bool
 	handler                func(cmd *command)
 }
 
 type coloniesController struct {
-	db              database.Database
-	cmdQueue        chan *command
-	planner         planner.Planner
-	wsSubCtrl       *wsSubscriptionController
-	relayServer     *cluster.RelayServer
-	eventHandler    *eventHandler
-	stopFlag        bool
-	stopMutex       sync.Mutex
-	leaderMutex     sync.Mutex
-	thisNode        cluster.Node
-	clusterConfig   cluster.Config
-	etcdServer      *cluster.EtcdServer
-	leader          bool
-	generatorPeriod int
-	cronPeriod      int
+	db               database.Database
+	cmdQueue         chan *command
+	blockingCmdQueue chan *command
+	planner          planner.Planner
+	wsSubCtrl        *wsSubscriptionController
+	relayServer      *cluster.RelayServer
+	eventHandler     *eventHandler
+	stopFlag         bool
+	stopMutex        sync.Mutex
+	leaderMutex      sync.Mutex
+	thisNode         cluster.Node
+	clusterConfig    cluster.Config
+	etcdServer       *cluster.EtcdServer
+	leader           bool
+	generatorPeriod  int
+	cronPeriod       int
 }
 
 func createColoniesController(db database.Database,
@@ -83,9 +85,11 @@ func createColoniesController(db database.Database,
 	controller.planner = basic.CreatePlanner()
 
 	controller.cmdQueue = make(chan *command)
+	controller.blockingCmdQueue = make(chan *command)
 
 	controller.tryBecomeLeader()
-	go controller.masterWorker()
+	go controller.blockingCmdQueueWorker()
+	go controller.cmdQueueWorker()
 	go controller.timeoutLoop()
 	go controller.generatorTriggerLoop()
 	go controller.cronTriggerLoop()
@@ -94,18 +98,18 @@ func createColoniesController(db database.Database,
 }
 
 func (controller *coloniesController) subscribeProcesses(executorID string, subscription *subscription) error {
-	cmd := &command{errorChan: make(chan error, 1),
+	cmd := &command{threaded: false, errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
 			controller.wsSubCtrl.addProcessesSubscriber(executorID, subscription)
 			cmd.errorChan <- nil
 		}}
-	controller.cmdQueue <- cmd
+	controller.blockingCmdQueue <- cmd
 
 	return <-cmd.errorChan
 }
 
 func (controller *coloniesController) subscribeProcess(executorID string, subscription *subscription) error {
-	cmd := &command{errorChan: make(chan error, 1),
+	cmd := &command{threaded: false, errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
 			process, err := controller.db.GetProcessByID(subscription.processID)
 			if err != nil {
@@ -115,13 +119,13 @@ func (controller *coloniesController) subscribeProcess(executorID string, subscr
 			controller.wsSubCtrl.addProcessSubscriber(executorID, process, subscription)
 			cmd.errorChan <- nil
 		}}
-	controller.cmdQueue <- cmd
+	controller.blockingCmdQueue <- cmd
 
 	return <-cmd.errorChan
 }
 
 func (controller *coloniesController) getColonies() ([]*core.Colony, error) {
-	cmd := &command{coloniesReplyChan: make(chan []*core.Colony),
+	cmd := &command{threaded: true, coloniesReplyChan: make(chan []*core.Colony),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
 			colonies, err := controller.db.GetColonies()
@@ -143,7 +147,7 @@ func (controller *coloniesController) getColonies() ([]*core.Colony, error) {
 }
 
 func (controller *coloniesController) getColony(colonyID string) (*core.Colony, error) {
-	cmd := &command{colonyReplyChan: make(chan *core.Colony),
+	cmd := &command{threaded: true, colonyReplyChan: make(chan *core.Colony),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
 			colony, err := controller.db.GetColonyByID(colonyID)
@@ -164,7 +168,7 @@ func (controller *coloniesController) getColony(colonyID string) (*core.Colony, 
 }
 
 func (controller *coloniesController) addColony(colony *core.Colony) (*core.Colony, error) {
-	cmd := &command{colonyReplyChan: make(chan *core.Colony, 1),
+	cmd := &command{threaded: true, colonyReplyChan: make(chan *core.Colony, 1),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
 			err := controller.db.AddColony(colony)
@@ -190,7 +194,7 @@ func (controller *coloniesController) addColony(colony *core.Colony) (*core.Colo
 }
 
 func (controller *coloniesController) deleteColony(colonyID string) error {
-	cmd := &command{errorChan: make(chan error, 1),
+	cmd := &command{threaded: true, errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
 			err := controller.db.DeleteColonyByID(colonyID)
 			if err != nil {
@@ -205,7 +209,7 @@ func (controller *coloniesController) deleteColony(colonyID string) error {
 }
 
 func (controller *coloniesController) addExecutor(executor *core.Executor) (*core.Executor, error) {
-	cmd := &command{executorReplyChan: make(chan *core.Executor, 1),
+	cmd := &command{threaded: true, executorReplyChan: make(chan *core.Executor, 1),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
 			err := controller.db.AddExecutor(executor)
@@ -231,7 +235,7 @@ func (controller *coloniesController) addExecutor(executor *core.Executor) (*cor
 }
 
 func (controller *coloniesController) getExecutor(executorID string) (*core.Executor, error) {
-	cmd := &command{executorReplyChan: make(chan *core.Executor),
+	cmd := &command{threaded: true, executorReplyChan: make(chan *core.Executor),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
 			executor, err := controller.db.GetExecutorByID(executorID)
@@ -252,7 +256,7 @@ func (controller *coloniesController) getExecutor(executorID string) (*core.Exec
 }
 
 func (controller *coloniesController) getExecutorByColonyID(colonyID string) ([]*core.Executor, error) {
-	cmd := &command{executorsReplyChan: make(chan []*core.Executor),
+	cmd := &command{threaded: true, executorsReplyChan: make(chan []*core.Executor),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
 			executors, err := controller.db.GetExecutorsByColonyID(colonyID)
@@ -276,7 +280,7 @@ func (controller *coloniesController) getExecutorByColonyID(colonyID string) ([]
 }
 
 func (controller *coloniesController) approveExecutor(executorID string) error {
-	cmd := &command{errorChan: make(chan error, 1),
+	cmd := &command{threaded: true, errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
 			executor, err := controller.db.GetExecutorByID(executorID)
 			if err != nil {
@@ -291,7 +295,7 @@ func (controller *coloniesController) approveExecutor(executorID string) error {
 }
 
 func (controller *coloniesController) rejectExecutor(executorID string) error {
-	cmd := &command{errorChan: make(chan error, 1),
+	cmd := &command{threaded: true, errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
 			executor, err := controller.db.GetExecutorByID(executorID)
 			if err != nil {
@@ -306,7 +310,7 @@ func (controller *coloniesController) rejectExecutor(executorID string) error {
 }
 
 func (controller *coloniesController) deleteExecutor(executorID string) error {
-	cmd := &command{errorChan: make(chan error, 1),
+	cmd := &command{threaded: true, errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
 			err := controller.db.DeleteExecutorByID(executorID)
 			cmd.errorChan <- err
@@ -331,7 +335,7 @@ func (controller *coloniesController) addProcessToDB(process *core.Process) (*co
 }
 
 func (controller *coloniesController) addProcess(process *core.Process) (*core.Process, error) {
-	cmd := &command{processReplyChan: make(chan *core.Process, 1),
+	cmd := &command{threaded: true, processReplyChan: make(chan *core.Process, 1),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
 			addedProcess, err := controller.addProcessToDB(process)
@@ -362,7 +366,7 @@ func (controller *coloniesController) addChild(
 	process *core.Process,
 	executorID string,
 	insert bool) (*core.Process, error) {
-	cmd := &command{processReplyChan: make(chan *core.Process, 1),
+	cmd := &command{threaded: false, processReplyChan: make(chan *core.Process, 1),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
 			parentProcess, err := controller.db.GetProcessByID(parentProcessID)
@@ -437,7 +441,7 @@ func (controller *coloniesController) addChild(
 			cmd.processReplyChan <- addedProcess
 		}}
 
-	controller.cmdQueue <- cmd
+	controller.blockingCmdQueue <- cmd
 	select {
 	case err := <-cmd.errorChan:
 		return nil, err
@@ -447,7 +451,7 @@ func (controller *coloniesController) addChild(
 }
 
 func (controller *coloniesController) getProcess(processID string) (*core.Process, error) {
-	cmd := &command{processReplyChan: make(chan *core.Process, 1),
+	cmd := &command{threaded: true, processReplyChan: make(chan *core.Process, 1),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
 			process, err := controller.db.GetProcessByID(processID)
@@ -468,7 +472,7 @@ func (controller *coloniesController) getProcess(processID string) (*core.Proces
 }
 
 func (controller *coloniesController) findProcessHistory(colonyID string, executorID string, seconds int, state int) ([]*core.Process, error) {
-	cmd := &command{processesReplyChan: make(chan []*core.Process),
+	cmd := &command{threaded: true, processesReplyChan: make(chan []*core.Process),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
 			var processes []*core.Process
@@ -500,7 +504,7 @@ func (controller *coloniesController) findProcessHistory(colonyID string, execut
 }
 
 func (controller *coloniesController) findPrioritizedProcesses(executorID string, colonyID string, count int) ([]*core.Process, error) {
-	cmd := &command{processesReplyChan: make(chan []*core.Process),
+	cmd := &command{threaded: true, processesReplyChan: make(chan []*core.Process),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
 			var processes []*core.Process
@@ -528,7 +532,7 @@ func (controller *coloniesController) findPrioritizedProcesses(executorID string
 }
 
 func (controller *coloniesController) findWaitingProcesses(colonyID string, count int) ([]*core.Process, error) {
-	cmd := &command{processesReplyChan: make(chan []*core.Process),
+	cmd := &command{threaded: true, processesReplyChan: make(chan []*core.Process),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
 			if count > MAX_COUNT {
@@ -554,7 +558,7 @@ func (controller *coloniesController) findWaitingProcesses(colonyID string, coun
 }
 
 func (controller *coloniesController) findRunningProcesses(colonyID string, count int) ([]*core.Process, error) {
-	cmd := &command{processesReplyChan: make(chan []*core.Process),
+	cmd := &command{threaded: true, processesReplyChan: make(chan []*core.Process),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
 			if count > MAX_COUNT {
@@ -580,7 +584,7 @@ func (controller *coloniesController) findRunningProcesses(colonyID string, coun
 }
 
 func (controller *coloniesController) findSuccessfulProcesses(colonyID string, count int) ([]*core.Process, error) {
-	cmd := &command{processesReplyChan: make(chan []*core.Process),
+	cmd := &command{threaded: true, processesReplyChan: make(chan []*core.Process),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
 			if count > MAX_COUNT {
@@ -606,7 +610,7 @@ func (controller *coloniesController) findSuccessfulProcesses(colonyID string, c
 }
 
 func (controller *coloniesController) findFailedProcesses(colonyID string, count int) ([]*core.Process, error) {
-	cmd := &command{processesReplyChan: make(chan []*core.Process),
+	cmd := &command{threaded: true, processesReplyChan: make(chan []*core.Process),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
 			if count > MAX_COUNT {
@@ -733,7 +737,7 @@ func (controller *coloniesController) createProcessGraph(workflowSpec *core.Work
 }
 
 func (controller *coloniesController) submitWorkflowSpec(workflowSpec *core.WorkflowSpec) (*core.ProcessGraph, error) {
-	cmd := &command{processGraphReplyChan: make(chan *core.ProcessGraph, 1),
+	cmd := &command{threaded: true, processGraphReplyChan: make(chan *core.ProcessGraph, 1),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
 			addedProcessGraph, err := controller.createProcessGraph(workflowSpec, make([]interface{}, 0), make([]interface{}, 0))
@@ -755,7 +759,7 @@ func (controller *coloniesController) submitWorkflowSpec(workflowSpec *core.Work
 }
 
 func (controller *coloniesController) getProcessGraphByID(processGraphID string) (*core.ProcessGraph, error) {
-	cmd := &command{processGraphReplyChan: make(chan *core.ProcessGraph, 1),
+	cmd := &command{threaded: true, processGraphReplyChan: make(chan *core.ProcessGraph, 1),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
 			graph, err := controller.db.GetProcessGraphByID(processGraphID)
@@ -786,7 +790,7 @@ func (controller *coloniesController) getProcessGraphByID(processGraphID string)
 }
 
 func (controller *coloniesController) findWaitingProcessGraphs(colonyID string, count int) ([]*core.ProcessGraph, error) {
-	cmd := &command{processGraphsReplyChan: make(chan []*core.ProcessGraph),
+	cmd := &command{threaded: true, processGraphsReplyChan: make(chan []*core.ProcessGraph),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
 			if count > MAX_COUNT {
@@ -820,7 +824,7 @@ func (controller *coloniesController) findWaitingProcessGraphs(colonyID string, 
 }
 
 func (controller *coloniesController) findRunningProcessGraphs(colonyID string, count int) ([]*core.ProcessGraph, error) {
-	cmd := &command{processGraphsReplyChan: make(chan []*core.ProcessGraph),
+	cmd := &command{threaded: true, processGraphsReplyChan: make(chan []*core.ProcessGraph),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
 			if count > MAX_COUNT {
@@ -853,7 +857,7 @@ func (controller *coloniesController) findRunningProcessGraphs(colonyID string, 
 }
 
 func (controller *coloniesController) findSuccessfulProcessGraphs(colonyID string, count int) ([]*core.ProcessGraph, error) {
-	cmd := &command{processGraphsReplyChan: make(chan []*core.ProcessGraph),
+	cmd := &command{threaded: true, processGraphsReplyChan: make(chan []*core.ProcessGraph),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
 			if count > MAX_COUNT {
@@ -886,7 +890,7 @@ func (controller *coloniesController) findSuccessfulProcessGraphs(colonyID strin
 }
 
 func (controller *coloniesController) findFailedProcessGraphs(colonyID string, count int) ([]*core.ProcessGraph, error) {
-	cmd := &command{processGraphsReplyChan: make(chan []*core.ProcessGraph),
+	cmd := &command{threaded: true, processGraphsReplyChan: make(chan []*core.ProcessGraph),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
 			if count > MAX_COUNT {
@@ -919,7 +923,7 @@ func (controller *coloniesController) findFailedProcessGraphs(colonyID string, c
 }
 
 func (controller *coloniesController) deleteProcess(processID string) error {
-	cmd := &command{errorChan: make(chan error, 1),
+	cmd := &command{threaded: true, errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
 			err := controller.db.DeleteProcessByID(processID)
 			cmd.errorChan <- err
@@ -930,7 +934,7 @@ func (controller *coloniesController) deleteProcess(processID string) error {
 }
 
 func (controller *coloniesController) deleteAllProcesses(colonyID string) error {
-	cmd := &command{errorChan: make(chan error, 1),
+	cmd := &command{threaded: true, errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
 			err := controller.db.DeleteAllProcessesByColonyID(colonyID)
 			cmd.errorChan <- err
@@ -941,7 +945,7 @@ func (controller *coloniesController) deleteAllProcesses(colonyID string) error 
 }
 
 func (controller *coloniesController) deleteProcessGraph(processID string) error {
-	cmd := &command{errorChan: make(chan error, 1),
+	cmd := &command{threaded: true, errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
 			err := controller.db.DeleteProcessGraphByID(processID)
 			cmd.errorChan <- err
@@ -952,7 +956,7 @@ func (controller *coloniesController) deleteProcessGraph(processID string) error
 }
 
 func (controller *coloniesController) deleteAllProcessGraphs(colonyID string) error {
-	cmd := &command{errorChan: make(chan error, 1),
+	cmd := &command{threaded: true, errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
 			err := controller.db.DeleteAllProcessGraphsByColonyID(colonyID)
 			cmd.errorChan <- err
@@ -963,7 +967,7 @@ func (controller *coloniesController) deleteAllProcessGraphs(colonyID string) er
 }
 
 func (controller *coloniesController) closeSuccessful(processID string, executorID string, output []interface{}) error {
-	cmd := &command{errorChan: make(chan error, 1),
+	cmd := &command{threaded: true, errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
 			process, err := controller.db.GetProcessByID(processID)
 			if err != nil {
@@ -1102,7 +1106,7 @@ func (controller *coloniesController) notifyChildren(process *core.Process) erro
 }
 
 func (controller *coloniesController) closeFailed(processID string, errs []string) error {
-	cmd := &command{errorChan: make(chan error, 1),
+	cmd := &command{threaded: true, errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
 			err := controller.db.MarkFailed(processID, errs)
 			if err != nil {
@@ -1143,7 +1147,7 @@ func (controller *coloniesController) closeFailed(processID string, errs []strin
 }
 
 func (controller *coloniesController) assign(executorID string, colonyID string, latest bool) (*core.Process, error) {
-	cmd := &command{processReplyChan: make(chan *core.Process),
+	cmd := &command{threaded: false, processReplyChan: make(chan *core.Process),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
 			executor, err := controller.db.GetExecutorByID(executorID)
@@ -1222,7 +1226,7 @@ func (controller *coloniesController) assign(executorID string, colonyID string,
 			cmd.processReplyChan <- selectedProcess
 		}}
 
-	controller.cmdQueue <- cmd
+	controller.blockingCmdQueue <- cmd
 	select {
 	case err := <-cmd.errorChan:
 		return nil, err
@@ -1232,7 +1236,7 @@ func (controller *coloniesController) assign(executorID string, colonyID string,
 }
 
 func (controller *coloniesController) unassignExecutor(processID string) error {
-	cmd := &command{errorChan: make(chan error, 1),
+	cmd := &command{threaded: true, errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
 			process, err := controller.db.GetProcessByID(processID)
 			if err != nil {
@@ -1249,7 +1253,7 @@ func (controller *coloniesController) unassignExecutor(processID string) error {
 }
 
 func (controller *coloniesController) resetProcess(processID string) error {
-	cmd := &command{errorChan: make(chan error, 1),
+	cmd := &command{threaded: true, errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
 			process, err := controller.db.GetProcessByID(processID)
 			if err != nil {
@@ -1266,7 +1270,7 @@ func (controller *coloniesController) resetProcess(processID string) error {
 }
 
 func (controller *coloniesController) getColonyStatistics(colonyID string) (*core.Statistics, error) {
-	cmd := &command{statisticsReplyChan: make(chan *core.Statistics),
+	cmd := &command{threaded: true, statisticsReplyChan: make(chan *core.Statistics),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
 			colonies := 1
@@ -1338,7 +1342,7 @@ func (controller *coloniesController) getColonyStatistics(colonyID string) (*cor
 }
 
 func (controller *coloniesController) getStatistics() (*core.Statistics, error) {
-	cmd := &command{statisticsReplyChan: make(chan *core.Statistics),
+	cmd := &command{threaded: true, statisticsReplyChan: make(chan *core.Statistics),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
 			colonies, err := controller.db.CountColonies()
@@ -1414,7 +1418,7 @@ func (controller *coloniesController) getStatistics() (*core.Statistics, error) 
 }
 
 func (controller *coloniesController) addAttribute(attribute *core.Attribute) (*core.Attribute, error) {
-	cmd := &command{attributeReplyChan: make(chan *core.Attribute, 1),
+	cmd := &command{threaded: true, attributeReplyChan: make(chan *core.Attribute, 1),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
 			err := controller.db.AddAttribute(*attribute)
@@ -1440,7 +1444,7 @@ func (controller *coloniesController) addAttribute(attribute *core.Attribute) (*
 }
 
 func (controller *coloniesController) getAttribute(attributeID string) (*core.Attribute, error) {
-	cmd := &command{attributeReplyChan: make(chan *core.Attribute, 1),
+	cmd := &command{threaded: true, attributeReplyChan: make(chan *core.Attribute, 1),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
 			attribute, err := controller.db.GetAttributeByID(attributeID)
@@ -1461,7 +1465,7 @@ func (controller *coloniesController) getAttribute(attributeID string) (*core.At
 }
 
 func (controller *coloniesController) addFunction(function *core.Function) (*core.Function, error) {
-	cmd := &command{functionReplyChan: make(chan *core.Function, 1),
+	cmd := &command{threaded: true, functionReplyChan: make(chan *core.Function, 1),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
 			err := controller.db.AddFunction(function)
@@ -1487,7 +1491,7 @@ func (controller *coloniesController) addFunction(function *core.Function) (*cor
 }
 
 func (controller *coloniesController) getFunctionsByExecutorID(executorID string) ([]*core.Function, error) {
-	cmd := &command{functionsReplyChan: make(chan []*core.Function, 1),
+	cmd := &command{threaded: true, functionsReplyChan: make(chan []*core.Function, 1),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
 			functions, err := controller.db.GetFunctionsByExecutorID(executorID)
@@ -1508,7 +1512,7 @@ func (controller *coloniesController) getFunctionsByExecutorID(executorID string
 }
 
 func (controller *coloniesController) getFunctionsByColonyID(colonyID string) ([]*core.Function, error) {
-	cmd := &command{functionsReplyChan: make(chan []*core.Function, 1),
+	cmd := &command{threaded: true, functionsReplyChan: make(chan []*core.Function, 1),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
 			functions, err := controller.db.GetFunctionsByColonyID(colonyID)
@@ -1529,7 +1533,7 @@ func (controller *coloniesController) getFunctionsByColonyID(colonyID string) ([
 }
 
 func (controller *coloniesController) getFunctionByID(functionID string) (*core.Function, error) {
-	cmd := &command{functionReplyChan: make(chan *core.Function, 1),
+	cmd := &command{threaded: true, functionReplyChan: make(chan *core.Function, 1),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
 			function, err := controller.db.GetFunctionByID(functionID)
@@ -1550,7 +1554,7 @@ func (controller *coloniesController) getFunctionByID(functionID string) (*core.
 }
 
 func (controller *coloniesController) deleteFunction(functionID string) error {
-	cmd := &command{errorChan: make(chan error, 1),
+	cmd := &command{threaded: true, errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
 			err := controller.db.DeleteFunctionByID(functionID)
 			if err != nil {
@@ -1565,7 +1569,7 @@ func (controller *coloniesController) deleteFunction(functionID string) error {
 }
 
 func (controller *coloniesController) resetDatabase() error {
-	cmd := &command{errorChan: make(chan error, 1),
+	cmd := &command{threaded: true, errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
 			err := controller.db.Drop()
 			if err != nil {
