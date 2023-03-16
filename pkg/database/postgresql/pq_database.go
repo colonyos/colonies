@@ -192,5 +192,23 @@ func (db *PQDatabase) Initialize() error {
 		return err
 	}
 
+	sqlStatement = `CREATE INDEX ` + db.dbPrefix + `PROCESSES_INDEX6 ON ` + db.dbPrefix + `PROCESSES (STATE, EXECUTOR_TYPE, IS_ASSIGNED, WAIT_FOR_PARENTS, TARGET_COLONY_ID, TARGET_EXECUTOR_IDS, PRIORITYTIME)`
+	_, err = db.postgresql.Exec(sqlStatement)
+	if err != nil {
+		return err
+	}
+
+	sqlStatement = `CREATE INDEX ` + db.dbPrefix + `ATTRIBUTES_INDEX1 ON ` + db.dbPrefix + `ATTRIBUTES (TARGET_ID, ATTRIBUTE_TYPE)`
+	_, err = db.postgresql.Exec(sqlStatement)
+	if err != nil {
+		return err
+	}
+
+	sqlStatement = `CREATE INDEX ` + db.dbPrefix + `ATTRIBUTES_INDEX2 ON ` + db.dbPrefix + `ATTRIBUTES (TARGET_ID)`
+	_, err = db.postgresql.Exec(sqlStatement)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
