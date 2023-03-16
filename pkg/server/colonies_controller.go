@@ -369,6 +369,7 @@ func (controller *coloniesController) addChild(
 	cmd := &command{threaded: false, processReplyChan: make(chan *core.Process, 1),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
+			process.WaitForParents = true
 			parentProcess, err := controller.db.GetProcessByID(parentProcessID)
 			if err != nil {
 				cmd.errorChan <- err
