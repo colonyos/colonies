@@ -150,7 +150,6 @@ func (db *PQDatabase) parseProcesses(rows *sql.Rows) ([]*core.Process, error) {
 		}
 
 		functionSpec := core.CreateFunctionSpec(nodeName, funcName, argsif, targetColonyID, targetExecutorIDs, executorType, maxWaitTime, maxExecTime, maxRetries, env, dependencies, priority, label)
-
 		process := core.CreateProcessFromDB(functionSpec, processID, assignedExecutorID, isAssigned, state, priorityTime, submissionTime, startTime, endTime, waitDeadline, execDeadline, errs, retries, attributes)
 
 		process.Input = inputif
@@ -347,17 +346,11 @@ func (db *PQDatabase) FindFailedProcesses(colonyID string, count int) ([]*core.P
 	return matches, nil
 }
 
-func (db *PQDatabase) FindUnassignedProcesses(colonyID string, executorID string, executorType string, count int, latest bool) ([]*core.Process, error) {
+func (db *PQDatabase) FindUnassignedProcesses(colonyID string, executorID string, executorType string, count int) ([]*core.Process, error) {
 	var sqlStatement string
 
-	// Note: The @> function tests if an array is a subset of another array
-	// We need to do that since the TARGET_EXECUTOR_IDS can contains many IDs
-	if latest {
-		sqlStatement = `SELECT * FROM ` + db.dbPrefix + `PROCESSES WHERE STATE=$1 AND EXECUTOR_TYPE=$2 AND IS_ASSIGNED=FALSE AND WAIT_FOR_PARENTS=FALSE AND TARGET_COLONY_ID=$3 AND (TARGET_EXECUTOR_IDS@>$4 OR TARGET_EXECUTOR_IDS@>$5) ORDER BY PRIORITYTIME DESC LIMIT $6`
-	} else {
-		sqlStatement = `SELECT * FROM ` + db.dbPrefix + `PROCESSES WHERE STATE=$1 AND EXECUTOR_TYPE=$2 AND IS_ASSIGNED=FALSE AND WAIT_FOR_PARENTS=FALSE AND TARGET_COLONY_ID=$3 AND (TARGET_EXECUTOR_IDS@>$4 OR TARGET_EXECUTOR_IDS@>$5) ORDER BY PRIORITYTIME LIMIT $6`
-	}
-	rows, err := db.postgresql.Query(sqlStatement, core.WAITING, executorType, colonyID, pq.Array([]string{executorID}), pq.Array([]string{"*"}), count)
+	sqlStatement = `SELECT * FROM ` + db.dbPrefix + `PROCESSES WHERE STATE=$1 AND EXECUTOR_TYPE=$2 AND IS_ASSIGNED=FALSE AND WAIT_FOR_PARENTS=FALSE AND TARGET_COLONY_ID=$3 ORDER BY PRIORITYTIME LIMIT $4`
+	rows, err := db.postgresql.Query(sqlStatement, core.WAITING, executorType, colonyID, count)
 	if err != nil {
 		return nil, err
 	}

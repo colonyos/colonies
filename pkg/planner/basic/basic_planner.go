@@ -22,20 +22,6 @@ func (c byLowestPriorityTime) Swap(i, j int) {
 	c[i], c[j] = c[j], c[i]
 }
 
-type byHigestPriorityTime []*core.Process
-
-func (c byHigestPriorityTime) Len() int {
-	return len(c)
-}
-
-func (c byHigestPriorityTime) Less(i, j int) bool {
-	return c[i].PriorityTime > c[j].PriorityTime
-}
-
-func (c byHigestPriorityTime) Swap(i, j int) {
-	c[i], c[j] = c[j], c[i]
-}
-
 type BasicPlanner struct {
 }
 
@@ -50,8 +36,8 @@ func (planner *BasicPlanner) printCandidates(candidates []*core.Process) {
 	}
 }
 
-func (planner *BasicPlanner) Select(executorID string, candidates []*core.Process, latest bool) (*core.Process, error) {
-	prioritizedProcesses := planner.Prioritize(executorID, candidates, 1, latest)
+func (planner *BasicPlanner) Select(executorID string, candidates []*core.Process) (*core.Process, error) {
+	prioritizedProcesses := planner.Prioritize(executorID, candidates, 1)
 	if len(prioritizedProcesses) < 1 {
 		return nil, errors.New("No processes can be selected for executor with Id <" + executorID + ">")
 	}
@@ -67,7 +53,7 @@ func min(x, y int) int {
 	return y
 }
 
-func (planner *BasicPlanner) Prioritize(executorID string, candidates []*core.Process, count int, latest bool) []*core.Process {
+func (planner *BasicPlanner) Prioritize(executorID string, candidates []*core.Process, count int) []*core.Process {
 	var prioritizedCandidates []*core.Process
 	if len(candidates) == 0 {
 		return prioritizedCandidates
@@ -86,13 +72,7 @@ func (planner *BasicPlanner) Prioritize(executorID string, candidates []*core.Pr
 		}
 	}
 
-	if latest {
-		c := byHigestPriorityTime(prioritizedCandidates)
-		sort.Sort(&c)
-		return c[:min(count, len(prioritizedCandidates))]
-	} else {
-		c := byLowestPriorityTime(prioritizedCandidates)
-		sort.Sort(&c)
-		return c[:min(count, len(prioritizedCandidates))]
-	}
+	c := byLowestPriorityTime(prioritizedCandidates)
+	sort.Sort(&c)
+	return c[:min(count, len(prioritizedCandidates))]
 }

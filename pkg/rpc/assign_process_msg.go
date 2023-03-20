@@ -8,7 +8,7 @@ const AssignProcessPayloadType = "assignprocessmsg"
 
 type AssignProcessMsg struct {
 	ColonyID string `json:"colonyid"`
-	Latest   bool   `json:"latest"`
+	Latest   bool   `json:"latest"` // TODO: remove, not used anymore
 	Timeout  int    `json:"timeout"`
 	MsgType  string `json:"msgtype"`
 }
