@@ -413,24 +413,6 @@ func (client *ColoniesClient) Submit(funcSpec *core.FunctionSpec, prvKey string)
 
 func (client *ColoniesClient) Assign(colonyID string, timeout int, prvKey string) (*core.Process, error) {
 	msg := rpc.CreateAssignProcessMsg(colonyID)
-	msg.Latest = false
-	msg.Timeout = timeout
-	jsonString, err := msg.ToJSON()
-	if err != nil {
-		return nil, err
-	}
-
-	respBodyString, err := client.sendMessage(rpc.AssignProcessPayloadType, jsonString, prvKey, false)
-	if err != nil {
-		return nil, err
-	}
-
-	return core.ConvertJSONToProcess(respBodyString)
-}
-
-func (client *ColoniesClient) AssignLatestProcess(colonyID string, timeout int, prvKey string) (*core.Process, error) {
-	msg := rpc.CreateAssignProcessMsg(colonyID)
-	msg.Latest = true
 	msg.Timeout = timeout
 	jsonString, err := msg.ToJSON()
 	if err != nil {

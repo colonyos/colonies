@@ -66,7 +66,7 @@ func (server *ColoniesServer) handleSubmitHTTPRequest(c *gin.Context, recoveredI
 func (server *ColoniesServer) handleAssignProcessHTTPRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string, originalRequest string) {
 	var err error
 	if server.exclusiveAssign && !server.controller.isLeader() {
-		// Find out qho is the leader
+		// Find out who is the leader
 		leader := server.controller.etcdServer.CurrentCluster().Leader
 		leaderHost := leader.Host
 		leaderPort := leader.APIPort
@@ -119,7 +119,7 @@ func (server *ColoniesServer) handleAssignProcessHTTPRequest(c *gin.Context, rec
 		"Timeout":      msg.Timeout}).
 		Debug("Waiting for processes")
 
-	process, assignErr := server.controller.assign(recoveredID, msg.ColonyID, msg.Latest)
+	process, assignErr := server.controller.assign(recoveredID, msg.ColonyID)
 	if assignErr != nil {
 		if msg.Timeout > 0 {
 			ctx, cancelCtx := context.WithTimeout(c.Request.Context(), time.Duration(msg.Timeout)*time.Second)
@@ -127,9 +127,7 @@ func (server *ColoniesServer) handleAssignProcessHTTPRequest(c *gin.Context, rec
 
 			// Wait for a new process to be submitted to a ColoniesServer in the cluster
 			server.controller.eventHandler.waitForProcess(executor.Type, core.WAITING, "", ctx)
-
-			// Try again! Note there is no guarantees we was assigned a process since multiple executors competes getting jobs
-			process, assignErr = server.controller.assign(recoveredID, msg.ColonyID, msg.Latest)
+			process, assignErr = server.controller.assign(recoveredID, msg.ColonyID)
 		}
 	}
 
