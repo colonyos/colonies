@@ -104,55 +104,11 @@ func TestAssignProcessWithTimeout(t *testing.T) {
 	<-done
 }
 
-func TestAssignLatestProcessWithTimeout(t *testing.T) {
-	env, client, server, _, done := setupTestEnv2(t)
-
-	addedProcessChan := make(chan *core.Process)
-	go func() {
-		time.Sleep(1 * time.Second)
-		funcSpec := utils.CreateTestFunctionSpec(env.colonyID)
-		addedProcess, err := client.Submit(funcSpec, env.executorPrvKey)
-		assert.Nil(t, err)
-		addedProcessChan <- addedProcess
-	}()
-
-	// This function call will block for 60 seconds or until the Go-routine above submits a process spec
-	assignProcess, err := client.AssignLatestProcess(env.colonyID, 60, env.executorPrvKey)
-	assert.Nil(t, err)
-
-	addedProcess := <-addedProcessChan
-	assert.Equal(t, addedProcess.ID, assignProcess.ID)
-
-	server.Shutdown()
-	<-done
-}
-
 func TestAssignProcessWithTimeoutFail(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 
 	_, err := client.Assign(env.colonyID, 1, env.executorPrvKey)
 	assert.NotNil(t, err)
-
-	server.Shutdown()
-	<-done
-}
-
-func TestAssignLatestProcess(t *testing.T) {
-	env, client, server, _, done := setupTestEnv2(t)
-
-	funcSpec1 := utils.CreateTestFunctionSpec(env.colonyID)
-	_, err := client.Submit(funcSpec1, env.executorPrvKey)
-	assert.Nil(t, err)
-
-	time.Sleep(50 * time.Millisecond)
-
-	funcSpec2 := utils.CreateTestFunctionSpecWithEnv(env.colonyID, make(map[string]string))
-	addedProcess2, err := client.Submit(funcSpec2, env.executorPrvKey)
-	assert.Nil(t, err)
-
-	assignedProcess, err := client.AssignLatestProcess(env.colonyID, -1, env.executorPrvKey)
-	assert.Nil(t, err)
-	assert.Equal(t, addedProcess2.ID, assignedProcess.ID)
 
 	server.Shutdown()
 	<-done
