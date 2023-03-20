@@ -78,7 +78,6 @@ var EtcdPeerPort int
 var EtcdCluster []string
 var EtcdDataDir string
 var RelayPort int
-var Latest bool
 var Timeout int
 var CronID string
 var CronName string
