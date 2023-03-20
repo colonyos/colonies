@@ -79,7 +79,6 @@ func init() {
 	assignProcessCmd.Flags().StringVarP(&ExecutorID, "executorid", "", "", "Executor Id")
 	assignProcessCmd.Flags().StringVarP(&ExecutorPrvKey, "executorprvkey", "", "", "Executor private key")
 	assignProcessCmd.Flags().IntVarP(&Timeout, "timeout", "", 100, "Max time to wait for a process assignment")
-	assignProcessCmd.Flags().BoolVarP(&Latest, "latest", "", false, "Try to assign the latest process in the queue")
 
 	closeSuccessfulCmd.Flags().StringSliceVarP(&Output, "out", "", make([]string, 0), "Output")
 	closeSuccessfulCmd.Flags().StringVarP(&ExecutorID, "executorid", "", "", "Executor Id")
@@ -156,20 +155,11 @@ var assignProcessCmd = &cobra.Command{
 		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Info("Starting a Colonies client")
 		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
 
-		if Latest {
-			process, err := client.AssignLatestProcess(ColonyID, Timeout, ExecutorPrvKey)
-			if err != nil {
-				log.Warning(err)
-			} else {
-				log.WithFields(log.Fields{"ProcessID": process.ID, "ExecutorID": ExecutorID}).Info("Assigned process to executor (latest)")
-			}
+		process, err := client.Assign(ColonyID, Timeout, ExecutorPrvKey)
+		if err != nil {
+			log.Warning(err)
 		} else {
-			process, err := client.Assign(ColonyID, Timeout, ExecutorPrvKey)
-			if err != nil {
-				log.Warning(err)
-			} else {
-				log.WithFields(log.Fields{"ProcessID": process.ID, "ExecutorID": ExecutorID}).Info("Assigned process to executor (oldest)")
-			}
+			log.WithFields(log.Fields{"ProcessID": process.ID, "ExecutorID": ExecutorID}).Info("Assigned process to executor (oldest)")
 		}
 
 	},
@@ -509,6 +499,8 @@ var getProcessCmd = &cobra.Command{
 			os.Exit(-1)
 		}
 
+		fmt.Println(process)
+
 		if JSON {
 			fmt.Println(process.ToJSON())
 			os.Exit(0)
@@ -536,7 +528,7 @@ var getProcessCmd = &cobra.Command{
 			[]string{"IsAssigned", isAssigned},
 			[]string{"AssignedExecutorID", assignedExecutorID},
 			[]string{"State", State2String(process.State)},
-			[]string{"Priority", strconv.Itoa(process.FunctionSpec.Priority)},
+			[]string{"PriorityTime", strconv.FormatInt(process.PriorityTime, 10)},
 			[]string{"SubmissionTime", process.SubmissionTime.Format(TimeLayout)},
 			[]string{"StartTime", process.StartTime.Format(TimeLayout)},
 			[]string{"EndTime", process.EndTime.Format(TimeLayout)},
