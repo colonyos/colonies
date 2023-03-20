@@ -1,6 +1,7 @@
 package server
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
@@ -282,6 +283,24 @@ func TestGetCron(t *testing.T) {
 	cronFromServer, err := client.GetCron(addedCron.ID, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.Equal(t, addedCron.ID, cronFromServer.ID)
+
+	server.Shutdown()
+	<-done
+}
+
+func TestCronArgs(t *testing.T) {
+	env, client, server, _, done := setupTestEnv2(t)
+
+	cron := utils.FakeCron(t, env.colonyID)
+	cron.Interval = 2
+
+	addedCron, err := client.AddCron(cron, env.executorPrvKey)
+	assert.Nil(t, err)
+	assert.NotNil(t, addedCron)
+
+	process, err := client.Assign(env.colonyID, 100, env.executorPrvKey)
+
+	fmt.Println(process.FunctionSpec.Args)
 
 	server.Shutdown()
 	<-done
