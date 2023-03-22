@@ -499,8 +499,6 @@ var getProcessCmd = &cobra.Command{
 			os.Exit(-1)
 		}
 
-		fmt.Println(process)
-
 		if JSON {
 			fmt.Println(process.ToJSON())
 			os.Exit(0)
