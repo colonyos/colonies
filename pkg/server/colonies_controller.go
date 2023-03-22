@@ -738,7 +738,7 @@ func (controller *coloniesController) createProcessGraph(workflowSpec *core.Work
 }
 
 func (controller *coloniesController) submitWorkflowSpec(workflowSpec *core.WorkflowSpec) (*core.ProcessGraph, error) {
-	cmd := &command{threaded: true, processGraphReplyChan: make(chan *core.ProcessGraph, 1),
+	cmd := &command{threaded: false, processGraphReplyChan: make(chan *core.ProcessGraph, 1),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
 			addedProcessGraph, err := controller.createProcessGraph(workflowSpec, make([]interface{}, 0), make([]interface{}, 0))
@@ -750,7 +750,7 @@ func (controller *coloniesController) submitWorkflowSpec(workflowSpec *core.Work
 			cmd.processGraphReplyChan <- addedProcessGraph
 		}}
 
-	controller.cmdQueue <- cmd
+	controller.blockingCmdQueue <- cmd
 	select {
 	case err := <-cmd.errorChan:
 		return nil, err
