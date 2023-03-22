@@ -479,7 +479,7 @@ func (graph *ProcessGraph) iterate(processID string, visited map[string]bool, vi
 	}
 
 	if process == nil {
-		errMsg := "Failed to iterate processgraph, process is nil"
+		errMsg := "Failed to iterate processgraph, process is nil, processID=" + processID
 		log.Error(errMsg)
 		return errors.New(errMsg)
 	}
