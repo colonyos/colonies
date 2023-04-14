@@ -1,6 +1,6 @@
 {
     "conditions": {
-        "executortype": "cli"
+        "executortype": "helloworld_executor"
     },
-    "funcname": "echo sayhello"
+    "funcname": "helloworld"
 }
