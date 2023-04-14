@@ -4,15 +4,15 @@
 ![ColonyOSLogo](docs/images/ColonyOsLogoNoShaddow2.png)
 
 # What is Colonies?
-Colonies is a framework for managing AI/ML workloads across heterogeneous computing platforms, e.g. public clouds, edge servers as well as web apps or IoT devices. It can be used a building block to implement a **distributed FaaS framework** or a **meta-operating system**.
+Colonies is an open-source framework designed to facilitate seamless execution of computational workloads across platforms, e.g. cloud, edge, devices, or High-Performance Computing (HPC), thereby creating so-called *compute continuums*. At its core, Colonies provides a decentralized runtime environment, called a **Colony**, which consisting of **Executors** that can be implemented in any language and run anywhere on the Internet. The **Executors* are distributed microservices that can easily integrate with any third-party application or system. Colonies has been developed with a strong emphasis on security and robustness to ensure scalability and reliability.
 
-## Key features
-* Users submit function specifications to the Colonies server they want to run. These functions will then be executed by **Executors**, which are computer programs residing anywhere on the Internet.
-* Colonies makes it possible to implement a **loosely decoupled** workflow architecture spanning many platforms and infrastructures. All coordination is managed by Colonies servers and developers can focus on implementing **Executors** and develop applications based on a **Function-as-a-Service (FaaS)** event-driven execution model. 
-* Complex workflows are automatically broken down into events (process assignments) that is received by the Executors. The system can then easily scale just by deploying more Executors. Failed processes are automatically re-assigned to other Executors. 
-* Colonies function a **distributed ledger** and contains full execution history. Traceability allows developers to keep track of the system and more easily debug their services.  
-* Colonies integrates well with Kubernetes and offers a more powerful alternative than traditional message-broker worker queues, e.g RabbitMQ worker queues.   
-* Colonies provides functionality to establish **trusted distributed computing environments** and is a building block for a [Meta-Operating System](https://en.wikipedia.org/wiki/Meta-system"), an overlay built on top of existing operating systems and platforms to create *compute continuums spanning devices, webapps, clouds, and edge and HPC platforms*.
+## How does it work? 
+* Users submit function specifications to a Colonies server specifying computations they wish to run. These functions will then be assigned and executed by the Executors.
+* Developers can focus on implementing Executors as isloated microservices. The system can then easily scale just by deploying more Executors. Failed processes are automatically re-assigned to other Executors.
+* Developers can express and submit workflows describing a sequence of computations carried out by several Executors.
+* Colonies makes it possible to develop a loosely decoupled architecture that spans multiple platforms and infrastructures, with all coordination managed by Colonies.
+* Colonies also functions as a distributed ledger, containing full execution history. This enables developers to keep track of the system and debug it more easily.
+* Colonies integrates well with Kubernetes and offers a more powerful alternative to traditional message-broker worker queues, e.g RabbitMQ worker queues.   
 
 ## Design
 The core idea of Colonies is to split up complex workloads in two layers, a **Meta-layer** and an **Execution-layer**.
@@ -20,7 +20,7 @@ The core idea of Colonies is to split up complex workloads in two layers, a **Me
 ![MetaOS](docs/images/arch.png)
 
 * The **Meta-layer** makes it possible to describe and manage complex workflows independently of implementation and execution environment.
-* The **Execution-layer** provides a [serverless computing](https://en.wikipedia.org/wiki/Serverless_computing) environment where developers can implement Executors implementing different functions. AI applications can then be broken down into composable functions executed by remote Executors anywhere on the Internet.
+* The **Execution-layer** provides a environment where developers can implement Executors. Applications can then be broken down into composable functions executed by remote Executors anywhere on the Internet.
 * A build-in **[zero-trust](https://en.wikipedia.org/wiki/Zero_trust_security_model)** protocol makes it possible to organize remote Exectors as a single unit called a **Colony**, thus making it possible for users to keep control even if workloads are spread out and executed on many different platforms at the same time. 
 
 ## Example
