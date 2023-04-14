@@ -4,7 +4,13 @@
 ![ColonyOSLogo](docs/images/ColonyOsLogoNoShaddow2.png)
 
 # What is Colonies?
-Colonies is an open-source framework designed to facilitate seamless execution of computational workloads across platforms, e.g. cloud, edge, devices, or High-Performance Computing (HPC), thereby creating so-called *compute continuums*. At its core, Colonies provides a *decentralized runtime environment*, called a **Colony**, which consisting of **Executors** that can be implemented in any language and run anywhere on the Internet. The Executors are distributed microservices that can easily integrate with any third-party application or system. Colonies has been developed with a strong emphasis on security and robustness to ensure scalability and reliability.
+Colonies is an open-source framework designed to facilitate seamless execution of computational workloads across platforms, e.g. cloud, edge, devices, or High-Performance Computing (HPC), thereby creating so-called *compute continuums*. 
+
+At its core, Colonies provides a **decentralized runtime environment**, called a **Colony**, which consisting of **Executors** that can be implemented in any language and run anywhere on the Internet. 
+
+The Executors are distributed microservices that can easily integrate with any third-party application or system. 
+
+Colonies has been developed with a strong emphasis on security and robustness to ensure scalability and reliability.
 
 ## How does it work? 
 * Users submit function specifications to a Colonies server specifying computations they wish to run. These functions will then be assigned and executed by the Executors.
@@ -12,7 +18,7 @@ Colonies is an open-source framework designed to facilitate seamless execution o
 * Developers can express and submit workflows describing a sequence of computations carried out by several Executors.
 * Colonies makes it possible to develop a loosely decoupled architecture that spans multiple platforms and infrastructures, with all coordination managed by Colonies.
 * Colonies also functions as a distributed ledger, containing full execution history. This enables developers to keep track of the system and debug it more easily.
-* Colonies integrates well with Kubernetes and offers a more powerful alternative to traditional message-broker worker queues, e.g RabbitMQ worker queues.   
+* Colonies integrates well with Kubernetes and offers a more powerful alternative to traditional message-broker worker queues, e.g RabbitMQ.
 
 ## Design
 The core idea of Colonies is to split up complex workloads in two layers, a **Meta-layer** and an **Execution-layer**.
@@ -21,7 +27,7 @@ The core idea of Colonies is to split up complex workloads in two layers, a **Me
 
 * The **Meta-layer** makes it possible to describe and manage complex workflows independently of implementation and execution environment.
 * The **Execution-layer** provides a environment where developers can implement Executors. Applications can then be broken down into composable functions executed by remote Executors anywhere on the Internet.
-* A build-in **[zero-trust](https://en.wikipedia.org/wiki/Zero_trust_security_model)** protocol makes it possible to organize remote Exectors as a single unit called a **Colony**, thus making it possible for users to keep control even if workloads are spread out and executed on many different platforms at the same time. 
+* A build-in **[zero-trust](https://en.wikipedia.org/wiki/Zero_trust_security_model)** protocol makes it possible to organize remote Exectors as a single unit (a colony), thus making it possible for users to keep control even if workloads are spread out and executed on many different platforms at the same time. 
 
 ## Example
 ### Start a Colonier server
