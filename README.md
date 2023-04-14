@@ -4,7 +4,7 @@
 ![ColonyOSLogo](docs/images/ColonyOsLogoNoShaddow2.png)
 
 # What is Colonies?
-Colonies is an open-source framework designed to facilitate seamless execution of computational workloads across platforms, e.g. cloud, edge, devices, or High-Performance Computing (HPC), thereby creating so-called *compute continuums*. At its core, Colonies provides a decentralized runtime environment, called a **Colony**, which consisting of **Executors** that can be implemented in any language and run anywhere on the Internet. The **Executors* are distributed microservices that can easily integrate with any third-party application or system. Colonies has been developed with a strong emphasis on security and robustness to ensure scalability and reliability.
+Colonies is an open-source framework designed to facilitate seamless execution of computational workloads across platforms, e.g. cloud, edge, devices, or High-Performance Computing (HPC), thereby creating so-called *compute continuums*. At its core, Colonies provides a *decentralized runtime environment*, called a **Colony**, which consisting of **Executors** that can be implemented in any language and run anywhere on the Internet. The Executors are distributed microservices that can easily integrate with any third-party application or system. Colonies has been developed with a strong emphasis on security and robustness to ensure scalability and reliability.
 
 ## How does it work? 
 * Users submit function specifications to a Colonies server specifying computations they wish to run. These functions will then be assigned and executed by the Executors.
