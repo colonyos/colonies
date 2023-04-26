@@ -396,8 +396,8 @@ func (db *PQDatabase) DeleteAllProcesses() error {
 }
 
 func (db *PQDatabase) DeleteAllProcessesByColonyID(colonyID string) error {
-	sqlStatement := `DELETE FROM ` + db.dbPrefix + `PROCESSES WHERE TARGET_COLONY_ID=$1`
-	_, err := db.postgresql.Exec(sqlStatement, colonyID)
+	sqlStatement := `DELETE FROM ` + db.dbPrefix + `PROCESSES WHERE TARGET_COLONY_ID=$1 AND PROCESSGRAPH_ID=$2`
+	_, err := db.postgresql.Exec(sqlStatement, colonyID, "")
 	if err != nil {
 		return err
 	}
