@@ -45,6 +45,40 @@ func TestDeleteColony(t *testing.T) {
 	<-done
 }
 
+func TestRenameColony(t *testing.T) {
+	_, client, server, serverPrvKey, done := setupTestEnv2(t)
+
+	colony, colonyPrvKey, err := utils.CreateTestColonyWithKey()
+	colony.Name = "test_name_1"
+	assert.Nil(t, err)
+	addedColony, err := client.AddColony(colony, serverPrvKey)
+	assert.Nil(t, err)
+	assert.True(t, colony.Equals(addedColony))
+
+	executor, executorPrvKey, err := utils.CreateTestExecutorWithKey(addedColony.ID)
+	assert.Nil(t, err)
+
+	_, err = client.AddExecutor(executor, colonyPrvKey)
+	assert.Nil(t, err)
+
+	err = client.ApproveExecutor(executor.ID, colonyPrvKey)
+	assert.Nil(t, err)
+
+	colonyFromServer, err := client.GetColonyByID(addedColony.ID, executorPrvKey)
+	assert.Nil(t, err)
+	assert.Equal(t, colonyFromServer.Name, "test_name_1")
+
+	err = client.RenameColony(addedColony.ID, "test_name_2", colonyPrvKey)
+	assert.Nil(t, err)
+
+	colonyFromServer, err = client.GetColonyByID(addedColony.ID, executorPrvKey)
+	assert.Nil(t, err)
+	assert.Equal(t, colonyFromServer.Name, "test_name_2")
+
+	server.Shutdown()
+	<-done
+}
+
 func TestGetColony(t *testing.T) {
 	client, server, serverPrvKey, done := prepareTests(t)
 
