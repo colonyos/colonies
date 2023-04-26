@@ -276,6 +276,21 @@ func (client *ColoniesClient) DeleteColony(colonyID string, prvKey string) error
 	return nil
 }
 
+func (client *ColoniesClient) RenameColony(colonyID string, name string, prvKey string) error {
+	msg := rpc.CreateRenameColonyMsg(colonyID, name)
+	jsonString, err := msg.ToJSON()
+	if err != nil {
+		return err
+	}
+
+	_, err = client.sendMessage(rpc.RenameColonyPayloadType, jsonString, prvKey, false)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (client *ColoniesClient) GetColonies(prvKey string) ([]*core.Colony, error) {
 	msg := rpc.CreateGetColoniesMsg()
 	jsonString, err := msg.ToJSON()
