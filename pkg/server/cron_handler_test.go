@@ -28,6 +28,56 @@ func TestAddCronDebug(t *testing.T) {
 	<-done
 }
 
+func TestAddCronDeleteAllProcesses(t *testing.T) {
+	env, client, server, _, done := setupTestEnv2(t)
+
+	cron := utils.FakeCron(t, env.colonyID)
+	cron.Interval = 1
+	cron.WaitForPrevProcessGraph = true
+
+	addedCron, err := client.AddCron(cron, env.executorPrvKey)
+	assert.Nil(t, err)
+	assert.NotNil(t, addedCron)
+
+	time.Sleep(2 * time.Second)
+
+	err = client.DeleteAllProcesses(env.colonyID, env.colonyPrvKey)
+	assert.Nil(t, err)
+
+	// If the cron is successful, there should be a process we can assign
+	process, err := client.Assign(env.colonyID, 100, env.executorPrvKey)
+	assert.Nil(t, err)
+	assert.NotNil(t, process)
+
+	server.Shutdown()
+	<-done
+}
+
+func TestAddCronDeleteAllProcessGraphs(t *testing.T) {
+	env, client, server, _, done := setupTestEnv2(t)
+
+	cron := utils.FakeCron(t, env.colonyID)
+	cron.Interval = 1
+	cron.WaitForPrevProcessGraph = true
+
+	addedCron, err := client.AddCron(cron, env.executorPrvKey)
+	assert.Nil(t, err)
+	assert.NotNil(t, addedCron)
+
+	time.Sleep(2 * time.Second)
+
+	err = client.DeleteAllProcessGraphs(env.colonyID, env.colonyPrvKey)
+	assert.Nil(t, err)
+
+	// If the cron is successful, there should be a process we can assign
+	process, err := client.Assign(env.colonyID, 100, env.executorPrvKey)
+	assert.Nil(t, err)
+	assert.NotNil(t, process)
+
+	server.Shutdown()
+	<-done
+}
+
 func TestFailCron(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 
