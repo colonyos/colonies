@@ -16,6 +16,7 @@ type Database interface {
 	AddColony(colony *core.Colony) error
 	GetColonies() ([]*core.Colony, error)
 	GetColonyByID(id string) (*core.Colony, error)
+	RenameColony(id string, name string) error
 	DeleteColonyByID(colonyID string) error
 	CountColonies() (int, error)
 

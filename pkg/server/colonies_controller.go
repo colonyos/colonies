@@ -208,6 +208,21 @@ func (controller *coloniesController) deleteColony(colonyID string) error {
 	return <-cmd.errorChan
 }
 
+func (controller *coloniesController) renameColony(colonyID string, name string) error {
+	cmd := &command{threaded: true, errorChan: make(chan error, 1),
+		handler: func(cmd *command) {
+			err := controller.db.RenameColony(colonyID, name)
+			if err != nil {
+				cmd.errorChan <- err
+				return
+			}
+			cmd.errorChan <- nil
+		}}
+
+	controller.cmdQueue <- cmd
+	return <-cmd.errorChan
+}
+
 func (controller *coloniesController) addExecutor(executor *core.Executor) (*core.Executor, error) {
 	cmd := &command{threaded: true, executorReplyChan: make(chan *core.Executor, 1),
 		errorChan: make(chan error, 1),

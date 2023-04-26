@@ -19,6 +19,7 @@ import (
 func init() {
 	colonyCmd.AddCommand(addColonyCmd)
 	colonyCmd.AddCommand(removeColonyCmd)
+	colonyCmd.AddCommand(renameColonyCmd)
 	colonyCmd.AddCommand(lsColoniesCmd)
 	colonyCmd.AddCommand(colonyStatsCmd)
 	rootCmd.AddCommand(colonyCmd)
@@ -36,6 +37,12 @@ func init() {
 	removeColonyCmd.Flags().StringVarP(&ServerPrvKey, "serverprvkey", "", "", "Colonies server private key")
 	removeColonyCmd.Flags().StringVarP(&ColonyID, "colonyid", "", "", "Colony Id")
 	removeColonyCmd.MarkFlagRequired("colonyid")
+
+	renameColonyCmd.Flags().StringVarP(&ServerID, "serverid", "", "", "Colonies server Id")
+	renameColonyCmd.Flags().StringVarP(&ColonyPrvKey, "colonyprvkey", "", "", "Colony private key")
+	renameColonyCmd.Flags().StringVarP(&ColonyID, "colonyid", "", "", "Colony Id")
+	renameColonyCmd.Flags().StringVarP(&ColonyName, "name", "", "", "New Colony name")
+	renameColonyCmd.MarkFlagRequired("name")
 
 	lsColoniesCmd.Flags().StringVarP(&ServerID, "serverid", "", "", "Colonies server Id")
 	lsColoniesCmd.Flags().StringVarP(&ServerPrvKey, "serverprvkey", "", "", "Colonies server private key")
@@ -139,6 +146,45 @@ var removeColonyCmd = &cobra.Command{
 		CheckError(err)
 
 		log.WithFields(log.Fields{"ColonyID": ColonyID}).Info("Colony removed")
+	},
+}
+
+var renameColonyCmd = &cobra.Command{
+	Use:   "rename",
+	Short: "Rename a colony",
+	Long:  "Rename a colony",
+	Run: func(cmd *cobra.Command, args []string) {
+		parseServerEnv()
+
+		if ColonyID == "" {
+			ColonyID = os.Getenv("COLONIES_COLONY_ID")
+		}
+		if ColonyID == "" {
+			CheckError(errors.New("Unknown Colony Id"))
+		}
+
+		if ColonyPrvKey == "" {
+			ColonyPrvKey = os.Getenv("COLONIES_COLONY_PRVKEY")
+		}
+		if ColonyPrvKey == "" {
+			keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
+			CheckError(err)
+
+			ColonyPrvKey, err = keychain.GetPrvKey(ColonyID)
+			CheckError(err)
+		}
+
+		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Info("Starting a Colonies client")
+		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
+
+		if ColonyName == "" {
+			CheckError(errors.New("Invalid Colony name"))
+		}
+
+		err := client.RenameColony(ColonyID, ColonyName, ColonyPrvKey)
+		CheckError(err)
+
+		log.WithFields(log.Fields{"ColonyID": ColonyID, "Name": ColonyName}).Info("Colony renamed")
 	},
 }
 
