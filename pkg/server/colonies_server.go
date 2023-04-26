@@ -143,6 +143,8 @@ func (server *ColoniesServer) handleAPIRequest(c *gin.Context) {
 		server.handleAddColonyHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 	case rpc.DeleteColonyPayloadType:
 		server.handleDeleteColonyHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+	case rpc.RenameColonyPayloadType:
+		server.handleRenameColonyHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 	case rpc.GetColoniesPayloadType:
 		server.handleGetColoniesHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 	case rpc.GetColonyPayloadType:

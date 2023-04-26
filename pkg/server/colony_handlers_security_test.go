@@ -39,18 +39,47 @@ func TestDeleteColonySecurity(t *testing.T) {
 	privateKey, err := crypto.GeneratePrivateKey()
 	assert.Nil(t, err)
 
+	invalidPrivateKey, err := crypto.GeneratePrivateKey()
+	assert.Nil(t, err)
+
 	colonyID, err := crypto.GenerateID(privateKey)
 	assert.Nil(t, err)
 
 	colony := core.CreateColony(colonyID, "test_colony_name")
 
-	invalidPrivateKey, err := crypto.GeneratePrivateKey()
+	_, err = client.AddColony(colony, serverPrvKey)
 	assert.Nil(t, err)
 
-	err = client.DeleteColony(colony.ID, invalidPrivateKey)
+	err = client.DeleteColony(colonyID, invalidPrivateKey)
 	assert.NotNil(t, err)
 
-	err = client.DeleteColony(colony.ID, serverPrvKey)
+	err = client.DeleteColony(colonyID, serverPrvKey)
+	assert.Nil(t, err)
+
+	server.Shutdown()
+	<-done
+}
+
+func TestRenameColonySecurity(t *testing.T) {
+	env, client, server, serverPrvKey, done := setupTestEnv1(t)
+
+	// The setup looks like this:
+	//   executor1 is member of colony1
+	//   executor2 is member of colony2
+
+	err := client.RenameColony(env.colony1ID, "test_new_name", serverPrvKey)
+	assert.NotNil(t, err)
+
+	err = client.RenameColony(env.colony1ID, "test_new_name", env.executor1PrvKey)
+	assert.NotNil(t, err)
+
+	err = client.RenameColony(env.colony1ID, "test_new_name", env.executor2PrvKey)
+	assert.NotNil(t, err)
+
+	err = client.RenameColony(env.colony1ID, "test_new_name", env.colony2PrvKey)
+	assert.NotNil(t, err)
+
+	err = client.RenameColony(env.colony1ID, "test_new_name", env.colony1PrvKey)
 	assert.Nil(t, err)
 
 	server.Shutdown()
