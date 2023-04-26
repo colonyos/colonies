@@ -86,6 +86,34 @@ func (server *ColoniesServer) handleDeleteColonyHTTPRequest(c *gin.Context, reco
 	server.sendEmptyHTTPReply(c, payloadType)
 }
 
+func (server *ColoniesServer) handleRenameColonyHTTPRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
+	msg, err := rpc.CreateRenameColonyMsgFromJSON(jsonString)
+	if err != nil {
+		if server.handleHTTPError(c, errors.New("Failed to rename colony, invalid JSON"), http.StatusBadRequest) {
+			return
+		}
+	}
+
+	if msg.MsgType != payloadType {
+		server.handleHTTPError(c, errors.New("Failed to rename colony, msg.MsgType does not match payloadType"), http.StatusBadRequest)
+		return
+	}
+
+	err = server.validator.RequireColonyOwner(recoveredID, msg.ColonyID)
+	if server.handleHTTPError(c, err, http.StatusForbidden) {
+		return
+	}
+
+	err = server.controller.renameColony(msg.ColonyID, msg.Name)
+	if server.handleHTTPError(c, err, http.StatusBadRequest) {
+		return
+	}
+
+	log.WithFields(log.Fields{"ColonyId": msg.ColonyID, "Name": msg.Name}).Debug("Renaming colony")
+
+	server.sendEmptyHTTPReply(c, payloadType)
+}
+
 func (server *ColoniesServer) handleGetColoniesHTTPRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
 	msg, err := rpc.CreateGetColoniesMsgFromJSON(jsonString)
 	if err != nil {

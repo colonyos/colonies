@@ -76,8 +76,27 @@ func (db *PQDatabase) GetColonyByID(id string) (*core.Colony, error) {
 	return colonies[0], nil
 }
 
+func (db *PQDatabase) RenameColony(id string, name string) error {
+	sqlStatement := `UPDATE ` + db.dbPrefix + `COLONIES SET NAME=$1 WHERE COLONY_ID=$2`
+	_, err := db.postgresql.Exec(sqlStatement, name, id)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (db *PQDatabase) DeleteColonyByID(colonyID string) error {
-	err := db.DeleteExecutorsByColonyID(colonyID)
+	colony, err := db.GetColonyByID(colonyID)
+	if err != nil {
+		return err
+	}
+
+	if colony == nil {
+		return errors.New("Colony does not exists")
+	}
+
+	err = db.DeleteExecutorsByColonyID(colonyID)
 	if err != nil {
 		return err
 	}
