@@ -30,6 +30,29 @@ func TestAddColony(t *testing.T) {
 	assert.True(t, colony.Equals(colonyFromDB))
 }
 
+func TestRenameColony(t *testing.T) {
+	db, err := PrepareTests()
+	assert.Nil(t, err)
+
+	defer db.Close()
+
+	colony := core.CreateColony(core.GenerateRandomID(), "test_colony_name")
+
+	err = db.AddColony(colony)
+	assert.Nil(t, err)
+
+	colonyFromDB, err := db.GetColonyByID(colony.ID)
+	assert.Nil(t, err)
+	assert.Equal(t, colonyFromDB.Name, "test_colony_name")
+
+	err = db.RenameColony(colony.ID, "test_colony_new_name")
+	assert.Nil(t, err)
+
+	colonyFromDB, err = db.GetColonyByID(colony.ID)
+	assert.Nil(t, err)
+	assert.Equal(t, colonyFromDB.Name, "test_colony_new_name")
+}
+
 func TestAddTwoColonies(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
@@ -136,6 +159,9 @@ func TestDeleteColonies(t *testing.T) {
 	function = &core.Function{FunctionID: core.GenerateRandomID(), ExecutorID: executor3.ID, ColonyID: colony2.ID, FuncName: "testfunc", Desc: "unit test function", AvgWaitTime: 1.1, AvgExecTime: 0.1, Args: []string{"arg1"}}
 	err = db.AddFunction(function)
 	assert.Nil(t, err)
+
+	err = db.DeleteColonyByID(core.GenerateRandomID())
+	assert.NotNil(t, err)
 
 	err = db.DeleteColonyByID(colony1.ID)
 	assert.Nil(t, err)

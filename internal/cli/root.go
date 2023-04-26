@@ -48,6 +48,7 @@ var TargetExecutorName string
 var WorkflowID string
 var ColonyPrvKey string
 var ColonyID string
+var ColonyName string
 var ProcessID string
 var Key string
 var Value string
