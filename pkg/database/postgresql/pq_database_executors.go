@@ -23,6 +23,16 @@ func (db *PQDatabase) AddExecutor(executor *core.Executor) error {
 	return nil
 }
 
+func (db *PQDatabase) AddOrReplaceExecutor(executor *core.Executor) error {
+	sqlStatement := `INSERT INTO ` + db.dbPrefix + `EXECUTORS (EXECUTOR_ID, EXECUTOR_TYPE, NAME, COLONY_ID, STATE, REQUIRE_FUNC_REG, COMMISSIONTIME, LASTHEARDFROM, LONG, LAT) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) ON CONFLICT (EXECUTOR_ID) DO UPDATE SET EXECUTOR_TYPE=EXCLUDED.EXECUTOR_TYPE, NAME=EXCLUDED.NAME, COLONY_ID=EXCLUDED.COLONY_ID, STATE=EXCLUDED.STATE, REQUIRE_FUNC_REG=EXCLUDED.REQUIRE_FUNC_REG, COMMISSIONTIME=EXCLUDED.COMMISSIONTIME, LASTHEARDFROM=EXCLUDED.LASTHEARDFROM, LONG=EXCLUDED.LONG, LAT=EXCLUDED.LAT;`
+	_, err := db.postgresql.Exec(sqlStatement, executor.ID, executor.Type, executor.Name, executor.ColonyID, 0, executor.RequireFuncReg, time.Now(), executor.LastHeardFromTime, executor.Location.Long, executor.Location.Lat)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (db *PQDatabase) parseExecutors(rows *sql.Rows) ([]*core.Executor, error) {
 	var executors []*core.Executor
 
@@ -102,6 +112,31 @@ func (db *PQDatabase) GetExecutorsByColonyID(colonyID string) ([]*core.Executor,
 	}
 
 	return executors, nil
+}
+
+func (db *PQDatabase) GetExecutorByName(colonyID string, executorName string) (*core.Executor, error) {
+	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `EXECUTORS WHERE COLONY_ID=$1 AND NAME=$2`
+	rows, err := db.postgresql.Query(sqlStatement, colonyID, executorName)
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	executors, err := db.parseExecutors(rows)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(executors) > 1 {
+		return nil, errors.New("Expected one executor, executor name should be unique")
+	}
+
+	if len(executors) == 0 {
+		return nil, nil
+	}
+
+	return executors[0], nil
 }
 
 func (db *PQDatabase) ApproveExecutor(executor *core.Executor) error {

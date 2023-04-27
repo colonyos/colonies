@@ -223,10 +223,24 @@ func (controller *coloniesController) renameColony(colonyID string, name string)
 	return <-cmd.errorChan
 }
 
-func (controller *coloniesController) addExecutor(executor *core.Executor) (*core.Executor, error) {
+func (controller *coloniesController) addExecutor(executor *core.Executor, allowExecutorReregister bool) (*core.Executor, error) {
 	cmd := &command{threaded: true, executorReplyChan: make(chan *core.Executor, 1),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
+			if allowExecutorReregister {
+				executorFromDB, err := controller.db.GetExecutorByName(executor.ColonyID, executor.Name)
+				if err != nil {
+					cmd.errorChan <- err
+					return
+				}
+				if executorFromDB != nil {
+					err := controller.db.DeleteExecutorByID(executorFromDB.ID)
+					if err != nil {
+						cmd.errorChan <- err
+						return
+					}
+				}
+			}
 			err := controller.db.AddExecutor(executor)
 			if err != nil {
 				cmd.errorChan <- err
@@ -290,8 +304,6 @@ func (controller *coloniesController) getExecutorByColonyID(colonyID string) ([]
 	case executors := <-cmd.executorsReplyChan:
 		return executors, nil
 	}
-
-	return executors, nil
 }
 
 func (controller *coloniesController) approveExecutor(executorID string) error {
