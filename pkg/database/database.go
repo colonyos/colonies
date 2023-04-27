@@ -22,9 +22,11 @@ type Database interface {
 
 	// Executor functions ...
 	AddExecutor(executor *core.Executor) error
+	AddOrReplaceExecutor(executor *core.Executor) error
 	GetExecutors() ([]*core.Executor, error)
 	GetExecutorByID(executorID string) (*core.Executor, error)
 	GetExecutorsByColonyID(colonyID string) ([]*core.Executor, error)
+	GetExecutorByName(colonyID string, executorName string) (*core.Executor, error)
 	ApproveExecutor(executor *core.Executor) error
 	RejectExecutor(executor *core.Executor) error
 	MarkAlive(executor *core.Executor) error

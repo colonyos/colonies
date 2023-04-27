@@ -179,6 +179,14 @@ var devCmd = &cobra.Command{
 		dbUser := os.Getenv("COLONIES_DB_USER")
 		dbPassword := os.Getenv("COLONIES_DB_PASSWORD")
 
+		AllowExecutorReregisterStr := os.Getenv("COLONIES_ALLOW_EXECUTOR_REREGISTER")
+		if AllowExecutorReregisterStr != "" {
+			AllowExecutorReregister, err = strconv.ParseBool(AllowExecutorReregisterStr)
+			CheckError(err)
+		} else {
+			AllowExecutorReregister = false
+		}
+
 		log.WithFields(log.Fields{"DBHost": dbHost, "DBPort": dbPort, "DBUser": dbUser, "DBPassword": dbPassword, "DBName": DBName}).Info("Starting embedded PostgreSQL server")
 		postgres := embeddedpostgres.NewDatabase(embeddedpostgres.DefaultConfig().
 			RuntimePath(coloniesPath + "/embedded-postgres-go/extracted").
@@ -281,7 +289,8 @@ var devCmd = &cobra.Command{
 			"/tmp/coloniesdev/dev/etcd",
 			GeneratorCheckerPeriod,
 			CronCheckerPeriod,
-			ExclusiveAssign)
+			ExclusiveAssign,
+			AllowExecutorReregister)
 
 		go coloniesServer.ServeForever()
 

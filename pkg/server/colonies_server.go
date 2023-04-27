@@ -23,18 +23,19 @@ import (
 )
 
 type ColoniesServer struct {
-	ginHandler        *gin.Engine
-	controller        *coloniesController
-	serverID          string
-	tls               bool
-	tlsPrivateKeyPath string
-	tlsCertPath       string
-	port              int
-	httpServer        *http.Server
-	crypto            security.Crypto
-	validator         security.Validator
-	db                database.Database
-	exclusiveAssign   bool
+	ginHandler              *gin.Engine
+	controller              *coloniesController
+	serverID                string
+	tls                     bool
+	tlsPrivateKeyPath       string
+	tlsCertPath             string
+	port                    int
+	httpServer              *http.Server
+	crypto                  security.Crypto
+	validator               security.Validator
+	db                      database.Database
+	exclusiveAssign         bool
+	allowExecutorReregister bool
 }
 
 func CreateColoniesServer(db database.Database,
@@ -48,7 +49,8 @@ func CreateColoniesServer(db database.Database,
 	etcdDataPath string,
 	generatorPeriod int,
 	cronPeriod int,
-	exclusiveAssign bool) *ColoniesServer {
+	exclusiveAssign bool,
+	allowExecutorReregister bool) *ColoniesServer {
 	server := &ColoniesServer{}
 	server.ginHandler = gin.Default()
 	server.ginHandler.Use(cors.Default())
@@ -70,22 +72,24 @@ func CreateColoniesServer(db database.Database,
 	server.crypto = crypto.CreateCrypto()
 	server.validator = validator.CreateValidator(db)
 	server.exclusiveAssign = exclusiveAssign
+	server.allowExecutorReregister = allowExecutorReregister
 
 	log.WithFields(log.Fields{"Port": port,
-		"ServerID":          serverID,
-		"TLS":               tls,
-		"TLSPrivateKeyPath": tlsPrivateKeyPath,
-		"TLSCertPath":       tlsCertPath,
-		"APIPort":           thisNode.APIPort,
-		"EtcdClientPort":    thisNode.EtcdClientPort,
-		"EtcdPeerPort":      thisNode.EtcdPeerPort,
-		"EtcdDataPath":      etcdDataPath,
-		"Host":              thisNode.Host,
-		"RelayPort":         thisNode.RelayPort,
-		"Name":              thisNode.Name,
-		"GeneratorPeriod":   generatorPeriod,
-		"CronPeriod":        cronPeriod,
-		"ExclusiveAssign":   exclusiveAssign}).
+		"ServerID":                serverID,
+		"TLS":                     tls,
+		"TLSPrivateKeyPath":       tlsPrivateKeyPath,
+		"TLSCertPath":             tlsCertPath,
+		"APIPort":                 thisNode.APIPort,
+		"EtcdClientPort":          thisNode.EtcdClientPort,
+		"EtcdPeerPort":            thisNode.EtcdPeerPort,
+		"EtcdDataPath":            etcdDataPath,
+		"Host":                    thisNode.Host,
+		"RelayPort":               thisNode.RelayPort,
+		"Name":                    thisNode.Name,
+		"GeneratorPeriod":         generatorPeriod,
+		"CronPeriod":              cronPeriod,
+		"AllowExecutorReregister": allowExecutorReregister,
+		"ExclusiveAssign":         exclusiveAssign}).
 		Info("Starting Colonies server")
 
 	server.setupRoutes()

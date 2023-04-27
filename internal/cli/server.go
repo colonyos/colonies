@@ -122,6 +122,14 @@ func parseServerEnv() {
 	} else {
 		ExclusiveAssign = false
 	}
+
+	AllowExecutorReregisterStr := os.Getenv("COLONIES_ALLOW_EXECUTOR_REREGISTER")
+	if AllowExecutorReregisterStr != "" {
+		AllowExecutorReregister, err = strconv.ParseBool(AllowExecutorReregisterStr)
+		CheckError(err)
+	} else {
+		AllowExecutorReregister = false
+	}
 }
 
 var serverStatusCmd = &cobra.Command{
@@ -228,15 +236,6 @@ var serverStartCmd = &cobra.Command{
 			log.Warning("EtcdDataDir not specified, setting it to " + EtcdDataDir)
 		}
 
-		log.WithFields(log.Fields{
-			"BuildVersion": build.BuildVersion,
-			"BuildTime":    build.BuildTime,
-			"ServerPort":   ServerPort,
-			"Verbose":      Verbose,
-			"UseTLS":       UseTLS,
-			"ServerID":     ServerID,
-		}).Info("Starting a Colonies Server")
-
 		if Verbose {
 			log.SetLevel(log.DebugLevel)
 		} else {
@@ -255,7 +254,8 @@ var serverStartCmd = &cobra.Command{
 			EtcdDataDir,
 			GeneratorCheckerPeriod,
 			CronCheckerPeriod,
-			ExclusiveAssign)
+			ExclusiveAssign,
+			AllowExecutorReregister)
 
 		for {
 			err := server.ServeForever()
