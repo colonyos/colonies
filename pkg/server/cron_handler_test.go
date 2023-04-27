@@ -349,8 +349,10 @@ func TestCronArgs(t *testing.T) {
 	assert.NotNil(t, addedCron)
 
 	process, err := client.Assign(env.colonyID, 100, env.executorPrvKey)
+	assert.Nil(t, err)
 
-	fmt.Println(process.FunctionSpec.Args)
+	// TODO:
+	fmt.Println(process)
 
 	server.Shutdown()
 	<-done

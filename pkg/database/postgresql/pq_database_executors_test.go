@@ -33,6 +33,34 @@ func TestAddExecutor(t *testing.T) {
 	assert.False(t, executorFromDB.IsRejected())
 }
 
+func TestAddOrReplaceExecutor(t *testing.T) {
+	db, err := PrepareTests()
+	assert.Nil(t, err)
+
+	defer db.Close()
+
+	colony := core.CreateColony(core.GenerateRandomID(), "test_colony_name_1")
+	err = db.AddColony(colony)
+	assert.Nil(t, err)
+
+	executor := utils.CreateTestExecutor(colony.ID)
+	executor.Name = "test_name_1"
+	err = db.AddOrReplaceExecutor(executor)
+	assert.Nil(t, err)
+
+	executorFromDB, err := db.GetExecutorByID(executor.ID)
+	assert.Nil(t, err)
+	assert.Equal(t, executorFromDB.Name, "test_name_1")
+
+	executor.Name = "test_name_2"
+	err = db.AddOrReplaceExecutor(executor)
+	assert.Nil(t, err)
+
+	executorFromDB, err = db.GetExecutorByID(executor.ID)
+	assert.Nil(t, err)
+	assert.Equal(t, executorFromDB.Name, "test_name_2")
+}
+
 func TestAddTwoExecutors(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
@@ -120,6 +148,32 @@ func TestGetExecutorByColonyID(t *testing.T) {
 	executorsColony1FromDB, err := db.GetExecutorsByColonyID(colony1.ID)
 	assert.Nil(t, err)
 	assert.True(t, core.IsExecutorArraysEqual(executorsColony1, executorsColony1FromDB))
+}
+
+func TestGetExecutorByName(t *testing.T) {
+	db, err := PrepareTests()
+	assert.Nil(t, err)
+
+	defer db.Close()
+
+	colony := core.CreateColony(core.GenerateRandomID(), "test_colony_name_1")
+
+	err = db.AddColony(colony)
+	assert.Nil(t, err)
+
+	executor1 := utils.CreateTestExecutor(colony.ID)
+	executor1.Name = "test_name_1"
+	err = db.AddExecutor(executor1)
+	assert.Nil(t, err)
+
+	executor2 := utils.CreateTestExecutor(colony.ID)
+	executor2.Name = "test_name_"
+	err = db.AddExecutor(executor2)
+	assert.Nil(t, err)
+
+	executorFromDB, err := db.GetExecutorByName(colony.ID, executor1.Name)
+	assert.Nil(t, err)
+	assert.True(t, executor1.Equals(executorFromDB))
 }
 
 func TestMarkAlive(t *testing.T) {
