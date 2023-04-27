@@ -89,6 +89,7 @@ var CronRandom bool
 var WaitForPrevProcessGraph bool
 var Long float64
 var Lat float64
+var AllowExecutorReregister bool
 var ExclusiveAssign bool
 var Approve bool
 
