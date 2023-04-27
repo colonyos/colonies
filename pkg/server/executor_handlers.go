@@ -33,7 +33,7 @@ func (server *ColoniesServer) handleAddExecutorHTTPRequest(c *gin.Context, recov
 		return
 	}
 
-	addedExecutor, err := server.controller.addExecutor(msg.Executor)
+	addedExecutor, err := server.controller.addExecutor(msg.Executor, server.allowExecutorReregister)
 	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}

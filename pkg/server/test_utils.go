@@ -140,7 +140,7 @@ func prepareTests(t *testing.T) (*client.ColoniesClient, *ColoniesServer, string
 	node := cluster.Node{Name: "etcd", Host: "localhost", EtcdClientPort: 24100, EtcdPeerPort: 23100, RelayPort: 25100, APIPort: TESTPORT}
 	clusterConfig := cluster.Config{}
 	clusterConfig.AddNode(node)
-	server := CreateColoniesServer(db, TESTPORT, serverID, EnableTLS, "../../cert/key.pem", "../../cert/cert.pem", node, clusterConfig, "/tmp/colonies/etcd", GENERATOR_TRIGGER_PERIOD, CRON_TRIGGER_PERIOD, true)
+	server := CreateColoniesServer(db, TESTPORT, serverID, EnableTLS, "../../cert/key.pem", "../../cert/cert.pem", node, clusterConfig, "/tmp/colonies/etcd", GENERATOR_TRIGGER_PERIOD, CRON_TRIGGER_PERIOD, true, false)
 
 	done := make(chan bool)
 	go func() {
@@ -313,7 +313,7 @@ func StartCluster(t *testing.T, db database.Database, size int) []ServerInfo {
 	for i, node := range clusterConfig.Nodes {
 		go func(i int, node cluster.Node) {
 			log.WithFields(log.Fields{"APIPort": node.APIPort}).Info("Starting ColoniesServer")
-			server := CreateColoniesServer(db, node.APIPort, serverID, false, "", "", node, clusterConfig, "/tmp/colonies/etcd"+strconv.Itoa(i), GENERATOR_TRIGGER_PERIOD, CRON_TRIGGER_PERIOD, true)
+			server := CreateColoniesServer(db, node.APIPort, serverID, false, "", "", node, clusterConfig, "/tmp/colonies/etcd"+strconv.Itoa(i), GENERATOR_TRIGGER_PERIOD, CRON_TRIGGER_PERIOD, true, false)
 			done := make(chan struct{})
 			s := ServerInfo{ServerID: serverID, ServerPrvKey: serverPrvKey, Server: server, Node: node, Done: done}
 			go func(i int) {
