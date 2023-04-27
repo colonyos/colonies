@@ -227,12 +227,12 @@ func (controller *coloniesController) addExecutor(executor *core.Executor, allow
 	cmd := &command{threaded: true, executorReplyChan: make(chan *core.Executor, 1),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
+			executorFromDB, err := controller.db.GetExecutorByName(executor.ColonyID, executor.Name)
+			if err != nil {
+				cmd.errorChan <- err
+				return
+			}
 			if allowExecutorReregister {
-				executorFromDB, err := controller.db.GetExecutorByName(executor.ColonyID, executor.Name)
-				if err != nil {
-					cmd.errorChan <- err
-					return
-				}
 				if executorFromDB != nil {
 					err := controller.db.DeleteExecutorByID(executorFromDB.ID)
 					if err != nil {
@@ -240,8 +240,14 @@ func (controller *coloniesController) addExecutor(executor *core.Executor, allow
 						return
 					}
 				}
+			} else {
+				if executorFromDB != nil {
+					cmd.errorChan <- errors.New("Executor name must be unique")
+					return
+				}
+
 			}
-			err := controller.db.AddExecutor(executor)
+			err = controller.db.AddExecutor(executor)
 			if err != nil {
 				cmd.errorChan <- err
 				return
