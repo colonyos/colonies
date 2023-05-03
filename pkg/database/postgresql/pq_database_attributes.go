@@ -7,7 +7,7 @@ import (
 	"github.com/colonyos/colonies/pkg/core"
 )
 
-func (db *PQDatabase) AddAttributes(attributes []core.Attribute) error { // TODO: Unit tests
+func (db *PQDatabase) AddAttributes(attributes []core.Attribute) error {
 	for _, attribute := range attributes {
 		err := db.AddAttribute(attribute)
 		if err != nil {
@@ -71,6 +71,23 @@ func (db *PQDatabase) GetAttributeByID(attributeID string) (core.Attribute, erro
 	}
 
 	return attributes[0], nil
+}
+
+func (db *PQDatabase) GetAttributesByColonyID(colonyID string) ([]core.Attribute, error) {
+	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `ATTRIBUTES WHERE TARGET_COLONY_ID=$1`
+	rows, err := db.postgresql.Query(sqlStatement, colonyID)
+	if err != nil {
+		return []core.Attribute{}, err
+	}
+
+	defer rows.Close()
+
+	attributes, err := db.parseAttributes(rows)
+	if err != nil {
+		return []core.Attribute{}, err
+	}
+
+	return attributes, nil
 }
 
 func (db *PQDatabase) GetAttribute(targetID string, key string, attributeType int) (core.Attribute, error) {
@@ -154,6 +171,32 @@ func (db *PQDatabase) DeleteAllAttributesByColonyID(colonyID string) error {
 	return nil
 }
 
+// TODO: This function will be very slow if the attribute table is large. The solution is to
+// store state in the process table, then the attributes can be deleted using a single
+// SQL statement.
+func (db *PQDatabase) DeleteAllAttributesByColonyIDWithState(colonyID string, state int) error {
+	attributes, err := db.GetAttributesByColonyID(colonyID)
+	if err != nil {
+		return err
+	}
+
+	for _, attribute := range attributes {
+		processID := attribute.TargetID
+		process, err := db.GetProcessByID(processID)
+		if err != nil {
+			return err
+		}
+		if process.State == state && process.ProcessGraphID == "" {
+			err = db.DeleteAttributeByID(attribute.ID)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
 func (db *PQDatabase) DeleteAllAttributesByProcessGraphID(processGraphID string) error {
 	sqlStatement := `DELETE FROM ` + db.dbPrefix + `ATTRIBUTES WHERE PROCESSGRAPH_ID=$1`
 	_, err := db.postgresql.Exec(sqlStatement, processGraphID)
@@ -169,6 +212,29 @@ func (db *PQDatabase) DeleteAllAttributesInProcessGraphsByColonyID(colonyID stri
 	_, err := db.postgresql.Exec(sqlStatement, "", colonyID)
 	if err != nil {
 		return err
+	}
+
+	return nil
+}
+
+func (db *PQDatabase) DeleteAllAttributesInProcessGraphsByColonyIDWithState(colonyID string, state int) error {
+	attributes, err := db.GetAttributesByColonyID(colonyID)
+	if err != nil {
+		return err
+	}
+
+	for _, attribute := range attributes {
+		processID := attribute.TargetID
+		process, err := db.GetProcessByID(processID)
+		if err != nil {
+			return err
+		}
+		if process.State == state && process.ProcessGraphID != "" {
+			err = db.DeleteAttributeByID(attribute.ID)
+			if err != nil {
+				return err
+			}
+		}
 	}
 
 	return nil

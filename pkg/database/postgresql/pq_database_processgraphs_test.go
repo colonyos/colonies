@@ -46,6 +46,20 @@ func generateProcessGraph(t *testing.T, db *PQDatabase, colonyID string) *core.P
 	return graph
 }
 
+func generateProcessGraph2(t *testing.T, db *PQDatabase, colonyID string) (*core.Process, *core.ProcessGraph) {
+	graph, err := core.CreateProcessGraph(colonyID)
+	assert.Nil(t, err)
+
+	process := utils.CreateTestProcess(colonyID)
+	process.ProcessGraphID = graph.ID
+	err = db.AddProcess(process)
+	assert.Nil(t, err)
+
+	graph.AddRoot(process.ID)
+
+	return process, graph
+}
+
 func TestAddProcessGraph(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
@@ -130,6 +144,186 @@ func TestDeleteAllProcessGraphsByColonyID(t *testing.T) {
 	graphFromDB, err = db.GetProcessGraphByID(graph2.ID)
 	assert.Nil(t, err)
 	assert.Nil(t, graphFromDB)
+}
+
+func TestDeleteAllWaitingProcessGraphsByColonyID(t *testing.T) {
+	db, err := PrepareTests()
+	assert.Nil(t, err)
+	defer db.Close()
+
+	colonyID := core.GenerateRandomID()
+
+	process1, graph1 := generateProcessGraph2(t, db, colonyID)
+	err = db.AddProcessGraph(graph1)
+	assert.Nil(t, err)
+
+	process2, graph2 := generateProcessGraph2(t, db, colonyID)
+	err = db.AddProcessGraph(graph2)
+	assert.Nil(t, err)
+
+	err = db.SetProcessGraphState(graph1.ID, core.WAITING)
+	assert.Nil(t, err)
+	err = db.SetProcessState(process1.ID, core.WAITING)
+	assert.Nil(t, err)
+
+	err = db.SetProcessGraphState(graph2.ID, core.WAITING)
+	assert.Nil(t, err)
+	err = db.SetProcessState(process2.ID, core.WAITING)
+	assert.Nil(t, err)
+
+	waitingProcesses, err := db.CountWaitingProcesses()
+	assert.Nil(t, err)
+	assert.Equal(t, waitingProcesses, 2)
+
+	waitingGraphs, err := db.CountWaitingProcessGraphs()
+	assert.Nil(t, err)
+	assert.Equal(t, waitingGraphs, 2)
+
+	err = db.DeleteAllWaitingProcessGraphsByColonyID(colonyID)
+	assert.Nil(t, err)
+
+	waitingGraphs, err = db.CountWaitingProcessGraphs()
+	assert.Nil(t, err)
+	assert.Equal(t, waitingGraphs, 0)
+
+	waitingProcesses, err = db.CountWaitingProcesses()
+	assert.Nil(t, err)
+	assert.Equal(t, waitingProcesses, 0)
+}
+
+func TestDeleteAllRunningProcessGraphsByColonyID(t *testing.T) {
+	db, err := PrepareTests()
+	assert.Nil(t, err)
+	defer db.Close()
+
+	colonyID := core.GenerateRandomID()
+
+	process1, graph1 := generateProcessGraph2(t, db, colonyID)
+	err = db.AddProcessGraph(graph1)
+	assert.Nil(t, err)
+
+	process2, graph2 := generateProcessGraph2(t, db, colonyID)
+	err = db.AddProcessGraph(graph2)
+	assert.Nil(t, err)
+
+	err = db.SetProcessGraphState(graph1.ID, core.RUNNING)
+	assert.Nil(t, err)
+	err = db.SetProcessState(process1.ID, core.RUNNING)
+	assert.Nil(t, err)
+
+	err = db.SetProcessGraphState(graph2.ID, core.RUNNING)
+	assert.Nil(t, err)
+	err = db.SetProcessState(process2.ID, core.RUNNING)
+	assert.Nil(t, err)
+
+	runningProcesses, err := db.CountRunningProcesses()
+	assert.Nil(t, err)
+	assert.Equal(t, runningProcesses, 2)
+
+	runningGraphs, err := db.CountRunningProcessGraphs()
+	assert.Nil(t, err)
+	assert.Equal(t, runningGraphs, 2)
+
+	err = db.DeleteAllRunningProcessGraphsByColonyID(colonyID)
+	assert.Nil(t, err)
+
+	runningProcesses, err = db.CountRunningProcesses()
+	assert.Nil(t, err)
+	assert.Equal(t, runningProcesses, 0)
+
+	runningGraphs, err = db.CountRunningProcessGraphs()
+	assert.Nil(t, err)
+	assert.Equal(t, runningGraphs, 0)
+}
+
+func TestDeleteAllSuccessfulProcessGraphsByColonyID(t *testing.T) {
+	db, err := PrepareTests()
+	assert.Nil(t, err)
+	defer db.Close()
+
+	colonyID := core.GenerateRandomID()
+
+	process1, graph1 := generateProcessGraph2(t, db, colonyID)
+	err = db.AddProcessGraph(graph1)
+	assert.Nil(t, err)
+
+	process2, graph2 := generateProcessGraph2(t, db, colonyID)
+	err = db.AddProcessGraph(graph2)
+	assert.Nil(t, err)
+
+	err = db.SetProcessGraphState(graph1.ID, core.SUCCESS)
+	assert.Nil(t, err)
+	err = db.SetProcessState(process1.ID, core.SUCCESS)
+	assert.Nil(t, err)
+
+	err = db.SetProcessGraphState(graph2.ID, core.SUCCESS)
+	assert.Nil(t, err)
+	err = db.SetProcessState(process2.ID, core.SUCCESS)
+	assert.Nil(t, err)
+
+	successfulProcesses, err := db.CountSuccessfulProcesses()
+	assert.Nil(t, err)
+	assert.Equal(t, successfulProcesses, 2)
+
+	successfulGraphs, err := db.CountSuccessfulProcessGraphs()
+	assert.Nil(t, err)
+	assert.Equal(t, successfulGraphs, 2)
+
+	err = db.DeleteAllSuccessfulProcessGraphsByColonyID(colonyID)
+	assert.Nil(t, err)
+
+	successfulProcesses, err = db.CountSuccessfulProcesses()
+	assert.Nil(t, err)
+	assert.Equal(t, successfulProcesses, 0)
+
+	successfulGraphs, err = db.CountSuccessfulProcessGraphs()
+	assert.Nil(t, err)
+	assert.Equal(t, successfulGraphs, 0)
+}
+
+func TestDeleteAllFailedProcessGraphsByColonyID(t *testing.T) {
+	db, err := PrepareTests()
+	assert.Nil(t, err)
+	defer db.Close()
+
+	colonyID := core.GenerateRandomID()
+
+	process1, graph1 := generateProcessGraph2(t, db, colonyID)
+	err = db.AddProcessGraph(graph1)
+	assert.Nil(t, err)
+
+	process2, graph2 := generateProcessGraph2(t, db, colonyID)
+	err = db.AddProcessGraph(graph2)
+	assert.Nil(t, err)
+
+	err = db.SetProcessGraphState(graph1.ID, core.FAILED)
+	assert.Nil(t, err)
+	err = db.SetProcessState(process1.ID, core.FAILED)
+	assert.Nil(t, err)
+
+	err = db.SetProcessGraphState(graph2.ID, core.FAILED)
+	assert.Nil(t, err)
+	err = db.SetProcessState(process2.ID, core.FAILED)
+	assert.Nil(t, err)
+
+	failedProcesses, err := db.CountFailedProcesses()
+	assert.Nil(t, err)
+	assert.Equal(t, failedProcesses, 2)
+
+	failedGraphs, err := db.CountFailedProcessGraphs()
+	assert.Nil(t, err)
+	assert.Equal(t, failedGraphs, 2)
+
+	err = db.DeleteAllFailedProcessGraphsByColonyID(colonyID)
+	assert.Nil(t, err)
+
+	failedProcesses, err = db.CountFailedProcesses()
+	assert.Nil(t, err)
+	assert.Equal(t, failedProcesses, 0)
+
+	failedGraphs, err = db.CountFailedProcessGraphs()
+	assert.Nil(t, err)
+	assert.Equal(t, failedGraphs, 0)
 }
 
 func TestSetProcessGraphState(t *testing.T) {
