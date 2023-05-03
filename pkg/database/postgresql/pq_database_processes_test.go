@@ -124,6 +124,136 @@ func TestDeleteAllProcessesByColony(t *testing.T) {
 	assert.NotNil(t, err)
 }
 
+func TestDeleteAllProcessesByColonyWithState(t *testing.T) {
+	db, err := PrepareTests()
+	assert.Nil(t, err)
+
+	defer db.Close()
+
+	colony1ID := core.GenerateRandomID()
+	colony2ID := core.GenerateRandomID()
+	executor1ID := core.GenerateRandomID()
+	executor2ID := core.GenerateRandomID()
+
+	process1 := utils.CreateTestProcessWithTargets(colony1ID, []string{executor1ID, executor2ID})
+	err = db.AddProcess(process1)
+	assert.Nil(t, err)
+
+	process2 := utils.CreateTestProcessWithTargets(colony1ID, []string{executor1ID, executor2ID})
+	err = db.AddProcess(process2)
+	assert.Nil(t, err)
+
+	process3 := utils.CreateTestProcessWithTargets(colony1ID, []string{executor1ID, executor2ID})
+	err = db.AddProcess(process3)
+	assert.Nil(t, err)
+
+	process4 := utils.CreateTestProcessWithTargets(colony1ID, []string{executor1ID, executor2ID})
+	err = db.AddProcess(process4)
+	assert.Nil(t, err)
+
+	process5 := utils.CreateTestProcessWithTargets(colony2ID, []string{executor1ID, executor2ID})
+	err = db.AddProcess(process5)
+	assert.Nil(t, err)
+
+	err = db.SetProcessState(process1.ID, core.WAITING)
+	assert.Nil(t, err)
+
+	err = db.SetProcessState(process2.ID, core.RUNNING)
+	assert.Nil(t, err)
+
+	err = db.SetProcessState(process3.ID, core.SUCCESS)
+	assert.Nil(t, err)
+
+	err = db.SetProcessState(process4.ID, core.FAILED)
+	assert.Nil(t, err)
+
+	err = db.SetProcessState(process5.ID, core.FAILED)
+	assert.Nil(t, err)
+
+	waitingProcesses, err := db.CountWaitingProcesses()
+	assert.Nil(t, err)
+	assert.Equal(t, waitingProcesses, 1)
+	runningProcesses, err := db.CountRunningProcesses()
+	assert.Nil(t, err)
+	assert.Equal(t, runningProcesses, 1)
+	successfulProcesses, err := db.CountSuccessfulProcesses()
+	assert.Nil(t, err)
+	assert.Equal(t, successfulProcesses, 1)
+	failedProcesses, err := db.CountFailedProcesses()
+	assert.Nil(t, err)
+	assert.Equal(t, failedProcesses, 2)
+
+	err = db.DeleteAllWaitingProcessesByColonyID(colony1ID)
+	waitingProcesses, err = db.CountWaitingProcesses()
+	assert.Nil(t, err)
+	assert.Equal(t, waitingProcesses, 0)
+	runningProcesses, err = db.CountRunningProcesses()
+	assert.Nil(t, err)
+	assert.Equal(t, runningProcesses, 1)
+	successfulProcesses, err = db.CountSuccessfulProcesses()
+	assert.Nil(t, err)
+	assert.Equal(t, successfulProcesses, 1)
+	failedProcesses, err = db.CountFailedProcesses()
+	assert.Nil(t, err)
+	assert.Equal(t, failedProcesses, 2)
+
+	err = db.DeleteAllRunningProcessesByColonyID(colony1ID)
+	waitingProcesses, err = db.CountWaitingProcesses()
+	assert.Nil(t, err)
+	assert.Equal(t, waitingProcesses, 0)
+	runningProcesses, err = db.CountRunningProcesses()
+	assert.Nil(t, err)
+	assert.Equal(t, runningProcesses, 0)
+	successfulProcesses, err = db.CountSuccessfulProcesses()
+	assert.Nil(t, err)
+	assert.Equal(t, successfulProcesses, 1)
+	failedProcesses, err = db.CountFailedProcesses()
+	assert.Nil(t, err)
+	assert.Equal(t, failedProcesses, 2)
+
+	err = db.DeleteAllSuccessfulProcessesByColonyID(colony1ID)
+	waitingProcesses, err = db.CountWaitingProcesses()
+	assert.Nil(t, err)
+	assert.Equal(t, waitingProcesses, 0)
+	runningProcesses, err = db.CountRunningProcesses()
+	assert.Nil(t, err)
+	assert.Equal(t, runningProcesses, 0)
+	successfulProcesses, err = db.CountSuccessfulProcesses()
+	assert.Nil(t, err)
+	assert.Equal(t, successfulProcesses, 0)
+	failedProcesses, err = db.CountFailedProcesses()
+	assert.Nil(t, err)
+	assert.Equal(t, failedProcesses, 2)
+
+	err = db.DeleteAllFailedProcessesByColonyID(colony1ID)
+	waitingProcesses, err = db.CountWaitingProcesses()
+	assert.Nil(t, err)
+	assert.Equal(t, waitingProcesses, 0)
+	runningProcesses, err = db.CountRunningProcesses()
+	assert.Nil(t, err)
+	assert.Equal(t, runningProcesses, 0)
+	successfulProcesses, err = db.CountSuccessfulProcesses()
+	assert.Nil(t, err)
+	assert.Equal(t, successfulProcesses, 0)
+	failedProcesses, err = db.CountFailedProcesses()
+	assert.Nil(t, err)
+	assert.Equal(t, failedProcesses, 1)
+
+	err = db.DeleteAllFailedProcessesByColonyID(colony2ID)
+	waitingProcesses, err = db.CountWaitingProcesses()
+	assert.Nil(t, err)
+	assert.Equal(t, waitingProcesses, 0)
+	runningProcesses, err = db.CountRunningProcesses()
+	assert.Nil(t, err)
+	assert.Equal(t, runningProcesses, 0)
+	successfulProcesses, err = db.CountSuccessfulProcesses()
+	assert.Nil(t, err)
+	assert.Equal(t, successfulProcesses, 0)
+	failedProcesses, err = db.CountFailedProcesses()
+	assert.Nil(t, err)
+	assert.Equal(t, failedProcesses, 0)
+}
+
 func TestDeleteAllProcessesByProcessGraphID(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
@@ -241,6 +371,78 @@ func TestDeleteAllProcessesInProcessGraphsByColonyID(t *testing.T) {
 	processFromServer, err = db.GetProcessByID(process3.ID)
 	assert.Nil(t, err)
 	assert.NotNil(t, processFromServer)
+}
+
+func TestDeleteAllProcessesInProcessGraphsByColonyIDWithState(t *testing.T) {
+	db, err := PrepareTests()
+	assert.Nil(t, err)
+
+	defer db.Close()
+
+	colonyID := core.GenerateRandomID()
+	processGraphID1 := core.GenerateRandomID()
+	processGraphID2 := core.GenerateRandomID()
+	processGraphID3 := core.GenerateRandomID()
+	process1 := utils.CreateTestProcess(colonyID)
+	process1.ProcessGraphID = processGraphID1
+	err = db.AddProcess(process1)
+	assert.Nil(t, err)
+	attribute1 := core.CreateAttribute(process1.ID, colonyID, processGraphID1, core.IN, "test_key1", "test_value1")
+	err = db.AddAttribute(attribute1)
+	assert.Nil(t, err)
+
+	process2 := utils.CreateTestProcess(colonyID)
+	process2.ProcessGraphID = processGraphID2
+	err = db.AddProcess(process2)
+	assert.Nil(t, err)
+	attribute2 := core.CreateAttribute(process2.ID, colonyID, processGraphID2, core.IN, "test_key1", "test_value1")
+	err = db.AddAttribute(attribute2)
+	assert.Nil(t, err)
+
+	process3 := utils.CreateTestProcess(colonyID)
+	process3.ProcessGraphID = processGraphID3
+	err = db.AddProcess(process3)
+	assert.Nil(t, err)
+	attribute3 := core.CreateAttribute(process3.ID, colonyID, processGraphID3, core.IN, "test_key1", "test_value1")
+	err = db.AddAttribute(attribute3)
+	assert.Nil(t, err)
+
+	process4 := utils.CreateTestProcess(colonyID)
+	err = db.AddProcess(process4)
+	assert.Nil(t, err)
+	attribute4 := core.CreateAttribute(process4.ID, colonyID, "", core.IN, "test_key1", "test_value1")
+	err = db.AddAttribute(attribute4)
+	assert.Nil(t, err)
+
+	err = db.SetProcessState(process1.ID, core.FAILED)
+	assert.Nil(t, err)
+
+	err = db.SetProcessState(process2.ID, core.FAILED)
+	assert.Nil(t, err)
+
+	err = db.SetProcessState(process3.ID, core.RUNNING)
+	assert.Nil(t, err)
+
+	err = db.SetProcessState(process4.ID, core.RUNNING)
+	assert.Nil(t, err)
+
+	runningProcesses, err := db.CountFailedProcesses()
+	assert.Nil(t, err)
+	assert.Equal(t, runningProcesses, 2)
+
+	err = db.DeleteAllProcessesInProcessGraphsByColonyIDWithState(colonyID, core.FAILED)
+	assert.Nil(t, err)
+
+	runningProcesses, err = db.CountFailedProcesses()
+	assert.Nil(t, err)
+	assert.Equal(t, runningProcesses, 0)
+
+	err = db.DeleteAllProcessesInProcessGraphsByColonyIDWithState(colonyID, core.RUNNING)
+	assert.Nil(t, err)
+
+	runningProcesses, err = db.CountRunningProcesses()
+	assert.Nil(t, err)
+	assert.Equal(t, runningProcesses, 1)
 }
 
 func TestDeleteAllProcessesAndAttributes(t *testing.T) {
