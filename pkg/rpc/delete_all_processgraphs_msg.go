@@ -9,6 +9,7 @@ const DeleteAllProcessGraphsPayloadType = "deleteallprocessgraphsmsg"
 type DeleteAllProcessGraphsMsg struct {
 	ColonyID string `json:"colonyid"`
 	MsgType  string `json:"msgtype"`
+	State    int    `json:"state"`
 }
 
 func CreateDeleteAllProcessGraphsMsg(colonyID string) *DeleteAllProcessGraphsMsg {
@@ -33,7 +34,7 @@ func (msg *DeleteAllProcessGraphsMsg) Equals(msg2 *DeleteAllProcessGraphsMsg) bo
 		return false
 	}
 
-	if msg.MsgType == msg2.MsgType && msg.ColonyID == msg2.ColonyID {
+	if msg.MsgType == msg2.MsgType && msg.ColonyID == msg2.ColonyID && msg.State == msg2.State {
 		return true
 	}
 

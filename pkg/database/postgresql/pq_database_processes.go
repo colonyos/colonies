@@ -395,6 +395,66 @@ func (db *PQDatabase) DeleteAllProcesses() error {
 	return nil
 }
 
+func (db *PQDatabase) DeleteAllWaitingProcessesByColonyID(colonyID string) error {
+	sqlStatement := `DELETE FROM ` + db.dbPrefix + `PROCESSES WHERE TARGET_COLONY_ID=$1 AND PROCESSGRAPH_ID=$2 AND STATE=$3`
+	_, err := db.postgresql.Exec(sqlStatement, colonyID, "", core.WAITING)
+	if err != nil {
+		return err
+	}
+
+	err = db.DeleteAllAttributesByColonyIDWithState(colonyID, core.WAITING)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (db *PQDatabase) DeleteAllRunningProcessesByColonyID(colonyID string) error {
+	sqlStatement := `DELETE FROM ` + db.dbPrefix + `PROCESSES WHERE TARGET_COLONY_ID=$1 AND PROCESSGRAPH_ID=$2 AND STATE=$3`
+	_, err := db.postgresql.Exec(sqlStatement, colonyID, "", core.RUNNING)
+	if err != nil {
+		return err
+	}
+
+	err = db.DeleteAllAttributesByColonyIDWithState(colonyID, core.RUNNING)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (db *PQDatabase) DeleteAllSuccessfulProcessesByColonyID(colonyID string) error {
+	sqlStatement := `DELETE FROM ` + db.dbPrefix + `PROCESSES WHERE TARGET_COLONY_ID=$1 AND PROCESSGRAPH_ID=$2 AND STATE=$3`
+	_, err := db.postgresql.Exec(sqlStatement, colonyID, "", core.SUCCESS)
+	if err != nil {
+		return err
+	}
+
+	err = db.DeleteAllAttributesByColonyIDWithState(colonyID, core.SUCCESS)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (db *PQDatabase) DeleteAllFailedProcessesByColonyID(colonyID string) error {
+	sqlStatement := `DELETE FROM ` + db.dbPrefix + `PROCESSES WHERE TARGET_COLONY_ID=$1 AND PROCESSGRAPH_ID=$2 AND STATE=$3`
+	_, err := db.postgresql.Exec(sqlStatement, colonyID, "", core.FAILED)
+	if err != nil {
+		return err
+	}
+
+	err = db.DeleteAllAttributesByColonyIDWithState(colonyID, core.FAILED)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (db *PQDatabase) DeleteAllProcessesByColonyID(colonyID string) error {
 	sqlStatement := `DELETE FROM ` + db.dbPrefix + `PROCESSES WHERE TARGET_COLONY_ID=$1 AND PROCESSGRAPH_ID=$2`
 	_, err := db.postgresql.Exec(sqlStatement, colonyID, "")
@@ -426,13 +486,28 @@ func (db *PQDatabase) DeleteAllProcessesByProcessGraphID(processGraphID string) 
 }
 
 func (db *PQDatabase) DeleteAllProcessesInProcessGraphsByColonyID(colonyID string) error {
-	sqlStatement := `DELETE FROM ` + db.dbPrefix + `PROCESSES WHERE TARGET_COLONY_ID=$1 AND PROCESSGRAPH_ID!=$2`
-	_, err := db.postgresql.Exec(sqlStatement, colonyID, "")
+	err := db.DeleteAllAttributesInProcessGraphsByColonyID(colonyID)
 	if err != nil {
 		return err
 	}
 
-	err = db.DeleteAllAttributesInProcessGraphsByColonyID(colonyID)
+	sqlStatement := `DELETE FROM ` + db.dbPrefix + `PROCESSES WHERE TARGET_COLONY_ID=$1 AND PROCESSGRAPH_ID!=$2`
+	_, err = db.postgresql.Exec(sqlStatement, colonyID, "")
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (db *PQDatabase) DeleteAllProcessesInProcessGraphsByColonyIDWithState(colonyID string, state int) error {
+	err := db.DeleteAllAttributesInProcessGraphsByColonyIDWithState(colonyID, state)
+	if err != nil {
+		return err
+	}
+
+	sqlStatement := `DELETE FROM ` + db.dbPrefix + `PROCESSES WHERE TARGET_COLONY_ID=$1 AND PROCESSGRAPH_ID!=$2 AND STATE=$3`
+	_, err = db.postgresql.Exec(sqlStatement, colonyID, "", state)
 	if err != nil {
 		return err
 	}
