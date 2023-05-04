@@ -355,7 +355,7 @@ func (server *ColoniesServer) handleDeleteAllProcessesHTTPRequest(c *gin.Context
 		return
 	}
 
-	err = server.controller.deleteAllProcesses(msg.ColonyID)
+	err = server.controller.deleteAllProcesses(msg.ColonyID, msg.State)
 	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}

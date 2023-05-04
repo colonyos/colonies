@@ -74,6 +74,9 @@ func init() {
 	deleteAllProcessesCmd.Flags().StringVarP(&ExecutorID, "executorid", "", "", "Executor Id")
 	deleteAllProcessesCmd.Flags().StringVarP(&ExecutorPrvKey, "executorprvkey", "", "", "Executor private key")
 	deleteAllProcessesCmd.Flags().StringVarP(&ColonyID, "colonyid", "", "", "Colony Id")
+	deleteAllProcessesCmd.Flags().BoolVarP(&Waiting, "waiting", "", false, "Delete all waiting processes")
+	deleteAllProcessesCmd.Flags().BoolVarP(&Successful, "successful", "", false, "Delete all successful processes")
+	deleteAllProcessesCmd.Flags().BoolVarP(&Failed, "failed", "", false, "Delete all failed processes")
 
 	assignProcessCmd.Flags().StringVarP(&ColonyID, "colonyid", "", "", "Colony Id")
 	assignProcessCmd.Flags().StringVarP(&ExecutorID, "executorid", "", "", "Executor Id")
@@ -650,7 +653,30 @@ var deleteAllProcessesCmd = &cobra.Command{
 			CheckError(err)
 		}
 
-		fmt.Print("WARNING!!! Are you sure you want to delete all process in the Colony This operation cannot be undone! (YES,no): ")
+		counter := 0
+		state := ""
+		if Waiting {
+			counter++
+			state = "waiting"
+		}
+		if Successful {
+			counter++
+			state = "successful"
+		}
+		if Failed {
+			counter++
+			state = "failed"
+		}
+
+		if counter > 1 {
+			CheckError(errors.New("Invalid flags, select --waiting, --successful or --failed"))
+		}
+
+		if counter == 0 {
+			state = "all"
+		}
+
+		fmt.Print("WARNING!!! Are you sure you want to delete " + state + " process in the Colony This operation cannot be undone! (YES,no): ")
 
 		reader := bufio.NewReader(os.Stdin)
 		reply, _ := reader.ReadString('\n')
@@ -658,10 +684,23 @@ var deleteAllProcessesCmd = &cobra.Command{
 			log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Info("Starting a Colonies client")
 			client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
 
-			err = client.DeleteAllProcesses(ColonyID, ColonyPrvKey)
-			CheckError(err)
-
-			log.WithFields(log.Fields{"ColonyID": ColonyID}).Info("Deleting all processes in Colony")
+			if state == "all" {
+				err = client.DeleteAllProcesses(ColonyID, ColonyPrvKey)
+				CheckError(err)
+				log.WithFields(log.Fields{"ColonyID": ColonyID}).Info("Deleting all processes in Colony")
+			} else if Waiting {
+				err = client.DeleteAllProcessesWithState(ColonyID, core.WAITING, ColonyPrvKey)
+				CheckError(err)
+				log.WithFields(log.Fields{"ColonyID": ColonyID}).Info("Deleting all waiting processes in Colony")
+			} else if Successful {
+				err = client.DeleteAllProcessesWithState(ColonyID, core.SUCCESS, ColonyPrvKey)
+				CheckError(err)
+				log.WithFields(log.Fields{"ColonyID": ColonyID}).Info("Deleting all successful processes in Colony")
+			} else if Failed {
+				err = client.DeleteAllProcessesWithState(ColonyID, core.FAILED, ColonyPrvKey)
+				CheckError(err)
+				log.WithFields(log.Fields{"ColonyID": ColonyID}).Info("Deleting all failed processes in Colony")
+			}
 		} else {
 			log.Info("Aborting ...")
 		}

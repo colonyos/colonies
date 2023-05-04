@@ -63,6 +63,10 @@ type Database interface {
 	FindUnassignedProcesses(colonyID string, executorID string, executorType string, count int) ([]*core.Process, error)
 	DeleteProcessByID(processID string) error
 	DeleteAllProcesses() error
+	DeleteAllWaitingProcessesByColonyID(colonyID string) error
+	DeleteAllRunningProcessesByColonyID(colonyID string) error
+	DeleteAllSuccessfulProcessesByColonyID(colonyID string) error
+	DeleteAllFailedProcessesByColonyID(colonyID string) error
 	DeleteAllProcessesByColonyID(colonyID string) error
 	DeleteAllProcessesByProcessGraphID(processGraphID string) error
 	DeleteAllProcessesInProcessGraphsByColonyID(colonyID string) error
@@ -93,14 +97,17 @@ type Database interface {
 	AddAttribute(attribute core.Attribute) error
 	AddAttributes(attribute []core.Attribute) error
 	GetAttributeByID(attributeID string) (core.Attribute, error)
+	GetAttributesByColonyID(colonyID string) ([]core.Attribute, error)
 	GetAttribute(targetID string, key string, attributeType int) (core.Attribute, error)
 	GetAttributes(targetID string) ([]core.Attribute, error)
 	GetAttributesByType(targetID string, attributeType int) ([]core.Attribute, error)
 	UpdateAttribute(attribute core.Attribute) error
 	DeleteAttributeByID(attributeID string) error
 	DeleteAllAttributesByColonyID(colonyID string) error
+	DeleteAllAttributesByColonyIDWithState(colonyID string, state int) error
 	DeleteAllAttributesByProcessGraphID(processGraphID string) error
 	DeleteAllAttributesInProcessGraphsByColonyID(colonyID string) error
+	DeleteAllAttributesInProcessGraphsByColonyIDWithState(colonyID string, state int) error
 	DeleteAttributesByTargetID(targetID string, attributeType int) error
 	DeleteAllAttributesByTargetID(targetID string) error
 	DeleteAllAttributes() error
@@ -115,6 +122,10 @@ type Database interface {
 	FindFailedProcessGraphs(colonyID string, count int) ([]*core.ProcessGraph, error)
 	DeleteProcessGraphByID(processGraphID string) error
 	DeleteAllProcessGraphsByColonyID(colonyID string) error
+	DeleteAllWaitingProcessGraphsByColonyID(colonyID string) error
+	DeleteAllRunningProcessGraphsByColonyID(colonyID string) error
+	DeleteAllSuccessfulProcessGraphsByColonyID(colonyID string) error
+	DeleteAllFailedProcessGraphsByColonyID(colonyID string) error
 	CountWaitingProcessGraphs() (int, error)
 	CountRunningProcessGraphs() (int, error)
 	CountSuccessfulProcessGraphs() (int, error)

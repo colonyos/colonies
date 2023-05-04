@@ -16,6 +16,8 @@ const (
 	FAILED      = 3
 )
 
+const NOTSET = -1
+
 type Process struct {
 	ID                 string        `json:"processid"`
 	AssignedExecutorID string        `json:"assignedexecutorid"`

@@ -419,3 +419,147 @@ func TestDeleteAllProcessGraphs(t *testing.T) {
 	server.Shutdown()
 	<-done
 }
+
+func TestDeleteAllProcessGraphsWithStateWaiting(t *testing.T) {
+	env, client, server, _, done := setupTestEnv2(t)
+
+	diamond := generateSingleWorkflowSpec(env.colonyID)
+	submittedGraph1, err := client.SubmitWorkflowSpec(diamond, env.executorPrvKey)
+	assert.Nil(t, err)
+	assert.NotNil(t, submittedGraph1)
+
+	diamond = generateSingleWorkflowSpec(env.colonyID)
+	submittedGraph2, err := client.SubmitWorkflowSpec(diamond, env.executorPrvKey)
+	assert.Nil(t, err)
+	assert.NotNil(t, submittedGraph2)
+
+	stat, err := client.ColonyStatistics(env.colonyID, env.executorPrvKey)
+	assert.Nil(t, err)
+	assert.Equal(t, stat.WaitingWorkflows, 2)
+	assert.Equal(t, stat.RunningWorkflows, 0)
+	assert.Equal(t, stat.SuccessfulWorkflows, 0)
+	assert.Equal(t, stat.FailedWorkflows, 0)
+
+	err = client.DeleteAllProcessGraphsWithState(env.colonyID, core.PENDING, env.colonyPrvKey)
+	assert.Nil(t, err)
+
+	stat, err = client.ColonyStatistics(env.colonyID, env.executorPrvKey)
+	assert.Nil(t, err)
+	assert.Equal(t, stat.WaitingWorkflows, 0)
+	assert.Equal(t, stat.RunningWorkflows, 0)
+	assert.Equal(t, stat.SuccessfulWorkflows, 0)
+	assert.Equal(t, stat.FailedWorkflows, 0)
+
+	server.Shutdown()
+	<-done
+}
+
+func TestDeleteAllProcessGraphsWithStateRunning(t *testing.T) {
+	env, client, server, _, done := setupTestEnv2(t)
+
+	diamond := generateSingleWorkflowSpec(env.colonyID)
+	submittedGraph1, err := client.SubmitWorkflowSpec(diamond, env.executorPrvKey)
+	assert.Nil(t, err)
+	assert.NotNil(t, submittedGraph1)
+
+	diamond = generateSingleWorkflowSpec(env.colonyID)
+	submittedGraph2, err := client.SubmitWorkflowSpec(diamond, env.executorPrvKey)
+	assert.Nil(t, err)
+	assert.NotNil(t, submittedGraph2)
+
+	_, err = client.Assign(env.colonyID, -1, env.executorPrvKey)
+	assert.Nil(t, err)
+
+	stat, err := client.ColonyStatistics(env.colonyID, env.executorPrvKey)
+	assert.Nil(t, err)
+	assert.Equal(t, stat.WaitingWorkflows, 1)
+	assert.Equal(t, stat.RunningWorkflows, 1)
+	assert.Equal(t, stat.SuccessfulWorkflows, 0)
+	assert.Equal(t, stat.FailedWorkflows, 0)
+
+	err = client.DeleteAllProcessGraphsWithState(env.colonyID, core.RUNNING, env.colonyPrvKey)
+	assert.NotNil(t, err)
+
+	server.Shutdown()
+	<-done
+}
+
+func TestDeleteAllProcessGraphsWithStateSuccessful(t *testing.T) {
+	env, client, server, _, done := setupTestEnv2(t)
+
+	diamond := generateSingleWorkflowSpec(env.colonyID)
+	submittedGraph1, err := client.SubmitWorkflowSpec(diamond, env.executorPrvKey)
+	assert.Nil(t, err)
+	assert.NotNil(t, submittedGraph1)
+
+	diamond = generateSingleWorkflowSpec(env.colonyID)
+	submittedGraph2, err := client.SubmitWorkflowSpec(diamond, env.executorPrvKey)
+	assert.Nil(t, err)
+	assert.NotNil(t, submittedGraph2)
+
+	process, err := client.Assign(env.colonyID, -1, env.executorPrvKey)
+	assert.Nil(t, err)
+
+	err = client.Close(process.ID, env.executorPrvKey)
+	assert.Nil(t, err)
+
+	stat, err := client.ColonyStatistics(env.colonyID, env.executorPrvKey)
+	assert.Nil(t, err)
+	assert.Equal(t, stat.WaitingWorkflows, 1)
+	assert.Equal(t, stat.RunningWorkflows, 0)
+	assert.Equal(t, stat.SuccessfulWorkflows, 1)
+	assert.Equal(t, stat.FailedWorkflows, 0)
+
+	err = client.DeleteAllProcessGraphsWithState(env.colonyID, core.SUCCESS, env.colonyPrvKey)
+	assert.Nil(t, err)
+
+	stat, err = client.ColonyStatistics(env.colonyID, env.executorPrvKey)
+	assert.Nil(t, err)
+	assert.Equal(t, stat.WaitingWorkflows, 1)
+	assert.Equal(t, stat.RunningWorkflows, 0)
+	assert.Equal(t, stat.SuccessfulWorkflows, 0)
+	assert.Equal(t, stat.FailedWorkflows, 0)
+
+	server.Shutdown()
+	<-done
+}
+
+func TestDeleteAllProcessGraphsWithStateFailed(t *testing.T) {
+	env, client, server, _, done := setupTestEnv2(t)
+
+	diamond := generateSingleWorkflowSpec(env.colonyID)
+	submittedGraph1, err := client.SubmitWorkflowSpec(diamond, env.executorPrvKey)
+	assert.Nil(t, err)
+	assert.NotNil(t, submittedGraph1)
+
+	diamond = generateSingleWorkflowSpec(env.colonyID)
+	submittedGraph2, err := client.SubmitWorkflowSpec(diamond, env.executorPrvKey)
+	assert.Nil(t, err)
+	assert.NotNil(t, submittedGraph2)
+
+	process, err := client.Assign(env.colonyID, -1, env.executorPrvKey)
+	assert.Nil(t, err)
+
+	err = client.Fail(process.ID, []string{"error"}, env.executorPrvKey)
+	assert.Nil(t, err)
+
+	stat, err := client.ColonyStatistics(env.colonyID, env.executorPrvKey)
+	assert.Nil(t, err)
+	assert.Equal(t, stat.WaitingWorkflows, 1)
+	assert.Equal(t, stat.RunningWorkflows, 0)
+	assert.Equal(t, stat.SuccessfulWorkflows, 0)
+	assert.Equal(t, stat.FailedWorkflows, 1)
+
+	err = client.DeleteAllProcessGraphsWithState(env.colonyID, core.FAILED, env.colonyPrvKey)
+	assert.Nil(t, err)
+
+	stat, err = client.ColonyStatistics(env.colonyID, env.executorPrvKey)
+	assert.Nil(t, err)
+	assert.Equal(t, stat.WaitingWorkflows, 1)
+	assert.Equal(t, stat.RunningWorkflows, 0)
+	assert.Equal(t, stat.SuccessfulWorkflows, 0)
+	assert.Equal(t, stat.FailedWorkflows, 0)
+
+	server.Shutdown()
+	<-done
+}
