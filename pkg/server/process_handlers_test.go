@@ -441,6 +441,142 @@ func TestDeleteAllProcessesForColony(t *testing.T) {
 	<-done
 }
 
+func TestDeleteAllProcessesForColonyWithStateWaiting(t *testing.T) {
+	env, client, server, _, done := setupTestEnv2(t)
+
+	funcSpec1 := utils.CreateTestFunctionSpec(env.colonyID)
+	_, err := client.Submit(funcSpec1, env.executorPrvKey)
+	assert.Nil(t, err)
+
+	funcSpec2 := utils.CreateTestFunctionSpec(env.colonyID)
+	_, err = client.Submit(funcSpec2, env.executorPrvKey)
+	assert.Nil(t, err)
+
+	stat, err := client.ColonyStatistics(env.colonyID, env.executorPrvKey)
+	assert.Nil(t, err)
+	assert.Equal(t, stat.WaitingProcesses, 2)
+	assert.Equal(t, stat.RunningProcesses, 0)
+	assert.Equal(t, stat.SuccessfulProcesses, 0)
+	assert.Equal(t, stat.FailedProcesses, 0)
+
+	err = client.DeleteAllProcessesWithState(env.colonyID, core.WAITING, env.colonyPrvKey)
+	assert.Nil(t, err)
+
+	stat, err = client.ColonyStatistics(env.colonyID, env.executorPrvKey)
+	assert.Nil(t, err)
+	assert.Equal(t, stat.WaitingProcesses, 0)
+	assert.Equal(t, stat.RunningProcesses, 0)
+	assert.Equal(t, stat.SuccessfulProcesses, 0)
+	assert.Equal(t, stat.FailedProcesses, 0)
+
+	server.Shutdown()
+	<-done
+}
+
+func TestDeleteAllProcessesForColonyWithStateRunning(t *testing.T) {
+	env, client, server, _, done := setupTestEnv2(t)
+
+	funcSpec1 := utils.CreateTestFunctionSpec(env.colonyID)
+	_, err := client.Submit(funcSpec1, env.executorPrvKey)
+	assert.Nil(t, err)
+
+	funcSpec2 := utils.CreateTestFunctionSpec(env.colonyID)
+	_, err = client.Submit(funcSpec2, env.executorPrvKey)
+	assert.Nil(t, err)
+
+	_, err = client.Assign(env.colonyID, -1, env.executorPrvKey)
+	assert.Nil(t, err)
+
+	stat, err := client.ColonyStatistics(env.colonyID, env.executorPrvKey)
+	assert.Nil(t, err)
+	assert.Equal(t, stat.WaitingProcesses, 1)
+	assert.Equal(t, stat.RunningProcesses, 1)
+	assert.Equal(t, stat.SuccessfulProcesses, 0)
+	assert.Equal(t, stat.FailedProcesses, 0)
+
+	err = client.DeleteAllProcessesWithState(env.colonyID, core.RUNNING, env.colonyPrvKey)
+	assert.NotNil(t, err)
+
+	server.Shutdown()
+	<-done
+}
+
+func TestDeleteAllProcessesForColonyWithStateSuccessful(t *testing.T) {
+	env, client, server, _, done := setupTestEnv2(t)
+
+	funcSpec1 := utils.CreateTestFunctionSpec(env.colonyID)
+	_, err := client.Submit(funcSpec1, env.executorPrvKey)
+	assert.Nil(t, err)
+
+	funcSpec2 := utils.CreateTestFunctionSpec(env.colonyID)
+	_, err = client.Submit(funcSpec2, env.executorPrvKey)
+	assert.Nil(t, err)
+
+	process, err := client.Assign(env.colonyID, -1, env.executorPrvKey)
+	assert.Nil(t, err)
+
+	err = client.Close(process.ID, env.executorPrvKey)
+	assert.Nil(t, err)
+
+	stat, err := client.ColonyStatistics(env.colonyID, env.executorPrvKey)
+	assert.Nil(t, err)
+	assert.Equal(t, stat.WaitingProcesses, 1)
+	assert.Equal(t, stat.RunningProcesses, 0)
+	assert.Equal(t, stat.SuccessfulProcesses, 1)
+	assert.Equal(t, stat.FailedProcesses, 0)
+
+	err = client.DeleteAllProcessesWithState(env.colonyID, core.SUCCESS, env.colonyPrvKey)
+	assert.Nil(t, err)
+
+	stat, err = client.ColonyStatistics(env.colonyID, env.executorPrvKey)
+	assert.Nil(t, err)
+	assert.Equal(t, stat.WaitingProcesses, 1)
+	assert.Equal(t, stat.RunningProcesses, 0)
+	assert.Equal(t, stat.SuccessfulProcesses, 0)
+	assert.Equal(t, stat.FailedProcesses, 0)
+
+	server.Shutdown()
+	<-done
+}
+
+func TestDeleteAllProcessesForColonyWithStateFailed(t *testing.T) {
+	env, client, server, _, done := setupTestEnv2(t)
+
+	funcSpec1 := utils.CreateTestFunctionSpec(env.colonyID)
+	_, err := client.Submit(funcSpec1, env.executorPrvKey)
+	assert.Nil(t, err)
+
+	funcSpec2 := utils.CreateTestFunctionSpec(env.colonyID)
+	_, err = client.Submit(funcSpec2, env.executorPrvKey)
+	assert.Nil(t, err)
+
+	process, err := client.Assign(env.colonyID, -1, env.executorPrvKey)
+	assert.Nil(t, err)
+
+	err = client.Fail(process.ID, []string{"error"}, env.executorPrvKey)
+	assert.Nil(t, err)
+
+	stat, err := client.ColonyStatistics(env.colonyID, env.executorPrvKey)
+	assert.Nil(t, err)
+	assert.Equal(t, stat.WaitingProcesses, 1)
+	assert.Equal(t, stat.RunningProcesses, 0)
+	assert.Equal(t, stat.SuccessfulProcesses, 0)
+	assert.Equal(t, stat.FailedProcesses, 1)
+
+	err = client.DeleteAllProcessesWithState(env.colonyID, core.FAILED, env.colonyPrvKey)
+	assert.Nil(t, err)
+
+	stat, err = client.ColonyStatistics(env.colonyID, env.executorPrvKey)
+	assert.Nil(t, err)
+	assert.Equal(t, stat.WaitingProcesses, 1)
+	assert.Equal(t, stat.RunningProcesses, 0)
+	assert.Equal(t, stat.SuccessfulProcesses, 0)
+	assert.Equal(t, stat.FailedProcesses, 0)
+
+	server.Shutdown()
+	<-done
+}
+
 func TestCloseSuccessful(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 

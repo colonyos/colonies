@@ -253,7 +253,8 @@ func (db *PQDatabase) DeleteAllWaitingProcessGraphsByColonyID(colonyID string) e
 	return nil
 }
 
-// XXX: This function may delete all belonging processes if the graph is running.
+// XXX: This function can cause inconsisteny, for example if the processgraph is running, and all running processes
+// is deleted it will no longer be possible to resolve the processgraph
 func (db *PQDatabase) DeleteAllRunningProcessGraphsByColonyID(colonyID string) error {
 	sqlStatement := `DELETE FROM ` + db.dbPrefix + `PROCESSGRAPHS WHERE TARGET_COLONY_ID=$1 AND STATE=$2`
 	_, err := db.postgresql.Exec(sqlStatement, colonyID, core.RUNNING)
@@ -269,7 +270,6 @@ func (db *PQDatabase) DeleteAllRunningProcessGraphsByColonyID(colonyID string) e
 	return nil
 }
 
-// XXX: This function may delete all belonging processes if the graph is running.
 func (db *PQDatabase) DeleteAllSuccessfulProcessGraphsByColonyID(colonyID string) error {
 	sqlStatement := `DELETE FROM ` + db.dbPrefix + `PROCESSGRAPHS WHERE TARGET_COLONY_ID=$1 AND STATE=$2`
 	_, err := db.postgresql.Exec(sqlStatement, colonyID, core.SUCCESS)
@@ -285,7 +285,6 @@ func (db *PQDatabase) DeleteAllSuccessfulProcessGraphsByColonyID(colonyID string
 	return nil
 }
 
-// XXX: This function may delete all belonging processes if the graph is running.
 func (db *PQDatabase) DeleteAllFailedProcessGraphsByColonyID(colonyID string) error {
 	sqlStatement := `DELETE FROM ` + db.dbPrefix + `PROCESSGRAPHS WHERE TARGET_COLONY_ID=$1 AND STATE=$2`
 	_, err := db.postgresql.Exec(sqlStatement, colonyID, core.FAILED)

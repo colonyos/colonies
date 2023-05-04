@@ -452,6 +452,7 @@ func (graph *ProcessGraph) WaitForParents() (int, error) {
 }
 
 func (graph *ProcessGraph) UpdateProcessIDs() error {
+	graph.ProcessIDs = []string{}
 	return graph.Iterate(func(process *Process) error {
 		graph.ProcessIDs = append(graph.ProcessIDs, process.ID)
 		return nil
@@ -479,8 +480,7 @@ func (graph *ProcessGraph) iterate(processID string, visited map[string]bool, vi
 	}
 
 	if process == nil {
-		errMsg := "Failed to iterate processgraph, process is nil, processID=" + processID
-		log.Error(errMsg)
+		errMsg := "Failed to iterate processgraph, process with ID=" + processID + " not found"
 		return errors.New(errMsg)
 	}
 
