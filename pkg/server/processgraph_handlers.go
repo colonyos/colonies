@@ -206,7 +206,7 @@ func (server *ColoniesServer) handleDeleteAllProcessGraphsHTTPRequest(c *gin.Con
 		return
 	}
 
-	err = server.controller.deleteAllProcessGraphs(msg.ColonyID)
+	err = server.controller.deleteAllProcessGraphs(msg.ColonyID, msg.State)
 	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
