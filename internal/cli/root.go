@@ -92,6 +92,9 @@ var Lat float64
 var AllowExecutorReregister bool
 var ExclusiveAssign bool
 var Approve bool
+var Waiting bool
+var Successful bool
+var Failed bool
 
 func init() {
 	rootCmd.PersistentFlags().BoolVarP(&Verbose, "verbose", "v", false, "verbose output")

@@ -64,6 +64,9 @@ func init() {
 	deleteAllWorkflowsCmd.Flags().StringVarP(&ExecutorID, "executorid", "", "", "Executor Id")
 	deleteAllWorkflowsCmd.Flags().StringVarP(&ExecutorPrvKey, "executorprvkey", "", "", "Executor private key")
 	deleteAllWorkflowsCmd.Flags().StringVarP(&ColonyID, "colonyid", "", "", "Colony Id")
+	deleteAllWorkflowsCmd.Flags().BoolVarP(&Waiting, "waiting", "", false, "Delete all waiting processes")
+	deleteAllWorkflowsCmd.Flags().BoolVarP(&Successful, "successful", "", false, "Delete all successful processes")
+	deleteAllWorkflowsCmd.Flags().BoolVarP(&Failed, "failed", "", false, "Delete all failed processes")
 
 	getWorkflowCmd.Flags().StringVarP(&ExecutorID, "executorid", "", "", "Executor Id")
 	getWorkflowCmd.Flags().StringVarP(&ExecutorPrvKey, "executorprvkey", "", "", "Executor private key")
@@ -246,7 +249,30 @@ var deleteAllWorkflowsCmd = &cobra.Command{
 			CheckError(err)
 		}
 
-		fmt.Print("WARNING!!! Are you sure you want to delete all workflows in the Colony This operation cannot be undone! (YES,no): ")
+		counter := 0
+		state := ""
+		if Waiting {
+			counter++
+			state = "waiting"
+		}
+		if Successful {
+			counter++
+			state = "successful"
+		}
+		if Failed {
+			counter++
+			state = "failed"
+		}
+
+		if counter > 1 {
+			CheckError(errors.New("Invalid flags, select --waiting, --successful or --failed"))
+		}
+
+		if counter == 0 {
+			state = "all"
+		}
+
+		fmt.Print("WARNING!!! Are you sure you want to delete " + state + " workflows in the Colony This operation cannot be undone! (YES,no): ")
 
 		reader := bufio.NewReader(os.Stdin)
 		reply, _ := reader.ReadString('\n')
@@ -254,10 +280,24 @@ var deleteAllWorkflowsCmd = &cobra.Command{
 			log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Info("Starting a Colonies client")
 			client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
 
-			err = client.DeleteAllProcessGraphs(ColonyID, ColonyPrvKey)
-			CheckError(err)
+			if state == "all" {
+				err = client.DeleteAllProcessGraphs(ColonyID, ColonyPrvKey)
+				CheckError(err)
+				log.WithFields(log.Fields{"ColonyID": ColonyID}).Info("Deleting all workflows in Colony")
+			} else if Waiting {
+				err = client.DeleteAllProcessGraphsWithState(ColonyID, core.WAITING, ColonyPrvKey)
+				CheckError(err)
+				log.WithFields(log.Fields{"ColonyID": ColonyID}).Info("Deleting all waiting workflows in Colony")
+			} else if Successful {
+				err = client.DeleteAllProcessGraphsWithState(ColonyID, core.SUCCESS, ColonyPrvKey)
+				CheckError(err)
+				log.WithFields(log.Fields{"ColonyID": ColonyID}).Info("Deleting all successful workflows in Colony")
+			} else if Failed {
+				err = client.DeleteAllProcessGraphsWithState(ColonyID, core.FAILED, ColonyPrvKey)
+				CheckError(err)
+				log.WithFields(log.Fields{"ColonyID": ColonyID}).Info("Deleting all failed workflows in Colony")
+			}
 
-			log.WithFields(log.Fields{"ColonyID": ColonyID}).Info("Deleting all workflows in Colony")
 		} else {
 			log.Info("Aborting ...")
 		}
