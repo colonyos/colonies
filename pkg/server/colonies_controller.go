@@ -714,7 +714,6 @@ func (controller *coloniesController) createProcessGraph(workflowSpec *core.Work
 					return nil, err
 				}
 			}
-			//rootProcesses = append(rootProcesses, process)
 
 			processgraph.AddRoot(process.ID)
 		} else {
@@ -967,11 +966,23 @@ func (controller *coloniesController) deleteProcess(processID string) error {
 	return <-cmd.errorChan
 }
 
-func (controller *coloniesController) deleteAllProcesses(colonyID string) error {
+func (controller *coloniesController) deleteAllProcesses(colonyID string, state int) error {
 	cmd := &command{threaded: true, errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
-			err := controller.db.DeleteAllProcessesByColonyID(colonyID)
-			cmd.errorChan <- err
+			switch state {
+			case core.WAITING:
+				cmd.errorChan <- controller.db.DeleteAllWaitingProcessesByColonyID(colonyID)
+			case core.RUNNING:
+				cmd.errorChan <- errors.New("not possible to delete running processes")
+			case core.SUCCESS:
+				cmd.errorChan <- controller.db.DeleteAllSuccessfulProcessesByColonyID(colonyID)
+			case core.FAILED:
+				cmd.errorChan <- controller.db.DeleteAllFailedProcessesByColonyID(colonyID)
+			case core.NOTSET:
+				cmd.errorChan <- controller.db.DeleteAllProcessesByColonyID(colonyID)
+			default:
+				cmd.errorChan <- errors.New("invalid state when deleting all processes")
+			}
 		}}
 
 	controller.cmdQueue <- cmd
@@ -989,11 +1000,23 @@ func (controller *coloniesController) deleteProcessGraph(processID string) error
 	return <-cmd.errorChan
 }
 
-func (controller *coloniesController) deleteAllProcessGraphs(colonyID string) error {
+func (controller *coloniesController) deleteAllProcessGraphs(colonyID string, state int) error {
 	cmd := &command{threaded: true, errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
-			err := controller.db.DeleteAllProcessGraphsByColonyID(colonyID)
-			cmd.errorChan <- err
+			switch state {
+			case core.WAITING:
+				cmd.errorChan <- controller.db.DeleteAllWaitingProcessGraphsByColonyID(colonyID)
+			case core.RUNNING:
+				cmd.errorChan <- errors.New("not possible to delete running processgraphs")
+			case core.SUCCESS:
+				cmd.errorChan <- controller.db.DeleteAllSuccessfulProcessGraphsByColonyID(colonyID)
+			case core.FAILED:
+				cmd.errorChan <- controller.db.DeleteAllFailedProcessGraphsByColonyID(colonyID)
+			case core.NOTSET:
+				cmd.errorChan <- controller.db.DeleteAllProcessGraphsByColonyID(colonyID)
+			default:
+				cmd.errorChan <- errors.New("invalid state when deleting all processgraphs")
+			}
 		}}
 
 	controller.cmdQueue <- cmd
@@ -1029,6 +1052,14 @@ func (controller *coloniesController) closeSuccessful(processID string, executor
 				processGraph.SetStorage(controller.db)
 				err = processGraph.Resolve()
 				if err != nil {
+					err2 := controller.handleDefunctProcessgraph(processGraph.ID, process.ID, err)
+					if err2 != nil {
+						log.Error(err2)
+						cmd.errorChan <- err2
+						return
+					}
+
+					log.Error(err)
 					cmd.errorChan <- err
 					return
 				}
@@ -1164,6 +1195,14 @@ func (controller *coloniesController) closeFailed(processID string, errs []strin
 				processGraph.SetStorage(controller.db)
 				err = processGraph.Resolve()
 				if err != nil {
+					err2 := controller.handleDefunctProcessgraph(processGraph.ID, process.ID, err)
+					if err2 != nil {
+						log.Error(err2)
+						cmd.errorChan <- err2
+						return
+					}
+
+					log.Error(err)
 					cmd.errorChan <- err
 					return
 				}
@@ -1178,6 +1217,19 @@ func (controller *coloniesController) closeFailed(processID string, errs []strin
 
 	controller.cmdQueue <- cmd
 	return <-cmd.errorChan
+}
+
+func (controller *coloniesController) handleDefunctProcessgraph(processGraphID string, processID string, err error) error {
+	err2 := controller.db.MarkFailed(processID, []string{err.Error()})
+	if err2 != nil {
+		return err2
+	}
+	err2 = controller.db.SetProcessGraphState(processGraphID, core.FAILED)
+	if err2 != nil {
+		return err2
+	}
+
+	return nil
 }
 
 func (controller *coloniesController) assign(executorID string, colonyID string) (*core.Process, error) {
@@ -1235,6 +1287,13 @@ func (controller *coloniesController) assign(executorID string, colonyID string)
 				processGraph.SetStorage(controller.db)
 				err = processGraph.Resolve()
 				if err != nil {
+					err2 := controller.handleDefunctProcessgraph(processGraph.ID, selectedProcess.ID, err)
+					if err2 != nil {
+						log.Error(err2)
+						cmd.errorChan <- err2
+						return
+					}
+
 					log.Error(err)
 					cmd.errorChan <- err
 					return
