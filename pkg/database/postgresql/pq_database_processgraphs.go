@@ -237,6 +237,69 @@ func (db *PQDatabase) DeleteAllProcessGraphsByColonyID(colonyID string) error {
 	return db.DeleteAllProcessesInProcessGraphsByColonyID(colonyID)
 }
 
+// XXX: This function may delete all belonging processes if the graph is running.
+func (db *PQDatabase) DeleteAllWaitingProcessGraphsByColonyID(colonyID string) error {
+	sqlStatement := `DELETE FROM ` + db.dbPrefix + `PROCESSGRAPHS WHERE TARGET_COLONY_ID=$1 AND STATE=$2`
+	_, err := db.postgresql.Exec(sqlStatement, colonyID, core.WAITING)
+	if err != nil {
+		return err
+	}
+
+	err = db.DeleteAllProcessesInProcessGraphsByColonyIDWithState(colonyID, core.WAITING)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// XXX: This function can cause inconsisteny, for example if the processgraph is running, and all running processes
+// is deleted it will no longer be possible to resolve the processgraph
+func (db *PQDatabase) DeleteAllRunningProcessGraphsByColonyID(colonyID string) error {
+	sqlStatement := `DELETE FROM ` + db.dbPrefix + `PROCESSGRAPHS WHERE TARGET_COLONY_ID=$1 AND STATE=$2`
+	_, err := db.postgresql.Exec(sqlStatement, colonyID, core.RUNNING)
+	if err != nil {
+		return err
+	}
+
+	err = db.DeleteAllProcessesInProcessGraphsByColonyIDWithState(colonyID, core.RUNNING)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (db *PQDatabase) DeleteAllSuccessfulProcessGraphsByColonyID(colonyID string) error {
+	sqlStatement := `DELETE FROM ` + db.dbPrefix + `PROCESSGRAPHS WHERE TARGET_COLONY_ID=$1 AND STATE=$2`
+	_, err := db.postgresql.Exec(sqlStatement, colonyID, core.SUCCESS)
+	if err != nil {
+		return err
+	}
+
+	err = db.DeleteAllProcessesInProcessGraphsByColonyIDWithState(colonyID, core.SUCCESS)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (db *PQDatabase) DeleteAllFailedProcessGraphsByColonyID(colonyID string) error {
+	sqlStatement := `DELETE FROM ` + db.dbPrefix + `PROCESSGRAPHS WHERE TARGET_COLONY_ID=$1 AND STATE=$2`
+	_, err := db.postgresql.Exec(sqlStatement, colonyID, core.FAILED)
+	if err != nil {
+		return err
+	}
+
+	err = db.DeleteAllProcessesInProcessGraphsByColonyIDWithState(colonyID, core.FAILED)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (db *PQDatabase) DeleteProcessGraphByID(processGraphID string) error {
 	sqlStatement := `DELETE FROM ` + db.dbPrefix + `PROCESSGRAPHS WHERE PROCESSGRAPH_ID=$1`
 	_, err := db.postgresql.Exec(sqlStatement, processGraphID)

@@ -565,6 +565,23 @@ func (client *ColoniesClient) DeleteProcess(processID string, prvKey string) err
 
 func (client *ColoniesClient) DeleteAllProcesses(colonyID string, prvKey string) error {
 	msg := rpc.CreateDeleteAllProcessesMsg(colonyID)
+	msg.State = core.NOTSET
+	jsonString, err := msg.ToJSON()
+	if err != nil {
+		return err
+	}
+
+	_, err = client.sendMessage(rpc.DeleteAllProcessesPayloadType, jsonString, prvKey, false)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (client *ColoniesClient) DeleteAllProcessesWithState(colonyID string, state int, prvKey string) error {
+	msg := rpc.CreateDeleteAllProcessesMsg(colonyID)
+	msg.State = state
 	jsonString, err := msg.ToJSON()
 	if err != nil {
 		return err
@@ -747,6 +764,23 @@ func (client *ColoniesClient) DeleteProcessGraph(processGraphID string, prvKey s
 
 func (client *ColoniesClient) DeleteAllProcessGraphs(colonyID string, prvKey string) error {
 	msg := rpc.CreateDeleteAllProcessGraphsMsg(colonyID)
+	msg.State = core.NOTSET
+	jsonString, err := msg.ToJSON()
+	if err != nil {
+		return err
+	}
+
+	_, err = client.sendMessage(rpc.DeleteAllProcessGraphsPayloadType, jsonString, prvKey, false)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (client *ColoniesClient) DeleteAllProcessGraphsWithState(colonyID string, state int, prvKey string) error {
+	msg := rpc.CreateDeleteAllProcessGraphsMsg(colonyID)
+	msg.State = state
 	jsonString, err := msg.ToJSON()
 	if err != nil {
 		return err

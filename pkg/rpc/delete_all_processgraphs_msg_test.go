@@ -9,6 +9,7 @@ import (
 
 func TestRPCDeleteAllProcessGraphsMsg(t *testing.T) {
 	msg := CreateDeleteAllProcessGraphsMsg(core.GenerateRandomID())
+	msg.State = core.NOTSET
 	jsonString, err := msg.ToJSON()
 	assert.Nil(t, err)
 
