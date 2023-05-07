@@ -46,6 +46,19 @@ func (controller *coloniesController) triggerGenerators() {
 				log.WithFields(log.Fields{"Error": err}).Error("Failed count generator args from db")
 				continue
 			}
+			now := time.Now()
+			timeout := false
+			if generator.LastRun.Unix() <= 0 { // Generator has never run
+				if generator.FirstPack.Unix() <= 0 { // Generator has never been packed
+					timeout = false
+				} else { // Generator has been packed, calulcate deadline based first pack
+					timeoutDeadline := generator.FirstPack.Add(time.Duration(generator.Timeout) * time.Second)
+					timeout = now.Unix() > timeoutDeadline.Unix()
+				}
+			} else { // Generator has run before
+				timeoutDeadline := generator.LastRun.Add(time.Duration(generator.Timeout) * time.Second)
+				timeout = now.Unix() > timeoutDeadline.Unix()
+			}
 			if counter >= generator.Trigger {
 				timesToSubmit := counter / generator.Trigger
 				for i := 0; i < timesToSubmit; i++ {
@@ -53,8 +66,14 @@ func (controller *coloniesController) triggerGenerators() {
 						"GeneratorId": generator.ID,
 						"Counter":     counter}).
 						Debug("Generator threshold reached, submitting workflow")
-					controller.submitWorkflow(generator)
+					controller.submitWorkflow(generator, generator.Trigger)
 				}
+			} else if counter >= 1 && generator.Timeout > 0 && timeout {
+				log.WithFields(log.Fields{
+					"GeneratorId": generator.ID,
+					"Counter":     counter}).
+					Debug("Generator threshold reached, submitting workflow")
+				controller.submitWorkflow(generator, counter)
 			}
 		}
 	}}
@@ -136,6 +155,21 @@ func (controller *coloniesController) packGenerator(generatorID string, colonyID
 			}
 			count, err := controller.db.CountGeneratorArgs(generatorID)
 			log.WithFields(log.Fields{"Arg": arg, "Count": count, "GeneratorId": generatorID}).Debug("Added args to generator")
+
+			generator, err := controller.db.GetGeneratorByID(generatorID)
+			if err != nil {
+				log.WithFields(log.Fields{"Error": err, "GeneratorId": generatorID}).Error("Failed to get generator")
+				cmd.errorChan <- err
+			}
+
+			if generator.FirstPack.Unix() < 0 {
+				err = controller.db.SetGeneratorFirstPack(generatorID)
+				if err != nil {
+					log.WithFields(log.Fields{"Error": err, "GeneratorId": generatorID}).Error("Failed to set generator first pack")
+					cmd.errorChan <- err
+				}
+			}
+
 			cmd.errorChan <- nil
 		}}
 
@@ -163,14 +197,14 @@ func (controller *coloniesController) generatorTriggerLoop() {
 	}
 }
 
-func (controller *coloniesController) submitWorkflow(generator *core.Generator) {
+func (controller *coloniesController) submitWorkflow(generator *core.Generator, counter int) {
 	workflowSpec, err := core.ConvertJSONToWorkflowSpec(generator.WorkflowSpec)
 	if err != nil {
 		log.WithFields(log.Fields{"Error": err}).Error("Failed to parse workflow spec")
 		return
 	}
 
-	generatorArgs, err := controller.db.GetGeneratorArgs(generator.ID, generator.Trigger)
+	generatorArgs, err := controller.db.GetGeneratorArgs(generator.ID, counter)
 	var args []string
 	for _, generatorArg := range generatorArgs {
 		args = append(args, generatorArg.Arg)
@@ -179,6 +213,7 @@ func (controller *coloniesController) submitWorkflow(generator *core.Generator) 
 	log.WithFields(log.Fields{
 		"GeneratorId": generator.ID,
 		"Trigger":     generator.Trigger,
+		"Counter":     counter,
 		"Args":        args}).
 		Debug("Generator submitting workflow")
 
