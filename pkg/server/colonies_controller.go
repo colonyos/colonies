@@ -59,6 +59,9 @@ type coloniesController struct {
 	leader           bool
 	generatorPeriod  int
 	cronPeriod       int
+	retention        bool
+	retentionPolicy  int64
+	retentionPeriod  int
 }
 
 func createColoniesController(db database.Database,
@@ -66,7 +69,10 @@ func createColoniesController(db database.Database,
 	clusterConfig cluster.Config,
 	etcdDataPath string,
 	generatorPeriod int,
-	cronPeriod int) *coloniesController {
+	cronPeriod int,
+	retention bool,
+	retentionPolicy int64,
+	retentionPeriod int) *coloniesController {
 
 	controller := &coloniesController{}
 	controller.db = db
@@ -78,6 +84,9 @@ func createColoniesController(db database.Database,
 	controller.leader = false
 	controller.generatorPeriod = generatorPeriod
 	controller.cronPeriod = cronPeriod
+	controller.retention = retention
+	controller.retentionPolicy = retentionPolicy
+	controller.retentionPeriod = retentionPeriod
 
 	controller.relayServer = cluster.CreateRelayServer(controller.thisNode, controller.clusterConfig)
 	controller.eventHandler = createEventHandler(controller.relayServer)
@@ -93,6 +102,7 @@ func createColoniesController(db database.Database,
 	go controller.timeoutLoop()
 	go controller.generatorTriggerLoop()
 	go controller.cronTriggerLoop()
+	go controller.retentionWorker()
 
 	return controller
 }

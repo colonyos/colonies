@@ -3,6 +3,7 @@ package postgresql
 import (
 	"database/sql"
 	"errors"
+	"time"
 
 	"github.com/colonyos/colonies/pkg/core"
 )
@@ -19,8 +20,8 @@ func (db *PQDatabase) AddAttributes(attributes []core.Attribute) error {
 }
 
 func (db *PQDatabase) AddAttribute(attribute core.Attribute) error {
-	sqlStatement := `INSERT INTO  ` + db.dbPrefix + `ATTRIBUTES (ATTRIBUTE_ID, KEY, VALUE, ATTRIBUTE_TYPE, TARGET_ID, TARGET_COLONY_ID, PROCESSGRAPH_ID) VALUES ($1, $2, $3, $4, $5, $6, $7)`
-	_, err := db.postgresql.Exec(sqlStatement, attribute.ID, attribute.Key, attribute.Value, attribute.AttributeType, attribute.TargetID, attribute.TargetColonyID, attribute.TargetProcessGraphID)
+	sqlStatement := `INSERT INTO  ` + db.dbPrefix + `ATTRIBUTES (ATTRIBUTE_ID, KEY, VALUE, ATTRIBUTE_TYPE, TARGET_ID, TARGET_COLONY_ID, PROCESSGRAPH_ID, ADDED, STATE) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`
+	_, err := db.postgresql.Exec(sqlStatement, attribute.ID, attribute.Key, attribute.Value, attribute.AttributeType, attribute.TargetID, attribute.TargetColonyID, attribute.TargetProcessGraphID, time.Now(), attribute.State)
 	if err != nil {
 		return err
 	}
@@ -39,11 +40,14 @@ func (db *PQDatabase) parseAttributes(rows *sql.Rows) ([]core.Attribute, error) 
 		var targetID string
 		var targetColonyID string
 		var targetProcessGraphID string
-		if err := rows.Scan(&attributeID, &key, &value, &attributeType, &targetID, &targetColonyID, &targetProcessGraphID); err != nil {
+		var added time.Time
+		var state int
+		if err := rows.Scan(&attributeID, &key, &value, &attributeType, &targetID, &targetColonyID, &targetProcessGraphID, &added, &state); err != nil {
 			return nil, err
 		}
 
 		attribute := core.CreateAttribute(targetID, targetColonyID, targetProcessGraphID, attributeType, key, value)
+		attribute.State = state
 		attributes = append(attributes, attribute)
 	}
 
@@ -151,6 +155,16 @@ func (db *PQDatabase) UpdateAttribute(attribute core.Attribute) error {
 	return nil
 }
 
+func (db *PQDatabase) SetAttributeState(processID string, state int) error {
+	sqlStatement := `UPDATE ` + db.dbPrefix + `ATTRIBUTES SET STATE=$1 WHERE TARGET_ID=$2`
+	_, err := db.postgresql.Exec(sqlStatement, state, processID)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (db *PQDatabase) DeleteAttributeByID(attributeID string) error {
 	sqlStatement := `DELETE FROM ` + db.dbPrefix + `ATTRIBUTES WHERE ATTRIBUTE_ID=$1`
 	_, err := db.postgresql.Exec(sqlStatement, attributeID)
@@ -171,27 +185,11 @@ func (db *PQDatabase) DeleteAllAttributesByColonyID(colonyID string) error {
 	return nil
 }
 
-// TODO: This function will be very slow if the attribute table is large. The solution is to
-// store state in the process table, then the attributes can be deleted using a single
-// SQL statement.
 func (db *PQDatabase) DeleteAllAttributesByColonyIDWithState(colonyID string, state int) error {
-	attributes, err := db.GetAttributesByColonyID(colonyID)
+	sqlStatement := `DELETE FROM ` + db.dbPrefix + `ATTRIBUTES WHERE TARGET_COLONY_ID=$1 AND STATE=$2 AND PROCESSGRAPH_ID=$3`
+	_, err := db.postgresql.Exec(sqlStatement, colonyID, state, "")
 	if err != nil {
 		return err
-	}
-
-	for _, attribute := range attributes {
-		processID := attribute.TargetID
-		process, err := db.GetProcessByID(processID)
-		if err != nil {
-			return err
-		}
-		if process.State == state && process.ProcessGraphID == "" {
-			err = db.DeleteAttributeByID(attribute.ID)
-			if err != nil {
-				return err
-			}
-		}
 	}
 
 	return nil
@@ -218,23 +216,10 @@ func (db *PQDatabase) DeleteAllAttributesInProcessGraphsByColonyID(colonyID stri
 }
 
 func (db *PQDatabase) DeleteAllAttributesInProcessGraphsByColonyIDWithState(colonyID string, state int) error {
-	attributes, err := db.GetAttributesByColonyID(colonyID)
+	sqlStatement := `DELETE FROM ` + db.dbPrefix + `ATTRIBUTES WHERE TARGET_COLONY_ID=$1 AND STATE=$2 AND PROCESSGRAPH_ID!=$3`
+	_, err := db.postgresql.Exec(sqlStatement, colonyID, state, "")
 	if err != nil {
 		return err
-	}
-
-	for _, attribute := range attributes {
-		processID := attribute.TargetID
-		process, err := db.GetProcessByID(processID)
-		if err != nil {
-			return err
-		}
-		if process.State == state && process.ProcessGraphID != "" {
-			err = db.DeleteAttributeByID(attribute.ID)
-			if err != nil {
-				return err
-			}
-		}
 	}
 
 	return nil
