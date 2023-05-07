@@ -243,6 +243,17 @@ var serverStartCmd = &cobra.Command{
 			gin.DefaultWriter = ioutil.Discard
 		}
 
+		retentionStr := os.Getenv("COLONIES_RETENTION")
+		retention := false
+		if retentionStr == "true" {
+			retention = true
+		}
+		retentionPolicyStr := os.Getenv("COLONIES_RETENTION_POLICY")
+		retentionPolicy, err := strconv.ParseInt(retentionPolicyStr, 10, 64)
+		CheckError(err)
+
+		retentionPeriod := 60000 // Run retention worker once a minute
+
 		server := server.CreateColoniesServer(db,
 			ServerPort,
 			ServerID,
@@ -255,7 +266,10 @@ var serverStartCmd = &cobra.Command{
 			GeneratorCheckerPeriod,
 			CronCheckerPeriod,
 			ExclusiveAssign,
-			AllowExecutorReregister)
+			AllowExecutorReregister,
+			retention,
+			retentionPolicy,
+			retentionPeriod)
 
 		for {
 			err := server.ServeForever()

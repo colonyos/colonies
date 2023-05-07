@@ -78,7 +78,6 @@ type Database interface {
 	SetParents(processID string, parents []string) error
 	SetChildren(processID string, children []string) error
 	SetWaitForParents(processID string, waitingForParent bool) error
-	ResetAllProcesses(process *core.Process) error
 	Assign(executorID string, process *core.Process) error
 	Unassign(process *core.Process) error
 	MarkSuccessful(processID string) (float64, float64, error)
@@ -165,4 +164,7 @@ type Database interface {
 	// Distributed locking
 	Lock(timeout int) error
 	Unlock() error
+
+	// Retention management
+	ApplyRetentionPolicy(retentionPeriod int64) error
 }
