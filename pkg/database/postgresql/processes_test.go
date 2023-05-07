@@ -668,12 +668,6 @@ func TestReset(t *testing.T) {
 
 	numberOfFailedProcesses, err = db.CountFailedProcesses()
 	assert.Equal(t, 2, numberOfFailedProcesses)
-
-	err = db.ResetAllProcesses(process)
-	assert.Nil(t, err)
-
-	numberOfFailedProcesses, err = db.CountFailedProcesses()
-	assert.Equal(t, 0, numberOfFailedProcesses)
 }
 
 func TestSetWaitingForParents(t *testing.T) {

@@ -106,6 +106,19 @@ func (controller *coloniesController) blockingCmdQueueWorker() {
 	}
 }
 
+func (controller *coloniesController) retentionWorker() {
+	for {
+		isLeader := controller.tryBecomeLeader()
+
+		if isLeader && controller.retention {
+			log.Debug("Appling retention policy")
+			controller.db.ApplyRetentionPolicy(controller.retentionPolicy)
+		}
+
+		time.Sleep(time.Duration(controller.retentionPeriod) * time.Millisecond)
+	}
+}
+
 func (controller *coloniesController) cmdQueueWorker() {
 	for {
 		select {

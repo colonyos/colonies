@@ -36,6 +36,9 @@ type ColoniesServer struct {
 	db                      database.Database
 	exclusiveAssign         bool
 	allowExecutorReregister bool
+	retention               bool
+	retentionPolicy         int64
+	retentionPeriod         int
 }
 
 func CreateColoniesServer(db database.Database,
@@ -50,7 +53,10 @@ func CreateColoniesServer(db database.Database,
 	generatorPeriod int,
 	cronPeriod int,
 	exclusiveAssign bool,
-	allowExecutorReregister bool) *ColoniesServer {
+	allowExecutorReregister bool,
+	retention bool,
+	retentionPolicy int64,
+	retentionPeriod int) *ColoniesServer {
 	server := &ColoniesServer{}
 	server.ginHandler = gin.Default()
 	server.ginHandler.Use(cors.Default())
@@ -63,7 +69,7 @@ func CreateColoniesServer(db database.Database,
 	}
 
 	server.httpServer = httpServer
-	server.controller = createColoniesController(db, thisNode, clusterConfig, etcdDataPath, generatorPeriod, cronPeriod)
+	server.controller = createColoniesController(db, thisNode, clusterConfig, etcdDataPath, generatorPeriod, cronPeriod, retention, retentionPolicy, retentionPeriod)
 	server.serverID = serverID
 	server.tls = tls
 	server.port = port
@@ -73,6 +79,8 @@ func CreateColoniesServer(db database.Database,
 	server.validator = validator.CreateValidator(db)
 	server.exclusiveAssign = exclusiveAssign
 	server.allowExecutorReregister = allowExecutorReregister
+	server.retention = retention
+	server.retentionPolicy = retentionPolicy
 
 	log.WithFields(log.Fields{"Port": port,
 		"ServerID":                serverID,
@@ -89,7 +97,9 @@ func CreateColoniesServer(db database.Database,
 		"GeneratorPeriod":         generatorPeriod,
 		"CronPeriod":              cronPeriod,
 		"AllowExecutorReregister": allowExecutorReregister,
-		"ExclusiveAssign":         exclusiveAssign}).
+		"ExclusiveAssign":         exclusiveAssign,
+		"Retention":               retention,
+		"RetentionPolicy":         retentionPolicy}).
 		Info("Starting Colonies server")
 
 	server.setupRoutes()
