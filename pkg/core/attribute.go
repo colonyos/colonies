@@ -19,6 +19,7 @@ type Attribute struct {
 	TargetID             string `json:"targetid"`
 	TargetColonyID       string `json:"targetcolonyid"`
 	TargetProcessGraphID string `json:"targetprocessgraphid"`
+	State                int    `json:"state"`
 	AttributeType        int    `json:"attributetype"`
 	Key                  string `json:"key"`
 	Value                string `json:"value"`
@@ -35,6 +36,7 @@ func CreateAttribute(targetID string,
 		TargetColonyID:       targetColonyID,
 		TargetProcessGraphID: targetProcessGraphID,
 		AttributeType:        attributeType,
+		State:                PENDING,
 		Key:                  key,
 		Value:                value}
 
@@ -82,6 +84,7 @@ func (attribute *Attribute) Equals(attribute2 Attribute) bool {
 		attribute.TargetID == attribute2.TargetID &&
 		attribute.TargetColonyID == attribute2.TargetColonyID &&
 		attribute.TargetProcessGraphID == attribute2.TargetProcessGraphID &&
+		attribute.State == attribute2.State &&
 		attribute.AttributeType == attribute2.AttributeType &&
 		attribute.Key == attribute2.Key &&
 		attribute.Value == attribute2.Value {
