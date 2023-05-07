@@ -9,8 +9,8 @@ import (
 )
 
 func (db *PQDatabase) AddGenerator(generator *core.Generator) error {
-	sqlStatement := `INSERT INTO  ` + db.dbPrefix + `GENERATORS (GENERATOR_ID, COLONY_ID, NAME, WORKFLOW_SPEC, TRIGGER, LASTRUN) VALUES ($1, $2, $3, $4, $5, $6)`
-	_, err := db.postgresql.Exec(sqlStatement, generator.ID, generator.ColonyID, generator.Name, generator.WorkflowSpec, generator.Trigger, time.Time{})
+	sqlStatement := `INSERT INTO  ` + db.dbPrefix + `GENERATORS (GENERATOR_ID, COLONY_ID, NAME, WORKFLOW_SPEC, TRIGGER, TIMEOUT, LASTRUN, FIRSTPACK) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`
+	_, err := db.postgresql.Exec(sqlStatement, generator.ID, generator.ColonyID, generator.Name, generator.WorkflowSpec, generator.Trigger, generator.Timeout, time.Time{}, time.Time{})
 	if err != nil {
 		return err
 	}
@@ -27,12 +27,14 @@ func (db *PQDatabase) parseGenerators(rows *sql.Rows) ([]*core.Generator, error)
 		var name string
 		var workflowSpec string
 		var trigger int
+		var timeout int
 		var lastRun time.Time
-		if err := rows.Scan(&generatorID, &colonyID, &name, &workflowSpec, &trigger, &lastRun); err != nil {
+		var firstPack time.Time
+		if err := rows.Scan(&generatorID, &colonyID, &name, &workflowSpec, &trigger, &timeout, &lastRun, &firstPack); err != nil {
 			return nil, err
 		}
 
-		generator := &core.Generator{ID: generatorID, ColonyID: colonyID, Name: name, WorkflowSpec: workflowSpec, Trigger: trigger, LastRun: lastRun}
+		generator := &core.Generator{ID: generatorID, ColonyID: colonyID, Name: name, WorkflowSpec: workflowSpec, Trigger: trigger, Timeout: timeout, LastRun: lastRun, FirstPack: firstPack}
 
 		generators = append(generators, generator)
 	}
@@ -95,6 +97,21 @@ func (db *PQDatabase) SetGeneratorLastRun(generatorID string) error {
 	}
 
 	sqlStatement := `UPDATE  ` + db.dbPrefix + `GENERATORS SET LASTRUN=$1 WHERE GENERATOR_ID=$2`
+	_, err = db.postgresql.Exec(sqlStatement, time.Now(), generator.ID)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (db *PQDatabase) SetGeneratorFirstPack(generatorID string) error {
+	generator, err := db.GetGeneratorByID(generatorID)
+	if err != nil {
+		return err
+	}
+
+	sqlStatement := `UPDATE  ` + db.dbPrefix + `GENERATORS SET FIRSTPACK=$1 WHERE GENERATOR_ID=$2`
 	_, err = db.postgresql.Exec(sqlStatement, time.Now(), generator.ID)
 	if err != nil {
 		return err

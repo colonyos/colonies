@@ -48,6 +48,114 @@ func TestAddGeneratorCounter(t *testing.T) {
 	<-done
 }
 
+func TestAddGeneratorTimeout(t *testing.T) {
+	env, client, server, _, done := setupTestEnv2(t)
+
+	colonyID := env.colonyID
+
+	generator := utils.FakeGenerator(t, colonyID)
+	generator.Trigger = 10
+	generator.Timeout = 1
+	addedGenerator, err := client.AddGenerator(generator, env.executorPrvKey)
+	assert.Nil(t, err)
+	assert.NotNil(t, addedGenerator)
+
+	err = client.PackGenerator(addedGenerator.ID, "arg1", env.executorPrvKey)
+	assert.Nil(t, err)
+
+	WaitForProcessGraphs(t, client, colonyID, addedGenerator.ID, env.executorPrvKey, 1)
+
+	graphs, err := client.GetWaitingProcessGraphs(colonyID, 100, env.executorPrvKey)
+	assert.Nil(t, err)
+	assert.Len(t, graphs, 1)
+
+	server.Shutdown()
+	<-done
+}
+
+// Tests that generator worker works correctly if it run before it has been packed
+// Also, tests that the generator keeps on working
+func TestAddGeneratorTimeout2(t *testing.T) {
+	env, client, server, _, done := setupTestEnv2(t)
+
+	colonyID := env.colonyID
+
+	generator := utils.FakeGenerator(t, colonyID)
+	generator.Trigger = 10
+	generator.Timeout = 1
+	addedGenerator, err := client.AddGenerator(generator, env.executorPrvKey)
+	assert.Nil(t, err)
+	assert.NotNil(t, addedGenerator)
+
+	// Sleep so that generator worker runs before it has been packed
+	time.Sleep(1 * time.Second)
+
+	err = client.PackGenerator(addedGenerator.ID, "arg1", env.executorPrvKey)
+	assert.Nil(t, err)
+
+	WaitForProcessGraphs(t, client, colonyID, addedGenerator.ID, env.executorPrvKey, 1)
+
+	graphs, err := client.GetWaitingProcessGraphs(colonyID, 100, env.executorPrvKey)
+	assert.Nil(t, err)
+	assert.Len(t, graphs, 1)
+
+	err = client.PackGenerator(addedGenerator.ID, "arg1", env.executorPrvKey)
+	assert.Nil(t, err)
+
+	WaitForProcessGraphs(t, client, colonyID, addedGenerator.ID, env.executorPrvKey, 2)
+
+	graphs, err = client.GetWaitingProcessGraphs(colonyID, 100, env.executorPrvKey)
+	assert.Nil(t, err)
+	assert.Len(t, graphs, 2)
+
+	server.Shutdown()
+	<-done
+}
+
+// This test tests a combination of trigger and timeout triggered workflows
+func TestAddGeneratorTimeout3(t *testing.T) {
+	env, client, server, _, done := setupTestEnv2(t)
+
+	colonyID := env.colonyID
+
+	generator := utils.FakeGenerator(t, colonyID)
+	generator.Trigger = 10
+	generator.Timeout = 1
+	addedGenerator, err := client.AddGenerator(generator, env.executorPrvKey)
+	assert.Nil(t, err)
+	assert.NotNil(t, addedGenerator)
+
+	// Since we are packing 12 args and the trigger is set to 10, a workflow should immediately by submitted
+	for i := 0; i < 12; i++ {
+		err = client.PackGenerator(addedGenerator.ID, "arg", env.executorPrvKey)
+		assert.Nil(t, err)
+	}
+
+	WaitForProcessGraphs(t, client, colonyID, addedGenerator.ID, env.executorPrvKey, 1)
+
+	graphs, err := client.GetWaitingProcessGraphs(colonyID, 100, env.executorPrvKey)
+	assert.Nil(t, err)
+	assert.Len(t, graphs, 1)
+
+	// The second workflow should be submitted by the timemout trigger
+	WaitForProcessGraphs(t, client, colonyID, addedGenerator.ID, env.executorPrvKey, 2)
+
+	graphs, err = client.GetWaitingProcessGraphs(colonyID, 100, env.executorPrvKey)
+	assert.Nil(t, err)
+	assert.Len(t, graphs, 2)
+
+	process, err := client.Assign(env.colonyID, -1, env.executorPrvKey)
+	assert.Nil(t, err)
+	assert.Len(t, process.FunctionSpec.Args, 10)
+
+	process, err = client.Assign(env.colonyID, -1, env.executorPrvKey)
+	assert.Nil(t, err)
+	assert.Len(t, process.FunctionSpec.Args, 2)
+
+	server.Shutdown()
+	<-done
+}
+
 func TestGetGenerator(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 
