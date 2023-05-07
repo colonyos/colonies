@@ -580,6 +580,11 @@ func (db *PQDatabase) SetProcessState(processID string, state int) error {
 		return err
 	}
 
+	err = db.SetAttributeState(processID, state)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -649,16 +654,6 @@ func (db *PQDatabase) SetWaitDeadline(process *core.Process, waitDeadline time.T
 	return nil
 }
 
-func (db *PQDatabase) ResetAllProcesses(process *core.Process) error {
-	sqlStatement := `UPDATE ` + db.dbPrefix + `PROCESSES SET IS_ASSIGNED=FALSE, START_TIME=$1, END_TIME=$2, ASSIGNED_EXECUTOR_ID=$3, STATE=$4`
-	_, err := db.postgresql.Exec(sqlStatement, time.Time{}, time.Time{}, "", core.WAITING)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
 func (db *PQDatabase) Assign(executorID string, process *core.Process) error {
 	processFromDB, err := db.GetProcessByID(process.ID)
 	if err != nil {
@@ -683,6 +678,11 @@ func (db *PQDatabase) Assign(executorID string, process *core.Process) error {
 		if err != nil {
 			return err
 		}
+	}
+
+	err = db.SetAttributeState(process.ID, core.RUNNING)
+	if err != nil {
+		return err
 	}
 
 	process.SetStartTime(startTime)
@@ -711,6 +711,11 @@ func (db *PQDatabase) Unassign(process *core.Process) error {
 		if err != nil {
 			return err
 		}
+	}
+
+	err := db.SetAttributeState(process.ID, core.PENDING)
+	if err != nil {
+		return err
 	}
 
 	process.SetEndTime(endTime)
@@ -750,6 +755,11 @@ func (db *PQDatabase) MarkSuccessful(processID string) (float64, float64, error)
 		return 0.0, 0.0, err
 	}
 
+	err = db.SetAttributeState(process.ID, core.SUCCESS)
+	if err != nil {
+		return 0.0, 0.0, err
+	}
+
 	process.SetEndTime(endTime)
 	process.SetState(core.SUCCESS)
 
@@ -785,8 +795,14 @@ func (db *PQDatabase) MarkFailed(processID string, errs []string) error {
 		return err
 	}
 
+	err = db.SetAttributeState(process.ID, core.FAILED)
+	if err != nil {
+		return err
+	}
+
 	process.SetEndTime(endTime)
 	process.SetState(core.FAILED)
+
 	return db.SetErrors(process.ID, errs)
 }
 
