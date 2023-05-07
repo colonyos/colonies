@@ -137,6 +137,7 @@ type Database interface {
 	// Generator functions
 	AddGenerator(generator *core.Generator) error
 	SetGeneratorLastRun(generatorID string) error
+	SetGeneratorFirstPack(generatorID string) error
 	GetGeneratorByID(generatorID string) (*core.Generator, error)
 	GetGeneratorByName(name string) (*core.Generator, error)
 	FindGeneratorsByColonyID(colonyID string, count int) ([]*core.Generator, error)
