@@ -36,6 +36,7 @@ func init() {
 	addGeneratorCmd.MarkFlagRequired("name")
 	addGeneratorCmd.Flags().IntVarP(&GeneratorTrigger, "trigger", "", -1, "Trigger")
 	addGeneratorCmd.MarkFlagRequired("trigger")
+	addGeneratorCmd.Flags().IntVarP(&GeneratorTimeout, "timeout", "", -1, "Timeout")
 
 	packGeneratorCmd.Flags().StringVarP(&ExecutorID, "executorid", "", "", "Executor Id")
 	packGeneratorCmd.Flags().StringVarP(&ExecutorPrvKey, "executorprvkey", "", "", "Executor private key")
@@ -127,19 +128,15 @@ var addGeneratorCmd = &cobra.Command{
 			CheckError(errors.New("Generator name not specified"))
 		}
 
-		if GeneratorTimeout == -1 {
-			CheckError(errors.New("Generator timeout not specified"))
-		}
-
 		if GeneratorTrigger == -1 {
 			CheckError(errors.New("Generator trigger not specified"))
 		}
 
-		generator := core.CreateGenerator(ColonyID, GeneratorName, workflowSpecJSON, GeneratorTrigger)
+		generator := core.CreateGenerator(ColonyID, GeneratorName, workflowSpecJSON, GeneratorTrigger, GeneratorTimeout)
 		addedGenerator, err := client.AddGenerator(generator, ExecutorPrvKey)
 		CheckError(err)
 
-		log.WithFields(log.Fields{"GeneratorID": addedGenerator.ID}).Info("Generator added")
+		log.WithFields(log.Fields{"GeneratorID": addedGenerator.ID, "GeneratorName": GeneratorName, "Trigger": GeneratorTrigger, "Timeout": GeneratorTimeout}).Info("Generator added")
 	},
 }
 
@@ -255,6 +252,7 @@ var getGeneratorCmd = &cobra.Command{
 			[]string{"Id", generator.ID},
 			[]string{"Name", generator.Name},
 			[]string{"Trigger", strconv.Itoa(generator.Trigger)},
+			[]string{"Timeout", strconv.Itoa(generator.Timeout)},
 			[]string{"Lastrun", generator.LastRun.Format(TimeLayout)},
 			[]string{"CheckerPeriod", strconv.Itoa(generator.CheckerPeriod)},
 			[]string{"QueueSize", strconv.Itoa(generator.QueueSize)},

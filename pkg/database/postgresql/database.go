@@ -144,7 +144,7 @@ func (db *PQDatabase) Initialize() error {
 		return err
 	}
 
-	sqlStatement = `CREATE TABLE ` + db.dbPrefix + `GENERATORS (GENERATOR_ID TEXT PRIMARY KEY NOT NULL, COLONY_ID TEXT NOT NULL, NAME TEXT NOT NULL UNIQUE, WORKFLOW_SPEC TEXT NOT NULL, TRIGGER INTEGER, LASTRUN TIMESTAMPTZ)`
+	sqlStatement = `CREATE TABLE ` + db.dbPrefix + `GENERATORS (GENERATOR_ID TEXT PRIMARY KEY NOT NULL, COLONY_ID TEXT NOT NULL, NAME TEXT NOT NULL UNIQUE, WORKFLOW_SPEC TEXT NOT NULL, TRIGGER INTEGER, TIMEOUT INTEGER, LASTRUN TIMESTAMPTZ, FIRSTPACK TIMESTAMPTZ)`
 	_, err = db.postgresql.Exec(sqlStatement)
 	if err != nil {
 		return err
@@ -205,6 +205,24 @@ func (db *PQDatabase) Initialize() error {
 	}
 
 	sqlStatement = `CREATE INDEX ` + db.dbPrefix + `ATTRIBUTES_INDEX2 ON ` + db.dbPrefix + `ATTRIBUTES (TARGET_ID)`
+	_, err = db.postgresql.Exec(sqlStatement)
+	if err != nil {
+		return err
+	}
+
+	sqlStatement = `CREATE INDEX ` + db.dbPrefix + `RETENTION_INDEX1 ON ` + db.dbPrefix + `ATTRIBUTES (ADDED, STATE)`
+	_, err = db.postgresql.Exec(sqlStatement)
+	if err != nil {
+		return err
+	}
+
+	sqlStatement = `CREATE INDEX ` + db.dbPrefix + `RETENTION_INDEX2 ON ` + db.dbPrefix + `PROCESSES (SUBMISSION_TIME, STATE)`
+	_, err = db.postgresql.Exec(sqlStatement)
+	if err != nil {
+		return err
+	}
+
+	sqlStatement = `CREATE INDEX ` + db.dbPrefix + `RETENTION_INDEX3 ON ` + db.dbPrefix + `PROCESSGRAPHS (SUBMISSION_TIME, STATE)`
 	_, err = db.postgresql.Exec(sqlStatement)
 	if err != nil {
 		return err

@@ -102,7 +102,7 @@ func FakeGenerator(t *testing.T, colonyID string) *core.Generator {
 	workflowSpec.AddFunctionSpec(funcSpec2)
 	jsonStr, err := workflowSpec.ToJSON()
 	assert.Nil(t, err)
-	generator := core.CreateGenerator(colonyID, "test_genname"+core.GenerateRandomID(), jsonStr, 10)
+	generator := core.CreateGenerator(colonyID, "test_genname"+core.GenerateRandomID(), jsonStr, 10, -1)
 	return generator
 }
 
@@ -113,7 +113,7 @@ func FakeGeneratorSingleProcess(t *testing.T, colonyID string) *core.Generator {
 	workflowSpec.AddFunctionSpec(funcSpec1)
 	jsonStr, err := workflowSpec.ToJSON()
 	assert.Nil(t, err)
-	generator := core.CreateGenerator(colonyID, "test_genname"+core.GenerateRandomID(), jsonStr, 10)
+	generator := core.CreateGenerator(colonyID, "test_genname"+core.GenerateRandomID(), jsonStr, 10, -1)
 	return generator
 }
 
