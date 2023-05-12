@@ -289,6 +289,8 @@ var devCmd = &cobra.Command{
 
 		retentionPeriod := 60000 // Run retention worker once a minute
 
+		setupProfiler()
+
 		coloniesServer := server.CreateColoniesServer(coloniesDB,
 			coloniesServerPort,
 			serverID,
