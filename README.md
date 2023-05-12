@@ -65,6 +65,7 @@ Below are some screenshots from the [Colonies Dashboard](https://github.com/colo
 # More information
 ## Installation
 * [Installation](docs/Installation.md)
+* [Configuration](docs/Configuration.md)
 ## Presentations
 * [Process Orchestration with ColonyOS](docs/Colonies.pptx)
 ## Guides
