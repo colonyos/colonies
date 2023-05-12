@@ -2,7 +2,9 @@ package cli
 
 import (
 	"fmt"
+	"net/http"
 	"os"
+	"strconv"
 
 	"github.com/colonyos/colonies/pkg/build"
 	"github.com/colonyos/colonies/pkg/core"
@@ -66,5 +68,33 @@ func CheckError(err error) {
 	if err != nil {
 		log.WithFields(log.Fields{"Error": err, "BuildVersion": build.BuildVersion, "BuildTime": build.BuildTime}).Error(err.Error())
 		os.Exit(-1)
+	}
+}
+
+func setupProfiler() {
+	profilerStr := os.Getenv("COLONIES_SERVER_PROFILER")
+	profiler := false
+	if profilerStr == "true" {
+		profiler = true
+	}
+
+	if profiler {
+		go func() {
+			log.Println(http.ListenAndServe(":6060", nil))
+		}()
+	}
+
+	profilerPortStr := os.Getenv("COLONIES_SERVER_PROFILER_PORT")
+	var err error
+	if profilerPortStr != "" {
+		_, err = strconv.Atoi(profilerPortStr)
+		CheckError(err)
+	}
+
+	if profiler {
+		go func() {
+			log.WithFields(log.Fields{"ProfilerPort": profilerPortStr}).Info("Enabling profiler")
+			http.ListenAndServe(":"+profilerPortStr, nil)
+		}()
 	}
 }
