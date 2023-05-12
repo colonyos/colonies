@@ -1,8 +1,8 @@
 # Monitoring
-The Colonies server has built-in support for Prometheus instrumentation. The development server starts a montitoring server at the port specified by the **COLONIES_MONITORPORT** environmental variable. 
+The Colonies server has built-in support for Prometheus instrumentation. The development server starts a montitoring server at the port specified by the **COLONIES_MONITOR_PORT** environmental variable. 
 
 ```console
-export COLONIES_MONITORPORT="21120"
+export COLONIES_MONITOR_PORT="21120"
 ```
 
 Alternatively, an standalone monitoring server can be started:
