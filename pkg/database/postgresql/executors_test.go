@@ -9,6 +9,53 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestExecutorClosedDB(t *testing.T) {
+	db, err := PrepareTests()
+	assert.Nil(t, err)
+
+	db.Close()
+
+	executor := utils.CreateTestExecutor(core.GenerateRandomID())
+	err = db.AddExecutor(executor)
+	assert.NotNil(t, err)
+
+	err = db.AddOrReplaceExecutor(executor)
+	assert.NotNil(t, err)
+
+	_, err = db.GetExecutors()
+	assert.NotNil(t, err)
+
+	_, err = db.GetExecutorByID("invalid_id")
+	assert.NotNil(t, err)
+
+	_, err = db.GetExecutorsByColonyID("invalid_id")
+	assert.NotNil(t, err)
+
+	_, err = db.GetExecutorByName("invalid_id", "invalid_name")
+	assert.NotNil(t, err)
+
+	err = db.ApproveExecutor(executor)
+	assert.NotNil(t, err)
+
+	err = db.RejectExecutor(executor)
+	assert.NotNil(t, err)
+
+	err = db.MarkAlive(executor)
+	assert.NotNil(t, err)
+
+	err = db.DeleteExecutorByID("invalid_id")
+	assert.NotNil(t, err)
+
+	err = db.DeleteExecutorsByColonyID("invalid_id")
+	assert.NotNil(t, err)
+
+	_, err = db.CountExecutors()
+	assert.NotNil(t, err)
+
+	_, err = db.CountExecutorsByColonyID("invalid_id")
+	assert.NotNil(t, err)
+}
+
 func TestAddExecutor(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
@@ -108,7 +155,11 @@ func TestGetExecutorByID(t *testing.T) {
 	err = db.AddExecutor(executor2)
 	assert.Nil(t, err)
 
-	executorFromDB, err := db.GetExecutorByID(executor1.ID)
+	executorFromDB, err := db.GetExecutorByID("invalid_id")
+	assert.Nil(t, err)
+	assert.Nil(t, executorFromDB)
+
+	executorFromDB, err = db.GetExecutorByID(executor1.ID)
 	assert.Nil(t, err)
 	assert.True(t, executor1.Equals(executorFromDB))
 }
@@ -145,7 +196,11 @@ func TestGetExecutorByColonyID(t *testing.T) {
 	executorsColony1 = append(executorsColony1, executor1)
 	executorsColony1 = append(executorsColony1, executor2)
 
-	executorsColony1FromDB, err := db.GetExecutorsByColonyID(colony1.ID)
+	executorsColony1FromDB, err := db.GetExecutorsByColonyID("invalid_id")
+	assert.Nil(t, err)
+	assert.NotNil(t, executorsColony1)
+
+	executorsColony1FromDB, err = db.GetExecutorsByColonyID(colony1.ID)
 	assert.Nil(t, err)
 	assert.True(t, core.IsExecutorArraysEqual(executorsColony1, executorsColony1FromDB))
 }
@@ -171,7 +226,19 @@ func TestGetExecutorByName(t *testing.T) {
 	err = db.AddExecutor(executor2)
 	assert.Nil(t, err)
 
-	executorFromDB, err := db.GetExecutorByName(colony.ID, executor1.Name)
+	executorFromDB, err := db.GetExecutorByName("invalid__id", executor1.Name)
+	assert.Nil(t, err)
+	assert.Nil(t, executorFromDB)
+
+	executorFromDB, err = db.GetExecutorByName(colony.ID, "invalid_name")
+	assert.Nil(t, err)
+	assert.Nil(t, executorFromDB)
+
+	executorFromDB, err = db.GetExecutorByName("invalid__id", "invalid_name")
+	assert.Nil(t, err)
+	assert.Nil(t, executorFromDB)
+
+	executorFromDB, err = db.GetExecutorByName(colony.ID, executor1.Name)
 	assert.Nil(t, err)
 	assert.True(t, executor1.Equals(executorFromDB))
 }
@@ -356,6 +423,14 @@ func TestDeleteExecutorMoveBackToQueue(t *testing.T) {
 	count, err = db.CountSuccessfulProcessesByColonyID(colony.ID)
 	assert.Nil(t, err)
 	assert.True(t, count == 1)
+
+	count, err = db.CountRunningProcessesByColonyID(colony.ID)
+	assert.Nil(t, err)
+	assert.True(t, count == 1)
+
+	count, err = db.CountFailedProcessesByColonyID(colony.ID)
+	assert.Nil(t, err)
+	assert.True(t, count == 0)
 }
 
 func TestDeleteExecutorsMoveBackToQueue(t *testing.T) {

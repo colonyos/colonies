@@ -9,6 +9,142 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestProcessClosedDB(t *testing.T) {
+	db, err := PrepareTests()
+	assert.Nil(t, err)
+
+	db.Close()
+
+	process := utils.CreateTestProcess("invalid_id")
+	err = db.AddProcess(process)
+	assert.NotNil(t, err)
+
+	_, err = db.GetProcesses()
+	assert.NotNil(t, err)
+
+	_, err = db.GetProcessByID("invalid_id")
+	assert.NotNil(t, err)
+
+	_, err = db.FindProcessesByColonyID("invalid_id", 60, core.SUCCESS)
+	assert.NotNil(t, err)
+
+	_, err = db.FindProcessesByExecutorID("invalid_id", "invalid_id", 60, core.SUCCESS)
+	assert.NotNil(t, err)
+
+	_, err = db.FindWaitingProcesses("invalid_id", 1)
+	assert.NotNil(t, err)
+
+	_, err = db.FindRunningProcesses("invalid_id", 1)
+	assert.NotNil(t, err)
+
+	_, err = db.FindAllRunningProcesses()
+	assert.NotNil(t, err)
+
+	_, err = db.FindAllWaitingProcesses()
+	assert.NotNil(t, err)
+
+	_, err = db.FindSuccessfulProcesses("invalid_id", 1)
+	assert.NotNil(t, err)
+
+	_, err = db.FindFailedProcesses("invalid_id", 1)
+	assert.NotNil(t, err)
+
+	_, err = db.FindUnassignedProcesses("invalid_id", "invalid_id", "invalid_type", 1)
+	assert.NotNil(t, err)
+
+	err = db.DeleteProcessByID("invalid_id")
+	assert.NotNil(t, err)
+
+	err = db.DeleteAllProcesses()
+	assert.NotNil(t, err)
+
+	err = db.DeleteAllWaitingProcessesByColonyID("invalid_id")
+	assert.NotNil(t, err)
+
+	err = db.DeleteAllRunningProcessesByColonyID("invalid_id")
+	assert.NotNil(t, err)
+
+	err = db.DeleteAllSuccessfulProcessesByColonyID("invalid_id")
+	assert.NotNil(t, err)
+
+	err = db.DeleteAllFailedProcessesByColonyID("invalid_id")
+	assert.NotNil(t, err)
+
+	err = db.DeleteAllProcessesByColonyID("invalid_id")
+	assert.NotNil(t, err)
+
+	err = db.DeleteAllProcessesByProcessGraphID("invalid_id")
+	assert.NotNil(t, err)
+
+	err = db.DeleteAllProcessesInProcessGraphsByColonyID("invalid_id")
+	assert.NotNil(t, err)
+
+	err = db.ResetProcess(process)
+	assert.NotNil(t, err)
+
+	input := make([]interface{}, 2)
+	input[0] = "result1"
+	input[1] = "result2"
+	err = db.SetInput("invalid_id", input)
+	assert.NotNil(t, err)
+
+	output := make([]interface{}, 2)
+	output[0] = "result1"
+	output[1] = "result2"
+	err = db.SetOutput("invalid_id", output)
+	assert.NotNil(t, err)
+
+	err = db.SetErrors("invalid_id", []string{"error"})
+	assert.NotNil(t, err)
+
+	err = db.SetProcessState("invalid_id", 1)
+	assert.NotNil(t, err)
+
+	parent := core.GenerateRandomID()
+	parents := []string{parent}
+	err = db.SetParents("invalid_id", parents)
+	assert.NotNil(t, err)
+
+	child := core.GenerateRandomID()
+	children := []string{child}
+	err = db.SetChildren("invalid_id", children)
+	assert.NotNil(t, err)
+
+	err = db.SetWaitForParents("invalid_id", false)
+	assert.NotNil(t, err)
+
+	err = db.Assign("invalid_id", process)
+	assert.NotNil(t, err)
+
+	err = db.Unassign(process)
+	assert.NotNil(t, err)
+
+	_, _, err = db.MarkSuccessful("invalid_id")
+	assert.NotNil(t, err)
+
+	err = db.MarkFailed("invalid_id", []string{"error"})
+	assert.NotNil(t, err)
+
+	_, err = db.CountProcesses()
+	assert.NotNil(t, err)
+	_, err = db.CountWaitingProcesses()
+	assert.NotNil(t, err)
+	_, err = db.CountRunningProcesses()
+	assert.NotNil(t, err)
+	_, err = db.CountSuccessfulProcesses()
+	assert.NotNil(t, err)
+	_, err = db.CountFailedProcesses()
+	assert.NotNil(t, err)
+	_, err = db.CountWaitingProcessesByColonyID("invalid_id")
+	assert.NotNil(t, err)
+	_, err = db.CountRunningProcessesByColonyID("invalid_id")
+	assert.NotNil(t, err)
+	_, err = db.CountSuccessfulProcessesByColonyID("invalid_id")
+	assert.NotNil(t, err)
+	_, err = db.CountFailedProcessesByColonyID("invalid_id")
+	assert.NotNil(t, err)
+}
+
 func TestAddProcess(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
@@ -29,6 +165,27 @@ func TestAddProcess(t *testing.T) {
 	assert.Contains(t, processFromDB.FunctionSpec.Conditions.ExecutorIDs, executor2ID)
 }
 
+func TestSelectCandiate(t *testing.T) {
+	db, err := PrepareTests()
+	assert.Nil(t, err)
+
+	defer db.Close()
+
+	var processes []*core.Process
+
+	selectedProcess := db.selectCandidate(processes)
+	assert.Nil(t, selectedProcess)
+
+	process1 := utils.CreateTestProcess(core.GenerateRandomID())
+	process2 := utils.CreateTestProcess(core.GenerateRandomID())
+	processes = append(processes, process1)
+	processes = append(processes, process2)
+
+	selectedProcess = db.selectCandidate(processes)
+	assert.NotNil(t, selectedProcess)
+	assert.Equal(t, selectedProcess.ID, process1.ID)
+}
+
 func TestAddProcessWithEnv(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
@@ -46,6 +203,10 @@ func TestAddProcessWithEnv(t *testing.T) {
 
 	_, err = db.GetProcessByID(process.ID)
 	assert.Nil(t, err)
+
+	processesFromDB, err := db.GetProcesses()
+	assert.Nil(t, err)
+	assert.Len(t, processesFromDB, 1)
 }
 
 func TestDeleteProcesses(t *testing.T) {
@@ -583,7 +744,20 @@ func TestMarkSuccessful(t *testing.T) {
 	assert.Equal(t, core.SUCCESS, processFromDB.State)
 
 	err = db.MarkFailed(process.ID, []string{"error"})
-	assert.NotNil(t, err) // Not possible to set successful process as failed
+	assert.NotNil(t, err) // Not possible to set a successful process as failed
+
+	process = utils.CreateTestProcess(colony.ID)
+	err = db.AddProcess(process)
+	assert.Nil(t, err)
+
+	err = db.Assign(executor.ID, process)
+	assert.Nil(t, err)
+
+	err = db.MarkFailed(process.ID, []string{"error"})
+	assert.Nil(t, err)
+
+	_, _, err = db.MarkSuccessful(process.ID)
+	assert.NotNil(t, err) // Not possible to set a failed process to successful
 }
 
 func TestMarkFailed(t *testing.T) {
@@ -624,7 +798,7 @@ func TestMarkFailed(t *testing.T) {
 	assert.NotNil(t, err) // Not possible to set failed process as failed
 }
 
-func TestReset(t *testing.T) {
+func TestResetProcess(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
 
@@ -637,6 +811,7 @@ func TestReset(t *testing.T) {
 	assert.Nil(t, err)
 
 	process := utils.CreateTestProcess(colony.ID)
+	process.FunctionSpec.MaxWaitTime = -1
 	err = db.AddProcess(process)
 	assert.Nil(t, err)
 	err = db.Assign(executor.ID, process)

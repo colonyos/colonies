@@ -8,9 +8,46 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestGeneratorClosedDB(t *testing.T) {
+	db, err := PrepareTests()
+	assert.Nil(t, err)
+
+	db.Close()
+
+	generator := utils.FakeGenerator(t, core.GenerateRandomID())
+	generator.ID = core.GenerateRandomID()
+	err = db.AddGenerator(generator)
+	assert.NotNil(t, err)
+
+	err = db.SetGeneratorLastRun("invalid_id")
+	assert.NotNil(t, err)
+
+	err = db.SetGeneratorFirstPack("invalid_id")
+	assert.NotNil(t, err)
+
+	_, err = db.GetGeneratorByID("invalid_id")
+	assert.NotNil(t, err)
+
+	_, err = db.GetGeneratorByName("invalid_name")
+	assert.NotNil(t, err)
+
+	_, err = db.FindGeneratorsByColonyID("invalid_id", 100)
+	assert.NotNil(t, err)
+
+	_, err = db.FindAllGenerators()
+	assert.NotNil(t, err)
+
+	err = db.DeleteGeneratorByID("invalid_id")
+	assert.NotNil(t, err)
+
+	err = db.DeleteAllGeneratorsByColonyID("invalid_id")
+	assert.NotNil(t, err)
+}
+
 func TestAddGenerator(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
+
 	defer db.Close()
 
 	generator := utils.FakeGenerator(t, core.GenerateRandomID())
@@ -19,9 +56,10 @@ func TestAddGenerator(t *testing.T) {
 	assert.Nil(t, err)
 }
 
-func TestGetGenerator(t *testing.T) {
+func TestGetGeneratorByID(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
+
 	defer db.Close()
 
 	generator := utils.FakeGenerator(t, core.GenerateRandomID())
@@ -29,7 +67,32 @@ func TestGetGenerator(t *testing.T) {
 	err = db.AddGenerator(generator)
 	assert.Nil(t, err)
 
-	generatorFromDB, err := db.GetGeneratorByID(generator.ID)
+	generatorFromDB, err := db.GetGeneratorByID("invalid_id")
+	assert.Nil(t, err)
+	assert.Nil(t, generatorFromDB)
+
+	generatorFromDB, err = db.GetGeneratorByID(generator.ID)
+	assert.Nil(t, err)
+	assert.True(t, generator.Equals(generatorFromDB))
+}
+
+func TestGetGeneratorByName(t *testing.T) {
+	db, err := PrepareTests()
+	assert.Nil(t, err)
+
+	defer db.Close()
+
+	generator := utils.FakeGenerator(t, core.GenerateRandomID())
+	generator.ID = core.GenerateRandomID()
+	generator.Name = "test_name"
+	err = db.AddGenerator(generator)
+	assert.Nil(t, err)
+
+	generatorFromDB, err := db.GetGeneratorByName("invalid_name")
+	assert.Nil(t, err)
+	assert.Nil(t, generatorFromDB)
+
+	generatorFromDB, err = db.GetGeneratorByName("test_name")
 	assert.Nil(t, err)
 	assert.True(t, generator.Equals(generatorFromDB))
 }
@@ -37,6 +100,7 @@ func TestGetGenerator(t *testing.T) {
 func TestSetGeneratorLastRun(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
+
 	defer db.Close()
 
 	generator := utils.FakeGenerator(t, core.GenerateRandomID())
@@ -62,6 +126,7 @@ func TestSetGeneratorLastRun(t *testing.T) {
 func TestSetGeneratorFirstPack(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
+
 	defer db.Close()
 
 	generator := utils.FakeGenerator(t, core.GenerateRandomID())
@@ -85,6 +150,7 @@ func TestSetGeneratorFirstPack(t *testing.T) {
 func TestFindGeneratorsByColonyID(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
+
 	defer db.Close()
 
 	colonyID := core.GenerateRandomID()
@@ -117,6 +183,7 @@ func TestFindGeneratorsByColonyID(t *testing.T) {
 func TestFindAllGenerators(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
+
 	defer db.Close()
 
 	colonyID1 := core.GenerateRandomID()
@@ -139,6 +206,7 @@ func TestFindAllGenerators(t *testing.T) {
 func TestDeleteGeneratorByID(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
+
 	defer db.Close()
 
 	colonyID := core.GenerateRandomID()
@@ -183,6 +251,7 @@ func TestDeleteGeneratorByID(t *testing.T) {
 func TestDeleteAllGeneratorsByColonyID(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
+
 	defer db.Close()
 
 	colonyID1 := core.GenerateRandomID()

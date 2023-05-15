@@ -739,14 +739,6 @@ func (db *PQDatabase) MarkSuccessful(processID string) (float64, float64, error)
 		return 0.0, 0.0, errors.New("Tried to set waiting process as completed without being running")
 	}
 
-	if process.State == core.FAILED {
-		return 0.0, 0.0, errors.New("Tried to set failed process (from db) as successful")
-	}
-
-	if process.State == core.WAITING {
-		return 0.0, 0.0, errors.New("Tried to set waiting process (from db) as successful without being running")
-	}
-
 	endTime := time.Now()
 
 	sqlStatement := `UPDATE ` + db.dbPrefix + `PROCESSES SET END_TIME=$1, STATE=$2 WHERE PROCESS_ID=$3`
