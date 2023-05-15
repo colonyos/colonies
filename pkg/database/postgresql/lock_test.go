@@ -7,6 +7,27 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestLockClosedDB(t *testing.T) {
+	dbHost := "localhost"
+	dbPort := 5432
+	dbUser := "postgres"
+	dbPassword := "rFcLGNkgsNtksg6Pgtn9CumL4xXBQ7"
+	dbName := "postgres"
+	dbPrefix := "TEST_"
+
+	db := CreatePQDatabase(dbHost, dbPort, dbUser, dbPassword, dbName, dbPrefix)
+	err := db.Connect()
+	assert.Nil(t, err)
+
+	db.Close()
+
+	err = db.Lock(1000)
+	assert.NotNil(t, err)
+
+	err = db.Unlock()
+	assert.NotNil(t, err)
+}
+
 func TestLock(t *testing.T) {
 	dbHost := "localhost"
 	dbPort := 5432
@@ -19,6 +40,7 @@ func TestLock(t *testing.T) {
 
 	err := db.Connect()
 	assert.Nil(t, err)
+
 	defer db.Close()
 
 	db.Drop()
@@ -75,6 +97,7 @@ func TestLockClose(t *testing.T) {
 
 	err = db2.Connect()
 	assert.Nil(t, err)
+
 	defer db2.Close()
 
 	// The function below will block until db.Close() is called in the go-routine above
@@ -111,6 +134,7 @@ func TestLockTimeout(t *testing.T) {
 
 	err = db2.Connect()
 	assert.Nil(t, err)
+
 	defer db2.Close()
 
 	err = db2.Lock(100)

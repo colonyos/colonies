@@ -8,6 +8,68 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestAttributeClosedDB(t *testing.T) {
+	db, err := PrepareTests()
+	assert.Nil(t, err)
+
+	db.Close()
+
+	attribute := core.CreateAttribute(core.GenerateRandomID(), core.GenerateRandomID(), "", core.IN, "test_key1", "test_value1")
+	err = db.AddAttribute(attribute)
+	assert.NotNil(t, err)
+
+	attribute1 := core.CreateAttribute(core.GenerateRandomID(), core.GenerateRandomID(), "", core.IN, "test_key1", "test_value1")
+	attribute2 := core.CreateAttribute(core.GenerateRandomID(), core.GenerateRandomID(), "", core.OUT, "test_key2", "test_value2")
+	attributes := []core.Attribute{attribute1, attribute2}
+	err = db.AddAttributes(attributes)
+	assert.NotNil(t, err)
+
+	_, err = db.GetAttributeByID("invalid_id")
+	assert.NotNil(t, err)
+
+	_, err = db.GetAttributesByColonyID("invalid_id")
+	assert.NotNil(t, err)
+
+	_, err = db.GetAttribute(core.GenerateRandomID(), "test_key1", core.IN)
+	assert.NotNil(t, err)
+
+	_, err = db.GetAttributes("invalid_id")
+	assert.NotNil(t, err)
+
+	_, err = db.GetAttributesByType("invalid_id", 1)
+	assert.NotNil(t, err)
+
+	err = db.UpdateAttribute(attribute)
+	assert.NotNil(t, err)
+
+	err = db.DeleteAttributeByID("invalid_id")
+	assert.NotNil(t, err)
+
+	err = db.DeleteAllAttributesByColonyID("invalid_id")
+	assert.NotNil(t, err)
+
+	err = db.DeleteAllAttributesByColonyIDWithState("invalid_id", 10)
+	assert.NotNil(t, err)
+
+	err = db.DeleteAllAttributesByProcessGraphID("invalid_id")
+	assert.NotNil(t, err)
+
+	err = db.DeleteAllAttributesInProcessGraphsByColonyID("invalid")
+	assert.NotNil(t, err)
+
+	err = db.DeleteAllAttributesInProcessGraphsByColonyIDWithState("invalid", -1)
+	assert.NotNil(t, err)
+
+	err = db.DeleteAttributesByTargetID("invalid_id", -1)
+	assert.NotNil(t, err)
+
+	err = db.DeleteAllAttributesByTargetID("invalid_id")
+	assert.NotNil(t, err)
+
+	err = db.DeleteAllAttributes()
+	assert.NotNil(t, err)
+}
+
 func TestAddAttribute(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
@@ -88,7 +150,15 @@ func TestGetAttributes(t *testing.T) {
 	var errAttributes []core.Attribute
 	errAttributes = append(errAttributes, attribute3)
 
-	attributesFromDB, err := db.GetAttributesByType(processID, core.IN)
+	attributesFromDB, err := db.GetAttributesByType("invalid_id", core.IN)
+	assert.Nil(t, err)
+	assert.Len(t, attributesFromDB, 0)
+
+	attributesFromDB, err = db.GetAttributesByType("invalid_id", 20)
+	assert.Nil(t, err)
+	assert.Len(t, attributesFromDB, 0)
+
+	attributesFromDB, err = db.GetAttributesByType(processID, core.IN)
 	assert.Nil(t, err)
 	assert.True(t, core.IsAttributeArraysEqual(inAttributes, attributesFromDB))
 
@@ -131,7 +201,11 @@ func TestGetAttributesByColonyID(t *testing.T) {
 	err = db.AddAttribute(attribute4)
 	assert.Nil(t, err)
 
-	attributesFromDB, err := db.GetAttributesByColonyID(colony1ID)
+	attributesFromDB, err := db.GetAttributesByColonyID("invalid_id")
+	assert.Nil(t, err)
+	assert.Len(t, attributesFromDB, 0)
+
+	attributesFromDB, err = db.GetAttributesByColonyID(colony1ID)
 	assert.Nil(t, err)
 	assert.Len(t, attributesFromDB, 3)
 
