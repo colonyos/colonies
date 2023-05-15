@@ -60,9 +60,82 @@ func generateProcessGraph2(t *testing.T, db *PQDatabase, colonyID string) (*core
 	return process, graph
 }
 
+func TestProcessGraphClosedDB(t *testing.T) {
+	db, err := PrepareTests()
+	assert.Nil(t, err)
+
+	graph := generateProcessGraph(t, db, "invalid_id")
+
+	db.Close()
+
+	err = db.AddProcessGraph(graph)
+	assert.NotNil(t, err)
+
+	_, err = db.GetProcessGraphByID("invalid_id")
+	assert.NotNil(t, err)
+
+	err = db.SetProcessGraphState("invalid_id", 1)
+	assert.NotNil(t, err)
+
+	_, err = db.FindWaitingProcessGraphs("invalid_id", 1)
+	assert.NotNil(t, err)
+
+	_, err = db.FindRunningProcessGraphs("invalid_id", 1)
+	assert.NotNil(t, err)
+
+	_, err = db.FindSuccessfulProcessGraphs("invalid_id", 1)
+	assert.NotNil(t, err)
+
+	_, err = db.FindFailedProcessGraphs("invalid_id", 1)
+	assert.NotNil(t, err)
+
+	err = db.DeleteProcessGraphByID("invalid_id")
+	assert.NotNil(t, err)
+
+	err = db.DeleteAllProcessGraphsByColonyID("invalid_id")
+	assert.NotNil(t, err)
+
+	err = db.DeleteAllWaitingProcessGraphsByColonyID("invalid_id")
+	assert.NotNil(t, err)
+
+	err = db.DeleteAllRunningProcessGraphsByColonyID("invalid_id")
+	assert.NotNil(t, err)
+
+	err = db.DeleteAllSuccessfulProcessGraphsByColonyID("invalid_id")
+	assert.NotNil(t, err)
+
+	err = db.DeleteAllFailedProcessGraphsByColonyID("invalid_id")
+	assert.NotNil(t, err)
+
+	_, err = db.CountWaitingProcessGraphs()
+	assert.NotNil(t, err)
+
+	_, err = db.CountRunningProcessGraphs()
+	assert.NotNil(t, err)
+
+	_, err = db.CountSuccessfulProcessGraphs()
+	assert.NotNil(t, err)
+
+	_, err = db.CountFailedProcessGraphs()
+	assert.NotNil(t, err)
+
+	_, err = db.CountWaitingProcessGraphsByColonyID("invalid_id")
+	assert.NotNil(t, err)
+
+	_, err = db.CountRunningProcessGraphsByColonyID("invalid_id")
+	assert.NotNil(t, err)
+
+	_, err = db.CountSuccessfulProcessGraphsByColonyID("invalid_id")
+	assert.NotNil(t, err)
+
+	_, err = db.CountFailedProcessGraphsByColonyID("invalid_id")
+	assert.NotNil(t, err)
+}
+
 func TestAddProcessGraph(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
+
 	defer db.Close()
 
 	colonyID := core.GenerateRandomID()
