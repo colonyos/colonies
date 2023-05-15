@@ -9,6 +9,16 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestRetentionClosedDB(t *testing.T) {
+	db, err := PrepareTests()
+	assert.Nil(t, err)
+
+	db.Close()
+
+	err = db.ApplyRetentionPolicy(1000)
+	assert.NotNil(t, err)
+}
+
 func TestCalcTimestamp(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
