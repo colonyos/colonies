@@ -8,6 +8,37 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestCronClosedDB(t *testing.T) {
+	db, err := PrepareTests()
+	assert.Nil(t, err)
+
+	db.Close()
+
+	cron := core.CreateCron(core.GenerateRandomID(), "test_name", "* * * * * *", 0, false, "workflow")
+	cron.ID = core.GenerateRandomID()
+
+	err = db.AddCron(cron)
+	assert.NotNil(t, err)
+
+	err = db.UpdateCron("invalid_id", time.Now(), time.Time{}, core.GenerateRandomID())
+	assert.NotNil(t, err)
+
+	_, err = db.GetCronByID("invalid_id")
+	assert.NotNil(t, err)
+
+	_, err = db.FindCronsByColonyID("invalid_id", 1)
+	assert.NotNil(t, err)
+
+	_, err = db.FindAllCrons()
+	assert.NotNil(t, err)
+
+	err = db.DeleteCronByID("invalid_id")
+	assert.NotNil(t, err)
+
+	err = db.DeleteAllCronsByColonyID("invalid_id")
+	assert.NotNil(t, err)
+}
+
 func TestAddCron(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)

@@ -7,6 +7,61 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestFunctionClosedDB(t *testing.T) {
+	db, err := PrepareTests()
+	assert.Nil(t, err)
+
+	db.Close()
+
+	function1 := &core.Function{
+		FunctionID:  core.GenerateRandomID(),
+		ExecutorID:  core.GenerateRandomID(),
+		ColonyID:    core.GenerateRandomID(),
+		FuncName:    "testfunc1",
+		Desc:        "unit test function",
+		Counter:     2,
+		MinWaitTime: 1.0,
+		MaxWaitTime: 2.0,
+		MinExecTime: 3.0,
+		MaxExecTime: 4.0,
+		AvgWaitTime: 1.1,
+		AvgExecTime: 0.1,
+		Args:        []string{"arg1"}}
+
+	err = db.AddFunction(function1)
+	assert.NotNil(t, err)
+
+	_, err = db.GetFunctionByID("invalid_id")
+	assert.NotNil(t, err)
+
+	_, err = db.GetFunctionsByExecutorID("invalid_id")
+	assert.NotNil(t, err)
+
+	_, err = db.GetFunctionsByColonyID("invalid_id")
+	assert.NotNil(t, err)
+
+	_, err = db.GetFunctionsByExecutorIDAndName("invalid_id", "invalid_name")
+	assert.NotNil(t, err)
+
+	err = db.UpdateFunctionStats("invalid_id", "invalid_name", 20, 0.1, 0.2, 0.3, 0.4, 2.0, 2.1)
+	assert.NotNil(t, err)
+
+	err = db.DeleteFunctionByID("invalid_id")
+	assert.NotNil(t, err)
+
+	err = db.DeleteFunctionByName("invalid_id", "invalid_name")
+	assert.NotNil(t, err)
+
+	err = db.DeleteFunctionsByExecutorID("invalid_id")
+	assert.NotNil(t, err)
+
+	err = db.DeleteFunctionsByColonyID("invalid_id")
+	assert.NotNil(t, err)
+
+	err = db.DeleteFunctions()
+	assert.NotNil(t, err)
+}
+
 func TestAddFunction(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)

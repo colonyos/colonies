@@ -8,6 +8,33 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestColonyClosedDB(t *testing.T) {
+	db, err := PrepareTests()
+	assert.Nil(t, err)
+
+	db.Close()
+
+	colony := core.CreateColony(core.GenerateRandomID(), "test_colony_name")
+
+	err = db.AddColony(colony)
+	assert.NotNil(t, err)
+
+	_, err = db.GetColonies()
+	assert.NotNil(t, err)
+
+	_, err = db.GetColonyByID("invalid_id")
+	assert.NotNil(t, err)
+
+	err = db.RenameColony("invalid_id", "invalid_name")
+	assert.NotNil(t, err)
+
+	err = db.DeleteColonyByID("invalid_id")
+	assert.NotNil(t, err)
+
+	_, err = db.CountColonies()
+	assert.NotNil(t, err)
+}
+
 func TestAddColony(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
