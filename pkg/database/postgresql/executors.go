@@ -86,10 +86,6 @@ func (db *PQDatabase) GetExecutorByID(executorID string) (*core.Executor, error)
 		return nil, err
 	}
 
-	if len(executors) > 1 {
-		return nil, errors.New("Expected one executor, executor id should be unique")
-	}
-
 	if len(executors) == 0 {
 		return nil, nil
 	}
@@ -126,10 +122,6 @@ func (db *PQDatabase) GetExecutorByName(colonyID string, executorName string) (*
 	executors, err := db.parseExecutors(rows)
 	if err != nil {
 		return nil, err
-	}
-
-	if len(executors) > 1 {
-		return nil, errors.New("Expected one executor, executor name should be unique")
 	}
 
 	if len(executors) == 0 {
