@@ -156,6 +156,30 @@ func TestAddProcess(t *testing.T) {
 	executor2ID := core.GenerateRandomID()
 
 	process := utils.CreateTestProcessWithTargets(colonyID, []string{executor1ID, executor2ID})
+	invalidArgs := make([]interface{}, 1)
+	invalidArgs[0] = func() {
+	}
+	process.FunctionSpec.Args = invalidArgs
+	err = db.AddProcess(process)
+	assert.NotNil(t, err)
+
+	process = utils.CreateTestProcessWithTargets(colonyID, []string{executor1ID, executor2ID})
+	invalidArgs = make([]interface{}, 1)
+	invalidArgs[0] = func() {
+	}
+	process.Input = invalidArgs
+	err = db.AddProcess(process)
+	assert.NotNil(t, err)
+
+	process = utils.CreateTestProcessWithTargets(colonyID, []string{executor1ID, executor2ID})
+	invalidArgs = make([]interface{}, 1)
+	invalidArgs[0] = func() {
+	}
+	process.Output = invalidArgs
+	err = db.AddProcess(process)
+	assert.NotNil(t, err)
+
+	process = utils.CreateTestProcessWithTargets(colonyID, []string{executor1ID, executor2ID})
 	err = db.AddProcess(process)
 	assert.Nil(t, err)
 
@@ -828,6 +852,7 @@ func TestResetProcess(t *testing.T) {
 	assert.Nil(t, err)
 
 	process = utils.CreateTestProcess(colony.ID)
+	process.FunctionSpec.MaxWaitTime = -1
 	err = db.AddProcess(process)
 	assert.Nil(t, err)
 	err = db.Assign(executor.ID, process)

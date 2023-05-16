@@ -30,11 +30,7 @@ func PrepareTestsWithPrefix(prefix string) (*PQDatabase, error) {
 		return nil, err
 	}
 
-	err = db.Drop()
-	if err != nil {
-		// ignore
-	}
-
+	db.Drop()
 	err = db.Initialize()
 
 	return db, err

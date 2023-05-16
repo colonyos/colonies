@@ -55,10 +55,6 @@ func (db *PQDatabase) GetGeneratorByID(generatorID string) (*core.Generator, err
 		return nil, err
 	}
 
-	if len(generators) > 1 {
-		return nil, errors.New("Expected one generator, generator id should be unique")
-	}
-
 	if len(generators) == 0 {
 		return nil, nil
 	}
