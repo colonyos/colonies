@@ -65,10 +65,6 @@ func (db *PQDatabase) GetColonyByID(id string) (*core.Colony, error) {
 		return nil, err
 	}
 
-	if len(colonies) > 1 {
-		return nil, errors.New("Expected one colony, colony id should be unique")
-	}
-
 	if len(colonies) == 0 {
 		return nil, nil
 	}

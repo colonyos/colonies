@@ -1,6 +1,6 @@
 module github.com/colonyos/colonies
 
-go 1.17
+go 1.19
 
 require (
 	github.com/btcsuite/btcd v0.22.0-beta

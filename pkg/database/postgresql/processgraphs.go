@@ -2,7 +2,6 @@ package postgresql
 
 import (
 	"database/sql"
-	"errors"
 	"time"
 
 	"github.com/colonyos/colonies/pkg/core"
@@ -67,10 +66,6 @@ func (db *PQDatabase) GetProcessGraphByID(processGraphID string) (*core.ProcessG
 	processGraphs, err := db.parseProcessGraphs(rows)
 	if err != nil {
 		return nil, err
-	}
-
-	if len(processGraphs) > 1 {
-		return nil, errors.New("Expected one processgraph, processgraph id should be unique")
 	}
 
 	if len(processGraphs) == 0 {

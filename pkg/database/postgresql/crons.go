@@ -2,7 +2,6 @@ package postgresql
 
 import (
 	"database/sql"
-	"errors"
 	"time"
 
 	"github.com/colonyos/colonies/pkg/core"
@@ -67,10 +66,6 @@ func (db *PQDatabase) GetCronByID(cronID string) (*core.Cron, error) {
 	crons, err := db.parseCrons(rows)
 	if err != nil {
 		return nil, err
-	}
-
-	if len(crons) > 1 {
-		return nil, errors.New("Expected one cron, cron id should be unique")
 	}
 
 	if len(crons) == 0 {
