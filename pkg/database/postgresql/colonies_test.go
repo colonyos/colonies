@@ -43,6 +43,9 @@ func TestAddColony(t *testing.T) {
 
 	colony := core.CreateColony(core.GenerateRandomID(), "test_colony_name")
 
+	err = db.AddColony(nil)
+	assert.NotNil(t, err)
+
 	err = db.AddColony(colony)
 	assert.Nil(t, err)
 
