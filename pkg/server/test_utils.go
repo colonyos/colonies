@@ -262,7 +262,7 @@ func waitForProcesses(t *testing.T, server *ColoniesServer, processes []*core.Pr
 	wait := make(chan error)
 	for _, process := range processes {
 		go func(process *core.Process) {
-			_, err := server.controller.eventHandler.waitForProcess(process.FunctionSpec.Conditions.ExecutorType, state, process.ID, ctx)
+			_, err := server.controller.getEventHandler().waitForProcess(process.FunctionSpec.Conditions.ExecutorType, state, process.ID, ctx)
 			wait <- err
 		}(process)
 	}

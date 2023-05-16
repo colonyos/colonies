@@ -109,7 +109,7 @@ func (server *ColoniesServer) handleGetCronHTTPRequest(c *gin.Context, recovered
 		return
 	}
 
-	cron.CheckerPeriod = server.controller.cronPeriod
+	cron.CheckerPeriod = server.controller.getCronPeriod()
 
 	jsonString, err = cron.ToJSON()
 	if server.handleHTTPError(c, err, http.StatusInternalServerError) {

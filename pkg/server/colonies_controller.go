@@ -107,6 +107,26 @@ func createColoniesController(db database.Database,
 	return controller
 }
 
+func (controller *coloniesController) getCronPeriod() int {
+	return controller.cronPeriod
+}
+
+func (controller *coloniesController) getGeneratorPeriod() int {
+	return controller.generatorPeriod
+}
+
+func (controller *coloniesController) getEtcdServer() *cluster.EtcdServer {
+	return controller.etcdServer
+}
+
+func (controller *coloniesController) getEventHandler() *eventHandler {
+	return controller.eventHandler
+}
+
+func (controller *coloniesController) getThisNode() cluster.Node {
+	return controller.thisNode
+}
+
 func (controller *coloniesController) subscribeProcesses(executorID string, subscription *subscription) error {
 	cmd := &command{threaded: false, errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
