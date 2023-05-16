@@ -199,10 +199,6 @@ func (db *PQDatabase) GetProcessByID(processID string) (*core.Process, error) {
 		return nil, err
 	}
 
-	if len(processes) > 1 {
-		return nil, errors.New("Expected one process, process id should be unique")
-	}
-
 	if len(processes) == 0 {
 		return nil, nil
 	}
