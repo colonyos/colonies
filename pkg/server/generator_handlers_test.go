@@ -12,18 +12,11 @@ import (
 )
 
 func TestHandleAddGeneratorHTTPRequest(t *testing.T) {
-	server := &ColoniesServer{}
-
-	validatorMock := &validatorMock{}
-	server.validator = validatorMock
-
-	controllerMock := &controllerMock{}
-	server.controller = controllerMock
+	server, controllerMock, _, _, ctx, w := setupFakeServer()
 
 	recoveredID := "invalid_id"
 	payloadType := "invalid_payload_type"
 	jsonString := "invalid json string"
-	ctx, w := getTestGinContext()
 	server.handleAddGeneratorHTTPRequest(ctx, recoveredID, payloadType, jsonString)
 	assertRPCError(t, w.Body.String())
 
@@ -73,7 +66,7 @@ func TestHandleAddGeneratorHTTPRequest(t *testing.T) {
 	assertRPCError(t, w.Body.String())
 
 	generator = utils.FakeGenerator(t, core.GenerateRandomID())
-	controllerMock.returnError = true
+	controllerMock.returnError = "addGenerator"
 	msg = rpc.CreateAddGeneratorMsg(generator)
 	payloadType = msg.MsgType
 	jsonString, err = msg.ToJSON()
@@ -81,7 +74,7 @@ func TestHandleAddGeneratorHTTPRequest(t *testing.T) {
 	ctx, w = getTestGinContext()
 	server.handleAddGeneratorHTTPRequest(ctx, recoveredID, payloadType, jsonString)
 	assertRPCError(t, w.Body.String())
-	controllerMock.returnError = false
+	controllerMock.returnError = ""
 
 	generator = utils.FakeGenerator(t, core.GenerateRandomID())
 	msg = rpc.CreateAddGeneratorMsg(generator)
@@ -91,6 +84,53 @@ func TestHandleAddGeneratorHTTPRequest(t *testing.T) {
 	ctx, w = getTestGinContext()
 	server.handleAddGeneratorHTTPRequest(ctx, recoveredID, payloadType, jsonString)
 	assertRPCError(t, w.Body.String())
+}
+
+func TestHandleGetGeneratorHTTPRequest(t *testing.T) {
+	server, controllerMock, _, dbMock, ctx, w := setupFakeServer()
+
+	recoveredID := "invalid_id"
+	payloadType := "invalid_payload_type"
+	jsonString := "invalid json string"
+	server.handleGetGeneratorHTTPRequest(ctx, recoveredID, payloadType, jsonString)
+	assertRPCError(t, w.Body.String())
+
+	//generator := utils.FakeGenerator(t, core.GenerateRandomID())
+	msg := rpc.CreateGetGeneratorMsg("invalid_id")
+	jsonString, err := msg.ToJSON()
+	assert.Nil(t, err)
+	ctx, w = getTestGinContext()
+	server.handleGetGeneratorHTTPRequest(ctx, recoveredID, payloadType, jsonString)
+	assertRPCError(t, w.Body.String())
+
+	controllerMock.returnError = "getGenerator"
+	msg = rpc.CreateGetGeneratorMsg("invalid_id")
+	payloadType = msg.MsgType
+	jsonString, err = msg.ToJSON()
+	assert.Nil(t, err)
+	ctx, w = getTestGinContext()
+	server.handleGetGeneratorHTTPRequest(ctx, recoveredID, payloadType, jsonString)
+	assertRPCError(t, w.Body.String())
+	controllerMock.returnError = ""
+
+	msg = rpc.CreateGetGeneratorMsg("invalid_id")
+	payloadType = msg.MsgType
+	jsonString, err = msg.ToJSON()
+	assert.Nil(t, err)
+	ctx, w = getTestGinContext()
+	server.handleGetGeneratorHTTPRequest(ctx, recoveredID, payloadType, jsonString)
+	assertRPCError(t, w.Body.String())
+
+	controllerMock.returnValue = "getGenerator"
+	dbMock.returnError = "CountGeneratorArgs"
+	msg = rpc.CreateGetGeneratorMsg("invalid_id")
+	payloadType = msg.MsgType
+	jsonString, err = msg.ToJSON()
+	assert.Nil(t, err)
+	ctx, w = getTestGinContext()
+	server.handleGetGeneratorHTTPRequest(ctx, recoveredID, payloadType, jsonString)
+	assertRPCError(t, w.Body.String())
+
 }
 
 // TEST ERROR
