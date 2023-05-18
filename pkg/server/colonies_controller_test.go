@@ -9,6 +9,42 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestColoniesControllerInvalidDB(t *testing.T) {
+	controller, dbMock := createFakeColoniesController()
+
+	dbMock.returnError = "GetProcessByID"
+	err := controller.subscribeProcess("invalid_id", &subscription{})
+	assert.NotNil(t, err)
+
+	dbMock.returnError = "GetColonies"
+	_, err = controller.getColonies()
+	assert.NotNil(t, err)
+
+	dbMock.returnError = "GetColonyByID"
+	_, err = controller.getColony("invalid_id")
+	assert.NotNil(t, err)
+
+	dbMock.returnError = "AddColony"
+	_, err = controller.addColony(nil)
+	assert.NotNil(t, err)
+
+	dbMock.returnError = ""
+	_, err = controller.addColony(nil)
+	assert.NotNil(t, err)
+
+	dbMock.returnError = "GetColonyByID"
+	_, err = controller.addColony(&core.Colony{})
+	assert.NotNil(t, err)
+
+	dbMock.returnError = "DeleteColonyByID"
+	err = controller.deleteColony("invalid_id")
+	assert.NotNil(t, err)
+
+	dbMock.returnError = "RenameColony"
+	err = controller.renameColony("invalid_id", "invalid_name")
+	assert.NotNil(t, err)
+}
+
 func TestColoniesControllerAddColony(t *testing.T) {
 	db, err := postgresql.PrepareTestsWithPrefix("TEST_2")
 	defer db.Close()

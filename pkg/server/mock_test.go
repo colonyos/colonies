@@ -27,6 +27,14 @@ func setupFakeServer() (*ColoniesServer, *controllerMock, *validatorMock, *dbMoc
 	return server, controllerMock, validatorMock, dbMock, ctx, w
 }
 
+func createFakeColoniesController() (*coloniesController, *dbMock) {
+	node := cluster.Node{Name: "etcd", Host: "localhost", EtcdClientPort: 24100, EtcdPeerPort: 23100, RelayPort: 25100, APIPort: TESTPORT}
+	clusterConfig := cluster.Config{}
+	clusterConfig.AddNode(node)
+	dbMock := &dbMock{}
+	return createColoniesController(dbMock, node, clusterConfig, "/tmp/colonies/etcd", GENERATOR_TRIGGER_PERIOD, CRON_TRIGGER_PERIOD, false, -1, 500), dbMock
+}
+
 // controllerMock
 type controllerMock struct {
 	returnError string
@@ -380,6 +388,7 @@ func (v *validatorMock) RequireExecutorMembership(recoveredID string, colonyID s
 
 type dbMock struct {
 	returnError string
+	returnValue string
 }
 
 func (db *dbMock) Close() {
@@ -394,22 +403,45 @@ func (db *dbMock) Drop() error {
 }
 
 func (db *dbMock) AddColony(colony *core.Colony) error {
+	if db.returnError == "AddColony" {
+		return errors.New("error")
+	}
 	return nil
 }
 
 func (db *dbMock) GetColonies() ([]*core.Colony, error) {
+	if db.returnError == "GetColonies" {
+		return nil, errors.New("error")
+	}
+
 	return nil, nil
 }
 
 func (db *dbMock) GetColonyByID(id string) (*core.Colony, error) {
+	if db.returnError == "GetColonyByID" {
+		return nil, errors.New("error")
+	}
+
+	if db.returnValue == "GetColonyByID" {
+		return &core.Colony{}, nil
+	}
+
 	return nil, nil
 }
 
 func (db *dbMock) RenameColony(id string, name string) error {
+	if db.returnError == "RenameColony" {
+		return errors.New("error")
+	}
+
 	return nil
 }
 
 func (db *dbMock) DeleteColonyByID(colonyID string) error {
+	if db.returnError == "DeleteColonyByID" {
+		return errors.New("error")
+	}
+
 	return nil
 }
 
@@ -522,6 +554,9 @@ func (db *dbMock) GetProcesses() ([]*core.Process, error) {
 }
 
 func (db *dbMock) GetProcessByID(processID string) (*core.Process, error) {
+	if db.returnError == "GetProcessByID" {
+		return nil, errors.New("error")
+	}
 	return nil, nil
 }
 

@@ -144,6 +144,11 @@ func (controller *coloniesController) subscribeProcess(executorID string, subscr
 			process, err := controller.db.GetProcessByID(subscription.processID)
 			if err != nil {
 				cmd.errorChan <- err
+				return
+			}
+			if process == nil {
+				cmd.errorChan <- errors.New("Invalid process with Id " + subscription.processID)
+				return
 			}
 
 			controller.wsSubCtrl.addProcessSubscriber(executorID, process, subscription)
@@ -206,6 +211,11 @@ func (controller *coloniesController) addColony(colony *core.Colony) (*core.Colo
 				cmd.errorChan <- err
 				return
 			}
+			if colony == nil {
+				cmd.errorChan <- errors.New("Invalid colony, colony is nil")
+				return
+			}
+
 			addedColony, err := controller.db.GetColonyByID(colony.ID)
 			if err != nil {
 				cmd.errorChan <- err
