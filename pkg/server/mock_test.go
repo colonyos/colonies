@@ -133,10 +133,6 @@ func (v *controllerMock) findProcessHistory(colonyID string, executorID string, 
 	return nil, nil
 }
 
-func (v *controllerMock) findPrioritizedProcesses(executorID string, colonyID string, count int) ([]*core.Process, error) {
-	return nil, nil
-}
-
 func (v *controllerMock) findWaitingProcesses(colonyID string, count int) ([]*core.Process, error) {
 	return nil, nil
 }
@@ -450,6 +446,10 @@ func (db *dbMock) CountColonies() (int, error) {
 }
 
 func (db *dbMock) AddExecutor(executor *core.Executor) error {
+	if db.returnError == "AddExecutor" {
+		return errors.New("error")
+	}
+
 	return nil
 }
 
@@ -462,22 +462,50 @@ func (db *dbMock) GetExecutors() ([]*core.Executor, error) {
 }
 
 func (db *dbMock) GetExecutorByID(executorID string) (*core.Executor, error) {
+	if db.returnError == "GetExecutorByID" {
+		return nil, errors.New("error")
+	}
+
+	if db.returnValue == "GetExecutorByID" {
+		return &core.Executor{}, nil
+	}
+
 	return nil, nil
 }
 
 func (db *dbMock) GetExecutorsByColonyID(colonyID string) ([]*core.Executor, error) {
+	if db.returnError == "GetExecutorByColonyID" {
+		return nil, errors.New("error")
+	}
+
 	return nil, nil
 }
 
 func (db *dbMock) GetExecutorByName(colonyID string, executorName string) (*core.Executor, error) {
+	if db.returnError == "GetExecutorByName" {
+		return nil, errors.New("error")
+	}
+
+	if db.returnValue == "GetExecutorByName" {
+		return &core.Executor{}, nil
+	}
+
 	return nil, nil
 }
 
 func (db *dbMock) ApproveExecutor(executor *core.Executor) error {
+	if db.returnError == "ApproveExecutor" {
+		return errors.New("error")
+	}
+
 	return nil
 }
 
 func (db *dbMock) RejectExecutor(executor *core.Executor) error {
+	if db.returnError == "RejectExecutor" {
+		return errors.New("error")
+	}
+
 	return nil
 }
 
@@ -486,6 +514,10 @@ func (db *dbMock) MarkAlive(executor *core.Executor) error {
 }
 
 func (db *dbMock) DeleteExecutorByID(executorID string) error {
+	if db.returnError == "DeleteExecutorByID" {
+		return errors.New("error")
+	}
+
 	return nil
 }
 
@@ -546,6 +578,10 @@ func (db *dbMock) DeleteFunctions() error {
 }
 
 func (db *dbMock) AddProcess(process *core.Process) error {
+	if db.returnError == "AddProcess" {
+		return errors.New("error")
+	}
+
 	return nil
 }
 

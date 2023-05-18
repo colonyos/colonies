@@ -31,7 +31,6 @@ type controller interface {
 	addChild(processGraphID string, parentProcessID string, childProcessID string, process *core.Process, executorID string, insert bool) (*core.Process, error)
 	getProcess(processID string) (*core.Process, error)
 	findProcessHistory(colonyID string, executorID string, seconds int, state int) ([]*core.Process, error)
-	findPrioritizedProcesses(executorID string, colonyID string, count int) ([]*core.Process, error)
 	findWaitingProcesses(colonyID string, count int) ([]*core.Process, error)
 	findRunningProcesses(colonyID string, count int) ([]*core.Process, error)
 	findSuccessfulProcesses(colonyID string, count int) ([]*core.Process, error)

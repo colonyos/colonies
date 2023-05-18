@@ -267,6 +267,10 @@ func (controller *coloniesController) addExecutor(executor *core.Executor, allow
 	cmd := &command{threaded: true, executorReplyChan: make(chan *core.Executor, 1),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
+			if executor == nil {
+				cmd.errorChan <- errors.New("Invalid executor, executor is nil")
+				return
+			}
 			executorFromDB, err := controller.db.GetExecutorByName(executor.ColonyID, executor.Name)
 			if err != nil {
 				cmd.errorChan <- err
@@ -394,6 +398,10 @@ func (controller *coloniesController) deleteExecutor(executorID string) error {
 }
 
 func (controller *coloniesController) addProcessToDB(process *core.Process) (*core.Process, error) {
+	if process == nil {
+		return nil, errors.New("Invalid process, process is nil")
+	}
+
 	err := controller.db.AddProcess(process)
 	if err != nil {
 		return nil, err
@@ -565,34 +573,6 @@ func (controller *coloniesController) findProcessHistory(colonyID string, execut
 				}
 			}
 			cmd.processesReplyChan <- processes
-		}}
-
-	controller.cmdQueue <- cmd
-	var processes []*core.Process
-	select {
-	case err := <-cmd.errorChan:
-		return processes, err
-	case processes := <-cmd.processesReplyChan:
-		return processes, nil
-	}
-}
-
-func (controller *coloniesController) findPrioritizedProcesses(executorID string, colonyID string, count int) ([]*core.Process, error) {
-	cmd := &command{threaded: true, processesReplyChan: make(chan []*core.Process),
-		errorChan: make(chan error, 1),
-		handler: func(cmd *command) {
-			var processes []*core.Process
-			if count > MAX_COUNT {
-				cmd.errorChan <- errors.New("Count is larger than MaxCount limit <" + strconv.Itoa(MAX_COUNT) + ">")
-				return
-			}
-			processes, err := controller.db.FindWaitingProcesses(colonyID, count)
-			if err != nil {
-				cmd.errorChan <- err
-				return
-			}
-			prioritizedProcesses := controller.planner.Prioritize(executorID, processes, count)
-			cmd.processesReplyChan <- prioritizedProcesses
 		}}
 
 	controller.cmdQueue <- cmd
