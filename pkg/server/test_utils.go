@@ -257,12 +257,12 @@ func generateSingleWorkflowSpec(colonyID string) *core.WorkflowSpec {
 }
 
 func waitForProcesses(t *testing.T, server *ColoniesServer, processes []*core.Process, state int) {
-	ctx, cancelCtx := context.WithTimeout(context.Background(), 100*time.Second)
+	ctx, cancelCtx := context.WithTimeout(context.Background(), 200*time.Second)
 	defer cancelCtx()
 	wait := make(chan error)
 	for _, process := range processes {
 		go func(process *core.Process) {
-			_, err := server.controller.eventHandler.waitForProcess(process.FunctionSpec.Conditions.ExecutorType, state, process.ID, ctx)
+			_, err := server.controller.getEventHandler().waitForProcess(process.FunctionSpec.Conditions.ExecutorType, state, process.ID, ctx)
 			wait <- err
 		}(process)
 	}

@@ -93,7 +93,7 @@ func (server *ColoniesServer) handleGetFunctionsHTTPRequest(c *gin.Context, reco
 			return
 		}
 	} else if msg.ExecutorID != "" {
-		targetExecutor, err := server.controller.db.GetExecutorByID(msg.ExecutorID)
+		targetExecutor, err := server.controller.getExecutor(msg.ExecutorID)
 		if server.handleHTTPError(c, err, http.StatusForbidden) {
 			return
 		}
@@ -143,7 +143,7 @@ func (server *ColoniesServer) handleDeleteFunctionHTTPRequest(c *gin.Context, re
 		return
 	}
 
-	executor, err := server.controller.db.GetExecutorByID(function.ExecutorID)
+	executor, err := server.controller.getExecutor(function.ExecutorID)
 	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		return
 	}

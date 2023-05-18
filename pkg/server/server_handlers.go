@@ -84,7 +84,7 @@ func (server *ColoniesServer) handleGetClusterHTTPRequest(c *gin.Context, recove
 		return
 	}
 
-	cluster := server.controller.etcdServer.CurrentCluster()
+	cluster := server.controller.getEtcdServer().CurrentCluster()
 	jsonString, err = cluster.ToJSON()
 	if server.handleHTTPError(c, err, http.StatusInternalServerError) {
 		return
