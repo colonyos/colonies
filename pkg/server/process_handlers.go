@@ -67,7 +67,7 @@ func (server *ColoniesServer) handleAssignProcessHTTPRequest(c *gin.Context, rec
 	var err error
 	if server.exclusiveAssign && !server.controller.isLeader() {
 		// Find out who is the leader
-		leader := server.controller.etcdServer.CurrentCluster().Leader
+		leader := server.controller.getEtcdServer().CurrentCluster().Leader
 		leaderHost := leader.Host
 		leaderPort := leader.APIPort
 		insecure := !server.tls
@@ -126,7 +126,7 @@ func (server *ColoniesServer) handleAssignProcessHTTPRequest(c *gin.Context, rec
 			defer cancelCtx()
 
 			// Wait for a new process to be submitted to a ColoniesServer in the cluster
-			server.controller.eventHandler.waitForProcess(executor.Type, core.WAITING, "", ctx)
+			server.controller.getEventHandler().waitForProcess(executor.Type, core.WAITING, "", ctx)
 			process, assignErr = server.controller.assign(recoveredID, msg.ColonyID)
 		}
 	}

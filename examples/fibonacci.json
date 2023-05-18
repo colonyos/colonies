@@ -1,0 +1,6 @@
+{
+    "conditions": {
+        "executortype": "cli"
+    },
+    "funcname": "calc_fibonacci"
+}

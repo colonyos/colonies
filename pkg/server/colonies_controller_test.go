@@ -9,6 +9,112 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestColoniesControllerInvalidDB(t *testing.T) {
+	controller, dbMock := createFakeColoniesController()
+
+	dbMock.returnError = "GetProcessByID"
+	err := controller.subscribeProcess("invalid_id", &subscription{})
+	assert.NotNil(t, err)
+
+	dbMock.returnError = "GetColonies"
+	_, err = controller.getColonies()
+	assert.NotNil(t, err)
+
+	dbMock.returnError = "GetColonyByID"
+	_, err = controller.getColony("invalid_id")
+	assert.NotNil(t, err)
+
+	dbMock.returnError = "AddColony"
+	_, err = controller.addColony(nil)
+	assert.NotNil(t, err)
+
+	dbMock.returnError = ""
+	_, err = controller.addColony(nil)
+	assert.NotNil(t, err)
+
+	dbMock.returnError = "GetColonyByID"
+	_, err = controller.addColony(&core.Colony{})
+	assert.NotNil(t, err)
+
+	dbMock.returnError = "DeleteColonyByID"
+	err = controller.deleteColony("invalid_id")
+	assert.NotNil(t, err)
+
+	dbMock.returnError = "RenameColony"
+	err = controller.renameColony("invalid_id", "invalid_name")
+	assert.NotNil(t, err)
+
+	_, err = controller.addExecutor(nil, false)
+	assert.NotNil(t, err)
+
+	dbMock.returnError = "GetExecutorByName"
+	_, err = controller.addExecutor(&core.Executor{}, false)
+	assert.NotNil(t, err)
+
+	dbMock.returnValue = "GetExecutorByName"
+	dbMock.returnError = "DeleteExecutorByID"
+	_, err = controller.addExecutor(&core.Executor{}, true)
+	assert.NotNil(t, err)
+
+	dbMock.returnValue = "GetExecutorByName"
+	_, err = controller.addExecutor(&core.Executor{}, false)
+	assert.NotNil(t, err)
+	dbMock.returnValue = ""
+
+	dbMock.returnError = "AddExecutor"
+	_, err = controller.addExecutor(&core.Executor{}, false)
+	assert.NotNil(t, err)
+
+	dbMock.returnError = "GetExecutorByID"
+	_, err = controller.addExecutor(&core.Executor{}, false)
+	assert.NotNil(t, err)
+
+	dbMock.returnError = "GetExecutorByID"
+	_, err = controller.getExecutor("invalid_id")
+	assert.NotNil(t, err)
+
+	dbMock.returnError = "GetExecutorByColonyID"
+	_, err = controller.getExecutorByColonyID("invalid_id")
+	assert.NotNil(t, err)
+
+	dbMock.returnError = "GetExecutorByID"
+	err = controller.approveExecutor("invalid_id")
+	assert.NotNil(t, err)
+
+	dbMock.returnValue = "GetExecutorByID"
+	dbMock.returnError = "ApproveExecutor"
+	err = controller.approveExecutor("invalid_id")
+	assert.NotNil(t, err)
+	dbMock.returnValue = ""
+
+	dbMock.returnError = "GetExecutorByID"
+	err = controller.rejectExecutor("invalid_id")
+	assert.NotNil(t, err)
+
+	dbMock.returnValue = "GetExecutorByID"
+	dbMock.returnError = "RejectExecutor"
+	err = controller.rejectExecutor("invalid_id")
+	assert.NotNil(t, err)
+	dbMock.returnValue = ""
+
+	_, err = controller.addProcessToDB(nil)
+	assert.NotNil(t, err)
+
+	dbMock.returnError = "AddProcess"
+	_, err = controller.addProcessToDB(&core.Process{})
+	assert.NotNil(t, err)
+
+	dbMock.returnError = "GetProcessByID"
+	_, err = controller.addProcessToDB(&core.Process{})
+	assert.NotNil(t, err)
+
+	dbMock.returnError = "AddProcess"
+	_, err = controller.addProcess(&core.Process{})
+	assert.NotNil(t, err)
+
+	controller.stop()
+}
+
 func TestColoniesControllerAddColony(t *testing.T) {
 	db, err := postgresql.PrepareTestsWithPrefix("TEST_2")
 	defer db.Close()

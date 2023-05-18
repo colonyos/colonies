@@ -42,7 +42,7 @@ func ConvertJSONToGenerator(jsonString string) (*Generator, error) {
 }
 
 func ConvertGeneratorArrayToJSON(generators []*Generator) (string, error) {
-	jsonBytes, err := json.MarshalIndent(generators, "", "    ")
+	jsonBytes, err := json.Marshal(generators)
 	if err != nil {
 		return "", err
 	}
@@ -102,7 +102,7 @@ func (generator *Generator) Equals(generator2 *Generator) bool {
 }
 
 func (generator *Generator) ToJSON() (string, error) {
-	jsonBytes, err := json.MarshalIndent(generator, "", "    ")
+	jsonBytes, err := json.Marshal(generator)
 	if err != nil {
 		return "", err
 	}

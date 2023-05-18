@@ -5,9 +5,133 @@ import (
 	"testing"
 	"time"
 
+	"github.com/colonyos/colonies/pkg/core"
+	"github.com/colonyos/colonies/pkg/rpc"
 	"github.com/colonyos/colonies/pkg/utils"
 	"github.com/stretchr/testify/assert"
 )
+
+func TestHandleAddGeneratorHTTPRequest(t *testing.T) {
+	server, controllerMock, _, _, ctx, w := setupFakeServer()
+
+	recoveredID := "invalid_id"
+	payloadType := "invalid_payload_type"
+	jsonString := "invalid json string"
+	server.handleAddGeneratorHTTPRequest(ctx, recoveredID, payloadType, jsonString)
+	assertRPCError(t, w.Body.String())
+
+	generator := utils.FakeGenerator(t, core.GenerateRandomID())
+	msg := rpc.CreateAddGeneratorMsg(generator)
+	jsonString, err := msg.ToJSON()
+	assert.Nil(t, err)
+	ctx, w = getTestGinContext()
+	server.handleAddGeneratorHTTPRequest(ctx, recoveredID, payloadType, jsonString)
+	assertRPCError(t, w.Body.String())
+
+	msg = rpc.CreateAddGeneratorMsg(nil)
+	payloadType = msg.MsgType
+	jsonString, err = msg.ToJSON()
+	assert.Nil(t, err)
+	ctx, w = getTestGinContext()
+	server.handleAddGeneratorHTTPRequest(ctx, recoveredID, payloadType, jsonString)
+	assertRPCError(t, w.Body.String())
+
+	msg = rpc.CreateAddGeneratorMsg(generator)
+	generator.WorkflowSpec = "invalid_spec"
+	payloadType = msg.MsgType
+	jsonString, err = msg.ToJSON()
+	assert.Nil(t, err)
+	ctx, w = getTestGinContext()
+	server.handleAddGeneratorHTTPRequest(ctx, recoveredID, payloadType, jsonString)
+	assertRPCError(t, w.Body.String())
+
+	colonyID := core.GenerateRandomID()
+	workflowSpec := core.CreateWorkflowSpec(colonyID)
+	funcSpec1 := utils.CreateTestFunctionSpec(colonyID)
+	funcSpec1.NodeName = "task1"
+	funcSpec2 := utils.CreateTestFunctionSpec(colonyID)
+	funcSpec2.NodeName = "task2"
+	funcSpec2.AddDependency("task10") // Error
+	workflowSpec.AddFunctionSpec(funcSpec1)
+	workflowSpec.AddFunctionSpec(funcSpec2)
+	jsonStr, err := workflowSpec.ToJSON()
+	assert.Nil(t, err)
+	generator = core.CreateGenerator(colonyID, "test_genname"+core.GenerateRandomID(), jsonStr, 10, -1)
+	msg = rpc.CreateAddGeneratorMsg(generator)
+	payloadType = msg.MsgType
+	jsonString, err = msg.ToJSON()
+	assert.Nil(t, err)
+	ctx, w = getTestGinContext()
+	server.handleAddGeneratorHTTPRequest(ctx, recoveredID, payloadType, jsonString)
+	assertRPCError(t, w.Body.String())
+
+	generator = utils.FakeGenerator(t, core.GenerateRandomID())
+	controllerMock.returnError = "addGenerator"
+	msg = rpc.CreateAddGeneratorMsg(generator)
+	payloadType = msg.MsgType
+	jsonString, err = msg.ToJSON()
+	assert.Nil(t, err)
+	ctx, w = getTestGinContext()
+	server.handleAddGeneratorHTTPRequest(ctx, recoveredID, payloadType, jsonString)
+	assertRPCError(t, w.Body.String())
+	controllerMock.returnError = ""
+
+	generator = utils.FakeGenerator(t, core.GenerateRandomID())
+	msg = rpc.CreateAddGeneratorMsg(generator)
+	payloadType = msg.MsgType
+	jsonString, err = msg.ToJSON()
+	assert.Nil(t, err)
+	ctx, w = getTestGinContext()
+	server.handleAddGeneratorHTTPRequest(ctx, recoveredID, payloadType, jsonString)
+	assertRPCError(t, w.Body.String())
+}
+
+func TestHandleGetGeneratorHTTPRequest(t *testing.T) {
+	server, controllerMock, _, dbMock, ctx, w := setupFakeServer()
+
+	recoveredID := "invalid_id"
+	payloadType := "invalid_payload_type"
+	jsonString := "invalid json string"
+	server.handleGetGeneratorHTTPRequest(ctx, recoveredID, payloadType, jsonString)
+	assertRPCError(t, w.Body.String())
+
+	//generator := utils.FakeGenerator(t, core.GenerateRandomID())
+	msg := rpc.CreateGetGeneratorMsg("invalid_id")
+	jsonString, err := msg.ToJSON()
+	assert.Nil(t, err)
+	ctx, w = getTestGinContext()
+	server.handleGetGeneratorHTTPRequest(ctx, recoveredID, payloadType, jsonString)
+	assertRPCError(t, w.Body.String())
+
+	controllerMock.returnError = "getGenerator"
+	msg = rpc.CreateGetGeneratorMsg("invalid_id")
+	payloadType = msg.MsgType
+	jsonString, err = msg.ToJSON()
+	assert.Nil(t, err)
+	ctx, w = getTestGinContext()
+	server.handleGetGeneratorHTTPRequest(ctx, recoveredID, payloadType, jsonString)
+	assertRPCError(t, w.Body.String())
+	controllerMock.returnError = ""
+
+	msg = rpc.CreateGetGeneratorMsg("invalid_id")
+	payloadType = msg.MsgType
+	jsonString, err = msg.ToJSON()
+	assert.Nil(t, err)
+	ctx, w = getTestGinContext()
+	server.handleGetGeneratorHTTPRequest(ctx, recoveredID, payloadType, jsonString)
+	assertRPCError(t, w.Body.String())
+
+	controllerMock.returnValue = "getGenerator"
+	dbMock.returnError = "CountGeneratorArgs"
+	msg = rpc.CreateGetGeneratorMsg("invalid_id")
+	payloadType = msg.MsgType
+	jsonString, err = msg.ToJSON()
+	assert.Nil(t, err)
+	ctx, w = getTestGinContext()
+	server.handleGetGeneratorHTTPRequest(ctx, recoveredID, payloadType, jsonString)
+	assertRPCError(t, w.Body.String())
+
+}
 
 // TEST ERROR
 // time="2023-02-22T22:06:06+01:00" level=error msg="Failed to iterate processgraph, process is nil"

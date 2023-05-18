@@ -35,6 +35,30 @@ func TestAddExecutor(t *testing.T) {
 	<-done
 }
 
+func TestAddExecutorReRegister(t *testing.T) {
+	client, server, serverPrvKey, done := prepareTests(t)
+
+	colony, colonyPrvKey, err := utils.CreateTestColonyWithKey()
+	_, err = client.AddColony(colony, serverPrvKey)
+	assert.Nil(t, err)
+
+	executor, _, err := utils.CreateTestExecutorWithKey(colony.ID)
+	assert.Nil(t, err)
+	_, err = client.AddExecutor(executor, colonyPrvKey)
+	assert.Nil(t, err)
+	assert.Nil(t, err)
+
+	_, err = client.AddExecutor(executor, colonyPrvKey)
+	assert.NotNil(t, err)
+
+	server.allowExecutorReregister = true
+	_, err = client.AddExecutor(executor, colonyPrvKey)
+	assert.Nil(t, err)
+
+	server.Shutdown()
+	<-done
+}
+
 func TestGetExecutors(t *testing.T) {
 	client, server, serverPrvKey, done := prepareTests(t)
 

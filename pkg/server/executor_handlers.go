@@ -37,6 +37,7 @@ func (server *ColoniesServer) handleAddExecutorHTTPRequest(c *gin.Context, recov
 	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
+
 	if addedExecutor == nil {
 		server.handleHTTPError(c, errors.New("Failed to add executor, addedExecutor is nil"), http.StatusInternalServerError)
 		return

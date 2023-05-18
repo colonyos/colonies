@@ -1,6 +1,7 @@
 package server
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
@@ -68,6 +69,7 @@ func TestSubscribeChangeStateProcess(t *testing.T) {
 		case <-subscription.ProcessChan:
 			waitForProcess <- nil
 		case err := <-subscription.ErrChan:
+			fmt.Println(err)
 			waitForProcess <- err
 		}
 	}()
@@ -80,6 +82,38 @@ func TestSubscribeChangeStateProcess(t *testing.T) {
 
 	err = <-waitForProcess
 	assert.Nil(t, err)
+	server.Shutdown()
+	<-done
+}
+
+func TestSubscribeChangeStateProcessInvalidID(t *testing.T) {
+	env, client, server, _, done := setupTestEnv1(t)
+
+	funcSpec := utils.CreateTestFunctionSpec(env.colony1ID)
+	addedProcess, err := client.Submit(funcSpec, env.executor1PrvKey)
+	assert.Nil(t, err)
+	assert.Equal(t, core.PENDING, addedProcess.State)
+
+	subscription, err := client.SubscribeProcess("invalid_id",
+		addedProcess.FunctionSpec.Conditions.ExecutorType,
+		core.SUCCESS,
+		100,
+		env.executor2PrvKey)
+	assert.Nil(t, err)
+
+	waitForProcess := make(chan error)
+	go func() {
+		select {
+		case <-subscription.ProcessChan:
+			waitForProcess <- nil
+		case err := <-subscription.ErrChan:
+			fmt.Println(err)
+			waitForProcess <- err
+		}
+	}()
+
+	err = <-waitForProcess
+	assert.NotNil(t, err)
 	server.Shutdown()
 	<-done
 }

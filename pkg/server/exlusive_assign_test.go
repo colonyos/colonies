@@ -42,8 +42,8 @@ func TestExclusiveAssign(t *testing.T) {
 	}
 
 	testServer := runningCluster[testServerIndex].Server
-	host := testServer.controller.thisNode.Host
-	apiPort := testServer.controller.thisNode.APIPort
+	host := testServer.controller.getThisNode().Host
+	apiPort := testServer.controller.getThisNode().APIPort
 
 	client := client.CreateColoniesClient(host, apiPort, true, true)
 
