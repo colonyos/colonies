@@ -24,7 +24,7 @@ import (
 
 type ColoniesServer struct {
 	ginHandler              *gin.Engine
-	controller              *coloniesController
+	controller              controller
 	serverID                string
 	tls                     bool
 	tlsPrivateKeyPath       string
