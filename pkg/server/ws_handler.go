@@ -108,7 +108,14 @@ func (server *ColoniesServer) handleWSRequest(c *gin.Context) {
 			}
 
 			processSubcription := createProcessesSubscription(wsConn, wsMsgType, msg.ExecutorType, msg.Timeout, msg.State)
-			server.controller.subscribeProcesses(recoveredID, processSubcription)
+			err = server.controller.subscribeProcesses(recoveredID, processSubcription)
+			if err != nil {
+				err := server.sendWSErrorMsg(err, http.StatusForbidden, wsConn, wsMsgType)
+				if err != nil {
+					log.WithFields(log.Fields{"Error": err}).Error("Failed to subscribe to processes")
+				}
+				return
+			}
 
 		case rpc.SubscribeProcessPayloadType:
 			msg, err := rpc.CreateSubscribeProcessMsgFromJSON(rpcMsg.DecodePayload())
@@ -151,7 +158,14 @@ func (server *ColoniesServer) handleWSRequest(c *gin.Context) {
 			}
 
 			processSubcription := createProcessSubscription(wsConn, wsMsgType, msg.ProcessID, msg.ExecutorType, msg.Timeout, msg.State)
-			server.controller.subscribeProcess(recoveredID, processSubcription)
+			err = server.controller.subscribeProcess(recoveredID, processSubcription)
+			if err != nil {
+				err := server.sendWSErrorMsg(err, http.StatusForbidden, wsConn, wsMsgType)
+				if err != nil {
+					log.WithFields(log.Fields{"Error": err}).Error("Failed to subscribe to process")
+				}
+				return
+			}
 		}
 	}
 }

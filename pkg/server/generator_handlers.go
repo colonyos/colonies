@@ -90,7 +90,7 @@ func (server *ColoniesServer) handleGetGeneratorHTTPRequest(c *gin.Context, reco
 		return
 	}
 
-	generator.CheckerPeriod = server.controller.generatorPeriod
+	generator.CheckerPeriod = server.controller.getGeneratorPeriod()
 	queueSize, err := server.db.CountGeneratorArgs(generator.ID)
 	if server.handleHTTPError(c, err, http.StatusInternalServerError) {
 		return
