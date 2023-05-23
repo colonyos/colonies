@@ -196,6 +196,147 @@ func TestAddChild(t *testing.T) {
 	<-done
 }
 
+func TestInsertChild(t *testing.T) {
+	//         task1
+	//          / \
+	//     task2   task3
+	//
+	// Will become:
+	//
+	//         task1
+	//           |
+	//         task4
+	//          / \
+	//     task2   task3
+
+	env, client, server, _, done := setupTestEnv2(t)
+
+	wf := generateTreeWorkflowSpec(env.colonyID)
+	submittedGraph, err := client.SubmitWorkflowSpec(wf, env.executorPrvKey)
+	assert.Nil(t, err)
+	assert.NotNil(t, submittedGraph)
+
+	// We must be assigned to a process in order to insert a child in processgraph
+	assignedProcess, err := client.Assign(env.colonyID, -1, env.executorPrvKey)
+	assert.Nil(t, err)
+	assert.True(t, assignedProcess.FunctionSpec.NodeName == "task1")
+
+	childFunctionSpec := utils.CreateTestFunctionSpec(env.colonyID)
+	childFunctionSpec.NodeName = "task4"
+	process, err := client.AddChild(assignedProcess.ProcessGraphID, assignedProcess.ID, "", childFunctionSpec, true, env.executorPrvKey)
+	assert.Nil(t, err)
+	assert.Len(t, process.Parents, 1)
+
+	parentProcess, err := client.GetProcess(process.Parents[0], env.executorPrvKey)
+	assert.Equal(t, parentProcess.FunctionSpec.NodeName, "task1")
+
+	task2Found := false
+	task3Found := false
+	for _, childID := range process.Children {
+		childProcess, err := client.GetProcess(childID, env.executorPrvKey)
+		assert.Nil(t, err)
+		if childProcess.FunctionSpec.NodeName == "task2" {
+			task2Found = true
+		}
+		if childProcess.FunctionSpec.NodeName == "task3" {
+			task3Found = true
+		}
+	}
+
+	assert.True(t, task2Found)
+	assert.True(t, task3Found)
+
+	server.Shutdown()
+	<-done
+}
+
+func TestInsertChild2(t *testing.T) {
+	//         task1
+	//          / \
+	//     task2   task3
+	//
+	// Will become:
+	//
+	//             task1
+	//          /    |    \
+	//     task2   task3  task4
+
+	env, client, server, _, done := setupTestEnv2(t)
+
+	wf := generateTreeWorkflowSpec(env.colonyID)
+	submittedGraph, err := client.SubmitWorkflowSpec(wf, env.executorPrvKey)
+	assert.Nil(t, err)
+	assert.NotNil(t, submittedGraph)
+
+	// We must be assigned to a process in order to insert a child in processgraph
+	assignedProcess, err := client.Assign(env.colonyID, -1, env.executorPrvKey)
+	assert.Nil(t, err)
+	assert.True(t, assignedProcess.FunctionSpec.NodeName == "task1")
+
+	childFunctionSpec := utils.CreateTestFunctionSpec(env.colonyID)
+	childFunctionSpec.NodeName = "task4"
+	process, err := client.AddChild(assignedProcess.ProcessGraphID, assignedProcess.ID, "", childFunctionSpec, false, env.executorPrvKey)
+	assert.Nil(t, err)
+	assert.Len(t, process.Parents, 1)
+
+	parentProcess, err := client.GetProcess(process.Parents[0], env.executorPrvKey)
+	assert.Equal(t, parentProcess.FunctionSpec.NodeName, "task1")
+	assert.Len(t, process.Children, 0)
+
+	server.Shutdown()
+	<-done
+}
+
+func TestInsertChild3(t *testing.T) {
+	//         task1
+	//          / \
+	//     task2   task3
+	//
+	// Will become:
+	//
+	//         task1
+	//          / \
+	//     task2   task4
+	//               |
+	//             task3
+
+	env, client, server, _, done := setupTestEnv2(t)
+
+	wf := generateTreeWorkflowSpec(env.colonyID)
+	submittedGraph, err := client.SubmitWorkflowSpec(wf, env.executorPrvKey)
+	assert.Nil(t, err)
+	assert.NotNil(t, submittedGraph)
+
+	var task3Process *core.Process
+	for _, processID := range submittedGraph.ProcessIDs {
+		process, err := client.GetProcess(processID, env.executorPrvKey)
+		assert.Nil(t, err)
+		if process.FunctionSpec.NodeName == "task3" {
+			task3Process = process
+		}
+	}
+	assert.NotNil(t, task3Process)
+
+	// We must be assigned to a process in order to insert a child in processgraph
+	assignedProcess, err := client.Assign(env.colonyID, -1, env.executorPrvKey)
+	assert.Nil(t, err)
+	assert.True(t, assignedProcess.FunctionSpec.NodeName == "task1")
+
+	childFunctionSpec := utils.CreateTestFunctionSpec(env.colonyID)
+	childFunctionSpec.NodeName = "task4"
+	process, err := client.AddChild(assignedProcess.ProcessGraphID, assignedProcess.ID, task3Process.ID, childFunctionSpec, false, env.executorPrvKey)
+	assert.Nil(t, err)
+	assert.Len(t, process.Parents, 1)
+
+	parentProcess, err := client.GetProcess(process.Parents[0], env.executorPrvKey)
+	assert.Equal(t, parentProcess.FunctionSpec.NodeName, "task1")
+	assert.Len(t, process.Children, 1)
+	assert.Equal(t, process.Children[0], task3Process.ID)
+
+	server.Shutdown()
+	<-done
+}
+
 func TestAddChildMaxWaitBug(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 
