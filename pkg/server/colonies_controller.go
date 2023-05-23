@@ -520,7 +520,14 @@ func (controller *coloniesController) addChild(
 			if !addedProcess.WaitForParents {
 				controller.eventHandler.signal(addedProcess)
 			}
-			cmd.processReplyChan <- addedProcess
+
+			updatedProcess, err := controller.db.GetProcessByID(addedProcess.ID)
+			if err != nil {
+				cmd.errorChan <- err
+				return
+			}
+
+			cmd.processReplyChan <- updatedProcess
 		}}
 
 	controller.blockingCmdQueue <- cmd
