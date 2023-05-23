@@ -9,7 +9,7 @@ on:
 jobs:
   # Label of the container job
   runner-job:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
 
     # Service containers to run with `runner-job`
     services:
