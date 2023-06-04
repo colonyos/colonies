@@ -31,10 +31,10 @@ func TestProcessClosedDB(t *testing.T) {
 	_, err = db.FindProcessesByExecutorID("invalid_id", "invalid_id", 60, core.SUCCESS)
 	assert.NotNil(t, err)
 
-	_, err = db.FindWaitingProcesses("invalid_id", 1)
+	_, err = db.FindWaitingProcesses("invalid_id", "", 1)
 	assert.NotNil(t, err)
 
-	_, err = db.FindRunningProcesses("invalid_id", 1)
+	_, err = db.FindRunningProcesses("invalid_id", "", 1)
 	assert.NotNil(t, err)
 
 	_, err = db.FindAllRunningProcesses()
@@ -43,10 +43,10 @@ func TestProcessClosedDB(t *testing.T) {
 	_, err = db.FindAllWaitingProcesses()
 	assert.NotNil(t, err)
 
-	_, err = db.FindSuccessfulProcesses("invalid_id", 1)
+	_, err = db.FindSuccessfulProcesses("invalid_id", "", 1)
 	assert.NotNil(t, err)
 
-	_, err = db.FindFailedProcesses("invalid_id", 1)
+	_, err = db.FindFailedProcesses("invalid_id", "", 1)
 	assert.NotNil(t, err)
 
 	_, err = db.FindUnassignedProcesses("invalid_id", "invalid_id", "invalid_type", 1)
@@ -1390,7 +1390,7 @@ func TestFindWaitingProcesses(t *testing.T) {
 		assert.Nil(t, err)
 		waitingProcessIDs[process.ID] = true
 	}
-	waitingProcessIDsFromDB, err := db.FindWaitingProcesses(colony.ID, 20)
+	waitingProcessIDsFromDB, err := db.FindWaitingProcesses(colony.ID, "", 20)
 	assert.Nil(t, err)
 
 	// Create some running processes
@@ -1403,7 +1403,7 @@ func TestFindWaitingProcesses(t *testing.T) {
 		assert.Nil(t, err)
 		runningProcessIDs[process.ID] = true
 	}
-	runningProcessIDsFromDB, err := db.FindRunningProcesses(colony.ID, 20)
+	runningProcessIDsFromDB, err := db.FindRunningProcesses(colony.ID, "", 20)
 	assert.Nil(t, err)
 
 	// Create some successful processes
@@ -1418,10 +1418,10 @@ func TestFindWaitingProcesses(t *testing.T) {
 		assert.Nil(t, err)
 		successfulProcessIDs[process.ID] = true
 	}
-	successfulProcessIDsFromDB, err := db.FindSuccessfulProcesses(colony.ID, 20)
+	successfulProcessIDsFromDB, err := db.FindSuccessfulProcesses(colony.ID, "", 20)
 	assert.Nil(t, err)
 
-	// Create some successful processes
+	// Create some failed processes
 	failedProcessIDs := make(map[string]bool)
 	for i := 0; i < 10; i++ {
 		process := utils.CreateTestProcess(colony.ID)
@@ -1433,7 +1433,7 @@ func TestFindWaitingProcesses(t *testing.T) {
 		assert.Nil(t, err)
 		failedProcessIDs[process.ID] = true
 	}
-	failedProcessIDsFromDB, err := db.FindFailedProcesses(colony.ID, 20)
+	failedProcessIDsFromDB, err := db.FindFailedProcesses(colony.ID, "", 20)
 	assert.Nil(t, err)
 
 	// Now, lets to some checks
@@ -1488,6 +1488,149 @@ func TestFindWaitingProcesses(t *testing.T) {
 	numberOfProcesses, err = db.CountFailedProcesses()
 	assert.Nil(t, err)
 	assert.Equal(t, 10, numberOfProcesses)
+}
+
+func TestFindWaitingProcessesByExecutorType(t *testing.T) {
+	db, err := PrepareTests()
+	assert.Nil(t, err)
+
+	defer db.Close()
+
+	colony := core.CreateColony(core.GenerateRandomID(), "test_colony_name_1")
+	err = db.AddColony(colony)
+	assert.Nil(t, err)
+
+	executor1 := utils.CreateTestExecutor(colony.ID)
+	executor1.Type = "test_executor_type_1"
+	err = db.AddExecutor(executor1)
+	assert.Nil(t, err)
+
+	executor2 := utils.CreateTestExecutor(colony.ID)
+	executor2.Type = "test_executor_type_2"
+	err = db.AddExecutor(executor2)
+	assert.Nil(t, err)
+
+	// Create some waiting/unassigned processes
+	waitingProcessIDs := make(map[string]bool)
+	for i := 0; i < 10; i++ {
+		process := utils.CreateTestProcess(colony.ID)
+		process.FunctionSpec.Conditions.ExecutorType = "test_executor_type_1"
+		err = db.AddProcess(process)
+		assert.Nil(t, err)
+		waitingProcessIDs[process.ID] = true
+	}
+	for i := 0; i < 5; i++ {
+		process := utils.CreateTestProcess(colony.ID)
+		process.FunctionSpec.Conditions.ExecutorType = "test_executor_type_2"
+		err = db.AddProcess(process)
+		assert.Nil(t, err)
+		waitingProcessIDs[process.ID] = true
+	}
+	waitingProcessIDsFromDB, err := db.FindWaitingProcesses(colony.ID, "", 20)
+	assert.Nil(t, err)
+	assert.Len(t, waitingProcessIDsFromDB, 15)
+
+	waitingProcessIDsFromDB, err = db.FindWaitingProcesses(colony.ID, "test_executor_type_1", 20)
+	assert.Nil(t, err)
+	assert.Len(t, waitingProcessIDsFromDB, 10)
+
+	waitingProcessIDsFromDB, err = db.FindWaitingProcesses(colony.ID, "test_executor_type_2", 20)
+	assert.Nil(t, err)
+	assert.Len(t, waitingProcessIDsFromDB, 5)
+
+	// Create some running processes
+	for i := 0; i < 4; i++ {
+		process := utils.CreateTestProcess(colony.ID)
+		process.FunctionSpec.Conditions.ExecutorType = "test_executor_type_1"
+		err = db.AddProcess(process)
+		err = db.Assign(executor1.ID, process)
+		assert.Nil(t, err)
+	}
+	for i := 0; i < 3; i++ {
+		process := utils.CreateTestProcess(colony.ID)
+		process.FunctionSpec.Conditions.ExecutorType = "test_executor_type_2"
+		err = db.AddProcess(process)
+		err = db.Assign(executor1.ID, process)
+		assert.Nil(t, err)
+	}
+
+	runningProcessIDsFromDB, err := db.FindRunningProcesses(colony.ID, "", 20)
+	assert.Nil(t, err)
+	assert.Len(t, runningProcessIDsFromDB, 7)
+
+	runningProcessIDsFromDB, err = db.FindRunningProcesses(colony.ID, "test_executor_type_1", 20)
+	assert.Nil(t, err)
+	assert.Len(t, runningProcessIDsFromDB, 4)
+
+	runningProcessIDsFromDB, err = db.FindRunningProcesses(colony.ID, "test_executor_type_2", 20)
+	assert.Nil(t, err)
+	assert.Len(t, runningProcessIDsFromDB, 3)
+
+	// Create some successful processes
+	for i := 0; i < 6; i++ {
+		process := utils.CreateTestProcess(colony.ID)
+		process.FunctionSpec.Conditions.ExecutorType = "test_executor_type_1"
+		err = db.AddProcess(process)
+		assert.Nil(t, err)
+		err = db.Assign(executor1.ID, process)
+		assert.Nil(t, err)
+		_, _, err = db.MarkSuccessful(process.ID)
+		assert.Nil(t, err)
+	}
+	for i := 0; i < 12; i++ {
+		process := utils.CreateTestProcess(colony.ID)
+		process.FunctionSpec.Conditions.ExecutorType = "test_executor_type_2"
+		err = db.AddProcess(process)
+		assert.Nil(t, err)
+		err = db.Assign(executor1.ID, process)
+		assert.Nil(t, err)
+		_, _, err = db.MarkSuccessful(process.ID)
+		assert.Nil(t, err)
+	}
+	successfulProcessIDsFromDB, err := db.FindSuccessfulProcesses(colony.ID, "", 20)
+	assert.Nil(t, err)
+	assert.Len(t, successfulProcessIDsFromDB, 18)
+
+	successfulProcessIDsFromDB, err = db.FindSuccessfulProcesses(colony.ID, "test_executor_type_1", 20)
+	assert.Nil(t, err)
+	assert.Len(t, successfulProcessIDsFromDB, 6)
+
+	successfulProcessIDsFromDB, err = db.FindSuccessfulProcesses(colony.ID, "test_executor_type_2", 20)
+	assert.Nil(t, err)
+	assert.Len(t, successfulProcessIDsFromDB, 12)
+
+	// // Create some failed processes
+	for i := 0; i < 3; i++ {
+		process := utils.CreateTestProcess(colony.ID)
+		process.FunctionSpec.Conditions.ExecutorType = "test_executor_type_1"
+		err = db.AddProcess(process)
+		assert.Nil(t, err)
+		err = db.Assign(executor1.ID, process)
+		assert.Nil(t, err)
+		err = db.MarkFailed(process.ID, []string{"error"})
+		assert.Nil(t, err)
+	}
+	for i := 0; i < 2; i++ {
+		process := utils.CreateTestProcess(colony.ID)
+		process.FunctionSpec.Conditions.ExecutorType = "test_executor_type_2"
+		err = db.AddProcess(process)
+		assert.Nil(t, err)
+		err = db.Assign(executor1.ID, process)
+		assert.Nil(t, err)
+		err = db.MarkFailed(process.ID, []string{"error"})
+		assert.Nil(t, err)
+	}
+	failedProcessIDsFromDB, err := db.FindFailedProcesses(colony.ID, "", 20)
+	assert.Nil(t, err)
+	assert.Len(t, failedProcessIDsFromDB, 5)
+
+	failedProcessIDsFromDB, err = db.FindFailedProcesses(colony.ID, "test_executor_type_1", 20)
+	assert.Nil(t, err)
+	assert.Len(t, failedProcessIDsFromDB, 3)
+
+	failedProcessIDsFromDB, err = db.FindFailedProcesses(colony.ID, "test_executor_type_2", 20)
+	assert.Nil(t, err)
+	assert.Len(t, failedProcessIDsFromDB, 2)
 }
 
 func TestFindAllProcesses(t *testing.T) {
