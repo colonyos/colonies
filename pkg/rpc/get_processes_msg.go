@@ -10,7 +10,7 @@ type GetProcessesMsg struct {
 	ColonyID     string `json:"colonyid"`
 	Count        int    `json:"count"`
 	State        int    `json:"state"`
-	ExecutorType string `json:"executorType"`
+	ExecutorType string `json:"executortype"`
 	MsgType      string `json:"msgtype"`
 }
 

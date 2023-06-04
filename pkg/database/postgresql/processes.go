@@ -246,7 +246,7 @@ func (db *PQDatabase) FindProcessesByExecutorID(colonyID string, executorID stri
 	return matches, nil
 }
 
-func (db *PQDatabase) findWaitingProcessesWithState(colonyID string, state int, count int) ([]*core.Process, error) {
+func (db *PQDatabase) findProcessesByState(colonyID string, state int, count int) ([]*core.Process, error) {
 	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `PROCESSES WHERE TARGET_COLONY_ID=$1 AND STATE=$2 ORDER BY PRIORITYTIME LIMIT $3`
 	rows, err := db.postgresql.Query(sqlStatement, colonyID, state, count)
 	if err != nil {
@@ -262,7 +262,7 @@ func (db *PQDatabase) findWaitingProcessesWithState(colonyID string, state int, 
 	return matches, nil
 }
 
-func (db *PQDatabase) findWaitingProcessesWithStateByExecutorID(colonyID string, executorType string, state int, count int) ([]*core.Process, error) {
+func (db *PQDatabase) findProcessesByStateAndExecutorType(colonyID string, executorType string, state int, count int) ([]*core.Process, error) {
 	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `PROCESSES WHERE TARGET_COLONY_ID=$1 AND STATE=$2 AND EXECUTOR_TYPE=$3 ORDER BY PRIORITYTIME LIMIT $4`
 	rows, err := db.postgresql.Query(sqlStatement, colonyID, state, executorType, count)
 	if err != nil {
@@ -280,34 +280,34 @@ func (db *PQDatabase) findWaitingProcessesWithStateByExecutorID(colonyID string,
 
 func (db *PQDatabase) FindWaitingProcesses(colonyID string, executorType string, count int) ([]*core.Process, error) {
 	if executorType == "" {
-		return db.findWaitingProcessesWithState(colonyID, core.WAITING, count)
+		return db.findProcessesByState(colonyID, core.WAITING, count)
 	}
 
-	return db.findWaitingProcessesWithStateByExecutorID(colonyID, executorType, core.WAITING, count)
+	return db.findProcessesByStateAndExecutorType(colonyID, executorType, core.WAITING, count)
 }
 
 func (db *PQDatabase) FindRunningProcesses(colonyID string, executorType string, count int) ([]*core.Process, error) {
 	if executorType == "" {
-		return db.findWaitingProcessesWithState(colonyID, core.RUNNING, count)
+		return db.findProcessesByState(colonyID, core.RUNNING, count)
 	}
 
-	return db.findWaitingProcessesWithStateByExecutorID(colonyID, executorType, core.RUNNING, count)
+	return db.findProcessesByStateAndExecutorType(colonyID, executorType, core.RUNNING, count)
 }
 
 func (db *PQDatabase) FindSuccessfulProcesses(colonyID string, executorType string, count int) ([]*core.Process, error) {
 	if executorType == "" {
-		return db.findWaitingProcessesWithState(colonyID, core.SUCCESS, count)
+		return db.findProcessesByState(colonyID, core.SUCCESS, count)
 	}
 
-	return db.findWaitingProcessesWithStateByExecutorID(colonyID, executorType, core.SUCCESS, count)
+	return db.findProcessesByStateAndExecutorType(colonyID, executorType, core.SUCCESS, count)
 }
 
 func (db *PQDatabase) FindFailedProcesses(colonyID string, executorType string, count int) ([]*core.Process, error) {
 	if executorType == "" {
-		return db.findWaitingProcessesWithState(colonyID, core.FAILED, count)
+		return db.findProcessesByState(colonyID, core.FAILED, count)
 	}
 
-	return db.findWaitingProcessesWithStateByExecutorID(colonyID, executorType, core.FAILED, count)
+	return db.findProcessesByStateAndExecutorType(colonyID, executorType, core.FAILED, count)
 }
 
 func (db *PQDatabase) FindAllRunningProcesses() ([]*core.Process, error) {
