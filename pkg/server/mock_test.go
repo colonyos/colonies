@@ -133,19 +133,19 @@ func (v *controllerMock) findProcessHistory(colonyID string, executorID string, 
 	return nil, nil
 }
 
-func (v *controllerMock) findWaitingProcesses(colonyID string, count int) ([]*core.Process, error) {
+func (v *controllerMock) findWaitingProcesses(colonyID string, executorType string, count int) ([]*core.Process, error) {
 	return nil, nil
 }
 
-func (v *controllerMock) findRunningProcesses(colonyID string, count int) ([]*core.Process, error) {
+func (v *controllerMock) findRunningProcesses(colonyID string, executorType string, count int) ([]*core.Process, error) {
 	return nil, nil
 }
 
-func (v *controllerMock) findSuccessfulProcesses(colonyID string, count int) ([]*core.Process, error) {
+func (v *controllerMock) findSuccessfulProcesses(colonyID string, executorType string, count int) ([]*core.Process, error) {
 	return nil, nil
 }
 
-func (v *controllerMock) findFailedProcesses(colonyID string, count int) ([]*core.Process, error) {
+func (v *controllerMock) findFailedProcesses(colonyID string, executorType string, count int) ([]*core.Process, error) {
 	return nil, nil
 }
 
@@ -604,11 +604,19 @@ func (db *dbMock) FindProcessesByExecutorID(colonyID string, executorID string, 
 	return nil, nil
 }
 
-func (db *dbMock) FindWaitingProcesses(colonyID string, count int) ([]*core.Process, error) {
+func (db *dbMock) FindWaitingProcesses(colonyID string, executorType string, count int) ([]*core.Process, error) {
 	return nil, nil
 }
 
-func (db *dbMock) FindRunningProcesses(colonyID string, count int) ([]*core.Process, error) {
+func (db *dbMock) FindRunningProcesses(colonyID string, executorType string, count int) ([]*core.Process, error) {
+	return nil, nil
+}
+
+func (db *dbMock) FindSuccessfulProcesses(colonyID string, executorType string, count int) ([]*core.Process, error) {
+	return nil, nil
+}
+
+func (db *dbMock) FindFailedProcesses(colonyID string, executorType string, count int) ([]*core.Process, error) {
 	return nil, nil
 }
 
@@ -617,14 +625,6 @@ func (db *dbMock) FindAllRunningProcesses() ([]*core.Process, error) {
 }
 
 func (db *dbMock) FindAllWaitingProcesses() ([]*core.Process, error) {
-	return nil, nil
-}
-
-func (db *dbMock) FindSuccessfulProcesses(colonyID string, count int) ([]*core.Process, error) {
-	return nil, nil
-}
-
-func (db *dbMock) FindFailedProcesses(colonyID string, count int) ([]*core.Process, error) {
 	return nil, nil
 }
 
