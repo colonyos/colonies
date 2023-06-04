@@ -363,6 +363,26 @@ func (db *PQDatabase) createProcessesIndex6() error {
 	return nil
 }
 
+func (db *PQDatabase) createProcessesIndex7() error {
+	sqlStatement := `CREATE INDEX ` + db.dbPrefix + `PROCESSES_INDEX7 ON ` + db.dbPrefix + `PROCESSES (TARGET_COLONY_ID, STATE, PRIORITYTIME)`
+	_, err := db.postgresql.Exec(sqlStatement)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (db *PQDatabase) createProcessesIndex8() error {
+	sqlStatement := `CREATE INDEX ` + db.dbPrefix + `PROCESSES_INDEX8 ON ` + db.dbPrefix + `PROCESSES (TARGET_COLONY_ID, STATE, EXECUTOR_TYPE, PRIORITYTIME)`
+	_, err := db.postgresql.Exec(sqlStatement)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (db *PQDatabase) createAttributesIndex1() error {
 	sqlStatement := `CREATE INDEX ` + db.dbPrefix + `ATTRIBUTES_INDEX1 ON ` + db.dbPrefix + `ATTRIBUTES (TARGET_ID, ATTRIBUTE_TYPE)`
 	_, err := db.postgresql.Exec(sqlStatement)
@@ -485,6 +505,16 @@ func (db *PQDatabase) Initialize() error {
 	}
 
 	err = db.createProcessesIndex6()
+	if err != nil {
+		return err
+	}
+
+	err = db.createProcessesIndex7()
+	if err != nil {
+		return err
+	}
+
+	err = db.createProcessesIndex8()
 	if err != nil {
 		return err
 	}

@@ -105,9 +105,9 @@ func (db *PQDatabase) SetProcessGraphState(processGraphID string, state int) err
 	return nil
 }
 
-func (db *PQDatabase) FindWaitingProcessGraphs(colonyID string, count int) ([]*core.ProcessGraph, error) {
+func (db *PQDatabase) findProcessGraphsByState(colonyID string, state int, count int) ([]*core.ProcessGraph, error) {
 	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `PROCESSGRAPHS WHERE TARGET_COLONY_ID=$1 AND STATE=$2 ORDER BY SUBMISSION_TIME DESC LIMIT $3`
-	rows, err := db.postgresql.Query(sqlStatement, colonyID, core.WAITING, count)
+	rows, err := db.postgresql.Query(sqlStatement, colonyID, state, count)
 	if err != nil {
 		return nil, err
 	}
@@ -119,54 +119,22 @@ func (db *PQDatabase) FindWaitingProcessGraphs(colonyID string, count int) ([]*c
 	}
 
 	return matches, nil
+}
+
+func (db *PQDatabase) FindWaitingProcessGraphs(colonyID string, count int) ([]*core.ProcessGraph, error) {
+	return db.findProcessGraphsByState(colonyID, core.WAITING, count)
 }
 
 func (db *PQDatabase) FindRunningProcessGraphs(colonyID string, count int) ([]*core.ProcessGraph, error) {
-	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `PROCESSGRAPHS WHERE TARGET_COLONY_ID=$1 AND STATE=$2 ORDER BY SUBMISSION_TIME DESC LIMIT $3`
-	rows, err := db.postgresql.Query(sqlStatement, colonyID, core.RUNNING, count)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	matches, err := db.parseProcessGraphs(rows)
-	if err != nil {
-		return nil, err
-	}
-
-	return matches, nil
+	return db.findProcessGraphsByState(colonyID, core.RUNNING, count)
 }
 
 func (db *PQDatabase) FindSuccessfulProcessGraphs(colonyID string, count int) ([]*core.ProcessGraph, error) {
-	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `PROCESSGRAPHS WHERE TARGET_COLONY_ID=$1 AND STATE=$2 ORDER BY SUBMISSION_TIME DESC LIMIT $3`
-	rows, err := db.postgresql.Query(sqlStatement, colonyID, core.SUCCESS, count)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	matches, err := db.parseProcessGraphs(rows)
-	if err != nil {
-		return nil, err
-	}
-
-	return matches, nil
+	return db.findProcessGraphsByState(colonyID, core.SUCCESS, count)
 }
 
 func (db *PQDatabase) FindFailedProcessGraphs(colonyID string, count int) ([]*core.ProcessGraph, error) {
-	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `PROCESSGRAPHS WHERE TARGET_COLONY_ID=$1 AND STATE=$2 ORDER BY SUBMISSION_TIME DESC LIMIT $3`
-	rows, err := db.postgresql.Query(sqlStatement, colonyID, core.FAILED, count)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	matches, err := db.parseProcessGraphs(rows)
-	if err != nil {
-		return nil, err
-	}
-
-	return matches, nil
+	return db.findProcessGraphsByState(colonyID, core.FAILED, count)
 }
 
 func (db *PQDatabase) countProcessGraphsByColonyID(state int, colonyID string) (int, error) {

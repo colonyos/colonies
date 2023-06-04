@@ -7,17 +7,19 @@ import (
 const GetProcessesPayloadType = "getprocessesmsg"
 
 type GetProcessesMsg struct {
-	ColonyID string `json:"colonyid"`
-	Count    int    `json:"count"`
-	State    int    `json:"state"`
-	MsgType  string `json:"msgtype"`
+	ColonyID     string `json:"colonyid"`
+	Count        int    `json:"count"`
+	State        int    `json:"state"`
+	ExecutorType string `json:"executortype"`
+	MsgType      string `json:"msgtype"`
 }
 
-func CreateGetProcessesMsg(colonyID string, count int, state int) *GetProcessesMsg {
+func CreateGetProcessesMsg(colonyID string, count int, state int, executorType string) *GetProcessesMsg {
 	msg := &GetProcessesMsg{}
 	msg.ColonyID = colonyID
 	msg.Count = count
 	msg.State = state
+	msg.ExecutorType = executorType
 	msg.MsgType = GetProcessesPayloadType
 
 	return msg
@@ -49,7 +51,8 @@ func (msg *GetProcessesMsg) Equals(msg2 *GetProcessesMsg) bool {
 	if msg.MsgType == msg2.MsgType &&
 		msg.ColonyID == msg2.ColonyID &&
 		msg.Count == msg2.Count &&
-		msg.State == msg2.State {
+		msg.State == msg2.State &&
+		msg.ExecutorType == msg2.ExecutorType {
 		return true
 	}
 

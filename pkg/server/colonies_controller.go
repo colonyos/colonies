@@ -592,7 +592,7 @@ func (controller *coloniesController) findProcessHistory(colonyID string, execut
 	}
 }
 
-func (controller *coloniesController) findWaitingProcesses(colonyID string, count int) ([]*core.Process, error) {
+func (controller *coloniesController) findWaitingProcesses(colonyID string, executorType string, count int) ([]*core.Process, error) {
 	cmd := &command{threaded: true, processesReplyChan: make(chan []*core.Process),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
@@ -600,7 +600,7 @@ func (controller *coloniesController) findWaitingProcesses(colonyID string, coun
 				cmd.errorChan <- errors.New("Count is larger than MaxCount limit <" + strconv.Itoa(MAX_COUNT) + ">")
 				return
 			}
-			processes, err := controller.db.FindWaitingProcesses(colonyID, count)
+			processes, err := controller.db.FindWaitingProcesses(colonyID, executorType, count)
 			if err != nil {
 				cmd.errorChan <- err
 				return
@@ -618,7 +618,7 @@ func (controller *coloniesController) findWaitingProcesses(colonyID string, coun
 	}
 }
 
-func (controller *coloniesController) findRunningProcesses(colonyID string, count int) ([]*core.Process, error) {
+func (controller *coloniesController) findRunningProcesses(colonyID string, executorType string, count int) ([]*core.Process, error) {
 	cmd := &command{threaded: true, processesReplyChan: make(chan []*core.Process),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
@@ -626,7 +626,7 @@ func (controller *coloniesController) findRunningProcesses(colonyID string, coun
 				cmd.errorChan <- errors.New("Count is larger than MaxCount limit <" + strconv.Itoa(MAX_COUNT) + ">")
 				return
 			}
-			processes, err := controller.db.FindRunningProcesses(colonyID, count)
+			processes, err := controller.db.FindRunningProcesses(colonyID, executorType, count)
 			if err != nil {
 				cmd.errorChan <- err
 				return
@@ -644,7 +644,7 @@ func (controller *coloniesController) findRunningProcesses(colonyID string, coun
 	}
 }
 
-func (controller *coloniesController) findSuccessfulProcesses(colonyID string, count int) ([]*core.Process, error) {
+func (controller *coloniesController) findSuccessfulProcesses(colonyID string, executorType string, count int) ([]*core.Process, error) {
 	cmd := &command{threaded: true, processesReplyChan: make(chan []*core.Process),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
@@ -652,7 +652,7 @@ func (controller *coloniesController) findSuccessfulProcesses(colonyID string, c
 				cmd.errorChan <- errors.New("Count is larger than MaxCount limit <" + strconv.Itoa(MAX_COUNT) + ">")
 				return
 			}
-			processes, err := controller.db.FindSuccessfulProcesses(colonyID, count)
+			processes, err := controller.db.FindSuccessfulProcesses(colonyID, executorType, count)
 			if err != nil {
 				cmd.errorChan <- err
 				return
@@ -670,7 +670,7 @@ func (controller *coloniesController) findSuccessfulProcesses(colonyID string, c
 	}
 }
 
-func (controller *coloniesController) findFailedProcesses(colonyID string, count int) ([]*core.Process, error) {
+func (controller *coloniesController) findFailedProcesses(colonyID string, executorType string, count int) ([]*core.Process, error) {
 	cmd := &command{threaded: true, processesReplyChan: make(chan []*core.Process),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
@@ -678,7 +678,7 @@ func (controller *coloniesController) findFailedProcesses(colonyID string, count
 				cmd.errorChan <- errors.New("Count is larger than MaxCount limit <" + strconv.Itoa(MAX_COUNT) + ">")
 				return
 			}
-			processes, err := controller.db.FindFailedProcesses(colonyID, count)
+			processes, err := controller.db.FindFailedProcesses(colonyID, executorType, count)
 			if err != nil {
 				cmd.errorChan <- err
 				return

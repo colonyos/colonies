@@ -54,12 +54,12 @@ type Database interface {
 	GetProcessByID(processID string) (*core.Process, error)
 	FindProcessesByColonyID(colonyID string, seconds int, state int) ([]*core.Process, error)
 	FindProcessesByExecutorID(colonyID string, executorID string, seconds int, state int) ([]*core.Process, error)
-	FindWaitingProcesses(colonyID string, count int) ([]*core.Process, error)
-	FindRunningProcesses(colonyID string, count int) ([]*core.Process, error)
+	FindWaitingProcesses(colonyID string, executorType string, count int) ([]*core.Process, error)
+	FindRunningProcesses(colonyID string, executorType string, count int) ([]*core.Process, error)
+	FindSuccessfulProcesses(colonyID string, executorType string, count int) ([]*core.Process, error)
+	FindFailedProcesses(colonyID string, executorType string, count int) ([]*core.Process, error)
 	FindAllRunningProcesses() ([]*core.Process, error)
 	FindAllWaitingProcesses() ([]*core.Process, error)
-	FindSuccessfulProcesses(colonyID string, count int) ([]*core.Process, error)
-	FindFailedProcesses(colonyID string, count int) ([]*core.Process, error)
 	FindUnassignedProcesses(colonyID string, executorID string, executorType string, count int) ([]*core.Process, error)
 	DeleteProcessByID(processID string) error
 	DeleteAllProcesses() error

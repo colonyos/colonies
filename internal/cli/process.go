@@ -36,24 +36,28 @@ func init() {
 	listWaitingProcessesCmd.Flags().StringVarP(&ColonyID, "colonyid", "", "", "Colony Id")
 	listWaitingProcessesCmd.Flags().StringVarP(&ExecutorID, "executorid", "", "", "Executor Id")
 	listWaitingProcessesCmd.Flags().StringVarP(&ExecutorPrvKey, "executorprvkey", "", "", "Executor private key")
+	listWaitingProcessesCmd.Flags().StringVarP(&ExecutorType, "type", "", "", "Only show processes targeting this executor type")
 	listWaitingProcessesCmd.Flags().IntVarP(&Count, "count", "", server.MAX_COUNT, "Number of processes to list")
 	listWaitingProcessesCmd.Flags().BoolVarP(&JSON, "json", "", false, "Print JSON instead of tables")
 
 	listRunningProcessesCmd.Flags().StringVarP(&ColonyID, "colonyid", "", "", "Colony Id")
 	listRunningProcessesCmd.Flags().StringVarP(&ExecutorID, "executorid", "", "", "Executor Id")
 	listRunningProcessesCmd.Flags().StringVarP(&ExecutorPrvKey, "executorprvkey", "", "", "Executor private key")
+	listRunningProcessesCmd.Flags().StringVarP(&ExecutorType, "type", "", "", "Only show processes targeting this executor type")
 	listRunningProcessesCmd.Flags().IntVarP(&Count, "count", "", server.MAX_COUNT, "Number of processes to list")
 	listRunningProcessesCmd.Flags().BoolVarP(&JSON, "json", "", false, "Print JSON instead of tables")
 
 	listSuccessfulProcessesCmd.Flags().StringVarP(&ColonyID, "colonyid", "", "", "Colony Id")
 	listSuccessfulProcessesCmd.Flags().StringVarP(&ExecutorID, "executorid", "", "", "Executor Id")
 	listSuccessfulProcessesCmd.Flags().StringVarP(&ExecutorPrvKey, "executorprvkey", "", "", "Executor private key")
+	listSuccessfulProcessesCmd.Flags().StringVarP(&ExecutorType, "type", "", "", "Only show processes targeting this executor type")
 	listSuccessfulProcessesCmd.Flags().IntVarP(&Count, "count", "", server.MAX_COUNT, "Number of processes to list")
 	listSuccessfulProcessesCmd.Flags().BoolVarP(&JSON, "json", "", false, "Print JSON instead of tables")
 
 	listFailedProcessesCmd.Flags().StringVarP(&ColonyID, "colonyid", "", "", "Colony Id")
 	listFailedProcessesCmd.Flags().StringVarP(&ExecutorID, "executorid", "", "", "Executor Id")
 	listFailedProcessesCmd.Flags().StringVarP(&ExecutorPrvKey, "executorprvkey", "", "", "Executor private key")
+	listFailedProcessesCmd.Flags().StringVarP(&ExecutorType, "type", "", "", "Only show processes targeting this executor type")
 	listFailedProcessesCmd.Flags().IntVarP(&Count, "count", "", server.MAX_COUNT, "Number of processes to list")
 	listFailedProcessesCmd.Flags().BoolVarP(&JSON, "json", "", false, "Print JSON instead of tables")
 
@@ -200,7 +204,7 @@ var listWaitingProcessesCmd = &cobra.Command{
 		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Info("Starting a Colonies client")
 		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
 
-		processes, err := client.GetWaitingProcesses(ColonyID, Count, ExecutorPrvKey)
+		processes, err := client.GetWaitingProcesses(ColonyID, ExecutorType, Count, ExecutorPrvKey)
 		CheckError(err)
 
 		if len(processes) == 0 {
@@ -261,7 +265,7 @@ var listRunningProcessesCmd = &cobra.Command{
 		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Info("Starting a Colonies client")
 		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
 
-		processes, err := client.GetRunningProcesses(ColonyID, Count, ExecutorPrvKey)
+		processes, err := client.GetRunningProcesses(ColonyID, ExecutorType, Count, ExecutorPrvKey)
 		CheckError(err)
 
 		if len(processes) == 0 {
@@ -321,7 +325,7 @@ var listSuccessfulProcessesCmd = &cobra.Command{
 		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Info("Starting a Colonies client")
 		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
 
-		processes, err := client.GetSuccessfulProcesses(ColonyID, Count, ExecutorPrvKey)
+		processes, err := client.GetSuccessfulProcesses(ColonyID, ExecutorType, Count, ExecutorPrvKey)
 		CheckError(err)
 
 		if len(processes) == 0 {
@@ -381,7 +385,7 @@ var listFailedProcessesCmd = &cobra.Command{
 		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Info("Starting a Colonies client")
 		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
 
-		processes, err := client.GetFailedProcesses(ColonyID, Count, ExecutorPrvKey)
+		processes, err := client.GetFailedProcesses(ColonyID, ExecutorType, Count, ExecutorPrvKey)
 		CheckError(err)
 
 		if len(processes) == 0 {

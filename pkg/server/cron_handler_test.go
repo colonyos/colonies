@@ -119,7 +119,7 @@ func TestAddCronWaitForPrevProcessGraph(t *testing.T) {
 	// Wait for 5 seconds, we should only have 1 cron workflow since WaitForPrevProcessGraph is true
 	time.Sleep(5 * time.Second)
 
-	processes, err := client.GetWaitingProcesses(env.colonyID, 100, env.executorPrvKey)
+	processes, err := client.GetWaitingProcesses(env.colonyID, "", 100, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.Len(t, processes, 1)
 
@@ -138,7 +138,7 @@ func TestAddCronWaitForPrevProcessGraph(t *testing.T) {
 
 	time.Sleep(5 * time.Second)
 
-	processes, err = client.GetWaitingProcesses(env.colonyID, 100, env.executorPrvKey)
+	processes, err = client.GetWaitingProcesses(env.colonyID, "", 100, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.Len(t, processes, 1)
 
@@ -170,7 +170,7 @@ func TestAddCronWaitForPrevProcessGraphFail(t *testing.T) {
 	// Wait for 5 seconds, we should only have 1 cron workflow since WaitForPrevProcessGraph is true
 	time.Sleep(5 * time.Second)
 
-	processes, err := client.GetWaitingProcesses(env.colonyID, 100, env.executorPrvKey)
+	processes, err := client.GetWaitingProcesses(env.colonyID, "", 100, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.Len(t, processes, 1)
 
@@ -189,7 +189,7 @@ func TestAddCronWaitForPrevProcessGraphFail(t *testing.T) {
 
 	time.Sleep(5 * time.Second)
 
-	processes, err = client.GetWaitingProcesses(env.colonyID, 100, env.executorPrvKey)
+	processes, err = client.GetWaitingProcesses(env.colonyID, "", 100, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.Len(t, processes, 1)
 
