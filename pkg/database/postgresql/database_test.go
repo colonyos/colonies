@@ -320,6 +320,14 @@ func TestInitialize(t *testing.T) {
 	err = db.Initialize()
 	assert.NotNil(t, err)
 
+	dbMock.returnErrorOnCaller("createProcessesIndex7")
+	err = db.Initialize()
+	assert.NotNil(t, err)
+
+	dbMock.returnErrorOnCaller("createProcessesIndex8")
+	err = db.Initialize()
+	assert.NotNil(t, err)
+
 	dbMock.returnErrorOnCaller("createAttributesIndex1")
 	err = db.Initialize()
 	assert.NotNil(t, err)
