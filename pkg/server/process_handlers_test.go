@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -27,7 +28,7 @@ func TestSubmitProcess(t *testing.T) {
 	processes = append(processes, addedProcess1)
 	processes = append(processes, addedProcess2)
 
-	processesFromServer, err := client.GetWaitingProcesses(env.colonyID, 100, env.executorPrvKey)
+	processesFromServer, err := client.GetWaitingProcesses(env.colonyID, "", 100, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.True(t, core.IsProcessArraysEqual(processes, processesFromServer))
 
@@ -76,6 +77,23 @@ func TestAssignProcess(t *testing.T) {
 	assignedProcess, err = client.Assign(env.colonyID, -1, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.Equal(t, addedProcess2.ID, assignedProcess.ID)
+
+	server.Shutdown()
+	<-done
+}
+
+func TestAssignProcessWithContext(t *testing.T) {
+	env, client, server, _, done := setupTestEnv2(t)
+
+	ctx, cancel := context.WithCancel(context.Background())
+
+	go func() {
+		time.Sleep(2 * time.Second)
+		cancel()
+	}()
+
+	_, err := client.AssignWithContext(env.colonyID, 100, ctx, env.executorPrvKey)
+	assert.NotNil(t, err)
 
 	server.Shutdown()
 	<-done
@@ -286,15 +304,28 @@ func TestGetWaitingProcesses(t *testing.T) {
 	numberOfRunningProcesses := 20
 	for i := 0; i < numberOfRunningProcesses; i++ {
 		funcSpec := utils.CreateTestFunctionSpec(env.colonyID)
+		if i < 5 {
+			funcSpec.Conditions.ExecutorType = "test_executor_type_1"
+		} else {
+			funcSpec.Conditions.ExecutorType = "test_executor_type_2"
+		}
 		_, err := client.Submit(funcSpec, env.executorPrvKey)
 		assert.Nil(t, err)
 	}
 
-	processesFromServer, err := client.GetWaitingProcesses(env.colonyID, numberOfRunningProcesses, env.executorPrvKey)
+	processesFromServer, err := client.GetWaitingProcesses(env.colonyID, "", numberOfRunningProcesses, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.Len(t, processesFromServer, numberOfRunningProcesses)
 
-	processesFromServer, err = client.GetWaitingProcesses(env.colonyID, 10, env.executorPrvKey)
+	processesFromServer, err = client.GetWaitingProcesses(env.colonyID, "test_executor_type_1", numberOfRunningProcesses, env.executorPrvKey)
+	assert.Nil(t, err)
+	assert.Len(t, processesFromServer, 5)
+
+	processesFromServer, err = client.GetWaitingProcesses(env.colonyID, "test_executor_type_2", numberOfRunningProcesses, env.executorPrvKey)
+	assert.Nil(t, err)
+	assert.Len(t, processesFromServer, 15)
+
+	processesFromServer, err = client.GetWaitingProcesses(env.colonyID, "", 10, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.Len(t, processesFromServer, 10)
 
@@ -305,20 +336,57 @@ func TestGetWaitingProcesses(t *testing.T) {
 func TestGetRunningProcesses(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 
+	executor1, executorPrvKey1, err := utils.CreateTestExecutorWithKey(env.colonyID)
+	executor1.Type = "test_executor_type_1"
+	assert.Nil(t, err)
+	_, err = client.AddExecutor(executor1, env.colonyPrvKey)
+	assert.Nil(t, err)
+	err = client.ApproveExecutor(executor1.ID, env.colonyPrvKey)
+	assert.Nil(t, err)
+
+	executor2, executorPrvKey2, err := utils.CreateTestExecutorWithKey(env.colonyID)
+	executor2.Type = "test_executor_type_2"
+	assert.Nil(t, err)
+	_, err = client.AddExecutor(executor2, env.colonyPrvKey)
+	assert.Nil(t, err)
+	err = client.ApproveExecutor(executor2.ID, env.colonyPrvKey)
+	assert.Nil(t, err)
+
 	numberOfRunningProcesses := 20
 	for i := 0; i < numberOfRunningProcesses; i++ {
 		funcSpec := utils.CreateTestFunctionSpec(env.colonyID)
+		if i < 5 {
+			funcSpec.Conditions.ExecutorType = "test_executor_type_1"
+		} else {
+			funcSpec.Conditions.ExecutorType = "test_executor_type_2"
+		}
 		_, err := client.Submit(funcSpec, env.executorPrvKey)
 		assert.Nil(t, err)
-		_, err = client.Assign(env.colonyID, -1, env.executorPrvKey)
+	}
+	for i := 0; i < numberOfRunningProcesses; i++ {
+		if i < 5 {
+			_, err = client.Assign(env.colonyID, -1, executorPrvKey1)
+			assert.Nil(t, err)
+		} else {
+			_, err = client.Assign(env.colonyID, -1, executorPrvKey2)
+			assert.Nil(t, err)
+		}
 		assert.Nil(t, err)
 	}
 
-	processesFromServer, err := client.GetRunningProcesses(env.colonyID, numberOfRunningProcesses, env.executorPrvKey)
+	processesFromServer, err := client.GetRunningProcesses(env.colonyID, "", numberOfRunningProcesses, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.Len(t, processesFromServer, numberOfRunningProcesses)
 
-	processesFromServer, err = client.GetRunningProcesses(env.colonyID, 10, env.executorPrvKey)
+	processesFromServer, err = client.GetRunningProcesses(env.colonyID, "test_executor_type_1", numberOfRunningProcesses, env.executorPrvKey)
+	assert.Nil(t, err)
+	assert.Len(t, processesFromServer, 5)
+
+	processesFromServer, err = client.GetRunningProcesses(env.colonyID, "test_executor_type_2", numberOfRunningProcesses, env.executorPrvKey)
+	assert.Nil(t, err)
+	assert.Len(t, processesFromServer, 15)
+
+	processesFromServer, err = client.GetRunningProcesses(env.colonyID, "", 10, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.Len(t, processesFromServer, 10)
 
@@ -329,22 +397,61 @@ func TestGetRunningProcesses(t *testing.T) {
 func TestGetSuccessfulProcesses(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 
+	executor1, executorPrvKey1, err := utils.CreateTestExecutorWithKey(env.colonyID)
+	executor1.Type = "test_executor_type_1"
+	assert.Nil(t, err)
+	_, err = client.AddExecutor(executor1, env.colonyPrvKey)
+	assert.Nil(t, err)
+	err = client.ApproveExecutor(executor1.ID, env.colonyPrvKey)
+	assert.Nil(t, err)
+
+	executor2, executorPrvKey2, err := utils.CreateTestExecutorWithKey(env.colonyID)
+	executor2.Type = "test_executor_type_2"
+	assert.Nil(t, err)
+	_, err = client.AddExecutor(executor2, env.colonyPrvKey)
+	assert.Nil(t, err)
+	err = client.ApproveExecutor(executor2.ID, env.colonyPrvKey)
+	assert.Nil(t, err)
+
 	numberOfRunningProcesses := 20
 	for i := 0; i < numberOfRunningProcesses; i++ {
 		funcSpec := utils.CreateTestFunctionSpec(env.colonyID)
+		if i < 5 {
+			funcSpec.Conditions.ExecutorType = "test_executor_type_1"
+		} else {
+			funcSpec.Conditions.ExecutorType = "test_executor_type_2"
+		}
 		_, err := client.Submit(funcSpec, env.executorPrvKey)
 		assert.Nil(t, err)
-		processFromServer, err := client.Assign(env.colonyID, -1, env.executorPrvKey)
-		assert.Nil(t, err)
-		err = client.Close(processFromServer.ID, env.executorPrvKey)
-		assert.Nil(t, err)
+	}
+	var processFromServer *core.Process
+	for i := 0; i < numberOfRunningProcesses; i++ {
+		if i < 5 {
+			processFromServer, err = client.Assign(env.colonyID, -1, executorPrvKey1)
+			assert.Nil(t, err)
+			err = client.Close(processFromServer.ID, executorPrvKey1)
+			assert.Nil(t, err)
+		} else {
+			processFromServer, err = client.Assign(env.colonyID, -1, executorPrvKey2)
+			assert.Nil(t, err)
+			err = client.Close(processFromServer.ID, executorPrvKey2)
+			assert.Nil(t, err)
+		}
 	}
 
-	processesFromServer, err := client.GetSuccessfulProcesses(env.colonyID, numberOfRunningProcesses, env.executorPrvKey)
+	processesFromServer, err := client.GetSuccessfulProcesses(env.colonyID, "", numberOfRunningProcesses, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.Len(t, processesFromServer, numberOfRunningProcesses)
 
-	processesFromServer, err = client.GetSuccessfulProcesses(env.colonyID, 10, env.executorPrvKey)
+	processesFromServer, err = client.GetSuccessfulProcesses(env.colonyID, "test_executor_type_1", numberOfRunningProcesses, env.executorPrvKey)
+	assert.Nil(t, err)
+	assert.Len(t, processesFromServer, 5)
+
+	processesFromServer, err = client.GetSuccessfulProcesses(env.colonyID, "test_executor_type_2", numberOfRunningProcesses, env.executorPrvKey)
+	assert.Nil(t, err)
+	assert.Len(t, processesFromServer, 15)
+
+	processesFromServer, err = client.GetSuccessfulProcesses(env.colonyID, "", 10, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.Len(t, processesFromServer, 10)
 
@@ -355,22 +462,62 @@ func TestGetSuccessfulProcesses(t *testing.T) {
 func TestGetFailedProcesses(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 
+	executor1, executorPrvKey1, err := utils.CreateTestExecutorWithKey(env.colonyID)
+	executor1.Type = "test_executor_type_1"
+	assert.Nil(t, err)
+	_, err = client.AddExecutor(executor1, env.colonyPrvKey)
+	assert.Nil(t, err)
+	err = client.ApproveExecutor(executor1.ID, env.colonyPrvKey)
+	assert.Nil(t, err)
+
+	executor2, executorPrvKey2, err := utils.CreateTestExecutorWithKey(env.colonyID)
+	executor2.Type = "test_executor_type_2"
+	assert.Nil(t, err)
+	_, err = client.AddExecutor(executor2, env.colonyPrvKey)
+	assert.Nil(t, err)
+	err = client.ApproveExecutor(executor2.ID, env.colonyPrvKey)
+	assert.Nil(t, err)
+
 	numberOfRunningProcesses := 20
 	for i := 0; i < numberOfRunningProcesses; i++ {
 		funcSpec := utils.CreateTestFunctionSpec(env.colonyID)
+		if i < 5 {
+			funcSpec.Conditions.ExecutorType = "test_executor_type_1"
+		} else {
+			funcSpec.Conditions.ExecutorType = "test_executor_type_2"
+		}
 		_, err := client.Submit(funcSpec, env.executorPrvKey)
-		assert.Nil(t, err)
-		processFromServer, err := client.Assign(env.colonyID, -1, env.executorPrvKey)
-		assert.Nil(t, err)
-		err = client.Fail(processFromServer.ID, []string{"error"}, env.executorPrvKey)
 		assert.Nil(t, err)
 	}
 
-	processesFromServer, err := client.GetFailedProcesses(env.colonyID, numberOfRunningProcesses, env.executorPrvKey)
+	var processFromServer *core.Process
+	for i := 0; i < numberOfRunningProcesses; i++ {
+		if i < 5 {
+			processFromServer, err = client.Assign(env.colonyID, -1, executorPrvKey1)
+			assert.Nil(t, err)
+			err = client.Fail(processFromServer.ID, []string{"error"}, executorPrvKey1)
+			assert.Nil(t, err)
+		} else {
+			processFromServer, err = client.Assign(env.colonyID, -1, executorPrvKey2)
+			assert.Nil(t, err)
+			err = client.Fail(processFromServer.ID, []string{"error"}, executorPrvKey2)
+			assert.Nil(t, err)
+		}
+	}
+
+	processesFromServer, err := client.GetFailedProcesses(env.colonyID, "", numberOfRunningProcesses, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.Len(t, processesFromServer, numberOfRunningProcesses)
 
-	processesFromServer, err = client.GetFailedProcesses(env.colonyID, 10, env.executorPrvKey)
+	processesFromServer, err = client.GetFailedProcesses(env.colonyID, "test_executor_type_1", numberOfRunningProcesses, env.executorPrvKey)
+	assert.Nil(t, err)
+	assert.Len(t, processesFromServer, 5)
+
+	processesFromServer, err = client.GetFailedProcesses(env.colonyID, "test_executor_type_2", numberOfRunningProcesses, env.executorPrvKey)
+	assert.Nil(t, err)
+	assert.Len(t, processesFromServer, 15)
+
+	processesFromServer, err = client.GetFailedProcesses(env.colonyID, "", 10, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.Len(t, processesFromServer, 10)
 
