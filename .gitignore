@@ -1,4 +1,7 @@
 .DS_Store
+lib/libcryptolib.so
+lib/libcryptolib.wasm
+bin
 coverage.txt
 *.sw*
 pkg/database/postgresql/*.sw*

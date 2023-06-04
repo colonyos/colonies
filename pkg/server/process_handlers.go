@@ -217,7 +217,7 @@ func (server *ColoniesServer) handleGetProcessesHTTPRequest(c *gin.Context, reco
 
 	switch msg.State {
 	case core.WAITING:
-		processes, err := server.controller.findWaitingProcesses(msg.ColonyID, msg.Count)
+		processes, err := server.controller.findWaitingProcesses(msg.ColonyID, msg.ExecutorType, msg.Count)
 		if server.handleHTTPError(c, err, http.StatusBadRequest) {
 			return
 		}
@@ -227,7 +227,7 @@ func (server *ColoniesServer) handleGetProcessesHTTPRequest(c *gin.Context, reco
 		}
 		server.sendHTTPReply(c, payloadType, jsonString)
 	case core.RUNNING:
-		processes, err := server.controller.findRunningProcesses(msg.ColonyID, msg.Count)
+		processes, err := server.controller.findRunningProcesses(msg.ColonyID, msg.ExecutorType, msg.Count)
 		if server.handleHTTPError(c, err, http.StatusBadRequest) {
 			return
 		}
@@ -237,7 +237,7 @@ func (server *ColoniesServer) handleGetProcessesHTTPRequest(c *gin.Context, reco
 		}
 		server.sendHTTPReply(c, payloadType, jsonString)
 	case core.SUCCESS:
-		processes, err := server.controller.findSuccessfulProcesses(msg.ColonyID, msg.Count)
+		processes, err := server.controller.findSuccessfulProcesses(msg.ColonyID, msg.ExecutorType, msg.Count)
 		if server.handleHTTPError(c, err, http.StatusBadRequest) {
 			return
 		}
@@ -247,7 +247,7 @@ func (server *ColoniesServer) handleGetProcessesHTTPRequest(c *gin.Context, reco
 		}
 		server.sendHTTPReply(c, payloadType, jsonString)
 	case core.FAILED:
-		processes, err := server.controller.findFailedProcesses(msg.ColonyID, msg.Count)
+		processes, err := server.controller.findFailedProcesses(msg.ColonyID, msg.ExecutorType, msg.Count)
 		if server.handleHTTPError(c, err, http.StatusBadRequest) {
 			return
 		}
