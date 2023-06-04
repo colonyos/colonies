@@ -10,7 +10,7 @@ GOLDFLAGS += -X 'main.BuildVersion=$(VERSION)'
 GOLDFLAGS += -X 'main.BuildTime=$(BUILDTIME)'
 
 build:
-	@CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w $(GOLDFLAGS)" -o ./bin/colonies ./cmd/main.go
+	@CGO_ENABLED=0 go build -ldflags="-s -w $(GOLDFLAGS)" -o ./bin/colonies ./cmd/main.go
 	@go build -buildmode=c-shared -o ./lib/libcryptolib.so ./internal/cryptolib/cryptolib.go
 	@GOOS=js GOARCH=wasm go build -o ./lib/libcryptolib.wasm internal/cryptolib.wasm/cryptolib.go
 
