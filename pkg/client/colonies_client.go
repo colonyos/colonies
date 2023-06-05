@@ -97,7 +97,7 @@ func (client *ColoniesClient) sendMessage(method string, jsonString string, prvK
 			return "", err
 		}
 
-		return "", errors.New(failure.Message)
+		return "", &core.ColoniesError{Status: failure.Status, Message: failure.Message}
 	}
 
 	return rpcReplyMsg.DecodePayload(), nil
