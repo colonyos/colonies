@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/tls"
 	"errors"
-	"fmt"
 	"net/url"
 	"strconv"
 
@@ -82,8 +81,6 @@ func (client *ColoniesClient) sendMessage(method string, jsonString string, prvK
 		SetBody(jsonString).
 		Post(protocol + "://" + client.host + ":" + strconv.Itoa(client.port) + "/api")
 	if err != nil {
-		fmt.Println("XXXXXX1")
-		fmt.Println(err)
 		return "", err
 	}
 
@@ -97,15 +94,9 @@ func (client *ColoniesClient) sendMessage(method string, jsonString string, prvK
 	if rpcReplyMsg.Error {
 		failure, err := core.ConvertJSONToFailure(rpcReplyMsg.DecodePayload())
 		if err != nil {
-			fmt.Println("XXXXXX2")
-			fmt.Println(err)
 			return "", err
 		}
 
-		fmt.Println("XXXXXX3")
-		fmt.Println(failure)
-
-		//return "", errors.New(failure.Message)
 		return "", &core.ColoniesError{Status: failure.Status, Message: failure.Message}
 	}
 
