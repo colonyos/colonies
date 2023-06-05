@@ -4,6 +4,15 @@ import (
 	"encoding/json"
 )
 
+type ColoniesError struct {
+	Status  int
+	Message string
+}
+
+func (e *ColoniesError) Error() string {
+	return e.Message
+}
+
 type Failure struct {
 	Status  int    `json:"status"`
 	Message string `json:"message"`
