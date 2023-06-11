@@ -32,8 +32,9 @@ func init() {
 	submitFunctionSpecCmd.Flags().StringVarP(&ExecutorPrvKey, "executorprvkey", "", "", "Executor private key")
 	submitFunctionSpecCmd.Flags().StringVarP(&SpecFile, "spec", "", "", "JSON specification of a process")
 	submitFunctionSpecCmd.Flags().StringVarP(&ColonyID, "colonyid", "", "", "Colony Id")
-	submitFunctionSpecCmd.Flags().BoolVarP(&Wait, "wait", "", false, "Colony Id")
+	submitFunctionSpecCmd.Flags().BoolVarP(&Wait, "wait", "", false, "Wait for process to finish")
 	submitFunctionSpecCmd.MarkFlagRequired("spec")
+	submitFunctionSpecCmd.Flags().BoolVarP(&PrintOutput, "out", "", false, "Print process output, wait flag must be set")
 
 	execFuncCmd.Flags().StringVarP(&ExecutorID, "executorid", "", "", "Executor Id")
 	execFuncCmd.Flags().StringVarP(&ExecutorPrvKey, "executorprvkey", "", "", "Executor private key")
@@ -46,7 +47,8 @@ func init() {
 	execFuncCmd.Flags().IntVarP(&MaxWaitTime, "maxwaittime", "", -1, "Maximum queue wait time")
 	execFuncCmd.Flags().IntVarP(&MaxExecTime, "maxexectime", "", -1, "Maximum execution time in seconds before failing")
 	execFuncCmd.Flags().IntVarP(&MaxRetries, "maxretries", "", -1, "Maximum number of retries when failing")
-	execFuncCmd.Flags().BoolVarP(&Wait, "wait", "", false, "Colony Id")
+	execFuncCmd.Flags().BoolVarP(&Wait, "wait", "", false, "Wait for process to finish")
+	execFuncCmd.Flags().BoolVarP(&PrintOutput, "out", "", false, "Print process output, wait flag must be set")
 
 	removeFuncCmd.Flags().StringVarP(&FunctionID, "functionid", "", "", "FunctionID")
 	removeFuncCmd.MarkFlagRequired("functionid")
@@ -306,6 +308,10 @@ var submitFunctionSpecCmd = &cobra.Command{
 
 		if Wait {
 			wait(client, addedProcess)
+			if PrintOutput {
+				fmt.Println(StrArr2Str(IfArr2StringArr(addedProcess.Output)))
+				os.Exit(0)
+			}
 		} else {
 			log.WithFields(log.Fields{"ProcessID": addedProcess.ID}).Info("Process submitted")
 		}
@@ -385,6 +391,12 @@ var execFuncCmd = &cobra.Command{
 
 		if Wait {
 			wait(client, addedProcess)
+			if PrintOutput {
+				process, err := client.GetProcess(addedProcess.ID, ExecutorPrvKey)
+				CheckError(err)
+				fmt.Println(StrArr2Str(IfArr2StringArr(process.Output)))
+				os.Exit(0)
+			}
 		} else {
 			log.WithFields(log.Fields{"ProcessID": addedProcess.ID}).Info("Process submitted")
 		}

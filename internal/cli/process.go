@@ -122,7 +122,8 @@ func wait(client *client.ColoniesClient, process *core.Process) {
 					fmt.Print(attribute.Value)
 				}
 			}
-			os.Exit(0)
+			return
+			//os.Exit(0)
 		case err := <-subscription.ErrChan:
 			CheckError(err)
 		}
