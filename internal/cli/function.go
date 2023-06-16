@@ -32,8 +32,9 @@ func init() {
 	submitFunctionSpecCmd.Flags().StringVarP(&ExecutorPrvKey, "executorprvkey", "", "", "Executor private key")
 	submitFunctionSpecCmd.Flags().StringVarP(&SpecFile, "spec", "", "", "JSON specification of a process")
 	submitFunctionSpecCmd.Flags().StringVarP(&ColonyID, "colonyid", "", "", "Colony Id")
-	submitFunctionSpecCmd.Flags().BoolVarP(&Wait, "wait", "", false, "Colony Id")
+	submitFunctionSpecCmd.Flags().BoolVarP(&Wait, "wait", "", false, "Wait for process to finish")
 	submitFunctionSpecCmd.MarkFlagRequired("spec")
+	submitFunctionSpecCmd.Flags().BoolVarP(&PrintOutput, "out", "", false, "Print process output, wait flag must be set")
 
 	execFuncCmd.Flags().StringVarP(&ExecutorID, "executorid", "", "", "Executor Id")
 	execFuncCmd.Flags().StringVarP(&ExecutorPrvKey, "executorprvkey", "", "", "Executor private key")
@@ -46,7 +47,8 @@ func init() {
 	execFuncCmd.Flags().IntVarP(&MaxWaitTime, "maxwaittime", "", -1, "Maximum queue wait time")
 	execFuncCmd.Flags().IntVarP(&MaxExecTime, "maxexectime", "", -1, "Maximum execution time in seconds before failing")
 	execFuncCmd.Flags().IntVarP(&MaxRetries, "maxretries", "", -1, "Maximum number of retries when failing")
-	execFuncCmd.Flags().BoolVarP(&Wait, "wait", "", false, "Colony Id")
+	execFuncCmd.Flags().BoolVarP(&Wait, "wait", "", false, "Wait for process to finish")
+	execFuncCmd.Flags().BoolVarP(&PrintOutput, "out", "", false, "Print process output, wait flag must be set")
 
 	removeFuncCmd.Flags().StringVarP(&FunctionID, "functionid", "", "", "FunctionID")
 	removeFuncCmd.MarkFlagRequired("functionid")
@@ -304,10 +306,22 @@ var submitFunctionSpecCmd = &cobra.Command{
 		addedProcess, err := client.Submit(funcSpec, ExecutorPrvKey)
 		CheckError(err)
 
+		log.WithFields(log.Fields{"ProcessID": addedProcess.ID}).Info("Process submitted")
 		if Wait {
 			wait(client, addedProcess)
-		} else {
-			log.WithFields(log.Fields{"ProcessID": addedProcess.ID}).Info("Process submitted")
+			process, err := client.GetProcess(addedProcess.ID, ExecutorPrvKey)
+			CheckError(err)
+			if process.State == core.FAILED {
+				log.WithFields(log.Fields{"ProcessID": addedProcess.ID, "Error": process.Errors}).Error("Process failed")
+				os.Exit(-1)
+			} else if process.State == core.SUCCESS {
+				log.WithFields(log.Fields{"ProcessID": addedProcess.ID}).Info("Process finished successfully")
+				os.Exit(0)
+			}
+			if PrintOutput {
+				fmt.Println(StrArr2Str(IfArr2StringArr(addedProcess.Output)))
+				os.Exit(0)
+			}
 		}
 	},
 }
@@ -383,10 +397,22 @@ var execFuncCmd = &cobra.Command{
 		addedProcess, err := client.Submit(&funcSpec, ExecutorPrvKey)
 		CheckError(err)
 
+		log.WithFields(log.Fields{"ProcessID": addedProcess.ID}).Info("Process submitted")
 		if Wait {
 			wait(client, addedProcess)
-		} else {
-			log.WithFields(log.Fields{"ProcessID": addedProcess.ID}).Info("Process submitted")
+			process, err := client.GetProcess(addedProcess.ID, ExecutorPrvKey)
+			CheckError(err)
+			if process.State == core.FAILED {
+				log.WithFields(log.Fields{"ProcessID": addedProcess.ID, "Error": process.Errors}).Error("Process failed")
+				os.Exit(-1)
+			} else if process.State == core.SUCCESS {
+				log.WithFields(log.Fields{"ProcessID": addedProcess.ID}).Info("Process finished successfully")
+				os.Exit(0)
+			}
+			if PrintOutput {
+				fmt.Println(StrArr2Str(IfArr2StringArr(process.Output)))
+				os.Exit(0)
+			}
 		}
 	},
 }
