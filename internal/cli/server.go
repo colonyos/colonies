@@ -99,6 +99,14 @@ func parseServerEnv() {
 		Verbose = false
 	}
 
+	if Verbose {
+		log.SetLevel(log.DebugLevel)
+	} else {
+		log.SetLevel(log.InfoLevel)
+		gin.SetMode(gin.ReleaseMode)
+		gin.DefaultWriter = ioutil.Discard
+	}
+
 	CronPeriodCheckerEnvStr := os.Getenv("COLONIES_CRON_CHECKER_PERIOD")
 	if CronPeriodCheckerEnvStr != "" {
 		CronCheckerPeriod, err = strconv.Atoi(CronPeriodCheckerEnvStr)
@@ -234,13 +242,6 @@ var serverStartCmd = &cobra.Command{
 		if EtcdDataDir == "" {
 			EtcdDataDir = "/tmp/colonies/prod/etcd"
 			log.Warning("EtcdDataDir not specified, setting it to " + EtcdDataDir)
-		}
-
-		if Verbose {
-			log.SetLevel(log.DebugLevel)
-		} else {
-			gin.SetMode(gin.ReleaseMode)
-			gin.DefaultWriter = ioutil.Discard
 		}
 
 		retentionStr := os.Getenv("COLONIES_RETENTION")
