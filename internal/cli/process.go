@@ -108,26 +108,31 @@ var processCmd = &cobra.Command{
 
 func wait(client *client.ColoniesClient, process *core.Process) {
 	for {
-		subscription, err := client.SubscribeProcess(process.ID,
+		successSubscription, err := client.SubscribeProcess(process.ID,
 			process.FunctionSpec.Conditions.ExecutorType,
 			core.SUCCESS,
 			100,
 			ExecutorPrvKey)
 		CheckError(err)
 
+		failedSubscription, err := client.SubscribeProcess(process.ID,
+			process.FunctionSpec.Conditions.ExecutorType,
+			core.FAILED,
+			100,
+			ExecutorPrvKey)
+		CheckError(err)
+
 		select {
-		case process := <-subscription.ProcessChan:
-			for _, attribute := range process.Attributes {
-				if attribute.Key == "output" {
-					fmt.Print(attribute.Value)
-				}
-			}
-			os.Exit(0)
-		case err := <-subscription.ErrChan:
+		case <-successSubscription.ProcessChan:
+			return
+		case err := <-successSubscription.ErrChan:
+			CheckError(err)
+		case <-failedSubscription.ProcessChan:
+			return
+		case err := <-failedSubscription.ErrChan:
 			CheckError(err)
 		}
 	}
-
 }
 
 var assignProcessCmd = &cobra.Command{
