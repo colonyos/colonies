@@ -306,14 +306,22 @@ var submitFunctionSpecCmd = &cobra.Command{
 		addedProcess, err := client.Submit(funcSpec, ExecutorPrvKey)
 		CheckError(err)
 
+		log.WithFields(log.Fields{"ProcessID": addedProcess.ID}).Info("Process submitted")
 		if Wait {
 			wait(client, addedProcess)
+			process, err := client.GetProcess(addedProcess.ID, ExecutorPrvKey)
+			CheckError(err)
+			if process.State == core.FAILED {
+				log.WithFields(log.Fields{"ProcessID": addedProcess.ID, "Error": process.Errors}).Error("Process failed")
+				os.Exit(-1)
+			} else if process.State == core.SUCCESS {
+				log.WithFields(log.Fields{"ProcessID": addedProcess.ID}).Info("Process finished successfully")
+				os.Exit(0)
+			}
 			if PrintOutput {
 				fmt.Println(StrArr2Str(IfArr2StringArr(addedProcess.Output)))
 				os.Exit(0)
 			}
-		} else {
-			log.WithFields(log.Fields{"ProcessID": addedProcess.ID}).Info("Process submitted")
 		}
 	},
 }
@@ -389,16 +397,22 @@ var execFuncCmd = &cobra.Command{
 		addedProcess, err := client.Submit(&funcSpec, ExecutorPrvKey)
 		CheckError(err)
 
+		log.WithFields(log.Fields{"ProcessID": addedProcess.ID}).Info("Process submitted")
 		if Wait {
 			wait(client, addedProcess)
+			process, err := client.GetProcess(addedProcess.ID, ExecutorPrvKey)
+			CheckError(err)
+			if process.State == core.FAILED {
+				log.WithFields(log.Fields{"ProcessID": addedProcess.ID, "Error": process.Errors}).Error("Process failed")
+				os.Exit(-1)
+			} else if process.State == core.SUCCESS {
+				log.WithFields(log.Fields{"ProcessID": addedProcess.ID}).Info("Process finished successfully")
+				os.Exit(0)
+			}
 			if PrintOutput {
-				process, err := client.GetProcess(addedProcess.ID, ExecutorPrvKey)
-				CheckError(err)
 				fmt.Println(StrArr2Str(IfArr2StringArr(process.Output)))
 				os.Exit(0)
 			}
-		} else {
-			log.WithFields(log.Fields{"ProcessID": addedProcess.ID}).Info("Process submitted")
 		}
 	},
 }
