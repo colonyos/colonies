@@ -224,10 +224,10 @@ var listWaitingProcessesCmd = &cobra.Command{
 
 			var data [][]string
 			for _, process := range processes {
-				data = append(data, []string{process.ID, process.FunctionSpec.FuncName, StrArr2Str(IfArr2StringArr(process.FunctionSpec.Args)), process.SubmissionTime.Format(TimeLayout), process.FunctionSpec.Conditions.ExecutorType})
+				data = append(data, []string{process.ID, process.FunctionSpec.FuncName, StrArr2Str(IfArr2StringArr(process.FunctionSpec.Args)), StrMap2Str(IfMap2StringMap(process.FunctionSpec.KwArgs)), process.SubmissionTime.Format(TimeLayout), process.FunctionSpec.Conditions.ExecutorType})
 			}
 			table := tablewriter.NewWriter(os.Stdout)
-			table.SetHeader([]string{"ID", "Func", "Args", "Submission Time", "Executor Type"})
+			table.SetHeader([]string{"ID", "Func", "Args", "KwArgs", "Submission Time", "Executor Type"})
 			for _, v := range data {
 				table.Append(v)
 			}
@@ -285,10 +285,10 @@ var listRunningProcessesCmd = &cobra.Command{
 
 			var data [][]string
 			for _, process := range processes {
-				data = append(data, []string{process.ID, process.FunctionSpec.FuncName, StrArr2Str(IfArr2StringArr(process.FunctionSpec.Args)), process.StartTime.Format(TimeLayout), process.FunctionSpec.Conditions.ExecutorType})
+				data = append(data, []string{process.ID, process.FunctionSpec.FuncName, StrArr2Str(IfArr2StringArr(process.FunctionSpec.Args)), StrMap2Str(IfMap2StringMap(process.FunctionSpec.KwArgs)), process.SubmissionTime.Format(TimeLayout), process.FunctionSpec.Conditions.ExecutorType})
 			}
 			table := tablewriter.NewWriter(os.Stdout)
-			table.SetHeader([]string{"ID", "FuncName", "Args", "Start time", "Executor Type"})
+			table.SetHeader([]string{"ID", "FuncName", "Args", "KwArgs", "Start time", "Executor Type"})
 			for _, v := range data {
 				table.Append(v)
 			}
@@ -345,10 +345,10 @@ var listSuccessfulProcessesCmd = &cobra.Command{
 
 			var data [][]string
 			for _, process := range processes {
-				data = append(data, []string{process.ID, process.FunctionSpec.FuncName, StrArr2Str(IfArr2StringArr(process.FunctionSpec.Args)), process.EndTime.Format(TimeLayout), process.FunctionSpec.Conditions.ExecutorType})
+				data = append(data, []string{process.ID, process.FunctionSpec.FuncName, StrArr2Str(IfArr2StringArr(process.FunctionSpec.Args)), StrMap2Str(IfMap2StringMap(process.FunctionSpec.KwArgs)), process.SubmissionTime.Format(TimeLayout), process.FunctionSpec.Conditions.ExecutorType})
 			}
 			table := tablewriter.NewWriter(os.Stdout)
-			table.SetHeader([]string{"ID", "FuncName", "Args", "End time", "Executor Type"})
+			table.SetHeader([]string{"ID", "FuncName", "Args", "KwArgs", "End time", "Executor Type"})
 			for _, v := range data {
 				table.Append(v)
 			}
@@ -405,10 +405,10 @@ var listFailedProcessesCmd = &cobra.Command{
 
 			var data [][]string
 			for _, process := range processes {
-				data = append(data, []string{process.ID, process.FunctionSpec.FuncName, StrArr2Str(IfArr2StringArr(process.FunctionSpec.Args)), process.EndTime.Format(TimeLayout), process.FunctionSpec.Conditions.ExecutorType})
+				data = append(data, []string{process.ID, process.FunctionSpec.FuncName, StrArr2Str(IfArr2StringArr(process.FunctionSpec.Args)), StrMap2Str(IfMap2StringMap(process.FunctionSpec.KwArgs)), process.SubmissionTime.Format(TimeLayout), process.FunctionSpec.Conditions.ExecutorType})
 			}
 			table := tablewriter.NewWriter(os.Stdout)
-			table.SetHeader([]string{"ID", "FuncName", "Args", "End time", "Executor Type"})
+			table.SetHeader([]string{"ID", "FuncName", "Args", "KwArgs", "End time", "Executor Type"})
 			for _, v := range data {
 				table.Append(v)
 			}
@@ -441,9 +441,18 @@ func printFunctionSpec(funcSpec *core.FunctionSpec) {
 		procArgs = "None"
 	}
 
+	procKwArgs := ""
+	for k, procKwArg := range IfMap2StringMap(funcSpec.KwArgs) {
+		procKwArgs += k + ":" + procKwArg + " "
+	}
+	if procKwArgs == "" {
+		procKwArgs = "None"
+	}
+
 	specData := [][]string{
 		[]string{"Func", procFunc},
 		[]string{"Args", procArgs},
+		[]string{"KwArgs", procKwArgs},
 		[]string{"MaxWaitTime", strconv.Itoa(funcSpec.MaxWaitTime)},
 		[]string{"MaxExecTime", strconv.Itoa(funcSpec.MaxExecTime)},
 		[]string{"MaxRetries", strconv.Itoa(funcSpec.MaxRetries)},

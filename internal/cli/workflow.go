@@ -522,6 +522,14 @@ func printGraf(client *client.ColoniesClient, graph *core.ProcessGraph) {
 			procArgs = "None"
 		}
 
+		procKwArgs := ""
+		for k, procKwArg := range IfMap2StringMap(process.FunctionSpec.KwArgs) {
+			procKwArgs += k + ":" + procKwArg + " "
+		}
+		if procKwArgs == "" {
+			procKwArgs = "None"
+		}
+
 		dependencies := ""
 		for _, dependency := range process.FunctionSpec.Conditions.Dependencies {
 			dependencies += dependency + " "
@@ -536,6 +544,7 @@ func printGraf(client *client.ColoniesClient, graph *core.ProcessGraph) {
 			[]string{"ExecutorType", process.FunctionSpec.Conditions.ExecutorType},
 			[]string{"FuncName", f},
 			[]string{"Args", procArgs},
+			[]string{"KwArgs", procKwArgs},
 			[]string{"State", State2String(process.State)},
 			[]string{"WaitingForParents", strconv.FormatBool(process.WaitForParents)},
 			[]string{"Dependencies", dependencies},

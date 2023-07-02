@@ -12,35 +12,42 @@ type Conditions struct {
 }
 
 type FunctionSpec struct {
-	NodeName    string            `json:"nodename"`
-	FuncName    string            `json:"funcname"`
-	Args        []interface{}     `json:"args"`
-	Priority    int               `json:"priority"`
-	MaxWaitTime int               `json:"maxwaittime"`
-	MaxExecTime int               `json:"maxexectime"`
-	MaxRetries  int               `json:"maxretries"`
-	Conditions  Conditions        `json:"conditions"`
-	Label       string            `json:"label"`
-	Env         map[string]string `json:"env"`
+	NodeName    string                 `json:"nodename"`
+	FuncName    string                 `json:"funcname"`
+	Args        []interface{}          `json:"args"`
+	KwArgs      map[string]interface{} `json:"kwargs"`
+	Priority    int                    `json:"priority"`
+	MaxWaitTime int                    `json:"maxwaittime"`
+	MaxExecTime int                    `json:"maxexectime"`
+	MaxRetries  int                    `json:"maxretries"`
+	Conditions  Conditions             `json:"conditions"`
+	Label       string                 `json:"label"`
+	Env         map[string]string      `json:"env"`
 }
 
 func CreateEmptyFunctionSpec() *FunctionSpec {
 	funcSpec := &FunctionSpec{}
 	funcSpec.Env = make(map[string]string)
 	funcSpec.Args = make([]interface{}, 0)
+	funcSpec.KwArgs = make(map[string]interface{}, 0)
 	funcSpec.MaxExecTime = -1
 	funcSpec.MaxRetries = -1
 	return funcSpec
 }
 
-func CreateFunctionSpec(nodeName string, funcName string, args []interface{}, colonyID string, executorIDs []string, executorType string, maxWaitTime int, maxExecTime int, maxRetries int, env map[string]string, dependencies []string, priority int, label string) *FunctionSpec {
+func CreateFunctionSpec(nodeName string, funcName string, args []interface{}, kwargs map[string]interface{}, colonyID string, executorIDs []string, executorType string, maxWaitTime int, maxExecTime int, maxRetries int, env map[string]string, dependencies []string, priority int, label string) *FunctionSpec {
 	argsif := make([]interface{}, len(args))
 	for k, v := range args {
 		argsif[k] = v
 	}
 
+	kwargsif := make(map[string]interface{}, len(kwargs))
+	for k, v := range kwargs {
+		kwargsif[k] = v
+	}
+
 	conditions := Conditions{ColonyID: colonyID, ExecutorIDs: executorIDs, ExecutorType: executorType, Dependencies: dependencies}
-	return &FunctionSpec{NodeName: nodeName, FuncName: funcName, Args: argsif, MaxWaitTime: maxWaitTime, MaxExecTime: maxExecTime, MaxRetries: maxRetries, Conditions: conditions, Env: env, Priority: priority, Label: label}
+	return &FunctionSpec{NodeName: nodeName, FuncName: funcName, Args: argsif, KwArgs: kwargsif, MaxWaitTime: maxWaitTime, MaxExecTime: maxExecTime, MaxRetries: maxRetries, Conditions: conditions, Env: env, Priority: priority, Label: label}
 }
 
 func ConvertJSONToFunctionSpec(jsonString string) (*FunctionSpec, error) {
@@ -95,6 +102,24 @@ func (funcSpec *FunctionSpec) Equals(funcSpec2 *FunctionSpec) bool {
 			}
 		}
 		if counter != len(funcSpec.Args) && counter != len(funcSpec2.Args) {
+			same = false
+		}
+	}
+
+	if funcSpec.KwArgs != nil && funcSpec2.KwArgs == nil {
+		same = false
+	} else if funcSpec.KwArgs == nil && funcSpec2.KwArgs != nil {
+		same = false
+	} else {
+		counter := 0
+		for name1, arg1 := range funcSpec.KwArgs {
+			for name2, arg2 := range funcSpec2.KwArgs {
+				if arg1 == arg2 && name1 == name2 {
+					counter++
+				}
+			}
+		}
+		if counter != len(funcSpec.KwArgs) && counter != len(funcSpec2.KwArgs) {
 			same = false
 		}
 	}
