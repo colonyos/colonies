@@ -218,11 +218,11 @@ func (controller *coloniesController) submitWorkflow(generator *core.Generator, 
 		Debug("Generator submitting workflow")
 
 	argsif := make([]interface{}, len(args))
-	for k, v := range args {
-		argsif[k] = v
+	for i, v := range args {
+		argsif[i] = v
 	}
 
-	_, err = controller.createProcessGraph(workflowSpec, argsif, make([]interface{}, 0))
+	_, err = controller.createProcessGraph(workflowSpec, argsif, make(map[string]interface{}), make([]interface{}, 0))
 	if err != nil {
 		log.WithFields(log.Fields{
 			"Error": err}).

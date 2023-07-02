@@ -156,6 +156,13 @@ func TestAddProcess(t *testing.T) {
 	executor2ID := core.GenerateRandomID()
 
 	process := utils.CreateTestProcessWithTargets(colonyID, []string{executor1ID, executor2ID})
+	invalidKwArgs := make(map[string]interface{})
+	invalidKwArgs["name"] = func() {
+	}
+	process.FunctionSpec.KwArgs = invalidKwArgs
+	err = db.AddProcess(process)
+	assert.NotNil(t, err)
+
 	invalidArgs := make([]interface{}, 1)
 	invalidArgs[0] = func() {
 	}
@@ -164,18 +171,18 @@ func TestAddProcess(t *testing.T) {
 	assert.NotNil(t, err)
 
 	process = utils.CreateTestProcessWithTargets(colonyID, []string{executor1ID, executor2ID})
-	invalidArgs = make([]interface{}, 1)
-	invalidArgs[0] = func() {
+	invalidInput := make([]interface{}, 1)
+	invalidInput[0] = func() {
 	}
-	process.Input = invalidArgs
+	process.Input = invalidInput
 	err = db.AddProcess(process)
 	assert.NotNil(t, err)
 
 	process = utils.CreateTestProcessWithTargets(colonyID, []string{executor1ID, executor2ID})
-	invalidArgs = make([]interface{}, 1)
-	invalidArgs[0] = func() {
+	invalidOutput := make([]interface{}, 1)
+	invalidOutput[0] = func() {
 	}
-	process.Output = invalidArgs
+	process.Output = invalidOutput
 	err = db.AddProcess(process)
 	assert.NotNil(t, err)
 

@@ -701,7 +701,7 @@ func (controller *coloniesController) updateProcessGraph(graph *core.ProcessGrap
 	return graph.UpdateProcessIDs()
 }
 
-func (controller *coloniesController) createProcessGraph(workflowSpec *core.WorkflowSpec, args []interface{}, rootInput []interface{}) (*core.ProcessGraph, error) {
+func (controller *coloniesController) createProcessGraph(workflowSpec *core.WorkflowSpec, args []interface{}, kwargs map[string]interface{}, rootInput []interface{}) (*core.ProcessGraph, error) {
 	processgraph, err := core.CreateProcessGraph(workflowSpec.ColonyID)
 	if err != nil {
 		log.WithFields(log.Fields{"Error": err}).Error("Failed to create processgraph")
@@ -725,10 +725,16 @@ func (controller *coloniesController) createProcessGraph(workflowSpec *core.Work
 			if len(args) > 0 {
 				// NOTE, overwrite the args, this will only happen when using Generators
 				argsif := make([]interface{}, len(args))
-				for v, k := range args {
-					argsif[v] = k
+				for i, k := range args {
+					argsif[i] = k
 				}
 				process.FunctionSpec.Args = argsif
+
+				kwargsif := make(map[string]interface{}, len(kwargs))
+				for v, k := range kwargs {
+					kwargsif[v] = k
+				}
+				process.FunctionSpec.KwArgs = kwargsif
 			}
 
 			if len(rootInput) > 0 {
@@ -800,7 +806,7 @@ func (controller *coloniesController) submitWorkflowSpec(workflowSpec *core.Work
 	cmd := &command{threaded: false, processGraphReplyChan: make(chan *core.ProcessGraph, 1),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
-			addedProcessGraph, err := controller.createProcessGraph(workflowSpec, make([]interface{}, 0), make([]interface{}, 0))
+			addedProcessGraph, err := controller.createProcessGraph(workflowSpec, make([]interface{}, 0), make(map[string]interface{}), make([]interface{}, 0))
 			if err != nil {
 				cmd.errorChan <- err
 				return
