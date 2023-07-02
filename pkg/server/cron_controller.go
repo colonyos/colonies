@@ -169,7 +169,7 @@ func (controller *coloniesController) startCron(cron *core.Cron) {
 		}
 	}
 
-	processGraph, err := controller.createProcessGraph(workflowSpec, make([]interface{}, 0), rootInput)
+	processGraph, err := controller.createProcessGraph(workflowSpec, make([]interface{}, 0), make(map[string]interface{}), rootInput)
 	if err != nil {
 		log.WithFields(log.Fields{"Error": err, "CronId": cron.ID}).Error("Failed to create cron processgraph")
 		return

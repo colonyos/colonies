@@ -63,9 +63,9 @@ This workflow can be modelled as follows:
 ```
 
 ## Submit a workflow 
-Open another terminal (and *source examples/devenv*).
+Open another terminal (and *source devenv*).
 ```console
-colonies workflow submit --spec examples/workflow.json
+colonies workflow submit --spec examples/workflow/workflow.json
 
 INFO[0000] Workflow submitted                            WorkflowID=8bc49205ae35e089b370c05cd2a110b84e72d5052c2ec3fb5bc4832274d9d1b1
 ```

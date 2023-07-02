@@ -187,13 +187,20 @@ var devCmd = &cobra.Command{
 			AllowExecutorReregister = false
 		}
 
+		err = os.Mkdir(coloniesPath+"embedded-postgres-go", 0700)
+		CheckError(err)
+		err = os.Mkdir(coloniesPath+"embedded-postgres-go/extracted", 0700)
+		CheckError(err)
+		err = os.Mkdir(coloniesPath+"embedded-postgres-go/extracted/data", 0700)
+		CheckError(err)
+
 		log.WithFields(log.Fields{"DBHost": dbHost, "DBPort": dbPort, "DBUser": dbUser, "DBPassword": dbPassword, "DBName": DBName}).Info("Starting embedded PostgreSQL server")
 		postgres := embeddedpostgres.NewDatabase(embeddedpostgres.DefaultConfig().
-			RuntimePath(coloniesPath + "/embedded-postgres-go/extracted").
-			BinariesPath(coloniesPath + "/embedded-postgres-go/extracted").
-			DataPath(coloniesPath + "/embedded-postgres-go/extracted/data").
+			RuntimePath(coloniesPath + "embedded-postgres-go/extracted").
+			BinariesPath(coloniesPath + "embedded-postgres-go/extracted").
+			DataPath(coloniesPath + "embedded-postgres-go/extracted/data").
 			Username(dbUser).
-			Version(embeddedpostgres.V14).
+			Version(embeddedpostgres.V12).
 			Password(dbPassword).
 			Port(50070))
 		defer postgres.Stop()
@@ -267,7 +274,7 @@ var devCmd = &cobra.Command{
 			ExclusiveAssign = false
 		}
 
-		node := cluster.Node{Name: "dev", Host: "localhost", APIPort: coloniesServerPort, EtcdClientPort: 2379, EtcdPeerPort: 2380, RelayPort: 2381}
+		node := cluster.Node{Name: "dev", Host: "localhost", APIPort: coloniesServerPort, EtcdClientPort: 23790, EtcdPeerPort: 23800, RelayPort: 2381}
 		clusterConfig := cluster.Config{}
 		clusterConfig.AddNode(node)
 

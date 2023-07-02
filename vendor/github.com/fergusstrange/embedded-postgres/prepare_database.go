@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -44,12 +43,16 @@ func defaultInitDatabase(binaryExtractLocation, runtimePath, pgDataDir, username
 	postgresInitDBProcess.Stderr = logger
 	postgresInitDBProcess.Stdout = logger
 
-	if err := postgresInitDBProcess.Run(); err != nil {
-		return fmt.Errorf("unable to init database using: %s", postgresInitDBProcess.String())
+	if err = postgresInitDBProcess.Run(); err != nil {
+		logContent, readLogsErr := readLogsOrTimeout(logger) // we want to preserve the original error
+		if readLogsErr != nil {
+			logContent = []byte(string(logContent) + " - " + readLogsErr.Error())
+		}
+		return fmt.Errorf("unable to init database using '%s': %w\n%s", postgresInitDBProcess.String(), err, string(logContent))
 	}
 
 	if err = os.Remove(passwordFile); err != nil {
-		return fmt.Errorf("unable to remove password file '%v': %v", passwordFile, err)
+		return fmt.Errorf("unable to remove password file '%v': %w", passwordFile, err)
 	}
 
 	return nil
@@ -57,7 +60,7 @@ func defaultInitDatabase(binaryExtractLocation, runtimePath, pgDataDir, username
 
 func createPasswordFile(runtimePath, password string) (string, error) {
 	passwordFileLocation := filepath.Join(runtimePath, "pwfile")
-	if err := ioutil.WriteFile(passwordFileLocation, []byte(password), 0600); err != nil {
+	if err := os.WriteFile(passwordFileLocation, []byte(password), 0600); err != nil {
 		return "", fmt.Errorf("unable to write password file to %s", passwordFileLocation)
 	}
 

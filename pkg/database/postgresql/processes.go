@@ -26,30 +26,35 @@ func (db *PQDatabase) AddProcess(process *core.Process) error {
 		deadline = time.Now().Add(time.Duration(maxWaitTime) * time.Second)
 	}
 
-	sqlStatement := `INSERT INTO  ` + db.dbPrefix + `PROCESSES (PROCESS_ID, TARGET_COLONY_ID, TARGET_EXECUTOR_IDS, ASSIGNED_EXECUTOR_ID, STATE, IS_ASSIGNED, EXECUTOR_TYPE, SUBMISSION_TIME, START_TIME, END_TIME, WAIT_DEADLINE, EXEC_DEADLINE, ERRORS, RETRIES, NODENAME, FUNCNAME, ARGS, MAX_WAIT_TIME, MAX_EXEC_TIME, MAX_RETRIES, DEPENDENCIES, PRIORITY, PRIORITYTIME, WAIT_FOR_PARENTS, PARENTS, CHILDREN, PROCESSGRAPH_ID, INPUT, OUTPUT, LABEL) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30)`
+	sqlStatement := `INSERT INTO  ` + db.dbPrefix + `PROCESSES (PROCESS_ID, TARGET_COLONY_ID, TARGET_EXECUTOR_IDS, ASSIGNED_EXECUTOR_ID, STATE, IS_ASSIGNED, EXECUTOR_TYPE, SUBMISSION_TIME, START_TIME, END_TIME, WAIT_DEADLINE, EXEC_DEADLINE, ERRORS, RETRIES, NODENAME, FUNCNAME, ARGS, KWARGS, MAX_WAIT_TIME, MAX_EXEC_TIME, MAX_RETRIES, DEPENDENCIES, PRIORITY, PRIORITYTIME, WAIT_FOR_PARENTS, PARENTS, CHILDREN, PROCESSGRAPH_ID, INPUT, OUTPUT, LABEL) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31)`
 
-	// TODO: Change the database so that argsm input and output are only text
 	argsJSON, err := json.Marshal(process.FunctionSpec.Args)
 	if err != nil {
 		return err
 	}
-	argsJSONArrStr := []string{string(argsJSON)}
+	argsJSONStr := string(argsJSON)
+
+	kwargsJSON, err := json.Marshal(process.FunctionSpec.KwArgs)
+	if err != nil {
+		return err
+	}
+	kwargsJSONStr := string(kwargsJSON)
 
 	inJSON, err := json.Marshal(process.Input)
 	if err != nil {
 		return err
 	}
-	inJSONArrStr := []string{string(inJSON)}
+	inJSONStr := string(inJSON)
 
 	outJSON, err := json.Marshal(process.Output)
 	if err != nil {
 		return err
 	}
-	outJSONArrStr := []string{string(outJSON)}
+	outJSONStr := string(outJSON)
 
 	process.SetSubmissionTime(submissionTime)
 
-	_, err = db.postgresql.Exec(sqlStatement, process.ID, process.FunctionSpec.Conditions.ColonyID, pq.Array(targetExecutorIDs), process.AssignedExecutorID, process.State, process.IsAssigned, process.FunctionSpec.Conditions.ExecutorType, submissionTime, time.Time{}, time.Time{}, deadline, process.ExecDeadline, pq.Array(process.Errors), 0, process.FunctionSpec.NodeName, process.FunctionSpec.FuncName, pq.Array(argsJSONArrStr), process.FunctionSpec.MaxWaitTime, process.FunctionSpec.MaxExecTime, process.FunctionSpec.MaxRetries, pq.Array(process.FunctionSpec.Conditions.Dependencies), process.FunctionSpec.Priority, process.PriorityTime, process.WaitForParents, pq.Array(process.Parents), pq.Array(process.Children), process.ProcessGraphID, pq.Array(inJSONArrStr), pq.Array(outJSONArrStr), process.FunctionSpec.Label)
+	_, err = db.postgresql.Exec(sqlStatement, process.ID, process.FunctionSpec.Conditions.ColonyID, pq.Array(targetExecutorIDs), process.AssignedExecutorID, process.State, process.IsAssigned, process.FunctionSpec.Conditions.ExecutorType, submissionTime, time.Time{}, time.Time{}, deadline, process.ExecDeadline, pq.Array(process.Errors), 0, process.FunctionSpec.NodeName, process.FunctionSpec.FuncName, argsJSONStr, kwargsJSONStr, process.FunctionSpec.MaxWaitTime, process.FunctionSpec.MaxExecTime, process.FunctionSpec.MaxRetries, pq.Array(process.FunctionSpec.Conditions.Dependencies), process.FunctionSpec.Priority, process.PriorityTime, process.WaitForParents, pq.Array(process.Parents), pq.Array(process.Children), process.ProcessGraphID, inJSONStr, outJSONStr, process.FunctionSpec.Label)
 	if err != nil {
 		return err
 	}
@@ -86,7 +91,8 @@ func (db *PQDatabase) parseProcesses(rows *sql.Rows) ([]*core.Process, error) {
 		var errs []string
 		var nodeName string
 		var funcName string
-		var argsJSONStrArr []string
+		var argsJSONStr string
+		var kwargsJSONStr string
 		var maxWaitTime int
 		var maxExecTime int
 		var retries int
@@ -98,11 +104,11 @@ func (db *PQDatabase) parseProcesses(rows *sql.Rows) ([]*core.Process, error) {
 		var parents []string
 		var children []string
 		var processGraphID string
-		var inputJSONStrArr []string
-		var outputJSONStrArr []string
+		var inputJSONStr string
+		var outputJSONStr string
 		var label string
 
-		if err := rows.Scan(&processID, &targetColonyID, pq.Array(&targetExecutorIDs), &assignedExecutorID, &state, &isAssigned, &executorType, &submissionTime, &startTime, &endTime, &waitDeadline, &execDeadline, pq.Array(&errs), &nodeName, &funcName, pq.Array(&argsJSONStrArr), &maxWaitTime, &maxExecTime, &retries, &maxRetries, pq.Array(&dependencies), &priority, &priorityTime, &waitForParent, pq.Array(&parents), pq.Array(&children), &processGraphID, pq.Array(&inputJSONStrArr), pq.Array(&outputJSONStrArr), &label); err != nil {
+		if err := rows.Scan(&processID, &targetColonyID, pq.Array(&targetExecutorIDs), &assignedExecutorID, &state, &isAssigned, &executorType, &submissionTime, &startTime, &endTime, &waitDeadline, &execDeadline, pq.Array(&errs), &nodeName, &funcName, &argsJSONStr, &kwargsJSONStr, &maxWaitTime, &maxExecTime, &retries, &maxRetries, pq.Array(&dependencies), &priority, &priorityTime, &waitForParent, pq.Array(&parents), pq.Array(&children), &processGraphID, &inputJSONStr, &outputJSONStr, &label); err != nil {
 			return nil, err
 		}
 
@@ -135,21 +141,18 @@ func (db *PQDatabase) parseProcesses(rows *sql.Rows) ([]*core.Process, error) {
 		}
 
 		var argsif []interface{}
-		if len(argsJSONStrArr) == 1 {
-			json.Unmarshal([]byte(argsJSONStrArr[0]), &argsif)
-		}
+		json.Unmarshal([]byte(argsJSONStr), &argsif)
+
+		var kwargsif map[string]interface{}
+		json.Unmarshal([]byte(kwargsJSONStr), &kwargsif)
 
 		var inputif []interface{}
-		if len(inputJSONStrArr) == 1 {
-			json.Unmarshal([]byte(inputJSONStrArr[0]), &inputif)
-		}
+		json.Unmarshal([]byte(inputJSONStr), &inputif)
 
 		var outputif []interface{}
-		if len(outputJSONStrArr) == 1 {
-			json.Unmarshal([]byte(outputJSONStrArr[0]), &outputif)
-		}
+		json.Unmarshal([]byte(outputJSONStr), &outputif)
 
-		functionSpec := core.CreateFunctionSpec(nodeName, funcName, argsif, targetColonyID, targetExecutorIDs, executorType, maxWaitTime, maxExecTime, maxRetries, env, dependencies, priority, label)
+		functionSpec := core.CreateFunctionSpec(nodeName, funcName, argsif, kwargsif, targetColonyID, targetExecutorIDs, executorType, maxWaitTime, maxExecTime, maxRetries, env, dependencies, priority, label)
 		process := core.CreateProcessFromDB(functionSpec, processID, assignedExecutorID, isAssigned, state, priorityTime, submissionTime, startTime, endTime, waitDeadline, execDeadline, errs, retries, attributes)
 
 		process.Input = inputif
@@ -653,10 +656,10 @@ func (db *PQDatabase) SetInput(processID string, input []interface{}) error {
 	if err != nil {
 		return err
 	}
-	inJSONArrStr := []string{string(inJSON)}
+	inJSONStr := string(inJSON)
 
 	sqlStatement := `UPDATE ` + db.dbPrefix + `PROCESSES SET INPUT=$1 WHERE PROCESS_ID=$2`
-	_, err = db.postgresql.Exec(sqlStatement, pq.Array(inJSONArrStr), processID)
+	_, err = db.postgresql.Exec(sqlStatement, inJSONStr, processID)
 	if err != nil {
 		return err
 	}
@@ -669,10 +672,10 @@ func (db *PQDatabase) SetOutput(processID string, output []interface{}) error {
 	if err != nil {
 		return err
 	}
-	outJSONArrStr := []string{string(outJSON)}
+	outJSONStr := string(outJSON)
 
 	sqlStatement := `UPDATE ` + db.dbPrefix + `PROCESSES SET OUTPUT=$1 WHERE PROCESS_ID=$2`
-	_, err = db.postgresql.Exec(sqlStatement, pq.Array(outJSONArrStr), processID)
+	_, err = db.postgresql.Exec(sqlStatement, outJSONStr, processID)
 	if err != nil {
 		return err
 	}
