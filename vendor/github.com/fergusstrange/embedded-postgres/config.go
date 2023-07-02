@@ -1,6 +1,7 @@
 package embeddedpostgres
 
 import (
+	"fmt"
 	"io"
 	"os"
 	"time"
@@ -17,6 +18,7 @@ type Config struct {
 	dataPath            string
 	binariesPath        string
 	locale              string
+	startParameters     map[string]string
 	binaryRepositoryURL string
 	startTimeout        time.Duration
 	logger              io.Writer
@@ -24,7 +26,7 @@ type Config struct {
 
 // DefaultConfig provides a default set of configuration to be used "as is" or modified using the provided builders.
 // The following can be assumed as defaults:
-// Version:      12
+// Version:      14
 // Port:         5432
 // Database:     postgres
 // Username:     postgres
@@ -32,7 +34,7 @@ type Config struct {
 // StartTimeout: 15 Seconds
 func DefaultConfig() Config {
 	return Config{
-		version:             V12,
+		version:             V15,
 		port:                5432,
 		database:            "postgres",
 		username:            "postgres",
@@ -100,6 +102,15 @@ func (c Config) Locale(locale string) Config {
 	return c
 }
 
+// StartParameters sets run-time parameters when starting Postgres (passed to Postgres via "-c").
+//
+// These parameters can be used to override the default configuration values in postgres.conf such
+// as max_connections=100. See https://www.postgresql.org/docs/current/runtime-config.html
+func (c Config) StartParameters(parameters map[string]string) Config {
+	c.startParameters = parameters
+	return c
+}
+
 // StartTimeout sets the max timeout that will be used when starting the Postgres process and creating the initial database.
 func (c Config) StartTimeout(timeout time.Duration) Config {
 	c.startTimeout = timeout
@@ -118,15 +129,20 @@ func (c Config) BinaryRepositoryURL(binaryRepositoryURL string) Config {
 	return c
 }
 
+func (c Config) GetConnectionURL() string {
+	return fmt.Sprintf("postgresql://%s:%s@%s:%d/%s", c.username, c.password, "localhost", c.port, c.database)
+}
+
 // PostgresVersion represents the semantic version used to fetch and run the Postgres process.
 type PostgresVersion string
 
 // Predefined supported Postgres versions.
 const (
-	V14 = PostgresVersion("14.2.0")
-	V13 = PostgresVersion("13.6.0")
-	V12 = PostgresVersion("12.10.0")
-	V11 = PostgresVersion("11.15.0")
-	V10 = PostgresVersion("10.20.0")
+	V15 = PostgresVersion("15.3.0")
+	V14 = PostgresVersion("14.8.0")
+	V13 = PostgresVersion("13.11.0")
+	V12 = PostgresVersion("12.15.0")
+	V11 = PostgresVersion("11.20.0")
+	V10 = PostgresVersion("10.23.0")
 	V9  = PostgresVersion("9.6.24")
 )

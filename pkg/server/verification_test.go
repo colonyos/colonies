@@ -13,10 +13,14 @@ func TestVerifyWorkflowSpec(t *testing.T) {
 	argsif := make([]interface{}, 1)
 	argsif[0] = "arg1"
 
+	kwargsif := make(map[string]interface{}, 1)
+	kwargsif["name"] = "arg1"
+
 	funcSpec1 := core.FunctionSpec{
 		NodeName:    "gen_task1",
 		FuncName:    "gen_test_func",
 		Args:        argsif,
+		KwArgs:      kwargsif,
 		MaxWaitTime: -1,
 		MaxExecTime: 2,
 		MaxRetries:  10,

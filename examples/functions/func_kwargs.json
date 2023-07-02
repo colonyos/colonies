@@ -1,0 +1,11 @@
+{
+     "conditions": {
+         "executortype": "cli"
+     },
+    "funcname": "helloworld",
+    "desc": "Hello world example",
+    "kwargs": {
+        "str1_kw": "str1",
+        "str2_kw": "str2"
+    } 
+}

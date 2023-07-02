@@ -9,7 +9,7 @@ First, create a file named colony.json, and put the following content into it.
 
 Then use the Colonies CLI to register the colony. The id of the colony will be returned if the command is successful. Note that the root password is required for this operation.
 ```console
-colonies colony add --serverid=9289dfccedf27392810b96968535530bb69f90afe7c35738e0e627f3810d943e --spec ./examples/colony.json
+colonies colony add --serverid=9289dfccedf27392810b96968535530bb69f90afe7c35738e0e627f3810d943e --spec ./examples/colony/colony.json
 ```
 Output: 
 ```
@@ -41,7 +41,7 @@ Only the colony owner is allowed to add a new executor.
 ```
 
 ```console
-colonies executor add --colonyid 0f4f350d264d1cffdec0d62c723a7da8b730c6863365da75697fd26a6d79ccc5 --colonyprvkey d95c54b63ac7c9ba624445fd755998e14e6aa71a17a74889c6a1754be80bcf09 --spec ./examples/executor.json
+colonies executor add --colonyid 0f4f350d264d1cffdec0d62c723a7da8b730c6863365da75697fd26a6d79ccc5 --colonyprvkey d95c54b63ac7c9ba624445fd755998e14e6aa71a17a74889c6a1754be80bcf09 --spec ./examples/executors/executor.json
 ```
 Output:
 ```
@@ -50,7 +50,7 @@ The *colonyprvkey* is automatically obtained from the keychain or environmental 
 
 ```console
 export COLONIES_COLONY_ID="0f4f350d264d1cffdec0d62c723a7da8b730c6863365da75697fd26a6d79ccc5"
-colonies executor add --spec ./examples/executor.json
+colonies executor add --spec ./examples/executors/executor.json
 ```
 Output:
 ```
@@ -134,10 +134,10 @@ First we need to create a function spec file.
 }
 ```
 
-To submit the process spec to the Colony, type:
+To submit a function spec to the Colony, type:
 
 ```console
-colonies function submit --spec ./examples/process_spec.json
+colonies function submit --spec ./examples/functions/helloworld.json
 ```
 Output:
 ```
@@ -167,7 +167,7 @@ Requirements:
 +----------------+------------------------------------------------------------------+
 | ColonyID       | 0f4f350d264d1cffdec0d62c723a7da8b730c6863365da75697fd26a6d79ccc5 |
 | ExecutorIDs    | None                                                             |
-| ExecutorType   | my_executor_type                                                |
+| ExecutorType   | cli                                                              |
 | Memory         | 1000                                                             |
 | CPU Cores      | 10                                                               |
 | Number of GPUs | 1                                                                |

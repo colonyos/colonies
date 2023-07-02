@@ -45,7 +45,7 @@ Spawn a workflow every Christmas Eve at 15:00:
 Cron workflows can either be added using the Colonies API/SDK or by using the CLI:
 
 ```console
-colonies cron add --name example_cron --cron "0/5 * * * * *" --spec examples/cron_workflow.json 
+colonies cron add --name example_cron --cron "0/5 * * * * *" --spec examples/cron/cron_workflow.json 
 ```
 
 Output:
@@ -88,7 +88,7 @@ The submitted workflow consists of two processes. The first process (generate_da
 
 ### Spawn a new workflow on Christmas
 ```console
-colonies cron add --name christmas_cron --cron "0 0 15 24 12 *" --spec examples/christmas_workflow.json 
+colonies cron add --name christmas_cron --cron "0 0 15 24 12 *" --spec examples/cron/christmas_workflow.json 
 ```
 
 Output:
@@ -251,14 +251,14 @@ The waiting queue will just keep on increasing if there are no executors executi
 An alternative way to spawn a cron is to specify an interval instead of a cron expression. In the example, below a workflow is spawned every 10 seconds.
 
 ```console
- cron add --name example_cron --interval 10 --spec examples/cron_maxwaittime_workflow.json
+ cron add --name example_cron --interval 10 --spec examples/cron/cron_maxwaittime_workflow.json
 ```
 
 ## Random intervals
 It is also possible to spawn a workflow at a random time within an interval. This can be very useful when testing a software (e.g. chaos engineering).
 
 ```console
- cron add --name example_cron --interval 10 --random --spec examples/cron_maxwaittime_workflow.json
+ cron add --name example_cron --interval 10 --random --spec examples/cron/cron_maxwaittime_workflow.json
 ```
 
 In the example, a workflow will be spawned randomly within 10 seconds. Use the get command to find out the next time (NextRun) it will run.

@@ -3,14 +3,16 @@ package embeddedpostgres
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"net"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strings"
+	"sync"
 )
+
+var mu sync.Mutex
 
 // EmbeddedPostgres maintains all configuration and runtime functions for maintaining the lifecycle of one Postgres process.
 type EmbeddedPostgres struct {
@@ -57,6 +59,7 @@ func newDatabaseWithConfig(config Config) *EmbeddedPostgres {
 
 // Start will try to start the configured Postgres process returning an error when there were any problems with invocation.
 // If any error occurs Start will try to also Stop the Postgres process in order to not leave any sub-process running.
+//
 //nolint:funlen
 func (ep *EmbeddedPostgres) Start() error {
 	if ep.started {
@@ -92,20 +95,11 @@ func (ep *EmbeddedPostgres) Start() error {
 		ep.config.binariesPath = ep.config.runtimePath
 	}
 
-	_, binDirErr := os.Stat(filepath.Join(ep.config.binariesPath, "bin"))
-	if os.IsNotExist(binDirErr) {
-		if !cacheExists {
-			if err := ep.remoteFetchStrategy(); err != nil {
-				return err
-			}
-		}
-
-		if err := decompressTarXz(defaultTarReader, cacheLocation, ep.config.binariesPath); err != nil {
-			return err
-		}
+	if err := ep.downloadAndExtractBinary(cacheExists, cacheLocation); err != nil {
+		return err
 	}
 
-	if err := os.MkdirAll(ep.config.runtimePath, 0755); err != nil {
+	if err := os.MkdirAll(ep.config.runtimePath, os.ModePerm); err != nil {
 		return fmt.Errorf("unable to create runtime directory %s with error: %s", ep.config.runtimePath, err)
 	}
 
@@ -148,6 +142,26 @@ func (ep *EmbeddedPostgres) Start() error {
 	return nil
 }
 
+func (ep *EmbeddedPostgres) downloadAndExtractBinary(cacheExists bool, cacheLocation string) error {
+	// lock to prevent collisions with duplicate downloads
+	mu.Lock()
+	defer mu.Unlock()
+
+	_, binDirErr := os.Stat(filepath.Join(ep.config.binariesPath, "bin"))
+	if os.IsNotExist(binDirErr) {
+		if !cacheExists {
+			if err := ep.remoteFetchStrategy(); err != nil {
+				return err
+			}
+		}
+
+		if err := decompressTarXz(defaultTarReader, cacheLocation, ep.config.binariesPath); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (ep *EmbeddedPostgres) cleanDataDirectoryAndInit() error {
 	if err := os.RemoveAll(ep.config.dataPath); err != nil {
 		return fmt.Errorf("unable to clean up data directory %s with error: %s", ep.config.dataPath, err)
@@ -179,16 +193,28 @@ func (ep *EmbeddedPostgres) Stop() error {
 	return nil
 }
 
+func encodeOptions(port uint32, parameters map[string]string) string {
+	options := []string{fmt.Sprintf("-p %d", port)}
+	for k, v := range parameters {
+		// Single-quote parameter values - they may have spaces.
+		options = append(options, fmt.Sprintf("-c %s='%s'", k, v))
+	}
+	return strings.Join(options, " ")
+}
+
 func startPostgres(ep *EmbeddedPostgres) error {
 	postgresBinary := filepath.Join(ep.config.binariesPath, "bin/pg_ctl")
 	postgresProcess := exec.Command(postgresBinary, "start", "-w",
 		"-D", ep.config.dataPath,
-		"-o", fmt.Sprintf(`"-p %d"`, ep.config.port))
+		"-o", encodeOptions(ep.config.port, ep.config.startParameters))
 	postgresProcess.Stdout = ep.syncedLogger.file
 	postgresProcess.Stderr = ep.syncedLogger.file
 
 	if err := postgresProcess.Run(); err != nil {
-		return fmt.Errorf("could not start postgres using %s", postgresProcess.String())
+		_ = ep.syncedLogger.flush()
+		logContent, _ := readLogsOrTimeout(ep.syncedLogger.file)
+
+		return fmt.Errorf("could not start postgres using %s:\n%s", postgresProcess.String(), string(logContent))
 	}
 
 	return nil
@@ -224,7 +250,7 @@ func ensurePortAvailable(port uint32) error {
 func dataDirIsValid(dataDir string, version PostgresVersion) bool {
 	pgVersion := filepath.Join(dataDir, "PG_VERSION")
 
-	d, err := ioutil.ReadFile(pgVersion)
+	d, err := os.ReadFile(pgVersion)
 	if err != nil {
 		return false
 	}

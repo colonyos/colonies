@@ -7,7 +7,7 @@ colonies dev
 ```
 ## Add a generator
 ```console
-colonies generator add --spec ./examples/generator_workflow.json --name testgenerator --trigger 5
+colonies generator add --spec ./examples/generators/generator_workflow.json --name testgenerator --trigger 5
 ```
 Output:
 ```

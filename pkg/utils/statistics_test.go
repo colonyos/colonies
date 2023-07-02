@@ -20,7 +20,7 @@ func TestCalcAvgTimes(t *testing.T) {
 	args := make([]interface{}, 1)
 	args[0] = "test_arg"
 
-	funcSpec1 := core.CreateFunctionSpec("test_name", "test_func", args, colonyID, []string{}, executorType, maxWaitTime, maxExecTime, maxRetries, make(map[string]string), []string{}, 1, "test_label")
+	funcSpec1 := core.CreateFunctionSpec("test_name", "test_func", args, nil, colonyID, []string{}, executorType, maxWaitTime, maxExecTime, maxRetries, make(map[string]string), []string{}, 1, "test_label")
 
 	var zeroProcesses []*core.Process
 	var processes []*core.Process

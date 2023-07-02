@@ -378,8 +378,8 @@ var execFuncCmd = &cobra.Command{
 		}
 
 		argsif := make([]interface{}, len(Args))
-		for k, v := range Args {
-			argsif[k] = v
+		for i, v := range Args {
+			argsif[i] = v
 		}
 
 		funcSpec := core.FunctionSpec{

@@ -35,7 +35,7 @@ export COLONIES_EXECUTOR_TYPE="cli"
 ```
 or 
 ```console
-source examples/devenv
+source devenv
 ```
 
 Now, start the development server. The development server will automatically add the keys from the environment (e.g. COLONIES_EXECUTOR_PRVKEY) to the Colonies keychain.
@@ -45,13 +45,13 @@ colonies dev
 ```
 
 ## Start an executor 
-Open another terminal (and *source examples/devenv*).
+Open another terminal (and *source devenv*).
 
 ```console
 colonies  executor os start --executorname my_executor --executortype cli 
 ```
 ## Submit a process specification
-Example process specification (see examples/sleep.json). The Colonies Executor will pull the process specification from the Colonies dev server and start a *sleep* process. This will cause the executor above to sleep for 100s. The *env* array in the JSON below will automatically be exported as real environment variables in the sleep process.
+Example process specification (see examples/function/sleep.json). The Colonies Executor will pull the process specification from the Colonies dev server and start a *sleep* process. This will cause the executor above to sleep for 100s. The *env* array in the JSON below will automatically be exported as real environment variables in the sleep process.
 ```json
 {
   "conditions": {
@@ -67,7 +67,7 @@ Example process specification (see examples/sleep.json). The Colonies Executor w
 }
 ```
 
-Open another terminal (and *source examples/devenv*).
+Open another terminal (and *source devenv*).
 ```console
 colonies function submit --spec sleep.json
 ```

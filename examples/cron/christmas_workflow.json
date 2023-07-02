@@ -3,7 +3,7 @@
         "nodename": "santa_is_coming",
         "funcname": "echo",
         "args": [
-            "HU HU HU"
+            "0": "HU HU HU"
         ],
         "conditions": {
             "executortype": "cli",
