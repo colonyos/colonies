@@ -24,8 +24,10 @@ func TestFunctionSpecJSON(t *testing.T) {
 
 	args := make([]interface{}, 1)
 	args[0] = "test_arg"
+	kwargs := make(map[string]interface{}, 1)
+	kwargs["0"] = "test_arg"
 
-	funcSpec := CreateFunctionSpec("test_name", "test_func", args, colonyID, []string{executor1ID, executor2ID}, executorType, maxWaitTime, maxExecTime, maxRetries, env, []string{"test_name2"}, 5, "test_label")
+	funcSpec := CreateFunctionSpec("test_name", "test_func", args, kwargs, colonyID, []string{executor1ID, executor2ID}, executorType, maxWaitTime, maxExecTime, maxRetries, env, []string{"test_name2"}, 5, "test_label")
 
 	jsonString, err := funcSpec.ToJSON()
 	assert.Nil(t, err)
@@ -63,13 +65,15 @@ func TestFunctionSpecEquals(t *testing.T) {
 
 	args := make([]interface{}, 1)
 	args[0] = "test_arg"
+	kwargs := make(map[string]interface{}, 1)
+	kwargs["0"] = "test_arg"
 
-	functionSpec1 := CreateFunctionSpec("test_name", "test_func", args, colonyID, []string{executor1ID, executor2ID}, executorType, maxWaitTime, maxExecTime, maxRetries, env, []string{}, 1, "test_label")
+	functionSpec1 := CreateFunctionSpec("test_name", "test_func", args, kwargs, colonyID, []string{executor1ID, executor2ID}, executorType, maxWaitTime, maxExecTime, maxRetries, env, []string{}, 1, "test_label")
 
 	args = make([]interface{}, 1)
 	args[0] = "test_arg2"
 
-	functionSpec2 := CreateFunctionSpec("test_name", "test_func", args, colonyID, []string{executor3ID}, executorType+"2", 200, 4, 2, env2, []string{}, 1, "test_label")
+	functionSpec2 := CreateFunctionSpec("test_name", "test_func", args, kwargs, colonyID, []string{executor3ID}, executorType+"2", 200, 4, 2, env2, []string{}, 1, "test_label")
 
 	assert.True(t, functionSpec1.Equals(functionSpec1))
 	assert.False(t, functionSpec1.Equals(nil))

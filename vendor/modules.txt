@@ -19,8 +19,8 @@ github.com/davecgh/go-spew/spew
 # github.com/dustin/go-humanize v1.0.0
 ## explicit
 github.com/dustin/go-humanize
-# github.com/fergusstrange/embedded-postgres v1.15.0
-## explicit; go 1.13
+# github.com/fergusstrange/embedded-postgres v1.23.0
+## explicit; go 1.18
 github.com/fergusstrange/embedded-postgres
 # github.com/form3tech-oss/jwt-go v3.2.3+incompatible
 ## explicit
@@ -107,7 +107,7 @@ github.com/kataras/tablewriter
 # github.com/leodido/go-urn v1.2.0
 ## explicit; go 1.13
 github.com/leodido/go-urn
-# github.com/lib/pq v1.10.4
+# github.com/lib/pq v1.10.9
 ## explicit; go 1.13
 github.com/lib/pq
 github.com/lib/pq/oid

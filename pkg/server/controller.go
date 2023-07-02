@@ -36,7 +36,7 @@ type controller interface {
 	findSuccessfulProcesses(colonyID string, executorType string, count int) ([]*core.Process, error)
 	findFailedProcesses(colonyID string, executorType string, count int) ([]*core.Process, error)
 	updateProcessGraph(graph *core.ProcessGraph) error
-	createProcessGraph(workflowSpec *core.WorkflowSpec, args []interface{}, rootInput []interface{}) (*core.ProcessGraph, error)
+	createProcessGraph(workflowSpec *core.WorkflowSpec, args []interface{}, kwargs map[string]interface{}, rootInput []interface{}) (*core.ProcessGraph, error)
 	submitWorkflowSpec(workflowSpec *core.WorkflowSpec) (*core.ProcessGraph, error)
 	getProcessGraphByID(processGraphID string) (*core.ProcessGraph, error)
 	findWaitingProcessGraphs(colonyID string, count int) ([]*core.ProcessGraph, error)

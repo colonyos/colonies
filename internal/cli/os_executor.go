@@ -158,12 +158,17 @@ var executorStartCmd = &cobra.Command{
 			}
 
 			log.WithFields(log.Fields{"ProcessID": assignedProcess.ID}).Info("Executor was assigned a process")
-			log.WithFields(log.Fields{"FuncName": assignedProcess.FunctionSpec.FuncName, "Args": assignedProcess.FunctionSpec.Args}).Info("Register function and lauching process")
+			argsStr := StrArr2Str(IfArr2StringArr(assignedProcess.FunctionSpec.Args))
+			log.WithFields(log.Fields{"FuncName": assignedProcess.FunctionSpec.FuncName, "Args": argsStr}).Info("Register function and lauching process")
 
 			function := &core.Function{ExecutorID: executorID, ColonyID: ColonyID, FuncName: assignedProcess.FunctionSpec.FuncName, Desc: "Unix command", Args: []string{"..."}}
 			_, err := client.AddFunction(function, executorPrvKey)
 
-			execCmd := IfArr2StringArr(assignedProcess.FunctionSpec.Args)
+			execCmd := make([]string, 0)
+			for _, arg := range IfArr2StringArr(assignedProcess.FunctionSpec.Args) {
+				execCmd = append(execCmd, arg)
+			}
+
 			execCmd = append([]string{assignedProcess.FunctionSpec.FuncName}, execCmd...)
 			execCmdStr := strings.Join(execCmd[:], " ")
 

@@ -153,7 +153,7 @@ func (v *controllerMock) updateProcessGraph(graph *core.ProcessGraph) error {
 	return nil
 }
 
-func (v *controllerMock) createProcessGraph(workflowSpec *core.WorkflowSpec, args []interface{}, rootInput []interface{}) (*core.ProcessGraph, error) {
+func (v *controllerMock) createProcessGraph(workflowSpec *core.WorkflowSpec, args []interface{}, kwargs map[string]interface{}, rootInput []interface{}) (*core.ProcessGraph, error) {
 	return nil, nil
 }
 
