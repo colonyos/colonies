@@ -46,9 +46,11 @@ colonies dev
 colonies function submit --spec sayhello.json 
 ```
 
-### Start a OS executor (executes functions as Unix commands)
+### Start a Unix executor (executes functions as Unix commands)
+See [Unix executor repo](https://github.com/colonyos/executors/unix) how to install an Unix executor. 
+
 ```console
-colonies executor os start --name testexecutor --executortype cli 
+./bin/unix_executor start 
 
 INFO[0000] Lauching process                              Args="[]" Func="echo sayhello"
 sayhello
@@ -81,6 +83,8 @@ Below are some screenshots from the [Colonies Dashboard](https://github.com/colo
 * [Overall design](docs/Design.md)
 * [HTTP RPC protocol](docs/RPC.md)
 * [Security design](docs/Security.md)
+## Executors
+* [Executors repo](https://github.com/colonyos/executors)
 ## SDKs
 * [Golang Colonies SDK](https://github.com/colonyos/colonies/tree/main/pkg/client)
 * [Rust Colonies SDK](https://github.com/colonyos/rust)
