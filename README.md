@@ -47,7 +47,7 @@ colonies function submit --spec sayhello.json
 ```
 
 ### Start a Unix executor (executes functions as Unix commands)
-See [Unix executor repo](https://github.com/colonyos/executors/unix) how to install an Unix executor. 
+See [Unix executor repo](https://github.com/colonyos/executors) how to install an Unix executor. 
 
 ```console
 ./bin/unix_executor start 
