@@ -1,7 +1,7 @@
 all: build
 .PHONY: all build
 
-IMAGE ?= colonyos/colonies:v1.2.1
+IMAGE ?= colonyos/colonies:latest
 
 VERSION := $(shell git rev-parse --short HEAD)
 BUILDTIME := $(shell date -u '+%Y-%m-%dT%H:%M:%SZ')

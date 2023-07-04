@@ -131,8 +131,10 @@ Processes:
 
 ## Start a executor 
 ```console
-colonies executor os start --executorname my_executor --executortype cli 
+./bin/unix_executor start   
+```
 
+```console
 INFO[0000] Starting an executor                          BuildTime="2022-05-31T13:43:22Z" BuildVersion=a153cbf
 INFO[0000] Saving executorID to /tmp/executorid
 INFO[0000] Saving executorPrvKey to /tmp/executorprvkey

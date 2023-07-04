@@ -32,7 +32,7 @@ The workflow just echo the args. It look like this:
 
 ## Start an executor executing the workflows spawn by the generator, i.e. run the Unix echo command.
 ```console
-colonies executor os start --executorname generator_executor --executortype cli --timeout 100 -v 
+ os start --executorname generator_executor --executortype cli --timeout 100 -v 
 ```
 
 ## Send data to the Generator 
