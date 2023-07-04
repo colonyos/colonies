@@ -313,12 +313,11 @@ var submitFunctionSpecCmd = &cobra.Command{
 				os.Exit(-1)
 			} else if process.State == core.SUCCESS {
 				log.WithFields(log.Fields{"ProcessID": addedProcess.ID}).Info("Process finished successfully")
-				os.Exit(0)
 			}
 			if PrintOutput {
 				fmt.Println(StrArr2Str(IfArr2StringArr(addedProcess.Output)))
-				os.Exit(0)
 			}
+			os.Exit(0)
 		}
 	},
 }
@@ -404,12 +403,11 @@ var execFuncCmd = &cobra.Command{
 				os.Exit(-1)
 			} else if process.State == core.SUCCESS {
 				log.WithFields(log.Fields{"ProcessID": addedProcess.ID}).Info("Process finished successfully")
-				os.Exit(0)
 			}
 			if PrintOutput {
 				fmt.Println(StrArr2Str(IfArr2StringArr(process.Output)))
-				os.Exit(0)
 			}
+			os.Exit(0)
 		}
 	},
 }

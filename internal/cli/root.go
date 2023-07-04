@@ -3,6 +3,7 @@ package cli
 import (
 	"fmt"
 	"os"
+	"sync"
 
 	"github.com/spf13/cobra"
 )
@@ -14,6 +15,8 @@ const DefaultDBHost = "localhost"
 const DefaultDBPort = 5432
 const DefaultServerHost = "localhost"
 const MaxAttributeLength = 30
+
+var mutex sync.Mutex
 
 var DBName = "postgres"
 var Verbose bool
@@ -57,7 +60,6 @@ var JSON bool
 var Wait bool
 var PrintOutput bool
 var Full bool
-var LogDir string
 var GeneratorID string
 var GeneratorName string
 var GeneratorTrigger int
