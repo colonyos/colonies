@@ -149,7 +149,6 @@ var removeFuncCmd = &cobra.Command{
 }
 
 type statsEntry struct {
-	args            string
 	callsCounter    int
 	executorCounter int
 	minWaitTime     float64
@@ -200,7 +199,6 @@ var listFuncCmd = &cobra.Command{
 			e, ok := statsMap[function.FuncName]
 			if ok {
 				statsMap[function.FuncName] = statsEntry{
-					args:            e.args,
 					callsCounter:    e.callsCounter + function.Counter,
 					executorCounter: e.executorCounter + 1,
 					minWaitTime:     math.Min(e.minWaitTime, function.MinWaitTime),
@@ -212,7 +210,6 @@ var listFuncCmd = &cobra.Command{
 				}
 			} else {
 				statsMap[function.FuncName] = statsEntry{
-					args:            StrArr2StrWithCommas(function.Args),
 					callsCounter:    function.Counter,
 					executorCounter: 1,
 					minWaitTime:     function.MinWaitTime,
@@ -230,7 +227,7 @@ var listFuncCmd = &cobra.Command{
 			fmt.Println("Function:")
 
 			funcData := [][]string{
-				[]string{"FuncName", funcName + "(" + s.args + ")"},
+				[]string{"FuncName", funcName},
 				[]string{"Calls", strconv.Itoa(s.callsCounter)},
 				[]string{"Served by", strconv.Itoa(s.executorCounter) + " executors"},
 				[]string{"MinWaitTime", fmt.Sprintf("%f s", s.minWaitTime)},
