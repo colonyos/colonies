@@ -259,17 +259,9 @@ func printExecutor(client *client.ColoniesClient, executor *core.Executor) {
 		fmt.Println("No functions found")
 	} else {
 		for innerCounter, function := range functions {
-			funcArgs := ""
-			for _, funcArg := range function.Args {
-				funcArgs += funcArg + " "
-			}
-			if funcArgs == "" {
-				funcArgs = "None"
-			}
 			funcData := [][]string{
 				[]string{"FuncName", function.FuncName},
 				[]string{"FunctionId", function.FunctionID},
-				[]string{"Args", funcArgs},
 				[]string{"Counter", strconv.Itoa(function.Counter)},
 				[]string{"MinWaitTime", fmt.Sprintf("%f s", function.MinWaitTime)},
 				[]string{"MaxWaitTime", fmt.Sprintf("%f s", function.MaxWaitTime)},

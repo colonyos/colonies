@@ -8,7 +8,7 @@ import (
 )
 
 func createFunction() *core.Function {
-	return &core.Function{ExecutorID: core.GenerateRandomID(), ColonyID: core.GenerateRandomID(), FuncName: "testfunc1", Desc: "unit test function", AvgWaitTime: 1.1, AvgExecTime: 0.1, Args: []string{"arg1"}}
+	return &core.Function{ExecutorID: core.GenerateRandomID(), ColonyID: core.GenerateRandomID(), FuncName: "testfunc1", AvgWaitTime: 1.1, AvgExecTime: 0.1}
 }
 
 func TestRPCAddFunctionMsg(t *testing.T) {

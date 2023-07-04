@@ -3,40 +3,35 @@ package core
 import "encoding/json"
 
 type Function struct {
-	FunctionID  string   `json:"functionid"`
-	ExecutorID  string   `json:"executorid"`
-	ColonyID    string   `json:"colonyid"`
-	FuncName    string   `json:"funcname"`
-	Desc        string   `json:"desc"`
-	Counter     int      `json:"counter"`
-	MinWaitTime float64  `json:"minwaittime"`
-	MaxWaitTime float64  `json:"maxwaittime"`
-	MinExecTime float64  `json:"minexectime"`
-	MaxExecTime float64  `json:"maxexectime"`
-	AvgWaitTime float64  `json:"avgwaittime"`
-	AvgExecTime float64  `json:"avgexectime"`
-	Args        []string `json:"args"`
+	FunctionID  string  `json:"functionid"`
+	ExecutorID  string  `json:"executorid"`
+	ColonyID    string  `json:"colonyid"`
+	FuncName    string  `json:"funcname"`
+	Counter     int     `json:"counter"`
+	MinWaitTime float64 `json:"minwaittime"`
+	MaxWaitTime float64 `json:"maxwaittime"`
+	MinExecTime float64 `json:"minexectime"`
+	MaxExecTime float64 `json:"maxexectime"`
+	AvgWaitTime float64 `json:"avgwaittime"`
+	AvgExecTime float64 `json:"avgexectime"`
 }
 
 func CreateFunction(functionID string,
 	executorID string,
 	colonyID string,
 	funcName string,
-	desc string,
 	counter int,
 	minWaitTime float64,
 	maxWaitTime float64,
 	minExecTime float64,
 	maxExecTime float64,
 	avgWaitTime float64,
-	avgExecTime float64,
-	args []string) *Function {
+	avgExecTime float64) *Function {
 	return &Function{
 		FunctionID:  functionID,
 		ExecutorID:  executorID,
 		ColonyID:    colonyID,
 		FuncName:    funcName,
-		Desc:        desc,
 		Counter:     counter,
 		MinWaitTime: minWaitTime,
 		MaxWaitTime: maxWaitTime,
@@ -44,7 +39,6 @@ func CreateFunction(functionID string,
 		MaxExecTime: maxExecTime,
 		AvgWaitTime: avgWaitTime,
 		AvgExecTime: avgExecTime,
-		Args:        args,
 	}
 }
 
@@ -103,7 +97,6 @@ func (function *Function) Equals(function2 *Function) bool {
 		function.ExecutorID != function2.ExecutorID ||
 		function.ColonyID != function2.ColonyID ||
 		function.FuncName != function2.FuncName ||
-		function.Desc != function2.Desc ||
 		function.Counter != function2.Counter ||
 		function.MinWaitTime != function2.MinWaitTime ||
 		function.MaxWaitTime != function2.MaxWaitTime ||
@@ -111,18 +104,6 @@ func (function *Function) Equals(function2 *Function) bool {
 		function.MaxExecTime != function2.MaxExecTime ||
 		function.AvgWaitTime != function2.AvgWaitTime ||
 		function.AvgExecTime != function2.AvgExecTime {
-		return false
-	}
-
-	counter := 0
-	for _, arg1 := range function.Args {
-		for _, arg2 := range function2.Args {
-			if arg1 == arg2 {
-				counter++
-			}
-		}
-	}
-	if counter != len(function.Args) || counter != len(function2.Args) {
 		return false
 	}
 

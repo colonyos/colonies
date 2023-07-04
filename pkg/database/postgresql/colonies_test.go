@@ -170,7 +170,7 @@ func TestDeleteColonies(t *testing.T) {
 	err = db.AddExecutor(executor1)
 	assert.Nil(t, err)
 
-	function := &core.Function{FunctionID: core.GenerateRandomID(), ExecutorID: executor1.ID, ColonyID: colony1.ID, FuncName: "testfunc", Desc: "unit test function", AvgWaitTime: 1.1, AvgExecTime: 0.1, Args: []string{"arg1"}}
+	function := &core.Function{FunctionID: core.GenerateRandomID(), ExecutorID: executor1.ID, ColonyID: colony1.ID, FuncName: "testfunc", AvgWaitTime: 1.1, AvgExecTime: 0.1}
 	err = db.AddFunction(function)
 	assert.Nil(t, err)
 
@@ -178,7 +178,7 @@ func TestDeleteColonies(t *testing.T) {
 	err = db.AddExecutor(executor2)
 	assert.Nil(t, err)
 
-	function = &core.Function{FunctionID: core.GenerateRandomID(), ExecutorID: executor2.ID, ColonyID: colony1.ID, FuncName: "testfunc", Desc: "unit test function", AvgWaitTime: 1.1, AvgExecTime: 0.1, Args: []string{"arg1"}}
+	function = &core.Function{FunctionID: core.GenerateRandomID(), ExecutorID: executor2.ID, ColonyID: colony1.ID, FuncName: "testfunc", AvgWaitTime: 1.1, AvgExecTime: 0.1}
 	err = db.AddFunction(function)
 	assert.Nil(t, err)
 
@@ -186,7 +186,7 @@ func TestDeleteColonies(t *testing.T) {
 	err = db.AddExecutor(executor3)
 	assert.Nil(t, err)
 
-	function = &core.Function{FunctionID: core.GenerateRandomID(), ExecutorID: executor3.ID, ColonyID: colony2.ID, FuncName: "testfunc", Desc: "unit test function", AvgWaitTime: 1.1, AvgExecTime: 0.1, Args: []string{"arg1"}}
+	function = &core.Function{FunctionID: core.GenerateRandomID(), ExecutorID: executor3.ID, ColonyID: colony2.ID, FuncName: "testfunc", AvgWaitTime: 1.1, AvgExecTime: 0.1}
 	err = db.AddFunction(function)
 	assert.Nil(t, err)
 
