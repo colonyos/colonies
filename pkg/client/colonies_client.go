@@ -674,6 +674,21 @@ func (client *ColoniesClient) Fail(processID string, errs []string, prvKey strin
 	return nil
 }
 
+func (client *ColoniesClient) SetOutput(processID string, output []interface{}, prvKey string) error {
+	msg := rpc.CreateSetOutputMsg(processID, output)
+	jsonString, err := msg.ToJSON()
+	if err != nil {
+		return err
+	}
+
+	_, err = client.sendMessage(rpc.SetOutputPayloadType, jsonString, prvKey, false, context.TODO())
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (client *ColoniesClient) AddAttribute(attribute core.Attribute, prvKey string) (core.Attribute, error) {
 	msg := rpc.CreateAddAttributeMsg(attribute)
 	jsonString, err := msg.ToJSON()

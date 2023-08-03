@@ -1056,6 +1056,23 @@ func (controller *coloniesController) deleteAllProcessGraphs(colonyID string, st
 	return <-cmd.errorChan
 }
 
+func (controller *coloniesController) setOutput(processID string, output []interface{}) error {
+	cmd := &command{threaded: true, errorChan: make(chan error, 1),
+		handler: func(cmd *command) {
+			if len(output) > 0 {
+				err := controller.db.SetOutput(processID, output)
+				if err != nil {
+					cmd.errorChan <- err
+					return
+				}
+			}
+			cmd.errorChan <- nil
+		}}
+
+	controller.cmdQueue <- cmd
+	return <-cmd.errorChan
+}
+
 func (controller *coloniesController) closeSuccessful(processID string, executorID string, output []interface{}) error {
 	cmd := &command{threaded: true, errorChan: make(chan error, 1),
 		handler: func(cmd *command) {

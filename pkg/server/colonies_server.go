@@ -205,6 +205,8 @@ func (server *ColoniesServer) handleAPIRequest(c *gin.Context) {
 		server.handleCloseSuccessfulHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 	case rpc.CloseFailedPayloadType:
 		server.handleCloseFailedHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+	case rpc.SetOutputPayloadType:
+		server.handleSetOutputHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 	case rpc.GetColonyStatisticsPayloadType:
 		server.handleColonyStatisticsHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 

@@ -197,6 +197,10 @@ func (v *controllerMock) deleteAllProcessGraphs(colonyID string, state int) erro
 	return nil
 }
 
+func (v *controllerMock) setOutput(processID string, output []interface{}) error {
+	return nil
+}
+
 func (v *controllerMock) closeSuccessful(processID string, executorID string, output []interface{}) error {
 	return nil
 }
