@@ -47,6 +47,7 @@ type controller interface {
 	deleteAllProcesses(colonyID string, state int) error
 	deleteProcessGraph(processID string) error
 	deleteAllProcessGraphs(colonyID string, state int) error
+	setOutput(processID string, output []interface{}) error
 	closeSuccessful(processID string, executorID string, output []interface{}) error
 	notifyChildren(process *core.Process) error
 	closeFailed(processID string, errs []string) error

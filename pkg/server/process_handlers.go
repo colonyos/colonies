@@ -3,7 +3,6 @@ package server
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net/http"
 	"time"
 
@@ -18,7 +17,6 @@ func (server *ColoniesServer) handleSubmitHTTPRequest(c *gin.Context, recoveredI
 	msg, err := rpc.CreateSubmitFunctionSpecMsgFromJSON(jsonString)
 	if err != nil {
 		log.Warning(err)
-		fmt.Println(err)
 		if server.handleHTTPError(c, errors.New("Failed to submit process, invalid JSON"), http.StatusBadRequest) {
 			return
 		}
@@ -361,6 +359,64 @@ func (server *ColoniesServer) handleDeleteAllProcessesHTTPRequest(c *gin.Context
 	}
 
 	log.WithFields(log.Fields{"ColonyId": msg.ColonyID}).Debug("Deleting all processes")
+
+	server.sendEmptyHTTPReply(c, payloadType)
+}
+
+func (server *ColoniesServer) handleSetOutputHTTPRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
+	msg, err := rpc.CreateSetOutputMsgFromJSON(jsonString)
+	if err != nil {
+		if server.handleHTTPError(c, errors.New("Failed to set output, invalid JSON"), http.StatusBadRequest) {
+			return
+		}
+	}
+
+	if msg.MsgType != payloadType {
+		server.handleHTTPError(c, errors.New("Failed to set output, msg.MsgType does not match payloadType"), http.StatusBadRequest)
+		return
+	}
+
+	process, err := server.controller.getProcess(msg.ProcessID)
+	if server.handleHTTPError(c, err, http.StatusBadRequest) {
+		return
+	}
+	if process == nil {
+		errmsg := "Failed to set output, process is nil"
+		log.Error(errmsg)
+		server.handleHTTPError(c, errors.New(errmsg), http.StatusInternalServerError)
+		return
+	}
+
+	err = server.validator.RequireExecutorMembership(recoveredID, process.FunctionSpec.Conditions.ColonyID, true)
+	if server.handleHTTPError(c, err, http.StatusForbidden) {
+		log.Error(err)
+		return
+	}
+
+	if process.AssignedExecutorID != recoveredID {
+		errmsg := "Failed to close process as successful, not allowed to close process as successful"
+		log.Error(errmsg)
+		err := errors.New(errmsg)
+		server.handleHTTPError(c, err, http.StatusForbidden)
+		return
+	}
+
+	if process.State != core.RUNNING {
+		errmsg := "Failed to set output, process is not running"
+		log.Error(errmsg)
+		err := errors.New(errmsg)
+		server.handleHTTPError(c, err, http.StatusForbidden)
+		return
+	}
+
+	err = server.controller.setOutput(process.ID, msg.Output)
+	if server.handleHTTPError(c, err, http.StatusBadRequest) {
+		log.WithFields(log.Fields{"Error": err}).Debug("Failed to set output")
+		server.handleHTTPError(c, err, http.StatusInternalServerError)
+		return
+	}
+
+	log.WithFields(log.Fields{"ProcessId": process.ID}).Debug("Set output")
 
 	server.sendEmptyHTTPReply(c, payloadType)
 }
