@@ -817,6 +817,30 @@ func TestCloseSuccessfulWithOutput(t *testing.T) {
 	<-done
 }
 
+func TestSetOutput(t *testing.T) {
+	env, client, server, _, done := setupTestEnv2(t)
+
+	funcSpec := utils.CreateTestFunctionSpec(env.colonyID)
+	_, err := client.Submit(funcSpec, env.executorPrvKey)
+	assert.Nil(t, err)
+
+	assignedProcess, err := client.Assign(env.colonyID, -1, env.executorPrvKey)
+	assert.Nil(t, err)
+
+	output := make([]interface{}, 2)
+	output[0] = "result1"
+	err = client.SetOutput(assignedProcess.ID, output, env.executorPrvKey)
+	assert.Nil(t, err)
+
+	processFromServer, err := client.GetProcess(assignedProcess.ID, env.executorPrvKey)
+	assert.Nil(t, err)
+
+	assert.Equal(t, processFromServer.Output[0], "result1")
+
+	server.Shutdown()
+	<-done
+}
+
 func TestCloseFailed(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 

@@ -353,6 +353,38 @@ func TestCloseSuccessfulSecurity(t *testing.T) {
 	<-done
 }
 
+func TestSetOutputSecurity(t *testing.T) {
+	env, client, server, _, done := setupTestEnv1(t)
+
+	// The setup looks like this:
+	//   executor1 is member of colony1
+	//   executor2 is member of colony2
+
+	output := make([]interface{}, 2)
+	output[0] = "result1"
+
+	funcSpec := utils.CreateTestFunctionSpec(env.colony1ID)
+	_, err := client.Submit(funcSpec, env.executor1PrvKey)
+	assert.Nil(t, err)
+	processFromServer, err := client.Assign(env.colony1ID, -1, env.executor1PrvKey)
+	assert.Nil(t, err)
+
+	err = client.SetOutput(processFromServer.ID, output, env.executor2PrvKey)
+	assert.NotNil(t, err) // Should not work
+
+	err = client.SetOutput(processFromServer.ID, output, env.colony1PrvKey)
+	assert.NotNil(t, err) // Should not work
+
+	err = client.SetOutput(processFromServer.ID, output, env.colony2PrvKey)
+	assert.NotNil(t, err) // Should not work
+
+	err = client.SetOutput(processFromServer.ID, output, env.executor1PrvKey)
+	assert.Nil(t, err) // Should work
+
+	server.Shutdown()
+	<-done
+}
+
 func TestCloseFailedSecurity(t *testing.T) {
 	env, client, server, _, done := setupTestEnv1(t)
 
