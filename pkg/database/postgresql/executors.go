@@ -11,8 +11,8 @@ import (
 )
 
 func (db *PQDatabase) AddExecutor(executor *core.Executor) error {
-	sqlStatement := `INSERT INTO  ` + db.dbPrefix + `EXECUTORS (EXECUTOR_ID, EXECUTOR_TYPE, NAME, COLONY_ID, STATE, REQUIRE_FUNC_REG, COMMISSIONTIME, LASTHEARDFROM, LONG, LAT) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`
-	_, err := db.postgresql.Exec(sqlStatement, executor.ID, executor.Type, executor.Name, executor.ColonyID, 0, executor.RequireFuncReg, time.Now(), executor.LastHeardFromTime, executor.Location.Long, executor.Location.Lat)
+	sqlStatement := `INSERT INTO  ` + db.dbPrefix + `EXECUTORS (EXECUTOR_ID, EXECUTOR_TYPE, NAME, COLONY_ID, STATE, REQUIRE_FUNC_REG, COMMISSIONTIME, LASTHEARDFROM, LONG, LAT, LOCDESC, HWMODEL, HWCPU, HWMEM, HWSTORAGE, HWGPUNAME, HWGPUCOUNT) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)`
+	_, err := db.postgresql.Exec(sqlStatement, executor.ID, executor.Type, executor.Name, executor.ColonyID, 0, executor.RequireFuncReg, time.Now(), executor.LastHeardFromTime, executor.Location.Long, executor.Location.Lat, executor.Location.Description, executor.Capabilities.Hardware.Model, executor.Capabilities.Hardware.CPU, executor.Capabilities.Hardware.Memory, executor.Capabilities.Hardware.Storage, executor.Capabilities.Hardware.GPU.Name, executor.Capabilities.Hardware.GPU.Count)
 	if err != nil {
 		if strings.HasPrefix(err.Error(), "pq: duplicate key value violates unique constraint") {
 			return errors.New("Executor name must be unique")
@@ -24,8 +24,9 @@ func (db *PQDatabase) AddExecutor(executor *core.Executor) error {
 }
 
 func (db *PQDatabase) AddOrReplaceExecutor(executor *core.Executor) error {
-	sqlStatement := `INSERT INTO ` + db.dbPrefix + `EXECUTORS (EXECUTOR_ID, EXECUTOR_TYPE, NAME, COLONY_ID, STATE, REQUIRE_FUNC_REG, COMMISSIONTIME, LASTHEARDFROM, LONG, LAT) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) ON CONFLICT (EXECUTOR_ID) DO UPDATE SET EXECUTOR_TYPE=EXCLUDED.EXECUTOR_TYPE, NAME=EXCLUDED.NAME, COLONY_ID=EXCLUDED.COLONY_ID, STATE=EXCLUDED.STATE, REQUIRE_FUNC_REG=EXCLUDED.REQUIRE_FUNC_REG, COMMISSIONTIME=EXCLUDED.COMMISSIONTIME, LASTHEARDFROM=EXCLUDED.LASTHEARDFROM, LONG=EXCLUDED.LONG, LAT=EXCLUDED.LAT;`
-	_, err := db.postgresql.Exec(sqlStatement, executor.ID, executor.Type, executor.Name, executor.ColonyID, 0, executor.RequireFuncReg, time.Now(), executor.LastHeardFromTime, executor.Location.Long, executor.Location.Lat)
+	sqlStatement := `INSERT INTO ` + db.dbPrefix + `EXECUTORS (EXECUTOR_ID, EXECUTOR_TYPE, NAME, COLONY_ID, STATE, REQUIRE_FUNC_REG, COMMISSIONTIME, LASTHEARDFROM, LONG, LAT, LOCDESC, HWMODEL, HWCPU, HWMEM, HWSTORAGE, HWGPUNAME, HWGPUCOUNT) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17) ON CONFLICT (EXECUTOR_ID) DO UPDATE SET EXECUTOR_TYPE=EXCLUDED.EXECUTOR_TYPE, NAME=EXCLUDED.NAME, COLONY_ID=EXCLUDED.COLONY_ID, STATE=EXCLUDED.STATE, REQUIRE_FUNC_REG=EXCLUDED.REQUIRE_FUNC_REG, COMMISSIONTIME=EXCLUDED.COMMISSIONTIME, LASTHEARDFROM=EXCLUDED.LASTHEARDFROM, LONG=EXCLUDED.LONG, LAT=EXCLUDED.LAT, LOCDESC=EXCLUDED.LOCDESC, HWMODEL=EXCLUDED.HWMODEL, HWCPU=EXCLUDED.HWCPU, HWMEM=EXCLUDED.HWMEM, HWSTORAGE=EXCLUDED.HWSTORAGE, HWGPUNAME=EXCLUDED.HWGPUNAME, HWGPUCOUNT=EXCLUDED.HWGPUCOUNT;`
+	_, err := db.postgresql.Exec(sqlStatement, executor.ID, executor.Type, executor.Name, executor.ColonyID, 0, executor.RequireFuncReg, time.Now(), executor.LastHeardFromTime, executor.Location.Long, executor.Location.Lat, executor.Location.Description, executor.Capabilities.Hardware.
+		Model, executor.Capabilities.Hardware.CPU, executor.Capabilities.Hardware.Memory, executor.Capabilities.Hardware.Storage, executor.Capabilities.Hardware.GPU.Name, executor.Capabilities.Hardware.GPU.Count)
 	if err != nil {
 		return err
 	}
@@ -47,13 +48,21 @@ func (db *PQDatabase) parseExecutors(rows *sql.Rows) ([]*core.Executor, error) {
 		var lastHeardFromTime time.Time
 		var long float64
 		var lat float64
-		if err := rows.Scan(&id, &executorType, &name, &colonyID, &state, &requireRunReg, &commissionTime, &lastHeardFromTime, &long, &lat); err != nil {
+		var desc string
+		var hwModel string
+		var hwCPU string
+		var hwMem string
+		var hwStorage string
+		var hwGPUName string
+		var hwGPUCount int
+		if err := rows.Scan(&id, &executorType, &name, &colonyID, &state, &requireRunReg, &commissionTime, &lastHeardFromTime, &long, &lat, &desc, &hwModel, &hwCPU, &hwMem, &hwStorage, &hwGPUName, &hwGPUCount); err != nil {
 			return nil, err
 		}
 
 		executor := core.CreateExecutorFromDB(id, executorType, name, colonyID, state, requireRunReg, commissionTime, lastHeardFromTime)
 		executor.Location.Long = long
 		executor.Location.Lat = lat
+		executor.Location.Description = desc
 		executors = append(executors, executor)
 	}
 
