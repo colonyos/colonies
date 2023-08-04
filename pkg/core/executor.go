@@ -12,20 +12,46 @@ const (
 )
 
 type Location struct {
-	Long float64 `json:"long"`
-	Lat  float64 `json:"lat"`
+	Long        float64 `json:"long"`
+	Lat         float64 `json:"lat"`
+	Description string  `json:"desc"`
+}
+
+type GPU struct {
+	Name  string `json:"name"`
+	Count int    `json:"count"`
+}
+
+type Software struct {
+	Name    string `json:"name"`
+	Type    string `json:"type"`
+	Version string `json:"version"`
+}
+
+type Hardware struct {
+	Model   string `json:"model"`
+	CPU     string `json:"cpu"`
+	Memory  string `json:"mem"`
+	Storage string `json:"storage"`
+	GPU     GPU    `json:"gpu"`
+}
+
+type Capabilities struct {
+	Hardware Hardware `json:"hardware"`
+	Software Software `json:"software"`
 }
 
 type Executor struct {
-	ID                string    `json:"executorid"`
-	Type              string    `json:"executortype"`
-	Name              string    `json:"executorname"`
-	ColonyID          string    `json:"colonyid"`
-	State             int       `json:"state"`
-	RequireFuncReg    bool      `json:"requirefuncreg"`
-	CommissionTime    time.Time `json:"commissiontime"`
-	LastHeardFromTime time.Time `json:"lastheardfromtime"`
-	Location          Location  `json:"location"`
+	ID                string       `json:"executorid"`
+	Type              string       `json:"executortype"`
+	Name              string       `json:"executorname"`
+	ColonyID          string       `json:"colonyid"`
+	State             int          `json:"state"`
+	RequireFuncReg    bool         `json:"requirefuncreg"`
+	CommissionTime    time.Time    `json:"commissiontime"`
+	LastHeardFromTime time.Time    `json:"lastheardfromtime"`
+	Location          Location     `json:"location"`
+	Capabilities      Capabilities `json:"capbilities"`
 }
 
 func CreateExecutor(id string,
@@ -110,16 +136,76 @@ func (executor *Executor) Equals(executor2 *Executor) bool {
 		return false
 	}
 
-	if executor.ID == executor2.ID &&
-		executor.Type == executor2.Type &&
-		executor.Name == executor2.Name &&
-		executor.ColonyID == executor2.ColonyID &&
-		executor.State == executor2.State &&
-		executor.RequireFuncReg == executor2.RequireFuncReg {
-		return true
+	same := true
+	if executor.ID != executor2.ID {
+		same = false
 	}
 
-	return false
+	if executor.Type != executor2.Type {
+		same = false
+	}
+
+	if executor.Name != executor2.Name {
+		same = false
+	}
+
+	if executor.ColonyID != executor2.ColonyID {
+		same = false
+	}
+
+	if executor.State != executor2.State {
+		same = false
+	}
+
+	if executor.RequireFuncReg != executor2.RequireFuncReg {
+		same = false
+	}
+
+	if executor.Location.Lat != executor2.Location.Lat {
+		same = false
+	}
+
+	if executor.Location.Long != executor2.Location.Long {
+		same = false
+	}
+
+	if executor.Location.Description != executor2.Location.Description {
+		same = false
+	}
+
+	if executor.Capabilities.Hardware.CPU != executor2.Capabilities.Hardware.CPU {
+		same = false
+	}
+
+	if executor.Capabilities.Hardware.Memory != executor2.Capabilities.Hardware.Memory {
+		same = false
+	}
+
+	if executor.Capabilities.Hardware.Storage != executor2.Capabilities.Hardware.Storage {
+		same = false
+	}
+
+	if executor.Capabilities.Hardware.GPU.Name != executor2.Capabilities.Hardware.GPU.Name {
+		same = false
+	}
+
+	if executor.Capabilities.Hardware.GPU.Count != executor2.Capabilities.Hardware.GPU.Count {
+		same = false
+	}
+
+	if executor.Capabilities.Software.Name != executor2.Capabilities.Software.Name {
+		same = false
+	}
+
+	if executor.Capabilities.Software.Type != executor2.Capabilities.Software.Type {
+		same = false
+	}
+
+	if executor.Capabilities.Software.Version != executor2.Capabilities.Software.Version {
+		same = false
+	}
+
+	return same
 }
 
 func (executor *Executor) IsApproved() bool {
