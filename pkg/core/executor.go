@@ -51,7 +51,7 @@ type Executor struct {
 	CommissionTime    time.Time    `json:"commissiontime"`
 	LastHeardFromTime time.Time    `json:"lastheardfromtime"`
 	Location          Location     `json:"location"`
-	Capabilities      Capabilities `json:"capbilities"`
+	Capabilities      Capabilities `json:"capabilities"`
 }
 
 func CreateExecutor(id string,

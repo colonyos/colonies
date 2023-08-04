@@ -248,6 +248,57 @@ func printExecutor(client *client.ColoniesClient, executor *core.Executor) {
 	executorTable.SetAlignment(tablewriter.ALIGN_LEFT)
 	executorTable.Render()
 
+	fmt.Println()
+	fmt.Println("Location:")
+
+	locationData := [][]string{
+		[]string{"Longitude", fmt.Sprintf("%f", executor.Location.Long)},
+		[]string{"Latitude", fmt.Sprintf("%f", executor.Location.Lat)},
+		[]string{"Description", executor.Location.Description},
+	}
+
+	locationTable := tablewriter.NewWriter(os.Stdout)
+	for _, v := range locationData {
+		locationTable.Append(v)
+	}
+	locationTable.SetAlignment(tablewriter.ALIGN_LEFT)
+	locationTable.Render()
+
+	fmt.Println()
+	fmt.Println("Hardware:")
+
+	hwData := [][]string{
+		[]string{"Model", executor.Capabilities.Hardware.Model},
+		[]string{"CPU", executor.Capabilities.Hardware.CPU},
+		[]string{"Memory", executor.Capabilities.Hardware.Memory},
+		[]string{"Storage", executor.Capabilities.Hardware.Storage},
+		[]string{"GPU", executor.Capabilities.Hardware.GPU.Name},
+		[]string{"GPUs", strconv.Itoa(executor.Capabilities.Hardware.GPU.Count)},
+	}
+
+	hwTable := tablewriter.NewWriter(os.Stdout)
+	for _, v := range hwData {
+		hwTable.Append(v)
+	}
+	hwTable.SetAlignment(tablewriter.ALIGN_LEFT)
+	hwTable.Render()
+
+	fmt.Println()
+	fmt.Println("Software:")
+
+	swData := [][]string{
+		[]string{"Name", executor.Capabilities.Software.Name},
+		[]string{"Type", executor.Capabilities.Software.Type},
+		[]string{"Version", executor.Capabilities.Software.Version},
+	}
+
+	swTable := tablewriter.NewWriter(os.Stdout)
+	for _, v := range swData {
+		swTable.Append(v)
+	}
+	swTable.SetAlignment(tablewriter.ALIGN_LEFT)
+	swTable.Render()
+
 	functions, err := client.GetFunctionsByExecutorID(executor.ID, ExecutorPrvKey)
 	CheckError(err)
 
