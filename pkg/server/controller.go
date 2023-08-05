@@ -21,6 +21,8 @@ type controller interface {
 	deleteColony(colonyID string) error
 	renameColony(colonyID string, name string) error
 	addExecutor(executor *core.Executor, allowExecutorReregister bool) (*core.Executor, error)
+	addLog(processID string, colonyID string, executorID string, msg string) error
+	getLogsByProcessID(processID string, limit int) (string, error)
 	getExecutor(executorID string) (*core.Executor, error)
 	getExecutorByColonyID(colonyID string) ([]*core.Executor, error)
 	approveExecutor(executorID string) error

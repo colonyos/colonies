@@ -89,6 +89,14 @@ func (v *controllerMock) renameColony(colonyID string, name string) error {
 	return nil
 }
 
+func (v *controllerMock) addLog(processID string, colonyID string, executorID string, msg string) error {
+	return nil
+}
+
+func (v *controllerMock) getLogsByProcessID(processID string, limit int) (string, error) {
+	return "", nil
+}
+
 func (v *controllerMock) addExecutor(executor *core.Executor, allowExecutorReregister bool) (*core.Executor, error) {
 	return nil, nil
 }
@@ -1011,8 +1019,15 @@ func (db *dbMock) Unlock() error {
 }
 
 func (db *dbMock) ApplyRetentionPolicy(retentionPeriod int64) error {
-
 	return nil
+}
+
+func (db *dbMock) AddLog(processID string, colonyID string, executorID string, msg string) error {
+	return nil
+}
+
+func (db *dbMock) GetLogsByProcessID(processID string, limit int) (string, error) {
+	return "", nil
 }
 
 // gin mockups

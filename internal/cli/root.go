@@ -97,6 +97,7 @@ var Approve bool
 var Waiting bool
 var Successful bool
 var Failed bool
+var TimescaleDB bool
 
 func init() {
 	rootCmd.PersistentFlags().BoolVarP(&Verbose, "verbose", "v", false, "Verbose (debugging)")
