@@ -10,6 +10,7 @@ import (
 	"time"
 
 	_ "github.com/lib/pq"
+	log "github.com/sirupsen/logrus"
 )
 
 type Postgresql interface {
@@ -36,17 +37,18 @@ type Postgresql interface {
 }
 
 type PQDatabase struct {
-	postgresql Postgresql
-	dbHost     string
-	dbPort     int
-	dbUser     string
-	dbPassword string
-	dbName     string
-	dbPrefix   string
+	postgresql  Postgresql
+	dbHost      string
+	dbPort      int
+	dbUser      string
+	dbPassword  string
+	dbName      string
+	dbPrefix    string
+	timescaleDB bool
 }
 
-func CreatePQDatabase(dbHost string, dbPort int, dbUser string, dbPassword string, dbName string, dbPrefix string) *PQDatabase {
-	return &PQDatabase{dbHost: dbHost, dbPort: dbPort, dbUser: dbUser, dbPassword: dbPassword, dbName: dbName, dbPrefix: dbPrefix}
+func CreatePQDatabase(dbHost string, dbPort int, dbUser string, dbPassword string, dbName string, dbPrefix string, timescaleDB bool) *PQDatabase {
+	return &PQDatabase{dbHost: dbHost, dbPort: dbPort, dbUser: dbUser, dbPassword: dbPassword, dbName: dbName, dbPrefix: dbPrefix, timescaleDB: timescaleDB}
 }
 
 func (db *PQDatabase) Connect() error {
@@ -107,6 +109,16 @@ func (db *PQDatabase) dropFunctionsTable() error {
 
 func (db *PQDatabase) dropProcessesTable() error {
 	sqlStatement := `DROP TABLE ` + db.dbPrefix + `PROCESSES`
+	_, err := db.postgresql.Exec(sqlStatement)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (db *PQDatabase) dropLogTable() error {
+	sqlStatement := `DROP TABLE ` + db.dbPrefix + `LOGS`
 	_, err := db.postgresql.Exec(sqlStatement)
 	if err != nil {
 		return err
@@ -186,6 +198,11 @@ func (db *PQDatabase) Drop() error {
 		return err
 	}
 
+	err = db.dropLogTable()
+	if err != nil {
+		return err
+	}
+
 	err = db.dropAttributesTable()
 	if err != nil {
 		return err
@@ -207,6 +224,16 @@ func (db *PQDatabase) Drop() error {
 	}
 
 	err = db.dropCronsTable()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (db *PQDatabase) createHypertables() error {
+	sqlStatement := `SELECT create_hypertable ('` + db.dbPrefix + `LOGS', 'TS', chunk_time_interval => 86400000000000)`
+	_, err := db.postgresql.Exec(sqlStatement)
 	if err != nil {
 		return err
 	}
@@ -245,6 +272,16 @@ func (db *PQDatabase) createFunctionsTable() error {
 
 func (db *PQDatabase) createProcessesTable() error {
 	sqlStatement := `CREATE TABLE ` + db.dbPrefix + `PROCESSES (PROCESS_ID TEXT PRIMARY KEY NOT NULL, TARGET_COLONY_ID TEXT NOT NULL, TARGET_EXECUTOR_IDS TEXT[], ASSIGNED_EXECUTOR_ID TEXT, STATE INTEGER, IS_ASSIGNED BOOLEAN, EXECUTOR_TYPE TEXT, SUBMISSION_TIME TIMESTAMPTZ, START_TIME TIMESTAMPTZ, END_TIME TIMESTAMPTZ, WAIT_DEADLINE TIMESTAMPTZ, EXEC_DEADLINE TIMESTAMPTZ, ERRORS TEXT[], NODENAME TEXT, FUNCNAME TEXT, ARGS TEXT, KWARGS TEXT, MAX_WAIT_TIME INTEGER, MAX_EXEC_TIME INTEGER, RETRIES INTEGER, MAX_RETRIES INTEGER, DEPENDENCIES TEXT[], PRIORITY INTEGER, PRIORITYTIME BIGINT, WAIT_FOR_PARENTS BOOLEAN, PARENTS TEXT[], CHILDREN TEXT[], PROCESSGRAPH_ID TEXT, INPUT TEXT, OUTPUT TEXT, LABEL TEXT)`
+	_, err := db.postgresql.Exec(sqlStatement)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (db *PQDatabase) createLogTable() error {
+	sqlStatement := `CREATE TABLE ` + db.dbPrefix + `LOGS (PROCESS_ID TEXT, COLONY_ID TEXT NOT NULL, EXECUTOR_ID TEXT NOT NULL, TS TIMESTAMPTZ, MSG TEXT NOT NULL)`
 	_, err := db.postgresql.Exec(sqlStatement)
 	if err != nil {
 		return err
@@ -454,6 +491,11 @@ func (db *PQDatabase) Initialize() error {
 		return err
 	}
 
+	err = db.createLogTable()
+	if err != nil {
+		return err
+	}
+
 	err = db.createAttributesTable()
 	if err != nil {
 		return err
@@ -542,6 +584,20 @@ func (db *PQDatabase) Initialize() error {
 	err = db.createRetentionIndex3()
 	if err != nil {
 		return err
+	}
+
+	if db.timescaleDB {
+		log.Info("Creating TimescaleDB hypertables")
+		err := db.createHypertables()
+		if err != nil {
+			return err
+		}
+	} else {
+		sqlStatement := `CREATE INDEX ` + db.dbPrefix + `LOGS_INDEX1 ON ` + db.dbPrefix + `LOGS (PROCESS_ID)`
+		_, err := db.postgresql.Exec(sqlStatement)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil

@@ -29,6 +29,7 @@ type command struct {
 	processGraphReplyChan  chan *core.ProcessGraph
 	processGraphsReplyChan chan []*core.ProcessGraph
 	statisticsReplyChan    chan *core.Statistics
+	logsReplyChan          chan string
 	executorReplyChan      chan *core.Executor
 	executorsReplyChan     chan []*core.Executor
 	attributeReplyChan     chan *core.Attribute
@@ -261,6 +262,42 @@ func (controller *coloniesController) renameColony(colonyID string, name string)
 
 	controller.cmdQueue <- cmd
 	return <-cmd.errorChan
+}
+
+func (controller *coloniesController) addLog(processID string, colonyID string, executorID string, msg string) error {
+	cmd := &command{threaded: true, errorChan: make(chan error, 1),
+		handler: func(cmd *command) {
+			err := controller.db.AddLog(processID, colonyID, executorID, msg)
+			if err != nil {
+				cmd.errorChan <- err
+				return
+			}
+			cmd.errorChan <- nil
+		}}
+
+	controller.cmdQueue <- cmd
+	return <-cmd.errorChan
+}
+
+func (controller *coloniesController) getLogsByProcessID(processID string, limit int) (string, error) {
+	cmd := &command{threaded: true, logsReplyChan: make(chan string), errorChan: make(chan error, 1),
+		handler: func(cmd *command) {
+			logStr, err := controller.db.GetLogsByProcessID(processID, limit)
+			if err != nil {
+				cmd.errorChan <- err
+				return
+			}
+			cmd.logsReplyChan <- logStr
+		}}
+
+	controller.cmdQueue <- cmd
+	var logStr string
+	select {
+	case err := <-cmd.errorChan:
+		return "", err
+	case logStr = <-cmd.logsReplyChan:
+		return logStr, nil
+	}
 }
 
 func (controller *coloniesController) addExecutor(executor *core.Executor, allowExecutorReregister bool) (*core.Executor, error) {

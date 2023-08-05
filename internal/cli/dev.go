@@ -217,7 +217,7 @@ var devCmd = &cobra.Command{
 		}()
 
 		log.WithFields(log.Fields{"DBHost": dbHost, "DBPort": dbPort, "DBUser": dbUser, "DBPassword": dbPassword, "DBName": DBName}).Info("Connecting to PostgreSQL server")
-		coloniesDB := postgresql.CreatePQDatabase(dbHost, dbPort, dbUser, dbPassword, DBName, DBPrefix)
+		coloniesDB := postgresql.CreatePQDatabase(dbHost, dbPort, dbUser, dbPassword, DBName, DBPrefix, false)
 		err = coloniesDB.Connect()
 		CheckError(err)
 
