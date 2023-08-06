@@ -232,7 +232,7 @@ func (db *PQDatabase) Drop() error {
 }
 
 func (db *PQDatabase) createHypertables() error {
-	sqlStatement := `SELECT create_hypertable ('` + db.dbPrefix + `LOGS', 'TS', chunk_time_interval => 86400000000000)`
+	sqlStatement := `SELECT create_hypertable ('` + db.dbPrefix + `LOGS', 'TS', chunk_time_interval => 86400000000000)` // 24h chunks, assuming ts is nanosec
 	_, err := db.postgresql.Exec(sqlStatement)
 	if err != nil {
 		return err
@@ -281,7 +281,7 @@ func (db *PQDatabase) createProcessesTable() error {
 }
 
 func (db *PQDatabase) createLogTable() error {
-	sqlStatement := `CREATE TABLE ` + db.dbPrefix + `LOGS (PROCESS_ID TEXT, COLONY_ID TEXT NOT NULL, EXECUTOR_ID TEXT NOT NULL, TS TIMESTAMPTZ, MSG TEXT NOT NULL)`
+	sqlStatement := `CREATE TABLE ` + db.dbPrefix + `LOGS (PROCESS_ID TEXT, COLONY_ID TEXT NOT NULL, EXECUTOR_ID TEXT NOT NULL, TS BIGINT, MSG TEXT NOT NULL, ADDED TIMESTAMPTZ)`
 	_, err := db.postgresql.Exec(sqlStatement)
 	if err != nil {
 		return err

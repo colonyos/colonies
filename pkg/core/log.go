@@ -2,15 +2,14 @@ package core
 
 import (
 	"encoding/json"
-	"time"
 )
 
 type Log struct {
-	ProcessID  string    `json:"processid"`
-	ColonyID   string    `json:"colonyid"`
-	ExecutorID string    `json:"executorid"`
-	Message    string    `json:"message"`
-	Timestamp  time.Time `json:"timestamp"`
+	ProcessID  string `json:"processid"`
+	ColonyID   string `json:"colonyid"`
+	ExecutorID string `json:"executorid"`
+	Message    string `json:"message"`
+	Timestamp  int64  `json:"timestamp"` // UTC Unix time
 }
 
 func ConvertJSONToLog(jsonString string) (Log, error) {
@@ -48,7 +47,7 @@ func (log *Log) Equals(log2 Log) bool {
 		log.ColonyID != log2.ColonyID ||
 		log.ExecutorID != log2.ExecutorID ||
 		log.Message != log2.Message ||
-		log.Timestamp.Unix() != log2.Timestamp.Unix() {
+		log.Timestamp != log2.Timestamp {
 		same = false
 	}
 
