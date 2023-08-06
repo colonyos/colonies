@@ -47,8 +47,7 @@ func init() {
 	lsExecutorsCmd.Flags().StringVarP(&ExecutorID, "executorid", "", "", "Executor Id")
 	lsExecutorsCmd.Flags().StringVarP(&ExecutorPrvKey, "executorprvkey", "", "", "Executor private key")
 
-	getExecutorCmd.Flags().StringVarP(&TargetExecutorID, "targetid", "", "", "Target executor Id")
-	getExecutorCmd.Flags().StringVarP(&ExecutorID, "executorid", "", "", "Executor Id")
+	getExecutorCmd.Flags().StringVarP(&TargetExecutorID, "executorid", "", "", "Target executor Id")
 	getExecutorCmd.Flags().StringVarP(&ExecutorPrvKey, "executorprvkey", "", "", "Executor private key")
 
 	approveExecutorCmd.Flags().StringVarP(&ColonyPrvKey, "colonyprvkey", "", "", "Colony private key")
