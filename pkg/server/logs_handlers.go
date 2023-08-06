@@ -3,6 +3,7 @@ package server
 import (
 	"errors"
 	"net/http"
+	"strconv"
 
 	"github.com/colonyos/colonies/pkg/core"
 	"github.com/colonyos/colonies/pkg/rpc"
@@ -98,14 +99,26 @@ func (server *ColoniesServer) handleGetLogsHTTPRequest(c *gin.Context, recovered
 		return
 	}
 
-	logStr, err := server.controller.getLogsByProcessID(msg.ProcessID, msg.Count)
+	if msg.Count > MAX_LOG_COUNT {
+		if server.handleHTTPError(c, errors.New("Count exceeds max log count ("+strconv.Itoa(MAX_LOG_COUNT)+")"), http.StatusForbidden) {
+			return
+		}
+	}
+
+	logs, err := server.controller.getLogsByProcessID(msg.ProcessID, msg.Count)
 	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		log.WithFields(log.Fields{"Error": err}).Debug("Failed to add log")
 		server.handleHTTPError(c, err, http.StatusInternalServerError)
 		return
 	}
 
-	log.WithFields(log.Fields{"ProcessId": process.ID}).Debug("Getting logs")
+	jsonStr, err := core.ConvertLogArrayToJSON(logs)
+	if server.handleHTTPError(c, err, http.StatusBadRequest) {
+		log.WithFields(log.Fields{"Error": err}).Debug("Failed to parse log")
+		server.handleHTTPError(c, err, http.StatusInternalServerError)
+		return
+	}
 
-	server.sendHTTPReply(c, payloadType, logStr)
+	log.WithFields(log.Fields{"ProcessId": process.ID}).Debug("Getting logs")
+	server.sendHTTPReply(c, payloadType, jsonStr)
 }

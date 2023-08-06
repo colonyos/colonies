@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"time"
 
+	"github.com/colonyos/colonies/pkg/core"
 	_ "github.com/lib/pq"
 )
 
@@ -17,35 +18,40 @@ func (db *PQDatabase) AddLog(processID string, colonyID string, executorID strin
 	return nil
 }
 
-func (db *PQDatabase) parseLogs(rows *sql.Rows) (string, error) {
-	logStr := ""
+func (db *PQDatabase) parseLogs(rows *sql.Rows) ([]core.Log, error) {
+	var logs []core.Log
 
 	for rows.Next() {
+		var processID string
+		var colonyID string
+		var executorID string
+		var ts time.Time
 		var msg string
-		if err := rows.Scan(&msg); err != nil {
-			return logStr, err
+		if err := rows.Scan(&processID, &colonyID, &executorID, &ts, &msg); err != nil {
+			return nil, err
 		}
-		logStr += msg
+		log := core.Log{ProcessID: processID, ColonyID: colonyID, ExecutorID: executorID, Timestamp: ts, Message: msg}
+		logs = append(logs, log)
 	}
 
-	return logStr, nil
+	return logs, nil
 }
 
-func (db *PQDatabase) GetLogsByProcessID(processID string, limit int) (string, error) {
-	sqlStatement := `SELECT MSG FROM ` + db.dbPrefix + `LOGS WHERE PROCESS_ID=$1 ORDER BY TS ASC LIMIT $2`
+func (db *PQDatabase) GetLogsByProcessID(processID string, limit int) ([]core.Log, error) {
+	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `LOGS WHERE PROCESS_ID=$1 ORDER BY TS ASC LIMIT $2`
 	rows, err := db.postgresql.Query(sqlStatement, processID, limit)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	defer rows.Close()
 
-	logStr, err := db.parseLogs(rows)
+	logs, err := db.parseLogs(rows)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	return logStr, nil
+	return logs, nil
 }
 
 func (db *PQDatabase) DeleteLogs(colonyID string) error {

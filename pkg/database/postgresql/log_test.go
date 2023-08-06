@@ -17,9 +17,11 @@ func TestAddGetLogs(t *testing.T) {
 	err = db.AddLog("test_processid", "test_colonyid", "test_executorid", "2")
 	assert.Nil(t, err)
 
-	logStr, err := db.GetLogsByProcessID("test_processid", 100)
-	assert.Nil(t, err)
-	assert.Equal(t, logStr, "12")
+	logs, err := db.GetLogsByProcessID("test_processid", 100)
+	assert.Len(t, logs, 2)
+	assert.Equal(t, logs[0].ProcessID, "test_processid")
+	assert.Equal(t, logs[0].ColonyID, "test_colonyid")
+	assert.Equal(t, logs[0].ExecutorID, "test_executorid")
 }
 
 func TestDeleteLogs(t *testing.T) {
@@ -33,18 +35,18 @@ func TestDeleteLogs(t *testing.T) {
 	err = db.AddLog("test_processid2", "test_colonyid2", "test_executorid", "2")
 	assert.Nil(t, err)
 
-	logStr, err := db.GetLogsByProcessID("test_processid1", 100)
+	logs, err := db.GetLogsByProcessID("test_processid1", 100)
 	assert.Nil(t, err)
-	assert.Equal(t, logStr, "1")
+	assert.Len(t, logs, 1)
 
 	err = db.DeleteLogs("test_colonyid1")
 	assert.Nil(t, err)
 
-	logStr, err = db.GetLogsByProcessID("test_processid1", 100)
+	logs, err = db.GetLogsByProcessID("test_processid1", 100)
 	assert.Nil(t, err)
-	assert.Equal(t, logStr, "")
+	assert.Len(t, logs, 0)
 
-	logStr, err = db.GetLogsByProcessID("test_processid2", 100)
+	logs, err = db.GetLogsByProcessID("test_processid2", 100)
 	assert.Nil(t, err)
-	assert.Equal(t, logStr, "2")
+	assert.Len(t, logs, 1)
 }

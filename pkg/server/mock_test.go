@@ -93,8 +93,8 @@ func (v *controllerMock) addLog(processID string, colonyID string, executorID st
 	return nil
 }
 
-func (v *controllerMock) getLogsByProcessID(processID string, limit int) (string, error) {
-	return "", nil
+func (v *controllerMock) getLogsByProcessID(processID string, limit int) ([]core.Log, error) {
+	return []core.Log{}, nil
 }
 
 func (v *controllerMock) addExecutor(executor *core.Executor, allowExecutorReregister bool) (*core.Executor, error) {
@@ -1026,8 +1026,8 @@ func (db *dbMock) AddLog(processID string, colonyID string, executorID string, m
 	return nil
 }
 
-func (db *dbMock) GetLogsByProcessID(processID string, limit int) (string, error) {
-	return "", nil
+func (db *dbMock) GetLogsByProcessID(processID string, limit int) ([]core.Log, error) {
+	return []core.Log{}, nil
 }
 
 // gin mockups

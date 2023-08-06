@@ -29,7 +29,7 @@ type command struct {
 	processGraphReplyChan  chan *core.ProcessGraph
 	processGraphsReplyChan chan []*core.ProcessGraph
 	statisticsReplyChan    chan *core.Statistics
-	logsReplyChan          chan string
+	logsReplyChan          chan []core.Log
 	executorReplyChan      chan *core.Executor
 	executorsReplyChan     chan []*core.Executor
 	attributeReplyChan     chan *core.Attribute
@@ -279,24 +279,24 @@ func (controller *coloniesController) addLog(processID string, colonyID string, 
 	return <-cmd.errorChan
 }
 
-func (controller *coloniesController) getLogsByProcessID(processID string, limit int) (string, error) {
-	cmd := &command{threaded: true, logsReplyChan: make(chan string), errorChan: make(chan error, 1),
+func (controller *coloniesController) getLogsByProcessID(processID string, limit int) ([]core.Log, error) {
+	cmd := &command{threaded: true, logsReplyChan: make(chan []core.Log), errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
-			logStr, err := controller.db.GetLogsByProcessID(processID, limit)
+			logs, err := controller.db.GetLogsByProcessID(processID, limit)
 			if err != nil {
 				cmd.errorChan <- err
 				return
 			}
-			cmd.logsReplyChan <- logStr
+			cmd.logsReplyChan <- logs
 		}}
 
 	controller.cmdQueue <- cmd
-	var logStr string
+	var logs []core.Log
 	select {
 	case err := <-cmd.errorChan:
-		return "", err
-	case logStr = <-cmd.logsReplyChan:
-		return logStr, nil
+		return []core.Log{}, err
+	case logs = <-cmd.logsReplyChan:
+		return logs, nil
 	}
 }
 
