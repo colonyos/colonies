@@ -15,7 +15,7 @@ func TestLockClosedDB(t *testing.T) {
 	dbName := "postgres"
 	dbPrefix := "TEST_"
 
-	db := CreatePQDatabase(dbHost, dbPort, dbUser, dbPassword, dbName, dbPrefix)
+	db := CreatePQDatabase(dbHost, dbPort, dbUser, dbPassword, dbName, dbPrefix, false)
 	err := db.Connect()
 	assert.Nil(t, err)
 
@@ -36,7 +36,7 @@ func TestLock(t *testing.T) {
 	dbName := "postgres"
 	dbPrefix := "TEST_"
 
-	db := CreatePQDatabase(dbHost, dbPort, dbUser, dbPassword, dbName, dbPrefix)
+	db := CreatePQDatabase(dbHost, dbPort, dbUser, dbPassword, dbName, dbPrefix, false)
 
 	err := db.Connect()
 	assert.Nil(t, err)
@@ -56,7 +56,7 @@ func TestLock(t *testing.T) {
 	err = db.Lock(10000)
 	assert.Nil(t, err)
 
-	db2 := CreatePQDatabase(dbHost, dbPort, dbUser, dbPassword, dbName, dbPrefix)
+	db2 := CreatePQDatabase(dbHost, dbPort, dbUser, dbPassword, dbName, dbPrefix, false)
 
 	err = db2.Connect()
 	assert.Nil(t, err)
@@ -75,7 +75,7 @@ func TestLockClose(t *testing.T) {
 	dbName := "postgres"
 	dbPrefix := "TEST_"
 
-	db := CreatePQDatabase(dbHost, dbPort, dbUser, dbPassword, dbName, dbPrefix)
+	db := CreatePQDatabase(dbHost, dbPort, dbUser, dbPassword, dbName, dbPrefix, false)
 
 	err := db.Connect()
 	assert.Nil(t, err)
@@ -93,7 +93,7 @@ func TestLockClose(t *testing.T) {
 	err = db.Lock(10000)
 	assert.Nil(t, err)
 
-	db2 := CreatePQDatabase(dbHost, dbPort, dbUser, dbPassword, dbName, dbPrefix)
+	db2 := CreatePQDatabase(dbHost, dbPort, dbUser, dbPassword, dbName, dbPrefix, false)
 
 	err = db2.Connect()
 	assert.Nil(t, err)
@@ -113,7 +113,7 @@ func TestLockTimeout(t *testing.T) {
 	dbName := "postgres"
 	dbPrefix := "TEST_"
 
-	db := CreatePQDatabase(dbHost, dbPort, dbUser, dbPassword, dbName, dbPrefix)
+	db := CreatePQDatabase(dbHost, dbPort, dbUser, dbPassword, dbName, dbPrefix, false)
 
 	err := db.Connect()
 	assert.Nil(t, err)
@@ -130,7 +130,7 @@ func TestLockTimeout(t *testing.T) {
 	err = db.Lock(10000)
 	assert.Nil(t, err)
 
-	db2 := CreatePQDatabase(dbHost, dbPort, dbUser, dbPassword, dbName, dbPrefix)
+	db2 := CreatePQDatabase(dbHost, dbPort, dbUser, dbPassword, dbName, dbPrefix, false)
 
 	err = db2.Connect()
 	assert.Nil(t, err)

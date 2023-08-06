@@ -1,4 +1,26 @@
 {
-    "executorname": "hal9000",
-    "executortype": "my_executor_type"
+    "executorname": "ml_executor",
+    "executortype": "ml",
+    "location": {
+        "long": 65.61204640586546,
+        "lat": 22.132275667285477,
+        "desc": "ICE Datacenter"
+    },
+    "capabilities": {
+        "hardware": {
+            "model": "AMD Ryzen 9 5950X 16-Core Processor",
+            "cpu": "4000m",
+            "mem": "16Gi",
+            "storage": "100Ti",
+            "gpu": {
+                "name": "nvidia_3080ti",
+                "count": 1
+            }
+        },
+        "software": {
+            "name": "colonyos/ml:latest",
+            "type": "k8s",
+            "version": "latest"
+        }
+    }
 }

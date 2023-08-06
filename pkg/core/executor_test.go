@@ -27,6 +27,37 @@ func TestCreateExecutor(t *testing.T) {
 	assert.Equal(t, colonyID, executor.ColonyID)
 }
 
+func TestCreateExecutor2(t *testing.T) {
+	id := "1e1bfca6feb8a13df3cbbca1104f20b4b29c311724ee5f690356257108023fb"
+	executorType := "test_executor_type"
+	name := ""
+	colonyID := "e0a17fead699b3e3b3eec21a3ab0efad54224f6eb22f4550abe9f2a207440834"
+	commissionTime := time.Now()
+	lastHeardFromTime := time.Now()
+
+	executor1 := CreateExecutor(id, executorType, name, colonyID, commissionTime, lastHeardFromTime)
+	executor1Location := Location{Long: 1.0, Lat: 2.0, Description: "test_desc"}
+	executor1GPU := GPU{Name: "test_name1", Count: 1}
+	executor1HW := Hardware{Model: "test_model", CPU: "test_cpu", Memory: "test_mem", Storage: "test_storage", GPU: executor1GPU}
+	executor1SW := Software{Name: "test_name1", Type: "test_type1", Version: "test_version1"}
+	executor1CAP := Capabilities{Hardware: executor1HW, Software: executor1SW}
+	executor1.Location = executor1Location
+	executor1.Capabilities = executor1CAP
+
+	executor2 := CreateExecutor(id, executorType, name, colonyID, commissionTime, lastHeardFromTime)
+	executor2Location := Location{Long: 1.0, Lat: 2.0, Description: "test_desc"}
+	executor2GPU := GPU{Name: "test_name1", Count: 1}
+	executor2HW := Hardware{Model: "test_model", CPU: "test_cpu", Memory: "test_mem", Storage: "test_storage", GPU: executor2GPU}
+	executor2SW := Software{Name: "test_name1", Type: "test_type1", Version: "test_version1"}
+	executor2CAP := Capabilities{Hardware: executor2HW, Software: executor2SW}
+	executor2.Location = executor2Location
+	executor2.Capabilities = executor2CAP
+
+	assert.True(t, executor1.Equals(executor2))
+	executor2.Location.Description = "changed_location"
+	assert.False(t, executor1.Equals(executor2))
+}
+
 func TestSetExecutorID(t *testing.T) {
 	id := "1e1bfca6feb8a13df3cbbca1104f20b4b29c311724ee5f690356257108023fb"
 	executorType := "test_executor_type"
