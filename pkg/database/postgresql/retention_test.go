@@ -35,6 +35,9 @@ func TestApplyRetentionPolicy(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
 
+	err = db.AddLog("test_processid", "test_colonyid", "test_executorid", time.Now().UTC().UnixNano(), "test_msg")
+	assert.Nil(t, err)
+
 	colonyID := core.GenerateRandomID()
 
 	process := utils.CreateTestProcess(colonyID)
@@ -59,6 +62,9 @@ func TestApplyRetentionPolicy(t *testing.T) {
 	count, err := db.CountSuccessfulProcessGraphs()
 	assert.Nil(t, err)
 	assert.Equal(t, count, 1)
+
+	logs, err := db.GetLogsByProcessID("test_processid", 100)
+	assert.Len(t, logs, 1)
 
 	err = db.ApplyRetentionPolicy(1) // has no effect, it has not passed 1 second yet
 	assert.Nil(t, err)
@@ -89,6 +95,9 @@ func TestApplyRetentionPolicy(t *testing.T) {
 
 	_, err = db.GetAttributeByID(attribute.ID)
 	assert.NotNil(t, err)
+
+	logs, err = db.GetLogsByProcessID("test_processid", 100)
+	assert.Len(t, logs, 0)
 
 	defer db.Close()
 }

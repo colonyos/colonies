@@ -24,6 +24,12 @@ func (db *PQDatabase) ApplyRetentionPolicy(retentionPeriod int64) error {
 		return err
 	}
 
+	sqlStatement = `DELETE FROM ` + db.dbPrefix + `LOGS WHERE ADDED<$1`
+	_, err = db.postgresql.Exec(sqlStatement, timestamp)
+	if err != nil {
+		return err
+	}
+
 	sqlStatement = `DELETE FROM ` + db.dbPrefix + `PROCESSES WHERE SUBMISSION_TIME<$1 AND STATE=$2`
 	_, err = db.postgresql.Exec(sqlStatement, timestamp, core.SUCCESS)
 	if err != nil {

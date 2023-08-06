@@ -82,21 +82,41 @@ func (server *ColoniesServer) handleGetLogsHTTPRequest(c *gin.Context, recovered
 		return
 	}
 
-	process, err := server.controller.getProcess(msg.ProcessID)
-	if server.handleHTTPError(c, err, http.StatusBadRequest) {
-		return
-	}
-	if process == nil {
-		errmsg := "Failed to get logs, process is nil"
-		log.Error(errmsg)
-		server.handleHTTPError(c, errors.New(errmsg), http.StatusInternalServerError)
-		return
-	}
+	if msg.ExecutorID != "" {
+		executor, err := server.controller.getExecutor(msg.ExecutorID)
+		if server.handleHTTPError(c, err, http.StatusBadRequest) {
+			return
+		}
 
-	err = server.validator.RequireExecutorMembership(recoveredID, process.FunctionSpec.Conditions.ColonyID, true)
-	if server.handleHTTPError(c, err, http.StatusForbidden) {
-		log.Error(err)
-		return
+		if executor == nil {
+			errmsg := "Failed to get logs, executor does not exist"
+			log.Error(errmsg)
+			server.handleHTTPError(c, errors.New(errmsg), http.StatusInternalServerError)
+			return
+		}
+
+		err = server.validator.RequireExecutorMembership(recoveredID, executor.ColonyID, true)
+		if server.handleHTTPError(c, err, http.StatusForbidden) {
+			log.Error(err)
+			return
+		}
+	} else {
+		process, err := server.controller.getProcess(msg.ProcessID)
+		if server.handleHTTPError(c, err, http.StatusBadRequest) {
+			return
+		}
+		if process == nil {
+			errmsg := "Failed to get logs, process does not exist"
+			log.Error(errmsg)
+			server.handleHTTPError(c, errors.New(errmsg), http.StatusInternalServerError)
+			return
+		}
+
+		err = server.validator.RequireExecutorMembership(recoveredID, process.FunctionSpec.Conditions.ColonyID, true)
+		if server.handleHTTPError(c, err, http.StatusForbidden) {
+			log.Error(err)
+			return
+		}
 	}
 
 	if msg.Count > MAX_LOG_COUNT {
@@ -105,11 +125,21 @@ func (server *ColoniesServer) handleGetLogsHTTPRequest(c *gin.Context, recovered
 		}
 	}
 
-	logs, err := server.controller.getLogsByProcessID(msg.ProcessID, msg.Count)
-	if server.handleHTTPError(c, err, http.StatusBadRequest) {
-		log.WithFields(log.Fields{"Error": err}).Debug("Failed to add log")
-		server.handleHTTPError(c, err, http.StatusInternalServerError)
-		return
+	var logs []core.Log
+	if msg.ExecutorID != "" {
+		logs, err = server.controller.getLogsByExecutorID(msg.ExecutorID, msg.Count, msg.Since)
+		if server.handleHTTPError(c, err, http.StatusBadRequest) {
+			log.WithFields(log.Fields{"Error": err}).Debug("Failed to add log")
+			server.handleHTTPError(c, err, http.StatusInternalServerError)
+			return
+		}
+	} else {
+		logs, err = server.controller.getLogsByProcessID(msg.ProcessID, msg.Count, msg.Since)
+		if server.handleHTTPError(c, err, http.StatusBadRequest) {
+			log.WithFields(log.Fields{"Error": err}).Debug("Failed to add log")
+			server.handleHTTPError(c, err, http.StatusInternalServerError)
+			return
+		}
 	}
 
 	jsonStr, err := core.ConvertLogArrayToJSON(logs)
@@ -119,6 +149,6 @@ func (server *ColoniesServer) handleGetLogsHTTPRequest(c *gin.Context, recovered
 		return
 	}
 
-	log.WithFields(log.Fields{"ProcessId": process.ID}).Debug("Getting logs")
+	log.Debug("Getting logs")
 	server.sendHTTPReply(c, payloadType, jsonStr)
 }

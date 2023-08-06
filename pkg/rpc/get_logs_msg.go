@@ -7,15 +7,18 @@ import (
 const GetLogsPayloadType = "getlogsmsg"
 
 type GetLogsMsg struct {
-	ProcessID string `json:"processid"`
-	Count     int    `json:"count"`
-	MsgType   string `json:"msgtype"`
+	ProcessID  string `json:"processid"`
+	ExecutorID string `json:"executorid"`
+	Count      int    `json:"count"`
+	Since      int64  `json:"since"`
+	MsgType    string `json:"msgtype"`
 }
 
-func CreateGetLogsMsg(processID string, count int) *GetLogsMsg {
+func CreateGetLogsMsg(processID string, count int, since int64) *GetLogsMsg {
 	msg := &GetLogsMsg{}
 	msg.ProcessID = processID
 	msg.Count = count
+	msg.Since = since
 	msg.MsgType = GetLogsPayloadType
 
 	return msg
@@ -35,7 +38,11 @@ func (msg *GetLogsMsg) Equals(msg2 *GetLogsMsg) bool {
 		return false
 	}
 
-	if msg.MsgType == msg2.MsgType && msg.ProcessID == msg2.ProcessID && msg.Count == msg2.Count {
+	if msg.MsgType == msg2.MsgType &&
+		msg.ProcessID == msg2.ProcessID &&
+		msg.Count == msg2.Count &&
+		msg.Since == msg2.Since &&
+		msg.ExecutorID == msg2.ExecutorID {
 		return true
 	}
 
