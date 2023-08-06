@@ -6,6 +6,7 @@ import (
 	"os"
 	"strconv"
 	"sync"
+	"time"
 
 	"github.com/colonyos/colonies/pkg/cluster"
 	"github.com/colonyos/colonies/pkg/core"
@@ -267,7 +268,7 @@ func (controller *coloniesController) renameColony(colonyID string, name string)
 func (controller *coloniesController) addLog(processID string, colonyID string, executorID string, msg string) error {
 	cmd := &command{threaded: true, errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
-			err := controller.db.AddLog(processID, colonyID, executorID, msg)
+			err := controller.db.AddLog(processID, colonyID, executorID, time.Now().UTC().UnixNano(), msg)
 			if err != nil {
 				cmd.errorChan <- err
 				return
@@ -279,15 +280,54 @@ func (controller *coloniesController) addLog(processID string, colonyID string, 
 	return <-cmd.errorChan
 }
 
-func (controller *coloniesController) getLogsByProcessID(processID string, limit int) ([]core.Log, error) {
+func (controller *coloniesController) getLogsByProcessID(processID string, limit int, since int64) ([]core.Log, error) {
 	cmd := &command{threaded: true, logsReplyChan: make(chan []core.Log), errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
-			logs, err := controller.db.GetLogsByProcessID(processID, limit)
-			if err != nil {
-				cmd.errorChan <- err
-				return
+			if since > 0 {
+				logs, err := controller.db.GetLogsByProcessIDSince(processID, limit, since)
+				if err != nil {
+					cmd.errorChan <- err
+					return
+				}
+				cmd.logsReplyChan <- logs
+			} else {
+				logs, err := controller.db.GetLogsByProcessID(processID, limit)
+				if err != nil {
+					cmd.errorChan <- err
+					return
+				}
+				cmd.logsReplyChan <- logs
 			}
-			cmd.logsReplyChan <- logs
+		}}
+
+	controller.cmdQueue <- cmd
+	var logs []core.Log
+	select {
+	case err := <-cmd.errorChan:
+		return []core.Log{}, err
+	case logs = <-cmd.logsReplyChan:
+		return logs, nil
+	}
+}
+
+func (controller *coloniesController) getLogsByExecutorID(executorID string, limit int, since int64) ([]core.Log, error) {
+	cmd := &command{threaded: true, logsReplyChan: make(chan []core.Log), errorChan: make(chan error, 1),
+		handler: func(cmd *command) {
+			if since > 0 {
+				logs, err := controller.db.GetLogsByExecutorIDSince(executorID, limit, since)
+				if err != nil {
+					cmd.errorChan <- err
+					return
+				}
+				cmd.logsReplyChan <- logs
+			} else {
+				logs, err := controller.db.GetLogsByExecutorID(executorID, limit)
+				if err != nil {
+					cmd.errorChan <- err
+					return
+				}
+				cmd.logsReplyChan <- logs
+			}
 		}}
 
 	controller.cmdQueue <- cmd
