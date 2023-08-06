@@ -56,6 +56,13 @@ func parseDBEnv() {
 	if DBPassword == "" {
 		DBPassword = os.Getenv("COLONIES_DB_PASSWORD")
 	}
+
+	timescaleDBEnv := os.Getenv("COLONIES_DB_TIMESCALEDB")
+	if timescaleDBEnv == "true" {
+		TimescaleDB = true
+	} else {
+		TimescaleDB = false
+	}
 }
 
 var dbCreateCmd = &cobra.Command{
@@ -67,7 +74,7 @@ var dbCreateCmd = &cobra.Command{
 
 		var db *postgresql.PQDatabase
 		for {
-			db = postgresql.CreatePQDatabase(DBHost, DBPort, DBUser, DBPassword, DBName, DBPrefix)
+			db = postgresql.CreatePQDatabase(DBHost, DBPort, DBUser, DBPassword, DBName, DBPrefix, TimescaleDB)
 			err := db.Connect()
 			if err != nil {
 				log.WithFields(log.Fields{"Error": err}).Error("Failed to call db.Connect(), retrying in 1 second ...")
@@ -100,10 +107,12 @@ var dbDropCmd = &cobra.Command{
 		reply, _ := reader.ReadString('\n')
 
 		if reply == "YES\n" {
-			db := postgresql.CreatePQDatabase(DBHost, DBPort, DBUser, DBPassword, DBName, DBPrefix)
+			log.WithFields(log.Fields{"DBHost": DBHost, "DBPort": DBPort, "DBUser": DBUser, "DBPassword": "*******************", "DBName": DBName, "UseTLS": UseTLS, "TimescaleDB": TimescaleDB}).Info("Connecting to PostgreSQL database")
+
+			db := postgresql.CreatePQDatabase(DBHost, DBPort, DBUser, DBPassword, DBName, DBPrefix, TimescaleDB)
 			err := db.Connect()
 			CheckError(err)
-			log.Info("Connecting to Colonies database, host: " + DBHost + ", port: " + strconv.Itoa(DBPort) + ", user: " + DBUser + ", password: " + "******************, name: " + DBName + ". prefix: " + DBPrefix)
+
 			err = db.Drop()
 			CheckError(err)
 			log.Info("Colonies database dropped")
