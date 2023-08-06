@@ -22,7 +22,7 @@ type controller interface {
 	renameColony(colonyID string, name string) error
 	addExecutor(executor *core.Executor, allowExecutorReregister bool) (*core.Executor, error)
 	addLog(processID string, colonyID string, executorID string, msg string) error
-	getLogsByProcessID(processID string, limit int) (string, error)
+	getLogsByProcessID(processID string, limit int) ([]core.Log, error)
 	getExecutor(executorID string) (*core.Executor, error)
 	getExecutorByColonyID(colonyID string) ([]*core.Executor, error)
 	approveExecutor(executorID string) error
