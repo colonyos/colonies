@@ -138,6 +138,13 @@ func parseServerEnv() {
 	} else {
 		AllowExecutorReregister = false
 	}
+
+	timescaleDBEnv := os.Getenv("COLONIES_DB_TIMESCALEDB")
+	if timescaleDBEnv == "true" {
+		TimescaleDB = true
+	} else {
+		TimescaleDB = false
+	}
 }
 
 var serverStatusCmd = &cobra.Command{
@@ -193,10 +200,11 @@ var serverStartCmd = &cobra.Command{
 			}
 		}
 
-		log.WithFields(log.Fields{"DBHost": DBHost, "DBPort": DBPort, "DBUser": DBUser, "DBPassword": "*******************", "DBName": DBName, "UseTLS": UseTLS}).Info("Connecting to PostgreSQL database")
+		log.WithFields(log.Fields{"DBHost": DBHost, "DBPort": DBPort, "DBUser": DBUser, "DBPassword": "*******************", "DBName": DBName, "UseTLS": UseTLS, "TimescaleDB": TimescaleDB}).Info("Connecting to PostgreSQL database")
+
 		var db *postgresql.PQDatabase
 		for {
-			db = postgresql.CreatePQDatabase(DBHost, DBPort, DBUser, DBPassword, DBName, DBPrefix)
+			db = postgresql.CreatePQDatabase(DBHost, DBPort, DBUser, DBPassword, DBName, DBPrefix, TimescaleDB)
 			err := db.Connect()
 			if err != nil {
 				log.WithFields(log.Fields{"Error": err}).Error("Failed to connect to PostgreSQL database")

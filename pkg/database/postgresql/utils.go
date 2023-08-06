@@ -23,7 +23,7 @@ func PrepareTestsWithPrefix(prefix string) (*PQDatabase, error) {
 	dbName := "postgres"
 	dbPrefix := prefix
 
-	db := CreatePQDatabase(dbHost, dbPort, dbUser, dbPassword, dbName, dbPrefix)
+	db := CreatePQDatabase(dbHost, dbPort, dbUser, dbPassword, dbName, dbPrefix, false)
 
 	err := db.Connect()
 	if err != nil {

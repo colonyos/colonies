@@ -79,6 +79,7 @@ Below are some screenshots from the [Colonies Dashboard](https://github.com/colo
 * [How to use generators](docs/Generators.md)
 * [How to use crons](docs/Crons.md)
 * [How to use the Colonies CLI](docs/CLI.md)
+* [Logging](docs/Logging.md)
 ## Design
 * [Overall design](docs/Design.md)
 * [HTTP RPC protocol](docs/RPC.md)

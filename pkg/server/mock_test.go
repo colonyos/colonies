@@ -89,6 +89,18 @@ func (v *controllerMock) renameColony(colonyID string, name string) error {
 	return nil
 }
 
+func (v *controllerMock) addLog(processID string, colonyID string, executorID string, msg string) error {
+	return nil
+}
+
+func (v *controllerMock) getLogsByProcessID(processID string, limit int, since int64) ([]core.Log, error) {
+	return []core.Log{}, nil
+}
+
+func (v *controllerMock) getLogsByExecutorID(processID string, limit int, since int64) ([]core.Log, error) {
+	return []core.Log{}, nil
+}
+
 func (v *controllerMock) addExecutor(executor *core.Executor, allowExecutorReregister bool) (*core.Executor, error) {
 	return nil, nil
 }
@@ -1011,8 +1023,27 @@ func (db *dbMock) Unlock() error {
 }
 
 func (db *dbMock) ApplyRetentionPolicy(retentionPeriod int64) error {
-
 	return nil
+}
+
+func (db *dbMock) AddLog(processID string, colonyID string, executorID string, timestamp int64, msg string) error {
+	return nil
+}
+
+func (db *dbMock) GetLogsByProcessID(processID string, limit int) ([]core.Log, error) {
+	return []core.Log{}, nil
+}
+
+func (db *dbMock) GetLogsByProcessIDSince(processID string, limit int, since int64) ([]core.Log, error) {
+	return []core.Log{}, nil
+}
+
+func (db *dbMock) GetLogsByExecutorID(processID string, limit int) ([]core.Log, error) {
+	return []core.Log{}, nil
+}
+
+func (db *dbMock) GetLogsByExecutorIDSince(processID string, limit int, since int64) ([]core.Log, error) {
+	return []core.Log{}, nil
 }
 
 // gin mockups

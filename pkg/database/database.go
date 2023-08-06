@@ -168,4 +168,11 @@ type Database interface {
 
 	// Retention management
 	ApplyRetentionPolicy(retentionPeriod int64) error
+
+	// Logging
+	AddLog(processID string, colonyID string, executorID string, timestamp int64, msg string) error
+	GetLogsByProcessID(processID string, limit int) ([]core.Log, error)
+	GetLogsByProcessIDSince(processID string, limit int, since int64) ([]core.Log, error)
+	GetLogsByExecutorID(executorID string, limit int) ([]core.Log, error)
+	GetLogsByExecutorIDSince(executorID string, limit int, since int64) ([]core.Log, error)
 }

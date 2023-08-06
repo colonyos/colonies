@@ -1127,3 +1127,82 @@ func (client *ColoniesClient) ResetDatabase(prvKey string) error {
 
 	return nil
 }
+
+func (client *ColoniesClient) AddLog(processID string, logmsg string, prvKey string) error {
+	msg := rpc.CreateAddLogMsg(processID, logmsg)
+	jsonString, err := msg.ToJSON()
+	if err != nil {
+		return err
+	}
+
+	_, err = client.sendMessage(rpc.AddLogPayloadType, jsonString, prvKey, false, context.TODO())
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (client *ColoniesClient) GetLogsByProcessID(processID string, count int, prvKey string) ([]core.Log, error) {
+	msg := rpc.CreateGetLogsMsg(processID, count, 0)
+	msg.ExecutorID = ""
+	jsonString, err := msg.ToJSON()
+	if err != nil {
+		return []core.Log{}, err
+	}
+
+	respBodyString, err := client.sendMessage(rpc.GetLogsPayloadType, jsonString, prvKey, false, context.TODO())
+	if err != nil {
+		return []core.Log{}, err
+	}
+
+	return core.ConvertJSONToLogArray(respBodyString)
+}
+
+func (client *ColoniesClient) GetLogsByProcessIDSince(processID string, count int, since int64, prvKey string) ([]core.Log, error) {
+	msg := rpc.CreateGetLogsMsg(processID, count, since)
+	msg.ExecutorID = ""
+	jsonString, err := msg.ToJSON()
+	if err != nil {
+		return []core.Log{}, err
+	}
+
+	respBodyString, err := client.sendMessage(rpc.GetLogsPayloadType, jsonString, prvKey, false, context.TODO())
+	if err != nil {
+		return []core.Log{}, err
+	}
+
+	return core.ConvertJSONToLogArray(respBodyString)
+}
+
+func (client *ColoniesClient) GetLogsByExecutorID(executorID string, count int, prvKey string) ([]core.Log, error) {
+	msg := rpc.CreateGetLogsMsg("", count, 0)
+	msg.ExecutorID = executorID
+	jsonString, err := msg.ToJSON()
+	if err != nil {
+		return []core.Log{}, err
+	}
+
+	respBodyString, err := client.sendMessage(rpc.GetLogsPayloadType, jsonString, prvKey, false, context.TODO())
+	if err != nil {
+		return []core.Log{}, err
+	}
+
+	return core.ConvertJSONToLogArray(respBodyString)
+}
+
+func (client *ColoniesClient) GetLogsByExecutorIDSince(executorID string, count int, since int64, prvKey string) ([]core.Log, error) {
+	msg := rpc.CreateGetLogsMsg("", count, since)
+	msg.ExecutorID = executorID
+	jsonString, err := msg.ToJSON()
+	if err != nil {
+		return []core.Log{}, err
+	}
+
+	respBodyString, err := client.sendMessage(rpc.GetLogsPayloadType, jsonString, prvKey, false, context.TODO())
+	if err != nil {
+		return []core.Log{}, err
+	}
+
+	return core.ConvertJSONToLogArray(respBodyString)
+}
