@@ -171,5 +171,5 @@ type Database interface {
 
 	// Logging
 	AddLog(processID string, colonyID string, executorID string, msg string) error
-	GetLogsByProcessID(processID string, limit int) (string, error)
+	GetLogsByProcessID(processID string, limit int) ([]core.Log, error)
 }
