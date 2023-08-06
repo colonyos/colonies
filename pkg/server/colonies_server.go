@@ -264,6 +264,12 @@ func (server *ColoniesServer) handleAPIRequest(c *gin.Context) {
 	case rpc.ResetDatabasePayloadType:
 		server.handleResetDatabaseHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 
+		// Log handlers
+	case rpc.AddLogPayloadType:
+		server.handleAddLogHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+	case rpc.GetLogsPayloadType:
+		server.handleGetLogsHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+
 	default:
 		errMsg := "invalid rpcMsg.PayloadType, " + rpcMsg.PayloadType
 		if server.handleHTTPError(c, errors.New(errMsg), http.StatusForbidden) {
