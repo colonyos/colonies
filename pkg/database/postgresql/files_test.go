@@ -219,3 +219,47 @@ func TestDeleteFileByName(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, fileFromDB)
 }
+
+func TestGetFilePrefixes(t *testing.T) {
+	db, err := PrepareTests()
+	assert.Nil(t, err)
+
+	defer db.Close()
+
+	now := time.Now()
+	file1 := utils.CreateTestFile("test_id", "test_colonyid", now)
+	file1.ID = core.GenerateRandomID()
+	file1.Prefix = "/testdir1"
+	file1.Name = "test_file.txt"
+	file1.Size = 1
+	err = db.AddFile(file1)
+	assert.Nil(t, err)
+
+	file2 := utils.CreateTestFile("test_id", "test_colonyid", now)
+	file2.ID = core.GenerateRandomID()
+	file2.Prefix = "/testdir2"
+	file2.Name = "test_file2.txt"
+	file2.Size = 1
+	err = db.AddFile(file2)
+	assert.Nil(t, err)
+
+	file3 := utils.CreateTestFile("test_id", "test_colonyid", now)
+	file3.ID = core.GenerateRandomID()
+	file3.Prefix = "/testdir3"
+	file3.Name = "test_file3.txt"
+	file3.Size = 1
+	err = db.AddFile(file3)
+	assert.Nil(t, err)
+
+	file4 := utils.CreateTestFile("test_id", "test_colonyid", now)
+	file4.ID = core.GenerateRandomID()
+	file4.Prefix = "/testdir3"
+	file4.Name = "test_file4.txt"
+	file4.Size = 1
+	err = db.AddFile(file4)
+	assert.Nil(t, err)
+
+	prefixes, err := db.GetFilePrefixes()
+	assert.Nil(t, err)
+	assert.Len(t, prefixes, 3)
+}
