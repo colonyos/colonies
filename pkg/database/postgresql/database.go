@@ -507,6 +507,48 @@ func (db *PQDatabase) createRetentionIndex3() error {
 	return nil
 }
 
+func (db *PQDatabase) createRetentionIndex4() error {
+	if !db.timescaleDB {
+		sqlStatement := `CREATE INDEX ` + db.dbPrefix + `RETENTION_INDEX4 ON ` + db.dbPrefix + `FILES (ADDED)`
+		_, err := db.postgresql.Exec(sqlStatement)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (db *PQDatabase) createFileIndex1() error {
+	sqlStatement := `CREATE INDEX ` + db.dbPrefix + `FILE_INDEX1 ON ` + db.dbPrefix + `FILES (PREFIX, NAME)`
+	_, err := db.postgresql.Exec(sqlStatement)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (db *PQDatabase) createFileIndex2() error {
+	sqlStatement := `CREATE INDEX ` + db.dbPrefix + `FILE_INDEX2 ON ` + db.dbPrefix + `FILES (FILE_ID)`
+	_, err := db.postgresql.Exec(sqlStatement)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (db *PQDatabase) createFileIndex3() error {
+	sqlStatement := `CREATE INDEX ` + db.dbPrefix + `FILE_INDEX3 ON ` + db.dbPrefix + `FILES (PREFIX)`
+	_, err := db.postgresql.Exec(sqlStatement)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (db *PQDatabase) Initialize() error {
 	err := db.createColoniesTable()
 	if err != nil {
@@ -624,6 +666,26 @@ func (db *PQDatabase) Initialize() error {
 	}
 
 	err = db.createRetentionIndex3()
+	if err != nil {
+		return err
+	}
+
+	err = db.createRetentionIndex4()
+	if err != nil {
+		return err
+	}
+
+	err = db.createFileIndex1()
+	if err != nil {
+		return err
+	}
+
+	err = db.createFileIndex2()
+	if err != nil {
+		return err
+	}
+
+	err = db.createFileIndex3()
 	if err != nil {
 		return err
 	}
