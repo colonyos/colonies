@@ -106,7 +106,7 @@ func (db *PQDatabase) GetLogsByExecutorIDSince(executorID string, limit int, sin
 	return logs, nil
 }
 
-func (db *PQDatabase) DeleteLogs(colonyID string) error {
+func (db *PQDatabase) DeleteLogsByColonyID(colonyID string) error {
 	sqlStatement := `DELETE FROM ` + db.dbPrefix + `LOGS WHERE COLONY_ID=$1`
 	_, err := db.postgresql.Exec(sqlStatement, colonyID)
 	if err != nil {
@@ -114,4 +114,23 @@ func (db *PQDatabase) DeleteLogs(colonyID string) error {
 	}
 
 	return nil
+}
+
+func (db *PQDatabase) CountLogs(colonyID string) (int, error) {
+	sqlStatement := `SELECT COUNT(*) FROM ` + db.dbPrefix + `LOGS WHERE COLONY_ID=$1`
+	rows, err := db.postgresql.Query(sqlStatement, colonyID)
+	if err != nil {
+		return -1, err
+	}
+
+	defer rows.Close()
+
+	rows.Next()
+	var count int
+	err = rows.Scan(&count)
+	if err != nil {
+		return -1, err
+	}
+
+	return count, nil
 }

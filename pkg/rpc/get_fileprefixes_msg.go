@@ -7,11 +7,13 @@ import (
 const GetFilePrefixesPayloadType = "getfileprefixesmsg"
 
 type GetFilePrefixesMsg struct {
-	MsgType string `json:"msgtype"`
+	MsgType  string `json:"msgtype"`
+	ColonyID string `json:"colonyid"`
 }
 
-func CreateGetFilePrefixesMsg() *GetFilePrefixesMsg {
+func CreateGetFilePrefixesMsg(colonyID string) *GetFilePrefixesMsg {
 	msg := &GetFilePrefixesMsg{}
+	msg.ColonyID = colonyID
 	msg.MsgType = GetFilePrefixesPayloadType
 
 	return msg
@@ -31,7 +33,7 @@ func (msg *GetFilePrefixesMsg) Equals(msg2 *GetFilePrefixesMsg) bool {
 		return false
 	}
 
-	if msg.MsgType == msg2.MsgType {
+	if msg.MsgType == msg2.MsgType && msg.ColonyID == msg2.ColonyID {
 		return true
 	}
 

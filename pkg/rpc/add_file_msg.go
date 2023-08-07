@@ -6,7 +6,7 @@ import (
 	"github.com/colonyos/colonies/pkg/core"
 )
 
-const AddFilePayloadType = "addlogmsg"
+const AddFilePayloadType = "addfilemsg"
 
 type AddFileMsg struct {
 	File    *core.File `json:"file"`

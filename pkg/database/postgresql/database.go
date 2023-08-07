@@ -520,7 +520,7 @@ func (db *PQDatabase) createRetentionIndex4() error {
 }
 
 func (db *PQDatabase) createFileIndex1() error {
-	sqlStatement := `CREATE INDEX ` + db.dbPrefix + `FILE_INDEX1 ON ` + db.dbPrefix + `FILES (PREFIX, NAME)`
+	sqlStatement := `CREATE INDEX ` + db.dbPrefix + `FILE_INDEX1 ON ` + db.dbPrefix + `FILES (COLONY_ID, PREFIX, NAME)`
 	_, err := db.postgresql.Exec(sqlStatement)
 	if err != nil {
 		return err
@@ -530,7 +530,7 @@ func (db *PQDatabase) createFileIndex1() error {
 }
 
 func (db *PQDatabase) createFileIndex2() error {
-	sqlStatement := `CREATE INDEX ` + db.dbPrefix + `FILE_INDEX2 ON ` + db.dbPrefix + `FILES (FILE_ID)`
+	sqlStatement := `CREATE INDEX ` + db.dbPrefix + `FILE_INDEX2 ON ` + db.dbPrefix + `FILES (COLONY_ID, FILE_ID)`
 	_, err := db.postgresql.Exec(sqlStatement)
 	if err != nil {
 		return err
@@ -540,7 +540,7 @@ func (db *PQDatabase) createFileIndex2() error {
 }
 
 func (db *PQDatabase) createFileIndex3() error {
-	sqlStatement := `CREATE INDEX ` + db.dbPrefix + `FILE_INDEX3 ON ` + db.dbPrefix + `FILES (PREFIX)`
+	sqlStatement := `CREATE INDEX ` + db.dbPrefix + `FILE_INDEX3 ON ` + db.dbPrefix + `FILES (COLONY_ID, PREFIX)`
 	_, err := db.postgresql.Exec(sqlStatement)
 	if err != nil {
 		return err
