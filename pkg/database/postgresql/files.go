@@ -9,7 +9,6 @@ import (
 )
 
 func (db *PQDatabase) AddFile(file *core.File) error {
-
 	sqlStatement := `INSERT INTO  ` + db.dbPrefix + `FILES (FILE_ID, COLONY_ID, PREFIX, NAME, SIZE, SEQNR, CHECKSUM, CHECKSUM_ALG, ADDED, PROTOCOL, S3_SERVER, S3_PORT, S3_TLS, S3_ACCESSKEY, S3_SECRETKEY, S3_REGION, S3_ENCKEY, S3_ENCALG, S3_OBJ, S3_BUCKET) VALUES ($1, $2, $3, $4, $5, nextval('` + db.dbPrefix + `FILE_SEQ'), $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)`
 	_, err := db.postgresql.Exec(sqlStatement, file.ID, file.ColonyID, file.Prefix, file.Name, file.Size, file.Checksum, file.ChecksumAlg, time.Now(), file.FileReference.Protocol, file.FileReference.S3Object.Server, file.FileReference.S3Object.Port, file.FileReference.S3Object.TLS, file.FileReference.S3Object.AccessKey, file.FileReference.S3Object.SecretKey, file.FileReference.S3Object.Region, file.FileReference.S3Object.EncryptionKey, file.FileReference.S3Object.EncryptionAlg, file.FileReference.S3Object.Object, file.FileReference.S3Object.Bucket)
 	if err != nil {
@@ -77,6 +76,23 @@ func (db *PQDatabase) parseFiles(rows *sql.Rows) ([]*core.File, error) {
 	}
 
 	return files, nil
+}
+
+func (db *PQDatabase) parsePrefix(rows *sql.Rows) ([]string, error) {
+	var prefixStr []string
+
+	for rows.Next() {
+		var prefix string
+
+		if err := rows.Scan(&prefix); err != nil {
+			return nil, err
+		}
+
+		prefixStr = append(prefixStr, prefix)
+
+	}
+
+	return prefixStr, nil
 }
 
 func (db *PQDatabase) GetFileByID(fileID string) (*core.File, error) {
@@ -184,4 +200,21 @@ func (db *PQDatabase) DeleteFileByName(prefix string, name string) error {
 	}
 
 	return nil
+}
+
+func (db *PQDatabase) GetFilePrefixes() ([]string, error) {
+	sqlStatement := `SELECT DISTINCT (PREFIX) FROM ` + db.dbPrefix + `FILES`
+	rows, err := db.postgresql.Query(sqlStatement)
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	prefixesStr, err := db.parsePrefix(rows)
+	if err != nil {
+		return nil, err
+	}
+
+	return prefixesStr, nil
 }
