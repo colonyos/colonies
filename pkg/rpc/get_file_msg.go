@@ -7,15 +7,17 @@ import (
 const GetFilePayloadType = "getfilemsg"
 
 type GetFileMsg struct {
-	FileID  string `json:"fileid"`
-	Prefix  string `json:"prefix"`
-	Name    string `json:"name"`
-	Latest  bool   `json:"latest"`
-	MsgType string `json:"msgtype"`
+	ColonyID string `json:"colonyid"`
+	FileID   string `json:"fileid"`
+	Prefix   string `json:"prefix"`
+	Name     string `json:"name"`
+	Latest   bool   `json:"latest"`
+	MsgType  string `json:"msgtype"`
 }
 
-func CreateGetFileMsg(fileID string, prefix string, name string, latest bool) *GetFileMsg {
+func CreateGetFileMsg(colonyID string, fileID string, prefix string, name string, latest bool) *GetFileMsg {
 	msg := &GetFileMsg{}
+	msg.ColonyID = colonyID
 	msg.FileID = fileID
 	msg.Prefix = prefix
 	msg.Name = name
@@ -40,6 +42,7 @@ func (msg *GetFileMsg) Equals(msg2 *GetFileMsg) bool {
 	}
 
 	if msg.MsgType == msg2.MsgType &&
+		msg.ColonyID == msg2.ColonyID &&
 		msg.FileID == msg2.FileID &&
 		msg.Prefix == msg2.Prefix &&
 		msg.Name == msg2.Name &&
