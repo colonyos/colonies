@@ -29,7 +29,7 @@ func TestAddGetFile(t *testing.T) {
 	file.SequenceNumber = 1
 	file.Added = time.Time{}
 
-	assert.True(t, file.Equals(*fileFromDB))
+	assert.True(t, file.Equals(fileFromDB))
 }
 
 func TestGetFileByName(t *testing.T) {
@@ -56,7 +56,8 @@ func TestGetFileByName(t *testing.T) {
 
 	fileFromDB, err := db.GetLatestFileByName(file1.Prefix, file1.Name)
 	assert.Nil(t, err)
-	assert.Equal(t, fileFromDB.Size, int64(2))
+	assert.Len(t, fileFromDB, 1)
+	assert.Equal(t, fileFromDB[0].Size, int64(2))
 
 	filesFromDB, err := db.GetFileByName(file1.Prefix, file1.Name)
 	assert.Nil(t, err)

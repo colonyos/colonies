@@ -179,7 +179,7 @@ type Database interface {
 	// File management
 	AddFile(file *core.File) error
 	GetFileByID(fileID string) (*core.File, error)
-	GetLatestFileByName(prefix string, name string) (*core.File, error)
+	GetLatestFileByName(prefix string, name string) ([]*core.File, error)
 	GetFileByName(prefix string, name string) ([]*core.File, error)
 	GetFileNamesByPrefix(prefix string) ([]string, error)
 	DeleteFileByID(fileID string) error
