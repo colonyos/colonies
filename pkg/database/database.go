@@ -175,4 +175,9 @@ type Database interface {
 	GetLogsByProcessIDSince(processID string, limit int, since int64) ([]core.Log, error)
 	GetLogsByExecutorID(executorID string, limit int) ([]core.Log, error)
 	GetLogsByExecutorIDSince(executorID string, limit int, since int64) ([]core.Log, error)
+
+	// File management
+	AddFile(file *core.File) error
+	GetFile(path string, filename string, version int64) error
+	ListFiles(path string) error
 }
