@@ -36,17 +36,17 @@ type File struct {
 	Added          time.Time     `json:"added"`
 }
 
-func ConvertJSONToFile(jsonString string) (File, error) {
-	var file File
+func ConvertJSONToFile(jsonString string) (*File, error) {
+	var file *File
 	err := json.Unmarshal([]byte(jsonString), &file)
 	if err != nil {
-		return File{}, err
+		return &File{}, err
 	}
 
 	return file, nil
 }
 
-func (file *File) Equals(file2 File) bool {
+func (file *File) Equals(file2 *File) bool {
 	same := true
 
 	if file.FileReference.S3Object.Server != file2.FileReference.S3Object.Server {
@@ -113,6 +113,48 @@ func (file *File) Equals(file2 File) bool {
 	}
 
 	return same
+}
+
+func ConvertFileArrayToJSON(files []*File) (string, error) {
+	jsonBytes, err := json.MarshalIndent(files, "", "    ")
+	if err != nil {
+		return "", err
+	}
+
+	return string(jsonBytes), nil
+}
+
+func ConvertJSONToFileArray(jsonString string) ([]*File, error) {
+	var files []*File
+	err := json.Unmarshal([]byte(jsonString), &files)
+	if err != nil {
+		return files, err
+	}
+
+	return files, nil
+}
+
+func IsFileArraysEqual(files1 []*File, files2 []*File) bool {
+	if files1 == nil || files2 == nil {
+		return false
+	}
+
+	if len(files1) != len(files2) {
+		return false
+	}
+
+	counter := 0
+	for i := range files1 {
+		if files1[i].Equals(files2[i]) {
+			counter++
+		}
+	}
+
+	if counter == len(files1) {
+		return true
+	}
+
+	return false
 }
 
 func (file *File) ToJSON() (string, error) {

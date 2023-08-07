@@ -116,7 +116,7 @@ func (db *PQDatabase) GetFileByID(fileID string) (*core.File, error) {
 	return nil, nil
 }
 
-func (db *PQDatabase) GetLatestFileByName(prefix string, name string) (*core.File, error) {
+func (db *PQDatabase) GetLatestFileByName(prefix string, name string) ([]*core.File, error) {
 	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `FILES WHERE NAME=$1 AND PREFIX=$2 ORDER BY SEQNR DESC LIMIT 1`
 	rows, err := db.postgresql.Query(sqlStatement, name, prefix)
 	if err != nil {
@@ -131,7 +131,7 @@ func (db *PQDatabase) GetLatestFileByName(prefix string, name string) (*core.Fil
 	}
 
 	if len(files) == 1 {
-		return files[0], nil
+		return files, nil
 	}
 
 	return nil, nil

@@ -1054,7 +1054,7 @@ func (db *dbMock) GetFileByID(fileID string) (*core.File, error) {
 	return nil, nil
 }
 
-func (db *dbMock) GetLatestFileByName(prefix string, name string) (*core.File, error) {
+func (db *dbMock) GetLatestFileByName(prefix string, name string) ([]*core.File, error) {
 	return nil, nil
 }
 
