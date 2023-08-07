@@ -20,17 +20,17 @@ func createTestFile() *File {
 		Object:        "test_object",
 		Bucket:        "test_bucket",
 	}
-	fileRef := FileReference{Protocol: "s3", S3Object: s3Object}
+	ref := Reference{Protocol: "s3", S3Object: s3Object}
 	file := File{
-		ID:            "test_id",
-		ColonyID:      "test_colonyid",
-		Prefix:        "test_prefix",
-		Name:          "test_name",
-		Size:          1111,
-		Checksum:      "test_checksum",
-		ChecksumAlg:   "test_checksumalg",
-		FileReference: fileRef,
-		Added:         time.Time{}}
+		ID:          "test_id",
+		ColonyID:    "test_colonyid",
+		Prefix:      "test_prefix",
+		Name:        "test_name",
+		Size:        1111,
+		Checksum:    "test_checksum",
+		ChecksumAlg: "test_checksumalg",
+		Reference:   ref,
+		Added:       time.Time{}}
 
 	return &file
 }

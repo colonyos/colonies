@@ -34,17 +34,17 @@ func CreateTestFile(id string, colonyID string, now time.Time) *core.File {
 		Object:        "test_object",
 		Bucket:        "test_bucket",
 	}
-	fileRef := core.FileReference{Protocol: "s3", S3Object: s3Object}
+	ref := core.Reference{Protocol: "s3", S3Object: s3Object}
 	file := core.File{
-		ID:            id,
-		ColonyID:      "test_colonyid",
-		Prefix:        "test_prefix",
-		Name:          "test_name",
-		Size:          1111,
-		Checksum:      "test_checksum",
-		ChecksumAlg:   "test_checksumalg",
-		FileReference: fileRef,
-		Added:         now}
+		ID:          id,
+		ColonyID:    colonyID,
+		Prefix:      "test_prefix",
+		Name:        "test_name",
+		Size:        1111,
+		Checksum:    "test_checksum",
+		ChecksumAlg: "test_checksumalg",
+		Reference:   ref,
+		Added:       now}
 
 	return &file
 }

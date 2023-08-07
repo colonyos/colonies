@@ -10,7 +10,7 @@ import (
 
 func (db *PQDatabase) AddFile(file *core.File) error {
 	sqlStatement := `INSERT INTO  ` + db.dbPrefix + `FILES (FILE_ID, COLONY_ID, PREFIX, NAME, SIZE, SEQNR, CHECKSUM, CHECKSUM_ALG, ADDED, PROTOCOL, S3_SERVER, S3_PORT, S3_TLS, S3_ACCESSKEY, S3_SECRETKEY, S3_REGION, S3_ENCKEY, S3_ENCALG, S3_OBJ, S3_BUCKET) VALUES ($1, $2, $3, $4, $5, nextval('` + db.dbPrefix + `FILE_SEQ'), $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)`
-	_, err := db.postgresql.Exec(sqlStatement, file.ID, file.ColonyID, file.Prefix, file.Name, file.Size, file.Checksum, file.ChecksumAlg, time.Now(), file.FileReference.Protocol, file.FileReference.S3Object.Server, file.FileReference.S3Object.Port, file.FileReference.S3Object.TLS, file.FileReference.S3Object.AccessKey, file.FileReference.S3Object.SecretKey, file.FileReference.S3Object.Region, file.FileReference.S3Object.EncryptionKey, file.FileReference.S3Object.EncryptionAlg, file.FileReference.S3Object.Object, file.FileReference.S3Object.Bucket)
+	_, err := db.postgresql.Exec(sqlStatement, file.ID, file.ColonyID, file.Prefix, file.Name, file.Size, file.Checksum, file.ChecksumAlg, time.Now(), file.Reference.Protocol, file.Reference.S3Object.Server, file.Reference.S3Object.Port, file.Reference.S3Object.TLS, file.Reference.S3Object.AccessKey, file.Reference.S3Object.SecretKey, file.Reference.S3Object.Region, file.Reference.S3Object.EncryptionKey, file.Reference.S3Object.EncryptionAlg, file.Reference.S3Object.Object, file.Reference.S3Object.Bucket)
 	if err != nil {
 		return err
 	}
@@ -59,7 +59,7 @@ func (db *PQDatabase) parseFiles(rows *sql.Rows) ([]*core.File, error) {
 			Object:        s3Object,
 			Bucket:        s3Bucket,
 		}
-		fileRef := core.FileReference{Protocol: "s3", S3Object: s3ObjectStruct}
+		ref := core.Reference{Protocol: "s3", S3Object: s3ObjectStruct}
 		file := core.File{
 			ID:             fileID,
 			ColonyID:       colonyID,
@@ -69,7 +69,7 @@ func (db *PQDatabase) parseFiles(rows *sql.Rows) ([]*core.File, error) {
 			SequenceNumber: seqnr,
 			Checksum:       checksum,
 			ChecksumAlg:    checksumAlg,
-			FileReference:  fileRef,
+			Reference:      ref,
 			Added:          added}
 
 		files = append(files, &file)
@@ -95,9 +95,9 @@ func (db *PQDatabase) parsePrefix(rows *sql.Rows) ([]string, error) {
 	return prefixStr, nil
 }
 
-func (db *PQDatabase) GetFileByID(fileID string) (*core.File, error) {
-	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `FILES WHERE FILE_ID=$1`
-	rows, err := db.postgresql.Query(sqlStatement, fileID)
+func (db *PQDatabase) GetFileByID(colonyID string, fileID string) (*core.File, error) {
+	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `FILES WHERE COLONY_ID=$1 AND FILE_ID=$2`
+	rows, err := db.postgresql.Query(sqlStatement, colonyID, fileID)
 	if err != nil {
 		return nil, err
 	}
@@ -116,9 +116,9 @@ func (db *PQDatabase) GetFileByID(fileID string) (*core.File, error) {
 	return nil, nil
 }
 
-func (db *PQDatabase) GetLatestFileByName(prefix string, name string) ([]*core.File, error) {
-	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `FILES WHERE NAME=$1 AND PREFIX=$2 ORDER BY SEQNR DESC LIMIT 1`
-	rows, err := db.postgresql.Query(sqlStatement, name, prefix)
+func (db *PQDatabase) GetLatestFileByName(colonyID string, prefix string, name string) ([]*core.File, error) {
+	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `FILES WHERE COLONY_ID=$1 AND NAME=$2 AND PREFIX=$3 ORDER BY SEQNR DESC LIMIT 1`
+	rows, err := db.postgresql.Query(sqlStatement, colonyID, name, prefix)
 	if err != nil {
 		return nil, err
 	}
@@ -137,9 +137,9 @@ func (db *PQDatabase) GetLatestFileByName(prefix string, name string) ([]*core.F
 	return nil, nil
 }
 
-func (db *PQDatabase) GetFileByName(prefix string, name string) ([]*core.File, error) {
-	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `FILES WHERE PREFIX=$1 AND NAME=$2 ORDER BY SEQNR DESC`
-	rows, err := db.postgresql.Query(sqlStatement, prefix, name)
+func (db *PQDatabase) GetFileByName(colonyID string, prefix string, name string) ([]*core.File, error) {
+	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `FILES WHERE COLONY_ID=$1 AND PREFIX=$2 AND NAME=$3 ORDER BY SEQNR DESC`
+	rows, err := db.postgresql.Query(sqlStatement, colonyID, prefix, name)
 	if err != nil {
 		return nil, err
 	}
@@ -154,9 +154,9 @@ func (db *PQDatabase) GetFileByName(prefix string, name string) ([]*core.File, e
 	return files, nil
 }
 
-func (db *PQDatabase) GetFileNamesByPrefix(prefix string) ([]string, error) {
-	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `FILES WHERE PREFIX=$1`
-	rows, err := db.postgresql.Query(sqlStatement, prefix)
+func (db *PQDatabase) GetFileNamesByPrefix(colonyID string, prefix string) ([]string, error) {
+	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `FILES WHERE COLONY_ID=$1 AND PREFIX=$2`
+	rows, err := db.postgresql.Query(sqlStatement, colonyID, prefix)
 	if err != nil {
 		return nil, err
 	}
@@ -182,9 +182,9 @@ func (db *PQDatabase) GetFileNamesByPrefix(prefix string) ([]string, error) {
 	return filenames, nil
 }
 
-func (db *PQDatabase) DeleteFileByID(fileID string) error {
-	sqlStatement := `DELETE FROM ` + db.dbPrefix + `FILES WHERE FILE_ID=$1`
-	_, err := db.postgresql.Exec(sqlStatement, fileID)
+func (db *PQDatabase) DeleteFileByID(colonyID string, fileID string) error {
+	sqlStatement := `DELETE FROM ` + db.dbPrefix + `FILES WHERE COLONY_ID=$1 AND FILE_ID=$2`
+	_, err := db.postgresql.Exec(sqlStatement, colonyID, fileID)
 	if err != nil {
 		return err
 	}
@@ -192,9 +192,9 @@ func (db *PQDatabase) DeleteFileByID(fileID string) error {
 	return nil
 }
 
-func (db *PQDatabase) DeleteFileByName(prefix string, name string) error {
-	sqlStatement := `DELETE FROM ` + db.dbPrefix + `FILES WHERE PREFIX=$1 AND NAME=$2`
-	_, err := db.postgresql.Exec(sqlStatement, prefix, name)
+func (db *PQDatabase) DeleteFileByName(colonyID string, prefix string, name string) error {
+	sqlStatement := `DELETE FROM ` + db.dbPrefix + `FILES WHERE COLONY_ID=$1 AND PREFIX=$2 AND NAME=$3`
+	_, err := db.postgresql.Exec(sqlStatement, colonyID, prefix, name)
 	if err != nil {
 		return err
 	}
@@ -202,9 +202,19 @@ func (db *PQDatabase) DeleteFileByName(prefix string, name string) error {
 	return nil
 }
 
-func (db *PQDatabase) GetFilePrefixes() ([]string, error) {
-	sqlStatement := `SELECT DISTINCT (PREFIX) FROM ` + db.dbPrefix + `FILES`
-	rows, err := db.postgresql.Query(sqlStatement)
+func (db *PQDatabase) DeleteFilesByColonyID(colonyID string) error {
+	sqlStatement := `DELETE FROM ` + db.dbPrefix + `FILES WHERE COLONY_ID=$1`
+	_, err := db.postgresql.Exec(sqlStatement, colonyID)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (db *PQDatabase) GetFilePrefixes(colonyID string) ([]string, error) {
+	sqlStatement := `SELECT DISTINCT (PREFIX) FROM ` + db.dbPrefix + `FILES WHERE COLONY_ID=$1`
+	rows, err := db.postgresql.Query(sqlStatement, colonyID)
 	if err != nil {
 		return nil, err
 	}
@@ -217,4 +227,23 @@ func (db *PQDatabase) GetFilePrefixes() ([]string, error) {
 	}
 
 	return prefixesStr, nil
+}
+
+func (db *PQDatabase) CountFiles(colonyID string) (int, error) {
+	sqlStatement := `SELECT COUNT(*) FROM ` + db.dbPrefix + `FILES WHERE COLONY_ID=$1`
+	rows, err := db.postgresql.Query(sqlStatement, colonyID)
+	if err != nil {
+		return -1, err
+	}
+
+	defer rows.Close()
+
+	rows.Next()
+	var count int
+	err = rows.Scan(&count)
+	if err != nil {
+		return -1, err
+	}
+
+	return count, nil
 }

@@ -7,7 +7,7 @@ import (
 )
 
 func TestGetFileMsg(t *testing.T) {
-	msg := CreateGetFileMsg("test_fileid", "test_prefix", "test_name", false)
+	msg := CreateGetFileMsg("test_colonyid", "test_fileid", "test_prefix", "test_name", false)
 	jsonString, err := msg.ToJSON()
 	assert.Nil(t, err)
 
@@ -21,7 +21,7 @@ func TestGetFileMsg(t *testing.T) {
 }
 
 func TestRPCGetFileMsgIndent(t *testing.T) {
-	msg := CreateGetFileMsg("test_fileid", "test_prefix", "test_name", false)
+	msg := CreateGetFileMsg("test_colonyid", "test_fileid", "test_prefix", "test_name", false)
 	jsonString, err := msg.ToJSONIndent()
 	assert.Nil(t, err)
 
@@ -35,7 +35,7 @@ func TestRPCGetFileMsgIndent(t *testing.T) {
 }
 
 func TestRPCGetFileMsgEquals(t *testing.T) {
-	msg := CreateGetFileMsg("test_fileid", "test_prefix", "test_name", false)
+	msg := CreateGetFileMsg("test_colonyid", "test_fileid", "test_prefix", "test_name", false)
 	assert.True(t, msg.Equals(msg))
 	assert.False(t, msg.Equals(nil))
 }

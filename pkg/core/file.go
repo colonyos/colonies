@@ -18,22 +18,22 @@ type S3Object struct {
 	Bucket        string `json:"bucket"`
 }
 
-type FileReference struct {
+type Reference struct {
 	Protocol string   `json:"protocol"`
 	S3Object S3Object `json:"s3object"`
 }
 
 type File struct {
-	ID             string        `json:"fileid"`
-	ColonyID       string        `json:"colonyid"`
-	Prefix         string        `json:"prefix"`
-	Name           string        `json:"name"`
-	Size           int64         `json:"size"`
-	SequenceNumber int64         `json:"sequencenr"`
-	Checksum       string        `json:"checksum"`
-	ChecksumAlg    string        `json:"checksumalg"`
-	FileReference  FileReference `json:"ref"`
-	Added          time.Time     `json:"added"`
+	ID             string    `json:"fileid"`
+	ColonyID       string    `json:"colonyid"`
+	Prefix         string    `json:"prefix"`
+	Name           string    `json:"name"`
+	Size           int64     `json:"size"`
+	SequenceNumber int64     `json:"sequencenr"`
+	Checksum       string    `json:"checksum"`
+	ChecksumAlg    string    `json:"checksumalg"`
+	Reference      Reference `json:"ref"`
+	Added          time.Time `json:"added"`
 }
 
 func ConvertJSONToFile(jsonString string) (*File, error) {
@@ -49,38 +49,38 @@ func ConvertJSONToFile(jsonString string) (*File, error) {
 func (file *File) Equals(file2 *File) bool {
 	same := true
 
-	if file.FileReference.S3Object.Server != file2.FileReference.S3Object.Server {
+	if file.Reference.S3Object.Server != file2.Reference.S3Object.Server {
 		same = false
 	}
-	if file.FileReference.S3Object.Port != file2.FileReference.S3Object.Port {
+	if file.Reference.S3Object.Port != file2.Reference.S3Object.Port {
 		same = false
 	}
-	if file.FileReference.S3Object.TLS != file2.FileReference.S3Object.TLS {
+	if file.Reference.S3Object.TLS != file2.Reference.S3Object.TLS {
 		same = false
 	}
-	if file.FileReference.S3Object.AccessKey != file2.FileReference.S3Object.AccessKey {
+	if file.Reference.S3Object.AccessKey != file2.Reference.S3Object.AccessKey {
 		same = false
 	}
-	if file.FileReference.S3Object.SecretKey != file2.FileReference.S3Object.SecretKey {
+	if file.Reference.S3Object.SecretKey != file2.Reference.S3Object.SecretKey {
 		same = false
 	}
-	if file.FileReference.S3Object.Region != file2.FileReference.S3Object.Region {
+	if file.Reference.S3Object.Region != file2.Reference.S3Object.Region {
 		same = false
 	}
-	if file.FileReference.S3Object.EncryptionKey != file2.FileReference.S3Object.EncryptionKey {
+	if file.Reference.S3Object.EncryptionKey != file2.Reference.S3Object.EncryptionKey {
 		same = false
 	}
-	if file.FileReference.S3Object.EncryptionAlg != file2.FileReference.S3Object.EncryptionAlg {
+	if file.Reference.S3Object.EncryptionAlg != file2.Reference.S3Object.EncryptionAlg {
 		same = false
 	}
-	if file.FileReference.S3Object.Object != file2.FileReference.S3Object.Object {
+	if file.Reference.S3Object.Object != file2.Reference.S3Object.Object {
 		same = false
 	}
-	if file.FileReference.S3Object.Bucket != file2.FileReference.S3Object.Bucket {
+	if file.Reference.S3Object.Bucket != file2.Reference.S3Object.Bucket {
 		same = false
 	}
 
-	if file.FileReference.Protocol != file2.FileReference.Protocol {
+	if file.Reference.Protocol != file2.Reference.Protocol {
 		same = false
 	}
 
