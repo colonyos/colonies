@@ -1046,6 +1046,38 @@ func (db *dbMock) GetLogsByExecutorIDSince(processID string, limit int, since in
 	return []core.Log{}, nil
 }
 
+func (db *dbMock) AddFile(file *core.File) error {
+	return nil
+}
+
+func (db *dbMock) GetFileByID(fileID string) (*core.File, error) {
+	return nil, nil
+}
+
+func (db *dbMock) GetLatestFileByName(prefix string, name string) (*core.File, error) {
+	return nil, nil
+}
+
+func (db *dbMock) GetFileByName(prefix string, name string) ([]*core.File, error) {
+	return nil, nil
+}
+
+func (db *dbMock) GetFileNamesByPrefix(prefix string) ([]string, error) {
+	return nil, nil
+}
+
+func (db *dbMock) DeleteFileByID(fileID string) error {
+	return nil
+}
+
+func (db *dbMock) DeleteFileByName(prefix string, name string) error {
+	return nil
+}
+
+func (db *dbMock) GetFilePrefixes() ([]string, error) {
+	return []string{}, nil
+}
+
 // gin mockups
 func getTestGinContext() (*gin.Context, *httptest.ResponseRecorder) {
 	gin.SetMode(gin.TestMode)
