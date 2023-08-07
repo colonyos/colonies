@@ -264,11 +264,21 @@ func (server *ColoniesServer) handleAPIRequest(c *gin.Context) {
 	case rpc.ResetDatabasePayloadType:
 		server.handleResetDatabaseHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 
-		// Log handlers
+	// Log handlers
 	case rpc.AddLogPayloadType:
 		server.handleAddLogHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 	case rpc.GetLogsPayloadType:
 		server.handleGetLogsHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+
+		// File handlers
+	case rpc.AddFilePayloadType:
+		server.handleAddFileHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+	case rpc.GetFilePayloadType:
+		server.handleGetFileHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+	case rpc.GetFilesPayloadType:
+		server.handleGetFilesHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+	case rpc.GetFilePrefixesPayloadType:
+		server.handleGetFilePrefixesHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 
 	default:
 		errMsg := "invalid rpcMsg.PayloadType, " + rpcMsg.PayloadType

@@ -1046,36 +1046,48 @@ func (db *dbMock) GetLogsByExecutorIDSince(processID string, limit int, since in
 	return []core.Log{}, nil
 }
 
+func (db *dbMock) DeleteLogsByColonyID(colonyID string) error {
+	return nil
+}
+
+func (db *dbMock) CountLogs(colonyID string) (int, error) {
+	return 0, nil
+}
+
 func (db *dbMock) AddFile(file *core.File) error {
 	return nil
 }
 
-func (db *dbMock) GetFileByID(fileID string) (*core.File, error) {
+func (db *dbMock) GetFileByID(colonyID string, fileID string) (*core.File, error) {
 	return nil, nil
 }
 
-func (db *dbMock) GetLatestFileByName(prefix string, name string) ([]*core.File, error) {
+func (db *dbMock) GetLatestFileByName(colonyID string, prefix string, name string) ([]*core.File, error) {
 	return nil, nil
 }
 
-func (db *dbMock) GetFileByName(prefix string, name string) ([]*core.File, error) {
+func (db *dbMock) GetFileByName(colonyID string, prefix string, name string) ([]*core.File, error) {
 	return nil, nil
 }
 
-func (db *dbMock) GetFileNamesByPrefix(prefix string) ([]string, error) {
+func (db *dbMock) GetFileNamesByPrefix(colonyID string, prefix string) ([]string, error) {
 	return nil, nil
 }
 
-func (db *dbMock) DeleteFileByID(fileID string) error {
+func (db *dbMock) DeleteFileByID(colonyID string, fileID string) error {
 	return nil
 }
 
-func (db *dbMock) DeleteFileByName(prefix string, name string) error {
+func (db *dbMock) DeleteFileByName(colonyID string, prefix string, name string) error {
 	return nil
 }
 
-func (db *dbMock) GetFilePrefixes() ([]string, error) {
+func (db *dbMock) GetFilePrefixes(colonyID string) ([]string, error) {
 	return []string{}, nil
+}
+
+func (db *dbMock) CountFiles(colonyID string) (int, error) {
+	return 0, nil
 }
 
 // gin mockups
