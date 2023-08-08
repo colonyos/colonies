@@ -69,16 +69,16 @@ func TestGetFileByNameSecurity(t *testing.T) {
 	addedFile, err := client.AddFile(file, env.executor1PrvKey)
 	assert.Nil(t, err)
 
-	_, err = client.GetFileByName(env.colony1ID, addedFile.Prefix, addedFile.Name, env.executor2PrvKey)
+	_, err = client.GetFileByName(env.colony1ID, addedFile.Label, addedFile.Name, env.executor2PrvKey)
 	assert.NotNil(t, err) // Should not work
 
-	_, err = client.GetFileByName(env.colony1ID, addedFile.Prefix, addedFile.Name, env.colony1PrvKey)
+	_, err = client.GetFileByName(env.colony1ID, addedFile.Label, addedFile.Name, env.colony1PrvKey)
 	assert.NotNil(t, err) // Should not work
 
-	_, err = client.GetFileByName(env.colony1ID, addedFile.Prefix, addedFile.Name, env.colony2PrvKey)
+	_, err = client.GetFileByName(env.colony1ID, addedFile.Label, addedFile.Name, env.colony2PrvKey)
 	assert.NotNil(t, err) // Should not work
 
-	_, err = client.GetFileByName(env.colony1ID, addedFile.Prefix, addedFile.Name, env.executor1PrvKey)
+	_, err = client.GetFileByName(env.colony1ID, addedFile.Label, addedFile.Name, env.executor1PrvKey)
 	assert.Nil(t, err) // Should work
 
 	server.Shutdown()
@@ -115,16 +115,16 @@ func TestGetFilePrefixesSecurity(t *testing.T) {
 	//   executor1 is member of colony1
 	//   executor2 is member of colony2
 
-	_, err := client.GetFilePrefixes(env.colony1ID, env.executor2PrvKey)
+	_, err := client.GetFileLabels(env.colony1ID, env.executor2PrvKey)
 	assert.NotNil(t, err) // Should not work
 
-	_, err = client.GetFilePrefixes(env.colony1ID, env.colony1PrvKey)
+	_, err = client.GetFileLabels(env.colony1ID, env.colony1PrvKey)
 	assert.NotNil(t, err) // Should not work
 
-	_, err = client.GetFilePrefixes(env.colony1ID, env.colony2PrvKey)
+	_, err = client.GetFileLabels(env.colony1ID, env.colony2PrvKey)
 	assert.NotNil(t, err) // Should not work
 
-	_, err = client.GetFilePrefixes(env.colony1ID, env.executor1PrvKey)
+	_, err = client.GetFileLabels(env.colony1ID, env.executor1PrvKey)
 	assert.Nil(t, err) // Should work
 
 	server.Shutdown()
@@ -139,7 +139,7 @@ func TestDeleteFileByIDSecurity(t *testing.T) {
 	//   executor2 is member of colony2
 
 	file := utils.CreateTestFile(env.colony1ID)
-	file.Prefix = "/testprefix"
+	file.Label = "/testlabel"
 	file.Name = "testfile2"
 	file.Size = 1
 	addedFile, err := client.AddFile(file, env.executor1PrvKey)
@@ -169,22 +169,22 @@ func TestDeleteFileByNameSecurity(t *testing.T) {
 	//   executor2 is member of colony2
 
 	file := utils.CreateTestFile(env.colony1ID)
-	file.Prefix = "/testprefix"
+	file.Label = "/testlabel"
 	file.Name = "testfile2"
 	file.Size = 1
 	addedFile, err := client.AddFile(file, env.executor1PrvKey)
 	assert.Nil(t, err)
 
-	err = client.DeleteFileByName(env.colony1ID, addedFile.Prefix, addedFile.Name, env.executor2PrvKey)
+	err = client.DeleteFileByName(env.colony1ID, addedFile.Label, addedFile.Name, env.executor2PrvKey)
 	assert.NotNil(t, err) // Should not work
 
-	err = client.DeleteFileByName(env.colony1ID, addedFile.Prefix, addedFile.Name, env.colony1PrvKey)
+	err = client.DeleteFileByName(env.colony1ID, addedFile.Label, addedFile.Name, env.colony1PrvKey)
 	assert.NotNil(t, err) // Should not work
 
-	err = client.DeleteFileByName(env.colony1ID, addedFile.Prefix, addedFile.Name, env.colony2PrvKey)
+	err = client.DeleteFileByName(env.colony1ID, addedFile.Label, addedFile.Name, env.colony2PrvKey)
 	assert.NotNil(t, err) // Should not work
 
-	err = client.DeleteFileByName(env.colony1ID, addedFile.Prefix, addedFile.Name, env.executor1PrvKey)
+	err = client.DeleteFileByName(env.colony1ID, addedFile.Label, addedFile.Name, env.executor1PrvKey)
 	assert.Nil(t, err) // Should work
 
 	server.Shutdown()

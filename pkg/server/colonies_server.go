@@ -277,8 +277,8 @@ func (server *ColoniesServer) handleAPIRequest(c *gin.Context) {
 		server.handleGetFileHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 	case rpc.GetFilesPayloadType:
 		server.handleGetFilesHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
-	case rpc.GetFilePrefixesPayloadType:
-		server.handleGetFilePrefixesHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+	case rpc.GetFileLabelsPayloadType:
+		server.handleGetFileLabelsHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 	case rpc.DeleteFilePayloadType:
 		server.handleDeleteFileHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 
