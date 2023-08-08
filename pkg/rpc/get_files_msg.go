@@ -12,10 +12,10 @@ type GetFilesMsg struct {
 	MsgType  string `json:"msgtype"`
 }
 
-func CreateGetFilesMsg(prefix string, colonyID string) *GetFilesMsg {
+func CreateGetFilesMsg(colonyID string, prefix string) *GetFilesMsg {
 	msg := &GetFilesMsg{}
-	msg.Prefix = prefix
 	msg.ColonyID = colonyID
+	msg.Prefix = prefix
 	msg.MsgType = GetFilesPayloadType
 
 	return msg
@@ -35,7 +35,7 @@ func (msg *GetFilesMsg) Equals(msg2 *GetFilesMsg) bool {
 		return false
 	}
 
-	if msg.MsgType == msg2.MsgType && msg.Prefix == msg2.Prefix && msg.ColonyID == msg2.ColonyID {
+	if msg.MsgType == msg2.MsgType && msg.ColonyID == msg2.ColonyID && msg.Prefix == msg2.Prefix {
 		return true
 	}
 

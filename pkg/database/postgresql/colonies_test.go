@@ -197,7 +197,7 @@ func TestDeleteColonies(t *testing.T) {
 	err = db.AddLog("test_processid1", colony2.ID, "test_executorid", time.Now().UTC().UnixNano(), "1")
 	assert.Nil(t, err)
 
-	file := utils.CreateTestFile("test_id", colony1.ID, time.Now())
+	file := utils.CreateTestFileWithID("test_id", colony1.ID, time.Now())
 	file.ID = core.GenerateRandomID()
 	file.Prefix = "/testdir"
 	file.Name = "test_file2.txt"
@@ -205,7 +205,7 @@ func TestDeleteColonies(t *testing.T) {
 	err = db.AddFile(file)
 	assert.Nil(t, err)
 
-	file = utils.CreateTestFile("test_id", colony2.ID, time.Now())
+	file = utils.CreateTestFileWithID("test_id", colony2.ID, time.Now())
 	file.ID = core.GenerateRandomID()
 	file.Prefix = "/testdir"
 	file.Name = "test_file2.txt"

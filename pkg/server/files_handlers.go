@@ -1,6 +1,7 @@
 package server
 
 import (
+	"encoding/json"
 	"errors"
 	"net/http"
 
@@ -39,9 +40,21 @@ func (server *ColoniesServer) handleAddFileHTTPRequest(c *gin.Context, recovered
 	file.ID = core.GenerateRandomID()
 	server.db.AddFile(msg.File)
 
+	addedFile, err := server.db.GetFileByID(msg.File.ColonyID, file.ID)
+	if server.handleHTTPError(c, err, http.StatusInternalServerError) {
+		log.Error(err)
+		return
+	}
+
+	jsonStr, err := addedFile.ToJSON()
+	if server.handleHTTPError(c, err, http.StatusInternalServerError) {
+		log.Error(err)
+		return
+	}
+
 	log.WithFields(log.Fields{"FileID": file.ID}).Debug("Adding file")
 
-	server.sendEmptyHTTPReply(c, payloadType)
+	server.sendHTTPReply(c, payloadType, jsonStr)
 }
 
 func (server *ColoniesServer) handleGetFileHTTPRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
@@ -57,26 +70,43 @@ func (server *ColoniesServer) handleGetFileHTTPRequest(c *gin.Context, recovered
 		return
 	}
 
+	err = server.validator.RequireExecutorMembership(recoveredID, msg.ColonyID, true)
+	if server.handleHTTPError(c, err, http.StatusForbidden) {
+		log.Error(err)
+		return
+	}
+
 	// Bypass colonies controller and use the database directly, no need to synchronize this operation since files are inmutable
 	var files []*core.File
-	var savedError error
 	if msg.FileID != "" {
 		file, err := server.db.GetFileByID(msg.ColonyID, msg.FileID)
-		if err != nil {
-			savedError = err
-		} else {
-			files = []*core.File{file}
+		if server.handleHTTPError(c, err, http.StatusBadRequest) {
+			log.WithFields(log.Fields{"Error": err}).Debug("Failed to get file")
+			server.handleHTTPError(c, err, http.StatusInternalServerError)
+			return
 		}
+		if file == nil {
+			if server.handleHTTPError(c, errors.New("Failed to get file"), http.StatusBadRequest) {
+				log.WithFields(log.Fields{"Error": err}).Debug("Failed to get file")
+				server.handleHTTPError(c, err, http.StatusInternalServerError)
+				return
+			}
+		}
+		files = []*core.File{file}
 	} else if msg.Prefix != "" && msg.Name != "" {
 		if msg.Latest {
 			files, err = server.db.GetLatestFileByName(msg.ColonyID, msg.Prefix, msg.Name)
-			if err != nil {
-				savedError = err
+			if server.handleHTTPError(c, err, http.StatusBadRequest) {
+				log.WithFields(log.Fields{"Error": err}).Debug("Failed to get file")
+				server.handleHTTPError(c, err, http.StatusInternalServerError)
+				return
 			}
 		} else {
 			files, err = server.db.GetFileByName(msg.ColonyID, msg.Prefix, msg.Name)
-			if err != nil {
-				savedError = err
+			if server.handleHTTPError(c, err, http.StatusBadRequest) {
+				log.WithFields(log.Fields{"Error": err}).Debug("Failed to get file")
+				server.handleHTTPError(c, err, http.StatusInternalServerError)
+				return
 			}
 		}
 	} else {
@@ -86,30 +116,27 @@ func (server *ColoniesServer) handleGetFileHTTPRequest(c *gin.Context, recovered
 		}
 	}
 
-	if len(files) > 0 {
+	if len(files) == 0 {
 		if server.handleHTTPError(c, errors.New("Failed to get file"), http.StatusNotFound) {
 			log.Error(err)
 			return
 		}
 	} else {
+		// This may not be strictly needed as the database lookup includes ColonyID
+		// The reason is to prevent a user to correctly authenticate, but then obtain a file part of another colony
 		for _, file := range files {
-			err = server.validator.RequireExecutorMembership(recoveredID, file.ColonyID, true)
-			if server.handleHTTPError(c, err, http.StatusForbidden) {
-				log.Error(err)
-				return
+			if msg.ColonyID != file.ColonyID {
+				if server.handleHTTPError(c, errors.New("msg.ColonyID missmatches file.ColonyID"), http.StatusForbidden) {
+					log.Error(err)
+					return
+				}
 			}
 		}
 	}
 
-	if server.handleHTTPError(c, savedError, http.StatusBadRequest) {
-		log.WithFields(log.Fields{"Error": err}).Debug("Failed to get file")
-		server.handleHTTPError(c, err, http.StatusInternalServerError)
-		return
-	}
-
 	jsonStr, err := core.ConvertFileArrayToJSON(files)
 	if server.handleHTTPError(c, err, http.StatusBadRequest) {
-		log.WithFields(log.Fields{"Error": err}).Debug("Failed to files")
+		log.WithFields(log.Fields{"Error": err}).Debug("Failed to converts files to json")
 		server.handleHTTPError(c, err, http.StatusInternalServerError)
 		return
 	}
@@ -131,7 +158,99 @@ func (server *ColoniesServer) handleGetFilesHTTPRequest(c *gin.Context, recovere
 		server.handleHTTPError(c, errors.New("Failed to get files, msg.MsgType does not match payloadType"), http.StatusBadRequest)
 		return
 	}
+
+	err = server.validator.RequireExecutorMembership(recoveredID, msg.ColonyID, true)
+	if server.handleHTTPError(c, err, http.StatusForbidden) {
+		log.Error(err)
+		return
+	}
+
+	fileNames, err := server.db.GetFileNamesByPrefix(msg.ColonyID, msg.Prefix)
+	if server.handleHTTPError(c, err, http.StatusBadRequest) {
+		log.Error(err)
+		return
+	}
+
+	jsonBytes, err := json.Marshal(fileNames)
+	if server.handleHTTPError(c, err, http.StatusInternalServerError) {
+		log.Error(err)
+		return
+	}
+
+	server.sendHTTPReply(c, payloadType, string(jsonBytes))
 }
 
 func (server *ColoniesServer) handleGetFilePrefixesHTTPRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
+	msg, err := rpc.CreateGetFilesMsgFromJSON(jsonString)
+	if err != nil {
+		if server.handleHTTPError(c, errors.New("Failed to get files, invalid JSON"), http.StatusBadRequest) {
+			return
+		}
+	}
+
+	if msg.MsgType != payloadType {
+		server.handleHTTPError(c, errors.New("Failed to get files, msg.MsgType does not match payloadType"), http.StatusBadRequest)
+		return
+	}
+
+	err = server.validator.RequireExecutorMembership(recoveredID, msg.ColonyID, true)
+	if server.handleHTTPError(c, err, http.StatusForbidden) {
+		log.Error(err)
+		return
+	}
+
+	prefixes, err := server.db.GetFilePrefixes(msg.ColonyID)
+	if server.handleHTTPError(c, err, http.StatusBadRequest) {
+		log.Error(err)
+		return
+	}
+
+	jsonBytes, err := json.Marshal(prefixes)
+	if server.handleHTTPError(c, err, http.StatusInternalServerError) {
+		log.Error(err)
+		return
+	}
+
+	server.sendHTTPReply(c, payloadType, string(jsonBytes))
+}
+
+func (server *ColoniesServer) handleDeleteFileHTTPRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
+	msg, err := rpc.CreateDeleteFileMsgFromJSON(jsonString)
+	if err != nil {
+		if server.handleHTTPError(c, errors.New("Failed to delete file, invalid JSON"), http.StatusBadRequest) {
+			return
+		}
+	}
+
+	if msg.MsgType != payloadType {
+		server.handleHTTPError(c, errors.New("Failed to delete file, msg.MsgType does not match payloadType"), http.StatusBadRequest)
+		return
+	}
+
+	err = server.validator.RequireExecutorMembership(recoveredID, msg.ColonyID, true)
+	if server.handleHTTPError(c, err, http.StatusForbidden) {
+		log.Error(err)
+		return
+	}
+
+	if msg.FileID != "" {
+		err = server.db.DeleteFileByID(msg.ColonyID, msg.FileID)
+		if server.handleHTTPError(c, err, http.StatusBadRequest) {
+			log.Error(err)
+			return
+		}
+	} else if msg.Prefix != "" && msg.Name != "" {
+		err = server.db.DeleteFileByName(msg.ColonyID, msg.Prefix, msg.Name)
+		if server.handleHTTPError(c, err, http.StatusBadRequest) {
+			log.Error(err)
+			return
+		}
+	} else {
+		if server.handleHTTPError(c, errors.New("malformated delete file msg"), http.StatusBadRequest) {
+			log.Error(err)
+			return
+		}
+	}
+
+	server.sendEmptyHTTPReply(c, payloadType)
 }

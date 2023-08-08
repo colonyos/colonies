@@ -9,7 +9,7 @@ import (
 )
 
 func TestRPCAddFileMsg(t *testing.T) {
-	file := utils.CreateTestFile("test_id", "test_colonyid", time.Now())
+	file := utils.CreateTestFileWithID("test_id", "test_colonyid", time.Now())
 	msg := CreateAddFileMsg(file)
 	jsonString, err := msg.ToJSON()
 	assert.Nil(t, err)
@@ -24,7 +24,7 @@ func TestRPCAddFileMsg(t *testing.T) {
 }
 
 func TestRPCAddFileMsgIndent(t *testing.T) {
-	file := utils.CreateTestFile("test_id", "test_colonyid", time.Now())
+	file := utils.CreateTestFileWithID("test_id", "test_colonyid", time.Now())
 	msg := CreateAddFileMsg(file)
 	jsonString, err := msg.ToJSONIndent()
 	assert.Nil(t, err)
@@ -39,7 +39,7 @@ func TestRPCAddFileMsgIndent(t *testing.T) {
 }
 
 func TestRPCAddFileMsgEquals(t *testing.T) {
-	file := utils.CreateTestFile("test_id", "test_colonyid", time.Now())
+	file := utils.CreateTestFileWithID("test_id", "test_colonyid", time.Now())
 	msg := CreateAddFileMsg(file)
 	assert.True(t, msg.Equals(msg))
 	assert.False(t, msg.Equals(nil))

@@ -279,6 +279,8 @@ func (server *ColoniesServer) handleAPIRequest(c *gin.Context) {
 		server.handleGetFilesHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 	case rpc.GetFilePrefixesPayloadType:
 		server.handleGetFilePrefixesHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+	case rpc.DeleteFilePayloadType:
+		server.handleDeleteFileHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 
 	default:
 		errMsg := "invalid rpcMsg.PayloadType, " + rpcMsg.PayloadType
