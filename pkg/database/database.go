@@ -181,11 +181,11 @@ type Database interface {
 	// File management
 	AddFile(file *core.File) error
 	GetFileByID(colonyID string, fileID string) (*core.File, error)
-	GetLatestFileByName(colonyID string, prefix string, name string) ([]*core.File, error)
-	GetFileByName(colonyID string, prefix string, name string) ([]*core.File, error)
-	GetFileNamesByPrefix(colonyID string, prefix string) ([]string, error)
+	GetLatestFileByName(colonyID string, label string, name string) ([]*core.File, error)
+	GetFileByName(colonyID string, label string, name string) ([]*core.File, error)
+	GetFileNamesByLabel(colonyID string, label string) ([]string, error)
 	DeleteFileByID(colonyID string, fileID string) error
-	DeleteFileByName(colonyID string, prefix string, name string) error
-	GetFilePrefixes(colonyID string) ([]string, error)
+	DeleteFileByName(colonyID string, label string, name string) error
+	GetFileLabels(colonyID string) ([]string, error)
 	CountFiles(colonyID string) (int, error)
 }

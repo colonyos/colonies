@@ -1285,14 +1285,14 @@ func (client *ColoniesClient) GetFilenames(colonyID string, prefix string, prvKe
 	return filenames, err
 }
 
-func (client *ColoniesClient) GetFilePrefixes(colonyID string, prvKey string) ([]string, error) {
-	msg := rpc.CreateGetFilePrefixesMsg(colonyID)
+func (client *ColoniesClient) GetFileLabels(colonyID string, prvKey string) ([]string, error) {
+	msg := rpc.CreateGetFileLabelsMsg(colonyID)
 	jsonString, err := msg.ToJSON()
 	if err != nil {
 		return nil, err
 	}
 
-	respBodyString, err := client.sendMessage(rpc.GetFilePrefixesPayloadType, jsonString, prvKey, false, context.TODO())
+	respBodyString, err := client.sendMessage(rpc.GetFileLabelsPayloadType, jsonString, prvKey, false, context.TODO())
 	if err != nil {
 		return nil, err
 	}

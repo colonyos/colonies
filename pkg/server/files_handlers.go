@@ -93,16 +93,16 @@ func (server *ColoniesServer) handleGetFileHTTPRequest(c *gin.Context, recovered
 			}
 		}
 		files = []*core.File{file}
-	} else if msg.Prefix != "" && msg.Name != "" {
+	} else if msg.Label != "" && msg.Name != "" {
 		if msg.Latest {
-			files, err = server.db.GetLatestFileByName(msg.ColonyID, msg.Prefix, msg.Name)
+			files, err = server.db.GetLatestFileByName(msg.ColonyID, msg.Label, msg.Name)
 			if server.handleHTTPError(c, err, http.StatusBadRequest) {
 				log.WithFields(log.Fields{"Error": err}).Debug("Failed to get file")
 				server.handleHTTPError(c, err, http.StatusInternalServerError)
 				return
 			}
 		} else {
-			files, err = server.db.GetFileByName(msg.ColonyID, msg.Prefix, msg.Name)
+			files, err = server.db.GetFileByName(msg.ColonyID, msg.Label, msg.Name)
 			if server.handleHTTPError(c, err, http.StatusBadRequest) {
 				log.WithFields(log.Fields{"Error": err}).Debug("Failed to get file")
 				server.handleHTTPError(c, err, http.StatusInternalServerError)
@@ -141,7 +141,7 @@ func (server *ColoniesServer) handleGetFileHTTPRequest(c *gin.Context, recovered
 		return
 	}
 
-	log.WithFields(log.Fields{"FileID": msg.FileID, "Prefix": msg.Prefix, "Name": msg.Name, "Latest": msg.Latest}).Debug("Getting file")
+	log.WithFields(log.Fields{"FileID": msg.FileID, "Label": msg.Label, "Name": msg.Name, "Latest": msg.Latest}).Debug("Getting file")
 
 	server.sendHTTPReply(c, payloadType, jsonStr)
 }
@@ -165,7 +165,7 @@ func (server *ColoniesServer) handleGetFilesHTTPRequest(c *gin.Context, recovere
 		return
 	}
 
-	fileNames, err := server.db.GetFileNamesByPrefix(msg.ColonyID, msg.Prefix)
+	fileNames, err := server.db.GetFileNamesByLabel(msg.ColonyID, msg.Label)
 	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		log.Error(err)
 		return
@@ -180,7 +180,7 @@ func (server *ColoniesServer) handleGetFilesHTTPRequest(c *gin.Context, recovere
 	server.sendHTTPReply(c, payloadType, string(jsonBytes))
 }
 
-func (server *ColoniesServer) handleGetFilePrefixesHTTPRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
+func (server *ColoniesServer) handleGetFileLabelsHTTPRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
 	msg, err := rpc.CreateGetFilesMsgFromJSON(jsonString)
 	if err != nil {
 		if server.handleHTTPError(c, errors.New("Failed to get files, invalid JSON"), http.StatusBadRequest) {
@@ -199,7 +199,7 @@ func (server *ColoniesServer) handleGetFilePrefixesHTTPRequest(c *gin.Context, r
 		return
 	}
 
-	prefixes, err := server.db.GetFilePrefixes(msg.ColonyID)
+	prefixes, err := server.db.GetFileLabels(msg.ColonyID)
 	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		log.Error(err)
 		return
@@ -239,8 +239,8 @@ func (server *ColoniesServer) handleDeleteFileHTTPRequest(c *gin.Context, recove
 			log.Error(err)
 			return
 		}
-	} else if msg.Prefix != "" && msg.Name != "" {
-		err = server.db.DeleteFileByName(msg.ColonyID, msg.Prefix, msg.Name)
+	} else if msg.Label != "" && msg.Name != "" {
+		err = server.db.DeleteFileByName(msg.ColonyID, msg.Label, msg.Name)
 		if server.handleHTTPError(c, err, http.StatusBadRequest) {
 			log.Error(err)
 			return
