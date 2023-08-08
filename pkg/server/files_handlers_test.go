@@ -96,11 +96,15 @@ func TestGetFiles(t *testing.T) {
 
 	prefix := "/testprefix"
 
+	filenames, err := client.GetFilenames(env.colonyID, prefix, env.executorPrvKey)
+	assert.Nil(t, err)
+	assert.Len(t, filenames, 0)
+
 	file := utils.CreateTestFile(env.colonyID)
 	file.Prefix = prefix
 	file.Name = "testfile1"
 	file.Size = 1
-	_, err := client.AddFile(file, env.executorPrvKey)
+	_, err = client.AddFile(file, env.executorPrvKey)
 	assert.Nil(t, err)
 
 	file = utils.CreateTestFile(env.colonyID)
@@ -110,7 +114,7 @@ func TestGetFiles(t *testing.T) {
 	_, err = client.AddFile(file, env.executorPrvKey)
 	assert.Nil(t, err)
 
-	filenames, err := client.GetFilenames(env.colonyID, "prefix_does_not_exists", env.executorPrvKey)
+	filenames, err = client.GetFilenames(env.colonyID, "prefix_does_not_exists", env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.Len(t, filenames, 0)
 
