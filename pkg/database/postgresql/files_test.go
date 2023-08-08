@@ -40,7 +40,7 @@ func TestGetFileByName(t *testing.T) {
 
 	now := time.Now()
 	file1 := utils.CreateTestFileWithID("test_id", "test_colonyid", now)
-	file1.Prefix = "/testpath"
+	file1.Label = "/testpath"
 	file1.Name = "test_file.txt"
 	file1.Size = 1
 	err = db.AddFile(file1)
@@ -48,23 +48,23 @@ func TestGetFileByName(t *testing.T) {
 
 	file2 := utils.CreateTestFileWithID("test_id", "test_colonyid", now)
 	file2.ID = core.GenerateRandomID()
-	file2.Prefix = "/testpath"
+	file2.Label = "/testpath"
 	file2.Name = "test_file.txt"
 	file2.Size = 2 // NOTE we changed the size to 2
 	err = db.AddFile(file2)
 	assert.Nil(t, err)
 
-	fileFromDB, err := db.GetLatestFileByName("test_colonyid", file1.Prefix, file1.Name)
+	fileFromDB, err := db.GetLatestFileByName("test_colonyid", file1.Label, file1.Name)
 	assert.Nil(t, err)
 	assert.Len(t, fileFromDB, 1)
 	assert.Equal(t, fileFromDB[0].Size, int64(2))
 
-	filesFromDB, err := db.GetFileByName("test_colonyid", file1.Prefix, file1.Name)
+	filesFromDB, err := db.GetFileByName("test_colonyid", file1.Label, file1.Name)
 	assert.Nil(t, err)
 	assert.Len(t, filesFromDB, 2)
 }
 
-func TestGetFileNamesByPrefix(t *testing.T) {
+func TestGetFileNamesByLabel(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
 
@@ -73,7 +73,7 @@ func TestGetFileNamesByPrefix(t *testing.T) {
 	now := time.Now()
 	file1 := utils.CreateTestFileWithID("test_id", "test_colonyid", now)
 	file1.ID = core.GenerateRandomID()
-	file1.Prefix = "/testpath"
+	file1.Label = "/testpath"
 	file1.Name = "test_file.txt"
 	file1.Size = 1
 	err = db.AddFile(file1)
@@ -81,7 +81,7 @@ func TestGetFileNamesByPrefix(t *testing.T) {
 
 	file2 := utils.CreateTestFileWithID("test_id", "test_colonyid", now)
 	file2.ID = core.GenerateRandomID()
-	file2.Prefix = "/testdir"
+	file2.Label = "/testdir"
 	file2.Name = "test_file.txt"
 	file2.Size = 1
 	err = db.AddFile(file2)
@@ -89,7 +89,7 @@ func TestGetFileNamesByPrefix(t *testing.T) {
 
 	file3 := utils.CreateTestFileWithID("test_id", "test_colonyid", now)
 	file3.ID = core.GenerateRandomID()
-	file3.Prefix = "/testdir"
+	file3.Label = "/testdir"
 	file3.Name = "test_file2.txt"
 	file3.Size = 1
 	err = db.AddFile(file3)
@@ -97,17 +97,17 @@ func TestGetFileNamesByPrefix(t *testing.T) {
 
 	file4 := utils.CreateTestFileWithID("test_id", "test_colonyid", now)
 	file4.ID = core.GenerateRandomID()
-	file4.Prefix = "/testdir2"
+	file4.Label = "/testdir2"
 	file4.Name = "test_file.txt"
 	file4.Size = 1
 	err = db.AddFile(file4)
 	assert.Nil(t, err)
 
-	filesnames, err := db.GetFileNamesByPrefix("test_colonyid", "/testdir")
+	filesnames, err := db.GetFileNamesByLabel("test_colonyid", "/testdir")
 	assert.Nil(t, err)
 	assert.Len(t, filesnames, 2)
 
-	filesnames, err = db.GetFileNamesByPrefix("test_colonyid", "/testdir2")
+	filesnames, err = db.GetFileNamesByLabel("test_colonyid", "/testdir2")
 	assert.Nil(t, err)
 	assert.Len(t, filesnames, 1)
 }
@@ -121,7 +121,7 @@ func TestDeleteFileByID(t *testing.T) {
 	now := time.Now()
 	file1 := utils.CreateTestFileWithID("test_id", "test_colonyid", now)
 	file1.ID = core.GenerateRandomID()
-	file1.Prefix = "/testdir"
+	file1.Label = "/testdir"
 	file1.Name = "test_file.txt"
 	file1.Size = 1
 	err = db.AddFile(file1)
@@ -129,13 +129,13 @@ func TestDeleteFileByID(t *testing.T) {
 
 	file2 := utils.CreateTestFileWithID("test_id", "test_colonyid", now)
 	file2.ID = core.GenerateRandomID()
-	file2.Prefix = "/testdir"
+	file2.Label = "/testdir"
 	file2.Name = "test_file2.txt"
 	file2.Size = 1
 	err = db.AddFile(file2)
 	assert.Nil(t, err)
 
-	filesnames, err := db.GetFileNamesByPrefix("test_colonyid", "/testdir")
+	filesnames, err := db.GetFileNamesByLabel("test_colonyid", "/testdir")
 	assert.Nil(t, err)
 	assert.Len(t, filesnames, 2)
 
@@ -146,7 +146,7 @@ func TestDeleteFileByID(t *testing.T) {
 	err = db.DeleteFileByID("test_colonyid", file2.ID)
 	assert.Nil(t, err)
 
-	filesnames, err = db.GetFileNamesByPrefix("test_colonyid", "/testdir")
+	filesnames, err = db.GetFileNamesByLabel("test_colonyid", "/testdir")
 	assert.Nil(t, err)
 	assert.Len(t, filesnames, 1)
 
@@ -164,7 +164,7 @@ func TestDeleteFilesByColonyID(t *testing.T) {
 	now := time.Now()
 	file1 := utils.CreateTestFileWithID("test_id", "test_colonyid1", now)
 	file1.ID = core.GenerateRandomID()
-	file1.Prefix = "/testdir"
+	file1.Label = "/testdir"
 	file1.Name = "test_file.txt"
 	file1.Size = 1
 	err = db.AddFile(file1)
@@ -172,7 +172,7 @@ func TestDeleteFilesByColonyID(t *testing.T) {
 
 	file2 := utils.CreateTestFileWithID("test_id", "test_colonyid2", now)
 	file2.ID = core.GenerateRandomID()
-	file2.Prefix = "/testdir"
+	file2.Label = "/testdir"
 	file2.Name = "test_file2.txt"
 	file2.Size = 1
 	err = db.AddFile(file2)
@@ -180,7 +180,7 @@ func TestDeleteFilesByColonyID(t *testing.T) {
 
 	file3 := utils.CreateTestFileWithID("test_id", "test_colonyid2", now)
 	file3.ID = core.GenerateRandomID()
-	file3.Prefix = "/testdir"
+	file3.Label = "/testdir"
 	file3.Name = "test_file3.txt"
 	file3.Size = 1
 	err = db.AddFile(file3)
@@ -215,7 +215,7 @@ func TestDeleteFileByName(t *testing.T) {
 	now := time.Now()
 	file1 := utils.CreateTestFileWithID("test_id", "test_colonyid", now)
 	file1.ID = core.GenerateRandomID()
-	file1.Prefix = "/testdir"
+	file1.Label = "/testdir"
 	file1.Name = "test_file.txt"
 	file1.Size = 1
 	err = db.AddFile(file1)
@@ -223,7 +223,7 @@ func TestDeleteFileByName(t *testing.T) {
 
 	file2 := utils.CreateTestFileWithID("test_id", "test_colonyid", now)
 	file2.ID = core.GenerateRandomID()
-	file2.Prefix = "/testdir"
+	file2.Label = "/testdir"
 	file2.Name = "test_file2.txt"
 	file2.Size = 1
 	err = db.AddFile(file2)
@@ -231,7 +231,7 @@ func TestDeleteFileByName(t *testing.T) {
 
 	file3 := utils.CreateTestFileWithID("test_id", "test_colonyid", now)
 	file3.ID = core.GenerateRandomID()
-	file3.Prefix = "/testdir"
+	file3.Label = "/testdir"
 	file3.Name = "test_file2.txt"
 	file3.Size = 1
 	err = db.AddFile(file3)
@@ -239,27 +239,27 @@ func TestDeleteFileByName(t *testing.T) {
 
 	file4 := utils.CreateTestFileWithID("test_id", "test_colonyid", now)
 	file4.ID = core.GenerateRandomID()
-	file4.Prefix = "/testdir"
+	file4.Label = "/testdir"
 	file4.Name = "test_file2.txt"
 	file4.Size = 1
 	err = db.AddFile(file4)
 	assert.Nil(t, err)
 
-	files, err := db.GetFileByName("test_colonyid", file4.Prefix, file4.Name)
+	files, err := db.GetFileByName("test_colonyid", file4.Label, file4.Name)
 	assert.Nil(t, err)
 	assert.Len(t, files, 3)
 
 	err = db.DeleteFileByID("test_colonyid", file4.ID)
 	assert.Nil(t, err)
 
-	files, err = db.GetFileByName("test_colonyid", file4.Prefix, file4.Name)
+	files, err = db.GetFileByName("test_colonyid", file4.Label, file4.Name)
 	assert.Nil(t, err)
 	assert.Len(t, files, 2)
 
-	err = db.DeleteFileByName("test_colonyid", file4.Prefix, file4.Name)
+	err = db.DeleteFileByName("test_colonyid", file4.Label, file4.Name)
 	assert.Nil(t, err)
 
-	files, err = db.GetFileByName("test_colonyid", file4.Prefix, file4.Name)
+	files, err = db.GetFileByName("test_colonyid", file4.Label, file4.Name)
 	assert.Nil(t, err)
 	assert.Len(t, files, 0)
 
@@ -272,7 +272,7 @@ func TestDeleteFileByName(t *testing.T) {
 	assert.NotNil(t, fileFromDB)
 }
 
-func TestGetFilePrefixes(t *testing.T) {
+func TestGetFileLabels(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
 
@@ -281,7 +281,7 @@ func TestGetFilePrefixes(t *testing.T) {
 	now := time.Now()
 	file1 := utils.CreateTestFileWithID("test_id", "test_colonyid", now)
 	file1.ID = core.GenerateRandomID()
-	file1.Prefix = "/testdir1"
+	file1.Label = "/testdir1"
 	file1.Name = "test_file.txt"
 	file1.Size = 1
 	err = db.AddFile(file1)
@@ -289,7 +289,7 @@ func TestGetFilePrefixes(t *testing.T) {
 
 	file2 := utils.CreateTestFileWithID("test_id", "test_colonyid", now)
 	file2.ID = core.GenerateRandomID()
-	file2.Prefix = "/testdir2"
+	file2.Label = "/testdir2"
 	file2.Name = "test_file2.txt"
 	file2.Size = 1
 	err = db.AddFile(file2)
@@ -297,7 +297,7 @@ func TestGetFilePrefixes(t *testing.T) {
 
 	file3 := utils.CreateTestFileWithID("test_id", "test_colonyid", now)
 	file3.ID = core.GenerateRandomID()
-	file3.Prefix = "/testdir3"
+	file3.Label = "/testdir3"
 	file3.Name = "test_file3.txt"
 	file3.Size = 1
 	err = db.AddFile(file3)
@@ -305,13 +305,13 @@ func TestGetFilePrefixes(t *testing.T) {
 
 	file4 := utils.CreateTestFileWithID("test_id", "test_colonyid", now)
 	file4.ID = core.GenerateRandomID()
-	file4.Prefix = "/testdir3"
+	file4.Label = "/testdir3"
 	file4.Name = "test_file4.txt"
 	file4.Size = 1
 	err = db.AddFile(file4)
 	assert.Nil(t, err)
 
-	prefixes, err := db.GetFilePrefixes("test_colonyid")
+	labels, err := db.GetFileLabels("test_colonyid")
 	assert.Nil(t, err)
-	assert.Len(t, prefixes, 3)
+	assert.Len(t, labels, 3)
 }

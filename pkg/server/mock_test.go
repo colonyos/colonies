@@ -1062,15 +1062,15 @@ func (db *dbMock) GetFileByID(colonyID string, fileID string) (*core.File, error
 	return nil, nil
 }
 
-func (db *dbMock) GetLatestFileByName(colonyID string, prefix string, name string) ([]*core.File, error) {
+func (db *dbMock) GetLatestFileByName(colonyID string, label string, name string) ([]*core.File, error) {
 	return nil, nil
 }
 
-func (db *dbMock) GetFileByName(colonyID string, prefix string, name string) ([]*core.File, error) {
+func (db *dbMock) GetFileByName(colonyID string, label string, name string) ([]*core.File, error) {
 	return nil, nil
 }
 
-func (db *dbMock) GetFileNamesByPrefix(colonyID string, prefix string) ([]string, error) {
+func (db *dbMock) GetFileNamesByLabel(colonyID string, label string) ([]string, error) {
 	return nil, nil
 }
 
@@ -1078,11 +1078,11 @@ func (db *dbMock) DeleteFileByID(colonyID string, fileID string) error {
 	return nil
 }
 
-func (db *dbMock) DeleteFileByName(colonyID string, prefix string, name string) error {
+func (db *dbMock) DeleteFileByName(colonyID string, label string, name string) error {
 	return nil
 }
 
-func (db *dbMock) GetFilePrefixes(colonyID string) ([]string, error) {
+func (db *dbMock) GetFileLabels(colonyID string) ([]string, error) {
 	return []string{}, nil
 }
 

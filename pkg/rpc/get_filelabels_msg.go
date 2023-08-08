@@ -4,22 +4,22 @@ import (
 	"encoding/json"
 )
 
-const GetFilePrefixesPayloadType = "getfileprefixesmsg"
+const GetFileLabelsPayloadType = "getfilelabelsmsg"
 
-type GetFilePrefixesMsg struct {
+type GetFileLabelsMsg struct {
 	MsgType  string `json:"msgtype"`
 	ColonyID string `json:"colonyid"`
 }
 
-func CreateGetFilePrefixesMsg(colonyID string) *GetFilePrefixesMsg {
-	msg := &GetFilePrefixesMsg{}
+func CreateGetFileLabelsMsg(colonyID string) *GetFileLabelsMsg {
+	msg := &GetFileLabelsMsg{}
 	msg.ColonyID = colonyID
-	msg.MsgType = GetFilePrefixesPayloadType
+	msg.MsgType = GetFileLabelsPayloadType
 
 	return msg
 }
 
-func (msg *GetFilePrefixesMsg) ToJSON() (string, error) {
+func (msg *GetFileLabelsMsg) ToJSON() (string, error) {
 	jsonBytes, err := json.Marshal(msg)
 	if err != nil {
 		return "", err
@@ -28,7 +28,7 @@ func (msg *GetFilePrefixesMsg) ToJSON() (string, error) {
 	return string(jsonBytes), nil
 }
 
-func (msg *GetFilePrefixesMsg) Equals(msg2 *GetFilePrefixesMsg) bool {
+func (msg *GetFileLabelsMsg) Equals(msg2 *GetFileLabelsMsg) bool {
 	if msg2 == nil {
 		return false
 	}
@@ -40,7 +40,7 @@ func (msg *GetFilePrefixesMsg) Equals(msg2 *GetFilePrefixesMsg) bool {
 	return false
 }
 
-func (msg *GetFilePrefixesMsg) ToJSONIndent() (string, error) {
+func (msg *GetFileLabelsMsg) ToJSONIndent() (string, error) {
 	jsonBytes, err := json.MarshalIndent(msg, "", "    ")
 	if err != nil {
 		return "", err
@@ -49,8 +49,8 @@ func (msg *GetFilePrefixesMsg) ToJSONIndent() (string, error) {
 	return string(jsonBytes), nil
 }
 
-func CreateGetFilePrefixesMsgFromJSON(jsonString string) (*GetFilePrefixesMsg, error) {
-	var msg *GetFilePrefixesMsg
+func CreateGetFileLabelsMsgFromJSON(jsonString string) (*GetFileLabelsMsg, error) {
+	var msg *GetFileLabelsMsg
 
 	err := json.Unmarshal([]byte(jsonString), &msg)
 	if err != nil {

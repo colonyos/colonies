@@ -24,7 +24,7 @@ func createTestFile() *File {
 	file := File{
 		ID:          "test_id",
 		ColonyID:    "test_colonyid",
-		Prefix:      "test_prefix",
+		Label:       "test_label",
 		Name:        "test_name",
 		Size:        1111,
 		Checksum:    "test_checksum",

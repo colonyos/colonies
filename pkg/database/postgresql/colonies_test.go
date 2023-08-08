@@ -199,7 +199,7 @@ func TestDeleteColonies(t *testing.T) {
 
 	file := utils.CreateTestFileWithID("test_id", colony1.ID, time.Now())
 	file.ID = core.GenerateRandomID()
-	file.Prefix = "/testdir"
+	file.Label = "/testdir"
 	file.Name = "test_file2.txt"
 	file.Size = 1
 	err = db.AddFile(file)
@@ -207,7 +207,7 @@ func TestDeleteColonies(t *testing.T) {
 
 	file = utils.CreateTestFileWithID("test_id", colony2.ID, time.Now())
 	file.ID = core.GenerateRandomID()
-	file.Prefix = "/testdir"
+	file.Label = "/testdir"
 	file.Name = "test_file2.txt"
 	file.Size = 1
 	err = db.AddFile(file)

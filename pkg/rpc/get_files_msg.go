@@ -7,15 +7,15 @@ import (
 const GetFilesPayloadType = "getfilesmsg"
 
 type GetFilesMsg struct {
-	Prefix   string `json:"prefix"`
+	Label    string `json:"label"`
 	ColonyID string `json:"colonyid"`
 	MsgType  string `json:"msgtype"`
 }
 
-func CreateGetFilesMsg(colonyID string, prefix string) *GetFilesMsg {
+func CreateGetFilesMsg(colonyID string, label string) *GetFilesMsg {
 	msg := &GetFilesMsg{}
 	msg.ColonyID = colonyID
-	msg.Prefix = prefix
+	msg.Label = label
 	msg.MsgType = GetFilesPayloadType
 
 	return msg
@@ -35,7 +35,7 @@ func (msg *GetFilesMsg) Equals(msg2 *GetFilesMsg) bool {
 		return false
 	}
 
-	if msg.MsgType == msg2.MsgType && msg.ColonyID == msg2.ColonyID && msg.Prefix == msg2.Prefix {
+	if msg.MsgType == msg2.MsgType && msg.ColonyID == msg2.ColonyID && msg.Label == msg2.Label {
 		return true
 	}
 

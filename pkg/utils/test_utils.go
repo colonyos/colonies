@@ -38,7 +38,7 @@ func CreateTestFileWithID(id string, colonyID string, now time.Time) *core.File 
 	file := core.File{
 		ID:          id,
 		ColonyID:    colonyID,
-		Prefix:      "test_prefix",
+		Label:       "test_label",
 		Name:        "test_name",
 		Size:        1111,
 		Checksum:    "test_checksum",
@@ -66,7 +66,7 @@ func CreateTestFile(colonyID string) *core.File {
 	file := core.File{
 		ID:          "",
 		ColonyID:    colonyID,
-		Prefix:      "test_prefix",
+		Label:       "test_label",
 		Name:        "test_name",
 		Size:        1111,
 		Checksum:    "test_checksum",

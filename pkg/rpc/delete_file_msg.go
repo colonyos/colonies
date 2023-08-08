@@ -10,15 +10,15 @@ type DeleteFileMsg struct {
 	MsgType  string `json:"msgtype"`
 	ColonyID string `json:"colonyid"`
 	FileID   string `json:"fileid"`
-	Prefix   string `json:"prefix"`
+	Label    string `json:"label"`
 	Name     string `json:"name"`
 }
 
-func CreateDeleteFileMsg(colonyID string, fileID string, prefix string, name string) *DeleteFileMsg {
+func CreateDeleteFileMsg(colonyID string, fileID string, label string, name string) *DeleteFileMsg {
 	msg := &DeleteFileMsg{}
 	msg.ColonyID = colonyID
 	msg.FileID = fileID
-	msg.Prefix = prefix
+	msg.Label = label
 	msg.Name = name
 	msg.MsgType = DeleteFilePayloadType
 
@@ -42,7 +42,7 @@ func (msg *DeleteFileMsg) Equals(msg2 *DeleteFileMsg) bool {
 	if msg.MsgType == msg2.MsgType &&
 		msg.ColonyID == msg2.ColonyID &&
 		msg.FileID == msg2.FileID &&
-		msg.Prefix == msg2.Prefix &&
+		msg.Label == msg2.Label &&
 		msg.Name == msg2.Name {
 		return true
 	}

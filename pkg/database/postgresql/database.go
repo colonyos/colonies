@@ -318,7 +318,7 @@ func (db *PQDatabase) createFileTable() error {
 		return err
 	}
 
-	sqlStatement = `CREATE TABLE ` + db.dbPrefix + `FILES (FILE_ID TEXT PRIMARY KEY NOT NULL, COLONY_ID TEXT NOT NULL, PREFIX TEXT NOT NULL, NAME TEXT NOT NULL, SIZE BIGINT, SEQNR BIGINT, CHECKSUM TEXT, CHECKSUM_ALG TEXT, ADDED TIMESTAMPTZ, PROTOCOL TEXT, S3_SERVER TEXT, S3_PORT INTEGER, S3_TLS BOOLEAN, S3_ACCESSKEY TEXT, S3_SECRETKEY TEXT, S3_REGION TEXT, S3_ENCKEY TEXT, S3_ENCALG TEXT, S3_OBJ TEXT, S3_BUCKET TEXT)`
+	sqlStatement = `CREATE TABLE ` + db.dbPrefix + `FILES (FILE_ID TEXT PRIMARY KEY NOT NULL, COLONY_ID TEXT NOT NULL, LABEL TEXT NOT NULL, NAME TEXT NOT NULL, SIZE BIGINT, SEQNR BIGINT, CHECKSUM TEXT, CHECKSUM_ALG TEXT, ADDED TIMESTAMPTZ, PROTOCOL TEXT, S3_SERVER TEXT, S3_PORT INTEGER, S3_TLS BOOLEAN, S3_ACCESSKEY TEXT, S3_SECRETKEY TEXT, S3_REGION TEXT, S3_ENCKEY TEXT, S3_ENCALG TEXT, S3_OBJ TEXT, S3_BUCKET TEXT)`
 	_, err = db.postgresql.Exec(sqlStatement)
 	if err != nil {
 		return err
@@ -520,7 +520,7 @@ func (db *PQDatabase) createRetentionIndex4() error {
 }
 
 func (db *PQDatabase) createFileIndex1() error {
-	sqlStatement := `CREATE INDEX ` + db.dbPrefix + `FILE_INDEX1 ON ` + db.dbPrefix + `FILES (COLONY_ID, PREFIX, NAME)`
+	sqlStatement := `CREATE INDEX ` + db.dbPrefix + `FILE_INDEX1 ON ` + db.dbPrefix + `FILES (COLONY_ID, LABEL, NAME)`
 	_, err := db.postgresql.Exec(sqlStatement)
 	if err != nil {
 		return err
@@ -540,7 +540,7 @@ func (db *PQDatabase) createFileIndex2() error {
 }
 
 func (db *PQDatabase) createFileIndex3() error {
-	sqlStatement := `CREATE INDEX ` + db.dbPrefix + `FILE_INDEX3 ON ` + db.dbPrefix + `FILES (COLONY_ID, PREFIX)`
+	sqlStatement := `CREATE INDEX ` + db.dbPrefix + `FILE_INDEX3 ON ` + db.dbPrefix + `FILES (COLONY_ID, LABEL)`
 	_, err := db.postgresql.Exec(sqlStatement)
 	if err != nil {
 		return err
