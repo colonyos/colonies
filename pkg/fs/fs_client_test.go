@@ -10,24 +10,19 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func printResult(localMissing []*FileInfo, remoteMissing []*FileInfo, localOverwrite []*FileInfo, remoteOverwrite []*FileInfo) {
-	fmt.Println("Missing local:", len(localMissing))
-	for _, fileInfo := range localMissing {
+func printSyncPlan(syncPlan *SyncPlan) {
+	fmt.Println("Missing local:", len(syncPlan.LocalMissing))
+	for _, fileInfo := range syncPlan.LocalMissing {
 		fmt.Println("  file:", fileInfo.Name)
 	}
 
-	fmt.Println("Overwrite local:", len(localOverwrite))
-	for _, fileInfo := range localOverwrite {
+	fmt.Println("Missing remote:", len(syncPlan.LocalMissing))
+	for _, fileInfo := range syncPlan.RemoteMissing {
 		fmt.Println("  file:", fileInfo.Name)
 	}
 
-	fmt.Println("Missing remote:", len(localMissing))
-	for _, fileInfo := range remoteMissing {
-		fmt.Println("  file:", fileInfo.Name)
-	}
-
-	fmt.Println("Overwrite remote:", len(localOverwrite))
-	for _, fileInfo := range remoteOverwrite {
+	fmt.Println("Conflicts:", len(syncPlan.Conflicts))
+	for _, fileInfo := range syncPlan.Conflicts {
 		fmt.Println("  file:", fileInfo.Name)
 	}
 }
@@ -54,10 +49,9 @@ func TestChecksum(t *testing.T) {
 //	Local:  "local_file"
 //
 //	Expected result:
-//	Remote missing: ["local_file"]
-//	Local missing: ["remote_file"]
-//	Local overwrite: []
-//	Remote overwrite: []
+//	  Remote missing: ["local_file"]
+//	  Local missing: ["remote_file"]
+//	  Conflicts: []
 func TestCalcSyncPlan1(t *testing.T) {
 	env, coloniesClient, coloniesServer, _, done := setupTestEnv(t)
 
@@ -80,15 +74,16 @@ func TestCalcSyncPlan1(t *testing.T) {
 	assert.Nil(t, err)
 
 	// Calculate a sync plan
-	fsClient := CreateFSClient(coloniesClient, env.colonyID, env.executorPrvKey)
-	localMissing, remoteMissing, localOverwrite, remoteOverwrite, err := fsClient.CalcSyncPlan(syncDir, label)
+	fsClient, err := CreateFSClient(coloniesClient, env.colonyID, env.executorPrvKey)
 	assert.Nil(t, err)
-	assert.Len(t, localMissing, 1)
-	assert.Len(t, remoteMissing, 1)
-	assert.Equal(t, localMissing[0].Name, "remote_file")
-	assert.Equal(t, remoteMissing[0].Name, "local_file")
+	syncPlan, err := fsClient.CalcSyncPlan(syncDir, label)
+	assert.Nil(t, err)
+	assert.Len(t, syncPlan.LocalMissing, 1)
+	assert.Len(t, syncPlan.RemoteMissing, 1)
+	assert.Equal(t, syncPlan.LocalMissing[0].Name, "remote_file")
+	assert.Equal(t, syncPlan.RemoteMissing[0].Name, "local_file")
 
-	printResult(localMissing, remoteMissing, localOverwrite, remoteOverwrite)
+	printSyncPlan(syncPlan)
 
 	// Clean up
 	err = os.RemoveAll(syncDir)
@@ -104,10 +99,9 @@ func TestCalcSyncPlan1(t *testing.T) {
 //	Local:  "same_file"
 //
 //	Expected result:
-//	Remote missing: []
-//	Local missing: []
-//	Local overwrite: []
-//	Remote overwrite: []
+//	  Remote missing: []
+//	  Local missing: []
+//	  Conflicts: []
 func TestCalcSyncPlan2(t *testing.T) {
 	env, coloniesClient, coloniesServer, _, done := setupTestEnv(t)
 
@@ -130,13 +124,14 @@ func TestCalcSyncPlan2(t *testing.T) {
 	assert.Nil(t, err)
 
 	// Calculate a sync plan
-	fsClient := CreateFSClient(coloniesClient, env.colonyID, env.executorPrvKey)
-	localMissing, remoteMissing, localOverwrite, remoteOverwrite, err := fsClient.CalcSyncPlan(syncDir, label)
+	fsClient, err := CreateFSClient(coloniesClient, env.colonyID, env.executorPrvKey)
 	assert.Nil(t, err)
-	assert.Len(t, localMissing, 0)
-	assert.Len(t, remoteMissing, 0)
+	syncPlan, err := fsClient.CalcSyncPlan(syncDir, label)
+	assert.Nil(t, err)
+	assert.Len(t, syncPlan.LocalMissing, 0)
+	assert.Len(t, syncPlan.RemoteMissing, 0)
 
-	printResult(localMissing, remoteMissing, localOverwrite, remoteOverwrite)
+	printSyncPlan(syncPlan)
 
 	// Clean up
 	err = os.RemoveAll(syncDir)
@@ -154,8 +149,7 @@ func TestCalcSyncPlan2(t *testing.T) {
 //	Expected result:
 //	Remote missing: []
 //	Local missing: []
-//	Local overwrite: ["same_file"]
-//	Remote overwrite: ["same_file"]
+//	  Conflicts: ["same_file"]
 func TestCalcSyncPlan3(t *testing.T) {
 	env, coloniesClient, coloniesServer, _, done := setupTestEnv(t)
 
@@ -178,13 +172,52 @@ func TestCalcSyncPlan3(t *testing.T) {
 	assert.Nil(t, err)
 
 	// Calculate a sync plan
-	fsClient := CreateFSClient(coloniesClient, env.colonyID, env.executorPrvKey)
-	localMissing, remoteMissing, localOverwrite, remoteOverwrite, err := fsClient.CalcSyncPlan(syncDir, label)
+	fsClient, err := CreateFSClient(coloniesClient, env.colonyID, env.executorPrvKey)
 	assert.Nil(t, err)
-	assert.Len(t, localMissing, 0)
-	assert.Len(t, remoteMissing, 0)
+	syncPlan, err := fsClient.CalcSyncPlan(syncDir, label)
+	assert.Nil(t, err)
+	assert.Len(t, syncPlan.LocalMissing, 0)
+	assert.Len(t, syncPlan.RemoteMissing, 0)
+	assert.Len(t, syncPlan.Conflicts, 1)
 
-	printResult(localMissing, remoteMissing, localOverwrite, remoteOverwrite)
+	printSyncPlan(syncPlan)
+
+	// Clean up
+	err = os.RemoveAll(syncDir)
+	assert.Nil(t, err)
+
+	coloniesServer.Shutdown()
+	<-done
+}
+
+// Scenario:
+//
+//	Remote: ""
+//	Local:  "local_file"
+//
+//	Expected result: File is uploaded to server
+func TestApplySyncPlan1(t *testing.T) {
+	env, coloniesClient, coloniesServer, _, done := setupTestEnv(t)
+
+	label := "test_label"
+
+	// Create a local file
+	syncDir, err := ioutil.TempDir("/tmp/", "sync")
+	assert.Nil(t, err)
+	f, err := ioutil.TempFile(syncDir, "test")
+	assert.Nil(t, err)
+	_, err = f.Write([]byte("testdata"))
+	assert.Nil(t, err)
+
+	// Calculate a sync plan
+	fsClient, err := CreateFSClient(coloniesClient, env.colonyID, env.executorPrvKey)
+	assert.Nil(t, err)
+	syncPlan, err := fsClient.CalcSyncPlan(syncDir, label)
+	assert.Nil(t, err)
+
+	printSyncPlan(syncPlan)
+
+	err = fsClient.ApplySyncPlan(env.colonyID, syncPlan, true)
 
 	// Clean up
 	err = os.RemoveAll(syncDir)
