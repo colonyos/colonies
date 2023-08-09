@@ -43,19 +43,20 @@ test:
 	@cd pkg/cron; grc go test -v --race
 
 github_test: 
-	@cd tests/reliability; go test -v --race
-	@cd internal/crypto; go test -v --race
-	@cd pkg/core; go test -v --race
-	@cd pkg/database/postgresql; go test -v --race
-	@cd pkg/rpc; go test -v --race
-	@cd pkg/security; go test -v --race
-	@cd pkg/security/crypto; go test -v --race
-	@cd pkg/security/validator; go test -v --race
-	@cd pkg/server; go test -v --race
-	@cd pkg/planner/basic; go test -v --race
-	@cd pkg/utils; go test -v --race
-	@cd pkg/cluster; go test -v --race
-	@cd pkg/cron; go test -v --race
+	# @cd tests/reliability; go test -v --race
+	# @cd internal/crypto; go test -v --race
+	# @cd pkg/core; go test -v --race
+	# @cd pkg/database/postgresql; go test -v --race
+	# @cd pkg/rpc; go test -v --race
+	# @cd pkg/security; go test -v --race
+	# @cd pkg/security/crypto; go test -v --race
+	# @cd pkg/security/validator; go test -v --race
+	# @cd pkg/server; go test -v --race
+	# @cd pkg/planner/basic; go test -v --race
+	# @cd pkg/utils; go test -v --race
+	# @cd pkg/cluster; go test -v --race
+	# @cd pkg/cron; go test -v --race
+	@cd pkg/fs; go test -v --race
 
 install:
 	cp ./bin/colonies /usr/local/bin
