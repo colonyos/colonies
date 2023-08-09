@@ -1,119 +1,123 @@
 package fs
 
-// import (
-// 	"bytes"
-// 	"context"
-// 	"crypto/tls"
-// 	"errors"
-// 	"net/http"
+import (
+	"bufio"
+	"context"
+	"crypto/tls"
+	"io"
+	"net/http"
+	"os"
 
-// 	"github.com/minio/minio-go/v7"
-// 	"github.com/minio/minio-go/v7/pkg/credentials"
-// 	log "github.com/sirupsen/logrus"
-// )
+	"github.com/minio/minio-go/v7"
+	"github.com/minio/minio-go/v7/pkg/credentials"
+	log "github.com/sirupsen/logrus"
+)
 
-// type S3 struct {
-// 	mc         *minio.Client
-// 	bucketName string
-// 	storageDir string
-// }
+type S3Client struct {
+	mc         *minio.Client
+	bucketName string
+}
 
-// func CreateS3Storage(endpoint string, region string, accessKey string, secretAccessKey string, secure bool, insecureSkipVerify bool, bucketName string, storageDir string) (*S3, error) {
-// 	transport := http.DefaultTransport
-// 	transport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: insecureSkipVerify}
+func CreateS3Client() (*S3Client, error) {
+	s3Client := &S3Client{}
+	endpoint := os.Getenv("AWS_S3_ENDPOINT")
+	accessKey := os.Getenv("AWS_S3_ACCESSKEY")
+	secretKey := os.Getenv("AWS_S3_SECRETKEY")
+	region := os.Getenv("AWS_S3_REGION")
+	useTLSStr := os.Getenv("AWS_S3_TLS")
+	bucketName := os.Getenv("AWS_S3_BUCKET")
+	skipVerifyStr := os.Getenv("AWS_S3_SKIPVERIFY")
 
-// 	minioClient, err := minio.New(endpoint, &minio.Options{
-// 		Creds:     credentials.NewStaticV4(accessKey, secretAccessKey, ""),
-// 		Secure:    secure,
-// 		Region:    region,
-// 		Transport: transport,
-// 	})
-// 	if err != nil {
-// 		log.Fatal(err)
-// 		return nil, err
-// 	}
+	skipVerify := false
+	if skipVerifyStr == "true" {
+		skipVerify = true
+	}
 
-// 	context := context.Background()
-// 	bucket, err := minioClient.BucketExists(context, bucketName)
-// 	if err != nil {
-// 		log.WithFields(log.Fields{"Error": err, "Bucket": bucket, "BucketName": bucketName}).Fatal("Failed to check if bucket exists")
-// 		return nil, err
-// 	}
-// 	if !bucket {
-// 		err = minioClient.MakeBucket(context, bucketName, minio.MakeBucketOptions{})
-// 		if err != nil {
-// 			log.WithFields(log.Fields{"Error": err, "Bucket": bucket}).Fatal("Failed to create bucket")
-// 			return nil, err
-// 		}
-// 	}
+	useTLS := false
+	if useTLSStr == "true" {
+		useTLS = true
+	}
 
-// 	return &S3{mc: minioClient, bucketName: bucketName, storageDir: storageDir}, nil
-// }
+	transport := http.DefaultTransport
+	transport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: skipVerify}
 
-// func (s3 *S3) Upload(filename string, filepath string, buf []byte) error {
-// 	file := utils.NewFile(filename, filepath, s3.storageDir)
-// 	if filepath+filename == "" {
-// 		return errors.New("Invalid file parameters")
-// 	}
-// 	uploadInfo, err := s3.mc.PutObject(context.Background(), s3.bucketName, file.GetRelativePath(), bytes.NewReader(buf), int64(len(buf)), minio.PutObjectOptions{ContentType: "application/octet-stream"})
-// 	if err != nil {
-// 		log.Errorln(err)
-// 		return err
-// 	}
-// 	log.Debugln(uploadInfo)
-// 	return nil
-// }
+	mc, err := minio.New(endpoint, &minio.Options{
+		Creds:     credentials.NewStaticV4(accessKey, secretKey, ""),
+		Secure:    useTLS,
+		Region:    region,
+		Transport: transport,
+	})
+	if err != nil {
+		log.Fatal(err)
+		return nil, err
+	}
 
-// func (s3 *S3) Download(filepath string) (*[]byte, error) {
-// 	file, err := s3.mc.GetObject(context.Background(), s3.bucketName, filepath, minio.GetObjectOptions{})
-// 	if err != nil {
-// 		return nil, err
-// 	}
+	log.WithFields(log.Fields{"Endpoint": endpoint, "AccessKey": accessKey, "SecretKey": secretKey, "Region": region, "TLS": useTLS, "InsecureSkipVerify": skipVerify, "Bucket": bucketName}).Debug("Creating S3 client")
 
-// 	defer file.Close()
+	s3Client.mc = mc
+	s3Client.bucketName = bucketName
 
-// 	buffer := new(bytes.Buffer)
-// 	_, err = buffer.ReadFrom(file)
-// 	if err != nil {
-// 		return nil, err
-// 	}
+	context := context.Background()
+	bucket, err := mc.BucketExists(context, bucketName)
+	if err != nil {
+		log.WithFields(log.Fields{"Error": err, "Bucket": bucket, "BucketName": bucketName}).Fatal("Failed to check if bucket exists")
+		return nil, err
+	}
+	if !bucket {
+		err = mc.MakeBucket(context, bucketName, minio.MakeBucketOptions{})
+		if err != nil {
+			log.WithFields(log.Fields{"Error": err, "Bucket": bucketName}).Fatal("Failed to create bucket")
+			return nil, err
+		}
+		log.WithFields(log.Fields{"Bucket": bucketName}).Info("Creating bucket")
+	}
 
-// 	b := buffer.Bytes()
-// 	return &b, err
-// }
+	return s3Client, nil
+}
 
-// func (s3 *S3) Exists(filepath string) bool {
-// 	_, err := s3.mc.StatObject(context.Background(), s3.bucketName, filepath, minio.StatObjectOptions{})
-// 	if err != nil {
-// 		log.Errorln(err)
-// 		return false
-// 	}
-// 	return true
-// }
+func (s3Client *S3Client) Upload(dir string, filename string, filelength int64) error {
+	f, err := os.Open(dir + "/" + filename)
+	if err != nil {
+		return err
+	}
 
-// func (s3 *S3) Remove(filepath string) error {
-// 	return s3.mc.RemoveObject(context.Background(), s3.bucketName, filepath, minio.RemoveObjectOptions{})
-// }
+	_, err = s3Client.mc.PutObject(context.Background(), s3Client.bucketName, filename, bufio.NewReader(f), filelength, minio.PutObjectOptions{ContentType: "application/octet-stream"})
+	if err != nil {
+		log.Errorln(err)
+		return err
+	}
 
-// func (s3 *S3) RemoveDir(directory string) error {
-// 	objs := s3.mc.ListObjects(context.Background(), s3.bucketName, minio.ListObjectsOptions{Prefix: directory})
-// 	for obj := range objs {
-// 		err := s3.RemoveFile(obj.Key)
-// 		if err != nil {
-// 			return err
-// 		}
-// 	}
-// 	return nil
-// }
+	return nil
+}
 
-// func (s3 *S3) List(directory string) ([]string, error) {
-// 	objs := s3.mc.ListObjects(context.Background(), s3.bucketName, minio.ListObjectsOptions{Prefix: directory})
-// 	keys := []string{}
-// 	for obj := range objs {
-// 		if obj.Err != nil {
-// 			return keys, obj.Err
-// 		}
-// 		keys = append(keys, obj.Key)
-// 	}
-// 	return keys, nil
-// }
+func (s3Client *S3Client) Download(filename string, downloadDir string) error {
+	file, err := s3Client.mc.GetObject(context.Background(), s3Client.bucketName, filename, minio.GetObjectOptions{})
+	if err != nil {
+		return err
+	}
+
+	defer file.Close()
+
+	destFile, err := os.Create(downloadDir + "/" + filename)
+	if err != nil {
+		return err
+
+	}
+	defer destFile.Close()
+
+	_, err = io.Copy(destFile, file)
+
+	return err
+}
+
+func (s3Client *S3Client) Exists(filename string) bool {
+	_, err := s3Client.mc.StatObject(context.Background(), s3Client.bucketName, filename, minio.StatObjectOptions{})
+	if err != nil {
+		return false
+	}
+	return true
+}
+
+func (s3Client *S3Client) Remove(filename string) error {
+	return s3Client.mc.RemoveObject(context.Background(), s3Client.bucketName, filename, minio.RemoveObjectOptions{})
+}
