@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/colonyos/colonies/pkg/client"
+	"github.com/colonyos/colonies/pkg/core"
 	"github.com/colonyos/colonies/pkg/fs"
 	"github.com/colonyos/colonies/pkg/security"
 	"github.com/kataras/tablewriter"
@@ -20,10 +21,12 @@ func init() {
 	fsCmd.AddCommand(syncCmd)
 	fsCmd.AddCommand(getLabelsCmd)
 	fsCmd.AddCommand(listFilesCmd)
+	fsCmd.AddCommand(getFileInfoCmd)
 	rootCmd.AddCommand(fsCmd)
 
 	syncCmd.Flags().StringVarP(&SyncDir, "dir", "d", "", "Local directory to sync")
 	syncCmd.MarkFlagRequired("dir")
+	syncCmd.Flags().StringVarP(&StorageDriver, "driver", "", "s3", "Storage driver")
 	syncCmd.Flags().StringVarP(&Label, "label", "l", "", "Label")
 	syncCmd.MarkFlagRequired("label")
 	syncCmd.Flags().BoolVarP(&Dry, "dry", "", false, "Dry run")
@@ -32,6 +35,10 @@ func init() {
 
 	listFilesCmd.Flags().StringVarP(&Label, "label", "l", "", "Label")
 	syncCmd.MarkFlagRequired("label")
+
+	getFileInfoCmd.Flags().StringVarP(&FileID, "fileid", "", "", "File Id")
+	getFileInfoCmd.Flags().StringVarP(&Label, "label", "l", "", "Label")
+	getFileInfoCmd.Flags().StringVarP(&Filename, "name", "n", "", "Filename")
 
 }
 
@@ -273,5 +280,87 @@ var listFilesCmd = &cobra.Command{
 		}
 		table.SetAlignment(tablewriter.ALIGN_LEFT)
 		table.Render()
+	},
+}
+
+func printFileInfo(coloniesFile *core.File) {
+	fileData := [][]string{
+		[]string{"Filename", coloniesFile.Name},
+		[]string{"Id", coloniesFile.ID},
+		[]string{"ColonyId", coloniesFile.ColonyID},
+		[]string{"Added", coloniesFile.Added.Format(TimeLayout)},
+		[]string{"Sequence Number", strconv.FormatInt(coloniesFile.SequenceNumber, 10)},
+		[]string{"Label", coloniesFile.Label},
+		[]string{"Size", strconv.FormatInt(coloniesFile.Size/1024, 10) + " KiB"},
+		[]string{"Checksum", coloniesFile.Checksum},
+		[]string{"Checksum Alg", coloniesFile.ChecksumAlg},
+		[]string{"Protocol", coloniesFile.Reference.Protocol},
+		[]string{"S3 Endpoint", coloniesFile.Reference.S3Object.Server},
+		[]string{"S3 TLS", strconv.FormatBool(coloniesFile.Reference.S3Object.TLS)},
+		[]string{"S3 Region", coloniesFile.Reference.S3Object.Region},
+		[]string{"S3 Bucket", coloniesFile.Reference.S3Object.Bucket},
+		[]string{"S3 Object", coloniesFile.Reference.S3Object.Object},
+		[]string{"S3 Accesskey", "*********************************"},
+		[]string{"S3 Secretkey", "*********************************"},
+		[]string{"Encryption Key", "*********************************"},
+		[]string{"Encryption Alg", ""},
+	}
+	fileTable := tablewriter.NewWriter(os.Stdout)
+	for _, v := range fileData {
+		fileTable.Append(v)
+	}
+	fileTable.SetAlignment(tablewriter.ALIGN_LEFT)
+	fileTable.Render()
+}
+
+var getFileInfoCmd = &cobra.Command{
+	Use:   "info",
+	Short: "Get info about a file",
+	Long:  "Get info about a file",
+	Run: func(cmd *cobra.Command, args []string) {
+		parseServerEnv()
+
+		keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
+		CheckError(err)
+
+		if ColonyID == "" {
+			ColonyID = os.Getenv("COLONIES_COLONY_ID")
+		}
+		if ColonyID == "" {
+			CheckError(errors.New("Unknown Colony Id"))
+		}
+
+		if ExecutorID == "" {
+			ExecutorID = os.Getenv("COLONIES_EXECUTOR_ID")
+		}
+		if ExecutorID == "" {
+			CheckError(errors.New("Unknown Executor Id"))
+		}
+
+		if ExecutorPrvKey == "" {
+			ExecutorPrvKey, err = keychain.GetPrvKey(ExecutorID)
+			CheckError(err)
+		}
+
+		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Debug("Starting a Colonies client")
+		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
+
+		var coloniesFiles []*core.File
+		if FileID != "" {
+			coloniesFiles, err = client.GetFileByID(ColonyID, FileID, ExecutorPrvKey)
+			CheckError(err)
+		} else if Filename != "" && Label != "" {
+			coloniesFiles, err = client.GetFileByName(ColonyID, Label, Filename, ExecutorPrvKey)
+			CheckError(err)
+		}
+
+		counter := 0
+		for _, coloniesFile := range coloniesFiles {
+			printFileInfo(coloniesFile)
+			if counter != len(coloniesFiles)-1 {
+				fmt.Println()
+			}
+			counter++
+		}
 	},
 }

@@ -102,10 +102,13 @@ var LogMsg string
 var Since int64
 var Follow bool
 var SyncDir string
+var StorageDriver string
 var Label string
 var Dry bool
 var KeepLocal bool
 var Yes bool
+var Filename string
+var FileID string
 
 func init() {
 	rootCmd.PersistentFlags().BoolVarP(&Verbose, "verbose", "v", false, "Verbose (debugging)")
