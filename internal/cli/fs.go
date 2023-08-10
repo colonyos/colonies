@@ -22,6 +22,7 @@ func init() {
 	fsCmd.AddCommand(getLabelsCmd)
 	fsCmd.AddCommand(listFilesCmd)
 	fsCmd.AddCommand(getFileInfoCmd)
+	fsCmd.AddCommand(getFileCmd)
 	rootCmd.AddCommand(fsCmd)
 
 	syncCmd.Flags().StringVarP(&SyncDir, "dir", "d", "", "Local directory to sync")
@@ -36,10 +37,14 @@ func init() {
 	listFilesCmd.Flags().StringVarP(&Label, "label", "l", "", "Label")
 	syncCmd.MarkFlagRequired("label")
 
-	getFileInfoCmd.Flags().StringVarP(&FileID, "fileid", "", "", "File Id")
+	getFileInfoCmd.Flags().StringVarP(&FileID, "fileid", "i", "", "File Id")
 	getFileInfoCmd.Flags().StringVarP(&Label, "label", "l", "", "Label")
 	getFileInfoCmd.Flags().StringVarP(&Filename, "name", "n", "", "Filename")
 
+	getFileCmd.Flags().StringVarP(&FileID, "fileid", "i", "", "File Id")
+	getFileCmd.Flags().StringVarP(&Label, "label", "l", "", "Label")
+	getFileCmd.Flags().StringVarP(&Filename, "name", "n", "", "Filename")
+	getFileCmd.Flags().StringVarP(&DownloadDir, "dir", "d", "", "Local directory to download file to")
 }
 
 var fsCmd = &cobra.Command{
@@ -137,6 +142,11 @@ var syncCmd = &cobra.Command{
 		log.WithFields(log.Fields{"SyncDir": SyncDir, "Label": Label, "Dry": Dry}).Debug("Starting a file storage client")
 		fsClient, err := fs.CreateFSClient(client, ColonyID, ExecutorPrvKey)
 		CheckError(err)
+
+		err = os.Mkdir(SyncDir, 0755)
+		if err == nil {
+			CheckError(err)
+		}
 
 		syncPlan, err := fsClient.CalcSyncPlan(SyncDir, Label, KeepLocal)
 		CheckError(err)
@@ -258,6 +268,11 @@ var listFilesCmd = &cobra.Command{
 		filenames, err := client.GetFilenames(ColonyID, Label, ExecutorPrvKey)
 		CheckError(err)
 
+		if len(filenames) == 0 {
+			fmt.Println("No files found")
+			os.Exit(0)
+		}
+
 		var fi []fileInfo
 		for _, filename := range filenames {
 			coloniesFile, err := client.GetLatestFileByName(ColonyID, Label, filename, ExecutorPrvKey)
@@ -352,6 +367,8 @@ var getFileInfoCmd = &cobra.Command{
 		} else if Filename != "" && Label != "" {
 			coloniesFiles, err = client.GetFileByName(ColonyID, Label, Filename, ExecutorPrvKey)
 			CheckError(err)
+		} else {
+			CheckError(errors.New("FileId nor filename + label were specified"))
 		}
 
 		counter := 0
@@ -362,5 +379,67 @@ var getFileInfoCmd = &cobra.Command{
 			}
 			counter++
 		}
+	},
+}
+
+var getFileCmd = &cobra.Command{
+	Use:   "get",
+	Short: "Download a file from file storage",
+	Long:  "Download a file from file storage",
+	Run: func(cmd *cobra.Command, args []string) {
+		parseServerEnv()
+
+		keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
+		CheckError(err)
+
+		if ColonyID == "" {
+			ColonyID = os.Getenv("COLONIES_COLONY_ID")
+		}
+		if ColonyID == "" {
+			CheckError(errors.New("Unknown Colony Id"))
+		}
+
+		if ExecutorID == "" {
+			ExecutorID = os.Getenv("COLONIES_EXECUTOR_ID")
+		}
+		if ExecutorID == "" {
+			CheckError(errors.New("Unknown Executor Id"))
+		}
+
+		if ExecutorPrvKey == "" {
+			ExecutorPrvKey, err = keychain.GetPrvKey(ExecutorID)
+			CheckError(err)
+		}
+
+		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Debug("Starting a Colonies client")
+		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
+
+		var coloniesFiles []*core.File
+		if FileID != "" {
+			coloniesFiles, err = client.GetFileByID(ColonyID, FileID, ExecutorPrvKey)
+			CheckError(err)
+		} else if Filename != "" && Label != "" {
+			fmt.Println(Label)
+			coloniesFiles, err = client.GetLatestFileByName(ColonyID, Label, Filename, ExecutorPrvKey)
+			CheckError(err)
+		} else {
+			CheckError(errors.New("FileId nor filename + label were specified"))
+		}
+
+		if len(coloniesFiles) != 1 {
+			CheckError(errors.New("Failed to get file info"))
+		}
+
+		err = os.Mkdir(DownloadDir, 0755)
+		if err == nil {
+			CheckError(err)
+		}
+
+		fsClient, err := fs.CreateFSClient(client, ColonyID, ExecutorPrvKey)
+		CheckError(err)
+		err = fsClient.Download(ColonyID, coloniesFiles[0].ID, DownloadDir)
+		CheckError(err)
+
+		log.WithFields(log.Fields{"DownloadDir": DownloadDir, FileID: Insecure}).Debug("Downloaded file")
 	},
 }
