@@ -109,6 +109,7 @@ var KeepLocal bool
 var Yes bool
 var Filename string
 var FileID string
+var DownloadDir string
 
 func init() {
 	rootCmd.PersistentFlags().BoolVarP(&Verbose, "verbose", "v", false, "Verbose (debugging)")
