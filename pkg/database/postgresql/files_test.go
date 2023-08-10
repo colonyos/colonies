@@ -314,4 +314,66 @@ func TestGetFileLabels(t *testing.T) {
 	labels, err := db.GetFileLabels("test_colonyid")
 	assert.Nil(t, err)
 	assert.Len(t, labels, 3)
+
+	files := 0
+	for _, label := range labels {
+		files += label.Files
+	}
+	assert.Equal(t, files, 4)
+}
+
+func TestCountLabelFiles(t *testing.T) {
+	db, err := PrepareTests()
+	assert.Nil(t, err)
+
+	defer db.Close()
+
+	now := time.Now()
+	file1 := utils.CreateTestFileWithID("test_id", "test_colonyid1", now)
+	file1.ID = core.GenerateRandomID()
+	file1.Label = "/testdir1"
+	file1.Name = "test_file.txt"
+	file1.Size = 1
+	err = db.AddFile(file1)
+	assert.Nil(t, err)
+
+	file2 := utils.CreateTestFileWithID("test_id", "test_colonyid2", now)
+	file2.ID = core.GenerateRandomID()
+	file2.Label = "/testdir2"
+	file2.Name = "test_file2.txt"
+	file2.Size = 1
+	err = db.AddFile(file2)
+	assert.Nil(t, err)
+
+	file3 := utils.CreateTestFileWithID("test_id", "test_colonyid2", now)
+	file3.ID = core.GenerateRandomID()
+	file3.Label = "/testdir3"
+	file3.Name = "test_file3.txt"
+	file3.Size = 1
+	err = db.AddFile(file3)
+	assert.Nil(t, err)
+
+	file4 := utils.CreateTestFileWithID("test_id", "test_colonyid2", now)
+	file4.ID = core.GenerateRandomID()
+	file4.Label = "/testdir3"
+	file4.Name = "test_file4.txt"
+	file4.Size = 1
+	err = db.AddFile(file4)
+	assert.Nil(t, err)
+
+	count, err := db.CountFilesWithLabel("test_colonyid2", "/testdir3")
+	assert.Nil(t, err)
+	assert.Equal(t, count, 2)
+
+	count, err = db.CountFilesWithLabel("test_colonyid2", "/testdir2")
+	assert.Nil(t, err)
+	assert.Equal(t, count, 1)
+
+	count, err = db.CountFilesWithLabel("test_colonyid1", "/testdir1")
+	assert.Nil(t, err)
+	assert.Equal(t, count, 1)
+
+	count, err = db.CountFilesWithLabel("test_colonyid1", "label_does_not_exists")
+	assert.Nil(t, err)
+	assert.Equal(t, count, 0)
 }

@@ -155,7 +155,7 @@ var serverStatusCmd = &cobra.Command{
 		parseDBEnv()
 		parseServerEnv()
 
-		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Info("Starting a Colonies client")
+		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Debug("Starting a Colonies client")
 		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
 
 		serverBuildVersion, serverBuildTime, err := client.Version()
@@ -314,7 +314,7 @@ var serverStatisticsCmd = &cobra.Command{
 			CheckError(err)
 		}
 
-		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Info("Starting a Colonies client")
+		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Debug("Starting a Colonies client")
 		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
 
 		stat, err := client.Statistics(ServerPrvKey)

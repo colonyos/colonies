@@ -1238,8 +1238,8 @@ func (client *ColoniesClient) GetFileByID(colonyID string, fileID string, prvKey
 	return core.ConvertJSONToFileArray(respBodyString)
 }
 
-func (client *ColoniesClient) GetLatestFileByName(colonyID string, prefix string, name string, prvKey string) ([]*core.File, error) {
-	msg := rpc.CreateGetFileMsg(colonyID, "", prefix, name, true)
+func (client *ColoniesClient) GetLatestFileByName(colonyID string, label string, name string, prvKey string) ([]*core.File, error) {
+	msg := rpc.CreateGetFileMsg(colonyID, "", label, name, true)
 	jsonString, err := msg.ToJSON()
 	if err != nil {
 		return nil, err
@@ -1253,8 +1253,8 @@ func (client *ColoniesClient) GetLatestFileByName(colonyID string, prefix string
 	return core.ConvertJSONToFileArray(respBodyString)
 }
 
-func (client *ColoniesClient) GetFileByName(colonyID string, prefix string, name string, prvKey string) ([]*core.File, error) {
-	msg := rpc.CreateGetFileMsg(colonyID, "", prefix, name, false)
+func (client *ColoniesClient) GetFileByName(colonyID string, label string, name string, prvKey string) ([]*core.File, error) {
+	msg := rpc.CreateGetFileMsg(colonyID, "", label, name, false)
 	jsonString, err := msg.ToJSON()
 	if err != nil {
 		return nil, err
@@ -1268,8 +1268,8 @@ func (client *ColoniesClient) GetFileByName(colonyID string, prefix string, name
 	return core.ConvertJSONToFileArray(respBodyString)
 }
 
-func (client *ColoniesClient) GetFilenames(colonyID string, prefix string, prvKey string) ([]string, error) {
-	msg := rpc.CreateGetFilesMsg(colonyID, prefix)
+func (client *ColoniesClient) GetFilenames(colonyID string, label string, prvKey string) ([]string, error) {
+	msg := rpc.CreateGetFilesMsg(colonyID, label)
 	jsonString, err := msg.ToJSON()
 	if err != nil {
 		return nil, err
@@ -1285,7 +1285,7 @@ func (client *ColoniesClient) GetFilenames(colonyID string, prefix string, prvKe
 	return filenames, err
 }
 
-func (client *ColoniesClient) GetFileLabels(colonyID string, prvKey string) ([]string, error) {
+func (client *ColoniesClient) GetFileLabels(colonyID string, prvKey string) ([]*core.Label, error) {
 	msg := rpc.CreateGetFileLabelsMsg(colonyID)
 	jsonString, err := msg.ToJSON()
 	if err != nil {
@@ -1297,9 +1297,12 @@ func (client *ColoniesClient) GetFileLabels(colonyID string, prvKey string) ([]s
 		return nil, err
 	}
 
-	var filenames []string
-	err = json.Unmarshal([]byte(respBodyString), &filenames)
-	return filenames, err
+	labels, err := core.ConvertJSONToLabelArray(respBodyString)
+	if err != nil {
+		return nil, err
+	}
+
+	return labels, err
 }
 
 func (client *ColoniesClient) DeleteFileByID(colonyID string, fileID string, prvKey string) error {
@@ -1317,8 +1320,8 @@ func (client *ColoniesClient) DeleteFileByID(colonyID string, fileID string, prv
 	return nil
 }
 
-func (client *ColoniesClient) DeleteFileByName(colonyID string, prefix string, name string, prvKey string) error {
-	msg := rpc.CreateDeleteFileMsg(colonyID, "", prefix, name)
+func (client *ColoniesClient) DeleteFileByName(colonyID string, label string, name string, prvKey string) error {
+	msg := rpc.CreateDeleteFileMsg(colonyID, "", label, name)
 	jsonString, err := msg.ToJSON()
 	if err != nil {
 		return err

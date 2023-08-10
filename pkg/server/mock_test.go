@@ -1082,11 +1082,15 @@ func (db *dbMock) DeleteFileByName(colonyID string, label string, name string) e
 	return nil
 }
 
-func (db *dbMock) GetFileLabels(colonyID string) ([]string, error) {
-	return []string{}, nil
+func (db *dbMock) GetFileLabels(colonyID string) ([]*core.Label, error) {
+	return nil, nil
 }
 
 func (db *dbMock) CountFiles(colonyID string) (int, error) {
+	return 0, nil
+}
+
+func (db *dbMock) CountFilesWithLabel(colonyID string, label string) (int, error) {
 	return 0, nil
 }
 

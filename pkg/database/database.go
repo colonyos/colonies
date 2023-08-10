@@ -186,6 +186,7 @@ type Database interface {
 	GetFileNamesByLabel(colonyID string, label string) ([]string, error)
 	DeleteFileByID(colonyID string, fileID string) error
 	DeleteFileByName(colonyID string, label string, name string) error
-	GetFileLabels(colonyID string) ([]string, error)
+	GetFileLabels(colonyID string) ([]*core.Label, error)
+	CountFilesWithLabel(colonyID string, label string) (int, error)
 	CountFiles(colonyID string) (int, error)
 }
