@@ -3,6 +3,7 @@ package fs
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"io"
 	"io/ioutil"
 	"os"
@@ -236,4 +237,17 @@ func (fsClient *FSClient) CalcSyncPlan(dir string, label string, keepLocal bool)
 		Dir:           dir,
 		Label:         label,
 		KeepLocal:     keepLocal}, nil
+}
+
+func (fsClient *FSClient) Download(colonyID string, fileID string, downloadDir string) error {
+	file, err := fsClient.coloniesClient.GetFileByID(colonyID, fileID, fsClient.executorPrvKey)
+	if err != nil {
+		return err
+	}
+
+	if len(file) != 1 {
+		return errors.New("Failed to get file info")
+	}
+
+	return fsClient.s3Client.Download(file[0].Name, file[0].Reference.S3Object.Object, downloadDir)
 }
