@@ -19,8 +19,10 @@ type FSClient struct {
 }
 
 type FileInfo struct {
-	Name     string
-	Checksum string
+	Name       string
+	Checksum   string
+	Size       int64
+	S3Filename string
 }
 
 type SyncPlan struct {
@@ -90,7 +92,7 @@ func (fsClient *FSClient) uploadFile(syncPlan *SyncPlan, fileInfo *FileInfo) err
 		ChecksumAlg: "SHA256",
 		Reference:   ref}
 
-	err = fsClient.s3Client.Upload(syncPlan.Dir, coloniesFile.Name, coloniesFile.Size)
+	err = fsClient.s3Client.Upload(syncPlan.Dir, coloniesFile.Name, coloniesFile.Reference.S3Object.Object, coloniesFile.Size)
 	if err != nil {
 		return err
 	}
@@ -105,12 +107,15 @@ func (fsClient *FSClient) uploadFile(syncPlan *SyncPlan, fileInfo *FileInfo) err
 func (fsClient *FSClient) ApplySyncPlan(colonyID string, syncPlan *SyncPlan) error {
 	// 1. Upload all remote missing files
 	for _, fileInfo := range syncPlan.RemoteMissing {
-		fsClient.uploadFile(syncPlan, fileInfo)
+		err := fsClient.uploadFile(syncPlan, fileInfo)
+		if err != nil {
+			return err
+		}
 	}
 
 	// 2. Download all local missing files
 	for _, fileInfo := range syncPlan.LocalMissing {
-		err := fsClient.s3Client.Download(fileInfo.Name, syncPlan.Dir)
+		err := fsClient.s3Client.Download(fileInfo.Name, fileInfo.S3Filename, syncPlan.Dir)
 		if err != nil {
 			return err
 		}
@@ -120,11 +125,14 @@ func (fsClient *FSClient) ApplySyncPlan(colonyID string, syncPlan *SyncPlan) err
 	// If keepLocalFiles then upload conflicting files to server else download conflicting files to local filesystem
 	if syncPlan.KeepLocal {
 		for _, fileInfo := range syncPlan.Conflicts {
-			fsClient.uploadFile(syncPlan, fileInfo)
+			err := fsClient.uploadFile(syncPlan, fileInfo)
+			if err != nil {
+				return err
+			}
 		}
 	} else {
 		for _, fileInfo := range syncPlan.Conflicts {
-			err := fsClient.s3Client.Download(fileInfo.Name, syncPlan.Dir)
+			err := fsClient.s3Client.Download(fileInfo.Name, fileInfo.S3Filename, syncPlan.Dir)
 			if err != nil {
 				return err
 			}
@@ -146,17 +154,22 @@ func (fsClient *FSClient) CalcSyncPlan(dir string, label string, keepLocal bool)
 	}
 
 	var remoteFileMap = make(map[string]string)
+	var remoteS3FilenameMap = make(map[string]string)
+	var remoteFileSizeMap = make(map[string]int64)
 	for _, remoteFilename := range remoteFilenames {
-		remoteColoniesFile, err := fsClient.coloniesClient.GetFileByName(fsClient.colonyID, label, remoteFilename, fsClient.executorPrvKey)
+		remoteColoniesFile, err := fsClient.coloniesClient.GetLatestFileByName(fsClient.colonyID, label, remoteFilename, fsClient.executorPrvKey)
 		if err != nil {
 			return nil, err
 		}
 		for _, revision := range remoteColoniesFile {
 			remoteFileMap[revision.Name] = revision.Checksum
+			remoteFileSizeMap[revision.Name] = revision.Size
+			remoteS3FilenameMap[revision.Name] = revision.Reference.S3Object.Object
 		}
 	}
 
 	var localFileMap = make(map[string]string)
+	var localFileSizeMap = make(map[string]int64)
 	for _, file := range files {
 		if !file.IsDir() {
 			checksum, err := checksum(dir + "/" + file.Name())
@@ -164,6 +177,12 @@ func (fsClient *FSClient) CalcSyncPlan(dir string, label string, keepLocal bool)
 				return nil, err
 			}
 			localFileMap[file.Name()] = checksum
+
+			fi, err := os.Stat(dir + "/" + file.Name())
+			if err != nil {
+				return nil, err
+			}
+			localFileSizeMap[file.Name()] = fi.Size()
 		}
 	}
 
@@ -173,7 +192,8 @@ func (fsClient *FSClient) CalcSyncPlan(dir string, label string, keepLocal bool)
 		_, ok := remoteFileMap[filename]
 		if !ok {
 			// File missing on server
-			remoteMissing = append(remoteMissing, &FileInfo{Name: filename, Checksum: checksum})
+			size := localFileSizeMap[filename]
+			remoteMissing = append(remoteMissing, &FileInfo{Name: filename, Checksum: checksum, Size: size, S3Filename: ""})
 		}
 	}
 
@@ -183,7 +203,9 @@ func (fsClient *FSClient) CalcSyncPlan(dir string, label string, keepLocal bool)
 		_, ok := localFileMap[filename]
 		if !ok {
 			// File missing locally
-			localMissing = append(localMissing, &FileInfo{Name: filename, Checksum: checksum})
+			size := remoteFileSizeMap[filename]
+			s3Filename := remoteS3FilenameMap[filename]
+			localMissing = append(localMissing, &FileInfo{Name: filename, Checksum: checksum, Size: size, S3Filename: s3Filename})
 		}
 	}
 
@@ -191,12 +213,18 @@ func (fsClient *FSClient) CalcSyncPlan(dir string, label string, keepLocal bool)
 	var conflicts []*FileInfo
 	for filename, checksum := range remoteFileMap {
 		// File exists locally, but does not match file on server
-		if localFileMap[filename] != checksum {
-			if keepLocal {
-				localChecksum := localFileMap[filename]
-				conflicts = append(conflicts, &FileInfo{Name: filename, Checksum: localChecksum})
-			} else {
-				conflicts = append(conflicts, &FileInfo{Name: filename, Checksum: checksum})
+		_, ok := localFileMap[filename]
+		if ok {
+			if localFileMap[filename] != checksum {
+				if keepLocal {
+					localChecksum := localFileMap[filename]
+					size := localFileSizeMap[filename]
+					conflicts = append(conflicts, &FileInfo{Name: filename, Checksum: localChecksum, Size: size, S3Filename: ""})
+				} else {
+					size := remoteFileSizeMap[filename]
+					s3Filename := remoteS3FilenameMap[filename]
+					conflicts = append(conflicts, &FileInfo{Name: filename, Checksum: checksum, Size: size, S3Filename: s3Filename})
+				}
 			}
 		}
 	}

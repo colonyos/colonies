@@ -212,7 +212,7 @@ func (db *PQDatabase) DeleteFilesByColonyID(colonyID string) error {
 	return nil
 }
 
-func (db *PQDatabase) GetFileLabels(colonyID string) ([]string, error) {
+func (db *PQDatabase) GetFileLabels(colonyID string) ([]*core.Label, error) {
 	sqlStatement := `SELECT DISTINCT (LABEL) FROM ` + db.dbPrefix + `FILES WHERE COLONY_ID=$1`
 	rows, err := db.postgresql.Query(sqlStatement, colonyID)
 	if err != nil {
@@ -226,12 +226,40 @@ func (db *PQDatabase) GetFileLabels(colonyID string) ([]string, error) {
 		return nil, err
 	}
 
-	return labelsStr, nil
+	var labels []*core.Label
+	for _, labelStr := range labelsStr {
+		fileCount, err := db.CountFilesWithLabel(colonyID, labelStr)
+		if err != nil {
+			return nil, err
+		}
+		labels = append(labels, &core.Label{Name: labelStr, Files: fileCount})
+	}
+
+	return labels, nil
 }
 
 func (db *PQDatabase) CountFiles(colonyID string) (int, error) {
 	sqlStatement := `SELECT COUNT(*) FROM ` + db.dbPrefix + `FILES WHERE COLONY_ID=$1`
 	rows, err := db.postgresql.Query(sqlStatement, colonyID)
+	if err != nil {
+		return -1, err
+	}
+
+	defer rows.Close()
+
+	rows.Next()
+	var count int
+	err = rows.Scan(&count)
+	if err != nil {
+		return -1, err
+	}
+
+	return count, nil
+}
+
+func (db *PQDatabase) CountFilesWithLabel(colonyID string, label string) (int, error) {
+	sqlStatement := `SELECT COUNT(*) FROM ` + db.dbPrefix + `FILES WHERE COLONY_ID=$1 AND LABEL=$2`
+	rows, err := db.postgresql.Query(sqlStatement, colonyID, label)
 	if err != nil {
 		return -1, err
 	}
