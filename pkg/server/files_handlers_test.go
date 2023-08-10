@@ -129,7 +129,7 @@ func TestGetFiles(t *testing.T) {
 	<-done
 }
 
-func TestGetFilePrefixes(t *testing.T) {
+func TestGetFileLabels(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 
 	file := utils.CreateTestFile(env.colonyID)

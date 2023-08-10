@@ -87,7 +87,7 @@ func CreateS3Client() (*S3Client, error) {
 	return s3Client, nil
 }
 
-func (s3Client *S3Client) Upload(dir string, filename string, filelength int64) error {
+func (s3Client *S3Client) Upload(dir string, filename string, s3Filename string, filelength int64) error {
 	f, err := os.Open(dir + "/" + filename)
 	if err != nil {
 		return err
@@ -115,7 +115,7 @@ func (s3Client *S3Client) Upload(dir string, filename string, filelength int64) 
 		reader = bufio.NewReader(f)
 	}
 
-	_, err = s3Client.mc.PutObject(context.Background(), s3Client.BucketName, filename, reader, filelength, minio.PutObjectOptions{ContentType: "application/octet-stream"})
+	_, err = s3Client.mc.PutObject(context.Background(), s3Client.BucketName, s3Filename, reader, filelength, minio.PutObjectOptions{ContentType: "application/octet-stream"})
 	if err != nil {
 		log.Errorln(err)
 		return err
@@ -124,8 +124,8 @@ func (s3Client *S3Client) Upload(dir string, filename string, filelength int64) 
 	return nil
 }
 
-func (s3Client *S3Client) Download(filename string, downloadDir string) error {
-	file, err := s3Client.mc.GetObject(context.Background(), s3Client.BucketName, filename, minio.GetObjectOptions{})
+func (s3Client *S3Client) Download(filename string, s3Filename string, downloadDir string) error {
+	file, err := s3Client.mc.GetObject(context.Background(), s3Client.BucketName, s3Filename, minio.GetObjectOptions{})
 	if err != nil {
 		return err
 	}
@@ -142,7 +142,7 @@ func (s3Client *S3Client) Download(filename string, downloadDir string) error {
 	progress := true
 	var writer io.Writer
 	if progress {
-		objInfo, err := s3Client.mc.StatObject(context.Background(), s3Client.BucketName, filename, minio.StatObjectOptions{})
+		objInfo, err := s3Client.mc.StatObject(context.Background(), s3Client.BucketName, s3Filename, minio.StatObjectOptions{})
 		if err != nil {
 			return err
 		}
