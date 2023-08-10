@@ -3,7 +3,6 @@ package fs
 import (
 	"crypto/sha256"
 	"encoding/hex"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
@@ -29,6 +28,7 @@ type SyncPlan struct {
 	LocalMissing  []*FileInfo
 	RemoteMissing []*FileInfo
 	Conflicts     []*FileInfo
+	KeepLocal     bool
 	Label         string
 }
 
@@ -68,8 +68,6 @@ func (fsClient *FSClient) uploadFile(syncPlan *SyncPlan, fileInfo *FileInfo) err
 	if err != nil {
 		return err
 	}
-	fmt.Println(fileStat.Size())
-	fmt.Println(fileInfo.Checksum)
 	s3Object := core.S3Object{
 		Server:        fsClient.s3Client.Endpoint,
 		Port:          -1,
@@ -104,8 +102,7 @@ func (fsClient *FSClient) uploadFile(syncPlan *SyncPlan, fileInfo *FileInfo) err
 	return nil
 }
 
-func (fsClient *FSClient) ApplySyncPlan(colonyID string, syncPlan *SyncPlan, keepLocal bool) error {
-
+func (fsClient *FSClient) ApplySyncPlan(colonyID string, syncPlan *SyncPlan) error {
 	// 1. Upload all remote missing files
 	for _, fileInfo := range syncPlan.RemoteMissing {
 		fsClient.uploadFile(syncPlan, fileInfo)
@@ -121,12 +118,12 @@ func (fsClient *FSClient) ApplySyncPlan(colonyID string, syncPlan *SyncPlan, kee
 
 	// 3. Handle conflicts
 	// If keepLocalFiles then upload conflicting files to server else download conflicting files to local filesystem
-	if keepLocal {
+	if syncPlan.KeepLocal {
 		for _, fileInfo := range syncPlan.Conflicts {
 			fsClient.uploadFile(syncPlan, fileInfo)
 		}
 	} else {
-		for _, fileInfo := range syncPlan.LocalMissing {
+		for _, fileInfo := range syncPlan.Conflicts {
 			err := fsClient.s3Client.Download(fileInfo.Name, syncPlan.Dir)
 			if err != nil {
 				return err
@@ -137,7 +134,7 @@ func (fsClient *FSClient) ApplySyncPlan(colonyID string, syncPlan *SyncPlan, kee
 	return nil
 }
 
-func (fsClient *FSClient) CalcSyncPlan(dir string, label string) (*SyncPlan, error) {
+func (fsClient *FSClient) CalcSyncPlan(dir string, label string, keepLocal bool) (*SyncPlan, error) {
 	files, err := ioutil.ReadDir(dir)
 	if err != nil {
 		return nil, err
@@ -182,15 +179,23 @@ func (fsClient *FSClient) CalcSyncPlan(dir string, label string) (*SyncPlan, err
 
 	// Find out which files are missing locally
 	var localMissing []*FileInfo
-	var conflicts []*FileInfo
 	for filename, checksum := range remoteFileMap {
 		_, ok := localFileMap[filename]
 		if !ok {
 			// File missing locally
 			localMissing = append(localMissing, &FileInfo{Name: filename, Checksum: checksum})
-		} else {
-			// File exists locally, but does not match file on server
-			if localFileMap[filename] != checksum {
+		}
+	}
+
+	// Calculate conflicts
+	var conflicts []*FileInfo
+	for filename, checksum := range remoteFileMap {
+		// File exists locally, but does not match file on server
+		if localFileMap[filename] != checksum {
+			if keepLocal {
+				localChecksum := localFileMap[filename]
+				conflicts = append(conflicts, &FileInfo{Name: filename, Checksum: localChecksum})
+			} else {
 				conflicts = append(conflicts, &FileInfo{Name: filename, Checksum: checksum})
 			}
 		}
@@ -201,5 +206,6 @@ func (fsClient *FSClient) CalcSyncPlan(dir string, label string) (*SyncPlan, err
 		RemoteMissing: remoteMissing,
 		Conflicts:     conflicts,
 		Dir:           dir,
-		Label:         label}, nil
+		Label:         label,
+		KeepLocal:     keepLocal}, nil
 }

@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"context"
 	"crypto/tls"
-	"fmt"
 	"io"
 	"net/http"
 	"os"
@@ -115,8 +114,6 @@ func (s3Client *S3Client) Upload(dir string, filename string, filelength int64) 
 	} else {
 		reader = bufio.NewReader(f)
 	}
-
-	fmt.Println("FileLength", filelength)
 
 	_, err = s3Client.mc.PutObject(context.Background(), s3Client.BucketName, filename, reader, filelength, minio.PutObjectOptions{ContentType: "application/octet-stream"})
 	if err != nil {
