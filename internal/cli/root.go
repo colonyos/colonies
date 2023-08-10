@@ -101,6 +101,11 @@ var TimescaleDB bool
 var LogMsg string
 var Since int64
 var Follow bool
+var SyncDir string
+var Label string
+var Dry bool
+var KeepLocal bool
+var Yes bool
 
 func init() {
 	rootCmd.PersistentFlags().BoolVarP(&Verbose, "verbose", "v", false, "Verbose (debugging)")

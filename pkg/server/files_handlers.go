@@ -199,19 +199,20 @@ func (server *ColoniesServer) handleGetFileLabelsHTTPRequest(c *gin.Context, rec
 		return
 	}
 
-	prefixes, err := server.db.GetFileLabels(msg.ColonyID)
+	labels, err := server.db.GetFileLabels(msg.ColonyID)
 	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		log.Error(err)
 		return
 	}
 
-	jsonBytes, err := json.Marshal(prefixes)
-	if server.handleHTTPError(c, err, http.StatusInternalServerError) {
-		log.Error(err)
+	jsonStr, err := core.ConvertLabelArrayToJSON(labels)
+	if server.handleHTTPError(c, err, http.StatusBadRequest) {
+		log.WithFields(log.Fields{"Error": err}).Debug("Failed to converts files to json")
+		server.handleHTTPError(c, err, http.StatusInternalServerError)
 		return
 	}
 
-	server.sendHTTPReply(c, payloadType, string(jsonBytes))
+	server.sendHTTPReply(c, payloadType, jsonStr)
 }
 
 func (server *ColoniesServer) handleDeleteFileHTTPRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
