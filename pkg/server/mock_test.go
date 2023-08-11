@@ -1102,11 +1102,19 @@ func (db *dbMock) GetSnapshotByID(colonyID string, snapshotID string) (*core.Sna
 	return nil, nil
 }
 
+func (db *dbMock) GetSnapshotByName(colonyID string, name string) (*core.Snapshot, error) {
+	return nil, nil
+}
+
 func (db *dbMock) GetSnapshotsByColonyID(colonyID string) ([]*core.Snapshot, error) {
 	return nil, nil
 }
 
 func (db *dbMock) DeleteSnapshotByID(colonyID string, snapshotID string) error {
+	return nil
+}
+
+func (db *dbMock) DeleteSnapshotByName(colonyID string, name string) error {
 	return nil
 }
 

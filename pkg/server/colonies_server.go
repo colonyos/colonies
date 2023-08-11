@@ -282,6 +282,16 @@ func (server *ColoniesServer) handleAPIRequest(c *gin.Context) {
 	case rpc.DeleteFilePayloadType:
 		server.handleDeleteFileHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 
+		// Snapshot handlers
+	case rpc.CreateSnapshotPayloadType:
+		server.handleCreateSnapshotHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+	case rpc.GetSnapshotPayloadType:
+		server.handleGetSnapshotHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+	case rpc.GetSnapshotsPayloadType:
+		server.handleGetSnapshotsHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+	case rpc.DeleteSnapshotPayloadType:
+		server.handleDeleteSnapshotHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+
 	default:
 		errMsg := "invalid rpcMsg.PayloadType, " + rpcMsg.PayloadType
 		if server.handleHTTPError(c, errors.New(errMsg), http.StatusForbidden) {
