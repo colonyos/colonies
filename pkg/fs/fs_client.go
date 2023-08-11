@@ -251,3 +251,41 @@ func (fsClient *FSClient) Download(colonyID string, fileID string, downloadDir s
 
 	return fsClient.s3Client.Download(file[0].Name, file[0].Reference.S3Object.Object, downloadDir)
 }
+
+func (fsClient *FSClient) RemoveFileByID(colonyID string, fileID string) error {
+	file, err := fsClient.coloniesClient.GetFileByID(colonyID, fileID, fsClient.executorPrvKey)
+	if err != nil {
+		return err
+	}
+
+	if len(file) != 1 {
+		return errors.New("Failed to get file info")
+	}
+
+	err = fsClient.s3Client.Remove(file[0].Reference.S3Object.Object)
+	if err != nil {
+		return err
+	}
+
+	return fsClient.coloniesClient.RemoveFileByID(colonyID, fileID, fsClient.executorPrvKey)
+}
+
+func (fsClient *FSClient) RemoveFileByName(colonyID string, label string, name string) error {
+	file, err := fsClient.coloniesClient.GetFileByName(colonyID, label, name, fsClient.executorPrvKey)
+	if err != nil {
+		return err
+	}
+
+	for _, revision := range file {
+		err = fsClient.s3Client.Remove(revision.Reference.S3Object.Object)
+		if err != nil {
+			return err
+		}
+		err = fsClient.coloniesClient.RemoveFileByID(colonyID, revision.ID, fsClient.executorPrvKey)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}

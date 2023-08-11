@@ -184,7 +184,7 @@ func TestDeleteFile(t *testing.T) {
 	fileFromServer, err := client.GetFileByID(env.colonyID, addedFile.ID, env.executorPrvKey)
 	assert.Len(t, fileFromServer, 1)
 
-	err = client.DeleteFileByID(env.colonyID, addedFile.ID, env.executorPrvKey)
+	err = client.RemoveFileByID(env.colonyID, addedFile.ID, env.executorPrvKey)
 	assert.Nil(t, err)
 
 	_, err = client.GetFileByID(env.colonyID, addedFile.ID, env.executorPrvKey)
@@ -194,16 +194,16 @@ func TestDeleteFile(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, fileCount, 2)
 
-	err = client.DeleteFileByName(env.colonyID, "label_does_not_exists", "testfile2", env.executorPrvKey)
+	err = client.RemoveFileByName(env.colonyID, "label_does_not_exists", "testfile2", env.executorPrvKey)
 	assert.Nil(t, err) // NOP
 
-	err = client.DeleteFileByName(env.colonyID, "/testlabel", "file_does_not_exist", env.executorPrvKey)
+	err = client.RemoveFileByName(env.colonyID, "/testlabel", "file_does_not_exist", env.executorPrvKey)
 	assert.Nil(t, err) // NOP
 
-	err = client.DeleteFileByName("colony_does_not_exists", "/testlabel", "testfile2", env.executorPrvKey)
+	err = client.RemoveFileByName("colony_does_not_exists", "/testlabel", "testfile2", env.executorPrvKey)
 	assert.NotNil(t, err)
 
-	err = client.DeleteFileByName(env.colonyID, "/testlabel", "testfile2", env.executorPrvKey)
+	err = client.RemoveFileByName(env.colonyID, "/testlabel", "testfile2", env.executorPrvKey)
 	assert.Nil(t, err)
 
 	fileCount, err = server.db.CountFiles(env.colonyID)

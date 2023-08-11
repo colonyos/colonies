@@ -145,16 +145,16 @@ func TestDeleteFileByIDSecurity(t *testing.T) {
 	addedFile, err := client.AddFile(file, env.executor1PrvKey)
 	assert.Nil(t, err)
 
-	err = client.DeleteFileByID(env.colony1ID, addedFile.ID, env.executor2PrvKey)
+	err = client.RemoveFileByID(env.colony1ID, addedFile.ID, env.executor2PrvKey)
 	assert.NotNil(t, err) // Should not work
 
-	err = client.DeleteFileByID(env.colony1ID, addedFile.ID, env.colony1PrvKey)
+	err = client.RemoveFileByID(env.colony1ID, addedFile.ID, env.colony1PrvKey)
 	assert.NotNil(t, err) // Should not work
 
-	err = client.DeleteFileByID(env.colony1ID, addedFile.ID, env.colony2PrvKey)
+	err = client.RemoveFileByID(env.colony1ID, addedFile.ID, env.colony2PrvKey)
 	assert.NotNil(t, err) // Should not work
 
-	err = client.DeleteFileByID(env.colony1ID, addedFile.ID, env.executor1PrvKey)
+	err = client.RemoveFileByID(env.colony1ID, addedFile.ID, env.executor1PrvKey)
 	assert.Nil(t, err) // Should work
 
 	server.Shutdown()
@@ -175,16 +175,16 @@ func TestDeleteFileByNameSecurity(t *testing.T) {
 	addedFile, err := client.AddFile(file, env.executor1PrvKey)
 	assert.Nil(t, err)
 
-	err = client.DeleteFileByName(env.colony1ID, addedFile.Label, addedFile.Name, env.executor2PrvKey)
+	err = client.RemoveFileByName(env.colony1ID, addedFile.Label, addedFile.Name, env.executor2PrvKey)
 	assert.NotNil(t, err) // Should not work
 
-	err = client.DeleteFileByName(env.colony1ID, addedFile.Label, addedFile.Name, env.colony1PrvKey)
+	err = client.RemoveFileByName(env.colony1ID, addedFile.Label, addedFile.Name, env.colony1PrvKey)
 	assert.NotNil(t, err) // Should not work
 
-	err = client.DeleteFileByName(env.colony1ID, addedFile.Label, addedFile.Name, env.colony2PrvKey)
+	err = client.RemoveFileByName(env.colony1ID, addedFile.Label, addedFile.Name, env.colony2PrvKey)
 	assert.NotNil(t, err) // Should not work
 
-	err = client.DeleteFileByName(env.colony1ID, addedFile.Label, addedFile.Name, env.executor1PrvKey)
+	err = client.RemoveFileByName(env.colony1ID, addedFile.Label, addedFile.Name, env.executor1PrvKey)
 	assert.Nil(t, err) // Should work
 
 	server.Shutdown()

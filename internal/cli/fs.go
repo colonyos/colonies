@@ -23,6 +23,7 @@ func init() {
 	fsCmd.AddCommand(listFilesCmd)
 	fsCmd.AddCommand(getFileInfoCmd)
 	fsCmd.AddCommand(getFileCmd)
+	fsCmd.AddCommand(removeFileCmd)
 	rootCmd.AddCommand(fsCmd)
 
 	syncCmd.Flags().StringVarP(&SyncDir, "dir", "d", "", "Local directory to sync")
@@ -45,6 +46,11 @@ func init() {
 	getFileCmd.Flags().StringVarP(&Label, "label", "l", "", "Label")
 	getFileCmd.Flags().StringVarP(&Filename, "name", "n", "", "Filename")
 	getFileCmd.Flags().StringVarP(&DownloadDir, "dir", "d", "", "Local directory to download file to")
+
+	removeFileCmd.Flags().StringVarP(&FileID, "fileid", "i", "", "File Id")
+	removeFileCmd.Flags().StringVarP(&Label, "label", "l", "", "Label")
+	removeFileCmd.Flags().StringVarP(&Filename, "name", "n", "", "Filename")
+	removeFileCmd.Flags().StringVarP(&DownloadDir, "dir", "d", "", "Local directory to download file to")
 }
 
 var fsCmd = &cobra.Command{
@@ -72,7 +78,7 @@ func printSyncPlan(syncPlan *fs.SyncPlan) {
 	}
 
 	if len(syncPlan.LocalMissing) > 0 {
-		fmt.Println("\nThese files will be downloaded " + SyncDir + ":")
+		fmt.Println("\nThese files will be downloaded to directory <" + SyncDir + ">:")
 		var downloaded [][]string
 		for _, file := range syncPlan.LocalMissing {
 			downloaded = append(downloaded, []string{file.Name, strconv.FormatInt(file.Size/1024, 10) + " KiB", Label})
@@ -91,7 +97,7 @@ func printSyncPlan(syncPlan *fs.SyncPlan) {
 		if syncPlan.KeepLocal {
 			fmt.Println("These files will be replaced at the server:")
 		} else {
-			fmt.Println("These files will be replaced at " + SyncDir + ":")
+			fmt.Println("These files will be replaced at directory <" + SyncDir + ">:")
 		}
 		var conflicts [][]string
 		for _, file := range syncPlan.Conflicts {
@@ -441,5 +447,54 @@ var getFileCmd = &cobra.Command{
 		CheckError(err)
 
 		log.WithFields(log.Fields{"DownloadDir": DownloadDir, FileID: Insecure}).Debug("Downloaded file")
+	},
+}
+
+var removeFileCmd = &cobra.Command{
+	Use:   "remove",
+	Short: "Remove a file from file storage",
+	Long:  "Remove a file from file storage",
+	Run: func(cmd *cobra.Command, args []string) {
+		parseServerEnv()
+
+		keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
+		CheckError(err)
+
+		if ColonyID == "" {
+			ColonyID = os.Getenv("COLONIES_COLONY_ID")
+		}
+		if ColonyID == "" {
+			CheckError(errors.New("Unknown Colony Id"))
+		}
+
+		if ExecutorID == "" {
+			ExecutorID = os.Getenv("COLONIES_EXECUTOR_ID")
+		}
+		if ExecutorID == "" {
+			CheckError(errors.New("Unknown Executor Id"))
+		}
+
+		if ExecutorPrvKey == "" {
+			ExecutorPrvKey, err = keychain.GetPrvKey(ExecutorID)
+			CheckError(err)
+		}
+
+		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Debug("Starting a Colonies client")
+		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
+		fsClient, err := fs.CreateFSClient(client, ColonyID, ExecutorPrvKey)
+		CheckError(err)
+
+		if FileID != "" {
+			err = fsClient.RemoveFileByID(ColonyID, FileID)
+			CheckError(err)
+		} else if Filename != "" && Label != "" {
+			fmt.Println(Label)
+			err = fsClient.RemoveFileByName(ColonyID, Label, Filename)
+			CheckError(err)
+		} else {
+			CheckError(errors.New("FileId nor filename + label were specified"))
+		}
+
+		log.WithFields(log.Fields{"FileID": FileID, "Label": Label, "Name": Filename}).Debug("Removed file, local file is not deleted")
 	},
 }

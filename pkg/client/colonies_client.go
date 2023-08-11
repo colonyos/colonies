@@ -1305,7 +1305,7 @@ func (client *ColoniesClient) GetFileLabels(colonyID string, prvKey string) ([]*
 	return labels, err
 }
 
-func (client *ColoniesClient) DeleteFileByID(colonyID string, fileID string, prvKey string) error {
+func (client *ColoniesClient) RemoveFileByID(colonyID string, fileID string, prvKey string) error {
 	msg := rpc.CreateDeleteFileMsg(colonyID, fileID, "", "")
 	jsonString, err := msg.ToJSON()
 	if err != nil {
@@ -1320,7 +1320,7 @@ func (client *ColoniesClient) DeleteFileByID(colonyID string, fileID string, prv
 	return nil
 }
 
-func (client *ColoniesClient) DeleteFileByName(colonyID string, label string, name string, prvKey string) error {
+func (client *ColoniesClient) RemoveFileByName(colonyID string, label string, name string, prvKey string) error {
 	msg := rpc.CreateDeleteFileMsg(colonyID, "", label, name)
 	jsonString, err := msg.ToJSON()
 	if err != nil {

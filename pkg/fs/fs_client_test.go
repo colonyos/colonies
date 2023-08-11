@@ -596,3 +596,106 @@ func TestDownload(t *testing.T) {
 	coloniesServer.Shutdown()
 	<-done
 }
+
+func TestRemoveByID(t *testing.T) {
+	env, coloniesClient, coloniesServer, _, done := setupTestEnv(t)
+
+	label := "test_label"
+
+	// Create tmpFile1
+	syncDir, err := ioutil.TempDir("/tmp/", "sync")
+	assert.Nil(t, err)
+	tmpFile1, err := ioutil.TempFile(syncDir, "test")
+	assert.Nil(t, err)
+	tmpFile1Filename := filepath.Base(tmpFile1.Name())
+	_, err = tmpFile1.Write([]byte("testdata"))
+	assert.Nil(t, err)
+
+	// Calculate a sync plan
+	fsClient, err := CreateFSClient(coloniesClient, env.colonyID, env.executorPrvKey)
+	assert.Nil(t, err)
+	syncPlan, err := fsClient.CalcSyncPlan(syncDir, label, true)
+	assert.Nil(t, err)
+
+	// Upload the file to the server
+	err = fsClient.ApplySyncPlan(env.colonyID, syncPlan)
+	assert.Nil(t, err)
+
+	coloniesFile, err := fsClient.coloniesClient.GetFileByName(env.colonyID, label, tmpFile1Filename, env.executorPrvKey)
+	assert.Nil(t, err)
+	assert.Len(t, coloniesFile, 1)
+	fileID := coloniesFile[0].ID
+
+	err = fsClient.RemoveFileByID(env.colonyID, fileID)
+	assert.Nil(t, err)
+
+	coloniesFile, err = fsClient.coloniesClient.GetFileByID(env.colonyID, fileID, env.executorPrvKey)
+	assert.NotNil(t, err)
+
+	// Clean up
+	tmpFile1.Close()
+	err = os.RemoveAll(syncDir)
+	assert.Nil(t, err)
+
+	coloniesServer.Shutdown()
+	<-done
+}
+
+func TestRemoveByName(t *testing.T) {
+	env, coloniesClient, coloniesServer, _, done := setupTestEnv(t)
+
+	label := "test_label"
+
+	// Create tmpFile1
+	syncDir, err := ioutil.TempDir("/tmp/", "sync")
+	assert.Nil(t, err)
+	tmpFile1, err := ioutil.TempFile(syncDir, "test")
+	assert.Nil(t, err)
+	tmpFile1Filename := filepath.Base(tmpFile1.Name())
+	_, err = tmpFile1.Write([]byte("testdata"))
+	assert.Nil(t, err)
+
+	// Calculate a sync plan
+	fsClient, err := CreateFSClient(coloniesClient, env.colonyID, env.executorPrvKey)
+	assert.Nil(t, err)
+	syncPlan, err := fsClient.CalcSyncPlan(syncDir, label, true)
+	assert.Nil(t, err)
+
+	// Upload the file to the server
+	err = fsClient.ApplySyncPlan(env.colonyID, syncPlan)
+	assert.Nil(t, err)
+
+	// Modify the file so that we get two revisions
+	err = tmpFile1.Truncate(0)
+	assert.Nil(t, err)
+	_, err = tmpFile1.Seek(0, 0)
+	assert.Nil(t, err)
+	_, err = tmpFile1.Write([]byte("testdata2"))
+	assert.Nil(t, err)
+
+	// Make another sync
+	keepLocal := true
+	syncPlan, err = fsClient.CalcSyncPlan(syncDir, label, keepLocal)
+	assert.Nil(t, err)
+	err = fsClient.ApplySyncPlan(env.colonyID, syncPlan)
+	assert.Nil(t, err)
+
+	// Get the file
+	coloniesFile, err := fsClient.coloniesClient.GetFileByName(env.colonyID, label, tmpFile1Filename, env.executorPrvKey)
+	assert.Nil(t, err)
+	assert.Len(t, coloniesFile, 2)
+
+	err = fsClient.RemoveFileByName(env.colonyID, label, tmpFile1Filename)
+	assert.Nil(t, err)
+
+	coloniesFile, err = fsClient.coloniesClient.GetFileByName(env.colonyID, label, tmpFile1Filename, env.executorPrvKey)
+	assert.NotNil(t, err)
+
+	// Clean up
+	tmpFile1.Close()
+	err = os.RemoveAll(syncDir)
+	assert.Nil(t, err)
+
+	coloniesServer.Shutdown()
+	<-done
+}
