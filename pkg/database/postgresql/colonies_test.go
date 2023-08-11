@@ -213,6 +213,11 @@ func TestDeleteColonies(t *testing.T) {
 	err = db.AddFile(file)
 	assert.Nil(t, err)
 
+	_, err = db.CreateSnapshot(colony1.ID, "/testdir", "test_snapshot_name1")
+	assert.Nil(t, err)
+	_, err = db.CreateSnapshot(colony2.ID, "/testdir", "test_snapshot_name2")
+	assert.Nil(t, err)
+
 	err = db.DeleteColonyByID(core.GenerateRandomID())
 	assert.NotNil(t, err)
 
@@ -274,6 +279,14 @@ func TestDeleteColonies(t *testing.T) {
 	fileCount, err = db.CountFiles(colony2.ID)
 	assert.Nil(t, err)
 	assert.Equal(t, fileCount, 1)
+
+	snapshots, err := db.GetSnapshotsByColonyID(colony1.ID)
+	assert.Nil(t, err)
+	assert.Len(t, snapshots, 0)
+
+	snapshots, err = db.GetSnapshotsByColonyID(colony2.ID)
+	assert.Nil(t, err)
+	assert.Len(t, snapshots, 1)
 }
 
 func TestCountColonies(t *testing.T) {
