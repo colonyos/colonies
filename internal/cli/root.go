@@ -110,6 +110,8 @@ var Yes bool
 var Filename string
 var FileID string
 var DownloadDir string
+var SnapshotID string
+var SnapshotName string
 
 func init() {
 	rootCmd.PersistentFlags().BoolVarP(&Verbose, "verbose", "v", false, "Verbose (debugging)")

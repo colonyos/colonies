@@ -699,3 +699,132 @@ func TestRemoveByName(t *testing.T) {
 	coloniesServer.Shutdown()
 	<-done
 }
+
+func TestDownloadSnapshot(t *testing.T) {
+	env, coloniesClient, coloniesServer, _, done := setupTestEnv(t)
+
+	label := "test_label"
+
+	// Create tmpFile1
+	syncDir, err := ioutil.TempDir("/tmp/", "sync1")
+	assert.Nil(t, err)
+	tmpFile1, err := ioutil.TempFile(syncDir, "test")
+	assert.Nil(t, err)
+	tmpFile1Filename := filepath.Base(tmpFile1.Name())
+	_, err = tmpFile1.Write([]byte("testdata1"))
+	assert.Nil(t, err)
+
+	// Create tmpFile2
+	tmpFile2, err := ioutil.TempFile(syncDir, "test2")
+	assert.Nil(t, err)
+	tmpFile2Filename := filepath.Base(tmpFile2.Name())
+	_, err = tmpFile2.Write([]byte("testdata2"))
+	assert.Nil(t, err)
+
+	// Calculate a sync plan
+	fsClient, err := CreateFSClient(coloniesClient, env.colonyID, env.executorPrvKey)
+	assert.Nil(t, err)
+	syncPlan, err := fsClient.CalcSyncPlan(syncDir, label, true)
+	assert.Nil(t, err)
+
+	// Upload the file to the server
+	err = fsClient.ApplySyncPlan(env.colonyID, syncPlan)
+	assert.Nil(t, err)
+
+	// Create a snapshot
+	snapshot, err := fsClient.coloniesClient.CreateSnapshot(env.colonyID, label, "test_snapshot1", env.executorPrvKey)
+	assert.Nil(t, err)
+
+	// Download files in snapshot
+	downloadDir, err := ioutil.TempDir("/tmp/", "download")
+	err = fsClient.DownloadSnapshot(snapshot.ID, downloadDir)
+	assert.Nil(t, err)
+
+	// Get the files
+	fileContent, err := os.ReadFile(downloadDir + "/" + tmpFile1Filename)
+	assert.Nil(t, err)
+	assert.Equal(t, "testdata1", (string(fileContent)))
+	fileContent, err = os.ReadFile(downloadDir + "/" + tmpFile2Filename)
+	assert.Nil(t, err)
+	assert.Equal(t, "testdata2", (string(fileContent)))
+
+	// Clean up
+	tmpFile1.Close()
+	err = os.RemoveAll(syncDir)
+	assert.Nil(t, err)
+	err = os.RemoveAll(downloadDir)
+	assert.Nil(t, err)
+
+	coloniesServer.Shutdown()
+	<-done
+}
+
+func TestRemoveAllFilesWithLabel(t *testing.T) {
+	env, coloniesClient, coloniesServer, _, done := setupTestEnv(t)
+
+	label := "test_label"
+
+	// Create tmpFile1
+	syncDir, err := ioutil.TempDir("/tmp/", "sync1")
+	assert.Nil(t, err)
+	tmpFile1, err := ioutil.TempFile(syncDir, "test")
+	assert.Nil(t, err)
+	tmpFile1Filename := filepath.Base(tmpFile1.Name())
+	_, err = tmpFile1.Write([]byte("testdata1"))
+	assert.Nil(t, err)
+
+	// Create tmpFile2
+	tmpFile2, err := ioutil.TempFile(syncDir, "test2")
+	assert.Nil(t, err)
+	tmpFile2Filename := filepath.Base(tmpFile2.Name())
+	_, err = tmpFile2.Write([]byte("testdata2"))
+	assert.Nil(t, err)
+
+	// Calculate a sync plan
+	fsClient, err := CreateFSClient(coloniesClient, env.colonyID, env.executorPrvKey)
+	assert.Nil(t, err)
+	syncPlan, err := fsClient.CalcSyncPlan(syncDir, label, true)
+	assert.Nil(t, err)
+
+	// Upload the file to the server
+	err = fsClient.ApplySyncPlan(env.colonyID, syncPlan)
+	assert.Nil(t, err)
+
+	filenames, err := fsClient.coloniesClient.GetFilenames(env.colonyID, label, env.executorPrvKey)
+	tmpFile1S3Object := ""
+	tmpFile2S3Object := ""
+	for _, filename := range filenames {
+		file, err := fsClient.coloniesClient.GetFileByName(env.colonyID, label, filename, env.executorPrvKey)
+		assert.Nil(t, err)
+		assert.Len(t, file, 1)
+		if file[0].Name == tmpFile1Filename {
+			tmpFile1S3Object = file[0].Reference.S3Object.Object
+		}
+		if file[0].Name == tmpFile2Filename {
+			tmpFile2S3Object = file[0].Reference.S3Object.Object
+		}
+	}
+
+	assert.True(t, fsClient.s3Client.Exists(tmpFile1S3Object))
+	assert.True(t, fsClient.s3Client.Exists(tmpFile2S3Object))
+
+	// Remove all files
+	err = fsClient.RemoveAllFilesWithLabel(label)
+	assert.Nil(t, err)
+
+	// Verify that files are gone
+	filenames, err = fsClient.coloniesClient.GetFilenames(fsClient.colonyID, label, fsClient.executorPrvKey)
+	assert.Nil(t, err)
+	assert.Len(t, filenames, 0)
+
+	assert.False(t, fsClient.s3Client.Exists(tmpFile1S3Object))
+	assert.False(t, fsClient.s3Client.Exists(tmpFile2S3Object))
+
+	// Clean up
+	tmpFile1.Close()
+	err = os.RemoveAll(syncDir)
+	assert.Nil(t, err)
+
+	coloniesServer.Shutdown()
+	<-done
+}
