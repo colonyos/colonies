@@ -1070,7 +1070,7 @@ func (db *dbMock) GetFileByName(colonyID string, label string, name string) ([]*
 	return nil, nil
 }
 
-func (db *dbMock) GetFileNamesByLabel(colonyID string, label string) ([]string, error) {
+func (db *dbMock) GetFilenamesByLabel(colonyID string, label string) ([]string, error) {
 	return nil, nil
 }
 
@@ -1092,6 +1092,26 @@ func (db *dbMock) CountFiles(colonyID string) (int, error) {
 
 func (db *dbMock) CountFilesWithLabel(colonyID string, label string) (int, error) {
 	return 0, nil
+}
+
+func (db *dbMock) CreateSnapshot(colonyID string, label string, name string) (*core.Snapshot, error) {
+	return nil, nil
+}
+
+func (db *dbMock) GetSnapshotByID(colonyID string, snapshotID string) (*core.Snapshot, error) {
+	return nil, nil
+}
+
+func (db *dbMock) GetSnapshotsByColonyID(colonyID string) ([]*core.Snapshot, error) {
+	return nil, nil
+}
+
+func (db *dbMock) DeleteSnapshotByID(colonyID string, snapshotID string) error {
+	return nil
+}
+
+func (db *dbMock) DeleteSnapshotsByColonyID(colonyID string) error {
+	return nil
 }
 
 // gin mockups

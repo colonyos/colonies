@@ -103,11 +103,11 @@ func TestGetFileNamesByLabel(t *testing.T) {
 	err = db.AddFile(file4)
 	assert.Nil(t, err)
 
-	filesnames, err := db.GetFileNamesByLabel("test_colonyid", "/testdir")
+	filesnames, err := db.GetFilenamesByLabel("test_colonyid", "/testdir")
 	assert.Nil(t, err)
 	assert.Len(t, filesnames, 2)
 
-	filesnames, err = db.GetFileNamesByLabel("test_colonyid", "/testdir2")
+	filesnames, err = db.GetFilenamesByLabel("test_colonyid", "/testdir2")
 	assert.Nil(t, err)
 	assert.Len(t, filesnames, 1)
 }
@@ -135,7 +135,7 @@ func TestDeleteFileByID(t *testing.T) {
 	err = db.AddFile(file2)
 	assert.Nil(t, err)
 
-	filesnames, err := db.GetFileNamesByLabel("test_colonyid", "/testdir")
+	filesnames, err := db.GetFilenamesByLabel("test_colonyid", "/testdir")
 	assert.Nil(t, err)
 	assert.Len(t, filesnames, 2)
 
@@ -146,7 +146,7 @@ func TestDeleteFileByID(t *testing.T) {
 	err = db.DeleteFileByID("test_colonyid", file2.ID)
 	assert.Nil(t, err)
 
-	filesnames, err = db.GetFileNamesByLabel("test_colonyid", "/testdir")
+	filesnames, err = db.GetFilenamesByLabel("test_colonyid", "/testdir")
 	assert.Nil(t, err)
 	assert.Len(t, filesnames, 1)
 

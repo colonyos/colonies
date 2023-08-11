@@ -154,7 +154,7 @@ func (db *PQDatabase) GetFileByName(colonyID string, label string, name string) 
 	return files, nil
 }
 
-func (db *PQDatabase) GetFileNamesByLabel(colonyID string, label string) ([]string, error) {
+func (db *PQDatabase) GetFilenamesByLabel(colonyID string, label string) ([]string, error) {
 	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `FILES WHERE COLONY_ID=$1 AND LABEL=$2`
 	rows, err := db.postgresql.Query(sqlStatement, colonyID, label)
 	if err != nil {

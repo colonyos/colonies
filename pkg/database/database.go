@@ -183,10 +183,17 @@ type Database interface {
 	GetFileByID(colonyID string, fileID string) (*core.File, error)
 	GetLatestFileByName(colonyID string, label string, name string) ([]*core.File, error)
 	GetFileByName(colonyID string, label string, name string) ([]*core.File, error)
-	GetFileNamesByLabel(colonyID string, label string) ([]string, error)
+	GetFilenamesByLabel(colonyID string, label string) ([]string, error)
 	DeleteFileByID(colonyID string, fileID string) error
 	DeleteFileByName(colonyID string, label string, name string) error
 	GetFileLabels(colonyID string) ([]*core.Label, error)
 	CountFilesWithLabel(colonyID string, label string) (int, error)
 	CountFiles(colonyID string) (int, error)
+
+	// Snapshots
+	CreateSnapshot(colonyID string, label string, name string) (*core.Snapshot, error)
+	GetSnapshotByID(colonyID string, snapshotID string) (*core.Snapshot, error)
+	GetSnapshotsByColonyID(colonyID string) ([]*core.Snapshot, error)
+	DeleteSnapshotByID(colonyID string, snapshotID string) error
+	DeleteSnapshotsByColonyID(colonyID string) error
 }

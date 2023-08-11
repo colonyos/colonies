@@ -165,7 +165,7 @@ func (server *ColoniesServer) handleGetFilesHTTPRequest(c *gin.Context, recovere
 		return
 	}
 
-	fileNames, err := server.db.GetFileNamesByLabel(msg.ColonyID, msg.Label)
+	fileNames, err := server.db.GetFilenamesByLabel(msg.ColonyID, msg.Label)
 	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		log.Error(err)
 		return
