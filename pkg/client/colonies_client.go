@@ -1334,3 +1334,113 @@ func (client *ColoniesClient) RemoveFileByName(colonyID string, label string, na
 
 	return nil
 }
+
+func (client *ColoniesClient) CreateSnapshot(colonyID string, label string, name string, prvKey string) (*core.Snapshot, error) {
+	msg := rpc.CreateCreateSnapshotMsg(colonyID, label, name)
+	jsonString, err := msg.ToJSON()
+	if err != nil {
+		return nil, err
+	}
+
+	respBodyString, err := client.sendMessage(rpc.CreateSnapshotPayloadType, jsonString, prvKey, false, context.TODO())
+	if err != nil {
+		return nil, err
+	}
+
+	snapshot, err := core.ConvertJSONToSnapshot(respBodyString)
+	if err != nil {
+		return nil, err
+	}
+
+	return snapshot, err
+}
+
+func (client *ColoniesClient) GetSnapshotByID(colonyID string, snapshotID string, prvKey string) (*core.Snapshot, error) {
+	msg := rpc.CreateGetSnapshotMsg(colonyID, snapshotID, "")
+	jsonString, err := msg.ToJSON()
+	if err != nil {
+		return nil, err
+	}
+
+	respBodyString, err := client.sendMessage(rpc.GetSnapshotPayloadType, jsonString, prvKey, false, context.TODO())
+	if err != nil {
+		return nil, err
+	}
+
+	snapshot, err := core.ConvertJSONToSnapshot(respBodyString)
+	if err != nil {
+		return nil, err
+	}
+
+	return snapshot, err
+}
+
+func (client *ColoniesClient) GetSnapshotByName(colonyID string, name string, prvKey string) (*core.Snapshot, error) {
+	msg := rpc.CreateGetSnapshotMsg(colonyID, "", name)
+	jsonString, err := msg.ToJSON()
+	if err != nil {
+		return nil, err
+	}
+
+	respBodyString, err := client.sendMessage(rpc.GetSnapshotPayloadType, jsonString, prvKey, false, context.TODO())
+	if err != nil {
+		return nil, err
+	}
+
+	snapshot, err := core.ConvertJSONToSnapshot(respBodyString)
+	if err != nil {
+		return nil, err
+	}
+
+	return snapshot, err
+}
+
+func (client *ColoniesClient) GetSnapshotsByColonyID(colonyID string, prvKey string) ([]*core.Snapshot, error) {
+	msg := rpc.CreateGetSnapshotsMsg(colonyID)
+	jsonString, err := msg.ToJSON()
+	if err != nil {
+		return nil, err
+	}
+
+	respBodyString, err := client.sendMessage(rpc.GetSnapshotsPayloadType, jsonString, prvKey, false, context.TODO())
+	if err != nil {
+		return nil, err
+	}
+
+	snapshots, err := core.ConvertJSONToSnapshotsArray(respBodyString)
+	if err != nil {
+		return nil, err
+	}
+
+	return snapshots, err
+}
+
+func (client *ColoniesClient) DeleteSnapshotByID(colonyID string, snapshotID string, prvKey string) error {
+	msg := rpc.CreateDeleteSnapshotMsg(colonyID, snapshotID, "")
+	jsonString, err := msg.ToJSON()
+	if err != nil {
+		return err
+	}
+
+	_, err = client.sendMessage(rpc.DeleteSnapshotPayloadType, jsonString, prvKey, false, context.TODO())
+	if err != nil {
+		return err
+	}
+
+	return err
+}
+
+func (client *ColoniesClient) DeleteSnapshotByName(colonyID string, name string, prvKey string) error {
+	msg := rpc.CreateDeleteSnapshotMsg(colonyID, "", name)
+	jsonString, err := msg.ToJSON()
+	if err != nil {
+		return err
+	}
+
+	_, err = client.sendMessage(rpc.DeleteSnapshotPayloadType, jsonString, prvKey, false, context.TODO())
+	if err != nil {
+		return err
+	}
+
+	return err
+}
