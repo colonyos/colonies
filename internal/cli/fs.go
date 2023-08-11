@@ -18,12 +18,19 @@ import (
 )
 
 func init() {
+	snapshotCmd.AddCommand(createSnapshotCmd)
+	snapshotCmd.AddCommand(downloadSnapshotCmd)
+	snapshotCmd.AddCommand(listSnapshotsCmd)
+	snapshotCmd.AddCommand(infoSnapshotCmd)
+	snapshotCmd.AddCommand(removeSnapshotCmd)
+
 	fsCmd.AddCommand(syncCmd)
 	fsCmd.AddCommand(getLabelsCmd)
 	fsCmd.AddCommand(listFilesCmd)
 	fsCmd.AddCommand(getFileInfoCmd)
 	fsCmd.AddCommand(getFileCmd)
 	fsCmd.AddCommand(removeFileCmd)
+	fsCmd.AddCommand(snapshotCmd)
 	rootCmd.AddCommand(fsCmd)
 
 	syncCmd.Flags().StringVarP(&SyncDir, "dir", "d", "", "Local directory to sync")
@@ -51,12 +58,33 @@ func init() {
 	removeFileCmd.Flags().StringVarP(&Label, "label", "l", "", "Label")
 	removeFileCmd.Flags().StringVarP(&Filename, "name", "n", "", "Filename")
 	removeFileCmd.Flags().StringVarP(&DownloadDir, "dir", "d", "", "Local directory to download file to")
+
+	createSnapshotCmd.Flags().StringVarP(&Label, "label", "l", "", "Label")
+	createSnapshotCmd.MarkFlagRequired("label")
+	createSnapshotCmd.Flags().StringVarP(&SnapshotName, "snapshotname", "n", "", "Snapshot name")
+	createSnapshotCmd.MarkFlagRequired("label")
+
+	downloadSnapshotCmd.Flags().StringVarP(&SnapshotID, "snapshotid", "i", "", "Snapshot Id")
+	downloadSnapshotCmd.Flags().StringVarP(&SnapshotName, "snapshotname", "n", "", "Snapshot name")
+	downloadSnapshotCmd.Flags().StringVarP(&DownloadDir, "dir", "d", "", "Local directory to download files to")
+
+	infoSnapshotCmd.Flags().StringVarP(&SnapshotID, "snapshotid", "i", "", "Snapshot Id")
+	infoSnapshotCmd.Flags().StringVarP(&SnapshotName, "snapshotname", "n", "", "Snapshot name")
+
+	removeSnapshotCmd.Flags().StringVarP(&SnapshotID, "snapshotid", "i", "", "Snapshot Id")
+	removeSnapshotCmd.Flags().StringVarP(&SnapshotName, "snapshotname", "n", "", "Snapshot name")
 }
 
 var fsCmd = &cobra.Command{
 	Use:   "fs",
 	Short: "Manage file storage",
 	Long:  "Manage file storage",
+}
+
+var snapshotCmd = &cobra.Command{
+	Use:   "snapshot",
+	Short: "Manage file snapshots",
+	Long:  "Manage file snapshots",
 }
 
 func printSyncPlan(syncPlan *fs.SyncPlan) {
@@ -145,7 +173,7 @@ var syncCmd = &cobra.Command{
 		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Debug("Starting a Colonies client")
 		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
 
-		log.WithFields(log.Fields{"SyncDir": SyncDir, "Label": Label, "Dry": Dry}).Debug("Starting a file storage client")
+		log.Debug("Starting a file storage client")
 		fsClient, err := fs.CreateFSClient(client, ColonyID, ExecutorPrvKey)
 		CheckError(err)
 
@@ -441,8 +469,10 @@ var getFileCmd = &cobra.Command{
 			CheckError(err)
 		}
 
+		log.Debug("Starting a file storage client")
 		fsClient, err := fs.CreateFSClient(client, ColonyID, ExecutorPrvKey)
 		CheckError(err)
+
 		err = fsClient.Download(ColonyID, coloniesFiles[0].ID, DownloadDir)
 		CheckError(err)
 
@@ -481,6 +511,8 @@ var removeFileCmd = &cobra.Command{
 
 		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Debug("Starting a Colonies client")
 		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
+
+		log.Debug("Starting a file storage client")
 		fsClient, err := fs.CreateFSClient(client, ColonyID, ExecutorPrvKey)
 		CheckError(err)
 
@@ -496,5 +528,281 @@ var removeFileCmd = &cobra.Command{
 		}
 
 		log.WithFields(log.Fields{"FileID": FileID, "Label": Label, "Name": Filename}).Debug("Removed file, local file is not deleted")
+	},
+}
+
+func printSnapshot(snapshot *core.Snapshot) {
+	snapshotData := [][]string{
+		[]string{"Id", snapshot.ID},
+		[]string{"ColonyId", snapshot.ColonyID},
+		[]string{"Label", snapshot.Label},
+		[]string{"Name", snapshot.Name},
+		[]string{"Added", snapshot.Added.Format(TimeLayout)},
+	}
+	snapshotTable := tablewriter.NewWriter(os.Stdout)
+	for _, v := range snapshotData {
+		snapshotTable.Append(v)
+	}
+	snapshotTable.SetAlignment(tablewriter.ALIGN_LEFT)
+	snapshotTable.Render()
+
+	if len(snapshot.FileIDs) > 0 {
+		fmt.Println()
+		var fileIDData [][]string
+		for _, fileID := range snapshot.FileIDs {
+			fileIDData = append(fileIDData, []string{fileID})
+		}
+		table := tablewriter.NewWriter(os.Stdout)
+		table.SetHeader([]string{"File IDs"})
+		for _, v := range fileIDData {
+			table.Append(v)
+		}
+		table.SetAlignment(tablewriter.ALIGN_LEFT)
+		table.Render()
+	}
+}
+
+var createSnapshotCmd = &cobra.Command{
+	Use:   "create",
+	Short: "Create a snapshot",
+	Long:  "Create a snapshot",
+	Run: func(cmd *cobra.Command, args []string) {
+		parseServerEnv()
+
+		keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
+		CheckError(err)
+
+		if ColonyID == "" {
+			ColonyID = os.Getenv("COLONIES_COLONY_ID")
+		}
+		if ColonyID == "" {
+			CheckError(errors.New("Unknown Colony Id"))
+		}
+
+		if ExecutorID == "" {
+			ExecutorID = os.Getenv("COLONIES_EXECUTOR_ID")
+		}
+		if ExecutorID == "" {
+			CheckError(errors.New("Unknown Executor Id"))
+		}
+
+		if ExecutorPrvKey == "" {
+			ExecutorPrvKey, err = keychain.GetPrvKey(ExecutorID)
+			CheckError(err)
+		}
+
+		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Debug("Starting a Colonies client")
+		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
+
+		snapshot, err := client.CreateSnapshot(ColonyID, Label, SnapshotName, ExecutorPrvKey)
+		CheckError(err)
+
+		log.WithFields(log.Fields{"Label": Label, "SnapshotName": SnapshotName}).Debug("Creating snapshot")
+
+		fmt.Println("Snapshot:")
+		printSnapshot(snapshot)
+	},
+}
+
+var downloadSnapshotCmd = &cobra.Command{
+	Use:   "download",
+	Short: "Download a snapshot",
+	Long:  "Download a snapshot",
+	Run: func(cmd *cobra.Command, args []string) {
+		parseServerEnv()
+
+		keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
+		CheckError(err)
+
+		if ColonyID == "" {
+			ColonyID = os.Getenv("COLONIES_COLONY_ID")
+		}
+		if ColonyID == "" {
+			CheckError(errors.New("Unknown Colony Id"))
+		}
+
+		if ExecutorID == "" {
+			ExecutorID = os.Getenv("COLONIES_EXECUTOR_ID")
+		}
+		if ExecutorID == "" {
+			CheckError(errors.New("Unknown Executor Id"))
+		}
+
+		if ExecutorPrvKey == "" {
+			ExecutorPrvKey, err = keychain.GetPrvKey(ExecutorID)
+			CheckError(err)
+		}
+
+		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Debug("Starting a Colonies client")
+		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
+
+		log.Debug("Starting a file storage client")
+		fsClient, err := fs.CreateFSClient(client, ColonyID, ExecutorPrvKey)
+		CheckError(err)
+
+		err = os.Mkdir(DownloadDir, 0755)
+		if err == nil {
+			CheckError(err)
+		}
+
+		if SnapshotID != "" {
+			err = fsClient.DownloadSnapshot(SnapshotID, DownloadDir)
+			CheckError(err)
+			log.WithFields(log.Fields{"SnapshotId": SnapshotID, "DownloadDir": DownloadDir}).Debug("Download snapshot")
+		} else if SnapshotName != "" {
+			err = fsClient.DownloadSnapshot(SnapshotID, DownloadDir)
+			snapshot, err := client.GetSnapshotByName(ColonyID, SnapshotName, ExecutorPrvKey)
+			CheckError(err)
+			err = fsClient.DownloadSnapshot(snapshot.ID, DownloadDir)
+			CheckError(err)
+			log.WithFields(log.Fields{"SnapshotName": SnapshotName, "SnapshotId": snapshot.ID, "DownloadDir": DownloadDir}).Debug("Download snapshot")
+		} else {
+			CheckError(errors.New("Snapshot Id nor name was provided"))
+		}
+	},
+}
+
+var listSnapshotsCmd = &cobra.Command{
+	Use:   "ls",
+	Short: "List all snapshots",
+	Long:  "List all snapshots",
+	Run: func(cmd *cobra.Command, args []string) {
+		parseServerEnv()
+
+		keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
+		CheckError(err)
+
+		if ColonyID == "" {
+			ColonyID = os.Getenv("COLONIES_COLONY_ID")
+		}
+		if ColonyID == "" {
+			CheckError(errors.New("Unknown Colony Id"))
+		}
+
+		if ExecutorID == "" {
+			ExecutorID = os.Getenv("COLONIES_EXECUTOR_ID")
+		}
+		if ExecutorID == "" {
+			CheckError(errors.New("Unknown Executor Id"))
+		}
+
+		if ExecutorPrvKey == "" {
+			ExecutorPrvKey, err = keychain.GetPrvKey(ExecutorID)
+			CheckError(err)
+		}
+
+		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Debug("Starting a Colonies client")
+		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
+
+		snapshots, err := client.GetSnapshotsByColonyID(ColonyID, ExecutorPrvKey)
+		CheckError(err)
+
+		var snapshotData [][]string
+		for _, s := range snapshots {
+			snapshotData = append(snapshotData, []string{s.Name, s.ID, s.Label, strconv.Itoa(len(s.FileIDs)), s.Added.Format(TimeLayout)})
+		}
+		table := tablewriter.NewWriter(os.Stdout)
+		table.SetHeader([]string{"Name", "ID", "Label", "Files", "Added"})
+		for _, v := range snapshotData {
+			table.Append(v)
+		}
+		table.SetAlignment(tablewriter.ALIGN_LEFT)
+		table.Render()
+	},
+}
+
+var infoSnapshotCmd = &cobra.Command{
+	Use:   "info",
+	Short: "Get info about a snapshot",
+	Long:  "Get info about a snapshot",
+	Run: func(cmd *cobra.Command, args []string) {
+		parseServerEnv()
+
+		keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
+		CheckError(err)
+
+		if ColonyID == "" {
+			ColonyID = os.Getenv("COLONIES_COLONY_ID")
+		}
+		if ColonyID == "" {
+			CheckError(errors.New("Unknown Colony Id"))
+		}
+
+		if ExecutorID == "" {
+			ExecutorID = os.Getenv("COLONIES_EXECUTOR_ID")
+		}
+		if ExecutorID == "" {
+			CheckError(errors.New("Unknown Executor Id"))
+		}
+
+		if ExecutorPrvKey == "" {
+			ExecutorPrvKey, err = keychain.GetPrvKey(ExecutorID)
+			CheckError(err)
+		}
+
+		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Debug("Starting a Colonies client")
+		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
+
+		if SnapshotID != "" {
+			snapshot, err := client.GetSnapshotByID(ColonyID, SnapshotID, ExecutorPrvKey)
+			CheckError(err)
+			printSnapshot(snapshot)
+		} else if SnapshotName != "" {
+			snapshot, err := client.GetSnapshotByName(ColonyID, SnapshotName, ExecutorPrvKey)
+			CheckError(err)
+			printSnapshot(snapshot)
+		} else {
+			CheckError(errors.New("Snapshot Id nor name was provided"))
+		}
+	},
+}
+
+var removeSnapshotCmd = &cobra.Command{
+	Use:   "remove",
+	Short: "Remove a snapshot",
+	Long:  "Remove a snapshot",
+	Run: func(cmd *cobra.Command, args []string) {
+		parseServerEnv()
+
+		keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
+		CheckError(err)
+
+		if ColonyID == "" {
+			ColonyID = os.Getenv("COLONIES_COLONY_ID")
+		}
+		if ColonyID == "" {
+			CheckError(errors.New("Unknown Colony Id"))
+		}
+
+		if ExecutorID == "" {
+			ExecutorID = os.Getenv("COLONIES_EXECUTOR_ID")
+		}
+		if ExecutorID == "" {
+			CheckError(errors.New("Unknown Executor Id"))
+		}
+
+		if ExecutorPrvKey == "" {
+			ExecutorPrvKey, err = keychain.GetPrvKey(ExecutorID)
+			CheckError(err)
+		}
+
+		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Debug("Starting a Colonies client")
+		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
+
+		log.Debug("Starting a file storage client")
+		fsClient, err := fs.CreateFSClient(client, ColonyID, ExecutorPrvKey)
+		CheckError(err)
+
+		fmt.Println(fsClient)
+
+		if SnapshotID != "" {
+			// TODO
+		} else if SnapshotName != "" && Label != "" {
+			// TODO
+		} else {
+			CheckError(errors.New("Snapshot Id nor name was provided"))
+		}
+
+		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Debug("Removing snb´")
 	},
 }
