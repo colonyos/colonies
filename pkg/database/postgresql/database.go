@@ -143,6 +143,16 @@ func (db *PQDatabase) dropFileTable() error {
 	return nil
 }
 
+func (db *PQDatabase) dropSnapshotTable() error {
+	sqlStatement := `DROP TABLE ` + db.dbPrefix + `SNAPSHOTS`
+	_, err := db.postgresql.Exec(sqlStatement)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (db *PQDatabase) dropAttributesTable() error {
 	sqlStatement := `DROP TABLE ` + db.dbPrefix + `ATTRIBUTES`
 	_, err := db.postgresql.Exec(sqlStatement)
@@ -220,6 +230,11 @@ func (db *PQDatabase) Drop() error {
 	}
 
 	err = db.dropFileTable()
+	if err != nil {
+		return err
+	}
+
+	err = db.dropSnapshotTable()
 	if err != nil {
 		return err
 	}
@@ -320,6 +335,16 @@ func (db *PQDatabase) createFileTable() error {
 
 	sqlStatement = `CREATE TABLE ` + db.dbPrefix + `FILES (FILE_ID TEXT PRIMARY KEY NOT NULL, COLONY_ID TEXT NOT NULL, LABEL TEXT NOT NULL, NAME TEXT NOT NULL, SIZE BIGINT, SEQNR BIGINT, CHECKSUM TEXT, CHECKSUM_ALG TEXT, ADDED TIMESTAMPTZ, PROTOCOL TEXT, S3_SERVER TEXT, S3_PORT INTEGER, S3_TLS BOOLEAN, S3_ACCESSKEY TEXT, S3_SECRETKEY TEXT, S3_REGION TEXT, S3_ENCKEY TEXT, S3_ENCALG TEXT, S3_OBJ TEXT, S3_BUCKET TEXT)`
 	_, err = db.postgresql.Exec(sqlStatement)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (db *PQDatabase) createSnapshotTable() error {
+	sqlStatement := `CREATE TABLE ` + db.dbPrefix + `SNAPSHOTS (SNAPSHOT_ID TEXT PRIMARY KEY NOT NULL, COLONY_ID TEXT NOT NULL, LABEL TEXT NOT NULL, NAME TEXT NOT NULL, FILE_IDS TEXT[], ADDED TIMESTAMPTZ)`
+	_, err := db.postgresql.Exec(sqlStatement)
 	if err != nil {
 		return err
 	}
@@ -576,6 +601,11 @@ func (db *PQDatabase) Initialize() error {
 	}
 
 	err = db.createFileTable()
+	if err != nil {
+		return err
+	}
+
+	err = db.createSnapshotTable()
 	if err != nil {
 		return err
 	}

@@ -116,7 +116,7 @@ func (file *File) Equals(file2 *File) bool {
 }
 
 func ConvertFileArrayToJSON(files []*File) (string, error) {
-	jsonBytes, err := json.MarshalIndent(files, "", "    ")
+	jsonBytes, err := json.Marshal(files)
 	if err != nil {
 		return "", err
 	}
