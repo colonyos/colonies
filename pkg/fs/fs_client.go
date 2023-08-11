@@ -291,25 +291,6 @@ func (fsClient *FSClient) RemoveFileByName(colonyID string, label string, name s
 	return nil
 }
 
-func (fsClient *FSClient) DownloadSnapshot(snapshotID string, downloadDir string) error {
-	snpashot, err := fsClient.coloniesClient.GetSnapshotByID(fsClient.colonyID, snapshotID, fsClient.executorPrvKey)
-	if err != nil {
-		return err
-	}
-	for _, fileID := range snpashot.FileIDs {
-		file, err := fsClient.coloniesClient.GetFileByID(fsClient.colonyID, fileID, fsClient.executorPrvKey)
-		if len(file) != 1 {
-			return errors.New("Failed to download file")
-		}
-		err = fsClient.s3Client.Download(file[0].Name, file[0].Reference.S3Object.Object, downloadDir)
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
 func (fsClient *FSClient) RemoveAllFilesWithLabel(label string) error {
 	filenames, err := fsClient.coloniesClient.GetFilenames(fsClient.colonyID, label, fsClient.executorPrvKey)
 	if err != nil {
@@ -332,6 +313,25 @@ func (fsClient *FSClient) RemoveAllFilesWithLabel(label string) error {
 			if err != nil {
 				return err
 			}
+		}
+	}
+
+	return nil
+}
+
+func (fsClient *FSClient) DownloadSnapshot(snapshotID string, downloadDir string) error {
+	snpashot, err := fsClient.coloniesClient.GetSnapshotByID(fsClient.colonyID, snapshotID, fsClient.executorPrvKey)
+	if err != nil {
+		return err
+	}
+	for _, fileID := range snpashot.FileIDs {
+		file, err := fsClient.coloniesClient.GetFileByID(fsClient.colonyID, fileID, fsClient.executorPrvKey)
+		if len(file) != 1 {
+			return errors.New("Failed to download file")
+		}
+		err = fsClient.s3Client.Download(file[0].Name, file[0].Reference.S3Object.Object, downloadDir)
+		if err != nil {
+			return err
 		}
 	}
 
