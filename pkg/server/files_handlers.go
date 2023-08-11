@@ -110,15 +110,15 @@ func (server *ColoniesServer) handleGetFileHTTPRequest(c *gin.Context, recovered
 			}
 		}
 	} else {
-		if server.handleHTTPError(c, errors.New("malformat get file msg"), http.StatusInternalServerError) {
-			log.Error(err)
+		if server.handleHTTPError(c, errors.New("malformatted get file msg"), http.StatusInternalServerError) {
+			log.WithFields(log.Fields{"Error": err}).Debug("Malformatted get file msg")
 			return
 		}
 	}
 
 	if len(files) == 0 {
 		if server.handleHTTPError(c, errors.New("Failed to get file"), http.StatusNotFound) {
-			log.Error(err)
+			log.WithFields(log.Fields{"Error": err}).Debug("Failed to get files, len files is 0")
 			return
 		}
 	} else {
@@ -230,25 +230,21 @@ func (server *ColoniesServer) handleDeleteFileHTTPRequest(c *gin.Context, recove
 
 	err = server.validator.RequireExecutorMembership(recoveredID, msg.ColonyID, true)
 	if server.handleHTTPError(c, err, http.StatusForbidden) {
-		log.Error(err)
 		return
 	}
 
 	if msg.FileID != "" {
 		err = server.db.DeleteFileByID(msg.ColonyID, msg.FileID)
 		if server.handleHTTPError(c, err, http.StatusBadRequest) {
-			log.Error(err)
 			return
 		}
 	} else if msg.Label != "" && msg.Name != "" {
 		err = server.db.DeleteFileByName(msg.ColonyID, msg.Label, msg.Name)
 		if server.handleHTTPError(c, err, http.StatusBadRequest) {
-			log.Error(err)
 			return
 		}
 	} else {
 		if server.handleHTTPError(c, errors.New("malformated delete file msg"), http.StatusBadRequest) {
-			log.Error(err)
 			return
 		}
 	}
