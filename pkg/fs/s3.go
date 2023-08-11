@@ -72,7 +72,7 @@ func CreateS3Client() (*S3Client, error) {
 	context := context.Background()
 	bucket, err := mc.BucketExists(context, bucketName)
 	if err != nil {
-		log.WithFields(log.Fields{"Error": err, "Bucket": bucket, "BucketName": bucketName}).Fatal("Failed to check if bucket exists")
+		log.WithFields(log.Fields{"Error": err, "BucketName": bucketName}).Fatal("Failed to check if bucket exists")
 		return nil, err
 	}
 	if !bucket {
