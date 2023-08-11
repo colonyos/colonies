@@ -10,6 +10,7 @@ import (
 
 	"github.com/colonyos/colonies/pkg/client"
 	"github.com/colonyos/colonies/pkg/core"
+	log "github.com/sirupsen/logrus"
 )
 
 type FSClient struct {
@@ -284,6 +285,53 @@ func (fsClient *FSClient) RemoveFileByName(colonyID string, label string, name s
 		err = fsClient.coloniesClient.RemoveFileByID(colonyID, revision.ID, fsClient.executorPrvKey)
 		if err != nil {
 			return err
+		}
+	}
+
+	return nil
+}
+
+func (fsClient *FSClient) DownloadSnapshot(snapshotID string, downloadDir string) error {
+	snpashot, err := fsClient.coloniesClient.GetSnapshotByID(fsClient.colonyID, snapshotID, fsClient.executorPrvKey)
+	if err != nil {
+		return err
+	}
+	for _, fileID := range snpashot.FileIDs {
+		file, err := fsClient.coloniesClient.GetFileByID(fsClient.colonyID, fileID, fsClient.executorPrvKey)
+		if len(file) != 1 {
+			return errors.New("Failed to download file")
+		}
+		err = fsClient.s3Client.Download(file[0].Name, file[0].Reference.S3Object.Object, downloadDir)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (fsClient *FSClient) RemoveAllFilesWithLabel(label string) error {
+	filenames, err := fsClient.coloniesClient.GetFilenames(fsClient.colonyID, label, fsClient.executorPrvKey)
+	if err != nil {
+		return err
+	}
+
+	for _, filename := range filenames {
+		file, err := fsClient.coloniesClient.GetFileByName(fsClient.colonyID, label, filename, fsClient.executorPrvKey)
+		if err != nil {
+			return err
+		}
+		for _, f := range file {
+			log.WithFields(log.Fields{"Filename": f.Reference.S3Object.Object, "BucketName": fsClient.s3Client.BucketName}).Debug("Removing file from S3")
+			err = fsClient.s3Client.Remove(f.Reference.S3Object.Object)
+			if err != nil {
+				return err
+			}
+			log.WithFields(log.Fields{"ColonyID": fsClient.colonyID, "FileID": f.ID}).Debug("Remove file from Colonies FS")
+			err = fsClient.coloniesClient.RemoveFileByID(fsClient.colonyID, f.ID, fsClient.executorPrvKey)
+			if err != nil {
+				return err
+			}
 		}
 	}
 
