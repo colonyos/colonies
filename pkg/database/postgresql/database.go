@@ -343,7 +343,7 @@ func (db *PQDatabase) createFileTable() error {
 }
 
 func (db *PQDatabase) createSnapshotTable() error {
-	sqlStatement := `CREATE TABLE ` + db.dbPrefix + `SNAPSHOTS (SNAPSHOT_ID TEXT PRIMARY KEY NOT NULL, COLONY_ID TEXT NOT NULL, LABEL TEXT NOT NULL, NAME TEXT NOT NULL, FILE_IDS TEXT[], ADDED TIMESTAMPTZ)`
+	sqlStatement := `CREATE TABLE ` + db.dbPrefix + `SNAPSHOTS (SNAPSHOT_ID TEXT PRIMARY KEY NOT NULL, COLONY_ID TEXT NOT NULL, LABEL TEXT NOT NULL, NAME TEXT NOT NULL UNIQUE, FILE_IDS TEXT[], ADDED TIMESTAMPTZ)`
 	_, err := db.postgresql.Exec(sqlStatement)
 	if err != nil {
 		return err

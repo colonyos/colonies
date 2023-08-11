@@ -58,9 +58,12 @@ func TestCreateSnapshot(t *testing.T) {
 	assert.Equal(t, snapshot.ColonyID, colonyID)
 	assert.Equal(t, snapshot.Name, snapshotName)
 	assert.Equal(t, snapshot.Label, label)
+
+	_, err = db.CreateSnapshot(colonyID, label, snapshotName)
+	assert.NotNil(t, err) // name must be unique
 }
 
-func TestGetSnapshot(t *testing.T) {
+func TestGetSnapshotByID(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
 
@@ -84,6 +87,34 @@ func TestGetSnapshot(t *testing.T) {
 	assert.Len(t, snapshot.FileIDs, 1)
 
 	snapshotFromDB, err := db.GetSnapshotByID(colonyID, snapshot.ID)
+	assert.Nil(t, err)
+	assert.True(t, snapshotFromDB.Equals(snapshot))
+}
+
+func TestGetSnapshotByName(t *testing.T) {
+	db, err := PrepareTests()
+	assert.Nil(t, err)
+
+	defer db.Close()
+
+	label := "test_label"
+	file1ID := "test_file1_id"
+	colonyID := "test_colony_id"
+
+	now := time.Now()
+	file := utils.CreateTestFileWithID("test_id", colonyID, now)
+	file.ID = file1ID
+	file.Label = label
+	file.Name = "test_file1"
+	err = db.AddFile(file)
+	assert.Nil(t, err)
+
+	snapshotName := "test_snapshot_name"
+	snapshot, err := db.CreateSnapshot(colonyID, label, snapshotName)
+	assert.Nil(t, err)
+	assert.Len(t, snapshot.FileIDs, 1)
+
+	snapshotFromDB, err := db.GetSnapshotByName(colonyID, snapshotName)
 	assert.Nil(t, err)
 	assert.True(t, snapshotFromDB.Equals(snapshot))
 }
@@ -146,6 +177,44 @@ func TestDeleteSnapshotByID(t *testing.T) {
 	assert.Nil(t, err)
 
 	err = db.DeleteSnapshotByID(colonyID, snapshot1.ID)
+	assert.Nil(t, err)
+
+	_, err = db.GetSnapshotByID(colonyID, snapshot1.ID)
+	assert.NotNil(t, err)
+	_, err = db.GetSnapshotByID(colonyID, snapshot2.ID)
+	assert.Nil(t, err)
+	snapshotsFromDB, err := db.GetSnapshotsByColonyID(colonyID)
+	assert.Nil(t, err)
+	assert.Len(t, snapshotsFromDB, 1)
+}
+
+func TestDeleteSnapshotByName(t *testing.T) {
+	db, err := PrepareTests()
+	assert.Nil(t, err)
+
+	defer db.Close()
+
+	label := "test_label"
+	file1ID := "test_file1_id"
+	colonyID := "test_colony_id"
+	now := time.Now()
+
+	file := utils.CreateTestFileWithID("test_id", colonyID, now)
+	file.ID = file1ID
+	file.Label = label
+	file.Name = "test_file1"
+	err = db.AddFile(file)
+	assert.Nil(t, err)
+
+	snapshotName1 := "test_snapshot_name"
+	snapshot1, err := db.CreateSnapshot(colonyID, label, snapshotName1)
+	assert.Nil(t, err)
+
+	snapshotName2 := "test_snapshot_name2"
+	snapshot2, err := db.CreateSnapshot(colonyID, label, snapshotName2)
+	assert.Nil(t, err)
+
+	err = db.DeleteSnapshotByName(colonyID, snapshotName1)
 	assert.Nil(t, err)
 
 	_, err = db.GetSnapshotByID(colonyID, snapshot1.ID)

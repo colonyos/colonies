@@ -195,5 +195,7 @@ type Database interface {
 	GetSnapshotByID(colonyID string, snapshotID string) (*core.Snapshot, error)
 	GetSnapshotsByColonyID(colonyID string) ([]*core.Snapshot, error)
 	DeleteSnapshotByID(colonyID string, snapshotID string) error
+	GetSnapshotByName(colonyID string, name string) (*core.Snapshot, error)
+	DeleteSnapshotByName(colonyID string, name string) error
 	DeleteSnapshotsByColonyID(colonyID string) error
 }

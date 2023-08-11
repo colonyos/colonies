@@ -3,6 +3,7 @@ package postgresql
 import (
 	"database/sql"
 	"errors"
+	"strings"
 	"time"
 
 	"github.com/colonyos/colonies/pkg/core"
@@ -31,7 +32,7 @@ func (db *PQDatabase) CreateSnapshot(colonyID string, label string, name string)
 	snapshotID := core.GenerateRandomID()
 	now := time.Now().UTC()
 	sqlStatement := `INSERT INTO  ` + db.dbPrefix + `SNAPSHOTS (SNAPSHOT_ID, COLONY_ID, LABEL, NAME, FILE_IDS, ADDED) VALUES ($1, $2, $3, $4, $5, $6)`
-	_, err = db.postgresql.Exec(sqlStatement, snapshotID, colonyID, label, name, pq.Array(fileIDs), now)
+	_, err = db.postgresql.Exec(sqlStatement, snapshotID, colonyID, label, colonyID+":"+name, pq.Array(fileIDs), now)
 	if err != nil {
 		return nil, err
 	}
@@ -56,7 +57,13 @@ func (db *PQDatabase) parseSnapshots(rows *sql.Rows) ([]*core.Snapshot, error) {
 			return nil, err
 		}
 
-		snapshot := &core.Snapshot{ID: snapshotID, ColonyID: colonyID, Label: label, Name: name, FileIDs: fileIDs, Added: added}
+		split := strings.Split(name, ":")
+
+		if len(split) != 2 {
+			return nil, errors.New("invalid split name")
+		}
+
+		snapshot := &core.Snapshot{ID: snapshotID, ColonyID: colonyID, Label: label, Name: split[1], FileIDs: fileIDs, Added: added}
 		snapshots = append(snapshots, snapshot)
 	}
 
@@ -66,6 +73,27 @@ func (db *PQDatabase) parseSnapshots(rows *sql.Rows) ([]*core.Snapshot, error) {
 func (db *PQDatabase) GetSnapshotByID(colonyID string, snapshotID string) (*core.Snapshot, error) {
 	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `SNAPSHOTS WHERE COLONY_ID=$1 AND SNAPSHOT_ID=$2`
 	rows, err := db.postgresql.Query(sqlStatement, colonyID, snapshotID)
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	snapshots, err := db.parseSnapshots(rows)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(snapshots) == 1 {
+		return snapshots[0], nil
+	} else {
+		return nil, errors.New("Snapshot not found")
+	}
+}
+
+func (db *PQDatabase) GetSnapshotByName(colonyID string, name string) (*core.Snapshot, error) {
+	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `SNAPSHOTS WHERE COLONY_ID=$1 AND NAME=$2`
+	rows, err := db.postgresql.Query(sqlStatement, colonyID, colonyID+":"+name)
 	if err != nil {
 		return nil, err
 	}
@@ -99,6 +127,16 @@ func (db *PQDatabase) GetSnapshotsByColonyID(colonyID string) ([]*core.Snapshot,
 func (db *PQDatabase) DeleteSnapshotByID(colonyID string, snapshotID string) error {
 	sqlStatement := `DELETE FROM ` + db.dbPrefix + `SNAPSHOTS WHERE COLONY_ID=$1 AND SNAPSHOT_ID=$2`
 	_, err := db.postgresql.Exec(sqlStatement, colonyID, snapshotID)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (db *PQDatabase) DeleteSnapshotByName(colonyID string, name string) error {
+	sqlStatement := `DELETE FROM ` + db.dbPrefix + `SNAPSHOTS WHERE COLONY_ID=$1 AND NAME=$2`
+	_, err := db.postgresql.Exec(sqlStatement, colonyID, colonyID+":"+name)
 	if err != nil {
 		return err
 	}
