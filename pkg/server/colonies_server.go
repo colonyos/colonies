@@ -264,11 +264,33 @@ func (server *ColoniesServer) handleAPIRequest(c *gin.Context) {
 	case rpc.ResetDatabasePayloadType:
 		server.handleResetDatabaseHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 
-		// Log handlers
+	// Log handlers
 	case rpc.AddLogPayloadType:
 		server.handleAddLogHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 	case rpc.GetLogsPayloadType:
 		server.handleGetLogsHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+
+		// File handlers
+	case rpc.AddFilePayloadType:
+		server.handleAddFileHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+	case rpc.GetFilePayloadType:
+		server.handleGetFileHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+	case rpc.GetFilesPayloadType:
+		server.handleGetFilesHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+	case rpc.GetFileLabelsPayloadType:
+		server.handleGetFileLabelsHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+	case rpc.DeleteFilePayloadType:
+		server.handleDeleteFileHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+
+		// Snapshot handlers
+	case rpc.CreateSnapshotPayloadType:
+		server.handleCreateSnapshotHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+	case rpc.GetSnapshotPayloadType:
+		server.handleGetSnapshotHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+	case rpc.GetSnapshotsPayloadType:
+		server.handleGetSnapshotsHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+	case rpc.DeleteSnapshotPayloadType:
+		server.handleDeleteSnapshotHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 
 	default:
 		errMsg := "invalid rpcMsg.PayloadType, " + rpcMsg.PayloadType

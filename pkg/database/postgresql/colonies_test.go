@@ -2,6 +2,7 @@ package postgresql
 
 import (
 	"testing"
+	"time"
 
 	"github.com/colonyos/colonies/pkg/core"
 	"github.com/colonyos/colonies/pkg/utils"
@@ -190,6 +191,33 @@ func TestDeleteColonies(t *testing.T) {
 	err = db.AddFunction(function)
 	assert.Nil(t, err)
 
+	err = db.AddLog("test_processid1", colony1.ID, "test_executorid", time.Now().UTC().UnixNano(), "1")
+	assert.Nil(t, err)
+
+	err = db.AddLog("test_processid1", colony2.ID, "test_executorid", time.Now().UTC().UnixNano(), "1")
+	assert.Nil(t, err)
+
+	file := utils.CreateTestFileWithID("test_id", colony1.ID, time.Now())
+	file.ID = core.GenerateRandomID()
+	file.Label = "/testdir"
+	file.Name = "test_file2.txt"
+	file.Size = 1
+	err = db.AddFile(file)
+	assert.Nil(t, err)
+
+	file = utils.CreateTestFileWithID("test_id", colony2.ID, time.Now())
+	file.ID = core.GenerateRandomID()
+	file.Label = "/testdir"
+	file.Name = "test_file2.txt"
+	file.Size = 1
+	err = db.AddFile(file)
+	assert.Nil(t, err)
+
+	_, err = db.CreateSnapshot(colony1.ID, "/testdir", "test_snapshot_name1")
+	assert.Nil(t, err)
+	_, err = db.CreateSnapshot(colony2.ID, "/testdir", "test_snapshot_name2")
+	assert.Nil(t, err)
+
 	err = db.DeleteColonyByID(core.GenerateRandomID())
 	assert.NotNil(t, err)
 
@@ -229,10 +257,36 @@ func TestDeleteColonies(t *testing.T) {
 	assert.NotNil(t, cronFromDB) // Should NOT have been deleted
 
 	functions, err := db.GetFunctionsByColonyID(colony1.ID)
+	assert.Nil(t, err)
 	assert.Len(t, functions, 0)
 
 	functions, err = db.GetFunctionsByColonyID(colony2.ID)
+	assert.Nil(t, err)
 	assert.Len(t, functions, 1)
+
+	logsCount, err := db.CountLogs(colony1.ID)
+	assert.Nil(t, err)
+	assert.Equal(t, logsCount, 0)
+
+	logsCount, err = db.CountFiles(colony2.ID)
+	assert.Nil(t, err)
+	assert.Equal(t, logsCount, 1)
+
+	fileCount, err := db.CountFiles(colony1.ID)
+	assert.Nil(t, err)
+	assert.Equal(t, fileCount, 0)
+
+	fileCount, err = db.CountFiles(colony2.ID)
+	assert.Nil(t, err)
+	assert.Equal(t, fileCount, 1)
+
+	snapshots, err := db.GetSnapshotsByColonyID(colony1.ID)
+	assert.Nil(t, err)
+	assert.Len(t, snapshots, 0)
+
+	snapshots, err = db.GetSnapshotsByColonyID(colony2.ID)
+	assert.Nil(t, err)
+	assert.Len(t, snapshots, 1)
 }
 
 func TestCountColonies(t *testing.T) {
