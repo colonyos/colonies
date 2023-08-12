@@ -124,6 +124,10 @@ func setupTestEnv2(t *testing.T) (*testEnv2, *client.ColoniesClient, *ColoniesSe
 	return env, client, server, serverPrvKey, done
 }
 
+func PrepareTests(t *testing.T) (*client.ColoniesClient, *ColoniesServer, string, chan bool) {
+	return prepareTests(t)
+}
+
 func prepareTests(t *testing.T) (*client.ColoniesClient, *ColoniesServer, string, chan bool) {
 	return prepareTestsWithRetention(t, false)
 }

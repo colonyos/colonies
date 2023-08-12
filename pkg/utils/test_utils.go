@@ -21,6 +21,62 @@ func CreateTestFunctionSpec(colonyID string) *core.FunctionSpec {
 	return core.CreateFunctionSpec("test_name", "test_func", args, kwargs, colonyID, []string{}, "test_executor_type", 1000, 100, 1, make(map[string]string), []string{}, 1, "test_label")
 }
 
+func CreateTestFileWithID(id string, colonyID string, now time.Time) *core.File {
+	s3Object := core.S3Object{
+		Server:        "test_server",
+		Port:          1111,
+		TLS:           true,
+		AccessKey:     "test_accesskey",
+		SecretKey:     "test_secretkey",
+		Region:        "test_region",
+		EncryptionKey: "test_encrytionkey",
+		EncryptionAlg: "test_encrytionalg",
+		Object:        "test_object",
+		Bucket:        "test_bucket",
+	}
+	ref := core.Reference{Protocol: "s3", S3Object: s3Object}
+	file := core.File{
+		ID:          id,
+		ColonyID:    colonyID,
+		Label:       "test_label",
+		Name:        "test_name",
+		Size:        1111,
+		Checksum:    "test_checksum",
+		ChecksumAlg: "test_checksumalg",
+		Reference:   ref,
+		Added:       now}
+
+	return &file
+}
+
+func CreateTestFile(colonyID string) *core.File {
+	s3Object := core.S3Object{
+		Server:        "test_server",
+		Port:          1111,
+		TLS:           true,
+		AccessKey:     "test_accesskey",
+		SecretKey:     "test_secretkey",
+		Region:        "test_region",
+		EncryptionKey: "test_encrytionkey",
+		EncryptionAlg: "test_encrytionalg",
+		Object:        "test_object",
+		Bucket:        "test_bucket",
+	}
+	ref := core.Reference{Protocol: "s3", S3Object: s3Object}
+	file := core.File{
+		ID:          "",
+		ColonyID:    colonyID,
+		Label:       "test_label",
+		Name:        "test_name",
+		Size:        1111,
+		Checksum:    "test_checksum",
+		ChecksumAlg: "test_checksumalg",
+		Reference:   ref,
+		Added:       time.Time{}}
+
+	return &file
+}
+
 func CreateTestProcessWithType(colonyID string, executorType string) *core.Process {
 	return core.CreateProcess(CreateTestFunctionSpecWithType(colonyID, executorType))
 }

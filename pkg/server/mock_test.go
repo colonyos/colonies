@@ -1046,6 +1046,82 @@ func (db *dbMock) GetLogsByExecutorIDSince(processID string, limit int, since in
 	return []core.Log{}, nil
 }
 
+func (db *dbMock) DeleteLogsByColonyID(colonyID string) error {
+	return nil
+}
+
+func (db *dbMock) CountLogs(colonyID string) (int, error) {
+	return 0, nil
+}
+
+func (db *dbMock) AddFile(file *core.File) error {
+	return nil
+}
+
+func (db *dbMock) GetFileByID(colonyID string, fileID string) (*core.File, error) {
+	return nil, nil
+}
+
+func (db *dbMock) GetLatestFileByName(colonyID string, label string, name string) ([]*core.File, error) {
+	return nil, nil
+}
+
+func (db *dbMock) GetFileByName(colonyID string, label string, name string) ([]*core.File, error) {
+	return nil, nil
+}
+
+func (db *dbMock) GetFilenamesByLabel(colonyID string, label string) ([]string, error) {
+	return nil, nil
+}
+
+func (db *dbMock) DeleteFileByID(colonyID string, fileID string) error {
+	return nil
+}
+
+func (db *dbMock) DeleteFileByName(colonyID string, label string, name string) error {
+	return nil
+}
+
+func (db *dbMock) GetFileLabels(colonyID string) ([]*core.Label, error) {
+	return nil, nil
+}
+
+func (db *dbMock) CountFiles(colonyID string) (int, error) {
+	return 0, nil
+}
+
+func (db *dbMock) CountFilesWithLabel(colonyID string, label string) (int, error) {
+	return 0, nil
+}
+
+func (db *dbMock) CreateSnapshot(colonyID string, label string, name string) (*core.Snapshot, error) {
+	return nil, nil
+}
+
+func (db *dbMock) GetSnapshotByID(colonyID string, snapshotID string) (*core.Snapshot, error) {
+	return nil, nil
+}
+
+func (db *dbMock) GetSnapshotByName(colonyID string, name string) (*core.Snapshot, error) {
+	return nil, nil
+}
+
+func (db *dbMock) GetSnapshotsByColonyID(colonyID string) ([]*core.Snapshot, error) {
+	return nil, nil
+}
+
+func (db *dbMock) DeleteSnapshotByID(colonyID string, snapshotID string) error {
+	return nil
+}
+
+func (db *dbMock) DeleteSnapshotByName(colonyID string, name string) error {
+	return nil
+}
+
+func (db *dbMock) DeleteSnapshotsByColonyID(colonyID string) error {
+	return nil
+}
+
 // gin mockups
 func getTestGinContext() (*gin.Context, *httptest.ResponseRecorder) {
 	gin.SetMode(gin.TestMode)

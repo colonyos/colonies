@@ -175,4 +175,27 @@ type Database interface {
 	GetLogsByProcessIDSince(processID string, limit int, since int64) ([]core.Log, error)
 	GetLogsByExecutorID(executorID string, limit int) ([]core.Log, error)
 	GetLogsByExecutorIDSince(executorID string, limit int, since int64) ([]core.Log, error)
+	DeleteLogsByColonyID(colonyID string) error
+	CountLogs(colonyID string) (int, error)
+
+	// File management
+	AddFile(file *core.File) error
+	GetFileByID(colonyID string, fileID string) (*core.File, error)
+	GetLatestFileByName(colonyID string, label string, name string) ([]*core.File, error)
+	GetFileByName(colonyID string, label string, name string) ([]*core.File, error)
+	GetFilenamesByLabel(colonyID string, label string) ([]string, error)
+	DeleteFileByID(colonyID string, fileID string) error
+	DeleteFileByName(colonyID string, label string, name string) error
+	GetFileLabels(colonyID string) ([]*core.Label, error)
+	CountFilesWithLabel(colonyID string, label string) (int, error)
+	CountFiles(colonyID string) (int, error)
+
+	// Snapshots
+	CreateSnapshot(colonyID string, label string, name string) (*core.Snapshot, error)
+	GetSnapshotByID(colonyID string, snapshotID string) (*core.Snapshot, error)
+	GetSnapshotsByColonyID(colonyID string) ([]*core.Snapshot, error)
+	DeleteSnapshotByID(colonyID string, snapshotID string) error
+	GetSnapshotByName(colonyID string, name string) (*core.Snapshot, error)
+	DeleteSnapshotByName(colonyID string, name string) error
+	DeleteSnapshotsByColonyID(colonyID string) error
 }
