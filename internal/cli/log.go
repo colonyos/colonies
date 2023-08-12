@@ -93,8 +93,6 @@ var getLogsCmd = &cobra.Command{
 		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Debug("Starting a Colonies client")
 		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
 
-		fmt.Println(TargetExecutorID)
-
 		if Follow {
 			var logs []core.Log
 			var lastTimestamp int64
