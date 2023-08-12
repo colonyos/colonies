@@ -101,6 +101,17 @@ var TimescaleDB bool
 var LogMsg string
 var Since int64
 var Follow bool
+var SyncDir string
+var StorageDriver string
+var Label string
+var Dry bool
+var KeepLocal bool
+var Yes bool
+var Filename string
+var FileID string
+var DownloadDir string
+var SnapshotID string
+var SnapshotName string
 
 func init() {
 	rootCmd.PersistentFlags().BoolVarP(&Verbose, "verbose", "v", false, "Verbose (debugging)")

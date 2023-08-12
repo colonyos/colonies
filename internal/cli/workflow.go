@@ -122,7 +122,7 @@ var submitWorkflowCmd = &cobra.Command{
 			CheckError(err)
 		}
 
-		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Info("Starting a Colonies client")
+		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Debug("Starting a Colonies client")
 		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
 
 		graph, err := client.SubmitWorkflowSpec(workflowSpec, ExecutorPrvKey)
@@ -161,7 +161,7 @@ var listWaitingWorkflowsCmd = &cobra.Command{
 			CheckError(err)
 		}
 
-		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Info("Starting a Colonies client")
+		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Debug("Starting a Colonies client")
 		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
 
 		graphs, err := client.GetWaitingProcessGraphs(ColonyID, Count, ExecutorPrvKey)
@@ -215,7 +215,7 @@ var deleteWorkflowCmd = &cobra.Command{
 			CheckError(err)
 		}
 
-		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Info("Starting a Colonies client")
+		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Debug("Starting a Colonies client")
 		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
 
 		log.WithFields(log.Fields{"WorkflowID": WorkflowID}).Info("ProcessGraph deleted")
@@ -277,7 +277,7 @@ var deleteAllWorkflowsCmd = &cobra.Command{
 		reader := bufio.NewReader(os.Stdin)
 		reply, _ := reader.ReadString('\n')
 		if reply == "YES\n" {
-			log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Info("Starting a Colonies client")
+			log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Debug("Starting a Colonies client")
 			client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
 
 			if state == "all" {
@@ -333,7 +333,7 @@ var listRunningWorkflowsCmd = &cobra.Command{
 			CheckError(err)
 		}
 
-		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Info("Starting a Colonies client")
+		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Debug("Starting a Colonies client")
 		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
 
 		graphs, err := client.GetRunningProcessGraphs(ColonyID, Count, ExecutorPrvKey)
@@ -394,7 +394,7 @@ var listSuccessfulWorkflowsCmd = &cobra.Command{
 			CheckError(err)
 		}
 
-		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Info("Starting a Colonies client")
+		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Debug("Starting a Colonies client")
 		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
 
 		graphs, err := client.GetSuccessfulProcessGraphs(ColonyID, Count, ExecutorPrvKey)
@@ -455,7 +455,7 @@ var listFailedWorkflowsCmd = &cobra.Command{
 			CheckError(err)
 		}
 
-		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Info("Starting a Colonies client")
+		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Debug("Starting a Colonies client")
 		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
 
 		graphs, err := client.GetFailedProcessGraphs(ColonyID, Count, ExecutorPrvKey)
@@ -584,7 +584,7 @@ var getWorkflowCmd = &cobra.Command{
 			CheckError(err)
 		}
 
-		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Info("Starting a Colonies client")
+		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Debug("Starting a Colonies client")
 		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
 
 		graph, err := client.GetProcessGraph(WorkflowID, ExecutorPrvKey)
