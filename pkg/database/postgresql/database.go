@@ -127,6 +127,32 @@ func (db *PQDatabase) dropLogTable() error {
 	return nil
 }
 
+func (db *PQDatabase) dropFileTable() error {
+	sqlStatement := `DROP SEQUENCE ` + db.dbPrefix + `FILE_SEQ`
+	_, err := db.postgresql.Exec(sqlStatement)
+	if err != nil {
+		return err
+	}
+
+	sqlStatement = `DROP TABLE ` + db.dbPrefix + `FILES`
+	_, err = db.postgresql.Exec(sqlStatement)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (db *PQDatabase) dropSnapshotTable() error {
+	sqlStatement := `DROP TABLE ` + db.dbPrefix + `SNAPSHOTS`
+	_, err := db.postgresql.Exec(sqlStatement)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (db *PQDatabase) dropAttributesTable() error {
 	sqlStatement := `DROP TABLE ` + db.dbPrefix + `ATTRIBUTES`
 	_, err := db.postgresql.Exec(sqlStatement)
@@ -199,6 +225,16 @@ func (db *PQDatabase) Drop() error {
 	}
 
 	err = db.dropLogTable()
+	if err != nil {
+		return err
+	}
+
+	err = db.dropFileTable()
+	if err != nil {
+		return err
+	}
+
+	err = db.dropSnapshotTable()
 	if err != nil {
 		return err
 	}
@@ -282,6 +318,32 @@ func (db *PQDatabase) createProcessesTable() error {
 
 func (db *PQDatabase) createLogTable() error {
 	sqlStatement := `CREATE TABLE ` + db.dbPrefix + `LOGS (PROCESS_ID TEXT, COLONY_ID TEXT NOT NULL, EXECUTOR_ID TEXT NOT NULL, TS BIGINT, MSG TEXT NOT NULL, ADDED TIMESTAMPTZ)`
+	_, err := db.postgresql.Exec(sqlStatement)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (db *PQDatabase) createFileTable() error {
+	sqlStatement := `CREATE SEQUENCE ` + db.dbPrefix + `FILE_SEQ`
+	_, err := db.postgresql.Exec(sqlStatement)
+	if err != nil {
+		return err
+	}
+
+	sqlStatement = `CREATE TABLE ` + db.dbPrefix + `FILES (FILE_ID TEXT PRIMARY KEY NOT NULL, COLONY_ID TEXT NOT NULL, LABEL TEXT NOT NULL, NAME TEXT NOT NULL, SIZE BIGINT, SEQNR BIGINT, CHECKSUM TEXT, CHECKSUM_ALG TEXT, ADDED TIMESTAMPTZ, PROTOCOL TEXT, S3_SERVER TEXT, S3_PORT INTEGER, S3_TLS BOOLEAN, S3_ACCESSKEY TEXT, S3_SECRETKEY TEXT, S3_REGION TEXT, S3_ENCKEY TEXT, S3_ENCALG TEXT, S3_OBJ TEXT, S3_BUCKET TEXT)`
+	_, err = db.postgresql.Exec(sqlStatement)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (db *PQDatabase) createSnapshotTable() error {
+	sqlStatement := `CREATE TABLE ` + db.dbPrefix + `SNAPSHOTS (SNAPSHOT_ID TEXT PRIMARY KEY NOT NULL, COLONY_ID TEXT NOT NULL, LABEL TEXT NOT NULL, NAME TEXT NOT NULL UNIQUE, FILE_IDS TEXT[], ADDED TIMESTAMPTZ)`
 	_, err := db.postgresql.Exec(sqlStatement)
 	if err != nil {
 		return err
@@ -470,6 +532,48 @@ func (db *PQDatabase) createRetentionIndex3() error {
 	return nil
 }
 
+func (db *PQDatabase) createRetentionIndex4() error {
+	if !db.timescaleDB {
+		sqlStatement := `CREATE INDEX ` + db.dbPrefix + `RETENTION_INDEX4 ON ` + db.dbPrefix + `FILES (ADDED)`
+		_, err := db.postgresql.Exec(sqlStatement)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (db *PQDatabase) createFileIndex1() error {
+	sqlStatement := `CREATE INDEX ` + db.dbPrefix + `FILE_INDEX1 ON ` + db.dbPrefix + `FILES (COLONY_ID, LABEL, NAME)`
+	_, err := db.postgresql.Exec(sqlStatement)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (db *PQDatabase) createFileIndex2() error {
+	sqlStatement := `CREATE INDEX ` + db.dbPrefix + `FILE_INDEX2 ON ` + db.dbPrefix + `FILES (COLONY_ID, FILE_ID)`
+	_, err := db.postgresql.Exec(sqlStatement)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (db *PQDatabase) createFileIndex3() error {
+	sqlStatement := `CREATE INDEX ` + db.dbPrefix + `FILE_INDEX3 ON ` + db.dbPrefix + `FILES (COLONY_ID, LABEL)`
+	_, err := db.postgresql.Exec(sqlStatement)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (db *PQDatabase) Initialize() error {
 	err := db.createColoniesTable()
 	if err != nil {
@@ -492,6 +596,16 @@ func (db *PQDatabase) Initialize() error {
 	}
 
 	err = db.createLogTable()
+	if err != nil {
+		return err
+	}
+
+	err = db.createFileTable()
+	if err != nil {
+		return err
+	}
+
+	err = db.createSnapshotTable()
 	if err != nil {
 		return err
 	}
@@ -582,6 +696,26 @@ func (db *PQDatabase) Initialize() error {
 	}
 
 	err = db.createRetentionIndex3()
+	if err != nil {
+		return err
+	}
+
+	err = db.createRetentionIndex4()
+	if err != nil {
+		return err
+	}
+
+	err = db.createFileIndex1()
+	if err != nil {
+		return err
+	}
+
+	err = db.createFileIndex2()
+	if err != nil {
+		return err
+	}
+
+	err = db.createFileIndex3()
 	if err != nil {
 		return err
 	}
