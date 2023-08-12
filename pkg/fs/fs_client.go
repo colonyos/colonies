@@ -43,10 +43,10 @@ func CreateFSClient(coloniesClient *client.ColoniesClient, colonyID string, exec
 	fsClient.executorPrvKey = executorPrvKey
 
 	s3Client, err := CreateS3Client()
-	fsClient.s3Client = s3Client
 	if err != nil {
 		return nil, err
 	}
+	fsClient.s3Client = s3Client
 
 	return fsClient, nil
 }
@@ -148,6 +148,10 @@ func (fsClient *FSClient) CalcSyncPlan(dir string, label string, keepLocal bool)
 	files, err := ioutil.ReadDir(dir)
 	if err != nil {
 		return nil, err
+	}
+
+	if fsClient.coloniesClient == nil {
+		return nil, errors.New("coloniesClient is nil")
 	}
 
 	remoteFilenames, err := fsClient.coloniesClient.GetFilenames(fsClient.colonyID, label, fsClient.executorPrvKey)
