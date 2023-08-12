@@ -335,9 +335,24 @@ func (fsClient *FSClient) DownloadSnapshot(snapshotID string, downloadDir string
 		if len(file) != 1 {
 			return errors.New("Failed to download file")
 		}
-		err = fsClient.s3Client.Download(file[0].Name, file[0].Reference.S3Object.Object, downloadDir)
+		downloadFile := false
+		// Check if we already have the file
+		checksum, err := checksum(downloadDir + "/" + file[0].Name)
 		if err != nil {
-			return err
+			downloadFile = true
+		} else {
+			if checksum != file[0].Checksum {
+				downloadFile = true
+			}
+		}
+		if downloadFile {
+			err = fsClient.s3Client.Download(file[0].Name, file[0].Reference.S3Object.Object, downloadDir)
+			if err != nil {
+				return err
+			}
+			log.WithFields(log.Fields{"Filename": file[0].Name, "DownloadDir": downloadDir}).Debug("Downloading file")
+		} else {
+			log.WithFields(log.Fields{"Filename": file[0].Name, "DownloadDir": downloadDir}).Debug("Skipping file, already downloaded")
 		}
 	}
 
