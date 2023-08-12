@@ -24,8 +24,11 @@ func init() {
 	snapshotCmd.AddCommand(infoSnapshotCmd)
 	snapshotCmd.AddCommand(removeSnapshotCmd)
 
+	labelsCmd.AddCommand(listLabelsCmd)
+	labelsCmd.AddCommand(removeLabelCmd)
+
 	fsCmd.AddCommand(syncCmd)
-	fsCmd.AddCommand(getLabelsCmd)
+	fsCmd.AddCommand(labelsCmd)
 	fsCmd.AddCommand(listFilesCmd)
 	fsCmd.AddCommand(getFileInfoCmd)
 	fsCmd.AddCommand(getFileCmd)
@@ -73,6 +76,10 @@ func init() {
 
 	removeSnapshotCmd.Flags().StringVarP(&SnapshotID, "snapshotid", "i", "", "Snapshot Id")
 	removeSnapshotCmd.Flags().StringVarP(&SnapshotName, "snapshotname", "n", "", "Snapshot name")
+
+	removeLabelCmd.Flags().StringVarP(&Label, "label", "l", "", "Label")
+	removeLabelCmd.MarkFlagRequired("label")
+	removeLabelCmd.Flags().BoolVarP(&Yes, "yes", "", false, "Anser yes to all questions")
 }
 
 var fsCmd = &cobra.Command{
@@ -186,7 +193,7 @@ var syncCmd = &cobra.Command{
 		CheckError(err)
 
 		if len(syncPlan.LocalMissing) == 0 && len(syncPlan.RemoteMissing) == 0 && len(syncPlan.Conflicts) == 0 {
-			fmt.Println("Nothing to do " + SyncDir + " is already synchronized with label " + Label)
+			log.WithFields(log.Fields{"Label": Label, "SyncDir": SyncDir}).Debug("Already synchronized. Nothing to do")
 			os.Exit(0)
 		}
 
@@ -198,7 +205,7 @@ var syncCmd = &cobra.Command{
 				CheckError(err)
 			} else {
 				printSyncPlan(syncPlan)
-				fmt.Print("\nAre you sure you want to continue (yes,no): ")
+				fmt.Print("\nAre you sure you want to continue? (yes,no): ")
 				reader := bufio.NewReader(os.Stdin)
 				reply, _ := reader.ReadString('\n')
 				if reply == "yes\n" || reply == "y\n" {
@@ -210,10 +217,16 @@ var syncCmd = &cobra.Command{
 	},
 }
 
-var getLabelsCmd = &cobra.Command{
-	Use:   "labels",
-	Short: "List all registered labels",
-	Long:  "List all registered labels",
+var labelsCmd = &cobra.Command{
+	Use:   "label",
+	Short: "Manage file labels",
+	Long:  "Manage file labels",
+}
+
+var listLabelsCmd = &cobra.Command{
+	Use:   "ls",
+	Short: "List all labels",
+	Long:  "List all labels",
 	Run: func(cmd *cobra.Command, args []string) {
 		parseServerEnv()
 
@@ -245,18 +258,74 @@ var getLabelsCmd = &cobra.Command{
 		coloniesLabels, err := client.GetFileLabels(ColonyID, ExecutorPrvKey)
 		CheckError(err)
 
-		var labels [][]string
-		for _, coloniesLabel := range coloniesLabels {
-			labels = append(labels, []string{coloniesLabel.Name, strconv.Itoa(coloniesLabel.Files)})
+		if len(coloniesLabels) > 0 {
+			var labels [][]string
+			for _, coloniesLabel := range coloniesLabels {
+				labels = append(labels, []string{coloniesLabel.Name, strconv.Itoa(coloniesLabel.Files)})
+			}
+			table := tablewriter.NewWriter(os.Stdout)
+			table.SetHeader([]string{"Label", "Number of files"})
+			for _, v := range labels {
+				table.Append(v)
+			}
+			table.SetAlignment(tablewriter.ALIGN_LEFT)
+			table.Render()
+		} else {
+			log.Info("No labels found")
 		}
-		table := tablewriter.NewWriter(os.Stdout)
-		table.SetHeader([]string{"Label", "Number of files"})
-		for _, v := range labels {
-			table.Append(v)
-		}
-		table.SetAlignment(tablewriter.ALIGN_LEFT)
-		table.Render()
+	},
+}
 
+var removeLabelCmd = &cobra.Command{
+	Use:   "remove",
+	Short: "Remove a label",
+	Long:  "Remove a label",
+	Run: func(cmd *cobra.Command, args []string) {
+		parseServerEnv()
+
+		keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
+		CheckError(err)
+
+		if ColonyID == "" {
+			ColonyID = os.Getenv("COLONIES_COLONY_ID")
+		}
+		if ColonyID == "" {
+			CheckError(errors.New("Unknown Colony Id"))
+		}
+
+		if ExecutorID == "" {
+			ExecutorID = os.Getenv("COLONIES_EXECUTOR_ID")
+		}
+		if ExecutorID == "" {
+			CheckError(errors.New("Unknown Executor Id"))
+		}
+
+		if ExecutorPrvKey == "" {
+			ExecutorPrvKey, err = keychain.GetPrvKey(ExecutorID)
+			CheckError(err)
+		}
+
+		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Debug("Starting a Colonies client")
+		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
+
+		log.Debug("Starting a file storage client")
+		fsClient, err := fs.CreateFSClient(client, ColonyID, ExecutorPrvKey)
+		CheckError(err)
+
+		if Yes {
+			err = fsClient.RemoveAllFilesWithLabel(Label)
+			CheckError(err)
+			log.WithFields(log.Fields{"Label": Label}).Debug("Label deleted")
+		} else {
+			fmt.Print("All files with label <" + Label + "> will be removed. Local files are not deleted.\n\nAre you sure you want to continue?  (yes,no): ")
+			reader := bufio.NewReader(os.Stdin)
+			reply, _ := reader.ReadString('\n')
+			if reply == "yes\n" || reply == "y\n" {
+				err = fsClient.RemoveAllFilesWithLabel(Label)
+				CheckError(err)
+				log.WithFields(log.Fields{"Label": Label}).Debug("Label deleted")
+			}
+		}
 	},
 }
 
@@ -303,7 +372,7 @@ var listFilesCmd = &cobra.Command{
 		CheckError(err)
 
 		if len(filenames) == 0 {
-			fmt.Println("No files found")
+			log.Info("No files found")
 			os.Exit(0)
 		}
 
@@ -531,9 +600,9 @@ var removeFileCmd = &cobra.Command{
 	},
 }
 
-func printSnapshot(snapshot *core.Snapshot) {
+func printSnapshot(snapshot *core.Snapshot, client *client.ColoniesClient) {
 	snapshotData := [][]string{
-		[]string{"Id", snapshot.ID},
+		[]string{"SnapshotId", snapshot.ID},
 		[]string{"ColonyId", snapshot.ColonyID},
 		[]string{"Label", snapshot.Label},
 		[]string{"Name", snapshot.Name},
@@ -550,15 +619,22 @@ func printSnapshot(snapshot *core.Snapshot) {
 		fmt.Println()
 		var fileIDData [][]string
 		for _, fileID := range snapshot.FileIDs {
-			fileIDData = append(fileIDData, []string{fileID})
+			revision, err := client.GetFileByID(ColonyID, fileID, ExecutorPrvKey)
+			CheckError(err)
+			if len(revision) != 1 {
+				CheckError(errors.New("Expected only one revision"))
+			}
+			fileIDData = append(fileIDData, []string{revision[0].Name, fileID, revision[0].Added.Format(TimeLayout)})
 		}
 		table := tablewriter.NewWriter(os.Stdout)
-		table.SetHeader([]string{"File IDs"})
+		table.SetHeader([]string{"Filename", "FileId", "Added"})
 		for _, v := range fileIDData {
 			table.Append(v)
 		}
 		table.SetAlignment(tablewriter.ALIGN_LEFT)
 		table.Render()
+	} else {
+		log.WithFields(log.Fields{"SnapshotID": SnapshotID, "SnapshotName": SnapshotName}).Warning("No files in snapshot")
 	}
 }
 
@@ -597,10 +673,9 @@ var createSnapshotCmd = &cobra.Command{
 		snapshot, err := client.CreateSnapshot(ColonyID, Label, SnapshotName, ExecutorPrvKey)
 		CheckError(err)
 
-		log.WithFields(log.Fields{"Label": Label, "SnapshotName": SnapshotName}).Debug("Creating snapshot")
+		log.WithFields(log.Fields{"Label": Label, "SnapshotName": SnapshotName}).Debug("Snapshot created")
 
-		fmt.Println("Snapshot:")
-		printSnapshot(snapshot)
+		printSnapshot(snapshot, client)
 	},
 }
 
@@ -697,17 +772,21 @@ var listSnapshotsCmd = &cobra.Command{
 		snapshots, err := client.GetSnapshotsByColonyID(ColonyID, ExecutorPrvKey)
 		CheckError(err)
 
-		var snapshotData [][]string
-		for _, s := range snapshots {
-			snapshotData = append(snapshotData, []string{s.Name, s.ID, s.Label, strconv.Itoa(len(s.FileIDs)), s.Added.Format(TimeLayout)})
+		if len(snapshots) > 0 {
+			var snapshotData [][]string
+			for _, s := range snapshots {
+				snapshotData = append(snapshotData, []string{s.Name, s.ID, s.Label, strconv.Itoa(len(s.FileIDs)), s.Added.Format(TimeLayout)})
+			}
+			table := tablewriter.NewWriter(os.Stdout)
+			table.SetHeader([]string{"Name", "ID", "Label", "Files", "Added"})
+			for _, v := range snapshotData {
+				table.Append(v)
+			}
+			table.SetAlignment(tablewriter.ALIGN_LEFT)
+			table.Render()
+		} else {
+			log.Info("No snapshots found")
 		}
-		table := tablewriter.NewWriter(os.Stdout)
-		table.SetHeader([]string{"Name", "ID", "Label", "Files", "Added"})
-		for _, v := range snapshotData {
-			table.Append(v)
-		}
-		table.SetAlignment(tablewriter.ALIGN_LEFT)
-		table.Render()
 	},
 }
 
@@ -746,11 +825,11 @@ var infoSnapshotCmd = &cobra.Command{
 		if SnapshotID != "" {
 			snapshot, err := client.GetSnapshotByID(ColonyID, SnapshotID, ExecutorPrvKey)
 			CheckError(err)
-			printSnapshot(snapshot)
+			printSnapshot(snapshot, client)
 		} else if SnapshotName != "" {
 			snapshot, err := client.GetSnapshotByName(ColonyID, SnapshotName, ExecutorPrvKey)
 			CheckError(err)
-			printSnapshot(snapshot)
+			printSnapshot(snapshot, client)
 		} else {
 			CheckError(errors.New("Snapshot Id nor name was provided"))
 		}
@@ -789,20 +868,16 @@ var removeSnapshotCmd = &cobra.Command{
 		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Debug("Starting a Colonies client")
 		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
 
-		log.Debug("Starting a file storage client")
-		fsClient, err := fs.CreateFSClient(client, ColonyID, ExecutorPrvKey)
-		CheckError(err)
-
-		fmt.Println(fsClient)
-
 		if SnapshotID != "" {
-			// TODO
-		} else if SnapshotName != "" && Label != "" {
-			// TODO
+			err = client.DeleteSnapshotByID(ColonyID, SnapshotID, ExecutorPrvKey)
+			CheckError(err)
+			log.WithFields(log.Fields{"SnapshotId": SnapshotID}).Info("Snapshot removed")
+		} else if SnapshotName != "" {
+			err = client.DeleteSnapshotByName(ColonyID, SnapshotName, ExecutorPrvKey)
+			CheckError(err)
+			log.WithFields(log.Fields{"SnapshotName": SnapshotName}).Info("Snapshot removed")
 		} else {
 			CheckError(errors.New("Snapshot Id nor name was provided"))
 		}
-
-		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Debug("Removing snb´")
 	},
 }
