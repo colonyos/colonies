@@ -184,16 +184,11 @@ var syncCmd = &cobra.Command{
 		fsClient, err := fs.CreateFSClient(client, ColonyID, ExecutorPrvKey)
 		CheckError(err)
 
-		err = os.Mkdir(SyncDir, 0755)
-		if err == nil {
-			CheckError(err)
-		}
-
 		syncPlan, err := fsClient.CalcSyncPlan(SyncDir, Label, KeepLocal)
 		CheckError(err)
 
 		if len(syncPlan.LocalMissing) == 0 && len(syncPlan.RemoteMissing) == 0 && len(syncPlan.Conflicts) == 0 {
-			log.WithFields(log.Fields{"Label": Label, "SyncDir": SyncDir}).Info("Already synchronized. Nothing to do")
+			log.WithFields(log.Fields{"Label": Label, "SyncDir": SyncDir}).Info("Nothing to do, already synchronized")
 			os.Exit(0)
 		}
 
@@ -201,6 +196,10 @@ var syncCmd = &cobra.Command{
 			printSyncPlan(syncPlan)
 		} else {
 			if Yes {
+				err = os.Mkdir(SyncDir, 0755)
+				if err == nil {
+					CheckError(err)
+				}
 				err = fsClient.ApplySyncPlan(ColonyID, syncPlan)
 				CheckError(err)
 			} else {
@@ -209,6 +208,10 @@ var syncCmd = &cobra.Command{
 				reader := bufio.NewReader(os.Stdin)
 				reply, _ := reader.ReadString('\n')
 				if reply == "yes\n" || reply == "y\n" {
+					err = os.Mkdir(SyncDir, 0755)
+					if err == nil {
+						CheckError(err)
+					}
 					err = fsClient.ApplySyncPlan(ColonyID, syncPlan)
 					CheckError(err)
 				}
@@ -330,10 +333,11 @@ var removeLabelCmd = &cobra.Command{
 }
 
 type fileInfo struct {
-	filename string
-	fileID   string
-	size     string
-	added    time.Time
+	filename  string
+	fileID    string
+	size      string
+	added     time.Time
+	revisions string
 }
 
 var listFilesCmd = &cobra.Command{
@@ -381,18 +385,21 @@ var listFilesCmd = &cobra.Command{
 			coloniesFile, err := client.GetLatestFileByName(ColonyID, Label, filename, ExecutorPrvKey)
 			CheckError(err)
 
+			allRevisions, err := client.GetFileByName(ColonyID, Label, filename, ExecutorPrvKey)
+			CheckError(err)
+
 			if len(coloniesFile) != 1 {
 				CheckError(errors.New("Failed to get file info from Colonies server"))
 			}
-			fi = append(fi, fileInfo{filename: filename, size: strconv.FormatInt(coloniesFile[0].Size/1024, 10) + " KiB", fileID: coloniesFile[0].ID, added: coloniesFile[0].Added})
+			fi = append(fi, fileInfo{filename: filename, size: strconv.FormatInt(coloniesFile[0].Size/1024, 10) + " KiB", fileID: coloniesFile[0].ID, added: coloniesFile[0].Added, revisions: strconv.Itoa(len(allRevisions))})
 		}
 
 		var fileData [][]string
 		for _, f := range fi {
-			fileData = append(fileData, []string{f.filename, f.size, f.fileID, f.added.Format(TimeLayout)})
+			fileData = append(fileData, []string{f.filename, f.size, f.fileID, f.added.Format(TimeLayout), f.revisions})
 		}
 		table := tablewriter.NewWriter(os.Stdout)
-		table.SetHeader([]string{"Filename", "Size", "Latest ID", "Added"})
+		table.SetHeader([]string{"Filename", "Size", "Latest ID", "Added", "Revisions"})
 		for _, v := range fileData {
 			table.Append(v)
 		}
