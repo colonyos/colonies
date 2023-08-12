@@ -514,6 +514,10 @@ var getFileCmd = &cobra.Command{
 			CheckError(err)
 		}
 
+		if DownloadDir == "" {
+			CheckError(errors.New("Download directory must be specified"))
+		}
+
 		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Debug("Starting a Colonies client")
 		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
 
@@ -725,7 +729,6 @@ var downloadSnapshotCmd = &cobra.Command{
 			CheckError(err)
 			log.WithFields(log.Fields{"SnapshotId": SnapshotID, "DownloadDir": DownloadDir}).Debug("Download snapshot")
 		} else if SnapshotName != "" {
-			err = fsClient.DownloadSnapshot(SnapshotID, DownloadDir)
 			snapshot, err := client.GetSnapshotByName(ColonyID, SnapshotName, ExecutorPrvKey)
 			CheckError(err)
 			err = fsClient.DownloadSnapshot(snapshot.ID, DownloadDir)
