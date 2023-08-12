@@ -173,7 +173,13 @@ func (fsClient *FSClient) CalcSyncPlan(dir string, label string, keepLocal bool)
 	var localFileMap = make(map[string]string)
 	var localFileSizeMap = make(map[string]int64)
 	for _, file := range files {
-		if !file.IsDir() {
+		// Strange, file.IsDir() says that a file is a not a directory when it is
+		// The workaround seems to obtain a new fileinfo struct
+		fileInfo, err := os.Stat(dir + "/" + file.Name())
+		if err != nil {
+			return nil, err
+		}
+		if !fileInfo.IsDir() {
 			checksum, err := checksum(dir + "/" + file.Name())
 			if err != nil {
 				return nil, err
@@ -320,11 +326,11 @@ func (fsClient *FSClient) RemoveAllFilesWithLabel(label string) error {
 }
 
 func (fsClient *FSClient) DownloadSnapshot(snapshotID string, downloadDir string) error {
-	snpashot, err := fsClient.coloniesClient.GetSnapshotByID(fsClient.colonyID, snapshotID, fsClient.executorPrvKey)
+	snapshot, err := fsClient.coloniesClient.GetSnapshotByID(fsClient.colonyID, snapshotID, fsClient.executorPrvKey)
 	if err != nil {
 		return err
 	}
-	for _, fileID := range snpashot.FileIDs {
+	for _, fileID := range snapshot.FileIDs {
 		file, err := fsClient.coloniesClient.GetFileByID(fsClient.colonyID, fileID, fsClient.executorPrvKey)
 		if len(file) != 1 {
 			return errors.New("Failed to download file")
