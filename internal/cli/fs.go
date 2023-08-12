@@ -193,7 +193,7 @@ var syncCmd = &cobra.Command{
 		CheckError(err)
 
 		if len(syncPlan.LocalMissing) == 0 && len(syncPlan.RemoteMissing) == 0 && len(syncPlan.Conflicts) == 0 {
-			log.WithFields(log.Fields{"Label": Label, "SyncDir": SyncDir}).Debug("Already synchronized. Nothing to do")
+			log.WithFields(log.Fields{"Label": Label, "SyncDir": SyncDir}).Info("Already synchronized. Nothing to do")
 			os.Exit(0)
 		}
 

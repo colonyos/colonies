@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"crypto/tls"
+	"fmt"
 	"io"
 	"net/http"
 	"os"
@@ -121,6 +122,10 @@ func (s3Client *S3Client) Upload(dir string, filename string, s3Filename string,
 		return err
 	}
 
+	if progress {
+		fmt.Println()
+	}
+
 	return nil
 }
 
@@ -167,6 +172,10 @@ func (s3Client *S3Client) Download(filename string, s3Filename string, downloadD
 	}
 
 	_, err = io.Copy(writer, file)
+
+	if progress {
+		fmt.Println()
+	}
 
 	return err
 }
