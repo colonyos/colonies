@@ -56,7 +56,7 @@ func CreateS3Client() (*S3Client, error) {
 		Transport: transport,
 	})
 	if err != nil {
-		log.Fatal(err)
+		log.Error(err)
 		return nil, err
 	}
 
