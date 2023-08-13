@@ -401,11 +401,11 @@ var lsExecutorsCmd = &cobra.Command{
 		} else {
 			var data [][]string
 			for _, executor := range executorsFromServer {
-				data = append(data, []string{executor.ID, executor.Name, executor.Type})
+				data = append(data, []string{executor.ID, executor.Type, executor.Location.Description})
 			}
 
 			table := tablewriter.NewWriter(os.Stdout)
-			table.SetHeader([]string{"ID", "Name", "Type"})
+			table.SetHeader([]string{"ID", "Type", "Location"})
 
 			for _, v := range data {
 				table.Append(v)
