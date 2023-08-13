@@ -46,11 +46,14 @@ func init() {
 	execFuncCmd.Flags().StringVarP(&FuncName, "func", "", "", "Remote function to call")
 	execFuncCmd.Flags().StringSliceVarP(&Args, "args", "", make([]string, 0), "Arguments")
 	execFuncCmd.Flags().StringSliceVarP(&Env, "env", "", make([]string, 0), "Environment")
+	execFuncCmd.Flags().StringSliceVarP(&KwArgs, "kwargs", "", make([]string, 0), "Environment")
+	execFuncCmd.Flags().StringSliceVarP(&Snapshots, "snapshots", "", make([]string, 0), "Environment")
 	execFuncCmd.Flags().IntVarP(&MaxWaitTime, "maxwaittime", "", -1, "Maximum queue wait time")
 	execFuncCmd.Flags().IntVarP(&MaxExecTime, "maxexectime", "", -1, "Maximum execution time in seconds before failing")
 	execFuncCmd.Flags().IntVarP(&MaxRetries, "maxretries", "", -1, "Maximum number of retries when failing")
 	execFuncCmd.Flags().BoolVarP(&Wait, "wait", "", false, "Wait for process to finish")
 	execFuncCmd.Flags().BoolVarP(&PrintOutput, "out", "", false, "Print process output, wait flag must be set")
+	execFuncCmd.Flags().BoolVarP(&Follow, "follow", "", false, "Follow process, wait flag cannot be set")
 
 	removeFuncCmd.Flags().StringVarP(&FunctionID, "functionid", "", "", "FunctionID")
 	removeFuncCmd.MarkFlagRequired("functionid")
@@ -269,13 +272,6 @@ func follow(client *client.ColoniesClient, process *core.Process) {
 		process, err := client.GetProcess(process.ID, ExecutorPrvKey)
 		CheckError(err)
 
-		if process.State == core.SUCCESS {
-			os.Exit(0)
-		}
-		if process.State == core.FAILED {
-			os.Exit(-1)
-		}
-
 		if len(logs) == 0 {
 			time.Sleep(500 * time.Millisecond)
 			continue
@@ -284,6 +280,13 @@ func follow(client *client.ColoniesClient, process *core.Process) {
 				fmt.Print(log.Message)
 			}
 			lastTimestamp = logs[len(logs)-1].Timestamp
+		}
+
+		if process.State == core.SUCCESS {
+			os.Exit(0)
+		}
+		if process.State == core.FAILED {
+			os.Exit(-1)
 		}
 	}
 }
@@ -365,12 +368,48 @@ var execFuncCmd = &cobra.Command{
 		for _, v := range Env {
 			s := strings.Split(v, "=")
 			if len(s) != 2 {
-				CheckError(errors.New("Invalid key-value pair, try e.g. --env key1=value1,key2=value2 "))
+				CheckError(errors.New("Invalid key-value pair, try e.g. --env key1=value1,key2=value2"))
 			}
 			key := s[0]
 			value := s[1]
 			env[key] = value
 		}
+
+		kwargsIf := make(map[string]interface{})
+		for _, v := range KwArgs {
+			s := strings.Split(v, ":")
+			if len(s) != 2 {
+				CheckError(errors.New("Invalid key-value pair, try e.g. --kwargs cmd:python3,args:/tmp/xor/xor.py"))
+			}
+			key := s[0]
+			value := s[1]
+
+			if key == "args" {
+				args := strings.Split(value, ",")
+				argsif := make([]interface{}, len(args))
+				for i, v := range args {
+					argsif[i] = v
+				}
+				kwargsIf[key] = argsif
+			} else {
+				kwargsIf[key] = value
+			}
+		}
+
+		snapshotsIf := make([]map[string]interface{}, 0)
+		for _, v := range Snapshots {
+			s := strings.Split(v, ":")
+			if len(s) != 2 {
+				CheckError(errors.New("Invalid key-value pair, try e.g. --snapshots mysnapshotname:/tmp/mypath"))
+			}
+			snapshotIf := make(map[string]interface{})
+			name := s[0]
+			dir := s[1]
+			snapshotIf["name"] = name
+			snapshotIf["dir"] = dir
+			snapshotsIf = append(snapshotsIf, snapshotIf)
+		}
+		kwargsIf["snapshots"] = snapshotsIf
 
 		if ColonyID == "" {
 			ColonyID = os.Getenv("COLONIES_COLONY_ID")
@@ -413,6 +452,7 @@ var execFuncCmd = &cobra.Command{
 		funcSpec := core.FunctionSpec{
 			FuncName:    FuncName,
 			Args:        argsif,
+			KwArgs:      kwargsIf,
 			MaxWaitTime: MaxWaitTime,
 			MaxExecTime: MaxExecTime,
 			MaxRetries:  MaxRetries,
@@ -440,6 +480,8 @@ var execFuncCmd = &cobra.Command{
 				fmt.Println(StrArr2Str(IfArr2StringArr(process.Output)))
 			}
 			os.Exit(0)
+		} else if Follow {
+			follow(client, addedProcess)
 		}
 	},
 }
