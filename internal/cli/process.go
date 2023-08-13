@@ -72,7 +72,7 @@ func init() {
 	deleteProcessCmd.Flags().StringVarP(&ExecutorID, "executorid", "", "", "Executor Id")
 	deleteProcessCmd.Flags().StringVarP(&ExecutorPrvKey, "executorprvkey", "", "", "Executor private key")
 	deleteProcessCmd.Flags().StringVarP(&ColonyID, "colonyid", "", "", "Colony Id")
-	deleteProcessCmd.Flags().StringVarP(&ProcessID, "processid", "", "", "Process Id")
+	deleteProcessCmd.Flags().StringVarP(&ProcessID, "processid", "p", "", "Process Id")
 	deleteProcessCmd.MarkFlagRequired("processid")
 
 	deleteAllProcessesCmd.Flags().StringVarP(&ExecutorID, "executorid", "", "", "Executor Id")
