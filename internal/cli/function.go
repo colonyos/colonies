@@ -274,6 +274,12 @@ func follow(client *client.ColoniesClient, process *core.Process) {
 
 		if len(logs) == 0 {
 			time.Sleep(500 * time.Millisecond)
+			if process.State == core.SUCCESS {
+				os.Exit(0)
+			}
+			if process.State == core.FAILED {
+				os.Exit(-1)
+			}
 			continue
 		} else {
 			for _, log := range logs {
@@ -282,12 +288,6 @@ func follow(client *client.ColoniesClient, process *core.Process) {
 			lastTimestamp = logs[len(logs)-1].Timestamp
 		}
 
-		if process.State == core.SUCCESS {
-			os.Exit(0)
-		}
-		if process.State == core.FAILED {
-			os.Exit(-1)
-		}
 	}
 }
 
