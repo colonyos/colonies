@@ -8,6 +8,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/colonyos/colonies/pkg/client"
 	"github.com/colonyos/colonies/pkg/core"
@@ -35,6 +36,7 @@ func init() {
 	submitFunctionSpecCmd.Flags().BoolVarP(&Wait, "wait", "", false, "Wait for process to finish")
 	submitFunctionSpecCmd.MarkFlagRequired("spec")
 	submitFunctionSpecCmd.Flags().BoolVarP(&PrintOutput, "out", "", false, "Print process output, wait flag must be set")
+	submitFunctionSpecCmd.Flags().BoolVarP(&Follow, "follow", "", false, "Follow process, wait flag cannot be set")
 
 	execFuncCmd.Flags().StringVarP(&ExecutorID, "executorid", "", "", "Executor Id")
 	execFuncCmd.Flags().StringVarP(&ExecutorPrvKey, "executorprvkey", "", "", "Executor private key")
@@ -55,7 +57,6 @@ func init() {
 }
 
 var functionCmd = &cobra.Command{
-
 	Use:   "function",
 	Short: "Manage functions",
 	Long:  "Manage functions",
@@ -258,6 +259,35 @@ var listFuncCmd = &cobra.Command{
 	},
 }
 
+func follow(client *client.ColoniesClient, process *core.Process) {
+	var lastTimestamp int64
+	lastTimestamp = 0
+	for {
+		logs, err := client.GetLogsByProcessIDSince(process.ID, Count, lastTimestamp, ExecutorPrvKey)
+		CheckError(err)
+
+		process, err := client.GetProcess(process.ID, ExecutorPrvKey)
+		CheckError(err)
+
+		if process.State == core.SUCCESS {
+			os.Exit(0)
+		}
+		if process.State == core.FAILED {
+			os.Exit(-1)
+		}
+
+		if len(logs) == 0 {
+			time.Sleep(500 * time.Millisecond)
+			continue
+		} else {
+			for _, log := range logs {
+				fmt.Print(log.Message)
+			}
+			lastTimestamp = logs[len(logs)-1].Timestamp
+		}
+	}
+}
+
 var submitFunctionSpecCmd = &cobra.Command{
 	Use:   "submit",
 	Short: "Submit a function specification",
@@ -318,6 +348,8 @@ var submitFunctionSpecCmd = &cobra.Command{
 				fmt.Println(StrArr2Str(IfArr2StringArr(addedProcess.Output)))
 			}
 			os.Exit(0)
+		} else if Follow {
+			follow(client, addedProcess)
 		}
 	},
 }
