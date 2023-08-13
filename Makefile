@@ -1,7 +1,8 @@
 all: build
 .PHONY: all build
 
-IMAGE ?= colonyos/colonies:latest
+BUILD_IMAGE ?= colonyos/colonies
+PUSH_IMAGE ?= colonyos/colonies:v1.5.2
 
 VERSION := $(shell git rev-parse --short HEAD)
 BUILDTIME := $(shell date -u '+%Y-%m-%dT%H:%M:%SZ')
@@ -15,10 +16,11 @@ build:
 	@GOOS=js GOARCH=wasm go build -o ./lib/libcryptolib.wasm internal/cryptolib.wasm/cryptolib.go
 
 container:
-	docker build -t $(IMAGE) .
+	docker build -t $(BUILD_IMAGE) .
 
 push:
-	docker push $(IMAGE)
+	docker tag $(BUILD_IMAGE) $(PUSH_IMAGE) 
+	docker push $(PUSH_IMAGE)
 
 coverage:
 	./buildtools/coverage.sh
