@@ -188,7 +188,7 @@ var syncCmd = &cobra.Command{
 		CheckError(err)
 
 		if len(syncPlan.LocalMissing) == 0 && len(syncPlan.RemoteMissing) == 0 && len(syncPlan.Conflicts) == 0 {
-			log.WithFields(log.Fields{"Label": Label, "SyncDir": SyncDir}).Info("Nothing to do, already synchronized")
+			log.WithFields(log.Fields{"Label": Label, "SyncDir": SyncDir}).Info("Synchronizing, nothing to do, already synchronized")
 			os.Exit(0)
 		}
 
@@ -684,7 +684,7 @@ var createSnapshotCmd = &cobra.Command{
 		snapshot, err := client.CreateSnapshot(ColonyID, Label, SnapshotName, ExecutorPrvKey)
 		CheckError(err)
 
-		log.WithFields(log.Fields{"Label": Label, "SnapshotName": SnapshotName}).Debug("Snapshot created")
+		log.WithFields(log.Fields{"Label": Label, "SnapshotName": SnapshotName}).Info("Snapshot created")
 
 		printSnapshot(snapshot, client)
 	},

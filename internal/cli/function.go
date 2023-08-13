@@ -263,6 +263,7 @@ var listFuncCmd = &cobra.Command{
 }
 
 func follow(client *client.ColoniesClient, process *core.Process) {
+	log.WithFields(log.Fields{"ProcessID": process.ID}).Info("Printing logs from process")
 	var lastTimestamp int64
 	lastTimestamp = 0
 	for {
@@ -275,9 +276,11 @@ func follow(client *client.ColoniesClient, process *core.Process) {
 		if len(logs) == 0 {
 			time.Sleep(500 * time.Millisecond)
 			if process.State == core.SUCCESS {
+				log.WithFields(log.Fields{"ProcessID": process.ID}).Info("Process finished successfully")
 				os.Exit(0)
 			}
 			if process.State == core.FAILED {
+				log.WithFields(log.Fields{"ProcessID": process.ID}).Error("Process failed")
 				os.Exit(-1)
 			}
 			continue
