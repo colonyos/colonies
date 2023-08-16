@@ -4,6 +4,12 @@ import (
 	"encoding/json"
 )
 
+type SyncDir struct {
+	Label      string `json:"label"`
+	SnapshotID string `json:"snapshotid"`
+	Dir        string `json:"dir"`
+}
+
 type Conditions struct {
 	ColonyID     string   `json:"colonyid"`
 	ExecutorIDs  []string `json:"executorids"`
@@ -22,6 +28,7 @@ type FunctionSpec struct {
 	MaxRetries  int                    `json:"maxretries"`
 	Conditions  Conditions             `json:"conditions"`
 	Label       string                 `json:"label"`
+	Filesystem  []*SyncDir             `json:"fs"`
 	Env         map[string]string      `json:"env"`
 }
 
@@ -173,6 +180,22 @@ func (funcSpec *FunctionSpec) Equals(funcSpec2 *FunctionSpec) bool {
 		}
 
 		if !(counter == len(funcSpec.Env) && counter == len(funcSpec2.Env)) {
+			same = false
+		}
+	}
+
+	if len(funcSpec.Filesystem) != len(funcSpec2.Filesystem) {
+		return false
+	}
+
+	for i := range funcSpec.Filesystem {
+		if funcSpec.Filesystem[i].Label != funcSpec2.Filesystem[i].Label {
+			same = false
+		}
+		if funcSpec.Filesystem[i].SnapshotID != funcSpec2.Filesystem[i].SnapshotID {
+			same = false
+		}
+		if funcSpec.Filesystem[i].Dir != funcSpec2.Filesystem[i].Dir {
 			same = false
 		}
 	}
