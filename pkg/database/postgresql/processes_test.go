@@ -194,6 +194,22 @@ func TestAddProcess(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Contains(t, processFromDB.FunctionSpec.Conditions.ExecutorIDs, executor1ID)
 	assert.Contains(t, processFromDB.FunctionSpec.Conditions.ExecutorIDs, executor2ID)
+
+	process = utils.CreateTestProcessWithTargets(colonyID, []string{executor1ID, executor2ID})
+	var fs []*core.SyncDir
+	syncDir1 := &core.SyncDir{Label: "test_label1", SnapshotID: "test_snapshotid1", Dir: "test_dir1"}
+	fs = append(fs, syncDir1)
+	process.FunctionSpec.Filesystem = fs
+
+	err = db.AddProcess(process)
+	assert.Nil(t, err)
+
+	processFromDB, err = db.GetProcessByID(process.ID)
+	assert.Nil(t, err)
+	assert.Len(t, processFromDB.FunctionSpec.Filesystem, 1)
+	assert.Equal(t, processFromDB.FunctionSpec.Filesystem[0].Label, "test_label1")
+	assert.Equal(t, processFromDB.FunctionSpec.Filesystem[0].SnapshotID, "test_snapshotid1")
+	assert.Equal(t, processFromDB.FunctionSpec.Filesystem[0].Dir, "test_dir1")
 }
 
 func TestSelectCandiate(t *testing.T) {
