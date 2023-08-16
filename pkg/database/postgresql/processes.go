@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/colonyos/colonies/pkg/core"
@@ -26,7 +27,12 @@ func (db *PQDatabase) AddProcess(process *core.Process) error {
 		deadline = time.Now().Add(time.Duration(maxWaitTime) * time.Second)
 	}
 
-	sqlStatement := `INSERT INTO  ` + db.dbPrefix + `PROCESSES (PROCESS_ID, TARGET_COLONY_ID, TARGET_EXECUTOR_IDS, ASSIGNED_EXECUTOR_ID, STATE, IS_ASSIGNED, EXECUTOR_TYPE, SUBMISSION_TIME, START_TIME, END_TIME, WAIT_DEADLINE, EXEC_DEADLINE, ERRORS, RETRIES, NODENAME, FUNCNAME, ARGS, KWARGS, MAX_WAIT_TIME, MAX_EXEC_TIME, MAX_RETRIES, DEPENDENCIES, PRIORITY, PRIORITYTIME, WAIT_FOR_PARENTS, PARENTS, CHILDREN, PROCESSGRAPH_ID, INPUT, OUTPUT, LABEL) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31)`
+	fsArr := make([]string, 0)
+	for _, syncDir := range process.FunctionSpec.Filesystem {
+		fsArr = append(fsArr, syncDir.Label+":"+syncDir.SnapshotID+":"+syncDir.Dir)
+	}
+
+	sqlStatement := `INSERT INTO  ` + db.dbPrefix + `PROCESSES (PROCESS_ID, TARGET_COLONY_ID, TARGET_EXECUTOR_IDS, ASSIGNED_EXECUTOR_ID, STATE, IS_ASSIGNED, EXECUTOR_TYPE, SUBMISSION_TIME, START_TIME, END_TIME, WAIT_DEADLINE, EXEC_DEADLINE, ERRORS, RETRIES, NODENAME, FUNCNAME, ARGS, KWARGS, MAX_WAIT_TIME, MAX_EXEC_TIME, MAX_RETRIES, DEPENDENCIES, PRIORITY, PRIORITYTIME, WAIT_FOR_PARENTS, PARENTS, CHILDREN, PROCESSGRAPH_ID, INPUT, OUTPUT, LABEL, FS) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32)`
 
 	argsJSON, err := json.Marshal(process.FunctionSpec.Args)
 	if err != nil {
@@ -54,7 +60,7 @@ func (db *PQDatabase) AddProcess(process *core.Process) error {
 
 	process.SetSubmissionTime(submissionTime)
 
-	_, err = db.postgresql.Exec(sqlStatement, process.ID, process.FunctionSpec.Conditions.ColonyID, pq.Array(targetExecutorIDs), process.AssignedExecutorID, process.State, process.IsAssigned, process.FunctionSpec.Conditions.ExecutorType, submissionTime, time.Time{}, time.Time{}, deadline, process.ExecDeadline, pq.Array(process.Errors), 0, process.FunctionSpec.NodeName, process.FunctionSpec.FuncName, argsJSONStr, kwargsJSONStr, process.FunctionSpec.MaxWaitTime, process.FunctionSpec.MaxExecTime, process.FunctionSpec.MaxRetries, pq.Array(process.FunctionSpec.Conditions.Dependencies), process.FunctionSpec.Priority, process.PriorityTime, process.WaitForParents, pq.Array(process.Parents), pq.Array(process.Children), process.ProcessGraphID, inJSONStr, outJSONStr, process.FunctionSpec.Label)
+	_, err = db.postgresql.Exec(sqlStatement, process.ID, process.FunctionSpec.Conditions.ColonyID, pq.Array(targetExecutorIDs), process.AssignedExecutorID, process.State, process.IsAssigned, process.FunctionSpec.Conditions.ExecutorType, submissionTime, time.Time{}, time.Time{}, deadline, process.ExecDeadline, pq.Array(process.Errors), 0, process.FunctionSpec.NodeName, process.FunctionSpec.FuncName, argsJSONStr, kwargsJSONStr, process.FunctionSpec.MaxWaitTime, process.FunctionSpec.MaxExecTime, process.FunctionSpec.MaxRetries, pq.Array(process.FunctionSpec.Conditions.Dependencies), process.FunctionSpec.Priority, process.PriorityTime, process.WaitForParents, pq.Array(process.Parents), pq.Array(process.Children), process.ProcessGraphID, inJSONStr, outJSONStr, process.FunctionSpec.Label, pq.Array(fsArr))
 	if err != nil {
 		return err
 	}
@@ -107,8 +113,9 @@ func (db *PQDatabase) parseProcesses(rows *sql.Rows) ([]*core.Process, error) {
 		var inputJSONStr string
 		var outputJSONStr string
 		var label string
+		var fsArr []string
 
-		if err := rows.Scan(&processID, &targetColonyID, pq.Array(&targetExecutorIDs), &assignedExecutorID, &state, &isAssigned, &executorType, &submissionTime, &startTime, &endTime, &waitDeadline, &execDeadline, pq.Array(&errs), &nodeName, &funcName, &argsJSONStr, &kwargsJSONStr, &maxWaitTime, &maxExecTime, &retries, &maxRetries, pq.Array(&dependencies), &priority, &priorityTime, &waitForParent, pq.Array(&parents), pq.Array(&children), &processGraphID, &inputJSONStr, &outputJSONStr, &label); err != nil {
+		if err := rows.Scan(&processID, &targetColonyID, pq.Array(&targetExecutorIDs), &assignedExecutorID, &state, &isAssigned, &executorType, &submissionTime, &startTime, &endTime, &waitDeadline, &execDeadline, pq.Array(&errs), &nodeName, &funcName, &argsJSONStr, &kwargsJSONStr, &maxWaitTime, &maxExecTime, &retries, &maxRetries, pq.Array(&dependencies), &priority, &priorityTime, &waitForParent, pq.Array(&parents), pq.Array(&children), &processGraphID, &inputJSONStr, &outputJSONStr, &label, pq.Array(&fsArr)); err != nil {
 			return nil, err
 		}
 
@@ -154,6 +161,20 @@ func (db *PQDatabase) parseProcesses(rows *sql.Rows) ([]*core.Process, error) {
 
 		functionSpec := core.CreateFunctionSpec(nodeName, funcName, argsif, kwargsif, targetColonyID, targetExecutorIDs, executorType, maxWaitTime, maxExecTime, maxRetries, env, dependencies, priority, label)
 		process := core.CreateProcessFromDB(functionSpec, processID, assignedExecutorID, isAssigned, state, priorityTime, submissionTime, startTime, endTime, waitDeadline, execDeadline, errs, retries, attributes)
+
+		var fs []*core.SyncDir
+		for _, syncDir := range fsArr {
+			s := strings.Split(syncDir, ":")
+			if len(s) != 3 {
+				return nil, errors.New("Invalid funspec.fs length")
+			}
+			label := s[0]
+			snapshotID := s[1]
+			dir := s[2]
+			fs = append(fs, &core.SyncDir{Label: label, SnapshotID: snapshotID, Dir: dir})
+		}
+
+		process.FunctionSpec.Filesystem = fs
 
 		process.Input = inputif
 		process.Output = outputif
