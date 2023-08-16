@@ -294,6 +294,19 @@ func follow(client *client.ColoniesClient, process *core.Process) {
 	}
 }
 
+func createSnapshot(funcSpec *core.FunctionSpec, client *client.ColoniesClient) {
+	if len(funcSpec.Filesystem) > 0 {
+		for _, syncDir := range funcSpec.Filesystem {
+			snapshotName := core.GenerateRandomID()
+			snapshot, err := client.CreateSnapshot(ColonyID, syncDir.Label, snapshotName, ExecutorPrvKey)
+			CheckError(err)
+			syncDir.SnapshotID = snapshot.ID
+			log.WithFields(log.Fields{"SnapshotID": snapshot.ID, "Label": syncDir.Label, "Dir": syncDir.Dir}).Debug("Creating snapshot")
+		}
+	}
+
+}
+
 var submitFunctionSpecCmd = &cobra.Command{
 	Use:   "submit",
 	Short: "Submit a function specification",
@@ -335,6 +348,8 @@ var submitFunctionSpecCmd = &cobra.Command{
 
 		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Debug("Starting a Colonies client")
 		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
+
+		createSnapshot(funcSpec, client)
 
 		addedProcess, err := client.Submit(funcSpec, ExecutorPrvKey)
 		CheckError(err)
@@ -399,21 +414,6 @@ var execFuncCmd = &cobra.Command{
 			}
 		}
 
-		snapshotsIf := make([]map[string]interface{}, 0)
-		for _, v := range Snapshots {
-			s := strings.Split(v, ":")
-			if len(s) != 2 {
-				CheckError(errors.New("Invalid key-value pair, try e.g. --snapshots mysnapshotname:/tmp/mypath"))
-			}
-			snapshotIf := make(map[string]interface{})
-			name := s[0]
-			dir := s[1]
-			snapshotIf["name"] = name
-			snapshotIf["dir"] = dir
-			snapshotsIf = append(snapshotsIf, snapshotIf)
-		}
-		kwargsIf["snapshots"] = snapshotsIf
-
 		if ColonyID == "" {
 			ColonyID = os.Getenv("COLONIES_COLONY_ID")
 		}
@@ -464,6 +464,8 @@ var execFuncCmd = &cobra.Command{
 
 		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Debug("Starting a Colonies client")
 		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
+
+		createSnapshot(&funcSpec, client)
 
 		addedProcess, err := client.Submit(&funcSpec, ExecutorPrvKey)
 		CheckError(err)
