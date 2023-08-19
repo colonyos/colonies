@@ -196,7 +196,7 @@ var syncCmd = &cobra.Command{
 			printSyncPlan(syncPlan)
 		} else {
 			if Yes {
-				err = os.Mkdir(SyncDir, 0755)
+				err = os.MkdirAll(SyncDir, 0755)
 				if err == nil {
 					CheckError(err)
 				}
@@ -208,7 +208,7 @@ var syncCmd = &cobra.Command{
 				reader := bufio.NewReader(os.Stdin)
 				reply, _ := reader.ReadString('\n')
 				if reply == "yes\n" || reply == "y\n" {
-					err = os.Mkdir(SyncDir, 0755)
+					err = os.MkdirAll(SyncDir, 0755)
 					if err == nil {
 						CheckError(err)
 					}
@@ -544,7 +544,7 @@ var getFileCmd = &cobra.Command{
 			CheckError(errors.New("Failed to get file info"))
 		}
 
-		err = os.Mkdir(DownloadDir, 0755)
+		err = os.MkdirAll(DownloadDir, 0755)
 		if err == nil {
 			CheckError(err)
 		}
@@ -726,7 +726,7 @@ var downloadSnapshotCmd = &cobra.Command{
 		fsClient, err := fs.CreateFSClient(client, ColonyID, ExecutorPrvKey)
 		CheckError(err)
 
-		err = os.Mkdir(DownloadDir, 0755)
+		err = os.MkdirAll(DownloadDir, 0755)
 		if err == nil {
 			CheckError(err)
 		}
