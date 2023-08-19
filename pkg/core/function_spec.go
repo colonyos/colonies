@@ -5,9 +5,10 @@ import (
 )
 
 type SyncDir struct {
-	Label      string `json:"label"`
-	SnapshotID string `json:"snapshotid"`
-	Dir        string `json:"dir"`
+	Label            string `json:"label"`
+	SnapshotID       string `json:"snapshotid"`
+	Dir              string `json:"dir"`
+	SyncOnCompletion bool   `json:"sync_on_completion"`
 }
 
 type Conditions struct {
@@ -196,6 +197,9 @@ func (funcSpec *FunctionSpec) Equals(funcSpec2 *FunctionSpec) bool {
 			same = false
 		}
 		if funcSpec.Filesystem[i].Dir != funcSpec2.Filesystem[i].Dir {
+			same = false
+		}
+		if funcSpec.Filesystem[i].SyncOnCompletion != funcSpec2.Filesystem[i].SyncOnCompletion {
 			same = false
 		}
 	}
