@@ -29,7 +29,7 @@ func (db *PQDatabase) AddProcess(process *core.Process) error {
 
 	fsArr := make([]string, 0)
 	for _, syncDir := range process.FunctionSpec.Filesystem {
-		fsArr = append(fsArr, syncDir.Label+":"+syncDir.SnapshotID+":"+syncDir.Dir)
+		fsArr = append(fsArr, syncDir.Label+":"+syncDir.SnapshotID+":"+syncDir.Dir+":"+strconv.FormatBool(syncDir.SyncOnCompletion))
 	}
 
 	sqlStatement := `INSERT INTO  ` + db.dbPrefix + `PROCESSES (PROCESS_ID, TARGET_COLONY_ID, TARGET_EXECUTOR_IDS, ASSIGNED_EXECUTOR_ID, STATE, IS_ASSIGNED, EXECUTOR_TYPE, SUBMISSION_TIME, START_TIME, END_TIME, WAIT_DEADLINE, EXEC_DEADLINE, ERRORS, RETRIES, NODENAME, FUNCNAME, ARGS, KWARGS, MAX_WAIT_TIME, MAX_EXEC_TIME, MAX_RETRIES, DEPENDENCIES, PRIORITY, PRIORITYTIME, WAIT_FOR_PARENTS, PARENTS, CHILDREN, PROCESSGRAPH_ID, INPUT, OUTPUT, LABEL, FS) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32)`
@@ -165,13 +165,19 @@ func (db *PQDatabase) parseProcesses(rows *sql.Rows) ([]*core.Process, error) {
 		var fs []*core.SyncDir
 		for _, syncDir := range fsArr {
 			s := strings.Split(syncDir, ":")
-			if len(s) != 3 {
+			if len(s) != 4 {
 				return nil, errors.New("Invalid funspec.fs length")
 			}
 			label := s[0]
 			snapshotID := s[1]
 			dir := s[2]
-			fs = append(fs, &core.SyncDir{Label: label, SnapshotID: snapshotID, Dir: dir})
+			syncOnCompletionStr := s[3]
+			syncOnCompletion, err := strconv.ParseBool(syncOnCompletionStr)
+			if err != nil {
+				return nil, err
+			}
+
+			fs = append(fs, &core.SyncDir{Label: label, SnapshotID: snapshotID, Dir: dir, SyncOnCompletion: syncOnCompletion})
 		}
 
 		process.FunctionSpec.Filesystem = fs

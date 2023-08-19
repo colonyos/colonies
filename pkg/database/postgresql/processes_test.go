@@ -197,7 +197,7 @@ func TestAddProcess(t *testing.T) {
 
 	process = utils.CreateTestProcessWithTargets(colonyID, []string{executor1ID, executor2ID})
 	var fs []*core.SyncDir
-	syncDir1 := &core.SyncDir{Label: "test_label1", SnapshotID: "test_snapshotid1", Dir: "test_dir1"}
+	syncDir1 := &core.SyncDir{Label: "test_label1", SnapshotID: "test_snapshotid1", Dir: "test_dir1", SyncOnCompletion: true}
 	fs = append(fs, syncDir1)
 	process.FunctionSpec.Filesystem = fs
 
@@ -210,6 +210,7 @@ func TestAddProcess(t *testing.T) {
 	assert.Equal(t, processFromDB.FunctionSpec.Filesystem[0].Label, "test_label1")
 	assert.Equal(t, processFromDB.FunctionSpec.Filesystem[0].SnapshotID, "test_snapshotid1")
 	assert.Equal(t, processFromDB.FunctionSpec.Filesystem[0].Dir, "test_dir1")
+	assert.Equal(t, processFromDB.FunctionSpec.Filesystem[0].SyncOnCompletion, true)
 }
 
 func TestSelectCandiate(t *testing.T) {
