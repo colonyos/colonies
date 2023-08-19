@@ -147,7 +147,8 @@ func (fsClient *FSClient) ApplySyncPlan(colonyID string, syncPlan *SyncPlan) err
 func (fsClient *FSClient) CalcSyncPlan(dir string, label string, keepLocal bool) (*SyncPlan, error) {
 	files, err := ioutil.ReadDir(dir)
 	if err != nil {
-		return nil, err
+		log.WithFields(log.Fields{"Dir": dir}).Debug("Directory does not exists")
+		files = nil
 	}
 
 	if fsClient.coloniesClient == nil {
