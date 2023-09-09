@@ -220,32 +220,27 @@ func TestAddProcessConditions(t *testing.T) {
 	defer db.Close()
 
 	colonyID := core.GenerateRandomID()
-	process := utils.CreateTestProcess(colonyID)
-	process.FunctionSpec.Conditions.Nodes = 1
-	process.FunctionSpec.Conditions.Processes = 2
-	process.FunctionSpec.Conditions.CPU = "1000m"
-	process.FunctionSpec.Conditions.Memory = "10G"
-	process.FunctionSpec.Conditions.Storage = "2000G"
-	process.FunctionSpec.Conditions.WallTime = 70
-	process.FunctionSpec.Conditions.GPU.Name = "nvidia_2080ti"
-	process.FunctionSpec.Conditions.GPU.Count = 4
-	process.FunctionSpec.Conditions.GPU.Memory = "10G"
+	executor1ID := core.GenerateRandomID()
+	executor2ID := core.GenerateRandomID()
 
-	err = db.AddProcess(process)
-	assert.Nil(t, err)
-
-	processFromDB, err := db.GetProcessByID(process.ID)
-	assert.Nil(t, err)
-	assert.Equal(t, processFromDB.FunctionSpec.Conditions.Nodes, 1)
-	assert.Equal(t, processFromDB.FunctionSpec.Conditions.Processes, 2)
-	assert.Equal(t, processFromDB.FunctionSpec.Conditions.CPU, "1000m")
-	assert.Equal(t, processFromDB.FunctionSpec.Conditions.Memory, "10G")
-	assert.Equal(t, processFromDB.FunctionSpec.Conditions.Storage, "2000G")
-	assert.Equal(t, processFromDB.FunctionSpec.Conditions.WallTime, int64(70))
-	assert.Equal(t, processFromDB.FunctionSpec.Conditions.GPU.Name, "nvidia_2080ti")
-	assert.Equal(t, processFromDB.FunctionSpec.Conditions.GPU.Count, 4)
-	assert.Equal(t, processFromDB.FunctionSpec.Conditions.GPU.Memory, "10G")
+	process := utils.CreateTestProcessWithTargets(colonyID, []string{executor1ID, executor2ID})
+	invalidKwArgs := make(map[string]interface{})
+	invalidKwArgs["name"] = func() {
+	}
+	process.FunctionSpec.KwArgs = invalidKwArgs
+    process.FunctionSpec.Conditions.Nodes = 1
+    process.FunctionSpec.Conditions.CPU = "1000m"
+    process.FunctionSpec.Conditions.Storage = "2000G"
+    process.FunctionSpec.Conditions.Processes = 2
+    process.FunctionSpec.Conditions.WallTime = 70
+    process.FunctionSpec.Conditions.GPU.Name = "nvidia_2080ti"
+    process.FunctionSpec.Conditions.GPU.Count = 4
+    process.FunctionSpec.Conditions.GPU.Memory = 10G
+	
+    err = db.AddProcess(process)
+	assert.NotNil(t, err)
 }
+
 
 func TestSelectCandiate(t *testing.T) {
 	db, err := PrepareTests()

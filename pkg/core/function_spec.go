@@ -16,6 +16,13 @@ type Conditions struct {
 	ExecutorIDs  []string `json:"executorids"`
 	ExecutorType string   `json:"executortype"`
 	Dependencies []string `json:"dependencies"`
+	Nodes        int      `json:"nodes"`
+	CPU          string   `json:"cpu"`
+	Processes    int      `json:"processes"`
+	Memory       string   `json:"mem"`
+	Storage      string   `json:"storage"`
+	GPU          GPU      `json:"gpu"`
+	WallTime     int64    `json:"walltime"`
 }
 
 type FunctionSpec struct {
@@ -146,6 +153,33 @@ func (funcSpec *FunctionSpec) Equals(funcSpec2 *FunctionSpec) bool {
 			}
 		}
 		if counter != len(funcSpec.Conditions.ExecutorIDs) && counter != len(funcSpec2.Conditions.ExecutorIDs) {
+			same = false
+		}
+		if funcSpec.Conditions.GPU.Name != funcSpec2.Conditions.GPU.Name {
+			same = false
+		}
+		if funcSpec.Conditions.GPU.Count != funcSpec2.Conditions.GPU.Count {
+			same = false
+		}
+		if funcSpec.Conditions.GPU.Memory != funcSpec2.Conditions.GPU.Memory {
+			same = false
+		}
+		if funcSpec.Conditions.CPU != funcSpec2.Conditions.CPU {
+			same = false
+		}
+		if funcSpec.Conditions.Processes != funcSpec2.Conditions.Processes {
+			same = false
+		}
+		if funcSpec.Conditions.Memory != funcSpec2.Conditions.Memory {
+			same = false
+		}
+		if funcSpec.Conditions.Storage != funcSpec2.Conditions.Storage {
+			same = false
+		}
+		if funcSpec.Conditions.Nodes != funcSpec2.Conditions.Nodes {
+			same = false
+		}
+		if funcSpec.Conditions.WallTime != funcSpec2.Conditions.WallTime {
 			same = false
 		}
 	}

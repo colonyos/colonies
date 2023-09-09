@@ -37,6 +37,14 @@ func TestFunctionSpecJSON(t *testing.T) {
 
 	funcSpec.Filesystem = fs
 
+	funcSpec.Conditions.Nodes = 10
+	funcSpec.Conditions.CPU = "1000m"
+	funcSpec.Conditions.Processes = 10
+	funcSpec.Conditions.Memory = "10G"
+	funcSpec.Conditions.Storage = "10G"
+	funcSpec.Conditions.GPU = GPU{Name: "test_name1", Count: 1, Memory: "11G"}
+	funcSpec.Conditions.WallTime = 1000
+
 	jsonString, err := funcSpec.ToJSON()
 	assert.Nil(t, err)
 

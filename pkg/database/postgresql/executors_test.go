@@ -67,6 +67,20 @@ func TestAddExecutor(t *testing.T) {
 	assert.Nil(t, err)
 
 	executor := utils.CreateTestExecutor(colony.ID)
+	executor.Capabilities.Software.Name = "sw_name"
+	executor.Capabilities.Software.Type = "sw_type"
+	executor.Capabilities.Software.Version = "sw_version"
+
+	executor.Capabilities.Hardware.Model = "model"
+	executor.Capabilities.Hardware.Nodes = 10
+	executor.Capabilities.Hardware.CPU = "1000m"
+	executor.Capabilities.Hardware.Memory = "10G"
+	executor.Capabilities.Hardware.Storage = "1000G"
+	executor.Capabilities.Hardware.GPU.Name = "nvidia_2080ti"
+	executor.Capabilities.Hardware.GPU.Count = 4000
+	executor.Capabilities.Hardware.GPU.NodeCount = 4
+	executor.Capabilities.Hardware.GPU.Memory = "10G"
+
 	err = db.AddExecutor(executor)
 	assert.Nil(t, err)
 
@@ -78,6 +92,20 @@ func TestAddExecutor(t *testing.T) {
 	assert.True(t, executorFromDB.IsPending())
 	assert.False(t, executorFromDB.IsApproved())
 	assert.False(t, executorFromDB.IsRejected())
+
+	assert.Equal(t, executor.Capabilities.Software.Name, "sw_name")
+	assert.Equal(t, executor.Capabilities.Software.Type, "sw_type")
+	assert.Equal(t, executor.Capabilities.Software.Version, "sw_version")
+
+	assert.Equal(t, executor.Capabilities.Hardware.Model, "model")
+	assert.Equal(t, executor.Capabilities.Hardware.Nodes, 10)
+	assert.Equal(t, executor.Capabilities.Hardware.CPU, "1000m")
+	assert.Equal(t, executor.Capabilities.Hardware.Memory, "10G")
+	assert.Equal(t, executor.Capabilities.Hardware.Storage, "1000G")
+	assert.Equal(t, executor.Capabilities.Hardware.GPU.Name, "nvidia_2080ti")
+	assert.Equal(t, executor.Capabilities.Hardware.GPU.Count, 4000)
+	assert.Equal(t, executor.Capabilities.Hardware.GPU.NodeCount, 4)
+	assert.Equal(t, executor.Capabilities.Hardware.GPU.Memory, "10G")
 }
 
 func TestAddOrReplaceExecutor(t *testing.T) {

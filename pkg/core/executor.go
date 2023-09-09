@@ -18,8 +18,10 @@ type Location struct {
 }
 
 type GPU struct {
-	Name  string `json:"name"`
-	Count int    `json:"count"`
+	Name      string `json:"name"`
+	Memory    string `json:"mem"`
+	Count     int    `json:"count"`
+	NodeCount int    `json:"nodecount"`
 }
 
 type Software struct {
@@ -30,6 +32,7 @@ type Software struct {
 
 type Hardware struct {
 	Model   string `json:"model"`
+	Nodes   int    `json:"nodes"`
 	CPU     string `json:"cpu"`
 	Memory  string `json:"mem"`
 	Storage string `json:"storage"`
@@ -173,6 +176,10 @@ func (executor *Executor) Equals(executor2 *Executor) bool {
 		same = false
 	}
 
+	if executor.Capabilities.Hardware.Nodes != executor2.Capabilities.Hardware.Nodes {
+		same = false
+	}
+
 	if executor.Capabilities.Hardware.CPU != executor2.Capabilities.Hardware.CPU {
 		same = false
 	}
@@ -189,7 +196,15 @@ func (executor *Executor) Equals(executor2 *Executor) bool {
 		same = false
 	}
 
+	if executor.Capabilities.Hardware.GPU.Memory != executor2.Capabilities.Hardware.GPU.Memory {
+		same = false
+	}
+
 	if executor.Capabilities.Hardware.GPU.Count != executor2.Capabilities.Hardware.GPU.Count {
+		same = false
+	}
+
+	if executor.Capabilities.Hardware.GPU.NodeCount != executor2.Capabilities.Hardware.GPU.NodeCount {
 		same = false
 	}
 

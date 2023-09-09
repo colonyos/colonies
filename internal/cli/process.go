@@ -481,6 +481,15 @@ func printFunctionSpec(funcSpec *core.FunctionSpec) {
 		[]string{"ExecutorIDs", executorIDs},
 		[]string{"ExecutorType", funcSpec.Conditions.ExecutorType},
 		[]string{"Dependencies", dep},
+		[]string{"Nodes", strconv.Itoa(funcSpec.Conditions.Nodes)},
+		[]string{"CPU", funcSpec.Conditions.CPU},
+		[]string{"Memmory", funcSpec.Conditions.Memory},
+		[]string{"Processes", strconv.Itoa(funcSpec.Conditions.Processes)},
+		[]string{"Storage", funcSpec.Conditions.Storage},
+		[]string{"Walltime", strconv.Itoa(int(funcSpec.Conditions.WallTime))},
+		[]string{"GPU", funcSpec.Conditions.GPU.Name},
+		[]string{"GPUs", strconv.Itoa(int(funcSpec.Conditions.GPU.Count))},
+		[]string{"GPUMemory", funcSpec.Conditions.GPU.Memory},
 	}
 	condTable := tablewriter.NewWriter(os.Stdout)
 	for _, v := range condData {
