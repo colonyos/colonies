@@ -11,8 +11,8 @@ import (
 )
 
 func (db *PQDatabase) AddExecutor(executor *core.Executor) error {
-	sqlStatement := `INSERT INTO  ` + db.dbPrefix + `EXECUTORS (EXECUTOR_ID, EXECUTOR_TYPE, NAME, COLONY_ID, STATE, REQUIRE_FUNC_REG, COMMISSIONTIME, LASTHEARDFROM, LONG, LAT, LOCDESC, HWMODEL, HWCPU, HWMEM, HWSTORAGE, HWGPUNAME, HWGPUCOUNT, SWNAME, SWTYPE, SWVERSION) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)`
-	_, err := db.postgresql.Exec(sqlStatement, executor.ID, executor.Type, executor.Name, executor.ColonyID, 0, executor.RequireFuncReg, time.Now(), executor.LastHeardFromTime, executor.Location.Long, executor.Location.Lat, executor.Location.Description, executor.Capabilities.Hardware.Model, executor.Capabilities.Hardware.CPU, executor.Capabilities.Hardware.Memory, executor.Capabilities.Hardware.Storage, executor.Capabilities.Hardware.GPU.Name, executor.Capabilities.Hardware.GPU.Count, executor.Capabilities.Software.Name, executor.Capabilities.Software.Type, executor.Capabilities.Software.Version)
+	sqlStatement := `INSERT INTO  ` + db.dbPrefix + `EXECUTORS (EXECUTOR_ID, EXECUTOR_TYPE, NAME, COLONY_ID, STATE, REQUIRE_FUNC_REG, COMMISSIONTIME, LASTHEARDFROM, LONG, LAT, LOCDESC, HWMODEL, HWNODES, HWCPU, HWMEM, HWSTORAGE, HWGPUNAME, HWGPUCOUNT, HWGPUNODECOUNT, HWGPUMEM, SWNAME, SWTYPE, SWVERSION) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23)`
+	_, err := db.postgresql.Exec(sqlStatement, executor.ID, executor.Type, executor.Name, executor.ColonyID, 0, executor.RequireFuncReg, time.Now(), executor.LastHeardFromTime, executor.Location.Long, executor.Location.Lat, executor.Location.Description, executor.Capabilities.Hardware.Model, executor.Capabilities.Hardware.Nodes, executor.Capabilities.Hardware.CPU, executor.Capabilities.Hardware.Memory, executor.Capabilities.Hardware.Storage, executor.Capabilities.Hardware.GPU.Name, executor.Capabilities.Hardware.GPU.Count, executor.Capabilities.Hardware.GPU.NodeCount, executor.Capabilities.Hardware.GPU.Memory, executor.Capabilities.Software.Name, executor.Capabilities.Software.Type, executor.Capabilities.Software.Version)
 	if err != nil {
 		if strings.HasPrefix(err.Error(), "pq: duplicate key value violates unique constraint") {
 			return errors.New("Executor name must be unique")
@@ -24,9 +24,8 @@ func (db *PQDatabase) AddExecutor(executor *core.Executor) error {
 }
 
 func (db *PQDatabase) AddOrReplaceExecutor(executor *core.Executor) error {
-	sqlStatement := `INSERT INTO ` + db.dbPrefix + `EXECUTORS (EXECUTOR_ID, EXECUTOR_TYPE, NAME, COLONY_ID, STATE, REQUIRE_FUNC_REG, COMMISSIONTIME, LASTHEARDFROM, LONG, LAT, LOCDESC, HWMODEL, HWCPU, HWMEM, HWSTORAGE, HWGPUNAME, HWGPUCOUNT, SWNAME, SWTYPE, SWVERSION) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20) ON CONFLICT (EXECUTOR_ID) DO UPDATE SET EXECUTOR_TYPE=EXCLUDED.EXECUTOR_TYPE, NAME=EXCLUDED.NAME, COLONY_ID=EXCLUDED.COLONY_ID, STATE=EXCLUDED.STATE, REQUIRE_FUNC_REG=EXCLUDED.REQUIRE_FUNC_REG, COMMISSIONTIME=EXCLUDED.COMMISSIONTIME, LASTHEARDFROM=EXCLUDED.LASTHEARDFROM, LONG=EXCLUDED.LONG, LAT=EXCLUDED.LAT, LOCDESC=EXCLUDED.LOCDESC, HWMODEL=EXCLUDED.HWMODEL, HWCPU=EXCLUDED.HWCPU, HWMEM=EXCLUDED.HWMEM, HWSTORAGE=EXCLUDED.HWSTORAGE, HWGPUNAME=EXCLUDED.HWGPUNAME, HWGPUCOUNT=EXCLUDED.HWGPUCOUNT, SWNAME=EXCLUDED.SWNAME, SWTYPE=EXCLUDED.SWTYPE, SWVERSION=EXCLUDED.SWVERSION;`
-	_, err := db.postgresql.Exec(sqlStatement, executor.ID, executor.Type, executor.Name, executor.ColonyID, 0, executor.RequireFuncReg, time.Now(), executor.LastHeardFromTime, executor.Location.Long, executor.Location.Lat, executor.Location.Description, executor.Capabilities.Hardware.
-		Model, executor.Capabilities.Hardware.CPU, executor.Capabilities.Hardware.Memory, executor.Capabilities.Hardware.Storage, executor.Capabilities.Hardware.GPU.Name, executor.Capabilities.Hardware.GPU.Count, executor.Capabilities.Software.Name, executor.Capabilities.Software.Type, executor.Capabilities.Software.Version)
+	sqlStatement := `INSERT INTO ` + db.dbPrefix + `EXECUTORS (EXECUTOR_ID, EXECUTOR_TYPE, NAME, COLONY_ID, STATE, REQUIRE_FUNC_REG, COMMISSIONTIME, LASTHEARDFROM, LONG, LAT, LOCDESC, HWMODEL, HWNODES, HWCPU, HWMEM, HWSTORAGE, HWGPUNAME, HWGPUCOUNT, HWGPUNODECOUNT,HWGPUMEM, SWNAME, SWTYPE, SWVERSION) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23) ON CONFLICT (EXECUTOR_ID) DO UPDATE SET EXECUTOR_TYPE=EXCLUDED.EXECUTOR_TYPE, NAME=EXCLUDED.NAME, COLONY_ID=EXCLUDED.COLONY_ID, STATE=EXCLUDED.STATE, REQUIRE_FUNC_REG=EXCLUDED.REQUIRE_FUNC_REG, COMMISSIONTIME=EXCLUDED.COMMISSIONTIME, LASTHEARDFROM=EXCLUDED.LASTHEARDFROM, LONG=EXCLUDED.LONG, LAT=EXCLUDED.LAT, LOCDESC=EXCLUDED.LOCDESC, HWMODEL=EXCLUDED.HWMODEL, HWNODES=EXCLUDED.HWNODES, HWCPU=EXCLUDED.HWCPU, HWMEM=EXCLUDED.HWMEM, HWSTORAGE=EXCLUDED.HWSTORAGE, HWGPUNAME=EXCLUDED.HWGPUNAME, HWGPUCOUNT=EXCLUDED.HWGPUCOUNT, HWGPUNODECOUNT=EXCLUDED.HWGPUNODECOUNT, HWGPUMEM=EXCLUDED.HWGPUMEM, SWNAME=EXCLUDED.SWNAME, SWTYPE=EXCLUDED.SWTYPE, SWVERSION=EXCLUDED.SWVERSION;`
+	_, err := db.postgresql.Exec(sqlStatement, executor.ID, executor.Type, executor.Name, executor.ColonyID, 0, executor.RequireFuncReg, time.Now(), executor.LastHeardFromTime, executor.Location.Long, executor.Location.Lat, executor.Location.Description, executor.Capabilities.Hardware.Model, executor.Capabilities.Hardware.Nodes, executor.Capabilities.Hardware.CPU, executor.Capabilities.Hardware.Memory, executor.Capabilities.Hardware.Storage, executor.Capabilities.Hardware.GPU.Name, executor.Capabilities.Hardware.GPU.Count, executor.Capabilities.Hardware.GPU.NodeCount, executor.Capabilities.Hardware.GPU.Memory, executor.Capabilities.Software.Name, executor.Capabilities.Software.Type, executor.Capabilities.Software.Version)
 	if err != nil {
 		return err
 	}
@@ -50,23 +49,26 @@ func (db *PQDatabase) parseExecutors(rows *sql.Rows) ([]*core.Executor, error) {
 		var lat float64
 		var desc string
 		var hwModel string
+		var hwNodes int
 		var hwCPU string
 		var hwMem string
 		var hwStorage string
 		var hwGPUName string
 		var hwGPUCount int
+		var hwGPUNodeCount int
+		var hwGPUMem string
 		var swName string
 		var swType string
 		var swVersion string
-		if err := rows.Scan(&id, &executorType, &name, &colonyID, &state, &requireRunReg, &commissionTime, &lastHeardFromTime, &long, &lat, &desc, &hwModel, &hwCPU, &hwMem, &hwStorage, &hwGPUName, &hwGPUCount, &swName, &swType, &swVersion); err != nil {
+		if err := rows.Scan(&id, &executorType, &name, &colonyID, &state, &requireRunReg, &commissionTime, &lastHeardFromTime, &long, &lat, &desc, &hwModel, &hwNodes, &hwCPU, &hwMem, &hwStorage, &hwGPUName, &hwGPUCount, &hwGPUNodeCount, &hwGPUMem, &swName, &swType, &swVersion); err != nil {
 			return nil, err
 		}
 
 		executor := core.CreateExecutorFromDB(id, executorType, name, colonyID, state, requireRunReg, commissionTime, lastHeardFromTime)
 		location := core.Location{Long: long, Lat: lat, Description: desc}
 		executor.Location = location
-		gpu := core.GPU{Name: hwGPUName, Count: hwGPUCount}
-		hw := core.Hardware{Model: hwModel, CPU: hwCPU, Memory: hwMem, Storage: hwStorage, GPU: gpu}
+		gpu := core.GPU{Name: hwGPUName, Count: hwGPUCount, Memory: hwGPUMem, NodeCount: hwGPUNodeCount}
+		hw := core.Hardware{Model: hwModel, CPU: hwCPU, Memory: hwMem, Storage: hwStorage, GPU: gpu, Nodes: hwNodes}
 		sw := core.Software{Name: swName, Type: swType, Version: swVersion}
 		capabilities := core.Capabilities{Hardware: hw, Software: sw}
 		executor.Capabilities = capabilities

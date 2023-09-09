@@ -37,8 +37,8 @@ func TestCreateExecutor2(t *testing.T) {
 
 	executor1 := CreateExecutor(id, executorType, name, colonyID, commissionTime, lastHeardFromTime)
 	executor1Location := Location{Long: 1.0, Lat: 2.0, Description: "test_desc"}
-	executor1GPU := GPU{Name: "test_name1", Count: 1}
-	executor1HW := Hardware{Model: "test_model", CPU: "test_cpu", Memory: "test_mem", Storage: "test_storage", GPU: executor1GPU}
+	executor1GPU := GPU{Name: "test_name1", Count: 1, Memory: "11G", NodeCount: 1}
+	executor1HW := Hardware{Model: "test_model", CPU: "test_cpu", Memory: "test_mem", Storage: "test_storage", GPU: executor1GPU, Nodes: 1}
 	executor1SW := Software{Name: "test_name1", Type: "test_type1", Version: "test_version1"}
 	executor1CAP := Capabilities{Hardware: executor1HW, Software: executor1SW}
 	executor1.Location = executor1Location
@@ -46,8 +46,8 @@ func TestCreateExecutor2(t *testing.T) {
 
 	executor2 := CreateExecutor(id, executorType, name, colonyID, commissionTime, lastHeardFromTime)
 	executor2Location := Location{Long: 1.0, Lat: 2.0, Description: "test_desc"}
-	executor2GPU := GPU{Name: "test_name1", Count: 1}
-	executor2HW := Hardware{Model: "test_model", CPU: "test_cpu", Memory: "test_mem", Storage: "test_storage", GPU: executor2GPU}
+	executor2GPU := GPU{Name: "test_name1", Count: 1, Memory: "11G", NodeCount: 1}
+	executor2HW := Hardware{Model: "test_model", CPU: "test_cpu", Memory: "test_mem", Storage: "test_storage", GPU: executor2GPU, Nodes: 1}
 	executor2SW := Software{Name: "test_name1", Type: "test_type1", Version: "test_version1"}
 	executor2CAP := Capabilities{Hardware: executor2HW, Software: executor2SW}
 	executor2.Location = executor2Location
