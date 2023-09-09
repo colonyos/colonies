@@ -269,10 +269,13 @@ func printExecutor(client *client.ColoniesClient, executor *core.Executor) {
 	hwData := [][]string{
 		[]string{"Model", executor.Capabilities.Hardware.Model},
 		[]string{"CPU", executor.Capabilities.Hardware.CPU},
+		[]string{"Nodes", strconv.Itoa(executor.Capabilities.Hardware.Nodes)},
 		[]string{"Memory", executor.Capabilities.Hardware.Memory},
 		[]string{"Storage", executor.Capabilities.Hardware.Storage},
 		[]string{"GPU", executor.Capabilities.Hardware.GPU.Name},
+		[]string{"GPUMem", executor.Capabilities.Hardware.GPU.Memory},
 		[]string{"GPUs", strconv.Itoa(executor.Capabilities.Hardware.GPU.Count)},
+		[]string{"GPUs/Node", strconv.Itoa(executor.Capabilities.Hardware.GPU.NodeCount)},
 	}
 
 	hwTable := tablewriter.NewWriter(os.Stdout)
