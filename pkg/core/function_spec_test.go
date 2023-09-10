@@ -40,6 +40,7 @@ func TestFunctionSpecJSON(t *testing.T) {
 	funcSpec.Conditions.Nodes = 10
 	funcSpec.Conditions.CPU = "1000m"
 	funcSpec.Conditions.Processes = 10
+	funcSpec.Conditions.ProcessesPerNode = 1
 	funcSpec.Conditions.Memory = "10G"
 	funcSpec.Conditions.Storage = "10G"
 	funcSpec.Conditions.GPU = GPU{Name: "test_name1", Count: 1, Memory: "11G"}

@@ -223,6 +223,7 @@ func TestAddProcessConditions(t *testing.T) {
 	process := utils.CreateTestProcess(colonyID)
 	process.FunctionSpec.Conditions.Nodes = 1
 	process.FunctionSpec.Conditions.Processes = 2
+	process.FunctionSpec.Conditions.ProcessesPerNode = 1
 	process.FunctionSpec.Conditions.CPU = "1000m"
 	process.FunctionSpec.Conditions.Memory = "10G"
 	process.FunctionSpec.Conditions.Storage = "2000G"
@@ -238,6 +239,7 @@ func TestAddProcessConditions(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, processFromDB.FunctionSpec.Conditions.Nodes, 1)
 	assert.Equal(t, processFromDB.FunctionSpec.Conditions.Processes, 2)
+	assert.Equal(t, processFromDB.FunctionSpec.Conditions.ProcessesPerNode, 1)
 	assert.Equal(t, processFromDB.FunctionSpec.Conditions.CPU, "1000m")
 	assert.Equal(t, processFromDB.FunctionSpec.Conditions.Memory, "10G")
 	assert.Equal(t, processFromDB.FunctionSpec.Conditions.Storage, "2000G")
