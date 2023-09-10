@@ -485,6 +485,7 @@ func printFunctionSpec(funcSpec *core.FunctionSpec) {
 		[]string{"CPU", funcSpec.Conditions.CPU},
 		[]string{"Memmory", funcSpec.Conditions.Memory},
 		[]string{"Processes", strconv.Itoa(funcSpec.Conditions.Processes)},
+		[]string{"ProcessesPerNode", strconv.Itoa(funcSpec.Conditions.ProcessesPerNode)},
 		[]string{"Storage", funcSpec.Conditions.Storage},
 		[]string{"Walltime", strconv.Itoa(int(funcSpec.Conditions.WallTime))},
 		[]string{"GPU", funcSpec.Conditions.GPU.Name},
