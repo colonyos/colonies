@@ -12,17 +12,18 @@ type SyncDir struct {
 }
 
 type Conditions struct {
-	ColonyID     string   `json:"colonyid"`
-	ExecutorIDs  []string `json:"executorids"`
-	ExecutorType string   `json:"executortype"`
-	Dependencies []string `json:"dependencies"`
-	Nodes        int      `json:"nodes"`
-	CPU          string   `json:"cpu"`
-	Processes    int      `json:"processes"`
-	Memory       string   `json:"mem"`
-	Storage      string   `json:"storage"`
-	GPU          GPU      `json:"gpu"`
-	WallTime     int64    `json:"walltime"`
+	ColonyID         string   `json:"colonyid"`
+	ExecutorIDs      []string `json:"executorids"`
+	ExecutorType     string   `json:"executortype"`
+	Dependencies     []string `json:"dependencies"`
+	Nodes            int      `json:"nodes"`
+	CPU              string   `json:"cpu"`
+	Processes        int      `json:"processes"`
+	ProcessesPerNode int      `json:"processes_per_node"`
+	Memory           string   `json:"mem"`
+	Storage          string   `json:"storage"`
+	GPU              GPU      `json:"gpu"`
+	WallTime         int64    `json:"walltime"`
 }
 
 type FunctionSpec struct {
@@ -168,6 +169,9 @@ func (funcSpec *FunctionSpec) Equals(funcSpec2 *FunctionSpec) bool {
 			same = false
 		}
 		if funcSpec.Conditions.Processes != funcSpec2.Conditions.Processes {
+			same = false
+		}
+		if funcSpec.Conditions.ProcessesPerNode != funcSpec2.Conditions.ProcessesPerNode {
 			same = false
 		}
 		if funcSpec.Conditions.Memory != funcSpec2.Conditions.Memory {
