@@ -1086,6 +1086,10 @@ func (db *dbMock) GetFileLabels(colonyID string) ([]*core.Label, error) {
 	return nil, nil
 }
 
+func (db *dbMock) GetFileLabelsByName(colonyID string, name string) ([]*core.Label, error) {
+	return nil, nil
+}
+
 func (db *dbMock) CountFiles(colonyID string) (int, error) {
 	return 0, nil
 }

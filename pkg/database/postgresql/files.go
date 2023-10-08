@@ -238,6 +238,32 @@ func (db *PQDatabase) GetFileLabels(colonyID string) ([]*core.Label, error) {
 	return labels, nil
 }
 
+func (db *PQDatabase) GetFileLabelsByName(colonyID string, name string) ([]*core.Label, error) {
+	sqlStatement := `SELECT DISTINCT (LABEL) FROM ` + db.dbPrefix + `FILES WHERE COLONY_ID=$1 AND LABEL LIKE $2`
+	rows, err := db.postgresql.Query(sqlStatement, colonyID, name+"%")
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	labelsStr, err := db.parseLabel(rows)
+	if err != nil {
+		return nil, err
+	}
+
+	var labels []*core.Label
+	for _, labelStr := range labelsStr {
+		fileCount, err := db.CountFilesWithLabel(colonyID, labelStr)
+		if err != nil {
+			return nil, err
+		}
+		labels = append(labels, &core.Label{Name: labelStr, Files: fileCount})
+	}
+
+	return labels, nil
+}
+
 func (db *PQDatabase) CountFiles(colonyID string) (int, error) {
 	sqlStatement := `SELECT COUNT(*) FROM ` + db.dbPrefix + `FILES WHERE COLONY_ID=$1`
 	rows, err := db.postgresql.Query(sqlStatement, colonyID)

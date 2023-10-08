@@ -1286,7 +1286,27 @@ func (client *ColoniesClient) GetFilenames(colonyID string, label string, prvKey
 }
 
 func (client *ColoniesClient) GetFileLabels(colonyID string, prvKey string) ([]*core.Label, error) {
-	msg := rpc.CreateGetFileLabelsMsg(colonyID)
+	msg := rpc.CreateGetAllFileLabelsMsg(colonyID)
+	jsonString, err := msg.ToJSON()
+	if err != nil {
+		return nil, err
+	}
+
+	respBodyString, err := client.sendMessage(rpc.GetFileLabelsPayloadType, jsonString, prvKey, false, context.TODO())
+	if err != nil {
+		return nil, err
+	}
+
+	labels, err := core.ConvertJSONToLabelArray(respBodyString)
+	if err != nil {
+		return nil, err
+	}
+
+	return labels, err
+}
+
+func (client *ColoniesClient) GetFileLabelsByName(colonyID string, name string, prvKey string) ([]*core.Label, error) {
+	msg := rpc.CreateGetFileLabelsMsg(colonyID, name)
 	jsonString, err := msg.ToJSON()
 	if err != nil {
 		return nil, err
