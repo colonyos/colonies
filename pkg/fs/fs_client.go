@@ -391,7 +391,7 @@ func (fsClient *FSClient) DownloadSnapshot(snapshotID string, downloadDir string
 	for _, fileID := range snapshot.FileIDs {
 		file, err := fsClient.coloniesClient.GetFileByID(fsClient.colonyID, fileID, fsClient.executorPrvKey)
 		if len(file) != 1 {
-			return errors.New("Failed to download file")
+			return errors.New("Failed to download file, no revision found")
 		}
 		downloadFile := false
 		// Check if we already have the file
@@ -404,7 +404,18 @@ func (fsClient *FSClient) DownloadSnapshot(snapshotID string, downloadDir string
 			}
 		}
 		if downloadFile {
-			err = fsClient.s3Client.Download(file[0].Name, file[0].Reference.S3Object.Object, downloadDir)
+			dir := strings.TrimPrefix(file[0].Label, snapshot.Label)
+			if len(dir) == 0 {
+				dir = "/"
+			}
+			dir = downloadDir + dir
+			if _, err := os.Stat(dir); os.IsNotExist(err) {
+				err = os.MkdirAll(dir, 0755)
+				if err != nil {
+					return err
+				}
+			}
+			err = fsClient.s3Client.Download(file[0].Name, file[0].Reference.S3Object.Object, dir)
 			if err != nil {
 				return err
 			}
