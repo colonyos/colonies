@@ -7,6 +7,8 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"path/filepath"
+	"strings"
 
 	"github.com/colonyos/colonies/pkg/client"
 	"github.com/colonyos/colonies/pkg/core"
@@ -107,6 +109,13 @@ func (fsClient *FSClient) uploadFile(syncPlan *SyncPlan, fileInfo *FileInfo) err
 }
 
 func (fsClient *FSClient) ApplySyncPlan(colonyID string, syncPlan *SyncPlan) error {
+	if _, err := os.Stat(syncPlan.Dir); os.IsNotExist(err) {
+		err = os.MkdirAll(syncPlan.Dir, 0755)
+		if err != nil {
+			return err
+		}
+	}
+
 	// 1. Upload all remote missing files
 	for _, fileInfo := range syncPlan.RemoteMissing {
 		err := fsClient.uploadFile(syncPlan, fileInfo)
@@ -142,6 +151,50 @@ func (fsClient *FSClient) ApplySyncPlan(colonyID string, syncPlan *SyncPlan) err
 	}
 
 	return nil
+}
+
+func (fsClient *FSClient) CalcSyncPlans(dir string, label string, keepLocal bool) ([]*SyncPlan, error) {
+	syncPlans := make(map[string]*SyncPlan)
+	err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		if info.IsDir() {
+			l := label + strings.TrimPrefix(path, dir)
+			syncPlan, err := fsClient.CalcSyncPlan(path, l, keepLocal)
+			if err != nil {
+				return err
+			}
+			syncPlans[l] = syncPlan
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	allLabels, err := fsClient.coloniesClient.GetFileLabelsByName(fsClient.colonyID, label, fsClient.executorPrvKey)
+	if err != nil {
+		return nil, err
+	}
+	for _, l := range allLabels {
+		if _, ok := syncPlans[l.Name]; !ok {
+			subdir := strings.TrimPrefix(l.Name, label)
+			syncPlan, err := fsClient.CalcSyncPlan(dir+subdir, l.Name, keepLocal)
+			if err != nil {
+				return nil, err
+			}
+			syncPlans[l.Name] = syncPlan
+		}
+	}
+
+	var a []*SyncPlan
+	for _, v := range syncPlans {
+		a = append(a, v)
+	}
+
+	return a, nil
 }
 
 func (fsClient *FSClient) CalcSyncPlan(dir string, label string, keepLocal bool) (*SyncPlan, error) {

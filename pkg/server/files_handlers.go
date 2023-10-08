@@ -181,7 +181,7 @@ func (server *ColoniesServer) handleGetFilesHTTPRequest(c *gin.Context, recovere
 }
 
 func (server *ColoniesServer) handleGetFileLabelsHTTPRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
-	msg, err := rpc.CreateGetFilesMsgFromJSON(jsonString)
+	msg, err := rpc.CreateGetFileLabelsMsgFromJSON(jsonString)
 	if err != nil {
 		if server.handleHTTPError(c, errors.New("Failed to get files, invalid JSON"), http.StatusBadRequest) {
 			return
@@ -199,10 +199,20 @@ func (server *ColoniesServer) handleGetFileLabelsHTTPRequest(c *gin.Context, rec
 		return
 	}
 
-	labels, err := server.db.GetFileLabels(msg.ColonyID)
-	if server.handleHTTPError(c, err, http.StatusBadRequest) {
-		log.Error(err)
-		return
+	var labels []*core.Label
+	if msg.Name == "" {
+		labels, err = server.db.GetFileLabels(msg.ColonyID)
+		if server.handleHTTPError(c, err, http.StatusBadRequest) {
+			log.Error(err)
+			return
+		}
+	} else {
+		labels, err = server.db.GetFileLabelsByName(msg.ColonyID, msg.Name)
+		if server.handleHTTPError(c, err, http.StatusBadRequest) {
+			log.Error(err)
+			return
+		}
+
 	}
 
 	jsonStr, err := core.ConvertLabelArrayToJSON(labels)
