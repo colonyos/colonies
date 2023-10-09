@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/colonyos/colonies/pkg/client"
@@ -94,57 +95,67 @@ var snapshotCmd = &cobra.Command{
 	Long:  "Manage file snapshots",
 }
 
-func printSyncPlan(syncPlan *fs.SyncPlan) {
-	if len(syncPlan.RemoteMissing) > 0 {
-		fmt.Println("The files will be uploaded:")
-		var uploaded [][]string
-		for _, file := range syncPlan.RemoteMissing {
-			uploaded = append(uploaded, []string{file.Name, strconv.FormatInt(file.Size/1024, 10) + " KiB", Label})
+func printSyncPlans(syncPlans []*fs.SyncPlan) {
+	for i, syncPlan := range syncPlans {
+		if i != 0 {
+			fmt.Println()
 		}
-		table := tablewriter.NewWriter(os.Stdout)
-		table.SetHeader([]string{"File", "Size", "Label"})
-		for _, v := range uploaded {
-			table.Append(v)
+		fmt.Println(syncPlan.Label + ":")
+		for i := 0; i < len(syncPlan.Label); i++ {
+			fmt.Print("=")
 		}
-		table.SetAlignment(tablewriter.ALIGN_LEFT)
-		table.Render()
-	} else {
-		fmt.Println("No files will be uploaded")
-	}
-
-	if len(syncPlan.LocalMissing) > 0 {
-		fmt.Println("\nThese files will be downloaded to directory <" + SyncDir + ">:")
-		var downloaded [][]string
-		for _, file := range syncPlan.LocalMissing {
-			downloaded = append(downloaded, []string{file.Name, strconv.FormatInt(file.Size/1024, 10) + " KiB", Label})
-		}
-		table := tablewriter.NewWriter(os.Stdout)
-		table.SetHeader([]string{"File", "Size", "Label"})
-		for _, v := range downloaded {
-			table.Append(v)
-		}
-		table.SetAlignment(tablewriter.ALIGN_LEFT)
-		table.Render()
-	} else {
-		fmt.Println("No files will be downloaded")
-	}
-	if len(syncPlan.Conflicts) > 0 {
-		if syncPlan.KeepLocal {
-			fmt.Println("These files will be replaced at the server:")
+		fmt.Println("=")
+		if len(syncPlan.RemoteMissing) > 0 {
+			fmt.Println("These files will be uploaded:")
+			var uploaded [][]string
+			for _, file := range syncPlan.RemoteMissing {
+				uploaded = append(uploaded, []string{file.Name, strconv.FormatInt(file.Size/1024, 10) + " KiB", Label})
+			}
+			table := tablewriter.NewWriter(os.Stdout)
+			table.SetHeader([]string{"File", "Size", "Label"})
+			for _, v := range uploaded {
+				table.Append(v)
+			}
+			table.SetAlignment(tablewriter.ALIGN_LEFT)
+			table.Render()
 		} else {
-			fmt.Println("These files will be replaced at directory <" + SyncDir + ">:")
+			fmt.Println("No files will be uploaded")
 		}
-		var conflicts [][]string
-		for _, file := range syncPlan.Conflicts {
-			conflicts = append(conflicts, []string{file.Name, strconv.FormatInt(file.Size/1024, 10) + " KiB", Label})
+
+		if len(syncPlan.LocalMissing) > 0 {
+			fmt.Println("\nThese files will be downloaded to directory: " + SyncDir)
+			var downloaded [][]string
+			for _, file := range syncPlan.LocalMissing {
+				downloaded = append(downloaded, []string{file.Name, strconv.FormatInt(file.Size/1024, 10) + " KiB", Label})
+			}
+			table := tablewriter.NewWriter(os.Stdout)
+			table.SetHeader([]string{"File", "Size", "Label"})
+			for _, v := range downloaded {
+				table.Append(v)
+			}
+			table.SetAlignment(tablewriter.ALIGN_LEFT)
+			table.Render()
+		} else {
+			fmt.Println("No files will be downloaded")
 		}
-		table := tablewriter.NewWriter(os.Stdout)
-		table.SetHeader([]string{"File", "Size", "Label"})
-		for _, v := range conflicts {
-			table.Append(v)
+		if len(syncPlan.Conflicts) > 0 {
+			if syncPlan.KeepLocal {
+				fmt.Println("These files will be replaced at the server:")
+			} else {
+				fmt.Println("These files will be replaced at directory:")
+			}
+			var conflicts [][]string
+			for _, file := range syncPlan.Conflicts {
+				conflicts = append(conflicts, []string{file.Name, strconv.FormatInt(file.Size/1024, 10) + " KiB", Label})
+			}
+			table := tablewriter.NewWriter(os.Stdout)
+			table.SetHeader([]string{"File", "Size", "Label"})
+			for _, v := range conflicts {
+				table.Append(v)
+			}
+			table.SetAlignment(tablewriter.ALIGN_LEFT)
+			table.Render()
 		}
-		table.SetAlignment(tablewriter.ALIGN_LEFT)
-		table.Render()
 	}
 }
 
@@ -177,6 +188,12 @@ var syncCmd = &cobra.Command{
 			CheckError(err)
 		}
 
+		if !strings.HasSuffix(SyncDir, "/") {
+			SyncDir += "/"
+		}
+		err = os.MkdirAll(SyncDir, 0755)
+		CheckError(err)
+
 		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Debug("Starting a Colonies client")
 		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
 
@@ -184,36 +201,46 @@ var syncCmd = &cobra.Command{
 		fsClient, err := fs.CreateFSClient(client, ColonyID, ExecutorPrvKey)
 		CheckError(err)
 
-		syncPlan, err := fsClient.CalcSyncPlan(SyncDir, Label, KeepLocal)
+		if !strings.HasSuffix(Label, "/") {
+			Label += "/"
+		}
+		if !strings.HasPrefix(Label, "/") {
+			Label = "/" + Label
+		}
+
+		syncPlans, err := fsClient.CalcSyncPlans(SyncDir, Label, KeepLocal)
 		CheckError(err)
 
-		if len(syncPlan.LocalMissing) == 0 && len(syncPlan.RemoteMissing) == 0 && len(syncPlan.Conflicts) == 0 {
+		counter := 0
+		for _, syncPlan := range syncPlans {
+			if len(syncPlan.LocalMissing) == 0 && len(syncPlan.RemoteMissing) == 0 && len(syncPlan.Conflicts) == 0 {
+				counter++
+			}
+		}
+
+		if counter == len(syncPlans) {
 			log.WithFields(log.Fields{"Label": Label, "SyncDir": SyncDir}).Info("Synchronizing, nothing to do, already synchronized")
 			os.Exit(0)
 		}
 
 		if Dry {
-			printSyncPlan(syncPlan)
+			printSyncPlans(syncPlans)
 		} else {
 			if Yes {
-				err = os.MkdirAll(SyncDir, 0755)
-				if err == nil {
+				for _, syncPlan := range syncPlans {
+					err = fsClient.ApplySyncPlan(ColonyID, syncPlan)
 					CheckError(err)
 				}
-				err = fsClient.ApplySyncPlan(ColonyID, syncPlan)
-				CheckError(err)
 			} else {
-				printSyncPlan(syncPlan)
+				printSyncPlans(syncPlans)
 				fmt.Print("\nAre you sure you want to continue? (yes,no): ")
 				reader := bufio.NewReader(os.Stdin)
 				reply, _ := reader.ReadString('\n')
 				if reply == "yes\n" || reply == "y\n" {
-					err = os.MkdirAll(SyncDir, 0755)
-					if err == nil {
+					for _, syncPlan := range syncPlans {
+						err = fsClient.ApplySyncPlan(ColonyID, syncPlan)
 						CheckError(err)
 					}
-					err = fsClient.ApplySyncPlan(ColonyID, syncPlan)
-					CheckError(err)
 				}
 			}
 		}
@@ -320,7 +347,7 @@ var removeLabelCmd = &cobra.Command{
 			CheckError(err)
 			log.WithFields(log.Fields{"Label": Label}).Debug("Label deleted")
 		} else {
-			fmt.Print("All files with label <" + Label + "> will be removed. Local files are not deleted.\n\nAre you sure you want to continue?  (yes,no): ")
+			fmt.Print("All files with label <" + Label + "/*> will be removed. Local files are not deleted.\n\nAre you sure you want to continue?  (yes,no): ")
 			reader := bufio.NewReader(os.Stdin)
 			reply, _ := reader.ReadString('\n')
 			if reply == "yes\n" || reply == "y\n" {
@@ -681,6 +708,13 @@ var createSnapshotCmd = &cobra.Command{
 		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Debug("Starting a Colonies client")
 		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
 
+		if !strings.HasSuffix(Label, "/") {
+			Label += "/"
+		}
+		if !strings.HasPrefix(Label, "/") {
+			Label = "/" + Label
+		}
+
 		snapshot, err := client.CreateSnapshot(ColonyID, Label, SnapshotName, ExecutorPrvKey)
 		CheckError(err)
 
@@ -729,6 +763,9 @@ var downloadSnapshotCmd = &cobra.Command{
 		err = os.MkdirAll(DownloadDir, 0755)
 		if err == nil {
 			CheckError(err)
+		}
+		if !strings.HasSuffix(DownloadDir, "/") {
+			DownloadDir += "/"
 		}
 
 		if SnapshotID != "" {
