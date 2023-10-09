@@ -7,6 +7,8 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"path/filepath"
+	"strings"
 
 	"github.com/colonyos/colonies/pkg/client"
 	"github.com/colonyos/colonies/pkg/core"
@@ -107,6 +109,13 @@ func (fsClient *FSClient) uploadFile(syncPlan *SyncPlan, fileInfo *FileInfo) err
 }
 
 func (fsClient *FSClient) ApplySyncPlan(colonyID string, syncPlan *SyncPlan) error {
+	if _, err := os.Stat(syncPlan.Dir); os.IsNotExist(err) {
+		err = os.MkdirAll(syncPlan.Dir, 0755)
+		if err != nil {
+			return err
+		}
+	}
+
 	// 1. Upload all remote missing files
 	for _, fileInfo := range syncPlan.RemoteMissing {
 		err := fsClient.uploadFile(syncPlan, fileInfo)
@@ -142,6 +151,50 @@ func (fsClient *FSClient) ApplySyncPlan(colonyID string, syncPlan *SyncPlan) err
 	}
 
 	return nil
+}
+
+func (fsClient *FSClient) CalcSyncPlans(dir string, label string, keepLocal bool) ([]*SyncPlan, error) {
+	syncPlans := make(map[string]*SyncPlan)
+	err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		if info.IsDir() {
+			l := label + strings.TrimPrefix(path, dir)
+			syncPlan, err := fsClient.CalcSyncPlan(path, l, keepLocal)
+			if err != nil {
+				return err
+			}
+			syncPlans[l] = syncPlan
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	allLabels, err := fsClient.coloniesClient.GetFileLabelsByName(fsClient.colonyID, label, fsClient.executorPrvKey)
+	if err != nil {
+		return nil, err
+	}
+	for _, l := range allLabels {
+		if _, ok := syncPlans[l.Name]; !ok {
+			subdir := strings.TrimPrefix(l.Name, label)
+			syncPlan, err := fsClient.CalcSyncPlan(dir+subdir, l.Name, keepLocal)
+			if err != nil {
+				return nil, err
+			}
+			syncPlans[l.Name] = syncPlan
+		}
+	}
+
+	var a []*SyncPlan
+	for _, v := range syncPlans {
+		a = append(a, v)
+	}
+
+	return a, nil
 }
 
 func (fsClient *FSClient) CalcSyncPlan(dir string, label string, keepLocal bool) (*SyncPlan, error) {
@@ -303,26 +356,33 @@ func (fsClient *FSClient) RemoveFileByName(colonyID string, label string, name s
 }
 
 func (fsClient *FSClient) RemoveAllFilesWithLabel(label string) error {
-	filenames, err := fsClient.coloniesClient.GetFilenames(fsClient.colonyID, label, fsClient.executorPrvKey)
+	allLabels, err := fsClient.coloniesClient.GetFileLabelsByName(fsClient.colonyID, label, fsClient.executorPrvKey)
 	if err != nil {
 		return err
 	}
 
-	for _, filename := range filenames {
-		file, err := fsClient.coloniesClient.GetFileByName(fsClient.colonyID, label, filename, fsClient.executorPrvKey)
+	for _, l := range allLabels {
+		filenames, err := fsClient.coloniesClient.GetFilenames(fsClient.colonyID, l.Name, fsClient.executorPrvKey)
 		if err != nil {
 			return err
 		}
-		for _, f := range file {
-			log.WithFields(log.Fields{"Filename": f.Reference.S3Object.Object, "BucketName": fsClient.s3Client.BucketName}).Debug("Removing file from S3")
-			err = fsClient.s3Client.Remove(f.Reference.S3Object.Object)
+
+		for _, filename := range filenames {
+			file, err := fsClient.coloniesClient.GetFileByName(fsClient.colonyID, l.Name, filename, fsClient.executorPrvKey)
 			if err != nil {
 				return err
 			}
-			log.WithFields(log.Fields{"ColonyID": fsClient.colonyID, "FileID": f.ID}).Debug("Remove file from Colonies FS")
-			err = fsClient.coloniesClient.RemoveFileByID(fsClient.colonyID, f.ID, fsClient.executorPrvKey)
-			if err != nil {
-				return err
+			for _, f := range file {
+				log.WithFields(log.Fields{"Filename": f.Reference.S3Object.Object, "BucketName": fsClient.s3Client.BucketName}).Debug("Removing file from S3")
+				err = fsClient.s3Client.Remove(f.Reference.S3Object.Object)
+				if err != nil {
+					return err
+				}
+				log.WithFields(log.Fields{"ColonyID": fsClient.colonyID, "FileID": f.ID}).Debug("Remove file from Colonies FS")
+				err = fsClient.coloniesClient.RemoveFileByID(fsClient.colonyID, f.ID, fsClient.executorPrvKey)
+				if err != nil {
+					return err
+				}
 			}
 		}
 	}
@@ -338,7 +398,7 @@ func (fsClient *FSClient) DownloadSnapshot(snapshotID string, downloadDir string
 	for _, fileID := range snapshot.FileIDs {
 		file, err := fsClient.coloniesClient.GetFileByID(fsClient.colonyID, fileID, fsClient.executorPrvKey)
 		if len(file) != 1 {
-			return errors.New("Failed to download file")
+			return errors.New("Failed to download file, no revision found")
 		}
 		downloadFile := false
 		// Check if we already have the file
@@ -351,7 +411,18 @@ func (fsClient *FSClient) DownloadSnapshot(snapshotID string, downloadDir string
 			}
 		}
 		if downloadFile {
-			err = fsClient.s3Client.Download(file[0].Name, file[0].Reference.S3Object.Object, downloadDir)
+			dir := strings.TrimPrefix(file[0].Label, snapshot.Label)
+			if len(dir) == 0 {
+				dir = "/"
+			}
+			dir = downloadDir + dir
+			if _, err := os.Stat(dir); os.IsNotExist(err) {
+				err = os.MkdirAll(dir, 0755)
+				if err != nil {
+					return err
+				}
+			}
+			err = fsClient.s3Client.Download(file[0].Name, file[0].Reference.S3Object.Object, dir)
 			if err != nil {
 				return err
 			}
