@@ -356,26 +356,33 @@ func (fsClient *FSClient) RemoveFileByName(colonyID string, label string, name s
 }
 
 func (fsClient *FSClient) RemoveAllFilesWithLabel(label string) error {
-	filenames, err := fsClient.coloniesClient.GetFilenames(fsClient.colonyID, label, fsClient.executorPrvKey)
+	allLabels, err := fsClient.coloniesClient.GetFileLabelsByName(fsClient.colonyID, label, fsClient.executorPrvKey)
 	if err != nil {
 		return err
 	}
 
-	for _, filename := range filenames {
-		file, err := fsClient.coloniesClient.GetFileByName(fsClient.colonyID, label, filename, fsClient.executorPrvKey)
+	for _, l := range allLabels {
+		filenames, err := fsClient.coloniesClient.GetFilenames(fsClient.colonyID, l.Name, fsClient.executorPrvKey)
 		if err != nil {
 			return err
 		}
-		for _, f := range file {
-			log.WithFields(log.Fields{"Filename": f.Reference.S3Object.Object, "BucketName": fsClient.s3Client.BucketName}).Debug("Removing file from S3")
-			err = fsClient.s3Client.Remove(f.Reference.S3Object.Object)
+
+		for _, filename := range filenames {
+			file, err := fsClient.coloniesClient.GetFileByName(fsClient.colonyID, l.Name, filename, fsClient.executorPrvKey)
 			if err != nil {
 				return err
 			}
-			log.WithFields(log.Fields{"ColonyID": fsClient.colonyID, "FileID": f.ID}).Debug("Remove file from Colonies FS")
-			err = fsClient.coloniesClient.RemoveFileByID(fsClient.colonyID, f.ID, fsClient.executorPrvKey)
-			if err != nil {
-				return err
+			for _, f := range file {
+				log.WithFields(log.Fields{"Filename": f.Reference.S3Object.Object, "BucketName": fsClient.s3Client.BucketName}).Debug("Removing file from S3")
+				err = fsClient.s3Client.Remove(f.Reference.S3Object.Object)
+				if err != nil {
+					return err
+				}
+				log.WithFields(log.Fields{"ColonyID": fsClient.colonyID, "FileID": f.ID}).Debug("Remove file from Colonies FS")
+				err = fsClient.coloniesClient.RemoveFileByID(fsClient.colonyID, f.ID, fsClient.executorPrvKey)
+				if err != nil {
+					return err
+				}
 			}
 		}
 	}
