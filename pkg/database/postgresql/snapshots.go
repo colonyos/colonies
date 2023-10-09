@@ -12,31 +12,38 @@ import (
 )
 
 func (db *PQDatabase) CreateSnapshot(colonyID string, label string, name string) (*core.Snapshot, error) {
-	filenames, err := db.GetFilenamesByLabel(colonyID, label)
+	allLabels, err := db.GetFileLabelsByName(colonyID, label)
 	if err != nil {
 		return nil, err
 	}
-	var fileIDs []string
+	snapshotID := core.GenerateRandomID()
+	now := time.Now().UTC()
 
-	for _, filename := range filenames {
-		file, err := db.GetLatestFileByName(colonyID, label, filename)
+	var fileIDs []string
+	for _, l := range allLabels {
+		filenames, err := db.GetFilenamesByLabel(colonyID, l.Name)
 		if err != nil {
 			return nil, err
 		}
-		if len(file) != 1 {
-			return nil, errors.New("failed to get file info, len>1")
+
+		for _, filename := range filenames {
+			file, err := db.GetLatestFileByName(colonyID, l.Name, filename)
+			if err != nil {
+				return nil, err
+			}
+			if len(file) != 1 {
+				return nil, errors.New("failed to get file info, len>1")
+			}
+			fileIDs = append(fileIDs, file[0].ID)
 		}
-		fileIDs = append(fileIDs, file[0].ID)
+
 	}
 
-	snapshotID := core.GenerateRandomID()
-	now := time.Now().UTC()
 	sqlStatement := `INSERT INTO  ` + db.dbPrefix + `SNAPSHOTS (SNAPSHOT_ID, COLONY_ID, LABEL, NAME, FILE_IDS, ADDED) VALUES ($1, $2, $3, $4, $5, $6)`
 	_, err = db.postgresql.Exec(sqlStatement, snapshotID, colonyID, label, colonyID+":"+name, pq.Array(fileIDs), now)
 	if err != nil {
 		return nil, err
 	}
-
 	snapshot := &core.Snapshot{ID: snapshotID, ColonyID: colonyID, Label: label, Name: name, FileIDs: fileIDs, Added: now}
 
 	return snapshot, nil

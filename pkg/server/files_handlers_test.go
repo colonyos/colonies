@@ -157,6 +157,70 @@ func TestGetFileLabels(t *testing.T) {
 	<-done
 }
 
+func TestGetFileLabelsByName(t *testing.T) {
+	env, client, server, _, done := setupTestEnv2(t)
+
+	file := utils.CreateTestFile(env.colonyID)
+	file.Label = "/testlabel1"
+	file.Name = "testfile1"
+	file.Size = 1
+	_, err := client.AddFile(file, env.executorPrvKey)
+	assert.Nil(t, err)
+
+	file = utils.CreateTestFile(env.colonyID)
+	file.Label = "/testlabel2"
+	file.Name = "testfile2"
+	file.Size = 1
+	_, err = client.AddFile(file, env.executorPrvKey)
+	assert.Nil(t, err)
+
+	file = utils.CreateTestFile(env.colonyID)
+	file.Label = "/testlabel2/sublabel1"
+	file.Name = "testfile3"
+	file.Size = 1
+	_, err = client.AddFile(file, env.executorPrvKey)
+	assert.Nil(t, err)
+
+	labels, err := client.GetFileLabelsByName(env.colonyID, "/testlabel1", env.executorPrvKey)
+	assert.Nil(t, err)
+	assert.Len(t, labels, 1)
+	assert.Equal(t, labels[0].Name, "/testlabel1")
+
+	labels, err = client.GetFileLabelsByName(env.colonyID, "/testlabel2", env.executorPrvKey)
+	assert.Nil(t, err)
+	assert.Len(t, labels, 2)
+
+	counter := 0
+	for _, label := range labels {
+		if label.Name == "/testlabel2" {
+			counter++
+		}
+		if label.Name == "/testlabel2/sublabel1" {
+			counter++
+		}
+	}
+	assert.Equal(t, counter, 2)
+
+	labels, err = client.GetFileLabelsByName(env.colonyID, "/testlabel", env.executorPrvKey)
+	assert.Nil(t, err)
+	assert.Len(t, labels, 3)
+
+	labels, err = client.GetFileLabelsByName(env.colonyID, "/", env.executorPrvKey)
+	assert.Nil(t, err)
+	assert.Len(t, labels, 3)
+
+	labels, err = client.GetFileLabelsByName(env.colonyID, "", env.executorPrvKey)
+	assert.Nil(t, err)
+	assert.Len(t, labels, 3)
+
+	labels, err = client.GetFileLabelsByName(env.colonyID, "does_not_exists", env.executorPrvKey)
+	assert.Nil(t, err)
+	assert.Len(t, labels, 0)
+
+	server.Shutdown()
+	<-done
+}
+
 func TestDeleteFile(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 
