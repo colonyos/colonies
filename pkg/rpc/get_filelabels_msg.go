@@ -9,11 +9,22 @@ const GetFileLabelsPayloadType = "getfilelabelsmsg"
 type GetFileLabelsMsg struct {
 	MsgType  string `json:"msgtype"`
 	ColonyID string `json:"colonyid"`
+	Name     string `json:"name"`
 }
 
-func CreateGetFileLabelsMsg(colonyID string) *GetFileLabelsMsg {
+func CreateGetFileLabelsMsg(colonyID string, name string) *GetFileLabelsMsg {
 	msg := &GetFileLabelsMsg{}
 	msg.ColonyID = colonyID
+	msg.Name = name
+	msg.MsgType = GetFileLabelsPayloadType
+
+	return msg
+}
+
+func CreateGetAllFileLabelsMsg(colonyID string) *GetFileLabelsMsg {
+	msg := &GetFileLabelsMsg{}
+	msg.ColonyID = colonyID
+	msg.Name = ""
 	msg.MsgType = GetFileLabelsPayloadType
 
 	return msg
