@@ -295,13 +295,13 @@ func follow(client *client.ColoniesClient, process *core.Process) {
 }
 
 func createSnapshot(funcSpec *core.FunctionSpec, client *client.ColoniesClient) {
-	if len(funcSpec.Filesystem) > 0 {
-		for _, syncDir := range funcSpec.Filesystem {
+	if len(funcSpec.Filesystem.SnapshotMounts) > 0 {
+		for _, snapshotMount := range funcSpec.Filesystem.SnapshotMounts {
 			snapshotName := core.GenerateRandomID()
-			snapshot, err := client.CreateSnapshot(ColonyID, syncDir.Label, snapshotName, ExecutorPrvKey)
+			snapshot, err := client.CreateSnapshot(ColonyID, snapshotMount.Label, snapshotName, ExecutorPrvKey)
 			CheckError(err)
-			syncDir.SnapshotID = snapshot.ID
-			log.WithFields(log.Fields{"SnapshotID": snapshot.ID, "Label": syncDir.Label, "Dir": syncDir.Dir}).Debug("Creating snapshot")
+			snapshotMount.SnapshotID = snapshot.ID
+			log.WithFields(log.Fields{"SnapshotID": snapshot.ID, "Label": snapshotMount.Label, "Dir": snapshotMount.Dir}).Debug("Creating snapshot")
 		}
 	}
 
