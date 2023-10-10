@@ -74,7 +74,7 @@ func (stat *Statistics) Equals(stat2 *Statistics) bool {
 }
 
 func (stat *Statistics) ToJSON() (string, error) {
-	jsonBytes, err := json.MarshalIndent(stat, "", "    ")
+	jsonBytes, err := json.Marshal(stat)
 	if err != nil {
 		return "", err
 	}

@@ -4,12 +4,24 @@ import (
 	"encoding/json"
 )
 
-type SyncDir struct {
-	Label            string `json:"label"`
-	SnapshotID       string `json:"snapshotid"`
-	Dir              string `json:"dir"`
-	ContainerMount   string `json:"container-mount"`
-	SyncOnCompletion bool   `json:"sync-on-completion"`
+type Filesystem struct {
+	Mount          string          `json:"mount"`
+	SnapshotMounts []SnapshotMount `json:"snapshots"`
+	SyncDirMounts  []SyncDirMount  `json:"dirs"`
+}
+
+type SnapshotMount struct {
+	SnapshotID  string `json:"snapshotid"`
+	Label       string `json:"label"`
+	Dir         string `json:"dir"`
+	KeepFiles   bool   `json:"keep-files"`
+	KeepSnaphot bool   `json:"keep-snapshot"`
+}
+
+type SyncDirMount struct {
+	Label     string `json:"label"`
+	Dir       string `json:"dir"`
+	KeepFiles bool   `json:"keep-files"`
 }
 
 type Conditions struct {
@@ -38,7 +50,7 @@ type FunctionSpec struct {
 	MaxRetries  int                    `json:"maxretries"`
 	Conditions  Conditions             `json:"conditions"`
 	Label       string                 `json:"label"`
-	Filesystem  []*SyncDir             `json:"fs"`
+	Filesystem  Filesystem             `json:"fs"`
 	Env         map[string]string      `json:"env"`
 }
 
@@ -224,21 +236,44 @@ func (funcSpec *FunctionSpec) Equals(funcSpec2 *FunctionSpec) bool {
 		}
 	}
 
-	if len(funcSpec.Filesystem) != len(funcSpec2.Filesystem) {
+	if funcSpec.Filesystem.Mount != funcSpec2.Filesystem.Mount {
+		same = false
+	}
+
+	if len(funcSpec.Filesystem.SyncDirMounts) != len(funcSpec2.Filesystem.SyncDirMounts) {
 		return false
 	}
 
-	for i := range funcSpec.Filesystem {
-		if funcSpec.Filesystem[i].Label != funcSpec2.Filesystem[i].Label {
+	if len(funcSpec.Filesystem.SnapshotMounts) != len(funcSpec2.Filesystem.SnapshotMounts) {
+		return false
+	}
+
+	for i := range funcSpec.Filesystem.SyncDirMounts {
+		if funcSpec.Filesystem.SyncDirMounts[i].Label != funcSpec2.Filesystem.SyncDirMounts[i].Label {
 			same = false
 		}
-		if funcSpec.Filesystem[i].SnapshotID != funcSpec2.Filesystem[i].SnapshotID {
+		if funcSpec.Filesystem.SyncDirMounts[i].Dir != funcSpec2.Filesystem.SyncDirMounts[i].Dir {
 			same = false
 		}
-		if funcSpec.Filesystem[i].Dir != funcSpec2.Filesystem[i].Dir {
+		if funcSpec.Filesystem.SyncDirMounts[i].KeepFiles != funcSpec2.Filesystem.SyncDirMounts[i].KeepFiles {
 			same = false
 		}
-		if funcSpec.Filesystem[i].SyncOnCompletion != funcSpec2.Filesystem[i].SyncOnCompletion {
+	}
+
+	for i := range funcSpec.Filesystem.SnapshotMounts {
+		if funcSpec.Filesystem.SnapshotMounts[i].SnapshotID != funcSpec2.Filesystem.SnapshotMounts[i].SnapshotID {
+			same = false
+		}
+		if funcSpec.Filesystem.SnapshotMounts[i].Dir != funcSpec2.Filesystem.SnapshotMounts[i].Dir {
+			same = false
+		}
+		if funcSpec.Filesystem.SnapshotMounts[i].Label != funcSpec2.Filesystem.SnapshotMounts[i].Label {
+			same = false
+		}
+		if funcSpec.Filesystem.SnapshotMounts[i].KeepFiles != funcSpec2.Filesystem.SnapshotMounts[i].KeepFiles {
+			same = false
+		}
+		if funcSpec.Filesystem.SnapshotMounts[i].KeepSnaphot != funcSpec2.Filesystem.SnapshotMounts[i].KeepSnaphot {
 			same = false
 		}
 	}
@@ -251,7 +286,7 @@ func (funcSpec *FunctionSpec) AddDependency(dependency string) {
 }
 
 func (funcSpec *FunctionSpec) ToJSON() (string, error) {
-	jsonString, err := json.MarshalIndent(funcSpec, "", "    ")
+	jsonString, err := json.Marshal(funcSpec)
 	if err != nil {
 		return "", err
 	}

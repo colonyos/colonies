@@ -35,7 +35,7 @@ func ConvertJSONToCron(jsonString string) (*Cron, error) {
 }
 
 func ConvertCronArrayToJSON(crons []*Cron) (string, error) {
-	jsonBytes, err := json.MarshalIndent(crons, "", "    ")
+	jsonBytes, err := json.Marshal(crons)
 	if err != nil {
 		return "", err
 	}
@@ -99,7 +99,7 @@ func (cron *Cron) Equals(cron2 *Cron) bool {
 }
 
 func (cron *Cron) ToJSON() (string, error) {
-	jsonBytes, err := json.MarshalIndent(cron, "", "    ")
+	jsonBytes, err := json.Marshal(cron)
 	if err != nil {
 		return "", err
 	}

@@ -63,7 +63,7 @@ func ConvertJSONToFunctionArray(jsonString string) ([]*Function, error) {
 }
 
 func ConvertFunctionArrayToJSON(functions []*Function) (string, error) {
-	jsonBytes, err := json.MarshalIndent(functions, "", "    ")
+	jsonBytes, err := json.Marshal(functions)
 	if err != nil {
 		return "", err
 	}
@@ -111,7 +111,7 @@ func (function *Function) Equals(function2 *Function) bool {
 }
 
 func (function *Function) ToJSON() (string, error) {
-	jsonBytes, err := json.MarshalIndent(function, "", "    ")
+	jsonBytes, err := json.Marshal(function)
 	if err != nil {
 		return "", err
 	}

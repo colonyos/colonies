@@ -37,7 +37,7 @@ func ConvertJSONToColonyArray(jsonString string) ([]*Colony, error) {
 }
 
 func ConvertColonyArrayToJSON(colonies []*Colony) (string, error) {
-	jsonBytes, err := json.MarshalIndent(colonies, "", "    ")
+	jsonBytes, err := json.Marshal(colonies)
 	if err != nil {
 		return "", err
 	}
@@ -80,7 +80,7 @@ func (colony *Colony) Equals(colony2 *Colony) bool {
 }
 
 func (colony *Colony) ToJSON() (string, error) {
-	jsonBytes, err := json.MarshalIndent(colony, "", "    ")
+	jsonBytes, err := json.Marshal(colony)
 	if err != nil {
 		return "", err
 	}
