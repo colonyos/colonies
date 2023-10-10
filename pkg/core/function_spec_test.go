@@ -27,15 +27,19 @@ func TestFunctionSpecJSON(t *testing.T) {
 	kwargs := make(map[string]interface{}, 1)
 	kwargs["0"] = "test_arg"
 
-	var fs []*SyncDir
-	syncDir1 := &SyncDir{Label: "test_label1", SnapshotID: "test_snapshotid1", Dir: "test_dir1"}
-	syncDir2 := &SyncDir{Label: "test_label2", SnapshotID: "test_snapshotid2", Dir: "test_dir2"}
-	fs = append(fs, syncDir1)
-	fs = append(fs, syncDir2)
+	var snapshots []SnapshotMount
+	snapshot1 := SnapshotMount{Label: "test_label1", SnapshotID: "test_snapshotid1", Dir: "test_dir1", KeepFiles: false, KeepSnaphot: false}
+	snapshot2 := SnapshotMount{Label: "test_label2", SnapshotID: "test_snapshotid2", Dir: "test_dir2", KeepFiles: true, KeepSnaphot: true}
+	snapshots = append(snapshots, snapshot1)
+	snapshots = append(snapshots, snapshot2)
+	var syncdirs []SyncDirMount
+	syncdir1 := SyncDirMount{Label: "test_label1", Dir: "test_dir1", KeepFiles: false}
+	syncdir2 := SyncDirMount{Label: "test_label2", Dir: "test_dir2", KeepFiles: false}
+	syncdirs = append(syncdirs, syncdir1)
+	syncdirs = append(syncdirs, syncdir2)
 
 	funcSpec := CreateFunctionSpec("test_name", "test_func", args, kwargs, colonyID, []string{executor1ID, executor2ID}, executorType, maxWaitTime, maxExecTime, maxRetries, env, []string{"test_name2"}, 5, "test_label")
-
-	funcSpec.Filesystem = fs
+	funcSpec.Filesystem = Filesystem{SnapshotMounts: snapshots, SyncDirMounts: syncdirs, Mount: "/cfs"}
 
 	funcSpec.Conditions.Nodes = 10
 	funcSpec.Conditions.CPU = "1000m"
@@ -85,22 +89,26 @@ func TestFunctionSpecEquals(t *testing.T) {
 	kwargs := make(map[string]interface{}, 1)
 	kwargs["0"] = "test_arg"
 
-	var fs []*SyncDir
-	syncDir1 := &SyncDir{Label: "test_label1", SnapshotID: "test_snapshotid1", Dir: "test_dir1"}
-	syncDir2 := &SyncDir{Label: "test_label2", SnapshotID: "test_snapshotid2", Dir: "test_dir2"}
-	fs = append(fs, syncDir1)
-	fs = append(fs, syncDir2)
+	var snapshots []SnapshotMount
+	snapshot1 := SnapshotMount{Label: "test_label1", SnapshotID: "test_snapshotid1", Dir: "test_dir1", KeepFiles: false, KeepSnaphot: false}
+	snapshot2 := SnapshotMount{Label: "test_label2", SnapshotID: "test_snapshotid2", Dir: "test_dir2", KeepFiles: true, KeepSnaphot: true}
+	snapshots = append(snapshots, snapshot1)
+	snapshots = append(snapshots, snapshot2)
+	var syncdirs []SyncDirMount
+	syncdir1 := SyncDirMount{Label: "test_label1", Dir: "test_dir1", KeepFiles: false}
+	syncdir2 := SyncDirMount{Label: "test_label2", Dir: "test_dir2", KeepFiles: false}
+	syncdirs = append(syncdirs, syncdir1)
+	syncdirs = append(syncdirs, syncdir2)
 
-	functionSpec1 := CreateFunctionSpec("test_name", "test_func", args, kwargs, colonyID, []string{executor1ID, executor2ID}, executorType, maxWaitTime, maxExecTime, maxRetries, env, []string{}, 1, "test_label")
-
-	functionSpec1.Filesystem = fs
+	funcSpec1 := CreateFunctionSpec("test_name", "test_func", args, kwargs, colonyID, []string{executor1ID, executor2ID}, executorType, maxWaitTime, maxExecTime, maxRetries, env, []string{}, 1, "test_label")
+	funcSpec1.Filesystem = Filesystem{SnapshotMounts: snapshots, SyncDirMounts: syncdirs, Mount: "/cfs"}
 
 	args = make([]interface{}, 1)
 	args[0] = "test_arg2"
 
 	functionSpec2 := CreateFunctionSpec("test_name", "test_func", args, kwargs, colonyID, []string{executor3ID}, executorType+"2", 200, 4, 2, env2, []string{}, 1, "test_label")
 
-	assert.True(t, functionSpec1.Equals(functionSpec1))
-	assert.False(t, functionSpec1.Equals(nil))
-	assert.False(t, functionSpec1.Equals(functionSpec2))
+	assert.True(t, funcSpec1.Equals(funcSpec1))
+	assert.False(t, funcSpec1.Equals(nil))
+	assert.False(t, funcSpec1.Equals(functionSpec2))
 }

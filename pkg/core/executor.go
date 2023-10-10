@@ -109,7 +109,7 @@ func ConvertJSONToExecutorArray(jsonString string) ([]*Executor, error) {
 }
 
 func ConvertExecutorArrayToJSON(executors []*Executor) (string, error) {
-	jsonBytes, err := json.MarshalIndent(executors, "", "    ")
+	jsonBytes, err := json.Marshal(executors)
 	if err != nil {
 		return "", err
 	}
@@ -264,7 +264,7 @@ func (executor *Executor) SetColonyID(colonyID string) {
 }
 
 func (executor *Executor) ToJSON() (string, error) {
-	jsonBytes, err := json.MarshalIndent(executor, "", "    ")
+	jsonBytes, err := json.Marshal(executor)
 	if err != nil {
 		return "", err
 	}
