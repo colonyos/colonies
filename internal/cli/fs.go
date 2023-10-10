@@ -201,13 +201,6 @@ var syncCmd = &cobra.Command{
 		fsClient, err := fs.CreateFSClient(client, ColonyID, ExecutorPrvKey)
 		CheckError(err)
 
-		if !strings.HasSuffix(Label, "/") {
-			Label += "/"
-		}
-		if !strings.HasPrefix(Label, "/") {
-			Label = "/" + Label
-		}
-
 		syncPlans, err := fsClient.CalcSyncPlans(SyncDir, Label, KeepLocal)
 		CheckError(err)
 
