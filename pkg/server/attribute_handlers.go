@@ -32,7 +32,7 @@ func (server *ColoniesServer) handleAddAttributeHTTPRequest(c *gin.Context, reco
 		return
 	}
 
-	err = server.validator.RequireExecutorMembership(recoveredID, process.FunctionSpec.Conditions.ColonyID, true)
+	err = server.validator.RequireMembership(recoveredID, process.FunctionSpec.Conditions.ColonyID, true)
 	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		return
 	}
@@ -94,7 +94,7 @@ func (server *ColoniesServer) handleGetAttributeHTTPRequest(c *gin.Context, reco
 		return
 	}
 
-	err = server.validator.RequireExecutorMembership(recoveredID, process.FunctionSpec.Conditions.ColonyID, true)
+	err = server.validator.RequireMembership(recoveredID, process.FunctionSpec.Conditions.ColonyID, true)
 	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		return
 	}

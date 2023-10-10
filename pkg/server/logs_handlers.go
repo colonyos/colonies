@@ -35,7 +35,7 @@ func (server *ColoniesServer) handleAddLogHTTPRequest(c *gin.Context, recoveredI
 		return
 	}
 
-	err = server.validator.RequireExecutorMembership(recoveredID, process.FunctionSpec.Conditions.ColonyID, true)
+	err = server.validator.RequireMembership(recoveredID, process.FunctionSpec.Conditions.ColonyID, true)
 	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		log.Error(err)
 		return
@@ -95,7 +95,7 @@ func (server *ColoniesServer) handleGetLogsHTTPRequest(c *gin.Context, recovered
 			return
 		}
 
-		err = server.validator.RequireExecutorMembership(recoveredID, executor.ColonyID, true)
+		err = server.validator.RequireMembership(recoveredID, executor.ColonyID, true)
 		if server.handleHTTPError(c, err, http.StatusForbidden) {
 			log.Error(err)
 			return
@@ -112,7 +112,7 @@ func (server *ColoniesServer) handleGetLogsHTTPRequest(c *gin.Context, recovered
 			return
 		}
 
-		err = server.validator.RequireExecutorMembership(recoveredID, process.FunctionSpec.Conditions.ColonyID, true)
+		err = server.validator.RequireMembership(recoveredID, process.FunctionSpec.Conditions.ColonyID, true)
 		if server.handleHTTPError(c, err, http.StatusForbidden) {
 			log.Error(err)
 			return

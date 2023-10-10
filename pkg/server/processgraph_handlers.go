@@ -28,7 +28,7 @@ func (server *ColoniesServer) handleSubmitWorkflowHTTPRequest(c *gin.Context, re
 		return
 	}
 
-	err = server.validator.RequireExecutorMembership(recoveredID, msg.WorkflowSpec.ColonyID, true)
+	err = server.validator.RequireMembership(recoveredID, msg.WorkflowSpec.ColonyID, true)
 	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		return
 	}
@@ -68,7 +68,7 @@ func (server *ColoniesServer) handleGetProcessGraphHTTPRequest(c *gin.Context, r
 		return
 	}
 
-	err = server.validator.RequireExecutorMembership(recoveredID, graph.ColonyID, true)
+	err = server.validator.RequireMembership(recoveredID, graph.ColonyID, true)
 	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		return
 	}
@@ -96,7 +96,7 @@ func (server *ColoniesServer) handleGetProcessGraphsHTTPRequest(c *gin.Context, 
 		return
 	}
 
-	err = server.validator.RequireExecutorMembership(recoveredID, msg.ColonyID, true)
+	err = server.validator.RequireMembership(recoveredID, msg.ColonyID, true)
 	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		return
 	}
@@ -173,7 +173,7 @@ func (server *ColoniesServer) handleDeleteProcessGraphHTTPRequest(c *gin.Context
 		return
 	}
 
-	err = server.validator.RequireExecutorMembership(recoveredID, graph.ColonyID, true)
+	err = server.validator.RequireMembership(recoveredID, graph.ColonyID, true)
 	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		return
 	}
@@ -233,7 +233,7 @@ func (server *ColoniesServer) handleAddChildHTTPRequest(c *gin.Context, recovere
 		return
 	}
 
-	err = server.validator.RequireExecutorMembership(recoveredID, msg.FunctionSpec.Conditions.ColonyID, true)
+	err = server.validator.RequireMembership(recoveredID, msg.FunctionSpec.Conditions.ColonyID, true)
 	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		return
 	}
