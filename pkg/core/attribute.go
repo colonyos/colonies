@@ -94,7 +94,7 @@ func (attribute *Attribute) Equals(attribute2 Attribute) bool {
 }
 
 func (attribute *Attribute) ToJSON() (string, error) {
-	jsonBytes, err := json.MarshalIndent(attribute, "", "    ")
+	jsonBytes, err := json.Marshal(attribute)
 	if err != nil {
 		return "", err
 	}

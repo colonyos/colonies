@@ -54,7 +54,7 @@ func (workflowSpec *WorkflowSpec) Equals(workflowSpec2 *WorkflowSpec) bool {
 }
 
 func (workflowSpec *WorkflowSpec) ToJSON() (string, error) {
-	jsonBytes, err := json.MarshalIndent(workflowSpec, "", "    ")
+	jsonBytes, err := json.Marshal(workflowSpec)
 	if err != nil {
 		return "", err
 	}
