@@ -31,7 +31,7 @@ func (server *ColoniesServer) handleSubmitHTTPRequest(c *gin.Context, recoveredI
 		return
 	}
 
-	err = server.validator.RequireExecutorMembership(recoveredID, msg.FunctionSpec.Conditions.ColonyID, true)
+	err = server.validator.RequireMembership(recoveredID, msg.FunctionSpec.Conditions.ColonyID, true)
 	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		return
 	}
@@ -95,7 +95,7 @@ func (server *ColoniesServer) handleAssignProcessHTTPRequest(c *gin.Context, rec
 		return
 	}
 
-	err = server.validator.RequireExecutorMembership(recoveredID, msg.ColonyID, true)
+	err = server.validator.RequireMembership(recoveredID, msg.ColonyID, true)
 	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		return
 	}
@@ -163,7 +163,7 @@ func (server *ColoniesServer) handleGetProcessHistHTTPRequest(c *gin.Context, re
 		return
 	}
 
-	err = server.validator.RequireExecutorMembership(recoveredID, msg.ColonyID, true)
+	err = server.validator.RequireMembership(recoveredID, msg.ColonyID, true)
 	if err != nil {
 		err = server.validator.RequireColonyOwner(recoveredID, msg.ColonyID)
 		if server.handleHTTPError(c, err, http.StatusForbidden) {
@@ -203,7 +203,7 @@ func (server *ColoniesServer) handleGetProcessesHTTPRequest(c *gin.Context, reco
 		return
 	}
 
-	err = server.validator.RequireExecutorMembership(recoveredID, msg.ColonyID, true)
+	err = server.validator.RequireMembership(recoveredID, msg.ColonyID, true)
 	if err != nil {
 		err = server.validator.RequireColonyOwner(recoveredID, msg.ColonyID)
 		if server.handleHTTPError(c, err, http.StatusForbidden) {
@@ -283,7 +283,7 @@ func (server *ColoniesServer) handleGetProcessHTTPRequest(c *gin.Context, recove
 		return
 	}
 
-	err = server.validator.RequireExecutorMembership(recoveredID, process.FunctionSpec.Conditions.ColonyID, true)
+	err = server.validator.RequireMembership(recoveredID, process.FunctionSpec.Conditions.ColonyID, true)
 	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		return
 	}
@@ -320,7 +320,7 @@ func (server *ColoniesServer) handleDeleteProcessHTTPRequest(c *gin.Context, rec
 		return
 	}
 
-	err = server.validator.RequireExecutorMembership(recoveredID, process.FunctionSpec.Conditions.ColonyID, true)
+	err = server.validator.RequireMembership(recoveredID, process.FunctionSpec.Conditions.ColonyID, true)
 	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		return
 	}
@@ -387,7 +387,7 @@ func (server *ColoniesServer) handleSetOutputHTTPRequest(c *gin.Context, recover
 		return
 	}
 
-	err = server.validator.RequireExecutorMembership(recoveredID, process.FunctionSpec.Conditions.ColonyID, true)
+	err = server.validator.RequireMembership(recoveredID, process.FunctionSpec.Conditions.ColonyID, true)
 	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		log.Error(err)
 		return
@@ -445,7 +445,7 @@ func (server *ColoniesServer) handleCloseSuccessfulHTTPRequest(c *gin.Context, r
 		return
 	}
 
-	err = server.validator.RequireExecutorMembership(recoveredID, process.FunctionSpec.Conditions.ColonyID, true)
+	err = server.validator.RequireMembership(recoveredID, process.FunctionSpec.Conditions.ColonyID, true)
 	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		log.Error(err)
 		return
@@ -503,7 +503,7 @@ func (server *ColoniesServer) handleCloseFailedHTTPRequest(c *gin.Context, recov
 		return
 	}
 
-	err = server.validator.RequireExecutorMembership(recoveredID, process.FunctionSpec.Conditions.ColonyID, true)
+	err = server.validator.RequireMembership(recoveredID, process.FunctionSpec.Conditions.ColonyID, true)
 	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		return
 	}

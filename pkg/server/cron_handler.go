@@ -28,7 +28,7 @@ func (server *ColoniesServer) handleAddCronHTTPRequest(c *gin.Context, recovered
 		return
 	}
 
-	err = server.validator.RequireExecutorMembership(recoveredID, msg.Cron.ColonyID, true)
+	err = server.validator.RequireMembership(recoveredID, msg.Cron.ColonyID, true)
 	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		return
 	}
@@ -104,7 +104,7 @@ func (server *ColoniesServer) handleGetCronHTTPRequest(c *gin.Context, recovered
 		return
 	}
 
-	err = server.validator.RequireExecutorMembership(recoveredID, cron.ColonyID, true)
+	err = server.validator.RequireMembership(recoveredID, cron.ColonyID, true)
 	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		return
 	}
@@ -134,7 +134,7 @@ func (server *ColoniesServer) handleGetCronsHTTPRequest(c *gin.Context, recovere
 		return
 	}
 
-	err = server.validator.RequireExecutorMembership(recoveredID, msg.ColonyID, true)
+	err = server.validator.RequireMembership(recoveredID, msg.ColonyID, true)
 	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		return
 	}
@@ -180,7 +180,7 @@ func (server *ColoniesServer) handleRunCronHTTPRequest(c *gin.Context, recovered
 		return
 	}
 
-	err = server.validator.RequireExecutorMembership(recoveredID, cron.ColonyID, true)
+	err = server.validator.RequireMembership(recoveredID, cron.ColonyID, true)
 	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		return
 	}
@@ -217,7 +217,7 @@ func (server *ColoniesServer) handleDeleteCronHTTPRequest(c *gin.Context, recove
 		return
 	}
 
-	err = server.validator.RequireExecutorMembership(recoveredID, cron.ColonyID, true)
+	err = server.validator.RequireMembership(recoveredID, cron.ColonyID, true)
 	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		return
 	}

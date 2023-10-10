@@ -27,7 +27,7 @@ func (server *ColoniesServer) handleAddFunctionHTTPRequest(c *gin.Context, recov
 		return
 	}
 
-	err = server.validator.RequireExecutorMembership(recoveredID, msg.Function.ColonyID, true)
+	err = server.validator.RequireMembership(recoveredID, msg.Function.ColonyID, true)
 	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		return
 	}
@@ -84,7 +84,7 @@ func (server *ColoniesServer) handleGetFunctionsHTTPRequest(c *gin.Context, reco
 	}
 
 	if msg.ColonyID != "" {
-		err = server.validator.RequireExecutorMembership(recoveredID, msg.ColonyID, true)
+		err = server.validator.RequireMembership(recoveredID, msg.ColonyID, true)
 		if server.handleHTTPError(c, err, http.StatusForbidden) {
 			return
 		}
@@ -102,7 +102,7 @@ func (server *ColoniesServer) handleGetFunctionsHTTPRequest(c *gin.Context, reco
 				return
 			}
 		}
-		err = server.validator.RequireExecutorMembership(recoveredID, targetExecutor.ColonyID, true)
+		err = server.validator.RequireMembership(recoveredID, targetExecutor.ColonyID, true)
 		if server.handleHTTPError(c, err, http.StatusForbidden) {
 			return
 		}
@@ -148,7 +148,7 @@ func (server *ColoniesServer) handleDeleteFunctionHTTPRequest(c *gin.Context, re
 		return
 	}
 
-	err = server.validator.RequireExecutorMembership(recoveredID, executor.ColonyID, true)
+	err = server.validator.RequireMembership(recoveredID, executor.ColonyID, true)
 	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		return
 	}

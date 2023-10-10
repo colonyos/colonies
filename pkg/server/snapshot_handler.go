@@ -23,7 +23,7 @@ func (server *ColoniesServer) handleCreateSnapshotHTTPRequest(c *gin.Context, re
 		return
 	}
 
-	err = server.validator.RequireExecutorMembership(recoveredID, msg.ColonyID, true)
+	err = server.validator.RequireMembership(recoveredID, msg.ColonyID, true)
 	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		log.Error(err)
 		return
@@ -59,7 +59,7 @@ func (server *ColoniesServer) handleGetSnapshotHTTPRequest(c *gin.Context, recov
 		return
 	}
 
-	err = server.validator.RequireExecutorMembership(recoveredID, msg.ColonyID, true)
+	err = server.validator.RequireMembership(recoveredID, msg.ColonyID, true)
 	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		log.Error(err)
 		return
@@ -109,7 +109,7 @@ func (server *ColoniesServer) handleGetSnapshotsHTTPRequest(c *gin.Context, reco
 		return
 	}
 
-	err = server.validator.RequireExecutorMembership(recoveredID, msg.ColonyID, true)
+	err = server.validator.RequireMembership(recoveredID, msg.ColonyID, true)
 	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		log.Error(err)
 		return
@@ -145,7 +145,7 @@ func (server *ColoniesServer) handleDeleteSnapshotHTTPRequest(c *gin.Context, re
 		return
 	}
 
-	err = server.validator.RequireExecutorMembership(recoveredID, msg.ColonyID, true)
+	err = server.validator.RequireMembership(recoveredID, msg.ColonyID, true)
 	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		log.Error(err)
 		return

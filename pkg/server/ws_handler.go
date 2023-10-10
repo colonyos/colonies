@@ -98,7 +98,7 @@ func (server *ColoniesServer) handleWSRequest(c *gin.Context) {
 			}
 
 			// This test is strictly not needed, since the request does not specifiy a colony, but is rather derived from the database
-			err = server.validator.RequireExecutorMembership(recoveredID, executor.ColonyID, true)
+			err = server.validator.RequireMembership(recoveredID, executor.ColonyID, true)
 			if err != nil {
 				err := server.sendWSErrorMsg(err, http.StatusForbidden, wsConn, wsMsgType)
 				if err != nil {
@@ -148,7 +148,7 @@ func (server *ColoniesServer) handleWSRequest(c *gin.Context) {
 
 			// This test is strictly not needed, since the request does not specifiy a colony, but is rather
 			// derived from the database
-			err = server.validator.RequireExecutorMembership(recoveredID, executor.ColonyID, true)
+			err = server.validator.RequireMembership(recoveredID, executor.ColonyID, true)
 			if err != nil {
 				err := server.sendWSErrorMsg(err, http.StatusForbidden, wsConn, wsMsgType)
 				if err != nil {

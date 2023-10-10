@@ -66,7 +66,7 @@ func (server *ColoniesServer) handleGetExecutorsHTTPRequest(c *gin.Context, reco
 		return
 	}
 
-	err = server.validator.RequireExecutorMembership(recoveredID, msg.ColonyID, false)
+	err = server.validator.RequireMembership(recoveredID, msg.ColonyID, false)
 	if err != nil {
 		err = server.validator.RequireColonyOwner(recoveredID, msg.ColonyID)
 		if server.handleHTTPError(c, err, http.StatusForbidden) {
@@ -111,7 +111,7 @@ func (server *ColoniesServer) handleGetExecutorHTTPRequest(c *gin.Context, recov
 		return
 	}
 
-	err = server.validator.RequireExecutorMembership(recoveredID, executor.ColonyID, true)
+	err = server.validator.RequireMembership(recoveredID, executor.ColonyID, true)
 	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		return
 	}

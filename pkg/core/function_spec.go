@@ -8,7 +8,8 @@ type SyncDir struct {
 	Label            string `json:"label"`
 	SnapshotID       string `json:"snapshotid"`
 	Dir              string `json:"dir"`
-	SyncOnCompletion bool   `json:"sync_on_completion"`
+	ContainerMount   string `json:"container-mount"`
+	SyncOnCompletion bool   `json:"sync-on-completion"`
 }
 
 type Conditions struct {
@@ -19,7 +20,7 @@ type Conditions struct {
 	Nodes            int      `json:"nodes"`
 	CPU              string   `json:"cpu"`
 	Processes        int      `json:"processes"`
-	ProcessesPerNode int      `json:"processes_per_node"`
+	ProcessesPerNode int      `json:"processes-per-node"`
 	Memory           string   `json:"mem"`
 	Storage          string   `json:"storage"`
 	GPU              GPU      `json:"gpu"`

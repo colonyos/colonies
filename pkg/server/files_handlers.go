@@ -29,7 +29,7 @@ func (server *ColoniesServer) handleAddFileHTTPRequest(c *gin.Context, recovered
 		return
 	}
 
-	err = server.validator.RequireExecutorMembership(recoveredID, msg.File.ColonyID, true)
+	err = server.validator.RequireMembership(recoveredID, msg.File.ColonyID, true)
 	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		log.Error(err)
 		return
@@ -70,7 +70,7 @@ func (server *ColoniesServer) handleGetFileHTTPRequest(c *gin.Context, recovered
 		return
 	}
 
-	err = server.validator.RequireExecutorMembership(recoveredID, msg.ColonyID, true)
+	err = server.validator.RequireMembership(recoveredID, msg.ColonyID, true)
 	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		log.Error(err)
 		return
@@ -159,7 +159,7 @@ func (server *ColoniesServer) handleGetFilesHTTPRequest(c *gin.Context, recovere
 		return
 	}
 
-	err = server.validator.RequireExecutorMembership(recoveredID, msg.ColonyID, true)
+	err = server.validator.RequireMembership(recoveredID, msg.ColonyID, true)
 	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		log.Error(err)
 		return
@@ -193,7 +193,7 @@ func (server *ColoniesServer) handleGetFileLabelsHTTPRequest(c *gin.Context, rec
 		return
 	}
 
-	err = server.validator.RequireExecutorMembership(recoveredID, msg.ColonyID, true)
+	err = server.validator.RequireMembership(recoveredID, msg.ColonyID, true)
 	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		log.Error(err)
 		return
@@ -238,7 +238,7 @@ func (server *ColoniesServer) handleDeleteFileHTTPRequest(c *gin.Context, recove
 		return
 	}
 
-	err = server.validator.RequireExecutorMembership(recoveredID, msg.ColonyID, true)
+	err = server.validator.RequireMembership(recoveredID, msg.ColonyID, true)
 	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		return
 	}
