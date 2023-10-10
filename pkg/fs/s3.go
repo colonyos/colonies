@@ -73,13 +73,13 @@ func CreateS3Client() (*S3Client, error) {
 	context := context.Background()
 	bucket, err := mc.BucketExists(context, bucketName)
 	if err != nil {
-		log.WithFields(log.Fields{"Error": err, "BucketName": bucketName}).Fatal("Failed to check if bucket exists")
+		log.WithFields(log.Fields{"Error": err, "BucketName": bucketName}).Error("Failed to check if bucket exists")
 		return nil, err
 	}
 	if !bucket {
 		err = mc.MakeBucket(context, bucketName, minio.MakeBucketOptions{})
 		if err != nil {
-			log.WithFields(log.Fields{"Error": err, "Bucket": bucketName}).Fatal("Failed to create bucket")
+			log.WithFields(log.Fields{"Error": err, "Bucket": bucketName}).Error("Failed to create bucket")
 			return nil, err
 		}
 		log.WithFields(log.Fields{"Bucket": bucketName}).Info("Creating bucket")

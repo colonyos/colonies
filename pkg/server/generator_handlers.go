@@ -27,7 +27,7 @@ func (server *ColoniesServer) handleAddGeneratorHTTPRequest(c *gin.Context, reco
 		return
 	}
 
-	err = server.validator.RequireExecutorMembership(recoveredID, msg.Generator.ColonyID, true)
+	err = server.validator.RequireMembership(recoveredID, msg.Generator.ColonyID, true)
 	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		return
 	}
@@ -85,7 +85,7 @@ func (server *ColoniesServer) handleGetGeneratorHTTPRequest(c *gin.Context, reco
 		return
 	}
 
-	err = server.validator.RequireExecutorMembership(recoveredID, generator.ColonyID, true)
+	err = server.validator.RequireMembership(recoveredID, generator.ColonyID, true)
 	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		return
 	}
@@ -129,7 +129,7 @@ func (server *ColoniesServer) handleResolveGeneratorHTTPRequest(c *gin.Context, 
 		return
 	}
 
-	err = server.validator.RequireExecutorMembership(recoveredID, generator.ColonyID, true)
+	err = server.validator.RequireMembership(recoveredID, generator.ColonyID, true)
 	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		return
 	}
@@ -157,7 +157,7 @@ func (server *ColoniesServer) handleGetGeneratorsHTTPRequest(c *gin.Context, rec
 		return
 	}
 
-	err = server.validator.RequireExecutorMembership(recoveredID, msg.ColonyID, true)
+	err = server.validator.RequireMembership(recoveredID, msg.ColonyID, true)
 	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		return
 	}
@@ -203,7 +203,7 @@ func (server *ColoniesServer) handlePackGeneratorHTTPRequest(c *gin.Context, rec
 		return
 	}
 
-	err = server.validator.RequireExecutorMembership(recoveredID, generator.ColonyID, true)
+	err = server.validator.RequireMembership(recoveredID, generator.ColonyID, true)
 	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		return
 	}
@@ -240,7 +240,7 @@ func (server *ColoniesServer) handleDeleteGeneratorHTTPRequest(c *gin.Context, r
 		return
 	}
 
-	err = server.validator.RequireExecutorMembership(recoveredID, generator.ColonyID, true)
+	err = server.validator.RequireMembership(recoveredID, generator.ColonyID, true)
 	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		return
 	}

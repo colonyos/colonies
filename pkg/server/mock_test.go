@@ -394,7 +394,7 @@ func (v *validatorMock) RequireColonyOwner(recoveredID string, colonyID string) 
 	return nil
 }
 
-func (v *validatorMock) RequireExecutorMembership(recoveredID string, colonyID string, approved bool) error {
+func (v *validatorMock) RequireMembership(recoveredID string, colonyID string, approved bool) error {
 	return nil
 }
 
