@@ -14,14 +14,19 @@ type SnapshotMount struct {
 	SnapshotID  string `json:"snapshotid"`
 	Label       string `json:"label"`
 	Dir         string `json:"dir"`
-	KeepFiles   bool   `json:"keep-files"`
-	KeepSnaphot bool   `json:"keep-snapshot"`
+	KeepFiles   bool   `json:"keepfiles"`
+	KeepSnaphot bool   `json:"keepsnapshot"`
+}
+
+type ConflictResolution struct {
+	KeepLocal bool `json:"keeplocal"`
 }
 
 type SyncDirMount struct {
-	Label     string `json:"label"`
-	Dir       string `json:"dir"`
-	KeepFiles bool   `json:"keep-files"`
+	Label              string             `json:"label"`
+	Dir                string             `json:"dir"`
+	KeepFiles          bool               `json:"keepfiles"`
+	ConflictResolution ConflictResolution `json:"onconflicts"`
 }
 
 type Conditions struct {

@@ -933,7 +933,7 @@ func TestAddFilesRecursively(t *testing.T) {
 func TestDownloadSnapshopRecursively(t *testing.T) {
 	env, coloniesClient, coloniesServer, _, done := setupTestEnv(t)
 
-	label := "test_label"
+	label := "/test_label"
 
 	syncDir, err := ioutil.TempDir("/tmp/", "sync")
 	assert.Nil(t, err)
@@ -1005,7 +1005,7 @@ func TestDownloadSnapshopRecursively(t *testing.T) {
 	}
 
 	// Create a snapshot
-	snapshot, err := fsClient.coloniesClient.CreateSnapshot(env.colonyID, label, "test_snapshot1", env.executorPrvKey)
+	snapshot, err := fsClient.coloniesClient.CreateSnapshot(env.colonyID, label, "/test_snapshot1", env.executorPrvKey)
 	assert.Nil(t, err)
 
 	// Download files in snapshot

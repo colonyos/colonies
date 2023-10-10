@@ -154,6 +154,9 @@ func (fsClient *FSClient) ApplySyncPlan(colonyID string, syncPlan *SyncPlan) err
 }
 
 func (fsClient *FSClient) CalcSyncPlans(dir string, label string, keepLocal bool) ([]*SyncPlan, error) {
+	if !strings.HasPrefix(label, "/") {
+		label = "/" + label
+	}
 	syncPlans := make(map[string]*SyncPlan)
 	err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
@@ -161,7 +164,12 @@ func (fsClient *FSClient) CalcSyncPlans(dir string, label string, keepLocal bool
 		}
 
 		if info.IsDir() {
-			l := label + strings.TrimPrefix(path, dir)
+			l := ""
+			if len(strings.TrimPrefix(path, dir)) > 0 {
+				l = label + "/" + strings.TrimPrefix(path, dir)
+			} else {
+				l = label
+			}
 			syncPlan, err := fsClient.CalcSyncPlan(path, l, keepLocal)
 			if err != nil {
 				return err
