@@ -23,7 +23,7 @@ func ConvertJSONToLog(jsonString string) (Log, error) {
 }
 
 func ConvertLogArrayToJSON(logs []Log) (string, error) {
-	jsonBytes, err := json.MarshalIndent(logs, "", "    ")
+	jsonBytes, err := json.Marshal(logs)
 	if err != nil {
 		return "", err
 	}

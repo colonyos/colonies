@@ -196,21 +196,29 @@ func TestAddProcess(t *testing.T) {
 	assert.Contains(t, processFromDB.FunctionSpec.Conditions.ExecutorIDs, executor2ID)
 
 	process = utils.CreateTestProcessWithTargets(colonyID, []string{executor1ID, executor2ID})
-	var fs []*core.SyncDir
-	syncDir1 := &core.SyncDir{Label: "test_label1", SnapshotID: "test_snapshotid1", Dir: "test_dir1", SyncOnCompletion: true}
-	fs = append(fs, syncDir1)
-	process.FunctionSpec.Filesystem = fs
+
+	var snapshots []core.SnapshotMount
+	snapshot1 := core.SnapshotMount{Label: "test_label1", SnapshotID: "test_snapshotid1", Dir: "test_dir1", KeepFiles: false, KeepSnaphot: false}
+	snapshot2 := core.SnapshotMount{Label: "test_label2", SnapshotID: "test_snapshotid2", Dir: "test_dir2", KeepFiles: true, KeepSnaphot: true}
+	snapshots = append(snapshots, snapshot1)
+	snapshots = append(snapshots, snapshot2)
+	var syncdirs []core.SyncDirMount
+	syncdir1 := core.SyncDirMount{Label: "test_label1", Dir: "test_dir1", KeepFiles: false}
+	syncdir2 := core.SyncDirMount{Label: "test_label2", Dir: "test_dir2", KeepFiles: false}
+	syncdirs = append(syncdirs, syncdir1)
+	syncdirs = append(syncdirs, syncdir2)
+	process.FunctionSpec.Filesystem = core.Filesystem{SnapshotMounts: snapshots, SyncDirMounts: syncdirs, Mount: "/cfs"}
 
 	err = db.AddProcess(process)
 	assert.Nil(t, err)
 
 	processFromDB, err = db.GetProcessByID(process.ID)
 	assert.Nil(t, err)
-	assert.Len(t, processFromDB.FunctionSpec.Filesystem, 1)
-	assert.Equal(t, processFromDB.FunctionSpec.Filesystem[0].Label, "test_label1")
-	assert.Equal(t, processFromDB.FunctionSpec.Filesystem[0].SnapshotID, "test_snapshotid1")
-	assert.Equal(t, processFromDB.FunctionSpec.Filesystem[0].Dir, "test_dir1")
-	assert.Equal(t, processFromDB.FunctionSpec.Filesystem[0].SyncOnCompletion, true)
+
+	assert.Len(t, processFromDB.FunctionSpec.Filesystem.SnapshotMounts, 2)
+	assert.Len(t, processFromDB.FunctionSpec.Filesystem.SyncDirMounts, 2)
+	assert.Equal(t, processFromDB.FunctionSpec.Filesystem.Mount, "/cfs")
+	assert.Equal(t, processFromDB.FunctionSpec.Filesystem.SnapshotMounts[0].Label, "test_label1")
 }
 
 func TestAddProcessConditions(t *testing.T) {
