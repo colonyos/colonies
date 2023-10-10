@@ -98,7 +98,7 @@ func ConvertJSONToProcessGraph(jsonString string) (*ProcessGraph, error) {
 }
 
 func ConvertProcessGraphArrayToJSON(processGraphs []*ProcessGraph) (string, error) {
-	jsonBytes, err := json.MarshalIndent(processGraphs, "", "    ")
+	jsonBytes, err := json.Marshal(processGraphs)
 	if err != nil {
 		return "", err
 	}
@@ -530,7 +530,7 @@ func (graph *ProcessGraph) ToJSON() (string, error) {
 		return "", err
 	}
 
-	jsonBytes, err := json.MarshalIndent(graph, "", "    ")
+	jsonBytes, err := json.Marshal(graph)
 	if err != nil {
 		return "", err
 	}
