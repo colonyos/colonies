@@ -18,8 +18,17 @@ type SnapshotMount struct {
 	KeepSnaphot bool   `json:"keepsnapshot"`
 }
 
-type ConflictResolution struct {
+type OnStart struct {
 	KeepLocal bool `json:"keeplocal"`
+}
+
+type OnClose struct {
+	KeepLocal bool `json:"keeplocal"`
+}
+
+type ConflictResolution struct {
+	OnStart OnStart `json:"onstart"`
+	OnClose OnClose `json:"onclose"`
 }
 
 type SyncDirMount struct {
