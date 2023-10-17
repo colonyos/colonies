@@ -99,6 +99,97 @@ func TestSubmitWorkflowSpec(t *testing.T) {
 	<-done
 }
 
+func TestSubmitInvalidWorkflowSpec(t *testing.T) {
+	env, client, server, _, done := setupTestEnv2(t)
+
+	wf := core.CreateWorkflowSpec(env.colonyID)
+
+	funcSpec1 := core.CreateEmptyFunctionSpec()
+	//funcSpec1.NodeName = "task1"
+	funcSpec1.Conditions.ColonyID = env.colonyID
+	funcSpec1.Conditions.ExecutorType = "test_executor_type"
+
+	funcSpec2 := core.CreateEmptyFunctionSpec()
+	//funcSpec2.NodeName = "task2"
+	funcSpec2.Conditions.ColonyID = env.colonyID
+	funcSpec2.Conditions.ExecutorType = "test_executor_type"
+
+	funcSpec3 := core.CreateEmptyFunctionSpec()
+	//funcSpec3.NodeName = "task3"
+	funcSpec3.Conditions.ColonyID = env.colonyID
+	funcSpec3.Conditions.ExecutorType = "test_executor_type"
+
+	funcSpec4 := core.CreateEmptyFunctionSpec()
+	//funcSpec4.NodeName = "task4"
+	funcSpec4.Conditions.ColonyID = env.colonyID
+	funcSpec4.Conditions.ExecutorType = "test_executor_type"
+
+	funcSpec2.AddDependency("task1")
+	funcSpec3.AddDependency("task1")
+	funcSpec4.AddDependency("task2")
+	funcSpec4.AddDependency("task3")
+
+	wf.AddFunctionSpec(funcSpec1)
+	wf.AddFunctionSpec(funcSpec2)
+	wf.AddFunctionSpec(funcSpec3)
+	wf.AddFunctionSpec(funcSpec4)
+
+	_, err := client.SubmitWorkflowSpec(wf, env.executorPrvKey)
+	assert.NotNil(t, err) // Error: nodename must be specified
+
+	graphs, err := client.GetWaitingProcessGraphs(env.colonyID, 100, env.executorPrvKey)
+	assert.Nil(t, err)
+	assert.Len(t, graphs, 0)
+
+	server.Shutdown()
+	<-done
+}
+
+func TestSubmitInvalidWorkflowSpec2(t *testing.T) {
+	env, client, server, _, done := setupTestEnv2(t)
+
+	wf := core.CreateWorkflowSpec(env.colonyID)
+
+	funcSpec1 := core.CreateEmptyFunctionSpec()
+	funcSpec1.NodeName = "task1"
+	funcSpec1.Conditions.ColonyID = env.colonyID
+	funcSpec1.Conditions.ExecutorType = "test_executor_type"
+
+	funcSpec2 := core.CreateEmptyFunctionSpec()
+	funcSpec2.NodeName = "task2"
+	funcSpec2.Conditions.ColonyID = env.colonyID
+	funcSpec2.Conditions.ExecutorType = "test_executor_type"
+
+	funcSpec3 := core.CreateEmptyFunctionSpec()
+	funcSpec3.NodeName = "task3"
+	funcSpec3.Conditions.ColonyID = env.colonyID
+	funcSpec3.Conditions.ExecutorType = "test_executor_type"
+
+	funcSpec4 := core.CreateEmptyFunctionSpec()
+	funcSpec4.NodeName = "task3" // Duplicate nodename
+	funcSpec4.Conditions.ColonyID = env.colonyID
+	funcSpec4.Conditions.ExecutorType = "test_executor_type"
+
+	funcSpec2.AddDependency("task1")
+	funcSpec3.AddDependency("task1")
+	funcSpec4.AddDependency("task2")
+
+	wf.AddFunctionSpec(funcSpec1)
+	wf.AddFunctionSpec(funcSpec2)
+	wf.AddFunctionSpec(funcSpec3)
+	wf.AddFunctionSpec(funcSpec4)
+
+	_, err := client.SubmitWorkflowSpec(wf, env.executorPrvKey)
+	assert.NotNil(t, err) // Error: nodename must be specified
+
+	graphs, err := client.GetWaitingProcessGraphs(env.colonyID, 100, env.executorPrvKey)
+	assert.Nil(t, err)
+	assert.Len(t, graphs, 0)
+
+	server.Shutdown()
+	<-done
+}
+
 func TestProcessGraphFailed(t *testing.T) {
 	// This is workflow we are going to test. Task2 and Task3 cannot be assigned before Task1 is closed as successful.
 	// Task4 cannot be assigned until both Task2 and Task3 is closed as successful.
