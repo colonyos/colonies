@@ -787,9 +787,12 @@ func (controller *coloniesController) createProcessGraph(workflowSpec *core.Work
 
 	// Create all processes
 	processMap := make(map[string]*core.Process)
-	//var rootProcesses []*core.Process
 	var processIDs []string
 	for _, funcSpec := range workflowSpec.FunctionSpecs {
+		if funcSpec.NodeName == "" {
+			return nil, errors.New("Nodename is missing, check function spec for errors")
+		}
+
 		if funcSpec.MaxExecTime == 0 {
 			log.WithFields(log.Fields{"NodeName": funcSpec.NodeName}).Debug("MaxExecTime was set to 0, resetting to -1")
 			funcSpec.MaxExecTime = -1
@@ -833,6 +836,12 @@ func (controller *coloniesController) createProcessGraph(workflowSpec *core.Work
 		processIDs = append(processIDs, process.ID)
 		process.ProcessGraphID = processgraph.ID
 		process.FunctionSpec.Conditions.ColonyID = workflowSpec.ColonyID
+
+		_, exists := processMap[process.FunctionSpec.NodeName]
+		if exists {
+			return nil, errors.New("Duplicate nodename: " + process.FunctionSpec.NodeName)
+		}
+
 		processMap[process.FunctionSpec.NodeName] = process
 	}
 
