@@ -218,8 +218,6 @@ var deleteWorkflowCmd = &cobra.Command{
 		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Debug("Starting a Colonies client")
 		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
 
-		log.WithFields(log.Fields{"WorkflowID": WorkflowID}).Info("ProcessGraph deleted")
-
 		err = client.DeleteProcessGraph(WorkflowID, ExecutorPrvKey)
 		CheckError(err)
 
