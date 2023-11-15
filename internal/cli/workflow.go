@@ -94,7 +94,7 @@ var submitWorkflowCmd = &cobra.Command{
 
 		jsonStr := "{\"functionspecs\":" + string(jsonSpecBytes) + "}"
 		workflowSpec, err := core.ConvertJSONToWorkflowSpec(jsonStr)
-		CheckError(err)
+		CheckJSONParseErr(err, string(jsonSpecBytes))
 
 		if workflowSpec.ColonyID == "" {
 			if ColonyID == "" {
