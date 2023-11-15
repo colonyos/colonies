@@ -318,7 +318,7 @@ var submitFunctionSpecCmd = &cobra.Command{
 		CheckError(err)
 
 		funcSpec, err := core.ConvertJSONToFunctionSpec(string(jsonSpecBytes))
-		CheckError(err)
+		CheckJSONParseErr(err, string(jsonSpecBytes))
 
 		if funcSpec.Conditions.ColonyID == "" {
 			if ColonyID == "" {

@@ -8,6 +8,7 @@ import (
 
 	"github.com/colonyos/colonies/pkg/build"
 	"github.com/colonyos/colonies/pkg/core"
+	"github.com/colonyos/colonies/pkg/validate"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -89,6 +90,15 @@ func State2String(state int) string {
 func CheckError(err error) {
 	if err != nil {
 		log.WithFields(log.Fields{"Error": err, "BuildVersion": build.BuildVersion, "BuildTime": build.BuildTime}).Error(err.Error())
+		os.Exit(-1)
+	}
+}
+
+func CheckJSONParseErr(err error, jsonStr string) {
+	if err != nil {
+		jsonErrStr, err := validate.JSON(err, jsonStr, true)
+		CheckError(err)
+		log.WithFields(log.Fields{"BuildVersion": build.BuildVersion, "BuildTime": build.BuildTime}).Error(jsonErrStr)
 		os.Exit(-1)
 	}
 }
