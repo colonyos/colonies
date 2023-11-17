@@ -280,6 +280,7 @@ func follow(client *client.ColoniesClient, process *core.Process) {
 				os.Exit(0)
 			}
 			if process.State == core.FAILED {
+				fmt.Println()
 				log.WithFields(log.Fields{"ProcessID": process.ID}).Error("Process failed")
 				os.Exit(-1)
 			}
