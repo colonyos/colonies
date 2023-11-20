@@ -1,0 +1,3 @@
+1. It should not be possible to delete a process if it is part of workflow.
+2. If a process fails in workflow, there could be many waiting process in the queue that never finish
+3. Make it possible to deleteall snapshots
