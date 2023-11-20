@@ -4,7 +4,7 @@
 ![ColonyOSLogo](docs/images/ColonyOsLogoNoShaddow2.png)
 
 # What is Colonies?
-Colonies is an open-source framework designed to facilitate seamless execution of computational workloads across platforms, e.g. cloud, edge, devices, or High-Performance Computing (HPC), creating so-called *Compute Continuums*. 
+Colonies is an open-source framework designed to facilitate seamless execution of computational workloads across platforms, e.g. cloud, edge, devices, or High-Performance Computing (HPC), creating so-called *Compute Continuums*. Colonies is key component of ColonyOS and provides a **Meta-Orchestrator**, delivering functionalities like a traditional operating system, but functions as an overlay on top of existing platforms. 
 
 At its core, Colonies provides a **distributed runtime environment**, called a **Colony**, consisting of a network of loosely connected **Executors**. Executors are distributed microservices that can easily integrate with any third-party application or system. They can be implemented in any language and run anywhere on the Internet, e.g. on supercomputers or in a web browser on a smart phone.
 
@@ -15,8 +15,7 @@ Colonies has been developed with a strong emphasis on security and robustness to
 * Developers can focus on implementing Executors as independent microservices. The system can then easily scale just by deploying more Executors, enabling parallel execution. Failed processes are automatically re-assigned to other Executors.
 * Developers can define and submit workflows describing a sequence of computations carried out by several Executors.
 * Colonies makes it possible to develop a loosely decoupled architecture that spans multiple platforms and infrastructures, with all coordination managed by Colonies.
-* Colonies also functions as a distributed ledger, containing full execution history. This enables developers to keep track of the system and more easily debug it.
-* Colonies integrates well with Kubernetes and offers a more powerful alternative to traditional message-broker worker queues, e.g RabbitMQ.
+* Colonies also functions as a ledger, containing full execution history. This enables developers to keep track of the system and more easily debug it.
 
 ## Design
 * Colonies serves as an intermediary layer to indirectly control and integrate with other computer systems. This enables Executors (or users) to publish instructions and subsequently assign these instructions to other Executors.
