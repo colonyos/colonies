@@ -1421,18 +1421,36 @@ func (controller *coloniesController) assign(executorID string, colonyID string)
 					cmd.errorChan <- errors.New(errMsg)
 				}
 				processGraph.SetStorage(controller.db)
-				err = processGraph.Resolve()
-				if err != nil {
-					err2 := controller.handleDefunctProcessgraph(processGraph.ID, selectedProcess.ID, err)
-					if err2 != nil {
-						log.Error(err2)
-						cmd.errorChan <- err2
+
+				// One Colonies server might have added a processgraph, and another colonies directly get an assign request
+				// This means that all processes part of the graph might not yet have been added, consequently the
+				// processgraph.Resolve() call might fail.
+				// The solution is to retry a couple of times.
+				maxRetries := 10
+				timeBetweenRetries := 500 * time.Millisecond // We will wait what max 10 * 0.5 = 5 seconds
+				retries := 0
+
+				for {
+					if retries >= maxRetries {
+						err2 := controller.handleDefunctProcessgraph(processGraph.ID, selectedProcess.ID, err)
+						if err2 != nil {
+							log.Error(err2)
+							cmd.errorChan <- err2
+							return
+						}
+
+						log.Error(err)
+						cmd.errorChan <- err
 						return
 					}
-
-					log.Error(err)
-					cmd.errorChan <- err
-					return
+					err = processGraph.Resolve()
+					if err != nil {
+						retries++
+						time.Sleep(timeBetweenRetries)
+						continue
+					} else {
+						break
+					}
 				}
 
 				// Now, we need to collect the output from the parents and use ut as our input
