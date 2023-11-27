@@ -1,12 +1,9 @@
 package cli
 
 import (
-	"errors"
 	"os"
 
-	"github.com/colonyos/colonies/pkg/client"
 	"github.com/colonyos/colonies/pkg/core"
-	"github.com/colonyos/colonies/pkg/security"
 	"github.com/kataras/tablewriter"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -46,32 +43,7 @@ var addAttributeCmd = &cobra.Command{
 	Short: "Add an attribute to a process",
 	Long:  "Add an attribute to a process",
 	Run: func(cmd *cobra.Command, args []string) {
-		parseServerEnv()
-
-		keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
-		CheckError(err)
-
-		if ColonyID == "" {
-			ColonyID = os.Getenv("COLONIES_COLONY_ID")
-		}
-		if ColonyID == "" {
-			CheckError(errors.New("Unknown Colony Id"))
-		}
-
-		if ExecutorID == "" {
-			ExecutorID = os.Getenv("COLONIES_EXECUTOR_ID")
-		}
-		if ExecutorID == "" {
-			CheckError(errors.New("Unknown Executor Id"))
-		}
-
-		if ExecutorPrvKey == "" {
-			ExecutorPrvKey, err = keychain.GetPrvKey(ExecutorID)
-			CheckError(err)
-		}
-
-		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Debug("Starting a Colonies client")
-		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
+		client := setup()
 
 		process, err := client.GetProcess(ProcessID, ExecutorPrvKey)
 		CheckError(err)
@@ -90,32 +62,7 @@ var getAttributeCmd = &cobra.Command{
 	Short: "Get an attribute of a process",
 	Long:  "Get an attribute of a process",
 	Run: func(cmd *cobra.Command, args []string) {
-		parseServerEnv()
-
-		keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
-		CheckError(err)
-
-		if ColonyID == "" {
-			ColonyID = os.Getenv("COLONIES_COLONY_ID")
-		}
-		if ColonyID == "" {
-			CheckError(errors.New("Unknown Colony Id"))
-		}
-
-		if ExecutorID == "" {
-			ExecutorID = os.Getenv("COLONIES_EXECUTOR_ID")
-		}
-		if ExecutorID == "" {
-			CheckError(errors.New("Unknown Executor Id"))
-		}
-
-		if ExecutorPrvKey == "" {
-			ExecutorPrvKey, err = keychain.GetPrvKey(ExecutorID)
-			CheckError(err)
-		}
-
-		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Debug("Starting a Colonies client")
-		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
+		client := setup()
 
 		attribute, err := client.GetAttribute(AttributeID, ExecutorPrvKey)
 		CheckError(err)

@@ -3,7 +3,6 @@ package cli
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"strconv"
 	"strings"
@@ -13,9 +12,7 @@ import (
 	"github.com/colonyos/colonies/pkg/client"
 	"github.com/colonyos/colonies/pkg/cluster"
 	"github.com/colonyos/colonies/pkg/database/postgresql"
-	"github.com/colonyos/colonies/pkg/security"
 	"github.com/colonyos/colonies/pkg/server"
-	"github.com/gin-gonic/gin"
 	"github.com/kataras/tablewriter"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -56,107 +53,13 @@ var serverCmd = &cobra.Command{
 	Long:  "Manage production server",
 }
 
-func parseServerEnv() {
-	var err error
-	ServerHostEnv := os.Getenv("COLONIES_SERVER_HOST")
-	if ServerHostEnv != "" {
-		ServerHost = ServerHostEnv
-	}
-
-	ServerPortEnvStr := os.Getenv("COLONIES_SERVER_PORT")
-	if ServerPortEnvStr != "" {
-		if ServerPort == -1 {
-			ServerPort, err = strconv.Atoi(ServerPortEnvStr)
-			CheckError(err)
-		}
-	}
-
-	if ServerID == "" {
-		ServerID = os.Getenv("COLONIES_SERVER_ID")
-	}
-
-	TLSEnv := os.Getenv("COLONIES_TLS")
-	if TLSEnv == "true" {
-		UseTLS = true
-		Insecure = false
-	} else if TLSEnv == "false" {
-		UseTLS = false
-		Insecure = true
-	}
-
-	if TLSKey == "" {
-		TLSKey = os.Getenv("COLONIES_TLSKEY")
-	}
-
-	if TLSCert == "" {
-		TLSCert = os.Getenv("COLONIES_TLSCERT")
-	}
-
-	VerboseEnv := os.Getenv("COLONIES_VERBOSE")
-	if VerboseEnv == "true" {
-		Verbose = true
-	} else if VerboseEnv == "false" {
-		Verbose = false
-	}
-
-	if Verbose {
-		log.SetLevel(log.DebugLevel)
-	} else {
-		log.SetLevel(log.InfoLevel)
-		gin.SetMode(gin.ReleaseMode)
-		gin.DefaultWriter = ioutil.Discard
-	}
-
-	CronPeriodCheckerEnvStr := os.Getenv("COLONIES_CRON_CHECKER_PERIOD")
-	if CronPeriodCheckerEnvStr != "" {
-		CronCheckerPeriod, err = strconv.Atoi(CronPeriodCheckerEnvStr)
-		CheckError(err)
-	} else {
-		CronCheckerPeriod = server.CRON_TRIGGER_PERIOD
-	}
-
-	GeneratorPeriodCheckerEnvStr := os.Getenv("COLONIES_GENERATOR_CHECKER_PERIOD")
-	if GeneratorPeriodCheckerEnvStr != "" {
-		GeneratorCheckerPeriod, err = strconv.Atoi(GeneratorPeriodCheckerEnvStr)
-		CheckError(err)
-	} else {
-		GeneratorCheckerPeriod = server.GENERATOR_TRIGGER_PERIOD
-	}
-
-	ExclusiveAssignEnvStr := os.Getenv("COLONIES_EXCLUSIVE_ASSIGN")
-	if ExclusiveAssignEnvStr != "" {
-		ExclusiveAssign, err = strconv.ParseBool(ExclusiveAssignEnvStr)
-		CheckError(err)
-	} else {
-		ExclusiveAssign = false
-	}
-
-	AllowExecutorReregisterStr := os.Getenv("COLONIES_ALLOW_EXECUTOR_REREGISTER")
-	if AllowExecutorReregisterStr != "" {
-		AllowExecutorReregister, err = strconv.ParseBool(AllowExecutorReregisterStr)
-		CheckError(err)
-	} else {
-		AllowExecutorReregister = false
-	}
-
-	timescaleDBEnv := os.Getenv("COLONIES_DB_TIMESCALEDB")
-	if timescaleDBEnv == "true" {
-		TimescaleDB = true
-	} else {
-		TimescaleDB = false
-	}
-}
-
 var serverStatusCmd = &cobra.Command{
 	Use:   "status",
 	Short: "Show status about a production server",
 	Long:  "Show status about a production server",
 	Run: func(cmd *cobra.Command, args []string) {
 		parseDBEnv()
-		parseServerEnv()
-
-		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Debug("Starting a Colonies client")
-		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
+		client := setup()
 
 		serverBuildVersion, serverBuildTime, err := client.Version()
 		CheckError(err)
@@ -184,7 +87,7 @@ var serverStartCmd = &cobra.Command{
 	Long:  "Start a production server",
 	Run: func(cmd *cobra.Command, args []string) {
 		parseDBEnv()
-		parseServerEnv()
+		parseEnv()
 
 		if !Insecure {
 			_, err := os.Stat(TLSKey)
@@ -297,22 +200,7 @@ var serverStatisticsCmd = &cobra.Command{
 	Short: "Show server statistics",
 	Long:  "Show server statistics",
 	Run: func(cmd *cobra.Command, args []string) {
-		parseServerEnv()
-
-		keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
-		CheckError(err)
-
-		if ServerID == "" {
-			ServerID = os.Getenv("COLONIES_SERVER_ID")
-		}
-		if ServerID == "" {
-			CheckError(errors.New("Unknown Server Id"))
-		}
-
-		if ServerPrvKey == "" {
-			ServerPrvKey, err = keychain.GetPrvKey(ServerID)
-			CheckError(err)
-		}
+		parseEnv()
 
 		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Debug("Starting a Colonies client")
 		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)

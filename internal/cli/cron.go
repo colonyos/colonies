@@ -7,9 +7,7 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/colonyos/colonies/pkg/client"
 	"github.com/colonyos/colonies/pkg/core"
-	"github.com/colonyos/colonies/pkg/security"
 	"github.com/colonyos/colonies/pkg/server"
 	"github.com/kataras/tablewriter"
 	log "github.com/sirupsen/logrus"
@@ -71,7 +69,7 @@ var addCronCmd = &cobra.Command{
 	Short: "Add a cron",
 	Long:  "Add a cron",
 	Run: func(cmd *cobra.Command, args []string) {
-		parseServerEnv()
+		client := setup()
 
 		jsonSpecBytes, err := ioutil.ReadFile(SpecFile)
 		CheckError(err)
@@ -81,13 +79,6 @@ var addCronCmd = &cobra.Command{
 		CheckError(err)
 
 		if workflowSpec.ColonyID == "" {
-			if ColonyID == "" {
-				ColonyID = os.Getenv("COLONIES_COLONY_ID")
-			}
-			if ColonyID == "" {
-				CheckError(errors.New("Unknown Colony Id, please set COLONYID env variable or specify ColonyID in JSON file"))
-			}
-
 			workflowSpec.ColonyID = ColonyID
 		}
 
@@ -95,33 +86,8 @@ var addCronCmd = &cobra.Command{
 		CheckError(err)
 
 		if workflowSpec.ColonyID == "" {
-			if ColonyID == "" {
-				ColonyID = os.Getenv("COLONIES_COLONY_ID")
-			}
-			if ColonyID == "" {
-				CheckError(errors.New("Unknown Colony Id, please set COLONYID env variable or specify ColonyID in JSON file"))
-			}
-
 			workflowSpec.ColonyID = ColonyID
 		}
-
-		keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
-		CheckError(err)
-
-		if ExecutorID == "" {
-			ExecutorID = os.Getenv("COLONIES_EXECUTOR_ID")
-		}
-		if ExecutorID == "" {
-			CheckError(errors.New("Unknown Executor Id"))
-		}
-
-		if ExecutorPrvKey == "" {
-			ExecutorPrvKey, err = keychain.GetPrvKey(ExecutorID)
-			CheckError(err)
-		}
-
-		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Debug("Starting a Colonies client")
-		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
 
 		if CronName == "" {
 			CheckError(errors.New("Cron name not specified"))
@@ -152,31 +118,13 @@ var delCronCmd = &cobra.Command{
 	Short: "Delete a cron",
 	Long:  "Delete a cron",
 	Run: func(cmd *cobra.Command, args []string) {
-		parseServerEnv()
-
-		keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
-		CheckError(err)
-
-		if ExecutorID == "" {
-			ExecutorID = os.Getenv("COLONIES_EXECUTOR_ID")
-		}
-		if ExecutorID == "" {
-			CheckError(errors.New("Unknown Executor Id"))
-		}
-
-		if ExecutorPrvKey == "" {
-			ExecutorPrvKey, err = keychain.GetPrvKey(ExecutorID)
-			CheckError(err)
-		}
-
-		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Debug("Starting a Colonies client")
-		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
+		client := setup()
 
 		if CronID == "" {
 			CheckError(errors.New("Cron Id not specified"))
 		}
 
-		err = client.DeleteCron(CronID, ExecutorPrvKey)
+		err := client.DeleteCron(CronID, ExecutorPrvKey)
 		CheckError(err)
 
 		log.WithFields(log.Fields{"CronId": CronID}).Info("Deleting cron")
@@ -188,25 +136,7 @@ var getCronCmd = &cobra.Command{
 	Short: "Get info about a cron",
 	Long:  "Get info about a cron",
 	Run: func(cmd *cobra.Command, args []string) {
-		parseServerEnv()
-
-		keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
-		CheckError(err)
-
-		if ExecutorID == "" {
-			ExecutorID = os.Getenv("COLONIES_EXECUTOR_ID")
-		}
-		if ExecutorID == "" {
-			CheckError(errors.New("Unknown Executor Id"))
-		}
-
-		if ExecutorPrvKey == "" {
-			ExecutorPrvKey, err = keychain.GetPrvKey(ExecutorID)
-			CheckError(err)
-		}
-
-		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Debug("Starting a Colonies client")
-		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
+		client := setup()
 
 		if CronID == "" {
 			CheckError(errors.New("Cron Id not specified"))
@@ -257,34 +187,10 @@ var getCronsCmd = &cobra.Command{
 	Short: "List all crons",
 	Long:  "List all crons",
 	Run: func(cmd *cobra.Command, args []string) {
-		parseServerEnv()
-
-		keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
-		CheckError(err)
-
-		if ColonyID == "" {
-			ColonyID = os.Getenv("COLONIES_COLONY_ID")
-		}
-		if ColonyID == "" {
-			CheckError(errors.New("Unknown Colony Id"))
-		}
-
-		if ExecutorID == "" {
-			ExecutorID = os.Getenv("COLONIES_EXECUTOR_ID")
-		}
-		if ExecutorID == "" {
-			CheckError(errors.New("Unknown Executor Id"))
-		}
-
-		if ExecutorPrvKey == "" {
-			ExecutorPrvKey, err = keychain.GetPrvKey(ExecutorID)
-			CheckError(err)
-		}
-
-		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Debug("Starting a Colonies client")
-		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
+		client := setup()
 
 		crons, err := client.GetCrons(ColonyID, Count, ExecutorPrvKey)
+		CheckError(err)
 		if crons == nil {
 			log.WithFields(log.Fields{"ColonyId": ColonyID}).Info("No crons found")
 			os.Exit(0)
@@ -309,31 +215,13 @@ var runCronCmd = &cobra.Command{
 	Short: "Run a cron now",
 	Long:  "Run a cron now",
 	Run: func(cmd *cobra.Command, args []string) {
-		parseServerEnv()
-
-		keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
-		CheckError(err)
-
-		if ExecutorID == "" {
-			ExecutorID = os.Getenv("COLONIES_EXECUTOR_ID")
-		}
-		if ExecutorID == "" {
-			CheckError(errors.New("Unknown Executor Id"))
-		}
-
-		if ExecutorPrvKey == "" {
-			ExecutorPrvKey, err = keychain.GetPrvKey(ExecutorID)
-			CheckError(err)
-		}
-
-		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Debug("Starting a Colonies client")
-		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
+		client := setup()
 
 		if CronID == "" {
 			CheckError(errors.New("Cron Id not specified"))
 		}
 
-		_, err = client.RunCron(CronID, ExecutorPrvKey)
+		_, err := client.RunCron(CronID, ExecutorPrvKey)
 		CheckError(err)
 
 		log.WithFields(log.Fields{"CronID": CronID}).Info("Running cron")
