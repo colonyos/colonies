@@ -303,7 +303,7 @@ func (db *PQDatabase) createColoniesTable() error {
 }
 
 func (db *PQDatabase) createUsersTable() error {
-	sqlStatement := `CREATE TABLE ` + db.dbPrefix + `USERS (NAME TEXT PRIMARY KEY NOT NULL, USER_ID TEXT NOT NULL, COLONY_NAME TEXT NOT NULL)`
+	sqlStatement := `CREATE TABLE ` + db.dbPrefix + `USERS (NAME TEXT PRIMARY KEY NOT NULL, USER_ID TEXT NOT NULL, COLONY_NAME TEXT NOT NULL, EMAIL TEXT NOT NULL, PHONE TEXT NOT NULL)`
 	_, err := db.postgresql.Exec(sqlStatement)
 	if err != nil {
 		return err

@@ -152,6 +152,16 @@ func (server *ColoniesServer) handleAPIRequest(c *gin.Context) {
 
 	switch rpcMsg.PayloadType {
 
+	// User handlers
+	case rpc.AddUserPayloadType:
+		server.handleAddUserHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+	case rpc.GetUsersPayloadType:
+		server.handleGetUsersHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+	case rpc.GetUserPayloadType:
+		server.handleGetUserHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+	case rpc.DeleteUserPayloadType:
+		server.handleDeleteUserHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+
 	// Colony handlers
 	case rpc.AddColonyPayloadType:
 		server.handleAddColonyHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())

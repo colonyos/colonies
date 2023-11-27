@@ -33,17 +33,17 @@ func TestGetUsers(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
 
-	colonyID := core.GenerateRandomID()
+	colonyName := core.GenerateRandomID()
 
-	user := utils.CreateTestUser(colonyID, "user1")
+	user := utils.CreateTestUser(colonyName, "user1")
 	err = db.AddUser(user)
 	assert.Nil(t, err)
 
-	user = utils.CreateTestUser(colonyID, "user2")
+	user = utils.CreateTestUser(colonyName, "user2")
 	err = db.AddUser(user)
 	assert.Nil(t, err)
 
-	users, err := db.GetUsers(colonyID)
+	users, err := db.GetUsersByColonyName(colonyName)
 	assert.Nil(t, err)
 	assert.Len(t, users, 2)
 
@@ -54,58 +54,58 @@ func TestDeleteUser(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
 
-	colonyID := core.GenerateRandomID()
+	colonyName := core.GenerateRandomID()
 
-	user1 := utils.CreateTestUser(colonyID, "user1")
+	user1 := utils.CreateTestUser(colonyName, "user1")
 	err = db.AddUser(user1)
 	assert.Nil(t, err)
 
-	user2 := utils.CreateTestUser(colonyID, "user2")
+	user2 := utils.CreateTestUser(colonyName, "user2")
 	err = db.AddUser(user2)
 	assert.Nil(t, err)
 
-	user3 := utils.CreateTestUser(colonyID, "user3")
+	user3 := utils.CreateTestUser(colonyName, "user3")
 	err = db.AddUser(user3)
 	assert.Nil(t, err)
 
-	users, err := db.GetUsers(colonyID)
+	users, err := db.GetUsersByColonyName(colonyName)
 	assert.Nil(t, err)
 	assert.Len(t, users, 3)
 
-	err = db.DeleteUserByID(colonyID, user1.ID)
+	err = db.DeleteUserByName(colonyName, user1.Name)
 	assert.Nil(t, err)
 
-	users, err = db.GetUsers(colonyID)
+	users, err = db.GetUsersByColonyName(colonyName)
 	assert.Nil(t, err)
 	assert.Len(t, users, 2)
 
-	user1FromDB, err := db.GetUserByID(colonyID, user1.ID)
+	user1FromDB, err := db.GetUserByName(colonyName, user1.Name)
 	assert.Nil(t, err)
 	assert.Nil(t, user1FromDB)
 
-	user2FromDB, err := db.GetUserByID(colonyID, user2.ID)
+	user2FromDB, err := db.GetUserByName(colonyName, user2.Name)
 	assert.Nil(t, err)
 	assert.NotNil(t, user2FromDB)
 
-	err = db.DeleteUserByName(colonyID, "user2")
+	err = db.DeleteUserByName(colonyName, "user2")
 	assert.Nil(t, err)
 
-	user2FromDB, err = db.GetUserByID(colonyID, user2.ID)
+	user2FromDB, err = db.GetUserByName(colonyName, user2.Name)
 	assert.Nil(t, err)
 	assert.Nil(t, user2FromDB)
 
-	users, err = db.GetUsers(colonyID)
+	users, err = db.GetUsersByColonyName(colonyName)
 	assert.Nil(t, err)
 	assert.Len(t, users, 1)
 
-	user3FromDB, err := db.GetUserByName(colonyID, "user3")
+	user3FromDB, err := db.GetUserByName(colonyName, "user3")
 	assert.Nil(t, err)
 	assert.NotNil(t, user3FromDB)
 
 	defer db.Close()
 }
 
-func TestDeleteUsersByColonyID(t *testing.T) {
+func TestDeleteUsersByColonyName(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
 
@@ -124,18 +124,18 @@ func TestDeleteUsersByColonyID(t *testing.T) {
 	err = db.AddUser(user3)
 	assert.Nil(t, err)
 
-	users, err := db.GetUsers(colonyName1)
+	users, err := db.GetUsersByColonyName(colonyName1)
 	assert.Nil(t, err)
 	assert.Len(t, users, 2)
 
-	err = db.DeleteUsersByColonyID(colonyName1)
+	err = db.DeleteUsersByColonyName(colonyName1)
 	assert.Nil(t, err)
 
-	users, err = db.GetUsers(colonyName1)
+	users, err = db.GetUsersByColonyName(colonyName1)
 	assert.Nil(t, err)
 	assert.Len(t, users, 0)
 
-	users, err = db.GetUsers(colonyName2)
+	users, err = db.GetUsersByColonyName(colonyName2)
 	assert.Nil(t, err)
 	assert.Len(t, users, 1)
 

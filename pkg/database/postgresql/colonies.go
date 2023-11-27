@@ -72,6 +72,27 @@ func (db *PQDatabase) GetColonyByID(id string) (*core.Colony, error) {
 	return colonies[0], nil
 }
 
+func (db *PQDatabase) GetColonyByName(name string) (*core.Colony, error) {
+	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `COLONIES WHERE NAME=$1`
+	rows, err := db.postgresql.Query(sqlStatement, name)
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	colonies, err := db.parseColonies(rows)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(colonies) == 0 {
+		return nil, nil
+	}
+
+	return colonies[0], nil
+}
+
 func (db *PQDatabase) RenameColony(id string, name string) error {
 	sqlStatement := `UPDATE ` + db.dbPrefix + `COLONIES SET NAME=$1 WHERE COLONY_ID=$2`
 	_, err := db.postgresql.Exec(sqlStatement, name, id)
@@ -92,7 +113,7 @@ func (db *PQDatabase) DeleteColonyByID(colonyID string) error {
 		return errors.New("Colony does not exists")
 	}
 
-	err = db.DeleteUsersByColonyID(colonyID)
+	err = db.DeleteUsersByColonyName(colony.Name)
 	if err != nil {
 		return err
 	}
