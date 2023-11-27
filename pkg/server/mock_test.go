@@ -414,6 +414,34 @@ func (db *dbMock) Drop() error {
 	return nil
 }
 
+func (db *dbMock) AddUser(user *core.User) error {
+	return nil
+}
+
+func (db *dbMock) GetUsers(colonyName string) ([]*core.User, error) {
+	return nil, nil
+}
+
+func (db *dbMock) GetUserByID(colonyName string, userID string) (*core.User, error) {
+	return nil, nil
+}
+
+func (db *dbMock) GetUserByName(colonyName string, name string) (*core.User, error) {
+	return nil, nil
+}
+
+func (db *dbMock) DeleteUserByID(colonyName string, userID string) error {
+	return nil
+}
+
+func (db *dbMock) DeleteUserByName(colonyName string, name string) error {
+	return nil
+}
+
+func (db *dbMock) DeleteUsersByColonyID(colonyName string) error {
+	return nil
+}
+
 func (db *dbMock) AddColony(colony *core.Colony) error {
 	if db.returnError == "AddColony" {
 		return errors.New("error")
