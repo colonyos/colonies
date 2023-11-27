@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/colonyos/colonies/internal/crypto"
 	"github.com/colonyos/colonies/pkg/client"
 	"github.com/colonyos/colonies/pkg/core"
 	"github.com/kataras/tablewriter"
@@ -28,8 +29,7 @@ func init() {
 	registerFuncCmd.Flags().StringVarP(&SpecFile, "spec", "", "", "JSON specification of a function")
 	registerFuncCmd.MarkFlagRequired("spec")
 
-	submitFunctionSpecCmd.Flags().StringVarP(&ExecutorID, "executorid", "", "", "Executor Id")
-	submitFunctionSpecCmd.Flags().StringVarP(&ExecutorPrvKey, "executorprvkey", "", "", "Executor private key")
+	submitFunctionSpecCmd.Flags().StringVarP(&PrvKey, "prvkey", "", "", "Private key")
 	submitFunctionSpecCmd.Flags().StringVarP(&SpecFile, "spec", "", "", "JSON specification of a process")
 	submitFunctionSpecCmd.Flags().StringVarP(&ColonyID, "colonyid", "", "", "Colony Id")
 	submitFunctionSpecCmd.Flags().BoolVarP(&Wait, "wait", "", false, "Wait for process to finish")
@@ -37,8 +37,7 @@ func init() {
 	submitFunctionSpecCmd.Flags().BoolVarP(&PrintOutput, "out", "", false, "Print process output, wait flag must be set")
 	submitFunctionSpecCmd.Flags().BoolVarP(&Follow, "follow", "", false, "Follow process, wait flag cannot be set")
 
-	execFuncCmd.Flags().StringVarP(&ExecutorID, "executorid", "", "", "Executor Id")
-	execFuncCmd.Flags().StringVarP(&ExecutorPrvKey, "executorprvkey", "", "", "Executor private key")
+	execFuncCmd.Flags().StringVarP(&PrvKey, "prvkey", "", "", "Private key")
 	execFuncCmd.Flags().StringVarP(&TargetExecutorType, "targettype", "", "", "Target executor type")
 	execFuncCmd.Flags().StringVarP(&TargetExecutorID, "targetid", "", "", "Target executor Id")
 	execFuncCmd.Flags().StringVarP(&ColonyID, "colonyid", "", "", "Colony Id")
@@ -77,13 +76,16 @@ var registerFuncCmd = &cobra.Command{
 		funcSpec, err := core.ConvertJSONToFunction(string(jsonSpecBytes))
 		CheckError(err)
 
-		funcSpec.ColonyID = ColonyID
-		funcSpec.ExecutorID = ExecutorID
-
-		addedFunc, err := client.AddFunction(funcSpec, ExecutorPrvKey)
+		executorIdentity, err := crypto.CreateIdendityFromString(PrvKey)
 		CheckError(err)
 
-		log.WithFields(log.Fields{"FunctionID": addedFunc.FunctionID, "ExecutorID": ExecutorID, "ColonyID": ColonyID}).Info("Function added")
+		funcSpec.ColonyID = ColonyID
+		funcSpec.ExecutorID = executorIdentity.ID()
+
+		addedFunc, err := client.AddFunction(funcSpec, PrvKey)
+		CheckError(err)
+
+		log.WithFields(log.Fields{"FunctionID": addedFunc.FunctionID, "ExecutorID": executorIdentity.ID, "ColonyID": ColonyID}).Info("Function added")
 	},
 }
 
@@ -94,7 +96,7 @@ var removeFuncCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		client := setup()
 
-		err := client.DeleteFunction(FunctionID, ExecutorPrvKey)
+		err := client.DeleteFunction(FunctionID, PrvKey)
 		CheckError(err)
 
 		log.WithFields(log.Fields{"FunctionId": ColonyID}).Info("Function removed")
@@ -119,7 +121,7 @@ var listFuncCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		client := setup()
 
-		functions, err := client.GetFunctionsByColonyID(ColonyID, ExecutorPrvKey)
+		functions, err := client.GetFunctionsByColonyID(ColonyID, PrvKey)
 		CheckError(err)
 
 		statsMap := make(map[string]statsEntry)
@@ -191,10 +193,10 @@ func follow(client *client.ColoniesClient, process *core.Process) {
 	var lastTimestamp int64
 	lastTimestamp = 0
 	for {
-		logs, err := client.GetLogsByProcessIDSince(process.ID, Count, lastTimestamp, ExecutorPrvKey)
+		logs, err := client.GetLogsByProcessIDSince(process.ID, Count, lastTimestamp, PrvKey)
 		CheckError(err)
 
-		process, err := client.GetProcess(process.ID, ExecutorPrvKey)
+		process, err := client.GetProcess(process.ID, PrvKey)
 		CheckError(err)
 
 		if len(logs) == 0 {
@@ -223,7 +225,7 @@ func createSnapshot(funcSpec *core.FunctionSpec, client *client.ColoniesClient) 
 	if len(funcSpec.Filesystem.SnapshotMounts) > 0 {
 		for i, snapshotMount := range funcSpec.Filesystem.SnapshotMounts {
 			snapshotName := core.GenerateRandomID()
-			snapshot, err := client.CreateSnapshot(ColonyID, snapshotMount.Label, snapshotName, ExecutorPrvKey)
+			snapshot, err := client.CreateSnapshot(ColonyID, snapshotMount.Label, snapshotName, PrvKey)
 			CheckError(err)
 			funcSpec.Filesystem.SnapshotMounts[i].SnapshotID = snapshot.ID
 			log.WithFields(log.Fields{"SnapshotID": snapshot.ID, "Label": snapshotMount.Label}).Debug("Creating snapshot")
@@ -251,13 +253,13 @@ var submitFunctionSpecCmd = &cobra.Command{
 
 		createSnapshot(funcSpec, client)
 
-		addedProcess, err := client.Submit(funcSpec, ExecutorPrvKey)
+		addedProcess, err := client.Submit(funcSpec, PrvKey)
 		CheckError(err)
 
 		log.WithFields(log.Fields{"ProcessID": addedProcess.ID}).Info("Process submitted")
 		if Wait {
 			wait(client, addedProcess)
-			process, err := client.GetProcess(addedProcess.ID, ExecutorPrvKey)
+			process, err := client.GetProcess(addedProcess.ID, PrvKey)
 			CheckError(err)
 			if process.State == core.FAILED {
 				log.WithFields(log.Fields{"ProcessID": addedProcess.ID, "Error": process.Errors}).Error("Process failed")
@@ -342,13 +344,13 @@ var execFuncCmd = &cobra.Command{
 
 		createSnapshot(&funcSpec, client)
 
-		addedProcess, err := client.Submit(&funcSpec, ExecutorPrvKey)
+		addedProcess, err := client.Submit(&funcSpec, PrvKey)
 		CheckError(err)
 
 		log.WithFields(log.Fields{"ProcessID": addedProcess.ID}).Info("Process submitted")
 		if Wait {
 			wait(client, addedProcess)
-			process, err := client.GetProcess(addedProcess.ID, ExecutorPrvKey)
+			process, err := client.GetProcess(addedProcess.ID, PrvKey)
 			CheckError(err)
 			if process.State == core.FAILED {
 				log.WithFields(log.Fields{"ProcessID": addedProcess.ID, "Error": process.Errors}).Error("Process failed")

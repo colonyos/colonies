@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/colonyos/colonies/internal/crypto"
 	"github.com/colonyos/colonies/pkg/build"
 	"github.com/colonyos/colonies/pkg/client"
 	"github.com/colonyos/colonies/pkg/cluster"
@@ -31,7 +32,6 @@ func init() {
 	serverCmd.PersistentFlags().StringVarP(&TLSCert, "tlscert", "", "", "TLS certificate")
 	serverCmd.PersistentFlags().StringVarP(&TLSKey, "tlskey", "", "", "TLS key")
 	serverCmd.PersistentFlags().IntVarP(&ServerPort, "port", "", -1, "Server HTTP port")
-	serverCmd.PersistentFlags().StringVarP(&ServerID, "serverid", "", "", "Colonies server Id")
 	serverCmd.PersistentFlags().StringVarP(&EtcdName, "etcdname", "", "etcd", "Etcd name")
 	serverCmd.PersistentFlags().StringVarP(&EtcdHost, "etcdhost", "", "0.0.0.0", "Etcd host name")
 	serverCmd.PersistentFlags().IntVarP(&EtcdClientPort, "etcdclientport", "", 2379, "Etcd port")
@@ -43,7 +43,6 @@ func init() {
 	serverStatusCmd.PersistentFlags().StringVarP(&ServerHost, "host", "", "localhost", "Server host")
 	serverStatusCmd.PersistentFlags().IntVarP(&ServerPort, "port", "", -1, "Server HTTP port")
 
-	serverStatisticsCmd.Flags().StringVarP(&ServerID, "serverid", "", "", "Colonies server Id")
 	serverStatisticsCmd.Flags().StringVarP(&ServerPrvKey, "serverprvkey", "", "", "Colonies server private key")
 }
 
@@ -168,9 +167,12 @@ var serverStartCmd = &cobra.Command{
 
 		setupProfiler()
 
+		serverIdentity, err := crypto.CreateIdendityFromString(ServerPrvKey)
+		CheckError(err)
+
 		server := server.CreateColoniesServer(db,
 			ServerPort,
-			ServerID,
+			serverIdentity.ID(),
 			UseTLS,
 			TLSKey,
 			TLSCert,
