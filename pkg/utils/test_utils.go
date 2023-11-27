@@ -9,6 +9,11 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func CreateTestUser(colonyID string, name string) *core.User {
+	userID := core.GenerateRandomID()
+	return core.CreateUser(colonyID, userID, name)
+}
+
 func CreateTestProcess(colonyID string) *core.Process {
 	return core.CreateProcess(CreateTestFunctionSpec(colonyID))
 }
@@ -161,7 +166,7 @@ func CreateTestColonyWithKey() (*core.Colony, string, error) {
 	if err != nil {
 		return nil, "", err
 	}
-	return core.CreateColony(colonyID, "test_colony_name"), colonyPrvKey, nil
+	return core.CreateColony(colonyID, "test_colony_name"+core.GenerateRandomID()), colonyPrvKey, nil
 }
 
 func FakeGenerator(t *testing.T, colonyID string) *core.Generator {
