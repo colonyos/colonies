@@ -689,7 +689,7 @@ func TestCountExectorsByColonyID(t *testing.T) {
 	err = db.AddExecutor(executor)
 	assert.Nil(t, err)
 
-	colony2 := core.CreateColony(core.GenerateRandomID(), "test_colony_name_1")
+	colony2 := core.CreateColony(core.GenerateRandomID(), "test_colony_name_2")
 	err = db.AddColony(colony2)
 	assert.Nil(t, err)
 
