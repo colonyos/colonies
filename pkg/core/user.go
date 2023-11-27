@@ -13,7 +13,7 @@ type User struct {
 }
 
 func CreateUser(colonyName string, userID string, name string, email string, phone string) *User {
-	return &User{ColonyName: colonyName, ID: userID, Name: name}
+	return &User{ColonyName: colonyName, ID: userID, Name: name, Email: email, Phone: phone}
 }
 
 func ConvertJSONToUser(jsonString string) (*User, error) {
