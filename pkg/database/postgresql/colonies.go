@@ -92,6 +92,11 @@ func (db *PQDatabase) DeleteColonyByID(colonyID string) error {
 		return errors.New("Colony does not exists")
 	}
 
+	err = db.DeleteUsersByColonyID(colonyID)
+	if err != nil {
+		return err
+	}
+
 	err = db.DeleteExecutorsByColonyID(colonyID)
 	if err != nil {
 		return err

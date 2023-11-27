@@ -12,6 +12,15 @@ type Database interface {
 	Initialize() error
 	Drop() error
 
+	// Users functions ...
+	AddUser(user *core.User) error
+	GetUsers(colonyName string) ([]*core.User, error)
+	GetUserByID(colonyName string, userID string) (*core.User, error)
+	GetUserByName(colonyName string, name string) (*core.User, error)
+	DeleteUserByID(colonyName string, userID string) error
+	DeleteUserByName(colonyName string, name string) error
+	DeleteUsersByColonyID(colonyName string) error
+
 	// Colony functions ...
 	AddColony(colony *core.Colony) error
 	GetColonies() ([]*core.Colony, error)
