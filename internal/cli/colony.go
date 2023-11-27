@@ -7,7 +7,6 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/colonyos/colonies/pkg/client"
 	"github.com/colonyos/colonies/pkg/core"
 	"github.com/colonyos/colonies/pkg/security"
 	"github.com/colonyos/colonies/pkg/security/crypto"
@@ -64,7 +63,7 @@ var addColonyCmd = &cobra.Command{
 	Short: "Add a new colony",
 	Long:  "Add a new colony",
 	Run: func(cmd *cobra.Command, args []string) {
-		parseServerEnv()
+		client := setup()
 
 		jsonSpecBytes, err := ioutil.ReadFile(SpecFile)
 		CheckError(err)
@@ -92,21 +91,6 @@ var addColonyCmd = &cobra.Command{
 		CheckError(err)
 		colony.SetID(colonyID)
 
-		if ServerID == "" {
-			ServerID = os.Getenv("COLONIES_SERVER_ID")
-		}
-		if ServerID == "" {
-			CheckError(errors.New("Unknown Server Id"))
-		}
-
-		if ServerPrvKey == "" {
-			ServerPrvKey, err = keychain.GetPrvKey(ServerID)
-			CheckError(err)
-		}
-
-		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Debug("Starting a Colonies client")
-		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
-
 		addedColony, err := client.AddColony(colony, ServerPrvKey)
 		CheckError(err)
 
@@ -122,27 +106,9 @@ var removeColonyCmd = &cobra.Command{
 	Short: "Remove a colony",
 	Long:  "Remove a colony",
 	Run: func(cmd *cobra.Command, args []string) {
-		parseServerEnv()
+		client := setup()
 
-		keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
-		CheckError(err)
-
-		if ServerID == "" {
-			ServerID = os.Getenv("COLONIES_SERVER_ID")
-		}
-		if ServerID == "" {
-			CheckError(errors.New("Unknown Server Id"))
-		}
-
-		if ServerPrvKey == "" {
-			ServerPrvKey, err = keychain.GetPrvKey(ServerID)
-			CheckError(err)
-		}
-
-		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Debug("Starting a Colonies client")
-		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
-
-		err = client.DeleteColony(ColonyID, ServerPrvKey)
+		err := client.DeleteColony(ColonyID, ServerPrvKey)
 		CheckError(err)
 
 		log.WithFields(log.Fields{"ColonyID": ColonyID}).Info("Colony removed")
@@ -154,28 +120,7 @@ var renameColonyCmd = &cobra.Command{
 	Short: "Rename a colony",
 	Long:  "Rename a colony",
 	Run: func(cmd *cobra.Command, args []string) {
-		parseServerEnv()
-
-		if ColonyID == "" {
-			ColonyID = os.Getenv("COLONIES_COLONY_ID")
-		}
-		if ColonyID == "" {
-			CheckError(errors.New("Unknown Colony Id"))
-		}
-
-		if ColonyPrvKey == "" {
-			ColonyPrvKey = os.Getenv("COLONIES_COLONY_PRVKEY")
-		}
-		if ColonyPrvKey == "" {
-			keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
-			CheckError(err)
-
-			ColonyPrvKey, err = keychain.GetPrvKey(ColonyID)
-			CheckError(err)
-		}
-
-		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Debug("Starting a Colonies client")
-		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
+		client := setup()
 
 		if ColonyName == "" {
 			CheckError(errors.New("Invalid Colony name"))
@@ -193,25 +138,7 @@ var lsColoniesCmd = &cobra.Command{
 	Short: "List all colonies",
 	Long:  "List all colonies",
 	Run: func(cmd *cobra.Command, args []string) {
-		parseServerEnv()
-
-		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Debug("Starting a Colonies client")
-		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
-
-		keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
-		CheckError(err)
-
-		if ServerID == "" {
-			ServerID = os.Getenv("COLONIES_SERVER_ID")
-		}
-		if ServerID == "" {
-			CheckError(errors.New("Unknown Server Id"))
-		}
-
-		if ServerPrvKey == "" {
-			ServerPrvKey, err = keychain.GetPrvKey(ServerID)
-			CheckError(err)
-		}
+		client := setup()
 
 		coloniesFromServer, err := client.GetColonies(ServerPrvKey)
 		CheckError(err)
@@ -249,34 +176,7 @@ var colonyStatsCmd = &cobra.Command{
 	Short: "Show statistics about a colony",
 	Long:  "Show statistics about a colony",
 	Run: func(cmd *cobra.Command, args []string) {
-		parseServerEnv()
-
-		keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
-		CheckError(err)
-
-		if ColonyID == "" {
-			ColonyID = os.Getenv("COLONIES_COLONY_ID")
-		}
-		if ColonyID == "" {
-			CheckError(errors.New("Unknown Colony Id"))
-		}
-
-		if ExecutorPrvKey == "" {
-			if ExecutorID == "" {
-				ExecutorID = os.Getenv("COLONIES_EXECUTOR_ID")
-			}
-			ExecutorPrvKey, _ = keychain.GetPrvKey(ExecutorID)
-		}
-
-		if ExecutorPrvKey == "" {
-			if ExecutorID == "" {
-				ExecutorID = os.Getenv("COLONIES_EXECUTOR_ID")
-			}
-			ExecutorPrvKey, _ = keychain.GetPrvKey(ExecutorID)
-		}
-
-		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Debug("Starting a Colonies client")
-		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
+		client := setup()
 
 		stat, err := client.ColonyStatistics(ColonyID, ExecutorPrvKey)
 		CheckError(err)

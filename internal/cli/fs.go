@@ -12,7 +12,6 @@ import (
 	"github.com/colonyos/colonies/pkg/client"
 	"github.com/colonyos/colonies/pkg/core"
 	"github.com/colonyos/colonies/pkg/fs"
-	"github.com/colonyos/colonies/pkg/security"
 	"github.com/kataras/tablewriter"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -164,38 +163,13 @@ var syncCmd = &cobra.Command{
 	Short: "Synchronize a directory with a file storage",
 	Long:  "Synchronize a directory with a file storage",
 	Run: func(cmd *cobra.Command, args []string) {
-		parseServerEnv()
-
-		keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
-		CheckError(err)
-
-		if ColonyID == "" {
-			ColonyID = os.Getenv("COLONIES_COLONY_ID")
-		}
-		if ColonyID == "" {
-			CheckError(errors.New("Unknown Colony Id"))
-		}
-
-		if ExecutorID == "" {
-			ExecutorID = os.Getenv("COLONIES_EXECUTOR_ID")
-		}
-		if ExecutorID == "" {
-			CheckError(errors.New("Unknown Executor Id"))
-		}
-
-		if ExecutorPrvKey == "" {
-			ExecutorPrvKey, err = keychain.GetPrvKey(ExecutorID)
-			CheckError(err)
-		}
+		client := setup()
 
 		if !strings.HasSuffix(SyncDir, "/") {
 			SyncDir += "/"
 		}
-		err = os.MkdirAll(SyncDir, 0755)
+		err := os.MkdirAll(SyncDir, 0755)
 		CheckError(err)
-
-		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Debug("Starting a Colonies client")
-		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
 
 		log.Debug("Starting a file storage client")
 		fsClient, err := fs.CreateFSClient(client, ColonyID, ExecutorPrvKey)
@@ -251,32 +225,7 @@ var listLabelsCmd = &cobra.Command{
 	Short: "List all labels",
 	Long:  "List all labels",
 	Run: func(cmd *cobra.Command, args []string) {
-		parseServerEnv()
-
-		keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
-		CheckError(err)
-
-		if ColonyID == "" {
-			ColonyID = os.Getenv("COLONIES_COLONY_ID")
-		}
-		if ColonyID == "" {
-			CheckError(errors.New("Unknown Colony Id"))
-		}
-
-		if ExecutorID == "" {
-			ExecutorID = os.Getenv("COLONIES_EXECUTOR_ID")
-		}
-		if ExecutorID == "" {
-			CheckError(errors.New("Unknown Executor Id"))
-		}
-
-		if ExecutorPrvKey == "" {
-			ExecutorPrvKey, err = keychain.GetPrvKey(ExecutorID)
-			CheckError(err)
-		}
-
-		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Debug("Starting a Colonies client")
-		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
+		client := setup()
 
 		coloniesLabels, err := client.GetFileLabels(ColonyID, ExecutorPrvKey)
 		CheckError(err)
@@ -304,32 +253,7 @@ var removeLabelCmd = &cobra.Command{
 	Short: "Remove a label",
 	Long:  "Remove a label",
 	Run: func(cmd *cobra.Command, args []string) {
-		parseServerEnv()
-
-		keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
-		CheckError(err)
-
-		if ColonyID == "" {
-			ColonyID = os.Getenv("COLONIES_COLONY_ID")
-		}
-		if ColonyID == "" {
-			CheckError(errors.New("Unknown Colony Id"))
-		}
-
-		if ExecutorID == "" {
-			ExecutorID = os.Getenv("COLONIES_EXECUTOR_ID")
-		}
-		if ExecutorID == "" {
-			CheckError(errors.New("Unknown Executor Id"))
-		}
-
-		if ExecutorPrvKey == "" {
-			ExecutorPrvKey, err = keychain.GetPrvKey(ExecutorID)
-			CheckError(err)
-		}
-
-		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Debug("Starting a Colonies client")
-		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
+		client := setup()
 
 		log.Debug("Starting a file storage client")
 		fsClient, err := fs.CreateFSClient(client, ColonyID, ExecutorPrvKey)
@@ -365,32 +289,7 @@ var listFilesCmd = &cobra.Command{
 	Short: "List all files with a label",
 	Long:  "List all files with a label",
 	Run: func(cmd *cobra.Command, args []string) {
-		parseServerEnv()
-
-		keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
-		CheckError(err)
-
-		if ColonyID == "" {
-			ColonyID = os.Getenv("COLONIES_COLONY_ID")
-		}
-		if ColonyID == "" {
-			CheckError(errors.New("Unknown Colony Id"))
-		}
-
-		if ExecutorID == "" {
-			ExecutorID = os.Getenv("COLONIES_EXECUTOR_ID")
-		}
-		if ExecutorID == "" {
-			CheckError(errors.New("Unknown Executor Id"))
-		}
-
-		if ExecutorPrvKey == "" {
-			ExecutorPrvKey, err = keychain.GetPrvKey(ExecutorID)
-			CheckError(err)
-		}
-
-		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Debug("Starting a Colonies client")
-		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
+		client := setup()
 
 		filenames, err := client.GetFilenames(ColonyID, Label, ExecutorPrvKey)
 		CheckError(err)
@@ -463,33 +362,9 @@ var getFileInfoCmd = &cobra.Command{
 	Short: "Get info about a file",
 	Long:  "Get info about a file",
 	Run: func(cmd *cobra.Command, args []string) {
-		parseServerEnv()
+		client := setup()
 
-		keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
-		CheckError(err)
-
-		if ColonyID == "" {
-			ColonyID = os.Getenv("COLONIES_COLONY_ID")
-		}
-		if ColonyID == "" {
-			CheckError(errors.New("Unknown Colony Id"))
-		}
-
-		if ExecutorID == "" {
-			ExecutorID = os.Getenv("COLONIES_EXECUTOR_ID")
-		}
-		if ExecutorID == "" {
-			CheckError(errors.New("Unknown Executor Id"))
-		}
-
-		if ExecutorPrvKey == "" {
-			ExecutorPrvKey, err = keychain.GetPrvKey(ExecutorID)
-			CheckError(err)
-		}
-
-		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Debug("Starting a Colonies client")
-		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
-
+		var err error
 		var coloniesFiles []*core.File
 		if FileID != "" {
 			coloniesFiles, err = client.GetFileByID(ColonyID, FileID, ExecutorPrvKey)
@@ -517,37 +392,13 @@ var getFileCmd = &cobra.Command{
 	Short: "Download a file from file storage",
 	Long:  "Download a file from file storage",
 	Run: func(cmd *cobra.Command, args []string) {
-		parseServerEnv()
-
-		keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
-		CheckError(err)
-
-		if ColonyID == "" {
-			ColonyID = os.Getenv("COLONIES_COLONY_ID")
-		}
-		if ColonyID == "" {
-			CheckError(errors.New("Unknown Colony Id"))
-		}
-
-		if ExecutorID == "" {
-			ExecutorID = os.Getenv("COLONIES_EXECUTOR_ID")
-		}
-		if ExecutorID == "" {
-			CheckError(errors.New("Unknown Executor Id"))
-		}
-
-		if ExecutorPrvKey == "" {
-			ExecutorPrvKey, err = keychain.GetPrvKey(ExecutorID)
-			CheckError(err)
-		}
+		client := setup()
 
 		if DownloadDir == "" {
 			CheckError(errors.New("Download directory must be specified"))
 		}
 
-		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Debug("Starting a Colonies client")
-		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
-
+		var err error
 		var coloniesFiles []*core.File
 		if FileID != "" {
 			coloniesFiles, err = client.GetFileByID(ColonyID, FileID, ExecutorPrvKey)
@@ -585,32 +436,7 @@ var removeFileCmd = &cobra.Command{
 	Short: "Remove a file from file storage",
 	Long:  "Remove a file from file storage",
 	Run: func(cmd *cobra.Command, args []string) {
-		parseServerEnv()
-
-		keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
-		CheckError(err)
-
-		if ColonyID == "" {
-			ColonyID = os.Getenv("COLONIES_COLONY_ID")
-		}
-		if ColonyID == "" {
-			CheckError(errors.New("Unknown Colony Id"))
-		}
-
-		if ExecutorID == "" {
-			ExecutorID = os.Getenv("COLONIES_EXECUTOR_ID")
-		}
-		if ExecutorID == "" {
-			CheckError(errors.New("Unknown Executor Id"))
-		}
-
-		if ExecutorPrvKey == "" {
-			ExecutorPrvKey, err = keychain.GetPrvKey(ExecutorID)
-			CheckError(err)
-		}
-
-		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Debug("Starting a Colonies client")
-		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
+		client := setup()
 
 		log.Debug("Starting a file storage client")
 		fsClient, err := fs.CreateFSClient(client, ColonyID, ExecutorPrvKey)
@@ -674,32 +500,7 @@ var createSnapshotCmd = &cobra.Command{
 	Short: "Create a snapshot",
 	Long:  "Create a snapshot",
 	Run: func(cmd *cobra.Command, args []string) {
-		parseServerEnv()
-
-		keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
-		CheckError(err)
-
-		if ColonyID == "" {
-			ColonyID = os.Getenv("COLONIES_COLONY_ID")
-		}
-		if ColonyID == "" {
-			CheckError(errors.New("Unknown Colony Id"))
-		}
-
-		if ExecutorID == "" {
-			ExecutorID = os.Getenv("COLONIES_EXECUTOR_ID")
-		}
-		if ExecutorID == "" {
-			CheckError(errors.New("Unknown Executor Id"))
-		}
-
-		if ExecutorPrvKey == "" {
-			ExecutorPrvKey, err = keychain.GetPrvKey(ExecutorID)
-			CheckError(err)
-		}
-
-		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Debug("Starting a Colonies client")
-		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
+		client := setup()
 
 		if !strings.HasSuffix(Label, "/") {
 			Label += "/"
@@ -722,32 +523,7 @@ var downloadSnapshotCmd = &cobra.Command{
 	Short: "Download a snapshot",
 	Long:  "Download a snapshot",
 	Run: func(cmd *cobra.Command, args []string) {
-		parseServerEnv()
-
-		keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
-		CheckError(err)
-
-		if ColonyID == "" {
-			ColonyID = os.Getenv("COLONIES_COLONY_ID")
-		}
-		if ColonyID == "" {
-			CheckError(errors.New("Unknown Colony Id"))
-		}
-
-		if ExecutorID == "" {
-			ExecutorID = os.Getenv("COLONIES_EXECUTOR_ID")
-		}
-		if ExecutorID == "" {
-			CheckError(errors.New("Unknown Executor Id"))
-		}
-
-		if ExecutorPrvKey == "" {
-			ExecutorPrvKey, err = keychain.GetPrvKey(ExecutorID)
-			CheckError(err)
-		}
-
-		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Debug("Starting a Colonies client")
-		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
+		client := setup()
 
 		log.Debug("Starting a file storage client")
 		fsClient, err := fs.CreateFSClient(client, ColonyID, ExecutorPrvKey)
@@ -782,32 +558,7 @@ var listSnapshotsCmd = &cobra.Command{
 	Short: "List all snapshots",
 	Long:  "List all snapshots",
 	Run: func(cmd *cobra.Command, args []string) {
-		parseServerEnv()
-
-		keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
-		CheckError(err)
-
-		if ColonyID == "" {
-			ColonyID = os.Getenv("COLONIES_COLONY_ID")
-		}
-		if ColonyID == "" {
-			CheckError(errors.New("Unknown Colony Id"))
-		}
-
-		if ExecutorID == "" {
-			ExecutorID = os.Getenv("COLONIES_EXECUTOR_ID")
-		}
-		if ExecutorID == "" {
-			CheckError(errors.New("Unknown Executor Id"))
-		}
-
-		if ExecutorPrvKey == "" {
-			ExecutorPrvKey, err = keychain.GetPrvKey(ExecutorID)
-			CheckError(err)
-		}
-
-		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Debug("Starting a Colonies client")
-		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
+		client := setup()
 
 		snapshots, err := client.GetSnapshotsByColonyID(ColonyID, ExecutorPrvKey)
 		CheckError(err)
@@ -835,32 +586,7 @@ var infoSnapshotCmd = &cobra.Command{
 	Short: "Get info about a snapshot",
 	Long:  "Get info about a snapshot",
 	Run: func(cmd *cobra.Command, args []string) {
-		parseServerEnv()
-
-		keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
-		CheckError(err)
-
-		if ColonyID == "" {
-			ColonyID = os.Getenv("COLONIES_COLONY_ID")
-		}
-		if ColonyID == "" {
-			CheckError(errors.New("Unknown Colony Id"))
-		}
-
-		if ExecutorID == "" {
-			ExecutorID = os.Getenv("COLONIES_EXECUTOR_ID")
-		}
-		if ExecutorID == "" {
-			CheckError(errors.New("Unknown Executor Id"))
-		}
-
-		if ExecutorPrvKey == "" {
-			ExecutorPrvKey, err = keychain.GetPrvKey(ExecutorID)
-			CheckError(err)
-		}
-
-		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Debug("Starting a Colonies client")
-		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
+		client := setup()
 
 		if SnapshotID != "" {
 			snapshot, err := client.GetSnapshotByID(ColonyID, SnapshotID, ExecutorPrvKey)
@@ -881,33 +607,9 @@ var removeSnapshotCmd = &cobra.Command{
 	Short: "Remove a snapshot",
 	Long:  "Remove a snapshot",
 	Run: func(cmd *cobra.Command, args []string) {
-		parseServerEnv()
+		client := setup()
 
-		keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
-		CheckError(err)
-
-		if ColonyID == "" {
-			ColonyID = os.Getenv("COLONIES_COLONY_ID")
-		}
-		if ColonyID == "" {
-			CheckError(errors.New("Unknown Colony Id"))
-		}
-
-		if ExecutorID == "" {
-			ExecutorID = os.Getenv("COLONIES_EXECUTOR_ID")
-		}
-		if ExecutorID == "" {
-			CheckError(errors.New("Unknown Executor Id"))
-		}
-
-		if ExecutorPrvKey == "" {
-			ExecutorPrvKey, err = keychain.GetPrvKey(ExecutorID)
-			CheckError(err)
-		}
-
-		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Debug("Starting a Colonies client")
-		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
-
+		var err error
 		if SnapshotID != "" {
 			err = client.DeleteSnapshotByID(ColonyID, SnapshotID, ExecutorPrvKey)
 			CheckError(err)

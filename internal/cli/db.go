@@ -2,15 +2,12 @@ package cli
 
 import (
 	"bufio"
-	"errors"
 	"fmt"
 	"os"
 	"strconv"
 	"time"
 
-	"github.com/colonyos/colonies/pkg/client"
 	"github.com/colonyos/colonies/pkg/database/postgresql"
-	"github.com/colonyos/colonies/pkg/security"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -128,25 +125,7 @@ var dbResetCmd = &cobra.Command{
 	Long:  "Remotely reset the database",
 	Run: func(cmd *cobra.Command, args []string) {
 		parseDBEnv()
-		parseServerEnv()
-
-		keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
-		CheckError(err)
-
-		if ServerID == "" {
-			ServerID = os.Getenv("COLONIES_SERVER_ID")
-		}
-		if ServerID == "" {
-			CheckError(errors.New("Unknown Server Id"))
-		}
-
-		if ServerPrvKey == "" {
-			ServerPrvKey, err = keychain.GetPrvKey(ServerID)
-			CheckError(err)
-		}
-
-		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Debug("Starting a Colonies client")
-		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
+		client := setup()
 
 		fmt.Print("WARNING!!! Are you sure you want to reset the database? This operation cannot be undone! (YES,no): ")
 

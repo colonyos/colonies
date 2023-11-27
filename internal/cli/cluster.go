@@ -1,14 +1,10 @@
 package cli
 
 import (
-	"errors"
 	"os"
 	"strconv"
 
-	"github.com/colonyos/colonies/pkg/client"
-	"github.com/colonyos/colonies/pkg/security"
 	"github.com/kataras/tablewriter"
-	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
@@ -30,28 +26,10 @@ var clusterCmd = &cobra.Command{
 
 var clusterInfoCmd = &cobra.Command{
 	Use:   "info",
-	Short: "Show info about a colonies cluster",
-	Long:  "Show info about a colonies cluster",
+	Short: "Show info about a Colonies cluster",
+	Long:  "Show info about a Colonies cluster",
 	Run: func(cmd *cobra.Command, args []string) {
-		parseServerEnv()
-
-		keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
-		CheckError(err)
-
-		if ServerID == "" {
-			ServerID = os.Getenv("COLONIES_SERVER_ID")
-		}
-		if ServerID == "" {
-			CheckError(errors.New("Unknown Server Id"))
-		}
-
-		if ServerPrvKey == "" {
-			ServerPrvKey, err = keychain.GetPrvKey(ServerID)
-			CheckError(err)
-		}
-
-		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Debug("Starting a Colonies client")
-		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
+		client := setup()
 
 		cluster, err := client.GetClusterInfo(ServerPrvKey)
 		CheckError(err)

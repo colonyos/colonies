@@ -74,14 +74,7 @@ var addExecutorCmd = &cobra.Command{
 	Short: "Add a new executor",
 	Long:  "Add a new executor",
 	Run: func(cmd *cobra.Command, args []string) {
-		parseServerEnv()
-
-		if ColonyID == "" {
-			ColonyID = os.Getenv("COLONIES_COLONY_ID")
-		}
-		if ColonyID == "" {
-			CheckError(errors.New("Unknown Colony Id"))
-		}
+		client := setup()
 
 		crypto := crypto.CreateCrypto()
 		var executorPrvKey string
@@ -107,20 +100,12 @@ var addExecutorCmd = &cobra.Command{
 			CheckError(err)
 		} else {
 			if ExecutorName == "" {
-				ExecutorName = os.Getenv("COLONIES_EXECUTOR_NAME")
-			}
-
-			if ExecutorName == "" {
 				CheckError(errors.New("Executor name not specified"))
 			}
 
 			if os.Getenv("HOSTNAME") != "" {
 				ExecutorName += "."
 				ExecutorName += os.Getenv("HOSTNAME")
-			}
-
-			if ExecutorType == "" {
-				ExecutorType = os.Getenv("COLONIES_EXECUTOR_TYPE")
 			}
 
 			if ExecutorType == "" {
@@ -136,15 +121,8 @@ var addExecutorCmd = &cobra.Command{
 		CheckError(err)
 
 		if ColonyPrvKey == "" {
-			ColonyPrvKey = os.Getenv("COLONIES_COLONY_PRVKEY")
-		}
-		if ColonyPrvKey == "" {
 			CheckError(errors.New("ERROR:" + ColonyPrvKey))
-			ColonyPrvKey, err = keychain.GetPrvKey(ColonyID)
 		}
-
-		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Debug("Starting a Colonies client")
-		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
 
 		addedExecutor, err := client.AddExecutor(executor, ColonyPrvKey)
 		CheckError(err)
@@ -175,28 +153,7 @@ var removeExecutorCmd = &cobra.Command{
 	Short: "Remove an executor",
 	Long:  "Remove an executor",
 	Run: func(cmd *cobra.Command, args []string) {
-		parseServerEnv()
-
-		if ColonyID == "" {
-			ColonyID = os.Getenv("COLONIES_COLONY_ID")
-		}
-		if ColonyID == "" {
-			CheckError(errors.New("Unknown Colony Id"))
-		}
-
-		if ColonyPrvKey == "" {
-			ColonyPrvKey = os.Getenv("COLONIES_COLONY_PRVKEY")
-		}
-		if ColonyPrvKey == "" {
-			keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
-			CheckError(err)
-
-			ColonyPrvKey, err = keychain.GetPrvKey(ColonyID)
-			CheckError(err)
-		}
-
-		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Debug("Starting a Colonies client")
-		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
+		client := setup()
 
 		if ExecutorID != "" {
 			err := client.DeleteExecutor(ExecutorID, ColonyPrvKey)
@@ -340,48 +297,10 @@ var lsExecutorsCmd = &cobra.Command{
 	Short: "List all executors",
 	Long:  "List all executors",
 	Run: func(cmd *cobra.Command, args []string) {
-		parseServerEnv()
-
-		keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
-		CheckError(err)
-
-		if ColonyID == "" {
-			ColonyID = os.Getenv("COLONIES_COLONY_ID")
-		}
-		if ColonyID == "" {
-			CheckError(errors.New("Unknown Colony Id"))
-		}
-
-		if ExecutorPrvKey == "" {
-			if ExecutorID == "" {
-				ExecutorID = os.Getenv("COLONIES_EXECUTOR_ID")
-			}
-			ExecutorPrvKey, _ = keychain.GetPrvKey(ExecutorID)
-		}
-
-		if ExecutorPrvKey == "" {
-			if ExecutorID == "" {
-				ExecutorID = os.Getenv("COLONIES_EXECUTOR_ID")
-			}
-			ExecutorPrvKey, _ = keychain.GetPrvKey(ExecutorID)
-		}
-
-		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Debug("Starting a Colonies client")
-		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
+		client := setup()
 
 		executorsFromServer, err := client.GetExecutors(ColonyID, ExecutorPrvKey)
-		if err != nil {
-			// Try ColonyPrvKey instead
-			if ColonyPrvKey == "" {
-				if ColonyID == "" {
-					ColonyID = os.Getenv("COLONIES_COLONY_ID")
-				}
-				ColonyPrvKey, err = keychain.GetPrvKey(ColonyID)
-				CheckError(err)
-			}
-			executorsFromServer, err = client.GetExecutors(ColonyID, ColonyPrvKey)
-			CheckError(err)
-		}
+		CheckError(err)
 
 		if Full {
 			if JSON {
@@ -425,48 +344,10 @@ var getExecutorCmd = &cobra.Command{
 	Short: "Get info about an executor",
 	Long:  "Get info about an executor",
 	Run: func(cmd *cobra.Command, args []string) {
-		parseServerEnv()
-
-		keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
-		CheckError(err)
-
-		if ColonyID == "" {
-			ColonyID = os.Getenv("COLONIES_COLONY_ID")
-		}
-		if ColonyID == "" {
-			CheckError(errors.New("Unknown Colony Id"))
-		}
-
-		if ExecutorPrvKey == "" {
-			if ExecutorID == "" {
-				ExecutorID = os.Getenv("COLONIES_EXECUTOR_ID")
-			}
-			ExecutorPrvKey, _ = keychain.GetPrvKey(ExecutorID)
-		}
-
-		if ExecutorPrvKey == "" {
-			if ExecutorID == "" {
-				ExecutorID = os.Getenv("COLONIES_EXECUTOR_ID")
-			}
-			ExecutorPrvKey, _ = keychain.GetPrvKey(ExecutorID)
-		}
-
-		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Debug("Starting a Colonies client")
-		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
+		client := setup()
 
 		executorFromServer, err := client.GetExecutor(TargetExecutorID, ExecutorPrvKey)
-		if err != nil {
-			// Try ColonyPrvKey instead
-			if ColonyPrvKey == "" {
-				if ColonyID == "" {
-					ColonyID = os.Getenv("COLONIES_COLONY_ID")
-				}
-				ColonyPrvKey, err = keychain.GetPrvKey(ColonyID)
-				CheckError(err)
-			}
-			executorFromServer, err = client.GetExecutor(TargetExecutorID, ColonyPrvKey)
-			CheckError(err)
-		}
+		CheckError(err)
 
 		printExecutor(client, executorFromServer)
 	},
@@ -477,27 +358,9 @@ var approveExecutorCmd = &cobra.Command{
 	Short: "Approve an executor",
 	Long:  "Approve an executor",
 	Run: func(cmd *cobra.Command, args []string) {
-		parseServerEnv()
+		client := setup()
 
-		keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
-		CheckError(err)
-
-		if ColonyID == "" {
-			ColonyID = os.Getenv("COLONIES_COLONY_ID")
-		}
-		if ColonyID == "" {
-			CheckError(errors.New("Unknown Colony Id"))
-		}
-
-		if ColonyPrvKey == "" {
-			ColonyPrvKey, err = keychain.GetPrvKey(ColonyID)
-			CheckError(err)
-		}
-
-		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Debug("Starting a Colonies client")
-		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
-
-		err = client.ApproveExecutor(ExecutorID, ColonyPrvKey)
+		err := client.ApproveExecutor(ExecutorID, ColonyPrvKey)
 		CheckError(err)
 
 		log.WithFields(log.Fields{"ExecutorID": ExecutorID, "ColonyID": ColonyID}).Info("Executor approved")
@@ -509,27 +372,9 @@ var rejectExecutorCmd = &cobra.Command{
 	Short: "Reject an executor",
 	Long:  "Reject an executor",
 	Run: func(cmd *cobra.Command, args []string) {
-		parseServerEnv()
+		client := setup()
 
-		keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
-		CheckError(err)
-
-		if ColonyID == "" {
-			ColonyID = os.Getenv("COLONIES_COLONY_ID")
-		}
-		if ColonyID == "" {
-			CheckError(errors.New("Unknown Colony Id"))
-		}
-
-		if ColonyPrvKey == "" {
-			ColonyPrvKey, err = keychain.GetPrvKey(ColonyID)
-			CheckError(err)
-		}
-
-		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Debug("Starting a Colonies client")
-		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
-
-		err = client.RejectExecutor(ExecutorID, ColonyPrvKey)
+		err := client.RejectExecutor(ExecutorID, ColonyPrvKey)
 		CheckError(err)
 
 		log.WithFields(log.Fields{"ExecutorID": ExecutorID, "ColonyID": ColonyID}).Info("Executor rejected")
@@ -554,35 +399,11 @@ var resolveExecutorCmd = &cobra.Command{
 	Short: "Resolve executor Id",
 	Long:  "Resolve executor Id",
 	Run: func(cmd *cobra.Command, args []string) {
-		parseServerEnv()
-
-		if ColonyID == "" {
-			ColonyID = os.Getenv("COLONIES_COLONY_ID")
-		}
-		if ColonyID == "" {
-			CheckError(errors.New("Unknown Colony Id, please set COLONYID env variable or specify ColonyID in JSON file"))
-		}
-
-		keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
-		CheckError(err)
-
-		if ExecutorID == "" {
-			ExecutorID = os.Getenv("COLONIES_EXECUTOR_ID")
-		}
-		if ExecutorID == "" {
-			CheckError(errors.New("Unknown Executor Id"))
-		}
-
-		if ExecutorPrvKey == "" {
-			ExecutorPrvKey, err = keychain.GetPrvKey(ExecutorID)
-			CheckError(err)
-		}
+		client := setup()
 
 		if TargetExecutorName == "" {
 			CheckError(errors.New("Target Executor Name must be specified"))
 		}
-
-		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
 
 		executors, err := client.GetExecutors(ColonyID, ExecutorPrvKey)
 		CheckError(err)

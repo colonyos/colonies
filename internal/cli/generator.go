@@ -7,9 +7,7 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/colonyos/colonies/pkg/client"
 	"github.com/colonyos/colonies/pkg/core"
-	"github.com/colonyos/colonies/pkg/security"
 	"github.com/colonyos/colonies/pkg/server"
 	"github.com/kataras/tablewriter"
 	log "github.com/sirupsen/logrus"
@@ -72,7 +70,7 @@ var addGeneratorCmd = &cobra.Command{
 	Short: "Add a generator",
 	Long:  "Add a generator",
 	Run: func(cmd *cobra.Command, args []string) {
-		parseServerEnv()
+		client := setup()
 
 		jsonSpecBytes, err := ioutil.ReadFile(SpecFile)
 		CheckError(err)
@@ -82,47 +80,11 @@ var addGeneratorCmd = &cobra.Command{
 		CheckError(err)
 
 		if workflowSpec.ColonyID == "" {
-			if ColonyID == "" {
-				ColonyID = os.Getenv("COLONIES_COLONY_ID")
-			}
-			if ColonyID == "" {
-				CheckError(errors.New("Unknown Colony Id, please set COLONYID env variable or specify ColonyID in JSON file"))
-			}
-
 			workflowSpec.ColonyID = ColonyID
 		}
 
 		workflowSpecJSON, err := workflowSpec.ToJSON()
 		CheckError(err)
-
-		if workflowSpec.ColonyID == "" {
-			if ColonyID == "" {
-				ColonyID = os.Getenv("COLONIES_COLONY_ID")
-			}
-			if ColonyID == "" {
-				CheckError(errors.New("Unknown Colony Id, please set COLONYID env variable or specify ColonyID in JSON file"))
-			}
-
-			workflowSpec.ColonyID = ColonyID
-		}
-
-		keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
-		CheckError(err)
-
-		if ExecutorID == "" {
-			ExecutorID = os.Getenv("COLONIES_EXECUTOR_ID")
-		}
-		if ExecutorID == "" {
-			CheckError(errors.New("Unknown Executor Id"))
-		}
-
-		if ExecutorPrvKey == "" {
-			ExecutorPrvKey, err = keychain.GetPrvKey(ExecutorID)
-			CheckError(err)
-		}
-
-		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Debug("Starting a Colonies client")
-		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
 
 		if GeneratorName == "" {
 			CheckError(errors.New("Generator name not specified"))
@@ -145,31 +107,13 @@ var packGeneratorCmd = &cobra.Command{
 	Short: "Pack arg to a generator",
 	Long:  "Pack arg to a generator",
 	Run: func(cmd *cobra.Command, args []string) {
-		parseServerEnv()
-
-		keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
-		CheckError(err)
-
-		if ExecutorID == "" {
-			ExecutorID = os.Getenv("COLONIES_EXECUTOR_ID")
-		}
-		if ExecutorID == "" {
-			CheckError(errors.New("Unknown Executor Id"))
-		}
-
-		if ExecutorPrvKey == "" {
-			ExecutorPrvKey, err = keychain.GetPrvKey(ExecutorID)
-			CheckError(err)
-		}
-
-		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Debug("Starting a Colonies client")
-		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
+		client := setup()
 
 		if GeneratorID == "" {
 			CheckError(errors.New("Generator Id not specified"))
 		}
 
-		err = client.PackGenerator(GeneratorID, Arg, ExecutorPrvKey)
+		err := client.PackGenerator(GeneratorID, Arg, ExecutorPrvKey)
 		CheckError(err)
 
 		log.WithFields(log.Fields{"GeneratorID": GeneratorID, "Arg": Arg}).Info("Packing arg to generator")
@@ -181,31 +125,13 @@ var delGeneratorCmd = &cobra.Command{
 	Short: "Delete a generator",
 	Long:  "Delete a generator",
 	Run: func(cmd *cobra.Command, args []string) {
-		parseServerEnv()
-
-		keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
-		CheckError(err)
-
-		if ExecutorID == "" {
-			ExecutorID = os.Getenv("COLONIES_EXECUTOR_ID")
-		}
-		if ExecutorID == "" {
-			CheckError(errors.New("Unknown Executor Id"))
-		}
-
-		if ExecutorPrvKey == "" {
-			ExecutorPrvKey, err = keychain.GetPrvKey(ExecutorID)
-			CheckError(err)
-		}
-
-		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Debug("Starting a Colonies client")
-		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
+		client := setup()
 
 		if GeneratorID == "" {
 			CheckError(errors.New("Generator Id not specified"))
 		}
 
-		err = client.DeleteGenerator(GeneratorID, ExecutorPrvKey)
+		err := client.DeleteGenerator(GeneratorID, ExecutorPrvKey)
 		CheckError(err)
 
 		log.WithFields(log.Fields{"GeneratorID": GeneratorID}).Info("Deleting generator")
@@ -217,25 +143,7 @@ var getGeneratorCmd = &cobra.Command{
 	Short: "Get info about a generator",
 	Long:  "Get info about a generator",
 	Run: func(cmd *cobra.Command, args []string) {
-		parseServerEnv()
-
-		keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
-		CheckError(err)
-
-		if ExecutorID == "" {
-			ExecutorID = os.Getenv("COLONIES_EXECUTOR_ID")
-		}
-		if ExecutorID == "" {
-			CheckError(errors.New("Unknown Executor Id"))
-		}
-
-		if ExecutorPrvKey == "" {
-			ExecutorPrvKey, err = keychain.GetPrvKey(ExecutorID)
-			CheckError(err)
-		}
-
-		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Debug("Starting a Colonies client")
-		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
+		client := setup()
 
 		if GeneratorID == "" {
 			CheckError(errors.New("Generator Id not specified"))
@@ -282,34 +190,10 @@ var getGeneratorsCmd = &cobra.Command{
 	Short: "List all generators",
 	Long:  "List all generators",
 	Run: func(cmd *cobra.Command, args []string) {
-		parseServerEnv()
-
-		keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
-		CheckError(err)
-
-		if ColonyID == "" {
-			ColonyID = os.Getenv("COLONIES_COLONY_ID")
-		}
-		if ColonyID == "" {
-			CheckError(errors.New("Unknown Colony Id"))
-		}
-
-		if ExecutorID == "" {
-			ExecutorID = os.Getenv("COLONIES_EXECUTOR_ID")
-		}
-		if ExecutorID == "" {
-			CheckError(errors.New("Unknown Executor Id"))
-		}
-
-		if ExecutorPrvKey == "" {
-			ExecutorPrvKey, err = keychain.GetPrvKey(ExecutorID)
-			CheckError(err)
-		}
-
-		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Debug("Starting a Colonies client")
-		client := client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
+		client := setup()
 
 		generators, err := client.GetGenerators(ColonyID, Count, ExecutorPrvKey)
+		CheckError(err)
 		if generators == nil {
 			log.WithFields(log.Fields{"ColonyId": ColonyID}).Info("No generators found")
 			os.Exit(0)

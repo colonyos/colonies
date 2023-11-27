@@ -6,7 +6,6 @@ import (
 	"strconv"
 
 	"github.com/colonyos/colonies/pkg/monitoring"
-	"github.com/colonyos/colonies/pkg/security"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -27,22 +26,7 @@ var monitoringStartCmd = &cobra.Command{
 	Short: "Start a monitoring server",
 	Long:  "Start a monitoring server",
 	Run: func(cmd *cobra.Command, args []string) {
-		parseServerEnv()
-
-		if ServerID == "" {
-			ServerID = os.Getenv("COLONIES_SERVER_ID")
-		}
-		if ServerID == "" {
-			CheckError(errors.New("Unknown Server Id"))
-		}
-
-		ServerPrvKey = os.Getenv("COLONIES_SERVER_PRVKEY")
-		if ServerPrvKey == "" {
-			keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
-			CheckError(err)
-			ServerPrvKey, err = keychain.GetPrvKey(ServerID)
-			CheckError(err)
-		}
+		parseEnv()
 
 		MonitorPortEnvStr := os.Getenv("COLONIES_MONITOR_PORT")
 		if MonitorPortEnvStr == "" {
