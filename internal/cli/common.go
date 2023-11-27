@@ -232,6 +232,10 @@ func parseEnv() {
 		ColonyID = os.Getenv("COLONIES_COLONY_ID")
 	}
 
+	if ColonyName == "" {
+		ColonyName = os.Getenv("COLONIES_COLONY_NAME")
+	}
+
 	ServerPrvKey = os.Getenv("COLONIES_SERVER_PRVKEY")
 	ColonyPrvKey = os.Getenv("COLONIES_COLONY_PRVKEY")
 	PrvKey = os.Getenv("COLONIES_PRVKEY")
@@ -335,8 +339,8 @@ func checkDevEnv() {
 		envErr = true
 	}
 
-	if os.Getenv("COLONIES_COLONY_ID") == "" {
-		log.Error("COLONIES_COLONY_ID environmental variable missing, try export COLONIES_COLONY_ID=\"4787a5071856a4acf702b2ffcea422e3237a679c681314113d86139461290cf4\"")
+	if os.Getenv("COLONIES_COLONY_NAME") == "" {
+		log.Error("COLONIES_COLONY_NAME environmental variable missing, try export COLONIES_COLONY_NAME=\"dev\"")
 		envErr = true
 	}
 
@@ -372,7 +376,7 @@ func checkDevEnv() {
 		envProposal += "export COLONIES_DB_USER=\"postgres\"\n"
 		envProposal += "export COLONIES_DB_PORT=\"50070\"\n"
 		envProposal += "export COLONIES_DB_PASSWORD=\"rFcLGNkgsNtksg6Pgtn9CumL4xXBQ7\"\n"
-		envProposal += "export COLONIES_COLONY_ID=\"4787a5071856a4acf702b2ffcea422e3237a679c681314113d86139461290cf4\"\n"
+		envProposal += "export COLONIES_COLONY_NAME=\"dev\"\n"
 		envProposal += "export COLONIES_COLONY_PRVKEY=\"ba949fa134981372d6da62b6a56f336ab4d843b22c02a4257dcf7d0d73097514\"\n"
 		envProposal += "export COLONIES_PRVKEY=\"ddf7f7791208083b6a9ed975a72684f6406a269cfa36f1b1c32045c0a71fff05\"\n"
 		envProposal += "export COLONIES_EXECUTOR_TYPE=\"cli\"\n"
@@ -386,7 +390,7 @@ func envError() {
 	env := `export COLONIES_SERVER_TLS="true"
 export COLONIES_SERVER_HOST=""
 export COLONIES_SERVER_PORT=""
-export COLONIES_COLONY_ID=""
+export COLONIES_COLONY_NAME=""
 export COLONIES_PRVKEY=""
     `
 
@@ -396,6 +400,11 @@ export COLONIES_PRVKEY=""
 
 func setup() *client.ColoniesClient {
 	parseEnv()
+
+	if ColonyName == "" {
+		log.Error("COLONIES_COLONY_NAME not set")
+		envError()
+	}
 
 	if PrvKey == "" {
 		log.Error("COLONIES_PRVKEY not set")
@@ -407,8 +416,8 @@ func setup() *client.ColoniesClient {
 		envError()
 	}
 
-	if ColonyID == "" {
-		log.Error("COLONIES_COLONY_ID not set")
+	if ColonyName == "" {
+		log.Error("COLONIES_COLONY_NAME not set")
 		envError()
 	}
 
