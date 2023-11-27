@@ -39,7 +39,7 @@ var addLogCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		client := setup()
 
-		err := client.AddLog(ProcessID, LogMsg, ExecutorPrvKey)
+		err := client.AddLog(ProcessID, LogMsg, PrvKey)
 		CheckError(err)
 
 		log.WithFields(log.Fields{"ProcessID": ProcessID, "LogMsg": LogMsg}).Info("Adding log")
@@ -60,9 +60,9 @@ var getLogsCmd = &cobra.Command{
 			lastTimestamp = 0
 			for {
 				if TargetExecutorID == "" {
-					logs, err = client.GetLogsByProcessIDSince(ProcessID, Count, lastTimestamp, ExecutorPrvKey)
+					logs, err = client.GetLogsByProcessIDSince(ProcessID, Count, lastTimestamp, PrvKey)
 				} else {
-					logs, err = client.GetLogsByExecutorIDSince(TargetExecutorID, Count, lastTimestamp, ExecutorPrvKey)
+					logs, err = client.GetLogsByExecutorIDSince(TargetExecutorID, Count, lastTimestamp, PrvKey)
 				}
 				CheckError(err)
 				if len(logs) == 0 {
@@ -79,9 +79,9 @@ var getLogsCmd = &cobra.Command{
 			var err error
 			var logs []core.Log
 			if TargetExecutorID == "" {
-				logs, err = client.GetLogsByProcessIDSince(ProcessID, Count, Since, ExecutorPrvKey)
+				logs, err = client.GetLogsByProcessIDSince(ProcessID, Count, Since, PrvKey)
 			} else {
-				logs, err = client.GetLogsByExecutorIDSince(ExecutorID, Count, Since, ExecutorPrvKey)
+				logs, err = client.GetLogsByExecutorIDSince(TargetExecutorID, Count, Since, PrvKey)
 			}
 			CheckError(err)
 			for _, log := range logs {

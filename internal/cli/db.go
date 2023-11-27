@@ -23,7 +23,6 @@ func init() {
 	dbCmd.PersistentFlags().StringVarP(&DBUser, "dbuser", "", "", "Colonies database user")
 	dbCmd.PersistentFlags().StringVarP(&DBPassword, "dbpassword", "", "", "Colonies database password")
 
-	dbResetCmd.Flags().StringVarP(&ServerID, "serverid", "", "", "Colonies server Id")
 	dbResetCmd.Flags().StringVarP(&ServerPrvKey, "serverprvkey", "", "", "Colonies server private key")
 }
 

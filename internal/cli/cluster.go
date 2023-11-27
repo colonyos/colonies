@@ -14,7 +14,6 @@ func init() {
 
 	clusterInfoCmd.Flags().StringVarP(&ServerHost, "host", "", "localhost", "Server host")
 	clusterInfoCmd.Flags().IntVarP(&ServerPort, "port", "", -1, "Server HTTP port")
-	clusterInfoCmd.Flags().StringVarP(&ServerID, "serverid", "", "", "Colonies server Id")
 	clusterInfoCmd.Flags().StringVarP(&ServerPrvKey, "serverprvkey", "", "", "Colonies server private key")
 }
 

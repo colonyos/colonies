@@ -10,7 +10,6 @@ import (
 	"github.com/colonyos/colonies/pkg/build"
 	"github.com/colonyos/colonies/pkg/client"
 	"github.com/colonyos/colonies/pkg/core"
-	"github.com/colonyos/colonies/pkg/security"
 	"github.com/colonyos/colonies/pkg/server"
 	"github.com/colonyos/colonies/pkg/validate"
 	"github.com/gin-gonic/gin"
@@ -147,15 +146,11 @@ func parseEnv() {
 	if ServerPortEnvStr != "" {
 		if ServerPort == -1 {
 			ServerPort, err = strconv.Atoi(ServerPortEnvStr)
-			envError()
+			CheckError(err)
 		}
 	}
 
-	if ServerID == "" {
-		ServerID = os.Getenv("COLONIES_SERVER_ID")
-	}
-
-	TLSEnv := os.Getenv("COLONIES_TLS")
+	TLSEnv := os.Getenv("COLONIES_SERVER_TLS")
 	if TLSEnv == "true" {
 		UseTLS = true
 		Insecure = false
@@ -165,11 +160,11 @@ func parseEnv() {
 	}
 
 	if TLSKey == "" {
-		TLSKey = os.Getenv("COLONIES_TLSKEY")
+		TLSKey = os.Getenv("COLONIES_SERVER_TLSKEY")
 	}
 
 	if TLSCert == "" {
-		TLSCert = os.Getenv("COLONIES_TLSCERT")
+		TLSCert = os.Getenv("COLONIES_SERVER_TLSCERT")
 	}
 
 	VerboseEnv := os.Getenv("COLONIES_VERBOSE")
@@ -211,6 +206,13 @@ func parseEnv() {
 		ExclusiveAssign = false
 	}
 
+	DBHost = os.Getenv("COLONIES_DB_HOST")
+	DBPort, err = strconv.Atoi(os.Getenv("COLONIES_DB_PORT"))
+	CheckError(err)
+
+	DBUser = os.Getenv("COLONIES_DB_USER")
+	DBPassword = os.Getenv("COLONIES_DB_PASSWORD")
+
 	AllowExecutorReregisterStr := os.Getenv("COLONIES_ALLOW_EXECUTOR_REREGISTER")
 	if AllowExecutorReregisterStr != "" {
 		AllowExecutorReregister, err = strconv.ParseBool(AllowExecutorReregisterStr)
@@ -226,35 +228,13 @@ func parseEnv() {
 		TimescaleDB = false
 	}
 
-	if ServerID != "" {
-		ServerID = os.Getenv("COLONIES_SERVER_ID")
-	}
-
 	if ColonyID == "" {
 		ColonyID = os.Getenv("COLONIES_COLONY_ID")
 	}
 
-	if ExecutorID == "" {
-		ExecutorID = os.Getenv("COLONIES_EXECUTOR_ID")
-	}
-
-	keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
-	CheckError(err)
-
-	ServerPrvKey, err = keychain.GetPrvKey(ServerID)
-	if err != nil {
-		ServerPrvKey = os.Getenv("COLONIES_SERVER_PRVKEY")
-	}
-
-	ColonyPrvKey, err = keychain.GetPrvKey(ColonyID)
-	if err != nil {
-		ColonyPrvKey = os.Getenv("COLONIES_COLONY_PRVKEY")
-	}
-
-	ExecutorPrvKey, err = keychain.GetPrvKey(ExecutorID)
-	if err != nil {
-		ExecutorPrvKey = os.Getenv("COLONIES_EXECUTOR_PRVKEY")
-	}
+	ServerPrvKey = os.Getenv("COLONIES_SERVER_PRVKEY")
+	ColonyPrvKey = os.Getenv("COLONIES_COLONY_PRVKEY")
+	PrvKey = os.Getenv("COLONIES_PRVKEY")
 
 	if ExecutorType == "" {
 		ExecutorType = os.Getenv("COLONIES_EXECUTOR_TYPE")
@@ -263,39 +243,172 @@ func parseEnv() {
 	if ExecutorName == "" {
 		ExecutorName = os.Getenv("COLONIES_EXECUTOR_NAME")
 	}
+
+	retentionStr := os.Getenv("COLONIES_RETENTION")
+	Retention = false
+	if retentionStr == "true" {
+		Retention = true
+	}
+	retentionPolicyStr := os.Getenv("COLONIES_RETENTION_POLICY")
+	RetentionPolicy, err = strconv.ParseInt(retentionPolicyStr, 10, 64)
+	CheckError(err)
+
+	monitorPortStr := os.Getenv("COLONIES_MONITOR_PORT")
+	MonitorPort, err = strconv.Atoi(monitorPortStr)
+	CheckError(err)
+
+	intervalStr := os.Getenv("COLONIES_MONITOR_INTERVAL")
+	MonitorInterval, err = strconv.Atoi(intervalStr)
+	CheckError(err)
+
+}
+
+func checkDevEnv() {
+	envErr := false
+	if os.Getenv("LANG") == "" {
+		log.Error("LANG environmental variable missing, try export LANG=en_US.UTF-8")
+		envErr = true
+	}
+
+	if os.Getenv("LANGUAGE") == "" {
+		log.Error("LANGUAGE environmental variable missing, try export LANGUAGE=en_US.UTF-8")
+		envErr = true
+	}
+
+	if os.Getenv("LC_ALL") == "" {
+		log.Error("LC_ALL environmental variable missing, try export LC_ALL=en_US.UTF-8")
+		envErr = true
+	}
+
+	if os.Getenv("LC_CTYPE") == "" {
+		log.Error("LC_CTYPE environmental variable missing, try export LC_CTYPE=UTF-8")
+		envErr = true
+	}
+
+	if os.Getenv("TZ") == "" {
+		log.Error("TZ environmental variable missing, try export TZ=Europe/Stockholm")
+		envErr = true
+	}
+
+	if os.Getenv("COLONIES_SERVER_HOST") == "" {
+		log.Error("COLONIES_SERVER_HOST environmental variable missing, try export COLONIES_SERVER_HOST=\"localhost\"")
+		envErr = true
+	}
+
+	if os.Getenv("COLONIES_SERVER_PORT") == "" {
+		log.Error("COLONIES_SERVER_PORT environmental variable missing, try export COLONIES_SERVER_PORT=\"50080\"")
+		envErr = true
+	}
+
+	if os.Getenv("COLONIES_MONITOR_PORT") == "" {
+		log.Error("COLONIES_MONITOR_PORT environmental variable missing, try export COLONIES_MONITOR_PORT=\"21120\"")
+		envErr = true
+	}
+
+	if os.Getenv("COLONIES_MONITOR_INTERVAL") == "" {
+		log.Error("COLONIES_MONITOR_INTERVAL environmental variable missing, try export COLONIES_MONITOR_INTERVAL=\"1\"")
+		envErr = true
+	}
+
+	if os.Getenv("COLONIES_SERVER_PRVKEY") == "" {
+		log.Error("COLONIES_SERVER_PRVKEY environmental variable missing, try export COLONIES_SERVER_PRVKEY=\"fcc79953d8a751bf41db661592dc34d30004b1a651ffa0725b03ac227641499d\"")
+		envErr = true
+	}
+
+	if os.Getenv("COLONIES_DB_HOST") == "" {
+		log.Error("COLONIES_DB_HOST environmental variable missing, try export COLONIES_DB_HOST=\"localhost\"")
+		envErr = true
+	}
+
+	if os.Getenv("COLONIES_DB_PORT") == "" {
+		log.Error("COLONIES_DB_PORT environmental variable missing, try export COLONIES_DB_PORT=\"50070\"")
+		envErr = true
+	}
+
+	if os.Getenv("COLONIES_DB_USER") == "" {
+		log.Error("COLONIES_DB_USER environmental variable missing, try export COLONIES_DB_USER=\"postgres\"")
+		envErr = true
+	}
+
+	if os.Getenv("COLONIES_DB_PASSWORD") == "" {
+		log.Error("COLONIES_DB_PASSWORD environmental variable missing, try export COLONIES_DB_PASSWORD=\"rFcLGNkgsNtksg6Pgtn9CumL4xXBQ7\"")
+		envErr = true
+	}
+
+	if os.Getenv("COLONIES_COLONY_ID") == "" {
+		log.Error("COLONIES_COLONY_ID environmental variable missing, try export COLONIES_COLONY_ID=\"4787a5071856a4acf702b2ffcea422e3237a679c681314113d86139461290cf4\"")
+		envErr = true
+	}
+
+	if os.Getenv("COLONIES_COLONY_PRVKEY") == "" {
+		log.Error("COLONIES_COLONY_PRVKEY environmental variable missing, try export COLONIES_COLONY_PRVKEY=\"ba949fa134981372d6da62b6a56f336ab4d843b22c02a4257dcf7d0d73097514\"")
+		envErr = true
+	}
+
+	if os.Getenv("COLONIES_PRVKEY") == "" {
+		log.Error("COLONIES_PRVKEY environmental variable missing, try export COLONIES_PRVKEY=\"ddf7f7791208083b6a9ed975a72684f6406a269cfa36f1b1c32045c0a71fff05\"")
+		envErr = true
+	}
+
+	if os.Getenv("COLONIES_EXECUTOR_TYPE") == "" {
+		log.Error("COLONIES_EXECUTOR_TYPE environmental variable missing, try export COLONIES_EXECUTOR_TYPE=\"cli\"")
+		envErr = true
+	}
+
+	if envErr {
+		log.Error(envErr)
+		fmt.Println("\nExample of enironmental variables:")
+		envProposal := "export LANG=en_US.UTF-8\n"
+		envProposal += "export LANGUAGE=en_US.UTF-8\n"
+		envProposal += "export LC_ALL=en_US.UTF-8\n"
+		envProposal += "export LC_CTYPE=UTF-8\n"
+		envProposal += "export TZ=Europe/Stockholm\n"
+		envProposal += "export COLONIES_TLS=\"false\"\n"
+		envProposal += "export COLONIES_SERVER_HOST=\"localhost\"\n"
+		envProposal += "export COLONIES_SERVER_PORT=\"50080\"\n"
+		envProposal += "export COLONIES_MONITOR_PORT=\"21120\"\n"
+		envProposal += "export COLONIES_SERVER_PRVKEY=\"fcc79953d8a751bf41db661592dc34d30004b1a651ffa0725b03ac227641499d\"\n"
+		envProposal += "export COLONIES_DB_HOST=\"localhost\"\n"
+		envProposal += "export COLONIES_DB_USER=\"postgres\"\n"
+		envProposal += "export COLONIES_DB_PORT=\"50070\"\n"
+		envProposal += "export COLONIES_DB_PASSWORD=\"rFcLGNkgsNtksg6Pgtn9CumL4xXBQ7\"\n"
+		envProposal += "export COLONIES_COLONY_ID=\"4787a5071856a4acf702b2ffcea422e3237a679c681314113d86139461290cf4\"\n"
+		envProposal += "export COLONIES_COLONY_PRVKEY=\"ba949fa134981372d6da62b6a56f336ab4d843b22c02a4257dcf7d0d73097514\"\n"
+		envProposal += "export COLONIES_PRVKEY=\"ddf7f7791208083b6a9ed975a72684f6406a269cfa36f1b1c32045c0a71fff05\"\n"
+		envProposal += "export COLONIES_EXECUTOR_TYPE=\"cli\"\n"
+
+		fmt.Println(envProposal)
+		os.Exit(-1)
+	}
 }
 
 func envError() {
-	env := `export COLONIES_TLS="true"
-export COLONIES_SERVER_TLS=""
+	env := `export COLONIES_SERVER_TLS="true"
 export COLONIES_SERVER_HOST=""
 export COLONIES_SERVER_PORT=""
 export COLONIES_COLONY_ID=""
-export COLONIES_EXECUTOR_ID=""
-export COLONIES_EXECUTOR_PRVKEY=""
+export COLONIES_PRVKEY=""
     `
 
-	envAlt := `export COLONIES_TLS="true"
-export COLONIES_SERVER_TLS=""
-export COLONIES_SERVER_HOST=""
-export COLONIES_SERVER_PORT=""
-export COLONIES_COLONY_ID=""
-export COLONIES_USER_ID=""
-export COLONIES_USER_PRVKEY=""
-    `
-
-	log.Error("Please set the following environmental variable: \n\n" + env + "\nor alternatively:\n\n" + envAlt)
+	log.Error("Please set the following environmental variable: \n\n" + env)
 	os.Exit(-1)
 }
 
 func setup() *client.ColoniesClient {
 	parseEnv()
 
-	if (UserID == "" || UserPrvKey == "") || (ExecutorID == "" || ExecutorPrvKey == "") {
+	if PrvKey == "" {
+		log.Error("COLONIES_PRVKEY not set")
 		envError()
 	}
 
-	if ColonyID == "" || ServerHost == "" {
+	if ServerHost == "" {
+		log.Error("COLONIES_SERVER_HOST not set")
+		envError()
+	}
+
+	if ColonyID == "" {
+		log.Error("COLONIES_COLONY_ID not set")
 		envError()
 	}
 

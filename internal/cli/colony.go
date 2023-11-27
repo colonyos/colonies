@@ -8,7 +8,6 @@ import (
 	"strconv"
 
 	"github.com/colonyos/colonies/pkg/core"
-	"github.com/colonyos/colonies/pkg/security"
 	"github.com/colonyos/colonies/pkg/security/crypto"
 	"github.com/kataras/tablewriter"
 	log "github.com/sirupsen/logrus"
@@ -26,28 +25,23 @@ func init() {
 	colonyCmd.PersistentFlags().StringVarP(&ServerHost, "host", "", DefaultServerHost, "Server host")
 	colonyCmd.PersistentFlags().IntVarP(&ServerPort, "port", "", -1, "Server HTTP port")
 
-	addColonyCmd.Flags().StringVarP(&ServerID, "serverid", "", "", "Colonies server Id")
 	addColonyCmd.Flags().StringVarP(&ServerPrvKey, "serverprvkey", "", "", "Colonies server private key")
 	addColonyCmd.Flags().StringVarP(&ColonyPrvKey, "colonyprvkey", "", "", "Colony private key")
 	addColonyCmd.Flags().StringVarP(&SpecFile, "spec", "", "", "JSON specification of a Colony")
 	addColonyCmd.MarkFlagRequired("spec")
 
-	removeColonyCmd.Flags().StringVarP(&ServerID, "serverid", "", "", "Colonies server Id")
 	removeColonyCmd.Flags().StringVarP(&ServerPrvKey, "serverprvkey", "", "", "Colonies server private key")
 	removeColonyCmd.Flags().StringVarP(&ColonyID, "colonyid", "", "", "Colony Id")
 	removeColonyCmd.MarkFlagRequired("colonyid")
 
-	renameColonyCmd.Flags().StringVarP(&ServerID, "serverid", "", "", "Colonies server Id")
 	renameColonyCmd.Flags().StringVarP(&ColonyPrvKey, "colonyprvkey", "", "", "Colony private key")
 	renameColonyCmd.Flags().StringVarP(&ColonyID, "colonyid", "", "", "Colony Id")
 	renameColonyCmd.Flags().StringVarP(&ColonyName, "name", "", "", "New Colony name")
 	renameColonyCmd.MarkFlagRequired("name")
 
-	lsColoniesCmd.Flags().StringVarP(&ServerID, "serverid", "", "", "Colonies server Id")
 	lsColoniesCmd.Flags().StringVarP(&ServerPrvKey, "serverprvkey", "", "", "Colonies server private key")
 	lsColoniesCmd.Flags().BoolVarP(&JSON, "json", "", false, "Print JSON instead of tables")
 
-	colonyStatsCmd.Flags().StringVarP(&ServerID, "serverid", "", "", "Colonies server Id")
 	colonyStatsCmd.Flags().StringVarP(&ServerPrvKey, "serverprvkey", "", "", "Colonies server private key")
 	colonyStatsCmd.Flags().StringVarP(&ColonyID, "colonyid", "", "", "Colony Id")
 }
@@ -73,9 +67,6 @@ var addColonyCmd = &cobra.Command{
 
 		crypto := crypto.CreateCrypto()
 
-		keychain, err := security.CreateKeychain(KEYCHAIN_PATH)
-		CheckError(err)
-
 		var prvKey string
 		if ColonyPrvKey != "" {
 			prvKey = ColonyPrvKey
@@ -84,7 +75,7 @@ var addColonyCmd = &cobra.Command{
 			}
 		} else {
 			prvKey, err = crypto.GeneratePrivateKey()
-			CheckError(err)
+			CheckError(errors.New("No Colony private key specified"))
 		}
 
 		colonyID, err := crypto.GenerateID(prvKey)
@@ -92,9 +83,6 @@ var addColonyCmd = &cobra.Command{
 		colony.SetID(colonyID)
 
 		addedColony, err := client.AddColony(colony, ServerPrvKey)
-		CheckError(err)
-
-		err = keychain.AddPrvKey(colonyID, prvKey)
 		CheckError(err)
 
 		log.WithFields(log.Fields{"ColonyID": addedColony.ID}).Info("Colony added")
@@ -178,7 +166,7 @@ var colonyStatsCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		client := setup()
 
-		stat, err := client.ColonyStatistics(ColonyID, ExecutorPrvKey)
+		stat, err := client.ColonyStatistics(ColonyID, PrvKey)
 		CheckError(err)
 
 		fmt.Println("Process statistics:")

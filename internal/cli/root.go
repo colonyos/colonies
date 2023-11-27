@@ -34,16 +34,13 @@ var ServerHost string
 var ServerPort int
 var MonitorPort int
 var MonitorInterval int
-var ServerID string
 var ServerPrvKey string
 var SpecFile string
 var Count int
 var ID string
 var PrvKey string
 var ExecutorName string
-var ExecutorID string
 var ExecutorType string
-var ExecutorPrvKey string
 var FunctionID string
 var TargetExecutorID string
 var TargetExecutorType string
@@ -116,6 +113,8 @@ var KwArgs []string
 var Snapshots []string
 var UserID string
 var UserPrvKey string
+var Retention bool
+var RetentionPolicy int64
 
 func init() {
 	rootCmd.PersistentFlags().BoolVarP(&Verbose, "verbose", "v", false, "Verbose (debugging)")

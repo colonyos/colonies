@@ -24,10 +24,8 @@ func init() {
 	addAttributeCmd.Flags().StringVarP(&ProcessID, "processid", "", "", "Process Id")
 	addAttributeCmd.MarkFlagRequired("processid")
 	addAttributeCmd.Flags().StringVarP(&ColonyID, "colonyid", "", "", "Colony Id")
-	addAttributeCmd.Flags().StringVarP(&ExecutorID, "executorid", "", "", "Executor Id")
 
 	getAttributeCmd.Flags().StringVarP(&ColonyID, "colonyid", "", "", "Colony Id")
-	getAttributeCmd.Flags().StringVarP(&ExecutorID, "executorid", "", "", "Executor Id")
 	getAttributeCmd.Flags().StringVarP(&AttributeID, "attributeid", "", "", "Attribute Id")
 	getAttributeCmd.MarkFlagRequired("attributeid")
 }
@@ -45,12 +43,12 @@ var addAttributeCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		client := setup()
 
-		process, err := client.GetProcess(ProcessID, ExecutorPrvKey)
+		process, err := client.GetProcess(ProcessID, PrvKey)
 		CheckError(err)
 
 		attribute := core.CreateAttribute(ProcessID, ColonyID, process.ProcessGraphID, core.OUT, Key, Value)
 
-		addedAttribute, err := client.AddAttribute(attribute, ExecutorPrvKey)
+		addedAttribute, err := client.AddAttribute(attribute, PrvKey)
 		CheckError(err)
 
 		log.WithFields(log.Fields{"AttributeID": addedAttribute.ID}).Info("Attribute added")
@@ -64,7 +62,7 @@ var getAttributeCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		client := setup()
 
-		attribute, err := client.GetAttribute(AttributeID, ExecutorPrvKey)
+		attribute, err := client.GetAttribute(AttributeID, PrvKey)
 		CheckError(err)
 
 		var attributeType string
