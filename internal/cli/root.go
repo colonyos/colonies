@@ -114,6 +114,8 @@ var SnapshotID string
 var SnapshotName string
 var KwArgs []string
 var Snapshots []string
+var UserID string
+var UserPrvKey string
 
 func init() {
 	rootCmd.PersistentFlags().BoolVarP(&Verbose, "verbose", "v", false, "Verbose (debugging)")
