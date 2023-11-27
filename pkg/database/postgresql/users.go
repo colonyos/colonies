@@ -13,8 +13,8 @@ func (db *PQDatabase) AddUser(user *core.User) error {
 		return errors.New("User is nil")
 	}
 
-	sqlStatement := `INSERT INTO  ` + db.dbPrefix + `USERS (COLONY_NAME, USER_ID, NAME) VALUES ($1, $2, $3)`
-	_, err := db.postgresql.Exec(sqlStatement, user.ColonyName, user.ID, user.Name)
+	sqlStatement := `INSERT INTO  ` + db.dbPrefix + `USERS (COLONY_NAME, USER_ID, NAME, EMAIL, PHONE) VALUES ($1, $2, $3, $4, $5)`
+	_, err := db.postgresql.Exec(sqlStatement, user.ColonyName, user.ID, user.Name, user.Email, user.Phone)
 	if err != nil {
 		return err
 	}
@@ -29,18 +29,20 @@ func (db *PQDatabase) parseUsers(rows *sql.Rows) ([]*core.User, error) {
 		var name string
 		var userID string
 		var colonyID string
-		if err := rows.Scan(&name, &userID, &colonyID); err != nil {
+		var email string
+		var phone string
+		if err := rows.Scan(&name, &userID, &colonyID, &email, &phone); err != nil {
 			return nil, err
 		}
 
-		user := core.CreateUser(colonyID, userID, name)
+		user := core.CreateUser(colonyID, userID, name, email, phone)
 		users = append(users, user)
 	}
 
 	return users, nil
 }
 
-func (db *PQDatabase) GetUsers(colonyName string) ([]*core.User, error) {
+func (db *PQDatabase) GetUsersByColonyName(colonyName string) ([]*core.User, error) {
 	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `USERS WHERE COLONY_NAME=$1`
 	rows, err := db.postgresql.Query(sqlStatement, colonyName)
 	if err != nil {
@@ -114,7 +116,7 @@ func (db *PQDatabase) DeleteUserByName(colonyName string, name string) error {
 	return nil
 }
 
-func (db *PQDatabase) DeleteUsersByColonyID(colonyName string) error {
+func (db *PQDatabase) DeleteUsersByColonyName(colonyName string) error {
 	sqlStatement := `DELETE FROM ` + db.dbPrefix + `USERS WHERE COLONY_NAME=$1`
 	_, err := db.postgresql.Exec(sqlStatement, colonyName)
 	if err != nil {

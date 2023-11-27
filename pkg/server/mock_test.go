@@ -418,7 +418,7 @@ func (db *dbMock) AddUser(user *core.User) error {
 	return nil
 }
 
-func (db *dbMock) GetUsers(colonyName string) ([]*core.User, error) {
+func (db *dbMock) GetUsersByColonyName(colonyName string) ([]*core.User, error) {
 	return nil, nil
 }
 
@@ -438,7 +438,7 @@ func (db *dbMock) DeleteUserByName(colonyName string, name string) error {
 	return nil
 }
 
-func (db *dbMock) DeleteUsersByColonyID(colonyName string) error {
+func (db *dbMock) DeleteUsersByColonyName(colonyName string) error {
 	return nil
 }
 
@@ -466,6 +466,10 @@ func (db *dbMock) GetColonyByID(id string) (*core.Colony, error) {
 		return &core.Colony{}, nil
 	}
 
+	return nil, nil
+}
+
+func (db *dbMock) GetColonyByName(name string) (*core.Colony, error) {
 	return nil, nil
 }
 
