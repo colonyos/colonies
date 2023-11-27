@@ -77,6 +77,16 @@ func (db *PQDatabase) Close() {
 	db.postgresql.Close()
 }
 
+func (db *PQDatabase) dropUsersTable() error {
+	sqlStatement := `DROP TABLE ` + db.dbPrefix + `USERS`
+	_, err := db.postgresql.Exec(sqlStatement)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (db *PQDatabase) dropColoniesTable() error {
 	sqlStatement := `DROP TABLE ` + db.dbPrefix + `COLONIES`
 	_, err := db.postgresql.Exec(sqlStatement)
@@ -204,7 +214,12 @@ func (db *PQDatabase) dropCronsTable() error {
 }
 
 func (db *PQDatabase) Drop() error {
-	err := db.dropColoniesTable()
+	err := db.dropUsersTable()
+	if err != nil {
+		return err
+	}
+
+	err = db.dropColoniesTable()
 	if err != nil {
 		return err
 	}
@@ -278,7 +293,17 @@ func (db *PQDatabase) createHypertables() error {
 }
 
 func (db *PQDatabase) createColoniesTable() error {
-	sqlStatement := `CREATE TABLE ` + db.dbPrefix + `COLONIES (COLONY_ID TEXT PRIMARY KEY NOT NULL, NAME TEXT NOT NULL)`
+	sqlStatement := `CREATE TABLE ` + db.dbPrefix + `COLONIES (COLONY_ID TEXT PRIMARY KEY NOT NULL, NAME TEXT NOT NULL UNIQUE)`
+	_, err := db.postgresql.Exec(sqlStatement)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (db *PQDatabase) createUsersTable() error {
+	sqlStatement := `CREATE TABLE ` + db.dbPrefix + `USERS (NAME TEXT PRIMARY KEY NOT NULL, USER_ID TEXT NOT NULL, COLONY_NAME TEXT NOT NULL)`
 	_, err := db.postgresql.Exec(sqlStatement)
 	if err != nil {
 		return err
@@ -575,7 +600,12 @@ func (db *PQDatabase) createFileIndex3() error {
 }
 
 func (db *PQDatabase) Initialize() error {
-	err := db.createColoniesTable()
+	err := db.createUsersTable()
+	if err != nil {
+		return err
+	}
+
+	err = db.createColoniesTable()
 	if err != nil {
 		return err
 	}
