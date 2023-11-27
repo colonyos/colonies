@@ -35,5 +35,10 @@ func (validator *StandaloneValidator) RequireColonyOwner(recoveredID string, col
 }
 
 func (validator *StandaloneValidator) RequireMembership(recoveredID string, colonyID string, approved bool) error {
-	return validator.ownership.checkIfExecutorIsValid(recoveredID, colonyID, approved)
+	err := validator.ownership.checkIfExecutorIsValid(recoveredID, colonyID, approved)
+	if err != nil {
+		return validator.ownership.checkIfUserIsValid(recoveredID, colonyID)
+	}
+
+	return nil
 }

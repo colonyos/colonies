@@ -8,9 +8,11 @@ type User struct {
 	ColonyName string `json:"colonyname"`
 	ID         string `json:"userid"`
 	Name       string `json:"name"`
+	Email      string `json:"email"`
+	Phone      string `json:"phone"`
 }
 
-func CreateUser(colonyName string, userID string, name string) *User {
+func CreateUser(colonyName string, userID string, name string, email string, phone string) *User {
 	return &User{ColonyName: colonyName, ID: userID, Name: name}
 }
 
@@ -68,7 +70,9 @@ func (user *User) Equals(user2 *User) bool {
 
 	if user.ID == user2.ID &&
 		user.ColonyName == user2.ColonyName &&
-		user.Name == user2.Name {
+		user.Name == user2.Name &&
+		user.Email == user2.Email &&
+		user.Phone == user2.Phone {
 		return true
 	}
 

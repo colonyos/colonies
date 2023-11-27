@@ -42,7 +42,7 @@ func (msg *GetUsersMsg) Equals(msg2 *GetUsersMsg) bool {
 		return false
 	}
 
-	if msg.MsgType == msg2.MsgType {
+	if msg.MsgType == msg2.MsgType && msg.ColonyName == msg2.ColonyName {
 		return true
 	}
 

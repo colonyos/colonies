@@ -11,7 +11,26 @@ import (
 
 func CreateTestUser(colonyID string, name string) *core.User {
 	userID := core.GenerateRandomID()
-	return core.CreateUser(colonyID, userID, name)
+	email := "test@test.com"
+	phone := "12345677"
+	return core.CreateUser(colonyID, userID, name, email, phone)
+}
+
+func CreateTestUserWithKey(colonyID string, name string) (*core.User, string, error) {
+	crypto := crypto.CreateCrypto()
+	userPrvKey, err := crypto.GeneratePrivateKey()
+	if err != nil {
+		return nil, "", err
+	}
+
+	userID, err := crypto.GenerateID(userPrvKey)
+	if err != nil {
+		return nil, "", err
+	}
+
+	email := "test@test.com"
+	phone := "12345677"
+	return core.CreateUser(colonyID, userID, name, email, phone), userPrvKey, nil
 }
 
 func CreateTestProcess(colonyID string) *core.Process {

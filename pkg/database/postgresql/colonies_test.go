@@ -131,6 +131,27 @@ func TestGetColonyByID(t *testing.T) {
 	assert.Nil(t, err)
 }
 
+func TestGetColonyByName(t *testing.T) {
+	db, err := PrepareTests()
+	assert.Nil(t, err)
+
+	defer db.Close()
+
+	colony1 := core.CreateColony(core.GenerateRandomID(), "test_colony_name_1")
+
+	err = db.AddColony(colony1)
+	assert.Nil(t, err)
+
+	colony2 := core.CreateColony(core.GenerateRandomID(), "test_colony_name_2")
+
+	err = db.AddColony(colony2)
+	assert.Nil(t, err)
+
+	colonyFromDB, err := db.GetColonyByName("test_colony_name_1")
+	assert.Nil(t, err)
+	assert.Equal(t, colony1.ID, colonyFromDB.ID)
+}
+
 func TestDeleteColonies(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
@@ -147,11 +168,11 @@ func TestDeleteColonies(t *testing.T) {
 	err = db.AddColony(colony2)
 	assert.Nil(t, err)
 
-	user1 := utils.CreateTestUser(colony1.ID, "user1")
+	user1 := utils.CreateTestUser(colony1.Name, "user1")
 	err = db.AddUser(user1)
 	assert.Nil(t, err)
 
-	user2 := utils.CreateTestUser(colony2.ID, "user2")
+	user2 := utils.CreateTestUser(colony2.Name, "user2")
 	err = db.AddUser(user2)
 	assert.Nil(t, err)
 
@@ -232,10 +253,10 @@ func TestDeleteColonies(t *testing.T) {
 	err = db.DeleteColonyByID(colony1.ID)
 	assert.Nil(t, err)
 
-	users, err := db.GetUsers(colony1.ID)
+	users, err := db.GetUsersByColonyName(colony1.Name)
 	assert.Len(t, users, 0)
 
-	users, err = db.GetUsers(colony2.ID)
+	users, err = db.GetUsersByColonyName(colony2.Name)
 	assert.Len(t, users, 1)
 
 	colonyFromDB, err := db.GetColonyByID(colony1.ID)
