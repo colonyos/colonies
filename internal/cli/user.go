@@ -32,7 +32,7 @@ func init() {
 }
 
 var userCmd = &cobra.Command{
-	Use:   "user",
+	Use:   "users",
 	Short: "Manage users",
 	Long:  "Manage users",
 }
@@ -88,11 +88,11 @@ var listUsersCmd = &cobra.Command{
 
 		var data [][]string
 		for _, user := range usersFromServer {
-			data = append(data, []string{user.ID, user.Name, user.Email, user.Phone})
+			data = append(data, []string{user.Name, user.Email, user.Phone})
 		}
 
 		table := tablewriter.NewWriter(os.Stdout)
-		table.SetHeader([]string{"UserId", "Username", "Email", "Phone"})
+		table.SetHeader([]string{"Username", "Email", "Phone"})
 
 		for _, v := range data {
 			table.Append(v)

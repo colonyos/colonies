@@ -70,14 +70,14 @@ func (ownership *ownershipImpl) checkIfExecutorIsValid(executorID string, colony
 	return nil
 }
 
-func (ownership *ownershipImpl) checkIfUserIsValid(userID string, colonyID string) error {
-	colony, err := ownership.db.GetColonyByID(colonyID)
+func (ownership *ownershipImpl) checkIfUserIsValid(userID string, colonyName string) error {
+	colony, err := ownership.db.GetColonyByName(colonyName)
 	if err != nil {
 		return err
 	}
 
 	if colony == nil {
-		return errors.New("Colony <" + colonyID + "> does not exists")
+		return errors.New("Colony with name <" + colonyName + "> does not exists")
 	}
 
 	user, err := ownership.db.GetUserByID(colony.Name, userID)
@@ -86,11 +86,11 @@ func (ownership *ownershipImpl) checkIfUserIsValid(userID string, colonyID strin
 	}
 
 	if user == nil {
-		return errors.New("Access denied, not a member of Colony with Id <" + colonyID + ">")
+		return errors.New("Access denied, not a member of Colony with Id <" + colony.ID + ">")
 	}
 
 	if user.ColonyName != colony.Name {
-		return errors.New("Access denied, not a member of Colony with Id <" + colonyID + ">")
+		return errors.New("Access denied, not a member of Colony with Id <" + colony.ID + ">")
 	}
 
 	return nil
