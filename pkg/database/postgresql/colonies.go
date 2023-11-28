@@ -26,9 +26,9 @@ func (db *PQDatabase) parseColonies(rows *sql.Rows) ([]*core.Colony, error) {
 	var colonies []*core.Colony
 
 	for rows.Next() {
-		var colonyID string
 		var name string
-		if err := rows.Scan(&colonyID, &name); err != nil {
+		var colonyID string
+		if err := rows.Scan(&name, &colonyID); err != nil {
 			return nil, err
 		}
 

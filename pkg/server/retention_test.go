@@ -39,13 +39,13 @@ func TestRetention(t *testing.T) {
 	err = client.Close(process.ID, executorPrvKey)
 	assert.Nil(t, err)
 
-	stat, err := client.ColonyStatistics(colony.ID, executorPrvKey)
+	stat, err := client.ColonyStatistics(colony.Name, executorPrvKey)
 	assert.Equal(t, stat.SuccessfulWorkflows, 1)
 	assert.Equal(t, stat.SuccessfulProcesses, 1)
 
 	time.Sleep(2 * time.Second)
 
-	stat, err = client.ColonyStatistics(colony.ID, executorPrvKey)
+	stat, err = client.ColonyStatistics(colony.Name, executorPrvKey)
 	assert.Equal(t, stat.SuccessfulWorkflows, 0)
 	assert.Equal(t, stat.SuccessfulProcesses, 0)
 

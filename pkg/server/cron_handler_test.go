@@ -146,7 +146,7 @@ func TestAddCronWaitForPrevProcessGraph(t *testing.T) {
 
 	assert.NotEqual(t, firstProcessID, secondProcessID)
 
-	stat, err := client.ColonyStatistics(env.colonyID, env.executorPrvKey)
+	stat, err := client.ColonyStatistics(env.colonyName, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.Equal(t, stat.WaitingWorkflows, 1)
 	assert.Equal(t, stat.SuccessfulWorkflows, 1)
@@ -197,7 +197,7 @@ func TestAddCronWaitForPrevProcessGraphFail(t *testing.T) {
 
 	assert.NotEqual(t, firstProcessID, secondProcessID)
 
-	stat, err := client.ColonyStatistics(env.colonyID, env.executorPrvKey)
+	stat, err := client.ColonyStatistics(env.colonyName, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.Equal(t, stat.WaitingWorkflows, 1)
 	assert.Equal(t, stat.SuccessfulWorkflows, 0)
@@ -232,7 +232,7 @@ func TestAddCronInputOutput(t *testing.T) {
 	assert.Len(t, process.Input, 1)
 	assert.Equal(t, process.Input[0], "result_cron1")
 
-	stat, err := client.ColonyStatistics(env.colonyID, env.executorPrvKey)
+	stat, err := client.ColonyStatistics(env.colonyName, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.Equal(t, stat.WaitingWorkflows, 0)
 	assert.Equal(t, stat.RunningWorkflows, 1)
@@ -272,7 +272,7 @@ func TestAddCronInputOutput2(t *testing.T) {
 	assert.Len(t, process.Input, 1)
 	assert.Equal(t, process.Input[0], "result_cron1")
 
-	stat, err := client.ColonyStatistics(env.colonyID, env.executorPrvKey)
+	stat, err := client.ColonyStatistics(env.colonyName, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.Equal(t, stat.WaitingWorkflows, 0)
 	assert.Equal(t, stat.RunningWorkflows, 1)

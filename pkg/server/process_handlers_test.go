@@ -599,7 +599,7 @@ func TestDeleteAllProcessesForColonyWithStateWaiting(t *testing.T) {
 	_, err = client.Submit(funcSpec2, env.executorPrvKey)
 	assert.Nil(t, err)
 
-	stat, err := client.ColonyStatistics(env.colonyID, env.executorPrvKey)
+	stat, err := client.ColonyStatistics(env.colonyName, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.Equal(t, stat.WaitingProcesses, 2)
 	assert.Equal(t, stat.RunningProcesses, 0)
@@ -609,7 +609,7 @@ func TestDeleteAllProcessesForColonyWithStateWaiting(t *testing.T) {
 	err = client.DeleteAllProcessesWithState(env.colonyID, core.WAITING, env.colonyPrvKey)
 	assert.Nil(t, err)
 
-	stat, err = client.ColonyStatistics(env.colonyID, env.executorPrvKey)
+	stat, err = client.ColonyStatistics(env.colonyName, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.Equal(t, stat.WaitingProcesses, 0)
 	assert.Equal(t, stat.RunningProcesses, 0)
@@ -634,7 +634,7 @@ func TestDeleteAllProcessesForColonyWithStateRunning(t *testing.T) {
 	_, err = client.Assign(env.colonyID, -1, env.executorPrvKey)
 	assert.Nil(t, err)
 
-	stat, err := client.ColonyStatistics(env.colonyID, env.executorPrvKey)
+	stat, err := client.ColonyStatistics(env.colonyName, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.Equal(t, stat.WaitingProcesses, 1)
 	assert.Equal(t, stat.RunningProcesses, 1)
@@ -665,7 +665,7 @@ func TestDeleteAllProcessesForColonyWithStateSuccessful(t *testing.T) {
 	err = client.Close(process.ID, env.executorPrvKey)
 	assert.Nil(t, err)
 
-	stat, err := client.ColonyStatistics(env.colonyID, env.executorPrvKey)
+	stat, err := client.ColonyStatistics(env.colonyName, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.Equal(t, stat.WaitingProcesses, 1)
 	assert.Equal(t, stat.RunningProcesses, 0)
@@ -675,7 +675,7 @@ func TestDeleteAllProcessesForColonyWithStateSuccessful(t *testing.T) {
 	err = client.DeleteAllProcessesWithState(env.colonyID, core.SUCCESS, env.colonyPrvKey)
 	assert.Nil(t, err)
 
-	stat, err = client.ColonyStatistics(env.colonyID, env.executorPrvKey)
+	stat, err = client.ColonyStatistics(env.colonyName, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.Equal(t, stat.WaitingProcesses, 1)
 	assert.Equal(t, stat.RunningProcesses, 0)
@@ -703,7 +703,7 @@ func TestDeleteAllProcessesForColonyWithStateFailed(t *testing.T) {
 	err = client.Fail(process.ID, []string{"error"}, env.executorPrvKey)
 	assert.Nil(t, err)
 
-	stat, err := client.ColonyStatistics(env.colonyID, env.executorPrvKey)
+	stat, err := client.ColonyStatistics(env.colonyName, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.Equal(t, stat.WaitingProcesses, 1)
 	assert.Equal(t, stat.RunningProcesses, 0)
@@ -713,7 +713,7 @@ func TestDeleteAllProcessesForColonyWithStateFailed(t *testing.T) {
 	err = client.DeleteAllProcessesWithState(env.colonyID, core.FAILED, env.colonyPrvKey)
 	assert.Nil(t, err)
 
-	stat, err = client.ColonyStatistics(env.colonyID, env.executorPrvKey)
+	stat, err = client.ColonyStatistics(env.colonyName, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.Equal(t, stat.WaitingProcesses, 1)
 	assert.Equal(t, stat.RunningProcesses, 0)
@@ -880,7 +880,7 @@ func TestMaxWaitTime(t *testing.T) {
 	processes = append(processes, process)
 	waitForProcesses(t, server, processes, core.FAILED)
 
-	stat, err := client.ColonyStatistics(env.colonyID, env.executorPrvKey)
+	stat, err := client.ColonyStatistics(env.colonyName, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.Equal(t, stat.FailedProcesses, 1)
 
@@ -906,7 +906,7 @@ func TestMaxExecTime(t *testing.T) {
 
 	waitForProcesses(t, server, processes, core.WAITING)
 
-	stat, err := client.ColonyStatistics(env.colonyID, env.executorPrvKey)
+	stat, err := client.ColonyStatistics(env.colonyName, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.Equal(t, stat.WaitingProcesses, numberOfProcesses)
 
@@ -933,7 +933,7 @@ func TestMaxExecTimeUnlimtedMaxRetries(t *testing.T) {
 
 	waitForProcesses(t, server, processes, core.WAITING)
 
-	stat, err := client.ColonyStatistics(env.colonyID, env.executorPrvKey)
+	stat, err := client.ColonyStatistics(env.colonyName, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.Equal(t, stat.WaitingProcesses, numberOfProcesses)
 
@@ -943,13 +943,13 @@ func TestMaxExecTimeUnlimtedMaxRetries(t *testing.T) {
 		assert.Nil(t, err)
 	}
 
-	stat, err = client.ColonyStatistics(env.colonyID, env.executorPrvKey)
+	stat, err = client.ColonyStatistics(env.colonyName, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.Equal(t, stat.RunningProcesses, numberOfProcesses)
 
 	waitForProcesses(t, server, processes, core.WAITING)
 
-	stat, err = client.ColonyStatistics(env.colonyID, env.executorPrvKey)
+	stat, err = client.ColonyStatistics(env.colonyName, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.Equal(t, stat.WaitingProcesses, numberOfProcesses)
 
@@ -977,7 +977,7 @@ func TestMaxExecTimeMaxRetries(t *testing.T) {
 	waitForProcesses(t, server, processes, core.WAITING)
 
 	// We should now have 10 waiting processes
-	stat, err := client.ColonyStatistics(env.colonyID, env.executorPrvKey)
+	stat, err := client.ColonyStatistics(env.colonyName, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.Equal(t, stat.WaitingProcesses, numberOfProcesses)
 
@@ -988,14 +988,14 @@ func TestMaxExecTimeMaxRetries(t *testing.T) {
 	}
 
 	// We should now have 10 running processes
-	stat, err = client.ColonyStatistics(env.colonyID, env.executorPrvKey)
+	stat, err = client.ColonyStatistics(env.colonyName, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.Equal(t, stat.RunningProcesses, numberOfProcesses)
 
 	waitForProcesses(t, server, processes, core.FAILED)
 
 	// We should now have 10 failed processes since max retries reached
-	stat, err = client.ColonyStatistics(env.colonyID, env.executorPrvKey)
+	stat, err = client.ColonyStatistics(env.colonyName, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.Equal(t, stat.FailedProcesses, numberOfProcesses) // NOTE Failed!!
 
