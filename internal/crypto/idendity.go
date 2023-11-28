@@ -61,6 +61,15 @@ func (idendity *Idendity) ID() string {
 	return idendity.id
 }
 
+func GenerateID(hexEncodedPrv string) (string, error) {
+	identity, err := CreateIdendityFromString(hexEncodedPrv)
+	if err != nil {
+		return "", err
+	}
+
+	return identity.ID(), nil
+}
+
 func CreateIdendityFromString(hexEncodedPrv string) (*Idendity, error) {
 	idendity := &Idendity{}
 	decodedPrv, err := hex.DecodeString(hexEncodedPrv)

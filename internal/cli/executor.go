@@ -6,11 +6,9 @@ import (
 	"io/ioutil"
 	"os"
 	"strconv"
-	"time"
 
 	"github.com/colonyos/colonies/pkg/client"
 	"github.com/colonyos/colonies/pkg/core"
-	"github.com/colonyos/colonies/pkg/security/crypto"
 	"github.com/kataras/tablewriter"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -30,13 +28,15 @@ func init() {
 	executorCmd.PersistentFlags().StringVarP(&ServerHost, "host", "", "localhost", "Server host")
 	executorCmd.PersistentFlags().IntVarP(&ServerPort, "port", "", -1, "Server HTTP port")
 
-	addExecutorCmd.Flags().StringVarP(&ColonyID, "colonyid", "", "", "Colony Id")
 	addExecutorCmd.Flags().StringVarP(&ColonyPrvKey, "colonyprvkey", "", "", "Colony private key")
-	addExecutorCmd.Flags().StringVarP(&PrvKey, "prvkey", "", "", "Private key")
 	addExecutorCmd.Flags().StringVarP(&SpecFile, "spec", "", "", "JSON specification of an executor")
+	addExecutorCmd.Flags().StringVarP(&ExecutorID, "executorid", "", "", "Executor ID")
+	addExecutorCmd.MarkFlagRequired("executorid")
 	addExecutorCmd.Flags().StringVarP(&ExecutorName, "name", "", "", "Executor name")
+	addExecutorCmd.MarkFlagRequired("nbame")
 	addExecutorCmd.Flags().StringVarP(&ExecutorType, "type", "", "", "Executor type")
-	addExecutorCmd.Flags().BoolVarP(&Approve, "approve", "", false, "Also, approve the added executor")
+	addExecutorCmd.MarkFlagRequired("type")
+	addExecutorCmd.Flags().BoolVarP(&Approve, "approve", "", false, "Also, approve the Executor")
 
 	removeExecutorCmd.Flags().StringVarP(&ColonyPrvKey, "colonyprvkey", "", "", "Colony private key")
 	removeExecutorCmd.Flags().StringVarP(&TargetExecutorID, "executorid", "", "", "Executor Id")
@@ -74,46 +74,35 @@ var addExecutorCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		client := setup()
 
-		crypto := crypto.CreateCrypto()
-		var prvKey string
-		var err error
-		if PrvKey != "" {
-			prvKey = PrvKey
-			if len(prvKey) != 64 {
-				CheckError(errors.New("Invalid private key length"))
-			}
-		} else {
-			prvKey, err = crypto.GeneratePrivateKey()
-			CheckError(err)
+		if len(ExecutorID) != 64 {
+			CheckError(errors.New("Invalid Executor Id length"))
 		}
 
-		executorID, err := crypto.GenerateID(prvKey)
-		CheckError(err)
+		if ExecutorType == "" {
+			CheckError(errors.New("Invalid Executor type"))
+		}
+
+		if ExecutorName == "" {
+			CheckError(errors.New("Invalid Executor name"))
+		}
+
+		if os.Getenv("HOSTNAME") != "" {
+			ExecutorName += "."
+			ExecutorName += os.Getenv("HOSTNAME")
+		}
 
 		var executor *core.Executor
-		if SpecFile != "" {
-			jsonSpecBytes, err := ioutil.ReadFile(SpecFile)
-			CheckError(err)
-			executor, err = core.ConvertJSONToExecutor(string(jsonSpecBytes))
-			CheckError(err)
-		} else {
-			if ExecutorName == "" {
-				CheckError(errors.New("Executor name not specified"))
-			}
-
-			if os.Getenv("HOSTNAME") != "" {
-				ExecutorName += "."
-				ExecutorName += os.Getenv("HOSTNAME")
-			}
-
-			if ExecutorType == "" {
-				CheckError(errors.New("Executor type not specified"))
-			}
-			executor = core.CreateExecutor(executorID, ExecutorType, ExecutorName, ColonyID, time.Now(), time.Now())
+		if SpecFile == "" {
+			CheckError(errors.New("Invalid spec file"))
 		}
 
-		executor.SetID(executorID)
-		executor.SetColonyID(ColonyID)
+		jsonSpecBytes, err := ioutil.ReadFile(SpecFile)
+		CheckError(err)
+		executor, err = core.ConvertJSONToExecutor(string(jsonSpecBytes))
+		CheckError(err)
+
+		executor.SetID(ExecutorID)
+		executor.SetColonyName(ColonyName)
 
 		if ColonyPrvKey == "" {
 			CheckError(errors.New("ERROR:" + ColonyPrvKey))
@@ -122,17 +111,9 @@ var addExecutorCmd = &cobra.Command{
 		addedExecutor, err := client.AddExecutor(executor, ColonyPrvKey)
 		CheckError(err)
 
-		// log.Info("Saving executor Id to /tmp/executorid")
-		// err = os.WriteFile("/tmp/id", []byte(executorID), 0644)
-		// CheckError(err)
-
-		// err = os.WriteFile("/tmp/prvkey", []byte(prvKey), 0644)
-		// CheckError(err)
-		// log.Info("Saving private key to /tmp/prvkey")
-
 		if Approve {
-			log.WithFields(log.Fields{"ExecutorID": executorID}).Info("Approving Executor")
-			err = client.ApproveExecutor(executorID, ColonyPrvKey)
+			log.WithFields(log.Fields{"ExecutorID": ExecutorID}).Info("Approving Executor")
+			err = client.ApproveExecutor(ExecutorID, ColonyPrvKey)
 			CheckError(err)
 		}
 

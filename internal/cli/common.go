@@ -93,7 +93,7 @@ func State2String(state int) string {
 
 func CheckError(err error) {
 	if err != nil {
-		log.WithFields(log.Fields{"Error": err, "BuildVersion": build.BuildVersion, "BuildTime": build.BuildTime}).Error(err.Error())
+		log.WithFields(log.Fields{"BuildVersion": build.BuildVersion, "BuildTime": build.BuildTime}).Error(err.Error())
 		os.Exit(-1)
 	}
 }
@@ -124,6 +124,9 @@ func setupProfiler() {
 	var err error
 	if profilerPortStr != "" {
 		_, err = strconv.Atoi(profilerPortStr)
+		if err != nil {
+			log.Error("Failed to parse COLONIES_SERVER_PROFILER_PORT")
+		}
 		CheckError(err)
 	}
 
@@ -146,6 +149,9 @@ func parseEnv() {
 	if ServerPortEnvStr != "" {
 		if ServerPort == -1 {
 			ServerPort, err = strconv.Atoi(ServerPortEnvStr)
+			if err != nil {
+				log.Error("Failed to parse COLONIES_SERVER_PORT")
+			}
 			CheckError(err)
 		}
 	}
@@ -185,6 +191,9 @@ func parseEnv() {
 	CronPeriodCheckerEnvStr := os.Getenv("COLONIES_CRON_CHECKER_PERIOD")
 	if CronPeriodCheckerEnvStr != "" {
 		CronCheckerPeriod, err = strconv.Atoi(CronPeriodCheckerEnvStr)
+		if err != nil {
+			log.Error("Failed to parse COLONIES_CRON_CHECKER_PERIOD")
+		}
 		CheckError(err)
 	} else {
 		CronCheckerPeriod = server.CRON_TRIGGER_PERIOD
@@ -193,6 +202,9 @@ func parseEnv() {
 	GeneratorPeriodCheckerEnvStr := os.Getenv("COLONIES_GENERATOR_CHECKER_PERIOD")
 	if GeneratorPeriodCheckerEnvStr != "" {
 		GeneratorCheckerPeriod, err = strconv.Atoi(GeneratorPeriodCheckerEnvStr)
+		if err != nil {
+			log.Error("Failed to parse COLONIES_GENERATOR_CHECKER_PERIOD")
+		}
 		CheckError(err)
 	} else {
 		GeneratorCheckerPeriod = server.GENERATOR_TRIGGER_PERIOD
@@ -201,14 +213,22 @@ func parseEnv() {
 	ExclusiveAssignEnvStr := os.Getenv("COLONIES_EXCLUSIVE_ASSIGN")
 	if ExclusiveAssignEnvStr != "" {
 		ExclusiveAssign, err = strconv.ParseBool(ExclusiveAssignEnvStr)
+		if err != nil {
+			log.Error("Failed to parse COLONIES_EXCLUSIVE_ASSIGN")
+		}
 		CheckError(err)
 	} else {
 		ExclusiveAssign = false
 	}
 
 	DBHost = os.Getenv("COLONIES_DB_HOST")
-	DBPort, err = strconv.Atoi(os.Getenv("COLONIES_DB_PORT"))
-	CheckError(err)
+	if DBHost != "" {
+		DBPort, err = strconv.Atoi(os.Getenv("COLONIES_DB_PORT"))
+		if err != nil {
+			log.Error("COLONIES_DB_PORT")
+		}
+		CheckError(err)
+	}
 
 	DBUser = os.Getenv("COLONIES_DB_USER")
 	DBPassword = os.Getenv("COLONIES_DB_PASSWORD")
@@ -216,6 +236,9 @@ func parseEnv() {
 	AllowExecutorReregisterStr := os.Getenv("COLONIES_ALLOW_EXECUTOR_REREGISTER")
 	if AllowExecutorReregisterStr != "" {
 		AllowExecutorReregister, err = strconv.ParseBool(AllowExecutorReregisterStr)
+		if err != nil {
+			log.Error("Failed to parse COLONIES_ALLOW_EXECUTOR_REREGISTER")
+		}
 		CheckError(err)
 	} else {
 		AllowExecutorReregister = false
@@ -254,17 +277,31 @@ func parseEnv() {
 		Retention = true
 	}
 	retentionPolicyStr := os.Getenv("COLONIES_RETENTION_POLICY")
-	RetentionPolicy, err = strconv.ParseInt(retentionPolicyStr, 10, 64)
-	CheckError(err)
+	if retentionPolicyStr != "" {
+		RetentionPolicy, err = strconv.ParseInt(retentionPolicyStr, 10, 64)
+		if err != nil {
+			log.Error("Failed to parse COLONIES_RETENTION_POLICY")
+		}
+		CheckError(err)
+	}
 
 	monitorPortStr := os.Getenv("COLONIES_MONITOR_PORT")
-	MonitorPort, err = strconv.Atoi(monitorPortStr)
-	CheckError(err)
+	if monitorPortStr != "" {
+		MonitorPort, err = strconv.Atoi(monitorPortStr)
+		if err != nil {
+			log.Error("Failed to parse COLONIES_MONITOR_PORT")
+		}
+		CheckError(err)
+	}
 
 	intervalStr := os.Getenv("COLONIES_MONITOR_INTERVAL")
-	MonitorInterval, err = strconv.Atoi(intervalStr)
-	CheckError(err)
-
+	if intervalStr != "" {
+		MonitorInterval, err = strconv.Atoi(intervalStr)
+		if err != nil {
+			log.Error("Failed to parse COLONIES_MONITOR_INTERVAL")
+		}
+		CheckError(err)
+	}
 }
 
 func checkDevEnv() {

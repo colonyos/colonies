@@ -124,20 +124,22 @@ var devCmd = &cobra.Command{
 		log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort}).Info("Connecting to Colonies server")
 		client := client.CreateColoniesClient(ServerHost, ServerPort, true, false)
 
-		log.WithFields(log.Fields{"ColonyID": ColonyID, "ServerPrvKey": ServerPrvKey}).Info("Registering a new Colony")
-		colony := core.CreateColony(ColonyID, "dev")
+		colonyID, err := crypto.GenerateID(ColonyPrvKey)
+		CheckError(err)
+
+		log.WithFields(log.Fields{"ColonyID": colonyID, "ServerPrvKey": ServerPrvKey}).Info("Registering a new Colony")
+		colony := core.CreateColony(colonyID, "dev")
 		_, err = client.AddColony(colony, ServerPrvKey)
 		CheckError(err)
 
 		executorName := "myexecutor"
 
-		identity, err := crypto.CreateIdendityFromString(PrvKey)
+		executorID, err := crypto.GenerateID(PrvKey)
 		CheckError(err)
 
-		executorID := identity.ID()
 		log.WithFields(log.Fields{"ExecutorID": executorID, "ExecutorType": ExecutorType, "ExecutorName": executorName, "ColonyPrvKey": ColonyPrvKey}).Info("Registering a new executor")
 
-		executor := core.CreateExecutor(executorID, ExecutorType, executorName, ColonyID, time.Now(), time.Now())
+		executor := core.CreateExecutor(executorID, ExecutorType, executorName, colonyID, time.Now(), time.Now())
 		_, err = client.AddExecutor(executor, ColonyPrvKey)
 		CheckError(err)
 
