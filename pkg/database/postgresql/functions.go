@@ -7,8 +7,8 @@ import (
 )
 
 func (db *PQDatabase) AddFunction(function *core.Function) error {
-	sqlStatement := `INSERT INTO  ` + db.dbPrefix + `FUNCTIONS (FUNCTION_ID, EXECUTOR_ID, COLONY_ID, FUNCNAME, COUNTER, MINWAITTIME, MAXWAITTIME, MINEXECTIME, MAXEXECTIME, AVGWAITTIME, AVGEXECTIME) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`
-	_, err := db.postgresql.Exec(sqlStatement, function.FunctionID, function.ExecutorID, function.ColonyID, function.FuncName, function.Counter, function.MinWaitTime, function.MaxWaitTime, function.MinExecTime, function.MaxExecTime, function.AvgWaitTime, function.AvgExecTime)
+	sqlStatement := `INSERT INTO  ` + db.dbPrefix + `FUNCTIONS (FUNCTION_ID, EXECUTOR_ID, COLONY_NAME, FUNCNAME, COUNTER, MINWAITTIME, MAXWAITTIME, MINEXECTIME, MAXEXECTIME, AVGWAITTIME, AVGEXECTIME) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`
+	_, err := db.postgresql.Exec(sqlStatement, function.FunctionID, function.ExecutorID, function.ColonyName, function.FuncName, function.Counter, function.MinWaitTime, function.MaxWaitTime, function.MinExecTime, function.MaxExecTime, function.AvgWaitTime, function.AvgExecTime)
 	if err != nil {
 		return err
 	}
@@ -101,9 +101,9 @@ func (db *PQDatabase) GetFunctionsByExecutorIDAndName(executorID string, name st
 	return nil, nil
 }
 
-func (db *PQDatabase) GetFunctionsByColonyID(colonyID string) ([]*core.Function, error) {
-	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `FUNCTIONS WHERE COLONY_ID=$1`
-	rows, err := db.postgresql.Query(sqlStatement, colonyID)
+func (db *PQDatabase) GetFunctionsByColonyName(colonyName string) ([]*core.Function, error) {
+	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `FUNCTIONS WHERE COLONY_NAME=$1`
+	rows, err := db.postgresql.Query(sqlStatement, colonyName)
 	if err != nil {
 		return nil, err
 	}
@@ -161,9 +161,9 @@ func (db *PQDatabase) DeleteFunctionsByExecutorID(executorID string) error {
 	return nil
 }
 
-func (db *PQDatabase) DeleteFunctionsByColonyID(colonyID string) error {
-	sqlStatement := `DELETE FROM ` + db.dbPrefix + `FUNCTIONS WHERE COLONY_ID=$1`
-	_, err := db.postgresql.Exec(sqlStatement, colonyID)
+func (db *PQDatabase) DeleteFunctionsByColonyName(colonyName string) error {
+	sqlStatement := `DELETE FROM ` + db.dbPrefix + `FUNCTIONS WHERE COLONY_NAME=$1`
+	_, err := db.postgresql.Exec(sqlStatement, colonyName)
 	if err != nil {
 		return err
 	}

@@ -8,8 +8,8 @@ import (
 )
 
 func (db *PQDatabase) AddCron(cron *core.Cron) error {
-	sqlStatement := `INSERT INTO  ` + db.dbPrefix + `CRONS (CRON_ID, COLONY_ID, NAME, CRON_EXPR, INTERVAL, RANDOM, NEXT_RUN, LAST_RUN, WORKFLOW_SPEC, PREV_PROCESSGRAPH_ID, WAIT_FOR_PREV_PROCESSGRAPH) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`
-	_, err := db.postgresql.Exec(sqlStatement, cron.ID, cron.ColonyID, cron.Name, cron.CronExpression, cron.Interval, cron.Random, cron.NextRun, cron.LastRun, cron.WorkflowSpec, cron.PrevProcessGraphID, cron.WaitForPrevProcessGraph)
+	sqlStatement := `INSERT INTO  ` + db.dbPrefix + `CRONS (CRON_ID, COLONY_NAME, NAME, CRON_EXPR, INTERVAL, RANDOM, NEXT_RUN, LAST_RUN, WORKFLOW_SPEC, PREV_PROCESSGRAPH_ID, WAIT_FOR_PREV_PROCESSGRAPH) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`
+	_, err := db.postgresql.Exec(sqlStatement, cron.ID, cron.ColonyName, cron.Name, cron.CronExpression, cron.Interval, cron.Random, cron.NextRun, cron.LastRun, cron.WorkflowSpec, cron.PrevProcessGraphID, cron.WaitForPrevProcessGraph)
 	if err != nil {
 		return err
 	}
@@ -32,7 +32,7 @@ func (db *PQDatabase) parseCrons(rows *sql.Rows) ([]*core.Cron, error) {
 
 	for rows.Next() {
 		var cronID string
-		var colonyID string
+		var colonyName string
 		var name string
 		var cronExpr string
 		var interval int
@@ -43,11 +43,11 @@ func (db *PQDatabase) parseCrons(rows *sql.Rows) ([]*core.Cron, error) {
 		var prevProcessGraphID string
 		var waitForPrevProcessGraph bool
 
-		if err := rows.Scan(&cronID, &colonyID, &name, &cronExpr, &interval, &random, &nextRun, &lastRun, &workflowSpec, &prevProcessGraphID, &waitForPrevProcessGraph); err != nil {
+		if err := rows.Scan(&cronID, &colonyName, &name, &cronExpr, &interval, &random, &nextRun, &lastRun, &workflowSpec, &prevProcessGraphID, &waitForPrevProcessGraph); err != nil {
 			return nil, err
 		}
 
-		cron := &core.Cron{ID: cronID, ColonyID: colonyID, Name: name, CronExpression: cronExpr, Interval: interval, Random: random, NextRun: nextRun, LastRun: lastRun, WorkflowSpec: workflowSpec, PrevProcessGraphID: prevProcessGraphID, WaitForPrevProcessGraph: waitForPrevProcessGraph}
+		cron := &core.Cron{ID: cronID, ColonyName: colonyName, Name: name, CronExpression: cronExpr, Interval: interval, Random: random, NextRun: nextRun, LastRun: lastRun, WorkflowSpec: workflowSpec, PrevProcessGraphID: prevProcessGraphID, WaitForPrevProcessGraph: waitForPrevProcessGraph}
 
 		crons = append(crons, cron)
 	}
@@ -75,9 +75,9 @@ func (db *PQDatabase) GetCronByID(cronID string) (*core.Cron, error) {
 	return crons[0], nil
 }
 
-func (db *PQDatabase) FindCronsByColonyID(colonyID string, count int) ([]*core.Cron, error) {
-	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `CRONS WHERE COLONY_ID=$1 LIMIT $2`
-	rows, err := db.postgresql.Query(sqlStatement, colonyID, count)
+func (db *PQDatabase) FindCronsByColonyName(colonyName string, count int) ([]*core.Cron, error) {
+	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `CRONS WHERE COLONY_NAME=$1 LIMIT $2`
+	rows, err := db.postgresql.Query(sqlStatement, colonyName, count)
 	if err != nil {
 		return nil, err
 	}
@@ -118,9 +118,9 @@ func (db *PQDatabase) DeleteCronByID(cronID string) error {
 	return nil
 }
 
-func (db *PQDatabase) DeleteAllCronsByColonyID(colonyID string) error {
-	sqlStatement := `DELETE FROM ` + db.dbPrefix + `CRONS WHERE COLONY_ID=$1`
-	_, err := db.postgresql.Exec(sqlStatement, colonyID)
+func (db *PQDatabase) DeleteAllCronsByColonyName(colonyName string) error {
+	sqlStatement := `DELETE FROM ` + db.dbPrefix + `CRONS WHERE COLONY_NAME=$1`
+	_, err := db.postgresql.Exec(sqlStatement, colonyName)
 	if err != nil {
 		return err
 	}

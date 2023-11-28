@@ -31,7 +31,7 @@ func (db *PQDatabase) AddProcess(process *core.Process) error {
 		return nil
 	}
 
-	sqlStatement := `INSERT INTO  ` + db.dbPrefix + `PROCESSES (PROCESS_ID, TARGET_COLONY_ID, TARGET_EXECUTOR_IDS, ASSIGNED_EXECUTOR_ID, STATE, IS_ASSIGNED, EXECUTOR_TYPE, SUBMISSION_TIME, START_TIME, END_TIME, WAIT_DEADLINE, EXEC_DEADLINE, ERRORS, RETRIES, NODENAME, FUNCNAME, ARGS, KWARGS, MAX_WAIT_TIME, MAX_EXEC_TIME, MAX_RETRIES, DEPENDENCIES, PRIORITY, PRIORITYTIME, WAIT_FOR_PARENTS, PARENTS, CHILDREN, PROCESSGRAPH_ID, INPUT, OUTPUT, LABEL, FS, NODES, CPU, PROCESSES, PROCESSES_PER_NODE, MEMORY, STORAGE, GPUNAME, GPUCOUNT, GPUMEM, WALLTIME) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35, $36, $37, $38, $39, $40, $41, $42)`
+	sqlStatement := `INSERT INTO  ` + db.dbPrefix + `PROCESSES (PROCESS_ID, TARGET_COLONY_NAME, TARGET_EXECUTOR_IDS, ASSIGNED_EXECUTOR_ID, STATE, IS_ASSIGNED, EXECUTOR_TYPE, SUBMISSION_TIME, START_TIME, END_TIME, WAIT_DEADLINE, EXEC_DEADLINE, ERRORS, RETRIES, NODENAME, FUNCNAME, ARGS, KWARGS, MAX_WAIT_TIME, MAX_EXEC_TIME, MAX_RETRIES, DEPENDENCIES, PRIORITY, PRIORITYTIME, WAIT_FOR_PARENTS, PARENTS, CHILDREN, PROCESSGRAPH_ID, INPUT, OUTPUT, LABEL, FS, NODES, CPU, PROCESSES, PROCESSES_PER_NODE, MEMORY, STORAGE, GPUNAME, GPUCOUNT, GPUMEM, WALLTIME) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35, $36, $37, $38, $39, $40, $41, $42)`
 
 	argsJSON, err := json.Marshal(process.FunctionSpec.Args)
 	if err != nil {
@@ -59,14 +59,14 @@ func (db *PQDatabase) AddProcess(process *core.Process) error {
 
 	process.SetSubmissionTime(submissionTime)
 
-	_, err = db.postgresql.Exec(sqlStatement, process.ID, process.FunctionSpec.Conditions.ColonyID, pq.Array(targetExecutorIDs), process.AssignedExecutorID, process.State, process.IsAssigned, process.FunctionSpec.Conditions.ExecutorType, submissionTime, time.Time{}, time.Time{}, deadline, process.ExecDeadline, pq.Array(process.Errors), 0, process.FunctionSpec.NodeName, process.FunctionSpec.FuncName, argsJSONStr, kwargsJSONStr, process.FunctionSpec.MaxWaitTime, process.FunctionSpec.MaxExecTime, process.FunctionSpec.MaxRetries, pq.Array(process.FunctionSpec.Conditions.Dependencies), process.FunctionSpec.Priority, process.PriorityTime, process.WaitForParents, pq.Array(process.Parents), pq.Array(process.Children), process.ProcessGraphID, inJSONStr, outJSONStr, process.FunctionSpec.Label, fsJSONStr, process.FunctionSpec.Conditions.Nodes, process.FunctionSpec.Conditions.CPU, process.FunctionSpec.Conditions.Processes, process.FunctionSpec.Conditions.ProcessesPerNode, process.FunctionSpec.Conditions.Memory, process.FunctionSpec.Conditions.Storage, process.FunctionSpec.Conditions.GPU.Name, process.FunctionSpec.Conditions.GPU.Count, process.FunctionSpec.Conditions.GPU.Memory, process.FunctionSpec.Conditions.WallTime)
+	_, err = db.postgresql.Exec(sqlStatement, process.ID, process.FunctionSpec.Conditions.ColonyName, pq.Array(targetExecutorIDs), process.AssignedExecutorID, process.State, process.IsAssigned, process.FunctionSpec.Conditions.ExecutorType, submissionTime, time.Time{}, time.Time{}, deadline, process.ExecDeadline, pq.Array(process.Errors), 0, process.FunctionSpec.NodeName, process.FunctionSpec.FuncName, argsJSONStr, kwargsJSONStr, process.FunctionSpec.MaxWaitTime, process.FunctionSpec.MaxExecTime, process.FunctionSpec.MaxRetries, pq.Array(process.FunctionSpec.Conditions.Dependencies), process.FunctionSpec.Priority, process.PriorityTime, process.WaitForParents, pq.Array(process.Parents), pq.Array(process.Children), process.ProcessGraphID, inJSONStr, outJSONStr, process.FunctionSpec.Label, fsJSONStr, process.FunctionSpec.Conditions.Nodes, process.FunctionSpec.Conditions.CPU, process.FunctionSpec.Conditions.Processes, process.FunctionSpec.Conditions.ProcessesPerNode, process.FunctionSpec.Conditions.Memory, process.FunctionSpec.Conditions.Storage, process.FunctionSpec.Conditions.GPU.Name, process.FunctionSpec.Conditions.GPU.Count, process.FunctionSpec.Conditions.GPU.Memory, process.FunctionSpec.Conditions.WallTime)
 	if err != nil {
 		return err
 	}
 
 	// Convert Envs to Attributes
 	for key, value := range process.FunctionSpec.Env {
-		process.Attributes = append(process.Attributes, core.CreateAttribute(process.ID, process.FunctionSpec.Conditions.ColonyID, process.ProcessGraphID, core.ENV, key, value))
+		process.Attributes = append(process.Attributes, core.CreateAttribute(process.ID, process.FunctionSpec.Conditions.ColonyName, process.ProcessGraphID, core.ENV, key, value))
 	}
 
 	err = db.AddAttributes(process.Attributes)
@@ -82,7 +82,7 @@ func (db *PQDatabase) parseProcesses(rows *sql.Rows) ([]*core.Process, error) {
 
 	for rows.Next() {
 		var processID string
-		var targetColonyID string
+		var targetColonyName string
 		var targetExecutorIDs []string
 		var assignedExecutorID string
 		var state int
@@ -124,7 +124,7 @@ func (db *PQDatabase) parseProcesses(rows *sql.Rows) ([]*core.Process, error) {
 		var gpuMemory string
 		var walltime int64
 
-		if err := rows.Scan(&processID, &targetColonyID, pq.Array(&targetExecutorIDs), &assignedExecutorID, &state, &isAssigned, &executorType, &submissionTime, &startTime, &endTime, &waitDeadline, &execDeadline, pq.Array(&errs), &nodeName, &funcName, &argsJSONStr, &kwargsJSONStr, &maxWaitTime, &maxExecTime, &retries, &maxRetries, pq.Array(&dependencies), &priority, &priorityTime, &waitForParent, pq.Array(&parents), pq.Array(&children), &processGraphID, &inputJSONStr, &outputJSONStr, &label, &fsJSONStr, &nodes, &cpu, &processesCount, &processesPerNode, &memory, &storage, &gpuName, &gpuCount, &gpuMemory, &walltime); err != nil {
+		if err := rows.Scan(&processID, &targetColonyName, pq.Array(&targetExecutorIDs), &assignedExecutorID, &state, &isAssigned, &executorType, &submissionTime, &startTime, &endTime, &waitDeadline, &execDeadline, pq.Array(&errs), &nodeName, &funcName, &argsJSONStr, &kwargsJSONStr, &maxWaitTime, &maxExecTime, &retries, &maxRetries, pq.Array(&dependencies), &priority, &priorityTime, &waitForParent, pq.Array(&parents), pq.Array(&children), &processGraphID, &inputJSONStr, &outputJSONStr, &label, &fsJSONStr, &nodes, &cpu, &processesCount, &processesPerNode, &memory, &storage, &gpuName, &gpuCount, &gpuMemory, &walltime); err != nil {
 			return nil, err
 		}
 
@@ -180,7 +180,7 @@ func (db *PQDatabase) parseProcesses(rows *sql.Rows) ([]*core.Process, error) {
 			return nil, err
 		}
 
-		functionSpec := core.CreateFunctionSpec(nodeName, funcName, argsif, kwargsif, targetColonyID, targetExecutorIDs, executorType, maxWaitTime, maxExecTime, maxRetries, env, dependencies, priority, label)
+		functionSpec := core.CreateFunctionSpec(nodeName, funcName, argsif, kwargsif, targetColonyName, targetExecutorIDs, executorType, maxWaitTime, maxExecTime, maxRetries, env, dependencies, priority, label)
 
 		functionSpec.Conditions.Nodes = nodes
 		functionSpec.Conditions.CPU = cpu
@@ -264,9 +264,9 @@ func (db *PQDatabase) selectCandidate(candidates []*core.Process) *core.Process 
 	}
 }
 
-func (db *PQDatabase) FindProcessesByColonyID(colonyID string, seconds int, state int) ([]*core.Process, error) {
-	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `PROCESSES WHERE TARGET_COLONY_ID=$1 AND STATE=$2 AND SUBMISSION_TIME BETWEEN NOW() - INTERVAL '1 seconds' * $3 AND NOW() ORDER BY SUBMISSION_TIME ASC`
-	rows, err := db.postgresql.Query(sqlStatement, colonyID, state, strconv.Itoa(seconds))
+func (db *PQDatabase) FindProcessesByColonyName(colonyName string, seconds int, state int) ([]*core.Process, error) {
+	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `PROCESSES WHERE TARGET_COLONY_NAME=$1 AND STATE=$2 AND SUBMISSION_TIME BETWEEN NOW() - INTERVAL '1 seconds' * $3 AND NOW() ORDER BY SUBMISSION_TIME ASC`
+	rows, err := db.postgresql.Query(sqlStatement, colonyName, state, strconv.Itoa(seconds))
 	if err != nil {
 		return nil, err
 	}
@@ -280,9 +280,9 @@ func (db *PQDatabase) FindProcessesByColonyID(colonyID string, seconds int, stat
 	return matches, nil
 }
 
-func (db *PQDatabase) FindProcessesByExecutorID(colonyID string, executorID string, seconds int, state int) ([]*core.Process, error) {
-	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `PROCESSES WHERE TARGET_COLONY_ID=$1 AND ASSIGNED_EXECUTOR_ID=$2 AND STATE=$3 AND SUBMISSION_TIME BETWEEN NOW() - INTERVAL '1 seconds' * $4 AND NOW() ORDER BY SUBMISSION_TIME ASC`
-	rows, err := db.postgresql.Query(sqlStatement, colonyID, executorID, state, strconv.Itoa(seconds))
+func (db *PQDatabase) FindProcessesByExecutorID(colonyName string, executorID string, seconds int, state int) ([]*core.Process, error) {
+	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `PROCESSES WHERE TARGET_COLONY_NAME=$1 AND ASSIGNED_EXECUTOR_ID=$2 AND STATE=$3 AND SUBMISSION_TIME BETWEEN NOW() - INTERVAL '1 seconds' * $4 AND NOW() ORDER BY SUBMISSION_TIME ASC`
+	rows, err := db.postgresql.Query(sqlStatement, colonyName, executorID, state, strconv.Itoa(seconds))
 	if err != nil {
 		return nil, err
 	}
@@ -296,10 +296,10 @@ func (db *PQDatabase) FindProcessesByExecutorID(colonyID string, executorID stri
 	return matches, nil
 }
 
-func (db *PQDatabase) FindWaitingProcesses(colonyID string, executorType string, count int) ([]*core.Process, error) {
+func (db *PQDatabase) FindWaitingProcesses(colonyName string, executorType string, count int) ([]*core.Process, error) {
 	if executorType == "" {
-		sqlStatement := `SELECT * FROM ` + db.dbPrefix + `PROCESSES WHERE TARGET_COLONY_ID=$1 AND STATE=$2 ORDER BY PRIORITYTIME LIMIT $3`
-		rows, err := db.postgresql.Query(sqlStatement, colonyID, core.WAITING, count)
+		sqlStatement := `SELECT * FROM ` + db.dbPrefix + `PROCESSES WHERE TARGET_COLONY_NAME=$1 AND STATE=$2 ORDER BY PRIORITYTIME LIMIT $3`
+		rows, err := db.postgresql.Query(sqlStatement, colonyName, core.WAITING, count)
 		if err != nil {
 			return nil, err
 		}
@@ -313,8 +313,8 @@ func (db *PQDatabase) FindWaitingProcesses(colonyID string, executorType string,
 		return matches, nil
 	}
 
-	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `PROCESSES WHERE TARGET_COLONY_ID=$1 AND EXECUTOR_TYPE=$2 AND STATE=$3 ORDER BY PRIORITYTIME LIMIT $4`
-	rows, err := db.postgresql.Query(sqlStatement, colonyID, executorType, core.WAITING, count)
+	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `PROCESSES WHERE TARGET_COLONY_NAME=$1 AND EXECUTOR_TYPE=$2 AND STATE=$3 ORDER BY PRIORITYTIME LIMIT $4`
+	rows, err := db.postgresql.Query(sqlStatement, colonyName, executorType, core.WAITING, count)
 	if err != nil {
 		return nil, err
 	}
@@ -328,10 +328,10 @@ func (db *PQDatabase) FindWaitingProcesses(colonyID string, executorType string,
 	return matches, nil
 }
 
-func (db *PQDatabase) FindRunningProcesses(colonyID string, executorType string, count int) ([]*core.Process, error) {
+func (db *PQDatabase) FindRunningProcesses(colonyName string, executorType string, count int) ([]*core.Process, error) {
 	if executorType == "" {
-		sqlStatement := `SELECT * FROM ` + db.dbPrefix + `PROCESSES WHERE TARGET_COLONY_ID=$1 AND STATE=$2 ORDER BY START_TIME ASC LIMIT $3`
-		rows, err := db.postgresql.Query(sqlStatement, colonyID, core.RUNNING, count)
+		sqlStatement := `SELECT * FROM ` + db.dbPrefix + `PROCESSES WHERE TARGET_COLONY_NAME=$1 AND STATE=$2 ORDER BY START_TIME ASC LIMIT $3`
+		rows, err := db.postgresql.Query(sqlStatement, colonyName, core.RUNNING, count)
 		if err != nil {
 			return nil, err
 		}
@@ -345,8 +345,8 @@ func (db *PQDatabase) FindRunningProcesses(colonyID string, executorType string,
 		return matches, nil
 	}
 
-	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `PROCESSES WHERE TARGET_COLONY_ID=$1 AND EXECUTOR_TYPE=$2 AND STATE=$3 ORDER BY START_TIME ASC LIMIT $4`
-	rows, err := db.postgresql.Query(sqlStatement, colonyID, executorType, core.RUNNING, count)
+	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `PROCESSES WHERE TARGET_COLONY_NAME=$1 AND EXECUTOR_TYPE=$2 AND STATE=$3 ORDER BY START_TIME ASC LIMIT $4`
+	rows, err := db.postgresql.Query(sqlStatement, colonyName, executorType, core.RUNNING, count)
 	if err != nil {
 		return nil, err
 	}
@@ -360,10 +360,10 @@ func (db *PQDatabase) FindRunningProcesses(colonyID string, executorType string,
 	return matches, nil
 }
 
-func (db *PQDatabase) FindSuccessfulProcesses(colonyID string, executorType string, count int) ([]*core.Process, error) {
+func (db *PQDatabase) FindSuccessfulProcesses(colonyName string, executorType string, count int) ([]*core.Process, error) {
 	if executorType == "" {
-		sqlStatement := `SELECT * FROM ` + db.dbPrefix + `PROCESSES WHERE TARGET_COLONY_ID=$1 AND STATE=$2 ORDER BY END_TIME DESC LIMIT $3`
-		rows, err := db.postgresql.Query(sqlStatement, colonyID, core.SUCCESS, count)
+		sqlStatement := `SELECT * FROM ` + db.dbPrefix + `PROCESSES WHERE TARGET_COLONY_NAME=$1 AND STATE=$2 ORDER BY END_TIME DESC LIMIT $3`
+		rows, err := db.postgresql.Query(sqlStatement, colonyName, core.SUCCESS, count)
 		if err != nil {
 			return nil, err
 		}
@@ -377,8 +377,8 @@ func (db *PQDatabase) FindSuccessfulProcesses(colonyID string, executorType stri
 		return matches, nil
 	}
 
-	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `PROCESSES WHERE TARGET_COLONY_ID=$1 AND EXECUTOR_TYPE=$2 AND STATE=$3 ORDER BY END_TIME DESC LIMIT $4`
-	rows, err := db.postgresql.Query(sqlStatement, colonyID, executorType, core.SUCCESS, count)
+	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `PROCESSES WHERE TARGET_COLONY_NAME=$1 AND EXECUTOR_TYPE=$2 AND STATE=$3 ORDER BY END_TIME DESC LIMIT $4`
+	rows, err := db.postgresql.Query(sqlStatement, colonyName, executorType, core.SUCCESS, count)
 	if err != nil {
 		return nil, err
 	}
@@ -392,10 +392,10 @@ func (db *PQDatabase) FindSuccessfulProcesses(colonyID string, executorType stri
 	return matches, nil
 }
 
-func (db *PQDatabase) FindFailedProcesses(colonyID string, executorType string, count int) ([]*core.Process, error) {
+func (db *PQDatabase) FindFailedProcesses(colonyName string, executorType string, count int) ([]*core.Process, error) {
 	if executorType == "" {
-		sqlStatement := `SELECT * FROM ` + db.dbPrefix + `PROCESSES WHERE TARGET_COLONY_ID=$1 AND STATE=$2 ORDER BY END_TIME DESC LIMIT $3`
-		rows, err := db.postgresql.Query(sqlStatement, colonyID, core.FAILED, count)
+		sqlStatement := `SELECT * FROM ` + db.dbPrefix + `PROCESSES WHERE TARGET_COLONY_NAME=$1 AND STATE=$2 ORDER BY END_TIME DESC LIMIT $3`
+		rows, err := db.postgresql.Query(sqlStatement, colonyName, core.FAILED, count)
 		if err != nil {
 			return nil, err
 		}
@@ -409,8 +409,8 @@ func (db *PQDatabase) FindFailedProcesses(colonyID string, executorType string, 
 		return matches, nil
 	}
 
-	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `PROCESSES WHERE TARGET_COLONY_ID=$1 AND EXECUTOR_TYPE=$2 AND STATE=$3 ORDER BY END_TIME DESC LIMIT $4`
-	rows, err := db.postgresql.Query(sqlStatement, colonyID, executorType, core.FAILED, count)
+	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `PROCESSES WHERE TARGET_COLONY_NAME=$1 AND EXECUTOR_TYPE=$2 AND STATE=$3 ORDER BY END_TIME DESC LIMIT $4`
+	rows, err := db.postgresql.Query(sqlStatement, colonyName, executorType, core.FAILED, count)
 	if err != nil {
 		return nil, err
 	}
@@ -456,11 +456,11 @@ func (db *PQDatabase) FindAllWaitingProcesses() ([]*core.Process, error) {
 	return matches, nil
 }
 
-func (db *PQDatabase) FindUnassignedProcesses(colonyID string, executorID string, executorType string, count int) ([]*core.Process, error) {
+func (db *PQDatabase) FindUnassignedProcesses(colonyName string, executorID string, executorType string, count int) ([]*core.Process, error) {
 	var sqlStatement string
 
-	sqlStatement = `SELECT * FROM ` + db.dbPrefix + `PROCESSES WHERE STATE=$1 AND EXECUTOR_TYPE=$2 AND IS_ASSIGNED=FALSE AND WAIT_FOR_PARENTS=FALSE AND TARGET_COLONY_ID=$3 ORDER BY PRIORITYTIME LIMIT $4`
-	rows, err := db.postgresql.Query(sqlStatement, core.WAITING, executorType, colonyID, count)
+	sqlStatement = `SELECT * FROM ` + db.dbPrefix + `PROCESSES WHERE STATE=$1 AND EXECUTOR_TYPE=$2 AND IS_ASSIGNED=FALSE AND WAIT_FOR_PARENTS=FALSE AND TARGET_COLONY_NAME=$3 ORDER BY PRIORITYTIME LIMIT $4`
+	rows, err := db.postgresql.Query(sqlStatement, core.WAITING, executorType, colonyName, count)
 	if err != nil {
 		return nil, err
 	}
@@ -505,29 +505,14 @@ func (db *PQDatabase) DeleteAllProcesses() error {
 	return nil
 }
 
-func (db *PQDatabase) DeleteAllWaitingProcessesByColonyID(colonyID string) error {
-	sqlStatement := `DELETE FROM ` + db.dbPrefix + `PROCESSES WHERE TARGET_COLONY_ID=$1 AND PROCESSGRAPH_ID=$2 AND STATE=$3`
-	_, err := db.postgresql.Exec(sqlStatement, colonyID, "", core.WAITING)
+func (db *PQDatabase) DeleteAllWaitingProcessesByColonyName(colonyName string) error {
+	sqlStatement := `DELETE FROM ` + db.dbPrefix + `PROCESSES WHERE TARGET_COLONY_NAME=$1 AND PROCESSGRAPH_ID=$2 AND STATE=$3`
+	_, err := db.postgresql.Exec(sqlStatement, colonyName, "", core.WAITING)
 	if err != nil {
 		return err
 	}
 
-	err = db.DeleteAllAttributesByColonyIDWithState(colonyID, core.WAITING)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (db *PQDatabase) DeleteAllRunningProcessesByColonyID(colonyID string) error {
-	sqlStatement := `DELETE FROM ` + db.dbPrefix + `PROCESSES WHERE TARGET_COLONY_ID=$1 AND PROCESSGRAPH_ID=$2 AND STATE=$3`
-	_, err := db.postgresql.Exec(sqlStatement, colonyID, "", core.RUNNING)
-	if err != nil {
-		return err
-	}
-
-	err = db.DeleteAllAttributesByColonyIDWithState(colonyID, core.RUNNING)
+	err = db.DeleteAllAttributesByColonyNameWithState(colonyName, core.WAITING)
 	if err != nil {
 		return err
 	}
@@ -535,29 +520,14 @@ func (db *PQDatabase) DeleteAllRunningProcessesByColonyID(colonyID string) error
 	return nil
 }
 
-func (db *PQDatabase) DeleteAllSuccessfulProcessesByColonyID(colonyID string) error {
-	sqlStatement := `DELETE FROM ` + db.dbPrefix + `PROCESSES WHERE TARGET_COLONY_ID=$1 AND PROCESSGRAPH_ID=$2 AND STATE=$3`
-	_, err := db.postgresql.Exec(sqlStatement, colonyID, "", core.SUCCESS)
+func (db *PQDatabase) DeleteAllRunningProcessesByColonyName(colonyName string) error {
+	sqlStatement := `DELETE FROM ` + db.dbPrefix + `PROCESSES WHERE TARGET_COLONY_NAME=$1 AND PROCESSGRAPH_ID=$2 AND STATE=$3`
+	_, err := db.postgresql.Exec(sqlStatement, colonyName, "", core.RUNNING)
 	if err != nil {
 		return err
 	}
 
-	err = db.DeleteAllAttributesByColonyIDWithState(colonyID, core.SUCCESS)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (db *PQDatabase) DeleteAllFailedProcessesByColonyID(colonyID string) error {
-	sqlStatement := `DELETE FROM ` + db.dbPrefix + `PROCESSES WHERE TARGET_COLONY_ID=$1 AND PROCESSGRAPH_ID=$2 AND STATE=$3`
-	_, err := db.postgresql.Exec(sqlStatement, colonyID, "", core.FAILED)
-	if err != nil {
-		return err
-	}
-
-	err = db.DeleteAllAttributesByColonyIDWithState(colonyID, core.FAILED)
+	err = db.DeleteAllAttributesByColonyNameWithState(colonyName, core.RUNNING)
 	if err != nil {
 		return err
 	}
@@ -565,14 +535,44 @@ func (db *PQDatabase) DeleteAllFailedProcessesByColonyID(colonyID string) error 
 	return nil
 }
 
-func (db *PQDatabase) DeleteAllProcessesByColonyID(colonyID string) error {
-	sqlStatement := `DELETE FROM ` + db.dbPrefix + `PROCESSES WHERE TARGET_COLONY_ID=$1 AND PROCESSGRAPH_ID=$2`
-	_, err := db.postgresql.Exec(sqlStatement, colonyID, "")
+func (db *PQDatabase) DeleteAllSuccessfulProcessesByColonyName(colonyName string) error {
+	sqlStatement := `DELETE FROM ` + db.dbPrefix + `PROCESSES WHERE TARGET_COLONY_NAME=$1 AND PROCESSGRAPH_ID=$2 AND STATE=$3`
+	_, err := db.postgresql.Exec(sqlStatement, colonyName, "", core.SUCCESS)
 	if err != nil {
 		return err
 	}
 
-	err = db.DeleteAllAttributesByColonyID(colonyID)
+	err = db.DeleteAllAttributesByColonyNameWithState(colonyName, core.SUCCESS)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (db *PQDatabase) DeleteAllFailedProcessesByColonyName(colonyName string) error {
+	sqlStatement := `DELETE FROM ` + db.dbPrefix + `PROCESSES WHERE TARGET_COLONY_NAME=$1 AND PROCESSGRAPH_ID=$2 AND STATE=$3`
+	_, err := db.postgresql.Exec(sqlStatement, colonyName, "", core.FAILED)
+	if err != nil {
+		return err
+	}
+
+	err = db.DeleteAllAttributesByColonyNameWithState(colonyName, core.FAILED)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (db *PQDatabase) DeleteAllProcessesByColonyName(colonyName string) error {
+	sqlStatement := `DELETE FROM ` + db.dbPrefix + `PROCESSES WHERE TARGET_COLONY_NAME=$1 AND PROCESSGRAPH_ID=$2`
+	_, err := db.postgresql.Exec(sqlStatement, colonyName, "")
+	if err != nil {
+		return err
+	}
+
+	err = db.DeleteAllAttributesByColonyName(colonyName)
 	if err != nil {
 		return err
 	}
@@ -595,14 +595,14 @@ func (db *PQDatabase) DeleteAllProcessesByProcessGraphID(processGraphID string) 
 	return nil
 }
 
-func (db *PQDatabase) DeleteAllProcessesInProcessGraphsByColonyID(colonyID string) error {
-	err := db.DeleteAllAttributesInProcessGraphsByColonyID(colonyID)
+func (db *PQDatabase) DeleteAllProcessesInProcessGraphsByColonyName(colonyName string) error {
+	err := db.DeleteAllAttributesInProcessGraphsByColonyName(colonyName)
 	if err != nil {
 		return err
 	}
 
-	sqlStatement := `DELETE FROM ` + db.dbPrefix + `PROCESSES WHERE TARGET_COLONY_ID=$1 AND PROCESSGRAPH_ID!=$2`
-	_, err = db.postgresql.Exec(sqlStatement, colonyID, "")
+	sqlStatement := `DELETE FROM ` + db.dbPrefix + `PROCESSES WHERE TARGET_COLONY_NAME=$1 AND PROCESSGRAPH_ID!=$2`
+	_, err = db.postgresql.Exec(sqlStatement, colonyName, "")
 	if err != nil {
 		return err
 	}
@@ -610,14 +610,14 @@ func (db *PQDatabase) DeleteAllProcessesInProcessGraphsByColonyID(colonyID strin
 	return nil
 }
 
-func (db *PQDatabase) DeleteAllProcessesInProcessGraphsByColonyIDWithState(colonyID string, state int) error {
-	err := db.DeleteAllAttributesInProcessGraphsByColonyIDWithState(colonyID, state)
+func (db *PQDatabase) DeleteAllProcessesInProcessGraphsByColonyNameWithState(colonyName string, state int) error {
+	err := db.DeleteAllAttributesInProcessGraphsByColonyNameWithState(colonyName, state)
 	if err != nil {
 		return err
 	}
 
-	sqlStatement := `DELETE FROM ` + db.dbPrefix + `PROCESSES WHERE TARGET_COLONY_ID=$1 AND PROCESSGRAPH_ID!=$2 AND STATE=$3`
-	_, err = db.postgresql.Exec(sqlStatement, colonyID, "", state)
+	sqlStatement := `DELETE FROM ` + db.dbPrefix + `PROCESSES WHERE TARGET_COLONY_NAME=$1 AND PROCESSGRAPH_ID!=$2 AND STATE=$3`
+	_, err = db.postgresql.Exec(sqlStatement, colonyName, "", state)
 	if err != nil {
 		return err
 	}
@@ -956,9 +956,9 @@ func (db *PQDatabase) countProcesses(state int) (int, error) {
 //
 // https://wiki.postgresql.org/wiki/Count_estimate
 
-func (db *PQDatabase) countProcessesByColonyID(state int, colonyID string) (int, error) {
-	sqlStatement := `SELECT COUNT(*) FROM ` + db.dbPrefix + `PROCESSES WHERE STATE=$1 AND TARGET_COLONY_ID=$2`
-	rows, err := db.postgresql.Query(sqlStatement, state, colonyID)
+func (db *PQDatabase) countProcessesByColonyName(state int, colonyName string) (int, error) {
+	sqlStatement := `SELECT COUNT(*) FROM ` + db.dbPrefix + `PROCESSES WHERE STATE=$1 AND TARGET_COLONY_NAME=$2`
+	rows, err := db.postgresql.Query(sqlStatement, state, colonyName)
 	if err != nil {
 		return -1, err
 	}
@@ -991,18 +991,18 @@ func (db *PQDatabase) CountFailedProcesses() (int, error) {
 	return db.countProcesses(core.FAILED)
 }
 
-func (db *PQDatabase) CountWaitingProcessesByColonyID(colonyID string) (int, error) {
-	return db.countProcessesByColonyID(core.WAITING, colonyID)
+func (db *PQDatabase) CountWaitingProcessesByColonyName(colonyName string) (int, error) {
+	return db.countProcessesByColonyName(core.WAITING, colonyName)
 }
 
-func (db *PQDatabase) CountRunningProcessesByColonyID(colonyID string) (int, error) {
-	return db.countProcessesByColonyID(core.RUNNING, colonyID)
+func (db *PQDatabase) CountRunningProcessesByColonyName(colonyName string) (int, error) {
+	return db.countProcessesByColonyName(core.RUNNING, colonyName)
 }
 
-func (db *PQDatabase) CountSuccessfulProcessesByColonyID(colonyID string) (int, error) {
-	return db.countProcessesByColonyID(core.SUCCESS, colonyID)
+func (db *PQDatabase) CountSuccessfulProcessesByColonyName(colonyName string) (int, error) {
+	return db.countProcessesByColonyName(core.SUCCESS, colonyName)
 }
 
-func (db *PQDatabase) CountFailedProcessesByColonyID(colonyID string) (int, error) {
-	return db.countProcessesByColonyID(core.FAILED, colonyID)
+func (db *PQDatabase) CountFailedProcessesByColonyName(colonyName string) (int, error) {
+	return db.countProcessesByColonyName(core.FAILED, colonyName)
 }

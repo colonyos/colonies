@@ -7,11 +7,11 @@ import (
 )
 
 func TestCreateGeneratorArg(t *testing.T) {
-	colonyID := GenerateRandomID()
+	colonyName := GenerateRandomID()
 	id := GenerateRandomID()
-	generatorArg := CreateGeneratorArg(id, colonyID, "arg")
+	generatorArg := CreateGeneratorArg(id, colonyName, "arg")
 	assert.Equal(t, generatorArg.Arg, "arg")
 	assert.Equal(t, generatorArg.GeneratorID, id)
-	assert.Equal(t, generatorArg.ColonyID, colonyID)
+	assert.Equal(t, generatorArg.ColonyName, colonyName)
 	assert.Len(t, generatorArg.ID, 64)
 }

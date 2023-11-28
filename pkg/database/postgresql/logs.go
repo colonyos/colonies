@@ -8,9 +8,9 @@ import (
 	_ "github.com/lib/pq"
 )
 
-func (db *PQDatabase) AddLog(processID string, colonyID string, executorID string, timestamp int64, msg string) error {
-	sqlStatement := `INSERT INTO  ` + db.dbPrefix + `LOGS (PROCESS_ID, COLONY_ID, EXECUTOR_ID, TS, MSG, ADDED) VALUES ($1, $2, $3, $4, $5, $6)`
-	_, err := db.postgresql.Exec(sqlStatement, processID, colonyID, executorID, timestamp, msg, time.Now())
+func (db *PQDatabase) AddLog(processID string, colonyName string, executorID string, timestamp int64, msg string) error {
+	sqlStatement := `INSERT INTO  ` + db.dbPrefix + `LOGS (PROCESS_ID, COLONY_NAME, EXECUTOR_ID, TS, MSG, ADDED) VALUES ($1, $2, $3, $4, $5, $6)`
+	_, err := db.postgresql.Exec(sqlStatement, processID, colonyName, executorID, timestamp, msg, time.Now())
 	if err != nil {
 		return err
 	}
@@ -23,15 +23,15 @@ func (db *PQDatabase) parseLogs(rows *sql.Rows) ([]core.Log, error) {
 
 	for rows.Next() {
 		var processID string
-		var colonyID string
+		var colonyName string
 		var executorID string
 		var ts int64
 		var msg string
 		var added time.Time
-		if err := rows.Scan(&processID, &colonyID, &executorID, &ts, &msg, &added); err != nil {
+		if err := rows.Scan(&processID, &colonyName, &executorID, &ts, &msg, &added); err != nil {
 			return nil, err
 		}
-		log := core.Log{ProcessID: processID, ColonyID: colonyID, ExecutorID: executorID, Timestamp: ts, Message: msg}
+		log := core.Log{ProcessID: processID, ColonyName: colonyName, ExecutorID: executorID, Timestamp: ts, Message: msg}
 		logs = append(logs, log)
 	}
 
@@ -106,9 +106,9 @@ func (db *PQDatabase) GetLogsByExecutorIDSince(executorID string, limit int, sin
 	return logs, nil
 }
 
-func (db *PQDatabase) DeleteLogsByColonyID(colonyID string) error {
-	sqlStatement := `DELETE FROM ` + db.dbPrefix + `LOGS WHERE COLONY_ID=$1`
-	_, err := db.postgresql.Exec(sqlStatement, colonyID)
+func (db *PQDatabase) DeleteLogsByColonyName(colonyName string) error {
+	sqlStatement := `DELETE FROM ` + db.dbPrefix + `LOGS WHERE COLONY_NAME=$1`
+	_, err := db.postgresql.Exec(sqlStatement, colonyName)
 	if err != nil {
 		return err
 	}
@@ -116,9 +116,9 @@ func (db *PQDatabase) DeleteLogsByColonyID(colonyID string) error {
 	return nil
 }
 
-func (db *PQDatabase) CountLogs(colonyID string) (int, error) {
-	sqlStatement := `SELECT COUNT(*) FROM ` + db.dbPrefix + `LOGS WHERE COLONY_ID=$1`
-	rows, err := db.postgresql.Query(sqlStatement, colonyID)
+func (db *PQDatabase) CountLogs(colonyName string) (int, error) {
+	sqlStatement := `SELECT COUNT(*) FROM ` + db.dbPrefix + `LOGS WHERE COLONY_NAME=$1`
+	rows, err := db.postgresql.Query(sqlStatement, colonyName)
 	if err != nil {
 		return -1, err
 	}

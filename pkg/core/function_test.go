@@ -9,12 +9,12 @@ import (
 func TestCreateFunction(t *testing.T) {
 	functionID := GenerateRandomID()
 	executorID := GenerateRandomID()
-	colonyID := GenerateRandomID()
+	colonyName := GenerateRandomID()
 
 	function1 := Function{
 		FunctionID:  functionID,
 		ExecutorID:  executorID,
-		ColonyID:    colonyID,
+		ColonyName:  colonyName,
 		FuncName:    "testfunc1",
 		MinWaitTime: 1,
 		MaxWaitTime: 1,
@@ -28,7 +28,7 @@ func TestCreateFunction(t *testing.T) {
 	function2 := Function{
 		FunctionID:  functionID,
 		ExecutorID:  executorID,
-		ColonyID:    colonyID,
+		ColonyName:  colonyName,
 		FuncName:    "testfunc1",
 		MinWaitTime: 1,
 		MaxWaitTime: 1,
@@ -42,7 +42,7 @@ func TestCreateFunction(t *testing.T) {
 	function3 := Function{
 		FunctionID:  functionID + "bla",
 		ExecutorID:  executorID,
-		ColonyID:    colonyID,
+		ColonyName:  colonyName,
 		FuncName:    "testfunc1",
 		MinWaitTime: 1,
 		MaxWaitTime: 1,
@@ -56,7 +56,7 @@ func TestCreateFunction(t *testing.T) {
 	function4 := Function{
 		FunctionID:  functionID,
 		ExecutorID:  executorID + "bla",
-		ColonyID:    colonyID,
+		ColonyName:  colonyName,
 		FuncName:    "testfunc1",
 		MinWaitTime: 1,
 		MaxWaitTime: 1,
@@ -70,7 +70,7 @@ func TestCreateFunction(t *testing.T) {
 	function5 := Function{
 		FunctionID:  functionID,
 		ExecutorID:  executorID,
-		ColonyID:    colonyID + "bla",
+		ColonyName:  colonyName + "bla",
 		FuncName:    "testfunc1",
 		MinWaitTime: 1,
 		MaxWaitTime: 1,
@@ -84,7 +84,7 @@ func TestCreateFunction(t *testing.T) {
 	function6 := Function{
 		FunctionID:  functionID,
 		ExecutorID:  executorID,
-		ColonyID:    colonyID,
+		ColonyName:  colonyName,
 		FuncName:    "testfunc1" + "bla",
 		MinWaitTime: 1,
 		MaxWaitTime: 1,
@@ -98,7 +98,7 @@ func TestCreateFunction(t *testing.T) {
 	function7 := Function{
 		FunctionID:  functionID,
 		ExecutorID:  executorID,
-		ColonyID:    colonyID,
+		ColonyName:  colonyName,
 		FuncName:    "testfunc2",
 		MinWaitTime: 1,
 		MaxWaitTime: 1,
@@ -112,7 +112,7 @@ func TestCreateFunction(t *testing.T) {
 	function8 := Function{
 		FunctionID:  functionID,
 		ExecutorID:  executorID,
-		ColonyID:    colonyID,
+		ColonyName:  colonyName,
 		FuncName:    "testfunc1",
 		AvgWaitTime: 2.1,
 		MinWaitTime: 1,
@@ -126,7 +126,7 @@ func TestCreateFunction(t *testing.T) {
 	function9 := Function{
 		FunctionID:  functionID,
 		ExecutorID:  executorID,
-		ColonyID:    colonyID,
+		ColonyName:  colonyName,
 		FuncName:    "testfunc1",
 		MinWaitTime: 1,
 		MaxWaitTime: 1,
@@ -140,7 +140,7 @@ func TestCreateFunction(t *testing.T) {
 	function10 := Function{
 		FunctionID:  functionID,
 		ExecutorID:  executorID,
-		ColonyID:    colonyID,
+		ColonyName:  colonyName,
 		FuncName:    "testfunc1",
 		MinWaitTime: 1,
 		MaxWaitTime: 1,
@@ -154,7 +154,7 @@ func TestCreateFunction(t *testing.T) {
 	function11 := Function{
 		FunctionID:  functionID,
 		ExecutorID:  executorID,
-		ColonyID:    colonyID,
+		ColonyName:  colonyName,
 		FuncName:    "testfunc1",
 		MinWaitTime: 2,
 		MaxWaitTime: 1,
@@ -168,7 +168,7 @@ func TestCreateFunction(t *testing.T) {
 	function12 := Function{
 		FunctionID:  functionID,
 		ExecutorID:  executorID,
-		ColonyID:    colonyID,
+		ColonyName:  colonyName,
 		FuncName:    "testfunc1",
 		MinWaitTime: 1,
 		MaxWaitTime: 2,
@@ -182,7 +182,7 @@ func TestCreateFunction(t *testing.T) {
 	function13 := Function{
 		FunctionID:  functionID,
 		ExecutorID:  executorID,
-		ColonyID:    colonyID,
+		ColonyName:  colonyName,
 		FuncName:    "testfunc1",
 		MinWaitTime: 1,
 		MaxWaitTime: 1,
@@ -196,7 +196,7 @@ func TestCreateFunction(t *testing.T) {
 	function14 := Function{
 		FunctionID:  functionID,
 		ExecutorID:  executorID,
-		ColonyID:    colonyID,
+		ColonyName:  colonyName,
 		FuncName:    "testfunc1",
 		MinWaitTime: 1,
 		MaxWaitTime: 1,
@@ -209,7 +209,7 @@ func TestCreateFunction(t *testing.T) {
 }
 
 func TestFunctionToJSON(t *testing.T) {
-	function1 := Function{FunctionID: GenerateRandomID(), ExecutorID: GenerateRandomID(), ColonyID: GenerateRandomID(), FuncName: "testfunc1", AvgWaitTime: 1.1, AvgExecTime: 0.1}
+	function1 := Function{FunctionID: GenerateRandomID(), ExecutorID: GenerateRandomID(), ColonyName: GenerateRandomID(), FuncName: "testfunc1", AvgWaitTime: 1.1, AvgExecTime: 0.1}
 	jsonStr, err := function1.ToJSON()
 	assert.Nil(t, err)
 
@@ -219,20 +219,20 @@ func TestFunctionToJSON(t *testing.T) {
 }
 
 func TestIsFunctionArraysEqual(t *testing.T) {
-	function1 := &Function{FunctionID: GenerateRandomID(), ExecutorID: GenerateRandomID(), ColonyID: GenerateRandomID(), FuncName: "testfunc1", AvgWaitTime: 1.1, AvgExecTime: 0.1}
-	function2 := &Function{FunctionID: GenerateRandomID(), ExecutorID: GenerateRandomID(), ColonyID: GenerateRandomID(), FuncName: "testfunc2", AvgWaitTime: 1.1, AvgExecTime: 0.1}
+	function1 := &Function{FunctionID: GenerateRandomID(), ExecutorID: GenerateRandomID(), ColonyName: GenerateRandomID(), FuncName: "testfunc1", AvgWaitTime: 1.1, AvgExecTime: 0.1}
+	function2 := &Function{FunctionID: GenerateRandomID(), ExecutorID: GenerateRandomID(), ColonyName: GenerateRandomID(), FuncName: "testfunc2", AvgWaitTime: 1.1, AvgExecTime: 0.1}
 	functions1 := []*Function{function1, function2}
 	assert.True(t, IsFunctionArraysEqual(functions1, functions1))
 
-	function3 := &Function{FunctionID: GenerateRandomID(), ExecutorID: GenerateRandomID(), ColonyID: GenerateRandomID(), FuncName: "testfunc1", AvgWaitTime: 1.1, AvgExecTime: 0.1}
-	function4 := &Function{FunctionID: GenerateRandomID(), ExecutorID: GenerateRandomID(), ColonyID: GenerateRandomID(), FuncName: "testfunc3", AvgWaitTime: 1.1, AvgExecTime: 0.1}
+	function3 := &Function{FunctionID: GenerateRandomID(), ExecutorID: GenerateRandomID(), ColonyName: GenerateRandomID(), FuncName: "testfunc1", AvgWaitTime: 1.1, AvgExecTime: 0.1}
+	function4 := &Function{FunctionID: GenerateRandomID(), ExecutorID: GenerateRandomID(), ColonyName: GenerateRandomID(), FuncName: "testfunc3", AvgWaitTime: 1.1, AvgExecTime: 0.1}
 	functions2 := []*Function{function3, function4}
 	assert.False(t, IsFunctionArraysEqual(functions1, functions2))
 }
 
 func TestFunctionsToJSON(t *testing.T) {
-	function1 := &Function{FunctionID: GenerateRandomID(), ExecutorID: GenerateRandomID(), ColonyID: GenerateRandomID(), FuncName: "testfunc1", AvgWaitTime: 1.1, AvgExecTime: 0.1}
-	function2 := &Function{FunctionID: GenerateRandomID(), ExecutorID: GenerateRandomID(), ColonyID: GenerateRandomID(), FuncName: "testfunc2", AvgWaitTime: 1.1, AvgExecTime: 0.1}
+	function1 := &Function{FunctionID: GenerateRandomID(), ExecutorID: GenerateRandomID(), ColonyName: GenerateRandomID(), FuncName: "testfunc1", AvgWaitTime: 1.1, AvgExecTime: 0.1}
+	function2 := &Function{FunctionID: GenerateRandomID(), ExecutorID: GenerateRandomID(), ColonyName: GenerateRandomID(), FuncName: "testfunc2", AvgWaitTime: 1.1, AvgExecTime: 0.1}
 	functions1 := []*Function{function1, function2}
 
 	jsonStr, err := ConvertFunctionArrayToJSON(functions1)

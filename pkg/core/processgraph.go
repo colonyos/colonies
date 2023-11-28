@@ -49,7 +49,7 @@ type Node struct {
 type ProcessGraph struct {
 	storage        ProcessGraphStorage
 	ID             string    `json:"processgraphid"`
-	ColonyID       string    `json:"colonyid"`
+	ColonyName     string    `json:"colonyname"`
 	Roots          []string  `json:"rootprocessids"`
 	State          int       `json:"state"`
 	SubmissionTime time.Time `json:"submissiontime"`
@@ -61,9 +61,9 @@ type ProcessGraph struct {
 	nodesMap       map[string]*Node
 }
 
-func CreateProcessGraph(colonyID string) (*ProcessGraph, error) {
+func CreateProcessGraph(colonyName string) (*ProcessGraph, error) {
 	graph := &ProcessGraph{}
-	graph.ColonyID = colonyID
+	graph.ColonyName = colonyName
 	graph.Edges = make([]Edge, 0)
 	graph.Nodes = make([]Node, 0)
 
@@ -512,7 +512,7 @@ func (graph *ProcessGraph) iterate(processID string, visited map[string]bool, vi
 func (graph *ProcessGraph) Equals(graph2 *ProcessGraph) bool {
 	if graph.State == graph2.State &&
 		graph.ID == graph2.ID &&
-		graph.ColonyID == graph2.ColonyID {
+		graph.ColonyName == graph2.ColonyName {
 		return true
 	}
 

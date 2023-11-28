@@ -43,7 +43,7 @@ func (mock *processGraphStorageMock) SetProcessGraphState(processGraphID string,
 }
 
 func createProcess() *Process {
-	colonyID := GenerateRandomID()
+	colonyName := GenerateRandomID()
 	executorType := "test_executor_type"
 	maxWaitTime := -1
 	maxExecTime := -1
@@ -54,7 +54,7 @@ func createProcess() *Process {
 	kwargs := make(map[string]interface{}, 1)
 	kwargs["0"] = "test_arg"
 
-	functionSpec := CreateFunctionSpec("test_name", "test_func", args, kwargs, colonyID, []string{}, executorType, maxWaitTime, maxExecTime, maxRetries, make(map[string]string), []string{}, 1, "testlabel")
+	functionSpec := CreateFunctionSpec("test_name", "test_func", args, kwargs, colonyName, []string{}, executorType, maxWaitTime, maxExecTime, maxRetries, make(map[string]string), []string{}, 1, "testlabel")
 	process := CreateProcess(functionSpec)
 
 	return process
@@ -87,9 +87,9 @@ func TestProcessGraphGetRoot(t *testing.T) {
 	mock.addProcess(process3)
 	mock.addProcess(process4)
 
-	colonyID := GenerateRandomID()
+	colonyName := GenerateRandomID()
 
-	graph, err := CreateProcessGraph(colonyID)
+	graph, err := CreateProcessGraph(colonyName)
 	assert.Nil(t, err)
 
 	graph.storage = mock
@@ -140,9 +140,9 @@ func TestProcessGraphCalcEdgesNodes(t *testing.T) {
 	mock.addProcess(process3)
 	mock.addProcess(process4)
 
-	colonyID := GenerateRandomID()
+	colonyName := GenerateRandomID()
 
-	graph, err := CreateProcessGraph(colonyID)
+	graph, err := CreateProcessGraph(colonyName)
 	assert.Nil(t, err)
 
 	graph.storage = mock
@@ -185,9 +185,9 @@ func TestProcessGraphDepth(t *testing.T) {
 	mock.addProcess(process3)
 	mock.addProcess(process4)
 
-	colonyID := GenerateRandomID()
+	colonyName := GenerateRandomID()
 
-	graph, err := CreateProcessGraph(colonyID)
+	graph, err := CreateProcessGraph(colonyName)
 	assert.Nil(t, err)
 
 	graph.storage = mock
@@ -241,9 +241,9 @@ func TestProcessGraphGetRootLoop(t *testing.T) {
 	mock.addProcess(process3)
 	mock.addProcess(process4)
 
-	colonyID := GenerateRandomID()
+	colonyName := GenerateRandomID()
 
-	graph, err := CreateProcessGraph(colonyID)
+	graph, err := CreateProcessGraph(colonyName)
 	assert.Nil(t, err)
 
 	graph.storage = mock
@@ -290,9 +290,9 @@ func TestProcessGraphIterate(t *testing.T) {
 	mock.addProcess(process3)
 	mock.addProcess(process4)
 
-	colonyID := GenerateRandomID()
+	colonyName := GenerateRandomID()
 
-	graph, err := CreateProcessGraph(colonyID)
+	graph, err := CreateProcessGraph(colonyName)
 	assert.Nil(t, err)
 
 	graph.storage = mock
@@ -337,9 +337,9 @@ func TestProcessGraphIterate2(t *testing.T) {
 	mock.addProcess(process3)
 	mock.addProcess(process4)
 
-	colonyID := GenerateRandomID()
+	colonyName := GenerateRandomID()
 
-	graph, err := CreateProcessGraph(colonyID)
+	graph, err := CreateProcessGraph(colonyName)
 	assert.Nil(t, err)
 
 	graph.storage = mock
@@ -365,9 +365,9 @@ func TestProcessGraphIterate3(t *testing.T) {
 	mock := createProcessGraphStorageMock()
 	mock.addProcess(process1)
 
-	colonyID := GenerateRandomID()
+	colonyName := GenerateRandomID()
 
-	graph, err := CreateProcessGraph(colonyID)
+	graph, err := CreateProcessGraph(colonyName)
 	assert.Nil(t, err)
 
 	graph.storage = mock
@@ -417,9 +417,9 @@ func TestProcessGraphIterateMultipleRoots(t *testing.T) {
 	mock.addProcess(process5)
 	mock.addProcess(process6)
 
-	colonyID := GenerateRandomID()
+	colonyName := GenerateRandomID()
 
-	graph, err := CreateProcessGraph(colonyID)
+	graph, err := CreateProcessGraph(colonyName)
 	assert.Nil(t, err)
 
 	graph.storage = mock
@@ -478,9 +478,9 @@ func TestProcessGraphResolve(t *testing.T) {
 	process3.WaitForParents = true
 	process4.WaitForParents = true
 
-	colonyID := GenerateRandomID()
+	colonyName := GenerateRandomID()
 
-	graph, err := CreateProcessGraph(colonyID)
+	graph, err := CreateProcessGraph(colonyName)
 	assert.Nil(t, err)
 
 	graph.storage = mock
@@ -713,9 +713,9 @@ func TestProcessGraphResolveMultipleRoots(t *testing.T) {
 	process4.WaitForParents = true
 	process6.WaitForParents = true
 
-	colonyID := GenerateRandomID()
+	colonyName := GenerateRandomID()
 
-	graph, err := CreateProcessGraph(colonyID)
+	graph, err := CreateProcessGraph(colonyName)
 	assert.Nil(t, err)
 
 	graph.storage = mock
@@ -812,9 +812,9 @@ func TestProcessGraphJSON(t *testing.T) {
 	mock.addProcess(process3)
 	mock.addProcess(process4)
 
-	colonyID := GenerateRandomID()
+	colonyName := GenerateRandomID()
 
-	graph, err := CreateProcessGraph(colonyID)
+	graph, err := CreateProcessGraph(colonyName)
 	assert.Nil(t, err)
 
 	graph.storage = mock
@@ -827,21 +827,21 @@ func TestProcessGraphJSON(t *testing.T) {
 	graph2, err := ConvertJSONToProcessGraphWithStorage(jsonStr)
 	assert.Nil(t, err)
 	assert.True(t, graph.Equals(graph2))
-	assert.True(t, graph2.ColonyID == colonyID)
+	assert.True(t, graph2.ColonyName == colonyName)
 
 	graph2, err = ConvertJSONToProcessGraph(jsonStr)
 	assert.Nil(t, err)
 	assert.True(t, graph.Equals(graph2))
-	assert.True(t, graph2.ColonyID == colonyID)
+	assert.True(t, graph2.ColonyName == colonyName)
 }
 
 func TestProcessGraphArrayJSON(t *testing.T) {
 	var graphs []*ProcessGraph
-	colonyID := GenerateRandomID()
+	colonyName := GenerateRandomID()
 
 	for i := 0; i < 10; i++ {
 		process1 := createProcess()
-		graph, err := CreateProcessGraph(colonyID)
+		graph, err := CreateProcessGraph(colonyName)
 		assert.Nil(t, err)
 		graph.AddRoot(process1.ID)
 		graphs = append(graphs, graph)
@@ -876,8 +876,8 @@ func TestUpdateProcessIDs(t *testing.T) {
 	mock.addProcess(process2)
 	mock.addProcess(process3)
 
-	colonyID := GenerateRandomID()
-	graph, err := CreateProcessGraph(colonyID)
+	colonyName := GenerateRandomID()
+	graph, err := CreateProcessGraph(colonyName)
 	assert.Nil(t, err)
 
 	graph.storage = mock
@@ -917,9 +917,9 @@ func TestProcessGraphGetLeaves(t *testing.T) {
 	mock.addProcess(process3)
 	mock.addProcess(process4)
 
-	colonyID := GenerateRandomID()
+	colonyName := GenerateRandomID()
 
-	graph, err := CreateProcessGraph(colonyID)
+	graph, err := CreateProcessGraph(colonyName)
 	assert.Nil(t, err)
 
 	graph.storage = mock
@@ -961,9 +961,9 @@ func TestProcessGraphGetLeaves2(t *testing.T) {
 	mock.addProcess(process4)
 	mock.addProcess(process5)
 
-	colonyID := GenerateRandomID()
+	colonyName := GenerateRandomID()
 
-	graph, err := CreateProcessGraph(colonyID)
+	graph, err := CreateProcessGraph(colonyName)
 	assert.Nil(t, err)
 
 	graph.storage = mock

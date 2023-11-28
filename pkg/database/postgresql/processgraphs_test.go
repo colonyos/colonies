@@ -8,11 +8,11 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func generateProcessGraph(t *testing.T, db *PQDatabase, colonyID string) *core.ProcessGraph {
-	process1 := utils.CreateTestProcess(colonyID)
-	process2 := utils.CreateTestProcess(colonyID)
-	process3 := utils.CreateTestProcess(colonyID)
-	process4 := utils.CreateTestProcess(colonyID)
+func generateProcessGraph(t *testing.T, db *PQDatabase, colonyName string) *core.ProcessGraph {
+	process1 := utils.CreateTestProcess(colonyName)
+	process2 := utils.CreateTestProcess(colonyName)
+	process3 := utils.CreateTestProcess(colonyName)
+	process4 := utils.CreateTestProcess(colonyName)
 
 	//        process1
 	//          / \
@@ -38,7 +38,7 @@ func generateProcessGraph(t *testing.T, db *PQDatabase, colonyID string) *core.P
 	err = db.AddProcess(process4)
 	assert.Nil(t, err)
 
-	graph, err := core.CreateProcessGraph(colonyID)
+	graph, err := core.CreateProcessGraph(colonyName)
 	assert.Nil(t, err)
 
 	graph.AddRoot(process1.ID)
@@ -46,11 +46,11 @@ func generateProcessGraph(t *testing.T, db *PQDatabase, colonyID string) *core.P
 	return graph
 }
 
-func generateProcessGraph2(t *testing.T, db *PQDatabase, colonyID string) (*core.Process, *core.ProcessGraph) {
-	graph, err := core.CreateProcessGraph(colonyID)
+func generateProcessGraph2(t *testing.T, db *PQDatabase, colonyName string) (*core.Process, *core.ProcessGraph) {
+	graph, err := core.CreateProcessGraph(colonyName)
 	assert.Nil(t, err)
 
-	process := utils.CreateTestProcess(colonyID)
+	process := utils.CreateTestProcess(colonyName)
 	process.ProcessGraphID = graph.ID
 	err = db.AddProcess(process)
 	assert.Nil(t, err)
@@ -92,19 +92,19 @@ func TestProcessGraphClosedDB(t *testing.T) {
 	err = db.DeleteProcessGraphByID("invalid_id")
 	assert.NotNil(t, err)
 
-	err = db.DeleteAllProcessGraphsByColonyID("invalid_id")
+	err = db.DeleteAllProcessGraphsByColonyName("invalid_name")
 	assert.NotNil(t, err)
 
-	err = db.DeleteAllWaitingProcessGraphsByColonyID("invalid_id")
+	err = db.DeleteAllWaitingProcessGraphsByColonyName("invalid_name")
 	assert.NotNil(t, err)
 
-	err = db.DeleteAllRunningProcessGraphsByColonyID("invalid_id")
+	err = db.DeleteAllRunningProcessGraphsByColonyName("invalid_name")
 	assert.NotNil(t, err)
 
-	err = db.DeleteAllSuccessfulProcessGraphsByColonyID("invalid_id")
+	err = db.DeleteAllSuccessfulProcessGraphsByColonyName("invalid_name")
 	assert.NotNil(t, err)
 
-	err = db.DeleteAllFailedProcessGraphsByColonyID("invalid_id")
+	err = db.DeleteAllFailedProcessGraphsByColonyName("invalid_name")
 	assert.NotNil(t, err)
 
 	_, err = db.CountWaitingProcessGraphs()
@@ -119,16 +119,16 @@ func TestProcessGraphClosedDB(t *testing.T) {
 	_, err = db.CountFailedProcessGraphs()
 	assert.NotNil(t, err)
 
-	_, err = db.CountWaitingProcessGraphsByColonyID("invalid_id")
+	_, err = db.CountWaitingProcessGraphsByColonyName("invalid_name")
 	assert.NotNil(t, err)
 
-	_, err = db.CountRunningProcessGraphsByColonyID("invalid_id")
+	_, err = db.CountRunningProcessGraphsByColonyName("invalid_name")
 	assert.NotNil(t, err)
 
-	_, err = db.CountSuccessfulProcessGraphsByColonyID("invalid_id")
+	_, err = db.CountSuccessfulProcessGraphsByColonyName("invalid_name")
 	assert.NotNil(t, err)
 
-	_, err = db.CountFailedProcessGraphsByColonyID("invalid_id")
+	_, err = db.CountFailedProcessGraphsByColonyName("invalid_name")
 	assert.NotNil(t, err)
 }
 
@@ -138,9 +138,9 @@ func TestAddProcessGraph(t *testing.T) {
 
 	defer db.Close()
 
-	colonyID := core.GenerateRandomID()
+	colonyName := core.GenerateRandomID()
 
-	graph := generateProcessGraph(t, db, colonyID)
+	graph := generateProcessGraph(t, db, colonyName)
 	err = db.AddProcessGraph(graph)
 	assert.Nil(t, err)
 
@@ -154,13 +154,13 @@ func TestDeleteProcessGraphByID(t *testing.T) {
 	assert.Nil(t, err)
 	defer db.Close()
 
-	colonyID := core.GenerateRandomID()
+	colonyName := core.GenerateRandomID()
 
-	graph1 := generateProcessGraph(t, db, colonyID)
+	graph1 := generateProcessGraph(t, db, colonyName)
 	err = db.AddProcessGraph(graph1)
 	assert.Nil(t, err)
 
-	graph2 := generateProcessGraph(t, db, colonyID)
+	graph2 := generateProcessGraph(t, db, colonyName)
 	err = db.AddProcessGraph(graph2)
 	assert.Nil(t, err)
 
@@ -184,18 +184,18 @@ func TestDeleteProcessGraphByID(t *testing.T) {
 	assert.True(t, graphFromDB.Equals(graph2))
 }
 
-func TestDeleteAllProcessGraphsByColonyID(t *testing.T) {
+func TestDeleteAllProcessGraphsByColonyName(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
 	defer db.Close()
 
-	colonyID := core.GenerateRandomID()
+	colonyName := core.GenerateRandomID()
 
-	graph1 := generateProcessGraph(t, db, colonyID)
+	graph1 := generateProcessGraph(t, db, colonyName)
 	err = db.AddProcessGraph(graph1)
 	assert.Nil(t, err)
 
-	graph2 := generateProcessGraph(t, db, colonyID)
+	graph2 := generateProcessGraph(t, db, colonyName)
 	err = db.AddProcessGraph(graph2)
 	assert.Nil(t, err)
 
@@ -207,7 +207,7 @@ func TestDeleteAllProcessGraphsByColonyID(t *testing.T) {
 	assert.Nil(t, err)
 	assert.True(t, graphFromDB.Equals(graph2))
 
-	err = db.DeleteAllProcessGraphsByColonyID(colonyID)
+	err = db.DeleteAllProcessGraphsByColonyName(colonyName)
 	assert.Nil(t, err)
 
 	graphFromDB, err = db.GetProcessGraphByID(graph1.ID)
@@ -219,18 +219,18 @@ func TestDeleteAllProcessGraphsByColonyID(t *testing.T) {
 	assert.Nil(t, graphFromDB)
 }
 
-func TestDeleteAllWaitingProcessGraphsByColonyID(t *testing.T) {
+func TestDeleteAllWaitingProcessGraphsByColonyName(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
 	defer db.Close()
 
-	colonyID := core.GenerateRandomID()
+	colonyName := core.GenerateRandomID()
 
-	process1, graph1 := generateProcessGraph2(t, db, colonyID)
+	process1, graph1 := generateProcessGraph2(t, db, colonyName)
 	err = db.AddProcessGraph(graph1)
 	assert.Nil(t, err)
 
-	process2, graph2 := generateProcessGraph2(t, db, colonyID)
+	process2, graph2 := generateProcessGraph2(t, db, colonyName)
 	err = db.AddProcessGraph(graph2)
 	assert.Nil(t, err)
 
@@ -252,7 +252,7 @@ func TestDeleteAllWaitingProcessGraphsByColonyID(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, waitingGraphs, 2)
 
-	err = db.DeleteAllWaitingProcessGraphsByColonyID(colonyID)
+	err = db.DeleteAllWaitingProcessGraphsByColonyName(colonyName)
 	assert.Nil(t, err)
 
 	waitingGraphs, err = db.CountWaitingProcessGraphs()
@@ -264,18 +264,18 @@ func TestDeleteAllWaitingProcessGraphsByColonyID(t *testing.T) {
 	assert.Equal(t, waitingProcesses, 0)
 }
 
-func TestDeleteAllRunningProcessGraphsByColonyID(t *testing.T) {
+func TestDeleteAllRunningProcessGraphsByColonyName(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
 	defer db.Close()
 
-	colonyID := core.GenerateRandomID()
+	colonyName := core.GenerateRandomID()
 
-	process1, graph1 := generateProcessGraph2(t, db, colonyID)
+	process1, graph1 := generateProcessGraph2(t, db, colonyName)
 	err = db.AddProcessGraph(graph1)
 	assert.Nil(t, err)
 
-	process2, graph2 := generateProcessGraph2(t, db, colonyID)
+	process2, graph2 := generateProcessGraph2(t, db, colonyName)
 	err = db.AddProcessGraph(graph2)
 	assert.Nil(t, err)
 
@@ -297,7 +297,7 @@ func TestDeleteAllRunningProcessGraphsByColonyID(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, runningGraphs, 2)
 
-	err = db.DeleteAllRunningProcessGraphsByColonyID(colonyID)
+	err = db.DeleteAllRunningProcessGraphsByColonyName(colonyName)
 	assert.Nil(t, err)
 
 	runningProcesses, err = db.CountRunningProcesses()
@@ -309,18 +309,18 @@ func TestDeleteAllRunningProcessGraphsByColonyID(t *testing.T) {
 	assert.Equal(t, runningGraphs, 0)
 }
 
-func TestDeleteAllSuccessfulProcessGraphsByColonyID(t *testing.T) {
+func TestDeleteAllSuccessfulProcessGraphsByColonyName(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
 	defer db.Close()
 
-	colonyID := core.GenerateRandomID()
+	colonyName := core.GenerateRandomID()
 
-	process1, graph1 := generateProcessGraph2(t, db, colonyID)
+	process1, graph1 := generateProcessGraph2(t, db, colonyName)
 	err = db.AddProcessGraph(graph1)
 	assert.Nil(t, err)
 
-	process2, graph2 := generateProcessGraph2(t, db, colonyID)
+	process2, graph2 := generateProcessGraph2(t, db, colonyName)
 	err = db.AddProcessGraph(graph2)
 	assert.Nil(t, err)
 
@@ -342,7 +342,7 @@ func TestDeleteAllSuccessfulProcessGraphsByColonyID(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, successfulGraphs, 2)
 
-	err = db.DeleteAllSuccessfulProcessGraphsByColonyID(colonyID)
+	err = db.DeleteAllSuccessfulProcessGraphsByColonyName(colonyName)
 	assert.Nil(t, err)
 
 	successfulProcesses, err = db.CountSuccessfulProcesses()
@@ -354,18 +354,18 @@ func TestDeleteAllSuccessfulProcessGraphsByColonyID(t *testing.T) {
 	assert.Equal(t, successfulGraphs, 0)
 }
 
-func TestDeleteAllFailedProcessGraphsByColonyID(t *testing.T) {
+func TestDeleteAllFailedProcessGraphsByColonyName(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
 	defer db.Close()
 
-	colonyID := core.GenerateRandomID()
+	colonyName := core.GenerateRandomID()
 
-	process1, graph1 := generateProcessGraph2(t, db, colonyID)
+	process1, graph1 := generateProcessGraph2(t, db, colonyName)
 	err = db.AddProcessGraph(graph1)
 	assert.Nil(t, err)
 
-	process2, graph2 := generateProcessGraph2(t, db, colonyID)
+	process2, graph2 := generateProcessGraph2(t, db, colonyName)
 	err = db.AddProcessGraph(graph2)
 	assert.Nil(t, err)
 
@@ -387,7 +387,7 @@ func TestDeleteAllFailedProcessGraphsByColonyID(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, failedGraphs, 2)
 
-	err = db.DeleteAllFailedProcessGraphsByColonyID(colonyID)
+	err = db.DeleteAllFailedProcessGraphsByColonyName(colonyName)
 	assert.Nil(t, err)
 
 	failedProcesses, err = db.CountFailedProcesses()
@@ -404,9 +404,9 @@ func TestSetProcessGraphState(t *testing.T) {
 	assert.Nil(t, err)
 	defer db.Close()
 
-	colonyID := core.GenerateRandomID()
+	colonyName := core.GenerateRandomID()
 
-	graph := generateProcessGraph(t, db, colonyID)
+	graph := generateProcessGraph(t, db, colonyName)
 	err = db.AddProcessGraph(graph)
 	assert.Nil(t, err)
 
@@ -428,11 +428,11 @@ func TestFindProcessGraphs(t *testing.T) {
 	assert.Nil(t, err)
 	defer db.Close()
 
-	var colonyID string
+	var colonyName string
 	for j := 0; j < 2; j++ {
-		colonyID = core.GenerateRandomID()
+		colonyName = core.GenerateRandomID()
 		for i := 0; i < 10; i++ {
-			graph := generateProcessGraph(t, db, colonyID)
+			graph := generateProcessGraph(t, db, colonyName)
 			err = db.AddProcessGraph(graph)
 			assert.Nil(t, err)
 			err = db.SetProcessGraphState(graph.ID, core.WAITING)
@@ -440,7 +440,7 @@ func TestFindProcessGraphs(t *testing.T) {
 		}
 
 		for i := 0; i < 9; i++ {
-			graph := generateProcessGraph(t, db, colonyID)
+			graph := generateProcessGraph(t, db, colonyName)
 			err = db.AddProcessGraph(graph)
 			assert.Nil(t, err)
 			err = db.SetProcessGraphState(graph.ID, core.RUNNING)
@@ -448,7 +448,7 @@ func TestFindProcessGraphs(t *testing.T) {
 		}
 
 		for i := 0; i < 8; i++ {
-			graph := generateProcessGraph(t, db, colonyID)
+			graph := generateProcessGraph(t, db, colonyName)
 			err = db.AddProcessGraph(graph)
 			assert.Nil(t, err)
 			err = db.SetProcessGraphState(graph.ID, core.FAILED)
@@ -456,7 +456,7 @@ func TestFindProcessGraphs(t *testing.T) {
 		}
 
 		for i := 0; i < 7; i++ {
-			graph := generateProcessGraph(t, db, colonyID)
+			graph := generateProcessGraph(t, db, colonyName)
 			err = db.AddProcessGraph(graph)
 			assert.Nil(t, err)
 			err = db.SetProcessGraphState(graph.ID, core.SUCCESS)
@@ -464,35 +464,35 @@ func TestFindProcessGraphs(t *testing.T) {
 		}
 	}
 
-	graphs, err := db.FindWaitingProcessGraphs(colonyID, 100)
+	graphs, err := db.FindWaitingProcessGraphs(colonyName, 100)
 	assert.Nil(t, err)
 	assert.Len(t, graphs, 10)
 
-	graphs, err = db.FindRunningProcessGraphs(colonyID, 100)
+	graphs, err = db.FindRunningProcessGraphs(colonyName, 100)
 	assert.Nil(t, err)
 	assert.Len(t, graphs, 9)
 
-	graphs, err = db.FindFailedProcessGraphs(colonyID, 100)
+	graphs, err = db.FindFailedProcessGraphs(colonyName, 100)
 	assert.Nil(t, err)
 	assert.Len(t, graphs, 8)
 
-	graphs, err = db.FindSuccessfulProcessGraphs(colonyID, 100)
+	graphs, err = db.FindSuccessfulProcessGraphs(colonyName, 100)
 	assert.Nil(t, err)
 	assert.Len(t, graphs, 7)
 
-	count, err := db.CountWaitingProcessGraphsByColonyID(colonyID)
+	count, err := db.CountWaitingProcessGraphsByColonyName(colonyName)
 	assert.Nil(t, err)
 	assert.True(t, count == 10)
 
-	count, err = db.CountRunningProcessGraphsByColonyID(colonyID)
+	count, err = db.CountRunningProcessGraphsByColonyName(colonyName)
 	assert.Nil(t, err)
 	assert.True(t, count == 9)
 
-	count, err = db.CountFailedProcessGraphsByColonyID(colonyID)
+	count, err = db.CountFailedProcessGraphsByColonyName(colonyName)
 	assert.Nil(t, err)
 	assert.True(t, count == 8)
 
-	count, err = db.CountSuccessfulProcessGraphsByColonyID(colonyID)
+	count, err = db.CountSuccessfulProcessGraphsByColonyName(colonyName)
 	assert.Nil(t, err)
 	assert.True(t, count == 7)
 

@@ -6,7 +6,7 @@ import (
 
 type Log struct {
 	ProcessID  string `json:"processid"`
-	ColonyID   string `json:"colonyid"`
+	ColonyName string `json:"colonyname"`
 	ExecutorID string `json:"executorid"`
 	Message    string `json:"message"`
 	Timestamp  int64  `json:"timestamp"` // UTC Unix time
@@ -44,7 +44,7 @@ func ConvertJSONToLogArray(jsonString string) ([]Log, error) {
 func (log *Log) Equals(log2 Log) bool {
 	same := true
 	if log.ProcessID != log2.ProcessID ||
-		log.ColonyID != log2.ColonyID ||
+		log.ColonyName != log2.ColonyName ||
 		log.ExecutorID != log2.ExecutorID ||
 		log.Message != log2.Message ||
 		log.Timestamp != log2.Timestamp {

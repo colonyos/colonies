@@ -9,8 +9,8 @@ import (
 )
 
 func (db *PQDatabase) AddGenerator(generator *core.Generator) error {
-	sqlStatement := `INSERT INTO  ` + db.dbPrefix + `GENERATORS (GENERATOR_ID, COLONY_ID, NAME, WORKFLOW_SPEC, TRIGGER, TIMEOUT, LASTRUN, FIRSTPACK) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`
-	_, err := db.postgresql.Exec(sqlStatement, generator.ID, generator.ColonyID, generator.Name, generator.WorkflowSpec, generator.Trigger, generator.Timeout, time.Time{}, time.Time{})
+	sqlStatement := `INSERT INTO  ` + db.dbPrefix + `GENERATORS (GENERATOR_ID, COLONY_NAME, NAME, WORKFLOW_SPEC, TRIGGER, TIMEOUT, LASTRUN, FIRSTPACK) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`
+	_, err := db.postgresql.Exec(sqlStatement, generator.ID, generator.ColonyName, generator.Name, generator.WorkflowSpec, generator.Trigger, generator.Timeout, time.Time{}, time.Time{})
 	if err != nil {
 		return err
 	}
@@ -23,18 +23,18 @@ func (db *PQDatabase) parseGenerators(rows *sql.Rows) ([]*core.Generator, error)
 
 	for rows.Next() {
 		var generatorID string
-		var colonyID string
+		var colonyName string
 		var name string
 		var workflowSpec string
 		var trigger int
 		var timeout int
 		var lastRun time.Time
 		var firstPack time.Time
-		if err := rows.Scan(&generatorID, &colonyID, &name, &workflowSpec, &trigger, &timeout, &lastRun, &firstPack); err != nil {
+		if err := rows.Scan(&generatorID, &colonyName, &name, &workflowSpec, &trigger, &timeout, &lastRun, &firstPack); err != nil {
 			return nil, err
 		}
 
-		generator := &core.Generator{ID: generatorID, ColonyID: colonyID, Name: name, WorkflowSpec: workflowSpec, Trigger: trigger, Timeout: timeout, LastRun: lastRun, FirstPack: firstPack}
+		generator := &core.Generator{ID: generatorID, ColonyName: colonyName, Name: name, WorkflowSpec: workflowSpec, Trigger: trigger, Timeout: timeout, LastRun: lastRun, FirstPack: firstPack}
 
 		generators = append(generators, generator)
 	}
@@ -116,9 +116,9 @@ func (db *PQDatabase) SetGeneratorFirstPack(generatorID string) error {
 	return nil
 }
 
-func (db *PQDatabase) FindGeneratorsByColonyID(colonyID string, count int) ([]*core.Generator, error) {
-	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `GENERATORS WHERE COLONY_ID=$1 LIMIT $2`
-	rows, err := db.postgresql.Query(sqlStatement, colonyID, count)
+func (db *PQDatabase) FindGeneratorsByColonyName(colonyName string, count int) ([]*core.Generator, error) {
+	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `GENERATORS WHERE COLONY_NAME=$1 LIMIT $2`
+	rows, err := db.postgresql.Query(sqlStatement, colonyName, count)
 	if err != nil {
 		return nil, err
 	}
@@ -158,12 +158,12 @@ func (db *PQDatabase) DeleteGeneratorByID(generatorID string) error {
 	return db.DeleteAllGeneratorArgsByGeneratorID(generatorID)
 }
 
-func (db *PQDatabase) DeleteAllGeneratorsByColonyID(colonyID string) error {
-	sqlStatement := `DELETE FROM ` + db.dbPrefix + `GENERATORS WHERE COLONY_ID=$1`
-	_, err := db.postgresql.Exec(sqlStatement, colonyID)
+func (db *PQDatabase) DeleteAllGeneratorsByColonyName(colonyName string) error {
+	sqlStatement := `DELETE FROM ` + db.dbPrefix + `GENERATORS WHERE COLONY_NAME=$1`
+	_, err := db.postgresql.Exec(sqlStatement, colonyName)
 	if err != nil {
 		return err
 	}
 
-	return db.DeleteAllGeneratorArgsByColonyID(colonyID)
+	return db.DeleteAllGeneratorArgsByColonyName(colonyName)
 }

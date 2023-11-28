@@ -155,7 +155,7 @@ func TestDeleteFileByID(t *testing.T) {
 	assert.Nil(t, file1FromDB)
 }
 
-func TestDeleteFilesByColonyID(t *testing.T) {
+func TestDeleteFilesByColonyName(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
 
@@ -170,7 +170,7 @@ func TestDeleteFilesByColonyID(t *testing.T) {
 	err = db.AddFile(file1)
 	assert.Nil(t, err)
 
-	file2 := utils.CreateTestFileWithID("test_id", "test_colonyid2", now)
+	file2 := utils.CreateTestFileWithID("test_id", "test_colony2", now)
 	file2.ID = core.GenerateRandomID()
 	file2.Label = "/testdir"
 	file2.Name = "test_file2.txt"
@@ -178,7 +178,7 @@ func TestDeleteFilesByColonyID(t *testing.T) {
 	err = db.AddFile(file2)
 	assert.Nil(t, err)
 
-	file3 := utils.CreateTestFileWithID("test_id", "test_colonyid2", now)
+	file3 := utils.CreateTestFileWithID("test_id", "test_colony2", now)
 	file3.ID = core.GenerateRandomID()
 	file3.Label = "/testdir"
 	file3.Name = "test_file3.txt"
@@ -190,18 +190,18 @@ func TestDeleteFilesByColonyID(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, files, 1)
 
-	files, err = db.CountFiles("test_colonyid2")
+	files, err = db.CountFiles("test_colony2")
 	assert.Nil(t, err)
 	assert.Equal(t, files, 2)
 
-	err = db.DeleteFilesByColonyID("test_colonyid2")
+	err = db.DeleteFilesByColonyName("test_colony2")
 	assert.Nil(t, err)
 
 	files, err = db.CountFiles("test_colonyid1")
 	assert.Nil(t, err)
 	assert.Equal(t, files, 1)
 
-	files, err = db.CountFiles("test_colonyid2")
+	files, err = db.CountFiles("test_colony2")
 	assert.Nil(t, err)
 	assert.Equal(t, files, 0)
 }
@@ -399,7 +399,7 @@ func TestCountLabelFiles(t *testing.T) {
 	defer db.Close()
 
 	now := time.Now()
-	file1 := utils.CreateTestFileWithID("test_id", "test_colonyid1", now)
+	file1 := utils.CreateTestFileWithID("test_id", "test_colony1", now)
 	file1.ID = core.GenerateRandomID()
 	file1.Label = "/testdir1"
 	file1.Name = "test_file.txt"
@@ -407,7 +407,7 @@ func TestCountLabelFiles(t *testing.T) {
 	err = db.AddFile(file1)
 	assert.Nil(t, err)
 
-	file2 := utils.CreateTestFileWithID("test_id", "test_colonyid2", now)
+	file2 := utils.CreateTestFileWithID("test_id", "test_colony2", now)
 	file2.ID = core.GenerateRandomID()
 	file2.Label = "/testdir2"
 	file2.Name = "test_file2.txt"
@@ -415,7 +415,7 @@ func TestCountLabelFiles(t *testing.T) {
 	err = db.AddFile(file2)
 	assert.Nil(t, err)
 
-	file3 := utils.CreateTestFileWithID("test_id", "test_colonyid2", now)
+	file3 := utils.CreateTestFileWithID("test_id", "test_colony2", now)
 	file3.ID = core.GenerateRandomID()
 	file3.Label = "/testdir3"
 	file3.Name = "test_file3.txt"
@@ -423,7 +423,7 @@ func TestCountLabelFiles(t *testing.T) {
 	err = db.AddFile(file3)
 	assert.Nil(t, err)
 
-	file4 := utils.CreateTestFileWithID("test_id", "test_colonyid2", now)
+	file4 := utils.CreateTestFileWithID("test_id", "test_colony2", now)
 	file4.ID = core.GenerateRandomID()
 	file4.Label = "/testdir3"
 	file4.Name = "test_file4.txt"
@@ -431,19 +431,19 @@ func TestCountLabelFiles(t *testing.T) {
 	err = db.AddFile(file4)
 	assert.Nil(t, err)
 
-	count, err := db.CountFilesWithLabel("test_colonyid2", "/testdir3")
+	count, err := db.CountFilesWithLabel("test_colony2", "/testdir3")
 	assert.Nil(t, err)
 	assert.Equal(t, count, 2)
 
-	count, err = db.CountFilesWithLabel("test_colonyid2", "/testdir2")
+	count, err = db.CountFilesWithLabel("test_colony2", "/testdir2")
 	assert.Nil(t, err)
 	assert.Equal(t, count, 1)
 
-	count, err = db.CountFilesWithLabel("test_colonyid1", "/testdir1")
+	count, err = db.CountFilesWithLabel("test_colony1", "/testdir1")
 	assert.Nil(t, err)
 	assert.Equal(t, count, 1)
 
-	count, err = db.CountFilesWithLabel("test_colonyid1", "label_does_not_exists")
+	count, err = db.CountFilesWithLabel("test_colony1", "label_does_not_exists")
 	assert.Nil(t, err)
 	assert.Equal(t, count, 0)
 }

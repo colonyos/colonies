@@ -29,7 +29,7 @@ func TestColonyClosedDB(t *testing.T) {
 	err = db.RenameColony("invalid_id", "invalid_name")
 	assert.NotNil(t, err)
 
-	err = db.DeleteColonyByID("invalid_id")
+	err = db.DeleteColonyByName("invalid_id")
 	assert.NotNil(t, err)
 
 	_, err = db.CountColonies()
@@ -76,7 +76,7 @@ func TestRenameColony(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, colonyFromDB.Name, "test_colony_name")
 
-	err = db.RenameColony(colony.ID, "test_colony_new_name")
+	err = db.RenameColony(colony.Name, "test_colony_new_name")
 	assert.Nil(t, err)
 
 	colonyFromDB, err = db.GetColonyByID(colony.ID)
@@ -176,47 +176,47 @@ func TestDeleteColonies(t *testing.T) {
 	err = db.AddUser(user2)
 	assert.Nil(t, err)
 
-	generator1 := utils.FakeGenerator(t, colony1.ID)
+	generator1 := utils.FakeGenerator(t, colony1.Name)
 	generator1.ID = core.GenerateRandomID()
 	err = db.AddGenerator(generator1)
 	assert.Nil(t, err)
 
-	generator2 := utils.FakeGenerator(t, colony2.ID)
+	generator2 := utils.FakeGenerator(t, colony2.Name)
 	generator2.ID = core.GenerateRandomID()
 	err = db.AddGenerator(generator2)
 	assert.Nil(t, err)
 
-	cron1 := utils.FakeCron(t, colony1.ID)
+	cron1 := utils.FakeCron(t, colony1.Name)
 	cron1.ID = core.GenerateRandomID()
 	err = db.AddCron(cron1)
 	assert.Nil(t, err)
 
-	cron2 := utils.FakeCron(t, colony2.ID)
+	cron2 := utils.FakeCron(t, colony2.Name)
 	cron2.ID = core.GenerateRandomID()
 	err = db.AddCron(cron2)
 	assert.Nil(t, err)
 
-	executor1 := utils.CreateTestExecutor(colony1.ID)
+	executor1 := utils.CreateTestExecutor(colony1.Name)
 	err = db.AddExecutor(executor1)
 	assert.Nil(t, err)
 
-	function := &core.Function{FunctionID: core.GenerateRandomID(), ExecutorID: executor1.ID, ColonyID: colony1.ID, FuncName: "testfunc", AvgWaitTime: 1.1, AvgExecTime: 0.1}
+	function := &core.Function{FunctionID: core.GenerateRandomID(), ExecutorID: executor1.ID, ColonyName: colony1.Name, FuncName: "testfunc", AvgWaitTime: 1.1, AvgExecTime: 0.1}
 	err = db.AddFunction(function)
 	assert.Nil(t, err)
 
-	executor2 := utils.CreateTestExecutor(colony1.ID)
+	executor2 := utils.CreateTestExecutor(colony1.Name)
 	err = db.AddExecutor(executor2)
 	assert.Nil(t, err)
 
-	function = &core.Function{FunctionID: core.GenerateRandomID(), ExecutorID: executor2.ID, ColonyID: colony1.ID, FuncName: "testfunc", AvgWaitTime: 1.1, AvgExecTime: 0.1}
+	function = &core.Function{FunctionID: core.GenerateRandomID(), ExecutorID: executor2.ID, ColonyName: colony1.Name, FuncName: "testfunc", AvgWaitTime: 1.1, AvgExecTime: 0.1}
 	err = db.AddFunction(function)
 	assert.Nil(t, err)
 
-	executor3 := utils.CreateTestExecutor(colony2.ID)
+	executor3 := utils.CreateTestExecutor(colony2.Name)
 	err = db.AddExecutor(executor3)
 	assert.Nil(t, err)
 
-	function = &core.Function{FunctionID: core.GenerateRandomID(), ExecutorID: executor3.ID, ColonyID: colony2.ID, FuncName: "testfunc", AvgWaitTime: 1.1, AvgExecTime: 0.1}
+	function = &core.Function{FunctionID: core.GenerateRandomID(), ExecutorID: executor3.ID, ColonyName: colony2.Name, FuncName: "testfunc", AvgWaitTime: 1.1, AvgExecTime: 0.1}
 	err = db.AddFunction(function)
 	assert.Nil(t, err)
 
@@ -226,7 +226,7 @@ func TestDeleteColonies(t *testing.T) {
 	err = db.AddLog("test_processid1", colony2.ID, "test_executorid", time.Now().UTC().UnixNano(), "1")
 	assert.Nil(t, err)
 
-	file := utils.CreateTestFileWithID("test_id", colony1.ID, time.Now())
+	file := utils.CreateTestFileWithID("test_id", colony1.Name, time.Now())
 	file.ID = core.GenerateRandomID()
 	file.Label = "/testdir"
 	file.Name = "test_file2.txt"
@@ -234,7 +234,7 @@ func TestDeleteColonies(t *testing.T) {
 	err = db.AddFile(file)
 	assert.Nil(t, err)
 
-	file = utils.CreateTestFileWithID("test_id", colony2.ID, time.Now())
+	file = utils.CreateTestFileWithID("test_id", colony2.Name, time.Now())
 	file.ID = core.GenerateRandomID()
 	file.Label = "/testdir"
 	file.Name = "test_file2.txt"
@@ -242,15 +242,15 @@ func TestDeleteColonies(t *testing.T) {
 	err = db.AddFile(file)
 	assert.Nil(t, err)
 
-	_, err = db.CreateSnapshot(colony1.ID, "/testdir", "test_snapshot_name1")
+	_, err = db.CreateSnapshot(colony1.Name, "/testdir", "test_snapshot_name1")
 	assert.Nil(t, err)
-	_, err = db.CreateSnapshot(colony2.ID, "/testdir", "test_snapshot_name2")
+	_, err = db.CreateSnapshot(colony2.Name, "/testdir", "test_snapshot_name2")
 	assert.Nil(t, err)
 
-	err = db.DeleteColonyByID(core.GenerateRandomID())
+	err = db.DeleteColonyByName(core.GenerateRandomID())
 	assert.NotNil(t, err)
 
-	err = db.DeleteColonyByID(colony1.ID)
+	err = db.DeleteColonyByName(colony1.Name)
 	assert.Nil(t, err)
 
 	users, err := db.GetUsersByColonyName(colony1.Name)
@@ -291,35 +291,35 @@ func TestDeleteColonies(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, cronFromDB) // Should NOT have been deleted
 
-	functions, err := db.GetFunctionsByColonyID(colony1.ID)
+	functions, err := db.GetFunctionsByColonyName(colony1.Name)
 	assert.Nil(t, err)
 	assert.Len(t, functions, 0)
 
-	functions, err = db.GetFunctionsByColonyID(colony2.ID)
+	functions, err = db.GetFunctionsByColonyName(colony2.Name)
 	assert.Nil(t, err)
 	assert.Len(t, functions, 1)
 
-	logsCount, err := db.CountLogs(colony1.ID)
+	logsCount, err := db.CountLogs(colony1.Name)
 	assert.Nil(t, err)
 	assert.Equal(t, logsCount, 0)
 
-	logsCount, err = db.CountFiles(colony2.ID)
+	logsCount, err = db.CountFiles(colony2.Name)
 	assert.Nil(t, err)
 	assert.Equal(t, logsCount, 1)
 
-	fileCount, err := db.CountFiles(colony1.ID)
+	fileCount, err := db.CountFiles(colony1.Name)
 	assert.Nil(t, err)
 	assert.Equal(t, fileCount, 0)
 
-	fileCount, err = db.CountFiles(colony2.ID)
+	fileCount, err = db.CountFiles(colony2.Name)
 	assert.Nil(t, err)
 	assert.Equal(t, fileCount, 1)
 
-	snapshots, err := db.GetSnapshotsByColonyID(colony1.ID)
+	snapshots, err := db.GetSnapshotsByColonyName(colony1.Name)
 	assert.Nil(t, err)
 	assert.Len(t, snapshots, 0)
 
-	snapshots, err = db.GetSnapshotsByColonyID(colony2.ID)
+	snapshots, err = db.GetSnapshotsByColonyName(colony2.Name)
 	assert.Nil(t, err)
 	assert.Len(t, snapshots, 1)
 }

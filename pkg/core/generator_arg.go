@@ -8,11 +8,11 @@ import (
 type GeneratorArg struct {
 	ID          string
 	GeneratorID string
-	ColonyID    string
+	ColonyName  string
 	Arg         string
 }
 
-func CreateGeneratorArg(generatorID string, colonyID string, arg string) *GeneratorArg {
+func CreateGeneratorArg(generatorID string, colonyName string, arg string) *GeneratorArg {
 	uuid := uuid.New()
 	crypto := crypto.CreateCrypto()
 	id := crypto.GenerateHash(uuid.String())
@@ -20,7 +20,7 @@ func CreateGeneratorArg(generatorID string, colonyID string, arg string) *Genera
 	generatorArg := &GeneratorArg{
 		ID:          id,
 		GeneratorID: generatorID,
-		ColonyID:    colonyID,
+		ColonyName:  colonyName,
 		Arg:         arg,
 	}
 

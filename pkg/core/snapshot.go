@@ -6,12 +6,12 @@ import (
 )
 
 type Snapshot struct {
-	ID       string    `json:"snapshotid"`
-	ColonyID string    `json:"colonyid"`
-	Label    string    `json:"label"`
-	Name     string    `json:"name"`
-	FileIDs  []string  `json:"fileids"`
-	Added    time.Time `json:"added"`
+	ID         string    `json:"snapshotid"`
+	ColonyName string    `json:"colonyname"`
+	Label      string    `json:"label"`
+	Name       string    `json:"name"`
+	FileIDs    []string  `json:"fileids"`
+	Added      time.Time `json:"added"`
 }
 
 func ConvertJSONToSnapshot(jsonString string) (*Snapshot, error) {
@@ -30,7 +30,7 @@ func (snapshot *Snapshot) Equals(snapshot2 *Snapshot) bool {
 	if snapshot.ID != snapshot2.ID {
 		same = false
 	}
-	if snapshot.ColonyID != snapshot2.ColonyID {
+	if snapshot.ColonyName != snapshot2.ColonyName {
 		same = false
 	}
 	if snapshot.Label != snapshot2.Label {

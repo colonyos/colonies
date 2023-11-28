@@ -25,7 +25,7 @@ type Reference struct {
 
 type File struct {
 	ID             string    `json:"fileid"`
-	ColonyID       string    `json:"colonyid"`
+	ColonyName     string    `json:"colonyname"`
 	Label          string    `json:"label"`
 	Name           string    `json:"name"`
 	Size           int64     `json:"size"`
@@ -87,7 +87,7 @@ func (file *File) Equals(file2 *File) bool {
 	if file.ID != file2.ID {
 		same = false
 	}
-	if file.ColonyID != file2.ColonyID {
+	if file.ColonyName != file2.ColonyName {
 		same = false
 	}
 	if file.Label != file2.Label {

@@ -7,24 +7,24 @@ import (
 )
 
 func TestCreateUser(t *testing.T) {
-	colonyID := GenerateRandomID()
+	colonyName := GenerateRandomID()
 	userID := GenerateRandomID()
 	name := "test_user_name"
 	email := "test@test.com"
 	phone := "12345677"
-	user := CreateUser(colonyID, userID, name, email, phone)
+	user := CreateUser(colonyName, userID, name, email, phone)
 
 	assert.Equal(t, user.Name, name)
 	assert.Len(t, user.ID, 64)
 }
 
 func TestUserToJSON(t *testing.T) {
-	colonyID := GenerateRandomID()
+	colonyName := GenerateRandomID()
 	userID := GenerateRandomID()
 	name := "test_user_name"
 	email := "test@test.com"
 	phone := "12345677"
-	user := CreateUser(colonyID, userID, name, email, phone)
+	user := CreateUser(colonyName, userID, name, email, phone)
 
 	jsonString, err := user.ToJSON()
 	assert.Nil(t, err)
@@ -38,30 +38,30 @@ func TestUserToJSON(t *testing.T) {
 }
 
 func TestUserEquals(t *testing.T) {
-	colonyID := GenerateRandomID()
+	colonyName := GenerateRandomID()
 	userID := GenerateRandomID()
 	name := "test_user_name"
 	email := "test@test.com"
 	phone := "12345677"
-	user1 := CreateUser(colonyID, userID, name, email, phone)
+	user1 := CreateUser(colonyName, userID, name, email, phone)
 
-	user2 := CreateUser(colonyID+"X", userID, name, email, phone)
+	user2 := CreateUser(colonyName+"X", userID, name, email, phone)
 	assert.False(t, user2.Equals(user1))
-	user3 := CreateUser(colonyID, userID+"X", name, email, phone)
+	user3 := CreateUser(colonyName, userID+"X", name, email, phone)
 	assert.False(t, user3.Equals(user1))
-	user4 := CreateUser(colonyID, userID, name+"X", email, phone)
+	user4 := CreateUser(colonyName, userID, name+"X", email, phone)
 	assert.False(t, user4.Equals(user1))
 	assert.True(t, user1.Equals(user1))
 }
 
 func TestIsUserArraysEqual(t *testing.T) {
-	colonyID := GenerateRandomID()
+	colonyName := GenerateRandomID()
 	userID := GenerateRandomID()
 	name := "test_user_name"
 	email := "test@test.com"
 	phone := "12345677"
-	user1 := CreateUser(colonyID, userID, name+"1", email, phone)
-	user2 := CreateUser(colonyID, userID, name+"2", email, phone)
+	user1 := CreateUser(colonyName, userID, name+"1", email, phone)
+	user2 := CreateUser(colonyName, userID, name+"2", email, phone)
 
 	var users1 []*User
 	users1 = append(users1, user1)
@@ -77,13 +77,13 @@ func TestIsUserArraysEqual(t *testing.T) {
 func TestUserToJSONArray(t *testing.T) {
 	var users []*User
 
-	colonyID := GenerateRandomID()
+	colonyName := GenerateRandomID()
 	userID := GenerateRandomID()
 	name := "test_user_name"
 	email := "test@test.com"
 	phone := "12345677"
-	user1 := CreateUser(colonyID, userID, name+"1", email, phone)
-	user2 := CreateUser(colonyID, userID, name+"2", email, phone)
+	user1 := CreateUser(colonyName, userID, name+"1", email, phone)
+	user2 := CreateUser(colonyName, userID, name+"2", email, phone)
 
 	users = append(users, user1)
 	users = append(users, user2)

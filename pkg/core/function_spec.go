@@ -39,7 +39,7 @@ type SyncDirMount struct {
 }
 
 type Conditions struct {
-	ColonyID         string   `json:"colonyid"`
+	ColonyName       string   `json:"colonyname"`
 	ExecutorIDs      []string `json:"executorids"`
 	ExecutorType     string   `json:"executortype"`
 	Dependencies     []string `json:"dependencies"`
@@ -78,7 +78,7 @@ func CreateEmptyFunctionSpec() *FunctionSpec {
 	return funcSpec
 }
 
-func CreateFunctionSpec(nodeName string, funcName string, args []interface{}, kwargs map[string]interface{}, colonyID string, executorIDs []string, executorType string, maxWaitTime int, maxExecTime int, maxRetries int, env map[string]string, dependencies []string, priority int, label string) *FunctionSpec {
+func CreateFunctionSpec(nodeName string, funcName string, args []interface{}, kwargs map[string]interface{}, colonyName string, executorIDs []string, executorType string, maxWaitTime int, maxExecTime int, maxRetries int, env map[string]string, dependencies []string, priority int, label string) *FunctionSpec {
 	argsif := make([]interface{}, len(args))
 	for k, v := range args {
 		argsif[k] = v
@@ -89,7 +89,7 @@ func CreateFunctionSpec(nodeName string, funcName string, args []interface{}, kw
 		kwargsif[k] = v
 	}
 
-	conditions := Conditions{ColonyID: colonyID, ExecutorIDs: executorIDs, ExecutorType: executorType, Dependencies: dependencies}
+	conditions := Conditions{ColonyName: colonyName, ExecutorIDs: executorIDs, ExecutorType: executorType, Dependencies: dependencies}
 	return &FunctionSpec{NodeName: nodeName, FuncName: funcName, Args: argsif, KwArgs: kwargsif, MaxWaitTime: maxWaitTime, MaxExecTime: maxExecTime, MaxRetries: maxRetries, Conditions: conditions, Env: env, Priority: priority, Label: label}
 }
 
@@ -124,7 +124,7 @@ func (funcSpec *FunctionSpec) Equals(funcSpec2 *FunctionSpec) bool {
 		funcSpec.MaxWaitTime != funcSpec2.MaxWaitTime ||
 		funcSpec.MaxExecTime != funcSpec2.MaxExecTime ||
 		funcSpec.MaxRetries != funcSpec2.MaxRetries ||
-		funcSpec.Conditions.ColonyID != funcSpec2.Conditions.ColonyID ||
+		funcSpec.Conditions.ColonyName != funcSpec2.Conditions.ColonyName ||
 		funcSpec.Conditions.ExecutorType != funcSpec2.Conditions.ExecutorType ||
 		funcSpec.Priority != funcSpec2.Priority ||
 		funcSpec.Label != funcSpec2.Label {

@@ -9,8 +9,8 @@ import (
 )
 
 func (db *PQDatabase) AddProcessGraph(processGraph *core.ProcessGraph) error {
-	sqlStatement := `INSERT INTO  ` + db.dbPrefix + `PROCESSGRAPHS (PROCESSGRAPH_ID, TARGET_COLONY_ID, ROOTS, STATE, SUBMISSION_TIME, START_TIME, END_TIME) VALUES ($1, $2, $3, $4, $5, $6, $7)`
-	_, err := db.postgresql.Exec(sqlStatement, processGraph.ID, processGraph.ColonyID, pq.Array(processGraph.Roots), processGraph.State, time.Now(), time.Time{}, time.Time{})
+	sqlStatement := `INSERT INTO  ` + db.dbPrefix + `PROCESSGRAPHS (PROCESSGRAPH_ID, TARGET_COLONY_NAME, ROOTS, STATE, SUBMISSION_TIME, START_TIME, END_TIME) VALUES ($1, $2, $3, $4, $5, $6, $7)`
+	_, err := db.postgresql.Exec(sqlStatement, processGraph.ID, processGraph.ColonyName, pq.Array(processGraph.Roots), processGraph.State, time.Now(), time.Time{}, time.Time{})
 	if err != nil {
 		return err
 	}
@@ -23,19 +23,19 @@ func (db *PQDatabase) parseProcessGraphs(rows *sql.Rows) ([]*core.ProcessGraph, 
 
 	for rows.Next() {
 		var processGraphID string
-		var colonyID string
+		var colonyName string
 		var roots []string
 		var state int
 		var submissionTime time.Time
 		var startTime time.Time
 		var endTime time.Time
-		if err := rows.Scan(&processGraphID, &colonyID, pq.Array(&roots), &state, &submissionTime, &startTime, &endTime); err != nil {
+		if err := rows.Scan(&processGraphID, &colonyName, pq.Array(&roots), &state, &submissionTime, &startTime, &endTime); err != nil {
 			return nil, err
 		}
 
-		graph, err := core.CreateProcessGraph(colonyID)
+		graph, err := core.CreateProcessGraph(colonyName)
 		graph.ID = processGraphID
-		graph.ColonyID = colonyID
+		graph.ColonyName = colonyName
 		graph.State = state
 		graph.SubmissionTime = submissionTime
 		graph.StartTime = startTime
@@ -105,9 +105,9 @@ func (db *PQDatabase) SetProcessGraphState(processGraphID string, state int) err
 	return nil
 }
 
-func (db *PQDatabase) findProcessGraphsByState(colonyID string, state int, count int) ([]*core.ProcessGraph, error) {
-	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `PROCESSGRAPHS WHERE TARGET_COLONY_ID=$1 AND STATE=$2 ORDER BY SUBMISSION_TIME DESC LIMIT $3`
-	rows, err := db.postgresql.Query(sqlStatement, colonyID, state, count)
+func (db *PQDatabase) findProcessGraphsByState(colonyName string, state int, count int) ([]*core.ProcessGraph, error) {
+	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `PROCESSGRAPHS WHERE TARGET_COLONY_NAME=$1 AND STATE=$2 ORDER BY SUBMISSION_TIME DESC LIMIT $3`
+	rows, err := db.postgresql.Query(sqlStatement, colonyName, state, count)
 	if err != nil {
 		return nil, err
 	}
@@ -121,25 +121,25 @@ func (db *PQDatabase) findProcessGraphsByState(colonyID string, state int, count
 	return matches, nil
 }
 
-func (db *PQDatabase) FindWaitingProcessGraphs(colonyID string, count int) ([]*core.ProcessGraph, error) {
-	return db.findProcessGraphsByState(colonyID, core.WAITING, count)
+func (db *PQDatabase) FindWaitingProcessGraphs(colonyName string, count int) ([]*core.ProcessGraph, error) {
+	return db.findProcessGraphsByState(colonyName, core.WAITING, count)
 }
 
-func (db *PQDatabase) FindRunningProcessGraphs(colonyID string, count int) ([]*core.ProcessGraph, error) {
-	return db.findProcessGraphsByState(colonyID, core.RUNNING, count)
+func (db *PQDatabase) FindRunningProcessGraphs(colonyName string, count int) ([]*core.ProcessGraph, error) {
+	return db.findProcessGraphsByState(colonyName, core.RUNNING, count)
 }
 
-func (db *PQDatabase) FindSuccessfulProcessGraphs(colonyID string, count int) ([]*core.ProcessGraph, error) {
-	return db.findProcessGraphsByState(colonyID, core.SUCCESS, count)
+func (db *PQDatabase) FindSuccessfulProcessGraphs(colonyName string, count int) ([]*core.ProcessGraph, error) {
+	return db.findProcessGraphsByState(colonyName, core.SUCCESS, count)
 }
 
-func (db *PQDatabase) FindFailedProcessGraphs(colonyID string, count int) ([]*core.ProcessGraph, error) {
-	return db.findProcessGraphsByState(colonyID, core.FAILED, count)
+func (db *PQDatabase) FindFailedProcessGraphs(colonyName string, count int) ([]*core.ProcessGraph, error) {
+	return db.findProcessGraphsByState(colonyName, core.FAILED, count)
 }
 
-func (db *PQDatabase) countProcessGraphsByColonyID(state int, colonyID string) (int, error) {
-	sqlStatement := `SELECT COUNT(*) FROM ` + db.dbPrefix + `PROCESSGRAPHS WHERE STATE=$1 AND TARGET_COLONY_ID=$2`
-	rows, err := db.postgresql.Query(sqlStatement, state, colonyID)
+func (db *PQDatabase) countProcessGraphsByColonyName(state int, colonyName string) (int, error) {
+	sqlStatement := `SELECT COUNT(*) FROM ` + db.dbPrefix + `PROCESSGRAPHS WHERE STATE=$1 AND TARGET_COLONY_NAME=$2`
+	rows, err := db.postgresql.Query(sqlStatement, state, colonyName)
 	if err != nil {
 		return -1, err
 	}
@@ -155,20 +155,20 @@ func (db *PQDatabase) countProcessGraphsByColonyID(state int, colonyID string) (
 
 	return count, nil
 }
-func (db *PQDatabase) CountWaitingProcessGraphsByColonyID(colonyID string) (int, error) {
-	return db.countProcessGraphsByColonyID(core.WAITING, colonyID)
+func (db *PQDatabase) CountWaitingProcessGraphsByColonyName(colonyName string) (int, error) {
+	return db.countProcessGraphsByColonyName(core.WAITING, colonyName)
 }
 
-func (db *PQDatabase) CountRunningProcessGraphsByColonyID(colonyID string) (int, error) {
-	return db.countProcessGraphsByColonyID(core.RUNNING, colonyID)
+func (db *PQDatabase) CountRunningProcessGraphsByColonyName(colonyName string) (int, error) {
+	return db.countProcessGraphsByColonyName(core.RUNNING, colonyName)
 }
 
-func (db *PQDatabase) CountSuccessfulProcessGraphsByColonyID(colonyID string) (int, error) {
-	return db.countProcessGraphsByColonyID(core.SUCCESS, colonyID)
+func (db *PQDatabase) CountSuccessfulProcessGraphsByColonyName(colonyName string) (int, error) {
+	return db.countProcessGraphsByColonyName(core.SUCCESS, colonyName)
 }
 
-func (db *PQDatabase) CountFailedProcessGraphsByColonyID(colonyID string) (int, error) {
-	return db.countProcessGraphsByColonyID(core.FAILED, colonyID)
+func (db *PQDatabase) CountFailedProcessGraphsByColonyName(colonyName string) (int, error) {
+	return db.countProcessGraphsByColonyName(core.FAILED, colonyName)
 }
 
 func (db *PQDatabase) countProcessGraphs(state int) (int, error) {
@@ -190,25 +190,25 @@ func (db *PQDatabase) countProcessGraphs(state int) (int, error) {
 	return count, nil
 }
 
-func (db *PQDatabase) DeleteAllProcessGraphsByColonyID(colonyID string) error {
-	sqlStatement := `DELETE FROM ` + db.dbPrefix + `PROCESSGRAPHS WHERE TARGET_COLONY_ID=$1`
-	_, err := db.postgresql.Exec(sqlStatement, colonyID)
+func (db *PQDatabase) DeleteAllProcessGraphsByColonyName(colonyName string) error {
+	sqlStatement := `DELETE FROM ` + db.dbPrefix + `PROCESSGRAPHS WHERE TARGET_COLONY_NAME=$1`
+	_, err := db.postgresql.Exec(sqlStatement, colonyName)
 	if err != nil {
 		return err
 	}
 
-	return db.DeleteAllProcessesInProcessGraphsByColonyID(colonyID)
+	return db.DeleteAllProcessesInProcessGraphsByColonyName(colonyName)
 }
 
 // XXX: This function may delete all belonging processes if the graph is running.
-func (db *PQDatabase) DeleteAllWaitingProcessGraphsByColonyID(colonyID string) error {
-	sqlStatement := `DELETE FROM ` + db.dbPrefix + `PROCESSGRAPHS WHERE TARGET_COLONY_ID=$1 AND STATE=$2`
-	_, err := db.postgresql.Exec(sqlStatement, colonyID, core.WAITING)
+func (db *PQDatabase) DeleteAllWaitingProcessGraphsByColonyName(colonyName string) error {
+	sqlStatement := `DELETE FROM ` + db.dbPrefix + `PROCESSGRAPHS WHERE TARGET_COLONY_NAME=$1 AND STATE=$2`
+	_, err := db.postgresql.Exec(sqlStatement, colonyName, core.WAITING)
 	if err != nil {
 		return err
 	}
 
-	err = db.DeleteAllProcessesInProcessGraphsByColonyIDWithState(colonyID, core.WAITING)
+	err = db.DeleteAllProcessesInProcessGraphsByColonyNameWithState(colonyName, core.WAITING)
 	if err != nil {
 		return err
 	}
@@ -218,29 +218,14 @@ func (db *PQDatabase) DeleteAllWaitingProcessGraphsByColonyID(colonyID string) e
 
 // XXX: This function can cause inconsisteny, for example if the processgraph is running, and all running processes
 // is deleted it will no longer be possible to resolve the processgraph
-func (db *PQDatabase) DeleteAllRunningProcessGraphsByColonyID(colonyID string) error {
-	sqlStatement := `DELETE FROM ` + db.dbPrefix + `PROCESSGRAPHS WHERE TARGET_COLONY_ID=$1 AND STATE=$2`
-	_, err := db.postgresql.Exec(sqlStatement, colonyID, core.RUNNING)
+func (db *PQDatabase) DeleteAllRunningProcessGraphsByColonyName(colonyName string) error {
+	sqlStatement := `DELETE FROM ` + db.dbPrefix + `PROCESSGRAPHS WHERE TARGET_COLONY_NAME=$1 AND STATE=$2`
+	_, err := db.postgresql.Exec(sqlStatement, colonyName, core.RUNNING)
 	if err != nil {
 		return err
 	}
 
-	err = db.DeleteAllProcessesInProcessGraphsByColonyIDWithState(colonyID, core.RUNNING)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (db *PQDatabase) DeleteAllSuccessfulProcessGraphsByColonyID(colonyID string) error {
-	sqlStatement := `DELETE FROM ` + db.dbPrefix + `PROCESSGRAPHS WHERE TARGET_COLONY_ID=$1 AND STATE=$2`
-	_, err := db.postgresql.Exec(sqlStatement, colonyID, core.SUCCESS)
-	if err != nil {
-		return err
-	}
-
-	err = db.DeleteAllProcessesInProcessGraphsByColonyIDWithState(colonyID, core.SUCCESS)
+	err = db.DeleteAllProcessesInProcessGraphsByColonyNameWithState(colonyName, core.RUNNING)
 	if err != nil {
 		return err
 	}
@@ -248,14 +233,29 @@ func (db *PQDatabase) DeleteAllSuccessfulProcessGraphsByColonyID(colonyID string
 	return nil
 }
 
-func (db *PQDatabase) DeleteAllFailedProcessGraphsByColonyID(colonyID string) error {
-	sqlStatement := `DELETE FROM ` + db.dbPrefix + `PROCESSGRAPHS WHERE TARGET_COLONY_ID=$1 AND STATE=$2`
-	_, err := db.postgresql.Exec(sqlStatement, colonyID, core.FAILED)
+func (db *PQDatabase) DeleteAllSuccessfulProcessGraphsByColonyName(colonyName string) error {
+	sqlStatement := `DELETE FROM ` + db.dbPrefix + `PROCESSGRAPHS WHERE TARGET_COLONY_NAME=$1 AND STATE=$2`
+	_, err := db.postgresql.Exec(sqlStatement, colonyName, core.SUCCESS)
 	if err != nil {
 		return err
 	}
 
-	err = db.DeleteAllProcessesInProcessGraphsByColonyIDWithState(colonyID, core.FAILED)
+	err = db.DeleteAllProcessesInProcessGraphsByColonyNameWithState(colonyName, core.SUCCESS)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (db *PQDatabase) DeleteAllFailedProcessGraphsByColonyName(colonyName string) error {
+	sqlStatement := `DELETE FROM ` + db.dbPrefix + `PROCESSGRAPHS WHERE TARGET_COLONY_NAME=$1 AND STATE=$2`
+	_, err := db.postgresql.Exec(sqlStatement, colonyName, core.FAILED)
+	if err != nil {
+		return err
+	}
+
+	err = db.DeleteAllProcessesInProcessGraphsByColonyNameWithState(colonyName, core.FAILED)
 	if err != nil {
 		return err
 	}

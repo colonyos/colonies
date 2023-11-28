@@ -3,12 +3,12 @@ package core
 import "encoding/json"
 
 type WorkflowSpec struct {
-	ColonyID      string         `json:"colonyid"`
+	ColonyName    string         `json:"colonyname"`
 	FunctionSpecs []FunctionSpec `json:"functionspecs"`
 }
 
-func CreateWorkflowSpec(colonyID string) *WorkflowSpec {
-	workflowSpec := &WorkflowSpec{ColonyID: colonyID}
+func CreateWorkflowSpec(colonyName string) *WorkflowSpec {
+	workflowSpec := &WorkflowSpec{ColonyName: colonyName}
 	return workflowSpec
 }
 
@@ -28,7 +28,7 @@ func ConvertJSONToWorkflowSpec(jsonString string) (*WorkflowSpec, error) {
 
 func (workflowSpec *WorkflowSpec) Equals(workflowSpec2 *WorkflowSpec) bool {
 	same := true
-	if workflowSpec.ColonyID != workflowSpec2.ColonyID {
+	if workflowSpec.ColonyName != workflowSpec2.ColonyName {
 		same = false
 	}
 

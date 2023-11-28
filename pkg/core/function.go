@@ -5,7 +5,7 @@ import "encoding/json"
 type Function struct {
 	FunctionID  string  `json:"functionid"`
 	ExecutorID  string  `json:"executorid"`
-	ColonyID    string  `json:"colonyid"`
+	ColonyName  string  `json:"colonyname"`
 	FuncName    string  `json:"funcname"`
 	Counter     int     `json:"counter"`
 	MinWaitTime float64 `json:"minwaittime"`
@@ -18,7 +18,7 @@ type Function struct {
 
 func CreateFunction(functionID string,
 	executorID string,
-	colonyID string,
+	colonyName string,
 	funcName string,
 	counter int,
 	minWaitTime float64,
@@ -30,7 +30,7 @@ func CreateFunction(functionID string,
 	return &Function{
 		FunctionID:  functionID,
 		ExecutorID:  executorID,
-		ColonyID:    colonyID,
+		ColonyName:  colonyName,
 		FuncName:    funcName,
 		Counter:     counter,
 		MinWaitTime: minWaitTime,
@@ -95,7 +95,7 @@ func (function *Function) Equals(function2 *Function) bool {
 
 	if function.FunctionID != function2.FunctionID ||
 		function.ExecutorID != function2.ExecutorID ||
-		function.ColonyID != function2.ColonyID ||
+		function.ColonyName != function2.ColonyName ||
 		function.FuncName != function2.FuncName ||
 		function.Counter != function2.Counter ||
 		function.MinWaitTime != function2.MinWaitTime ||
