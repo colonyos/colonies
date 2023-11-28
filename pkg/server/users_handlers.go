@@ -115,7 +115,7 @@ func (server *ColoniesServer) handleGetUsersHTTPRequest(c *gin.Context, recovere
 		}
 	}
 
-	err = server.validator.RequireMembership(recoveredID, colony.ID, false)
+	err = server.validator.RequireMembership(recoveredID, msg.ColonyName, false)
 	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		return
 	}
@@ -161,7 +161,7 @@ func (server *ColoniesServer) handleGetUserHTTPRequest(c *gin.Context, recovered
 		}
 	}
 
-	err = server.validator.RequireMembership(recoveredID, colony.ID, false)
+	err = server.validator.RequireMembership(recoveredID, colony.Name, false)
 	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		return
 	}

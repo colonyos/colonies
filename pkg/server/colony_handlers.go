@@ -64,7 +64,7 @@ func (server *ColoniesServer) handleAddColonyHTTPRequest(c *gin.Context, recover
 		return
 	}
 
-	log.WithFields(log.Fields{"ColonyId": addedColony.ID}).Debug("Adding colony")
+	log.WithFields(log.Fields{"ColonyName": msg.Colony.Name, "ColonyId": addedColony.ID}).Debug("Adding colony")
 
 	server.sendHTTPReply(c, payloadType, jsonString)
 }

@@ -12,7 +12,7 @@ func init() {
 }
 
 var keychainCmd = &cobra.Command{
-	Use:   "keychain",
+	Use:   "key",
 	Short: "Manage private keys",
 	Long:  "Manage private keys",
 }
