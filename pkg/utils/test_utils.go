@@ -33,19 +33,19 @@ func CreateTestUserWithKey(colonyID string, name string) (*core.User, string, er
 	return core.CreateUser(colonyID, userID, name, email, phone), userPrvKey, nil
 }
 
-func CreateTestProcess(colonyID string) *core.Process {
-	return core.CreateProcess(CreateTestFunctionSpec(colonyID))
+func CreateTestProcess(colonyName string) *core.Process {
+	return core.CreateProcess(CreateTestFunctionSpec(colonyName))
 }
 
-func CreateTestFunctionSpec(colonyID string) *core.FunctionSpec {
+func CreateTestFunctionSpec(colonyName string) *core.FunctionSpec {
 	args := make([]interface{}, 1)
 	args[0] = "test_arg"
 	kwargs := make(map[string]interface{}, 1)
 	kwargs["name"] = "test_arg"
-	return core.CreateFunctionSpec("test_name", "test_func", args, kwargs, colonyID, []string{}, "test_executor_type", 1000, 100, 1, make(map[string]string), []string{}, 1, "test_label")
+	return core.CreateFunctionSpec("test_name", "test_func", args, kwargs, colonyName, []string{}, "test_executor_type", 1000, 100, 1, make(map[string]string), []string{}, 1, "test_label")
 }
 
-func CreateTestFileWithID(id string, colonyID string, now time.Time) *core.File {
+func CreateTestFileWithID(id string, colonyName string, now time.Time) *core.File {
 	s3Object := core.S3Object{
 		Server:        "test_server",
 		Port:          1111,
@@ -61,7 +61,7 @@ func CreateTestFileWithID(id string, colonyID string, now time.Time) *core.File 
 	ref := core.Reference{Protocol: "s3", S3Object: s3Object}
 	file := core.File{
 		ID:          id,
-		ColonyID:    colonyID,
+		ColonyName:  colonyName,
 		Label:       "test_label",
 		Name:        "test_name",
 		Size:        1111,
@@ -73,7 +73,7 @@ func CreateTestFileWithID(id string, colonyID string, now time.Time) *core.File 
 	return &file
 }
 
-func CreateTestFile(colonyID string) *core.File {
+func CreateTestFile(colonyName string) *core.File {
 	s3Object := core.S3Object{
 		Server:        "test_server",
 		Port:          1111,
@@ -89,7 +89,7 @@ func CreateTestFile(colonyID string) *core.File {
 	ref := core.Reference{Protocol: "s3", S3Object: s3Object}
 	file := core.File{
 		ID:          "",
-		ColonyID:    colonyID,
+		ColonyName:  colonyName,
 		Label:       "test_label",
 		Name:        "test_name",
 		Size:        1111,
@@ -137,8 +137,8 @@ func CreateTestFunctionSpecWithTargets(colonyID string, targetExecutorIDs []stri
 	return core.CreateFunctionSpec("test_name", "test_func", args, kwargs, colonyID, targetExecutorIDs, "test_executor_type", 1000, 100, 1, make(map[string]string), []string{}, 1, "test_label")
 }
 
-func CreateTestExecutor(colonyID string) *core.Executor {
-	executor := core.CreateExecutor(core.GenerateRandomID(), "test_executor_type", core.GenerateRandomID(), colonyID, time.Now(), time.Now())
+func CreateTestExecutor(colonyName string) *core.Executor {
+	executor := core.CreateExecutor(core.GenerateRandomID(), "test_executor_type", core.GenerateRandomID(), colonyName, time.Now(), time.Now())
 	location := core.Location{Long: 1.0, Lat: 2.0, Description: "test_desc"}
 	gpu := core.GPU{Name: "test_name1", Count: 1}
 	hw := core.Hardware{Model: "test_model", CPU: "test_cpu", Memory: "test_mem", Storage: "test_storage", GPU: gpu}
@@ -150,15 +150,15 @@ func CreateTestExecutor(colonyID string) *core.Executor {
 	return executor
 }
 
-func CreateTestExecutorWithType(colonyID string, executorType string) *core.Executor {
-	return core.CreateExecutor(core.GenerateRandomID(), executorType, core.GenerateRandomID(), colonyID, time.Now(), time.Now())
+func CreateTestExecutorWithType(colonyName string, executorType string) *core.Executor {
+	return core.CreateExecutor(core.GenerateRandomID(), executorType, core.GenerateRandomID(), colonyName, time.Now(), time.Now())
 }
 
-func CreateTestExecutorWithID(colonyID string, executorID string) *core.Executor {
-	return core.CreateExecutor(executorID, "test_executor_type", core.GenerateRandomID(), colonyID, time.Now(), time.Now())
+func CreateTestExecutorWithID(colonyName string, executorID string) *core.Executor {
+	return core.CreateExecutor(executorID, "test_executor_type", core.GenerateRandomID(), colonyName, time.Now(), time.Now())
 }
 
-func CreateTestExecutorWithKey(colonyID string) (*core.Executor, string, error) {
+func CreateTestExecutorWithKey(colonyName string) (*core.Executor, string, error) {
 	crypto := crypto.CreateCrypto()
 	executorPrvKey, err := crypto.GeneratePrivateKey()
 	if err != nil {
@@ -170,7 +170,7 @@ func CreateTestExecutorWithKey(colonyID string) (*core.Executor, string, error) 
 		return nil, "", err
 	}
 
-	return core.CreateExecutor(executorID, "test_executor_type", core.GenerateRandomID(), colonyID, time.Now(), time.Now()), executorPrvKey, nil
+	return core.CreateExecutor(executorID, "test_executor_type", core.GenerateRandomID(), colonyName, time.Now(), time.Now()), executorPrvKey, nil
 }
 
 func CreateTestColonyWithKey() (*core.Colony, string, error) {

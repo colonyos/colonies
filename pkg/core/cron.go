@@ -7,7 +7,7 @@ import (
 
 type Cron struct {
 	ID                      string    `json:"cronid"`
-	ColonyID                string    `json:"colonyid"`
+	ColonyName              string    `json:"colonyname"`
 	Name                    string    `json:"name"`
 	CronExpression          string    `json:"cronexpression"`
 	Interval                int       `json:"interval"`
@@ -20,8 +20,8 @@ type Cron struct {
 	CheckerPeriod           int       `json:"checkerperiod"`
 }
 
-func CreateCron(colonyID string, name string, cronExpression string, interval int, random bool, workflowSpec string) *Cron {
-	return &Cron{ColonyID: colonyID, Name: name, CronExpression: cronExpression, Interval: interval, Random: random, NextRun: time.Time{}, LastRun: time.Time{}, WorkflowSpec: workflowSpec, WaitForPrevProcessGraph: false}
+func CreateCron(colonyName string, name string, cronExpression string, interval int, random bool, workflowSpec string) *Cron {
+	return &Cron{ColonyName: colonyName, Name: name, CronExpression: cronExpression, Interval: interval, Random: random, NextRun: time.Time{}, LastRun: time.Time{}, WorkflowSpec: workflowSpec, WaitForPrevProcessGraph: false}
 }
 
 func ConvertJSONToCron(jsonString string) (*Cron, error) {
@@ -81,7 +81,7 @@ func (cron *Cron) Equals(cron2 *Cron) bool {
 
 	same := true
 	if cron.ID != cron2.ID ||
-		cron.ColonyID != cron2.ColonyID ||
+		cron.ColonyName != cron2.ColonyName ||
 		cron.Name != cron2.Name ||
 		cron.CronExpression != cron2.CronExpression ||
 		cron.Interval != cron2.Interval ||
