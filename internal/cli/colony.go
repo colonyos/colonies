@@ -3,12 +3,10 @@ package cli
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"strconv"
 
 	"github.com/colonyos/colonies/pkg/core"
-	"github.com/colonyos/colonies/pkg/security/crypto"
 	"github.com/kataras/tablewriter"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -26,24 +24,27 @@ func init() {
 	colonyCmd.PersistentFlags().IntVarP(&ServerPort, "port", "", -1, "Server HTTP port")
 
 	addColonyCmd.Flags().StringVarP(&ServerPrvKey, "serverprvkey", "", "", "Colonies server private key")
-	addColonyCmd.Flags().StringVarP(&ColonyPrvKey, "colonyprvkey", "", "", "Colony private key")
-	addColonyCmd.Flags().StringVarP(&SpecFile, "spec", "", "", "JSON specification of a Colony")
-	addColonyCmd.MarkFlagRequired("spec")
+	addColonyCmd.Flags().StringVarP(&TargetColonyID, "colonyid", "", "", "Colony Id")
+	addColonyCmd.MarkFlagRequired("colonyid")
+	addColonyCmd.Flags().StringVarP(&TargetColonyName, "name", "", "", "Unique name of the Colony")
+	addColonyCmd.MarkFlagRequired("name")
 
 	removeColonyCmd.Flags().StringVarP(&ServerPrvKey, "serverprvkey", "", "", "Colonies server private key")
-	removeColonyCmd.Flags().StringVarP(&ColonyID, "colonyid", "", "", "Colony Id")
+	removeColonyCmd.Flags().StringVarP(&TargetColonyName, "name", "", "", "Colony name")
 	removeColonyCmd.MarkFlagRequired("colonyid")
 
 	renameColonyCmd.Flags().StringVarP(&ColonyPrvKey, "colonyprvkey", "", "", "Colony private key")
-	renameColonyCmd.Flags().StringVarP(&ColonyID, "colonyid", "", "", "Colony Id")
-	renameColonyCmd.Flags().StringVarP(&ColonyName, "name", "", "", "New Colony name")
+	renameColonyCmd.Flags().StringVarP(&TargetColonyName, "name", "", "", "Old Colony name")
 	renameColonyCmd.MarkFlagRequired("name")
+	renameColonyCmd.Flags().StringVarP(&NewColonyName, "newname", "", "", "New Colony name")
+	renameColonyCmd.MarkFlagRequired("newname")
 
 	lsColoniesCmd.Flags().StringVarP(&ServerPrvKey, "serverprvkey", "", "", "Colonies server private key")
 	lsColoniesCmd.Flags().BoolVarP(&JSON, "json", "", false, "Print JSON instead of tables")
 
 	colonyStatsCmd.Flags().StringVarP(&ServerPrvKey, "serverprvkey", "", "", "Colonies server private key")
-	colonyStatsCmd.Flags().StringVarP(&ColonyID, "colonyid", "", "", "Colony Id")
+	colonyStatsCmd.Flags().StringVarP(&TargetColonyName, "name", "", "", "Colony name")
+	colonyStatsCmd.MarkFlagRequired("name")
 }
 
 var colonyCmd = &cobra.Command{
@@ -54,33 +55,20 @@ var colonyCmd = &cobra.Command{
 
 var addColonyCmd = &cobra.Command{
 	Use:   "add",
-	Short: "Add a new colony",
-	Long:  "Add a new colony",
+	Short: "Add a new Colony",
+	Long:  "Add a new Colony",
 	Run: func(cmd *cobra.Command, args []string) {
 		client := setup()
 
-		jsonSpecBytes, err := ioutil.ReadFile(SpecFile)
-		CheckError(err)
-
-		colony, err := core.ConvertJSONToColony(string(jsonSpecBytes))
-		CheckError(err)
-
-		crypto := crypto.CreateCrypto()
-
-		var prvKey string
-		if ColonyPrvKey != "" {
-			prvKey = ColonyPrvKey
-			if len(prvKey) != 64 {
-				CheckError(errors.New("Invalid private key length"))
-			}
-		} else {
-			prvKey, err = crypto.GeneratePrivateKey()
-			CheckError(errors.New("No Colony private key specified"))
+		if TargetColonyName == "" {
+			CheckError(errors.New("Target Colony name must be specifed"))
 		}
 
-		colonyID, err := crypto.GenerateID(prvKey)
-		CheckError(err)
-		colony.SetID(colonyID)
+		if TargetColonyID == "" {
+			CheckError(errors.New("Target Colony Id must be specifed"))
+		}
+
+		colony := &core.Colony{Name: TargetColonyName, ID: TargetColonyID}
 
 		addedColony, err := client.AddColony(colony, ServerPrvKey)
 		CheckError(err)
@@ -91,40 +79,48 @@ var addColonyCmd = &cobra.Command{
 
 var removeColonyCmd = &cobra.Command{
 	Use:   "remove",
-	Short: "Remove a colony",
-	Long:  "Remove a colony",
+	Short: "Remove a Colony",
+	Long:  "Remove a Colony",
 	Run: func(cmd *cobra.Command, args []string) {
 		client := setup()
 
-		err := client.DeleteColony(ColonyID, ServerPrvKey)
+		if TargetColonyName == "" {
+			CheckError(errors.New("Colony name  not specified"))
+		}
+
+		err := client.RemoveColony(TargetColonyName, ServerPrvKey)
 		CheckError(err)
 
-		log.WithFields(log.Fields{"ColonyID": ColonyID}).Info("Colony removed")
+		log.WithFields(log.Fields{"ColonyID": TargetColonyID}).Info("Colony removed")
 	},
 }
 
 var renameColonyCmd = &cobra.Command{
 	Use:   "rename",
-	Short: "Rename a colony",
-	Long:  "Rename a colony",
+	Short: "Rename a Colony",
+	Long:  "Rename a Colony",
 	Run: func(cmd *cobra.Command, args []string) {
 		client := setup()
 
-		if ColonyName == "" {
-			CheckError(errors.New("Invalid Colony name"))
+		if TargetColonyName == "" {
+			CheckError(errors.New("Colony name not specified"))
 		}
 
-		err := client.RenameColony(ColonyID, ColonyName, ColonyPrvKey)
+		if NewColonyName == "" {
+			CheckError(errors.New("The new Colony name not specified"))
+		}
+
+		err := client.RenameColony(TargetColonyName, NewColonyName, ColonyPrvKey)
 		CheckError(err)
 
-		log.WithFields(log.Fields{"ColonyID": ColonyID, "Name": ColonyName}).Info("Colony renamed")
+		log.WithFields(log.Fields{"ColonyName": TargetColonyName, "NewColonyName": NewColonyName}).Info("Colony renamed")
 	},
 }
 
 var lsColoniesCmd = &cobra.Command{
 	Use:   "ls",
-	Short: "List all colonies",
-	Long:  "List all colonies",
+	Short: "List all Colonies",
+	Long:  "List all Colonies",
 	Run: func(cmd *cobra.Command, args []string) {
 		client := setup()
 
@@ -161,12 +157,16 @@ var lsColoniesCmd = &cobra.Command{
 
 var colonyStatsCmd = &cobra.Command{
 	Use:   "stats",
-	Short: "Show statistics about a colony",
-	Long:  "Show statistics about a colony",
+	Short: "Show statistics about a Colony",
+	Long:  "Show statistics about a Colony",
 	Run: func(cmd *cobra.Command, args []string) {
 		client := setup()
 
-		stat, err := client.ColonyStatistics(ColonyID, PrvKey)
+		if TargetColonyName == "" {
+			CheckError(errors.New("Colony name not specified"))
+		}
+
+		stat, err := client.ColonyStatistics(TargetColonyName, PrvKey)
 		CheckError(err)
 
 		fmt.Println("Process statistics:")
