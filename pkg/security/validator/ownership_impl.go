@@ -46,16 +46,16 @@ func (ownership *ownershipImpl) checkIfExecutorIsValid(executorID string, colony
 	}
 
 	if executor == nil {
-		return errors.New("Executor with Id <" + executorID + "> is not a member of Colony with Id <" + colonyID + "> (Executor does not exist)")
+		return errors.New("Access denied, not a member of Colony with Id <" + colonyID + ">")
 	}
 
 	if executor.ColonyID != colonyID {
-		return errors.New("Executor with Id <" + executorID + "> is not a member of Colony with Id <" + colonyID + ">, (Failed to receover Colony Id)")
+		return errors.New("Access denied, not a member of Colony with Id <" + colonyID + ">")
 	}
 
 	if approved {
 		if executor.State != core.APPROVED {
-			return errors.New("Executor with Id <" + executorID + "> is not approved")
+			return errors.New("Access denied, Executor with Id <" + executorID + "> is not approved")
 		}
 	}
 
@@ -78,11 +78,11 @@ func (ownership *ownershipImpl) checkIfUserIsValid(userID string, colonyID strin
 	}
 
 	if user == nil {
-		return errors.New("User or Executor with Id <" + userID + "> is not a member of Colony with Id <" + colonyID + "> (User does not exist)")
+		return errors.New("Access denied, not a member of Colony with Id <" + colonyID + ">")
 	}
 
 	if user.ColonyName != colony.Name {
-		return errors.New("User with Executor Id <" + user.ID + "> is not a member of Colony with Name <" + colony.Name + ">, (Failed to receover Colony Id)")
+		return errors.New("Access denied, not a member of Colony with Id <" + colonyID + ">")
 	}
 
 	return nil

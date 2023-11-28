@@ -665,7 +665,7 @@ func TestDeleteAllProcessGraphsWithStateWaiting(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, submittedGraph2)
 
-	stat, err := client.ColonyStatistics(env.colonyID, env.executorPrvKey)
+	stat, err := client.ColonyStatistics(env.colonyName, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.Equal(t, stat.WaitingWorkflows, 2)
 	assert.Equal(t, stat.RunningWorkflows, 0)
@@ -675,7 +675,7 @@ func TestDeleteAllProcessGraphsWithStateWaiting(t *testing.T) {
 	err = client.DeleteAllProcessGraphsWithState(env.colonyID, core.PENDING, env.colonyPrvKey)
 	assert.Nil(t, err)
 
-	stat, err = client.ColonyStatistics(env.colonyID, env.executorPrvKey)
+	stat, err = client.ColonyStatistics(env.colonyName, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.Equal(t, stat.WaitingWorkflows, 0)
 	assert.Equal(t, stat.RunningWorkflows, 0)
@@ -702,7 +702,7 @@ func TestDeleteAllProcessGraphsWithStateRunning(t *testing.T) {
 	_, err = client.Assign(env.colonyID, -1, env.executorPrvKey)
 	assert.Nil(t, err)
 
-	stat, err := client.ColonyStatistics(env.colonyID, env.executorPrvKey)
+	stat, err := client.ColonyStatistics(env.colonyName, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.Equal(t, stat.WaitingWorkflows, 1)
 	assert.Equal(t, stat.RunningWorkflows, 1)
@@ -735,7 +735,7 @@ func TestDeleteAllProcessGraphsWithStateSuccessful(t *testing.T) {
 	err = client.Close(process.ID, env.executorPrvKey)
 	assert.Nil(t, err)
 
-	stat, err := client.ColonyStatistics(env.colonyID, env.executorPrvKey)
+	stat, err := client.ColonyStatistics(env.colonyName, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.Equal(t, stat.WaitingWorkflows, 1)
 	assert.Equal(t, stat.RunningWorkflows, 0)
@@ -745,7 +745,7 @@ func TestDeleteAllProcessGraphsWithStateSuccessful(t *testing.T) {
 	err = client.DeleteAllProcessGraphsWithState(env.colonyID, core.SUCCESS, env.colonyPrvKey)
 	assert.Nil(t, err)
 
-	stat, err = client.ColonyStatistics(env.colonyID, env.executorPrvKey)
+	stat, err = client.ColonyStatistics(env.colonyName, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.Equal(t, stat.WaitingWorkflows, 1)
 	assert.Equal(t, stat.RunningWorkflows, 0)
@@ -775,7 +775,7 @@ func TestDeleteAllProcessGraphsWithStateFailed(t *testing.T) {
 	err = client.Fail(process.ID, []string{"error"}, env.executorPrvKey)
 	assert.Nil(t, err)
 
-	stat, err := client.ColonyStatistics(env.colonyID, env.executorPrvKey)
+	stat, err := client.ColonyStatistics(env.colonyName, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.Equal(t, stat.WaitingWorkflows, 1)
 	assert.Equal(t, stat.RunningWorkflows, 0)
@@ -785,7 +785,7 @@ func TestDeleteAllProcessGraphsWithStateFailed(t *testing.T) {
 	err = client.DeleteAllProcessGraphsWithState(env.colonyID, core.FAILED, env.colonyPrvKey)
 	assert.Nil(t, err)
 
-	stat, err = client.ColonyStatistics(env.colonyID, env.executorPrvKey)
+	stat, err = client.ColonyStatistics(env.colonyName, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.Equal(t, stat.WaitingWorkflows, 1)
 	assert.Equal(t, stat.RunningWorkflows, 0)

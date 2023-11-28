@@ -7,15 +7,15 @@ import (
 const RenameColonyPayloadType = "renamecolonymsg"
 
 type RenameColonyMsg struct {
-	ColonyID string `json:"colonyid"`
-	Name     string `json:"name"`
-	MsgType  string `json:"msgtype"`
+	OldName string `json:"oldname"`
+	NewName string `json:"newname"`
+	MsgType string `json:"msgtype"`
 }
 
-func CreateRenameColonyMsg(colonyID string, name string) *RenameColonyMsg {
+func CreateRenameColonyMsg(oldName string, newName string) *RenameColonyMsg {
 	msg := &RenameColonyMsg{}
-	msg.ColonyID = colonyID
-	msg.Name = name
+	msg.OldName = oldName
+	msg.NewName = newName
 	msg.MsgType = RenameColonyPayloadType
 
 	return msg
@@ -35,7 +35,7 @@ func (msg *RenameColonyMsg) Equals(msg2 *RenameColonyMsg) bool {
 		return false
 	}
 
-	if msg.MsgType == msg2.MsgType && msg.ColonyID == msg2.ColonyID && msg.Name == msg2.Name {
+	if msg.MsgType == msg2.MsgType && msg.OldName == msg2.OldName && msg.NewName == msg2.NewName {
 		return true
 	}
 

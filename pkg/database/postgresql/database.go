@@ -293,7 +293,7 @@ func (db *PQDatabase) createHypertables() error {
 }
 
 func (db *PQDatabase) createColoniesTable() error {
-	sqlStatement := `CREATE TABLE ` + db.dbPrefix + `COLONIES (COLONY_ID TEXT PRIMARY KEY NOT NULL, NAME TEXT NOT NULL UNIQUE)`
+	sqlStatement := `CREATE TABLE ` + db.dbPrefix + `COLONIES (NAME TEXT PRIMARY KEY NOT NULL, COLONY_ID TEXT NOT NULL UNIQUE)`
 	_, err := db.postgresql.Exec(sqlStatement)
 	if err != nil {
 		return err
@@ -303,7 +303,7 @@ func (db *PQDatabase) createColoniesTable() error {
 }
 
 func (db *PQDatabase) createUsersTable() error {
-	sqlStatement := `CREATE TABLE ` + db.dbPrefix + `USERS (NAME TEXT PRIMARY KEY NOT NULL, USER_ID TEXT NOT NULL, COLONY_NAME TEXT NOT NULL, EMAIL TEXT NOT NULL, PHONE TEXT NOT NULL)`
+	sqlStatement := `CREATE TABLE ` + db.dbPrefix + `USERS (NAME TEXT PRIMARY KEY NOT NULL, USER_ID TEXT NOT NULL UNIQUE, COLONY_NAME TEXT NOT NULL, EMAIL TEXT NOT NULL, PHONE TEXT NOT NULL)`
 	_, err := db.postgresql.Exec(sqlStatement)
 	if err != nil {
 		return err

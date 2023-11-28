@@ -7,13 +7,13 @@ import (
 const DeleteColonyPayloadType = "deletecolonymsg"
 
 type DeleteColonyMsg struct {
-	ColonyID string `json:"colonyid"`
-	MsgType  string `json:"msgtype"`
+	ColonyName string `json:"colonyname"`
+	MsgType    string `json:"msgtype"`
 }
 
-func CreateDeleteColonyMsg(colonyID string) *DeleteColonyMsg {
+func CreateDeleteColonyMsg(colonyName string) *DeleteColonyMsg {
 	msg := &DeleteColonyMsg{}
-	msg.ColonyID = colonyID
+	msg.ColonyName = colonyName
 	msg.MsgType = DeleteColonyPayloadType
 
 	return msg
@@ -33,7 +33,7 @@ func (msg *DeleteColonyMsg) Equals(msg2 *DeleteColonyMsg) bool {
 		return false
 	}
 
-	if msg.MsgType == msg2.MsgType && msg.ColonyID == msg2.ColonyID {
+	if msg.MsgType == msg2.MsgType && msg.ColonyName == msg2.ColonyName {
 		return true
 	}
 

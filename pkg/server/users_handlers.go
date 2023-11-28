@@ -36,7 +36,7 @@ func (server *ColoniesServer) handleAddUserHTTPRequest(c *gin.Context, recovered
 	}
 
 	if colony == nil {
-		if server.handleHTTPError(c, errors.New("Colony with name "+msg.User.ColonyName+" does not exists"), http.StatusBadRequest) {
+		if server.handleHTTPError(c, errors.New("Colony with name <"+msg.User.ColonyName+"> does not exists"), http.StatusBadRequest) {
 			return
 		}
 	}
@@ -44,6 +44,28 @@ func (server *ColoniesServer) handleAddUserHTTPRequest(c *gin.Context, recovered
 	err = server.validator.RequireColonyOwner(recoveredID, colony.ID)
 	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		return
+	}
+
+	userExist, err := server.db.GetUserByName(msg.User.ColonyName, msg.User.Name)
+	if server.handleHTTPError(c, err, http.StatusBadRequest) {
+		return
+	}
+
+	if userExist != nil {
+		if server.handleHTTPError(c, errors.New("A user with name <"+msg.User.Name+"> already exists in Colony with name <"+msg.User.ColonyName+">"), http.StatusBadRequest) {
+			return
+		}
+	}
+
+	userExist, err = server.db.GetUserByID(msg.User.ID, msg.User.Name)
+	if server.handleHTTPError(c, err, http.StatusBadRequest) {
+		return
+	}
+
+	if userExist != nil {
+		if server.handleHTTPError(c, errors.New("A user with Id <"+msg.User.ID+"> already exists in Colony with name <"+msg.User.ColonyName+">"), http.StatusBadRequest) {
+			return
+		}
 	}
 
 	err = server.db.AddUser(msg.User)
@@ -88,7 +110,7 @@ func (server *ColoniesServer) handleGetUsersHTTPRequest(c *gin.Context, recovere
 	}
 
 	if colony == nil {
-		if server.handleHTTPError(c, errors.New("Colony with name "+msg.ColonyName+" does not exists"), http.StatusBadRequest) {
+		if server.handleHTTPError(c, errors.New("Colony with name <"+msg.ColonyName+"> does not exists"), http.StatusBadRequest) {
 			return
 		}
 	}
@@ -134,7 +156,7 @@ func (server *ColoniesServer) handleGetUserHTTPRequest(c *gin.Context, recovered
 	}
 
 	if colony == nil {
-		if server.handleHTTPError(c, errors.New("Colony with name "+msg.ColonyName+" does not exists"), http.StatusBadRequest) {
+		if server.handleHTTPError(c, errors.New("Colony with name <"+msg.ColonyName+"> does not exists"), http.StatusBadRequest) {
 			return
 		}
 	}
@@ -180,7 +202,7 @@ func (server *ColoniesServer) handleDeleteUserHTTPRequest(c *gin.Context, recove
 	}
 
 	if colony == nil {
-		if server.handleHTTPError(c, errors.New("Colony with name "+msg.ColonyName+" does not exists"), http.StatusBadRequest) {
+		if server.handleHTTPError(c, errors.New("Colony with name <"+msg.ColonyName+"> does not exists"), http.StatusBadRequest) {
 			return
 		}
 	}

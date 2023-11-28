@@ -21,7 +21,7 @@ func TestAddColony(t *testing.T) {
 	<-done
 }
 
-func TestDeleteColony(t *testing.T) {
+func TestRemoveColony(t *testing.T) {
 	client, server, serverPrvKey, done := prepareTests(t)
 
 	colony, _, err := utils.CreateTestColonyWithKey()
@@ -34,7 +34,7 @@ func TestDeleteColony(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Len(t, coloniesFromServer, 1)
 
-	err = client.DeleteColony(addedColony.ID, serverPrvKey)
+	err = client.RemoveColony(addedColony.Name, serverPrvKey)
 	assert.Nil(t, err)
 
 	coloniesFromServer, err = client.GetColonies(serverPrvKey)
@@ -68,7 +68,7 @@ func TestRenameColony(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, colonyFromServer.Name, "test_name_1")
 
-	err = client.RenameColony(addedColony.ID, "test_name_2", colonyPrvKey)
+	err = client.RenameColony("test_name_1", "test_name_2", colonyPrvKey)
 	assert.Nil(t, err)
 
 	colonyFromServer, err = client.GetColonyByID(addedColony.ID, executorPrvKey)
@@ -172,7 +172,7 @@ func TestGetColonyStatistics(t *testing.T) {
 		assert.Nil(t, err)
 	}
 
-	stat, err := client.ColonyStatistics(env.colonyID, env.executorPrvKey)
+	stat, err := client.ColonyStatistics(env.colonyName, env.executorPrvKey)
 	assert.Nil(t, err)
 
 	assert.Equal(t, stat.WaitingProcesses, numberOfWaitingProcesses)

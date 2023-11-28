@@ -25,8 +25,10 @@ import (
 
 type testEnv1 struct {
 	colony1PrvKey   string
+	colony1Name     string
 	colony1ID       string
 	colony2PrvKey   string
+	colony2Name     string
 	colony2ID       string
 	executor1PrvKey string
 	executor1ID     string
@@ -35,6 +37,7 @@ type testEnv1 struct {
 }
 
 type testEnv2 struct {
+	colonyName     string
 	colonyID       string
 	colony         *core.Colony
 	colonyPrvKey   string
@@ -83,8 +86,10 @@ func setupTestEnv1(t *testing.T) (*testEnv1, *client.ColoniesClient, *ColoniesSe
 	assert.Nil(t, err)
 
 	env := &testEnv1{colony1PrvKey: colony1PrvKey,
+		colony1Name:     colony1.Name,
 		colony1ID:       colony1.ID,
 		colony2PrvKey:   colony2PrvKey,
+		colony2Name:     colony2.Name,
 		colony2ID:       colony2.ID,
 		executor1PrvKey: executor1PrvKey,
 		executor1ID:     executor1.ID,
@@ -114,7 +119,9 @@ func setupTestEnv2(t *testing.T) (*testEnv2, *client.ColoniesClient, *ColoniesSe
 	err = client.ApproveExecutor(executor.ID, colonyPrvKey)
 	assert.Nil(t, err)
 
-	env := &testEnv2{colonyID: colony.ID,
+	env := &testEnv2{
+		colonyID:       colony.ID,
+		colonyName:     colony.Name,
 		colony:         colony,
 		colonyPrvKey:   colonyPrvKey,
 		executorID:     executor.ID,
