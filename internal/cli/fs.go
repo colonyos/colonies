@@ -331,7 +331,7 @@ func printFileInfo(coloniesFile *core.File) {
 	fileData := [][]string{
 		[]string{"Filename", coloniesFile.Name},
 		[]string{"Id", coloniesFile.ID},
-		[]string{"ColonyId", coloniesFile.ColonyID},
+		[]string{"ColonyName", coloniesFile.ColonyName},
 		[]string{"Added", coloniesFile.Added.Format(TimeLayout)},
 		[]string{"Sequence Number", strconv.FormatInt(coloniesFile.SequenceNumber, 10)},
 		[]string{"Label", coloniesFile.Label},
@@ -460,7 +460,7 @@ var removeFileCmd = &cobra.Command{
 func printSnapshot(snapshot *core.Snapshot, client *client.ColoniesClient) {
 	snapshotData := [][]string{
 		[]string{"SnapshotId", snapshot.ID},
-		[]string{"ColonyId", snapshot.ColonyID},
+		[]string{"ColonyName", snapshot.ColonyName},
 		[]string{"Label", snapshot.Label},
 		[]string{"Name", snapshot.Name},
 		[]string{"Added", snapshot.Added.Format(TimeLayout)},
@@ -560,7 +560,7 @@ var listSnapshotsCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		client := setup()
 
-		snapshots, err := client.GetSnapshotsByColonyID(ColonyID, PrvKey)
+		snapshots, err := client.GetSnapshotsByColonyName(ColonyName, PrvKey)
 		CheckError(err)
 
 		if len(snapshots) > 0 {

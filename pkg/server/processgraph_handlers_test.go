@@ -21,28 +21,28 @@ func TestSubmitWorkflowSpec(t *testing.T) {
 
 	env, client, server, _, done := setupTestEnv2(t)
 
-	wf := generateDiamondtWorkflowSpec(env.colonyID)
+	wf := generateDiamondtWorkflowSpec(env.colonyName)
 	submittedGraph, err := client.SubmitWorkflowSpec(wf, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.NotNil(t, submittedGraph)
 
-	graphs, err := client.GetWaitingProcessGraphs(env.colonyID, 100, env.executorPrvKey)
+	graphs, err := client.GetWaitingProcessGraphs(env.colonyName, 100, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.Len(t, graphs, 1)
 
-	processes, err := client.GetWaitingProcesses(env.colonyID, "", 100, env.executorPrvKey)
+	processes, err := client.GetWaitingProcesses(env.colonyName, "", 100, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.Len(t, processes, 4)
 
-	assignedProcess1, err := client.Assign(env.colonyID, -1, env.executorPrvKey)
+	assignedProcess1, err := client.Assign(env.colonyName, -1, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.True(t, assignedProcess1.FunctionSpec.NodeName == "task1")
 
 	// We cannot be assigned more tasks until task1 is closed
-	_, err = client.Assign(env.colonyID, -1, env.executorPrvKey)
+	_, err = client.Assign(env.colonyName, -1, env.executorPrvKey)
 	assert.NotNil(t, err) // Note error
 
-	graphs, err = client.GetRunningProcessGraphs(env.colonyID, 100, env.executorPrvKey)
+	graphs, err = client.GetRunningProcessGraphs(env.colonyName, 100, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.Len(t, graphs, 1)
 
@@ -50,16 +50,16 @@ func TestSubmitWorkflowSpec(t *testing.T) {
 	err = client.Close(assignedProcess1.ID, env.executorPrvKey)
 	assert.Nil(t, err)
 
-	assignedProcess2, err := client.Assign(env.colonyID, -1, env.executorPrvKey)
+	assignedProcess2, err := client.Assign(env.colonyName, -1, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.True(t, assignedProcess2.FunctionSpec.NodeName == "task2" || assignedProcess2.FunctionSpec.NodeName == "task3")
 
-	assignedProcess3, err := client.Assign(env.colonyID, -1, env.executorPrvKey)
+	assignedProcess3, err := client.Assign(env.colonyName, -1, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.True(t, assignedProcess3.FunctionSpec.NodeName == "task2" || assignedProcess3.FunctionSpec.NodeName == "task3")
 
 	// We cannot be assigned more tasks (task4 is left) until task2 and task3 finish
-	_, err = client.Assign(env.colonyID, -1, env.executorPrvKey)
+	_, err = client.Assign(env.colonyName, -1, env.executorPrvKey)
 	assert.NotNil(t, err) // Note error
 
 	// Close task2
@@ -71,7 +71,7 @@ func TestSubmitWorkflowSpec(t *testing.T) {
 	assert.Nil(t, err)
 
 	// Now it should be possible to assign task4 to an executor
-	assignedProcess4, err := client.Assign(env.colonyID, -1, env.executorPrvKey)
+	assignedProcess4, err := client.Assign(env.colonyName, -1, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.True(t, assignedProcess4.FunctionSpec.NodeName == "task4")
 
@@ -79,19 +79,19 @@ func TestSubmitWorkflowSpec(t *testing.T) {
 	err = client.Close(assignedProcess4.ID, env.executorPrvKey)
 	assert.Nil(t, err)
 
-	graphs, err = client.GetWaitingProcessGraphs(env.colonyID, 100, env.executorPrvKey)
+	graphs, err = client.GetWaitingProcessGraphs(env.colonyName, 100, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.Len(t, graphs, 0)
 
-	graphs, err = client.GetRunningProcessGraphs(env.colonyID, 100, env.executorPrvKey)
+	graphs, err = client.GetRunningProcessGraphs(env.colonyName, 100, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.Len(t, graphs, 0)
 
-	graphs, err = client.GetSuccessfulProcessGraphs(env.colonyID, 100, env.executorPrvKey)
+	graphs, err = client.GetSuccessfulProcessGraphs(env.colonyName, 100, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.Len(t, graphs, 1)
 
-	graphs, err = client.GetFailedProcessGraphs(env.colonyID, 100, env.executorPrvKey)
+	graphs, err = client.GetFailedProcessGraphs(env.colonyName, 100, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.Len(t, graphs, 0)
 
@@ -102,26 +102,26 @@ func TestSubmitWorkflowSpec(t *testing.T) {
 func TestSubmitInvalidWorkflowSpec(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 
-	wf := core.CreateWorkflowSpec(env.colonyID)
+	wf := core.CreateWorkflowSpec(env.colonyName)
 
 	funcSpec1 := core.CreateEmptyFunctionSpec()
 	//funcSpec1.NodeName = "task1"
-	funcSpec1.Conditions.ColonyID = env.colonyID
+	funcSpec1.Conditions.ColonyName = env.colonyName
 	funcSpec1.Conditions.ExecutorType = "test_executor_type"
 
 	funcSpec2 := core.CreateEmptyFunctionSpec()
 	//funcSpec2.NodeName = "task2"
-	funcSpec2.Conditions.ColonyID = env.colonyID
+	funcSpec2.Conditions.ColonyName = env.colonyName
 	funcSpec2.Conditions.ExecutorType = "test_executor_type"
 
 	funcSpec3 := core.CreateEmptyFunctionSpec()
 	//funcSpec3.NodeName = "task3"
-	funcSpec3.Conditions.ColonyID = env.colonyID
+	funcSpec3.Conditions.ColonyName = env.colonyName
 	funcSpec3.Conditions.ExecutorType = "test_executor_type"
 
 	funcSpec4 := core.CreateEmptyFunctionSpec()
 	//funcSpec4.NodeName = "task4"
-	funcSpec4.Conditions.ColonyID = env.colonyID
+	funcSpec4.Conditions.ColonyName = env.colonyName
 	funcSpec4.Conditions.ExecutorType = "test_executor_type"
 
 	funcSpec2.AddDependency("task1")
@@ -137,7 +137,7 @@ func TestSubmitInvalidWorkflowSpec(t *testing.T) {
 	_, err := client.SubmitWorkflowSpec(wf, env.executorPrvKey)
 	assert.NotNil(t, err) // Error: nodename must be specified
 
-	graphs, err := client.GetWaitingProcessGraphs(env.colonyID, 100, env.executorPrvKey)
+	graphs, err := client.GetWaitingProcessGraphs(env.colonyName, 100, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.Len(t, graphs, 0)
 
@@ -148,26 +148,26 @@ func TestSubmitInvalidWorkflowSpec(t *testing.T) {
 func TestSubmitInvalidWorkflowSpec2(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 
-	wf := core.CreateWorkflowSpec(env.colonyID)
+	wf := core.CreateWorkflowSpec(env.colonyName)
 
 	funcSpec1 := core.CreateEmptyFunctionSpec()
 	funcSpec1.NodeName = "task1"
-	funcSpec1.Conditions.ColonyID = env.colonyID
+	funcSpec1.Conditions.ColonyName = env.colonyName
 	funcSpec1.Conditions.ExecutorType = "test_executor_type"
 
 	funcSpec2 := core.CreateEmptyFunctionSpec()
 	funcSpec2.NodeName = "task2"
-	funcSpec2.Conditions.ColonyID = env.colonyID
+	funcSpec2.Conditions.ColonyName = env.colonyName
 	funcSpec2.Conditions.ExecutorType = "test_executor_type"
 
 	funcSpec3 := core.CreateEmptyFunctionSpec()
 	funcSpec3.NodeName = "task3"
-	funcSpec3.Conditions.ColonyID = env.colonyID
+	funcSpec3.Conditions.ColonyName = env.colonyName
 	funcSpec3.Conditions.ExecutorType = "test_executor_type"
 
 	funcSpec4 := core.CreateEmptyFunctionSpec()
 	funcSpec4.NodeName = "task3" // Duplicate nodename
-	funcSpec4.Conditions.ColonyID = env.colonyID
+	funcSpec4.Conditions.ColonyName = env.colonyName
 	funcSpec4.Conditions.ExecutorType = "test_executor_type"
 
 	funcSpec2.AddDependency("task1")
@@ -182,7 +182,7 @@ func TestSubmitInvalidWorkflowSpec2(t *testing.T) {
 	_, err := client.SubmitWorkflowSpec(wf, env.executorPrvKey)
 	assert.NotNil(t, err) // Error: nodename must be specified
 
-	graphs, err := client.GetWaitingProcessGraphs(env.colonyID, 100, env.executorPrvKey)
+	graphs, err := client.GetWaitingProcessGraphs(env.colonyName, 100, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.Len(t, graphs, 0)
 
@@ -202,18 +202,18 @@ func TestProcessGraphFailed(t *testing.T) {
 
 	env, client, server, _, done := setupTestEnv2(t)
 
-	wf := generateDiamondtWorkflowSpec(env.colonyID)
+	wf := generateDiamondtWorkflowSpec(env.colonyName)
 	submittedGraph, err := client.SubmitWorkflowSpec(wf, env.executorPrvKey)
 	assert.Nil(t, err)
 
-	assignedProcess, err := client.Assign(env.colonyID, -1, env.executorPrvKey)
+	assignedProcess, err := client.Assign(env.colonyName, -1, env.executorPrvKey)
 	assert.Nil(t, err)
 
 	// Close task1
 	err = client.Fail(assignedProcess.ID, []string{}, env.executorPrvKey)
 	assert.Nil(t, err)
 
-	assignedProcess, err = client.Assign(env.colonyID, -1, env.executorPrvKey)
+	assignedProcess, err = client.Assign(env.colonyName, -1, env.executorPrvKey)
 	assert.NotNil(t, err) // Error, all processes in the entire graph will fail, i.e no processes can be selected for executor with Id
 
 	processGraph, err := client.GetProcessGraph(submittedGraph.ID, env.executorPrvKey)
@@ -231,17 +231,17 @@ func TestAddChild(t *testing.T) {
 
 	env, client, server, _, done := setupTestEnv2(t)
 
-	wf := generateTreeWorkflowSpec(env.colonyID)
+	wf := generateTreeWorkflowSpec(env.colonyName)
 	submittedGraph, err := client.SubmitWorkflowSpec(wf, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.NotNil(t, submittedGraph)
 
-	assignedProcess, err := client.Assign(env.colonyID, -1, env.executorPrvKey)
+	assignedProcess, err := client.Assign(env.colonyName, -1, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.True(t, assignedProcess.FunctionSpec.NodeName == "task1")
 
 	// Add task5 to task1
-	childFunctionSpec := utils.CreateTestFunctionSpec(env.colonyID)
+	childFunctionSpec := utils.CreateTestFunctionSpec(env.colonyName)
 	childFunctionSpec.NodeName = "task5"
 	_, err = client.AddChild(assignedProcess.ProcessGraphID, assignedProcess.ID, "", childFunctionSpec, false, env.executorPrvKey)
 	assert.Nil(t, err)
@@ -249,19 +249,19 @@ func TestAddChild(t *testing.T) {
 	assert.Nil(t, err)
 
 	var names []string
-	assignedProcess, err = client.Assign(env.colonyID, -1, env.executorPrvKey)
+	assignedProcess, err = client.Assign(env.colonyName, -1, env.executorPrvKey)
 	assert.Nil(t, err)
 	names = append(names, assignedProcess.FunctionSpec.NodeName)
 	err = client.Close(assignedProcess.ID, env.executorPrvKey)
 	assert.Nil(t, err)
 
-	assignedProcess, err = client.Assign(env.colonyID, -1, env.executorPrvKey)
+	assignedProcess, err = client.Assign(env.colonyName, -1, env.executorPrvKey)
 	assert.Nil(t, err)
 	names = append(names, assignedProcess.FunctionSpec.NodeName)
 	err = client.Close(assignedProcess.ID, env.executorPrvKey)
 	assert.Nil(t, err)
 
-	assignedProcess, err = client.Assign(env.colonyID, -1, env.executorPrvKey)
+	assignedProcess, err = client.Assign(env.colonyName, -1, env.executorPrvKey)
 	assert.Nil(t, err)
 	names = append(names, assignedProcess.FunctionSpec.NodeName)
 	err = client.Close(assignedProcess.ID, env.executorPrvKey)
@@ -302,17 +302,17 @@ func TestInsertChild(t *testing.T) {
 
 	env, client, server, _, done := setupTestEnv2(t)
 
-	wf := generateTreeWorkflowSpec(env.colonyID)
+	wf := generateTreeWorkflowSpec(env.colonyName)
 	submittedGraph, err := client.SubmitWorkflowSpec(wf, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.NotNil(t, submittedGraph)
 
 	// We must be assigned to a process in order to insert a child in processgraph
-	assignedProcess, err := client.Assign(env.colonyID, -1, env.executorPrvKey)
+	assignedProcess, err := client.Assign(env.colonyName, -1, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.True(t, assignedProcess.FunctionSpec.NodeName == "task1")
 
-	childFunctionSpec := utils.CreateTestFunctionSpec(env.colonyID)
+	childFunctionSpec := utils.CreateTestFunctionSpec(env.colonyName)
 	childFunctionSpec.NodeName = "task4"
 	process, err := client.AddChild(assignedProcess.ProcessGraphID, assignedProcess.ID, "", childFunctionSpec, true, env.executorPrvKey)
 	assert.Nil(t, err)
@@ -354,17 +354,17 @@ func TestInsertChild2(t *testing.T) {
 
 	env, client, server, _, done := setupTestEnv2(t)
 
-	wf := generateTreeWorkflowSpec(env.colonyID)
+	wf := generateTreeWorkflowSpec(env.colonyName)
 	submittedGraph, err := client.SubmitWorkflowSpec(wf, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.NotNil(t, submittedGraph)
 
 	// We must be assigned to a process in order to insert a child in processgraph
-	assignedProcess, err := client.Assign(env.colonyID, -1, env.executorPrvKey)
+	assignedProcess, err := client.Assign(env.colonyName, -1, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.True(t, assignedProcess.FunctionSpec.NodeName == "task1")
 
-	childFunctionSpec := utils.CreateTestFunctionSpec(env.colonyID)
+	childFunctionSpec := utils.CreateTestFunctionSpec(env.colonyName)
 	childFunctionSpec.NodeName = "task4"
 	process, err := client.AddChild(assignedProcess.ProcessGraphID, assignedProcess.ID, "", childFunctionSpec, false, env.executorPrvKey)
 	assert.Nil(t, err)
@@ -393,7 +393,7 @@ func TestInsertChild3(t *testing.T) {
 
 	env, client, server, _, done := setupTestEnv2(t)
 
-	wf := generateTreeWorkflowSpec(env.colonyID)
+	wf := generateTreeWorkflowSpec(env.colonyName)
 	submittedGraph, err := client.SubmitWorkflowSpec(wf, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.NotNil(t, submittedGraph)
@@ -409,11 +409,11 @@ func TestInsertChild3(t *testing.T) {
 	assert.NotNil(t, task3Process)
 
 	// We must be assigned to a process in order to insert a child in processgraph
-	assignedProcess, err := client.Assign(env.colonyID, -1, env.executorPrvKey)
+	assignedProcess, err := client.Assign(env.colonyName, -1, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.True(t, assignedProcess.FunctionSpec.NodeName == "task1")
 
-	childFunctionSpec := utils.CreateTestFunctionSpec(env.colonyID)
+	childFunctionSpec := utils.CreateTestFunctionSpec(env.colonyName)
 	childFunctionSpec.NodeName = "task4"
 	process, err := client.AddChild(assignedProcess.ProcessGraphID, assignedProcess.ID, task3Process.ID, childFunctionSpec, false, env.executorPrvKey)
 	assert.Nil(t, err)
@@ -431,25 +431,25 @@ func TestInsertChild3(t *testing.T) {
 func TestAddChildMaxWaitBug(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 
-	wf := generateSingleWorkflowSpec(env.colonyID)
+	wf := generateSingleWorkflowSpec(env.colonyName)
 	submittedGraph, err := client.SubmitWorkflowSpec(wf, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.NotNil(t, submittedGraph)
 
-	assignedProcess, err := client.Assign(env.colonyID, -1, env.executorPrvKey)
+	assignedProcess, err := client.Assign(env.colonyName, -1, env.executorPrvKey)
 	assert.Nil(t, err)
 
 	processGraph, err := client.GetProcessGraph(submittedGraph.ID, env.executorPrvKey)
 
 	// Add task2 to task1
-	childFunctionSpec := utils.CreateTestFunctionSpec(env.colonyID)
+	childFunctionSpec := utils.CreateTestFunctionSpec(env.colonyName)
 	childFunctionSpec.MaxWaitTime = 1
 	childFunctionSpec.NodeName = "task2"
 	_, err = client.AddChild(assignedProcess.ProcessGraphID, assignedProcess.ID, "", childFunctionSpec, false, env.executorPrvKey)
 	assert.Nil(t, err)
 
 	// Add task3 to task1
-	childFunctionSpec = utils.CreateTestFunctionSpec(env.colonyID)
+	childFunctionSpec = utils.CreateTestFunctionSpec(env.colonyName)
 	childFunctionSpec.MaxWaitTime = 1
 	childFunctionSpec.NodeName = "task3"
 	_, err = client.AddChild(assignedProcess.ProcessGraphID, assignedProcess.ID, "", childFunctionSpec, false, env.executorPrvKey)
@@ -480,20 +480,20 @@ func TestSubmitWorkflowSpecWithInputOutput(t *testing.T) {
 
 	env, client, server, _, done := setupTestEnv2(t)
 
-	diamond := generateDiamondtWorkflowSpec(env.colonyID)
+	diamond := generateDiamondtWorkflowSpec(env.colonyName)
 	submittedGraph, err := client.SubmitWorkflowSpec(diamond, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.NotNil(t, submittedGraph)
 
-	graphs, err := client.GetWaitingProcessGraphs(env.colonyID, 100, env.executorPrvKey)
+	graphs, err := client.GetWaitingProcessGraphs(env.colonyName, 100, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.Len(t, graphs, 1)
 
-	processes, err := client.GetWaitingProcesses(env.colonyID, "", 100, env.executorPrvKey)
+	processes, err := client.GetWaitingProcesses(env.colonyName, "", 100, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.Len(t, processes, 4)
 
-	assignedProcess1, err := client.Assign(env.colonyID, -1, env.executorPrvKey)
+	assignedProcess1, err := client.Assign(env.colonyName, -1, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.True(t, assignedProcess1.FunctionSpec.NodeName == "task1")
 
@@ -503,12 +503,12 @@ func TestSubmitWorkflowSpecWithInputOutput(t *testing.T) {
 	err = client.CloseWithOutput(assignedProcess1.ID, output, env.executorPrvKey)
 	assert.Nil(t, err)
 
-	assignedProcess2, err := client.Assign(env.colonyID, -1, env.executorPrvKey)
+	assignedProcess2, err := client.Assign(env.colonyName, -1, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.Len(t, assignedProcess2.Input, 1)
 	assert.Equal(t, assignedProcess2.Input[0], "output_task1")
 
-	assignedProcess3, err := client.Assign(env.colonyID, -1, env.executorPrvKey)
+	assignedProcess3, err := client.Assign(env.colonyName, -1, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.Len(t, assignedProcess3.Input, 1)
 	assert.Equal(t, assignedProcess3.Input[0], "output_task1")
@@ -526,7 +526,7 @@ func TestSubmitWorkflowSpecWithInputOutput(t *testing.T) {
 	assert.Nil(t, err)
 
 	// Now it should be possible to assign task4 to an executor
-	assignedProcess4, err := client.Assign(env.colonyID, -1, env.executorPrvKey)
+	assignedProcess4, err := client.Assign(env.colonyName, -1, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.Len(t, assignedProcess4.Input, 2)
 
@@ -549,17 +549,17 @@ func TestSubmitWorkflowSpecWithInputOutput(t *testing.T) {
 func TestSubmitWorkflowSpecFailed(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 
-	diamond := generateDiamondtWorkflowSpec(env.colonyID)
+	diamond := generateDiamondtWorkflowSpec(env.colonyName)
 	submittedGraph, err := client.SubmitWorkflowSpec(diamond, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.NotNil(t, submittedGraph)
 
-	assignedProcess1, err := client.Assign(env.colonyID, -1, env.executorPrvKey)
+	assignedProcess1, err := client.Assign(env.colonyName, -1, env.executorPrvKey)
 	assert.Nil(t, err)
 	err = client.Fail(assignedProcess1.ID, []string{"error"}, env.executorPrvKey)
 	assert.Nil(t, err)
 
-	graphs, err := client.GetFailedProcessGraphs(env.colonyID, 100, env.executorPrvKey)
+	graphs, err := client.GetFailedProcessGraphs(env.colonyName, 100, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.Len(t, graphs, 1)
 
@@ -570,7 +570,7 @@ func TestSubmitWorkflowSpecFailed(t *testing.T) {
 func TestGetProcessGraph(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 
-	diamond := generateDiamondtWorkflowSpec(env.colonyID)
+	diamond := generateDiamondtWorkflowSpec(env.colonyName)
 	submittedGraph, err := client.SubmitWorkflowSpec(diamond, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.NotNil(t, submittedGraph)
@@ -586,12 +586,12 @@ func TestGetProcessGraph(t *testing.T) {
 func TestDeleteProcessGraph(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 
-	diamond := generateDiamondtWorkflowSpec(env.colonyID)
+	diamond := generateDiamondtWorkflowSpec(env.colonyName)
 	submittedGraph1, err := client.SubmitWorkflowSpec(diamond, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.NotNil(t, submittedGraph1)
 
-	diamond = generateDiamondtWorkflowSpec(env.colonyID)
+	diamond = generateDiamondtWorkflowSpec(env.colonyName)
 	submittedGraph2, err := client.SubmitWorkflowSpec(diamond, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.NotNil(t, submittedGraph2)
@@ -621,12 +621,12 @@ func TestDeleteProcessGraph(t *testing.T) {
 func TestDeleteAllProcessGraphs(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 
-	diamond := generateDiamondtWorkflowSpec(env.colonyID)
+	diamond := generateDiamondtWorkflowSpec(env.colonyName)
 	submittedGraph1, err := client.SubmitWorkflowSpec(diamond, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.NotNil(t, submittedGraph1)
 
-	diamond = generateDiamondtWorkflowSpec(env.colonyID)
+	diamond = generateDiamondtWorkflowSpec(env.colonyName)
 	submittedGraph2, err := client.SubmitWorkflowSpec(diamond, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.NotNil(t, submittedGraph2)
@@ -639,7 +639,7 @@ func TestDeleteAllProcessGraphs(t *testing.T) {
 	assert.Nil(t, err)
 	assert.True(t, submittedGraph2.ID == graphFromServer.ID)
 
-	err = client.DeleteAllProcessGraphs(env.colonyID, env.colonyPrvKey)
+	err = client.DeleteAllProcessGraphs(env.colonyName, env.colonyPrvKey)
 	assert.Nil(t, err)
 
 	graphFromServer, err = client.GetProcessGraph(submittedGraph1.ID, env.executorPrvKey)
@@ -655,12 +655,12 @@ func TestDeleteAllProcessGraphs(t *testing.T) {
 func TestDeleteAllProcessGraphsWithStateWaiting(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 
-	diamond := generateSingleWorkflowSpec(env.colonyID)
+	diamond := generateSingleWorkflowSpec(env.colonyName)
 	submittedGraph1, err := client.SubmitWorkflowSpec(diamond, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.NotNil(t, submittedGraph1)
 
-	diamond = generateSingleWorkflowSpec(env.colonyID)
+	diamond = generateSingleWorkflowSpec(env.colonyName)
 	submittedGraph2, err := client.SubmitWorkflowSpec(diamond, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.NotNil(t, submittedGraph2)
@@ -672,7 +672,7 @@ func TestDeleteAllProcessGraphsWithStateWaiting(t *testing.T) {
 	assert.Equal(t, stat.SuccessfulWorkflows, 0)
 	assert.Equal(t, stat.FailedWorkflows, 0)
 
-	err = client.DeleteAllProcessGraphsWithState(env.colonyID, core.PENDING, env.colonyPrvKey)
+	err = client.DeleteAllProcessGraphsWithState(env.colonyName, core.PENDING, env.colonyPrvKey)
 	assert.Nil(t, err)
 
 	stat, err = client.ColonyStatistics(env.colonyName, env.executorPrvKey)
@@ -689,17 +689,17 @@ func TestDeleteAllProcessGraphsWithStateWaiting(t *testing.T) {
 func TestDeleteAllProcessGraphsWithStateRunning(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 
-	diamond := generateSingleWorkflowSpec(env.colonyID)
+	diamond := generateSingleWorkflowSpec(env.colonyName)
 	submittedGraph1, err := client.SubmitWorkflowSpec(diamond, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.NotNil(t, submittedGraph1)
 
-	diamond = generateSingleWorkflowSpec(env.colonyID)
+	diamond = generateSingleWorkflowSpec(env.colonyName)
 	submittedGraph2, err := client.SubmitWorkflowSpec(diamond, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.NotNil(t, submittedGraph2)
 
-	_, err = client.Assign(env.colonyID, -1, env.executorPrvKey)
+	_, err = client.Assign(env.colonyName, -1, env.executorPrvKey)
 	assert.Nil(t, err)
 
 	stat, err := client.ColonyStatistics(env.colonyName, env.executorPrvKey)
@@ -709,7 +709,7 @@ func TestDeleteAllProcessGraphsWithStateRunning(t *testing.T) {
 	assert.Equal(t, stat.SuccessfulWorkflows, 0)
 	assert.Equal(t, stat.FailedWorkflows, 0)
 
-	err = client.DeleteAllProcessGraphsWithState(env.colonyID, core.RUNNING, env.colonyPrvKey)
+	err = client.DeleteAllProcessGraphsWithState(env.colonyName, core.RUNNING, env.colonyPrvKey)
 	assert.NotNil(t, err)
 
 	server.Shutdown()
@@ -719,17 +719,17 @@ func TestDeleteAllProcessGraphsWithStateRunning(t *testing.T) {
 func TestDeleteAllProcessGraphsWithStateSuccessful(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 
-	diamond := generateSingleWorkflowSpec(env.colonyID)
+	diamond := generateSingleWorkflowSpec(env.colonyName)
 	submittedGraph1, err := client.SubmitWorkflowSpec(diamond, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.NotNil(t, submittedGraph1)
 
-	diamond = generateSingleWorkflowSpec(env.colonyID)
+	diamond = generateSingleWorkflowSpec(env.colonyName)
 	submittedGraph2, err := client.SubmitWorkflowSpec(diamond, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.NotNil(t, submittedGraph2)
 
-	process, err := client.Assign(env.colonyID, -1, env.executorPrvKey)
+	process, err := client.Assign(env.colonyName, -1, env.executorPrvKey)
 	assert.Nil(t, err)
 
 	err = client.Close(process.ID, env.executorPrvKey)
@@ -742,7 +742,7 @@ func TestDeleteAllProcessGraphsWithStateSuccessful(t *testing.T) {
 	assert.Equal(t, stat.SuccessfulWorkflows, 1)
 	assert.Equal(t, stat.FailedWorkflows, 0)
 
-	err = client.DeleteAllProcessGraphsWithState(env.colonyID, core.SUCCESS, env.colonyPrvKey)
+	err = client.DeleteAllProcessGraphsWithState(env.colonyName, core.SUCCESS, env.colonyPrvKey)
 	assert.Nil(t, err)
 
 	stat, err = client.ColonyStatistics(env.colonyName, env.executorPrvKey)
@@ -759,17 +759,17 @@ func TestDeleteAllProcessGraphsWithStateSuccessful(t *testing.T) {
 func TestDeleteAllProcessGraphsWithStateFailed(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 
-	diamond := generateSingleWorkflowSpec(env.colonyID)
+	diamond := generateSingleWorkflowSpec(env.colonyName)
 	submittedGraph1, err := client.SubmitWorkflowSpec(diamond, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.NotNil(t, submittedGraph1)
 
-	diamond = generateSingleWorkflowSpec(env.colonyID)
+	diamond = generateSingleWorkflowSpec(env.colonyName)
 	submittedGraph2, err := client.SubmitWorkflowSpec(diamond, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.NotNil(t, submittedGraph2)
 
-	process, err := client.Assign(env.colonyID, -1, env.executorPrvKey)
+	process, err := client.Assign(env.colonyName, -1, env.executorPrvKey)
 	assert.Nil(t, err)
 
 	err = client.Fail(process.ID, []string{"error"}, env.executorPrvKey)
@@ -782,7 +782,7 @@ func TestDeleteAllProcessGraphsWithStateFailed(t *testing.T) {
 	assert.Equal(t, stat.SuccessfulWorkflows, 0)
 	assert.Equal(t, stat.FailedWorkflows, 1)
 
-	err = client.DeleteAllProcessGraphsWithState(env.colonyID, core.FAILED, env.colonyPrvKey)
+	err = client.DeleteAllProcessGraphsWithState(env.colonyName, core.FAILED, env.colonyPrvKey)
 	assert.Nil(t, err)
 
 	stat, err = client.ColonyStatistics(env.colonyName, env.executorPrvKey)

@@ -17,7 +17,7 @@ import (
 
 type FSClient struct {
 	coloniesClient *client.ColoniesClient
-	colonyID       string
+	colonyName     string
 	executorPrvKey string
 	s3Client       *S3Client
 }
@@ -38,10 +38,10 @@ type SyncPlan struct {
 	Label         string
 }
 
-func CreateFSClient(coloniesClient *client.ColoniesClient, colonyID string, executorPrvKey string) (*FSClient, error) {
+func CreateFSClient(coloniesClient *client.ColoniesClient, colonyName string, executorPrvKey string) (*FSClient, error) {
 	fsClient := &FSClient{}
 	fsClient.coloniesClient = coloniesClient
-	fsClient.colonyID = colonyID
+	fsClient.colonyName = colonyName
 	fsClient.executorPrvKey = executorPrvKey
 
 	s3Client, err := CreateS3Client()
@@ -88,7 +88,7 @@ func (fsClient *FSClient) uploadFile(syncPlan *SyncPlan, fileInfo *FileInfo) err
 	}
 	ref := core.Reference{Protocol: "s3", S3Object: s3Object}
 	coloniesFile := &core.File{
-		ColonyID:    fsClient.colonyID,
+		ColonyName:  fsClient.colonyName,
 		Label:       syncPlan.Label,
 		Name:        fileInfo.Name,
 		Size:        fileStat.Size(),
@@ -108,7 +108,7 @@ func (fsClient *FSClient) uploadFile(syncPlan *SyncPlan, fileInfo *FileInfo) err
 	return nil
 }
 
-func (fsClient *FSClient) ApplySyncPlan(colonyID string, syncPlan *SyncPlan) error {
+func (fsClient *FSClient) ApplySyncPlan(colonyName string, syncPlan *SyncPlan) error {
 	if _, err := os.Stat(syncPlan.Dir); os.IsNotExist(err) {
 		err = os.MkdirAll(syncPlan.Dir, 0755)
 		if err != nil {
@@ -182,7 +182,7 @@ func (fsClient *FSClient) CalcSyncPlans(dir string, label string, keepLocal bool
 		return nil, err
 	}
 
-	allLabels, err := fsClient.coloniesClient.GetFileLabelsByName(fsClient.colonyID, label, fsClient.executorPrvKey)
+	allLabels, err := fsClient.coloniesClient.GetFileLabelsByName(fsClient.colonyName, label, fsClient.executorPrvKey)
 	if err != nil {
 		return nil, err
 	}
@@ -216,7 +216,7 @@ func (fsClient *FSClient) CalcSyncPlan(dir string, label string, keepLocal bool)
 		return nil, errors.New("coloniesClient is nil")
 	}
 
-	remoteFilenames, err := fsClient.coloniesClient.GetFilenames(fsClient.colonyID, label, fsClient.executorPrvKey)
+	remoteFilenames, err := fsClient.coloniesClient.GetFilenames(fsClient.colonyName, label, fsClient.executorPrvKey)
 	if err != nil {
 		return nil, err
 	}
@@ -225,7 +225,7 @@ func (fsClient *FSClient) CalcSyncPlan(dir string, label string, keepLocal bool)
 	var remoteS3FilenameMap = make(map[string]string)
 	var remoteFileSizeMap = make(map[string]int64)
 	for _, remoteFilename := range remoteFilenames {
-		remoteColoniesFile, err := fsClient.coloniesClient.GetLatestFileByName(fsClient.colonyID, label, remoteFilename, fsClient.executorPrvKey)
+		remoteColoniesFile, err := fsClient.coloniesClient.GetLatestFileByName(fsClient.colonyName, label, remoteFilename, fsClient.executorPrvKey)
 		if err != nil {
 			return nil, err
 		}
@@ -312,8 +312,8 @@ func (fsClient *FSClient) CalcSyncPlan(dir string, label string, keepLocal bool)
 		KeepLocal:     keepLocal}, nil
 }
 
-func (fsClient *FSClient) Download(colonyID string, fileID string, downloadDir string) error {
-	file, err := fsClient.coloniesClient.GetFileByID(colonyID, fileID, fsClient.executorPrvKey)
+func (fsClient *FSClient) Download(colonyName string, fileID string, downloadDir string) error {
+	file, err := fsClient.coloniesClient.GetFileByID(colonyName, fileID, fsClient.executorPrvKey)
 	if err != nil {
 		return err
 	}
@@ -325,8 +325,8 @@ func (fsClient *FSClient) Download(colonyID string, fileID string, downloadDir s
 	return fsClient.s3Client.Download(file[0].Name, file[0].Reference.S3Object.Object, downloadDir)
 }
 
-func (fsClient *FSClient) RemoveFileByID(colonyID string, fileID string) error {
-	file, err := fsClient.coloniesClient.GetFileByID(colonyID, fileID, fsClient.executorPrvKey)
+func (fsClient *FSClient) RemoveFileByID(colonyName string, fileID string) error {
+	file, err := fsClient.coloniesClient.GetFileByID(colonyName, fileID, fsClient.executorPrvKey)
 	if err != nil {
 		return err
 	}
@@ -340,11 +340,11 @@ func (fsClient *FSClient) RemoveFileByID(colonyID string, fileID string) error {
 		return err
 	}
 
-	return fsClient.coloniesClient.RemoveFileByID(colonyID, fileID, fsClient.executorPrvKey)
+	return fsClient.coloniesClient.RemoveFileByID(colonyName, fileID, fsClient.executorPrvKey)
 }
 
-func (fsClient *FSClient) RemoveFileByName(colonyID string, label string, name string) error {
-	file, err := fsClient.coloniesClient.GetFileByName(colonyID, label, name, fsClient.executorPrvKey)
+func (fsClient *FSClient) RemoveFileByName(colonyName string, label string, name string) error {
+	file, err := fsClient.coloniesClient.GetFileByName(colonyName, label, name, fsClient.executorPrvKey)
 	if err != nil {
 		return err
 	}
@@ -354,7 +354,7 @@ func (fsClient *FSClient) RemoveFileByName(colonyID string, label string, name s
 		if err != nil {
 			return err
 		}
-		err = fsClient.coloniesClient.RemoveFileByID(colonyID, revision.ID, fsClient.executorPrvKey)
+		err = fsClient.coloniesClient.RemoveFileByID(colonyName, revision.ID, fsClient.executorPrvKey)
 		if err != nil {
 			return err
 		}
@@ -364,19 +364,19 @@ func (fsClient *FSClient) RemoveFileByName(colonyID string, label string, name s
 }
 
 func (fsClient *FSClient) RemoveAllFilesWithLabel(label string) error {
-	allLabels, err := fsClient.coloniesClient.GetFileLabelsByName(fsClient.colonyID, label, fsClient.executorPrvKey)
+	allLabels, err := fsClient.coloniesClient.GetFileLabelsByName(fsClient.colonyName, label, fsClient.executorPrvKey)
 	if err != nil {
 		return err
 	}
 
 	for _, l := range allLabels {
-		filenames, err := fsClient.coloniesClient.GetFilenames(fsClient.colonyID, l.Name, fsClient.executorPrvKey)
+		filenames, err := fsClient.coloniesClient.GetFilenames(fsClient.colonyName, l.Name, fsClient.executorPrvKey)
 		if err != nil {
 			return err
 		}
 
 		for _, filename := range filenames {
-			file, err := fsClient.coloniesClient.GetFileByName(fsClient.colonyID, l.Name, filename, fsClient.executorPrvKey)
+			file, err := fsClient.coloniesClient.GetFileByName(fsClient.colonyName, l.Name, filename, fsClient.executorPrvKey)
 			if err != nil {
 				return err
 			}
@@ -386,8 +386,8 @@ func (fsClient *FSClient) RemoveAllFilesWithLabel(label string) error {
 				if err != nil {
 					return err
 				}
-				log.WithFields(log.Fields{"ColonyID": fsClient.colonyID, "FileID": f.ID}).Debug("Remove file from Colonies FS")
-				err = fsClient.coloniesClient.RemoveFileByID(fsClient.colonyID, f.ID, fsClient.executorPrvKey)
+				log.WithFields(log.Fields{"ColonyName": fsClient.colonyName, "FileID": f.ID}).Debug("Remove file from Colonies FS")
+				err = fsClient.coloniesClient.RemoveFileByID(fsClient.colonyName, f.ID, fsClient.executorPrvKey)
 				if err != nil {
 					return err
 				}
@@ -399,12 +399,12 @@ func (fsClient *FSClient) RemoveAllFilesWithLabel(label string) error {
 }
 
 func (fsClient *FSClient) DownloadSnapshot(snapshotID string, downloadDir string) error {
-	snapshot, err := fsClient.coloniesClient.GetSnapshotByID(fsClient.colonyID, snapshotID, fsClient.executorPrvKey)
+	snapshot, err := fsClient.coloniesClient.GetSnapshotByID(fsClient.colonyName, snapshotID, fsClient.executorPrvKey)
 	if err != nil {
 		return err
 	}
 	for _, fileID := range snapshot.FileIDs {
-		file, err := fsClient.coloniesClient.GetFileByID(fsClient.colonyID, fileID, fsClient.executorPrvKey)
+		file, err := fsClient.coloniesClient.GetFileByID(fsClient.colonyName, fileID, fsClient.executorPrvKey)
 		if len(file) != 1 {
 			return errors.New("Failed to download file, no revision found")
 		}

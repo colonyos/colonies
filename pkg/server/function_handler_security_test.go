@@ -16,7 +16,7 @@ func TestAddFunctionSecurity(t *testing.T) {
 	//   executor1 and executor3 are member of colony1
 	//   executor2 is member of colony2
 
-	executor3, executor3PrvKey, err := utils.CreateTestExecutorWithKey(env.colony1ID)
+	executor3, executor3PrvKey, err := utils.CreateTestExecutorWithKey(env.colony1Name)
 	assert.Nil(t, err)
 	_, err = client.AddExecutor(executor3, env.colony1PrvKey)
 	assert.Nil(t, err)
@@ -24,10 +24,10 @@ func TestAddFunctionSecurity(t *testing.T) {
 	err = client.ApproveExecutor(executor3.ID, env.colony1PrvKey)
 	assert.Nil(t, err)
 
-	function1 := &core.Function{ExecutorID: env.executor1ID, ColonyID: env.colony1ID, FuncName: "testfunc1", AvgWaitTime: 1.1, AvgExecTime: 0.1}
-	function2 := &core.Function{ExecutorID: env.executor2ID, ColonyID: env.colony1ID, FuncName: "testfunc1", AvgWaitTime: 1.1, AvgExecTime: 0.1}
+	function1 := &core.Function{ExecutorID: env.executor1ID, ColonyName: env.colony1Name, FuncName: "testfunc1", AvgWaitTime: 1.1, AvgExecTime: 0.1}
+	function2 := &core.Function{ExecutorID: env.executor2ID, ColonyName: env.colony1Name, FuncName: "testfunc1", AvgWaitTime: 1.1, AvgExecTime: 0.1}
 
-	function3 := &core.Function{ExecutorID: env.executor1ID, ColonyID: env.colony2ID, FuncName: "testfunc1", AvgWaitTime: 1.1, AvgExecTime: 0.1}
+	function3 := &core.Function{ExecutorID: env.executor1ID, ColonyName: env.colony2Name, FuncName: "testfunc1", AvgWaitTime: 1.1, AvgExecTime: 0.1}
 
 	_, err = client.AddFunction(function1, env.executor2PrvKey)
 	assert.NotNil(t, err) // Should not work
@@ -58,8 +58,8 @@ func TestGetFunctionsSecurity(t *testing.T) {
 	//   executor1 is member of colony1
 	//   executor2 is member of colony2
 
-	function1 := &core.Function{ExecutorID: env.executor1ID, ColonyID: env.colony1ID, FuncName: "testfunc1", AvgWaitTime: 1.1, AvgExecTime: 0.1}
-	function2 := &core.Function{ExecutorID: env.executor1ID, ColonyID: env.colony1ID, FuncName: "testfunc2", AvgWaitTime: 1.1, AvgExecTime: 0.1}
+	function1 := &core.Function{ExecutorID: env.executor1ID, ColonyName: env.colony1Name, FuncName: "testfunc1", AvgWaitTime: 1.1, AvgExecTime: 0.1}
+	function2 := &core.Function{ExecutorID: env.executor1ID, ColonyName: env.colony1Name, FuncName: "testfunc2", AvgWaitTime: 1.1, AvgExecTime: 0.1}
 
 	_, err := client.AddFunction(function1, env.executor1PrvKey)
 	assert.Nil(t, err)
@@ -90,7 +90,7 @@ func TestDeleteFunctionSecurity(t *testing.T) {
 	//   executor1 and exector 3 are member of colony1
 	//   executor2 is member of colony2
 
-	executor3, executor3PrvKey, err := utils.CreateTestExecutorWithKey(env.colony1ID)
+	executor3, executor3PrvKey, err := utils.CreateTestExecutorWithKey(env.colony1Name)
 	assert.Nil(t, err)
 	_, err = client.AddExecutor(executor3, env.colony1PrvKey)
 	assert.Nil(t, err)
@@ -98,7 +98,7 @@ func TestDeleteFunctionSecurity(t *testing.T) {
 	err = client.ApproveExecutor(executor3.ID, env.colony1PrvKey)
 	assert.Nil(t, err)
 
-	function := &core.Function{ExecutorID: env.executor1ID, ColonyID: env.colony1ID, FuncName: "testfunc1", AvgWaitTime: 1.1, AvgExecTime: 0.1}
+	function := &core.Function{ExecutorID: env.executor1ID, ColonyName: env.colony1Name, FuncName: "testfunc1", AvgWaitTime: 1.1, AvgExecTime: 0.1}
 
 	addedFunction, err := client.AddFunction(function, env.executor1PrvKey)
 	assert.Nil(t, err)

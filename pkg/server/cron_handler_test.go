@@ -12,7 +12,7 @@ import (
 func TestAddCronDebug(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 
-	cron := utils.FakeCron(t, env.colonyID)
+	cron := utils.FakeCron(t, env.colonyName)
 	cron.Interval = 2
 
 	addedCron, err := client.AddCron(cron, env.executorPrvKey)
@@ -20,7 +20,7 @@ func TestAddCronDebug(t *testing.T) {
 	assert.NotNil(t, addedCron)
 
 	// If the cron is successful, there should be a process we can assign
-	process, err := client.Assign(env.colonyID, 100, env.executorPrvKey)
+	process, err := client.Assign(env.colonyName, 100, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.NotNil(t, process)
 
@@ -31,7 +31,7 @@ func TestAddCronDebug(t *testing.T) {
 func TestAddCronDeleteAllProcesses(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 
-	cron := utils.FakeCron(t, env.colonyID)
+	cron := utils.FakeCron(t, env.colonyName)
 	cron.Interval = 1
 	cron.WaitForPrevProcessGraph = true
 
@@ -41,11 +41,11 @@ func TestAddCronDeleteAllProcesses(t *testing.T) {
 
 	time.Sleep(2 * time.Second)
 
-	err = client.DeleteAllProcesses(env.colonyID, env.colonyPrvKey)
+	err = client.DeleteAllProcesses(env.colonyName, env.colonyPrvKey)
 	assert.Nil(t, err)
 
 	// If the cron is successful, there should be a process we can assign
-	process, err := client.Assign(env.colonyID, 100, env.executorPrvKey)
+	process, err := client.Assign(env.colonyName, 100, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.NotNil(t, process)
 
@@ -56,7 +56,7 @@ func TestAddCronDeleteAllProcesses(t *testing.T) {
 func TestAddCronDeleteAllProcessGraphs(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 
-	cron := utils.FakeCron(t, env.colonyID)
+	cron := utils.FakeCron(t, env.colonyName)
 	cron.Interval = 1
 	cron.WaitForPrevProcessGraph = true
 
@@ -66,11 +66,11 @@ func TestAddCronDeleteAllProcessGraphs(t *testing.T) {
 
 	time.Sleep(2 * time.Second)
 
-	err = client.DeleteAllProcessGraphs(env.colonyID, env.colonyPrvKey)
+	err = client.DeleteAllProcessGraphs(env.colonyName, env.colonyPrvKey)
 	assert.Nil(t, err)
 
 	// If the cron is successful, there should be a process we can assign
-	process, err := client.Assign(env.colonyID, 100, env.executorPrvKey)
+	process, err := client.Assign(env.colonyName, 100, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.NotNil(t, process)
 
@@ -81,7 +81,7 @@ func TestAddCronDeleteAllProcessGraphs(t *testing.T) {
 func TestFailCron(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 
-	cron := utils.FakeCron(t, env.colonyID)
+	cron := utils.FakeCron(t, env.colonyName)
 	cron.Interval = 2
 
 	addedCron, err := client.AddCron(cron, env.executorPrvKey)
@@ -89,7 +89,7 @@ func TestFailCron(t *testing.T) {
 	assert.NotNil(t, addedCron)
 
 	// If the cron is successful, there should be a process we can assign
-	process, err := client.Assign(env.colonyID, 100, env.executorPrvKey)
+	process, err := client.Assign(env.colonyName, 100, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.NotNil(t, process)
 
@@ -97,7 +97,7 @@ func TestFailCron(t *testing.T) {
 	assert.Nil(t, err)
 
 	// Cron should still generate a cron workflow even if the last process fails
-	process, err = client.Assign(env.colonyID, 100, env.executorPrvKey)
+	process, err = client.Assign(env.colonyName, 100, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.NotNil(t, process)
 
@@ -108,7 +108,7 @@ func TestFailCron(t *testing.T) {
 func TestAddCronWaitForPrevProcessGraph(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 
-	cron := utils.FakeSingleCron(t, env.colonyID)
+	cron := utils.FakeSingleCron(t, env.colonyName)
 	cron.Interval = 1
 	cron.WaitForPrevProcessGraph = true
 
@@ -119,18 +119,18 @@ func TestAddCronWaitForPrevProcessGraph(t *testing.T) {
 	// Wait for 5 seconds, we should only have 1 cron workflow since WaitForPrevProcessGraph is true
 	time.Sleep(5 * time.Second)
 
-	processes, err := client.GetWaitingProcesses(env.colonyID, "", 100, env.executorPrvKey)
+	processes, err := client.GetWaitingProcesses(env.colonyName, "", 100, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.Len(t, processes, 1)
 
 	firstProcessID := processes[0]
 
-	processgraphs, err := client.GetWaitingProcessGraphs(env.colonyID, 100, env.executorPrvKey)
+	processgraphs, err := client.GetWaitingProcessGraphs(env.colonyName, 100, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.Len(t, processgraphs, 1)
 
 	// Now assign a the cron process, then a new cron should be triggered
-	process, err := client.Assign(env.colonyID, 100, env.executorPrvKey)
+	process, err := client.Assign(env.colonyName, 100, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.NotNil(t, process)
 	err = client.Close(process.ID, env.executorPrvKey)
@@ -138,7 +138,7 @@ func TestAddCronWaitForPrevProcessGraph(t *testing.T) {
 
 	time.Sleep(5 * time.Second)
 
-	processes, err = client.GetWaitingProcesses(env.colonyID, "", 100, env.executorPrvKey)
+	processes, err = client.GetWaitingProcesses(env.colonyName, "", 100, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.Len(t, processes, 1)
 
@@ -159,7 +159,7 @@ func TestAddCronWaitForPrevProcessGraph(t *testing.T) {
 func TestAddCronWaitForPrevProcessGraphFail(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 
-	cron := utils.FakeSingleCron(t, env.colonyID)
+	cron := utils.FakeSingleCron(t, env.colonyName)
 	cron.Interval = 1
 	cron.WaitForPrevProcessGraph = true
 
@@ -170,18 +170,18 @@ func TestAddCronWaitForPrevProcessGraphFail(t *testing.T) {
 	// Wait for 5 seconds, we should only have 1 cron workflow since WaitForPrevProcessGraph is true
 	time.Sleep(5 * time.Second)
 
-	processes, err := client.GetWaitingProcesses(env.colonyID, "", 100, env.executorPrvKey)
+	processes, err := client.GetWaitingProcesses(env.colonyName, "", 100, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.Len(t, processes, 1)
 
 	firstProcessID := processes[0]
 
-	processgraphs, err := client.GetWaitingProcessGraphs(env.colonyID, 100, env.executorPrvKey)
+	processgraphs, err := client.GetWaitingProcessGraphs(env.colonyName, 100, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.Len(t, processgraphs, 1)
 
 	// Now assign a the cron process, then a new cron should be triggered
-	process, err := client.Assign(env.colonyID, 100, env.executorPrvKey)
+	process, err := client.Assign(env.colonyName, 100, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.NotNil(t, process)
 	err = client.Fail(process.ID, []string{""}, env.executorPrvKey)
@@ -189,7 +189,7 @@ func TestAddCronWaitForPrevProcessGraphFail(t *testing.T) {
 
 	time.Sleep(5 * time.Second)
 
-	processes, err = client.GetWaitingProcesses(env.colonyID, "", 100, env.executorPrvKey)
+	processes, err = client.GetWaitingProcesses(env.colonyName, "", 100, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.Len(t, processes, 1)
 
@@ -211,7 +211,7 @@ func TestAddCronWaitForPrevProcessGraphFail(t *testing.T) {
 func TestAddCronInputOutput(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 
-	cron := utils.FakeSingleCron(t, env.colonyID)
+	cron := utils.FakeSingleCron(t, env.colonyName)
 	cron.Interval = 1
 	cron.WaitForPrevProcessGraph = true
 
@@ -219,14 +219,14 @@ func TestAddCronInputOutput(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, addedCron)
 
-	process, err := client.Assign(env.colonyID, 100, env.executorPrvKey)
+	process, err := client.Assign(env.colonyName, 100, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.NotNil(t, process)
 	output := make([]interface{}, 1)
 	output[0] = "result_cron1"
 	err = client.CloseWithOutput(process.ID, output, env.executorPrvKey)
 
-	process, err = client.Assign(env.colonyID, 100, env.executorPrvKey)
+	process, err = client.Assign(env.colonyName, 100, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.NotNil(t, process)
 	assert.Len(t, process.Input, 1)
@@ -245,7 +245,7 @@ func TestAddCronInputOutput(t *testing.T) {
 func TestAddCronInputOutput2(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 
-	cron := utils.FakeCron(t, env.colonyID)
+	cron := utils.FakeCron(t, env.colonyName)
 	cron.Interval = 1
 	cron.WaitForPrevProcessGraph = true
 
@@ -253,20 +253,20 @@ func TestAddCronInputOutput2(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, addedCron)
 
-	process, err := client.Assign(env.colonyID, 100, env.executorPrvKey)
+	process, err := client.Assign(env.colonyName, 100, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.NotNil(t, process)
 	err = client.Close(process.ID, env.executorPrvKey)
 	assert.Nil(t, err)
 
-	process, err = client.Assign(env.colonyID, 100, env.executorPrvKey)
+	process, err = client.Assign(env.colonyName, 100, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.NotNil(t, process)
 	output := make([]interface{}, 1)
 	output[0] = "result_cron1"
 	err = client.CloseWithOutput(process.ID, output, env.executorPrvKey)
 
-	process, err = client.Assign(env.colonyID, 100, env.executorPrvKey)
+	process, err = client.Assign(env.colonyName, 100, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.NotNil(t, process)
 	assert.Len(t, process.Input, 1)
@@ -285,7 +285,7 @@ func TestAddCronInputOutput2(t *testing.T) {
 func TestAddCronWithCronExpr(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 
-	cron := utils.FakeCron(t, env.colonyID)
+	cron := utils.FakeCron(t, env.colonyName)
 	cron.CronExpression = "0/1 * * * * *" // every second
 
 	addedCron, err := client.AddCron(cron, env.executorPrvKey)
@@ -293,7 +293,7 @@ func TestAddCronWithCronExpr(t *testing.T) {
 	assert.NotNil(t, addedCron)
 
 	// If the cron is successful, there should be a process we can assign
-	process, err := client.Assign(env.colonyID, 100, env.executorPrvKey)
+	process, err := client.Assign(env.colonyName, 100, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.NotNil(t, process)
 
@@ -304,13 +304,13 @@ func TestAddCronWithCronExpr(t *testing.T) {
 func TestAddCronFail(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 
-	cron := utils.FakeCron(t, env.colonyID)
+	cron := utils.FakeCron(t, env.colonyName)
 	cron.WorkflowSpec = "error"
 	addedCron, err := client.AddCron(cron, env.executorPrvKey)
 	assert.NotNil(t, err)
 	assert.Nil(t, addedCron)
 
-	cron = utils.FakeCron(t, env.colonyID)
+	cron = utils.FakeCron(t, env.colonyName)
 	cron.CronExpression = "error"
 	addedCron, err = client.AddCron(cron, env.executorPrvKey)
 	assert.NotNil(t, err)
@@ -323,7 +323,7 @@ func TestAddCronFail(t *testing.T) {
 func TestGetCron(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 
-	cron := utils.FakeCron(t, env.colonyID)
+	cron := utils.FakeCron(t, env.colonyName)
 	cron.Interval = 2
 
 	addedCron, err := client.AddCron(cron, env.executorPrvKey)
@@ -341,14 +341,14 @@ func TestGetCron(t *testing.T) {
 func TestCronArgs(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 
-	cron := utils.FakeCron(t, env.colonyID)
+	cron := utils.FakeCron(t, env.colonyName)
 	cron.Interval = 2
 
 	addedCron, err := client.AddCron(cron, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.NotNil(t, addedCron)
 
-	process, err := client.Assign(env.colonyID, 100, env.executorPrvKey)
+	process, err := client.Assign(env.colonyName, 100, env.executorPrvKey)
 	assert.Nil(t, err)
 
 	// TODO:
@@ -361,18 +361,18 @@ func TestCronArgs(t *testing.T) {
 func TestGetCrons(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 
-	cron1 := utils.FakeCron(t, env.colonyID)
+	cron1 := utils.FakeCron(t, env.colonyName)
 	cron1.Name = "test_cron_1"
 	addedCron1, err := client.AddCron(cron1, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.NotNil(t, addedCron1)
-	cron2 := utils.FakeCron(t, env.colonyID)
+	cron2 := utils.FakeCron(t, env.colonyName)
 	cron2.Name = "test_cron_2"
 	addedCron2, err := client.AddCron(cron2, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.NotNil(t, addedCron2)
 
-	cronsFromServer, err := client.GetCrons(env.colonyID, 100, env.executorPrvKey)
+	cronsFromServer, err := client.GetCrons(env.colonyName, 100, env.executorPrvKey)
 	assert.Nil(t, err)
 
 	assert.Len(t, cronsFromServer, 2)
@@ -396,7 +396,7 @@ func TestGetCrons(t *testing.T) {
 func TestDeleteCron(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 
-	cron := utils.FakeCron(t, env.colonyID)
+	cron := utils.FakeCron(t, env.colonyName)
 	addedCron, err := client.AddCron(cron, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.NotNil(t, addedCron)
@@ -415,7 +415,7 @@ func TestDeleteCron(t *testing.T) {
 func TestRunCron(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 
-	cron := utils.FakeCron(t, env.colonyID)
+	cron := utils.FakeCron(t, env.colonyName)
 	cron.Interval = 1000 // Will be triggered in 1000 seconds
 
 	addedCron, err := client.AddCron(cron, env.executorPrvKey)
@@ -425,7 +425,7 @@ func TestRunCron(t *testing.T) {
 	_, err = client.RunCron(addedCron.ID, env.executorPrvKey)
 
 	// If the cron is successful, there should be a process we can assign
-	process, err := client.Assign(env.colonyID, 10, env.executorPrvKey)
+	process, err := client.Assign(env.colonyName, 10, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.NotNil(t, process)
 

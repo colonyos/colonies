@@ -12,7 +12,7 @@ func TestCreateSnapshot(t *testing.T) {
 
 	label := "test_label"
 
-	file := utils.CreateTestFile(env.colonyID)
+	file := utils.CreateTestFile(env.colonyName)
 	addedFile, err := client.AddFile(file, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.NotNil(t, addedFile)
@@ -21,7 +21,7 @@ func TestCreateSnapshot(t *testing.T) {
 	file.SequenceNumber = addedFile.SequenceNumber
 	assert.True(t, file.Equals(addedFile))
 
-	snapshot, err := client.CreateSnapshot(env.colonyID, label, "test_snapshot_name", env.executorPrvKey)
+	snapshot, err := client.CreateSnapshot(env.colonyName, label, "test_snapshot_name", env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.Equal(t, snapshot.Name, "test_snapshot_name")
 
@@ -34,7 +34,7 @@ func TestGetSnapshot(t *testing.T) {
 
 	label := "test_label"
 
-	file := utils.CreateTestFile(env.colonyID)
+	file := utils.CreateTestFile(env.colonyName)
 	addedFile, err := client.AddFile(file, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.NotNil(t, addedFile)
@@ -43,15 +43,15 @@ func TestGetSnapshot(t *testing.T) {
 	file.SequenceNumber = addedFile.SequenceNumber
 	assert.True(t, file.Equals(addedFile))
 
-	snapshot, err := client.CreateSnapshot(env.colonyID, label, "test_snapshot_name", env.executorPrvKey)
+	snapshot, err := client.CreateSnapshot(env.colonyName, label, "test_snapshot_name", env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.Equal(t, snapshot.Name, "test_snapshot_name")
 
-	snapshotFromDB, err := client.GetSnapshotByID(env.colonyID, snapshot.ID, env.executorPrvKey)
+	snapshotFromDB, err := client.GetSnapshotByID(env.colonyName, snapshot.ID, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.True(t, snapshot.Equals(snapshotFromDB))
 
-	snapshotFromDB, err = client.GetSnapshotByName(env.colonyID, "test_snapshot_name", env.executorPrvKey)
+	snapshotFromDB, err = client.GetSnapshotByName(env.colonyName, "test_snapshot_name", env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.True(t, snapshot.Equals(snapshotFromDB))
 
@@ -59,12 +59,12 @@ func TestGetSnapshot(t *testing.T) {
 	<-done
 }
 
-func TestGetSnapshotsByColonyID(t *testing.T) {
+func TestGetSnapshotsByColonyName(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 
 	label := "test_label"
 
-	file := utils.CreateTestFile(env.colonyID)
+	file := utils.CreateTestFile(env.colonyName)
 	addedFile, err := client.AddFile(file, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.NotNil(t, addedFile)
@@ -73,15 +73,15 @@ func TestGetSnapshotsByColonyID(t *testing.T) {
 	file.SequenceNumber = addedFile.SequenceNumber
 	assert.True(t, file.Equals(addedFile))
 
-	snapshot, err := client.CreateSnapshot(env.colonyID, label, "test_snapshot_name1", env.executorPrvKey)
+	snapshot, err := client.CreateSnapshot(env.colonyName, label, "test_snapshot_name1", env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.Equal(t, snapshot.Name, "test_snapshot_name1")
 
-	snapshot, err = client.CreateSnapshot(env.colonyID, label, "test_snapshot_name2", env.executorPrvKey)
+	snapshot, err = client.CreateSnapshot(env.colonyName, label, "test_snapshot_name2", env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.Equal(t, snapshot.Name, "test_snapshot_name2")
 
-	snapshotsFromDB, err := client.GetSnapshotsByColonyID(env.colonyID, env.executorPrvKey)
+	snapshotsFromDB, err := client.GetSnapshotsByColonyName(env.colonyName, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.Len(t, snapshotsFromDB, 2)
 
@@ -94,7 +94,7 @@ func TestDeleteSnapshotByID(t *testing.T) {
 
 	label := "test_label"
 
-	file := utils.CreateTestFile(env.colonyID)
+	file := utils.CreateTestFile(env.colonyName)
 	addedFile, err := client.AddFile(file, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.NotNil(t, addedFile)
@@ -103,29 +103,29 @@ func TestDeleteSnapshotByID(t *testing.T) {
 	file.SequenceNumber = addedFile.SequenceNumber
 	assert.True(t, file.Equals(addedFile))
 
-	snapshot1, err := client.CreateSnapshot(env.colonyID, label, "test_snapshot_name1", env.executorPrvKey)
+	snapshot1, err := client.CreateSnapshot(env.colonyName, label, "test_snapshot_name1", env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.Equal(t, snapshot1.Name, "test_snapshot_name1")
 
-	snapshot2, err := client.CreateSnapshot(env.colonyID, label, "test_snapshot_name2", env.executorPrvKey)
+	snapshot2, err := client.CreateSnapshot(env.colonyName, label, "test_snapshot_name2", env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.Equal(t, snapshot2.Name, "test_snapshot_name2")
 
-	snapshotsFromDB, err := client.GetSnapshotsByColonyID(env.colonyID, env.executorPrvKey)
+	snapshotsFromDB, err := client.GetSnapshotsByColonyName(env.colonyName, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.Len(t, snapshotsFromDB, 2)
 
-	err = client.DeleteSnapshotByID(env.colonyID, snapshot2.ID, env.executorPrvKey)
+	err = client.DeleteSnapshotByID(env.colonyName, snapshot2.ID, env.executorPrvKey)
 	assert.Nil(t, err)
 
-	snapshotsFromDB, err = client.GetSnapshotsByColonyID(env.colonyID, env.executorPrvKey)
+	snapshotsFromDB, err = client.GetSnapshotsByColonyName(env.colonyName, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.Len(t, snapshotsFromDB, 1)
 
-	_, err = client.GetSnapshotByID(env.colonyID, snapshot1.ID, env.executorPrvKey)
+	_, err = client.GetSnapshotByID(env.colonyName, snapshot1.ID, env.executorPrvKey)
 	assert.Nil(t, err)
 
-	_, err = client.GetSnapshotByID(env.colonyID, snapshot2.ID, env.executorPrvKey)
+	_, err = client.GetSnapshotByID(env.colonyName, snapshot2.ID, env.executorPrvKey)
 	assert.NotNil(t, err)
 
 	server.Shutdown()
@@ -137,7 +137,7 @@ func TestDeleteSnapshotByName(t *testing.T) {
 
 	label := "test_label"
 
-	file := utils.CreateTestFile(env.colonyID)
+	file := utils.CreateTestFile(env.colonyName)
 	addedFile, err := client.AddFile(file, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.NotNil(t, addedFile)
@@ -146,29 +146,29 @@ func TestDeleteSnapshotByName(t *testing.T) {
 	file.SequenceNumber = addedFile.SequenceNumber
 	assert.True(t, file.Equals(addedFile))
 
-	snapshot1, err := client.CreateSnapshot(env.colonyID, label, "test_snapshot_name1", env.executorPrvKey)
+	snapshot1, err := client.CreateSnapshot(env.colonyName, label, "test_snapshot_name1", env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.Equal(t, snapshot1.Name, "test_snapshot_name1")
 
-	snapshot2, err := client.CreateSnapshot(env.colonyID, label, "test_snapshot_name2", env.executorPrvKey)
+	snapshot2, err := client.CreateSnapshot(env.colonyName, label, "test_snapshot_name2", env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.Equal(t, snapshot2.Name, "test_snapshot_name2")
 
-	snapshotsFromDB, err := client.GetSnapshotsByColonyID(env.colonyID, env.executorPrvKey)
+	snapshotsFromDB, err := client.GetSnapshotsByColonyName(env.colonyName, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.Len(t, snapshotsFromDB, 2)
 
-	err = client.DeleteSnapshotByName(env.colonyID, "test_snapshot_name2", env.executorPrvKey)
+	err = client.DeleteSnapshotByName(env.colonyName, "test_snapshot_name2", env.executorPrvKey)
 	assert.Nil(t, err)
 
-	snapshotsFromDB, err = client.GetSnapshotsByColonyID(env.colonyID, env.executorPrvKey)
+	snapshotsFromDB, err = client.GetSnapshotsByColonyName(env.colonyName, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.Len(t, snapshotsFromDB, 1)
 
-	_, err = client.GetSnapshotByID(env.colonyID, snapshot1.ID, env.executorPrvKey)
+	_, err = client.GetSnapshotByID(env.colonyName, snapshot1.ID, env.executorPrvKey)
 	assert.Nil(t, err)
 
-	_, err = client.GetSnapshotByID(env.colonyID, snapshot2.ID, env.executorPrvKey)
+	_, err = client.GetSnapshotByID(env.colonyName, snapshot2.ID, env.executorPrvKey)
 	assert.NotNil(t, err)
 
 	server.Shutdown()
