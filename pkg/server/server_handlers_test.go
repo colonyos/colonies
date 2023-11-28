@@ -28,7 +28,7 @@ func TestGetStatistics(t *testing.T) {
 	// Waiting
 	numberOfWaitingProcesses := 5
 	for i := 0; i < numberOfWaitingProcesses; i++ {
-		funcSpec := utils.CreateTestFunctionSpec(env.colonyID)
+		funcSpec := utils.CreateTestFunctionSpec(env.colonyName)
 		_, err := client.Submit(funcSpec, env.executorPrvKey)
 		assert.Nil(t, err)
 	}
@@ -36,20 +36,20 @@ func TestGetStatistics(t *testing.T) {
 	// Running
 	numberOfRunningProcesses := 6
 	for i := 0; i < numberOfRunningProcesses; i++ {
-		funcSpec := utils.CreateTestFunctionSpec(env.colonyID)
+		funcSpec := utils.CreateTestFunctionSpec(env.colonyName)
 		_, err := client.Submit(funcSpec, env.executorPrvKey)
 		assert.Nil(t, err)
-		_, err = client.Assign(env.colonyID, -1, env.executorPrvKey)
+		_, err = client.Assign(env.colonyName, -1, env.executorPrvKey)
 		assert.Nil(t, err)
 	}
 
 	// Successful
 	numberOfSuccessfulProcesses := 7
 	for i := 0; i < numberOfSuccessfulProcesses; i++ {
-		funcSpec := utils.CreateTestFunctionSpec(env.colonyID)
+		funcSpec := utils.CreateTestFunctionSpec(env.colonyName)
 		_, err := client.Submit(funcSpec, env.executorPrvKey)
 		assert.Nil(t, err)
-		processFromServer, err := client.Assign(env.colonyID, -1, env.executorPrvKey)
+		processFromServer, err := client.Assign(env.colonyName, -1, env.executorPrvKey)
 		assert.Nil(t, err)
 		err = client.Close(processFromServer.ID, env.executorPrvKey)
 		assert.Nil(t, err)
@@ -58,10 +58,10 @@ func TestGetStatistics(t *testing.T) {
 	// Failed
 	numberOfFailedProcesses := 8
 	for i := 0; i < numberOfFailedProcesses; i++ {
-		funcSpec := utils.CreateTestFunctionSpec(env.colonyID)
+		funcSpec := utils.CreateTestFunctionSpec(env.colonyName)
 		_, err := client.Submit(funcSpec, env.executorPrvKey)
 		assert.Nil(t, err)
-		processFromServer, err := client.Assign(env.colonyID, -1, env.executorPrvKey)
+		processFromServer, err := client.Assign(env.colonyName, -1, env.executorPrvKey)
 		assert.Nil(t, err)
 		err = client.Fail(processFromServer.ID, []string{"error"}, env.executorPrvKey)
 		assert.Nil(t, err)

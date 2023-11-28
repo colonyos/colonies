@@ -32,8 +32,8 @@ func TestRequireColonyOwner(t *testing.T) {
 	security := createTestValidator(ownership)
 
 	colonyID := core.GenerateRandomID()
-	ownership.addColony(colonyID)
-	assert.Nil(t, security.RequireColonyOwner(colonyID, colonyID))
+	ownership.addColony(colonyID, "my_colony")
+	assert.Nil(t, security.RequireColonyOwner(colonyID, "my_colony"))
 	assert.NotNil(t, security.RequireColonyOwner(core.GenerateRandomID(), colonyID))
 }
 
@@ -42,7 +42,7 @@ func TestRequireMembership(t *testing.T) {
 	security := createTestValidator(ownership)
 
 	colonyID := core.GenerateRandomID()
-	ownership.addColony(colonyID)
+	ownership.addColony(colonyID, "my_colony")
 	executor1ID := core.GenerateRandomID()
 	executor2ID := core.GenerateRandomID()
 	ownership.addExecutor(executor1ID, colonyID)

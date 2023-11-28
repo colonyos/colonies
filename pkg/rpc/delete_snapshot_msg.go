@@ -7,7 +7,7 @@ import (
 const DeleteSnapshotPayloadType = "deletesnapshotmsg"
 
 type DeleteSnapshotMsg struct {
-	ColonyID   string `json:"colonyid"`
+	ColonyName string `json:"colonyname"`
 	SnapshotID string `json:"snapshotid"`
 	Name       string `json:"name"`
 	MsgType    string `json:"msgtype"`
@@ -16,7 +16,7 @@ type DeleteSnapshotMsg struct {
 func CreateDeleteSnapshotMsg(colonyID string, snapshotID string, name string) *DeleteSnapshotMsg {
 	msg := &DeleteSnapshotMsg{}
 	msg.MsgType = DeleteSnapshotPayloadType
-	msg.ColonyID = colonyID
+	msg.ColonyName = colonyID
 	msg.SnapshotID = snapshotID
 	msg.Name = name
 
@@ -38,7 +38,7 @@ func (msg *DeleteSnapshotMsg) Equals(msg2 *DeleteSnapshotMsg) bool {
 	}
 
 	if msg.MsgType == msg2.MsgType &&
-		msg.ColonyID == msg2.ColonyID &&
+		msg.ColonyName == msg2.ColonyName &&
 		msg.Name == msg2.Name &&
 		msg.SnapshotID == msg2.SnapshotID {
 		return true

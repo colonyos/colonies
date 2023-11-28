@@ -23,13 +23,13 @@ func (server *ColoniesServer) handleCreateSnapshotHTTPRequest(c *gin.Context, re
 		return
 	}
 
-	err = server.validator.RequireMembership(recoveredID, msg.ColonyID, true)
+	err = server.validator.RequireMembership(recoveredID, msg.ColonyName, true)
 	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		log.Error(err)
 		return
 	}
 
-	snapshot, err := server.db.CreateSnapshot(msg.ColonyID, msg.Label, msg.Name)
+	snapshot, err := server.db.CreateSnapshot(msg.ColonyName, msg.Label, msg.Name)
 	if server.handleHTTPError(c, err, http.StatusInternalServerError) {
 		log.Error(err)
 		return
@@ -59,7 +59,7 @@ func (server *ColoniesServer) handleGetSnapshotHTTPRequest(c *gin.Context, recov
 		return
 	}
 
-	err = server.validator.RequireMembership(recoveredID, msg.ColonyID, true)
+	err = server.validator.RequireMembership(recoveredID, msg.ColonyName, true)
 	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		log.Error(err)
 		return
@@ -67,13 +67,13 @@ func (server *ColoniesServer) handleGetSnapshotHTTPRequest(c *gin.Context, recov
 
 	var snapshot *core.Snapshot
 	if msg.SnapshotID != "" {
-		snapshot, err = server.db.GetSnapshotByID(msg.ColonyID, msg.SnapshotID)
+		snapshot, err = server.db.GetSnapshotByID(msg.ColonyName, msg.SnapshotID)
 		if server.handleHTTPError(c, err, http.StatusInternalServerError) {
 			log.Error(err)
 			return
 		}
 	} else if msg.Name != "" {
-		snapshot, err = server.db.GetSnapshotByName(msg.ColonyID, msg.Name)
+		snapshot, err = server.db.GetSnapshotByName(msg.ColonyName, msg.Name)
 		if server.handleHTTPError(c, err, http.StatusInternalServerError) {
 			log.Error(err)
 			return
@@ -109,13 +109,13 @@ func (server *ColoniesServer) handleGetSnapshotsHTTPRequest(c *gin.Context, reco
 		return
 	}
 
-	err = server.validator.RequireMembership(recoveredID, msg.ColonyID, true)
+	err = server.validator.RequireMembership(recoveredID, msg.ColonyName, true)
 	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		log.Error(err)
 		return
 	}
 
-	snapshots, err := server.db.GetSnapshotsByColonyID(msg.ColonyID)
+	snapshots, err := server.db.GetSnapshotsByColonyName(msg.ColonyName)
 	if server.handleHTTPError(c, err, http.StatusInternalServerError) {
 		log.Error(err)
 		return
@@ -127,7 +127,7 @@ func (server *ColoniesServer) handleGetSnapshotsHTTPRequest(c *gin.Context, reco
 		return
 	}
 
-	log.WithFields(log.Fields{"ColonyID": msg.ColonyID}).Debug("Getting snapshots")
+	log.WithFields(log.Fields{"ColonyName": msg.ColonyName}).Debug("Getting snapshots")
 
 	server.sendHTTPReply(c, payloadType, jsonStr)
 }
@@ -145,20 +145,20 @@ func (server *ColoniesServer) handleDeleteSnapshotHTTPRequest(c *gin.Context, re
 		return
 	}
 
-	err = server.validator.RequireMembership(recoveredID, msg.ColonyID, true)
+	err = server.validator.RequireMembership(recoveredID, msg.ColonyName, true)
 	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		log.Error(err)
 		return
 	}
 
 	if msg.SnapshotID != "" {
-		err = server.db.DeleteSnapshotByID(msg.ColonyID, msg.SnapshotID)
+		err = server.db.DeleteSnapshotByID(msg.ColonyName, msg.SnapshotID)
 		if server.handleHTTPError(c, err, http.StatusInternalServerError) {
 			log.Error(err)
 			return
 		}
 	} else if msg.Name != "" {
-		err = server.db.DeleteSnapshotByName(msg.ColonyID, msg.Name)
+		err = server.db.DeleteSnapshotByName(msg.ColonyName, msg.Name)
 		if server.handleHTTPError(c, err, http.StatusInternalServerError) {
 			log.Error(err)
 			return

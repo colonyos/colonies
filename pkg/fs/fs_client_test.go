@@ -31,12 +31,12 @@ func printSyncPlan(syncPlan *SyncPlan) {
 }
 
 func checkFile(t *testing.T, env *testEnv, label string, coloniesClient *client.ColoniesClient, f *os.File) {
-	fileNames, err := coloniesClient.GetFilenames(env.colonyID, label, env.executorPrvKey)
+	fileNames, err := coloniesClient.GetFilenames(env.colonyName, label, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.Len(t, fileNames, 1)
 	orgFilename := filepath.Base(f.Name())
 	assert.Equal(t, fileNames[0], orgFilename)
-	coloniesFile, err := coloniesClient.GetFileByName(env.colonyID, label, orgFilename, env.executorPrvKey)
+	coloniesFile, err := coloniesClient.GetFileByName(env.colonyName, label, orgFilename, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.Len(t, coloniesFile, 1)
 	assert.Equal(t, coloniesFile[0].Name, orgFilename)
@@ -90,7 +90,7 @@ func TestCalcSyncPlan1(t *testing.T) {
 	assert.Nil(t, err)
 
 	// Create a remote file
-	coloniesFile := utils.CreateTestFile(env.colonyID)
+	coloniesFile := utils.CreateTestFile(env.colonyName)
 	coloniesFile.Checksum = "710ff3fb242a5dee1220f1cb0e6a519891fb67f2f828a6cab4ef8894633b1f51"
 	coloniesFile.Name = "remote_file"
 	coloniesFile.Label = label
@@ -98,7 +98,7 @@ func TestCalcSyncPlan1(t *testing.T) {
 	assert.Nil(t, err)
 
 	// Calculate a sync plan
-	fsClient, err := CreateFSClient(coloniesClient, env.colonyID, env.executorPrvKey)
+	fsClient, err := CreateFSClient(coloniesClient, env.colonyName, env.executorPrvKey)
 	assert.Nil(t, err)
 	syncPlan, err := fsClient.CalcSyncPlan(syncDir, label, true)
 	assert.Nil(t, err)
@@ -141,7 +141,7 @@ func TestCalcSyncPlan2(t *testing.T) {
 	assert.Nil(t, err)
 
 	// Create a remote file
-	coloniesFile := utils.CreateTestFile(env.colonyID)
+	coloniesFile := utils.CreateTestFile(env.colonyName)
 	coloniesFile.Checksum = "810ff2fb242a5dee4220f2cb0e6a519891fb67f2f828a6cab4ef8894633b1f50"
 	coloniesFile.Name = "same_file"
 	coloniesFile.Label = label
@@ -149,7 +149,7 @@ func TestCalcSyncPlan2(t *testing.T) {
 	assert.Nil(t, err)
 
 	// Calculate a sync plan
-	fsClient, err := CreateFSClient(coloniesClient, env.colonyID, env.executorPrvKey)
+	fsClient, err := CreateFSClient(coloniesClient, env.colonyName, env.executorPrvKey)
 	assert.Nil(t, err)
 	syncPlan, err := fsClient.CalcSyncPlan(syncDir, label, true)
 	assert.Nil(t, err)
@@ -190,7 +190,7 @@ func TestCalcSyncPlan3(t *testing.T) {
 	assert.Nil(t, err)
 
 	// Create a remote file
-	coloniesFile := utils.CreateTestFile(env.colonyID)
+	coloniesFile := utils.CreateTestFile(env.colonyName)
 	coloniesFile.Checksum = "710ff2fb242a5dee4220f2cb0e6a519891fb67f2f828a6cab4ef8894633b1f50" // Different checksum
 	coloniesFile.Name = "same_file"
 	coloniesFile.Label = label
@@ -198,7 +198,7 @@ func TestCalcSyncPlan3(t *testing.T) {
 	assert.Nil(t, err)
 
 	// Calculate a sync plan
-	fsClient, err := CreateFSClient(coloniesClient, env.colonyID, env.executorPrvKey)
+	fsClient, err := CreateFSClient(coloniesClient, env.colonyName, env.executorPrvKey)
 	assert.Nil(t, err)
 	syncPlan, err := fsClient.CalcSyncPlan(syncDir, label, true)
 	assert.Nil(t, err)
@@ -237,13 +237,13 @@ func TestApplySyncPlan1(t *testing.T) {
 	assert.Nil(t, err)
 
 	// Calculate a sync plan
-	fsClient, err := CreateFSClient(coloniesClient, env.colonyID, env.executorPrvKey)
+	fsClient, err := CreateFSClient(coloniesClient, env.colonyName, env.executorPrvKey)
 	assert.Nil(t, err)
 	syncPlan, err := fsClient.CalcSyncPlan(syncDir, label, true)
 	assert.Nil(t, err)
 
 	//printSyncPlan(syncPlan)
-	err = fsClient.ApplySyncPlan(env.colonyID, syncPlan)
+	err = fsClient.ApplySyncPlan(env.colonyName, syncPlan)
 	assert.Nil(t, err)
 	checkFile(t, env, label, coloniesClient, tmpFile1)
 
@@ -276,13 +276,13 @@ func TestApplySyncPlan2(t *testing.T) {
 	assert.Nil(t, err)
 
 	// Calculate a sync plan
-	fsClient, err := CreateFSClient(coloniesClient, env.colonyID, env.executorPrvKey)
+	fsClient, err := CreateFSClient(coloniesClient, env.colonyName, env.executorPrvKey)
 	assert.Nil(t, err)
 	syncPlan, err := fsClient.CalcSyncPlan(syncDir, label, true)
 	assert.Nil(t, err)
 
 	// Upload the file to the server
-	err = fsClient.ApplySyncPlan(env.colonyID, syncPlan)
+	err = fsClient.ApplySyncPlan(env.colonyName, syncPlan)
 	assert.Nil(t, err)
 
 	syncDir2, err := ioutil.TempDir("/tmp/", "sync")
@@ -290,7 +290,7 @@ func TestApplySyncPlan2(t *testing.T) {
 
 	syncPlan2, err := fsClient.CalcSyncPlan(syncDir2, label, true)
 	assert.Nil(t, err)
-	err = fsClient.ApplySyncPlan(env.colonyID, syncPlan2)
+	err = fsClient.ApplySyncPlan(env.colonyName, syncPlan2)
 	assert.Nil(t, err)
 
 	tmpFile1Filename := filepath.Base(tmpFile1.Name())
@@ -331,13 +331,13 @@ func TestApplySyncPlan3(t *testing.T) {
 	assert.Nil(t, err)
 
 	// Calculate a sync plan
-	fsClient, err := CreateFSClient(coloniesClient, env.colonyID, env.executorPrvKey)
+	fsClient, err := CreateFSClient(coloniesClient, env.colonyName, env.executorPrvKey)
 	assert.Nil(t, err)
 	syncPlan, err := fsClient.CalcSyncPlan(syncDir, label, true)
 	assert.Nil(t, err)
 
 	// Upload the file to the server
-	err = fsClient.ApplySyncPlan(env.colonyID, syncPlan)
+	err = fsClient.ApplySyncPlan(env.colonyName, syncPlan)
 	assert.Nil(t, err)
 
 	// Create tmpFile2
@@ -351,7 +351,7 @@ func TestApplySyncPlan3(t *testing.T) {
 
 	syncPlan2, err := fsClient.CalcSyncPlan(syncDir2, label, true)
 	assert.Nil(t, err)
-	err = fsClient.ApplySyncPlan(env.colonyID, syncPlan2)
+	err = fsClient.ApplySyncPlan(env.colonyName, syncPlan2)
 	assert.Nil(t, err)
 
 	// Check that we got both files
@@ -401,13 +401,13 @@ func TestApplySyncPlan4(t *testing.T) {
 	assert.Nil(t, err)
 
 	// Calculate a sync plan
-	fsClient, err := CreateFSClient(coloniesClient, env.colonyID, env.executorPrvKey)
+	fsClient, err := CreateFSClient(coloniesClient, env.colonyName, env.executorPrvKey)
 	assert.Nil(t, err)
 	syncPlan, err := fsClient.CalcSyncPlan(syncDir, label, true)
 	assert.Nil(t, err)
 
 	// Upload the file to the server
-	err = fsClient.ApplySyncPlan(env.colonyID, syncPlan)
+	err = fsClient.ApplySyncPlan(env.colonyName, syncPlan)
 	assert.Nil(t, err)
 
 	// Replace content in tmpFile1
@@ -426,7 +426,7 @@ func TestApplySyncPlan4(t *testing.T) {
 	syncPlan, err = fsClient.CalcSyncPlan(syncDir, label, keepLocal)
 	assert.Nil(t, err)
 	assert.Len(t, syncPlan.Conflicts, 1)
-	err = fsClient.ApplySyncPlan(env.colonyID, syncPlan)
+	err = fsClient.ApplySyncPlan(env.colonyName, syncPlan)
 	assert.Nil(t, err)
 
 	// Verify that local file is not replaced
@@ -435,11 +435,11 @@ func TestApplySyncPlan4(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, string(data2), (string(fileContent)))
 
-	remoteColoniesFile, err := coloniesClient.GetFileByName(env.colonyID, label, tmpFile1Filename, env.executorPrvKey)
+	remoteColoniesFile, err := coloniesClient.GetFileByName(env.colonyName, label, tmpFile1Filename, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.Len(t, remoteColoniesFile, 2)
 
-	remoteColoniesFile, err = coloniesClient.GetLatestFileByName(env.colonyID, label, tmpFile1Filename, env.executorPrvKey)
+	remoteColoniesFile, err = coloniesClient.GetLatestFileByName(env.colonyName, label, tmpFile1Filename, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.Len(t, remoteColoniesFile, 1)
 	remoteChecksum := remoteColoniesFile[0].Checksum
@@ -483,13 +483,13 @@ func TestApplySyncPlan5(t *testing.T) {
 	assert.Nil(t, err)
 
 	// Calculate a sync plan
-	fsClient, err := CreateFSClient(coloniesClient, env.colonyID, env.executorPrvKey)
+	fsClient, err := CreateFSClient(coloniesClient, env.colonyName, env.executorPrvKey)
 	assert.Nil(t, err)
 	syncPlan, err := fsClient.CalcSyncPlan(syncDir, label, true)
 	assert.Nil(t, err)
 
 	// Upload the file to the server
-	err = fsClient.ApplySyncPlan(env.colonyID, syncPlan)
+	err = fsClient.ApplySyncPlan(env.colonyName, syncPlan)
 	assert.Nil(t, err)
 
 	// Replace content in tmpFile1
@@ -508,7 +508,7 @@ func TestApplySyncPlan5(t *testing.T) {
 	syncPlan, err = fsClient.CalcSyncPlan(syncDir, label, keepLocal)
 	assert.Nil(t, err)
 	assert.Len(t, syncPlan.Conflicts, 1)
-	err = fsClient.ApplySyncPlan(env.colonyID, syncPlan)
+	err = fsClient.ApplySyncPlan(env.colonyName, syncPlan)
 	assert.Nil(t, err)
 
 	// Verify that local file is replaced
@@ -517,11 +517,11 @@ func TestApplySyncPlan5(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, string(data1), (string(fileContent)))
 
-	remoteColoniesFile, err := coloniesClient.GetFileByName(env.colonyID, label, tmpFile1Filename, env.executorPrvKey)
+	remoteColoniesFile, err := coloniesClient.GetFileByName(env.colonyName, label, tmpFile1Filename, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.Len(t, remoteColoniesFile, 1) // We did not upload another revision
 
-	remoteColoniesFile, err = coloniesClient.GetLatestFileByName(env.colonyID, label, tmpFile1Filename, env.executorPrvKey)
+	remoteColoniesFile, err = coloniesClient.GetLatestFileByName(env.colonyName, label, tmpFile1Filename, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.Len(t, remoteColoniesFile, 1)
 	remoteChecksum := remoteColoniesFile[0].Checksum
@@ -562,16 +562,16 @@ func TestDownload(t *testing.T) {
 	assert.Nil(t, err)
 
 	// Calculate a sync plan
-	fsClient, err := CreateFSClient(coloniesClient, env.colonyID, env.executorPrvKey)
+	fsClient, err := CreateFSClient(coloniesClient, env.colonyName, env.executorPrvKey)
 	assert.Nil(t, err)
 	syncPlan, err := fsClient.CalcSyncPlan(syncDir, label, true)
 	assert.Nil(t, err)
 
 	// Upload the file to the server
-	err = fsClient.ApplySyncPlan(env.colonyID, syncPlan)
+	err = fsClient.ApplySyncPlan(env.colonyName, syncPlan)
 	assert.Nil(t, err)
 
-	coloniesFile, err := fsClient.coloniesClient.GetFileByName(env.colonyID, label, tmpFile1Filename, env.executorPrvKey)
+	coloniesFile, err := fsClient.coloniesClient.GetFileByName(env.colonyName, label, tmpFile1Filename, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.Len(t, coloniesFile, 1)
 	fileID := coloniesFile[0].ID
@@ -579,7 +579,7 @@ func TestDownload(t *testing.T) {
 	downloadDir, err := ioutil.TempDir("/tmp/", "download")
 	assert.Nil(t, err)
 
-	err = fsClient.Download(env.colonyID, fileID, downloadDir)
+	err = fsClient.Download(env.colonyName, fileID, downloadDir)
 	assert.Nil(t, err)
 
 	fileContent, err := os.ReadFile(downloadDir + "/" + tmpFile1Filename)
@@ -612,24 +612,24 @@ func TestRemoveByID(t *testing.T) {
 	assert.Nil(t, err)
 
 	// Calculate a sync plan
-	fsClient, err := CreateFSClient(coloniesClient, env.colonyID, env.executorPrvKey)
+	fsClient, err := CreateFSClient(coloniesClient, env.colonyName, env.executorPrvKey)
 	assert.Nil(t, err)
 	syncPlan, err := fsClient.CalcSyncPlan(syncDir, label, true)
 	assert.Nil(t, err)
 
 	// Upload the file to the server
-	err = fsClient.ApplySyncPlan(env.colonyID, syncPlan)
+	err = fsClient.ApplySyncPlan(env.colonyName, syncPlan)
 	assert.Nil(t, err)
 
-	coloniesFile, err := fsClient.coloniesClient.GetFileByName(env.colonyID, label, tmpFile1Filename, env.executorPrvKey)
+	coloniesFile, err := fsClient.coloniesClient.GetFileByName(env.colonyName, label, tmpFile1Filename, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.Len(t, coloniesFile, 1)
 	fileID := coloniesFile[0].ID
 
-	err = fsClient.RemoveFileByID(env.colonyID, fileID)
+	err = fsClient.RemoveFileByID(env.colonyName, fileID)
 	assert.Nil(t, err)
 
-	coloniesFile, err = fsClient.coloniesClient.GetFileByID(env.colonyID, fileID, env.executorPrvKey)
+	coloniesFile, err = fsClient.coloniesClient.GetFileByID(env.colonyName, fileID, env.executorPrvKey)
 	assert.NotNil(t, err)
 
 	// Clean up
@@ -656,13 +656,13 @@ func TestRemoveByName(t *testing.T) {
 	assert.Nil(t, err)
 
 	// Calculate a sync plan
-	fsClient, err := CreateFSClient(coloniesClient, env.colonyID, env.executorPrvKey)
+	fsClient, err := CreateFSClient(coloniesClient, env.colonyName, env.executorPrvKey)
 	assert.Nil(t, err)
 	syncPlan, err := fsClient.CalcSyncPlan(syncDir, label, true)
 	assert.Nil(t, err)
 
 	// Upload the file to the server
-	err = fsClient.ApplySyncPlan(env.colonyID, syncPlan)
+	err = fsClient.ApplySyncPlan(env.colonyName, syncPlan)
 	assert.Nil(t, err)
 
 	// Modify the file so that we get two revisions
@@ -677,18 +677,18 @@ func TestRemoveByName(t *testing.T) {
 	keepLocal := true
 	syncPlan, err = fsClient.CalcSyncPlan(syncDir, label, keepLocal)
 	assert.Nil(t, err)
-	err = fsClient.ApplySyncPlan(env.colonyID, syncPlan)
+	err = fsClient.ApplySyncPlan(env.colonyName, syncPlan)
 	assert.Nil(t, err)
 
 	// Get the file
-	coloniesFile, err := fsClient.coloniesClient.GetFileByName(env.colonyID, label, tmpFile1Filename, env.executorPrvKey)
+	coloniesFile, err := fsClient.coloniesClient.GetFileByName(env.colonyName, label, tmpFile1Filename, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.Len(t, coloniesFile, 2)
 
-	err = fsClient.RemoveFileByName(env.colonyID, label, tmpFile1Filename)
+	err = fsClient.RemoveFileByName(env.colonyName, label, tmpFile1Filename)
 	assert.Nil(t, err)
 
-	coloniesFile, err = fsClient.coloniesClient.GetFileByName(env.colonyID, label, tmpFile1Filename, env.executorPrvKey)
+	coloniesFile, err = fsClient.coloniesClient.GetFileByName(env.colonyName, label, tmpFile1Filename, env.executorPrvKey)
 	assert.NotNil(t, err)
 
 	// Clean up
@@ -722,17 +722,17 @@ func TestDownloadSnapshot(t *testing.T) {
 	assert.Nil(t, err)
 
 	// Calculate a sync plan
-	fsClient, err := CreateFSClient(coloniesClient, env.colonyID, env.executorPrvKey)
+	fsClient, err := CreateFSClient(coloniesClient, env.colonyName, env.executorPrvKey)
 	assert.Nil(t, err)
 	syncPlan, err := fsClient.CalcSyncPlan(syncDir, label, true)
 	assert.Nil(t, err)
 
 	// Upload the file to the server
-	err = fsClient.ApplySyncPlan(env.colonyID, syncPlan)
+	err = fsClient.ApplySyncPlan(env.colonyName, syncPlan)
 	assert.Nil(t, err)
 
 	// Create a snapshot
-	snapshot, err := fsClient.coloniesClient.CreateSnapshot(env.colonyID, label, "test_snapshot1", env.executorPrvKey)
+	snapshot, err := fsClient.coloniesClient.CreateSnapshot(env.colonyName, label, "test_snapshot1", env.executorPrvKey)
 	assert.Nil(t, err)
 
 	// Download files in snapshot
@@ -781,20 +781,20 @@ func TestRemoveAllFilesWithLabel(t *testing.T) {
 	assert.Nil(t, err)
 
 	// Calculate a sync plan
-	fsClient, err := CreateFSClient(coloniesClient, env.colonyID, env.executorPrvKey)
+	fsClient, err := CreateFSClient(coloniesClient, env.colonyName, env.executorPrvKey)
 	assert.Nil(t, err)
 	syncPlan, err := fsClient.CalcSyncPlan(syncDir, label, true)
 	assert.Nil(t, err)
 
 	// Upload the file to the server
-	err = fsClient.ApplySyncPlan(env.colonyID, syncPlan)
+	err = fsClient.ApplySyncPlan(env.colonyName, syncPlan)
 	assert.Nil(t, err)
 
-	filenames, err := fsClient.coloniesClient.GetFilenames(env.colonyID, label, env.executorPrvKey)
+	filenames, err := fsClient.coloniesClient.GetFilenames(env.colonyName, label, env.executorPrvKey)
 	tmpFile1S3Object := ""
 	tmpFile2S3Object := ""
 	for _, filename := range filenames {
-		file, err := fsClient.coloniesClient.GetFileByName(env.colonyID, label, filename, env.executorPrvKey)
+		file, err := fsClient.coloniesClient.GetFileByName(env.colonyName, label, filename, env.executorPrvKey)
 		assert.Nil(t, err)
 		assert.Len(t, file, 1)
 		if file[0].Name == tmpFile1Filename {
@@ -813,7 +813,7 @@ func TestRemoveAllFilesWithLabel(t *testing.T) {
 	assert.Nil(t, err)
 
 	// Verify that files are gone
-	filenames, err = fsClient.coloniesClient.GetFilenames(fsClient.colonyID, label, fsClient.executorPrvKey)
+	filenames, err = fsClient.coloniesClient.GetFilenames(fsClient.colonyName, label, fsClient.executorPrvKey)
 	assert.Nil(t, err)
 	assert.Len(t, filenames, 0)
 
@@ -893,13 +893,13 @@ func TestAddFilesRecursively(t *testing.T) {
 	//   /tmp/sync2289845301/subdir1/subsubdir1/file63200468450
 	//   /tmp/sync2289845301/subdir2/file53082049703
 
-	fsClient, err := CreateFSClient(coloniesClient, env.colonyID, env.executorPrvKey)
+	fsClient, err := CreateFSClient(coloniesClient, env.colonyName, env.executorPrvKey)
 	assert.Nil(t, err)
 	syncPlans, err := fsClient.CalcSyncPlans(syncDir, label, true)
 	assert.Nil(t, err)
 
 	for _, syncPlan := range syncPlans {
-		err = fsClient.ApplySyncPlan(env.colonyID, syncPlan)
+		err = fsClient.ApplySyncPlan(env.colonyName, syncPlan)
 		assert.Nil(t, err)
 	}
 
@@ -908,7 +908,7 @@ func TestAddFilesRecursively(t *testing.T) {
 
 	syncPlans, err = fsClient.CalcSyncPlans(syncDir2, label, true)
 	for _, syncPlan := range syncPlans {
-		err = fsClient.ApplySyncPlan(env.colonyID, syncPlan)
+		err = fsClient.ApplySyncPlan(env.colonyName, syncPlan)
 		assert.Nil(t, err)
 	}
 
@@ -922,7 +922,7 @@ func TestAddFilesRecursively(t *testing.T) {
 	err = os.RemoveAll(syncDir2)
 	assert.Nil(t, err)
 
-	labelsAtServer, err := coloniesClient.GetFileLabels(env.colonyID, env.executorPrvKey)
+	labelsAtServer, err := coloniesClient.GetFileLabels(env.colonyName, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.Len(t, labelsAtServer, 4)
 
@@ -994,18 +994,18 @@ func TestDownloadSnapshopRecursively(t *testing.T) {
 	//   /tmp/sync2289845301/subdir1/subsubdir1/file63200468450
 	//   /tmp/sync2289845301/subdir2/file53082049703
 
-	fsClient, err := CreateFSClient(coloniesClient, env.colonyID, env.executorPrvKey)
+	fsClient, err := CreateFSClient(coloniesClient, env.colonyName, env.executorPrvKey)
 	assert.Nil(t, err)
 	syncPlans, err := fsClient.CalcSyncPlans(syncDir, label, true)
 	assert.Nil(t, err)
 
 	for _, syncPlan := range syncPlans {
-		err = fsClient.ApplySyncPlan(env.colonyID, syncPlan)
+		err = fsClient.ApplySyncPlan(env.colonyName, syncPlan)
 		assert.Nil(t, err)
 	}
 
 	// Create a snapshot
-	snapshot, err := fsClient.coloniesClient.CreateSnapshot(env.colonyID, label, "/test_snapshot1", env.executorPrvKey)
+	snapshot, err := fsClient.coloniesClient.CreateSnapshot(env.colonyName, label, "/test_snapshot1", env.executorPrvKey)
 	assert.Nil(t, err)
 
 	// Download files in snapshot
@@ -1023,7 +1023,7 @@ func TestDownloadSnapshopRecursively(t *testing.T) {
 	err = os.RemoveAll(downloadDir)
 	assert.Nil(t, err)
 
-	labelsAtServer, err := coloniesClient.GetFileLabels(env.colonyID, env.executorPrvKey)
+	labelsAtServer, err := coloniesClient.GetFileLabels(env.colonyName, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.Len(t, labelsAtServer, 4)
 

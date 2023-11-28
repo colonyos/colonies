@@ -7,7 +7,7 @@ import (
 const GetProcessHistPayloadType = "getprocesshistmsg"
 
 type GetProcessHistMsg struct {
-	ColonyID   string `json:"colonyid"`
+	ColonyName string `json:"colonyname"`
 	ExecutorID string `json:"executorid"`
 	Seconds    int    `json:"seconds"`
 	State      int    `json:"state"`
@@ -16,7 +16,7 @@ type GetProcessHistMsg struct {
 
 func CreateGetProcessHistMsg(colonyID string, executorID string, seconds int, state int) *GetProcessHistMsg {
 	msg := &GetProcessHistMsg{}
-	msg.ColonyID = colonyID
+	msg.ColonyName = colonyID
 	msg.ExecutorID = executorID
 	msg.Seconds = seconds
 	msg.State = state
@@ -49,7 +49,7 @@ func (msg *GetProcessHistMsg) Equals(msg2 *GetProcessHistMsg) bool {
 	}
 
 	if msg.MsgType == msg2.MsgType &&
-		msg.ColonyID == msg2.ColonyID &&
+		msg.ColonyName == msg2.ColonyName &&
 		msg.ExecutorID == msg2.ExecutorID &&
 		msg.Seconds == msg2.Seconds &&
 		msg.State == msg2.State {

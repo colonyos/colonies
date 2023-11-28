@@ -15,7 +15,6 @@ import (
 func init() {
 	colonyCmd.AddCommand(addColonyCmd)
 	colonyCmd.AddCommand(removeColonyCmd)
-	colonyCmd.AddCommand(renameColonyCmd)
 	colonyCmd.AddCommand(lsColoniesCmd)
 	colonyCmd.AddCommand(colonyStatsCmd)
 	rootCmd.AddCommand(colonyCmd)
@@ -32,12 +31,6 @@ func init() {
 	removeColonyCmd.Flags().StringVarP(&ServerPrvKey, "serverprvkey", "", "", "Colonies server private key")
 	removeColonyCmd.Flags().StringVarP(&TargetColonyName, "name", "", "", "Colony name")
 	removeColonyCmd.MarkFlagRequired("colonyid")
-
-	renameColonyCmd.Flags().StringVarP(&ColonyPrvKey, "colonyprvkey", "", "", "Colony private key")
-	renameColonyCmd.Flags().StringVarP(&TargetColonyName, "name", "", "", "Old Colony name")
-	renameColonyCmd.MarkFlagRequired("name")
-	renameColonyCmd.Flags().StringVarP(&NewColonyName, "newname", "", "", "New Colony name")
-	renameColonyCmd.MarkFlagRequired("newname")
 
 	lsColoniesCmd.Flags().StringVarP(&ServerPrvKey, "serverprvkey", "", "", "Colonies server private key")
 	lsColoniesCmd.Flags().BoolVarP(&JSON, "json", "", false, "Print JSON instead of tables")
@@ -92,28 +85,6 @@ var removeColonyCmd = &cobra.Command{
 		CheckError(err)
 
 		log.WithFields(log.Fields{"ColonyID": TargetColonyID}).Info("Colony removed")
-	},
-}
-
-var renameColonyCmd = &cobra.Command{
-	Use:   "rename",
-	Short: "Rename a Colony",
-	Long:  "Rename a Colony",
-	Run: func(cmd *cobra.Command, args []string) {
-		client := setup()
-
-		if TargetColonyName == "" {
-			CheckError(errors.New("Colony name not specified"))
-		}
-
-		if NewColonyName == "" {
-			CheckError(errors.New("The new Colony name not specified"))
-		}
-
-		err := client.RenameColony(TargetColonyName, NewColonyName, ColonyPrvKey)
-		CheckError(err)
-
-		log.WithFields(log.Fields{"ColonyName": TargetColonyName, "NewColonyName": NewColonyName}).Info("Colony renamed")
 	},
 }
 

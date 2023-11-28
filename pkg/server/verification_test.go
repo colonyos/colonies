@@ -24,7 +24,7 @@ func TestVerifyWorkflowSpec(t *testing.T) {
 		MaxWaitTime: -1,
 		MaxExecTime: 2,
 		MaxRetries:  10,
-		Conditions:  core.Conditions{ColonyID: colonyID, ExecutorType: "bemisexecutor"},
+		Conditions:  core.Conditions{ColonyName: colonyID, ExecutorType: "bemisexecutor"},
 		Env:         make(map[string]string)}
 
 	funcSpec2 := core.FunctionSpec{
@@ -34,7 +34,7 @@ func TestVerifyWorkflowSpec(t *testing.T) {
 		MaxWaitTime: -1,
 		MaxExecTime: 2,
 		MaxRetries:  30,
-		Conditions:  core.Conditions{ColonyID: colonyID, ExecutorType: "bemisexecutor"},
+		Conditions:  core.Conditions{ColonyName: colonyID, ExecutorType: "bemisexecutor"},
 		Env:         make(map[string]string)}
 
 	workflowSpec := core.CreateWorkflowSpec(colonyID)
@@ -52,7 +52,7 @@ func TestVerifyWorkflowSpec(t *testing.T) {
 		MaxWaitTime: -1,
 		MaxExecTime: 2,
 		MaxRetries:  10,
-		Conditions:  core.Conditions{ColonyID: colonyID, ExecutorType: "bemisexecutor"},
+		Conditions:  core.Conditions{ColonyName: colonyID, ExecutorType: "bemisexecutor"},
 		Env:         make(map[string]string)}
 
 	funcSpec2 = core.FunctionSpec{
@@ -62,7 +62,7 @@ func TestVerifyWorkflowSpec(t *testing.T) {
 		MaxWaitTime: -1,
 		MaxExecTime: 2,
 		MaxRetries:  30,
-		Conditions:  core.Conditions{ColonyID: colonyID, ExecutorType: "bemisexecutor"},
+		Conditions:  core.Conditions{ColonyName: colonyID, ExecutorType: "bemisexecutor"},
 		Env:         make(map[string]string)}
 
 	workflowSpec = core.CreateWorkflowSpec(colonyID)

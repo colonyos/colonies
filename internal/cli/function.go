@@ -79,7 +79,7 @@ var registerFuncCmd = &cobra.Command{
 		executorIdentity, err := crypto.CreateIdendityFromString(PrvKey)
 		CheckError(err)
 
-		funcSpec.ColonyID = ColonyID
+		funcSpec.ColonyName = ColonyName
 		funcSpec.ExecutorID = executorIdentity.ID()
 
 		addedFunc, err := client.AddFunction(funcSpec, PrvKey)
@@ -121,7 +121,7 @@ var listFuncCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		client := setup()
 
-		functions, err := client.GetFunctionsByColonyID(ColonyID, PrvKey)
+		functions, err := client.GetFunctionsByColonyName(ColonyName, PrvKey)
 		CheckError(err)
 
 		statsMap := make(map[string]statsEntry)
@@ -247,8 +247,8 @@ var submitFunctionSpecCmd = &cobra.Command{
 		funcSpec, err := core.ConvertJSONToFunctionSpec(string(jsonSpecBytes))
 		CheckJSONParseErr(err, string(jsonSpecBytes))
 
-		if funcSpec.Conditions.ColonyID == "" {
-			funcSpec.Conditions.ColonyID = ColonyID
+		if funcSpec.Conditions.ColonyName == "" {
+			funcSpec.Conditions.ColonyName = ColonyName
 		}
 
 		createSnapshot(funcSpec, client)
@@ -322,9 +322,9 @@ var execFuncCmd = &cobra.Command{
 
 		var conditions core.Conditions
 		if TargetExecutorType != "" {
-			conditions = core.Conditions{ColonyID: ColonyID, ExecutorType: TargetExecutorType}
+			conditions = core.Conditions{ColonyName: ColonyName, ExecutorType: TargetExecutorType}
 		} else {
-			conditions = core.Conditions{ColonyID: ColonyID, ExecutorIDs: []string{TargetExecutorID}}
+			conditions = core.Conditions{ColonyName: ColonyName, ExecutorIDs: []string{TargetExecutorID}}
 		}
 
 		argsif := make([]interface{}, len(Args))

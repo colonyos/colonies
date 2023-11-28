@@ -7,15 +7,15 @@ import (
 const GetProcessGraphsPayloadType = "getprocessgraphsmsg"
 
 type GetProcessGraphsMsg struct {
-	ColonyID string `json:"colonyid"`
-	Count    int    `json:"count"`
-	State    int    `json:"state"`
-	MsgType  string `json:"msgtype"`
+	ColonyName string `json:"colonyname"`
+	Count      int    `json:"count"`
+	State      int    `json:"state"`
+	MsgType    string `json:"msgtype"`
 }
 
 func CreateGetProcessGraphsMsg(colonyID string, count int, state int) *GetProcessGraphsMsg {
 	msg := &GetProcessGraphsMsg{}
-	msg.ColonyID = colonyID
+	msg.ColonyName = colonyID
 	msg.Count = count
 	msg.State = state
 	msg.MsgType = GetProcessGraphsPayloadType
@@ -47,7 +47,7 @@ func (msg *GetProcessGraphsMsg) Equals(msg2 *GetProcessGraphsMsg) bool {
 	}
 
 	if msg.MsgType == msg2.MsgType &&
-		msg.ColonyID == msg2.ColonyID &&
+		msg.ColonyName == msg2.ColonyName &&
 		msg.Count == msg2.Count &&
 		msg.State == msg2.State {
 		return true

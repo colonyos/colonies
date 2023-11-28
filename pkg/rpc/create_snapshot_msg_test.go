@@ -7,7 +7,7 @@ import (
 )
 
 func TestRPCCreateSnapshotMsg(t *testing.T) {
-	msg := CreateCreateSnapshotMsg("test_colonyid", "test_label", "test_name")
+	msg := CreateCreateSnapshotMsg("test_colony", "test_label", "test_name")
 	jsonString, err := msg.ToJSON()
 	assert.Nil(t, err)
 
@@ -21,7 +21,7 @@ func TestRPCCreateSnapshotMsg(t *testing.T) {
 }
 
 func TestRPCCreateSnapShotMsgEquals(t *testing.T) {
-	msg := CreateCreateSnapshotMsg("test_colonyid", "test_label", "test_name")
+	msg := CreateCreateSnapshotMsg("test_colony", "test_label", "test_name")
 	assert.True(t, msg.Equals(msg))
 	assert.False(t, msg.Equals(nil))
 }

@@ -127,7 +127,7 @@ func (controller *coloniesController) getGenerators(colonyID string, count int) 
 	cmd := &command{generatorsReplyChan: make(chan []*core.Generator, 1),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
-			generators, err := controller.db.FindGeneratorsByColonyID(colonyID, count)
+			generators, err := controller.db.FindGeneratorsByColonyName(colonyID, count)
 			if err != nil {
 				cmd.errorChan <- err
 				return

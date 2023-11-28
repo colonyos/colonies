@@ -7,14 +7,14 @@ import (
 const GetSnapshotsPayloadType = "getsnapshotsmsg"
 
 type GetSnapshotsMsg struct {
-	ColonyID string `json:"colonyid"`
-	MsgType  string `json:"msgtype"`
+	ColonyName string `json:"colonyname"`
+	MsgType    string `json:"msgtype"`
 }
 
 func CreateGetSnapshotsMsg(colonyID string) *GetSnapshotsMsg {
 	msg := &GetSnapshotsMsg{}
 	msg.MsgType = GetSnapshotsPayloadType
-	msg.ColonyID = colonyID
+	msg.ColonyName = colonyID
 
 	return msg
 }
@@ -34,7 +34,7 @@ func (msg *GetSnapshotsMsg) Equals(msg2 *GetSnapshotsMsg) bool {
 	}
 
 	if msg.MsgType == msg2.MsgType &&
-		msg.ColonyID == msg2.ColonyID {
+		msg.ColonyName == msg2.ColonyName {
 		return true
 	}
 

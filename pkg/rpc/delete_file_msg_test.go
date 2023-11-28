@@ -7,7 +7,7 @@ import (
 )
 
 func TestDeleteFileMsg(t *testing.T) {
-	msg := CreateDeleteFileMsg("test_colonyid", "test_fileid", "test_prefix", "test_name")
+	msg := CreateDeleteFileMsg("test_colony", "test_fileid", "test_prefix", "test_name")
 	jsonString, err := msg.ToJSON()
 	assert.Nil(t, err)
 
@@ -21,7 +21,7 @@ func TestDeleteFileMsg(t *testing.T) {
 }
 
 func TestRPCGDeleteFileMsgIndent(t *testing.T) {
-	msg := CreateDeleteFileMsg("test_colonyid", "test_fileid", "test_prefix", "test_name")
+	msg := CreateDeleteFileMsg("test_colony", "test_fileid", "test_prefix", "test_name")
 	jsonString, err := msg.ToJSONIndent()
 	assert.Nil(t, err)
 
@@ -35,7 +35,7 @@ func TestRPCGDeleteFileMsgIndent(t *testing.T) {
 }
 
 func TestRPCDeleteFileMsgEquals(t *testing.T) {
-	msg := CreateDeleteFileMsg("test_colonyid", "test_fileid", "test_prefix", "test_name")
+	msg := CreateDeleteFileMsg("test_colony", "test_fileid", "test_prefix", "test_name")
 	assert.True(t, msg.Equals(msg))
 	assert.False(t, msg.Equals(nil))
 }

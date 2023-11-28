@@ -27,7 +27,7 @@ func (server *ColoniesServer) handleAddGeneratorHTTPRequest(c *gin.Context, reco
 		return
 	}
 
-	err = server.validator.RequireMembership(recoveredID, msg.Generator.ColonyID, true)
+	err = server.validator.RequireMembership(recoveredID, msg.Generator.ColonyName, true)
 	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		return
 	}
@@ -85,7 +85,7 @@ func (server *ColoniesServer) handleGetGeneratorHTTPRequest(c *gin.Context, reco
 		return
 	}
 
-	err = server.validator.RequireMembership(recoveredID, generator.ColonyID, true)
+	err = server.validator.RequireMembership(recoveredID, generator.ColonyName, true)
 	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		return
 	}
@@ -129,7 +129,7 @@ func (server *ColoniesServer) handleResolveGeneratorHTTPRequest(c *gin.Context, 
 		return
 	}
 
-	err = server.validator.RequireMembership(recoveredID, generator.ColonyID, true)
+	err = server.validator.RequireMembership(recoveredID, generator.ColonyName, true)
 	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		return
 	}
@@ -157,12 +157,12 @@ func (server *ColoniesServer) handleGetGeneratorsHTTPRequest(c *gin.Context, rec
 		return
 	}
 
-	err = server.validator.RequireMembership(recoveredID, msg.ColonyID, true)
+	err = server.validator.RequireMembership(recoveredID, msg.ColonyName, true)
 	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		return
 	}
 
-	generators, err := server.controller.getGenerators(msg.ColonyID, msg.Count)
+	generators, err := server.controller.getGenerators(msg.ColonyName, msg.Count)
 	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
@@ -176,7 +176,7 @@ func (server *ColoniesServer) handleGetGeneratorsHTTPRequest(c *gin.Context, rec
 		return
 	}
 
-	log.WithFields(log.Fields{"ColonyId": msg.ColonyID, "Count": msg.Count}).Debug("Getting generators")
+	log.WithFields(log.Fields{"ColonyId": msg.ColonyName, "Count": msg.Count}).Debug("Getting generators")
 
 	server.sendHTTPReply(c, payloadType, jsonString)
 }
@@ -203,12 +203,12 @@ func (server *ColoniesServer) handlePackGeneratorHTTPRequest(c *gin.Context, rec
 		return
 	}
 
-	err = server.validator.RequireMembership(recoveredID, generator.ColonyID, true)
+	err = server.validator.RequireMembership(recoveredID, generator.ColonyName, true)
 	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		return
 	}
 
-	err = server.controller.packGenerator(generator.ID, generator.ColonyID, msg.Arg)
+	err = server.controller.packGenerator(generator.ID, generator.ColonyName, msg.Arg)
 	if server.handleHTTPError(c, err, http.StatusInternalServerError) {
 		return
 	}
@@ -240,7 +240,7 @@ func (server *ColoniesServer) handleDeleteGeneratorHTTPRequest(c *gin.Context, r
 		return
 	}
 
-	err = server.validator.RequireMembership(recoveredID, generator.ColonyID, true)
+	err = server.validator.RequireMembership(recoveredID, generator.ColonyName, true)
 	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		return
 	}

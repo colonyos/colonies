@@ -7,18 +7,16 @@ import (
 const AssignProcessPayloadType = "assignprocessmsg"
 
 type AssignProcessMsg struct {
-	ColonyID string `json:"colonyid"`
-	Latest   bool   `json:"latest"` // TODO: remove, not used anymore
-	Timeout  int    `json:"timeout"`
-	MsgType  string `json:"msgtype"`
+	ColonyName string `json:"colonyname"`
+	Timeout    int    `json:"timeout"`
+	MsgType    string `json:"msgtype"`
 }
 
 func CreateAssignProcessMsg(colonyID string) *AssignProcessMsg {
 	msg := &AssignProcessMsg{}
-	msg.ColonyID = colonyID
+	msg.ColonyName = colonyID
 	msg.MsgType = AssignProcessPayloadType
 	msg.Timeout = -1 // Not implemented yet
-	msg.Latest = false
 
 	return msg
 }
@@ -46,7 +44,7 @@ func (msg *AssignProcessMsg) Equals(msg2 *AssignProcessMsg) bool {
 		return false
 	}
 
-	if msg.MsgType == msg2.MsgType && msg.ColonyID == msg2.ColonyID {
+	if msg.MsgType == msg2.MsgType && msg.ColonyName == msg2.ColonyName {
 		return true
 	}
 

@@ -7,14 +7,14 @@ import (
 const GetFileLabelsPayloadType = "getfilelabelsmsg"
 
 type GetFileLabelsMsg struct {
-	MsgType  string `json:"msgtype"`
-	ColonyID string `json:"colonyid"`
-	Name     string `json:"name"`
+	MsgType    string `json:"msgtype"`
+	ColonyName string `json:"colonyname"`
+	Name       string `json:"name"`
 }
 
 func CreateGetFileLabelsMsg(colonyID string, name string) *GetFileLabelsMsg {
 	msg := &GetFileLabelsMsg{}
-	msg.ColonyID = colonyID
+	msg.ColonyName = colonyID
 	msg.Name = name
 	msg.MsgType = GetFileLabelsPayloadType
 
@@ -23,7 +23,7 @@ func CreateGetFileLabelsMsg(colonyID string, name string) *GetFileLabelsMsg {
 
 func CreateGetAllFileLabelsMsg(colonyID string) *GetFileLabelsMsg {
 	msg := &GetFileLabelsMsg{}
-	msg.ColonyID = colonyID
+	msg.ColonyName = colonyID
 	msg.Name = ""
 	msg.MsgType = GetFileLabelsPayloadType
 
@@ -44,7 +44,7 @@ func (msg *GetFileLabelsMsg) Equals(msg2 *GetFileLabelsMsg) bool {
 		return false
 	}
 
-	if msg.MsgType == msg2.MsgType && msg.ColonyID == msg2.ColonyID {
+	if msg.MsgType == msg2.MsgType && msg.ColonyName == msg2.ColonyName {
 		return true
 	}
 

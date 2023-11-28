@@ -28,7 +28,7 @@ func (server *ColoniesServer) handleAddCronHTTPRequest(c *gin.Context, recovered
 		return
 	}
 
-	err = server.validator.RequireMembership(recoveredID, msg.Cron.ColonyID, true)
+	err = server.validator.RequireMembership(recoveredID, msg.Cron.ColonyName, true)
 	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		return
 	}
@@ -104,7 +104,7 @@ func (server *ColoniesServer) handleGetCronHTTPRequest(c *gin.Context, recovered
 		return
 	}
 
-	err = server.validator.RequireMembership(recoveredID, cron.ColonyID, true)
+	err = server.validator.RequireMembership(recoveredID, cron.ColonyName, true)
 	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		return
 	}
@@ -134,12 +134,12 @@ func (server *ColoniesServer) handleGetCronsHTTPRequest(c *gin.Context, recovere
 		return
 	}
 
-	err = server.validator.RequireMembership(recoveredID, msg.ColonyID, true)
+	err = server.validator.RequireMembership(recoveredID, msg.ColonyName, true)
 	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		return
 	}
 
-	crons, err := server.controller.getCrons(msg.ColonyID, msg.Count)
+	crons, err := server.controller.getCrons(msg.ColonyName, msg.Count)
 	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
@@ -153,7 +153,7 @@ func (server *ColoniesServer) handleGetCronsHTTPRequest(c *gin.Context, recovere
 		return
 	}
 
-	log.WithFields(log.Fields{"ColonyId": msg.ColonyID, "Count": msg.Count}).Debug("Getting crons")
+	log.WithFields(log.Fields{"ColonyId": msg.ColonyName, "Count": msg.Count}).Debug("Getting crons")
 
 	server.sendHTTPReply(c, payloadType, jsonString)
 }
@@ -180,7 +180,7 @@ func (server *ColoniesServer) handleRunCronHTTPRequest(c *gin.Context, recovered
 		return
 	}
 
-	err = server.validator.RequireMembership(recoveredID, cron.ColonyID, true)
+	err = server.validator.RequireMembership(recoveredID, cron.ColonyName, true)
 	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		return
 	}
@@ -217,7 +217,7 @@ func (server *ColoniesServer) handleDeleteCronHTTPRequest(c *gin.Context, recove
 		return
 	}
 
-	err = server.validator.RequireMembership(recoveredID, cron.ColonyID, true)
+	err = server.validator.RequireMembership(recoveredID, cron.ColonyName, true)
 	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		return
 	}

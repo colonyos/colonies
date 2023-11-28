@@ -87,15 +87,15 @@ var submitWorkflowCmd = &cobra.Command{
 		workflowSpec, err := core.ConvertJSONToWorkflowSpec(jsonStr)
 		CheckJSONParseErr(err, string(jsonSpecBytes))
 
-		if workflowSpec.ColonyID == "" {
-			if ColonyID == "" {
-				ColonyID = os.Getenv("COLONIES_COLONY_ID")
+		if workflowSpec.ColonyName == "" {
+			if ColonyName == "" {
+				ColonyName = os.Getenv("COLONIES_COLONY_NAME")
 			}
-			if ColonyID == "" {
-				CheckError(errors.New("Unknown Colony Id, please set COLONYID env variable or specify ColonyID in JSON file"))
+			if ColonyName == "" {
+				CheckError(errors.New("Unknown Colony Id, please export COLONIES_COLONY_NAME variable or specify ColonyName in JSON file"))
 			}
 
-			workflowSpec.ColonyID = ColonyID
+			workflowSpec.ColonyName = ColonyName
 		}
 
 		graph, err := client.SubmitWorkflowSpec(workflowSpec, PrvKey)

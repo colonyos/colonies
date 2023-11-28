@@ -7,7 +7,7 @@ import (
 const GetProcessesPayloadType = "getprocessesmsg"
 
 type GetProcessesMsg struct {
-	ColonyID     string `json:"colonyid"`
+	ColonyName   string `json:"colonyname"`
 	Count        int    `json:"count"`
 	State        int    `json:"state"`
 	ExecutorType string `json:"executortype"`
@@ -16,7 +16,7 @@ type GetProcessesMsg struct {
 
 func CreateGetProcessesMsg(colonyID string, count int, state int, executorType string) *GetProcessesMsg {
 	msg := &GetProcessesMsg{}
-	msg.ColonyID = colonyID
+	msg.ColonyName = colonyID
 	msg.Count = count
 	msg.State = state
 	msg.ExecutorType = executorType
@@ -49,7 +49,7 @@ func (msg *GetProcessesMsg) Equals(msg2 *GetProcessesMsg) bool {
 	}
 
 	if msg.MsgType == msg2.MsgType &&
-		msg.ColonyID == msg2.ColonyID &&
+		msg.ColonyName == msg2.ColonyName &&
 		msg.Count == msg2.Count &&
 		msg.State == msg2.State &&
 		msg.ExecutorType == msg2.ExecutorType {

@@ -7,13 +7,13 @@ import (
 const GetExecutorsPayloadType = "getexecutorsmsg"
 
 type GetExecutorsMsg struct {
-	ColonyID string `json:"colonyid"`
-	MsgType  string `json:"msgtype"`
+	ColonyName string `json:"colonyname"`
+	MsgType    string `json:"msgtype"`
 }
 
 func CreateGetExecutorsMsg(colonyID string) *GetExecutorsMsg {
 	msg := &GetExecutorsMsg{}
-	msg.ColonyID = colonyID
+	msg.ColonyName = colonyID
 	msg.MsgType = GetExecutorsPayloadType
 
 	return msg
@@ -42,7 +42,7 @@ func (msg *GetExecutorsMsg) Equals(msg2 *GetExecutorsMsg) bool {
 		return false
 	}
 
-	if msg.MsgType == msg2.MsgType && msg.ColonyID == msg2.ColonyID {
+	if msg.MsgType == msg2.MsgType && msg.ColonyName == msg2.ColonyName {
 		return true
 	}
 

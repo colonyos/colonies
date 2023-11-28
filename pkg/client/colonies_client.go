@@ -354,21 +354,6 @@ func (client *ColoniesClient) RemoveColony(colonyName string, prvKey string) err
 	return nil
 }
 
-func (client *ColoniesClient) RenameColony(oldName string, newName string, prvKey string) error {
-	msg := rpc.CreateRenameColonyMsg(oldName, newName)
-	jsonString, err := msg.ToJSON()
-	if err != nil {
-		return err
-	}
-
-	_, err = client.sendMessage(rpc.RenameColonyPayloadType, jsonString, prvKey, false, context.TODO())
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
 func (client *ColoniesClient) GetColonies(prvKey string) ([]*core.Colony, error) {
 	msg := rpc.CreateGetColoniesMsg()
 	jsonString, err := msg.ToJSON()
@@ -384,8 +369,8 @@ func (client *ColoniesClient) GetColonies(prvKey string) ([]*core.Colony, error)
 	return core.ConvertJSONToColonyArray(respBodyString)
 }
 
-func (client *ColoniesClient) GetColonyByID(colonyID string, prvKey string) (*core.Colony, error) {
-	msg := rpc.CreateGetColonyMsg(colonyID)
+func (client *ColoniesClient) GetColonyByName(colonyName string, prvKey string) (*core.Colony, error) {
+	msg := rpc.CreateGetColonyMsg(colonyName)
 	jsonString, err := msg.ToJSON()
 	if err != nil {
 		return nil, err
@@ -1113,8 +1098,8 @@ func (client *ColoniesClient) GetFunctionsByExecutorID(executorID string, prvKey
 	return core.ConvertJSONToFunctionArray(respBodyString)
 }
 
-func (client *ColoniesClient) GetFunctionsByColonyID(colonyID string, prvKey string) ([]*core.Function, error) {
-	msg := rpc.CreateGetFunctionsByColonyIDMsg(colonyID)
+func (client *ColoniesClient) GetFunctionsByColonyName(colonyID string, prvKey string) ([]*core.Function, error) {
+	msg := rpc.CreateGetFunctionsByColonyNameMsg(colonyID)
 	jsonString, err := msg.ToJSON()
 	if err != nil {
 		return nil, err
@@ -1490,7 +1475,7 @@ func (client *ColoniesClient) GetSnapshotByName(colonyID string, name string, pr
 	return snapshot, err
 }
 
-func (client *ColoniesClient) GetSnapshotsByColonyID(colonyID string, prvKey string) ([]*core.Snapshot, error) {
+func (client *ColoniesClient) GetSnapshotsByColonyName(colonyID string, prvKey string) ([]*core.Snapshot, error) {
 	msg := rpc.CreateGetSnapshotsMsg(colonyID)
 	jsonString, err := msg.ToJSON()
 	if err != nil {

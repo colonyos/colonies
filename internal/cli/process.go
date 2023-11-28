@@ -341,7 +341,7 @@ func printFunctionSpec(funcSpec *core.FunctionSpec) {
 	}
 
 	condData := [][]string{
-		[]string{"ColonyID", funcSpec.Conditions.ColonyID},
+		[]string{"ColonyName", funcSpec.Conditions.ColonyName},
 		[]string{"ExecutorIDs", executorIDs},
 		[]string{"ExecutorType", funcSpec.Conditions.ExecutorType},
 		[]string{"Dependencies", dep},

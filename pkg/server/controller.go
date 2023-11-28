@@ -25,7 +25,7 @@ type controller interface {
 	getLogsByProcessID(processID string, limit int, since int64) ([]core.Log, error)
 	getLogsByExecutorID(processID string, limit int, since int64) ([]core.Log, error)
 	getExecutor(executorID string) (*core.Executor, error)
-	getExecutorByColonyID(colonyID string) ([]*core.Executor, error)
+	getExecutorByColonyName(colonyID string) ([]*core.Executor, error)
 	approveExecutor(executorID string) error
 	rejectExecutor(executorID string) error
 	deleteExecutor(executorID string) error
@@ -64,7 +64,7 @@ type controller interface {
 	getAttribute(attributeID string) (*core.Attribute, error)
 	addFunction(function *core.Function) (*core.Function, error)
 	getFunctionsByExecutorID(executorID string) ([]*core.Function, error)
-	getFunctionsByColonyID(colonyID string) ([]*core.Function, error)
+	getFunctionsByColonyName(colonyID string) ([]*core.Function, error)
 	getFunctionByID(functionID string) (*core.Function, error)
 	deleteFunction(functionID string) error
 	addGenerator(generator *core.Generator) (*core.Generator, error)

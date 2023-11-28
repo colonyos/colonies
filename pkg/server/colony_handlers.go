@@ -98,55 +98,12 @@ func (server *ColoniesServer) handleDeleteColonyHTTPRequest(c *gin.Context, reco
 		}
 	}
 
-	err = server.controller.deleteColony(colony.ID)
+	err = server.controller.deleteColony(colony.Name)
 	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
 
-	log.WithFields(log.Fields{"ColonyId": colony.ID}).Debug("Deleting colony")
-
-	server.sendEmptyHTTPReply(c, payloadType)
-}
-
-func (server *ColoniesServer) handleRenameColonyHTTPRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
-	msg, err := rpc.CreateRenameColonyMsgFromJSON(jsonString)
-	if err != nil {
-		if server.handleHTTPError(c, errors.New("Failed to rename colony, invalid JSON"), http.StatusBadRequest) {
-			return
-		}
-	}
-
-	if msg.MsgType != payloadType {
-		server.handleHTTPError(c, errors.New("Failed to rename colony, msg.MsgType does not match payloadType"), http.StatusBadRequest)
-		return
-	}
-
-	colony, err := server.db.GetColonyByName(msg.OldName)
-	if server.handleHTTPError(c, err, http.StatusBadRequest) {
-		return
-	}
-
-	if colony == nil {
-		if server.handleHTTPError(c, errors.New("Colony with name <"+msg.OldName+"> not found"), http.StatusBadRequest) {
-			return
-		}
-	}
-
-	err = server.validator.RequireColonyOwner(recoveredID, colony.ID)
-	if server.handleHTTPError(c, err, http.StatusForbidden) {
-		return
-	}
-
-	err = server.controller.renameColony(colony.ID, msg.NewName)
-	if server.handleHTTPError(c, err, http.StatusBadRequest) {
-		return
-	}
-
-	log.WithFields(log.Fields{
-		"OldColonyName": msg.OldName,
-		"ColonyId":      colony.ID,
-		"NewColonyName": msg.NewName}).
-		Debug("Renaming colony")
+	log.WithFields(log.Fields{"ColonyId": colony.ID, "ColonyName": colony.Name}).Debug("Deleting colony")
 
 	server.sendEmptyHTTPReply(c, payloadType)
 }
@@ -197,12 +154,12 @@ func (server *ColoniesServer) handleGetColonyHTTPRequest(c *gin.Context, recover
 		return
 	}
 
-	err = server.validator.RequireMembership(recoveredID, msg.ColonyID, true)
+	err = server.validator.RequireMembership(recoveredID, msg.ColonyName, true)
 	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		return
 	}
 
-	colony, err := server.controller.getColony(msg.ColonyID)
+	colony, err := server.controller.getColony(msg.ColonyName)
 	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
@@ -216,7 +173,7 @@ func (server *ColoniesServer) handleGetColonyHTTPRequest(c *gin.Context, recover
 		return
 	}
 
-	log.WithFields(log.Fields{"ColonyId": msg.ColonyID}).Debug("Getting colony")
+	log.WithFields(log.Fields{"ColonyName": msg.ColonyName}).Debug("Getting colony")
 
 	server.sendHTTPReply(c, payloadType, jsonString)
 }
@@ -245,15 +202,15 @@ func (server *ColoniesServer) handleColonyStatisticsHTTPRequest(c *gin.Context, 
 		}
 	}
 
-	err = server.validator.RequireMembership(recoveredID, colony.ID, true)
+	err = server.validator.RequireMembership(recoveredID, colony.Name, true)
 	if err != nil {
-		err = server.validator.RequireColonyOwner(recoveredID, colony.ID)
+		err = server.validator.RequireColonyOwner(recoveredID, colony.Name)
 		if server.handleHTTPError(c, err, http.StatusForbidden) {
 			return
 		}
 	}
 
-	stat, err := server.controller.getColonyStatistics(colony.ID)
+	stat, err := server.controller.getColonyStatistics(colony.Name)
 	if server.handleHTTPError(c, err, http.StatusInternalServerError) {
 		return
 	}

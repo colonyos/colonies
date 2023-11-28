@@ -73,15 +73,15 @@ var addCronCmd = &cobra.Command{
 		workflowSpec, err := core.ConvertJSONToWorkflowSpec(jsonStr)
 		CheckError(err)
 
-		if workflowSpec.ColonyID == "" {
-			workflowSpec.ColonyID = ColonyID
+		if workflowSpec.ColonyName == "" {
+			workflowSpec.ColonyName = ColonyName
 		}
 
 		workflowSpecJSON, err := workflowSpec.ToJSON()
 		CheckError(err)
 
-		if workflowSpec.ColonyID == "" {
-			workflowSpec.ColonyID = ColonyID
+		if workflowSpec.ColonyName == "" {
+			workflowSpec.ColonyName = ColonyName
 		}
 
 		if CronName == "" {
@@ -146,7 +146,7 @@ var getCronCmd = &cobra.Command{
 		fmt.Println("Cron:")
 		generatorData := [][]string{
 			[]string{"Id", cron.ID},
-			[]string{"ColonyID", cron.ColonyID},
+			[]string{"ColonyName", cron.ColonyName},
 			[]string{"Name", cron.Name},
 			[]string{"Cron Expression", cron.CronExpression},
 			[]string{"Interval", strconv.Itoa(cron.Interval)},

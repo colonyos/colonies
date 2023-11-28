@@ -22,18 +22,18 @@ func TestRetention(t *testing.T) {
 	_, err = client.AddColony(colony, serverPrvKey)
 	assert.Nil(t, err)
 
-	executor, executorPrvKey, err := utils.CreateTestExecutorWithKey(colony.ID)
+	executor, executorPrvKey, err := utils.CreateTestExecutorWithKey(colony.Name)
 	_, err = client.AddExecutor(executor, colonyPrvKey)
 	assert.Nil(t, err)
 
 	err = client.ApproveExecutor(executor.ID, colonyPrvKey)
 	assert.Nil(t, err)
 
-	wf := generateSingleWorkflowSpec(colony.ID)
+	wf := generateSingleWorkflowSpec(colony.Name)
 	_, err = client.SubmitWorkflowSpec(wf, executorPrvKey)
 	assert.Nil(t, err)
 
-	process, err := client.Assign(colony.ID, -1, executorPrvKey)
+	process, err := client.Assign(colony.Name, -1, executorPrvKey)
 	assert.Nil(t, err)
 
 	err = client.Close(process.ID, executorPrvKey)

@@ -7,14 +7,14 @@ import (
 const GetFilesPayloadType = "getfilesmsg"
 
 type GetFilesMsg struct {
-	Label    string `json:"label"`
-	ColonyID string `json:"colonyid"`
-	MsgType  string `json:"msgtype"`
+	Label      string `json:"label"`
+	ColonyName string `json:"colonyname"`
+	MsgType    string `json:"msgtype"`
 }
 
 func CreateGetFilesMsg(colonyID string, label string) *GetFilesMsg {
 	msg := &GetFilesMsg{}
-	msg.ColonyID = colonyID
+	msg.ColonyName = colonyID
 	msg.Label = label
 	msg.MsgType = GetFilesPayloadType
 
@@ -35,7 +35,7 @@ func (msg *GetFilesMsg) Equals(msg2 *GetFilesMsg) bool {
 		return false
 	}
 
-	if msg.MsgType == msg2.MsgType && msg.ColonyID == msg2.ColonyID && msg.Label == msg2.Label {
+	if msg.MsgType == msg2.MsgType && msg.ColonyName == msg2.ColonyName && msg.Label == msg2.Label {
 		return true
 	}
 

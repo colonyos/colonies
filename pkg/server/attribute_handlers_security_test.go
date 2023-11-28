@@ -15,21 +15,21 @@ func TestAddAttributeSecurity(t *testing.T) {
 	//   executor1 is member of colony1
 	//   executor2 is member of colony2
 
-	funcSpec := utils.CreateTestFunctionSpec(env.colony1ID)
+	funcSpec := utils.CreateTestFunctionSpec(env.colony1Name)
 	addedProcess, err := client.Submit(funcSpec, env.executor1PrvKey)
 	assert.Nil(t, err)
 	assert.Equal(t, core.PENDING, addedProcess.State)
 
-	assignedProcess, err := client.Assign(env.colony1ID, -1, env.executor1PrvKey)
+	assignedProcess, err := client.Assign(env.colony1Name, -1, env.executor1PrvKey)
 	assert.Nil(t, err)
 
-	attribute := core.CreateAttribute(assignedProcess.ID, env.colony1ID, "", core.OUT, "result", "helloworld")
+	attribute := core.CreateAttribute(assignedProcess.ID, env.colony1Name, "", core.OUT, "result", "helloworld")
 	_, err = client.AddAttribute(attribute, env.executor2PrvKey)
 	assert.NotNil(t, err) // Should not work
 
 	// Add another executor to colony1 and try to set an attribute in the assigned processes assigned to
 	// executor1, it should not be possible
-	executor3, executor3PrvKey, err := utils.CreateTestExecutorWithKey(env.colony1ID)
+	executor3, executor3PrvKey, err := utils.CreateTestExecutorWithKey(env.colony1Name)
 	assert.Nil(t, err)
 	_, err = client.AddExecutor(executor3, env.colony1PrvKey)
 	assert.Nil(t, err)
@@ -52,15 +52,15 @@ func TestGetAttributeSecurity(t *testing.T) {
 	//   executor1 is member of colony1
 	//   executor2 is member of colony2
 
-	funcSpec := utils.CreateTestFunctionSpec(env.colony1ID)
+	funcSpec := utils.CreateTestFunctionSpec(env.colony1Name)
 	addedProcess, err := client.Submit(funcSpec, env.executor1PrvKey)
 	assert.Nil(t, err)
 	assert.Equal(t, core.PENDING, addedProcess.State)
 
-	assignedProcess, err := client.Assign(env.colony1ID, -1, env.executor1PrvKey)
+	assignedProcess, err := client.Assign(env.colony1Name, -1, env.executor1PrvKey)
 	assert.Nil(t, err)
 
-	attribute := core.CreateAttribute(assignedProcess.ID, env.colony1ID, "", core.OUT, "result", "helloworld")
+	attribute := core.CreateAttribute(assignedProcess.ID, env.colony1Name, "", core.OUT, "result", "helloworld")
 	_, err = client.AddAttribute(attribute, env.executor1PrvKey)
 	assert.Nil(t, err)
 

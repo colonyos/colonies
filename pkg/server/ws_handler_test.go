@@ -33,7 +33,7 @@ func TestSubscribeProcesses(t *testing.T) {
 
 	time.Sleep(1 * time.Second)
 
-	funcSpec := utils.CreateTestFunctionSpec(env.colony1ID)
+	funcSpec := utils.CreateTestFunctionSpec(env.colony1Name)
 	_, err = client.Submit(funcSpec, env.executor1PrvKey)
 	assert.Nil(t, err)
 
@@ -51,7 +51,7 @@ func TestSubscribeProcesses(t *testing.T) {
 func TestSubscribeChangeStateProcess(t *testing.T) {
 	env, client, server, _, done := setupTestEnv1(t)
 
-	funcSpec := utils.CreateTestFunctionSpec(env.colony1ID)
+	funcSpec := utils.CreateTestFunctionSpec(env.colony1Name)
 	addedProcess, err := client.Submit(funcSpec, env.executor1PrvKey)
 	assert.Nil(t, err)
 	assert.Equal(t, core.PENDING, addedProcess.State)
@@ -74,7 +74,7 @@ func TestSubscribeChangeStateProcess(t *testing.T) {
 		}
 	}()
 
-	assignedProcess, err := client.Assign(env.colony1ID, -1, env.executor1PrvKey)
+	assignedProcess, err := client.Assign(env.colony1Name, -1, env.executor1PrvKey)
 	assert.Nil(t, err)
 
 	err = client.Close(assignedProcess.ID, env.executor1PrvKey)
@@ -89,7 +89,7 @@ func TestSubscribeChangeStateProcess(t *testing.T) {
 func TestSubscribeChangeStateProcessInvalidID(t *testing.T) {
 	env, client, server, _, done := setupTestEnv1(t)
 
-	funcSpec := utils.CreateTestFunctionSpec(env.colony1ID)
+	funcSpec := utils.CreateTestFunctionSpec(env.colony1Name)
 	addedProcess, err := client.Submit(funcSpec, env.executor1PrvKey)
 	assert.Nil(t, err)
 	assert.Equal(t, core.PENDING, addedProcess.State)
@@ -130,12 +130,12 @@ func TestSubscribeChangeStateProcessInvalidID(t *testing.T) {
 func TestSubscribeChangeStateProcess2(t *testing.T) {
 	env, client, server, _, done := setupTestEnv1(t)
 
-	funcSpec := utils.CreateTestFunctionSpec(env.colony1ID)
+	funcSpec := utils.CreateTestFunctionSpec(env.colony1Name)
 	addedProcess, err := client.Submit(funcSpec, env.executor1PrvKey)
 	assert.Nil(t, err)
 	assert.Equal(t, core.WAITING, addedProcess.State)
 
-	assignedProcess, err := client.Assign(env.colony1ID, -1, env.executor1PrvKey)
+	assignedProcess, err := client.Assign(env.colony1Name, -1, env.executor1PrvKey)
 	assert.Nil(t, err)
 
 	err = client.Close(assignedProcess.ID, env.executor1PrvKey)

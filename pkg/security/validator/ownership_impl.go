@@ -17,27 +17,35 @@ func createOwnership(db database.Database) *ownershipImpl {
 	return ownership
 }
 
-func (ownership *ownershipImpl) checkIfColonyExists(colonyID string) error {
-	colony, err := ownership.db.GetColonyByID(colonyID)
+func (ownership *ownershipImpl) resolveColony(colonyName string) (string, error) {
+	if colonyName == "" {
+		return "", errors.New("Empty Colony name")
+	}
+
+	colony, err := ownership.db.GetColonyByName(colonyName)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	if colony == nil {
-		return errors.New("Colony <" + colonyID + "> does not exists")
+		return "", errors.New("Colony with name <" + colonyName + "> does not exists")
 	}
 
-	return nil
+	if colony.ID == "" {
+		return "", errors.New("No Colony Id found")
+	}
+
+	return colony.ID, nil
 }
 
-func (ownership *ownershipImpl) checkIfExecutorIsValid(executorID string, colonyID string, approved bool) error {
-	colony, err := ownership.db.GetColonyByID(colonyID)
+func (ownership *ownershipImpl) checkIfExecutorIsValid(executorID string, colonyName string, approved bool) error {
+	colony, err := ownership.db.GetColonyByName(colonyName)
 	if err != nil {
 		return err
 	}
 
 	if colony == nil {
-		return errors.New("Colony <" + colonyID + "> does not exists")
+		return errors.New("Colony <" + colonyName + "> does not exists")
 	}
 
 	executor, err := ownership.db.GetExecutorByID(executorID)
@@ -46,11 +54,11 @@ func (ownership *ownershipImpl) checkIfExecutorIsValid(executorID string, colony
 	}
 
 	if executor == nil {
-		return errors.New("Access denied, not a member of Colony with Id <" + colonyID + ">")
+		return errors.New("Access denied, not a member of Colony with name <" + colonyName + ">")
 	}
 
-	if executor.ColonyID != colonyID {
-		return errors.New("Access denied, not a member of Colony with Id <" + colonyID + ">")
+	if executor.ColonyName != colony.Name {
+		return errors.New("Access denied, not a member of Colony with name <" + colonyName + ">")
 	}
 
 	if approved {

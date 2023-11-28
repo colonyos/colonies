@@ -2,6 +2,7 @@ package server
 
 import (
 	"errors"
+	"fmt"
 	"math"
 	"os"
 	"strconv"
@@ -183,11 +184,11 @@ func (controller *coloniesController) getColonies() ([]*core.Colony, error) {
 	}
 }
 
-func (controller *coloniesController) getColony(colonyID string) (*core.Colony, error) {
+func (controller *coloniesController) getColony(colonyName string) (*core.Colony, error) {
 	cmd := &command{threaded: true, colonyReplyChan: make(chan *core.Colony),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
-			colony, err := controller.db.GetColonyByID(colonyID)
+			colony, err := controller.db.GetColonyByName(colonyName)
 			if err != nil {
 				cmd.errorChan <- err
 				return
@@ -235,10 +236,11 @@ func (controller *coloniesController) addColony(colony *core.Colony) (*core.Colo
 	}
 }
 
-func (controller *coloniesController) deleteColony(colonyID string) error {
+func (controller *coloniesController) deleteColony(colonyName string) error {
 	cmd := &command{threaded: true, errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
-			err := controller.db.DeleteColonyByID(colonyID)
+			err := controller.db.DeleteColonyByName(colonyName)
+			fmt.Println(err)
 			if err != nil {
 				cmd.errorChan <- err
 				return
@@ -348,7 +350,7 @@ func (controller *coloniesController) addExecutor(executor *core.Executor, allow
 				cmd.errorChan <- errors.New("Invalid executor, executor is nil")
 				return
 			}
-			executorFromDB, err := controller.db.GetExecutorByName(executor.ColonyID, executor.Name)
+			executorFromDB, err := controller.db.GetExecutorByName(executor.ColonyName, executor.Name)
 			if err != nil {
 				cmd.errorChan <- err
 				return
@@ -411,11 +413,11 @@ func (controller *coloniesController) getExecutor(executorID string) (*core.Exec
 	}
 }
 
-func (controller *coloniesController) getExecutorByColonyID(colonyID string) ([]*core.Executor, error) {
+func (controller *coloniesController) getExecutorByColonyName(colonyID string) ([]*core.Executor, error) {
 	cmd := &command{threaded: true, executorsReplyChan: make(chan []*core.Executor),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
-			executors, err := controller.db.GetExecutorsByColonyID(colonyID)
+			executors, err := controller.db.GetExecutorsByColonyName(colonyID)
 			if err != nil {
 				cmd.errorChan <- err
 				return
@@ -644,7 +646,7 @@ func (controller *coloniesController) findProcessHistory(colonyID string, execut
 			var processes []*core.Process
 			var err error
 			if executorID == "" {
-				processes, err = controller.db.FindProcessesByColonyID(colonyID, seconds, state)
+				processes, err = controller.db.FindProcessesByColonyName(colonyID, seconds, state)
 				if err != nil {
 					cmd.errorChan <- err
 					return
@@ -779,7 +781,7 @@ func (controller *coloniesController) updateProcessGraph(graph *core.ProcessGrap
 }
 
 func (controller *coloniesController) createProcessGraph(workflowSpec *core.WorkflowSpec, args []interface{}, kwargs map[string]interface{}, rootInput []interface{}) (*core.ProcessGraph, error) {
-	processgraph, err := core.CreateProcessGraph(workflowSpec.ColonyID)
+	processgraph, err := core.CreateProcessGraph(workflowSpec.ColonyName)
 	if err != nil {
 		log.WithFields(log.Fields{"Error": err}).Error("Failed to create processgraph")
 		return nil, err
@@ -835,7 +837,7 @@ func (controller *coloniesController) createProcessGraph(workflowSpec *core.Work
 		}
 		processIDs = append(processIDs, process.ID)
 		process.ProcessGraphID = processgraph.ID
-		process.FunctionSpec.Conditions.ColonyID = workflowSpec.ColonyID
+		process.FunctionSpec.Conditions.ColonyName = workflowSpec.ColonyName
 
 		_, exists := processMap[process.FunctionSpec.NodeName]
 		if exists {
@@ -1090,15 +1092,15 @@ func (controller *coloniesController) deleteAllProcesses(colonyID string, state 
 		handler: func(cmd *command) {
 			switch state {
 			case core.WAITING:
-				cmd.errorChan <- controller.db.DeleteAllWaitingProcessesByColonyID(colonyID)
+				cmd.errorChan <- controller.db.DeleteAllWaitingProcessesByColonyName(colonyID)
 			case core.RUNNING:
 				cmd.errorChan <- errors.New("not possible to delete running processes")
 			case core.SUCCESS:
-				cmd.errorChan <- controller.db.DeleteAllSuccessfulProcessesByColonyID(colonyID)
+				cmd.errorChan <- controller.db.DeleteAllSuccessfulProcessesByColonyName(colonyID)
 			case core.FAILED:
-				cmd.errorChan <- controller.db.DeleteAllFailedProcessesByColonyID(colonyID)
+				cmd.errorChan <- controller.db.DeleteAllFailedProcessesByColonyName(colonyID)
 			case core.NOTSET:
-				cmd.errorChan <- controller.db.DeleteAllProcessesByColonyID(colonyID)
+				cmd.errorChan <- controller.db.DeleteAllProcessesByColonyName(colonyID)
 			default:
 				cmd.errorChan <- errors.New("invalid state when deleting all processes")
 			}
@@ -1124,15 +1126,15 @@ func (controller *coloniesController) deleteAllProcessGraphs(colonyID string, st
 		handler: func(cmd *command) {
 			switch state {
 			case core.WAITING:
-				cmd.errorChan <- controller.db.DeleteAllWaitingProcessGraphsByColonyID(colonyID)
+				cmd.errorChan <- controller.db.DeleteAllWaitingProcessGraphsByColonyName(colonyID)
 			case core.RUNNING:
 				cmd.errorChan <- errors.New("not possible to delete running processgraphs")
 			case core.SUCCESS:
-				cmd.errorChan <- controller.db.DeleteAllSuccessfulProcessGraphsByColonyID(colonyID)
+				cmd.errorChan <- controller.db.DeleteAllSuccessfulProcessGraphsByColonyName(colonyID)
 			case core.FAILED:
-				cmd.errorChan <- controller.db.DeleteAllFailedProcessGraphsByColonyID(colonyID)
+				cmd.errorChan <- controller.db.DeleteAllFailedProcessGraphsByColonyName(colonyID)
 			case core.NOTSET:
-				cmd.errorChan <- controller.db.DeleteAllProcessGraphsByColonyID(colonyID)
+				cmd.errorChan <- controller.db.DeleteAllProcessGraphsByColonyName(colonyID)
 			default:
 				cmd.errorChan <- errors.New("invalid state when deleting all processgraphs")
 			}
@@ -1521,47 +1523,47 @@ func (controller *coloniesController) getColonyStatistics(colonyID string) (*cor
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
 			colonies := 1
-			executors, err := controller.db.CountExecutorsByColonyID(colonyID)
+			executors, err := controller.db.CountExecutorsByColonyName(colonyID)
 			if err != nil {
 				cmd.errorChan <- err
 				return
 			}
-			waitingProcesses, err := controller.db.CountWaitingProcessesByColonyID(colonyID)
+			waitingProcesses, err := controller.db.CountWaitingProcessesByColonyName(colonyID)
 			if err != nil {
 				cmd.errorChan <- err
 				return
 			}
-			runningProcesses, err := controller.db.CountRunningProcessesByColonyID(colonyID)
+			runningProcesses, err := controller.db.CountRunningProcessesByColonyName(colonyID)
 			if err != nil {
 				cmd.errorChan <- err
 				return
 			}
-			successProcesses, err := controller.db.CountSuccessfulProcessesByColonyID(colonyID)
+			successProcesses, err := controller.db.CountSuccessfulProcessesByColonyName(colonyID)
 			if err != nil {
 				cmd.errorChan <- err
 				return
 			}
-			failedProcesses, err := controller.db.CountFailedProcessesByColonyID(colonyID)
+			failedProcesses, err := controller.db.CountFailedProcessesByColonyName(colonyID)
 			if err != nil {
 				cmd.errorChan <- err
 				return
 			}
-			waitingWorkflows, err := controller.db.CountWaitingProcessGraphsByColonyID(colonyID)
+			waitingWorkflows, err := controller.db.CountWaitingProcessGraphsByColonyName(colonyID)
 			if err != nil {
 				cmd.errorChan <- err
 				return
 			}
-			runningWorkflows, err := controller.db.CountRunningProcessGraphsByColonyID(colonyID)
+			runningWorkflows, err := controller.db.CountRunningProcessGraphsByColonyName(colonyID)
 			if err != nil {
 				cmd.errorChan <- err
 				return
 			}
-			successWorkflows, err := controller.db.CountSuccessfulProcessGraphsByColonyID(colonyID)
+			successWorkflows, err := controller.db.CountSuccessfulProcessGraphsByColonyName(colonyID)
 			if err != nil {
 				cmd.errorChan <- err
 				return
 			}
-			failedWorkflows, err := controller.db.CountFailedProcessGraphsByColonyID(colonyID)
+			failedWorkflows, err := controller.db.CountFailedProcessGraphsByColonyName(colonyID)
 			if err != nil {
 				cmd.errorChan <- err
 				return
@@ -1758,11 +1760,11 @@ func (controller *coloniesController) getFunctionsByExecutorID(executorID string
 	}
 }
 
-func (controller *coloniesController) getFunctionsByColonyID(colonyID string) ([]*core.Function, error) {
+func (controller *coloniesController) getFunctionsByColonyName(colonyID string) ([]*core.Function, error) {
 	cmd := &command{threaded: true, functionsReplyChan: make(chan []*core.Function, 1),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
-			functions, err := controller.db.GetFunctionsByColonyID(colonyID)
+			functions, err := controller.db.GetFunctionsByColonyName(colonyID)
 			if err != nil {
 				cmd.errorChan <- err
 				return
