@@ -7,8 +7,8 @@ import (
 )
 
 func (db *PQDatabase) AddGeneratorArg(generatorArg *core.GeneratorArg) error {
-	sqlStatement := `INSERT INTO  ` + db.dbPrefix + `GENERATORARGS (GENERATORARG_ID, GENERATOR_ID, COLONY_ID, ARG) VALUES ($1, $2, $3, $4)`
-	_, err := db.postgresql.Exec(sqlStatement, generatorArg.ID, generatorArg.GeneratorID, generatorArg.ColonyID, generatorArg.Arg)
+	sqlStatement := `INSERT INTO  ` + db.dbPrefix + `GENERATORARGS (GENERATORARG_ID, GENERATOR_ID, COLONY_NAME, ARG) VALUES ($1, $2, $3, $4)`
+	_, err := db.postgresql.Exec(sqlStatement, generatorArg.ID, generatorArg.GeneratorID, generatorArg.ColonyName, generatorArg.Arg)
 	if err != nil {
 		return err
 	}
@@ -22,13 +22,13 @@ func (db *PQDatabase) parseGeneratorArgs(rows *sql.Rows) ([]*core.GeneratorArg, 
 	for rows.Next() {
 		var generatorArgID string
 		var generatorID string
-		var colonyID string
+		var colonyName string
 		var arg string
-		if err := rows.Scan(&generatorArgID, &generatorID, &colonyID, &arg); err != nil {
+		if err := rows.Scan(&generatorArgID, &generatorID, &colonyName, &arg); err != nil {
 			return nil, err
 		}
 
-		generatorArg := &core.GeneratorArg{ID: generatorArgID, GeneratorID: generatorID, ColonyID: colonyID, Arg: arg}
+		generatorArg := &core.GeneratorArg{ID: generatorArgID, GeneratorID: generatorID, ColonyName: colonyName, Arg: arg}
 
 		generatorArgs = append(generatorArgs, generatorArg)
 	}
@@ -90,9 +90,9 @@ func (db *PQDatabase) DeleteAllGeneratorArgsByGeneratorID(generatorID string) er
 	return nil
 }
 
-func (db *PQDatabase) DeleteAllGeneratorArgsByColonyID(colonyID string) error {
-	sqlStatement := `DELETE FROM ` + db.dbPrefix + `GENERATORARGS WHERE COLONY_ID=$1`
-	_, err := db.postgresql.Exec(sqlStatement, colonyID)
+func (db *PQDatabase) DeleteAllGeneratorArgsByColonyName(colonyName string) error {
+	sqlStatement := `DELETE FROM ` + db.dbPrefix + `GENERATORARGS WHERE COLONY_NAME=$1`
+	_, err := db.postgresql.Exec(sqlStatement, colonyName)
 	if err != nil {
 		return err
 	}

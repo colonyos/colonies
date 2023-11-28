@@ -93,9 +93,9 @@ func (db *PQDatabase) GetColonyByName(name string) (*core.Colony, error) {
 	return colonies[0], nil
 }
 
-func (db *PQDatabase) RenameColony(id string, name string) error {
-	sqlStatement := `UPDATE ` + db.dbPrefix + `COLONIES SET NAME=$1 WHERE COLONY_ID=$2`
-	_, err := db.postgresql.Exec(sqlStatement, name, id)
+func (db *PQDatabase) RenameColony(colonyName string, newName string) error {
+	sqlStatement := `UPDATE ` + db.dbPrefix + `COLONIES SET NAME=$1 WHERE NAME=$2`
+	_, err := db.postgresql.Exec(sqlStatement, newName, colonyName)
 	if err != nil {
 		return err
 	}
@@ -103,8 +103,8 @@ func (db *PQDatabase) RenameColony(id string, name string) error {
 	return nil
 }
 
-func (db *PQDatabase) DeleteColonyByID(colonyID string) error {
-	colony, err := db.GetColonyByID(colonyID)
+func (db *PQDatabase) DeleteColonyByName(colonyName string) error {
+	colony, err := db.GetColonyByName(colonyName)
 	if err != nil {
 		return err
 	}
@@ -118,53 +118,53 @@ func (db *PQDatabase) DeleteColonyByID(colonyID string) error {
 		return err
 	}
 
-	err = db.DeleteExecutorsByColonyID(colonyID)
+	err = db.DeleteExecutorsByColonyName(colony.Name)
 	if err != nil {
 		return err
 	}
 
-	sqlStatement := `DELETE FROM ` + db.dbPrefix + `COLONIES WHERE COLONY_ID=$1`
-	_, err = db.postgresql.Exec(sqlStatement, colonyID)
+	sqlStatement := `DELETE FROM ` + db.dbPrefix + `COLONIES WHERE NAME=$1`
+	_, err = db.postgresql.Exec(sqlStatement, colonyName)
 	if err != nil {
 		return err
 	}
 
-	err = db.DeleteAllProcessesByColonyID(colonyID)
+	err = db.DeleteAllProcessesByColonyName(colony.Name)
 	if err != nil {
 		return err
 	}
 
-	err = db.DeleteAllProcessGraphsByColonyID(colonyID)
+	err = db.DeleteAllProcessGraphsByColonyName(colony.Name)
 	if err != nil {
 		return err
 	}
 
-	err = db.DeleteAllGeneratorsByColonyID(colonyID)
+	err = db.DeleteAllGeneratorsByColonyName(colony.Name)
 	if err != nil {
 		return err
 	}
 
-	err = db.DeleteAllCronsByColonyID(colonyID)
+	err = db.DeleteAllCronsByColonyName(colony.Name)
 	if err != nil {
 		return err
 	}
 
-	err = db.DeleteFunctionsByColonyID(colonyID)
+	err = db.DeleteFunctionsByColonyName(colony.Name)
 	if err != nil {
 		return err
 	}
 
-	err = db.DeleteLogsByColonyID(colonyID)
+	err = db.DeleteLogsByColonyName(colony.Name)
 	if err != nil {
 		return err
 	}
 
-	err = db.DeleteFilesByColonyID(colonyID)
+	err = db.DeleteFilesByColonyName(colony.Name)
 	if err != nil {
 		return err
 	}
 
-	err = db.DeleteSnapshotsByColonyID(colonyID)
+	err = db.DeleteSnapshotsByColonyName(colony.Name)
 	if err != nil {
 		return err
 	}

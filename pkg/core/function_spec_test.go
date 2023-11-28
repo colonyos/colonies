@@ -12,7 +12,7 @@ func TestCreateEmptyFunctionSpec(t *testing.T) {
 }
 
 func TestFunctionSpecJSON(t *testing.T) {
-	colonyID := GenerateRandomID()
+	colonyName := GenerateRandomID()
 	executorType := "test_executor_type"
 	executor1ID := GenerateRandomID()
 	executor2ID := GenerateRandomID()
@@ -38,7 +38,7 @@ func TestFunctionSpecJSON(t *testing.T) {
 	syncdirs = append(syncdirs, syncdir1)
 	syncdirs = append(syncdirs, syncdir2)
 
-	funcSpec := CreateFunctionSpec("test_name", "test_func", args, kwargs, colonyID, []string{executor1ID, executor2ID}, executorType, maxWaitTime, maxExecTime, maxRetries, env, []string{"test_name2"}, 5, "test_label")
+	funcSpec := CreateFunctionSpec("test_name", "test_func", args, kwargs, colonyName, []string{executor1ID, executor2ID}, executorType, maxWaitTime, maxExecTime, maxRetries, env, []string{"test_name2"}, 5, "test_label")
 	funcSpec.Filesystem = Filesystem{SnapshotMounts: snapshots, SyncDirMounts: syncdirs, Mount: "/cfs"}
 
 	funcSpec.Conditions.Nodes = 10
@@ -59,7 +59,7 @@ func TestFunctionSpecJSON(t *testing.T) {
 	funcSpec2, err = ConvertJSONToFunctionSpec(jsonString)
 	assert.Nil(t, err)
 
-	assert.Equal(t, funcSpec.Conditions.ColonyID, funcSpec2.Conditions.ColonyID)
+	assert.Equal(t, funcSpec.Conditions.ColonyName, funcSpec2.Conditions.ColonyName)
 	assert.Equal(t, funcSpec.MaxExecTime, funcSpec2.MaxExecTime)
 	assert.Equal(t, funcSpec.MaxRetries, funcSpec2.MaxRetries)
 	assert.Equal(t, funcSpec.Conditions.ExecutorIDs, funcSpec2.Conditions.ExecutorIDs)
@@ -70,7 +70,7 @@ func TestFunctionSpecJSON(t *testing.T) {
 }
 
 func TestFunctionSpecEquals(t *testing.T) {
-	colonyID := GenerateRandomID()
+	colonyName := GenerateRandomID()
 	executorType := "test_executor_type"
 	executor1ID := GenerateRandomID()
 	executor2ID := GenerateRandomID()
@@ -100,13 +100,13 @@ func TestFunctionSpecEquals(t *testing.T) {
 	syncdirs = append(syncdirs, syncdir1)
 	syncdirs = append(syncdirs, syncdir2)
 
-	funcSpec1 := CreateFunctionSpec("test_name", "test_func", args, kwargs, colonyID, []string{executor1ID, executor2ID}, executorType, maxWaitTime, maxExecTime, maxRetries, env, []string{}, 1, "test_label")
+	funcSpec1 := CreateFunctionSpec("test_name", "test_func", args, kwargs, colonyName, []string{executor1ID, executor2ID}, executorType, maxWaitTime, maxExecTime, maxRetries, env, []string{}, 1, "test_label")
 	funcSpec1.Filesystem = Filesystem{SnapshotMounts: snapshots, SyncDirMounts: syncdirs, Mount: "/cfs"}
 
 	args = make([]interface{}, 1)
 	args[0] = "test_arg2"
 
-	functionSpec2 := CreateFunctionSpec("test_name", "test_func", args, kwargs, colonyID, []string{executor3ID}, executorType+"2", 200, 4, 2, env2, []string{}, 1, "test_label")
+	functionSpec2 := CreateFunctionSpec("test_name", "test_func", args, kwargs, colonyName, []string{executor3ID}, executorType+"2", 200, 4, 2, env2, []string{}, 1, "test_label")
 
 	assert.True(t, funcSpec1.Equals(funcSpec1))
 	assert.False(t, funcSpec1.Equals(nil))
