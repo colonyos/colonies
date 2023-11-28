@@ -7,13 +7,13 @@ import (
 const GetColonyStatisticsPayloadType = "getcolonystatsmsg"
 
 type GetColonyStatisticsMsg struct {
-	ColonyID string `json:"colonyid"`
-	MsgType  string `json:"msgtype"`
+	ColonyName string `json:"colonyname"`
+	MsgType    string `json:"msgtype"`
 }
 
-func CreateGetColonyStatisticsMsg(colonyID string) *GetColonyStatisticsMsg {
+func CreateGetColonyStatisticsMsg(colonyName string) *GetColonyStatisticsMsg {
 	msg := &GetColonyStatisticsMsg{}
-	msg.ColonyID = colonyID
+	msg.ColonyName = colonyName
 	msg.MsgType = GetColonyStatisticsPayloadType
 
 	return msg
@@ -42,7 +42,7 @@ func (msg *GetColonyStatisticsMsg) Equals(msg2 *GetColonyStatisticsMsg) bool {
 		return false
 	}
 
-	if msg.MsgType == msg2.MsgType && msg.ColonyID == msg2.ColonyID {
+	if msg.MsgType == msg2.MsgType && msg.ColonyName == msg2.ColonyName {
 		return true
 	}
 
