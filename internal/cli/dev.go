@@ -127,8 +127,8 @@ var devCmd = &cobra.Command{
 		colonyID, err := crypto.GenerateID(ColonyPrvKey)
 		CheckError(err)
 
-		log.WithFields(log.Fields{"ColonyID": colonyID, "ServerPrvKey": ServerPrvKey}).Info("Registering a new Colony")
-		colony := core.CreateColony(colonyID, "dev")
+		log.WithFields(log.Fields{"ColonyName": ColonyName, "ColonyID": colonyID, "ServerPrvKey": ServerPrvKey}).Info("Registering a new Colony")
+		colony := core.CreateColony(colonyID, ColonyName)
 		_, err = client.AddColony(colony, ServerPrvKey)
 		CheckError(err)
 
@@ -139,7 +139,7 @@ var devCmd = &cobra.Command{
 
 		log.WithFields(log.Fields{"ExecutorID": executorID, "ExecutorType": ExecutorType, "ExecutorName": executorName, "ColonyPrvKey": ColonyPrvKey}).Info("Registering a new executor")
 
-		executor := core.CreateExecutor(executorID, ExecutorType, executorName, colonyID, time.Now(), time.Now())
+		executor := core.CreateExecutor(executorID, ExecutorType, executorName, ColonyName, time.Now(), time.Now())
 		_, err = client.AddExecutor(executor, ColonyPrvKey)
 		CheckError(err)
 

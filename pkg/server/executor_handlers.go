@@ -48,7 +48,12 @@ func (server *ColoniesServer) handleAddExecutorHTTPRequest(c *gin.Context, recov
 		return
 	}
 
-	log.WithFields(log.Fields{"ColonyId": msg.Executor.ColonyName, "ExecutorId": addedExecutor.ID}).Debug("Adding executor")
+	log.WithFields(log.Fields{
+		"ColonyId":     msg.Executor.ColonyName,
+		"ExecutorName": addedExecutor.Name,
+		"ExecutorType": addedExecutor.Type,
+		"ExecutorId":   addedExecutor.ID}).
+		Debug("Adding executor")
 
 	server.sendHTTPReply(c, payloadType, jsonString)
 }

@@ -32,10 +32,8 @@ func init() {
 	addExecutorCmd.Flags().StringVarP(&SpecFile, "spec", "", "", "JSON specification of an executor")
 	addExecutorCmd.Flags().StringVarP(&ExecutorID, "executorid", "", "", "Executor ID")
 	addExecutorCmd.MarkFlagRequired("executorid")
-	addExecutorCmd.Flags().StringVarP(&ExecutorName, "name", "", "", "Executor name")
-	addExecutorCmd.MarkFlagRequired("nbame")
-	addExecutorCmd.Flags().StringVarP(&ExecutorType, "type", "", "", "Executor type")
-	addExecutorCmd.MarkFlagRequired("type")
+	addExecutorCmd.Flags().StringVarP(&TargetExecutorName, "name", "", "", "Executor name")
+	addExecutorCmd.Flags().StringVarP(&TargetExecutorType, "type", "", "", "Executor type")
 	addExecutorCmd.Flags().BoolVarP(&Approve, "approve", "", false, "Also, approve the Executor")
 
 	removeExecutorCmd.Flags().StringVarP(&ColonyPrvKey, "colonyprvkey", "", "", "Colony private key")
@@ -62,7 +60,7 @@ func init() {
 }
 
 var executorCmd = &cobra.Command{
-	Use:   "executor",
+	Use:   "executors",
 	Short: "Manage executors",
 	Long:  "Manage executors",
 }
@@ -82,24 +80,34 @@ var addExecutorCmd = &cobra.Command{
 			CheckError(errors.New("Invalid Executor type"))
 		}
 
-		if ExecutorName == "" {
-			CheckError(errors.New("Invalid Executor name"))
-		}
-
 		if os.Getenv("HOSTNAME") != "" {
 			ExecutorName += "."
 			ExecutorName += os.Getenv("HOSTNAME")
 		}
 
 		var executor *core.Executor
-		if SpecFile == "" {
-			CheckError(errors.New("Invalid spec file"))
+		if SpecFile != "" {
+			jsonSpecBytes, err := ioutil.ReadFile(SpecFile)
+			CheckError(err)
+			executor, err = core.ConvertJSONToExecutor(string(jsonSpecBytes))
+			CheckError(err)
+		} else {
+			if TargetExecutorName == "" {
+				CheckError(errors.New("ExecutorName must be specified if omitting spec file"))
+			}
+			if TargetExecutorType == "" {
+				CheckError(errors.New("ExecutorType must be specified if omitting spec file"))
+			}
+			executor = &core.Executor{}
 		}
 
-		jsonSpecBytes, err := ioutil.ReadFile(SpecFile)
-		CheckError(err)
-		executor, err = core.ConvertJSONToExecutor(string(jsonSpecBytes))
-		CheckError(err)
+		if TargetExecutorName != "" {
+			executor.Name = TargetExecutorName
+		}
+
+		if TargetExecutorType != "" {
+			executor.Type = TargetExecutorType
+		}
 
 		executor.SetID(ExecutorID)
 		executor.SetColonyName(ColonyName)
@@ -117,7 +125,7 @@ var addExecutorCmd = &cobra.Command{
 			CheckError(err)
 		}
 
-		log.WithFields(log.Fields{"ExecutorName": executor.Name, "ExecutorType": executor.Type, "ExecutorID": addedExecutor.ID, "ColonyID": ColonyID}).Info("Executor added")
+		log.WithFields(log.Fields{"ExecutorName": executor.Name, "ExecutorType": executor.Type, "ExecutorID": addedExecutor.ID, "ColonyName": ColonyName}).Info("Executor added")
 	},
 }
 
