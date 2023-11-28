@@ -11,7 +11,7 @@ import (
 func TestAddGetLogByProcessID(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 
-	funcSpec1 := utils.CreateTestFunctionSpec(env.colonyID)
+	funcSpec1 := utils.CreateTestFunctionSpec(env.colonyName)
 	addedProcess, err := client.Submit(funcSpec1, env.executorPrvKey)
 	assert.Nil(t, err)
 
@@ -21,7 +21,7 @@ func TestAddGetLogByProcessID(t *testing.T) {
 	err = client.AddLog("invalid_process_id", "test_msg", env.executorPrvKey)
 	assert.NotNil(t, err) // Failed to add log, process is nil
 
-	assignedProcess, err := client.Assign(env.colonyID, -1, env.executorPrvKey)
+	assignedProcess, err := client.Assign(env.colonyName, -1, env.executorPrvKey)
 	assert.Nil(t, err)
 
 	err = client.AddLog(assignedProcess.ID, "test_msg", env.executorPrvKey)
@@ -34,7 +34,7 @@ func TestAddGetLogByProcessID(t *testing.T) {
 	assert.Len(t, logs, 1)
 	assert.Equal(t, logs[0].Message, "test_msg")
 	assert.Equal(t, logs[0].ProcessID, assignedProcess.ID)
-	assert.Equal(t, logs[0].ColonyID, env.colonyID)
+	assert.Equal(t, logs[0].ColonyName, env.colonyName)
 
 	server.Shutdown()
 	<-done
@@ -43,11 +43,11 @@ func TestAddGetLogByProcessID(t *testing.T) {
 func TestAddGetLogSinceByProcessID(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 
-	funcSpec1 := utils.CreateTestFunctionSpec(env.colonyID)
+	funcSpec1 := utils.CreateTestFunctionSpec(env.colonyName)
 	_, err := client.Submit(funcSpec1, env.executorPrvKey)
 	assert.Nil(t, err)
 
-	assignedProcess, err := client.Assign(env.colonyID, -1, env.executorPrvKey)
+	assignedProcess, err := client.Assign(env.colonyName, -1, env.executorPrvKey)
 	assert.Nil(t, err)
 
 	err = client.AddLog(assignedProcess.ID, "test_msg1", env.executorPrvKey)
@@ -76,11 +76,11 @@ func TestAddGetLogByExectorID(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 
 	// Process 1
-	funcSpec1 := utils.CreateTestFunctionSpec(env.colonyID)
+	funcSpec1 := utils.CreateTestFunctionSpec(env.colonyName)
 	_, err := client.Submit(funcSpec1, env.executorPrvKey)
 	assert.Nil(t, err)
 
-	assignedProcess, err := client.Assign(env.colonyID, -1, env.executorPrvKey)
+	assignedProcess, err := client.Assign(env.colonyName, -1, env.executorPrvKey)
 	assert.Nil(t, err)
 
 	err = client.AddLog(assignedProcess.ID, "test_msg_process_1", env.executorPrvKey)
@@ -93,11 +93,11 @@ func TestAddGetLogByExectorID(t *testing.T) {
 	assert.NotNil(t, err) // Not possible to add logs to closed processes
 
 	// Process 2
-	funcSpec1 = utils.CreateTestFunctionSpec(env.colonyID)
+	funcSpec1 = utils.CreateTestFunctionSpec(env.colonyName)
 	_, err = client.Submit(funcSpec1, env.executorPrvKey)
 	assert.Nil(t, err)
 
-	assignedProcess, err = client.Assign(env.colonyID, -1, env.executorPrvKey)
+	assignedProcess, err = client.Assign(env.colonyName, -1, env.executorPrvKey)
 	assert.Nil(t, err)
 
 	err = client.AddLog(assignedProcess.ID, "test_msg_process_2", env.executorPrvKey)

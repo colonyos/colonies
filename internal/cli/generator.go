@@ -74,8 +74,8 @@ var addGeneratorCmd = &cobra.Command{
 		workflowSpec, err := core.ConvertJSONToWorkflowSpec(jsonStr)
 		CheckError(err)
 
-		if workflowSpec.ColonyID == "" {
-			workflowSpec.ColonyID = ColonyID
+		if workflowSpec.ColonyName == "" {
+			workflowSpec.ColonyName = ColonyName
 		}
 
 		workflowSpecJSON, err := workflowSpec.ToJSON()

@@ -7,14 +7,14 @@ import (
 const GetGeneratorsPayloadType = "getgeneratorsmsg"
 
 type GetGeneratorsMsg struct {
-	ColonyID string `json:"colonyid"`
-	Count    int    `json:"count"`
-	MsgType  string `json:"msgtype"`
+	ColonyName string `json:"colonyname"`
+	Count      int    `json:"count"`
+	MsgType    string `json:"msgtype"`
 }
 
 func CreateGetGeneratorsMsg(colonyID string, count int) *GetGeneratorsMsg {
 	msg := &GetGeneratorsMsg{}
-	msg.ColonyID = colonyID
+	msg.ColonyName = colonyID
 	msg.Count = count
 	msg.MsgType = GetGeneratorsPayloadType
 
@@ -45,7 +45,7 @@ func (msg *GetGeneratorsMsg) Equals(msg2 *GetGeneratorsMsg) bool {
 	}
 
 	if msg.MsgType == msg2.MsgType &&
-		msg.ColonyID == msg2.ColonyID &&
+		msg.ColonyName == msg2.ColonyName &&
 		msg.Count == msg2.Count {
 		return true
 	}

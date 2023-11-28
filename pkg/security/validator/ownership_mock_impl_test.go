@@ -8,24 +8,11 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestCheckIfColonyExistsMock(t *testing.T) {
-	ownership := createOwnershipMock()
-
-	colony := core.CreateColony(core.GenerateRandomID(), "test_colony_name_1")
-	ownership.addColony(colony.ID)
-
-	err := ownership.checkIfColonyExists(core.GenerateRandomID())
-	assert.NotNil(t, err)
-
-	err = ownership.checkIfColonyExists(colony.ID)
-	assert.Nil(t, err)
-}
-
 func TestCheckIfExecutorBelongsToColonyMock(t *testing.T) {
 	ownership := createOwnershipMock()
 
 	colony := core.CreateColony(core.GenerateRandomID(), "test_colony_name_1")
-	ownership.addColony(colony.ID)
+	ownership.addColony(colony.ID, colony.Name)
 
 	executor := utils.CreateTestExecutor(colony.ID)
 	ownership.addExecutor(executor.ID, colony.ID)
@@ -40,7 +27,7 @@ func TestCheckIfExecutorIsValidMock(t *testing.T) {
 	ownership := createOwnershipMock()
 
 	colony := core.CreateColony(core.GenerateRandomID(), "test_colony_name_1")
-	ownership.addColony(colony.ID)
+	ownership.addColony(colony.ID, colony.Name)
 
 	executor := utils.CreateTestExecutor(colony.ID)
 	ownership.addExecutor(executor.ID, colony.ID)

@@ -5,7 +5,7 @@ import (
 )
 
 type OwnershipMock struct {
-	colonies          map[string]bool
+	colonies          map[string]string
 	executors         map[string]string
 	users             map[string]string
 	approvedExecutors map[string]bool
@@ -13,15 +13,15 @@ type OwnershipMock struct {
 
 func createOwnershipMock() *OwnershipMock {
 	ownership := &OwnershipMock{}
-	ownership.colonies = make(map[string]bool)
+	ownership.colonies = make(map[string]string)
 	ownership.executors = make(map[string]string)
 	ownership.approvedExecutors = make(map[string]bool)
 
 	return ownership
 }
 
-func (ownership *OwnershipMock) addColony(colonyID string) {
-	ownership.colonies[colonyID] = true
+func (ownership *OwnershipMock) addColony(colonyID string, colonyName string) {
+	ownership.colonies[colonyName] = colonyID
 }
 
 func (ownership *OwnershipMock) addExecutor(executorID string, colonyID string) {
@@ -36,13 +36,8 @@ func (ownership *OwnershipMock) approveExecutor(executorID string, colonyID stri
 	ownership.approvedExecutors[executorID] = true
 }
 
-func (ownership *OwnershipMock) checkIfColonyExists(colonyID string) error {
-	colonyIDFromDB := ownership.colonies[colonyID]
-	if !colonyIDFromDB {
-		return errors.New("Colony does not exists")
-	}
-
-	return nil
+func (ownership *OwnershipMock) resolveColony(colonyName string) (string, error) {
+	return ownership.colonies[colonyName], nil
 }
 
 func (ownership *OwnershipMock) checkIfExecutorBelongsToColony(executorID string, colonyID string) error {
@@ -57,19 +52,19 @@ func (ownership *OwnershipMock) checkIfExecutorBelongsToColony(executorID string
 	return nil
 }
 
-func (ownership *OwnershipMock) checkIfUserBelongsToColony(userID string, colonyID string) error {
+func (ownership *OwnershipMock) checkIfUserBelongsToColony(userID string, colonyName string) error {
 	colonyIDFromDB := ownership.users[userID]
 	if colonyIDFromDB == "" {
 		return errors.New("Colony does not exists")
 	}
-	if colonyIDFromDB != colonyID {
+	if colonyIDFromDB != colonyName {
 		return errors.New("Colony does have such a executor")
 	}
 
 	return nil
 }
 
-func (ownership *OwnershipMock) checkIfExecutorIsValid(executorID string, colonyID string, approved bool) error {
+func (ownership *OwnershipMock) checkIfExecutorIsValid(executorID string, colonyName string, approved bool) error {
 	if ownership.executors[executorID] == "" {
 		return errors.New("Executor does not exists")
 	}
@@ -83,7 +78,7 @@ func (ownership *OwnershipMock) checkIfExecutorIsValid(executorID string, colony
 	return nil
 }
 
-func (ownership *OwnershipMock) checkIfUserIsValid(userID string, colonyID string) error {
+func (ownership *OwnershipMock) checkIfUserIsValid(userID string, colonyName string) error {
 	if ownership.users[userID] == "" {
 		return errors.New("User does not exists")
 	}

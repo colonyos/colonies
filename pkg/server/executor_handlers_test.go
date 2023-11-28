@@ -15,7 +15,7 @@ func TestAddExecutor(t *testing.T) {
 	_, err = client.AddColony(colony, serverPrvKey)
 	assert.Nil(t, err)
 
-	executor, executorPrvKey, err := utils.CreateTestExecutorWithKey(colony.ID)
+	executor, executorPrvKey, err := utils.CreateTestExecutorWithKey(colony.Name)
 	assert.Nil(t, err)
 	addedExecutor, err := client.AddExecutor(executor, colonyPrvKey)
 	assert.Nil(t, err)
@@ -42,10 +42,9 @@ func TestAddExecutorReRegister(t *testing.T) {
 	_, err = client.AddColony(colony, serverPrvKey)
 	assert.Nil(t, err)
 
-	executor, _, err := utils.CreateTestExecutorWithKey(colony.ID)
+	executor, _, err := utils.CreateTestExecutorWithKey(colony.Name)
 	assert.Nil(t, err)
 	_, err = client.AddExecutor(executor, colonyPrvKey)
-	assert.Nil(t, err)
 	assert.Nil(t, err)
 
 	_, err = client.AddExecutor(executor, colonyPrvKey)
@@ -67,13 +66,13 @@ func TestGetExecutors(t *testing.T) {
 	_, err = client.AddColony(colony, serverPrvKey)
 	assert.Nil(t, err)
 
-	executor1, executor1PrvKey, err := utils.CreateTestExecutorWithKey(colony.ID)
+	executor1, executor1PrvKey, err := utils.CreateTestExecutorWithKey(colony.Name)
 	_, err = client.AddExecutor(executor1, colonyPrvKey)
 	assert.Nil(t, err)
 	err = client.ApproveExecutor(executor1.ID, colonyPrvKey)
 	assert.Nil(t, err)
 
-	executor2, _, err := utils.CreateTestExecutorWithKey(colony.ID)
+	executor2, _, err := utils.CreateTestExecutorWithKey(colony.Name)
 	_, err = client.AddExecutor(executor2, colonyPrvKey)
 	assert.Nil(t, err)
 	err = client.ApproveExecutor(executor2.ID, colonyPrvKey)
@@ -87,7 +86,7 @@ func TestGetExecutors(t *testing.T) {
 	executors = append(executors, executor1)
 	executors = append(executors, executor2)
 
-	executorsFromServer, err := client.GetExecutors(colony.ID, executor1PrvKey)
+	executorsFromServer, err := client.GetExecutors(colony.Name, executor1PrvKey)
 	assert.Nil(t, err)
 	assert.True(t, core.IsExecutorArraysEqual(executors, executorsFromServer))
 
@@ -99,14 +98,14 @@ func TestApproveRejectExecutor(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 
 	// Add an approved eecutor to use for the test below
-	approvedExecutor, approvedExecutorPrvKey, err := utils.CreateTestExecutorWithKey(env.colonyID)
+	approvedExecutor, approvedExecutorPrvKey, err := utils.CreateTestExecutorWithKey(env.colonyName)
 	assert.Nil(t, err)
 	_, err = client.AddExecutor(approvedExecutor, env.colonyPrvKey)
 	assert.Nil(t, err)
 	err = client.ApproveExecutor(approvedExecutor.ID, env.colonyPrvKey)
 	assert.Nil(t, err)
 
-	testExecutor, _, err := utils.CreateTestExecutorWithKey(env.colonyID)
+	testExecutor, _, err := utils.CreateTestExecutorWithKey(env.colonyName)
 	assert.Nil(t, err)
 	_, err = client.AddExecutor(testExecutor, env.colonyPrvKey)
 	assert.Nil(t, err)
@@ -136,7 +135,7 @@ func TestApproveRejectExecutor(t *testing.T) {
 func TestDeleteExecutor(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 
-	executor, executorPrvKey, err := utils.CreateTestExecutorWithKey(env.colonyID)
+	executor, executorPrvKey, err := utils.CreateTestExecutorWithKey(env.colonyName)
 	assert.Nil(t, err)
 	_, err = client.AddExecutor(executor, env.colonyPrvKey)
 	assert.Nil(t, err)

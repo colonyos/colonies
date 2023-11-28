@@ -28,7 +28,7 @@ func (server *ColoniesServer) handleSubmitWorkflowHTTPRequest(c *gin.Context, re
 		return
 	}
 
-	err = server.validator.RequireMembership(recoveredID, msg.WorkflowSpec.ColonyID, true)
+	err = server.validator.RequireMembership(recoveredID, msg.WorkflowSpec.ColonyName, true)
 	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		return
 	}
@@ -68,7 +68,7 @@ func (server *ColoniesServer) handleGetProcessGraphHTTPRequest(c *gin.Context, r
 		return
 	}
 
-	err = server.validator.RequireMembership(recoveredID, graph.ColonyID, true)
+	err = server.validator.RequireMembership(recoveredID, graph.ColonyName, true)
 	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		return
 	}
@@ -96,16 +96,16 @@ func (server *ColoniesServer) handleGetProcessGraphsHTTPRequest(c *gin.Context, 
 		return
 	}
 
-	err = server.validator.RequireMembership(recoveredID, msg.ColonyID, true)
+	err = server.validator.RequireMembership(recoveredID, msg.ColonyName, true)
 	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		return
 	}
 
-	log.WithFields(log.Fields{"ColonyId": msg.ColonyID}).Debug("Getting processgraphs")
+	log.WithFields(log.Fields{"ColonyId": msg.ColonyName}).Debug("Getting processgraphs")
 
 	switch msg.State {
 	case core.WAITING:
-		graphs, err := server.controller.findWaitingProcessGraphs(msg.ColonyID, msg.Count)
+		graphs, err := server.controller.findWaitingProcessGraphs(msg.ColonyName, msg.Count)
 		if server.handleHTTPError(c, err, http.StatusBadRequest) {
 			return
 		}
@@ -115,7 +115,7 @@ func (server *ColoniesServer) handleGetProcessGraphsHTTPRequest(c *gin.Context, 
 		}
 		server.sendHTTPReply(c, payloadType, jsonString)
 	case core.RUNNING:
-		graphs, err := server.controller.findRunningProcessGraphs(msg.ColonyID, msg.Count)
+		graphs, err := server.controller.findRunningProcessGraphs(msg.ColonyName, msg.Count)
 		if server.handleHTTPError(c, err, http.StatusBadRequest) {
 			return
 		}
@@ -125,7 +125,7 @@ func (server *ColoniesServer) handleGetProcessGraphsHTTPRequest(c *gin.Context, 
 		}
 		server.sendHTTPReply(c, payloadType, jsonString)
 	case core.SUCCESS:
-		graphs, err := server.controller.findSuccessfulProcessGraphs(msg.ColonyID, msg.Count)
+		graphs, err := server.controller.findSuccessfulProcessGraphs(msg.ColonyName, msg.Count)
 		if server.handleHTTPError(c, err, http.StatusBadRequest) {
 			return
 		}
@@ -135,7 +135,7 @@ func (server *ColoniesServer) handleGetProcessGraphsHTTPRequest(c *gin.Context, 
 		}
 		server.sendHTTPReply(c, payloadType, jsonString)
 	case core.FAILED:
-		graphs, err := server.controller.findFailedProcessGraphs(msg.ColonyID, msg.Count)
+		graphs, err := server.controller.findFailedProcessGraphs(msg.ColonyName, msg.Count)
 		if server.handleHTTPError(c, err, http.StatusBadRequest) {
 			return
 		}
@@ -173,7 +173,7 @@ func (server *ColoniesServer) handleDeleteProcessGraphHTTPRequest(c *gin.Context
 		return
 	}
 
-	err = server.validator.RequireMembership(recoveredID, graph.ColonyID, true)
+	err = server.validator.RequireMembership(recoveredID, graph.ColonyName, true)
 	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		return
 	}
@@ -201,17 +201,17 @@ func (server *ColoniesServer) handleDeleteAllProcessGraphsHTTPRequest(c *gin.Con
 		return
 	}
 
-	err = server.validator.RequireColonyOwner(recoveredID, msg.ColonyID)
+	err = server.validator.RequireColonyOwner(recoveredID, msg.ColonyName)
 	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		return
 	}
 
-	err = server.controller.deleteAllProcessGraphs(msg.ColonyID, msg.State)
+	err = server.controller.deleteAllProcessGraphs(msg.ColonyName, msg.State)
 	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
 
-	log.WithFields(log.Fields{"ColonyId": msg.ColonyID}).Debug("Deleting all processgraphs")
+	log.WithFields(log.Fields{"ColonyId": msg.ColonyName}).Debug("Deleting all processgraphs")
 
 	server.sendEmptyHTTPReply(c, payloadType)
 }
@@ -233,7 +233,7 @@ func (server *ColoniesServer) handleAddChildHTTPRequest(c *gin.Context, recovere
 		return
 	}
 
-	err = server.validator.RequireMembership(recoveredID, msg.FunctionSpec.Conditions.ColonyID, true)
+	err = server.validator.RequireMembership(recoveredID, msg.FunctionSpec.Conditions.ColonyName, true)
 	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		return
 	}

@@ -20,6 +20,7 @@ import (
 
 type testEnv struct {
 	colonyID       string
+	colonyName     string
 	colony         *core.Colony
 	colonyPrvKey   string
 	executorID     string
@@ -40,14 +41,16 @@ func setupTestEnv(t *testing.T) (*testEnv, *client.ColoniesClient, *server.Colon
 	_, err = client.AddColony(colony, serverPrvKey)
 	assert.Nil(t, err)
 
-	executor, executorPrvKey, err := utils.CreateTestExecutorWithKey(colony.ID)
+	executor, executorPrvKey, err := utils.CreateTestExecutorWithKey(colony.Name)
 	_, err = client.AddExecutor(executor, colonyPrvKey)
 	assert.Nil(t, err)
 
 	err = client.ApproveExecutor(executor.ID, colonyPrvKey)
 	assert.Nil(t, err)
 
-	env := &testEnv{colonyID: colony.ID,
+	env := &testEnv{
+		colonyName:     colony.Name,
+		colonyID:       colony.ID,
 		colony:         colony,
 		colonyPrvKey:   colonyPrvKey,
 		executorID:     executor.ID,

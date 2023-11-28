@@ -7,7 +7,7 @@ import (
 const GetExecutorPayloadType = "getexecutormsg"
 
 type GetExecutorMsg struct {
-	ExecutorID string `json:"executorid"`
+	ExecutorID string `json:"executorname"`
 	MsgType    string `json:"msgtype"`
 }
 

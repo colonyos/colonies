@@ -7,16 +7,16 @@ import (
 const DeleteFilePayloadType = "deletefilemsg"
 
 type DeleteFileMsg struct {
-	MsgType  string `json:"msgtype"`
-	ColonyID string `json:"colonyid"`
-	FileID   string `json:"fileid"`
-	Label    string `json:"label"`
-	Name     string `json:"name"`
+	MsgType    string `json:"msgtype"`
+	ColonyName string `json:"colonyname"`
+	FileID     string `json:"fileid"`
+	Label      string `json:"label"`
+	Name       string `json:"name"`
 }
 
 func CreateDeleteFileMsg(colonyID string, fileID string, label string, name string) *DeleteFileMsg {
 	msg := &DeleteFileMsg{}
-	msg.ColonyID = colonyID
+	msg.ColonyName = colonyID
 	msg.FileID = fileID
 	msg.Label = label
 	msg.Name = name
@@ -40,7 +40,7 @@ func (msg *DeleteFileMsg) Equals(msg2 *DeleteFileMsg) bool {
 	}
 
 	if msg.MsgType == msg2.MsgType &&
-		msg.ColonyID == msg2.ColonyID &&
+		msg.ColonyName == msg2.ColonyName &&
 		msg.FileID == msg2.FileID &&
 		msg.Label == msg2.Label &&
 		msg.Name == msg2.Name {
