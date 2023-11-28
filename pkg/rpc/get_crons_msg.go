@@ -7,14 +7,14 @@ import (
 const GetCronsPayloadType = "getcronsmsg"
 
 type GetCronsMsg struct {
-	ColonyID string `json:"colonyid"`
-	Count    int    `json:"count"`
-	MsgType  string `json:"msgtype"`
+	ColonyName string `json:"colonyname"`
+	Count      int    `json:"count"`
+	MsgType    string `json:"msgtype"`
 }
 
 func CreateGetCronsMsg(colonyID string, count int) *GetCronsMsg {
 	msg := &GetCronsMsg{}
-	msg.ColonyID = colonyID
+	msg.ColonyName = colonyID
 	msg.Count = count
 	msg.MsgType = GetCronsPayloadType
 
@@ -45,7 +45,7 @@ func (msg *GetCronsMsg) Equals(msg2 *GetCronsMsg) bool {
 	}
 
 	if msg.MsgType == msg2.MsgType &&
-		msg.ColonyID == msg2.ColonyID &&
+		msg.ColonyName == msg2.ColonyName &&
 		msg.Count == msg2.Count {
 		return true
 	}

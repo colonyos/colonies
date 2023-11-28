@@ -7,14 +7,14 @@ import (
 const DeleteAllProcessGraphsPayloadType = "deleteallprocessgraphsmsg"
 
 type DeleteAllProcessGraphsMsg struct {
-	ColonyID string `json:"colonyid"`
-	MsgType  string `json:"msgtype"`
-	State    int    `json:"state"`
+	ColonyName string `json:"colonyname"`
+	MsgType    string `json:"msgtype"`
+	State      int    `json:"state"`
 }
 
 func CreateDeleteAllProcessGraphsMsg(colonyID string) *DeleteAllProcessGraphsMsg {
 	msg := &DeleteAllProcessGraphsMsg{}
-	msg.ColonyID = colonyID
+	msg.ColonyName = colonyID
 	msg.MsgType = DeleteAllProcessGraphsPayloadType
 
 	return msg
@@ -34,7 +34,7 @@ func (msg *DeleteAllProcessGraphsMsg) Equals(msg2 *DeleteAllProcessGraphsMsg) bo
 		return false
 	}
 
-	if msg.MsgType == msg2.MsgType && msg.ColonyID == msg2.ColonyID && msg.State == msg2.State {
+	if msg.MsgType == msg2.MsgType && msg.ColonyName == msg2.ColonyName && msg.State == msg2.State {
 		return true
 	}
 

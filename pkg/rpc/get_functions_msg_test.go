@@ -41,8 +41,8 @@ func TestRPCGetFunctionsByExecutorIDMsgEquals(t *testing.T) {
 	assert.False(t, msg.Equals(nil))
 }
 
-func TestRPCGetFunctionsByColonyIDMsg(t *testing.T) {
-	msg := CreateGetFunctionsByColonyIDMsg(core.GenerateRandomID())
+func TestRPCGetFunctionsByColonyNameMsg(t *testing.T) {
+	msg := CreateGetFunctionsByColonyNameMsg(core.GenerateRandomID())
 	jsonString, err := msg.ToJSON()
 	assert.Nil(t, err)
 
@@ -55,8 +55,8 @@ func TestRPCGetFunctionsByColonyIDMsg(t *testing.T) {
 	assert.True(t, msg.Equals(msg2))
 }
 
-func TestRPCGetFunctionsByColonyIDMsgIndent(t *testing.T) {
-	msg := CreateGetFunctionsByColonyIDMsg(core.GenerateRandomID())
+func TestRPCGetFunctionsByColonyNameMsgIndent(t *testing.T) {
+	msg := CreateGetFunctionsByColonyNameMsg(core.GenerateRandomID())
 	jsonString, err := msg.ToJSONIndent()
 	assert.Nil(t, err)
 
@@ -69,8 +69,8 @@ func TestRPCGetFunctionsByColonyIDMsgIndent(t *testing.T) {
 	assert.True(t, msg.Equals(msg2))
 }
 
-func TestRPCGetFunctionsByColonyIDMsgEquals(t *testing.T) {
-	msg := CreateGetFunctionsByColonyIDMsg(core.GenerateRandomID())
+func TestRPCGetFunctionsByColonyNameMsgEquals(t *testing.T) {
+	msg := CreateGetFunctionsByColonyNameMsg(core.GenerateRandomID())
 	assert.True(t, msg.Equals(msg))
 	assert.False(t, msg.Equals(nil))
 }

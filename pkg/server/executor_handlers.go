@@ -28,7 +28,7 @@ func (server *ColoniesServer) handleAddExecutorHTTPRequest(c *gin.Context, recov
 		return
 	}
 
-	err = server.validator.RequireColonyOwner(recoveredID, msg.Executor.ColonyID)
+	err = server.validator.RequireColonyOwner(recoveredID, msg.Executor.ColonyName)
 	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		return
 	}
@@ -48,7 +48,7 @@ func (server *ColoniesServer) handleAddExecutorHTTPRequest(c *gin.Context, recov
 		return
 	}
 
-	log.WithFields(log.Fields{"ColonyId": msg.Executor.ColonyID, "ExecutorId": addedExecutor.ID}).Debug("Adding executor")
+	log.WithFields(log.Fields{"ColonyId": msg.Executor.ColonyName, "ExecutorId": addedExecutor.ID}).Debug("Adding executor")
 
 	server.sendHTTPReply(c, payloadType, jsonString)
 }
@@ -66,15 +66,15 @@ func (server *ColoniesServer) handleGetExecutorsHTTPRequest(c *gin.Context, reco
 		return
 	}
 
-	err = server.validator.RequireMembership(recoveredID, msg.ColonyID, false)
+	err = server.validator.RequireMembership(recoveredID, msg.ColonyName, false)
 	if err != nil {
-		err = server.validator.RequireColonyOwner(recoveredID, msg.ColonyID)
+		err = server.validator.RequireColonyOwner(recoveredID, msg.ColonyName)
 		if server.handleHTTPError(c, err, http.StatusForbidden) {
 			return
 		}
 	}
 
-	executors, err := server.controller.getExecutorByColonyID(msg.ColonyID)
+	executors, err := server.controller.getExecutorByColonyName(msg.ColonyName)
 	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
@@ -84,7 +84,7 @@ func (server *ColoniesServer) handleGetExecutorsHTTPRequest(c *gin.Context, reco
 		return
 	}
 
-	log.WithFields(log.Fields{"ColonyId": msg.ColonyID}).Debug("Getting executors")
+	log.WithFields(log.Fields{"ColonyId": msg.ColonyName}).Debug("Getting executors")
 
 	server.sendHTTPReply(c, payloadType, jsonString)
 }
@@ -111,7 +111,7 @@ func (server *ColoniesServer) handleGetExecutorHTTPRequest(c *gin.Context, recov
 		return
 	}
 
-	err = server.validator.RequireMembership(recoveredID, executor.ColonyID, true)
+	err = server.validator.RequireMembership(recoveredID, executor.ColonyName, true)
 	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		return
 	}
@@ -148,7 +148,7 @@ func (server *ColoniesServer) handleApproveExecutorHTTPRequest(c *gin.Context, r
 		return
 	}
 
-	err = server.validator.RequireColonyOwner(recoveredID, executor.ColonyID)
+	err = server.validator.RequireColonyOwner(recoveredID, executor.ColonyName)
 	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		return
 	}
@@ -185,7 +185,7 @@ func (server *ColoniesServer) handleRejectExecutorHTTPRequest(c *gin.Context, re
 		return
 	}
 
-	err = server.validator.RequireColonyOwner(recoveredID, executor.ColonyID)
+	err = server.validator.RequireColonyOwner(recoveredID, executor.ColonyName)
 	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		return
 	}
@@ -222,7 +222,7 @@ func (server *ColoniesServer) handleDeleteExecutorHTTPRequest(c *gin.Context, re
 		return
 	}
 
-	err = server.validator.RequireColonyOwner(recoveredID, executor.ColonyID)
+	err = server.validator.RequireColonyOwner(recoveredID, executor.ColonyName)
 	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		return
 	}

@@ -8,7 +8,7 @@ const GetFunctionsPayloadType = "getfunctionsmsg"
 
 type GetFunctionsMsg struct {
 	ExecutorID string `json:"executorid"`
-	ColonyID   string `json:"colonyid"`
+	ColonyName string `json:"colonyname"`
 	MsgType    string `json:"msgtype"`
 }
 
@@ -20,9 +20,9 @@ func CreateGetFunctionsByExecutorIDMsg(executorID string) *GetFunctionsMsg {
 	return msg
 }
 
-func CreateGetFunctionsByColonyIDMsg(colonyID string) *GetFunctionsMsg {
+func CreateGetFunctionsByColonyNameMsg(colonyID string) *GetFunctionsMsg {
 	msg := &GetFunctionsMsg{}
-	msg.ColonyID = colonyID
+	msg.ColonyName = colonyID
 	msg.MsgType = GetFunctionsPayloadType
 
 	return msg
@@ -51,7 +51,7 @@ func (msg *GetFunctionsMsg) Equals(msg2 *GetFunctionsMsg) bool {
 		return false
 	}
 
-	if msg.MsgType == msg2.MsgType && (msg.ExecutorID == msg2.ExecutorID || msg.ColonyID == msg.ColonyID) {
+	if msg.MsgType == msg2.MsgType && (msg.ExecutorID == msg2.ExecutorID || msg.ColonyName == msg.ColonyName) {
 		return true
 	}
 

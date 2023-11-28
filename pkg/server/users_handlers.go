@@ -41,7 +41,7 @@ func (server *ColoniesServer) handleAddUserHTTPRequest(c *gin.Context, recovered
 		}
 	}
 
-	err = server.validator.RequireColonyOwner(recoveredID, colony.ID)
+	err = server.validator.RequireColonyOwner(recoveredID, colony.Name)
 	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		return
 	}
@@ -207,7 +207,7 @@ func (server *ColoniesServer) handleDeleteUserHTTPRequest(c *gin.Context, recove
 		}
 	}
 
-	err = server.validator.RequireColonyOwner(recoveredID, colony.ID)
+	err = server.validator.RequireColonyOwner(recoveredID, colony.Name)
 	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		return
 	}

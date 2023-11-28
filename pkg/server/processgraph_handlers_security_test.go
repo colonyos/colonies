@@ -14,7 +14,7 @@ func TestSubmitWorkflowSpecSecurity(t *testing.T) {
 	//   executor1 is member of colony1
 	//   executor2 is member of colony2
 
-	diamond := generateDiamondtWorkflowSpec(env.colony1ID)
+	diamond := generateDiamondtWorkflowSpec(env.colony1Name)
 
 	_, err := client.SubmitWorkflowSpec(diamond, env.executor2PrvKey)
 	assert.NotNil(t, err)
@@ -36,7 +36,7 @@ func TestGetProcessGraphSecurity(t *testing.T) {
 	//   executor1 is member of colony1
 	//   executor2 is member of colony2
 
-	diamond := generateDiamondtWorkflowSpec(env.colony1ID)
+	diamond := generateDiamondtWorkflowSpec(env.colony1Name)
 	graph, err := client.SubmitWorkflowSpec(diamond, env.executor1PrvKey)
 	assert.Nil(t, err)
 
@@ -60,13 +60,13 @@ func TestGetProcessGraphsSecurity(t *testing.T) {
 	//   executor1 is member of colony1
 	//   executor2 is member of colony2
 
-	_, err := client.GetWaitingProcessGraphs(env.colony1ID, 100, env.executor2PrvKey)
+	_, err := client.GetWaitingProcessGraphs(env.colony1Name, 100, env.executor2PrvKey)
 	assert.NotNil(t, err)
-	_, err = client.GetWaitingProcessGraphs(env.colony1ID, 100, env.colony1PrvKey)
+	_, err = client.GetWaitingProcessGraphs(env.colony1Name, 100, env.colony1PrvKey)
 	assert.NotNil(t, err)
-	_, err = client.GetWaitingProcessGraphs(env.colony1ID, 100, env.colony2PrvKey)
+	_, err = client.GetWaitingProcessGraphs(env.colony1Name, 100, env.colony2PrvKey)
 	assert.NotNil(t, err)
-	_, err = client.GetWaitingProcessGraphs(env.colony1ID, 100, env.executor1PrvKey)
+	_, err = client.GetWaitingProcessGraphs(env.colony1Name, 100, env.executor1PrvKey)
 	assert.Nil(t, err)
 
 	server.Shutdown()
@@ -80,7 +80,7 @@ func TestDeleteProcessGraphSecurity(t *testing.T) {
 	//   executor1 is member of colony1
 	//   executor2 is member of colony2
 
-	diamond := generateDiamondtWorkflowSpec(env.colony1ID)
+	diamond := generateDiamondtWorkflowSpec(env.colony1Name)
 	graph, err := client.SubmitWorkflowSpec(diamond, env.executor1PrvKey)
 	assert.Nil(t, err)
 
@@ -104,17 +104,17 @@ func TestDeleteAllProcessGraphsSecurity(t *testing.T) {
 	//   executor1 is member of colony1
 	//   executor2 is member of colony2
 
-	diamond := generateDiamondtWorkflowSpec(env.colony1ID)
+	diamond := generateDiamondtWorkflowSpec(env.colony1Name)
 	_, err := client.SubmitWorkflowSpec(diamond, env.executor1PrvKey)
 	assert.Nil(t, err)
 
-	err = client.DeleteAllProcessGraphs(env.colony1ID, env.executor2PrvKey)
+	err = client.DeleteAllProcessGraphs(env.colony1Name, env.executor2PrvKey)
 	assert.NotNil(t, err)
-	err = client.DeleteAllProcessGraphs(env.colony1ID, env.colony1PrvKey)
+	err = client.DeleteAllProcessGraphs(env.colony1Name, env.colony1PrvKey)
 	assert.Nil(t, err)
-	err = client.DeleteAllProcessGraphs(env.colony1ID, env.colony2PrvKey)
+	err = client.DeleteAllProcessGraphs(env.colony1Name, env.colony2PrvKey)
 	assert.NotNil(t, err)
-	err = client.DeleteAllProcessGraphs(env.colony1ID, env.executor1PrvKey)
+	err = client.DeleteAllProcessGraphs(env.colony1Name, env.executor1PrvKey)
 	assert.NotNil(t, err)
 
 	server.Shutdown()
@@ -124,7 +124,7 @@ func TestDeleteAllProcessGraphsSecurity(t *testing.T) {
 func TestAddChildSecurity(t *testing.T) {
 	env, client, server, _, done := setupTestEnv1(t)
 
-	executor, executor3PrvKey, err := utils.CreateTestExecutorWithKey(env.colony2ID)
+	executor, executor3PrvKey, err := utils.CreateTestExecutorWithKey(env.colony2Name)
 	assert.Nil(t, err)
 	executor3, err := client.AddExecutor(executor, env.colony2PrvKey)
 	assert.Nil(t, err)
@@ -136,13 +136,13 @@ func TestAddChildSecurity(t *testing.T) {
 	//   executor2 is member of colony2
 	//   executor3 is member of colony2
 
-	diamond := generateDiamondtWorkflowSpec(env.colony2ID)
+	diamond := generateDiamondtWorkflowSpec(env.colony2Name)
 	processGraph, err := client.SubmitWorkflowSpec(diamond, env.executor2PrvKey)
 	assert.Nil(t, err)
 
 	parentProcessID := processGraph.Roots[0]
 
-	childFunctionSpec := utils.CreateTestFunctionSpec(env.colony2ID)
+	childFunctionSpec := utils.CreateTestFunctionSpec(env.colony2Name)
 	childFunctionSpec.NodeName = "task5"
 
 	_, err = client.AddChild(processGraph.ID, parentProcessID, "", childFunctionSpec, false, env.executor1PrvKey)
@@ -158,7 +158,7 @@ func TestAddChildSecurity(t *testing.T) {
 	assert.NotNil(t, err) // Error, process must be running
 
 	// Assign task1 to executor2
-	_, err = client.Assign(env.colony2ID, -1, env.executor2PrvKey)
+	_, err = client.Assign(env.colony2Name, -1, env.executor2PrvKey)
 	assert.Nil(t, err)
 
 	// Now, we should be able to add a child since we got assigned task1
