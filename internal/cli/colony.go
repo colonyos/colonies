@@ -66,7 +66,7 @@ var addColonyCmd = &cobra.Command{
 		addedColony, err := client.AddColony(colony, ServerPrvKey)
 		CheckError(err)
 
-		log.WithFields(log.Fields{"ColonyID": addedColony.ID}).Info("Colony added")
+		log.WithFields(log.Fields{"ColonyName": TargetColonyName, "ColonyID": addedColony.ID}).Info("Colony added")
 	},
 }
 
@@ -84,7 +84,7 @@ var removeColonyCmd = &cobra.Command{
 		err := client.RemoveColony(TargetColonyName, ServerPrvKey)
 		CheckError(err)
 
-		log.WithFields(log.Fields{"ColonyID": TargetColonyID}).Info("Colony removed")
+		log.WithFields(log.Fields{"ColonyName": TargetColonyName}).Info("Colony removed")
 	},
 }
 
@@ -112,11 +112,11 @@ var lsColoniesCmd = &cobra.Command{
 
 		var data [][]string
 		for _, colony := range coloniesFromServer {
-			data = append(data, []string{colony.ID, colony.Name})
+			data = append(data, []string{colony.Name})
 		}
 
 		table := tablewriter.NewWriter(os.Stdout)
-		table.SetHeader([]string{"ID", "Name"})
+		table.SetHeader([]string{"Name"})
 
 		for _, v := range data {
 			table.Append(v)
