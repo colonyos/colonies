@@ -48,7 +48,7 @@ type Executor struct {
 	ID                string       `json:"executorid"`
 	Type              string       `json:"executortype"`
 	Name              string       `json:"executorname"`
-	ColonyID          string       `json:"colonyid"`
+	ColonyName        string       `json:"colonyname"`
 	State             int          `json:"state"`
 	RequireFuncReg    bool         `json:"requirefuncreg"`
 	CommissionTime    time.Time    `json:"commissiontime"`
@@ -60,13 +60,13 @@ type Executor struct {
 func CreateExecutor(id string,
 	executorType string,
 	name string,
-	colonyID string,
+	colonyName string,
 	commissionTime time.Time,
 	lastHeardFromTime time.Time) *Executor {
 	return &Executor{ID: id,
 		Type:              executorType,
 		Name:              name,
-		ColonyID:          colonyID,
+		ColonyName:        colonyName,
 		State:             PENDING,
 		RequireFuncReg:    false,
 		CommissionTime:    commissionTime,
@@ -77,12 +77,12 @@ func CreateExecutor(id string,
 func CreateExecutorFromDB(id string,
 	executorType string,
 	name string,
-	colonyID string,
+	colonyName string,
 	state int,
 	requireFuncReg bool,
 	commissionTime time.Time,
 	lastHeardFromTime time.Time) *Executor {
-	executor := CreateExecutor(id, executorType, name, colonyID, commissionTime, lastHeardFromTime)
+	executor := CreateExecutor(id, executorType, name, colonyName, commissionTime, lastHeardFromTime)
 	executor.State = state
 	executor.RequireFuncReg = requireFuncReg
 	return executor
@@ -152,7 +152,7 @@ func (executor *Executor) Equals(executor2 *Executor) bool {
 		same = false
 	}
 
-	if executor.ColonyID != executor2.ColonyID {
+	if executor.ColonyName != executor2.ColonyName {
 		same = false
 	}
 
@@ -259,8 +259,8 @@ func (executor *Executor) SetID(id string) {
 	executor.ID = id
 }
 
-func (executor *Executor) SetColonyID(colonyID string) {
-	executor.ColonyID = colonyID
+func (executor *Executor) SetColonyName(colonyName string) {
+	executor.ColonyName = colonyName
 }
 
 func (executor *Executor) ToJSON() (string, error) {

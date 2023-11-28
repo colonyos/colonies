@@ -29,7 +29,7 @@ func TestGeneratorArgClosedDB(t *testing.T) {
 	err = db.DeleteAllGeneratorArgsByGeneratorID("invalid_id")
 	assert.NotNil(t, err)
 
-	err = db.DeleteAllGeneratorArgsByColonyID("invalid_id")
+	err = db.DeleteAllGeneratorArgsByColonyName("invalid_name")
 	assert.NotNil(t, err)
 }
 
@@ -39,10 +39,10 @@ func TestGeneratorArg(t *testing.T) {
 
 	defer db.Close()
 
-	colonyID := core.GenerateRandomID()
+	colonyName := core.GenerateRandomID()
 	generatorID := core.GenerateRandomID()
-	generatorArg := core.CreateGeneratorArg(generatorID, colonyID, "arg")
-	generatorArg2 := core.CreateGeneratorArg(generatorID, colonyID, "arg")
+	generatorArg := core.CreateGeneratorArg(generatorID, colonyName, "arg")
+	generatorArg2 := core.CreateGeneratorArg(generatorID, colonyName, "arg")
 
 	err = db.AddGeneratorArg(generatorArg)
 	assert.Nil(t, err)
@@ -64,9 +64,9 @@ func TestDeleteGeneratorArgByID(t *testing.T) {
 
 	defer db.Close()
 
-	colonyID := core.GenerateRandomID()
+	colonyName := core.GenerateRandomID()
 	generatorID := core.GenerateRandomID()
-	generatorArg := core.CreateGeneratorArg(generatorID, colonyID, "arg")
+	generatorArg := core.CreateGeneratorArg(generatorID, colonyName, "arg")
 
 	err = db.AddGeneratorArg(generatorArg)
 	assert.Nil(t, err)
@@ -89,11 +89,11 @@ func TestDeleteGeneratorArgByGeneratorID(t *testing.T) {
 
 	defer db.Close()
 
-	colonyID := core.GenerateRandomID()
+	colonyName := core.GenerateRandomID()
 	generatorID1 := core.GenerateRandomID()
-	generatorArg := core.CreateGeneratorArg(generatorID1, colonyID, "arg")
+	generatorArg := core.CreateGeneratorArg(generatorID1, colonyName, "arg")
 	generatorID2 := core.GenerateRandomID()
-	generatorArg2 := core.CreateGeneratorArg(generatorID2, colonyID, "arg")
+	generatorArg2 := core.CreateGeneratorArg(generatorID2, colonyName, "arg")
 
 	err = db.AddGeneratorArg(generatorArg)
 	assert.Nil(t, err)
@@ -112,24 +112,24 @@ func TestDeleteGeneratorArgByGeneratorID(t *testing.T) {
 	assert.Equal(t, count, 1)
 }
 
-func TestDeleteGeneratorArgByColonyID(t *testing.T) {
+func TestDeleteGeneratorArgByColonyName(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
 
 	defer db.Close()
 
-	colonyID := core.GenerateRandomID()
+	colonyName := core.GenerateRandomID()
 	generatorID1 := core.GenerateRandomID()
-	generatorArg := core.CreateGeneratorArg(generatorID1, colonyID, "arg")
+	generatorArg := core.CreateGeneratorArg(generatorID1, colonyName, "arg")
 	generatorID2 := core.GenerateRandomID()
-	generatorArg2 := core.CreateGeneratorArg(generatorID2, colonyID, "arg")
+	generatorArg2 := core.CreateGeneratorArg(generatorID2, colonyName, "arg")
 
 	err = db.AddGeneratorArg(generatorArg)
 	assert.Nil(t, err)
 	err = db.AddGeneratorArg(generatorArg2)
 	assert.Nil(t, err)
 
-	err = db.DeleteAllGeneratorArgsByColonyID(colonyID)
+	err = db.DeleteAllGeneratorArgsByColonyName(colonyName)
 	assert.Nil(t, err)
 
 	count, err := db.CountGeneratorArgs(generatorID1)

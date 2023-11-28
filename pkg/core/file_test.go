@@ -23,7 +23,7 @@ func createTestFile() *File {
 	ref := Reference{Protocol: "s3", S3Object: s3Object}
 	file := File{
 		ID:          "test_id",
-		ColonyID:    "test_colonyid",
+		ColonyName:  "test_colony",
 		Label:       "test_label",
 		Name:        "test_name",
 		Size:        1111,

@@ -7,7 +7,7 @@ import (
 
 type Generator struct {
 	ID            string    `json:"generatorid"`
-	ColonyID      string    `json:"colonyid"`
+	ColonyName    string    `json:"colonyname"`
 	Name          string    `json:"name"`
 	WorkflowSpec  string    `json:"workflowspec"`
 	Trigger       int       `json:"trigger"`
@@ -18,9 +18,9 @@ type Generator struct {
 	CheckerPeriod int       `json:"checkerperiod"`
 }
 
-func CreateGenerator(colonyID string, name string, workflowSpec string, trigger int, timeout int) *Generator {
+func CreateGenerator(colonyName string, name string, workflowSpec string, trigger int, timeout int) *Generator {
 	generator := &Generator{
-		ColonyID:     colonyID,
+		ColonyName:   colonyName,
 		Name:         name,
 		WorkflowSpec: workflowSpec,
 		Trigger:      trigger,
@@ -88,7 +88,7 @@ func (generator *Generator) Equals(generator2 *Generator) bool {
 
 	same := true
 	if generator.ID != generator2.ID ||
-		generator.ColonyID != generator2.ColonyID ||
+		generator.ColonyName != generator2.ColonyName ||
 		generator.Name != generator2.Name ||
 		generator.WorkflowSpec != generator2.WorkflowSpec ||
 		generator.Trigger != generator2.Trigger ||

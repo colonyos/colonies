@@ -8,7 +8,7 @@ import (
 )
 
 func TestCreateProcess(t *testing.T) {
-	colonyID := GenerateRandomID()
+	colonyName := GenerateRandomID()
 	executor1ID := GenerateRandomID()
 	executor2ID := GenerateRandomID()
 	executorType := "test_executor_type"
@@ -21,13 +21,13 @@ func TestCreateProcess(t *testing.T) {
 	kwargs := make(map[string]interface{}, 1)
 	kwargs["0"] = "test_arg"
 
-	funcSpec := CreateFunctionSpec("test_name", "test_func", args, kwargs, colonyID, []string{executor1ID, executor2ID}, executorType, maxWaitTime, maxExecTime, maxRetries, make(map[string]string), []string{}, 1, "test_label")
+	funcSpec := CreateFunctionSpec("test_name", "test_func", args, kwargs, colonyName, []string{executor1ID, executor2ID}, executorType, maxWaitTime, maxExecTime, maxRetries, make(map[string]string), []string{}, 1, "test_label")
 	process := CreateProcess(funcSpec)
 	assert.True(t, process.FunctionSpec.Equals(funcSpec))
 }
 
 func TestCreateProcessFromDB(t *testing.T) {
-	colonyID := GenerateRandomID()
+	colonyName := GenerateRandomID()
 	executor1ID := GenerateRandomID()
 	executor2ID := GenerateRandomID()
 	executorType := "test_executor_type"
@@ -40,13 +40,13 @@ func TestCreateProcessFromDB(t *testing.T) {
 	args := make([]interface{}, 1)
 	args[0] = "test_arg"
 
-	funcSpec := CreateFunctionSpec("test_name", "test_func", args, nil, colonyID, []string{executor1ID, executor2ID}, executorType, maxWaitTime, maxExecTime, maxRetries, make(map[string]string), []string{}, 1, "test_label")
+	funcSpec := CreateFunctionSpec("test_name", "test_func", args, nil, colonyName, []string{executor1ID, executor2ID}, executorType, maxWaitTime, maxExecTime, maxRetries, make(map[string]string), []string{}, 1, "test_label")
 	process := CreateProcessFromDB(funcSpec, GenerateRandomID(), GenerateRandomID(), true, FAILED, 2.0, time.Now(), time.Now(), time.Now(), time.Now(), time.Now(), []string{"errormsg"}, 2, attributes)
 	assert.True(t, process.Equals(process))
 }
 
 func TestAssignProcess(t *testing.T) {
-	colonyID := GenerateRandomID()
+	colonyName := GenerateRandomID()
 	executor1ID := GenerateRandomID()
 	executor2ID := GenerateRandomID()
 	executorType := "test_executor_type"
@@ -59,7 +59,7 @@ func TestAssignProcess(t *testing.T) {
 	kwargs := make(map[string]interface{}, 1)
 	kwargs["0"] = "test_arg"
 
-	funcSpec := CreateFunctionSpec("test_name", "test_func", args, kwargs, colonyID, []string{executor1ID, executor2ID}, executorType, maxWaitTime, maxExecTime, maxRetries, make(map[string]string), []string{}, 1, "test_label")
+	funcSpec := CreateFunctionSpec("test_name", "test_func", args, kwargs, colonyName, []string{executor1ID, executor2ID}, executorType, maxWaitTime, maxExecTime, maxRetries, make(map[string]string), []string{}, 1, "test_label")
 	process := CreateProcess(funcSpec)
 
 	assert.False(t, process.IsAssigned)
@@ -72,7 +72,7 @@ func TestAssignProcess(t *testing.T) {
 func TestProcessTimeCalc(t *testing.T) {
 	startTime := time.Now()
 
-	colonyID := GenerateRandomID()
+	colonyName := GenerateRandomID()
 	executorType := "test_executor_type"
 	maxWaitTime := -1
 	maxExecTime := -1
@@ -81,7 +81,7 @@ func TestProcessTimeCalc(t *testing.T) {
 	args := make([]interface{}, 1)
 	args[0] = "test_arg"
 
-	funcSpec := CreateFunctionSpec("test_name", "test_func", args, nil, colonyID, []string{}, executorType, maxWaitTime, maxExecTime, maxRetries, make(map[string]string), []string{}, 1, "test_label")
+	funcSpec := CreateFunctionSpec("test_name", "test_func", args, nil, colonyName, []string{}, executorType, maxWaitTime, maxExecTime, maxRetries, make(map[string]string), []string{}, 1, "test_label")
 	process := CreateProcess(funcSpec)
 	process.SetSubmissionTime(startTime)
 	process.SetStartTime(startTime.Add(1 * time.Second))
@@ -93,7 +93,7 @@ func TestProcessTimeCalc(t *testing.T) {
 func TestProcessEquals(t *testing.T) {
 	startTime := time.Now()
 
-	colonyID := GenerateRandomID()
+	colonyName := GenerateRandomID()
 	executorType := "test_executor_type"
 	maxWaitTime := -1
 	maxExecTime := -1
@@ -104,7 +104,7 @@ func TestProcessEquals(t *testing.T) {
 	kwargs := make(map[string]interface{}, 1)
 	kwargs["0"] = "test_arg"
 
-	funcSpec1 := CreateFunctionSpec("test_name", "test_func", args, kwargs, colonyID, []string{}, executorType, maxWaitTime, maxExecTime, maxRetries, make(map[string]string), []string{}, 1, "test_label")
+	funcSpec1 := CreateFunctionSpec("test_name", "test_func", args, kwargs, colonyName, []string{}, executorType, maxWaitTime, maxExecTime, maxRetries, make(map[string]string), []string{}, 1, "test_label")
 	process1 := CreateProcess(funcSpec1)
 	process1.SetSubmissionTime(startTime)
 	process1.SetStartTime(startTime.Add(1 * time.Second))
@@ -119,8 +119,8 @@ func TestProcessEquals(t *testing.T) {
 	assert.True(t, process1.Equals(process1))
 	assert.False(t, process1.Equals(nil))
 
-	colonyID2 := GenerateRandomID()
-	funcSpec2 := CreateFunctionSpec("test_name", "test_func", args, kwargs, colonyID2, []string{}, executorType, maxWaitTime, maxExecTime, maxRetries, make(map[string]string), []string{}, 1, "testl_label")
+	colonyName2 := GenerateRandomID()
+	funcSpec2 := CreateFunctionSpec("test_name", "test_func", args, kwargs, colonyName2, []string{}, executorType, maxWaitTime, maxExecTime, maxRetries, make(map[string]string), []string{}, 1, "testl_label")
 
 	process2 := CreateProcess(funcSpec2)
 	process2.SetSubmissionTime(startTime)
@@ -133,7 +133,7 @@ func TestProcessEquals(t *testing.T) {
 func TestProcessToJSON(t *testing.T) {
 	startTime := time.Now()
 
-	colonyID := GenerateRandomID()
+	colonyName := GenerateRandomID()
 	executorType := "test_executor_type"
 	maxExecTime := -1
 	maxWaitTime := -1
@@ -144,7 +144,7 @@ func TestProcessToJSON(t *testing.T) {
 	kwargs := make(map[string]interface{}, 1)
 	kwargs["0"] = "test_arg"
 
-	funcSpec := CreateFunctionSpec("test_name", "test_func", args, kwargs, colonyID, []string{}, executorType, maxWaitTime, maxExecTime, maxRetries, make(map[string]string), []string{"test_name_2"}, 1, "test_label")
+	funcSpec := CreateFunctionSpec("test_name", "test_func", args, kwargs, colonyName, []string{}, executorType, maxWaitTime, maxExecTime, maxRetries, make(map[string]string), []string{"test_name_2"}, 1, "test_label")
 	process := CreateProcess(funcSpec)
 	process.AddParent(GenerateRandomID())
 	process.AddParent(GenerateRandomID())
@@ -182,7 +182,7 @@ func TestProcessToJSON(t *testing.T) {
 func TestPriorityTime(t *testing.T) {
 	startTime := time.Date(2021, 8, 15, 14, 30, 45, 100, time.Local)
 
-	colonyID := GenerateRandomID()
+	colonyName := GenerateRandomID()
 	executorType := "test_executor_type"
 	maxWaitTime := -1
 	maxExecTime := -1
@@ -191,7 +191,7 @@ func TestPriorityTime(t *testing.T) {
 	args := make([]interface{}, 1)
 	args[0] = "test_arg"
 
-	funcSpec1 := CreateFunctionSpec("test_name", "test_func", args, nil, colonyID, []string{}, executorType, maxWaitTime, maxExecTime, maxRetries, make(map[string]string), []string{}, 2, "test_label")
+	funcSpec1 := CreateFunctionSpec("test_name", "test_func", args, nil, colonyName, []string{}, executorType, maxWaitTime, maxExecTime, maxRetries, make(map[string]string), []string{}, 2, "test_label")
 	process1 := CreateProcess(funcSpec1)
 	process1.SetSubmissionTime(startTime)
 
@@ -201,7 +201,7 @@ func TestPriorityTime(t *testing.T) {
 func TestProcessArrayToJSON(t *testing.T) {
 	startTime := time.Now()
 
-	colonyID := GenerateRandomID()
+	colonyName := GenerateRandomID()
 	executorType := "test_executor_type"
 	maxWaitTime := -1
 	maxExecTime := -1
@@ -212,7 +212,7 @@ func TestProcessArrayToJSON(t *testing.T) {
 	kwargs := make(map[string]interface{}, 1)
 	kwargs["0"] = "test_arg"
 
-	funcSpec1 := CreateFunctionSpec("test_name", "test_func", args, kwargs, colonyID, []string{}, executorType, maxWaitTime, maxExecTime, maxRetries, make(map[string]string), []string{}, 1, "test_label")
+	funcSpec1 := CreateFunctionSpec("test_name", "test_func", args, kwargs, colonyName, []string{}, executorType, maxWaitTime, maxExecTime, maxRetries, make(map[string]string), []string{}, 1, "test_label")
 	process1 := CreateProcess(funcSpec1)
 	process1.SetSubmissionTime(startTime)
 	process1.SetStartTime(startTime.Add(1 * time.Second))
@@ -226,7 +226,7 @@ func TestProcessArrayToJSON(t *testing.T) {
 	attributes1 = append(attributes1, CreateAttribute(attribute3ID, GenerateRandomID(), "", OUT, "out_key_1", "out_value_1"))
 	process1.SetAttributes(attributes1)
 
-	funcSpec2 := CreateFunctionSpec("test_name", "test_func", args, kwargs, colonyID, []string{}, executorType, maxWaitTime, maxExecTime, maxRetries, make(map[string]string), []string{}, 1, "test_label")
+	funcSpec2 := CreateFunctionSpec("test_name", "test_func", args, kwargs, colonyName, []string{}, executorType, maxWaitTime, maxExecTime, maxRetries, make(map[string]string), []string{}, 1, "test_label")
 	process2 := CreateProcess(funcSpec2)
 	process2.SetSubmissionTime(startTime)
 	process2.SetStartTime(startTime.Add(1 * time.Second))
@@ -256,7 +256,7 @@ func TestProcessArrayToJSON(t *testing.T) {
 }
 
 func TestProcessingTime(t *testing.T) {
-	colonyID := GenerateRandomID()
+	colonyName := GenerateRandomID()
 	executor1ID := GenerateRandomID()
 	executor2ID := GenerateRandomID()
 	executorType := "test_executor_type"
@@ -270,7 +270,7 @@ func TestProcessingTime(t *testing.T) {
 	kwargs := make(map[string]interface{}, 1)
 	kwargs["0"] = "test_arg"
 
-	funcSpec := CreateFunctionSpec("test_name", "test_func", args, kwargs, colonyID, []string{executor1ID, executor2ID}, executorType, maxWaitTime, maxExecTime, maxRetries, make(map[string]string), []string{}, 1, "test_label")
+	funcSpec := CreateFunctionSpec("test_name", "test_func", args, kwargs, colonyName, []string{executor1ID, executor2ID}, executorType, maxWaitTime, maxExecTime, maxRetries, make(map[string]string), []string{}, 1, "test_label")
 	process := CreateProcessFromDB(funcSpec, GenerateRandomID(), GenerateRandomID(), true, RUNNING, 2.0, time.Time{}, time.Time{}, time.Time{}, time.Time{}, time.Time{}, []string{"errormsg"}, 2, attributes)
 
 	processingTime := int64(process.ProcessingTime())
@@ -282,7 +282,7 @@ func TestProcessingTime(t *testing.T) {
 }
 
 func TestProcessClone(t *testing.T) {
-	colonyID := GenerateRandomID()
+	colonyName := GenerateRandomID()
 	executorType := "test_executor_type"
 	maxWaitTime := -1
 	maxExecTime := -1
@@ -291,7 +291,7 @@ func TestProcessClone(t *testing.T) {
 	kwargs := make(map[string]interface{}, 1)
 	kwargs["0"] = "test_arg"
 
-	funcSpec := CreateFunctionSpec("test_name", "test_func", nil, kwargs, colonyID, []string{}, executorType, maxWaitTime, maxExecTime, maxRetries, make(map[string]string), []string{}, 1, "test_label")
+	funcSpec := CreateFunctionSpec("test_name", "test_func", nil, kwargs, colonyName, []string{}, executorType, maxWaitTime, maxExecTime, maxRetries, make(map[string]string), []string{}, 1, "test_label")
 	process := CreateProcess(funcSpec)
 
 	processClone := process.Clone()
