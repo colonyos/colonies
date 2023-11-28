@@ -163,7 +163,7 @@ func printExecutor(client *client.ColoniesClient, executor *core.Executor) {
 		[]string{"Name", executor.Name},
 		[]string{"ID", executor.ID},
 		[]string{"Type", executor.Type},
-		[]string{"ColonyID", executor.ColonyID},
+		[]string{"ColonyName", executor.ColonyName},
 		[]string{"State", state},
 		[]string{"RequireFuncRegistration", requireFuncRegStr},
 		[]string{"CommissionTime", executor.CommissionTime.Format(TimeLayout)},

@@ -14,7 +14,7 @@ func TestAddCronSecurity(t *testing.T) {
 	//   executor1 is member of colony1
 	//   executor2 is member of colony2
 
-	cron := utils.FakeCron(t, env.colony1ID)
+	cron := utils.FakeCron(t, env.colony1Name)
 
 	_, err := client.AddCron(cron, env.executor2PrvKey)
 	assert.NotNil(t, err)
@@ -36,7 +36,7 @@ func TestGetCronSecurity(t *testing.T) {
 	//   executor1 is member of colony1
 	//   executor2 is member of colony2
 
-	cron := utils.FakeCron(t, env.colony1ID)
+	cron := utils.FakeCron(t, env.colony1Name)
 	addedCron, err := client.AddCron(cron, env.executor1PrvKey)
 	assert.Nil(t, err)
 
@@ -60,17 +60,17 @@ func TestGetCronsSecurity(t *testing.T) {
 	//   executor1 is member of colony1
 	//   executor2 is member of colony2
 
-	cron := utils.FakeCron(t, env.colony1ID)
+	cron := utils.FakeCron(t, env.colony1Name)
 	_, err := client.AddCron(cron, env.executor1PrvKey)
 	assert.Nil(t, err)
 
-	_, err = client.GetCrons(env.colony1ID, 100, env.executor2PrvKey)
+	_, err = client.GetCrons(env.colony1Name, 100, env.executor2PrvKey)
 	assert.NotNil(t, err)
-	_, err = client.GetCrons(env.colony1ID, 100, env.colony1PrvKey)
+	_, err = client.GetCrons(env.colony1Name, 100, env.colony1PrvKey)
 	assert.NotNil(t, err)
-	_, err = client.GetCrons(env.colony1ID, 100, env.colony2PrvKey)
+	_, err = client.GetCrons(env.colony1Name, 100, env.colony2PrvKey)
 	assert.NotNil(t, err)
-	_, err = client.GetCrons(env.colony1ID, 100, env.executor1PrvKey)
+	_, err = client.GetCrons(env.colony1Name, 100, env.executor1PrvKey)
 	assert.Nil(t, err)
 
 	server.Shutdown()
@@ -84,7 +84,7 @@ func TestRunCronSecurity(t *testing.T) {
 	//   executor1 is member of colony1
 	//   executor2 is member of colony2
 
-	cron := utils.FakeCron(t, env.colony1ID)
+	cron := utils.FakeCron(t, env.colony1Name)
 	addedCron, err := client.AddCron(cron, env.executor1PrvKey)
 	assert.Nil(t, err)
 
@@ -108,7 +108,7 @@ func TestDeleteCronSecurity(t *testing.T) {
 	//   executor1 is member of colony1
 	//   executor2 is member of colony2
 
-	cron := utils.FakeCron(t, env.colony1ID)
+	cron := utils.FakeCron(t, env.colony1Name)
 	addedCron, err := client.AddCron(cron, env.executor1PrvKey)
 	assert.Nil(t, err)
 

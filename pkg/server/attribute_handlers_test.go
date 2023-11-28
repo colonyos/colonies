@@ -11,19 +11,19 @@ import (
 func TestAddGetAttributes(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 
-	funcSpec := utils.CreateTestFunctionSpec(env.colonyID)
+	funcSpec := utils.CreateTestFunctionSpec(env.colonyName)
 	addedProcess, err := client.Submit(funcSpec, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.Equal(t, core.PENDING, addedProcess.State)
 
-	assignedProcess, err := client.Assign(env.colonyID, -1, env.executorPrvKey)
+	assignedProcess, err := client.Assign(env.colonyName, -1, env.executorPrvKey)
 	assert.Nil(t, err)
 
-	attribute := core.CreateAttribute(core.GenerateRandomID(), env.colonyID, "", core.OUT, "result", "helloworld")
+	attribute := core.CreateAttribute(core.GenerateRandomID(), env.colonyName, "", core.OUT, "result", "helloworld")
 	_, err = client.AddAttribute(attribute, env.executorPrvKey)
 	assert.NotNil(t, err)
 
-	attribute = core.CreateAttribute(assignedProcess.ID, env.colonyID, "", core.OUT, "result", "helloworld")
+	attribute = core.CreateAttribute(assignedProcess.ID, env.colonyName, "", core.OUT, "result", "helloworld")
 	addedAttribute, err := client.AddAttribute(attribute, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.Equal(t, attribute.ID, addedAttribute.ID)

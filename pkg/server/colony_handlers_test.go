@@ -45,40 +45,6 @@ func TestRemoveColony(t *testing.T) {
 	<-done
 }
 
-func TestRenameColony(t *testing.T) {
-	_, client, server, serverPrvKey, done := setupTestEnv2(t)
-
-	colony, colonyPrvKey, err := utils.CreateTestColonyWithKey()
-	colony.Name = "test_name_1"
-	assert.Nil(t, err)
-	addedColony, err := client.AddColony(colony, serverPrvKey)
-	assert.Nil(t, err)
-	assert.True(t, colony.Equals(addedColony))
-
-	executor, executorPrvKey, err := utils.CreateTestExecutorWithKey(addedColony.ID)
-	assert.Nil(t, err)
-
-	_, err = client.AddExecutor(executor, colonyPrvKey)
-	assert.Nil(t, err)
-
-	err = client.ApproveExecutor(executor.ID, colonyPrvKey)
-	assert.Nil(t, err)
-
-	colonyFromServer, err := client.GetColonyByID(addedColony.ID, executorPrvKey)
-	assert.Nil(t, err)
-	assert.Equal(t, colonyFromServer.Name, "test_name_1")
-
-	err = client.RenameColony("test_name_1", "test_name_2", colonyPrvKey)
-	assert.Nil(t, err)
-
-	colonyFromServer, err = client.GetColonyByID(addedColony.ID, executorPrvKey)
-	assert.Nil(t, err)
-	assert.Equal(t, colonyFromServer.Name, "test_name_2")
-
-	server.Shutdown()
-	<-done
-}
-
 func TestGetColony(t *testing.T) {
 	client, server, serverPrvKey, done := prepareTests(t)
 
@@ -87,7 +53,7 @@ func TestGetColony(t *testing.T) {
 	_, err = client.AddColony(colony, serverPrvKey)
 	assert.Nil(t, err)
 
-	executor, executorPrvKey, err := utils.CreateTestExecutorWithKey(colony.ID)
+	executor, executorPrvKey, err := utils.CreateTestExecutorWithKey(colony.Name)
 	assert.Nil(t, err)
 	_, err = client.AddExecutor(executor, colonyPrvKey)
 	assert.Nil(t, err)
@@ -95,7 +61,7 @@ func TestGetColony(t *testing.T) {
 	err = client.ApproveExecutor(executor.ID, colonyPrvKey)
 	assert.Nil(t, err)
 
-	colonyFromServer, err := client.GetColonyByID(colony.ID, executorPrvKey)
+	colonyFromServer, err := client.GetColonyByName(colony.Name, executorPrvKey)
 	assert.Nil(t, err)
 	assert.True(t, colony.Equals(colonyFromServer))
 
@@ -134,7 +100,7 @@ func TestGetColonyStatistics(t *testing.T) {
 	// Waiting
 	numberOfWaitingProcesses := 2
 	for i := 0; i < numberOfWaitingProcesses; i++ {
-		funcSpec := utils.CreateTestFunctionSpec(env.colonyID)
+		funcSpec := utils.CreateTestFunctionSpec(env.colonyName)
 		_, err := client.Submit(funcSpec, env.executorPrvKey)
 		assert.Nil(t, err)
 	}
@@ -142,19 +108,19 @@ func TestGetColonyStatistics(t *testing.T) {
 	// Running
 	numberOfRunningProcesses := 3
 	for i := 0; i < numberOfRunningProcesses; i++ {
-		funcSpec := utils.CreateTestFunctionSpec(env.colonyID)
+		funcSpec := utils.CreateTestFunctionSpec(env.colonyName)
 		_, err := client.Submit(funcSpec, env.executorPrvKey)
 		assert.Nil(t, err)
-		_, err = client.Assign(env.colonyID, -1, env.executorPrvKey)
+		_, err = client.Assign(env.colonyName, -1, env.executorPrvKey)
 	}
 
 	// Successful
 	numberOfSuccessfulProcesses := 1
 	for i := 0; i < numberOfSuccessfulProcesses; i++ {
-		funcSpec := utils.CreateTestFunctionSpec(env.colonyID)
+		funcSpec := utils.CreateTestFunctionSpec(env.colonyName)
 		_, err := client.Submit(funcSpec, env.executorPrvKey)
 		assert.Nil(t, err)
-		processFromServer, err := client.Assign(env.colonyID, -1, env.executorPrvKey)
+		processFromServer, err := client.Assign(env.colonyName, -1, env.executorPrvKey)
 		assert.Nil(t, err)
 		err = client.Close(processFromServer.ID, env.executorPrvKey)
 		assert.Nil(t, err)
@@ -163,10 +129,10 @@ func TestGetColonyStatistics(t *testing.T) {
 	// Failed
 	numberOfFailedProcesses := 2
 	for i := 0; i < numberOfFailedProcesses; i++ {
-		funcSpec := utils.CreateTestFunctionSpec(env.colonyID)
+		funcSpec := utils.CreateTestFunctionSpec(env.colonyName)
 		_, err := client.Submit(funcSpec, env.executorPrvKey)
 		assert.Nil(t, err)
-		processFromServer, err := client.Assign(env.colonyID, -1, env.executorPrvKey)
+		processFromServer, err := client.Assign(env.colonyName, -1, env.executorPrvKey)
 		assert.Nil(t, err)
 		err = client.Fail(processFromServer.ID, []string{"error"}, env.executorPrvKey)
 		assert.Nil(t, err)

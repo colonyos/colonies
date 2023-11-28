@@ -8,6 +8,7 @@ import (
 
 type StandaloneValidator struct {
 	ownership ownership
+	db        database.Database
 }
 
 func createTestValidator(ownership ownership) *StandaloneValidator {
@@ -15,7 +16,7 @@ func createTestValidator(ownership ownership) *StandaloneValidator {
 }
 
 func CreateValidator(db database.Database) *StandaloneValidator {
-	return &StandaloneValidator{ownership: createOwnership(db)}
+	return &StandaloneValidator{ownership: createOwnership(db), db: db}
 }
 
 func (validator *StandaloneValidator) RequireServerOwner(recoveredID string, serverID string) error {
@@ -26,18 +27,23 @@ func (validator *StandaloneValidator) RequireServerOwner(recoveredID string, ser
 	return nil
 }
 
-func (validator *StandaloneValidator) RequireColonyOwner(recoveredID string, colonyID string) error {
+func (validator *StandaloneValidator) RequireColonyOwner(recoveredID string, colonyName string) error {
+	colonyID, err := validator.ownership.resolveColony(colonyName)
+	if err != nil {
+		return err
+	}
+
 	if recoveredID != colonyID {
 		return errors.New("Access denied, not Colony owner")
 	}
 
-	return validator.ownership.checkIfColonyExists(colonyID)
+	return nil
 }
 
-func (validator *StandaloneValidator) RequireMembership(recoveredID string, colonyID string, approved bool) error {
-	err := validator.ownership.checkIfExecutorIsValid(recoveredID, colonyID, approved)
+func (validator *StandaloneValidator) RequireMembership(recoveredID string, colonyName string, approved bool) error {
+	err := validator.ownership.checkIfExecutorIsValid(recoveredID, colonyName, approved)
 	if err != nil {
-		return validator.ownership.checkIfUserIsValid(recoveredID, colonyID)
+		return validator.ownership.checkIfUserIsValid(recoveredID, colonyName)
 	}
 
 	return nil

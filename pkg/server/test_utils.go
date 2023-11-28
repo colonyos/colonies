@@ -69,12 +69,12 @@ func setupTestEnv1(t *testing.T) (*testEnv1, *client.ColoniesClient, *ColoniesSe
 	_, err = client.AddColony(colony2, serverPrvKey)
 	assert.Nil(t, err)
 
-	executor1, executor1PrvKey, err := utils.CreateTestExecutorWithKey(colony1.ID)
+	executor1, executor1PrvKey, err := utils.CreateTestExecutorWithKey(colony1.Name)
 	assert.Nil(t, err)
 	_, err = client.AddExecutor(executor1, colony1PrvKey)
 	assert.Nil(t, err)
 
-	executor2, executor2PrvKey, err := utils.CreateTestExecutorWithKey(colony2.ID)
+	executor2, executor2PrvKey, err := utils.CreateTestExecutorWithKey(colony2.Name)
 	assert.Nil(t, err)
 	_, err = client.AddExecutor(executor2, colony2PrvKey)
 	assert.Nil(t, err)
@@ -112,7 +112,7 @@ func setupTestEnv2(t *testing.T) (*testEnv2, *client.ColoniesClient, *ColoniesSe
 	_, err = client.AddColony(colony, serverPrvKey)
 	assert.Nil(t, err)
 
-	executor, executorPrvKey, err := utils.CreateTestExecutorWithKey(colony.ID)
+	executor, executorPrvKey, err := utils.CreateTestExecutorWithKey(colony.Name)
 	_, err = client.AddExecutor(executor, colonyPrvKey)
 	assert.Nil(t, err)
 
@@ -192,22 +192,22 @@ func generateDiamondtWorkflowSpec(colonyID string) *core.WorkflowSpec {
 
 	funcSpec1 := core.CreateEmptyFunctionSpec()
 	funcSpec1.NodeName = "task1"
-	funcSpec1.Conditions.ColonyID = colonyID
+	funcSpec1.Conditions.ColonyName = colonyID
 	funcSpec1.Conditions.ExecutorType = "test_executor_type"
 
 	funcSpec2 := core.CreateEmptyFunctionSpec()
 	funcSpec2.NodeName = "task2"
-	funcSpec2.Conditions.ColonyID = colonyID
+	funcSpec2.Conditions.ColonyName = colonyID
 	funcSpec2.Conditions.ExecutorType = "test_executor_type"
 
 	funcSpec3 := core.CreateEmptyFunctionSpec()
 	funcSpec3.NodeName = "task3"
-	funcSpec3.Conditions.ColonyID = colonyID
+	funcSpec3.Conditions.ColonyName = colonyID
 	funcSpec3.Conditions.ExecutorType = "test_executor_type"
 
 	funcSpec4 := core.CreateEmptyFunctionSpec()
 	funcSpec4.NodeName = "task4"
-	funcSpec4.Conditions.ColonyID = colonyID
+	funcSpec4.Conditions.ColonyName = colonyID
 	funcSpec4.Conditions.ExecutorType = "test_executor_type"
 
 	funcSpec2.AddDependency("task1")
@@ -232,17 +232,17 @@ func generateTreeWorkflowSpec(colonyID string) *core.WorkflowSpec {
 
 	funcSpec1 := core.CreateEmptyFunctionSpec()
 	funcSpec1.NodeName = "task1"
-	funcSpec1.Conditions.ColonyID = colonyID
+	funcSpec1.Conditions.ColonyName = colonyID
 	funcSpec1.Conditions.ExecutorType = "test_executor_type"
 
 	funcSpec2 := core.CreateEmptyFunctionSpec()
 	funcSpec2.NodeName = "task2"
-	funcSpec2.Conditions.ColonyID = colonyID
+	funcSpec2.Conditions.ColonyName = colonyID
 	funcSpec2.Conditions.ExecutorType = "test_executor_type"
 
 	funcSpec3 := core.CreateEmptyFunctionSpec()
 	funcSpec3.NodeName = "task3"
-	funcSpec3.Conditions.ColonyID = colonyID
+	funcSpec3.Conditions.ColonyName = colonyID
 	funcSpec3.Conditions.ExecutorType = "test_executor_type"
 
 	funcSpec2.AddDependency("task1")
@@ -259,7 +259,7 @@ func generateSingleWorkflowSpec(colonyID string) *core.WorkflowSpec {
 	workflowSpec := core.CreateWorkflowSpec(colonyID)
 	funcSpec1 := core.CreateEmptyFunctionSpec()
 	funcSpec1.NodeName = "task1"
-	funcSpec1.Conditions.ColonyID = colonyID
+	funcSpec1.Conditions.ColonyName = colonyID
 	funcSpec1.Conditions.ExecutorType = "test_executor_type"
 
 	workflowSpec.AddFunctionSpec(funcSpec1)

@@ -35,7 +35,7 @@ func (server *ColoniesServer) handleAddLogHTTPRequest(c *gin.Context, recoveredI
 		return
 	}
 
-	err = server.validator.RequireMembership(recoveredID, process.FunctionSpec.Conditions.ColonyID, true)
+	err = server.validator.RequireMembership(recoveredID, process.FunctionSpec.Conditions.ColonyName, true)
 	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		log.Error(err)
 		return
@@ -57,7 +57,7 @@ func (server *ColoniesServer) handleAddLogHTTPRequest(c *gin.Context, recoveredI
 		return
 	}
 
-	err = server.controller.addLog(process.ID, process.FunctionSpec.Conditions.ColonyID, recoveredID, msg.Message)
+	err = server.controller.addLog(process.ID, process.FunctionSpec.Conditions.ColonyName, recoveredID, msg.Message)
 	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		log.WithFields(log.Fields{"Error": err}).Debug("Failed to add log")
 		server.handleHTTPError(c, err, http.StatusInternalServerError)
@@ -95,7 +95,7 @@ func (server *ColoniesServer) handleGetLogsHTTPRequest(c *gin.Context, recovered
 			return
 		}
 
-		err = server.validator.RequireMembership(recoveredID, executor.ColonyID, true)
+		err = server.validator.RequireMembership(recoveredID, executor.ColonyName, true)
 		if server.handleHTTPError(c, err, http.StatusForbidden) {
 			log.Error(err)
 			return
@@ -112,7 +112,7 @@ func (server *ColoniesServer) handleGetLogsHTTPRequest(c *gin.Context, recovered
 			return
 		}
 
-		err = server.validator.RequireMembership(recoveredID, process.FunctionSpec.Conditions.ColonyID, true)
+		err = server.validator.RequireMembership(recoveredID, process.FunctionSpec.Conditions.ColonyName, true)
 		if server.handleHTTPError(c, err, http.StatusForbidden) {
 			log.Error(err)
 			return

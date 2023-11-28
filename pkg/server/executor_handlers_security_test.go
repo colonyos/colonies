@@ -9,7 +9,7 @@ import (
 
 func TestAddExecutorSecurity(t *testing.T) {
 	env, client, server, _, done := setupTestEnv1(t)
-	executor3, _, err := utils.CreateTestExecutorWithKey(env.colony1ID)
+	executor3, _, err := utils.CreateTestExecutorWithKey(env.colony1Name)
 	assert.Nil(t, err)
 
 	// The setup looks like this:
@@ -37,19 +37,19 @@ func TestGetExecutorsByColonySecurity(t *testing.T) {
 	//   executor2 is member of colony2
 
 	// Now try to access executor1 using credential of executor2
-	_, err := client.GetExecutors(env.colony1ID, env.executor2PrvKey)
+	_, err := client.GetExecutors(env.colony1Name, env.executor2PrvKey)
 	assert.NotNil(t, err) // Should not work
 
 	// Now try to access executor1 using executor1 credential
-	_, err = client.GetExecutors(env.colony1ID, env.executor1PrvKey)
+	_, err = client.GetExecutors(env.colony1Name, env.executor1PrvKey)
 	assert.Nil(t, err) // Should work
 
 	// Now try to access executor1 using colony1 credential
-	_, err = client.GetExecutors(env.colony1ID, env.colony1PrvKey)
+	_, err = client.GetExecutors(env.colony1Name, env.colony1PrvKey)
 	assert.Nil(t, err) // Should work, colony owner can also get executors
 
 	// Now try to access executor1 using colony1 credential
-	_, err = client.GetExecutors(env.colony1ID, env.colony2PrvKey)
+	_, err = client.GetExecutors(env.colony1Name, env.colony2PrvKey)
 	assert.NotNil(t, err) // Should not work, cannot use colony2 credential
 
 	server.Shutdown()
@@ -85,7 +85,7 @@ func TestGetExecutorSecurity(t *testing.T) {
 
 func TestApproveExecutorSecurity(t *testing.T) {
 	env, client, server, _, done := setupTestEnv1(t)
-	executor3, _, err := utils.CreateTestExecutorWithKey(env.colony1ID)
+	executor3, _, err := utils.CreateTestExecutorWithKey(env.colony1Name)
 	assert.Nil(t, err)
 
 	// The setup looks like this:
@@ -108,7 +108,7 @@ func TestApproveExecutorSecurity(t *testing.T) {
 
 func TestRejectExecutorSecurity(t *testing.T) {
 	env, client, server, _, done := setupTestEnv1(t)
-	executor3, _, err := utils.CreateTestExecutorWithKey(env.colony1ID)
+	executor3, _, err := utils.CreateTestExecutorWithKey(env.colony1Name)
 	assert.Nil(t, err)
 
 	// The setup looks like this:
@@ -137,18 +137,18 @@ func TestNonApprovedExecutorSecurity(t *testing.T) {
 	//   executor2 is member of colony2
 
 	// Add another executor to colony1 and list all executors, it should be possible
-	executor3, executor3PrvKey, err := utils.CreateTestExecutorWithKey(env.colony1ID)
+	executor3, executor3PrvKey, err := utils.CreateTestExecutorWithKey(env.colony1Name)
 	assert.Nil(t, err)
 	_, err = client.AddExecutor(executor3, env.colony1PrvKey)
 	assert.Nil(t, err)
 
-	_, err = client.GetExecutors(env.colony1ID, executor3PrvKey)
+	_, err = client.GetExecutors(env.colony1Name, executor3PrvKey)
 	assert.Nil(t, err) // Should work, executor should be able to list all executors even if it is not approved
 
 	err = client.ApproveExecutor(executor3.ID, env.colony1PrvKey)
 	assert.Nil(t, err)
 
-	_, err = client.GetExecutors(env.colony1ID, executor3PrvKey)
+	_, err = client.GetExecutors(env.colony1Name, executor3PrvKey)
 	assert.Nil(t, err) // Should also work
 
 	server.Shutdown()
@@ -163,7 +163,7 @@ func TestDeleteExecutorSecurity(t *testing.T) {
 	//   executor2 is member of colony2
 
 	// Add another executor to colony1 and list all executors, it should be possible
-	executor3, executor3PrvKey, err := utils.CreateTestExecutorWithKey(env.colony1ID)
+	executor3, executor3PrvKey, err := utils.CreateTestExecutorWithKey(env.colony1Name)
 	assert.Nil(t, err)
 	_, err = client.AddExecutor(executor3, env.colony1PrvKey)
 	assert.Nil(t, err)

@@ -17,10 +17,10 @@ func TestAddLogSecurity(t *testing.T) {
 	output := make([]interface{}, 2)
 	output[0] = "result1"
 
-	funcSpec := utils.CreateTestFunctionSpec(env.colony1ID)
+	funcSpec := utils.CreateTestFunctionSpec(env.colony1Name)
 	_, err := client.Submit(funcSpec, env.executor1PrvKey)
 	assert.Nil(t, err)
-	processFromServer, err := client.Assign(env.colony1ID, -1, env.executor1PrvKey)
+	processFromServer, err := client.Assign(env.colony1Name, -1, env.executor1PrvKey)
 	assert.Nil(t, err)
 
 	err = client.AddLog(processFromServer.ID, "test_msg", env.executor2PrvKey)
@@ -46,10 +46,10 @@ func TestGetLogsSecurity(t *testing.T) {
 	//   executor1 is member of colony1
 	//   executor2 is member of colony2
 
-	funcSpec := utils.CreateTestFunctionSpec(env.colony1ID)
+	funcSpec := utils.CreateTestFunctionSpec(env.colony1Name)
 	_, err := client.Submit(funcSpec, env.executor1PrvKey)
 	assert.Nil(t, err)
-	processFromServer, err := client.Assign(env.colony1ID, -1, env.executor1PrvKey)
+	processFromServer, err := client.Assign(env.colony1Name, -1, env.executor1PrvKey)
 	assert.Nil(t, err)
 
 	err = client.AddLog(processFromServer.ID, "test_msg", env.executor1PrvKey)
