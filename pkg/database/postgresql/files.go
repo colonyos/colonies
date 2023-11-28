@@ -9,8 +9,8 @@ import (
 )
 
 func (db *PQDatabase) AddFile(file *core.File) error {
-	sqlStatement := `INSERT INTO  ` + db.dbPrefix + `FILES (FILE_ID, COLONY_ID, LABEL, NAME, SIZE, SEQNR, CHECKSUM, CHECKSUM_ALG, ADDED, PROTOCOL, S3_SERVER, S3_PORT, S3_TLS, S3_ACCESSKEY, S3_SECRETKEY, S3_REGION, S3_ENCKEY, S3_ENCALG, S3_OBJ, S3_BUCKET) VALUES ($1, $2, $3, $4, $5, nextval('` + db.dbPrefix + `FILE_SEQ'), $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)`
-	_, err := db.postgresql.Exec(sqlStatement, file.ID, file.ColonyID, file.Label, file.Name, file.Size, file.Checksum, file.ChecksumAlg, time.Now(), file.Reference.Protocol, file.Reference.S3Object.Server, file.Reference.S3Object.Port, file.Reference.S3Object.TLS, file.Reference.S3Object.AccessKey, file.Reference.S3Object.SecretKey, file.Reference.S3Object.Region, file.Reference.S3Object.EncryptionKey, file.Reference.S3Object.EncryptionAlg, file.Reference.S3Object.Object, file.Reference.S3Object.Bucket)
+	sqlStatement := `INSERT INTO  ` + db.dbPrefix + `FILES (FILE_ID, COLONY_NAME, LABEL, NAME, SIZE, SEQNR, CHECKSUM, CHECKSUM_ALG, ADDED, PROTOCOL, S3_SERVER, S3_PORT, S3_TLS, S3_ACCESSKEY, S3_SECRETKEY, S3_REGION, S3_ENCKEY, S3_ENCALG, S3_OBJ, S3_BUCKET) VALUES ($1, $2, $3, $4, $5, nextval('` + db.dbPrefix + `FILE_SEQ'), $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)`
+	_, err := db.postgresql.Exec(sqlStatement, file.ID, file.ColonyName, file.Label, file.Name, file.Size, file.Checksum, file.ChecksumAlg, time.Now(), file.Reference.Protocol, file.Reference.S3Object.Server, file.Reference.S3Object.Port, file.Reference.S3Object.TLS, file.Reference.S3Object.AccessKey, file.Reference.S3Object.SecretKey, file.Reference.S3Object.Region, file.Reference.S3Object.EncryptionKey, file.Reference.S3Object.EncryptionAlg, file.Reference.S3Object.Object, file.Reference.S3Object.Bucket)
 	if err != nil {
 		return err
 	}
@@ -23,7 +23,7 @@ func (db *PQDatabase) parseFiles(rows *sql.Rows) ([]*core.File, error) {
 
 	for rows.Next() {
 		var fileID string
-		var colonyID string
+		var colonyName string
 		var label string
 		var name string
 		var size int64
@@ -43,7 +43,7 @@ func (db *PQDatabase) parseFiles(rows *sql.Rows) ([]*core.File, error) {
 		var s3Object string
 		var s3Bucket string
 
-		if err := rows.Scan(&fileID, &colonyID, &label, &name, &size, &seqnr, &checksum, &checksumAlg, &added, &protocol, &s3Server, &s3Port, &s3TLS, &s3AccessKey, &s3SecretKey, &s3Region, &s3EncryptionKey, &s3EncryptionAlg, &s3Object, &s3Bucket); err != nil {
+		if err := rows.Scan(&fileID, &colonyName, &label, &name, &size, &seqnr, &checksum, &checksumAlg, &added, &protocol, &s3Server, &s3Port, &s3TLS, &s3AccessKey, &s3SecretKey, &s3Region, &s3EncryptionKey, &s3EncryptionAlg, &s3Object, &s3Bucket); err != nil {
 			return nil, err
 		}
 
@@ -62,7 +62,7 @@ func (db *PQDatabase) parseFiles(rows *sql.Rows) ([]*core.File, error) {
 		ref := core.Reference{Protocol: "s3", S3Object: s3ObjectStruct}
 		file := core.File{
 			ID:             fileID,
-			ColonyID:       colonyID,
+			ColonyName:     colonyName,
 			Label:          label,
 			Name:           name,
 			Size:           size,
@@ -95,9 +95,9 @@ func (db *PQDatabase) parseLabel(rows *sql.Rows) ([]string, error) {
 	return labelStr, nil
 }
 
-func (db *PQDatabase) GetFileByID(colonyID string, fileID string) (*core.File, error) {
-	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `FILES WHERE COLONY_ID=$1 AND FILE_ID=$2`
-	rows, err := db.postgresql.Query(sqlStatement, colonyID, fileID)
+func (db *PQDatabase) GetFileByID(colonyName string, fileID string) (*core.File, error) {
+	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `FILES WHERE COLONY_NAME=$1 AND FILE_ID=$2`
+	rows, err := db.postgresql.Query(sqlStatement, colonyName, fileID)
 	if err != nil {
 		return nil, err
 	}
@@ -116,9 +116,9 @@ func (db *PQDatabase) GetFileByID(colonyID string, fileID string) (*core.File, e
 	return nil, nil
 }
 
-func (db *PQDatabase) GetLatestFileByName(colonyID string, label string, name string) ([]*core.File, error) {
-	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `FILES WHERE COLONY_ID=$1 AND NAME=$2 AND LABEL=$3 ORDER BY SEQNR DESC LIMIT 1`
-	rows, err := db.postgresql.Query(sqlStatement, colonyID, name, label)
+func (db *PQDatabase) GetLatestFileByName(colonyName string, label string, name string) ([]*core.File, error) {
+	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `FILES WHERE COLONY_NAME=$1 AND NAME=$2 AND LABEL=$3 ORDER BY SEQNR DESC LIMIT 1`
+	rows, err := db.postgresql.Query(sqlStatement, colonyName, name, label)
 	if err != nil {
 		return nil, err
 	}
@@ -137,9 +137,9 @@ func (db *PQDatabase) GetLatestFileByName(colonyID string, label string, name st
 	return nil, nil
 }
 
-func (db *PQDatabase) GetFileByName(colonyID string, label string, name string) ([]*core.File, error) {
-	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `FILES WHERE COLONY_ID=$1 AND LABEL=$2 AND NAME=$3 ORDER BY SEQNR DESC`
-	rows, err := db.postgresql.Query(sqlStatement, colonyID, label, name)
+func (db *PQDatabase) GetFileByName(colonyName string, label string, name string) ([]*core.File, error) {
+	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `FILES WHERE COLONY_NAME=$1 AND LABEL=$2 AND NAME=$3 ORDER BY SEQNR DESC`
+	rows, err := db.postgresql.Query(sqlStatement, colonyName, label, name)
 	if err != nil {
 		return nil, err
 	}
@@ -154,9 +154,9 @@ func (db *PQDatabase) GetFileByName(colonyID string, label string, name string) 
 	return files, nil
 }
 
-func (db *PQDatabase) GetFilenamesByLabel(colonyID string, label string) ([]string, error) {
-	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `FILES WHERE COLONY_ID=$1 AND LABEL=$2`
-	rows, err := db.postgresql.Query(sqlStatement, colonyID, label)
+func (db *PQDatabase) GetFilenamesByLabel(colonyName string, label string) ([]string, error) {
+	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `FILES WHERE COLONY_NAME=$1 AND LABEL=$2`
+	rows, err := db.postgresql.Query(sqlStatement, colonyName, label)
 	if err != nil {
 		return nil, err
 	}
@@ -182,9 +182,9 @@ func (db *PQDatabase) GetFilenamesByLabel(colonyID string, label string) ([]stri
 	return filenames, nil
 }
 
-func (db *PQDatabase) DeleteFileByID(colonyID string, fileID string) error {
-	sqlStatement := `DELETE FROM ` + db.dbPrefix + `FILES WHERE COLONY_ID=$1 AND FILE_ID=$2`
-	_, err := db.postgresql.Exec(sqlStatement, colonyID, fileID)
+func (db *PQDatabase) DeleteFileByID(colonyName string, fileID string) error {
+	sqlStatement := `DELETE FROM ` + db.dbPrefix + `FILES WHERE COLONY_NAME=$1 AND FILE_ID=$2`
+	_, err := db.postgresql.Exec(sqlStatement, colonyName, fileID)
 	if err != nil {
 		return err
 	}
@@ -192,9 +192,9 @@ func (db *PQDatabase) DeleteFileByID(colonyID string, fileID string) error {
 	return nil
 }
 
-func (db *PQDatabase) DeleteFileByName(colonyID string, label string, name string) error {
-	sqlStatement := `DELETE FROM ` + db.dbPrefix + `FILES WHERE COLONY_ID=$1 AND LABEL=$2 AND NAME=$3`
-	_, err := db.postgresql.Exec(sqlStatement, colonyID, label, name)
+func (db *PQDatabase) DeleteFileByName(colonyName string, label string, name string) error {
+	sqlStatement := `DELETE FROM ` + db.dbPrefix + `FILES WHERE COLONY_NAME=$1 AND LABEL=$2 AND NAME=$3`
+	_, err := db.postgresql.Exec(sqlStatement, colonyName, label, name)
 	if err != nil {
 		return err
 	}
@@ -202,9 +202,9 @@ func (db *PQDatabase) DeleteFileByName(colonyID string, label string, name strin
 	return nil
 }
 
-func (db *PQDatabase) DeleteFilesByColonyID(colonyID string) error {
-	sqlStatement := `DELETE FROM ` + db.dbPrefix + `FILES WHERE COLONY_ID=$1`
-	_, err := db.postgresql.Exec(sqlStatement, colonyID)
+func (db *PQDatabase) DeleteFilesByColonyName(colonyName string) error {
+	sqlStatement := `DELETE FROM ` + db.dbPrefix + `FILES WHERE COLONY_NAME=$1`
+	_, err := db.postgresql.Exec(sqlStatement, colonyName)
 	if err != nil {
 		return err
 	}
@@ -212,9 +212,9 @@ func (db *PQDatabase) DeleteFilesByColonyID(colonyID string) error {
 	return nil
 }
 
-func (db *PQDatabase) GetFileLabels(colonyID string) ([]*core.Label, error) {
-	sqlStatement := `SELECT DISTINCT (LABEL) FROM ` + db.dbPrefix + `FILES WHERE COLONY_ID=$1`
-	rows, err := db.postgresql.Query(sqlStatement, colonyID)
+func (db *PQDatabase) GetFileLabels(colonyName string) ([]*core.Label, error) {
+	sqlStatement := `SELECT DISTINCT (LABEL) FROM ` + db.dbPrefix + `FILES WHERE COLONY_NAME=$1`
+	rows, err := db.postgresql.Query(sqlStatement, colonyName)
 	if err != nil {
 		return nil, err
 	}
@@ -228,7 +228,7 @@ func (db *PQDatabase) GetFileLabels(colonyID string) ([]*core.Label, error) {
 
 	var labels []*core.Label
 	for _, labelStr := range labelsStr {
-		fileCount, err := db.CountFilesWithLabel(colonyID, labelStr)
+		fileCount, err := db.CountFilesWithLabel(colonyName, labelStr)
 		if err != nil {
 			return nil, err
 		}
@@ -238,9 +238,9 @@ func (db *PQDatabase) GetFileLabels(colonyID string) ([]*core.Label, error) {
 	return labels, nil
 }
 
-func (db *PQDatabase) GetFileLabelsByName(colonyID string, name string) ([]*core.Label, error) {
-	sqlStatement := `SELECT DISTINCT (LABEL) FROM ` + db.dbPrefix + `FILES WHERE COLONY_ID=$1 AND LABEL LIKE $2`
-	rows, err := db.postgresql.Query(sqlStatement, colonyID, name+"%")
+func (db *PQDatabase) GetFileLabelsByName(colonyName string, name string) ([]*core.Label, error) {
+	sqlStatement := `SELECT DISTINCT (LABEL) FROM ` + db.dbPrefix + `FILES WHERE COLONY_NAME=$1 AND LABEL LIKE $2`
+	rows, err := db.postgresql.Query(sqlStatement, colonyName, name+"%")
 	if err != nil {
 		return nil, err
 	}
@@ -254,7 +254,7 @@ func (db *PQDatabase) GetFileLabelsByName(colonyID string, name string) ([]*core
 
 	var labels []*core.Label
 	for _, labelStr := range labelsStr {
-		fileCount, err := db.CountFilesWithLabel(colonyID, labelStr)
+		fileCount, err := db.CountFilesWithLabel(colonyName, labelStr)
 		if err != nil {
 			return nil, err
 		}
@@ -264,9 +264,9 @@ func (db *PQDatabase) GetFileLabelsByName(colonyID string, name string) ([]*core
 	return labels, nil
 }
 
-func (db *PQDatabase) CountFiles(colonyID string) (int, error) {
-	sqlStatement := `SELECT COUNT(*) FROM ` + db.dbPrefix + `FILES WHERE COLONY_ID=$1`
-	rows, err := db.postgresql.Query(sqlStatement, colonyID)
+func (db *PQDatabase) CountFiles(colonyName string) (int, error) {
+	sqlStatement := `SELECT COUNT(*) FROM ` + db.dbPrefix + `FILES WHERE COLONY_NAME=$1`
+	rows, err := db.postgresql.Query(sqlStatement, colonyName)
 	if err != nil {
 		return -1, err
 	}
@@ -283,9 +283,9 @@ func (db *PQDatabase) CountFiles(colonyID string) (int, error) {
 	return count, nil
 }
 
-func (db *PQDatabase) CountFilesWithLabel(colonyID string, label string) (int, error) {
-	sqlStatement := `SELECT COUNT(*) FROM ` + db.dbPrefix + `FILES WHERE COLONY_ID=$1 AND LABEL=$2`
-	rows, err := db.postgresql.Query(sqlStatement, colonyID, label)
+func (db *PQDatabase) CountFilesWithLabel(colonyName string, label string) (int, error) {
+	sqlStatement := `SELECT COUNT(*) FROM ` + db.dbPrefix + `FILES WHERE COLONY_NAME=$1 AND LABEL=$2`
+	rows, err := db.postgresql.Query(sqlStatement, colonyName, label)
 	if err != nil {
 		return -1, err
 	}

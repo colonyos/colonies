@@ -10,10 +10,10 @@ import (
 func TestIsSnapshotEquals(t *testing.T) {
 	now := time.Now()
 	fileID1s := []string{"test_file_id1", "test_file_id2"}
-	snapshot1 := &Snapshot{ID: "test_snapshot_id1", ColonyID: "test_colony_id1", Label: "test_label", Name: "test_snapshotname", FileIDs: fileID1s, Added: now}
+	snapshot1 := &Snapshot{ID: "test_snapshot_id1", ColonyName: "test_colony_1", Label: "test_label", Name: "test_snapshotname", FileIDs: fileID1s, Added: now}
 
 	fileID2s := []string{"test_file_id1", "test_file_id2"}
-	snapshot2 := &Snapshot{ID: "test_snapshot_id1", ColonyID: "test_colony_id1", Label: "test_label", Name: "test_snapshotname", FileIDs: fileID2s, Added: now}
+	snapshot2 := &Snapshot{ID: "test_snapshot_id1", ColonyName: "test_colony_1", Label: "test_label", Name: "test_snapshotname", FileIDs: fileID2s, Added: now}
 
 	assert.True(t, snapshot1.Equals(snapshot2))
 	snapshot1.Name = "changed_name"
@@ -23,7 +23,7 @@ func TestIsSnapshotEquals(t *testing.T) {
 func TestSnapshotToJSON(t *testing.T) {
 	now := time.Now()
 	fileID1s := []string{"test_file_id1", "test_file_id2"}
-	snapshot1 := &Snapshot{ID: "test_snapshot_id1", ColonyID: "test_colony_id1", Label: "test_label", Name: "test_snapshotname", FileIDs: fileID1s, Added: now}
+	snapshot1 := &Snapshot{ID: "test_snapshot_id1", ColonyName: "test_colony_1", Label: "test_label", Name: "test_snapshotname", FileIDs: fileID1s, Added: now}
 	jsonStr, err := snapshot1.ToJSON()
 	assert.Nil(t, err)
 
@@ -35,10 +35,10 @@ func TestSnapshotToJSON(t *testing.T) {
 func TestIsSnapshotArraysEquals(t *testing.T) {
 	now := time.Now()
 	fileIDs := []string{"test_file_id1", "test_file_id2"}
-	snapshot1 := &Snapshot{ID: "test_snapshot_id1", ColonyID: "test_colony_id1", Label: "test_label", Name: "test_snapshotname1", FileIDs: fileIDs, Added: now}
-	snapshot2 := &Snapshot{ID: "test_snapshot_id2", ColonyID: "test_colony_id1", Label: "test_label", Name: "test_snapshotname2", FileIDs: fileIDs, Added: now}
-	snapshot3 := &Snapshot{ID: "test_snapshot_id3", ColonyID: "test_colony_id1", Label: "test_label", Name: "test_snapshotname3", FileIDs: fileIDs, Added: now}
-	snapshot4 := &Snapshot{ID: "test_snapshot_id4", ColonyID: "test_colony_id1", Label: "test_label", Name: "test_snapshotname4", FileIDs: fileIDs, Added: now}
+	snapshot1 := &Snapshot{ID: "test_snapshot_id1", ColonyName: "test_colony_1", Label: "test_label", Name: "test_snapshotname1", FileIDs: fileIDs, Added: now}
+	snapshot2 := &Snapshot{ID: "test_snapshot_id2", ColonyName: "test_colony_1", Label: "test_label", Name: "test_snapshotname2", FileIDs: fileIDs, Added: now}
+	snapshot3 := &Snapshot{ID: "test_snapshot_id3", ColonyName: "test_colony_1", Label: "test_label", Name: "test_snapshotname3", FileIDs: fileIDs, Added: now}
+	snapshot4 := &Snapshot{ID: "test_snapshot_id4", ColonyName: "test_colony_1", Label: "test_label", Name: "test_snapshotname4", FileIDs: fileIDs, Added: now}
 
 	snapshots1 := []*Snapshot{snapshot1, snapshot2}
 	snapshots2 := []*Snapshot{snapshot3, snapshot4}
@@ -49,8 +49,8 @@ func TestIsSnapshotArraysEquals(t *testing.T) {
 func TestSnapshotArrayToJSON(t *testing.T) {
 	now := time.Now()
 	fileIDs := []string{"test_file_id1", "test_file_id2"}
-	snapshot1 := &Snapshot{ID: "test_snapshot_id1", ColonyID: "test_colony_id1", Label: "test_label", Name: "test_snapshotname1", FileIDs: fileIDs, Added: now}
-	snapshot2 := &Snapshot{ID: "test_snapshot_id2", ColonyID: "test_colony_id1", Label: "test_label", Name: "test_snapshotname2", FileIDs: fileIDs, Added: now}
+	snapshot1 := &Snapshot{ID: "test_snapshot_id1", ColonyName: "test_colony_1", Label: "test_label", Name: "test_snapshotname1", FileIDs: fileIDs, Added: now}
+	snapshot2 := &Snapshot{ID: "test_snapshot_id2", ColonyName: "test_colony_1", Label: "test_label", Name: "test_snapshotname2", FileIDs: fileIDs, Added: now}
 	snapshots1 := []*Snapshot{snapshot1, snapshot2}
 
 	jsonStr, err := ConvertSnapshotArrayToJSON(snapshots1)

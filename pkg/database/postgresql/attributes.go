@@ -20,8 +20,8 @@ func (db *PQDatabase) AddAttributes(attributes []core.Attribute) error {
 }
 
 func (db *PQDatabase) AddAttribute(attribute core.Attribute) error {
-	sqlStatement := `INSERT INTO  ` + db.dbPrefix + `ATTRIBUTES (ATTRIBUTE_ID, KEY, VALUE, ATTRIBUTE_TYPE, TARGET_ID, TARGET_COLONY_ID, PROCESSGRAPH_ID, ADDED, STATE) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`
-	_, err := db.postgresql.Exec(sqlStatement, attribute.ID, attribute.Key, attribute.Value, attribute.AttributeType, attribute.TargetID, attribute.TargetColonyID, attribute.TargetProcessGraphID, time.Now(), attribute.State)
+	sqlStatement := `INSERT INTO  ` + db.dbPrefix + `ATTRIBUTES (ATTRIBUTE_ID, KEY, VALUE, ATTRIBUTE_TYPE, TARGET_ID, TARGET_COLONY_NAME, PROCESSGRAPH_ID, ADDED, STATE) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`
+	_, err := db.postgresql.Exec(sqlStatement, attribute.ID, attribute.Key, attribute.Value, attribute.AttributeType, attribute.TargetID, attribute.TargetColonyName, attribute.TargetProcessGraphID, time.Now(), attribute.State)
 	if err != nil {
 		return err
 	}
@@ -38,15 +38,15 @@ func (db *PQDatabase) parseAttributes(rows *sql.Rows) ([]core.Attribute, error) 
 		var value string
 		var attributeType int
 		var targetID string
-		var targetColonyID string
+		var targetColonyName string
 		var targetProcessGraphID string
 		var added time.Time
 		var state int
-		if err := rows.Scan(&attributeID, &key, &value, &attributeType, &targetID, &targetColonyID, &targetProcessGraphID, &added, &state); err != nil {
+		if err := rows.Scan(&attributeID, &key, &value, &attributeType, &targetID, &targetColonyName, &targetProcessGraphID, &added, &state); err != nil {
 			return nil, err
 		}
 
-		attribute := core.CreateAttribute(targetID, targetColonyID, targetProcessGraphID, attributeType, key, value)
+		attribute := core.CreateAttribute(targetID, targetColonyName, targetProcessGraphID, attributeType, key, value)
 		attribute.State = state
 		attributes = append(attributes, attribute)
 	}
@@ -77,9 +77,9 @@ func (db *PQDatabase) GetAttributeByID(attributeID string) (core.Attribute, erro
 	return attributes[0], nil
 }
 
-func (db *PQDatabase) GetAttributesByColonyID(colonyID string) ([]core.Attribute, error) {
-	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `ATTRIBUTES WHERE TARGET_COLONY_ID=$1`
-	rows, err := db.postgresql.Query(sqlStatement, colonyID)
+func (db *PQDatabase) GetAttributesByColonyName(colonyName string) ([]core.Attribute, error) {
+	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `ATTRIBUTES WHERE TARGET_COLONY_NAME=$1`
+	rows, err := db.postgresql.Query(sqlStatement, colonyName)
 	if err != nil {
 		return []core.Attribute{}, err
 	}
@@ -175,9 +175,9 @@ func (db *PQDatabase) DeleteAttributeByID(attributeID string) error {
 	return nil
 }
 
-func (db *PQDatabase) DeleteAllAttributesByColonyID(colonyID string) error {
-	sqlStatement := `DELETE FROM ` + db.dbPrefix + `ATTRIBUTES WHERE TARGET_COLONY_ID=$1`
-	_, err := db.postgresql.Exec(sqlStatement, colonyID)
+func (db *PQDatabase) DeleteAllAttributesByColonyName(colonyName string) error {
+	sqlStatement := `DELETE FROM ` + db.dbPrefix + `ATTRIBUTES WHERE TARGET_COLONY_NAME=$1`
+	_, err := db.postgresql.Exec(sqlStatement, colonyName)
 	if err != nil {
 		return err
 	}
@@ -185,9 +185,9 @@ func (db *PQDatabase) DeleteAllAttributesByColonyID(colonyID string) error {
 	return nil
 }
 
-func (db *PQDatabase) DeleteAllAttributesByColonyIDWithState(colonyID string, state int) error {
-	sqlStatement := `DELETE FROM ` + db.dbPrefix + `ATTRIBUTES WHERE TARGET_COLONY_ID=$1 AND STATE=$2 AND PROCESSGRAPH_ID=$3`
-	_, err := db.postgresql.Exec(sqlStatement, colonyID, state, "")
+func (db *PQDatabase) DeleteAllAttributesByColonyNameWithState(colonyName string, state int) error {
+	sqlStatement := `DELETE FROM ` + db.dbPrefix + `ATTRIBUTES WHERE TARGET_COLONY_NAME=$1 AND STATE=$2 AND PROCESSGRAPH_ID=$3`
+	_, err := db.postgresql.Exec(sqlStatement, colonyName, state, "")
 	if err != nil {
 		return err
 	}
@@ -205,9 +205,9 @@ func (db *PQDatabase) DeleteAllAttributesByProcessGraphID(processGraphID string)
 	return nil
 }
 
-func (db *PQDatabase) DeleteAllAttributesInProcessGraphsByColonyID(colonyID string) error {
-	sqlStatement := `DELETE FROM ` + db.dbPrefix + `ATTRIBUTES WHERE PROCESSGRAPH_ID!=$1 AND TARGET_COLONY_ID=$2`
-	_, err := db.postgresql.Exec(sqlStatement, "", colonyID)
+func (db *PQDatabase) DeleteAllAttributesInProcessGraphsByColonyName(colonyName string) error {
+	sqlStatement := `DELETE FROM ` + db.dbPrefix + `ATTRIBUTES WHERE PROCESSGRAPH_ID!=$1 AND TARGET_COLONY_NAME=$2`
+	_, err := db.postgresql.Exec(sqlStatement, "", colonyName)
 	if err != nil {
 		return err
 	}
@@ -215,9 +215,9 @@ func (db *PQDatabase) DeleteAllAttributesInProcessGraphsByColonyID(colonyID stri
 	return nil
 }
 
-func (db *PQDatabase) DeleteAllAttributesInProcessGraphsByColonyIDWithState(colonyID string, state int) error {
-	sqlStatement := `DELETE FROM ` + db.dbPrefix + `ATTRIBUTES WHERE TARGET_COLONY_ID=$1 AND STATE=$2 AND PROCESSGRAPH_ID!=$3`
-	_, err := db.postgresql.Exec(sqlStatement, colonyID, state, "")
+func (db *PQDatabase) DeleteAllAttributesInProcessGraphsByColonyNameWithState(colonyName string, state int) error {
+	sqlStatement := `DELETE FROM ` + db.dbPrefix + `ATTRIBUTES WHERE TARGET_COLONY_NAME=$1 AND STATE=$2 AND PROCESSGRAPH_ID!=$3`
+	_, err := db.postgresql.Exec(sqlStatement, colonyName, state, "")
 	if err != nil {
 		return err
 	}

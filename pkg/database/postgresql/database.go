@@ -313,7 +313,7 @@ func (db *PQDatabase) createUsersTable() error {
 }
 
 func (db *PQDatabase) createExecutorsTable() error {
-	sqlStatement := `CREATE TABLE ` + db.dbPrefix + `EXECUTORS (EXECUTOR_ID TEXT PRIMARY KEY NOT NULL, EXECUTOR_TYPE TEXT NOT NULL, NAME TEXT NOT NULL, COLONY_ID TEXT NOT NULL, STATE INTEGER, REQUIRE_FUNC_REG BOOLEAN, COMMISSIONTIME TIMESTAMPTZ, LASTHEARDFROM TIMESTAMPTZ, LONG DOUBLE PRECISION, LAT DOUBLE PRECISION, LOCDESC TEXT, HWMODEL TEXT, HWNODES INT, HWCPU TEXT, HWMEM TEXT, HWSTORAGE TEXT, HWGPUNAME TEXT, HWGPUCOUNT TEXT, HWGPUNODECOUNT INTEGER, HWGPUMEM TEXT, SWNAME TEXT, SWTYPE TEXT, SWVERSION TEXT)`
+	sqlStatement := `CREATE TABLE ` + db.dbPrefix + `EXECUTORS (EXECUTOR_ID TEXT PRIMARY KEY NOT NULL, EXECUTOR_TYPE TEXT NOT NULL, NAME TEXT NOT NULL, COLONY_NAME TEXT NOT NULL, STATE INTEGER, REQUIRE_FUNC_REG BOOLEAN, COMMISSIONTIME TIMESTAMPTZ, LASTHEARDFROM TIMESTAMPTZ, LONG DOUBLE PRECISION, LAT DOUBLE PRECISION, LOCDESC TEXT, HWMODEL TEXT, HWNODES INT, HWCPU TEXT, HWMEM TEXT, HWSTORAGE TEXT, HWGPUNAME TEXT, HWGPUCOUNT TEXT, HWGPUNODECOUNT INTEGER, HWGPUMEM TEXT, SWNAME TEXT, SWTYPE TEXT, SWVERSION TEXT)`
 	_, err := db.postgresql.Exec(sqlStatement)
 	if err != nil {
 		return err
@@ -322,7 +322,7 @@ func (db *PQDatabase) createExecutorsTable() error {
 }
 
 func (db *PQDatabase) createFunctionsTable() error {
-	sqlStatement := `CREATE TABLE ` + db.dbPrefix + `FUNCTIONS (FUNCTION_ID TEXT PRIMARY KEY NOT NULL, EXECUTOR_ID TEXT NOT NULL, COLONY_ID TEXT NOT NULL, FUNCNAME TEXT NOT NULL, COUNTER INTEGER, MINWAITTIME FLOAT, MAXWAITTIME FLOAT, MINEXECTIME FLOAT, MAXEXECTIME FLOAT, AVGWAITTIME FLOAT, AVGEXECTIME FLOAT)`
+	sqlStatement := `CREATE TABLE ` + db.dbPrefix + `FUNCTIONS (FUNCTION_ID TEXT PRIMARY KEY NOT NULL, EXECUTOR_ID TEXT NOT NULL, COLONY_NAME TEXT NOT NULL, FUNCNAME TEXT NOT NULL, COUNTER INTEGER, MINWAITTIME FLOAT, MAXWAITTIME FLOAT, MINEXECTIME FLOAT, MAXEXECTIME FLOAT, AVGWAITTIME FLOAT, AVGEXECTIME FLOAT)`
 	_, err := db.postgresql.Exec(sqlStatement)
 	if err != nil {
 		return err
@@ -332,7 +332,7 @@ func (db *PQDatabase) createFunctionsTable() error {
 }
 
 func (db *PQDatabase) createProcessesTable() error {
-	sqlStatement := `CREATE TABLE ` + db.dbPrefix + `PROCESSES (PROCESS_ID TEXT PRIMARY KEY NOT NULL, TARGET_COLONY_ID TEXT NOT NULL, TARGET_EXECUTOR_IDS TEXT[], ASSIGNED_EXECUTOR_ID TEXT, STATE INTEGER, IS_ASSIGNED BOOLEAN, EXECUTOR_TYPE TEXT, SUBMISSION_TIME TIMESTAMPTZ, START_TIME TIMESTAMPTZ, END_TIME TIMESTAMPTZ, WAIT_DEADLINE TIMESTAMPTZ, EXEC_DEADLINE TIMESTAMPTZ, ERRORS TEXT[], NODENAME TEXT, FUNCNAME TEXT, ARGS TEXT, KWARGS TEXT, MAX_WAIT_TIME INTEGER, MAX_EXEC_TIME INTEGER, RETRIES INTEGER, MAX_RETRIES INTEGER, DEPENDENCIES TEXT[], PRIORITY INTEGER, PRIORITYTIME BIGINT, WAIT_FOR_PARENTS BOOLEAN, PARENTS TEXT[], CHILDREN TEXT[], PROCESSGRAPH_ID TEXT, INPUT TEXT, OUTPUT TEXT, LABEL TEXT, FS TEXT, NODES INTEGER, CPU TEXT, PROCESSES INTEGER, PROCESSES_PER_NODE INTEGER, MEMORY TEXT, STORAGE TEXT, GPUNAME TEXT, GPUCOUNT TEXT, GPUMEM TEXT, WALLTIME BIGINT)`
+	sqlStatement := `CREATE TABLE ` + db.dbPrefix + `PROCESSES (PROCESS_ID TEXT PRIMARY KEY NOT NULL, TARGET_COLONY_NAME TEXT NOT NULL, TARGET_EXECUTOR_IDS TEXT[], ASSIGNED_EXECUTOR_ID TEXT, STATE INTEGER, IS_ASSIGNED BOOLEAN, EXECUTOR_TYPE TEXT, SUBMISSION_TIME TIMESTAMPTZ, START_TIME TIMESTAMPTZ, END_TIME TIMESTAMPTZ, WAIT_DEADLINE TIMESTAMPTZ, EXEC_DEADLINE TIMESTAMPTZ, ERRORS TEXT[], NODENAME TEXT, FUNCNAME TEXT, ARGS TEXT, KWARGS TEXT, MAX_WAIT_TIME INTEGER, MAX_EXEC_TIME INTEGER, RETRIES INTEGER, MAX_RETRIES INTEGER, DEPENDENCIES TEXT[], PRIORITY INTEGER, PRIORITYTIME BIGINT, WAIT_FOR_PARENTS BOOLEAN, PARENTS TEXT[], CHILDREN TEXT[], PROCESSGRAPH_ID TEXT, INPUT TEXT, OUTPUT TEXT, LABEL TEXT, FS TEXT, NODES INTEGER, CPU TEXT, PROCESSES INTEGER, PROCESSES_PER_NODE INTEGER, MEMORY TEXT, STORAGE TEXT, GPUNAME TEXT, GPUCOUNT TEXT, GPUMEM TEXT, WALLTIME BIGINT)`
 	_, err := db.postgresql.Exec(sqlStatement)
 	if err != nil {
 		return err
@@ -342,7 +342,7 @@ func (db *PQDatabase) createProcessesTable() error {
 }
 
 func (db *PQDatabase) createLogTable() error {
-	sqlStatement := `CREATE TABLE ` + db.dbPrefix + `LOGS (PROCESS_ID TEXT, COLONY_ID TEXT NOT NULL, EXECUTOR_ID TEXT NOT NULL, TS BIGINT, MSG TEXT NOT NULL, ADDED TIMESTAMPTZ)`
+	sqlStatement := `CREATE TABLE ` + db.dbPrefix + `LOGS (PROCESS_ID TEXT, COLONY_NAME TEXT NOT NULL, EXECUTOR_ID TEXT NOT NULL, TS BIGINT, MSG TEXT NOT NULL, ADDED TIMESTAMPTZ)`
 	_, err := db.postgresql.Exec(sqlStatement)
 	if err != nil {
 		return err
@@ -358,7 +358,7 @@ func (db *PQDatabase) createFileTable() error {
 		return err
 	}
 
-	sqlStatement = `CREATE TABLE ` + db.dbPrefix + `FILES (FILE_ID TEXT PRIMARY KEY NOT NULL, COLONY_ID TEXT NOT NULL, LABEL TEXT NOT NULL, NAME TEXT NOT NULL, SIZE BIGINT, SEQNR BIGINT, CHECKSUM TEXT, CHECKSUM_ALG TEXT, ADDED TIMESTAMPTZ, PROTOCOL TEXT, S3_SERVER TEXT, S3_PORT INTEGER, S3_TLS BOOLEAN, S3_ACCESSKEY TEXT, S3_SECRETKEY TEXT, S3_REGION TEXT, S3_ENCKEY TEXT, S3_ENCALG TEXT, S3_OBJ TEXT, S3_BUCKET TEXT)`
+	sqlStatement = `CREATE TABLE ` + db.dbPrefix + `FILES (FILE_ID TEXT PRIMARY KEY NOT NULL, COLONY_NAME TEXT NOT NULL, LABEL TEXT NOT NULL, NAME TEXT NOT NULL, SIZE BIGINT, SEQNR BIGINT, CHECKSUM TEXT, CHECKSUM_ALG TEXT, ADDED TIMESTAMPTZ, PROTOCOL TEXT, S3_SERVER TEXT, S3_PORT INTEGER, S3_TLS BOOLEAN, S3_ACCESSKEY TEXT, S3_SECRETKEY TEXT, S3_REGION TEXT, S3_ENCKEY TEXT, S3_ENCALG TEXT, S3_OBJ TEXT, S3_BUCKET TEXT)`
 	_, err = db.postgresql.Exec(sqlStatement)
 	if err != nil {
 		return err
@@ -368,7 +368,7 @@ func (db *PQDatabase) createFileTable() error {
 }
 
 func (db *PQDatabase) createSnapshotTable() error {
-	sqlStatement := `CREATE TABLE ` + db.dbPrefix + `SNAPSHOTS (SNAPSHOT_ID TEXT PRIMARY KEY NOT NULL, COLONY_ID TEXT NOT NULL, LABEL TEXT NOT NULL, NAME TEXT NOT NULL UNIQUE, FILE_IDS TEXT[], ADDED TIMESTAMPTZ)`
+	sqlStatement := `CREATE TABLE ` + db.dbPrefix + `SNAPSHOTS (SNAPSHOT_ID TEXT PRIMARY KEY NOT NULL, COLONY_NAME TEXT NOT NULL, LABEL TEXT NOT NULL, NAME TEXT NOT NULL UNIQUE, FILE_IDS TEXT[], ADDED TIMESTAMPTZ)`
 	_, err := db.postgresql.Exec(sqlStatement)
 	if err != nil {
 		return err
@@ -378,7 +378,7 @@ func (db *PQDatabase) createSnapshotTable() error {
 }
 
 func (db *PQDatabase) createAttributesTable() error {
-	sqlStatement := `CREATE TABLE ` + db.dbPrefix + `ATTRIBUTES (ATTRIBUTE_ID TEXT PRIMARY KEY NOT NULL, KEY TEXT NOT NULL, VALUE TEXT NOT NULL, ATTRIBUTE_TYPE INTEGER, TARGET_ID TEXT NOT NULL, TARGET_COLONY_ID TEXT NOT NULL, PROCESSGRAPH_ID TEXT NOT NULL, ADDED TIMESTAMPTZ, STATE INTEGER)`
+	sqlStatement := `CREATE TABLE ` + db.dbPrefix + `ATTRIBUTES (ATTRIBUTE_ID TEXT PRIMARY KEY NOT NULL, KEY TEXT NOT NULL, VALUE TEXT NOT NULL, ATTRIBUTE_TYPE INTEGER, TARGET_ID TEXT NOT NULL, TARGET_COLONY_NAME TEXT NOT NULL, PROCESSGRAPH_ID TEXT NOT NULL, ADDED TIMESTAMPTZ, STATE INTEGER)`
 	_, err := db.postgresql.Exec(sqlStatement)
 	if err != nil {
 		return err
@@ -388,7 +388,7 @@ func (db *PQDatabase) createAttributesTable() error {
 }
 
 func (db *PQDatabase) createProcessGraphsTable() error {
-	sqlStatement := `CREATE TABLE ` + db.dbPrefix + `PROCESSGRAPHS (PROCESSGRAPH_ID TEXT PRIMARY KEY NOT NULL, TARGET_COLONY_ID TEXT NOT NULL, ROOTS TEXT[], STATE INTEGER, SUBMISSION_TIME TIMESTAMPTZ, START_TIME TIMESTAMPTZ, END_TIME TIMESTAMPTZ)`
+	sqlStatement := `CREATE TABLE ` + db.dbPrefix + `PROCESSGRAPHS (PROCESSGRAPH_ID TEXT PRIMARY KEY NOT NULL, TARGET_COLONY_NAME TEXT NOT NULL, ROOTS TEXT[], STATE INTEGER, SUBMISSION_TIME TIMESTAMPTZ, START_TIME TIMESTAMPTZ, END_TIME TIMESTAMPTZ)`
 	_, err := db.postgresql.Exec(sqlStatement)
 	if err != nil {
 		return err
@@ -398,7 +398,7 @@ func (db *PQDatabase) createProcessGraphsTable() error {
 }
 
 func (db *PQDatabase) createGeneratorsTable() error {
-	sqlStatement := `CREATE TABLE ` + db.dbPrefix + `GENERATORS (GENERATOR_ID TEXT PRIMARY KEY NOT NULL, COLONY_ID TEXT NOT NULL, NAME TEXT NOT NULL UNIQUE, WORKFLOW_SPEC TEXT NOT NULL, TRIGGER INTEGER, TIMEOUT INTEGER, LASTRUN TIMESTAMPTZ, FIRSTPACK TIMESTAMPTZ)`
+	sqlStatement := `CREATE TABLE ` + db.dbPrefix + `GENERATORS (GENERATOR_ID TEXT PRIMARY KEY NOT NULL, COLONY_NAME TEXT NOT NULL, NAME TEXT NOT NULL UNIQUE, WORKFLOW_SPEC TEXT NOT NULL, TRIGGER INTEGER, TIMEOUT INTEGER, LASTRUN TIMESTAMPTZ, FIRSTPACK TIMESTAMPTZ)`
 	_, err := db.postgresql.Exec(sqlStatement)
 	if err != nil {
 		return err
@@ -408,7 +408,7 @@ func (db *PQDatabase) createGeneratorsTable() error {
 }
 
 func (db *PQDatabase) createGeneratorArgsTable() error {
-	sqlStatement := `CREATE TABLE ` + db.dbPrefix + `GENERATORARGS (GENERATORARG_ID TEXT PRIMARY KEY NOT NULL, GENERATOR_ID TEXT NOT NULL, COLONY_ID TEXT NOT NULL, ARG TEXT NOT NULL)`
+	sqlStatement := `CREATE TABLE ` + db.dbPrefix + `GENERATORARGS (GENERATORARG_ID TEXT PRIMARY KEY NOT NULL, GENERATOR_ID TEXT NOT NULL, COLONY_NAME TEXT NOT NULL, ARG TEXT NOT NULL)`
 	_, err := db.postgresql.Exec(sqlStatement)
 	if err != nil {
 		return err
@@ -418,7 +418,7 @@ func (db *PQDatabase) createGeneratorArgsTable() error {
 }
 
 func (db *PQDatabase) createCronsTable() error {
-	sqlStatement := `CREATE TABLE ` + db.dbPrefix + `CRONS (CRON_ID TEXT PRIMARY KEY NOT NULL, COLONY_ID TEXT NOT NULL, NAME TEXT NOT NULL UNIQUE, CRON_EXPR TEXT NOT NULL, INTERVAL INT, RANDOM BOOLEAN, NEXT_RUN TIMESTAMPTZ, LAST_RUN TIMESTAMPTZ, WORKFLOW_SPEC TEXT NOT NULL, PREV_PROCESSGRAPH_ID TEXT NOT NULL, WAIT_FOR_PREV_PROCESSGRAPH BOOLEAN)`
+	sqlStatement := `CREATE TABLE ` + db.dbPrefix + `CRONS (CRON_ID TEXT PRIMARY KEY NOT NULL, COLONY_NAME TEXT NOT NULL, NAME TEXT NOT NULL UNIQUE, CRON_EXPR TEXT NOT NULL, INTERVAL INT, RANDOM BOOLEAN, NEXT_RUN TIMESTAMPTZ, LAST_RUN TIMESTAMPTZ, WORKFLOW_SPEC TEXT NOT NULL, PREV_PROCESSGRAPH_ID TEXT NOT NULL, WAIT_FOR_PREV_PROCESSGRAPH BOOLEAN)`
 	_, err := db.postgresql.Exec(sqlStatement)
 	if err != nil {
 		return err
@@ -428,7 +428,7 @@ func (db *PQDatabase) createCronsTable() error {
 }
 
 func (db *PQDatabase) createProcessesIndex1() error {
-	sqlStatement := `CREATE INDEX ` + db.dbPrefix + `PROCESSES_INDEX1 ON ` + db.dbPrefix + `PROCESSES (TARGET_COLONY_ID, STATE, SUBMISSION_TIME)`
+	sqlStatement := `CREATE INDEX ` + db.dbPrefix + `PROCESSES_INDEX1 ON ` + db.dbPrefix + `PROCESSES (TARGET_COLONY_NAME, STATE, SUBMISSION_TIME)`
 	_, err := db.postgresql.Exec(sqlStatement)
 	if err != nil {
 		return err
@@ -438,7 +438,7 @@ func (db *PQDatabase) createProcessesIndex1() error {
 }
 
 func (db *PQDatabase) createProcessesIndex2() error {
-	sqlStatement := `CREATE INDEX ` + db.dbPrefix + `PROCESSES_INDEX2 ON ` + db.dbPrefix + `PROCESSES (TARGET_COLONY_ID, STATE, START_TIME)`
+	sqlStatement := `CREATE INDEX ` + db.dbPrefix + `PROCESSES_INDEX2 ON ` + db.dbPrefix + `PROCESSES (TARGET_COLONY_NAME, STATE, START_TIME)`
 	_, err := db.postgresql.Exec(sqlStatement)
 	if err != nil {
 		return err
@@ -448,7 +448,7 @@ func (db *PQDatabase) createProcessesIndex2() error {
 }
 
 func (db *PQDatabase) createProcessesIndex3() error {
-	sqlStatement := `CREATE INDEX ` + db.dbPrefix + `PROCESSES_INDEX3 ON ` + db.dbPrefix + `PROCESSES (TARGET_COLONY_ID, STATE, END_TIME)`
+	sqlStatement := `CREATE INDEX ` + db.dbPrefix + `PROCESSES_INDEX3 ON ` + db.dbPrefix + `PROCESSES (TARGET_COLONY_NAME, STATE, END_TIME)`
 	_, err := db.postgresql.Exec(sqlStatement)
 	if err != nil {
 		return err
@@ -478,7 +478,7 @@ func (db *PQDatabase) createProcessesIndex5() error {
 }
 
 func (db *PQDatabase) createProcessesIndex6() error {
-	sqlStatement := `CREATE INDEX ` + db.dbPrefix + `PROCESSES_INDEX6 ON ` + db.dbPrefix + `PROCESSES (STATE, EXECUTOR_TYPE, IS_ASSIGNED, WAIT_FOR_PARENTS, TARGET_COLONY_ID, PRIORITYTIME)`
+	sqlStatement := `CREATE INDEX ` + db.dbPrefix + `PROCESSES_INDEX6 ON ` + db.dbPrefix + `PROCESSES (STATE, EXECUTOR_TYPE, IS_ASSIGNED, WAIT_FOR_PARENTS, TARGET_COLONY_NAME, PRIORITYTIME)`
 	_, err := db.postgresql.Exec(sqlStatement)
 	if err != nil {
 		return err
@@ -488,7 +488,7 @@ func (db *PQDatabase) createProcessesIndex6() error {
 }
 
 func (db *PQDatabase) createProcessesIndex7() error {
-	sqlStatement := `CREATE INDEX ` + db.dbPrefix + `PROCESSES_INDEX7 ON ` + db.dbPrefix + `PROCESSES (TARGET_COLONY_ID, STATE, PRIORITYTIME)`
+	sqlStatement := `CREATE INDEX ` + db.dbPrefix + `PROCESSES_INDEX7 ON ` + db.dbPrefix + `PROCESSES (TARGET_COLONY_NAME, STATE, PRIORITYTIME)`
 	_, err := db.postgresql.Exec(sqlStatement)
 	if err != nil {
 		return err
@@ -498,7 +498,7 @@ func (db *PQDatabase) createProcessesIndex7() error {
 }
 
 func (db *PQDatabase) createProcessesIndex8() error {
-	sqlStatement := `CREATE INDEX ` + db.dbPrefix + `PROCESSES_INDEX8 ON ` + db.dbPrefix + `PROCESSES (TARGET_COLONY_ID, STATE, EXECUTOR_TYPE, PRIORITYTIME)`
+	sqlStatement := `CREATE INDEX ` + db.dbPrefix + `PROCESSES_INDEX8 ON ` + db.dbPrefix + `PROCESSES (TARGET_COLONY_NAME, STATE, EXECUTOR_TYPE, PRIORITYTIME)`
 	_, err := db.postgresql.Exec(sqlStatement)
 	if err != nil {
 		return err
@@ -570,7 +570,7 @@ func (db *PQDatabase) createRetentionIndex4() error {
 }
 
 func (db *PQDatabase) createFileIndex1() error {
-	sqlStatement := `CREATE INDEX ` + db.dbPrefix + `FILE_INDEX1 ON ` + db.dbPrefix + `FILES (COLONY_ID, LABEL, NAME)`
+	sqlStatement := `CREATE INDEX ` + db.dbPrefix + `FILE_INDEX1 ON ` + db.dbPrefix + `FILES (COLONY_NAME, LABEL, NAME)`
 	_, err := db.postgresql.Exec(sqlStatement)
 	if err != nil {
 		return err
@@ -580,7 +580,7 @@ func (db *PQDatabase) createFileIndex1() error {
 }
 
 func (db *PQDatabase) createFileIndex2() error {
-	sqlStatement := `CREATE INDEX ` + db.dbPrefix + `FILE_INDEX2 ON ` + db.dbPrefix + `FILES (COLONY_ID, FILE_ID)`
+	sqlStatement := `CREATE INDEX ` + db.dbPrefix + `FILE_INDEX2 ON ` + db.dbPrefix + `FILES (COLONY_NAME, FILE_ID)`
 	_, err := db.postgresql.Exec(sqlStatement)
 	if err != nil {
 		return err
@@ -590,7 +590,7 @@ func (db *PQDatabase) createFileIndex2() error {
 }
 
 func (db *PQDatabase) createFileIndex3() error {
-	sqlStatement := `CREATE INDEX ` + db.dbPrefix + `FILE_INDEX3 ON ` + db.dbPrefix + `FILES (COLONY_ID, LABEL)`
+	sqlStatement := `CREATE INDEX ` + db.dbPrefix + `FILE_INDEX3 ON ` + db.dbPrefix + `FILES (COLONY_NAME, LABEL)`
 	_, err := db.postgresql.Exec(sqlStatement)
 	if err != nil {
 		return err
