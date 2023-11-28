@@ -31,7 +31,7 @@ func TestAddColonySecurity(t *testing.T) {
 	<-done
 }
 
-func TestDeleteColonySecurity(t *testing.T) {
+func TestRemoveColonySecurity(t *testing.T) {
 	client, server, serverPrvKey, done := prepareTests(t)
 
 	crypto := crypto.CreateCrypto()
@@ -50,10 +50,10 @@ func TestDeleteColonySecurity(t *testing.T) {
 	_, err = client.AddColony(colony, serverPrvKey)
 	assert.Nil(t, err)
 
-	err = client.DeleteColony(colonyID, invalidPrivateKey)
+	err = client.RemoveColony(colony.Name, invalidPrivateKey)
 	assert.NotNil(t, err)
 
-	err = client.DeleteColony(colonyID, serverPrvKey)
+	err = client.RemoveColony(colony.Name, serverPrvKey)
 	assert.Nil(t, err)
 
 	server.Shutdown()
@@ -67,19 +67,19 @@ func TestRenameColonySecurity(t *testing.T) {
 	//   executor1 is member of colony1
 	//   executor2 is member of colony2
 
-	err := client.RenameColony(env.colony1ID, "test_new_name", serverPrvKey)
+	err := client.RenameColony(env.colony1Name, "test_new_name", serverPrvKey)
 	assert.NotNil(t, err)
 
-	err = client.RenameColony(env.colony1ID, "test_new_name", env.executor1PrvKey)
+	err = client.RenameColony(env.colony1Name, "test_new_name", env.executor1PrvKey)
 	assert.NotNil(t, err)
 
-	err = client.RenameColony(env.colony1ID, "test_new_name", env.executor2PrvKey)
+	err = client.RenameColony(env.colony1Name, "test_new_name", env.executor2PrvKey)
 	assert.NotNil(t, err)
 
-	err = client.RenameColony(env.colony1ID, "test_new_name", env.colony2PrvKey)
+	err = client.RenameColony(env.colony1Name, "test_new_name", env.colony2PrvKey)
 	assert.NotNil(t, err)
 
-	err = client.RenameColony(env.colony1ID, "test_new_name", env.colony1PrvKey)
+	err = client.RenameColony(env.colony1Name, "test_new_name", env.colony1PrvKey)
 	assert.Nil(t, err)
 
 	server.Shutdown()
@@ -132,32 +132,32 @@ func TestGetColonyByIDSecurity(t *testing.T) {
 	<-done
 }
 
-func TestGetProcessStatSecurity(t *testing.T) {
+func TestGetColonyStatisticsSecurity(t *testing.T) {
 	env, client, server, _, done := setupTestEnv1(t)
 
 	// The setup looks like this:
 	//   executor1 is member of colony1
 	//   executor2 is member of colony2
 
-	_, err := client.ColonyStatistics(env.colony1ID, env.executor2PrvKey)
+	_, err := client.ColonyStatistics(env.colony1Name, env.executor2PrvKey)
 	assert.NotNil(t, err) // Should not work
 
-	_, err = client.ColonyStatistics(env.colony2ID, env.executor1PrvKey)
+	_, err = client.ColonyStatistics(env.colony2Name, env.executor1PrvKey)
 	assert.NotNil(t, err) // Should not work
 
-	_, err = client.ColonyStatistics(env.colony1ID, env.executor1PrvKey)
+	_, err = client.ColonyStatistics(env.colony1Name, env.executor1PrvKey)
 	assert.Nil(t, err) // Should work
 
-	_, err = client.ColonyStatistics(env.colony2ID, env.executor2PrvKey)
+	_, err = client.ColonyStatistics(env.colony2Name, env.executor2PrvKey)
 	assert.Nil(t, err) // Should work
 
-	_, err = client.ColonyStatistics(env.colony1ID, env.colony1PrvKey)
+	_, err = client.ColonyStatistics(env.colony1Name, env.colony1PrvKey)
 	assert.Nil(t, err) // Should work
 
-	_, err = client.ColonyStatistics(env.colony2ID, env.colony2PrvKey)
+	_, err = client.ColonyStatistics(env.colony2Name, env.colony2PrvKey)
 	assert.Nil(t, err) // Should work
 
-	_, err = client.ColonyStatistics(env.colony1ID, env.colony2PrvKey)
+	_, err = client.ColonyStatistics(env.colony1Name, env.colony2PrvKey)
 	assert.NotNil(t, err) // Should not work
 
 	server.Shutdown()
