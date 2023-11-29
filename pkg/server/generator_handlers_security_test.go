@@ -36,8 +36,8 @@ func TestGetGeneratorSecurity(t *testing.T) {
 	//   executor1 is member of colony1
 	//   executor2 is member of colony2
 
-	colonyID := env.colony1Name
-	generator := utils.FakeGenerator(t, colonyID)
+	colonyName := env.colony1Name
+	generator := utils.FakeGenerator(t, colonyName)
 
 	addedGenerator, err := client.AddGenerator(generator, env.executor1PrvKey)
 	assert.Nil(t, err)
@@ -62,8 +62,8 @@ func TestResolveGeneratorSecurity(t *testing.T) {
 	//   executor1 is member of colony1
 	//   executor2 is member of colony2
 
-	colonyID := env.colony1Name
-	generator := utils.FakeGenerator(t, colonyID)
+	colonyName := env.colony1Name
+	generator := utils.FakeGenerator(t, colonyName)
 
 	addedGenerator, err := client.AddGenerator(generator, env.executor1PrvKey)
 	assert.Nil(t, err)
@@ -88,19 +88,19 @@ func TestGetGeneratorsSecurity(t *testing.T) {
 	//   executor1 is member of colony1
 	//   executor2 is member of colony2
 
-	colonyID := env.colony1Name
-	generator := utils.FakeGenerator(t, colonyID)
+	colonyName := env.colony1Name
+	generator := utils.FakeGenerator(t, colonyName)
 
 	_, err := client.AddGenerator(generator, env.executor1PrvKey)
 	assert.Nil(t, err)
 
-	_, err = client.GetGenerators(colonyID, 100, env.executor2PrvKey)
+	_, err = client.GetGenerators(colonyName, 100, env.executor2PrvKey)
 	assert.NotNil(t, err)
-	_, err = client.GetGenerators(colonyID, 100, env.colony1PrvKey)
+	_, err = client.GetGenerators(colonyName, 100, env.colony1PrvKey)
 	assert.NotNil(t, err)
-	_, err = client.GetGenerators(colonyID, 100, env.colony2PrvKey)
+	_, err = client.GetGenerators(colonyName, 100, env.colony2PrvKey)
 	assert.NotNil(t, err)
-	_, err = client.GetGenerators(colonyID, 100, env.executor1PrvKey)
+	_, err = client.GetGenerators(colonyName, 100, env.executor1PrvKey)
 	assert.Nil(t, err)
 
 	server.Shutdown()
@@ -114,8 +114,8 @@ func TestAddArgGeneratorSecurity(t *testing.T) {
 	//   executor1 is member of colony1
 	//   executor2 is member of colony2
 
-	colonyID := env.colony1Name
-	generator := utils.FakeGenerator(t, colonyID)
+	colonyName := env.colony1Name
+	generator := utils.FakeGenerator(t, colonyName)
 
 	addedGenerator, err := client.AddGenerator(generator, env.executor1PrvKey)
 	assert.Nil(t, err)
@@ -140,8 +140,8 @@ func TestDeleteGeneratorSecurity(t *testing.T) {
 	//   executor1 is member of colony1
 	//   executor2 is member of colony2
 
-	colonyID := env.colony1Name
-	generator := utils.FakeGenerator(t, colonyID)
+	colonyName := env.colony1Name
+	generator := utils.FakeGenerator(t, colonyName)
 
 	addedGenerator, err := client.AddGenerator(generator, env.executor1PrvKey)
 	assert.Nil(t, err)
