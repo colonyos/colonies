@@ -3,8 +3,10 @@ package cli
 import (
 	"fmt"
 	"os"
+	"strconv"
 	"sync"
 
+	"github.com/kataras/tablewriter"
 	"github.com/spf13/cobra"
 )
 
@@ -127,6 +129,8 @@ func init() {
 	rootCmd.PersistentFlags().BoolVarP(&Verbose, "verbose", "v", false, "Verbose (debugging)")
 	rootCmd.PersistentFlags().BoolVarP(&Insecure, "insecure", "", false, "Disable TLS and use HTTP")
 	rootCmd.PersistentFlags().BoolVarP(&SkipTLSVerify, "skip-tls-verify", "", false, "Skip TLS certificate verification")
+
+	rootCmd.AddCommand(configCmd)
 }
 
 var rootCmd = &cobra.Command{
@@ -140,4 +144,26 @@ func Execute() {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
+}
+
+var configCmd = &cobra.Command{
+	Use:   "config",
+	Short: "Show currently used configuration",
+	Long:  "Show currently used configuration",
+	Run: func(cmd *cobra.Command, args []string) {
+		setup()
+
+		fmt.Println("Current configurations:")
+		specData := [][]string{
+			[]string{"Colony", ColonyName},
+			[]string{"Server", ServerHost + ":" + strconv.Itoa(ServerPort)},
+			[]string{"TLS", fmt.Sprintf("%t", UseTLS)},
+		}
+		specTable := tablewriter.NewWriter(os.Stdout)
+		for _, v := range specData {
+			specTable.Append(v)
+		}
+		specTable.SetAlignment(tablewriter.ALIGN_LEFT)
+		specTable.Render()
+	},
 }
