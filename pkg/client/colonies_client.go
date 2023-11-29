@@ -429,8 +429,8 @@ func (client *ColoniesClient) GetExecutor(executorID string, prvKey string) (*co
 	return core.ConvertJSONToExecutor(respBodyString)
 }
 
-func (client *ColoniesClient) ApproveExecutor(executorID string, prvKey string) error {
-	msg := rpc.CreateApproveExecutorMsg(executorID)
+func (client *ColoniesClient) ApproveExecutor(colonyName string, executorName string, prvKey string) error {
+	msg := rpc.CreateApproveExecutorMsg(colonyName, executorName)
 	jsonString, err := msg.ToJSON()
 	if err != nil {
 		return err
@@ -444,8 +444,8 @@ func (client *ColoniesClient) ApproveExecutor(executorID string, prvKey string) 
 	return nil
 }
 
-func (client *ColoniesClient) RejectExecutor(executorID string, prvKey string) error {
-	msg := rpc.CreateRejectExecutorMsg(executorID)
+func (client *ColoniesClient) RejectExecutor(colonyName string, executorID string, prvKey string) error {
+	msg := rpc.CreateRejectExecutorMsg(colonyName, executorID)
 	jsonString, err := msg.ToJSON()
 	if err != nil {
 		return err

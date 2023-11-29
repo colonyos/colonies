@@ -8,7 +8,7 @@ import (
 )
 
 func TestRPCRejctExecutorMsg(t *testing.T) {
-	msg := CreateRejectExecutorMsg(core.GenerateRandomID())
+	msg := CreateRejectExecutorMsg(core.GenerateRandomID(), core.GenerateRandomID())
 	jsonString, err := msg.ToJSON()
 	assert.Nil(t, err)
 
@@ -22,7 +22,7 @@ func TestRPCRejctExecutorMsg(t *testing.T) {
 }
 
 func TestRPCRejctExecutorMsgIndent(t *testing.T) {
-	msg := CreateRejectExecutorMsg(core.GenerateRandomID())
+	msg := CreateRejectExecutorMsg(core.GenerateRandomID(), core.GenerateRandomID())
 	jsonString, err := msg.ToJSONIndent()
 	assert.Nil(t, err)
 
@@ -36,7 +36,7 @@ func TestRPCRejctExecutorMsgIndent(t *testing.T) {
 }
 
 func TestRPCRejectExecutorMsgEquals(t *testing.T) {
-	msg := CreateRejectExecutorMsg(core.GenerateRandomID())
+	msg := CreateRejectExecutorMsg(core.GenerateRandomID(), core.GenerateRandomID())
 	assert.True(t, msg.Equals(msg))
 	assert.False(t, msg.Equals(nil))
 }
