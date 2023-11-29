@@ -26,8 +26,6 @@ type controller interface {
 	getLogsByExecutorID(processID string, limit int, since int64) ([]core.Log, error)
 	getExecutor(executorID string) (*core.Executor, error)
 	getExecutorByColonyName(colonyID string) ([]*core.Executor, error)
-	approveExecutor(executorID string) error
-	rejectExecutor(executorID string) error
 	deleteExecutor(executorID string) error
 	addProcessToDB(process *core.Process) (*core.Process, error)
 	addProcess(process *core.Process) (*core.Process, error)

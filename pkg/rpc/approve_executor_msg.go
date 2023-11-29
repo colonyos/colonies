@@ -7,13 +7,15 @@ import (
 const ApproveExecutorPayloadType = "approveexecutormsg"
 
 type ApproveExecutorRPC struct {
-	ExecutorID string `json:"executorid"`
-	MsgType    string `json:"msgtype"`
+	ColonyName   string `json:"colonyname"`
+	ExecutorName string `json:"executorname"`
+	MsgType      string `json:"msgtype"`
 }
 
-func CreateApproveExecutorMsg(executorID string) *ApproveExecutorRPC {
+func CreateApproveExecutorMsg(colonyName string, executorName string) *ApproveExecutorRPC {
 	msg := &ApproveExecutorRPC{}
-	msg.ExecutorID = executorID
+	msg.ColonyName = colonyName
+	msg.ExecutorName = executorName
 	msg.MsgType = ApproveExecutorPayloadType
 
 	return msg
@@ -42,7 +44,7 @@ func (msg *ApproveExecutorRPC) Equals(msg2 *ApproveExecutorRPC) bool {
 		return false
 	}
 
-	if msg.MsgType == msg2.MsgType && msg.ExecutorID == msg2.ExecutorID {
+	if msg.MsgType == msg2.MsgType && msg.ExecutorName == msg2.ExecutorName && msg.ColonyName == msg2.ColonyName {
 		return true
 	}
 

@@ -222,7 +222,7 @@ func TestMarkAlive(t *testing.T) {
 	assert.Nil(t, err)
 	_, err = client.AddExecutor(executor, env.colonyPrvKey)
 	assert.Nil(t, err)
-	err = client.ApproveExecutor(executor.ID, env.colonyPrvKey)
+	err = client.ApproveExecutor(env.colonyName, executor.Name, env.colonyPrvKey)
 	assert.Nil(t, err)
 
 	executorFromServer, err := client.GetExecutor(executor.ID, executorPrvKey)
@@ -341,7 +341,7 @@ func TestGetRunningProcesses(t *testing.T) {
 	assert.Nil(t, err)
 	_, err = client.AddExecutor(executor1, env.colonyPrvKey)
 	assert.Nil(t, err)
-	err = client.ApproveExecutor(executor1.ID, env.colonyPrvKey)
+	err = client.ApproveExecutor(env.colonyName, executor1.Name, env.colonyPrvKey)
 	assert.Nil(t, err)
 
 	executor2, executorPrvKey2, err := utils.CreateTestExecutorWithKey(env.colonyName)
@@ -349,7 +349,7 @@ func TestGetRunningProcesses(t *testing.T) {
 	assert.Nil(t, err)
 	_, err = client.AddExecutor(executor2, env.colonyPrvKey)
 	assert.Nil(t, err)
-	err = client.ApproveExecutor(executor2.ID, env.colonyPrvKey)
+	err = client.ApproveExecutor(env.colonyName, executor2.Name, env.colonyPrvKey)
 	assert.Nil(t, err)
 
 	numberOfRunningProcesses := 20
@@ -402,7 +402,7 @@ func TestGetSuccessfulProcesses(t *testing.T) {
 	assert.Nil(t, err)
 	_, err = client.AddExecutor(executor1, env.colonyPrvKey)
 	assert.Nil(t, err)
-	err = client.ApproveExecutor(executor1.ID, env.colonyPrvKey)
+	err = client.ApproveExecutor(env.colonyName, executor1.Name, env.colonyPrvKey)
 	assert.Nil(t, err)
 
 	executor2, executorPrvKey2, err := utils.CreateTestExecutorWithKey(env.colonyName)
@@ -410,7 +410,7 @@ func TestGetSuccessfulProcesses(t *testing.T) {
 	assert.Nil(t, err)
 	_, err = client.AddExecutor(executor2, env.colonyPrvKey)
 	assert.Nil(t, err)
-	err = client.ApproveExecutor(executor2.ID, env.colonyPrvKey)
+	err = client.ApproveExecutor(env.colonyName, executor2.Name, env.colonyPrvKey)
 	assert.Nil(t, err)
 
 	numberOfRunningProcesses := 20
@@ -467,7 +467,7 @@ func TestGetFailedProcesses(t *testing.T) {
 	assert.Nil(t, err)
 	_, err = client.AddExecutor(executor1, env.colonyPrvKey)
 	assert.Nil(t, err)
-	err = client.ApproveExecutor(executor1.ID, env.colonyPrvKey)
+	err = client.ApproveExecutor(env.colonyName, executor1.Name, env.colonyPrvKey)
 	assert.Nil(t, err)
 
 	executor2, executorPrvKey2, err := utils.CreateTestExecutorWithKey(env.colonyName)
@@ -475,7 +475,7 @@ func TestGetFailedProcesses(t *testing.T) {
 	assert.Nil(t, err)
 	_, err = client.AddExecutor(executor2, env.colonyPrvKey)
 	assert.Nil(t, err)
-	err = client.ApproveExecutor(executor2.ID, env.colonyPrvKey)
+	err = client.ApproveExecutor(env.colonyName, executor2.Name, env.colonyPrvKey)
 	assert.Nil(t, err)
 
 	numberOfRunningProcesses := 20
