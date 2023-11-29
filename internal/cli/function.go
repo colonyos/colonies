@@ -31,7 +31,6 @@ func init() {
 
 	submitFunctionSpecCmd.Flags().StringVarP(&PrvKey, "prvkey", "", "", "Private key")
 	submitFunctionSpecCmd.Flags().StringVarP(&SpecFile, "spec", "", "", "JSON specification of a process")
-	submitFunctionSpecCmd.Flags().StringVarP(&ColonyID, "colonyid", "", "", "Colony Id")
 	submitFunctionSpecCmd.Flags().BoolVarP(&Wait, "wait", "", false, "Wait for process to finish")
 	submitFunctionSpecCmd.MarkFlagRequired("spec")
 	submitFunctionSpecCmd.Flags().BoolVarP(&PrintOutput, "out", "", false, "Print process output, wait flag must be set")
@@ -40,7 +39,6 @@ func init() {
 	execFuncCmd.Flags().StringVarP(&PrvKey, "prvkey", "", "", "Private key")
 	execFuncCmd.Flags().StringVarP(&TargetExecutorType, "targettype", "", "", "Target executor type")
 	execFuncCmd.Flags().StringVarP(&TargetExecutorID, "targetid", "", "", "Target executor Id")
-	execFuncCmd.Flags().StringVarP(&ColonyID, "colonyid", "", "", "Colony Id")
 	execFuncCmd.Flags().StringVarP(&FuncName, "func", "", "", "Remote function to call")
 	execFuncCmd.Flags().StringSliceVarP(&Args, "args", "", make([]string, 0), "Arguments")
 	execFuncCmd.Flags().StringSliceVarP(&Env, "env", "", make([]string, 0), "Environment")
@@ -59,14 +57,14 @@ func init() {
 
 var functionCmd = &cobra.Command{
 	Use:   "function",
-	Short: "Manage functions",
-	Long:  "Manage functions",
+	Short: "Manage Functions",
+	Long:  "Manage Functions",
 }
 
 var registerFuncCmd = &cobra.Command{
 	Use:   "register",
-	Short: "Register a function to an executor",
-	Long:  "Register a function to an executor",
+	Short: "Register a Function to an Executor",
+	Long:  "Register a Function to an Executor",
 	Run: func(cmd *cobra.Command, args []string) {
 		client := setup()
 
@@ -85,21 +83,21 @@ var registerFuncCmd = &cobra.Command{
 		addedFunc, err := client.AddFunction(funcSpec, PrvKey)
 		CheckError(err)
 
-		log.WithFields(log.Fields{"FunctionID": addedFunc.FunctionID, "ExecutorID": executorIdentity.ID, "ColonyID": ColonyID}).Info("Function added")
+		log.WithFields(log.Fields{"FunctionID": addedFunc.FunctionID, "ExecutorID": executorIdentity.ID, "ColonyName": ColonyName}).Info("Function added")
 	},
 }
 
 var removeFuncCmd = &cobra.Command{
 	Use:   "remove",
-	Short: "Remove a function from an executor, use 'colonies executor ls --full' to get the functionid",
-	Long:  "Remove a function from an executor, use 'colonies executor ls --full' to get the functionid",
+	Short: "Remove a Function from an Executor  Hint: use 'colonies executor ls --full' to get the functionid",
+	Long:  "Remove a Function from an Executor  Hint: use 'colonies executor ls --full' to get the functionid",
 	Run: func(cmd *cobra.Command, args []string) {
 		client := setup()
 
 		err := client.DeleteFunction(FunctionID, PrvKey)
 		CheckError(err)
 
-		log.WithFields(log.Fields{"FunctionId": ColonyID}).Info("Function removed")
+		log.WithFields(log.Fields{"ColonyName": ColonyName, "FunctionId": FunctionID}).Info("Function removed")
 	},
 }
 
@@ -116,8 +114,8 @@ type statsEntry struct {
 
 var listFuncCmd = &cobra.Command{
 	Use:   "ls",
-	Short: "List all functions",
-	Long:  "List all functions",
+	Short: "List all Functions",
+	Long:  "List all Functions",
 	Run: func(cmd *cobra.Command, args []string) {
 		client := setup()
 
@@ -182,14 +180,14 @@ var listFuncCmd = &cobra.Command{
 		}
 
 		if counter == 0 {
-			log.WithFields(log.Fields{"ColonyId": ColonyID}).Info("No functions found")
+			log.WithFields(log.Fields{"ColonyName": ColonyName}).Info("No functions found")
 		}
 
 	},
 }
 
 func follow(client *client.ColoniesClient, process *core.Process) {
-	log.WithFields(log.Fields{"ProcessID": process.ID}).Info("Printing logs from process")
+	log.WithFields(log.Fields{"ProcessId": process.ID}).Info("Printing logs from process")
 	var lastTimestamp int64
 	lastTimestamp = 0
 	for {
@@ -202,12 +200,12 @@ func follow(client *client.ColoniesClient, process *core.Process) {
 		if len(logs) == 0 {
 			time.Sleep(500 * time.Millisecond)
 			if process.State == core.SUCCESS {
-				log.WithFields(log.Fields{"ProcessID": process.ID}).Info("Process finished successfully")
+				log.WithFields(log.Fields{"ProcessId": process.ID}).Info("Process finished successfully")
 				os.Exit(0)
 			}
 			if process.State == core.FAILED {
 				fmt.Println()
-				log.WithFields(log.Fields{"ProcessID": process.ID}).Error("Process failed")
+				log.WithFields(log.Fields{"ProcessId": process.ID}).Error("Process failed")
 				os.Exit(-1)
 			}
 			continue
@@ -225,7 +223,7 @@ func createSnapshot(funcSpec *core.FunctionSpec, client *client.ColoniesClient) 
 	if len(funcSpec.Filesystem.SnapshotMounts) > 0 {
 		for i, snapshotMount := range funcSpec.Filesystem.SnapshotMounts {
 			snapshotName := core.GenerateRandomID()
-			snapshot, err := client.CreateSnapshot(ColonyID, snapshotMount.Label, snapshotName, PrvKey)
+			snapshot, err := client.CreateSnapshot(ColonyName, snapshotMount.Label, snapshotName, PrvKey)
 			CheckError(err)
 			funcSpec.Filesystem.SnapshotMounts[i].SnapshotID = snapshot.ID
 			log.WithFields(log.Fields{"SnapshotID": snapshot.ID, "Label": snapshotMount.Label}).Debug("Creating snapshot")
@@ -236,8 +234,8 @@ func createSnapshot(funcSpec *core.FunctionSpec, client *client.ColoniesClient) 
 
 var submitFunctionSpecCmd = &cobra.Command{
 	Use:   "submit",
-	Short: "Submit a function specification",
-	Long:  "Submit a function specification",
+	Short: "Submit a Function specification",
+	Long:  "Submit a Function specification",
 	Run: func(cmd *cobra.Command, args []string) {
 		client := setup()
 
@@ -256,16 +254,16 @@ var submitFunctionSpecCmd = &cobra.Command{
 		addedProcess, err := client.Submit(funcSpec, PrvKey)
 		CheckError(err)
 
-		log.WithFields(log.Fields{"ProcessID": addedProcess.ID}).Info("Process submitted")
+		log.WithFields(log.Fields{"ProcessId": addedProcess.ID}).Info("Process submitted")
 		if Wait {
 			wait(client, addedProcess)
 			process, err := client.GetProcess(addedProcess.ID, PrvKey)
 			CheckError(err)
 			if process.State == core.FAILED {
-				log.WithFields(log.Fields{"ProcessID": addedProcess.ID, "Error": process.Errors}).Error("Process failed")
+				log.WithFields(log.Fields{"ProcessId": addedProcess.ID, "Error": process.Errors}).Error("Process failed")
 				os.Exit(-1)
 			} else if process.State == core.SUCCESS {
-				log.WithFields(log.Fields{"ProcessID": addedProcess.ID}).Info("Process finished successfully")
+				log.WithFields(log.Fields{"ProcessId": addedProcess.ID}).Info("Process finished successfully")
 			}
 			if PrintOutput {
 				fmt.Println(StrArr2Str(IfArr2StringArr(addedProcess.Output)))
@@ -279,8 +277,8 @@ var submitFunctionSpecCmd = &cobra.Command{
 
 var execFuncCmd = &cobra.Command{
 	Use:   "exec",
-	Short: "Execute a function",
-	Long:  "Execute a function",
+	Short: "Execute a Function",
+	Long:  "Execute a Function",
 	Run: func(cmd *cobra.Command, args []string) {
 		client := setup()
 
@@ -347,16 +345,16 @@ var execFuncCmd = &cobra.Command{
 		addedProcess, err := client.Submit(&funcSpec, PrvKey)
 		CheckError(err)
 
-		log.WithFields(log.Fields{"ProcessID": addedProcess.ID}).Info("Process submitted")
+		log.WithFields(log.Fields{"ProcessId": addedProcess.ID}).Info("Process submitted")
 		if Wait {
 			wait(client, addedProcess)
 			process, err := client.GetProcess(addedProcess.ID, PrvKey)
 			CheckError(err)
 			if process.State == core.FAILED {
-				log.WithFields(log.Fields{"ProcessID": addedProcess.ID, "Error": process.Errors}).Error("Process failed")
+				log.WithFields(log.Fields{"ProcessId": addedProcess.ID, "Error": process.Errors}).Error("Process failed")
 				os.Exit(-1)
 			} else if process.State == core.SUCCESS {
-				log.WithFields(log.Fields{"ProcessID": addedProcess.ID}).Info("Process finished successfully")
+				log.WithFields(log.Fields{"ProcessId": addedProcess.ID}).Info("Process finished successfully")
 			}
 			if PrintOutput {
 				fmt.Println(StrArr2Str(IfArr2StringArr(process.Output)))

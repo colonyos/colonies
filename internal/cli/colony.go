@@ -34,10 +34,6 @@ func init() {
 
 	lsColoniesCmd.Flags().StringVarP(&ServerPrvKey, "serverprvkey", "", "", "Colonies server private key")
 	lsColoniesCmd.Flags().BoolVarP(&JSON, "json", "", false, "Print JSON instead of tables")
-
-	colonyStatsCmd.Flags().StringVarP(&ServerPrvKey, "serverprvkey", "", "", "Colonies server private key")
-	colonyStatsCmd.Flags().StringVarP(&TargetColonyName, "name", "", "", "Colony name")
-	colonyStatsCmd.MarkFlagRequired("name")
 }
 
 var colonyCmd = &cobra.Command{
@@ -133,11 +129,7 @@ var colonyStatsCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		client := setup()
 
-		if TargetColonyName == "" {
-			CheckError(errors.New("Colony name not specified"))
-		}
-
-		stat, err := client.ColonyStatistics(TargetColonyName, PrvKey)
+		stat, err := client.ColonyStatistics(ColonyName, PrvKey)
 		CheckError(err)
 
 		fmt.Println("Process statistics:")
