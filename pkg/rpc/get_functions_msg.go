@@ -7,14 +7,15 @@ import (
 const GetFunctionsPayloadType = "getfunctionsmsg"
 
 type GetFunctionsMsg struct {
-	ExecutorID string `json:"executorid"`
-	ColonyName string `json:"colonyname"`
-	MsgType    string `json:"msgtype"`
+	ExecutorName string `json:"executorname"`
+	ColonyName   string `json:"colonyname"`
+	MsgType      string `json:"msgtype"`
 }
 
-func CreateGetFunctionsByExecutorIDMsg(executorID string) *GetFunctionsMsg {
+func CreateGetFunctionsMsg(colonyName string, executorName string) *GetFunctionsMsg {
 	msg := &GetFunctionsMsg{}
-	msg.ExecutorID = executorID
+	msg.ColonyName = colonyName
+	msg.ExecutorName = executorName
 	msg.MsgType = GetFunctionsPayloadType
 
 	return msg
@@ -51,7 +52,7 @@ func (msg *GetFunctionsMsg) Equals(msg2 *GetFunctionsMsg) bool {
 		return false
 	}
 
-	if msg.MsgType == msg2.MsgType && (msg.ExecutorID == msg2.ExecutorID || msg.ColonyName == msg.ColonyName) {
+	if msg.MsgType == msg2.MsgType && (msg.ExecutorName == msg2.ExecutorName || msg.ColonyName == msg.ColonyName) {
 		return true
 	}
 

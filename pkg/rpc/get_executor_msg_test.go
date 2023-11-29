@@ -8,7 +8,7 @@ import (
 )
 
 func TestRPCGetExecutorMsg(t *testing.T) {
-	msg := CreateGetExecutorMsg(core.GenerateRandomID())
+	msg := CreateGetExecutorMsg(core.GenerateRandomID(), core.GenerateRandomID())
 	jsonString, err := msg.ToJSON()
 	assert.Nil(t, err)
 
@@ -22,7 +22,7 @@ func TestRPCGetExecutorMsg(t *testing.T) {
 }
 
 func TestRPCGetExecutorMsgIndent(t *testing.T) {
-	msg := CreateGetExecutorMsg(core.GenerateRandomID())
+	msg := CreateGetExecutorMsg(core.GenerateRandomID(), core.GenerateRandomID())
 	jsonString, err := msg.ToJSONIndent()
 	assert.Nil(t, err)
 
@@ -36,7 +36,7 @@ func TestRPCGetExecutorMsgIndent(t *testing.T) {
 }
 
 func TestRPCGetExecutorMsgEquals(t *testing.T) {
-	msg := CreateGetExecutorMsg(core.GenerateRandomID())
+	msg := CreateGetExecutorMsg(core.GenerateRandomID(), core.GenerateRandomID())
 	assert.True(t, msg.Equals(msg))
 	assert.False(t, msg.Equals(nil))
 }
