@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/colonyos/colonies/internal/crypto"
 	"github.com/colonyos/colonies/pkg/client"
 	"github.com/colonyos/colonies/pkg/core"
 	"github.com/colonyos/colonies/pkg/server"
@@ -32,49 +33,38 @@ func init() {
 	processCmd.PersistentFlags().StringVarP(&ServerHost, "host", "", "localhost", "Server host")
 	processCmd.PersistentFlags().IntVarP(&ServerPort, "port", "", -1, "Server HTTP port")
 
-	listWaitingProcessesCmd.Flags().StringVarP(&ColonyID, "colonyid", "", "", "Colony Id")
 	listWaitingProcessesCmd.Flags().StringVarP(&PrvKey, "prvkey", "", "", "Private key")
 	listWaitingProcessesCmd.Flags().StringVarP(&ExecutorType, "type", "", "", "Only show processes targeting this executor type")
 	listWaitingProcessesCmd.Flags().IntVarP(&Count, "count", "", server.MAX_COUNT, "Number of processes to list")
 	listWaitingProcessesCmd.Flags().BoolVarP(&JSON, "json", "", false, "Print JSON instead of tables")
 
-	listRunningProcessesCmd.Flags().StringVarP(&ColonyID, "colonyid", "", "", "Colony Id")
 	listRunningProcessesCmd.Flags().StringVarP(&PrvKey, "prvkey", "", "", "Private key")
 	listRunningProcessesCmd.Flags().StringVarP(&ExecutorType, "type", "", "", "Only show processes targeting this executor type")
 	listRunningProcessesCmd.Flags().IntVarP(&Count, "count", "", server.MAX_COUNT, "Number of processes to list")
 	listRunningProcessesCmd.Flags().BoolVarP(&JSON, "json", "", false, "Print JSON instead of tables")
 
-	listSuccessfulProcessesCmd.Flags().StringVarP(&ColonyID, "colonyid", "", "", "Colony Id")
 	listSuccessfulProcessesCmd.Flags().StringVarP(&PrvKey, "prvkey", "", "", "Private key")
 	listSuccessfulProcessesCmd.Flags().StringVarP(&ExecutorType, "type", "", "", "Only show processes targeting this executor type")
 	listSuccessfulProcessesCmd.Flags().IntVarP(&Count, "count", "", server.MAX_COUNT, "Number of processes to list")
 	listSuccessfulProcessesCmd.Flags().BoolVarP(&JSON, "json", "", false, "Print JSON instead of tables")
 
-	listFailedProcessesCmd.Flags().StringVarP(&ColonyID, "colonyid", "", "", "Colony Id")
 	listFailedProcessesCmd.Flags().StringVarP(&PrvKey, "prvkey", "", "", "Private key")
 	listFailedProcessesCmd.Flags().StringVarP(&ExecutorType, "type", "", "", "Only show processes targeting this executor type")
 	listFailedProcessesCmd.Flags().IntVarP(&Count, "count", "", server.MAX_COUNT, "Number of processes to list")
 	listFailedProcessesCmd.Flags().BoolVarP(&JSON, "json", "", false, "Print JSON instead of tables")
 
-	getProcessCmd.Flags().StringVarP(&PrvKey, "prvkey", "", "", "Private key")
-	getProcessCmd.Flags().StringVarP(&ColonyID, "colonyid", "", "", "Colony Id")
 	getProcessCmd.Flags().StringVarP(&ProcessID, "processid", "p", "", "Process Id")
 	getProcessCmd.MarkFlagRequired("processid")
 	getProcessCmd.Flags().BoolVarP(&JSON, "json", "", false, "Print JSON instead of tables")
 	getProcessCmd.Flags().BoolVarP(&PrintOutput, "out", "", false, "Print process output")
 
-	deleteProcessCmd.Flags().StringVarP(&PrvKey, "prvkey", "", "", "Private key")
-	deleteProcessCmd.Flags().StringVarP(&ColonyID, "colonyid", "", "", "Colony Id")
 	deleteProcessCmd.Flags().StringVarP(&ProcessID, "processid", "p", "", "Process Id")
 	deleteProcessCmd.MarkFlagRequired("processid")
 
-	deleteAllProcessesCmd.Flags().StringVarP(&PrvKey, "prvkey", "", "", "Private key")
-	deleteAllProcessesCmd.Flags().StringVarP(&ColonyID, "colonyid", "", "", "Colony Id")
 	deleteAllProcessesCmd.Flags().BoolVarP(&Waiting, "waiting", "", false, "Delete all waiting processes")
 	deleteAllProcessesCmd.Flags().BoolVarP(&Successful, "successful", "", false, "Delete all successful processes")
 	deleteAllProcessesCmd.Flags().BoolVarP(&Failed, "failed", "", false, "Delete all failed processes")
 
-	assignProcessCmd.Flags().StringVarP(&ColonyID, "colonyid", "", "", "Colony Id")
 	assignProcessCmd.Flags().StringVarP(&PrvKey, "prvkey", "", "", "Private key")
 	assignProcessCmd.Flags().IntVarP(&Timeout, "timeout", "", 100, "Max time to wait for a process assignment")
 
@@ -131,13 +121,15 @@ var assignProcessCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		client := setup()
 
-		process, err := client.Assign(ColonyID, Timeout, PrvKey)
+		executorID, err := crypto.GenerateID(PrvKey)
+		CheckError(err)
+
+		process, err := client.Assign(ColonyName, Timeout, PrvKey)
 		if err != nil {
 			log.Warning(err)
 		} else {
-			log.WithFields(log.Fields{"ProcessID": process.ID}).Info("Assigned process to executor (oldest)")
+			log.WithFields(log.Fields{"ProcessId": process.ID, "ExecutorId": executorID}).Info("Assigned process to executor")
 		}
-
 	},
 }
 
@@ -148,11 +140,14 @@ var listWaitingProcessesCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		client := setup()
 
-		processes, err := client.GetWaitingProcesses(ColonyID, ExecutorType, Count, PrvKey)
+		fmt.Println(ExecutorType)
+		ExecutorType = ""
+
+		processes, err := client.GetWaitingProcesses(ColonyName, ExecutorType, Count, PrvKey)
 		CheckError(err)
 
 		if len(processes) == 0 {
-			log.WithFields(log.Fields{"ColonyId": ColonyID}).Info("No waiting processes found")
+			log.WithFields(log.Fields{"ColonyName": ColonyName}).Info("No waiting processes found")
 		} else {
 			if JSON {
 				jsonString, err := core.ConvertProcessArrayToJSON(processes)
@@ -184,11 +179,11 @@ var listRunningProcessesCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		client := setup()
 
-		processes, err := client.GetRunningProcesses(ColonyID, ExecutorType, Count, PrvKey)
+		processes, err := client.GetRunningProcesses(ColonyName, ExecutorType, Count, PrvKey)
 		CheckError(err)
 
 		if len(processes) == 0 {
-			log.WithFields(log.Fields{"ColonyId": ColonyID}).Info("No running processes found")
+			log.WithFields(log.Fields{"ColonyName": ColonyName}).Info("No running processes found")
 		} else {
 			if JSON {
 				jsonString, err := core.ConvertProcessArrayToJSON(processes)
@@ -219,11 +214,11 @@ var listSuccessfulProcessesCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		client := setup()
 
-		processes, err := client.GetSuccessfulProcesses(ColonyID, ExecutorType, Count, PrvKey)
+		processes, err := client.GetSuccessfulProcesses(ColonyName, ExecutorType, Count, PrvKey)
 		CheckError(err)
 
 		if len(processes) == 0 {
-			log.WithFields(log.Fields{"ColonyId": ColonyID}).Info("No successful processes found")
+			log.WithFields(log.Fields{"ColonyName": ColonyName}).Info("No successful processes found")
 		} else {
 			if JSON {
 				jsonString, err := core.ConvertProcessArrayToJSON(processes)
@@ -254,11 +249,11 @@ var listFailedProcessesCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		client := setup()
 
-		processes, err := client.GetFailedProcesses(ColonyID, ExecutorType, Count, PrvKey)
+		processes, err := client.GetFailedProcesses(ColonyName, ExecutorType, Count, PrvKey)
 		CheckError(err)
 
 		if len(processes) == 0 {
-			log.WithFields(log.Fields{"ColonyId": ColonyID}).Info("No failed processes found")
+			log.WithFields(log.Fields{"ColonyName": ColonyName}).Info("No failed processes found")
 		} else {
 			if JSON {
 				jsonString, err := core.ConvertProcessArrayToJSON(processes)
@@ -373,7 +368,7 @@ var getProcessCmd = &cobra.Command{
 
 		process, err := client.GetProcess(ProcessID, PrvKey)
 		if err != nil {
-			log.WithFields(log.Fields{"ProcessID": ProcessID, "Error": err}).Info("Process not found")
+			log.WithFields(log.Fields{"ProcessId": ProcessID, "Error": err}).Info("Process not found")
 			os.Exit(-1)
 		}
 
@@ -485,7 +480,7 @@ var deleteProcessCmd = &cobra.Command{
 		err := client.DeleteProcess(ProcessID, PrvKey)
 		CheckError(err)
 
-		log.WithFields(log.Fields{"ProcessID": ProcessID}).Info("Process deleted")
+		log.WithFields(log.Fields{"ProcessId": ProcessID}).Info("Process deleted")
 	},
 }
 
@@ -519,28 +514,28 @@ var deleteAllProcessesCmd = &cobra.Command{
 			state = "all"
 		}
 
-		fmt.Print("WARNING!!! Are you sure you want to delete " + state + " process in the Colony This operation cannot be undone! (YES,no): ")
+		fmt.Print("WARNING!!! Are you sure you want to delete " + state + " process from Colony <" + ColonyName + ">. This operation cannot be undone! (YES,no): ")
 
 		var err error
 		reader := bufio.NewReader(os.Stdin)
 		reply, _ := reader.ReadString('\n')
 		if reply == "YES\n" {
 			if state == "all" {
-				err = client.DeleteAllProcesses(ColonyID, ColonyPrvKey)
+				err = client.DeleteAllProcesses(ColonyName, ColonyPrvKey)
 				CheckError(err)
-				log.WithFields(log.Fields{"ColonyID": ColonyID}).Info("Deleting all processes in Colony")
+				log.WithFields(log.Fields{"ColonyName": ColonyName}).Info("Deleting all processes in Colony")
 			} else if Waiting {
-				err = client.DeleteAllProcessesWithState(ColonyID, core.WAITING, ColonyPrvKey)
+				err = client.DeleteAllProcessesWithState(ColonyName, core.WAITING, ColonyPrvKey)
 				CheckError(err)
-				log.WithFields(log.Fields{"ColonyID": ColonyID}).Info("Deleting all waiting processes in Colony")
+				log.WithFields(log.Fields{"ColonyName": ColonyName}).Info("Deleting all waiting processes in Colony")
 			} else if Successful {
-				err = client.DeleteAllProcessesWithState(ColonyID, core.SUCCESS, ColonyPrvKey)
+				err = client.DeleteAllProcessesWithState(ColonyName, core.SUCCESS, ColonyPrvKey)
 				CheckError(err)
-				log.WithFields(log.Fields{"ColonyID": ColonyID}).Info("Deleting all successful processes in Colony")
+				log.WithFields(log.Fields{"ColonyName": ColonyName}).Info("Deleting all successful processes in Colony")
 			} else if Failed {
-				err = client.DeleteAllProcessesWithState(ColonyID, core.FAILED, ColonyPrvKey)
+				err = client.DeleteAllProcessesWithState(ColonyName, core.FAILED, ColonyPrvKey)
 				CheckError(err)
-				log.WithFields(log.Fields{"ColonyID": ColonyID}).Info("Deleting all failed processes in Colony")
+				log.WithFields(log.Fields{"ColonyName": ColonyName}).Info("Deleting all failed processes in Colony")
 			}
 		} else {
 			log.Info("Aborting ...")
@@ -570,7 +565,7 @@ var closeSuccessfulCmd = &cobra.Command{
 			CheckError(err)
 		}
 
-		log.WithFields(log.Fields{"ProcessID": process.ID}).Info("Process closed as Successful")
+		log.WithFields(log.Fields{"ProcessId": process.ID}).Info("Process closed as Successful")
 	},
 }
 
@@ -591,6 +586,6 @@ var closeFailedCmd = &cobra.Command{
 		err = client.Fail(process.ID, Errors, PrvKey)
 		CheckError(err)
 
-		log.WithFields(log.Fields{"ProcessID": process.ID}).Info("Process closed as Failed")
+		log.WithFields(log.Fields{"ProcessId": process.ID}).Info("Process closed as Failed")
 	},
 }

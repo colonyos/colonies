@@ -1,5 +1,5 @@
 {
-    "executorname": "ml_executor",
+    "executorname": "ml-executor",
     "executortype": "ml",
     "location": {
         "long": 65.61204640586546,

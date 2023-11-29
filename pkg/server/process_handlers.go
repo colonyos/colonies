@@ -56,7 +56,7 @@ func (server *ColoniesServer) handleSubmitHTTPRequest(c *gin.Context, recoveredI
 		return
 	}
 
-	log.WithFields(log.Fields{"ProcessId": process.ID}).Debug("Submitting process")
+	log.WithFields(log.Fields{"ColonyName": process.FunctionSpec.Conditions.ColonyName, "ProcessId": process.ID}).Debug("Submitting process")
 
 	server.sendHTTPReply(c, payloadType, jsonString)
 }
@@ -113,7 +113,7 @@ func (server *ColoniesServer) handleAssignProcessHTTPRequest(c *gin.Context, rec
 	log.WithFields(log.Fields{
 		"ExecutorType": executor.Type,
 		"ExecutorId":   recoveredID,
-		"ColonyId":     msg.ColonyName,
+		"ColonyName":   msg.ColonyName,
 		"Timeout":      msg.Timeout}).
 		Debug("Waiting for processes")
 
@@ -130,7 +130,7 @@ func (server *ColoniesServer) handleAssignProcessHTTPRequest(c *gin.Context, rec
 	}
 
 	if server.handleHTTPError(c, assignErr, http.StatusNotFound) {
-		log.WithFields(log.Fields{"ExecutorId": recoveredID, "ColonyId": msg.ColonyName}).Debug("No process can be assigned")
+		log.WithFields(log.Fields{"ExecutorId": recoveredID, "ColonyName": msg.ColonyName}).Debug("No process can be assigned")
 		return
 	}
 	if process == nil {
@@ -181,7 +181,7 @@ func (server *ColoniesServer) handleGetProcessHistHTTPRequest(c *gin.Context, re
 	}
 
 	log.WithFields(log.Fields{
-		"ColonyId":   msg.ColonyName,
+		"ColonyName": msg.ColonyName,
 		"ExecutorId": msg.ExecutorID,
 		"Seconds":    msg.Seconds,
 		"State":      msg.State}).
@@ -211,7 +211,7 @@ func (server *ColoniesServer) handleGetProcessesHTTPRequest(c *gin.Context, reco
 		}
 	}
 
-	log.WithFields(log.Fields{"ColonyId": msg.ColonyName, "Count": msg.Count}).Debug("Getting processes")
+	log.WithFields(log.Fields{"ColonyName": msg.ColonyName, "Count": msg.Count}).Debug("Getting processes")
 
 	switch msg.State {
 	case core.WAITING:
@@ -358,7 +358,7 @@ func (server *ColoniesServer) handleDeleteAllProcessesHTTPRequest(c *gin.Context
 		return
 	}
 
-	log.WithFields(log.Fields{"ColonyId": msg.ColonyName}).Debug("Deleting all processes")
+	log.WithFields(log.Fields{"ColonyName": msg.ColonyName}).Debug("Deleting all processes")
 
 	server.sendEmptyHTTPReply(c, payloadType)
 }
