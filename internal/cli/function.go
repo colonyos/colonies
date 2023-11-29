@@ -10,7 +10,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/colonyos/colonies/internal/crypto"
 	"github.com/colonyos/colonies/pkg/client"
 	"github.com/colonyos/colonies/pkg/core"
 	"github.com/kataras/tablewriter"
@@ -26,8 +25,11 @@ func init() {
 	functionCmd.AddCommand(removeFuncCmd)
 	functionCmd.AddCommand(listFuncCmd)
 
-	registerFuncCmd.Flags().StringVarP(&SpecFile, "spec", "", "", "JSON specification of a function")
-	registerFuncCmd.MarkFlagRequired("spec")
+	registerFuncCmd.Flags().StringVarP(&PrvKey, "prvkey", "", "", "Private key")
+	registerFuncCmd.Flags().StringVarP(&TargetExecutorName, "name", "", "", "Executor name")
+	registerFuncCmd.MarkFlagRequired("name")
+	registerFuncCmd.Flags().StringVarP(&FuncName, "func", "", "", "Function name to register")
+	registerFuncCmd.MarkFlagRequired("func")
 
 	submitFunctionSpecCmd.Flags().StringVarP(&PrvKey, "prvkey", "", "", "Private key")
 	submitFunctionSpecCmd.Flags().StringVarP(&SpecFile, "spec", "", "", "JSON specification of a process")
@@ -68,22 +70,19 @@ var registerFuncCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		client := setup()
 
-		jsonSpecBytes, err := ioutil.ReadFile(SpecFile)
+		if TargetExecutorName == "" {
+			CheckError(errors.New("Executor name must be specified"))
+		}
+
+		if FuncName == "" {
+			CheckError(errors.New("Func must be specified"))
+		}
+
+		f := &core.Function{ExecutorName: TargetExecutorName, ColonyName: ColonyName, FuncName: FuncName}
+		regF, err := client.AddFunction(f, PrvKey)
 		CheckError(err)
 
-		funcSpec, err := core.ConvertJSONToFunction(string(jsonSpecBytes))
-		CheckError(err)
-
-		executorIdentity, err := crypto.CreateIdendityFromString(PrvKey)
-		CheckError(err)
-
-		funcSpec.ColonyName = ColonyName
-		funcSpec.ExecutorID = executorIdentity.ID()
-
-		addedFunc, err := client.AddFunction(funcSpec, PrvKey)
-		CheckError(err)
-
-		log.WithFields(log.Fields{"FunctionID": addedFunc.FunctionID, "ExecutorID": executorIdentity.ID, "ColonyName": ColonyName}).Info("Function added")
+		log.WithFields(log.Fields{"FunctionID": regF.FunctionID, "ExecutorName": regF.ExecutorName, "ColonyName": ColonyName, "FuncName": FuncName}).Info("Function added")
 	},
 }
 

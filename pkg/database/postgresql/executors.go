@@ -196,8 +196,13 @@ func (db *PQDatabase) MarkAlive(executor *core.Executor) error {
 }
 
 func (db *PQDatabase) DeleteExecutorByID(executorID string) error {
+	executor, err := db.GetExecutorByID(executorID)
+	if err != nil {
+		return err
+	}
+
 	sqlStatement := `DELETE FROM ` + db.dbPrefix + `EXECUTORS WHERE EXECUTOR_ID=$1`
-	_, err := db.postgresql.Exec(sqlStatement, executorID)
+	_, err = db.postgresql.Exec(sqlStatement, executorID)
 	if err != nil {
 		return err
 	}
@@ -209,7 +214,7 @@ func (db *PQDatabase) DeleteExecutorByID(executorID string) error {
 		return err
 	}
 
-	err = db.DeleteFunctionsByExecutorID(executorID)
+	err = db.DeleteFunctionsByExecutorName(executor.ColonyName, executor.Name)
 	if err != nil {
 		return err
 	}
