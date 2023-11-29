@@ -756,7 +756,7 @@ func TestCloseSuccessfulWithFunctions(t *testing.T) {
 	_, err := client.Submit(funcSpec, env.executorPrvKey)
 	assert.Nil(t, err)
 
-	function := &core.Function{ColonyName: env.colonyName, ExecutorID: env.executorID, FuncName: funcSpec.FuncName}
+	function := &core.Function{ColonyName: env.colonyName, ExecutorName: env.executorName, FuncName: funcSpec.FuncName}
 	_, err = client.AddFunction(function, env.executorPrvKey)
 	assert.Nil(t, err)
 
@@ -775,7 +775,7 @@ func TestCloseSuccessfulWithFunctions(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, core.SUCCESS, assignedProcessFromServer.State)
 
-	functions, err := client.GetFunctionsByExecutorID(env.executorID, env.executorPrvKey)
+	functions, err := client.GetFunctionsByExecutorName(env.colonyName, env.executorName, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.Len(t, functions, 1)
 	assert.Equal(t, functions[0].Counter, 1)

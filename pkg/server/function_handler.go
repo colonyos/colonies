@@ -32,13 +32,23 @@ func (server *ColoniesServer) handleAddFunctionHTTPRequest(c *gin.Context, recov
 		return
 	}
 
-	if msg.Function.ExecutorID != recoveredID {
+	executor, err := server.db.GetExecutorByName(msg.Function.ColonyName, msg.Function.ExecutorName)
+	if server.handleHTTPError(c, err, http.StatusInternalServerError) {
+		return
+	}
+
+	if executor == nil {
+		server.handleHTTPError(c, errors.New("Failed to add function, Executor with name <"+msg.Function.ExecutorName+"> does not exist"), http.StatusBadRequest)
+		return
+	}
+
+	if executor.ID != recoveredID {
 		if server.handleHTTPError(c, errors.New("Not allowed to add a function to another executor"), http.StatusForbidden) {
 			return
 		}
 	}
 
-	functions, err := server.controller.getFunctionsByExecutorID(msg.Function.ExecutorID)
+	functions, err := server.controller.getFunctionsByExecutorName(msg.Function.ColonyName, msg.Function.ExecutorName)
 	for _, function := range functions {
 		if function.FuncName == msg.Function.FuncName {
 			if server.handleHTTPError(c, errors.New("Function already exists"), http.StatusForbidden) {
@@ -58,7 +68,7 @@ func (server *ColoniesServer) handleAddFunctionHTTPRequest(c *gin.Context, recov
 		return
 	}
 
-	log.WithFields(log.Fields{"FunctionId": addedFunction.FunctionID, "ExecutorId": addedFunction.ExecutorID, "ColonyName": addedFunction.ColonyName, "FuncName": addedFunction.FuncName}).Debug("Adding function")
+	log.WithFields(log.Fields{"FunctionId": addedFunction.FunctionID, "ExecutorName": addedFunction.ExecutorName, "ColonyName": addedFunction.ColonyName, "FuncName": addedFunction.FuncName}).Debug("Adding function")
 
 	server.sendHTTPReply(c, payloadType, jsonString)
 }
@@ -78,12 +88,7 @@ func (server *ColoniesServer) handleGetFunctionsHTTPRequest(c *gin.Context, reco
 
 	var functions []*core.Function
 
-	if msg.ExecutorID != "" && msg.ColonyName != "" {
-		server.handleHTTPError(c, errors.New("Both msg.ExecutorID and msg.ColonyName set, choose one"), http.StatusBadRequest)
-		return
-	}
-
-	if msg.ColonyName != "" {
+	if msg.ExecutorName == "" {
 		err = server.validator.RequireMembership(recoveredID, msg.ColonyName, true)
 		if server.handleHTTPError(c, err, http.StatusForbidden) {
 			return
@@ -92,8 +97,8 @@ func (server *ColoniesServer) handleGetFunctionsHTTPRequest(c *gin.Context, reco
 		if server.handleHTTPError(c, err, http.StatusForbidden) {
 			return
 		}
-	} else if msg.ExecutorID != "" {
-		targetExecutor, err := server.controller.getExecutor(msg.ExecutorID)
+	} else {
+		targetExecutor, err := server.db.GetExecutorByName(msg.ColonyName, msg.ExecutorName)
 		if server.handleHTTPError(c, err, http.StatusForbidden) {
 			return
 		}
@@ -106,7 +111,7 @@ func (server *ColoniesServer) handleGetFunctionsHTTPRequest(c *gin.Context, reco
 		if server.handleHTTPError(c, err, http.StatusForbidden) {
 			return
 		}
-		functions, err = server.controller.getFunctionsByExecutorID(msg.ExecutorID)
+		functions, err = server.controller.getFunctionsByExecutorName(msg.ColonyName, msg.ExecutorName)
 		if server.handleHTTPError(c, err, http.StatusForbidden) {
 			return
 		}
@@ -143,8 +148,13 @@ func (server *ColoniesServer) handleDeleteFunctionHTTPRequest(c *gin.Context, re
 		return
 	}
 
-	executor, err := server.controller.getExecutor(function.ExecutorID)
+	executor, err := server.db.GetExecutorByName(function.ColonyName, function.ExecutorName)
 	if server.handleHTTPError(c, err, http.StatusForbidden) {
+		return
+	}
+
+	if executor == nil {
+		server.handleHTTPError(c, errors.New("Failed to delete function, Executor does not exist"), http.StatusBadRequest)
 		return
 	}
 
@@ -153,7 +163,7 @@ func (server *ColoniesServer) handleDeleteFunctionHTTPRequest(c *gin.Context, re
 		return
 	}
 
-	if function.ExecutorID != recoveredID {
+	if executor.ID != recoveredID {
 		if server.handleHTTPError(c, errors.New("Not allowed to add a function to another executor"), http.StatusForbidden) {
 			return
 		}

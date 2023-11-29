@@ -3,21 +3,21 @@ package core
 import "encoding/json"
 
 type Function struct {
-	FunctionID  string  `json:"functionid"`
-	ExecutorID  string  `json:"executorid"`
-	ColonyName  string  `json:"colonyname"`
-	FuncName    string  `json:"funcname"`
-	Counter     int     `json:"counter"`
-	MinWaitTime float64 `json:"minwaittime"`
-	MaxWaitTime float64 `json:"maxwaittime"`
-	MinExecTime float64 `json:"minexectime"`
-	MaxExecTime float64 `json:"maxexectime"`
-	AvgWaitTime float64 `json:"avgwaittime"`
-	AvgExecTime float64 `json:"avgexectime"`
+	FunctionID   string  `json:"functionid"`
+	ExecutorName string  `json:"executorname"`
+	ColonyName   string  `json:"colonyname"`
+	FuncName     string  `json:"funcname"`
+	Counter      int     `json:"counter"`
+	MinWaitTime  float64 `json:"minwaittime"`
+	MaxWaitTime  float64 `json:"maxwaittime"`
+	MinExecTime  float64 `json:"minexectime"`
+	MaxExecTime  float64 `json:"maxexectime"`
+	AvgWaitTime  float64 `json:"avgwaittime"`
+	AvgExecTime  float64 `json:"avgexectime"`
 }
 
 func CreateFunction(functionID string,
-	executorID string,
+	executorName string,
 	colonyName string,
 	funcName string,
 	counter int,
@@ -28,17 +28,17 @@ func CreateFunction(functionID string,
 	avgWaitTime float64,
 	avgExecTime float64) *Function {
 	return &Function{
-		FunctionID:  functionID,
-		ExecutorID:  executorID,
-		ColonyName:  colonyName,
-		FuncName:    funcName,
-		Counter:     counter,
-		MinWaitTime: minWaitTime,
-		MaxWaitTime: maxWaitTime,
-		MinExecTime: minExecTime,
-		MaxExecTime: maxExecTime,
-		AvgWaitTime: avgWaitTime,
-		AvgExecTime: avgExecTime,
+		FunctionID:   functionID,
+		ExecutorName: executorName,
+		ColonyName:   colonyName,
+		FuncName:     funcName,
+		Counter:      counter,
+		MinWaitTime:  minWaitTime,
+		MaxWaitTime:  maxWaitTime,
+		MinExecTime:  minExecTime,
+		MaxExecTime:  maxExecTime,
+		AvgWaitTime:  avgWaitTime,
+		AvgExecTime:  avgExecTime,
 	}
 }
 
@@ -94,7 +94,7 @@ func (function *Function) Equals(function2 *Function) bool {
 	}
 
 	if function.FunctionID != function2.FunctionID ||
-		function.ExecutorID != function2.ExecutorID ||
+		function.ExecutorName != function2.ExecutorName ||
 		function.ColonyName != function2.ColonyName ||
 		function.FuncName != function2.FuncName ||
 		function.Counter != function2.Counter ||

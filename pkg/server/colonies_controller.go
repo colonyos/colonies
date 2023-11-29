@@ -1183,7 +1183,13 @@ func (controller *coloniesController) closeSuccessful(processID string, executor
 
 			process.State = core.SUCCESS
 
-			function, err := controller.db.GetFunctionsByExecutorIDAndName(executorID, process.FunctionSpec.FuncName)
+			executor, err := controller.db.GetExecutorByID(executorID)
+			if err != nil {
+				cmd.errorChan <- err
+				return
+			}
+
+			function, err := controller.db.GetFunctionsByExecutorAndName(process.FunctionSpec.Conditions.ColonyName, executor.Name, process.FunctionSpec.FuncName)
 			if err != nil {
 				cmd.errorChan <- err
 				return
@@ -1232,7 +1238,9 @@ func (controller *coloniesController) closeSuccessful(processID string, executor
 					avgExecTime = processingTime
 				}
 
-				controller.db.UpdateFunctionStats(function.ExecutorID,
+				controller.db.UpdateFunctionStats(
+					process.FunctionSpec.Conditions.ColonyName,
+					function.ExecutorName,
 					function.FuncName,
 					function.Counter+1,
 					minWaitTime,
@@ -1709,11 +1717,11 @@ func (controller *coloniesController) addFunction(function *core.Function) (*cor
 	}
 }
 
-func (controller *coloniesController) getFunctionsByExecutorID(executorID string) ([]*core.Function, error) {
+func (controller *coloniesController) getFunctionsByExecutorName(colonyName string, executorName string) ([]*core.Function, error) {
 	cmd := &command{threaded: true, functionsReplyChan: make(chan []*core.Function, 1),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
-			functions, err := controller.db.GetFunctionsByExecutorID(executorID)
+			functions, err := controller.db.GetFunctionsByExecutorName(colonyName, executorName)
 			if err != nil {
 				cmd.errorChan <- err
 				return

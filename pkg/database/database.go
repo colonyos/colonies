@@ -47,13 +47,13 @@ type Database interface {
 	// Function functions ...
 	AddFunction(function *core.Function) error
 	GetFunctionByID(functionID string) (*core.Function, error)
-	GetFunctionsByExecutorID(executorID string) ([]*core.Function, error)
+	GetFunctionsByExecutorName(colonyName string, executorName string) ([]*core.Function, error)
 	GetFunctionsByColonyName(colonyName string) ([]*core.Function, error)
-	GetFunctionsByExecutorIDAndName(executorID string, name string) (*core.Function, error)
-	UpdateFunctionStats(executorID string, name string, counter int, minWaitTime float64, maxWaitTime float64, minExecTime float64, maxExecTime float64, avgWaitTime float64, avgExecTime float64) error
+	GetFunctionsByExecutorAndName(colonyName string, executorName string, name string) (*core.Function, error)
+	UpdateFunctionStats(colonyName string, executorName string, name string, counter int, minWaitTime float64, maxWaitTime float64, minExecTime float64, maxExecTime float64, avgWaitTime float64, avgExecTime float64) error
 	DeleteFunctionByID(functionID string) error
-	DeleteFunctionByName(executorID string, name string) error
-	DeleteFunctionsByExecutorID(executorID string) error
+	DeleteFunctionByName(colonyName string, executorName string, name string) error
+	DeleteFunctionsByExecutorName(colonyName string, executorName string) error
 	DeleteFunctionsByColonyName(colonyName string) error
 	DeleteFunctions() error
 

@@ -73,7 +73,7 @@ func (v *controllerMock) getColonies() ([]*core.Colony, error) {
 	return nil, nil
 }
 
-func (v *controllerMock) getColony(colonyID string) (*core.Colony, error) {
+func (v *controllerMock) getColony(colonyName string) (*core.Colony, error) {
 	return nil, nil
 }
 
@@ -81,15 +81,15 @@ func (v *controllerMock) addColony(colony *core.Colony) (*core.Colony, error) {
 	return nil, nil
 }
 
-func (v *controllerMock) deleteColony(colonyID string) error {
+func (v *controllerMock) deleteColony(colonyName string) error {
 	return nil
 }
 
-func (v *controllerMock) renameColony(colonyID string, name string) error {
+func (v *controllerMock) renameColony(colonyName string, name string) error {
 	return nil
 }
 
-func (v *controllerMock) addLog(processID string, colonyID string, executorID string, msg string) error {
+func (v *controllerMock) addLog(processID string, colonyName string, executorID string, msg string) error {
 	return nil
 }
 
@@ -109,7 +109,7 @@ func (v *controllerMock) getExecutor(executorID string) (*core.Executor, error) 
 	return nil, nil
 }
 
-func (v *controllerMock) getExecutorByColonyName(colonyID string) ([]*core.Executor, error) {
+func (v *controllerMock) getExecutorByColonyName(colonyName string) ([]*core.Executor, error) {
 	return nil, nil
 }
 
@@ -133,23 +133,23 @@ func (v *controllerMock) getProcess(processID string) (*core.Process, error) {
 	return nil, nil
 }
 
-func (v *controllerMock) findProcessHistory(colonyID string, executorID string, seconds int, state int) ([]*core.Process, error) {
+func (v *controllerMock) findProcessHistory(colonyName string, executorID string, seconds int, state int) ([]*core.Process, error) {
 	return nil, nil
 }
 
-func (v *controllerMock) findWaitingProcesses(colonyID string, executorType string, count int) ([]*core.Process, error) {
+func (v *controllerMock) findWaitingProcesses(colonyName string, executorType string, count int) ([]*core.Process, error) {
 	return nil, nil
 }
 
-func (v *controllerMock) findRunningProcesses(colonyID string, executorType string, count int) ([]*core.Process, error) {
+func (v *controllerMock) findRunningProcesses(colonyName string, executorType string, count int) ([]*core.Process, error) {
 	return nil, nil
 }
 
-func (v *controllerMock) findSuccessfulProcesses(colonyID string, executorType string, count int) ([]*core.Process, error) {
+func (v *controllerMock) findSuccessfulProcesses(colonyName string, executorType string, count int) ([]*core.Process, error) {
 	return nil, nil
 }
 
-func (v *controllerMock) findFailedProcesses(colonyID string, executorType string, count int) ([]*core.Process, error) {
+func (v *controllerMock) findFailedProcesses(colonyName string, executorType string, count int) ([]*core.Process, error) {
 	return nil, nil
 }
 
@@ -169,19 +169,19 @@ func (v *controllerMock) getProcessGraphByID(processGraphID string) (*core.Proce
 	return nil, nil
 }
 
-func (v *controllerMock) findWaitingProcessGraphs(colonyID string, count int) ([]*core.ProcessGraph, error) {
+func (v *controllerMock) findWaitingProcessGraphs(colonyName string, count int) ([]*core.ProcessGraph, error) {
 	return nil, nil
 }
 
-func (v *controllerMock) findRunningProcessGraphs(colonyID string, count int) ([]*core.ProcessGraph, error) {
+func (v *controllerMock) findRunningProcessGraphs(colonyName string, count int) ([]*core.ProcessGraph, error) {
 	return nil, nil
 }
 
-func (v *controllerMock) findSuccessfulProcessGraphs(colonyID string, count int) ([]*core.ProcessGraph, error) {
+func (v *controllerMock) findSuccessfulProcessGraphs(colonyName string, count int) ([]*core.ProcessGraph, error) {
 	return nil, nil
 }
 
-func (v *controllerMock) findFailedProcessGraphs(colonyID string, count int) ([]*core.ProcessGraph, error) {
+func (v *controllerMock) findFailedProcessGraphs(colonyName string, count int) ([]*core.ProcessGraph, error) {
 	return nil, nil
 }
 
@@ -189,7 +189,7 @@ func (v *controllerMock) deleteProcess(processID string) error {
 	return nil
 }
 
-func (v *controllerMock) deleteAllProcesses(colonyID string, state int) error {
+func (v *controllerMock) deleteAllProcesses(colonyName string, state int) error {
 	return nil
 }
 
@@ -197,7 +197,7 @@ func (v *controllerMock) deleteProcessGraph(processID string) error {
 	return nil
 }
 
-func (v *controllerMock) deleteAllProcessGraphs(colonyID string, state int) error {
+func (v *controllerMock) deleteAllProcessGraphs(colonyName string, state int) error {
 	return nil
 }
 
@@ -221,7 +221,7 @@ func (v *controllerMock) handleDefunctProcessgraph(processGraphID string, proces
 	return nil
 }
 
-func (v *controllerMock) assign(executorID string, colonyID string) (*core.Process, error) {
+func (v *controllerMock) assign(executorID string, colonyName string) (*core.Process, error) {
 	return nil, nil
 }
 
@@ -233,7 +233,7 @@ func (v *controllerMock) resetProcess(processID string) error {
 	return nil
 }
 
-func (v *controllerMock) getColonyStatistics(colonyID string) (*core.Statistics, error) {
+func (v *controllerMock) getColonyStatistics(colonyName string) (*core.Statistics, error) {
 	return nil, nil
 }
 
@@ -253,11 +253,11 @@ func (v *controllerMock) addFunction(function *core.Function) (*core.Function, e
 	return nil, nil
 }
 
-func (v *controllerMock) getFunctionsByExecutorID(executorID string) ([]*core.Function, error) {
+func (v *controllerMock) getFunctionsByExecutorName(colonyName string, executorID string) ([]*core.Function, error) {
 	return nil, nil
 }
 
-func (v *controllerMock) getFunctionsByColonyName(colonyID string) ([]*core.Function, error) {
+func (v *controllerMock) getFunctionsByColonyName(colonyName string) ([]*core.Function, error) {
 	return nil, nil
 }
 
@@ -293,11 +293,11 @@ func (v *controllerMock) resolveGenerator(generatorName string) (*core.Generator
 	return nil, nil
 }
 
-func (v *controllerMock) getGenerators(colonyID string, count int) ([]*core.Generator, error) {
+func (v *controllerMock) getGenerators(colonyName string, count int) ([]*core.Generator, error) {
 	return nil, nil
 }
 
-func (v *controllerMock) packGenerator(generatorID string, colonyID, arg string) error {
+func (v *controllerMock) packGenerator(generatorID string, colonyName, arg string) error {
 	return nil
 }
 
@@ -322,7 +322,7 @@ func (v *controllerMock) getCron(cronID string) (*core.Cron, error) {
 	return nil, nil
 }
 
-func (v *controllerMock) getCrons(colonyID string, count int) ([]*core.Cron, error) {
+func (v *controllerMock) getCrons(colonyName string, count int) ([]*core.Cron, error) {
 	return nil, nil
 }
 
@@ -382,11 +382,11 @@ func (v *validatorMock) RequireServerOwner(recoveredID string, serverID string) 
 	return nil
 }
 
-func (v *validatorMock) RequireColonyOwner(recoveredID string, colonyID string) error {
+func (v *validatorMock) RequireColonyOwner(recoveredID string, colonyName string) error {
 	return nil
 }
 
-func (v *validatorMock) RequireMembership(recoveredID string, colonyID string, approved bool) error {
+func (v *validatorMock) RequireMembership(recoveredID string, colonyName string, approved bool) error {
 	return nil
 }
 
@@ -481,7 +481,7 @@ func (db *dbMock) RenameColony(id string, name string) error {
 	return nil
 }
 
-func (db *dbMock) DeleteColonyByName(colonyID string) error {
+func (db *dbMock) DeleteColonyByName(colonyName string) error {
 	if db.returnError == "DeleteColonyByName" {
 		return errors.New("error")
 	}
@@ -517,7 +517,7 @@ func (db *dbMock) GetExecutorByID(executorID string) (*core.Executor, error) {
 	return nil, nil
 }
 
-func (db *dbMock) GetExecutorsByColonyName(colonyID string) ([]*core.Executor, error) {
+func (db *dbMock) GetExecutorsByColonyName(colonyName string) ([]*core.Executor, error) {
 	if db.returnError == "GetExecutorByColonyName" {
 		return nil, errors.New("error")
 	}
@@ -525,7 +525,7 @@ func (db *dbMock) GetExecutorsByColonyName(colonyID string) ([]*core.Executor, e
 	return nil, nil
 }
 
-func (db *dbMock) GetExecutorByName(colonyID string, executorName string) (*core.Executor, error) {
+func (db *dbMock) GetExecutorByName(colonyName string, executorName string) (*core.Executor, error) {
 	if db.returnError == "GetExecutorByName" {
 		return nil, errors.New("error")
 	}
@@ -565,7 +565,7 @@ func (db *dbMock) DeleteExecutorByID(executorID string) error {
 	return nil
 }
 
-func (db *dbMock) DeleteExecutorsByColonyName(colonyID string) error {
+func (db *dbMock) DeleteExecutorsByColonyName(colonyName string) error {
 	return nil
 }
 
@@ -573,7 +573,7 @@ func (db *dbMock) CountExecutors() (int, error) {
 	return -1, nil
 }
 
-func (db *dbMock) CountExecutorsByColonyName(colonyID string) (int, error) {
+func (db *dbMock) CountExecutorsByColonyName(colonyName string) (int, error) {
 	return -1, nil
 }
 
@@ -585,19 +585,19 @@ func (db *dbMock) GetFunctionByID(functionID string) (*core.Function, error) {
 	return nil, nil
 }
 
-func (db *dbMock) GetFunctionsByExecutorID(executorID string) ([]*core.Function, error) {
+func (db *dbMock) GetFunctionsByExecutorName(colonyName string, executorID string) ([]*core.Function, error) {
 	return nil, nil
 }
 
-func (db *dbMock) GetFunctionsByColonyName(colonyID string) ([]*core.Function, error) {
+func (db *dbMock) GetFunctionsByColonyName(colonyName string) ([]*core.Function, error) {
 	return nil, nil
 }
 
-func (db *dbMock) GetFunctionsByExecutorIDAndName(executorID string, name string) (*core.Function, error) {
+func (db *dbMock) GetFunctionsByExecutorAndName(colonyName string, executorID string, name string) (*core.Function, error) {
 	return nil, nil
 }
 
-func (db *dbMock) UpdateFunctionStats(executorID string, name string, counter int, minWaitTime float64, maxWaitTime float64, minExecTime float64, maxExecTime float64, avgWaitTime float64, avgExecTime float64) error {
+func (db *dbMock) UpdateFunctionStats(colonyName string, executorID string, name string, counter int, minWaitTime float64, maxWaitTime float64, minExecTime float64, maxExecTime float64, avgWaitTime float64, avgExecTime float64) error {
 	return nil
 }
 
@@ -605,15 +605,15 @@ func (db *dbMock) DeleteFunctionByID(functionID string) error {
 	return nil
 }
 
-func (db *dbMock) DeleteFunctionByName(executorID string, name string) error {
+func (db *dbMock) DeleteFunctionByName(colonyName string, executorName string, name string) error {
 	return nil
 }
 
-func (db *dbMock) DeleteFunctionsByExecutorID(executorID string) error {
+func (db *dbMock) DeleteFunctionsByExecutorName(colonyName string, executorID string) error {
 	return nil
 }
 
-func (db *dbMock) DeleteFunctionsByColonyName(colonyID string) error {
+func (db *dbMock) DeleteFunctionsByColonyName(colonyName string) error {
 	return nil
 }
 
@@ -640,27 +640,27 @@ func (db *dbMock) GetProcessByID(processID string) (*core.Process, error) {
 	return nil, nil
 }
 
-func (db *dbMock) FindProcessesByColonyName(colonyID string, seconds int, state int) ([]*core.Process, error) {
+func (db *dbMock) FindProcessesByColonyName(colonyName string, seconds int, state int) ([]*core.Process, error) {
 	return nil, nil
 }
 
-func (db *dbMock) FindProcessesByExecutorID(colonyID string, executorID string, seconds int, state int) ([]*core.Process, error) {
+func (db *dbMock) FindProcessesByExecutorID(colonyName string, executorID string, seconds int, state int) ([]*core.Process, error) {
 	return nil, nil
 }
 
-func (db *dbMock) FindWaitingProcesses(colonyID string, executorType string, count int) ([]*core.Process, error) {
+func (db *dbMock) FindWaitingProcesses(colonyName string, executorType string, count int) ([]*core.Process, error) {
 	return nil, nil
 }
 
-func (db *dbMock) FindRunningProcesses(colonyID string, executorType string, count int) ([]*core.Process, error) {
+func (db *dbMock) FindRunningProcesses(colonyName string, executorType string, count int) ([]*core.Process, error) {
 	return nil, nil
 }
 
-func (db *dbMock) FindSuccessfulProcesses(colonyID string, executorType string, count int) ([]*core.Process, error) {
+func (db *dbMock) FindSuccessfulProcesses(colonyName string, executorType string, count int) ([]*core.Process, error) {
 	return nil, nil
 }
 
-func (db *dbMock) FindFailedProcesses(colonyID string, executorType string, count int) ([]*core.Process, error) {
+func (db *dbMock) FindFailedProcesses(colonyName string, executorType string, count int) ([]*core.Process, error) {
 	return nil, nil
 }
 
@@ -672,7 +672,7 @@ func (db *dbMock) FindAllWaitingProcesses() ([]*core.Process, error) {
 	return nil, nil
 }
 
-func (db *dbMock) FindUnassignedProcesses(colonyID string, executorID string, executorType string, count int) ([]*core.Process, error) {
+func (db *dbMock) FindUnassignedProcesses(colonyName string, executorID string, executorType string, count int) ([]*core.Process, error) {
 	return nil, nil
 }
 
@@ -684,23 +684,23 @@ func (db *dbMock) DeleteAllProcesses() error {
 	return nil
 }
 
-func (db *dbMock) DeleteAllWaitingProcessesByColonyName(colonyID string) error {
+func (db *dbMock) DeleteAllWaitingProcessesByColonyName(colonyName string) error {
 	return nil
 }
 
-func (db *dbMock) DeleteAllRunningProcessesByColonyName(colonyID string) error {
+func (db *dbMock) DeleteAllRunningProcessesByColonyName(colonyName string) error {
 	return nil
 }
 
-func (db *dbMock) DeleteAllSuccessfulProcessesByColonyName(colonyID string) error {
+func (db *dbMock) DeleteAllSuccessfulProcessesByColonyName(colonyName string) error {
 	return nil
 }
 
-func (db *dbMock) DeleteAllFailedProcessesByColonyName(colonyID string) error {
+func (db *dbMock) DeleteAllFailedProcessesByColonyName(colonyName string) error {
 	return nil
 }
 
-func (db *dbMock) DeleteAllProcessesByColonyName(colonyID string) error {
+func (db *dbMock) DeleteAllProcessesByColonyName(colonyName string) error {
 	return nil
 }
 
@@ -708,7 +708,7 @@ func (db *dbMock) DeleteAllProcessesByProcessGraphID(processGraphID string) erro
 	return nil
 }
 
-func (db *dbMock) DeleteAllProcessesInProcessGraphsByColonyName(colonyID string) error {
+func (db *dbMock) DeleteAllProcessesInProcessGraphsByColonyName(colonyName string) error {
 	return nil
 }
 
@@ -780,19 +780,19 @@ func (db *dbMock) CountFailedProcesses() (int, error) {
 	return -1, nil
 }
 
-func (db *dbMock) CountWaitingProcessesByColonyName(colonyID string) (int, error) {
+func (db *dbMock) CountWaitingProcessesByColonyName(colonyName string) (int, error) {
 	return -1, nil
 }
 
-func (db *dbMock) CountRunningProcessesByColonyName(colonyID string) (int, error) {
+func (db *dbMock) CountRunningProcessesByColonyName(colonyName string) (int, error) {
 	return -1, nil
 }
 
-func (db *dbMock) CountSuccessfulProcessesByColonyName(colonyID string) (int, error) {
+func (db *dbMock) CountSuccessfulProcessesByColonyName(colonyName string) (int, error) {
 	return -1, nil
 }
 
-func (db *dbMock) CountFailedProcessesByColonyName(colonyID string) (int, error) {
+func (db *dbMock) CountFailedProcessesByColonyName(colonyName string) (int, error) {
 	return -1, nil
 }
 
@@ -808,7 +808,7 @@ func (db *dbMock) GetAttributeByID(attributeID string) (core.Attribute, error) {
 	return core.Attribute{}, nil
 }
 
-func (db *dbMock) GetAttributesByColonyName(colonyID string) ([]core.Attribute, error) {
+func (db *dbMock) GetAttributesByColonyName(colonyName string) ([]core.Attribute, error) {
 	return nil, nil
 }
 
@@ -832,11 +832,11 @@ func (db *dbMock) DeleteAttributeByID(attributeID string) error {
 	return nil
 }
 
-func (db *dbMock) DeleteAllAttributesByColonyName(colonyID string) error {
+func (db *dbMock) DeleteAllAttributesByColonyName(colonyName string) error {
 	return nil
 }
 
-func (db *dbMock) DeleteAllAttributesByColonyNameWithState(colonyID string, state int) error {
+func (db *dbMock) DeleteAllAttributesByColonyNameWithState(colonyName string, state int) error {
 	return nil
 }
 
@@ -844,11 +844,11 @@ func (db *dbMock) DeleteAllAttributesByProcessGraphID(processGraphID string) err
 	return nil
 }
 
-func (db *dbMock) DeleteAllAttributesInProcessGraphsByColonyName(colonyID string) error {
+func (db *dbMock) DeleteAllAttributesInProcessGraphsByColonyName(colonyName string) error {
 	return nil
 }
 
-func (db *dbMock) DeleteAllAttributesInProcessGraphsByColonyNameWithState(colonyID string, state int) error {
+func (db *dbMock) DeleteAllAttributesInProcessGraphsByColonyNameWithState(colonyName string, state int) error {
 	return nil
 }
 
@@ -876,19 +876,19 @@ func (db *dbMock) SetProcessGraphState(processGraphID string, state int) error {
 	return nil
 }
 
-func (db *dbMock) FindWaitingProcessGraphs(colonyID string, count int) ([]*core.ProcessGraph, error) {
+func (db *dbMock) FindWaitingProcessGraphs(colonyName string, count int) ([]*core.ProcessGraph, error) {
 	return nil, nil
 }
 
-func (db *dbMock) FindRunningProcessGraphs(colonyID string, count int) ([]*core.ProcessGraph, error) {
+func (db *dbMock) FindRunningProcessGraphs(colonyName string, count int) ([]*core.ProcessGraph, error) {
 	return nil, nil
 }
 
-func (db *dbMock) FindSuccessfulProcessGraphs(colonyID string, count int) ([]*core.ProcessGraph, error) {
+func (db *dbMock) FindSuccessfulProcessGraphs(colonyName string, count int) ([]*core.ProcessGraph, error) {
 	return nil, nil
 }
 
-func (db *dbMock) FindFailedProcessGraphs(colonyID string, count int) ([]*core.ProcessGraph, error) {
+func (db *dbMock) FindFailedProcessGraphs(colonyName string, count int) ([]*core.ProcessGraph, error) {
 	return nil, nil
 }
 
@@ -896,23 +896,23 @@ func (db *dbMock) DeleteProcessGraphByID(processGraphID string) error {
 	return nil
 }
 
-func (db *dbMock) DeleteAllProcessGraphsByColonyName(colonyID string) error {
+func (db *dbMock) DeleteAllProcessGraphsByColonyName(colonyName string) error {
 	return nil
 }
 
-func (db *dbMock) DeleteAllWaitingProcessGraphsByColonyName(colonyID string) error {
+func (db *dbMock) DeleteAllWaitingProcessGraphsByColonyName(colonyName string) error {
 	return nil
 }
 
-func (db *dbMock) DeleteAllRunningProcessGraphsByColonyName(colonyID string) error {
+func (db *dbMock) DeleteAllRunningProcessGraphsByColonyName(colonyName string) error {
 	return nil
 }
 
-func (db *dbMock) DeleteAllSuccessfulProcessGraphsByColonyName(colonyID string) error {
+func (db *dbMock) DeleteAllSuccessfulProcessGraphsByColonyName(colonyName string) error {
 	return nil
 }
 
-func (db *dbMock) DeleteAllFailedProcessGraphsByColonyName(colonyID string) error {
+func (db *dbMock) DeleteAllFailedProcessGraphsByColonyName(colonyName string) error {
 	return nil
 }
 
@@ -932,19 +932,19 @@ func (db *dbMock) CountFailedProcessGraphs() (int, error) {
 	return -1, nil
 }
 
-func (db *dbMock) CountWaitingProcessGraphsByColonyName(colonyID string) (int, error) {
+func (db *dbMock) CountWaitingProcessGraphsByColonyName(colonyName string) (int, error) {
 	return -1, nil
 }
 
-func (db *dbMock) CountRunningProcessGraphsByColonyName(colonyID string) (int, error) {
+func (db *dbMock) CountRunningProcessGraphsByColonyName(colonyName string) (int, error) {
 	return -1, nil
 }
 
-func (db *dbMock) CountSuccessfulProcessGraphsByColonyName(colonyID string) (int, error) {
+func (db *dbMock) CountSuccessfulProcessGraphsByColonyName(colonyName string) (int, error) {
 	return -1, nil
 }
 
-func (db *dbMock) CountFailedProcessGraphsByColonyName(colonyID string) (int, error) {
+func (db *dbMock) CountFailedProcessGraphsByColonyName(colonyName string) (int, error) {
 	return -1, nil
 }
 
@@ -968,7 +968,7 @@ func (db *dbMock) GetGeneratorByName(name string) (*core.Generator, error) {
 	return nil, nil
 }
 
-func (db *dbMock) FindGeneratorsByColonyName(colonyID string, count int) ([]*core.Generator, error) {
+func (db *dbMock) FindGeneratorsByColonyName(colonyName string, count int) ([]*core.Generator, error) {
 	return nil, nil
 }
 
@@ -980,7 +980,7 @@ func (db *dbMock) DeleteGeneratorByID(generatorID string) error {
 	return nil
 }
 
-func (db *dbMock) DeleteAllGeneratorsByColonyName(colonyID string) error {
+func (db *dbMock) DeleteAllGeneratorsByColonyName(colonyName string) error {
 	return nil
 }
 
@@ -1025,7 +1025,7 @@ func (db *dbMock) GetCronByID(cronID string) (*core.Cron, error) {
 	return nil, nil
 }
 
-func (db *dbMock) FindCronsByColonyName(colonyID string, count int) ([]*core.Cron, error) {
+func (db *dbMock) FindCronsByColonyName(colonyName string, count int) ([]*core.Cron, error) {
 	return nil, nil
 }
 
@@ -1037,7 +1037,7 @@ func (db *dbMock) DeleteCronByID(cronID string) error {
 	return nil
 }
 
-func (db *dbMock) DeleteAllCronsByColonyName(colonyID string) error {
+func (db *dbMock) DeleteAllCronsByColonyName(colonyName string) error {
 	return nil
 }
 
@@ -1054,7 +1054,7 @@ func (db *dbMock) ApplyRetentionPolicy(retentionPeriod int64) error {
 	return nil
 }
 
-func (db *dbMock) AddLog(processID string, colonyID string, executorID string, timestamp int64, msg string) error {
+func (db *dbMock) AddLog(processID string, colonyName string, executorID string, timestamp int64, msg string) error {
 	return nil
 }
 
@@ -1074,11 +1074,11 @@ func (db *dbMock) GetLogsByExecutorIDSince(processID string, limit int, since in
 	return []core.Log{}, nil
 }
 
-func (db *dbMock) DeleteLogsByColonyName(colonyID string) error {
+func (db *dbMock) DeleteLogsByColonyName(colonyName string) error {
 	return nil
 }
 
-func (db *dbMock) CountLogs(colonyID string) (int, error) {
+func (db *dbMock) CountLogs(colonyName string) (int, error) {
 	return 0, nil
 }
 
@@ -1086,71 +1086,71 @@ func (db *dbMock) AddFile(file *core.File) error {
 	return nil
 }
 
-func (db *dbMock) GetFileByID(colonyID string, fileID string) (*core.File, error) {
+func (db *dbMock) GetFileByID(colonyName string, fileID string) (*core.File, error) {
 	return nil, nil
 }
 
-func (db *dbMock) GetLatestFileByName(colonyID string, label string, name string) ([]*core.File, error) {
+func (db *dbMock) GetLatestFileByName(colonyName string, label string, name string) ([]*core.File, error) {
 	return nil, nil
 }
 
-func (db *dbMock) GetFileByName(colonyID string, label string, name string) ([]*core.File, error) {
+func (db *dbMock) GetFileByName(colonyName string, label string, name string) ([]*core.File, error) {
 	return nil, nil
 }
 
-func (db *dbMock) GetFilenamesByLabel(colonyID string, label string) ([]string, error) {
+func (db *dbMock) GetFilenamesByLabel(colonyName string, label string) ([]string, error) {
 	return nil, nil
 }
 
-func (db *dbMock) DeleteFileByID(colonyID string, fileID string) error {
+func (db *dbMock) DeleteFileByID(colonyName string, fileID string) error {
 	return nil
 }
 
-func (db *dbMock) DeleteFileByName(colonyID string, label string, name string) error {
+func (db *dbMock) DeleteFileByName(colonyName string, label string, name string) error {
 	return nil
 }
 
-func (db *dbMock) GetFileLabels(colonyID string) ([]*core.Label, error) {
+func (db *dbMock) GetFileLabels(colonyName string) ([]*core.Label, error) {
 	return nil, nil
 }
 
-func (db *dbMock) GetFileLabelsByName(colonyID string, name string) ([]*core.Label, error) {
+func (db *dbMock) GetFileLabelsByName(colonyName string, name string) ([]*core.Label, error) {
 	return nil, nil
 }
 
-func (db *dbMock) CountFiles(colonyID string) (int, error) {
+func (db *dbMock) CountFiles(colonyName string) (int, error) {
 	return 0, nil
 }
 
-func (db *dbMock) CountFilesWithLabel(colonyID string, label string) (int, error) {
+func (db *dbMock) CountFilesWithLabel(colonyName string, label string) (int, error) {
 	return 0, nil
 }
 
-func (db *dbMock) CreateSnapshot(colonyID string, label string, name string) (*core.Snapshot, error) {
+func (db *dbMock) CreateSnapshot(colonyName string, label string, name string) (*core.Snapshot, error) {
 	return nil, nil
 }
 
-func (db *dbMock) GetSnapshotByID(colonyID string, snapshotID string) (*core.Snapshot, error) {
+func (db *dbMock) GetSnapshotByID(colonyName string, snapshotID string) (*core.Snapshot, error) {
 	return nil, nil
 }
 
-func (db *dbMock) GetSnapshotByName(colonyID string, name string) (*core.Snapshot, error) {
+func (db *dbMock) GetSnapshotByName(colonyName string, name string) (*core.Snapshot, error) {
 	return nil, nil
 }
 
-func (db *dbMock) GetSnapshotsByColonyName(colonyID string) ([]*core.Snapshot, error) {
+func (db *dbMock) GetSnapshotsByColonyName(colonyName string) ([]*core.Snapshot, error) {
 	return nil, nil
 }
 
-func (db *dbMock) DeleteSnapshotByID(colonyID string, snapshotID string) error {
+func (db *dbMock) DeleteSnapshotByID(colonyName string, snapshotID string) error {
 	return nil
 }
 
-func (db *dbMock) DeleteSnapshotByName(colonyID string, name string) error {
+func (db *dbMock) DeleteSnapshotByName(colonyName string, name string) error {
 	return nil
 }
 
-func (db *dbMock) DeleteSnapshotsByColonyName(colonyID string) error {
+func (db *dbMock) DeleteSnapshotsByColonyName(colonyName string) error {
 	return nil
 }
 

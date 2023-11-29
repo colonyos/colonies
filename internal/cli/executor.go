@@ -234,7 +234,7 @@ func printExecutor(client *client.ColoniesClient, executor *core.Executor) {
 	swTable.SetAlignment(tablewriter.ALIGN_LEFT)
 	swTable.Render()
 
-	functions, err := client.GetFunctionsByExecutorID(executor.ID, PrvKey)
+	functions, err := client.GetFunctionsByExecutorName(ColonyName, executor.Name, PrvKey)
 	CheckError(err)
 
 	fmt.Println()
