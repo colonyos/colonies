@@ -113,14 +113,6 @@ func (v *controllerMock) getExecutorByColonyName(colonyID string) ([]*core.Execu
 	return nil, nil
 }
 
-func (v *controllerMock) approveExecutor(executorID string) error {
-	return nil
-}
-
-func (v *controllerMock) rejectExecutor(executorID string) error {
-	return nil
-}
-
 func (v *controllerMock) deleteExecutor(executorID string) error {
 	return nil
 }
@@ -506,10 +498,6 @@ func (db *dbMock) AddExecutor(executor *core.Executor) error {
 		return errors.New("error")
 	}
 
-	return nil
-}
-
-func (db *dbMock) AddOrReplaceExecutor(executor *core.Executor) error {
 	return nil
 }
 

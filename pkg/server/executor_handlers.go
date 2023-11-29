@@ -144,7 +144,7 @@ func (server *ColoniesServer) handleApproveExecutorHTTPRequest(c *gin.Context, r
 		return
 	}
 
-	executor, err := server.controller.getExecutor(msg.ExecutorID)
+	executor, err := server.db.GetExecutorByName(msg.ColonyName, msg.ExecutorName)
 	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
@@ -158,7 +158,7 @@ func (server *ColoniesServer) handleApproveExecutorHTTPRequest(c *gin.Context, r
 		return
 	}
 
-	err = server.controller.approveExecutor(msg.ExecutorID)
+	err = server.db.ApproveExecutor(executor)
 	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
@@ -181,7 +181,7 @@ func (server *ColoniesServer) handleRejectExecutorHTTPRequest(c *gin.Context, re
 		return
 	}
 
-	executor, err := server.controller.getExecutor(msg.ExecutorID)
+	executor, err := server.db.GetExecutorByName(msg.ColonyName, msg.ExecutorName)
 	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
@@ -195,7 +195,7 @@ func (server *ColoniesServer) handleRejectExecutorHTTPRequest(c *gin.Context, re
 		return
 	}
 
-	err = server.controller.rejectExecutor(msg.ExecutorID)
+	err = server.db.RejectExecutor(executor)
 	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
