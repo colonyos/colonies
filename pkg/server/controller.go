@@ -61,7 +61,7 @@ type controller interface {
 	addAttribute(attribute *core.Attribute) (*core.Attribute, error)
 	getAttribute(attributeID string) (*core.Attribute, error)
 	addFunction(function *core.Function) (*core.Function, error)
-	getFunctionsByExecutorID(executorID string) ([]*core.Function, error)
+	getFunctionsByExecutorName(colonyName string, executorName string) ([]*core.Function, error)
 	getFunctionsByColonyName(colonyID string) ([]*core.Function, error)
 	getFunctionByID(functionID string) (*core.Function, error)
 	deleteFunction(functionID string) error

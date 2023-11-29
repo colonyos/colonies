@@ -11,7 +11,7 @@ import (
 func TestAddFunction(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 
-	function1 := &core.Function{ExecutorID: env.executorID, ColonyName: env.colonyName, FuncName: "testfunc1", AvgWaitTime: 1.1, AvgExecTime: 0.1}
+	function1 := &core.Function{ExecutorName: env.executorName, ColonyName: env.colonyName, FuncName: "testfunc1", AvgWaitTime: 1.1, AvgExecTime: 0.1}
 
 	addedFunction1, err := client.AddFunction(function1, env.executorPrvKey)
 	assert.Nil(t, err)
@@ -27,17 +27,17 @@ func TestAddFunction(t *testing.T) {
 func TestGetFunctionsByExecutorID(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 
-	function1 := &core.Function{ExecutorID: env.executorID, ColonyName: env.colonyName, FuncName: "testfunc1", AvgWaitTime: 1.1, AvgExecTime: 0.1}
+	function1 := &core.Function{ExecutorName: env.executorName, ColonyName: env.colonyName, FuncName: "testfunc1", AvgWaitTime: 1.1, AvgExecTime: 0.1}
 
 	_, err := client.AddFunction(function1, env.executorPrvKey)
 	assert.Nil(t, err)
 
-	function2 := &core.Function{ExecutorID: env.executorID, ColonyName: env.colonyName, FuncName: "testfunc2", AvgWaitTime: 1.1, AvgExecTime: 0.1}
+	function2 := &core.Function{ExecutorName: env.executorName, ColonyName: env.colonyName, FuncName: "testfunc2", AvgWaitTime: 1.1, AvgExecTime: 0.1}
 
 	_, err = client.AddFunction(function2, env.executorPrvKey)
 	assert.Nil(t, err)
 
-	functions, err := client.GetFunctionsByExecutorID(env.executorID, env.executorPrvKey)
+	functions, err := client.GetFunctionsByExecutorName(env.colonyName, env.executorName, env.executorPrvKey)
 	assert.Nil(t, err)
 
 	counter := 0
@@ -63,12 +63,12 @@ func TestGetFunctionsByColonyName(t *testing.T) {
 	err = client.ApproveExecutor(env.colonyName, executor2.Name, env.colonyPrvKey)
 	assert.Nil(t, err)
 
-	function1 := &core.Function{ExecutorID: env.executorID, ColonyName: env.colonyName, FuncName: "testfunc1", AvgWaitTime: 1.1, AvgExecTime: 0.1}
+	function1 := &core.Function{ExecutorName: env.executorName, ColonyName: env.colonyName, FuncName: "testfunc1", AvgWaitTime: 1.1, AvgExecTime: 0.1}
 
 	_, err = client.AddFunction(function1, env.executorPrvKey)
 	assert.Nil(t, err)
 
-	function2 := &core.Function{ExecutorID: executor2.ID, ColonyName: env.colonyName, FuncName: "testfunc2", AvgWaitTime: 1.1, AvgExecTime: 0.1}
+	function2 := &core.Function{ExecutorName: executor2.Name, ColonyName: env.colonyName, FuncName: "testfunc2", AvgWaitTime: 1.1, AvgExecTime: 0.1}
 
 	_, err = client.AddFunction(function2, executor2PrvKey)
 	assert.Nil(t, err)
@@ -84,24 +84,24 @@ func TestGetFunctionsByColonyName(t *testing.T) {
 func TestDeleteFunction(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 
-	function1 := &core.Function{ExecutorID: env.executorID, ColonyName: env.colonyName, FuncName: "testfunc1", AvgWaitTime: 1.1, AvgExecTime: 0.1}
+	function1 := &core.Function{ExecutorName: env.executorName, ColonyName: env.colonyName, FuncName: "testfunc1", AvgWaitTime: 1.1, AvgExecTime: 0.1}
 
 	addedFunction1, err := client.AddFunction(function1, env.executorPrvKey)
 	assert.Nil(t, err)
 
-	function2 := &core.Function{ExecutorID: env.executorID, ColonyName: env.colonyName, FuncName: "testfunc2", AvgWaitTime: 1.1, AvgExecTime: 0.1}
+	function2 := &core.Function{ExecutorName: env.executorName, ColonyName: env.colonyName, FuncName: "testfunc2", AvgWaitTime: 1.1, AvgExecTime: 0.1}
 
 	_, err = client.AddFunction(function2, env.executorPrvKey)
 	assert.Nil(t, err)
 
-	functions, err := client.GetFunctionsByExecutorID(env.executorID, env.executorPrvKey)
+	functions, err := client.GetFunctionsByExecutorName(env.colonyName, env.executorName, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.Len(t, functions, 2)
 
 	err = client.DeleteFunction(addedFunction1.FunctionID, env.executorPrvKey)
 	assert.Nil(t, err)
 
-	functions, err = client.GetFunctionsByExecutorID(env.executorID, env.executorPrvKey)
+	functions, err = client.GetFunctionsByExecutorName(env.colonyName, env.executorName, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.Len(t, functions, 1)
 
