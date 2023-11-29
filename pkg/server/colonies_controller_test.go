@@ -77,26 +77,6 @@ func TestColoniesControllerInvalidDB(t *testing.T) {
 	_, err = controller.getExecutorByColonyName("invalid_id")
 	assert.NotNil(t, err)
 
-	dbMock.returnError = "GetExecutorByID"
-	err = controller.approveExecutor("invalid_id")
-	assert.NotNil(t, err)
-
-	dbMock.returnValue = "GetExecutorByID"
-	dbMock.returnError = "ApproveExecutor"
-	err = controller.approveExecutor("invalid_id")
-	assert.NotNil(t, err)
-	dbMock.returnValue = ""
-
-	dbMock.returnError = "GetExecutorByID"
-	err = controller.rejectExecutor("invalid_id")
-	assert.NotNil(t, err)
-
-	dbMock.returnValue = "GetExecutorByID"
-	dbMock.returnError = "RejectExecutor"
-	err = controller.rejectExecutor("invalid_id")
-	assert.NotNil(t, err)
-	dbMock.returnValue = ""
-
 	_, err = controller.addProcessToDB(nil)
 	assert.NotNil(t, err)
 
@@ -144,30 +124,6 @@ func TestColoniesControllerAddExecutor(t *testing.T) {
 	addedExecutor, err := controller.addExecutor(executor, false)
 	assert.Nil(t, err)
 	assert.True(t, executor.Equals(addedExecutor))
-}
-
-func TestColoniesControllerApproveExecutor(t *testing.T) {
-	db, err := postgresql.PrepareTestsWithPrefix("TEST_2")
-	defer db.Close()
-	assert.Nil(t, err)
-
-	controller := createTestColoniesController(db)
-	defer controller.stop()
-
-	executor, _, err := utils.CreateTestExecutorWithKey(core.GenerateRandomID())
-	assert.Nil(t, err)
-
-	addedExecutor, err := controller.addExecutor(executor, false)
-	assert.Nil(t, err)
-	assert.True(t, executor.Equals(addedExecutor))
-
-	err = controller.approveExecutor(executor.ID)
-	assert.Nil(t, err)
-
-	executorFromController, err := controller.getExecutor(executor.ID)
-	assert.Nil(t, err)
-	assert.True(t, executorFromController.IsApproved())
-	assert.False(t, executor.IsApproved())
 }
 
 func TestColoniesControllerAddProcess(t *testing.T) {

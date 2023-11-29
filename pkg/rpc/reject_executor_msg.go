@@ -7,13 +7,15 @@ import (
 const RejectExecutorPayloadType = "rejectexecutormsg"
 
 type RejectExecutorMsg struct {
-	ExecutorID string `json:"executorid"`
-	MsgType    string `json:"msgtype"`
+	ColonyName   string `json:"colonyname"`
+	ExecutorName string `json:"executorid"`
+	MsgType      string `json:"msgtype"`
 }
 
-func CreateRejectExecutorMsg(executorID string) *RejectExecutorMsg {
+func CreateRejectExecutorMsg(colonyName string, executorName string) *RejectExecutorMsg {
 	msg := &RejectExecutorMsg{}
-	msg.ExecutorID = executorID
+	msg.ColonyName = colonyName
+	msg.ExecutorName = executorName
 	msg.MsgType = RejectExecutorPayloadType
 
 	return msg
@@ -42,7 +44,7 @@ func (msg *RejectExecutorMsg) Equals(msg2 *RejectExecutorMsg) bool {
 		return false
 	}
 
-	if msg.MsgType == msg2.MsgType && msg.ExecutorID == msg2.ExecutorID {
+	if msg.MsgType == msg2.MsgType && msg.ExecutorName == msg2.ExecutorName && msg.ColonyName == msg2.ColonyName {
 		return true
 	}
 

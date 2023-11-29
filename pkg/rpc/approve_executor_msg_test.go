@@ -8,7 +8,7 @@ import (
 )
 
 func TestRPCApproveExecutorMsg(t *testing.T) {
-	msg := CreateApproveExecutorMsg(core.GenerateRandomID())
+	msg := CreateApproveExecutorMsg(core.GenerateRandomID(), core.GenerateRandomID())
 	jsonString, err := msg.ToJSON()
 	assert.Nil(t, err)
 
@@ -22,7 +22,7 @@ func TestRPCApproveExecutorMsg(t *testing.T) {
 }
 
 func TestRPCApproveExecutorMsgIndent(t *testing.T) {
-	msg := CreateApproveExecutorMsg(core.GenerateRandomID())
+	msg := CreateApproveExecutorMsg(core.GenerateRandomID(), core.GenerateRandomID())
 	jsonString, err := msg.ToJSONIndent()
 	assert.Nil(t, err)
 
@@ -36,7 +36,7 @@ func TestRPCApproveExecutorMsgIndent(t *testing.T) {
 }
 
 func TestRPCApproveExecutorMsgEquals(t *testing.T) {
-	msg := CreateApproveExecutorMsg(core.GenerateRandomID())
+	msg := CreateApproveExecutorMsg(core.GenerateRandomID(), core.GenerateRandomID())
 	assert.True(t, msg.Equals(msg))
 	assert.False(t, msg.Equals(nil))
 }

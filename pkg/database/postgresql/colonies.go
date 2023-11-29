@@ -13,8 +13,17 @@ func (db *PQDatabase) AddColony(colony *core.Colony) error {
 		return errors.New("Colony is nil")
 	}
 
+	exitingColony, err := db.GetColonyByName(colony.Name)
+	if err != nil {
+		return err
+	}
+
+	if exitingColony != nil {
+		return errors.New("Colony with name <" + colony.Name + "> already exists")
+	}
+
 	sqlStatement := `INSERT INTO  ` + db.dbPrefix + `COLONIES (COLONY_ID, NAME) VALUES ($1, $2)`
-	_, err := db.postgresql.Exec(sqlStatement, colony.ID, colony.Name)
+	_, err = db.postgresql.Exec(sqlStatement, colony.ID, colony.Name)
 	if err != nil {
 		return err
 	}

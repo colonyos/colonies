@@ -145,7 +145,7 @@ var devCmd = &cobra.Command{
 
 		log.WithFields(log.Fields{"ExecutorID": executorID}).Info("Approving executor")
 		log.Info("Approving CLI executor")
-		err = client.ApproveExecutor(executorID, ColonyPrvKey)
+		err = client.ApproveExecutor(ColonyName, executorName, ColonyPrvKey)
 		CheckError(err)
 
 		log.WithFields(log.Fields{

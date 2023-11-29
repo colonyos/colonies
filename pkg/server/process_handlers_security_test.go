@@ -344,7 +344,7 @@ func TestCloseSuccessfulSecurity(t *testing.T) {
 	assert.Nil(t, err)
 	_, err = client.AddExecutor(executor3, env.colony1PrvKey)
 	assert.Nil(t, err)
-	err = client.ApproveExecutor(executor3.ID, env.colony1PrvKey)
+	err = client.ApproveExecutor(env.colony1Name, executor3.Name, env.colony1PrvKey)
 	assert.Nil(t, err)
 	err = client.Close(processFromServer.ID, executor3PrvKey)
 	assert.NotNil(t, err) // Should work
@@ -409,7 +409,7 @@ func TestCloseFailedSecurity(t *testing.T) {
 	assert.Nil(t, err)
 	_, err = client.AddExecutor(executor3, env.colony1PrvKey)
 	assert.Nil(t, err)
-	err = client.ApproveExecutor(executor3.ID, env.colony1PrvKey)
+	err = client.ApproveExecutor(env.colony1Name, executor3.Name, env.colony1PrvKey)
 	assert.Nil(t, err)
 	err = client.Fail(processFromServer.ID, []string{"error"}, executor3PrvKey)
 	assert.NotNil(t, err) // Should work

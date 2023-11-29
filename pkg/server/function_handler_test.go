@@ -60,7 +60,7 @@ func TestGetFunctionsByColonyName(t *testing.T) {
 	assert.Nil(t, err)
 	_, err = client.AddExecutor(executor2, env.colonyPrvKey)
 	assert.Nil(t, err)
-	err = client.ApproveExecutor(executor2.ID, env.colonyPrvKey)
+	err = client.ApproveExecutor(env.colonyName, executor2.Name, env.colonyPrvKey)
 	assert.Nil(t, err)
 
 	function1 := &core.Function{ExecutorID: env.executorID, ColonyName: env.colonyName, FuncName: "testfunc1", AvgWaitTime: 1.1, AvgExecTime: 0.1}

@@ -24,11 +24,11 @@ func init() {
 	executorCmd.AddCommand(resolveExecutorCmd)
 	rootCmd.AddCommand(executorCmd)
 
+	executorCmd.Flags().StringVarP(&ColonyPrvKey, "colonyprvkey", "", "", "Colony private key")
 	executorCmd.PersistentFlags().StringVarP(&ColonyID, "colonyid", "", "", "Colony Id")
 	executorCmd.PersistentFlags().StringVarP(&ServerHost, "host", "", "localhost", "Server host")
 	executorCmd.PersistentFlags().IntVarP(&ServerPort, "port", "", -1, "Server HTTP port")
 
-	addExecutorCmd.Flags().StringVarP(&ColonyPrvKey, "colonyprvkey", "", "", "Colony private key")
 	addExecutorCmd.Flags().StringVarP(&SpecFile, "spec", "", "", "JSON specification of an executor")
 	addExecutorCmd.Flags().StringVarP(&ExecutorID, "executorid", "", "", "Executor ID")
 	addExecutorCmd.MarkFlagRequired("executorid")
@@ -36,7 +36,6 @@ func init() {
 	addExecutorCmd.Flags().StringVarP(&TargetExecutorType, "type", "", "", "Executor type")
 	addExecutorCmd.Flags().BoolVarP(&Approve, "approve", "", false, "Also, approve the Executor")
 
-	removeExecutorCmd.Flags().StringVarP(&ColonyPrvKey, "colonyprvkey", "", "", "Colony private key")
 	removeExecutorCmd.Flags().StringVarP(&TargetExecutorID, "executorid", "", "", "Executor Id")
 
 	lsExecutorsCmd.Flags().BoolVarP(&JSON, "json", "", false, "Print JSON instead of tables")
@@ -46,17 +45,14 @@ func init() {
 	getExecutorCmd.Flags().StringVarP(&TargetExecutorID, "executorid", "", "", "Target executor Id")
 	getExecutorCmd.Flags().StringVarP(&PrvKey, "prvkey", "", "", "Private key")
 
-	approveExecutorCmd.Flags().StringVarP(&ColonyPrvKey, "colonyprvkey", "", "", "Colony private key")
-	approveExecutorCmd.Flags().StringVarP(&TargetExecutorID, "executorid", "", "", "Colony Executor Id")
-	approveExecutorCmd.MarkFlagRequired("executorid")
+	approveExecutorCmd.Flags().StringVarP(&TargetExecutorName, "name", "", "", "Colony Executor Id")
+	approveExecutorCmd.MarkFlagRequired("name")
 
-	rejectExecutorCmd.Flags().StringVarP(&ColonyPrvKey, "colonyprvkey", "", "", "Colony private key")
-	rejectExecutorCmd.Flags().StringVarP(&TargetExecutorID, "executorid", "", "", "Executor Id")
+	rejectExecutorCmd.Flags().StringVarP(&TargetExecutorName, "name", "", "", "Executor Id")
 	rejectExecutorCmd.MarkFlagRequired("executorid")
 
-	resolveExecutorCmd.Flags().StringVarP(&PrvKey, "prvkey", "", "", "Private key")
 	resolveExecutorCmd.Flags().StringVarP(&TargetExecutorName, "executorname", "", "", "Executor name to resolve Id for")
-	resolveExecutorCmd.MarkFlagRequired("executorid")
+	resolveExecutorCmd.MarkFlagRequired("name")
 }
 
 var executorCmd = &cobra.Command{
@@ -120,12 +116,17 @@ var addExecutorCmd = &cobra.Command{
 		CheckError(err)
 
 		if Approve {
-			log.WithFields(log.Fields{"ExecutorID": ExecutorID}).Info("Approving Executor")
-			err = client.ApproveExecutor(ExecutorID, ColonyPrvKey)
+			log.WithFields(log.Fields{"ExecutorName": executor.Name}).Info("Approving Executor")
+			err = client.ApproveExecutor(ColonyName, executor.Name, ColonyPrvKey)
 			CheckError(err)
 		}
 
-		log.WithFields(log.Fields{"ExecutorName": executor.Name, "ExecutorType": executor.Type, "ExecutorID": addedExecutor.ID, "ColonyName": ColonyName}).Info("Executor added")
+		log.WithFields(log.Fields{
+			"ExecutorName": executor.Name,
+			"ExecutorType": executor.Type,
+			"ExecutorID":   addedExecutor.ID,
+			"ColonyName":   ColonyName}).
+			Info("Executor added")
 	},
 }
 
@@ -341,10 +342,14 @@ var approveExecutorCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		client := setup()
 
-		err := client.ApproveExecutor(TargetExecutorID, ColonyPrvKey)
+		if TargetExecutorName == "" {
+			CheckError(errors.New("Executor name must be specified"))
+		}
+
+		err := client.ApproveExecutor(ColonyName, TargetExecutorName, ColonyPrvKey)
 		CheckError(err)
 
-		log.WithFields(log.Fields{"TargetExecutorID": TargetExecutorID, "ColonyID": ColonyID}).Info("Executor approved")
+		log.WithFields(log.Fields{"ExecutorName": TargetExecutorName, "ColonyName": ColonyName}).Info("Executor approved")
 	},
 }
 
@@ -355,10 +360,14 @@ var rejectExecutorCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		client := setup()
 
-		err := client.RejectExecutor(TargetExecutorID, ColonyPrvKey)
+		if TargetExecutorName == "" {
+			CheckError(errors.New("Executor name must be specified"))
+		}
+
+		err := client.RejectExecutor(ColonyName, TargetExecutorName, ColonyPrvKey)
 		CheckError(err)
 
-		log.WithFields(log.Fields{"TargetExecutorID": TargetExecutorID, "ColonyID": ColonyID}).Info("Executor rejected")
+		log.WithFields(log.Fields{"ExecutorName": TargetExecutorName, "ColonyName": ColonyName}).Info("Executor reject")
 	},
 }
 
