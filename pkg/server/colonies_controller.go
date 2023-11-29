@@ -23,7 +23,7 @@ type command struct {
 	process                *core.Process
 	count                  int
 	colony                 *core.Colony
-	colonyID               string
+	colonyName               string
 	colonyReplyChan        chan *core.Colony
 	coloniesReplyChan      chan []*core.Colony
 	processReplyChan       chan *core.Process
@@ -252,10 +252,10 @@ func (controller *coloniesController) deleteColony(colonyName string) error {
 	return <-cmd.errorChan
 }
 
-func (controller *coloniesController) renameColony(colonyID string, name string) error {
+func (controller *coloniesController) renameColony(colonyName string, name string) error {
 	cmd := &command{threaded: true, errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
-			err := controller.db.RenameColony(colonyID, name)
+			err := controller.db.RenameColony(colonyName, name)
 			if err != nil {
 				cmd.errorChan <- err
 				return
@@ -267,10 +267,10 @@ func (controller *coloniesController) renameColony(colonyID string, name string)
 	return <-cmd.errorChan
 }
 
-func (controller *coloniesController) addLog(processID string, colonyID string, executorID string, msg string) error {
+func (controller *coloniesController) addLog(processID string, colonyName string, executorID string, msg string) error {
 	cmd := &command{threaded: true, errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
-			err := controller.db.AddLog(processID, colonyID, executorID, time.Now().UTC().UnixNano(), msg)
+			err := controller.db.AddLog(processID, colonyName, executorID, time.Now().UTC().UnixNano(), msg)
 			if err != nil {
 				cmd.errorChan <- err
 				return
@@ -413,11 +413,11 @@ func (controller *coloniesController) getExecutor(executorID string) (*core.Exec
 	}
 }
 
-func (controller *coloniesController) getExecutorByColonyName(colonyID string) ([]*core.Executor, error) {
+func (controller *coloniesController) getExecutorByColonyName(colonyName string) ([]*core.Executor, error) {
 	cmd := &command{threaded: true, executorsReplyChan: make(chan []*core.Executor),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
-			executors, err := controller.db.GetExecutorsByColonyName(colonyID)
+			executors, err := controller.db.GetExecutorsByColonyName(colonyName)
 			if err != nil {
 				cmd.errorChan <- err
 				return
@@ -609,20 +609,20 @@ func (controller *coloniesController) getProcess(processID string) (*core.Proces
 	}
 }
 
-func (controller *coloniesController) findProcessHistory(colonyID string, executorID string, seconds int, state int) ([]*core.Process, error) {
+func (controller *coloniesController) findProcessHistory(colonyName string, executorID string, seconds int, state int) ([]*core.Process, error) {
 	cmd := &command{threaded: true, processesReplyChan: make(chan []*core.Process),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
 			var processes []*core.Process
 			var err error
 			if executorID == "" {
-				processes, err = controller.db.FindProcessesByColonyName(colonyID, seconds, state)
+				processes, err = controller.db.FindProcessesByColonyName(colonyName, seconds, state)
 				if err != nil {
 					cmd.errorChan <- err
 					return
 				}
 			} else {
-				processes, err = controller.db.FindProcessesByExecutorID(colonyID, executorID, seconds, state)
+				processes, err = controller.db.FindProcessesByExecutorID(colonyName, executorID, seconds, state)
 				if err != nil {
 					cmd.errorChan <- err
 					return
@@ -641,7 +641,7 @@ func (controller *coloniesController) findProcessHistory(colonyID string, execut
 	}
 }
 
-func (controller *coloniesController) findWaitingProcesses(colonyID string, executorType string, count int) ([]*core.Process, error) {
+func (controller *coloniesController) findWaitingProcesses(colonyName string, executorType string, count int) ([]*core.Process, error) {
 	cmd := &command{threaded: true, processesReplyChan: make(chan []*core.Process),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
@@ -649,7 +649,7 @@ func (controller *coloniesController) findWaitingProcesses(colonyID string, exec
 				cmd.errorChan <- errors.New("Count is larger than MaxCount limit <" + strconv.Itoa(MAX_COUNT) + ">")
 				return
 			}
-			processes, err := controller.db.FindWaitingProcesses(colonyID, executorType, count)
+			processes, err := controller.db.FindWaitingProcesses(colonyName, executorType, count)
 			if err != nil {
 				cmd.errorChan <- err
 				return
@@ -667,7 +667,7 @@ func (controller *coloniesController) findWaitingProcesses(colonyID string, exec
 	}
 }
 
-func (controller *coloniesController) findRunningProcesses(colonyID string, executorType string, count int) ([]*core.Process, error) {
+func (controller *coloniesController) findRunningProcesses(colonyName string, executorType string, count int) ([]*core.Process, error) {
 	cmd := &command{threaded: true, processesReplyChan: make(chan []*core.Process),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
@@ -675,7 +675,7 @@ func (controller *coloniesController) findRunningProcesses(colonyID string, exec
 				cmd.errorChan <- errors.New("Count is larger than MaxCount limit <" + strconv.Itoa(MAX_COUNT) + ">")
 				return
 			}
-			processes, err := controller.db.FindRunningProcesses(colonyID, executorType, count)
+			processes, err := controller.db.FindRunningProcesses(colonyName, executorType, count)
 			if err != nil {
 				cmd.errorChan <- err
 				return
@@ -693,7 +693,7 @@ func (controller *coloniesController) findRunningProcesses(colonyID string, exec
 	}
 }
 
-func (controller *coloniesController) findSuccessfulProcesses(colonyID string, executorType string, count int) ([]*core.Process, error) {
+func (controller *coloniesController) findSuccessfulProcesses(colonyName string, executorType string, count int) ([]*core.Process, error) {
 	cmd := &command{threaded: true, processesReplyChan: make(chan []*core.Process),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
@@ -701,7 +701,7 @@ func (controller *coloniesController) findSuccessfulProcesses(colonyID string, e
 				cmd.errorChan <- errors.New("Count is larger than MaxCount limit <" + strconv.Itoa(MAX_COUNT) + ">")
 				return
 			}
-			processes, err := controller.db.FindSuccessfulProcesses(colonyID, executorType, count)
+			processes, err := controller.db.FindSuccessfulProcesses(colonyName, executorType, count)
 			if err != nil {
 				cmd.errorChan <- err
 				return
@@ -719,7 +719,7 @@ func (controller *coloniesController) findSuccessfulProcesses(colonyID string, e
 	}
 }
 
-func (controller *coloniesController) findFailedProcesses(colonyID string, executorType string, count int) ([]*core.Process, error) {
+func (controller *coloniesController) findFailedProcesses(colonyName string, executorType string, count int) ([]*core.Process, error) {
 	cmd := &command{threaded: true, processesReplyChan: make(chan []*core.Process),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
@@ -727,7 +727,7 @@ func (controller *coloniesController) findFailedProcesses(colonyID string, execu
 				cmd.errorChan <- errors.New("Count is larger than MaxCount limit <" + strconv.Itoa(MAX_COUNT) + ">")
 				return
 			}
-			processes, err := controller.db.FindFailedProcesses(colonyID, executorType, count)
+			processes, err := controller.db.FindFailedProcesses(colonyName, executorType, count)
 			if err != nil {
 				cmd.errorChan <- err
 				return
@@ -913,7 +913,7 @@ func (controller *coloniesController) getProcessGraphByID(processGraphID string)
 	}
 }
 
-func (controller *coloniesController) findWaitingProcessGraphs(colonyID string, count int) ([]*core.ProcessGraph, error) {
+func (controller *coloniesController) findWaitingProcessGraphs(colonyName string, count int) ([]*core.ProcessGraph, error) {
 	cmd := &command{threaded: true, processGraphsReplyChan: make(chan []*core.ProcessGraph),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
@@ -921,7 +921,7 @@ func (controller *coloniesController) findWaitingProcessGraphs(colonyID string, 
 				cmd.errorChan <- errors.New("Count is larger than MaxCount limit <" + strconv.Itoa(MAX_COUNT) + ">")
 				return
 			}
-			graphs, err := controller.db.FindWaitingProcessGraphs(colonyID, count)
+			graphs, err := controller.db.FindWaitingProcessGraphs(colonyName, count)
 			if err != nil {
 				cmd.errorChan <- err
 				return
@@ -947,7 +947,7 @@ func (controller *coloniesController) findWaitingProcessGraphs(colonyID string, 
 	}
 }
 
-func (controller *coloniesController) findRunningProcessGraphs(colonyID string, count int) ([]*core.ProcessGraph, error) {
+func (controller *coloniesController) findRunningProcessGraphs(colonyName string, count int) ([]*core.ProcessGraph, error) {
 	cmd := &command{threaded: true, processGraphsReplyChan: make(chan []*core.ProcessGraph),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
@@ -955,7 +955,7 @@ func (controller *coloniesController) findRunningProcessGraphs(colonyID string, 
 				cmd.errorChan <- errors.New("Count is larger than MaxCount limit <" + strconv.Itoa(MAX_COUNT) + ">")
 				return
 			}
-			graphs, err := controller.db.FindRunningProcessGraphs(colonyID, count)
+			graphs, err := controller.db.FindRunningProcessGraphs(colonyName, count)
 			if err != nil {
 				cmd.errorChan <- err
 				return
@@ -980,7 +980,7 @@ func (controller *coloniesController) findRunningProcessGraphs(colonyID string, 
 	}
 }
 
-func (controller *coloniesController) findSuccessfulProcessGraphs(colonyID string, count int) ([]*core.ProcessGraph, error) {
+func (controller *coloniesController) findSuccessfulProcessGraphs(colonyName string, count int) ([]*core.ProcessGraph, error) {
 	cmd := &command{threaded: true, processGraphsReplyChan: make(chan []*core.ProcessGraph),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
@@ -988,7 +988,7 @@ func (controller *coloniesController) findSuccessfulProcessGraphs(colonyID strin
 				cmd.errorChan <- errors.New("Count is larger than MaxCount limit <" + strconv.Itoa(MAX_COUNT) + ">")
 				return
 			}
-			graphs, err := controller.db.FindSuccessfulProcessGraphs(colonyID, count)
+			graphs, err := controller.db.FindSuccessfulProcessGraphs(colonyName, count)
 			if err != nil {
 				cmd.errorChan <- err
 				return
@@ -1013,7 +1013,7 @@ func (controller *coloniesController) findSuccessfulProcessGraphs(colonyID strin
 	}
 }
 
-func (controller *coloniesController) findFailedProcessGraphs(colonyID string, count int) ([]*core.ProcessGraph, error) {
+func (controller *coloniesController) findFailedProcessGraphs(colonyName string, count int) ([]*core.ProcessGraph, error) {
 	cmd := &command{threaded: true, processGraphsReplyChan: make(chan []*core.ProcessGraph),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
@@ -1021,7 +1021,7 @@ func (controller *coloniesController) findFailedProcessGraphs(colonyID string, c
 				cmd.errorChan <- errors.New("Count is larger than MaxCount limit <" + strconv.Itoa(MAX_COUNT) + ">")
 				return
 			}
-			graphs, err := controller.db.FindFailedProcessGraphs(colonyID, count)
+			graphs, err := controller.db.FindFailedProcessGraphs(colonyName, count)
 			if err != nil {
 				cmd.errorChan <- err
 				return
@@ -1057,20 +1057,20 @@ func (controller *coloniesController) deleteProcess(processID string) error {
 	return <-cmd.errorChan
 }
 
-func (controller *coloniesController) deleteAllProcesses(colonyID string, state int) error {
+func (controller *coloniesController) deleteAllProcesses(colonyName string, state int) error {
 	cmd := &command{threaded: true, errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
 			switch state {
 			case core.WAITING:
-				cmd.errorChan <- controller.db.DeleteAllWaitingProcessesByColonyName(colonyID)
+				cmd.errorChan <- controller.db.DeleteAllWaitingProcessesByColonyName(colonyName)
 			case core.RUNNING:
 				cmd.errorChan <- errors.New("not possible to delete running processes")
 			case core.SUCCESS:
-				cmd.errorChan <- controller.db.DeleteAllSuccessfulProcessesByColonyName(colonyID)
+				cmd.errorChan <- controller.db.DeleteAllSuccessfulProcessesByColonyName(colonyName)
 			case core.FAILED:
-				cmd.errorChan <- controller.db.DeleteAllFailedProcessesByColonyName(colonyID)
+				cmd.errorChan <- controller.db.DeleteAllFailedProcessesByColonyName(colonyName)
 			case core.NOTSET:
-				cmd.errorChan <- controller.db.DeleteAllProcessesByColonyName(colonyID)
+				cmd.errorChan <- controller.db.DeleteAllProcessesByColonyName(colonyName)
 			default:
 				cmd.errorChan <- errors.New("invalid state when deleting all processes")
 			}
@@ -1091,20 +1091,20 @@ func (controller *coloniesController) deleteProcessGraph(processID string) error
 	return <-cmd.errorChan
 }
 
-func (controller *coloniesController) deleteAllProcessGraphs(colonyID string, state int) error {
+func (controller *coloniesController) deleteAllProcessGraphs(colonyName string, state int) error {
 	cmd := &command{threaded: true, errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
 			switch state {
 			case core.WAITING:
-				cmd.errorChan <- controller.db.DeleteAllWaitingProcessGraphsByColonyName(colonyID)
+				cmd.errorChan <- controller.db.DeleteAllWaitingProcessGraphsByColonyName(colonyName)
 			case core.RUNNING:
 				cmd.errorChan <- errors.New("not possible to delete running processgraphs")
 			case core.SUCCESS:
-				cmd.errorChan <- controller.db.DeleteAllSuccessfulProcessGraphsByColonyName(colonyID)
+				cmd.errorChan <- controller.db.DeleteAllSuccessfulProcessGraphsByColonyName(colonyName)
 			case core.FAILED:
-				cmd.errorChan <- controller.db.DeleteAllFailedProcessGraphsByColonyName(colonyID)
+				cmd.errorChan <- controller.db.DeleteAllFailedProcessGraphsByColonyName(colonyName)
 			case core.NOTSET:
-				cmd.errorChan <- controller.db.DeleteAllProcessGraphsByColonyName(colonyID)
+				cmd.errorChan <- controller.db.DeleteAllProcessGraphsByColonyName(colonyName)
 			default:
 				cmd.errorChan <- errors.New("invalid state when deleting all processgraphs")
 			}
@@ -1348,7 +1348,7 @@ func (controller *coloniesController) handleDefunctProcessgraph(processGraphID s
 	return nil
 }
 
-func (controller *coloniesController) assign(executorID string, colonyID string) (*core.Process, error) {
+func (controller *coloniesController) assign(executorID string, colonyName string) (*core.Process, error) {
 	cmd := &command{threaded: false, processReplyChan: make(chan *core.Process),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
@@ -1369,7 +1369,7 @@ func (controller *coloniesController) assign(executorID string, colonyID string)
 			}
 
 			var processes []*core.Process
-			processes, err = controller.db.FindUnassignedProcesses(colonyID, executorID, executor.Type, 10)
+			processes, err = controller.db.FindUnassignedProcesses(colonyName, executorID, executor.Type, 10)
 			if err != nil {
 				cmd.errorChan <- err
 				return
@@ -1496,52 +1496,52 @@ func (controller *coloniesController) resetProcess(processID string) error {
 	return <-cmd.errorChan
 }
 
-func (controller *coloniesController) getColonyStatistics(colonyID string) (*core.Statistics, error) {
+func (controller *coloniesController) getColonyStatistics(colonyName string) (*core.Statistics, error) {
 	cmd := &command{threaded: true, statisticsReplyChan: make(chan *core.Statistics),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
 			colonies := 1
-			executors, err := controller.db.CountExecutorsByColonyName(colonyID)
+			executors, err := controller.db.CountExecutorsByColonyName(colonyName)
 			if err != nil {
 				cmd.errorChan <- err
 				return
 			}
-			waitingProcesses, err := controller.db.CountWaitingProcessesByColonyName(colonyID)
+			waitingProcesses, err := controller.db.CountWaitingProcessesByColonyName(colonyName)
 			if err != nil {
 				cmd.errorChan <- err
 				return
 			}
-			runningProcesses, err := controller.db.CountRunningProcessesByColonyName(colonyID)
+			runningProcesses, err := controller.db.CountRunningProcessesByColonyName(colonyName)
 			if err != nil {
 				cmd.errorChan <- err
 				return
 			}
-			successProcesses, err := controller.db.CountSuccessfulProcessesByColonyName(colonyID)
+			successProcesses, err := controller.db.CountSuccessfulProcessesByColonyName(colonyName)
 			if err != nil {
 				cmd.errorChan <- err
 				return
 			}
-			failedProcesses, err := controller.db.CountFailedProcessesByColonyName(colonyID)
+			failedProcesses, err := controller.db.CountFailedProcessesByColonyName(colonyName)
 			if err != nil {
 				cmd.errorChan <- err
 				return
 			}
-			waitingWorkflows, err := controller.db.CountWaitingProcessGraphsByColonyName(colonyID)
+			waitingWorkflows, err := controller.db.CountWaitingProcessGraphsByColonyName(colonyName)
 			if err != nil {
 				cmd.errorChan <- err
 				return
 			}
-			runningWorkflows, err := controller.db.CountRunningProcessGraphsByColonyName(colonyID)
+			runningWorkflows, err := controller.db.CountRunningProcessGraphsByColonyName(colonyName)
 			if err != nil {
 				cmd.errorChan <- err
 				return
 			}
-			successWorkflows, err := controller.db.CountSuccessfulProcessGraphsByColonyName(colonyID)
+			successWorkflows, err := controller.db.CountSuccessfulProcessGraphsByColonyName(colonyName)
 			if err != nil {
 				cmd.errorChan <- err
 				return
 			}
-			failedWorkflows, err := controller.db.CountFailedProcessGraphsByColonyName(colonyID)
+			failedWorkflows, err := controller.db.CountFailedProcessGraphsByColonyName(colonyName)
 			if err != nil {
 				cmd.errorChan <- err
 				return
@@ -1738,11 +1738,11 @@ func (controller *coloniesController) getFunctionsByExecutorName(colonyName stri
 	}
 }
 
-func (controller *coloniesController) getFunctionsByColonyName(colonyID string) ([]*core.Function, error) {
+func (controller *coloniesController) getFunctionsByColonyName(colonyName string) ([]*core.Function, error) {
 	cmd := &command{threaded: true, functionsReplyChan: make(chan []*core.Function, 1),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
-			functions, err := controller.db.GetFunctionsByColonyName(colonyID)
+			functions, err := controller.db.GetFunctionsByColonyName(colonyName)
 			if err != nil {
 				cmd.errorChan <- err
 				return

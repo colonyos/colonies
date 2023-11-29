@@ -65,11 +65,11 @@ func (controller *coloniesController) getCron(cronID string) (*core.Cron, error)
 	}
 }
 
-func (controller *coloniesController) getCrons(colonyID string, count int) ([]*core.Cron, error) {
+func (controller *coloniesController) getCrons(colonyName string, count int) ([]*core.Cron, error) {
 	cmd := &command{cronsReplyChan: make(chan []*core.Cron, 1),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
-			crons, err := controller.db.FindCronsByColonyName(colonyID, count)
+			crons, err := controller.db.FindCronsByColonyName(colonyName, count)
 			if err != nil {
 				cmd.errorChan <- err
 				return
