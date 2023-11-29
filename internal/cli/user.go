@@ -1,7 +1,9 @@
 package cli
 
 import (
+	"bufio"
 	"errors"
+	"fmt"
 	"os"
 
 	"github.com/colonyos/colonies/pkg/core"
@@ -13,6 +15,7 @@ import (
 func init() {
 	userCmd.AddCommand(addUserCmd)
 	userCmd.AddCommand(listUsersCmd)
+	userCmd.AddCommand(getUserCmd)
 	userCmd.AddCommand(removeUserCmd)
 	rootCmd.AddCommand(userCmd)
 
@@ -20,27 +23,31 @@ func init() {
 	userCmd.PersistentFlags().IntVarP(&ServerPort, "port", "", -1, "Server HTTP port")
 
 	addUserCmd.Flags().StringVarP(&ColonyPrvKey, "colonyprvkey", "", "", "Colony private key")
-	addUserCmd.Flags().StringVarP(&Username, "username", "", "", "Username")
-	addUserCmd.MarkFlagRequired("username")
+	addUserCmd.Flags().StringVarP(&Username, "name", "", "", "Username")
+	addUserCmd.MarkFlagRequired("name")
 	addUserCmd.Flags().StringVarP(&UserID, "userid", "", "", "User Id")
 	addUserCmd.MarkFlagRequired("userid")
 	addUserCmd.Flags().StringVarP(&Email, "email", "", "", "Email")
 	addUserCmd.Flags().StringVarP(&Phone, "phone", "", "", "Phone")
 
-	removeUserCmd.Flags().StringVarP(&Username, "username", "", "", "Username")
-	removeUserCmd.MarkFlagRequired("username")
+	getUserCmd.Flags().StringVarP(&Username, "name", "", "", "Username")
+	getUserCmd.MarkFlagRequired("name")
+
+	removeUserCmd.Flags().StringVarP(&Username, "name", "", "", "Username")
+	removeUserCmd.MarkFlagRequired("name")
+
 }
 
 var userCmd = &cobra.Command{
 	Use:   "users",
-	Short: "Manage users",
-	Long:  "Manage users",
+	Short: "Manage Users",
+	Long:  "Manage Users",
 }
 
 var addUserCmd = &cobra.Command{
 	Use:   "add",
-	Short: "Add a new user",
-	Long:  "Add a new user",
+	Short: "Add a new User",
+	Long:  "Add a new User",
 	Run: func(cmd *cobra.Command, args []string) {
 		client := setup()
 
@@ -73,8 +80,8 @@ var addUserCmd = &cobra.Command{
 
 var listUsersCmd = &cobra.Command{
 	Use:   "ls",
-	Short: "List users member of a Colony",
-	Long:  "List users member of a Colony",
+	Short: "List Users member of a Colony",
+	Long:  "List Users member of a Colony",
 	Run: func(cmd *cobra.Command, args []string) {
 		client := setup()
 
@@ -102,15 +109,50 @@ var listUsersCmd = &cobra.Command{
 	},
 }
 
-var removeUserCmd = &cobra.Command{
-	Use:   "remove",
-	Short: "Remove a user from a Colony",
-	Long:  "Remove a user from a Colony",
+var getUserCmd = &cobra.Command{
+	Use:   "get",
+	Short: "Get info about a User",
+	Long:  "Get info about a User",
 	Run: func(cmd *cobra.Command, args []string) {
 		client := setup()
 
-		err := client.DeleteUser(ColonyName, Username, ColonyPrvKey)
+		user, err := client.GetUser(ColonyName, Username, PrvKey)
 		CheckError(err)
+
+		userData := [][]string{
+			[]string{"Name", user.Name},
+			[]string{"ID", user.ID},
+			[]string{"ColonyName", user.ColonyName},
+			[]string{"Email", user.Email},
+			[]string{"Phone", user.Phone},
+		}
+
+		userTable := tablewriter.NewWriter(os.Stdout)
+		for _, v := range userData {
+			userTable.Append(v)
+		}
+		userTable.SetAlignment(tablewriter.ALIGN_LEFT)
+		userTable.Render()
+	},
+}
+
+var removeUserCmd = &cobra.Command{
+	Use:   "remove",
+	Short: "Remove a User from a Colony",
+	Long:  "Remove a User from a Colony",
+	Run: func(cmd *cobra.Command, args []string) {
+		client := setup()
+
+		fmt.Print("WARNING!!! Are you sure you want to delete the User <" + Username + "> from Colony <" + ColonyName + "> ! (YES,no): ")
+
+		reader := bufio.NewReader(os.Stdin)
+		reply, _ := reader.ReadString('\n')
+		if reply == "YES\n" {
+			err := client.DeleteUser(ColonyName, Username, ColonyPrvKey)
+			CheckError(err)
+		} else {
+			fmt.Println("Aborting ...")
+		}
 
 		log.WithFields(log.Fields{
 			"ColonyName": ColonyName,

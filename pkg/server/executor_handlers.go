@@ -107,7 +107,7 @@ func (server *ColoniesServer) handleGetExecutorHTTPRequest(c *gin.Context, recov
 		return
 	}
 
-	executor, err := server.controller.getExecutor(msg.ExecutorID)
+	executor, err := server.db.GetExecutorByName(msg.ColonyName, msg.ExecutorName)
 	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
