@@ -7,13 +7,15 @@ import (
 const GetExecutorPayloadType = "getexecutormsg"
 
 type GetExecutorMsg struct {
-	ExecutorID string `json:"executorname"`
-	MsgType    string `json:"msgtype"`
+	ColonyName   string `json:"colonyname"`
+	ExecutorName string `json:"executorname"`
+	MsgType      string `json:"msgtype"`
 }
 
-func CreateGetExecutorMsg(executorID string) *GetExecutorMsg {
+func CreateGetExecutorMsg(colonyName string, executorName string) *GetExecutorMsg {
 	msg := &GetExecutorMsg{}
-	msg.ExecutorID = executorID
+	msg.ColonyName = colonyName
+	msg.ExecutorName = executorName
 	msg.MsgType = GetExecutorPayloadType
 
 	return msg
@@ -42,7 +44,7 @@ func (msg *GetExecutorMsg) Equals(msg2 *GetExecutorMsg) bool {
 		return false
 	}
 
-	if msg.MsgType == msg2.MsgType && msg.ExecutorID == msg2.ExecutorID {
+	if msg.MsgType == msg2.MsgType && msg.ExecutorName == msg2.ExecutorName {
 		return true
 	}
 

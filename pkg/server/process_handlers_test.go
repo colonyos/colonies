@@ -225,7 +225,7 @@ func TestMarkAlive(t *testing.T) {
 	err = client.ApproveExecutor(env.colonyName, executor.Name, env.colonyPrvKey)
 	assert.Nil(t, err)
 
-	executorFromServer, err := client.GetExecutor(executor.ID, executorPrvKey)
+	executorFromServer, err := client.GetExecutor(env.colonyName, executor.Name, executorPrvKey)
 	assert.Nil(t, err)
 
 	time1 := executorFromServer.LastHeardFromTime
@@ -233,7 +233,7 @@ func TestMarkAlive(t *testing.T) {
 
 	client.Assign(env.colonyName, -1, executorPrvKey) // This will update the last heard from
 
-	executorFromServer, err = client.GetExecutor(executor.ID, executorPrvKey)
+	executorFromServer, err = client.GetExecutor(env.colonyName, executor.Name, executorPrvKey)
 	assert.Nil(t, err)
 	time2 := executorFromServer.LastHeardFromTime
 

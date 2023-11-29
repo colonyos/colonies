@@ -414,8 +414,8 @@ func (client *ColoniesClient) GetExecutors(colonyID string, prvKey string) ([]*c
 	return core.ConvertJSONToExecutorArray(respBodyString)
 }
 
-func (client *ColoniesClient) GetExecutor(executorID string, prvKey string) (*core.Executor, error) {
-	msg := rpc.CreateGetExecutorMsg(executorID)
+func (client *ColoniesClient) GetExecutor(colonyName string, executorName string, prvKey string) (*core.Executor, error) {
+	msg := rpc.CreateGetExecutorMsg(colonyName, executorName)
 	jsonString, err := msg.ToJSON()
 	if err != nil {
 		return nil, err

@@ -64,19 +64,19 @@ func TestGetExecutorSecurity(t *testing.T) {
 	//   executor2 is member of colony2
 
 	// Now try to access executor1 using credentials of executor2
-	_, err := client.GetExecutor(env.executor1ID, env.executor2PrvKey)
+	_, err := client.GetExecutor(env.colony1Name, env.executor1Name, env.executor2PrvKey)
 	assert.NotNil(t, err) // Should not work
 
 	// Now try to access executor1 using executor1 credential
-	_, err = client.GetExecutor(env.executor1ID, env.executor1PrvKey)
+	_, err = client.GetExecutor(env.colony1Name, env.executor1Name, env.executor1PrvKey)
 	assert.Nil(t, err) // Should work
 
 	// Now try to access executor1 using colony1 credential
-	_, err = client.GetExecutor(env.executor1ID, env.colony1PrvKey)
+	_, err = client.GetExecutor(env.colony1Name, env.executor1Name, env.colony1PrvKey)
 	assert.NotNil(t, err) // Should work, cannot use colony1 crendential
 
 	// Now try to access executor1 using colony1 credential
-	_, err = client.GetExecutor(env.executor1ID, env.colony2PrvKey)
+	_, err = client.GetExecutor(env.colony1Name, env.executor1ID, env.colony2PrvKey)
 	assert.NotNil(t, err) // Should not work
 
 	server.Shutdown()

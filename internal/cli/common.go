@@ -261,7 +261,10 @@ func parseEnv() {
 
 	ServerPrvKey = os.Getenv("COLONIES_SERVER_PRVKEY")
 	ColonyPrvKey = os.Getenv("COLONIES_COLONY_PRVKEY")
-	PrvKey = os.Getenv("COLONIES_PRVKEY")
+
+	if PrvKey == "" {
+		PrvKey = os.Getenv("COLONIES_PRVKEY")
+	}
 
 	if ExecutorType == "" {
 		ExecutorType = os.Getenv("COLONIES_EXECUTOR_TYPE")

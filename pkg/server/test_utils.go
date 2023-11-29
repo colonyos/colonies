@@ -31,8 +31,10 @@ type testEnv1 struct {
 	colony2Name     string
 	colony2ID       string
 	executor1PrvKey string
+	executor1Name   string
 	executor1ID     string
 	executor2PrvKey string
+	executor2Name   string
 	executor2ID     string
 }
 
@@ -41,6 +43,7 @@ type testEnv2 struct {
 	colonyID       string
 	colony         *core.Colony
 	colonyPrvKey   string
+	executorName   string
 	executorID     string
 	executor       *core.Executor
 	executorPrvKey string
@@ -93,8 +96,10 @@ func setupTestEnv1(t *testing.T) (*testEnv1, *client.ColoniesClient, *ColoniesSe
 		colony2ID:       colony2.ID,
 		executor1PrvKey: executor1PrvKey,
 		executor1ID:     executor1.ID,
+		executor1Name:   executor1.Name,
 		executor2PrvKey: executor2PrvKey,
-		executor2ID:     executor2.ID}
+		executor2ID:     executor2.ID,
+		executor2Name:   executor2.Name}
 
 	return env, client, server, serverPrvKey, done
 }
@@ -124,6 +129,7 @@ func setupTestEnv2(t *testing.T) (*testEnv2, *client.ColoniesClient, *ColoniesSe
 		colonyName:     colony.Name,
 		colony:         colony,
 		colonyPrvKey:   colonyPrvKey,
+		executorName:   executor.Name,
 		executorID:     executor.ID,
 		executor:       executor,
 		executorPrvKey: executorPrvKey}

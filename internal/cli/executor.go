@@ -21,7 +21,6 @@ func init() {
 	executorCmd.AddCommand(getExecutorCmd)
 	executorCmd.AddCommand(approveExecutorCmd)
 	executorCmd.AddCommand(rejectExecutorCmd)
-	executorCmd.AddCommand(resolveExecutorCmd)
 	rootCmd.AddCommand(executorCmd)
 
 	executorCmd.Flags().StringVarP(&ColonyPrvKey, "colonyprvkey", "", "", "Colony private key")
@@ -40,19 +39,14 @@ func init() {
 
 	lsExecutorsCmd.Flags().BoolVarP(&JSON, "json", "", false, "Print JSON instead of tables")
 	lsExecutorsCmd.Flags().BoolVarP(&Full, "full", "", false, "Print detail info")
-	lsExecutorsCmd.Flags().StringVarP(&PrvKey, "prvkey", "", "", "Private key")
 
-	getExecutorCmd.Flags().StringVarP(&TargetExecutorID, "executorid", "", "", "Target executor Id")
-	getExecutorCmd.Flags().StringVarP(&PrvKey, "prvkey", "", "", "Private key")
+	getExecutorCmd.Flags().StringVarP(&TargetExecutorName, "name", "", "", "Executor name")
 
 	approveExecutorCmd.Flags().StringVarP(&TargetExecutorName, "name", "", "", "Colony Executor Id")
 	approveExecutorCmd.MarkFlagRequired("name")
 
 	rejectExecutorCmd.Flags().StringVarP(&TargetExecutorName, "name", "", "", "Executor Id")
 	rejectExecutorCmd.MarkFlagRequired("executorid")
-
-	resolveExecutorCmd.Flags().StringVarP(&TargetExecutorName, "executorname", "", "", "Executor name to resolve Id for")
-	resolveExecutorCmd.MarkFlagRequired("name")
 }
 
 var executorCmd = &cobra.Command{
@@ -63,8 +57,8 @@ var executorCmd = &cobra.Command{
 
 var addExecutorCmd = &cobra.Command{
 	Use:   "add",
-	Short: "Add a new executor",
-	Long:  "Add a new executor",
+	Short: "Add a new Executor",
+	Long:  "Add a new Executor",
 	Run: func(cmd *cobra.Command, args []string) {
 		client := setup()
 
@@ -132,8 +126,8 @@ var addExecutorCmd = &cobra.Command{
 
 var removeExecutorCmd = &cobra.Command{
 	Use:   "remove",
-	Short: "Remove an executor",
-	Long:  "Remove an executor",
+	Short: "Remove an Executor",
+	Long:  "Remove an Executor",
 	Run: func(cmd *cobra.Command, args []string) {
 		client := setup()
 
@@ -276,12 +270,12 @@ func printExecutor(client *client.ColoniesClient, executor *core.Executor) {
 
 var lsExecutorsCmd = &cobra.Command{
 	Use:   "ls",
-	Short: "List all executors",
-	Long:  "List all executors",
+	Short: "List all Executors",
+	Long:  "List all Executors",
 	Run: func(cmd *cobra.Command, args []string) {
 		client := setup()
 
-		executorsFromServer, err := client.GetExecutors(ColonyID, PrvKey)
+		executorsFromServer, err := client.GetExecutors(ColonyName, PrvKey)
 		CheckError(err)
 
 		if Full {
@@ -305,11 +299,11 @@ var lsExecutorsCmd = &cobra.Command{
 		} else {
 			var data [][]string
 			for _, executor := range executorsFromServer {
-				data = append(data, []string{executor.ID, executor.Type, executor.Location.Description})
+				data = append(data, []string{executor.Name, executor.Type, executor.Location.Description})
 			}
 
 			table := tablewriter.NewWriter(os.Stdout)
-			table.SetHeader([]string{"ID", "Type", "Location"})
+			table.SetHeader([]string{"Name", "Type", "Location"})
 
 			for _, v := range data {
 				table.Append(v)
@@ -323,12 +317,16 @@ var lsExecutorsCmd = &cobra.Command{
 
 var getExecutorCmd = &cobra.Command{
 	Use:   "get",
-	Short: "Get info about an executor",
-	Long:  "Get info about an executor",
+	Short: "Get info about an Executor",
+	Long:  "Get info about an Executor",
 	Run: func(cmd *cobra.Command, args []string) {
 		client := setup()
 
-		executorFromServer, err := client.GetExecutor(TargetExecutorID, PrvKey)
+		if TargetExecutorName == "" {
+			CheckError(errors.New("Executor name not specified"))
+		}
+
+		executorFromServer, err := client.GetExecutor(ColonyName, TargetExecutorName, PrvKey)
 		CheckError(err)
 
 		printExecutor(client, executorFromServer)
@@ -337,8 +335,8 @@ var getExecutorCmd = &cobra.Command{
 
 var approveExecutorCmd = &cobra.Command{
 	Use:   "approve",
-	Short: "Approve an executor",
-	Long:  "Approve an executor",
+	Short: "Approve an Executor",
+	Long:  "Approve an Executor",
 	Run: func(cmd *cobra.Command, args []string) {
 		client := setup()
 
@@ -355,8 +353,8 @@ var approveExecutorCmd = &cobra.Command{
 
 var rejectExecutorCmd = &cobra.Command{
 	Use:   "reject",
-	Short: "Reject an executor",
-	Long:  "Reject an executor",
+	Short: "Reject an Executor",
+	Long:  "Reject an Executor",
 	Run: func(cmd *cobra.Command, args []string) {
 		client := setup()
 
@@ -382,29 +380,4 @@ func removeExecutorFromTmp(client *client.ColoniesClient) {
 
 	err = client.DeleteExecutor(executorID, ColonyPrvKey)
 	CheckError(err)
-}
-
-var resolveExecutorCmd = &cobra.Command{
-	Use:   "resolve",
-	Short: "Resolve executor Id",
-	Long:  "Resolve executor Id",
-	Run: func(cmd *cobra.Command, args []string) {
-		client := setup()
-
-		if TargetExecutorName == "" {
-			CheckError(errors.New("Target Executor Name must be specified"))
-		}
-
-		executors, err := client.GetExecutors(ColonyID, PrvKey)
-		CheckError(err)
-
-		for _, executor := range executors {
-			if executor.Name == TargetExecutorName {
-				fmt.Println(executor.ID)
-				os.Exit(0)
-			}
-		}
-
-		log.WithFields(log.Fields{"ColonyId": ColonyID, "TargetExecutorName": TargetExecutorName}).Error("No such executor found")
-	},
 }

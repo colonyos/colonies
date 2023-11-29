@@ -86,11 +86,11 @@ func (ownership *ownershipImpl) checkIfUserIsValid(userID string, colonyName str
 	}
 
 	if user == nil {
-		return errors.New("Access denied, not a member of Colony with Id <" + colony.ID + ">")
+		return errors.New("Access denied, not a member of Colony with name <" + colony.Name + ">")
 	}
 
 	if user.ColonyName != colony.Name {
-		return errors.New("Access denied, not a member of Colony with Id <" + colony.ID + ">")
+		return errors.New("Access denied, not a member of Colony with name <" + colony.Name + ">")
 	}
 
 	return nil

@@ -26,7 +26,7 @@ func TestAddExecutor(t *testing.T) {
 	// Just to make the comparison below work, the state will change after it has been approved
 	addedExecutor.State = core.APPROVED
 
-	executorFromServer, err := client.GetExecutor(executor.ID, executorPrvKey)
+	executorFromServer, err := client.GetExecutor(colony.Name, executor.Name, executorPrvKey)
 	assert.Nil(t, err)
 	assert.NotNil(t, executorFromServer)
 	assert.True(t, addedExecutor.Equals(executorFromServer))
@@ -110,21 +110,21 @@ func TestApproveRejectExecutor(t *testing.T) {
 	_, err = client.AddExecutor(testExecutor, env.colonyPrvKey)
 	assert.Nil(t, err)
 
-	eecutorFromServer, err := client.GetExecutor(testExecutor.ID, approvedExecutorPrvKey)
+	eecutorFromServer, err := client.GetExecutor(env.colonyName, testExecutor.Name, approvedExecutorPrvKey)
 	assert.Nil(t, err)
 	assert.False(t, eecutorFromServer.IsApproved())
 
 	err = client.ApproveExecutor(env.colonyName, testExecutor.Name, env.colonyPrvKey)
 	assert.Nil(t, err)
 
-	eecutorFromServer, err = client.GetExecutor(testExecutor.ID, approvedExecutorPrvKey)
+	eecutorFromServer, err = client.GetExecutor(env.colonyName, testExecutor.Name, approvedExecutorPrvKey)
 	assert.Nil(t, err)
 	assert.True(t, eecutorFromServer.IsApproved())
 
 	err = client.RejectExecutor(env.colonyName, testExecutor.Name, env.colonyPrvKey)
 	assert.Nil(t, err)
 
-	eecutorFromServer, err = client.GetExecutor(testExecutor.ID, approvedExecutorPrvKey)
+	eecutorFromServer, err = client.GetExecutor(env.colonyName, testExecutor.Name, approvedExecutorPrvKey)
 	assert.Nil(t, err)
 	assert.False(t, eecutorFromServer.IsApproved())
 
@@ -143,7 +143,7 @@ func TestDeleteExecutor(t *testing.T) {
 	assert.Nil(t, err)
 
 	// Try to get it
-	executorFromServer, err := client.GetExecutor(executor.ID, executorPrvKey)
+	executorFromServer, err := client.GetExecutor(env.colonyName, executor.Name, executorPrvKey)
 	assert.Nil(t, err)
 	assert.NotNil(t, executorFromServer)
 	assert.True(t, executor.ID == executorFromServer.ID)
@@ -153,7 +153,7 @@ func TestDeleteExecutor(t *testing.T) {
 	assert.Nil(t, err)
 
 	// Try to get it again, it should be gone
-	executorFromServer, err = client.GetExecutor(executor.ID, executorPrvKey)
+	executorFromServer, err = client.GetExecutor(env.colonyName, executor.Name, executorPrvKey)
 	assert.NotNil(t, err)
 	assert.Nil(t, executorFromServer)
 
