@@ -34,17 +34,17 @@ func init() {
 	processCmd.PersistentFlags().IntVarP(&ServerPort, "port", "", -1, "Server HTTP port")
 
 	listWaitingProcessesCmd.Flags().StringVarP(&PrvKey, "prvkey", "", "", "Private key")
-	listWaitingProcessesCmd.Flags().StringVarP(&ExecutorType, "type", "", "", "Only show processes targeting this executor type")
+	listWaitingProcessesCmd.Flags().StringVarP(&TargetExecutorType, "type", "", "", "Only show processes targeting this executor type")
 	listWaitingProcessesCmd.Flags().IntVarP(&Count, "count", "", server.MAX_COUNT, "Number of processes to list")
 	listWaitingProcessesCmd.Flags().BoolVarP(&JSON, "json", "", false, "Print JSON instead of tables")
 
 	listRunningProcessesCmd.Flags().StringVarP(&PrvKey, "prvkey", "", "", "Private key")
-	listRunningProcessesCmd.Flags().StringVarP(&ExecutorType, "type", "", "", "Only show processes targeting this executor type")
+	listRunningProcessesCmd.Flags().StringVarP(&TargetExecutorType, "type", "", "", "Only show processes targeting this executor type")
 	listRunningProcessesCmd.Flags().IntVarP(&Count, "count", "", server.MAX_COUNT, "Number of processes to list")
 	listRunningProcessesCmd.Flags().BoolVarP(&JSON, "json", "", false, "Print JSON instead of tables")
 
 	listSuccessfulProcessesCmd.Flags().StringVarP(&PrvKey, "prvkey", "", "", "Private key")
-	listSuccessfulProcessesCmd.Flags().StringVarP(&ExecutorType, "type", "", "", "Only show processes targeting this executor type")
+	listSuccessfulProcessesCmd.Flags().StringVarP(&TargetExecutorType, "type", "", "", "Only show processes targeting this executor type")
 	listSuccessfulProcessesCmd.Flags().IntVarP(&Count, "count", "", server.MAX_COUNT, "Number of processes to list")
 	listSuccessfulProcessesCmd.Flags().BoolVarP(&JSON, "json", "", false, "Print JSON instead of tables")
 
@@ -140,10 +140,7 @@ var listWaitingProcessesCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		client := setup()
 
-		fmt.Println(ExecutorType)
-		ExecutorType = ""
-
-		processes, err := client.GetWaitingProcesses(ColonyName, ExecutorType, Count, PrvKey)
+		processes, err := client.GetWaitingProcesses(ColonyName, TargetExecutorType, Count, PrvKey)
 		CheckError(err)
 
 		if len(processes) == 0 {
@@ -179,7 +176,7 @@ var listRunningProcessesCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		client := setup()
 
-		processes, err := client.GetRunningProcesses(ColonyName, ExecutorType, Count, PrvKey)
+		processes, err := client.GetRunningProcesses(ColonyName, TargetExecutorType, Count, PrvKey)
 		CheckError(err)
 
 		if len(processes) == 0 {
@@ -214,7 +211,7 @@ var listSuccessfulProcessesCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		client := setup()
 
-		processes, err := client.GetSuccessfulProcesses(ColonyName, ExecutorType, Count, PrvKey)
+		processes, err := client.GetSuccessfulProcesses(ColonyName, TargetExecutorType, Count, PrvKey)
 		CheckError(err)
 
 		if len(processes) == 0 {
@@ -249,7 +246,7 @@ var listFailedProcessesCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		client := setup()
 
-		processes, err := client.GetFailedProcesses(ColonyName, ExecutorType, Count, PrvKey)
+		processes, err := client.GetFailedProcesses(ColonyName, TargetExecutorType, Count, PrvKey)
 		CheckError(err)
 
 		if len(processes) == 0 {

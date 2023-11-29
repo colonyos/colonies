@@ -39,8 +39,8 @@ type testEnv1 struct {
 }
 
 type testEnv2 struct {
-	colonyName     string
 	colonyID       string
+	colonyName     string
 	colony         *core.Colony
 	colonyPrvKey   string
 	executorName   string
@@ -187,33 +187,33 @@ func createTestColoniesController2(db database.Database) *coloniesController {
 	return createColoniesController(db, node, clusterConfig, "/tmp/colonies/etcd", GENERATOR_TRIGGER_PERIOD, CRON_TRIGGER_PERIOD, false, -1, 500)
 }
 
-func generateDiamondtWorkflowSpec(colonyID string) *core.WorkflowSpec {
+func generateDiamondtWorkflowSpec(colonyName string) *core.WorkflowSpec {
 	//         task1
 	//          / \
 	//     task2   task3
 	//          \ /
 	//         task4
 
-	workflowSpec := core.CreateWorkflowSpec(colonyID)
+	workflowSpec := core.CreateWorkflowSpec(colonyName)
 
 	funcSpec1 := core.CreateEmptyFunctionSpec()
 	funcSpec1.NodeName = "task1"
-	funcSpec1.Conditions.ColonyName = colonyID
+	funcSpec1.Conditions.ColonyName = colonyName
 	funcSpec1.Conditions.ExecutorType = "test_executor_type"
 
 	funcSpec2 := core.CreateEmptyFunctionSpec()
 	funcSpec2.NodeName = "task2"
-	funcSpec2.Conditions.ColonyName = colonyID
+	funcSpec2.Conditions.ColonyName = colonyName
 	funcSpec2.Conditions.ExecutorType = "test_executor_type"
 
 	funcSpec3 := core.CreateEmptyFunctionSpec()
 	funcSpec3.NodeName = "task3"
-	funcSpec3.Conditions.ColonyName = colonyID
+	funcSpec3.Conditions.ColonyName = colonyName
 	funcSpec3.Conditions.ExecutorType = "test_executor_type"
 
 	funcSpec4 := core.CreateEmptyFunctionSpec()
 	funcSpec4.NodeName = "task4"
-	funcSpec4.Conditions.ColonyName = colonyID
+	funcSpec4.Conditions.ColonyName = colonyName
 	funcSpec4.Conditions.ExecutorType = "test_executor_type"
 
 	funcSpec2.AddDependency("task1")
@@ -229,26 +229,26 @@ func generateDiamondtWorkflowSpec(colonyID string) *core.WorkflowSpec {
 	return workflowSpec
 }
 
-func generateTreeWorkflowSpec(colonyID string) *core.WorkflowSpec {
+func generateTreeWorkflowSpec(colonyName string) *core.WorkflowSpec {
 	//         task1
 	//          / \
 	//     task2   task3
 
-	workflowSpec := core.CreateWorkflowSpec(colonyID)
+	workflowSpec := core.CreateWorkflowSpec(colonyName)
 
 	funcSpec1 := core.CreateEmptyFunctionSpec()
 	funcSpec1.NodeName = "task1"
-	funcSpec1.Conditions.ColonyName = colonyID
+	funcSpec1.Conditions.ColonyName = colonyName
 	funcSpec1.Conditions.ExecutorType = "test_executor_type"
 
 	funcSpec2 := core.CreateEmptyFunctionSpec()
 	funcSpec2.NodeName = "task2"
-	funcSpec2.Conditions.ColonyName = colonyID
+	funcSpec2.Conditions.ColonyName = colonyName
 	funcSpec2.Conditions.ExecutorType = "test_executor_type"
 
 	funcSpec3 := core.CreateEmptyFunctionSpec()
 	funcSpec3.NodeName = "task3"
-	funcSpec3.Conditions.ColonyName = colonyID
+	funcSpec3.Conditions.ColonyName = colonyName
 	funcSpec3.Conditions.ExecutorType = "test_executor_type"
 
 	funcSpec2.AddDependency("task1")
@@ -261,11 +261,11 @@ func generateTreeWorkflowSpec(colonyID string) *core.WorkflowSpec {
 	return workflowSpec
 }
 
-func generateSingleWorkflowSpec(colonyID string) *core.WorkflowSpec {
-	workflowSpec := core.CreateWorkflowSpec(colonyID)
+func generateSingleWorkflowSpec(colonyName string) *core.WorkflowSpec {
+	workflowSpec := core.CreateWorkflowSpec(colonyName)
 	funcSpec1 := core.CreateEmptyFunctionSpec()
 	funcSpec1.NodeName = "task1"
-	funcSpec1.Conditions.ColonyName = colonyID
+	funcSpec1.Conditions.ColonyName = colonyName
 	funcSpec1.Conditions.ExecutorType = "test_executor_type"
 
 	workflowSpec.AddFunctionSpec(funcSpec1)
@@ -387,12 +387,12 @@ func WaitForServerToDie(t *testing.T, s ServerInfo) {
 	}
 }
 
-func WaitForProcessGraphs(t *testing.T, c *client.ColoniesClient, colonyID string, generatorID string, executorPrvKey string, threshold int) int {
+func WaitForProcessGraphs(t *testing.T, c *client.ColoniesClient, colonyName string, generatorID string, executorPrvKey string, threshold int) int {
 	var graphs []*core.ProcessGraph
 	var err error
 	retries := 40
 	for i := 0; i < retries; i++ {
-		graphs, err = c.GetWaitingProcessGraphs(colonyID, 100, executorPrvKey)
+		graphs, err = c.GetWaitingProcessGraphs(colonyName, 100, executorPrvKey)
 		assert.Nil(t, err)
 		if len(graphs) >= threshold {
 			break

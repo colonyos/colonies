@@ -8,7 +8,7 @@ import (
 )
 
 func TestVerifyWorkflowSpec(t *testing.T) {
-	colonyID := core.GenerateRandomID()
+	colonyName := core.GenerateRandomID()
 
 	argsif := make([]interface{}, 1)
 	argsif[0] = "arg1"
@@ -24,7 +24,7 @@ func TestVerifyWorkflowSpec(t *testing.T) {
 		MaxWaitTime: -1,
 		MaxExecTime: 2,
 		MaxRetries:  10,
-		Conditions:  core.Conditions{ColonyName: colonyID, ExecutorType: "bemisexecutor"},
+		Conditions:  core.Conditions{ColonyName: colonyName, ExecutorType: "bemisexecutor"},
 		Env:         make(map[string]string)}
 
 	funcSpec2 := core.FunctionSpec{
@@ -34,10 +34,10 @@ func TestVerifyWorkflowSpec(t *testing.T) {
 		MaxWaitTime: -1,
 		MaxExecTime: 2,
 		MaxRetries:  30,
-		Conditions:  core.Conditions{ColonyName: colonyID, ExecutorType: "bemisexecutor"},
+		Conditions:  core.Conditions{ColonyName: colonyName, ExecutorType: "bemisexecutor"},
 		Env:         make(map[string]string)}
 
-	workflowSpec := core.CreateWorkflowSpec(colonyID)
+	workflowSpec := core.CreateWorkflowSpec(colonyName)
 	funcSpec2.AddDependency("task1")
 	workflowSpec.AddFunctionSpec(&funcSpec1)
 	workflowSpec.AddFunctionSpec(&funcSpec2)
@@ -52,7 +52,7 @@ func TestVerifyWorkflowSpec(t *testing.T) {
 		MaxWaitTime: -1,
 		MaxExecTime: 2,
 		MaxRetries:  10,
-		Conditions:  core.Conditions{ColonyName: colonyID, ExecutorType: "bemisexecutor"},
+		Conditions:  core.Conditions{ColonyName: colonyName, ExecutorType: "bemisexecutor"},
 		Env:         make(map[string]string)}
 
 	funcSpec2 = core.FunctionSpec{
@@ -62,10 +62,10 @@ func TestVerifyWorkflowSpec(t *testing.T) {
 		MaxWaitTime: -1,
 		MaxExecTime: 2,
 		MaxRetries:  30,
-		Conditions:  core.Conditions{ColonyName: colonyID, ExecutorType: "bemisexecutor"},
+		Conditions:  core.Conditions{ColonyName: colonyName, ExecutorType: "bemisexecutor"},
 		Env:         make(map[string]string)}
 
-	workflowSpec = core.CreateWorkflowSpec(colonyID)
+	workflowSpec = core.CreateWorkflowSpec(colonyName)
 	funcSpec2.AddDependency("gen_task1") // Should work
 	workflowSpec.AddFunctionSpec(&funcSpec1)
 	workflowSpec.AddFunctionSpec(&funcSpec2)

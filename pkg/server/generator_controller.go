@@ -123,11 +123,11 @@ func (controller *coloniesController) resolveGenerator(generatorName string) (*c
 	}
 }
 
-func (controller *coloniesController) getGenerators(colonyID string, count int) ([]*core.Generator, error) {
+func (controller *coloniesController) getGenerators(colonyName string, count int) ([]*core.Generator, error) {
 	cmd := &command{generatorsReplyChan: make(chan []*core.Generator, 1),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
-			generators, err := controller.db.FindGeneratorsByColonyName(colonyID, count)
+			generators, err := controller.db.FindGeneratorsByColonyName(colonyName, count)
 			if err != nil {
 				cmd.errorChan <- err
 				return
@@ -144,10 +144,10 @@ func (controller *coloniesController) getGenerators(colonyID string, count int) 
 	}
 }
 
-func (controller *coloniesController) packGenerator(generatorID string, colonyID, arg string) error {
+func (controller *coloniesController) packGenerator(generatorID string, colonyName, arg string) error {
 	cmd := &command{errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
-			generatorArg := core.CreateGeneratorArg(generatorID, colonyID, arg)
+			generatorArg := core.CreateGeneratorArg(generatorID, colonyName, arg)
 			err := controller.db.AddGeneratorArg(generatorArg)
 			if err != nil {
 				log.WithFields(log.Fields{"Error": err}).Error("Failed add generator args")
