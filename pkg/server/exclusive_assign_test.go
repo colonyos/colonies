@@ -57,7 +57,7 @@ func TestExclusiveAssign(t *testing.T) {
 	_, err = client.AddExecutor(executor1, colony1PrvKey)
 	assert.Nil(t, err)
 
-	err = client.ApproveExecutor(executor1.ID, colony1PrvKey)
+	err = client.ApproveExecutor(colony1.Name, executor1.Name, colony1PrvKey)
 	assert.Nil(t, err)
 
 	funcSpec1 := utils.CreateTestFunctionSpec(colony1.Name)

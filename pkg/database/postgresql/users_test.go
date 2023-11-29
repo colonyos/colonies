@@ -12,17 +12,40 @@ func TestAddUser(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
 
-	colonyID := core.GenerateRandomID()
+	colonyName := core.GenerateRandomID()
 
-	user := utils.CreateTestUser(colonyID, "user1")
+	err = db.AddUser(nil)
+	assert.NotNil(t, err) // Error
+
+	user := utils.CreateTestUser(colonyName, "user1")
 	err = db.AddUser(user)
 	assert.Nil(t, err)
 
-	userFromDB, err := db.GetUserByID(colonyID, user.ID)
+	err = db.AddUser(user) // Try to add an already existing user
+	assert.NotNil(t, err)  // Error
+
+	user2 := utils.CreateTestUser(colonyName, "user1") // username not unique
+	err = db.AddUser(user2)
+	assert.NotNil(t, err) // Error
+
+	user2.Name = "unique_name"
+	err = db.AddUser(user2)
+	assert.Nil(t, err)
+
+	user3 := utils.CreateTestUser(colonyName, "user3") // id not unique
+	user3.ID = user2.ID
+	err = db.AddUser(user3)
+	assert.NotNil(t, err) // Error
+
+	user3.ID = core.GenerateRandomID()
+	err = db.AddUser(user3)
+	assert.Nil(t, err)
+
+	userFromDB, err := db.GetUserByID(colonyName, user.ID)
 	assert.Nil(t, err)
 	assert.True(t, userFromDB.Equals(user))
 
-	userFromDB, err = db.GetUserByName(colonyID, user.Name)
+	userFromDB, err = db.GetUserByName(colonyName, user.Name)
 	assert.Nil(t, err)
 	assert.True(t, userFromDB.Equals(user))
 

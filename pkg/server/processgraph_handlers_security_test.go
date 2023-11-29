@@ -128,7 +128,7 @@ func TestAddChildSecurity(t *testing.T) {
 	assert.Nil(t, err)
 	executor3, err := client.AddExecutor(executor, env.colony2PrvKey)
 	assert.Nil(t, err)
-	err = client.ApproveExecutor(executor3.ID, env.colony2PrvKey)
+	err = client.ApproveExecutor(env.colony2Name, executor3.Name, env.colony2PrvKey)
 	assert.Nil(t, err)
 
 	// The setup looks like this:

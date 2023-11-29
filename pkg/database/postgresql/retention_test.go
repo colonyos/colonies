@@ -38,17 +38,17 @@ func TestApplyRetentionPolicy(t *testing.T) {
 	err = db.AddLog("test_processid", "test_colonyid", "test_executorid", time.Now().UTC().UnixNano(), "test_msg")
 	assert.Nil(t, err)
 
-	colonyID := core.GenerateRandomID()
+	colonyName := core.GenerateRandomID()
 
-	process := utils.CreateTestProcess(colonyID)
+	process := utils.CreateTestProcess(colonyName)
 	err = db.AddProcess(process)
 	assert.Nil(t, err)
 
-	attribute := core.CreateAttribute(process.ID, colonyID, "", core.IN, "test_key2", "test_value2")
+	attribute := core.CreateAttribute(process.ID, colonyName, "", core.IN, "test_key2", "test_value2")
 	err = db.AddAttribute(attribute)
 	assert.Nil(t, err)
 
-	graph, err := core.CreateProcessGraph(colonyID)
+	graph, err := core.CreateProcessGraph(colonyName)
 	assert.Nil(t, err)
 	graph.AddRoot(process.ID)
 	err = db.AddProcessGraph(graph)

@@ -45,7 +45,7 @@ func setupTestEnv(t *testing.T) (*testEnv, *client.ColoniesClient, *server.Colon
 	_, err = client.AddExecutor(executor, colonyPrvKey)
 	assert.Nil(t, err)
 
-	err = client.ApproveExecutor(executor.ID, colonyPrvKey)
+	err = client.ApproveExecutor(colony.Name, executor.Name, colonyPrvKey)
 	assert.Nil(t, err)
 
 	env := &testEnv{

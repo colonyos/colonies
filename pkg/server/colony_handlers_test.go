@@ -58,7 +58,7 @@ func TestGetColony(t *testing.T) {
 	_, err = client.AddExecutor(executor, colonyPrvKey)
 	assert.Nil(t, err)
 
-	err = client.ApproveExecutor(executor.ID, colonyPrvKey)
+	err = client.ApproveExecutor(colony.Name, executor.Name, colonyPrvKey)
 	assert.Nil(t, err)
 
 	colonyFromServer, err := client.GetColonyByName(colony.Name, executorPrvKey)

@@ -83,7 +83,7 @@ func TestAddGetLogsByExecutorIDSince(t *testing.T) {
 	assert.Len(t, logs, 1)
 }
 
-func TestDeleteLogsByColonyID(t *testing.T) {
+func TestDeleteLogsByColonyName(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
 

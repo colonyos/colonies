@@ -435,36 +435,6 @@ func (controller *coloniesController) getExecutorByColonyName(colonyID string) (
 	}
 }
 
-func (controller *coloniesController) approveExecutor(executorID string) error {
-	cmd := &command{threaded: true, errorChan: make(chan error, 1),
-		handler: func(cmd *command) {
-			executor, err := controller.db.GetExecutorByID(executorID)
-			if err != nil {
-				cmd.errorChan <- err
-				return
-			}
-			cmd.errorChan <- controller.db.ApproveExecutor(executor)
-		}}
-
-	controller.cmdQueue <- cmd
-	return <-cmd.errorChan
-}
-
-func (controller *coloniesController) rejectExecutor(executorID string) error {
-	cmd := &command{threaded: true, errorChan: make(chan error, 1),
-		handler: func(cmd *command) {
-			executor, err := controller.db.GetExecutorByID(executorID)
-			if err != nil {
-				cmd.errorChan <- err
-				return
-			}
-			cmd.errorChan <- controller.db.RejectExecutor(executor)
-		}}
-
-	controller.cmdQueue <- cmd
-	return <-cmd.errorChan
-}
-
 func (controller *coloniesController) deleteExecutor(executorID string) error {
 	cmd := &command{threaded: true, errorChan: make(chan error, 1),
 		handler: func(cmd *command) {

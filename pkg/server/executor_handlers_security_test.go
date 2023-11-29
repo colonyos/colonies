@@ -96,10 +96,10 @@ func TestApproveExecutorSecurity(t *testing.T) {
 	_, err = client.AddExecutor(executor3, env.colony1PrvKey)
 	assert.Nil(t, err)
 
-	err = client.ApproveExecutor(executor3.ID, env.colony2PrvKey)
+	err = client.ApproveExecutor(env.colony2Name, executor3.Name, env.colony2PrvKey)
 	assert.NotNil(t, err) // Should not work
 
-	err = client.ApproveExecutor(executor3.ID, env.colony1PrvKey)
+	err = client.ApproveExecutor(env.colony1Name, executor3.Name, env.colony1PrvKey)
 	assert.Nil(t, err) // Should work
 
 	server.Shutdown()
@@ -119,10 +119,10 @@ func TestRejectExecutorSecurity(t *testing.T) {
 	_, err = client.AddExecutor(executor3, env.colony1PrvKey)
 	assert.Nil(t, err)
 
-	err = client.RejectExecutor(executor3.ID, env.colony2PrvKey)
+	err = client.RejectExecutor(env.colony2Name, executor3.Name, env.colony2PrvKey)
 	assert.NotNil(t, err) // Should not work
 
-	err = client.RejectExecutor(executor3.ID, env.colony1PrvKey)
+	err = client.RejectExecutor(env.colony1Name, executor3.Name, env.colony1PrvKey)
 	assert.Nil(t, err) // Should work
 
 	server.Shutdown()
@@ -145,7 +145,7 @@ func TestNonApprovedExecutorSecurity(t *testing.T) {
 	_, err = client.GetExecutors(env.colony1Name, executor3PrvKey)
 	assert.Nil(t, err) // Should work, executor should be able to list all executors even if it is not approved
 
-	err = client.ApproveExecutor(executor3.ID, env.colony1PrvKey)
+	err = client.ApproveExecutor(env.colony1Name, executor3.Name, env.colony1PrvKey)
 	assert.Nil(t, err)
 
 	_, err = client.GetExecutors(env.colony1Name, executor3PrvKey)

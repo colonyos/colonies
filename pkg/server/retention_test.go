@@ -26,7 +26,7 @@ func TestRetention(t *testing.T) {
 	_, err = client.AddExecutor(executor, colonyPrvKey)
 	assert.Nil(t, err)
 
-	err = client.ApproveExecutor(executor.ID, colonyPrvKey)
+	err = client.ApproveExecutor(colony.Name, executor.Name, colonyPrvKey)
 	assert.Nil(t, err)
 
 	wf := generateSingleWorkflowSpec(colony.Name)

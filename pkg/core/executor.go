@@ -82,6 +82,7 @@ func CreateExecutorFromDB(id string,
 	requireFuncReg bool,
 	commissionTime time.Time,
 	lastHeardFromTime time.Time) *Executor {
+
 	executor := CreateExecutor(id, executorType, name, colonyName, commissionTime, lastHeardFromTime)
 	executor.State = state
 	executor.RequireFuncReg = requireFuncReg

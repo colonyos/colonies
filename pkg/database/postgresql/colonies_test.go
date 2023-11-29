@@ -50,6 +50,9 @@ func TestAddColony(t *testing.T) {
 	err = db.AddColony(colony)
 	assert.Nil(t, err)
 
+	err = db.AddColony(colony) // Try to add the same colony again
+	assert.NotNil(t, err)      // Error
+
 	colonies, err := db.GetColonies()
 	assert.Nil(t, err)
 

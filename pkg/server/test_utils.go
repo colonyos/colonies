@@ -79,10 +79,10 @@ func setupTestEnv1(t *testing.T) (*testEnv1, *client.ColoniesClient, *ColoniesSe
 	_, err = client.AddExecutor(executor2, colony2PrvKey)
 	assert.Nil(t, err)
 
-	err = client.ApproveExecutor(executor1.ID, colony1PrvKey)
+	err = client.ApproveExecutor(colony1.Name, executor1.Name, colony1PrvKey)
 	assert.Nil(t, err)
 
-	err = client.ApproveExecutor(executor2.ID, colony2PrvKey)
+	err = client.ApproveExecutor(colony2.Name, executor2.Name, colony2PrvKey)
 	assert.Nil(t, err)
 
 	env := &testEnv1{colony1PrvKey: colony1PrvKey,
@@ -116,7 +116,7 @@ func setupTestEnv2(t *testing.T) (*testEnv2, *client.ColoniesClient, *ColoniesSe
 	_, err = client.AddExecutor(executor, colonyPrvKey)
 	assert.Nil(t, err)
 
-	err = client.ApproveExecutor(executor.ID, colonyPrvKey)
+	err = client.ApproveExecutor(colony.Name, executor.Name, colonyPrvKey)
 	assert.Nil(t, err)
 
 	env := &testEnv2{

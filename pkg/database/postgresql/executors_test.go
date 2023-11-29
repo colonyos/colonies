@@ -19,9 +19,6 @@ func TestExecutorClosedDB(t *testing.T) {
 	err = db.AddExecutor(executor)
 	assert.NotNil(t, err)
 
-	err = db.AddOrReplaceExecutor(executor)
-	assert.NotNil(t, err)
-
 	_, err = db.GetExecutors()
 	assert.NotNil(t, err)
 
@@ -108,35 +105,7 @@ func TestAddExecutor(t *testing.T) {
 	assert.Equal(t, executor.Capabilities.Hardware.GPU.Memory, "10G")
 }
 
-func TestAddOrReplaceExecutor(t *testing.T) {
-	db, err := PrepareTests()
-	assert.Nil(t, err)
-
-	defer db.Close()
-
-	colony := core.CreateColony(core.GenerateRandomID(), "test_colony_name_1")
-	err = db.AddColony(colony)
-	assert.Nil(t, err)
-
-	executor := utils.CreateTestExecutor(colony.Name)
-	executor.Name = "test_name_1"
-	err = db.AddOrReplaceExecutor(executor)
-	assert.Nil(t, err)
-
-	executorFromDB, err := db.GetExecutorByID(executor.ID)
-	assert.Nil(t, err)
-	assert.Equal(t, executorFromDB.Name, "test_name_1")
-
-	executor.Name = "test_name_2"
-	err = db.AddOrReplaceExecutor(executor)
-	assert.Nil(t, err)
-
-	executorFromDB, err = db.GetExecutorByID(executor.ID)
-	assert.Nil(t, err)
-	assert.Equal(t, executorFromDB.Name, "test_name_2")
-}
-
-func TestAddTwoExecutors(t *testing.T) {
+func TestAddExecutors(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
 
@@ -146,18 +115,46 @@ func TestAddTwoExecutors(t *testing.T) {
 
 	err = db.AddColony(colony)
 	assert.Nil(t, err)
+
+	err = db.AddExecutor(nil)
+	assert.NotNil(t, err) // Error
 
 	executor1 := utils.CreateTestExecutor(colony.Name)
 	err = db.AddExecutor(executor1)
 	assert.Nil(t, err)
 
+	err = db.AddExecutor(executor1) // Try to add the same executor again
+	assert.NotNil(t, err)           // Error
+
 	executor2 := utils.CreateTestExecutor(colony.Name)
 	err = db.AddExecutor(executor2)
+	assert.Nil(t, err)
+
+	executor3 := utils.CreateTestExecutor(colony.Name)
+	executor3.Name = executor2.Name // Note name not unique
+	err = db.AddExecutor(executor3)
+	assert.NotNil(t, err) // Error
+
+	executor3 = utils.CreateTestExecutor(colony.Name)
+	executor3.Name = "unique_name"
+	err = db.AddExecutor(executor3)
+	assert.Nil(t, err)
+
+	executor4 := utils.CreateTestExecutor(colony.Name)
+	executor4.ID = executor2.ID // Note id not unique
+	err = db.AddExecutor(executor4)
+	assert.NotNil(t, err) // Error
+
+	executor4 = utils.CreateTestExecutor(colony.Name)
+	executor4.ID = core.GenerateRandomID()
+	err = db.AddExecutor(executor4)
 	assert.Nil(t, err)
 
 	var executors []*core.Executor
 	executors = append(executors, executor1)
 	executors = append(executors, executor2)
+	executors = append(executors, executor3)
+	executors = append(executors, executor4)
 
 	executorsFromDB, err := db.GetExecutors()
 	assert.Nil(t, err)

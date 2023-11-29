@@ -21,7 +21,7 @@ func TestAddFunctionSecurity(t *testing.T) {
 	_, err = client.AddExecutor(executor3, env.colony1PrvKey)
 	assert.Nil(t, err)
 
-	err = client.ApproveExecutor(executor3.ID, env.colony1PrvKey)
+	err = client.ApproveExecutor(env.colony1Name, executor3.Name, env.colony1PrvKey)
 	assert.Nil(t, err)
 
 	function1 := &core.Function{ExecutorID: env.executor1ID, ColonyName: env.colony1Name, FuncName: "testfunc1", AvgWaitTime: 1.1, AvgExecTime: 0.1}
@@ -95,7 +95,7 @@ func TestDeleteFunctionSecurity(t *testing.T) {
 	_, err = client.AddExecutor(executor3, env.colony1PrvKey)
 	assert.Nil(t, err)
 
-	err = client.ApproveExecutor(executor3.ID, env.colony1PrvKey)
+	err = client.ApproveExecutor(env.colony1Name, executor3.Name, env.colony1PrvKey)
 	assert.Nil(t, err)
 
 	function := &core.Function{ExecutorID: env.executor1ID, ColonyName: env.colony1Name, FuncName: "testfunc1", AvgWaitTime: 1.1, AvgExecTime: 0.1}

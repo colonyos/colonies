@@ -32,7 +32,6 @@ type Database interface {
 
 	// Executor functions ...
 	AddExecutor(executor *core.Executor) error
-	AddOrReplaceExecutor(executor *core.Executor) error
 	GetExecutors() ([]*core.Executor, error)
 	GetExecutorByID(executorID string) (*core.Executor, error)
 	GetExecutorsByColonyName(colonyName string) ([]*core.Executor, error)

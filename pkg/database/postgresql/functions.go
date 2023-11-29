@@ -22,7 +22,7 @@ func (db *PQDatabase) parseFunctions(rows *sql.Rows) ([]*core.Function, error) {
 	for rows.Next() {
 		var functionID string
 		var executorID string
-		var colonyID string
+		var colonyName string
 		var name string
 		var counter int
 		var minWaitTime float64
@@ -31,11 +31,11 @@ func (db *PQDatabase) parseFunctions(rows *sql.Rows) ([]*core.Function, error) {
 		var maxExecTime float64
 		var avgWaitTime float64
 		var avgExecTime float64
-		if err := rows.Scan(&functionID, &executorID, &colonyID, &name, &counter, &minWaitTime, &maxWaitTime, &minExecTime, &maxExecTime, &avgWaitTime, &avgExecTime); err != nil {
+		if err := rows.Scan(&functionID, &executorID, &colonyName, &name, &counter, &minWaitTime, &maxWaitTime, &minExecTime, &maxExecTime, &avgWaitTime, &avgExecTime); err != nil {
 			return nil, err
 		}
 
-		function := core.CreateFunction(functionID, executorID, colonyID, name, counter, minWaitTime, maxWaitTime, minExecTime, maxExecTime, avgWaitTime, avgExecTime)
+		function := core.CreateFunction(functionID, executorID, colonyName, name, counter, minWaitTime, maxWaitTime, minExecTime, maxExecTime, avgWaitTime, avgExecTime)
 		functions = append(functions, function)
 	}
 
