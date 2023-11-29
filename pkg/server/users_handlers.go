@@ -84,7 +84,7 @@ func (server *ColoniesServer) handleAddUserHTTPRequest(c *gin.Context, recovered
 		return
 	}
 
-	log.WithFields(log.Fields{"ColonyName": addedUser.ColonyName, "ColonyID": colony.ID, "Name": addedUser.Name, "UserID": addedUser.ID}).Debug("Adding user")
+	log.WithFields(log.Fields{"ColonyName": addedUser.ColonyName, "Name": addedUser.Name, "UserID": addedUser.ID}).Debug("Adding user")
 
 	server.sendHTTPReply(c, payloadType, jsonString)
 }
@@ -217,7 +217,7 @@ func (server *ColoniesServer) handleDeleteUserHTTPRequest(c *gin.Context, recove
 		return
 	}
 
-	log.WithFields(log.Fields{"ColonyName": msg.ColonyName, "ColonyID": colony.ID, "UserName": msg.Name}).Debug("Removing user")
+	log.WithFields(log.Fields{"ColonyName": msg.ColonyName, "UserName": msg.Name}).Debug("Removing user")
 
 	server.sendEmptyHTTPReply(c, payloadType)
 }

@@ -17,15 +17,14 @@ func init() {
 	attributeCmd.PersistentFlags().StringVarP(&ServerHost, "host", "", "localhost", "Server host")
 	attributeCmd.PersistentFlags().IntVarP(&ServerPort, "port", "", -1, "Server HTTP port")
 
+	addAttributeCmd.Flags().StringVarP(&PrvKey, "prvkey", "", "", "Executor private key")
 	addAttributeCmd.Flags().StringVarP(&Key, "key", "", "", "Key")
 	addAttributeCmd.MarkFlagRequired("key")
 	addAttributeCmd.Flags().StringVarP(&Value, "value", "", "", "Value")
 	addAttributeCmd.MarkFlagRequired("value")
-	addAttributeCmd.Flags().StringVarP(&ProcessID, "processid", "", "", "Process Id")
+	addAttributeCmd.Flags().StringVarP(&ProcessID, "processid", "p", "", "Process Id")
 	addAttributeCmd.MarkFlagRequired("processid")
-	addAttributeCmd.Flags().StringVarP(&ColonyID, "colonyid", "", "", "Colony Id")
 
-	getAttributeCmd.Flags().StringVarP(&ColonyID, "colonyid", "", "", "Colony Id")
 	getAttributeCmd.Flags().StringVarP(&AttributeID, "attributeid", "", "", "Attribute Id")
 	getAttributeCmd.MarkFlagRequired("attributeid")
 }
@@ -46,7 +45,7 @@ var addAttributeCmd = &cobra.Command{
 		process, err := client.GetProcess(ProcessID, PrvKey)
 		CheckError(err)
 
-		attribute := core.CreateAttribute(ProcessID, ColonyID, process.ProcessGraphID, core.OUT, Key, Value)
+		attribute := core.CreateAttribute(ProcessID, ColonyName, process.ProcessGraphID, core.OUT, Key, Value)
 
 		addedAttribute, err := client.AddAttribute(attribute, PrvKey)
 		CheckError(err)

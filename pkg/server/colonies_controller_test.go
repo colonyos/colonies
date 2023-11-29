@@ -134,15 +134,15 @@ func TestColoniesControllerAddProcess(t *testing.T) {
 	controller := createTestColoniesController(db)
 	defer controller.stop()
 
-	colonyID := core.GenerateRandomID()
+	colonyName := core.GenerateRandomID()
 
-	executor, _, err := utils.CreateTestExecutorWithKey(colonyID)
+	executor, _, err := utils.CreateTestExecutorWithKey(colonyName)
 	assert.Nil(t, err)
 
 	_, err = controller.addExecutor(executor, false)
 	assert.Nil(t, err)
 
-	funcSpec := utils.CreateTestFunctionSpecWithEnv(colonyID, make(map[string]string))
+	funcSpec := utils.CreateTestFunctionSpecWithEnv(colonyName, make(map[string]string))
 	process := core.CreateProcess(funcSpec)
 
 	addedProcess, err := controller.addProcess(process)
@@ -158,20 +158,20 @@ func TestColoniesControllerAssignExecutor(t *testing.T) {
 	controller := createTestColoniesController(db)
 	defer controller.stop()
 
-	colonyID := core.GenerateRandomID()
+	colonyName := core.GenerateRandomID()
 
-	executor, _, err := utils.CreateTestExecutorWithKey(colonyID)
+	executor, _, err := utils.CreateTestExecutorWithKey(colonyName)
 	assert.Nil(t, err)
 
 	_, err = controller.addExecutor(executor, false)
 	assert.Nil(t, err)
 
-	funcSpec := utils.CreateTestFunctionSpecWithEnv(colonyID, make(map[string]string))
+	funcSpec := utils.CreateTestFunctionSpecWithEnv(colonyName, make(map[string]string))
 	process := core.CreateProcess(funcSpec)
 	_, err = controller.addProcess(process)
 	assert.Nil(t, err)
 
-	assignedProcess, err := controller.assign(executor.ID, colonyID)
+	assignedProcess, err := controller.assign(executor.ID, colonyName)
 	assert.Nil(t, err)
 	assert.True(t, process.ID == assignedProcess.ID)
 }
@@ -189,20 +189,20 @@ func TestColoniesControllerAssignExecutorConcurrency(t *testing.T) {
 	controller2 := createTestColoniesController2(db)
 	defer controller2.stop()
 
-	colonyID := core.GenerateRandomID()
+	colonyName := core.GenerateRandomID()
 
-	executor1, _, err := utils.CreateTestExecutorWithKey(colonyID)
+	executor1, _, err := utils.CreateTestExecutorWithKey(colonyName)
 	assert.Nil(t, err)
 	_, err = controller1.addExecutor(executor1, false)
 	assert.Nil(t, err)
 
-	executor2, _, err := utils.CreateTestExecutorWithKey(colonyID)
+	executor2, _, err := utils.CreateTestExecutorWithKey(colonyName)
 	assert.Nil(t, err)
 	_, err = controller1.addExecutor(executor2, false)
 	assert.Nil(t, err)
 
 	for i := 0; i < processCount; i++ {
-		funcSpec := utils.CreateTestFunctionSpecWithEnv(colonyID, make(map[string]string))
+		funcSpec := utils.CreateTestFunctionSpecWithEnv(colonyName, make(map[string]string))
 		process := core.CreateProcess(funcSpec)
 		_, err = controller1.addProcess(process)
 		assert.Nil(t, err)
@@ -212,7 +212,7 @@ func TestColoniesControllerAssignExecutorConcurrency(t *testing.T) {
 
 	go func() {
 		for {
-			_, err := controller1.assign(executor1.ID, colonyID)
+			_, err := controller1.assign(executor1.ID, colonyName)
 			if err == nil {
 				countChan <- 1
 			}
@@ -225,7 +225,7 @@ func TestColoniesControllerAssignExecutorConcurrency(t *testing.T) {
 
 	go func() {
 		for {
-			_, err := controller2.assign(executor2.ID, colonyID)
+			_, err := controller2.assign(executor2.ID, colonyName)
 			if err == nil {
 				countChan <- 1
 			}

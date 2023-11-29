@@ -45,18 +45,18 @@ func TestHandleAddGeneratorHTTPRequest(t *testing.T) {
 	server.handleAddGeneratorHTTPRequest(ctx, recoveredID, payloadType, jsonString)
 	assertRPCError(t, w.Body.String())
 
-	colonyID := core.GenerateRandomID()
-	workflowSpec := core.CreateWorkflowSpec(colonyID)
-	funcSpec1 := utils.CreateTestFunctionSpec(colonyID)
+	colonyName := core.GenerateRandomID()
+	workflowSpec := core.CreateWorkflowSpec(colonyName)
+	funcSpec1 := utils.CreateTestFunctionSpec(colonyName)
 	funcSpec1.NodeName = "task1"
-	funcSpec2 := utils.CreateTestFunctionSpec(colonyID)
+	funcSpec2 := utils.CreateTestFunctionSpec(colonyName)
 	funcSpec2.NodeName = "task2"
 	funcSpec2.AddDependency("task10") // Error
 	workflowSpec.AddFunctionSpec(funcSpec1)
 	workflowSpec.AddFunctionSpec(funcSpec2)
 	jsonStr, err := workflowSpec.ToJSON()
 	assert.Nil(t, err)
-	generator = core.CreateGenerator(colonyID, "test_genname"+core.GenerateRandomID(), jsonStr, 10, -1)
+	generator = core.CreateGenerator(colonyName, "test_genname"+core.GenerateRandomID(), jsonStr, 10, -1)
 	msg = rpc.CreateAddGeneratorMsg(generator)
 	payloadType = msg.MsgType
 	jsonString, err = msg.ToJSON()
@@ -144,9 +144,9 @@ func TestHandleGetGeneratorHTTPRequest(t *testing.T) {
 func TestAddGeneratorCounter(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 
-	colonyID := env.colonyName
+	colonyName := env.colonyName
 
-	generator := utils.FakeGenerator(t, colonyID)
+	generator := utils.FakeGenerator(t, colonyName)
 	generator.Trigger = 10
 	addedGenerator, err := client.AddGenerator(generator, env.executorPrvKey)
 	assert.Nil(t, err)
@@ -162,9 +162,9 @@ func TestAddGeneratorCounter(t *testing.T) {
 	}()
 	<-doneInc
 
-	WaitForProcessGraphs(t, client, colonyID, addedGenerator.ID, env.executorPrvKey, 7)
+	WaitForProcessGraphs(t, client, colonyName, addedGenerator.ID, env.executorPrvKey, 7)
 
-	graphs, err := client.GetWaitingProcessGraphs(colonyID, 100, env.executorPrvKey)
+	graphs, err := client.GetWaitingProcessGraphs(colonyName, 100, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.Len(t, graphs, 7)
 
@@ -175,9 +175,9 @@ func TestAddGeneratorCounter(t *testing.T) {
 func TestAddGeneratorTimeout(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 
-	colonyID := env.colonyName
+	colonyName := env.colonyName
 
-	generator := utils.FakeGenerator(t, colonyID)
+	generator := utils.FakeGenerator(t, colonyName)
 	generator.Trigger = 10
 	generator.Timeout = 1
 	addedGenerator, err := client.AddGenerator(generator, env.executorPrvKey)
@@ -187,9 +187,9 @@ func TestAddGeneratorTimeout(t *testing.T) {
 	err = client.PackGenerator(addedGenerator.ID, "arg1", env.executorPrvKey)
 	assert.Nil(t, err)
 
-	WaitForProcessGraphs(t, client, colonyID, addedGenerator.ID, env.executorPrvKey, 1)
+	WaitForProcessGraphs(t, client, colonyName, addedGenerator.ID, env.executorPrvKey, 1)
 
-	graphs, err := client.GetWaitingProcessGraphs(colonyID, 100, env.executorPrvKey)
+	graphs, err := client.GetWaitingProcessGraphs(colonyName, 100, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.Len(t, graphs, 1)
 
@@ -202,9 +202,9 @@ func TestAddGeneratorTimeout(t *testing.T) {
 func TestAddGeneratorTimeout2(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 
-	colonyID := env.colonyName
+	colonyName := env.colonyName
 
-	generator := utils.FakeGenerator(t, colonyID)
+	generator := utils.FakeGenerator(t, colonyName)
 	generator.Trigger = 10
 	generator.Timeout = 1
 	addedGenerator, err := client.AddGenerator(generator, env.executorPrvKey)
@@ -217,18 +217,18 @@ func TestAddGeneratorTimeout2(t *testing.T) {
 	err = client.PackGenerator(addedGenerator.ID, "arg1", env.executorPrvKey)
 	assert.Nil(t, err)
 
-	WaitForProcessGraphs(t, client, colonyID, addedGenerator.ID, env.executorPrvKey, 1)
+	WaitForProcessGraphs(t, client, colonyName, addedGenerator.ID, env.executorPrvKey, 1)
 
-	graphs, err := client.GetWaitingProcessGraphs(colonyID, 100, env.executorPrvKey)
+	graphs, err := client.GetWaitingProcessGraphs(colonyName, 100, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.Len(t, graphs, 1)
 
 	err = client.PackGenerator(addedGenerator.ID, "arg1", env.executorPrvKey)
 	assert.Nil(t, err)
 
-	WaitForProcessGraphs(t, client, colonyID, addedGenerator.ID, env.executorPrvKey, 2)
+	WaitForProcessGraphs(t, client, colonyName, addedGenerator.ID, env.executorPrvKey, 2)
 
-	graphs, err = client.GetWaitingProcessGraphs(colonyID, 100, env.executorPrvKey)
+	graphs, err = client.GetWaitingProcessGraphs(colonyName, 100, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.Len(t, graphs, 2)
 
@@ -240,9 +240,9 @@ func TestAddGeneratorTimeout2(t *testing.T) {
 func TestAddGeneratorTimeout3(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 
-	colonyID := env.colonyName
+	colonyName := env.colonyName
 
-	generator := utils.FakeGenerator(t, colonyID)
+	generator := utils.FakeGenerator(t, colonyName)
 	generator.Trigger = 10
 	generator.Timeout = 1
 	addedGenerator, err := client.AddGenerator(generator, env.executorPrvKey)
@@ -255,16 +255,16 @@ func TestAddGeneratorTimeout3(t *testing.T) {
 		assert.Nil(t, err)
 	}
 
-	WaitForProcessGraphs(t, client, colonyID, addedGenerator.ID, env.executorPrvKey, 1)
+	WaitForProcessGraphs(t, client, colonyName, addedGenerator.ID, env.executorPrvKey, 1)
 
-	graphs, err := client.GetWaitingProcessGraphs(colonyID, 100, env.executorPrvKey)
+	graphs, err := client.GetWaitingProcessGraphs(colonyName, 100, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.Len(t, graphs, 1)
 
 	// The second workflow should be submitted by the timemout trigger
-	WaitForProcessGraphs(t, client, colonyID, addedGenerator.ID, env.executorPrvKey, 2)
+	WaitForProcessGraphs(t, client, colonyName, addedGenerator.ID, env.executorPrvKey, 2)
 
-	graphs, err = client.GetWaitingProcessGraphs(colonyID, 100, env.executorPrvKey)
+	graphs, err = client.GetWaitingProcessGraphs(colonyName, 100, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.Len(t, graphs, 2)
 
@@ -283,9 +283,9 @@ func TestAddGeneratorTimeout3(t *testing.T) {
 func TestGetGenerator(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 
-	colonyID := env.colonyName
+	colonyName := env.colonyName
 
-	generator := utils.FakeGenerator(t, colonyID)
+	generator := utils.FakeGenerator(t, colonyName)
 	addedGenerator, err := client.AddGenerator(generator, env.executorPrvKey)
 	assert.Nil(t, err)
 
@@ -300,9 +300,9 @@ func TestGetGenerator(t *testing.T) {
 func TestResolveGenerator(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 
-	colonyID := env.colonyName
+	colonyName := env.colonyName
 
-	generator := utils.FakeGenerator(t, colonyID)
+	generator := utils.FakeGenerator(t, colonyName)
 	generator.Name = "test_generator_name"
 	addedGenerator, err := client.AddGenerator(generator, env.executorPrvKey)
 	assert.Nil(t, err)
@@ -318,21 +318,21 @@ func TestResolveGenerator(t *testing.T) {
 func TestGetGenerators(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 
-	colonyID := env.colonyName
+	colonyName := env.colonyName
 
-	generator1 := utils.FakeGenerator(t, colonyID)
+	generator1 := utils.FakeGenerator(t, colonyName)
 	addedGenerator1, err := client.AddGenerator(generator1, env.executorPrvKey)
 	assert.Nil(t, err)
 
-	generator2 := utils.FakeGenerator(t, colonyID)
+	generator2 := utils.FakeGenerator(t, colonyName)
 	addedGenerator2, err := client.AddGenerator(generator2, env.executorPrvKey)
 	assert.Nil(t, err)
 
-	generator3 := utils.FakeGenerator(t, colonyID)
+	generator3 := utils.FakeGenerator(t, colonyName)
 	addedGenerator3, err := client.AddGenerator(generator3, env.executorPrvKey)
 	assert.Nil(t, err)
 
-	generatorsFromServer, err := client.GetGenerators(colonyID, 100, env.executorPrvKey)
+	generatorsFromServer, err := client.GetGenerators(colonyName, 100, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.Len(t, generatorsFromServer, 3)
 
@@ -355,7 +355,7 @@ func TestGetGenerators(t *testing.T) {
 	assert.True(t, generator2Found)
 	assert.True(t, generator3Found)
 
-	generatorsFromServer, err = client.GetGenerators(colonyID, 1, env.executorPrvKey)
+	generatorsFromServer, err = client.GetGenerators(colonyName, 1, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.Len(t, generatorsFromServer, 1)
 
@@ -366,9 +366,9 @@ func TestGetGenerators(t *testing.T) {
 func TestDeleteGenerator(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 
-	colonyID := env.colonyName
+	colonyName := env.colonyName
 
-	generator := utils.FakeGenerator(t, colonyID)
+	generator := utils.FakeGenerator(t, colonyName)
 	addedGenerator, err := client.AddGenerator(generator, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.NotNil(t, addedGenerator)
@@ -378,7 +378,7 @@ func TestDeleteGenerator(t *testing.T) {
 
 	time.Sleep(2 * time.Second)
 
-	graphs, err := client.GetWaitingProcessGraphs(colonyID, 100, env.executorPrvKey)
+	graphs, err := client.GetWaitingProcessGraphs(colonyName, 100, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.True(t, len(graphs) == 0)
 

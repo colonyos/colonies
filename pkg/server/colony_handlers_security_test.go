@@ -16,10 +16,10 @@ func TestAddColonySecurity(t *testing.T) {
 	privateKey, err := crypto.GeneratePrivateKey()
 	assert.Nil(t, err)
 
-	colonyID, err := crypto.GenerateID(privateKey)
+	colonyName, err := crypto.GenerateID(privateKey)
 	assert.Nil(t, err)
 
-	colony := core.CreateColony(colonyID, "test_colony_name")
+	colony := core.CreateColony(colonyName, "test_colony_name")
 
 	_, err = client.AddColony(colony, "invalid_api_key")
 	assert.NotNilf(t, err, "it should be possible to create a colony without correct api key")
@@ -42,10 +42,10 @@ func TestRemoveColonySecurity(t *testing.T) {
 	invalidPrivateKey, err := crypto.GeneratePrivateKey()
 	assert.Nil(t, err)
 
-	colonyID, err := crypto.GenerateID(privateKey)
+	colonyName, err := crypto.GenerateID(privateKey)
 	assert.Nil(t, err)
 
-	colony := core.CreateColony(colonyID, "test_colony_name")
+	colony := core.CreateColony(colonyName, "test_colony_name")
 
 	_, err = client.AddColony(colony, serverPrvKey)
 	assert.Nil(t, err)
