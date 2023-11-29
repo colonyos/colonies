@@ -13,18 +13,20 @@ func TestFunctionClosedDB(t *testing.T) {
 
 	db.Close()
 
+	colonyName := core.GenerateRandomID()
+
 	function1 := &core.Function{
-		FunctionID:  core.GenerateRandomID(),
-		ExecutorID:  core.GenerateRandomID(),
-		ColonyName:  core.GenerateRandomID(),
-		FuncName:    "testfunc1",
-		Counter:     2,
-		MinWaitTime: 1.0,
-		MaxWaitTime: 2.0,
-		MinExecTime: 3.0,
-		MaxExecTime: 4.0,
-		AvgWaitTime: 1.1,
-		AvgExecTime: 0.1}
+		FunctionID:   core.GenerateRandomID(),
+		ExecutorName: core.GenerateRandomID(),
+		ColonyName:   colonyName,
+		FuncName:     "testfunc1",
+		Counter:      2,
+		MinWaitTime:  1.0,
+		MaxWaitTime:  2.0,
+		MinExecTime:  3.0,
+		MaxExecTime:  4.0,
+		AvgWaitTime:  1.1,
+		AvgExecTime:  0.1}
 
 	err = db.AddFunction(function1)
 	assert.NotNil(t, err)
@@ -32,25 +34,25 @@ func TestFunctionClosedDB(t *testing.T) {
 	_, err = db.GetFunctionByID("invalid_id")
 	assert.NotNil(t, err)
 
-	_, err = db.GetFunctionsByExecutorID("invalid_id")
+	_, err = db.GetFunctionsByExecutorName(colonyName, "invalid_id")
 	assert.NotNil(t, err)
 
 	_, err = db.GetFunctionsByColonyName("invalid_name")
 	assert.NotNil(t, err)
 
-	_, err = db.GetFunctionsByExecutorIDAndName("invalid_id", "invalid_name")
+	_, err = db.GetFunctionsByExecutorAndName(colonyName, "invalid_id", "invalid_name")
 	assert.NotNil(t, err)
 
-	err = db.UpdateFunctionStats("invalid_id", "invalid_name", 20, 0.1, 0.2, 0.3, 0.4, 2.0, 2.1)
+	err = db.UpdateFunctionStats(colonyName, "invalid_id", "invalid_name", 20, 0.1, 0.2, 0.3, 0.4, 2.0, 2.1)
 	assert.NotNil(t, err)
 
 	err = db.DeleteFunctionByID("invalid_id")
 	assert.NotNil(t, err)
 
-	err = db.DeleteFunctionByName("invalid_id", "invalid_name")
+	err = db.DeleteFunctionByName(colonyName, "invalid_id", "invalid_name")
 	assert.NotNil(t, err)
 
-	err = db.DeleteFunctionsByExecutorID("invalid_id")
+	err = db.DeleteFunctionsByExecutorName(colonyName, "invalid_id")
 	assert.NotNil(t, err)
 
 	err = db.DeleteFunctionsByColonyName("invalid_name")
@@ -67,22 +69,22 @@ func TestAddFunction(t *testing.T) {
 	defer db.Close()
 
 	function1 := &core.Function{
-		FunctionID:  core.GenerateRandomID(),
-		ExecutorID:  core.GenerateRandomID(),
-		ColonyName:  core.GenerateRandomID(),
-		FuncName:    "testfunc1",
-		Counter:     2,
-		MinWaitTime: 1.0,
-		MaxWaitTime: 2.0,
-		MinExecTime: 3.0,
-		MaxExecTime: 4.0,
-		AvgWaitTime: 1.1,
-		AvgExecTime: 0.1}
+		FunctionID:   core.GenerateRandomID(),
+		ExecutorName: core.GenerateRandomID(),
+		ColonyName:   core.GenerateRandomID(),
+		FuncName:     "testfunc1",
+		Counter:      2,
+		MinWaitTime:  1.0,
+		MaxWaitTime:  2.0,
+		MinExecTime:  3.0,
+		MaxExecTime:  4.0,
+		AvgWaitTime:  1.1,
+		AvgExecTime:  0.1}
 
 	err = db.AddFunction(function1)
 	assert.Nil(t, err)
 
-	functions, err := db.GetFunctionsByExecutorID(function1.ExecutorID)
+	functions, err := db.GetFunctionsByExecutorName(function1.ColonyName, function1.ExecutorName)
 	assert.Nil(t, err)
 	assert.Len(t, functions, 1)
 
@@ -96,26 +98,26 @@ func TestGetFunctionByExecutorIDAndName(t *testing.T) {
 	defer db.Close()
 
 	function1 := &core.Function{
-		FunctionID:  core.GenerateRandomID(),
-		ExecutorID:  core.GenerateRandomID(),
-		ColonyName:  core.GenerateRandomID(),
-		FuncName:    "testfunc1",
-		Counter:     2,
-		MinWaitTime: 1.0,
-		MaxWaitTime: 2.0,
-		MinExecTime: 3.0,
-		MaxExecTime: 4.0,
-		AvgWaitTime: 1.1,
-		AvgExecTime: 0.1}
+		FunctionID:   core.GenerateRandomID(),
+		ExecutorName: core.GenerateRandomID(),
+		ColonyName:   core.GenerateRandomID(),
+		FuncName:     "testfunc1",
+		Counter:      2,
+		MinWaitTime:  1.0,
+		MaxWaitTime:  2.0,
+		MinExecTime:  3.0,
+		MaxExecTime:  4.0,
+		AvgWaitTime:  1.1,
+		AvgExecTime:  0.1}
 
 	err = db.AddFunction(function1)
 	assert.Nil(t, err)
 
-	functionFromDB, err := db.GetFunctionsByExecutorIDAndName(function1.ExecutorID, function1.FuncName)
+	functionFromDB, err := db.GetFunctionsByExecutorAndName(function1.ColonyName, function1.ExecutorName, function1.FuncName)
 	assert.Nil(t, err)
 	assert.True(t, function1.Equals(functionFromDB))
 
-	functionFromDB, err = db.GetFunctionsByExecutorIDAndName(function1.ExecutorID, "does_not_exists")
+	functionFromDB, err = db.GetFunctionsByExecutorAndName(function1.ColonyName, function1.ExecutorName, "does_not_exists")
 	assert.Nil(t, err)
 	assert.Nil(t, functionFromDB)
 }
@@ -128,7 +130,7 @@ func TestGetFunctionByID(t *testing.T) {
 
 	colonyName := core.GenerateRandomID()
 
-	function1 := &core.Function{FunctionID: core.GenerateRandomID(), ExecutorID: core.GenerateRandomID(), ColonyName: colonyName, FuncName: "testfunc1", Counter: 3, AvgWaitTime: 1.1, AvgExecTime: 0.1}
+	function1 := &core.Function{FunctionID: core.GenerateRandomID(), ExecutorName: core.GenerateRandomID(), ColonyName: colonyName, FuncName: "testfunc1", Counter: 3, AvgWaitTime: 1.1, AvgExecTime: 0.1}
 
 	err = db.AddFunction(function1)
 	assert.Nil(t, err)
@@ -147,12 +149,12 @@ func TestGetFunctionByColonyName(t *testing.T) {
 
 	colonyName := core.GenerateRandomID()
 
-	function1 := &core.Function{FunctionID: core.GenerateRandomID(), ExecutorID: core.GenerateRandomID(), ColonyName: colonyName, FuncName: "testfunc1", AvgWaitTime: 1.1, AvgExecTime: 0.1}
+	function1 := &core.Function{FunctionID: core.GenerateRandomID(), ExecutorName: core.GenerateRandomID(), ColonyName: colonyName, FuncName: "testfunc1", AvgWaitTime: 1.1, AvgExecTime: 0.1}
 
 	err = db.AddFunction(function1)
 	assert.Nil(t, err)
 
-	function2 := &core.Function{FunctionID: core.GenerateRandomID(), ExecutorID: core.GenerateRandomID(), ColonyName: colonyName, FuncName: "testfunc1", AvgWaitTime: 1.1, AvgExecTime: 0.1}
+	function2 := &core.Function{FunctionID: core.GenerateRandomID(), ExecutorName: core.GenerateRandomID(), ColonyName: colonyName, FuncName: "testfunc1", AvgWaitTime: 1.1, AvgExecTime: 0.1}
 
 	err = db.AddFunction(function2)
 	assert.Nil(t, err)
@@ -171,7 +173,7 @@ func TestUpdateFunctionStats(t *testing.T) {
 
 	colonyName := core.GenerateRandomID()
 
-	function1 := &core.Function{FunctionID: core.GenerateRandomID(), ExecutorID: core.GenerateRandomID(), ColonyName: colonyName, FuncName: "testfunc1", Counter: 10, AvgWaitTime: 1.1, AvgExecTime: 0.1}
+	function1 := &core.Function{FunctionID: core.GenerateRandomID(), ExecutorName: core.GenerateRandomID(), ColonyName: colonyName, FuncName: "testfunc1", Counter: 10, AvgWaitTime: 1.1, AvgExecTime: 0.1}
 
 	assert.Equal(t, function1.Counter, 10)
 	assert.Equal(t, function1.AvgWaitTime, 1.1)
@@ -180,10 +182,10 @@ func TestUpdateFunctionStats(t *testing.T) {
 	err = db.AddFunction(function1)
 	assert.Nil(t, err)
 
-	err = db.UpdateFunctionStats(function1.ExecutorID, function1.FuncName, 20, 0.1, 0.2, 0.3, 0.4, 2.0, 2.1)
+	err = db.UpdateFunctionStats(function1.ColonyName, function1.ExecutorName, function1.FuncName, 20, 0.1, 0.2, 0.3, 0.4, 2.0, 2.1)
 	assert.Nil(t, err)
 
-	functions, err := db.GetFunctionsByExecutorID(function1.ExecutorID)
+	functions, err := db.GetFunctionsByExecutorName(function1.ColonyName, function1.ExecutorName)
 	assert.Nil(t, err)
 	assert.Len(t, functions, 1)
 
@@ -204,12 +206,12 @@ func TestDeleteFunctionByExecutorID(t *testing.T) {
 
 	colonyName := core.GenerateRandomID()
 
-	function1 := &core.Function{FunctionID: core.GenerateRandomID(), ExecutorID: core.GenerateRandomID(), ColonyName: colonyName, FuncName: "testfunc1", AvgWaitTime: 1.1, AvgExecTime: 0.1}
+	function1 := &core.Function{FunctionID: core.GenerateRandomID(), ExecutorName: core.GenerateRandomID(), ColonyName: colonyName, FuncName: "testfunc1", AvgWaitTime: 1.1, AvgExecTime: 0.1}
 
 	err = db.AddFunction(function1)
 	assert.Nil(t, err)
 
-	function2 := &core.Function{FunctionID: core.GenerateRandomID(), ExecutorID: core.GenerateRandomID(), ColonyName: colonyName, FuncName: "testfunc2", AvgWaitTime: 1.1, AvgExecTime: 0.1}
+	function2 := &core.Function{FunctionID: core.GenerateRandomID(), ExecutorName: core.GenerateRandomID(), ColonyName: colonyName, FuncName: "testfunc2", AvgWaitTime: 1.1, AvgExecTime: 0.1}
 
 	err = db.AddFunction(function2)
 	assert.Nil(t, err)
@@ -217,7 +219,7 @@ func TestDeleteFunctionByExecutorID(t *testing.T) {
 	functions, err := db.GetFunctionsByColonyName(colonyName)
 	assert.Len(t, functions, 2)
 
-	err = db.DeleteFunctionsByExecutorID(function1.ExecutorID)
+	err = db.DeleteFunctionsByExecutorName(function1.ColonyName, function1.ExecutorName)
 	assert.Nil(t, err)
 
 	functions, err = db.GetFunctionsByColonyName(colonyName)
@@ -231,14 +233,14 @@ func TestDeleteFunctionByID(t *testing.T) {
 	defer db.Close()
 
 	colonyName := core.GenerateRandomID()
-	executorID := core.GenerateRandomID()
+	executorName := core.GenerateRandomID()
 
-	function1 := &core.Function{FunctionID: core.GenerateRandomID(), ExecutorID: executorID, ColonyName: colonyName, FuncName: "testfunc1", AvgWaitTime: 1.1, AvgExecTime: 0.1}
+	function1 := &core.Function{FunctionID: core.GenerateRandomID(), ExecutorName: executorName, ColonyName: colonyName, FuncName: "testfunc1", AvgWaitTime: 1.1, AvgExecTime: 0.1}
 
 	err = db.AddFunction(function1)
 	assert.Nil(t, err)
 
-	function2 := &core.Function{FunctionID: core.GenerateRandomID(), ExecutorID: executorID, ColonyName: colonyName, FuncName: "testfunc2", AvgWaitTime: 1.1, AvgExecTime: 0.1}
+	function2 := &core.Function{FunctionID: core.GenerateRandomID(), ExecutorName: executorName, ColonyName: colonyName, FuncName: "testfunc2", AvgWaitTime: 1.1, AvgExecTime: 0.1}
 
 	err = db.AddFunction(function2)
 	assert.Nil(t, err)
@@ -261,14 +263,14 @@ func TestDeleteFunctionByName(t *testing.T) {
 	defer db.Close()
 
 	colonyName := core.GenerateRandomID()
-	executorID := core.GenerateRandomID()
+	executorName := core.GenerateRandomID()
 
-	function1 := &core.Function{FunctionID: core.GenerateRandomID(), ExecutorID: executorID, ColonyName: colonyName, FuncName: "testfunc1", AvgWaitTime: 1.1, AvgExecTime: 0.1}
+	function1 := &core.Function{FunctionID: core.GenerateRandomID(), ExecutorName: executorName, ColonyName: colonyName, FuncName: "testfunc1", AvgWaitTime: 1.1, AvgExecTime: 0.1}
 
 	err = db.AddFunction(function1)
 	assert.Nil(t, err)
 
-	function2 := &core.Function{FunctionID: core.GenerateRandomID(), ExecutorID: executorID, ColonyName: colonyName, FuncName: "testfunc2", AvgWaitTime: 1.1, AvgExecTime: 0.1}
+	function2 := &core.Function{FunctionID: core.GenerateRandomID(), ExecutorName: executorName, ColonyName: colonyName, FuncName: "testfunc2", AvgWaitTime: 1.1, AvgExecTime: 0.1}
 
 	err = db.AddFunction(function2)
 	assert.Nil(t, err)
@@ -276,7 +278,7 @@ func TestDeleteFunctionByName(t *testing.T) {
 	functions, err := db.GetFunctionsByColonyName(colonyName)
 	assert.Len(t, functions, 2)
 
-	err = db.DeleteFunctionByName(function1.ExecutorID, "testfunc1")
+	err = db.DeleteFunctionByName(function1.ColonyName, function1.ExecutorName, "testfunc1")
 	assert.Nil(t, err)
 
 	functions, err = db.GetFunctionsByColonyName(colonyName)
@@ -293,17 +295,17 @@ func TestDeleteFunctionByColonyName(t *testing.T) {
 	colonyName1 := core.GenerateRandomID()
 	colonyName2 := core.GenerateRandomID()
 
-	function1 := &core.Function{FunctionID: core.GenerateRandomID(), ExecutorID: core.GenerateRandomID(), ColonyName: colonyName1, FuncName: "testfunc1", AvgWaitTime: 1.1, AvgExecTime: 0.1}
+	function1 := &core.Function{FunctionID: core.GenerateRandomID(), ExecutorName: core.GenerateRandomID(), ColonyName: colonyName1, FuncName: "testfunc1", AvgWaitTime: 1.1, AvgExecTime: 0.1}
 
 	err = db.AddFunction(function1)
 	assert.Nil(t, err)
 
-	function2 := &core.Function{FunctionID: core.GenerateRandomID(), ExecutorID: core.GenerateRandomID(), ColonyName: colonyName1, FuncName: "testfunc2", AvgWaitTime: 1.1, AvgExecTime: 0.1}
+	function2 := &core.Function{FunctionID: core.GenerateRandomID(), ExecutorName: core.GenerateRandomID(), ColonyName: colonyName1, FuncName: "testfunc2", AvgWaitTime: 1.1, AvgExecTime: 0.1}
 
 	err = db.AddFunction(function2)
 	assert.Nil(t, err)
 
-	function3 := &core.Function{FunctionID: core.GenerateRandomID(), ExecutorID: core.GenerateRandomID(), ColonyName: colonyName2, FuncName: "testfunc3", AvgWaitTime: 1.1, AvgExecTime: 0.1}
+	function3 := &core.Function{FunctionID: core.GenerateRandomID(), ExecutorName: core.GenerateRandomID(), ColonyName: colonyName2, FuncName: "testfunc3", AvgWaitTime: 1.1, AvgExecTime: 0.1}
 
 	err = db.AddFunction(function3)
 	assert.Nil(t, err)
@@ -333,17 +335,17 @@ func TestDeleteFunctions(t *testing.T) {
 	colonyName1 := core.GenerateRandomID()
 	colonyName2 := core.GenerateRandomID()
 
-	function1 := &core.Function{FunctionID: core.GenerateRandomID(), ExecutorID: core.GenerateRandomID(), ColonyName: colonyName1, FuncName: "testfunc1", AvgWaitTime: 1.1, AvgExecTime: 0.1}
+	function1 := &core.Function{FunctionID: core.GenerateRandomID(), ExecutorName: core.GenerateRandomID(), ColonyName: colonyName1, FuncName: "testfunc1", AvgWaitTime: 1.1, AvgExecTime: 0.1}
 
 	err = db.AddFunction(function1)
 	assert.Nil(t, err)
 
-	function2 := &core.Function{FunctionID: core.GenerateRandomID(), ExecutorID: core.GenerateRandomID(), ColonyName: colonyName1, FuncName: "testfunc2", AvgWaitTime: 1.1, AvgExecTime: 0.1}
+	function2 := &core.Function{FunctionID: core.GenerateRandomID(), ExecutorName: core.GenerateRandomID(), ColonyName: colonyName1, FuncName: "testfunc2", AvgWaitTime: 1.1, AvgExecTime: 0.1}
 
 	err = db.AddFunction(function2)
 	assert.Nil(t, err)
 
-	function3 := &core.Function{FunctionID: core.GenerateRandomID(), ExecutorID: core.GenerateRandomID(), ColonyName: colonyName2, FuncName: "testfunc3", AvgWaitTime: 1.1, AvgExecTime: 0.1}
+	function3 := &core.Function{FunctionID: core.GenerateRandomID(), ExecutorName: core.GenerateRandomID(), ColonyName: colonyName2, FuncName: "testfunc3", AvgWaitTime: 1.1, AvgExecTime: 0.1}
 
 	err = db.AddFunction(function3)
 	assert.Nil(t, err)

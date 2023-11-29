@@ -7,8 +7,8 @@ import (
 )
 
 func (db *PQDatabase) AddFunction(function *core.Function) error {
-	sqlStatement := `INSERT INTO  ` + db.dbPrefix + `FUNCTIONS (FUNCTION_ID, EXECUTOR_ID, COLONY_NAME, FUNCNAME, COUNTER, MINWAITTIME, MAXWAITTIME, MINEXECTIME, MAXEXECTIME, AVGWAITTIME, AVGEXECTIME) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`
-	_, err := db.postgresql.Exec(sqlStatement, function.FunctionID, function.ExecutorID, function.ColonyName, function.FuncName, function.Counter, function.MinWaitTime, function.MaxWaitTime, function.MinExecTime, function.MaxExecTime, function.AvgWaitTime, function.AvgExecTime)
+	sqlStatement := `INSERT INTO  ` + db.dbPrefix + `FUNCTIONS (FUNCTION_ID, EXECUTOR_NAME, COLONY_NAME, FUNCNAME, COUNTER, MINWAITTIME, MAXWAITTIME, MINEXECTIME, MAXEXECTIME, AVGWAITTIME, AVGEXECTIME) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`
+	_, err := db.postgresql.Exec(sqlStatement, function.FunctionID, function.ExecutorName, function.ColonyName, function.FuncName, function.Counter, function.MinWaitTime, function.MaxWaitTime, function.MinExecTime, function.MaxExecTime, function.AvgWaitTime, function.AvgExecTime)
 	if err != nil {
 		return err
 	}
@@ -63,9 +63,9 @@ func (db *PQDatabase) GetFunctionByID(functionID string) (*core.Function, error)
 	return functions[0], nil
 }
 
-func (db *PQDatabase) GetFunctionsByExecutorID(executorID string) ([]*core.Function, error) {
-	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `FUNCTIONS WHERE EXECUTOR_ID=$1`
-	rows, err := db.postgresql.Query(sqlStatement, executorID)
+func (db *PQDatabase) GetFunctionsByExecutorName(colonyName string, executorID string) ([]*core.Function, error) {
+	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `FUNCTIONS WHERE COLONY_NAME=$1 AND EXECUTOR_NAME=$2`
+	rows, err := db.postgresql.Query(sqlStatement, colonyName, executorID)
 	if err != nil {
 		return nil, err
 	}
@@ -80,9 +80,9 @@ func (db *PQDatabase) GetFunctionsByExecutorID(executorID string) ([]*core.Funct
 	return functions, nil
 }
 
-func (db *PQDatabase) GetFunctionsByExecutorIDAndName(executorID string, name string) (*core.Function, error) {
-	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `FUNCTIONS WHERE EXECUTOR_ID=$1 AND FUNCNAME=$2`
-	rows, err := db.postgresql.Query(sqlStatement, executorID, name)
+func (db *PQDatabase) GetFunctionsByExecutorAndName(colonyName string, executorName string, name string) (*core.Function, error) {
+	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `FUNCTIONS WHERE COLONY_NAME=$1 AND EXECUTOR_NAME=$2 AND FUNCNAME=$3`
+	rows, err := db.postgresql.Query(sqlStatement, colonyName, executorName, name)
 	if err != nil {
 		return nil, err
 	}
@@ -113,7 +113,9 @@ func (db *PQDatabase) GetFunctionsByColonyName(colonyName string) ([]*core.Funct
 	return db.parseFunctions(rows)
 }
 
-func (db *PQDatabase) UpdateFunctionStats(executorID string,
+func (db *PQDatabase) UpdateFunctionStats(
+	colonyName string,
+	executorName string,
 	name string,
 	counter int,
 	minWaitTime float64,
@@ -122,8 +124,8 @@ func (db *PQDatabase) UpdateFunctionStats(executorID string,
 	maxExecTime float64,
 	avgWaitTime float64,
 	avgExecTime float64) error {
-	sqlStatement := `UPDATE ` + db.dbPrefix + `FUNCTIONS SET COUNTER=$1, MINWAITTIME=$2, MAXWAITTIME=$3, MINEXECTIME=$4, MAXEXECTIME=$5, AVGWAITTIME=$6, AVGEXECTIME=$7 WHERE EXECUTOR_ID=$8 AND FUNCNAME=$9`
-	_, err := db.postgresql.Exec(sqlStatement, counter, minWaitTime, maxWaitTime, minExecTime, maxExecTime, avgWaitTime, avgExecTime, executorID, name)
+	sqlStatement := `UPDATE ` + db.dbPrefix + `FUNCTIONS SET COUNTER=$1, MINWAITTIME=$2, MAXWAITTIME=$3, MINEXECTIME=$4, MAXEXECTIME=$5, AVGWAITTIME=$6, AVGEXECTIME=$7 WHERE EXECUTOR_NAME=$8 AND FUNCNAME=$9 AND COLONY_NAME=$10`
+	_, err := db.postgresql.Exec(sqlStatement, counter, minWaitTime, maxWaitTime, minExecTime, maxExecTime, avgWaitTime, avgExecTime, executorName, name, colonyName)
 	if err != nil {
 		return err
 	}
@@ -141,9 +143,9 @@ func (db *PQDatabase) DeleteFunctionByID(functionID string) error {
 	return nil
 }
 
-func (db *PQDatabase) DeleteFunctionByName(executorID string, name string) error {
-	sqlStatement := `DELETE FROM ` + db.dbPrefix + `FUNCTIONS WHERE EXECUTOR_ID=$1 AND FUNCNAME=$2`
-	_, err := db.postgresql.Exec(sqlStatement, executorID, name)
+func (db *PQDatabase) DeleteFunctionByName(colonyName string, executorName string, name string) error {
+	sqlStatement := `DELETE FROM ` + db.dbPrefix + `FUNCTIONS WHERE COLONY_NAME=$1 AND EXECUTOR_NAME=$2 AND FUNCNAME=$3`
+	_, err := db.postgresql.Exec(sqlStatement, colonyName, executorName, name)
 	if err != nil {
 		return err
 	}
@@ -151,9 +153,9 @@ func (db *PQDatabase) DeleteFunctionByName(executorID string, name string) error
 	return nil
 }
 
-func (db *PQDatabase) DeleteFunctionsByExecutorID(executorID string) error {
-	sqlStatement := `DELETE FROM ` + db.dbPrefix + `FUNCTIONS WHERE EXECUTOR_ID=$1`
-	_, err := db.postgresql.Exec(sqlStatement, executorID)
+func (db *PQDatabase) DeleteFunctionsByExecutorName(colonyName string, executorName string) error {
+	sqlStatement := `DELETE FROM ` + db.dbPrefix + `FUNCTIONS WHERE COLONY_NAME=$1 AND EXECUTOR_NAME=$2`
+	_, err := db.postgresql.Exec(sqlStatement, colonyName, executorName)
 	if err != nil {
 		return err
 	}

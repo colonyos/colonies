@@ -346,7 +346,7 @@ func TestDeleteExecutorMoveBackToQueue(t *testing.T) {
 	err = db.AddExecutor(executor1)
 	assert.Nil(t, err)
 
-	function := &core.Function{FunctionID: core.GenerateRandomID(), ExecutorID: executor1.ID, ColonyName: colony.Name, FuncName: "testfunc3", AvgWaitTime: 1.1, AvgExecTime: 0.1}
+	function := &core.Function{FunctionID: core.GenerateRandomID(), ExecutorName: executor1.Name, ColonyName: colony.Name, FuncName: "testfunc3", AvgWaitTime: 1.1, AvgExecTime: 0.1}
 	err = db.AddFunction(function)
 	assert.Nil(t, err)
 
@@ -354,7 +354,7 @@ func TestDeleteExecutorMoveBackToQueue(t *testing.T) {
 	err = db.AddExecutor(executor2)
 	assert.Nil(t, err)
 
-	function = &core.Function{FunctionID: core.GenerateRandomID(), ExecutorID: executor2.ID, ColonyName: colony.Name, FuncName: "testfunc3", AvgWaitTime: 1.1, AvgExecTime: 0.1}
+	function = &core.Function{FunctionID: core.GenerateRandomID(), ExecutorName: executor2.Name, ColonyName: colony.Name, FuncName: "testfunc3", AvgWaitTime: 1.1, AvgExecTime: 0.1}
 	err = db.AddFunction(function)
 	assert.Nil(t, err)
 
@@ -583,7 +583,7 @@ func TestDeleteExecutors(t *testing.T) {
 	err = db.AddExecutor(executor1)
 	assert.Nil(t, err)
 
-	function := &core.Function{FunctionID: core.GenerateRandomID(), ExecutorID: executor1.ID, ColonyName: colony1.Name, FuncName: "testfunc3", AvgWaitTime: 1.1, AvgExecTime: 0.1}
+	function := &core.Function{FunctionID: core.GenerateRandomID(), ExecutorName: executor1.Name, ColonyName: colony1.Name, FuncName: "testfunc3", AvgWaitTime: 1.1, AvgExecTime: 0.1}
 	err = db.AddFunction(function)
 	assert.Nil(t, err)
 
@@ -591,7 +591,7 @@ func TestDeleteExecutors(t *testing.T) {
 	err = db.AddExecutor(executor2)
 	assert.Nil(t, err)
 
-	function = &core.Function{FunctionID: core.GenerateRandomID(), ExecutorID: executor2.ID, ColonyName: colony1.Name, FuncName: "testfunc3", AvgWaitTime: 1.1, AvgExecTime: 0.1}
+	function = &core.Function{FunctionID: core.GenerateRandomID(), ExecutorName: executor2.Name, ColonyName: colony1.Name, FuncName: "testfunc3", AvgWaitTime: 1.1, AvgExecTime: 0.1}
 	err = db.AddFunction(function)
 	assert.Nil(t, err)
 
@@ -599,7 +599,7 @@ func TestDeleteExecutors(t *testing.T) {
 	err = db.AddExecutor(executor3)
 	assert.Nil(t, err)
 
-	function = &core.Function{FunctionID: core.GenerateRandomID(), ExecutorID: executor3.ID, ColonyName: colony2.Name, FuncName: "testfunc3", AvgWaitTime: 1.1, AvgExecTime: 0.1}
+	function = &core.Function{FunctionID: core.GenerateRandomID(), ExecutorName: executor3.Name, ColonyName: colony2.Name, FuncName: "testfunc3", AvgWaitTime: 1.1, AvgExecTime: 0.1}
 	err = db.AddFunction(function)
 	assert.Nil(t, err)
 
