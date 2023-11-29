@@ -172,7 +172,7 @@ var syncCmd = &cobra.Command{
 		CheckError(err)
 
 		log.Debug("Starting a file storage client")
-		fsClient, err := fs.CreateFSClient(client, ColonyID, PrvKey)
+		fsClient, err := fs.CreateFSClient(client, ColonyName, PrvKey)
 		CheckError(err)
 
 		syncPlans, err := fsClient.CalcSyncPlans(SyncDir, Label, KeepLocal)
@@ -195,7 +195,7 @@ var syncCmd = &cobra.Command{
 		} else {
 			if Yes {
 				for _, syncPlan := range syncPlans {
-					err = fsClient.ApplySyncPlan(ColonyID, syncPlan)
+					err = fsClient.ApplySyncPlan(ColonyName, syncPlan)
 					CheckError(err)
 				}
 			} else {
@@ -205,7 +205,7 @@ var syncCmd = &cobra.Command{
 				reply, _ := reader.ReadString('\n')
 				if reply == "yes\n" || reply == "y\n" {
 					for _, syncPlan := range syncPlans {
-						err = fsClient.ApplySyncPlan(ColonyID, syncPlan)
+						err = fsClient.ApplySyncPlan(ColonyName, syncPlan)
 						CheckError(err)
 					}
 				}
@@ -227,7 +227,7 @@ var listLabelsCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		client := setup()
 
-		coloniesLabels, err := client.GetFileLabels(ColonyID, PrvKey)
+		coloniesLabels, err := client.GetFileLabels(ColonyName, PrvKey)
 		CheckError(err)
 
 		if len(coloniesLabels) > 0 {
@@ -256,7 +256,7 @@ var removeLabelCmd = &cobra.Command{
 		client := setup()
 
 		log.Debug("Starting a file storage client")
-		fsClient, err := fs.CreateFSClient(client, ColonyID, PrvKey)
+		fsClient, err := fs.CreateFSClient(client, ColonyName, PrvKey)
 		CheckError(err)
 
 		if Yes {
@@ -291,7 +291,7 @@ var listFilesCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		client := setup()
 
-		filenames, err := client.GetFilenames(ColonyID, Label, PrvKey)
+		filenames, err := client.GetFilenames(ColonyName, Label, PrvKey)
 		CheckError(err)
 
 		if len(filenames) == 0 {
@@ -301,10 +301,10 @@ var listFilesCmd = &cobra.Command{
 
 		var fi []fileInfo
 		for _, filename := range filenames {
-			coloniesFile, err := client.GetLatestFileByName(ColonyID, Label, filename, PrvKey)
+			coloniesFile, err := client.GetLatestFileByName(ColonyName, Label, filename, PrvKey)
 			CheckError(err)
 
-			allRevisions, err := client.GetFileByName(ColonyID, Label, filename, PrvKey)
+			allRevisions, err := client.GetFileByName(ColonyName, Label, filename, PrvKey)
 			CheckError(err)
 
 			if len(coloniesFile) != 1 {
@@ -367,10 +367,10 @@ var getFileInfoCmd = &cobra.Command{
 		var err error
 		var coloniesFiles []*core.File
 		if FileID != "" {
-			coloniesFiles, err = client.GetFileByID(ColonyID, FileID, PrvKey)
+			coloniesFiles, err = client.GetFileByID(ColonyName, FileID, PrvKey)
 			CheckError(err)
 		} else if Filename != "" && Label != "" {
-			coloniesFiles, err = client.GetFileByName(ColonyID, Label, Filename, PrvKey)
+			coloniesFiles, err = client.GetFileByName(ColonyName, Label, Filename, PrvKey)
 			CheckError(err)
 		} else {
 			CheckError(errors.New("FileId nor filename + label were specified"))
@@ -401,11 +401,11 @@ var getFileCmd = &cobra.Command{
 		var err error
 		var coloniesFiles []*core.File
 		if FileID != "" {
-			coloniesFiles, err = client.GetFileByID(ColonyID, FileID, PrvKey)
+			coloniesFiles, err = client.GetFileByID(ColonyName, FileID, PrvKey)
 			CheckError(err)
 		} else if Filename != "" && Label != "" {
 			fmt.Println(Label)
-			coloniesFiles, err = client.GetLatestFileByName(ColonyID, Label, Filename, PrvKey)
+			coloniesFiles, err = client.GetLatestFileByName(ColonyName, Label, Filename, PrvKey)
 			CheckError(err)
 		} else {
 			CheckError(errors.New("FileId nor filename + label were specified"))
@@ -421,10 +421,10 @@ var getFileCmd = &cobra.Command{
 		}
 
 		log.Debug("Starting a file storage client")
-		fsClient, err := fs.CreateFSClient(client, ColonyID, PrvKey)
+		fsClient, err := fs.CreateFSClient(client, ColonyName, PrvKey)
 		CheckError(err)
 
-		err = fsClient.Download(ColonyID, coloniesFiles[0].ID, DownloadDir)
+		err = fsClient.Download(ColonyName, coloniesFiles[0].ID, DownloadDir)
 		CheckError(err)
 
 		log.WithFields(log.Fields{"DownloadDir": DownloadDir, FileID: Insecure}).Debug("Downloaded file")
@@ -439,15 +439,15 @@ var removeFileCmd = &cobra.Command{
 		client := setup()
 
 		log.Debug("Starting a file storage client")
-		fsClient, err := fs.CreateFSClient(client, ColonyID, PrvKey)
+		fsClient, err := fs.CreateFSClient(client, ColonyName, PrvKey)
 		CheckError(err)
 
 		if FileID != "" {
-			err = fsClient.RemoveFileByID(ColonyID, FileID)
+			err = fsClient.RemoveFileByID(ColonyName, FileID)
 			CheckError(err)
 		} else if Filename != "" && Label != "" {
 			fmt.Println(Label)
-			err = fsClient.RemoveFileByName(ColonyID, Label, Filename)
+			err = fsClient.RemoveFileByName(ColonyName, Label, Filename)
 			CheckError(err)
 		} else {
 			CheckError(errors.New("FileId nor filename + label were specified"))
@@ -476,7 +476,7 @@ func printSnapshot(snapshot *core.Snapshot, client *client.ColoniesClient) {
 		fmt.Println()
 		var fileIDData [][]string
 		for _, fileID := range snapshot.FileIDs {
-			revision, err := client.GetFileByID(ColonyID, fileID, PrvKey)
+			revision, err := client.GetFileByID(ColonyName, fileID, PrvKey)
 			CheckError(err)
 			if len(revision) != 1 {
 				CheckError(errors.New("Expected only one revision"))
@@ -509,7 +509,7 @@ var createSnapshotCmd = &cobra.Command{
 			Label = "/" + Label
 		}
 
-		snapshot, err := client.CreateSnapshot(ColonyID, Label, SnapshotName, PrvKey)
+		snapshot, err := client.CreateSnapshot(ColonyName, Label, SnapshotName, PrvKey)
 		CheckError(err)
 
 		log.WithFields(log.Fields{"Label": Label, "SnapshotName": SnapshotName}).Info("Snapshot created")
@@ -526,7 +526,7 @@ var downloadSnapshotCmd = &cobra.Command{
 		client := setup()
 
 		log.Debug("Starting a file storage client")
-		fsClient, err := fs.CreateFSClient(client, ColonyID, PrvKey)
+		fsClient, err := fs.CreateFSClient(client, ColonyName, PrvKey)
 		CheckError(err)
 
 		err = os.MkdirAll(DownloadDir, 0755)
@@ -542,7 +542,7 @@ var downloadSnapshotCmd = &cobra.Command{
 			CheckError(err)
 			log.WithFields(log.Fields{"SnapshotId": SnapshotID, "DownloadDir": DownloadDir}).Debug("Download snapshot")
 		} else if SnapshotName != "" {
-			snapshot, err := client.GetSnapshotByName(ColonyID, SnapshotName, PrvKey)
+			snapshot, err := client.GetSnapshotByName(ColonyName, SnapshotName, PrvKey)
 			CheckError(err)
 			err = fsClient.DownloadSnapshot(snapshot.ID, DownloadDir)
 			CheckError(err)
@@ -589,11 +589,11 @@ var infoSnapshotCmd = &cobra.Command{
 		client := setup()
 
 		if SnapshotID != "" {
-			snapshot, err := client.GetSnapshotByID(ColonyID, SnapshotID, PrvKey)
+			snapshot, err := client.GetSnapshotByID(ColonyName, SnapshotID, PrvKey)
 			CheckError(err)
 			printSnapshot(snapshot, client)
 		} else if SnapshotName != "" {
-			snapshot, err := client.GetSnapshotByName(ColonyID, SnapshotName, PrvKey)
+			snapshot, err := client.GetSnapshotByName(ColonyName, SnapshotName, PrvKey)
 			CheckError(err)
 			printSnapshot(snapshot, client)
 		} else {
@@ -611,11 +611,11 @@ var removeSnapshotCmd = &cobra.Command{
 
 		var err error
 		if SnapshotID != "" {
-			err = client.DeleteSnapshotByID(ColonyID, SnapshotID, PrvKey)
+			err = client.DeleteSnapshotByID(ColonyName, SnapshotID, PrvKey)
 			CheckError(err)
 			log.WithFields(log.Fields{"SnapshotId": SnapshotID}).Info("Snapshot removed")
 		} else if SnapshotName != "" {
-			err = client.DeleteSnapshotByName(ColonyID, SnapshotName, PrvKey)
+			err = client.DeleteSnapshotByName(ColonyName, SnapshotName, PrvKey)
 			CheckError(err)
 			log.WithFields(log.Fields{"SnapshotName": SnapshotName}).Info("Snapshot removed")
 		} else {
