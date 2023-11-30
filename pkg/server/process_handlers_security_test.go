@@ -266,7 +266,7 @@ func TestGetProcessSecurity(t *testing.T) {
 	<-done
 }
 
-func TestDeleteProcessSecurity(t *testing.T) {
+func TestRemoveProcessSecurity(t *testing.T) {
 	env, client, server, _, done := setupTestEnv1(t)
 
 	// The setup looks like this:
@@ -277,23 +277,23 @@ func TestDeleteProcessSecurity(t *testing.T) {
 	addedProcess, err := client.Submit(funcSpec, env.executor1PrvKey)
 	assert.Nil(t, err)
 
-	err = client.DeleteProcess(addedProcess.ID, env.executor2PrvKey)
+	err = client.RemoveProcess(addedProcess.ID, env.executor2PrvKey)
 	assert.NotNil(t, err) // Should not work
 
-	err = client.DeleteProcess(addedProcess.ID, env.colony1PrvKey)
+	err = client.RemoveProcess(addedProcess.ID, env.colony1PrvKey)
 	assert.NotNil(t, err) // Should not work
 
-	err = client.DeleteProcess(addedProcess.ID, env.colony2PrvKey)
+	err = client.RemoveProcess(addedProcess.ID, env.colony2PrvKey)
 	assert.NotNil(t, err) // Should not work
 
-	err = client.DeleteProcess(addedProcess.ID, env.executor1PrvKey)
+	err = client.RemoveProcess(addedProcess.ID, env.executor1PrvKey)
 	assert.Nil(t, err) // Should work
 
 	server.Shutdown()
 	<-done
 }
 
-func TestDeleteAllProcessSecurity(t *testing.T) {
+func TestRemoveAllProcessSecurity(t *testing.T) {
 	env, client, server, _, done := setupTestEnv1(t)
 
 	// The setup looks like this:
@@ -304,16 +304,16 @@ func TestDeleteAllProcessSecurity(t *testing.T) {
 	_, err := client.Submit(funcSpec, env.executor1PrvKey)
 	assert.Nil(t, err)
 
-	err = client.DeleteAllProcesses(env.colony1Name, env.executor2PrvKey)
+	err = client.RemoveAllProcesses(env.colony1Name, env.executor2PrvKey)
 	assert.NotNil(t, err) // Should not work
 
-	err = client.DeleteAllProcesses(env.colony1Name, env.executor1PrvKey)
+	err = client.RemoveAllProcesses(env.colony1Name, env.executor1PrvKey)
 	assert.NotNil(t, err) // Should not work
 
-	err = client.DeleteAllProcesses(env.colony1Name, env.colony2PrvKey)
+	err = client.RemoveAllProcesses(env.colony1Name, env.colony2PrvKey)
 	assert.NotNil(t, err) // Should not work
 
-	err = client.DeleteAllProcesses(env.colony1Name, env.colony1PrvKey)
+	err = client.RemoveAllProcesses(env.colony1Name, env.colony1PrvKey)
 	assert.Nil(t, err) // Shoul dwork
 
 	server.Shutdown()

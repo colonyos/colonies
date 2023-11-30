@@ -474,7 +474,7 @@ func (db *PQDatabase) FindUnassignedProcesses(colonyName string, executorID stri
 	return matches, nil
 }
 
-func (db *PQDatabase) DeleteProcessByID(processID string) error {
+func (db *PQDatabase) RemoveProcessByID(processID string) error {
 	sqlStatement := `DELETE FROM ` + db.dbPrefix + `PROCESSES WHERE PROCESS_ID=$1`
 	_, err := db.postgresql.Exec(sqlStatement, processID)
 	if err != nil {
@@ -482,7 +482,7 @@ func (db *PQDatabase) DeleteProcessByID(processID string) error {
 	}
 
 	// TODO test this code
-	err = db.DeleteAllAttributesByTargetID(processID)
+	err = db.RemoveAllAttributesByTargetID(processID)
 	if err != nil {
 		return err
 	}
@@ -490,14 +490,14 @@ func (db *PQDatabase) DeleteProcessByID(processID string) error {
 	return nil
 }
 
-func (db *PQDatabase) DeleteAllProcesses() error {
+func (db *PQDatabase) RemoveAllProcesses() error {
 	sqlStatement := `DELETE FROM ` + db.dbPrefix + `PROCESSES`
 	_, err := db.postgresql.Exec(sqlStatement)
 	if err != nil {
 		return err
 	}
 
-	err = db.DeleteAllAttributes()
+	err = db.RemoveAllAttributes()
 	if err != nil {
 		return err
 	}
@@ -505,14 +505,14 @@ func (db *PQDatabase) DeleteAllProcesses() error {
 	return nil
 }
 
-func (db *PQDatabase) DeleteAllWaitingProcessesByColonyName(colonyName string) error {
+func (db *PQDatabase) RemoveAllWaitingProcessesByColonyName(colonyName string) error {
 	sqlStatement := `DELETE FROM ` + db.dbPrefix + `PROCESSES WHERE TARGET_COLONY_NAME=$1 AND PROCESSGRAPH_ID=$2 AND STATE=$3`
 	_, err := db.postgresql.Exec(sqlStatement, colonyName, "", core.WAITING)
 	if err != nil {
 		return err
 	}
 
-	err = db.DeleteAllAttributesByColonyNameWithState(colonyName, core.WAITING)
+	err = db.RemoveAllAttributesByColonyNameWithState(colonyName, core.WAITING)
 	if err != nil {
 		return err
 	}
@@ -520,14 +520,14 @@ func (db *PQDatabase) DeleteAllWaitingProcessesByColonyName(colonyName string) e
 	return nil
 }
 
-func (db *PQDatabase) DeleteAllRunningProcessesByColonyName(colonyName string) error {
+func (db *PQDatabase) RemoveAllRunningProcessesByColonyName(colonyName string) error {
 	sqlStatement := `DELETE FROM ` + db.dbPrefix + `PROCESSES WHERE TARGET_COLONY_NAME=$1 AND PROCESSGRAPH_ID=$2 AND STATE=$3`
 	_, err := db.postgresql.Exec(sqlStatement, colonyName, "", core.RUNNING)
 	if err != nil {
 		return err
 	}
 
-	err = db.DeleteAllAttributesByColonyNameWithState(colonyName, core.RUNNING)
+	err = db.RemoveAllAttributesByColonyNameWithState(colonyName, core.RUNNING)
 	if err != nil {
 		return err
 	}
@@ -535,14 +535,14 @@ func (db *PQDatabase) DeleteAllRunningProcessesByColonyName(colonyName string) e
 	return nil
 }
 
-func (db *PQDatabase) DeleteAllSuccessfulProcessesByColonyName(colonyName string) error {
+func (db *PQDatabase) RemoveAllSuccessfulProcessesByColonyName(colonyName string) error {
 	sqlStatement := `DELETE FROM ` + db.dbPrefix + `PROCESSES WHERE TARGET_COLONY_NAME=$1 AND PROCESSGRAPH_ID=$2 AND STATE=$3`
 	_, err := db.postgresql.Exec(sqlStatement, colonyName, "", core.SUCCESS)
 	if err != nil {
 		return err
 	}
 
-	err = db.DeleteAllAttributesByColonyNameWithState(colonyName, core.SUCCESS)
+	err = db.RemoveAllAttributesByColonyNameWithState(colonyName, core.SUCCESS)
 	if err != nil {
 		return err
 	}
@@ -550,14 +550,14 @@ func (db *PQDatabase) DeleteAllSuccessfulProcessesByColonyName(colonyName string
 	return nil
 }
 
-func (db *PQDatabase) DeleteAllFailedProcessesByColonyName(colonyName string) error {
+func (db *PQDatabase) RemoveAllFailedProcessesByColonyName(colonyName string) error {
 	sqlStatement := `DELETE FROM ` + db.dbPrefix + `PROCESSES WHERE TARGET_COLONY_NAME=$1 AND PROCESSGRAPH_ID=$2 AND STATE=$3`
 	_, err := db.postgresql.Exec(sqlStatement, colonyName, "", core.FAILED)
 	if err != nil {
 		return err
 	}
 
-	err = db.DeleteAllAttributesByColonyNameWithState(colonyName, core.FAILED)
+	err = db.RemoveAllAttributesByColonyNameWithState(colonyName, core.FAILED)
 	if err != nil {
 		return err
 	}
@@ -565,14 +565,14 @@ func (db *PQDatabase) DeleteAllFailedProcessesByColonyName(colonyName string) er
 	return nil
 }
 
-func (db *PQDatabase) DeleteAllProcessesByColonyName(colonyName string) error {
+func (db *PQDatabase) RemoveAllProcessesByColonyName(colonyName string) error {
 	sqlStatement := `DELETE FROM ` + db.dbPrefix + `PROCESSES WHERE TARGET_COLONY_NAME=$1 AND PROCESSGRAPH_ID=$2`
 	_, err := db.postgresql.Exec(sqlStatement, colonyName, "")
 	if err != nil {
 		return err
 	}
 
-	err = db.DeleteAllAttributesByColonyName(colonyName)
+	err = db.RemoveAllAttributesByColonyName(colonyName)
 	if err != nil {
 		return err
 	}
@@ -580,14 +580,14 @@ func (db *PQDatabase) DeleteAllProcessesByColonyName(colonyName string) error {
 	return nil
 }
 
-func (db *PQDatabase) DeleteAllProcessesByProcessGraphID(processGraphID string) error {
+func (db *PQDatabase) RemoveAllProcessesByProcessGraphID(processGraphID string) error {
 	sqlStatement := `DELETE FROM ` + db.dbPrefix + `PROCESSES WHERE PROCESSGRAPH_ID=$1`
 	_, err := db.postgresql.Exec(sqlStatement, processGraphID)
 	if err != nil {
 		return err
 	}
 
-	err = db.DeleteAllAttributesByProcessGraphID(processGraphID)
+	err = db.RemoveAllAttributesByProcessGraphID(processGraphID)
 	if err != nil {
 		return err
 	}
@@ -595,8 +595,8 @@ func (db *PQDatabase) DeleteAllProcessesByProcessGraphID(processGraphID string) 
 	return nil
 }
 
-func (db *PQDatabase) DeleteAllProcessesInProcessGraphsByColonyName(colonyName string) error {
-	err := db.DeleteAllAttributesInProcessGraphsByColonyName(colonyName)
+func (db *PQDatabase) RemoveAllProcessesInProcessGraphsByColonyName(colonyName string) error {
+	err := db.RemoveAllAttributesInProcessGraphsByColonyName(colonyName)
 	if err != nil {
 		return err
 	}
@@ -610,8 +610,8 @@ func (db *PQDatabase) DeleteAllProcessesInProcessGraphsByColonyName(colonyName s
 	return nil
 }
 
-func (db *PQDatabase) DeleteAllProcessesInProcessGraphsByColonyNameWithState(colonyName string, state int) error {
-	err := db.DeleteAllAttributesInProcessGraphsByColonyNameWithState(colonyName, state)
+func (db *PQDatabase) RemoveAllProcessesInProcessGraphsByColonyNameWithState(colonyName string, state int) error {
+	err := db.RemoveAllAttributesInProcessGraphsByColonyNameWithState(colonyName, state)
 	if err != nil {
 		return err
 	}

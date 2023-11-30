@@ -40,10 +40,10 @@ func TestExecutorClosedDB(t *testing.T) {
 	err = db.MarkAlive(executor)
 	assert.NotNil(t, err)
 
-	err = db.DeleteExecutorByID("invalid_id")
+	err = db.RemoveExecutorByName("invalid_colony_name", "invalid_id")
 	assert.NotNil(t, err)
 
-	err = db.DeleteExecutorsByColonyName("invalid_colony_name")
+	err = db.RemoveExecutorsByColonyName("invalid_colony_name")
 	assert.NotNil(t, err)
 
 	_, err = db.CountExecutors()
@@ -331,7 +331,7 @@ func TestApproveExecutor(t *testing.T) {
 	assert.True(t, executor.IsRejected())
 }
 
-func TestDeleteExecutorMoveBackToQueue(t *testing.T) {
+func TestRemoveExecutorMoveBackToQueue(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
 
@@ -423,7 +423,7 @@ func TestDeleteExecutorMoveBackToQueue(t *testing.T) {
 	functions, err := db.GetFunctionsByColonyName(colony.Name)
 	assert.Len(t, functions, 2)
 
-	err = db.DeleteExecutorByID(executor1.ID)
+	err = db.RemoveExecutorByName(colony.Name, executor1.Name)
 	assert.Nil(t, err)
 
 	functions, err = db.GetFunctionsByColonyName(colony.Name)
@@ -458,7 +458,7 @@ func TestDeleteExecutorMoveBackToQueue(t *testing.T) {
 	assert.True(t, count == 0)
 }
 
-func TestDeleteExecutorsMoveBackToQueue(t *testing.T) {
+func TestRemoveExecutorsMoveBackToQueue(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
 
@@ -539,7 +539,7 @@ func TestDeleteExecutorsMoveBackToQueue(t *testing.T) {
 	_, _, err = db.MarkSuccessful(process4.ID)
 	assert.Nil(t, err)
 
-	err = db.DeleteExecutorsByColonyName(colony.Name)
+	err = db.RemoveExecutorsByColonyName(colony.Name)
 	assert.Nil(t, err)
 
 	processFromDB, err = db.GetProcessByID(process1.ID)
@@ -563,7 +563,7 @@ func TestDeleteExecutorsMoveBackToQueue(t *testing.T) {
 	assert.True(t, count == 1)
 }
 
-func TestDeleteExecutors(t *testing.T) {
+func TestRemoveExecutors(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
 
@@ -609,11 +609,12 @@ func TestDeleteExecutors(t *testing.T) {
 	functions, err = db.GetFunctionsByColonyName(colony2.Name)
 	assert.Len(t, functions, 1)
 
-	err = db.DeleteExecutorByID(executor2.ID)
+	err = db.RemoveExecutorByName(colony1.Name, executor2.Name)
 	assert.Nil(t, err)
 
 	executorFromDB, err := db.GetExecutorByID(executor2.ID)
 	assert.Nil(t, err)
+
 	assert.Nil(t, executorFromDB)
 
 	err = db.AddExecutor(executor2)
@@ -623,7 +624,7 @@ func TestDeleteExecutors(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, executorFromDB)
 
-	err = db.DeleteExecutorsByColonyName(colony1.Name)
+	err = db.RemoveExecutorsByColonyName(colony1.Name)
 	assert.Nil(t, err)
 
 	executorFromDB, err = db.GetExecutorByID(executor1.ID)

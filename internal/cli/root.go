@@ -45,8 +45,6 @@ var ExecutorID string
 var ExecutorName string
 var ExecutorType string
 var FunctionID string
-var ColonyID string
-var TargetColonyID string
 var TargetColonyName string
 var NewColonyName string
 var TargetExecutorID string

@@ -4,23 +4,23 @@ import (
 	"encoding/json"
 )
 
-const DeleteGeneratorPayloadType = "deletegeneratormsg"
+const RemoveGeneratorPayloadType = "removegeneratormsg"
 
-type DeleteGeneratorMsg struct {
+type RemoveGeneratorMsg struct {
 	GeneratorID string `json:"generatorid"`
 	MsgType     string `json:"msgtype"`
 	All         bool   `json:"all"`
 }
 
-func CreateDeleteGeneratorMsg(generatorID string) *DeleteGeneratorMsg {
-	msg := &DeleteGeneratorMsg{}
+func CreateRemoveGeneratorMsg(generatorID string) *RemoveGeneratorMsg {
+	msg := &RemoveGeneratorMsg{}
 	msg.GeneratorID = generatorID
-	msg.MsgType = DeleteGeneratorPayloadType
+	msg.MsgType = RemoveGeneratorPayloadType
 
 	return msg
 }
 
-func (msg *DeleteGeneratorMsg) ToJSON() (string, error) {
+func (msg *RemoveGeneratorMsg) ToJSON() (string, error) {
 	jsonBytes, err := json.Marshal(msg)
 	if err != nil {
 		return "", err
@@ -29,7 +29,7 @@ func (msg *DeleteGeneratorMsg) ToJSON() (string, error) {
 	return string(jsonBytes), nil
 }
 
-func (msg *DeleteGeneratorMsg) Equals(msg2 *DeleteGeneratorMsg) bool {
+func (msg *RemoveGeneratorMsg) Equals(msg2 *RemoveGeneratorMsg) bool {
 	if msg2 == nil {
 		return false
 	}
@@ -41,7 +41,7 @@ func (msg *DeleteGeneratorMsg) Equals(msg2 *DeleteGeneratorMsg) bool {
 	return false
 }
 
-func (msg *DeleteGeneratorMsg) ToJSONIndent() (string, error) {
+func (msg *RemoveGeneratorMsg) ToJSONIndent() (string, error) {
 	jsonBytes, err := json.MarshalIndent(msg, "", "    ")
 	if err != nil {
 		return "", err
@@ -50,8 +50,8 @@ func (msg *DeleteGeneratorMsg) ToJSONIndent() (string, error) {
 	return string(jsonBytes), nil
 }
 
-func CreateDeleteGeneratorMsgFromJSON(jsonString string) (*DeleteGeneratorMsg, error) {
-	var msg *DeleteGeneratorMsg
+func CreateRemoveGeneratorMsgFromJSON(jsonString string) (*RemoveGeneratorMsg, error) {
+	var msg *RemoveGeneratorMsg
 
 	err := json.Unmarshal([]byte(jsonString), &msg)
 	if err != nil {

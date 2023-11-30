@@ -23,13 +23,13 @@ func TestGeneratorArgClosedDB(t *testing.T) {
 	_, err = db.CountGeneratorArgs("invalid_id")
 	assert.NotNil(t, err)
 
-	err = db.DeleteGeneratorArgByID("invalid_id")
+	err = db.RemoveGeneratorArgByID("invalid_id")
 	assert.NotNil(t, err)
 
-	err = db.DeleteAllGeneratorArgsByGeneratorID("invalid_id")
+	err = db.RemoveAllGeneratorArgsByGeneratorID("invalid_id")
 	assert.NotNil(t, err)
 
-	err = db.DeleteAllGeneratorArgsByColonyName("invalid_name")
+	err = db.RemoveAllGeneratorArgsByColonyName("invalid_name")
 	assert.NotNil(t, err)
 }
 
@@ -58,7 +58,7 @@ func TestGeneratorArg(t *testing.T) {
 	assert.Equal(t, count, 2)
 }
 
-func TestDeleteGeneratorArgByID(t *testing.T) {
+func TestRemoveGeneratorArgByID(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
 
@@ -75,7 +75,7 @@ func TestDeleteGeneratorArgByID(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, count, 1)
 
-	err = db.DeleteGeneratorArgByID(generatorArg.ID)
+	err = db.RemoveGeneratorArgByID(generatorArg.ID)
 	assert.Nil(t, err)
 
 	count, err = db.CountGeneratorArgs(generatorID)
@@ -83,7 +83,7 @@ func TestDeleteGeneratorArgByID(t *testing.T) {
 	assert.Equal(t, count, 0)
 }
 
-func TestDeleteGeneratorArgByGeneratorID(t *testing.T) {
+func TestRemoveGeneratorArgByGeneratorID(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
 
@@ -100,7 +100,7 @@ func TestDeleteGeneratorArgByGeneratorID(t *testing.T) {
 	err = db.AddGeneratorArg(generatorArg2)
 	assert.Nil(t, err)
 
-	err = db.DeleteAllGeneratorArgsByGeneratorID(generatorID1)
+	err = db.RemoveAllGeneratorArgsByGeneratorID(generatorID1)
 	assert.Nil(t, err)
 
 	count, err := db.CountGeneratorArgs(generatorID1)
@@ -112,7 +112,7 @@ func TestDeleteGeneratorArgByGeneratorID(t *testing.T) {
 	assert.Equal(t, count, 1)
 }
 
-func TestDeleteGeneratorArgByColonyName(t *testing.T) {
+func TestRemoveGeneratorArgByColonyName(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
 
@@ -129,7 +129,7 @@ func TestDeleteGeneratorArgByColonyName(t *testing.T) {
 	err = db.AddGeneratorArg(generatorArg2)
 	assert.Nil(t, err)
 
-	err = db.DeleteAllGeneratorArgsByColonyName(colonyName)
+	err = db.RemoveAllGeneratorArgsByColonyName(colonyName)
 	assert.Nil(t, err)
 
 	count, err := db.CountGeneratorArgs(generatorID1)

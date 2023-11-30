@@ -36,12 +36,8 @@ func TestColoniesControllerInvalidDB(t *testing.T) {
 	_, err = controller.addColony(&core.Colony{})
 	assert.NotNil(t, err)
 
-	dbMock.returnError = "DeleteColonyByName"
-	err = controller.deleteColony("invalid_id")
-	assert.NotNil(t, err)
-
-	dbMock.returnError = "RenameColony"
-	err = controller.renameColony("invalid_id", "invalid_name")
+	dbMock.returnError = "RemoveColonyByName"
+	err = controller.removeColony("invalid_id")
 	assert.NotNil(t, err)
 
 	_, err = controller.addExecutor(nil, false)
@@ -49,11 +45,6 @@ func TestColoniesControllerInvalidDB(t *testing.T) {
 
 	dbMock.returnError = "GetExecutorByName"
 	_, err = controller.addExecutor(&core.Executor{}, false)
-	assert.NotNil(t, err)
-
-	dbMock.returnValue = "GetExecutorByName"
-	dbMock.returnError = "DeleteExecutorByID"
-	_, err = controller.addExecutor(&core.Executor{}, true)
 	assert.NotNil(t, err)
 
 	dbMock.returnValue = "GetExecutorByName"

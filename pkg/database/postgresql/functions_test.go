@@ -46,19 +46,19 @@ func TestFunctionClosedDB(t *testing.T) {
 	err = db.UpdateFunctionStats(colonyName, "invalid_id", "invalid_name", 20, 0.1, 0.2, 0.3, 0.4, 2.0, 2.1)
 	assert.NotNil(t, err)
 
-	err = db.DeleteFunctionByID("invalid_id")
+	err = db.RemoveFunctionByID("invalid_id")
 	assert.NotNil(t, err)
 
-	err = db.DeleteFunctionByName(colonyName, "invalid_id", "invalid_name")
+	err = db.RemoveFunctionByName(colonyName, "invalid_id", "invalid_name")
 	assert.NotNil(t, err)
 
-	err = db.DeleteFunctionsByExecutorName(colonyName, "invalid_id")
+	err = db.RemoveFunctionsByExecutorName(colonyName, "invalid_id")
 	assert.NotNil(t, err)
 
-	err = db.DeleteFunctionsByColonyName("invalid_name")
+	err = db.RemoveFunctionsByColonyName("invalid_name")
 	assert.NotNil(t, err)
 
-	err = db.DeleteFunctions()
+	err = db.RemoveFunctions()
 	assert.NotNil(t, err)
 }
 
@@ -198,7 +198,7 @@ func TestUpdateFunctionStats(t *testing.T) {
 	assert.Equal(t, functions[0].AvgExecTime, 2.1)
 }
 
-func TestDeleteFunctionByExecutorID(t *testing.T) {
+func TestRemoveFunctionByExecutorID(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
 
@@ -219,14 +219,14 @@ func TestDeleteFunctionByExecutorID(t *testing.T) {
 	functions, err := db.GetFunctionsByColonyName(colonyName)
 	assert.Len(t, functions, 2)
 
-	err = db.DeleteFunctionsByExecutorName(function1.ColonyName, function1.ExecutorName)
+	err = db.RemoveFunctionsByExecutorName(function1.ColonyName, function1.ExecutorName)
 	assert.Nil(t, err)
 
 	functions, err = db.GetFunctionsByColonyName(colonyName)
 	assert.Len(t, functions, 1)
 }
 
-func TestDeleteFunctionByID(t *testing.T) {
+func TestRemoveFunctionByID(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
 
@@ -248,7 +248,7 @@ func TestDeleteFunctionByID(t *testing.T) {
 	functions, err := db.GetFunctionsByColonyName(colonyName)
 	assert.Len(t, functions, 2)
 
-	err = db.DeleteFunctionByID(function1.FunctionID)
+	err = db.RemoveFunctionByID(function1.FunctionID)
 	assert.Nil(t, err)
 
 	functions, err = db.GetFunctionsByColonyName(colonyName)
@@ -256,7 +256,7 @@ func TestDeleteFunctionByID(t *testing.T) {
 	assert.True(t, functions[0].Equals(function2))
 }
 
-func TestDeleteFunctionByName(t *testing.T) {
+func TestRemoveFunctionByName(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
 
@@ -278,7 +278,7 @@ func TestDeleteFunctionByName(t *testing.T) {
 	functions, err := db.GetFunctionsByColonyName(colonyName)
 	assert.Len(t, functions, 2)
 
-	err = db.DeleteFunctionByName(function1.ColonyName, function1.ExecutorName, "testfunc1")
+	err = db.RemoveFunctionByName(function1.ColonyName, function1.ExecutorName, "testfunc1")
 	assert.Nil(t, err)
 
 	functions, err = db.GetFunctionsByColonyName(colonyName)
@@ -286,7 +286,7 @@ func TestDeleteFunctionByName(t *testing.T) {
 	assert.True(t, functions[0].Equals(function2))
 }
 
-func TestDeleteFunctionByColonyName(t *testing.T) {
+func TestRemoveFunctionByColonyName(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
 
@@ -316,7 +316,7 @@ func TestDeleteFunctionByColonyName(t *testing.T) {
 	functions, err = db.GetFunctionsByColonyName(colonyName2)
 	assert.Len(t, functions, 1)
 
-	err = db.DeleteFunctionsByColonyName(function1.ColonyName)
+	err = db.RemoveFunctionsByColonyName(function1.ColonyName)
 	assert.Nil(t, err)
 
 	functions, err = db.GetFunctionsByColonyName(colonyName1)
@@ -326,7 +326,7 @@ func TestDeleteFunctionByColonyName(t *testing.T) {
 	assert.Len(t, functions, 1)
 }
 
-func TestDeleteFunctions(t *testing.T) {
+func TestRemoveFunctions(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
 
@@ -356,7 +356,7 @@ func TestDeleteFunctions(t *testing.T) {
 	functions, err = db.GetFunctionsByColonyName(colonyName2)
 	assert.Len(t, functions, 1)
 
-	err = db.DeleteFunctions()
+	err = db.RemoveFunctions()
 	assert.Nil(t, err)
 
 	functions, err = db.GetFunctionsByColonyName(colonyName1)

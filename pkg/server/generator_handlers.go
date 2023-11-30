@@ -218,16 +218,16 @@ func (server *ColoniesServer) handlePackGeneratorHTTPRequest(c *gin.Context, rec
 	server.sendEmptyHTTPReply(c, payloadType)
 }
 
-func (server *ColoniesServer) handleDeleteGeneratorHTTPRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
-	msg, err := rpc.CreateDeleteGeneratorMsgFromJSON(jsonString)
+func (server *ColoniesServer) handleRemoveGeneratorHTTPRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
+	msg, err := rpc.CreateRemoveGeneratorMsgFromJSON(jsonString)
 	if err != nil {
-		if server.handleHTTPError(c, errors.New("Failed to delete generator, invalid JSON"), http.StatusBadRequest) {
+		if server.handleHTTPError(c, errors.New("Failed to remove generator, invalid JSON"), http.StatusBadRequest) {
 			return
 		}
 	}
 
 	if msg.MsgType != payloadType {
-		server.handleHTTPError(c, errors.New("Failed to delete generator, msg.MsgType does not match payloadType"), http.StatusBadRequest)
+		server.handleHTTPError(c, errors.New("Failed to remove generator, msg.MsgType does not match payloadType"), http.StatusBadRequest)
 		return
 	}
 
@@ -236,7 +236,7 @@ func (server *ColoniesServer) handleDeleteGeneratorHTTPRequest(c *gin.Context, r
 		return
 	}
 	if generator == nil {
-		server.handleHTTPError(c, errors.New("Failed to delete generator, generator is nil"), http.StatusInternalServerError)
+		server.handleHTTPError(c, errors.New("Failed to remove generator, generator is nil"), http.StatusInternalServerError)
 		return
 	}
 
@@ -245,12 +245,12 @@ func (server *ColoniesServer) handleDeleteGeneratorHTTPRequest(c *gin.Context, r
 		return
 	}
 
-	err = server.controller.deleteGenerator(generator.ID)
+	err = server.controller.removeGenerator(generator.ID)
 	if server.handleHTTPError(c, err, http.StatusInternalServerError) {
 		return
 	}
 
-	log.WithFields(log.Fields{"GeneratorId": generator.ID}).Debug("Deleting generator")
+	log.WithFields(log.Fields{"GeneratorId": generator.ID}).Debug("Removing generator")
 
 	server.sendEmptyHTTPReply(c, payloadType)
 }

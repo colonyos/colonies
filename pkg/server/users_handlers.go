@@ -181,8 +181,8 @@ func (server *ColoniesServer) handleGetUserHTTPRequest(c *gin.Context, recovered
 	server.sendHTTPReply(c, payloadType, jsonString)
 }
 
-func (server *ColoniesServer) handleDeleteUserHTTPRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
-	msg, err := rpc.CreateDeleteUserMsgFromJSON(jsonString)
+func (server *ColoniesServer) handleRemoveUserHTTPRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
+	msg, err := rpc.CreateRemoveUserMsgFromJSON(jsonString)
 	if err != nil {
 		if server.handleHTTPError(c, errors.New("Failed to remove user, invalid JSON"), http.StatusBadRequest) {
 			return
@@ -212,7 +212,7 @@ func (server *ColoniesServer) handleDeleteUserHTTPRequest(c *gin.Context, recove
 		return
 	}
 
-	err = server.db.DeleteUserByName(colony.Name, msg.Name)
+	err = server.db.RemoveUserByName(colony.Name, msg.Name)
 	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}

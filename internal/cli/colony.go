@@ -23,7 +23,7 @@ func init() {
 	colonyCmd.PersistentFlags().IntVarP(&ServerPort, "port", "", -1, "Server HTTP port")
 
 	addColonyCmd.Flags().StringVarP(&ServerPrvKey, "serverprvkey", "", "", "Colonies server private key")
-	addColonyCmd.Flags().StringVarP(&TargetColonyID, "colonyid", "", "", "Colony Id")
+	addColonyCmd.Flags().StringVarP(&TargetColonyName, "colonyid", "", "", "Colony Id")
 	addColonyCmd.MarkFlagRequired("colonyid")
 	addColonyCmd.Flags().StringVarP(&TargetColonyName, "name", "", "", "Unique name of the Colony")
 	addColonyCmd.MarkFlagRequired("name")
@@ -53,11 +53,11 @@ var addColonyCmd = &cobra.Command{
 			CheckError(errors.New("Target Colony name must be specifed"))
 		}
 
-		if TargetColonyID == "" {
+		if TargetColonyName == "" {
 			CheckError(errors.New("Target Colony Id must be specifed"))
 		}
 
-		colony := &core.Colony{Name: TargetColonyName, ID: TargetColonyID}
+		colony := &core.Colony{Name: TargetColonyName, ID: TargetColonyName}
 
 		addedColony, err := client.AddColony(colony, ServerPrvKey)
 		CheckError(err)

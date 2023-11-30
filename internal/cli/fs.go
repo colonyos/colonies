@@ -262,15 +262,15 @@ var removeLabelCmd = &cobra.Command{
 		if Yes {
 			err = fsClient.RemoveAllFilesWithLabel(Label)
 			CheckError(err)
-			log.WithFields(log.Fields{"Label": Label}).Debug("Label deleted")
+			log.WithFields(log.Fields{"Label": Label}).Debug("Label removed")
 		} else {
-			fmt.Print("All files with label <" + Label + "/*> will be removed. Local files are not deleted.\n\nAre you sure you want to continue?  (yes,no): ")
+			fmt.Print("All files with label <" + Label + "/*> will be removed. Local files are not removed.\n\nAre you sure you want to continue?  (yes,no): ")
 			reader := bufio.NewReader(os.Stdin)
 			reply, _ := reader.ReadString('\n')
 			if reply == "yes\n" || reply == "y\n" {
 				err = fsClient.RemoveAllFilesWithLabel(Label)
 				CheckError(err)
-				log.WithFields(log.Fields{"Label": Label}).Debug("Label deleted")
+				log.WithFields(log.Fields{"Label": Label}).Debug("Label removed")
 			}
 		}
 	},
@@ -453,7 +453,7 @@ var removeFileCmd = &cobra.Command{
 			CheckError(errors.New("FileId nor filename + label were specified"))
 		}
 
-		log.WithFields(log.Fields{"FileID": FileID, "Label": Label, "Name": Filename}).Debug("Removed file, local file is not deleted")
+		log.WithFields(log.Fields{"FileID": FileID, "Label": Label, "Name": Filename}).Debug("Removed file, local file is not removed")
 	},
 }
 
@@ -611,11 +611,11 @@ var removeSnapshotCmd = &cobra.Command{
 
 		var err error
 		if SnapshotID != "" {
-			err = client.DeleteSnapshotByID(ColonyName, SnapshotID, PrvKey)
+			err = client.RemoveSnapshotByID(ColonyName, SnapshotID, PrvKey)
 			CheckError(err)
 			log.WithFields(log.Fields{"SnapshotId": SnapshotID}).Info("Snapshot removed")
 		} else if SnapshotName != "" {
-			err = client.DeleteSnapshotByName(ColonyName, SnapshotName, PrvKey)
+			err = client.RemoveSnapshotByName(ColonyName, SnapshotName, PrvKey)
 			CheckError(err)
 			log.WithFields(log.Fields{"SnapshotName": SnapshotName}).Info("Snapshot removed")
 		} else {

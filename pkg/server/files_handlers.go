@@ -225,16 +225,16 @@ func (server *ColoniesServer) handleGetFileLabelsHTTPRequest(c *gin.Context, rec
 	server.sendHTTPReply(c, payloadType, jsonStr)
 }
 
-func (server *ColoniesServer) handleDeleteFileHTTPRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
-	msg, err := rpc.CreateDeleteFileMsgFromJSON(jsonString)
+func (server *ColoniesServer) handleRemoveFileHTTPRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
+	msg, err := rpc.CreateRemoveFileMsgFromJSON(jsonString)
 	if err != nil {
-		if server.handleHTTPError(c, errors.New("Failed to delete file, invalid JSON"), http.StatusBadRequest) {
+		if server.handleHTTPError(c, errors.New("Failed to remove file, invalid JSON"), http.StatusBadRequest) {
 			return
 		}
 	}
 
 	if msg.MsgType != payloadType {
-		server.handleHTTPError(c, errors.New("Failed to delete file, msg.MsgType does not match payloadType"), http.StatusBadRequest)
+		server.handleHTTPError(c, errors.New("Failed to remove file, msg.MsgType does not match payloadType"), http.StatusBadRequest)
 		return
 	}
 
@@ -244,17 +244,17 @@ func (server *ColoniesServer) handleDeleteFileHTTPRequest(c *gin.Context, recove
 	}
 
 	if msg.FileID != "" {
-		err = server.db.DeleteFileByID(msg.ColonyName, msg.FileID)
+		err = server.db.RemoveFileByID(msg.ColonyName, msg.FileID)
 		if server.handleHTTPError(c, err, http.StatusBadRequest) {
 			return
 		}
 	} else if msg.Label != "" && msg.Name != "" {
-		err = server.db.DeleteFileByName(msg.ColonyName, msg.Label, msg.Name)
+		err = server.db.RemoveFileByName(msg.ColonyName, msg.Label, msg.Name)
 		if server.handleHTTPError(c, err, http.StatusBadRequest) {
 			return
 		}
 	} else {
-		if server.handleHTTPError(c, errors.New("malformated delete file msg"), http.StatusBadRequest) {
+		if server.handleHTTPError(c, errors.New("malformated remove file msg"), http.StatusBadRequest) {
 			return
 		}
 	}

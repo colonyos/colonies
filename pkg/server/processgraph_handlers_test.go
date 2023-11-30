@@ -583,7 +583,7 @@ func TestGetProcessGraph(t *testing.T) {
 	<-done
 }
 
-func TestDeleteProcessGraph(t *testing.T) {
+func TestRemoveProcessGraph(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 
 	diamond := generateDiamondtWorkflowSpec(env.colonyName)
@@ -604,7 +604,7 @@ func TestDeleteProcessGraph(t *testing.T) {
 	assert.Nil(t, err)
 	assert.True(t, submittedGraph2.ID == graphFromServer.ID)
 
-	err = client.DeleteProcessGraph(submittedGraph1.ID, env.executorPrvKey)
+	err = client.RemoveProcessGraph(submittedGraph1.ID, env.executorPrvKey)
 	assert.Nil(t, err)
 
 	graphFromServer, err = client.GetProcessGraph(submittedGraph1.ID, env.executorPrvKey)
@@ -618,7 +618,7 @@ func TestDeleteProcessGraph(t *testing.T) {
 	<-done
 }
 
-func TestDeleteAllProcessGraphs(t *testing.T) {
+func TestRemoveAllProcessGraphs(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 
 	diamond := generateDiamondtWorkflowSpec(env.colonyName)
@@ -639,7 +639,7 @@ func TestDeleteAllProcessGraphs(t *testing.T) {
 	assert.Nil(t, err)
 	assert.True(t, submittedGraph2.ID == graphFromServer.ID)
 
-	err = client.DeleteAllProcessGraphs(env.colonyName, env.colonyPrvKey)
+	err = client.RemoveAllProcessGraphs(env.colonyName, env.colonyPrvKey)
 	assert.Nil(t, err)
 
 	graphFromServer, err = client.GetProcessGraph(submittedGraph1.ID, env.executorPrvKey)
@@ -652,7 +652,7 @@ func TestDeleteAllProcessGraphs(t *testing.T) {
 	<-done
 }
 
-func TestDeleteAllProcessGraphsWithStateWaiting(t *testing.T) {
+func TestRemoveAllProcessGraphsWithStateWaiting(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 
 	diamond := generateSingleWorkflowSpec(env.colonyName)
@@ -672,7 +672,7 @@ func TestDeleteAllProcessGraphsWithStateWaiting(t *testing.T) {
 	assert.Equal(t, stat.SuccessfulWorkflows, 0)
 	assert.Equal(t, stat.FailedWorkflows, 0)
 
-	err = client.DeleteAllProcessGraphsWithState(env.colonyName, core.PENDING, env.colonyPrvKey)
+	err = client.RemoveAllProcessGraphsWithState(env.colonyName, core.PENDING, env.colonyPrvKey)
 	assert.Nil(t, err)
 
 	stat, err = client.ColonyStatistics(env.colonyName, env.executorPrvKey)
@@ -686,7 +686,7 @@ func TestDeleteAllProcessGraphsWithStateWaiting(t *testing.T) {
 	<-done
 }
 
-func TestDeleteAllProcessGraphsWithStateRunning(t *testing.T) {
+func TestRemoveAllProcessGraphsWithStateRunning(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 
 	diamond := generateSingleWorkflowSpec(env.colonyName)
@@ -709,14 +709,14 @@ func TestDeleteAllProcessGraphsWithStateRunning(t *testing.T) {
 	assert.Equal(t, stat.SuccessfulWorkflows, 0)
 	assert.Equal(t, stat.FailedWorkflows, 0)
 
-	err = client.DeleteAllProcessGraphsWithState(env.colonyName, core.RUNNING, env.colonyPrvKey)
+	err = client.RemoveAllProcessGraphsWithState(env.colonyName, core.RUNNING, env.colonyPrvKey)
 	assert.NotNil(t, err)
 
 	server.Shutdown()
 	<-done
 }
 
-func TestDeleteAllProcessGraphsWithStateSuccessful(t *testing.T) {
+func TestRemoveAllProcessGraphsWithStateSuccessful(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 
 	diamond := generateSingleWorkflowSpec(env.colonyName)
@@ -742,7 +742,7 @@ func TestDeleteAllProcessGraphsWithStateSuccessful(t *testing.T) {
 	assert.Equal(t, stat.SuccessfulWorkflows, 1)
 	assert.Equal(t, stat.FailedWorkflows, 0)
 
-	err = client.DeleteAllProcessGraphsWithState(env.colonyName, core.SUCCESS, env.colonyPrvKey)
+	err = client.RemoveAllProcessGraphsWithState(env.colonyName, core.SUCCESS, env.colonyPrvKey)
 	assert.Nil(t, err)
 
 	stat, err = client.ColonyStatistics(env.colonyName, env.executorPrvKey)
@@ -756,7 +756,7 @@ func TestDeleteAllProcessGraphsWithStateSuccessful(t *testing.T) {
 	<-done
 }
 
-func TestDeleteAllProcessGraphsWithStateFailed(t *testing.T) {
+func TestRemoveAllProcessGraphsWithStateFailed(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 
 	diamond := generateSingleWorkflowSpec(env.colonyName)
@@ -782,7 +782,7 @@ func TestDeleteAllProcessGraphsWithStateFailed(t *testing.T) {
 	assert.Equal(t, stat.SuccessfulWorkflows, 0)
 	assert.Equal(t, stat.FailedWorkflows, 1)
 
-	err = client.DeleteAllProcessGraphsWithState(env.colonyName, core.FAILED, env.colonyPrvKey)
+	err = client.RemoveAllProcessGraphsWithState(env.colonyName, core.FAILED, env.colonyPrvKey)
 	assert.Nil(t, err)
 
 	stat, err = client.ColonyStatistics(env.colonyName, env.executorPrvKey)

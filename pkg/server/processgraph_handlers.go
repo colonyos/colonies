@@ -151,16 +151,16 @@ func (server *ColoniesServer) handleGetProcessGraphsHTTPRequest(c *gin.Context, 
 	}
 }
 
-func (server *ColoniesServer) handleDeleteProcessGraphHTTPRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
-	msg, err := rpc.CreateDeleteProcessGraphMsgFromJSON(jsonString)
+func (server *ColoniesServer) handleRemoveProcessGraphHTTPRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
+	msg, err := rpc.CreateRemoveProcessGraphMsgFromJSON(jsonString)
 	if err != nil {
-		if server.handleHTTPError(c, errors.New("Failed to delete processgraph, invalid JSON"), http.StatusBadRequest) {
+		if server.handleHTTPError(c, errors.New("Failed to remove processgraph, invalid JSON"), http.StatusBadRequest) {
 			return
 		}
 	}
 
 	if msg.MsgType != payloadType {
-		server.handleHTTPError(c, errors.New("Failed to delete processgraph, msg.MsgType does not match payloadType"), http.StatusBadRequest)
+		server.handleHTTPError(c, errors.New("Failed to remove processgraph, msg.MsgType does not match payloadType"), http.StatusBadRequest)
 		return
 	}
 
@@ -169,7 +169,7 @@ func (server *ColoniesServer) handleDeleteProcessGraphHTTPRequest(c *gin.Context
 		return
 	}
 	if graph == nil {
-		server.handleHTTPError(c, errors.New("Failed to delete processgraph, graph is nil"), http.StatusInternalServerError)
+		server.handleHTTPError(c, errors.New("Failed to remove processgraph, graph is nil"), http.StatusInternalServerError)
 		return
 	}
 
@@ -178,26 +178,26 @@ func (server *ColoniesServer) handleDeleteProcessGraphHTTPRequest(c *gin.Context
 		return
 	}
 
-	err = server.controller.deleteProcessGraph(msg.ProcessGraphID)
+	err = server.controller.removeProcessGraph(msg.ProcessGraphID)
 	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
 
-	log.WithFields(log.Fields{"ProcessGraphId": graph.ID}).Debug("Deleting processgraph")
+	log.WithFields(log.Fields{"ProcessGraphId": graph.ID}).Debug("Removing processgraph")
 
 	server.sendEmptyHTTPReply(c, payloadType)
 }
 
-func (server *ColoniesServer) handleDeleteAllProcessGraphsHTTPRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
-	msg, err := rpc.CreateDeleteAllProcessGraphsMsgFromJSON(jsonString)
+func (server *ColoniesServer) handleRemoveAllProcessGraphsHTTPRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
+	msg, err := rpc.CreateRemoveAllProcessGraphsMsgFromJSON(jsonString)
 	if err != nil {
-		if server.handleHTTPError(c, errors.New("Failed to delete all processgraphs, invalid JSON"), http.StatusBadRequest) {
+		if server.handleHTTPError(c, errors.New("Failed to remove all processgraphs, invalid JSON"), http.StatusBadRequest) {
 			return
 		}
 	}
 
 	if msg.MsgType != payloadType {
-		server.handleHTTPError(c, errors.New("Failed to delete all processgraphs, msg.MsgType does not match payloadType"), http.StatusBadRequest)
+		server.handleHTTPError(c, errors.New("Failed to remove all processgraphs, msg.MsgType does not match payloadType"), http.StatusBadRequest)
 		return
 	}
 
@@ -206,12 +206,12 @@ func (server *ColoniesServer) handleDeleteAllProcessGraphsHTTPRequest(c *gin.Con
 		return
 	}
 
-	err = server.controller.deleteAllProcessGraphs(msg.ColonyName, msg.State)
+	err = server.controller.removeAllProcessGraphs(msg.ColonyName, msg.State)
 	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
 
-	log.WithFields(log.Fields{"ColonyId": msg.ColonyName}).Debug("Deleting all processgraphs")
+	log.WithFields(log.Fields{"ColonyId": msg.ColonyName}).Debug("Removing all processgraphs")
 
 	server.sendEmptyHTTPReply(c, payloadType)
 }
