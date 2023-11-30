@@ -189,8 +189,8 @@ var getGeneratorsCmd = &cobra.Command{
 
 		generators, err := client.GetGenerators(ColonyName, Count, PrvKey)
 		CheckError(err)
-		if generators == nil {
-			log.WithFields(log.Fields{"ColonyId": ColonyName}).Info("No generators found")
+		if len(generators) == 0 { // TODO: this does not work, since err set
+			log.Info("No generators found")
 			os.Exit(0)
 		}
 
