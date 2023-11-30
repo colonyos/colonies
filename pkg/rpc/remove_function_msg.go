@@ -4,22 +4,22 @@ import (
 	"encoding/json"
 )
 
-const DeleteFunctionPayloadType = "deletefunctionmsg"
+const RemoveFunctionPayloadType = "removefunctionmsg"
 
-type DeleteFunctionMsg struct {
+type RemoveFunctionMsg struct {
 	FunctionID string `json:"functionid"`
 	MsgType    string `json:"msgtype"`
 }
 
-func CreateDeleteFunctionMsg(functionID string) *DeleteFunctionMsg {
-	msg := &DeleteFunctionMsg{}
+func CreateRemoveFunctionMsg(functionID string) *RemoveFunctionMsg {
+	msg := &RemoveFunctionMsg{}
 	msg.FunctionID = functionID
-	msg.MsgType = DeleteFunctionPayloadType
+	msg.MsgType = RemoveFunctionPayloadType
 
 	return msg
 }
 
-func (msg *DeleteFunctionMsg) ToJSON() (string, error) {
+func (msg *RemoveFunctionMsg) ToJSON() (string, error) {
 	jsonBytes, err := json.Marshal(msg)
 	if err != nil {
 		return "", err
@@ -28,7 +28,7 @@ func (msg *DeleteFunctionMsg) ToJSON() (string, error) {
 	return string(jsonBytes), nil
 }
 
-func (msg *DeleteFunctionMsg) ToJSONIndent() (string, error) {
+func (msg *RemoveFunctionMsg) ToJSONIndent() (string, error) {
 	jsonBytes, err := json.MarshalIndent(msg, "", "    ")
 	if err != nil {
 		return "", err
@@ -37,7 +37,7 @@ func (msg *DeleteFunctionMsg) ToJSONIndent() (string, error) {
 	return string(jsonBytes), nil
 }
 
-func (msg *DeleteFunctionMsg) Equals(msg2 *DeleteFunctionMsg) bool {
+func (msg *RemoveFunctionMsg) Equals(msg2 *RemoveFunctionMsg) bool {
 	if msg2 == nil {
 		return false
 	}
@@ -49,8 +49,8 @@ func (msg *DeleteFunctionMsg) Equals(msg2 *DeleteFunctionMsg) bool {
 	return false
 }
 
-func CreateDeleteFunctionMsgFromJSON(jsonString string) (*DeleteFunctionMsg, error) {
-	var msg *DeleteFunctionMsg
+func CreateRemoveFunctionMsgFromJSON(jsonString string) (*RemoveFunctionMsg, error) {
+	var msg *RemoveFunctionMsg
 
 	err := json.Unmarshal([]byte(jsonString), &msg)
 	if err != nil {

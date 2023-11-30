@@ -133,7 +133,7 @@ func TestAddArgGeneratorSecurity(t *testing.T) {
 	<-done
 }
 
-func TestDeleteGeneratorSecurity(t *testing.T) {
+func TestRemoveGeneratorSecurity(t *testing.T) {
 	env, client, server, _, done := setupTestEnv1(t)
 
 	// The setup looks like this:
@@ -146,13 +146,13 @@ func TestDeleteGeneratorSecurity(t *testing.T) {
 	addedGenerator, err := client.AddGenerator(generator, env.executor1PrvKey)
 	assert.Nil(t, err)
 
-	err = client.DeleteGenerator(addedGenerator.ID, env.executor2PrvKey)
+	err = client.RemoveGenerator(addedGenerator.ID, env.executor2PrvKey)
 	assert.NotNil(t, err)
-	err = client.DeleteGenerator(addedGenerator.ID, env.colony1PrvKey)
+	err = client.RemoveGenerator(addedGenerator.ID, env.colony1PrvKey)
 	assert.NotNil(t, err)
-	err = client.DeleteGenerator(addedGenerator.ID, env.colony2PrvKey)
+	err = client.RemoveGenerator(addedGenerator.ID, env.colony2PrvKey)
 	assert.NotNil(t, err)
-	err = client.DeleteGenerator(addedGenerator.ID, env.executor1PrvKey)
+	err = client.RemoveGenerator(addedGenerator.ID, env.executor1PrvKey)
 	assert.Nil(t, err)
 
 	server.Shutdown()

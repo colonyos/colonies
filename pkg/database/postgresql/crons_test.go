@@ -32,10 +32,10 @@ func TestCronClosedDB(t *testing.T) {
 	_, err = db.FindAllCrons()
 	assert.NotNil(t, err)
 
-	err = db.DeleteCronByID("invalid_id")
+	err = db.RemoveCronByID("invalid_id")
 	assert.NotNil(t, err)
 
-	err = db.DeleteAllCronsByColonyName("invalid_colony_name")
+	err = db.RemoveAllCronsByColonyName("invalid_colony_name")
 	assert.NotNil(t, err)
 }
 
@@ -161,7 +161,7 @@ func TestFindAllCrons(t *testing.T) {
 	assert.Len(t, crons, 3)
 }
 
-func TestDeleteCronByID(t *testing.T) {
+func TestRemoveCronByID(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
 
@@ -176,7 +176,7 @@ func TestDeleteCronByID(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, cronFromDB.ID, cron.ID)
 
-	err = db.DeleteCronByID(cron.ID)
+	err = db.RemoveCronByID(cron.ID)
 	assert.Nil(t, err)
 
 	cronFromDB, err = db.GetCronByID(cron.ID)
@@ -184,7 +184,7 @@ func TestDeleteCronByID(t *testing.T) {
 	assert.Nil(t, cronFromDB)
 }
 
-func TestDeleteAllCronsByID(t *testing.T) {
+func TestRemoveAllCronsByID(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
 
@@ -207,7 +207,7 @@ func TestDeleteAllCronsByID(t *testing.T) {
 	err = db.AddCron(cron3)
 	assert.Nil(t, err)
 
-	err = db.DeleteAllCronsByColonyName(colonyName2)
+	err = db.RemoveAllCronsByColonyName(colonyName2)
 	assert.Nil(t, err)
 
 	crons, err := db.FindCronsByColonyName(colonyName1, 100)

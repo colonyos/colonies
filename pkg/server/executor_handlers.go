@@ -205,25 +205,25 @@ func (server *ColoniesServer) handleRejectExecutorHTTPRequest(c *gin.Context, re
 	server.sendEmptyHTTPReply(c, payloadType)
 }
 
-func (server *ColoniesServer) handleDeleteExecutorHTTPRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
-	msg, err := rpc.CreateDeleteExecutorMsgFromJSON(jsonString)
+func (server *ColoniesServer) handleRemoveExecutorHTTPRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
+	msg, err := rpc.CreateRemoveExecutorMsgFromJSON(jsonString)
 	if err != nil {
-		if server.handleHTTPError(c, errors.New("Failed to delete executor, invalid JSON"), http.StatusBadRequest) {
+		if server.handleHTTPError(c, errors.New("Failed to remove executor, invalid JSON"), http.StatusBadRequest) {
 			return
 		}
 	}
 
 	if msg.MsgType != payloadType {
-		server.handleHTTPError(c, errors.New("Failed to delete executor, msg.MsgType does not match payloadType"), http.StatusBadRequest)
+		server.handleHTTPError(c, errors.New("Failed to remove executor, msg.MsgType does not match payloadType"), http.StatusBadRequest)
 		return
 	}
 
-	executor, err := server.controller.getExecutor(msg.ExecutorID)
+	executor, err := server.db.GetExecutorByName(msg.ColonyName, msg.ExecutorName)
 	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
 	if executor == nil {
-		server.handleHTTPError(c, errors.New("Failed to delete executor, executor is nil"), http.StatusInternalServerError)
+		server.handleHTTPError(c, errors.New("Failed to remove executor, executor is nil"), http.StatusInternalServerError)
 		return
 	}
 
@@ -232,12 +232,12 @@ func (server *ColoniesServer) handleDeleteExecutorHTTPRequest(c *gin.Context, re
 		return
 	}
 
-	err = server.controller.deleteExecutor(msg.ExecutorID)
+	err = server.db.RemoveExecutorByName(msg.ColonyName, msg.ExecutorName)
 	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
 
-	log.WithFields(log.Fields{"ExecutorId": executor.ID}).Debug("Deleting executor")
+	log.WithFields(log.Fields{"ExecutorId": executor.ID}).Debug("Removing executor")
 
 	server.sendEmptyHTTPReply(c, payloadType)
 }

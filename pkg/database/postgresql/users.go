@@ -112,7 +112,7 @@ func (db *PQDatabase) GetUserByName(colonyName string, name string) (*core.User,
 	return users[0], nil
 }
 
-func (db *PQDatabase) DeleteUserByID(colonyName string, userID string) error {
+func (db *PQDatabase) RemoveUserByID(colonyName string, userID string) error {
 	sqlStatement := `DELETE FROM ` + db.dbPrefix + `USERS WHERE COLONY_NAME=$1 AND USER_ID=$2`
 	_, err := db.postgresql.Exec(sqlStatement, colonyName, userID)
 	if err != nil {
@@ -122,7 +122,7 @@ func (db *PQDatabase) DeleteUserByID(colonyName string, userID string) error {
 	return nil
 }
 
-func (db *PQDatabase) DeleteUserByName(colonyName string, name string) error {
+func (db *PQDatabase) RemoveUserByName(colonyName string, name string) error {
 	sqlStatement := `DELETE FROM ` + db.dbPrefix + `USERS WHERE NAME=$1 AND COLONY_NAME=$2`
 	_, err := db.postgresql.Exec(sqlStatement, colonyName+":"+name, colonyName)
 	if err != nil {
@@ -132,7 +132,7 @@ func (db *PQDatabase) DeleteUserByName(colonyName string, name string) error {
 	return nil
 }
 
-func (db *PQDatabase) DeleteUsersByColonyName(colonyName string) error {
+func (db *PQDatabase) RemoveUsersByColonyName(colonyName string) error {
 	sqlStatement := `DELETE FROM ` + db.dbPrefix + `USERS WHERE COLONY_NAME=$1`
 	_, err := db.postgresql.Exec(sqlStatement, colonyName)
 	if err != nil {

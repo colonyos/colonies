@@ -195,26 +195,30 @@ func (db *PQDatabase) MarkAlive(executor *core.Executor) error {
 	return nil
 }
 
-func (db *PQDatabase) DeleteExecutorByID(executorID string) error {
-	executor, err := db.GetExecutorByID(executorID)
+func (db *PQDatabase) RemoveExecutorByName(colonyName string, executorName string) error {
+	executor, err := db.GetExecutorByName(colonyName, executorName)
 	if err != nil {
 		return err
 	}
 
-	sqlStatement := `DELETE FROM ` + db.dbPrefix + `EXECUTORS WHERE EXECUTOR_ID=$1`
-	_, err = db.postgresql.Exec(sqlStatement, executorID)
+	if executor == nil {
+		return errors.New("Executor <" + executorName + "> does not exists")
+	}
+
+	sqlStatement := `DELETE FROM ` + db.dbPrefix + `EXECUTORS WHERE COLONY_NAME=$1 AND NAME=$2`
+	_, err = db.postgresql.Exec(sqlStatement, colonyName, colonyName+":"+executorName)
 	if err != nil {
 		return err
 	}
 
 	// Move back the executor currently running process back to the queue
 	sqlStatement = `UPDATE ` + db.dbPrefix + `PROCESSES SET IS_ASSIGNED=FALSE, START_TIME=$1, END_TIME=$2, ASSIGNED_EXECUTOR_ID=$3, STATE=$4 WHERE ASSIGNED_EXECUTOR_ID=$5 AND STATE=$6`
-	_, err = db.postgresql.Exec(sqlStatement, time.Time{}, time.Time{}, "", core.WAITING, executorID, core.RUNNING)
+	_, err = db.postgresql.Exec(sqlStatement, time.Time{}, time.Time{}, "", core.WAITING, executor.ID, core.RUNNING)
 	if err != nil {
 		return err
 	}
 
-	err = db.DeleteFunctionsByExecutorName(executor.ColonyName, executor.Name)
+	err = db.RemoveFunctionsByExecutorName(executor.ColonyName, executor.Name)
 	if err != nil {
 		return err
 	}
@@ -222,7 +226,7 @@ func (db *PQDatabase) DeleteExecutorByID(executorID string) error {
 	return nil
 }
 
-func (db *PQDatabase) DeleteExecutorsByColonyName(colonyName string) error {
+func (db *PQDatabase) RemoveExecutorsByColonyName(colonyName string) error {
 	sqlStatement := `DELETE FROM ` + db.dbPrefix + `EXECUTORS WHERE COLONY_NAME=$1`
 	_, err := db.postgresql.Exec(sqlStatement, colonyName)
 	if err != nil {
@@ -236,7 +240,7 @@ func (db *PQDatabase) DeleteExecutorsByColonyName(colonyName string) error {
 		return err
 	}
 
-	err = db.DeleteFunctionsByColonyName(colonyName)
+	err = db.RemoveFunctionsByColonyName(colonyName)
 	if err != nil {
 		return err
 	}

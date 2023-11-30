@@ -195,16 +195,16 @@ func (server *ColoniesServer) handleRunCronHTTPRequest(c *gin.Context, recovered
 	server.sendHTTPReply(c, payloadType, jsonString)
 }
 
-func (server *ColoniesServer) handleDeleteCronHTTPRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
-	msg, err := rpc.CreateDeleteCronMsgFromJSON(jsonString)
+func (server *ColoniesServer) handleRemoveCronHTTPRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
+	msg, err := rpc.CreateRemoveCronMsgFromJSON(jsonString)
 	if err != nil {
-		if server.handleHTTPError(c, errors.New("Failed to delete cron, invalid JSON"), http.StatusBadRequest) {
+		if server.handleHTTPError(c, errors.New("Failed to remove cron, invalid JSON"), http.StatusBadRequest) {
 			return
 		}
 	}
 
 	if msg.MsgType != payloadType {
-		server.handleHTTPError(c, errors.New("Failed to delete cron, msg.MsgType does not match payloadType"), http.StatusBadRequest)
+		server.handleHTTPError(c, errors.New("Failed to remove cron, msg.MsgType does not match payloadType"), http.StatusBadRequest)
 		return
 	}
 
@@ -213,7 +213,7 @@ func (server *ColoniesServer) handleDeleteCronHTTPRequest(c *gin.Context, recove
 		return
 	}
 	if cron == nil {
-		server.handleHTTPError(c, errors.New("Failed to delete cron, cron is nil"), http.StatusInternalServerError)
+		server.handleHTTPError(c, errors.New("Failed to remove cron, cron is nil"), http.StatusInternalServerError)
 		return
 	}
 
@@ -222,12 +222,12 @@ func (server *ColoniesServer) handleDeleteCronHTTPRequest(c *gin.Context, recove
 		return
 	}
 
-	err = server.controller.deleteCron(cron.ID)
+	err = server.controller.removeCron(cron.ID)
 	if server.handleHTTPError(c, err, http.StatusInternalServerError) {
 		return
 	}
 
-	log.WithFields(log.Fields{"CronId": cron.ID}).Debug("Deleting cron")
+	log.WithFields(log.Fields{"CronId": cron.ID}).Debug("Removing cron")
 
 	server.sendEmptyHTTPReply(c, payloadType)
 }

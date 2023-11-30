@@ -539,7 +539,7 @@ func TestGetProcess(t *testing.T) {
 	<-done
 }
 
-func TestDeleteProcess(t *testing.T) {
+func TestRemoveProcess(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 
 	funcSpec := utils.CreateTestFunctionSpec(env.colonyName)
@@ -549,7 +549,7 @@ func TestDeleteProcess(t *testing.T) {
 	processFromServer, err := client.GetProcess(addedProcess.ID, env.executorPrvKey)
 	assert.True(t, addedProcess.Equals(processFromServer))
 
-	err = client.DeleteProcess(addedProcess.ID, env.executorPrvKey)
+	err = client.RemoveProcess(addedProcess.ID, env.executorPrvKey)
 	assert.Nil(t, err)
 
 	processFromServer, err = client.GetProcess(addedProcess.ID, env.executorPrvKey)
@@ -560,7 +560,7 @@ func TestDeleteProcess(t *testing.T) {
 	<-done
 }
 
-func TestDeleteAllProcessesForColony(t *testing.T) {
+func TestRemoveAllProcessesForColony(t *testing.T) {
 	env, client, server, _, done := setupTestEnv1(t)
 
 	funcSpec1 := utils.CreateTestFunctionSpec(env.colony1Name)
@@ -574,7 +574,7 @@ func TestDeleteAllProcessesForColony(t *testing.T) {
 	processFromServer, err := client.GetProcess(addedProcess1.ID, env.executor1PrvKey)
 	assert.True(t, addedProcess1.Equals(processFromServer))
 
-	err = client.DeleteAllProcesses(env.colony1Name, env.colony1PrvKey)
+	err = client.RemoveAllProcesses(env.colony1Name, env.colony1PrvKey)
 	assert.Nil(t, err)
 
 	_, err = client.GetProcess(addedProcess1.ID, env.executor1PrvKey)
@@ -588,7 +588,7 @@ func TestDeleteAllProcessesForColony(t *testing.T) {
 	<-done
 }
 
-func TestDeleteAllProcessesForColonyWithStateWaiting(t *testing.T) {
+func TestRemoveAllProcessesForColonyWithStateWaiting(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 
 	funcSpec1 := utils.CreateTestFunctionSpec(env.colonyName)
@@ -606,7 +606,7 @@ func TestDeleteAllProcessesForColonyWithStateWaiting(t *testing.T) {
 	assert.Equal(t, stat.SuccessfulProcesses, 0)
 	assert.Equal(t, stat.FailedProcesses, 0)
 
-	err = client.DeleteAllProcessesWithState(env.colonyName, core.WAITING, env.colonyPrvKey)
+	err = client.RemoveAllProcessesWithState(env.colonyName, core.WAITING, env.colonyPrvKey)
 	assert.Nil(t, err)
 
 	stat, err = client.ColonyStatistics(env.colonyName, env.executorPrvKey)
@@ -620,7 +620,7 @@ func TestDeleteAllProcessesForColonyWithStateWaiting(t *testing.T) {
 	<-done
 }
 
-func TestDeleteAllProcessesForColonyWithStateRunning(t *testing.T) {
+func TestRemoveAllProcessesForColonyWithStateRunning(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 
 	funcSpec1 := utils.CreateTestFunctionSpec(env.colonyName)
@@ -641,14 +641,14 @@ func TestDeleteAllProcessesForColonyWithStateRunning(t *testing.T) {
 	assert.Equal(t, stat.SuccessfulProcesses, 0)
 	assert.Equal(t, stat.FailedProcesses, 0)
 
-	err = client.DeleteAllProcessesWithState(env.colonyName, core.RUNNING, env.colonyPrvKey)
+	err = client.RemoveAllProcessesWithState(env.colonyName, core.RUNNING, env.colonyPrvKey)
 	assert.NotNil(t, err)
 
 	server.Shutdown()
 	<-done
 }
 
-func TestDeleteAllProcessesForColonyWithStateSuccessful(t *testing.T) {
+func TestRemoveAllProcessesForColonyWithStateSuccessful(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 
 	funcSpec1 := utils.CreateTestFunctionSpec(env.colonyName)
@@ -672,7 +672,7 @@ func TestDeleteAllProcessesForColonyWithStateSuccessful(t *testing.T) {
 	assert.Equal(t, stat.SuccessfulProcesses, 1)
 	assert.Equal(t, stat.FailedProcesses, 0)
 
-	err = client.DeleteAllProcessesWithState(env.colonyName, core.SUCCESS, env.colonyPrvKey)
+	err = client.RemoveAllProcessesWithState(env.colonyName, core.SUCCESS, env.colonyPrvKey)
 	assert.Nil(t, err)
 
 	stat, err = client.ColonyStatistics(env.colonyName, env.executorPrvKey)
@@ -686,7 +686,7 @@ func TestDeleteAllProcessesForColonyWithStateSuccessful(t *testing.T) {
 	<-done
 }
 
-func TestDeleteAllProcessesForColonyWithStateFailed(t *testing.T) {
+func TestRemoveAllProcessesForColonyWithStateFailed(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 
 	funcSpec1 := utils.CreateTestFunctionSpec(env.colonyName)
@@ -710,7 +710,7 @@ func TestDeleteAllProcessesForColonyWithStateFailed(t *testing.T) {
 	assert.Equal(t, stat.SuccessfulProcesses, 0)
 	assert.Equal(t, stat.FailedProcesses, 1)
 
-	err = client.DeleteAllProcessesWithState(env.colonyName, core.FAILED, env.colonyPrvKey)
+	err = client.RemoveAllProcessesWithState(env.colonyName, core.FAILED, env.colonyPrvKey)
 	assert.Nil(t, err)
 
 	stat, err = client.ColonyStatistics(env.colonyName, env.executorPrvKey)

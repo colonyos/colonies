@@ -4,18 +4,18 @@ import (
 	"encoding/json"
 )
 
-const DeleteSnapshotPayloadType = "deletesnapshotmsg"
+const RemoveSnapshotPayloadType = "removesnapshotmsg"
 
-type DeleteSnapshotMsg struct {
+type RemoveSnapshotMsg struct {
 	ColonyName string `json:"colonyname"`
 	SnapshotID string `json:"snapshotid"`
 	Name       string `json:"name"`
 	MsgType    string `json:"msgtype"`
 }
 
-func CreateDeleteSnapshotMsg(colonyID string, snapshotID string, name string) *DeleteSnapshotMsg {
-	msg := &DeleteSnapshotMsg{}
-	msg.MsgType = DeleteSnapshotPayloadType
+func CreateRemoveSnapshotMsg(colonyID string, snapshotID string, name string) *RemoveSnapshotMsg {
+	msg := &RemoveSnapshotMsg{}
+	msg.MsgType = RemoveSnapshotPayloadType
 	msg.ColonyName = colonyID
 	msg.SnapshotID = snapshotID
 	msg.Name = name
@@ -23,7 +23,7 @@ func CreateDeleteSnapshotMsg(colonyID string, snapshotID string, name string) *D
 	return msg
 }
 
-func (msg *DeleteSnapshotMsg) ToJSON() (string, error) {
+func (msg *RemoveSnapshotMsg) ToJSON() (string, error) {
 	jsonBytes, err := json.Marshal(msg)
 	if err != nil {
 		return "", err
@@ -32,7 +32,7 @@ func (msg *DeleteSnapshotMsg) ToJSON() (string, error) {
 	return string(jsonBytes), nil
 }
 
-func (msg *DeleteSnapshotMsg) Equals(msg2 *DeleteSnapshotMsg) bool {
+func (msg *RemoveSnapshotMsg) Equals(msg2 *RemoveSnapshotMsg) bool {
 	if msg2 == nil {
 		return false
 	}
@@ -47,8 +47,8 @@ func (msg *DeleteSnapshotMsg) Equals(msg2 *DeleteSnapshotMsg) bool {
 	return false
 }
 
-func CreateDeleteSnapshotMsgFromJSON(jsonString string) (*DeleteSnapshotMsg, error) {
-	var msg *DeleteSnapshotMsg
+func CreateRemoveSnapshotMsgFromJSON(jsonString string) (*RemoveSnapshotMsg, error) {
+	var msg *RemoveSnapshotMsg
 
 	err := json.Unmarshal([]byte(jsonString), &msg)
 	if err != nil {

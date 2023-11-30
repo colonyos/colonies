@@ -251,8 +251,8 @@ func parseEnv() {
 		TimescaleDB = false
 	}
 
-	if ColonyID == "" {
-		ColonyID = os.Getenv("COLONIES_COLONY_ID")
+	if ColonyName == "" {
+		ColonyName = os.Getenv("COLONIES_COLONY_ID")
 	}
 
 	if ColonyName == "" {

@@ -34,10 +34,10 @@ func (controller *coloniesController) addCron(cron *core.Cron) (*core.Cron, erro
 	}
 }
 
-func (controller *coloniesController) deleteGenerator(generatorID string) error {
+func (controller *coloniesController) removeGenerator(generatorID string) error {
 	cmd := &command{errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
-			cmd.errorChan <- controller.db.DeleteGeneratorByID(generatorID)
+			cmd.errorChan <- controller.db.RemoveGeneratorByID(generatorID)
 		}}
 
 	controller.cmdQueue <- cmd
@@ -108,10 +108,10 @@ func (controller *coloniesController) runCron(cronID string) (*core.Cron, error)
 	}
 }
 
-func (controller *coloniesController) deleteCron(cronID string) error {
+func (controller *coloniesController) removeCron(cronID string) error {
 	cmd := &command{errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
-			err := controller.db.DeleteCronByID(cronID)
+			err := controller.db.RemoveCronByID(cronID)
 			cmd.errorChan <- err
 		}}
 

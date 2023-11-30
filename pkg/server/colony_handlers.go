@@ -69,16 +69,16 @@ func (server *ColoniesServer) handleAddColonyHTTPRequest(c *gin.Context, recover
 	server.sendHTTPReply(c, payloadType, jsonString)
 }
 
-func (server *ColoniesServer) handleDeleteColonyHTTPRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
-	msg, err := rpc.CreateDeleteColonyMsgFromJSON(jsonString)
+func (server *ColoniesServer) handleRemoveColonyHTTPRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
+	msg, err := rpc.CreateRemoveColonyMsgFromJSON(jsonString)
 	if err != nil {
-		if server.handleHTTPError(c, errors.New("Failed to delete colony, invalid JSON"), http.StatusBadRequest) {
+		if server.handleHTTPError(c, errors.New("Failed to remove colony, invalid JSON"), http.StatusBadRequest) {
 			return
 		}
 	}
 
 	if msg.MsgType != payloadType {
-		server.handleHTTPError(c, errors.New("Failed to delete colony, msg.MsgType does not match payloadType"), http.StatusBadRequest)
+		server.handleHTTPError(c, errors.New("Failed to remove colony, msg.MsgType does not match payloadType"), http.StatusBadRequest)
 		return
 	}
 
@@ -98,12 +98,12 @@ func (server *ColoniesServer) handleDeleteColonyHTTPRequest(c *gin.Context, reco
 		}
 	}
 
-	err = server.controller.deleteColony(colony.Name)
+	err = server.controller.removeColony(colony.Name)
 	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
 
-	log.WithFields(log.Fields{"ColonyId": colony.ID, "ColonyName": colony.Name}).Debug("Deleting colony")
+	log.WithFields(log.Fields{"ColonyId": colony.ID, "ColonyName": colony.Name}).Debug("Removing colony")
 
 	server.sendEmptyHTTPReply(c, payloadType)
 }

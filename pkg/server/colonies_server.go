@@ -159,14 +159,14 @@ func (server *ColoniesServer) handleAPIRequest(c *gin.Context) {
 		server.handleGetUsersHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 	case rpc.GetUserPayloadType:
 		server.handleGetUserHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
-	case rpc.DeleteUserPayloadType:
-		server.handleDeleteUserHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+	case rpc.RemoveUserPayloadType:
+		server.handleRemoveUserHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 
 	// Colony handlers
 	case rpc.AddColonyPayloadType:
 		server.handleAddColonyHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
-	case rpc.DeleteColonyPayloadType:
-		server.handleDeleteColonyHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+	case rpc.RemoveColonyPayloadType:
+		server.handleRemoveColonyHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 	case rpc.GetColoniesPayloadType:
 		server.handleGetColoniesHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 	case rpc.GetColonyPayloadType:
@@ -183,16 +183,16 @@ func (server *ColoniesServer) handleAPIRequest(c *gin.Context) {
 		server.handleApproveExecutorHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 	case rpc.RejectExecutorPayloadType:
 		server.handleRejectExecutorHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
-	case rpc.DeleteExecutorPayloadType:
-		server.handleDeleteExecutorHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+	case rpc.RemoveExecutorPayloadType:
+		server.handleRemoveExecutorHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 
 	//Function handlers
 	case rpc.AddFunctionPayloadType:
 		server.handleAddFunctionHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 	case rpc.GetFunctionsPayloadType:
 		server.handleGetFunctionsHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
-	case rpc.DeleteFunctionPayloadType:
-		server.handleDeleteFunctionHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+	case rpc.RemoveFunctionPayloadType:
+		server.handleRemoveFunctionHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 
 	// Process handlers
 	case rpc.SubmitFunctionSpecPayloadType:
@@ -205,10 +205,10 @@ func (server *ColoniesServer) handleAPIRequest(c *gin.Context) {
 		server.handleGetProcessesHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 	case rpc.GetProcessPayloadType:
 		server.handleGetProcessHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
-	case rpc.DeleteProcessPayloadType:
-		server.handleDeleteProcessHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
-	case rpc.DeleteAllProcessesPayloadType:
-		server.handleDeleteAllProcessesHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+	case rpc.RemoveProcessPayloadType:
+		server.handleRemoveProcessHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+	case rpc.RemoveAllProcessesPayloadType:
+		server.handleRemoveAllProcessesHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 	case rpc.CloseSuccessfulPayloadType:
 		server.handleCloseSuccessfulHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 	case rpc.CloseFailedPayloadType:
@@ -231,10 +231,10 @@ func (server *ColoniesServer) handleAPIRequest(c *gin.Context) {
 		server.handleGetProcessGraphHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 	case rpc.GetProcessGraphsPayloadType:
 		server.handleGetProcessGraphsHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
-	case rpc.DeleteProcessGraphPayloadType:
-		server.handleDeleteProcessGraphHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
-	case rpc.DeleteAllProcessGraphsPayloadType:
-		server.handleDeleteAllProcessGraphsHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+	case rpc.RemoveProcessGraphPayloadType:
+		server.handleRemoveProcessGraphHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+	case rpc.RemoveAllProcessGraphsPayloadType:
+		server.handleRemoveAllProcessGraphsHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 	case rpc.AddChildPayloadType:
 		server.handleAddChildHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 
@@ -249,8 +249,8 @@ func (server *ColoniesServer) handleAPIRequest(c *gin.Context) {
 		server.handleGetGeneratorsHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 	case rpc.PackGeneratorPayloadType:
 		server.handlePackGeneratorHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
-	case rpc.DeleteGeneratorPayloadType:
-		server.handleDeleteGeneratorHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+	case rpc.RemoveGeneratorPayloadType:
+		server.handleRemoveGeneratorHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 
 	// Cron handlers
 	case rpc.AddCronPayloadType:
@@ -261,8 +261,8 @@ func (server *ColoniesServer) handleAPIRequest(c *gin.Context) {
 		server.handleGetCronsHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 	case rpc.RunCronPayloadType:
 		server.handleRunCronHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
-	case rpc.DeleteCronPayloadType:
-		server.handleDeleteCronHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+	case rpc.RemoveCronPayloadType:
+		server.handleRemoveCronHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 
 	// Server handlers
 	case rpc.GetStatisiticsPayloadType:
@@ -287,8 +287,8 @@ func (server *ColoniesServer) handleAPIRequest(c *gin.Context) {
 		server.handleGetFilesHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 	case rpc.GetFileLabelsPayloadType:
 		server.handleGetFileLabelsHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
-	case rpc.DeleteFilePayloadType:
-		server.handleDeleteFileHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+	case rpc.RemoveFilePayloadType:
+		server.handleRemoveFileHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 
 		// Snapshot handlers
 	case rpc.CreateSnapshotPayloadType:
@@ -297,8 +297,8 @@ func (server *ColoniesServer) handleAPIRequest(c *gin.Context) {
 		server.handleGetSnapshotHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 	case rpc.GetSnapshotsPayloadType:
 		server.handleGetSnapshotsHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
-	case rpc.DeleteSnapshotPayloadType:
-		server.handleDeleteSnapshotHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+	case rpc.RemoveSnapshotPayloadType:
+		server.handleRemoveSnapshotHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 
 	default:
 		errMsg := "invalid rpcMsg.PayloadType, " + rpcMsg.PayloadType

@@ -108,7 +108,7 @@ func (db *PQDatabase) FindAllCrons() ([]*core.Cron, error) {
 
 }
 
-func (db *PQDatabase) DeleteCronByID(cronID string) error {
+func (db *PQDatabase) RemoveCronByID(cronID string) error {
 	sqlStatement := `DELETE FROM ` + db.dbPrefix + `CRONS WHERE CRON_ID=$1`
 	_, err := db.postgresql.Exec(sqlStatement, cronID)
 	if err != nil {
@@ -118,7 +118,7 @@ func (db *PQDatabase) DeleteCronByID(cronID string) error {
 	return nil
 }
 
-func (db *PQDatabase) DeleteAllCronsByColonyName(colonyName string) error {
+func (db *PQDatabase) RemoveAllCronsByColonyName(colonyName string) error {
 	sqlStatement := `DELETE FROM ` + db.dbPrefix + `CRONS WHERE COLONY_NAME=$1`
 	_, err := db.postgresql.Exec(sqlStatement, colonyName)
 	if err != nil {
