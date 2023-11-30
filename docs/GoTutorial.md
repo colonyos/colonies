@@ -25,7 +25,7 @@ func main() {
     }
 
     funcSpec := core.CreateEmptyFunctionSpec()
-    funcSpec.Conditions.ColonyID = colonyID
+    funcSpec.Conditions.ColonyName = colonyID
     funcSpec.Conditions.ExecutorType = os.Getenv("COLONIES_EXECUTOR_TYPE")
     funcSpec.Env["fibonacciNum"] = os.Args[1]
 
@@ -151,7 +151,7 @@ FunctionSpec:
 
 Conditions:
 +--------------+------------------------------------------------------------------+
-| ColonyID     | 4787a5071856a4acf702b2ffcea422e3237a679c681314113d86139461290cf4 |
+| ColonyName     | 4787a5071856a4acf702b2ffcea422e3237a679c681314113d86139461290cf4 |
 | ExecutorIDs  | None                                                             |
 | ExecutorType | cli                                                              |
 | Memory       | 1000                                                             |
