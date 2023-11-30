@@ -36,6 +36,7 @@ var ServerHost string
 var ServerPort int
 var MonitorPort int
 var MonitorInterval int
+var ServerID string
 var ServerPrvKey string
 var SpecFile string
 var Count int
