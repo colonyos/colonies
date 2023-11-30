@@ -23,45 +23,45 @@ func init() {
 	workflowCmd.AddCommand(listSuccessfulWorkflowsCmd)
 	workflowCmd.AddCommand(listFailedWorkflowsCmd)
 	workflowCmd.AddCommand(getWorkflowCmd)
-	workflowCmd.AddCommand(deleteWorkflowCmd)
-	workflowCmd.AddCommand(deleteAllWorkflowsCmd)
+	workflowCmd.AddCommand(removeWorkflowCmd)
+	workflowCmd.AddCommand(removeAllWorkflowsCmd)
 	rootCmd.AddCommand(workflowCmd)
 
 	submitWorkflowCmd.Flags().StringVarP(&PrvKey, "prvkey", "", "", "Private key")
 	submitWorkflowCmd.Flags().StringVarP(&SpecFile, "spec", "", "", "JSON specification of a Colony workflow")
-	submitWorkflowCmd.Flags().StringVarP(&ColonyID, "colonyid", "", "", "Colony Id")
+	submitWorkflowCmd.Flags().StringVarP(&ColonyName, "colonyid", "", "", "Colony Id")
 	submitWorkflowCmd.Flags().BoolVarP(&Wait, "wait", "", false, "Colony Id")
 	submitWorkflowCmd.MarkFlagRequired("spec")
 
-	listWaitingWorkflowsCmd.Flags().StringVarP(&ColonyID, "colonyid", "", "", "Colony Id")
+	listWaitingWorkflowsCmd.Flags().StringVarP(&ColonyName, "colonyid", "", "", "Colony Id")
 	listWaitingWorkflowsCmd.Flags().StringVarP(&PrvKey, "prvkey", "", "", "Private key")
 	listWaitingWorkflowsCmd.Flags().IntVarP(&Count, "count", "", server.MAX_COUNT, "Number of workflows to list")
 
-	listRunningWorkflowsCmd.Flags().StringVarP(&ColonyID, "colonyid", "", "", "Colony Id")
+	listRunningWorkflowsCmd.Flags().StringVarP(&ColonyName, "colonyid", "", "", "Colony Id")
 	listRunningWorkflowsCmd.Flags().StringVarP(&PrvKey, "prvkey", "", "", "Private key")
 	listRunningWorkflowsCmd.Flags().IntVarP(&Count, "count", "", server.MAX_COUNT, "Number of workflows to list")
 
-	listSuccessfulWorkflowsCmd.Flags().StringVarP(&ColonyID, "colonyid", "", "", "Colony Id")
+	listSuccessfulWorkflowsCmd.Flags().StringVarP(&ColonyName, "colonyid", "", "", "Colony Id")
 	listSuccessfulWorkflowsCmd.Flags().StringVarP(&PrvKey, "prvkey", "", "", "Private key")
 	listSuccessfulWorkflowsCmd.Flags().IntVarP(&Count, "count", "", server.MAX_COUNT, "Number of workflows to list")
 
-	listFailedWorkflowsCmd.Flags().StringVarP(&ColonyID, "colonyid", "", "", "Colony Id")
+	listFailedWorkflowsCmd.Flags().StringVarP(&ColonyName, "colonyid", "", "", "Colony Id")
 	listFailedWorkflowsCmd.Flags().StringVarP(&PrvKey, "prvkey", "", "", "Private key")
 	listFailedWorkflowsCmd.Flags().IntVarP(&Count, "count", "", server.MAX_COUNT, "Number of workflows to list")
 
-	deleteWorkflowCmd.Flags().StringVarP(&PrvKey, "prvkey", "", "", "Private key")
-	deleteWorkflowCmd.Flags().StringVarP(&ColonyID, "colonyid", "", "", "Colony Id")
-	deleteWorkflowCmd.Flags().StringVarP(&WorkflowID, "workflowid", "", "", "Workflow Id")
-	deleteWorkflowCmd.MarkFlagRequired("processid")
+	removeWorkflowCmd.Flags().StringVarP(&PrvKey, "prvkey", "", "", "Private key")
+	removeWorkflowCmd.Flags().StringVarP(&ColonyName, "colonyid", "", "", "Colony Id")
+	removeWorkflowCmd.Flags().StringVarP(&WorkflowID, "workflowid", "", "", "Workflow Id")
+	removeWorkflowCmd.MarkFlagRequired("processid")
 
-	deleteAllWorkflowsCmd.Flags().StringVarP(&PrvKey, "prvkey", "", "", "Private key")
-	deleteAllWorkflowsCmd.Flags().StringVarP(&ColonyID, "colonyid", "", "", "Colony Id")
-	deleteAllWorkflowsCmd.Flags().BoolVarP(&Waiting, "waiting", "", false, "Delete all waiting processes")
-	deleteAllWorkflowsCmd.Flags().BoolVarP(&Successful, "successful", "", false, "Delete all successful processes")
-	deleteAllWorkflowsCmd.Flags().BoolVarP(&Failed, "failed", "", false, "Delete all failed processes")
+	removeAllWorkflowsCmd.Flags().StringVarP(&PrvKey, "prvkey", "", "", "Private key")
+	removeAllWorkflowsCmd.Flags().StringVarP(&ColonyName, "colonyid", "", "", "Colony Id")
+	removeAllWorkflowsCmd.Flags().BoolVarP(&Waiting, "waiting", "", false, "Remove all waiting processes")
+	removeAllWorkflowsCmd.Flags().BoolVarP(&Successful, "successful", "", false, "Remove all successful processes")
+	removeAllWorkflowsCmd.Flags().BoolVarP(&Failed, "failed", "", false, "Remove all failed processes")
 
 	getWorkflowCmd.Flags().StringVarP(&PrvKey, "prvkey", "", "", "Private key")
-	getWorkflowCmd.Flags().StringVarP(&ColonyID, "colonyid", "", "", "Colony Id")
+	getWorkflowCmd.Flags().StringVarP(&ColonyName, "colonyid", "", "", "Colony Id")
 	getWorkflowCmd.Flags().StringVarP(&WorkflowID, "workflowid", "", "", "Workflow Id")
 	getWorkflowCmd.MarkFlagRequired("workflowid")
 	getWorkflowCmd.Flags().BoolVarP(&JSON, "json", "", false, "Print JSON instead of tables")
@@ -112,7 +112,7 @@ var listWaitingWorkflowsCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		client := setup()
 
-		graphs, err := client.GetWaitingProcessGraphs(ColonyID, Count, PrvKey)
+		graphs, err := client.GetWaitingProcessGraphs(ColonyName, Count, PrvKey)
 		CheckError(err)
 
 		if len(graphs) == 0 {
@@ -141,24 +141,24 @@ var listWaitingWorkflowsCmd = &cobra.Command{
 	},
 }
 
-var deleteWorkflowCmd = &cobra.Command{
-	Use:   "delete",
-	Short: "Delete a workflow",
-	Long:  "Delete a workflow",
+var removeWorkflowCmd = &cobra.Command{
+	Use:   "remove",
+	Short: "remove a workflow",
+	Long:  "remove a workflow",
 	Run: func(cmd *cobra.Command, args []string) {
 		client := setup()
 
-		err := client.DeleteProcessGraph(WorkflowID, PrvKey)
+		err := client.RemoveProcessGraph(WorkflowID, PrvKey)
 		CheckError(err)
 
-		log.WithFields(log.Fields{"WorkflowID": WorkflowID}).Info("ProcessGraph deleted")
+		log.WithFields(log.Fields{"WorkflowID": WorkflowID}).Info("Workflow removed")
 	},
 }
 
-var deleteAllWorkflowsCmd = &cobra.Command{
-	Use:   "deleteall",
-	Short: "Delete all workflows",
-	Long:  "Delete all workflows",
+var removeAllWorkflowsCmd = &cobra.Command{
+	Use:   "removeall",
+	Short: "Remove all workflows",
+	Long:  "Remove all workflows",
 	Run: func(cmd *cobra.Command, args []string) {
 		client := setup()
 
@@ -185,28 +185,28 @@ var deleteAllWorkflowsCmd = &cobra.Command{
 			state = "all"
 		}
 
-		fmt.Print("WARNING!!! Are you sure you want to delete " + state + " workflows in the Colony This operation cannot be undone! (YES,no): ")
+		fmt.Print("WARNING!!! Are you sure you want to remove all " + state + " workflows in the Colony This operation cannot be undone! (YES,no): ")
 
 		var err error
 		reader := bufio.NewReader(os.Stdin)
 		reply, _ := reader.ReadString('\n')
 		if reply == "YES\n" {
 			if state == "all" {
-				err = client.DeleteAllProcessGraphs(ColonyID, ColonyPrvKey)
+				err = client.RemoveAllProcessGraphs(ColonyName, ColonyPrvKey)
 				CheckError(err)
-				log.WithFields(log.Fields{"ColonyID": ColonyID}).Info("Deleting all workflows in Colony")
+				log.WithFields(log.Fields{"ColonyName": ColonyName}).Info("Deleting all workflows in Colony")
 			} else if Waiting {
-				err = client.DeleteAllProcessGraphsWithState(ColonyID, core.WAITING, ColonyPrvKey)
+				err = client.RemoveAllProcessGraphsWithState(ColonyName, core.WAITING, ColonyPrvKey)
 				CheckError(err)
-				log.WithFields(log.Fields{"ColonyID": ColonyID}).Info("Deleting all waiting workflows in Colony")
+				log.WithFields(log.Fields{"ColonyName": ColonyName}).Info("Deleting all waiting workflows in Colony")
 			} else if Successful {
-				err = client.DeleteAllProcessGraphsWithState(ColonyID, core.SUCCESS, ColonyPrvKey)
+				err = client.RemoveAllProcessGraphsWithState(ColonyName, core.SUCCESS, ColonyPrvKey)
 				CheckError(err)
-				log.WithFields(log.Fields{"ColonyID": ColonyID}).Info("Deleting all successful workflows in Colony")
+				log.WithFields(log.Fields{"ColonyName": ColonyName}).Info("Deleting all successful workflows in Colony")
 			} else if Failed {
-				err = client.DeleteAllProcessGraphsWithState(ColonyID, core.FAILED, ColonyPrvKey)
+				err = client.RemoveAllProcessGraphsWithState(ColonyName, core.FAILED, ColonyPrvKey)
 				CheckError(err)
-				log.WithFields(log.Fields{"ColonyID": ColonyID}).Info("Deleting all failed workflows in Colony")
+				log.WithFields(log.Fields{"ColonyName": ColonyName}).Info("Deleting all failed workflows in Colony")
 			}
 
 		} else {
@@ -222,7 +222,7 @@ var listRunningWorkflowsCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		client := setup()
 
-		graphs, err := client.GetRunningProcessGraphs(ColonyID, Count, PrvKey)
+		graphs, err := client.GetRunningProcessGraphs(ColonyName, Count, PrvKey)
 		CheckError(err)
 
 		if len(graphs) == 0 {
@@ -258,7 +258,7 @@ var listSuccessfulWorkflowsCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		client := setup()
 
-		graphs, err := client.GetSuccessfulProcessGraphs(ColonyID, Count, PrvKey)
+		graphs, err := client.GetSuccessfulProcessGraphs(ColonyName, Count, PrvKey)
 		CheckError(err)
 
 		if len(graphs) == 0 {
@@ -294,7 +294,7 @@ var listFailedWorkflowsCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		client := setup()
 
-		graphs, err := client.GetFailedProcessGraphs(ColonyID, Count, PrvKey)
+		graphs, err := client.GetFailedProcessGraphs(ColonyName, Count, PrvKey)
 		CheckError(err)
 
 		if len(graphs) == 0 {
@@ -327,7 +327,7 @@ func printGraf(client *client.ColoniesClient, graph *core.ProcessGraph) {
 	fmt.Println("Workflow:")
 	workflowData := [][]string{
 		[]string{"WorkflowID", graph.ID},
-		[]string{"ColonyID", graph.ID},
+		[]string{"ColonyName", graph.ID},
 		[]string{"State", State2String(graph.State)},
 		[]string{"SubmissionTime", graph.SubmissionTime.Format(TimeLayout)},
 		[]string{"StartTime", graph.StartTime.Format(TimeLayout)},

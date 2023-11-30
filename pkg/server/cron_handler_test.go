@@ -28,7 +28,7 @@ func TestAddCronDebug(t *testing.T) {
 	<-done
 }
 
-func TestAddCronDeleteAllProcesses(t *testing.T) {
+func TestAddCronRemoveAllProcesses(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 
 	cron := utils.FakeCron(t, env.colonyName)
@@ -41,7 +41,7 @@ func TestAddCronDeleteAllProcesses(t *testing.T) {
 
 	time.Sleep(2 * time.Second)
 
-	err = client.DeleteAllProcesses(env.colonyName, env.colonyPrvKey)
+	err = client.RemoveAllProcesses(env.colonyName, env.colonyPrvKey)
 	assert.Nil(t, err)
 
 	// If the cron is successful, there should be a process we can assign
@@ -53,7 +53,7 @@ func TestAddCronDeleteAllProcesses(t *testing.T) {
 	<-done
 }
 
-func TestAddCronDeleteAllProcessGraphs(t *testing.T) {
+func TestAddCronRemoveAllProcessGraphs(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 
 	cron := utils.FakeCron(t, env.colonyName)
@@ -66,7 +66,7 @@ func TestAddCronDeleteAllProcessGraphs(t *testing.T) {
 
 	time.Sleep(2 * time.Second)
 
-	err = client.DeleteAllProcessGraphs(env.colonyName, env.colonyPrvKey)
+	err = client.RemoveAllProcessGraphs(env.colonyName, env.colonyPrvKey)
 	assert.Nil(t, err)
 
 	// If the cron is successful, there should be a process we can assign
@@ -393,7 +393,7 @@ func TestGetCrons(t *testing.T) {
 	<-done
 }
 
-func TestDeleteCron(t *testing.T) {
+func TestRemoveCron(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 
 	cron := utils.FakeCron(t, env.colonyName)
@@ -401,7 +401,7 @@ func TestDeleteCron(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, addedCron)
 
-	err = client.DeleteCron(addedCron.ID, env.executorPrvKey)
+	err = client.RemoveCron(addedCron.ID, env.executorPrvKey)
 	assert.Nil(t, err)
 
 	cronFromServer, err := client.GetCron(addedCron.ID, env.executorPrvKey)

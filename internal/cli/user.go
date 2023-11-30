@@ -143,12 +143,12 @@ var removeUserCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		client := setup()
 
-		fmt.Print("WARNING!!! Are you sure you want to delete the User <" + Username + "> from Colony <" + ColonyName + "> ! (YES,no): ")
+		fmt.Print("WARNING!!! Are you sure you want to remove the User <" + Username + "> from Colony <" + ColonyName + "> ! (YES,no): ")
 
 		reader := bufio.NewReader(os.Stdin)
 		reply, _ := reader.ReadString('\n')
 		if reply == "YES\n" {
-			err := client.DeleteUser(ColonyName, Username, ColonyPrvKey)
+			err := client.RemoveUser(ColonyName, Username, ColonyPrvKey)
 			CheckError(err)
 		} else {
 			fmt.Println("Aborting ...")

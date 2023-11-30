@@ -106,7 +106,7 @@ func (db *PQDatabase) GetLogsByExecutorIDSince(executorID string, limit int, sin
 	return logs, nil
 }
 
-func (db *PQDatabase) DeleteLogsByColonyName(colonyName string) error {
+func (db *PQDatabase) RemoveLogsByColonyName(colonyName string) error {
 	sqlStatement := `DELETE FROM ` + db.dbPrefix + `LOGS WHERE COLONY_NAME=$1`
 	_, err := db.postgresql.Exec(sqlStatement, colonyName)
 	if err != nil {

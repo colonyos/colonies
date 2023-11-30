@@ -112,7 +112,7 @@ func (db *PQDatabase) RenameColony(colonyName string, newName string) error {
 	return nil
 }
 
-func (db *PQDatabase) DeleteColonyByName(colonyName string) error {
+func (db *PQDatabase) RemoveColonyByName(colonyName string) error {
 	colony, err := db.GetColonyByName(colonyName)
 	if err != nil {
 		return err
@@ -122,12 +122,12 @@ func (db *PQDatabase) DeleteColonyByName(colonyName string) error {
 		return errors.New("Colony does not exists")
 	}
 
-	err = db.DeleteUsersByColonyName(colony.Name)
+	err = db.RemoveUsersByColonyName(colony.Name)
 	if err != nil {
 		return err
 	}
 
-	err = db.DeleteExecutorsByColonyName(colony.Name)
+	err = db.RemoveExecutorsByColonyName(colony.Name)
 	if err != nil {
 		return err
 	}
@@ -138,42 +138,42 @@ func (db *PQDatabase) DeleteColonyByName(colonyName string) error {
 		return err
 	}
 
-	err = db.DeleteAllProcessesByColonyName(colony.Name)
+	err = db.RemoveAllProcessesByColonyName(colony.Name)
 	if err != nil {
 		return err
 	}
 
-	err = db.DeleteAllProcessGraphsByColonyName(colony.Name)
+	err = db.RemoveAllProcessGraphsByColonyName(colony.Name)
 	if err != nil {
 		return err
 	}
 
-	err = db.DeleteAllGeneratorsByColonyName(colony.Name)
+	err = db.RemoveAllGeneratorsByColonyName(colony.Name)
 	if err != nil {
 		return err
 	}
 
-	err = db.DeleteAllCronsByColonyName(colony.Name)
+	err = db.RemoveAllCronsByColonyName(colony.Name)
 	if err != nil {
 		return err
 	}
 
-	err = db.DeleteFunctionsByColonyName(colony.Name)
+	err = db.RemoveFunctionsByColonyName(colony.Name)
 	if err != nil {
 		return err
 	}
 
-	err = db.DeleteLogsByColonyName(colony.Name)
+	err = db.RemoveLogsByColonyName(colony.Name)
 	if err != nil {
 		return err
 	}
 
-	err = db.DeleteFilesByColonyName(colony.Name)
+	err = db.RemoveFilesByColonyName(colony.Name)
 	if err != nil {
 		return err
 	}
 
-	err = db.DeleteSnapshotsByColonyName(colony.Name)
+	err = db.RemoveSnapshotsByColonyName(colony.Name)
 	if err != nil {
 		return err
 	}

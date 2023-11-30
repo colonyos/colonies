@@ -4,23 +4,23 @@ import (
 	"encoding/json"
 )
 
-const DeleteAllProcessGraphsPayloadType = "deleteallprocessgraphsmsg"
+const RemoveAllProcessGraphsPayloadType = "removeallprocessgraphsmsg"
 
-type DeleteAllProcessGraphsMsg struct {
+type RemoveAllProcessGraphsMsg struct {
 	ColonyName string `json:"colonyname"`
 	MsgType    string `json:"msgtype"`
 	State      int    `json:"state"`
 }
 
-func CreateDeleteAllProcessGraphsMsg(colonyID string) *DeleteAllProcessGraphsMsg {
-	msg := &DeleteAllProcessGraphsMsg{}
+func CreateRemoveAllProcessGraphsMsg(colonyID string) *RemoveAllProcessGraphsMsg {
+	msg := &RemoveAllProcessGraphsMsg{}
 	msg.ColonyName = colonyID
-	msg.MsgType = DeleteAllProcessGraphsPayloadType
+	msg.MsgType = RemoveAllProcessGraphsPayloadType
 
 	return msg
 }
 
-func (msg *DeleteAllProcessGraphsMsg) ToJSON() (string, error) {
+func (msg *RemoveAllProcessGraphsMsg) ToJSON() (string, error) {
 	jsonBytes, err := json.Marshal(msg)
 	if err != nil {
 		return "", err
@@ -29,7 +29,7 @@ func (msg *DeleteAllProcessGraphsMsg) ToJSON() (string, error) {
 	return string(jsonBytes), nil
 }
 
-func (msg *DeleteAllProcessGraphsMsg) Equals(msg2 *DeleteAllProcessGraphsMsg) bool {
+func (msg *RemoveAllProcessGraphsMsg) Equals(msg2 *RemoveAllProcessGraphsMsg) bool {
 	if msg2 == nil {
 		return false
 	}
@@ -41,7 +41,7 @@ func (msg *DeleteAllProcessGraphsMsg) Equals(msg2 *DeleteAllProcessGraphsMsg) bo
 	return false
 }
 
-func (msg *DeleteAllProcessGraphsMsg) ToJSONIndent() (string, error) {
+func (msg *RemoveAllProcessGraphsMsg) ToJSONIndent() (string, error) {
 	jsonBytes, err := json.MarshalIndent(msg, "", "    ")
 	if err != nil {
 		return "", err
@@ -50,8 +50,8 @@ func (msg *DeleteAllProcessGraphsMsg) ToJSONIndent() (string, error) {
 	return string(jsonBytes), nil
 }
 
-func CreateDeleteAllProcessGraphsMsgFromJSON(jsonString string) (*DeleteAllProcessGraphsMsg, error) {
-	var msg *DeleteAllProcessGraphsMsg
+func CreateRemoveAllProcessGraphsMsgFromJSON(jsonString string) (*RemoveAllProcessGraphsMsg, error) {
+	var msg *RemoveAllProcessGraphsMsg
 
 	err := json.Unmarshal([]byte(jsonString), &msg)
 	if err != nil {
