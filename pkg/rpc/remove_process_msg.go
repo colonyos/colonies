@@ -4,23 +4,23 @@ import (
 	"encoding/json"
 )
 
-const DeleteProcessPayloadType = "deleteprocessmsg"
+const RemoveProcessPayloadType = "removeprocessmsg"
 
-type DeleteProcessMsg struct {
+type RemoveProcessMsg struct {
 	ProcessID string `json:"processid"`
 	MsgType   string `json:"msgtype"`
 	All       bool   `json:"all"`
 }
 
-func CreateDeleteProcessMsg(processID string) *DeleteProcessMsg {
-	msg := &DeleteProcessMsg{}
+func CreateRemoveProcessMsg(processID string) *RemoveProcessMsg {
+	msg := &RemoveProcessMsg{}
 	msg.ProcessID = processID
-	msg.MsgType = DeleteProcessPayloadType
+	msg.MsgType = RemoveProcessPayloadType
 
 	return msg
 }
 
-func (msg *DeleteProcessMsg) ToJSON() (string, error) {
+func (msg *RemoveProcessMsg) ToJSON() (string, error) {
 	jsonBytes, err := json.Marshal(msg)
 	if err != nil {
 		return "", err
@@ -29,7 +29,7 @@ func (msg *DeleteProcessMsg) ToJSON() (string, error) {
 	return string(jsonBytes), nil
 }
 
-func (msg *DeleteProcessMsg) Equals(msg2 *DeleteProcessMsg) bool {
+func (msg *RemoveProcessMsg) Equals(msg2 *RemoveProcessMsg) bool {
 	if msg2 == nil {
 		return false
 	}
@@ -41,7 +41,7 @@ func (msg *DeleteProcessMsg) Equals(msg2 *DeleteProcessMsg) bool {
 	return false
 }
 
-func (msg *DeleteProcessMsg) ToJSONIndent() (string, error) {
+func (msg *RemoveProcessMsg) ToJSONIndent() (string, error) {
 	jsonBytes, err := json.MarshalIndent(msg, "", "    ")
 	if err != nil {
 		return "", err
@@ -50,8 +50,8 @@ func (msg *DeleteProcessMsg) ToJSONIndent() (string, error) {
 	return string(jsonBytes), nil
 }
 
-func CreateDeleteProcessMsgFromJSON(jsonString string) (*DeleteProcessMsg, error) {
-	var msg *DeleteProcessMsg
+func CreateRemoveProcessMsgFromJSON(jsonString string) (*RemoveProcessMsg, error) {
+	var msg *RemoveProcessMsg
 
 	err := json.Unmarshal([]byte(jsonString), &msg)
 	if err != nil {

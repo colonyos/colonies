@@ -29,7 +29,7 @@ func TestColonyClosedDB(t *testing.T) {
 	err = db.RenameColony("invalid_id", "invalid_name")
 	assert.NotNil(t, err)
 
-	err = db.DeleteColonyByName("invalid_id")
+	err = db.RemoveColonyByName("invalid_id")
 	assert.NotNil(t, err)
 
 	_, err = db.CountColonies()
@@ -155,7 +155,7 @@ func TestGetColonyByName(t *testing.T) {
 	assert.Equal(t, colony1.ID, colonyFromDB.ID)
 }
 
-func TestDeleteColonies(t *testing.T) {
+func TestRemoveColonies(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
 
@@ -250,10 +250,10 @@ func TestDeleteColonies(t *testing.T) {
 	_, err = db.CreateSnapshot(colony2.Name, "/testdir", "test_snapshot_name2")
 	assert.Nil(t, err)
 
-	err = db.DeleteColonyByName(core.GenerateRandomID())
+	err = db.RemoveColonyByName(core.GenerateRandomID())
 	assert.NotNil(t, err)
 
-	err = db.DeleteColonyByName(colony1.Name)
+	err = db.RemoveColonyByName(colony1.Name)
 	assert.Nil(t, err)
 
 	users, err := db.GetUsersByColonyName(colony1.Name)
@@ -276,23 +276,23 @@ func TestDeleteColonies(t *testing.T) {
 
 	executorFromDB, err = db.GetExecutorByID(executor3.ID)
 	assert.Nil(t, err)
-	assert.NotNil(t, executorFromDB) // Belongs to Colony 2 and should therefore NOT be deleted
+	assert.NotNil(t, executorFromDB) // Belongs to Colony 2 and should therefore NOT be removed
 
 	generatorFromDB, err := db.GetGeneratorByID(generator1.ID)
 	assert.Nil(t, err)
-	assert.Nil(t, generatorFromDB) // Should have been deleted
+	assert.Nil(t, generatorFromDB) // Should have been removed
 
 	generatorFromDB, err = db.GetGeneratorByID(generator2.ID)
 	assert.Nil(t, err)
-	assert.NotNil(t, generatorFromDB) // Should NOT have been deleted
+	assert.NotNil(t, generatorFromDB) // Should NOT have been removed
 
 	cronFromDB, err := db.GetCronByID(cron1.ID)
 	assert.Nil(t, err)
-	assert.Nil(t, cronFromDB) // Should have been deleted
+	assert.Nil(t, cronFromDB) // Should have been removed
 
 	cronFromDB, err = db.GetCronByID(cron2.ID)
 	assert.Nil(t, err)
-	assert.NotNil(t, cronFromDB) // Should NOT have been deleted
+	assert.NotNil(t, cronFromDB) // Should NOT have been removed
 
 	functions, err := db.GetFunctionsByColonyName(colony1.Name)
 	assert.Nil(t, err)

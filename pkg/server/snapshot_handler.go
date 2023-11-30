@@ -132,16 +132,16 @@ func (server *ColoniesServer) handleGetSnapshotsHTTPRequest(c *gin.Context, reco
 	server.sendHTTPReply(c, payloadType, jsonStr)
 }
 
-func (server *ColoniesServer) handleDeleteSnapshotHTTPRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
-	msg, err := rpc.CreateDeleteSnapshotMsgFromJSON(jsonString)
+func (server *ColoniesServer) handleRemoveSnapshotHTTPRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
+	msg, err := rpc.CreateRemoveSnapshotMsgFromJSON(jsonString)
 	if err != nil {
-		if server.handleHTTPError(c, errors.New("Failed to delete snapshot, invalid JSON"), http.StatusBadRequest) {
+		if server.handleHTTPError(c, errors.New("Failed to remove snapshot, invalid JSON"), http.StatusBadRequest) {
 			return
 		}
 	}
 
 	if msg.MsgType != payloadType {
-		server.handleHTTPError(c, errors.New("Failed to delete snapshot, msg.MsgType does not match payloadType"), http.StatusBadRequest)
+		server.handleHTTPError(c, errors.New("Failed to remove snapshot, msg.MsgType does not match payloadType"), http.StatusBadRequest)
 		return
 	}
 
@@ -152,25 +152,25 @@ func (server *ColoniesServer) handleDeleteSnapshotHTTPRequest(c *gin.Context, re
 	}
 
 	if msg.SnapshotID != "" {
-		err = server.db.DeleteSnapshotByID(msg.ColonyName, msg.SnapshotID)
+		err = server.db.RemoveSnapshotByID(msg.ColonyName, msg.SnapshotID)
 		if server.handleHTTPError(c, err, http.StatusInternalServerError) {
 			log.Error(err)
 			return
 		}
 	} else if msg.Name != "" {
-		err = server.db.DeleteSnapshotByName(msg.ColonyName, msg.Name)
+		err = server.db.RemoveSnapshotByName(msg.ColonyName, msg.Name)
 		if server.handleHTTPError(c, err, http.StatusInternalServerError) {
 			log.Error(err)
 			return
 		}
 	} else {
-		if server.handleHTTPError(c, errors.New("Failed to delete snapsnot, malformatted msg"), http.StatusInternalServerError) {
+		if server.handleHTTPError(c, errors.New("Failed to remove snapsnot, malformatted msg"), http.StatusInternalServerError) {
 			log.Error(err)
 			return
 		}
 	}
 
-	log.WithFields(log.Fields{"SnapshotID": msg.SnapshotID}).Debug("Deleting snapshot")
+	log.WithFields(log.Fields{"SnapshotID": msg.SnapshotID}).Debug("Removing snapshot")
 
 	server.sendEmptyHTTPReply(c, payloadType)
 }

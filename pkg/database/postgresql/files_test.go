@@ -112,7 +112,7 @@ func TestGetFileNamesByLabel(t *testing.T) {
 	assert.Len(t, filesnames, 1)
 }
 
-func TestDeleteFileByID(t *testing.T) {
+func TestRemoveFileByID(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
 
@@ -143,7 +143,7 @@ func TestDeleteFileByID(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, file1FromDB)
 
-	err = db.DeleteFileByID("test_colonyid", file2.ID)
+	err = db.RemoveFileByID("test_colonyid", file2.ID)
 	assert.Nil(t, err)
 
 	filesnames, err = db.GetFilenamesByLabel("test_colonyid", "/testdir")
@@ -155,7 +155,7 @@ func TestDeleteFileByID(t *testing.T) {
 	assert.Nil(t, file1FromDB)
 }
 
-func TestDeleteFilesByColonyName(t *testing.T) {
+func TestRemoveFilesByColonyName(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
 
@@ -194,7 +194,7 @@ func TestDeleteFilesByColonyName(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, files, 2)
 
-	err = db.DeleteFilesByColonyName("test_colony2")
+	err = db.RemoveFilesByColonyName("test_colony2")
 	assert.Nil(t, err)
 
 	files, err = db.CountFiles("test_colonyid1")
@@ -206,7 +206,7 @@ func TestDeleteFilesByColonyName(t *testing.T) {
 	assert.Equal(t, files, 0)
 }
 
-func TestDeleteFileByName(t *testing.T) {
+func TestRemoveFileByName(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
 
@@ -249,14 +249,14 @@ func TestDeleteFileByName(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Len(t, files, 3)
 
-	err = db.DeleteFileByID("test_colonyid", file4.ID)
+	err = db.RemoveFileByID("test_colonyid", file4.ID)
 	assert.Nil(t, err)
 
 	files, err = db.GetFileByName("test_colonyid", file4.Label, file4.Name)
 	assert.Nil(t, err)
 	assert.Len(t, files, 2)
 
-	err = db.DeleteFileByName("test_colonyid", file4.Label, file4.Name)
+	err = db.RemoveFileByName("test_colonyid", file4.Label, file4.Name)
 	assert.Nil(t, err)
 
 	files, err = db.GetFileByName("test_colonyid", file4.Label, file4.Name)

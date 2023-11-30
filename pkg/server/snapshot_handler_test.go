@@ -89,7 +89,7 @@ func TestGetSnapshotsByColonyName(t *testing.T) {
 	<-done
 }
 
-func TestDeleteSnapshotByID(t *testing.T) {
+func TestRemoveSnapshotByID(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 
 	label := "test_label"
@@ -115,7 +115,7 @@ func TestDeleteSnapshotByID(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Len(t, snapshotsFromDB, 2)
 
-	err = client.DeleteSnapshotByID(env.colonyName, snapshot2.ID, env.executorPrvKey)
+	err = client.RemoveSnapshotByID(env.colonyName, snapshot2.ID, env.executorPrvKey)
 	assert.Nil(t, err)
 
 	snapshotsFromDB, err = client.GetSnapshotsByColonyName(env.colonyName, env.executorPrvKey)
@@ -132,7 +132,7 @@ func TestDeleteSnapshotByID(t *testing.T) {
 	<-done
 }
 
-func TestDeleteSnapshotByName(t *testing.T) {
+func TestRemoveSnapshotByName(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 
 	label := "test_label"
@@ -158,7 +158,7 @@ func TestDeleteSnapshotByName(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Len(t, snapshotsFromDB, 2)
 
-	err = client.DeleteSnapshotByName(env.colonyName, "test_snapshot_name2", env.executorPrvKey)
+	err = client.RemoveSnapshotByName(env.colonyName, "test_snapshot_name2", env.executorPrvKey)
 	assert.Nil(t, err)
 
 	snapshotsFromDB, err = client.GetSnapshotsByColonyName(env.colonyName, env.executorPrvKey)
