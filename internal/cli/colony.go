@@ -95,7 +95,7 @@ var lsColoniesCmd = &cobra.Command{
 		CheckError(err)
 
 		if len(coloniesFromServer) == 0 {
-			log.Warning("No colonies found")
+			log.Info("No Colonies found")
 			os.Exit(0)
 		}
 

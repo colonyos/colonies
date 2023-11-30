@@ -278,6 +278,11 @@ var lsExecutorsCmd = &cobra.Command{
 		executorsFromServer, err := client.GetExecutors(ColonyName, PrvKey)
 		CheckError(err)
 
+		if len(executorsFromServer) == 0 {
+			log.Info("No Executors found")
+			os.Exit(0)
+		}
+
 		if Full {
 			if JSON {
 				jsonString, err := core.ConvertExecutorArrayToJSON(executorsFromServer)
