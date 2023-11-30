@@ -511,7 +511,7 @@ var removeAllProcessesCmd = &cobra.Command{
 			state = "all"
 		}
 
-		fmt.Print("WARNING!!! Are you sure you want to remove all " + state + " processes from Colony <" + ColonyName + ">. This operation cannot be undone! (YES,no): ")
+		fmt.Print("WARNING!!! Are you sure you want to remove " + state + " processes from Colony <" + ColonyName + ">. This operation cannot be undone! (YES,no): ")
 
 		var err error
 		reader := bufio.NewReader(os.Stdin)
@@ -520,19 +520,19 @@ var removeAllProcessesCmd = &cobra.Command{
 			if state == "all" {
 				err = client.RemoveAllProcesses(ColonyName, ColonyPrvKey)
 				CheckError(err)
-				log.WithFields(log.Fields{"ColonyName": ColonyName}).Info("Deleting all processes in Colony")
+				log.WithFields(log.Fields{"ColonyName": ColonyName}).Info("Deleting all processes in Colony <" + ColonyName + ">")
 			} else if Waiting {
 				err = client.RemoveAllProcessesWithState(ColonyName, core.WAITING, ColonyPrvKey)
 				CheckError(err)
-				log.WithFields(log.Fields{"ColonyName": ColonyName}).Info("Deleting all waiting processes in Colony")
+				log.WithFields(log.Fields{"ColonyName": ColonyName}).Info("Deleting all waiting processes in Colony <" + ColonyName + ">")
 			} else if Successful {
 				err = client.RemoveAllProcessesWithState(ColonyName, core.SUCCESS, ColonyPrvKey)
 				CheckError(err)
-				log.WithFields(log.Fields{"ColonyName": ColonyName}).Info("Deleting all successful processes in Colony")
+				log.WithFields(log.Fields{"ColonyName": ColonyName}).Info("Deleting all successful processes in Colony <" + ColonyName + ">")
 			} else if Failed {
 				err = client.RemoveAllProcessesWithState(ColonyName, core.FAILED, ColonyPrvKey)
 				CheckError(err)
-				log.WithFields(log.Fields{"ColonyName": ColonyName}).Info("Deleting all failed processes in Colony")
+				log.WithFields(log.Fields{"ColonyName": ColonyName}).Info("Deleting all failed processes in Colony <" + ColonyName + ">")
 			}
 		} else {
 			log.Info("Aborting ...")
