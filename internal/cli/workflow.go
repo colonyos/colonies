@@ -101,7 +101,7 @@ var submitWorkflowCmd = &cobra.Command{
 		graph, err := client.SubmitWorkflowSpec(workflowSpec, PrvKey)
 		CheckError(err)
 
-		log.WithFields(log.Fields{"WorkflowID": graph.ID}).Info("Workflow submitted")
+		log.WithFields(log.Fields{"ColonyName": ColonyName, "WorkflowID": graph.ID}).Info("Workflow submitted")
 	},
 }
 
@@ -185,7 +185,7 @@ var removeAllWorkflowsCmd = &cobra.Command{
 			state = "all"
 		}
 
-		fmt.Print("WARNING!!! Are you sure you want to remove all " + state + " workflows in the Colony This operation cannot be undone! (YES,no): ")
+		fmt.Print("WARNING!!! Are you sure you want to remove " + state + " workflows in the Colony <" + ColonyName + ">. This operation cannot be undone! (YES,no): ")
 
 		var err error
 		reader := bufio.NewReader(os.Stdin)
@@ -194,21 +194,20 @@ var removeAllWorkflowsCmd = &cobra.Command{
 			if state == "all" {
 				err = client.RemoveAllProcessGraphs(ColonyName, ColonyPrvKey)
 				CheckError(err)
-				log.WithFields(log.Fields{"ColonyName": ColonyName}).Info("Deleting all workflows in Colony")
+				log.WithFields(log.Fields{"ColonyName": ColonyName}).Info("Deleting all workflows in Colony <" + ColonyName + ">")
 			} else if Waiting {
 				err = client.RemoveAllProcessGraphsWithState(ColonyName, core.WAITING, ColonyPrvKey)
 				CheckError(err)
-				log.WithFields(log.Fields{"ColonyName": ColonyName}).Info("Deleting all waiting workflows in Colony")
+				log.WithFields(log.Fields{"ColonyName": ColonyName}).Info("Deleting all waiting workflows in Colony <" + ColonyName + ">")
 			} else if Successful {
 				err = client.RemoveAllProcessGraphsWithState(ColonyName, core.SUCCESS, ColonyPrvKey)
 				CheckError(err)
-				log.WithFields(log.Fields{"ColonyName": ColonyName}).Info("Deleting all successful workflows in Colony")
+				log.WithFields(log.Fields{"ColonyName": ColonyName}).Info("Deleting all successful workflows in Colony <" + ColonyName + ">")
 			} else if Failed {
 				err = client.RemoveAllProcessGraphsWithState(ColonyName, core.FAILED, ColonyPrvKey)
 				CheckError(err)
-				log.WithFields(log.Fields{"ColonyName": ColonyName}).Info("Deleting all failed workflows in Colony")
+				log.WithFields(log.Fields{"ColonyName": ColonyName}).Info("Deleting all failed workflows in Colony <" + ColonyName + ">")
 			}
-
 		} else {
 			log.Info("Aborting ...")
 		}
