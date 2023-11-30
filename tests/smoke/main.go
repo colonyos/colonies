@@ -40,7 +40,7 @@ func submitProcess(client *client.ColoniesClient, colonyID string, executorPrvKe
 		MaxWaitTime: 100,
 		MaxExecTime: 2,
 		MaxRetries:  10,
-		Conditions:  core.Conditions{ColonyID: colonyID, ExecutorType: "bemisexecutor"},
+		Conditions:  core.Conditions{ColonyName: colonyID, ExecutorType: "bemisexecutor"},
 		Env:         make(map[string]string)}
 
 	client.Submit(&funcSpec, executorPrvKey)
@@ -54,7 +54,7 @@ func startCron(client *client.ColoniesClient, colonyID string, executorPrvKey st
 		MaxWaitTime: -1,
 		MaxExecTime: 2,
 		MaxRetries:  10,
-		Conditions:  core.Conditions{ColonyID: colonyID, ExecutorType: "bemisexecutor"},
+		Conditions:  core.Conditions{ColonyName: colonyID, ExecutorType: "bemisexecutor"},
 		Env:         make(map[string]string)}
 
 	funcSpec2 := core.FunctionSpec{
@@ -64,7 +64,7 @@ func startCron(client *client.ColoniesClient, colonyID string, executorPrvKey st
 		MaxWaitTime: -1,
 		MaxExecTime: 2,
 		MaxRetries:  30,
-		Conditions:  core.Conditions{ColonyID: colonyID, ExecutorType: "bemisexecutor"},
+		Conditions:  core.Conditions{ColonyName: colonyID, ExecutorType: "bemisexecutor"},
 		Env:         make(map[string]string)}
 
 	workflowSpec := core.CreateWorkflowSpec(colonyID)
@@ -87,7 +87,7 @@ func startGenerator(client *client.ColoniesClient, colonyID string, executorPrvK
 		MaxWaitTime: -1,
 		MaxExecTime: 2,
 		MaxRetries:  10,
-		Conditions:  core.Conditions{ColonyID: colonyID, ExecutorType: "bemisexecutor"},
+		Conditions:  core.Conditions{ColonyName: colonyID, ExecutorType: "bemisexecutor"},
 		Env:         make(map[string]string)}
 
 	funcSpec2 := core.FunctionSpec{
@@ -97,7 +97,7 @@ func startGenerator(client *client.ColoniesClient, colonyID string, executorPrvK
 		MaxWaitTime: -1,
 		MaxExecTime: 2,
 		MaxRetries:  30,
-		Conditions:  core.Conditions{ColonyID: colonyID, ExecutorType: "bemisexecutor"},
+		Conditions:  core.Conditions{ColonyName: colonyID, ExecutorType: "bemisexecutor"},
 		Env:         make(map[string]string)}
 
 	workflowSpec := core.CreateWorkflowSpec(colonyID)
