@@ -37,10 +37,10 @@ func TestGeneratorClosedDB(t *testing.T) {
 	_, err = db.FindAllGenerators()
 	assert.NotNil(t, err)
 
-	err = db.DeleteGeneratorByID("invalid_id")
+	err = db.RemoveGeneratorByID("invalid_id")
 	assert.NotNil(t, err)
 
-	err = db.DeleteAllGeneratorsByColonyName("invalid_name")
+	err = db.RemoveAllGeneratorsByColonyName("invalid_name")
 	assert.NotNil(t, err)
 }
 
@@ -203,7 +203,7 @@ func TestFindAllGenerators(t *testing.T) {
 	assert.Len(t, generatorsFromDB, 2)
 }
 
-func TestDeleteGeneratorByID(t *testing.T) {
+func TestRemoveGeneratorByID(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
 
@@ -232,7 +232,7 @@ func TestDeleteGeneratorByID(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, count, 1)
 
-	err = db.DeleteGeneratorByID(generator1.ID)
+	err = db.RemoveGeneratorByID(generator1.ID)
 	assert.Nil(t, err)
 
 	generatorFromDB, err = db.GetGeneratorByID(generator1.ID)
@@ -248,7 +248,7 @@ func TestDeleteGeneratorByID(t *testing.T) {
 	assert.Equal(t, count, 0)
 }
 
-func TestDeleteAllGeneratorsByColonyName(t *testing.T) {
+func TestRemoveAllGeneratorsByColonyName(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
 
@@ -288,7 +288,7 @@ func TestDeleteAllGeneratorsByColonyName(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, generatorFromDB)
 
-	err = db.DeleteAllGeneratorsByColonyName(colonyName1)
+	err = db.RemoveAllGeneratorsByColonyName(colonyName1)
 	assert.Nil(t, err)
 
 	generatorFromDB, err = db.GetGeneratorByID(generator1.ID)

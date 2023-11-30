@@ -2,7 +2,6 @@ package server
 
 import (
 	"errors"
-	"fmt"
 	"math"
 	"os"
 	"strconv"
@@ -23,7 +22,7 @@ type command struct {
 	process                *core.Process
 	count                  int
 	colony                 *core.Colony
-	colonyName               string
+	colonyName             string
 	colonyReplyChan        chan *core.Colony
 	coloniesReplyChan      chan []*core.Colony
 	processReplyChan       chan *core.Process
@@ -236,26 +235,10 @@ func (controller *coloniesController) addColony(colony *core.Colony) (*core.Colo
 	}
 }
 
-func (controller *coloniesController) deleteColony(colonyName string) error {
+func (controller *coloniesController) removeColony(colonyName string) error {
 	cmd := &command{threaded: true, errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
-			err := controller.db.DeleteColonyByName(colonyName)
-			fmt.Println(err)
-			if err != nil {
-				cmd.errorChan <- err
-				return
-			}
-			cmd.errorChan <- nil
-		}}
-
-	controller.cmdQueue <- cmd
-	return <-cmd.errorChan
-}
-
-func (controller *coloniesController) renameColony(colonyName string, name string) error {
-	cmd := &command{threaded: true, errorChan: make(chan error, 1),
-		handler: func(cmd *command) {
-			err := controller.db.RenameColony(colonyName, name)
+			err := controller.db.RemoveColonyByName(colonyName)
 			if err != nil {
 				cmd.errorChan <- err
 				return
@@ -357,7 +340,7 @@ func (controller *coloniesController) addExecutor(executor *core.Executor, allow
 			}
 			if allowExecutorReregister {
 				if executorFromDB != nil {
-					err := controller.db.DeleteExecutorByID(executorFromDB.ID)
+					err := controller.db.RemoveExecutorByName(executor.ColonyName, executorFromDB.Name)
 					if err != nil {
 						cmd.errorChan <- err
 						return
@@ -433,17 +416,6 @@ func (controller *coloniesController) getExecutorByColonyName(colonyName string)
 	case executors := <-cmd.executorsReplyChan:
 		return executors, nil
 	}
-}
-
-func (controller *coloniesController) deleteExecutor(executorID string) error {
-	cmd := &command{threaded: true, errorChan: make(chan error, 1),
-		handler: func(cmd *command) {
-			err := controller.db.DeleteExecutorByID(executorID)
-			cmd.errorChan <- err
-		}}
-
-	controller.cmdQueue <- cmd
-	return <-cmd.errorChan
 }
 
 func (controller *coloniesController) addProcessToDB(process *core.Process) (*core.Process, error) {
@@ -1046,10 +1018,10 @@ func (controller *coloniesController) findFailedProcessGraphs(colonyName string,
 	}
 }
 
-func (controller *coloniesController) deleteProcess(processID string) error {
+func (controller *coloniesController) removeProcess(processID string) error {
 	cmd := &command{threaded: true, errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
-			err := controller.db.DeleteProcessByID(processID)
+			err := controller.db.RemoveProcessByID(processID)
 			cmd.errorChan <- err
 		}}
 
@@ -1057,22 +1029,22 @@ func (controller *coloniesController) deleteProcess(processID string) error {
 	return <-cmd.errorChan
 }
 
-func (controller *coloniesController) deleteAllProcesses(colonyName string, state int) error {
+func (controller *coloniesController) removeAllProcesses(colonyName string, state int) error {
 	cmd := &command{threaded: true, errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
 			switch state {
 			case core.WAITING:
-				cmd.errorChan <- controller.db.DeleteAllWaitingProcessesByColonyName(colonyName)
+				cmd.errorChan <- controller.db.RemoveAllWaitingProcessesByColonyName(colonyName)
 			case core.RUNNING:
-				cmd.errorChan <- errors.New("not possible to delete running processes")
+				cmd.errorChan <- errors.New("Not possible to remove running processes")
 			case core.SUCCESS:
-				cmd.errorChan <- controller.db.DeleteAllSuccessfulProcessesByColonyName(colonyName)
+				cmd.errorChan <- controller.db.RemoveAllSuccessfulProcessesByColonyName(colonyName)
 			case core.FAILED:
-				cmd.errorChan <- controller.db.DeleteAllFailedProcessesByColonyName(colonyName)
+				cmd.errorChan <- controller.db.RemoveAllFailedProcessesByColonyName(colonyName)
 			case core.NOTSET:
-				cmd.errorChan <- controller.db.DeleteAllProcessesByColonyName(colonyName)
+				cmd.errorChan <- controller.db.RemoveAllProcessesByColonyName(colonyName)
 			default:
-				cmd.errorChan <- errors.New("invalid state when deleting all processes")
+				cmd.errorChan <- errors.New("Invalid state when deleting all processes")
 			}
 		}}
 
@@ -1080,10 +1052,10 @@ func (controller *coloniesController) deleteAllProcesses(colonyName string, stat
 	return <-cmd.errorChan
 }
 
-func (controller *coloniesController) deleteProcessGraph(processID string) error {
+func (controller *coloniesController) removeProcessGraph(processID string) error {
 	cmd := &command{threaded: true, errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
-			err := controller.db.DeleteProcessGraphByID(processID)
+			err := controller.db.RemoveProcessGraphByID(processID)
 			cmd.errorChan <- err
 		}}
 
@@ -1091,20 +1063,20 @@ func (controller *coloniesController) deleteProcessGraph(processID string) error
 	return <-cmd.errorChan
 }
 
-func (controller *coloniesController) deleteAllProcessGraphs(colonyName string, state int) error {
+func (controller *coloniesController) removeAllProcessGraphs(colonyName string, state int) error {
 	cmd := &command{threaded: true, errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
 			switch state {
 			case core.WAITING:
-				cmd.errorChan <- controller.db.DeleteAllWaitingProcessGraphsByColonyName(colonyName)
+				cmd.errorChan <- controller.db.RemoveAllWaitingProcessGraphsByColonyName(colonyName)
 			case core.RUNNING:
-				cmd.errorChan <- errors.New("not possible to delete running processgraphs")
+				cmd.errorChan <- errors.New("not possible to remove running processgraphs")
 			case core.SUCCESS:
-				cmd.errorChan <- controller.db.DeleteAllSuccessfulProcessGraphsByColonyName(colonyName)
+				cmd.errorChan <- controller.db.RemoveAllSuccessfulProcessGraphsByColonyName(colonyName)
 			case core.FAILED:
-				cmd.errorChan <- controller.db.DeleteAllFailedProcessGraphsByColonyName(colonyName)
+				cmd.errorChan <- controller.db.RemoveAllFailedProcessGraphsByColonyName(colonyName)
 			case core.NOTSET:
-				cmd.errorChan <- controller.db.DeleteAllProcessGraphsByColonyName(colonyName)
+				cmd.errorChan <- controller.db.RemoveAllProcessGraphsByColonyName(colonyName)
 			default:
 				cmd.errorChan <- errors.New("invalid state when deleting all processgraphs")
 			}
@@ -1780,10 +1752,10 @@ func (controller *coloniesController) getFunctionByID(functionID string) (*core.
 	}
 }
 
-func (controller *coloniesController) deleteFunction(functionID string) error {
+func (controller *coloniesController) removeFunction(functionID string) error {
 	cmd := &command{threaded: true, errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
-			err := controller.db.DeleteFunctionByID(functionID)
+			err := controller.db.RemoveFunctionByID(functionID)
 			if err != nil {
 				cmd.errorChan <- err
 				return

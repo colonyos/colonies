@@ -182,7 +182,7 @@ func (db *PQDatabase) GetFilenamesByLabel(colonyName string, label string) ([]st
 	return filenames, nil
 }
 
-func (db *PQDatabase) DeleteFileByID(colonyName string, fileID string) error {
+func (db *PQDatabase) RemoveFileByID(colonyName string, fileID string) error {
 	sqlStatement := `DELETE FROM ` + db.dbPrefix + `FILES WHERE COLONY_NAME=$1 AND FILE_ID=$2`
 	_, err := db.postgresql.Exec(sqlStatement, colonyName, fileID)
 	if err != nil {
@@ -192,7 +192,7 @@ func (db *PQDatabase) DeleteFileByID(colonyName string, fileID string) error {
 	return nil
 }
 
-func (db *PQDatabase) DeleteFileByName(colonyName string, label string, name string) error {
+func (db *PQDatabase) RemoveFileByName(colonyName string, label string, name string) error {
 	sqlStatement := `DELETE FROM ` + db.dbPrefix + `FILES WHERE COLONY_NAME=$1 AND LABEL=$2 AND NAME=$3`
 	_, err := db.postgresql.Exec(sqlStatement, colonyName, label, name)
 	if err != nil {
@@ -202,7 +202,7 @@ func (db *PQDatabase) DeleteFileByName(colonyName string, label string, name str
 	return nil
 }
 
-func (db *PQDatabase) DeleteFilesByColonyName(colonyName string) error {
+func (db *PQDatabase) RemoveFilesByColonyName(colonyName string) error {
 	sqlStatement := `DELETE FROM ` + db.dbPrefix + `FILES WHERE COLONY_NAME=$1`
 	_, err := db.postgresql.Exec(sqlStatement, colonyName)
 	if err != nil {

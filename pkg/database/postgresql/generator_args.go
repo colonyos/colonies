@@ -70,7 +70,7 @@ func (db *PQDatabase) CountGeneratorArgs(generatorID string) (int, error) {
 	return count, nil
 }
 
-func (db *PQDatabase) DeleteGeneratorArgByID(generatorArgsID string) error {
+func (db *PQDatabase) RemoveGeneratorArgByID(generatorArgsID string) error {
 	sqlStatement := `DELETE FROM ` + db.dbPrefix + `GENERATORARGS WHERE GENERATORARG_ID=$1`
 	_, err := db.postgresql.Exec(sqlStatement, generatorArgsID)
 	if err != nil {
@@ -80,7 +80,7 @@ func (db *PQDatabase) DeleteGeneratorArgByID(generatorArgsID string) error {
 	return nil
 }
 
-func (db *PQDatabase) DeleteAllGeneratorArgsByGeneratorID(generatorID string) error {
+func (db *PQDatabase) RemoveAllGeneratorArgsByGeneratorID(generatorID string) error {
 	sqlStatement := `DELETE FROM ` + db.dbPrefix + `GENERATORARGS WHERE GENERATOR_ID=$1`
 	_, err := db.postgresql.Exec(sqlStatement, generatorID)
 	if err != nil {
@@ -90,7 +90,7 @@ func (db *PQDatabase) DeleteAllGeneratorArgsByGeneratorID(generatorID string) er
 	return nil
 }
 
-func (db *PQDatabase) DeleteAllGeneratorArgsByColonyName(colonyName string) error {
+func (db *PQDatabase) RemoveAllGeneratorArgsByColonyName(colonyName string) error {
 	sqlStatement := `DELETE FROM ` + db.dbPrefix + `GENERATORARGS WHERE COLONY_NAME=$1`
 	_, err := db.postgresql.Exec(sqlStatement, colonyName)
 	if err != nil {

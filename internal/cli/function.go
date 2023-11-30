@@ -93,7 +93,7 @@ var removeFuncCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		client := setup()
 
-		err := client.DeleteFunction(FunctionID, PrvKey)
+		err := client.RemoveFunction(FunctionID, PrvKey)
 		CheckError(err)
 
 		log.WithFields(log.Fields{"ColonyName": ColonyName, "FunctionId": FunctionID}).Info("Function removed")

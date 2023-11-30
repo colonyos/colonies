@@ -17,9 +17,9 @@ type Database interface {
 	GetUsersByColonyName(colonyName string) ([]*core.User, error)
 	GetUserByID(colonyName string, userID string) (*core.User, error)
 	GetUserByName(colonyName string, name string) (*core.User, error)
-	DeleteUserByID(colonyName string, userID string) error
-	DeleteUserByName(colonyName string, name string) error
-	DeleteUsersByColonyName(colonyName string) error
+	RemoveUserByID(colonyName string, userID string) error
+	RemoveUserByName(colonyName string, name string) error
+	RemoveUsersByColonyName(colonyName string) error
 
 	// Colony functions ...
 	AddColony(colony *core.Colony) error
@@ -27,7 +27,7 @@ type Database interface {
 	GetColonyByID(id string) (*core.Colony, error)
 	GetColonyByName(name string) (*core.Colony, error)
 	RenameColony(colonyName string, newColonyName string) error
-	DeleteColonyByName(colonyName string) error
+	RemoveColonyByName(colonyName string) error
 	CountColonies() (int, error)
 
 	// Executor functions ...
@@ -39,8 +39,8 @@ type Database interface {
 	ApproveExecutor(executor *core.Executor) error
 	RejectExecutor(executor *core.Executor) error
 	MarkAlive(executor *core.Executor) error
-	DeleteExecutorByID(executorID string) error
-	DeleteExecutorsByColonyName(colonyName string) error
+	RemoveExecutorByName(colonyName string, executorName string) error
+	RemoveExecutorsByColonyName(colonyName string) error
 	CountExecutors() (int, error)
 	CountExecutorsByColonyName(colonyName string) (int, error)
 
@@ -51,11 +51,11 @@ type Database interface {
 	GetFunctionsByColonyName(colonyName string) ([]*core.Function, error)
 	GetFunctionsByExecutorAndName(colonyName string, executorName string, name string) (*core.Function, error)
 	UpdateFunctionStats(colonyName string, executorName string, name string, counter int, minWaitTime float64, maxWaitTime float64, minExecTime float64, maxExecTime float64, avgWaitTime float64, avgExecTime float64) error
-	DeleteFunctionByID(functionID string) error
-	DeleteFunctionByName(colonyName string, executorName string, name string) error
-	DeleteFunctionsByExecutorName(colonyName string, executorName string) error
-	DeleteFunctionsByColonyName(colonyName string) error
-	DeleteFunctions() error
+	RemoveFunctionByID(functionID string) error
+	RemoveFunctionByName(colonyName string, executorName string, name string) error
+	RemoveFunctionsByExecutorName(colonyName string, executorName string) error
+	RemoveFunctionsByColonyName(colonyName string) error
+	RemoveFunctions() error
 
 	// Process functions ...
 	AddProcess(process *core.Process) error
@@ -70,15 +70,15 @@ type Database interface {
 	FindAllRunningProcesses() ([]*core.Process, error)
 	FindAllWaitingProcesses() ([]*core.Process, error)
 	FindUnassignedProcesses(colonyName string, executorID string, executorType string, count int) ([]*core.Process, error)
-	DeleteProcessByID(processID string) error
-	DeleteAllProcesses() error
-	DeleteAllWaitingProcessesByColonyName(colonyName string) error
-	DeleteAllRunningProcessesByColonyName(colonyName string) error
-	DeleteAllSuccessfulProcessesByColonyName(colonyName string) error
-	DeleteAllFailedProcessesByColonyName(colonyName string) error
-	DeleteAllProcessesByColonyName(colonyName string) error
-	DeleteAllProcessesByProcessGraphID(processGraphID string) error
-	DeleteAllProcessesInProcessGraphsByColonyName(colonyName string) error
+	RemoveProcessByID(processID string) error
+	RemoveAllProcesses() error
+	RemoveAllWaitingProcessesByColonyName(colonyName string) error
+	RemoveAllRunningProcessesByColonyName(colonyName string) error
+	RemoveAllSuccessfulProcessesByColonyName(colonyName string) error
+	RemoveAllFailedProcessesByColonyName(colonyName string) error
+	RemoveAllProcessesByColonyName(colonyName string) error
+	RemoveAllProcessesByProcessGraphID(processGraphID string) error
+	RemoveAllProcessesInProcessGraphsByColonyName(colonyName string) error
 	ResetProcess(process *core.Process) error
 	SetInput(processID string, output []interface{}) error
 	SetOutput(processID string, output []interface{}) error
@@ -110,15 +110,15 @@ type Database interface {
 	GetAttributes(targetID string) ([]core.Attribute, error)
 	GetAttributesByType(targetID string, attributeType int) ([]core.Attribute, error)
 	UpdateAttribute(attribute core.Attribute) error
-	DeleteAttributeByID(attributeID string) error
-	DeleteAllAttributesByColonyName(colonyName string) error
-	DeleteAllAttributesByColonyNameWithState(colonyName string, state int) error
-	DeleteAllAttributesByProcessGraphID(processGraphID string) error
-	DeleteAllAttributesInProcessGraphsByColonyName(colonyName string) error
-	DeleteAllAttributesInProcessGraphsByColonyNameWithState(colonyName string, state int) error
-	DeleteAttributesByTargetID(targetID string, attributeType int) error
-	DeleteAllAttributesByTargetID(targetID string) error
-	DeleteAllAttributes() error
+	RemoveAttributeByID(attributeID string) error
+	RemoveAllAttributesByColonyName(colonyName string) error
+	RemoveAllAttributesByColonyNameWithState(colonyName string, state int) error
+	RemoveAllAttributesByProcessGraphID(processGraphID string) error
+	RemoveAllAttributesInProcessGraphsByColonyName(colonyName string) error
+	RemoveAllAttributesInProcessGraphsByColonyNameWithState(colonyName string, state int) error
+	RemoveAttributesByTargetID(targetID string, attributeType int) error
+	RemoveAllAttributesByTargetID(targetID string) error
+	RemoveAllAttributes() error
 
 	// ProcessGraph functions
 	AddProcessGraph(processGraph *core.ProcessGraph) error
@@ -128,12 +128,12 @@ type Database interface {
 	FindRunningProcessGraphs(colonyName string, count int) ([]*core.ProcessGraph, error)
 	FindSuccessfulProcessGraphs(colonyName string, count int) ([]*core.ProcessGraph, error)
 	FindFailedProcessGraphs(colonyName string, count int) ([]*core.ProcessGraph, error)
-	DeleteProcessGraphByID(processGraphID string) error
-	DeleteAllProcessGraphsByColonyName(colonyName string) error
-	DeleteAllWaitingProcessGraphsByColonyName(colonyName string) error
-	DeleteAllRunningProcessGraphsByColonyName(colonyName string) error
-	DeleteAllSuccessfulProcessGraphsByColonyName(colonyName string) error
-	DeleteAllFailedProcessGraphsByColonyName(colonyName string) error
+	RemoveProcessGraphByID(processGraphID string) error
+	RemoveAllProcessGraphsByColonyName(colonyName string) error
+	RemoveAllWaitingProcessGraphsByColonyName(colonyName string) error
+	RemoveAllRunningProcessGraphsByColonyName(colonyName string) error
+	RemoveAllSuccessfulProcessGraphsByColonyName(colonyName string) error
+	RemoveAllFailedProcessGraphsByColonyName(colonyName string) error
 	CountWaitingProcessGraphs() (int, error)
 	CountRunningProcessGraphs() (int, error)
 	CountSuccessfulProcessGraphs() (int, error)
@@ -151,16 +151,16 @@ type Database interface {
 	GetGeneratorByName(name string) (*core.Generator, error)
 	FindGeneratorsByColonyName(colonyName string, count int) ([]*core.Generator, error)
 	FindAllGenerators() ([]*core.Generator, error)
-	DeleteGeneratorByID(generatorID string) error
-	DeleteAllGeneratorsByColonyName(colonyName string) error
+	RemoveGeneratorByID(generatorID string) error
+	RemoveAllGeneratorsByColonyName(colonyName string) error
 
 	// Generator args functions
 	AddGeneratorArg(generatorArg *core.GeneratorArg) error
 	GetGeneratorArgs(generatorID string, count int) ([]*core.GeneratorArg, error)
 	CountGeneratorArgs(generatorID string) (int, error)
-	DeleteGeneratorArgByID(generatorArgsID string) error
-	DeleteAllGeneratorArgsByGeneratorID(generatorID string) error
-	DeleteAllGeneratorArgsByColonyName(generatorID string) error
+	RemoveGeneratorArgByID(generatorArgsID string) error
+	RemoveAllGeneratorArgsByGeneratorID(generatorID string) error
+	RemoveAllGeneratorArgsByColonyName(generatorID string) error
 
 	// Cron functions
 	AddCron(cron *core.Cron) error
@@ -168,8 +168,8 @@ type Database interface {
 	GetCronByID(cronID string) (*core.Cron, error)
 	FindCronsByColonyName(colonyName string, count int) ([]*core.Cron, error)
 	FindAllCrons() ([]*core.Cron, error)
-	DeleteCronByID(cronID string) error
-	DeleteAllCronsByColonyName(colonyName string) error
+	RemoveCronByID(cronID string) error
+	RemoveAllCronsByColonyName(colonyName string) error
 
 	// Distributed locking
 	Lock(timeout int) error
@@ -184,7 +184,7 @@ type Database interface {
 	GetLogsByProcessIDSince(processID string, limit int, since int64) ([]core.Log, error)
 	GetLogsByExecutorID(executorID string, limit int) ([]core.Log, error)
 	GetLogsByExecutorIDSince(executorID string, limit int, since int64) ([]core.Log, error)
-	DeleteLogsByColonyName(colonyName string) error
+	RemoveLogsByColonyName(colonyName string) error
 	CountLogs(colonyName string) (int, error)
 
 	// File management
@@ -193,8 +193,8 @@ type Database interface {
 	GetLatestFileByName(colonyName string, label string, name string) ([]*core.File, error)
 	GetFileByName(colonyName string, label string, name string) ([]*core.File, error)
 	GetFilenamesByLabel(colonyName string, label string) ([]string, error)
-	DeleteFileByID(colonyName string, fileID string) error
-	DeleteFileByName(colonyName string, label string, name string) error
+	RemoveFileByID(colonyName string, fileID string) error
+	RemoveFileByName(colonyName string, label string, name string) error
 	GetFileLabels(colonyName string) ([]*core.Label, error)
 	GetFileLabelsByName(colonyName string, name string) ([]*core.Label, error)
 	CountFilesWithLabel(colonyName string, label string) (int, error)
@@ -204,8 +204,8 @@ type Database interface {
 	CreateSnapshot(colonyName string, label string, name string) (*core.Snapshot, error)
 	GetSnapshotByID(colonNamey string, snapshotID string) (*core.Snapshot, error)
 	GetSnapshotsByColonyName(colonyName string) ([]*core.Snapshot, error)
-	DeleteSnapshotByID(colonyName string, snapshotID string) error
+	RemoveSnapshotByID(colonyName string, snapshotID string) error
 	GetSnapshotByName(colonyName string, name string) (*core.Snapshot, error)
-	DeleteSnapshotByName(colonyName string, name string) error
-	DeleteSnapshotsByColonyName(colonyName string) error
+	RemoveSnapshotByName(colonyName string, name string) error
+	RemoveSnapshotsByColonyName(colonyName string) error
 }

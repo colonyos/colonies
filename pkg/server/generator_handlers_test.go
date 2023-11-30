@@ -363,7 +363,7 @@ func TestGetGenerators(t *testing.T) {
 	<-done
 }
 
-func TestDeleteGenerator(t *testing.T) {
+func TestRemoveGenerator(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 
 	colonyName := env.colonyName
@@ -373,7 +373,7 @@ func TestDeleteGenerator(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, addedGenerator)
 
-	err = client.DeleteGenerator(addedGenerator.ID, env.executorPrvKey)
+	err = client.RemoveGenerator(addedGenerator.ID, env.executorPrvKey)
 	assert.Nil(t, err)
 
 	time.Sleep(2 * time.Second)

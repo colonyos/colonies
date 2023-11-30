@@ -24,7 +24,7 @@ func init() {
 	rootCmd.AddCommand(executorCmd)
 
 	executorCmd.Flags().StringVarP(&ColonyPrvKey, "colonyprvkey", "", "", "Colony private key")
-	executorCmd.PersistentFlags().StringVarP(&ColonyID, "colonyid", "", "", "Colony Id")
+	executorCmd.PersistentFlags().StringVarP(&ColonyName, "colonyid", "", "", "Colony Id")
 	executorCmd.PersistentFlags().StringVarP(&ServerHost, "host", "", "localhost", "Server host")
 	executorCmd.PersistentFlags().IntVarP(&ServerPort, "port", "", -1, "Server HTTP port")
 
@@ -35,7 +35,7 @@ func init() {
 	addExecutorCmd.Flags().StringVarP(&TargetExecutorType, "type", "", "", "Executor type")
 	addExecutorCmd.Flags().BoolVarP(&Approve, "approve", "", false, "Also, approve the Executor")
 
-	removeExecutorCmd.Flags().StringVarP(&TargetExecutorID, "executorid", "", "", "Executor Id")
+	removeExecutorCmd.Flags().StringVarP(&TargetExecutorName, "name", "", "", "Executor Id")
 
 	lsExecutorsCmd.Flags().BoolVarP(&JSON, "json", "", false, "Print JSON instead of tables")
 	lsExecutorsCmd.Flags().BoolVarP(&Full, "full", "", false, "Print detail info")
@@ -131,14 +131,14 @@ var removeExecutorCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		client := setup()
 
-		if TargetExecutorID != "" {
-			err := client.DeleteExecutor(TargetExecutorID, ColonyPrvKey)
-			CheckError(err)
-		} else {
-			removeExecutorFromTmp(client)
+		if TargetExecutorName == "" {
+			CheckError(errors.New("Executor name must be specified"))
 		}
 
-		log.WithFields(log.Fields{"TargetExecutorID": TargetExecutorID, "ColonyID": ColonyID}).Info("Executor removed")
+		err := client.RemoveExecutor(ColonyName, TargetExecutorName, ColonyPrvKey)
+		CheckError(err)
+
+		log.WithFields(log.Fields{"ExecutorName": TargetExecutorName, "ColonyName": ColonyName}).Info("Executor removed")
 	},
 }
 
@@ -367,17 +367,4 @@ var rejectExecutorCmd = &cobra.Command{
 
 		log.WithFields(log.Fields{"ExecutorName": TargetExecutorName, "ColonyName": ColonyName}).Info("Executor reject")
 	},
-}
-
-func removeExecutorFromTmp(client *client.ColoniesClient) {
-	mutex.Lock()
-	defer mutex.Unlock()
-
-	executorIDBytes, err := os.ReadFile("/tmp/executorid")
-	CheckError(err)
-
-	executorID := string(executorIDBytes)
-
-	err = client.DeleteExecutor(executorID, ColonyPrvKey)
-	CheckError(err)
 }

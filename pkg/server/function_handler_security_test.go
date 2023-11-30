@@ -83,7 +83,7 @@ func TestGetFunctionsSecurity(t *testing.T) {
 	<-done
 }
 
-func TestDeleteFunctionSecurity(t *testing.T) {
+func TestRemoveFunctionSecurity(t *testing.T) {
 	env, client, server, _, done := setupTestEnv1(t)
 
 	// The setup looks like this:
@@ -103,19 +103,19 @@ func TestDeleteFunctionSecurity(t *testing.T) {
 	addedFunction, err := client.AddFunction(function, env.executor1PrvKey)
 	assert.Nil(t, err)
 
-	err = client.DeleteFunction(addedFunction.FunctionID, env.executor2PrvKey)
+	err = client.RemoveFunction(addedFunction.FunctionID, env.executor2PrvKey)
 	assert.NotNil(t, err) // Should not work
 
-	err = client.DeleteFunction(addedFunction.FunctionID, env.colony1PrvKey)
+	err = client.RemoveFunction(addedFunction.FunctionID, env.colony1PrvKey)
 	assert.NotNil(t, err) // Should not work
 
-	err = client.DeleteFunction(addedFunction.FunctionID, env.colony2PrvKey)
+	err = client.RemoveFunction(addedFunction.FunctionID, env.colony2PrvKey)
 	assert.NotNil(t, err) // Should not work
 
-	err = client.DeleteFunction(addedFunction.FunctionID, executor3PrvKey)
+	err = client.RemoveFunction(addedFunction.FunctionID, executor3PrvKey)
 	assert.NotNil(t, err)
 
-	err = client.DeleteFunction(addedFunction.FunctionID, env.executor1PrvKey)
+	err = client.RemoveFunction(addedFunction.FunctionID, env.executor1PrvKey)
 	assert.Nil(t, err)
 
 	server.Shutdown()

@@ -132,7 +132,7 @@ func TestApproveRejectExecutor(t *testing.T) {
 	<-done
 }
 
-func TestDeleteExecutor(t *testing.T) {
+func TestRemoveExecutor(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 
 	executor, executorPrvKey, err := utils.CreateTestExecutorWithKey(env.colonyName)
@@ -148,8 +148,8 @@ func TestDeleteExecutor(t *testing.T) {
 	assert.NotNil(t, executorFromServer)
 	assert.True(t, executor.ID == executorFromServer.ID)
 
-	// Now delete it
-	err = client.DeleteExecutor(executor.ID, env.colonyPrvKey)
+	// Now remove it
+	err = client.RemoveExecutor(env.colonyName, executor.Name, env.colonyPrvKey)
 	assert.Nil(t, err)
 
 	// Try to get it again, it should be gone

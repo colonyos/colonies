@@ -148,22 +148,22 @@ func (db *PQDatabase) FindAllGenerators() ([]*core.Generator, error) {
 	return generators, nil
 }
 
-func (db *PQDatabase) DeleteGeneratorByID(generatorID string) error {
+func (db *PQDatabase) RemoveGeneratorByID(generatorID string) error {
 	sqlStatement := `DELETE FROM ` + db.dbPrefix + `GENERATORS WHERE GENERATOR_ID=$1`
 	_, err := db.postgresql.Exec(sqlStatement, generatorID)
 	if err != nil {
 		return err
 	}
 
-	return db.DeleteAllGeneratorArgsByGeneratorID(generatorID)
+	return db.RemoveAllGeneratorArgsByGeneratorID(generatorID)
 }
 
-func (db *PQDatabase) DeleteAllGeneratorsByColonyName(colonyName string) error {
+func (db *PQDatabase) RemoveAllGeneratorsByColonyName(colonyName string) error {
 	sqlStatement := `DELETE FROM ` + db.dbPrefix + `GENERATORS WHERE COLONY_NAME=$1`
 	_, err := db.postgresql.Exec(sqlStatement, colonyName)
 	if err != nil {
 		return err
 	}
 
-	return db.DeleteAllGeneratorArgsByColonyName(colonyName)
+	return db.RemoveAllGeneratorArgsByColonyName(colonyName)
 }

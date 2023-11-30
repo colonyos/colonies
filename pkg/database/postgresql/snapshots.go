@@ -131,7 +131,7 @@ func (db *PQDatabase) GetSnapshotsByColonyName(colonyName string) ([]*core.Snaps
 	return db.parseSnapshots(rows)
 }
 
-func (db *PQDatabase) DeleteSnapshotByID(colonyName string, snapshotID string) error {
+func (db *PQDatabase) RemoveSnapshotByID(colonyName string, snapshotID string) error {
 	sqlStatement := `DELETE FROM ` + db.dbPrefix + `SNAPSHOTS WHERE COLONY_NAME=$1 AND SNAPSHOT_ID=$2`
 	_, err := db.postgresql.Exec(sqlStatement, colonyName, snapshotID)
 	if err != nil {
@@ -141,7 +141,7 @@ func (db *PQDatabase) DeleteSnapshotByID(colonyName string, snapshotID string) e
 	return nil
 }
 
-func (db *PQDatabase) DeleteSnapshotByName(colonyName string, name string) error {
+func (db *PQDatabase) RemoveSnapshotByName(colonyName string, name string) error {
 	sqlStatement := `DELETE FROM ` + db.dbPrefix + `SNAPSHOTS WHERE COLONY_NAME=$1 AND NAME=$2`
 	_, err := db.postgresql.Exec(sqlStatement, colonyName, colonyName+":"+name)
 	if err != nil {
@@ -151,7 +151,7 @@ func (db *PQDatabase) DeleteSnapshotByName(colonyName string, name string) error
 	return nil
 }
 
-func (db *PQDatabase) DeleteSnapshotsByColonyName(colonyName string) error {
+func (db *PQDatabase) RemoveSnapshotsByColonyName(colonyName string) error {
 	sqlStatement := `DELETE FROM ` + db.dbPrefix + `SNAPSHOTS WHERE COLONY_NAME=$1`
 	_, err := db.postgresql.Exec(sqlStatement, colonyName)
 	if err != nil {

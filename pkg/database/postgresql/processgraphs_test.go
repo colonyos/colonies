@@ -89,22 +89,22 @@ func TestProcessGraphClosedDB(t *testing.T) {
 	_, err = db.FindFailedProcessGraphs("invalid_id", 1)
 	assert.NotNil(t, err)
 
-	err = db.DeleteProcessGraphByID("invalid_id")
+	err = db.RemoveProcessGraphByID("invalid_id")
 	assert.NotNil(t, err)
 
-	err = db.DeleteAllProcessGraphsByColonyName("invalid_name")
+	err = db.RemoveAllProcessGraphsByColonyName("invalid_name")
 	assert.NotNil(t, err)
 
-	err = db.DeleteAllWaitingProcessGraphsByColonyName("invalid_name")
+	err = db.RemoveAllWaitingProcessGraphsByColonyName("invalid_name")
 	assert.NotNil(t, err)
 
-	err = db.DeleteAllRunningProcessGraphsByColonyName("invalid_name")
+	err = db.RemoveAllRunningProcessGraphsByColonyName("invalid_name")
 	assert.NotNil(t, err)
 
-	err = db.DeleteAllSuccessfulProcessGraphsByColonyName("invalid_name")
+	err = db.RemoveAllSuccessfulProcessGraphsByColonyName("invalid_name")
 	assert.NotNil(t, err)
 
-	err = db.DeleteAllFailedProcessGraphsByColonyName("invalid_name")
+	err = db.RemoveAllFailedProcessGraphsByColonyName("invalid_name")
 	assert.NotNil(t, err)
 
 	_, err = db.CountWaitingProcessGraphs()
@@ -149,7 +149,7 @@ func TestAddProcessGraph(t *testing.T) {
 	assert.True(t, graph.Equals(graphFromDB))
 }
 
-func TestDeleteProcessGraphByID(t *testing.T) {
+func TestRemoveProcessGraphByID(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
 	defer db.Close()
@@ -172,7 +172,7 @@ func TestDeleteProcessGraphByID(t *testing.T) {
 	assert.Nil(t, err)
 	assert.True(t, graphFromDB.Equals(graph2))
 
-	err = db.DeleteProcessGraphByID(graph1.ID)
+	err = db.RemoveProcessGraphByID(graph1.ID)
 	assert.Nil(t, err)
 
 	graphFromDB, err = db.GetProcessGraphByID(graph1.ID)
@@ -184,7 +184,7 @@ func TestDeleteProcessGraphByID(t *testing.T) {
 	assert.True(t, graphFromDB.Equals(graph2))
 }
 
-func TestDeleteAllProcessGraphsByColonyName(t *testing.T) {
+func TestRemoveAllProcessGraphsByColonyName(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
 	defer db.Close()
@@ -207,7 +207,7 @@ func TestDeleteAllProcessGraphsByColonyName(t *testing.T) {
 	assert.Nil(t, err)
 	assert.True(t, graphFromDB.Equals(graph2))
 
-	err = db.DeleteAllProcessGraphsByColonyName(colonyName)
+	err = db.RemoveAllProcessGraphsByColonyName(colonyName)
 	assert.Nil(t, err)
 
 	graphFromDB, err = db.GetProcessGraphByID(graph1.ID)
@@ -219,7 +219,7 @@ func TestDeleteAllProcessGraphsByColonyName(t *testing.T) {
 	assert.Nil(t, graphFromDB)
 }
 
-func TestDeleteAllWaitingProcessGraphsByColonyName(t *testing.T) {
+func TestRemoveAllWaitingProcessGraphsByColonyName(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
 	defer db.Close()
@@ -252,7 +252,7 @@ func TestDeleteAllWaitingProcessGraphsByColonyName(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, waitingGraphs, 2)
 
-	err = db.DeleteAllWaitingProcessGraphsByColonyName(colonyName)
+	err = db.RemoveAllWaitingProcessGraphsByColonyName(colonyName)
 	assert.Nil(t, err)
 
 	waitingGraphs, err = db.CountWaitingProcessGraphs()
@@ -264,7 +264,7 @@ func TestDeleteAllWaitingProcessGraphsByColonyName(t *testing.T) {
 	assert.Equal(t, waitingProcesses, 0)
 }
 
-func TestDeleteAllRunningProcessGraphsByColonyName(t *testing.T) {
+func TestRemoveAllRunningProcessGraphsByColonyName(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
 	defer db.Close()
@@ -297,7 +297,7 @@ func TestDeleteAllRunningProcessGraphsByColonyName(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, runningGraphs, 2)
 
-	err = db.DeleteAllRunningProcessGraphsByColonyName(colonyName)
+	err = db.RemoveAllRunningProcessGraphsByColonyName(colonyName)
 	assert.Nil(t, err)
 
 	runningProcesses, err = db.CountRunningProcesses()
@@ -309,7 +309,7 @@ func TestDeleteAllRunningProcessGraphsByColonyName(t *testing.T) {
 	assert.Equal(t, runningGraphs, 0)
 }
 
-func TestDeleteAllSuccessfulProcessGraphsByColonyName(t *testing.T) {
+func TestRemoveAllSuccessfulProcessGraphsByColonyName(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
 	defer db.Close()
@@ -342,7 +342,7 @@ func TestDeleteAllSuccessfulProcessGraphsByColonyName(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, successfulGraphs, 2)
 
-	err = db.DeleteAllSuccessfulProcessGraphsByColonyName(colonyName)
+	err = db.RemoveAllSuccessfulProcessGraphsByColonyName(colonyName)
 	assert.Nil(t, err)
 
 	successfulProcesses, err = db.CountSuccessfulProcesses()
@@ -354,7 +354,7 @@ func TestDeleteAllSuccessfulProcessGraphsByColonyName(t *testing.T) {
 	assert.Equal(t, successfulGraphs, 0)
 }
 
-func TestDeleteAllFailedProcessGraphsByColonyName(t *testing.T) {
+func TestRemoveAllFailedProcessGraphsByColonyName(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
 	defer db.Close()
@@ -387,7 +387,7 @@ func TestDeleteAllFailedProcessGraphsByColonyName(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, failedGraphs, 2)
 
-	err = db.DeleteAllFailedProcessGraphsByColonyName(colonyName)
+	err = db.RemoveAllFailedProcessGraphsByColonyName(colonyName)
 	assert.Nil(t, err)
 
 	failedProcesses, err = db.CountFailedProcesses()

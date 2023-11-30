@@ -119,7 +119,7 @@ func TestGetSnapshotByColonyNameSecurity(t *testing.T) {
 	<-done
 }
 
-func TestDeleteSnapshotByNameSecurity(t *testing.T) {
+func TestRemoveSnapshotByNameSecurity(t *testing.T) {
 	env, client, server, _, done := setupTestEnv1(t)
 
 	// The setup looks like this:
@@ -129,26 +129,26 @@ func TestDeleteSnapshotByNameSecurity(t *testing.T) {
 	snapshot, err := client.CreateSnapshot(env.colony1Name, "test_label", "test_snapshot_name", env.executor1PrvKey)
 	assert.Nil(t, err) // Should work
 
-	err = client.DeleteSnapshotByName(env.colony1Name, snapshot.Name, env.executor2PrvKey)
+	err = client.RemoveSnapshotByName(env.colony1Name, snapshot.Name, env.executor2PrvKey)
 	assert.NotNil(t, err) // Should not work
 
-	err = client.DeleteSnapshotByName(env.colony1Name, snapshot.Name, env.colony1PrvKey)
+	err = client.RemoveSnapshotByName(env.colony1Name, snapshot.Name, env.colony1PrvKey)
 	assert.NotNil(t, err) // Should not work
 
-	err = client.DeleteSnapshotByName(env.colony1Name, snapshot.Name, env.colony2PrvKey)
+	err = client.RemoveSnapshotByName(env.colony1Name, snapshot.Name, env.colony2PrvKey)
 	assert.NotNil(t, err) // Should not work
 
-	err = client.DeleteSnapshotByName(env.colony2Name, snapshot.Name, env.executor1PrvKey)
+	err = client.RemoveSnapshotByName(env.colony2Name, snapshot.Name, env.executor1PrvKey)
 	assert.NotNil(t, err) // Should not work
 
-	err = client.DeleteSnapshotByName(env.colony1Name, snapshot.Name, env.executor1PrvKey)
+	err = client.RemoveSnapshotByName(env.colony1Name, snapshot.Name, env.executor1PrvKey)
 	assert.Nil(t, err) // Should work
 
 	server.Shutdown()
 	<-done
 }
 
-func TestDeleteSnapshotByIDSecurity(t *testing.T) {
+func TestRemoveSnapshotByIDSecurity(t *testing.T) {
 	env, client, server, _, done := setupTestEnv1(t)
 
 	// The setup looks like this:
@@ -158,19 +158,19 @@ func TestDeleteSnapshotByIDSecurity(t *testing.T) {
 	snapshot, err := client.CreateSnapshot(env.colony1Name, "test_label", "test_snapshot_name", env.executor1PrvKey)
 	assert.Nil(t, err) // Should work
 
-	err = client.DeleteSnapshotByID(env.colony1Name, snapshot.ID, env.executor2PrvKey)
+	err = client.RemoveSnapshotByID(env.colony1Name, snapshot.ID, env.executor2PrvKey)
 	assert.NotNil(t, err) // Should not work
 
-	err = client.DeleteSnapshotByID(env.colony1Name, snapshot.ID, env.colony1PrvKey)
+	err = client.RemoveSnapshotByID(env.colony1Name, snapshot.ID, env.colony1PrvKey)
 	assert.NotNil(t, err) // Should not work
 
-	err = client.DeleteSnapshotByID(env.colony1Name, snapshot.ID, env.colony2PrvKey)
+	err = client.RemoveSnapshotByID(env.colony1Name, snapshot.ID, env.colony2PrvKey)
 	assert.NotNil(t, err) // Should not work
 
-	err = client.DeleteSnapshotByID(env.colony2Name, snapshot.ID, env.executor1PrvKey)
+	err = client.RemoveSnapshotByID(env.colony2Name, snapshot.ID, env.executor1PrvKey)
 	assert.NotNil(t, err) // Should not work
 
-	err = client.DeleteSnapshotByID(env.colony1Name, snapshot.ID, env.executor1PrvKey)
+	err = client.RemoveSnapshotByID(env.colony1Name, snapshot.ID, env.executor1PrvKey)
 	assert.Nil(t, err) // Should work
 
 	server.Shutdown()

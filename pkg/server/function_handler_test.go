@@ -81,7 +81,7 @@ func TestGetFunctionsByColonyName(t *testing.T) {
 	<-done
 }
 
-func TestDeleteFunction(t *testing.T) {
+func TestRemoveFunction(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 
 	function1 := &core.Function{ExecutorName: env.executorName, ColonyName: env.colonyName, FuncName: "testfunc1", AvgWaitTime: 1.1, AvgExecTime: 0.1}
@@ -98,7 +98,7 @@ func TestDeleteFunction(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Len(t, functions, 2)
 
-	err = client.DeleteFunction(addedFunction1.FunctionID, env.executorPrvKey)
+	err = client.RemoveFunction(addedFunction1.FunctionID, env.executorPrvKey)
 	assert.Nil(t, err)
 
 	functions, err = client.GetFunctionsByExecutorName(env.colonyName, env.executorName, env.executorPrvKey)

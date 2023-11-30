@@ -4,23 +4,23 @@ import (
 	"encoding/json"
 )
 
-const DeleteAllProcessesPayloadType = "deleteallprocessesmsg"
+const RemoveAllProcessesPayloadType = "removeallprocessesmsg"
 
-type DeleteAllProcessesMsg struct {
+type RemoveAllProcessesMsg struct {
 	ColonyName string `json:"colonyname"`
 	MsgType    string `json:"msgtype"`
 	State      int    `json:"state"`
 }
 
-func CreateDeleteAllProcessesMsg(colonyID string) *DeleteAllProcessesMsg {
-	msg := &DeleteAllProcessesMsg{}
+func CreateRemoveAllProcessesMsg(colonyID string) *RemoveAllProcessesMsg {
+	msg := &RemoveAllProcessesMsg{}
 	msg.ColonyName = colonyID
-	msg.MsgType = DeleteAllProcessesPayloadType
+	msg.MsgType = RemoveAllProcessesPayloadType
 
 	return msg
 }
 
-func (msg *DeleteAllProcessesMsg) ToJSON() (string, error) {
+func (msg *RemoveAllProcessesMsg) ToJSON() (string, error) {
 	jsonBytes, err := json.Marshal(msg)
 	if err != nil {
 		return "", err
@@ -29,7 +29,7 @@ func (msg *DeleteAllProcessesMsg) ToJSON() (string, error) {
 	return string(jsonBytes), nil
 }
 
-func (msg *DeleteAllProcessesMsg) Equals(msg2 *DeleteAllProcessesMsg) bool {
+func (msg *RemoveAllProcessesMsg) Equals(msg2 *RemoveAllProcessesMsg) bool {
 	if msg2 == nil {
 		return false
 	}
@@ -41,7 +41,7 @@ func (msg *DeleteAllProcessesMsg) Equals(msg2 *DeleteAllProcessesMsg) bool {
 	return false
 }
 
-func (msg *DeleteAllProcessesMsg) ToJSONIndent() (string, error) {
+func (msg *RemoveAllProcessesMsg) ToJSONIndent() (string, error) {
 	jsonBytes, err := json.MarshalIndent(msg, "", "    ")
 	if err != nil {
 		return "", err
@@ -50,8 +50,8 @@ func (msg *DeleteAllProcessesMsg) ToJSONIndent() (string, error) {
 	return string(jsonBytes), nil
 }
 
-func CreateDeleteAllProcessesMsgFromJSON(jsonString string) (*DeleteAllProcessesMsg, error) {
-	var msg *DeleteAllProcessesMsg
+func CreateRemoveAllProcessesMsgFromJSON(jsonString string) (*RemoveAllProcessesMsg, error) {
+	var msg *RemoveAllProcessesMsg
 
 	err := json.Unmarshal([]byte(jsonString), &msg)
 	if err != nil {

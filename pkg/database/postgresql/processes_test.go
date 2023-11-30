@@ -52,31 +52,31 @@ func TestProcessClosedDB(t *testing.T) {
 	_, err = db.FindUnassignedProcesses("invalid_id", "invalid_id", "invalid_type", 1)
 	assert.NotNil(t, err)
 
-	err = db.DeleteProcessByID("invalid_id")
+	err = db.RemoveProcessByID("invalid_id")
 	assert.NotNil(t, err)
 
-	err = db.DeleteAllProcesses()
+	err = db.RemoveAllProcesses()
 	assert.NotNil(t, err)
 
-	err = db.DeleteAllWaitingProcessesByColonyName("invalid_name")
+	err = db.RemoveAllWaitingProcessesByColonyName("invalid_name")
 	assert.NotNil(t, err)
 
-	err = db.DeleteAllRunningProcessesByColonyName("invalid_name")
+	err = db.RemoveAllRunningProcessesByColonyName("invalid_name")
 	assert.NotNil(t, err)
 
-	err = db.DeleteAllSuccessfulProcessesByColonyName("invalid_name")
+	err = db.RemoveAllSuccessfulProcessesByColonyName("invalid_name")
 	assert.NotNil(t, err)
 
-	err = db.DeleteAllFailedProcessesByColonyName("invalid_name")
+	err = db.RemoveAllFailedProcessesByColonyName("invalid_name")
 	assert.NotNil(t, err)
 
-	err = db.DeleteAllProcessesByColonyName("invalid_name")
+	err = db.RemoveAllProcessesByColonyName("invalid_name")
 	assert.NotNil(t, err)
 
-	err = db.DeleteAllProcessesByProcessGraphID("invalid_id")
+	err = db.RemoveAllProcessesByProcessGraphID("invalid_id")
 	assert.NotNil(t, err)
 
-	err = db.DeleteAllProcessesInProcessGraphsByColonyName("invalid_name")
+	err = db.RemoveAllProcessesInProcessGraphsByColonyName("invalid_name")
 	assert.NotNil(t, err)
 
 	err = db.ResetProcess(process)
@@ -301,7 +301,7 @@ func TestAddProcessWithEnv(t *testing.T) {
 	assert.Len(t, processesFromDB, 1)
 }
 
-func TestDeleteProcesses(t *testing.T) {
+func TestRemoveProcesses(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
 
@@ -331,14 +331,14 @@ func TestDeleteProcesses(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, 3, numberOfProcesses)
 
-	err = db.DeleteProcessByID(process1.ID)
+	err = db.RemoveProcessByID(process1.ID)
 	assert.Nil(t, err)
 
 	numberOfProcesses, err = db.CountProcesses()
 	assert.Nil(t, err)
 	assert.Equal(t, 2, numberOfProcesses)
 
-	err = db.DeleteAllProcesses()
+	err = db.RemoveAllProcesses()
 	assert.Nil(t, err)
 
 	numberOfProcesses, err = db.CountProcesses()
@@ -346,7 +346,7 @@ func TestDeleteProcesses(t *testing.T) {
 	assert.Equal(t, 0, numberOfProcesses)
 }
 
-func TestDeleteAllProcessesByColony(t *testing.T) {
+func TestRemoveAllProcessesByColony(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
 
@@ -368,7 +368,7 @@ func TestDeleteAllProcessesByColony(t *testing.T) {
 	err = db.AddAttribute(attribute2)
 	assert.Nil(t, err)
 
-	err = db.DeleteAllProcessesByColonyName(colony2Name)
+	err = db.RemoveAllProcessesByColonyName(colony2Name)
 	assert.Nil(t, err)
 
 	_, err = db.GetAttribute(process1.ID, "test_key1", core.IN)
@@ -377,7 +377,7 @@ func TestDeleteAllProcessesByColony(t *testing.T) {
 	assert.NotNil(t, err)
 }
 
-func TestDeleteAllProcessesByColonyWithState(t *testing.T) {
+func TestRemoveAllProcessesByColonyWithState(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
 
@@ -436,7 +436,7 @@ func TestDeleteAllProcessesByColonyWithState(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, failedProcesses, 2)
 
-	err = db.DeleteAllWaitingProcessesByColonyName(colony1Name)
+	err = db.RemoveAllWaitingProcessesByColonyName(colony1Name)
 	waitingProcesses, err = db.CountWaitingProcesses()
 	assert.Nil(t, err)
 	assert.Equal(t, waitingProcesses, 0)
@@ -450,7 +450,7 @@ func TestDeleteAllProcessesByColonyWithState(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, failedProcesses, 2)
 
-	err = db.DeleteAllRunningProcessesByColonyName(colony1Name)
+	err = db.RemoveAllRunningProcessesByColonyName(colony1Name)
 	waitingProcesses, err = db.CountWaitingProcesses()
 	assert.Nil(t, err)
 	assert.Equal(t, waitingProcesses, 0)
@@ -464,7 +464,7 @@ func TestDeleteAllProcessesByColonyWithState(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, failedProcesses, 2)
 
-	err = db.DeleteAllSuccessfulProcessesByColonyName(colony1Name)
+	err = db.RemoveAllSuccessfulProcessesByColonyName(colony1Name)
 	waitingProcesses, err = db.CountWaitingProcesses()
 	assert.Nil(t, err)
 	assert.Equal(t, waitingProcesses, 0)
@@ -478,7 +478,7 @@ func TestDeleteAllProcessesByColonyWithState(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, failedProcesses, 2)
 
-	err = db.DeleteAllFailedProcessesByColonyName(colony1Name)
+	err = db.RemoveAllFailedProcessesByColonyName(colony1Name)
 	waitingProcesses, err = db.CountWaitingProcesses()
 	assert.Nil(t, err)
 	assert.Equal(t, waitingProcesses, 0)
@@ -492,7 +492,7 @@ func TestDeleteAllProcessesByColonyWithState(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, failedProcesses, 1)
 
-	err = db.DeleteAllFailedProcessesByColonyName(colony2Name)
+	err = db.RemoveAllFailedProcessesByColonyName(colony2Name)
 	waitingProcesses, err = db.CountWaitingProcesses()
 	assert.Nil(t, err)
 	assert.Equal(t, waitingProcesses, 0)
@@ -507,7 +507,7 @@ func TestDeleteAllProcessesByColonyWithState(t *testing.T) {
 	assert.Equal(t, failedProcesses, 0)
 }
 
-func TestDeleteAllProcessesByProcessGraphID(t *testing.T) {
+func TestRemoveAllProcessesByProcessGraphID(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
 
@@ -550,7 +550,7 @@ func TestDeleteAllProcessesByProcessGraphID(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, processFromServer)
 
-	err = db.DeleteAllProcessesByProcessGraphID(processGraphID)
+	err = db.RemoveAllProcessesByProcessGraphID(processGraphID)
 	assert.Nil(t, err)
 
 	processFromServer, err = db.GetProcessByID(process1.ID)
@@ -566,7 +566,7 @@ func TestDeleteAllProcessesByProcessGraphID(t *testing.T) {
 	assert.NotNil(t, processFromServer)
 }
 
-func TestDeleteAllProcessesInProcessGraphsByColonyName(t *testing.T) {
+func TestRemoveAllProcessesInProcessGraphsByColonyName(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
 
@@ -610,7 +610,7 @@ func TestDeleteAllProcessesInProcessGraphsByColonyName(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, processFromServer)
 
-	err = db.DeleteAllProcessesInProcessGraphsByColonyName(colonyName)
+	err = db.RemoveAllProcessesInProcessGraphsByColonyName(colonyName)
 	assert.Nil(t, err)
 
 	processFromServer, err = db.GetProcessByID(process1.ID)
@@ -626,7 +626,7 @@ func TestDeleteAllProcessesInProcessGraphsByColonyName(t *testing.T) {
 	assert.NotNil(t, processFromServer)
 }
 
-func TestDeleteAllProcessesInProcessGraphsByColonyNameWithState(t *testing.T) {
+func TestRemoveAllProcessesInProcessGraphsByColonyNameWithState(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
 
@@ -683,14 +683,14 @@ func TestDeleteAllProcessesInProcessGraphsByColonyNameWithState(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, runningProcesses, 2)
 
-	err = db.DeleteAllProcessesInProcessGraphsByColonyNameWithState(colonyName, core.FAILED)
+	err = db.RemoveAllProcessesInProcessGraphsByColonyNameWithState(colonyName, core.FAILED)
 	assert.Nil(t, err)
 
 	runningProcesses, err = db.CountFailedProcesses()
 	assert.Nil(t, err)
 	assert.Equal(t, runningProcesses, 0)
 
-	err = db.DeleteAllProcessesInProcessGraphsByColonyNameWithState(colonyName, core.RUNNING)
+	err = db.RemoveAllProcessesInProcessGraphsByColonyNameWithState(colonyName, core.RUNNING)
 	assert.Nil(t, err)
 
 	runningProcesses, err = db.CountRunningProcesses()
@@ -698,7 +698,7 @@ func TestDeleteAllProcessesInProcessGraphsByColonyNameWithState(t *testing.T) {
 	assert.Equal(t, runningProcesses, 1)
 }
 
-func TestDeleteAllProcessesAndAttributes(t *testing.T) {
+func TestRemoveAllProcessesAndAttributes(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
 
@@ -713,14 +713,14 @@ func TestDeleteAllProcessesAndAttributes(t *testing.T) {
 	err = db.AddAttribute(attribute)
 	assert.Nil(t, err)
 
-	err = db.DeleteAllProcesses()
+	err = db.RemoveAllProcesses()
 	assert.Nil(t, err)
 
 	_, err = db.GetAttribute(process1.ID, "test_key1", core.IN)
 	assert.NotNil(t, err)
 }
 
-func TestDeleteProcessesAndAttributes(t *testing.T) {
+func TestRemoveProcessesAndAttributes(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
 
@@ -743,7 +743,7 @@ func TestDeleteProcessesAndAttributes(t *testing.T) {
 	err = db.AddAttribute(attribute)
 	assert.Nil(t, err)
 
-	err = db.DeleteProcessByID(process1.ID)
+	err = db.RemoveProcessByID(process1.ID)
 	assert.Nil(t, err)
 
 	_, err = db.GetAttribute(process1.ID, "test_key1", core.IN)
@@ -751,7 +751,7 @@ func TestDeleteProcessesAndAttributes(t *testing.T) {
 
 	attributeFromDB, err := db.GetAttribute(process2.ID, "test_key2", core.IN)
 	assert.Nil(t, err)
-	assert.NotNil(t, attributeFromDB) // Not deleted as it belongs to process 2
+	assert.NotNil(t, attributeFromDB) // Not removed as it belongs to process 2
 }
 
 func TestAssign(t *testing.T) {

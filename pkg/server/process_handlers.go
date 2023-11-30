@@ -298,16 +298,16 @@ func (server *ColoniesServer) handleGetProcessHTTPRequest(c *gin.Context, recove
 	server.sendHTTPReply(c, payloadType, jsonString)
 }
 
-func (server *ColoniesServer) handleDeleteProcessHTTPRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
-	msg, err := rpc.CreateDeleteProcessMsgFromJSON(jsonString)
+func (server *ColoniesServer) handleRemoveProcessHTTPRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
+	msg, err := rpc.CreateRemoveProcessMsgFromJSON(jsonString)
 	if err != nil {
-		if server.handleHTTPError(c, errors.New("Failed to delete process, invalid JSON"), http.StatusBadRequest) {
+		if server.handleHTTPError(c, errors.New("Failed to remove process, invalid JSON"), http.StatusBadRequest) {
 			return
 		}
 	}
 
 	if msg.MsgType != payloadType {
-		server.handleHTTPError(c, errors.New("Failed to delete process, msg.MsgType does not match payloadType"), http.StatusBadRequest)
+		server.handleHTTPError(c, errors.New("Failed to remove process, msg.MsgType does not match payloadType"), http.StatusBadRequest)
 		return
 	}
 
@@ -316,7 +316,7 @@ func (server *ColoniesServer) handleDeleteProcessHTTPRequest(c *gin.Context, rec
 		return
 	}
 	if process == nil {
-		server.handleHTTPError(c, errors.New("Failed to delete process, process is nil"), http.StatusInternalServerError)
+		server.handleHTTPError(c, errors.New("Failed to remove process, process is nil"), http.StatusInternalServerError)
 		return
 	}
 
@@ -325,26 +325,26 @@ func (server *ColoniesServer) handleDeleteProcessHTTPRequest(c *gin.Context, rec
 		return
 	}
 
-	err = server.controller.deleteProcess(msg.ProcessID)
+	err = server.controller.removeProcess(msg.ProcessID)
 	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
 
-	log.WithFields(log.Fields{"ProcessId": process.ID}).Debug("Deleting process")
+	log.WithFields(log.Fields{"ProcessId": process.ID}).Debug("Removing process")
 
 	server.sendEmptyHTTPReply(c, payloadType)
 }
 
-func (server *ColoniesServer) handleDeleteAllProcessesHTTPRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
-	msg, err := rpc.CreateDeleteAllProcessesMsgFromJSON(jsonString)
+func (server *ColoniesServer) handleRemoveAllProcessesHTTPRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
+	msg, err := rpc.CreateRemoveAllProcessesMsgFromJSON(jsonString)
 	if err != nil {
-		if server.handleHTTPError(c, errors.New("Failed to delete all processes, invalid JSON"), http.StatusBadRequest) {
+		if server.handleHTTPError(c, errors.New("Failed to remove all processes, invalid JSON"), http.StatusBadRequest) {
 			return
 		}
 	}
 
 	if msg.MsgType != payloadType {
-		server.handleHTTPError(c, errors.New("Failed to delete all processes, msg.MsgType does not match payloadType"), http.StatusBadRequest)
+		server.handleHTTPError(c, errors.New("Failed to remove all processes, msg.MsgType does not match payloadType"), http.StatusBadRequest)
 		return
 	}
 
@@ -353,12 +353,12 @@ func (server *ColoniesServer) handleDeleteAllProcessesHTTPRequest(c *gin.Context
 		return
 	}
 
-	err = server.controller.deleteAllProcesses(msg.ColonyName, msg.State)
+	err = server.controller.removeAllProcesses(msg.ColonyName, msg.State)
 	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
 
-	log.WithFields(log.Fields{"ColonyName": msg.ColonyName}).Debug("Deleting all processes")
+	log.WithFields(log.Fields{"ColonyName": msg.ColonyName}).Debug("Removing all processes")
 
 	server.sendEmptyHTTPReply(c, payloadType)
 }

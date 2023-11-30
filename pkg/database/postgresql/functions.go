@@ -133,7 +133,7 @@ func (db *PQDatabase) UpdateFunctionStats(
 	return nil
 }
 
-func (db *PQDatabase) DeleteFunctionByID(functionID string) error {
+func (db *PQDatabase) RemoveFunctionByID(functionID string) error {
 	sqlStatement := `DELETE FROM ` + db.dbPrefix + `FUNCTIONS WHERE FUNCTION_ID=$1`
 	_, err := db.postgresql.Exec(sqlStatement, functionID)
 	if err != nil {
@@ -143,7 +143,7 @@ func (db *PQDatabase) DeleteFunctionByID(functionID string) error {
 	return nil
 }
 
-func (db *PQDatabase) DeleteFunctionByName(colonyName string, executorName string, name string) error {
+func (db *PQDatabase) RemoveFunctionByName(colonyName string, executorName string, name string) error {
 	sqlStatement := `DELETE FROM ` + db.dbPrefix + `FUNCTIONS WHERE COLONY_NAME=$1 AND EXECUTOR_NAME=$2 AND FUNCNAME=$3`
 	_, err := db.postgresql.Exec(sqlStatement, colonyName, executorName, name)
 	if err != nil {
@@ -153,7 +153,7 @@ func (db *PQDatabase) DeleteFunctionByName(colonyName string, executorName strin
 	return nil
 }
 
-func (db *PQDatabase) DeleteFunctionsByExecutorName(colonyName string, executorName string) error {
+func (db *PQDatabase) RemoveFunctionsByExecutorName(colonyName string, executorName string) error {
 	sqlStatement := `DELETE FROM ` + db.dbPrefix + `FUNCTIONS WHERE COLONY_NAME=$1 AND EXECUTOR_NAME=$2`
 	_, err := db.postgresql.Exec(sqlStatement, colonyName, executorName)
 	if err != nil {
@@ -163,7 +163,7 @@ func (db *PQDatabase) DeleteFunctionsByExecutorName(colonyName string, executorN
 	return nil
 }
 
-func (db *PQDatabase) DeleteFunctionsByColonyName(colonyName string) error {
+func (db *PQDatabase) RemoveFunctionsByColonyName(colonyName string) error {
 	sqlStatement := `DELETE FROM ` + db.dbPrefix + `FUNCTIONS WHERE COLONY_NAME=$1`
 	_, err := db.postgresql.Exec(sqlStatement, colonyName)
 	if err != nil {
@@ -173,7 +173,7 @@ func (db *PQDatabase) DeleteFunctionsByColonyName(colonyName string) error {
 	return nil
 }
 
-func (db *PQDatabase) DeleteFunctions() error {
+func (db *PQDatabase) RemoveFunctions() error {
 	sqlStatement := `DELETE FROM ` + db.dbPrefix + `FUNCTIONS`
 	_, err := db.postgresql.Exec(sqlStatement)
 	if err != nil {

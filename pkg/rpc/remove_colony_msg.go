@@ -4,22 +4,22 @@ import (
 	"encoding/json"
 )
 
-const DeleteColonyPayloadType = "deletecolonymsg"
+const RemoveColonyPayloadType = "removecolonymsg"
 
-type DeleteColonyMsg struct {
+type RemoveColonyMsg struct {
 	ColonyName string `json:"colonyname"`
 	MsgType    string `json:"msgtype"`
 }
 
-func CreateDeleteColonyMsg(colonyName string) *DeleteColonyMsg {
-	msg := &DeleteColonyMsg{}
+func CreateRemoveColonyMsg(colonyName string) *RemoveColonyMsg {
+	msg := &RemoveColonyMsg{}
 	msg.ColonyName = colonyName
-	msg.MsgType = DeleteColonyPayloadType
+	msg.MsgType = RemoveColonyPayloadType
 
 	return msg
 }
 
-func (msg *DeleteColonyMsg) ToJSON() (string, error) {
+func (msg *RemoveColonyMsg) ToJSON() (string, error) {
 	jsonBytes, err := json.Marshal(msg)
 	if err != nil {
 		return "", err
@@ -28,7 +28,7 @@ func (msg *DeleteColonyMsg) ToJSON() (string, error) {
 	return string(jsonBytes), nil
 }
 
-func (msg *DeleteColonyMsg) Equals(msg2 *DeleteColonyMsg) bool {
+func (msg *RemoveColonyMsg) Equals(msg2 *RemoveColonyMsg) bool {
 	if msg2 == nil {
 		return false
 	}
@@ -40,7 +40,7 @@ func (msg *DeleteColonyMsg) Equals(msg2 *DeleteColonyMsg) bool {
 	return false
 }
 
-func (msg *DeleteColonyMsg) ToJSONIndent() (string, error) {
+func (msg *RemoveColonyMsg) ToJSONIndent() (string, error) {
 	jsonBytes, err := json.MarshalIndent(msg, "", "    ")
 	if err != nil {
 		return "", err
@@ -49,8 +49,8 @@ func (msg *DeleteColonyMsg) ToJSONIndent() (string, error) {
 	return string(jsonBytes), nil
 }
 
-func CreateDeleteColonyMsgFromJSON(jsonString string) (*DeleteColonyMsg, error) {
-	var msg *DeleteColonyMsg
+func CreateRemoveColonyMsgFromJSON(jsonString string) (*RemoveColonyMsg, error) {
+	var msg *RemoveColonyMsg
 
 	err := json.Unmarshal([]byte(jsonString), &msg)
 	if err != nil {

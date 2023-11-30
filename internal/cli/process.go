@@ -23,8 +23,8 @@ func init() {
 	processCmd.AddCommand(listSuccessfulProcessesCmd)
 	processCmd.AddCommand(listFailedProcessesCmd)
 	processCmd.AddCommand(getProcessCmd)
-	processCmd.AddCommand(deleteProcessCmd)
-	processCmd.AddCommand(deleteAllProcessesCmd)
+	processCmd.AddCommand(removeProcessCmd)
+	processCmd.AddCommand(removeAllProcessesCmd)
 	processCmd.AddCommand(assignProcessCmd)
 	processCmd.AddCommand(closeSuccessfulCmd)
 	processCmd.AddCommand(closeFailedCmd)
@@ -58,12 +58,12 @@ func init() {
 	getProcessCmd.Flags().BoolVarP(&JSON, "json", "", false, "Print JSON instead of tables")
 	getProcessCmd.Flags().BoolVarP(&PrintOutput, "out", "", false, "Print process output")
 
-	deleteProcessCmd.Flags().StringVarP(&ProcessID, "processid", "p", "", "Process Id")
-	deleteProcessCmd.MarkFlagRequired("processid")
+	removeProcessCmd.Flags().StringVarP(&ProcessID, "processid", "p", "", "Process Id")
+	removeProcessCmd.MarkFlagRequired("processid")
 
-	deleteAllProcessesCmd.Flags().BoolVarP(&Waiting, "waiting", "", false, "Delete all waiting processes")
-	deleteAllProcessesCmd.Flags().BoolVarP(&Successful, "successful", "", false, "Delete all successful processes")
-	deleteAllProcessesCmd.Flags().BoolVarP(&Failed, "failed", "", false, "Delete all failed processes")
+	removeAllProcessesCmd.Flags().BoolVarP(&Waiting, "waiting", "", false, "Remove all waiting processes")
+	removeAllProcessesCmd.Flags().BoolVarP(&Successful, "successful", "", false, "Remove all successful processes")
+	removeAllProcessesCmd.Flags().BoolVarP(&Failed, "failed", "", false, "Remove all failed processes")
 
 	assignProcessCmd.Flags().StringVarP(&PrvKey, "prvkey", "", "", "Private key")
 	assignProcessCmd.Flags().IntVarP(&Timeout, "timeout", "", 100, "Max time to wait for a process assignment")
@@ -467,24 +467,24 @@ var getProcessCmd = &cobra.Command{
 	},
 }
 
-var deleteProcessCmd = &cobra.Command{
-	Use:   "delete",
-	Short: "Delete a process",
-	Long:  "Delete a process",
+var removeProcessCmd = &cobra.Command{
+	Use:   "remove",
+	Short: "Remove a process",
+	Long:  "Remove a process",
 	Run: func(cmd *cobra.Command, args []string) {
 		client := setup()
 
-		err := client.DeleteProcess(ProcessID, PrvKey)
+		err := client.RemoveProcess(ProcessID, PrvKey)
 		CheckError(err)
 
-		log.WithFields(log.Fields{"ProcessId": ProcessID}).Info("Process deleted")
+		log.WithFields(log.Fields{"ProcessId": ProcessID}).Info("Process removed")
 	},
 }
 
-var deleteAllProcessesCmd = &cobra.Command{
-	Use:   "deleteall",
-	Short: "Delete all processes",
-	Long:  "Delete all processes",
+var removeAllProcessesCmd = &cobra.Command{
+	Use:   "removeall",
+	Short: "Remove all processes",
+	Long:  "Remove all processes",
 	Run: func(cmd *cobra.Command, args []string) {
 		client := setup()
 
@@ -511,26 +511,26 @@ var deleteAllProcessesCmd = &cobra.Command{
 			state = "all"
 		}
 
-		fmt.Print("WARNING!!! Are you sure you want to delete " + state + " process from Colony <" + ColonyName + ">. This operation cannot be undone! (YES,no): ")
+		fmt.Print("WARNING!!! Are you sure you want to remove all " + state + " processes from Colony <" + ColonyName + ">. This operation cannot be undone! (YES,no): ")
 
 		var err error
 		reader := bufio.NewReader(os.Stdin)
 		reply, _ := reader.ReadString('\n')
 		if reply == "YES\n" {
 			if state == "all" {
-				err = client.DeleteAllProcesses(ColonyName, ColonyPrvKey)
+				err = client.RemoveAllProcesses(ColonyName, ColonyPrvKey)
 				CheckError(err)
 				log.WithFields(log.Fields{"ColonyName": ColonyName}).Info("Deleting all processes in Colony")
 			} else if Waiting {
-				err = client.DeleteAllProcessesWithState(ColonyName, core.WAITING, ColonyPrvKey)
+				err = client.RemoveAllProcessesWithState(ColonyName, core.WAITING, ColonyPrvKey)
 				CheckError(err)
 				log.WithFields(log.Fields{"ColonyName": ColonyName}).Info("Deleting all waiting processes in Colony")
 			} else if Successful {
-				err = client.DeleteAllProcessesWithState(ColonyName, core.SUCCESS, ColonyPrvKey)
+				err = client.RemoveAllProcessesWithState(ColonyName, core.SUCCESS, ColonyPrvKey)
 				CheckError(err)
 				log.WithFields(log.Fields{"ColonyName": ColonyName}).Info("Deleting all successful processes in Colony")
 			} else if Failed {
-				err = client.DeleteAllProcessesWithState(ColonyName, core.FAILED, ColonyPrvKey)
+				err = client.RemoveAllProcessesWithState(ColonyName, core.FAILED, ColonyPrvKey)
 				CheckError(err)
 				log.WithFields(log.Fields{"ColonyName": ColonyName}).Info("Deleting all failed processes in Colony")
 			}

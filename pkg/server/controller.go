@@ -18,15 +18,13 @@ type controller interface {
 	getColonies() ([]*core.Colony, error)
 	getColony(colonyName string) (*core.Colony, error)
 	addColony(colony *core.Colony) (*core.Colony, error)
-	deleteColony(colonyName string) error
-	renameColony(colonyName string, name string) error
+	removeColony(colonyName string) error
 	addExecutor(executor *core.Executor, allowExecutorReregister bool) (*core.Executor, error)
 	addLog(processID string, colonyName string, executorID string, msg string) error
 	getLogsByProcessID(processID string, limit int, since int64) ([]core.Log, error)
 	getLogsByExecutorID(processID string, limit int, since int64) ([]core.Log, error)
 	getExecutor(executorID string) (*core.Executor, error)
 	getExecutorByColonyName(colonyName string) ([]*core.Executor, error)
-	deleteExecutor(executorID string) error
 	addProcessToDB(process *core.Process) (*core.Process, error)
 	addProcess(process *core.Process) (*core.Process, error)
 	addChild(processGraphID string, parentProcessID string, childProcessID string, process *core.Process, executorID string, insert bool) (*core.Process, error)
@@ -44,10 +42,10 @@ type controller interface {
 	findRunningProcessGraphs(colonyName string, count int) ([]*core.ProcessGraph, error)
 	findSuccessfulProcessGraphs(colonyName string, count int) ([]*core.ProcessGraph, error)
 	findFailedProcessGraphs(colonyName string, count int) ([]*core.ProcessGraph, error)
-	deleteProcess(processID string) error
-	deleteAllProcesses(colonyName string, state int) error
-	deleteProcessGraph(processID string) error
-	deleteAllProcessGraphs(colonyName string, state int) error
+	removeProcess(processID string) error
+	removeAllProcesses(colonyName string, state int) error
+	removeProcessGraph(processID string) error
+	removeAllProcessGraphs(colonyName string, state int) error
 	setOutput(processID string, output []interface{}) error
 	closeSuccessful(processID string, executorID string, output []interface{}) error
 	notifyChildren(process *core.Process) error
@@ -64,7 +62,7 @@ type controller interface {
 	getFunctionsByExecutorName(colonyName string, executorName string) ([]*core.Function, error)
 	getFunctionsByColonyName(colonyName string) ([]*core.Function, error)
 	getFunctionByID(functionID string) (*core.Function, error)
-	deleteFunction(functionID string) error
+	removeFunction(functionID string) error
 	addGenerator(generator *core.Generator) (*core.Generator, error)
 	getGenerator(generatorID string) (*core.Generator, error)
 	resolveGenerator(generatorName string) (*core.Generator, error)
@@ -74,11 +72,11 @@ type controller interface {
 	triggerGenerators()
 	submitWorkflow(generator *core.Generator, counter int)
 	addCron(cron *core.Cron) (*core.Cron, error)
-	deleteGenerator(generatorID string) error
+	removeGenerator(generatorID string) error
 	getCron(cronID string) (*core.Cron, error)
 	getCrons(colonyName string, count int) ([]*core.Cron, error)
 	runCron(cronID string) (*core.Cron, error)
-	deleteCron(cronID string) error
+	removeCron(cronID string) error
 	calcNextRun(cron *core.Cron) time.Time
 	startCron(cron *core.Cron)
 	triggerCrons()

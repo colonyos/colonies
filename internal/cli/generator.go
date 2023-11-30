@@ -28,7 +28,7 @@ func init() {
 	addGeneratorCmd.Flags().StringVarP(&PrvKey, "prvkey", "", "", "Private key")
 	addGeneratorCmd.Flags().StringVarP(&SpecFile, "spec", "", "", "JSON specification of a Colony workflow")
 	addGeneratorCmd.MarkFlagRequired("spec")
-	addGeneratorCmd.Flags().StringVarP(&ColonyID, "colonyid", "", "", "Colony Id")
+	addGeneratorCmd.Flags().StringVarP(&ColonyName, "colonyid", "", "", "Colony Id")
 	addGeneratorCmd.Flags().StringVarP(&GeneratorName, "name", "", "", "Generator name")
 	addGeneratorCmd.MarkFlagRequired("name")
 	addGeneratorCmd.Flags().IntVarP(&GeneratorTrigger, "trigger", "", -1, "Trigger")
@@ -50,7 +50,7 @@ func init() {
 	getGeneratorCmd.MarkFlagRequired("generatorid")
 
 	getGeneratorsCmd.Flags().StringVarP(&PrvKey, "prvkey", "", "", "Private key")
-	getGeneratorsCmd.Flags().StringVarP(&ColonyID, "colonyid", "", "", "Colony Id")
+	getGeneratorsCmd.Flags().StringVarP(&ColonyName, "colonyid", "", "", "Colony Id")
 	getGeneratorsCmd.Flags().IntVarP(&Count, "count", "", server.MAX_COUNT, "Number of generators to list")
 }
 
@@ -89,7 +89,7 @@ var addGeneratorCmd = &cobra.Command{
 			CheckError(errors.New("Generator trigger not specified"))
 		}
 
-		generator := core.CreateGenerator(ColonyID, GeneratorName, workflowSpecJSON, GeneratorTrigger, GeneratorTimeout)
+		generator := core.CreateGenerator(ColonyName, GeneratorName, workflowSpecJSON, GeneratorTrigger, GeneratorTimeout)
 		addedGenerator, err := client.AddGenerator(generator, PrvKey)
 		CheckError(err)
 
@@ -116,9 +116,9 @@ var packGeneratorCmd = &cobra.Command{
 }
 
 var delGeneratorCmd = &cobra.Command{
-	Use:   "delete",
-	Short: "Delete a generator",
-	Long:  "Delete a generator",
+	Use:   "remove",
+	Short: "Remove a generator",
+	Long:  "Remove a generator",
 	Run: func(cmd *cobra.Command, args []string) {
 		client := setup()
 
@@ -126,7 +126,7 @@ var delGeneratorCmd = &cobra.Command{
 			CheckError(errors.New("Generator Id not specified"))
 		}
 
-		err := client.DeleteGenerator(GeneratorID, PrvKey)
+		err := client.RemoveGenerator(GeneratorID, PrvKey)
 		CheckError(err)
 
 		log.WithFields(log.Fields{"GeneratorID": GeneratorID}).Info("Deleting generator")
@@ -187,10 +187,10 @@ var getGeneratorsCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		client := setup()
 
-		generators, err := client.GetGenerators(ColonyID, Count, PrvKey)
+		generators, err := client.GetGenerators(ColonyName, Count, PrvKey)
 		CheckError(err)
 		if generators == nil {
-			log.WithFields(log.Fields{"ColonyId": ColonyID}).Info("No generators found")
+			log.WithFields(log.Fields{"ColonyId": ColonyName}).Info("No generators found")
 			os.Exit(0)
 		}
 

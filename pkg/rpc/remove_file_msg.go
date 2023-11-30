@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 )
 
-const DeleteFilePayloadType = "deletefilemsg"
+const RemoveFilePayloadType = "removefilemsg"
 
-type DeleteFileMsg struct {
+type RemoveFileMsg struct {
 	MsgType    string `json:"msgtype"`
 	ColonyName string `json:"colonyname"`
 	FileID     string `json:"fileid"`
@@ -14,18 +14,18 @@ type DeleteFileMsg struct {
 	Name       string `json:"name"`
 }
 
-func CreateDeleteFileMsg(colonyID string, fileID string, label string, name string) *DeleteFileMsg {
-	msg := &DeleteFileMsg{}
+func CreateRemoveFileMsg(colonyID string, fileID string, label string, name string) *RemoveFileMsg {
+	msg := &RemoveFileMsg{}
 	msg.ColonyName = colonyID
 	msg.FileID = fileID
 	msg.Label = label
 	msg.Name = name
-	msg.MsgType = DeleteFilePayloadType
+	msg.MsgType = RemoveFilePayloadType
 
 	return msg
 }
 
-func (msg *DeleteFileMsg) ToJSON() (string, error) {
+func (msg *RemoveFileMsg) ToJSON() (string, error) {
 	jsonBytes, err := json.Marshal(msg)
 	if err != nil {
 		return "", err
@@ -34,7 +34,7 @@ func (msg *DeleteFileMsg) ToJSON() (string, error) {
 	return string(jsonBytes), nil
 }
 
-func (msg *DeleteFileMsg) Equals(msg2 *DeleteFileMsg) bool {
+func (msg *RemoveFileMsg) Equals(msg2 *RemoveFileMsg) bool {
 	if msg2 == nil {
 		return false
 	}
@@ -50,7 +50,7 @@ func (msg *DeleteFileMsg) Equals(msg2 *DeleteFileMsg) bool {
 	return false
 }
 
-func (msg *DeleteFileMsg) ToJSONIndent() (string, error) {
+func (msg *RemoveFileMsg) ToJSONIndent() (string, error) {
 	jsonBytes, err := json.MarshalIndent(msg, "", "    ")
 	if err != nil {
 		return "", err
@@ -59,8 +59,8 @@ func (msg *DeleteFileMsg) ToJSONIndent() (string, error) {
 	return string(jsonBytes), nil
 }
 
-func CreateDeleteFileMsgFromJSON(jsonString string) (*DeleteFileMsg, error) {
-	var msg *DeleteFileMsg
+func CreateRemoveFileMsgFromJSON(jsonString string) (*RemoveFileMsg, error) {
+	var msg *RemoveFileMsg
 
 	err := json.Unmarshal([]byte(jsonString), &msg)
 	if err != nil {

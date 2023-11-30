@@ -4,24 +4,24 @@ import (
 	"encoding/json"
 )
 
-const DeleteUserPayloadType = "deleteusermsg"
+const RemoveUserPayloadType = "removeusermsg"
 
-type DeleteUserMsg struct {
+type RemoveUserMsg struct {
 	ColonyName string `json:"colonyname"`
 	Name       string `json:"name"`
 	MsgType    string `json:"msgtype"`
 }
 
-func CreateDeleteUserMsg(colonyName string, name string) *DeleteUserMsg {
-	msg := &DeleteUserMsg{}
+func CreateRemoveUserMsg(colonyName string, name string) *RemoveUserMsg {
+	msg := &RemoveUserMsg{}
 	msg.ColonyName = colonyName
 	msg.Name = name
-	msg.MsgType = DeleteUserPayloadType
+	msg.MsgType = RemoveUserPayloadType
 
 	return msg
 }
 
-func (msg *DeleteUserMsg) ToJSON() (string, error) {
+func (msg *RemoveUserMsg) ToJSON() (string, error) {
 	jsonBytes, err := json.Marshal(msg)
 	if err != nil {
 		return "", err
@@ -30,7 +30,7 @@ func (msg *DeleteUserMsg) ToJSON() (string, error) {
 	return string(jsonBytes), nil
 }
 
-func (msg *DeleteUserMsg) Equals(msg2 *DeleteUserMsg) bool {
+func (msg *RemoveUserMsg) Equals(msg2 *RemoveUserMsg) bool {
 	if msg2 == nil {
 		return false
 	}
@@ -42,7 +42,7 @@ func (msg *DeleteUserMsg) Equals(msg2 *DeleteUserMsg) bool {
 	return false
 }
 
-func (msg *DeleteUserMsg) ToJSONIndent() (string, error) {
+func (msg *RemoveUserMsg) ToJSONIndent() (string, error) {
 	jsonBytes, err := json.MarshalIndent(msg, "", "    ")
 	if err != nil {
 		return "", err
@@ -51,8 +51,8 @@ func (msg *DeleteUserMsg) ToJSONIndent() (string, error) {
 	return string(jsonBytes), nil
 }
 
-func CreateDeleteUserMsgFromJSON(jsonString string) (*DeleteUserMsg, error) {
-	var msg *DeleteUserMsg
+func CreateRemoveUserMsgFromJSON(jsonString string) (*RemoveUserMsg, error) {
+	var msg *RemoveUserMsg
 
 	err := json.Unmarshal([]byte(jsonString), &msg)
 	if err != nil {

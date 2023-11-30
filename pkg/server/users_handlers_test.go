@@ -81,7 +81,7 @@ func TestGetUser(t *testing.T) {
 	<-done
 }
 
-func TestDeleteUser(t *testing.T) {
+func TestRemoveUser(t *testing.T) {
 	client, server, serverPrvKey, done := prepareTests(t)
 
 	colony, colonyPrvKey, err := utils.CreateTestColonyWithKey()
@@ -105,7 +105,7 @@ func TestDeleteUser(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Len(t, usersFromServer, 2)
 
-	err = client.DeleteUser(colony.Name, "test_user2", colonyPrvKey)
+	err = client.RemoveUser(colony.Name, "test_user2", colonyPrvKey)
 	assert.Nil(t, err)
 
 	usersFromServer, err = client.GetUsers(colony.Name, prvKey)

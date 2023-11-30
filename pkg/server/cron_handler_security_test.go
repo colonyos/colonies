@@ -101,7 +101,7 @@ func TestRunCronSecurity(t *testing.T) {
 	<-done
 }
 
-func TestDeleteCronSecurity(t *testing.T) {
+func TestRemoveCronSecurity(t *testing.T) {
 	env, client, server, _, done := setupTestEnv1(t)
 
 	// The setup looks like this:
@@ -112,13 +112,13 @@ func TestDeleteCronSecurity(t *testing.T) {
 	addedCron, err := client.AddCron(cron, env.executor1PrvKey)
 	assert.Nil(t, err)
 
-	err = client.DeleteCron(addedCron.ID, env.executor2PrvKey)
+	err = client.RemoveCron(addedCron.ID, env.executor2PrvKey)
 	assert.NotNil(t, err)
-	err = client.DeleteCron(addedCron.ID, env.colony1PrvKey)
+	err = client.RemoveCron(addedCron.ID, env.colony1PrvKey)
 	assert.NotNil(t, err)
-	err = client.DeleteCron(addedCron.ID, env.colony2PrvKey)
+	err = client.RemoveCron(addedCron.ID, env.colony2PrvKey)
 	assert.NotNil(t, err)
-	err = client.DeleteCron(addedCron.ID, env.executor1PrvKey)
+	err = client.RemoveCron(addedCron.ID, env.executor1PrvKey)
 	assert.Nil(t, err)
 
 	server.Shutdown()

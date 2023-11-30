@@ -221,7 +221,7 @@ func TestGetFileLabelsByName(t *testing.T) {
 	<-done
 }
 
-func TestDeleteFile(t *testing.T) {
+func TestRemoveFile(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 
 	file := utils.CreateTestFile(env.colonyName)

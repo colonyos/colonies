@@ -304,14 +304,14 @@ func (client *ColoniesClient) GetUsers(colonyName string, prvKey string) ([]*cor
 	return usersFromServer, nil
 }
 
-func (client *ColoniesClient) DeleteUser(colonyName string, username string, prvKey string) error {
-	msg := rpc.CreateDeleteUserMsg(colonyName, username)
+func (client *ColoniesClient) RemoveUser(colonyName string, username string, prvKey string) error {
+	msg := rpc.CreateRemoveUserMsg(colonyName, username)
 	jsonString, err := msg.ToJSON()
 	if err != nil {
 		return err
 	}
 
-	_, err = client.sendMessage(rpc.DeleteUserPayloadType, jsonString, prvKey, false, context.TODO())
+	_, err = client.sendMessage(rpc.RemoveUserPayloadType, jsonString, prvKey, false, context.TODO())
 	if err != nil {
 		return err
 	}
@@ -340,13 +340,13 @@ func (client *ColoniesClient) AddColony(colony *core.Colony, prvKey string) (*co
 }
 
 func (client *ColoniesClient) RemoveColony(colonyName string, prvKey string) error {
-	msg := rpc.CreateDeleteColonyMsg(colonyName)
+	msg := rpc.CreateRemoveColonyMsg(colonyName)
 	jsonString, err := msg.ToJSON()
 	if err != nil {
 		return err
 	}
 
-	_, err = client.sendMessage(rpc.DeleteColonyPayloadType, jsonString, prvKey, false, context.TODO())
+	_, err = client.sendMessage(rpc.RemoveColonyPayloadType, jsonString, prvKey, false, context.TODO())
 	if err != nil {
 		return err
 	}
@@ -459,14 +459,14 @@ func (client *ColoniesClient) RejectExecutor(colonyName string, executorID strin
 	return nil
 }
 
-func (client *ColoniesClient) DeleteExecutor(executorID string, prvKey string) error {
-	msg := rpc.CreateDeleteExecutorMsg(executorID)
+func (client *ColoniesClient) RemoveExecutor(colonyName string, executorName string, prvKey string) error {
+	msg := rpc.CreateRemoveExecutorMsg(colonyName, executorName)
 	jsonString, err := msg.ToJSON()
 	if err != nil {
 		return err
 	}
 
-	_, err = client.sendMessage(rpc.DeleteExecutorPayloadType, jsonString, prvKey, false, context.TODO())
+	_, err = client.sendMessage(rpc.RemoveExecutorPayloadType, jsonString, prvKey, false, context.TODO())
 	if err != nil {
 		return err
 	}
@@ -642,14 +642,14 @@ func (client *ColoniesClient) GetProcess(processID string, prvKey string) (*core
 	return core.ConvertJSONToProcess(respBodyString)
 }
 
-func (client *ColoniesClient) DeleteProcess(processID string, prvKey string) error {
-	msg := rpc.CreateDeleteProcessMsg(processID)
+func (client *ColoniesClient) RemoveProcess(processID string, prvKey string) error {
+	msg := rpc.CreateRemoveProcessMsg(processID)
 	jsonString, err := msg.ToJSON()
 	if err != nil {
 		return err
 	}
 
-	_, err = client.sendMessage(rpc.DeleteProcessPayloadType, jsonString, prvKey, false, context.TODO())
+	_, err = client.sendMessage(rpc.RemoveProcessPayloadType, jsonString, prvKey, false, context.TODO())
 	if err != nil {
 		return err
 	}
@@ -657,15 +657,15 @@ func (client *ColoniesClient) DeleteProcess(processID string, prvKey string) err
 	return nil
 }
 
-func (client *ColoniesClient) DeleteAllProcesses(colonyName string, prvKey string) error {
-	msg := rpc.CreateDeleteAllProcessesMsg(colonyName)
+func (client *ColoniesClient) RemoveAllProcesses(colonyName string, prvKey string) error {
+	msg := rpc.CreateRemoveAllProcessesMsg(colonyName)
 	msg.State = core.NOTSET
 	jsonString, err := msg.ToJSON()
 	if err != nil {
 		return err
 	}
 
-	_, err = client.sendMessage(rpc.DeleteAllProcessesPayloadType, jsonString, prvKey, false, context.TODO())
+	_, err = client.sendMessage(rpc.RemoveAllProcessesPayloadType, jsonString, prvKey, false, context.TODO())
 	if err != nil {
 		return err
 	}
@@ -673,15 +673,15 @@ func (client *ColoniesClient) DeleteAllProcesses(colonyName string, prvKey strin
 	return nil
 }
 
-func (client *ColoniesClient) DeleteAllProcessesWithState(colonyName string, state int, prvKey string) error {
-	msg := rpc.CreateDeleteAllProcessesMsg(colonyName)
+func (client *ColoniesClient) RemoveAllProcessesWithState(colonyName string, state int, prvKey string) error {
+	msg := rpc.CreateRemoveAllProcessesMsg(colonyName)
 	msg.State = state
 	jsonString, err := msg.ToJSON()
 	if err != nil {
 		return err
 	}
 
-	_, err = client.sendMessage(rpc.DeleteAllProcessesPayloadType, jsonString, prvKey, false, context.TODO())
+	_, err = client.sendMessage(rpc.RemoveAllProcessesPayloadType, jsonString, prvKey, false, context.TODO())
 	if err != nil {
 		return err
 	}
@@ -856,14 +856,14 @@ func (client *ColoniesClient) GetFailedProcessGraphs(colonyName string, count in
 	return client.getProcessGraphs(core.FAILED, colonyName, count, prvKey)
 }
 
-func (client *ColoniesClient) DeleteProcessGraph(processGraphID string, prvKey string) error {
-	msg := rpc.CreateDeleteProcessGraphMsg(processGraphID)
+func (client *ColoniesClient) RemoveProcessGraph(processGraphID string, prvKey string) error {
+	msg := rpc.CreateRemoveProcessGraphMsg(processGraphID)
 	jsonString, err := msg.ToJSON()
 	if err != nil {
 		return err
 	}
 
-	_, err = client.sendMessage(rpc.DeleteProcessGraphPayloadType, jsonString, prvKey, false, context.TODO())
+	_, err = client.sendMessage(rpc.RemoveProcessGraphPayloadType, jsonString, prvKey, false, context.TODO())
 	if err != nil {
 		return err
 	}
@@ -871,15 +871,15 @@ func (client *ColoniesClient) DeleteProcessGraph(processGraphID string, prvKey s
 	return nil
 }
 
-func (client *ColoniesClient) DeleteAllProcessGraphs(colonyName string, prvKey string) error {
-	msg := rpc.CreateDeleteAllProcessGraphsMsg(colonyName)
+func (client *ColoniesClient) RemoveAllProcessGraphs(colonyName string, prvKey string) error {
+	msg := rpc.CreateRemoveAllProcessGraphsMsg(colonyName)
 	msg.State = core.NOTSET
 	jsonString, err := msg.ToJSON()
 	if err != nil {
 		return err
 	}
 
-	_, err = client.sendMessage(rpc.DeleteAllProcessGraphsPayloadType, jsonString, prvKey, false, context.TODO())
+	_, err = client.sendMessage(rpc.RemoveAllProcessGraphsPayloadType, jsonString, prvKey, false, context.TODO())
 	if err != nil {
 		return err
 	}
@@ -887,15 +887,15 @@ func (client *ColoniesClient) DeleteAllProcessGraphs(colonyName string, prvKey s
 	return nil
 }
 
-func (client *ColoniesClient) DeleteAllProcessGraphsWithState(colonyName string, state int, prvKey string) error {
-	msg := rpc.CreateDeleteAllProcessGraphsMsg(colonyName)
+func (client *ColoniesClient) RemoveAllProcessGraphsWithState(colonyName string, state int, prvKey string) error {
+	msg := rpc.CreateRemoveAllProcessGraphsMsg(colonyName)
 	msg.State = state
 	jsonString, err := msg.ToJSON()
 	if err != nil {
 		return err
 	}
 
-	_, err = client.sendMessage(rpc.DeleteAllProcessGraphsPayloadType, jsonString, prvKey, false, context.TODO())
+	_, err = client.sendMessage(rpc.RemoveAllProcessGraphsPayloadType, jsonString, prvKey, false, context.TODO())
 	if err != nil {
 		return err
 	}
@@ -978,14 +978,14 @@ func (client *ColoniesClient) PackGenerator(generatorID string, arg string, prvK
 	return nil
 }
 
-func (client *ColoniesClient) DeleteGenerator(generatorID string, prvKey string) error {
-	msg := rpc.CreateDeleteGeneratorMsg(generatorID)
+func (client *ColoniesClient) RemoveGenerator(generatorID string, prvKey string) error {
+	msg := rpc.CreateRemoveGeneratorMsg(generatorID)
 	jsonString, err := msg.ToJSON()
 	if err != nil {
 		return err
 	}
 
-	_, err = client.sendMessage(rpc.DeleteGeneratorPayloadType, jsonString, prvKey, false, context.TODO())
+	_, err = client.sendMessage(rpc.RemoveGeneratorPayloadType, jsonString, prvKey, false, context.TODO())
 	if err != nil {
 		return err
 	}
@@ -1053,14 +1053,14 @@ func (client *ColoniesClient) RunCron(cronID string, prvKey string) (*core.Cron,
 	return core.ConvertJSONToCron(respBodyString)
 }
 
-func (client *ColoniesClient) DeleteCron(cronID string, prvKey string) error {
-	msg := rpc.CreateDeleteCronMsg(cronID)
+func (client *ColoniesClient) RemoveCron(cronID string, prvKey string) error {
+	msg := rpc.CreateRemoveCronMsg(cronID)
 	jsonString, err := msg.ToJSON()
 	if err != nil {
 		return err
 	}
 
-	_, err = client.sendMessage(rpc.DeleteCronPayloadType, jsonString, prvKey, false, context.TODO())
+	_, err = client.sendMessage(rpc.RemoveCronPayloadType, jsonString, prvKey, false, context.TODO())
 	if err != nil {
 		return err
 	}
@@ -1113,14 +1113,14 @@ func (client *ColoniesClient) GetFunctionsByColonyName(colonyName string, prvKey
 	return core.ConvertJSONToFunctionArray(respBodyString)
 }
 
-func (client *ColoniesClient) DeleteFunction(functionID string, prvKey string) error {
-	msg := rpc.CreateDeleteFunctionMsg(functionID)
+func (client *ColoniesClient) RemoveFunction(functionID string, prvKey string) error {
+	msg := rpc.CreateRemoveFunctionMsg(functionID)
 	jsonString, err := msg.ToJSON()
 	if err != nil {
 		return err
 	}
 
-	_, err = client.sendMessage(rpc.DeleteFunctionPayloadType, jsonString, prvKey, false, context.TODO())
+	_, err = client.sendMessage(rpc.RemoveFunctionPayloadType, jsonString, prvKey, false, context.TODO())
 	if err != nil {
 		return err
 	}
@@ -1386,13 +1386,13 @@ func (client *ColoniesClient) GetFileLabelsByName(colonyName string, name string
 }
 
 func (client *ColoniesClient) RemoveFileByID(colonyName string, fileID string, prvKey string) error {
-	msg := rpc.CreateDeleteFileMsg(colonyName, fileID, "", "")
+	msg := rpc.CreateRemoveFileMsg(colonyName, fileID, "", "")
 	jsonString, err := msg.ToJSON()
 	if err != nil {
 		return err
 	}
 
-	_, err = client.sendMessage(rpc.DeleteFilePayloadType, jsonString, prvKey, false, context.TODO())
+	_, err = client.sendMessage(rpc.RemoveFilePayloadType, jsonString, prvKey, false, context.TODO())
 	if err != nil {
 		return err
 	}
@@ -1401,13 +1401,13 @@ func (client *ColoniesClient) RemoveFileByID(colonyName string, fileID string, p
 }
 
 func (client *ColoniesClient) RemoveFileByName(colonyName string, label string, name string, prvKey string) error {
-	msg := rpc.CreateDeleteFileMsg(colonyName, "", label, name)
+	msg := rpc.CreateRemoveFileMsg(colonyName, "", label, name)
 	jsonString, err := msg.ToJSON()
 	if err != nil {
 		return err
 	}
 
-	_, err = client.sendMessage(rpc.DeleteFilePayloadType, jsonString, prvKey, false, context.TODO())
+	_, err = client.sendMessage(rpc.RemoveFilePayloadType, jsonString, prvKey, false, context.TODO())
 	if err != nil {
 		return err
 	}
@@ -1495,14 +1495,14 @@ func (client *ColoniesClient) GetSnapshotsByColonyName(colonyName string, prvKey
 	return snapshots, err
 }
 
-func (client *ColoniesClient) DeleteSnapshotByID(colonyName string, snapshotID string, prvKey string) error {
-	msg := rpc.CreateDeleteSnapshotMsg(colonyName, snapshotID, "")
+func (client *ColoniesClient) RemoveSnapshotByID(colonyName string, snapshotID string, prvKey string) error {
+	msg := rpc.CreateRemoveSnapshotMsg(colonyName, snapshotID, "")
 	jsonString, err := msg.ToJSON()
 	if err != nil {
 		return err
 	}
 
-	_, err = client.sendMessage(rpc.DeleteSnapshotPayloadType, jsonString, prvKey, false, context.TODO())
+	_, err = client.sendMessage(rpc.RemoveSnapshotPayloadType, jsonString, prvKey, false, context.TODO())
 	if err != nil {
 		return err
 	}
@@ -1510,14 +1510,14 @@ func (client *ColoniesClient) DeleteSnapshotByID(colonyName string, snapshotID s
 	return err
 }
 
-func (client *ColoniesClient) DeleteSnapshotByName(colonyName string, name string, prvKey string) error {
-	msg := rpc.CreateDeleteSnapshotMsg(colonyName, "", name)
+func (client *ColoniesClient) RemoveSnapshotByName(colonyName string, name string, prvKey string) error {
+	msg := rpc.CreateRemoveSnapshotMsg(colonyName, "", name)
 	jsonString, err := msg.ToJSON()
 	if err != nil {
 		return err
 	}
 
-	_, err = client.sendMessage(rpc.DeleteSnapshotPayloadType, jsonString, prvKey, false, context.TODO())
+	_, err = client.sendMessage(rpc.RemoveSnapshotPayloadType, jsonString, prvKey, false, context.TODO())
 	if err != nil {
 		return err
 	}

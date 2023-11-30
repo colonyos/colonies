@@ -131,7 +131,7 @@ func TestGetFilePrefixesSecurity(t *testing.T) {
 	<-done
 }
 
-func TestDeleteFileByIDSecurity(t *testing.T) {
+func TestRemoveFileByIDSecurity(t *testing.T) {
 	env, client, server, _, done := setupTestEnv1(t)
 
 	// The setup looks like this:
@@ -161,7 +161,7 @@ func TestDeleteFileByIDSecurity(t *testing.T) {
 	<-done
 }
 
-func TestDeleteFileByNameSecurity(t *testing.T) {
+func TestRemoveFileByNameSecurity(t *testing.T) {
 	env, client, server, _, done := setupTestEnv1(t)
 
 	// The setup looks like this:

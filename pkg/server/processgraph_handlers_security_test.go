@@ -73,7 +73,7 @@ func TestGetProcessGraphsSecurity(t *testing.T) {
 	<-done
 }
 
-func TestDeleteProcessGraphSecurity(t *testing.T) {
+func TestRemoveProcessGraphSecurity(t *testing.T) {
 	env, client, server, _, done := setupTestEnv1(t)
 
 	// The setup looks like this:
@@ -84,20 +84,20 @@ func TestDeleteProcessGraphSecurity(t *testing.T) {
 	graph, err := client.SubmitWorkflowSpec(diamond, env.executor1PrvKey)
 	assert.Nil(t, err)
 
-	err = client.DeleteProcessGraph(graph.ID, env.executor2PrvKey)
+	err = client.RemoveProcessGraph(graph.ID, env.executor2PrvKey)
 	assert.NotNil(t, err)
-	err = client.DeleteProcessGraph(graph.ID, env.colony1PrvKey)
+	err = client.RemoveProcessGraph(graph.ID, env.colony1PrvKey)
 	assert.NotNil(t, err)
-	err = client.DeleteProcessGraph(graph.ID, env.colony2PrvKey)
+	err = client.RemoveProcessGraph(graph.ID, env.colony2PrvKey)
 	assert.NotNil(t, err)
-	err = client.DeleteProcessGraph(graph.ID, env.executor1PrvKey)
+	err = client.RemoveProcessGraph(graph.ID, env.executor1PrvKey)
 	assert.Nil(t, err)
 
 	server.Shutdown()
 	<-done
 }
 
-func TestDeleteAllProcessGraphsSecurity(t *testing.T) {
+func TestRemoveAllProcessGraphsSecurity(t *testing.T) {
 	env, client, server, _, done := setupTestEnv1(t)
 
 	// The setup looks like this:
@@ -108,13 +108,13 @@ func TestDeleteAllProcessGraphsSecurity(t *testing.T) {
 	_, err := client.SubmitWorkflowSpec(diamond, env.executor1PrvKey)
 	assert.Nil(t, err)
 
-	err = client.DeleteAllProcessGraphs(env.colony1Name, env.executor2PrvKey)
+	err = client.RemoveAllProcessGraphs(env.colony1Name, env.executor2PrvKey)
 	assert.NotNil(t, err)
-	err = client.DeleteAllProcessGraphs(env.colony1Name, env.colony1PrvKey)
+	err = client.RemoveAllProcessGraphs(env.colony1Name, env.colony1PrvKey)
 	assert.Nil(t, err)
-	err = client.DeleteAllProcessGraphs(env.colony1Name, env.colony2PrvKey)
+	err = client.RemoveAllProcessGraphs(env.colony1Name, env.colony2PrvKey)
 	assert.NotNil(t, err)
-	err = client.DeleteAllProcessGraphs(env.colony1Name, env.executor1PrvKey)
+	err = client.RemoveAllProcessGraphs(env.colony1Name, env.executor1PrvKey)
 	assert.NotNil(t, err)
 
 	server.Shutdown()

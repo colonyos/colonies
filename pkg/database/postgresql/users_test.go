@@ -73,7 +73,7 @@ func TestGetUsers(t *testing.T) {
 	defer db.Close()
 }
 
-func TestDeleteUser(t *testing.T) {
+func TestRemoveUser(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
 
@@ -95,7 +95,7 @@ func TestDeleteUser(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Len(t, users, 3)
 
-	err = db.DeleteUserByName(colonyName, user1.Name)
+	err = db.RemoveUserByName(colonyName, user1.Name)
 	assert.Nil(t, err)
 
 	users, err = db.GetUsersByColonyName(colonyName)
@@ -110,7 +110,7 @@ func TestDeleteUser(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, user2FromDB)
 
-	err = db.DeleteUserByName(colonyName, "user2")
+	err = db.RemoveUserByName(colonyName, "user2")
 	assert.Nil(t, err)
 
 	user2FromDB, err = db.GetUserByName(colonyName, user2.Name)
@@ -128,7 +128,7 @@ func TestDeleteUser(t *testing.T) {
 	defer db.Close()
 }
 
-func TestDeleteUsersByColonyName(t *testing.T) {
+func TestRemoveUsersByColonyName(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
 
@@ -151,7 +151,7 @@ func TestDeleteUsersByColonyName(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Len(t, users, 2)
 
-	err = db.DeleteUsersByColonyName(colonyName1)
+	err = db.RemoveUsersByColonyName(colonyName1)
 	assert.Nil(t, err)
 
 	users, err = db.GetUsersByColonyName(colonyName1)

@@ -4,23 +4,23 @@ import (
 	"encoding/json"
 )
 
-const DeleteCronPayloadType = "deletecronmsg"
+const RemoveCronPayloadType = "removecronmsg"
 
-type DeleteCronMsg struct {
+type RemoveCronMsg struct {
 	CronID  string `json:"cronid"`
 	MsgType string `json:"msgtype"`
 	All     bool   `json:"all"`
 }
 
-func CreateDeleteCronMsg(cronID string) *DeleteCronMsg {
-	msg := &DeleteCronMsg{}
+func CreateRemoveCronMsg(cronID string) *RemoveCronMsg {
+	msg := &RemoveCronMsg{}
 	msg.CronID = cronID
-	msg.MsgType = DeleteCronPayloadType
+	msg.MsgType = RemoveCronPayloadType
 
 	return msg
 }
 
-func (msg *DeleteCronMsg) ToJSON() (string, error) {
+func (msg *RemoveCronMsg) ToJSON() (string, error) {
 	jsonBytes, err := json.Marshal(msg)
 	if err != nil {
 		return "", err
@@ -29,7 +29,7 @@ func (msg *DeleteCronMsg) ToJSON() (string, error) {
 	return string(jsonBytes), nil
 }
 
-func (msg *DeleteCronMsg) Equals(msg2 *DeleteCronMsg) bool {
+func (msg *RemoveCronMsg) Equals(msg2 *RemoveCronMsg) bool {
 	if msg2 == nil {
 		return false
 	}
@@ -41,7 +41,7 @@ func (msg *DeleteCronMsg) Equals(msg2 *DeleteCronMsg) bool {
 	return false
 }
 
-func (msg *DeleteCronMsg) ToJSONIndent() (string, error) {
+func (msg *RemoveCronMsg) ToJSONIndent() (string, error) {
 	jsonBytes, err := json.MarshalIndent(msg, "", "    ")
 	if err != nil {
 		return "", err
@@ -50,8 +50,8 @@ func (msg *DeleteCronMsg) ToJSONIndent() (string, error) {
 	return string(jsonBytes), nil
 }
 
-func CreateDeleteCronMsgFromJSON(jsonString string) (*DeleteCronMsg, error) {
-	var msg *DeleteCronMsg
+func CreateRemoveCronMsgFromJSON(jsonString string) (*RemoveCronMsg, error) {
+	var msg *RemoveCronMsg
 
 	err := json.Unmarshal([]byte(jsonString), &msg)
 	if err != nil {

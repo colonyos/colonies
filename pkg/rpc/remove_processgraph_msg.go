@@ -4,23 +4,23 @@ import (
 	"encoding/json"
 )
 
-const DeleteProcessGraphPayloadType = "deleteprocessgraphmsg"
+const RemoveProcessGraphPayloadType = "removeprocessgraphmsg"
 
-type DeleteProcessGraphMsg struct {
+type RemoveProcessGraphMsg struct {
 	ProcessGraphID string `json:"processgraphid"`
 	MsgType        string `json:"msgtype"`
 	All            bool   `json:"all"`
 }
 
-func CreateDeleteProcessGraphMsg(processGraphID string) *DeleteProcessGraphMsg {
-	msg := &DeleteProcessGraphMsg{}
+func CreateRemoveProcessGraphMsg(processGraphID string) *RemoveProcessGraphMsg {
+	msg := &RemoveProcessGraphMsg{}
 	msg.ProcessGraphID = processGraphID
-	msg.MsgType = DeleteProcessGraphPayloadType
+	msg.MsgType = RemoveProcessGraphPayloadType
 
 	return msg
 }
 
-func (msg *DeleteProcessGraphMsg) ToJSON() (string, error) {
+func (msg *RemoveProcessGraphMsg) ToJSON() (string, error) {
 	jsonBytes, err := json.Marshal(msg)
 	if err != nil {
 		return "", err
@@ -29,7 +29,7 @@ func (msg *DeleteProcessGraphMsg) ToJSON() (string, error) {
 	return string(jsonBytes), nil
 }
 
-func (msg *DeleteProcessGraphMsg) Equals(msg2 *DeleteProcessGraphMsg) bool {
+func (msg *RemoveProcessGraphMsg) Equals(msg2 *RemoveProcessGraphMsg) bool {
 	if msg2 == nil {
 		return false
 	}
@@ -41,7 +41,7 @@ func (msg *DeleteProcessGraphMsg) Equals(msg2 *DeleteProcessGraphMsg) bool {
 	return false
 }
 
-func (msg *DeleteProcessGraphMsg) ToJSONIndent() (string, error) {
+func (msg *RemoveProcessGraphMsg) ToJSONIndent() (string, error) {
 	jsonBytes, err := json.MarshalIndent(msg, "", "    ")
 	if err != nil {
 		return "", err
@@ -50,8 +50,8 @@ func (msg *DeleteProcessGraphMsg) ToJSONIndent() (string, error) {
 	return string(jsonBytes), nil
 }
 
-func CreateDeleteProcessGraphMsgFromJSON(jsonString string) (*DeleteProcessGraphMsg, error) {
-	var msg *DeleteProcessGraphMsg
+func CreateRemoveProcessGraphMsgFromJSON(jsonString string) (*RemoveProcessGraphMsg, error) {
+	var msg *RemoveProcessGraphMsg
 
 	err := json.Unmarshal([]byte(jsonString), &msg)
 	if err != nil {

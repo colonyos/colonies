@@ -150,7 +150,7 @@ func TestGetSnapshotsByColonyName(t *testing.T) {
 	assert.Len(t, snapshotsFromDB, 2)
 }
 
-func TestDeleteSnapshotByID(t *testing.T) {
+func TestRemoveSnapshotByID(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
 
@@ -176,7 +176,7 @@ func TestDeleteSnapshotByID(t *testing.T) {
 	snapshot2, err := db.CreateSnapshot(colonyName, label, snapshotName2)
 	assert.Nil(t, err)
 
-	err = db.DeleteSnapshotByID(colonyName, snapshot1.ID)
+	err = db.RemoveSnapshotByID(colonyName, snapshot1.ID)
 	assert.Nil(t, err)
 
 	_, err = db.GetSnapshotByID(colonyName, snapshot1.ID)
@@ -188,7 +188,7 @@ func TestDeleteSnapshotByID(t *testing.T) {
 	assert.Len(t, snapshotsFromDB, 1)
 }
 
-func TestDeleteSnapshotByName(t *testing.T) {
+func TestRemoveSnapshotByName(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
 
@@ -214,7 +214,7 @@ func TestDeleteSnapshotByName(t *testing.T) {
 	snapshot2, err := db.CreateSnapshot(colonyName, label, snapshotName2)
 	assert.Nil(t, err)
 
-	err = db.DeleteSnapshotByName(colonyName, snapshotName1)
+	err = db.RemoveSnapshotByName(colonyName, snapshotName1)
 	assert.Nil(t, err)
 
 	_, err = db.GetSnapshotByID(colonyName, snapshot1.ID)
@@ -226,7 +226,7 @@ func TestDeleteSnapshotByName(t *testing.T) {
 	assert.Len(t, snapshotsFromDB, 1)
 }
 
-func TestDeleteSnapshotsByColonyName(t *testing.T) {
+func TestRemoveSnapshotsByColonyName(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
 
@@ -277,7 +277,7 @@ func TestDeleteSnapshotsByColonyName(t *testing.T) {
 	_, err = db.CreateSnapshot(colonyName2, label, snapshotName4)
 	assert.Nil(t, err)
 
-	err = db.DeleteSnapshotsByColonyName(colonyName1)
+	err = db.RemoveSnapshotsByColonyName(colonyName1)
 	assert.Nil(t, err)
 
 	snapshotsFromDB, err := db.GetSnapshotsByColonyName(colonyName1)

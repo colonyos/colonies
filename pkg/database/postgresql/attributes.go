@@ -165,7 +165,7 @@ func (db *PQDatabase) SetAttributeState(processID string, state int) error {
 	return nil
 }
 
-func (db *PQDatabase) DeleteAttributeByID(attributeID string) error {
+func (db *PQDatabase) RemoveAttributeByID(attributeID string) error {
 	sqlStatement := `DELETE FROM ` + db.dbPrefix + `ATTRIBUTES WHERE ATTRIBUTE_ID=$1`
 	_, err := db.postgresql.Exec(sqlStatement, attributeID)
 	if err != nil {
@@ -175,7 +175,7 @@ func (db *PQDatabase) DeleteAttributeByID(attributeID string) error {
 	return nil
 }
 
-func (db *PQDatabase) DeleteAllAttributesByColonyName(colonyName string) error {
+func (db *PQDatabase) RemoveAllAttributesByColonyName(colonyName string) error {
 	sqlStatement := `DELETE FROM ` + db.dbPrefix + `ATTRIBUTES WHERE TARGET_COLONY_NAME=$1`
 	_, err := db.postgresql.Exec(sqlStatement, colonyName)
 	if err != nil {
@@ -185,7 +185,7 @@ func (db *PQDatabase) DeleteAllAttributesByColonyName(colonyName string) error {
 	return nil
 }
 
-func (db *PQDatabase) DeleteAllAttributesByColonyNameWithState(colonyName string, state int) error {
+func (db *PQDatabase) RemoveAllAttributesByColonyNameWithState(colonyName string, state int) error {
 	sqlStatement := `DELETE FROM ` + db.dbPrefix + `ATTRIBUTES WHERE TARGET_COLONY_NAME=$1 AND STATE=$2 AND PROCESSGRAPH_ID=$3`
 	_, err := db.postgresql.Exec(sqlStatement, colonyName, state, "")
 	if err != nil {
@@ -195,7 +195,7 @@ func (db *PQDatabase) DeleteAllAttributesByColonyNameWithState(colonyName string
 	return nil
 }
 
-func (db *PQDatabase) DeleteAllAttributesByProcessGraphID(processGraphID string) error {
+func (db *PQDatabase) RemoveAllAttributesByProcessGraphID(processGraphID string) error {
 	sqlStatement := `DELETE FROM ` + db.dbPrefix + `ATTRIBUTES WHERE PROCESSGRAPH_ID=$1`
 	_, err := db.postgresql.Exec(sqlStatement, processGraphID)
 	if err != nil {
@@ -205,7 +205,7 @@ func (db *PQDatabase) DeleteAllAttributesByProcessGraphID(processGraphID string)
 	return nil
 }
 
-func (db *PQDatabase) DeleteAllAttributesInProcessGraphsByColonyName(colonyName string) error {
+func (db *PQDatabase) RemoveAllAttributesInProcessGraphsByColonyName(colonyName string) error {
 	sqlStatement := `DELETE FROM ` + db.dbPrefix + `ATTRIBUTES WHERE PROCESSGRAPH_ID!=$1 AND TARGET_COLONY_NAME=$2`
 	_, err := db.postgresql.Exec(sqlStatement, "", colonyName)
 	if err != nil {
@@ -215,7 +215,7 @@ func (db *PQDatabase) DeleteAllAttributesInProcessGraphsByColonyName(colonyName 
 	return nil
 }
 
-func (db *PQDatabase) DeleteAllAttributesInProcessGraphsByColonyNameWithState(colonyName string, state int) error {
+func (db *PQDatabase) RemoveAllAttributesInProcessGraphsByColonyNameWithState(colonyName string, state int) error {
 	sqlStatement := `DELETE FROM ` + db.dbPrefix + `ATTRIBUTES WHERE TARGET_COLONY_NAME=$1 AND STATE=$2 AND PROCESSGRAPH_ID!=$3`
 	_, err := db.postgresql.Exec(sqlStatement, colonyName, state, "")
 	if err != nil {
@@ -225,7 +225,7 @@ func (db *PQDatabase) DeleteAllAttributesInProcessGraphsByColonyNameWithState(co
 	return nil
 }
 
-func (db *PQDatabase) DeleteAttributesByTargetID(targetID string, attributeType int) error {
+func (db *PQDatabase) RemoveAttributesByTargetID(targetID string, attributeType int) error {
 	sqlStatement := `DELETE FROM ` + db.dbPrefix + `ATTRIBUTES WHERE TARGET_ID=$1 AND ATTRIBUTE_TYPE=$2`
 	_, err := db.postgresql.Exec(sqlStatement, targetID, attributeType)
 	if err != nil {
@@ -235,7 +235,7 @@ func (db *PQDatabase) DeleteAttributesByTargetID(targetID string, attributeType 
 	return nil
 }
 
-func (db *PQDatabase) DeleteAllAttributesByTargetID(targetID string) error {
+func (db *PQDatabase) RemoveAllAttributesByTargetID(targetID string) error {
 	sqlStatement := `DELETE FROM ` + db.dbPrefix + `ATTRIBUTES WHERE TARGET_ID=$1`
 	_, err := db.postgresql.Exec(sqlStatement, targetID)
 	if err != nil {
@@ -245,7 +245,7 @@ func (db *PQDatabase) DeleteAllAttributesByTargetID(targetID string) error {
 	return nil
 }
 
-func (db *PQDatabase) DeleteAllAttributes() error {
+func (db *PQDatabase) RemoveAllAttributes() error {
 	sqlStatement := `DELETE FROM ` + db.dbPrefix + `ATTRIBUTES`
 	_, err := db.postgresql.Exec(sqlStatement)
 	if err != nil {

@@ -102,9 +102,9 @@ var addCronCmd = &cobra.Command{
 }
 
 var delCronCmd = &cobra.Command{
-	Use:   "delete",
-	Short: "Delete a cron",
-	Long:  "Delete a cron",
+	Use:   "remove",
+	Short: "Remove a cron",
+	Long:  "Remove a cron",
 	Run: func(cmd *cobra.Command, args []string) {
 		client := setup()
 
@@ -112,7 +112,7 @@ var delCronCmd = &cobra.Command{
 			CheckError(errors.New("Cron Id not specified"))
 		}
 
-		err := client.DeleteCron(CronID, PrvKey)
+		err := client.RemoveCron(CronID, PrvKey)
 		CheckError(err)
 
 		log.WithFields(log.Fields{"CronId": CronID}).Info("Deleting cron")

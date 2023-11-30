@@ -238,13 +238,13 @@ func (controller *coloniesController) submitWorkflow(generator *core.Generator, 
 			"Trigger":     generator.Trigger,
 			"Count":       count,
 			"Arg":         generatorArg.Arg}).
-			Debug("Deleting generator arg")
+			Debug("Removing generator arg")
 
-		err = controller.db.DeleteGeneratorArgByID(generatorArg.ID)
+		err = controller.db.RemoveGeneratorArgByID(generatorArg.ID)
 		if err != nil {
 			log.WithFields(log.Fields{
 				"Error": err}).
-				Error("Failed to delete generator arg")
+				Error("Failed to remove generator arg")
 			return
 		}
 	}

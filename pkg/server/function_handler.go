@@ -125,21 +125,21 @@ func (server *ColoniesServer) handleGetFunctionsHTTPRequest(c *gin.Context, reco
 	server.sendHTTPReply(c, payloadType, jsonString)
 }
 
-func (server *ColoniesServer) handleDeleteFunctionHTTPRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
-	msg, err := rpc.CreateDeleteFunctionMsgFromJSON(jsonString)
+func (server *ColoniesServer) handleRemoveFunctionHTTPRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
+	msg, err := rpc.CreateRemoveFunctionMsgFromJSON(jsonString)
 	if err != nil {
-		if server.handleHTTPError(c, errors.New("Failed to delete function, invalid JSON"), http.StatusBadRequest) {
+		if server.handleHTTPError(c, errors.New("Failed to remove function, invalid JSON"), http.StatusBadRequest) {
 			return
 		}
 	}
 
 	if msg.MsgType != payloadType {
-		server.handleHTTPError(c, errors.New("Failed to delete function, msg.MsgType does not match payloadType"), http.StatusBadRequest)
+		server.handleHTTPError(c, errors.New("Failed to remove function, msg.MsgType does not match payloadType"), http.StatusBadRequest)
 		return
 	}
 
 	if msg.FunctionID == "" {
-		server.handleHTTPError(c, errors.New("Failed to delete function, msg.FunctionID is empty"), http.StatusBadRequest)
+		server.handleHTTPError(c, errors.New("Failed to remove function, msg.FunctionID is empty"), http.StatusBadRequest)
 		return
 	}
 
@@ -154,7 +154,7 @@ func (server *ColoniesServer) handleDeleteFunctionHTTPRequest(c *gin.Context, re
 	}
 
 	if executor == nil {
-		server.handleHTTPError(c, errors.New("Failed to delete function, Executor does not exist"), http.StatusBadRequest)
+		server.handleHTTPError(c, errors.New("Failed to remove function, Executor does not exist"), http.StatusBadRequest)
 		return
 	}
 
@@ -169,12 +169,12 @@ func (server *ColoniesServer) handleDeleteFunctionHTTPRequest(c *gin.Context, re
 		}
 	}
 
-	err = server.controller.deleteFunction(msg.FunctionID)
+	err = server.controller.removeFunction(msg.FunctionID)
 	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		return
 	}
 
-	log.WithFields(log.Fields{"FunctionId": msg.FunctionID}).Debug("Deleting function")
+	log.WithFields(log.Fields{"FunctionId": msg.FunctionID}).Debug("Removing function")
 
 	server.sendEmptyHTTPReply(c, payloadType)
 }

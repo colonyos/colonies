@@ -155,7 +155,7 @@ func TestNonApprovedExecutorSecurity(t *testing.T) {
 	<-done
 }
 
-func TestDeleteExecutorSecurity(t *testing.T) {
+func TestRemoveExecutorSecurity(t *testing.T) {
 	env, client, server, _, done := setupTestEnv1(t)
 
 	// The setup looks like this:
@@ -168,19 +168,19 @@ func TestDeleteExecutorSecurity(t *testing.T) {
 	_, err = client.AddExecutor(executor3, env.colony1PrvKey)
 	assert.Nil(t, err)
 
-	err = client.DeleteExecutor(executor3.ID, executor3PrvKey)
+	err = client.RemoveExecutor(env.colony1Name, executor3.Name, executor3PrvKey)
 	assert.NotNil(t, err) // Should not work
 
-	err = client.DeleteExecutor(executor3.ID, env.executor1PrvKey)
+	err = client.RemoveExecutor(env.colony1Name, executor3.Name, env.executor1PrvKey)
 	assert.NotNil(t, err) // Should not work
 
-	err = client.DeleteExecutor(executor3.ID, env.executor2PrvKey)
+	err = client.RemoveExecutor(env.colony1Name, executor3.Name, env.executor2PrvKey)
 	assert.NotNil(t, err) // Should not work
 
-	err = client.DeleteExecutor(executor3.ID, env.colony2PrvKey)
+	err = client.RemoveExecutor(env.colony1Name, executor3.Name, env.colony2PrvKey)
 	assert.NotNil(t, err) // Should not work
 
-	err = client.DeleteExecutor(executor3.ID, env.colony1PrvKey)
+	err = client.RemoveExecutor(env.colony1Name, executor3.Name, env.colony1PrvKey)
 	assert.Nil(t, err) // Should work
 
 	server.Shutdown()
