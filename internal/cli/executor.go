@@ -66,10 +66,6 @@ var addExecutorCmd = &cobra.Command{
 			CheckError(errors.New("Invalid Executor Id length"))
 		}
 
-		if ExecutorType == "" {
-			CheckError(errors.New("Invalid Executor type"))
-		}
-
 		if os.Getenv("HOSTNAME") != "" {
 			ExecutorName += "."
 			ExecutorName += os.Getenv("HOSTNAME")
