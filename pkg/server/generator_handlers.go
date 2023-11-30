@@ -166,10 +166,6 @@ func (server *ColoniesServer) handleGetGeneratorsHTTPRequest(c *gin.Context, rec
 	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
-	if generators == nil {
-		server.handleHTTPError(c, errors.New("Failed to get generators, generators is nil"), http.StatusInternalServerError)
-		return
-	}
 
 	jsonString, err = core.ConvertGeneratorArrayToJSON(generators)
 	if server.handleHTTPError(c, err, http.StatusInternalServerError) {
