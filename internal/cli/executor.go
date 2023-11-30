@@ -50,7 +50,7 @@ func init() {
 }
 
 var executorCmd = &cobra.Command{
-	Use:   "executors",
+	Use:   "executor",
 	Short: "Manage executors",
 	Long:  "Manage executors",
 }
