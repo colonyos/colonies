@@ -259,6 +259,7 @@ func parseEnv() {
 		ColonyName = os.Getenv("COLONIES_COLONY_NAME")
 	}
 
+	ServerID = os.Getenv("COLONIES_SERVER_ID")
 	ServerPrvKey = os.Getenv("COLONIES_SERVER_PRVKEY")
 	ColonyPrvKey = os.Getenv("COLONIES_COLONY_PRVKEY")
 

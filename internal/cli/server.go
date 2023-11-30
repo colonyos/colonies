@@ -8,7 +8,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/colonyos/colonies/internal/crypto"
 	"github.com/colonyos/colonies/pkg/build"
 	"github.com/colonyos/colonies/pkg/client"
 	"github.com/colonyos/colonies/pkg/cluster"
@@ -167,12 +166,9 @@ var serverStartCmd = &cobra.Command{
 
 		setupProfiler()
 
-		serverIdentity, err := crypto.CreateIdendityFromString(ServerPrvKey)
-		CheckError(err)
-
 		server := server.CreateColoniesServer(db,
 			ServerPort,
-			serverIdentity.ID(),
+			ServerID,
 			UseTLS,
 			TLSKey,
 			TLSCert,

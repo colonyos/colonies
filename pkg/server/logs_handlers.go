@@ -41,16 +41,16 @@ func (server *ColoniesServer) handleAddLogHTTPRequest(c *gin.Context, recoveredI
 		return
 	}
 
-	if process.AssignedExecutorID != recoveredID {
-		errmsg := "Failed to add log, not allowed to add log"
+	if process.State != core.RUNNING {
+		errmsg := "Failed to set output, process is not running"
 		log.Error(errmsg)
 		err := errors.New(errmsg)
 		server.handleHTTPError(c, err, http.StatusForbidden)
 		return
 	}
 
-	if process.State != core.RUNNING {
-		errmsg := "Failed to set output, process is not running"
+	if process.AssignedExecutorID != recoveredID {
+		errmsg := "Failed to add log, not allowed to add log, only the assigned Executor may att logs"
 		log.Error(errmsg)
 		err := errors.New(errmsg)
 		server.handleHTTPError(c, err, http.StatusForbidden)

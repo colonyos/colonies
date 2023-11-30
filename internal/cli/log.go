@@ -14,6 +14,7 @@ func init() {
 	logCmd.AddCommand(getLogsCmd)
 	rootCmd.AddCommand(logCmd)
 
+	addLogCmd.Flags().StringVarP(&PrvKey, "prvkey", "", "", "Private key")
 	addLogCmd.Flags().StringVarP(&ProcessID, "processid", "p", "", "Process Id")
 	addLogCmd.MarkFlagRequired("processid")
 	addLogCmd.Flags().StringVarP(&LogMsg, "msg", "m", "", "Message")
