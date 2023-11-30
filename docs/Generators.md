@@ -91,7 +91,7 @@ FunctionSpec:
 
 Conditions:
 +--------------+------------------------------------------------------------------+
-| ColonyID     | 4787a5071856a4acf702b2ffcea422e3237a679c681314113d86139461290cf4 |
+| ColonyName     | 4787a5071856a4acf702b2ffcea422e3237a679c681314113d86139461290cf4 |
 | ExecutorIDs  | None                                                             |
 | ExecutorType | cli                                                              |
 | Dependencies |                                                                  |
