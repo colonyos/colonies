@@ -108,7 +108,7 @@ INFO[0000] Starting a Colonies client                    Insecure=true ServerHos
 Cron:
 +----------------------+------------------------------------------------------------------+
 | Id                   | e2c81ec5b2ab75c2290cf195310105f1e8f5f1b733b70973f843dc2adb7708ac |
-| ColonyID             | 4787a5071856a4acf702b2ffcea422e3237a679c681314113d86139461290cf4 |
+| ColonyName             | 4787a5071856a4acf702b2ffcea422e3237a679c681314113d86139461290cf4 |
 | Name                 | example_cron                                                     |
 | Cron Expression      | 0/5 * * * * *                                                    |
 | Interval             | -1                                                               |
@@ -132,7 +132,7 @@ FunctionSpec 0:
 
 Conditions:
 +--------------+------+
-| ColonyID     |      |
+| ColonyName     |      |
 | ExecutorIDs  | None |
 | ExecutorType | cli  |
 | Dependencies |      |
@@ -150,7 +150,7 @@ FunctionSpec 1:
 
 Conditions:
 +--------------+---------------+
-| ColonyID     |               |
+| ColonyName     |               |
 | ExecutorIDs  | None          |
 | ExecutorType | cli           |
 | Dependencies | generate_date |
@@ -270,7 +270,7 @@ Output:
 ```console
 +----------------------+------------------------------------------------------------------+
 | Id                   | bb345cca6eb919824989a169f589b508841d6aaa4b020377da624afb2e7af9fe |
-| ColonyID             | 4787a5071856a4acf702b2ffcea422e3237a679c681314113d86139461290cf4 |
+| ColonyName             | 4787a5071856a4acf702b2ffcea422e3237a679c681314113d86139461290cf4 |
 | Name                 | example_cron                                                     |
 | Cron Expression      |                                                                  |
 | Interval             | 10                                                               |

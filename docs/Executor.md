@@ -156,7 +156,7 @@ As Colony contains all registered executors, it is possible to use it for servic
 executors, err := client.GetExecutors(colonyID, prvKey)
 for _, executor := range executors {
     if executor.Name == "videocam" {
-         condition := &Condition{ExecutorID: []{executor.ID}, ColonyID: colonyID}
+         condition := &Condition{ExecutorID: []{executor.ID}, ColonyName: colonyID}
          funcSpec := &FunctionSpec{Condition: condition, Func: "turn_on_video", Args: []{arg}, MaxExecTime: 1, MaxRetries: 3}
          err := client.Submit(funcSpec, prvKey)
     }

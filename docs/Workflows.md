@@ -76,7 +76,7 @@ colonies workflow get --workflowid 8bc49205ae35e089b370c05cd2a110b84e72d5052c2ec
 Workflow:
 +----------------+------------------------------------------------------------------+
 | WorkflowID     | 8bc49205ae35e089b370c05cd2a110b84e72d5052c2ec3fb5bc4832274d9d1b1 |
-| ColonyID       | 8bc49205ae35e089b370c05cd2a110b84e72d5052c2ec3fb5bc4832274d9d1b1 |
+| ColonyName       | 8bc49205ae35e089b370c05cd2a110b84e72d5052c2ec3fb5bc4832274d9d1b1 |
 | State          | Waiting                                                          |
 | SubmissionTime | 2022-05-31 16:23:13                                              |
 | StartTime      | 0001-01-01 01:12:12                                              |

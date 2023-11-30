@@ -165,7 +165,7 @@ Process:
 
 Requirements:
 +----------------+------------------------------------------------------------------+
-| ColonyID       | 0f4f350d264d1cffdec0d62c723a7da8b730c6863365da75697fd26a6d79ccc5 |
+| ColonyName       | 0f4f350d264d1cffdec0d62c723a7da8b730c6863365da75697fd26a6d79ccc5 |
 | ExecutorIDs    | None                                                             |
 | ExecutorType   | cli                                                              |
 | Memory         | 1000                                                             |
@@ -283,7 +283,7 @@ Output:
 
 Requirements:
 +----------------+------------------------------------------------------------------+
-| ColonyID       | 0f4f350d264d1cffdec0d62c723a7da8b730c6863365da75697fd26a6d79ccc5 |
+| ColonyName       | 0f4f350d264d1cffdec0d62c723a7da8b730c6863365da75697fd26a6d79ccc5 |
 | ExecutorIDs    | None                                                             |
 | ExecutorType   | my_executor_type                                                 |
 | Memory         | 1000                                                             |
