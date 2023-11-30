@@ -252,7 +252,7 @@ func parseEnv() {
 	}
 
 	if ColonyName == "" {
-		ColonyName = os.Getenv("COLONIES_COLONY_ID")
+		ColonyName = os.Getenv("COLONIES_COLONY_NAME")
 	}
 
 	if ColonyName == "" {
