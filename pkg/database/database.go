@@ -148,7 +148,7 @@ type Database interface {
 	SetGeneratorLastRun(generatorID string) error
 	SetGeneratorFirstPack(generatorID string) error
 	GetGeneratorByID(generatorID string) (*core.Generator, error)
-	GetGeneratorByName(name string) (*core.Generator, error)
+	GetGeneratorByName(colonyName string, name string) (*core.Generator, error)
 	FindGeneratorsByColonyName(colonyName string, count int) ([]*core.Generator, error)
 	FindAllGenerators() ([]*core.Generator, error)
 	RemoveGeneratorByID(generatorID string) error
@@ -166,6 +166,7 @@ type Database interface {
 	AddCron(cron *core.Cron) error
 	UpdateCron(cronID string, nextRun time.Time, lastRun time.Time, lastProcessGraphID string) error
 	GetCronByID(cronID string) (*core.Cron, error)
+	GetCronByName(colonyName string, cronName string) (*core.Cron, error)
 	FindCronsByColonyName(colonyName string, count int) ([]*core.Cron, error)
 	FindAllCrons() ([]*core.Cron, error)
 	RemoveCronByID(cronID string) error

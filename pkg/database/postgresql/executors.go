@@ -16,7 +16,6 @@ func (db *PQDatabase) AddExecutor(executor *core.Executor) error {
 	}
 
 	existingExecutor, err := db.GetExecutorByName(executor.ColonyName, executor.Name)
-
 	if err != nil {
 		return err
 	}

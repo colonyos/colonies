@@ -8,7 +8,7 @@ import (
 )
 
 func TestRPCResolveGeneratorMsg(t *testing.T) {
-	msg := CreateResolveGeneratorMsg(core.GenerateRandomID())
+	msg := CreateResolveGeneratorMsg(core.GenerateRandomID(), core.GenerateRandomID())
 	jsonString, err := msg.ToJSON()
 	assert.Nil(t, err)
 
@@ -22,7 +22,7 @@ func TestRPCResolveGeneratorMsg(t *testing.T) {
 }
 
 func TestRPCResolveGeneratorMsgIndent(t *testing.T) {
-	msg := CreateResolveGeneratorMsg(core.GenerateRandomID())
+	msg := CreateResolveGeneratorMsg(core.GenerateRandomID(), core.GenerateRandomID())
 	jsonString, err := msg.ToJSONIndent()
 	assert.Nil(t, err)
 
@@ -36,7 +36,7 @@ func TestRPCResolveGeneratorMsgIndent(t *testing.T) {
 }
 
 func TestRPCResolveGeneratorMsgEquals(t *testing.T) {
-	msg := CreateResolveGeneratorMsg(core.GenerateRandomID())
+	msg := CreateResolveGeneratorMsg(core.GenerateRandomID(), core.GenerateRandomID())
 	assert.True(t, msg.Equals(msg))
 	assert.False(t, msg.Equals(nil))
 }

@@ -9,8 +9,17 @@ import (
 )
 
 func (db *PQDatabase) AddGenerator(generator *core.Generator) error {
+	existingGenerator, err := db.GetGeneratorByName(generator.ColonyName, generator.Name)
+	if err != nil {
+		return err
+	}
+
+	if existingGenerator != nil {
+		return errors.New("Generator with name <" + generator.Name + "> in Colony <" + generator.ColonyName + "> already exists")
+	}
+
 	sqlStatement := `INSERT INTO  ` + db.dbPrefix + `GENERATORS (GENERATOR_ID, COLONY_NAME, NAME, WORKFLOW_SPEC, TRIGGER, TIMEOUT, LASTRUN, FIRSTPACK) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`
-	_, err := db.postgresql.Exec(sqlStatement, generator.ID, generator.ColonyName, generator.Name, generator.WorkflowSpec, generator.Trigger, generator.Timeout, time.Time{}, time.Time{})
+	_, err = db.postgresql.Exec(sqlStatement, generator.ID, generator.ColonyName, generator.Name, generator.WorkflowSpec, generator.Trigger, generator.Timeout, time.Time{}, time.Time{})
 	if err != nil {
 		return err
 	}
@@ -62,9 +71,9 @@ func (db *PQDatabase) GetGeneratorByID(generatorID string) (*core.Generator, err
 	return generators[0], nil
 }
 
-func (db *PQDatabase) GetGeneratorByName(name string) (*core.Generator, error) {
-	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `GENERATORS WHERE NAME=$1`
-	rows, err := db.postgresql.Query(sqlStatement, name)
+func (db *PQDatabase) GetGeneratorByName(colonyName string, name string) (*core.Generator, error) {
+	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `GENERATORS WHERE COLONY_NAME=$1 AND NAME=$2`
+	rows, err := db.postgresql.Query(sqlStatement, colonyName, name)
 	if err != nil {
 		return nil, err
 	}
