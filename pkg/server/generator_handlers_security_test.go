@@ -68,13 +68,13 @@ func TestResolveGeneratorSecurity(t *testing.T) {
 	addedGenerator, err := client.AddGenerator(generator, env.executor1PrvKey)
 	assert.Nil(t, err)
 
-	_, err = client.ResolveGenerator(addedGenerator.Name, env.executor2PrvKey)
+	_, err = client.ResolveGenerator(env.colony2Name, addedGenerator.Name, env.executor2PrvKey)
 	assert.NotNil(t, err)
-	_, err = client.ResolveGenerator(addedGenerator.Name, env.colony1PrvKey)
+	_, err = client.ResolveGenerator(env.colony1Name, addedGenerator.Name, env.colony1PrvKey)
 	assert.NotNil(t, err)
-	_, err = client.ResolveGenerator(addedGenerator.Name, env.colony2PrvKey)
+	_, err = client.ResolveGenerator(env.colony2Name, addedGenerator.Name, env.colony2PrvKey)
 	assert.NotNil(t, err)
-	_, err = client.ResolveGenerator(addedGenerator.Name, env.executor1PrvKey)
+	_, err = client.ResolveGenerator(env.colony1Name, addedGenerator.Name, env.executor1PrvKey)
 	assert.Nil(t, err)
 
 	server.Shutdown()

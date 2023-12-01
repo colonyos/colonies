@@ -28,7 +28,7 @@ func TestGeneratorClosedDB(t *testing.T) {
 	_, err = db.GetGeneratorByID("invalid_id")
 	assert.NotNil(t, err)
 
-	_, err = db.GetGeneratorByName("invalid_name")
+	_, err = db.GetGeneratorByName("invalid_colony_name", "invalid_name")
 	assert.NotNil(t, err)
 
 	_, err = db.FindGeneratorsByColonyName("invalid_name", 100)
@@ -88,11 +88,11 @@ func TestGetGeneratorByName(t *testing.T) {
 	err = db.AddGenerator(generator)
 	assert.Nil(t, err)
 
-	generatorFromDB, err := db.GetGeneratorByName("invalid_name")
+	generatorFromDB, err := db.GetGeneratorByName(generator.ColonyName, "invalid_name")
 	assert.Nil(t, err)
 	assert.Nil(t, generatorFromDB)
 
-	generatorFromDB, err = db.GetGeneratorByName("test_name")
+	generatorFromDB, err = db.GetGeneratorByName(generator.ColonyName, "test_name")
 	assert.Nil(t, err)
 	assert.True(t, generator.Equals(generatorFromDB))
 }

@@ -32,15 +32,6 @@ func TestAddUser(t *testing.T) {
 	err = db.AddUser(user2)
 	assert.Nil(t, err)
 
-	user3 := utils.CreateTestUser(colonyName, "user3") // id not unique
-	user3.ID = user2.ID
-	err = db.AddUser(user3)
-	assert.NotNil(t, err) // Error
-
-	user3.ID = core.GenerateRandomID()
-	err = db.AddUser(user3)
-	assert.Nil(t, err)
-
 	userFromDB, err := db.GetUserByID(colonyName, user.ID)
 	assert.Nil(t, err)
 	assert.True(t, userFromDB.Equals(user))

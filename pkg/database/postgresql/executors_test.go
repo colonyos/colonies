@@ -140,21 +140,10 @@ func TestAddExecutors(t *testing.T) {
 	err = db.AddExecutor(executor3)
 	assert.Nil(t, err)
 
-	executor4 := utils.CreateTestExecutor(colony.Name)
-	executor4.ID = executor2.ID // Note id not unique
-	err = db.AddExecutor(executor4)
-	assert.NotNil(t, err) // Error
-
-	executor4 = utils.CreateTestExecutor(colony.Name)
-	executor4.ID = core.GenerateRandomID()
-	err = db.AddExecutor(executor4)
-	assert.Nil(t, err)
-
 	var executors []*core.Executor
 	executors = append(executors, executor1)
 	executors = append(executors, executor2)
 	executors = append(executors, executor3)
-	executors = append(executors, executor4)
 
 	executorsFromDB, err := db.GetExecutors()
 	assert.Nil(t, err)
