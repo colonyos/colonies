@@ -120,7 +120,7 @@ func (server *ColoniesServer) handleResolveGeneratorHTTPRequest(c *gin.Context, 
 		return
 	}
 
-	generator, err := server.controller.resolveGenerator(msg.GeneratorName)
+	generator, err := server.controller.resolveGenerator(msg.ColonyName, msg.GeneratorName)
 	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}

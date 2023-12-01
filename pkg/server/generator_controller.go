@@ -102,11 +102,11 @@ func (controller *coloniesController) getGenerator(generatorID string) (*core.Ge
 	}
 }
 
-func (controller *coloniesController) resolveGenerator(generatorName string) (*core.Generator, error) {
+func (controller *coloniesController) resolveGenerator(colonyName string, generatorName string) (*core.Generator, error) {
 	cmd := &command{generatorReplyChan: make(chan *core.Generator, 1),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
-			generator, err := controller.db.GetGeneratorByName(generatorName)
+			generator, err := controller.db.GetGeneratorByName(colonyName, generatorName)
 			if err != nil {
 				cmd.errorChan <- err
 				return

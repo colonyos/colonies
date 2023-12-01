@@ -285,7 +285,7 @@ func (v *controllerMock) getGenerator(generatorID string) (*core.Generator, erro
 	return nil, nil
 }
 
-func (v *controllerMock) resolveGenerator(generatorName string) (*core.Generator, error) {
+func (v *controllerMock) resolveGenerator(colonyName string, generatorName string) (*core.Generator, error) {
 	return nil, nil
 }
 
@@ -960,7 +960,7 @@ func (db *dbMock) GetGeneratorByID(generatorID string) (*core.Generator, error) 
 	return nil, nil
 }
 
-func (db *dbMock) GetGeneratorByName(name string) (*core.Generator, error) {
+func (db *dbMock) GetGeneratorByName(colonyName string, name string) (*core.Generator, error) {
 	return nil, nil
 }
 
@@ -1017,7 +1017,10 @@ func (db *dbMock) UpdateCron(cronID string, nextRun time.Time, lastRun time.Time
 }
 
 func (db *dbMock) GetCronByID(cronID string) (*core.Cron, error) {
+	return nil, nil
+}
 
+func (db *dbMock) GetCronByName(colonyName string, cronName string) (*core.Cron, error) {
 	return nil, nil
 }
 

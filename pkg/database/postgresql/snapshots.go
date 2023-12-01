@@ -12,10 +12,19 @@ import (
 )
 
 func (db *PQDatabase) CreateSnapshot(colonyName string, label string, name string) (*core.Snapshot, error) {
+	existingSnapshot, _ := db.GetSnapshotByName(colonyName, name)
+
+	if existingSnapshot != nil {
+		return nil, errors.New("Snapshot with name <" + name + "> in Colony <" + colonyName + "> already exists")
+	}
+
+	label = strings.TrimSuffix(label, "/")
+
 	allLabels, err := db.GetFileLabelsByName(colonyName, label)
 	if err != nil {
 		return nil, err
 	}
+
 	snapshotID := core.GenerateRandomID()
 	now := time.Now().UTC()
 
@@ -94,7 +103,7 @@ func (db *PQDatabase) GetSnapshotByID(colonyName string, snapshotID string) (*co
 	if len(snapshots) == 1 {
 		return snapshots[0], nil
 	} else {
-		return nil, errors.New("Snapshot not found")
+		return nil, errors.New("Snapshot not found with Id <" + snapshotID + "> in Colony <" + colonyName + "> does not exists")
 	}
 }
 
@@ -115,7 +124,7 @@ func (db *PQDatabase) GetSnapshotByName(colonyName string, name string) (*core.S
 	if len(snapshots) == 1 {
 		return snapshots[0], nil
 	} else {
-		return nil, errors.New("Snapshot not found")
+		return nil, errors.New("Snapshot not found with name <" + name + "> in Colony <" + colonyName + "> does not exists")
 	}
 }
 

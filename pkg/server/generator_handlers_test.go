@@ -307,7 +307,7 @@ func TestResolveGenerator(t *testing.T) {
 	addedGenerator, err := client.AddGenerator(generator, env.executorPrvKey)
 	assert.Nil(t, err)
 
-	generatorFromServer, err := client.ResolveGenerator("test_generator_name", env.executorPrvKey)
+	generatorFromServer, err := client.ResolveGenerator(env.colonyName, "test_generator_name", env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.Equal(t, generatorFromServer.ID, addedGenerator.ID)
 

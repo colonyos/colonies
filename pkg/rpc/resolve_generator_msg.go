@@ -7,13 +7,15 @@ import (
 const ResolveGeneratorPayloadType = "resolvegeneratormsg"
 
 type ResolveGeneratorMsg struct {
+	ColonyName    string `json:"colonyname"`
 	GeneratorName string `json:"generatorname"`
 	MsgType       string `json:"msgtype"`
 }
 
-func CreateResolveGeneratorMsg(generatorName string) *ResolveGeneratorMsg {
+func CreateResolveGeneratorMsg(colonyName string, generatorName string) *ResolveGeneratorMsg {
 	msg := &ResolveGeneratorMsg{}
 	msg.GeneratorName = generatorName
+	msg.ColonyName = colonyName
 	msg.MsgType = ResolveGeneratorPayloadType
 
 	return msg
@@ -42,7 +44,7 @@ func (msg *ResolveGeneratorMsg) Equals(msg2 *ResolveGeneratorMsg) bool {
 		return false
 	}
 
-	if msg.MsgType == msg2.MsgType && msg.GeneratorName == msg2.GeneratorName {
+	if msg.MsgType == msg2.MsgType && msg.GeneratorName == msg2.GeneratorName && msg.ColonyName == msg2.ColonyName {
 		return true
 	}
 

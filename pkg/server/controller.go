@@ -65,7 +65,7 @@ type controller interface {
 	removeFunction(functionID string) error
 	addGenerator(generator *core.Generator) (*core.Generator, error)
 	getGenerator(generatorID string) (*core.Generator, error)
-	resolveGenerator(generatorName string) (*core.Generator, error)
+	resolveGenerator(colonyName string, generatorName string) (*core.Generator, error)
 	getGenerators(colonyName string, count int) ([]*core.Generator, error)
 	packGenerator(generatorID string, colonyName, arg string) error
 	generatorTriggerLoop()
