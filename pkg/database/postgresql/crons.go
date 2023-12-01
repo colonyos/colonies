@@ -2,14 +2,24 @@ package postgresql
 
 import (
 	"database/sql"
+	"errors"
 	"time"
 
 	"github.com/colonyos/colonies/pkg/core"
 )
 
 func (db *PQDatabase) AddCron(cron *core.Cron) error {
+	existingCron, err := db.GetCronByName(cron.ColonyName, cron.Name)
+	if err != nil {
+		return err
+	}
+
+	if existingCron != nil {
+		return errors.New("Cron with name <" + cron.Name + "> in Colony <" + cron.ColonyName + "> already exists")
+	}
+
 	sqlStatement := `INSERT INTO  ` + db.dbPrefix + `CRONS (CRON_ID, COLONY_NAME, NAME, CRON_EXPR, INTERVAL, RANDOM, NEXT_RUN, LAST_RUN, WORKFLOW_SPEC, PREV_PROCESSGRAPH_ID, WAIT_FOR_PREV_PROCESSGRAPH) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`
-	_, err := db.postgresql.Exec(sqlStatement, cron.ID, cron.ColonyName, cron.Name, cron.CronExpression, cron.Interval, cron.Random, cron.NextRun, cron.LastRun, cron.WorkflowSpec, cron.PrevProcessGraphID, cron.WaitForPrevProcessGraph)
+	_, err = db.postgresql.Exec(sqlStatement, cron.ID, cron.ColonyName, cron.Name, cron.CronExpression, cron.Interval, cron.Random, cron.NextRun, cron.LastRun, cron.WorkflowSpec, cron.PrevProcessGraphID, cron.WaitForPrevProcessGraph)
 	if err != nil {
 		return err
 	}
@@ -58,6 +68,26 @@ func (db *PQDatabase) parseCrons(rows *sql.Rows) ([]*core.Cron, error) {
 func (db *PQDatabase) GetCronByID(cronID string) (*core.Cron, error) {
 	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `CRONS WHERE CRON_ID=$1`
 	rows, err := db.postgresql.Query(sqlStatement, cronID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	crons, err := db.parseCrons(rows)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(crons) == 0 {
+		return nil, nil
+	}
+
+	return crons[0], nil
+}
+
+func (db *PQDatabase) GetCronByName(colonyName string, cronName string) (*core.Cron, error) {
+	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `CRONS WHERE COLONY_NAME=$1 AND NAME=$2`
+	rows, err := db.postgresql.Query(sqlStatement, colonyName, cronName)
 	if err != nil {
 		return nil, err
 	}

@@ -446,14 +446,13 @@ var removeFileCmd = &cobra.Command{
 			err = fsClient.RemoveFileByID(ColonyName, FileID)
 			CheckError(err)
 		} else if Filename != "" && Label != "" {
-			fmt.Println(Label)
 			err = fsClient.RemoveFileByName(ColonyName, Label, Filename)
 			CheckError(err)
 		} else {
 			CheckError(errors.New("FileId nor filename + label were specified"))
 		}
 
-		log.WithFields(log.Fields{"FileID": FileID, "Label": Label, "Name": Filename}).Debug("Removed file, local file is not removed")
+		log.WithFields(log.Fields{"FileID": FileID, "Label": Label, "Name": Filename}).Info("Removed file (local file is not removed)")
 	},
 }
 
@@ -528,6 +527,10 @@ var downloadSnapshotCmd = &cobra.Command{
 		log.Debug("Starting a file storage client")
 		fsClient, err := fs.CreateFSClient(client, ColonyName, PrvKey)
 		CheckError(err)
+
+		if DownloadDir == "" {
+			CheckError(errors.New("Download dir must be specified"))
+		}
 
 		err = os.MkdirAll(DownloadDir, 0755)
 		if err == nil {

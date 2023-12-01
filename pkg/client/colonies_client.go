@@ -933,8 +933,8 @@ func (client *ColoniesClient) GetGenerator(generatorID string, prvKey string) (*
 	return core.ConvertJSONToGenerator(respBodyString)
 }
 
-func (client *ColoniesClient) ResolveGenerator(generatorName string, prvKey string) (*core.Generator, error) {
-	msg := rpc.CreateResolveGeneratorMsg(generatorName)
+func (client *ColoniesClient) ResolveGenerator(colonyName string, generatorName string, prvKey string) (*core.Generator, error) {
+	msg := rpc.CreateResolveGeneratorMsg(colonyName, generatorName)
 	jsonString, err := msg.ToJSON()
 	if err != nil {
 		return nil, err

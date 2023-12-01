@@ -348,7 +348,7 @@ func (controller *coloniesController) addExecutor(executor *core.Executor, allow
 				}
 			} else {
 				if executorFromDB != nil {
-					cmd.errorChan <- errors.New("Executor name must be unique")
+					cmd.errorChan <- errors.New("Executor with name <" + executorFromDB.Name + "> in Colony <" + executorFromDB.ColonyName + "> already exists")
 					return
 				}
 
