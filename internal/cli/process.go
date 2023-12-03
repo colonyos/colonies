@@ -37,21 +37,25 @@ func init() {
 	listWaitingProcessesCmd.Flags().StringVarP(&TargetExecutorType, "type", "", "", "Only show processes targeting this executor type")
 	listWaitingProcessesCmd.Flags().IntVarP(&Count, "count", "", server.MAX_COUNT, "Number of processes to list")
 	listWaitingProcessesCmd.Flags().BoolVarP(&JSON, "json", "", false, "Print JSON instead of tables")
+	listWaitingProcessesCmd.Flags().BoolVarP(&ShowIDs, "ids", "i", false, "Show IDs")
 
 	listRunningProcessesCmd.Flags().StringVarP(&PrvKey, "prvkey", "", "", "Private key")
 	listRunningProcessesCmd.Flags().StringVarP(&TargetExecutorType, "type", "", "", "Only show processes targeting this executor type")
 	listRunningProcessesCmd.Flags().IntVarP(&Count, "count", "", server.MAX_COUNT, "Number of processes to list")
 	listRunningProcessesCmd.Flags().BoolVarP(&JSON, "json", "", false, "Print JSON instead of tables")
+	listRunningProcessesCmd.Flags().BoolVarP(&ShowIDs, "ids", "i", false, "Show IDs")
 
 	listSuccessfulProcessesCmd.Flags().StringVarP(&PrvKey, "prvkey", "", "", "Private key")
 	listSuccessfulProcessesCmd.Flags().StringVarP(&TargetExecutorType, "type", "", "", "Only show processes targeting this executor type")
 	listSuccessfulProcessesCmd.Flags().IntVarP(&Count, "count", "", server.MAX_COUNT, "Number of processes to list")
 	listSuccessfulProcessesCmd.Flags().BoolVarP(&JSON, "json", "", false, "Print JSON instead of tables")
+	listSuccessfulProcessesCmd.Flags().BoolVarP(&ShowIDs, "ids", "i", false, "Show IDs")
 
 	listFailedProcessesCmd.Flags().StringVarP(&PrvKey, "prvkey", "", "", "Private key")
 	listFailedProcessesCmd.Flags().StringVarP(&ExecutorType, "type", "", "", "Only show processes targeting this executor type")
 	listFailedProcessesCmd.Flags().IntVarP(&Count, "count", "", server.MAX_COUNT, "Number of processes to list")
 	listFailedProcessesCmd.Flags().BoolVarP(&JSON, "json", "", false, "Print JSON instead of tables")
+	listFailedProcessesCmd.Flags().BoolVarP(&ShowIDs, "ids", "i", false, "Show IDs")
 
 	getProcessCmd.Flags().StringVarP(&ProcessID, "processid", "p", "", "Process Id")
 	getProcessCmd.MarkFlagRequired("processid")
@@ -155,10 +159,19 @@ var listWaitingProcessesCmd = &cobra.Command{
 
 			var data [][]string
 			for _, process := range processes {
-				data = append(data, []string{process.ID, process.FunctionSpec.FuncName, StrArr2Str(IfArr2StringArr(process.FunctionSpec.Args)), StrMap2Str(IfMap2StringMap(process.FunctionSpec.KwArgs)), process.SubmissionTime.Format(TimeLayout), process.FunctionSpec.Conditions.ExecutorType})
+				args, kwArgs := parseArgs(process)
+				if ShowIDs {
+					data = append(data, []string{process.ID, process.FunctionSpec.FuncName, args, kwArgs, process.SubmissionTime.Format(TimeLayout), process.FunctionSpec.Conditions.ExecutorType, process.InitiatorName})
+				} else {
+					data = append(data, []string{process.FunctionSpec.FuncName, args, kwArgs, process.SubmissionTime.Format(TimeLayout), process.FunctionSpec.Conditions.ExecutorType, process.InitiatorName})
+				}
 			}
 			table := tablewriter.NewWriter(os.Stdout)
-			table.SetHeader([]string{"ID", "Func", "Args", "KwArgs", "Submission Time", "Executor Type"})
+			if ShowIDs {
+				table.SetHeader([]string{"ID", "Func", "Args", "KwArgs", "Submission Time", "Executor Type", "Initiator Name"})
+			} else {
+				table.SetHeader([]string{"Func", "Args", "KwArgs", "Submission Time", "Executor Type", "Initiator Name"})
+			}
 			for _, v := range data {
 				table.Append(v)
 			}
@@ -191,10 +204,19 @@ var listRunningProcessesCmd = &cobra.Command{
 
 			var data [][]string
 			for _, process := range processes {
-				data = append(data, []string{process.ID, process.FunctionSpec.FuncName, StrArr2Str(IfArr2StringArr(process.FunctionSpec.Args)), StrMap2Str(IfMap2StringMap(process.FunctionSpec.KwArgs)), process.SubmissionTime.Format(TimeLayout), process.FunctionSpec.Conditions.ExecutorType})
+				args, kwArgs := parseArgs(process)
+				if ShowIDs {
+					data = append(data, []string{process.ID, process.FunctionSpec.FuncName, args, kwArgs, process.SubmissionTime.Format(TimeLayout), process.FunctionSpec.Conditions.ExecutorType, process.InitiatorName})
+				} else {
+					data = append(data, []string{process.FunctionSpec.FuncName, args, kwArgs, process.SubmissionTime.Format(TimeLayout), process.FunctionSpec.Conditions.ExecutorType, process.InitiatorName})
+				}
 			}
 			table := tablewriter.NewWriter(os.Stdout)
-			table.SetHeader([]string{"ID", "FuncName", "Args", "KwArgs", "Start time", "Executor Type"})
+			if ShowIDs {
+				table.SetHeader([]string{"ID", "FuncName", "Args", "KwArgs", "Start time", "Executor Type", "Initiator Name"})
+			} else {
+				table.SetHeader([]string{"FuncName", "Args", "KwArgs", "Start time", "Executor Type", "Initiator Name"})
+			}
 			for _, v := range data {
 				table.Append(v)
 			}
@@ -226,10 +248,19 @@ var listSuccessfulProcessesCmd = &cobra.Command{
 
 			var data [][]string
 			for _, process := range processes {
-				data = append(data, []string{process.ID, process.FunctionSpec.FuncName, StrArr2Str(IfArr2StringArr(process.FunctionSpec.Args)), StrMap2Str(IfMap2StringMap(process.FunctionSpec.KwArgs)), process.SubmissionTime.Format(TimeLayout), process.FunctionSpec.Conditions.ExecutorType})
+				args, kwArgs := parseArgs(process)
+				if ShowIDs {
+					data = append(data, []string{process.ID, process.FunctionSpec.FuncName, args, kwArgs, process.SubmissionTime.Format(TimeLayout), process.FunctionSpec.Conditions.ExecutorType, process.InitiatorName})
+				} else {
+					data = append(data, []string{process.FunctionSpec.FuncName, args, kwArgs, process.SubmissionTime.Format(TimeLayout), process.FunctionSpec.Conditions.ExecutorType, process.InitiatorName})
+				}
 			}
 			table := tablewriter.NewWriter(os.Stdout)
-			table.SetHeader([]string{"ID", "FuncName", "Args", "KwArgs", "End time", "Executor Type"})
+			if ShowIDs {
+				table.SetHeader([]string{"ID", "FuncName", "Args", "KwArgs", "End time", "Executor Type", "Initiator Name"})
+			} else {
+				table.SetHeader([]string{"FuncName", "Args", "KwArgs", "End time", "Executor Type", "Initiator Name"})
+			}
 			for _, v := range data {
 				table.Append(v)
 			}
@@ -261,10 +292,19 @@ var listFailedProcessesCmd = &cobra.Command{
 
 			var data [][]string
 			for _, process := range processes {
-				data = append(data, []string{process.ID, process.FunctionSpec.FuncName, StrArr2Str(IfArr2StringArr(process.FunctionSpec.Args)), StrMap2Str(IfMap2StringMap(process.FunctionSpec.KwArgs)), process.SubmissionTime.Format(TimeLayout), process.FunctionSpec.Conditions.ExecutorType})
+				args, kwArgs := parseArgs(process)
+				if ShowIDs {
+					data = append(data, []string{process.ID, process.FunctionSpec.FuncName, args, kwArgs, process.SubmissionTime.Format(TimeLayout), process.FunctionSpec.Conditions.ExecutorType, process.InitiatorName})
+				} else {
+					data = append(data, []string{process.FunctionSpec.FuncName, args, kwArgs, process.SubmissionTime.Format(TimeLayout), process.FunctionSpec.Conditions.ExecutorType, process.InitiatorName})
+				}
 			}
 			table := tablewriter.NewWriter(os.Stdout)
-			table.SetHeader([]string{"ID", "FuncName", "Args", "KwArgs", "End time", "Executor Type"})
+			if ShowIDs {
+				table.SetHeader([]string{"ID", "FuncName", "Args", "KwArgs", "End time", "Executor Type", "Initiator"})
+			} else {
+				table.SetHeader([]string{"FuncName", "Args", "KwArgs", "End time", "Executor Type", "Initiator"})
+			}
 			for _, v := range data {
 				table.Append(v)
 			}
@@ -297,12 +337,20 @@ func printFunctionSpec(funcSpec *core.FunctionSpec) {
 		procArgs = "None"
 	}
 
+	if len(procArgs) > MaxArgInfoLength {
+		procArgs = procArgs[0:MaxArgInfoLength] + "..."
+	}
+
 	procKwArgs := ""
 	for k, procKwArg := range IfMap2StringMap(funcSpec.KwArgs) {
 		procKwArgs += k + ":" + procKwArg + " "
 	}
 	if procKwArgs == "" {
 		procKwArgs = "None"
+	}
+
+	if len(procKwArgs) > MaxArgInfoLength {
+		procKwArgs = procKwArgs[0:MaxArgInfoLength] + "..."
 	}
 
 	specData := [][]string{
@@ -389,11 +437,22 @@ var getProcessCmd = &cobra.Command{
 			os.Exit(0)
 		}
 
-		fmt.Println("Process:")
+		input := StrArr2Str(IfArr2StringArr(process.Input))
+		if len(input) > MaxArgInfoLength {
+			input = input[0:MaxArgInfoLength] + "..."
+		}
 
+		output := StrArr2Str(IfArr2StringArr(process.Output))
+		if len(output) > MaxArgInfoLength {
+			output = output[0:MaxArgInfoLength] + "..."
+		}
+
+		fmt.Println("Process:")
 		processData := [][]string{
 			[]string{"ID", process.ID},
 			[]string{"IsAssigned", isAssigned},
+			[]string{"InitiatorID", process.InitiatorID},
+			[]string{"InitiatorName", process.InitiatorName},
 			[]string{"AssignedExecutorID", assignedExecutorID},
 			[]string{"State", State2String(process.State)},
 			[]string{"PriorityTime", strconv.FormatInt(process.PriorityTime, 10)},
@@ -405,8 +464,9 @@ var getProcessCmd = &cobra.Command{
 			[]string{"WaitingTime", process.WaitingTime().String()},
 			[]string{"ProcessingTime", process.ProcessingTime().String()},
 			[]string{"Retries", strconv.Itoa(process.Retries)},
+			[]string{"Input", input},
+			[]string{"Output", output},
 			[]string{"Errors", StrArr2Str(process.Errors)},
-			[]string{"Output", StrArr2Str(IfArr2StringArr(process.Output))},
 		}
 		processTable := tablewriter.NewWriter(os.Stdout)
 		for _, v := range processData {
@@ -520,19 +580,19 @@ var removeAllProcessesCmd = &cobra.Command{
 			if state == "all" {
 				err = client.RemoveAllProcesses(ColonyName, ColonyPrvKey)
 				CheckError(err)
-				log.WithFields(log.Fields{"ColonyName": ColonyName}).Info("Deleting all processes in Colony <" + ColonyName + ">")
+				log.WithFields(log.Fields{"ColonyName": ColonyName}).Info("Removing all processes in Colony <" + ColonyName + ">")
 			} else if Waiting {
 				err = client.RemoveAllProcessesWithState(ColonyName, core.WAITING, ColonyPrvKey)
 				CheckError(err)
-				log.WithFields(log.Fields{"ColonyName": ColonyName}).Info("Deleting all waiting processes in Colony <" + ColonyName + ">")
+				log.WithFields(log.Fields{"ColonyName": ColonyName}).Info("Removing all waiting processes in Colony <" + ColonyName + ">")
 			} else if Successful {
 				err = client.RemoveAllProcessesWithState(ColonyName, core.SUCCESS, ColonyPrvKey)
 				CheckError(err)
-				log.WithFields(log.Fields{"ColonyName": ColonyName}).Info("Deleting all successful processes in Colony <" + ColonyName + ">")
+				log.WithFields(log.Fields{"ColonyName": ColonyName}).Info("Removing all successful processes in Colony <" + ColonyName + ">")
 			} else if Failed {
 				err = client.RemoveAllProcessesWithState(ColonyName, core.FAILED, ColonyPrvKey)
 				CheckError(err)
-				log.WithFields(log.Fields{"ColonyName": ColonyName}).Info("Deleting all failed processes in Colony <" + ColonyName + ">")
+				log.WithFields(log.Fields{"ColonyName": ColonyName}).Info("Removing all failed processes in Colony <" + ColonyName + ">")
 			}
 		} else {
 			log.Info("Aborting ...")

@@ -127,10 +127,10 @@ var listWaitingWorkflowsCmd = &cobra.Command{
 
 			var data [][]string
 			for _, graph := range graphs {
-				data = append(data, []string{graph.ID, graph.SubmissionTime.Format(TimeLayout)})
+				data = append(data, []string{graph.ID, graph.SubmissionTime.Format(TimeLayout), graph.InitiatorName})
 			}
 			table := tablewriter.NewWriter(os.Stdout)
-			table.SetHeader([]string{"ID", "Submission Time"})
+			table.SetHeader([]string{"ID", "Submission Time", "Initiator Name"})
 			for _, v := range data {
 				table.Append(v)
 			}
@@ -194,19 +194,19 @@ var removeAllWorkflowsCmd = &cobra.Command{
 			if state == "all" {
 				err = client.RemoveAllProcessGraphs(ColonyName, ColonyPrvKey)
 				CheckError(err)
-				log.WithFields(log.Fields{"ColonyName": ColonyName}).Info("Deleting all workflows in Colony <" + ColonyName + ">")
+				log.WithFields(log.Fields{"ColonyName": ColonyName}).Info("Removing all workflows in Colony <" + ColonyName + ">")
 			} else if Waiting {
 				err = client.RemoveAllProcessGraphsWithState(ColonyName, core.WAITING, ColonyPrvKey)
 				CheckError(err)
-				log.WithFields(log.Fields{"ColonyName": ColonyName}).Info("Deleting all waiting workflows in Colony <" + ColonyName + ">")
+				log.WithFields(log.Fields{"ColonyName": ColonyName}).Info("Removing all waiting workflows in Colony <" + ColonyName + ">")
 			} else if Successful {
 				err = client.RemoveAllProcessGraphsWithState(ColonyName, core.SUCCESS, ColonyPrvKey)
 				CheckError(err)
-				log.WithFields(log.Fields{"ColonyName": ColonyName}).Info("Deleting all successful workflows in Colony <" + ColonyName + ">")
+				log.WithFields(log.Fields{"ColonyName": ColonyName}).Info("Removing all successful workflows in Colony <" + ColonyName + ">")
 			} else if Failed {
 				err = client.RemoveAllProcessGraphsWithState(ColonyName, core.FAILED, ColonyPrvKey)
 				CheckError(err)
-				log.WithFields(log.Fields{"ColonyName": ColonyName}).Info("Deleting all failed workflows in Colony <" + ColonyName + ">")
+				log.WithFields(log.Fields{"ColonyName": ColonyName}).Info("Removing all failed workflows in Colony <" + ColonyName + ">")
 			}
 		} else {
 			log.Info("Aborting ...")
@@ -326,6 +326,8 @@ func printGraf(client *client.ColoniesClient, graph *core.ProcessGraph) {
 	fmt.Println("Workflow:")
 	workflowData := [][]string{
 		[]string{"WorkflowID", graph.ID},
+		[]string{"InitiatorID", graph.InitiatorID},
+		[]string{"InitiatorName", graph.InitiatorName},
 		[]string{"ColonyName", graph.ID},
 		[]string{"State", State2String(graph.State)},
 		[]string{"SubmissionTime", graph.SubmissionTime.Format(TimeLayout)},
@@ -375,6 +377,8 @@ func printGraf(client *client.ColoniesClient, graph *core.ProcessGraph) {
 
 		processData := [][]string{
 			[]string{"NodeName", process.FunctionSpec.NodeName},
+			[]string{"InitiatorID", process.InitiatorID},
+			[]string{"InitiatorName", process.InitiatorName},
 			[]string{"ProcessID", process.ID},
 			[]string{"ExecutorType", process.FunctionSpec.Conditions.ExecutorType},
 			[]string{"FuncName", f},

@@ -115,7 +115,7 @@ var delCronCmd = &cobra.Command{
 		err := client.RemoveCron(CronID, PrvKey)
 		CheckError(err)
 
-		log.WithFields(log.Fields{"CronId": CronID}).Info("Deleting cron")
+		log.WithFields(log.Fields{"CronId": CronID}).Info("Removing cron")
 	},
 }
 
@@ -140,6 +140,8 @@ var getCronCmd = &cobra.Command{
 		generatorData := [][]string{
 			[]string{"Id", cron.ID},
 			[]string{"ColonyName", cron.ColonyName},
+			[]string{"InitiatorID", cron.InitiatorID},
+			[]string{"InitiatorName", cron.InitiatorName},
 			[]string{"Name", cron.Name},
 			[]string{"Cron Expression", cron.CronExpression},
 			[]string{"Interval", strconv.Itoa(cron.Interval)},
@@ -186,10 +188,10 @@ var getCronsCmd = &cobra.Command{
 
 		var data [][]string
 		for _, cron := range crons {
-			data = append(data, []string{cron.ID, cron.Name})
+			data = append(data, []string{cron.ID, cron.Name, cron.InitiatorName})
 		}
 		table := tablewriter.NewWriter(os.Stdout)
-		table.SetHeader([]string{"CronId", "Name"})
+		table.SetHeader([]string{"CronId", "Name", "Initiator Name"})
 		for _, v := range data {
 			table.Append(v)
 		}

@@ -15,12 +15,13 @@ func TestHandleAddGeneratorHTTPRequest(t *testing.T) {
 	server, controllerMock, _, _, ctx, w := setupFakeServer()
 
 	recoveredID := "invalid_id"
+	initiatorName := "invalid_name"
 	payloadType := "invalid_payload_type"
 	jsonString := "invalid json string"
 	server.handleAddGeneratorHTTPRequest(ctx, recoveredID, payloadType, jsonString)
 	assertRPCError(t, w.Body.String())
 
-	generator := utils.FakeGenerator(t, core.GenerateRandomID())
+	generator := utils.FakeGenerator(t, core.GenerateRandomID(), recoveredID, initiatorName)
 	msg := rpc.CreateAddGeneratorMsg(generator)
 	jsonString, err := msg.ToJSON()
 	assert.Nil(t, err)
@@ -65,7 +66,7 @@ func TestHandleAddGeneratorHTTPRequest(t *testing.T) {
 	server.handleAddGeneratorHTTPRequest(ctx, recoveredID, payloadType, jsonString)
 	assertRPCError(t, w.Body.String())
 
-	generator = utils.FakeGenerator(t, core.GenerateRandomID())
+	generator = utils.FakeGenerator(t, core.GenerateRandomID(), "test_initiator_id", "test_initiator_name")
 	controllerMock.returnError = "addGenerator"
 	msg = rpc.CreateAddGeneratorMsg(generator)
 	payloadType = msg.MsgType
@@ -76,7 +77,7 @@ func TestHandleAddGeneratorHTTPRequest(t *testing.T) {
 	assertRPCError(t, w.Body.String())
 	controllerMock.returnError = ""
 
-	generator = utils.FakeGenerator(t, core.GenerateRandomID())
+	generator = utils.FakeGenerator(t, core.GenerateRandomID(), "test_initiator_id", "test_initiator_name")
 	msg = rpc.CreateAddGeneratorMsg(generator)
 	payloadType = msg.MsgType
 	jsonString, err = msg.ToJSON()
@@ -146,7 +147,7 @@ func TestAddGeneratorCounter(t *testing.T) {
 
 	colonyName := env.colonyName
 
-	generator := utils.FakeGenerator(t, colonyName)
+	generator := utils.FakeGenerator(t, colonyName, env.executorID, env.executorName)
 	generator.Trigger = 10
 	addedGenerator, err := client.AddGenerator(generator, env.executorPrvKey)
 	assert.Nil(t, err)
@@ -177,7 +178,7 @@ func TestAddGeneratorTimeout(t *testing.T) {
 
 	colonyName := env.colonyName
 
-	generator := utils.FakeGenerator(t, colonyName)
+	generator := utils.FakeGenerator(t, colonyName, env.executorID, env.executorName)
 	generator.Trigger = 10
 	generator.Timeout = 1
 	addedGenerator, err := client.AddGenerator(generator, env.executorPrvKey)
@@ -204,7 +205,7 @@ func TestAddGeneratorTimeout2(t *testing.T) {
 
 	colonyName := env.colonyName
 
-	generator := utils.FakeGenerator(t, colonyName)
+	generator := utils.FakeGenerator(t, colonyName, env.executorID, env.executorName)
 	generator.Trigger = 10
 	generator.Timeout = 1
 	addedGenerator, err := client.AddGenerator(generator, env.executorPrvKey)
@@ -242,7 +243,7 @@ func TestAddGeneratorTimeout3(t *testing.T) {
 
 	colonyName := env.colonyName
 
-	generator := utils.FakeGenerator(t, colonyName)
+	generator := utils.FakeGenerator(t, colonyName, env.executorID, env.executorName)
 	generator.Trigger = 10
 	generator.Timeout = 1
 	addedGenerator, err := client.AddGenerator(generator, env.executorPrvKey)
@@ -285,7 +286,7 @@ func TestGetGenerator(t *testing.T) {
 
 	colonyName := env.colonyName
 
-	generator := utils.FakeGenerator(t, colonyName)
+	generator := utils.FakeGenerator(t, colonyName, env.executorID, env.executorName)
 	addedGenerator, err := client.AddGenerator(generator, env.executorPrvKey)
 	assert.Nil(t, err)
 
@@ -302,7 +303,7 @@ func TestResolveGenerator(t *testing.T) {
 
 	colonyName := env.colonyName
 
-	generator := utils.FakeGenerator(t, colonyName)
+	generator := utils.FakeGenerator(t, colonyName, env.executorID, env.executorName)
 	generator.Name = "test_generator_name"
 	addedGenerator, err := client.AddGenerator(generator, env.executorPrvKey)
 	assert.Nil(t, err)
@@ -320,15 +321,15 @@ func TestGetGenerators(t *testing.T) {
 
 	colonyName := env.colonyName
 
-	generator1 := utils.FakeGenerator(t, colonyName)
+	generator1 := utils.FakeGenerator(t, colonyName, env.executorID, env.executorName)
 	addedGenerator1, err := client.AddGenerator(generator1, env.executorPrvKey)
 	assert.Nil(t, err)
 
-	generator2 := utils.FakeGenerator(t, colonyName)
+	generator2 := utils.FakeGenerator(t, colonyName, env.executorID, env.executorName)
 	addedGenerator2, err := client.AddGenerator(generator2, env.executorPrvKey)
 	assert.Nil(t, err)
 
-	generator3 := utils.FakeGenerator(t, colonyName)
+	generator3 := utils.FakeGenerator(t, colonyName, env.executorID, env.executorName)
 	addedGenerator3, err := client.AddGenerator(generator3, env.executorPrvKey)
 	assert.Nil(t, err)
 
@@ -368,7 +369,7 @@ func TestRemoveGenerator(t *testing.T) {
 
 	colonyName := env.colonyName
 
-	generator := utils.FakeGenerator(t, colonyName)
+	generator := utils.FakeGenerator(t, colonyName, env.executorID, env.executorName)
 	addedGenerator, err := client.AddGenerator(generator, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.NotNil(t, addedGenerator)
