@@ -63,6 +63,16 @@ func (server *ColoniesServer) handleAddCronHTTPRequest(c *gin.Context, recovered
 	}
 
 	msg.Cron.ID = core.GenerateRandomID()
+	msg.Cron.InitiatorID = recoveredID
+
+	initiatorName, err := resolveInitiator(workflowSpec.ColonyName, recoveredID, server.db)
+	if server.handleHTTPError(c, err, http.StatusInternalServerError) {
+		return
+	}
+
+	msg.Cron.InitiatorID = recoveredID
+	msg.Cron.InitiatorName = initiatorName
+
 	addedCron, err := server.controller.addCron(msg.Cron)
 	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return

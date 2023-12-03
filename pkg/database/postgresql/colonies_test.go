@@ -179,22 +179,22 @@ func TestRemoveColonies(t *testing.T) {
 	err = db.AddUser(user2)
 	assert.Nil(t, err)
 
-	generator1 := utils.FakeGenerator(t, colony1.Name)
+	generator1 := utils.FakeGenerator(t, colony1.Name, "test_initiator_id", "test_initiator_name")
 	generator1.ID = core.GenerateRandomID()
 	err = db.AddGenerator(generator1)
 	assert.Nil(t, err)
 
-	generator2 := utils.FakeGenerator(t, colony2.Name)
+	generator2 := utils.FakeGenerator(t, colony2.Name, "test_initiator_id", "test_initiator_name")
 	generator2.ID = core.GenerateRandomID()
 	err = db.AddGenerator(generator2)
 	assert.Nil(t, err)
 
-	cron1 := utils.FakeCron(t, colony1.Name)
+	cron1 := utils.FakeCron(t, colony1.Name, "test_initiator_id", "test_initiator_name")
 	cron1.ID = core.GenerateRandomID()
 	err = db.AddCron(cron1)
 	assert.Nil(t, err)
 
-	cron2 := utils.FakeCron(t, colony2.Name)
+	cron2 := utils.FakeCron(t, colony2.Name, "test_initiator_id", "test_initiator_name")
 	cron2.ID = core.GenerateRandomID()
 	err = db.AddCron(cron2)
 	assert.Nil(t, err)

@@ -33,7 +33,7 @@ func (server *ColoniesServer) handleSubmitWorkflowHTTPRequest(c *gin.Context, re
 		return
 	}
 
-	processGraph, err := server.controller.submitWorkflowSpec(msg.WorkflowSpec)
+	processGraph, err := server.controller.submitWorkflowSpec(msg.WorkflowSpec, recoveredID)
 	if server.handleHTTPError(c, err, http.StatusInternalServerError) {
 		return
 	}

@@ -66,14 +66,14 @@ func (controller *coloniesController) triggerGenerators() {
 						"GeneratorId": generator.ID,
 						"Counter":     counter}).
 						Debug("Generator threshold reached, submitting workflow")
-					controller.submitWorkflow(generator, generator.Trigger)
+					controller.submitWorkflow(generator, generator.Trigger, generator.InitiatorID)
 				}
 			} else if counter >= 1 && generator.Timeout > 0 && timeout {
 				log.WithFields(log.Fields{
 					"GeneratorId": generator.ID,
 					"Counter":     counter}).
 					Debug("Generator threshold reached, submitting workflow")
-				controller.submitWorkflow(generator, counter)
+				controller.submitWorkflow(generator, counter, generator.InitiatorID)
 			}
 		}
 	}}
@@ -197,7 +197,7 @@ func (controller *coloniesController) generatorTriggerLoop() {
 	}
 }
 
-func (controller *coloniesController) submitWorkflow(generator *core.Generator, counter int) {
+func (controller *coloniesController) submitWorkflow(generator *core.Generator, counter int, recoveredID string) {
 	workflowSpec, err := core.ConvertJSONToWorkflowSpec(generator.WorkflowSpec)
 	if err != nil {
 		log.WithFields(log.Fields{"Error": err}).Error("Failed to parse workflow spec")
@@ -222,7 +222,7 @@ func (controller *coloniesController) submitWorkflow(generator *core.Generator, 
 		argsif[i] = v
 	}
 
-	_, err = controller.createProcessGraph(workflowSpec, argsif, make(map[string]interface{}), make([]interface{}, 0))
+	_, err = controller.createProcessGraph(workflowSpec, argsif, make(map[string]interface{}), make([]interface{}, 0), recoveredID)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"Error": err}).

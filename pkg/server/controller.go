@@ -35,8 +35,8 @@ type controller interface {
 	findSuccessfulProcesses(colonyName string, executorType string, count int) ([]*core.Process, error)
 	findFailedProcesses(colonyName string, executorType string, count int) ([]*core.Process, error)
 	updateProcessGraph(graph *core.ProcessGraph) error
-	createProcessGraph(workflowSpec *core.WorkflowSpec, args []interface{}, kwargs map[string]interface{}, rootInput []interface{}) (*core.ProcessGraph, error)
-	submitWorkflowSpec(workflowSpec *core.WorkflowSpec) (*core.ProcessGraph, error)
+	createProcessGraph(workflowSpec *core.WorkflowSpec, args []interface{}, kwargs map[string]interface{}, rootInput []interface{}, recoveredID string) (*core.ProcessGraph, error)
+	submitWorkflowSpec(workflowSpec *core.WorkflowSpec, recoveredID string) (*core.ProcessGraph, error)
 	getProcessGraphByID(processGraphID string) (*core.ProcessGraph, error)
 	findWaitingProcessGraphs(colonyName string, count int) ([]*core.ProcessGraph, error)
 	findRunningProcessGraphs(colonyName string, count int) ([]*core.ProcessGraph, error)
@@ -70,7 +70,7 @@ type controller interface {
 	packGenerator(generatorID string, colonyName, arg string) error
 	generatorTriggerLoop()
 	triggerGenerators()
-	submitWorkflow(generator *core.Generator, counter int)
+	submitWorkflow(generator *core.Generator, counter int, recoveredID string) // TODO: change name, there is also a submitWorkflowSpec()
 	addCron(cron *core.Cron) (*core.Cron, error)
 	removeGenerator(generatorID string) error
 	getCron(cronID string) (*core.Cron, error)

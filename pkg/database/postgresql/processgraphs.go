@@ -9,8 +9,8 @@ import (
 )
 
 func (db *PQDatabase) AddProcessGraph(processGraph *core.ProcessGraph) error {
-	sqlStatement := `INSERT INTO  ` + db.dbPrefix + `PROCESSGRAPHS (PROCESSGRAPH_ID, TARGET_COLONY_NAME, ROOTS, STATE, SUBMISSION_TIME, START_TIME, END_TIME) VALUES ($1, $2, $3, $4, $5, $6, $7)`
-	_, err := db.postgresql.Exec(sqlStatement, processGraph.ID, processGraph.ColonyName, pq.Array(processGraph.Roots), processGraph.State, time.Now(), time.Time{}, time.Time{})
+	sqlStatement := `INSERT INTO  ` + db.dbPrefix + `PROCESSGRAPHS (PROCESSGRAPH_ID, TARGET_COLONY_NAME, ROOTS, STATE, SUBMISSION_TIME, START_TIME, END_TIME, INITIATOR_ID, INITIATOR_NAME) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`
+	_, err := db.postgresql.Exec(sqlStatement, processGraph.ID, processGraph.ColonyName, pq.Array(processGraph.Roots), processGraph.State, time.Now(), time.Time{}, time.Time{}, processGraph.InitiatorID, processGraph.InitiatorName)
 	if err != nil {
 		return err
 	}
@@ -29,20 +29,26 @@ func (db *PQDatabase) parseProcessGraphs(rows *sql.Rows) ([]*core.ProcessGraph, 
 		var submissionTime time.Time
 		var startTime time.Time
 		var endTime time.Time
-		if err := rows.Scan(&processGraphID, &colonyName, pq.Array(&roots), &state, &submissionTime, &startTime, &endTime); err != nil {
+		var initiatorID string
+		var initiatorName string
+
+		if err := rows.Scan(&processGraphID, &colonyName, pq.Array(&roots), &state, &submissionTime, &startTime, &endTime, &initiatorID, &initiatorName); err != nil {
 			return nil, err
 		}
 
 		graph, err := core.CreateProcessGraph(colonyName)
+		if err != nil {
+			return graphs, err
+		}
+
 		graph.ID = processGraphID
 		graph.ColonyName = colonyName
 		graph.State = state
 		graph.SubmissionTime = submissionTime
 		graph.StartTime = startTime
 		graph.EndTime = endTime
-		if err != nil {
-			return graphs, err
-		}
+		graph.InitiatorID = initiatorID
+		graph.InitiatorName = initiatorName
 
 		for _, root := range roots {
 			graph.AddRoot(root)
