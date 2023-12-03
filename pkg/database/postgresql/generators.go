@@ -18,8 +18,8 @@ func (db *PQDatabase) AddGenerator(generator *core.Generator) error {
 		return errors.New("Generator with name <" + generator.Name + "> in Colony <" + generator.ColonyName + "> already exists")
 	}
 
-	sqlStatement := `INSERT INTO  ` + db.dbPrefix + `GENERATORS (GENERATOR_ID, COLONY_NAME, NAME, WORKFLOW_SPEC, TRIGGER, TIMEOUT, LASTRUN, FIRSTPACK) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`
-	_, err = db.postgresql.Exec(sqlStatement, generator.ID, generator.ColonyName, generator.Name, generator.WorkflowSpec, generator.Trigger, generator.Timeout, time.Time{}, time.Time{})
+	sqlStatement := `INSERT INTO  ` + db.dbPrefix + `GENERATORS (GENERATOR_ID, COLONY_NAME, NAME, WORKFLOW_SPEC, TRIGGER, TIMEOUT, LASTRUN, FIRSTPACK, INITIATOR_ID, INITIATOR_NAME) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`
+	_, err = db.postgresql.Exec(sqlStatement, generator.ID, generator.ColonyName, generator.Name, generator.WorkflowSpec, generator.Trigger, generator.Timeout, time.Time{}, time.Time{}, generator.InitiatorID, generator.InitiatorName)
 	if err != nil {
 		return err
 	}
@@ -39,11 +39,17 @@ func (db *PQDatabase) parseGenerators(rows *sql.Rows) ([]*core.Generator, error)
 		var timeout int
 		var lastRun time.Time
 		var firstPack time.Time
-		if err := rows.Scan(&generatorID, &colonyName, &name, &workflowSpec, &trigger, &timeout, &lastRun, &firstPack); err != nil {
+		var initiatorID string
+		var initiatorName string
+
+		if err := rows.Scan(&generatorID, &colonyName, &name, &workflowSpec, &trigger, &timeout, &lastRun, &firstPack, &initiatorID, &initiatorName); err != nil {
 			return nil, err
 		}
 
 		generator := &core.Generator{ID: generatorID, ColonyName: colonyName, Name: name, WorkflowSpec: workflowSpec, Trigger: trigger, Timeout: timeout, LastRun: lastRun, FirstPack: firstPack}
+
+		generator.InitiatorID = initiatorID
+		generator.InitiatorName = initiatorName
 
 		generators = append(generators, generator)
 	}

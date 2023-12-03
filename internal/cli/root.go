@@ -17,6 +17,8 @@ const DefaultDBHost = "localhost"
 const DefaultDBPort = 5432
 const DefaultServerHost = "localhost"
 const MaxAttributeLength = 30
+const MaxArgLength = 20
+const MaxArgInfoLength = 50
 
 var mutex sync.Mutex
 
@@ -124,6 +126,7 @@ var UserID string
 var Username string
 var Email string
 var Phone string
+var ShowIDs bool
 
 func init() {
 	rootCmd.PersistentFlags().BoolVarP(&Verbose, "verbose", "v", false, "Verbose (debugging)")

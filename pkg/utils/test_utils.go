@@ -34,7 +34,11 @@ func CreateTestUserWithKey(colonyID string, name string) (*core.User, string, er
 }
 
 func CreateTestProcess(colonyName string) *core.Process {
-	return core.CreateProcess(CreateTestFunctionSpec(colonyName))
+	process := core.CreateProcess(CreateTestFunctionSpec(colonyName))
+	process.InitiatorID = "test_initiator_id"
+	process.InitiatorName = "test_initiator_name"
+
+	return process
 }
 
 func CreateTestFunctionSpec(colonyName string) *core.FunctionSpec {
@@ -102,7 +106,11 @@ func CreateTestFile(colonyName string) *core.File {
 }
 
 func CreateTestProcessWithType(colonyID string, executorType string) *core.Process {
-	return core.CreateProcess(CreateTestFunctionSpecWithType(colonyID, executorType))
+	process := core.CreateProcess(CreateTestFunctionSpecWithType(colonyID, executorType))
+	process.InitiatorID = "test_initiator_id"
+	process.InitiatorName = "test_initiator_name"
+
+	return process
 }
 
 func CreateTestFunctionSpecWithType(colonyID string, executorType string) *core.FunctionSpec {
@@ -114,7 +122,11 @@ func CreateTestFunctionSpecWithType(colonyID string, executorType string) *core.
 }
 
 func CreateTestProcessWithEnv(colonyID string, env map[string]string) *core.Process {
-	return core.CreateProcess(CreateTestFunctionSpecWithEnv(colonyID, env))
+	process := core.CreateProcess(CreateTestFunctionSpecWithEnv(colonyID, env))
+	process.InitiatorID = "test_initiator_id"
+	process.InitiatorName = "test_initiator_name"
+
+	return process
 }
 
 func CreateTestFunctionSpecWithEnv(colonyID string, env map[string]string) *core.FunctionSpec {
@@ -126,7 +138,11 @@ func CreateTestFunctionSpecWithEnv(colonyID string, env map[string]string) *core
 }
 
 func CreateTestProcessWithTargets(colonyID string, targetExecutorIDs []string) *core.Process {
-	return core.CreateProcess(CreateTestFunctionSpecWithTargets(colonyID, targetExecutorIDs))
+	process := core.CreateProcess(CreateTestFunctionSpecWithTargets(colonyID, targetExecutorIDs))
+	process.InitiatorID = "test_initiator_id"
+	process.InitiatorName = "test_initiator_name"
+
+	return process
 }
 
 func CreateTestFunctionSpecWithTargets(colonyID string, targetExecutorIDs []string) *core.FunctionSpec {
@@ -188,7 +204,7 @@ func CreateTestColonyWithKey() (*core.Colony, string, error) {
 	return core.CreateColony(colonyID, "test_colony_name"+core.GenerateRandomID()), colonyPrvKey, nil
 }
 
-func FakeGenerator(t *testing.T, colonyID string) *core.Generator {
+func FakeGenerator(t *testing.T, colonyID string, initiatorID string, initiatorName string) *core.Generator {
 	workflowSpec := core.CreateWorkflowSpec(colonyID)
 	funcSpec1 := CreateTestFunctionSpec(colonyID)
 	funcSpec1.NodeName = "task1"
@@ -200,10 +216,12 @@ func FakeGenerator(t *testing.T, colonyID string) *core.Generator {
 	jsonStr, err := workflowSpec.ToJSON()
 	assert.Nil(t, err)
 	generator := core.CreateGenerator(colonyID, "test_genname"+core.GenerateRandomID(), jsonStr, 10, -1)
+	generator.InitiatorID = initiatorID
+	generator.InitiatorName = initiatorName
 	return generator
 }
 
-func FakeGeneratorSingleProcess(t *testing.T, colonyID string) *core.Generator {
+func FakeGeneratorSingleProcess(t *testing.T, colonyID string, initiatorID string, initiatorName string) *core.Generator {
 	workflowSpec := core.CreateWorkflowSpec(colonyID)
 	funcSpec1 := CreateTestFunctionSpec(colonyID)
 	funcSpec1.NodeName = "task1"
@@ -211,10 +229,12 @@ func FakeGeneratorSingleProcess(t *testing.T, colonyID string) *core.Generator {
 	jsonStr, err := workflowSpec.ToJSON()
 	assert.Nil(t, err)
 	generator := core.CreateGenerator(colonyID, "test_genname"+core.GenerateRandomID(), jsonStr, 10, -1)
+	generator.InitiatorID = initiatorID
+	generator.InitiatorName = initiatorName
 	return generator
 }
 
-func FakeCron(t *testing.T, colonyID string) *core.Cron {
+func FakeCron(t *testing.T, colonyID string, initiatorID string, initiatorName string) *core.Cron {
 	workflowSpec := core.CreateWorkflowSpec(colonyID)
 	funcSpec1 := CreateTestFunctionSpec(colonyID)
 	funcSpec1.NodeName = "task1"
@@ -226,10 +246,12 @@ func FakeCron(t *testing.T, colonyID string) *core.Cron {
 	jsonStr, err := workflowSpec.ToJSON()
 	assert.Nil(t, err)
 	cron := core.CreateCron(colonyID, "test_cron1"+core.GenerateRandomID(), "1 * * * * *", -1, false, jsonStr)
+	cron.InitiatorID = initiatorID
+	cron.InitiatorName = initiatorName
 	return cron
 }
 
-func FakeSingleCron(t *testing.T, colonyID string) *core.Cron {
+func FakeSingleCron(t *testing.T, colonyID string, initiatorID string, initiatorName string) *core.Cron {
 	workflowSpec := core.CreateWorkflowSpec(colonyID)
 	funcSpec := CreateTestFunctionSpec(colonyID)
 	funcSpec.NodeName = "task1"
@@ -237,5 +259,7 @@ func FakeSingleCron(t *testing.T, colonyID string) *core.Cron {
 	jsonStr, err := workflowSpec.ToJSON()
 	assert.Nil(t, err)
 	cron := core.CreateCron(colonyID, "test_cron1"+core.GenerateRandomID(), "1 * * * * *", -1, false, jsonStr)
+	cron.InitiatorID = initiatorID
+	cron.InitiatorName = initiatorName
 	return cron
 }

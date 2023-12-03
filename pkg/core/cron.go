@@ -7,6 +7,8 @@ import (
 
 type Cron struct {
 	ID                      string    `json:"cronid"`
+	InitiatorID             string    `json:"initiatorid"`
+	InitiatorName           string    `json:"initiatorname"`
 	ColonyName              string    `json:"colonyname"`
 	Name                    string    `json:"name"`
 	CronExpression          string    `json:"cronexpression"`

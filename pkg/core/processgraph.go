@@ -49,6 +49,8 @@ type Node struct {
 type ProcessGraph struct {
 	storage        ProcessGraphStorage
 	ID             string    `json:"processgraphid"`
+	InitiatorID    string    `json:"initiatorid"`
+	InitiatorName  string    `json:"initiatorname"`
 	ColonyName     string    `json:"colonyname"`
 	Roots          []string  `json:"rootprocessids"`
 	State          int       `json:"state"`
@@ -512,7 +514,9 @@ func (graph *ProcessGraph) iterate(processID string, visited map[string]bool, vi
 func (graph *ProcessGraph) Equals(graph2 *ProcessGraph) bool {
 	if graph.State == graph2.State &&
 		graph.ID == graph2.ID &&
-		graph.ColonyName == graph2.ColonyName {
+		graph.ColonyName == graph2.ColonyName &&
+		graph.InitiatorID == graph2.InitiatorID &&
+		graph.InitiatorName == graph2.InitiatorID {
 		return true
 	}
 

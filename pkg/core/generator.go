@@ -7,6 +7,8 @@ import (
 
 type Generator struct {
 	ID            string    `json:"generatorid"`
+	InitiatorID   string    `json:"initiatorid"`
+	InitiatorName string    `json:"initiatorname"`
 	ColonyName    string    `json:"colonyname"`
 	Name          string    `json:"name"`
 	WorkflowSpec  string    `json:"workflowspec"`

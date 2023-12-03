@@ -23,6 +23,8 @@ func TestCreateProcess(t *testing.T) {
 
 	funcSpec := CreateFunctionSpec("test_name", "test_func", args, kwargs, colonyName, []string{executor1ID, executor2ID}, executorType, maxWaitTime, maxExecTime, maxRetries, make(map[string]string), []string{}, 1, "test_label")
 	process := CreateProcess(funcSpec)
+	process.InitiatorID = "test_initiator_id"
+	process.InitiatorName = "test_initiator_name"
 	assert.True(t, process.FunctionSpec.Equals(funcSpec))
 }
 

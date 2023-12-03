@@ -44,6 +44,15 @@ func (server *ColoniesServer) handleAddGeneratorHTTPRequest(c *gin.Context, reco
 	}
 
 	msg.Generator.ID = core.GenerateRandomID()
+
+	initiatorName, err := resolveInitiator(msg.Generator.ColonyName, recoveredID, server.db)
+	if server.handleHTTPError(c, err, http.StatusInternalServerError) {
+		return
+	}
+
+	msg.Generator.InitiatorID = recoveredID
+	msg.Generator.InitiatorName = initiatorName
+
 	addedGenerator, err := server.controller.addGenerator(msg.Generator)
 	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return

@@ -34,6 +34,10 @@ func TestSubmitWorkflowSpec(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Len(t, processes, 4)
 
+	// It should not be possible to remove processes part of a workflow
+	err = client.RemoveProcess(processes[0].ID, env.executorPrvKey)
+	assert.NotNil(t, err) // Error
+
 	assignedProcess1, err := client.Assign(env.colonyName, -1, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.True(t, assignedProcess1.FunctionSpec.NodeName == "task1")

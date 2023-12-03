@@ -153,11 +153,11 @@ func (v *controllerMock) updateProcessGraph(graph *core.ProcessGraph) error {
 	return nil
 }
 
-func (v *controllerMock) createProcessGraph(workflowSpec *core.WorkflowSpec, args []interface{}, kwargs map[string]interface{}, rootInput []interface{}) (*core.ProcessGraph, error) {
+func (v *controllerMock) createProcessGraph(workflowSpec *core.WorkflowSpec, args []interface{}, kwargs map[string]interface{}, rootInput []interface{}, recoveredID string) (*core.ProcessGraph, error) {
 	return nil, nil
 }
 
-func (v *controllerMock) submitWorkflowSpec(workflowSpec *core.WorkflowSpec) (*core.ProcessGraph, error) {
+func (v *controllerMock) submitWorkflowSpec(workflowSpec *core.WorkflowSpec, recoveredID string) (*core.ProcessGraph, error) {
 	return nil, nil
 }
 
@@ -303,7 +303,7 @@ func (v *controllerMock) generatorTriggerLoop() {
 func (v *controllerMock) triggerGenerators() {
 }
 
-func (v *controllerMock) submitWorkflow(generator *core.Generator, counter int) {
+func (v *controllerMock) submitWorkflow(generator *core.Generator, counter int, recoveredID string) {
 }
 
 func (v *controllerMock) addCron(cron *core.Cron) (*core.Cron, error) {

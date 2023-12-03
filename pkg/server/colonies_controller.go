@@ -722,10 +722,15 @@ func (controller *coloniesController) updateProcessGraph(graph *core.ProcessGrap
 	return graph.UpdateProcessIDs()
 }
 
-func (controller *coloniesController) createProcessGraph(workflowSpec *core.WorkflowSpec, args []interface{}, kwargs map[string]interface{}, rootInput []interface{}) (*core.ProcessGraph, error) {
+func (controller *coloniesController) createProcessGraph(workflowSpec *core.WorkflowSpec, args []interface{}, kwargs map[string]interface{}, rootInput []interface{}, recoveredID string) (*core.ProcessGraph, error) {
 	processgraph, err := core.CreateProcessGraph(workflowSpec.ColonyName)
 	if err != nil {
 		log.WithFields(log.Fields{"Error": err}).Error("Failed to create processgraph")
+		return nil, err
+	}
+
+	initiatorName, err := resolveInitiator(workflowSpec.ColonyName, recoveredID, controller.db)
+	if err != nil {
 		return nil, err
 	}
 
@@ -781,6 +786,9 @@ func (controller *coloniesController) createProcessGraph(workflowSpec *core.Work
 		process.ProcessGraphID = processgraph.ID
 		process.FunctionSpec.Conditions.ColonyName = workflowSpec.ColonyName
 
+		process.InitiatorID = recoveredID
+		process.InitiatorName = initiatorName
+
 		_, exists := processMap[process.FunctionSpec.NodeName]
 		if exists {
 			return nil, errors.New("Duplicate nodename: " + process.FunctionSpec.NodeName)
@@ -790,6 +798,10 @@ func (controller *coloniesController) createProcessGraph(workflowSpec *core.Work
 	}
 
 	processgraph.ProcessIDs = processIDs
+
+	processgraph.InitiatorID = recoveredID
+	processgraph.InitiatorName = initiatorName
+
 	err = controller.db.AddProcessGraph(processgraph)
 	if err != nil {
 		msg := "Failed to create processgraph, failed to add processgraph"
@@ -832,11 +844,11 @@ func (controller *coloniesController) createProcessGraph(workflowSpec *core.Work
 	return processgraph, nil
 }
 
-func (controller *coloniesController) submitWorkflowSpec(workflowSpec *core.WorkflowSpec) (*core.ProcessGraph, error) {
+func (controller *coloniesController) submitWorkflowSpec(workflowSpec *core.WorkflowSpec, recoveredID string) (*core.ProcessGraph, error) {
 	cmd := &command{threaded: false, processGraphReplyChan: make(chan *core.ProcessGraph, 1),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
-			addedProcessGraph, err := controller.createProcessGraph(workflowSpec, make([]interface{}, 0), make(map[string]interface{}), make([]interface{}, 0))
+			addedProcessGraph, err := controller.createProcessGraph(workflowSpec, make([]interface{}, 0), make(map[string]interface{}), make([]interface{}, 0), recoveredID)
 			if err != nil {
 				cmd.errorChan <- err
 				return
