@@ -9,7 +9,7 @@ import (
 )
 
 func TestRPCAddGeneratorMsg(t *testing.T) {
-	generator := utils.FakeGenerator(t, core.GenerateRandomID())
+	generator := utils.FakeGenerator(t, core.GenerateRandomID(), core.GenerateRandomID(), core.GenerateRandomID())
 	msg := CreateAddGeneratorMsg(generator)
 	jsonString, err := msg.ToJSON()
 	assert.Nil(t, err)
@@ -24,7 +24,7 @@ func TestRPCAddGeneratorMsg(t *testing.T) {
 }
 
 func TestRPCAddGeneratorMsgIndent(t *testing.T) {
-	generator := utils.FakeGenerator(t, core.GenerateRandomID())
+	generator := utils.FakeGenerator(t, core.GenerateRandomID(), core.GenerateRandomID(), core.GenerateRandomID())
 	msg := CreateAddGeneratorMsg(generator)
 	jsonString, err := msg.ToJSONIndent()
 	assert.Nil(t, err)
@@ -39,7 +39,7 @@ func TestRPCAddGeneratorMsgIndent(t *testing.T) {
 }
 
 func TestRPCAddGeneratorMsgEquals(t *testing.T) {
-	generator := utils.FakeGenerator(t, core.GenerateRandomID())
+	generator := utils.FakeGenerator(t, core.GenerateRandomID(), core.GenerateRandomID(), core.GenerateRandomID())
 	msg := CreateAddGeneratorMsg(generator)
 	assert.True(t, msg.Equals(msg))
 	assert.False(t, msg.Equals(nil))
