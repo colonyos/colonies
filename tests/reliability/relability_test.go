@@ -98,7 +98,7 @@ func TestGeneratorReliability(t *testing.T) {
 	err = c.ApproveExecutor(colony.Name, executor.Name, colonyPrvKey)
 
 	// Start a generator
-	generator := utils.FakeGenerator(t, colony.Name)
+	generator := utils.FakeGenerator(t, colony.Name, executor.ID, executor.Name)
 	generator.Trigger = 1
 	addedGenerator, err := c.AddGenerator(generator, executorPrvKey)
 	assert.Nil(t, err)
@@ -192,7 +192,7 @@ func TestCronReliability(t *testing.T) {
 	err = c.ApproveExecutor(colony.Name, executor.Name, colonyPrvKey)
 
 	// Start a cron
-	cron := utils.FakeCron(t, colony.Name)
+	cron := utils.FakeCron(t, colony.Name, executor.ID, executor.Name)
 	cron.CronExpression = "0/1 * * * * *" // every second
 	addedCron, err := c.AddCron(cron, executorPrvKey)
 	assert.Nil(t, err)
