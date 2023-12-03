@@ -42,6 +42,36 @@ func (server *ColoniesServer) handleSubmitHTTPRequest(c *gin.Context, recoveredI
 	}
 
 	process := core.CreateProcess(msg.FunctionSpec)
+
+	initiatorName, err := resolveInitiator(msg.FunctionSpec.Conditions.ColonyName, recoveredID, server.db)
+	if server.handleHTTPError(c, err, http.StatusInternalServerError) {
+		return
+	}
+
+	process.InitiatorID = recoveredID
+	process.InitiatorName = initiatorName
+
+	executor, err := server.db.GetExecutorByID(recoveredID)
+	if server.handleHTTPError(c, err, http.StatusBadRequest) {
+		return
+	}
+
+	if executor != nil {
+		process.InitiatorName = executor.Name
+	} else {
+		user, err := server.db.GetUserByID(msg.FunctionSpec.Conditions.ColonyName, recoveredID)
+		if server.handleHTTPError(c, err, http.StatusBadRequest) {
+			return
+		}
+		if user != nil {
+			process.InitiatorName = user.Name
+		} else {
+			if server.handleHTTPError(c, errors.New("Could not derive InitiatorName"), http.StatusBadRequest) {
+				return
+			}
+		}
+	}
+
 	addedProcess, err := server.controller.addProcess(process)
 	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
@@ -322,6 +352,13 @@ func (server *ColoniesServer) handleRemoveProcessHTTPRequest(c *gin.Context, rec
 
 	err = server.validator.RequireMembership(recoveredID, process.FunctionSpec.Conditions.ColonyName, true)
 	if server.handleHTTPError(c, err, http.StatusForbidden) {
+		return
+	}
+
+	if process.ProcessGraphID != "" {
+		err := errors.New("Failed to remove, cannot remove a process part of a workflow, delete the entire workflow instead")
+		if server.handleHTTPError(c, err, http.StatusBadRequest) {
+		}
 		return
 	}
 

@@ -14,7 +14,7 @@ func TestAddCronSecurity(t *testing.T) {
 	//   executor1 is member of colony1
 	//   executor2 is member of colony2
 
-	cron := utils.FakeCron(t, env.colony1Name)
+	cron := utils.FakeCron(t, env.colony1Name, env.executor1ID, env.executor1Name)
 
 	_, err := client.AddCron(cron, env.executor2PrvKey)
 	assert.NotNil(t, err)
@@ -36,7 +36,7 @@ func TestGetCronSecurity(t *testing.T) {
 	//   executor1 is member of colony1
 	//   executor2 is member of colony2
 
-	cron := utils.FakeCron(t, env.colony1Name)
+	cron := utils.FakeCron(t, env.colony1Name, env.executor1ID, env.executor1Name)
 	addedCron, err := client.AddCron(cron, env.executor1PrvKey)
 	assert.Nil(t, err)
 
@@ -60,7 +60,7 @@ func TestGetCronsSecurity(t *testing.T) {
 	//   executor1 is member of colony1
 	//   executor2 is member of colony2
 
-	cron := utils.FakeCron(t, env.colony1Name)
+	cron := utils.FakeCron(t, env.colony1Name, env.executor1ID, env.executor1Name)
 	_, err := client.AddCron(cron, env.executor1PrvKey)
 	assert.Nil(t, err)
 
@@ -84,7 +84,7 @@ func TestRunCronSecurity(t *testing.T) {
 	//   executor1 is member of colony1
 	//   executor2 is member of colony2
 
-	cron := utils.FakeCron(t, env.colony1Name)
+	cron := utils.FakeCron(t, env.colony1Name, env.executor1ID, env.executor1Name)
 	addedCron, err := client.AddCron(cron, env.executor1PrvKey)
 	assert.Nil(t, err)
 
@@ -108,7 +108,7 @@ func TestRemoveCronSecurity(t *testing.T) {
 	//   executor1 is member of colony1
 	//   executor2 is member of colony2
 
-	cron := utils.FakeCron(t, env.colony1Name)
+	cron := utils.FakeCron(t, env.colony1Name, env.executor1ID, env.executor1Name)
 	addedCron, err := client.AddCron(cron, env.executor1PrvKey)
 	assert.Nil(t, err)
 

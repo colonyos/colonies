@@ -20,6 +20,8 @@ const NOTSET = -1
 
 type Process struct {
 	ID                 string        `json:"processid"`
+	InitiatorID        string        `json:"initiatorid"`
+	InitiatorName      string        `json:"initiatorname"`
 	AssignedExecutorID string        `json:"assignedexecutorid"`
 	IsAssigned         bool          `json:"isassigned"`
 	State              int           `json:"state"`
@@ -145,6 +147,8 @@ func (process *Process) Equals(process2 *Process) bool {
 
 	same := true
 	if process.ID != process2.ID ||
+		process.InitiatorID != process2.InitiatorID ||
+		process.InitiatorName != process2.InitiatorName ||
 		process.AssignedExecutorID != process2.AssignedExecutorID ||
 		process.State != process2.State ||
 		process.PriorityTime != process2.PriorityTime ||

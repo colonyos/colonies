@@ -129,7 +129,7 @@ var delGeneratorCmd = &cobra.Command{
 		err := client.RemoveGenerator(GeneratorID, PrvKey)
 		CheckError(err)
 
-		log.WithFields(log.Fields{"GeneratorID": GeneratorID}).Info("Deleting generator")
+		log.WithFields(log.Fields{"GeneratorID": GeneratorID}).Info("Removing generator")
 	},
 }
 
@@ -153,6 +153,9 @@ var getGeneratorCmd = &cobra.Command{
 		fmt.Println("Generator:")
 		generatorData := [][]string{
 			[]string{"Id", generator.ID},
+			[]string{"ColonyName", generator.ColonyName},
+			[]string{"InitiatorID", generator.InitiatorID},
+			[]string{"InitiatorName", generator.InitiatorName},
 			[]string{"Name", generator.Name},
 			[]string{"Trigger", strconv.Itoa(generator.Trigger)},
 			[]string{"Timeout", strconv.Itoa(generator.Timeout)},
@@ -197,10 +200,10 @@ var getGeneratorsCmd = &cobra.Command{
 
 		var data [][]string
 		for _, generator := range generators {
-			data = append(data, []string{generator.ID, generator.Name})
+			data = append(data, []string{generator.ID, generator.Name, generator.InitiatorName})
 		}
 		table := tablewriter.NewWriter(os.Stdout)
-		table.SetHeader([]string{"GeneratorId", "Name"})
+		table.SetHeader([]string{"GeneratorId", "Name", "Initiator Name"})
 		for _, v := range data {
 			table.Append(v)
 		}

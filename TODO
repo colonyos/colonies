@@ -1,7 +1,6 @@
-1. It should not be possible to delete a process if it is part of workflow.
-2. If a process fails in workflow, there could be many waiting process in the queue that never finish
-3. Make it possible to deleteall snapshots
-
+1. If a process fails in workflow, there could be many waiting process in the queue that never finish
+2. Make it possible to deleteall snapshots
+3. Users should not be allowed to delete other users processes
 
 4. Om Mac https://stackoverflow.com/questions/76187256/importerror-urllib3-v2-0-only-supports-openssl-1-1-1-currently-the-ssl-modu
 

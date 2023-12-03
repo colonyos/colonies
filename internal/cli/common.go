@@ -55,6 +55,21 @@ func StrArr2StrWithCommas(args []string) string {
 	return str[0 : len(str)-1]
 }
 
+func parseArgs(process *core.Process) (string, string) {
+	args := StrArr2Str(IfArr2StringArr(process.FunctionSpec.Args))
+	kwArgs := StrMap2Str(IfMap2StringMap(process.FunctionSpec.KwArgs))
+
+	if len(args) > MaxArgLength {
+		args = args[0:MaxArgLength] + "..."
+	}
+
+	if len(kwArgs) > MaxArgLength {
+		kwArgs = kwArgs[0:MaxArgLength] + "..."
+	}
+
+	return args, kwArgs
+}
+
 func IfArr2StringArr(ifarr []interface{}) []string {
 	strarr := make([]string, len(ifarr))
 	for k, v := range ifarr {
