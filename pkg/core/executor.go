@@ -44,6 +44,19 @@ type Capabilities struct {
 	Software Software `json:"software"`
 }
 
+type Project struct {
+	AllocatedCPU     int64 `json:"allocatedcpu"`
+	UsedCPU          int64 `json:"usedcpu"`
+	AllocatedGPU     int64 `json:"allocatedgpu"`
+	UsedGPU          int64 `json:"usedgpu"`
+	AllocatedStorage int64 `json:"allocatedstorage"`
+	UsedStorage      int64 `json:"usedstorage"`
+}
+
+type Allocations struct {
+	Projects map[string]Project `json:"projects"`
+}
+
 type Executor struct {
 	ID                string       `json:"executorid"`
 	Type              string       `json:"executortype"`
@@ -55,6 +68,7 @@ type Executor struct {
 	LastHeardFromTime time.Time    `json:"lastheardfromtime"`
 	Location          Location     `json:"location"`
 	Capabilities      Capabilities `json:"capabilities"`
+	Allocations       Allocations  `json:"allocations"`
 }
 
 func CreateExecutor(id string,

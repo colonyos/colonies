@@ -83,6 +83,7 @@ func TestAddExecutor(t *testing.T) {
 
 	executors, err := db.GetExecutors()
 	assert.Nil(t, err)
+	assert.Len(t, executors, 1)
 
 	executorFromDB := executors[0]
 	assert.True(t, executor.Equals(executorFromDB))
@@ -103,6 +104,37 @@ func TestAddExecutor(t *testing.T) {
 	assert.Equal(t, executor.Capabilities.Hardware.GPU.Count, 4000)
 	assert.Equal(t, executor.Capabilities.Hardware.GPU.NodeCount, 4)
 	assert.Equal(t, executor.Capabilities.Hardware.GPU.Memory, "10G")
+}
+
+func TestAddExecutorWithAllocation(t *testing.T) {
+	db, err := PrepareTests()
+	assert.Nil(t, err)
+
+	defer db.Close()
+
+	colony := core.CreateColony(core.GenerateRandomID(), "test_colony_name_1")
+	err = db.AddColony(colony)
+	assert.Nil(t, err)
+
+	executor := utils.CreateTestExecutor(colony.Name)
+	project := core.Project{AllocatedCPU: 1, UsedCPU: 2, AllocatedGPU: 3, UsedGPU: 4, AllocatedStorage: 5, UsedStorage: 6}
+	projects := make(map[string]core.Project)
+	projects["test_project"] = project
+	executor.Allocations.Projects = projects
+
+	err = db.AddExecutor(executor)
+	assert.Nil(t, err)
+
+	executors, err := db.GetExecutors()
+	assert.Nil(t, err)
+	assert.Len(t, executors, 1)
+	testProj := executor.Allocations.Projects["test_project"]
+	assert.Equal(t, testProj.AllocatedCPU, int64(1))
+	assert.Equal(t, testProj.UsedCPU, int64(2))
+	assert.Equal(t, testProj.AllocatedGPU, int64(3))
+	assert.Equal(t, testProj.UsedGPU, int64(4))
+	assert.Equal(t, testProj.AllocatedStorage, int64(5))
+	assert.Equal(t, testProj.UsedStorage, int64(6))
 }
 
 func TestAddExecutors(t *testing.T) {

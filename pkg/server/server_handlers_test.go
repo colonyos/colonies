@@ -39,7 +39,7 @@ func TestGetStatistics(t *testing.T) {
 		funcSpec := utils.CreateTestFunctionSpec(env.colonyName)
 		_, err := client.Submit(funcSpec, env.executorPrvKey)
 		assert.Nil(t, err)
-		_, err = client.Assign(env.colonyName, -1, env.executorPrvKey)
+		_, err = client.Assign(env.colonyName, -1, "", "", env.executorPrvKey)
 		assert.Nil(t, err)
 	}
 
@@ -49,7 +49,7 @@ func TestGetStatistics(t *testing.T) {
 		funcSpec := utils.CreateTestFunctionSpec(env.colonyName)
 		_, err := client.Submit(funcSpec, env.executorPrvKey)
 		assert.Nil(t, err)
-		processFromServer, err := client.Assign(env.colonyName, -1, env.executorPrvKey)
+		processFromServer, err := client.Assign(env.colonyName, -1, "", "", env.executorPrvKey)
 		assert.Nil(t, err)
 		err = client.Close(processFromServer.ID, env.executorPrvKey)
 		assert.Nil(t, err)
@@ -61,7 +61,7 @@ func TestGetStatistics(t *testing.T) {
 		funcSpec := utils.CreateTestFunctionSpec(env.colonyName)
 		_, err := client.Submit(funcSpec, env.executorPrvKey)
 		assert.Nil(t, err)
-		processFromServer, err := client.Assign(env.colonyName, -1, env.executorPrvKey)
+		processFromServer, err := client.Assign(env.colonyName, -1, "", "", env.executorPrvKey)
 		assert.Nil(t, err)
 		err = client.Fail(processFromServer.ID, []string{"error"}, env.executorPrvKey)
 		assert.Nil(t, err)

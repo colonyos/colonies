@@ -33,7 +33,7 @@ func TestRetention(t *testing.T) {
 	_, err = client.SubmitWorkflowSpec(wf, executorPrvKey)
 	assert.Nil(t, err)
 
-	process, err := client.Assign(colony.Name, -1, executorPrvKey)
+	process, err := client.Assign(colony.Name, -1, "", "", executorPrvKey)
 	assert.Nil(t, err)
 
 	err = client.Close(process.ID, executorPrvKey)
