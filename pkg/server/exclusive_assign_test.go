@@ -64,7 +64,7 @@ func TestExclusiveAssign(t *testing.T) {
 	addedProcess1, err := client.Submit(funcSpec1, executor1PrvKey)
 	assert.Nil(t, err)
 
-	assignedProcess, err := client.Assign(colony1.Name, -1, executor1PrvKey)
+	assignedProcess, err := client.Assign(colony1.Name, -1, "", "", executor1PrvKey)
 	assert.Nil(t, err)
 	assert.Equal(t, assignedProcess.ID, addedProcess1.ID)
 

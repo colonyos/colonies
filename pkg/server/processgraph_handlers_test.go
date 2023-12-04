@@ -38,12 +38,12 @@ func TestSubmitWorkflowSpec(t *testing.T) {
 	err = client.RemoveProcess(processes[0].ID, env.executorPrvKey)
 	assert.NotNil(t, err) // Error
 
-	assignedProcess1, err := client.Assign(env.colonyName, -1, env.executorPrvKey)
+	assignedProcess1, err := client.Assign(env.colonyName, -1, "", "", env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.True(t, assignedProcess1.FunctionSpec.NodeName == "task1")
 
 	// We cannot be assigned more tasks until task1 is closed
-	_, err = client.Assign(env.colonyName, -1, env.executorPrvKey)
+	_, err = client.Assign(env.colonyName, -1, "", "", env.executorPrvKey)
 	assert.NotNil(t, err) // Note error
 
 	graphs, err = client.GetRunningProcessGraphs(env.colonyName, 100, env.executorPrvKey)
@@ -54,16 +54,16 @@ func TestSubmitWorkflowSpec(t *testing.T) {
 	err = client.Close(assignedProcess1.ID, env.executorPrvKey)
 	assert.Nil(t, err)
 
-	assignedProcess2, err := client.Assign(env.colonyName, -1, env.executorPrvKey)
+	assignedProcess2, err := client.Assign(env.colonyName, -1, "", "", env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.True(t, assignedProcess2.FunctionSpec.NodeName == "task2" || assignedProcess2.FunctionSpec.NodeName == "task3")
 
-	assignedProcess3, err := client.Assign(env.colonyName, -1, env.executorPrvKey)
+	assignedProcess3, err := client.Assign(env.colonyName, -1, "", "", env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.True(t, assignedProcess3.FunctionSpec.NodeName == "task2" || assignedProcess3.FunctionSpec.NodeName == "task3")
 
 	// We cannot be assigned more tasks (task4 is left) until task2 and task3 finish
-	_, err = client.Assign(env.colonyName, -1, env.executorPrvKey)
+	_, err = client.Assign(env.colonyName, -1, "", "", env.executorPrvKey)
 	assert.NotNil(t, err) // Note error
 
 	// Close task2
@@ -75,7 +75,7 @@ func TestSubmitWorkflowSpec(t *testing.T) {
 	assert.Nil(t, err)
 
 	// Now it should be possible to assign task4 to an executor
-	assignedProcess4, err := client.Assign(env.colonyName, -1, env.executorPrvKey)
+	assignedProcess4, err := client.Assign(env.colonyName, -1, "", "", env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.True(t, assignedProcess4.FunctionSpec.NodeName == "task4")
 
@@ -210,14 +210,14 @@ func TestProcessGraphFailed(t *testing.T) {
 	submittedGraph, err := client.SubmitWorkflowSpec(wf, env.executorPrvKey)
 	assert.Nil(t, err)
 
-	assignedProcess, err := client.Assign(env.colonyName, -1, env.executorPrvKey)
+	assignedProcess, err := client.Assign(env.colonyName, -1, "", "", env.executorPrvKey)
 	assert.Nil(t, err)
 
 	// Close task1
 	err = client.Fail(assignedProcess.ID, []string{}, env.executorPrvKey)
 	assert.Nil(t, err)
 
-	assignedProcess, err = client.Assign(env.colonyName, -1, env.executorPrvKey)
+	assignedProcess, err = client.Assign(env.colonyName, -1, "", "", env.executorPrvKey)
 	assert.NotNil(t, err) // Error, all processes in the entire graph will fail, i.e no processes can be selected for executor with Id
 
 	processGraph, err := client.GetProcessGraph(submittedGraph.ID, env.executorPrvKey)
@@ -240,7 +240,7 @@ func TestAddChild(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, submittedGraph)
 
-	assignedProcess, err := client.Assign(env.colonyName, -1, env.executorPrvKey)
+	assignedProcess, err := client.Assign(env.colonyName, -1, "", "", env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.True(t, assignedProcess.FunctionSpec.NodeName == "task1")
 
@@ -253,19 +253,19 @@ func TestAddChild(t *testing.T) {
 	assert.Nil(t, err)
 
 	var names []string
-	assignedProcess, err = client.Assign(env.colonyName, -1, env.executorPrvKey)
+	assignedProcess, err = client.Assign(env.colonyName, -1, "", "", env.executorPrvKey)
 	assert.Nil(t, err)
 	names = append(names, assignedProcess.FunctionSpec.NodeName)
 	err = client.Close(assignedProcess.ID, env.executorPrvKey)
 	assert.Nil(t, err)
 
-	assignedProcess, err = client.Assign(env.colonyName, -1, env.executorPrvKey)
+	assignedProcess, err = client.Assign(env.colonyName, -1, "", "", env.executorPrvKey)
 	assert.Nil(t, err)
 	names = append(names, assignedProcess.FunctionSpec.NodeName)
 	err = client.Close(assignedProcess.ID, env.executorPrvKey)
 	assert.Nil(t, err)
 
-	assignedProcess, err = client.Assign(env.colonyName, -1, env.executorPrvKey)
+	assignedProcess, err = client.Assign(env.colonyName, -1, "", "", env.executorPrvKey)
 	assert.Nil(t, err)
 	names = append(names, assignedProcess.FunctionSpec.NodeName)
 	err = client.Close(assignedProcess.ID, env.executorPrvKey)
@@ -312,7 +312,7 @@ func TestInsertChild(t *testing.T) {
 	assert.NotNil(t, submittedGraph)
 
 	// We must be assigned to a process in order to insert a child in processgraph
-	assignedProcess, err := client.Assign(env.colonyName, -1, env.executorPrvKey)
+	assignedProcess, err := client.Assign(env.colonyName, -1, "", "", env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.True(t, assignedProcess.FunctionSpec.NodeName == "task1")
 
@@ -364,7 +364,7 @@ func TestInsertChild2(t *testing.T) {
 	assert.NotNil(t, submittedGraph)
 
 	// We must be assigned to a process in order to insert a child in processgraph
-	assignedProcess, err := client.Assign(env.colonyName, -1, env.executorPrvKey)
+	assignedProcess, err := client.Assign(env.colonyName, -1, "", "", env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.True(t, assignedProcess.FunctionSpec.NodeName == "task1")
 
@@ -413,7 +413,7 @@ func TestInsertChild3(t *testing.T) {
 	assert.NotNil(t, task3Process)
 
 	// We must be assigned to a process in order to insert a child in processgraph
-	assignedProcess, err := client.Assign(env.colonyName, -1, env.executorPrvKey)
+	assignedProcess, err := client.Assign(env.colonyName, -1, "", "", env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.True(t, assignedProcess.FunctionSpec.NodeName == "task1")
 
@@ -440,7 +440,7 @@ func TestAddChildMaxWaitBug(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, submittedGraph)
 
-	assignedProcess, err := client.Assign(env.colonyName, -1, env.executorPrvKey)
+	assignedProcess, err := client.Assign(env.colonyName, -1, "", "", env.executorPrvKey)
 	assert.Nil(t, err)
 
 	processGraph, err := client.GetProcessGraph(submittedGraph.ID, env.executorPrvKey)
@@ -497,7 +497,7 @@ func TestSubmitWorkflowSpecWithInputOutput(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Len(t, processes, 4)
 
-	assignedProcess1, err := client.Assign(env.colonyName, -1, env.executorPrvKey)
+	assignedProcess1, err := client.Assign(env.colonyName, -1, "", "", env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.True(t, assignedProcess1.FunctionSpec.NodeName == "task1")
 
@@ -507,12 +507,12 @@ func TestSubmitWorkflowSpecWithInputOutput(t *testing.T) {
 	err = client.CloseWithOutput(assignedProcess1.ID, output, env.executorPrvKey)
 	assert.Nil(t, err)
 
-	assignedProcess2, err := client.Assign(env.colonyName, -1, env.executorPrvKey)
+	assignedProcess2, err := client.Assign(env.colonyName, -1, "", "", env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.Len(t, assignedProcess2.Input, 1)
 	assert.Equal(t, assignedProcess2.Input[0], "output_task1")
 
-	assignedProcess3, err := client.Assign(env.colonyName, -1, env.executorPrvKey)
+	assignedProcess3, err := client.Assign(env.colonyName, -1, "", "", env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.Len(t, assignedProcess3.Input, 1)
 	assert.Equal(t, assignedProcess3.Input[0], "output_task1")
@@ -530,7 +530,7 @@ func TestSubmitWorkflowSpecWithInputOutput(t *testing.T) {
 	assert.Nil(t, err)
 
 	// Now it should be possible to assign task4 to an executor
-	assignedProcess4, err := client.Assign(env.colonyName, -1, env.executorPrvKey)
+	assignedProcess4, err := client.Assign(env.colonyName, -1, "", "", env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.Len(t, assignedProcess4.Input, 2)
 
@@ -558,7 +558,7 @@ func TestSubmitWorkflowSpecFailed(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, submittedGraph)
 
-	assignedProcess1, err := client.Assign(env.colonyName, -1, env.executorPrvKey)
+	assignedProcess1, err := client.Assign(env.colonyName, -1, "", "", env.executorPrvKey)
 	assert.Nil(t, err)
 	err = client.Fail(assignedProcess1.ID, []string{"error"}, env.executorPrvKey)
 	assert.Nil(t, err)
@@ -703,7 +703,7 @@ func TestRemoveAllProcessGraphsWithStateRunning(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, submittedGraph2)
 
-	_, err = client.Assign(env.colonyName, -1, env.executorPrvKey)
+	_, err = client.Assign(env.colonyName, -1, "", "", env.executorPrvKey)
 	assert.Nil(t, err)
 
 	stat, err := client.ColonyStatistics(env.colonyName, env.executorPrvKey)
@@ -733,7 +733,7 @@ func TestRemoveAllProcessGraphsWithStateSuccessful(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, submittedGraph2)
 
-	process, err := client.Assign(env.colonyName, -1, env.executorPrvKey)
+	process, err := client.Assign(env.colonyName, -1, "", "", env.executorPrvKey)
 	assert.Nil(t, err)
 
 	err = client.Close(process.ID, env.executorPrvKey)
@@ -773,7 +773,7 @@ func TestRemoveAllProcessGraphsWithStateFailed(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, submittedGraph2)
 
-	process, err := client.Assign(env.colonyName, -1, env.executorPrvKey)
+	process, err := client.Assign(env.colonyName, -1, "", "", env.executorPrvKey)
 	assert.Nil(t, err)
 
 	err = client.Fail(process.ID, []string{"error"}, env.executorPrvKey)

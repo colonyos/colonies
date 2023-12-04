@@ -20,7 +20,7 @@ func TestAddAttributeSecurity(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, core.PENDING, addedProcess.State)
 
-	assignedProcess, err := client.Assign(env.colony1Name, -1, env.executor1PrvKey)
+	assignedProcess, err := client.Assign(env.colony1Name, -1, "", "", env.executor1PrvKey)
 	assert.Nil(t, err)
 
 	attribute := core.CreateAttribute(assignedProcess.ID, env.colony1Name, "", core.OUT, "result", "helloworld")
@@ -57,7 +57,7 @@ func TestGetAttributeSecurity(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, core.PENDING, addedProcess.State)
 
-	assignedProcess, err := client.Assign(env.colony1Name, -1, env.executor1PrvKey)
+	assignedProcess, err := client.Assign(env.colony1Name, -1, "", "", env.executor1PrvKey)
 	assert.Nil(t, err)
 
 	attribute := core.CreateAttribute(assignedProcess.ID, env.colony1Name, "", core.OUT, "result", "helloworld")
