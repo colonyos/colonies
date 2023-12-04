@@ -128,7 +128,7 @@ var assignProcessCmd = &cobra.Command{
 		executorID, err := crypto.GenerateID(PrvKey)
 		CheckError(err)
 
-		process, err := client.Assign(ColonyName, Timeout, PrvKey)
+		process, err := client.Assign(ColonyName, Timeout, "", "", PrvKey)
 		if err != nil {
 			log.Warning(err)
 		} else {
