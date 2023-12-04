@@ -7,12 +7,14 @@ import (
 const AssignProcessPayloadType = "assignprocessmsg"
 
 type AssignProcessMsg struct {
-	ColonyName string `json:"colonyname"`
-	Timeout    int    `json:"timeout"`
-	MsgType    string `json:"msgtype"`
+	ColonyName      string `json:"colonyname"`
+	Timeout         int    `json:"timeout"`
+	AvailableCPU    string `json:"availablecpu"`
+	AvailableMemory string `json:"availablemem"`
+	MsgType         string `json:"msgtype"`
 }
 
-func CreateAssignProcessMsg(colonyID string) *AssignProcessMsg {
+func CreateAssignProcessMsg(colonyID string, availableCPU string, availableMemory string) *AssignProcessMsg {
 	msg := &AssignProcessMsg{}
 	msg.ColonyName = colonyID
 	msg.MsgType = AssignProcessPayloadType
@@ -44,7 +46,10 @@ func (msg *AssignProcessMsg) Equals(msg2 *AssignProcessMsg) bool {
 		return false
 	}
 
-	if msg.MsgType == msg2.MsgType && msg.ColonyName == msg2.ColonyName {
+	if msg.MsgType == msg2.MsgType &&
+		msg.ColonyName == msg2.ColonyName &&
+		msg.AvailableCPU == msg2.AvailableCPU &&
+		msg.AvailableMemory == msg2.AvailableMemory {
 		return true
 	}
 

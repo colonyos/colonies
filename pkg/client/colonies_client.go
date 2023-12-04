@@ -489,8 +489,8 @@ func (client *ColoniesClient) Submit(funcSpec *core.FunctionSpec, prvKey string)
 	return core.ConvertJSONToProcess(respBodyString)
 }
 
-func (client *ColoniesClient) Assign(colonyName string, timeout int, prvKey string) (*core.Process, error) {
-	msg := rpc.CreateAssignProcessMsg(colonyName)
+func (client *ColoniesClient) Assign(colonyName string, timeout int, availableCPU string, availableMem string, prvKey string) (*core.Process, error) {
+	msg := rpc.CreateAssignProcessMsg(colonyName, availableCPU, availableMem)
 	msg.Timeout = timeout
 	jsonString, err := msg.ToJSON()
 	if err != nil {
@@ -505,8 +505,13 @@ func (client *ColoniesClient) Assign(colonyName string, timeout int, prvKey stri
 	return core.ConvertJSONToProcess(respBodyString)
 }
 
-func (client *ColoniesClient) AssignWithContext(colonyName string, timeout int, ctx context.Context, prvKey string) (*core.Process, error) {
-	msg := rpc.CreateAssignProcessMsg(colonyName)
+func (client *ColoniesClient) AssignWithContext(colonyName string,
+	timeout int,
+	ctx context.Context,
+	availableCPU string,
+	availableMem string,
+	prvKey string) (*core.Process, error) {
+	msg := rpc.CreateAssignProcessMsg(colonyName, availableCPU, availableMem)
 	msg.Timeout = timeout
 	jsonString, err := msg.ToJSON()
 	if err != nil {

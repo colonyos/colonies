@@ -16,7 +16,7 @@ func TestAddGetAttributes(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, core.PENDING, addedProcess.State)
 
-	assignedProcess, err := client.Assign(env.colonyName, -1, env.executorPrvKey)
+	assignedProcess, err := client.Assign(env.colonyName, -1, "", "", env.executorPrvKey)
 	assert.Nil(t, err)
 
 	attribute := core.CreateAttribute(core.GenerateRandomID(), env.colonyName, "", core.OUT, "result", "helloworld")

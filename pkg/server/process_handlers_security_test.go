@@ -52,23 +52,23 @@ func TestAssignSecurity(t *testing.T) {
 	assert.Nil(t, err)
 
 	// Now try to assign a process from colony2 using executor1 credentials
-	_, err = client.Assign(env.colony2Name, -1, env.executor1PrvKey)
+	_, err = client.Assign(env.colony2Name, -1, "", "", env.executor1PrvKey)
 	assert.NotNil(t, err) // Should not work
 
 	// Now try to assign a process from colony2 using executor1 credentials
-	_, err = client.Assign(env.colony1Name, -1, env.executor2PrvKey)
+	_, err = client.Assign(env.colony1Name, -1, "", "", env.executor2PrvKey)
 	assert.NotNil(t, err) // Should not work
 
 	// Now try to assign a process from colony2 using executor1 credentials
-	_, err = client.Assign(env.colony1Name, -1, env.executor1PrvKey)
+	_, err = client.Assign(env.colony1Name, -1, "", "", env.executor1PrvKey)
 	assert.Nil(t, err) // Should work
 
 	// Now try to assign a process from colony2 using colony1 credentials
-	_, err = client.Assign(env.colony1Name, -1, env.colony1PrvKey)
+	_, err = client.Assign(env.colony1Name, -1, "", "", env.colony1PrvKey)
 	assert.NotNil(t, err) // Should not work, only executors are allowed
 
 	// Now try to assign a process from colony2 using colony1 credentials
-	_, err = client.Assign(env.colony1Name, -1, env.colony2PrvKey)
+	_, err = client.Assign(env.colony1Name, -1, "", "", env.colony2PrvKey)
 	assert.NotNil(t, err) // Should not work, only executors are allowed, also invalid credentials are used
 
 	server.Shutdown()
@@ -87,7 +87,7 @@ func TestGetProcessHistForColonySecurity(t *testing.T) {
 		funcSpec := utils.CreateTestFunctionSpec(env.colony1Name)
 		_, err := client.Submit(funcSpec, env.executor1PrvKey)
 		assert.Nil(t, err)
-		_, err = client.Assign(env.colony1Name, -1, env.executor1PrvKey)
+		_, err = client.Assign(env.colony1Name, -1, "", "", env.executor1PrvKey)
 		assert.Nil(t, err)
 	}
 
@@ -119,7 +119,7 @@ func TestGetProcessHistForExecutorSecurity(t *testing.T) {
 		funcSpec := utils.CreateTestFunctionSpec(env.colony1Name)
 		_, err := client.Submit(funcSpec, env.executor1PrvKey)
 		assert.Nil(t, err)
-		_, err = client.Assign(env.colony1Name, -1, env.executor1PrvKey)
+		_, err = client.Assign(env.colony1Name, -1, "", "", env.executor1PrvKey)
 		assert.Nil(t, err)
 	}
 
@@ -151,7 +151,7 @@ func TestGetWaitingProcessesSecurity(t *testing.T) {
 		funcSpec := utils.CreateTestFunctionSpec(env.colony1Name)
 		_, err := client.Submit(funcSpec, env.executor1PrvKey)
 		assert.Nil(t, err)
-		_, err = client.Assign(env.colony1Name, -1, env.executor1PrvKey)
+		_, err = client.Assign(env.colony1Name, -1, "", "", env.executor1PrvKey)
 		assert.Nil(t, err)
 	}
 
@@ -201,7 +201,7 @@ func TestGetSuccessfulProcessesSecurity(t *testing.T) {
 		funcSpec := utils.CreateTestFunctionSpec(env.colony1Name)
 		_, err := client.Submit(funcSpec, env.executor1PrvKey)
 		assert.Nil(t, err)
-		processFromServer, err := client.Assign(env.colony1Name, -1, env.executor1PrvKey)
+		processFromServer, err := client.Assign(env.colony1Name, -1, "", "", env.executor1PrvKey)
 		assert.Nil(t, err)
 		err = client.Close(processFromServer.ID, env.executor1PrvKey)
 		assert.Nil(t, err)
@@ -229,7 +229,7 @@ func TestGetFailedProcessesSecurity(t *testing.T) {
 		funcSpec := utils.CreateTestFunctionSpec(env.colony1Name)
 		_, err := client.Submit(funcSpec, env.executor1PrvKey)
 		assert.Nil(t, err)
-		processFromServer, err := client.Assign(env.colony1Name, -1, env.executor1PrvKey)
+		processFromServer, err := client.Assign(env.colony1Name, -1, "", "", env.executor1PrvKey)
 		assert.Nil(t, err)
 		err = client.Fail(processFromServer.ID, []string{"error"}, env.executor1PrvKey)
 		assert.Nil(t, err)
@@ -330,7 +330,7 @@ func TestCloseSuccessfulSecurity(t *testing.T) {
 	funcSpec := utils.CreateTestFunctionSpec(env.colony1Name)
 	_, err := client.Submit(funcSpec, env.executor1PrvKey)
 	assert.Nil(t, err)
-	processFromServer, err := client.Assign(env.colony1Name, -1, env.executor1PrvKey)
+	processFromServer, err := client.Assign(env.colony1Name, -1, "", "", env.executor1PrvKey)
 	assert.Nil(t, err)
 
 	err = client.Close(processFromServer.ID, env.executor2PrvKey)
@@ -366,7 +366,7 @@ func TestSetOutputSecurity(t *testing.T) {
 	funcSpec := utils.CreateTestFunctionSpec(env.colony1Name)
 	_, err := client.Submit(funcSpec, env.executor1PrvKey)
 	assert.Nil(t, err)
-	processFromServer, err := client.Assign(env.colony1Name, -1, env.executor1PrvKey)
+	processFromServer, err := client.Assign(env.colony1Name, -1, "", "", env.executor1PrvKey)
 	assert.Nil(t, err)
 
 	err = client.SetOutput(processFromServer.ID, output, env.executor2PrvKey)
@@ -395,7 +395,7 @@ func TestCloseFailedSecurity(t *testing.T) {
 	funcSpec := utils.CreateTestFunctionSpec(env.colony1Name)
 	_, err := client.Submit(funcSpec, env.executor1PrvKey)
 	assert.Nil(t, err)
-	processFromServer, err := client.Assign(env.colony1Name, -1, env.executor1PrvKey)
+	processFromServer, err := client.Assign(env.colony1Name, -1, "", "", env.executor1PrvKey)
 	assert.Nil(t, err)
 
 	err = client.Fail(processFromServer.ID, []string{"error"}, env.executor2PrvKey)

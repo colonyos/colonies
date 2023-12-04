@@ -8,7 +8,7 @@ import (
 )
 
 func TestRPCAssignProcessMsg(t *testing.T) {
-	msg := CreateAssignProcessMsg(core.GenerateRandomID())
+	msg := CreateAssignProcessMsg(core.GenerateRandomID(), "1000m", "10G")
 	jsonString, err := msg.ToJSON()
 	assert.Nil(t, err)
 
@@ -22,7 +22,7 @@ func TestRPCAssignProcessMsg(t *testing.T) {
 }
 
 func TestRPCAssignProcessMsgIndent(t *testing.T) {
-	msg := CreateAssignProcessMsg(core.GenerateRandomID())
+	msg := CreateAssignProcessMsg(core.GenerateRandomID(), "1000m", "10G")
 	jsonString, err := msg.ToJSONIndent()
 	assert.Nil(t, err)
 
@@ -36,7 +36,7 @@ func TestRPCAssignProcessMsgIndent(t *testing.T) {
 }
 
 func TestRPCAssignProcessMsgEquals(t *testing.T) {
-	msg := CreateAssignProcessMsg(core.GenerateRandomID())
+	msg := CreateAssignProcessMsg(core.GenerateRandomID(), "1000m", "10G")
 	assert.True(t, msg.Equals(msg))
 	assert.False(t, msg.Equals(nil))
 }

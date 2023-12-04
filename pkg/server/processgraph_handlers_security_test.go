@@ -158,7 +158,7 @@ func TestAddChildSecurity(t *testing.T) {
 	assert.NotNil(t, err) // Error, process must be running
 
 	// Assign task1 to executor2
-	_, err = client.Assign(env.colony2Name, -1, env.executor2PrvKey)
+	_, err = client.Assign(env.colony2Name, -1, "", "", env.executor2PrvKey)
 	assert.Nil(t, err)
 
 	// Now, we should be able to add a child since we got assigned task1

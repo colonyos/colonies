@@ -269,11 +269,11 @@ func TestAddGeneratorTimeout3(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Len(t, graphs, 2)
 
-	process, err := client.Assign(env.colonyName, -1, env.executorPrvKey)
+	process, err := client.Assign(env.colonyName, -1, "", "", env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.Len(t, process.FunctionSpec.Args, 10)
 
-	process, err = client.Assign(env.colonyName, -1, env.executorPrvKey)
+	process, err = client.Assign(env.colonyName, -1, "", "", env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.Len(t, process.FunctionSpec.Args, 2)
 
