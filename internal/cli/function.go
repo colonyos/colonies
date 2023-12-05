@@ -242,6 +242,15 @@ var submitFunctionSpecCmd = &cobra.Command{
 		CheckError(err)
 
 		funcSpec, err := core.ConvertJSONToFunctionSpec(string(jsonSpecBytes))
+		if err != nil {
+			if strings.Contains(err.Error(), "cannot unmarshal array into Go value of type core.FunctionSpec") {
+				jsonStr := "{\"functionspecs\":" + string(jsonSpecBytes) + "}"
+				_, err := core.ConvertJSONToWorkflowSpec(jsonStr)
+				if err == nil {
+					CheckError(errors.New("It looks like you are trying to submit a workflow, try to use colonies workflow submit --spec instead"))
+				}
+			}
+		}
 		CheckJSONParseErr(err, string(jsonSpecBytes))
 
 		if funcSpec.Conditions.ColonyName == "" {
