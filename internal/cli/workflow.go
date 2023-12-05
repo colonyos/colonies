@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"os"
 	"strconv"
+	"strings"
 
 	"github.com/colonyos/colonies/pkg/client"
 	"github.com/colonyos/colonies/pkg/core"
@@ -85,6 +86,14 @@ var submitWorkflowCmd = &cobra.Command{
 
 		jsonStr := "{\"functionspecs\":" + string(jsonSpecBytes) + "}"
 		workflowSpec, err := core.ConvertJSONToWorkflowSpec(jsonStr)
+		if err != nil {
+			if strings.Contains(err.Error(), "cannot unmarshal object into Go struct field WorkflowSpec.functionspecs of type []core.FunctionSpec") {
+				_, err := core.ConvertJSONToFunctionSpec(string(jsonSpecBytes))
+				if err == nil {
+					CheckError(errors.New("It looks like you are trying to submit a function spec, try to use colonies function submit --spec instead"))
+				}
+			}
+		}
 		CheckJSONParseErr(err, string(jsonSpecBytes))
 
 		if workflowSpec.ColonyName == "" {
