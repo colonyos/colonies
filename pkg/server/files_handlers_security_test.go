@@ -92,16 +92,16 @@ func TestGetFilenamesSecurity(t *testing.T) {
 	//   executor1 is member of colony1
 	//   executor2 is member of colony2
 
-	_, err := client.GetFilenames(env.colony1Name, "/testprefix", env.executor2PrvKey)
+	_, err := client.GetFileData(env.colony1Name, "/testprefix", env.executor2PrvKey)
 	assert.NotNil(t, err) // Should not work
 
-	_, err = client.GetFilenames(env.colony1Name, "/testprefix", env.colony1PrvKey)
+	_, err = client.GetFileData(env.colony1Name, "/testprefix", env.colony1PrvKey)
 	assert.NotNil(t, err) // Should not work
 
-	_, err = client.GetFilenames(env.colony1Name, "/testprefix", env.colony2PrvKey)
+	_, err = client.GetFileData(env.colony1Name, "/testprefix", env.colony2PrvKey)
 	assert.NotNil(t, err) // Should not work
 
-	_, err = client.GetFilenames(env.colony1Name, "/testprefix", env.executor1PrvKey)
+	_, err = client.GetFileData(env.colony1Name, "/testprefix", env.executor1PrvKey)
 	assert.Nil(t, err) // Should work
 
 	server.Shutdown()

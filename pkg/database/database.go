@@ -194,6 +194,7 @@ type Database interface {
 	GetLatestFileByName(colonyName string, label string, name string) ([]*core.File, error)
 	GetFileByName(colonyName string, label string, name string) ([]*core.File, error)
 	GetFilenamesByLabel(colonyName string, label string) ([]string, error)
+	GetFileDataByLabel(colonyName string, label string) ([]*core.FileData, error)
 	RemoveFileByID(colonyName string, fileID string) error
 	RemoveFileByName(colonyName string, label string, name string) error
 	GetFileLabels(colonyName string) ([]*core.Label, error)
