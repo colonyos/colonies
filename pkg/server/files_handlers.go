@@ -1,7 +1,6 @@
 package server
 
 import (
-	"encoding/json"
 	"errors"
 	"net/http"
 
@@ -165,13 +164,13 @@ func (server *ColoniesServer) handleGetFilesHTTPRequest(c *gin.Context, recovere
 		return
 	}
 
-	fileNames, err := server.db.GetFilenamesByLabel(msg.ColonyName, msg.Label)
+	fileDataArr, err := server.db.GetFileDataByLabel(msg.ColonyName, msg.Label)
 	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		log.Error(err)
 		return
 	}
 
-	jsonBytes, err := json.Marshal(fileNames)
+	jsonBytes, err := core.ConvertFileDataArrayToJSON(fileDataArr)
 	if server.handleHTTPError(c, err, http.StatusInternalServerError) {
 		log.Error(err)
 		return

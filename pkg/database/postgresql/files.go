@@ -182,6 +182,29 @@ func (db *PQDatabase) GetFilenamesByLabel(colonyName string, label string) ([]st
 	return filenames, nil
 }
 
+func (db *PQDatabase) GetFileDataByLabel(colonyName string, label string) ([]*core.FileData, error) {
+	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `FILES WHERE COLONY_NAME=$1 AND LABEL=$2`
+	rows, err := db.postgresql.Query(sqlStatement, colonyName, label)
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	files, err := db.parseFiles(rows)
+	if err != nil {
+		return nil, err
+	}
+
+	fileDataArr := []*core.FileData{}
+	for _, file := range files {
+		fileData := &core.FileData{Name: file.Name, Checksum: file.Checksum, Size: file.Size, S3Filename: file.Reference.S3Object.Object}
+		fileDataArr = append(fileDataArr, fileData)
+	}
+
+	return fileDataArr, nil
+}
+
 func (db *PQDatabase) RemoveFileByID(colonyName string, fileID string) error {
 	sqlStatement := `DELETE FROM ` + db.dbPrefix + `FILES WHERE COLONY_NAME=$1 AND FILE_ID=$2`
 	_, err := db.postgresql.Exec(sqlStatement, colonyName, fileID)

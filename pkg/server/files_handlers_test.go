@@ -96,9 +96,9 @@ func TestGetFiles(t *testing.T) {
 
 	label := "/testprefix"
 
-	filenames, err := client.GetFilenames(env.colonyName, label, env.executorPrvKey)
+	fileData, err := client.GetFileData(env.colonyName, label, env.executorPrvKey)
 	assert.Nil(t, err)
-	assert.Len(t, filenames, 0)
+	assert.Len(t, fileData, 0)
 
 	file := utils.CreateTestFile(env.colonyName)
 	file.Label = label
@@ -114,16 +114,16 @@ func TestGetFiles(t *testing.T) {
 	_, err = client.AddFile(file, env.executorPrvKey)
 	assert.Nil(t, err)
 
-	filenames, err = client.GetFilenames(env.colonyName, "prefix_does_not_exists", env.executorPrvKey)
+	fileData, err = client.GetFileData(env.colonyName, "prefix_does_not_exists", env.executorPrvKey)
 	assert.Nil(t, err)
-	assert.Len(t, filenames, 0)
+	assert.Len(t, fileData, 0)
 
-	filenames, err = client.GetFilenames("colony_does_not_exists", label, env.executorPrvKey)
+	fileData, err = client.GetFileData("colony_does_not_exists", label, env.executorPrvKey)
 	assert.NotNil(t, err) // Should not work
 
-	filenames, err = client.GetFilenames(env.colonyName, label, env.executorPrvKey)
+	fileData, err = client.GetFileData(env.colonyName, label, env.executorPrvKey)
 	assert.Nil(t, err)
-	assert.Len(t, filenames, 2)
+	assert.Len(t, fileData, 2)
 
 	server.Shutdown()
 	<-done

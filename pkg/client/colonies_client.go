@@ -3,7 +3,6 @@ package client
 import (
 	"context"
 	"crypto/tls"
-	"encoding/json"
 	"errors"
 	"net/url"
 	"strconv"
@@ -1333,7 +1332,7 @@ func (client *ColoniesClient) GetFileByName(colonyName string, label string, nam
 	return core.ConvertJSONToFileArray(respBodyString)
 }
 
-func (client *ColoniesClient) GetFilenames(colonyName string, label string, prvKey string) ([]string, error) {
+func (client *ColoniesClient) GetFileData(colonyName string, label string, prvKey string) ([]*core.FileData, error) {
 	msg := rpc.CreateGetFilesMsg(colonyName, label)
 	jsonString, err := msg.ToJSON()
 	if err != nil {
@@ -1345,9 +1344,7 @@ func (client *ColoniesClient) GetFilenames(colonyName string, label string, prvK
 		return nil, err
 	}
 
-	var filenames []string
-	err = json.Unmarshal([]byte(respBodyString), &filenames)
-	return filenames, err
+	return core.ConvertJSONToFileDataArray(respBodyString)
 }
 
 func (client *ColoniesClient) GetFileLabels(colonyName string, prvKey string) ([]*core.Label, error) {

@@ -31,11 +31,11 @@ func printSyncPlan(syncPlan *SyncPlan) {
 }
 
 func checkFile(t *testing.T, env *testEnv, label string, coloniesClient *client.ColoniesClient, f *os.File) {
-	fileNames, err := coloniesClient.GetFilenames(env.colonyName, label, env.executorPrvKey)
+	fileData, err := coloniesClient.GetFileData(env.colonyName, label, env.executorPrvKey)
 	assert.Nil(t, err)
-	assert.Len(t, fileNames, 1)
+	assert.Len(t, fileData, 1)
 	orgFilename := filepath.Base(f.Name())
-	assert.Equal(t, fileNames[0], orgFilename)
+	assert.Equal(t, fileData[0].Name, orgFilename)
 	coloniesFile, err := coloniesClient.GetFileByName(env.colonyName, label, orgFilename, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.Len(t, coloniesFile, 1)
@@ -790,11 +790,11 @@ func TestRemoveAllFilesWithLabel(t *testing.T) {
 	err = fsClient.ApplySyncPlan(env.colonyName, syncPlan)
 	assert.Nil(t, err)
 
-	filenames, err := fsClient.coloniesClient.GetFilenames(env.colonyName, label, env.executorPrvKey)
+	fileDataArr, err := fsClient.coloniesClient.GetFileData(env.colonyName, label, env.executorPrvKey)
 	tmpFile1S3Object := ""
 	tmpFile2S3Object := ""
-	for _, filename := range filenames {
-		file, err := fsClient.coloniesClient.GetFileByName(env.colonyName, label, filename, env.executorPrvKey)
+	for _, fileData := range fileDataArr {
+		file, err := fsClient.coloniesClient.GetFileByName(env.colonyName, label, fileData.Name, env.executorPrvKey)
 		assert.Nil(t, err)
 		assert.Len(t, file, 1)
 		if file[0].Name == tmpFile1Filename {
@@ -813,9 +813,9 @@ func TestRemoveAllFilesWithLabel(t *testing.T) {
 	assert.Nil(t, err)
 
 	// Verify that files are gone
-	filenames, err = fsClient.coloniesClient.GetFilenames(fsClient.colonyName, label, fsClient.executorPrvKey)
+	fileDataArr, err = fsClient.coloniesClient.GetFileData(fsClient.colonyName, label, fsClient.executorPrvKey)
 	assert.Nil(t, err)
-	assert.Len(t, filenames, 0)
+	assert.Len(t, fileDataArr, 0)
 
 	assert.False(t, fsClient.s3Client.Exists(tmpFile1S3Object))
 	assert.False(t, fsClient.s3Client.Exists(tmpFile2S3Object))
