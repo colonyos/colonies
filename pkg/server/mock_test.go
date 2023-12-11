@@ -1101,6 +1101,10 @@ func (db *dbMock) GetFilenamesByLabel(colonyName string, label string) ([]string
 	return nil, nil
 }
 
+func (db *dbMock) GetFileDataByLabel(colonyName string, label string) ([]*core.FileData, error) {
+	return nil, nil
+}
+
 func (db *dbMock) RemoveFileByID(colonyName string, fileID string) error {
 	return nil
 }

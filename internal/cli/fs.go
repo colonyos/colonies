@@ -291,26 +291,26 @@ var listFilesCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		client := setup()
 
-		filenames, err := client.GetFilenames(ColonyName, Label, PrvKey)
+		fileDataArr, err := client.GetFileData(ColonyName, Label, PrvKey)
 		CheckError(err)
 
-		if len(filenames) == 0 {
+		if len(fileDataArr) == 0 {
 			log.Info("No files found")
 			os.Exit(0)
 		}
 
 		var fi []fileInfo
-		for _, filename := range filenames {
-			coloniesFile, err := client.GetLatestFileByName(ColonyName, Label, filename, PrvKey)
+		for _, fileData := range fileDataArr {
+			coloniesFile, err := client.GetLatestFileByName(ColonyName, Label, fileData.Name, PrvKey)
 			CheckError(err)
 
-			allRevisions, err := client.GetFileByName(ColonyName, Label, filename, PrvKey)
+			allRevisions, err := client.GetFileByName(ColonyName, Label, fileData.Name, PrvKey)
 			CheckError(err)
 
 			if len(coloniesFile) != 1 {
 				CheckError(errors.New("Failed to get file info from Colonies server"))
 			}
-			fi = append(fi, fileInfo{filename: filename, size: strconv.FormatInt(coloniesFile[0].Size/1024, 10) + " KiB", fileID: coloniesFile[0].ID, added: coloniesFile[0].Added, revisions: strconv.Itoa(len(allRevisions))})
+			fi = append(fi, fileInfo{filename: fileData.Name, size: strconv.FormatInt(coloniesFile[0].Size/1024, 10) + " KiB", fileID: coloniesFile[0].ID, added: coloniesFile[0].Added, revisions: strconv.Itoa(len(allRevisions))})
 		}
 
 		var fileData [][]string
