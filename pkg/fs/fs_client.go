@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
@@ -165,11 +166,26 @@ func (fsClient *FSClient) CalcSyncPlans(dir string, label string, keepLocal bool
 
 		if info.IsDir() {
 			l := ""
-			if len(strings.TrimPrefix(path, dir)) > 0 {
+			// label = /myfiles
+			// l = "/C:/Program Files/Git/myfiles"
+
+			// label: /myfiles
+			// path: /home/johan/dev/github/colonyos/colonies/myfiles/
+			// dir: /home/johan/dev/github/colonyos/colonies/myfiles/
+			// l: /myfiles
+			// label: /myfiles
+			// path: /home/johan/dev/github/colonyos/colonies/myfiles/a
+			// dir: /home/johan/dev/github/colonyos/colonies/myfiles/
+			// l: /myfiles/a
+
+			path = strings.Replace(path, `\`, `/`, -1)
+			dir = strings.Replace(dir, `\`, `/`, -1)
+			if len(strings.TrimPrefix(path, dir)) > 0 { // XXX this line does not work on windows
 				l = label + "/" + strings.TrimPrefix(path, dir)
 			} else {
 				l = label
 			}
+			fmt.Println("l:", l)
 
 			log.WithFields(log.Fields{"Label": l, "Dir:": path}).Debug("Calculating sync plan")
 			syncPlan, err := fsClient.CalcSyncPlan(path, l, keepLocal)
