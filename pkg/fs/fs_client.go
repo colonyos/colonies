@@ -178,6 +178,7 @@ func (fsClient *FSClient) CalcSyncPlans(dir string, label string, keepLocal bool
 			// dir: /home/johan/dev/github/colonyos/colonies/myfiles/
 			// l: /myfiles/a
 
+			log.WithFields(log.Fields{"Label": label, "Dir:": dir, "Path": path}).Debug("Calculating sync plan, before triem")
 			path = strings.Replace(path, `\`, `/`, -1)
 			dir = strings.Replace(dir, `\`, `/`, -1)
 			if len(strings.TrimPrefix(path, dir)) > 0 { // XXX this line does not work on windows
@@ -187,7 +188,7 @@ func (fsClient *FSClient) CalcSyncPlans(dir string, label string, keepLocal bool
 			}
 			fmt.Println("l:", l)
 
-			log.WithFields(log.Fields{"Label": l, "Dir:": path}).Debug("Calculating sync plan")
+			log.WithFields(log.Fields{"Label": l, "Dir:": dir, "Path": path}).Debug("Calculating sync plan")
 			syncPlan, err := fsClient.CalcSyncPlan(path, l, keepLocal)
 			if err != nil {
 				return err
