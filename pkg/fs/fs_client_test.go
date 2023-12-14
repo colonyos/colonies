@@ -6,6 +6,7 @@ import (
 	"math/rand"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/colonyos/colonies/pkg/client"
@@ -1029,4 +1030,19 @@ func TestDownloadSnapshopRecursively(t *testing.T) {
 
 	coloniesServer.Shutdown()
 	<-done
+}
+
+func TestApplySyncPlans(t *testing.T) {
+	//env, coloniesClient, coloniesServer, _, done := setupTestEnv(t)
+
+	label := "/myfiles"
+	dir := "/C:/Program Files/Git/myfiles"
+	path := "/C:/Program Files/Git/myfiles"
+
+	l := label + "/" + strings.TrimPrefix(path, dir)
+
+	fmt.Println(l)
+
+	//coloniesServer.Shutdown()
+	//<-done
 }
