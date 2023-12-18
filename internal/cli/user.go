@@ -52,7 +52,7 @@ var addUserCmd = &cobra.Command{
 		client := setup()
 
 		if len(UserID) != 64 {
-			CheckError(errors.New("Invalid Eser Id length"))
+			CheckError(errors.New("Invalid user Id length"))
 		}
 
 		if Username == "" {
