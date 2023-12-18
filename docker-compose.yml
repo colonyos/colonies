@@ -1,0 +1,61 @@
+version: '3.8'
+
+services:
+  timescaledb:
+    image: timescale/timescaledb:latest-pg12
+    environment:
+      POSTGRES_USER: ${COLONIES_DB_USER}
+      POSTGRES_PASSWORD: ${COLONIES_DB_PASSWORD}
+      PGDATA: /var/lib/postgresql/data
+      TZ: ${TZ}
+      TS_TUNE_MAX_CONNS: "1000"
+    volumes:
+      - timescaledb_data:/var/lib/postgresql/data
+  
+  minio:
+    image: minio/minio:latest
+    environment:
+      MINIO_ROOT_USER: $MINIO_USER
+      MINIO_ROOT_PASSWORD: $MINIO_PASSWORD
+    volumes:
+      - minio_data:/var/lib/minio/data
+    command: minio server /var/lib/minio/data --console-address :9001
+    ports:
+      - "9000:9000" 
+      - "9001:9001" 
+
+  colonies-server:
+    image: colonyos/colonies
+    depends_on: 
+      - timescaledb
+    environment:
+      COLONIES_SERVER_TLS: "false"
+      COLONIES_SERVER_ID: ${COLONIES_SERVER_ID}
+      COLONIES_SERVER_PORT: ${COLONIES_SERVER_PORT}
+      COLONIES_DB_HOST: timescaledb 
+      COLONIES_DB_PORT: 5432
+      COLONIES_DB_USER:  ${COLONIES_DB_USER} 
+      COLONIES_DB_PASSWORD:  ${COLONIES_DB_PASSWORD}
+      COLONIES_DB_TIMESCALEDB: "true"
+      COLONIES_TLSCERT: "/run/secrets/tls/tls.crt"
+      COLONIES_TLSKEY: "/run/secrets/tls/tls.key"
+      COLONIES_VERBOSE: "true"  
+      COLONIES_SERVER_PROFILER: "false"
+      COLONIES_SERVER_PROFILER_PORT: "6060"
+      COLONIES_CRON_CHECKER_PERIOD: "1000"
+      COLONIES_GENERATOR_CHECKER_PERIOD: "500"
+      COLONIES_EXCLUSIVE_ASSIGN: "true"
+      COLONIES_ALLOW_EXECUTOR_REREGISTER: "false"
+      COLONIES_RETENTION: "false"
+      COLONIES_RETENTION_POLICY: "604800" # 60 seconds * 60 * 24 * 7 = 604800 (1 week)
+      TZ: ${TZ}
+    volumes:
+      - colonies_etcd:/var/colonies/etcd
+    ports:
+      - "${COLONIES_SERVER_PORT}:${COLONIES_SERVER_PORT}"
+    command: sh -c "colonies database create; colonies server start --port  ${COLONIES_SERVER_PORT} --relayport 25100 --etcdname server1 --etcdhost colonies-server --etcdclientport 23100 --etcdpeerport 24100 --initial-cluster server1=colonies-server:24100:25100:${COLONIES_SERVER_PORT} --etcddatadir /var/colonies/etcd --insecure"
+
+volumes:
+  timescaledb_data:
+  minio_data:
+  colonies_etcd:
