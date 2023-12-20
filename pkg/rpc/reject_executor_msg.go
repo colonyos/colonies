@@ -8,7 +8,7 @@ const RejectExecutorPayloadType = "rejectexecutormsg"
 
 type RejectExecutorMsg struct {
 	ColonyName   string `json:"colonyname"`
-	ExecutorName string `json:"executorid"`
+	ExecutorName string `json:"executorname"`
 	MsgType      string `json:"msgtype"`
 }
 
