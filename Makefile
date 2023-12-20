@@ -2,7 +2,7 @@ all: build
 .PHONY: all build
 
 BUILD_IMAGE ?= colonyos/colonies
-PUSH_IMAGE ?= colonyos/colonies:v1.7.4
+PUSH_IMAGE ?= colonyos/colonies:v1.7.5
 
 VERSION := $(shell git rev-parse --short HEAD)
 BUILDTIME := $(shell date -u '+%Y-%m-%dT%H:%M:%SZ')
@@ -20,6 +20,7 @@ container:
 
 push:
 	docker tag $(BUILD_IMAGE) $(PUSH_IMAGE) 
+	docker push $(BUILD_IMAGE)
 	docker push $(PUSH_IMAGE)
 
 coverage:
