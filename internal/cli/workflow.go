@@ -6,13 +6,10 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"strconv"
 	"strings"
 
-	"github.com/colonyos/colonies/pkg/client"
 	"github.com/colonyos/colonies/pkg/core"
 	"github.com/colonyos/colonies/pkg/server"
-	"github.com/kataras/tablewriter"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -114,42 +111,6 @@ var submitWorkflowCmd = &cobra.Command{
 	},
 }
 
-var listWaitingWorkflowsCmd = &cobra.Command{
-	Use:   "psw",
-	Short: "List all waiting workflows",
-	Long:  "List all waiting workflows",
-	Run: func(cmd *cobra.Command, args []string) {
-		client := setup()
-
-		graphs, err := client.GetWaitingProcessGraphs(ColonyName, Count, PrvKey)
-		CheckError(err)
-
-		if len(graphs) == 0 {
-			log.Warning("No waiting workflows found")
-		} else {
-			if JSON {
-				jsonString, err := core.ConvertProcessGraphArrayToJSON(graphs)
-				CheckError(err)
-				fmt.Println(jsonString)
-				os.Exit(0)
-			}
-
-			var data [][]string
-			for _, graph := range graphs {
-				data = append(data, []string{graph.ID, graph.SubmissionTime.Format(TimeLayout), graph.InitiatorName})
-			}
-			table := tablewriter.NewWriter(os.Stdout)
-			table.SetHeader([]string{"ID", "Submission Time", "Initiator Name"})
-			for _, v := range data {
-				table.Append(v)
-			}
-			table.SetAlignment(tablewriter.ALIGN_LEFT)
-			table.Render()
-		}
-
-	},
-}
-
 var removeWorkflowCmd = &cobra.Command{
 	Use:   "remove",
 	Short: "remove a workflow",
@@ -223,6 +184,31 @@ var removeAllWorkflowsCmd = &cobra.Command{
 	},
 }
 
+var listWaitingWorkflowsCmd = &cobra.Command{
+	Use:   "psw",
+	Short: "List all waiting workflows",
+	Long:  "List all waiting workflows",
+	Run: func(cmd *cobra.Command, args []string) {
+		client := setup()
+
+		graphs, err := client.GetWaitingProcessGraphs(ColonyName, Count, PrvKey)
+		CheckError(err)
+
+		if len(graphs) == 0 {
+			log.Warning("No waiting workflows found")
+		} else {
+			if JSON {
+				jsonString, err := core.ConvertProcessGraphArrayToJSON(graphs)
+				CheckError(err)
+				fmt.Println(jsonString)
+				os.Exit(0)
+			}
+
+			printWorkflowTable(graphs, core.WAITING)
+		}
+	},
+}
+
 var listRunningWorkflowsCmd = &cobra.Command{
 	Use:   "ps",
 	Short: "List all running workflows",
@@ -243,19 +229,8 @@ var listRunningWorkflowsCmd = &cobra.Command{
 				os.Exit(0)
 			}
 
-			var data [][]string
-			for _, graph := range graphs {
-				data = append(data, []string{graph.ID, graph.SubmissionTime.Format(TimeLayout)})
-			}
-			table := tablewriter.NewWriter(os.Stdout)
-			table.SetHeader([]string{"ID", "Submission Time"})
-			for _, v := range data {
-				table.Append(v)
-			}
-			table.SetAlignment(tablewriter.ALIGN_LEFT)
-			table.Render()
+			printWorkflowTable(graphs, core.RUNNING)
 		}
-
 	},
 }
 
@@ -279,19 +254,8 @@ var listSuccessfulWorkflowsCmd = &cobra.Command{
 				os.Exit(0)
 			}
 
-			var data [][]string
-			for _, graph := range graphs {
-				data = append(data, []string{graph.ID, graph.EndTime.Format(TimeLayout)})
-			}
-			table := tablewriter.NewWriter(os.Stdout)
-			table.SetHeader([]string{"ID", "End Time"})
-			for _, v := range data {
-				table.Append(v)
-			}
-			table.SetAlignment(tablewriter.ALIGN_LEFT)
-			table.Render()
+			printWorkflowTable(graphs, core.SUCCESS)
 		}
-
 	},
 }
 
@@ -315,99 +279,10 @@ var listFailedWorkflowsCmd = &cobra.Command{
 				os.Exit(0)
 			}
 
-			var data [][]string
-			for _, graph := range graphs {
-				data = append(data, []string{graph.ID, graph.EndTime.Format(TimeLayout)})
-			}
-			table := tablewriter.NewWriter(os.Stdout)
-			table.SetHeader([]string{"ID", "End Time"})
-			for _, v := range data {
-				table.Append(v)
-			}
-			table.SetAlignment(tablewriter.ALIGN_LEFT)
-			table.Render()
+			printWorkflowTable(graphs, core.FAILED)
 		}
 
 	},
-}
-
-func printGraf(client *client.ColoniesClient, graph *core.ProcessGraph) {
-	fmt.Println("Workflow:")
-	workflowData := [][]string{
-		[]string{"WorkflowID", graph.ID},
-		[]string{"InitiatorID", graph.InitiatorID},
-		[]string{"InitiatorName", graph.InitiatorName},
-		[]string{"ColonyName", graph.ID},
-		[]string{"State", State2String(graph.State)},
-		[]string{"SubmissionTime", graph.SubmissionTime.Format(TimeLayout)},
-		[]string{"StartTime", graph.StartTime.Format(TimeLayout)},
-		[]string{"EndTime", graph.EndTime.Format(TimeLayout)},
-	}
-	workflowTable := tablewriter.NewWriter(os.Stdout)
-	for _, v := range workflowData {
-		workflowTable.Append(v)
-	}
-	workflowTable.SetAlignment(tablewriter.ALIGN_LEFT)
-	workflowTable.Render()
-
-	fmt.Println("\nProcesses:")
-	for i, processID := range graph.ProcessIDs {
-		process, err := client.GetProcess(processID, PrvKey)
-		CheckError(err)
-
-		f := process.FunctionSpec.FuncName
-		if f == "" {
-			f = "None"
-		}
-
-		procArgs := ""
-		for _, procArg := range IfArr2StringArr(process.FunctionSpec.Args) {
-			procArgs += procArg + " "
-		}
-		if procArgs == "" {
-			procArgs = "None"
-		}
-
-		procKwArgs := ""
-		for k, procKwArg := range IfMap2StringMap(process.FunctionSpec.KwArgs) {
-			procKwArgs += k + ":" + procKwArg + " "
-		}
-		if procKwArgs == "" {
-			procKwArgs = "None"
-		}
-
-		dependencies := ""
-		for _, dependency := range process.FunctionSpec.Conditions.Dependencies {
-			dependencies += dependency + " "
-		}
-		if dependencies == "" {
-			dependencies = "None"
-		}
-
-		processData := [][]string{
-			[]string{"NodeName", process.FunctionSpec.NodeName},
-			[]string{"InitiatorID", process.InitiatorID},
-			[]string{"InitiatorName", process.InitiatorName},
-			[]string{"ProcessID", process.ID},
-			[]string{"ExecutorType", process.FunctionSpec.Conditions.ExecutorType},
-			[]string{"FuncName", f},
-			[]string{"Args", procArgs},
-			[]string{"KwArgs", procKwArgs},
-			[]string{"State", State2String(process.State)},
-			[]string{"WaitingForParents", strconv.FormatBool(process.WaitForParents)},
-			[]string{"Dependencies", dependencies},
-		}
-		processTable := tablewriter.NewWriter(os.Stdout)
-		for _, v := range processData {
-			processTable.Append(v)
-		}
-		processTable.SetAlignment(tablewriter.ALIGN_LEFT)
-		processTable.Render()
-
-		if i < len(graph.ProcessIDs)-1 {
-			fmt.Println()
-		}
-	}
 }
 
 var getWorkflowCmd = &cobra.Command{
