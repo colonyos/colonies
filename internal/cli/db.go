@@ -59,6 +59,11 @@ func parseDBEnv() {
 	} else {
 		TimescaleDB = false
 	}
+
+	initDBStr := os.Getenv("COLONIES_INITDB")
+	if initDBStr == "true" {
+		InitDB = true
+	}
 }
 
 var dbCreateCmd = &cobra.Command{

@@ -21,7 +21,7 @@ export COLONIES_DB_PASSWORD="rFcLGNkgsNtksg6Pgtn9CumL4xXBQ7"
 The following variables are utilized by the CLI tool to minimize the number of flags required when executing commands.
 
 ```console
-export COLONIES_TLS="false"
+export COLONIES_SERVER_TLS="false"
 export COLONIES_SERVER_HOST="localhost"
 export COLONIES_SERVER_PORT="50080"
 export COLONIES_SERVER_ID="039231c7644e04b6895471dd5335cf332681c54e27f81fac54f9067b3f2c0103"

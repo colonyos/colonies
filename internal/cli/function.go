@@ -330,7 +330,7 @@ var execFuncCmd = &cobra.Command{
 		if TargetExecutorType != "" {
 			conditions = core.Conditions{ColonyName: ColonyName, ExecutorType: TargetExecutorType}
 		} else {
-			conditions = core.Conditions{ColonyName: ColonyName, ExecutorIDs: []string{TargetExecutorID}}
+			conditions = core.Conditions{ColonyName: ColonyName, ExecutorNames: []string{TargetExecutorName}}
 		}
 
 		argsif := make([]interface{}, len(Args))

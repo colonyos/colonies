@@ -22,6 +22,7 @@ func init() {
 	serverCmd.AddCommand(serverStartCmd)
 	serverCmd.AddCommand(serverStatusCmd)
 	serverCmd.AddCommand(serverStatisticsCmd)
+	serverCmd.AddCommand(serverAliveCmd)
 	rootCmd.AddCommand(serverCmd)
 
 	serverCmd.PersistentFlags().StringVarP(&DBHost, "dbhost", "", "", "Colonies database host")
@@ -38,6 +39,8 @@ func init() {
 	serverCmd.PersistentFlags().IntVarP(&RelayPort, "relayport", "", 2381, "Colonies server relay port")
 	serverCmd.PersistentFlags().StringSliceVarP(&EtcdCluster, "initial-cluster", "", make([]string, 0), "Cluster config, e.g. --etcdcluster server1=localhost:peerport:relayport:apiport,server2=localhost:peerport:relayport:apiport")
 	serverCmd.PersistentFlags().StringVarP(&EtcdDataDir, "etcddatadir", "", "", "Etcd data dir")
+
+	serverCmd.Flags().BoolVarP(&InitDB, "initdb", "", false, "Initialize DB")
 
 	serverStatusCmd.PersistentFlags().StringVarP(&ServerHost, "host", "", "localhost", "Server host")
 	serverStatusCmd.PersistentFlags().IntVarP(&ServerPort, "port", "", -1, "Server HTTP port")
@@ -153,15 +156,6 @@ var serverStartCmd = &cobra.Command{
 			log.Warning("EtcdDataDir not specified, setting it to " + EtcdDataDir)
 		}
 
-		retentionStr := os.Getenv("COLONIES_RETENTION")
-		retention := false
-		if retentionStr == "true" {
-			retention = true
-		}
-		retentionPolicyStr := os.Getenv("COLONIES_RETENTION_POLICY")
-		retentionPolicy, err := strconv.ParseInt(retentionPolicyStr, 10, 64)
-		CheckError(err)
-
 		retentionPeriod := 60000 // Run retention worker once a minute
 
 		setupProfiler()
@@ -179,14 +173,42 @@ var serverStartCmd = &cobra.Command{
 			CronCheckerPeriod,
 			ExclusiveAssign,
 			AllowExecutorReregister,
-			retention,
-			retentionPolicy,
+			Retention,
+			RetentionPolicy,
 			retentionPeriod)
+
+		if InitDB {
+			parseDBEnv()
+
+			var db *postgresql.PQDatabase
+			for {
+				db = postgresql.CreatePQDatabase(DBHost, DBPort, DBUser, DBPassword, DBName, DBPrefix, TimescaleDB)
+				err := db.Connect()
+				if err != nil {
+					log.WithFields(log.Fields{"Error": err}).Error("Failed to call db.Connect(), retrying in 1 second ...")
+					time.Sleep(1 * time.Second)
+				} else {
+					break
+				}
+			}
+
+			for {
+				log.WithFields(log.Fields{"Host": DBHost, "Port": DBPort, "User": DBUser, "Password": "**********************", "Prefix": DBPrefix}).Error("Connecting to PostgreSQL database")
+				err := db.Initialize()
+				if err != nil {
+					log.Warning("Failed to create database")
+					time.Sleep(1 * time.Second)
+				} else {
+					log.Info("Colonies database created")
+					break
+				}
+			}
+		}
 
 		for {
 			err := server.ServeForever()
 			if err != nil {
-				log.WithFields(log.Fields{"Error": err}).Error("Failed to connect to Colonies Server")
+				log.WithFields(log.Fields{"Error": err}).Error("Failed to start Colonies Server")
 				time.Sleep(1 * time.Second)
 			}
 		}
@@ -225,5 +247,14 @@ var serverStatisticsCmd = &cobra.Command{
 		}
 		specTable.SetAlignment(tablewriter.ALIGN_LEFT)
 		specTable.Render()
+	},
+}
+
+var serverAliveCmd = &cobra.Command{
+	Use:   "alive",
+	Short: "Check if a server is alive",
+	Long:  "Check if a server is alive",
+	Run: func(cmd *cobra.Command, args []string) {
+		os.Exit(0)
 	},
 }

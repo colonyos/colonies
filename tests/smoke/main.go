@@ -160,7 +160,7 @@ func main() {
 		checkError(err)
 	}
 
-	tlsEnv := os.Getenv("COLONIES_TLS")
+	tlsEnv := os.Getenv("COLONIES_SERVER_TLS")
 	insecure := true
 	if tlsEnv == "true" {
 		insecure = false
