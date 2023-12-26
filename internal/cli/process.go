@@ -157,28 +157,8 @@ var listWaitingProcessesCmd = &cobra.Command{
 				os.Exit(0)
 			}
 
-			var data [][]string
-			for _, process := range processes {
-				args, kwArgs := parseArgs(process)
-				if ShowIDs {
-					data = append(data, []string{process.ID, process.FunctionSpec.FuncName, args, kwArgs, process.SubmissionTime.Format(TimeLayout), process.FunctionSpec.Conditions.ExecutorType, process.InitiatorName})
-				} else {
-					data = append(data, []string{process.FunctionSpec.FuncName, args, kwArgs, process.SubmissionTime.Format(TimeLayout), process.FunctionSpec.Conditions.ExecutorType, process.InitiatorName})
-				}
-			}
-			table := tablewriter.NewWriter(os.Stdout)
-			if ShowIDs {
-				table.SetHeader([]string{"ID", "Func", "Args", "KwArgs", "Submission Time", "Executor Type", "Initiator Name"})
-			} else {
-				table.SetHeader([]string{"Func", "Args", "KwArgs", "Submission Time", "Executor Type", "Initiator Name"})
-			}
-			for _, v := range data {
-				table.Append(v)
-			}
-			table.SetAlignment(tablewriter.ALIGN_LEFT)
-			table.Render()
+			printProcessesTable(processes, core.WAITING)
 		}
-
 	},
 }
 
@@ -202,26 +182,7 @@ var listRunningProcessesCmd = &cobra.Command{
 				os.Exit(0)
 			}
 
-			var data [][]string
-			for _, process := range processes {
-				args, kwArgs := parseArgs(process)
-				if ShowIDs {
-					data = append(data, []string{process.ID, process.FunctionSpec.FuncName, args, kwArgs, process.SubmissionTime.Format(TimeLayout), process.FunctionSpec.Conditions.ExecutorType, process.InitiatorName})
-				} else {
-					data = append(data, []string{process.FunctionSpec.FuncName, args, kwArgs, process.SubmissionTime.Format(TimeLayout), process.FunctionSpec.Conditions.ExecutorType, process.InitiatorName})
-				}
-			}
-			table := tablewriter.NewWriter(os.Stdout)
-			if ShowIDs {
-				table.SetHeader([]string{"ID", "FuncName", "Args", "KwArgs", "Start time", "Executor Type", "Initiator Name"})
-			} else {
-				table.SetHeader([]string{"FuncName", "Args", "KwArgs", "Start time", "Executor Type", "Initiator Name"})
-			}
-			for _, v := range data {
-				table.Append(v)
-			}
-			table.SetAlignment(tablewriter.ALIGN_LEFT)
-			table.Render()
+			printProcessesTable(processes, core.RUNNING)
 		}
 	},
 }
@@ -246,26 +207,7 @@ var listSuccessfulProcessesCmd = &cobra.Command{
 				os.Exit(0)
 			}
 
-			var data [][]string
-			for _, process := range processes {
-				args, kwArgs := parseArgs(process)
-				if ShowIDs {
-					data = append(data, []string{process.ID, process.FunctionSpec.FuncName, args, kwArgs, process.SubmissionTime.Format(TimeLayout), process.FunctionSpec.Conditions.ExecutorType, process.InitiatorName})
-				} else {
-					data = append(data, []string{process.FunctionSpec.FuncName, args, kwArgs, process.SubmissionTime.Format(TimeLayout), process.FunctionSpec.Conditions.ExecutorType, process.InitiatorName})
-				}
-			}
-			table := tablewriter.NewWriter(os.Stdout)
-			if ShowIDs {
-				table.SetHeader([]string{"ID", "FuncName", "Args", "KwArgs", "End time", "Executor Type", "Initiator Name"})
-			} else {
-				table.SetHeader([]string{"FuncName", "Args", "KwArgs", "End time", "Executor Type", "Initiator Name"})
-			}
-			for _, v := range data {
-				table.Append(v)
-			}
-			table.SetAlignment(tablewriter.ALIGN_LEFT)
-			table.Render()
+			printProcessesTable(processes, core.WAITING)
 		}
 	},
 }
@@ -290,38 +232,19 @@ var listFailedProcessesCmd = &cobra.Command{
 				os.Exit(0)
 			}
 
-			var data [][]string
-			for _, process := range processes {
-				args, kwArgs := parseArgs(process)
-				if ShowIDs {
-					data = append(data, []string{process.ID, process.FunctionSpec.FuncName, args, kwArgs, process.SubmissionTime.Format(TimeLayout), process.FunctionSpec.Conditions.ExecutorType, process.InitiatorName})
-				} else {
-					data = append(data, []string{process.FunctionSpec.FuncName, args, kwArgs, process.SubmissionTime.Format(TimeLayout), process.FunctionSpec.Conditions.ExecutorType, process.InitiatorName})
-				}
-			}
-			table := tablewriter.NewWriter(os.Stdout)
-			if ShowIDs {
-				table.SetHeader([]string{"ID", "FuncName", "Args", "KwArgs", "End time", "Executor Type", "Initiator"})
-			} else {
-				table.SetHeader([]string{"FuncName", "Args", "KwArgs", "End time", "Executor Type", "Initiator"})
-			}
-			for _, v := range data {
-				table.Append(v)
-			}
-			table.SetAlignment(tablewriter.ALIGN_LEFT)
-			table.Render()
+			printProcessesTable(processes, core.FAILED)
 		}
 	},
 }
 
 func printFunctionSpec(funcSpec *core.FunctionSpec) {
-	executorIDs := ""
-	for _, executorID := range funcSpec.Conditions.ExecutorIDs {
-		executorIDs += executorID + "\n"
+	executorNames := ""
+	for _, executorName := range funcSpec.Conditions.ExecutorNames {
+		executorNames += executorName + "\n"
 	}
-	executorIDs = strings.TrimSuffix(executorIDs, "\n")
-	if executorIDs == "" {
-		executorIDs = "None"
+	executorNames = strings.TrimSuffix(executorNames, "\n")
+	if executorNames == "" {
+		executorNames = "None"
 	}
 
 	procFunc := funcSpec.FuncName
@@ -382,7 +305,7 @@ func printFunctionSpec(funcSpec *core.FunctionSpec) {
 
 	condData := [][]string{
 		[]string{"ColonyName", funcSpec.Conditions.ColonyName},
-		[]string{"ExecutorIDs", executorIDs},
+		[]string{"ExecutorNames", executorNames},
 		[]string{"ExecutorType", funcSpec.Conditions.ExecutorType},
 		[]string{"Dependencies", dep},
 		[]string{"Nodes", strconv.Itoa(funcSpec.Conditions.Nodes)},

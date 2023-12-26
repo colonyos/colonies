@@ -40,7 +40,7 @@ type SyncDirMount struct {
 
 type Conditions struct {
 	ColonyName       string   `json:"colonyname"`
-	ExecutorIDs      []string `json:"executorids"`
+	ExecutorNames    []string `json:"executorNames"`
 	ExecutorType     string   `json:"executortype"`
 	Dependencies     []string `json:"dependencies"`
 	Nodes            int      `json:"nodes"`
@@ -78,7 +78,7 @@ func CreateEmptyFunctionSpec() *FunctionSpec {
 	return funcSpec
 }
 
-func CreateFunctionSpec(nodeName string, funcName string, args []interface{}, kwargs map[string]interface{}, colonyName string, executorIDs []string, executorType string, maxWaitTime int, maxExecTime int, maxRetries int, env map[string]string, dependencies []string, priority int, label string) *FunctionSpec {
+func CreateFunctionSpec(nodeName string, funcName string, args []interface{}, kwargs map[string]interface{}, colonyName string, executorNames []string, executorType string, maxWaitTime int, maxExecTime int, maxRetries int, env map[string]string, dependencies []string, priority int, label string) *FunctionSpec {
 	argsif := make([]interface{}, len(args))
 	for k, v := range args {
 		argsif[k] = v
@@ -89,7 +89,7 @@ func CreateFunctionSpec(nodeName string, funcName string, args []interface{}, kw
 		kwargsif[k] = v
 	}
 
-	conditions := Conditions{ColonyName: colonyName, ExecutorIDs: executorIDs, ExecutorType: executorType, Dependencies: dependencies}
+	conditions := Conditions{ColonyName: colonyName, ExecutorNames: executorNames, ExecutorType: executorType, Dependencies: dependencies}
 	return &FunctionSpec{NodeName: nodeName, FuncName: funcName, Args: argsif, KwArgs: kwargsif, MaxWaitTime: maxWaitTime, MaxExecTime: maxExecTime, MaxRetries: maxRetries, Conditions: conditions, Env: env, Priority: priority, Label: label}
 }
 
@@ -167,20 +167,20 @@ func (funcSpec *FunctionSpec) Equals(funcSpec2 *FunctionSpec) bool {
 		}
 	}
 
-	if funcSpec.Conditions.ExecutorIDs != nil && funcSpec2.Conditions.ExecutorIDs == nil {
+	if funcSpec.Conditions.ExecutorNames != nil && funcSpec2.Conditions.ExecutorNames == nil {
 		same = false
-	} else if funcSpec.Conditions.ExecutorIDs == nil && funcSpec2.Conditions.ExecutorIDs != nil {
+	} else if funcSpec.Conditions.ExecutorNames == nil && funcSpec2.Conditions.ExecutorNames != nil {
 		same = false
 	} else {
 		counter := 0
-		for _, targetExecutorID1 := range funcSpec.Conditions.ExecutorIDs {
-			for _, targetExecutorID2 := range funcSpec2.Conditions.ExecutorIDs {
-				if targetExecutorID1 == targetExecutorID2 {
+		for _, targetExecutorName1 := range funcSpec.Conditions.ExecutorNames {
+			for _, targetExecutorName2 := range funcSpec2.Conditions.ExecutorNames {
+				if targetExecutorName1 == targetExecutorName2 {
 					counter++
 				}
 			}
 		}
-		if counter != len(funcSpec.Conditions.ExecutorIDs) && counter != len(funcSpec2.Conditions.ExecutorIDs) {
+		if counter != len(funcSpec.Conditions.ExecutorNames) && counter != len(funcSpec2.Conditions.ExecutorNames) {
 			same = false
 		}
 		if funcSpec.Conditions.GPU.Name != funcSpec2.Conditions.GPU.Name {
