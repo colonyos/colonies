@@ -458,8 +458,73 @@ func printAttributesTable(process *core.Process) {
 		}
 		t.Render()
 	} else {
-		fmt.Println("No attributes found")
+		fmt.Println("\nNo attributes found")
 	}
+}
+
+func printAttributeTable(attribute *core.Attribute) {
+	style := goprettytable.StyleRounded
+	theme, err := table.LoadTheme("solarized-dark")
+	CheckError(err)
+
+	var sortCol int
+	if ShowIDs {
+		sortCol = 5
+	} else {
+		sortCol = 4
+	}
+
+	t := table.NewTable(theme, table.TableOptions{
+		Columns: []int{1, 2},
+		SortBy:  sortCol,
+		Style:   style,
+	})
+
+	var cols = []table.Column{
+		{ID: "attributeid", Name: "AttributeId", SortIndex: 1},
+		{ID: "targetid", Name: "TargetId", SortIndex: 2},
+		{ID: "key", Name: "Key", SortIndex: 3},
+		{ID: "value", Name: "Value", SortIndex: 4},
+		{ID: "type", Name: "Type", SortIndex: 5},
+	}
+	t.SetCols(cols)
+
+	var attributeType string
+	switch attribute.AttributeType {
+	case core.IN:
+		attributeType = "In"
+	case core.OUT:
+		attributeType = "Out"
+	case core.ERR:
+		attributeType = "Err"
+	case core.ENV:
+		attributeType = "Env"
+	default:
+		attributeType = "Unknown"
+	}
+	var key string
+	if len(attribute.Key) > MaxAttributeLength {
+		key = attribute.Key[0:MaxAttributeLength] + "..."
+	} else {
+		key = attribute.Key
+	}
+
+	var value string
+	if len(attribute.Value) > MaxAttributeLength {
+		value = attribute.Value[0:MaxAttributeLength] + "..."
+	} else {
+		value = attribute.Value
+	}
+	row := []interface{}{
+		termenv.String(attribute.ID).Foreground(theme.ColorGray),
+		termenv.String(attribute.TargetID).Foreground(theme.ColorCyan),
+		termenv.String(key).Foreground(theme.ColorViolet),
+		termenv.String(value).Foreground(theme.ColorViolet),
+		termenv.String(attributeType).Foreground(theme.ColorMagenta),
+	}
+	t.AddRow(row)
+
+	t.Render()
 }
 
 func printProcessesTable(processes []*core.Process, mode int) {
