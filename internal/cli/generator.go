@@ -178,7 +178,7 @@ var getGeneratorCmd = &cobra.Command{
 		for i, funcSpec := range workflowSpec.FunctionSpecs {
 			fmt.Println()
 			fmt.Println("FunctionSpec " + strconv.Itoa(i) + ":")
-			printFunctionSpec(&funcSpec)
+			printFunctionSpecTable(&funcSpec)
 		}
 	},
 }
