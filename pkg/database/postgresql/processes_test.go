@@ -49,7 +49,7 @@ func TestProcessClosedDB(t *testing.T) {
 	_, err = db.FindFailedProcesses("invalid_id", "", 1)
 	assert.NotNil(t, err)
 
-	_, err = db.FindUnassignedProcesses("invalid_id", "invalid_id", "invalid_type", 1)
+	_, err = db.FindCandidates("invalid_id", "invalid_type", 1)
 	assert.NotNil(t, err)
 
 	err = db.RemoveProcessByID("invalid_id")
@@ -152,10 +152,10 @@ func TestAddProcess(t *testing.T) {
 	defer db.Close()
 
 	colonyName := core.GenerateRandomID()
-	executor1ID := core.GenerateRandomID()
-	executor2ID := core.GenerateRandomID()
+	executor1Name := core.GenerateRandomID()
+	executor2Name := core.GenerateRandomID()
 
-	process := utils.CreateTestProcessWithTargets(colonyName, []string{executor1ID, executor2ID})
+	process := utils.CreateTestProcessWithTargets(colonyName, []string{executor1Name, executor2Name})
 	invalidKwArgs := make(map[string]interface{})
 	invalidKwArgs["name"] = func() {
 	}
@@ -170,7 +170,7 @@ func TestAddProcess(t *testing.T) {
 	err = db.AddProcess(process)
 	assert.NotNil(t, err)
 
-	process = utils.CreateTestProcessWithTargets(colonyName, []string{executor1ID, executor2ID})
+	process = utils.CreateTestProcessWithTargets(colonyName, []string{executor1Name, executor2Name})
 	invalidInput := make([]interface{}, 1)
 	invalidInput[0] = func() {
 	}
@@ -178,7 +178,7 @@ func TestAddProcess(t *testing.T) {
 	err = db.AddProcess(process)
 	assert.NotNil(t, err)
 
-	process = utils.CreateTestProcessWithTargets(colonyName, []string{executor1ID, executor2ID})
+	process = utils.CreateTestProcessWithTargets(colonyName, []string{executor1Name, executor2Name})
 	invalidOutput := make([]interface{}, 1)
 	invalidOutput[0] = func() {
 	}
@@ -186,16 +186,16 @@ func TestAddProcess(t *testing.T) {
 	err = db.AddProcess(process)
 	assert.NotNil(t, err)
 
-	process = utils.CreateTestProcessWithTargets(colonyName, []string{executor1ID, executor2ID})
+	process = utils.CreateTestProcessWithTargets(colonyName, []string{executor1Name, executor2Name})
 	err = db.AddProcess(process)
 	assert.Nil(t, err)
 
 	processFromDB, err := db.GetProcessByID(process.ID)
 	assert.Nil(t, err)
-	assert.Contains(t, processFromDB.FunctionSpec.Conditions.ExecutorIDs, executor1ID)
-	assert.Contains(t, processFromDB.FunctionSpec.Conditions.ExecutorIDs, executor2ID)
+	assert.Contains(t, processFromDB.FunctionSpec.Conditions.ExecutorNames, executor1Name)
+	assert.Contains(t, processFromDB.FunctionSpec.Conditions.ExecutorNames, executor2Name)
 
-	process = utils.CreateTestProcessWithTargets(colonyName, []string{executor1ID, executor2ID})
+	process = utils.CreateTestProcessWithTargets(colonyName, []string{executor1Name, executor2Name})
 
 	var snapshots []core.SnapshotMount
 	snapshot1 := core.SnapshotMount{Label: "test_label1", SnapshotID: "test_snapshotid1", Dir: "test_dir1", KeepFiles: false, KeepSnaphot: false}
@@ -1189,7 +1189,7 @@ func TestFindUnassignedProcesses1(t *testing.T) {
 	err = db.AddProcess(process2)
 	assert.Nil(t, err)
 
-	processsFromDB, err := db.FindUnassignedProcesses(colony.Name, executor.ID, executor.Type, 100)
+	processsFromDB, err := db.FindCandidates(colony.Name, executor.Type, 100)
 	assert.Nil(t, err)
 	assert.Len(t, processsFromDB, 1)
 }
@@ -1228,7 +1228,7 @@ func TestFindUnassignedProcesses2(t *testing.T) {
 
 	time.Sleep(50 * time.Millisecond)
 
-	processsFromDB, err := db.FindUnassignedProcesses(colony.Name, executor2.ID, executor2.Type, 2)
+	processsFromDB, err := db.FindCandidates(colony.Name, executor2.Type, 2)
 	assert.Nil(t, err)
 	assert.Len(t, processsFromDB, 2)
 
@@ -1276,13 +1276,13 @@ func TestFindUnassignedProcesses3(t *testing.T) {
 	err = db.AddProcess(process2)
 	assert.Nil(t, err)
 
-	processsFromDB, err := db.FindUnassignedProcesses(colony.Name, executor1.ID, executor1.Type, 1)
+	processsFromDB, err := db.FindCandidates(colony.Name, executor1.Type, 1)
 	assert.Nil(t, err)
 
 	assert.Len(t, processsFromDB, 1)
 	assert.Equal(t, process1.ID, processsFromDB[0].ID)
 
-	processsFromDB, err = db.FindUnassignedProcesses(colony.Name, executor2.ID, executor2.Type, 1)
+	processsFromDB, err = db.FindCandidates(colony.Name, executor2.Type, 1)
 	assert.Nil(t, err)
 	assert.Len(t, processsFromDB, 1)
 	assert.Equal(t, process1.ID, processsFromDB[0].ID)
@@ -1318,12 +1318,12 @@ func TestFindUnassignedProcesses4(t *testing.T) {
 	err = db.AddProcess(process2)
 	assert.Nil(t, err)
 
-	processsFromDB, err := db.FindUnassignedProcesses(colony.Name, executor1.ID, executor1.Type, 1)
+	processsFromDB, err := db.FindCandidates(colony.Name, executor1.Type, 1)
 	assert.Nil(t, err)
 	assert.Len(t, processsFromDB, 1)
 	assert.Equal(t, process1.ID, processsFromDB[0].ID)
 
-	processsFromDB, err = db.FindUnassignedProcesses(colony.Name, executor2.ID, executor2.Type, 1)
+	processsFromDB, err = db.FindCandidates(colony.Name, executor2.Type, 1)
 	assert.Nil(t, err)
 	assert.Len(t, processsFromDB, 1)
 	assert.Equal(t, process2.ID, processsFromDB[0].ID)
@@ -1352,7 +1352,7 @@ func TestFindUnassignedProcessesOldest(t *testing.T) {
 	err = db.AddProcess(process2)
 	assert.Nil(t, err)
 
-	processsFromDB, err := db.FindUnassignedProcesses(colony.Name, executor.ID, executor.Type, 100)
+	processsFromDB, err := db.FindCandidates(colony.Name, executor.Type, 100)
 	assert.Nil(t, err)
 	assert.Len(t, processsFromDB, 1)
 	assert.Equal(t, processsFromDB[0].ID, process1.ID)
@@ -1398,7 +1398,7 @@ func TestFindProcessAssigned(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, 0, numberOfFailedProcesses)
 
-	processsFromDB1, err := db.FindUnassignedProcesses(colony.Name, executor.ID, executor.Type, 1)
+	processsFromDB1, err := db.FindCandidates(colony.Name, executor.Type, 1)
 	assert.Nil(t, err)
 	assert.Equal(t, process1.ID, processsFromDB1[0].ID)
 	assert.Len(t, processsFromDB1, 1)
@@ -1410,7 +1410,7 @@ func TestFindProcessAssigned(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, 1, numberOfRunningProcesses)
 
-	processsFromDB2, err := db.FindUnassignedProcesses(colony.Name, executor.ID, executor.Type, 1)
+	processsFromDB2, err := db.FindCandidates(colony.Name, executor.Type, 1)
 	assert.Nil(t, err)
 	assert.Equal(t, process2.ID, processsFromDB2[0].ID)
 
