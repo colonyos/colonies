@@ -11,8 +11,7 @@ import (
 	"github.com/colonyos/colonies/pkg/cluster"
 	"github.com/colonyos/colonies/pkg/core"
 	"github.com/colonyos/colonies/pkg/database"
-	"github.com/colonyos/colonies/pkg/planner"
-	"github.com/colonyos/colonies/pkg/planner/basic"
+	"github.com/colonyos/colonies/pkg/scheduler"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -48,7 +47,7 @@ type coloniesController struct {
 	db               database.Database
 	cmdQueue         chan *command
 	blockingCmdQueue chan *command
-	planner          planner.Planner
+	scheduler        *scheduler.Scheduler
 	wsSubCtrl        *wsSubscriptionController
 	relayServer      *cluster.RelayServer
 	eventHandler     *eventHandler
@@ -93,7 +92,7 @@ func createColoniesController(db database.Database,
 	controller.relayServer = cluster.CreateRelayServer(controller.thisNode, controller.clusterConfig)
 	controller.eventHandler = createEventHandler(controller.relayServer)
 	controller.wsSubCtrl = createWSSubscriptionController(controller.eventHandler)
-	controller.planner = basic.CreatePlanner()
+	controller.scheduler = scheduler.CreateScheduler(controller.db)
 
 	controller.cmdQueue = make(chan *command)
 	controller.blockingCmdQueue = make(chan *command)
@@ -1352,14 +1351,7 @@ func (controller *coloniesController) assign(executorID string, colonyName strin
 				return
 			}
 
-			var processes []*core.Process
-			processes, err = controller.db.FindUnassignedProcesses(colonyName, executorID, executor.Type, 10)
-			if err != nil {
-				cmd.errorChan <- err
-				return
-			}
-
-			selectedProcess, err := controller.planner.Select(executorID, processes)
+			selectedProcess, err := controller.scheduler.Select(colonyName, executor)
 			if err != nil {
 				cmd.errorChan <- err
 				return

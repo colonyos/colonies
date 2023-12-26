@@ -39,7 +39,7 @@ services:
       COLONIES_DB_TIMESCALEDB: "true"
       COLONIES_TLSCERT: "/run/secrets/tls/tls.crt"
       COLONIES_TLSKEY: "/run/secrets/tls/tls.key"
-      COLONIES_VERBOSE: "true"  
+      COLONIES_VERBOSE: "false"  
       COLONIES_SERVER_PROFILER: "false"
       COLONIES_SERVER_PROFILER_PORT: "6060"
       COLONIES_CRON_CHECKER_PERIOD: "1000"
