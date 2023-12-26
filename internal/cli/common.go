@@ -423,7 +423,7 @@ func checkDevEnv() {
 		envProposal += "export LC_ALL=en_US.UTF-8\n"
 		envProposal += "export LC_CTYPE=UTF-8\n"
 		envProposal += "export TZ=Europe/Stockholm\n"
-		envProposal += "export COLONIES_TLS=\"false\"\n"
+		envProposal += "export COLONIES_SERVER_TLS=\"false\"\n"
 		envProposal += "export COLONIES_SERVER_HOST=\"localhost\"\n"
 		envProposal += "export COLONIES_SERVER_PORT=\"50080\"\n"
 		envProposal += "export COLONIES_MONITOR_PORT=\"21120\"\n"

@@ -668,7 +668,7 @@ func (db *dbMock) FindAllWaitingProcesses() ([]*core.Process, error) {
 	return nil, nil
 }
 
-func (db *dbMock) FindUnassignedProcesses(colonyName string, executorID string, executorType string, count int) ([]*core.Process, error) {
+func (db *dbMock) FindCandidates(colonyName string, executorType string, count int) ([]*core.Process, error) {
 	return nil, nil
 }
 

@@ -69,7 +69,7 @@ type Database interface {
 	FindFailedProcesses(colonyName string, executorType string, count int) ([]*core.Process, error)
 	FindAllRunningProcesses() ([]*core.Process, error)
 	FindAllWaitingProcesses() ([]*core.Process, error)
-	FindUnassignedProcesses(colonyName string, executorID string, executorType string, count int) ([]*core.Process, error)
+	FindCandidates(colonyName string, executorType string, count int) ([]*core.Process, error)
 	RemoveProcessByID(processID string) error
 	RemoveAllProcesses() error
 	RemoveAllWaitingProcessesByColonyName(colonyName string) error
