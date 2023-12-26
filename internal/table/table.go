@@ -64,7 +64,7 @@ func (t *Table) Render() {
 		return
 	}
 
-	sortMode := table.Asc
+	sortMode := table.Dsc
 	if t.opts.SortBy >= 12 {
 		sortMode = table.AscNumeric
 	}
