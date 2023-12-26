@@ -5,14 +5,11 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"strconv"
-	"strings"
 
 	"github.com/colonyos/colonies/internal/crypto"
 	"github.com/colonyos/colonies/pkg/client"
 	"github.com/colonyos/colonies/pkg/core"
 	"github.com/colonyos/colonies/pkg/server"
-	"github.com/kataras/tablewriter"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -237,96 +234,6 @@ var listFailedProcessesCmd = &cobra.Command{
 	},
 }
 
-func printFunctionSpec(funcSpec *core.FunctionSpec) {
-	executorNames := ""
-	for _, executorName := range funcSpec.Conditions.ExecutorNames {
-		executorNames += executorName + "\n"
-	}
-	executorNames = strings.TrimSuffix(executorNames, "\n")
-	if executorNames == "" {
-		executorNames = "None"
-	}
-
-	procFunc := funcSpec.FuncName
-	if procFunc == "" {
-		procFunc = "None"
-	}
-
-	procArgs := ""
-	for _, procArg := range IfArr2StringArr(funcSpec.Args) {
-		procArgs += procArg + " "
-	}
-	if procArgs == "" {
-		procArgs = "None"
-	}
-
-	if len(procArgs) > MaxArgInfoLength {
-		procArgs = procArgs[0:MaxArgInfoLength] + "..."
-	}
-
-	procKwArgs := ""
-	for k, procKwArg := range IfMap2StringMap(funcSpec.KwArgs) {
-		procKwArgs += k + ":" + procKwArg + " "
-	}
-	if procKwArgs == "" {
-		procKwArgs = "None"
-	}
-
-	if len(procKwArgs) > MaxArgInfoLength {
-		procKwArgs = procKwArgs[0:MaxArgInfoLength] + "..."
-	}
-
-	specData := [][]string{
-		[]string{"Func", procFunc},
-		[]string{"Args", procArgs},
-		[]string{"KwArgs", procKwArgs},
-		[]string{"MaxWaitTime", strconv.Itoa(funcSpec.MaxWaitTime)},
-		[]string{"MaxExecTime", strconv.Itoa(funcSpec.MaxExecTime)},
-		[]string{"MaxRetries", strconv.Itoa(funcSpec.MaxRetries)},
-		[]string{"Priority", strconv.Itoa(funcSpec.Priority)},
-	}
-	specTable := tablewriter.NewWriter(os.Stdout)
-	for _, v := range specData {
-		specTable.Append(v)
-	}
-	specTable.SetAlignment(tablewriter.ALIGN_LEFT)
-	specTable.Render()
-
-	fmt.Println()
-	fmt.Println("Conditions:")
-
-	dep := ""
-	for _, s := range funcSpec.Conditions.Dependencies {
-		dep += s + " "
-	}
-	if len(dep) > 0 {
-		dep = dep[:len(dep)-1]
-	}
-
-	condData := [][]string{
-		[]string{"ColonyName", funcSpec.Conditions.ColonyName},
-		[]string{"ExecutorNames", executorNames},
-		[]string{"ExecutorType", funcSpec.Conditions.ExecutorType},
-		[]string{"Dependencies", dep},
-		[]string{"Nodes", strconv.Itoa(funcSpec.Conditions.Nodes)},
-		[]string{"CPU", funcSpec.Conditions.CPU},
-		[]string{"Memmory", funcSpec.Conditions.Memory},
-		[]string{"Processes", strconv.Itoa(funcSpec.Conditions.Processes)},
-		[]string{"ProcessesPerNode", strconv.Itoa(funcSpec.Conditions.ProcessesPerNode)},
-		[]string{"Storage", funcSpec.Conditions.Storage},
-		[]string{"Walltime", strconv.Itoa(int(funcSpec.Conditions.WallTime))},
-		[]string{"GPU", funcSpec.Conditions.GPU.Name},
-		[]string{"GPUs", strconv.Itoa(int(funcSpec.Conditions.GPU.Count))},
-		[]string{"GPUMemory", funcSpec.Conditions.GPU.Memory},
-	}
-	condTable := tablewriter.NewWriter(os.Stdout)
-	for _, v := range condData {
-		condTable.Append(v)
-	}
-	condTable.SetAlignment(tablewriter.ALIGN_LEFT)
-	condTable.Render()
-}
-
 var getProcessCmd = &cobra.Command{
 	Use:   "get",
 	Short: "Get info about a process",
@@ -345,108 +252,15 @@ var getProcessCmd = &cobra.Command{
 			os.Exit(0)
 		}
 
-		assignedExecutorID := "None"
-		if process.AssignedExecutorID != "" {
-			assignedExecutorID = process.AssignedExecutorID
-		}
-
-		isAssigned := "False"
-		if process.IsAssigned {
-			isAssigned = "True"
-		}
-
 		if PrintOutput {
 			fmt.Println(StrArr2Str(IfArr2StringArr(process.Output)))
 			os.Exit(0)
 		}
 
-		input := StrArr2Str(IfArr2StringArr(process.Input))
-		if len(input) > MaxArgInfoLength {
-			input = input[0:MaxArgInfoLength] + "..."
-		}
-
-		output := StrArr2Str(IfArr2StringArr(process.Output))
-		if len(output) > MaxArgInfoLength {
-			output = output[0:MaxArgInfoLength] + "..."
-		}
-
-		fmt.Println("Process:")
-		processData := [][]string{
-			[]string{"ID", process.ID},
-			[]string{"IsAssigned", isAssigned},
-			[]string{"InitiatorID", process.InitiatorID},
-			[]string{"InitiatorName", process.InitiatorName},
-			[]string{"AssignedExecutorID", assignedExecutorID},
-			[]string{"State", State2String(process.State)},
-			[]string{"PriorityTime", strconv.FormatInt(process.PriorityTime, 10)},
-			[]string{"SubmissionTime", process.SubmissionTime.Format(TimeLayout)},
-			[]string{"StartTime", process.StartTime.Format(TimeLayout)},
-			[]string{"EndTime", process.EndTime.Format(TimeLayout)},
-			[]string{"WaitDeadline", process.WaitDeadline.Format(TimeLayout)},
-			[]string{"ExecDeadline", process.ExecDeadline.Format(TimeLayout)},
-			[]string{"WaitingTime", process.WaitingTime().String()},
-			[]string{"ProcessingTime", process.ProcessingTime().String()},
-			[]string{"Retries", strconv.Itoa(process.Retries)},
-			[]string{"Input", input},
-			[]string{"Output", output},
-			[]string{"Errors", StrArr2Str(process.Errors)},
-		}
-		processTable := tablewriter.NewWriter(os.Stdout)
-		for _, v := range processData {
-			processTable.Append(v)
-		}
-		processTable.SetAlignment(tablewriter.ALIGN_LEFT)
-		processTable.Render()
-
-		fmt.Println()
-		fmt.Println("FunctionSpec:")
-		printFunctionSpec(&process.FunctionSpec)
-
-		fmt.Println()
-		fmt.Println("Attributes:")
-		if len(process.Attributes) > 0 {
-
-			var attributeData [][]string
-			for _, attribute := range process.Attributes {
-				var attributeType string
-				switch attribute.AttributeType {
-				case core.IN:
-					attributeType = "In"
-				case core.OUT:
-					attributeType = "Out"
-				case core.ERR:
-					attributeType = "Err"
-				case core.ENV:
-					attributeType = "Env"
-				default:
-					attributeType = "Unknown"
-				}
-				var key string
-				if len(attribute.Key) > MaxAttributeLength {
-					key = attribute.Key[0:MaxAttributeLength] + "..."
-				} else {
-					key = attribute.Key
-				}
-
-				var value string
-				if len(attribute.Value) > MaxAttributeLength {
-					value = attribute.Value[0:MaxAttributeLength] + "..."
-				} else {
-					value = attribute.Value
-				}
-				attributeData = append(attributeData, []string{attribute.ID, key, value, attributeType})
-			}
-
-			attributeTable := tablewriter.NewWriter(os.Stdout)
-			attributeTable.SetHeader([]string{"ID", "Key", "Value", "Type"})
-			attributeTable.SetAlignment(tablewriter.ALIGN_LEFT)
-			for _, v := range attributeData {
-				attributeTable.Append(v)
-			}
-			attributeTable.Render()
-		} else {
-			fmt.Println("No attributes found")
-		}
+		printProcessTable(process)
+		printFunctionSpecTable(&process.FunctionSpec)
+		printConditionsTable(&process.FunctionSpec)
+		printAttributesTable(process)
 	},
 }
 
