@@ -11,9 +11,15 @@ import (
 
 func printProcessesTable(processes []*core.Process, mode int) {
 	style := goprettytable.StyleRounded
-	sortCol := 1
-	theme, err := table.LoadTheme("dark")
+	theme, err := table.LoadTheme("solarized-dark")
 	CheckError(err)
+
+	var sortCol int
+	if ShowIDs {
+		sortCol = 5
+	} else {
+		sortCol = 4
+	}
 
 	t := table.NewTable(theme, table.TableOptions{
 		Columns: []int{1, 2},
@@ -88,8 +94,8 @@ func printProcessesTable(processes []*core.Process, mode int) {
 			row := []interface{}{
 				termenv.String(process.ID).Foreground(theme.ColorGray),
 				termenv.String(process.FunctionSpec.FuncName).Foreground(theme.ColorMagenta),
-				termenv.String(args).Foreground(theme.ColorBlue),
-				termenv.String(kwArgs).Foreground(theme.ColorBlue),
+				termenv.String(args).Foreground(theme.ColorViolet),
+				termenv.String(kwArgs).Foreground(theme.ColorViolet),
 				termenv.String(timeValue).Foreground(timeColor),
 				termenv.String(process.FunctionSpec.Conditions.ExecutorType).Foreground(theme.ColorYellow),
 				termenv.String(process.InitiatorName).Foreground(theme.ColorCyan),
@@ -98,8 +104,8 @@ func printProcessesTable(processes []*core.Process, mode int) {
 		} else {
 			row := []interface{}{
 				termenv.String(process.FunctionSpec.FuncName).Foreground(theme.ColorMagenta),
-				termenv.String(args).Foreground(theme.ColorBlue),
-				termenv.String(kwArgs).Foreground(theme.ColorBlue),
+				termenv.String(args).Foreground(theme.ColorViolet),
+				termenv.String(kwArgs).Foreground(theme.ColorViolet),
 				termenv.String(timeValue).Foreground(timeColor),
 				termenv.String(process.FunctionSpec.Conditions.ExecutorType).Foreground(theme.ColorYellow),
 				termenv.String(process.InitiatorName).Foreground(theme.ColorCyan),
