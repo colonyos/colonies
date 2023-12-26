@@ -1,10 +1,7 @@
 package cli
 
 import (
-	"os"
-
 	"github.com/colonyos/colonies/pkg/core"
-	"github.com/kataras/tablewriter"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -64,46 +61,6 @@ var getAttributeCmd = &cobra.Command{
 		attribute, err := client.GetAttribute(AttributeID, PrvKey)
 		CheckError(err)
 
-		var attributeType string
-		switch attribute.AttributeType {
-		case core.IN:
-			attributeType = "In"
-		case core.OUT:
-			attributeType = "Out"
-		case core.ERR:
-			attributeType = "Err"
-		case core.ENV:
-			attributeType = "Env"
-		default:
-			attributeType = "Unknown"
-		}
-
-		var key string
-		if len(attribute.Key) > MaxAttributeLength {
-			key = attribute.Key[0:MaxAttributeLength] + "..."
-		} else {
-			key = attribute.Key
-		}
-
-		var value string
-		if len(attribute.Value) > MaxAttributeLength {
-			value = attribute.Value[0:MaxAttributeLength] + "..."
-		} else {
-			value = attribute.Value
-		}
-
-		attributeData := [][]string{
-			[]string{"ID", attribute.ID},
-			[]string{"TargetID", attribute.TargetID},
-			[]string{"AttributeType", attributeType},
-			[]string{"Key", key},
-			[]string{"Value", value},
-		}
-		attributeTable := tablewriter.NewWriter(os.Stdout)
-		for _, v := range attributeData {
-			attributeTable.Append(v)
-		}
-		attributeTable.SetAlignment(tablewriter.ALIGN_LEFT)
-		attributeTable.Render()
+		printAttributeTable(&attribute)
 	},
 }
