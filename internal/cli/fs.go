@@ -94,70 +94,6 @@ var snapshotCmd = &cobra.Command{
 	Long:  "Manage file snapshots",
 }
 
-func printSyncPlans(syncPlans []*fs.SyncPlan) {
-	for i, syncPlan := range syncPlans {
-		if i != 0 {
-			fmt.Println()
-		}
-		fmt.Println(syncPlan.Label + ":")
-		for i := 0; i < len(syncPlan.Label); i++ {
-			fmt.Print("=")
-		}
-		fmt.Println("=")
-		if len(syncPlan.RemoteMissing) > 0 {
-			fmt.Println("These files will be uploaded:")
-			var uploaded [][]string
-			for _, file := range syncPlan.RemoteMissing {
-				uploaded = append(uploaded, []string{file.Name, strconv.FormatInt(file.Size/1024, 10) + " KiB", Label})
-			}
-			table := tablewriter.NewWriter(os.Stdout)
-			table.SetHeader([]string{"File", "Size", "Label"})
-			for _, v := range uploaded {
-				table.Append(v)
-			}
-			table.SetAlignment(tablewriter.ALIGN_LEFT)
-			table.Render()
-		} else {
-			fmt.Println("No files will be uploaded")
-		}
-
-		if len(syncPlan.LocalMissing) > 0 {
-			fmt.Println("\nThese files will be downloaded to directory: " + SyncDir)
-			var downloaded [][]string
-			for _, file := range syncPlan.LocalMissing {
-				downloaded = append(downloaded, []string{file.Name, strconv.FormatInt(file.Size/1024, 10) + " KiB", Label})
-			}
-			table := tablewriter.NewWriter(os.Stdout)
-			table.SetHeader([]string{"File", "Size", "Label"})
-			for _, v := range downloaded {
-				table.Append(v)
-			}
-			table.SetAlignment(tablewriter.ALIGN_LEFT)
-			table.Render()
-		} else {
-			fmt.Println("No files will be downloaded")
-		}
-		if len(syncPlan.Conflicts) > 0 {
-			if syncPlan.KeepLocal {
-				fmt.Println("These files will be replaced at the server:")
-			} else {
-				fmt.Println("These files will be replaced at directory:")
-			}
-			var conflicts [][]string
-			for _, file := range syncPlan.Conflicts {
-				conflicts = append(conflicts, []string{file.Name, strconv.FormatInt(file.Size/1024, 10) + " KiB", Label})
-			}
-			table := tablewriter.NewWriter(os.Stdout)
-			table.SetHeader([]string{"File", "Size", "Label"})
-			for _, v := range conflicts {
-				table.Append(v)
-			}
-			table.SetAlignment(tablewriter.ALIGN_LEFT)
-			table.Render()
-		}
-	}
-}
-
 var syncCmd = &cobra.Command{
 	Use:   "sync",
 	Short: "Synchronize a directory with a file storage",
@@ -165,10 +101,18 @@ var syncCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		client := setup()
 
-		if !strings.HasSuffix(SyncDir, "/") {
-			SyncDir += "/"
+		fileInfo, err := os.Stat(SyncDir)
+		if err == nil {
+			if !fileInfo.IsDir() {
+				CheckError(errors.New(SyncDir + " is not a directory"))
+			}
 		}
-		err := os.MkdirAll(SyncDir, 0755)
+
+		Label = strings.TrimRight(Label, "/")
+		Label = strings.TrimLeft(Label, "/")
+		Label = "/" + Label
+
+		err = os.MkdirAll(SyncDir, 0755)
 		CheckError(err)
 
 		log.Debug("Starting a file storage client")
@@ -227,21 +171,11 @@ var listLabelsCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		client := setup()
 
-		coloniesLabels, err := client.GetFileLabels(ColonyName, PrvKey)
+		labels, err := client.GetFileLabels(ColonyName, PrvKey)
 		CheckError(err)
 
-		if len(coloniesLabels) > 0 {
-			var labels [][]string
-			for _, coloniesLabel := range coloniesLabels {
-				labels = append(labels, []string{coloniesLabel.Name, strconv.Itoa(coloniesLabel.Files)})
-			}
-			table := tablewriter.NewWriter(os.Stdout)
-			table.SetHeader([]string{"Label", "Number of files"})
-			for _, v := range labels {
-				table.Append(v)
-			}
-			table.SetAlignment(tablewriter.ALIGN_LEFT)
-			table.Render()
+		if len(labels) > 0 {
+			printLabelsTable(labels)
 		} else {
 			log.Info("No labels found")
 		}
