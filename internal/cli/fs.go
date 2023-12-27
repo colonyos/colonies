@@ -9,10 +9,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/colonyos/colonies/pkg/client"
 	"github.com/colonyos/colonies/pkg/core"
 	"github.com/colonyos/colonies/pkg/fs"
-	"github.com/kataras/tablewriter"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -233,7 +231,7 @@ var listFilesCmd = &cobra.Command{
 			os.Exit(0)
 		}
 
-		var fi []fileInfo
+		var files []fileInfo
 		for _, fileData := range fileDataArr {
 			coloniesFile, err := client.GetLatestFileByName(ColonyName, Label, fileData.Name, PrvKey)
 			CheckError(err)
@@ -244,51 +242,11 @@ var listFilesCmd = &cobra.Command{
 			if len(coloniesFile) != 1 {
 				CheckError(errors.New("Failed to get file info from Colonies server"))
 			}
-			fi = append(fi, fileInfo{filename: fileData.Name, size: strconv.FormatInt(coloniesFile[0].Size/1024, 10) + " KiB", fileID: coloniesFile[0].ID, added: coloniesFile[0].Added, revisions: strconv.Itoa(len(allRevisions))})
+			files = append(files, fileInfo{filename: fileData.Name, size: strconv.FormatInt(coloniesFile[0].Size/1024, 10) + " KiB", fileID: coloniesFile[0].ID, added: coloniesFile[0].Added, revisions: strconv.Itoa(len(allRevisions))})
 		}
 
-		var fileData [][]string
-		for _, f := range fi {
-			fileData = append(fileData, []string{f.filename, f.size, f.fileID, f.added.Format(TimeLayout), f.revisions})
-		}
-		table := tablewriter.NewWriter(os.Stdout)
-		table.SetHeader([]string{"Filename", "Size", "Latest ID", "Added", "Revisions"})
-		for _, v := range fileData {
-			table.Append(v)
-		}
-		table.SetAlignment(tablewriter.ALIGN_LEFT)
-		table.Render()
+		printFilesTable(files)
 	},
-}
-
-func printFileInfo(coloniesFile *core.File) {
-	fileData := [][]string{
-		[]string{"Filename", coloniesFile.Name},
-		[]string{"Id", coloniesFile.ID},
-		[]string{"ColonyName", coloniesFile.ColonyName},
-		[]string{"Added", coloniesFile.Added.Format(TimeLayout)},
-		[]string{"Sequence Number", strconv.FormatInt(coloniesFile.SequenceNumber, 10)},
-		[]string{"Label", coloniesFile.Label},
-		[]string{"Size", strconv.FormatInt(coloniesFile.Size/1024, 10) + " KiB"},
-		[]string{"Checksum", coloniesFile.Checksum},
-		[]string{"Checksum Alg", coloniesFile.ChecksumAlg},
-		[]string{"Protocol", coloniesFile.Reference.Protocol},
-		[]string{"S3 Endpoint", coloniesFile.Reference.S3Object.Server},
-		[]string{"S3 TLS", strconv.FormatBool(coloniesFile.Reference.S3Object.TLS)},
-		[]string{"S3 Region", coloniesFile.Reference.S3Object.Region},
-		[]string{"S3 Bucket", coloniesFile.Reference.S3Object.Bucket},
-		[]string{"S3 Object", coloniesFile.Reference.S3Object.Object},
-		[]string{"S3 Accesskey", "*********************************"},
-		[]string{"S3 Secretkey", "*********************************"},
-		[]string{"Encryption Key", "*********************************"},
-		[]string{"Encryption Alg", ""},
-	}
-	fileTable := tablewriter.NewWriter(os.Stdout)
-	for _, v := range fileData {
-		fileTable.Append(v)
-	}
-	fileTable.SetAlignment(tablewriter.ALIGN_LEFT)
-	fileTable.Render()
 }
 
 var getFileInfoCmd = &cobra.Command{
@@ -299,21 +257,21 @@ var getFileInfoCmd = &cobra.Command{
 		client := setup()
 
 		var err error
-		var coloniesFiles []*core.File
+		var files []*core.File
 		if FileID != "" {
-			coloniesFiles, err = client.GetFileByID(ColonyName, FileID, PrvKey)
+			files, err = client.GetFileByID(ColonyName, FileID, PrvKey)
 			CheckError(err)
 		} else if Filename != "" && Label != "" {
-			coloniesFiles, err = client.GetFileByName(ColonyName, Label, Filename, PrvKey)
+			files, err = client.GetFileByName(ColonyName, Label, Filename, PrvKey)
 			CheckError(err)
 		} else {
 			CheckError(errors.New("FileId nor filename + label were specified"))
 		}
 
 		counter := 0
-		for _, coloniesFile := range coloniesFiles {
-			printFileInfo(coloniesFile)
-			if counter != len(coloniesFiles)-1 {
+		for _, file := range files {
+			printFileInfoTable(file)
+			if counter != len(files)-1 {
 				fmt.Println()
 			}
 			counter++
@@ -390,44 +348,6 @@ var removeFileCmd = &cobra.Command{
 	},
 }
 
-func printSnapshot(snapshot *core.Snapshot, client *client.ColoniesClient) {
-	snapshotData := [][]string{
-		[]string{"SnapshotId", snapshot.ID},
-		[]string{"ColonyName", snapshot.ColonyName},
-		[]string{"Label", snapshot.Label},
-		[]string{"Name", snapshot.Name},
-		[]string{"Added", snapshot.Added.Format(TimeLayout)},
-	}
-	snapshotTable := tablewriter.NewWriter(os.Stdout)
-	for _, v := range snapshotData {
-		snapshotTable.Append(v)
-	}
-	snapshotTable.SetAlignment(tablewriter.ALIGN_LEFT)
-	snapshotTable.Render()
-
-	if len(snapshot.FileIDs) > 0 {
-		fmt.Println()
-		var fileIDData [][]string
-		for _, fileID := range snapshot.FileIDs {
-			revision, err := client.GetFileByID(ColonyName, fileID, PrvKey)
-			CheckError(err)
-			if len(revision) != 1 {
-				CheckError(errors.New("Expected only one revision"))
-			}
-			fileIDData = append(fileIDData, []string{revision[0].Name, fileID, revision[0].Added.Format(TimeLayout)})
-		}
-		table := tablewriter.NewWriter(os.Stdout)
-		table.SetHeader([]string{"Filename", "FileId", "Added"})
-		for _, v := range fileIDData {
-			table.Append(v)
-		}
-		table.SetAlignment(tablewriter.ALIGN_LEFT)
-		table.Render()
-	} else {
-		log.WithFields(log.Fields{"SnapshotID": SnapshotID, "SnapshotName": SnapshotName}).Warning("No files in snapshot")
-	}
-}
-
 var createSnapshotCmd = &cobra.Command{
 	Use:   "create",
 	Short: "Create a snapshot",
@@ -447,7 +367,7 @@ var createSnapshotCmd = &cobra.Command{
 
 		log.WithFields(log.Fields{"Label": Label, "SnapshotName": SnapshotName}).Info("Snapshot created")
 
-		printSnapshot(snapshot, client)
+		printSnapshotTable(snapshot, client)
 	},
 }
 
@@ -501,17 +421,7 @@ var listSnapshotsCmd = &cobra.Command{
 		CheckError(err)
 
 		if len(snapshots) > 0 {
-			var snapshotData [][]string
-			for _, s := range snapshots {
-				snapshotData = append(snapshotData, []string{s.Name, s.ID, s.Label, strconv.Itoa(len(s.FileIDs)), s.Added.Format(TimeLayout)})
-			}
-			table := tablewriter.NewWriter(os.Stdout)
-			table.SetHeader([]string{"Name", "ID", "Label", "Files", "Added"})
-			for _, v := range snapshotData {
-				table.Append(v)
-			}
-			table.SetAlignment(tablewriter.ALIGN_LEFT)
-			table.Render()
+			printSnapshotsTable(snapshots)
 		} else {
 			log.Info("No snapshots found")
 		}
@@ -528,11 +438,11 @@ var infoSnapshotCmd = &cobra.Command{
 		if SnapshotID != "" {
 			snapshot, err := client.GetSnapshotByID(ColonyName, SnapshotID, PrvKey)
 			CheckError(err)
-			printSnapshot(snapshot, client)
+			printSnapshotTable(snapshot, client)
 		} else if SnapshotName != "" {
 			snapshot, err := client.GetSnapshotByName(ColonyName, SnapshotName, PrvKey)
 			CheckError(err)
-			printSnapshot(snapshot, client)
+			printSnapshotTable(snapshot, client)
 		} else {
 			CheckError(errors.New("Snapshot Id nor name was provided"))
 		}
