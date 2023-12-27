@@ -42,6 +42,7 @@ func (controller *coloniesController) timeoutLoop() {
 
 		processes, err := controller.db.FindAllRunningProcesses()
 		if err != nil {
+			log.Error(err)
 			continue
 		}
 		for _, process := range processes {
@@ -67,6 +68,8 @@ func (controller *coloniesController) timeoutLoop() {
 			}
 		}
 
+		// TODO: FindAllWaitingProcesses will only return max 1000 processes, this is to avoid dumping the entire database
+		// However, the means that maxWaitTime may not work correctly if there are more than 1000 waiting processes.
 		processes, err = controller.db.FindAllWaitingProcesses()
 		if err != nil {
 			continue

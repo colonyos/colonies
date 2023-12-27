@@ -445,7 +445,7 @@ func (db *PQDatabase) FindAllRunningProcesses() ([]*core.Process, error) {
 }
 
 func (db *PQDatabase) FindAllWaitingProcesses() ([]*core.Process, error) {
-	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `PROCESSES WHERE STATE=$1 ORDER BY PRIORITYTIME`
+	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `PROCESSES WHERE STATE=$1 ORDER BY PRIORITYTIME LIMIT 1000`
 	rows, err := db.postgresql.Query(sqlStatement, core.WAITING)
 	if err != nil {
 		return nil, err
