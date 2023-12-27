@@ -155,11 +155,29 @@ func (fsClient *FSClient) ApplySyncPlan(colonyName string, syncPlan *SyncPlan) e
 }
 
 func (fsClient *FSClient) CalcSyncPlans(dir string, label string, keepLocal bool) ([]*SyncPlan, error) {
+	dir, err := filepath.Abs(dir)
+	if err != nil {
+		return nil, err
+	}
+
+	fileInfo, err := os.Stat(dir)
+	if err != nil {
+		return nil, err
+	}
+
+	fmt.Println(dir)
+	fmt.Println(fileInfo.IsDir())
+
+	if !fileInfo.IsDir() {
+		return nil, errors.New(dir + " is not a directory")
+	}
+
 	if !strings.HasPrefix(label, "/") {
 		label = "/" + label
 	}
+
 	syncPlans := make(map[string]*SyncPlan)
-	err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
+	err = filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
@@ -178,15 +196,13 @@ func (fsClient *FSClient) CalcSyncPlans(dir string, label string, keepLocal bool
 			// dir: /home/johan/dev/github/colonyos/colonies/myfiles/
 			// l: /myfiles/a
 
-			log.WithFields(log.Fields{"Label": label, "Dir:": dir, "Path": path}).Debug("Calculating sync plan, before triem")
 			path = strings.Replace(path, `\`, `/`, -1)
 			dir = strings.Replace(dir, `\`, `/`, -1)
 			if len(strings.TrimPrefix(path, dir)) > 0 { // XXX this line does not work on windows
-				l = label + "/" + strings.TrimPrefix(path, dir)
+				l = label + strings.TrimPrefix(path, dir)
 			} else {
 				l = label
 			}
-			fmt.Println("l:", l)
 
 			log.WithFields(log.Fields{"Label": l, "Dir:": dir, "Path": path}).Debug("Calculating sync plan")
 			syncPlan, err := fsClient.CalcSyncPlan(path, l, keepLocal)
@@ -245,8 +261,9 @@ func (fsClient *FSClient) CalcSyncPlan(dir string, label string, keepLocal bool)
 	var remoteFileMap = make(map[string]string)
 	var remoteS3FilenameMap = make(map[string]string)
 	var remoteFileSizeMap = make(map[string]int64)
+
 	for _, remoteFileData := range remoteFileDataArr {
-		remoteFileMap[remoteFileData.Name] = remoteFileData.Name
+		remoteFileMap[remoteFileData.Name] = remoteFileData.Checksum
 		remoteFileSizeMap[remoteFileData.Name] = remoteFileData.Size
 		remoteS3FilenameMap[remoteFileData.Name] = remoteFileData.S3Filename
 	}
@@ -304,6 +321,7 @@ func (fsClient *FSClient) CalcSyncPlan(dir string, label string, keepLocal bool)
 		// File exists locally, but does not match file on server
 		_, ok := localFileMap[filename]
 		if ok {
+			//fmt.Println("filename: ", filename, " remote cs: ", checksum, " local cs: ", localFileMap[filename])
 			if localFileMap[filename] != checksum {
 				if keepLocal {
 					localChecksum := localFileMap[filename]
