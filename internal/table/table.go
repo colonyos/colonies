@@ -32,9 +32,9 @@ type Table struct {
 func NewTable(theme Theme, opts TableOptions) *Table {
 	t := &Table{}
 	t.tab = table.NewWriter()
-	// t.tab.SetAllowedRowLength(width)
+	t.tab.SetAllowedRowLength(width)
 	t.tab.SetOutputMirror(os.Stdout)
-	// t.tab.Style().Options.SeparateColumns = true
+	t.tab.Style().Options.SeparateColumns = true
 	t.tab.SetStyle(opts.Style)
 
 	t.theme = theme

@@ -7,7 +7,6 @@ import (
 	"os"
 
 	"github.com/colonyos/colonies/pkg/core"
-	"github.com/kataras/tablewriter"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -93,19 +92,7 @@ var listUsersCmd = &cobra.Command{
 			os.Exit(0)
 		}
 
-		var data [][]string
-		for _, user := range usersFromServer {
-			data = append(data, []string{user.Name, user.Email, user.Phone})
-		}
-
-		table := tablewriter.NewWriter(os.Stdout)
-		table.SetHeader([]string{"Username", "Email", "Phone"})
-
-		for _, v := range data {
-			table.Append(v)
-		}
-
-		table.Render()
+		printUsersTable(usersFromServer)
 	},
 }
 
@@ -119,20 +106,7 @@ var getUserCmd = &cobra.Command{
 		user, err := client.GetUser(ColonyName, Username, PrvKey)
 		CheckError(err)
 
-		userData := [][]string{
-			[]string{"Name", user.Name},
-			[]string{"ID", user.ID},
-			[]string{"ColonyName", user.ColonyName},
-			[]string{"Email", user.Email},
-			[]string{"Phone", user.Phone},
-		}
-
-		userTable := tablewriter.NewWriter(os.Stdout)
-		for _, v := range userData {
-			userTable.Append(v)
-		}
-		userTable.SetAlignment(tablewriter.ALIGN_LEFT)
-		userTable.Render()
+		printUserTable(user)
 	},
 }
 
