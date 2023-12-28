@@ -275,7 +275,7 @@ func printConditionsTable(funcSpec *core.FunctionSpec) {
 	}
 
 	row := []interface{}{
-		termenv.String("ColonyName").Foreground(theme.ColorCyan),
+		termenv.String("Colony").Foreground(theme.ColorCyan),
 		termenv.String(funcSpec.Conditions.ColonyName).Foreground(theme.ColorGray),
 	}
 	t.AddRow(row)

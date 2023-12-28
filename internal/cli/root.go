@@ -3,10 +3,8 @@ package cli
 import (
 	"fmt"
 	"os"
-	"strconv"
 	"sync"
 
-	"github.com/kataras/tablewriter"
 	"github.com/spf13/cobra"
 )
 
@@ -156,18 +154,6 @@ var configCmd = &cobra.Command{
 	Long:  "Show currently used configuration",
 	Run: func(cmd *cobra.Command, args []string) {
 		setup()
-
-		fmt.Println("Current configurations:")
-		specData := [][]string{
-			[]string{"Colony", ColonyName},
-			[]string{"Server", ServerHost + ":" + strconv.Itoa(ServerPort)},
-			[]string{"TLS", fmt.Sprintf("%t", UseTLS)},
-		}
-		specTable := tablewriter.NewWriter(os.Stdout)
-		for _, v := range specData {
-			specTable.Append(v)
-		}
-		specTable.SetAlignment(tablewriter.ALIGN_LEFT)
-		specTable.Render()
+		printConfigTable()
 	},
 }

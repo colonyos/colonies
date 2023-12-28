@@ -2,14 +2,11 @@ package cli
 
 import (
 	"errors"
-	"fmt"
 	"io/ioutil"
 	"os"
-	"strconv"
 
 	"github.com/colonyos/colonies/pkg/core"
 	"github.com/colonyos/colonies/pkg/server"
-	"github.com/kataras/tablewriter"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -136,37 +133,11 @@ var getCronCmd = &cobra.Command{
 			os.Exit(0)
 		}
 
-		fmt.Println("Cron:")
-		generatorData := [][]string{
-			[]string{"Id", cron.ID},
-			[]string{"ColonyName", cron.ColonyName},
-			[]string{"InitiatorID", cron.InitiatorID},
-			[]string{"InitiatorName", cron.InitiatorName},
-			[]string{"Name", cron.Name},
-			[]string{"Cron Expression", cron.CronExpression},
-			[]string{"Interval", strconv.Itoa(cron.Interval)},
-			[]string{"Random", strconv.FormatBool(cron.Random)},
-			[]string{"NextRun", cron.NextRun.Format(TimeLayout)},
-			[]string{"LastRun", cron.LastRun.Format(TimeLayout)},
-			[]string{"PrevProcessGraphID", cron.PrevProcessGraphID},
-			[]string{"WaitForPrevProcessGraph", strconv.FormatBool(cron.WaitForPrevProcessGraph)},
-			[]string{"CheckerPeriod", strconv.Itoa(cron.CheckerPeriod)},
-		}
-		generatorTable := tablewriter.NewWriter(os.Stdout)
-		for _, v := range generatorData {
-			generatorTable.Append(v)
-		}
-		generatorTable.SetAlignment(tablewriter.ALIGN_LEFT)
-		generatorTable.SetAutoWrapText(false)
-		generatorTable.Render()
+		printCronTable(cron)
 
-		fmt.Println()
-		fmt.Println("WorkflowSpec:")
 		workflowSpec, err := core.ConvertJSONToWorkflowSpec(cron.WorkflowSpec)
 		CheckError(err)
-		for i, funcSpec := range workflowSpec.FunctionSpecs {
-			fmt.Println()
-			fmt.Println("FunctionSpec " + strconv.Itoa(i) + ":")
+		for _, funcSpec := range workflowSpec.FunctionSpecs {
 			printFunctionSpecTable(&funcSpec)
 		}
 	},
@@ -186,17 +157,7 @@ var getCronsCmd = &cobra.Command{
 			os.Exit(0)
 		}
 
-		var data [][]string
-		for _, cron := range crons {
-			data = append(data, []string{cron.ID, cron.Name, cron.InitiatorName})
-		}
-		table := tablewriter.NewWriter(os.Stdout)
-		table.SetHeader([]string{"CronId", "Name", "Initiator Name"})
-		for _, v := range data {
-			table.Append(v)
-		}
-		table.SetAlignment(tablewriter.ALIGN_LEFT)
-		table.Render()
+		printCronsTable(crons)
 	},
 }
 

@@ -2,14 +2,11 @@ package cli
 
 import (
 	"errors"
-	"fmt"
 	"io/ioutil"
 	"os"
-	"strconv"
 
 	"github.com/colonyos/colonies/pkg/core"
 	"github.com/colonyos/colonies/pkg/server"
-	"github.com/kataras/tablewriter"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -150,34 +147,11 @@ var getGeneratorCmd = &cobra.Command{
 			os.Exit(0)
 		}
 
-		fmt.Println("Generator:")
-		generatorData := [][]string{
-			[]string{"Id", generator.ID},
-			[]string{"ColonyName", generator.ColonyName},
-			[]string{"InitiatorID", generator.InitiatorID},
-			[]string{"InitiatorName", generator.InitiatorName},
-			[]string{"Name", generator.Name},
-			[]string{"Trigger", strconv.Itoa(generator.Trigger)},
-			[]string{"Timeout", strconv.Itoa(generator.Timeout)},
-			[]string{"Lastrun", generator.LastRun.Format(TimeLayout)},
-			[]string{"CheckerPeriod", strconv.Itoa(generator.CheckerPeriod)},
-			[]string{"QueueSize", strconv.Itoa(generator.QueueSize)},
-		}
-		generatorTable := tablewriter.NewWriter(os.Stdout)
-		for _, v := range generatorData {
-			generatorTable.Append(v)
-		}
-		generatorTable.SetAlignment(tablewriter.ALIGN_LEFT)
-		generatorTable.SetAutoWrapText(false)
-		generatorTable.Render()
+		printGeneratorTable(generator)
 
-		fmt.Println()
-		fmt.Println("WorkflowSpec:")
 		workflowSpec, err := core.ConvertJSONToWorkflowSpec(generator.WorkflowSpec)
 		CheckError(err)
-		for i, funcSpec := range workflowSpec.FunctionSpecs {
-			fmt.Println()
-			fmt.Println("FunctionSpec " + strconv.Itoa(i) + ":")
+		for _, funcSpec := range workflowSpec.FunctionSpecs {
 			printFunctionSpecTable(&funcSpec)
 		}
 	},
@@ -198,16 +172,6 @@ var getGeneratorsCmd = &cobra.Command{
 			os.Exit(0)
 		}
 
-		var data [][]string
-		for _, generator := range generators {
-			data = append(data, []string{generator.ID, generator.Name, generator.InitiatorName})
-		}
-		table := tablewriter.NewWriter(os.Stdout)
-		table.SetHeader([]string{"GeneratorId", "Name", "Initiator Name"})
-		for _, v := range data {
-			table.Append(v)
-		}
-		table.SetAlignment(tablewriter.ALIGN_LEFT)
-		table.Render()
+		printGeneratorsTable(generators)
 	},
 }
