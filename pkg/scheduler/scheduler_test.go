@@ -12,21 +12,25 @@ import (
 func TestSelectProcess(t *testing.T) {
 	startTime := time.Now()
 
+	mock := createProcessLookupMock()
 	colony := core.CreateColony(core.GenerateRandomID(), "test_colony_name")
+	executor := utils.CreateTestExecutor(colony.Name)
+	executor.Name = "executor1"
 
-	process1 := utils.CreateTestProcess(colony.ID)
+	process1 := utils.CreateTestProcess(colony.Name)
 	process1.SetSubmissionTime(startTime.Add(600 * time.Millisecond))
+	mock.addProcess(process1)
 
-	process2 := utils.CreateTestProcess(colony.ID)
+	process2 := utils.CreateTestProcess(colony.Name)
 	process2.SetSubmissionTime(startTime.Add(100 * time.Millisecond))
+	mock.addProcess(process2)
 
-	process3 := utils.CreateTestProcess(colony.ID)
+	process3 := utils.CreateTestProcess(colony.Name)
 	process3.SetSubmissionTime(startTime.Add(300 * time.Millisecond))
+	mock.addProcess(process3)
 
-	candidates := []*core.Process{process1, process2, process3}
-
-	p := CreatePrioritizer()
-	selectedProcess, err := p.Select("executorid_1", candidates)
+	s := CreateScheduler(mock)
+	selectedProcess, err := s.Select(colony.Name, executor)
 	assert.Nil(t, err)
 	assert.NotNil(t, selectedProcess)
 	assert.Equal(t, selectedProcess.ID, process2.ID)
@@ -35,52 +39,37 @@ func TestSelectProcess(t *testing.T) {
 func TestSelectProcess2(t *testing.T) {
 	startTime := time.Now()
 
+	mock := createProcessLookupMock()
 	colony := core.CreateColony(core.GenerateRandomID(), "test_colony_name")
+	executor := utils.CreateTestExecutor(colony.Name)
+	executor.Name = "executor1"
 
-	process1 := utils.CreateTestProcess(colony.ID)
+	process1 := utils.CreateTestProcess(colony.Name)
 	process1.SetSubmissionTime(startTime.Add(60 * time.Millisecond))
+	mock.addProcess(process1)
 
-	process2 := utils.CreateTestProcess(colony.ID)
+	process2 := utils.CreateTestProcess(colony.Name)
 	process2.SetSubmissionTime(startTime.Add(100 * time.Millisecond))
+	mock.addProcess(process2)
 
-	process3 := utils.CreateTestProcess(colony.ID)
+	process3 := utils.CreateTestProcess(colony.Name)
 	process3.SetSubmissionTime(startTime.Add(300 * time.Millisecond))
+	mock.addProcess(process3)
 
-	candidates := []*core.Process{process1, process2, process3}
-
-	p := CreatePrioritizer()
-	selectedProcess, err := p.Select("executorid_1", candidates)
-	assert.Nil(t, err)
-	assert.Equal(t, selectedProcess.ID, process1.ID)
-}
-
-func TestSelectProcessSameSubmissionTimes(t *testing.T) {
-	startTime := time.Now()
-
-	colony := core.CreateColony(core.GenerateRandomID(), "test_colony_name")
-
-	process1 := utils.CreateTestProcess(colony.ID)
-	process1.SetSubmissionTime(startTime)
-
-	process2 := utils.CreateTestProcess(colony.ID)
-	process2.SetSubmissionTime(startTime)
-
-	process3 := utils.CreateTestProcess(colony.ID)
-	process3.SetSubmissionTime(startTime)
-
-	candidates := []*core.Process{process1, process2, process3}
-
-	p := CreatePrioritizer()
-	selectedProcess, err := p.Select("executorid_1", candidates)
+	s := CreateScheduler(mock)
+	selectedProcess, err := s.Select(colony.Name, executor)
 	assert.Nil(t, err)
 	assert.Equal(t, selectedProcess.ID, process1.ID)
 }
 
 func TestSelectProcessNoProcesss(t *testing.T) {
-	candidates := []*core.Process{}
+	mock := createProcessLookupMock()
+	colony := core.CreateColony(core.GenerateRandomID(), "test_colony_name")
+	executor := utils.CreateTestExecutor(colony.Name)
+	executor.Name = "executor1"
 
-	p := CreatePrioritizer()
-	selectedProcess, err := p.Select("executorid_1", candidates)
+	s := CreateScheduler(mock)
+	selectedProcess, err := s.Select(colony.Name, executor)
 	assert.NotNil(t, err)
 	assert.Nil(t, selectedProcess)
 }
@@ -88,30 +77,75 @@ func TestSelectProcessNoProcesss(t *testing.T) {
 func TestPrioritize(t *testing.T) {
 	startTime := time.Now()
 
+	mock := createProcessLookupMock()
 	colony := core.CreateColony(core.GenerateRandomID(), "test_colony_name")
+	executor := utils.CreateTestExecutor(colony.Name)
+	executor.Name = "executor1"
 
-	process1 := utils.CreateTestProcess(colony.ID)
+	process1 := utils.CreateTestProcess(colony.Name)
 	process1.SetSubmissionTime(startTime.Add(600 * time.Millisecond))
+	mock.addProcess(process1)
 
-	process2 := utils.CreateTestProcess(colony.ID)
+	process2 := utils.CreateTestProcess(colony.Name)
 	process2.SetSubmissionTime(startTime.Add(100 * time.Millisecond))
+	mock.addProcess(process2)
 
-	process3 := utils.CreateTestProcess(colony.ID)
+	process3 := utils.CreateTestProcess(colony.Name)
 	process3.SetSubmissionTime(startTime.Add(300 * time.Millisecond))
+	mock.addProcess(process3)
 
-	candidates := []*core.Process{process1, process2, process3}
-
-	p := CreatePrioritizer()
-	prioritizedProcesses := p.Prioritize("executorid_1", candidates, 3)
+	s := CreateScheduler(mock)
+	prioritizedProcesses, err := s.Prioritize(colony.Name, executor, 3)
+	assert.Nil(t, err)
 	assert.Len(t, prioritizedProcesses, 3)
 
 	assert.Equal(t, process2.ID, prioritizedProcesses[0].ID)
 	assert.Equal(t, process3.ID, prioritizedProcesses[1].ID)
 	assert.Equal(t, process1.ID, prioritizedProcesses[2].ID)
 
-	prioritizedProcesses = p.Prioritize("executorid_1", candidates, 2)
+	prioritizedProcesses, err = s.Prioritize(colony.Name, executor, 2)
+	assert.Nil(t, err)
 	assert.Len(t, prioritizedProcesses, 2)
 
 	assert.Equal(t, process2.ID, prioritizedProcesses[0].ID)
 	assert.Equal(t, process3.ID, prioritizedProcesses[1].ID)
+}
+
+func TestPrioritizeByName(t *testing.T) {
+	startTime := time.Now()
+
+	mock := createProcessLookupMock()
+	colony := core.CreateColony(core.GenerateRandomID(), "test_colony_name")
+	executor1 := utils.CreateTestExecutor(colony.Name)
+	executor1.Name = "executor1"
+
+	executor2 := utils.CreateTestExecutor(colony.Name)
+	executor2.Name = "executor2"
+
+	process1 := utils.CreateTestProcess(colony.Name)
+	process1.SetSubmissionTime(startTime.Add(600 * time.Millisecond))
+	process1.FunctionSpec.Conditions.ExecutorNames = []string{"executor1"}
+	mock.addProcess(process1)
+
+	process2 := utils.CreateTestProcess(colony.Name)
+	process2.SetSubmissionTime(startTime.Add(100 * time.Millisecond))
+	process2.FunctionSpec.Conditions.ExecutorNames = []string{"executor2"}
+	mock.addProcess(process2)
+
+	process3 := utils.CreateTestProcess(colony.Name)
+	process3.SetSubmissionTime(startTime.Add(300 * time.Millisecond))
+	mock.addProcess(process3)
+
+	s := CreateScheduler(mock)
+	prioritizedProcesses, err := s.Prioritize(colony.Name, executor1, 3)
+	assert.Nil(t, err)
+	assert.Len(t, prioritizedProcesses, 2)
+	assert.Equal(t, prioritizedProcesses[0].ID, process3.ID)
+	assert.Equal(t, prioritizedProcesses[1].ID, process1.ID)
+
+	prioritizedProcesses, err = s.Prioritize(colony.Name, executor2, 3)
+	assert.Nil(t, err)
+	assert.Len(t, prioritizedProcesses, 2)
+	assert.Equal(t, prioritizedProcesses[0].ID, process2.ID)
+	assert.Equal(t, prioritizedProcesses[1].ID, process3.ID)
 }

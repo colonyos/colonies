@@ -59,10 +59,17 @@ func min(x, y int) int {
 }
 
 func (scheduler *Scheduler) Prioritize(colonyName string, executor *core.Executor, count int) ([]*core.Process, error) {
-	candidates, err := scheduler.db.FindCandidates(colonyName, executor.Type, 1)
+	candidates, err := scheduler.db.FindCandidatesByName(colonyName, executor.Name, executor.Type, count)
 	if err != nil {
 		return nil, err
 	}
+
+	candidates2, err := scheduler.db.FindCandidates(colonyName, executor.Type, count)
+	if err != nil {
+		return nil, err
+	}
+
+	candidates = append(candidates, candidates2...)
 
 	if len(candidates) == 0 {
 		return []*core.Process{}, nil
