@@ -672,6 +672,10 @@ func (db *dbMock) FindCandidates(colonyName string, executorType string, count i
 	return nil, nil
 }
 
+func (db *dbMock) FindCandidatesByName(colonyName string, executorName string, executorType string, count int) ([]*core.Process, error) {
+	return nil, nil
+}
+
 func (db *dbMock) RemoveProcessByID(processID string) error {
 	return nil
 }
