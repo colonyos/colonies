@@ -5,6 +5,7 @@ import "encoding/json"
 type Function struct {
 	FunctionID   string  `json:"functionid"`
 	ExecutorName string  `json:"executorname"`
+	ExecutorType string  `json:"executortype"`
 	ColonyName   string  `json:"colonyname"`
 	FuncName     string  `json:"funcname"`
 	Counter      int     `json:"counter"`
@@ -18,6 +19,7 @@ type Function struct {
 
 func CreateFunction(functionID string,
 	executorName string,
+	executorType string,
 	colonyName string,
 	funcName string,
 	counter int,
@@ -30,6 +32,7 @@ func CreateFunction(functionID string,
 	return &Function{
 		FunctionID:   functionID,
 		ExecutorName: executorName,
+		ExecutorType: executorType,
 		ColonyName:   colonyName,
 		FuncName:     funcName,
 		Counter:      counter,
@@ -95,6 +98,7 @@ func (function *Function) Equals(function2 *Function) bool {
 
 	if function.FunctionID != function2.FunctionID ||
 		function.ExecutorName != function2.ExecutorName ||
+		function.ExecutorType != function2.ExecutorType ||
 		function.ColonyName != function2.ColonyName ||
 		function.FuncName != function2.FuncName ||
 		function.Counter != function2.Counter ||
