@@ -57,6 +57,7 @@ func (server *ColoniesServer) handleAddFunctionHTTPRequest(c *gin.Context, recov
 		}
 	}
 
+	msg.Function.ExecutorType = executor.Type
 	msg.Function.FunctionID = core.GenerateRandomID()
 	addedFunction, err := server.controller.addFunction(msg.Function)
 	if server.handleHTTPError(c, err, http.StatusForbidden) {
