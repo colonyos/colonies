@@ -6,13 +6,11 @@ import (
 	"io/ioutil"
 	"math"
 	"os"
-	"strconv"
 	"strings"
 	"time"
 
 	"github.com/colonyos/colonies/pkg/client"
 	"github.com/colonyos/colonies/pkg/core"
-	"github.com/kataras/tablewriter"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -101,6 +99,8 @@ var removeFuncCmd = &cobra.Command{
 }
 
 type statsEntry struct {
+	funcName        string
+	executorType    string
 	callsCounter    int
 	executorCounter int
 	minWaitTime     float64
@@ -123,9 +123,12 @@ var listFuncCmd = &cobra.Command{
 
 		statsMap := make(map[string]statsEntry)
 		for _, function := range functions {
-			e, ok := statsMap[function.FuncName]
+			key := function.ExecutorType + function.FuncName
+			e, ok := statsMap[key]
 			if ok {
-				statsMap[function.FuncName] = statsEntry{
+				statsMap[key] = statsEntry{
+					executorType:    function.ExecutorType,
+					funcName:        function.FuncName,
 					callsCounter:    e.callsCounter + function.Counter,
 					executorCounter: e.executorCounter + 1,
 					minWaitTime:     math.Min(e.minWaitTime, function.MinWaitTime),
@@ -136,7 +139,9 @@ var listFuncCmd = &cobra.Command{
 					avgExecTime:     (e.avgExecTime + function.AvgExecTime) / 2.0,
 				}
 			} else {
-				statsMap[function.FuncName] = statsEntry{
+				statsMap[key] = statsEntry{
+					executorType:    function.ExecutorType,
+					funcName:        function.FuncName,
 					callsCounter:    function.Counter,
 					executorCounter: 1,
 					minWaitTime:     function.MinWaitTime,
@@ -149,39 +154,12 @@ var listFuncCmd = &cobra.Command{
 			}
 		}
 
-		counter := 0
-		for funcName, s := range statsMap {
-			fmt.Println("Function:")
-
-			funcData := [][]string{
-				[]string{"FuncName", funcName},
-				[]string{"Calls", strconv.Itoa(s.callsCounter)},
-				[]string{"Served by", strconv.Itoa(s.executorCounter) + " executors"},
-				[]string{"MinWaitTime", fmt.Sprintf("%f s", s.minWaitTime)},
-				[]string{"MaxWaitTime", fmt.Sprintf("%f s", s.maxWaitTime)},
-				[]string{"AvgWaitTime", fmt.Sprintf("%f s", s.avgWaitTime)},
-				[]string{"MinExecTime", fmt.Sprintf("%f s", s.minExecTime)},
-				[]string{"MaxExecTime", fmt.Sprintf("%f s", s.maxExecTime)},
-				[]string{"AvgExecTime", fmt.Sprintf("%f s", s.avgExecTime)},
-			}
-
-			funcTable := tablewriter.NewWriter(os.Stdout)
-			for _, v := range funcData {
-				funcTable.Append(v)
-			}
-			funcTable.SetAlignment(tablewriter.ALIGN_LEFT)
-			funcTable.Render()
-
-			if counter != len(statsMap)-1 {
-				fmt.Println()
-			}
-			counter++
-		}
-
-		if counter == 0 {
+		if len(statsMap) == 0 {
 			log.WithFields(log.Fields{"ColonyName": ColonyName}).Info("No functions found")
+			os.Exit(0)
 		}
 
+		printFunctionTable(statsMap)
 	},
 }
 

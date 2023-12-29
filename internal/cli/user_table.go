@@ -40,7 +40,6 @@ func printUserTable(user *core.User) {
 	t.AddRow(row)
 
 	t.Render()
-
 }
 
 func printUsersTable(users []*core.User) {

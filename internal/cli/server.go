@@ -2,18 +2,15 @@ package cli
 
 import (
 	"errors"
-	"fmt"
 	"os"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/colonyos/colonies/pkg/build"
 	"github.com/colonyos/colonies/pkg/client"
 	"github.com/colonyos/colonies/pkg/cluster"
 	"github.com/colonyos/colonies/pkg/database/postgresql"
 	"github.com/colonyos/colonies/pkg/server"
-	"github.com/kataras/tablewriter"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -65,20 +62,7 @@ var serverStatusCmd = &cobra.Command{
 		serverBuildVersion, serverBuildTime, err := client.Version()
 		CheckError(err)
 
-		serverData := [][]string{
-			[]string{"Server Host", ServerHost},
-			[]string{"Server Port", strconv.Itoa(ServerPort)},
-			[]string{"CLI Version", build.BuildVersion},
-			[]string{"CLI BuildTime", build.BuildTime},
-			[]string{"Server Version", serverBuildVersion},
-			[]string{"Server BuildTime", serverBuildTime},
-		}
-		serverTable := tablewriter.NewWriter(os.Stdout)
-		for _, v := range serverData {
-			serverTable.Append(v)
-		}
-		serverTable.SetAlignment(tablewriter.ALIGN_LEFT)
-		serverTable.Render()
+		printServerStatusTable(serverBuildVersion, serverBuildTime)
 	},
 }
 
@@ -216,7 +200,7 @@ var serverStartCmd = &cobra.Command{
 }
 
 var serverStatisticsCmd = &cobra.Command{
-	Use:   "stat",
+	Use:   "stats",
 	Short: "Show server statistics",
 	Long:  "Show server statistics",
 	Run: func(cmd *cobra.Command, args []string) {
@@ -228,25 +212,7 @@ var serverStatisticsCmd = &cobra.Command{
 		stat, err := client.Statistics(ServerPrvKey)
 		CheckError(err)
 
-		fmt.Println("Process statistics:")
-		specData := [][]string{
-			[]string{"Colonies", strconv.Itoa(stat.Colonies)},
-			[]string{"Executors", strconv.Itoa(stat.Executors)},
-			[]string{"Waiting processes", strconv.Itoa(stat.WaitingProcesses)},
-			[]string{"Running processes", strconv.Itoa(stat.RunningProcesses)},
-			[]string{"Successful processes", strconv.Itoa(stat.SuccessfulProcesses)},
-			[]string{"Failed processes", strconv.Itoa(stat.FailedProcesses)},
-			[]string{"Waiting workflows", strconv.Itoa(stat.WaitingWorkflows)},
-			[]string{"Running workflows ", strconv.Itoa(stat.RunningWorkflows)},
-			[]string{"Successful workflows", strconv.Itoa(stat.SuccessfulWorkflows)},
-			[]string{"Failed workflows", strconv.Itoa(stat.FailedWorkflows)},
-		}
-		specTable := tablewriter.NewWriter(os.Stdout)
-		for _, v := range specData {
-			specTable.Append(v)
-		}
-		specTable.SetAlignment(tablewriter.ALIGN_LEFT)
-		specTable.Render()
+		printServerStatTable(stat)
 	},
 }
 
