@@ -1166,7 +1166,7 @@ func TestSetErrorMsg(t *testing.T) {
 	assert.Equal(t, processFromDB.Errors[0], "error")
 }
 
-func TestFindUnassignedProcesses1(t *testing.T) {
+func TestFindCandidates1(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
 
@@ -1194,7 +1194,7 @@ func TestFindUnassignedProcesses1(t *testing.T) {
 	assert.Len(t, processsFromDB, 1)
 }
 
-func TestFindUnassignedProcesses2(t *testing.T) {
+func TestFindCandidates2(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
 
@@ -1218,27 +1218,32 @@ func TestFindUnassignedProcesses2(t *testing.T) {
 
 	time.Sleep(50 * time.Millisecond)
 
-	process2 := utils.CreateTestProcessWithTargets(colony.Name, []string{executor2.ID})
+	process2 := utils.CreateTestProcessWithTargets(colony.Name, []string{executor2.Name})
 	err = db.AddProcess(process2)
 	assert.Nil(t, err)
 
-	process3 := utils.CreateTestProcessWithTargets(colony.Name, []string{executor2.ID})
+	process3 := utils.CreateTestProcessWithTargets(colony.Name, []string{executor2.Name})
 	err = db.AddProcess(process3)
 	assert.Nil(t, err)
 
 	time.Sleep(50 * time.Millisecond)
 
-	processsFromDB, err := db.FindCandidates(colony.Name, executor2.Type, 2)
+	processesFromDB, err := db.FindCandidates(colony.Name, executor2.Type, 2)
 	assert.Nil(t, err)
-	assert.Len(t, processsFromDB, 2)
+	assert.Len(t, processesFromDB, 1)
+	assert.Equal(t, processesFromDB[0].ID, process1.ID)
+
+	processesFromDB, err = db.FindCandidatesByName(colony.Name, executor2.Name, executor2.Type, 2)
+	assert.Nil(t, err)
+	assert.Len(t, processesFromDB, 2)
 
 	counter := 0
-	for _, processFromDB := range processsFromDB {
-		if processFromDB.ID == process1.ID {
+	for _, processFromDB := range processesFromDB {
+		if processFromDB.ID == process2.ID {
 			counter++
 		}
 
-		if processFromDB.ID == process2.ID {
+		if processFromDB.ID == process3.ID {
 			counter++
 		}
 	}
@@ -1247,7 +1252,7 @@ func TestFindUnassignedProcesses2(t *testing.T) {
 }
 
 // Test that the order of targetExecutorIDs strings does not matter
-func TestFindUnassignedProcesses3(t *testing.T) {
+func TestFindCandidates3(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
 
@@ -1266,30 +1271,33 @@ func TestFindUnassignedProcesses3(t *testing.T) {
 	err = db.AddExecutor(executor2)
 	assert.Nil(t, err)
 
-	process1 := utils.CreateTestProcessWithTargets(colony.Name, []string{executor1.ID, executor2.ID})
+	process1 := utils.CreateTestProcessWithTargets(colony.Name, []string{executor1.Name, executor2.Name})
 	err = db.AddProcess(process1)
 	assert.Nil(t, err)
 
 	time.Sleep(50 * time.Millisecond)
 
-	process2 := utils.CreateTestProcessWithTargets(colony.Name, []string{executor1.ID, executor2.ID})
+	process2 := utils.CreateTestProcessWithTargets(colony.Name, []string{executor1.Name, executor2.Name})
 	err = db.AddProcess(process2)
 	assert.Nil(t, err)
 
-	processsFromDB, err := db.FindCandidates(colony.Name, executor1.Type, 1)
+	processesFromDB, err := db.FindCandidates(colony.Name, executor1.Type, 1)
 	assert.Nil(t, err)
+	assert.Len(t, processesFromDB, 0)
 
-	assert.Len(t, processsFromDB, 1)
-	assert.Equal(t, process1.ID, processsFromDB[0].ID)
-
-	processsFromDB, err = db.FindCandidates(colony.Name, executor2.Type, 1)
+	processesFromDB, err = db.FindCandidatesByName(colony.Name, executor1.Name, executor1.Type, 1)
 	assert.Nil(t, err)
-	assert.Len(t, processsFromDB, 1)
-	assert.Equal(t, process1.ID, processsFromDB[0].ID)
+	assert.Len(t, processesFromDB, 1)
+	assert.Equal(t, processesFromDB[0].ID, process1.ID)
+
+	processesFromDB, err = db.FindCandidatesByName(colony.Name, executor2.Name, executor1.Type, 1)
+	assert.Nil(t, err)
+	assert.Len(t, processesFromDB, 1)
+	assert.Equal(t, processesFromDB[0].ID, process1.ID)
 }
 
 // Test that executor type matching is working
-func TestFindUnassignedProcesses4(t *testing.T) {
+func TestFindCandidates4(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
 
@@ -1329,7 +1337,7 @@ func TestFindUnassignedProcesses4(t *testing.T) {
 	assert.Equal(t, process2.ID, processsFromDB[0].ID)
 }
 
-func TestFindUnassignedProcessesOldest(t *testing.T) {
+func TestFindCandidatesOldest(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
 
@@ -1356,6 +1364,61 @@ func TestFindUnassignedProcessesOldest(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Len(t, processsFromDB, 1)
 	assert.Equal(t, processsFromDB[0].ID, process1.ID)
+}
+
+func TestFindCandidatesByName(t *testing.T) {
+	db, err := PrepareTests()
+	assert.Nil(t, err)
+
+	defer db.Close()
+
+	colony := core.CreateColony(core.GenerateRandomID(), "test_colony_name_1")
+	err = db.AddColony(colony)
+	assert.Nil(t, err)
+
+	executor1 := utils.CreateTestExecutor(colony.Name)
+	executor1.Name = "executor1"
+	err = db.AddExecutor(executor1)
+	assert.Nil(t, err)
+
+	executor2 := utils.CreateTestExecutor(colony.Name)
+	executor2.Name = "executor2"
+	err = db.AddExecutor(executor2)
+	assert.Nil(t, err)
+
+	process1 := utils.CreateTestProcess(colony.Name)
+	err = db.AddProcess(process1)
+	assert.Nil(t, err)
+
+	process2 := utils.CreateTestProcess(colony.Name)
+	process2.FunctionSpec.Conditions.ExecutorNames = []string{"executor1"}
+	err = db.AddProcess(process2)
+	assert.Nil(t, err)
+
+	process3 := utils.CreateTestProcess(colony.Name)
+	process3.FunctionSpec.Conditions.ExecutorNames = []string{"executor1", "executor2"}
+	err = db.AddProcess(process3)
+	assert.Nil(t, err)
+
+	processsFromDB, err := db.FindCandidates(colony.Name, executor1.Type, 100)
+	assert.Nil(t, err)
+	assert.Len(t, processsFromDB, 1)
+
+	processsFromDB, err = db.FindCandidatesByName(colony.Name, "executor1", executor1.Type, 100)
+	assert.Nil(t, err)
+	assert.Len(t, processsFromDB, 2)
+
+	counter := 0
+	for _, process := range processsFromDB {
+		if process.ID == process2.ID {
+			counter++
+		}
+		if process.ID == process3.ID {
+			counter++
+		}
+	}
+
+	assert.True(t, counter == 2)
 }
 
 func TestFindProcessAssigned(t *testing.T) {

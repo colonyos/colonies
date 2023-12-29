@@ -7,8 +7,8 @@ import (
 )
 
 func (db *PQDatabase) AddFunction(function *core.Function) error {
-	sqlStatement := `INSERT INTO  ` + db.dbPrefix + `FUNCTIONS (FUNCTION_ID, EXECUTOR_NAME, COLONY_NAME, FUNCNAME, COUNTER, MINWAITTIME, MAXWAITTIME, MINEXECTIME, MAXEXECTIME, AVGWAITTIME, AVGEXECTIME) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`
-	_, err := db.postgresql.Exec(sqlStatement, function.FunctionID, function.ExecutorName, function.ColonyName, function.FuncName, function.Counter, function.MinWaitTime, function.MaxWaitTime, function.MinExecTime, function.MaxExecTime, function.AvgWaitTime, function.AvgExecTime)
+	sqlStatement := `INSERT INTO  ` + db.dbPrefix + `FUNCTIONS (FUNCTION_ID, EXECUTOR_NAME, EXECUTOR_TYPE, COLONY_NAME, FUNCNAME, COUNTER, MINWAITTIME, MAXWAITTIME, MINEXECTIME, MAXEXECTIME, AVGWAITTIME, AVGEXECTIME) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`
+	_, err := db.postgresql.Exec(sqlStatement, function.FunctionID, function.ExecutorName, function.ExecutorType, function.ColonyName, function.FuncName, function.Counter, function.MinWaitTime, function.MaxWaitTime, function.MinExecTime, function.MaxExecTime, function.AvgWaitTime, function.AvgExecTime)
 	if err != nil {
 		return err
 	}
@@ -22,6 +22,7 @@ func (db *PQDatabase) parseFunctions(rows *sql.Rows) ([]*core.Function, error) {
 	for rows.Next() {
 		var functionID string
 		var executorID string
+		var executorType string
 		var colonyName string
 		var name string
 		var counter int
@@ -31,11 +32,11 @@ func (db *PQDatabase) parseFunctions(rows *sql.Rows) ([]*core.Function, error) {
 		var maxExecTime float64
 		var avgWaitTime float64
 		var avgExecTime float64
-		if err := rows.Scan(&functionID, &executorID, &colonyName, &name, &counter, &minWaitTime, &maxWaitTime, &minExecTime, &maxExecTime, &avgWaitTime, &avgExecTime); err != nil {
+		if err := rows.Scan(&functionID, &executorID, &executorType, &colonyName, &name, &counter, &minWaitTime, &maxWaitTime, &minExecTime, &maxExecTime, &avgWaitTime, &avgExecTime); err != nil {
 			return nil, err
 		}
 
-		function := core.CreateFunction(functionID, executorID, colonyName, name, counter, minWaitTime, maxWaitTime, minExecTime, maxExecTime, avgWaitTime, avgExecTime)
+		function := core.CreateFunction(functionID, executorID, executorType, colonyName, name, counter, minWaitTime, maxWaitTime, minExecTime, maxExecTime, avgWaitTime, avgExecTime)
 		functions = append(functions, function)
 	}
 
