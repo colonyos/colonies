@@ -13,7 +13,6 @@ require (
 	github.com/gorilla/websocket v1.4.2
 	github.com/jedib0t/go-pretty/v6 v6.4.9
 	github.com/k0kubun/go-ansi v0.0.0-20180517002512-3bf9e2903213
-	github.com/kataras/tablewriter v0.0.0-20180708051242-e063d29b7c23
 	github.com/lib/pq v1.10.9
 	github.com/minio/minio-go/v7 v7.0.61
 	github.com/muesli/termenv v0.15.2
