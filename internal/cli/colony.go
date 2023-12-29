@@ -4,10 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"strconv"
 
 	"github.com/colonyos/colonies/pkg/core"
-	"github.com/kataras/tablewriter"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -106,19 +104,7 @@ var lsColoniesCmd = &cobra.Command{
 			os.Exit(0)
 		}
 
-		var data [][]string
-		for _, colony := range coloniesFromServer {
-			data = append(data, []string{colony.Name})
-		}
-
-		table := tablewriter.NewWriter(os.Stdout)
-		table.SetHeader([]string{"Name"})
-
-		for _, v := range data {
-			table.Append(v)
-		}
-
-		table.Render()
+		printColonyTable(coloniesFromServer)
 	},
 }
 
@@ -132,23 +118,6 @@ var colonyStatsCmd = &cobra.Command{
 		stat, err := client.ColonyStatistics(ColonyName, PrvKey)
 		CheckError(err)
 
-		fmt.Println("Process statistics:")
-		specData := [][]string{
-			[]string{"Executors", strconv.Itoa(stat.Executors)},
-			[]string{"Waiting processes", strconv.Itoa(stat.WaitingProcesses)},
-			[]string{"Running processes", strconv.Itoa(stat.RunningProcesses)},
-			[]string{"Successful processes", strconv.Itoa(stat.SuccessfulProcesses)},
-			[]string{"Failed processes", strconv.Itoa(stat.FailedProcesses)},
-			[]string{"Waiting workflows", strconv.Itoa(stat.WaitingWorkflows)},
-			[]string{"Running workflows ", strconv.Itoa(stat.RunningWorkflows)},
-			[]string{"Successful workflows", strconv.Itoa(stat.SuccessfulWorkflows)},
-			[]string{"Failed workflows", strconv.Itoa(stat.FailedWorkflows)},
-		}
-		specTable := tablewriter.NewWriter(os.Stdout)
-		for _, v := range specData {
-			specTable.Append(v)
-		}
-		specTable.SetAlignment(tablewriter.ALIGN_LEFT)
-		specTable.Render()
+		printColonyStatTable(stat)
 	},
 }
