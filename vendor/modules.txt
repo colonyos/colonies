@@ -109,9 +109,6 @@ github.com/json-iterator/go
 # github.com/k0kubun/go-ansi v0.0.0-20180517002512-3bf9e2903213
 ## explicit
 github.com/k0kubun/go-ansi
-# github.com/kataras/tablewriter v0.0.0-20180708051242-e063d29b7c23
-## explicit
-github.com/kataras/tablewriter
 # github.com/klauspost/compress v1.16.7
 ## explicit; go 1.18
 github.com/klauspost/compress/s2
