@@ -70,6 +70,7 @@ type Database interface {
 	FindAllRunningProcesses() ([]*core.Process, error)
 	FindAllWaitingProcesses() ([]*core.Process, error)
 	FindCandidates(colonyName string, executorType string, count int) ([]*core.Process, error)
+	FindCandidatesByName(colonyName string, executorName string, executorType string, count int) ([]*core.Process, error)
 	RemoveProcessByID(processID string) error
 	RemoveAllProcesses() error
 	RemoveAllWaitingProcessesByColonyName(colonyName string) error
