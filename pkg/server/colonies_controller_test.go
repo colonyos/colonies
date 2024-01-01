@@ -162,7 +162,7 @@ func TestColoniesControllerAssignExecutor(t *testing.T) {
 	_, err = controller.addProcess(process)
 	assert.Nil(t, err)
 
-	assignedProcess, err := controller.assign(executor.ID, colonyName)
+	assignedProcess, err := controller.assign(executor.ID, colonyName, 0, 0)
 	assert.Nil(t, err)
 	assert.True(t, process.ID == assignedProcess.ID)
 }
@@ -203,7 +203,7 @@ func TestColoniesControllerAssignExecutorConcurrency(t *testing.T) {
 
 	go func() {
 		for {
-			_, err := controller1.assign(executor1.ID, colonyName)
+			_, err := controller1.assign(executor1.ID, colonyName, 0, 0)
 			if err == nil {
 				countChan <- 1
 			}
@@ -216,7 +216,7 @@ func TestColoniesControllerAssignExecutorConcurrency(t *testing.T) {
 
 	go func() {
 		for {
-			_, err := controller2.assign(executor2.ID, colonyName)
+			_, err := controller2.assign(executor2.ID, colonyName, 0, 0)
 			if err == nil {
 				countChan <- 1
 			}

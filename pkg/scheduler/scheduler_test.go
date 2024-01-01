@@ -30,7 +30,7 @@ func TestSelectProcess(t *testing.T) {
 	mock.addProcess(process3)
 
 	s := CreateScheduler(mock)
-	selectedProcess, err := s.Select(colony.Name, executor)
+	selectedProcess, err := s.Select(colony.Name, executor, 0, 0)
 	assert.Nil(t, err)
 	assert.NotNil(t, selectedProcess)
 	assert.Equal(t, selectedProcess.ID, process2.ID)
@@ -57,7 +57,7 @@ func TestSelectProcess2(t *testing.T) {
 	mock.addProcess(process3)
 
 	s := CreateScheduler(mock)
-	selectedProcess, err := s.Select(colony.Name, executor)
+	selectedProcess, err := s.Select(colony.Name, executor, 0, 0)
 	assert.Nil(t, err)
 	assert.Equal(t, selectedProcess.ID, process1.ID)
 }
@@ -69,7 +69,7 @@ func TestSelectProcessNoProcesss(t *testing.T) {
 	executor.Name = "executor1"
 
 	s := CreateScheduler(mock)
-	selectedProcess, err := s.Select(colony.Name, executor)
+	selectedProcess, err := s.Select(colony.Name, executor, 0, 0)
 	assert.NotNil(t, err)
 	assert.Nil(t, selectedProcess)
 }
@@ -95,7 +95,7 @@ func TestPrioritize(t *testing.T) {
 	mock.addProcess(process3)
 
 	s := CreateScheduler(mock)
-	prioritizedProcesses, err := s.Prioritize(colony.Name, executor, 3)
+	prioritizedProcesses, err := s.Prioritize(colony.Name, executor, 0, 0, 3)
 	assert.Nil(t, err)
 	assert.Len(t, prioritizedProcesses, 3)
 
@@ -103,7 +103,7 @@ func TestPrioritize(t *testing.T) {
 	assert.Equal(t, process3.ID, prioritizedProcesses[1].ID)
 	assert.Equal(t, process1.ID, prioritizedProcesses[2].ID)
 
-	prioritizedProcesses, err = s.Prioritize(colony.Name, executor, 2)
+	prioritizedProcesses, err = s.Prioritize(colony.Name, executor, 0, 0, 2)
 	assert.Nil(t, err)
 	assert.Len(t, prioritizedProcesses, 2)
 
@@ -137,13 +137,13 @@ func TestPrioritizeByName(t *testing.T) {
 	mock.addProcess(process3)
 
 	s := CreateScheduler(mock)
-	prioritizedProcesses, err := s.Prioritize(colony.Name, executor1, 3)
+	prioritizedProcesses, err := s.Prioritize(colony.Name, executor1, 0, 0, 3)
 	assert.Nil(t, err)
 	assert.Len(t, prioritizedProcesses, 2)
 	assert.Equal(t, prioritizedProcesses[0].ID, process3.ID)
 	assert.Equal(t, prioritizedProcesses[1].ID, process1.ID)
 
-	prioritizedProcesses, err = s.Prioritize(colony.Name, executor2, 3)
+	prioritizedProcesses, err = s.Prioritize(colony.Name, executor2, 0, 0, 3)
 	assert.Nil(t, err)
 	assert.Len(t, prioritizedProcesses, 2)
 	assert.Equal(t, prioritizedProcesses[0].ID, process2.ID)

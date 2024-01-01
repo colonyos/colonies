@@ -57,10 +57,27 @@ func (db *PQDatabase) AddProcess(process *core.Process) error {
 
 	process.SetSubmissionTime(submissionTime)
 
-	cpu := parsers.ConvertCPUToInt(process.FunctionSpec.Conditions.CPU)
-	memory := parsers.ConvertMemoryToInt(process.FunctionSpec.Conditions.Memory)
+	cpu, err := parsers.ConvertCPUToInt(process.FunctionSpec.Conditions.CPU)
+	if err != nil {
+		return err
+	}
 
-	_, err = db.postgresql.Exec(sqlStatement, process.ID, process.FunctionSpec.Conditions.ColonyName, pq.Array(targetExecutorNames), process.AssignedExecutorID, process.State, process.IsAssigned, process.FunctionSpec.Conditions.ExecutorType, submissionTime, time.Time{}, time.Time{}, deadline, process.ExecDeadline, pq.Array(process.Errors), 0, process.FunctionSpec.NodeName, process.FunctionSpec.FuncName, argsJSONStr, kwargsJSONStr, process.FunctionSpec.MaxWaitTime, process.FunctionSpec.MaxExecTime, process.FunctionSpec.MaxRetries, pq.Array(process.FunctionSpec.Conditions.Dependencies), process.FunctionSpec.Priority, process.PriorityTime, process.WaitForParents, pq.Array(process.Parents), pq.Array(process.Children), process.ProcessGraphID, inJSONStr, outJSONStr, process.FunctionSpec.Label, fsJSONStr, process.FunctionSpec.Conditions.Nodes, cpu, process.FunctionSpec.Conditions.Processes, process.FunctionSpec.Conditions.ProcessesPerNode, memory, process.FunctionSpec.Conditions.Storage, process.FunctionSpec.Conditions.GPU.Name, process.FunctionSpec.Conditions.GPU.Count, process.FunctionSpec.Conditions.GPU.Memory, process.FunctionSpec.Conditions.WallTime, process.InitiatorID, process.InitiatorName)
+	memory, err := parsers.ConvertMemoryToInt(process.FunctionSpec.Conditions.Memory)
+	if err != nil {
+		return err
+	}
+
+	storage, err := parsers.ConvertMemoryToInt(process.FunctionSpec.Conditions.Storage)
+	if err != nil {
+		return err
+	}
+
+	gpuMem, err := parsers.ConvertMemoryToInt(process.FunctionSpec.Conditions.GPU.Memory)
+	if err != nil {
+		return err
+	}
+
+	_, err = db.postgresql.Exec(sqlStatement, process.ID, process.FunctionSpec.Conditions.ColonyName, pq.Array(targetExecutorNames), process.AssignedExecutorID, process.State, process.IsAssigned, process.FunctionSpec.Conditions.ExecutorType, submissionTime, time.Time{}, time.Time{}, deadline, process.ExecDeadline, pq.Array(process.Errors), 0, process.FunctionSpec.NodeName, process.FunctionSpec.FuncName, argsJSONStr, kwargsJSONStr, process.FunctionSpec.MaxWaitTime, process.FunctionSpec.MaxExecTime, process.FunctionSpec.MaxRetries, pq.Array(process.FunctionSpec.Conditions.Dependencies), process.FunctionSpec.Priority, process.PriorityTime, process.WaitForParents, pq.Array(process.Parents), pq.Array(process.Children), process.ProcessGraphID, inJSONStr, outJSONStr, process.FunctionSpec.Label, fsJSONStr, process.FunctionSpec.Conditions.Nodes, cpu, process.FunctionSpec.Conditions.Processes, process.FunctionSpec.Conditions.ProcessesPerNode, memory, storage, process.FunctionSpec.Conditions.GPU.Name, process.FunctionSpec.Conditions.GPU.Count, gpuMem, process.FunctionSpec.Conditions.WallTime, process.InitiatorID, process.InitiatorName)
 	if err != nil {
 		return err
 	}
@@ -115,14 +132,14 @@ func (db *PQDatabase) parseProcesses(rows *sql.Rows) ([]*core.Process, error) {
 		var label string
 		var fsJSONStr string
 		var nodes int
-		var cpu int
+		var cpu int64
 		var processesCount int
 		var processesPerNode int
-		var memory int
-		var storage string
+		var memory int64
+		var storage int64
 		var gpuName string
 		var gpuCount int
-		var gpuMemory string
+		var gpuMemory int64
 		var walltime int64
 		var initiatorID string
 		var initiatorName string
@@ -186,14 +203,14 @@ func (db *PQDatabase) parseProcesses(rows *sql.Rows) ([]*core.Process, error) {
 		functionSpec := core.CreateFunctionSpec(nodeName, funcName, argsif, kwargsif, targetColonyName, targetExecutorNames, executorType, maxWaitTime, maxExecTime, maxRetries, env, dependencies, priority, label)
 
 		functionSpec.Conditions.Nodes = nodes
-		functionSpec.Conditions.CPU = parsers.ConvertMemoryToString(cpu)
+		functionSpec.Conditions.CPU = parsers.ConvertCPUToString(cpu)
 		functionSpec.Conditions.Processes = processesCount
 		functionSpec.Conditions.ProcessesPerNode = processesPerNode
 		functionSpec.Conditions.Memory = parsers.ConvertMemoryToString(memory)
-		functionSpec.Conditions.Storage = storage
+		functionSpec.Conditions.Storage = parsers.ConvertMemoryToString(storage)
 		functionSpec.Conditions.GPU.Name = gpuName
 		functionSpec.Conditions.GPU.Count = gpuCount
-		functionSpec.Conditions.GPU.Memory = gpuMemory
+		functionSpec.Conditions.GPU.Memory = parsers.ConvertMemoryToString(gpuMemory)
 		functionSpec.Conditions.WallTime = walltime
 
 		fs := core.Filesystem{}
@@ -461,11 +478,11 @@ func (db *PQDatabase) FindAllWaitingProcesses() ([]*core.Process, error) {
 	return matches, nil
 }
 
-func (db *PQDatabase) FindCandidates(colonyName string, executorType string, count int) ([]*core.Process, error) {
+func (db *PQDatabase) FindCandidates(colonyName string, executorType string, cpu int64, memory int64, gpuName string, gpuMem int64, gpuCount int, storage int64, nodes int, processes int, processesPerNode int, count int) ([]*core.Process, error) {
 	var sqlStatement string
 
-	sqlStatement = `SELECT * FROM ` + db.dbPrefix + `PROCESSES WHERE STATE=$1 AND EXECUTOR_TYPE=$2 AND IS_ASSIGNED=FALSE AND WAIT_FOR_PARENTS=FALSE AND TARGET_COLONY_NAME=$3 AND TARGET_EXECUTOR_NAMES='{}' ORDER BY PRIORITYTIME LIMIT $4`
-	rows, err := db.postgresql.Query(sqlStatement, core.WAITING, executorType, colonyName, count)
+	sqlStatement = `SELECT * FROM ` + db.dbPrefix + `PROCESSES WHERE STATE=$1 AND EXECUTOR_TYPE=$2 AND IS_ASSIGNED=FALSE AND WAIT_FOR_PARENTS=FALSE AND TARGET_COLONY_NAME=$3 AND array_length(TARGET_EXECUTOR_NAMES, 1) IS NULL AND CPU>=$4 AND MEMORY>=$5 AND GPUNAME=$6 AND GPUMEM>=$7 AND GPUCOUNT>=$8 AND STORAGE>=$9 AND NODES>=$10 AND PROCESSES>=$11 AND PROCESSES_PER_NODE>=$12 ORDER BY PRIORITYTIME LIMIT $13`
+	rows, err := db.postgresql.Query(sqlStatement, core.WAITING, executorType, colonyName, cpu, memory, gpuName, gpuMem, gpuCount, storage, nodes, processes, processesPerNode, count)
 	if err != nil {
 		return nil, err
 	}
@@ -479,11 +496,11 @@ func (db *PQDatabase) FindCandidates(colonyName string, executorType string, cou
 	return matches, nil
 }
 
-func (db *PQDatabase) FindCandidatesByName(colonyName string, executorName string, executorType string, count int) ([]*core.Process, error) {
+func (db *PQDatabase) FindCandidatesByName(colonyName string, executorName string, executorType string, cpu int64, memory int64, gpuName string, gpuMem int64, gpuCount int, storage int64, nodes int, processes int, processesPerNode int, count int) ([]*core.Process, error) {
 	var sqlStatement string
 
-	sqlStatement = `SELECT * FROM ` + db.dbPrefix + `PROCESSES WHERE STATE=$1 AND $2=ANY(TARGET_EXECUTOR_NAMES) AND EXECUTOR_TYPE=$3 AND IS_ASSIGNED=FALSE AND WAIT_FOR_PARENTS=FALSE AND TARGET_COLONY_NAME=$4 ORDER BY PRIORITYTIME LIMIT $5`
-	rows, err := db.postgresql.Query(sqlStatement, core.WAITING, executorName, executorType, colonyName, count)
+	sqlStatement = `SELECT * FROM ` + db.dbPrefix + `PROCESSES WHERE STATE=$1 AND $2=ANY(TARGET_EXECUTOR_NAMES) AND EXECUTOR_TYPE=$3 AND IS_ASSIGNED=FALSE AND WAIT_FOR_PARENTS=FALSE AND TARGET_COLONY_NAME=$4 AND CPU>=$5 AND MEMORY>=$6 AND GPUNAME=$7 AND GPUMEM>=$8 AND GPUCOUNT>=$9 AND STORAGE>=$10 AND NODES>=$11 AND PROCESSES>=$12 AND PROCESSES_PER_NODE>=$13 ORDER BY PRIORITYTIME LIMIT $14`
+	rows, err := db.postgresql.Query(sqlStatement, core.WAITING, executorName, executorType, colonyName, cpu, memory, gpuName, gpuMem, gpuCount, storage, nodes, processes, processesPerNode, count)
 	if err != nil {
 		return nil, err
 	}
