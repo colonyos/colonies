@@ -157,7 +157,7 @@ func CreateTestExecutor(colonyName string) *core.Executor {
 	executor := core.CreateExecutor(core.GenerateRandomID(), "test_executor_type", core.GenerateRandomID(), colonyName, time.Now(), time.Now())
 	location := core.Location{Long: 1.0, Lat: 2.0, Description: "test_desc"}
 	gpu := core.GPU{Name: "test_name1", Count: 1}
-	hw := core.Hardware{Model: "test_model", CPU: "test_cpu", Memory: "test_mem", Storage: "test_storage", GPU: gpu}
+	hw := core.Hardware{Model: "test_model", CPU: "0m", Memory: "0m", Storage: "test_storage", GPU: gpu}
 	sw := core.Software{Name: "test_name1", Type: "test_type1", Version: "test_version1"}
 	capabilities := core.Capabilities{Hardware: hw, Software: sw}
 	executor.Location = location

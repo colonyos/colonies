@@ -8,6 +8,7 @@ import (
 
 	"github.com/colonyos/colonies/pkg/client"
 	"github.com/colonyos/colonies/pkg/core"
+	"github.com/colonyos/colonies/pkg/parsers"
 	"github.com/colonyos/colonies/pkg/rpc"
 	"github.com/gin-gonic/gin"
 	log "github.com/sirupsen/logrus"
@@ -147,7 +148,17 @@ func (server *ColoniesServer) handleAssignProcessHTTPRequest(c *gin.Context, rec
 		"Timeout":      msg.Timeout}).
 		Debug("Waiting for processes")
 
-	process, assignErr := server.controller.assign(recoveredID, msg.ColonyName)
+	cpu, err := parsers.ConvertCPUToInt(msg.AvailableCPU)
+	if server.handleHTTPError(c, err, http.StatusBadRequest) {
+		return
+	}
+
+	memory, err := parsers.ConvertMemoryToInt(msg.AvailableMemory)
+	if server.handleHTTPError(c, err, http.StatusBadRequest) {
+		return
+	}
+
+	process, assignErr := server.controller.assign(recoveredID, msg.ColonyName, cpu, memory)
 	if assignErr != nil {
 		if msg.Timeout > 0 {
 			ctx, cancelCtx := context.WithTimeout(c.Request.Context(), time.Duration(msg.Timeout)*time.Second)
@@ -155,7 +166,7 @@ func (server *ColoniesServer) handleAssignProcessHTTPRequest(c *gin.Context, rec
 
 			// Wait for a new process to be submitted to a ColoniesServer in the cluster
 			server.controller.getEventHandler().waitForProcess(executor.Type, core.WAITING, "", ctx)
-			process, assignErr = server.controller.assign(recoveredID, msg.ColonyName)
+			process, assignErr = server.controller.assign(recoveredID, msg.ColonyName, cpu, memory)
 		}
 	}
 
