@@ -215,6 +215,114 @@ func TestAssignProcessPriority(t *testing.T) {
 	<-done
 }
 
+func TestAssignProcessWithLimits(t *testing.T) {
+	env, client, server, _, done := setupTestEnv2(t)
+
+	funcSpec1 := utils.CreateTestFunctionSpec(env.colonyName)
+	funcSpec1.Conditions.CPU = "4000m"
+	funcSpec1.Conditions.Memory = "4000G"
+	addedProcess1, err := client.Submit(funcSpec1, env.executorPrvKey)
+	assert.Nil(t, err)
+
+	assignedProcess, err := client.Assign(env.colonyName, -1, "", "", env.executorPrvKey)
+	assert.NotNil(t, err)
+
+	assignedProcess, err = client.Assign(env.colonyName, -1, "1000m", "10G", env.executorPrvKey)
+	assert.NotNil(t, err)
+
+	assignedProcess, err = client.Assign(env.colonyName, -1, "1000m", "4000G", env.executorPrvKey)
+	assert.NotNil(t, err)
+
+	assignedProcess, err = client.Assign(env.colonyName, -1, "4000m", "3000G", env.executorPrvKey)
+	assert.NotNil(t, err)
+
+	assignedProcess, err = client.Assign(env.colonyName, -1, "4000m", "4000G", env.executorPrvKey)
+	assert.Nil(t, err)
+	assert.Equal(t, addedProcess1.ID, assignedProcess.ID)
+
+	server.Shutdown()
+	<-done
+}
+
+func TestAssignProcessByNameAndLimits(t *testing.T) {
+	env, client, server, _, done := setupTestEnv2(t)
+	assignedProcess, err := client.Assign(env.colonyName, -1, "", "", env.executorPrvKey)
+	assert.Nil(t, assignedProcess)
+	assert.NotNil(t, err)
+
+	funcSpec1 := utils.CreateTestFunctionSpec(env.colonyName)
+	funcSpec1.Conditions.ExecutorNames = []string{"executor1"}
+	funcSpec1.Conditions.CPU = "4000m"
+	funcSpec1.Conditions.Memory = "4000G"
+	addedProcess1, err := client.Submit(funcSpec1, env.executorPrvKey)
+	assert.Nil(t, err)
+
+	funcSpec2 := utils.CreateTestFunctionSpecWithEnv(env.colonyName, make(map[string]string))
+	funcSpec2.Conditions.CPU = "4000m"
+	funcSpec2.Conditions.Memory = "4000G"
+	addedProcess2, err := client.Submit(funcSpec2, env.executorPrvKey)
+	assert.Nil(t, err)
+
+	funcSpec3 := utils.CreateTestFunctionSpecWithEnv(env.colonyName, make(map[string]string))
+	funcSpec3.Conditions.CPU = "4000m"
+	funcSpec3.Conditions.Memory = "4000G"
+	addedProcess3, err := client.Submit(funcSpec3, env.executorPrvKey)
+	assert.Nil(t, err)
+
+	funcSpec4 := utils.CreateTestFunctionSpecWithEnv(env.colonyName, make(map[string]string))
+	funcSpec4.Conditions.ExecutorNames = []string{"executor2"}
+	funcSpec4.Conditions.CPU = "4000m"
+	funcSpec4.Conditions.Memory = "4000G"
+	addedProcess4, err := client.Submit(funcSpec4, env.executorPrvKey)
+	assert.Nil(t, err)
+
+	executor1, executor1PrvKey, err := utils.CreateTestExecutorWithKey(env.colonyName)
+	executor1.Name = "executor1"
+	assert.Nil(t, err)
+	_, err = client.AddExecutor(executor1, env.colonyPrvKey)
+	assert.Nil(t, err)
+	err = client.ApproveExecutor(env.colonyName, executor1.Name, env.colonyPrvKey)
+
+	executor2, executor2PrvKey, err := utils.CreateTestExecutorWithKey(env.colonyName)
+	executor2.Name = "executor2"
+	assert.Nil(t, err)
+	_, err = client.AddExecutor(executor2, env.colonyPrvKey)
+	assert.Nil(t, err)
+	err = client.ApproveExecutor(env.colonyName, executor2.Name, env.colonyPrvKey)
+	assert.Nil(t, err)
+
+	assignedProcess, err = client.Assign(env.colonyName, -1, "1000m", "1000G", executor2PrvKey)
+	assert.NotNil(t, err)
+
+	assignedProcess, err = client.Assign(env.colonyName, -1, "1000m", "5000G", executor2PrvKey)
+	assert.NotNil(t, err)
+
+	assignedProcess, err = client.Assign(env.colonyName, -1, "5000m", "1000G", executor2PrvKey)
+	assert.NotNil(t, err)
+
+	assignedProcess, err = client.Assign(env.colonyName, -1, "5000m", "5000G", executor2PrvKey)
+	assert.Nil(t, err)
+	assert.Equal(t, addedProcess2.ID, assignedProcess.ID)
+
+	assignedProcess, err = client.Assign(env.colonyName, -1, "5000m", "5000Gi", executor1PrvKey)
+	assert.Nil(t, err)
+	assert.Equal(t, addedProcess1.ID, assignedProcess.ID)
+
+	assignedProcess, err = client.Assign(env.colonyName, -1, "4000m", "4000G", executor1PrvKey)
+	assert.Nil(t, err)
+	assert.Equal(t, addedProcess3.ID, assignedProcess.ID)
+
+	_, err = client.Assign(env.colonyName, -1, "4000m", "4000G", executor1PrvKey)
+	assert.NotNil(t, err)
+
+	assignedProcess, err = client.Assign(env.colonyName, -1, "10000m", "9000G", executor2PrvKey)
+	assert.Nil(t, err)
+	assert.Equal(t, addedProcess4.ID, assignedProcess.ID)
+
+	server.Shutdown()
+	<-done
+}
+
 func TestAssignProcessByName(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 	assignedProcess, err := client.Assign(env.colonyName, -1, "", "", env.executorPrvKey)

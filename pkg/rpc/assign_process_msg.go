@@ -17,6 +17,8 @@ type AssignProcessMsg struct {
 func CreateAssignProcessMsg(colonyID string, availableCPU string, availableMemory string) *AssignProcessMsg {
 	msg := &AssignProcessMsg{}
 	msg.ColonyName = colonyID
+	msg.AvailableCPU = availableCPU
+	msg.AvailableMemory = availableMemory
 	msg.MsgType = AssignProcessPayloadType
 	msg.Timeout = -1 // Not implemented yet
 
