@@ -1331,7 +1331,7 @@ func (controller *coloniesController) handleDefunctProcessgraph(processGraphID s
 	return nil
 }
 
-func (controller *coloniesController) assign(executorID string, colonyName string) (*core.Process, error) {
+func (controller *coloniesController) assign(executorID string, colonyName string, cpu int64, mem int64) (*core.Process, error) {
 	cmd := &command{threaded: false, processReplyChan: make(chan *core.Process),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
@@ -1351,7 +1351,7 @@ func (controller *coloniesController) assign(executorID string, colonyName strin
 				return
 			}
 
-			selectedProcess, err := controller.scheduler.Select(colonyName, executor)
+			selectedProcess, err := controller.scheduler.Select(colonyName, executor, cpu, mem)
 			if err != nil {
 				cmd.errorChan <- err
 				return
