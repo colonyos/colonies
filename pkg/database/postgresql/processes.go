@@ -481,7 +481,7 @@ func (db *PQDatabase) FindAllWaitingProcesses() ([]*core.Process, error) {
 func (db *PQDatabase) FindCandidates(colonyName string, executorType string, cpu int64, memory int64, gpuName string, gpuMem int64, gpuCount int, storage int64, nodes int, processes int, processesPerNode int, count int) ([]*core.Process, error) {
 	var sqlStatement string
 
-	sqlStatement = `SELECT * FROM ` + db.dbPrefix + `PROCESSES WHERE STATE=$1 AND EXECUTOR_TYPE=$2 AND IS_ASSIGNED=FALSE AND WAIT_FOR_PARENTS=FALSE AND TARGET_COLONY_NAME=$3 AND array_length(TARGET_EXECUTOR_NAMES, 1) IS NULL AND CPU>=$4 AND MEMORY>=$5 AND GPUNAME=$6 AND GPUMEM>=$7 AND GPUCOUNT>=$8 AND STORAGE>=$9 AND NODES>=$10 AND PROCESSES>=$11 AND PROCESSES_PER_NODE>=$12 ORDER BY PRIORITYTIME LIMIT $13`
+	sqlStatement = `SELECT * FROM ` + db.dbPrefix + `PROCESSES WHERE STATE=$1 AND EXECUTOR_TYPE=$2 AND IS_ASSIGNED=FALSE AND WAIT_FOR_PARENTS=FALSE AND TARGET_COLONY_NAME=$3 AND array_length(TARGET_EXECUTOR_NAMES, 1) IS NULL AND CPU<=$4 AND MEMORY<=$5 AND GPUNAME=$6 AND GPUMEM<=$7 AND GPUCOUNT<=$8 AND STORAGE<=$9 AND NODES<=$10 AND PROCESSES<=$11 AND PROCESSES_PER_NODE<=$12 ORDER BY PRIORITYTIME LIMIT $13`
 	rows, err := db.postgresql.Query(sqlStatement, core.WAITING, executorType, colonyName, cpu, memory, gpuName, gpuMem, gpuCount, storage, nodes, processes, processesPerNode, count)
 	if err != nil {
 		return nil, err
@@ -499,7 +499,7 @@ func (db *PQDatabase) FindCandidates(colonyName string, executorType string, cpu
 func (db *PQDatabase) FindCandidatesByName(colonyName string, executorName string, executorType string, cpu int64, memory int64, gpuName string, gpuMem int64, gpuCount int, storage int64, nodes int, processes int, processesPerNode int, count int) ([]*core.Process, error) {
 	var sqlStatement string
 
-	sqlStatement = `SELECT * FROM ` + db.dbPrefix + `PROCESSES WHERE STATE=$1 AND $2=ANY(TARGET_EXECUTOR_NAMES) AND EXECUTOR_TYPE=$3 AND IS_ASSIGNED=FALSE AND WAIT_FOR_PARENTS=FALSE AND TARGET_COLONY_NAME=$4 AND CPU>=$5 AND MEMORY>=$6 AND GPUNAME=$7 AND GPUMEM>=$8 AND GPUCOUNT>=$9 AND STORAGE>=$10 AND NODES>=$11 AND PROCESSES>=$12 AND PROCESSES_PER_NODE>=$13 ORDER BY PRIORITYTIME LIMIT $14`
+	sqlStatement = `SELECT * FROM ` + db.dbPrefix + `PROCESSES WHERE STATE=$1 AND $2=ANY(TARGET_EXECUTOR_NAMES) AND EXECUTOR_TYPE=$3 AND IS_ASSIGNED=FALSE AND WAIT_FOR_PARENTS=FALSE AND TARGET_COLONY_NAME=$4 AND CPU<=$5 AND MEMORY<=$6 AND GPUNAME=$7 AND GPUMEM<=$8 AND GPUCOUNT<=$9 AND STORAGE<=$10 AND NODES<=$11 AND PROCESSES<=$12 AND PROCESSES_PER_NODE<=$13 ORDER BY PRIORITYTIME LIMIT $14`
 	rows, err := db.postgresql.Query(sqlStatement, core.WAITING, executorName, executorType, colonyName, cpu, memory, gpuName, gpuMem, gpuCount, storage, nodes, processes, processesPerNode, count)
 	if err != nil {
 		return nil, err

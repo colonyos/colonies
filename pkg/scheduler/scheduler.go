@@ -59,6 +59,8 @@ func min(x, y int) int {
 }
 
 func (scheduler *Scheduler) Prioritize(colonyName string, executor *core.Executor, cpu int64, memory int64, count int) ([]*core.Process, error) {
+
+	// These conditions are not yet implemented
 	gpuName := ""
 	gpuMem := int64(0)
 	gpuCount := 0
