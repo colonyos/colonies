@@ -4,15 +4,13 @@ import (
 	"bufio"
 	"context"
 	"crypto/tls"
-	"fmt"
 	"io"
 	"net/http"
 	"os"
 
-	"github.com/k0kubun/go-ansi"
+	"github.com/jedib0t/go-pretty/v6/progress"
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
-	"github.com/schollz/progressbar/v3"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -88,7 +86,27 @@ func CreateS3Client() (*S3Client, error) {
 	return s3Client, nil
 }
 
-func (s3Client *S3Client) Upload(dir string, filename string, s3Filename string, filelength int64) error {
+type ProgressWriter struct {
+	tracker *progress.Tracker
+}
+
+func (pw *ProgressWriter) Write(p []byte) (n int, err error) {
+	n = len(p)
+	pw.tracker.Increment(int64(n))
+	return n, nil
+}
+
+// type ProgressReader struct {
+// 	tracker *progress.Tracker
+// }
+//
+// func (pw *ProgressReader) Read(p []byte) (n int, err error) {
+// 	n = len(p)
+// 	pw.tracker.Increment(int64(n))
+// 	return n, nil
+// }
+
+func (s3Client *S3Client) Upload(dir string, filename string, s3Filename string, filelength int64, tracker *progress.Tracker) error {
 	f, err := os.Open(dir + "/" + filename)
 	if err != nil {
 		return err
@@ -97,21 +115,8 @@ func (s3Client *S3Client) Upload(dir string, filename string, s3Filename string,
 	progress := true
 	var reader io.Reader
 	if progress {
-		bar := progressbar.NewOptions(int(filelength),
-			progressbar.OptionSetWriter(ansi.NewAnsiStdout()),
-			progressbar.OptionEnableColorCodes(true),
-			progressbar.OptionShowBytes(true),
-			progressbar.OptionSetWidth(15),
-			progressbar.OptionSetDescription("[cyan] Uploading "+filename),
-			progressbar.OptionSetTheme(progressbar.Theme{
-				Saucer:        "[blue]=[reset]",
-				SaucerHead:    "[green]>[reset]",
-				SaucerPadding: " ",
-				BarStart:      "[",
-				BarEnd:        "]",
-			}))
-
-		reader = io.TeeReader(bufio.NewReader(f), bar)
+		pw := &ProgressWriter{tracker: tracker}
+		reader = io.TeeReader(bufio.NewReader(f), pw)
 	} else {
 		reader = bufio.NewReader(f)
 	}
@@ -122,14 +127,10 @@ func (s3Client *S3Client) Upload(dir string, filename string, s3Filename string,
 		return err
 	}
 
-	if progress {
-		fmt.Println()
-	}
-
 	return nil
 }
 
-func (s3Client *S3Client) Download(filename string, s3Filename string, downloadDir string) error {
+func (s3Client *S3Client) Download(filename string, s3Filename string, downloadDir string, tracker *progress.Tracker) error {
 	file, err := s3Client.mc.GetObject(context.Background(), s3Client.BucketName, s3Filename, minio.GetObjectOptions{})
 	if err != nil {
 		return err
@@ -147,35 +148,13 @@ func (s3Client *S3Client) Download(filename string, s3Filename string, downloadD
 	progress := true
 	var writer io.Writer
 	if progress {
-		objInfo, err := s3Client.mc.StatObject(context.Background(), s3Client.BucketName, s3Filename, minio.StatObjectOptions{})
-		if err != nil {
-			return err
-		}
-
-		bar := progressbar.NewOptions(int(objInfo.Size),
-			progressbar.OptionSetWriter(ansi.NewAnsiStdout()),
-			progressbar.OptionEnableColorCodes(true),
-			progressbar.OptionShowBytes(true),
-			progressbar.OptionSetWidth(15),
-			progressbar.OptionSetDescription("[cyan] Downloading "+filename),
-			progressbar.OptionSetTheme(progressbar.Theme{
-				Saucer:        "[blue]=[reset]",
-				SaucerHead:    "[green]>[reset]",
-				SaucerPadding: " ",
-				BarStart:      "[",
-				BarEnd:        "]",
-			}))
-
-		writer = io.MultiWriter(destFile, bar)
+		pw := &ProgressWriter{tracker: tracker}
+		writer = io.MultiWriter(destFile, pw)
 	} else {
 		writer = destFile
 	}
 
 	_, err = io.Copy(writer, file)
-
-	if progress {
-		fmt.Println()
-	}
 
 	return err
 }
