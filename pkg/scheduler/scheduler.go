@@ -38,8 +38,8 @@ func (scheduler *Scheduler) printCandidates(candidates []*core.Process) {
 	}
 }
 
-func (scheduler *Scheduler) Select(colonyName string, executor *core.Executor) (*core.Process, error) {
-	prioritizedProcesses, err := scheduler.Prioritize(colonyName, executor, 1)
+func (scheduler *Scheduler) Select(colonyName string, executor *core.Executor, cpu int64, memory int64) (*core.Process, error) {
+	prioritizedProcesses, err := scheduler.Prioritize(colonyName, executor, cpu, memory, 1)
 	if err != nil {
 		return nil, err
 	}
@@ -58,13 +58,21 @@ func min(x, y int) int {
 	return y
 }
 
-func (scheduler *Scheduler) Prioritize(colonyName string, executor *core.Executor, count int) ([]*core.Process, error) {
-	candidates, err := scheduler.db.FindCandidatesByName(colonyName, executor.Name, executor.Type, count)
+func (scheduler *Scheduler) Prioritize(colonyName string, executor *core.Executor, cpu int64, memory int64, count int) ([]*core.Process, error) {
+	gpuName := ""
+	gpuMem := int64(0)
+	gpuCount := 0
+	storage := int64(0)
+	nodes := 0
+	processes := 0
+	processesPerNode := 0
+
+	candidates, err := scheduler.db.FindCandidatesByName(colonyName, executor.Name, executor.Type, cpu, memory, gpuName, gpuMem, gpuCount, storage, nodes, processes, processesPerNode, count)
 	if err != nil {
 		return nil, err
 	}
 
-	candidates2, err := scheduler.db.FindCandidates(colonyName, executor.Type, count)
+	candidates2, err := scheduler.db.FindCandidates(colonyName, executor.Type, cpu, memory, gpuName, gpuMem, gpuCount, storage, nodes, processes, processesPerNode, count)
 	if err != nil {
 		return nil, err
 	}
