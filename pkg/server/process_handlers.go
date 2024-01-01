@@ -141,13 +141,6 @@ func (server *ColoniesServer) handleAssignProcessHTTPRequest(c *gin.Context, rec
 		return
 	}
 
-	log.WithFields(log.Fields{
-		"ExecutorType": executor.Type,
-		"ExecutorId":   recoveredID,
-		"ColonyName":   msg.ColonyName,
-		"Timeout":      msg.Timeout}).
-		Debug("Waiting for processes")
-
 	cpu, err := parsers.ConvertCPUToInt(msg.AvailableCPU)
 	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
@@ -157,6 +150,17 @@ func (server *ColoniesServer) handleAssignProcessHTTPRequest(c *gin.Context, rec
 	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
+
+	log.WithFields(log.Fields{
+		"ExecutorType": executor.Type,
+		"ExecutorId":   recoveredID,
+		"ColonyName":   msg.ColonyName,
+		"AvailableCPU": msg.AvailableCPU,
+		"AvailableMem": msg.AvailableMemory,
+		"CPU":          cpu,
+		"Memory":       memory,
+		"Timeout":      msg.Timeout}).
+		Debug("Waiting for processes")
 
 	process, assignErr := server.controller.assign(recoveredID, msg.ColonyName, cpu, memory)
 	if assignErr != nil {
