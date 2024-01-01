@@ -8,10 +8,8 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
-	mathrand "math/rand"
-	"time"
 
-	"github.com/btcsuite/btcd/btcec"
+	"github.com/btcsuite/btcd/btcec/v2"
 )
 
 type Idendity struct {
@@ -20,12 +18,15 @@ type Idendity struct {
 }
 
 func CreateIdendity() (*Idendity, error) {
-	mathrand.Seed(time.Now().UnixNano()) // XXX Is this secure?
 	idendity := &Idendity{}
 
 	prv, err := ecdsa.GenerateKey(btcec.S256(), rand.Reader)
 	if err != nil {
 		return nil, err
+	}
+
+	if prv == nil {
+		return nil, errors.New("Invalid private key")
 	}
 
 	idendity.prv = prv

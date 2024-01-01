@@ -5,10 +5,9 @@ import (
 	"encoding/hex"
 	"fmt"
 	"math/big"
-	"math/rand"
-	"time"
 
-	"github.com/btcsuite/btcd/btcec"
+	"github.com/btcsuite/btcd/btcec/v2"
+	becdsa "github.com/btcsuite/btcd/btcec/v2/ecdsa"
 	"github.com/pkg/errors"
 )
 
@@ -19,12 +18,11 @@ var (
 	wordBytes      = wordBits / 8
 )
 
-func init() {
-	rand.Seed(time.Now().UTC().UnixNano())
-}
+const SignatureLength = 64 + 1
+const RecoveryIDOffset = 64
 
 func RecoveredID(hash *Hash, sig []byte) (string, error) {
-	if len(sig) != 65 {
+	if len(sig) != SignatureLength {
 		return "", errors.New("Invalid signature length")
 	}
 
@@ -50,54 +48,70 @@ func RecoveredID(hash *Hash, sig []byte) (string, error) {
 
 func Sign(hash *Hash, prv *ecdsa.PrivateKey) ([]byte, error) {
 	if len(hash.Bytes()) != 32 {
-		return nil, fmt.Errorf("hash is required to be exactly 32 bytes")
+		return nil, fmt.Errorf("hash is required to be exactly 32 bytes (%d)", len(hash.Bytes()))
 	}
 	if prv.Curve != btcec.S256() {
-		return nil, fmt.Errorf("private key curve is not secp256k1")
+		return nil, errors.New("private key curve is not secp256k1")
 	}
-	sig, err := btcec.SignCompact(btcec.S256(), (*btcec.PrivateKey)(prv), hash.Bytes(), false)
+
+	// Convert ecdsa.PrivateKey -> btcec.PrivateKey
+	var priv btcec.PrivateKey
+	if overflow := priv.Key.SetByteSlice(prv.D.Bytes()); overflow || priv.Key.IsZero() {
+		return nil, errors.New("invalid private key")
+	}
+	defer priv.Zero()
+	sig, err := becdsa.SignCompact(&priv, hash.Bytes(), false) // ref uncompressed pubkey
 	if err != nil {
 		return nil, err
 	}
 
 	v := sig[0] - 27
 	copy(sig, sig[1:])
-	sig[64] = v
+	sig[RecoveryIDOffset] = v
+
 	return sig, nil
 }
 
-func Verify(pubkey []byte, hash *Hash, sigrec []byte) (bool, error) {
-	if len(sigrec) != 65 {
-		return false, nil
-	}
-	if len(hash.Bytes()) != 32 {
-		return false, errors.New("Invalid hash length, expected it to be 32")
-	}
+func Verify(pubkey []byte, hash *Hash, sig []byte) (bool, error) {
+	sig = sig[:len(sig)-1] // Remove recovery id
 
-	sig := sigrec[:len(sigrec)-1]
-
-	signature := &btcec.Signature{R: new(big.Int).SetBytes(sig[:32]), S: new(big.Int).SetBytes(sig[32:])}
-	key, err := btcec.ParsePubKey(pubkey, btcec.S256())
+	if len(sig) != SignatureLength-1 {
+		return false, fmt.Errorf("Invalid signature length")
+	}
+	var r, s btcec.ModNScalar
+	if r.SetByteSlice(sig[:32]) {
+		return false, fmt.Errorf("Failed to parse signature")
+	}
+	if s.SetByteSlice(sig[32:]) {
+		return false, fmt.Errorf("Failed to parse signature")
+	}
+	signature := becdsa.NewSignature(&r, &s)
+	key, err := btcec.ParsePubKey(pubkey)
 	if err != nil {
-		return false, nil
+		return false, err
 	}
-	if signature.S.Cmp(secp256k1halfN) > 0 {
-		return false, nil
+
+	// Reject malleable signatures, libsecp256k1 does this check but btcec doesn't
+	if s.IsOverHalfOrder() {
+		return false, fmt.Errorf("Signature s value is over half the order")
 	}
 
 	return signature.Verify(hash.Bytes(), key), nil
 }
 
 func RecoverPublicKey(hash *Hash, sig []byte) ([]byte, error) {
-	btcsig := make([]byte, 65)
-	btcsig[0] = sig[64] + 27
+	if len(sig) != SignatureLength {
+		return nil, errors.New("Invalid signature")
+	}
+
+	btcsig := make([]byte, SignatureLength)
+	btcsig[0] = sig[RecoveryIDOffset] + 27
 	copy(btcsig[1:], sig)
 
-	pub, _, err := btcec.RecoverCompact(btcec.S256(), btcsig, hash.Bytes())
+	pub, _, err := becdsa.RecoverCompact(btcsig, hash.Bytes())
 	if err != nil {
 		return nil, err
 	}
-
-	bytes := (*btcec.PublicKey)(pub).SerializeUncompressed()
+	bytes := pub.SerializeUncompressed()
 	return bytes, err
 }
