@@ -41,7 +41,7 @@ test:
 	@cd pkg/security/validator; grc go test -v --race
 	@cd pkg/server; grc go test -v --race
 	@cd pkg/scheduler; grc go test -v --race
-	@cd pkg/parser; grc go test -v --race
+	@cd pkg/parsers; grc go test -v --race
 	@cd pkg/utils; grc go test -v --race
 	@cd pkg/cluster; grc go test -v --race
 	@cd pkg/cron; grc go test -v --race
@@ -58,7 +58,7 @@ github_test:
 	@cd pkg/security/validator; go test -v --race
 	@cd pkg/server; go test -v --race
 	@cd pkg/scheduler; go test -v --race
-	@cd pkg/parser; go test -v --race
+	@cd pkg/parsers; go test -v --race
 	@cd pkg/utils; go test -v --race
 	@cd pkg/cluster; go test -v --race
 	@cd pkg/cron; go test -v --race
