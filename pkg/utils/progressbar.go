@@ -4,6 +4,11 @@ import (
 	"time"
 
 	"github.com/jedib0t/go-pretty/v6/progress"
+	"github.com/muesli/termenv"
+)
+
+var (
+	env = termenv.EnvColorProfile()
 )
 
 func ProgressBar(trackers int) progress.Writer {
@@ -18,21 +23,10 @@ func ProgressBar(trackers int) progress.Writer {
 	showSpeedOverall := false
 	showPinned := true
 
-	// messageColors := []text.Color{
-	// 	text.FgRed,
-	// 	text.FgGreen,
-	// 	text.FgYellow,
-	// 	text.FgBlue,
-	// 	text.FgMagenta,
-	// 	text.FgCyan,
-	// 	text.FgWhite,
-	// }
-	// timeStart := time.Now()
-
 	pw := progress.NewWriter()
 	pw.SetAutoStop(autoStop)
 	pw.SetTrackerLength(20)
-	pw.SetMessageWidth(30)
+	pw.SetMessageWidth(40)
 	pw.SetNumTrackersExpected(trackers)
 	pw.SetSortBy(progress.SortByPercentDsc)
 	pw.SetStyle(progress.StyleDefault)

@@ -101,6 +101,7 @@ func TestCalcSyncPlan1(t *testing.T) {
 	// Calculate a sync plan
 	fsClient, err := CreateFSClient(coloniesClient, env.colonyName, env.executorPrvKey)
 	assert.Nil(t, err)
+	fsClient.Quiet = true
 	syncPlan, err := fsClient.CalcSyncPlan(syncDir, label, true)
 	assert.Nil(t, err)
 	assert.Len(t, syncPlan.LocalMissing, 1)
@@ -152,6 +153,7 @@ func TestCalcSyncPlan2(t *testing.T) {
 	// Calculate a sync plan
 	fsClient, err := CreateFSClient(coloniesClient, env.colonyName, env.executorPrvKey)
 	assert.Nil(t, err)
+	fsClient.Quiet = true
 	syncPlan, err := fsClient.CalcSyncPlan(syncDir, label, true)
 	assert.Nil(t, err)
 	assert.Len(t, syncPlan.LocalMissing, 0)
@@ -201,6 +203,7 @@ func TestCalcSyncPlan3(t *testing.T) {
 	// Calculate a sync plan
 	fsClient, err := CreateFSClient(coloniesClient, env.colonyName, env.executorPrvKey)
 	assert.Nil(t, err)
+	fsClient.Quiet = true
 	syncPlan, err := fsClient.CalcSyncPlan(syncDir, label, true)
 	assert.Nil(t, err)
 	assert.Len(t, syncPlan.LocalMissing, 0)
@@ -240,6 +243,7 @@ func TestApplySyncPlan1(t *testing.T) {
 	// Calculate a sync plan
 	fsClient, err := CreateFSClient(coloniesClient, env.colonyName, env.executorPrvKey)
 	assert.Nil(t, err)
+	fsClient.Quiet = true
 	syncPlan, err := fsClient.CalcSyncPlan(syncDir, label, true)
 	assert.Nil(t, err)
 
@@ -279,6 +283,7 @@ func TestApplySyncPlan2(t *testing.T) {
 	// Calculate a sync plan
 	fsClient, err := CreateFSClient(coloniesClient, env.colonyName, env.executorPrvKey)
 	assert.Nil(t, err)
+	fsClient.Quiet = true
 	syncPlan, err := fsClient.CalcSyncPlan(syncDir, label, true)
 	assert.Nil(t, err)
 
@@ -334,6 +339,7 @@ func TestApplySyncPlan3(t *testing.T) {
 	// Calculate a sync plan
 	fsClient, err := CreateFSClient(coloniesClient, env.colonyName, env.executorPrvKey)
 	assert.Nil(t, err)
+	fsClient.Quiet = true
 	syncPlan, err := fsClient.CalcSyncPlan(syncDir, label, true)
 	assert.Nil(t, err)
 
@@ -404,6 +410,7 @@ func TestApplySyncPlan4(t *testing.T) {
 	// Calculate a sync plan
 	fsClient, err := CreateFSClient(coloniesClient, env.colonyName, env.executorPrvKey)
 	assert.Nil(t, err)
+	fsClient.Quiet = true
 	syncPlan, err := fsClient.CalcSyncPlan(syncDir, label, true)
 	assert.Nil(t, err)
 
@@ -486,6 +493,7 @@ func TestApplySyncPlan5(t *testing.T) {
 	// Calculate a sync plan
 	fsClient, err := CreateFSClient(coloniesClient, env.colonyName, env.executorPrvKey)
 	assert.Nil(t, err)
+	fsClient.Quiet = true
 	syncPlan, err := fsClient.CalcSyncPlan(syncDir, label, true)
 	assert.Nil(t, err)
 
@@ -565,6 +573,7 @@ func TestDownload(t *testing.T) {
 	// Calculate a sync plan
 	fsClient, err := CreateFSClient(coloniesClient, env.colonyName, env.executorPrvKey)
 	assert.Nil(t, err)
+	fsClient.Quiet = true
 	syncPlan, err := fsClient.CalcSyncPlan(syncDir, label, true)
 	assert.Nil(t, err)
 
@@ -615,6 +624,7 @@ func TestRemoveByID(t *testing.T) {
 	// Calculate a sync plan
 	fsClient, err := CreateFSClient(coloniesClient, env.colonyName, env.executorPrvKey)
 	assert.Nil(t, err)
+	fsClient.Quiet = true
 	syncPlan, err := fsClient.CalcSyncPlan(syncDir, label, true)
 	assert.Nil(t, err)
 
@@ -659,6 +669,7 @@ func TestRemoveByName(t *testing.T) {
 	// Calculate a sync plan
 	fsClient, err := CreateFSClient(coloniesClient, env.colonyName, env.executorPrvKey)
 	assert.Nil(t, err)
+	fsClient.Quiet = true
 	syncPlan, err := fsClient.CalcSyncPlan(syncDir, label, true)
 	assert.Nil(t, err)
 
@@ -725,6 +736,7 @@ func TestDownloadSnapshot(t *testing.T) {
 	// Calculate a sync plan
 	fsClient, err := CreateFSClient(coloniesClient, env.colonyName, env.executorPrvKey)
 	assert.Nil(t, err)
+	fsClient.Quiet = true
 	syncPlan, err := fsClient.CalcSyncPlan(syncDir, label, true)
 	assert.Nil(t, err)
 
@@ -784,6 +796,7 @@ func TestRemoveAllFilesWithLabel(t *testing.T) {
 	// Calculate a sync plan
 	fsClient, err := CreateFSClient(coloniesClient, env.colonyName, env.executorPrvKey)
 	assert.Nil(t, err)
+	fsClient.Quiet = true
 	syncPlan, err := fsClient.CalcSyncPlan(syncDir, label, true)
 	assert.Nil(t, err)
 
@@ -896,6 +909,7 @@ func TestAddFilesRecursively(t *testing.T) {
 
 	fsClient, err := CreateFSClient(coloniesClient, env.colonyName, env.executorPrvKey)
 	assert.Nil(t, err)
+	fsClient.Quiet = true
 	syncPlans, err := fsClient.CalcSyncPlans(syncDir, label, true)
 	assert.Nil(t, err)
 
@@ -997,6 +1011,7 @@ func TestDownloadSnapshopRecursively(t *testing.T) {
 
 	fsClient, err := CreateFSClient(coloniesClient, env.colonyName, env.executorPrvKey)
 	assert.Nil(t, err)
+	fsClient.Quiet = true
 	syncPlans, err := fsClient.CalcSyncPlans(syncDir, label, true)
 	assert.Nil(t, err)
 
