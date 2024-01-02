@@ -16,7 +16,8 @@ type worker struct {
 }
 
 type job struct {
-	f   func() error
+	f   func(arg interface{}) error
+	a   interface{}
 	err chan error
 }
 
@@ -31,7 +32,7 @@ func (w *worker) run() {
 			return
 		case job := <-w.pool.queue:
 			log.Debugf("Worker %d: received job", w.id)
-			err := job.f()
+			err := job.f(job.a)
 			job.err <- err
 		}
 	}
@@ -63,8 +64,8 @@ func (pool *WorkerPool) Stop() {
 	}
 }
 
-func (pool *WorkerPool) Call(f func() error) chan error {
+func (pool *WorkerPool) Call(f func(arg interface{}) error, a interface{}) chan error {
 	err := make(chan error, 1)
-	pool.queue <- &job{f: f, err: err}
+	pool.queue <- &job{f: f, a: a, err: err}
 	return err
 }

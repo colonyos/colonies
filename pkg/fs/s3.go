@@ -96,23 +96,13 @@ func (pw *ProgressWriter) Write(p []byte) (n int, err error) {
 	return n, nil
 }
 
-// type ProgressReader struct {
-// 	tracker *progress.Tracker
-// }
-//
-// func (pw *ProgressReader) Read(p []byte) (n int, err error) {
-// 	n = len(p)
-// 	pw.tracker.Increment(int64(n))
-// 	return n, nil
-// }
-
-func (s3Client *S3Client) Upload(dir string, filename string, s3Filename string, filelength int64, tracker *progress.Tracker) error {
+func (s3Client *S3Client) Upload(dir string, filename string, s3Filename string, filelength int64, tracker *progress.Tracker, quiet bool) error {
 	f, err := os.Open(dir + "/" + filename)
 	if err != nil {
 		return err
 	}
 
-	progress := true
+	progress := !quiet
 	var reader io.Reader
 	if progress {
 		pw := &ProgressWriter{tracker: tracker}
@@ -130,7 +120,7 @@ func (s3Client *S3Client) Upload(dir string, filename string, s3Filename string,
 	return nil
 }
 
-func (s3Client *S3Client) Download(filename string, s3Filename string, downloadDir string, tracker *progress.Tracker) error {
+func (s3Client *S3Client) Download(filename string, s3Filename string, downloadDir string, tracker *progress.Tracker, quiet bool) error {
 	file, err := s3Client.mc.GetObject(context.Background(), s3Client.BucketName, s3Filename, minio.GetObjectOptions{})
 	if err != nil {
 		return err
@@ -145,7 +135,7 @@ func (s3Client *S3Client) Download(filename string, s3Filename string, downloadD
 	}
 	defer destFile.Close()
 
-	progress := true
+	progress := !quiet
 	var writer io.Writer
 	if progress {
 		pw := &ProgressWriter{tracker: tracker}

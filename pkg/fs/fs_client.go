@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -23,6 +22,7 @@ type FSClient struct {
 	colonyName     string
 	executorPrvKey string
 	s3Client       *S3Client
+	Quiet          bool
 }
 
 type FileInfo struct {
@@ -72,7 +72,7 @@ func checksum(filePath string) (string, error) {
 	return hex.EncodeToString(hasher.Sum(nil)), nil
 }
 
-func (fsClient *FSClient) uploadFile(syncPlan *SyncPlan, fileInfo *FileInfo, tracker *progress.Tracker) error {
+func (fsClient *FSClient) uploadFile(syncPlan *SyncPlan, fileInfo *FileInfo, tracker *progress.Tracker, quite bool) error {
 	fileStat, err := os.Stat(syncPlan.Dir + "/" + fileInfo.Name)
 	if err != nil {
 		return err
@@ -99,7 +99,7 @@ func (fsClient *FSClient) uploadFile(syncPlan *SyncPlan, fileInfo *FileInfo, tra
 		ChecksumAlg: "SHA256",
 		Reference:   ref}
 
-	err = fsClient.s3Client.Upload(syncPlan.Dir, coloniesFile.Name, coloniesFile.Reference.S3Object.Object, coloniesFile.Size, tracker)
+	err = fsClient.s3Client.Upload(syncPlan.Dir, coloniesFile.Name, coloniesFile.Reference.S3Object.Object, coloniesFile.Size, tracker, quite)
 	if err != nil {
 		return err
 	}
@@ -122,41 +122,68 @@ func (fsClient *FSClient) ApplySyncPlan(colonyName string, syncPlan *SyncPlan) e
 		}
 	}
 
-	pw := utils.ProgressBar(totalCalls)
-	go pw.Render()
-
 	totalUploadSize := int64(0)
-	for _, fileInfo := range syncPlan.RemoteMissing {
-		totalUploadSize += fileInfo.Size
-	}
-
 	totalDownloadSize := int64(0)
-	for _, fileInfo := range syncPlan.LocalMissing {
-		totalDownloadSize += fileInfo.Size
+	totalConflictSize := int64(0)
+
+	var pw progress.Writer
+	if !fsClient.Quiet {
+		pw = utils.ProgressBar(totalCalls)
+		go pw.Render()
+
+		for _, fileInfo := range syncPlan.RemoteMissing {
+			totalUploadSize += fileInfo.Size
+		}
+
+		for _, fileInfo := range syncPlan.LocalMissing {
+			totalDownloadSize += fileInfo.Size
+		}
+
+		for _, fileInfo := range syncPlan.Conflicts {
+			totalConflictSize += fileInfo.Size
+		}
 	}
 
 	pool := utils.NewWorkerPool(50).Start()
 
-	messageUploadTracker := fmt.Sprintf("Uploading %s", syncPlan.Label)
-	uploadTracker := progress.Tracker{Message: messageUploadTracker, Total: totalUploadSize, Units: progress.UnitsBytes}
-	if len(syncPlan.RemoteMissing) > 0 {
-		pw.AppendTracker(&uploadTracker)
-		uploadTracker.Start()
-	}
+	var uploadTracker progress.Tracker
+	var downloadTracker progress.Tracker
+	var conflictTracker progress.Tracker
 
-	messageDownloadTracker := fmt.Sprintf("Downloading %s", syncPlan.Label)
-	downloadTracker := progress.Tracker{Message: messageDownloadTracker, Total: totalDownloadSize, Units: progress.UnitsBytes}
-	if len(syncPlan.LocalMissing) > 0 {
-		pw.AppendTracker(&downloadTracker)
-		downloadTracker.Start()
+	if !fsClient.Quiet {
+		messageUploadTracker := fmt.Sprintf("Uploading %s", syncPlan.Label)
+		uploadTracker = progress.Tracker{Message: messageUploadTracker, Total: totalUploadSize, Units: progress.UnitsBytes}
+		if len(syncPlan.RemoteMissing) > 0 {
+			pw.AppendTracker(&uploadTracker)
+			uploadTracker.Start()
+		}
+
+		messageDownloadTracker := fmt.Sprintf("Downloading %s", syncPlan.Dir)
+		downloadTracker = progress.Tracker{Message: messageDownloadTracker, Total: totalDownloadSize, Units: progress.UnitsBytes}
+		if len(syncPlan.LocalMissing) > 0 {
+			pw.AppendTracker(&downloadTracker)
+			downloadTracker.Start()
+		}
+
+		var messageConflictTracker string
+		if syncPlan.KeepLocal {
+			messageConflictTracker = fmt.Sprintf("Conflict (keeplocal) %s", syncPlan.Label)
+		} else {
+			messageConflictTracker = fmt.Sprintf("Conflict (keepremote) %s", syncPlan.Label)
+		}
+		conflictTracker = progress.Tracker{Message: messageConflictTracker, Total: totalConflictSize, Units: progress.UnitsBytes}
+		if len(syncPlan.Conflicts) > 0 {
+			pw.AppendTracker(&conflictTracker)
+			conflictTracker.Start()
+		}
 	}
 
 	// 1. Upload all remote missing files
 	for _, fileInfo := range syncPlan.RemoteMissing {
-		errChan := pool.Call(func() error {
-			err := fsClient.uploadFile(syncPlan, fileInfo, &uploadTracker)
-			return err
-		})
+		errChan := pool.Call(func(arg interface{}) error {
+			f := arg.(*FileInfo)
+			return fsClient.uploadFile(syncPlan, f, &uploadTracker, fsClient.Quiet)
+		}, fileInfo)
 		go func() {
 			err := <-errChan
 			aggErrChan <- err
@@ -165,10 +192,10 @@ func (fsClient *FSClient) ApplySyncPlan(colonyName string, syncPlan *SyncPlan) e
 
 	// 2. Download all local missing files
 	for _, fileInfo := range syncPlan.LocalMissing {
-		errChan := pool.Call(func() error {
-			fmt.Println("Downloading ", fileInfo.Name)
-			return fsClient.s3Client.Download(fileInfo.Name, fileInfo.S3Filename, syncPlan.Dir, &downloadTracker)
-		})
+		errChan := pool.Call(func(arg interface{}) error {
+			f := arg.(*FileInfo)
+			return fsClient.s3Client.Download(f.Name, f.S3Filename, syncPlan.Dir, &downloadTracker, fsClient.Quiet)
+		}, fileInfo)
 		go func() {
 			err := <-errChan
 			aggErrChan <- err
@@ -179,15 +206,10 @@ func (fsClient *FSClient) ApplySyncPlan(colonyName string, syncPlan *SyncPlan) e
 	// If keepLocalFiles then upload conflicting files to server else download conflicting files to local filesystem
 	if syncPlan.KeepLocal {
 		for _, fileInfo := range syncPlan.Conflicts {
-			errChan := pool.Call(func() error {
-				// message := fmt.Sprintf("Uploading %s", fileInfo.Name)
-				// tracker := progress.Tracker{Message: message, Total: fileInfo.Size, Units: progress.UnitsBytes}
-				// pw.AppendTracker(&tracker)
-				// tracker.Start()
-				err := fsClient.uploadFile(syncPlan, fileInfo, &uploadTracker)
-				//tracker.MarkAsDone()
-				return err
-			})
+			errChan := pool.Call(func(arg interface{}) error {
+				f := arg.(*FileInfo)
+				return fsClient.uploadFile(syncPlan, f, &conflictTracker, fsClient.Quiet)
+			}, fileInfo)
 			go func() {
 				err := <-errChan
 				aggErrChan <- err
@@ -195,10 +217,10 @@ func (fsClient *FSClient) ApplySyncPlan(colonyName string, syncPlan *SyncPlan) e
 		}
 	} else {
 		for _, fileInfo := range syncPlan.Conflicts {
-			errChan := pool.Call(func() error {
-				fmt.Println("Downloading (conflict)", fileInfo.Name)
-				return fsClient.s3Client.Download(fileInfo.Name, fileInfo.S3Filename, syncPlan.Dir, &downloadTracker)
-			})
+			errChan := pool.Call(func(arg interface{}) error {
+				f := arg.(*FileInfo)
+				return fsClient.s3Client.Download(f.Name, f.S3Filename, syncPlan.Dir, &conflictTracker, fsClient.Quiet)
+			}, fileInfo)
 			go func() {
 				err := <-errChan
 				aggErrChan <- err
@@ -224,9 +246,18 @@ O:
 		}
 	}
 
-	fmt.Println("counter: ", counter, " expectedErrs: ", expectedErrs)
-	uploadTracker.MarkAsDone()
-	downloadTracker.MarkAsDone()
+	if !fsClient.Quiet {
+		for {
+			if !pw.IsRenderInProgress() {
+				break
+			}
+		}
+
+		uploadTracker.MarkAsDone()
+		downloadTracker.MarkAsDone()
+		conflictTracker.MarkAsDone()
+		pw.Stop()
+	}
 
 	return nil
 }
@@ -315,7 +346,7 @@ func (fsClient *FSClient) CalcSyncPlans(dir string, label string, keepLocal bool
 }
 
 func (fsClient *FSClient) CalcSyncPlan(dir string, label string, keepLocal bool) (*SyncPlan, error) {
-	files, err := ioutil.ReadDir(dir)
+	files, err := os.ReadDir(dir)
 	if err != nil {
 		log.WithFields(log.Fields{"Dir": dir}).Debug("Directory does not exists")
 		files = nil
@@ -323,6 +354,21 @@ func (fsClient *FSClient) CalcSyncPlan(dir string, label string, keepLocal bool)
 
 	if fsClient.coloniesClient == nil {
 		return nil, errors.New("coloniesClient is nil")
+	}
+
+	var pw progress.Writer
+	var localTracker progress.Tracker
+	if !fsClient.Quiet {
+		pw = utils.ProgressBar(2)
+		pw.Style().Visibility.Value = false
+		go pw.Render()
+
+		if len(files) > 0 {
+			localTrackerMessage := fmt.Sprintf("Analyzing %s", dir)
+			localTracker = progress.Tracker{Message: localTrackerMessage, Total: int64(len(files)), Units: progress.UnitsDefault}
+			pw.AppendTracker(&localTracker)
+			localTracker.Start()
+		}
 	}
 
 	log.WithFields(log.Fields{"Label": label, "Dir:": dir}).Debug("Getting remoteFilenames")
@@ -364,6 +410,12 @@ func (fsClient *FSClient) CalcSyncPlan(dir string, label string, keepLocal bool)
 			}
 			localFileSizeMap[file.Name()] = fi.Size()
 		}
+
+		fmt.Println(file.Name())
+
+		if !fsClient.Quiet {
+			localTracker.Increment(int64(1))
+		}
 	}
 
 	// Find out which files are missing at the server
@@ -395,7 +447,6 @@ func (fsClient *FSClient) CalcSyncPlan(dir string, label string, keepLocal bool)
 		// File exists locally, but does not match file on server
 		_, ok := localFileMap[filename]
 		if ok {
-			//fmt.Println("filename: ", filename, " remote cs: ", checksum, " local cs: ", localFileMap[filename])
 			if localFileMap[filename] != checksum {
 				if keepLocal {
 					localChecksum := localFileMap[filename]
@@ -407,6 +458,18 @@ func (fsClient *FSClient) CalcSyncPlan(dir string, label string, keepLocal bool)
 					conflicts = append(conflicts, &FileInfo{Name: filename, Checksum: checksum, Size: size, S3Filename: s3Filename})
 				}
 			}
+		}
+	}
+
+	if !fsClient.Quiet {
+		if len(files) > 0 {
+			for {
+				if !pw.IsRenderInProgress() {
+					break
+				}
+			}
+			localTracker.MarkAsDone()
+			pw.Stop()
 		}
 	}
 
@@ -432,13 +495,25 @@ func (fsClient *FSClient) Download(colonyName string, fileID string, downloadDir
 	pw := utils.ProgressBar(1)
 	go pw.Render()
 
-	messageDownloadTracker := fmt.Sprintf("Downloading %s", file[0].Name)
-	downloadTracker := progress.Tracker{Message: messageDownloadTracker, Total: file[0].Size, Units: progress.UnitsBytes}
-	pw.AppendTracker(&downloadTracker)
-	downloadTracker.Start()
+	var downloadTracker progress.Tracker
+	if !fsClient.Quiet {
+		messageDownloadTracker := fmt.Sprintf("Downloading %s", file[0].Name)
+		downloadTracker = progress.Tracker{Message: messageDownloadTracker, Total: file[0].Size, Units: progress.UnitsBytes}
+		pw.AppendTracker(&downloadTracker)
+		downloadTracker.Start()
+	}
 
-	err = fsClient.s3Client.Download(file[0].Name, file[0].Reference.S3Object.Object, downloadDir, &downloadTracker)
-	downloadTracker.MarkAsDone()
+	err = fsClient.s3Client.Download(file[0].Name, file[0].Reference.S3Object.Object, downloadDir, &downloadTracker, fsClient.Quiet)
+
+	if !fsClient.Quiet {
+		for {
+			if !pw.IsRenderInProgress() {
+				break
+			}
+		}
+
+		downloadTracker.MarkAsDone()
+	}
 	return err
 }
 
@@ -486,24 +561,114 @@ func (fsClient *FSClient) RemoveAllFilesWithLabel(label string) error {
 		return err
 	}
 
+	var pw progress.Writer
+	var labelTracker progress.Tracker
+
+	if !fsClient.Quiet {
+		pw = utils.ProgressBar(2)
+		pw.Style().Visibility.Value = false
+		go pw.Render()
+
+		labelTrackerMessage := fmt.Sprintf("Analyzing labels")
+		labelTracker = progress.Tracker{Message: labelTrackerMessage, Total: int64(len(allLabels)), Units: progress.UnitsDefault}
+		pw.AppendTracker(&labelTracker)
+		labelTracker.Start()
+	}
+
+	allFileDataArr := make(map[*core.Label][]*core.FileData)
 	for _, l := range allLabels {
 		fileDataArr, err := fsClient.coloniesClient.GetFileData(fsClient.colonyName, l.Name, fsClient.executorPrvKey)
 		if err != nil {
 			return err
 		}
+		allFileDataArr[l] = fileDataArr
+		if !fsClient.Quiet {
+			labelTracker.Increment(int64(1))
+		}
+	}
 
+	if !fsClient.Quiet {
+		labelTracker.MarkAsDone()
+	}
+
+	totalRevisions := 0
+	for _, innerSlice := range allFileDataArr {
+		totalRevisions += len(innerSlice)
+	}
+
+	var removeTracker progress.Tracker
+	if !fsClient.Quiet {
+		removeTrackerMessage := fmt.Sprintf("Removing files")
+		removeTracker = progress.Tracker{Message: removeTrackerMessage, Total: int64(totalRevisions), Units: progress.UnitsDefault}
+		pw.AppendTracker(&removeTracker)
+		removeTracker.Start()
+	}
+
+	aggErrChan := make(chan error, totalRevisions)
+	pool := utils.NewWorkerPool(5).Start()
+
+	type w struct {
+		l        *core.Label
+		fileData *core.FileData
+	}
+
+	for l, fileDataArr := range allFileDataArr {
 		for _, fileData := range fileDataArr {
-			log.WithFields(log.Fields{"SA3Filename": fileData.Name, "BucketName": fsClient.s3Client.BucketName}).Debug("Removing file from S3")
-			err = fsClient.s3Client.Remove(fileData.S3Filename)
+			errChan := pool.Call(func(arg interface{}) error {
+				w := arg.(*w)
+				log.WithFields(log.Fields{"S3Filename": w.fileData.Name, "BucketName": fsClient.s3Client.BucketName}).Debug("Removing file from S3")
+				err = fsClient.s3Client.Remove(w.fileData.S3Filename)
+				if err != nil {
+					return err
+				}
+				log.WithFields(log.Fields{"ColonyName": fsClient.colonyName, "FileName": w.fileData.Name}).Debug("Remove file from Colonies FS")
+				err = fsClient.coloniesClient.RemoveFileByName(fsClient.colonyName, w.l.Name, w.fileData.Name, fsClient.executorPrvKey)
+				if err != nil {
+					return err
+				}
+				if !fsClient.Quiet {
+					removeTracker.Increment(int64(1))
+				}
+				return nil
+			}, &w{l: l, fileData: fileData})
+			go func() {
+				err := <-errChan
+				aggErrChan <- err
+			}()
+
+		}
+	}
+
+	expectedErrs := totalRevisions
+	counter := 0
+O:
+	for {
+		select {
+		case err := <-aggErrChan:
 			if err != nil {
+				log.WithFields(log.Fields{"Error": err}).Debug("Error in worker")
 				return err
 			}
-			log.WithFields(log.Fields{"ColonyName": fsClient.colonyName, "FileName": fileData.Name}).Debug("Remove file from Colonies FS")
-			err = fsClient.coloniesClient.RemoveFileByName(fsClient.colonyName, l.Name, fileData.Name, fsClient.executorPrvKey)
-			if err != nil {
-				return err
+			counter++
+			expectedErrs--
+			if expectedErrs == 0 {
+				break O
 			}
 		}
+	}
+
+	if !fsClient.Quiet {
+		labelTracker.MarkAsDone()
+	}
+
+	if !fsClient.Quiet {
+		for {
+			if !pw.IsRenderInProgress() {
+				break
+			}
+		}
+
+		pw.Stop()
 	}
 
 	return nil
@@ -542,18 +707,30 @@ func (fsClient *FSClient) DownloadSnapshot(snapshotID string, downloadDir string
 				}
 			}
 
-			pw := utils.ProgressBar(1)
-			messageDownloadTracker := fmt.Sprintf("Downloading %s", file[0].Name)
-			downloadTracker := progress.Tracker{Message: messageDownloadTracker, Total: file[0].Size, Units: progress.UnitsBytes}
-			pw.AppendTracker(&downloadTracker)
-			downloadTracker.Start()
+			var pw progress.Writer
+			var downloadTracker progress.Tracker
+			if !fsClient.Quiet {
+				pw = utils.ProgressBar(1)
+				messageDownloadTracker := fmt.Sprintf("Downloading %s", file[0].Name)
+				downloadTracker = progress.Tracker{Message: messageDownloadTracker, Total: file[0].Size, Units: progress.UnitsBytes}
+				pw.AppendTracker(&downloadTracker)
+				downloadTracker.Start()
+			}
 
-			err = fsClient.s3Client.Download(file[0].Name, file[0].Reference.S3Object.Object, dir, &downloadTracker)
+			err = fsClient.s3Client.Download(file[0].Name, file[0].Reference.S3Object.Object, dir, &downloadTracker, fsClient.Quiet)
 			if err != nil {
 				return err
 			}
 
-			downloadTracker.MarkAsDone()
+			if !fsClient.Quiet {
+				for {
+					if !pw.IsRenderInProgress() {
+						break
+					}
+				}
+
+				downloadTracker.MarkAsDone()
+			}
 
 			log.WithFields(log.Fields{"Filename": file[0].Name, "DownloadDir": downloadDir}).Debug("Downloading file")
 		} else {

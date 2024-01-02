@@ -126,6 +126,8 @@ var Email string
 var Phone string
 var ShowIDs bool
 var InitDB bool
+var SyncPlans bool
+var Quite bool
 
 func init() {
 	rootCmd.PersistentFlags().BoolVarP(&Verbose, "verbose", "v", false, "Verbose (debugging)")

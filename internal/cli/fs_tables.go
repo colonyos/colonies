@@ -12,7 +12,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func printSyncPlans(syncPlans []*fs.SyncPlan) {
+func printSyncPlansDetails(syncPlans []*fs.SyncPlan) {
 	remoteMissingTable, theme := createTable(3)
 	remoteMissingTable.SetTitle("These files will be uploaded")
 	var cols = []table.Column{
