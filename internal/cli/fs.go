@@ -42,6 +42,8 @@ func init() {
 	syncCmd.Flags().BoolVarP(&Dry, "dry", "", false, "Dry run")
 	syncCmd.Flags().BoolVarP(&Yes, "yes", "", false, "Anser yes to all questions")
 	syncCmd.Flags().BoolVarP(&KeepLocal, "keeplocal", "", true, "Keep local files in case of conflicts")
+	syncCmd.Flags().BoolVarP(&SyncPlans, "syncplans", "", false, "Print sync plans details")
+	syncCmd.Flags().BoolVarP(&Quite, "quite", "", false, "No outputs")
 
 	listFilesCmd.Flags().StringVarP(&Label, "label", "l", "", "Label")
 	syncCmd.MarkFlagRequired("label")
@@ -92,12 +94,43 @@ var snapshotCmd = &cobra.Command{
 	Long:  "Manage file snapshots",
 }
 
+func printSyncPlans(syncPlans []*fs.SyncPlan) {
+	filesToDownload := 0
+	filesToUpload := 0
+	conflicts := 0
+
+	for _, syncPlan := range syncPlans {
+		filesToDownload += len(syncPlan.LocalMissing)
+		filesToUpload += len(syncPlan.RemoteMissing)
+		conflicts += len(syncPlan.Conflicts)
+	}
+
+	var conflictResolution string
+	if KeepLocal {
+		conflictResolution = "replace-remote"
+	} else {
+		conflictResolution = "replace-local"
+	}
+
+	log.WithFields(log.Fields{"Conflict resolution": conflictResolution, "Download": filesToDownload, "Upload": filesToUpload, "Conflicts": conflicts}).Info("Sync plans completed")
+
+	if SyncPlans {
+		printSyncPlansDetails(syncPlans)
+	} else {
+		log.Info("Add --syncplan flag to view the sync plan in more detail")
+	}
+}
+
 var syncCmd = &cobra.Command{
 	Use:   "sync",
 	Short: "Synchronize a directory with a file storage",
 	Long:  "Synchronize a directory with a file storage",
 	Run: func(cmd *cobra.Command, args []string) {
 		client := setup()
+
+		if Quite && !Yes {
+			CheckError(errors.New("--quite and --yes flags must be used together, please add --yes"))
+		}
 
 		fileInfo, err := os.Stat(SyncDir)
 		if err == nil {
@@ -117,6 +150,14 @@ var syncCmd = &cobra.Command{
 		fsClient, err := fs.CreateFSClient(client, ColonyName, PrvKey)
 		CheckError(err)
 
+		if Quite {
+			fsClient.Quiet = true
+		}
+
+		if !Quite {
+			log.Info("Calculating sync plans")
+		}
+
 		syncPlans, err := fsClient.CalcSyncPlans(SyncDir, Label, KeepLocal)
 		CheckError(err)
 
@@ -128,7 +169,9 @@ var syncCmd = &cobra.Command{
 		}
 
 		if counter == len(syncPlans) {
-			log.WithFields(log.Fields{"Label": Label, "SyncDir": SyncDir}).Info("Synchronizing, nothing to do, already synchronized")
+			if !Quite {
+				log.WithFields(log.Fields{"Label": Label, "SyncDir": SyncDir}).Info("Synchronizing, nothing to do, already synchronized")
+			}
 			os.Exit(0)
 		}
 

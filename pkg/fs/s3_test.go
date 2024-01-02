@@ -29,7 +29,7 @@ func TestS3Upload(t *testing.T) {
 	assert.Nil(t, err)
 
 	// Upload file to S3
-	err = s3Client.Upload(tmpDir, filename, filename, int64(len(data)))
+	err = s3Client.Upload(tmpDir, filename, filename, int64(len(data)), nil, true)
 	assert.Nil(t, err)
 
 	// Clean up
@@ -58,11 +58,11 @@ func TestS3Download(t *testing.T) {
 	assert.Nil(t, err)
 
 	// Upload file to S3
-	err = s3Client.Upload(srcTmpDir, filename, filename, int64(len(data)))
+	err = s3Client.Upload(srcTmpDir, filename, filename, int64(len(data)), nil, true)
 	assert.Nil(t, err)
 
 	// Download file back to client
-	err = s3Client.Download(filename, filename, dstTmpDir)
+	err = s3Client.Download(filename, filename, dstTmpDir, nil, true)
 	assert.Nil(t, err)
 
 	fileContent, err := os.ReadFile(dstTmpDir + "/" + filename)
@@ -94,7 +94,7 @@ func TestS3Remove(t *testing.T) {
 	assert.Nil(t, err)
 
 	// Upload file to S3
-	err = s3Client.Upload(tmpDir, filename, filename, int64(len(data)))
+	err = s3Client.Upload(tmpDir, filename, filename, int64(len(data)), nil, true)
 	assert.Nil(t, err)
 	assert.True(t, s3Client.Exists(filename))
 
