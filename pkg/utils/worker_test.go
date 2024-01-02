@@ -13,9 +13,9 @@ func TestWorkerPool(t *testing.T) {
 	aggErrChan := make(chan error, calls)
 
 	for i := 0; i < calls; i++ {
-		errChan := pool.Call(func() error {
+		errChan := pool.Call(func(arg interface{}) error {
 			return nil
-		})
+		}, "")
 
 		go func() {
 			err := <-errChan

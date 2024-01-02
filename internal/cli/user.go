@@ -39,8 +39,8 @@ func init() {
 
 var userCmd = &cobra.Command{
 	Use:   "user",
-	Short: "Manage Users",
-	Long:  "Manage Users",
+	Short: "Manage users",
+	Long:  "Manage users",
 }
 
 var addUserCmd = &cobra.Command{

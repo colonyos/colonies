@@ -57,8 +57,8 @@ func init() {
 
 var functionCmd = &cobra.Command{
 	Use:   "function",
-	Short: "Manage Functions",
-	Long:  "Manage Functions",
+	Short: "Manage functions",
+	Long:  "Manage functions",
 }
 
 var registerFuncCmd = &cobra.Command{
