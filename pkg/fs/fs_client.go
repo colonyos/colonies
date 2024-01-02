@@ -411,8 +411,6 @@ func (fsClient *FSClient) CalcSyncPlan(dir string, label string, keepLocal bool)
 			localFileSizeMap[file.Name()] = fi.Size()
 		}
 
-		fmt.Println(file.Name())
-
 		if !fsClient.Quiet {
 			localTracker.Increment(int64(1))
 		}
@@ -608,21 +606,22 @@ func (fsClient *FSClient) RemoveAllFilesWithLabel(label string) error {
 	pool := utils.NewWorkerPool(5).Start()
 
 	type w struct {
-		l        *core.Label
-		fileData *core.FileData
+		l          string
+		filename   string
+		s3Filename string
 	}
 
 	for l, fileDataArr := range allFileDataArr {
 		for _, fileData := range fileDataArr {
 			errChan := pool.Call(func(arg interface{}) error {
-				w := arg.(*w)
-				log.WithFields(log.Fields{"S3Filename": w.fileData.Name, "BucketName": fsClient.s3Client.BucketName}).Debug("Removing file from S3")
-				err = fsClient.s3Client.Remove(w.fileData.S3Filename)
+				w := arg.(w)
+				log.WithFields(log.Fields{"S3Filename": w.filename, "BucketName": fsClient.s3Client.BucketName}).Debug("Removing file from S3")
+				err := fsClient.s3Client.Remove(w.s3Filename)
 				if err != nil {
 					return err
 				}
-				log.WithFields(log.Fields{"ColonyName": fsClient.colonyName, "FileName": w.fileData.Name}).Debug("Remove file from Colonies FS")
-				err = fsClient.coloniesClient.RemoveFileByName(fsClient.colonyName, w.l.Name, w.fileData.Name, fsClient.executorPrvKey)
+				log.WithFields(log.Fields{"ColonyName": fsClient.colonyName, "Filename": w.filename}).Debug("Remove file from Colonies FS")
+				err = fsClient.coloniesClient.RemoveFileByName(fsClient.colonyName, w.l, w.filename, fsClient.executorPrvKey)
 				if err != nil {
 					return err
 				}
@@ -630,7 +629,7 @@ func (fsClient *FSClient) RemoveAllFilesWithLabel(label string) error {
 					removeTracker.Increment(int64(1))
 				}
 				return nil
-			}, &w{l: l, fileData: fileData})
+			}, w{l: l.Name, filename: fileData.Name, s3Filename: fileData.S3Filename})
 			go func() {
 				err := <-errChan
 				aggErrChan <- err
