@@ -67,3 +67,6 @@ github_test:
 install:
 	cp ./bin/colonies /usr/local/bin
 	cp ./lib/libcryptolib.so /usr/local/lib
+
+startdb: 
+	docker run -d -p 5432:5432 -e POSTGRES_PASSWORD=rFcLGNkgsNtksg6Pgtn9CumL4xXBQ7 --restart unless-stopped timescale/timescaledb:latest-pg16
