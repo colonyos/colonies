@@ -209,6 +209,16 @@ func (db *PQDatabase) MarkAlive(executor *core.Executor) error {
 	return nil
 }
 
+func (db *PQDatabase) ChangeExecutorID(colonyName string, oldExecutorID, newExecutorID string) error {
+	sqlStatement := `UPDATE  ` + db.dbPrefix + `EXECUTORS SET EXECUTOR_ID=$1 WHERE COLONY_NAME=$2 AND EXECUTOR_ID=$3`
+	_, err := db.postgresql.Query(sqlStatement, newExecutorID, colonyName, oldExecutorID)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (db *PQDatabase) RemoveExecutorByName(colonyName string, executorName string) error {
 	executor, err := db.GetExecutorByName(colonyName, executorName)
 	if err != nil {
