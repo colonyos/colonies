@@ -72,7 +72,7 @@ func (server *ColoniesServer) handleGetExecutorsHTTPRequest(c *gin.Context, reco
 	}
 
 	err = server.validator.RequireMembership(recoveredID, msg.ColonyName, false)
-	if err != nil {
+	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		return
 	}
 
