@@ -128,6 +128,7 @@ var ShowIDs bool
 var InitDB bool
 var SyncPlans bool
 var Quite bool
+var TargetServerID string
 
 func init() {
 	rootCmd.PersistentFlags().BoolVarP(&Verbose, "verbose", "v", false, "Verbose (debugging)")

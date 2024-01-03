@@ -12,6 +12,7 @@ import (
 
 func init() {
 	colonyCmd.AddCommand(addColonyCmd)
+	colonyCmd.AddCommand(chColonyIDCmd)
 	colonyCmd.AddCommand(removeColonyCmd)
 	colonyCmd.AddCommand(lsColoniesCmd)
 	colonyCmd.AddCommand(colonyStatsCmd)
@@ -25,6 +26,9 @@ func init() {
 	addColonyCmd.MarkFlagRequired("colonyid")
 	addColonyCmd.Flags().StringVarP(&TargetColonyName, "name", "", "", "Unique name of the Colony")
 	addColonyCmd.MarkFlagRequired("name")
+
+	chColonyIDCmd.Flags().StringVarP(&TargetColonyID, "colonyid", "", "", "Colony Id")
+	chColonyIDCmd.MarkFlagRequired("colonyid")
 
 	removeColonyCmd.Flags().StringVarP(&ServerPrvKey, "serverprvkey", "", "", "Colonies server private key")
 	removeColonyCmd.Flags().StringVarP(&TargetColonyName, "name", "", "", "Colony name")
@@ -61,6 +65,27 @@ var addColonyCmd = &cobra.Command{
 		CheckError(err)
 
 		log.WithFields(log.Fields{"ColonyName": TargetColonyName, "ColonyID": addedColony.ID}).Info("Colony added")
+	},
+}
+
+var chColonyIDCmd = &cobra.Command{
+	Use:   "chid",
+	Short: "Change colony Id",
+	Long:  "Change colony Id",
+	Run: func(cmd *cobra.Command, args []string) {
+		client := setup()
+
+		if len(TargetColonyID) != 64 {
+			CheckError(errors.New("Invalid colony Id length"))
+		}
+
+		err := client.ChangeColonyID(ColonyName, TargetColonyID, ColonyPrvKey)
+		CheckError(err)
+
+		log.WithFields(log.Fields{
+			"ColonyName": ColonyName,
+			"ColonyId":   TargetColonyID}).
+			Info("Changed colony Id")
 	},
 }
 
