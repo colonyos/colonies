@@ -16,11 +16,15 @@ import (
 )
 
 func init() {
+	serverCmd.AddCommand(chServerIDCmd)
 	serverCmd.AddCommand(serverStartCmd)
 	serverCmd.AddCommand(serverStatusCmd)
 	serverCmd.AddCommand(serverStatisticsCmd)
 	serverCmd.AddCommand(serverAliveCmd)
 	rootCmd.AddCommand(serverCmd)
+
+	chServerIDCmd.Flags().StringVarP(&TargetServerID, "serverid", "", "", "Server Id")
+	chServerIDCmd.MarkFlagRequired("serverid")
 
 	serverCmd.PersistentFlags().StringVarP(&DBHost, "dbhost", "", "", "Colonies database host")
 	serverCmd.PersistentFlags().IntVarP(&DBPort, "dbport", "", DefaultDBPort, "Colonies database port")
@@ -48,6 +52,25 @@ var serverCmd = &cobra.Command{
 	Use:   "server",
 	Short: "Manage production server",
 	Long:  "Manage production server",
+}
+
+var chServerIDCmd = &cobra.Command{
+	Use:   "chid",
+	Short: "Change server Id",
+	Long:  "Change server Id",
+	Run: func(cmd *cobra.Command, args []string) {
+		client := setup()
+
+		if len(TargetServerID) != 64 {
+			CheckError(errors.New("Invalid server Id length"))
+		}
+
+		CheckError(client.ChangeServerID(TargetServerID, ServerPrvKey))
+
+		log.WithFields(log.Fields{
+			"ServerId": ServerID}).
+			Info("Changed server Id")
+	},
 }
 
 var serverStatusCmd = &cobra.Command{

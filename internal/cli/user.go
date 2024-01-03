@@ -13,6 +13,7 @@ import (
 
 func init() {
 	userCmd.AddCommand(addUserCmd)
+	userCmd.AddCommand(chUserIDCmd)
 	userCmd.AddCommand(listUsersCmd)
 	userCmd.AddCommand(getUserCmd)
 	userCmd.AddCommand(removeUserCmd)
@@ -29,12 +30,14 @@ func init() {
 	addUserCmd.Flags().StringVarP(&Email, "email", "", "", "Email")
 	addUserCmd.Flags().StringVarP(&Phone, "phone", "", "", "Phone")
 
+	chUserIDCmd.Flags().StringVarP(&UserID, "userid", "", "", "User Id")
+	chUserIDCmd.MarkFlagRequired("userid")
+
 	getUserCmd.Flags().StringVarP(&Username, "name", "", "", "Username")
 	getUserCmd.MarkFlagRequired("name")
 
 	removeUserCmd.Flags().StringVarP(&Username, "name", "", "", "Username")
 	removeUserCmd.MarkFlagRequired("name")
-
 }
 
 var userCmd = &cobra.Command{
@@ -74,6 +77,27 @@ var addUserCmd = &cobra.Command{
 			"Email":      Email,
 			"Phone":      Phone}).
 			Info("User added")
+	},
+}
+
+var chUserIDCmd = &cobra.Command{
+	Use:   "chid",
+	Short: "Change user Id",
+	Long:  "Change user Id",
+	Run: func(cmd *cobra.Command, args []string) {
+		client := setup()
+
+		if len(UserID) != 64 {
+			CheckError(errors.New("Invalid user Id length"))
+		}
+
+		err := client.ChangeUserID(ColonyName, UserID, PrvKey)
+		CheckError(err)
+
+		log.WithFields(log.Fields{
+			"ColonyName": ColonyName,
+			"UserId":     UserID}).
+			Info("Changed user Id")
 	},
 }
 
