@@ -13,6 +13,7 @@ import (
 
 func init() {
 	executorCmd.AddCommand(addExecutorCmd)
+	executorCmd.AddCommand(chExecutorIDCmd)
 	executorCmd.AddCommand(removeExecutorCmd)
 	executorCmd.AddCommand(lsExecutorsCmd)
 	executorCmd.AddCommand(getExecutorCmd)
@@ -26,11 +27,14 @@ func init() {
 	executorCmd.PersistentFlags().IntVarP(&ServerPort, "port", "", -1, "Server HTTP port")
 
 	addExecutorCmd.Flags().StringVarP(&SpecFile, "spec", "", "", "JSON specification of an executor")
-	addExecutorCmd.Flags().StringVarP(&ExecutorID, "executorid", "", "", "Executor ID")
+	addExecutorCmd.Flags().StringVarP(&ExecutorID, "executorid", "", "", "Executor Id")
 	addExecutorCmd.MarkFlagRequired("executorid")
 	addExecutorCmd.Flags().StringVarP(&TargetExecutorName, "name", "", "", "Executor name")
 	addExecutorCmd.Flags().StringVarP(&TargetExecutorType, "type", "", "", "Executor type")
 	addExecutorCmd.Flags().BoolVarP(&Approve, "approve", "", false, "Also, approve the Executor")
+
+	chExecutorIDCmd.Flags().StringVarP(&ExecutorID, "executorid", "", "", "Executor Id")
+	chExecutorIDCmd.MarkFlagRequired("executorid")
 
 	removeExecutorCmd.Flags().StringVarP(&TargetExecutorName, "name", "", "", "Executor Id")
 
@@ -114,6 +118,27 @@ var addExecutorCmd = &cobra.Command{
 			"ExecutorID":   addedExecutor.ID,
 			"ColonyName":   ColonyName}).
 			Info("Executor added")
+	},
+}
+
+var chExecutorIDCmd = &cobra.Command{
+	Use:   "chid",
+	Short: "Change executor Id",
+	Long:  "Change executor Id",
+	Run: func(cmd *cobra.Command, args []string) {
+		client := setup()
+
+		if len(ExecutorID) != 64 {
+			CheckError(errors.New("Invalid executor Id length"))
+		}
+
+		err := client.ChangeExecutorID(ColonyName, ExecutorID, PrvKey)
+		CheckError(err)
+
+		log.WithFields(log.Fields{
+			"ColonyName": ColonyName,
+			"ExecutorId": ExecutorID}).
+			Info("Changed executor Id")
 	},
 }
 
