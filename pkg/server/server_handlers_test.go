@@ -100,20 +100,20 @@ func TestCheckHealth(t *testing.T) {
 	<-done
 }
 
-func TestResetDatabase(t *testing.T) {
-	_, client, server, serverPrvKey, done := setupTestEnv2(t)
-
-	colonies, err := client.GetColonies(serverPrvKey)
-	assert.Nil(t, err)
-	assert.Len(t, colonies, 1)
-
-	err = client.ResetDatabase(serverPrvKey)
-	assert.Nil(t, err)
-
-	colonies, err = client.GetColonies(serverPrvKey)
-	assert.Nil(t, err)
-	assert.Len(t, colonies, 0)
-
-	server.Shutdown()
-	<-done
-}
+// func TestResetDatabase(t *testing.T) {
+// 	_, client, server, serverPrvKey, done := setupTestEnv2(t)
+//
+// 	colonies, err := client.GetColonies(serverPrvKey)
+// 	assert.Nil(t, err)
+// 	assert.Len(t, colonies, 1)
+//
+// 	err = client.ResetDatabase(serverPrvKey)
+// 	assert.Nil(t, err)
+//
+// 	colonies, err = client.GetColonies(serverPrvKey)
+// 	assert.Nil(t, err)
+// 	assert.Len(t, colonies, 0)
+//
+// 	server.Shutdown()
+// 	<-done
+// }

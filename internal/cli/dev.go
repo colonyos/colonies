@@ -1,7 +1,7 @@
 package cli
 
 import (
-	"io/ioutil"
+	"io"
 	"os"
 	"os/signal"
 	"syscall"
@@ -92,7 +92,7 @@ var devCmd = &cobra.Command{
 			log.SetLevel(log.DebugLevel)
 		} else {
 			gin.SetMode(gin.ReleaseMode)
-			gin.DefaultWriter = ioutil.Discard
+			gin.DefaultWriter = io.Discard
 		}
 
 		retentionPeriod := 60000 // Run retention worker once a minute
@@ -102,9 +102,10 @@ var devCmd = &cobra.Command{
 		serverIdentity, err := crypto.CreateIdendityFromString(ServerPrvKey)
 		CheckError(err)
 
+		coloniesDB.SetServerID("", serverIdentity.ID())
+
 		coloniesServer := server.CreateColoniesServer(coloniesDB,
 			ServerPort,
-			serverIdentity.ID(),
 			false,
 			"",
 			"",
