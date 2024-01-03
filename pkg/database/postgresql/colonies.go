@@ -102,6 +102,16 @@ func (db *PQDatabase) GetColonyByName(name string) (*core.Colony, error) {
 	return colonies[0], nil
 }
 
+func (db *PQDatabase) ChangeColonyID(colonyName string, oldColonyID, newColonyID string) error {
+	sqlStatement := `UPDATE  ` + db.dbPrefix + `COLONIES SET COLONY_ID=$1 WHERE NAME=$2 AND COLONY_ID=$3`
+	_, err := db.postgresql.Query(sqlStatement, newColonyID, colonyName, oldColonyID)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (db *PQDatabase) RenameColony(colonyName string, newName string) error {
 	sqlStatement := `UPDATE ` + db.dbPrefix + `COLONIES SET NAME=$1 WHERE NAME=$2`
 	_, err := db.postgresql.Exec(sqlStatement, newName, colonyName)

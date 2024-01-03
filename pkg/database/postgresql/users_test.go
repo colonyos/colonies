@@ -155,3 +155,27 @@ func TestRemoveUsersByColonyName(t *testing.T) {
 
 	defer db.Close()
 }
+
+func TestChangeUserID(t *testing.T) {
+	db, err := PrepareTests()
+	assert.Nil(t, err)
+
+	colonyName := core.GenerateRandomID()
+
+	user := utils.CreateTestUser(colonyName, "user")
+	err = db.AddUser(user)
+	assert.Nil(t, err)
+
+	userFromDB, err := db.GetUserByName(colonyName, user.Name)
+	assert.Nil(t, err)
+
+	err = db.ChangeUserID(colonyName, userFromDB.ID, "new_id")
+	assert.Nil(t, err)
+
+	userFromDB, err = db.GetUserByName(colonyName, user.Name)
+	assert.Nil(t, err)
+	assert.Equal(t, "new_id", userFromDB.ID)
+	assert.NotEqual(t, user.ID, userFromDB.ID)
+
+	defer db.Close()
+}

@@ -1526,3 +1526,63 @@ func (client *ColoniesClient) RemoveSnapshotByName(colonyName string, name strin
 
 	return err
 }
+
+func (client *ColoniesClient) ChangeUserID(colonyName, userID string, prvKey string) error {
+	msg := rpc.CreateChangeUserIDMsg(colonyName, userID)
+	jsonString, err := msg.ToJSON()
+	if err != nil {
+		return err
+	}
+
+	_, err = client.sendMessage(rpc.ChangeUserIDPayloadType, jsonString, prvKey, false, context.TODO())
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (client *ColoniesClient) ChangeExecutorID(colonyName, executorID string, prvKey string) error {
+	msg := rpc.CreateChangeExecutorIDMsg(colonyName, executorID)
+	jsonString, err := msg.ToJSON()
+	if err != nil {
+		return err
+	}
+
+	_, err = client.sendMessage(rpc.ChangeExecutorIDPayloadType, jsonString, prvKey, false, context.TODO())
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (client *ColoniesClient) ChangeColonyID(colonyName, colonyID string, prvKey string) error {
+	msg := rpc.CreateChangeColonyIDMsg(colonyName, colonyID)
+	jsonString, err := msg.ToJSON()
+	if err != nil {
+		return err
+	}
+
+	_, err = client.sendMessage(rpc.ChangeColonyIDPayloadType, jsonString, prvKey, false, context.TODO())
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (client *ColoniesClient) ChangeServerID(serverID string, prvKey string) error {
+	msg := rpc.CreateChangeServerIDMsg(serverID)
+	jsonString, err := msg.ToJSON()
+	if err != nil {
+		return err
+	}
+
+	_, err = client.sendMessage(rpc.ChangeServerIDPayloadType, jsonString, prvKey, false, context.TODO())
+	if err != nil {
+		return err
+	}
+
+	return nil
+}

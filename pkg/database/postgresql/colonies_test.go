@@ -353,3 +353,26 @@ func TestCountColonies(t *testing.T) {
 	assert.Nil(t, err)
 	assert.True(t, coloniesCount == 2)
 }
+
+func TestChangeColonyID(t *testing.T) {
+	db, err := PrepareTests()
+	assert.Nil(t, err)
+
+	defer db.Close()
+
+	colony := core.CreateColony(core.GenerateRandomID(), "test_colony_name")
+
+	err = db.AddColony(colony)
+	assert.Nil(t, err)
+
+	colonyFromDB, err := db.GetColonyByName(colony.Name)
+	assert.Nil(t, err)
+
+	err = db.ChangeColonyID(colony.Name, colony.ID, "new_id")
+	assert.Nil(t, err)
+
+	colonyFromDB, err = db.GetColonyByName(colony.Name)
+	assert.Nil(t, err)
+	assert.Equal(t, "new_id", colonyFromDB.ID)
+	assert.NotEqual(t, colony.ID, colonyFromDB.ID)
+}

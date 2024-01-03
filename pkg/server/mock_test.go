@@ -1161,6 +1161,26 @@ func (db *dbMock) RemoveSnapshotsByColonyName(colonyName string) error {
 	return nil
 }
 
+func (db *dbMock) SetServerID(oldServerID, newServerID string) error {
+	return nil
+}
+
+func (db *dbMock) GetServerID() (string, error) {
+	return "", nil
+}
+
+func (db *dbMock) ChangeColonyID(colonyName string, oldColonyID, newColonyID string) error {
+	return nil
+}
+
+func (db *dbMock) ChangeUserID(colonyName string, oldUserID, newUserID string) error {
+	return nil
+}
+
+func (db *dbMock) ChangeExecutorID(colonyName string, oldExecutorID, newExecutorID string) error {
+	return nil
+}
+
 // gin mockups
 func getTestGinContext() (*gin.Context, *httptest.ResponseRecorder) {
 	gin.SetMode(gin.TestMode)
