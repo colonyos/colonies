@@ -91,16 +91,6 @@ func (db *PQDatabase) GetUserByID(colonyName string, userID string) (*core.User,
 	return users[0], nil
 }
 
-func (db *PQDatabase) ChangeUserByID(colonyName string, userID string) error {
-	sqlStatement := `UPDATE  ` + db.dbPrefix + `USERS SET USER_ID=$1, WHERE COLONY_ID=$4`
-	_, err := db.postgresql.Query(sqlStatement, userID, colonyName)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
 func (db *PQDatabase) GetUserByName(colonyName string, name string) (*core.User, error) {
 	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `USERS WHERE NAME=$1 AND COLONY_NAME=$2`
 	rows, err := db.postgresql.Query(sqlStatement, colonyName+":"+name, colonyName)
@@ -120,6 +110,16 @@ func (db *PQDatabase) GetUserByName(colonyName string, name string) (*core.User,
 	}
 
 	return users[0], nil
+}
+
+func (db *PQDatabase) ChangeUserID(colonyName string, oldUserID, newUserID string) error {
+	sqlStatement := `UPDATE  ` + db.dbPrefix + `USERS SET USER_ID=$1 WHERE COLONY_NAME=$2 AND USER_ID=$3`
+	_, err := db.postgresql.Query(sqlStatement, newUserID, colonyName, oldUserID)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (db *PQDatabase) RemoveUserByID(colonyName string, userID string) error {
