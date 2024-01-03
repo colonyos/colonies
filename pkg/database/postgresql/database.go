@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	_ "github.com/lib/pq"
@@ -298,7 +299,8 @@ func (db *PQDatabase) Drop() error {
 }
 
 func (db *PQDatabase) createHypertables() error {
-	sqlStatement := `SELECT create_hypertable ('` + db.dbPrefix + `LOGS', 'TS', chunk_time_interval => 86400000000000)` // 24h chunks, assuming ts is nanosec
+	prefix := strings.ToLower(db.dbPrefix)
+	sqlStatement := `SELECT create_hypertable ('` + prefix + `logs', 'ts', chunk_time_interval => 86400000000000)` // 24h chunks, assuming ts is nanosec
 	_, err := db.postgresql.Exec(sqlStatement)
 	if err != nil {
 		return err
