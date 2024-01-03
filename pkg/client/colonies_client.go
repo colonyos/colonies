@@ -1178,21 +1178,6 @@ func (client *ColoniesClient) GetClusterInfo(prvKey string) (*cluster.Config, er
 	return cluster.ConvertJSONToConfig(respBodyString)
 }
 
-func (client *ColoniesClient) ResetDatabase(prvKey string) error {
-	msg := rpc.CreateResetDatabaseMsg()
-	jsonString, err := msg.ToJSON()
-	if err != nil {
-		return err
-	}
-
-	_, err = client.sendMessage(rpc.ResetDatabasePayloadType, jsonString, prvKey, false, context.TODO())
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
 func (client *ColoniesClient) AddLog(processID string, logmsg string, prvKey string) error {
 	msg := rpc.CreateAddLogMsg(processID, logmsg)
 	jsonString, err := msg.ToJSON()

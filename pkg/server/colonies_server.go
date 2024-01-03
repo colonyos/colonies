@@ -43,7 +43,6 @@ type ColoniesServer struct {
 
 func CreateColoniesServer(db database.Database,
 	port int,
-	serverID string,
 	tls bool,
 	tlsPrivateKeyPath string,
 	tlsCertPath string,
@@ -70,7 +69,7 @@ func CreateColoniesServer(db database.Database,
 
 	server.httpServer = httpServer
 	server.controller = createColoniesController(db, thisNode, clusterConfig, etcdDataPath, generatorPeriod, cronPeriod, retention, retentionPolicy, retentionPeriod)
-	server.serverID = serverID
+
 	server.tls = tls
 	server.port = port
 	server.tlsPrivateKeyPath = tlsPrivateKeyPath
@@ -83,7 +82,6 @@ func CreateColoniesServer(db database.Database,
 	server.retentionPolicy = retentionPolicy
 
 	log.WithFields(log.Fields{"Port": port,
-		"ServerID":                serverID,
 		"TLS":                     tls,
 		"TLSPrivateKeyPath":       tlsPrivateKeyPath,
 		"TLSCertPath":             tlsCertPath,
@@ -105,6 +103,10 @@ func CreateColoniesServer(db database.Database,
 	server.setupRoutes()
 
 	return server
+}
+
+func (server *ColoniesServer) getServerID() (string, error) {
+	return server.db.GetServerID()
 }
 
 func (server *ColoniesServer) setupRoutes() {
@@ -269,8 +271,6 @@ func (server *ColoniesServer) handleAPIRequest(c *gin.Context) {
 		server.handleStatisticsHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 	case rpc.GetClusterPayloadType:
 		server.handleGetClusterHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
-	case rpc.ResetDatabasePayloadType:
-		server.handleResetDatabaseHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 
 	// Log handlers
 	case rpc.AddLogPayloadType:

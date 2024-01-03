@@ -21,7 +21,7 @@ func CreateValidator(db database.Database) *StandaloneValidator {
 
 func (validator *StandaloneValidator) RequireServerOwner(recoveredID string, serverID string) error {
 	if recoveredID != serverID {
-		return errors.New("Access denied, not Server owner")
+		return errors.New("Access denied, not server owner")
 	}
 
 	return nil
@@ -34,7 +34,7 @@ func (validator *StandaloneValidator) RequireColonyOwner(recoveredID string, col
 	}
 
 	if recoveredID != colonyID {
-		return errors.New("Access denied, not Colony owner")
+		return errors.New("Access denied, not colony owner")
 	}
 
 	return nil
