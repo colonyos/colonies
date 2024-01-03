@@ -213,6 +213,16 @@ func (db *PQDatabase) dropCronsTable() error {
 	return nil
 }
 
+func (db *PQDatabase) dropServerTable() error {
+	sqlStatement := `DROP TABLE ` + db.dbPrefix + `SERVER`
+	_, err := db.postgresql.Exec(sqlStatement)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (db *PQDatabase) Drop() error {
 	err := db.dropUsersTable()
 	if err != nil {
@@ -279,11 +289,26 @@ func (db *PQDatabase) Drop() error {
 		return err
 	}
 
+	err = db.dropServerTable()
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
 func (db *PQDatabase) createHypertables() error {
 	sqlStatement := `SELECT create_hypertable ('` + db.dbPrefix + `LOGS', 'TS', chunk_time_interval => 86400000000000)` // 24h chunks, assuming ts is nanosec
+	_, err := db.postgresql.Exec(sqlStatement)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (db *PQDatabase) createServerTable() error {
+	sqlStatement := `CREATE TABLE ` + db.dbPrefix + `SERVER (SERVER_ID TEXT PRIMARY KEY NOT NULL)`
 	_, err := db.postgresql.Exec(sqlStatement)
 	if err != nil {
 		return err
@@ -611,6 +636,11 @@ func (db *PQDatabase) createFileIndex3() error {
 
 func (db *PQDatabase) Initialize() error {
 	err := db.createUsersTable()
+	if err != nil {
+		return err
+	}
+
+	err = db.createServerTable()
 	if err != nil {
 		return err
 	}

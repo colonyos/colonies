@@ -211,4 +211,11 @@ type Database interface {
 	GetSnapshotByName(colonyName string, name string) (*core.Snapshot, error)
 	RemoveSnapshotByName(colonyName string, name string) error
 	RemoveSnapshotsByColonyName(colonyName string) error
+
+	// Security
+	SetServerID(oldServerID, newServerID string) error
+	GetServerID() (string, error)
+	ChangeColonyID(colonyName string, oldColonyID, newColonyID string) error
+	ChangeUserID(colonyName string, oldUserID, newUserID string) error
+	ChangeExecutorID(colonyName string, oldExecutorID, newExecutorID string) error
 }

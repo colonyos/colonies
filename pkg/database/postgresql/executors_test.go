@@ -729,3 +729,27 @@ func TestCountExectorsByColonyName(t *testing.T) {
 	assert.True(t, executorCount == 1)
 
 }
+
+func TestChangeExecutorID(t *testing.T) {
+	db, err := PrepareTests()
+	assert.Nil(t, err)
+
+	colonyName := core.GenerateRandomID()
+
+	executor := utils.CreateTestExecutor(colonyName)
+	err = db.AddExecutor(executor)
+	assert.Nil(t, err)
+
+	executorFromDB, err := db.GetExecutorByName(colonyName, executor.Name)
+	assert.Nil(t, err)
+
+	err = db.ChangeExecutorID(colonyName, executor.ID, "new_id")
+	assert.Nil(t, err)
+
+	executorFromDB, err = db.GetExecutorByName(colonyName, executor.Name)
+	assert.Nil(t, err)
+	assert.Equal(t, "new_id", executorFromDB.ID)
+	assert.NotEqual(t, executorFromDB.ID, executor.ID)
+
+	defer db.Close()
+}
