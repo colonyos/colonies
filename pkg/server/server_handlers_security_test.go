@@ -57,29 +57,3 @@ func TestGetClusterInfoSecurity(t *testing.T) {
 	server.Shutdown()
 	<-done
 }
-
-func TestGetResetDatabaseSecurity(t *testing.T) {
-	env, client, server, serverPrvKey, done := setupTestEnv1(t)
-
-	// The setup looks like this:
-	//   executor1 is member of colony1
-	//   executor2 is member of colony2
-
-	err := client.ResetDatabase(env.executor1PrvKey)
-	assert.NotNil(t, err) // Should not work
-
-	err = client.ResetDatabase(env.executor2PrvKey)
-	assert.NotNil(t, err) // Should not work
-
-	err = client.ResetDatabase(env.colony1PrvKey)
-	assert.NotNil(t, err) // Should not work
-
-	err = client.ResetDatabase(env.colony2PrvKey)
-	assert.NotNil(t, err) // Should not work
-
-	err = client.ResetDatabase(serverPrvKey)
-	assert.Nil(t, err) // Should work
-
-	server.Shutdown()
-	<-done
-}

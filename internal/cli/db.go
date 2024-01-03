@@ -15,15 +15,12 @@ import (
 func init() {
 	dbCmd.AddCommand(dbCreateCmd)
 	dbCmd.AddCommand(dbDropCmd)
-	dbCmd.AddCommand(dbResetCmd)
 	rootCmd.AddCommand(dbCmd)
 
 	dbCmd.PersistentFlags().StringVarP(&DBHost, "dbhost", "", DefaultDBHost, "Colonies database host")
 	dbCmd.PersistentFlags().IntVarP(&DBPort, "dbport", "", DefaultDBPort, "Colonies database port")
 	dbCmd.PersistentFlags().StringVarP(&DBUser, "dbuser", "", "", "Colonies database user")
 	dbCmd.PersistentFlags().StringVarP(&DBPassword, "dbpassword", "", "", "Colonies database password")
-
-	dbResetCmd.Flags().StringVarP(&ServerPrvKey, "serverprvkey", "", "", "Colonies server private key")
 }
 
 var dbCmd = &cobra.Command{
@@ -71,6 +68,7 @@ var dbCreateCmd = &cobra.Command{
 	Short: "Create a database",
 	Long:  "Create a database",
 	Run: func(cmd *cobra.Command, args []string) {
+		parseEnv()
 		parseDBEnv()
 
 		var db *postgresql.PQDatabase
@@ -85,13 +83,18 @@ var dbCreateCmd = &cobra.Command{
 			}
 		}
 
-		log.WithFields(log.Fields{"Host": DBHost, "Port": DBPort, "User": DBUser, "Password": "**********************", "Prefix": DBPrefix}).Error("Connecting to PostgreSQL database")
+		log.WithFields(log.Fields{"Host": DBHost, "Port": DBPort, "User": DBUser, "Password": "**********************", "Prefix": DBPrefix}).Error("Connected to PostgreSQL database")
+
 		err := db.Initialize()
 		if err != nil {
-			log.Warning("Failed to create database")
+			log.WithFields(log.Fields{"Error": err}).Error("Failed to call db.Initialize()")
 			os.Exit(0)
 		}
-		log.Info("Colonies database created")
+
+		log.WithFields(log.Fields{"ServerID": ServerID}).Info("Setting server ID")
+		CheckError(db.SetServerID("", ServerID))
+
+		log.Info("Colonies database initialized")
 	},
 }
 
@@ -117,28 +120,6 @@ var dbDropCmd = &cobra.Command{
 			err = db.Drop()
 			CheckError(err)
 			log.Info("Colonies database dropped")
-		} else {
-			log.Info("Aborting ...")
-		}
-	},
-}
-
-var dbResetCmd = &cobra.Command{
-	Use:   "reset",
-	Short: "Remotely reset the database",
-	Long:  "Remotely reset the database",
-	Run: func(cmd *cobra.Command, args []string) {
-		parseDBEnv()
-		client := setup()
-
-		fmt.Print("WARNING!!! Are you sure you want to reset the database? This operation cannot be undone! (YES,no): ")
-
-		reader := bufio.NewReader(os.Stdin)
-		reply, _ := reader.ReadString('\n')
-
-		if reply == "YES\n" {
-			client.ResetDatabase(ServerPrvKey)
-			log.Info("Colonies database reset")
 		} else {
 			log.Info("Aborting ...")
 		}

@@ -46,7 +46,7 @@ func TestGetExecutorsByColonySecurity(t *testing.T) {
 
 	// Now try to access executor1 using colony1 credential
 	_, err = client.GetExecutors(env.colony1Name, env.colony1PrvKey)
-	assert.Nil(t, err) // Should work, colony owner can also get executors
+	assert.NotNil(t, err) // Should not work, colony owner can't get executors
 
 	// Now try to access executor1 using colony1 credential
 	_, err = client.GetExecutors(env.colony1Name, env.colony2PrvKey)
