@@ -126,10 +126,10 @@ func TestGetColonyStatisticsSecurity(t *testing.T) {
 	assert.Nil(t, err) // Should work
 
 	_, err = client.ColonyStatistics(env.colony1Name, env.colony1PrvKey)
-	assert.Nil(t, err) // Should work
+	assert.NotNil(t, err) // Should not work
 
 	_, err = client.ColonyStatistics(env.colony2Name, env.colony2PrvKey)
-	assert.Nil(t, err) // Should work
+	assert.NotNil(t, err) // Should not work
 
 	_, err = client.ColonyStatistics(env.colony1Name, env.colony2PrvKey)
 	assert.NotNil(t, err) // Should not work

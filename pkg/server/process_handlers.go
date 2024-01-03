@@ -210,10 +210,7 @@ func (server *ColoniesServer) handleGetProcessHistHTTPRequest(c *gin.Context, re
 
 	err = server.validator.RequireMembership(recoveredID, msg.ColonyName, true)
 	if err != nil {
-		err = server.validator.RequireColonyOwner(recoveredID, msg.ColonyName)
-		if server.handleHTTPError(c, err, http.StatusForbidden) {
-			return
-		}
+		return
 	}
 
 	processes, err := server.controller.findProcessHistory(msg.ColonyName, msg.ExecutorID, msg.Seconds, msg.State)
@@ -250,10 +247,7 @@ func (server *ColoniesServer) handleGetProcessesHTTPRequest(c *gin.Context, reco
 
 	err = server.validator.RequireMembership(recoveredID, msg.ColonyName, true)
 	if err != nil {
-		err = server.validator.RequireColonyOwner(recoveredID, msg.ColonyName)
-		if server.handleHTTPError(c, err, http.StatusForbidden) {
-			return
-		}
+		return
 	}
 
 	log.WithFields(log.Fields{"ColonyName": msg.ColonyName, "Count": msg.Count}).Debug("Getting processes")

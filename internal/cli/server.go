@@ -36,8 +36,7 @@ func init() {
 	serverCmd.PersistentFlags().IntVarP(&RelayPort, "relayport", "", 2381, "Colonies server relay port")
 	serverCmd.PersistentFlags().StringSliceVarP(&EtcdCluster, "initial-cluster", "", make([]string, 0), "Cluster config, e.g. --etcdcluster server1=localhost:peerport:relayport:apiport,server2=localhost:peerport:relayport:apiport")
 	serverCmd.PersistentFlags().StringVarP(&EtcdDataDir, "etcddatadir", "", "", "Etcd data dir")
-
-	serverCmd.Flags().BoolVarP(&InitDB, "initdb", "", false, "Initialize DB")
+	serverCmd.PersistentFlags().BoolVarP(&InitDB, "initdb", "", false, "Initialize DB")
 
 	serverStatusCmd.PersistentFlags().StringVarP(&ServerHost, "host", "", "localhost", "Server host")
 	serverStatusCmd.PersistentFlags().IntVarP(&ServerPort, "port", "", -1, "Server HTTP port")
@@ -88,8 +87,6 @@ var serverStartCmd = &cobra.Command{
 			}
 		}
 
-		log.WithFields(log.Fields{"DBHost": DBHost, "DBPort": DBPort, "DBUser": DBUser, "DBPassword": "*******************", "DBName": DBName, "UseTLS": UseTLS, "TimescaleDB": TimescaleDB}).Info("Connecting to PostgreSQL database")
-
 		var db *postgresql.PQDatabase
 		for {
 			db = postgresql.CreatePQDatabase(DBHost, DBPort, DBUser, DBPassword, DBName, DBPrefix, TimescaleDB)
@@ -101,6 +98,8 @@ var serverStartCmd = &cobra.Command{
 				break
 			}
 		}
+
+		log.WithFields(log.Fields{"DBHost": DBHost, "DBPort": DBPort, "DBUser": DBUser, "DBPassword": "*******************", "DBName": DBName, "UseTLS": UseTLS, "TimescaleDB": TimescaleDB}).Info("Connected to PostgreSQL database")
 
 		node := cluster.Node{Name: EtcdName, Host: EtcdHost, APIPort: ServerPort, EtcdClientPort: EtcdClientPort, EtcdPeerPort: EtcdPeerPort, RelayPort: RelayPort}
 		clusterConfig := cluster.Config{}
@@ -146,7 +145,6 @@ var serverStartCmd = &cobra.Command{
 
 		server := server.CreateColoniesServer(db,
 			ServerPort,
-			ServerID,
 			UseTLS,
 			TLSKey,
 			TLSCert,
@@ -162,30 +160,14 @@ var serverStartCmd = &cobra.Command{
 			retentionPeriod)
 
 		if InitDB {
-			parseDBEnv()
+			err := db.Initialize()
+			if err != nil {
+				log.WithFields(log.Fields{"Error": err}).Error("Failed to call db.Initialize()")
+			} else {
+				log.WithFields(log.Fields{"ServerID": ServerID}).Info("Setting server ID")
+				CheckError(db.SetServerID("", ServerID))
 
-			var db *postgresql.PQDatabase
-			for {
-				db = postgresql.CreatePQDatabase(DBHost, DBPort, DBUser, DBPassword, DBName, DBPrefix, TimescaleDB)
-				err := db.Connect()
-				if err != nil {
-					log.WithFields(log.Fields{"Error": err}).Error("Failed to call db.Connect(), retrying in 1 second ...")
-					time.Sleep(1 * time.Second)
-				} else {
-					break
-				}
-			}
-
-			for {
-				log.WithFields(log.Fields{"Host": DBHost, "Port": DBPort, "User": DBUser, "Password": "**********************", "Prefix": DBPrefix}).Error("Connecting to PostgreSQL database")
-				err := db.Initialize()
-				if err != nil {
-					log.Warning("Failed to create database")
-					time.Sleep(1 * time.Second)
-				} else {
-					log.Info("Colonies database created")
-					break
-				}
+				log.Info("Colonies database initialized")
 			}
 		}
 

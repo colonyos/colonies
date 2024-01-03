@@ -101,7 +101,7 @@ func TestGetProcessHistForColonySecurity(t *testing.T) {
 	assert.Nil(t, err) // Should work
 
 	_, err = client.GetProcessHistForColony(core.RUNNING, env.colony1Name, 60, env.colony1PrvKey)
-	assert.Nil(t, err) // Should work
+	assert.NotNil(t, err) // Should not work
 
 	server.Shutdown()
 	<-done
@@ -133,7 +133,7 @@ func TestGetProcessHistForExecutorSecurity(t *testing.T) {
 	assert.Nil(t, err) // Should work
 
 	_, err = client.GetProcessHistForExecutor(core.RUNNING, env.colony1Name, env.executor1ID, 60, env.colony1PrvKey)
-	assert.Nil(t, err) // Should work
+	assert.NotNil(t, err) // Should not work
 
 	server.Shutdown()
 	<-done
