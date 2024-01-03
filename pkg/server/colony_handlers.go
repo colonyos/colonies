@@ -23,7 +23,12 @@ func (server *ColoniesServer) handleAddColonyHTTPRequest(c *gin.Context, recover
 		return
 	}
 
-	err = server.validator.RequireServerOwner(recoveredID, server.serverID)
+	serverID, err := server.getServerID()
+	if server.handleHTTPError(c, err, http.StatusInternalServerError) {
+		return
+	}
+
+	err = server.validator.RequireServerOwner(recoveredID, serverID)
 	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		return
 	}
@@ -82,7 +87,12 @@ func (server *ColoniesServer) handleRemoveColonyHTTPRequest(c *gin.Context, reco
 		return
 	}
 
-	err = server.validator.RequireServerOwner(recoveredID, server.serverID)
+	serverID, err := server.getServerID()
+	if server.handleHTTPError(c, err, http.StatusInternalServerError) {
+		return
+	}
+
+	err = server.validator.RequireServerOwner(recoveredID, serverID)
 	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		return
 	}
@@ -121,7 +131,13 @@ func (server *ColoniesServer) handleGetColoniesHTTPRequest(c *gin.Context, recov
 		return
 	}
 
-	err = server.validator.RequireServerOwner(recoveredID, server.serverID)
+	serverID, err := server.getServerID()
+
+	if server.handleHTTPError(c, err, http.StatusInternalServerError) {
+		return
+	}
+
+	err = server.validator.RequireServerOwner(recoveredID, serverID)
 	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		return
 	}
@@ -204,10 +220,7 @@ func (server *ColoniesServer) handleColonyStatisticsHTTPRequest(c *gin.Context, 
 
 	err = server.validator.RequireMembership(recoveredID, colony.Name, true)
 	if err != nil {
-		err = server.validator.RequireColonyOwner(recoveredID, colony.Name)
-		if server.handleHTTPError(c, err, http.StatusForbidden) {
-			return
-		}
+		return
 	}
 
 	stat, err := server.controller.getColonyStatistics(colony.Name)

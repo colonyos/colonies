@@ -180,7 +180,7 @@ func (server *ColoniesServer) handleChangeServerIDHTTPRequest(c *gin.Context, re
 		return
 	}
 
-	serverID, err := server.db.GetServerID()
+	serverID, err := server.getServerID()
 	if server.handleHTTPError(c, err, http.StatusInternalServerError) {
 		return
 	}
