@@ -126,6 +126,7 @@ var Email string
 var Phone string
 var ShowIDs bool
 var InitDB bool
+var TargetServerID string
 
 func init() {
 	rootCmd.PersistentFlags().BoolVarP(&Verbose, "verbose", "v", false, "Verbose (debugging)")
