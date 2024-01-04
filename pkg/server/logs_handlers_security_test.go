@@ -55,16 +55,16 @@ func TestGetLogsSecurity(t *testing.T) {
 	err = client.AddLog(processFromServer.ID, "test_msg", env.executor1PrvKey)
 	assert.Nil(t, err)
 
-	_, err = client.GetLogsByProcessID(processFromServer.ID, 100, env.executor2PrvKey)
+	_, err = client.GetLogsByProcessID(env.colony2Name, processFromServer.ID, 100, env.executor2PrvKey)
 	assert.NotNil(t, err) // Should not work
 
-	_, err = client.GetLogsByProcessID(processFromServer.ID, 100, env.colony1PrvKey)
+	_, err = client.GetLogsByProcessID(env.colony1Name, processFromServer.ID, 100, env.colony1PrvKey)
 	assert.NotNil(t, err) // Should not work
 
-	_, err = client.GetLogsByProcessID(processFromServer.ID, 100, env.colony2PrvKey)
+	_, err = client.GetLogsByProcessID(env.colony2Name, processFromServer.ID, 100, env.colony2PrvKey)
 	assert.NotNil(t, err) // Should not work
 
-	_, err = client.GetLogsByProcessID(processFromServer.ID, 100, env.executor1PrvKey)
+	_, err = client.GetLogsByProcessID(env.colony1Name, processFromServer.ID, 100, env.executor1PrvKey)
 	assert.Nil(t, err) // Should work
 
 	server.Shutdown()
