@@ -20,9 +20,6 @@ type controller interface {
 	addColony(colony *core.Colony) (*core.Colony, error)
 	removeColony(colonyName string) error
 	addExecutor(executor *core.Executor, allowExecutorReregister bool) (*core.Executor, error)
-	addLog(processID string, colonyName string, executorID string, msg string) error
-	getLogsByProcessID(processID string, limit int, since int64) ([]core.Log, error)
-	getLogsByExecutorID(processID string, limit int, since int64) ([]core.Log, error)
 	getExecutor(executorID string) (*core.Executor, error)
 	getExecutorByColonyName(colonyName string) ([]*core.Executor, error)
 	addProcessToDB(process *core.Process) (*core.Process, error)
