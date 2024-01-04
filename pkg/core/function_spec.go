@@ -40,7 +40,7 @@ type SyncDirMount struct {
 
 type Conditions struct {
 	ColonyName       string   `json:"colonyname"`
-	ExecutorNames    []string `json:"executorNames"`
+	ExecutorNames    []string `json:"executornames"`
 	ExecutorType     string   `json:"executortype"`
 	Dependencies     []string `json:"dependencies"`
 	Nodes            int      `json:"nodes"`

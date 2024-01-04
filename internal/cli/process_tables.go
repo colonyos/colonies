@@ -368,14 +368,7 @@ func printConditionsTable(funcSpec *core.FunctionSpec) {
 }
 
 func printProcessesTable(processes []*core.Process, mode int) {
-	var sortCol int
-	if ShowIDs {
-		sortCol = 5
-	} else {
-		sortCol = 4
-	}
-
-	t, theme := createTable(sortCol)
+	t, theme := createTable(0)
 
 	var timeid string
 	var timeTitle string
@@ -383,16 +376,16 @@ func printProcessesTable(processes []*core.Process, mode int) {
 	switch mode {
 	case core.WAITING:
 		timeid = "submissiontime"
-		timeTitle = "SubmssionTime"
+		timeTitle = "Submssion time"
 	case core.RUNNING:
 		timeid = "starttime"
-		timeTitle = "StartTime"
+		timeTitle = "Start time"
 	case core.SUCCESS:
 		timeid = "endtime"
-		timeTitle = "EndTime"
+		timeTitle = "End time"
 	case core.FAILED:
 		timeid = "endtime"
-		timeTitle = "EndTime"
+		timeTitle = "End time"
 	default:
 		CheckError(errors.New("Invalid table type"))
 	}
@@ -404,8 +397,10 @@ func printProcessesTable(processes []*core.Process, mode int) {
 			{ID: "args", Name: "Args", SortIndex: 3},
 			{ID: "kwargs", Name: "KwArgs", SortIndex: 4},
 			{ID: timeid, Name: timeTitle, SortIndex: 5},
-			{ID: "executortype", Name: "ExecutorType", SortIndex: 6},
-			{ID: "initiatorname", Name: "Initiator", SortIndex: 7},
+			{ID: "executorname", Name: "Executor name", SortIndex: 6},
+			{ID: "executortype", Name: "Executor type", SortIndex: 7},
+			{ID: "initiatorname", Name: "Initiator", SortIndex: 8},
+			{ID: "label", Name: "Label", SortIndex: 9},
 		}
 		t.SetCols(cols)
 	} else {
@@ -414,8 +409,10 @@ func printProcessesTable(processes []*core.Process, mode int) {
 			{ID: "args", Name: "Args", SortIndex: 2},
 			{ID: "kwargs", Name: "KwArgs", SortIndex: 3},
 			{ID: timeid, Name: timeTitle, SortIndex: 4},
-			{ID: "executortype", Name: "ExecutorType", SortIndex: 5},
-			{ID: "initiatorname", Name: "Initiator", SortIndex: 6},
+			{ID: "executorname", Name: "Executor name", SortIndex: 5},
+			{ID: "executortype", Name: "Executor type", SortIndex: 6},
+			{ID: "initiatorname", Name: "Initiator", SortIndex: 7},
+			{ID: "label", Name: "Label", SortIndex: 8},
 		}
 		t.SetCols(cols)
 	}
@@ -440,6 +437,9 @@ func printProcessesTable(processes []*core.Process, mode int) {
 		default:
 			CheckError(errors.New("Invalid table type"))
 		}
+
+		executorNames := StrArr2Str(process.FunctionSpec.Conditions.ExecutorNames)
+
 		if ShowIDs {
 			row := []interface{}{
 				termenv.String(process.ID).Foreground(theme.ColorGray),
@@ -447,8 +447,10 @@ func printProcessesTable(processes []*core.Process, mode int) {
 				termenv.String(args).Foreground(theme.ColorViolet),
 				termenv.String(kwArgs).Foreground(theme.ColorViolet),
 				termenv.String(timeValue).Foreground(timeColor),
+				termenv.String(executorNames).Foreground(theme.ColorYellow),
 				termenv.String(process.FunctionSpec.Conditions.ExecutorType).Foreground(theme.ColorYellow),
 				termenv.String(process.InitiatorName).Foreground(theme.ColorCyan),
+				termenv.String(process.FunctionSpec.Label).Foreground(theme.ColorGreen),
 			}
 			t.AddRow(row)
 		} else {
@@ -457,8 +459,10 @@ func printProcessesTable(processes []*core.Process, mode int) {
 				termenv.String(args).Foreground(theme.ColorViolet),
 				termenv.String(kwArgs).Foreground(theme.ColorViolet),
 				termenv.String(timeValue).Foreground(timeColor),
+				termenv.String(executorNames).Foreground(theme.ColorYellow),
 				termenv.String(process.FunctionSpec.Conditions.ExecutorType).Foreground(theme.ColorYellow),
 				termenv.String(process.InitiatorName).Foreground(theme.ColorCyan),
+				termenv.String(process.FunctionSpec.Label).Foreground(theme.ColorGreen),
 			}
 			t.AddRow(row)
 		}

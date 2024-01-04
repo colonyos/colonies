@@ -133,22 +133,6 @@ func (v *controllerMock) findProcessHistory(colonyName string, executorID string
 	return nil, nil
 }
 
-func (v *controllerMock) findWaitingProcesses(colonyName string, executorType string, count int) ([]*core.Process, error) {
-	return nil, nil
-}
-
-func (v *controllerMock) findRunningProcesses(colonyName string, executorType string, count int) ([]*core.Process, error) {
-	return nil, nil
-}
-
-func (v *controllerMock) findSuccessfulProcesses(colonyName string, executorType string, count int) ([]*core.Process, error) {
-	return nil, nil
-}
-
-func (v *controllerMock) findFailedProcesses(colonyName string, executorType string, count int) ([]*core.Process, error) {
-	return nil, nil
-}
-
 func (v *controllerMock) updateProcessGraph(graph *core.ProcessGraph) error {
 	return nil
 }
@@ -644,19 +628,19 @@ func (db *dbMock) FindProcessesByExecutorID(colonyName string, executorID string
 	return nil, nil
 }
 
-func (db *dbMock) FindWaitingProcesses(colonyName string, executorType string, count int) ([]*core.Process, error) {
+func (db *dbMock) FindWaitingProcesses(colonyName string, executorType string, label string, initiator string, count int) ([]*core.Process, error) {
 	return nil, nil
 }
 
-func (db *dbMock) FindRunningProcesses(colonyName string, executorType string, count int) ([]*core.Process, error) {
+func (db *dbMock) FindRunningProcesses(colonyName string, executorType string, label string, initiator string, count int) ([]*core.Process, error) {
 	return nil, nil
 }
 
-func (db *dbMock) FindSuccessfulProcesses(colonyName string, executorType string, count int) ([]*core.Process, error) {
+func (db *dbMock) FindSuccessfulProcesses(colonyName string, executorType string, label string, initiator string, count int) ([]*core.Process, error) {
 	return nil, nil
 }
 
-func (db *dbMock) FindFailedProcesses(colonyName string, executorType string, count int) ([]*core.Process, error) {
+func (db *dbMock) FindFailedProcesses(colonyName string, executorType string, label string, initiator string, count int) ([]*core.Process, error) {
 	return nil, nil
 }
 

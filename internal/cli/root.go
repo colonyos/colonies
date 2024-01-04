@@ -120,6 +120,7 @@ var Snapshots []string
 var Retention bool
 var RetentionPolicy int64
 var UserPrvKey string
+var Initiator string
 var UserID string
 var Username string
 var Email string

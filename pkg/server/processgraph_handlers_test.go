@@ -30,7 +30,7 @@ func TestSubmitWorkflowSpec(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Len(t, graphs, 1)
 
-	processes, err := client.GetWaitingProcesses(env.colonyName, "", 100, env.executorPrvKey)
+	processes, err := client.GetWaitingProcesses(env.colonyName, "", "", "", 100, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.Len(t, processes, 4)
 
@@ -493,7 +493,7 @@ func TestSubmitWorkflowSpecWithInputOutput(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Len(t, graphs, 1)
 
-	processes, err := client.GetWaitingProcesses(env.colonyName, "", 100, env.executorPrvKey)
+	processes, err := client.GetWaitingProcesses(env.colonyName, "", "", "", 100, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.Len(t, processes, 4)
 
