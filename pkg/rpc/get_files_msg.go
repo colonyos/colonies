@@ -12,9 +12,9 @@ type GetFilesMsg struct {
 	MsgType    string `json:"msgtype"`
 }
 
-func CreateGetFilesMsg(colonyID string, label string) *GetFilesMsg {
+func CreateGetFilesMsg(colonyName string, label string) *GetFilesMsg {
 	msg := &GetFilesMsg{}
-	msg.ColonyName = colonyID
+	msg.ColonyName = colonyName
 	msg.Label = label
 	msg.MsgType = GetFilesPayloadType
 

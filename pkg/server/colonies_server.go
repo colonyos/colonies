@@ -299,6 +299,8 @@ func (server *ColoniesServer) handleAPIRequest(c *gin.Context) {
 		server.handleGetSnapshotsHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 	case rpc.RemoveSnapshotPayloadType:
 		server.handleRemoveSnapshotHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+	case rpc.RemoveAllSnapshotsPayloadType:
+		server.handleRemoveAllSnapshotsHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 
 		// Security handlers
 	case rpc.ChangeUserIDPayloadType:

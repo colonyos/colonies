@@ -12,9 +12,9 @@ type RemoveAllProcessesMsg struct {
 	State      int    `json:"state"`
 }
 
-func CreateRemoveAllProcessesMsg(colonyID string) *RemoveAllProcessesMsg {
+func CreateRemoveAllProcessesMsg(colonyName string) *RemoveAllProcessesMsg {
 	msg := &RemoveAllProcessesMsg{}
-	msg.ColonyName = colonyID
+	msg.ColonyName = colonyName
 	msg.MsgType = RemoveAllProcessesPayloadType
 
 	return msg
