@@ -169,7 +169,7 @@ func follow(client *client.ColoniesClient, process *core.Process) {
 	var lastTimestamp int64
 	lastTimestamp = 0
 	for {
-		logs, err := client.GetLogsByProcessIDSince(process.ID, Count, lastTimestamp, PrvKey)
+		logs, err := client.GetLogsByProcessIDSince(ColonyName, process.ID, Count, lastTimestamp, PrvKey)
 		CheckError(err)
 
 		process, err := client.GetProcess(process.ID, PrvKey)

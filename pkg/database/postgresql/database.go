@@ -300,7 +300,8 @@ func (db *PQDatabase) Drop() error {
 
 func (db *PQDatabase) createHypertables() error {
 	prefix := strings.ToLower(db.dbPrefix)
-	sqlStatement := `SELECT create_hypertable ('` + prefix + `logs', 'ts', chunk_time_interval => 86400000000000)` // 24h chunks, assuming ts is nanosec
+	//sqlStatement := `SELECT create_hypertable ('` + prefix + `logs', 'ts', chunk_time_interval => 86400000000000)` // 24h chunks, assuming ts is nanosec
+	sqlStatement := `SELECT create_hypertable ('` + prefix + `logs', by_range('added', INTERVAL '1 day'))`
 	_, err := db.postgresql.Exec(sqlStatement)
 	if err != nil {
 		return err
@@ -369,7 +370,7 @@ func (db *PQDatabase) createProcessesTable() error {
 }
 
 func (db *PQDatabase) createLogTable() error {
-	sqlStatement := `CREATE TABLE ` + db.dbPrefix + `LOGS (PROCESS_ID TEXT, COLONY_NAME TEXT NOT NULL, EXECUTOR_ID TEXT NOT NULL, TS BIGINT, MSG TEXT NOT NULL, ADDED TIMESTAMPTZ)`
+	sqlStatement := `CREATE TABLE ` + db.dbPrefix + `LOGS (PROCESS_ID TEXT, COLONY_NAME TEXT NOT NULL, EXECUTOR_NAME TEXT NOT NULL, TS BIGINT, MSG TEXT NOT NULL, ADDED TIMESTAMPTZ)`
 	_, err := db.postgresql.Exec(sqlStatement)
 	if err != nil {
 		return err
