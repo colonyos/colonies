@@ -318,29 +318,40 @@ func (db *PQDatabase) FindProcessesByExecutorID(colonyName string, executorID st
 	return matches, nil
 }
 
-func (db *PQDatabase) FindWaitingProcesses(colonyName string, executorType string, count int) ([]*core.Process, error) {
-	if executorType == "" {
-		sqlStatement := `SELECT * FROM ` + db.dbPrefix + `PROCESSES WHERE TARGET_COLONY_NAME=$1 AND STATE=$2 ORDER BY PRIORITYTIME LIMIT $3`
-		rows, err := db.postgresql.Query(sqlStatement, colonyName, core.WAITING, count)
+func (db *PQDatabase) FindWaitingProcesses(colonyName string, executorType string, label string, initiator string, count int) ([]*core.Process, error) {
+	var sqlStatement string
+	var rows *sql.Rows
+	var err error
+
+	if executorType != "" {
+		sqlStatement = `SELECT * FROM ` + db.dbPrefix + `PROCESSES WHERE TARGET_COLONY_NAME=$1 AND EXECUTOR_TYPE=$2 AND STATE=$3 ORDER BY PRIORITYTIME LIMIT $4`
+		rows, err = db.postgresql.Query(sqlStatement, colonyName, executorType, core.WAITING, count)
 		if err != nil {
 			return nil, err
 		}
 		defer rows.Close()
-
-		matches, err := db.parseProcesses(rows)
+	} else if initiator != "" {
+		sqlStatement = `SELECT * FROM ` + db.dbPrefix + `PROCESSES WHERE TARGET_COLONY_NAME=$1 AND INITIATOR_NAME=$2 AND STATE=$3 ORDER BY PRIORITYTIME LIMIT $4`
+		rows, err = db.postgresql.Query(sqlStatement, colonyName, initiator, core.WAITING, count)
 		if err != nil {
 			return nil, err
 		}
-
-		return matches, nil
+		defer rows.Close()
+	} else if label != "" {
+		sqlStatement = `SELECT * FROM ` + db.dbPrefix + `PROCESSES WHERE TARGET_COLONY_NAME=$1 AND LABEL=$2 AND STATE=$3 ORDER BY PRIORITYTIME LIMIT $4`
+		rows, err = db.postgresql.Query(sqlStatement, colonyName, label, core.WAITING, count)
+		if err != nil {
+			return nil, err
+		}
+		defer rows.Close()
+	} else {
+		sqlStatement = `SELECT * FROM ` + db.dbPrefix + `PROCESSES WHERE TARGET_COLONY_NAME=$1 AND STATE=$2 ORDER BY PRIORITYTIME LIMIT $3`
+		rows, err = db.postgresql.Query(sqlStatement, colonyName, core.WAITING, count)
+		if err != nil {
+			return nil, err
+		}
+		defer rows.Close()
 	}
-
-	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `PROCESSES WHERE TARGET_COLONY_NAME=$1 AND EXECUTOR_TYPE=$2 AND STATE=$3 ORDER BY PRIORITYTIME LIMIT $4`
-	rows, err := db.postgresql.Query(sqlStatement, colonyName, executorType, core.WAITING, count)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
 
 	matches, err := db.parseProcesses(rows)
 	if err != nil {
@@ -350,29 +361,40 @@ func (db *PQDatabase) FindWaitingProcesses(colonyName string, executorType strin
 	return matches, nil
 }
 
-func (db *PQDatabase) FindRunningProcesses(colonyName string, executorType string, count int) ([]*core.Process, error) {
-	if executorType == "" {
-		sqlStatement := `SELECT * FROM ` + db.dbPrefix + `PROCESSES WHERE TARGET_COLONY_NAME=$1 AND STATE=$2 ORDER BY START_TIME ASC LIMIT $3`
-		rows, err := db.postgresql.Query(sqlStatement, colonyName, core.RUNNING, count)
+func (db *PQDatabase) FindRunningProcesses(colonyName string, executorType string, label string, initiator string, count int) ([]*core.Process, error) {
+	var sqlStatement string
+	var rows *sql.Rows
+	var err error
+
+	if executorType != "" {
+		sqlStatement = `SELECT * FROM ` + db.dbPrefix + `PROCESSES WHERE TARGET_COLONY_NAME=$1 AND EXECUTOR_TYPE=$2 AND STATE=$3 ORDER BY START_TIME ASC LIMIT $4`
+		rows, err = db.postgresql.Query(sqlStatement, colonyName, executorType, core.RUNNING, count)
 		if err != nil {
 			return nil, err
 		}
 		defer rows.Close()
-
-		matches, err := db.parseProcesses(rows)
+	} else if initiator != "" {
+		sqlStatement = `SELECT * FROM ` + db.dbPrefix + `PROCESSES WHERE TARGET_COLONY_NAME=$1 AND INITIATOR_NAME=$2 AND STATE=$3 ORDER BY START_TIME ASC LIMIT $4`
+		rows, err = db.postgresql.Query(sqlStatement, colonyName, initiator, core.RUNNING, count)
 		if err != nil {
 			return nil, err
 		}
-
-		return matches, nil
+		defer rows.Close()
+	} else if label != "" {
+		sqlStatement = `SELECT * FROM ` + db.dbPrefix + `PROCESSES WHERE TARGET_COLONY_NAME=$1 AND LABEL=$2 AND STATE=$3 ORDER BY START_TIME ASC LIMIT $4`
+		rows, err = db.postgresql.Query(sqlStatement, colonyName, label, core.RUNNING, count)
+		if err != nil {
+			return nil, err
+		}
+		defer rows.Close()
+	} else {
+		sqlStatement = `SELECT * FROM ` + db.dbPrefix + `PROCESSES WHERE TARGET_COLONY_NAME=$1 AND STATE=$2 ORDER BY START_TIME ASC LIMIT $3`
+		rows, err = db.postgresql.Query(sqlStatement, colonyName, core.RUNNING, count)
+		if err != nil {
+			return nil, err
+		}
+		defer rows.Close()
 	}
-
-	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `PROCESSES WHERE TARGET_COLONY_NAME=$1 AND EXECUTOR_TYPE=$2 AND STATE=$3 ORDER BY START_TIME ASC LIMIT $4`
-	rows, err := db.postgresql.Query(sqlStatement, colonyName, executorType, core.RUNNING, count)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
 
 	matches, err := db.parseProcesses(rows)
 	if err != nil {
@@ -382,29 +404,40 @@ func (db *PQDatabase) FindRunningProcesses(colonyName string, executorType strin
 	return matches, nil
 }
 
-func (db *PQDatabase) FindSuccessfulProcesses(colonyName string, executorType string, count int) ([]*core.Process, error) {
-	if executorType == "" {
-		sqlStatement := `SELECT * FROM ` + db.dbPrefix + `PROCESSES WHERE TARGET_COLONY_NAME=$1 AND STATE=$2 ORDER BY END_TIME DESC LIMIT $3`
-		rows, err := db.postgresql.Query(sqlStatement, colonyName, core.SUCCESS, count)
+func (db *PQDatabase) FindSuccessfulProcesses(colonyName string, executorType string, label string, initiator string, count int) ([]*core.Process, error) {
+	var sqlStatement string
+	var rows *sql.Rows
+	var err error
+
+	if executorType != "" {
+		sqlStatement = `SELECT * FROM ` + db.dbPrefix + `PROCESSES WHERE TARGET_COLONY_NAME=$1 AND EXECUTOR_TYPE=$2 AND STATE=$3 ORDER BY END_TIME DESC LIMIT $4`
+		rows, err = db.postgresql.Query(sqlStatement, colonyName, executorType, core.SUCCESS, count)
 		if err != nil {
 			return nil, err
 		}
 		defer rows.Close()
-
-		matches, err := db.parseProcesses(rows)
+	} else if initiator != "" {
+		sqlStatement = `SELECT * FROM ` + db.dbPrefix + `PROCESSES WHERE TARGET_COLONY_NAME=$1 AND INITIATOR_NAME=$2 AND STATE=$3 ORDER BY END_TIME DESC LIMIT $4`
+		rows, err = db.postgresql.Query(sqlStatement, colonyName, initiator, core.SUCCESS, count)
 		if err != nil {
 			return nil, err
 		}
-
-		return matches, nil
+		defer rows.Close()
+	} else if label != "" {
+		sqlStatement = `SELECT * FROM ` + db.dbPrefix + `PROCESSES WHERE TARGET_COLONY_NAME=$1 AND LABEL=$2 AND STATE=$3 ORDER BY END_TIME DESC LIMIT $4`
+		rows, err = db.postgresql.Query(sqlStatement, colonyName, label, core.SUCCESS, count)
+		if err != nil {
+			return nil, err
+		}
+		defer rows.Close()
+	} else {
+		sqlStatement = `SELECT * FROM ` + db.dbPrefix + `PROCESSES WHERE TARGET_COLONY_NAME=$1 AND STATE=$2 ORDER BY END_TIME DESC LIMIT $3`
+		rows, err = db.postgresql.Query(sqlStatement, colonyName, core.SUCCESS, count)
+		if err != nil {
+			return nil, err
+		}
+		defer rows.Close()
 	}
-
-	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `PROCESSES WHERE TARGET_COLONY_NAME=$1 AND EXECUTOR_TYPE=$2 AND STATE=$3 ORDER BY END_TIME DESC LIMIT $4`
-	rows, err := db.postgresql.Query(sqlStatement, colonyName, executorType, core.SUCCESS, count)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
 
 	matches, err := db.parseProcesses(rows)
 	if err != nil {
@@ -414,29 +447,40 @@ func (db *PQDatabase) FindSuccessfulProcesses(colonyName string, executorType st
 	return matches, nil
 }
 
-func (db *PQDatabase) FindFailedProcesses(colonyName string, executorType string, count int) ([]*core.Process, error) {
-	if executorType == "" {
-		sqlStatement := `SELECT * FROM ` + db.dbPrefix + `PROCESSES WHERE TARGET_COLONY_NAME=$1 AND STATE=$2 ORDER BY END_TIME DESC LIMIT $3`
-		rows, err := db.postgresql.Query(sqlStatement, colonyName, core.FAILED, count)
+func (db *PQDatabase) FindFailedProcesses(colonyName string, executorType string, label string, initiator string, count int) ([]*core.Process, error) {
+	var sqlStatement string
+	var rows *sql.Rows
+	var err error
+
+	if executorType != "" {
+		sqlStatement = `SELECT * FROM ` + db.dbPrefix + `PROCESSES WHERE TARGET_COLONY_NAME=$1 AND EXECUTOR_TYPE=$2 AND STATE=$3 ORDER BY END_TIME DESC LIMIT $4`
+		rows, err = db.postgresql.Query(sqlStatement, colonyName, executorType, core.FAILED, count)
 		if err != nil {
 			return nil, err
 		}
 		defer rows.Close()
-
-		matches, err := db.parseProcesses(rows)
+	} else if initiator != "" {
+		sqlStatement = `SELECT * FROM ` + db.dbPrefix + `PROCESSES WHERE TARGET_COLONY_NAME=$1 AND INITIATOR_NAME=$2 AND STATE=$3 ORDER BY END_TIME DESC LIMIT $4`
+		rows, err = db.postgresql.Query(sqlStatement, colonyName, initiator, core.FAILED, count)
 		if err != nil {
 			return nil, err
 		}
-
-		return matches, nil
+		defer rows.Close()
+	} else if label != "" {
+		sqlStatement = `SELECT * FROM ` + db.dbPrefix + `PROCESSES WHERE TARGET_COLONY_NAME=$1 AND LABEL=$2 AND STATE=$3 ORDER BY END_TIME DESC LIMIT $4`
+		rows, err = db.postgresql.Query(sqlStatement, colonyName, label, core.FAILED, count)
+		if err != nil {
+			return nil, err
+		}
+		defer rows.Close()
+	} else {
+		sqlStatement = `SELECT * FROM ` + db.dbPrefix + `PROCESSES WHERE TARGET_COLONY_NAME=$1 AND STATE=$2 ORDER BY END_TIME DESC LIMIT $3`
+		rows, err = db.postgresql.Query(sqlStatement, colonyName, core.FAILED, count)
+		if err != nil {
+			return nil, err
+		}
+		defer rows.Close()
 	}
-
-	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `PROCESSES WHERE TARGET_COLONY_NAME=$1 AND EXECUTOR_TYPE=$2 AND STATE=$3 ORDER BY END_TIME DESC LIMIT $4`
-	rows, err := db.postgresql.Query(sqlStatement, colonyName, executorType, core.FAILED, count)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
 
 	matches, err := db.parseProcesses(rows)
 	if err != nil {

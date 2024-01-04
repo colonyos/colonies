@@ -155,10 +155,10 @@ func TestGetWaitingProcessesSecurity(t *testing.T) {
 		assert.Nil(t, err)
 	}
 
-	_, err := client.GetRunningProcesses(env.colony1Name, "", numberOfRunningProcesses, env.executor2PrvKey)
+	_, err := client.GetRunningProcesses(env.colony1Name, "", "", "", numberOfRunningProcesses, env.executor2PrvKey)
 	assert.NotNil(t, err) // Should not work
 
-	_, err = client.GetRunningProcesses(env.colony1Name, "", numberOfRunningProcesses, env.executor1PrvKey)
+	_, err = client.GetRunningProcesses(env.colony1Name, "", "", "", numberOfRunningProcesses, env.executor1PrvKey)
 	assert.Nil(t, err) // Should work
 
 	server.Shutdown()
@@ -179,10 +179,10 @@ func TestGetRunningProcessesSecurity(t *testing.T) {
 		assert.Nil(t, err)
 	}
 
-	_, err := client.GetWaitingProcesses(env.colony1Name, "", numberOfRunningProcesses, env.executor2PrvKey)
+	_, err := client.GetWaitingProcesses(env.colony1Name, "", "", "", numberOfRunningProcesses, env.executor2PrvKey)
 	assert.NotNil(t, err) // Should not work
 
-	_, err = client.GetWaitingProcesses(env.colony1Name, "", numberOfRunningProcesses, env.executor1PrvKey)
+	_, err = client.GetWaitingProcesses(env.colony1Name, "", "", "", numberOfRunningProcesses, env.executor1PrvKey)
 	assert.Nil(t, err) // Should work
 
 	server.Shutdown()
@@ -207,10 +207,10 @@ func TestGetSuccessfulProcessesSecurity(t *testing.T) {
 		assert.Nil(t, err)
 	}
 
-	_, err := client.GetSuccessfulProcesses(env.colony1Name, "", numberOfRunningProcesses, env.executor2PrvKey)
+	_, err := client.GetSuccessfulProcesses(env.colony1Name, "", "", "", numberOfRunningProcesses, env.executor2PrvKey)
 	assert.NotNil(t, err) // Should not work
 
-	_, err = client.GetSuccessfulProcesses(env.colony1Name, "", numberOfRunningProcesses, env.executor1PrvKey)
+	_, err = client.GetSuccessfulProcesses(env.colony1Name, "", "", "", numberOfRunningProcesses, env.executor1PrvKey)
 	assert.Nil(t, err) // Should work
 
 	server.Shutdown()
@@ -235,10 +235,10 @@ func TestGetFailedProcessesSecurity(t *testing.T) {
 		assert.Nil(t, err)
 	}
 
-	_, err := client.GetFailedProcesses(env.colony1Name, "", numberOfRunningProcesses, env.executor2PrvKey)
+	_, err := client.GetFailedProcesses(env.colony1Name, "", "", "", numberOfRunningProcesses, env.executor2PrvKey)
 	assert.NotNil(t, err) // Should not work
 
-	_, err = client.GetFailedProcesses(env.colony1Name, "", numberOfRunningProcesses, env.executor1PrvKey)
+	_, err = client.GetFailedProcesses(env.colony1Name, "", "", "", numberOfRunningProcesses, env.executor1PrvKey)
 	assert.Nil(t, err) // Should work
 
 	server.Shutdown()
