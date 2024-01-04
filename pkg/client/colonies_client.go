@@ -1072,7 +1072,7 @@ func (client *ColoniesClient) AddFunction(function *core.Function, prvKey string
 	return core.ConvertJSONToFunction(respBodyString)
 }
 
-func (client *ColoniesClient) GetFunctionsByExecutorName(colonyName string, executorName string, prvKey string) ([]*core.Function, error) {
+func (client *ColoniesClient) GetFunctionsByExecutor(colonyName string, executorName string, prvKey string) ([]*core.Function, error) {
 	msg := rpc.CreateGetFunctionsMsg(colonyName, executorName)
 	jsonString, err := msg.ToJSON()
 	if err != nil {
@@ -1087,7 +1087,7 @@ func (client *ColoniesClient) GetFunctionsByExecutorName(colonyName string, exec
 	return core.ConvertJSONToFunctionArray(respBodyString)
 }
 
-func (client *ColoniesClient) GetFunctionsByColonyName(colonyName string, prvKey string) ([]*core.Function, error) {
+func (client *ColoniesClient) GetFunctionsByColony(colonyName string, prvKey string) ([]*core.Function, error) {
 	msg := rpc.CreateGetFunctionsByColonyNameMsg(colonyName)
 	jsonString, err := msg.ToJSON()
 	if err != nil {
@@ -1178,7 +1178,7 @@ func (client *ColoniesClient) AddLog(processID string, logmsg string, prvKey str
 	return nil
 }
 
-func (client *ColoniesClient) GetLogsByProcessID(colonyName string, processID string, count int, prvKey string) ([]core.Log, error) {
+func (client *ColoniesClient) GetLogsByProcess(colonyName string, processID string, count int, prvKey string) ([]core.Log, error) {
 	msg := rpc.CreateGetLogsMsg(colonyName, processID, count, 0)
 	msg.ExecutorName = ""
 	jsonString, err := msg.ToJSON()
@@ -1194,7 +1194,7 @@ func (client *ColoniesClient) GetLogsByProcessID(colonyName string, processID st
 	return core.ConvertJSONToLogArray(respBodyString)
 }
 
-func (client *ColoniesClient) GetLogsByProcessIDSince(colonyName string, processID string, count int, since int64, prvKey string) ([]core.Log, error) {
+func (client *ColoniesClient) GetLogsByProcessSince(colonyName string, processID string, count int, since int64, prvKey string) ([]core.Log, error) {
 	msg := rpc.CreateGetLogsMsg(colonyName, processID, count, since)
 	msg.ExecutorName = ""
 	jsonString, err := msg.ToJSON()

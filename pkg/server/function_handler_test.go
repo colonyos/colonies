@@ -37,7 +37,7 @@ func TestGetFunctionsByExecutorID(t *testing.T) {
 	_, err = client.AddFunction(function2, env.executorPrvKey)
 	assert.Nil(t, err)
 
-	functions, err := client.GetFunctionsByExecutorName(env.colonyName, env.executorName, env.executorPrvKey)
+	functions, err := client.GetFunctionsByExecutor(env.colonyName, env.executorName, env.executorPrvKey)
 	assert.Nil(t, err)
 
 	counter := 0
@@ -73,7 +73,7 @@ func TestGetFunctionsByColonyName(t *testing.T) {
 	_, err = client.AddFunction(function2, executor2PrvKey)
 	assert.Nil(t, err)
 
-	functions, err := client.GetFunctionsByColonyName(env.colonyName, env.executorPrvKey)
+	functions, err := client.GetFunctionsByColony(env.colonyName, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.Len(t, functions, 2)
 
@@ -94,14 +94,14 @@ func TestRemoveFunction(t *testing.T) {
 	_, err = client.AddFunction(function2, env.executorPrvKey)
 	assert.Nil(t, err)
 
-	functions, err := client.GetFunctionsByExecutorName(env.colonyName, env.executorName, env.executorPrvKey)
+	functions, err := client.GetFunctionsByExecutor(env.colonyName, env.executorName, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.Len(t, functions, 2)
 
 	err = client.RemoveFunction(addedFunction1.FunctionID, env.executorPrvKey)
 	assert.Nil(t, err)
 
-	functions, err = client.GetFunctionsByExecutorName(env.colonyName, env.executorName, env.executorPrvKey)
+	functions, err = client.GetFunctionsByExecutor(env.colonyName, env.executorName, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.Len(t, functions, 1)
 

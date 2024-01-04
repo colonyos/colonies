@@ -207,7 +207,7 @@ func printExecutorTable(client *client.ColoniesClient, executor *core.Executor) 
 
 	t.Render()
 
-	functions, err := client.GetFunctionsByExecutorName(ColonyName, executor.Name, PrvKey)
+	functions, err := client.GetFunctionsByExecutor(ColonyName, executor.Name, PrvKey)
 	CheckError(err)
 
 	for _, function := range functions {

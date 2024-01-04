@@ -1,9 +1,2 @@
-1. If a process fails in workflow, there could be many waiting process in the queue that never finish
-2. Make it possible to deleteall snapshots
-3. Users should not be allowed to delete other users processes
-
-4. Om Mac https://stackoverflow.com/questions/76187256/importerror-urllib3-v2-0-only-supports-openssl-1-1-1-currently-the-ssl-modu
-
-brew install openssl@1.1
-pip install urllib3==1.26.6
-Also, /usr/local/lib become a file when install libcryptolib.so as the dir did not exists
+Manuel test log
+Implement search log
