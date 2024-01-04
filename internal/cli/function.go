@@ -119,7 +119,7 @@ var listFuncCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		client := setup()
 
-		functions, err := client.GetFunctionsByColonyName(ColonyName, PrvKey)
+		functions, err := client.GetFunctionsByColony(ColonyName, PrvKey)
 		CheckError(err)
 
 		statsMap := make(map[string]statsEntry)
@@ -169,7 +169,7 @@ func follow(client *client.ColoniesClient, process *core.Process) {
 	var lastTimestamp int64
 	lastTimestamp = 0
 	for {
-		logs, err := client.GetLogsByProcessIDSince(ColonyName, process.ID, Count, lastTimestamp, PrvKey)
+		logs, err := client.GetLogsByProcessSince(ColonyName, process.ID, Count, lastTimestamp, PrvKey)
 		CheckError(err)
 
 		process, err := client.GetProcess(process.ID, PrvKey)

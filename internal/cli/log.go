@@ -61,7 +61,7 @@ var getLogsCmd = &cobra.Command{
 			lastTimestamp = 0
 			for {
 				if TargetExecutorID == "" {
-					logs, err = client.GetLogsByProcessIDSince(ColonyName, ProcessID, Count, lastTimestamp, PrvKey)
+					logs, err = client.GetLogsByProcessSince(ColonyName, ProcessID, Count, lastTimestamp, PrvKey)
 				} else {
 					logs, err = client.GetLogsByExecutorSince(ColonyName, TargetExecutorName, Count, lastTimestamp, PrvKey)
 				}
@@ -80,7 +80,7 @@ var getLogsCmd = &cobra.Command{
 			var err error
 			var logs []core.Log
 			if TargetExecutorID == "" {
-				logs, err = client.GetLogsByProcessIDSince(ColonyName, ProcessID, Count, Since, PrvKey)
+				logs, err = client.GetLogsByProcessSince(ColonyName, ProcessID, Count, Since, PrvKey)
 			} else {
 				logs, err = client.GetLogsByExecutorSince(ColonyName, TargetExecutorName, Count, Since, PrvKey)
 			}
