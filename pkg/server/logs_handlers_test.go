@@ -27,10 +27,10 @@ func TestAddGetLogByProcess(t *testing.T) {
 	err = client.AddLog(assignedProcess.ID, "test_msg", env.executorPrvKey)
 	assert.Nil(t, err)
 
-	_, err = client.GetLogsByProcessID(env.colonyName, assignedProcess.ID, MAX_LOG_COUNT+1, env.executorPrvKey)
+	_, err = client.GetLogsByProcess(env.colonyName, assignedProcess.ID, MAX_LOG_COUNT+1, env.executorPrvKey)
 	assert.NotNil(t, err) // Exceeds max log count
 
-	logs, err := client.GetLogsByProcessID(env.colonyName, assignedProcess.ID, 100, env.executorPrvKey)
+	logs, err := client.GetLogsByProcess(env.colonyName, assignedProcess.ID, 100, env.executorPrvKey)
 	assert.Len(t, logs, 1)
 	assert.Equal(t, logs[0].Message, "test_msg")
 	assert.Equal(t, logs[0].ProcessID, assignedProcess.ID)
@@ -58,12 +58,12 @@ func TestAddGetLogSinceByProcess(t *testing.T) {
 	err = client.AddLog(assignedProcess.ID, "test_msg2", env.executorPrvKey)
 	assert.Nil(t, err)
 
-	logs, err := client.GetLogsByProcessID(env.colonyName, assignedProcess.ID, 100, env.executorPrvKey)
+	logs, err := client.GetLogsByProcess(env.colonyName, assignedProcess.ID, 100, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.Len(t, logs, 2)
 
 	since := logs[0].Timestamp
-	logs, err = client.GetLogsByProcessIDSince(env.colonyName, assignedProcess.ID, 100, since, env.executorPrvKey)
+	logs, err = client.GetLogsByProcessSince(env.colonyName, assignedProcess.ID, 100, since, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.Len(t, logs, 1)
 	assert.Equal(t, logs[0].Message, "test_msg2")
