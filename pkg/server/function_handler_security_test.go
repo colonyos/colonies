@@ -65,16 +65,16 @@ func TestGetFunctionsSecurity(t *testing.T) {
 	_, err = client.AddFunction(function2, env.executor1PrvKey)
 	assert.Nil(t, err)
 
-	_, err = client.GetFunctionsByExecutorName(env.colony1Name, env.executor1Name, env.executor2PrvKey)
+	_, err = client.GetFunctionsByExecutor(env.colony1Name, env.executor1Name, env.executor2PrvKey)
 	assert.NotNil(t, err) // Should not work
 
-	_, err = client.GetFunctionsByExecutorName(env.colony1Name, env.executor1Name, env.colony1PrvKey)
+	_, err = client.GetFunctionsByExecutor(env.colony1Name, env.executor1Name, env.colony1PrvKey)
 	assert.NotNil(t, err) // Should not work
 
-	_, err = client.GetFunctionsByExecutorName(env.colony1Name, env.executor1Name, env.colony2PrvKey)
+	_, err = client.GetFunctionsByExecutor(env.colony1Name, env.executor1Name, env.colony2PrvKey)
 	assert.NotNil(t, err) // Should not work
 
-	_, err = client.GetFunctionsByExecutorName(env.colony1Name, env.executor1Name, env.executor1PrvKey)
+	_, err = client.GetFunctionsByExecutor(env.colony1Name, env.executor1Name, env.executor1PrvKey)
 	assert.Nil(t, err)
 
 	server.Shutdown()
