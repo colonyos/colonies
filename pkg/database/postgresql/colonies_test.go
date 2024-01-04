@@ -223,10 +223,10 @@ func TestRemoveColonies(t *testing.T) {
 	err = db.AddFunction(function)
 	assert.Nil(t, err)
 
-	err = db.AddLog("test_processid1", colony1.ID, "test_executorid", time.Now().UTC().UnixNano(), "1")
+	err = db.AddLog("test_processid1", colony1.ID, "test_executor_name", time.Now().UTC().UnixNano(), "1")
 	assert.Nil(t, err)
 
-	err = db.AddLog("test_processid1", colony2.ID, "test_executorid", time.Now().UTC().UnixNano(), "1")
+	err = db.AddLog("test_processid1", colony2.ID, "test_executor_name", time.Now().UTC().UnixNano(), "1")
 	assert.Nil(t, err)
 
 	file := utils.CreateTestFileWithID("test_id", colony1.Name, time.Now())

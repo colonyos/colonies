@@ -8,7 +8,7 @@ import (
 )
 
 func TestGetLogsMsg(t *testing.T) {
-	msg := CreateGetLogsMsg(core.GenerateRandomID(), 100, 0)
+	msg := CreateGetLogsMsg("test_colony_name", core.GenerateRandomID(), 100, 0)
 	jsonString, err := msg.ToJSON()
 	assert.Nil(t, err)
 
@@ -22,7 +22,7 @@ func TestGetLogsMsg(t *testing.T) {
 }
 
 func TestRPCGetLogsMsgIndent(t *testing.T) {
-	msg := CreateGetLogsMsg(core.GenerateRandomID(), 100, 0)
+	msg := CreateGetLogsMsg("test_colony_name", core.GenerateRandomID(), 100, 0)
 	jsonString, err := msg.ToJSONIndent()
 	assert.Nil(t, err)
 
@@ -36,7 +36,7 @@ func TestRPCGetLogsMsgIndent(t *testing.T) {
 }
 
 func TestRPCGetLogsMsgEquals(t *testing.T) {
-	msg := CreateGetLogsMsg(core.GenerateRandomID(), 100, 0)
+	msg := CreateGetLogsMsg("test_colony_name", core.GenerateRandomID(), 100, 0)
 	assert.True(t, msg.Equals(msg))
 	assert.False(t, msg.Equals(nil))
 }
