@@ -30,10 +30,6 @@ type controller interface {
 	addChild(processGraphID string, parentProcessID string, childProcessID string, process *core.Process, executorID string, insert bool) (*core.Process, error)
 	getProcess(processID string) (*core.Process, error)
 	findProcessHistory(colonyName string, executorID string, seconds int, state int) ([]*core.Process, error)
-	findWaitingProcesses(colonyName string, executorType string, count int) ([]*core.Process, error)
-	findRunningProcesses(colonyName string, executorType string, count int) ([]*core.Process, error)
-	findSuccessfulProcesses(colonyName string, executorType string, count int) ([]*core.Process, error)
-	findFailedProcesses(colonyName string, executorType string, count int) ([]*core.Process, error)
 	updateProcessGraph(graph *core.ProcessGraph) error
 	createProcessGraph(workflowSpec *core.WorkflowSpec, args []interface{}, kwargs map[string]interface{}, rootInput []interface{}, recoveredID string) (*core.ProcessGraph, error)
 	submitWorkflowSpec(workflowSpec *core.WorkflowSpec, recoveredID string) (*core.ProcessGraph, error)
