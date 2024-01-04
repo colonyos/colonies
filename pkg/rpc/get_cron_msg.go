@@ -11,9 +11,9 @@ type GetCronMsg struct {
 	MsgType string `json:"msgtype"`
 }
 
-func CreateGetCronMsg(cronID string) *GetCronMsg {
+func CreateGetCronMsg(cronName string) *GetCronMsg {
 	msg := &GetCronMsg{}
-	msg.CronID = cronID
+	msg.CronID = cronName
 	msg.MsgType = GetCronPayloadType
 
 	return msg

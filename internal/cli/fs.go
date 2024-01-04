@@ -21,6 +21,7 @@ func init() {
 	snapshotCmd.AddCommand(listSnapshotsCmd)
 	snapshotCmd.AddCommand(infoSnapshotCmd)
 	snapshotCmd.AddCommand(removeSnapshotCmd)
+	snapshotCmd.AddCommand(removeAllSnapshotsCmd)
 
 	labelsCmd.AddCommand(listLabelsCmd)
 	labelsCmd.AddCommand(removeLabelCmd)
@@ -511,5 +512,28 @@ var removeSnapshotCmd = &cobra.Command{
 		} else {
 			CheckError(errors.New("Snapshot Id nor name was provided"))
 		}
+	},
+}
+
+var removeAllSnapshotsCmd = &cobra.Command{
+	Use:   "removeall",
+	Short: "Remove all snapshots",
+	Long:  "Remove all snapshots",
+	Run: func(cmd *cobra.Command, args []string) {
+		client := setup()
+
+		fmt.Print("WARNING!!! Are you sure you want to remove all snapshots in colony <" + ColonyName + ">. This operation cannot be undone! (YES,no): ")
+
+		reader := bufio.NewReader(os.Stdin)
+		reply, _ := reader.ReadString('\n')
+		if reply == "YES\n" {
+			err := client.RemoveAllSnapshots(ColonyName, PrvKey)
+			CheckError(err)
+		} else {
+			log.Info("Aborting ...")
+			os.Exit(0)
+		}
+
+		log.Info("All snapshots removed")
 	},
 }
