@@ -535,7 +535,27 @@ func (db *PQDatabase) createProcessesIndex8() error {
 }
 
 func (db *PQDatabase) createProcessesIndex9() error {
-	sqlStatement := `CREATE INDEX ` + db.dbPrefix + `PROCESSES_INDEX9 ON ` + db.dbPrefix + `PROCESSES (STATE, EXECUTOR_TYPE, IS_ASSIGNED, WAIT_FOR_PARENTS, TARGET_COLONY_NAME, EXECUTOR_TYPE, IS_ASSIGNED, TARGET_EXECUTOR_NAMES, CPU, MEMORY, GPUNAME, GPUMEM, GPUCOUNT, STORAGE, NODES, PROCESSES, PROCESSES_PER_NODE, PRIORITYTIME)`
+	sqlStatement := `CREATE INDEX ` + db.dbPrefix + `PROCESSES_INDEX9 ON ` + db.dbPrefix + `PROCESSES (TARGET_COLONY_NAME, STATE, INITIATOR_NAME, PRIORITYTIME)`
+	_, err := db.postgresql.Exec(sqlStatement)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (db *PQDatabase) createProcessesIndex10() error {
+	sqlStatement := `CREATE INDEX ` + db.dbPrefix + `PROCESSES_INDEX10 ON ` + db.dbPrefix + `PROCESSES (TARGET_COLONY_NAME, STATE, LABEL, PRIORITYTIME)`
+	_, err := db.postgresql.Exec(sqlStatement)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (db *PQDatabase) createProcessesIndex11() error {
+	sqlStatement := `CREATE INDEX ` + db.dbPrefix + `PROCESSES_INDEX11 ON ` + db.dbPrefix + `PROCESSES (STATE, EXECUTOR_TYPE, IS_ASSIGNED, WAIT_FOR_PARENTS, TARGET_COLONY_NAME, EXECUTOR_TYPE, IS_ASSIGNED, TARGET_EXECUTOR_NAMES, CPU, MEMORY, GPUNAME, GPUMEM, GPUCOUNT, STORAGE, NODES, PROCESSES, PROCESSES_PER_NODE, PRIORITYTIME)`
 	_, err := db.postgresql.Exec(sqlStatement)
 	if err != nil {
 		return err
@@ -748,6 +768,16 @@ func (db *PQDatabase) Initialize() error {
 	}
 
 	err = db.createProcessesIndex9()
+	if err != nil {
+		return err
+	}
+
+	err = db.createProcessesIndex10()
+	if err != nil {
+		return err
+	}
+
+	err = db.createProcessesIndex11()
 	if err != nil {
 		return err
 	}

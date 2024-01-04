@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/colonyos/colonies/pkg/client"
@@ -141,6 +142,11 @@ func (server *ColoniesServer) handleAssignProcessHTTPRequest(c *gin.Context, rec
 		return
 	}
 
+	if executor == nil {
+		server.handleHTTPError(c, errors.New("Failed to assign process, executor not found"), http.StatusInternalServerError)
+		return
+	}
+
 	cpu, err := parsers.ConvertCPUToInt(msg.AvailableCPU)
 	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
@@ -247,14 +253,42 @@ func (server *ColoniesServer) handleGetProcessesHTTPRequest(c *gin.Context, reco
 
 	err = server.validator.RequireMembership(recoveredID, msg.ColonyName, true)
 	if err != nil {
-		return
+		if server.handleHTTPError(c, err, http.StatusForbidden) {
+			return
+		}
 	}
 
 	log.WithFields(log.Fields{"ColonyName": msg.ColonyName, "Count": msg.Count}).Debug("Getting processes")
 
+	if msg.Count > MAX_COUNT {
+		if server.handleHTTPError(c, errors.New("Count is larger than MaxCount limit <"+strconv.Itoa(MAX_COUNT)+">"), http.StatusBadRequest) {
+			return
+		}
+	}
+
+	if msg.Initiator != "" {
+		users, err := server.db.GetUsersByColonyName(msg.ColonyName)
+		if server.handleHTTPError(c, err, http.StatusInternalServerError) {
+			return
+		}
+
+		found := false
+		for _, user := range users {
+			if user.Name == msg.Initiator {
+				found = true
+				break
+			}
+		}
+		if !found {
+			if server.handleHTTPError(c, errors.New("User <"+msg.Initiator+"> does not exist"), http.StatusBadRequest) {
+				return
+			}
+		}
+	}
+
 	switch msg.State {
 	case core.WAITING:
-		processes, err := server.controller.findWaitingProcesses(msg.ColonyName, msg.ExecutorType, msg.Count)
+		processes, err := server.db.FindWaitingProcesses(msg.ColonyName, msg.ExecutorType, msg.Label, msg.Initiator, msg.Count)
 		if server.handleHTTPError(c, err, http.StatusBadRequest) {
 			return
 		}
@@ -264,7 +298,7 @@ func (server *ColoniesServer) handleGetProcessesHTTPRequest(c *gin.Context, reco
 		}
 		server.sendHTTPReply(c, payloadType, jsonString)
 	case core.RUNNING:
-		processes, err := server.controller.findRunningProcesses(msg.ColonyName, msg.ExecutorType, msg.Count)
+		processes, err := server.db.FindRunningProcesses(msg.ColonyName, msg.ExecutorType, msg.Label, msg.Initiator, msg.Count)
 		if server.handleHTTPError(c, err, http.StatusBadRequest) {
 			return
 		}
@@ -274,7 +308,7 @@ func (server *ColoniesServer) handleGetProcessesHTTPRequest(c *gin.Context, reco
 		}
 		server.sendHTTPReply(c, payloadType, jsonString)
 	case core.SUCCESS:
-		processes, err := server.controller.findSuccessfulProcesses(msg.ColonyName, msg.ExecutorType, msg.Count)
+		processes, err := server.db.FindSuccessfulProcesses(msg.ColonyName, msg.ExecutorType, msg.Label, msg.Initiator, msg.Count)
 		if server.handleHTTPError(c, err, http.StatusBadRequest) {
 			return
 		}
@@ -284,7 +318,7 @@ func (server *ColoniesServer) handleGetProcessesHTTPRequest(c *gin.Context, reco
 		}
 		server.sendHTTPReply(c, payloadType, jsonString)
 	case core.FAILED:
-		processes, err := server.controller.findFailedProcesses(msg.ColonyName, msg.ExecutorType, msg.Count)
+		processes, err := server.db.FindFailedProcesses(msg.ColonyName, msg.ExecutorType, msg.Label, msg.Initiator, msg.Count)
 		if server.handleHTTPError(c, err, http.StatusBadRequest) {
 			return
 		}

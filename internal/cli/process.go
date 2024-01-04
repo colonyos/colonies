@@ -31,28 +31,36 @@ func init() {
 	processCmd.PersistentFlags().IntVarP(&ServerPort, "port", "", -1, "Server HTTP port")
 
 	listWaitingProcessesCmd.Flags().StringVarP(&PrvKey, "prvkey", "", "", "Private key")
-	listWaitingProcessesCmd.Flags().StringVarP(&TargetExecutorType, "type", "", "", "Only show processes targeting this executor type")
 	listWaitingProcessesCmd.Flags().IntVarP(&Count, "count", "", server.MAX_COUNT, "Number of processes to list")
 	listWaitingProcessesCmd.Flags().BoolVarP(&JSON, "json", "", false, "Print JSON instead of tables")
 	listWaitingProcessesCmd.Flags().BoolVarP(&ShowIDs, "ids", "i", false, "Show IDs")
+	listWaitingProcessesCmd.Flags().StringVarP(&TargetExecutorType, "executortype", "", "", "Filter by executor type")
+	listWaitingProcessesCmd.Flags().StringVarP(&Label, "label", "", "", "Filter by label")
+	listWaitingProcessesCmd.Flags().StringVarP(&Initiator, "initiator", "", "", "Filter by initiator")
 
 	listRunningProcessesCmd.Flags().StringVarP(&PrvKey, "prvkey", "", "", "Private key")
-	listRunningProcessesCmd.Flags().StringVarP(&TargetExecutorType, "type", "", "", "Only show processes targeting this executor type")
 	listRunningProcessesCmd.Flags().IntVarP(&Count, "count", "", server.MAX_COUNT, "Number of processes to list")
 	listRunningProcessesCmd.Flags().BoolVarP(&JSON, "json", "", false, "Print JSON instead of tables")
 	listRunningProcessesCmd.Flags().BoolVarP(&ShowIDs, "ids", "i", false, "Show IDs")
+	listRunningProcessesCmd.Flags().StringVarP(&TargetExecutorType, "executortype", "", "", "Filter by executor type")
+	listRunningProcessesCmd.Flags().StringVarP(&Label, "label", "", "", "Filter by label")
+	listRunningProcessesCmd.Flags().StringVarP(&Initiator, "initiator", "", "", "Filter by initiator")
 
 	listSuccessfulProcessesCmd.Flags().StringVarP(&PrvKey, "prvkey", "", "", "Private key")
-	listSuccessfulProcessesCmd.Flags().StringVarP(&TargetExecutorType, "type", "", "", "Only show processes targeting this executor type")
 	listSuccessfulProcessesCmd.Flags().IntVarP(&Count, "count", "", server.MAX_COUNT, "Number of processes to list")
 	listSuccessfulProcessesCmd.Flags().BoolVarP(&JSON, "json", "", false, "Print JSON instead of tables")
 	listSuccessfulProcessesCmd.Flags().BoolVarP(&ShowIDs, "ids", "i", false, "Show IDs")
+	listSuccessfulProcessesCmd.Flags().StringVarP(&TargetExecutorType, "executortype", "", "", "Filter by executor type")
+	listSuccessfulProcessesCmd.Flags().StringVarP(&Label, "label", "", "", "Filter by label")
+	listSuccessfulProcessesCmd.Flags().StringVarP(&Initiator, "initiator", "", "", "Filter by initiator")
 
 	listFailedProcessesCmd.Flags().StringVarP(&PrvKey, "prvkey", "", "", "Private key")
-	listFailedProcessesCmd.Flags().StringVarP(&ExecutorType, "type", "", "", "Only show processes targeting this executor type")
 	listFailedProcessesCmd.Flags().IntVarP(&Count, "count", "", server.MAX_COUNT, "Number of processes to list")
 	listFailedProcessesCmd.Flags().BoolVarP(&JSON, "json", "", false, "Print JSON instead of tables")
 	listFailedProcessesCmd.Flags().BoolVarP(&ShowIDs, "ids", "i", false, "Show IDs")
+	listFailedProcessesCmd.Flags().StringVarP(&TargetExecutorType, "executortype", "", "", "Filter by executor type")
+	listFailedProcessesCmd.Flags().StringVarP(&Label, "label", "", "", "Filter by label")
+	listFailedProcessesCmd.Flags().StringVarP(&Initiator, "initiator", "", "", "Filter by initiator")
 
 	getProcessCmd.Flags().StringVarP(&ProcessID, "processid", "p", "", "Process Id")
 	getProcessCmd.MarkFlagRequired("processid")
@@ -134,6 +142,26 @@ var assignProcessCmd = &cobra.Command{
 	},
 }
 
+func checkFilterArgs() {
+	counter := 0
+
+	if TargetExecutorType != "" {
+		counter++
+	}
+
+	if Label != "" {
+		counter++
+	}
+
+	if Initiator != "" {
+		counter++
+	}
+
+	if counter > 1 {
+		CheckError(errors.New("Invalid filter arguments, select --executortype, --label or --initiator"))
+	}
+}
+
 var listWaitingProcessesCmd = &cobra.Command{
 	Use:   "psw",
 	Short: "List all waiting processes",
@@ -141,7 +169,9 @@ var listWaitingProcessesCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		client := setup()
 
-		processes, err := client.GetWaitingProcesses(ColonyName, TargetExecutorType, Count, PrvKey)
+		checkFilterArgs()
+
+		processes, err := client.GetWaitingProcesses(ColonyName, TargetExecutorType, Label, Initiator, Count, PrvKey)
 		CheckError(err)
 
 		if len(processes) == 0 {
@@ -166,7 +196,9 @@ var listRunningProcessesCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		client := setup()
 
-		processes, err := client.GetRunningProcesses(ColonyName, TargetExecutorType, Count, PrvKey)
+		checkFilterArgs()
+
+		processes, err := client.GetRunningProcesses(ColonyName, TargetExecutorType, Label, Initiator, Count, PrvKey)
 		CheckError(err)
 
 		if len(processes) == 0 {
@@ -191,7 +223,9 @@ var listSuccessfulProcessesCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		client := setup()
 
-		processes, err := client.GetSuccessfulProcesses(ColonyName, TargetExecutorType, Count, PrvKey)
+		checkFilterArgs()
+
+		processes, err := client.GetSuccessfulProcesses(ColonyName, TargetExecutorType, Label, Initiator, Count, PrvKey)
 		CheckError(err)
 
 		if len(processes) == 0 {
@@ -216,7 +250,9 @@ var listFailedProcessesCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		client := setup()
 
-		processes, err := client.GetFailedProcesses(ColonyName, TargetExecutorType, Count, PrvKey)
+		checkFilterArgs()
+
+		processes, err := client.GetFailedProcesses(ColonyName, TargetExecutorType, Label, Initiator, Count, PrvKey)
 		CheckError(err)
 
 		if len(processes) == 0 {
@@ -359,7 +395,7 @@ var closeSuccessfulCmd = &cobra.Command{
 			CheckError(err)
 		}
 
-		log.WithFields(log.Fields{"ProcessId": process.ID}).Info("Process closed as Successful")
+		log.WithFields(log.Fields{"ProcessId": process.ID}).Info("Process closed as successful")
 	},
 }
 
@@ -380,6 +416,6 @@ var closeFailedCmd = &cobra.Command{
 		err = client.Fail(process.ID, Errors, PrvKey)
 		CheckError(err)
 
-		log.WithFields(log.Fields{"ProcessId": process.ID}).Info("Process closed as Failed")
+		log.WithFields(log.Fields{"ProcessId": process.ID}).Info("Process closed as failed")
 	},
 }

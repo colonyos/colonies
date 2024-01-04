@@ -3,7 +3,6 @@ package cli
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"math"
 	"os"
 	"strings"
@@ -18,7 +17,7 @@ import (
 func init() {
 	rootCmd.AddCommand(functionCmd)
 	functionCmd.AddCommand(execFuncCmd)
-	functionCmd.AddCommand(submitFunctionSpecCmd)
+	functionCmd.AddCommand(submitFuncSpecCmd)
 	functionCmd.AddCommand(registerFuncCmd)
 	functionCmd.AddCommand(removeFuncCmd)
 	functionCmd.AddCommand(listFuncCmd)
@@ -29,12 +28,13 @@ func init() {
 	registerFuncCmd.Flags().StringVarP(&FuncName, "func", "", "", "Function name to register")
 	registerFuncCmd.MarkFlagRequired("func")
 
-	submitFunctionSpecCmd.Flags().StringVarP(&PrvKey, "prvkey", "", "", "Private key")
-	submitFunctionSpecCmd.Flags().StringVarP(&SpecFile, "spec", "", "", "JSON specification of a process")
-	submitFunctionSpecCmd.Flags().BoolVarP(&Wait, "wait", "", false, "Wait for process to finish")
-	submitFunctionSpecCmd.MarkFlagRequired("spec")
-	submitFunctionSpecCmd.Flags().BoolVarP(&PrintOutput, "out", "", false, "Print process output, wait flag must be set")
-	submitFunctionSpecCmd.Flags().BoolVarP(&Follow, "follow", "", false, "Follow process, wait flag cannot be set")
+	submitFuncSpecCmd.Flags().StringVarP(&PrvKey, "prvkey", "", "", "Private key")
+	submitFuncSpecCmd.Flags().StringVarP(&SpecFile, "spec", "", "", "JSON specification of a function")
+	submitFuncSpecCmd.Flags().BoolVarP(&Wait, "wait", "", false, "Wait for process to finish")
+	submitFuncSpecCmd.MarkFlagRequired("spec")
+	submitFuncSpecCmd.Flags().BoolVarP(&PrintOutput, "out", "", false, "Print process output, wait flag must be set")
+	submitFuncSpecCmd.Flags().BoolVarP(&Follow, "follow", "", false, "Follow process, wait flag cannot be set")
+	submitFuncSpecCmd.Flags().StringVarP(&Label, "label", "", "", "Add a label")
 
 	execFuncCmd.Flags().StringVarP(&PrvKey, "prvkey", "", "", "Private key")
 	execFuncCmd.Flags().StringVarP(&TargetExecutorType, "targettype", "", "", "Target executor type")
@@ -50,6 +50,7 @@ func init() {
 	execFuncCmd.Flags().BoolVarP(&Wait, "wait", "", false, "Wait for process to finish")
 	execFuncCmd.Flags().BoolVarP(&PrintOutput, "out", "", false, "Print process output, wait flag must be set")
 	execFuncCmd.Flags().BoolVarP(&Follow, "follow", "", false, "Follow process, wait flag cannot be set")
+	execFuncCmd.Flags().StringVarP(&Label, "label", "", "", "Add a label")
 
 	removeFuncCmd.Flags().StringVarP(&FunctionID, "functionid", "", "", "FunctionID")
 	removeFuncCmd.MarkFlagRequired("functionid")
@@ -209,14 +210,14 @@ func createSnapshot(funcSpec *core.FunctionSpec, client *client.ColoniesClient) 
 
 }
 
-var submitFunctionSpecCmd = &cobra.Command{
+var submitFuncSpecCmd = &cobra.Command{
 	Use:   "submit",
 	Short: "Submit a Function specification",
 	Long:  "Submit a Function specification",
 	Run: func(cmd *cobra.Command, args []string) {
 		client := setup()
 
-		jsonSpecBytes, err := ioutil.ReadFile(SpecFile)
+		jsonSpecBytes, err := os.ReadFile(SpecFile)
 		CheckError(err)
 
 		funcSpec, err := core.ConvertJSONToFunctionSpec(string(jsonSpecBytes))
@@ -236,6 +237,10 @@ var submitFunctionSpecCmd = &cobra.Command{
 		}
 
 		createSnapshot(funcSpec, client)
+
+		if Label != "" {
+			funcSpec.Label = Label
+		}
 
 		addedProcess, err := client.Submit(funcSpec, PrvKey)
 		CheckError(err)
@@ -327,6 +332,10 @@ var execFuncCmd = &cobra.Command{
 			Env:         env}
 
 		createSnapshot(&funcSpec, client)
+
+		if Label != "" {
+			funcSpec.Label = Label
+		}
 
 		addedProcess, err := client.Submit(&funcSpec, PrvKey)
 		CheckError(err)

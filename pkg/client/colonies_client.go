@@ -555,8 +555,8 @@ func (client *ColoniesClient) GetProcessHistForExecutor(state int, colonyName st
 	return core.ConvertJSONToProcessArray(respBodyString)
 }
 
-func (client *ColoniesClient) getProcesses(state int, colonyName string, executorType string, count int, prvKey string) ([]*core.Process, error) {
-	msg := rpc.CreateGetProcessesMsg(colonyName, count, state, executorType)
+func (client *ColoniesClient) getProcesses(state int, colonyName string, executorType string, label string, initiator string, count int, prvKey string) ([]*core.Process, error) {
+	msg := rpc.CreateGetProcessesMsg(colonyName, count, state, executorType, label, initiator)
 	jsonString, err := msg.ToJSON()
 	if err != nil {
 		return nil, err
@@ -570,35 +570,20 @@ func (client *ColoniesClient) getProcesses(state int, colonyName string, executo
 	return core.ConvertJSONToProcessArray(respBodyString)
 }
 
-func (client *ColoniesClient) getProcessesWithExecutorType(state int, colonyName string, count int, executorType string, prvKey string) ([]*core.Process, error) {
-	msg := rpc.CreateGetProcessesMsg(colonyName, count, state, "")
-	jsonString, err := msg.ToJSON()
-	if err != nil {
-		return nil, err
-	}
-
-	respBodyString, err := client.sendMessage(rpc.GetProcessesPayloadType, jsonString, prvKey, false, context.TODO())
-	if err != nil {
-		return nil, err
-	}
-
-	return core.ConvertJSONToProcessArray(respBodyString)
+func (client *ColoniesClient) GetWaitingProcesses(colonyName string, executorType string, label string, initiator string, count int, prvKey string) ([]*core.Process, error) {
+	return client.getProcesses(core.WAITING, colonyName, executorType, label, initiator, count, prvKey)
 }
 
-func (client *ColoniesClient) GetWaitingProcesses(colonyName string, executorType string, count int, prvKey string) ([]*core.Process, error) {
-	return client.getProcesses(core.WAITING, colonyName, executorType, count, prvKey)
+func (client *ColoniesClient) GetRunningProcesses(colonyName string, executorType string, label string, initiator string, count int, prvKey string) ([]*core.Process, error) {
+	return client.getProcesses(core.RUNNING, colonyName, executorType, label, initiator, count, prvKey)
 }
 
-func (client *ColoniesClient) GetRunningProcesses(colonyName string, executorType string, count int, prvKey string) ([]*core.Process, error) {
-	return client.getProcesses(core.RUNNING, colonyName, executorType, count, prvKey)
+func (client *ColoniesClient) GetSuccessfulProcesses(colonyName string, executorType string, label string, initiator string, count int, prvKey string) ([]*core.Process, error) {
+	return client.getProcesses(core.SUCCESS, colonyName, executorType, label, initiator, count, prvKey)
 }
 
-func (client *ColoniesClient) GetSuccessfulProcesses(colonyName string, executorType string, count int, prvKey string) ([]*core.Process, error) {
-	return client.getProcesses(core.SUCCESS, colonyName, executorType, count, prvKey)
-}
-
-func (client *ColoniesClient) GetFailedProcesses(colonyName string, executorType string, count int, prvKey string) ([]*core.Process, error) {
-	return client.getProcesses(core.FAILED, colonyName, executorType, count, prvKey)
+func (client *ColoniesClient) GetFailedProcesses(colonyName string, executorType string, label string, initiator string, count int, prvKey string) ([]*core.Process, error) {
+	return client.getProcesses(core.FAILED, colonyName, executorType, label, initiator, count, prvKey)
 }
 
 func (client *ColoniesClient) ColonyStatistics(colonyName string, prvKey string) (*core.Statistics, error) {
