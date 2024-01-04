@@ -15,9 +15,9 @@ type GetFileMsg struct {
 	MsgType    string `json:"msgtype"`
 }
 
-func CreateGetFileMsg(colonyID string, fileID string, label string, name string, latest bool) *GetFileMsg {
+func CreateGetFileMsg(colonyName string, fileID string, label string, name string, latest bool) *GetFileMsg {
 	msg := &GetFileMsg{}
-	msg.ColonyName = colonyID
+	msg.ColonyName = colonyName
 	msg.FileID = fileID
 	msg.Label = label
 	msg.Name = name

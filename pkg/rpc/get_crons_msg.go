@@ -12,9 +12,9 @@ type GetCronsMsg struct {
 	MsgType    string `json:"msgtype"`
 }
 
-func CreateGetCronsMsg(colonyID string, count int) *GetCronsMsg {
+func CreateGetCronsMsg(colonyName string, count int) *GetCronsMsg {
 	msg := &GetCronsMsg{}
-	msg.ColonyName = colonyID
+	msg.ColonyName = colonyName
 	msg.Count = count
 	msg.MsgType = GetCronsPayloadType
 

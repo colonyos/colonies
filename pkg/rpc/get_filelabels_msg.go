@@ -12,18 +12,18 @@ type GetFileLabelsMsg struct {
 	Name       string `json:"name"`
 }
 
-func CreateGetFileLabelsMsg(colonyID string, name string) *GetFileLabelsMsg {
+func CreateGetFileLabelsMsg(colonyName string, name string) *GetFileLabelsMsg {
 	msg := &GetFileLabelsMsg{}
-	msg.ColonyName = colonyID
+	msg.ColonyName = colonyName
 	msg.Name = name
 	msg.MsgType = GetFileLabelsPayloadType
 
 	return msg
 }
 
-func CreateGetAllFileLabelsMsg(colonyID string) *GetFileLabelsMsg {
+func CreateGetAllFileLabelsMsg(colonyName string) *GetFileLabelsMsg {
 	msg := &GetFileLabelsMsg{}
-	msg.ColonyName = colonyID
+	msg.ColonyName = colonyName
 	msg.Name = ""
 	msg.MsgType = GetFileLabelsPayloadType
 

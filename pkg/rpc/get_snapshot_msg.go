@@ -13,10 +13,10 @@ type GetSnapshotMsg struct {
 	MsgType    string `json:"msgtype"`
 }
 
-func CreateGetSnapshotMsg(colonyID string, snapshotID string, name string) *GetSnapshotMsg {
+func CreateGetSnapshotMsg(colonyName string, snapshotID string, name string) *GetSnapshotMsg {
 	msg := &GetSnapshotMsg{}
 	msg.MsgType = GetSnapshotPayloadType
-	msg.ColonyName = colonyID
+	msg.ColonyName = colonyName
 	msg.SnapshotID = snapshotID
 	msg.Name = name
 

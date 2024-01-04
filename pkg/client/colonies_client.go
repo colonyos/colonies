@@ -1512,6 +1512,21 @@ func (client *ColoniesClient) RemoveSnapshotByName(colonyName string, name strin
 	return err
 }
 
+func (client *ColoniesClient) RemoveAllSnapshots(colonyName string, prvKey string) error {
+	msg := rpc.CreateRemoveAllSnapshotsMsg(colonyName)
+	jsonString, err := msg.ToJSON()
+	if err != nil {
+		return err
+	}
+
+	_, err = client.sendMessage(rpc.RemoveAllSnapshotsPayloadType, jsonString, prvKey, false, context.TODO())
+	if err != nil {
+		return err
+	}
+
+	return err
+}
+
 func (client *ColoniesClient) ChangeUserID(colonyName, userID string, prvKey string) error {
 	msg := rpc.CreateChangeUserIDMsg(colonyName, userID)
 	jsonString, err := msg.ToJSON()

@@ -12,9 +12,9 @@ type GetGeneratorsMsg struct {
 	MsgType    string `json:"msgtype"`
 }
 
-func CreateGetGeneratorsMsg(colonyID string, count int) *GetGeneratorsMsg {
+func CreateGetGeneratorsMsg(colonyName string, count int) *GetGeneratorsMsg {
 	msg := &GetGeneratorsMsg{}
-	msg.ColonyName = colonyID
+	msg.ColonyName = colonyName
 	msg.Count = count
 	msg.MsgType = GetGeneratorsPayloadType
 

@@ -308,7 +308,7 @@ var removeAllProcessesCmd = &cobra.Command{
 			state = "all"
 		}
 
-		fmt.Print("WARNING!!! Are you sure you want to remove " + state + " processes from Colony <" + ColonyName + ">. This operation cannot be undone! (YES,no): ")
+		fmt.Print("WARNING!!! Are you sure you want to remove " + state + " processes in colony <" + ColonyName + ">. This operation cannot be undone! (YES,no): ")
 
 		var err error
 		reader := bufio.NewReader(os.Stdin)
@@ -317,19 +317,19 @@ var removeAllProcessesCmd = &cobra.Command{
 			if state == "all" {
 				err = client.RemoveAllProcesses(ColonyName, ColonyPrvKey)
 				CheckError(err)
-				log.WithFields(log.Fields{"ColonyName": ColonyName}).Info("Removing all processes in Colony <" + ColonyName + ">")
+				log.WithFields(log.Fields{"ColonyName": ColonyName}).Info("Removing all processes in colony <" + ColonyName + ">")
 			} else if Waiting {
 				err = client.RemoveAllProcessesWithState(ColonyName, core.WAITING, ColonyPrvKey)
 				CheckError(err)
-				log.WithFields(log.Fields{"ColonyName": ColonyName}).Info("Removing all waiting processes in Colony <" + ColonyName + ">")
+				log.WithFields(log.Fields{"ColonyName": ColonyName}).Info("Removing all waiting processes in colony <" + ColonyName + ">")
 			} else if Successful {
 				err = client.RemoveAllProcessesWithState(ColonyName, core.SUCCESS, ColonyPrvKey)
 				CheckError(err)
-				log.WithFields(log.Fields{"ColonyName": ColonyName}).Info("Removing all successful processes in Colony <" + ColonyName + ">")
+				log.WithFields(log.Fields{"ColonyName": ColonyName}).Info("Removing all successful processes in colony <" + ColonyName + ">")
 			} else if Failed {
 				err = client.RemoveAllProcessesWithState(ColonyName, core.FAILED, ColonyPrvKey)
 				CheckError(err)
-				log.WithFields(log.Fields{"ColonyName": ColonyName}).Info("Removing all failed processes in Colony <" + ColonyName + ">")
+				log.WithFields(log.Fields{"ColonyName": ColonyName}).Info("Removing all failed processes in colony <" + ColonyName + ">")
 			}
 		} else {
 			log.Info("Aborting ...")

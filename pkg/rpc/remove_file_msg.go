@@ -14,9 +14,9 @@ type RemoveFileMsg struct {
 	Name       string `json:"name"`
 }
 
-func CreateRemoveFileMsg(colonyID string, fileID string, label string, name string) *RemoveFileMsg {
+func CreateRemoveFileMsg(colonyName string, fileID string, label string, name string) *RemoveFileMsg {
 	msg := &RemoveFileMsg{}
-	msg.ColonyName = colonyID
+	msg.ColonyName = colonyName
 	msg.FileID = fileID
 	msg.Label = label
 	msg.Name = name

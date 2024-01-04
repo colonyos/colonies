@@ -8,7 +8,7 @@ import (
 )
 
 func createFunctionSpec() *core.FunctionSpec {
-	colonyID := core.GenerateRandomID()
+	colonyName := core.GenerateRandomID()
 	executorType := "test_executor_type"
 	executor1ID := core.GenerateRandomID()
 	executor2ID := core.GenerateRandomID()
@@ -21,7 +21,7 @@ func createFunctionSpec() *core.FunctionSpec {
 	args := make([]interface{}, 1)
 	args[0] = "test_arg"
 
-	return core.CreateFunctionSpec("test_name", "test_func", args, nil, colonyID, []string{executor1ID, executor2ID}, executorType, maxWaitTime, maxExecTime, maxRetries, env, []string{}, 1, "test_label")
+	return core.CreateFunctionSpec("test_name", "test_func", args, nil, colonyName, []string{executor1ID, executor2ID}, executorType, maxWaitTime, maxExecTime, maxRetries, env, []string{}, 1, "test_label")
 }
 
 func TestRPCSubmitFunctionSpecMsg(t *testing.T) {

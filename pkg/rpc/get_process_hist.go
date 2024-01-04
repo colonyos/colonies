@@ -14,9 +14,9 @@ type GetProcessHistMsg struct {
 	MsgType    string `json:"msgtype"`
 }
 
-func CreateGetProcessHistMsg(colonyID string, executorID string, seconds int, state int) *GetProcessHistMsg {
+func CreateGetProcessHistMsg(colonyName string, executorID string, seconds int, state int) *GetProcessHistMsg {
 	msg := &GetProcessHistMsg{}
-	msg.ColonyName = colonyID
+	msg.ColonyName = colonyName
 	msg.ExecutorID = executorID
 	msg.Seconds = seconds
 	msg.State = state

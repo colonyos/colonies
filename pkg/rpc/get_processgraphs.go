@@ -13,9 +13,9 @@ type GetProcessGraphsMsg struct {
 	MsgType    string `json:"msgtype"`
 }
 
-func CreateGetProcessGraphsMsg(colonyID string, count int, state int) *GetProcessGraphsMsg {
+func CreateGetProcessGraphsMsg(colonyName string, count int, state int) *GetProcessGraphsMsg {
 	msg := &GetProcessGraphsMsg{}
-	msg.ColonyName = colonyID
+	msg.ColonyName = colonyName
 	msg.Count = count
 	msg.State = state
 	msg.MsgType = GetProcessGraphsPayloadType

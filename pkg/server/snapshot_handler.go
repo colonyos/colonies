@@ -41,7 +41,7 @@ func (server *ColoniesServer) handleCreateSnapshotHTTPRequest(c *gin.Context, re
 		return
 	}
 
-	log.WithFields(log.Fields{"SnapshotID": snapshot.ID}).Debug("Creating snapshot")
+	log.WithFields(log.Fields{"ColonyName": msg.ColonyName, "SnapshotID": snapshot.ID}).Debug("Creating snapshot")
 
 	server.sendHTTPReply(c, payloadType, jsonStr)
 }
@@ -91,7 +91,7 @@ func (server *ColoniesServer) handleGetSnapshotHTTPRequest(c *gin.Context, recov
 		return
 	}
 
-	log.WithFields(log.Fields{"SnapshotID": snapshot.ID}).Debug("Getting snapshot")
+	log.WithFields(log.Fields{"ColonyName": msg.ColonyName, "SnapshotID": snapshot.ID}).Debug("Getting snapshot")
 
 	server.sendHTTPReply(c, payloadType, jsonStr)
 }
@@ -170,7 +170,37 @@ func (server *ColoniesServer) handleRemoveSnapshotHTTPRequest(c *gin.Context, re
 		}
 	}
 
-	log.WithFields(log.Fields{"SnapshotID": msg.SnapshotID}).Debug("Removing snapshot")
+	log.WithFields(log.Fields{"SnapshotID": msg.SnapshotID, "ColonyName": msg.ColonyName}).Debug("Removing snapshot")
+
+	server.sendEmptyHTTPReply(c, payloadType)
+}
+
+func (server *ColoniesServer) handleRemoveAllSnapshotsHTTPRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
+	msg, err := rpc.CreateRemoveAllSnapshotsMsgFromJSON(jsonString)
+	if err != nil {
+		if server.handleHTTPError(c, errors.New("Failed to remove snapshot, invalid JSON"), http.StatusBadRequest) {
+			return
+		}
+	}
+
+	if msg.MsgType != payloadType {
+		server.handleHTTPError(c, errors.New("Failed to remove snapshot, msg.MsgType does not match payloadType"), http.StatusBadRequest)
+		return
+	}
+
+	err = server.validator.RequireMembership(recoveredID, msg.ColonyName, true)
+	if server.handleHTTPError(c, err, http.StatusForbidden) {
+		log.Error(err)
+		return
+	}
+
+	err = server.db.RemoveSnapshotsByColonyName(msg.ColonyName)
+	if server.handleHTTPError(c, err, http.StatusInternalServerError) {
+		log.Error(err)
+		return
+	}
+
+	log.WithFields(log.Fields{"ColonyName": msg.ColonyName}).Debug("Removing all snapshots")
 
 	server.sendEmptyHTTPReply(c, payloadType)
 }

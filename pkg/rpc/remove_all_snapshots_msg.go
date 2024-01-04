@@ -4,22 +4,22 @@ import (
 	"encoding/json"
 )
 
-const GetSnapshotsPayloadType = "getsnapshotsmsg"
+const RemoveAllSnapshotsPayloadType = "removeallsnapshotmsg"
 
-type GetSnapshotsMsg struct {
+type RemoveAllSnapshotsMsg struct {
 	ColonyName string `json:"colonyname"`
 	MsgType    string `json:"msgtype"`
 }
 
-func CreateGetSnapshotsMsg(colonyName string) *GetSnapshotsMsg {
-	msg := &GetSnapshotsMsg{}
-	msg.MsgType = GetSnapshotsPayloadType
+func CreateRemoveAllSnapshotsMsg(colonyName string) *RemoveAllSnapshotsMsg {
+	msg := &RemoveAllSnapshotsMsg{}
+	msg.MsgType = RemoveAllSnapshotsPayloadType
 	msg.ColonyName = colonyName
 
 	return msg
 }
 
-func (msg *GetSnapshotsMsg) ToJSON() (string, error) {
+func (msg *RemoveAllSnapshotsMsg) ToJSON() (string, error) {
 	jsonBytes, err := json.Marshal(msg)
 	if err != nil {
 		return "", err
@@ -28,7 +28,7 @@ func (msg *GetSnapshotsMsg) ToJSON() (string, error) {
 	return string(jsonBytes), nil
 }
 
-func (msg *GetSnapshotsMsg) Equals(msg2 *GetSnapshotsMsg) bool {
+func (msg *RemoveAllSnapshotsMsg) Equals(msg2 *RemoveAllSnapshotsMsg) bool {
 	if msg2 == nil {
 		return false
 	}
@@ -41,8 +41,8 @@ func (msg *GetSnapshotsMsg) Equals(msg2 *GetSnapshotsMsg) bool {
 	return false
 }
 
-func CreateGetSnapshotsMsgFromJSON(jsonString string) (*GetSnapshotsMsg, error) {
-	var msg *GetSnapshotsMsg
+func CreateRemoveAllSnapshotsMsgFromJSON(jsonString string) (*RemoveAllSnapshotsMsg, error) {
+	var msg *RemoveAllSnapshotsMsg
 
 	err := json.Unmarshal([]byte(jsonString), &msg)
 	if err != nil {

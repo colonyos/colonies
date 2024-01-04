@@ -13,10 +13,10 @@ type RemoveSnapshotMsg struct {
 	MsgType    string `json:"msgtype"`
 }
 
-func CreateRemoveSnapshotMsg(colonyID string, snapshotID string, name string) *RemoveSnapshotMsg {
+func CreateRemoveSnapshotMsg(colonyName string, snapshotID string, name string) *RemoveSnapshotMsg {
 	msg := &RemoveSnapshotMsg{}
 	msg.MsgType = RemoveSnapshotPayloadType
-	msg.ColonyName = colonyID
+	msg.ColonyName = colonyName
 	msg.SnapshotID = snapshotID
 	msg.Name = name
 

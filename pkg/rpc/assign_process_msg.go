@@ -14,9 +14,9 @@ type AssignProcessMsg struct {
 	MsgType         string `json:"msgtype"`
 }
 
-func CreateAssignProcessMsg(colonyID string, availableCPU string, availableMemory string) *AssignProcessMsg {
+func CreateAssignProcessMsg(colonyName string, availableCPU string, availableMemory string) *AssignProcessMsg {
 	msg := &AssignProcessMsg{}
-	msg.ColonyName = colonyID
+	msg.ColonyName = colonyName
 	msg.AvailableCPU = availableCPU
 	msg.AvailableMemory = availableMemory
 	msg.MsgType = AssignProcessPayloadType

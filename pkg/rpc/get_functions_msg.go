@@ -21,9 +21,9 @@ func CreateGetFunctionsMsg(colonyName string, executorName string) *GetFunctions
 	return msg
 }
 
-func CreateGetFunctionsByColonyNameMsg(colonyID string) *GetFunctionsMsg {
+func CreateGetFunctionsByColonyNameMsg(colonyName string) *GetFunctionsMsg {
 	msg := &GetFunctionsMsg{}
-	msg.ColonyName = colonyID
+	msg.ColonyName = colonyName
 	msg.MsgType = GetFunctionsPayloadType
 
 	return msg

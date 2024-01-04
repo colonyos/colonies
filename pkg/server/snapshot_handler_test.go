@@ -174,3 +174,36 @@ func TestRemoveSnapshotByName(t *testing.T) {
 	server.Shutdown()
 	<-done
 }
+
+func TestRemoveAllSnapshots(t *testing.T) {
+	env, client, server, _, done := setupTestEnv2(t)
+
+	label := "test_label"
+
+	file := utils.CreateTestFile(env.colonyName)
+	addedFile, err := client.AddFile(file, env.executorPrvKey)
+	assert.Nil(t, err)
+	assert.NotNil(t, addedFile)
+	file.ID = addedFile.ID
+	file.Added = addedFile.Added
+	file.SequenceNumber = addedFile.SequenceNumber
+	assert.True(t, file.Equals(addedFile))
+
+	snapshot1, err := client.CreateSnapshot(env.colonyName, label, "test_snapshot_name1", env.executorPrvKey)
+	assert.Nil(t, err)
+	assert.Equal(t, snapshot1.Name, "test_snapshot_name1")
+
+	snapshot2, err := client.CreateSnapshot(env.colonyName, label, "test_snapshot_name2", env.executorPrvKey)
+	assert.Nil(t, err)
+	assert.Equal(t, snapshot2.Name, "test_snapshot_name2")
+
+	err = client.RemoveAllSnapshots(env.colonyName, env.executorPrvKey)
+	assert.Nil(t, err)
+
+	snapshotsFromDB, err := client.GetSnapshotsByColonyName(env.colonyName, env.executorPrvKey)
+	assert.Nil(t, err)
+	assert.Len(t, snapshotsFromDB, 0)
+
+	server.Shutdown()
+	<-done
+}

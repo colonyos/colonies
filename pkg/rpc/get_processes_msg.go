@@ -14,9 +14,9 @@ type GetProcessesMsg struct {
 	MsgType      string `json:"msgtype"`
 }
 
-func CreateGetProcessesMsg(colonyID string, count int, state int, executorType string) *GetProcessesMsg {
+func CreateGetProcessesMsg(colonyName string, count int, state int, executorType string) *GetProcessesMsg {
 	msg := &GetProcessesMsg{}
-	msg.ColonyName = colonyID
+	msg.ColonyName = colonyName
 	msg.Count = count
 	msg.State = state
 	msg.ExecutorType = executorType

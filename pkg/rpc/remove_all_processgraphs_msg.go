@@ -12,9 +12,9 @@ type RemoveAllProcessGraphsMsg struct {
 	State      int    `json:"state"`
 }
 
-func CreateRemoveAllProcessGraphsMsg(colonyID string) *RemoveAllProcessGraphsMsg {
+func CreateRemoveAllProcessGraphsMsg(colonyName string) *RemoveAllProcessGraphsMsg {
 	msg := &RemoveAllProcessGraphsMsg{}
-	msg.ColonyName = colonyID
+	msg.ColonyName = colonyName
 	msg.MsgType = RemoveAllProcessGraphsPayloadType
 
 	return msg
