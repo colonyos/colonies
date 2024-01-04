@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestAddGetLogByProcessID(t *testing.T) {
+func TestAddGetLogByProcess(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 
 	funcSpec1 := utils.CreateTestFunctionSpec(env.colonyName)
@@ -27,10 +27,10 @@ func TestAddGetLogByProcessID(t *testing.T) {
 	err = client.AddLog(assignedProcess.ID, "test_msg", env.executorPrvKey)
 	assert.Nil(t, err)
 
-	_, err = client.GetLogsByProcessID(assignedProcess.ID, MAX_LOG_COUNT+1, env.executorPrvKey)
+	_, err = client.GetLogsByProcessID(env.colonyName, assignedProcess.ID, MAX_LOG_COUNT+1, env.executorPrvKey)
 	assert.NotNil(t, err) // Exceeds max log count
 
-	logs, err := client.GetLogsByProcessID(assignedProcess.ID, 100, env.executorPrvKey)
+	logs, err := client.GetLogsByProcessID(env.colonyName, assignedProcess.ID, 100, env.executorPrvKey)
 	assert.Len(t, logs, 1)
 	assert.Equal(t, logs[0].Message, "test_msg")
 	assert.Equal(t, logs[0].ProcessID, assignedProcess.ID)
@@ -40,7 +40,7 @@ func TestAddGetLogByProcessID(t *testing.T) {
 	<-done
 }
 
-func TestAddGetLogSinceByProcessID(t *testing.T) {
+func TestAddGetLogSinceByProcess(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 
 	funcSpec1 := utils.CreateTestFunctionSpec(env.colonyName)
@@ -58,12 +58,12 @@ func TestAddGetLogSinceByProcessID(t *testing.T) {
 	err = client.AddLog(assignedProcess.ID, "test_msg2", env.executorPrvKey)
 	assert.Nil(t, err)
 
-	logs, err := client.GetLogsByProcessID(assignedProcess.ID, 100, env.executorPrvKey)
+	logs, err := client.GetLogsByProcessID(env.colonyName, assignedProcess.ID, 100, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.Len(t, logs, 2)
 
 	since := logs[0].Timestamp
-	logs, err = client.GetLogsByProcessIDSince(assignedProcess.ID, 100, since, env.executorPrvKey)
+	logs, err = client.GetLogsByProcessIDSince(env.colonyName, assignedProcess.ID, 100, since, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.Len(t, logs, 1)
 	assert.Equal(t, logs[0].Message, "test_msg2")
@@ -72,7 +72,7 @@ func TestAddGetLogSinceByProcessID(t *testing.T) {
 	<-done
 }
 
-func TestAddGetLogByExectorID(t *testing.T) {
+func TestAddGetLogByExecutor(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 
 	// Process 1
@@ -103,14 +103,14 @@ func TestAddGetLogByExectorID(t *testing.T) {
 	err = client.AddLog(assignedProcess.ID, "test_msg_process_2", env.executorPrvKey)
 	assert.Nil(t, err)
 
-	logs, err := client.GetLogsByExecutorID(env.executorID, 10, env.executorPrvKey)
+	logs, err := client.GetLogsByExecutor(env.colonyName, env.executorName, 10, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.Len(t, logs, 2)
 
 	err = client.AddLog(assignedProcess.ID, "test_msg_process_2_2", env.executorPrvKey)
 	assert.Nil(t, err)
 
-	logs, err = client.GetLogsByExecutorIDSince(env.executorID, 10, logs[len(logs)-1].Timestamp, env.executorPrvKey)
+	logs, err = client.GetLogsByExecutorSince(env.colonyName, env.executorName, 10, logs[len(logs)-1].Timestamp, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.Len(t, logs, 1)
 	assert.Equal(t, logs[0].Message, "test_msg_process_2_2")

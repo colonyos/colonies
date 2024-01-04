@@ -5,11 +5,17 @@ import (
 )
 
 type Log struct {
-	ProcessID  string `json:"processid"`
-	ColonyName string `json:"colonyname"`
-	ExecutorID string `json:"executorid"`
-	Message    string `json:"message"`
-	Timestamp  int64  `json:"timestamp"` // UTC Unix time
+	ProcessID    string `json:"processid"`
+	ColonyName   string `json:"colonyname"`
+	ExecutorName string `json:"executorname"`
+	Message      string `json:"message"`
+	Timestamp    int64  `json:"timestamp"` // UTC Unix time
+}
+
+type SearchResult struct {
+	TS           int64  `json:"ts"`
+	ExecutorName string `json:"executorname"`
+	ProcessID    string `json:"processid"`
 }
 
 func ConvertJSONToLog(jsonString string) (Log, error) {
@@ -45,7 +51,7 @@ func (log *Log) Equals(log2 Log) bool {
 	same := true
 	if log.ProcessID != log2.ProcessID ||
 		log.ColonyName != log2.ColonyName ||
-		log.ExecutorID != log2.ExecutorID ||
+		log.ExecutorName != log2.ExecutorName ||
 		log.Message != log2.Message ||
 		log.Timestamp != log2.Timestamp {
 		same = false

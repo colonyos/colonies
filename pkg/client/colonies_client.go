@@ -1178,9 +1178,9 @@ func (client *ColoniesClient) AddLog(processID string, logmsg string, prvKey str
 	return nil
 }
 
-func (client *ColoniesClient) GetLogsByProcessID(processID string, count int, prvKey string) ([]core.Log, error) {
-	msg := rpc.CreateGetLogsMsg(processID, count, 0)
-	msg.ExecutorID = ""
+func (client *ColoniesClient) GetLogsByProcessID(colonyName string, processID string, count int, prvKey string) ([]core.Log, error) {
+	msg := rpc.CreateGetLogsMsg(colonyName, processID, count, 0)
+	msg.ExecutorName = ""
 	jsonString, err := msg.ToJSON()
 	if err != nil {
 		return []core.Log{}, err
@@ -1194,9 +1194,9 @@ func (client *ColoniesClient) GetLogsByProcessID(processID string, count int, pr
 	return core.ConvertJSONToLogArray(respBodyString)
 }
 
-func (client *ColoniesClient) GetLogsByProcessIDSince(processID string, count int, since int64, prvKey string) ([]core.Log, error) {
-	msg := rpc.CreateGetLogsMsg(processID, count, since)
-	msg.ExecutorID = ""
+func (client *ColoniesClient) GetLogsByProcessIDSince(colonyName string, processID string, count int, since int64, prvKey string) ([]core.Log, error) {
+	msg := rpc.CreateGetLogsMsg(colonyName, processID, count, since)
+	msg.ExecutorName = ""
 	jsonString, err := msg.ToJSON()
 	if err != nil {
 		return []core.Log{}, err
@@ -1210,9 +1210,9 @@ func (client *ColoniesClient) GetLogsByProcessIDSince(processID string, count in
 	return core.ConvertJSONToLogArray(respBodyString)
 }
 
-func (client *ColoniesClient) GetLogsByExecutorID(executorID string, count int, prvKey string) ([]core.Log, error) {
-	msg := rpc.CreateGetLogsMsg("", count, 0)
-	msg.ExecutorID = executorID
+func (client *ColoniesClient) GetLogsByExecutor(colonyName, executorName string, count int, prvKey string) ([]core.Log, error) {
+	msg := rpc.CreateGetLogsMsg(colonyName, "", count, 0)
+	msg.ExecutorName = executorName
 	jsonString, err := msg.ToJSON()
 	if err != nil {
 		return []core.Log{}, err
@@ -1226,9 +1226,9 @@ func (client *ColoniesClient) GetLogsByExecutorID(executorID string, count int, 
 	return core.ConvertJSONToLogArray(respBodyString)
 }
 
-func (client *ColoniesClient) GetLogsByExecutorIDSince(executorID string, count int, since int64, prvKey string) ([]core.Log, error) {
-	msg := rpc.CreateGetLogsMsg("", count, since)
-	msg.ExecutorID = executorID
+func (client *ColoniesClient) GetLogsByExecutorSince(colonyName, executorName string, count int, since int64, prvKey string) ([]core.Log, error) {
+	msg := rpc.CreateGetLogsMsg(colonyName, "", count, since)
+	msg.ExecutorName = executorName
 	jsonString, err := msg.ToJSON()
 	if err != nil {
 		return []core.Log{}, err

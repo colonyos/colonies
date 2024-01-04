@@ -4,6 +4,7 @@ import (
 	"errors"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/colonyos/colonies/pkg/core"
 	"github.com/colonyos/colonies/pkg/rpc"
@@ -41,6 +42,12 @@ func (server *ColoniesServer) handleAddLogHTTPRequest(c *gin.Context, recoveredI
 		return
 	}
 
+	executor, err := server.db.GetExecutorByID(recoveredID)
+	if server.handleHTTPError(c, err, http.StatusForbidden) {
+		log.Error(err)
+		return
+	}
+
 	if process.State != core.RUNNING {
 		errmsg := "Failed to set output, process is not running"
 		log.Error(errmsg)
@@ -57,7 +64,8 @@ func (server *ColoniesServer) handleAddLogHTTPRequest(c *gin.Context, recoveredI
 		return
 	}
 
-	err = server.controller.addLog(process.ID, process.FunctionSpec.Conditions.ColonyName, recoveredID, msg.Message)
+	colonyName := process.FunctionSpec.Conditions.ColonyName
+	err = server.db.AddLog(process.ID, colonyName, executor.Name, time.Now().UTC().UnixNano(), msg.Message)
 	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		log.WithFields(log.Fields{"Error": err}).Debug("Failed to add log")
 		server.handleHTTPError(c, err, http.StatusInternalServerError)
@@ -82,8 +90,8 @@ func (server *ColoniesServer) handleGetLogsHTTPRequest(c *gin.Context, recovered
 		return
 	}
 
-	if msg.ExecutorID != "" {
-		executor, err := server.controller.getExecutor(msg.ExecutorID)
+	if msg.ExecutorName != "" {
+		executor, err := server.db.GetExecutorByName(msg.ColonyName, msg.ExecutorName)
 		if server.handleHTTPError(c, err, http.StatusBadRequest) {
 			return
 		}
@@ -126,17 +134,25 @@ func (server *ColoniesServer) handleGetLogsHTTPRequest(c *gin.Context, recovered
 	}
 
 	var logs []core.Log
-	if msg.ExecutorID != "" {
-		logs, err = server.controller.getLogsByExecutorID(msg.ExecutorID, msg.Count, msg.Since)
+	if msg.ExecutorName != "" {
+		if msg.Since > 0 {
+			logs, err = server.db.GetLogsByExecutorSince(msg.ExecutorName, msg.Count, msg.Since)
+		} else {
+			logs, err = server.db.GetLogsByExecutor(msg.ExecutorName, msg.Count)
+		}
 		if server.handleHTTPError(c, err, http.StatusBadRequest) {
-			log.WithFields(log.Fields{"Error": err}).Debug("Failed to add log")
+			log.WithFields(log.Fields{"Error": err, "ColonyName": msg.ColonyName}).Debug("Failed to get logs for executor")
 			server.handleHTTPError(c, err, http.StatusInternalServerError)
 			return
 		}
 	} else {
-		logs, err = server.controller.getLogsByProcessID(msg.ProcessID, msg.Count, msg.Since)
+		if msg.Since > 0 {
+			logs, err = server.db.GetLogsByProcessIDSince(msg.ProcessID, msg.Count, msg.Since)
+		} else {
+			logs, err = server.db.GetLogsByProcessID(msg.ProcessID, msg.Count)
+		}
 		if server.handleHTTPError(c, err, http.StatusBadRequest) {
-			log.WithFields(log.Fields{"Error": err}).Debug("Failed to add log")
+			log.WithFields(log.Fields{"Error": err, "ColonyName": msg.ColonyName}).Debug("Failed to get logs for process")
 			server.handleHTTPError(c, err, http.StatusInternalServerError)
 			return
 		}

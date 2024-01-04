@@ -8,9 +8,19 @@ import (
 	_ "github.com/lib/pq"
 )
 
-func (db *PQDatabase) AddLog(processID string, colonyName string, executorID string, timestamp int64, msg string) error {
-	sqlStatement := `INSERT INTO  ` + db.dbPrefix + `LOGS (PROCESS_ID, COLONY_NAME, EXECUTOR_ID, TS, MSG, ADDED) VALUES ($1, $2, $3, $4, $5, $6)`
-	_, err := db.postgresql.Exec(sqlStatement, processID, colonyName, executorID, timestamp, msg, time.Now())
+func (db *PQDatabase) AddLog(processID string, colonyName string, executorName string, timestamp int64, msg string) error {
+	sqlStatement := `INSERT INTO  ` + db.dbPrefix + `LOGS (PROCESS_ID, COLONY_NAME, EXECUTOR_NAME, TS, MSG, ADDED) VALUES ($1, $2, $3, $4, $5, $6)`
+	_, err := db.postgresql.Exec(sqlStatement, processID, colonyName, executorName, timestamp, msg, time.Now())
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (db *PQDatabase) AddHistoricalLog(processID string, colonyName string, executorName string, timestamp int64, msg string, t time.Time) error {
+	sqlStatement := `INSERT INTO  ` + db.dbPrefix + `LOGS (PROCESS_ID, COLONY_NAME, EXECUTOR_NAME, TS, MSG, ADDED) VALUES ($1, $2, $3, $4, $5, $6)`
+	_, err := db.postgresql.Exec(sqlStatement, processID, colonyName, executorName, timestamp, msg, t)
 	if err != nil {
 		return err
 	}
@@ -24,14 +34,14 @@ func (db *PQDatabase) parseLogs(rows *sql.Rows) ([]core.Log, error) {
 	for rows.Next() {
 		var processID string
 		var colonyName string
-		var executorID string
+		var executorName string
 		var ts int64
 		var msg string
 		var added time.Time
-		if err := rows.Scan(&processID, &colonyName, &executorID, &ts, &msg, &added); err != nil {
+		if err := rows.Scan(&processID, &colonyName, &executorName, &ts, &msg, &added); err != nil {
 			return nil, err
 		}
-		log := core.Log{ProcessID: processID, ColonyName: colonyName, ExecutorID: executorID, Timestamp: ts, Message: msg}
+		log := core.Log{ProcessID: processID, ColonyName: colonyName, ExecutorName: executorName, Timestamp: ts, Message: msg}
 		logs = append(logs, log)
 	}
 
@@ -55,9 +65,9 @@ func (db *PQDatabase) GetLogsByProcessID(processID string, limit int) ([]core.Lo
 	return logs, nil
 }
 
-func (db *PQDatabase) GetLogsByExecutorID(executorID string, limit int) ([]core.Log, error) {
-	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `LOGS WHERE EXECUTOR_ID=$1 ORDER BY TS ASC LIMIT $2`
-	rows, err := db.postgresql.Query(sqlStatement, executorID, limit)
+func (db *PQDatabase) GetLogsByExecutor(executorName string, limit int) ([]core.Log, error) {
+	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `LOGS WHERE EXECUTOR_NAME=$1 ORDER BY TS ASC LIMIT $2`
+	rows, err := db.postgresql.Query(sqlStatement, executorName, limit)
 	if err != nil {
 		return nil, err
 	}
@@ -89,9 +99,9 @@ func (db *PQDatabase) GetLogsByProcessIDSince(processID string, limit int, since
 	return logs, nil
 }
 
-func (db *PQDatabase) GetLogsByExecutorIDSince(executorID string, limit int, since int64) ([]core.Log, error) {
-	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `LOGS WHERE EXECUTOR_ID=$1 AND TS>$2 ORDER BY TS ASC LIMIT $3`
-	rows, err := db.postgresql.Query(sqlStatement, executorID, since, limit)
+func (db *PQDatabase) GetLogsByExecutorSince(executorName string, limit int, since int64) ([]core.Log, error) {
+	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `LOGS WHERE EXECUTOR_NAME=$1 AND TS>$2 ORDER BY TS ASC LIMIT $3`
+	rows, err := db.postgresql.Query(sqlStatement, executorName, since, limit)
 	if err != nil {
 		return nil, err
 	}
@@ -133,4 +143,31 @@ func (db *PQDatabase) CountLogs(colonyName string) (int, error) {
 	}
 
 	return count, nil
+}
+
+func (db *PQDatabase) SearchLogs(colonyName string, text string, days int) ([]*core.SearchResult, error) {
+	sqlStatement := `SELECT PROCESS_ID, TS, EXECUTOR_NAME
+                     FROM ` + db.dbPrefix + `LOGS
+                     WHERE MSG LIKE '%' || $1 || '%' AND COLONY_NAME = $2 
+                     AND ADDED > NOW() - make_interval(days => $3) LIMIT 100`
+
+	rows, err := db.postgresql.Query(sqlStatement, text, colonyName, days)
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	var results []*core.SearchResult
+	for rows.Next() {
+		var processID string
+		var ts int64
+		var executorName string
+		if err := rows.Scan(&processID, &ts, &executorName); err != nil {
+			return nil, err
+		}
+		results = append(results, &core.SearchResult{ProcessID: processID, TS: ts, ExecutorName: executorName})
+	}
+
+	return results, nil
 }

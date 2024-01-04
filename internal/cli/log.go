@@ -21,7 +21,7 @@ func init() {
 	addLogCmd.MarkFlagRequired("msg")
 
 	getLogsCmd.Flags().StringVarP(&ProcessID, "processid", "p", "", "Process Id")
-	getLogsCmd.Flags().StringVarP(&TargetExecutorID, "executorid", "e", "", "Executor Id")
+	getLogsCmd.Flags().StringVarP(&TargetExecutorName, "executorname", "e", "", "Executor name")
 	getLogsCmd.Flags().Int64VarP(&Since, "since", "", 0, "Fetch log generated since (unix nano) time")
 	getLogsCmd.Flags().IntVarP(&Count, "count", "", 100, "Number of messages to fetch")
 	getLogsCmd.Flags().BoolVarP(&Follow, "follow", "", false, "Follow process")
@@ -61,9 +61,9 @@ var getLogsCmd = &cobra.Command{
 			lastTimestamp = 0
 			for {
 				if TargetExecutorID == "" {
-					logs, err = client.GetLogsByProcessIDSince(ProcessID, Count, lastTimestamp, PrvKey)
+					logs, err = client.GetLogsByProcessIDSince(ColonyName, ProcessID, Count, lastTimestamp, PrvKey)
 				} else {
-					logs, err = client.GetLogsByExecutorIDSince(TargetExecutorID, Count, lastTimestamp, PrvKey)
+					logs, err = client.GetLogsByExecutorSince(ColonyName, TargetExecutorName, Count, lastTimestamp, PrvKey)
 				}
 				CheckError(err)
 				if len(logs) == 0 {
@@ -80,9 +80,9 @@ var getLogsCmd = &cobra.Command{
 			var err error
 			var logs []core.Log
 			if TargetExecutorID == "" {
-				logs, err = client.GetLogsByProcessIDSince(ProcessID, Count, Since, PrvKey)
+				logs, err = client.GetLogsByProcessIDSince(ColonyName, ProcessID, Count, Since, PrvKey)
 			} else {
-				logs, err = client.GetLogsByExecutorIDSince(TargetExecutorID, Count, Since, PrvKey)
+				logs, err = client.GetLogsByExecutorSince(ColonyName, TargetExecutorName, Count, Since, PrvKey)
 			}
 			CheckError(err)
 			for _, log := range logs {
