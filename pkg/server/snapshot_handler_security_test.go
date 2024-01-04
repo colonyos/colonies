@@ -176,3 +176,32 @@ func TestRemoveSnapshotByIDSecurity(t *testing.T) {
 	server.Shutdown()
 	<-done
 }
+
+func TestRemoveAllSnapshotSecurity(t *testing.T) {
+	env, client, server, _, done := setupTestEnv1(t)
+
+	// The setup looks like this:
+	//   executor1 is member of colony1
+	//   executor2 is member of colony2
+
+	_, err := client.CreateSnapshot(env.colony1Name, "test_label", "test_snapshot_name", env.executor1PrvKey)
+	assert.Nil(t, err) // Should work
+
+	err = client.RemoveAllSnapshots(env.colony1Name, env.executor2PrvKey)
+	assert.NotNil(t, err) // Should not work
+
+	err = client.RemoveAllSnapshots(env.colony1Name, env.colony1PrvKey)
+	assert.NotNil(t, err) // Should not work
+
+	err = client.RemoveAllSnapshots(env.colony1Name, env.colony2PrvKey)
+	assert.NotNil(t, err) // Should not work
+
+	err = client.RemoveAllSnapshots(env.colony2Name, env.executor1PrvKey)
+	assert.NotNil(t, err) // Should not work
+
+	err = client.RemoveAllSnapshots(env.colony1Name, env.executor1PrvKey)
+	assert.Nil(t, err) // Should work
+
+	server.Shutdown()
+	<-done
+}

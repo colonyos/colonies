@@ -11,9 +11,9 @@ type GetExecutorsMsg struct {
 	MsgType    string `json:"msgtype"`
 }
 
-func CreateGetExecutorsMsg(colonyID string) *GetExecutorsMsg {
+func CreateGetExecutorsMsg(colonyName string) *GetExecutorsMsg {
 	msg := &GetExecutorsMsg{}
-	msg.ColonyName = colonyID
+	msg.ColonyName = colonyName
 	msg.MsgType = GetExecutorsPayloadType
 
 	return msg
