@@ -12,23 +12,17 @@ type Log struct {
 	Timestamp    int64  `json:"timestamp"` // UTC Unix time
 }
 
-type SearchResult struct {
-	TS           int64  `json:"ts"`
-	ExecutorName string `json:"executorname"`
-	ProcessID    string `json:"processid"`
-}
-
-func ConvertJSONToLog(jsonString string) (Log, error) {
-	var log Log
+func ConvertJSONToLog(jsonString string) (*Log, error) {
+	var log *Log
 	err := json.Unmarshal([]byte(jsonString), &log)
 	if err != nil {
-		return Log{}, err
+		return &Log{}, err
 	}
 
 	return log, nil
 }
 
-func ConvertLogArrayToJSON(logs []Log) (string, error) {
+func ConvertLogArrayToJSON(logs []*Log) (string, error) {
 	jsonBytes, err := json.Marshal(logs)
 	if err != nil {
 		return "", err
@@ -37,8 +31,8 @@ func ConvertLogArrayToJSON(logs []Log) (string, error) {
 	return string(jsonBytes), nil
 }
 
-func ConvertJSONToLogArray(jsonString string) ([]Log, error) {
-	var logs []Log
+func ConvertJSONToLogArray(jsonString string) ([]*Log, error) {
+	var logs []*Log
 	err := json.Unmarshal([]byte(jsonString), &logs)
 	if err != nil {
 		return logs, err
@@ -47,7 +41,7 @@ func ConvertJSONToLogArray(jsonString string) ([]Log, error) {
 	return logs, nil
 }
 
-func (log *Log) Equals(log2 Log) bool {
+func (log *Log) Equals(log2 *Log) bool {
 	same := true
 	if log.ProcessID != log2.ProcessID ||
 		log.ColonyName != log2.ColonyName ||
@@ -60,7 +54,7 @@ func (log *Log) Equals(log2 Log) bool {
 	return same
 }
 
-func IsLogArraysEqual(logs1 []Log, logs2 []Log) bool {
+func IsLogArraysEqual(logs1 []*Log, logs2 []*Log) bool {
 	if logs1 == nil || logs2 == nil {
 		return false
 	}

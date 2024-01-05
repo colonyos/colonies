@@ -1033,20 +1033,20 @@ func (db *dbMock) AddLog(processID string, colonyName string, executorName strin
 	return nil
 }
 
-func (db *dbMock) GetLogsByProcessID(processID string, limit int) ([]core.Log, error) {
-	return []core.Log{}, nil
+func (db *dbMock) GetLogsByProcessID(processID string, limit int) ([]*core.Log, error) {
+	return []*core.Log{}, nil
 }
 
-func (db *dbMock) GetLogsByProcessIDSince(processID string, limit int, since int64) ([]core.Log, error) {
-	return []core.Log{}, nil
+func (db *dbMock) GetLogsByProcessIDSince(processID string, limit int, since int64) ([]*core.Log, error) {
+	return []*core.Log{}, nil
 }
 
-func (db *dbMock) GetLogsByExecutor(processID string, limit int) ([]core.Log, error) {
-	return []core.Log{}, nil
+func (db *dbMock) GetLogsByExecutor(processID string, limit int) ([]*core.Log, error) {
+	return []*core.Log{}, nil
 }
 
-func (db *dbMock) GetLogsByExecutorSince(processID string, limit int, since int64) ([]core.Log, error) {
-	return []core.Log{}, nil
+func (db *dbMock) GetLogsByExecutorSince(processID string, limit int, since int64) ([]*core.Log, error) {
+	return []*core.Log{}, nil
 }
 
 func (db *dbMock) RemoveLogsByColonyName(colonyName string) error {
@@ -1055,6 +1055,10 @@ func (db *dbMock) RemoveLogsByColonyName(colonyName string) error {
 
 func (db *dbMock) CountLogs(colonyName string) (int, error) {
 	return 0, nil
+}
+
+func (db *dbMock) SearchLogs(colonyName string, text string, days int, count int) ([]*core.Log, error) {
+	return nil, nil
 }
 
 func (db *dbMock) AddFile(file *core.File) error {

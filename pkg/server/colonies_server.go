@@ -277,6 +277,8 @@ func (server *ColoniesServer) handleAPIRequest(c *gin.Context) {
 		server.handleAddLogHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 	case rpc.GetLogsPayloadType:
 		server.handleGetLogsHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+	case rpc.SearchLogsPayloadType:
+		server.handleSearchLogsHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 
 		// File handlers
 	case rpc.AddFilePayloadType:
