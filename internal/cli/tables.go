@@ -7,6 +7,7 @@ import (
 
 func createTable(sortCol int) (*table.Table, table.Theme) {
 	style := goprettytable.StyleRounded
+
 	theme, err := table.LoadTheme("solarized-dark")
 	CheckError(err)
 
@@ -14,5 +15,5 @@ func createTable(sortCol int) (*table.Table, table.Theme) {
 		Columns: []int{1, 2},
 		SortBy:  sortCol,
 		Style:   style,
-	}), theme
+	}, ASCII), theme
 }

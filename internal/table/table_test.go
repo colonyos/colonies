@@ -17,7 +17,7 @@ func TestTable(t *testing.T) {
 		Columns: []int{1, 2},
 		SortBy:  sortCol,
 		Style:   style,
-	})
+	}, true)
 
 	var cols = []Column{
 		{ID: "mountpoint", Name: "Mounted on", SortIndex: 1},
