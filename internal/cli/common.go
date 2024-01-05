@@ -155,6 +155,12 @@ func setupProfiler() {
 
 func parseEnv() {
 	var err error
+	ASCII = false
+	ASCIIStr := os.Getenv("COLONIES_CLI_ASCII")
+	if ASCIIStr == "true" {
+		ASCII = true
+	}
+
 	ServerHostEnv := os.Getenv("COLONIES_SERVER_HOST")
 	if ServerHostEnv != "" {
 		ServerHost = ServerHostEnv
