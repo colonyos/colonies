@@ -29,13 +29,16 @@ type Table struct {
 	opts  TableOptions
 }
 
-func NewTable(theme Theme, opts TableOptions) *Table {
+func NewTable(theme Theme, opts TableOptions, ascii bool) *Table {
 	t := &Table{}
 	t.tab = table.NewWriter()
 	t.tab.SetAllowedRowLength(width)
 	t.tab.SetOutputMirror(os.Stdout)
 	t.tab.Style().Options.SeparateColumns = true
-	t.tab.SetStyle(opts.Style)
+
+	if !ascii {
+		t.tab.SetStyle(opts.Style)
+	}
 
 	t.theme = theme
 	t.opts = opts
