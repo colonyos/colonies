@@ -133,7 +133,7 @@ func (server *ColoniesServer) handleGetLogsHTTPRequest(c *gin.Context, recovered
 		}
 	}
 
-	var logs []core.Log
+	var logs []*core.Log
 	if msg.ExecutorName != "" {
 		if msg.Since > 0 {
 			logs, err = server.db.GetLogsByExecutorSince(msg.ExecutorName, msg.Count, msg.Since)
@@ -156,6 +156,54 @@ func (server *ColoniesServer) handleGetLogsHTTPRequest(c *gin.Context, recovered
 			server.handleHTTPError(c, err, http.StatusInternalServerError)
 			return
 		}
+	}
+
+	jsonStr, err := core.ConvertLogArrayToJSON(logs)
+	if server.handleHTTPError(c, err, http.StatusBadRequest) {
+		log.WithFields(log.Fields{"Error": err}).Debug("Failed to parse log")
+		server.handleHTTPError(c, err, http.StatusInternalServerError)
+		return
+	}
+
+	log.Debug("Getting logs")
+	server.sendHTTPReply(c, payloadType, jsonStr)
+}
+
+func (server *ColoniesServer) handleSearchLogsHTTPRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
+	msg, err := rpc.CreateSearchLogsMsgFromJSON(jsonString)
+	if err != nil {
+		if server.handleHTTPError(c, errors.New("Failed to search logs, invalid JSON"), http.StatusBadRequest) {
+			return
+		}
+	}
+
+	if msg.MsgType != payloadType {
+		server.handleHTTPError(c, errors.New("Failed to get logs, msg.MsgType does not match payloadType"), http.StatusBadRequest)
+		return
+	}
+
+	err = server.validator.RequireMembership(recoveredID, msg.ColonyName, true)
+	if server.handleHTTPError(c, err, http.StatusForbidden) {
+		log.Error(err)
+		return
+	}
+
+	if msg.Count > MAX_COUNT {
+		if server.handleHTTPError(c, errors.New("Count exceeds max log count ("+strconv.Itoa(MAX_COUNT)+")"), http.StatusBadRequest) {
+			return
+		}
+	}
+
+	if msg.Days > MAX_DAYS {
+		if server.handleHTTPError(c, errors.New("Count exceeds max day count ("+strconv.Itoa(MAX_DAYS)+")"), http.StatusBadRequest) {
+			return
+		}
+	}
+
+	logs, err := server.db.SearchLogs(msg.ColonyName, msg.Text, msg.Days, msg.Count)
+	if server.handleHTTPError(c, err, http.StatusBadRequest) {
+		log.WithFields(log.Fields{"Error": err, "ColonyName": msg.ColonyName}).Debug("Failed to search logs")
+		return
 	}
 
 	jsonStr, err := core.ConvertLogArrayToJSON(logs)
