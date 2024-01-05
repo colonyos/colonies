@@ -118,3 +118,50 @@ func TestAddGetLogByExecutor(t *testing.T) {
 	server.Shutdown()
 	<-done
 }
+
+func TestSearchLogsByExecutor(t *testing.T) {
+	env, client, server, _, done := setupTestEnv2(t)
+
+	// Process 1
+	funcSpec1 := utils.CreateTestFunctionSpec(env.colonyName)
+	_, err := client.Submit(funcSpec1, env.executorPrvKey)
+	assert.Nil(t, err)
+
+	assignedProcess, err := client.Assign(env.colonyName, -1, "", "", env.executorPrvKey)
+	assert.Nil(t, err)
+
+	err = client.AddLog(assignedProcess.ID, "test_msg_process_1", env.executorPrvKey)
+	assert.Nil(t, err)
+
+	err = client.Close(assignedProcess.ID, env.executorPrvKey)
+	assert.Nil(t, err)
+
+	// Process 2
+	funcSpec1 = utils.CreateTestFunctionSpec(env.colonyName)
+	_, err = client.Submit(funcSpec1, env.executorPrvKey)
+	assert.Nil(t, err)
+
+	assignedProcess, err = client.Assign(env.colonyName, -1, "", "", env.executorPrvKey)
+	assert.Nil(t, err)
+
+	err = client.AddLog(assignedProcess.ID, "ERROR", env.executorPrvKey)
+	assert.Nil(t, err)
+
+	err = client.AddLog(assignedProcess.ID, "ERROR", env.executorPrvKey)
+	assert.Nil(t, err)
+
+	logs, err := client.SearchLogs(env.colonyName, "ERROR", 1, MAX_COUNT+1, env.executorPrvKey)
+	assert.NotNil(t, err) // Exceeds max count
+
+	logs, err = client.SearchLogs(env.colonyName, "ERROR", MAX_DAYS+1, 1, env.executorPrvKey)
+	assert.NotNil(t, err) // Exceeds max count
+
+	logs, err = client.SearchLogs(env.colonyName, "ERROR", 1, 10, env.executorPrvKey)
+	assert.Nil(t, err)
+	assert.Len(t, logs, 2)
+	assert.Equal(t, logs[0].Message, "ERROR")
+	assert.Equal(t, logs[1].Message, "ERROR")
+
+	server.Shutdown()
+	<-done
+}

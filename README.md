@@ -14,7 +14,7 @@ Colonies has been developed with a strong emphasis on security and robustness to
 * Users submit function specifications to a Colonies server specifying computations they wish to run. These functions will then be assigned and executed by the Executors.
 * Developers can focus on implementing Executors as independent microservices. The system can then easily scale just by deploying more Executors, enabling parallel execution. Failed processes are automatically re-assigned to other Executors.
 * Developers can define and submit workflows describing a sequence of computations carried out by several Executors.
-* Colonies makes it possible to develop a loosely decoupled architecture that spans multiple platforms and infrastructures, with all coordination managed by Colonies.
+* Colonies makes it possible to develop a *loosely-decoupled* architecture that spans multiple platforms and infrastructures, with all coordination managed by Colonies.
 * Colonies also functions as a ledger, containing full execution history. This enables developers to keep track of the system and more easily debug it.
 
 ## Design
