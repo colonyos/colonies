@@ -1,6 +1,7 @@
 package server
 
 const MAX_COUNT = 100
+const MAX_DAYS = 30
 const MAX_LOG_COUNT = 500
 const TESTHOST = "localhost"
 const TESTPORT = 28088

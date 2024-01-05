@@ -1,7 +1,6 @@
 package postgresql
 
 import (
-	"fmt"
 	"testing"
 	"time"
 
@@ -118,20 +117,55 @@ func TestSearchLogs(t *testing.T) {
 	defer db.Close()
 
 	timestamp := time.Now().UTC()
-	err = db.AddHistoricalLog("test_processid1", "test_colony", "test_executor_name1", timestamp.UnixNano(), "1", timestamp)
+	err = db.addHistoricalLog("test_processid1", "test_colony", "test_executor_name1", timestamp.UnixNano(), "1", timestamp)
 	assert.Nil(t, err)
 	timestamp = time.Now().UTC()
-	err = db.AddHistoricalLog("test_processid2", "test_colony", "test_executor_name1", timestamp.UnixNano(), "test", timestamp)
+	err = db.addHistoricalLog("test_processid2", "test_colony", "test_executor_name1", timestamp.UnixNano(), "test", timestamp)
+	assert.Nil(t, err)
+	timestamp = time.Now().UTC()
+	err = db.addHistoricalLog("test_processid2", "test_colony", "test_executor_name1", timestamp.UnixNano(), "test", timestamp)
 	assert.Nil(t, err)
 	timestamp = time.Now().Add(-24 * time.Hour * 3).UTC()
-	err = db.AddHistoricalLog("test_processid3", "test_colony", "test_executor_name2", timestamp.UnixNano(), "error", timestamp)
+	err = db.addHistoricalLog("test_processid3", "test_colony", "test_executor_name2", timestamp.UnixNano(), "error", timestamp)
 	assert.Nil(t, err)
 
-	searchResults, err := db.SearchLogs("test_colony", "error", 4)
+	logs, err := db.SearchLogs("test_colony", "", -1, 10)
 	assert.Nil(t, err)
-	assert.Len(t, searchResults, 1)
-	for _, s := range searchResults {
-		fmt.Println(time.Unix(0, s.TS))
-		fmt.Println(s.ProcessID)
+	assert.Len(t, logs, 0)
+
+	logs, err = db.SearchLogs("test_colony", "error", -1, 10)
+	assert.Nil(t, err)
+	assert.Len(t, logs, 0)
+
+	logs, err = db.SearchLogs("test_colony", "error", 0, 10)
+	assert.Nil(t, err)
+	assert.Len(t, logs, 0)
+
+	logs, err = db.SearchLogs("test_colony", "error", 1, 10)
+	assert.Nil(t, err)
+	assert.Len(t, logs, 0)
+
+	logs, err = db.SearchLogs("test_colony", "error", 2, 10)
+	assert.Nil(t, err)
+	assert.Len(t, logs, 0)
+
+	logs, err = db.SearchLogs("test_colony", "error", 3, 10)
+	assert.Nil(t, err)
+	assert.Len(t, logs, 0)
+
+	logs, err = db.SearchLogs("test_colony", "error", 4, 10)
+	assert.Nil(t, err)
+	assert.Len(t, logs, 1)
+	for _, log := range logs {
+		assert.Equal(t, log.ProcessID, "test_processid3")
+		assert.Equal(t, log.Message, "error")
+	}
+
+	logs, err = db.SearchLogs("test_colony", "test", 3, 10)
+	assert.Nil(t, err)
+	assert.Len(t, logs, 2)
+	for _, log := range logs {
+		assert.Equal(t, log.Message, "test")
+		assert.Equal(t, log.ExecutorName, "test_executor_name1")
 	}
 }

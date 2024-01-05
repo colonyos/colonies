@@ -1,8 +1,8 @@
 {
     "conditions": {
         "executortype": "helloworld-executor",
-		"executornames": ["helloworld-executor-haha"]
+		"executornames": ["helloworld-executor"]
     },
     "funcname": "helloworld",
-	"label": "bla"
+	"label": "mylabel"
 }
