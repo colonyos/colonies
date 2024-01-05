@@ -132,6 +132,7 @@ var Quite bool
 var TargetServerID string
 var Text string
 var Days int
+var ASCII bool
 
 func init() {
 	rootCmd.PersistentFlags().BoolVarP(&Verbose, "verbose", "v", false, "Verbose (debugging)")
