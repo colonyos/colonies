@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"errors"
+	"math"
 	"net/http"
 	"strconv"
 	"time"
@@ -147,14 +148,24 @@ func (server *ColoniesServer) handleAssignProcessHTTPRequest(c *gin.Context, rec
 		return
 	}
 
-	cpu, err := parsers.ConvertCPUToInt(msg.AvailableCPU)
-	if server.handleHTTPError(c, err, http.StatusBadRequest) {
-		return
+	var cpu int64
+	if msg.AvailableCPU == "" {
+		cpu = math.MaxInt64
+	} else {
+		cpu, err = parsers.ConvertCPUToInt(msg.AvailableCPU)
+		if server.handleHTTPError(c, err, http.StatusBadRequest) {
+			return
+		}
 	}
 
-	memory, err := parsers.ConvertMemoryToInt(msg.AvailableMemory)
-	if server.handleHTTPError(c, err, http.StatusBadRequest) {
-		return
+	var memory int64
+	if msg.AvailableMemory == "" {
+		memory = math.MaxInt64
+	} else {
+		memory, err = parsers.ConvertMemoryToInt(msg.AvailableMemory)
+		if server.handleHTTPError(c, err, http.StatusBadRequest) {
+			return
+		}
 	}
 
 	log.WithFields(log.Fields{
