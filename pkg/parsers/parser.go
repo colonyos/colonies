@@ -56,7 +56,9 @@ func ConvertMemoryToInt(mem string) (int64, error) {
 		return 0, fmt.Errorf("no valid unit found in input")
 	}
 
-	return num * unitMap[unit], nil
+	mb := num * unitMap[unit] / 1000
+
+	return mb, nil
 }
 
 func ConvertCPUToString(cpu int64) string {
@@ -64,5 +66,5 @@ func ConvertCPUToString(cpu int64) string {
 }
 
 func ConvertMemoryToString(mem int64) string {
-	return strconv.FormatInt(mem, 10) + "Ki"
+	return strconv.FormatInt(mem, 10) + "Mi"
 }
