@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"strconv"
 	"time"
 
 	"github.com/colonyos/colonies/pkg/core"
@@ -35,15 +34,6 @@ func printLogTable(logs []*core.Log) {
 		}
 		t.AddRow(row)
 
-		var timeback int64
-		timeback = 1000000000 * 1 // 1 seconds
-		row = []interface{}{
-			termenv.String("Cmd").Foreground(theme.ColorGreen),
-			termenv.String("colonies log get --processid " + log.ProcessID + " --since " + strconv.FormatInt(log.Timestamp-timeback, 10)).Foreground(theme.ColorGray),
-		}
-		t.AddRow(row)
-
 		t.Render()
 	}
-
 }

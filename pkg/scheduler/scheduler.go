@@ -3,6 +3,7 @@ package scheduler
 import (
 	"errors"
 	"fmt"
+	"math"
 	"sort"
 
 	"github.com/colonyos/colonies/pkg/core"
@@ -63,11 +64,11 @@ func (scheduler *Scheduler) Prioritize(colonyName string, executor *core.Executo
 	// These conditions are not yet implemented
 	gpuName := ""
 	gpuMem := int64(0)
-	gpuCount := 0
+	gpuCount := math.MaxInt8
 	storage := int64(0)
-	nodes := 0
-	processes := 0
-	processesPerNode := 0
+	nodes := math.MaxInt8
+	processes := math.MaxInt8
+	processesPerNode := math.MaxInt8
 
 	candidates, err := scheduler.db.FindCandidatesByName(colonyName, executor.Name, executor.Type, cpu, memory, gpuName, gpuMem, gpuCount, storage, nodes, processes, processesPerNode, count)
 	if err != nil {
