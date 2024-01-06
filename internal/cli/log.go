@@ -5,7 +5,9 @@ import (
 	"os"
 	"time"
 
+	"github.com/colonyos/colonies/internal/table"
 	"github.com/colonyos/colonies/pkg/core"
+	"github.com/muesli/termenv"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -31,6 +33,8 @@ func init() {
 	searchLogsCmd.Flags().StringVarP(&Text, "text", "t", "", "Text to search")
 	searchLogsCmd.Flags().IntVarP(&Days, "days", "d", 1, "Number of days back in time to search")
 	searchLogsCmd.Flags().IntVarP(&Count, "count", "", 10, "Number of search results to fetch")
+	searchLogsCmd.Flags().BoolVarP(&Print, "print", "", false, "Print logs")
+	searchLogsCmd.Flags().IntVarP(&SecondsBack, "seconds", "", 1, "Seconds back in time to print logs before the search result occurred")
 }
 
 var logCmd = &cobra.Command{
@@ -109,8 +113,6 @@ var searchLogsCmd = &cobra.Command{
 			CheckError(fmt.Errorf("--text flag is required"))
 		}
 
-		log.WithFields(log.Fields{"Text": Text, "Days": Days, "Count": Count}).Info("Searching for logs")
-
 		logs, err := client.SearchLogs(ColonyName, Text, Days, Count, PrvKey)
 		CheckError(err)
 
@@ -119,6 +121,38 @@ var searchLogsCmd = &cobra.Command{
 			os.Exit(0)
 		}
 
+		if Print {
+			var timestamp int64
+			timestamp = 1000000000 * int64(SecondsBack)
+
+			log.WithFields(log.Fields{"Text": Text, "Days": Days, "Count": Count, "Seconds": SecondsBack}).Info("Searching for logs")
+			fmt.Println()
+
+			theme, err := table.LoadTheme("solarized-dark")
+			CheckError(err)
+			for _, log := range logs {
+				fullLogs, err := client.GetLogsByProcessSince(ColonyName, log.ProcessID, Count, timestamp, PrvKey)
+				CheckError(err)
+				fmt.Print(termenv.String("Timestamp: ").Foreground(theme.ColorCyan))
+				fmt.Println(termenv.String(time.Unix(0, log.Timestamp).Format(TimeLayout)).Foreground(theme.ColorGray))
+				fmt.Print(termenv.String("ProcessID: ").Foreground(theme.ColorCyan))
+				fmt.Println(termenv.String(log.ProcessID).Foreground(theme.ColorGray))
+				fmt.Print(termenv.String("ExecutorName: ").Foreground(theme.ColorCyan))
+				fmt.Println(termenv.String(log.ExecutorName).Foreground(theme.ColorGray))
+
+				fmt.Println(termenv.String("=================== LOGS ====================").Foreground(theme.ColorViolet))
+
+				for _, fullLog := range fullLogs {
+					fmt.Print(fullLog.Message)
+				}
+				fmt.Println()
+				fmt.Println(termenv.String("================= END LOGS ==================").Foreground(theme.ColorViolet))
+				fmt.Println()
+			}
+			os.Exit(0)
+		}
+
+		log.WithFields(log.Fields{"Text": Text, "Days": Days, "Count": Count}).Info("Searching for logs")
 		printLogTable(logs)
 	},
 }

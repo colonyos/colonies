@@ -133,6 +133,8 @@ var TargetServerID string
 var Text string
 var Days int
 var ASCII bool
+var Print bool
+var SecondsBack int
 
 func init() {
 	rootCmd.PersistentFlags().BoolVarP(&Verbose, "verbose", "v", false, "Verbose (debugging)")

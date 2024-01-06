@@ -228,6 +228,8 @@ func (fsClient *FSClient) ApplySyncPlan(colonyName string, syncPlan *SyncPlan) e
 		}
 	}
 
+	fmt.Println("1")
+
 	expectedErrs := totalCalls
 	counter := 0
 O:
@@ -245,6 +247,7 @@ O:
 			}
 		}
 	}
+	fmt.Println("2")
 
 	if !fsClient.Quiet {
 		for {
@@ -258,6 +261,7 @@ O:
 		conflictTracker.MarkAsDone()
 		pw.Stop()
 	}
+	fmt.Println("3")
 
 	return nil
 }
@@ -289,17 +293,6 @@ func (fsClient *FSClient) CalcSyncPlans(dir string, label string, keepLocal bool
 
 		if info.IsDir() {
 			l := ""
-			// label = /myfiles
-			// l = "/C:/Program Files/Git/myfiles"
-
-			// label: /myfiles
-			// path: /home/johan/dev/github/colonyos/colonies/myfiles/
-			// dir: /home/johan/dev/github/colonyos/colonies/myfiles/
-			// l: /myfiles
-			// label: /myfiles
-			// path: /home/johan/dev/github/colonyos/colonies/myfiles/a
-			// dir: /home/johan/dev/github/colonyos/colonies/myfiles/
-			// l: /myfiles/a
 
 			path = strings.Replace(path, `\`, `/`, -1)
 			dir = strings.Replace(dir, `\`, `/`, -1)
