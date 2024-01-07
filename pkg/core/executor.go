@@ -235,7 +235,67 @@ func (executor *Executor) Equals(executor2 *Executor) bool {
 		same = false
 	}
 
+	if executor.Allocations.Projects == nil && executor2.Allocations.Projects != nil {
+		same = false
+	}
+
+	if executor.Allocations.Projects != nil && executor2.Allocations.Projects == nil {
+		same = false
+	}
+
+	if executor.Allocations.Projects != nil && executor2.Allocations.Projects != nil {
+		if len(executor.Allocations.Projects) != len(executor2.Allocations.Projects) {
+			same = false
+		}
+
+		if !IsProjectsEqual(executor.Allocations.Projects, executor2.Allocations.Projects) {
+			same = false
+		}
+	}
+
 	return same
+}
+
+func IsProjectEqual(project1 Project, project2 Project) bool {
+	if project1.AllocatedCPU != project2.AllocatedCPU {
+		return false
+	}
+
+	if project1.UsedCPU != project2.UsedCPU {
+		return false
+	}
+
+	if project1.AllocatedGPU != project2.AllocatedGPU {
+		return false
+	}
+
+	if project1.UsedGPU != project2.UsedGPU {
+		return false
+	}
+
+	if project1.AllocatedStorage != project2.AllocatedStorage {
+		return false
+	}
+
+	if project1.UsedStorage != project2.UsedStorage {
+		return false
+	}
+
+	return true
+}
+
+func IsProjectsEqual(projects1 map[string]Project, projects2 map[string]Project) bool {
+	if len(projects1) != len(projects2) {
+		return false
+	}
+
+	for key, project1 := range projects1 {
+		if !IsProjectEqual(project1, projects2[key]) {
+			return false
+		}
+	}
+
+	return true
 }
 
 func (executor *Executor) IsApproved() bool {
