@@ -187,6 +187,8 @@ func (server *ColoniesServer) handleAPIRequest(c *gin.Context) {
 		server.handleRejectExecutorHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 	case rpc.RemoveExecutorPayloadType:
 		server.handleRemoveExecutorHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+	case rpc.ReportAllocationsPayloadType:
+		server.handleReportAllocationsHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 
 	//Function handlers
 	case rpc.AddFunctionPayloadType:

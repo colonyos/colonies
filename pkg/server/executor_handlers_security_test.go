@@ -3,6 +3,7 @@ package server
 import (
 	"testing"
 
+	"github.com/colonyos/colonies/pkg/core"
 	"github.com/colonyos/colonies/pkg/utils"
 	"github.com/stretchr/testify/assert"
 )
@@ -24,6 +25,35 @@ func TestAddExecutorSecurity(t *testing.T) {
 	// Now, try to add executor 3 to colony1 using colony 1 credentials
 	_, err = client.AddExecutor(executor3, env.colony1PrvKey)
 	assert.Nil(t, err) // Should work
+
+	server.Shutdown()
+	<-done
+}
+
+func TestReportAllocationSecurity(t *testing.T) {
+	env, client, server, _, done := setupTestEnv1(t)
+
+	// The setup looks like this:
+	//   executor1 is member of colony1
+	//   executor2 is member of colony2
+	//   executor3 is bound to colony1, but not yet a member
+
+	project := core.Project{AllocatedCPU: 1, UsedCPU: 2, AllocatedGPU: 3, UsedGPU: 4, AllocatedStorage: 5, UsedStorage: 6}
+	projects := make(map[string]core.Project)
+	projects["test_project"] = project
+	alloc := core.Allocations{Projects: projects}
+
+	err := client.ReportAllocation(env.colony1Name, env.executor1Name, alloc, env.colony1PrvKey)
+	assert.NotNil(t, err) // Should not work
+
+	err = client.ReportAllocation(env.colony1Name, env.executor1Name, alloc, env.colony2PrvKey)
+	assert.NotNil(t, err) // Should not work
+
+	err = client.ReportAllocation(env.colony1Name, env.executor1Name, alloc, env.executor2PrvKey)
+	assert.NotNil(t, err) // Should not work
+
+	err = client.ReportAllocation(env.colony1Name, env.executor1Name, alloc, env.executor1PrvKey)
+	assert.Nil(t, err)
 
 	server.Shutdown()
 	<-done

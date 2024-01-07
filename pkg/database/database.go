@@ -32,6 +32,7 @@ type Database interface {
 
 	// Executor functions ...
 	AddExecutor(executor *core.Executor) error
+	SetAllocations(colonyName string, executorName string, allocations core.Allocations) error
 	GetExecutors() ([]*core.Executor, error)
 	GetExecutorByID(executorID string) (*core.Executor, error)
 	GetExecutorsByColonyName(colonyName string) ([]*core.Executor, error)
