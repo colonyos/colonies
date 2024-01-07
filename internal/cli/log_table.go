@@ -30,7 +30,7 @@ func printLogTable(logs []*core.Log) {
 
 		row = []interface{}{
 			termenv.String("Text").Foreground(theme.ColorMagenta),
-			termenv.String(log.Message).Foreground(theme.ColorGray),
+			termenv.String(insertNewLines(log.Message, 64)).Foreground(theme.ColorGray),
 		}
 		t.AddRow(row)
 

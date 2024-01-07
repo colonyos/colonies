@@ -486,3 +486,19 @@ func setup() *client.ColoniesClient {
 	log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Debug("Starting a Colonies client")
 	return client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
 }
+
+func insertNewLines(s string, interval int) string {
+	var result string
+	count := 0
+
+	for _, char := range s {
+		if count == interval {
+			result += "\n"
+			count = 0
+		}
+		result += string(char)
+		count++
+	}
+
+	return result
+}
