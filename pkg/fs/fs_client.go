@@ -113,6 +113,10 @@ func (fsClient *FSClient) uploadFile(syncPlan *SyncPlan, fileInfo *FileInfo, tra
 
 func (fsClient *FSClient) ApplySyncPlan(colonyName string, syncPlan *SyncPlan) error {
 	totalCalls := len(syncPlan.RemoteMissing) + len(syncPlan.LocalMissing) + len(syncPlan.Conflicts)
+	if totalCalls == 0 {
+		return nil
+	}
+
 	aggErrChan := make(chan error, totalCalls)
 
 	if _, err := os.Stat(syncPlan.Dir); os.IsNotExist(err) {
@@ -228,8 +232,6 @@ func (fsClient *FSClient) ApplySyncPlan(colonyName string, syncPlan *SyncPlan) e
 		}
 	}
 
-	fmt.Println("1")
-
 	expectedErrs := totalCalls
 	counter := 0
 O:
@@ -247,7 +249,6 @@ O:
 			}
 		}
 	}
-	fmt.Println("2")
 
 	if !fsClient.Quiet {
 		for {
@@ -261,7 +262,6 @@ O:
 		conflictTracker.MarkAsDone()
 		pw.Stop()
 	}
-	fmt.Println("3")
 
 	return nil
 }
