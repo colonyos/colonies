@@ -162,7 +162,7 @@ func (server *ColoniesServer) handleAssignProcessHTTPRequest(c *gin.Context, rec
 	if msg.AvailableMemory == "" {
 		memory = math.MaxInt64
 	} else {
-		memory, err = parsers.ConvertMemoryToInt(msg.AvailableMemory)
+		memory, err = parsers.ConvertMemoryToBytes(msg.AvailableMemory)
 		if server.handleHTTPError(c, err, http.StatusBadRequest) {
 			return
 		}

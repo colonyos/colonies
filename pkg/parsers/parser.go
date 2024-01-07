@@ -22,14 +22,25 @@ func ConvertCPUToInt(cpu string) (int64, error) {
 	return value, nil
 }
 
-func ConvertMemoryToInt(mem string) (int64, error) {
+func ConvertMemoryToBytes(mem string) (int64, error) {
 	unitMap := map[string]int64{
-		"Ki": 1024, "KiB": 1024,
-		"Mi": 1024 * 1024, "MiB": 1024 * 1024,
-		"Gi": 1024 * 1024 * 1024, "GiB": 1024 * 1024 * 1024,
-		"K": 1000, "KB": 1000,
-		"M": 1000 * 1000, "MB": 1000 * 1000,
-		"G": 1000 * 1000 * 1000, "GB": 1000 * 1000 * 1000,
+		"Ki":  1024,
+		"KiB": 1024,
+		"Mi":  1024 * 1024,
+		"MiB": 1024 * 1024,
+		"Gi":  1024 * 1024 * 1024,
+		"GiB": 1024 * 1024 * 1024,
+		"TiB": 1024 * 1024 * 1024 * 1024,
+		"K":   1000,
+		"KB":  1000,
+		"Kb":  1000,
+		"M":   1000 * 1000,
+		"MB":  1000 * 1000,
+		"Mb":  1000 * 1000,
+		"G":   1000 * 1000 * 1000,
+		"Gb":  1000 * 1000 * 1000,
+		"TB":  1000 * 1000 * 1000 * 1000,
+		"Tb":  1000 * 1000 * 1000 * 1000,
 	}
 
 	// Handling edge cases
@@ -56,7 +67,7 @@ func ConvertMemoryToInt(mem string) (int64, error) {
 		return 0, fmt.Errorf("no valid unit found in input")
 	}
 
-	mb := num * unitMap[unit] / 1000
+	mb := num * unitMap[unit]
 
 	return mb, nil
 }
@@ -65,6 +76,7 @@ func ConvertCPUToString(cpu int64) string {
 	return strconv.FormatInt(cpu, 10) + "m"
 }
 
+// mem is in bytes
 func ConvertMemoryToString(mem int64) string {
-	return strconv.FormatInt(mem, 10) + "Mi"
+	return strconv.FormatInt(mem/(1024*1024), 10) + "Mi"
 }

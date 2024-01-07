@@ -398,6 +398,21 @@ func (client *ColoniesClient) AddExecutor(executor *core.Executor, prvKey string
 	return core.ConvertJSONToExecutor(respBodyString)
 }
 
+func (client *ColoniesClient) ReportAllocation(colonyName string, executorName string, alloc core.Allocations, prvKey string) error {
+	msg := rpc.CreateReportAllocationsMsg(colonyName, executorName, alloc)
+	jsonString, err := msg.ToJSON()
+	if err != nil {
+		return err
+	}
+
+	_, err = client.sendMessage(rpc.ReportAllocationsPayloadType, jsonString, prvKey, false, context.TODO())
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (client *ColoniesClient) GetExecutors(colonyName string, prvKey string) ([]*core.Executor, error) {
 	msg := rpc.CreateGetExecutorsMsg(colonyName)
 	jsonString, err := msg.ToJSON()

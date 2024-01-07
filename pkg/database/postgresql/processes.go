@@ -62,17 +62,17 @@ func (db *PQDatabase) AddProcess(process *core.Process) error {
 		return err
 	}
 
-	memory, err := parsers.ConvertMemoryToInt(process.FunctionSpec.Conditions.Memory)
+	memory, err := parsers.ConvertMemoryToBytes(process.FunctionSpec.Conditions.Memory)
 	if err != nil {
 		return err
 	}
 
-	storage, err := parsers.ConvertMemoryToInt(process.FunctionSpec.Conditions.Storage)
+	storage, err := parsers.ConvertMemoryToBytes(process.FunctionSpec.Conditions.Storage)
 	if err != nil {
 		return err
 	}
 
-	gpuMem, err := parsers.ConvertMemoryToInt(process.FunctionSpec.Conditions.GPU.Memory)
+	gpuMem, err := parsers.ConvertMemoryToBytes(process.FunctionSpec.Conditions.GPU.Memory)
 	if err != nil {
 		return err
 	}
