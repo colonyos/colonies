@@ -39,7 +39,7 @@ func TestConvertMemoryToInt(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		result, err := ConvertMemoryToInt(tc.mem)
+		result, err := ConvertMemoryToBytes(tc.mem)
 		if tc.expected == -1 {
 			assert.Error(t, err)
 		} else {

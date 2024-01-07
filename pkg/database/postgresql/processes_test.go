@@ -249,12 +249,12 @@ func TestAddProcessConditions(t *testing.T) {
 	assert.Equal(t, processFromDB.FunctionSpec.Conditions.Processes, 2)
 	assert.Equal(t, processFromDB.FunctionSpec.Conditions.ProcessesPerNode, 1)
 	assert.Equal(t, processFromDB.FunctionSpec.Conditions.CPU, "1000m")
-	assert.Equal(t, processFromDB.FunctionSpec.Conditions.Memory, "10000000Mi")
-	assert.Equal(t, processFromDB.FunctionSpec.Conditions.Storage, "2000000000Mi")
+	assert.Equal(t, processFromDB.FunctionSpec.Conditions.Memory, "9536Mi")
+	assert.Equal(t, processFromDB.FunctionSpec.Conditions.Storage, "1907348Mi")
 	assert.Equal(t, processFromDB.FunctionSpec.Conditions.WallTime, int64(70))
 	assert.Equal(t, processFromDB.FunctionSpec.Conditions.GPU.Name, "nvidia_2080ti")
 	assert.Equal(t, processFromDB.FunctionSpec.Conditions.GPU.Count, 4)
-	assert.Equal(t, processFromDB.FunctionSpec.Conditions.GPU.Memory, "10000000Mi")
+	assert.Equal(t, processFromDB.FunctionSpec.Conditions.GPU.Memory, "9536Mi")
 }
 
 func TestSelectCandiate(t *testing.T) {
