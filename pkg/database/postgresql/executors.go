@@ -43,6 +43,30 @@ func (db *PQDatabase) AddExecutor(executor *core.Executor) error {
 	return nil
 }
 
+func (db *PQDatabase) SetAllocations(colonyName string, executorName string, allocations core.Allocations) error {
+	executor, err := db.GetExecutorByName(colonyName, executorName)
+	if err != nil {
+		return err
+	}
+
+	if executor == nil {
+		return errors.New("Executor with name <" + executorName + "> does not exists in Colony with name <" + colonyName + ">")
+	}
+
+	allocationsJSONBytes, err := json.Marshal(allocations)
+	if err != nil {
+		return err
+	}
+
+	sqlStatement := `UPDATE ` + db.dbPrefix + `EXECUTORS SET ALLOCATIONS=$1 WHERE COLONY_NAME=$2 AND NAME=$3`
+	_, err = db.postgresql.Exec(sqlStatement, allocationsJSONBytes, colonyName, colonyName+":"+executorName)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (db *PQDatabase) parseExecutors(rows *sql.Rows) ([]*core.Executor, error) {
 	var executors []*core.Executor
 

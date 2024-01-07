@@ -238,3 +238,47 @@ func (server *ColoniesServer) handleRemoveExecutorHTTPRequest(c *gin.Context, re
 
 	server.sendEmptyHTTPReply(c, payloadType)
 }
+
+func (server *ColoniesServer) handleReportAllocationsHTTPRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
+	msg, err := rpc.CreateReportAllocationsMsgFromJSON(jsonString)
+	if err != nil {
+		if server.handleHTTPError(c, errors.New("Failed to report allocation, invalid JSON"), http.StatusBadRequest) {
+			return
+		}
+	}
+
+	if msg.MsgType != payloadType {
+		server.handleHTTPError(c, errors.New("Failed to report allocation, msg.MsgType does not match payloadType"), http.StatusBadRequest)
+		return
+	}
+
+	err = server.validator.RequireMembership(recoveredID, msg.ColonyName, false)
+	if server.handleHTTPError(c, err, http.StatusForbidden) {
+		return
+	}
+
+	executor, err := server.db.GetExecutorByName(msg.ColonyName, msg.ExecutorName)
+	if server.handleHTTPError(c, err, http.StatusInternalServerError) {
+		return
+	}
+	if executor == nil {
+		if server.handleHTTPError(c, errors.New("Executor with name <"+msg.ExecutorName+"> does not exist"), http.StatusBadRequest) {
+			return
+		}
+	}
+
+	if executor.ID != recoveredID {
+		if server.handleHTTPError(c, errors.New("Only an executor can report allocations to itself"), http.StatusBadRequest) {
+			return
+		}
+	}
+
+	err = server.db.SetAllocations(msg.ColonyName, executor.Name, msg.Allocations)
+	if server.handleHTTPError(c, err, http.StatusBadRequest) {
+		return
+	}
+
+	log.WithFields(log.Fields{"ExecutorName": executor.Name, "ColonyName": msg.ColonyName}).Debug("Reporting allocations")
+
+	server.sendEmptyHTTPReply(c, payloadType)
+}

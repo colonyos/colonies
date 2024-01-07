@@ -97,6 +97,15 @@ func TestExecutorEquals(t *testing.T) {
 	executor1 := CreateExecutor(id, executorType, name, colonyName, commissionTime, lastHeardFromTime)
 	assert.True(t, executor1.Equals(executor1))
 
+	executorWithAlloc := CreateExecutor(id, executorType, name, colonyName, commissionTime, lastHeardFromTime)
+	project1 := Project{AllocatedCPU: 1, UsedCPU: 1, AllocatedGPU: 1, UsedGPU: 1, AllocatedStorage: 1, UsedStorage: 1}
+	project2 := Project{AllocatedCPU: 2, UsedCPU: 2, AllocatedGPU: 2, UsedGPU: 2, AllocatedStorage: 2, UsedStorage: 2}
+	projects := make(map[string]Project)
+	projects["test_project1"] = project1
+	projects["test_project2"] = project2
+	executorWithAlloc.Allocations.Projects = projects
+	assert.False(t, executor1.Equals(executorWithAlloc))
+
 	executor2 := CreateExecutor(id+"X", executorType, name, colonyName, commissionTime, lastHeardFromTime)
 	assert.False(t, executor2.Equals(executor1))
 	executor2 = CreateExecutor(id, executorType+"X", name, colonyName, commissionTime, lastHeardFromTime)

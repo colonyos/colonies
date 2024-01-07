@@ -461,6 +461,10 @@ func (db *dbMock) CountColonies() (int, error) {
 	return -1, nil
 }
 
+func (db *dbMock) SetAllocations(colonyName string, executorName string, allocations core.Allocations) error {
+	return nil
+}
+
 func (db *dbMock) AddExecutor(executor *core.Executor) error {
 	if db.returnError == "AddExecutor" {
 		return errors.New("error")

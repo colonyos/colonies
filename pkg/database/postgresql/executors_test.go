@@ -106,7 +106,7 @@ func TestAddExecutor(t *testing.T) {
 	assert.Equal(t, executor.Capabilities.Hardware.GPU.Memory, "10G")
 }
 
-func TestAddExecutorWithAllocation(t *testing.T) {
+func TestAddExecutorWithAllocations(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
 
@@ -128,13 +128,63 @@ func TestAddExecutorWithAllocation(t *testing.T) {
 	executors, err := db.GetExecutors()
 	assert.Nil(t, err)
 	assert.Len(t, executors, 1)
-	testProj := executor.Allocations.Projects["test_project"]
+	testProj := executors[0].Allocations.Projects["test_project"]
 	assert.Equal(t, testProj.AllocatedCPU, int64(1))
 	assert.Equal(t, testProj.UsedCPU, int64(2))
 	assert.Equal(t, testProj.AllocatedGPU, int64(3))
 	assert.Equal(t, testProj.UsedGPU, int64(4))
 	assert.Equal(t, testProj.AllocatedStorage, int64(5))
 	assert.Equal(t, testProj.UsedStorage, int64(6))
+}
+
+func TestSetAllocations(t *testing.T) {
+	db, err := PrepareTests()
+	assert.Nil(t, err)
+
+	defer db.Close()
+
+	colony := core.CreateColony(core.GenerateRandomID(), "test_colony_name_1")
+	err = db.AddColony(colony)
+	assert.Nil(t, err)
+
+	executor := utils.CreateTestExecutor(colony.Name)
+	project := core.Project{AllocatedCPU: 1, UsedCPU: 2, AllocatedGPU: 3, UsedGPU: 4, AllocatedStorage: 5, UsedStorage: 6}
+	projects := make(map[string]core.Project)
+	projects["test_project"] = project
+	executor.Allocations.Projects = projects
+
+	err = db.AddExecutor(executor)
+	assert.Nil(t, err)
+
+	executors, err := db.GetExecutors()
+	assert.Nil(t, err)
+	assert.Len(t, executors, 1)
+	testProj := executors[0].Allocations.Projects["test_project"]
+	assert.Equal(t, testProj.AllocatedCPU, int64(1))
+	assert.Equal(t, testProj.UsedCPU, int64(2))
+	assert.Equal(t, testProj.AllocatedGPU, int64(3))
+	assert.Equal(t, testProj.UsedGPU, int64(4))
+	assert.Equal(t, testProj.AllocatedStorage, int64(5))
+	assert.Equal(t, testProj.UsedStorage, int64(6))
+
+	project = core.Project{AllocatedCPU: 7, UsedCPU: 8, AllocatedGPU: 9, UsedGPU: 10, AllocatedStorage: 11, UsedStorage: 12}
+	projects = make(map[string]core.Project)
+	projects["test_project"] = project
+	allocations := core.Allocations{Projects: projects}
+
+	err = db.SetAllocations(colony.Name, executor.Name, allocations)
+	assert.Nil(t, err)
+
+	executors, err = db.GetExecutors()
+	assert.Nil(t, err)
+	assert.Len(t, executors, 1)
+	testProj = executors[0].Allocations.Projects["test_project"]
+	assert.Equal(t, testProj.AllocatedCPU, int64(7))
+	assert.Equal(t, testProj.UsedCPU, int64(8))
+	assert.Equal(t, testProj.AllocatedGPU, int64(9))
+	assert.Equal(t, testProj.UsedGPU, int64(10))
+	assert.Equal(t, testProj.AllocatedStorage, int64(11))
+	assert.Equal(t, testProj.UsedStorage, int64(12))
 }
 
 func TestAddExecutors(t *testing.T) {
