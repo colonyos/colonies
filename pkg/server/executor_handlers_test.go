@@ -35,6 +35,45 @@ func TestAddExecutor(t *testing.T) {
 	<-done
 }
 
+func TestReportAllocations(t *testing.T) {
+	client, server, serverPrvKey, done := prepareTests(t)
+
+	colony, colonyPrvKey, err := utils.CreateTestColonyWithKey()
+	_, err = client.AddColony(colony, serverPrvKey)
+	assert.Nil(t, err)
+
+	executor, executorPrvKey, err := utils.CreateTestExecutorWithKey(colony.Name)
+	assert.Nil(t, err)
+	addedExecutor, err := client.AddExecutor(executor, colonyPrvKey)
+	assert.Nil(t, err)
+	assert.True(t, executor.Equals(addedExecutor))
+	err = client.ApproveExecutor(colony.Name, executor.Name, colonyPrvKey)
+	assert.Nil(t, err)
+
+	project := core.Project{AllocatedCPU: 1, UsedCPU: 2, AllocatedGPU: 3, UsedGPU: 4, AllocatedStorage: 5, UsedStorage: 6}
+	projects := make(map[string]core.Project)
+	projects["test_project"] = project
+	alloc := core.Allocations{Projects: projects}
+
+	err = client.ReportAllocation(colony.Name, executor.Name, alloc, executorPrvKey)
+	assert.Nil(t, err)
+
+	executorFromServer, err := client.GetExecutor(colony.Name, executor.Name, executorPrvKey)
+	assert.Nil(t, err)
+	assert.NotNil(t, executorFromServer)
+
+	testProj := executorFromServer.Allocations.Projects["test_project"]
+	assert.Equal(t, testProj.AllocatedCPU, int64(1))
+	assert.Equal(t, testProj.UsedCPU, int64(2))
+	assert.Equal(t, testProj.AllocatedGPU, int64(3))
+	assert.Equal(t, testProj.UsedGPU, int64(4))
+	assert.Equal(t, testProj.AllocatedStorage, int64(5))
+	assert.Equal(t, testProj.UsedStorage, int64(6))
+
+	server.Shutdown()
+	<-done
+}
+
 func TestAddExecutorReRegister(t *testing.T) {
 	client, server, serverPrvKey, done := prepareTests(t)
 
