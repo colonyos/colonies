@@ -221,11 +221,15 @@ func TestAssignProcessWithLimits(t *testing.T) {
 	funcSpec1 := utils.CreateTestFunctionSpec(env.colonyName)
 	funcSpec1.Conditions.CPU = "4000m"
 	funcSpec1.Conditions.Memory = "4000G"
+
 	addedProcess1, err := client.Submit(funcSpec1, env.executorPrvKey)
 	assert.Nil(t, err)
 
+	addedProcess1, err = client.Submit(funcSpec1, env.executorPrvKey)
+	assert.Nil(t, err)
+
 	assignedProcess, err := client.Assign(env.colonyName, -1, "", "", env.executorPrvKey)
-	assert.NotNil(t, err)
+	assert.Nil(t, err)
 
 	assignedProcess, err = client.Assign(env.colonyName, -1, "1000m", "10G", env.executorPrvKey)
 	assert.NotNil(t, err)
