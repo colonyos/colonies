@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 
 	"github.com/colonyos/colonies/pkg/build"
 	"github.com/colonyos/colonies/pkg/client"
@@ -488,17 +489,31 @@ func setup() *client.ColoniesClient {
 }
 
 func insertNewLines(s string, interval int) string {
-	var result string
+	var result strings.Builder
 	count := 0
 
-	for _, char := range s {
-		if count == interval {
-			result += "\n"
-			count = 0
+	// Split the string into words
+	words := strings.Fields(s)
+
+	for _, word := range words {
+		wordLength := len(word)
+
+		// If adding the next word exceeds the interval and count is not at the beginning of a new line, insert a newline
+		if count+wordLength > interval && count > 0 {
+			result.WriteString("\n")
+			count = 0 // Reset count after inserting newline
 		}
-		result += string(char)
-		count++
+
+		// If it's not the beginning of the line, add a space before the word
+		if count > 0 {
+			result.WriteString(" ")
+			count++ // Increment count for the space
+		}
+
+		// Add the word and update the count
+		result.WriteString(word)
+		count += wordLength
 	}
 
-	return result
+	return result.String()
 }
