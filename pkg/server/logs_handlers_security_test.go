@@ -1,7 +1,6 @@
 package server
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/colonyos/colonies/pkg/utils"
@@ -89,7 +88,6 @@ func TestSearchLogsSecurity(t *testing.T) {
 	assert.Nil(t, err)
 
 	_, err = client.SearchLogs(env.colony1Name, "test_msg", 3, 10, env.executor2PrvKey)
-	fmt.Println(err)
 	assert.NotNil(t, err) // Should not work
 
 	_, err = client.SearchLogs(env.colony1Name, "test_msg", 3, 10, env.colony1PrvKey)
