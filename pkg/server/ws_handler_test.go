@@ -18,7 +18,7 @@ func TestSubscribeProcesses(t *testing.T) {
 
 	executorType := "test_executor_type"
 
-	subscription, err := client.SubscribeProcesses(executorType, core.WAITING, 100, env.executor2PrvKey)
+	subscription, err := client.SubscribeProcesses(env.colony1Name, executorType, core.WAITING, 100, env.executor1PrvKey)
 	assert.Nil(t, err)
 
 	waitForProcess := make(chan error)
@@ -56,11 +56,12 @@ func TestSubscribeChangeStateProcess(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, core.PENDING, addedProcess.State)
 
-	subscription, err := client.SubscribeProcess(addedProcess.ID,
+	subscription, err := client.SubscribeProcess(env.colony1Name,
+		addedProcess.ID,
 		addedProcess.FunctionSpec.Conditions.ExecutorType,
 		core.SUCCESS,
 		100,
-		env.executor2PrvKey)
+		env.executor1PrvKey)
 	assert.Nil(t, err)
 
 	waitForProcess := make(chan error)
@@ -94,7 +95,8 @@ func TestSubscribeChangeStateProcessInvalidID(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, core.PENDING, addedProcess.State)
 
-	subscription, err := client.SubscribeProcess("invalid_id",
+	subscription, err := client.SubscribeProcess(env.colony1Name,
+		"invalid_id",
 		addedProcess.FunctionSpec.Conditions.ExecutorType,
 		core.SUCCESS,
 		100,
@@ -143,11 +145,12 @@ func TestSubscribeChangeStateProcess2(t *testing.T) {
 
 	time.Sleep(5 * time.Second)
 
-	subscription, err := client.SubscribeProcess(addedProcess.ID,
+	subscription, err := client.SubscribeProcess(env.colony1Name,
+		addedProcess.ID,
 		addedProcess.FunctionSpec.Conditions.ExecutorType,
 		core.SUCCESS,
 		100,
-		env.executor2PrvKey)
+		env.executor1PrvKey)
 	assert.Nil(t, err)
 
 	waitForProcess := make(chan error)

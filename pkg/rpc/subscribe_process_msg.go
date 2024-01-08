@@ -7,6 +7,7 @@ import (
 const SubscribeProcessPayloadType = "subscribeprocessmsg"
 
 type SubscribeProcessMsg struct {
+	ColonyName   string `json:"colonyname"`
 	ProcessID    string `json:"processid"`
 	ExecutorType string `json:"executortype"`
 	State        int    `json:"state"`
@@ -14,8 +15,9 @@ type SubscribeProcessMsg struct {
 	MsgType      string `json:"msgtype"`
 }
 
-func CreateSubscribeProcessMsg(processID string, executorType string, state int, timeout int) *SubscribeProcessMsg {
+func CreateSubscribeProcessMsg(colonyName string, processID string, executorType string, state int, timeout int) *SubscribeProcessMsg {
 	msg := &SubscribeProcessMsg{}
+	msg.ColonyName = colonyName
 	msg.ProcessID = processID
 	msg.ExecutorType = executorType
 	msg.State = state
@@ -52,7 +54,8 @@ func (msg *SubscribeProcessMsg) Equals(msg2 *SubscribeProcessMsg) bool {
 		msg.ProcessID == msg2.ProcessID &&
 		msg.ExecutorType == msg2.ExecutorType &&
 		msg.State == msg2.State &&
-		msg.Timeout == msg2.Timeout {
+		msg.Timeout == msg2.Timeout &&
+		msg.ColonyName == msg2.ColonyName {
 		return true
 	}
 
