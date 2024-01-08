@@ -48,6 +48,7 @@ func (server *ColoniesServer) handleWSRequest(c *gin.Context) {
 	for {
 		wsMsgType, data, err := wsConn.ReadMessage()
 		if err != nil {
+			log.Error(err)
 			return
 		}
 
@@ -81,24 +82,8 @@ func (server *ColoniesServer) handleWSRequest(c *gin.Context) {
 				return
 			}
 
-			executor, err := server.controller.getExecutor(recoveredID)
-			if err != nil {
-				err := server.sendWSErrorMsg(err, http.StatusForbidden, wsConn, wsMsgType)
-				if err != nil {
-					log.WithFields(log.Fields{"Error": err}).Error("Failed to subscribe to processes, failed to call server.sendWSErrorMsg()")
-				}
-				return
-			}
-			if executor == nil {
-				err := server.sendWSErrorMsg(errors.New("Failed to subscribe to processes, executor not found"), http.StatusForbidden, wsConn, wsMsgType)
-				if err != nil {
-					log.WithFields(log.Fields{"Error": err}).Error("Failed to subscribe to processes, failed to call server.sendWSErrorMsg()")
-				}
-				return
-			}
-
 			// This test is strictly not needed, since the request does not specifiy a colony, but is rather derived from the database
-			err = server.validator.RequireMembership(recoveredID, executor.ColonyName, true)
+			err = server.validator.RequireMembership(recoveredID, msg.ColonyName, true)
 			if err != nil {
 				err := server.sendWSErrorMsg(err, http.StatusForbidden, wsConn, wsMsgType)
 				if err != nil {
@@ -130,27 +115,34 @@ func (server *ColoniesServer) handleWSRequest(c *gin.Context) {
 				return
 			}
 
-			executor, err := server.controller.getExecutor(recoveredID)
+			err = server.validator.RequireMembership(recoveredID, msg.ColonyName, true)
 			if err != nil {
+				log.Error(err)
 				err := server.sendWSErrorMsg(err, http.StatusForbidden, wsConn, wsMsgType)
 				if err != nil {
-					log.WithFields(log.Fields{"Error": err}).Error("Failed to subscribe to process, Failed to call server.sendWSErrorMsg()")
+					log.WithFields(log.Fields{"Error": err}).Error("Failed to subscribe to process, not member of colony")
 				}
 				return
 			}
-			if executor == nil {
-				err := server.sendWSErrorMsg(errors.New("Failed to subscribe to process, executor not found"), http.StatusForbidden, wsConn, wsMsgType)
+			process, err := server.db.GetProcessByID(msg.ProcessID)
+			if err != nil {
+				err := server.sendWSErrorMsg(err, http.StatusForbidden, wsConn, wsMsgType)
 				if err != nil {
 					log.WithFields(log.Fields{"Error": err}).Error("Failed to subscribe to process, failed to call server.sendWSErrorMsg()")
 				}
 				return
 			}
 
-			// This test is strictly not needed, since the request does not specifiy a colony, but is rather
-			// derived from the database
-			err = server.validator.RequireMembership(recoveredID, executor.ColonyName, true)
-			if err != nil {
-				err := server.sendWSErrorMsg(err, http.StatusForbidden, wsConn, wsMsgType)
+			if process == nil {
+				err := server.sendWSErrorMsg(errors.New("Failed to subscribe to process, process not found"), http.StatusForbidden, wsConn, wsMsgType)
+				if err != nil {
+					log.WithFields(log.Fields{"Error": err}).Error("Failed to subscribe to process, failed to call server.sendWSErrorMsg()")
+				}
+				return
+			}
+
+			if process.FunctionSpec.Conditions.ColonyName != msg.ColonyName {
+				err := server.sendWSErrorMsg(errors.New("Failed to subscribe to process, process does not belong to colony"), http.StatusForbidden, wsConn, wsMsgType)
 				if err != nil {
 					log.WithFields(log.Fields{"Error": err}).Error("Failed to subscribe to process, failed to call server.sendWSErrorMsg()")
 				}
