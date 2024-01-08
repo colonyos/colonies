@@ -145,7 +145,6 @@ var searchLogsCmd = &cobra.Command{
 				for _, fullLog := range fullLogs {
 					fmt.Print(fullLog.Message)
 				}
-				fmt.Println()
 				fmt.Println(termenv.String("================= END LOGS ==================").Foreground(theme.ColorViolet))
 				fmt.Println()
 			}
