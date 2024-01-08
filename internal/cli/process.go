@@ -96,14 +96,18 @@ var processCmd = &cobra.Command{
 
 func wait(client *client.ColoniesClient, process *core.Process) {
 	for {
-		successSubscription, err := client.SubscribeProcess(process.ID,
+		successSubscription, err := client.SubscribeProcess(
+			ColonyName,
+			process.ID,
 			process.FunctionSpec.Conditions.ExecutorType,
 			core.SUCCESS,
 			100,
 			PrvKey)
 		CheckError(err)
 
-		failedSubscription, err := client.SubscribeProcess(process.ID,
+		failedSubscription, err := client.SubscribeProcess(
+			ColonyName,
+			process.ID,
 			process.FunctionSpec.Conditions.ExecutorType,
 			core.FAILED,
 			100,

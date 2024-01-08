@@ -129,8 +129,8 @@ func (client *ColoniesClient) establishWebSocketConn(jsonString string) (*websoc
 	return wsConn, nil
 }
 
-func (client *ColoniesClient) SubscribeProcesses(executorType string, state int, timeout int, prvKey string) (*ProcessSubscription, error) {
-	msg := rpc.CreateSubscribeProcessesMsg(executorType, state, timeout)
+func (client *ColoniesClient) SubscribeProcesses(colonyName string, executorType string, state int, timeout int, prvKey string) (*ProcessSubscription, error) {
+	msg := rpc.CreateSubscribeProcessesMsg(colonyName, executorType, state, timeout)
 	jsonString, err := msg.ToJSON()
 	if err != nil {
 		return nil, err
@@ -187,8 +187,8 @@ func (client *ColoniesClient) SubscribeProcesses(executorType string, state int,
 	return subscription, nil
 }
 
-func (client *ColoniesClient) SubscribeProcess(processID string, executorType string, state int, timeout int, prvKey string) (*ProcessSubscription, error) {
-	msg := rpc.CreateSubscribeProcessMsg(processID, executorType, state, timeout)
+func (client *ColoniesClient) SubscribeProcess(colonyName string, processID string, executorType string, state int, timeout int, prvKey string) (*ProcessSubscription, error) {
+	msg := rpc.CreateSubscribeProcessMsg(colonyName, processID, executorType, state, timeout)
 	jsonString, err := msg.ToJSON()
 	if err != nil {
 		return nil, err
