@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"strings"
 	"time"
 
 	"github.com/colonyos/colonies/pkg/core"
@@ -30,7 +31,7 @@ func printLogTable(logs []*core.Log) {
 
 		row = []interface{}{
 			termenv.String("Text").Foreground(theme.ColorMagenta),
-			termenv.String(insertNewLines(log.Message, 64)).Foreground(theme.ColorGray),
+			termenv.String(insertNewLines(strings.TrimSpace(log.Message), 64)).Foreground(theme.ColorGray),
 		}
 		t.AddRow(row)
 
