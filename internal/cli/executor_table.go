@@ -17,6 +17,7 @@ func printExecutorsTable(executors []*core.Executor) {
 		{ID: "name", Name: "Name", SortIndex: 1},
 		{ID: "type", Name: "Type", SortIndex: 2},
 		{ID: "Location", Name: "Location", SortIndex: 3},
+		{ID: "lastheardfrom", Name: "Last Heard From", SortIndex: 3},
 	}
 	t.SetCols(cols)
 
@@ -25,6 +26,7 @@ func printExecutorsTable(executors []*core.Executor) {
 			termenv.String(executor.Name).Foreground(theme.ColorCyan),
 			termenv.String(executor.Type).Foreground(theme.ColorViolet),
 			termenv.String(executor.Location.Description).Foreground(theme.ColorMagenta),
+			termenv.String(executor.LastHeardFromTime.Format(TimeLayout)).Foreground(theme.ColorGreen),
 		}
 		t.AddRow(row)
 	}
@@ -89,13 +91,13 @@ func printExecutorTable(client *client.ColoniesClient, executor *core.Executor) 
 	t.AddRow(row)
 
 	row = []interface{}{
-		termenv.String("CommissionTime").Foreground(theme.ColorCyan),
+		termenv.String("Commission Time").Foreground(theme.ColorCyan),
 		termenv.String(executor.CommissionTime.Format(TimeLayout)).Foreground(theme.ColorGray),
 	}
 	t.AddRow(row)
 
 	row = []interface{}{
-		termenv.String("LastHeardFrom").Foreground(theme.ColorCyan),
+		termenv.String("Last Heard From").Foreground(theme.ColorCyan),
 		termenv.String(executor.LastHeardFromTime.Format(TimeLayout)).Foreground(theme.ColorGray),
 	}
 	t.AddRow(row)
