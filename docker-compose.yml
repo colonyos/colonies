@@ -25,7 +25,7 @@ services:
       - "9001:9001" 
 
   colonies-server:
-    image: colonyos/colonies
+    image: colonyos/colonies:v1.7.10
     depends_on: 
       - timescaledb
     environment:
