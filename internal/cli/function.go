@@ -257,7 +257,8 @@ var submitFuncSpecCmd = &cobra.Command{
 				log.WithFields(log.Fields{"ProcessId": addedProcess.ID}).Info("Process finished successfully")
 			}
 			if PrintOutput {
-				fmt.Println(StrArr2Str(IfArr2StringArr(addedProcess.Output)))
+				fmt.Println(process.Output...)
+				//fmt.Println(StrArr2Str(IfArr2StringArr(addedProcess.Output)))
 			}
 			os.Exit(0)
 		} else if Follow {
