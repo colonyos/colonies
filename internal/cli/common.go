@@ -244,10 +244,12 @@ func parseEnv() {
 	}
 
 	DBHost = os.Getenv("COLONIES_DB_HOST")
-	if DBHost != "" {
-		DBPort, err = strconv.Atoi(os.Getenv("COLONIES_DB_PORT"))
+
+	DBPortStr := os.Getenv("COLONIES_DB_PORT")
+	if DBPortStr != "" {
+		DBPort, err = strconv.Atoi(DBPortStr)
 		if err != nil {
-			log.Error("COLONIES_DB_PORT")
+			log.Error("Failed to parse COLONIES_DB_PORT")
 		}
 		CheckError(err)
 	}
