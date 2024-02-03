@@ -49,7 +49,7 @@ func TestProcessClosedDB(t *testing.T) {
 	_, err = db.FindFailedProcesses("invalid_id", "", "", "", 1)
 	assert.NotNil(t, err)
 
-	_, err = db.FindCandidates("invalid_id", "invalid_type", 0, 0, "", 0, 0, 0, 0, 0, 0, 1)
+	_, err = db.FindCandidates("invalid_id", "invalid_type", 0, 0, 0, 0, 0, 0, 1)
 	assert.NotNil(t, err)
 
 	err = db.RemoveProcessByID("invalid_id")
@@ -1189,7 +1189,7 @@ func TestFindCandidates1(t *testing.T) {
 	err = db.AddProcess(process2)
 	assert.Nil(t, err)
 
-	processsFromDB, err := db.FindCandidates(colony.Name, executor.Type, 0, 0, "", 0, 0, 0, 0, 0, 0, 100)
+	processsFromDB, err := db.FindCandidates(colony.Name, executor.Type, 0, 0, 0, 0, 0, 0, 100)
 	assert.Nil(t, err)
 	assert.Len(t, processsFromDB, 1)
 }
@@ -1228,12 +1228,12 @@ func TestFindCandidates2(t *testing.T) {
 
 	time.Sleep(50 * time.Millisecond)
 
-	processesFromDB, err := db.FindCandidates(colony.Name, executor2.Type, 0, 0, "", 0, 0, 0, 0, 0, 0, 2)
+	processesFromDB, err := db.FindCandidates(colony.Name, executor2.Type, 0, 0, 0, 0, 0, 0, 2)
 	assert.Nil(t, err)
 	assert.Len(t, processesFromDB, 1)
 	assert.Equal(t, processesFromDB[0].ID, process1.ID)
 
-	processesFromDB, err = db.FindCandidatesByName(colony.Name, executor2.Name, executor2.Type, 0, 0, "", 0, 0, 0, 0, 0, 0, 2)
+	processesFromDB, err = db.FindCandidatesByName(colony.Name, executor2.Name, executor2.Type, 0, 0, 0, 0, 0, 0, 2)
 	assert.Nil(t, err)
 	assert.Len(t, processesFromDB, 2)
 
@@ -1281,16 +1281,16 @@ func TestFindCandidates3(t *testing.T) {
 	err = db.AddProcess(process2)
 	assert.Nil(t, err)
 
-	processesFromDB, err := db.FindCandidates(colony.Name, executor1.Type, 0, 0, "", 0, 0, 0, 0, 0, 9, 1)
+	processesFromDB, err := db.FindCandidates(colony.Name, executor1.Type, 0, 0, 0, 0, 0, 9, 1)
 	assert.Nil(t, err)
 	assert.Len(t, processesFromDB, 0)
 
-	processesFromDB, err = db.FindCandidatesByName(colony.Name, executor1.Name, executor1.Type, 0, 0, "", 0, 0, 0, 0, 0, 0, 1)
+	processesFromDB, err = db.FindCandidatesByName(colony.Name, executor1.Name, executor1.Type, 0, 0, 0, 0, 0, 0, 1)
 	assert.Nil(t, err)
 	assert.Len(t, processesFromDB, 1)
 	assert.Equal(t, processesFromDB[0].ID, process1.ID)
 
-	processesFromDB, err = db.FindCandidatesByName(colony.Name, executor2.Name, executor1.Type, 0, 0, "", 0, 0, 0, 0, 0, 0, 1)
+	processesFromDB, err = db.FindCandidatesByName(colony.Name, executor2.Name, executor1.Type, 0, 0, 0, 0, 0, 0, 1)
 	assert.Nil(t, err)
 	assert.Len(t, processesFromDB, 1)
 	assert.Equal(t, processesFromDB[0].ID, process1.ID)
@@ -1326,12 +1326,12 @@ func TestFindCandidates4(t *testing.T) {
 	err = db.AddProcess(process2)
 	assert.Nil(t, err)
 
-	processsFromDB, err := db.FindCandidates(colony.Name, executor1.Type, 0, 0, "", 0, 0, 0, 0, 0, 0, 1)
+	processsFromDB, err := db.FindCandidates(colony.Name, executor1.Type, 0, 0, 0, 0, 0, 0, 1)
 	assert.Nil(t, err)
 	assert.Len(t, processsFromDB, 1)
 	assert.Equal(t, process1.ID, processsFromDB[0].ID)
 
-	processsFromDB, err = db.FindCandidates(colony.Name, executor2.Type, 0, 0, "", 0, 0, 0, 0, 0, 0, 1)
+	processsFromDB, err = db.FindCandidates(colony.Name, executor2.Type, 0, 0, 0, 0, 0, 0, 1)
 	assert.Nil(t, err)
 	assert.Len(t, processsFromDB, 1)
 	assert.Equal(t, process2.ID, processsFromDB[0].ID)
@@ -1360,7 +1360,7 @@ func TestFindCandidatesOldest(t *testing.T) {
 	err = db.AddProcess(process2)
 	assert.Nil(t, err)
 
-	processsFromDB, err := db.FindCandidates(colony.Name, executor.Type, 0, 0, "", 0, 0, 0, 0, 0, 0, 100)
+	processsFromDB, err := db.FindCandidates(colony.Name, executor.Type, 0, 0, 0, 0, 0, 0, 100)
 	assert.Nil(t, err)
 	assert.Len(t, processsFromDB, 1)
 	assert.Equal(t, processsFromDB[0].ID, process1.ID)
@@ -1400,11 +1400,11 @@ func TestFindCandidatesByName(t *testing.T) {
 	err = db.AddProcess(process3)
 	assert.Nil(t, err)
 
-	processsFromDB, err := db.FindCandidates(colony.Name, executor1.Type, 0, 0, "", 0, 0, 0, 0, 0, 0, 100)
+	processsFromDB, err := db.FindCandidates(colony.Name, executor1.Type, 0, 0, 0, 0, 0, 0, 100)
 	assert.Nil(t, err)
 	assert.Len(t, processsFromDB, 1)
 
-	processsFromDB, err = db.FindCandidatesByName(colony.Name, "executor1", executor1.Type, 0, 0, "", 0, 0, 0, 0, 0, 0, 100)
+	processsFromDB, err = db.FindCandidatesByName(colony.Name, "executor1", executor1.Type, 0, 0, 0, 0, 0, 0, 100)
 	assert.Nil(t, err)
 	assert.Len(t, processsFromDB, 2)
 
@@ -1461,7 +1461,7 @@ func TestFindProcessAssigned(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, 0, numberOfFailedProcesses)
 
-	processsFromDB1, err := db.FindCandidates(colony.Name, executor.Type, 0, 0, "", 0, 0, 0, 0, 0, 0, 1)
+	processsFromDB1, err := db.FindCandidates(colony.Name, executor.Type, 0, 0, 0, 0, 0, 0, 1)
 	assert.Nil(t, err)
 	assert.Equal(t, process1.ID, processsFromDB1[0].ID)
 	assert.Len(t, processsFromDB1, 1)
@@ -1473,7 +1473,7 @@ func TestFindProcessAssigned(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, 1, numberOfRunningProcesses)
 
-	processsFromDB2, err := db.FindCandidates(colony.Name, executor.Type, 0, 0, "", 0, 0, 0, 0, 0, 0, 1)
+	processsFromDB2, err := db.FindCandidates(colony.Name, executor.Type, 0, 0, 0, 0, 0, 0, 1)
 	assert.Nil(t, err)
 	assert.Equal(t, process2.ID, processsFromDB2[0].ID)
 
