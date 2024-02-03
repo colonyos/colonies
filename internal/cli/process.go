@@ -9,7 +9,6 @@ import (
 	"github.com/colonyos/colonies/internal/crypto"
 	"github.com/colonyos/colonies/pkg/client"
 	"github.com/colonyos/colonies/pkg/core"
-	"github.com/colonyos/colonies/pkg/server"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -31,7 +30,7 @@ func init() {
 	processCmd.PersistentFlags().IntVarP(&ServerPort, "port", "", -1, "Server HTTP port")
 
 	listWaitingProcessesCmd.Flags().StringVarP(&PrvKey, "prvkey", "", "", "Private key")
-	listWaitingProcessesCmd.Flags().IntVarP(&Count, "count", "", server.MAX_COUNT, "Number of processes to list")
+	listWaitingProcessesCmd.Flags().IntVarP(&Count, "count", "", DefaultCount, "Number of processes to list")
 	listWaitingProcessesCmd.Flags().BoolVarP(&JSON, "json", "", false, "Print JSON instead of tables")
 	listWaitingProcessesCmd.Flags().BoolVarP(&ShowIDs, "ids", "i", false, "Show IDs")
 	listWaitingProcessesCmd.Flags().StringVarP(&TargetExecutorType, "executortype", "", "", "Filter by executor type")
@@ -39,7 +38,7 @@ func init() {
 	listWaitingProcessesCmd.Flags().StringVarP(&Initiator, "initiator", "", "", "Filter by initiator")
 
 	listRunningProcessesCmd.Flags().StringVarP(&PrvKey, "prvkey", "", "", "Private key")
-	listRunningProcessesCmd.Flags().IntVarP(&Count, "count", "", server.MAX_COUNT, "Number of processes to list")
+	listRunningProcessesCmd.Flags().IntVarP(&Count, "count", "", DefaultCount, "Number of processes to list")
 	listRunningProcessesCmd.Flags().BoolVarP(&JSON, "json", "", false, "Print JSON instead of tables")
 	listRunningProcessesCmd.Flags().BoolVarP(&ShowIDs, "ids", "i", false, "Show IDs")
 	listRunningProcessesCmd.Flags().StringVarP(&TargetExecutorType, "executortype", "", "", "Filter by executor type")
@@ -47,7 +46,7 @@ func init() {
 	listRunningProcessesCmd.Flags().StringVarP(&Initiator, "initiator", "", "", "Filter by initiator")
 
 	listSuccessfulProcessesCmd.Flags().StringVarP(&PrvKey, "prvkey", "", "", "Private key")
-	listSuccessfulProcessesCmd.Flags().IntVarP(&Count, "count", "", server.MAX_COUNT, "Number of processes to list")
+	listSuccessfulProcessesCmd.Flags().IntVarP(&Count, "count", "", DefaultCount, "Number of processes to list")
 	listSuccessfulProcessesCmd.Flags().BoolVarP(&JSON, "json", "", false, "Print JSON instead of tables")
 	listSuccessfulProcessesCmd.Flags().BoolVarP(&ShowIDs, "ids", "i", false, "Show IDs")
 	listSuccessfulProcessesCmd.Flags().StringVarP(&TargetExecutorType, "executortype", "", "", "Filter by executor type")
@@ -55,7 +54,7 @@ func init() {
 	listSuccessfulProcessesCmd.Flags().StringVarP(&Initiator, "initiator", "", "", "Filter by initiator")
 
 	listFailedProcessesCmd.Flags().StringVarP(&PrvKey, "prvkey", "", "", "Private key")
-	listFailedProcessesCmd.Flags().IntVarP(&Count, "count", "", server.MAX_COUNT, "Number of processes to list")
+	listFailedProcessesCmd.Flags().IntVarP(&Count, "count", "", DefaultCount, "Number of processes to list")
 	listFailedProcessesCmd.Flags().BoolVarP(&JSON, "json", "", false, "Print JSON instead of tables")
 	listFailedProcessesCmd.Flags().BoolVarP(&ShowIDs, "ids", "i", false, "Show IDs")
 	listFailedProcessesCmd.Flags().StringVarP(&TargetExecutorType, "executortype", "", "", "Filter by executor type")
