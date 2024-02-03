@@ -6,7 +6,6 @@ import (
 	"os"
 
 	"github.com/colonyos/colonies/pkg/core"
-	"github.com/colonyos/colonies/pkg/server"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -37,7 +36,7 @@ func init() {
 	getCronCmd.Flags().StringVarP(&CronID, "cronid", "", "", "Cron Id")
 	getCronCmd.MarkFlagRequired("cronid")
 
-	getCronsCmd.Flags().IntVarP(&Count, "count", "", server.MAX_COUNT, "Number of crons to list")
+	getCronsCmd.Flags().IntVarP(&Count, "count", "", DefaultCount, "Number of crons to list")
 
 	runCronCmd.Flags().StringVarP(&CronID, "cronid", "", "", "Cron Id")
 	runCronCmd.MarkFlagRequired("cronid")
