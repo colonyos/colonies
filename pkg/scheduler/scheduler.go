@@ -62,20 +62,17 @@ func min(x, y int) int {
 func (scheduler *Scheduler) Prioritize(colonyName string, executor *core.Executor, cpu int64, memory int64, count int) ([]*core.Process, error) {
 
 	// These conditions are not yet implemented
-	gpuName := ""
-	gpuMem := int64(0)
-	gpuCount := math.MaxInt8
 	storage := int64(0)
 	nodes := math.MaxInt8
 	processes := math.MaxInt8
 	processesPerNode := math.MaxInt8
 
-	candidates, err := scheduler.db.FindCandidatesByName(colonyName, executor.Name, executor.Type, cpu, memory, gpuName, gpuMem, gpuCount, storage, nodes, processes, processesPerNode, count)
+	candidates, err := scheduler.db.FindCandidatesByName(colonyName, executor.Name, executor.Type, cpu, memory, storage, nodes, processes, processesPerNode, count)
 	if err != nil {
 		return nil, err
 	}
 
-	candidates2, err := scheduler.db.FindCandidates(colonyName, executor.Type, cpu, memory, gpuName, gpuMem, gpuCount, storage, nodes, processes, processesPerNode, count)
+	candidates2, err := scheduler.db.FindCandidates(colonyName, executor.Type, cpu, memory, storage, nodes, processes, processesPerNode, count)
 	if err != nil {
 		return nil, err
 	}
