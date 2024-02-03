@@ -17,6 +17,7 @@ const DefaultServerHost = "localhost"
 const MaxAttributeLength = 30
 const MaxArgLength = 20
 const MaxArgInfoLength = 50
+const DefaultCount = 20
 
 var mutex sync.Mutex
 

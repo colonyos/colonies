@@ -9,7 +9,6 @@ import (
 	"strings"
 
 	"github.com/colonyos/colonies/pkg/core"
-	"github.com/colonyos/colonies/pkg/server"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -33,19 +32,19 @@ func init() {
 
 	listWaitingWorkflowsCmd.Flags().StringVarP(&ColonyName, "colonyid", "", "", "Colony Id")
 	listWaitingWorkflowsCmd.Flags().StringVarP(&PrvKey, "prvkey", "", "", "Private key")
-	listWaitingWorkflowsCmd.Flags().IntVarP(&Count, "count", "", server.MAX_COUNT, "Number of workflows to list")
+	listWaitingWorkflowsCmd.Flags().IntVarP(&Count, "count", "", DefaultCount, "Number of workflows to list")
 
 	listRunningWorkflowsCmd.Flags().StringVarP(&ColonyName, "colonyid", "", "", "Colony Id")
 	listRunningWorkflowsCmd.Flags().StringVarP(&PrvKey, "prvkey", "", "", "Private key")
-	listRunningWorkflowsCmd.Flags().IntVarP(&Count, "count", "", server.MAX_COUNT, "Number of workflows to list")
+	listRunningWorkflowsCmd.Flags().IntVarP(&Count, "count", "", DefaultCount, "Number of workflows to list")
 
 	listSuccessfulWorkflowsCmd.Flags().StringVarP(&ColonyName, "colonyid", "", "", "Colony Id")
 	listSuccessfulWorkflowsCmd.Flags().StringVarP(&PrvKey, "prvkey", "", "", "Private key")
-	listSuccessfulWorkflowsCmd.Flags().IntVarP(&Count, "count", "", server.MAX_COUNT, "Number of workflows to list")
+	listSuccessfulWorkflowsCmd.Flags().IntVarP(&Count, "count", "", DefaultCount, "Number of workflows to list")
 
 	listFailedWorkflowsCmd.Flags().StringVarP(&ColonyName, "colonyid", "", "", "Colony Id")
 	listFailedWorkflowsCmd.Flags().StringVarP(&PrvKey, "prvkey", "", "", "Private key")
-	listFailedWorkflowsCmd.Flags().IntVarP(&Count, "count", "", server.MAX_COUNT, "Number of workflows to list")
+	listFailedWorkflowsCmd.Flags().IntVarP(&Count, "count", "", DefaultCount, "Number of workflows to list")
 
 	removeWorkflowCmd.Flags().StringVarP(&PrvKey, "prvkey", "", "", "Private key")
 	removeWorkflowCmd.Flags().StringVarP(&ColonyName, "colonyid", "", "", "Colony Id")

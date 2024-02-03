@@ -6,7 +6,6 @@ import (
 	"os"
 
 	"github.com/colonyos/colonies/pkg/core"
-	"github.com/colonyos/colonies/pkg/server"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -48,7 +47,7 @@ func init() {
 
 	getGeneratorsCmd.Flags().StringVarP(&PrvKey, "prvkey", "", "", "Private key")
 	getGeneratorsCmd.Flags().StringVarP(&ColonyName, "colonyid", "", "", "Colony Id")
-	getGeneratorsCmd.Flags().IntVarP(&Count, "count", "", server.MAX_COUNT, "Number of generators to list")
+	getGeneratorsCmd.Flags().IntVarP(&Count, "count", "", DefaultCount, "Number of generators to list")
 }
 
 var generatorCmd = &cobra.Command{
