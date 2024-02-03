@@ -644,11 +644,11 @@ func (db *dbMock) FindAllWaitingProcesses() ([]*core.Process, error) {
 	return nil, nil
 }
 
-func (db *dbMock) FindCandidates(colonyName string, executorType string, cpu int64, memory int64, gpuName string, gpuMem int64, gpuCount int, storage int64, nodes int, processes int, processesPerNode int, count int) ([]*core.Process, error) {
+func (db *dbMock) FindCandidates(colonyName string, executorType string, cpu int64, memory int64, storage int64, nodes int, processes int, processesPerNode int, count int) ([]*core.Process, error) {
 	return nil, nil
 }
 
-func (db *dbMock) FindCandidatesByName(colonyName string, executorName string, executorType string, cpu int64, memory int64, gpuName string, gpuMem int64, gpuCount int, storage int64, nodes int, processes int, processesPerNode int, count int) ([]*core.Process, error) {
+func (db *dbMock) FindCandidatesByName(colonyName string, executorName string, executorType string, cpu int64, memory int64, storage int64, nodes int, processes int, processesPerNode int, count int) ([]*core.Process, error) {
 	return nil, nil
 }
 
