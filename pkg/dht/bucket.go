@@ -8,7 +8,7 @@ type bucket struct {
 	list *list.List
 }
 
-func newBucket() *bucket {
+func createBucket() *bucket {
 	bucket := &bucket{}
 	bucket.list = list.New()
 	return bucket
