@@ -16,7 +16,6 @@ func CreateKademliaID(data string) *KademliaID {
 	for i := 0; i < IDLength; i++ {
 		newKademliaID[i] = decoded[i]
 	}
-
 	return &newKademliaID
 }
 

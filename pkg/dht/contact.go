@@ -11,15 +11,15 @@ type Contact struct {
 	distance *KademliaID
 }
 
-func CreateContact(id *KademliaID, address string) *Contact {
-	return &Contact{id, address, nil}
+func CreateContact(id *KademliaID, address string) Contact {
+	return Contact{id, address, nil}
 }
 
 func (contact *Contact) CalcDistance(target *KademliaID) {
 	contact.distance = contact.ID.CalcDistance(target)
 }
 
-func (contact *Contact) Less(otherContact *Contact) bool {
+func (contact *Contact) Less(otherContact Contact) bool {
 	return contact.distance.Less(otherContact.distance)
 }
 
@@ -28,14 +28,14 @@ func (contact *Contact) String() string {
 }
 
 type ContactCandidates struct {
-	contacts []*Contact
+	contacts []Contact
 }
 
-func (candidates *ContactCandidates) Append(contacts []*Contact) {
+func (candidates *ContactCandidates) Append(contacts []Contact) {
 	candidates.contacts = append(candidates.contacts, contacts...)
 }
 
-func (candidates *ContactCandidates) GetContacts(count int) []*Contact {
+func (candidates *ContactCandidates) GetContacts(count int) []Contact {
 	return candidates.contacts[:count]
 }
 

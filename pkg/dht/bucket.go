@@ -14,10 +14,10 @@ func createBucket() *bucket {
 	return bucket
 }
 
-func (bucket *bucket) AddContact(contact *Contact) {
+func (bucket *bucket) addContact(contact Contact) {
 	var element *list.Element
 	for e := bucket.list.Front(); e != nil; e = e.Next() {
-		nodeID := e.Value.(*Contact).ID
+		nodeID := e.Value.(Contact).ID
 
 		if (contact).ID.Equals(nodeID) {
 			element = e
@@ -35,11 +35,31 @@ func (bucket *bucket) AddContact(contact *Contact) {
 	}
 }
 
-func (bucket *bucket) GetContactAndCalcDistance(target *KademliaID) []*Contact {
-	var contacts []*Contact
+func (bucket *bucket) removeContact(contact Contact) {
+	for e := bucket.list.Front(); e != nil; e = e.Next() {
+		nodeID := e.Value.(Contact).ID
+
+		if (contact).ID.Equals(nodeID) {
+			bucket.list.Remove(e)
+		}
+	}
+}
+
+func (bucket *bucket) getContact(target *KademliaID) Contact {
+	for elt := bucket.list.Front(); elt != nil; elt = elt.Next() {
+		contact := elt.Value.(Contact)
+		if contact.ID.Equals(target) {
+			return contact
+		}
+	}
+	return Contact{}
+}
+
+func (bucket *bucket) getContactAndCalcDistance(target *KademliaID) []Contact {
+	var contacts []Contact
 
 	for elt := bucket.list.Front(); elt != nil; elt = elt.Next() {
-		contact := elt.Value.(*Contact)
+		contact := elt.Value.(Contact)
 		contact.CalcDistance(target)
 		contacts = append(contacts, contact)
 	}
@@ -47,6 +67,6 @@ func (bucket *bucket) GetContactAndCalcDistance(target *KademliaID) []*Contact {
 	return contacts
 }
 
-func (bucket *bucket) Len() int {
+func (bucket *bucket) len() int {
 	return bucket.list.Len()
 }

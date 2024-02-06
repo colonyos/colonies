@@ -2,13 +2,13 @@ package dht
 
 const bucketSize = 20
 
-type RoutingTable struct {
-	me      *Contact
+type routingTable struct {
+	me      Contact
 	buckets [IDLength * 8]*bucket
 }
 
-func CreateRoutingTable(me *Contact) *RoutingTable {
-	routingTable := &RoutingTable{}
+func createRoutingTable(me Contact) *routingTable {
+	routingTable := &routingTable{}
 	for i := 0; i < IDLength*8; i++ {
 		routingTable.buckets[i] = createBucket()
 	}
@@ -16,27 +16,39 @@ func CreateRoutingTable(me *Contact) *RoutingTable {
 	return routingTable
 }
 
-func (routingTable *RoutingTable) AddContact(contact *Contact) {
+func (routingTable *routingTable) addContact(contact Contact) {
 	bucketIndex := routingTable.getBucketIndex(contact.ID)
 	bucket := routingTable.buckets[bucketIndex]
-	bucket.AddContact(contact)
+	bucket.addContact(contact)
 }
 
-func (routingTable *RoutingTable) FindClosestContacts(target *KademliaID, count int) []*Contact {
+func (routingTable *routingTable) removeContact(contact Contact) {
+	bucketIndex := routingTable.getBucketIndex(contact.ID)
+	bucket := routingTable.buckets[bucketIndex]
+	bucket.removeContact(contact)
+}
+
+func (routingTable *routingTable) getContact(id *KademliaID) Contact {
+	bucketIndex := routingTable.getBucketIndex(id)
+	bucket := routingTable.buckets[bucketIndex]
+	return bucket.getContact(id)
+}
+
+func (routingTable *routingTable) findClosestContacts(target *KademliaID, count int) []Contact {
 	var candidates ContactCandidates
 	bucketIndex := routingTable.getBucketIndex(target)
 	bucket := routingTable.buckets[bucketIndex]
 
-	candidates.Append(bucket.GetContactAndCalcDistance(target))
+	candidates.Append(bucket.getContactAndCalcDistance(target))
 
 	for i := 1; (bucketIndex-i >= 0 || bucketIndex+i < IDLength*8) && candidates.Len() < count; i++ {
 		if bucketIndex-i >= 0 {
 			bucket = routingTable.buckets[bucketIndex-i]
-			candidates.Append(bucket.GetContactAndCalcDistance(target))
+			candidates.Append(bucket.getContactAndCalcDistance(target))
 		}
 		if bucketIndex+i < IDLength*8 {
 			bucket = routingTable.buckets[bucketIndex+i]
-			candidates.Append(bucket.GetContactAndCalcDistance(target))
+			candidates.Append(bucket.getContactAndCalcDistance(target))
 		}
 	}
 
@@ -49,7 +61,7 @@ func (routingTable *RoutingTable) FindClosestContacts(target *KademliaID, count 
 	return candidates.GetContacts(count)
 }
 
-func (routingTable *RoutingTable) getBucketIndex(id *KademliaID) int {
+func (routingTable *routingTable) getBucketIndex(id *KademliaID) int {
 	distance := id.CalcDistance(routingTable.me.ID)
 	for i := 0; i < IDLength; i++ {
 		for j := 0; j < 8; j++ {
