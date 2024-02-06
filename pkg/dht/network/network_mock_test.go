@@ -24,7 +24,7 @@ func TestMockNetwork(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, socket2)
 	go func() {
-		socket.Send(&Message{ToAddr: "10.0.0.1:8080", FromAddr: "10.0.0.2:8080", Payload: []byte("test_payload")})
+		socket.Send(&Message{To: "10.0.0.1:8080", From: "10.0.0.2:8080", Payload: []byte("test_payload")})
 	}()
 
 	select {
@@ -32,7 +32,7 @@ func TestMockNetwork(t *testing.T) {
 		t.Error("Timeout")
 	case msg := <-resultChan:
 		assert.Equal(t, "test_payload", string(msg.Payload))
-		assert.Equal(t, "10.0.0.1:8080", msg.ToAddr)
-		assert.Equal(t, "10.0.0.2:8080", msg.FromAddr)
+		assert.Equal(t, "10.0.0.1:8080", msg.To)
+		assert.Equal(t, "10.0.0.2:8080", msg.From)
 	}
 }
