@@ -22,10 +22,8 @@ func createKademliaNode(t *testing.T, n network.Network, addr string, bootstrapA
 		fmt.Println(err)
 	}
 
-	contact1 := CreateContact(CreateKademliaID(id1), "localhost:8001")
+	contact1 := CreateContact(CreateKademliaID(id1), addr)
 	k, err := CreateKademlia(n, contact1)
-
-	go k.ServerForEver()
 
 	assert.Nil(t, err)
 
@@ -38,11 +36,22 @@ func createKademliaNode(t *testing.T, n network.Network, addr string, bootstrapA
 func TestNewKademlia(t *testing.T) {
 	n := network.CreateFakeNetwork()
 
-	bootstrapNode := createKademliaNode(t, n, "localhost:8001", "localhost:8001")
+	bootstrapNode := createKademliaNode(t, n, "localhost:8000", "localhost:8000")
 
 	var nodes []*Kademlia
-	for i := 0; i < 3; i++ {
+	for i := 1; i < 3; i++ {
 		nodes = append(nodes, createKademliaNode(t, n, "localhost:800"+fmt.Sprint(i), bootstrapNode.contact.Addr))
+	}
+
+	fmt.Println("-------------------------------------")
+	targetID := nodes[1].contact.ID
+	fmt.Println("targetID: ", targetID)
+	//contacts, err := nodes[0].FindContacts(nodes[1].contact.Addr, targetID.String())
+	contacts, err := nodes[0].FindContacts(bootstrapNode.contact.Addr, targetID.String())
+	assert.Nil(t, err)
+
+	for _, contact := range contacts {
+		fmt.Println(contact.Addr)
 	}
 
 	select {}
