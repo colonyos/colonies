@@ -2,12 +2,12 @@ package dht
 
 import "encoding/json"
 
-type PingRequest struct {
+type PingReq struct {
 	Header RPCHeader `json:"header"`
 }
 
-func ConvertJSONToPingRequest(jsonStr string) (*PingRequest, error) {
-	var req *PingRequest
+func ConvertJSONToPingReq(jsonStr string) (*PingReq, error) {
+	var req *PingReq
 	err := json.Unmarshal([]byte(jsonStr), &req)
 	if err != nil {
 		return nil, err
@@ -16,7 +16,7 @@ func ConvertJSONToPingRequest(jsonStr string) (*PingRequest, error) {
 	return req, nil
 }
 
-func (req *PingRequest) ToJSON() (string, error) {
+func (req *PingReq) ToJSON() (string, error) {
 	jsonBytes, err := json.Marshal(req)
 	if err != nil {
 		return "", err
