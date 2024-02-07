@@ -34,7 +34,7 @@ func (rtw *routingTableWorker) serveForever() {
 		case ADD_CONTACT:
 			rtw.routingTable.addContact(job.contact)
 		case FIND_CONTACTS:
-			job.res <- rtw.routingTable.findClosestContacts(CreateKademliaID(job.kademliaID), job.count)
+			job.res <- rtw.routingTable.findClosestContacts(CreateKademliaID(job.kademliaID), job.count) // RACE CONDITION
 		}
 	}
 }
