@@ -23,7 +23,7 @@ func main() {
 	)
 
 	// The host's Peer ID as a string.
-	peerIDStr := "12D3KooWQZpxVb4w3hkio7qgaDiJP5XC9vmSg2Cvu1ct74xFzyvo"
+	peerIDStr := "12D3KooWPFWVJaBcQypmAzke9Qoy3vHRUCacstwgdxVUxbG6s4aJ"
 
 	// Convert the Peer ID string to a peer.ID.
 	peerID, err := peer.Decode(peerIDStr)

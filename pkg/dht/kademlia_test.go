@@ -97,3 +97,27 @@ func TestKademliaFindContact(t *testing.T) {
 	assert.NotNil(t, contact)
 	assert.Equal(t, contact.ID.String(), targetID.String())
 }
+
+func TestKademliaStoreValue(t *testing.T) {
+	n := network.CreateFakeNetwork()
+
+	bootstrapNode := createKademliaNode(t, n, "localhost:8000", "localhost:8000")
+	bootstrapNode.Ping(bootstrapNode.contact.Addr, context.TODO())
+
+	var nodes []*Kademlia
+	for i := 1; i < 20; i++ {
+		k := createKademliaNode(t, n, "localhost:800"+fmt.Sprint(i), bootstrapNode.contact.Addr)
+		k.Ping(bootstrapNode.contact.Addr, context.TODO())
+		nodes = append(nodes, k)
+	}
+
+	// targetID := nodes[10].contact.ID
+	// contact, err := nodes[0].FindContact(targetID.String(), context.TODO())
+	// assert.Nil(t, err)
+	// assert.NotNil(t, contact)
+	// assert.Equal(t, contact.ID.String(), targetID.String())
+
+	// k[10].StoreValue("prefix/value1", "test1", context.TODO())
+	// k[8].StoreValue("prefix/value2", "test2", context.TODO())
+	// k[4].StoreValue("prefix/value2", "test2", context.TODO())
+}
