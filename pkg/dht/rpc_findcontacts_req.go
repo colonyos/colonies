@@ -5,6 +5,7 @@ import "encoding/json"
 type FindContactsReq struct {
 	Header     RPCHeader `json:"header"`
 	KademliaID string    `json:"kademliaid"`
+	Count      int       `json:"count"`
 }
 
 func ConvertJSONToFindContactsReq(jsonStr string) (*FindContactsReq, error) {
