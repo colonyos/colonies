@@ -162,17 +162,17 @@ func (k *Kademlia) FindClosestContacts(kademliaID string, count int, ctx context
 		if _, ok := foundContacts[contact.Addr]; !ok {
 			foundContacts[contact.Addr] = contact
 			outgoingReq <- struct{}{}
-			go func() {
+			go func(contact2 Contact, kademliaID2 string, count2 int, ctx2 context.Context) {
 				defer func() { <-outgoingReq }()
-				contacts, err := k.FindRemoteContacts(contact.Addr, kademliaID, count, ctx)
+				contacts, err := k.FindRemoteContacts(contact2.Addr, kademliaID2, count2, ctx2)
 				if err != nil {
-					log.WithFields(log.Fields{"Error": err, "Addr": contact.Addr}).Error("Failed to find remote contacts")
+					log.WithFields(log.Fields{"Error": err, "Addr": contact2.Addr}).Error("Failed to find remote contacts")
 					return
 				}
 				for _, contact := range contacts {
 					pendingContactChan <- contact
 				}
-			}()
+			}(contact, kademliaID, count, ctx)
 		} else {
 			log.WithFields(log.Fields{"Address": contact.Addr}).Info("Contact already found")
 		}

@@ -68,7 +68,9 @@ func (dispatcher *dispatcher) serveForever() {
 			dispatcher.k.handleFindContactsReq(msg)
 		case network.MSG_FIND_CONTACTS_RESP:
 			log.WithFields(log.Fields{"MsgID": msg.ID, "MyAddr": dispatcher.k.contact.Addr, "From": msg.From}).Info("Received FIND_CONTACTS_RESP")
+			dispatcher.mutex.Lock()
 			replyChan, ok := dispatcher.replyHandler[msg.ID]
+			dispatcher.mutex.Unlock()
 			if ok {
 				replyChan <- msg
 

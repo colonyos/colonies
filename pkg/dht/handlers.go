@@ -44,6 +44,8 @@ func (k *Kademlia) handleFindContactsReq(msg network.Message) error {
 
 	kademliaID := req.KademliaID
 
+	k.rtw.addContact(req.Header.Sender)
+
 	count := req.Count
 	if count > MAX_COUNT {
 		count = MAX_COUNT
