@@ -45,7 +45,7 @@ func (bucket *bucket) removeContact(contact Contact) {
 	}
 }
 
-func (bucket *bucket) getContact(target *KademliaID) Contact {
+func (bucket *bucket) getContact(target KademliaID) Contact {
 	for elt := bucket.list.Front(); elt != nil; elt = elt.Next() {
 		contact := elt.Value.(Contact)
 		if contact.ID.Equals(target) {
@@ -55,7 +55,7 @@ func (bucket *bucket) getContact(target *KademliaID) Contact {
 	return Contact{}
 }
 
-func (bucket *bucket) getContactAndCalcDistance(target *KademliaID) []Contact {
+func (bucket *bucket) getContactAndCalcDistance(target KademliaID) []Contact {
 	var contacts []Contact
 
 	for elt := bucket.list.Front(); elt != nil; elt = elt.Next() {
