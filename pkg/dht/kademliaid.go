@@ -9,14 +9,14 @@ const IDLength = 32
 
 type KademliaID [IDLength]byte
 
-func CreateKademliaID(data string) *KademliaID {
+func CreateKademliaID(data string) KademliaID {
 	decoded, _ := hex.DecodeString(data)
 
 	newKademliaID := KademliaID{}
 	for i := 0; i < IDLength; i++ {
 		newKademliaID[i] = decoded[i]
 	}
-	return &newKademliaID
+	return newKademliaID
 }
 
 func NewRandomKademliaID() *KademliaID {
@@ -27,7 +27,7 @@ func NewRandomKademliaID() *KademliaID {
 	return &newKademliaID
 }
 
-func (kademliaID KademliaID) Less(otherKademliaID *KademliaID) bool {
+func (kademliaID KademliaID) Less(otherKademliaID KademliaID) bool {
 	for i := 0; i < IDLength; i++ {
 		if kademliaID[i] != otherKademliaID[i] {
 			return kademliaID[i] < otherKademliaID[i]
@@ -36,7 +36,7 @@ func (kademliaID KademliaID) Less(otherKademliaID *KademliaID) bool {
 	return false
 }
 
-func (kademliaID KademliaID) Equals(otherKademliaID *KademliaID) bool {
+func (kademliaID KademliaID) Equals(otherKademliaID KademliaID) bool {
 	for i := 0; i < IDLength; i++ {
 		if kademliaID[i] != otherKademliaID[i] {
 			return false
@@ -45,12 +45,12 @@ func (kademliaID KademliaID) Equals(otherKademliaID *KademliaID) bool {
 	return true
 }
 
-func (kademliaID KademliaID) CalcDistance(target *KademliaID) *KademliaID {
+func (kademliaID KademliaID) CalcDistance(target KademliaID) KademliaID {
 	result := KademliaID{}
 	for i := 0; i < IDLength; i++ {
 		result[i] = kademliaID[i] ^ target[i]
 	}
-	return &result
+	return result
 }
 
 func (kademliaID *KademliaID) String() string {
