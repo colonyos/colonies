@@ -17,6 +17,6 @@ func TestRoutingTable(t *testing.T) {
 
 	contacts := rt.findClosestContacts(CreateKademliaID("2111111400000000000000000000000000000000000000000000000000000000"), 20)
 	for i := range contacts {
-		fmt.Println(contacts[i].String())
+		fmt.Println(contacts[i].Addr, "->", contacts[i].ID.String())
 	}
 }
