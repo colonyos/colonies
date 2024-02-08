@@ -1,6 +1,7 @@
 package dht
 
 import (
+	"context"
 	"fmt"
 	"testing"
 
@@ -24,35 +25,68 @@ func createKademliaNode(t *testing.T, n network.Network, addr string, bootstrapA
 
 	contact1 := CreateContact(CreateKademliaID(id1), addr)
 	k, err := CreateKademlia(n, contact1)
-
-	assert.Nil(t, err)
-
-	err = k.Ping(bootstrapAddr)
 	assert.Nil(t, err)
 
 	return k
 }
 
-func TestNewKademlia(t *testing.T) {
+func TestKademliaFindRemoteContacts(t *testing.T) {
+	n := network.CreateFakeNetwork()
+
+	b := createKademliaNode(t, n, "localhost:8000", "localhost:8000")
+	k := createKademliaNode(t, n, "localhost:8001", b.contact.Addr)
+	k.Ping(b.contact.Addr)
+
+	targetID := k.contact.ID
+	contacts, err := k.FindRemoteContacts(b.contact.Addr, targetID.String(), 100, context.TODO()) // Ask bootstrap node for contact info to the k node
+	assert.Nil(t, err)
+
+	foundContact := false
+	for _, contact := range contacts {
+		if contact.ID.String() == targetID.String() {
+			foundContact = true
+		}
+	}
+
+	assert.True(t, foundContact)
+
+	b.Shutdown()
+	k.Shutdown()
+}
+
+func TestKademliaFindClosestContacts(t *testing.T) {
 	n := network.CreateFakeNetwork()
 
 	bootstrapNode := createKademliaNode(t, n, "localhost:8000", "localhost:8000")
+	bootstrapNode.Ping(bootstrapNode.contact.Addr)
 
+	fmt.Println("bootstrapNode: ", bootstrapNode.contact.Addr)
 	var nodes []*Kademlia
-	for i := 1; i < 3; i++ {
-		nodes = append(nodes, createKademliaNode(t, n, "localhost:800"+fmt.Sprint(i), bootstrapNode.contact.Addr))
+	for i := 1; i < 20; i++ {
+		k := createKademliaNode(t, n, "localhost:800"+fmt.Sprint(i), bootstrapNode.contact.Addr)
+		k.Ping(bootstrapNode.contact.Addr)
+		nodes = append(nodes, k)
 	}
 
-	fmt.Println("-------------------------------------")
-	targetID := nodes[1].contact.ID
-	fmt.Println("targetID: ", targetID)
-	//contacts, err := nodes[0].FindContacts(nodes[1].contact.Addr, targetID.String())
-	contacts, err := nodes[0].FindContacts(bootstrapNode.contact.Addr, targetID.String())
+	fmt.Println("--------------------------------------")
+	//targetID := NewRandomKademliaID()
+
+	targetID := nodes[10].contact.ID
+	contacts, err := nodes[0].FindClosestContacts(targetID.String())
 	assert.Nil(t, err)
 
 	for _, contact := range contacts {
-		fmt.Println(contact.Addr)
+		fmt.Println(contact.Addr + "->" + contact.ID.String())
 	}
+	fmt.Println("targetID: ", targetID.String())
+	fmt.Println("--------------------------------------")
 
-	select {}
+	targetID = nodes[3].contact.ID
+	contacts, err = nodes[10].FindClosestContacts(targetID.String())
+	assert.Nil(t, err)
+
+	for _, contact := range contacts {
+		fmt.Println(contact.Addr + "->" + contact.ID.String())
+	}
+	fmt.Println("targetID: ", targetID.String())
 }

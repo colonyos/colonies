@@ -34,3 +34,8 @@ func CreateKademlia(n network.Network, contact Contact) (*Kademlia, error) {
 
 	return k, nil
 }
+
+func (k *Kademlia) Shutdown() {
+	k.rtw.shutdown()
+	k.dispatcher.shutdown()
+}

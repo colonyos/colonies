@@ -3,11 +3,12 @@ package dht
 const (
 	ADD_CONTACT   int = 0
 	FIND_CONTACTS int = 1
+	STOP          int = 100
 )
 
 type routingTableWorker struct {
-	jobQueue     chan *job
-	routingTable *routingTable
+	jobQueue chan job
+	rt       *routingTable
 }
 
 type job struct {
@@ -20,9 +21,8 @@ type job struct {
 
 func createRoutingTableWorker(contact Contact) *routingTableWorker {
 	rtw := &routingTableWorker{}
-	rtw.jobQueue = make(chan *job, 1000)
-	rtw.routingTable = createRoutingTable(contact)
-	go rtw.serveForever()
+	rtw.jobQueue = make(chan job, 1000)
+	rtw.rt = createRoutingTable(contact)
 
 	return rtw
 }
@@ -32,19 +32,25 @@ func (rtw *routingTableWorker) serveForever() {
 		job := <-rtw.jobQueue
 		switch job.jobType {
 		case ADD_CONTACT:
-			rtw.routingTable.addContact(job.contact)
+			rtw.rt.addContact(job.contact)
 		case FIND_CONTACTS:
-			job.res <- rtw.routingTable.findClosestContacts(CreateKademliaID(job.kademliaID), job.count) // RACE CONDITION
+			job.res <- rtw.rt.findClosestContacts(CreateKademliaID(job.kademliaID), job.count)
+		case STOP:
+			return
 		}
 	}
 }
 
 func (rtw *routingTableWorker) addContact(contact Contact) {
-	rtw.jobQueue <- &job{jobType: ADD_CONTACT, contact: contact}
+	rtw.jobQueue <- job{jobType: ADD_CONTACT, contact: contact}
 }
 
 func (rtw *routingTableWorker) findContacts(kademliaID string, count int) chan []Contact {
 	res := make(chan []Contact)
-	rtw.jobQueue <- &job{jobType: FIND_CONTACTS, kademliaID: kademliaID, res: res, count: count}
+	rtw.jobQueue <- job{jobType: FIND_CONTACTS, kademliaID: kademliaID, res: res, count: count}
 	return res
+}
+
+func (rtw *routingTableWorker) shutdown() {
+	rtw.jobQueue <- job{jobType: STOP}
 }

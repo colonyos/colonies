@@ -17,7 +17,7 @@ func CreateFakeNetwork() *FakeNetwork {
 func (n *FakeNetwork) Listen(addr string) (Socket, error) {
 	n.mutex.Lock()
 	defer n.mutex.Unlock()
-	socket := &FakeSocket{conn: make(chan *Message, 1000)}
+	socket := &FakeSocket{conn: make(chan Message, 1000)}
 	n.Hosts[addr] = socket
 	return socket, nil
 }

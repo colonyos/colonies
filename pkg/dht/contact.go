@@ -6,16 +6,16 @@ import (
 )
 
 type Contact struct {
-	ID       *KademliaID `json:"kademliaid"`
-	Addr     string      `json:"address"`
-	distance *KademliaID
+	ID       KademliaID `json:"kademliaid"`
+	Addr     string     `json:"address"`
+	distance KademliaID
 }
 
-func CreateContact(id *KademliaID, address string) Contact {
-	return Contact{id, address, nil}
+func CreateContact(id KademliaID, address string) Contact {
+	return Contact{id, address, KademliaID{}}
 }
 
-func (contact *Contact) CalcDistance(target *KademliaID) {
+func (contact *Contact) CalcDistance(target KademliaID) {
 	contact.distance = contact.ID.CalcDistance(target)
 }
 

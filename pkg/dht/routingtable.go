@@ -28,13 +28,13 @@ func (routingTable *routingTable) removeContact(contact Contact) {
 	bucket.removeContact(contact)
 }
 
-func (routingTable *routingTable) getContact(id *KademliaID) Contact {
+func (routingTable *routingTable) getContact(id KademliaID) Contact {
 	bucketIndex := routingTable.getBucketIndex(id)
 	bucket := routingTable.buckets[bucketIndex]
 	return bucket.getContact(id)
 }
 
-func (routingTable *routingTable) findClosestContacts(target *KademliaID, count int) []Contact {
+func (routingTable *routingTable) findClosestContacts(target KademliaID, count int) []Contact {
 	var candidates ContactCandidates
 	bucketIndex := routingTable.getBucketIndex(target)
 	bucket := routingTable.buckets[bucketIndex]
@@ -61,7 +61,7 @@ func (routingTable *routingTable) findClosestContacts(target *KademliaID, count 
 	return candidates.GetContacts(count)
 }
 
-func (routingTable *routingTable) getBucketIndex(id *KademliaID) int {
+func (routingTable *routingTable) getBucketIndex(id KademliaID) int {
 	distance := id.CalcDistance(routingTable.me.ID)
 	for i := 0; i < IDLength; i++ {
 		for j := 0; j < 8; j++ {
