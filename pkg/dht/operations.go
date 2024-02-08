@@ -3,14 +3,12 @@ package dht
 import (
 	"context"
 	"errors"
-	"fmt"
-	"time"
 
 	"github.com/colonyos/colonies/pkg/dht/network"
 	log "github.com/sirupsen/logrus"
 )
 
-func (k *Kademlia) Ping(addr string) error {
+func (k *Kademlia) Ping(addr string, cxt context.Context) error {
 	log.WithFields(log.Fields{"To": addr, "From": k.contact.Addr}).Info("Sending ping request")
 	payload := PingReq{Header: RPCHeader{Sender: k.contact}}
 	json, err := payload.ToJSON()
@@ -26,9 +24,8 @@ func (k *Kademlia) Ping(addr string) error {
 	}
 
 	select {
-	case <-time.After(1 * time.Second):
+	case <-cxt.Done():
 		log.WithFields(log.Fields{"Address": addr}).Warn("Ping timeout")
-		// TODO: handle timeout
 	case msg := <-reply:
 		log.WithFields(log.Fields{"From": msg.From}).Info("Ping response received")
 		rpc, err := ConvertJSONToPingResp(string(msg.Payload))
@@ -46,14 +43,19 @@ func (k *Kademlia) Ping(addr string) error {
 
 func (k *Kademlia) FindRemoteContacts(addr string, kademliaID string, count int, ctx context.Context) ([]Contact, error) {
 	log.WithFields(log.Fields{"To": addr, "From": k.contact.Addr}).Info("Sending find contacts request")
-	payload := FindContactsReq{Header: RPCHeader{Sender: k.contact}, KademliaID: kademliaID}
+	payload := FindContactsReq{Header: RPCHeader{Sender: k.contact}, KademliaID: kademliaID, Count: count}
 	json, err := payload.ToJSON()
 	if err != nil {
 		log.WithFields(log.Fields{"Error": err}).Error("Failed to convert to JSON")
 		return nil, err
 	}
 
-	reply, err := k.dispatcher.send(network.Message{Type: network.MSG_FIND_CONTACTS_REQ, From: k.contact.Addr, To: addr, Payload: []byte(json)})
+	reply, err := k.dispatcher.send(network.Message{
+		Type:    network.MSG_FIND_CONTACTS_REQ,
+		From:    k.contact.Addr,
+		To:      addr,
+		Payload: []byte(json)})
+
 	defer close(reply)
 	if err != nil {
 		log.WithFields(log.Fields{"Error": err}).Error("Failed to send ping request")
@@ -89,61 +91,36 @@ func (k *Kademlia) FindLocalContacts(kademliaID string, count int, ctx context.C
 	}
 }
 
-// func (k *Kademlia) findRemoteContacts(addr string,
-// 	kademliaID string,
-// 	pendingContactChan chan Contact,
-// 	count int,
-// 	context context.Context) (chan bool, error) {
-//
-// 	doneChan := make(chan bool)
-//
-// 	log.WithFields(log.Fields{"To": addr, "From": k.contact.Addr}).Info("Sending find contacts request")
-// 	payload := FindContactsReq{Header: RPCHeader{Sender: k.contact}, KademliaID: kademliaID}
-// 	json, err := payload.ToJSON()
-// 	if err != nil {
-// 		log.WithFields(log.Fields{"Error": err}).Error("Failed to convert to JSON")
-// 		return doneChan, err
-// 	}
-//
-// 	reply, err := k.dispatcher.send(network.Message{Type: network.MSG_FIND_CONTACTS_REQ, From: k.contact.Addr, To: addr, Payload: []byte(json)})
-// 	if err != nil {
-// 		log.WithFields(log.Fields{"Error": err}).Error("Failed to send ping request")
-// 		return doneChan, err
-// 	}
-//
-// 	select {
-// 	case <-context.Done():
-// 		log.Error("Find local closest contacts timeout")
-// 		return doneChan, err
-// 	case msg := <-reply:
-// 		log.WithFields(log.Fields{"From": msg.From}).Info("Find contacts response received")
-// 		resp, err := ConvertJSONToFindContactsResp(string(msg.Payload))
-// 		if err != nil {
-// 			log.WithFields(log.Fields{"Error": err}).Error("Failed to convert to FindContactResp")
-// 			return doneChan, err
-// 		}
-//
-// 		close(reply)
-//
-// 		for _, contact := range resp.Contacts {
-// 			pendingContactChan <- contact
-// 		}
-//
-// 		doneChan <- true
-// 	}
-//
-// 	return doneChan, nil
-// }
+func (k *Kademlia) FindContact(kademliaID string, ctx context.Context) (Contact, error) {
+	contacts, err := k.FindClosestContacts(kademliaID, 1, ctx)
+	if err != nil {
+		log.WithFields(log.Fields{"Error": err}).Error("Failed to find closest contacts")
+		return Contact{}, err
+	}
 
-func (k *Kademlia) FindClosestContacts(kademliaID string) ([]Contact, error) {
+	foundContacts := make(map[string]Contact)
+
+	for _, contact := range contacts {
+		foundContacts[contact.ID.String()] = contact
+	}
+	if len(foundContacts) == 0 {
+		log.Info("No contacts found")
+		return Contact{}, errors.New("No contacts found")
+	}
+
+	if c, ok := foundContacts[kademliaID]; ok {
+		return c, nil
+	}
+
+	return Contact{}, errors.New("No contacts found")
+}
+
+func (k *Kademlia) FindClosestContacts(kademliaID string, count int, ctx context.Context) ([]Contact, error) {
 	foundContacts := make(map[string]Contact)
 	pendingContactChan := make(chan Contact, 10)
-	count := 10
 
 	maxPendingRequests := 10000
 	outgoingReq := make(chan struct{}, maxPendingRequests)
-
-	ctx := context.TODO()
 
 	contacts, err := k.FindLocalContacts(kademliaID, count, ctx)
 	if err != nil {
@@ -160,12 +137,13 @@ func (k *Kademlia) FindClosestContacts(kademliaID string) ([]Contact, error) {
 		pendingContactChan <- contact
 	}
 
-	fmt.Println(len(pendingContactChan))
-
 	var contact Contact
 	for {
 		if len(pendingContactChan) > 0 {
 			contact = <-pendingContactChan
+			if contact.ID == CreateKademliaID(kademliaID) && count == 1 {
+				return []Contact{contact}, nil
+			}
 		} else if len(outgoingReq) == 0 && len(pendingContactChan) == 0 {
 			var candidates ContactCandidates
 			for _, contact := range foundContacts {
@@ -173,8 +151,12 @@ func (k *Kademlia) FindClosestContacts(kademliaID string) ([]Contact, error) {
 				candidates.contacts = append(candidates.contacts, contact)
 			}
 			candidates.Sort()
-			// 100 TODO
-			return candidates.GetContacts(10), nil
+
+			if count > candidates.Len() {
+				count = candidates.Len()
+			}
+
+			return candidates.GetContacts(count), nil
 		}
 
 		if _, ok := foundContacts[contact.Addr]; !ok {
@@ -184,12 +166,10 @@ func (k *Kademlia) FindClosestContacts(kademliaID string) ([]Contact, error) {
 				defer func() { <-outgoingReq }()
 				contacts, err := k.FindRemoteContacts(contact.Addr, kademliaID, count, ctx)
 				if err != nil {
-					// TODO
+					log.WithFields(log.Fields{"Error": err, "Addr": contact.Addr}).Error("Failed to find remote contacts")
 					return
 				}
-				fmt.Println(len(contacts))
 				for _, contact := range contacts {
-					fmt.Println("adding contact", contact.Addr)
 					pendingContactChan <- contact
 				}
 			}()

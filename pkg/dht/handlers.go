@@ -8,7 +8,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-const COUNT = 10
+const MAX_COUNT = 100
 
 func (k *Kademlia) handlePingReq(msg network.Message) error {
 	log.WithFields(log.Fields{"Me": k.contact.Addr}).Info("Sending ping response")
@@ -44,11 +44,16 @@ func (k *Kademlia) handleFindContactsReq(msg network.Message) error {
 
 	kademliaID := req.KademliaID
 
+	count := req.Count
+	if count > MAX_COUNT {
+		count = MAX_COUNT
+	}
+
 	select {
 	case <-time.After(1 * time.Second):
 		log.WithFields(log.Fields{"Me": k.contact.Addr, "MyID": k.contact.ID, "TargetID": kademliaID}).Error("Failed to send closest contacts")
 		return errors.New("Failed to find closest contacts")
-	case contacts := <-k.rtw.findContacts(kademliaID, COUNT):
+	case contacts := <-k.rtw.findContacts(kademliaID, count):
 		payload := FindContactsResp{Header: RPCHeader{Sender: k.contact}, Contacts: contacts}
 		json, err := payload.ToJSON()
 		if err != nil {
