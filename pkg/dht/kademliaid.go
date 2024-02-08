@@ -19,12 +19,12 @@ func CreateKademliaID(data string) KademliaID {
 	return newKademliaID
 }
 
-func NewRandomKademliaID() *KademliaID {
+func NewRandomKademliaID() KademliaID {
 	newKademliaID := KademliaID{}
 	for i := 0; i < IDLength; i++ {
 		newKademliaID[i] = uint8(rand.Intn(256))
 	}
-	return &newKademliaID
+	return newKademliaID
 }
 
 func (kademliaID KademliaID) Less(otherKademliaID KademliaID) bool {
