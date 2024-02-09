@@ -123,7 +123,7 @@ First we need to create a function spec file.
 {
      "conditions": {
          "colonyid": "0f4f350d264d1cffdec0d62c723a7da8b730c6863365da75697fd26a6d79ccc5",
-         "executorids": [],
+         "executornames": [],
          "exectuortype": "my_executor_type",
      },
      "env": {
@@ -166,7 +166,7 @@ Process:
 Requirements:
 +----------------+------------------------------------------------------------------+
 | ColonyName       | 0f4f350d264d1cffdec0d62c723a7da8b730c6863365da75697fd26a6d79ccc5 |
-| ExecutorIDs    | None                                                             |
+| ExecutorNames    | None                                                             |
 | ExecutorType   | cli                                                              |
 | Memory         | 1000                                                             |
 | CPU Cores      | 10                                                               |
@@ -284,7 +284,7 @@ Output:
 Requirements:
 +----------------+------------------------------------------------------------------+
 | ColonyName       | 0f4f350d264d1cffdec0d62c723a7da8b730c6863365da75697fd26a6d79ccc5 |
-| ExecutorIDs    | None                                                             |
+| ExecutorNames    | None                                                             |
 | ExecutorType   | my_executor_type                                                 |
 | Memory         | 1000                                                             |
 | CPU Cores      | 10                                                               |

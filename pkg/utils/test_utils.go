@@ -137,20 +137,20 @@ func CreateTestFunctionSpecWithEnv(colonyID string, env map[string]string) *core
 	return core.CreateFunctionSpec("test_name", "test_func", args, kwargs, colonyID, []string{}, "test_executor_type", 1000, 100, 1, env, []string{}, 1, "test_label")
 }
 
-func CreateTestProcessWithTargets(colonyID string, targetExecutorIDs []string) *core.Process {
-	process := core.CreateProcess(CreateTestFunctionSpecWithTargets(colonyID, targetExecutorIDs))
+func CreateTestProcessWithTargets(colonyID string, targetExecutorNames []string) *core.Process {
+	process := core.CreateProcess(CreateTestFunctionSpecWithTargets(colonyID, targetExecutorNames))
 	process.InitiatorID = "test_initiator_id"
 	process.InitiatorName = "test_initiator_name"
 
 	return process
 }
 
-func CreateTestFunctionSpecWithTargets(colonyID string, targetExecutorIDs []string) *core.FunctionSpec {
+func CreateTestFunctionSpecWithTargets(colonyID string, targetExecutorNames []string) *core.FunctionSpec {
 	args := make([]interface{}, 1)
 	args[0] = "test_arg"
 	kwargs := make(map[string]interface{}, 1)
 	kwargs["name"] = "test_arg"
-	return core.CreateFunctionSpec("test_name", "test_func", args, kwargs, colonyID, targetExecutorIDs, "test_executor_type", 1000, 100, 1, make(map[string]string), []string{}, 1, "test_label")
+	return core.CreateFunctionSpec("test_name", "test_func", args, kwargs, colonyID, targetExecutorNames, "test_executor_type", 1000, 100, 1, make(map[string]string), []string{}, 1, "test_label")
 }
 
 func CreateTestExecutor(colonyName string) *core.Executor {

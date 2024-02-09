@@ -292,7 +292,7 @@ Else it will contain the reply JSON data, e.g:
         "maxretries": 3,
         "conditions": {
             "colonyid": "2de470e10b87dc261c05f6b2da45d0802044208d6c617a056f4824d958710827",
-            "executorids": [],
+            "executornames": [],
             "executortype": "test_executor_type",
             "mem": 1000,
             "cores": 10,
@@ -331,7 +331,7 @@ Else it will contain the reply JSON data, e.g:
         "maxretries": 3,
         "conditions": {
             "colonyid": "2de470e10b87dc261c05f6b2da45d0802044208d6c617a056f4824d958710827",
-            "executorids": [],
+            "executornames": [],
             "executortype": "test_executor_type",
             "mem": 1000,
             "cores": 10,
@@ -374,7 +374,7 @@ Else it will contain the reply JSON data, e.g:
         "maxretries": 3,
         "conditions": {
             "colonyid": "326691e2b5fc0651b5d781393c7279ab3dc58c6627d0a7b2a09e9aa0e4a60950",
-            "executorids": [],
+            "executornames": [],
             "executortype": "test_executor_type",
             "mem": 1000,
             "cores": 10,
@@ -427,7 +427,7 @@ Note, all process will be returned for the entire colony if executorID is not sp
             "maxretries": 3,
             "conditions": {
                 "colonyid": "891f0c88e8a00cb103df472e4ece347a41eb0115e5c40f12d565bb24eb3fc71d",
-                "executorids": [],
+                "executornames": [],
                 "executortype": "test_executor_type",
                 "mem": 1000,
                 "cores": 10,
@@ -478,7 +478,7 @@ The state attribute can have the following values:
             "maxretries": 3,
             "conditions": {
                 "colonyid": "891f0c88e8a00cb103df472e4ece347a41eb0115e5c40f12d565bb24eb3fc71d",
-                "executorids": [],
+                "executornames": [],
                 "executortype": "test_executor_type",
                 "mem": 1000,
                 "cores": 10,
@@ -520,7 +520,7 @@ The state attribute can have the following values:
         "maxretries": 3,
         "conditions": {
             "colonyid": "ee193a3f4f3f93bfc87801cf1d01511c12c199cb80bfbf4955bb3d9d4638720d",
-            "executorids": [],
+            "executornames": [],
             "executortype": "test_executor_type",
             "mem": 1000,
             "cores": 10,
@@ -763,7 +763,7 @@ The state attribute can have the following values:
         "maxretries": 3,
         "conditions": {
             "colonyid": "ee193a3f4f3f93bfc87801cf1d01511c12c199cb80bfbf4955bb3d9d4638720d",
-            "executorids": [],
+            "executornames": [],
             "executortype": "test_executor_type",
             "mem": 1000,
             "cores": 10,
