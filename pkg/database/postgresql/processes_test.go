@@ -1251,7 +1251,7 @@ func TestFindCandidates2(t *testing.T) {
 	assert.Equal(t, 2, counter)
 }
 
-// Test that the order of targetExecutorIDs strings does not matter
+// Test that the order of targetExecutorNames strings does not matter
 func TestFindCandidates3(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
