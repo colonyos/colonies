@@ -133,7 +133,7 @@ FunctionSpec 0:
 Conditions:
 +--------------+------+
 | ColonyName     |      |
-| ExecutorIDs  | None |
+| ExecutorNames  | None |
 | ExecutorType | cli  |
 | Dependencies |      |
 +--------------+------+
@@ -151,7 +151,7 @@ FunctionSpec 1:
 Conditions:
 +--------------+---------------+
 | ColonyName     |               |
-| ExecutorIDs  | None          |
+| ExecutorNames  | None          |
 | ExecutorType | cli           |
 | Dependencies | generate_date |
 +--------------+---------------+
