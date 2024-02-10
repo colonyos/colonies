@@ -48,6 +48,8 @@ func (dispatcher *dispatcher) serveForever() {
 			continue
 		}
 
+		// TODO: Dry this up
+
 		switch msg.Type {
 		case network.MSG_PING_REQ:
 			log.WithFields(log.Fields{"MsgID": msg.ID, "MyAddr": dispatcher.k.contact.Addr, "From": msg.From}).Info("Received PING_REQ")
@@ -65,9 +67,52 @@ func (dispatcher *dispatcher) serveForever() {
 			}
 		case network.MSG_FIND_CONTACTS_REQ:
 			log.WithFields(log.Fields{"MsgID": msg.ID, "MyAddr": dispatcher.k.contact.Addr, "From": msg.From}).Info("Received FIND_CONTACTS_REQ")
-			dispatcher.k.handleFindContactsReq(msg)
+			err := dispatcher.k.handleFindContactsReq(msg)
+			if err != nil {
+				log.WithFields(log.Fields{"Error": err}).Error("Failed to handle FIND_CONTACTS_REQ")
+			}
 		case network.MSG_FIND_CONTACTS_RESP:
 			log.WithFields(log.Fields{"MsgID": msg.ID, "MyAddr": dispatcher.k.contact.Addr, "From": msg.From}).Info("Received FIND_CONTACTS_RESP")
+			dispatcher.mutex.Lock()
+			replyChan, ok := dispatcher.replyHandler[msg.ID]
+			dispatcher.mutex.Unlock()
+			if ok {
+				replyChan <- msg
+
+				dispatcher.mutex.Lock()
+				delete(dispatcher.replyHandler, msg.ID)
+				dispatcher.mutex.Unlock()
+			} else {
+				log.WithFields(log.Fields{"Error": "No handler for message", "MsgID": msg.ID}).Error("Dropping message")
+			}
+		case network.MSG_PUT_REQ:
+			log.WithFields(log.Fields{"MsgID": msg.ID, "MyAddr": dispatcher.k.contact.Addr, "From": msg.From}).Info("Received FIND_PUT_REQ")
+			err := dispatcher.k.handlePutReq(msg)
+			if err != nil {
+				log.WithFields(log.Fields{"Error": err}).Error("Failed to handle PUT_REQ")
+			}
+		case network.MSG_PUT_RESP:
+			log.WithFields(log.Fields{"MsgID": msg.ID, "MyAddr": dispatcher.k.contact.Addr, "From": msg.From}).Info("Received FIND_PUT_RESP")
+			dispatcher.mutex.Lock()
+			replyChan, ok := dispatcher.replyHandler[msg.ID]
+			dispatcher.mutex.Unlock()
+			if ok {
+				replyChan <- msg
+
+				dispatcher.mutex.Lock()
+				delete(dispatcher.replyHandler, msg.ID)
+				dispatcher.mutex.Unlock()
+			} else {
+				log.WithFields(log.Fields{"Error": "No handler for message", "MsgID": msg.ID}).Error("Dropping message")
+			}
+		case network.MSG_GET_REQ:
+			log.WithFields(log.Fields{"MsgID": msg.ID, "MyAddr": dispatcher.k.contact.Addr, "From": msg.From}).Info("Received FIND_GET_REQ")
+			err := dispatcher.k.handleGetReq(msg)
+			if err != nil {
+				log.WithFields(log.Fields{"Error": err}).Error("Failed to handle GET_REQ")
+			}
+		case network.MSG_GET_RESP:
+			log.WithFields(log.Fields{"MsgID": msg.ID, "MyAddr": dispatcher.k.contact.Addr, "From": msg.From}).Info("Received FIND_GET_RESP")
 			dispatcher.mutex.Lock()
 			replyChan, ok := dispatcher.replyHandler[msg.ID]
 			dispatcher.mutex.Unlock()

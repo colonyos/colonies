@@ -8,7 +8,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func (k *Kademlia) Ping(addr string, cxt context.Context) error {
+func (k *Kademlia) Ping(addr string, ctx context.Context) error {
 	log.WithFields(log.Fields{"To": addr, "From": k.contact.Addr}).Info("Sending ping request")
 	payload := PingReq{Header: RPCHeader{Sender: k.contact}}
 	json, err := payload.ToJSON()
@@ -24,8 +24,8 @@ func (k *Kademlia) Ping(addr string, cxt context.Context) error {
 	}
 
 	select {
-	case <-cxt.Done():
-		log.WithFields(log.Fields{"Address": addr}).Warn("Ping timeout")
+	case <-ctx.Done():
+		log.WithFields(log.Fields{"Address": addr}).Warn("Ping request timeout")
 	case msg := <-reply:
 		log.WithFields(log.Fields{"From": msg.From}).Info("Ping response received")
 		rpc, err := ConvertJSONToPingResp(string(msg.Payload))
@@ -35,7 +35,7 @@ func (k *Kademlia) Ping(addr string, cxt context.Context) error {
 		}
 
 		contact := rpc.Header.Sender
-		k.rtw.addContact(contact)
+		k.states.addContact(contact)
 	}
 
 	return nil
@@ -79,7 +79,7 @@ func (k *Kademlia) FindRemoteContacts(addr string, kademliaID string, count int,
 }
 
 func (k *Kademlia) FindLocalContacts(kademliaID string, count int, ctx context.Context) ([]Contact, error) {
-	contactsChan := k.rtw.findContacts(kademliaID, count)
+	contactsChan := k.states.findContacts(kademliaID, count)
 	defer close(contactsChan)
 
 	select {
@@ -176,5 +176,75 @@ func (k *Kademlia) FindClosestContacts(kademliaID string, count int, ctx context
 		} else {
 			log.WithFields(log.Fields{"Address": contact.Addr}).Info("Contact already found")
 		}
+	}
+}
+
+func (k *Kademlia) PutKVRemote(addr string, key string, value string, ctx context.Context) error {
+	log.WithFields(log.Fields{"To": addr, "From": k.contact.Addr}).Info("Sending put request")
+	payload := PutReq{Header: RPCHeader{Sender: k.contact}, Key: key, Value: value}
+	json, err := payload.ToJSON()
+	if err != nil {
+		log.WithFields(log.Fields{"Error": err}).Error("Failed to convert to JSON")
+		return err
+	}
+
+	reply, err := k.dispatcher.send(network.Message{Type: network.MSG_PUT_REQ, From: k.contact.Addr, To: addr, Payload: []byte(json)})
+	if err != nil {
+		log.WithFields(log.Fields{"Error": err}).Error("Failed to send ping request")
+		return err
+	}
+
+	select {
+	case <-ctx.Done():
+		log.WithFields(log.Fields{"Address": addr}).Warn("Put request timeout")
+		return errors.New("Put request timeout")
+	case msg := <-reply:
+		log.WithFields(log.Fields{"From": msg.From}).Info("Put response received")
+		rpc, err := ConvertJSONToPutResp(string(msg.Payload))
+		if err != nil {
+			log.WithFields(log.Fields{"Error": err}).Error("Failed to convert to PutResp")
+			return err
+		}
+
+		if rpc.Status != PUT_STATUS_SUCCESS {
+			return errors.New(rpc.Error)
+		}
+
+		return nil
+	}
+}
+
+func (k *Kademlia) GetKVRemote(addr string, key string, ctx context.Context) ([]string, error) {
+	log.WithFields(log.Fields{"To": addr, "From": k.contact.Addr}).Info("Sending get request")
+	payload := GetReq{Header: RPCHeader{Sender: k.contact}, Key: key}
+	json, err := payload.ToJSON()
+	if err != nil {
+		log.WithFields(log.Fields{"Error": err}).Error("Failed to convert to JSON")
+		return nil, err
+	}
+
+	reply, err := k.dispatcher.send(network.Message{Type: network.MSG_GET_REQ, From: k.contact.Addr, To: addr, Payload: []byte(json)})
+	if err != nil {
+		log.WithFields(log.Fields{"Error": err}).Error("Failed to send ping request")
+		return nil, err
+	}
+
+	select {
+	case <-ctx.Done():
+		log.WithFields(log.Fields{"Address": addr}).Warn("Get request timeout")
+		return nil, errors.New("Put request timeout")
+	case msg := <-reply:
+		log.WithFields(log.Fields{"From": msg.From}).Info("Get response received")
+		rpc, err := ConvertJSONToGetResp(string(msg.Payload))
+		if err != nil {
+			log.WithFields(log.Fields{"Error": err}).Error("Failed to convert to GetResp")
+			return nil, err
+		}
+
+		if rpc.Status != GET_STATUS_SUCCESS {
+			return nil, errors.New(rpc.Error)
+		}
+
+		return rpc.Values, nil
 	}
 }
