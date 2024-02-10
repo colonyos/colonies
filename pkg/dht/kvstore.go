@@ -7,7 +7,7 @@ import (
 
 type node struct {
 	children map[string]*node
-	value    string
+	kv       KV
 	isValue  bool
 }
 
@@ -19,11 +19,21 @@ type kvStore struct {
 	root *node
 }
 
+type KV struct {
+	Key   string `json:"key"`
+	Value string `json:"value"`
+	Sig   string `json:"sig"`
+}
+
+func (kv *KV) String() string {
+	return fmt.Sprintf("%s:%s", kv.Key, kv.Value)
+}
+
 func createKVStore() *kvStore {
 	return &kvStore{root: &node{children: make(map[string]*node)}}
 }
 
-func (kvs *kvStore) put(key string, value string) error {
+func (kvStore *kvStore) put(key string, value string, sig string) error {
 	if len(key) == 0 || key[0] != '/' {
 		return fmt.Errorf("Invalid key, must start with /")
 	}
@@ -34,7 +44,7 @@ func (kvs *kvStore) put(key string, value string) error {
 
 	parts := strings.Split(key, "/")[1:]
 
-	current := kvs.root
+	current := kvStore.root
 	for _, part := range parts[:len(parts)-1] {
 		if _, ok := current.children[part]; !ok {
 			current.children[part] = newNode()
@@ -46,33 +56,33 @@ func (kvs *kvStore) put(key string, value string) error {
 	if current.children[lastPart] == nil {
 		current.children[lastPart] = newNode()
 	}
-	current.children[lastPart].value = value
+	current.children[lastPart].kv = KV{Key: key, Value: value, Sig: sig}
 	current.children[lastPart].isValue = true
 
 	return nil
 }
 
-func (kvs *kvStore) get(key string) (string, error) {
+func (kvStore *kvStore) get(key string) (KV, error) {
 	parts := strings.Split(key, "/")[1:]
 
-	current := kvs.root
+	current := kvStore.root
 	for _, part := range parts {
 		if _, ok := current.children[part]; !ok {
-			return "", fmt.Errorf("Key not found")
+			return KV{}, fmt.Errorf("Key not found")
 		}
 		current = current.children[part]
 	}
 
 	if current.isValue {
-		return current.value, nil
+		return current.kv, nil
 	} else {
-		return "", fmt.Errorf("Key not found")
+		return KV{}, fmt.Errorf("Key not found")
 	}
 }
 
-func (kvs *kvStore) getAllValuesWithPrefix(prefix string) ([]string, error) {
+func (kvStore *kvStore) getAllValuesWithPrefix(prefix string) ([]KV, error) {
 	parts := strings.Split(prefix, "/")[1:]
-	current := kvs.root
+	current := kvStore.root
 
 	for _, part := range parts {
 		if child, ok := current.children[part]; ok {
@@ -82,21 +92,21 @@ func (kvs *kvStore) getAllValuesWithPrefix(prefix string) ([]string, error) {
 		}
 	}
 
-	var values []string
-	kvs.collectValues(current, &values)
-	return values, nil
+	var coll []KV
+	kvStore.collectValues(current, &coll)
+	return coll, nil
 }
 
-func (kvs *kvStore) collectValues(node *node, values *[]string) {
+func (kvStore *kvStore) collectValues(node *node, coll *[]KV) {
 	if node.isValue {
-		*values = append(*values, node.value)
+		*coll = append(*coll, node.kv)
 	}
 	for _, child := range node.children {
-		kvs.collectValues(child, values)
+		kvStore.collectValues(child, coll)
 	}
 }
 
-func (kvs *kvStore) removeKey(key string) error {
+func (kvStore *kvStore) removeKey(key string) error {
 	if len(key) == 0 || key[0] != '/' {
 		return fmt.Errorf("Invalid key, must start with /")
 	}
@@ -106,14 +116,14 @@ func (kvs *kvStore) removeKey(key string) error {
 		return fmt.Errorf("Invalid key, cannot be the root")
 	}
 
-	current := kvs.root
+	current := kvStore.root
 	for i, part := range parts {
 		if _, ok := current.children[part]; !ok {
 			return fmt.Errorf("Key not found")
 		}
 		if i == len(parts)-1 {
 			if len(current.children[part].children) > 0 {
-				current.children[part].value = ""
+				current.children[part].kv = KV{}
 				current.children[part].isValue = false
 			} else {
 				delete(current.children, part)

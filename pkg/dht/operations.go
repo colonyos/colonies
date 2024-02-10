@@ -4,11 +4,14 @@ import (
 	"context"
 	"errors"
 
+	"github.com/colonyos/colonies/internal/crypto"
 	"github.com/colonyos/colonies/pkg/dht/network"
 	log "github.com/sirupsen/logrus"
 )
 
-func (k *Kademlia) Ping(addr string, ctx context.Context) error {
+const MaxPendingRequests = 10000
+
+func (k *Kademlia) ping(addr string, ctx context.Context) error {
 	log.WithFields(log.Fields{"To": addr, "From": k.contact.Addr}).Info("Sending ping request")
 	payload := PingReq{Header: RPCHeader{Sender: k.contact}}
 	json, err := payload.ToJSON()
@@ -17,7 +20,14 @@ func (k *Kademlia) Ping(addr string, ctx context.Context) error {
 		return err
 	}
 
-	reply, err := k.dispatcher.send(network.Message{Type: network.MSG_PING_REQ, From: k.contact.Addr, To: addr, Payload: []byte(json)})
+	reply, err := k.dispatcher.send(network.Message{
+		Type:    network.MSG_PING_REQ,
+		From:    k.contact.Addr,
+		To:      addr,
+		Payload: []byte(json)})
+
+	defer close(reply)
+
 	if err != nil {
 		log.WithFields(log.Fields{"Error": err}).Error("Failed to send ping request")
 		return err
@@ -41,7 +51,7 @@ func (k *Kademlia) Ping(addr string, ctx context.Context) error {
 	return nil
 }
 
-func (k *Kademlia) FindRemoteContacts(addr string, kademliaID string, count int, ctx context.Context) ([]Contact, error) {
+func (k *Kademlia) findRemoteContacts(addr string, kademliaID string, count int, ctx context.Context) ([]Contact, error) {
 	log.WithFields(log.Fields{"To": addr, "From": k.contact.Addr}).Info("Sending find contacts request")
 	payload := FindContactsReq{Header: RPCHeader{Sender: k.contact}, KademliaID: kademliaID, Count: count}
 	json, err := payload.ToJSON()
@@ -57,6 +67,7 @@ func (k *Kademlia) FindRemoteContacts(addr string, kademliaID string, count int,
 		Payload: []byte(json)})
 
 	defer close(reply)
+
 	if err != nil {
 		log.WithFields(log.Fields{"Error": err}).Error("Failed to send ping request")
 		return nil, err
@@ -78,21 +89,25 @@ func (k *Kademlia) FindRemoteContacts(addr string, kademliaID string, count int,
 	}
 }
 
-func (k *Kademlia) FindLocalContacts(kademliaID string, count int, ctx context.Context) ([]Contact, error) {
-	contactsChan := k.states.findContacts(kademliaID, count)
+func (k *Kademlia) findLocalContacts(kademliaID string, count int, ctx context.Context) ([]Contact, error) {
+	contactsChan, errChan := k.states.findContacts(kademliaID, count)
 	defer close(contactsChan)
+	defer close(errChan)
 
 	select {
 	case <-ctx.Done():
 		log.Error("Find local closest contacts timeout")
 		return []Contact{}, errors.New("Find local closest contacts timeout")
+	case err := <-errChan:
+		log.WithFields(log.Fields{"Error": err}).Error("Failed to find local closest contacts")
+		return []Contact{}, err
 	case contacts := <-contactsChan:
 		return contacts, nil
 	}
 }
 
 func (k *Kademlia) FindContact(kademliaID string, ctx context.Context) (Contact, error) {
-	contacts, err := k.FindClosestContacts(kademliaID, 1, ctx)
+	contacts, err := k.FindContacts(kademliaID, 1, ctx)
 	if err != nil {
 		log.WithFields(log.Fields{"Error": err}).Error("Failed to find closest contacts")
 		return Contact{}, err
@@ -115,14 +130,26 @@ func (k *Kademlia) FindContact(kademliaID string, ctx context.Context) (Contact,
 	return Contact{}, errors.New("No contacts found")
 }
 
-func (k *Kademlia) FindClosestContacts(kademliaID string, count int, ctx context.Context) ([]Contact, error) {
+func (k *Kademlia) Register(bootstrapAddr string, kademliaID string, ctx context.Context) error {
+	err := k.ping(bootstrapAddr, ctx)
+	if err != nil {
+		return err
+	}
+
+	// Lookup our self in the network, this will populate remote nodes routing tables with our contact
+	nodesToRegister := 20
+	_, err = k.FindContacts(kademliaID, nodesToRegister, ctx)
+
+	return err
+}
+
+func (k *Kademlia) FindContacts(kademliaID string, count int, ctx context.Context) ([]Contact, error) {
 	foundContacts := make(map[string]Contact)
 	pendingContactChan := make(chan Contact, 10)
 
-	maxPendingRequests := 10000
-	outgoingReq := make(chan struct{}, maxPendingRequests)
+	outgoingReq := make(chan struct{}, MaxPendingRequests)
 
-	contacts, err := k.FindLocalContacts(kademliaID, count, ctx)
+	contacts, err := k.findLocalContacts(kademliaID, count, ctx)
 	if err != nil {
 		log.WithFields(log.Fields{"Error": err}).Error("Failed to find local contacts")
 		return []Contact{}, err
@@ -164,7 +191,7 @@ func (k *Kademlia) FindClosestContacts(kademliaID string, count int, ctx context
 			outgoingReq <- struct{}{}
 			go func(contact2 Contact, kademliaID2 string, count2 int, ctx2 context.Context) {
 				defer func() { <-outgoingReq }()
-				contacts, err := k.FindRemoteContacts(contact2.Addr, kademliaID2, count2, ctx2)
+				contacts, err := k.findRemoteContacts(contact2.Addr, kademliaID2, count2, ctx2)
 				if err != nil {
 					log.WithFields(log.Fields{"Error": err, "Addr": contact2.Addr}).Error("Failed to find remote contacts")
 					return
@@ -173,22 +200,27 @@ func (k *Kademlia) FindClosestContacts(kademliaID string, count int, ctx context
 					pendingContactChan <- contact
 				}
 			}(contact, kademliaID, count, ctx)
-		} else {
-			log.WithFields(log.Fields{"Address": contact.Addr}).Info("Contact already found")
 		}
 	}
 }
 
-func (k *Kademlia) PutKVRemote(addr string, key string, value string, ctx context.Context) error {
+func (k *Kademlia) putRemote(addr string, key string, value string, sig string, ctx context.Context) error {
 	log.WithFields(log.Fields{"To": addr, "From": k.contact.Addr}).Info("Sending put request")
-	payload := PutReq{Header: RPCHeader{Sender: k.contact}, Key: key, Value: value}
+	payload := PutReq{Header: RPCHeader{Sender: k.contact}, KV: KV{Key: key, Value: value, Sig: sig}}
 	json, err := payload.ToJSON()
 	if err != nil {
 		log.WithFields(log.Fields{"Error": err}).Error("Failed to convert to JSON")
 		return err
 	}
 
-	reply, err := k.dispatcher.send(network.Message{Type: network.MSG_PUT_REQ, From: k.contact.Addr, To: addr, Payload: []byte(json)})
+	reply, err := k.dispatcher.send(network.Message{
+		Type:    network.MSG_PUT_REQ,
+		From:    k.contact.Addr,
+		To:      addr,
+		Payload: []byte(json)})
+
+	defer close(reply)
+
 	if err != nil {
 		log.WithFields(log.Fields{"Error": err}).Error("Failed to send ping request")
 		return err
@@ -214,7 +246,7 @@ func (k *Kademlia) PutKVRemote(addr string, key string, value string, ctx contex
 	}
 }
 
-func (k *Kademlia) GetKVRemote(addr string, key string, ctx context.Context) ([]string, error) {
+func (k *Kademlia) getRemote(addr string, key string, ctx context.Context) ([]KV, error) {
 	log.WithFields(log.Fields{"To": addr, "From": k.contact.Addr}).Info("Sending get request")
 	payload := GetReq{Header: RPCHeader{Sender: k.contact}, Key: key}
 	json, err := payload.ToJSON()
@@ -223,7 +255,14 @@ func (k *Kademlia) GetKVRemote(addr string, key string, ctx context.Context) ([]
 		return nil, err
 	}
 
-	reply, err := k.dispatcher.send(network.Message{Type: network.MSG_GET_REQ, From: k.contact.Addr, To: addr, Payload: []byte(json)})
+	reply, err := k.dispatcher.send(network.Message{
+		Type:    network.MSG_GET_REQ,
+		From:    k.contact.Addr,
+		To:      addr,
+		Payload: []byte(json)})
+
+	defer close(reply)
+
 	if err != nil {
 		log.WithFields(log.Fields{"Error": err}).Error("Failed to send ping request")
 		return nil, err
@@ -245,6 +284,74 @@ func (k *Kademlia) GetKVRemote(addr string, key string, ctx context.Context) ([]
 			return nil, errors.New(rpc.Error)
 		}
 
-		return rpc.Values, nil
+		return rpc.KVS, nil
 	}
+}
+
+func (k *Kademlia) Put(key string, value string, sig string, replicationFactor int, ctx context.Context) error {
+	rootKey, err := getRootKey(key)
+	if err != nil {
+		return err
+	}
+
+	hash := crypto.GenerateHashFromString(rootKey)
+
+	contacts, err := k.FindContacts(hash.String(), replicationFactor, ctx)
+	if err != nil {
+		log.WithFields(log.Fields{"Error": err}).Error("Failed to find closest contacts")
+		return err
+	}
+
+	if len(contacts) == 0 {
+		log.Info("No contacts found")
+		return errors.New("No contacts found")
+	}
+
+	for _, contact := range contacts {
+		err := k.putRemote(contact.Addr, key, value, sig, ctx)
+		if err != nil {
+			log.WithFields(log.Fields{"Error": err}).Error("Failed to put value")
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (k *Kademlia) Get(key string, ctx context.Context) ([]KV, error) {
+	rootKey, err := getRootKey(key)
+	if err != nil {
+		return nil, err
+	}
+
+	hash := crypto.GenerateHashFromString(rootKey)
+
+	contacts, err := k.FindContacts(hash.String(), 1, ctx)
+	if err != nil {
+		log.WithFields(log.Fields{"Error": err}).Error("Failed to find closest contacts")
+		return nil, err
+	}
+
+	if len(contacts) == 0 {
+		log.Info("No contacts found")
+		return nil, errors.New("No contacts found")
+	}
+
+	kvsMap := make(map[string]KV)
+	for _, contact := range contacts {
+		kvs, err := k.getRemote(contact.Addr, key, ctx)
+		if err != nil {
+			log.WithFields(log.Fields{"Error": err}).Error("Failed to get value")
+		}
+		for _, kv := range kvs {
+			kvsMap[kv.String()] = kv
+		}
+	}
+
+	var result []KV
+	for _, v := range kvsMap {
+		result = append(result, v)
+	}
+
+	return result, nil
 }
