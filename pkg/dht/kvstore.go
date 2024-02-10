@@ -5,85 +5,145 @@ import (
 	"strings"
 )
 
-type Node struct {
-	Children map[string]*Node
-	Value    string
-	IsValue  bool
+type node struct {
+	children map[string]*node
+	value    string
+	isValue  bool
 }
 
-func NewNode() *Node {
-	return &Node{Children: make(map[string]*Node)}
+func newNode() *node {
+	return &node{children: make(map[string]*node)}
 }
 
-type KVStore struct {
-	root *Node
+type kvStore struct {
+	root *node
 }
 
-func NewKVStore() *KVStore {
-	return &KVStore{root: &Node{Children: make(map[string]*Node)}}
+func createKVStore() *kvStore {
+	return &kvStore{root: &node{children: make(map[string]*node)}}
 }
 
-func (kv *KVStore) Put(key string, value string) error {
+func (kvs *kvStore) put(key string, value string) error {
+	if len(key) == 0 || key[0] != '/' {
+		return fmt.Errorf("Invalid key, must start with /")
+	}
+
+	if len(value) == 0 {
+		return fmt.Errorf("Invalid value, cannot be empty")
+	}
+
 	parts := strings.Split(key, "/")[1:]
 
-	current := kv.root
+	current := kvs.root
 	for _, part := range parts[:len(parts)-1] {
-		if _, ok := current.Children[part]; !ok {
-			current.Children[part] = NewNode()
+		if _, ok := current.children[part]; !ok {
+			current.children[part] = newNode()
 		}
-		current = current.Children[part]
+		current = current.children[part]
 	}
 
 	lastPart := parts[len(parts)-1]
-	if current.Children[lastPart] == nil {
-		current.Children[lastPart] = NewNode()
+	if current.children[lastPart] == nil {
+		current.children[lastPart] = newNode()
 	}
-	current.Children[lastPart].Value = value
-	current.Children[lastPart].IsValue = true
+	current.children[lastPart].value = value
+	current.children[lastPart].isValue = true
 
 	return nil
 }
 
-func (kv *KVStore) Get(key string) (string, error) {
+func (kvs *kvStore) get(key string) (string, error) {
 	parts := strings.Split(key, "/")[1:]
 
-	current := kv.root
+	current := kvs.root
 	for _, part := range parts {
-		if _, ok := current.Children[part]; !ok {
-			return "", fmt.Errorf("key not found")
+		if _, ok := current.children[part]; !ok {
+			return "", fmt.Errorf("Key not found")
 		}
-		current = current.Children[part]
+		current = current.children[part]
 	}
 
-	if current.IsValue {
-		return current.Value, nil
+	if current.isValue {
+		return current.value, nil
 	} else {
-		return "", fmt.Errorf("key not found")
+		return "", fmt.Errorf("Key not found")
 	}
 }
 
-func (kv *KVStore) GetAllValuesWithPrefix(prefix string) ([]string, error) {
+func (kvs *kvStore) getAllValuesWithPrefix(prefix string) ([]string, error) {
 	parts := strings.Split(prefix, "/")[1:]
-	current := kv.root
+	current := kvs.root
 
 	for _, part := range parts {
-		if child, ok := current.Children[part]; ok {
+		if child, ok := current.children[part]; ok {
 			current = child
 		} else {
-			return nil, fmt.Errorf("prefix not found")
+			return nil, fmt.Errorf("Prefix not found")
 		}
 	}
 
 	var values []string
-	kv.collectValues(current, &values)
+	kvs.collectValues(current, &values)
 	return values, nil
 }
 
-func (kv *KVStore) collectValues(node *Node, values *[]string) {
-	if node.IsValue {
-		*values = append(*values, node.Value)
+func (kvs *kvStore) collectValues(node *node, values *[]string) {
+	if node.isValue {
+		*values = append(*values, node.value)
 	}
-	for _, child := range node.Children {
-		kv.collectValues(child, values)
+	for _, child := range node.children {
+		kvs.collectValues(child, values)
+	}
+}
+
+func (kvs *kvStore) removeKey(key string) error {
+	if len(key) == 0 || key[0] != '/' {
+		return fmt.Errorf("Invalid key, must start with /")
+	}
+
+	parts := strings.Split(key, "/")[1:]
+	if len(parts) == 0 {
+		return fmt.Errorf("Invalid key, cannot be the root")
+	}
+
+	current := kvs.root
+	for i, part := range parts {
+		if _, ok := current.children[part]; !ok {
+			return fmt.Errorf("Key not found")
+		}
+		if i == len(parts)-1 {
+			if len(current.children[part].children) > 0 {
+				current.children[part].value = ""
+				current.children[part].isValue = false
+			} else {
+				delete(current.children, part)
+			}
+		} else {
+			current = current.children[part]
+		}
+	}
+
+	return nil
+}
+
+func (kvs *kvStore) cleanupParents(node *node, parts []string) {
+	if len(parts) == 0 || node == nil {
+		return
+	}
+
+	parent := node
+	for _, part := range parts[:len(parts)-1] {
+		parent = parent.children[part]
+	}
+
+	lastPart := parts[len(parts)-1]
+	child, ok := parent.children[lastPart]
+	if !ok {
+		return
+	}
+
+	if len(child.children) == 0 && !child.isValue {
+		delete(parent.children, lastPart)
+		kvs.cleanupParents(kvs.root, parts[:len(parts)-1])
 	}
 }

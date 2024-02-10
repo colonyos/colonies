@@ -66,7 +66,7 @@ func TestKademliaFindClosestContacts(t *testing.T) {
 	}
 
 	targetID := nodes[10].contact.ID
-	contacts, err := nodes[0].FindClosestContacts(targetID.String(), 10, context.TODO())
+	contacts, err := nodes[4].FindClosestContacts(targetID.String(), 10, context.TODO())
 	assert.Nil(t, err)
 	assert.True(t, len(contacts) > 0)
 	assert.Equal(t, contacts[0].ID.String(), targetID.String())
@@ -98,7 +98,7 @@ func TestKademliaFindContact(t *testing.T) {
 	assert.Equal(t, contact.ID.String(), targetID.String())
 }
 
-func TestKademliaStoreValue(t *testing.T) {
+func TestKademliaPutKVRemote(t *testing.T) {
 	n := network.CreateFakeNetwork()
 
 	bootstrapNode := createKademliaNode(t, n, "localhost:8000", "localhost:8000")
@@ -111,13 +111,22 @@ func TestKademliaStoreValue(t *testing.T) {
 		nodes = append(nodes, k)
 	}
 
-	// targetID := nodes[10].contact.ID
-	// contact, err := nodes[0].FindContact(targetID.String(), context.TODO())
-	// assert.Nil(t, err)
-	// assert.NotNil(t, contact)
-	// assert.Equal(t, contact.ID.String(), targetID.String())
+	targetNode := nodes[10]
+	err := nodes[5].PutKVRemote(targetNode.contact.Addr, "/prefix/key1", "test1", context.TODO())
+	assert.Nil(t, err)
 
-	// k[10].StoreValue("prefix/value1", "test1", context.TODO())
-	// k[8].StoreValue("prefix/value2", "test2", context.TODO())
-	// k[4].StoreValue("prefix/value2", "test2", context.TODO())
+	values, err := nodes[6].GetKVRemote(targetNode.contact.Addr, "/prefix/key1", context.TODO())
+	assert.Nil(t, err)
+	assert.Equal(t, len(values), 1)
+	assert.Equal(t, values[0], "test1")
+
+	err = nodes[5].PutKVRemote(targetNode.contact.Addr, "/prefix/key2", "test2", context.TODO())
+	assert.Nil(t, err)
+
+	values, err = nodes[6].GetKVRemote(targetNode.contact.Addr, "/prefix", context.TODO())
+	assert.Nil(t, err)
+	assert.Equal(t, len(values), 2)
+
+	_, err = nodes[6].GetKVRemote(targetNode.contact.Addr, "/prefix/not_found", context.TODO())
+	assert.NotNil(t, err)
 }

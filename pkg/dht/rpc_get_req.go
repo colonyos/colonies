@@ -2,14 +2,13 @@ package dht
 
 import "encoding/json"
 
-type PutReq struct {
+type GetReq struct {
 	Header RPCHeader `json:"header"`
 	Key    string    `json:"key"`
-	Value  string    `json:"value"`
 }
 
-func ConvertJSONToPutReq(jsonStr string) (*PutReq, error) {
-	var req *PutReq
+func ConvertJSONToGetReq(jsonStr string) (*GetReq, error) {
+	var req *GetReq
 	err := json.Unmarshal([]byte(jsonStr), &req)
 	if err != nil {
 		return nil, err
@@ -18,7 +17,7 @@ func ConvertJSONToPutReq(jsonStr string) (*PutReq, error) {
 	return req, nil
 }
 
-func (req *PutReq) ToJSON() (string, error) {
+func (req *GetReq) ToJSON() (string, error) {
 	jsonBytes, err := json.Marshal(req)
 	if err != nil {
 		return "", err

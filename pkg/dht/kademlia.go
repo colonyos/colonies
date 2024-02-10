@@ -8,7 +8,7 @@ import (
 type Kademlia struct {
 	n          network.Network
 	contact    Contact
-	rtw        *routingTableWorker
+	states     *states
 	dispatcher *dispatcher
 	socket     network.Socket
 }
@@ -20,8 +20,8 @@ func CreateKademlia(n network.Network, contact Contact) (*Kademlia, error) {
 		return nil, err
 	}
 
-	rtw := createRoutingTableWorker(contact)
-	k := &Kademlia{n: n, contact: contact, rtw: rtw, socket: socket}
+	states := createStates(contact)
+	k := &Kademlia{n: n, contact: contact, states: states, socket: socket}
 	dispatcher, err := createDispatcher(n, contact.Addr, k)
 	if err != nil {
 		log.WithFields(log.Fields{"Error": err}).Error("Failed to create dispatcher")
@@ -30,12 +30,12 @@ func CreateKademlia(n network.Network, contact Contact) (*Kademlia, error) {
 	k.dispatcher = dispatcher
 
 	go dispatcher.serveForever()
-	go rtw.serveForever()
+	go states.serveForever()
 
 	return k, nil
 }
 
 func (k *Kademlia) Shutdown() {
-	k.rtw.shutdown()
+	k.states.shutdown()
 	k.dispatcher.shutdown()
 }
