@@ -31,12 +31,12 @@ func TestKademliaFindRemoteContacts(t *testing.T) {
 
 	b := createKademliaNode(t, n, "localhost:8000", "localhost:8000")
 	k := createKademliaNode(t, n, "localhost:8001", b.contact.Addr)
-	k.Ping(b.contact.Addr, context.TODO())
+	k.ping(b.contact.Addr, context.TODO())
 
 	targetID := k.contact.ID
 
 	// Ask bootstrap node for contact info to the k node
-	contacts, err := k.FindRemoteContacts(b.contact.Addr, targetID.String(), 100, context.TODO())
+	contacts, err := k.findRemoteContacts(b.contact.Addr, targetID.String(), 100, context.TODO())
 	assert.Nil(t, err)
 
 	foundContact := false
@@ -52,27 +52,26 @@ func TestKademliaFindRemoteContacts(t *testing.T) {
 	k.Shutdown()
 }
 
-func TestKademliaFindClosestContacts(t *testing.T) {
+func TestKademliaFindContacts(t *testing.T) {
 	n := network.CreateFakeNetwork()
 
 	bootstrapNode := createKademliaNode(t, n, "localhost:8000", "localhost:8000")
-	bootstrapNode.Ping(bootstrapNode.contact.Addr, context.TODO())
 
 	var nodes []*Kademlia
 	for i := 1; i < 20; i++ {
 		k := createKademliaNode(t, n, "localhost:800"+fmt.Sprint(i), bootstrapNode.contact.Addr)
-		k.Ping(bootstrapNode.contact.Addr, context.TODO())
+		k.Register(bootstrapNode.contact.Addr, k.contact.ID.String(), context.TODO())
 		nodes = append(nodes, k)
 	}
 
 	targetID := nodes[10].contact.ID
-	contacts, err := nodes[4].FindClosestContacts(targetID.String(), 10, context.TODO())
+	contacts, err := nodes[4].FindContacts(targetID.String(), 10, context.TODO())
 	assert.Nil(t, err)
 	assert.True(t, len(contacts) > 0)
 	assert.Equal(t, contacts[0].ID.String(), targetID.String())
 
 	targetID = nodes[3].contact.ID
-	contacts, err = nodes[10].FindClosestContacts(targetID.String(), 10, context.TODO())
+	contacts, err = nodes[10].FindContacts(targetID.String(), 10, context.TODO())
 	assert.Nil(t, err)
 	assert.True(t, len(contacts) > 0)
 	assert.Equal(t, contacts[0].ID.String(), targetID.String())
@@ -82,12 +81,11 @@ func TestKademliaFindContact(t *testing.T) {
 	n := network.CreateFakeNetwork()
 
 	bootstrapNode := createKademliaNode(t, n, "localhost:8000", "localhost:8000")
-	bootstrapNode.Ping(bootstrapNode.contact.Addr, context.TODO())
 
 	var nodes []*Kademlia
 	for i := 1; i < 20; i++ {
 		k := createKademliaNode(t, n, "localhost:800"+fmt.Sprint(i), bootstrapNode.contact.Addr)
-		k.Ping(bootstrapNode.contact.Addr, context.TODO())
+		k.Register(bootstrapNode.contact.Addr, k.contact.ID.String(), context.TODO())
 		nodes = append(nodes, k)
 	}
 
@@ -98,35 +96,69 @@ func TestKademliaFindContact(t *testing.T) {
 	assert.Equal(t, contact.ID.String(), targetID.String())
 }
 
-func TestKademliaPutKVRemote(t *testing.T) {
+func TestKademliaPutGetRemote(t *testing.T) {
 	n := network.CreateFakeNetwork()
 
 	bootstrapNode := createKademliaNode(t, n, "localhost:8000", "localhost:8000")
-	bootstrapNode.Ping(bootstrapNode.contact.Addr, context.TODO())
 
 	var nodes []*Kademlia
 	for i := 1; i < 20; i++ {
 		k := createKademliaNode(t, n, "localhost:800"+fmt.Sprint(i), bootstrapNode.contact.Addr)
-		k.Ping(bootstrapNode.contact.Addr, context.TODO())
+		k.Register(bootstrapNode.contact.Addr, k.contact.ID.String(), context.TODO())
 		nodes = append(nodes, k)
 	}
 
 	targetNode := nodes[10]
-	err := nodes[5].PutKVRemote(targetNode.contact.Addr, "/prefix/key1", "test1", context.TODO())
+	err := nodes[5].putRemote(targetNode.contact.Addr, "/prefix/key1", "test1", "", context.TODO())
 	assert.Nil(t, err)
 
-	values, err := nodes[6].GetKVRemote(targetNode.contact.Addr, "/prefix/key1", context.TODO())
+	kvs, err := nodes[6].getRemote(targetNode.contact.Addr, "/prefix/key1", context.TODO())
 	assert.Nil(t, err)
-	assert.Equal(t, len(values), 1)
-	assert.Equal(t, values[0], "test1")
+	assert.Equal(t, len(kvs), 1)
+	assert.Equal(t, kvs[0].Value, "test1")
 
-	err = nodes[5].PutKVRemote(targetNode.contact.Addr, "/prefix/key2", "test2", context.TODO())
+	err = nodes[5].putRemote(targetNode.contact.Addr, "/prefix/key2", "test2", "", context.TODO())
 	assert.Nil(t, err)
 
-	values, err = nodes[6].GetKVRemote(targetNode.contact.Addr, "/prefix", context.TODO())
+	kvs, err = nodes[6].getRemote(targetNode.contact.Addr, "/prefix", context.TODO())
 	assert.Nil(t, err)
-	assert.Equal(t, len(values), 2)
+	assert.Equal(t, len(kvs), 2)
 
-	_, err = nodes[6].GetKVRemote(targetNode.contact.Addr, "/prefix/not_found", context.TODO())
+	_, err = nodes[6].getRemote(targetNode.contact.Addr, "/prefix/not_found", context.TODO())
 	assert.NotNil(t, err)
+}
+
+func TestKademliaPutGet(t *testing.T) {
+	n := network.CreateFakeNetwork()
+
+	bootstrapNode := createKademliaNode(t, n, "localhost:8000", "localhost:8000")
+
+	var nodes []*Kademlia
+	for i := 1; i < 50; i++ {
+		k := createKademliaNode(t, n, "localhost:800"+fmt.Sprint(i), bootstrapNode.contact.Addr)
+		k.Register(bootstrapNode.contact.Addr, k.contact.ID.String(), context.TODO())
+		nodes = append(nodes, k)
+	}
+
+	err := nodes[5].Put("/prefix/key1", "test1", "", 5, context.TODO())
+	assert.Nil(t, err)
+
+	kvs, err := nodes[28].Get("/prefix/key1", context.TODO())
+	assert.Nil(t, err)
+	assert.Equal(t, len(kvs), 1)
+	assert.Equal(t, kvs[0].Value, "test1")
+
+	err = nodes[12].Put("/prefix/key2", "test2", "", 5, context.TODO())
+	assert.Nil(t, err)
+
+	kvs, err = nodes[40].Get("/prefix", context.TODO())
+	assert.Nil(t, err)
+
+	count := 0
+	for _, kv := range kvs {
+		if kv.Value == "test1" || kv.Value == "test2" {
+			count++
+		}
+	}
+	assert.Equal(t, count, 2)
 }

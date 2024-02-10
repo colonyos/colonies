@@ -9,8 +9,7 @@ const (
 
 type GetResp struct {
 	Header RPCHeader `json:"header"`
-	Values []string  `json:"value"`
-	Key    string    `json:"key"`
+	KVS    []KV      `json:"kvs"`
 	Status int       `json:"status"`
 	Error  string    `json:"error"`
 }

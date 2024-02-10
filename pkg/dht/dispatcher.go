@@ -36,6 +36,21 @@ func createDispatcher(n network.Network, addr string, k *Kademlia) (*dispatcher,
 		cancel:       cancel}, nil
 }
 
+func (dispatcher *dispatcher) handleResponse(msg *network.Message) {
+	dispatcher.mutex.Lock()
+	replyChan, ok := dispatcher.replyHandler[msg.ID]
+	dispatcher.mutex.Unlock()
+	if ok {
+		replyChan <- *msg
+
+		dispatcher.mutex.Lock()
+		delete(dispatcher.replyHandler, msg.ID)
+		dispatcher.mutex.Unlock()
+	} else {
+		log.WithFields(log.Fields{"Error": "No handler for message", "MsgID": msg.ID}).Error("Dropping message")
+	}
+}
+
 func (dispatcher *dispatcher) serveForever() {
 	for {
 		msg, err := dispatcher.socket.Receive(dispatcher.ctx)
@@ -48,23 +63,13 @@ func (dispatcher *dispatcher) serveForever() {
 			continue
 		}
 
-		// TODO: Dry this up
-
 		switch msg.Type {
 		case network.MSG_PING_REQ:
 			log.WithFields(log.Fields{"MsgID": msg.ID, "MyAddr": dispatcher.k.contact.Addr, "From": msg.From}).Info("Received PING_REQ")
 			dispatcher.k.handlePingReq(msg)
 		case network.MSG_PING_RESP:
 			log.WithFields(log.Fields{"MsgID": msg.ID, "MyAddr": dispatcher.k.contact.Addr, "From": msg.From}).Info("Received PING_RESP")
-			replyChan, ok := dispatcher.replyHandler[msg.ID]
-			if ok {
-				replyChan <- msg
-				dispatcher.mutex.Lock()
-				delete(dispatcher.replyHandler, msg.ID)
-				dispatcher.mutex.Unlock()
-			} else {
-				log.WithFields(log.Fields{"Error": "No handler for message", "MsgID": msg.ID}).Error("Dropping message")
-			}
+			dispatcher.handleResponse(&msg)
 		case network.MSG_FIND_CONTACTS_REQ:
 			log.WithFields(log.Fields{"MsgID": msg.ID, "MyAddr": dispatcher.k.contact.Addr, "From": msg.From}).Info("Received FIND_CONTACTS_REQ")
 			err := dispatcher.k.handleFindContactsReq(msg)
@@ -73,18 +78,7 @@ func (dispatcher *dispatcher) serveForever() {
 			}
 		case network.MSG_FIND_CONTACTS_RESP:
 			log.WithFields(log.Fields{"MsgID": msg.ID, "MyAddr": dispatcher.k.contact.Addr, "From": msg.From}).Info("Received FIND_CONTACTS_RESP")
-			dispatcher.mutex.Lock()
-			replyChan, ok := dispatcher.replyHandler[msg.ID]
-			dispatcher.mutex.Unlock()
-			if ok {
-				replyChan <- msg
-
-				dispatcher.mutex.Lock()
-				delete(dispatcher.replyHandler, msg.ID)
-				dispatcher.mutex.Unlock()
-			} else {
-				log.WithFields(log.Fields{"Error": "No handler for message", "MsgID": msg.ID}).Error("Dropping message")
-			}
+			dispatcher.handleResponse(&msg)
 		case network.MSG_PUT_REQ:
 			log.WithFields(log.Fields{"MsgID": msg.ID, "MyAddr": dispatcher.k.contact.Addr, "From": msg.From}).Info("Received FIND_PUT_REQ")
 			err := dispatcher.k.handlePutReq(msg)
@@ -93,18 +87,7 @@ func (dispatcher *dispatcher) serveForever() {
 			}
 		case network.MSG_PUT_RESP:
 			log.WithFields(log.Fields{"MsgID": msg.ID, "MyAddr": dispatcher.k.contact.Addr, "From": msg.From}).Info("Received FIND_PUT_RESP")
-			dispatcher.mutex.Lock()
-			replyChan, ok := dispatcher.replyHandler[msg.ID]
-			dispatcher.mutex.Unlock()
-			if ok {
-				replyChan <- msg
-
-				dispatcher.mutex.Lock()
-				delete(dispatcher.replyHandler, msg.ID)
-				dispatcher.mutex.Unlock()
-			} else {
-				log.WithFields(log.Fields{"Error": "No handler for message", "MsgID": msg.ID}).Error("Dropping message")
-			}
+			dispatcher.handleResponse(&msg)
 		case network.MSG_GET_REQ:
 			log.WithFields(log.Fields{"MsgID": msg.ID, "MyAddr": dispatcher.k.contact.Addr, "From": msg.From}).Info("Received FIND_GET_REQ")
 			err := dispatcher.k.handleGetReq(msg)
@@ -113,18 +96,7 @@ func (dispatcher *dispatcher) serveForever() {
 			}
 		case network.MSG_GET_RESP:
 			log.WithFields(log.Fields{"MsgID": msg.ID, "MyAddr": dispatcher.k.contact.Addr, "From": msg.From}).Info("Received FIND_GET_RESP")
-			dispatcher.mutex.Lock()
-			replyChan, ok := dispatcher.replyHandler[msg.ID]
-			dispatcher.mutex.Unlock()
-			if ok {
-				replyChan <- msg
-
-				dispatcher.mutex.Lock()
-				delete(dispatcher.replyHandler, msg.ID)
-				dispatcher.mutex.Unlock()
-			} else {
-				log.WithFields(log.Fields{"Error": "No handler for message", "MsgID": msg.ID}).Error("Dropping message")
-			}
+			dispatcher.handleResponse(&msg)
 		default:
 			log.WithFields(log.Fields{"Error": "Unknown message type", "Type": msg.Type}).Error("Dropping message")
 		}
