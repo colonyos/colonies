@@ -10,6 +10,19 @@ import (
 
 const MAX_COUNT = 100
 
+func (k *Kademlia) addContact(contact *Contact) error {
+	errChan := k.states.addContact(*contact)
+	defer close(errChan)
+
+	select {
+	case <-time.After(1 * time.Second):
+		log.WithFields(log.Fields{"Me": k.contact.Addr}).Error("Failed to add contact")
+		return errors.New("Failed to add contact")
+	case e := <-errChan:
+		return e
+	}
+}
+
 func (k *Kademlia) handlePingReq(msg network.Message) error {
 	log.WithFields(log.Fields{"Me": k.contact.Addr}).Info("Handling ping request")
 
@@ -19,9 +32,17 @@ func (k *Kademlia) handlePingReq(msg network.Message) error {
 		return err
 	}
 
-	k.states.addContact(req.Header.Sender)
+	err = k.addContact(&req.Header.Sender)
 
-	payload := PingResp{Header: RPCHeader{Sender: k.contact}}
+	errMsg := ""
+	status := PING_STATUS_SUCCESS
+	if err != nil {
+		log.WithFields(log.Fields{"Error": err}).Error("Failed to add contact")
+		errMsg = err.Error()
+		status = PING_STATUS_ERROR
+	}
+
+	payload := PingResp{Header: RPCHeader{Sender: k.contact}, Status: status, Error: errMsg}
 	json, err := payload.ToJSON()
 	if err != nil {
 		log.WithFields(log.Fields{"Error": err}).Error("Failed to convert to JSON")
@@ -46,32 +67,50 @@ func (k *Kademlia) handleFindContactsReq(msg network.Message) error {
 
 	kademliaID := req.KademliaID
 
-	k.states.addContact(req.Header.Sender)
-
-	count := req.Count
-	if count > MAX_COUNT {
-		count = MAX_COUNT
-	}
-
-	select {
-	case <-time.After(1 * time.Second):
-		log.WithFields(log.Fields{"Me": k.contact.Addr, "MyID": k.contact.ID, "TargetID": kademliaID}).Error("Failed to send closest contacts")
-		return errors.New("Failed to find closest contacts")
-	case contacts := <-k.states.findContacts(kademliaID, count):
-		payload := FindContactsResp{Header: RPCHeader{Sender: k.contact}, Contacts: contacts}
-		json, err := payload.ToJSON()
-		if err != nil {
-			log.WithFields(log.Fields{"Error": err}).Error("Failed to convert to JSON")
-			return err
+	var contacts []Contact
+	err = k.addContact(&req.Header.Sender)
+	if err == nil {
+		count := req.Count
+		if count > MAX_COUNT {
+			count = MAX_COUNT
 		}
 
-		log.WithFields(log.Fields{"Me": k.contact.Addr, "MyID": k.contact.ID.String(), "TargetID": kademliaID}).Info("Sending closest contacts")
-		return k.dispatcher.sendReply(msg, network.Message{
-			Type:    network.MSG_FIND_CONTACTS_RESP,
-			From:    k.contact.Addr,
-			To:      msg.From,
-			Payload: []byte(json)})
+		contactsChan, errChan := k.states.findContacts(kademliaID, count)
+		defer close(contactsChan)
+		defer close(errChan)
+
+		select {
+		case <-time.After(1 * time.Second):
+			log.WithFields(log.Fields{"Me": k.contact.Addr, "MyID": k.contact.ID.String(), "TargetID": kademliaID}).Error("Failed to send closest contacts (timeout)")
+			return errors.New("Failed to find closest contacts")
+		case e := <-errChan:
+			err = e
+		case c := <-contactsChan:
+			contacts = c
+		}
 	}
+
+	errMsg := ""
+	status := FIND_CONTACTS_STATUS_SUCCESS
+	if err != nil {
+		log.WithFields(log.Fields{"Error": err}).Error("Failed to find contacts")
+		errMsg = err.Error()
+		status = FIND_CONTACTS_STATUS_ERROR
+	}
+
+	payload := FindContactsResp{Header: RPCHeader{Sender: k.contact}, Contacts: contacts, Status: status, Error: errMsg}
+	json, err := payload.ToJSON()
+	if err != nil {
+		log.WithFields(log.Fields{"Error": err}).Error("Failed to convert to JSON")
+		return err
+	}
+
+	log.WithFields(log.Fields{"Me": k.contact.Addr, "MyID": k.contact.ID.String(), "TargetID": kademliaID}).Info("Sending closest contacts")
+	return k.dispatcher.sendReply(msg, network.Message{
+		Type:    network.MSG_FIND_CONTACTS_RESP,
+		From:    k.contact.Addr,
+		To:      msg.From,
+		Payload: []byte(json)})
 }
 
 func (k *Kademlia) handlePutReq(msg network.Message) error {
@@ -83,18 +122,19 @@ func (k *Kademlia) handlePutReq(msg network.Message) error {
 		return err
 	}
 
-	k.states.addContact(req.Header.Sender)
-	errChan := k.states.put(req.Key, req.Value)
+	err = k.addContact(&req.Header.Sender)
+	if err == nil {
+		errChan := k.states.put(req.KV.Key, req.KV.Value, req.KV.Sig)
+		defer close(errChan)
 
-	select {
-	case <-time.After(1 * time.Second):
-		log.WithFields(log.Fields{"Me": k.contact.Addr, "Key": req.Key, "Value": req.Value}).Error("Failed to put key-value pair")
-		return errors.New("Failed to put key-value pair")
-	case e := <-errChan:
-		err = e
+		select {
+		case <-time.After(1 * time.Second):
+			log.WithFields(log.Fields{"Me": k.contact.Addr, "Key": req.KV.Key, "Value": req.KV.Value}).Error("Failed to put key-value pair")
+			return errors.New("Failed to put key-value pair")
+		case e := <-errChan:
+			err = e
+		}
 	}
-
-	close(errChan)
 
 	errMsg := ""
 	status := PUT_STATUS_SUCCESS
@@ -111,7 +151,7 @@ func (k *Kademlia) handlePutReq(msg network.Message) error {
 		return err
 	}
 
-	log.WithFields(log.Fields{"Me": k.contact.Addr, "Key": req.Key, "Value": req.Value}).Info("Sending put response")
+	log.WithFields(log.Fields{"Me": k.contact.Addr, "Key": req.KV.Key, "Value": req.KV.Value}).Info("Sending put response")
 
 	return k.dispatcher.sendReply(msg, network.Message{
 		Type:    network.MSG_PUT_RESP,
@@ -123,29 +163,29 @@ func (k *Kademlia) handlePutReq(msg network.Message) error {
 func (k *Kademlia) handleGetReq(msg network.Message) error {
 	log.WithFields(log.Fields{"Me": k.contact.Addr}).Info("Handling get request")
 
-	req, err := ConvertJSONToPutReq(string(msg.Payload))
+	req, err := ConvertJSONToGetReq(string(msg.Payload))
 	if err != nil {
 		log.WithFields(log.Fields{"Error": err}).Error("Failed to convert to GetReq")
 		return err
 	}
 
-	k.states.addContact(req.Header.Sender)
-	valuesChan, errChan := k.states.get(req.Key)
+	var kvs []KV
+	err = k.addContact(&req.Header.Sender)
+	if err == nil {
+		kvsChan, errChan := k.states.get(req.Key)
+		defer close(kvsChan)
+		defer close(errChan)
 
-	var values []string
-
-	select {
-	case <-time.After(1 * time.Second):
-		log.WithFields(log.Fields{"Me": k.contact.Addr, "Key": req.Key, "Value": req.Value}).Error("Failed to get key-value pair")
-		return errors.New("Failed to get key-value pair")
-	case v := <-valuesChan:
-		values = v
-	case e := <-errChan:
-		err = e
+		select {
+		case <-time.After(1 * time.Second):
+			log.WithFields(log.Fields{"Me": k.contact.Addr, "Key": req.Key}).Error("Failed to get key-value pair")
+			return errors.New("Failed to get key-value pair")
+		case k := <-kvsChan:
+			kvs = k
+		case e := <-errChan:
+			err = e
+		}
 	}
-
-	close(valuesChan)
-	close(errChan)
 
 	errMsg := ""
 	status := GET_STATUS_SUCCESS
@@ -155,7 +195,7 @@ func (k *Kademlia) handleGetReq(msg network.Message) error {
 		status = GET_STATUS_ERROR
 	}
 
-	payload := GetResp{Header: RPCHeader{Sender: k.contact}, Status: status, Error: errMsg, Values: values}
+	payload := GetResp{Header: RPCHeader{Sender: k.contact}, Status: status, Error: errMsg, KVS: kvs}
 	json, err := payload.ToJSON()
 	if err != nil {
 		log.WithFields(log.Fields{"Error": err}).Error("Failed to convert to JSON")

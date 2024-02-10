@@ -2,8 +2,15 @@ package dht
 
 import "encoding/json"
 
+const (
+	PING_STATUS_SUCCESS = 0
+	PING_STATUS_ERROR   = 1
+)
+
 type PingResp struct {
 	Header RPCHeader `json:"header"`
+	Status int       `json:"status"`
+	Error  string    `json:"error"`
 }
 
 func ConvertJSONToPingResp(jsonStr string) (*PingResp, error) {

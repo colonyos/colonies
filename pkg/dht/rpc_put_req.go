@@ -4,8 +4,7 @@ import "encoding/json"
 
 type PutReq struct {
 	Header RPCHeader `json:"header"`
-	Key    string    `json:"key"`
-	Value  string    `json:"value"`
+	KV     KV        `json:"kv"`
 }
 
 func ConvertJSONToPutReq(jsonStr string) (*PutReq, error) {

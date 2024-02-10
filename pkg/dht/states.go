@@ -22,7 +22,8 @@ type job struct {
 	contactsChan chan []Contact
 	key          string
 	value        string
-	valuesChan   chan []string
+	sig          string
+	kvChan       chan []KV
 	errChan      chan error
 }
 
@@ -40,16 +41,17 @@ func (s *states) serveForever() {
 		switch job.jobType {
 		case ADD_CONTACT:
 			s.rt.addContact(job.contact)
+			job.errChan <- nil
 		case FIND_CONTACTS:
 			job.contactsChan <- s.rt.findClosestContacts(CreateKademliaID(job.kademliaID), job.count)
 		case PUT:
-			job.errChan <- s.kvs.put(job.key, job.value)
+			job.errChan <- s.kvs.put(job.key, job.value, job.sig)
 		case GET:
-			values, err := s.kvs.getAllValuesWithPrefix(job.value)
+			kvs, err := s.kvs.getAllValuesWithPrefix(job.value)
 			if err != nil {
 				job.errChan <- err
 			} else {
-				job.valuesChan <- values
+				job.kvChan <- kvs
 			}
 		case STOP:
 			return
@@ -57,27 +59,30 @@ func (s *states) serveForever() {
 	}
 }
 
-func (s *states) addContact(contact Contact) {
-	s.jobQueue <- job{jobType: ADD_CONTACT, contact: contact}
-}
-
-func (s *states) findContacts(kademliaID string, count int) chan []Contact {
-	contactsChan := make(chan []Contact)
-	s.jobQueue <- job{jobType: FIND_CONTACTS, kademliaID: kademliaID, contactsChan: contactsChan, count: count}
-	return contactsChan
-}
-
-func (s *states) put(key string, value string) chan error {
-	errChan := make(chan error)
-	s.jobQueue <- job{jobType: PUT, key: key, value: value, errChan: errChan}
+func (s *states) addContact(contact Contact) chan error {
+	errChan := make(chan error, 1)
+	s.jobQueue <- job{jobType: ADD_CONTACT, contact: contact, errChan: errChan}
 	return errChan
 }
 
-func (s *states) get(value string) (chan []string, chan error) {
-	valuesChan := make(chan []string)
-	errChan := make(chan error)
-	s.jobQueue <- job{jobType: GET, value: value, errChan: errChan, valuesChan: valuesChan}
-	return valuesChan, errChan
+func (s *states) findContacts(kademliaID string, count int) (chan []Contact, chan error) {
+	contactsChan := make(chan []Contact, 1)
+	errChan := make(chan error, 1)
+	s.jobQueue <- job{jobType: FIND_CONTACTS, kademliaID: kademliaID, contactsChan: contactsChan, errChan: errChan, count: count}
+	return contactsChan, errChan
+}
+
+func (s *states) put(key string, value string, sig string) chan error {
+	errChan := make(chan error, 1)
+	s.jobQueue <- job{jobType: PUT, key: key, value: value, sig: sig, errChan: errChan}
+	return errChan
+}
+
+func (s *states) get(value string) (chan []KV, chan error) {
+	kvChan := make(chan []KV, 1)
+	errChan := make(chan error, 1)
+	s.jobQueue <- job{jobType: GET, value: value, errChan: errChan, kvChan: kvChan}
+	return kvChan, errChan
 }
 
 func (s *states) shutdown() {

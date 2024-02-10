@@ -12,9 +12,9 @@ const (
 )
 
 type Message struct {
+	ID      string
 	From    string
 	To      string
 	Type    int
 	Payload []byte
-	ID      string
 }
