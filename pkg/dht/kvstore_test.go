@@ -4,89 +4,113 @@ import (
 	"reflect"
 	"sort"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestPutGetSimple(t *testing.T) {
-	kv := NewKVStore()
+	kvs := createKVStore()
 	key := "/prefix/key"
 	value := "value"
 
-	err := kv.Put(key, value)
-	if err != nil {
-		t.Fatalf("Put() error = %v, wantErr %v", err, false)
-	}
+	err := kvs.put(key, value)
+	assert.Nil(t, err)
 
-	got, err := kv.Get(key)
-	if err != nil {
-		t.Fatalf("Get() error = %v", err)
-	}
-	if got != value {
-		t.Errorf("Get() = %v, want %v", got, value)
-	}
+	got, err := kvs.get(key)
+	assert.Nil(t, err)
+	assert.Equal(t, got, value)
+}
+
+func TestPutGetSimple2(t *testing.T) {
+	kvs := createKVStore()
+	key := "/prefix"
+	value := "value"
+
+	err := kvs.put(key, value)
+	assert.Nil(t, err)
+
+	got, err := kvs.get(key)
+	assert.Nil(t, err)
+	assert.Equal(t, got, value)
+}
+
+func TestPutGetSimple3(t *testing.T) {
+	kvs := createKVStore()
+	key := "/"
+	value := "value"
+
+	err := kvs.put(key, value)
+	assert.Nil(t, err)
+
+	got, err := kvs.get(key)
+	assert.Nil(t, err)
+	assert.Equal(t, got, value)
+}
+
+func TestPutGetSimple4(t *testing.T) {
+	kvs := createKVStore()
+	key := ""
+	value := "value"
+
+	err := kvs.put(key, value)
+	assert.NotNil(t, err)
+}
+
+func TestPutGetSimple5(t *testing.T) {
+	kvs := createKVStore()
+	key := "/prefix"
+	value := ""
+
+	err := kvs.put(key, value)
+	assert.NotNil(t, err)
 }
 
 func TestGetNonExistent(t *testing.T) {
-	kv := NewKVStore()
+	kvs := createKVStore()
 	key := "/prefix/nonexistent"
 
-	_, err := kv.Get(key)
-	if err == nil {
-		t.Errorf("Expected an error when getting a nonexistent key, but got nil")
-	}
+	_, err := kvs.get(key)
+	assert.NotNil(t, err)
 }
 
 func TestPutGetNested(t *testing.T) {
-	kv := NewKVStore()
+	kvs := createKVStore()
 	key := "/prefix/path1/path2/key"
 	value := "deepValue"
 
-	err := kv.Put(key, value)
-	if err != nil {
-		t.Fatalf("Put() error = %v, wantErr %v", err, false)
-	}
+	err := kvs.put(key, value)
+	assert.Nil(t, err)
 
-	got, err := kv.Get(key)
-	if err != nil {
-		t.Fatalf("Get() error = %v", err)
-	}
-	if got != value {
-		t.Errorf("Get() = %v, want %v", got, value)
-	}
+	got, err := kvs.get(key)
+	assert.Nil(t, err)
+	assert.Equal(t, got, value)
 }
 
 func TestPutOverwrite(t *testing.T) {
-	kv := NewKVStore()
+	kvs := createKVStore()
 	key := "/prefix/key"
 	firstValue := "firstValue"
 	secondValue := "secondValue"
 
-	kv.Put(key, firstValue)
+	kvs.put(key, firstValue)
 
-	err := kv.Put(key, secondValue)
-	if err != nil {
-		t.Fatalf("Put() error = %v, wantErr %v", err, false)
-	}
+	err := kvs.put(key, secondValue)
+	assert.Nil(t, err)
 
-	got, err := kv.Get(key)
-	if err != nil {
-		t.Fatalf("Get() error = %v", err)
-	}
-	if got != secondValue {
-		t.Errorf("Get() = %v, want %v", got, secondValue)
-	}
+	got, err := kvs.get(key)
+	assert.Nil(t, err)
+	assert.Equal(t, got, secondValue)
 }
 
 func TestGetAllValuesWithSimplePrefix(t *testing.T) {
-	kv := NewKVStore()
-	kv.Put("/prefix/key1", "value1")
-	kv.Put("/prefix/key2", "value2")
+	kvs := createKVStore()
+	kvs.put("/prefix/key1", "value1")
+	kvs.put("/prefix/key2", "value2")
 
 	expected := []string{"value1", "value2"}
 
-	got, err := kv.GetAllValuesWithPrefix("/prefix")
-	if err != nil {
-		t.Fatalf("GetAllValuesWithPrefix() error = %v", err)
-	}
+	got, err := kvs.getAllValuesWithPrefix("/prefix")
+	assert.Nil(t, err)
 
 	sort.Strings(got)
 	if !reflect.DeepEqual(got, expected) {
@@ -95,16 +119,14 @@ func TestGetAllValuesWithSimplePrefix(t *testing.T) {
 }
 
 func TestGetAllValuesWithNestedPrefix(t *testing.T) {
-	kv := NewKVStore()
-	kv.Put("/prefix/key1/nested1", "nestedValue1")
-	kv.Put("/prefix/key1/nested2", "nestedValue2")
+	kvs := createKVStore()
+	kvs.put("/prefix/key1/nested1", "nestedValue1")
+	kvs.put("/prefix/key1/nested2", "nestedValue2")
 
 	expected := []string{"nestedValue1", "nestedValue2"}
 
-	got, err := kv.GetAllValuesWithPrefix("/prefix/key1")
-	if err != nil {
-		t.Fatalf("GetAllValuesWithPrefix() error = %v", err)
-	}
+	got, err := kvs.getAllValuesWithPrefix("/prefix/key1")
+	assert.Nil(t, err)
 
 	sort.Strings(got)
 	if !reflect.DeepEqual(got, expected) {
@@ -113,20 +135,18 @@ func TestGetAllValuesWithNestedPrefix(t *testing.T) {
 }
 
 func TestGetAllValuesWithNonExistentPrefix(t *testing.T) {
-	kv := NewKVStore()
+	kvs := createKVStore()
 
-	_, err := kv.GetAllValuesWithPrefix("/nonexistent")
-	if err == nil {
-		t.Errorf("GetAllValuesWithPrefix() expected an error, but got nil")
-	}
+	_, err := kvs.getAllValuesWithPrefix("/nonexistent")
+	assert.NotNil(t, err)
 }
 
 func TestGetAllValuesWithComplexTree(t *testing.T) {
-	kv := NewKVStore()
-	kv.Put("/prefix/key1", "value1")
-	kv.Put("/prefix/key1/nested1", "nestedValue1")
-	kv.Put("/prefix/key1/nested2", "nestedValue2")
-	kv.Put("/prefix/key2", "value2")
+	kvs := createKVStore()
+	kvs.put("/prefix/key1", "value1")
+	kvs.put("/prefix/key1/nested1", "nestedValue1")
+	kvs.put("/prefix/key1/nested2", "nestedValue2")
+	kvs.put("/prefix/key2", "value2")
 
 	expectedPrefix := []string{"value1", "value2", "nestedValue1", "nestedValue2"}
 	sort.Strings(expectedPrefix)
@@ -134,15 +154,11 @@ func TestGetAllValuesWithComplexTree(t *testing.T) {
 	expectedKey1 := []string{"value1", "nestedValue1", "nestedValue2"}
 	sort.Strings(expectedKey1)
 
-	gotPrefix, err := kv.GetAllValuesWithPrefix("/prefix")
-	if err != nil {
-		t.Fatalf("GetAllValuesWithPrefix('/prefix') error = %v", err)
-	}
+	gotPrefix, err := kvs.getAllValuesWithPrefix("/prefix")
+	assert.Nil(t, err)
 
-	gotKey1, err := kv.GetAllValuesWithPrefix("/prefix/key1")
-	if err != nil {
-		t.Fatalf("GetAllValuesWithPrefix('/prefix/key1') error = %v", err)
-	}
+	gotKey1, err := kvs.getAllValuesWithPrefix("/prefix/key1")
+	assert.Nil(t, err)
 
 	sort.Strings(gotPrefix)
 	sort.Strings(gotKey1)
@@ -153,5 +169,38 @@ func TestGetAllValuesWithComplexTree(t *testing.T) {
 
 	if !reflect.DeepEqual(gotKey1, expectedKey1) {
 		t.Errorf("GetAllValuesWithPrefix('/prefix/key1') = %v, want %v", gotKey1, expectedKey1)
+	}
+}
+
+func TestRemoveKey(t *testing.T) {
+	kvs := createKVStore()
+
+	kvs.put("/a/b/c", "value1")
+	kvs.put("/a/b/d", "value2")
+	kvs.put("/a/b", "value3")
+
+	if err := kvs.removeKey("/a/b/c"); err != nil {
+		t.Fatalf("Failed to remove key /a/b/c: %v", err)
+	}
+	if _, err := kvs.get("/a/b/c"); err == nil {
+		t.Errorf("Expected /a/b/c to be removed, but it was found")
+	}
+
+	if err := kvs.removeKey("/a/b"); err != nil {
+		t.Fatalf("Failed to remove key /a/b: %v", err)
+	}
+	if _, err := kvs.get("/a/b"); err == nil {
+		t.Errorf("Expected /a/b to be removed, but it was found")
+	}
+	if _, err := kvs.get("/a/b/d"); err != nil {
+		t.Errorf("Expected /a/b/d to exist, but it was not found")
+	}
+
+	if err := kvs.removeKey("/non/existing"); err == nil {
+		t.Errorf("Expected error when removing non-existing key, but got nil")
+	}
+
+	if err := kvs.removeKey("/"); err == nil {
+		t.Errorf("Expected error when attempting to remove the root, but got nil")
 	}
 }
