@@ -20,6 +20,7 @@ type job struct {
 	kademliaID   string
 	count        int
 	contactsChan chan []Contact
+	id           string
 	key          string
 	value        string
 	sig          string
@@ -45,7 +46,7 @@ func (s *states) serveForever() {
 		case FIND_CONTACTS:
 			job.contactsChan <- s.rt.findClosestContacts(CreateKademliaID(job.kademliaID), job.count)
 		case PUT:
-			job.errChan <- s.kvs.put(job.key, job.value, job.sig)
+			job.errChan <- s.kvs.put(job.id, job.key, job.value, job.sig)
 		case GET:
 			kvs, err := s.kvs.getAllValuesWithPrefix(job.value)
 			if err != nil {
@@ -72,9 +73,9 @@ func (s *states) findContacts(kademliaID string, count int) (chan []Contact, cha
 	return contactsChan, errChan
 }
 
-func (s *states) put(key string, value string, sig string) chan error {
+func (s *states) put(id string, key string, value string, sig string) chan error {
 	errChan := make(chan error, 1)
-	s.jobQueue <- job{jobType: PUT, key: key, value: value, sig: sig, errChan: errChan}
+	s.jobQueue <- job{jobType: PUT, id: id, key: key, value: value, sig: sig, errChan: errChan}
 	return errChan
 }
 
