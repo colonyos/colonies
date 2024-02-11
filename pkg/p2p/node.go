@@ -1,5 +1,7 @@
 package p2p
 
+import "encoding/json"
+
 type Node struct {
 	Addr   []string
 	HostID string
@@ -24,4 +26,23 @@ func (n *Node) String() string {
 
 	str += "]}"
 	return str
+}
+
+func (n *Node) ToJSON() (string, error) {
+	jsonBytes, err := json.Marshal(n)
+	if err != nil {
+		return "", err
+	}
+
+	return string(jsonBytes), nil
+}
+
+func ConvertJSONToNode(jsonStr string) (*Node, error) {
+	var n *Node
+	err := json.Unmarshal([]byte(jsonStr), &n)
+	if err != nil {
+		return nil, err
+	}
+
+	return n, nil
 }
