@@ -24,7 +24,7 @@ type Messenger struct {
 
 func CreateMessenger(addr []string) (*Messenger, error) {
 	host, err := libp2p.New(
-		libp2p.ListenAddrStrings(addr[0]),
+		libp2p.ListenAddrStrings(addr[0]), // TODO: bind to all addresses
 		libp2p.NATPortMap(),
 	)
 	if err != nil {

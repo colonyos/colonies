@@ -1,12 +1,16 @@
 package dht
 
-import "context"
+import (
+	"context"
+
+	"github.com/colonyos/colonies/pkg/p2p"
+)
 
 // DHT defines the operations supported by a Distributed Hash Table in a Kademlia network.
 type DHT interface {
 	// Register adds a new node to the DHT network using a bootstrap node's address and a unique KademliaID.
 	// The context allows for request cancellation and timeout control.
-	Register(bootstrapAddr string, kademliaID string, ctx context.Context) error
+	Register(bootstrapNode p2p.Node, kademliaID string, ctx context.Context) error
 
 	// FindContact retrieves information about a node identified by its KademliaID.
 	// It returns a Contact structure with the node's information or an error if the node is not found.
@@ -27,5 +31,11 @@ type DHT interface {
 	// and no trailing slash. This method fetched data stored under the hierarchical key structure.
 	// It returns a map of subkey-value pairs if successful or an error if the retrieval operation fails or if the
 	// specified path does not exist.
-	Get(key string, ctx context.Context) error
+	Get(key string, ctx context.Context) ([]KV, error)
+
+	// GetContact returns the contact information of the local DHT node.
+	GetContact() Contact
+
+	// Shutdown gracefully stops the DHT node and releases all resources.
+	Shutdown()
 }
