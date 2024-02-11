@@ -2,7 +2,7 @@ package dht
 
 import "testing"
 
-func TestIsValidKey(t *testing.T) {
+func TestValidateKey(t *testing.T) {
 	tests := []struct {
 		key  string
 		want bool
@@ -21,7 +21,7 @@ func TestIsValidKey(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.key, func(t *testing.T) {
-			got, err := isValidKey(tt.key)
+			got, err := ValidateKey(tt.key)
 			if err != nil {
 				t.Fatalf("isValidKey(%q) returned an unexpected error: %v", tt.key, err)
 			}

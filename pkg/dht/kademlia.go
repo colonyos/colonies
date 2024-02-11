@@ -7,7 +7,7 @@ import (
 
 type Kademlia struct {
 	n          network.Network
-	contact    Contact
+	Contact    Contact
 	states     *states
 	dispatcher *dispatcher
 	socket     network.Socket
@@ -21,7 +21,7 @@ func CreateKademlia(n network.Network, contact Contact) (*Kademlia, error) {
 	}
 
 	states := createStates(contact)
-	k := &Kademlia{n: n, contact: contact, states: states, socket: socket}
+	k := &Kademlia{n: n, Contact: contact, states: states, socket: socket}
 	dispatcher, err := createDispatcher(n, contact.Addr, k)
 	if err != nil {
 		log.WithFields(log.Fields{"Error": err}).Error("Failed to create dispatcher")

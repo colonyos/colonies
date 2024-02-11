@@ -11,11 +11,12 @@ import (
 func TestPutGetSimple(t *testing.T) {
 	kvs := createKVStore()
 
+	id := "myid"
 	key := "/prefix/key"
 	value := "value"
 	sig := core.GenerateRandomID()
 
-	err := kvs.put(key, value, sig)
+	err := kvs.put(id, key, value, sig)
 	assert.Nil(t, err)
 
 	got, err := kvs.get(key)
@@ -27,11 +28,12 @@ func TestPutGetSimple(t *testing.T) {
 func TestPutGetSimple2(t *testing.T) {
 	kvs := createKVStore()
 
+	id := "myid"
 	key := "/prefix"
 	value := "value"
 	sig := core.GenerateRandomID()
 
-	err := kvs.put(key, value, sig)
+	err := kvs.put(id, key, value, sig)
 	assert.Nil(t, err)
 
 	got, err := kvs.get(key)
@@ -43,11 +45,12 @@ func TestPutGetSimple2(t *testing.T) {
 func TestPutGetSimple3(t *testing.T) {
 	kvs := createKVStore()
 
+	id := "myid"
 	key := "/"
 	value := "value"
 	sig := core.GenerateRandomID()
 
-	err := kvs.put(key, value, sig)
+	err := kvs.put(id, key, value, sig)
 	assert.Nil(t, err)
 
 	got, err := kvs.get(key)
@@ -59,22 +62,24 @@ func TestPutGetSimple3(t *testing.T) {
 func TestPutGetSimple4(t *testing.T) {
 	kvs := createKVStore()
 
+	id := "myid"
 	key := ""
 	value := "value"
 	sig := core.GenerateRandomID()
 
-	err := kvs.put(key, value, sig)
+	err := kvs.put(id, key, value, sig)
 	assert.NotNil(t, err)
 }
 
 func TestPutGetSimple5(t *testing.T) {
 	kvs := createKVStore()
 
+	id := "myid"
 	key := "/prefix"
 	value := ""
 	sig := core.GenerateRandomID()
 
-	err := kvs.put(key, value, sig)
+	err := kvs.put(id, key, value, sig)
 	assert.NotNil(t, err)
 }
 
@@ -90,11 +95,12 @@ func TestGetNonExistent(t *testing.T) {
 func TestPutGetNested(t *testing.T) {
 	kvs := createKVStore()
 
+	id := "myid"
 	key := "/prefix/path1/path2/key"
 	value := "deepValue"
 	sig := core.GenerateRandomID()
 
-	err := kvs.put(key, value, sig)
+	err := kvs.put(id, key, value, sig)
 	assert.Nil(t, err)
 
 	got, err := kvs.get(key)
@@ -106,15 +112,16 @@ func TestPutGetNested(t *testing.T) {
 func TestPutOverwrite(t *testing.T) {
 	kvs := createKVStore()
 
+	id := "myid"
 	key := "/prefix/key"
 	firstValue := "firstValue"
 	secondValue := "secondValue"
 	sig := core.GenerateRandomID()
 
-	err := kvs.put(key, firstValue, sig)
+	err := kvs.put(id, key, firstValue, sig)
 	assert.Nil(t, err)
 
-	err = kvs.put(key, secondValue, sig)
+	err = kvs.put(id, key, secondValue, sig)
 	assert.Nil(t, err)
 
 	got, err := kvs.get(key)
@@ -128,8 +135,8 @@ func TestGetAllValuesWithSimplePrefix(t *testing.T) {
 
 	sig := core.GenerateRandomID()
 
-	kvs.put("/prefix/key1", "value1", sig)
-	kvs.put("/prefix/key2", "value2", sig)
+	kvs.put("myid", "/prefix/key1", "value1", sig)
+	kvs.put("myid", "/prefix/key2", "value2", sig)
 
 	got, err := kvs.getAllValuesWithPrefix("/prefix")
 	assert.Nil(t, err)
@@ -148,8 +155,8 @@ func TestGetAllValuesWithNestedPrefix(t *testing.T) {
 	kvs := createKVStore()
 
 	sig := core.GenerateRandomID()
-	kvs.put("/prefix/key1/nested1", "nestedValue1", sig)
-	kvs.put("/prefix/key1/nested2", "nestedValue2", sig)
+	kvs.put("myid", "/prefix/key1/nested1", "nestedValue1", sig)
+	kvs.put("myid", "/prefix/key1/nested2", "nestedValue2", sig)
 
 	got, err := kvs.getAllValuesWithPrefix("/prefix/key1")
 	assert.Nil(t, err)
@@ -176,10 +183,10 @@ func TestGetAllValuesWithComplexTree(t *testing.T) {
 
 	sig := core.GenerateRandomID()
 
-	kvs.put("/prefix/key1", "value1", sig)
-	kvs.put("/prefix/key1/nested1", "nestedValue1", sig)
-	kvs.put("/prefix/key1/nested2", "nestedValue2", sig)
-	kvs.put("/prefix/key2", "value2", sig)
+	kvs.put("myid", "/prefix/key1", "value1", sig)
+	kvs.put("myid", "/prefix/key1/nested1", "nestedValue1", sig)
+	kvs.put("myid", "/prefix/key1/nested2", "nestedValue2", sig)
+	kvs.put("myid", "/prefix/key2", "value2", sig)
 
 	expectedPrefix := []string{"value1", "value2", "nestedValue1", "nestedValue2"}
 	sort.Strings(expectedPrefix)
@@ -214,11 +221,11 @@ func TestRemoveKey(t *testing.T) {
 
 	sig := core.GenerateRandomID()
 
-	err := kvs.put("/a/b/c", "value1", sig)
+	err := kvs.put("myid", "/a/b/c", "value1", sig)
 	assert.Nil(t, err)
-	err = kvs.put("/a/b/d", "value2", sig)
+	err = kvs.put("myid", "/a/b/d", "value2", sig)
 	assert.Nil(t, err)
-	err = kvs.put("/a/b", "value3", sig)
+	err = kvs.put("myid", "/a/b", "value3", sig)
 	assert.Nil(t, err)
 
 	if err := kvs.removeKey("/a/b/c"); err != nil {

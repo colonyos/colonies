@@ -20,6 +20,7 @@ type kvStore struct {
 }
 
 type KV struct {
+	ID    string `json:"id"`
 	Key   string `json:"key"`
 	Value string `json:"value"`
 	Sig   string `json:"sig"`
@@ -33,7 +34,7 @@ func createKVStore() *kvStore {
 	return &kvStore{root: &node{children: make(map[string]*node)}}
 }
 
-func (kvStore *kvStore) put(key string, value string, sig string) error {
+func (kvStore *kvStore) put(id string, key string, value string, sig string) error {
 	if len(key) == 0 || key[0] != '/' {
 		return fmt.Errorf("Invalid key, must start with /")
 	}
@@ -56,7 +57,7 @@ func (kvStore *kvStore) put(key string, value string, sig string) error {
 	if current.children[lastPart] == nil {
 		current.children[lastPart] = newNode()
 	}
-	current.children[lastPart].kv = KV{Key: key, Value: value, Sig: sig}
+	current.children[lastPart].kv = KV{ID: id, Key: key, Value: value, Sig: sig}
 	current.children[lastPart].isValue = true
 
 	return nil

@@ -65,37 +65,37 @@ func (dispatcher *dispatcher) serveForever() {
 
 		switch msg.Type {
 		case network.MSG_PING_REQ:
-			log.WithFields(log.Fields{"MsgID": msg.ID, "MyAddr": dispatcher.k.contact.Addr, "From": msg.From}).Info("Received PING_REQ")
+			log.WithFields(log.Fields{"MsgID": msg.ID, "MyAddr": dispatcher.k.Contact.Addr, "From": msg.From}).Info("Received PING_REQ")
 			dispatcher.k.handlePingReq(msg)
 		case network.MSG_PING_RESP:
-			log.WithFields(log.Fields{"MsgID": msg.ID, "MyAddr": dispatcher.k.contact.Addr, "From": msg.From}).Info("Received PING_RESP")
+			log.WithFields(log.Fields{"MsgID": msg.ID, "MyAddr": dispatcher.k.Contact.Addr, "From": msg.From}).Info("Received PING_RESP")
 			dispatcher.handleResponse(&msg)
 		case network.MSG_FIND_CONTACTS_REQ:
-			log.WithFields(log.Fields{"MsgID": msg.ID, "MyAddr": dispatcher.k.contact.Addr, "From": msg.From}).Info("Received FIND_CONTACTS_REQ")
+			log.WithFields(log.Fields{"MsgID": msg.ID, "MyAddr": dispatcher.k.Contact.Addr, "From": msg.From}).Info("Received FIND_CONTACTS_REQ")
 			err := dispatcher.k.handleFindContactsReq(msg)
 			if err != nil {
 				log.WithFields(log.Fields{"Error": err}).Error("Failed to handle FIND_CONTACTS_REQ")
 			}
 		case network.MSG_FIND_CONTACTS_RESP:
-			log.WithFields(log.Fields{"MsgID": msg.ID, "MyAddr": dispatcher.k.contact.Addr, "From": msg.From}).Info("Received FIND_CONTACTS_RESP")
+			log.WithFields(log.Fields{"MsgID": msg.ID, "MyAddr": dispatcher.k.Contact.Addr, "From": msg.From}).Info("Received FIND_CONTACTS_RESP")
 			dispatcher.handleResponse(&msg)
 		case network.MSG_PUT_REQ:
-			log.WithFields(log.Fields{"MsgID": msg.ID, "MyAddr": dispatcher.k.contact.Addr, "From": msg.From}).Info("Received FIND_PUT_REQ")
+			log.WithFields(log.Fields{"MsgID": msg.ID, "MyAddr": dispatcher.k.Contact.Addr, "From": msg.From}).Info("Received FIND_PUT_REQ")
 			err := dispatcher.k.handlePutReq(msg)
 			if err != nil {
 				log.WithFields(log.Fields{"Error": err}).Error("Failed to handle PUT_REQ")
 			}
 		case network.MSG_PUT_RESP:
-			log.WithFields(log.Fields{"MsgID": msg.ID, "MyAddr": dispatcher.k.contact.Addr, "From": msg.From}).Info("Received FIND_PUT_RESP")
+			log.WithFields(log.Fields{"MsgID": msg.ID, "MyAddr": dispatcher.k.Contact.Addr, "From": msg.From}).Info("Received FIND_PUT_RESP")
 			dispatcher.handleResponse(&msg)
 		case network.MSG_GET_REQ:
-			log.WithFields(log.Fields{"MsgID": msg.ID, "MyAddr": dispatcher.k.contact.Addr, "From": msg.From}).Info("Received FIND_GET_REQ")
+			log.WithFields(log.Fields{"MsgID": msg.ID, "MyAddr": dispatcher.k.Contact.Addr, "From": msg.From}).Info("Received FIND_GET_REQ")
 			err := dispatcher.k.handleGetReq(msg)
 			if err != nil {
 				log.WithFields(log.Fields{"Error": err}).Error("Failed to handle GET_REQ")
 			}
 		case network.MSG_GET_RESP:
-			log.WithFields(log.Fields{"MsgID": msg.ID, "MyAddr": dispatcher.k.contact.Addr, "From": msg.From}).Info("Received FIND_GET_RESP")
+			log.WithFields(log.Fields{"MsgID": msg.ID, "MyAddr": dispatcher.k.Contact.Addr, "From": msg.From}).Info("Received FIND_GET_RESP")
 			dispatcher.handleResponse(&msg)
 		default:
 			log.WithFields(log.Fields{"Error": "Unknown message type", "Type": msg.Type}).Error("Dropping message")

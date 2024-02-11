@@ -2,6 +2,7 @@ package dht
 
 import (
 	"context"
+	"encoding/hex"
 	"errors"
 
 	"github.com/colonyos/colonies/internal/crypto"
@@ -12,8 +13,8 @@ import (
 const MaxPendingRequests = 10000
 
 func (k *Kademlia) ping(addr string, ctx context.Context) error {
-	log.WithFields(log.Fields{"To": addr, "From": k.contact.Addr}).Info("Sending ping request")
-	payload := PingReq{Header: RPCHeader{Sender: k.contact}}
+	log.WithFields(log.Fields{"To": addr, "From": k.Contact.Addr}).Info("Sending ping request")
+	payload := PingReq{Header: RPCHeader{Sender: k.Contact}}
 	json, err := payload.ToJSON()
 	if err != nil {
 		log.WithFields(log.Fields{"Error": err}).Error("Failed to convert to JSON")
@@ -22,7 +23,7 @@ func (k *Kademlia) ping(addr string, ctx context.Context) error {
 
 	reply, err := k.dispatcher.send(network.Message{
 		Type:    network.MSG_PING_REQ,
-		From:    k.contact.Addr,
+		From:    k.Contact.Addr,
 		To:      addr,
 		Payload: []byte(json)})
 
@@ -52,8 +53,8 @@ func (k *Kademlia) ping(addr string, ctx context.Context) error {
 }
 
 func (k *Kademlia) findRemoteContacts(addr string, kademliaID string, count int, ctx context.Context) ([]Contact, error) {
-	log.WithFields(log.Fields{"To": addr, "From": k.contact.Addr}).Info("Sending find contacts request")
-	payload := FindContactsReq{Header: RPCHeader{Sender: k.contact}, KademliaID: kademliaID, Count: count}
+	log.WithFields(log.Fields{"To": addr, "From": k.Contact.Addr}).Info("Sending find contacts request")
+	payload := FindContactsReq{Header: RPCHeader{Sender: k.Contact}, KademliaID: kademliaID, Count: count}
 	json, err := payload.ToJSON()
 	if err != nil {
 		log.WithFields(log.Fields{"Error": err}).Error("Failed to convert to JSON")
@@ -62,7 +63,7 @@ func (k *Kademlia) findRemoteContacts(addr string, kademliaID string, count int,
 
 	reply, err := k.dispatcher.send(network.Message{
 		Type:    network.MSG_FIND_CONTACTS_REQ,
-		From:    k.contact.Addr,
+		From:    k.Contact.Addr,
 		To:      addr,
 		Payload: []byte(json)})
 
@@ -204,9 +205,26 @@ func (k *Kademlia) FindContacts(kademliaID string, count int, ctx context.Contex
 	}
 }
 
-func (k *Kademlia) putRemote(addr string, key string, value string, sig string, ctx context.Context) error {
-	log.WithFields(log.Fields{"To": addr, "From": k.contact.Addr}).Info("Sending put request")
-	payload := PutReq{Header: RPCHeader{Sender: k.contact}, KV: KV{Key: key, Value: value, Sig: sig}}
+func (k *Kademlia) putRemote(addr string, key string, value string, ctx context.Context) error {
+	log.WithFields(log.Fields{"To": addr, "From": k.Contact.Addr}).Info("Sending put request")
+
+	hash := crypto.GenerateHashFromString(value)
+
+	id, err := crypto.CreateIdendityFromString(k.Contact.ID.String())
+	if err != nil {
+		log.WithFields(log.Fields{"Error": err}).Error("Failed to create identity")
+		return err
+	}
+
+	sig, err := crypto.Sign(hash, id.PrivateKey())
+	if err != nil {
+		log.WithFields(log.Fields{"Error": err}).Error("Failed to sign value")
+		return err
+	}
+
+	sigHex := hex.EncodeToString(sig)
+
+	payload := PutReq{Header: RPCHeader{Sender: k.Contact}, KV: KV{ID: id.ID(), Key: key, Value: value, Sig: sigHex}}
 	json, err := payload.ToJSON()
 	if err != nil {
 		log.WithFields(log.Fields{"Error": err}).Error("Failed to convert to JSON")
@@ -215,7 +233,7 @@ func (k *Kademlia) putRemote(addr string, key string, value string, sig string, 
 
 	reply, err := k.dispatcher.send(network.Message{
 		Type:    network.MSG_PUT_REQ,
-		From:    k.contact.Addr,
+		From:    k.Contact.Addr,
 		To:      addr,
 		Payload: []byte(json)})
 
@@ -247,8 +265,8 @@ func (k *Kademlia) putRemote(addr string, key string, value string, sig string, 
 }
 
 func (k *Kademlia) getRemote(addr string, key string, ctx context.Context) ([]KV, error) {
-	log.WithFields(log.Fields{"To": addr, "From": k.contact.Addr}).Info("Sending get request")
-	payload := GetReq{Header: RPCHeader{Sender: k.contact}, Key: key}
+	log.WithFields(log.Fields{"To": addr, "From": k.Contact.Addr}).Info("Sending get request")
+	payload := GetReq{Header: RPCHeader{Sender: k.Contact}, Key: key}
 	json, err := payload.ToJSON()
 	if err != nil {
 		log.WithFields(log.Fields{"Error": err}).Error("Failed to convert to JSON")
@@ -257,7 +275,7 @@ func (k *Kademlia) getRemote(addr string, key string, ctx context.Context) ([]KV
 
 	reply, err := k.dispatcher.send(network.Message{
 		Type:    network.MSG_GET_REQ,
-		From:    k.contact.Addr,
+		From:    k.Contact.Addr,
 		To:      addr,
 		Payload: []byte(json)})
 
@@ -288,7 +306,7 @@ func (k *Kademlia) getRemote(addr string, key string, ctx context.Context) ([]KV
 	}
 }
 
-func (k *Kademlia) Put(key string, value string, sig string, replicationFactor int, ctx context.Context) error {
+func (k *Kademlia) Put(key string, value string, replicationFactor int, ctx context.Context) error {
 	rootKey, err := getRootKey(key)
 	if err != nil {
 		return err
@@ -308,7 +326,7 @@ func (k *Kademlia) Put(key string, value string, sig string, replicationFactor i
 	}
 
 	for _, contact := range contacts {
-		err := k.putRemote(contact.Addr, key, value, sig, ctx)
+		err := k.putRemote(contact.Addr, key, value, ctx)
 		if err != nil {
 			log.WithFields(log.Fields{"Error": err}).Error("Failed to put value")
 			return err
