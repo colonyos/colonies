@@ -3,16 +3,28 @@ package dht
 import (
 	"fmt"
 	"sort"
+
+	"github.com/colonyos/colonies/internal/crypto"
 )
 
 type Contact struct {
 	ID       KademliaID `json:"kademliaid"`
 	Addr     string     `json:"address"`
+	prvKey   string
 	distance KademliaID
 }
 
-func CreateContact(id KademliaID, address string) Contact {
-	return Contact{id, address, KademliaID{}}
+func createContactWithKademliaID(id KademliaID, addr string) Contact {
+	return Contact{ID: id, Addr: addr}
+}
+
+func CreateContact(addr string, prvKey string) (Contact, error) {
+	id, err := crypto.CreateIdendityFromString(prvKey)
+	if err != nil {
+		return Contact{}, err
+	}
+
+	return Contact{ID: CreateKademliaID(id.ID()), Addr: addr, prvKey: prvKey}, nil
 }
 
 func (contact *Contact) CalcDistance(target KademliaID) {
