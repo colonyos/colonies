@@ -132,7 +132,7 @@ func (k *Kademlia) FindContact(kademliaID string, ctx context.Context) (Contact,
 }
 
 func (k *Kademlia) Register(bootstrapNode p2p.Node, kademliaID string, ctx context.Context) error {
-	err := k.ping(bootstrapNode, ctx)
+	err := k.ping(bootstrapNode, ctx) // TODO: May be just add contact without ping
 	if err != nil {
 		return err
 	}
