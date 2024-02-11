@@ -28,6 +28,10 @@ func CreateKademlia(messenger p2p.Messenger, contact Contact) (*Kademlia, error)
 	return k, nil
 }
 
+func (k *Kademlia) GetContact() Contact {
+	return k.Contact
+}
+
 func (k *Kademlia) Shutdown() {
 	k.states.shutdown()
 	k.dispatcher.shutdown()
