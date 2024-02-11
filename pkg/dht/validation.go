@@ -1,13 +1,14 @@
 package dht
 
 import (
+	"encoding/hex"
 	"fmt"
 	"regexp"
 
 	"github.com/colonyos/colonies/internal/crypto"
 )
 
-func isValidKey(key string) (bool, error) {
+func ValidateKey(key string) (bool, error) {
 	// Define the regular expression pattern for validation
 	// ^/                  : The string must start with a single slash
 	// ([a-zA-Z0-9]+/)     : Must have one or more alphanumeric characters followed by a slash
@@ -25,20 +26,16 @@ func isValidKey(key string) (bool, error) {
 	return isValid, nil
 }
 
-func isValidRootKey(key, value, sig string) (bool, error) {
-	// The root key must be a valid identity of the Kademlia node ID adding a key-value pair
-	rootKey, err := getRootKey(key)
-	if err != nil {
-		return false, fmt.Errorf("Invalid root key: %v", err)
-	}
+func ValidateValue(kv KV) (bool, error) {
+	hash := crypto.GenerateHashFromString(kv.Value)
 
-	hash := crypto.GenerateHashFromString(value)
-	recoveredRootKey, err := crypto.RecoveredID(hash, []byte(sig))
+	sigBytes, err := hex.DecodeString(kv.Sig)
+	recoveredID, err := crypto.RecoveredID(hash, []byte(sigBytes))
 	if err != nil {
 		return false, fmt.Errorf("Invalid signature: %v", err)
 	}
 
-	if recoveredRootKey != rootKey {
+	if recoveredID != kv.ID {
 		return false, fmt.Errorf("Invalid signature")
 	}
 
