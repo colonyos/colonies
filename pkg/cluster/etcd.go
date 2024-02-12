@@ -48,10 +48,10 @@ func CreateEtcdServer(thisNode Node, config Config, dataPath string) *EtcdServer
 	lcurl, _ := url.Parse(listenClientURLs)
 	acurl, _ := url.Parse(advertiseClientURLs)
 
-	cfg.LPUrls = []url.URL{*lpurl}
-	cfg.LCUrls = []url.URL{*lcurl}
-	cfg.APUrls = []url.URL{*apurl}
-	cfg.ACUrls = []url.URL{*acurl}
+	cfg.ListenPeerUrls = []url.URL{*lpurl}
+	cfg.ListenClientUrls = []url.URL{*lcurl}
+	cfg.AdvertisePeerUrls = []url.URL{*apurl}
+	cfg.AdvertiseClientUrls = []url.URL{*acurl}
 	cfg.InitialCluster = cfg.InitialClusterFromName(cfg.Name)
 	cfg.InitialCluster = server.buildInitialClusterStr()
 	cfg.InitialClusterToken = "etcd-cluster-1"
