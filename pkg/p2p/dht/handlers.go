@@ -12,7 +12,6 @@ const MAX_COUNT = 100
 
 func (k *Kademlia) addContact(contact *Contact) error {
 	errChan := k.states.addContact(*contact)
-	defer close(errChan)
 
 	select {
 	case <-time.After(1 * time.Second):
@@ -76,8 +75,6 @@ func (k *Kademlia) handleFindContactsReq(msg p2p.Message) error {
 		}
 
 		contactsChan, errChan := k.states.findContacts(kademliaID, count)
-		defer close(contactsChan)
-		defer close(errChan)
 
 		select {
 		case <-time.After(1 * time.Second):
@@ -136,7 +133,6 @@ func (k *Kademlia) handlePutReq(msg p2p.Message) error {
 	err = k.addContact(&req.Header.Sender)
 	if err == nil {
 		errChan := k.states.put(req.KV.ID, req.KV.Key, req.KV.Value, req.KV.Sig)
-		defer close(errChan)
 
 		select {
 		case <-time.After(1 * time.Second):
@@ -184,8 +180,6 @@ func (k *Kademlia) handleGetReq(msg p2p.Message) error {
 	err = k.addContact(&req.Header.Sender)
 	if err == nil {
 		kvsChan, errChan := k.states.get(req.Key)
-		defer close(kvsChan)
-		defer close(errChan)
 
 		select {
 		case <-time.After(1 * time.Second):

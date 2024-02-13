@@ -1,24 +1,16 @@
 package p2p
 
 import (
-	"reflect"
 	"testing"
 )
 
 func TestCreateNode(t *testing.T) {
-	hostID := "host123"
-	addrs := []string{"192.168.1.1", "10.0.0.1"}
+	expected := "Node{host123, [192.168.1.1, 10.0.0.1]}"
+	node := CreateNode("host123", []string{"192.168.1.1", "10.0.0.1"})
+	actual := node.String()
 
-	expectedNode := &Node{
-		HostID: hostID,
-		Addr:   addrs,
-	}
-
-	// Actual node created by CreateNode
-	node := CreateNode(hostID, addrs)
-
-	if !reflect.DeepEqual(node, expectedNode) {
-		t.Errorf("CreateNode() = %v, want %v", node, expectedNode)
+	if actual != expected {
+		t.Errorf("CreateNode() = %v, want %v", actual, expected)
 	}
 }
 
