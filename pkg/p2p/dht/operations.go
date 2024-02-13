@@ -27,8 +27,6 @@ func (k *Kademlia) ping(node p2p.Node, ctx context.Context) error {
 		To:      node,
 		Payload: []byte(json)})
 
-	defer close(reply)
-
 	if err != nil {
 		log.WithFields(log.Fields{"Error": err}).Error("Failed to send ping request")
 		return err
@@ -67,8 +65,6 @@ func (k *Kademlia) findRemoteContacts(node p2p.Node, kademliaID string, count in
 		To:      node,
 		Payload: []byte(json)})
 
-	defer close(reply)
-
 	if err != nil {
 		log.WithFields(log.Fields{"Error": err}).Error("Failed to send ping request")
 		return nil, err
@@ -92,8 +88,6 @@ func (k *Kademlia) findRemoteContacts(node p2p.Node, kademliaID string, count in
 
 func (k *Kademlia) findLocalContacts(kademliaID string, count int, ctx context.Context) ([]Contact, error) {
 	contactsChan, errChan := k.states.findContacts(kademliaID, count)
-	defer close(contactsChan)
-	defer close(errChan)
 
 	select {
 	case <-ctx.Done():
@@ -132,7 +126,7 @@ func (k *Kademlia) FindContact(kademliaID string, ctx context.Context) (Contact,
 }
 
 func (k *Kademlia) Register(bootstrapNode p2p.Node, kademliaID string, ctx context.Context) error {
-	err := k.ping(bootstrapNode, ctx) // TODO: May be just add contact without ping
+	err := k.ping(bootstrapNode, ctx)
 	if err != nil {
 		return err
 	}
@@ -237,8 +231,6 @@ func (k *Kademlia) putRemote(node p2p.Node, key string, value string, ctx contex
 		To:      node,
 		Payload: []byte(json)})
 
-	defer close(reply)
-
 	if err != nil {
 		log.WithFields(log.Fields{"Error": err}).Error("Failed to send ping request")
 		return err
@@ -278,8 +270,6 @@ func (k *Kademlia) getRemote(node p2p.Node, key string, ctx context.Context) ([]
 		From:    k.Contact.Node,
 		To:      node,
 		Payload: []byte(json)})
-
-	defer close(reply)
 
 	if err != nil {
 		log.WithFields(log.Fields{"Error": err}).Error("Failed to send ping request")
@@ -333,10 +323,14 @@ func (k *Kademlia) Put(key string, value string, replicationFactor int, ctx cont
 		}
 	}
 
+	for _, contact := range contacts {
+		log.WithFields(log.Fields{"Contact": contact.Node.String(), "Key": key}).Info("Contact has stored value")
+	}
+
 	return nil
 }
 
-func (k *Kademlia) Get(key string, ctx context.Context) ([]KV, error) {
+func (k *Kademlia) Get(key string, replicationFactor int, ctx context.Context) ([]KV, error) {
 	rootKey, err := getRootKey(key)
 	if err != nil {
 		return nil, err
@@ -344,7 +338,7 @@ func (k *Kademlia) Get(key string, ctx context.Context) ([]KV, error) {
 
 	hash := crypto.GenerateHashFromString(rootKey)
 
-	contacts, err := k.FindContacts(hash.String(), 1, ctx)
+	contacts, err := k.FindContacts(hash.String(), replicationFactor, ctx)
 	if err != nil {
 		log.WithFields(log.Fields{"Error": err}).Error("Failed to find closest contacts")
 		return nil, err
@@ -364,6 +358,10 @@ func (k *Kademlia) Get(key string, ctx context.Context) ([]KV, error) {
 		for _, kv := range kvs {
 			kvsMap[kv.String()] = kv
 		}
+	}
+
+	for _, contact := range contacts {
+		log.WithFields(log.Fields{"Contact": contact.Node.String(), "Key": key}).Info("Contact should have value")
 	}
 
 	var result []KV
