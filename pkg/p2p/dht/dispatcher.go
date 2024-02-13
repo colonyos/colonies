@@ -20,7 +20,7 @@ type dispatcher struct {
 
 func createDispatcher(k *Kademlia) (*dispatcher, error) {
 	ctx, cancel := context.WithCancel(context.Background())
-	msgChan := make(chan p2p.Message)
+	msgChan := make(chan p2p.Message, 1000)
 	go k.messenger.ListenForever(msgChan, ctx)
 
 	return &dispatcher{
@@ -39,6 +39,7 @@ func (dispatcher *dispatcher) handleResponse(msg *p2p.Message) {
 		replyChan <- *msg
 
 		dispatcher.mutex.Lock()
+		close(replyChan)
 		delete(dispatcher.replyHandler, msg.ID)
 		dispatcher.mutex.Unlock()
 	} else {
