@@ -7,8 +7,8 @@ type Node struct {
 	HostID string
 }
 
-func CreateNode(hostID string, addr []string) *Node {
-	return &Node{
+func CreateNode(hostID string, addr []string) Node {
+	return Node{
 		Addr:   addr,
 		HostID: hostID,
 	}
@@ -37,11 +37,11 @@ func (n *Node) ToJSON() (string, error) {
 	return string(jsonBytes), nil
 }
 
-func ConvertJSONToNode(jsonStr string) (*Node, error) {
-	var n *Node
+func ConvertJSONToNode(jsonStr string) (Node, error) {
+	var n Node
 	err := json.Unmarshal([]byte(jsonStr), &n)
 	if err != nil {
-		return nil, err
+		return n, err
 	}
 
 	return n, nil

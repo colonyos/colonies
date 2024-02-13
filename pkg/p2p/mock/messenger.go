@@ -21,9 +21,7 @@ func (m *MockMessenger) Send(msg p2p.Message, ctx context.Context) error {
 		return err
 	}
 	msg.From = m.node
-	socket.Send(msg)
-
-	return nil
+	return socket.Send(msg)
 }
 
 func (m *MockMessenger) ListenForever(msgChan chan p2p.Message, ctx context.Context) error {

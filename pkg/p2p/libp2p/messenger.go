@@ -5,8 +5,8 @@ import (
 	"context"
 	"encoding/binary"
 	"encoding/json"
+	"fmt"
 	"io"
-	"log"
 
 	"github.com/colonyos/colonies/pkg/p2p"
 	"github.com/libp2p/go-libp2p"
@@ -15,6 +15,7 @@ import (
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/libp2p/go-libp2p/core/peerstore"
 	ma "github.com/multiformats/go-multiaddr"
+	log "github.com/sirupsen/logrus"
 )
 
 type Messenger struct {
@@ -22,16 +23,27 @@ type Messenger struct {
 	host host.Host
 }
 
-func CreateMessenger(addr []string) (*Messenger, error) {
+func CreateMessenger(port int) (*Messenger, error) {
+	listenAddr := fmt.Sprintf("/ip4/0.0.0.0/tcp/%d", port)
 	host, err := libp2p.New(
-		libp2p.ListenAddrStrings(addr[0]), // TODO: bind to all addresses
+		libp2p.ListenAddrStrings(listenAddr),
 		libp2p.NATPortMap(),
 	)
 	if err != nil {
 		return nil, err
 	}
 
-	return &Messenger{host: host, Node: p2p.Node{HostID: host.ID().String(), Addr: addr}}, nil
+	var addrs []string
+	for _, addr := range host.Addrs() {
+		fullAddr := fmt.Sprintf("%s", addr)
+		addrs = append(addrs, fullAddr)
+	}
+
+	for _, addr := range addrs {
+		log.Info("Listening on ", addr)
+	}
+
+	return &Messenger{host: host, Node: p2p.Node{HostID: host.ID().String(), Addr: addrs}}, nil
 }
 
 func (m *Messenger) Send(msg p2p.Message, ctx context.Context) error {
@@ -80,35 +92,35 @@ func (m *Messenger) Send(msg p2p.Message, ctx context.Context) error {
 }
 
 func (m *Messenger) ListenForever(msgChan chan p2p.Message, ctx context.Context) error {
-	m.host.SetStreamHandler("/colonies/1.0.0", func(stream network.Stream) {
-		var msg p2p.Message
-		r := bufio.NewReader(stream)
+	for {
+		m.host.SetStreamHandler("/colonies/1.0.0", func(stream network.Stream) {
+			var msg p2p.Message
+			r := bufio.NewReader(stream)
 
-		select {
-		case <-ctx.Done():
-			return
-		default:
-			lengthBytes := make([]byte, 4)
-			_, err := io.ReadFull(r, lengthBytes)
-			if err != nil {
+			select {
+			case <-ctx.Done():
 				return
+			default:
+				lengthBytes := make([]byte, 4)
+				_, err := io.ReadFull(r, lengthBytes)
+				if err != nil {
+					return
+				}
+				length := binary.BigEndian.Uint32(lengthBytes)
+
+				data := make([]byte, length)
+				_, err = io.ReadFull(r, data)
+				if err != nil {
+					return
+				}
+
+				err = json.Unmarshal(data, &msg)
+				if err != nil {
+					return
+				}
+
+				msgChan <- msg
 			}
-			length := binary.BigEndian.Uint32(lengthBytes)
-
-			data := make([]byte, length)
-			_, err = io.ReadFull(r, data)
-			if err != nil {
-				return
-			}
-
-			err = json.Unmarshal(data, &msg)
-			if err != nil {
-				return
-			}
-
-			msgChan <- msg
-		}
-	})
-
-	return nil
+		})
+	}
 }

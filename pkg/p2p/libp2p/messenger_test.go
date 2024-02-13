@@ -10,22 +10,25 @@ import (
 )
 
 func TestMessenger(t *testing.T) {
-	messenger1, err := CreateMessenger([]string{"/ip4/10.0.0.201/tcp/4001", "/ip4/127.0.0.1/tcp/4001"})
+	messenger1, err := CreateMessenger(4001)
 	assert.Equal(t, err, nil)
 
-	messenger2, err := CreateMessenger([]string{"/ip4/10.0.0.201/tcp/4002", "/ip4/127.0.0.1/tcp/4002"})
+	messenger2, err := CreateMessenger(4002)
 	assert.Equal(t, err, nil)
 
 	msgChan := make(chan p2p.Message)
-	ctx := context.TODO()
 	go func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 1000*time.Millisecond)
 		messenger1.ListenForever(msgChan, ctx)
+		cancel()
 	}()
 
 	for {
-		err := messenger2.Send(p2p.Message{From: messenger2.Node, To: messenger1.Node, Payload: []byte("Hello")}, context.TODO())
+		ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
+		err := messenger2.Send(p2p.Message{From: messenger2.Node, To: messenger1.Node, Payload: []byte("Hello")}, ctx)
+		cancel()
 		if err != nil {
-			time.Sleep(1000 * time.Millisecond)
+			time.Sleep(100 * time.Millisecond)
 		} else {
 			break
 		}
@@ -37,7 +40,9 @@ func TestMessenger(t *testing.T) {
 	assert.Equal(t, msg.From.HostID, messenger2.Node.HostID)
 	assert.Equal(t, msg.To.HostID, messenger1.Node.HostID)
 
-	err = messenger2.Send(p2p.Message{From: messenger2.Node, To: messenger1.Node, Payload: []byte("Hello 2")}, context.TODO())
+	ctx, cancel := context.WithTimeout(context.Background(), 1000*time.Millisecond)
+	err = messenger2.Send(p2p.Message{From: messenger2.Node, To: messenger1.Node, Payload: []byte("Hello 2")}, ctx)
+	cancel()
 	assert.Equal(t, err, nil)
 
 	msg = <-msgChan
