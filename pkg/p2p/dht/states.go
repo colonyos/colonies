@@ -43,10 +43,14 @@ func (s *states) serveForever() {
 		case ADD_CONTACT:
 			s.rt.addContact(job.contact)
 			job.errChan <- nil
+			close(job.errChan)
 		case FIND_CONTACTS:
 			job.contactsChan <- s.rt.findClosestContacts(CreateKademliaID(job.kademliaID), job.count)
+			close(job.contactsChan)
+			close(job.errChan)
 		case PUT:
 			job.errChan <- s.kvs.put(job.id, job.key, job.value, job.sig)
+			close(job.errChan)
 		case GET:
 			kvs, err := s.kvs.getAllValuesWithPrefix(job.value)
 			if err != nil {
@@ -54,6 +58,8 @@ func (s *states) serveForever() {
 			} else {
 				job.kvChan <- kvs
 			}
+			close(job.kvChan)
+			close(job.errChan)
 		case STOP:
 			return
 		}
