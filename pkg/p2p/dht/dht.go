@@ -31,7 +31,7 @@ type DHT interface {
 	// and no trailing slash. This method fetched data stored under the hierarchical key structure.
 	// It returns a map of subkey-value pairs if successful or an error if the retrieval operation fails or if the
 	// specified path does not exist.
-	Get(key string, ctx context.Context) ([]KV, error)
+	Get(key string, replicationFactor int, ctx context.Context) ([]KV, error)
 
 	// GetContact returns the contact information of the local DHT node.
 	GetContact() Contact
