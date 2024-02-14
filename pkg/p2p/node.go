@@ -3,12 +3,12 @@ package p2p
 import "encoding/json"
 
 type Node struct {
-	Name   string   `json:"name"`
-	Addr   []string `json:"addr"`
-	HostID string   `json:"hostID"`
+	Name   string `json:"name"`
+	Addr   string `json:"addr"`
+	HostID string `json:"hostID"`
 }
 
-func CreateNode(name string, hostID string, addr []string) Node {
+func CreateNode(name string, hostID string, addr string) Node {
 	return Node{
 		Name:   name,
 		Addr:   addr,
@@ -17,17 +17,7 @@ func CreateNode(name string, hostID string, addr []string) Node {
 }
 
 func (n *Node) String() string {
-	str := "Node{" + n.Name + ":" + n.HostID + ", ["
-	for _, addr := range n.Addr {
-		str += addr + ", "
-	}
-
-	if len(n.Addr) > 0 {
-		str = str[:len(str)-2]
-	}
-
-	str += "]}"
-	return str
+	return "Node{" + n.Name + ":" + n.HostID + ", [" + string(n.Addr) + "]}"
 }
 
 func (n *Node) ToJSON() (string, error) {
@@ -48,14 +38,8 @@ func (n *Node) Equals(other Node) bool {
 		return false
 	}
 
-	if len(n.Addr) != len(other.Addr) {
+	if n.Addr != other.Addr {
 		return false
-	}
-
-	for i, addr := range n.Addr {
-		if addr != other.Addr[i] {
-			return false
-		}
 	}
 
 	return true
