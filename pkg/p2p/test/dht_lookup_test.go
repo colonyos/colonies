@@ -71,7 +71,8 @@ func TestDHTTest(t *testing.T) {
 	from := messenger1.Node
 
 	ctx, cancel = context.WithTimeout(context.Background(), 1000*time.Millisecond)
-	err = messenger1.Send(p2p.Message{From: from, To: *to, Payload: []byte("Hello!")}, ctx)
+	msgToSend := p2p.Message{From: from, To: *to, Payload: []byte("Hello!")}
+	err = messenger1.Send(msgToSend, ctx)
 	cancel()
 	assert.Equal(t, err, nil)
 
