@@ -28,8 +28,8 @@ func TestNetworkMock(t *testing.T) {
 	assert.NotNil(t, socket2)
 	go func() {
 		socket.Send(p2p.Message{
-			To:      p2p.Node{HostID: "", Addr: "10.0.0.1:8080"},
-			From:    p2p.Node{HostID: "", Addr: "10.0.0.2:8080"},
+			To:      p2p.Node{Addr: "10.0.0.1:8080"},
+			From:    p2p.Node{Addr: "10.0.0.2:8080"},
 			Payload: []byte("test_payload")})
 	}()
 
