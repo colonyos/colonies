@@ -1,14 +1,54 @@
 package dht
 
 import (
-	"encoding/hex"
 	"fmt"
 	"regexp"
 
-	"github.com/colonyos/colonies/internal/crypto"
+	"github.com/colonyos/colonies/pkg/security/crypto"
 )
 
-func ValidateKey(key string) (bool, error) {
+func ValidateKV(kv *KV) (bool, error) {
+	if kv == nil {
+		return false, fmt.Errorf("Invalid key-value pair, kv is nil")
+	}
+
+	valid, err := validateValue(kv)
+	if err != nil {
+		return false, err
+	}
+	if !valid {
+		return false, err
+	}
+
+	valid, err = validateRootKey(kv.Key, kv.ID)
+	if err != nil {
+		return false, err
+	}
+	if !valid {
+		return false, err
+	}
+
+	return true, nil
+}
+
+func validateRootKey(key string, id string) (bool, error) {
+	rootKey, err := getRootKey(key) // Will call validateKey
+	if err != nil {
+		return false, err
+	}
+
+	if len(rootKey) != 64 {
+		return false, fmt.Errorf("Invalid root key length")
+	}
+
+	if id != rootKey {
+		return false, fmt.Errorf("Invalid root key")
+	}
+
+	return true, nil
+}
+
+func validateKey(key string) (bool, error) {
 	// Define the regular expression pattern for validation
 	// ^/                  : The string must start with a single slash
 	// ([a-zA-Z0-9]+/)     : Must have one or more alphanumeric characters followed by a slash
@@ -26,11 +66,12 @@ func ValidateKey(key string) (bool, error) {
 	return isValid, nil
 }
 
-func ValidateValue(kv KV) (bool, error) {
-	hash := crypto.GenerateHashFromString(kv.Value)
+func validateValue(kv *KV) (bool, error) {
+	crypto := crypto.CreateCrypto()
 
-	sigBytes, err := hex.DecodeString(kv.Sig)
-	recoveredID, err := crypto.RecoveredID(hash, []byte(sigBytes))
+	hash := crypto.GenerateHash(kv.Value)
+
+	recoveredID, err := crypto.RecoverID(hash, kv.Sig)
 	if err != nil {
 		return false, fmt.Errorf("Invalid signature: %v", err)
 	}

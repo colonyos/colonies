@@ -2,15 +2,15 @@ package dht
 
 import (
 	"context"
-	"encoding/hex"
 	"errors"
 
-	"github.com/colonyos/colonies/internal/crypto"
 	"github.com/colonyos/colonies/pkg/p2p"
+	"github.com/colonyos/colonies/pkg/security/crypto"
 	log "github.com/sirupsen/logrus"
 )
 
 const MaxPendingRequests = 10000
+const RegistrationReplicationFactor = 10
 
 func (k *Kademlia) ping(node p2p.Node, ctx context.Context) error {
 	log.WithFields(log.Fields{"To": node.String(), "From": k.Contact.Node.String()}).Info("Sending ping request")
@@ -125,7 +125,7 @@ func (k *Kademlia) FindContact(kademliaID string, ctx context.Context) (Contact,
 	return Contact{}, errors.New("No contacts found")
 }
 
-func (k *Kademlia) Register(bootstrapNode p2p.Node, kademliaID string, ctx context.Context) error {
+func (k *Kademlia) RegisterNetwork(bootstrapNode p2p.Node, kademliaID string, ctx context.Context) error {
 	err := k.ping(bootstrapNode, ctx)
 	if err != nil {
 		return err
@@ -199,26 +199,18 @@ func (k *Kademlia) FindContacts(kademliaID string, count int, ctx context.Contex
 	}
 }
 
-func (k *Kademlia) putRemote(node p2p.Node, key string, value string, ctx context.Context) error {
+func (k *Kademlia) putRemote(node p2p.Node, id string, prvKey string, key string, value string, ctx context.Context) error {
 	log.WithFields(log.Fields{"To": node, "From": k.Contact.Node.String()}).Info("Sending put request")
 
-	hash := crypto.GenerateHashFromString(value)
-
-	id, err := crypto.CreateIdendityFromString(k.Contact.ID.String())
+	crypto := crypto.CreateCrypto()
+	hash := crypto.GenerateHash(value)
+	sig, err := crypto.GenerateSignature(hash, prvKey)
 	if err != nil {
-		log.WithFields(log.Fields{"Error": err}).Error("Failed to create identity")
+		log.WithFields(log.Fields{"Error": err}).Error("Failed to generate signature")
 		return err
 	}
 
-	sig, err := crypto.Sign(hash, id.PrivateKey())
-	if err != nil {
-		log.WithFields(log.Fields{"Error": err}).Error("Failed to sign value")
-		return err
-	}
-
-	sigHex := hex.EncodeToString(sig)
-
-	payload := PutReq{Header: RPCHeader{Sender: k.Contact}, KV: KV{ID: id.ID(), Key: key, Value: value, Sig: sigHex}}
+	payload := PutReq{Header: RPCHeader{Sender: k.Contact}, KV: KV{ID: id, Key: "/" + id + key, Value: value, Sig: sig}}
 	json, err := payload.ToJSON()
 	if err != nil {
 		log.WithFields(log.Fields{"Error": err}).Error("Failed to convert to JSON")
@@ -256,9 +248,9 @@ func (k *Kademlia) putRemote(node p2p.Node, key string, value string, ctx contex
 	}
 }
 
-func (k *Kademlia) getRemote(node p2p.Node, key string, ctx context.Context) ([]KV, error) {
+func (k *Kademlia) getRemote(node p2p.Node, id string, key string, ctx context.Context) ([]KV, error) {
 	log.WithFields(log.Fields{"To": node, "From": k.Contact.Node.String()}).Info("Sending get request")
-	payload := GetReq{Header: RPCHeader{Sender: k.Contact}, Key: key}
+	payload := GetReq{Header: RPCHeader{Sender: k.Contact}, Key: "/" + id + key}
 	json, err := payload.ToJSON()
 	if err != nil {
 		log.WithFields(log.Fields{"Error": err}).Error("Failed to convert to JSON")
@@ -272,7 +264,7 @@ func (k *Kademlia) getRemote(node p2p.Node, key string, ctx context.Context) ([]
 		Payload: []byte(json)})
 
 	if err != nil {
-		log.WithFields(log.Fields{"Error": err}).Error("Failed to send ping request")
+		log.WithFields(log.Fields{"Error": err}).Error("Failed to send get request")
 		return nil, err
 	}
 
@@ -296,15 +288,11 @@ func (k *Kademlia) getRemote(node p2p.Node, key string, ctx context.Context) ([]
 	}
 }
 
-func (k *Kademlia) Put(key string, value string, replicationFactor int, ctx context.Context) error {
-	rootKey, err := getRootKey(key)
-	if err != nil {
-		return err
-	}
+func (k *Kademlia) Put(id string, prvKey string, key string, value string, replicationFactor int, ctx context.Context) error {
+	crypto := crypto.CreateCrypto()
+	hash := crypto.GenerateHash(id)
 
-	hash := crypto.GenerateHashFromString(rootKey)
-
-	contacts, err := k.FindContacts(hash.String(), replicationFactor, ctx)
+	contacts, err := k.FindContacts(hash, replicationFactor, ctx)
 	if err != nil {
 		log.WithFields(log.Fields{"Error": err}).Error("Failed to find closest contacts")
 		return err
@@ -316,7 +304,7 @@ func (k *Kademlia) Put(key string, value string, replicationFactor int, ctx cont
 	}
 
 	for _, contact := range contacts {
-		err := k.putRemote(contact.Node, key, value, ctx)
+		err := k.putRemote(contact.Node, id, prvKey, key, value, ctx)
 		if err != nil {
 			log.WithFields(log.Fields{"Error": err}).Error("Failed to put value")
 			return err
@@ -330,15 +318,11 @@ func (k *Kademlia) Put(key string, value string, replicationFactor int, ctx cont
 	return nil
 }
 
-func (k *Kademlia) Get(key string, replicationFactor int, ctx context.Context) ([]KV, error) {
-	rootKey, err := getRootKey(key)
-	if err != nil {
-		return nil, err
-	}
+func (k *Kademlia) Get(id string, key string, replicationFactor int, ctx context.Context) ([]KV, error) {
+	crypto := crypto.CreateCrypto()
+	hash := crypto.GenerateHash(id)
 
-	hash := crypto.GenerateHashFromString(rootKey)
-
-	contacts, err := k.FindContacts(hash.String(), replicationFactor, ctx)
+	contacts, err := k.FindContacts(hash, replicationFactor, ctx)
 	if err != nil {
 		log.WithFields(log.Fields{"Error": err}).Error("Failed to find closest contacts")
 		return nil, err
@@ -351,7 +335,7 @@ func (k *Kademlia) Get(key string, replicationFactor int, ctx context.Context) (
 
 	kvsMap := make(map[string]KV)
 	for _, contact := range contacts {
-		kvs, err := k.getRemote(contact.Node, key, ctx)
+		kvs, err := k.getRemote(contact.Node, id, key, ctx)
 		if err != nil {
 			log.WithFields(log.Fields{"Error": err}).Error("Failed to get value")
 		}
@@ -370,4 +354,43 @@ func (k *Kademlia) Get(key string, replicationFactor int, ctx context.Context) (
 	}
 
 	return result, nil
+}
+
+func (k *Kademlia) RegisterNode(id string, prvKey string, node *p2p.Node, ctx context.Context) error {
+	nodeJSON, err := node.ToJSON()
+	if err != nil {
+		log.WithFields(log.Fields{"Error": err}).Error("Failed to convert node to JSON")
+		return err
+	}
+	err = k.Put(id, prvKey, "/nodes/"+node.Name, nodeJSON, RegistrationReplicationFactor, ctx)
+	if err != nil {
+		log.WithFields(log.Fields{"Error": err}).Error("Failed to put node")
+		return err
+	}
+
+	return nil
+}
+
+func (k *Kademlia) LookupNode(id string, name string, ctx context.Context) (*p2p.Node, error) {
+	kvs, err := k.Get(id, "/nodes/"+name, RegistrationReplicationFactor, ctx)
+	if err != nil {
+		log.WithFields(log.Fields{"Error": err}).Error("Failed to put node")
+		return nil, err
+	}
+
+	if len(kvs) == 0 {
+		return nil, errors.New("No nodes found")
+	}
+
+	if len(kvs) > 1 {
+		return nil, errors.New("Multiple nodes found")
+	}
+
+	node, err := p2p.ConvertJSONToNode(kvs[0].Value)
+	if err != nil {
+		log.WithFields(log.Fields{"Error": err}).Error("Failed to convert to node")
+		return nil, err
+	}
+
+	return &node, nil
 }

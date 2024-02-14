@@ -5,8 +5,8 @@ import (
 	"github.com/colonyos/colonies/pkg/p2p/libp2p"
 )
 
-func CreateDHT(port int) (DHT, error) {
-	m, err := libp2p.CreateMessenger(port)
+func CreateDHT(port int, name string) (DHT, error) {
+	m, err := libp2p.CreateMessenger(port, name)
 	if err != nil {
 		return nil, err
 	}

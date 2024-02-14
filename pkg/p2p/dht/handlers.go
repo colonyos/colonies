@@ -119,15 +119,14 @@ func (k *Kademlia) handlePutReq(msg p2p.Message) error {
 		return err
 	}
 
-	isValueValid, err := ValidateValue(req.KV)
+	valid, err := ValidateKV(&req.KV)
 	if err != nil {
-		log.WithFields(log.Fields{"Error": err}).Error("Failed to validate value")
+		log.WithFields(log.Fields{"Error": err}).Error("Failed to validate key-value")
 		return err
 	}
-
-	if !isValueValid {
-		log.WithFields(log.Fields{"Node": k.Contact.Node.String(), "Key": req.KV.Key, "Value": req.KV.Value}).Error("Failed to validate value")
-		return errors.New("Failed to validate value")
+	if !valid {
+		log.WithFields(log.Fields{"Node": k.Contact.Node.String(), "Key": req.KV.Key, "Value": req.KV.Value}).Error("Failed to validate key-value")
+		return errors.New("Failed to validate key-value")
 	}
 
 	err = k.addContact(&req.Header.Sender)

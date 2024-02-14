@@ -2,11 +2,13 @@ package p2p
 
 import (
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestCreateNode(t *testing.T) {
-	expected := "Node{host123, [192.168.1.1, 10.0.0.1]}"
-	node := CreateNode("host123", []string{"192.168.1.1", "10.0.0.1"})
+	expected := "Node{name:hostid123, [192.168.1.1, 10.0.0.1]}"
+	node := CreateNode("name", "hostid123", []string{"192.168.1.1", "10.0.0.1"})
 	actual := node.String()
 
 	if actual != expected {
@@ -14,47 +16,10 @@ func TestCreateNode(t *testing.T) {
 	}
 }
 
-func TestNodeString(t *testing.T) {
-	node := &Node{
-		HostID: "host123",
-		Addr:   []string{"192.168.1.1", "10.0.0.1"},
-	}
+func TestNodeEquals(t *testing.T) {
+	node := CreateNode("name", "hostid123", []string{"192.168.1.1", "10.0.0.1"})
+	otherNode := CreateNode("name", "hostid123", []string{"192.168.1.2", "10.0.0.2"})
 
-	expectedStr := "Node{host123, [192.168.1.1, 10.0.0.1]}"
-
-	actualStr := node.String()
-
-	if actualStr != expectedStr {
-		t.Errorf("String() = %v, want %v", actualStr, expectedStr)
-	}
-}
-
-func TestNodeString2(t *testing.T) {
-	node := &Node{
-		HostID: "host123",
-		Addr:   []string{"192.168.1.1"},
-	}
-
-	expectedStr := "Node{host123, [192.168.1.1]}"
-
-	actualStr := node.String()
-
-	if actualStr != expectedStr {
-		t.Errorf("String() = %v, want %v", actualStr, expectedStr)
-	}
-}
-
-func TestNodeString3(t *testing.T) {
-	node := &Node{
-		HostID: "host123",
-		Addr:   []string{},
-	}
-
-	expectedStr := "Node{host123, []}"
-
-	actualStr := node.String()
-
-	if actualStr != expectedStr {
-		t.Errorf("String() = %v, want %v", actualStr, expectedStr)
-	}
+	assert.True(t, node.Equals(node))
+	assert.False(t, node.Equals(otherNode))
 }

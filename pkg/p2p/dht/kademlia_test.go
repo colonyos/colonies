@@ -6,18 +6,17 @@ import (
 	"testing"
 	"time"
 
-	"github.com/colonyos/colonies/internal/crypto"
 	"github.com/colonyos/colonies/pkg/core"
 	"github.com/colonyos/colonies/pkg/p2p"
 	"github.com/colonyos/colonies/pkg/p2p/mock"
+	"github.com/colonyos/colonies/pkg/security/crypto"
 	"github.com/stretchr/testify/assert"
 )
 
 func createKademliaNode(t *testing.T, n mock.Network, addr string) *Kademlia {
-	id, err := crypto.CreateIdendity()
+	crypto := crypto.CreateCrypto()
+	prvKey, err := crypto.GeneratePrivateKey()
 	assert.Nil(t, err)
-
-	prvKey := id.PrivateKeyAsHex()
 
 	node := p2p.Node{HostID: core.GenerateRandomID(), Addr: []string{addr}}
 	contact1, err := CreateContact(node, prvKey)
@@ -69,7 +68,7 @@ func TestKademliaFindContacts(t *testing.T) {
 	for i := 1; i < 200; i++ {
 		k := createKademliaNode(t, n, "localhost:800"+fmt.Sprint(i))
 		ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
-		k.Register(bootstrapNode.Contact.Node, k.Contact.ID.String(), ctx)
+		k.RegisterNetwork(bootstrapNode.Contact.Node, k.Contact.ID.String(), ctx)
 		cancel()
 		nodes = append(nodes, k)
 	}
@@ -100,7 +99,7 @@ func TestKademliaFindContact(t *testing.T) {
 	for i := 1; i < 20; i++ {
 		k := createKademliaNode(t, n, "localhost:800"+fmt.Sprint(i))
 		ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
-		k.Register(bootstrapNode.Contact.Node, k.Contact.ID.String(), ctx)
+		k.RegisterNetwork(bootstrapNode.Contact.Node, k.Contact.ID.String(), ctx)
 		cancel()
 		nodes = append(nodes, k)
 	}
@@ -123,37 +122,43 @@ func TestKademliaPutGetRemote(t *testing.T) {
 	for i := 1; i < 20; i++ {
 		k := createKademliaNode(t, n, "localhost:800"+fmt.Sprint(i))
 		ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
-		k.Register(bootstrapNode.Contact.Node, k.Contact.ID.String(), ctx)
+		k.RegisterNetwork(bootstrapNode.Contact.Node, k.Contact.ID.String(), ctx)
 		cancel()
 		nodes = append(nodes, k)
 	}
 
+	crypto := crypto.CreateCrypto()
+	prvKey, err := crypto.GeneratePrivateKey()
+	assert.Nil(t, err)
+	id, err := crypto.GenerateID(prvKey)
+	assert.Nil(t, err)
+
 	targetNode := nodes[10]
 	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
-	err := nodes[5].putRemote(targetNode.Contact.Node, "/prefix/key1", "test1", ctx)
+	err = nodes[5].putRemote(targetNode.Contact.Node, id, prvKey, "/key1", "test1", ctx)
 	cancel()
 	assert.Nil(t, err)
 
 	ctx, cancel = context.WithTimeout(context.Background(), 100*time.Millisecond)
-	kvs, err := nodes[6].getRemote(targetNode.Contact.Node, "/prefix/key1", ctx)
+	kvs, err := nodes[6].getRemote(targetNode.Contact.Node, id, "/key1", ctx)
 	cancel()
 	assert.Nil(t, err)
 	assert.Equal(t, len(kvs), 1)
 	assert.Equal(t, kvs[0].Value, "test1")
 
 	ctx, cancel = context.WithTimeout(context.Background(), 100*time.Millisecond)
-	err = nodes[5].putRemote(targetNode.Contact.Node, "/prefix/key2", "test2", ctx)
+	err = nodes[5].putRemote(targetNode.Contact.Node, id, prvKey, "/key2", "test2", ctx)
 	cancel()
 	assert.Nil(t, err)
 
 	ctx, cancel = context.WithTimeout(context.Background(), 100*time.Millisecond)
-	kvs, err = nodes[6].getRemote(targetNode.Contact.Node, "/prefix", ctx)
+	kvs, err = nodes[6].getRemote(targetNode.Contact.Node, id, "", ctx)
 	cancel()
 	assert.Nil(t, err)
 	assert.Equal(t, len(kvs), 2)
 
 	ctx, cancel = context.WithTimeout(context.Background(), 100*time.Millisecond)
-	_, err = nodes[6].getRemote(targetNode.Contact.Node, "/prefix/not_found", ctx)
+	_, err = nodes[6].getRemote(targetNode.Contact.Node, "/prefix/not_found", "", ctx)
 	cancel()
 	assert.NotNil(t, err)
 }
@@ -167,32 +172,38 @@ func TestKademliaPutGet(t *testing.T) {
 	for i := 1; i < 50; i++ {
 		k := createKademliaNode(t, n, "localhost:800"+fmt.Sprint(i))
 		ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
-		k.Register(bootstrapNode.Contact.Node, k.Contact.ID.String(), ctx)
+		k.RegisterNetwork(bootstrapNode.Contact.Node, k.Contact.ID.String(), ctx)
 		cancel()
 		nodes = append(nodes, k)
 	}
 
 	replicationFactor := 5
 
+	crypto := crypto.CreateCrypto()
+	prvKey, err := crypto.GeneratePrivateKey()
+	assert.Nil(t, err)
+	id, err := crypto.GenerateID(prvKey)
+	assert.Nil(t, err)
+
 	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
-	err := nodes[5].Put("/prefix/key1", "test1", replicationFactor, ctx)
+	err = nodes[5].Put(id, prvKey, "/prefix/key1", "test1", replicationFactor, ctx)
 	cancel()
 	assert.Nil(t, err)
 
 	ctx, cancel = context.WithTimeout(context.Background(), 100*time.Millisecond)
-	kvs, err := nodes[28].Get("/prefix/key1", replicationFactor, ctx)
+	kvs, err := nodes[28].Get(id, "/prefix/key1", replicationFactor, ctx)
 	cancel()
 	assert.Nil(t, err)
 	assert.Equal(t, len(kvs), 1)
 	assert.Equal(t, kvs[0].Value, "test1")
 
 	ctx, cancel = context.WithTimeout(context.Background(), 100*time.Millisecond)
-	err = nodes[12].Put("/prefix/key2", "test2", replicationFactor, ctx)
+	err = nodes[12].Put(id, prvKey, "/prefix/key2", "test2", replicationFactor, ctx)
 	cancel()
 	assert.Nil(t, err)
 
 	ctx, cancel = context.WithTimeout(context.Background(), 100*time.Millisecond)
-	kvs, err = nodes[40].Get("/prefix", replicationFactor, ctx)
+	kvs, err = nodes[40].Get(id, "/prefix", replicationFactor, ctx)
 	cancel()
 	assert.Nil(t, err)
 
@@ -203,4 +214,37 @@ func TestKademliaPutGet(t *testing.T) {
 		}
 	}
 	assert.Equal(t, count, 2)
+}
+
+func TestKademliaNodeRegAndLookup(t *testing.T) {
+	n := mock.CreateFakeNetwork()
+
+	bootstrapNode := createKademliaNode(t, n, "localhost:8000")
+
+	var nodes []*Kademlia
+	for i := 1; i < 20; i++ {
+		k := createKademliaNode(t, n, "localhost:800"+fmt.Sprint(i))
+		ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
+		k.RegisterNetwork(bootstrapNode.Contact.Node, k.Contact.ID.String(), ctx)
+		cancel()
+		nodes = append(nodes, k)
+	}
+
+	crypto := crypto.CreateCrypto()
+	prvKey, err := crypto.GeneratePrivateKey()
+	assert.Nil(t, err)
+	id, err := crypto.GenerateID(prvKey)
+	assert.Nil(t, err)
+
+	node := p2p.CreateNode("testnodename", "hostid123", []string{"192.168.1.1", "10.0.0.1"})
+	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
+	err = nodes[5].RegisterNode(id, prvKey, &node, ctx)
+	cancel()
+	assert.Nil(t, err)
+
+	ctx, cancel = context.WithTimeout(context.Background(), 100*time.Millisecond)
+	lookupedNode, err := nodes[10].LookupNode(id, "testnodename", ctx)
+	cancel()
+	assert.Nil(t, err)
+	assert.True(t, lookupedNode.Equals(node))
 }

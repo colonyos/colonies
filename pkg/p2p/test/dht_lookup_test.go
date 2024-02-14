@@ -9,35 +9,39 @@ import (
 	"github.com/colonyos/colonies/pkg/p2p"
 	"github.com/colonyos/colonies/pkg/p2p/dht"
 	"github.com/colonyos/colonies/pkg/p2p/libp2p"
+	"github.com/colonyos/colonies/pkg/security/crypto"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestDHTTest(t *testing.T) {
 	// Create a new DHT node
-	dht1, err := dht.CreateDHT(4001)
+	dht1, err := dht.CreateDHT(4001, "dht1")
 	assert.Nil(t, err)
 
 	// Create a second DHT node
-	dht2, err := dht.CreateDHT(4002)
+	dht2, err := dht.CreateDHT(4002, "dht2")
 	assert.Nil(t, err)
 
 	// Register the second DHT node with the first
 	c := dht1.GetContact()
 	ctx, cancel := context.WithTimeout(context.Background(), 1000*time.Millisecond)
-	err = dht2.Register(c.Node, c.ID.String(), ctx)
+	err = dht2.RegisterNetwork(c.Node, c.ID.String(), ctx)
 	cancel()
 	assert.Nil(t, err)
 
-	// Setup two messenger nodes
-	messenger1, err := libp2p.CreateMessenger(5001)
+	// Create a ECDSA key pair to be able to publish a key-value pair to the DHT
+	crypto := crypto.CreateCrypto()
+	prvKey, err := crypto.GeneratePrivateKey()
 	assert.Nil(t, err)
-	messenger1Node := messenger1.Node
-	messenger1NodeJSON, err := messenger1Node.ToJSON()
+	id, err := crypto.GenerateID(prvKey)
+	assert.Nil(t, err)
 
-	messenger2, err := libp2p.CreateMessenger(5002)
+	// Setup two messenger nodes
+	messenger1, err := libp2p.CreateMessenger(5001, "mes1")
 	assert.Nil(t, err)
-	messenger2Node := messenger2.Node
-	messenger2NodeJSON, err := messenger2Node.ToJSON()
+
+	messenger2, err := libp2p.CreateMessenger(5002, "mes2")
+	assert.Nil(t, err)
 
 	msgChan := make(chan p2p.Message)
 	go func() {
@@ -47,28 +51,28 @@ func TestDHTTest(t *testing.T) {
 
 	// Register the messenger nodes with the DHT
 	ctx, cancel = context.WithTimeout(context.Background(), 1000*time.Millisecond)
-	err = dht1.Put("/m1", messenger1NodeJSON, 2, ctx)
+	err = dht1.RegisterNode(id, prvKey, &messenger1.Node, ctx)
 	assert.Nil(t, err)
 	cancel()
 
 	ctx, cancel = context.WithTimeout(context.Background(), 1000*time.Millisecond)
-	err = dht1.Put("/m2", messenger2NodeJSON, 2, ctx)
+	err = dht1.RegisterNode(id, prvKey, &messenger2.Node, ctx)
 	assert.Nil(t, err)
 	cancel()
 
 	// Now messenger1 want to message messenger2. First, messenger1 needs to first find messenger2 contact information
 	ctx, cancel = context.WithTimeout(context.Background(), 1000*time.Millisecond)
-	kv, err := dht1.Get("/m2", 2, ctx)
+	messenger2Node, err := dht2.LookupNode(id, "mes2", ctx)
 	cancel()
-	assert.Len(t, kv, 1)
-	to, err := p2p.ConvertJSONToNode(kv[0].Value)
+	to := messenger2Node
 	from := messenger1.Node
 
 	ctx, cancel = context.WithTimeout(context.Background(), 1000*time.Millisecond)
-	err = messenger1.Send(p2p.Message{From: from, To: to, Payload: []byte("Hello!")}, ctx)
+	err = messenger1.Send(p2p.Message{From: from, To: *to, Payload: []byte("Hello!")}, ctx)
 	cancel()
 	assert.Equal(t, err, nil)
 
 	msg := <-msgChan
 	fmt.Println(string(msg.Payload))
+	assert.Equal(t, string(msg.Payload), "Hello!")
 }

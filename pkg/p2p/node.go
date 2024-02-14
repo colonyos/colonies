@@ -3,19 +3,21 @@ package p2p
 import "encoding/json"
 
 type Node struct {
-	Addr   []string
-	HostID string
+	Name   string   `json:"name"`
+	Addr   []string `json:"addr"`
+	HostID string   `json:"hostID"`
 }
 
-func CreateNode(hostID string, addr []string) Node {
+func CreateNode(name string, hostID string, addr []string) Node {
 	return Node{
+		Name:   name,
 		Addr:   addr,
 		HostID: hostID,
 	}
 }
 
 func (n *Node) String() string {
-	str := "Node{" + n.HostID + ", ["
+	str := "Node{" + n.Name + ":" + n.HostID + ", ["
 	for _, addr := range n.Addr {
 		str += addr + ", "
 	}
@@ -35,6 +37,28 @@ func (n *Node) ToJSON() (string, error) {
 	}
 
 	return string(jsonBytes), nil
+}
+
+func (n *Node) Equals(other Node) bool {
+	if n.Name != other.Name {
+		return false
+	}
+
+	if n.HostID != other.HostID {
+		return false
+	}
+
+	if len(n.Addr) != len(other.Addr) {
+		return false
+	}
+
+	for i, addr := range n.Addr {
+		if addr != other.Addr[i] {
+			return false
+		}
+	}
+
+	return true
 }
 
 func ConvertJSONToNode(jsonStr string) (Node, error) {

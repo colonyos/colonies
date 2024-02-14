@@ -10,10 +10,10 @@ import (
 )
 
 func TestMessenger(t *testing.T) {
-	messenger1, err := CreateMessenger(4001)
+	messenger1, err := CreateMessenger(4001, "mes1")
 	assert.Equal(t, err, nil)
 
-	messenger2, err := CreateMessenger(4002)
+	messenger2, err := CreateMessenger(4002, "mes2")
 	assert.Equal(t, err, nil)
 
 	msgChan := make(chan p2p.Message)
