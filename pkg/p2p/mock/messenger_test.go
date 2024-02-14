@@ -12,10 +12,10 @@ import (
 func TestMessenger(t *testing.T) {
 	n := CreateFakeNetwork()
 
-	node1 := p2p.Node{HostID: "node1", Addr: []string{"10.0.0.1:1111"}}
+	node1 := p2p.Node{HostID: "node1", Addr: "10.0.0.1:1111"}
 	messenger1 := CreateMessenger(n, node1)
 
-	node2 := p2p.Node{HostID: "node2", Addr: []string{"10.0.0.2:1111"}}
+	node2 := p2p.Node{HostID: "node2", Addr: "10.0.0.2:1111"}
 	messenger2 := CreateMessenger(n, node2)
 
 	msgChan := make(chan p2p.Message)
@@ -38,8 +38,8 @@ func TestMessenger(t *testing.T) {
 	assert.Equal(t, string(msg.Payload), "Hello")
 	assert.Equal(t, msg.From.HostID, "node2")
 	assert.Equal(t, msg.To.HostID, "node1")
-	assert.Equal(t, msg.From.Addr[0], "10.0.0.2:1111")
-	assert.Equal(t, msg.To.Addr[0], "10.0.0.1:1111")
+	assert.Equal(t, msg.From.Addr, "10.0.0.2:1111")
+	assert.Equal(t, msg.To.Addr, "10.0.0.1:1111")
 
 	err := messenger2.Send(p2p.Message{From: node2, To: node1, Payload: []byte("Hello 2")}, context.TODO())
 	assert.Equal(t, err, nil)

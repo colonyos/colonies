@@ -13,6 +13,9 @@ type DHT interface {
 	// The context allows for request cancellation and timeout control.
 	RegisterNetwork(bootstrapNode p2p.Node, kademliaID string, ctx context.Context) error
 
+	// RegisterNetworkWithAddr adds a new node to the DHT network using a bootstrap node's address and a unique KademliaID.
+	RegisterNetworkWithAddr(bootstrapNodeAddr string, kademliaID string, ctx context.Context) error
+
 	// FindContact retrieves information about a node identified by its KademliaID.
 	// It returns a Contact structure with the node's information or an error if the node is not found.
 	FindContact(kademliaID string, ctx context.Context) (Contact, error)
