@@ -53,7 +53,7 @@ func CreateMessengerWithBindAddr(bindAddr string, port int, name string) (*Messe
 		log.Info("Listening on ", addr)
 	}
 
-	return &Messenger{host: host, Node: p2p.Node{Name: name, HostID: host.ID().String(), Addr: addrs[0]}}, nil
+	return &Messenger{host: host, Node: p2p.Node{Name: name, Addr: addrs[0]}}, nil
 }
 
 func (m *Messenger) Send(msg p2p.Message, ctx context.Context) error {
