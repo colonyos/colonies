@@ -139,7 +139,7 @@ func (k *Kademlia) RegisterNetwork(bootstrapNode p2p.Node, kademliaID string, ct
 }
 
 func (k *Kademlia) RegisterNetworkWithAddr(bootstrapNodeAddr string, kademliaID string, ctx context.Context) error {
-	bootstrapNode := p2p.CreateNode("boostrapnode", "", bootstrapNodeAddr)
+	bootstrapNode := p2p.CreateNode("boostrapnode", bootstrapNodeAddr)
 	err := k.ping(bootstrapNode, ctx)
 	if err != nil {
 		return err

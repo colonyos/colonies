@@ -6,7 +6,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/colonyos/colonies/pkg/core"
 	"github.com/colonyos/colonies/pkg/p2p"
 	"github.com/colonyos/colonies/pkg/p2p/mock"
 	"github.com/colonyos/colonies/pkg/security/crypto"
@@ -18,7 +17,7 @@ func createKademliaNode(t *testing.T, n mock.Network, addr string) *Kademlia {
 	prvKey, err := crypto.GeneratePrivateKey()
 	assert.Nil(t, err)
 
-	node := p2p.Node{HostID: core.GenerateRandomID(), Addr: addr}
+	node := p2p.Node{Addr: addr}
 	contact1, err := CreateContact(node, prvKey)
 	assert.Nil(t, err)
 
@@ -236,7 +235,7 @@ func TestKademliaNodeRegAndLookup(t *testing.T) {
 	id, err := crypto.GenerateID(prvKey)
 	assert.Nil(t, err)
 
-	node := p2p.CreateNode("testnodename", "hostid123", "192.168.1.1")
+	node := p2p.CreateNode("testnodename", "192.168.1.1")
 	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
 	err = nodes[5].RegisterNode(id, prvKey, &node, ctx)
 	cancel()
