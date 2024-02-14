@@ -6,7 +6,7 @@ import (
 )
 
 func getRootKey(key string) (string, error) {
-	valid, err := ValidateKey(key)
+	valid, err := validateKey(key)
 	if err != nil {
 		return "", err
 	}
