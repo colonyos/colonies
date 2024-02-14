@@ -7,8 +7,8 @@ import (
 )
 
 func TestCreateNode(t *testing.T) {
-	expected := "Node{name:hostid123, [192.168.1.1, 10.0.0.1]}"
-	node := CreateNode("name", "hostid123", []string{"192.168.1.1", "10.0.0.1"})
+	expected := "Node{name:hostid123, [192.168.1.1]}"
+	node := CreateNode("name", "hostid123", "192.168.1.1")
 	actual := node.String()
 
 	if actual != expected {
@@ -17,8 +17,8 @@ func TestCreateNode(t *testing.T) {
 }
 
 func TestNodeEquals(t *testing.T) {
-	node := CreateNode("name", "hostid123", []string{"192.168.1.1", "10.0.0.1"})
-	otherNode := CreateNode("name", "hostid123", []string{"192.168.1.2", "10.0.0.2"})
+	node := CreateNode("name", "hostid123", "10.0.0.1")
+	otherNode := CreateNode("name", "hostid123", "10.0.0.2")
 
 	assert.True(t, node.Equals(node))
 	assert.False(t, node.Equals(otherNode))

@@ -18,7 +18,7 @@ func createKademliaNode(t *testing.T, n mock.Network, addr string) *Kademlia {
 	prvKey, err := crypto.GeneratePrivateKey()
 	assert.Nil(t, err)
 
-	node := p2p.Node{HostID: core.GenerateRandomID(), Addr: []string{addr}}
+	node := p2p.Node{HostID: core.GenerateRandomID(), Addr: addr}
 	contact1, err := CreateContact(node, prvKey)
 	assert.Nil(t, err)
 
@@ -236,7 +236,7 @@ func TestKademliaNodeRegAndLookup(t *testing.T) {
 	id, err := crypto.GenerateID(prvKey)
 	assert.Nil(t, err)
 
-	node := p2p.CreateNode("testnodename", "hostid123", []string{"192.168.1.1", "10.0.0.1"})
+	node := p2p.CreateNode("testnodename", "hostid123", "192.168.1.1")
 	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
 	err = nodes[5].RegisterNode(id, prvKey, &node, ctx)
 	cancel()

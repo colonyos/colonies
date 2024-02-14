@@ -13,8 +13,10 @@ import (
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/peer"
+
+	//peerstore "github.com/libp2p/go-libp2p/core/peer"
 	"github.com/libp2p/go-libp2p/core/peerstore"
-	ma "github.com/multiformats/go-multiaddr"
+	"github.com/multiformats/go-multiaddr"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -24,15 +26,7 @@ type Messenger struct {
 }
 
 func CreateMessenger(port int, name string) (*Messenger, error) {
-	bestIP, err := getBestIPAddress()
-	if err != nil {
-		return nil, err
-	}
-	return CreateMessengerWithBindAddr(bestIP, port, name)
-}
-
-func CreateMessengerWithBindAddr(bindAddr string, port int, name string) (*Messenger, error) {
-	listenAddr := fmt.Sprintf("/ip4/"+bindAddr+"/tcp/%d", port)
+	listenAddr := fmt.Sprintf("/ip4/0.0.0.0/tcp/%d", port)
 	host, err := libp2p.New(
 		libp2p.ListenAddrStrings(listenAddr),
 		libp2p.NATPortMap(),
@@ -41,11 +35,9 @@ func CreateMessengerWithBindAddr(bindAddr string, port int, name string) (*Messe
 		return nil, err
 	}
 
-	peerID := host.ID()
-
 	var addrs []string
 	for _, addr := range host.Addrs() {
-		fullAddr := fmt.Sprintf("%s/p2p/%s", addr, peerID.String())
+		fullAddr := fmt.Sprintf("%s", addr)
 		addrs = append(addrs, fullAddr)
 	}
 
@@ -53,7 +45,7 @@ func CreateMessengerWithBindAddr(bindAddr string, port int, name string) (*Messe
 		log.Info("Listening on ", addr)
 	}
 
-	return &Messenger{host: host, Node: p2p.Node{Name: name, HostID: host.ID().String(), Addr: addrs[0]}}, nil
+	return &Messenger{host: host, Node: p2p.Node{Name: name, HostID: host.ID().String(), Addr: addrs}}, nil
 }
 
 func (m *Messenger) Send(msg p2p.Message, ctx context.Context) error {
@@ -64,23 +56,31 @@ func (m *Messenger) Send(msg p2p.Message, ctx context.Context) error {
 		return err
 	}
 
-	addrStr := msg.To.Addr
-
-	addr, err := ma.NewMultiaddr(addrStr)
+	ma, err := multiaddr.NewMultiaddr(msg.To.Addr[0])
 	if err != nil {
-		log.Fatalf("Failed to parse multiaddr \"%s\": %s", addrStr, err)
-	}
-	pid, err := addr.ValueForProtocol(ma.P_P2P)
-	if err != nil {
-		log.Fatalf("Failed to get peer ID from multiaddr \"%s\": %s", addrStr, err)
-	}
-	p, err := peer.Decode(pid)
-	if err != nil {
-		log.Fatalf("Failed to parse peer ID from multiaddr \"%s\": %s", addrStr, err)
+		return err
 	}
 
-	host.Peerstore().AddAddr(p, addr, peerstore.PermanentAddrTTL)
+	p, err := peer.Decode(msg.To.Addr[0])
 
+	// for _, addrStr := range msg.To.Addr {
+	// 	addr, err := multiaddr.NewMultiaddr(addrStr)
+	// 	peer, err := peerstor.AddrInfoFromP2pAddr(addr)
+	// }
+
+	if msg.To.HostID != "" {
+		p, err := peer.Decode(msg.To.HostID)
+		if err != nil {
+			return err
+		}
+		for _, addrStr := range msg.To.Addr {
+			addr, err := ma.NewMultiaddr(addrStr)
+			if err != nil {
+				log.Fatalf("Failed to parse multiaddr \"%s\": %s", addrStr, err)
+			}
+			host.Peerstore().AddAddr(p, addr, peerstore.PermanentAddrTTL)
+		}
+	}
 	stream, err := host.NewStream(ctx, p, "/colonies/1.0.0")
 	if err != nil {
 		return err

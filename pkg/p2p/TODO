@@ -1,0 +1,2 @@
+Ping all nodes every node in bucket remove nodes not responding. 
+If all nodes does not respond, the keep the routing table intact, as we might be disconnected instead.

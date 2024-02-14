@@ -138,6 +138,20 @@ func (k *Kademlia) RegisterNetwork(bootstrapNode p2p.Node, kademliaID string, ct
 	return err
 }
 
+func (k *Kademlia) RegisterNetworkWithAddr(bootstrapNodeAddr string, kademliaID string, ctx context.Context) error {
+	bootstrapNode := p2p.CreateNode("boostrapnode", "", bootstrapNodeAddr)
+	err := k.ping(bootstrapNode, ctx)
+	if err != nil {
+		return err
+	}
+
+	// Lookup our self in the network, this will populate remote nodes routing tables with our contact
+	nodesToRegister := 20
+	_, err = k.FindContacts(kademliaID, nodesToRegister, ctx)
+
+	return err
+}
+
 func (k *Kademlia) FindContacts(kademliaID string, count int, ctx context.Context) ([]Contact, error) {
 	foundContacts := make(map[string]Contact)
 	pendingContactChan := make(chan Contact, 10)

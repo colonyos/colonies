@@ -28,8 +28,8 @@ func TestNetworkMock(t *testing.T) {
 	assert.NotNil(t, socket2)
 	go func() {
 		socket.Send(p2p.Message{
-			To:      p2p.Node{HostID: "", Addr: []string{"10.0.0.1:8080"}},
-			From:    p2p.Node{HostID: "", Addr: []string{"10.0.0.2:8080"}},
+			To:      p2p.Node{HostID: "", Addr: "10.0.0.1:8080"},
+			From:    p2p.Node{HostID: "", Addr: "10.0.0.2:8080"},
 			Payload: []byte("test_payload")})
 	}()
 
@@ -39,8 +39,8 @@ func TestNetworkMock(t *testing.T) {
 	case msg := <-resultChan:
 		cancel()
 		assert.Equal(t, "test_payload", string(msg.Payload))
-		assert.Equal(t, "10.0.0.1:8080", msg.To.Addr[0])
-		assert.Equal(t, "10.0.0.2:8080", msg.From.Addr[0])
+		assert.Equal(t, "10.0.0.1:8080", msg.To.Addr)
+		assert.Equal(t, "10.0.0.2:8080", msg.From.Addr)
 	}
 }
 

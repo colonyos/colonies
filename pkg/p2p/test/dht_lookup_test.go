@@ -22,10 +22,13 @@ func TestDHTTest(t *testing.T) {
 	dht2, err := dht.CreateDHT(4002, "dht2")
 	assert.Nil(t, err)
 
+	fmt.Println(dht1.GetContact().Node.Addr)
+
 	// Register the second DHT node with the first
 	c := dht1.GetContact()
 	ctx, cancel := context.WithTimeout(context.Background(), 1000*time.Millisecond)
-	err = dht2.RegisterNetwork(c.Node, c.ID.String(), ctx)
+	//err = dht2.RegisterNetwork(c.Node, c.ID.String(), ctx)
+	err = dht2.RegisterNetworkWithAddr(c.Node.Addr, c.ID.String(), ctx)
 	cancel()
 	assert.Nil(t, err)
 
