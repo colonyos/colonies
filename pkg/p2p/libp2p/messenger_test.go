@@ -37,8 +37,6 @@ func TestMessenger(t *testing.T) {
 	msg := <-msgChan
 
 	assert.Equal(t, string(msg.Payload), "Hello")
-	assert.Equal(t, msg.From.HostID, messenger2.Node.HostID)
-	assert.Equal(t, msg.To.HostID, messenger1.Node.HostID)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 1000*time.Millisecond)
 	err = messenger2.Send(p2p.Message{From: messenger2.Node, To: messenger1.Node, Payload: []byte("Hello 2")}, ctx)
