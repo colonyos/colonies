@@ -16,7 +16,7 @@ type Contact struct {
 }
 
 func createContactWithKademliaID(id KademliaID, addr string) Contact { // Just for testing
-	return Contact{ID: id, Node: p2p.Node{HostID: "", Addr: []string{addr}}}
+	return Contact{ID: id, Node: p2p.Node{HostID: "", Addr: addr}}
 }
 
 func CreateContact(node p2p.Node, prvKey string) (Contact, error) {
