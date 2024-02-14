@@ -23,7 +23,7 @@ type Messenger struct {
 	host host.Host
 }
 
-func CreateMessenger(port int) (*Messenger, error) {
+func CreateMessenger(port int, name string) (*Messenger, error) {
 	listenAddr := fmt.Sprintf("/ip4/0.0.0.0/tcp/%d", port)
 	host, err := libp2p.New(
 		libp2p.ListenAddrStrings(listenAddr),
@@ -43,7 +43,7 @@ func CreateMessenger(port int) (*Messenger, error) {
 		log.Info("Listening on ", addr)
 	}
 
-	return &Messenger{host: host, Node: p2p.Node{HostID: host.ID().String(), Addr: addrs}}, nil
+	return &Messenger{host: host, Node: p2p.Node{Name: name, HostID: host.ID().String(), Addr: addrs}}, nil
 }
 
 func (m *Messenger) Send(msg p2p.Message, ctx context.Context) error {
