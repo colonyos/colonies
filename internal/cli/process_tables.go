@@ -234,8 +234,6 @@ func printFunctionSpecTable(funcSpec *core.FunctionSpec) {
 		termenv.String("Priority").Foreground(theme.ColorViolet),
 		termenv.String(strconv.Itoa(funcSpec.Priority)).Foreground(theme.ColorGray),
 	}
-	t.AddRow(row)
-	t.Render()
 
 	row = []interface{}{
 		termenv.String("Label").Foreground(theme.ColorViolet),
