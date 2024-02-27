@@ -193,7 +193,6 @@ func follow(client *client.ColoniesClient, process *core.Process) {
 			}
 			lastTimestamp = logs[len(logs)-1].Timestamp
 		}
-
 	}
 }
 
