@@ -552,6 +552,46 @@ func TestApplySyncPlan5(t *testing.T) {
 
 // Scenario:
 //
+//	Remote:
+//	Local:  tmpFile1 <- empty size
+//
+//	Expected result: tmpFile1 is uploaded to server
+func TestApplySyncPlanEmpty(t *testing.T) {
+	env, coloniesClient, coloniesServer, _, done := setupTestEnv(t)
+
+	label := "test_label"
+
+	// Create tmpFile1
+	syncDir, err := ioutil.TempDir("/tmp/", "sync")
+	assert.Nil(t, err)
+	tmpFile1, err := ioutil.TempFile(syncDir, "test")
+	assert.Nil(t, err)
+	_, err = tmpFile1.Write([]byte(""))
+	assert.Nil(t, err)
+
+	// Calculate a sync plan
+	fsClient, err := CreateFSClient(coloniesClient, env.colonyName, env.executorPrvKey)
+	assert.Nil(t, err)
+	fsClient.Quiet = true
+	syncPlan, err := fsClient.CalcSyncPlan(syncDir, label, true)
+	assert.Nil(t, err)
+
+	//printSyncPlan(syncPlan)
+	err = fsClient.ApplySyncPlan(env.colonyName, syncPlan)
+	assert.Nil(t, err)
+	checkFile(t, env, label, coloniesClient, tmpFile1)
+
+	// Clean up
+	tmpFile1.Close()
+	err = os.RemoveAll(syncDir)
+	assert.Nil(t, err)
+
+	coloniesServer.Shutdown()
+	<-done
+}
+
+// Scenario:
+//
 //	Remote: tmpFile1
 //	Local:
 //

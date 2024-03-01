@@ -99,10 +99,13 @@ func (fsClient *FSClient) uploadFile(syncPlan *SyncPlan, fileInfo *FileInfo, tra
 		ChecksumAlg: "SHA256",
 		Reference:   ref}
 
-	err = fsClient.s3Client.Upload(syncPlan.Dir, coloniesFile.Name, coloniesFile.Reference.S3Object.Object, coloniesFile.Size, tracker, quite)
-	if err != nil {
-		return err
+	if coloniesFile.Size > 0 {
+		err = fsClient.s3Client.Upload(syncPlan.Dir, coloniesFile.Name, coloniesFile.Reference.S3Object.Object, coloniesFile.Size, tracker, quite)
+		if err != nil {
+			return err
+		}
 	}
+
 	_, err = fsClient.coloniesClient.AddFile(coloniesFile, fsClient.executorPrvKey)
 	if err != nil {
 		return err
@@ -154,18 +157,21 @@ func (fsClient *FSClient) ApplySyncPlan(colonyName string, syncPlan *SyncPlan) e
 	var downloadTracker progress.Tracker
 	var conflictTracker progress.Tracker
 
+	startTracker := false
 	if !fsClient.Quiet {
 		messageUploadTracker := fmt.Sprintf("Uploading %s", syncPlan.Label)
 		uploadTracker = progress.Tracker{Message: messageUploadTracker, Total: totalUploadSize, Units: progress.UnitsBytes}
-		if len(syncPlan.RemoteMissing) > 0 {
+		if len(syncPlan.RemoteMissing) > 0 && totalUploadSize > 0 {
 			pw.AppendTracker(&uploadTracker)
+			startTracker = true
 			uploadTracker.Start()
 		}
 
 		messageDownloadTracker := fmt.Sprintf("Downloading %s", syncPlan.Dir)
 		downloadTracker = progress.Tracker{Message: messageDownloadTracker, Total: totalDownloadSize, Units: progress.UnitsBytes}
-		if len(syncPlan.LocalMissing) > 0 {
+		if len(syncPlan.LocalMissing) > 0 && totalDownloadSize > 0 {
 			pw.AppendTracker(&downloadTracker)
+			startTracker = true
 			downloadTracker.Start()
 		}
 
@@ -176,8 +182,9 @@ func (fsClient *FSClient) ApplySyncPlan(colonyName string, syncPlan *SyncPlan) e
 			messageConflictTracker = fmt.Sprintf("Conflict (keepremote) %s", syncPlan.Label)
 		}
 		conflictTracker = progress.Tracker{Message: messageConflictTracker, Total: totalConflictSize, Units: progress.UnitsBytes}
-		if len(syncPlan.Conflicts) > 0 {
+		if len(syncPlan.Conflicts) > 0 && totalConflictSize > 0 {
 			pw.AppendTracker(&conflictTracker)
+			startTracker = true
 			conflictTracker.Start()
 		}
 	}
@@ -198,7 +205,16 @@ func (fsClient *FSClient) ApplySyncPlan(colonyName string, syncPlan *SyncPlan) e
 	for _, fileInfo := range syncPlan.LocalMissing {
 		errChan := pool.Call(func(arg interface{}) error {
 			f := arg.(*FileInfo)
-			return fsClient.s3Client.Download(f.Name, f.S3Filename, syncPlan.Dir, &downloadTracker, fsClient.Quiet)
+			if f.Size > 0 {
+				return fsClient.s3Client.Download(f.Name, f.S3Filename, syncPlan.Dir, &downloadTracker, fsClient.Quiet)
+			} else {
+				file, err := os.Create(syncPlan.Dir + "/" + f.Name)
+				if err != nil {
+					return err
+				}
+				defer file.Close()
+				return nil
+			}
 		}, fileInfo)
 		go func() {
 			err := <-errChan
@@ -250,7 +266,7 @@ O:
 		}
 	}
 
-	if !fsClient.Quiet {
+	if !fsClient.Quiet && startTracker {
 		for {
 			if !pw.IsRenderInProgress() {
 				break
