@@ -2,7 +2,7 @@ all: build
 .PHONY: all build
 
 BUILD_IMAGE ?= colonyos/colonies
-PUSH_IMAGE ?= colonyos/colonies:v1.8.0
+PUSH_IMAGE ?= colonyos/colonies:v1.8.1
 
 VERSION := $(shell git rev-parse --short HEAD)
 BUILDTIME := $(shell date -u '+%Y-%m-%dT%H:%M:%SZ')
@@ -13,6 +13,7 @@ GOLDFLAGS += -X 'main.BuildTime=$(BUILDTIME)'
 build:
 	@CGO_ENABLED=0 go build -ldflags="-s -w $(GOLDFLAGS)" -o ./bin/colonies ./cmd/main.go
 	@go build -buildmode=c-shared -o ./lib/libcryptolib.so ./internal/cryptolib/cryptolib.go
+	@go build -buildmode=c-shared -o ./lib/libcfslib.so ./internal/cfslib/cfslib.go
 	@GOOS=js GOARCH=wasm go build -o ./lib/libcryptolib.wasm internal/cryptolib.wasm/cryptolib.go
 
 container:
@@ -67,6 +68,7 @@ github_test:
 install:
 	cp ./bin/colonies /usr/local/bin
 	cp ./lib/libcryptolib.so /usr/local/lib
+	cp ./lib/libcfslib.so /usr/local/lib
 
 startdb: 
 	docker run -d -p 5432:5432 -e POSTGRES_PASSWORD=rFcLGNkgsNtksg6Pgtn9CumL4xXBQ7 --restart unless-stopped timescale/timescaledb:latest-pg16
