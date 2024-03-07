@@ -298,7 +298,7 @@ func (db *PQDatabase) GetFileLabelsByName(colonyName string, name string) ([]*co
 }
 
 func (db *PQDatabase) GetFileLabelByName(colonyName string, name string) (*core.Label, error) {
-	sqlStatement := `SELECT LABEL FROM ` + db.dbPrefix + `FILES WHERE COLONY_NAME=$1 AND LABEL=$2`
+	sqlStatement := `SELECT DISTINCT (LABEL) FROM ` + db.dbPrefix + `FILES WHERE COLONY_NAME=$1 AND LABEL=$2`
 	rows, err := db.postgresql.Query(sqlStatement, colonyName, name)
 	if err != nil {
 		return nil, err
