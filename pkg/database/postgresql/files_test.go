@@ -440,6 +440,30 @@ func TestGetFileLabelsByName(t *testing.T) {
 	assert.Equal(t, counter, 1)
 }
 
+func TestGetFileLabelByName(t *testing.T) {
+	db, err := PrepareTests()
+	assert.Nil(t, err)
+
+	defer db.Close()
+
+	label, err := db.GetFileLabelByName("test_colonyid", "/demowater")
+	assert.Nil(t, err)
+	assert.Nil(t, label)
+
+	now := time.Now()
+	file := utils.CreateTestFileWithID("test_id", "test_colonyid", now)
+	file.ID = core.GenerateRandomID()
+	file.Label = "/demowater"
+	file.Name = "test_file.txt"
+	file.Size = 1
+	err = db.AddFile(file)
+	assert.Nil(t, err)
+
+	label, err = db.GetFileLabelByName("test_colonyid", "/demowater")
+	assert.Nil(t, err)
+	assert.NotNil(t, label)
+}
+
 func TestGetFileLabelsByNameOverlappingName(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
