@@ -20,7 +20,7 @@ func (db *PQDatabase) CreateSnapshot(colonyName string, label string, name strin
 
 	label = strings.TrimSuffix(label, "/")
 
-	allLabels, err := db.GetFileLabelsByName(colonyName, label)
+	allLabels, err := db.GetFileLabelsByName(colonyName, label, true)
 	if err != nil {
 		return nil, err
 	}

@@ -1101,7 +1101,7 @@ func (db *dbMock) GetFileLabels(colonyName string) ([]*core.Label, error) {
 	return nil, nil
 }
 
-func (db *dbMock) GetFileLabelsByName(colonyName string, name string) ([]*core.Label, error) {
+func (db *dbMock) GetFileLabelsByName(colonyName string, name string, exact bool) ([]*core.Label, error) {
 	return nil, nil
 }
 

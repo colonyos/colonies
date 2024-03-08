@@ -409,7 +409,7 @@ func TestGetFileLabelsByName(t *testing.T) {
 	err = db.AddFile(file4)
 	assert.Nil(t, err)
 
-	labels, err := db.GetFileLabelsByName("test_colonyid", "/testdir1")
+	labels, err := db.GetFileLabelsByName("test_colonyid", "/testdir1", true)
 	assert.Nil(t, err)
 	assert.Len(t, labels, 3)
 
@@ -427,7 +427,7 @@ func TestGetFileLabelsByName(t *testing.T) {
 	}
 	assert.Equal(t, counter, 3)
 
-	labels, err = db.GetFileLabelsByName("test_colonyid", "/testdir2")
+	labels, err = db.GetFileLabelsByName("test_colonyid", "/testdir2", true)
 	assert.Nil(t, err)
 	assert.Len(t, labels, 1)
 
@@ -495,7 +495,7 @@ func TestGetFileLabelsByNameOverlappingName(t *testing.T) {
 	err = db.AddFile(file3)
 	assert.Nil(t, err)
 
-	labels, err := db.GetFileLabelsByName("test_colonyid", "/d")
+	labels, err := db.GetFileLabelsByName("test_colonyid", "/d", true)
 	assert.Nil(t, err)
 
 	assert.Len(t, labels, 2)

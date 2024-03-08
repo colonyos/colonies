@@ -181,12 +181,12 @@ func TestGetFileLabelsByName(t *testing.T) {
 	_, err = client.AddFile(file, env.executorPrvKey)
 	assert.Nil(t, err)
 
-	labels, err := client.GetFileLabelsByName(env.colonyName, "/testlabel1", env.executorPrvKey)
+	labels, err := client.GetFileLabelsByName(env.colonyName, "/testlabel1", true, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.Len(t, labels, 1)
 	assert.Equal(t, labels[0].Name, "/testlabel1")
 
-	labels, err = client.GetFileLabelsByName(env.colonyName, "/testlabel2", env.executorPrvKey)
+	labels, err = client.GetFileLabelsByName(env.colonyName, "/testlabel2", true, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.Len(t, labels, 2)
 
@@ -201,11 +201,11 @@ func TestGetFileLabelsByName(t *testing.T) {
 	}
 	assert.Equal(t, counter, 2)
 
-	labels, err = client.GetFileLabelsByName(env.colonyName, "/testlabel2", env.executorPrvKey)
+	labels, err = client.GetFileLabelsByName(env.colonyName, "/testlabel2", true, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.Len(t, labels, 2)
 
-	labels, err = client.GetFileLabelsByName(env.colonyName, "does_not_exists", env.executorPrvKey)
+	labels, err = client.GetFileLabelsByName(env.colonyName, "does_not_exists", true, env.executorPrvKey)
 	assert.Nil(t, err)
 	assert.Len(t, labels, 0)
 

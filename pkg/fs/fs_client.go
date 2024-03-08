@@ -331,7 +331,7 @@ func (fsClient *FSClient) CalcSyncPlans(dir string, label string, keepLocal bool
 		return nil, err
 	}
 
-	allLabels, err := fsClient.coloniesClient.GetFileLabelsByName(fsClient.colonyName, label, fsClient.executorPrvKey)
+	allLabels, err := fsClient.coloniesClient.GetFileLabelsByName(fsClient.colonyName, label, true, fsClient.executorPrvKey)
 	if err != nil {
 		return nil, err
 	}
@@ -563,7 +563,7 @@ func (fsClient *FSClient) RemoveFileByName(colonyName string, label string, name
 }
 
 func (fsClient *FSClient) RemoveAllFilesWithLabel(label string) error {
-	allLabels, err := fsClient.coloniesClient.GetFileLabelsByName(fsClient.colonyName, label, fsClient.executorPrvKey)
+	allLabels, err := fsClient.coloniesClient.GetFileLabelsByName(fsClient.colonyName, label, false, fsClient.executorPrvKey)
 	if err != nil {
 		return err
 	}

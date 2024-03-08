@@ -1371,8 +1371,8 @@ func (client *ColoniesClient) GetFileLabels(colonyName string, prvKey string) ([
 	return labels, err
 }
 
-func (client *ColoniesClient) GetFileLabelsByName(colonyName string, name string, prvKey string) ([]*core.Label, error) {
-	msg := rpc.CreateGetFileLabelsMsg(colonyName, name)
+func (client *ColoniesClient) GetFileLabelsByName(colonyName string, name string, exact bool, prvKey string) ([]*core.Label, error) {
+	msg := rpc.CreateGetFileLabelsMsg(colonyName, name, exact)
 	jsonString, err := msg.ToJSON()
 	if err != nil {
 		return nil, err

@@ -7,7 +7,7 @@ import (
 )
 
 func TestGetFileLabelsMsg(t *testing.T) {
-	msg := CreateGetFileLabelsMsg("test_colony", "test_label")
+	msg := CreateGetFileLabelsMsg("test_colony", "test_label", true)
 	jsonString, err := msg.ToJSON()
 	assert.Nil(t, err)
 
@@ -35,7 +35,7 @@ func TestRPCGetFileLabelsMsgIndent(t *testing.T) {
 }
 
 func TestRPCGetFileLAbelsMsgEquals(t *testing.T) {
-	msg := CreateGetFileLabelsMsg("test_colony", "test_label")
+	msg := CreateGetFileLabelsMsg("test_colony", "test_label", false)
 	assert.True(t, msg.Equals(msg))
 	assert.False(t, msg.Equals(nil))
 }

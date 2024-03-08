@@ -261,11 +261,20 @@ func (db *PQDatabase) GetFileLabels(colonyName string) ([]*core.Label, error) {
 	return labels, nil
 }
 
-func (db *PQDatabase) GetFileLabelsByName(colonyName string, name string) ([]*core.Label, error) {
+func (db *PQDatabase) GetFileLabelsByName(colonyName string, name string, exact bool) ([]*core.Label, error) {
+	var rows *sql.Rows
+	var err error
 	sqlStatement := `SELECT DISTINCT (LABEL) FROM ` + db.dbPrefix + `FILES WHERE COLONY_NAME=$1 AND LABEL LIKE $2`
-	rows, err := db.postgresql.Query(sqlStatement, colonyName, name+"/%")
-	if err != nil {
-		return nil, err
+	if exact {
+		rows, err = db.postgresql.Query(sqlStatement, colonyName, name+"/%")
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		rows, err = db.postgresql.Query(sqlStatement, colonyName, name+"%")
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	defer rows.Close()
@@ -284,15 +293,27 @@ func (db *PQDatabase) GetFileLabelsByName(colonyName string, name string) ([]*co
 		labels = append(labels, &core.Label{Name: labelStr, Files: fileCount})
 	}
 
-	label, err := db.GetFileLabelByName(colonyName, name)
-	if err != nil {
-		return nil, err
-	}
-	if label == nil {
-		return nil, nil
-	}
+	if exact {
+		label, err := db.GetFileLabelByName(colonyName, name)
+		if err != nil {
+			return nil, err
+		}
+		if label == nil {
+			return nil, nil
+		}
 
-	labels = append(labels, label)
+		labels = append(labels, label)
+
+		labelMap := make(map[string]*core.Label)
+		for _, label := range labels {
+			labelMap[label.Name] = label
+		}
+
+		labels = []*core.Label{}
+		for _, label := range labelMap {
+			labels = append(labels, label)
+		}
+	}
 
 	return labels, nil
 }
