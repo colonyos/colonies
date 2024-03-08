@@ -240,7 +240,7 @@ var removeLabelCmd = &cobra.Command{
 			CheckError(err)
 			log.WithFields(log.Fields{"Label": Label}).Debug("Label removed")
 		} else {
-			fmt.Print("All files with label <" + Label + "/*> will be removed. Local files are not removed.\n\nAre you sure you want to continue?  (yes,no): ")
+			fmt.Print("All files with label <" + Label + "*> will be removed. Local files are not removed.\n\nAre you sure you want to continue?  (yes,no): ")
 			reader := bufio.NewReader(os.Stdin)
 			reply, _ := reader.ReadString('\n')
 			if reply == "yes\n" || reply == "y\n" {
