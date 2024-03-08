@@ -206,7 +206,7 @@ func (server *ColoniesServer) handleGetFileLabelsHTTPRequest(c *gin.Context, rec
 			return
 		}
 	} else {
-		labels, err = server.db.GetFileLabelsByName(msg.ColonyName, msg.Name)
+		labels, err = server.db.GetFileLabelsByName(msg.ColonyName, msg.Name, msg.Exact)
 		if server.handleHTTPError(c, err, http.StatusBadRequest) {
 			log.Error(err)
 			return
