@@ -196,8 +196,20 @@ func (db *PQDatabase) GetFileDataByLabel(colonyName string, label string) ([]*co
 		return nil, err
 	}
 
-	fileDataArr := []*core.FileData{}
+	// Keep file with the highest sequence number, remove duplicates with the same colonyName, label and colonyName
+	filemap := make(map[string]*core.File)
 	for _, file := range files {
+		if _, ok := filemap[file.Name]; !ok {
+			filemap[file.Name] = file
+		} else {
+			if filemap[file.Name].SequenceNumber < file.SequenceNumber {
+				filemap[file.Name] = file
+			}
+		}
+	}
+
+	fileDataArr := []*core.FileData{}
+	for _, file := range filemap {
 		fileData := &core.FileData{Name: file.Name, Checksum: file.Checksum, Size: file.Size, S3Filename: file.Reference.S3Object.Object}
 		fileDataArr = append(fileDataArr, fileData)
 	}
