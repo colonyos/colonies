@@ -196,7 +196,7 @@ func (db *PQDatabase) GetFileDataByLabel(colonyName string, label string) ([]*co
 		return nil, err
 	}
 
-	// Keep file with the highest sequence number, remove duplicates with the same colonyName, label and colonyName
+	// Keep file with the highest sequence number, remove duplicates with the same name
 	filemap := make(map[string]*core.File)
 	for _, file := range files {
 		if _, ok := filemap[file.Name]; !ok {
