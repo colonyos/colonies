@@ -4,7 +4,7 @@
 ![ColonyOSLogo](docs/images/ColonyOsLogoNoShaddow2.png)
 
 # What is Colonies?
-Colonies is an open-source framework designed to facilitate seamless execution of computational workloads across platforms, e.g. cloud, edge, devices, or High-Performance Computing (HPC), creating so-called *Compute Continuums*. Colonies is key component of ColonyOS and provides a **Meta-Orchestrator**, delivering functionalities like a traditional operating system, but functions as an overlay on top of existing platforms. 
+ColonyOS is an open-source framework designed to facilitate seamless execution of computational workloads across platforms, e.g. cloud, edge, devices, or High-Performance Computing (HPC), creating so-called *Compute Continuums*. Colonies is key component of ColonyOS and provides a **Meta-Orchestrator**, delivering functionalities like a traditional operating system, but functions as an overlay on top of existing platforms. 
 
 At its core, Colonies provides a **distributed runtime environment**, called a **Colony**, consisting of a network of loosely connected **Executors**. Executors are distributed microservices that can easily integrate with any third-party application or system. They can be implemented in any language and run anywhere on the Internet, e.g. on supercomputers or in a web browser on a smart phone.
 
@@ -100,7 +100,7 @@ Below are some screenshots from the [Colonies Dashboard](https://github.com/colo
 More information can also be found [here](https://colonyos.io).
 
 # Current users
-* Colonies is currently being used by **[RockSigma AB](https://www.rocksigma.com)** to build a compute engine for automatic seismic processing in underground mines. 
+* ColonyOS is currently being used by **[RockSigma AB](https://www.rocksigma.com)** to build a compute engine for automatic seismic processing in underground mines. 
 
 # Running the tests
 Follow the instructions at [Installation Guide](./docs/Installation.md) then type:
