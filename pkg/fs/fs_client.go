@@ -3,9 +3,11 @@ package fs
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -30,6 +32,7 @@ type FileInfo struct {
 	Checksum   string
 	Size       int64
 	S3Filename string
+	Dir        bool
 }
 
 type SyncPlan struct {
@@ -39,6 +42,16 @@ type SyncPlan struct {
 	Conflicts     []*FileInfo
 	KeepLocal     bool
 	Label         string
+}
+
+type CleanPlan struct {
+	Dir           string
+	FilesToRemove []*FileInfo
+	Label         string
+}
+
+type CFSFile struct {
+	Label string `json:"label"`
 }
 
 func CreateFSClient(coloniesClient *client.ColoniesClient, colonyName string, executorPrvKey string) (*FSClient, error) {
@@ -114,7 +127,7 @@ func (fsClient *FSClient) uploadFile(syncPlan *SyncPlan, fileInfo *FileInfo, tra
 	return nil
 }
 
-func (fsClient *FSClient) ApplySyncPlan(colonyName string, syncPlan *SyncPlan) error {
+func (fsClient *FSClient) ApplySyncPlan(syncPlan *SyncPlan) error {
 	totalCalls := len(syncPlan.RemoteMissing) + len(syncPlan.LocalMissing) + len(syncPlan.Conflicts)
 	if totalCalls == 0 {
 		return nil
@@ -127,6 +140,17 @@ func (fsClient *FSClient) ApplySyncPlan(colonyName string, syncPlan *SyncPlan) e
 		if err != nil {
 			return err
 		}
+	}
+
+	// Create a .cfs file based on the CFSFile struct
+	cfsFile := CFSFile{Label: syncPlan.Label}
+	cfsFileBytes, err := json.Marshal(cfsFile)
+	if err != nil {
+		return err
+	}
+	err = ioutil.WriteFile(syncPlan.Dir+"/.cfs", cfsFileBytes, 0644)
+	if err != nil {
+		return err
 	}
 
 	totalUploadSize := int64(0)
@@ -406,7 +430,7 @@ func (fsClient *FSClient) CalcSyncPlan(dir string, label string, keepLocal bool)
 		if err != nil {
 			return nil, err
 		}
-		if !fileInfo.IsDir() {
+		if !fileInfo.IsDir() && file.Name() != ".cfs" { // Ignore .cfs file
 			checksum, err := checksum(dir + "/" + file.Name())
 			if err != nil {
 				return nil, err
@@ -487,6 +511,170 @@ func (fsClient *FSClient) CalcSyncPlan(dir string, label string, keepLocal bool)
 		Dir:           dir,
 		Label:         label,
 		KeepLocal:     keepLocal}, nil
+}
+
+func (fsClient *FSClient) CalcCleanPlan(dir string, label string) (*CleanPlan, error) {
+	dir, err := filepath.Abs(dir)
+	if err != nil {
+		return nil, err
+	}
+
+	fileInfo, err := os.Stat(dir)
+	if err != nil {
+		return nil, err
+	}
+
+	if !fileInfo.IsDir() {
+		return nil, errors.New(dir + " is not a directory")
+	}
+
+	if !strings.HasPrefix(label, "/") {
+		label = "/" + label
+	}
+
+	filesInLabels, err := fsClient.coloniesClient.GetFileData(fsClient.colonyName, label, fsClient.executorPrvKey)
+	if err != nil {
+		return nil, err
+	}
+
+	remoteFiles := make(map[string]string)
+	for _, fileData := range filesInLabels {
+		remoteFiles[fileData.Name] = fileData.Name
+	}
+
+	localFiles, err := ioutil.ReadDir(dir)
+	if err != nil {
+		return nil, err
+	}
+
+	filesToRemove := make([]*FileInfo, 0)
+	for _, localFile := range localFiles {
+		if localFile.IsDir() {
+			// check if there is a label called label/dir
+			labels, err := fsClient.coloniesClient.GetFileLabelsByName(fsClient.colonyName, label+"/"+localFile.Name(), true, fsClient.executorPrvKey)
+			if err != nil {
+				return nil, err
+			}
+			labelsDict := make(map[string]string)
+			for _, l := range labels {
+				labelsDict[l.Name] = l.Name
+			}
+			_, ok := labelsDict[label+"/"+localFile.Name()]
+			if !ok {
+				filesToRemove = append(filesToRemove, &FileInfo{Name: dir + "/" + localFile.Name(), Dir: true})
+			}
+		} else {
+			if localFile.Name() != ".cfs" {
+				_, ok := remoteFiles[localFile.Name()]
+				if !ok {
+					filesToRemove = append(filesToRemove, &FileInfo{Name: dir + "/" + localFile.Name(), Dir: false})
+				}
+			}
+		}
+	}
+
+	return &CleanPlan{Dir: dir, FilesToRemove: filesToRemove, Label: label}, nil
+}
+
+func (fsClient *FSClient) CalcCleanPlans(dir string, label string) ([]*CleanPlan, error) {
+	fileInfo, err := os.Stat(dir)
+	if err != nil {
+		return nil, err
+	}
+
+	if !fileInfo.IsDir() {
+		return nil, errors.New(dir + " is not a directory")
+	}
+
+	if !strings.HasPrefix(label, "/") {
+		label = "/" + label
+	}
+
+	labels, err := fsClient.coloniesClient.GetFileLabelsByName(fsClient.colonyName, label, true, fsClient.executorPrvKey)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(labels) == 0 {
+		return nil, errors.New("Root directory not found in colonyFS")
+	}
+
+	return fsClient.calcCleanPlans(dir, label)
+}
+
+func (fsClient *FSClient) calcCleanPlans(dir string, label string) ([]*CleanPlan, error) {
+	dir, err := filepath.Abs(dir)
+	if err != nil {
+		return nil, err
+	}
+
+	fileInfo, err := os.Stat(dir)
+	if err != nil {
+		return nil, err
+	}
+
+	if !fileInfo.IsDir() {
+		return nil, errors.New(dir + " is not a directory")
+	}
+
+	if !strings.HasPrefix(label, "/") {
+		label = "/" + label
+	}
+
+	cleanPlans := make(map[string]*CleanPlan)
+	err = filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		if info.IsDir() {
+			l := ""
+
+			path = strings.Replace(path, `\`, `/`, -1)
+			dir = strings.Replace(dir, `\`, `/`, -1)
+			if len(strings.TrimPrefix(path, dir)) > 0 { // XXX this line does not work on windows
+				l = label + strings.TrimPrefix(path, dir)
+			} else {
+				l = label
+			}
+
+			log.WithFields(log.Fields{"Label": l, "Dir:": dir, "Path": path}).Debug("Calculating clean plan")
+			cleanPlan, err := fsClient.CalcCleanPlan(path, l)
+			if err != nil {
+				return err
+			}
+			cleanPlans[l] = cleanPlan
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	var a []*CleanPlan
+	for _, v := range cleanPlans {
+		a = append(a, v)
+	}
+
+	return a, nil
+}
+
+func (fsClient *FSClient) ApplyCleanPlan(cleanPlan *CleanPlan) error {
+	for _, fileInfo := range cleanPlan.FilesToRemove {
+		if fileInfo.Dir {
+			err := os.RemoveAll(fileInfo.Name)
+			if err != nil {
+				return err
+			}
+		} else {
+			err := os.Remove(fileInfo.Name)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
 }
 
 func (fsClient *FSClient) Download(colonyName string, fileID string, downloadDir string) error {
@@ -612,7 +800,7 @@ func (fsClient *FSClient) RemoveAllFilesWithLabel(label string) error {
 	}
 
 	aggErrChan := make(chan error, totalRevisions)
-	pool := utils.NewWorkerPool(5).Start()
+	pool := utils.NewWorkerPool(50).Start()
 
 	type w struct {
 		l          string

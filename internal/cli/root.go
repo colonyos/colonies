@@ -129,6 +129,7 @@ var Phone string
 var ShowIDs bool
 var InitDB bool
 var SyncPlans bool
+var CleanPlans bool
 var Quite bool
 var TargetServerID string
 var Text string

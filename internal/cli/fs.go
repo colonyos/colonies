@@ -2,6 +2,7 @@ package cli
 
 import (
 	"bufio"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -27,6 +28,7 @@ func init() {
 	labelsCmd.AddCommand(removeLabelCmd)
 
 	fsCmd.AddCommand(syncCmd)
+	fsCmd.AddCommand(cleanCmd)
 	fsCmd.AddCommand(labelsCmd)
 	fsCmd.AddCommand(listFilesCmd)
 	fsCmd.AddCommand(getFileInfoCmd)
@@ -36,18 +38,22 @@ func init() {
 	rootCmd.AddCommand(fsCmd)
 
 	syncCmd.Flags().StringVarP(&SyncDir, "dir", "d", "", "Local directory to sync")
-	syncCmd.MarkFlagRequired("dir")
 	syncCmd.Flags().StringVarP(&StorageDriver, "driver", "", "s3", "Storage driver")
 	syncCmd.Flags().StringVarP(&Label, "label", "l", "", "Label")
-	syncCmd.MarkFlagRequired("label")
 	syncCmd.Flags().BoolVarP(&Dry, "dry", "", false, "Dry run")
 	syncCmd.Flags().BoolVarP(&Yes, "yes", "", false, "Anser yes to all questions")
 	syncCmd.Flags().BoolVarP(&KeepLocal, "keeplocal", "", true, "Keep local files in case of conflicts")
 	syncCmd.Flags().BoolVarP(&SyncPlans, "syncplans", "", false, "Print sync plans details")
 	syncCmd.Flags().BoolVarP(&Quite, "quite", "", false, "No outputs")
 
+	cleanCmd.Flags().StringVarP(&SyncDir, "dir", "d", "", "Local directory to clean")
+	cleanCmd.Flags().StringVarP(&Label, "label", "l", "", "Label")
+	cleanCmd.Flags().BoolVarP(&Dry, "dry", "", false, "Dry run")
+	cleanCmd.Flags().BoolVarP(&Yes, "yes", "", false, "Anser yes to all questions")
+	cleanCmd.Flags().BoolVarP(&CleanPlans, "cleanplans", "", false, "Print clean plans details")
+	cleanCmd.Flags().BoolVarP(&Quite, "quite", "", false, "No outputs")
+
 	listFilesCmd.Flags().StringVarP(&Label, "label", "l", "", "Label")
-	syncCmd.MarkFlagRequired("label")
 
 	getFileInfoCmd.Flags().StringVarP(&FileID, "fileid", "i", "", "File Id")
 	getFileInfoCmd.Flags().StringVarP(&Label, "label", "l", "", "Label")
@@ -118,7 +124,23 @@ func printSyncPlans(syncPlans []*fs.SyncPlan) {
 	if SyncPlans {
 		printSyncPlansDetails(syncPlans)
 	} else {
-		log.Info("Add --syncplan flag to view the sync plan in more detail")
+		log.Info("Add --syncplans flag to view the sync plan in more detail")
+	}
+}
+
+func printCleanPlans(cleanPlans []*fs.CleanPlan) {
+	filesToRemove := 0
+
+	for _, cleanPlan := range cleanPlans {
+		filesToRemove += len(cleanPlan.FilesToRemove)
+	}
+
+	log.WithFields(log.Fields{"FilesToRemove": filesToRemove}).Info("Clean plans completed")
+
+	if CleanPlans {
+		printCleanPlansDetails(cleanPlans)
+	} else {
+		log.Info("Add --cleanplans flag to view the clean plan in more detail")
 	}
 }
 
@@ -137,6 +159,23 @@ var syncCmd = &cobra.Command{
 		if err == nil {
 			if !fileInfo.IsDir() {
 				CheckError(errors.New(SyncDir + " is not a directory"))
+			}
+		}
+
+		currentDir, err := os.Getwd()
+		CheckError(err)
+
+		if SyncDir == "" {
+			log.Info("No directory specified, using current directory " + currentDir + " as sync directory")
+			SyncDir = currentDir
+		}
+
+		if Label == "" {
+			cfsFile := getCFSFile(SyncDir)
+			if cfsFile.Label == "" {
+				CheckError(errors.New("No label found in .cfs file, use --label flag"))
+			} else {
+				Label = cfsFile.Label
 			}
 		}
 
@@ -181,7 +220,7 @@ var syncCmd = &cobra.Command{
 		} else {
 			if Yes {
 				for _, syncPlan := range syncPlans {
-					err = fsClient.ApplySyncPlan(ColonyName, syncPlan)
+					err = fsClient.ApplySyncPlan(syncPlan)
 					CheckError(err)
 				}
 			} else {
@@ -191,7 +230,116 @@ var syncCmd = &cobra.Command{
 				reply, _ := reader.ReadString('\n')
 				if reply == "yes\n" || reply == "y\n" {
 					for _, syncPlan := range syncPlans {
-						err = fsClient.ApplySyncPlan(ColonyName, syncPlan)
+						err = fsClient.ApplySyncPlan(syncPlan)
+						CheckError(err)
+					}
+				}
+			}
+		}
+	},
+}
+
+func getCFSFile(SyncDir string) fs.CFSFile {
+	cfsFile := SyncDir + "/.cfs"
+	if _, err := os.Stat(cfsFile); err == nil {
+		file, err := os.Open(cfsFile)
+		CheckError(err)
+		defer file.Close()
+		fileContent, err := os.ReadFile(cfsFile)
+		CheckError(err)
+		var cfsFile fs.CFSFile
+		err = json.Unmarshal(fileContent, &cfsFile)
+		CheckError(err)
+		return cfsFile
+	}
+	return fs.CFSFile{}
+}
+
+var cleanCmd = &cobra.Command{
+	Use:   "clean",
+	Short: "Remove local files not present in ColonyFS",
+	Long:  "Remove local files not present in ColonyFS",
+	Run: func(cmd *cobra.Command, args []string) {
+		client := setup()
+
+		currentDir, err := os.Getwd()
+		CheckError(err)
+
+		if SyncDir == "" {
+			log.Info("No directory specified, using current directory " + currentDir + " as sync directory")
+			SyncDir = currentDir
+		}
+
+		if Label == "" {
+			cfsFile := getCFSFile(SyncDir)
+			if cfsFile.Label == "" {
+				CheckError(errors.New("No label found in .cfs file, use --label flag"))
+			} else {
+				Label = cfsFile.Label
+			}
+		}
+
+		if Quite && !Yes {
+			CheckError(errors.New("--quite and --yes flags must be used together, please add --yes"))
+		}
+
+		fileInfo, err := os.Stat(SyncDir)
+		if err == nil {
+			if !fileInfo.IsDir() {
+				CheckError(errors.New(SyncDir + " is not a directory"))
+			}
+		}
+
+		Label = strings.TrimRight(Label, "/")
+		Label = strings.TrimLeft(Label, "/")
+		Label = "/" + Label
+
+		err = os.MkdirAll(SyncDir, 0755)
+		CheckError(err)
+
+		log.Debug("Starting a file storage client")
+		fsClient, err := fs.CreateFSClient(client, ColonyName, PrvKey)
+		CheckError(err)
+
+		if Quite {
+			fsClient.Quiet = true
+		}
+
+		if !Quite {
+			log.Info("Calculating clean plans")
+		}
+
+		cleanPlans, err := fsClient.CalcCleanPlans(SyncDir, Label)
+		CheckError(err)
+
+		counter := 0
+		for _, cleanPlan := range cleanPlans {
+			counter += len(cleanPlan.FilesToRemove)
+		}
+
+		if counter == 0 {
+			if !Quite {
+				log.WithFields(log.Fields{"Label": Label, "SyncDir": SyncDir}).Info("Clean, nothing to do, no files to remove ")
+			}
+			os.Exit(0)
+		}
+
+		if Dry {
+			printCleanPlans(cleanPlans)
+		} else {
+			if Yes {
+				for _, cleanPlan := range cleanPlans {
+					err = fsClient.ApplyCleanPlan(cleanPlan)
+					CheckError(err)
+				}
+			} else {
+				printCleanPlans(cleanPlans)
+				fmt.Print("\nAre you sure you want to continue? (yes,no): ")
+				reader := bufio.NewReader(os.Stdin)
+				reply, _ := reader.ReadString('\n')
+				if reply == "yes\n" || reply == "y\n" {
+					for _, cleanPlan := range cleanPlans {
+						err = fsClient.ApplyCleanPlan(cleanPlan)
 						CheckError(err)
 					}
 				}
@@ -266,6 +414,18 @@ var listFilesCmd = &cobra.Command{
 	Long:  "List all files with a label",
 	Run: func(cmd *cobra.Command, args []string) {
 		client := setup()
+
+		currentDir, err := os.Getwd()
+		CheckError(err)
+
+		if Label == "" {
+			cfsFile := getCFSFile(currentDir)
+			if cfsFile.Label == "" {
+				CheckError(errors.New("No label found in .cfs file, use --label flag"))
+			} else {
+				Label = cfsFile.Label
+			}
+		}
 
 		fileDataArr, err := client.GetFileData(ColonyName, Label, PrvKey)
 		CheckError(err)

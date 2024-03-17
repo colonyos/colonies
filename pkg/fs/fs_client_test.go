@@ -248,7 +248,7 @@ func TestApplySyncPlan1(t *testing.T) {
 	assert.Nil(t, err)
 
 	//printSyncPlan(syncPlan)
-	err = fsClient.ApplySyncPlan(env.colonyName, syncPlan)
+	err = fsClient.ApplySyncPlan(syncPlan)
 	assert.Nil(t, err)
 	checkFile(t, env, label, coloniesClient, tmpFile1)
 
@@ -288,7 +288,7 @@ func TestApplySyncPlan2(t *testing.T) {
 	assert.Nil(t, err)
 
 	// Upload the file to the server
-	err = fsClient.ApplySyncPlan(env.colonyName, syncPlan)
+	err = fsClient.ApplySyncPlan(syncPlan)
 	assert.Nil(t, err)
 
 	syncDir2, err := ioutil.TempDir("/tmp/", "sync")
@@ -296,7 +296,7 @@ func TestApplySyncPlan2(t *testing.T) {
 
 	syncPlan2, err := fsClient.CalcSyncPlan(syncDir2, label, true)
 	assert.Nil(t, err)
-	err = fsClient.ApplySyncPlan(env.colonyName, syncPlan2)
+	err = fsClient.ApplySyncPlan(syncPlan2)
 	assert.Nil(t, err)
 
 	tmpFile1Filename := filepath.Base(tmpFile1.Name())
@@ -344,7 +344,7 @@ func TestApplySyncPlan3(t *testing.T) {
 	assert.Nil(t, err)
 
 	// Upload the file to the server
-	err = fsClient.ApplySyncPlan(env.colonyName, syncPlan)
+	err = fsClient.ApplySyncPlan(syncPlan)
 	assert.Nil(t, err)
 
 	// Create tmpFile2
@@ -358,7 +358,7 @@ func TestApplySyncPlan3(t *testing.T) {
 
 	syncPlan2, err := fsClient.CalcSyncPlan(syncDir2, label, true)
 	assert.Nil(t, err)
-	err = fsClient.ApplySyncPlan(env.colonyName, syncPlan2)
+	err = fsClient.ApplySyncPlan(syncPlan2)
 	assert.Nil(t, err)
 
 	// Check that we got both files
@@ -415,7 +415,7 @@ func TestApplySyncPlan4(t *testing.T) {
 	assert.Nil(t, err)
 
 	// Upload the file to the server
-	err = fsClient.ApplySyncPlan(env.colonyName, syncPlan)
+	err = fsClient.ApplySyncPlan(syncPlan)
 	assert.Nil(t, err)
 
 	// Replace content in tmpFile1
@@ -434,7 +434,7 @@ func TestApplySyncPlan4(t *testing.T) {
 	syncPlan, err = fsClient.CalcSyncPlan(syncDir, label, keepLocal)
 	assert.Nil(t, err)
 	assert.Len(t, syncPlan.Conflicts, 1)
-	err = fsClient.ApplySyncPlan(env.colonyName, syncPlan)
+	err = fsClient.ApplySyncPlan(syncPlan)
 	assert.Nil(t, err)
 
 	// Verify that local file is not replaced
@@ -498,7 +498,7 @@ func TestApplySyncPlan5(t *testing.T) {
 	assert.Nil(t, err)
 
 	// Upload the file to the server
-	err = fsClient.ApplySyncPlan(env.colonyName, syncPlan)
+	err = fsClient.ApplySyncPlan(syncPlan)
 	assert.Nil(t, err)
 
 	// Replace content in tmpFile1
@@ -517,7 +517,7 @@ func TestApplySyncPlan5(t *testing.T) {
 	syncPlan, err = fsClient.CalcSyncPlan(syncDir, label, keepLocal)
 	assert.Nil(t, err)
 	assert.Len(t, syncPlan.Conflicts, 1)
-	err = fsClient.ApplySyncPlan(env.colonyName, syncPlan)
+	err = fsClient.ApplySyncPlan(syncPlan)
 	assert.Nil(t, err)
 
 	// Verify that local file is replaced
@@ -577,7 +577,7 @@ func TestApplySyncPlanEmpty(t *testing.T) {
 	assert.Nil(t, err)
 
 	//printSyncPlan(syncPlan)
-	err = fsClient.ApplySyncPlan(env.colonyName, syncPlan)
+	err = fsClient.ApplySyncPlan(syncPlan)
 	assert.Nil(t, err)
 	checkFile(t, env, label, coloniesClient, tmpFile1)
 
@@ -618,7 +618,7 @@ func TestDownload(t *testing.T) {
 	assert.Nil(t, err)
 
 	// Upload the file to the server
-	err = fsClient.ApplySyncPlan(env.colonyName, syncPlan)
+	err = fsClient.ApplySyncPlan(syncPlan)
 	assert.Nil(t, err)
 
 	coloniesFile, err := fsClient.coloniesClient.GetFileByName(env.colonyName, label, tmpFile1Filename, env.executorPrvKey)
@@ -669,7 +669,7 @@ func TestRemoveByID(t *testing.T) {
 	assert.Nil(t, err)
 
 	// Upload the file to the server
-	err = fsClient.ApplySyncPlan(env.colonyName, syncPlan)
+	err = fsClient.ApplySyncPlan(syncPlan)
 	assert.Nil(t, err)
 
 	coloniesFile, err := fsClient.coloniesClient.GetFileByName(env.colonyName, label, tmpFile1Filename, env.executorPrvKey)
@@ -714,7 +714,7 @@ func TestRemoveByName(t *testing.T) {
 	assert.Nil(t, err)
 
 	// Upload the file to the server
-	err = fsClient.ApplySyncPlan(env.colonyName, syncPlan)
+	err = fsClient.ApplySyncPlan(syncPlan)
 	assert.Nil(t, err)
 
 	// Modify the file so that we get two revisions
@@ -729,7 +729,7 @@ func TestRemoveByName(t *testing.T) {
 	keepLocal := true
 	syncPlan, err = fsClient.CalcSyncPlan(syncDir, label, keepLocal)
 	assert.Nil(t, err)
-	err = fsClient.ApplySyncPlan(env.colonyName, syncPlan)
+	err = fsClient.ApplySyncPlan(syncPlan)
 	assert.Nil(t, err)
 
 	// Get the file
@@ -781,7 +781,7 @@ func TestDownloadSnapshot(t *testing.T) {
 	assert.Nil(t, err)
 
 	// Upload the file to the server
-	err = fsClient.ApplySyncPlan(env.colonyName, syncPlan)
+	err = fsClient.ApplySyncPlan(syncPlan)
 	assert.Nil(t, err)
 
 	// Create a snapshot
@@ -841,7 +841,7 @@ func TestRemoveAllFilesWithLabel(t *testing.T) {
 	assert.Nil(t, err)
 
 	// Upload the file to the server
-	err = fsClient.ApplySyncPlan(env.colonyName, syncPlan)
+	err = fsClient.ApplySyncPlan(syncPlan)
 	assert.Nil(t, err)
 
 	fileDataArr, err := fsClient.coloniesClient.GetFileData(env.colonyName, label, env.executorPrvKey)
@@ -954,7 +954,7 @@ func TestAddFilesRecursively(t *testing.T) {
 	assert.Nil(t, err)
 
 	for _, syncPlan := range syncPlans {
-		err = fsClient.ApplySyncPlan(env.colonyName, syncPlan)
+		err = fsClient.ApplySyncPlan(syncPlan)
 		assert.Nil(t, err)
 	}
 
@@ -963,7 +963,7 @@ func TestAddFilesRecursively(t *testing.T) {
 
 	syncPlans, err = fsClient.CalcSyncPlans(syncDir2, label, true)
 	for _, syncPlan := range syncPlans {
-		err = fsClient.ApplySyncPlan(env.colonyName, syncPlan)
+		err = fsClient.ApplySyncPlan(syncPlan)
 		assert.Nil(t, err)
 	}
 
@@ -1056,7 +1056,7 @@ func TestDownloadSnapshopRecursively(t *testing.T) {
 	assert.Nil(t, err)
 
 	for _, syncPlan := range syncPlans {
-		err = fsClient.ApplySyncPlan(env.colonyName, syncPlan)
+		err = fsClient.ApplySyncPlan(syncPlan)
 		assert.Nil(t, err)
 	}
 
@@ -1087,7 +1087,7 @@ func TestDownloadSnapshopRecursively(t *testing.T) {
 	<-done
 }
 
-func TestApplySyncPlans(t *testing.T) {
+func TestApplySyncPlansWindows(t *testing.T) {
 	//env, coloniesClient, coloniesServer, _, done := setupTestEnv(t)
 
 	label := "/myfiles"
@@ -1100,4 +1100,288 @@ func TestApplySyncPlans(t *testing.T) {
 
 	//coloniesServer.Shutdown()
 	//<-done
+}
+
+func TestCleanNoSubdir(t *testing.T) {
+	env, coloniesClient, coloniesServer, _, done := setupTestEnv(t)
+
+	label := "/test_label"
+
+	syncDir, err := ioutil.TempDir("/tmp/", "sync")
+	assert.Nil(t, err)
+
+	tmpFile1, err := ioutil.TempFile(syncDir, "file1")
+	assert.Nil(t, err)
+	_, err = tmpFile1.Write([]byte("testdata1"))
+	assert.Nil(t, err)
+
+	tmpFile2, err := ioutil.TempFile(syncDir, "file2")
+	assert.Nil(t, err)
+	_, err = tmpFile2.Write([]byte("testdata2"))
+	assert.Nil(t, err)
+
+	fsClient, err := CreateFSClient(coloniesClient, env.colonyName, env.executorPrvKey)
+	assert.Nil(t, err)
+	fsClient.Quiet = true
+	syncPlans, err := fsClient.CalcSyncPlans(syncDir, label, true)
+	assert.Nil(t, err)
+
+	for _, syncPlan := range syncPlans {
+		err = fsClient.ApplySyncPlan(syncPlan)
+		assert.Nil(t, err)
+	}
+
+	cleanPlan, err := fsClient.CalcCleanPlan(syncDir, label)
+	assert.Nil(t, err)
+	assert.Len(t, cleanPlan.FilesToRemove, 0)
+
+	tmpFile3, err := ioutil.TempFile(syncDir, "file3")
+	assert.Nil(t, err)
+	_, err = tmpFile3.Write([]byte("testdata3"))
+	assert.Nil(t, err)
+
+	cleanPlan, err = fsClient.CalcCleanPlan(syncDir, label)
+	assert.Nil(t, err)
+	assert.Len(t, cleanPlan.FilesToRemove, 1)
+
+	err = os.RemoveAll(syncDir)
+	assert.Nil(t, err)
+
+	coloniesServer.Shutdown()
+	<-done
+}
+
+func TestCleanSubDir(t *testing.T) {
+	env, coloniesClient, coloniesServer, _, done := setupTestEnv(t)
+
+	label := "/test_label"
+
+	syncDir, err := ioutil.TempDir("/tmp/", "sync")
+	assert.Nil(t, err)
+
+	tmpFile1, err := ioutil.TempFile(syncDir, "file1")
+	assert.Nil(t, err)
+	_, err = tmpFile1.Write([]byte("testdata1"))
+	assert.Nil(t, err)
+
+	tmpFile2, err := ioutil.TempFile(syncDir, "file2")
+	assert.Nil(t, err)
+	_, err = tmpFile2.Write([]byte("testdata2"))
+	assert.Nil(t, err)
+
+	subDirPath1 := syncDir + "/subdir1"
+	err = os.Mkdir(subDirPath1, 0755)
+	assert.Nil(t, err)
+
+	tmpFile3, err := ioutil.TempFile(subDirPath1, "file3")
+	assert.Nil(t, err)
+	_, err = tmpFile3.Write([]byte("testdata3"))
+	assert.Nil(t, err)
+
+	fsClient, err := CreateFSClient(coloniesClient, env.colonyName, env.executorPrvKey)
+	assert.Nil(t, err)
+	fsClient.Quiet = true
+	syncPlans, err := fsClient.CalcSyncPlans(syncDir, label, true)
+	assert.Nil(t, err)
+
+	for _, syncPlan := range syncPlans {
+		err = fsClient.ApplySyncPlan(syncPlan)
+		assert.Nil(t, err)
+	}
+
+	cleanPlan, err := fsClient.CalcCleanPlan(syncDir, label)
+	assert.Nil(t, err)
+	assert.Len(t, cleanPlan.FilesToRemove, 0)
+
+	tmpFile4, err := ioutil.TempFile(syncDir, "file4")
+	assert.Nil(t, err)
+	_, err = tmpFile4.Write([]byte("testdata4"))
+	assert.Nil(t, err)
+
+	subDirPath2 := syncDir + "/subdir2"
+	err = os.Mkdir(subDirPath2, 0755)
+	assert.Nil(t, err)
+
+	cleanPlan, err = fsClient.CalcCleanPlan(syncDir, label)
+	assert.Nil(t, err)
+	assert.Len(t, cleanPlan.FilesToRemove, 2)
+
+	// Count files in syncDir
+	files, err := ioutil.ReadDir(syncDir)
+	assert.Nil(t, err)
+	assert.Len(t, files, 5)
+
+	err = fsClient.ApplyCleanPlan(cleanPlan)
+	assert.Nil(t, err)
+
+	files, err = ioutil.ReadDir(syncDir)
+	assert.Nil(t, err)
+	assert.Len(t, files, 3)
+
+	counter := 0
+	for _, file := range files {
+		if syncDir+"/"+file.Name() == tmpFile1.Name() || syncDir+"/"+file.Name() == tmpFile2.Name() || file.Name() == "subdir1" {
+			counter++
+		}
+	}
+	assert.Equal(t, counter, 3)
+
+	err = os.RemoveAll(syncDir)
+	assert.Nil(t, err)
+
+	coloniesServer.Shutdown()
+	<-done
+}
+
+func TestCleanNoLabel(t *testing.T) {
+	env, coloniesClient, coloniesServer, _, done := setupTestEnv(t)
+
+	label := "/test_label"
+
+	syncDir, err := ioutil.TempDir("/tmp/", "sync")
+	assert.Nil(t, err)
+
+	tmpFile1, err := ioutil.TempFile(syncDir, "file1")
+	assert.Nil(t, err)
+	_, err = tmpFile1.Write([]byte("testdata1"))
+	assert.Nil(t, err)
+
+	tmpFile2, err := ioutil.TempFile(syncDir, "file2")
+	assert.Nil(t, err)
+	_, err = tmpFile2.Write([]byte("testdata2"))
+	assert.Nil(t, err)
+
+	subDirPath1 := syncDir + "/subdir1"
+	err = os.Mkdir(subDirPath1, 0755)
+	assert.Nil(t, err)
+
+	tmpFile3, err := ioutil.TempFile(subDirPath1, "file3")
+	assert.Nil(t, err)
+	_, err = tmpFile3.Write([]byte("testdata3"))
+	assert.Nil(t, err)
+
+	fsClient, err := CreateFSClient(coloniesClient, env.colonyName, env.executorPrvKey)
+	assert.Nil(t, err)
+	fsClient.Quiet = true
+
+	cleanPlan, err := fsClient.CalcCleanPlan(syncDir, label)
+	assert.Nil(t, err)
+	assert.Len(t, cleanPlan.FilesToRemove, 3)
+
+	err = os.RemoveAll(syncDir)
+	assert.Nil(t, err)
+
+	coloniesServer.Shutdown()
+	<-done
+}
+
+func TestCleanFilesRecursively(t *testing.T) {
+	env, coloniesClient, coloniesServer, _, done := setupTestEnv(t)
+
+	label := "test_label"
+
+	syncDir, err := ioutil.TempDir("/tmp/", "sync")
+	assert.Nil(t, err)
+
+	subDirPath1 := syncDir + "/subdir1"
+	err = os.Mkdir(subDirPath1, 0755)
+	assert.Nil(t, err)
+
+	subDirPath2 := syncDir + "/subdir2"
+	err = os.Mkdir(subDirPath2, 0755)
+	assert.Nil(t, err)
+
+	subSubDirPath1 := subDirPath1 + "/subsubdir1"
+	err = os.Mkdir(subSubDirPath1, 0755)
+	assert.Nil(t, err)
+
+	tmpFile1, err := ioutil.TempFile(syncDir, "file1")
+	assert.Nil(t, err)
+	filepath.Base(tmpFile1.Name())
+	_, err = tmpFile1.Write([]byte("testdata1"))
+	assert.Nil(t, err)
+
+	tmpFile2, err := ioutil.TempFile(syncDir, "file2")
+	assert.Nil(t, err)
+	filepath.Base(tmpFile2.Name())
+	_, err = tmpFile2.Write([]byte("testdata2"))
+	assert.Nil(t, err)
+
+	tmpFile3, err := ioutil.TempFile(subDirPath1, "file3")
+	assert.Nil(t, err)
+	filepath.Base(tmpFile3.Name())
+	_, err = tmpFile3.Write([]byte("testdata3"))
+	assert.Nil(t, err)
+
+	tmpFile4, err := ioutil.TempFile(subDirPath1, "file4")
+	assert.Nil(t, err)
+	filepath.Base(tmpFile4.Name())
+	_, err = tmpFile4.Write([]byte("testdata4"))
+	assert.Nil(t, err)
+
+	tmpFile5, err := ioutil.TempFile(subDirPath2, "file5")
+	assert.Nil(t, err)
+	filepath.Base(tmpFile5.Name())
+	_, err = tmpFile5.Write([]byte("testdata5"))
+	assert.Nil(t, err)
+
+	tmpFile6, err := ioutil.TempFile(subSubDirPath1, "file6")
+	assert.Nil(t, err)
+	filepath.Base(tmpFile6.Name())
+	_, err = tmpFile6.Write([]byte("testdata6"))
+	assert.Nil(t, err)
+
+	// We now have this file structure:
+	//   /tmp/sync2289845301/file2939843634
+	//   /tmp/sync2289845301/file11729054073
+	//   /tmp/sync2289845301/subdir1/file31004664384
+	//   /tmp/sync2289845301/subdir1/file42329025229
+	//   /tmp/sync2289845301/subdir1/subsubdir1/file63200468450
+	//   /tmp/sync2289845301/subdir2/file53082049703
+
+	fsClient, err := CreateFSClient(coloniesClient, env.colonyName, env.executorPrvKey)
+	assert.Nil(t, err)
+	_, err = fsClient.CalcCleanPlans(syncDir, label)
+	assert.NotNil(t, err) // Root dir must be a label
+
+	fsClient.Quiet = true
+	syncPlans, err := fsClient.CalcSyncPlans(syncDir, label, true)
+	assert.Nil(t, err)
+
+	for _, syncPlan := range syncPlans {
+		err = fsClient.ApplySyncPlan(syncPlan)
+		assert.Nil(t, err)
+	}
+
+	// Add some more files not synced to ColonyFS
+
+	tmpFile7, err := ioutil.TempFile(syncDir, "file7")
+	assert.Nil(t, err)
+	_, err = tmpFile7.Write([]byte("testdata7"))
+	assert.Nil(t, err)
+
+	tmpFile8, err := ioutil.TempFile(subSubDirPath1, "file8")
+	assert.Nil(t, err)
+	_, err = tmpFile8.Write([]byte("testdata8"))
+	assert.Nil(t, err)
+
+	subSubDirPath2 := subDirPath1 + "/subsubdir2"
+	err = os.Mkdir(subSubDirPath2, 0755)
+	assert.Nil(t, err)
+
+	counter := 0
+	cleanPlans, err := fsClient.CalcCleanPlans(syncDir, label)
+	assert.Nil(t, err)
+	for _, cleanPlan := range cleanPlans {
+		for _, fileToDelete := range cleanPlan.FilesToRemove {
+			if fileToDelete.Name == tmpFile7.Name() || fileToDelete.Name == tmpFile8.Name() || fileToDelete.Name == subSubDirPath2 {
+				counter++
+			}
+		}
+	}
+
+	assert.Equal(t, counter, 3)
+
+	coloniesServer.Shutdown()
+	<-done
 }
