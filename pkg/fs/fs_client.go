@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -148,7 +147,7 @@ func (fsClient *FSClient) ApplySyncPlan(syncPlan *SyncPlan) error {
 	if err != nil {
 		return err
 	}
-	err = ioutil.WriteFile(syncPlan.Dir+"/.cfs", cfsFileBytes, 0644)
+	err = os.WriteFile(syncPlan.Dir+"/.cfs", cfsFileBytes, 0644)
 	if err != nil {
 		return err
 	}
@@ -542,7 +541,7 @@ func (fsClient *FSClient) CalcCleanPlan(dir string, label string) (*CleanPlan, e
 		remoteFiles[fileData.Name] = fileData.Name
 	}
 
-	localFiles, err := ioutil.ReadDir(dir)
+	localFiles, err := os.ReadDir(dir)
 	if err != nil {
 		return nil, err
 	}
