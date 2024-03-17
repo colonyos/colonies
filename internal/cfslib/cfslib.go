@@ -33,6 +33,8 @@ func sync(chost *C.char, cport C.int, cinsecure C.int, cskiptlsverify C.int, cdi
 		return C.int(1)
 	}
 
+	fsClient.Quiet = true
+
 	syncPlans, err := fsClient.CalcSyncPlans(dir, label, keepLocal)
 	if err != nil {
 		fmt.Println("failed to calculate sync plans:", err)
@@ -40,7 +42,7 @@ func sync(chost *C.char, cport C.int, cinsecure C.int, cskiptlsverify C.int, cdi
 	}
 
 	for _, syncPlan := range syncPlans {
-		err = fsClient.ApplySyncPlan(colonyName, syncPlan)
+		err = fsClient.ApplySyncPlan(syncPlan)
 		if err != nil {
 			fmt.Println("failed to apply sync plan:", err)
 			return C.int(1)
