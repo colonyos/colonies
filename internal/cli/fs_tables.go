@@ -73,6 +73,23 @@ func printSyncPlansDetails(syncPlans []*fs.SyncPlan) {
 	conflictTable.Render()
 }
 
+func printCleanPlansDetails(cleanPlans []*fs.CleanPlan) {
+	removeTable, theme := createTable(1)
+	removeTable.SetTitle("These files will be removed from local filesystem")
+
+	for _, cleanPlan := range cleanPlans {
+		if len(cleanPlan.FilesToRemove) > 0 {
+			for _, file := range cleanPlan.FilesToRemove {
+				row := []interface{}{
+					termenv.String(file.Name).Foreground(theme.ColorRed),
+				}
+				removeTable.AddRow(row)
+			}
+		}
+	}
+	removeTable.Render()
+}
+
 func printLabelsTable(labels []*core.Label) {
 	sortCol := 1
 
