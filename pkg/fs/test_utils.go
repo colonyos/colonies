@@ -72,28 +72,32 @@ func areDirsSame(dir1, dir2 string) (bool, error) {
 		relPath, _ := filepath.Rel(dir1, path1)
 		path2 := filepath.Join(dir2, relPath)
 
-		info2, err2 := os.Stat(path2)
-		if err2 != nil {
-			if os.IsNotExist(err2) {
-				isSame = false
-				return fmt.Errorf("%s does not exist in %s", path1, dir2)
+		cfsFile := filepath.Base(path2)
+
+		if cfsFile != ".cfs" {
+			info2, err2 := os.Stat(path2)
+			if err2 != nil {
+				if os.IsNotExist(err2) {
+					isSame = false
+					return fmt.Errorf("%s does not exist in %s", path1, dir2)
+				}
+				return err2
 			}
-			return err2
-		}
 
-		// If one is dir and the other is not
-		if info1.IsDir() != info2.IsDir() {
-			isSame = false
-			return fmt.Errorf("%s and %s are not the same type", path1, path2)
-		}
-
-		// Compare file contents
-		if !info1.IsDir() {
-			content1, _ := ioutil.ReadFile(path1)
-			content2, _ := ioutil.ReadFile(path2)
-			if !bytes.Equal(content1, content2) {
+			// If one is dir and the other is not
+			if info1.IsDir() != info2.IsDir() {
 				isSame = false
-				return fmt.Errorf("content of %s and %s is not the same", path1, path2)
+				return fmt.Errorf("%s and %s are not the same type", path1, path2)
+			}
+
+			// Compare file contents
+			if !info1.IsDir() {
+				content1, _ := ioutil.ReadFile(path1)
+				content2, _ := ioutil.ReadFile(path2)
+				if !bytes.Equal(content1, content2) {
+					isSame = false
+					return fmt.Errorf("content of %s and %s is not the same", path1, path2)
+				}
 			}
 		}
 

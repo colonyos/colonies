@@ -2,7 +2,6 @@ package fs
 
 import (
 	"fmt"
-	"io/ioutil"
 	"math/rand"
 	"os"
 	"path/filepath"
@@ -53,7 +52,7 @@ func generateRandomData(size int) []byte {
 }
 
 func TestChecksum(t *testing.T) {
-	testDir, err := ioutil.TempDir("/tmp/", "test")
+	testDir, err := os.MkdirTemp("/tmp/", "test")
 	assert.Nil(t, err)
 	f, err := os.Create(testDir + "/test_file")
 	assert.Nil(t, err)
@@ -83,7 +82,7 @@ func TestCalcSyncPlan1(t *testing.T) {
 	label := "test_label"
 
 	// Create a local file
-	syncDir, err := ioutil.TempDir("/tmp/", "sync")
+	syncDir, err := os.MkdirTemp("/tmp/", "sync")
 	assert.Nil(t, err)
 	localFile, err := os.Create(syncDir + "/" + "local_file")
 	assert.Nil(t, err)
@@ -135,7 +134,7 @@ func TestCalcSyncPlan2(t *testing.T) {
 	label := "test_label"
 
 	// Create a local file
-	syncDir, err := ioutil.TempDir("/tmp/", "sync")
+	syncDir, err := os.MkdirTemp("/tmp/", "sync")
 	assert.Nil(t, err)
 	sameFile, err := os.Create(syncDir + "/" + "same_file")
 	assert.Nil(t, err)
@@ -185,7 +184,7 @@ func TestCalcSyncPlan3(t *testing.T) {
 	label := "test_label"
 
 	// Create a local file
-	syncDir, err := ioutil.TempDir("/tmp/", "sync")
+	syncDir, err := os.MkdirTemp("/tmp/", "sync")
 	assert.Nil(t, err)
 	sameFile, err := os.Create(syncDir + "/" + "same_file")
 	assert.Nil(t, err)
@@ -233,9 +232,9 @@ func TestApplySyncPlan1(t *testing.T) {
 	label := "test_label"
 
 	// Create tmpFile1
-	syncDir, err := ioutil.TempDir("/tmp/", "sync")
+	syncDir, err := os.MkdirTemp("/tmp/", "sync")
 	assert.Nil(t, err)
-	tmpFile1, err := ioutil.TempFile(syncDir, "test")
+	tmpFile1, err := os.CreateTemp(syncDir, "test")
 	assert.Nil(t, err)
 	_, err = tmpFile1.Write([]byte("testdata"))
 	assert.Nil(t, err)
@@ -273,9 +272,9 @@ func TestApplySyncPlan2(t *testing.T) {
 	label := "test_label"
 
 	// Create tmpFile1
-	syncDir, err := ioutil.TempDir("/tmp/", "sync")
+	syncDir, err := os.MkdirTemp("/tmp/", "sync")
 	assert.Nil(t, err)
-	tmpFile1, err := ioutil.TempFile(syncDir, "test")
+	tmpFile1, err := os.CreateTemp(syncDir, "test")
 	assert.Nil(t, err)
 	_, err = tmpFile1.Write([]byte("testdata"))
 	assert.Nil(t, err)
@@ -291,7 +290,7 @@ func TestApplySyncPlan2(t *testing.T) {
 	err = fsClient.ApplySyncPlan(syncPlan)
 	assert.Nil(t, err)
 
-	syncDir2, err := ioutil.TempDir("/tmp/", "sync")
+	syncDir2, err := os.MkdirTemp("/tmp/", "sync")
 	assert.Nil(t, err)
 
 	syncPlan2, err := fsClient.CalcSyncPlan(syncDir2, label, true)
@@ -328,9 +327,9 @@ func TestApplySyncPlan3(t *testing.T) {
 	fileSize := 1000
 
 	// Create tmpFile1
-	syncDir, err := ioutil.TempDir("/tmp/", "sync")
+	syncDir, err := os.MkdirTemp("/tmp/", "sync")
 	assert.Nil(t, err)
-	tmpFile1, err := ioutil.TempFile(syncDir, "test")
+	tmpFile1, err := os.CreateTemp(syncDir, "test")
 	assert.Nil(t, err)
 	data1 := generateRandomData(fileSize)
 	_, err = tmpFile1.Write(data1)
@@ -348,9 +347,9 @@ func TestApplySyncPlan3(t *testing.T) {
 	assert.Nil(t, err)
 
 	// Create tmpFile2
-	syncDir2, err := ioutil.TempDir("/tmp/", "sync")
+	syncDir2, err := os.MkdirTemp("/tmp/", "sync")
 	assert.Nil(t, err)
-	tmpFile2, err := ioutil.TempFile(syncDir2, "test")
+	tmpFile2, err := os.CreateTemp(syncDir2, "test")
 	assert.Nil(t, err)
 	data2 := generateRandomData(fileSize)
 	_, err = tmpFile2.Write(data2)
@@ -397,9 +396,9 @@ func TestApplySyncPlan4(t *testing.T) {
 	fileSize := 1000
 
 	// Create tmpFile1
-	syncDir, err := ioutil.TempDir("/tmp/", "sync")
+	syncDir, err := os.MkdirTemp("/tmp/", "sync")
 	assert.Nil(t, err)
-	tmpFile1, err := ioutil.TempFile(syncDir, "test")
+	tmpFile1, err := os.CreateTemp(syncDir, "test")
 	assert.Nil(t, err)
 	data1 := generateRandomData(fileSize)
 	_, err = tmpFile1.Write(data1)
@@ -480,9 +479,9 @@ func TestApplySyncPlan5(t *testing.T) {
 	fileSize := 1000
 
 	// Create tmpFile1
-	syncDir, err := ioutil.TempDir("/tmp/", "sync")
+	syncDir, err := os.MkdirTemp("/tmp/", "sync")
 	assert.Nil(t, err)
-	tmpFile1, err := ioutil.TempFile(syncDir, "test")
+	tmpFile1, err := os.CreateTemp(syncDir, "test")
 	assert.Nil(t, err)
 	data1 := generateRandomData(fileSize)
 	_, err = tmpFile1.Write(data1)
@@ -562,9 +561,9 @@ func TestApplySyncPlanEmpty(t *testing.T) {
 	label := "test_label"
 
 	// Create tmpFile1
-	syncDir, err := ioutil.TempDir("/tmp/", "sync")
+	syncDir, err := os.MkdirTemp("/tmp/", "sync")
 	assert.Nil(t, err)
-	tmpFile1, err := ioutil.TempFile(syncDir, "test")
+	tmpFile1, err := os.CreateTemp(syncDir, "test")
 	assert.Nil(t, err)
 	_, err = tmpFile1.Write([]byte(""))
 	assert.Nil(t, err)
@@ -602,9 +601,9 @@ func TestDownload(t *testing.T) {
 	label := "test_label"
 
 	// Create tmpFile1
-	syncDir, err := ioutil.TempDir("/tmp/", "sync")
+	syncDir, err := os.MkdirTemp("/tmp/", "sync")
 	assert.Nil(t, err)
-	tmpFile1, err := ioutil.TempFile(syncDir, "test")
+	tmpFile1, err := os.CreateTemp(syncDir, "test")
 	assert.Nil(t, err)
 	tmpFile1Filename := filepath.Base(tmpFile1.Name())
 	_, err = tmpFile1.Write([]byte("testdata"))
@@ -626,7 +625,7 @@ func TestDownload(t *testing.T) {
 	assert.Len(t, coloniesFile, 1)
 	fileID := coloniesFile[0].ID
 
-	downloadDir, err := ioutil.TempDir("/tmp/", "download")
+	downloadDir, err := os.MkdirTemp("/tmp/", "download")
 	assert.Nil(t, err)
 
 	err = fsClient.Download(env.colonyName, fileID, downloadDir)
@@ -653,9 +652,9 @@ func TestRemoveByID(t *testing.T) {
 	label := "test_label"
 
 	// Create tmpFile1
-	syncDir, err := ioutil.TempDir("/tmp/", "sync")
+	syncDir, err := os.MkdirTemp("/tmp/", "sync")
 	assert.Nil(t, err)
-	tmpFile1, err := ioutil.TempFile(syncDir, "test")
+	tmpFile1, err := os.CreateTemp(syncDir, "test")
 	assert.Nil(t, err)
 	tmpFile1Filename := filepath.Base(tmpFile1.Name())
 	_, err = tmpFile1.Write([]byte("testdata"))
@@ -698,9 +697,9 @@ func TestRemoveByName(t *testing.T) {
 	label := "test_label"
 
 	// Create tmpFile1
-	syncDir, err := ioutil.TempDir("/tmp/", "sync")
+	syncDir, err := os.MkdirTemp("/tmp/", "sync")
 	assert.Nil(t, err)
-	tmpFile1, err := ioutil.TempFile(syncDir, "test")
+	tmpFile1, err := os.CreateTemp(syncDir, "test")
 	assert.Nil(t, err)
 	tmpFile1Filename := filepath.Base(tmpFile1.Name())
 	_, err = tmpFile1.Write([]byte("testdata"))
@@ -758,16 +757,16 @@ func TestDownloadSnapshot(t *testing.T) {
 	label := "test_label"
 
 	// Create tmpFile1
-	syncDir, err := ioutil.TempDir("/tmp/", "sync1")
+	syncDir, err := os.MkdirTemp("/tmp/", "sync1")
 	assert.Nil(t, err)
-	tmpFile1, err := ioutil.TempFile(syncDir, "test")
+	tmpFile1, err := os.CreateTemp(syncDir, "test")
 	assert.Nil(t, err)
 	tmpFile1Filename := filepath.Base(tmpFile1.Name())
 	_, err = tmpFile1.Write([]byte("testdata1"))
 	assert.Nil(t, err)
 
 	// Create tmpFile2
-	tmpFile2, err := ioutil.TempFile(syncDir, "test2")
+	tmpFile2, err := os.CreateTemp(syncDir, "test2")
 	assert.Nil(t, err)
 	tmpFile2Filename := filepath.Base(tmpFile2.Name())
 	_, err = tmpFile2.Write([]byte("testdata2"))
@@ -789,7 +788,7 @@ func TestDownloadSnapshot(t *testing.T) {
 	assert.Nil(t, err)
 
 	// Download files in snapshot
-	downloadDir, err := ioutil.TempDir("/tmp/", "download")
+	downloadDir, err := os.MkdirTemp("/tmp/", "download")
 	err = fsClient.DownloadSnapshot(snapshot.ID, downloadDir)
 	assert.Nil(t, err)
 
@@ -818,16 +817,16 @@ func TestRemoveAllFilesWithLabel(t *testing.T) {
 	label := "test_label"
 
 	// Create tmpFile1
-	syncDir, err := ioutil.TempDir("/tmp/", "sync1")
+	syncDir, err := os.MkdirTemp("/tmp/", "sync1")
 	assert.Nil(t, err)
-	tmpFile1, err := ioutil.TempFile(syncDir, "test")
+	tmpFile1, err := os.CreateTemp(syncDir, "test")
 	assert.Nil(t, err)
 	tmpFile1Filename := filepath.Base(tmpFile1.Name())
 	_, err = tmpFile1.Write([]byte("testdata1"))
 	assert.Nil(t, err)
 
 	// Create tmpFile2
-	tmpFile2, err := ioutil.TempFile(syncDir, "test2")
+	tmpFile2, err := os.CreateTemp(syncDir, "test2")
 	assert.Nil(t, err)
 	tmpFile2Filename := filepath.Base(tmpFile2.Name())
 	_, err = tmpFile2.Write([]byte("testdata2"))
@@ -888,7 +887,7 @@ func TestAddFilesRecursively(t *testing.T) {
 
 	label := "test_label"
 
-	syncDir, err := ioutil.TempDir("/tmp/", "sync")
+	syncDir, err := os.MkdirTemp("/tmp/", "sync")
 	assert.Nil(t, err)
 
 	subDirPath1 := syncDir + "/subdir1"
@@ -903,39 +902,33 @@ func TestAddFilesRecursively(t *testing.T) {
 	err = os.Mkdir(subSubDirPath1, 0755)
 	assert.Nil(t, err)
 
-	tmpFile1, err := ioutil.TempFile(syncDir, "file1")
+	tmpFile1, err := os.CreateTemp(syncDir, "file1")
 	assert.Nil(t, err)
-	filepath.Base(tmpFile1.Name())
 	_, err = tmpFile1.Write([]byte("testdata1"))
 	assert.Nil(t, err)
 
-	tmpFile2, err := ioutil.TempFile(syncDir, "file2")
+	tmpFile2, err := os.CreateTemp(syncDir, "file2")
 	assert.Nil(t, err)
-	filepath.Base(tmpFile2.Name())
 	_, err = tmpFile2.Write([]byte("testdata2"))
 	assert.Nil(t, err)
 
-	tmpFile3, err := ioutil.TempFile(subDirPath1, "file3")
+	tmpFile3, err := os.CreateTemp(subDirPath1, "file3")
 	assert.Nil(t, err)
-	filepath.Base(tmpFile3.Name())
 	_, err = tmpFile3.Write([]byte("testdata3"))
 	assert.Nil(t, err)
 
-	tmpFile4, err := ioutil.TempFile(subDirPath1, "file4")
+	tmpFile4, err := os.CreateTemp(subDirPath1, "file4")
 	assert.Nil(t, err)
-	filepath.Base(tmpFile4.Name())
 	_, err = tmpFile4.Write([]byte("testdata4"))
 	assert.Nil(t, err)
 
-	tmpFile5, err := ioutil.TempFile(subDirPath2, "file5")
+	tmpFile5, err := os.CreateTemp(subDirPath2, "file5")
 	assert.Nil(t, err)
-	filepath.Base(tmpFile5.Name())
 	_, err = tmpFile5.Write([]byte("testdata5"))
 	assert.Nil(t, err)
 
-	tmpFile6, err := ioutil.TempFile(subSubDirPath1, "file6")
+	tmpFile6, err := os.CreateTemp(subSubDirPath1, "file6")
 	assert.Nil(t, err)
-	filepath.Base(tmpFile6.Name())
 	_, err = tmpFile6.Write([]byte("testdata6"))
 	assert.Nil(t, err)
 
@@ -958,7 +951,7 @@ func TestAddFilesRecursively(t *testing.T) {
 		assert.Nil(t, err)
 	}
 
-	syncDir2, err := ioutil.TempDir("/tmp/", "sync2")
+	syncDir2, err := os.MkdirTemp("/tmp/", "sync2")
 	assert.Nil(t, err)
 
 	syncPlans, err = fsClient.CalcSyncPlans(syncDir2, label, true)
@@ -990,7 +983,7 @@ func TestDownloadSnapshopRecursively(t *testing.T) {
 
 	label := "/test_label"
 
-	syncDir, err := ioutil.TempDir("/tmp/", "sync")
+	syncDir, err := os.MkdirTemp("/tmp/", "sync")
 	assert.Nil(t, err)
 
 	subDirPath1 := syncDir + "/subdir1"
@@ -1005,39 +998,33 @@ func TestDownloadSnapshopRecursively(t *testing.T) {
 	err = os.Mkdir(subSubDirPath1, 0755)
 	assert.Nil(t, err)
 
-	tmpFile1, err := ioutil.TempFile(syncDir, "file1")
+	tmpFile1, err := os.CreateTemp(syncDir, "file1")
 	assert.Nil(t, err)
-	filepath.Base(tmpFile1.Name())
 	_, err = tmpFile1.Write([]byte("testdata1"))
 	assert.Nil(t, err)
 
-	tmpFile2, err := ioutil.TempFile(syncDir, "file2")
+	tmpFile2, err := os.CreateTemp(syncDir, "file2")
 	assert.Nil(t, err)
-	filepath.Base(tmpFile2.Name())
 	_, err = tmpFile2.Write([]byte("testdata2"))
 	assert.Nil(t, err)
 
-	tmpFile3, err := ioutil.TempFile(subDirPath1, "file3")
+	tmpFile3, err := os.CreateTemp(subDirPath1, "file3")
 	assert.Nil(t, err)
-	filepath.Base(tmpFile3.Name())
 	_, err = tmpFile3.Write([]byte("testdata3"))
 	assert.Nil(t, err)
 
-	tmpFile4, err := ioutil.TempFile(subDirPath1, "file4")
+	tmpFile4, err := os.CreateTemp(subDirPath1, "file4")
 	assert.Nil(t, err)
-	filepath.Base(tmpFile4.Name())
 	_, err = tmpFile4.Write([]byte("testdata4"))
 	assert.Nil(t, err)
 
-	tmpFile5, err := ioutil.TempFile(subDirPath2, "file5")
+	tmpFile5, err := os.CreateTemp(subDirPath2, "file5")
 	assert.Nil(t, err)
-	filepath.Base(tmpFile5.Name())
 	_, err = tmpFile5.Write([]byte("testdata5"))
 	assert.Nil(t, err)
 
-	tmpFile6, err := ioutil.TempFile(subSubDirPath1, "file6")
+	tmpFile6, err := os.CreateTemp(subSubDirPath1, "file6")
 	assert.Nil(t, err)
-	filepath.Base(tmpFile6.Name())
 	_, err = tmpFile6.Write([]byte("testdata6"))
 	assert.Nil(t, err)
 
@@ -1065,7 +1052,7 @@ func TestDownloadSnapshopRecursively(t *testing.T) {
 	assert.Nil(t, err)
 
 	// Download files in snapshot
-	downloadDir, err := ioutil.TempDir("/tmp/", "download")
+	downloadDir, err := os.MkdirTemp("/tmp/", "download")
 	err = fsClient.DownloadSnapshot(snapshot.ID, downloadDir)
 	assert.Nil(t, err)
 
@@ -1107,15 +1094,15 @@ func TestCleanNoSubdir(t *testing.T) {
 
 	label := "/test_label"
 
-	syncDir, err := ioutil.TempDir("/tmp/", "sync")
+	syncDir, err := os.MkdirTemp("/tmp/", "sync")
 	assert.Nil(t, err)
 
-	tmpFile1, err := ioutil.TempFile(syncDir, "file1")
+	tmpFile1, err := os.CreateTemp(syncDir, "file1")
 	assert.Nil(t, err)
 	_, err = tmpFile1.Write([]byte("testdata1"))
 	assert.Nil(t, err)
 
-	tmpFile2, err := ioutil.TempFile(syncDir, "file2")
+	tmpFile2, err := os.CreateTemp(syncDir, "file2")
 	assert.Nil(t, err)
 	_, err = tmpFile2.Write([]byte("testdata2"))
 	assert.Nil(t, err)
@@ -1135,7 +1122,7 @@ func TestCleanNoSubdir(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Len(t, cleanPlan.FilesToRemove, 0)
 
-	tmpFile3, err := ioutil.TempFile(syncDir, "file3")
+	tmpFile3, err := os.CreateTemp(syncDir, "file3")
 	assert.Nil(t, err)
 	_, err = tmpFile3.Write([]byte("testdata3"))
 	assert.Nil(t, err)
@@ -1156,15 +1143,15 @@ func TestCleanSubDir(t *testing.T) {
 
 	label := "/test_label"
 
-	syncDir, err := ioutil.TempDir("/tmp/", "sync")
+	syncDir, err := os.MkdirTemp("/tmp/", "sync")
 	assert.Nil(t, err)
 
-	tmpFile1, err := ioutil.TempFile(syncDir, "file1")
+	tmpFile1, err := os.CreateTemp(syncDir, "file1")
 	assert.Nil(t, err)
 	_, err = tmpFile1.Write([]byte("testdata1"))
 	assert.Nil(t, err)
 
-	tmpFile2, err := ioutil.TempFile(syncDir, "file2")
+	tmpFile2, err := os.CreateTemp(syncDir, "file2")
 	assert.Nil(t, err)
 	_, err = tmpFile2.Write([]byte("testdata2"))
 	assert.Nil(t, err)
@@ -1173,7 +1160,7 @@ func TestCleanSubDir(t *testing.T) {
 	err = os.Mkdir(subDirPath1, 0755)
 	assert.Nil(t, err)
 
-	tmpFile3, err := ioutil.TempFile(subDirPath1, "file3")
+	tmpFile3, err := os.CreateTemp(subDirPath1, "file3")
 	assert.Nil(t, err)
 	_, err = tmpFile3.Write([]byte("testdata3"))
 	assert.Nil(t, err)
@@ -1193,7 +1180,7 @@ func TestCleanSubDir(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Len(t, cleanPlan.FilesToRemove, 0)
 
-	tmpFile4, err := ioutil.TempFile(syncDir, "file4")
+	tmpFile4, err := os.CreateTemp(syncDir, "file4")
 	assert.Nil(t, err)
 	_, err = tmpFile4.Write([]byte("testdata4"))
 	assert.Nil(t, err)
@@ -1207,16 +1194,16 @@ func TestCleanSubDir(t *testing.T) {
 	assert.Len(t, cleanPlan.FilesToRemove, 2)
 
 	// Count files in syncDir
-	files, err := ioutil.ReadDir(syncDir)
+	files, err := os.ReadDir(syncDir)
 	assert.Nil(t, err)
-	assert.Len(t, files, 5)
+	assert.Len(t, files, 6) // Including .cfs file
 
 	err = fsClient.ApplyCleanPlan(cleanPlan)
 	assert.Nil(t, err)
 
-	files, err = ioutil.ReadDir(syncDir)
+	files, err = os.ReadDir(syncDir)
 	assert.Nil(t, err)
-	assert.Len(t, files, 3)
+	assert.Len(t, files, 4) // Including .cfs file
 
 	counter := 0
 	for _, file := range files {
@@ -1238,15 +1225,15 @@ func TestCleanNoLabel(t *testing.T) {
 
 	label := "/test_label"
 
-	syncDir, err := ioutil.TempDir("/tmp/", "sync")
+	syncDir, err := os.MkdirTemp("/tmp/", "sync")
 	assert.Nil(t, err)
 
-	tmpFile1, err := ioutil.TempFile(syncDir, "file1")
+	tmpFile1, err := os.CreateTemp(syncDir, "file1")
 	assert.Nil(t, err)
 	_, err = tmpFile1.Write([]byte("testdata1"))
 	assert.Nil(t, err)
 
-	tmpFile2, err := ioutil.TempFile(syncDir, "file2")
+	tmpFile2, err := os.CreateTemp(syncDir, "file2")
 	assert.Nil(t, err)
 	_, err = tmpFile2.Write([]byte("testdata2"))
 	assert.Nil(t, err)
@@ -1255,7 +1242,7 @@ func TestCleanNoLabel(t *testing.T) {
 	err = os.Mkdir(subDirPath1, 0755)
 	assert.Nil(t, err)
 
-	tmpFile3, err := ioutil.TempFile(subDirPath1, "file3")
+	tmpFile3, err := os.CreateTemp(subDirPath1, "file3")
 	assert.Nil(t, err)
 	_, err = tmpFile3.Write([]byte("testdata3"))
 	assert.Nil(t, err)
@@ -1280,7 +1267,7 @@ func TestCleanFilesRecursively(t *testing.T) {
 
 	label := "test_label"
 
-	syncDir, err := ioutil.TempDir("/tmp/", "sync")
+	syncDir, err := os.MkdirTemp("/tmp/", "sync")
 	assert.Nil(t, err)
 
 	subDirPath1 := syncDir + "/subdir1"
@@ -1295,39 +1282,33 @@ func TestCleanFilesRecursively(t *testing.T) {
 	err = os.Mkdir(subSubDirPath1, 0755)
 	assert.Nil(t, err)
 
-	tmpFile1, err := ioutil.TempFile(syncDir, "file1")
+	tmpFile1, err := os.CreateTemp(syncDir, "file1")
 	assert.Nil(t, err)
-	filepath.Base(tmpFile1.Name())
 	_, err = tmpFile1.Write([]byte("testdata1"))
 	assert.Nil(t, err)
 
-	tmpFile2, err := ioutil.TempFile(syncDir, "file2")
+	tmpFile2, err := os.CreateTemp(syncDir, "file2")
 	assert.Nil(t, err)
-	filepath.Base(tmpFile2.Name())
 	_, err = tmpFile2.Write([]byte("testdata2"))
 	assert.Nil(t, err)
 
-	tmpFile3, err := ioutil.TempFile(subDirPath1, "file3")
+	tmpFile3, err := os.CreateTemp(subDirPath1, "file3")
 	assert.Nil(t, err)
-	filepath.Base(tmpFile3.Name())
 	_, err = tmpFile3.Write([]byte("testdata3"))
 	assert.Nil(t, err)
 
-	tmpFile4, err := ioutil.TempFile(subDirPath1, "file4")
+	tmpFile4, err := os.CreateTemp(subDirPath1, "file4")
 	assert.Nil(t, err)
-	filepath.Base(tmpFile4.Name())
 	_, err = tmpFile4.Write([]byte("testdata4"))
 	assert.Nil(t, err)
 
-	tmpFile5, err := ioutil.TempFile(subDirPath2, "file5")
+	tmpFile5, err := os.CreateTemp(subDirPath2, "file5")
 	assert.Nil(t, err)
-	filepath.Base(tmpFile5.Name())
 	_, err = tmpFile5.Write([]byte("testdata5"))
 	assert.Nil(t, err)
 
-	tmpFile6, err := ioutil.TempFile(subSubDirPath1, "file6")
+	tmpFile6, err := os.CreateTemp(subSubDirPath1, "file6")
 	assert.Nil(t, err)
-	filepath.Base(tmpFile6.Name())
 	_, err = tmpFile6.Write([]byte("testdata6"))
 	assert.Nil(t, err)
 
@@ -1355,12 +1336,12 @@ func TestCleanFilesRecursively(t *testing.T) {
 
 	// Add some more files not synced to ColonyFS
 
-	tmpFile7, err := ioutil.TempFile(syncDir, "file7")
+	tmpFile7, err := os.CreateTemp(syncDir, "file7")
 	assert.Nil(t, err)
 	_, err = tmpFile7.Write([]byte("testdata7"))
 	assert.Nil(t, err)
 
-	tmpFile8, err := ioutil.TempFile(subSubDirPath1, "file8")
+	tmpFile8, err := os.CreateTemp(subSubDirPath1, "file8")
 	assert.Nil(t, err)
 	_, err = tmpFile8.Write([]byte("testdata8"))
 	assert.Nil(t, err)
