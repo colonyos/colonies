@@ -11,77 +11,77 @@ source examples/devenv
 }
 ```
 
-## 3. Fibonacci Job Generator code (examples/generator.go)
+## 3. Fibonacci Job Generator code (examples/generator/generator.go)
 ```go
 func main() {
-    colonyID := os.Getenv("COLONIES_COLONY_ID")
-    executorPrvKey := os.Getenv("COLONIES_EXECUTOR_PRVKEY")
-    coloniesHost := os.Getenv("COLONIES_SERVER_HOST")
-    coloniesPortStr := os.Getenv("COLONIES_SERVER_PORT")
-    coloniesPort, err := strconv.Atoi(coloniesPortStr)
-    if err != nil {
-        fmt.Println(err)
-        os.Exit(-1)
-    }
+	colonyName := os.Getenv("COLONIES_COLONY_NAME")
+	executorPrvKey := os.Getenv("COLONIES_EXECUTOR_PRVKEY")
+	coloniesHost := os.Getenv("COLONIES_SERVER_HOST")
+	coloniesPortStr := os.Getenv("COLONIES_SERVER_PORT")
+	coloniesPort, err := strconv.Atoi(coloniesPortStr)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(-1)
+	}
 
-    funcSpec := core.CreateEmptyFunctionSpec()
-    funcSpec.Conditions.ColonyName = colonyID
-    funcSpec.Conditions.ExecutorType = os.Getenv("COLONIES_EXECUTOR_TYPE")
-    funcSpec.Env["fibonacciNum"] = os.Args[1]
+	funcSpec := core.CreateEmptyFunctionSpec()
+	funcSpec.Conditions.ColonyName = colonyName
+	funcSpec.Conditions.ExecutorType = os.Getenv("COLONIES_EXECUTOR_TYPE")
+	funcSpec.Env["fibonacciNum"] = os.Args[1]
 
-    client := client.CreateColoniesClient(coloniesHost, coloniesPort, true, false)
-    addedProcess, err := client.Submit(funcSpec, executorPrvKey)
-    if err != nil {
-        fmt.Println(err)
-        return
-    }
+	client := client.CreateColoniesClient(coloniesHost, coloniesPort, true, false)
+	addedProcess, err := client.Submit(funcSpec, executorPrvKey)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
 
-    fmt.Println("Submitted a new process to the Colonies server with Id <" + addedProcess.ID + ">")
+	fmt.Println("Submitted a new process to the Colonies server with Id <" + addedProcess.ID + ">")
 }
 ```
 
 
-## 6. Fibonacci Solver executor code (examples/solver.go) 
+## 6. Fibonacci Solver executor code (examples/solver/solver.go) 
 ```go
 func main() {
-    colonyID := os.Getenv("COLONIES_COLONY_ID")
-    executorPrvKey := os.Getenv("COLONIES_EXECUTOR_PRVKEY")
-    coloniesHost := os.Getenv("COLONIES_SERVER_HOST")
-    coloniesPortStr := os.Getenv("COLONIES_SERVER_PORT")
-    coloniesPort, err := strconv.Atoi(coloniesPortStr)
-    if err != nil {
-        fmt.Println(err)
-        os.Exit(-1)
-    }
+	colonyName := os.Getenv("COLONIES_COLONY_NAME")
+	executorPrvKey := os.Getenv("COLONIES_EXECUTOR_PRVKEY")
+	coloniesHost := os.Getenv("COLONIES_SERVER_HOST")
+	coloniesPortStr := os.Getenv("COLONIES_SERVER_PORT")
+	coloniesPort, err := strconv.Atoi(coloniesPortStr)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(-1)
+	}
 
-    // Ask the Colonies server to assign a process to this executor 
-    client := client.CreateColoniesClient(coloniesHost, coloniesPort, true, false)
-    assignedProcess, err := client.Assign(colonyID, 100, executorPrvKey) // Max wait 100 seconds for assignment request
-    if err != nil {
-        fmt.Println(err)
-        return
-    }
+	// Ask the Colonies server to assign a process to this executor
+	client := client.CreateColoniesClient(coloniesHost, coloniesPort, true, false)
+	assignedProcess, err := client.Assign(colonyName, 100, "", "", executorPrvKey) // Max wait 100 seconds for assignment request
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
 
-    // Parse env attribute and calculate the given Fibonacci number
-    for _, attribute := range assignedProcess.Attributes {
-        if attribute.Key == "fibonacciNum" {
-            fmt.Println("We were assigned process " + assignedProcess.ID)
-            fmt.Println("Calculating Fibonacci serie for " + attribute.Value)
-            nr, _ := strconv.Atoi(attribute.Value)
-            fibonacci := fib.FibonacciBig(uint(nr))
-            fmt.Println("Result: The last number in the Fibonacci serie " + attribute.Value + " is " + fibonacci.String())
+	// Parse env attribute and calculate the given Fibonacci number
+	for _, attribute := range assignedProcess.Attributes {
+		if attribute.Key == "fibonacciNum" {
+			fmt.Println("We were assigned process " + assignedProcess.ID)
+			fmt.Println("Calculating Fibonacci serie for " + attribute.Value)
+			nr, _ := strconv.Atoi(attribute.Value)
+			fibonacci := fib.FibonacciBig(uint(nr))
+			fmt.Println("Result: The last number in the Fibonacci serie " + attribute.Value + " is " + fibonacci.String())
 
-            attribute := core.CreateAttribute(assignedProcess.ID, colonyID, "", core.OUT, "result", fibonacci.String())
-            client.AddAttribute(attribute, executorPrvKey)
+			attribute := core.CreateAttribute(assignedProcess.ID, colonyName, "", core.OUT, "result", fibonacci.String())
+			client.AddAttribute(attribute, executorPrvKey)
 
-            // Close the process as successful
-            client.Close(assignedProcess.ID, executorPrvKey)
-            return
-        }
-    }
+			// Close the process as successful
+			client.Close(assignedProcess.ID, executorPrvKey)
+			return
+		}
+	}
 
-    // Close the process as failed
-    client.Fail(assignedProcess.ID, "invalid args", executorPrvKey)
+	// Close the process as failed
+	client.Fail(assignedProcess.ID, []string{"invalid arg"}, executorPrvKey)
 }
 ```
 
@@ -168,4 +168,4 @@ Attributes:
 +------------------------------------------------------------------+--------------+-------+------+
 ```
 
-See examples/generate_sub.go and examples/solver_pub.go for an event-driven version of the generator and executor.
+See examples/generate_sub/generate_sub.go and examples/solver_pub/solver_pub.go for an event-driven version of the generator and executor.
