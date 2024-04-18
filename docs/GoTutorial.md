@@ -8,7 +8,6 @@ colonies dev
 ## 2. Environmental variables
 ```console
 source examples/devenv
-}
 ```
 
 ## 3. Fibonacci Job Generator code (examples/generator/generator.go)
