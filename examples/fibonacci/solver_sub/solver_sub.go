@@ -11,7 +11,7 @@ import (
 )
 
 func main() {
-	colonyID := os.Getenv("COLONIES_COLONY_ID")
+	colonyName := os.Getenv("COLONIES_COLONY_NAME")
 	executorPrvKey := os.Getenv("COLONIES_EXECUTOR_PRVKEY")
 	coloniesHost := os.Getenv("COLONIES_SERVER_HOST")
 	coloniesPortStr := os.Getenv("COLONIES_SERVER_PORT")
@@ -24,7 +24,7 @@ func main() {
 	client := client.CreateColoniesClient(coloniesHost, coloniesPort, true, false)
 
 	// Subscribe for new processes
-	subscription, err := client.SubscribeProcesses("cli", core.WAITING, 100, executorPrvKey)
+	subscription, err := client.SubscribeProcesses(colonyName, "cli", core.WAITING, 100, executorPrvKey)
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -35,7 +35,7 @@ func main() {
 		for {
 			select {
 			case <-subscription.ProcessChan:
-				assignedProcess, err := client.Assign(colonyID, -1, executorPrvKey)
+				assignedProcess, err := client.Assign(colonyName, -1, "", "", executorPrvKey)
 				if err != nil {
 					fmt.Println(err)
 					continue
@@ -51,7 +51,7 @@ func main() {
 						fmt.Println("We were assigned process " + assignedProcess.ID)
 						fmt.Println("Result: The last number in the Fibonacci serie " + attribute.Value + " is " + fibonacci.String())
 
-						attribute := core.CreateAttribute(assignedProcess.ID, colonyID, "", core.OUT, "result", fibonacci.String())
+						attribute := core.CreateAttribute(assignedProcess.ID, colonyName, "", core.OUT, "result", fibonacci.String())
 						client.AddAttribute(attribute, executorPrvKey)
 
 						// Close the process as Successful

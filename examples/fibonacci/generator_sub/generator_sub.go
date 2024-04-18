@@ -10,7 +10,7 @@ import (
 )
 
 func main() {
-	colonyID := os.Getenv("COLONIES_COLONY_ID")
+	colonyName := os.Getenv("COLONIES_COLONY_NAME")
 	executorPrvKey := os.Getenv("COLONIES_EXECUTOR_PRVKEY")
 	coloniesHost := os.Getenv("COLONIES_SERVER_HOST")
 	coloniesPortStr := os.Getenv("COLONIES_SERVER_PORT")
@@ -19,10 +19,11 @@ func main() {
 		fmt.Println(err)
 		os.Exit(-1)
 	}
+	executorType := os.Getenv("COLONIES_EXECUTOR_TYPE")
 
 	funcSpec := core.CreateEmptyFunctionSpec()
-	funcSpec.Conditions.ColonyName = colonyID
-	funcSpec.Conditions.ExecutorType = os.Getenv("COLONIES_EXECUTOR_TYPE")
+	funcSpec.Conditions.ColonyName = colonyName
+	funcSpec.Conditions.ExecutorType = executorType
 	funcSpec.Env["fibonacciNum"] = os.Args[1]
 
 	client := client.CreateColoniesClient(coloniesHost, coloniesPort, true, false)
@@ -34,9 +35,9 @@ func main() {
 	fmt.Println("Submitted a new process to the Colonies server with Id <" + addedProcess.ID + ">")
 	fmt.Println("Waiting for process to be computed ...")
 
-	fmt.Println(os.Getenv("COLONIES_EXECUTOR_TYPE"))
+	fmt.Println(executorType)
 
-	subscription, _ := client.SubscribeProcess(addedProcess.ID, os.Getenv("COLONIES_EXECUTOR_TYPE"), core.SUCCESS, 100, executorPrvKey)
+	subscription, _ := client.SubscribeProcess(colonyName, addedProcess.ID, executorType, core.SUCCESS, 100, executorPrvKey)
 	process := <-subscription.ProcessChan
 
 	for _, attribute := range process.Attributes {

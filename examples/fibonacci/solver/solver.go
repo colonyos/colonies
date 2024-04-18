@@ -12,7 +12,7 @@ import (
 )
 
 func main() {
-	colonyID := os.Getenv("COLONIES_COLONY_ID")
+	colonyName := os.Getenv("COLONIES_COLONY_NAME")
 	executorPrvKey := os.Getenv("COLONIES_EXECUTOR_PRVKEY")
 	coloniesHost := os.Getenv("COLONIES_SERVER_HOST")
 	coloniesPortStr := os.Getenv("COLONIES_SERVER_PORT")
@@ -24,7 +24,7 @@ func main() {
 
 	// Ask the Colonies server to assign a process to this executor
 	client := client.CreateColoniesClient(coloniesHost, coloniesPort, true, false)
-	assignedProcess, err := client.Assign(colonyID, 100, executorPrvKey) // Max wait 100 seconds for assignment request
+	assignedProcess, err := client.Assign(colonyName, 100, "", "", executorPrvKey) // Max wait 100 seconds for assignment request
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -39,7 +39,7 @@ func main() {
 			fibonacci := fib.FibonacciBig(uint(nr))
 			fmt.Println("Result: The last number in the Fibonacci serie " + attribute.Value + " is " + fibonacci.String())
 
-			attribute := core.CreateAttribute(assignedProcess.ID, colonyID, "", core.OUT, "result", fibonacci.String())
+			attribute := core.CreateAttribute(assignedProcess.ID, colonyName, "", core.OUT, "result", fibonacci.String())
 			client.AddAttribute(attribute, executorPrvKey)
 
 			// Close the process as successful
@@ -49,5 +49,5 @@ func main() {
 	}
 
 	// Close the process as failed
-	client.Fail(assignedProcess.ID, "invalid arg", executorPrvKey)
+	client.Fail(assignedProcess.ID, []string{"invalid arg"}, executorPrvKey)
 }

@@ -10,7 +10,7 @@ import (
 )
 
 func main() {
-	colonyID := os.Getenv("COLONIES_COLONY_ID")
+	colonyName := os.Getenv("COLONIES_COLONY_NAME")
 	executorPrvKey := os.Getenv("COLONIES_EXECUTOR_PRVKEY")
 	coloniesHost := os.Getenv("COLONIES_SERVER_HOST")
 	coloniesPortStr := os.Getenv("COLONIES_SERVER_PORT")
@@ -21,7 +21,7 @@ func main() {
 	}
 
 	funcSpec := core.CreateEmptyFunctionSpec()
-	funcSpec.Conditions.ColonyName = colonyID
+	funcSpec.Conditions.ColonyName = colonyName
 	funcSpec.Conditions.ExecutorType = os.Getenv("COLONIES_EXECUTOR_TYPE")
 	funcSpec.Env["fibonacciNum"] = os.Args[1]
 
