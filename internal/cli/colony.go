@@ -16,6 +16,7 @@ func init() {
 	colonyCmd.AddCommand(removeColonyCmd)
 	colonyCmd.AddCommand(lsColoniesCmd)
 	colonyCmd.AddCommand(colonyStatsCmd)
+	colonyCmd.AddCommand(checkColonyCmd)
 	rootCmd.AddCommand(colonyCmd)
 
 	colonyCmd.PersistentFlags().StringVarP(&ServerHost, "host", "", DefaultServerHost, "Server host")
@@ -36,6 +37,9 @@ func init() {
 
 	lsColoniesCmd.Flags().StringVarP(&ServerPrvKey, "serverprvkey", "", "", "Colonies server private key")
 	lsColoniesCmd.Flags().BoolVarP(&JSON, "json", "", false, "Print JSON instead of tables")
+
+	checkColonyCmd.Flags().StringVarP(&PrvKey, "prvkey", "", "", "Colonies server private key")
+	checkColonyCmd.Flags().StringVarP(&TargetColonyName, "name", "", "", "Unique name of the Colony")
 }
 
 var colonyCmd = &cobra.Command{
@@ -117,15 +121,18 @@ var lsColoniesCmd = &cobra.Command{
 		coloniesFromServer, err := client.GetColonies(ServerPrvKey)
 		CheckError(err)
 
-		if len(coloniesFromServer) == 0 {
-			log.Info("No Colonies found")
+		if JSON {
+			jsonString, err := core.ConvertColonyArrayToJSON(coloniesFromServer)
+			if jsonString == "null" {
+				jsonString = "[]"
+			}
+			CheckError(err)
+			fmt.Println(jsonString)
 			os.Exit(0)
 		}
 
-		if JSON {
-			jsonString, err := core.ConvertColonyArrayToJSON(coloniesFromServer)
-			CheckError(err)
-			fmt.Println(jsonString)
+		if len(coloniesFromServer) == 0 {
+			log.Info("No Colonies found")
 			os.Exit(0)
 		}
 
@@ -144,5 +151,23 @@ var colonyStatsCmd = &cobra.Command{
 		CheckError(err)
 
 		printColonyStatTable(stat)
+	},
+}
+
+var checkColonyCmd = &cobra.Command{
+	Use:   "check",
+	Short: "Check if a Colony exists",
+	Long:  "Check if a Colony exists",
+	Run: func(cmd *cobra.Command, args []string) {
+		client := setup()
+
+		if TargetColonyName == "" {
+			CheckError(errors.New("Colony name  not specified"))
+		}
+
+		_, err := client.GetColonyByName(TargetColonyName, PrvKey)
+		CheckError(err)
+
+		log.WithFields(log.Fields{"ColonyName": TargetColonyName}).Info("Colony exists")
 	},
 }
