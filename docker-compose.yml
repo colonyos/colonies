@@ -11,35 +11,63 @@ services:
       TS_TUNE_MAX_CONNS: "1000"
     volumes:
       - timescaledb_data:/var/lib/postgresql/data
-  
+
   minio:
     image: minio/minio:latest
     environment:
-      MINIO_ROOT_USER: $MINIO_USER
-      MINIO_ROOT_PASSWORD: $MINIO_PASSWORD
+      MINIO_ROOT_USER: ${MINIO_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_PASSWORD}
     volumes:
       - minio_data:/var/lib/minio/data
     command: minio server /var/lib/minio/data --console-address :9001
     ports:
-      - "9000:9000" 
-      - "9001:9001" 
+      - "9000:9000"
+      - "9001:9001"
+
+  minio-setup:
+    image: minio/mc
+    depends_on:
+      - minio
+    environment:
+      AWS_S3_ENDPOINT: minio:9000
+      AWS_S3_ACCESSKEY: RrXN2vcLeHjBptG8a3Ay
+      AWS_S3_SECRETKEY: ivwLB0Luqomq65nNVmoo8fTBgxXgNvqYGC50VQN6
+      AWS_S3_REGION_KEY: ""
+      AWS_S3_BUCKET: colonies-prod
+      AWS_S3_TLS: "false"
+      AWS_S3_SKIPVERIFY: "false"
+      MINIO_USER: ${MINIO_USER}
+      MINIO_PASSWORD: ${MINIO_PASSWORD}
+    entrypoint: >
+      /bin/sh -c "
+      echo 'Executing: /usr/bin/mc alias set myminio http://minio:9000 ${MINIO_USER} ${MINIO_PASSWORD}';
+      until (/usr/bin/mc alias set myminio http://minio:9000 ${MINIO_USER} ${MINIO_PASSWORD}); do echo 'Waiting for MinIO...'; sleep 3; done;
+      echo 'MinIO is ready. Setting up...';
+      echo 'Executing: /usr/bin/mc admin user add myminio ${AWS_S3_ACCESSKEY} ${AWS_S3_SECRETKEY}';
+      /usr/bin/mc admin user add myminio ${AWS_S3_ACCESSKEY} ${AWS_S3_SECRETKEY};
+      echo 'Executing: /usr/bin/mc admin policy attach myminio readwrite --user=${AWS_S3_ACCESSKEY}';
+      /usr/bin/mc admin policy attach myminio readwrite --user=${AWS_S3_ACCESSKEY};
+      echo 'Executing: /usr/bin/mc mb myminio/${AWS_S3_BUCKET}';
+      /usr/bin/mc mb myminio/${AWS_S3_BUCKET};
+      echo 'MinIO setup completed.';
+      "
 
   colonies-server:
-    image: colonyos/colonies:v1.7.10
-    depends_on: 
+    image: colonyos/colonies:v1.8.5
+    depends_on:
       - timescaledb
     environment:
       COLONIES_SERVER_TLS: "false"
       COLONIES_SERVER_ID: ${COLONIES_SERVER_ID}
       COLONIES_SERVER_PORT: ${COLONIES_SERVER_PORT}
-      COLONIES_DB_HOST: timescaledb 
+      COLONIES_DB_HOST: timescaledb
       COLONIES_DB_PORT: 5432
-      COLONIES_DB_USER:  ${COLONIES_DB_USER} 
-      COLONIES_DB_PASSWORD:  ${COLONIES_DB_PASSWORD}
+      COLONIES_DB_USER: ${COLONIES_DB_USER}
+      COLONIES_DB_PASSWORD: ${COLONIES_DB_PASSWORD}
       COLONIES_DB_TIMESCALEDB: "true"
       COLONIES_TLSCERT: "/run/secrets/tls/tls.crt"
       COLONIES_TLSKEY: "/run/secrets/tls/tls.key"
-      COLONIES_VERBOSE: "true"  
+      COLONIES_VERBOSE: "true"
       COLONIES_SERVER_PROFILER: "false"
       COLONIES_SERVER_PROFILER_PORT: "6060"
       COLONIES_CRON_CHECKER_PERIOD: "1000"
@@ -53,8 +81,86 @@ services:
       - colonies_etcd:/var/colonies/etcd
     ports:
       - "${COLONIES_SERVER_PORT}:${COLONIES_SERVER_PORT}"
-    command: sh -c "colonies server start --initdb --port  ${COLONIES_SERVER_PORT} --relayport 25100 --etcdname server1 --etcdhost colonies-server --etcdclientport 23100 --etcdpeerport 24100 --initial-cluster server1=colonies-server:24100:25100:${COLONIES_SERVER_PORT} --etcddatadir /var/colonies/etcd --insecure"
-    
+    command: sh -c "colonies server start --initdb --port ${COLONIES_SERVER_PORT} --relayport 25100 --etcdname server1 --etcdhost colonies-server --etcdclientport 23100 --etcdpeerport 24100 --initial-cluster server1=colonies-server:24100:25100:${COLONIES_SERVER_PORT} --etcddatadir /var/colonies/etcd --insecure"
+
+  colonies-setup:
+    image: colonyos/colonies:v1.8.5
+    depends_on:
+      - colonies-server
+    environment:
+      COLONIES_SERVER_HOST: colonies-server
+      COLONIES_SERVER_TLS: "false"
+      COLONIES_SERVER_ID: ${COLONIES_SERVER_ID}
+      COLONIES_SERVER_PORT: ${COLONIES_SERVER_PORT}
+      COLONIES_SERVER_PRVKEY: ${COLONIES_SERVER_PRVKEY}
+      COLONIES_PRVKEY: ${COLONIES_PRVKEY}
+      COLONIES_VERBOSE: "true"
+      COLONIES_COLONY_NAME: ${COLONIES_COLONY_NAME}
+      COLONIES_COLONY_ID: ${COLONIES_COLONY_ID}
+      COLONIES_COLONY_PRVKEY: ${COLONIES_COLONY_PRVKEY}
+      COLONIES_ID: ${COLONIES_ID}
+      TZ: ${TZ}
+    entrypoint: >
+      /bin/sh -c "
+      echo 'Executing: colonies colony add --name ${COLONIES_COLONY_NAME} --colonyid ${COLONIES_COLONY_ID}';
+      until (colonies server status); do echo 'Waiting for Colonies server...'; sleep 3; done;
+      colonies colony add --name ${COLONIES_COLONY_NAME} --colonyid ${COLONIES_COLONY_ID};
+      echo 'Executing: colonies user add --name=myuser --email= --phone= --userid=${COLONIES_ID}';
+      colonies user add --name='myuser' --email='' --phone='' --userid=${COLONIES_ID};
+      "
+
+  docker-executor:
+    image: colonyos/dockerexecutor:v1.0.0
+    privileged: true
+    environment:
+      LANG: ${LANG:-en_US.UTF-8}
+      LANGUAGE: ${LANGUAGE:-en_US.UTF-8}
+      LC_ALL: ${LC_ALL:-en_US.UTF-8}
+      LC_CTYPE: ${LC_CTYPE:-UTF-8}
+      TZ: ${TZ:-Europe/Stockholm}
+      COLONIES_TLS: "false" 
+      COLONIES_SERVER_TLS: "false"
+      COLONIES_SERVER_HOST: colonies-server
+      COLONIES_SERVER_PORT: ${COLONIES_SERVER_PORT}
+      COLONIES_COLONY_NAME: ${COLONIES_COLONY_NAME}
+      COLONIES_COLONY_PRVKEY: ${COLONIES_COLONY_PRVKEY}
+      COLONIES_PRVKEY: ${COLONIES_PRVKEY}
+      COLONIES_EXECUTOR_NAME: ${COLONIES_EXECUTOR_NAME}
+      AWS_S3_TLS: ${AWS_S3_TLS}
+      AWS_S3_SKIPVERIFY: ${AWS_S3_SKIPVERIFY}
+      AWS_S3_ENDPOINT: ${AWS_S3_ENDPOINT}
+      AWS_S3_ACCESSKEY: ${AWS_S3_ACCESSKEY}
+      AWS_S3_SECRETKEY: ${AWS_S3_SECRETKEY}
+      AWS_S3_REGION_KEY: ${AWS_S3_REGION_KEY}
+      AWS_S3_BUCKET: ${AWS_S3_BUCKET:-hpc}
+      EXECUTOR_ADD_DEBUG_LOGS: "false"
+      EXECUTOR_TYPE: "container-executor"
+      EXECUTOR_GPU: ${EXECUTOR_GPU}
+      EXECUTOR_SW_NAME: "colonyos/dockerexecutor:v1.0.1"
+      EXECUTOR_SW_TYPE: "docker"
+      EXECUTOR_SW_VERSION: "colonyos/dockerexecutor:v1.0.1"
+      EXECUTOR_HW_CPU: ""
+      EXECUTOR_HW_MODEL: "n/a"
+      EXECUTOR_HW_NODES: "1"
+      EXECUTOR_HW_MEM: ""
+      EXECUTOR_HW_STORAGE: ""
+      EXECUTOR_HW_GPU_COUNT: "0"
+      EXECUTOR_HW_GPU_MEM: ""
+      EXECUTOR_HW_GPU_NODES_COUNT: "0"
+      EXECUTOR_HW_GPU_NAME: ""
+      EXECUTOR_LOCATION_LONG: ""
+      EXECUTOR_LOCATION_LAT: ""
+      EXECUTOR_LOCATION_DESC: "n/a"
+      EXECUTOR_FS_DIR: ${EXECUTOR_FS_DIR}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ${EXECUTOR_FS_DIR}:${EXECUTOR_FS_DIR}
+    command: >
+      /bin/sh -c "
+      until (colonies colony check --name ${COLONIES_COLONY_NAME}); do echo 'Waiting for Colonies server...'; sleep 3; done;
+      docker_executor start -v
+      "
+
 volumes:
   timescaledb_data:
   minio_data:
