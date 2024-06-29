@@ -70,6 +70,7 @@ services:
       COLONIES_VERBOSE: "true"
       COLONIES_SERVER_PROFILER: "false"
       COLONIES_SERVER_PROFILER_PORT: "6060"
+      COLONIES_ALLOW_EXECUTOR_REREGISTER: ${COLONIES_ALLOW_EXECUTOR_REREGISTER} 
       COLONIES_CRON_CHECKER_PERIOD: "1000"
       COLONIES_GENERATOR_CHECKER_PERIOD: "500"
       COLONIES_EXCLUSIVE_ASSIGN: "true"
@@ -128,7 +129,7 @@ services:
       COLONIES_EXECUTOR_NAME: ${COLONIES_EXECUTOR_NAME}
       AWS_S3_TLS: ${AWS_S3_TLS}
       AWS_S3_SKIPVERIFY: ${AWS_S3_SKIPVERIFY}
-      AWS_S3_ENDPOINT: ${AWS_S3_ENDPOINT}
+      AWS_S3_ENDPOINT: minio:9000 
       AWS_S3_ACCESSKEY: ${AWS_S3_ACCESSKEY}
       AWS_S3_SECRETKEY: ${AWS_S3_SECRETKEY}
       AWS_S3_REGION_KEY: ${AWS_S3_REGION_KEY}
@@ -158,6 +159,7 @@ services:
     command: >
       /bin/sh -c "
       until (colonies colony check --name ${COLONIES_COLONY_NAME}); do echo 'Waiting for Colonies server...'; sleep 3; done;
+      colonies executor remove --name dev-docker;
       docker_executor start -v
       "
 
