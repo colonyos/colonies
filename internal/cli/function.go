@@ -34,6 +34,7 @@ func init() {
 	submitFuncSpecCmd.MarkFlagRequired("spec")
 	submitFuncSpecCmd.Flags().BoolVarP(&PrintOutput, "out", "", false, "Print process output, wait flag must be set")
 	submitFuncSpecCmd.Flags().BoolVarP(&Follow, "follow", "", false, "Follow process, wait flag cannot be set")
+	submitFuncSpecCmd.Flags().BoolVarP(&Snapshot, "snapshot", "", false, "Automatically create snapshot")
 	submitFuncSpecCmd.Flags().StringVarP(&Label, "label", "", "", "Add a label")
 
 	execFuncCmd.Flags().StringVarP(&PrvKey, "prvkey", "", "", "Private key")
@@ -51,6 +52,7 @@ func init() {
 	execFuncCmd.Flags().BoolVarP(&PrintOutput, "out", "", false, "Print process output, wait flag must be set")
 	execFuncCmd.Flags().BoolVarP(&Follow, "follow", "", false, "Follow process, wait flag cannot be set")
 	execFuncCmd.Flags().StringVarP(&Label, "label", "", "", "Add a label")
+	execFuncCmd.Flags().BoolVarP(&Snapshot, "snapshot", "", false, "Automatically create snapshot")
 
 	removeFuncCmd.Flags().StringVarP(&FunctionID, "functionid", "", "", "FunctionID")
 	removeFuncCmd.MarkFlagRequired("functionid")
@@ -235,7 +237,9 @@ var submitFuncSpecCmd = &cobra.Command{
 			funcSpec.Conditions.ColonyName = ColonyName
 		}
 
-		createSnapshot(funcSpec, client)
+		if Snapshot {
+			createSnapshot(funcSpec, client)
+		}
 
 		if Label != "" {
 			funcSpec.Label = Label
@@ -331,7 +335,9 @@ var execFuncCmd = &cobra.Command{
 			Conditions:  conditions,
 			Env:         env}
 
-		createSnapshot(&funcSpec, client)
+		if Snapshot {
+			createSnapshot(&funcSpec, client)
+		}
 
 		if Label != "" {
 			funcSpec.Label = Label
