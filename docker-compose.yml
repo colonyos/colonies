@@ -81,7 +81,7 @@ services:
     volumes:
       - colonies_etcd:/var/colonies/etcd
     ports:
-      - "${COLONIES_SERVER_PORT}:${COLONIES_SERVER_PORT}"
+      - "0.0.0.0:${COLONIES_SERVER_PORT}:${COLONIES_SERVER_PORT}"
     command: sh -c "colonies server start --initdb --port ${COLONIES_SERVER_PORT} --relayport 25100 --etcdname server1 --etcdhost colonies-server --etcdclientport 23100 --etcdpeerport 24100 --initial-cluster server1=colonies-server:24100:25100:${COLONIES_SERVER_PORT} --etcddatadir /var/colonies/etcd --insecure"
 
   colonies-setup:
