@@ -3,7 +3,8 @@
 
 ![ColonyOSLogo](docs/images/ColonyOsLogoNoShaddow2.png)
 
-**[Tutorials](https://github.com/colonyos/tutorials)**
+# Tutorials
+This [repo](https://github.com/colonyos/tutorials) contains several tutorials to help you get started with ColonyOS.
 
 # What is Colonies?
 ColonyOS is an open-source framework designed to facilitate seamless execution of computational workloads across platforms, e.g. cloud, edge, devices, or High-Performance Computing (HPC), creating so-called *Compute Continuums*. Colonies is key component of ColonyOS and provides a **Meta-Orchestrator**, delivering functionalities like a traditional operating system, but functions as an overlay on top of existing platforms. 
