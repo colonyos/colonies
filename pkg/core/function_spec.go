@@ -46,7 +46,7 @@ type Conditions struct {
 	Nodes            int      `json:"nodes"`
 	CPU              string   `json:"cpu"`
 	Processes        int      `json:"processes"`
-	ProcessesPerNode int      `json:"processes-per-node"`
+	ProcessesPerNode int      `json:"processespernode"`
 	Memory           string   `json:"mem"`
 	Storage          string   `json:"storage"`
 	GPU              GPU      `json:"gpu"`
