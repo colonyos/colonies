@@ -111,7 +111,7 @@ services:
       "
 
   docker-executor:
-    image: colonyos/dockerexecutor:v1.0.0
+    image: colonyos/dockerexecutor:v1.0.3
     privileged: true
     environment:
       LANG: ${LANG:-en_US.UTF-8}
