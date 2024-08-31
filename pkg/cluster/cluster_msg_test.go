@@ -9,7 +9,7 @@ import (
 func TestClusterMsg(t *testing.T) {
 	// test cluster message
 	msg := &ClusterMsg{
-		MsgType:    PingRequestMsgType,
+		MsgType:    PingRequest,
 		ID:         "2",
 		Originator: "replica1",
 		Recipient:  "replica2",

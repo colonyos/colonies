@@ -28,7 +28,7 @@ type Cluster struct {
 
 type response struct {
 	reciveChan chan *ClusterMsg
-	added      int64
+	added      int64 // TODO: purge old messages after a certain time
 }
 
 func CreateCluster(thisNode Node, clusterConfig Config, ginHandler *gin.Engine) *Cluster {

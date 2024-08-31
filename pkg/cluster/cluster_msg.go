@@ -5,22 +5,24 @@ import (
 )
 
 const (
-	PingRequestMsgType = iota
-	PingResponseMsgType
-	VerifyConfigRequestMsgType
-	VerifyConfigResponseMsgType
-	GetConfigRequestMsgType
-	GetConfigResponseMsgType
-	CallRequestMsgType
-	CallResponseMsgType
+	PingRequest = iota
+	PingResponse
+	VerifyNodeListRequest
+	VerifyNodeListResponse
+	NodeListRequest
+	NodeListResponse
+	RPCRequest
+	RPCResponse
 )
 
 type ClusterMsg struct {
-	MsgType    int
-	ID         string
-	Originator string
-	Recipient  string
-	Data       []byte
+	MsgType      int
+	ID           string
+	Originator   string
+	Recipient    string
+	NodeList     []string
+	NodeListHash string
+	Data         []byte
 }
 
 func (m *ClusterMsg) Serialize() ([]byte, error) {

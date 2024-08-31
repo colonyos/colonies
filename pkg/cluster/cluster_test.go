@@ -60,7 +60,7 @@ func TestClusterSend(t *testing.T) {
 	}()
 
 	msg := &ClusterMsg{
-		MsgType:   PingRequestMsgType,
+		MsgType:   PingRequest,
 		Recipient: "replica1",
 		Data:      []byte("payload"),
 	}
@@ -119,7 +119,7 @@ func TestClusterSendAndReceive(t *testing.T) {
 					errMsgReplica2 = fmt.Errorf("invalid payload")
 				}
 				msg.Data = []byte("pong")
-				msg.MsgType = PingResponseMsgType
+				msg.MsgType = PingResponse
 				errSendReplica2 = clusterReplica2.Reply(msg, context.TODO())
 				doneReplica2 <- struct{}{}
 			}
@@ -127,7 +127,7 @@ func TestClusterSendAndReceive(t *testing.T) {
 	}()
 
 	msg := &ClusterMsg{
-		MsgType:   PingRequestMsgType,
+		MsgType:   PingRequest,
 		Recipient: "replica1",
 		Data:      []byte("ping"),
 	}
@@ -143,7 +143,7 @@ func TestClusterSendAndReceive(t *testing.T) {
 
 	reply := <-replyChan
 	assert.NotNil(t, reply)
-	assert.Equal(t, PingResponseMsgType, reply.MsgType)
+	assert.Equal(t, PingResponse, reply.MsgType)
 	assert.Equal(t, "pong", string(reply.Data))
 
 	close(replyChan)
