@@ -7,7 +7,7 @@ import (
 )
 
 func (controller *coloniesController) isLeader() bool {
-	areWeLeader := controller.etcdServer.Leader() == controller.thisNode.Name
+	areWeLeader := controller.getClusterServer().EtcdServer().Leader() == controller.thisNode.Name
 	if areWeLeader && !controller.leader {
 		log.WithFields(log.Fields{"EtcdNode": controller.thisNode.Name}).Debug("ColoniesServer became leader")
 		controller.leader = true

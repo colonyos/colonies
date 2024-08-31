@@ -10,9 +10,9 @@ import (
 type controller interface {
 	getCronPeriod() int
 	getGeneratorPeriod() int
-	getEtcdServer() *cluster.EtcdServer
 	getEventHandler() *eventHandler
 	getThisNode() cluster.Node
+	getClusterServer() *cluster.ClusterServer
 	subscribeProcesses(executorID string, subscription *subscription) error
 	subscribeProcess(executorID string, subscription *subscription) error
 	getColonies() ([]*core.Colony, error)

@@ -3,7 +3,6 @@ package server
 import (
 	"errors"
 	"math"
-	"os"
 	"strconv"
 	"sync"
 	"time"
@@ -49,14 +48,14 @@ type coloniesController struct {
 	blockingCmdQueue chan *command
 	scheduler        *scheduler.Scheduler
 	wsSubCtrl        *wsSubscriptionController
-	relayServer      *cluster.RelayServer
+	thisNode         cluster.Node
+	clusterConfig    cluster.Config
+	cs               *cluster.ClusterServer
+	relay            *cluster.Relay
 	eventHandler     *eventHandler
 	stopFlag         bool
 	stopMutex        sync.Mutex
 	leaderMutex      sync.Mutex
-	thisNode         cluster.Node
-	clusterConfig    cluster.Config
-	etcdServer       *cluster.EtcdServer
 	leader           bool
 	generatorPeriod  int
 	cronPeriod       int
@@ -77,20 +76,18 @@ func createColoniesController(db database.Database,
 
 	controller := &coloniesController{}
 	controller.db = db
-	controller.thisNode = thisNode
-	controller.clusterConfig = clusterConfig
-	controller.etcdServer = cluster.CreateEtcdServer(controller.thisNode, controller.clusterConfig, etcdDataPath)
-	controller.etcdServer.Start()
-	controller.etcdServer.WaitToStart()
-	controller.leader = false
 	controller.generatorPeriod = generatorPeriod
 	controller.cronPeriod = cronPeriod
 	controller.retention = retention
 	controller.retentionPolicy = retentionPolicy
 	controller.retentionPeriod = retentionPeriod
 
-	controller.relayServer = cluster.CreateRelayServer(controller.thisNode, controller.clusterConfig)
-	controller.eventHandler = createEventHandler(controller.relayServer)
+	controller.clusterConfig = clusterConfig
+	controller.leader = false
+	controller.thisNode = thisNode
+	controller.cs = cluster.CreateClusterServer(controller.thisNode, controller.clusterConfig, etcdDataPath)
+	controller.relay = controller.cs.Relay()
+	controller.eventHandler = createEventHandler(controller.relay)
 	controller.wsSubCtrl = createWSSubscriptionController(controller.eventHandler)
 	controller.scheduler = scheduler.CreateScheduler(controller.db)
 
@@ -108,16 +105,16 @@ func createColoniesController(db database.Database,
 	return controller
 }
 
+func (controller *coloniesController) getClusterServer() *cluster.ClusterServer {
+	return controller.cs
+}
+
 func (controller *coloniesController) getCronPeriod() int {
 	return controller.cronPeriod
 }
 
 func (controller *coloniesController) getGeneratorPeriod() int {
 	return controller.generatorPeriod
-}
-
-func (controller *coloniesController) getEtcdServer() *cluster.EtcdServer {
-	return controller.etcdServer
 }
 
 func (controller *coloniesController) getEventHandler() *eventHandler {
@@ -1614,8 +1611,5 @@ func (controller *coloniesController) stop() {
 	controller.stopMutex.Unlock()
 	controller.cmdQueue <- &command{stop: true}
 	controller.eventHandler.stop()
-	controller.relayServer.Shutdown()
-	controller.etcdServer.Stop()
-	controller.etcdServer.WaitToStop()
-	os.RemoveAll(controller.etcdServer.StorageDir())
+	controller.cs.Shutdown()
 }

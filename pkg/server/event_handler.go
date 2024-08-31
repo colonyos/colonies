@@ -18,7 +18,7 @@ type eventHandler struct {
 	idCounter         int
 	stopped           bool
 	mutex             sync.Mutex
-	relayServer       *cluster.RelayServer
+	relay             *cluster.Relay
 	relayChan         chan []byte
 	stopRelayListener chan struct{}
 }
@@ -38,12 +38,12 @@ type replyMessage struct {
 	stopped      bool // Just for testing purposes
 }
 
-func createEventHandler(relayServer *cluster.RelayServer) *eventHandler {
+func createEventHandler(relay *cluster.Relay) *eventHandler {
 	handler := &eventHandler{}
 	handler.listeners = make(map[string]map[string]chan *core.Process)
 	handler.processIDs = make(map[string]string)
 	handler.msgQueue = make(chan *message)
-	handler.relayServer = relayServer
+	handler.relay = relay
 
 	handler.mutex.Lock()
 	handler.stopped = true
@@ -52,9 +52,9 @@ func createEventHandler(relayServer *cluster.RelayServer) *eventHandler {
 	// Start master worker
 	go handler.masterWorker()
 
-	if relayServer != nil {
+	if relay != nil {
 		handler.stopRelayListener = make(chan struct{})
-		handler.relayChan = relayServer.Receive()
+		handler.relayChan = relay.Receive()
 		go handler.relayListener()
 	}
 
@@ -159,12 +159,12 @@ func (handler *eventHandler) signal(process *core.Process) {
 
 	// broadcast the msg to the relayServer
 	go func() {
-		if handler.relayServer != nil {
+		if handler.relay != nil {
 			jsonStr, err := process.ToJSON()
 			if err != nil {
 				log.WithFields(log.Fields{"Error": err}).Error("Failed to parse JSON in signal")
 			}
-			handler.relayServer.Broadcast([]byte(jsonStr))
+			handler.relay.Broadcast([]byte(jsonStr))
 		}
 	}()
 }
@@ -236,9 +236,8 @@ func (handler *eventHandler) subscribe(executorType string, state int, processID
 
 func (handler *eventHandler) stop() {
 	handler.msgQueue <- &message{stop: true}
-	if handler.relayServer != nil {
+	if handler.relay != nil {
 		handler.stopRelayListener <- struct{}{}
-		handler.relayServer.Shutdown()
 	}
 }
 

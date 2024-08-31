@@ -98,7 +98,7 @@ func (server *ColoniesServer) handleAssignProcessHTTPRequest(c *gin.Context, rec
 	var err error
 	if server.exclusiveAssign && !server.controller.isLeader() {
 		// Find out who is the leader
-		leader := server.controller.getEtcdServer().CurrentCluster().Leader
+		leader := server.controller.getClusterServer().EtcdServer().CurrentCluster().Leader
 		leaderHost := leader.Host
 		leaderPort := leader.APIPort
 		insecure := !server.tls
