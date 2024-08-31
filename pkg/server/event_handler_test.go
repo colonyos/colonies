@@ -353,17 +353,17 @@ func TestEventHandleRelayServer(t *testing.T) {
 	config.AddNode(node2)
 	config.AddNode(node3)
 
-	clusterServer1 := cluster.CreateClusterServer(node1, config, ".")
-	clusterServer2 := cluster.CreateClusterServer(node2, config, ".")
-	clusterServer3 := cluster.CreateClusterServer(node3, config, ".")
+	clusterManager1 := cluster.CreateClusterManager(node1, config, ".")
+	clusterManager2 := cluster.CreateClusterManager(node2, config, ".")
+	clusterManager3 := cluster.CreateClusterManager(node3, config, ".")
 
-	defer clusterServer1.Shutdown()
-	defer clusterServer2.Shutdown()
-	defer clusterServer3.Shutdown()
+	defer clusterManager1.Shutdown()
+	defer clusterManager2.Shutdown()
+	defer clusterManager3.Shutdown()
 
-	relay1 := clusterServer1.Relay()
-	relay2 := clusterServer2.Relay()
-	relay3 := clusterServer3.Relay()
+	relay1 := clusterManager1.Relay()
+	relay2 := clusterManager2.Relay()
+	relay3 := clusterManager3.Relay()
 
 	handler1 := createEventHandler(relay1)
 	handler2 := createEventHandler(relay2)

@@ -31,10 +31,10 @@ func TestCreateEtcdCluster(t *testing.T) {
 	server3.Start()
 	server4.Start()
 
-	server1.WaitToStart()
-	server2.WaitToStart()
-	server3.WaitToStart()
-	server4.WaitToStart()
+	server1.BlockUntilReady()
+	server2.BlockUntilReady()
+	server3.BlockUntilReady()
+	server4.BlockUntilReady()
 
 	leader := server1.Leader()
 	assert.Equal(t, server2.Leader(), leader)
@@ -58,10 +58,10 @@ func TestCreateEtcdCluster(t *testing.T) {
 	server3.Stop()
 	server4.Stop()
 
-	server1.WaitToStop()
-	server2.WaitToStop()
-	server3.WaitToStop()
-	server4.WaitToStop()
+	server1.BlockUntilStopped()
+	server2.BlockUntilStopped()
+	server3.BlockUntilStopped()
+	server4.BlockUntilStopped()
 
 	os.RemoveAll(server1.StorageDir())
 	os.RemoveAll(server2.StorageDir())

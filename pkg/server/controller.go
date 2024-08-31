@@ -12,7 +12,7 @@ type controller interface {
 	getGeneratorPeriod() int
 	getEventHandler() *eventHandler
 	getThisNode() cluster.Node
-	getClusterServer() *cluster.ClusterServer
+	getClusterManager() *cluster.ClusterManager
 	subscribeProcesses(executorID string, subscription *subscription) error
 	subscribeProcess(executorID string, subscription *subscription) error
 	getColonies() ([]*core.Colony, error)

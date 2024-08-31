@@ -16,19 +16,27 @@ func TestClusterSend(t *testing.T) {
 
 	node1 := Node{Name: "replica1", Host: "localhost", EtcdClientPort: 24100, EtcdPeerPort: 23100, RelayPort: 25100, APIPort: 26100}
 	node2 := Node{Name: "replica2", Host: "localhost", EtcdClientPort: 24200, EtcdPeerPort: 23200, RelayPort: 25200, APIPort: 26200}
+	node3 := Node{Name: "replica3", Host: "localhost", EtcdClientPort: 24300, EtcdPeerPort: 23300, RelayPort: 25300, APIPort: 26300}
 
 	config := Config{}
 	config.AddNode(node1)
 	config.AddNode(node2)
+	config.AddNode(node3)
 
-	clusterServer1 := CreateClusterServer(node1, config, ".")
-	clusterServer2 := CreateClusterServer(node2, config, ".")
+	clusterManager1 := CreateClusterManager(node1, config, ".")
+	clusterManager2 := CreateClusterManager(node2, config, ".")
+	clusterManager3 := CreateClusterManager(node3, config, ".")
 
-	clusterReplica1 := clusterServer1.Cluster()
-	clusterReplica2 := clusterServer2.Cluster()
+	clusterManager1.BlockUntilReady()
+	clusterManager2.BlockUntilReady()
+	clusterManager3.BlockUntilReady()
 
-	defer clusterServer1.Shutdown()
-	defer clusterServer2.Shutdown()
+	clusterReplica1 := clusterManager1.Cluster()
+	clusterReplica2 := clusterManager2.Cluster()
+
+	defer clusterManager1.Shutdown()
+	defer clusterManager2.Shutdown()
+	defer clusterManager3.Shutdown()
 
 	incomingChan2 := clusterReplica2.ReceiveChan()
 
@@ -82,14 +90,14 @@ func TestClusterSendAndReceive(t *testing.T) {
 	config.AddNode(node1)
 	config.AddNode(node2)
 
-	clusterServer1 := CreateClusterServer(node1, config, ".")
-	clusterServer2 := CreateClusterServer(node2, config, ".")
+	clusterManager1 := CreateClusterManager(node1, config, ".")
+	clusterManager2 := CreateClusterManager(node2, config, ".")
 
-	clusterReplica1 := clusterServer1.Cluster()
-	clusterReplica2 := clusterServer2.Cluster()
+	clusterReplica1 := clusterManager1.Cluster()
+	clusterReplica2 := clusterManager2.Cluster()
 
-	defer clusterServer1.Shutdown()
-	defer clusterServer2.Shutdown()
+	defer clusterManager1.Shutdown()
+	defer clusterManager2.Shutdown()
 
 	incomingChan2 := clusterReplica2.ReceiveChan()
 

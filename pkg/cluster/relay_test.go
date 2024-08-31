@@ -21,17 +21,21 @@ func TestRelay(t *testing.T) {
 	config.AddNode(node2)
 	config.AddNode(node3)
 
-	clusterServer1 := CreateClusterServer(node1, config, ".")
-	clusterServer2 := CreateClusterServer(node2, config, ".")
-	clusterServer3 := CreateClusterServer(node3, config, ".")
+	clusterManager1 := CreateClusterManager(node1, config, ".")
+	clusterManager2 := CreateClusterManager(node2, config, ".")
+	clusterManager3 := CreateClusterManager(node3, config, ".")
 
-	relay1 := clusterServer1.Relay()
-	relay2 := clusterServer2.Relay()
-	relay3 := clusterServer3.Relay()
+	clusterManager1.BlockUntilReady()
+	clusterManager2.BlockUntilReady()
+	clusterManager3.BlockUntilReady()
 
-	defer clusterServer1.Shutdown()
-	defer clusterServer2.Shutdown()
-	defer clusterServer3.Shutdown()
+	relay1 := clusterManager1.Relay()
+	relay2 := clusterManager2.Relay()
+	relay3 := clusterManager3.Relay()
+
+	defer clusterManager1.Shutdown()
+	defer clusterManager2.Shutdown()
+	defer clusterManager3.Shutdown()
 
 	incomingRelayChan1 := relay1.Receive()
 	incomingRelayChan2 := relay2.Receive()

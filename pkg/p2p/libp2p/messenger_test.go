@@ -16,7 +16,7 @@ func TestMessenger(t *testing.T) {
 	messenger2, err := CreateMessenger(4002, "mes2")
 	assert.Equal(t, err, nil)
 
-	msgChan := make(chan p2p.Message)
+	msgChan := make(chan *p2p.Message)
 	go func() {
 		ctx, cancel := context.WithTimeout(context.Background(), 1000*time.Millisecond)
 		messenger1.ListenForever(msgChan, ctx)

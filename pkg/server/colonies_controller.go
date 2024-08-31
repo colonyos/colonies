@@ -50,7 +50,7 @@ type coloniesController struct {
 	wsSubCtrl        *wsSubscriptionController
 	thisNode         cluster.Node
 	clusterConfig    cluster.Config
-	cs               *cluster.ClusterServer
+	clusterManager   *cluster.ClusterManager
 	relay            *cluster.Relay
 	eventHandler     *eventHandler
 	stopFlag         bool
@@ -85,14 +85,18 @@ func createColoniesController(db database.Database,
 	controller.clusterConfig = clusterConfig
 	controller.leader = false
 	controller.thisNode = thisNode
-	controller.cs = cluster.CreateClusterServer(controller.thisNode, controller.clusterConfig, etcdDataPath)
-	controller.relay = controller.cs.Relay()
+	controller.clusterManager = cluster.CreateClusterManager(controller.thisNode, controller.clusterConfig, etcdDataPath)
+	controller.relay = controller.clusterManager.Relay()
 	controller.eventHandler = createEventHandler(controller.relay)
 	controller.wsSubCtrl = createWSSubscriptionController(controller.eventHandler)
 	controller.scheduler = scheduler.CreateScheduler(controller.db)
 
 	controller.cmdQueue = make(chan *command)
 	controller.blockingCmdQueue = make(chan *command)
+
+	log.Info("Waiting for cluster to be ready...")
+	controller.clusterManager.BlockUntilReady()
+	log.Info("Cluster is ready")
 
 	controller.tryBecomeLeader()
 	go controller.blockingCmdQueueWorker()
@@ -105,8 +109,8 @@ func createColoniesController(db database.Database,
 	return controller
 }
 
-func (controller *coloniesController) getClusterServer() *cluster.ClusterServer {
-	return controller.cs
+func (controller *coloniesController) getClusterManager() *cluster.ClusterManager {
+	return controller.clusterManager
 }
 
 func (controller *coloniesController) getCronPeriod() int {
@@ -1611,5 +1615,5 @@ func (controller *coloniesController) stop() {
 	controller.stopMutex.Unlock()
 	controller.cmdQueue <- &command{stop: true}
 	controller.eventHandler.stop()
-	controller.cs.Shutdown()
+	controller.clusterManager.Shutdown()
 }

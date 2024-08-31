@@ -49,7 +49,7 @@ func (v *controllerMock) getGeneratorPeriod() int {
 	return -1
 }
 
-func (v *controllerMock) getClusterServer() *cluster.ClusterServer {
+func (v *controllerMock) getClusterManager() *cluster.ClusterManager {
 	return nil
 }
 

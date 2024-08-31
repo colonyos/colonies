@@ -105,10 +105,10 @@ func (m *Messenger) Send(msg p2p.Message, ctx context.Context) error {
 	return err
 }
 
-func (m *Messenger) ListenForever(msgChan chan p2p.Message, ctx context.Context) error {
+func (m *Messenger) ListenForever(msgChan chan *p2p.Message, ctx context.Context) error {
 	for {
 		m.host.SetStreamHandler("/colonies/1.0.0", func(stream network.Stream) {
-			var msg p2p.Message
+			var msg *p2p.Message
 			r := bufio.NewReader(stream)
 
 			select {
@@ -132,6 +132,8 @@ func (m *Messenger) ListenForever(msgChan chan p2p.Message, ctx context.Context)
 				if err != nil {
 					return
 				}
+
+				msg.Stream = stream
 
 				msgChan <- msg
 			}

@@ -121,11 +121,11 @@ func (server *EtcdServer) Stop() {
 	server.stop <- true
 }
 
-func (server *EtcdServer) WaitToStart() {
+func (server *EtcdServer) BlockUntilReady() {
 	<-server.ready
 }
 
-func (server *EtcdServer) WaitToStop() {
+func (server *EtcdServer) BlockUntilStopped() {
 	<-server.stopped
 }
 
