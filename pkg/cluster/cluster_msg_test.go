@@ -7,7 +7,6 @@ import (
 )
 
 func TestClusterMsg(t *testing.T) {
-	// test cluster message
 	msg := &ClusterMsg{
 		MsgType:    PingRequest,
 		ID:         "2",

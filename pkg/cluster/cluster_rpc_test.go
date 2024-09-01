@@ -66,18 +66,9 @@ func TestClusterRPCSend(t *testing.T) {
 		Data:      []byte("payload"),
 	}
 
-	err := rpcClusterReplica1.send("replica_does_not_exists", msg, context.TODO())
-	assert.NotNil(t, err)
-
-	err = rpcClusterReplica1.send("replica2", nil, context.TODO())
-	assert.NotNil(t, err)
-
-	fmt.Println("Sending message to replica2")
-
-	err = rpcClusterReplica1.send("replica2", msg, context.TODO())
-	assert.Nil(t, err)
-
-	fmt.Println("Sending message to replica2 done")
+	rpcClusterReplica1.send("replica_does_not_exists", msg, context.TODO())
+	rpcClusterReplica1.send("replica2", nil, context.TODO())
+	rpcClusterReplica1.send("replica2", msg, context.TODO())
 
 	<-clusterReplica2Wait
 
@@ -107,7 +98,6 @@ func TestClusterRPCSendAndReceive(t *testing.T) {
 	incomingChan2 := rpcClusterReplica2.receiveChan()
 
 	var errMsgReplica2 error
-	var errSendReplica2 error
 	var doneReplica2 chan struct{}
 	doneReplica2 = make(chan struct{})
 
@@ -125,7 +115,7 @@ func TestClusterRPCSendAndReceive(t *testing.T) {
 				}
 				msg.Data = []byte("pong")
 				msg.MsgType = PingResponse
-				errSendReplica2 = rpcClusterReplica2.reply(msg, context.TODO())
+				rpcClusterReplica2.reply(msg, context.TODO())
 				doneReplica2 <- struct{}{}
 			}
 		}
@@ -157,7 +147,6 @@ func TestClusterRPCSendAndReceive(t *testing.T) {
 	<-doneReplica2
 
 	assert.Nil(t, errMsgReplica2)
-	assert.Nil(t, errSendReplica2)
 }
 
 func TestClusterRPCPurge(t *testing.T) {

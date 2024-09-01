@@ -2,6 +2,9 @@ package cluster
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
+	"strings"
 	"sync"
 	"time"
 
@@ -9,8 +12,9 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-const PING_RESPONSE_TIMEOUT = 1 // Wait max 1 second for a response to a ping request
-const RPC_PURGE_INTERVAL = 600  // Purge RPC responses every 10 minutes
+const PING_RESPONSE_TIMEOUT = 1    // Wait max 1 second for a response to a ping request
+const RPC_PURGE_INTERVAL = 600     // Purge RPC responses every 10 minutes
+const NODE_LIST_CHECK_INTERVAL = 5 // Check the node list every 5 second
 
 type Coordinator struct {
 	thisNode          Node
@@ -20,12 +24,13 @@ type Coordinator struct {
 	doneChan          chan bool
 	readyChan         chan bool
 	nodeList          []string
+	nodeListChecksum  string
 	nodeListMutex     *sync.Mutex
 	genListInProgress bool
 	genListDoneChan   chan bool
 }
 
-func CreateCoordinator(thisNode Node, clusterConfig Config, etcdServer *EtcdServer, ginHandler *gin.Engine) *Coordinator {
+func CreateCoordinator(thisNode Node, clusterConfig Config, etcdServer *EtcdServer, ginHandler *gin.Engine, nodeListCheckInterval int) *Coordinator {
 	c := &Coordinator{
 		thisNode:      thisNode,
 		clusterConfig: clusterConfig,
@@ -37,6 +42,7 @@ func CreateCoordinator(thisNode Node, clusterConfig Config, etcdServer *EtcdServ
 	}
 
 	go c.handleRequests()
+	go c.monitorNodeList(time.Second * time.Duration(nodeListCheckInterval))
 
 	<-c.readyChan
 
@@ -76,10 +82,7 @@ func (c *Coordinator) handlePingRequest(msg *ClusterMsg) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), PING_RESPONSE_TIMEOUT*time.Second)
 	defer cancel()
-	err := c.rpc.reply(msg, ctx)
-	if err != nil {
-		log.WithFields(log.Fields{"error": err}).Error("Failed to send Ping response")
-	}
+	c.rpc.reply(msg, ctx)
 }
 
 func (c *Coordinator) handleVerifyNodeListRequest(msg *ClusterMsg) {
@@ -94,12 +97,41 @@ func (c *Coordinator) handleRPCRequest(msg *ClusterMsg) {
 	log.Debugf("Received RPC request from %s", msg.Originator)
 }
 
+func (c *Coordinator) calcChecksum(nodeList []string) string {
+	concatenated := strings.Join(nodeList, ",")
+	hash := sha256.New()
+	hash.Write([]byte(concatenated))
+	return hex.EncodeToString(hash.Sum(nil))
+}
+
+func (c *Coordinator) GetNodeList() []string {
+	c.nodeListMutex.Lock()
+	defer c.nodeListMutex.Unlock()
+
+	return c.nodeList
+}
+
+func (c *Coordinator) LatestNodeListVersion(checksum string) bool {
+	c.nodeListMutex.Lock()
+	defer c.nodeListMutex.Unlock()
+	return c.nodeListChecksum == checksum
+}
+
+func (c *Coordinator) Leader() string {
+	return c.etcdServer.Leader()
+}
+
+func (c *Coordinator) IsLeader() bool {
+	return c.etcdServer.Leader() == c.thisNode.Name
+}
+
 func (c *Coordinator) genNodeList() bool {
 	c.nodeListMutex.Lock()
 	if c.genListInProgress {
 		log.WithFields(log.Fields{"Node": c.thisNode.Name}).Debug("Node list generation already in progress, waiting for it to finish")
 		c.nodeListMutex.Unlock()
-		// Wait for the current list generation to finish and ruturn the last generated list
+
+		// Wait for the current list node generation to finish and ruturn the last generated list
 		<-c.genListDoneChan
 		return false
 	}
@@ -175,15 +207,36 @@ func (c *Coordinator) genNodeList() bool {
 		nodeList = append(nodeList, msg.Originator)
 	}
 
-	c.nodeListMutex.Lock()
 	nodeList = append(nodeList, c.thisNode.Name)
+
+	c.nodeListMutex.Lock()
 	c.genListInProgress = false
-	close(c.genListDoneChan)
+	c.nodeList = nodeList
+	c.nodeListChecksum = c.calcChecksum(nodeList)
 	c.nodeListMutex.Unlock()
 
-	c.nodeList = nodeList
+	close(c.genListDoneChan)
 
 	log.WithFields(log.Fields{"Node": c.thisNode.Name, "NodeList": nodeList}).Debug("Done generating node list")
 
 	return true
+}
+
+func (c *Coordinator) monitorNodeList(purgeInterval time.Duration) {
+	ticker := time.NewTicker(purgeInterval)
+	defer ticker.Stop()
+
+	for range ticker.C {
+		if c.IsLeader() {
+			c.nodeListMutex.Lock()
+			lenNodeList := len(c.GetNodeList())
+			c.nodeListMutex.Unlock()
+
+			if len(c.clusterConfig.Nodes) != lenNodeList {
+				log.WithFields(log.Fields{"Node": c.thisNode.Name}).Debug("Some nodes are missing from the node list, try to generate a new one")
+				c.genNodeList()
+			}
+
+		}
+	}
 }

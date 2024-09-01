@@ -27,6 +27,7 @@ type clusterRPC struct {
 
 type response struct {
 	receiveChan chan *ClusterMsg
+	errChan     chan error
 	msgID       string
 	added       int64 // Used to purge old messages after a certain time
 }
@@ -91,50 +92,53 @@ func (rpc *clusterRPC) handleClusterRequest(ctx *gin.Context) {
 	ctx.String(http.StatusOK, "")
 }
 
-func (rpc *clusterRPC) send(name string, msg *ClusterMsg, ctx context.Context) error {
-	return rpc.sendInternal(name, msg, false, ctx)
+func (rpc *clusterRPC) send(name string, msg *ClusterMsg, ctx context.Context) {
+	rpc.sendInternal(name, msg, false, ctx)
 }
 
-func (rpc *clusterRPC) reply(msg *ClusterMsg, ctx context.Context) error {
-	return rpc.sendInternal(msg.Originator, msg, true, ctx)
+func (rpc *clusterRPC) reply(msg *ClusterMsg, ctx context.Context) {
+	rpc.sendInternal(msg.Originator, msg, true, ctx)
 }
 
-func (rpc *clusterRPC) sendInternal(name string, msg *ClusterMsg, reply bool, ctx context.Context) error {
-	if msg == nil {
-		log.WithFields(log.Fields{"Error": "Trying to send nil cluster message"}).Error("ClusterRPC: Nil cluster message")
-		return errors.New("ClusterMsg is nil")
-	}
+func (rpc *clusterRPC) sendInternal(name string, msg *ClusterMsg, reply bool, ctx context.Context) {
+	go func() {
+		if msg == nil {
+			log.WithFields(log.Fields{"Error": "Trying to send nil cluster message"}).Error("ClusterRPC: Nil cluster message")
+			return
+		}
 
-	msg.Originator = rpc.thisNode.Name
+		msg.Originator = rpc.thisNode.Name
 
-	if !reply {
-		msg.ID = core.GenerateRandomID()
-	}
+		if !reply {
+			msg.ID = core.GenerateRandomID()
+		}
 
-	buf, err := msg.Serialize()
-	if err != nil {
-		return err
-	}
+		buf, err := msg.Serialize()
+		if err != nil {
+			log.WithFields(log.Fields{"Error": err}).Error("ClusterRPC: Error serializing message")
+			return
+		}
 
-	found := false
-	for _, node := range rpc.clusterConfig.Nodes {
-		if node.Name == name {
-			found = true
-			_, err := rpc.restyClient.R().
-				SetContext(ctx).
-				SetBody(buf).
-				Post("http://" + node.Host + ":" + strconv.Itoa(node.RelayPort) + "/cluster")
-			if err != nil {
-				return err
+		found := false
+		for _, node := range rpc.clusterConfig.Nodes {
+			if node.Name == name {
+				found = true
+				_, err := rpc.restyClient.R().
+					SetContext(ctx).
+					SetBody(buf).
+					Post("http://" + node.Host + ":" + strconv.Itoa(node.RelayPort) + "/cluster")
+				if err != nil {
+					log.WithFields(log.Fields{"Error": err}).Error("ClusterRPC: Error sending message")
+					return
+				}
 			}
 		}
-	}
 
-	if !found {
-		return errors.New("Node not found")
-	}
-
-	return nil
+		if !found {
+			log.WithFields(log.Fields{"Error": "Node not found"}).Error("ClusterRPC: Node not found")
+			return
+		}
+	}()
 }
 
 func (rpc *clusterRPC) sendAndReceive(name string, msg *ClusterMsg, ctx context.Context) (*response, error) {
@@ -153,8 +157,9 @@ func (rpc *clusterRPC) sendAndReceive(name string, msg *ClusterMsg, ctx context.
 	}
 
 	receiveChan := make(chan *ClusterMsg)
+	errChan := make(chan error)
 	now := time.Now().Unix()
-	resp := &response{receiveChan: receiveChan, msgID: msgID, added: now}
+	resp := &response{receiveChan: receiveChan, errChan: errChan, msgID: msgID, added: now}
 
 	rpc.mutex.Lock()
 	rpc.pendingResponses[msgID] = resp
@@ -170,7 +175,7 @@ func (rpc *clusterRPC) sendAndReceive(name string, msg *ClusterMsg, ctx context.
 					SetBody(buf).
 					Post("http://" + host + ":" + strconv.Itoa(port) + "/cluster")
 				if err != nil {
-					rpc.close(resp) // Clean up on failure
+					resp.errChan <- err
 					log.WithFields(log.Fields{"Error": err}).Error("ClusterRPC: Error sending message")
 				}
 			}(node.Host, node.RelayPort, buf, ctx)

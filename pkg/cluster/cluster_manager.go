@@ -35,7 +35,7 @@ func CreateClusterManager(thisNode Node, clusterConfig Config, etcdDataPath stri
 	manager.etcdServer = CreateEtcdServer(thisNode, clusterConfig, etcdDataPath)
 	manager.etcdServer.Start()
 
-	manager.coordinator = CreateCoordinator(thisNode, clusterConfig, manager.etcdServer, manager.ginHandler)
+	manager.coordinator = CreateCoordinator(thisNode, clusterConfig, manager.etcdServer, manager.ginHandler, NODE_LIST_CHECK_INTERVAL)
 
 	httpServer := &http.Server{
 		Addr:    ":" + strconv.Itoa(thisNode.RelayPort),
