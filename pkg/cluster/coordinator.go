@@ -5,27 +5,50 @@ import (
 	"sync"
 	"time"
 
+	"github.com/gin-gonic/gin"
 	log "github.com/sirupsen/logrus"
 )
 
 const PING_RESPONSE_TIMEOUT = 1 // Wait max 1 second for a response to a ping request
+const RPC_PURGE_INTERVAL = 600  // Purge RPC responses every 10 minutes
 
 type Coordinator struct {
-	coordinator *Coordinator
-	etcdServer  *EtcdServer
-	cluster     *Cluster
-	doneChan    chan bool
+	thisNode      Node
+	clusterConfig Config
+	etcdServer    *EtcdServer
+	rpc           *clusterRPC
+	doneChan      chan bool
+	readyChan     chan bool
+	nodeList      []string
 }
 
-func CreateCoordinator(etcdServer *EtcdServer, cluster *Cluster) *Coordinator {
-	return &Coordinator{etcdServer: etcdServer, cluster: cluster, doneChan: make(chan bool)}
+func CreateCoordinator(thisNode Node, clusterConfig Config, etcdServer *EtcdServer, ginHandler *gin.Engine) *Coordinator {
+	c := &Coordinator{
+		thisNode:      thisNode,
+		clusterConfig: clusterConfig,
+		etcdServer:    etcdServer,
+		rpc:           createClusterRPC(thisNode, clusterConfig, ginHandler, time.Duration(time.Second*RPC_PURGE_INTERVAL)),
+		doneChan:      make(chan bool),
+		readyChan:     make(chan bool),
+	}
+
+	go c.handleRequests()
+
+	<-c.readyChan
+
+	return c
 }
 
 func (c *Coordinator) handleRequests() {
-	msgChan := c.cluster.ReceiveChan()
+	log.WithFields(log.Fields{"Node": c.thisNode.Name}).Debug("Handling requests")
+
+	close(c.readyChan)
+
+	msgChan := c.rpc.receiveChan()
 	for {
 		select {
 		case msg := <-msgChan:
+			log.WithFields(log.Fields{"Node": c.thisNode.Name, "MsgType": msg.MsgType}).Debug("Received message")
 			switch msg.MsgType {
 			case PingRequest:
 				c.handlePingRequest(msg)
@@ -49,7 +72,7 @@ func (c *Coordinator) handlePingRequest(msg *ClusterMsg) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), PING_RESPONSE_TIMEOUT*time.Second)
 	defer cancel()
-	err := c.cluster.Reply(msg, ctx)
+	err := c.rpc.reply(msg, ctx)
 	if err != nil {
 		log.WithFields(log.Fields{"error": err}).Error("Failed to send Ping response")
 	}
@@ -60,112 +83,47 @@ func (c *Coordinator) handleVerifyNodeListRequest(msg *ClusterMsg) {
 
 }
 
-// func (c *Coordinator) handleGetNodeListRequest(msg *ClusterMsg) {
-// 	log.Debugf("Received GetNodeList request from %s", msg.Originator)
-//
-// 	replyChans := make(chan chan *ClusterMsg)
-//
-// 	// Send ping request to all nodes
-// 	for _, node := range c.cluster.clusterConfig.Nodes {
-// 		msg.MsgType = PingRequest
-// 		msg.Recipient = node.Name
-// 		ctx, cancel := context.WithTimeout(context.Background(), PING_RESPONSE_TIMEOUT*time.Second)
-// 		defer cancel()
-// 		replyChan, err := c.cluster.SendAndReceive(node.Name, msg, ctx)
-// 		if err != nil {
-// 			log.WithFields(log.Fields{"error": err}).Error("Failed to send Ping request")
-// 		}
-// 		replyChans <- replyChan
-// 	}
-//
-// 	// Wait for responses
-// 	ctx, cancel := context.WithTimeout(context.Background(), PING_RESPONSE_TIMEOUT*time.Second)
-// 	defer cancel()
-//
-// 	pingResponses := make(chan *ClusterMsg)
-// Loop:
-// 	for {
-// 		done := make(chan bool)
-// 		select {
-// 		case <-done:
-// 			log.Debug("Received all ping responses")
-// 			break Loop
-// 		case <-ctx.Done():
-// 			log.Error("Timeout waiting for ping responses")
-// 			break Loop
-// 		case replyChan := <-replyChans:
-// 			go func() {
-// 				ctx, cancel := context.WithTimeout(context.Background(), PING_RESPONSE_TIMEOUT*time.Second)
-// 				defer cancel()
-//
-// 				select {
-// 				case <-ctx.Done():
-// 					log.Error("Timeout waiting for ping response")
-// 					return
-// 				case replyMsg := <-replyChan:
-// 					if replyMsg.MsgType == PingResponse {
-// 						log.Debugf("Received ping response from %s", replyMsg.Originator)
-// 					} else {
-// 						log.WithFields(log.Fields{"msgType": replyMsg.MsgType}).Error("Unexpected message type, expected ping response")
-// 					}
-// 					pingResponses <- replyMsg
-// 					if len(pingResponses) == len(c.cluster.clusterConfig.Nodes) {
-// 						done <- true
-// 						return
-// 					}
-// 				}
-// 			}()
-// 		}
-// 	}
-//
-// 	close(pingResponses)
-//
-// 	nodeList := make([]string, 0)
-// 	for msg := range pingResponses {
-// 		nodeList = append(nodeList, msg.Originator)
-// 	}
-//
-// 	log.WithFields(log.Fields{"NodeList": nodeList}).Debug("Sending node list response")
-// 	msg.MsgType = NodeListResponse
-// 	msg.NodeList = nodeList
-// 	ctx, cancel = context.WithTimeout(context.Background(), PING_RESPONSE_TIMEOUT*time.Second)
-// 	defer cancel()
-// 	err := c.cluster.Reply(msg, ctx)
-// 	if err != nil {
-// 		log.WithFields(log.Fields{"error": err}).Error("Failed to send NodeList response")
-// 	}
-// }
-
 func (c *Coordinator) handleGetNodeListRequest(msg *ClusterMsg) {
-	log.Debugf("Received GetNodeList request from %s", msg.Originator)
+}
 
-	replyChans := make(chan chan *ClusterMsg, len(c.cluster.clusterConfig.Nodes))
+func (c *Coordinator) handleRPCRequest(msg *ClusterMsg) {
+	log.Debugf("Received RPC request from %s", msg.Originator)
+}
 
-	// Send ping request to all nodes
-	for _, node := range c.cluster.clusterConfig.Nodes {
-		msgCopy := *msg // Copy the message to avoid modifying it during iteration
-		msgCopy.MsgType = PingRequest
-		msgCopy.Recipient = node.Name
-		ctx, cancel := context.WithTimeout(context.Background(), PING_RESPONSE_TIMEOUT*time.Second)
-		defer cancel()
-		replyChan, err := c.cluster.SendAndReceive(node.Name, &msgCopy, ctx)
-		if err != nil {
-			log.WithFields(log.Fields{"error": err}).Error("Failed to send Ping request")
+func (c *Coordinator) genNodeList() {
+	responsesChan := make(chan *response, len(c.rpc.clusterConfig.Nodes)-1)
+
+	log.WithFields(log.Fields{"Node": c.thisNode.Name}).Debug("Sending ping requests to all nodes")
+
+	for _, node := range c.rpc.clusterConfig.Nodes {
+		if node.Name != c.thisNode.Name {
+			msg := &ClusterMsg{
+				MsgType:   PingRequest,
+				Recipient: node.Name,
+			}
+
+			ctx, cancel := context.WithTimeout(context.Background(), PING_RESPONSE_TIMEOUT*time.Second)
+			defer cancel()
+
+			log.WithFields(log.Fields{"Node": c.thisNode.Name, "Recipient": node.Name}).Debug("Sending ping request")
+			response, err := c.rpc.sendAndReceive(node.Name, msg, ctx)
+			if err != nil {
+				log.WithFields(log.Fields{"error": err}).Error("Failed to send Ping request")
+				continue // Skip to the next node to avoid sending nil channels
+			}
+			responsesChan <- response
 		}
-		replyChans <- replyChan
 	}
-	close(replyChans) // Close the replyChans channel when done sending
+	close(responsesChan)
 
-	// Wait for responses
-	ctx, cancel := context.WithTimeout(context.Background(), PING_RESPONSE_TIMEOUT*time.Second)
-	defer cancel()
-
-	pingResponses := make(chan *ClusterMsg, len(c.cluster.clusterConfig.Nodes))
+	pingResponses := make(chan *ClusterMsg, len(c.rpc.clusterConfig.Nodes))
 	var wg sync.WaitGroup // Use a WaitGroup to wait for all goroutines to finish
 
-	for replyChan := range replyChans {
+	//for replyChan := range replyChans {
+	for resp := range responsesChan {
 		wg.Add(1)
-		go func(replyChan chan *ClusterMsg) {
+		go func(resp *response) {
+			replyChan := resp.receiveChan
 			defer wg.Done()
 
 			ctx, cancel := context.WithTimeout(context.Background(), PING_RESPONSE_TIMEOUT*time.Second)
@@ -174,38 +132,34 @@ func (c *Coordinator) handleGetNodeListRequest(msg *ClusterMsg) {
 			select {
 			case <-ctx.Done():
 				log.Error("Timeout waiting for ping response")
+				c.rpc.close(resp)
 			case replyMsg := <-replyChan:
-				if replyMsg.MsgType == PingResponse {
-					log.Debugf("Received ping response from %s", replyMsg.Originator)
-				} else {
-					log.WithFields(log.Fields{"msgType": replyMsg.MsgType}).Error("Unexpected message type, expected ping response")
+				if replyMsg != nil { // Ensure we're not processing nil messages
+					if replyMsg.MsgType == PingResponse {
+						log.Debugf("Received ping response from %s", replyMsg.Originator)
+					} else {
+						log.WithFields(log.Fields{"msgType": replyMsg.MsgType}).Error("Unexpected message type, expected ping response")
+					}
+					pingResponses <- replyMsg
+					c.rpc.close(resp)
 				}
-				pingResponses <- replyMsg
 			}
-		}(replyChan)
+		}(resp)
 	}
 
-	go func() {
-		wg.Wait()
-		close(pingResponses) // Close pingResponses when all goroutines are done
-	}()
+	log.WithFields(log.Fields{"Node": c.thisNode.Name}).Debug("Waiting for all ping responses to generate node list")
+	wg.Wait()
+	close(pingResponses) // Close pingResponses when all goroutines are done
+
+	log.WithFields(log.Fields{"Node": c.thisNode.Name}).Debug("Generating node list")
 
 	nodeList := make([]string, 0)
 	for msg := range pingResponses {
 		nodeList = append(nodeList, msg.Originator)
 	}
+	nodeList = append(nodeList, c.thisNode.Name)
 
-	log.WithFields(log.Fields{"NodeList": nodeList}).Debug("Sending node list response")
-	msg.MsgType = NodeListResponse
-	msg.NodeList = nodeList
-	ctx, cancel = context.WithTimeout(context.Background(), PING_RESPONSE_TIMEOUT*time.Second)
-	defer cancel()
-	err := c.cluster.Reply(msg, ctx)
-	if err != nil {
-		log.WithFields(log.Fields{"error": err}).Error("Failed to send NodeList response")
-	}
-}
+	c.nodeList = nodeList
 
-func (c *Coordinator) handleRPCRequest(msg *ClusterMsg) {
-	log.Debugf("Received RPC request from %s", msg.Originator)
+	log.WithFields(log.Fields{"Node": c.thisNode.Name, "NodeList": nodeList}).Debug("Done generating node list")
 }

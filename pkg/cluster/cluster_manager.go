@@ -19,8 +19,8 @@ type ClusterManager struct {
 	clusterConfig Config
 	thisNode      Node
 	relay         *Relay
-	cluster       *Cluster
 	etcdServer    *EtcdServer
+	coordinator   *Coordinator
 }
 
 func CreateClusterManager(thisNode Node, clusterConfig Config, etcdDataPath string) *ClusterManager {
@@ -31,10 +31,11 @@ func CreateClusterManager(thisNode Node, clusterConfig Config, etcdDataPath stri
 	manager.thisNode = thisNode
 
 	manager.relay = CreateRelay(thisNode, clusterConfig, manager.ginHandler)
-	manager.cluster = CreateCluster(thisNode, clusterConfig, manager.ginHandler)
 
 	manager.etcdServer = CreateEtcdServer(thisNode, clusterConfig, etcdDataPath)
 	manager.etcdServer.Start()
+
+	manager.coordinator = CreateCoordinator(thisNode, clusterConfig, manager.etcdServer, manager.ginHandler)
 
 	httpServer := &http.Server{
 		Addr:    ":" + strconv.Itoa(thisNode.RelayPort),
@@ -62,12 +63,12 @@ func (manager *ClusterManager) Relay() *Relay {
 	return manager.relay
 }
 
-func (manager *ClusterManager) Cluster() *Cluster {
-	return manager.cluster
-}
-
 func (manager *ClusterManager) EtcdServer() *EtcdServer {
 	return manager.etcdServer
+}
+
+func (manager *ClusterManager) Coordinator() *Coordinator {
+	return manager.coordinator
 }
 
 func (manager *ClusterManager) BlockUntilReady() {
@@ -85,5 +86,4 @@ func (manager *ClusterManager) Shutdown() {
 	if err := manager.httpServer.Shutdown(ctx); err != nil {
 		log.WithFields(log.Fields{"Error": err}).Warning("ClusterServer forced to shutdown")
 	}
-
 }
