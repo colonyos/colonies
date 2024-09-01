@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"fmt"
 	"strings"
 	"sync"
 	"time"
@@ -12,7 +13,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-const PING_RESPONSE_TIMEOUT = 1    // Wait max 1 second for a response to a ping request
+const PING_RESPONSE_TIMEOUT = 10   // Wait max 1 second for a response to a ping request
 const RPC_PURGE_INTERVAL = 600     // Purge RPC responses every 10 minutes
 const NODE_LIST_CHECK_INTERVAL = 5 // Check the node list every 5 second
 
@@ -79,10 +80,7 @@ func (c *Coordinator) handleRequests() {
 func (c *Coordinator) handlePingRequest(msg *ClusterMsg) {
 	log.Debugf("Received Ping request from %s", msg.Originator)
 	msg.MsgType = PingResponse
-
-	ctx, cancel := context.WithTimeout(context.Background(), PING_RESPONSE_TIMEOUT*time.Second)
-	defer cancel()
-	c.rpc.reply(msg, ctx)
+	c.rpc.reply(msg)
 }
 
 func (c *Coordinator) handleVerifyNodeListRequest(msg *ClusterMsg) {
@@ -151,11 +149,8 @@ func (c *Coordinator) genNodeList() bool {
 				Recipient: node.Name,
 			}
 
-			ctx, cancel := context.WithTimeout(context.Background(), PING_RESPONSE_TIMEOUT*time.Second)
-			defer cancel()
-
 			log.WithFields(log.Fields{"Node": c.thisNode.Name, "Recipient": node.Name}).Debug("Sending ping request")
-			response, err := c.rpc.sendAndReceive(node.Name, msg, ctx)
+			response, err := c.rpc.sendAndReceive(node.Name, msg)
 			if err != nil {
 				log.WithFields(log.Fields{"error": err}).Error("Failed to send Ping request")
 				continue // Skip to the next node to avoid sending nil channels
@@ -185,6 +180,7 @@ func (c *Coordinator) genNodeList() bool {
 			case replyMsg := <-replyChan:
 				if replyMsg != nil { // Ensure we're not processing nil messages
 					if replyMsg.MsgType == PingResponse {
+						fmt.Println("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXxx")
 						log.Debugf("Received ping response from %s", replyMsg.Originator)
 					} else {
 						log.WithFields(log.Fields{"msgType": replyMsg.MsgType}).Error("Unexpected message type, expected ping response")

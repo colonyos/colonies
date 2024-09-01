@@ -1,6 +1,7 @@
 package cluster
 
 import (
+	"fmt"
 	"io"
 	"testing"
 
@@ -51,6 +52,14 @@ func TestCoordinatorGenNodeList(t *testing.T) {
 	assert.True(t, progress1 != progress2)
 
 	coordinator.genNodeList()
+
+	nodeList := coordinator.GetNodeList()
+	fmt.Println(nodeList)
+	assert.Equal(t, 3, len(nodeList))
+
+	for _, node := range nodeList {
+		assert.True(t, node == "replica1" || node == "replica2" || node == "replica3")
+	}
 
 	clusterManager1.Shutdown()
 	clusterManager2.Shutdown()

@@ -1,7 +1,6 @@
 package cluster
 
 import (
-	"context"
 	"fmt"
 	"io"
 	"testing"
@@ -66,9 +65,9 @@ func TestClusterRPCSend(t *testing.T) {
 		Data:      []byte("payload"),
 	}
 
-	rpcClusterReplica1.send("replica_does_not_exists", msg, context.TODO())
-	rpcClusterReplica1.send("replica2", nil, context.TODO())
-	rpcClusterReplica1.send("replica2", msg, context.TODO())
+	rpcClusterReplica1.send("replica_does_not_exists", msg)
+	rpcClusterReplica1.send("replica2", nil)
+	rpcClusterReplica1.send("replica2", msg)
 
 	<-clusterReplica2Wait
 
@@ -115,7 +114,7 @@ func TestClusterRPCSendAndReceive(t *testing.T) {
 				}
 				msg.Data = []byte("pong")
 				msg.MsgType = PingResponse
-				rpcClusterReplica2.reply(msg, context.TODO())
+				rpcClusterReplica2.reply(msg)
 				doneReplica2 <- struct{}{}
 			}
 		}
@@ -127,15 +126,15 @@ func TestClusterRPCSendAndReceive(t *testing.T) {
 		Data:      []byte("ping"),
 	}
 
-	response, err := rpcClusterReplica1.sendAndReceive("replica2", nil, context.TODO())
+	response, err := rpcClusterReplica1.sendAndReceive("replica2", nil)
 	defer rpcClusterReplica1.close(response)
 	assert.NotNil(t, err)
 
-	response, err = rpcClusterReplica1.sendAndReceive("replica_does_not_exists", msg, context.TODO())
+	response, err = rpcClusterReplica1.sendAndReceive("replica_does_not_exists", msg)
 	defer rpcClusterReplica1.close(response)
 	assert.NotNil(t, err)
 
-	response, err = rpcClusterReplica1.sendAndReceive("replica2", msg, context.TODO())
+	response, err = rpcClusterReplica1.sendAndReceive("replica2", msg)
 	defer rpcClusterReplica1.close(response)
 	assert.Nil(t, err)
 
