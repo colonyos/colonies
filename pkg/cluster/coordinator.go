@@ -13,13 +13,16 @@ const PING_RESPONSE_TIMEOUT = 1 // Wait max 1 second for a response to a ping re
 const RPC_PURGE_INTERVAL = 600  // Purge RPC responses every 10 minutes
 
 type Coordinator struct {
-	thisNode      Node
-	clusterConfig Config
-	etcdServer    *EtcdServer
-	rpc           *clusterRPC
-	doneChan      chan bool
-	readyChan     chan bool
-	nodeList      []string
+	thisNode          Node
+	clusterConfig     Config
+	etcdServer        *EtcdServer
+	rpc               *clusterRPC
+	doneChan          chan bool
+	readyChan         chan bool
+	nodeList          []string
+	nodeListMutex     *sync.Mutex
+	genListInProgress bool
+	genListDoneChan   chan bool
 }
 
 func CreateCoordinator(thisNode Node, clusterConfig Config, etcdServer *EtcdServer, ginHandler *gin.Engine) *Coordinator {
@@ -30,6 +33,7 @@ func CreateCoordinator(thisNode Node, clusterConfig Config, etcdServer *EtcdServ
 		rpc:           createClusterRPC(thisNode, clusterConfig, ginHandler, time.Duration(time.Second*RPC_PURGE_INTERVAL)),
 		doneChan:      make(chan bool),
 		readyChan:     make(chan bool),
+		nodeListMutex: &sync.Mutex{},
 	}
 
 	go c.handleRequests()
@@ -90,7 +94,20 @@ func (c *Coordinator) handleRPCRequest(msg *ClusterMsg) {
 	log.Debugf("Received RPC request from %s", msg.Originator)
 }
 
-func (c *Coordinator) genNodeList() {
+func (c *Coordinator) genNodeList() bool {
+	c.nodeListMutex.Lock()
+	if c.genListInProgress {
+		log.WithFields(log.Fields{"Node": c.thisNode.Name}).Debug("Node list generation already in progress, waiting for it to finish")
+		c.nodeListMutex.Unlock()
+		// Wait for the current list generation to finish and ruturn the last generated list
+		<-c.genListDoneChan
+		return false
+	}
+
+	c.genListInProgress = true
+	c.genListDoneChan = make(chan bool)
+	c.nodeListMutex.Unlock()
+
 	responsesChan := make(chan *response, len(c.rpc.clusterConfig.Nodes)-1)
 
 	log.WithFields(log.Fields{"Node": c.thisNode.Name}).Debug("Sending ping requests to all nodes")
@@ -157,9 +174,16 @@ func (c *Coordinator) genNodeList() {
 	for msg := range pingResponses {
 		nodeList = append(nodeList, msg.Originator)
 	}
+
+	c.nodeListMutex.Lock()
 	nodeList = append(nodeList, c.thisNode.Name)
+	c.genListInProgress = false
+	close(c.genListDoneChan)
+	c.nodeListMutex.Unlock()
 
 	c.nodeList = nodeList
 
 	log.WithFields(log.Fields{"Node": c.thisNode.Name, "NodeList": nodeList}).Debug("Done generating node list")
+
+	return true
 }

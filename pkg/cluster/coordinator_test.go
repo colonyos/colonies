@@ -6,9 +6,10 @@ import (
 
 	"github.com/gin-gonic/gin"
 	log "github.com/sirupsen/logrus"
+	"github.com/stretchr/testify/assert"
 )
 
-func TestCoordinator(t *testing.T) {
+func TestCoordinatorGenNodeList(t *testing.T) {
 	gin.SetMode(gin.ReleaseMode)
 	gin.DefaultWriter = io.Discard
 	log.SetLevel(log.DebugLevel)
@@ -25,11 +26,30 @@ func TestCoordinator(t *testing.T) {
 	clusterManager1 := CreateClusterManager(node1, config, ".")
 	clusterManager2 := CreateClusterManager(node2, config, ".")
 	clusterManager3 := CreateClusterManager(node3, config, ".")
+
 	clusterManager1.BlockUntilReady()
 	clusterManager2.BlockUntilReady()
 	clusterManager3.BlockUntilReady()
 
 	coordinator := clusterManager1.Coordinator()
+
+	doneChan := make(chan bool, 2)
+
+	go func() {
+		inProgress := coordinator.genNodeList()
+		doneChan <- inProgress
+	}()
+
+	go func() {
+		inProgress := coordinator.genNodeList()
+		doneChan <- inProgress
+	}()
+
+	progress1 := <-doneChan
+	progress2 := <-doneChan
+
+	assert.True(t, progress1 != progress2)
+
 	coordinator.genNodeList()
 
 	clusterManager1.Shutdown()

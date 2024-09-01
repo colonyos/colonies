@@ -164,14 +164,16 @@ func (rpc *clusterRPC) sendAndReceive(name string, msg *ClusterMsg, ctx context.
 	for _, node := range rpc.clusterConfig.Nodes {
 		if node.Name == name {
 			found = true
-			_, err := rpc.restyClient.R().
-				SetContext(ctx).
-				SetBody(buf).
-				Post("http://" + node.Host + ":" + strconv.Itoa(node.RelayPort) + "/cluster")
-			if err != nil {
-				rpc.close(resp) // Clean up on failure
-				return nil, err
-			}
+			go func(host string, port int, buf []byte, ctx context.Context) {
+				_, err := rpc.restyClient.R().
+					SetContext(ctx).
+					SetBody(buf).
+					Post("http://" + host + ":" + strconv.Itoa(port) + "/cluster")
+				if err != nil {
+					rpc.close(resp) // Clean up on failure
+					log.WithFields(log.Fields{"Error": err}).Error("ClusterRPC: Error sending message")
+				}
+			}(node.Host, node.RelayPort, buf, ctx)
 		}
 	}
 
