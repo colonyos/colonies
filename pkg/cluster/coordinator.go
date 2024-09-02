@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
-	"fmt"
 	"strings"
 	"sync"
 	"time"
@@ -180,7 +179,6 @@ func (c *Coordinator) genNodeList() bool {
 			case replyMsg := <-replyChan:
 				if replyMsg != nil { // Ensure we're not processing nil messages
 					if replyMsg.MsgType == PingResponse {
-						fmt.Println("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXxx")
 						log.Debugf("Received ping response from %s", replyMsg.Originator)
 					} else {
 						log.WithFields(log.Fields{"msgType": replyMsg.MsgType}).Error("Unexpected message type, expected ping response")

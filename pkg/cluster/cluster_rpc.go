@@ -101,21 +101,22 @@ func (rpc *clusterRPC) reply(msg *ClusterMsg) {
 }
 
 func (rpc *clusterRPC) sendInternal(name string, msg *ClusterMsg, reply bool) {
-	go func() {
-		ctx, _ := context.WithTimeout(context.Background(), PING_RESPONSE_TIMEOUT*time.Second)
-		defer ctx.Done()
-		if msg == nil {
-			log.WithFields(log.Fields{"Error": "Trying to send nil cluster message"}).Error("ClusterRPC: Nil cluster message")
-			return
-		}
+	if msg == nil {
+		log.WithFields(log.Fields{"Error": "Trying to send nil cluster message"}).Error("ClusterRPC: Nil cluster message")
+		return
+	}
 
-		msg.Originator = rpc.thisNode.Name
+	go func(msgCopy ClusterMsg) {
+		ctx, cancel := context.WithTimeout(context.Background(), PING_RESPONSE_TIMEOUT*time.Second)
+		defer cancel()
+
+		msgCopy.Originator = rpc.thisNode.Name
 
 		if !reply {
-			msg.ID = core.GenerateRandomID()
+			msgCopy.ID = core.GenerateRandomID()
 		}
 
-		buf, err := msg.Serialize()
+		buf, err := msgCopy.Serialize()
 		if err != nil {
 			log.WithFields(log.Fields{"Error": err}).Error("ClusterRPC: Error serializing message")
 			return
@@ -140,7 +141,7 @@ func (rpc *clusterRPC) sendInternal(name string, msg *ClusterMsg, reply bool) {
 			log.WithFields(log.Fields{"Error": "Node not found"}).Error("ClusterRPC: Node not found")
 			return
 		}
-	}()
+	}(*msg)
 }
 
 func (rpc *clusterRPC) sendAndReceive(name string, msg *ClusterMsg) (*response, error) {
@@ -193,8 +194,7 @@ func (rpc *clusterRPC) sendAndReceive(name string, msg *ClusterMsg) (*response, 
 		return nil, errors.New("Node not found")
 	}
 
-	<-ctx.Done()    // Wait for context cancellation or timeout
-	rpc.close(resp) // Clean up resources when done
+	<-ctx.Done() // Wait for context cancellation or timeout
 
 	return resp, nil
 }
