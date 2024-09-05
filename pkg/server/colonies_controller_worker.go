@@ -7,18 +7,18 @@ import (
 )
 
 func (controller *coloniesController) isLeader() bool {
-	areWeLeader := controller.getClusterManager().EtcdServer().Leader() == controller.thisNode.Name
-	if areWeLeader && !controller.leader {
+	isLeader := controller.getClusterManager().Coordinator().IsLeader()
+	if isLeader && !controller.leader {
 		log.WithFields(log.Fields{"EtcdNode": controller.thisNode.Name}).Debug("ColoniesServer became leader")
 		controller.leader = true
 	}
 
-	if !areWeLeader && controller.leader {
+	if !isLeader && controller.leader {
 		log.WithFields(log.Fields{"EtcdNode": controller.thisNode.Name}).Debug("ColoniesServer is no longer leader")
 		controller.leader = false
 	}
 
-	return areWeLeader
+	return isLeader
 }
 
 func (controller *coloniesController) tryBecomeLeader() bool {
