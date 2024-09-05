@@ -63,12 +63,12 @@ func (manager *ClusterManager) Relay() *Relay {
 	return manager.relay
 }
 
-func (manager *ClusterManager) EtcdServer() *EtcdServer {
-	return manager.etcdServer
-}
-
 func (manager *ClusterManager) Coordinator() *Coordinator {
 	return manager.coordinator
+}
+
+func (manager *ClusterManager) ClusterConfig() *Config {
+	return &manager.clusterConfig
 }
 
 func (manager *ClusterManager) BlockUntilReady() {
@@ -79,6 +79,8 @@ func (manager *ClusterManager) Shutdown() {
 	manager.etcdServer.Stop()
 	manager.etcdServer.BlockUntilStopped()
 	os.RemoveAll(manager.etcdServer.StorageDir())
+
+	manager.coordinator.shutdown()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()

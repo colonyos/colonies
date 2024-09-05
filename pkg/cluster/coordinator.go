@@ -12,7 +12,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-const PING_RESPONSE_TIMEOUT = 10   // Wait max 1 second for a response to a ping request
+const PING_RESPONSE_TIMEOUT = 2    // Wait max 1 second for a response to a ping request
 const RPC_PURGE_INTERVAL = 600     // Purge RPC responses every 10 minutes
 const NODE_LIST_CHECK_INTERVAL = 5 // Check the node list every 5 second
 
@@ -28,6 +28,8 @@ type Coordinator struct {
 	nodeListMutex     *sync.Mutex
 	genListInProgress bool
 	genListDoneChan   chan bool
+	simulateFailures  bool
+	failureTimeout    time.Duration
 }
 
 func CreateCoordinator(thisNode Node, clusterConfig Config, etcdServer *EtcdServer, ginHandler *gin.Engine, nodeListCheckInterval int) *Coordinator {
@@ -49,6 +51,16 @@ func CreateCoordinator(thisNode Node, clusterConfig Config, etcdServer *EtcdServ
 	return c
 }
 
+func (c *Coordinator) EnableFailures(failureTimeout time.Duration) {
+	log.WithFields(log.Fields{"Node": c.thisNode.Name, "Timeout": failureTimeout}).Debug("Enabling failures")
+	c.simulateFailures = true
+	c.failureTimeout = failureTimeout
+}
+
+func (c *Coordinator) DisableFailures() {
+	c.simulateFailures = false
+}
+
 func (c *Coordinator) handleRequests() {
 	log.WithFields(log.Fields{"Node": c.thisNode.Name}).Debug("Handling requests")
 
@@ -58,6 +70,11 @@ func (c *Coordinator) handleRequests() {
 	for {
 		select {
 		case msg := <-msgChan:
+			if c.simulateFailures {
+				log.WithFields(log.Fields{"Node": c.thisNode.Name, "SleepTime": c.failureTimeout}).Debug("Simulating failure")
+				time.Sleep(c.failureTimeout)
+			}
+
 			log.WithFields(log.Fields{"Node": c.thisNode.Name, "MsgType": msg.MsgType}).Debug("Received message")
 			switch msg.MsgType {
 			case PingRequest:
@@ -69,8 +86,8 @@ func (c *Coordinator) handleRequests() {
 			case RPCRequest:
 				c.handleRPCRequest(msg)
 			}
-
 		case <-c.doneChan:
+			log.WithFields(log.Fields{"Node": c.thisNode.Name}).Debug("Closing coordinator")
 			return
 		}
 	}
@@ -114,8 +131,12 @@ func (c *Coordinator) LatestNodeListVersion(checksum string) bool {
 	return c.nodeListChecksum == checksum
 }
 
-func (c *Coordinator) Leader() string {
+func (c *Coordinator) LeaderName() string {
 	return c.etcdServer.Leader()
+}
+
+func (c *Coordinator) LeaderNode() Node {
+	return c.etcdServer.CurrentCluster().Leader
 }
 
 func (c *Coordinator) IsLeader() bool {
@@ -148,11 +169,11 @@ func (c *Coordinator) genNodeList() bool {
 				Recipient: node.Name,
 			}
 
-			log.WithFields(log.Fields{"Node": c.thisNode.Name, "Recipient": node.Name}).Debug("Sending ping request")
+			log.WithFields(log.Fields{"Sender": c.thisNode.Name, "Reciever": node.Name}).Debug("Sending ping request")
 			response, err := c.rpc.sendAndReceive(node.Name, msg)
 			if err != nil {
-				log.WithFields(log.Fields{"error": err}).Error("Failed to send Ping request")
-				continue // Skip to the next node to avoid sending nil channels
+				log.WithFields(log.Fields{"error": err}).Error("Failed to send ping request")
+				continue
 			}
 			responsesChan <- response
 		}
@@ -167,15 +188,18 @@ func (c *Coordinator) genNodeList() bool {
 		wg.Add(1)
 		go func(resp *response) {
 			replyChan := resp.receiveChan
+			errChan := resp.errChan
 			defer wg.Done()
 
 			ctx, cancel := context.WithTimeout(context.Background(), PING_RESPONSE_TIMEOUT*time.Second)
 			defer cancel()
+			defer c.rpc.close(resp)
 
 			select {
 			case <-ctx.Done():
-				log.Error("Timeout waiting for ping response")
-				c.rpc.close(resp)
+				log.WithFields(log.Fields{"Node": c.thisNode.Name}).Debug("Timeout waiting for ping response")
+			case err := <-errChan:
+				log.WithFields(log.Fields{"Error": err}).Error("Error waiting for ping response")
 			case replyMsg := <-replyChan:
 				if replyMsg != nil { // Ensure we're not processing nil messages
 					if replyMsg.MsgType == PingResponse {
@@ -184,9 +208,9 @@ func (c *Coordinator) genNodeList() bool {
 						log.WithFields(log.Fields{"msgType": replyMsg.MsgType}).Error("Unexpected message type, expected ping response")
 					}
 					pingResponses <- replyMsg
-					c.rpc.close(resp)
 				}
 			}
+
 		}(resp)
 	}
 
@@ -233,4 +257,9 @@ func (c *Coordinator) monitorNodeList(purgeInterval time.Duration) {
 
 		}
 	}
+}
+
+func (c *Coordinator) shutdown() {
+	c.doneChan <- true
+	c.rpc.shutdown()
 }

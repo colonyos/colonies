@@ -23,6 +23,7 @@ type clusterRPC struct {
 	incomingClusterMsgChan chan *ClusterMsg
 	pendingResponses       map[string]*response
 	mutex                  *sync.Mutex
+	doneChan               chan struct{}
 }
 
 type response struct {
@@ -41,6 +42,7 @@ func createClusterRPC(thisNode Node, clusterConfig Config, ginHandler *gin.Engin
 		incomingClusterMsgChan: make(chan *ClusterMsg, 1000),
 		mutex:                  &sync.Mutex{},
 		pendingResponses:       make(map[string]*response),
+		doneChan:               make(chan struct{}),
 	}
 
 	rpc.setupRoutes()
@@ -75,7 +77,7 @@ func (rpc *clusterRPC) handleClusterRequest(ctx *gin.Context) {
 
 	msgID := clusterMsg.ID
 
-	log.WithFields(log.Fields{"Node": rpc.thisNode.Name, "msgID": msgID}).Debug("ClusterRPC: Received cluster rpc message")
+	log.WithFields(log.Fields{"Node": rpc.thisNode.Name, "MsgID": msgID, "MagType": clusterMsg.MsgType}).Debug("ClusterRPC: Received cluster rpc message")
 
 	rpc.mutex.Lock()
 	response, ok := rpc.pendingResponses[msgID]
@@ -105,6 +107,8 @@ func (rpc *clusterRPC) sendInternal(name string, msg *ClusterMsg, reply bool) {
 		log.WithFields(log.Fields{"Error": "Trying to send nil cluster message"}).Error("ClusterRPC: Nil cluster message")
 		return
 	}
+
+	log.WithFields(log.Fields{"Receiver": name, "MsgType": msg.MsgType}).Debug("ClusterRPC: Sending cluster rpc message")
 
 	go func(msgCopy ClusterMsg) {
 		ctx, cancel := context.WithTimeout(context.Background(), PING_RESPONSE_TIMEOUT*time.Second)
@@ -150,6 +154,20 @@ func (rpc *clusterRPC) sendAndReceive(name string, msg *ClusterMsg) (*response, 
 		return nil, errors.New("ClusterMsg is nil")
 	}
 
+	found := false
+	var node Node
+	for _, n := range rpc.clusterConfig.Nodes {
+		if n.Name == name {
+			found = true
+			node = n
+			break
+		}
+	}
+
+	if !found {
+		return nil, errors.New("Node not found")
+	}
+
 	msgID := core.GenerateRandomID()
 	msg.ID = msgID
 	msg.Originator = rpc.thisNode.Name
@@ -169,32 +187,17 @@ func (rpc *clusterRPC) sendAndReceive(name string, msg *ClusterMsg) (*response, 
 	rpc.mutex.Unlock()
 
 	ctx, cancel := context.WithTimeout(context.Background(), PING_RESPONSE_TIMEOUT*time.Second)
-	defer cancel()
-
-	found := false
-	for _, node := range rpc.clusterConfig.Nodes {
-		if node.Name == name {
-			found = true
-			go func(host string, port int, buf []byte) {
-				_, err := rpc.restyClient.R().
-					SetContext(ctx).
-					SetBody(buf).
-					Post("http://" + host + ":" + strconv.Itoa(port) + "/cluster")
-				if err != nil {
-					resp.errChan <- err
-					log.WithFields(log.Fields{"Error": err}).Error("ClusterRPC: Error sending message 1")
-				}
-				cancel()
-			}(node.Host, node.RelayPort, buf)
+	go func(resp *response, host string, port int, buf []byte) {
+		defer cancel()
+		_, err := rpc.restyClient.R().
+			SetContext(ctx).
+			SetBody(buf).
+			Post("http://" + host + ":" + strconv.Itoa(port) + "/cluster")
+		if err != nil {
+			resp.errChan <- err
+			log.WithFields(log.Fields{"Error": err}).Error("ClusterRPC: Error sending message")
 		}
-	}
-
-	if !found {
-		rpc.close(resp) // Clean up if node not found
-		return nil, errors.New("Node not found")
-	}
-
-	<-ctx.Done() // Wait for context cancellation or timeout
+	}(resp, node.Host, node.RelayPort, buf)
 
 	return resp, nil
 }
@@ -214,9 +217,15 @@ func (rpc *clusterRPC) close(r *response) {
 
 	if _, exists := rpc.pendingResponses[r.msgID]; exists {
 		close(r.receiveChan)
+		close(r.errChan)
 		delete(rpc.pendingResponses, r.msgID)
 		log.WithFields(log.Fields{"PendingResponses": len(rpc.pendingResponses)}).Debug("ClusterRPC: Cleaning up")
 	}
+}
+
+func (rpc *clusterRPC) shutdown() {
+	rpc.doneChan <- struct{}{}
+	close(rpc.doneChan)
 }
 
 func (rpc *clusterRPC) cleanupOldResponses(purgeInterval time.Duration) {
@@ -224,25 +233,33 @@ func (rpc *clusterRPC) cleanupOldResponses(purgeInterval time.Duration) {
 	ticker := time.NewTicker(purgeInterval)
 	defer ticker.Stop()
 
-	for range ticker.C {
-		log.Debug("ClusterRPC: Cleaning up old pending responses now")
-		cutoff := time.Now().Unix() - int64(purgeInterval.Seconds())
+	for {
+		select {
+		case <-ticker.C:
+			log.Debug("ClusterRPC: Cleaning up old pending responses now")
+			cutoff := time.Now().Unix() - int64(purgeInterval.Seconds())
 
-		rpc.mutex.Lock()
-		for msgID, resp := range rpc.pendingResponses {
-			log.WithFields(log.Fields{
-				"msgID":       msgID,
-				"AddedTime":   resp.added,
-				"CutoffTime":  cutoff,
-				"ShouldPurge": resp.added < cutoff,
-			}).Debug("ClusterRPC: Checking if response should be purged")
+			rpc.mutex.Lock()
+			for msgID, resp := range rpc.pendingResponses {
+				log.WithFields(log.Fields{
+					"msgID":       msgID,
+					"AddedTime":   resp.added,
+					"CutoffTime":  cutoff,
+					"ShouldPurge": resp.added < cutoff,
+				}).Debug("ClusterRPC: Checking if response should be purged")
 
-			if resp.added < cutoff {
-				close(resp.receiveChan)
-				delete(rpc.pendingResponses, resp.msgID)
-				log.WithFields(log.Fields{"PendingResponses": len(rpc.pendingResponses)}).Debug("ClusterRPC: Cleaning up")
+				if resp.added < cutoff {
+					close(resp.receiveChan)
+					close(resp.errChan)
+					delete(rpc.pendingResponses, resp.msgID)
+					log.WithFields(log.Fields{"PendingResponses": len(rpc.pendingResponses)}).Debug("ClusterRPC: Cleaning up")
+				}
 			}
+			rpc.mutex.Unlock()
+
+		case <-rpc.doneChan:
+			log.Debug("ClusterRPC: Stopping cleanup of old responses")
+			return
 		}
-		rpc.mutex.Unlock()
 	}
 }

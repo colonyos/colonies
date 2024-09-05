@@ -172,11 +172,13 @@ func TestClusterRPCPurge(t *testing.T) {
 	rpc.mutex.Lock()
 	rpc.pendingResponses["oldMsg"] = &response{
 		receiveChan: make(chan *ClusterMsg),
+		errChan:     make(chan error, 1),
 		msgID:       "oldMsg",
 		added:       currentTime - 10, // Old
 	}
 	rpc.pendingResponses["newMsg"] = &response{
 		receiveChan: make(chan *ClusterMsg),
+		errChan:     make(chan error, 1),
 		msgID:       "newMsg",
 		added:       currentTime + 10, // New
 	}
