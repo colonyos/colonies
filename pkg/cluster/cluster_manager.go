@@ -16,14 +16,14 @@ import (
 type ClusterManager struct {
 	ginHandler    *gin.Engine
 	httpServer    *http.Server
-	clusterConfig Config
-	thisNode      Node
+	clusterConfig *Config
+	thisNode      *Node
 	relay         *Relay
 	etcdServer    *EtcdServer
 	coordinator   *Coordinator
 }
 
-func CreateClusterManager(thisNode Node, clusterConfig Config, etcdDataPath string) *ClusterManager {
+func CreateClusterManager(thisNode *Node, clusterConfig *Config, etcdDataPath string) *ClusterManager {
 	manager := &ClusterManager{}
 	manager.ginHandler = gin.Default()
 	manager.ginHandler.Use(cors.Default())
@@ -68,7 +68,7 @@ func (manager *ClusterManager) Coordinator() *Coordinator {
 }
 
 func (manager *ClusterManager) ClusterConfig() *Config {
-	return &manager.clusterConfig
+	return manager.clusterConfig
 }
 
 func (manager *ClusterManager) BlockUntilReady() {

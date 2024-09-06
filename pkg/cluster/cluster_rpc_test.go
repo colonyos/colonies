@@ -16,11 +16,11 @@ func TestClusterRPCSend(t *testing.T) {
 	gin.DefaultWriter = io.Discard
 	log.SetLevel(log.DebugLevel)
 
-	node1 := Node{Name: "replica1", Host: "localhost", EtcdClientPort: 24100, EtcdPeerPort: 23100, RelayPort: 25100, APIPort: 26100}
-	node2 := Node{Name: "replica2", Host: "localhost", EtcdClientPort: 24200, EtcdPeerPort: 23200, RelayPort: 25200, APIPort: 26200}
-	node3 := Node{Name: "replica3", Host: "localhost", EtcdClientPort: 24300, EtcdPeerPort: 23300, RelayPort: 25300, APIPort: 26300}
+	node1 := &Node{Name: "replica1", Host: "localhost", EtcdClientPort: 24100, EtcdPeerPort: 23100, RelayPort: 25100, APIPort: 26100}
+	node2 := &Node{Name: "replica2", Host: "localhost", EtcdClientPort: 24200, EtcdPeerPort: 23200, RelayPort: 25200, APIPort: 26200}
+	node3 := &Node{Name: "replica3", Host: "localhost", EtcdClientPort: 24300, EtcdPeerPort: 23300, RelayPort: 25300, APIPort: 26300}
 
-	config := Config{}
+	config := EmptyConfig()
 	config.AddNode(node1)
 	config.AddNode(node2)
 	config.AddNode(node3)
@@ -49,7 +49,7 @@ func TestClusterRPCSend(t *testing.T) {
 				if msg == nil {
 					errReplica2 = fmt.Errorf("msg is nil")
 				}
-				if msg != nil && string(msg.Data) != "payload" {
+				if msg != nil && string(msg.NodeListHash) != "payload" {
 					errReplica2 = fmt.Errorf("invalid payload")
 				}
 				clusterReplica2Wait <- struct{}{}
@@ -58,9 +58,9 @@ func TestClusterRPCSend(t *testing.T) {
 	}()
 
 	msg := &ClusterMsg{
-		MsgType:   PingRequest,
-		Recipient: "replica1",
-		Data:      []byte("payload"),
+		MsgType:      PingRequest,
+		Recipient:    "replica1",
+		NodeListHash: "payload",
 	}
 
 	rpcClusterReplica1.send("replica_does_not_exists", msg)
@@ -76,10 +76,10 @@ func TestClusterRPCSendAndReceive(t *testing.T) {
 	gin.SetMode(gin.ReleaseMode)
 	gin.DefaultWriter = io.Discard
 
-	node1 := Node{Name: "replica1", Host: "localhost", EtcdClientPort: 24100, EtcdPeerPort: 23100, RelayPort: 25100, APIPort: 26100}
-	node2 := Node{Name: "replica2", Host: "localhost", EtcdClientPort: 24200, EtcdPeerPort: 23200, RelayPort: 25200, APIPort: 26200}
+	node1 := &Node{Name: "replica1", Host: "localhost", EtcdClientPort: 24100, EtcdPeerPort: 23100, RelayPort: 25100, APIPort: 26100}
+	node2 := &Node{Name: "replica2", Host: "localhost", EtcdClientPort: 24200, EtcdPeerPort: 23200, RelayPort: 25200, APIPort: 26200}
 
-	config := Config{}
+	config := EmptyConfig()
 	config.AddNode(node1)
 	config.AddNode(node2)
 
@@ -106,11 +106,11 @@ func TestClusterRPCSendAndReceive(t *testing.T) {
 					errMsgReplica2 = fmt.Errorf("msg is nil")
 					break
 				}
-				payload := string(msg.Data)
-				if payload != "ping" {
+				hash := string(msg.NodeListHash)
+				if hash != "ping" {
 					errMsgReplica2 = fmt.Errorf("invalid payload")
 				}
-				msg.Data = []byte("pong")
+				msg.NodeListHash = "pong"
 				msg.MsgType = PingResponse
 				rpcClusterReplica2.reply(msg)
 				doneReplica2 <- struct{}{}
@@ -119,9 +119,9 @@ func TestClusterRPCSendAndReceive(t *testing.T) {
 	}()
 
 	msg := &ClusterMsg{
-		MsgType:   PingRequest,
-		Recipient: "replica1",
-		Data:      []byte("ping"),
+		MsgType:      PingRequest,
+		Recipient:    "replica1",
+		NodeListHash: "ping",
 	}
 
 	response, err := rpcClusterReplica1.sendAndReceive("replica2", nil)
@@ -139,7 +139,7 @@ func TestClusterRPCSendAndReceive(t *testing.T) {
 	reply := <-response.receiveChan
 	assert.NotNil(t, reply)
 	assert.Equal(t, PingResponse, reply.MsgType)
-	assert.Equal(t, "pong", string(reply.Data))
+	assert.Equal(t, "pong", string(reply.NodeListHash))
 
 	<-doneReplica2
 
@@ -151,11 +151,11 @@ func TestClusterRPCPurge(t *testing.T) {
 	gin.DefaultWriter = io.Discard
 	log.SetLevel(log.DebugLevel)
 
-	node1 := Node{Name: "replica1", Host: "localhost", EtcdClientPort: 24100, EtcdPeerPort: 23100, RelayPort: 25100, APIPort: 26100}
-	node2 := Node{Name: "replica2", Host: "localhost", EtcdClientPort: 24200, EtcdPeerPort: 23200, RelayPort: 25200, APIPort: 26200}
-	node3 := Node{Name: "replica3", Host: "localhost", EtcdClientPort: 24300, EtcdPeerPort: 23300, RelayPort: 25300, APIPort: 26300}
+	node1 := &Node{Name: "replica1", Host: "localhost", EtcdClientPort: 24100, EtcdPeerPort: 23100, RelayPort: 25100, APIPort: 26100}
+	node2 := &Node{Name: "replica2", Host: "localhost", EtcdClientPort: 24200, EtcdPeerPort: 23200, RelayPort: 25200, APIPort: 26200}
+	node3 := &Node{Name: "replica3", Host: "localhost", EtcdClientPort: 24300, EtcdPeerPort: 23300, RelayPort: 25300, APIPort: 26300}
 
-	config := Config{}
+	config := EmptyConfig()
 	config.AddNode(node1)
 	config.AddNode(node2)
 	config.AddNode(node3)

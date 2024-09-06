@@ -15,12 +15,12 @@ import (
 type testRPCServer struct {
 	ginHandler    *gin.Engine
 	httpServer    *http.Server
-	clusterConfig Config
-	thisNode      Node
+	clusterConfig *Config
+	thisNode      *Node
 	rpc           *clusterRPC
 }
 
-func createTestRPCServer(thisNode Node, clusterConfig Config, etcdDataPath string, purgeInterval time.Duration) *testRPCServer {
+func createTestRPCServer(thisNode *Node, clusterConfig *Config, etcdDataPath string, purgeInterval time.Duration) *testRPCServer {
 	server := &testRPCServer{}
 	server.ginHandler = gin.Default()
 	server.ginHandler.Use(cors.Default())

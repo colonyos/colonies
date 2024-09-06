@@ -37,12 +37,30 @@ func (node *Node) Equals(node2 *Node) bool {
 }
 
 type Config struct {
-	Nodes  []Node `json:"nodes"`
-	Leader Node   `json:"leader"`
+	Nodes  map[string]*Node `json:"nodes"`
+	Leader *Node            `json:"leader"`
 }
 
-func (config *Config) AddNode(node Node) {
-	config.Nodes = append(config.Nodes, node)
+func EmptyConfig() *Config {
+	return &Config{
+		Nodes: make(map[string]*Node),
+	}
+}
+
+func NewConfig(nodes []*Node, leaderNode *Node) *Config {
+	config := EmptyConfig()
+
+	for _, node := range nodes {
+		config.Nodes[node.Name] = node
+	}
+
+	config.Leader = leaderNode
+
+	return config
+}
+
+func (config *Config) AddNode(node *Node) {
+	config.Nodes[node.Name] = node
 }
 
 func ConvertJSONToConfig(jsonString string) (*Config, error) {
@@ -60,24 +78,35 @@ func (config *Config) Equals(config2 *Config) bool {
 		return false
 	}
 
-	if !config.Leader.Equals(&config2.Leader) {
+	if len(config.Nodes) != len(config2.Nodes) {
+		return false
+	}
+
+	if config.Leader == nil && config2.Leader != nil {
+		return false
+	}
+
+	if config.Leader != nil && config2.Leader == nil {
+		return false
+	}
+
+	if config.Leader != nil && config2.Leader != nil && config.Leader.Name != config2.Leader.Name {
 		return false
 	}
 
 	counter := 0
-	for _, node1 := range config.Nodes {
-		for _, node2 := range config2.Nodes {
-			if node1.Equals(&node2) {
-				counter++
-			}
+
+	for _, node := range config.Nodes {
+		if _, ok := config2.Nodes[node.Name]; ok {
+			counter++
 		}
 	}
 
-	if counter == len(config.Nodes) && counter == len(config.Nodes) {
-		return true
+	if counter != len(config.Nodes) && counter != len(config.Nodes) {
+		return false
 	}
 
-	return false
+	return true
 }
 
 func (config *Config) ToJSON() (string, error) {

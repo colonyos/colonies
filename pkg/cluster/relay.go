@@ -13,12 +13,12 @@ import (
 type Relay struct {
 	ginHandler    *gin.Engine
 	restyClient   *resty.Client
-	clusterConfig Config
-	thisNode      Node
+	clusterConfig *Config
+	thisNode      *Node
 	incoming      chan []byte
 }
 
-func CreateRelay(thisNode Node, clusterConfig Config, ginHandler *gin.Engine) *Relay {
+func CreateRelay(thisNode *Node, clusterConfig *Config, ginHandler *gin.Engine) *Relay {
 	relay := &Relay{}
 	relay.ginHandler = ginHandler
 	relay.restyClient = resty.New()

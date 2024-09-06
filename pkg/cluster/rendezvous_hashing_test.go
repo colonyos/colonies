@@ -2,6 +2,8 @@ package cluster
 
 import (
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestRendezVousHahing(t *testing.T) {
@@ -11,7 +13,8 @@ func TestRendezVousHahing(t *testing.T) {
 	keys := []string{"Key1", "Key2", "Key3", "Key4", "Key5", "Key6", "Key7", "Key8", "Key9", "Key10"}
 
 	for _, key := range keys {
-		node := rh.GetNode(key)
+		node, err := rh.GetNode(key)
+		assert.Nil(t, err)
 
 		if key == "Key1" {
 			if node != "Node1" {

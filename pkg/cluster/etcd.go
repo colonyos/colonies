@@ -10,8 +10,8 @@ import (
 )
 
 type EtcdServer struct {
-	thisNode Node
-	config   Config
+	thisNode *Node
+	config   *Config
 	ready    chan bool
 	stop     chan bool
 	stopped  chan bool
@@ -20,7 +20,7 @@ type EtcdServer struct {
 	cfg      *embed.Config
 }
 
-func CreateEtcdServer(thisNode Node, config Config, dataPath string) *EtcdServer {
+func CreateEtcdServer(thisNode *Node, config *Config, dataPath string) *EtcdServer {
 	server := &EtcdServer{thisNode: thisNode,
 		config:   config,
 		ready:    make(chan bool, 1),
@@ -139,8 +139,8 @@ func (server *EtcdServer) Leader() string {
 	return ""
 }
 
-func (server *EtcdServer) Members() []Node {
-	var nodes []Node
+func (server *EtcdServer) Members() []*Node {
+	var nodes []*Node
 	for _, member := range server.etcd.Server.Cluster().Members() {
 		for _, node := range server.config.Nodes {
 			if node.Name == member.Name {
@@ -153,11 +153,11 @@ func (server *EtcdServer) Members() []Node {
 	return nodes
 }
 
-func (server *EtcdServer) CurrentCluster() Config {
+func (server *EtcdServer) CurrentCluster() *Config {
 	nodes := server.Members()
 	leader := server.Leader()
 
-	var leaderNode Node
+	var leaderNode *Node
 	for _, node := range nodes {
 		if node.Name == leader {
 			leaderNode = node
@@ -165,5 +165,5 @@ func (server *EtcdServer) CurrentCluster() Config {
 		}
 	}
 
-	return Config{Nodes: nodes, Leader: leaderNode}
+	return NewConfig(nodes, leaderNode)
 }

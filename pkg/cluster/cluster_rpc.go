@@ -18,8 +18,8 @@ import (
 type clusterRPC struct {
 	ginHandler             *gin.Engine
 	restyClient            *resty.Client
-	clusterConfig          Config
-	thisNode               Node
+	clusterConfig          *Config
+	thisNode               *Node
 	incomingClusterMsgChan chan *ClusterMsg
 	pendingResponses       map[string]*response
 	mutex                  *sync.Mutex
@@ -33,7 +33,7 @@ type response struct {
 	added       int64 // Used to purge old messages after a certain time
 }
 
-func createClusterRPC(thisNode Node, clusterConfig Config, ginHandler *gin.Engine, purgeInterval time.Duration) *clusterRPC {
+func createClusterRPC(thisNode *Node, clusterConfig *Config, ginHandler *gin.Engine, purgeInterval time.Duration) *clusterRPC {
 	rpc := &clusterRPC{
 		ginHandler:             ginHandler,
 		restyClient:            resty.New(),
@@ -154,17 +154,24 @@ func (rpc *clusterRPC) sendAndReceive(name string, msg *ClusterMsg) (*response, 
 		return nil, errors.New("ClusterMsg is nil")
 	}
 
-	found := false
-	var node Node
-	for _, n := range rpc.clusterConfig.Nodes {
-		if n.Name == name {
-			found = true
-			node = n
-			break
-		}
+	if rpc.clusterConfig.Nodes == nil {
+		return nil, errors.New("Cluster not configured")
 	}
 
-	if !found {
+	if len(rpc.clusterConfig.Nodes) == 0 {
+		return nil, errors.New("Cluster not configured")
+	}
+
+	if rpc.thisNode.Name == name {
+		return nil, errors.New("Cannot send message to self")
+	}
+
+	if rpc.thisNode.Name == msg.Originator {
+		return nil, errors.New("Cannot send message to self")
+	}
+
+	node := rpc.clusterConfig.Nodes[name]
+	if node == nil {
 		return nil, errors.New("Node not found")
 	}
 

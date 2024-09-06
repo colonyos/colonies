@@ -1,7 +1,6 @@
 package cluster
 
 import (
-	"fmt"
 	"io"
 	"testing"
 	"time"
@@ -11,16 +10,36 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func findMissingElement(original, subset []string) string {
+	elementCount := make(map[string]int)
+
+	for _, v := range original {
+		elementCount[v]++
+	}
+
+	for _, v := range subset {
+		elementCount[v]--
+	}
+
+	for key, count := range elementCount {
+		if count > 0 {
+			return key
+		}
+	}
+
+	return ""
+}
+
 func TestCoordinatorGenNodeListFailure(t *testing.T) {
 	gin.SetMode(gin.ReleaseMode)
 	gin.DefaultWriter = io.Discard
 	log.SetLevel(log.DebugLevel)
 
-	node1 := Node{Name: "replica1", Host: "localhost", EtcdClientPort: 24100, EtcdPeerPort: 23100, RelayPort: 25100, APIPort: 26100}
-	node2 := Node{Name: "replica2", Host: "localhost", EtcdClientPort: 24200, EtcdPeerPort: 23200, RelayPort: 25200, APIPort: 26200}
-	node3 := Node{Name: "replica3", Host: "localhost", EtcdClientPort: 24300, EtcdPeerPort: 23300, RelayPort: 25300, APIPort: 26300}
+	node1 := &Node{Name: "replica1", Host: "localhost", EtcdClientPort: 24100, EtcdPeerPort: 23100, RelayPort: 25100, APIPort: 26100}
+	node2 := &Node{Name: "replica2", Host: "localhost", EtcdClientPort: 24200, EtcdPeerPort: 23200, RelayPort: 25200, APIPort: 26200}
+	node3 := &Node{Name: "replica3", Host: "localhost", EtcdClientPort: 24300, EtcdPeerPort: 23300, RelayPort: 25300, APIPort: 26300}
 
-	config := Config{}
+	config := EmptyConfig()
 	config.AddNode(node1)
 	config.AddNode(node2)
 	config.AddNode(node3)
@@ -35,9 +54,9 @@ func TestCoordinatorGenNodeListFailure(t *testing.T) {
 
 	// Find out who the coordinator is the leader
 	leaderName := clusterManager1.Coordinator().LeaderName()
-	fmt.Println("Leader is: ", leaderName)
 
 	var leaderCoordinator *Coordinator
+
 	if leaderName == "replica1" {
 		leaderCoordinator = clusterManager1.Coordinator()
 	} else if leaderName == "replica2" {
@@ -48,27 +67,42 @@ func TestCoordinatorGenNodeListFailure(t *testing.T) {
 
 	assert.NotNil(t, leaderCoordinator)
 
-	var nonLeaderCoordinator *Coordinator
+	var failedCoordinator *Coordinator
 	if leaderName == "replica1" {
-		nonLeaderCoordinator = clusterManager2.Coordinator()
+		failedCoordinator = clusterManager2.Coordinator()
 	} else if leaderName == "replica2" {
-		nonLeaderCoordinator = clusterManager1.Coordinator()
+		failedCoordinator = clusterManager1.Coordinator()
 	} else if leaderName == "replica3" {
-		nonLeaderCoordinator = clusterManager1.Coordinator()
+		failedCoordinator = clusterManager1.Coordinator()
+	}
+	failedName := failedCoordinator.Name()
+
+	assert.NotNil(t, failedCoordinator)
+
+	otherName := findMissingElement([]string{"replica1", "replica2", "replica3"}, []string{leaderName, failedName})
+
+	// Find out who the other coordinator is
+	var otherCoordinator *Coordinator
+	if otherName == "replica1" {
+		otherCoordinator = clusterManager1.Coordinator()
+	} else if otherName == "replica2" {
+		otherCoordinator = clusterManager2.Coordinator()
+	} else if otherName == "replica3" {
+		otherCoordinator = clusterManager3.Coordinator()
 	}
 
-	assert.NotNil(t, nonLeaderCoordinator)
+	assert.NotNil(t, otherCoordinator)
 
-	nonLeaderCoordinator.EnableFailures(time.Duration(PING_RESPONSE_TIMEOUT+1) * time.Second) // Will delay ping response in 10 seconds
+	failedCoordinator.EnableFailures(time.Duration(PING_RESPONSE_TIMEOUT+1) * time.Second) // Will delay ping response in 10 seconds
 	leaderCoordinator.genNodeList()
 
 	nodeList := leaderCoordinator.GetNodeList()
 	assert.Equal(t, 2, len(nodeList))
 	for _, node := range nodeList {
-		assert.True(t, node == "replica2" || node == "replica3")
+		assert.True(t, node == leaderCoordinator.Name() || node == otherCoordinator.Name())
 	}
 
-	nonLeaderCoordinator.DisableFailures()
+	failedCoordinator.DisableFailures()
 
 	// Wait for the coordinator to retry
 	time.Sleep(time.Duration(NODE_LIST_RETRY_DELAY+1) * time.Second)

@@ -3,6 +3,7 @@ package cluster
 import (
 	"crypto/sha256"
 	"encoding/binary"
+	"errors"
 )
 
 type RendezvousHash struct {
@@ -22,7 +23,11 @@ func hash(key, node string) uint64 {
 	return binary.BigEndian.Uint64(hashBytes[:8])
 }
 
-func (rh *RendezvousHash) GetNode(key string) string {
+func (rh *RendezvousHash) GetNode(key string) (string, error) {
+	if len(rh.nodes) == 0 {
+		return "", errors.New("no nodes available")
+	}
+
 	var maxWeight uint64
 	var selectedNode string
 	for _, node := range rh.nodes {
@@ -32,5 +37,5 @@ func (rh *RendezvousHash) GetNode(key string) string {
 			selectedNode = node
 		}
 	}
-	return selectedNode
+	return selectedNode, nil
 }

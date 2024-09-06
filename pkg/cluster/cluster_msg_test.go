@@ -12,7 +12,6 @@ func TestClusterMsg(t *testing.T) {
 		ID:         "2",
 		Originator: "replica1",
 		Recipient:  "replica2",
-		Data:       []byte{1, 2, 3},
 	}
 
 	serializedMsg, err := msg.Serialize()

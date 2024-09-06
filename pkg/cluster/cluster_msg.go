@@ -7,22 +7,22 @@ import (
 const (
 	PingRequest = iota
 	PingResponse
-	VerifyNodeListRequest
-	VerifyNodeListResponse
 	NodeListRequest
 	NodeListResponse
-	RPCRequest
-	RPCResponse
+	VerifyNodeListRequest
+	VerifyNodeListResponse
+	FindNodeRequest
+	FindNodeResponse
 )
 
 type ClusterMsg struct {
-	MsgType      int
-	ID           string
-	Originator   string
-	Recipient    string
-	NodeList     []string
-	NodeListHash string
-	Data         []byte
+	MsgType         int
+	ID              string
+	Originator      string
+	Recipient       string
+	NodeList        []string
+	NodeListHash    string
+	FailureDetected bool
 }
 
 func (m *ClusterMsg) Serialize() ([]byte, error) {
@@ -43,5 +43,6 @@ func (m *ClusterMsg) Equals(other *ClusterMsg) bool {
 		m.ID == other.ID &&
 		m.Originator == other.Originator &&
 		m.Recipient == other.Recipient &&
-		string(m.Data) == string(other.Data)
+		m.FailureDetected == other.FailureDetected &&
+		m.NodeListHash == other.NodeListHash
 }
