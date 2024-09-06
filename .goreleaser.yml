@@ -3,3 +3,5 @@ builds:
 - 
   main: ./cmd
   binary: colonies
+  env:
+  - CGO_ENABLED=0
