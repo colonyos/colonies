@@ -1,7 +1,6 @@
 package cluster
 
 import (
-	"fmt"
 	"io"
 	"testing"
 
@@ -54,7 +53,6 @@ func TestCoordinatorGenNodeList(t *testing.T) {
 	coordinator.genNodeList()
 
 	nodeList := coordinator.GetNodeList()
-	fmt.Println(nodeList)
 	assert.Equal(t, 3, len(nodeList))
 
 	for _, node := range nodeList {

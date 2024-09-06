@@ -12,9 +12,9 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-const PING_RESPONSE_TIMEOUT = 2    // Wait max 1 second for a response to a ping request
-const RPC_PURGE_INTERVAL = 600     // Purge RPC responses every 10 minutes
-const NODE_LIST_CHECK_INTERVAL = 5 // Check the node list every 5 second
+const PING_RESPONSE_TIMEOUT = 1 // Wait max 1 second for a response to a ping request
+const RPC_PURGE_INTERVAL = 600  // Purge RPC responses every 10 minutes
+const NODE_LIST_RETRY_DELAY = PING_RESPONSE_TIMEOUT + 1
 
 type Coordinator struct {
 	thisNode          Node
@@ -26,25 +26,26 @@ type Coordinator struct {
 	nodeList          []string
 	nodeListChecksum  string
 	nodeListMutex     *sync.Mutex
+	simFailureMutex   *sync.Mutex
 	genListInProgress bool
 	genListDoneChan   chan bool
 	simulateFailures  bool
 	failureTimeout    time.Duration
 }
 
-func CreateCoordinator(thisNode Node, clusterConfig Config, etcdServer *EtcdServer, ginHandler *gin.Engine, nodeListCheckInterval int) *Coordinator {
+func CreateCoordinator(thisNode Node, clusterConfig Config, etcdServer *EtcdServer, ginHandler *gin.Engine) *Coordinator {
 	c := &Coordinator{
-		thisNode:      thisNode,
-		clusterConfig: clusterConfig,
-		etcdServer:    etcdServer,
-		rpc:           createClusterRPC(thisNode, clusterConfig, ginHandler, time.Duration(time.Second*RPC_PURGE_INTERVAL)),
-		doneChan:      make(chan bool),
-		readyChan:     make(chan bool),
-		nodeListMutex: &sync.Mutex{},
+		thisNode:        thisNode,
+		clusterConfig:   clusterConfig,
+		etcdServer:      etcdServer,
+		rpc:             createClusterRPC(thisNode, clusterConfig, ginHandler, time.Duration(time.Second*RPC_PURGE_INTERVAL)),
+		doneChan:        make(chan bool),
+		readyChan:       make(chan bool),
+		nodeListMutex:   &sync.Mutex{},
+		simFailureMutex: &sync.Mutex{},
 	}
 
 	go c.handleRequests()
-	go c.monitorNodeList(time.Second * time.Duration(nodeListCheckInterval))
 
 	<-c.readyChan
 
@@ -52,12 +53,16 @@ func CreateCoordinator(thisNode Node, clusterConfig Config, etcdServer *EtcdServ
 }
 
 func (c *Coordinator) EnableFailures(failureTimeout time.Duration) {
+	c.simFailureMutex.Lock()
+	defer c.simFailureMutex.Unlock()
 	log.WithFields(log.Fields{"Node": c.thisNode.Name, "Timeout": failureTimeout}).Debug("Enabling failures")
 	c.simulateFailures = true
 	c.failureTimeout = failureTimeout
 }
 
 func (c *Coordinator) DisableFailures() {
+	c.simFailureMutex.Lock()
+	defer c.simFailureMutex.Unlock()
 	c.simulateFailures = false
 }
 
@@ -70,9 +75,13 @@ func (c *Coordinator) handleRequests() {
 	for {
 		select {
 		case msg := <-msgChan:
+			c.simFailureMutex.Lock()
 			if c.simulateFailures {
+				c.simFailureMutex.Unlock()
 				log.WithFields(log.Fields{"Node": c.thisNode.Name, "SleepTime": c.failureTimeout}).Debug("Simulating failure")
 				time.Sleep(c.failureTimeout)
+			} else {
+				c.simFailureMutex.Unlock()
 			}
 
 			log.WithFields(log.Fields{"Node": c.thisNode.Name, "MsgType": msg.MsgType}).Debug("Received message")
@@ -237,29 +246,27 @@ func (c *Coordinator) genNodeList() bool {
 
 	log.WithFields(log.Fields{"Node": c.thisNode.Name, "NodeList": nodeList}).Debug("Done generating node list")
 
+	// If the nodelist contains less nodes than the cluster configuration,
+	// spawn a thread to tries to connect to the missing nodes
+	if c.IsLeader() {
+		if len(nodeList) < len(c.clusterConfig.Nodes) {
+			go func() {
+				for {
+
+					log.WithFields(log.Fields{"Node": c.thisNode.Name}).Debug("Some nodes are missing from the node list, try to generate a new one")
+					time.Sleep((NODE_LIST_RETRY_DELAY) * time.Second)
+					if c.genNodeList() {
+						break
+					}
+				}
+			}()
+		}
+	}
+
 	return true
 }
 
-func (c *Coordinator) monitorNodeList(purgeInterval time.Duration) {
-	ticker := time.NewTicker(purgeInterval)
-	defer ticker.Stop()
-
-	for range ticker.C {
-		if c.IsLeader() {
-			c.nodeListMutex.Lock()
-			lenNodeList := len(c.GetNodeList())
-			c.nodeListMutex.Unlock()
-
-			if len(c.clusterConfig.Nodes) != lenNodeList {
-				log.WithFields(log.Fields{"Node": c.thisNode.Name}).Debug("Some nodes are missing from the node list, try to generate a new one")
-				c.genNodeList()
-			}
-
-		}
-	}
-}
-
 func (c *Coordinator) shutdown() {
-	c.doneChan <- true
+	close(c.doneChan)
 	c.rpc.shutdown()
 }

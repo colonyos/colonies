@@ -33,17 +33,51 @@ func TestCoordinatorGenNodeListFailure(t *testing.T) {
 	clusterManager2.BlockUntilReady()
 	clusterManager3.BlockUntilReady()
 
-	coordinator1 := clusterManager1.Coordinator()
-	fmt.Println(coordinator1)
-	coordinator1.EnableFailures(time.Duration(10) * time.Second) // Will delay ping response in 10 seconds
+	// Find out who the coordinator is the leader
+	leaderName := clusterManager1.Coordinator().LeaderName()
+	fmt.Println("Leader is: ", leaderName)
 
-	coordinator3 := clusterManager3.Coordinator()
+	var leaderCoordinator *Coordinator
+	if leaderName == "replica1" {
+		leaderCoordinator = clusterManager1.Coordinator()
+	} else if leaderName == "replica2" {
+		leaderCoordinator = clusterManager2.Coordinator()
+	} else if leaderName == "replica3" {
+		leaderCoordinator = clusterManager3.Coordinator()
+	}
 
-	coordinator3.genNodeList()
-	nodeList := coordinator3.GetNodeList()
+	assert.NotNil(t, leaderCoordinator)
+
+	var nonLeaderCoordinator *Coordinator
+	if leaderName == "replica1" {
+		nonLeaderCoordinator = clusterManager2.Coordinator()
+	} else if leaderName == "replica2" {
+		nonLeaderCoordinator = clusterManager1.Coordinator()
+	} else if leaderName == "replica3" {
+		nonLeaderCoordinator = clusterManager1.Coordinator()
+	}
+
+	assert.NotNil(t, nonLeaderCoordinator)
+
+	nonLeaderCoordinator.EnableFailures(time.Duration(PING_RESPONSE_TIMEOUT+1) * time.Second) // Will delay ping response in 10 seconds
+	leaderCoordinator.genNodeList()
+
+	nodeList := leaderCoordinator.GetNodeList()
 	assert.Equal(t, 2, len(nodeList))
 	for _, node := range nodeList {
 		assert.True(t, node == "replica2" || node == "replica3")
+	}
+
+	nonLeaderCoordinator.DisableFailures()
+
+	// Wait for the coordinator to retry
+	time.Sleep(time.Duration(NODE_LIST_RETRY_DELAY+1) * time.Second)
+
+	// Full node list should now be generated
+	nodeList = leaderCoordinator.GetNodeList()
+	assert.Equal(t, 3, len(nodeList))
+	for _, node := range nodeList {
+		assert.True(t, node == "replica1" || node == "replica2" || node == "replica3")
 	}
 
 	clusterManager1.Shutdown()

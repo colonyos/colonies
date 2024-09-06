@@ -44,10 +44,8 @@ func TestClusterRPCSend(t *testing.T) {
 
 	go func() {
 		for {
-			fmt.Println("Waiting for message from replica1")
 			select {
 			case msg := <-incomingChan2:
-				fmt.Println("Received message from replica1")
 				if msg == nil {
 					errReplica2 = fmt.Errorf("msg is nil")
 				}
