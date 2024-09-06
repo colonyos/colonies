@@ -1,10 +1,8 @@
 package cluster
 
 import (
-	"fmt"
 	"io"
 	"testing"
-	"time"
 
 	"github.com/colonyos/colonies/pkg/core"
 	"github.com/gin-gonic/gin"
@@ -221,33 +219,17 @@ func TestFindNode(t *testing.T) {
 	clusterManager3.BlockUntilReady()
 
 	id := core.GenerateRandomID()
-	nowNano1 := time.Now().UnixNano()
 	n1, err := clusterManager1.Coordinator().FindNode(id, false)
-	endNano1 := time.Now().UnixNano()
 	assert.Nil(t, err)
-	timeRun1 := endNano1 - nowNano1
 
-	nowNano2 := time.Now().UnixNano()
 	n2, err := clusterManager1.Coordinator().FindNode(id, false)
-	endNano2 := time.Now().UnixNano()
 	assert.Nil(t, err)
-	timeRun2 := endNano2 - nowNano2
 
-	nowNano3 := time.Now().UnixNano()
 	n3, err := clusterManager1.Coordinator().FindNode(id, false)
-	endNano3 := time.Now().UnixNano()
 	assert.Nil(t, err)
-	timeRun3 := endNano3 - nowNano3
 
-	fmt.Println("XXXXXXXXXXXXXXXXXXXXXXxx")
-	fmt.Println("ID: ", id)
-	fmt.Println("N1: ", n1)
-	fmt.Println("N2: ", n2)
-	fmt.Println("N3: ", n3)
-	fmt.Println("XXXXXXXXXXXXXXXXXXXXXXxx")
-	fmt.Println("TimeRun1: ", timeRun1)
-	fmt.Println("TimeRun2: ", timeRun2)
-	fmt.Println("TimeRun3: ", timeRun3)
+	assert.True(t, n1 == n2)
+	assert.True(t, n1 == n3)
 
 	clusterManager1.Shutdown()
 	clusterManager2.Shutdown()
