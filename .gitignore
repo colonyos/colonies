@@ -3,6 +3,7 @@ lib/libcryptolib.so
 lib/libcryptolib.wasm
 lib/libcfslib.so
 bin
+lib
 coverage.txt
 *.sw*
 pkg/database/postgresql/*.sw*
