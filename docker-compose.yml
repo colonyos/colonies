@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   timescaledb:
     image: timescale/timescaledb:latest-pg16
@@ -74,7 +72,6 @@ services:
       COLONIES_CRON_CHECKER_PERIOD: "1000"
       COLONIES_GENERATOR_CHECKER_PERIOD: "500"
       COLONIES_EXCLUSIVE_ASSIGN: "true"
-      COLONIES_ALLOW_EXECUTOR_REREGISTER: "false"
       COLONIES_RETENTION: "false"
       COLONIES_RETENTION_POLICY: "604800" # 60 seconds * 60 * 24 * 7 = 604800 (1 week)
       TZ: ${TZ}
