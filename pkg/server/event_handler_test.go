@@ -353,13 +353,21 @@ func TestEventHandleRelayServer(t *testing.T) {
 	config.AddNode(node2)
 	config.AddNode(node3)
 
-	relayServer1 := cluster.CreateRelayServer(node1, config)
-	relayServer2 := cluster.CreateRelayServer(node2, config)
-	relayServer3 := cluster.CreateRelayServer(node3, config)
+	clusterManager1 := cluster.CreateClusterManager(node1, config, ".")
+	clusterManager2 := cluster.CreateClusterManager(node2, config, ".")
+	clusterManager3 := cluster.CreateClusterManager(node3, config, ".")
 
-	handler1 := createEventHandler(relayServer1)
-	handler2 := createEventHandler(relayServer2)
-	handler3 := createEventHandler(relayServer3)
+	defer clusterManager1.Shutdown()
+	defer clusterManager2.Shutdown()
+	defer clusterManager3.Shutdown()
+
+	relay1 := clusterManager1.Relay()
+	relay2 := clusterManager2.Relay()
+	relay3 := clusterManager3.Relay()
+
+	handler1 := createEventHandler(relay1)
+	handler2 := createEventHandler(relay2)
+	handler3 := createEventHandler(relay3)
 
 	retChan1 := make(chan retValues)
 	go func() {

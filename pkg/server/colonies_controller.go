@@ -3,7 +3,6 @@ package server
 import (
 	"errors"
 	"math"
-	"os"
 	"strconv"
 	"sync"
 	"time"
@@ -49,14 +48,14 @@ type coloniesController struct {
 	blockingCmdQueue chan *command
 	scheduler        *scheduler.Scheduler
 	wsSubCtrl        *wsSubscriptionController
-	relayServer      *cluster.RelayServer
+	thisNode         cluster.Node
+	clusterConfig    cluster.Config
+	clusterManager   *cluster.ClusterManager
+	relay            *cluster.Relay
 	eventHandler     *eventHandler
 	stopFlag         bool
 	stopMutex        sync.Mutex
 	leaderMutex      sync.Mutex
-	thisNode         cluster.Node
-	clusterConfig    cluster.Config
-	etcdServer       *cluster.EtcdServer
 	leader           bool
 	generatorPeriod  int
 	cronPeriod       int
@@ -77,25 +76,27 @@ func createColoniesController(db database.Database,
 
 	controller := &coloniesController{}
 	controller.db = db
-	controller.thisNode = thisNode
-	controller.clusterConfig = clusterConfig
-	controller.etcdServer = cluster.CreateEtcdServer(controller.thisNode, controller.clusterConfig, etcdDataPath)
-	controller.etcdServer.Start()
-	controller.etcdServer.WaitToStart()
-	controller.leader = false
 	controller.generatorPeriod = generatorPeriod
 	controller.cronPeriod = cronPeriod
 	controller.retention = retention
 	controller.retentionPolicy = retentionPolicy
 	controller.retentionPeriod = retentionPeriod
 
-	controller.relayServer = cluster.CreateRelayServer(controller.thisNode, controller.clusterConfig)
-	controller.eventHandler = createEventHandler(controller.relayServer)
+	controller.clusterConfig = clusterConfig
+	controller.leader = false
+	controller.thisNode = thisNode
+	controller.clusterManager = cluster.CreateClusterManager(controller.thisNode, controller.clusterConfig, etcdDataPath)
+	controller.relay = controller.clusterManager.Relay()
+	controller.eventHandler = createEventHandler(controller.relay)
 	controller.wsSubCtrl = createWSSubscriptionController(controller.eventHandler)
 	controller.scheduler = scheduler.CreateScheduler(controller.db)
 
 	controller.cmdQueue = make(chan *command)
 	controller.blockingCmdQueue = make(chan *command)
+
+	log.Info("Waiting for cluster to be ready...")
+	controller.clusterManager.BlockUntilReady()
+	log.Info("Cluster is ready")
 
 	controller.tryBecomeLeader()
 	go controller.blockingCmdQueueWorker()
@@ -108,16 +109,16 @@ func createColoniesController(db database.Database,
 	return controller
 }
 
+func (controller *coloniesController) getClusterManager() *cluster.ClusterManager {
+	return controller.clusterManager
+}
+
 func (controller *coloniesController) getCronPeriod() int {
 	return controller.cronPeriod
 }
 
 func (controller *coloniesController) getGeneratorPeriod() int {
 	return controller.generatorPeriod
-}
-
-func (controller *coloniesController) getEtcdServer() *cluster.EtcdServer {
-	return controller.etcdServer
 }
 
 func (controller *coloniesController) getEventHandler() *eventHandler {
@@ -1614,8 +1615,5 @@ func (controller *coloniesController) stop() {
 	controller.stopMutex.Unlock()
 	controller.cmdQueue <- &command{stop: true}
 	controller.eventHandler.stop()
-	controller.relayServer.Shutdown()
-	controller.etcdServer.Stop()
-	controller.etcdServer.WaitToStop()
-	os.RemoveAll(controller.etcdServer.StorageDir())
+	controller.clusterManager.Shutdown()
 }

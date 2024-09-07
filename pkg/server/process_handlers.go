@@ -97,8 +97,7 @@ func (server *ColoniesServer) handleSubmitHTTPRequest(c *gin.Context, recoveredI
 func (server *ColoniesServer) handleAssignProcessHTTPRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string, originalRequest string) {
 	var err error
 	if server.exclusiveAssign && !server.controller.isLeader() {
-		// Find out who is the leader
-		leader := server.controller.getEtcdServer().CurrentCluster().Leader
+		leader := server.controller.getClusterManager().Coordinator().LeaderNode()
 		leaderHost := leader.Host
 		leaderPort := leader.APIPort
 		insecure := !server.tls
