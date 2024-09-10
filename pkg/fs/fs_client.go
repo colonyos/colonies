@@ -24,6 +24,7 @@ type FSClient struct {
 	executorPrvKey string
 	s3Client       *S3Client
 	Quiet          bool
+	strongFilePerm bool
 }
 
 type FileInfo struct {
@@ -53,11 +54,33 @@ type CFSFile struct {
 	Label string `json:"label"`
 }
 
+const STRONG_RWX_PERMISSIONS = 0744 // rwxr--r--
+const STRONG_RW_PERMISSIONS = 0644  // rw-r--r--
+const WEAK_RWX_PERMISSIONS = 0777   // rwxrwxrwx
+const WEAK_RW_PERMISSIONS = 0662    // rw-rw--w-
+
 func CreateFSClient(coloniesClient *client.ColoniesClient, colonyName string, executorPrvKey string) (*FSClient, error) {
+	fsClient, err := createFSClient(coloniesClient, colonyName, executorPrvKey, true)
+	if err != nil {
+		return nil, err
+	}
+	return fsClient, nil
+}
+
+func CreateFSClientWeakFilePerm(coloniesClient *client.ColoniesClient, colonyName string, executorPrvKey string) (*FSClient, error) {
+	fsClient, err := createFSClient(coloniesClient, colonyName, executorPrvKey, false)
+	if err != nil {
+		return nil, err
+	}
+	return fsClient, nil
+}
+
+func createFSClient(coloniesClient *client.ColoniesClient, colonyName string, executorPrvKey string, strongFilePerm bool) (*FSClient, error) {
 	fsClient := &FSClient{}
 	fsClient.coloniesClient = coloniesClient
 	fsClient.colonyName = colonyName
 	fsClient.executorPrvKey = executorPrvKey
+	fsClient.strongFilePerm = strongFilePerm
 
 	s3Client, err := CreateS3Client()
 	if err != nil {
@@ -135,7 +158,11 @@ func (fsClient *FSClient) ApplySyncPlan(syncPlan *SyncPlan) error {
 	aggErrChan := make(chan error, totalCalls)
 
 	if _, err := os.Stat(syncPlan.Dir); os.IsNotExist(err) {
-		err = os.MkdirAll(syncPlan.Dir, 0755)
+		if !fsClient.strongFilePerm {
+			err = os.MkdirAll(syncPlan.Dir, STRONG_RWX_PERMISSIONS)
+		} else {
+			err = os.MkdirAll(syncPlan.Dir, WEAK_RWX_PERMISSIONS)
+		}
 		if err != nil {
 			return err
 		}
@@ -147,7 +174,12 @@ func (fsClient *FSClient) ApplySyncPlan(syncPlan *SyncPlan) error {
 	if err != nil {
 		return err
 	}
-	err = os.WriteFile(syncPlan.Dir+"/.cfs", cfsFileBytes, 0644)
+
+	if fsClient.strongFilePerm {
+		err = os.WriteFile(syncPlan.Dir+"/.cfs", cfsFileBytes, STRONG_RW_PERMISSIONS)
+	} else {
+		err = os.WriteFile(syncPlan.Dir+"/.cfs", cfsFileBytes, WEAK_RW_PERMISSIONS)
+	}
 	if err != nil {
 		return err
 	}
@@ -896,7 +928,12 @@ func (fsClient *FSClient) DownloadSnapshot(snapshotID string, downloadDir string
 			}
 			dir = downloadDir + dir
 			if _, err := os.Stat(dir); os.IsNotExist(err) {
-				err = os.MkdirAll(dir, 0755)
+
+				if !fsClient.strongFilePerm {
+					err = os.MkdirAll(dir, STRONG_RWX_PERMISSIONS)
+				} else {
+					err = os.MkdirAll(dir, WEAK_RWX_PERMISSIONS)
+				}
 				if err != nil {
 					return err
 				}
