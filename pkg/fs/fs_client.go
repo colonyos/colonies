@@ -160,11 +160,22 @@ func (fsClient *FSClient) ApplySyncPlan(syncPlan *SyncPlan) error {
 	if _, err := os.Stat(syncPlan.Dir); os.IsNotExist(err) {
 		if !fsClient.strongFilePerm {
 			err = os.MkdirAll(syncPlan.Dir, STRONG_RWX_PERMISSIONS)
+			if err != nil {
+				return err
+			}
+			err = os.Chmod(syncPlan.Dir, STRONG_RWX_PERMISSIONS)
+			if err != nil {
+				log.Fatal(err)
+			}
 		} else {
 			err = os.MkdirAll(syncPlan.Dir, WEAK_RWX_PERMISSIONS)
-		}
-		if err != nil {
-			return err
+			if err != nil {
+				return err
+			}
+			err = os.Chmod(syncPlan.Dir, WEAK_RWX_PERMISSIONS)
+			if err != nil {
+				log.Fatal(err)
+			}
 		}
 	}
 
@@ -175,13 +186,25 @@ func (fsClient *FSClient) ApplySyncPlan(syncPlan *SyncPlan) error {
 		return err
 	}
 
+	cfsFileName := syncPlan.Dir + "/.cfs"
 	if fsClient.strongFilePerm {
-		err = os.WriteFile(syncPlan.Dir+"/.cfs", cfsFileBytes, STRONG_RW_PERMISSIONS)
+		err = os.WriteFile(cfsFileName, cfsFileBytes, STRONG_RW_PERMISSIONS)
+		if err != nil {
+			return err
+		}
+		err = os.Chmod(cfsFileName, STRONG_RW_PERMISSIONS)
+		if err != nil {
+			log.Fatal(err)
+		}
 	} else {
-		err = os.WriteFile(syncPlan.Dir+"/.cfs", cfsFileBytes, WEAK_RW_PERMISSIONS)
-	}
-	if err != nil {
-		return err
+		err = os.WriteFile(cfsFileName, cfsFileBytes, WEAK_RW_PERMISSIONS)
+		if err != nil {
+			return err
+		}
+		err = os.Chmod(cfsFileName, WEAK_RW_PERMISSIONS)
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 
 	totalUploadSize := int64(0)
@@ -931,11 +954,23 @@ func (fsClient *FSClient) DownloadSnapshot(snapshotID string, downloadDir string
 
 				if !fsClient.strongFilePerm {
 					err = os.MkdirAll(dir, STRONG_RWX_PERMISSIONS)
+					if err != nil {
+						return err
+					}
+					err = os.Chmod(dir, STRONG_RWX_PERMISSIONS)
+					if err != nil {
+						log.Fatal(err)
+					}
+
 				} else {
 					err = os.MkdirAll(dir, WEAK_RWX_PERMISSIONS)
-				}
-				if err != nil {
-					return err
+					if err != nil {
+						return err
+					}
+					err = os.Chmod(dir, WEAK_RWX_PERMISSIONS)
+					if err != nil {
+						log.Fatal(err)
+					}
 				}
 			}
 
