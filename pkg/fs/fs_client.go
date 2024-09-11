@@ -150,13 +150,25 @@ func (fsClient *FSClient) uploadFile(syncPlan *SyncPlan, fileInfo *FileInfo, tra
 		log.WithFields(log.Fields{"Dir": syncPlan.Dir, "Filename": coloniesFile.Name, "Label": coloniesFile.Label}).Debug("Setting file permissions (strong)")
 		err = os.Chmod(syncPlan.Dir+"/"+fileInfo.Name, STRONG_RW_PERMISSIONS)
 		if err != nil {
-			log.Fatal(err)
+			log.Error(err)
+			return err
+		}
+		err = os.Chmod(syncPlan.Dir, STRONG_RWX_PERMISSIONS)
+		if err != nil {
+			log.Error(err)
+			return err
 		}
 	} else {
 		log.WithFields(log.Fields{"Dir": syncPlan.Dir, "Filename": coloniesFile.Name, "Label": coloniesFile.Label}).Debug("Setting file permissions (weak)")
 		err = os.Chmod(syncPlan.Dir+"/"+fileInfo.Name, WEAK_RW_PERMISSIONS)
 		if err != nil {
-			log.Fatal(err)
+			log.Error(err)
+			return err
+		}
+		err = os.Chmod(syncPlan.Dir, WEAK_RWX_PERMISSIONS)
+		if err != nil {
+			log.Error(err)
+			return err
 		}
 	}
 
