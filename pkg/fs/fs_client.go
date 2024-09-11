@@ -24,7 +24,6 @@ type FSClient struct {
 	executorPrvKey string
 	s3Client       *S3Client
 	Quiet          bool
-	strongFilePerm bool
 }
 
 type FileInfo struct {
@@ -54,33 +53,11 @@ type CFSFile struct {
 	Label string `json:"label"`
 }
 
-const STRONG_RWX_PERMISSIONS = 0744 // rwxr--r--
-const STRONG_RW_PERMISSIONS = 0644  // rw-r--r--
-const WEAK_RWX_PERMISSIONS = 0777   // rwxrwxrwx
-const WEAK_RW_PERMISSIONS = 0662    // rw-rw--w-
-
 func CreateFSClient(coloniesClient *client.ColoniesClient, colonyName string, executorPrvKey string) (*FSClient, error) {
-	fsClient, err := createFSClient(coloniesClient, colonyName, executorPrvKey, true)
-	if err != nil {
-		return nil, err
-	}
-	return fsClient, nil
-}
-
-func CreateFSClientWeakFilePerm(coloniesClient *client.ColoniesClient, colonyName string, executorPrvKey string) (*FSClient, error) {
-	fsClient, err := createFSClient(coloniesClient, colonyName, executorPrvKey, false)
-	if err != nil {
-		return nil, err
-	}
-	return fsClient, nil
-}
-
-func createFSClient(coloniesClient *client.ColoniesClient, colonyName string, executorPrvKey string, strongFilePerm bool) (*FSClient, error) {
 	fsClient := &FSClient{}
 	fsClient.coloniesClient = coloniesClient
 	fsClient.colonyName = colonyName
 	fsClient.executorPrvKey = executorPrvKey
-	fsClient.strongFilePerm = strongFilePerm
 
 	s3Client, err := CreateS3Client()
 	if err != nil {
@@ -146,32 +123,6 @@ func (fsClient *FSClient) uploadFile(syncPlan *SyncPlan, fileInfo *FileInfo, tra
 		return err
 	}
 
-	if fsClient.strongFilePerm {
-		log.WithFields(log.Fields{"Dir": syncPlan.Dir, "Filename": coloniesFile.Name, "Label": coloniesFile.Label}).Debug("Setting file permissions (strong)")
-		err = os.Chmod(syncPlan.Dir+"/"+fileInfo.Name, STRONG_RW_PERMISSIONS)
-		if err != nil {
-			log.Error(err)
-			return err
-		}
-		err = os.Chmod(syncPlan.Dir, STRONG_RWX_PERMISSIONS)
-		if err != nil {
-			log.Error(err)
-			return err
-		}
-	} else {
-		log.WithFields(log.Fields{"Dir": syncPlan.Dir, "Filename": coloniesFile.Name, "Label": coloniesFile.Label}).Debug("Setting file permissions (weak)")
-		err = os.Chmod(syncPlan.Dir+"/"+fileInfo.Name, WEAK_RW_PERMISSIONS)
-		if err != nil {
-			log.Error(err)
-			return err
-		}
-		err = os.Chmod(syncPlan.Dir, WEAK_RWX_PERMISSIONS)
-		if err != nil {
-			log.Error(err)
-			return err
-		}
-	}
-
 	return nil
 }
 
@@ -184,24 +135,9 @@ func (fsClient *FSClient) ApplySyncPlan(syncPlan *SyncPlan) error {
 	aggErrChan := make(chan error, totalCalls)
 
 	if _, err := os.Stat(syncPlan.Dir); os.IsNotExist(err) {
-		if !fsClient.strongFilePerm {
-			err = os.MkdirAll(syncPlan.Dir, STRONG_RWX_PERMISSIONS)
-			if err != nil {
-				return err
-			}
-			err = os.Chmod(syncPlan.Dir, STRONG_RWX_PERMISSIONS)
-			if err != nil {
-				log.Fatal(err)
-			}
-		} else {
-			err = os.MkdirAll(syncPlan.Dir, WEAK_RWX_PERMISSIONS)
-			if err != nil {
-				return err
-			}
-			err = os.Chmod(syncPlan.Dir, WEAK_RWX_PERMISSIONS)
-			if err != nil {
-				log.Fatal(err)
-			}
+		err = os.MkdirAll(syncPlan.Dir, 0755)
+		if err != nil {
+			return err
 		}
 	}
 
@@ -211,26 +147,9 @@ func (fsClient *FSClient) ApplySyncPlan(syncPlan *SyncPlan) error {
 	if err != nil {
 		return err
 	}
-
-	cfsFileName := syncPlan.Dir + "/.cfs"
-	if fsClient.strongFilePerm {
-		err = os.WriteFile(cfsFileName, cfsFileBytes, STRONG_RW_PERMISSIONS)
-		if err != nil {
-			return err
-		}
-		err = os.Chmod(cfsFileName, STRONG_RW_PERMISSIONS)
-		if err != nil {
-			log.Fatal(err)
-		}
-	} else {
-		err = os.WriteFile(cfsFileName, cfsFileBytes, WEAK_RW_PERMISSIONS)
-		if err != nil {
-			return err
-		}
-		err = os.Chmod(cfsFileName, WEAK_RW_PERMISSIONS)
-		if err != nil {
-			log.Fatal(err)
-		}
+	err = os.WriteFile(syncPlan.Dir+"/.cfs", cfsFileBytes, 0644)
+	if err != nil {
+		return err
 	}
 
 	totalUploadSize := int64(0)
@@ -977,26 +896,9 @@ func (fsClient *FSClient) DownloadSnapshot(snapshotID string, downloadDir string
 			}
 			dir = downloadDir + dir
 			if _, err := os.Stat(dir); os.IsNotExist(err) {
-
-				if !fsClient.strongFilePerm {
-					err = os.MkdirAll(dir, STRONG_RWX_PERMISSIONS)
-					if err != nil {
-						return err
-					}
-					err = os.Chmod(dir, STRONG_RWX_PERMISSIONS)
-					if err != nil {
-						log.Fatal(err)
-					}
-
-				} else {
-					err = os.MkdirAll(dir, WEAK_RWX_PERMISSIONS)
-					if err != nil {
-						return err
-					}
-					err = os.Chmod(dir, WEAK_RWX_PERMISSIONS)
-					if err != nil {
-						log.Fatal(err)
-					}
+				err = os.MkdirAll(dir, 0755)
+				if err != nil {
+					return err
 				}
 			}
 
