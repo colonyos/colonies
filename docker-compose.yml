@@ -51,7 +51,7 @@ services:
       "
 
   colonies-server:
-    image: colonyos/colonies:v1.8.7
+    image: colonyos/colonies:v1.8.17
     depends_on:
       - timescaledb
     environment:
@@ -108,7 +108,7 @@ services:
       "
 
   docker-executor:
-    image: colonyos/dockerexecutor:v1.0.3
+    image: colonyos/dockerexecutor:v1.0.4
     privileged: true
     environment:
       LANG: ${LANG:-en_US.UTF-8}
