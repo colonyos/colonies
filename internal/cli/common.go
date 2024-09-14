@@ -519,3 +519,7 @@ func insertNewLines(s string, interval int) string {
 
 	return result.String()
 }
+
+func formatTimestamp(timestamp string) string {
+	return strings.Replace(timestamp, "T", " ", 1)
+}

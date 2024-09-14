@@ -145,6 +145,7 @@ func init() {
 	rootCmd.PersistentFlags().BoolVarP(&SkipTLSVerify, "skip-tls-verify", "", false, "Skip TLS certificate verification")
 
 	rootCmd.AddCommand(configCmd)
+	rootCmd.AddCommand(versionCmd)
 }
 
 var rootCmd = &cobra.Command{
@@ -167,5 +168,15 @@ var configCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		setup()
 		printConfigTable()
+	},
+}
+
+var versionCmd = &cobra.Command{
+	Use:   "version",
+	Short: "Version",
+	Long:  "Version",
+	Run: func(cmd *cobra.Command, args []string) {
+		setup()
+		printVersionTable()
 	},
 }

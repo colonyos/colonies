@@ -31,7 +31,7 @@ func printServerStatusTable(serverBuildVersion string, serverBuildTime string) {
 
 	row = []interface{}{
 		termenv.String("Server buildtime").Foreground(theme.ColorCyan),
-		termenv.String(serverBuildTime).Foreground(theme.ColorGray),
+		termenv.String(formatTimestamp(serverBuildTime)).Foreground(theme.ColorGray),
 	}
 	t.AddRow(row)
 
@@ -43,7 +43,7 @@ func printServerStatusTable(serverBuildVersion string, serverBuildTime string) {
 
 	row = []interface{}{
 		termenv.String("CLI buildtime").Foreground(theme.ColorCyan),
-		termenv.String(build.BuildTime).Foreground(theme.ColorGray),
+		termenv.String(formatTimestamp(build.BuildTime)).Foreground(theme.ColorGray),
 	}
 	t.AddRow(row)
 
