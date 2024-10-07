@@ -35,12 +35,14 @@ type FileInfo struct {
 }
 
 type SyncPlan struct {
-	Dir           string
-	LocalMissing  []*FileInfo
-	RemoteMissing []*FileInfo
-	Conflicts     []*FileInfo
-	KeepLocal     bool
-	Label         string
+	Dir                 string
+	LocalMissing        []*FileInfo
+	RemoteMissing       []*FileInfo
+	Conflicts           []*FileInfo
+	KeepLocalOnConflict bool
+	PurgeLocal          bool
+	PurgeRemote         bool
+	Label               string
 }
 
 type CleanPlan struct {
@@ -176,13 +178,29 @@ func (fsClient *FSClient) ApplySyncPlan(syncPlan *SyncPlan) error {
 
 	pool := utils.NewWorkerPool(50).Start()
 
+	var removeTracker progress.Tracker
 	var uploadTracker progress.Tracker
 	var downloadTracker progress.Tracker
 	var conflictTracker progress.Tracker
 
 	startTracker := false
 	if !fsClient.Quiet {
+		totalPurgeSize := int64(0)
+		if syncPlan.PurgeLocal {
+			totalPurgeSize = totalUploadSize
+		} else {
+			totalPurgeSize = totalDownloadSize
+		}
+
+		messageRemoveTracker := fmt.Sprintf("Removing %s", syncPlan.Label)
+		removeTracker = progress.Tracker{Message: messageRemoveTracker, Total: totalPurgeSize, Units: progress.UnitsBytes}
+		if len(syncPlan.LocalMissing) > 0 && totalUploadSize > 0 && syncPlan.PurgeLocal {
+			pw.AppendTracker(&removeTracker)
+			startTracker = true
+			removeTracker.Start()
+		}
 		messageUploadTracker := fmt.Sprintf("Uploading %s", syncPlan.Label)
+
 		uploadTracker = progress.Tracker{Message: messageUploadTracker, Total: totalUploadSize, Units: progress.UnitsBytes}
 		if len(syncPlan.RemoteMissing) > 0 && totalUploadSize > 0 {
 			pw.AppendTracker(&uploadTracker)
@@ -199,7 +217,7 @@ func (fsClient *FSClient) ApplySyncPlan(syncPlan *SyncPlan) error {
 		}
 
 		var messageConflictTracker string
-		if syncPlan.KeepLocal {
+		if syncPlan.KeepLocalOnConflict {
 			messageConflictTracker = fmt.Sprintf("Conflict (keeplocal) %s", syncPlan.Label)
 		} else {
 			messageConflictTracker = fmt.Sprintf("Conflict (keepremote) %s", syncPlan.Label)
@@ -212,7 +230,44 @@ func (fsClient *FSClient) ApplySyncPlan(syncPlan *SyncPlan) error {
 		}
 	}
 
-	// 1. Upload all remote missing files
+	// 1. Purge files
+	if syncPlan.PurgeLocal {
+		for _, fileInfo := range syncPlan.RemoteMissing {
+			errChan := pool.Call(func(arg interface{}) error {
+				f := arg.(*FileInfo)
+				if f.Size > 0 {
+					fmt.Println("Removing: " + syncPlan.Dir + "/" + f.Name)
+					return fsClient.s3Client.Remove(f.S3Filename)
+				}
+				return nil
+			}, fileInfo)
+			go func() {
+				err := <-errChan
+				aggErrChan <- err
+			}()
+		}
+	} else if syncPlan.PurgeRemote {
+		for _, fileInfo := range syncPlan.LocalMissing {
+			errChan := pool.Call(func(arg interface{}) error {
+				f := arg.(*FileInfo)
+				if f.Size > 0 {
+					// Remove file from ColonyFS
+					err := fsClient.coloniesClient.RemoveFileByName(fsClient.colonyName, syncPlan.Label, f.Name, fsClient.executorPrvKey)
+					if err != nil {
+						return err
+					}
+					return os.Remove(syncPlan.Dir + "/" + f.Name)
+				}
+				return nil
+			}, fileInfo)
+			go func() {
+				err := <-errChan
+				aggErrChan <- err
+			}()
+		}
+	}
+
+	// 2. Upload all remote missing files
 	for _, fileInfo := range syncPlan.RemoteMissing {
 		errChan := pool.Call(func(arg interface{}) error {
 			f := arg.(*FileInfo)
@@ -224,7 +279,7 @@ func (fsClient *FSClient) ApplySyncPlan(syncPlan *SyncPlan) error {
 		}()
 	}
 
-	// 2. Download all local missing files
+	// 3. Download all local missing files
 	for _, fileInfo := range syncPlan.LocalMissing {
 		errChan := pool.Call(func(arg interface{}) error {
 			f := arg.(*FileInfo)
@@ -245,9 +300,9 @@ func (fsClient *FSClient) ApplySyncPlan(syncPlan *SyncPlan) error {
 		}()
 	}
 
-	// 3. Handle conflicts
-	// If keepLocalFiles then upload conflicting files to server else download conflicting files to local filesystem
-	if syncPlan.KeepLocal {
+	// 4. Handle conflicts
+	// If keepLocalOnConflict then upload conflicting files to server else download conflicting files to local filesystem
+	if syncPlan.KeepLocalOnConflict {
 		for _, fileInfo := range syncPlan.Conflicts {
 			errChan := pool.Call(func(arg interface{}) error {
 				f := arg.(*FileInfo)
@@ -296,6 +351,7 @@ O:
 			}
 		}
 
+		removeTracker.MarkAsDone()
 		uploadTracker.MarkAsDone()
 		downloadTracker.MarkAsDone()
 		conflictTracker.MarkAsDone()
@@ -305,7 +361,11 @@ O:
 	return nil
 }
 
-func (fsClient *FSClient) CalcSyncPlans(dir string, label string, keepLocal bool) ([]*SyncPlan, error) {
+func (fsClient *FSClient) CalcSyncPlans(dir string, label string, keepLocalOnConflict bool, purgeLocal bool, purgeRemote bool) ([]*SyncPlan, error) {
+	if purgeRemote && purgeLocal {
+		return nil, errors.New("Cannot purge both local and remote files at the same time, choose local or remote")
+	}
+
 	dir, err := filepath.Abs(dir)
 	if err != nil {
 		return nil, err
@@ -342,7 +402,7 @@ func (fsClient *FSClient) CalcSyncPlans(dir string, label string, keepLocal bool
 			}
 
 			log.WithFields(log.Fields{"Label": l, "Dir:": dir, "Path": path}).Debug("Calculating sync plan")
-			syncPlan, err := fsClient.CalcSyncPlan(path, l, keepLocal)
+			syncPlan, err := fsClient.CalcSyncPlan(path, l, keepLocalOnConflict, purgeLocal, purgeRemote)
 			if err != nil {
 				return err
 			}
@@ -361,7 +421,7 @@ func (fsClient *FSClient) CalcSyncPlans(dir string, label string, keepLocal bool
 	for _, l := range allLabels {
 		if _, ok := syncPlans[l.Name]; !ok {
 			subdir := strings.TrimPrefix(l.Name, label)
-			syncPlan, err := fsClient.CalcSyncPlan(dir+subdir, l.Name, keepLocal)
+			syncPlan, err := fsClient.CalcSyncPlan(dir+subdir, l.Name, keepLocalOnConflict, purgeLocal, purgeRemote)
 			if err != nil {
 				return nil, err
 			}
@@ -377,7 +437,7 @@ func (fsClient *FSClient) CalcSyncPlans(dir string, label string, keepLocal bool
 	return a, nil
 }
 
-func (fsClient *FSClient) CalcSyncPlan(dir string, label string, keepLocal bool) (*SyncPlan, error) {
+func (fsClient *FSClient) CalcSyncPlan(dir string, label string, keepLocalOnConflict bool, purgeLocal bool, purgeRemote bool) (*SyncPlan, error) {
 	files, err := os.ReadDir(dir)
 	if err != nil {
 		log.WithFields(log.Fields{"Dir": dir}).Debug("Directory does not exists")
@@ -478,7 +538,7 @@ func (fsClient *FSClient) CalcSyncPlan(dir string, label string, keepLocal bool)
 		_, ok := localFileMap[filename]
 		if ok {
 			if localFileMap[filename] != checksum {
-				if keepLocal {
+				if keepLocalOnConflict {
 					localChecksum := localFileMap[filename]
 					size := localFileSizeMap[filename]
 					conflicts = append(conflicts, &FileInfo{Name: filename, Checksum: localChecksum, Size: size, S3Filename: ""})
@@ -504,178 +564,179 @@ func (fsClient *FSClient) CalcSyncPlan(dir string, label string, keepLocal bool)
 	}
 
 	return &SyncPlan{
-		LocalMissing:  localMissing,
-		RemoteMissing: remoteMissing,
-		Conflicts:     conflicts,
-		Dir:           dir,
-		Label:         label,
-		KeepLocal:     keepLocal}, nil
+		LocalMissing:        localMissing,
+		RemoteMissing:       remoteMissing,
+		Conflicts:           conflicts,
+		Dir:                 dir,
+		Label:               label,
+		PurgeLocal:          purgeLocal,
+		PurgeRemote:         purgeRemote,
+		KeepLocalOnConflict: keepLocalOnConflict}, nil
 }
 
-func (fsClient *FSClient) CalcCleanPlan(dir string, label string) (*CleanPlan, error) {
-	dir, err := filepath.Abs(dir)
-	if err != nil {
-		return nil, err
-	}
-
-	fileInfo, err := os.Stat(dir)
-	if err != nil {
-		return nil, err
-	}
-
-	if !fileInfo.IsDir() {
-		return nil, errors.New(dir + " is not a directory")
-	}
-
-	if !strings.HasPrefix(label, "/") {
-		label = "/" + label
-	}
-
-	filesInLabels, err := fsClient.coloniesClient.GetFileData(fsClient.colonyName, label, fsClient.executorPrvKey)
-	if err != nil {
-		return nil, err
-	}
-
-	remoteFiles := make(map[string]string)
-	for _, fileData := range filesInLabels {
-		remoteFiles[fileData.Name] = fileData.Name
-	}
-
-	localFiles, err := os.ReadDir(dir)
-	if err != nil {
-		return nil, err
-	}
-
-	filesToRemove := make([]*FileInfo, 0)
-	for _, localFile := range localFiles {
-		if localFile.IsDir() {
-			// check if there is a label called label/dir
-			labels, err := fsClient.coloniesClient.GetFileLabelsByName(fsClient.colonyName, label+"/"+localFile.Name(), true, fsClient.executorPrvKey)
-			if err != nil {
-				return nil, err
-			}
-			labelsDict := make(map[string]string)
-			for _, l := range labels {
-				labelsDict[l.Name] = l.Name
-			}
-			_, ok := labelsDict[label+"/"+localFile.Name()]
-			if !ok {
-				filesToRemove = append(filesToRemove, &FileInfo{Name: dir + "/" + localFile.Name(), Dir: true})
-			}
-		} else {
-			if localFile.Name() != ".cfs" {
-				_, ok := remoteFiles[localFile.Name()]
-				if !ok {
-					filesToRemove = append(filesToRemove, &FileInfo{Name: dir + "/" + localFile.Name(), Dir: false})
-				}
-			}
-		}
-	}
-
-	return &CleanPlan{Dir: dir, FilesToRemove: filesToRemove, Label: label}, nil
-}
-
-func (fsClient *FSClient) CalcCleanPlans(dir string, label string) ([]*CleanPlan, error) {
-	fileInfo, err := os.Stat(dir)
-	if err != nil {
-		return nil, err
-	}
-
-	if !fileInfo.IsDir() {
-		return nil, errors.New(dir + " is not a directory")
-	}
-
-	if !strings.HasPrefix(label, "/") {
-		label = "/" + label
-	}
-
-	labels, err := fsClient.coloniesClient.GetFileLabelsByName(fsClient.colonyName, label, true, fsClient.executorPrvKey)
-	if err != nil {
-		return nil, err
-	}
-
-	if len(labels) == 0 {
-		return nil, errors.New("Root directory not found in colonyFS")
-	}
-
-	return fsClient.calcCleanPlans(dir, label)
-}
-
-func (fsClient *FSClient) calcCleanPlans(dir string, label string) ([]*CleanPlan, error) {
-	dir, err := filepath.Abs(dir)
-	if err != nil {
-		return nil, err
-	}
-
-	fileInfo, err := os.Stat(dir)
-	if err != nil {
-		return nil, err
-	}
-
-	if !fileInfo.IsDir() {
-		return nil, errors.New(dir + " is not a directory")
-	}
-
-	if !strings.HasPrefix(label, "/") {
-		label = "/" + label
-	}
-
-	cleanPlans := make(map[string]*CleanPlan)
-	err = filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-
-		if info.IsDir() {
-			l := ""
-
-			path = strings.Replace(path, `\`, `/`, -1)
-			dir = strings.Replace(dir, `\`, `/`, -1)
-			if len(strings.TrimPrefix(path, dir)) > 0 { // XXX this line does not work on windows
-				l = label + strings.TrimPrefix(path, dir)
-			} else {
-				l = label
-			}
-
-			log.WithFields(log.Fields{"Label": l, "Dir:": dir, "Path": path}).Debug("Calculating clean plan")
-			cleanPlan, err := fsClient.CalcCleanPlan(path, l)
-			if err != nil {
-				return err
-			}
-			cleanPlans[l] = cleanPlan
-		}
-		return nil
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	var a []*CleanPlan
-	for _, v := range cleanPlans {
-		a = append(a, v)
-	}
-
-	return a, nil
-}
-
-func (fsClient *FSClient) ApplyCleanPlan(cleanPlan *CleanPlan) error {
-	for _, fileInfo := range cleanPlan.FilesToRemove {
-		if fileInfo.Dir {
-			err := os.RemoveAll(fileInfo.Name)
-			if err != nil {
-				return err
-			}
-		} else {
-			err := os.Remove(fileInfo.Name)
-			if err != nil {
-				return err
-			}
-		}
-	}
-
-	return nil
-}
-
+//	func (fsClient *FSClient) CalcCleanPlan(dir string, label string) (*CleanPlan, error) {
+//		dir, err := filepath.Abs(dir)
+//		if err != nil {
+//			return nil, err
+//		}
+//
+//		fileInfo, err := os.Stat(dir)
+//		if err != nil {
+//			return nil, err
+//		}
+//
+//		if !fileInfo.IsDir() {
+//			return nil, errors.New(dir + " is not a directory")
+//		}
+//
+//		if !strings.HasPrefix(label, "/") {
+//			label = "/" + label
+//		}
+//
+//		filesInLabels, err := fsClient.coloniesClient.GetFileData(fsClient.colonyName, label, fsClient.executorPrvKey)
+//		if err != nil {
+//			return nil, err
+//		}
+//
+//		remoteFiles := make(map[string]string)
+//		for _, fileData := range filesInLabels {
+//			remoteFiles[fileData.Name] = fileData.Name
+//		}
+//
+//		localFiles, err := os.ReadDir(dir)
+//		if err != nil {
+//			return nil, err
+//		}
+//
+//		filesToRemove := make([]*FileInfo, 0)
+//		for _, localFile := range localFiles {
+//			if localFile.IsDir() {
+//				// check if there is a label called label/dir
+//				labels, err := fsClient.coloniesClient.GetFileLabelsByName(fsClient.colonyName, label+"/"+localFile.Name(), true, fsClient.executorPrvKey)
+//				if err != nil {
+//					return nil, err
+//				}
+//				labelsDict := make(map[string]string)
+//				for _, l := range labels {
+//					labelsDict[l.Name] = l.Name
+//				}
+//				_, ok := labelsDict[label+"/"+localFile.Name()]
+//				if !ok {
+//					filesToRemove = append(filesToRemove, &FileInfo{Name: dir + "/" + localFile.Name(), Dir: true})
+//				}
+//			} else {
+//				if localFile.Name() != ".cfs" {
+//					_, ok := remoteFiles[localFile.Name()]
+//					if !ok {
+//						filesToRemove = append(filesToRemove, &FileInfo{Name: dir + "/" + localFile.Name(), Dir: false})
+//					}
+//				}
+//			}
+//		}
+//
+//		return &CleanPlan{Dir: dir, FilesToRemove: filesToRemove, Label: label}, nil
+//	}
+//
+//	func (fsClient *FSClient) CalcCleanPlans(dir string, label string) ([]*CleanPlan, error) {
+//		fileInfo, err := os.Stat(dir)
+//		if err != nil {
+//			return nil, err
+//		}
+//
+//		if !fileInfo.IsDir() {
+//			return nil, errors.New(dir + " is not a directory")
+//		}
+//
+//		if !strings.HasPrefix(label, "/") {
+//			label = "/" + label
+//		}
+//
+//		labels, err := fsClient.coloniesClient.GetFileLabelsByName(fsClient.colonyName, label, true, fsClient.executorPrvKey)
+//		if err != nil {
+//			return nil, err
+//		}
+//
+//		if len(labels) == 0 {
+//			return nil, errors.New("Root directory not found in colonyFS")
+//		}
+//
+//		return fsClient.calcCleanPlans(dir, label)
+//	}
+//
+//	func (fsClient *FSClient) calcCleanPlans(dir string, label string) ([]*CleanPlan, error) {
+//		dir, err := filepath.Abs(dir)
+//		if err != nil {
+//			return nil, err
+//		}
+//
+//		fileInfo, err := os.Stat(dir)
+//		if err != nil {
+//			return nil, err
+//		}
+//
+//		if !fileInfo.IsDir() {
+//			return nil, errors.New(dir + " is not a directory")
+//		}
+//
+//		if !strings.HasPrefix(label, "/") {
+//			label = "/" + label
+//		}
+//
+//		cleanPlans := make(map[string]*CleanPlan)
+//		err = filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
+//			if err != nil {
+//				return err
+//			}
+//
+//			if info.IsDir() {
+//				l := ""
+//
+//				path = strings.Replace(path, `\`, `/`, -1)
+//				dir = strings.Replace(dir, `\`, `/`, -1)
+//				if len(strings.TrimPrefix(path, dir)) > 0 { // XXX this line does not work on windows
+//					l = label + strings.TrimPrefix(path, dir)
+//				} else {
+//					l = label
+//				}
+//
+//				log.WithFields(log.Fields{"Label": l, "Dir:": dir, "Path": path}).Debug("Calculating clean plan")
+//				cleanPlan, err := fsClient.CalcCleanPlan(path, l)
+//				if err != nil {
+//					return err
+//				}
+//				cleanPlans[l] = cleanPlan
+//			}
+//			return nil
+//		})
+//		if err != nil {
+//			return nil, err
+//		}
+//
+//		var a []*CleanPlan
+//		for _, v := range cleanPlans {
+//			a = append(a, v)
+//		}
+//
+//		return a, nil
+//	}
+//
+//	func (fsClient *FSClient) ApplyCleanPlan(cleanPlan *CleanPlan) error {
+//		for _, fileInfo := range cleanPlan.FilesToRemove {
+//			if fileInfo.Dir {
+//				err := os.RemoveAll(fileInfo.Name)
+//				if err != nil {
+//					return err
+//				}
+//			} else {
+//				err := os.Remove(fileInfo.Name)
+//				if err != nil {
+//					return err
+//				}
+//			}
+//		}
+//
+//		return nil
+//	}
 func (fsClient *FSClient) Download(colonyName string, fileID string, downloadDir string) error {
 	file, err := fsClient.coloniesClient.GetFileByID(colonyName, fileID, fsClient.executorPrvKey)
 	if err != nil {

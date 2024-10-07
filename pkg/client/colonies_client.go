@@ -1036,6 +1036,10 @@ func (client *ColoniesClient) GetCrons(colonyName string, count int, prvKey stri
 
 	respBodyString, err := client.sendMessage(rpc.GetCronsPayloadType, jsonString, prvKey, false, context.TODO())
 	if err != nil {
+		errMsg := "Failed to get crons, crons is nil"
+		if err.Error() == errMsg {
+			return nil, nil
+		}
 		return nil, err
 	}
 
