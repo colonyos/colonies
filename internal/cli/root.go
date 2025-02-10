@@ -138,6 +138,8 @@ var ASCII bool
 var Print bool
 var SecondsBack int
 var Snapshot bool
+var IDPath string
+var PrvKeyPath string
 
 func init() {
 	rootCmd.PersistentFlags().BoolVarP(&Verbose, "verbose", "v", false, "Verbose (debugging)")

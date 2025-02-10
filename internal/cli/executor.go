@@ -7,12 +7,14 @@ import (
 	"os"
 
 	"github.com/colonyos/colonies/pkg/core"
+	"github.com/colonyos/colonies/pkg/security/crypto"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
 func init() {
 	executorCmd.AddCommand(addExecutorCmd)
+	executorCmd.AddCommand(CreateExecutorCmd)
 	executorCmd.AddCommand(chExecutorIDCmd)
 	executorCmd.AddCommand(removeExecutorCmd)
 	executorCmd.AddCommand(lsExecutorsCmd)
@@ -32,6 +34,13 @@ func init() {
 	addExecutorCmd.Flags().StringVarP(&TargetExecutorName, "name", "", "", "Executor name")
 	addExecutorCmd.Flags().StringVarP(&TargetExecutorType, "type", "", "", "Executor type")
 	addExecutorCmd.Flags().BoolVarP(&Approve, "approve", "", false, "Also, approve the Executor")
+
+	CreateExecutorCmd.Flags().StringVarP(&SpecFile, "spec", "", "", "JSON specification of an executor")
+	CreateExecutorCmd.Flags().StringVarP(&TargetExecutorName, "name", "", "", "Executor name")
+	CreateExecutorCmd.Flags().StringVarP(&TargetExecutorType, "type", "", "", "Executor type")
+	CreateExecutorCmd.Flags().BoolVarP(&Approve, "approve", "", false, "Also, approve the Executor")
+	CreateExecutorCmd.Flags().StringVarP(&PrvKeyPath, "keypath", "", "", "Path where the private key will be stored")
+	CreateExecutorCmd.Flags().StringVarP(&IDPath, "idpath", "", "", "Path where the ID will be stored")
 
 	chExecutorIDCmd.Flags().StringVarP(&ExecutorID, "executorid", "", "", "Executor Id")
 	chExecutorIDCmd.MarkFlagRequired("executorid")
@@ -116,6 +125,98 @@ var addExecutorCmd = &cobra.Command{
 			"ExecutorName": executor.Name,
 			"ExecutorType": executor.Type,
 			"ExecutorID":   addedExecutor.ID,
+			"ColonyName":   ColonyName}).
+			Info("Executor added")
+	},
+}
+
+var CreateExecutorCmd = &cobra.Command{
+	Use:   "create",
+	Short: "Generate keys and add a new Executor",
+	Long:  "Generate keys and add a new Executor",
+	Run: func(cmd *cobra.Command, args []string) {
+		client := setup()
+
+		crypto := crypto.CreateCrypto()
+		prvKey, err := crypto.GeneratePrivateKey()
+		CheckError(err)
+
+		ExecutorID, err := crypto.GenerateID(prvKey)
+		CheckError(err)
+
+		// Save the private key to PrvKeyPath
+		if PrvKeyPath != "" {
+			err = ioutil.WriteFile(PrvKeyPath, []byte(prvKey), 0644)
+			CheckError(err)
+		} else {
+			CheckError(errors.New("Private key path not specified"))
+		}
+
+		// Save the ID to IDPath
+		if IDPath != "" {
+			err = ioutil.WriteFile(IDPath, []byte(ExecutorID), 0644)
+			CheckError(err)
+		} else {
+			CheckError(errors.New("ID path not specified"))
+		}
+
+		log.WithFields(log.Fields{"ExecutorId": ExecutorID}).Info("Generated Executor Id")
+
+		if len(ExecutorID) != 64 {
+			CheckError(errors.New("Invalid Executor Id length"))
+		}
+
+		if os.Getenv("HOSTNAME") != "" {
+			ExecutorName += "."
+			ExecutorName += os.Getenv("HOSTNAME")
+		}
+
+		var executor *core.Executor
+		if SpecFile != "" {
+			jsonSpecBytes, err := ioutil.ReadFile(SpecFile)
+			CheckError(err)
+			executor, err = core.ConvertJSONToExecutor(string(jsonSpecBytes))
+			CheckError(err)
+		} else {
+			if TargetExecutorName == "" {
+				CheckError(errors.New("ExecutorName must be specified if omitting spec file"))
+			}
+			if TargetExecutorType == "" {
+				CheckError(errors.New("ExecutorType must be specified if omitting spec file"))
+			}
+			executor = &core.Executor{}
+		}
+
+		if TargetExecutorName != "" {
+			executor.Name = TargetExecutorName
+		}
+
+		if TargetExecutorType != "" {
+			executor.Type = TargetExecutorType
+		}
+
+		executor.SetID(ExecutorID)
+		executor.SetColonyName(ColonyName)
+
+		if ColonyPrvKey == "" {
+			CheckError(errors.New("ERROR:" + ColonyPrvKey))
+		}
+
+		addedExecutor, err := client.AddExecutor(executor, ColonyPrvKey)
+		CheckError(err)
+
+		if Approve {
+			log.WithFields(log.Fields{"ExecutorName": executor.Name}).Info("Approving Executor")
+			err = client.ApproveExecutor(ColonyName, executor.Name, ColonyPrvKey)
+			CheckError(err)
+		}
+
+		log.WithFields(log.Fields{
+			"ExecutorName": executor.Name,
+			"ExecutorType": executor.Type,
+			"ExecutorID":   addedExecutor.ID,
+			"PrvKeyPath":   PrvKeyPath,
+			"IDPath":       IDPath,
 			"ColonyName":   ColonyName}).
 			Info("Executor added")
 	},
