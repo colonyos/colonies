@@ -1,23 +1,13 @@
 package crdt
 
 import (
-	"crypto/rand"
 	"encoding/json"
-	"fmt"
-	"math/big"
 	"reflect"
 	"testing"
 
+	"github.com/colonyos/colonies/pkg/core"
 	"github.com/stretchr/testify/assert"
 )
-
-func randomClientID() string {
-	n, err := rand.Int(rand.Reader, big.NewInt(10000))
-	if err != nil {
-		panic("Failed to generate random client ID: " + err.Error())
-	}
-	return fmt.Sprintf("%d", n.Int64())
-}
 
 func compareJSON(t *testing.T, expectedJSON, exportedJSON []byte) {
 	var expected, actual interface{}
@@ -29,7 +19,7 @@ func compareJSON(t *testing.T, expectedJSON, exportedJSON []byte) {
 }
 
 func TestImportGraph(t *testing.T) {
-	clientID := ClientID(randomClientID())
+	clientID := ClientID(core.GenerateRandomID())
 
 	originalJSON := []byte(`{
 		"uid": "user_1",
@@ -65,7 +55,7 @@ func TestImportGraph(t *testing.T) {
 }
 
 func TestGraphAddToObject(t *testing.T) {
-	clientID := randomClientID()
+	clientID := ClientID(core.GenerateRandomID())
 
 	// Initial JSON with missing "C"
 	initialJSON := []byte(`{
@@ -111,7 +101,7 @@ func TestGraphAddToObject(t *testing.T) {
 }
 
 func TestGraphAddToArray(t *testing.T) {
-	clientID := randomClientID()
+	clientID := ClientID(core.GenerateRandomID())
 
 	// Initial JSON with missing "C"
 	initialJSON := []byte(`[
@@ -156,7 +146,7 @@ func TestGraphAddToArray(t *testing.T) {
 }
 
 func TestGraphStringArrayLitteral(t *testing.T) {
-	clientID := randomClientID()
+	clientID := ClientID(core.GenerateRandomID())
 
 	initialJSON := []byte(`["A", "B", "D"]`)
 
@@ -170,7 +160,7 @@ func TestGraphStringArrayLitteral(t *testing.T) {
 	_, err := g.ImportJSON(initialJSON, "", "", -1, false, ClientID(clientID))
 	assert.Nil(t, err, "AddNodeRecursively should not return an error")
 
-	nodeIDC := generateRandomNodeID()
+	nodeIDC := generateRandomNodeID(string("C"))
 	nodeC := g.GetOrCreateNode(nodeIDC, false)
 	nodeC.Litteral = true
 	nodeC.LitteralValue = "C"
@@ -194,7 +184,7 @@ func TestGraphStringArrayLitteral(t *testing.T) {
 }
 
 func TestGraphIntArrayLitteral(t *testing.T) {
-	clientID := randomClientID()
+	clientID := ClientID(core.GenerateRandomID())
 
 	initialJSON := []byte(`[1, 2, 4]`)
 
@@ -208,7 +198,7 @@ func TestGraphIntArrayLitteral(t *testing.T) {
 	_, err := g.ImportJSON(initialJSON, "", "", -1, false, ClientID(clientID))
 	assert.Nil(t, err, "AddNodeRecursively should not return an error")
 
-	nodeIDC := generateRandomNodeID()
+	nodeIDC := generateRandomNodeID(string("C"))
 	nodeC := g.GetOrCreateNode(nodeIDC, false)
 	nodeC.Litteral = true
 	nodeC.LitteralValue = 3
@@ -236,7 +226,7 @@ func TestGraphIntArrayLitteral(t *testing.T) {
 }
 
 func TestExportImportRaw(t *testing.T) {
-	clientID := randomClientID()
+	clientID := ClientID(core.GenerateRandomID())
 
 	initialJSON := []byte(`{
 		"A": "1",
@@ -267,4 +257,39 @@ func TestExportImportRaw(t *testing.T) {
 	compareJSON(t, json, json2)
 	assert.True(t, g.Equal(g2), "Graphs should be equal after import/export")
 
+}
+
+// The prupose of this test is to check that the graph ID is correctly set
+func TestGraphID(t *testing.T) {
+	clientID := ClientID(core.GenerateRandomID())
+
+	initialJSON := []byte(`["A", "B", "B"]`)
+
+	// We will create graph that looks like this:
+	// Root
+	// ├── A
+	// ├── B
+	// └── B <- Duplicate
+
+	g := NewGraph()
+	_, err := g.ImportJSON(initialJSON, "", "", -1, false, ClientID(clientID))
+	assert.Nil(t, err, "AddNodeRecursively should not return an error")
+
+	exportedJSON, err := g.ExportToJSON()
+	assert.Nil(t, err, "ExportToJSON should not return an error")
+	t.Logf("Exported Graph JSON:\n%s", string(exportedJSON))
+
+	// Correct expected JSON
+	expectedJSON := []byte(`[
+		"A",
+		"B",
+		"B"
+	]`)
+
+	compareJSON(t, expectedJSON, exportedJSON)
+
+	// Print raw JSON
+	rawJSON, err := g.ExportRawToJSON()
+	assert.Nil(t, err, "ExportToRaw should not return an error")
+	t.Logf("Exported Graph Raw JSON:\n%s", string(rawJSON))
 }

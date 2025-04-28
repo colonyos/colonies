@@ -57,3 +57,50 @@ func clocksEqual(a, b VectorClock) bool {
 	}
 	return true
 }
+
+func lowestClientIDAFirst(a, b VectorClock) bool {
+	minA := findLowestClientID(a)
+	minB := findLowestClientID(b)
+
+	return minA < minB
+}
+
+func findLowestClientID(clock VectorClock) ClientID {
+	var minID ClientID
+	for id := range clock {
+		if minID == "" || id < minID {
+			minID = id
+		}
+	}
+	return minID
+}
+
+func resolveConflict(a, b VectorClock, append bool) VectorClock {
+	cmp := compareClocks(a, b)
+
+	switch {
+	case cmp == 1:
+		return copyClock(a)
+	case cmp == -1:
+		return copyClock(b)
+	default:
+		if append {
+			merged := make(VectorClock)
+			for k, v := range a {
+				merged[k] = v
+			}
+			for k, v := range b {
+				if mv, ok := merged[k]; !ok || v > mv {
+					merged[k] = v
+				}
+			}
+			return merged
+		} else {
+			if lowestClientIDAFirst(a, b) {
+				return copyClock(a)
+			} else {
+				return copyClock(b)
+			}
+		}
+	}
+}

@@ -1,13 +1,12 @@
 package crdt
 
 import (
-	"crypto/rand"
-	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"sort"
 
+	"github.com/colonyos/colonies/pkg/core"
 	"github.com/iancoleman/orderedmap"
 )
 
@@ -76,12 +75,10 @@ func NewGraph() *Graph {
 	return g
 }
 
-func generateRandomNodeID() NodeID {
-	b := make([]byte, 8)
-	if _, err := rand.Read(b); err != nil {
-		panic("Failed to generate random node ID")
-	}
-	return NodeID(hex.EncodeToString(b))
+func generateRandomNodeID(label string) NodeID {
+	id := core.GenerateRandomID()
+	id = label + "-" + id
+	return NodeID(id)
 }
 
 func (n *Node) SetField(key string, value interface{}, clientID ClientID, version int) {
@@ -157,13 +154,10 @@ func (g *Graph) ImportJSON(rawJSON []byte, parentID NodeID, edgeLabel string, id
 	case map[string]interface{}:
 		var id NodeID
 		if idVal, ok := v["id"]; ok {
-			id = NodeID(fmt.Sprintf("%v", idVal))
+			idStr := fmt.Sprintf("%v", idVal)
+			id = generateRandomNodeID(idStr)
 		} else {
-			if parent.ID == "" {
-				id = NodeID("")
-			} else {
-				id = generateRandomNodeID()
-			}
+			id = generateRandomNodeID(string(parent.ID))
 		}
 		node := g.GetOrCreateNode(id, isArray)
 
@@ -210,7 +204,8 @@ func (g *Graph) ImportJSON(rawJSON []byte, parentID NodeID, edgeLabel string, id
 		if parent.ID == "" {
 			return "", errors.New("parent.ID is empty")
 		}
-		id := generateRandomNodeID()
+		strID := fmt.Sprintf("%v", v)
+		id := generateRandomNodeID(strID)
 		node := g.GetOrCreateNode(id, parent.IsArray)
 		node.Litteral = true
 		node.LitteralValue = v
@@ -326,6 +321,7 @@ func (g *Graph) ExportRaw() (map[string]interface{}, error) {
 				"label":    edge.Label,
 				"position": edge.Position,
 				"to":       string(edge.To),
+				"from":     string(edge.From),
 			})
 		}
 
@@ -333,8 +329,8 @@ func (g *Graph) ExportRaw() (map[string]interface{}, error) {
 	}
 
 	return map[string]interface{}{
-		"root":  string(g.Root.ID), // 🌟 Important
-		"nodes": nodes,             // 🌟 Important
+		"root":  string(g.Root.ID),
+		"nodes": nodes,
 	}, nil
 }
 
@@ -423,6 +419,9 @@ func (g *Graph) ImportRaw(data map[string]interface{}) error {
 				edge := &Edge{}
 				if toStr, ok := edgeMap["to"].(string); ok {
 					edge.To = NodeID(toStr)
+				}
+				if fromStr, ok := edgeMap["from"].(string); ok {
+					edge.From = NodeID(fromStr)
 				}
 				if labelStr, ok := edgeMap["label"].(string); ok {
 					edge.Label = labelStr
