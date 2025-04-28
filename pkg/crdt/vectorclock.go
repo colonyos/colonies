@@ -75,14 +75,14 @@ func findLowestClientID(clock VectorClock) ClientID {
 	return minID
 }
 
-func resolveConflict(a, b VectorClock, append bool) VectorClock {
+func resolveConflict(a, b VectorClock, ownerA, ownerB ClientID, append bool) (VectorClock, ClientID) {
 	cmp := compareClocks(a, b)
 
 	switch {
 	case cmp == 1:
-		return copyClock(a)
+		return copyClock(a), ownerA
 	case cmp == -1:
-		return copyClock(b)
+		return copyClock(b), ownerB
 	default:
 		if append {
 			merged := make(VectorClock)
@@ -94,12 +94,13 @@ func resolveConflict(a, b VectorClock, append bool) VectorClock {
 					merged[k] = v
 				}
 			}
-			return merged
+			return merged, "" // merged case, no clear owner winner
 		} else {
-			if lowestClientIDAFirst(a, b) {
-				return copyClock(a)
+			// Tie-breaker: lowest owner ID wins
+			if ownerA < ownerB {
+				return copyClock(a), ownerA
 			} else {
-				return copyClock(b)
+				return copyClock(b), ownerB
 			}
 		}
 	}

@@ -170,6 +170,8 @@ func TestResolveConflict(t *testing.T) {
 		name   string
 		a      VectorClock
 		b      VectorClock
+		ownerA ClientID
+		ownerB ClientID
 		append bool
 		want   VectorClock
 	}{
@@ -177,6 +179,8 @@ func TestResolveConflict(t *testing.T) {
 			name:   "a wins (newer)",
 			a:      VectorClock{"c1": 3},
 			b:      VectorClock{"c1": 2},
+			ownerA: "c1",
+			ownerB: "c1",
 			append: false,
 			want:   VectorClock{"c1": 3},
 		},
@@ -184,6 +188,8 @@ func TestResolveConflict(t *testing.T) {
 			name:   "b wins (newer)",
 			a:      VectorClock{"c1": 2},
 			b:      VectorClock{"c1": 3},
+			ownerA: "c1",
+			ownerB: "c1",
 			append: false,
 			want:   VectorClock{"c1": 3},
 		},
@@ -191,6 +197,8 @@ func TestResolveConflict(t *testing.T) {
 			name:   "append merge",
 			a:      VectorClock{"c1": 2},
 			b:      VectorClock{"c2": 3},
+			ownerA: "c1",
+			ownerB: "c2",
 			append: true,
 			want:   VectorClock{"c1": 2, "c2": 3},
 		},
@@ -198,6 +206,8 @@ func TestResolveConflict(t *testing.T) {
 			name:   "tie, lowest client id wins (a lower)",
 			a:      VectorClock{"0001": 2},
 			b:      VectorClock{"0002": 2},
+			ownerA: "0001",
+			ownerB: "0002",
 			append: false,
 			want:   VectorClock{"0001": 2},
 		},
@@ -205,6 +215,8 @@ func TestResolveConflict(t *testing.T) {
 			name:   "tie, lowest client id wins (b lower)",
 			a:      VectorClock{"0003": 2},
 			b:      VectorClock{"0002": 2},
+			ownerA: "0003",
+			ownerB: "0002",
 			append: false,
 			want:   VectorClock{"0002": 2},
 		},
@@ -212,9 +224,9 @@ func TestResolveConflict(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := resolveConflict(tt.a, tt.b, tt.append)
-			if !clocksEqual(got, tt.want) {
-				t.Errorf("resolveConflict() = %v, want %v", got, tt.want)
+			gotClock, _ := resolveConflict(tt.a, tt.b, tt.ownerA, tt.ownerB, tt.append)
+			if !clocksEqual(gotClock, tt.want) {
+				t.Errorf("resolveConflict() = %v, want %v", gotClock, tt.want)
 			}
 		})
 	}
