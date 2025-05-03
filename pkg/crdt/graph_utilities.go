@@ -10,11 +10,12 @@ import (
 )
 
 func (g *Graph) ImportJSON(rawJSON []byte, parentID NodeID, edgeLabel string, idx int, isArray bool, clientID ClientID) (NodeID, error) {
+	version := 1
 	var parent *Node
 	if parentID == "" {
 		parent = g.Root
 	} else {
-		parent = g.GetOrCreateNode(parentID, isArray)
+		parent = g.getOrCreateNode(parentID, isArray, clientID, version)
 	}
 
 	var data interface{}
@@ -31,14 +32,14 @@ func (g *Graph) ImportJSON(rawJSON []byte, parentID NodeID, edgeLabel string, id
 		} else {
 			id = generateRandomNodeID(string(parent.ID))
 		}
-		node := g.GetOrCreateNode(id, isArray)
+		node := g.getOrCreateNode(id, isArray, clientID, version)
 
 		if parent.ID == "" {
 			return "", errors.New("parent.ID is empty")
 		}
 
 		if isArray {
-			g.InsertEdge(parent.ID, id, edgeLabel, idx, clientID)
+			g.insertEdge(parent.ID, id, edgeLabel, idx, clientID)
 		} else {
 			g.AddEdge(parent.ID, id, edgeLabel, clientID)
 		}
@@ -78,11 +79,11 @@ func (g *Graph) ImportJSON(rawJSON []byte, parentID NodeID, edgeLabel string, id
 		}
 		strID := fmt.Sprintf("%v", v)
 		id := generateRandomNodeID(strID)
-		node := g.GetOrCreateNode(id, isArray)
+		node := g.getOrCreateNode(id, isArray, clientID, version)
 		node.Litteral = true
 		node.LitteralValue = v
 		if isArray {
-			g.InsertEdge(parent.ID, id, edgeLabel, idx, clientID)
+			g.insertEdge(parent.ID, id, edgeLabel, idx, clientID)
 		} else {
 			g.AddEdge(parent.ID, id, edgeLabel, clientID)
 		}
@@ -107,13 +108,13 @@ func (g *Graph) Print() {
 
 func (g *Graph) exportNodeOrdered(id NodeID, visited map[NodeID]bool) (interface{}, error) {
 	if visited[id] {
-		return nil, fmt.Errorf("cycle detected at node %s", id)
+		return nil, fmt.Errorf("Cycle detected at node %s", id)
 	}
 	visited[id] = true
 
 	node, ok := g.Nodes[id]
 	if !ok {
-		return nil, fmt.Errorf("node %s not found", id)
+		return nil, fmt.Errorf("Node %s not found", id)
 	}
 
 	if node.Litteral {
@@ -165,7 +166,7 @@ func (g *Graph) exportNodeOrdered(id NodeID, visited map[NodeID]bool) (interface
 	return obj, nil
 }
 
-func (g *Graph) ExportRaw() (map[string]interface{}, error) {
+func (g *Graph) exportRaw() (map[string]interface{}, error) {
 	nodes := make(map[string]interface{})
 
 	for id, node := range g.Nodes {
@@ -206,8 +207,8 @@ func (g *Graph) ExportRaw() (map[string]interface{}, error) {
 	}, nil
 }
 
-func (g *Graph) ExportRawToJSON() ([]byte, error) {
-	exported, err := g.ExportRaw()
+func (g *Graph) Save() ([]byte, error) {
+	exported, err := g.exportRaw()
 	if err != nil {
 		return nil, err
 	}
@@ -215,7 +216,7 @@ func (g *Graph) ExportRawToJSON() ([]byte, error) {
 	return json.MarshalIndent(exported, "", "  ")
 }
 
-func (g *Graph) ImportRaw(data map[string]interface{}) error {
+func (g *Graph) importRaw(data map[string]interface{}) error {
 	nodesData, ok := data["nodes"].(map[string]interface{})
 	if !ok {
 		return errors.New("invalid raw data: nodes missing")
@@ -230,7 +231,7 @@ func (g *Graph) ImportRaw(data map[string]interface{}) error {
 		}
 
 		id := NodeID(idStr)
-		node := NewNodeFromID(id, false)
+		node := newNodeFromID(id, false)
 
 		if isArray, ok := nodeMap["isArray"].(bool); ok {
 			node.IsArray = isArray
@@ -320,12 +321,12 @@ func (g *Graph) ImportRaw(data map[string]interface{}) error {
 	return nil
 }
 
-func (g *Graph) ImportRawJSON(data []byte) error {
+func (g *Graph) Load(data []byte) error {
 	var rawData map[string]interface{}
 	if err := json.Unmarshal(data, &rawData); err != nil {
 		return err
 	}
-	return g.ImportRaw(rawData)
+	return g.importRaw(rawData)
 }
 
 func (g *Graph) ExportToJSON() ([]byte, error) {
@@ -358,7 +359,6 @@ func (g *Graph) Export() (interface{}, error) {
 	}
 
 	if isArray {
-		fmt.Println("All edges have empty labels, treating as array")
 		// Root points to an array
 		sort.Slice(g.Root.Edges, func(i, j int) bool {
 			return g.Root.Edges[i].Position < g.Root.Edges[j].Position
@@ -384,6 +384,18 @@ func (g *Graph) Export() (interface{}, error) {
 		}
 		return result, nil
 	}
+}
+
+func (g *Graph) Clone() (*Graph, error) {
+	safeCopy, err := g.Save()
+	if err != nil {
+		return nil, err
+	}
+	newGraph := NewGraph()
+	if err := newGraph.Load(safeCopy); err != nil {
+		return nil, err
+	}
+	return newGraph, nil
 }
 
 func (g *Graph) Equal(other *Graph) bool {

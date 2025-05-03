@@ -2,7 +2,6 @@ package crdt
 
 import (
 	"fmt"
-	"log"
 	"sort"
 	"testing"
 
@@ -282,7 +281,7 @@ func TestGraphTidy(t *testing.T) {
 
 	// Create an orphan node manually (NOT attached)
 	orphanID := generateRandomNodeID("orphan")
-	orphan := g.GetOrCreateNode(orphanID, false)
+	orphan := g.getOrCreateNode(orphanID, false, clientID, 1)
 
 	// Connect parent → child
 	err := g.AddEdge(parent.ID, child.ID, "link", clientID)
@@ -367,13 +366,13 @@ func TestGraphMergeLitterals(t *testing.T) {
 	g1.Merge(g2)
 
 	// Export and log results
-	jsonOutput, err := g1.ExportToJSON()
-	assert.Nil(t, err, "ExportToJSON should not return an error")
-	log.Printf("JSON after sync: %s", string(jsonOutput))
+	//jsonOutput, err := g1.ExportToJSON()
+	//assert.Nil(t, err, "ExportToJSON should not return an error")
+	//log.Printf("JSON after sync: %s", string(jsonOutput))
 
-	rawJSON, err := g1.ExportRawToJSON()
-	assert.Nil(t, err, "ExportRawToJSON should not return an error")
-	log.Printf("Raw JSON after sync: %s", string(rawJSON))
+	//rawJSON, err := g1.Save()
+	//assert.Nil(t, err, "ExportRawToJSON should not return an error")
+	//log.Printf("Raw JSON after sync: %s", string(rawJSON))
 
 	// Check that all nodes exist
 	_, ok1 := g1.GetNode(node1.ID)
@@ -399,61 +398,76 @@ func TestGraphMergeLitterals(t *testing.T) {
 
 func TestGraphMergeLists(t *testing.T) {
 	clientA := ClientID("clientA")
-	//clientB := ClientID("clientB")
+	clientB := ClientID("clientB")
 
 	initialJSON := []byte(`[1, 2, 4]`)
 
 	// We will create graph that looks like this:
 	// Root
-	// ├── A
-	// ├── B
-	// └── D
+	// ├── 1
+	// ├── 2
+	// └── 4
 
 	g1 := NewGraph()
 	_, err := g1.ImportJSON(initialJSON, "", "", -1, false, ClientID(clientA))
 	assert.Nil(t, err, "AddNodeRecursively should not return an error")
 
-	rawJSON, err := g1.ExportRawToJSON()
+	rawJSON, err := g1.Save()
 	assert.Nil(t, err, "ExportToRaw should not return an error")
-	t.Logf("Exported Graph Raw JSON:\n%s", string(rawJSON))
 
 	g2 := NewGraph()
-	g2.ImportRawJSON(rawJSON)
+	g2.Load(rawJSON)
 	assert.Nil(t, err, "ImportRawJSON should not return an error")
 
-	//g1.Merge(g2)
-
-	json, err := g1.ExportToJSON()
-	assert.Nil(t, err, "ExportToJSON should not return an error")
-	t.Logf("Exported Graph JSON after merge:\n%s", string(json))
-
-	rawJSON, err = g1.ExportRawToJSON()
+	rawJSONBefore, err := g1.Save()
 	assert.Nil(t, err, "ExportToRaw should not return an error")
-	t.Logf("Exported Graph Raw JSON after merge:\n%s", string(rawJSON))
 
-	// nodeIDC := generateRandomNodeID(string("C"))
-	// nodeC := g.GetOrCreateNode(nodeIDC, false)
-	// nodeC.Litteral = true
-	// nodeC.LitteralValue = 3
-	//
-	// err = g.InsertEdge(g.Root.ID, nodeIDC, "", 10, clientID) // Invalid position
-	// assert.NotNil(t, err, "InsertEdge should return an error for invalid position")
-	// err = g.InsertEdge(g.Root.ID, nodeIDC, "", -1, clientID) // Invalid position
-	// assert.NotNil(t, err, "InsertEdge should return an error for invalid position")
-	// err = g.InsertEdge(g.Root.ID, nodeIDC, "", 2, clientID) // Position 2
-	// assert.Nil(t, err, "InsertEdge should not return an error")
-	//
-	// exportedJSON, err := g.ExportToJSON()
-	// assert.Nil(t, err, "ExportToJSON should not return an error")
-	// t.Logf("Exported Graph JSON:\n%s", string(exportedJSON))
-	//
-	// // Correct expected JSON
-	// expectedJSON := []byte(`[
-	// 	1,
-	// 	2,
-	// 	3,
-	// 	4
-	// ]`)
-	//
-	// compareJSON(t, expectedJSON, exportedJSON)
+	g1.Merge(g2)
+
+	rawJSONAfter, err := g1.Save()
+	assert.Nil(t, err, "ExportToRaw should not return an error")
+
+	// Graph should be identical before and after merge
+	assert.Equal(t, rawJSONBefore, rawJSONAfter, "Graph should be identical before and after merge")
+	assert.True(t, g1.Equal(g2), "Graphs should be equal after merge")
+
+	// Let's do some modifications on the graph independently
+	// Original    :    [1, 2, 4]
+	// G1(A):        [0, 1, 2, 4]
+	// G2(B):           [1, 2, 3, 4]
+	// G1 + G2:      [0, 1, 2, 3, 4] <- 4 is added to G1, owner of root is B
+	// G2 + G1:      [0, 1, 2, 3, 4] <- 0 is added to G2, owner of root is A
+
+	// 1. Create a new node in g1
+	node0 := g1.CreateNode("0", true, clientA)
+	node0.Litteral = true
+	node0.LitteralValue = 0
+
+	// Find the node with id "0"
+	sibling, err := g1.GetSiblingNode(g1.Root.ID, 0)
+	assert.Nil(t, err, "GetSiblingNode should not return an error")
+	err = g1.InsertEdge(g1.Root.ID, node0.ID, sibling.ID, "", true, clientA)
+	assert.Nil(t, err, "InsertEdge should not return an error")
+	// G1: [0, 1, 2, 4]  <-- 0 added
+
+	// 2. Create a new node in g2
+	node3 := g2.CreateNode("3", true, clientA)
+	node3.Litteral = true
+	node3.LitteralValue = 3
+	sibling, err = g2.GetSiblingNode(g2.Root.ID, 1)
+	assert.Nil(t, err, "GetSiblingNode should not return an error")
+	err = g2.InsertEdge(g2.Root.ID, node3.ID, sibling.ID, "", false, clientB)
+	assert.Nil(t, err, "InsertEdge should not return an error")
+	// G2: [1, 2, 3, 4]   <-- 3 added
+
+	g1Clone, err := g1.Clone()
+	assert.Nil(t, err, "Clone should not return an error")
+
+	// 3. Merge the graphs
+	g1.Merge(g2)
+	g2.Merge(g1Clone)
+
+	// G2 == G1
+	assert.True(t, g1.Equal(g2), "Graphs should be equal after merge")
+	assert.True(t, g1.Root.Owner == g2.Root.Owner, "Owners should be equal after merge")
 }

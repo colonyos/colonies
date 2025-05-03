@@ -50,7 +50,7 @@ func TestImportGraph(t *testing.T) {
 
 	exportedJSON, err := g.ExportToJSON()
 	assert.Nil(t, err, "ExportToJSON should not return an error")
-	t.Logf("Exported Graph JSON:\n%s", string(exportedJSON))
+	//t.Logf("Exported Graph JSON:\n%s", string(exportedJSON))
 	compareJSON(t, originalJSON, exportedJSON)
 }
 
@@ -87,7 +87,7 @@ func TestGraphAddToObject(t *testing.T) {
 
 	exportedJSON, err := g.ExportToJSON()
 	assert.Nil(t, err, "ExportToJSON should not return an error")
-	t.Logf("Exported Graph JSON:\n%s", string(exportedJSON))
+	//t.Logf("Exported Graph JSON:\n%s", string(exportedJSON))
 
 	// Define the expected correct JSON
 	expectedJSON := []byte(`{
@@ -124,15 +124,15 @@ func TestGraphAddToArray(t *testing.T) {
 
 	// Create missing C
 	nodeIDC := NodeID("C")
-	nodeC := g.GetOrCreateNode(nodeIDC, true)
+	nodeC := g.getOrCreateNode(nodeIDC, true, clientID, 1)
 	nodeC.SetField("id", "C", ClientID(clientID), 1)
 	nodeC.SetField("value", "3", ClientID(clientID), 1)
 
-	g.InsertEdge(g.Root.ID, NodeID("C"), "", 2, clientID) // Insert C
+	g.insertEdge(g.Root.ID, NodeID("C"), "", 2, clientID) // Insert C
 
 	exportedJSON, err := g.ExportToJSON()
 	assert.Nil(t, err, "ExportToJSON should not return an error")
-	t.Logf("Exported Graph JSON:\n%s", string(exportedJSON))
+	//t.Logf("Exported Graph JSON:\n%s", string(exportedJSON))
 
 	// Correct expected JSON
 	expectedJSON := []byte(`[
@@ -161,16 +161,16 @@ func TestGraphStringArrayLitteral(t *testing.T) {
 	assert.Nil(t, err, "AddNodeRecursively should not return an error")
 
 	nodeIDC := generateRandomNodeID(string("C"))
-	nodeC := g.GetOrCreateNode(nodeIDC, false)
+	nodeC := g.getOrCreateNode(nodeIDC, false, clientID, 1)
 	nodeC.Litteral = true
 	nodeC.LitteralValue = "C"
 
-	err = g.InsertEdge(g.Root.ID, nodeIDC, "", 2, clientID) // Position 2
+	err = g.insertEdge(g.Root.ID, nodeIDC, "", 2, clientID) // Position 2
 	assert.Nil(t, err, "InsertEdge should not return an error")
 
 	exportedJSON, err := g.ExportToJSON()
 	assert.Nil(t, err, "ExportToJSON should not return an error")
-	t.Logf("Exported Graph JSON:\n%s", string(exportedJSON))
+	//t.Logf("Exported Graph JSON:\n%s", string(exportedJSON))
 
 	// Correct expected JSON
 	expectedJSON := []byte(`[
@@ -198,25 +198,25 @@ func TestGraphIntArrayLitteral(t *testing.T) {
 	_, err := g.ImportJSON(initialJSON, "", "", -1, false, ClientID(clientID))
 	assert.Nil(t, err, "AddNodeRecursively should not return an error")
 
-	rawJSON, err := g.ExportRawToJSON()
-	assert.Nil(t, err, "ExportToRaw should not return an error")
-	t.Logf("Exported Graph Raw JSON:\n%s", string(rawJSON))
+	//rawJSON, err := g.Save()
+	//assert.Nil(t, err, "ExportToRaw should not return an error")
+	//t.Logf("Exported Graph Raw JSON:\n%s", string(rawJSON))
 
 	nodeIDC := generateRandomNodeID(string("C"))
-	nodeC := g.GetOrCreateNode(nodeIDC, false)
+	nodeC := g.getOrCreateNode(nodeIDC, false, clientID, 1)
 	nodeC.Litteral = true
 	nodeC.LitteralValue = 3
 
-	err = g.InsertEdge(g.Root.ID, nodeIDC, "", 10, clientID) // Invalid position
+	err = g.insertEdge(g.Root.ID, nodeIDC, "", 10, clientID) // Invalid position
 	assert.NotNil(t, err, "InsertEdge should return an error for invalid position")
-	err = g.InsertEdge(g.Root.ID, nodeIDC, "", -1, clientID) // Invalid position
+	err = g.insertEdge(g.Root.ID, nodeIDC, "", -1, clientID) // Invalid position
 	assert.NotNil(t, err, "InsertEdge should return an error for invalid position")
-	err = g.InsertEdge(g.Root.ID, nodeIDC, "", 2, clientID) // Position 2
+	err = g.insertEdge(g.Root.ID, nodeIDC, "", 2, clientID) // Position 2
 	assert.Nil(t, err, "InsertEdge should not return an error")
 
 	exportedJSON, err := g.ExportToJSON()
 	assert.Nil(t, err, "ExportToJSON should not return an error")
-	t.Logf("Exported Graph JSON:\n%s", string(exportedJSON))
+	//t.Logf("Exported Graph JSON:\n%s", string(exportedJSON))
 
 	// Correct expected JSON
 	expectedJSON := []byte(`[
@@ -229,7 +229,7 @@ func TestGraphIntArrayLitteral(t *testing.T) {
 	compareJSON(t, expectedJSON, exportedJSON)
 }
 
-func TestExportImportRaw(t *testing.T) {
+func TestSaveAndLoad(t *testing.T) {
 	clientID := ClientID(core.GenerateRandomID())
 
 	initialJSON := []byte(`{
@@ -242,21 +242,21 @@ func TestExportImportRaw(t *testing.T) {
 	_, err := g.ImportJSON(initialJSON, "", "", -1, false, ClientID(clientID))
 	assert.Nil(t, err, "AddNodeRecursively should not return an error")
 
-	rawJSON, err := g.ExportRawToJSON()
+	rawJSON, err := g.Save()
 	assert.Nil(t, err, "ExportToRaw should not return an error")
-	t.Logf("Exported Graph Raw JSON:\n%s", string(rawJSON))
+	//t.Logf("Exported Graph Raw JSON:\n%s", string(rawJSON))
 
 	json, err := g.ExportToJSON()
 	assert.Nil(t, err, "ExportToJSON should not return an error")
-	t.Logf("Exported Graph JSON:\n%s", string(json))
+	//t.Logf("Exported Graph JSON:\n%s", string(json))
 
 	g2 := NewGraph()
-	err = g2.ImportRawJSON(rawJSON)
+	err = g2.Load(rawJSON)
 	assert.Nil(t, err, "ImportRawJSON should not return an error")
 
 	json2, err := g2.ExportToJSON()
 	assert.Nil(t, err, "ExportToJSON should not return an error")
-	t.Logf("Exported Graph JSON:\n%s", string(json2))
+	//t.Logf("Exported Graph JSON:\n%s", string(json2))
 
 	compareJSON(t, json, json2)
 	assert.True(t, g.Equal(g2), "Graphs should be equal after import/export")
@@ -281,7 +281,7 @@ func TestGraphID(t *testing.T) {
 
 	exportedJSON, err := g.ExportToJSON()
 	assert.Nil(t, err, "ExportToJSON should not return an error")
-	t.Logf("Exported Graph JSON:\n%s", string(exportedJSON))
+	//t.Logf("Exported Graph JSON:\n%s", string(exportedJSON))
 
 	// Correct expected JSON
 	expectedJSON := []byte(`[
@@ -293,7 +293,7 @@ func TestGraphID(t *testing.T) {
 	compareJSON(t, expectedJSON, exportedJSON)
 
 	// Print raw JSON
-	rawJSON, err := g.ExportRawToJSON()
-	assert.Nil(t, err, "ExportToRaw should not return an error")
-	t.Logf("Exported Graph Raw JSON:\n%s", string(rawJSON))
+	//rawJSON, err := g.Save()
+	//assert.Nil(t, err, "ExportToRaw should not return an error")
+	//t.Logf("Exported Graph Raw JSON:\n%s", string(rawJSON))
 }
