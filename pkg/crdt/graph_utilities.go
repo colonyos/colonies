@@ -78,7 +78,7 @@ func (g *Graph) ImportJSON(rawJSON []byte, parentID NodeID, edgeLabel string, id
 		}
 		strID := fmt.Sprintf("%v", v)
 		id := generateRandomNodeID(strID)
-		node := g.GetOrCreateNode(id, parent.IsArray)
+		node := g.GetOrCreateNode(id, isArray)
 		node.Litteral = true
 		node.LitteralValue = v
 		if isArray {
@@ -349,15 +349,16 @@ func (g *Graph) Export() (interface{}, error) {
 		return g.exportNodeOrdered(childID, visited)
 	}
 
-	allEdgesEmptyLabel := true
+	isArray := false
 	for _, e := range g.Root.Edges {
-		if e.Label != "" {
-			allEdgesEmptyLabel = false
+		if e.Position >= 0 {
+			isArray = true
 			break
 		}
 	}
 
-	if allEdgesEmptyLabel {
+	if isArray {
+		fmt.Println("All edges have empty labels, treating as array")
 		// Root points to an array
 		sort.Slice(g.Root.Edges, func(i, j int) bool {
 			return g.Root.Edges[i].Position < g.Root.Edges[j].Position
@@ -435,4 +436,50 @@ func (g *Graph) Equal(other *Graph) bool {
 	}
 
 	return true
+}
+
+func copyFields(original map[string]VersionedField) map[string]VersionedField {
+	newFields := make(map[string]VersionedField)
+	for k, v := range original {
+		newFields[k] = v
+	}
+	return newFields
+}
+
+func edgeExists(edges []*Edge, candidate *Edge) bool {
+	for _, e := range edges {
+		if e.From == candidate.From && e.To == candidate.To && e.Label == candidate.Label && e.Position == candidate.Position {
+			return true
+		}
+	}
+	return false
+}
+
+func mergeClocks(a, b VectorClock) VectorClock {
+	merged := make(VectorClock)
+	for k, v := range a {
+		merged[k] = v
+	}
+	for k, v := range b {
+		if mv, ok := merged[k]; !ok || v > mv {
+			merged[k] = v
+		}
+	}
+	return merged
+}
+
+func lowestClientID(a, b ClientID) ClientID {
+	if a < b {
+		return a
+	}
+	return b
+}
+
+func sortEdgesByNodeID(edges []*Edge) {
+	sort.SliceStable(edges, func(i, j int) bool {
+		return edges[i].To < edges[j].To
+	})
+	for i, edge := range edges {
+		edge.Position = i
+	}
 }

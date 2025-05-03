@@ -198,6 +198,10 @@ func TestGraphIntArrayLitteral(t *testing.T) {
 	_, err := g.ImportJSON(initialJSON, "", "", -1, false, ClientID(clientID))
 	assert.Nil(t, err, "AddNodeRecursively should not return an error")
 
+	rawJSON, err := g.ExportRawToJSON()
+	assert.Nil(t, err, "ExportToRaw should not return an error")
+	t.Logf("Exported Graph Raw JSON:\n%s", string(rawJSON))
+
 	nodeIDC := generateRandomNodeID(string("C"))
 	nodeC := g.GetOrCreateNode(nodeIDC, false)
 	nodeC.Litteral = true

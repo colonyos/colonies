@@ -47,11 +47,17 @@ func (g *Graph) CreateAttachedNode(name string, isArray bool, parentID NodeID, c
 }
 
 func NewNodeFromID(id NodeID, isArray bool) *Node {
-	return &Node{
-		ID:     id,
-		Fields: make(map[string]VersionedField),
-		Edges:  make([]*Edge, 0),
+	node := &Node{
+		ID:      id,
+		Fields:  make(map[string]VersionedField),
+		Edges:   make([]*Edge, 0),
+		IsArray: isArray,
 	}
+
+	node.Clock = make(VectorClock)
+	node.Owner = ClientID("")
+
+	return node
 }
 
 func (g *Graph) GetOrCreateNode(id NodeID, isArray bool) *Node {
@@ -224,7 +230,7 @@ func (g *Graph) InsertEdge(from, to NodeID, label string, position int, clientID
 	return g.insertEdgeWithVersion(from, to, label, position, clientID, newVersion)
 }
 
-func (g *Graph) removeEdgeWithVersion(from, to NodeID, label string, clientID ClientID, newVersion int) error {
+func (g *Graph) removeEdgeWithVersion(from, to NodeID, clientID ClientID, newVersion int) error {
 	node, ok := g.Nodes[from]
 	if !ok {
 		return fmt.Errorf("Cannot remove edge, node %s not found", from)
@@ -239,25 +245,36 @@ func (g *Graph) removeEdgeWithVersion(from, to NodeID, label string, clientID Cl
 
 	if clocksEqual(winningClock, newClock) {
 		// New clock wins -> allow edge removal
+		index := -1
 		newEdges := []*Edge{}
 		for _, edge := range node.Edges {
-			if !(edge.To == to && edge.Label == label) {
+			if !(edge.To == to) {
 				newEdges = append(newEdges, edge)
+			}
+			if edge.To == to {
+				index = edge.Position
 			}
 		}
 		node.Edges = newEdges
 		node.Clock = newClock
 		node.Owner = clientID
 
-		log.WithFields(log.Fields{"NodeID": from, "To": to, "Label": label, "Version": newVersion}).Debug("Edge removed")
+		for _, edge := range newEdges {
+			if edge.Position > index {
+				edge.Position--
+			}
+		}
+
+		log.WithFields(log.Fields{"NodeID": from, "To": to, "Version": newVersion}).Debug("Edge removed")
 	} else {
-		log.WithFields(log.Fields{"NodeID": from, "To": to, "Label": label, "Version": newVersion}).Debug("Edge remove ignored due to conflict")
+		log.WithFields(log.Fields{"NodeID": from, "To": to, "Version": newVersion}).Debug("Edge remove ignored due to conflict")
+		return fmt.Errorf("Cannot remove edge, conflict detected: %s", from)
 	}
 
 	return nil
 }
 
-func (g *Graph) RemoveEdge(from, to NodeID, label string, clientID ClientID) error {
+func (g *Graph) RemoveEdge(from, to NodeID, clientID ClientID) error {
 	node, ok := g.Nodes[from]
 	if !ok {
 		return fmt.Errorf("Cannot remove edge, node %s not found", from)
@@ -265,10 +282,10 @@ func (g *Graph) RemoveEdge(from, to NodeID, label string, clientID ClientID) err
 	latestVersion := node.Clock[clientID]
 	newVersion := latestVersion + 1
 
-	return g.removeEdgeWithVersion(from, to, label, clientID, newVersion)
+	return g.removeEdgeWithVersion(from, to, clientID, newVersion)
 }
 
-func (n *Node) SetLiteral(value interface{}, clientID ClientID, version int) {
+func (n *Node) SetLiteral(value interface{}, clientID ClientID, version int) error {
 	currentClock := n.Clock
 	newClock := make(VectorClock)
 	newClock[clientID] = version
@@ -283,7 +300,10 @@ func (n *Node) SetLiteral(value interface{}, clientID ClientID, version int) {
 		log.WithFields(log.Fields{"NodeID": n.ID, "LiteralValue": value}).Debug("Set literal value")
 	} else {
 		log.WithFields(log.Fields{"NodeID": n.ID, "AttemptedLiteralValue": value, "ExistingOwner": n.Owner, "WinningOwner": winningOwner}).Debug("Literal set ignored due to conflict")
+		return fmt.Errorf("Cannot set literal value, conflict detected: %s", n.ID)
 	}
+
+	return nil
 }
 
 // Tidy removes all nodes that are not referenced by any edges.
@@ -316,6 +336,90 @@ func (g *Graph) Tidy() {
 		if !referenced[id] {
 			delete(g.Nodes, id)
 			log.WithFields(log.Fields{"NodeID": id}).Debug("Purged unreferenced node")
+		}
+	}
+}
+
+// Note when merging two nodes with the same ID, the following rules apply:
+// n1 + n2 → [n1, n2]
+// [n1, n2] + [n2, n3] → [n1, n2, n3] (with deduplication and order preservation)
+func (g *Graph) Merge(g2 *Graph) {
+	log.SetLevel(log.DebugLevel)
+
+	for id, remote := range g2.Nodes {
+		log.WithField("NodeID", id).Debug("Merging node")
+
+		local, exists := g.Nodes[id]
+		if !exists {
+			log.WithField("NodeID", id).Debug("Node does not exist in local graph, cloning from remote")
+			cloned := NewNodeFromID(id, remote.IsArray)
+			cloned.Fields = make(map[string]VersionedField)
+			for k, v := range remote.Fields {
+				cloned.Fields[k] = v
+			}
+			cloned.Litteral = remote.Litteral
+			cloned.LitteralValue = remote.LitteralValue
+			cloned.Clock = copyClock(remote.Clock)
+			cloned.Owner = remote.Owner
+			g.Nodes[id] = cloned
+			continue
+		}
+
+		// Merge fields
+		for k, remoteField := range remote.Fields {
+			g.Nodes[id].SetField(k, remoteField.Value, remoteField.Owner, remoteField.Clock[remoteField.Owner])
+		}
+
+		// Merge literal
+		if remote.Litteral {
+			// Ignore error
+			err := local.SetLiteral(remote.LitteralValue, remote.Owner, remote.Clock[remote.Owner])
+			if err != nil {
+				log.WithField("NodeID", id).Debug("Failed to set literal value")
+			}
+		}
+
+		// Merge edges
+		for _, re := range remote.Edges {
+			exists := false
+			for _, le := range local.Edges {
+				if le.To == re.To {
+					exists = true
+					break
+				}
+			}
+			if !exists {
+				if _, exists := g.Nodes[re.To]; !exists {
+					if remoteNode, ok := g2.Nodes[re.To]; ok {
+						cloned := NewNodeFromID(re.To, true) // Always become an array when merging nodes
+						cloned.Fields = make(map[string]VersionedField)
+						for k, v := range remoteNode.Fields {
+							cloned.Fields[k] = v
+						}
+						cloned.Litteral = remoteNode.Litteral
+						cloned.LitteralValue = remoteNode.LitteralValue
+						cloned.Clock = copyClock(remoteNode.Clock)
+						cloned.Owner = remoteNode.Owner
+						g.Nodes[re.To] = cloned
+					}
+				}
+				if re.Position >= 0 {
+					err := g.InsertEdge(re.From, re.To, re.Label, re.Position, remote.Owner)
+					if err != nil {
+						log.WithField("NodeID", re.From).Debug("Failed to insert edge")
+					}
+				} else {
+					err := g.InsertEdge(re.From, re.To, re.Label, 0, remote.Owner)
+					if err != nil {
+						log.WithField("NodeID", re.From).Debug("Failed to insert edge")
+					} else {
+						// Sort edges deterministically after insert
+						if parent, ok := g.Nodes[re.From]; ok {
+							sortEdgesByNodeID(parent.Edges)
+						}
+					}
+				}
+			}
 		}
 	}
 }

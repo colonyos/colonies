@@ -2,6 +2,8 @@ package crdt
 
 import (
 	"fmt"
+	"log"
+	"sort"
 	"testing"
 
 	"github.com/colonyos/colonies/pkg/core"
@@ -199,7 +201,7 @@ func TestGraphRemoveEdgeWithVersion(t *testing.T) {
 	assert.Equal(t, 1, len(parent.Edges), "Expected 1 edge before removal")
 
 	// Remove the edge with higher version (should succeed)
-	err = g.removeEdgeWithVersion(parent.ID, child.ID, "link", clientID, 2)
+	err = g.removeEdgeWithVersion(parent.ID, child.ID, clientID, 2)
 	assert.Nil(t, err, "removeEdgeWithVersion should not return error")
 	assert.Equal(t, 0, len(parent.Edges), "Expected 0 edges after removal")
 
@@ -207,18 +209,66 @@ func TestGraphRemoveEdgeWithVersion(t *testing.T) {
 	_ = g.addEdgeWithVersion(parent.ID, child.ID, "link", clientID, 3)
 
 	// Try to remove with lower version (should be ignored)
-	err = g.removeEdgeWithVersion(parent.ID, child.ID, "link", clientID, 2)
-	assert.Nil(t, err, "removeEdgeWithVersion with lower version should not error")
+	err = g.removeEdgeWithVersion(parent.ID, child.ID, clientID, 2)
+	assert.NotNil(t, err, "removeEdgeWithVersion with lower version should error")
 	assert.Equal(t, 1, len(parent.Edges), "Edge should still exist after invalid removal")
 
 	// Tie-break with other client (lower client ID wins)
-	err = g.removeEdgeWithVersion(parent.ID, child.ID, "link", otherClientID, 3)
+	err = g.removeEdgeWithVersion(parent.ID, child.ID, otherClientID, 3)
 	assert.Nil(t, err, "removeEdgeWithVersion tie-break should not error")
 
 	if otherClientID < clientID {
 		assert.Equal(t, 0, len(parent.Edges), "Tie-break: other client removed the edge")
 	} else {
 		assert.Equal(t, 1, len(parent.Edges), "Tie-break: original client kept the edge")
+	}
+}
+
+func TestGraphRemoveIndexInArray(t *testing.T) {
+	clientID := ClientID(core.GenerateRandomID())
+
+	initialJSON := []byte(`["A", "B", "C"]`)
+
+	// We will create graph that looks like this:
+	// Root
+	// ├── A
+	// ├── B
+	// └── D
+
+	g := NewGraph()
+	_, err := g.ImportJSON(initialJSON, "", "", -1, false, ClientID(clientID))
+	assert.Nil(t, err, "AddNodeRecursively should not return an error")
+
+	// Find the node with ID "B"
+	edges := g.Root.Edges
+	for _, edge := range edges {
+		node := g.Nodes[edge.To]
+		if node.LitteralValue.(string) == "B" {
+			// Remove the edge with ID "B"
+			err = g.removeEdgeWithVersion(g.Root.ID, node.ID, clientID, 3)
+			assert.Nil(t, err, "removeEdgeWithVersion should not return an error")
+			break
+		}
+	}
+
+	exportedJSON, err := g.ExportToJSON()
+	assert.Nil(t, err, "ExportToJSON should not return an error")
+
+	// Correct expected JSON
+	expectedJSON := []byte(`[
+		"A",
+		"C"
+	]`)
+
+	compareJSON(t, expectedJSON, exportedJSON)
+
+	for _, edge := range g.Root.Edges {
+		node := g.Nodes[edge.To]
+		if node.LitteralValue.(string) == "A" {
+			assert.Equal(t, 0, edge.Position, "Edge position should be 0")
+		} else if node.LitteralValue.(string) == "C" {
+			assert.Equal(t, 1, edge.Position, "Edge position should be 1")
+		}
 	}
 }
 
@@ -289,4 +339,121 @@ func TestNodeSetLiteral(t *testing.T) {
 
 	assert.Equal(t, expectedWinner, node.Owner, fmt.Sprintf("Expected owner %s to win tie-breaker, got %s", expectedWinner, node.Owner))
 	assert.Equal(t, expectedValue, node.LitteralValue, fmt.Sprintf("Expected literal value %s after conflict resolution, got %s", expectedValue, node.LitteralValue))
+}
+
+// TODO: it should not be possible to setField and use litteral at the same time
+
+// Test case:
+// 1. Create two graphs with shared nodes
+// 2. Set different literal values on the same node in both graphs
+// 3. Merge the graphs
+// 4. The merged graph should be an array of literals since n1 + n2 → [n1, n2] sorted by node ID
+func TestGraphMergeLitterals(t *testing.T) {
+	g1 := NewGraph()
+	g2 := NewGraph()
+
+	clientA := ClientID("clientA")
+	clientB := ClientID("clientB")
+
+	// Create shared nodes in both graphs
+	node1 := g1.CreateAttachedNode("sharedA", false, g1.Root.ID, clientA)
+	node2 := g2.CreateAttachedNode("sharedB", false, g2.Root.ID, clientB)
+	err := node2.SetLiteral("B-literal", clientB, 1)
+	assert.Nil(t, err, "SetLiteral should not return an error")
+	err = node1.SetLiteral("A-literal", clientA, 1)
+	assert.Nil(t, err, "SetLiteral should not return an error")
+
+	// Perform merge
+	g1.Merge(g2)
+
+	// Export and log results
+	jsonOutput, err := g1.ExportToJSON()
+	assert.Nil(t, err, "ExportToJSON should not return an error")
+	log.Printf("JSON after sync: %s", string(jsonOutput))
+
+	rawJSON, err := g1.ExportRawToJSON()
+	assert.Nil(t, err, "ExportRawToJSON should not return an error")
+	log.Printf("Raw JSON after sync: %s", string(rawJSON))
+
+	// Check that all nodes exist
+	_, ok1 := g1.GetNode(node1.ID)
+	_, ok2 := g1.GetNode(node2.ID)
+	assert.True(t, ok1, "Node1 should exist after merge")
+	assert.True(t, ok2, "Node2 should exist after merge")
+
+	// Check if literal value is merged into array and sorted by NodeID
+	root := g1.Root
+	assert.GreaterOrEqual(t, len(root.Edges), 2, "Expected at least two edges from root")
+
+	ids := make([]string, 0)
+	for _, edge := range root.Edges {
+		ids = append(ids, string(edge.To))
+	}
+
+	sorted := make([]string, len(ids))
+	copy(sorted, ids)
+	sort.Strings(sorted)
+
+	assert.Equal(t, sorted, ids, "Edges from root should be sorted by NodeID after merge")
+}
+
+func TestGraphMergeLists(t *testing.T) {
+	clientA := ClientID("clientA")
+	//clientB := ClientID("clientB")
+
+	initialJSON := []byte(`[1, 2, 4]`)
+
+	// We will create graph that looks like this:
+	// Root
+	// ├── A
+	// ├── B
+	// └── D
+
+	g1 := NewGraph()
+	_, err := g1.ImportJSON(initialJSON, "", "", -1, false, ClientID(clientA))
+	assert.Nil(t, err, "AddNodeRecursively should not return an error")
+
+	rawJSON, err := g1.ExportRawToJSON()
+	assert.Nil(t, err, "ExportToRaw should not return an error")
+	t.Logf("Exported Graph Raw JSON:\n%s", string(rawJSON))
+
+	g2 := NewGraph()
+	g2.ImportRawJSON(rawJSON)
+	assert.Nil(t, err, "ImportRawJSON should not return an error")
+
+	//g1.Merge(g2)
+
+	json, err := g1.ExportToJSON()
+	assert.Nil(t, err, "ExportToJSON should not return an error")
+	t.Logf("Exported Graph JSON after merge:\n%s", string(json))
+
+	rawJSON, err = g1.ExportRawToJSON()
+	assert.Nil(t, err, "ExportToRaw should not return an error")
+	t.Logf("Exported Graph Raw JSON after merge:\n%s", string(rawJSON))
+
+	// nodeIDC := generateRandomNodeID(string("C"))
+	// nodeC := g.GetOrCreateNode(nodeIDC, false)
+	// nodeC.Litteral = true
+	// nodeC.LitteralValue = 3
+	//
+	// err = g.InsertEdge(g.Root.ID, nodeIDC, "", 10, clientID) // Invalid position
+	// assert.NotNil(t, err, "InsertEdge should return an error for invalid position")
+	// err = g.InsertEdge(g.Root.ID, nodeIDC, "", -1, clientID) // Invalid position
+	// assert.NotNil(t, err, "InsertEdge should return an error for invalid position")
+	// err = g.InsertEdge(g.Root.ID, nodeIDC, "", 2, clientID) // Position 2
+	// assert.Nil(t, err, "InsertEdge should not return an error")
+	//
+	// exportedJSON, err := g.ExportToJSON()
+	// assert.Nil(t, err, "ExportToJSON should not return an error")
+	// t.Logf("Exported Graph JSON:\n%s", string(exportedJSON))
+	//
+	// // Correct expected JSON
+	// expectedJSON := []byte(`[
+	// 	1,
+	// 	2,
+	// 	3,
+	// 	4
+	// ]`)
+	//
+	// compareJSON(t, expectedJSON, exportedJSON)
 }
