@@ -91,26 +91,55 @@ func generatePositionBetweenLSEQ(left, right Position) Position {
 			r = Base
 		}
 
-		gap := r - l - 1
-		if gap > 0 {
-			newDigit := l + 1 + rand.Intn(gap)
-			pos = append(pos, newDigit)
-			return pos
+		if r-l > 1 {
+			// Space exists, choose randomly in the gap
+			newDigit := l + 1 + rand.Intn(r-l-1)
+			return append(pos, newDigit)
 		}
 
-		// No gap, append l and move to deeper level
+		// No room, copy l and go deeper
 		pos = append(pos, l)
 		level++
 
-		// Occasionally stop depth increase to avoid long positions
-		if rand.Intn(Bound) == 0 {
-			// Fallback if still no gap: add a middle digit arbitrarily
-			pos = append(pos, Base/2)
-			return pos
-		}
+		// No need to randomly break — just continue until a valid gap is found
 	}
 }
 
+//	func generatePositionBetweenLSEQ(left, right Position) Position {
+//		pos := Position{}
+//		level := 0
+//
+//		for {
+//			var l, r int
+//			if level < len(left) {
+//				l = left[level]
+//			}
+//			if level < len(right) {
+//				r = right[level]
+//			} else {
+//				r = Base
+//			}
+//
+//			gap := r - l - 1
+//			if gap > 0 {
+//				newDigit := l + 1 + rand.Intn(gap)
+//				pos = append(pos, newDigit)
+//				return pos
+//			}
+//
+//			// No gap, append l and move to deeper level
+//			pos = append(pos, l)
+//			level++
+//
+//			// Occasionally stop depth increase to avoid long positions
+//			if rand.Intn(Bound) == 0 {
+//				// Fallback if still no gap: add a middle digit arbitrarily
+//				pos = append(pos, Base/2)
+//				return pos
+//			}
+//		}
+//	}
+//
 //	func generatePositionBetweenLSEQ(left, right Position) Position {
 //		pos := Position{}
 //		level := 0

@@ -1,0 +1,2 @@
+1. It should not be possible to setField and use litteral at the same time.
+

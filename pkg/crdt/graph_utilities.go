@@ -8,6 +8,7 @@ import (
 	"sort"
 
 	"github.com/iancoleman/orderedmap"
+	log "github.com/sirupsen/logrus"
 )
 
 func (g *Graph) ImportJSON(rawJSON []byte, parentID NodeID, edgeLabel string, idx int, isArray bool, clientID ClientID) (NodeID, error) {
@@ -93,7 +94,7 @@ func (g *Graph) ImportJSON(rawJSON []byte, parentID NodeID, edgeLabel string, id
 		}
 		return parent.ID, nil
 	default:
-		return "", fmt.Errorf("unsupported JSON root type: %T", v)
+		return "", fmt.Errorf("Unsupported JSON root type: %T", v)
 	}
 }
 
@@ -414,21 +415,15 @@ func (g *Graph) Clone() (*Graph, error) {
 }
 
 func (g *Graph) Equal(other *Graph) bool {
-	// Compare node sets
 	if len(g.Nodes) != len(other.Nodes) {
+		log.WithFields(log.Fields{"Nodes1": len(g.Nodes), "Nodes2": len(other.Nodes)}).Warning("Node counts not equal")
 		return false
 	}
 
 	for id, node := range g.Nodes {
 		otherNode, ok := other.Nodes[id]
-		if !ok || !nodesEqual(node, otherNode) {
-			return false
-		}
-	}
-
-	// Check for extra nodes in 'other'
-	for id := range other.Nodes {
-		if _, ok := g.Nodes[id]; !ok {
+		if !ok || !nodesSemanticallyEqual(node, otherNode) {
+			log.WithFields(log.Fields{"NodeID": id, "Node1": node, "Node2": otherNode}).Warning("Nodes not equal")
 			return false
 		}
 	}
@@ -436,37 +431,131 @@ func (g *Graph) Equal(other *Graph) bool {
 	return true
 }
 
-func nodesEqual(n1, n2 *Node) bool {
-	if n1.Owner != n2.Owner || !clocksEqual(n1.Clock, n2.Clock) {
-		return false
-	}
+func nodesSemanticallyEqual(n1, n2 *Node) bool {
 	if n1.IsArray != n2.IsArray || n1.Litteral != n2.Litteral {
-		return false
-	}
-	if !reflect.DeepEqual(n1.LitteralValue, n2.LitteralValue) {
+		log.WithFields(log.Fields{"IsArray1": n1.IsArray, "IsArray2": n2.IsArray, "Litteral1": n1.Litteral, "Litteral2": n2.Litteral}).Warning("Node types not equal")
 		return false
 	}
 
+	switch v1 := n1.LitteralValue.(type) {
+	case float64:
+		switch v2 := n2.LitteralValue.(type) {
+		case float64:
+			if v1 != v2 {
+				log.WithFields(log.Fields{"LitteralValue1": v1, "LitteralValue2": v2}).Warning("Litteral values not equal (float64)")
+				return false
+			}
+		case int:
+			if v1 != float64(v2) {
+				log.WithFields(log.Fields{"LitteralValue1": v1, "LitteralValue2": v2}).Warning("Litteral values not equal (float64 vs int)")
+				return false
+			}
+		default:
+			log.Warning("Type mismatch: float64 vs unsupported type")
+			return false
+		}
+
+	case int:
+		switch v2 := n2.LitteralValue.(type) {
+		case int:
+			if v1 != v2 {
+				log.WithFields(log.Fields{"LitteralValue1": v1, "LitteralValue2": v2}).Warning("Litteral values not equal (int)")
+				return false
+			}
+		case float64:
+			if float64(v1) != v2 {
+				log.WithFields(log.Fields{"LitteralValue1": v1, "LitteralValue2": v2}).Warning("Litteral values not equal (int vs float64)")
+				return false
+			}
+		default:
+			log.Warning("Type mismatch: int vs unsupported type")
+			return false
+		}
+
+	case string:
+		if v2, ok := n2.LitteralValue.(string); ok {
+			if v1 != v2 {
+				log.WithFields(log.Fields{"LitteralValue1": v1, "LitteralValue2": v2}).Warning("Litteral values not equal (string)")
+				return false
+			}
+		} else {
+			log.Warning("Type mismatch: string vs non-string")
+			return false
+		}
+
+	case bool:
+		if v2, ok := n2.LitteralValue.(bool); ok {
+			if v1 != v2 {
+				log.WithFields(log.Fields{"LitteralValue1": v1, "LitteralValue2": v2}).Warning("Litteral values not equal (bool)")
+				return false
+			}
+		} else {
+			log.Warning("Type mismatch: bool vs non-bool")
+			return false
+		}
+
+	case nil:
+		if n2.LitteralValue != nil {
+			log.Warning("Litteral values not equal: nil vs non-nil")
+			return false
+		}
+
+	default:
+		// Final fallback: reflect (last resort for complex or unknown types)
+		if !reflect.DeepEqual(n1.LitteralValue, n2.LitteralValue) {
+			log.WithFields(log.Fields{
+				"LitteralValue1": n1.LitteralValue,
+				"LitteralValue2": n2.LitteralValue,
+			}).Warning("Litteral values not equal (fallback reflect)")
+			return false
+		}
+	}
+
 	if len(n1.Fields) != len(n2.Fields) {
+		log.WithFields(log.Fields{"Fields1": len(n1.Fields), "Fields2": len(n2.Fields)}).Warning("Field counts not equal")
 		return false
 	}
 	for key, f1 := range n1.Fields {
 		f2, ok := n2.Fields[key]
-		if !ok || !reflect.DeepEqual(f1.Value, f2.Value) || f1.Owner != f2.Owner || !clocksEqual(f1.Clock, f2.Clock) {
+		if !ok || !reflect.DeepEqual(f1.Value, f2.Value) {
+			log.WithFields(log.Fields{"Key": key, "Value1": f1.Value, "Value2": f2.Value}).Warning("Field values not equal")
 			return false
 		}
 	}
 
 	if len(n1.Edges) != len(n2.Edges) {
+		log.WithFields(log.Fields{"Edges1": len(n1.Edges), "Edges2": len(n2.Edges)}).Warning("Edge counts not equal")
 		return false
 	}
-	for i := range n1.Edges {
-		e1 := n1.Edges[i]
-		e2 := n2.Edges[i]
-		if e1.From != e2.From || e1.To != e2.To || e1.Label != e2.Label {
-			return false
+
+	// NOTE: Each graph will be different due to random nature of the LSEQ algorithm
+	if n1.IsArray {
+		// Compare edges by LSEQ order
+		sorted1 := make([]*Edge, len(n1.Edges))
+		sorted2 := make([]*Edge, len(n2.Edges))
+		copy(sorted1, n1.Edges)
+		copy(sorted2, n2.Edges)
+		sortEdgesByLSEQ(sorted1)
+		sortEdgesByLSEQ(sorted2)
+
+		for i := range sorted1 {
+			if sorted1[i].To != sorted2[i].To || sorted1[i].Label != sorted2[i].Label {
+				log.WithFields(log.Fields{"Edge1": sorted1[i], "Edge2": sorted2[i]}).Warning("Edges not equal")
+				return false
+			}
 		}
-		if !reflect.DeepEqual(e1.LSEQPosition, e2.LSEQPosition) {
+	} else {
+		// Compare edges as unordered field entries
+		labelMap1 := map[string]NodeID{}
+		labelMap2 := map[string]NodeID{}
+		for _, e := range n1.Edges {
+			labelMap1[e.Label] = e.To
+		}
+		for _, e := range n2.Edges {
+			labelMap2[e.Label] = e.To
+		}
+		if !reflect.DeepEqual(labelMap1, labelMap2) {
+			log.WithFields(log.Fields{"LabelMap1": labelMap1, "LabelMap2": labelMap2}).Warning("Edge labels not equal")
 			return false
 		}
 	}
@@ -474,6 +563,89 @@ func nodesEqual(n1, n2 *Node) bool {
 	return true
 }
 
+func sortEdgesByToStable(edges []*Edge) []*Edge {
+	copied := make([]*Edge, len(edges))
+	copy(copied, edges)
+	sort.SliceStable(copied, func(i, j int) bool {
+		// Deterministic sort using LSEQPosition
+		p1 := copied[i].LSEQPosition
+		p2 := copied[j].LSEQPosition
+		for k := 0; k < len(p1) && k < len(p2); k++ {
+			if p1[k] != p2[k] {
+				return p1[k] < p2[k]
+			}
+		}
+		if len(p1) != len(p2) {
+			return len(p1) < len(p2)
+		}
+		// Fallback to .To string as tie-breaker
+		return copied[i].To < copied[j].To
+	})
+	return copied
+}
+
+//
+// func (g *Graph) Equal(other *Graph) bool {
+// 	// Compare node sets
+// 	if len(g.Nodes) != len(other.Nodes) {
+// 		return false
+// 	}
+//
+// 	for id, node := range g.Nodes {
+// 		otherNode, ok := other.Nodes[id]
+// 		if !ok || !nodesEqual(node, otherNode) {
+// 			return false
+// 		}
+// 	}
+//
+// 	// Check for extra nodes in 'other'
+// 	for id := range other.Nodes {
+// 		if _, ok := g.Nodes[id]; !ok {
+// 			return false
+// 		}
+// 	}
+//
+// 	return true
+// }
+//
+// func nodesEqual(n1, n2 *Node) bool {
+// 	if n1.Owner != n2.Owner || !clocksEqual(n1.Clock, n2.Clock) {
+// 		return false
+// 	}
+// 	if n1.IsArray != n2.IsArray || n1.Litteral != n2.Litteral {
+// 		return false
+// 	}
+// 	if !reflect.DeepEqual(n1.LitteralValue, n2.LitteralValue) {
+// 		return false
+// 	}
+//
+// 	if len(n1.Fields) != len(n2.Fields) {
+// 		return false
+// 	}
+// 	for key, f1 := range n1.Fields {
+// 		f2, ok := n2.Fields[key]
+// 		if !ok || !reflect.DeepEqual(f1.Value, f2.Value) || f1.Owner != f2.Owner || !clocksEqual(f1.Clock, f2.Clock) {
+// 			return false
+// 		}
+// 	}
+//
+// 	if len(n1.Edges) != len(n2.Edges) {
+// 		return false
+// 	}
+// 	for i := range n1.Edges {
+// 		e1 := n1.Edges[i]
+// 		e2 := n2.Edges[i]
+// 		if e1.From != e2.From || e1.To != e2.To || e1.Label != e2.Label {
+// 			return false
+// 		}
+// 		if !reflect.DeepEqual(e1.LSEQPosition, e2.LSEQPosition) {
+// 			return false
+// 		}
+// 	}
+//
+// 	return true
+// }
+//
 // func (g *Graph) Equal(other *Graph) bool {
 // 	if len(g.Nodes) != len(other.Nodes) {
 // 		return false
