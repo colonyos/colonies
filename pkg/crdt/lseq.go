@@ -173,12 +173,13 @@ func generatePositionBetweenLSEQ(left, right Position) Position {
 //
 //		return pos
 //	}
+
 func sortEdgesByLSEQ(edges []*Edge) {
 	sort.SliceStable(edges, func(i, j int) bool {
 		p1 := edges[i].LSEQPosition
 		p2 := edges[j].LSEQPosition
 
-		// Lexicographic comparison of Position slices
+		// Lexicographic comparison
 		for k := 0; k < len(p1) && k < len(p2); k++ {
 			if p1[k] < p2[k] {
 				return true
@@ -188,11 +189,12 @@ func sortEdgesByLSEQ(edges []*Edge) {
 			}
 		}
 
+		// If one is prefix of the other, shorter one is smaller
 		if len(p1) != len(p2) {
 			return len(p1) < len(p2)
 		}
 
-		// Tie-breaker: use NodeID to guarantee deterministic ordering
+		// Tie-breaker: use .To ID to guarantee deterministic sort
 		return edges[i].To < edges[j].To
 	})
 }

@@ -41,9 +41,7 @@ func (g *Graph) ImportJSON(rawJSON []byte, parentID NodeID, edgeLabel string, id
 		}
 
 		if isArray {
-			// ) InsertEdge(from, to NodeID, label string, leftOf NodeID, clientID ClientID)
 			g.AppendEdge(parent.ID, id, edgeLabel, clientID)
-			//	g.insertEdge(parent.ID, id, edgeLabel, idx, clientID)
 		} else {
 			g.AddEdge(parent.ID, id, edgeLabel, clientID)
 		}
@@ -197,7 +195,12 @@ func (g *Graph) exportRaw() (map[string]interface{}, error) {
 			}
 		}
 
-		for _, edge := range node.Edges {
+		// Sort edges by LSEQ before exporting
+		sortedEdges := make([]*Edge, len(node.Edges))
+		copy(sortedEdges, node.Edges)
+		sortEdgesByLSEQ(sortedEdges)
+
+		for _, edge := range sortedEdges {
 			nodeData["edges"] = append(nodeData["edges"].([]map[string]interface{}), map[string]interface{}{
 				"label":        edge.Label,
 				"lseqposition": edge.LSEQPosition,
@@ -214,6 +217,47 @@ func (g *Graph) exportRaw() (map[string]interface{}, error) {
 		"nodes": nodes,
 	}, nil
 }
+
+// func (g *Graph) exportRaw() (map[string]interface{}, error) {
+// 	nodes := make(map[string]interface{})
+//
+// 	for id, node := range g.Nodes {
+// 		nodeData := map[string]interface{}{
+// 			"id":            string(node.ID),
+// 			"isArray":       node.IsArray,
+// 			"litteral":      node.Litteral,
+// 			"litteralValue": node.LitteralValue,
+// 			"owner":         string(node.Owner),
+// 			"clock":         node.Clock,
+// 			"fields":        map[string]interface{}{},
+// 			"edges":         []map[string]interface{}{},
+// 		}
+//
+// 		for key, field := range node.Fields {
+// 			nodeData["fields"].(map[string]interface{})[key] = map[string]interface{}{
+// 				"value": field.Value,
+// 				"clock": field.Clock,
+// 				"owner": string(field.Owner),
+// 			}
+// 		}
+//
+// 		for _, edge := range node.Edges {
+// 			nodeData["edges"] = append(nodeData["edges"].([]map[string]interface{}), map[string]interface{}{
+// 				"label":        edge.Label,
+// 				"lseqposition": edge.LSEQPosition,
+// 				"to":           string(edge.To),
+// 				"from":         string(edge.From),
+// 			})
+// 		}
+//
+// 		nodes[string(id)] = nodeData
+// 	}
+//
+// 	return map[string]interface{}{
+// 		"root":  string(g.Root.ID),
+// 		"nodes": nodes,
+// 	}, nil
+// }
 
 func (g *Graph) Save() ([]byte, error) {
 	exported, err := g.exportRaw()
@@ -375,10 +419,9 @@ func (g *Graph) Export() (interface{}, error) {
 	}
 
 	if isArray {
-		// Root points to an array
-		sort.Slice(g.Root.Edges, func(i, j int) bool {
-			return g.Root.Edges[i].Position < g.Root.Edges[j].Position
-		})
+		// Root points to an array — sort by LSEQ
+		sortEdgesByLSEQ(g.Root.Edges)
+
 		var arrayItems []interface{}
 		for _, e := range g.Root.Edges {
 			child, err := g.exportNodeOrdered(e.To, visited)
@@ -389,7 +432,7 @@ func (g *Graph) Export() (interface{}, error) {
 		}
 		return arrayItems, nil
 	} else {
-		// Root points to a map
+		// Root points to a map — order by label (in edge order)
 		result := orderedmap.New()
 		for _, e := range g.Root.Edges {
 			child, err := g.exportNodeOrdered(e.To, visited)
@@ -578,125 +621,10 @@ func sortEdgesByToStable(edges []*Edge) []*Edge {
 		if len(p1) != len(p2) {
 			return len(p1) < len(p2)
 		}
-		// Fallback to .To string as tie-breaker
 		return copied[i].To < copied[j].To
 	})
 	return copied
 }
-
-//
-// func (g *Graph) Equal(other *Graph) bool {
-// 	// Compare node sets
-// 	if len(g.Nodes) != len(other.Nodes) {
-// 		return false
-// 	}
-//
-// 	for id, node := range g.Nodes {
-// 		otherNode, ok := other.Nodes[id]
-// 		if !ok || !nodesEqual(node, otherNode) {
-// 			return false
-// 		}
-// 	}
-//
-// 	// Check for extra nodes in 'other'
-// 	for id := range other.Nodes {
-// 		if _, ok := g.Nodes[id]; !ok {
-// 			return false
-// 		}
-// 	}
-//
-// 	return true
-// }
-//
-// func nodesEqual(n1, n2 *Node) bool {
-// 	if n1.Owner != n2.Owner || !clocksEqual(n1.Clock, n2.Clock) {
-// 		return false
-// 	}
-// 	if n1.IsArray != n2.IsArray || n1.Litteral != n2.Litteral {
-// 		return false
-// 	}
-// 	if !reflect.DeepEqual(n1.LitteralValue, n2.LitteralValue) {
-// 		return false
-// 	}
-//
-// 	if len(n1.Fields) != len(n2.Fields) {
-// 		return false
-// 	}
-// 	for key, f1 := range n1.Fields {
-// 		f2, ok := n2.Fields[key]
-// 		if !ok || !reflect.DeepEqual(f1.Value, f2.Value) || f1.Owner != f2.Owner || !clocksEqual(f1.Clock, f2.Clock) {
-// 			return false
-// 		}
-// 	}
-//
-// 	if len(n1.Edges) != len(n2.Edges) {
-// 		return false
-// 	}
-// 	for i := range n1.Edges {
-// 		e1 := n1.Edges[i]
-// 		e2 := n2.Edges[i]
-// 		if e1.From != e2.From || e1.To != e2.To || e1.Label != e2.Label {
-// 			return false
-// 		}
-// 		if !reflect.DeepEqual(e1.LSEQPosition, e2.LSEQPosition) {
-// 			return false
-// 		}
-// 	}
-//
-// 	return true
-// }
-//
-// func (g *Graph) Equal(other *Graph) bool {
-// 	if len(g.Nodes) != len(other.Nodes) {
-// 		return false
-// 	}
-//
-// 	for id, node := range g.Nodes {
-// 		otherNode, ok := other.Nodes[id]
-// 		if !ok {
-// 			return false
-// 		}
-//
-// 		if node.Owner != otherNode.Owner || !clocksEqual(node.Clock, otherNode.Clock) {
-// 			return false
-// 		}
-//
-// 		if node.IsArray != otherNode.IsArray || node.Litteral != otherNode.Litteral {
-// 			return false
-// 		}
-//
-// 		if fmt.Sprintf("%v", node.LitteralValue) != fmt.Sprintf("%v", otherNode.LitteralValue) {
-// 			return false
-// 		}
-//
-// 		if len(node.Fields) != len(otherNode.Fields) {
-// 			return false
-// 		}
-//
-// 		for key, field := range node.Fields {
-// 			otherField, ok := otherNode.Fields[key]
-// 			if !ok {
-// 				return false
-// 			}
-// 			if field.Value != otherField.Value || field.Owner != otherField.Owner || !clocksEqual(field.Clock, otherField.Clock) {
-// 				return false
-// 			}
-// 		}
-//
-// 		if len(node.Edges) != len(otherNode.Edges) {
-// 			return false
-// 		}
-//
-// 		for i, edge := range node.Edges {
-// 			otherEdge := otherNode.Edges[i]
-// 			if edge.From != otherEdge.From || edge.To != otherEdge.To || edge.Label != otherEdge.Label || edge.Position != otherEdge.Position {
-// 				return false
-// 			}
-// 		}
-// 	}
-//
-// 	return true
-// }
 
 func copyFields(original map[string]VersionedField) map[string]VersionedField {
 	newFields := make(map[string]VersionedField)
@@ -742,4 +670,20 @@ func sortEdgesByNodeID(edges []*Edge) {
 	for i, edge := range edges {
 		edge.Position = i
 	}
+}
+
+func compareLSEQ(a, b []int) int {
+	for i := 0; i < len(a) && i < len(b); i++ {
+		if a[i] < b[i] {
+			return -1
+		} else if a[i] > b[i] {
+			return 1
+		}
+	}
+	if len(a) < len(b) {
+		return -1
+	} else if len(a) > len(b) {
+		return 1
+	}
+	return 0
 }

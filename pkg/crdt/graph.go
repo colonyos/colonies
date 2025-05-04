@@ -116,9 +116,17 @@ func (n *Node) SetField(key string, value interface{}, clientID ClientID, versio
 			Clock: newClock,
 			Owner: clientID,
 		}
-		log.WithFields(log.Fields{"NodeID": n.ID, "Key": key, "Value": value}).Debug("Set field")
+		log.WithFields(log.Fields{
+			"NodeID": n.ID,
+			"Key":    key,
+			"Value":  value}).Debug("Set field")
 	} else {
-		log.WithFields(log.Fields{"NodeID": n.ID, "Key": key, "CurrentField": currentField, "NewClock": newClock, "WinningClock": winningClock}).Debug("Conflict detected")
+		log.WithFields(log.Fields{
+			"NodeID":       n.ID,
+			"Key":          key,
+			"CurrentField": currentField,
+			"NewClock":     newClock,
+			"WinningClock": winningClock}).Debug("Conflict detected")
 	}
 }
 
@@ -205,6 +213,26 @@ func (g *Graph) AppendEdge(from, to NodeID, label string, clientID ClientID) err
 	return g.insertEdgeWithVersion(from, to, label, lastSibling, false, clientID, newVersion)
 }
 
+func (g *Graph) PrependEdge(from, to NodeID, label string, clientID ClientID) error {
+	node, ok := g.Nodes[from]
+	if !ok {
+		return fmt.Errorf("PrependEdge: parent node %s not found", from)
+	}
+
+	var firstSibling NodeID
+	if len(node.Edges) > 0 {
+		// Use the first edge as anchor for left-side insert
+		first := node.Edges[0]
+		firstSibling = first.To
+	} else {
+		// No siblings yet, insert at the beginning
+		firstSibling = ""
+	}
+
+	newVersion := node.Clock[clientID] + 1
+	return g.insertEdgeWithVersion(from, to, label, firstSibling, true /* left */, clientID, newVersion)
+}
+
 func (g *Graph) InsertEdgeLeft(from, to NodeID, label string, sibling NodeID, clientID ClientID) error {
 	node, ok := g.Nodes[from]
 	if !ok {
@@ -238,7 +266,10 @@ func (g *Graph) insertEdgeWithVersion(from, to NodeID, label string, sibling Nod
 	newClock[clientID] = newVersion
 	winningClock, winningOwner := resolveConflict(node.Clock, newClock, node.Owner, clientID, false)
 	if !clocksEqual(winningClock, newClock) || winningOwner != clientID {
-		log.WithFields(log.Fields{"NodeID": from, "To": to, "Version": newVersion}).Error("insertWithVersion ignored due to conflict")
+		log.WithFields(log.Fields{
+			"NodeID":  from,
+			"To":      to,
+			"Version": newVersion}).Error("insertWithVersion ignored due to conflict")
 		return nil
 	}
 
@@ -310,197 +341,6 @@ func (g *Graph) insertEdgeWithVersion(from, to NodeID, label string, sibling Nod
 
 	return nil
 }
-
-// func (g *Graph) insertEdgeWithVersion(from, to NodeID, label string, leftOf NodeID, clientID ClientID, newVersion int) error {
-// 	node, ok := g.Nodes[from]
-// 	if !ok {
-// 		return fmt.Errorf("InsertEdge: parent node %s not found", from)
-// 	}
-//
-// 	// Prepare clock
-// 	newClock := copyClock(node.Clock)
-// 	newClock[clientID] = newVersion
-// 	winningClock, winningOwner := resolveConflict(node.Clock, newClock, node.Owner, clientID, false)
-// 	if !clocksEqual(winningClock, newClock) || winningOwner != clientID {
-// 		log.WithFields(log.Fields{"NodeID": from, "To": to, "Version": newVersion}).Debug("InsertEdgeLSEQ ignored due to conflict")
-// 		return nil
-// 	}
-//
-// 	// Find left and right LSEQ positions
-// 	var leftPos, rightPos Position
-//
-// 	if leftOf == "" || len(node.Edges) == 0 {
-// 		// No left sibling, insert at the beginning
-// 		leftPos = []int{}
-// 		rightPos = []int{Base}
-// 	} else {
-// 		// Find LSEQ positions surrounding the insertion point
-// 		found := false
-// 		for i, e := range node.Edges {
-// 			if e.To == leftOf {
-// 				leftPos = e.LSEQPosition
-// 				if i+1 < len(node.Edges) {
-// 					rightPos = node.Edges[i+1].LSEQPosition
-// 				} else {
-// 					rightPos = []int{Base}
-// 				}
-// 				found = true
-// 				break
-// 			}
-// 		}
-// 		if !found {
-// 			// Fallback to inserting at the beginning if sibling not found
-// 			leftPos = []int{}
-// 			rightPos = []int{Base}
-// 		}
-// 	}
-//
-// 	// Generate LSEQ position
-// 	newPos := generatePositionBetweenLSEQ(leftPos, rightPos)
-//
-// 	// Insert edge
-// 	edge := &Edge{
-// 		From:         from,
-// 		To:           to,
-// 		Label:        label,
-// 		LSEQPosition: newPos,
-// 		Position:     -1, // Deprecated
-// 	}
-// 	node.Edges = append(node.Edges, edge)
-// 	sortEdgesByLSEQ(node.Edges)
-//
-// 	node.Clock = newClock
-// 	node.Owner = clientID
-//
-// 	log.WithFields(log.Fields{"NodeID": from, "To": to, "LSEQPosition": newPos, "Version": newVersion}).Debug("InsertEdge succeeded")
-// 	return nil
-// }
-
-//
-// func (g *Graph) insertEdgeWithVersion(from, to NodeID, label string, position int, clientID ClientID, newVersion int) error {
-// 	node, ok := g.Nodes[from]
-// 	if !ok {
-// 		return errors.New("Cannot insert edge, node not found: " + string(from))
-// 	}
-//
-// 	if position < 0 {
-// 		return errors.New("Cannot insert edge, position must be non-negative")
-// 	} else if position > len(node.Edges) {
-// 		return errors.New("Cannot insert edge, position out of bounds")
-// 	}
-//
-// 	// Prepare the new clock
-// 	newClock := copyClock(node.Clock)
-// 	newClock[clientID] = newVersion
-//
-// 	// Resolve clock conflict
-// 	winningClock, winningOwner := resolveConflict(node.Clock, newClock, node.Owner, clientID, false)
-//
-// 	if clocksEqual(winningClock, newClock) && winningOwner == clientID {
-// 		// New clock wins -> insert edge
-// 		for _, edge := range node.Edges {
-// 			if edge.Position >= position {
-// 				edge.Position++
-// 			}
-// 		}
-//
-// 		newEdge := &Edge{
-// 			From:     from,
-// 			To:       to,
-// 			Label:    label,
-// 			Position: position,
-// 		}
-// 		node.Edges = append(node.Edges, newEdge)
-//
-// 		node.Clock = newClock
-// 		node.Owner = winningOwner
-//
-// 		log.WithFields(log.Fields{
-// 			"NodeID":   from,
-// 			"To":       to,
-// 			"Label":    label,
-// 			"Position": position,
-// 			"Version":  newVersion,
-// 		}).Debug("Edge inserted")
-// 	} else {
-// 		log.WithFields(log.Fields{
-// 			"NodeID":   from,
-// 			"To":       to,
-// 			"Label":    label,
-// 			"Position": position,
-// 			"Version":  newVersion,
-// 		}).Debug("Edge insert ignored due to conflict")
-// 	}
-//
-// 	return nil
-// }
-//
-// func (g *Graph) insertEdge(from, to NodeID, label string, position int, clientID ClientID) error {
-// 	node, ok := g.Nodes[from]
-// 	if !ok {
-// 		return errors.New("Cannot insert edge, node not found: " + string(from))
-// 	}
-// 	latestVersion := node.Clock[clientID]
-// 	newVersion := latestVersion + 1
-//
-// 	return g.insertEdgeWithVersion(from, to, label, position, clientID, newVersion)
-// }
-//
-// // We cannot use the position in the array directly as it may change when merging
-// // nodes. Instead, we need to find the sibling edge and insert before or after it.
-// func (g *Graph) InsertEdge(from, to, sibling NodeID, label string, left bool, clientID ClientID) error {
-// 	node, ok := g.Nodes[from]
-// 	if !ok {
-// 		return errors.New("Cannot insert edge, node not found: " + string(from))
-// 	}
-// 	latestVersion := node.Clock[clientID]
-// 	newVersion := latestVersion + 1
-//
-// 	if len(node.Edges) == 0 {
-// 		return g.insertEdgeWithVersion(from, to, label, 0, clientID, newVersion)
-// 	}
-//
-// 	// Find the singling edge
-// 	var siblingEdge *Edge
-// 	for _, edge := range node.Edges {
-// 		if edge.To == sibling {
-// 			siblingEdge = edge
-// 			break
-// 		}
-// 	}
-//
-// 	if siblingEdge == nil {
-// 		return errors.New("Cannot insert edge, sibling edge not found")
-// 	}
-//
-// 	if left {
-// 		// Insert before the sibling edge
-// 		return g.insertEdgeWithVersion(from, to, label, siblingEdge.Position, clientID, newVersion)
-// 	} else {
-// 		// Insert after the sibling edge
-// 		return g.insertEdgeWithVersion(from, to, label, siblingEdge.Position+1, clientID, newVersion)
-// 	}
-// }
-
-// func (g *Graph) GetSiblingNode(nodeID NodeID, pos int) (*Node, error) {
-// 	node, ok := g.Nodes[nodeID]
-// 	if !ok {
-// 		return nil, errors.New("Cannot find node: " + string(nodeID))
-// 	}
-// 	if len(node.Edges) == 0 {
-// 		return nil, errors.New("Cannot find sibling node, no edges")
-// 	}
-//
-// 	if pos < 0 || pos >= len(node.Edges) {
-// 		return nil, errors.New("Cannot find sibling node, position out of bounds")
-// 	}
-// 	for _, edge := range node.Edges {
-// 		if edge.Position == pos {
-// 			return g.Nodes[edge.To], nil
-// 		}
-// 	}
-// 	return nil, errors.New("Cannot find sibling node, position not found")
-// }
 
 func (g *Graph) GetSibling(nodeID NodeID, index int) (*Node, error) {
 	node, ok := g.Nodes[nodeID]
@@ -607,9 +447,15 @@ func (g *Graph) removeEdgeWithVersion(from, to NodeID, clientID ClientID, newVer
 			}
 		}
 
-		log.WithFields(log.Fields{"NodeID": from, "To": to, "Version": newVersion}).Debug("Edge removed")
+		log.WithFields(log.Fields{
+			"NodeID":  from,
+			"To":      to,
+			"Version": newVersion}).Debug("Edge removed")
 	} else {
-		log.WithFields(log.Fields{"NodeID": from, "To": to, "Version": newVersion}).Debug("Edge remove ignored due to conflict")
+		log.WithFields(log.Fields{
+			"NodeID":  from,
+			"To":      to,
+			"Version": newVersion}).Debug("Edge remove ignored due to conflict")
 		return fmt.Errorf("Cannot remove edge, conflict detected: %s", from)
 	}
 
@@ -639,9 +485,14 @@ func (n *Node) SetLiteral(value interface{}, clientID ClientID, version int) err
 		n.LitteralValue = value
 		n.Clock = newClock
 		n.Owner = clientID
-		log.WithFields(log.Fields{"NodeID": n.ID, "LiteralValue": value}).Debug("Set literal value")
+		log.WithFields(log.Fields{
+			"NodeID":       n.ID,
+			"LiteralValue": value}).Debug("Set literal value")
 	} else {
-		log.WithFields(log.Fields{"NodeID": n.ID, "AttemptedLiteralValue": value, "ExistingOwner": n.Owner, "WinningOwner": winningOwner}).Debug("Literal set ignored due to conflict")
+		log.WithFields(log.Fields{"NodeID": n.ID,
+			"AttemptedLiteralValue": value,
+			"ExistingOwner":         n.Owner,
+			"WinningOwner":          winningOwner}).Debug("Literal set ignored due to conflict")
 		return fmt.Errorf("Cannot set literal value, conflict detected: %s", n.ID)
 	}
 
@@ -682,45 +533,38 @@ func (g *Graph) Tidy() {
 	}
 }
 
-// Rules for merging graphs containing arrays:
+// Requirements for merging graphs containing arrays:
 //
-// 1. When two nodes with the same parent and label are concurrently added,
-//    they are treated as elements of an array (since JSON has no native set type).
-//    This ensures deterministic, append-only behavior.
+//  1. When two nodes with the same parent and label are concurrently added,
+//     they are treated as elements of an array (since JSON has no native set type).
+//     This ensures deterministic, append-only behavior.
 //
-//    Example:
-//      n1 + n2 → [n1, n2] (becomes an array even if originally a single value)
-//    The nodes must be sorted by ther node ID to ensure deterministic order.
+//     Example:
+//     n1 + n2 → [n1, n2] (becomes an array even if originally a single value)
+//     The nodes must be sorted by ther node ID to ensure deterministic order.
 //
-// 2. When two arrays are merged, their items are combined while preserving order
-//    and deduplicating based on NodeID. Relative sibling order determines final position.
+//  2. When two arrays are merged, their items are combined while preserving order
+//     and deduplicating based on NodeID. Relative sibling order determines final position.
 //
-//    Example:
-//      [n1, n2, n3] + [n0, n1] → [n0, n1, n2, n3]
+//     Example:
+//     [n1, n2, n3] + [n0, n1] → [n0, n1, n2, n3]
 //
 // 3. If a sibling (anchor) is not found for a node, the node is inserted at the start.
 //
-//    Example:
-//      [n1, n2] + [n3] → [n3, n1, n2]
+//		Example:
+//		  [n1, n2] + [n3] → [n3, n1, n2]
 //
-// 4. If multiple arrays are merged concurrently, insertion order is resolved by
-//    using the earliest common sibling (or none, default to front).
+//	 4. If multiple arrays are merged concurrently, insertion order is resolved by
+//	    using the earliest common sibling (or none, default to front).
 //
-//    Example:
-//      [n1, n2] + [n2, n3, n4] + [n1, n5, n6] → [n1, n5, n6, n2, n3, n4]
-//      [n1, n2] + [n1, n5, n6] + [n2, n3, n4] → [n1, n5, n6, n2, n3, n4]
+//	    Example:
+//	    [n1, n2] + [n2, n3, n4] + [n1, n5, n6] → [n1, n5, n6, n2, n3, n4]
+//	    [n1, n2] + [n1, n5, n6] + [n2, n3, n4] → [n1, n5, n6, n2, n3, n4]
 //
-// 5. Concurrent insertions after same anchor.
-//    Considering the following merge operations leading to inconsistent order:
-//      [n1] + [n1, n3, n4] + [n1, n5, n6] → [n1, n5, n6, n3, n4]
-//      [n1] + [n1, n5, n6] + [n1, n3, n4] → [n1, n3, n4, n5, n6]
-//
-//    Solution: User must specify a start and end position for the insertion.
-//    merge([n1], [n1, n3, n4], start=n1, end="")  -> [n1, n3, n4]
-//    When merging second time, we can detect that there are already two nodes added between start and stop, then
-//    we need to sort them by their node ID to ensure deterministic order.
-//    merge([n1, n3, n4], [n1, n5, n6], start=n1, end="")  -> [n1, sort([n3, n4, n5, n6])] -> [n1, n3, n4, n5, n6]
-
+//	 5. Concurrent insertions after same anchor.
+//	    Considering the following merge operations leading to inconsistent order:
+//	    [n1] + [n1, n3, n4] + [n1, n5, n6] → [n1, n5, n6, n3, n4]
+//	    [n1] + [n1, n5, n6] + [n1, n3, n4] → [n1, n3, n4, n5, n6]
 func (g *Graph) Merge(g2 *Graph) {
 	for id, remote := range g2.Nodes {
 		log.WithField("NodeID", id).Debug("Merging node")
@@ -741,7 +585,6 @@ func (g *Graph) Merge(g2 *Graph) {
 			continue
 		}
 
-		// Precompute merged values before CRDT ops can override them
 		mergedClock := mergeClocks(local.Clock, remote.Clock)
 		mergedOwner := lowestClientID(local.Owner, remote.Owner)
 
@@ -757,21 +600,24 @@ func (g *Graph) Merge(g2 *Graph) {
 
 		// Merge edges
 		for _, re := range remote.Edges {
-			alreadyExists := false
-			for _, le := range local.Edges {
-				if le.To == re.To {
-					alreadyExists = true
-					break
+			// Ensure both from and to nodes exist in local graph
+			if _, exists := g.Nodes[re.From]; !exists {
+				if remoteParentNode, ok := g2.Nodes[re.From]; ok {
+					cloned := newNodeFromID(re.From, remoteParentNode.IsArray)
+					cloned.Fields = make(map[string]VersionedField)
+					for k, v := range remoteParentNode.Fields {
+						cloned.Fields[k] = v
+					}
+					cloned.Litteral = remoteParentNode.Litteral
+					cloned.LitteralValue = remoteParentNode.LitteralValue
+					cloned.Clock = copyClock(remoteParentNode.Clock)
+					cloned.Owner = remoteParentNode.Owner
+					g.Nodes[re.From] = cloned
 				}
 			}
-			if alreadyExists {
-				continue
-			}
-
-			// Clone target node if missing
 			if _, exists := g.Nodes[re.To]; !exists {
 				if remoteNode, ok := g2.Nodes[re.To]; ok {
-					cloned := newNodeFromID(re.To, true)
+					cloned := newNodeFromID(re.To, remoteNode.IsArray)
 					cloned.Fields = make(map[string]VersionedField)
 					for k, v := range remoteNode.Fields {
 						cloned.Fields[k] = v
@@ -784,24 +630,121 @@ func (g *Graph) Merge(g2 *Graph) {
 				}
 			}
 
-			// Determine sibling node (if any)
-			var sibling *Node
-			if re.Position > 0 {
-				if s, err := g2.GetSibling(re.From, re.Position-1); err == nil {
-					sibling = s
+			// Get parent and child from local graph
+			parentNode := g.Nodes[re.From]
+			toNode := g.Nodes[re.To]
+
+			// Avoid adding duplicate edges
+			alreadyExists := false
+			for _, le := range parentNode.Edges {
+				if le.To == re.To {
+					alreadyExists = true
+					break
+				}
+			}
+			if alreadyExists {
+				continue
+			}
+
+			// Check if parent has exactly one child and isn't yet an array
+			if len(parentNode.Edges) == 1 {
+				existingEdge := parentNode.Edges[0]
+				existingChild := g.Nodes[existingEdge.To]
+
+				// Promote to array
+				parentNode.IsArray = true
+				existingChild.IsArray = true
+				toNode.IsArray = true
+
+				log.WithFields(log.Fields{
+					"Parent":        re.From,
+					"ExistingChild": existingEdge.To,
+					"NewChild":      re.To,
+				}).Debug("Promoting parent to array due to concurrent insert")
+
+				// Remove and re-insert existing edge
+				err := g.RemoveEdge(re.From, existingEdge.To, remote.Owner)
+				if err != nil {
+					log.WithError(err).Error("Failed to remove existing edge during array promotion")
+				}
+				err = g.AppendEdge(re.From, existingEdge.To, "", remote.Owner)
+				if err != nil {
+					log.WithError(err).Error("Failed to re-insert existing edge after array promotion")
 				}
 			}
 
-			// Insert edge respecting sibling, or default to beginning
-			if sibling != nil {
-				//InsertEdge(from, to NodeID, label string, leftOf NodeID, clientID ClientID) error {
-				if err := g.InsertEdgeLeft(re.From, re.To, re.Label, sibling.ID, remote.Owner); err != nil {
-					log.WithField("NodeID", re.From).Error("InsertEdge failed")
+			if toNode.IsArray {
+				// Sort remote parent's edges to find left sibling
+				remoteParent := g2.Nodes[re.From]
+				sortEdgesByLSEQ(remoteParent.Edges)
+
+				var siblingID NodeID
+				var sibling *Node = nil
+
+				for i, edge := range remoteParent.Edges {
+					if edge.To == re.To && i > 0 {
+						siblingID = remoteParent.Edges[i-1].To
+						break
+					}
+				}
+
+				if siblingID != "" {
+					var exists bool
+					sibling, exists = g.Nodes[siblingID]
+					if !exists {
+						sibling = nil
+					}
+				}
+
+				if sibling == nil {
+					log.WithFields(log.Fields{
+						"From":     re.From,
+						"To":       re.To,
+						"Label":    re.Label,
+						"ClientID": remote.Owner,
+					}).Debug("Appending edge to array (no left sibling found in local graph)")
+					err := g.PrependEdge(re.From, re.To, re.Label, remote.Owner)
+					if err != nil {
+						log.WithFields(log.Fields{
+							"NodeID": re.From,
+							"To":     re.To,
+							"Label":  re.Label,
+							"Error":  err,
+						}).Error("AppendEdge failed")
+					}
+				} else {
+					log.WithFields(log.Fields{
+						"From":      re.From,
+						"To":        re.To,
+						"Label":     re.Label,
+						"SiblingID": sibling.ID,
+						"ClientID":  remote.Owner,
+					}).Debug("Inserting edge to array (right of sibling from remote graph)")
+					err := g.InsertEdgeRight(re.From, re.To, re.Label, sibling.ID, remote.Owner)
+					if err != nil {
+						log.WithFields(log.Fields{
+							"NodeID": re.From,
+							"To":     re.To,
+							"Label":  re.Label,
+							"Error":  err,
+						}).Error("InsertEdgeLeft failed")
+					}
 				}
 			} else {
-				err := g.InsertEdgeLeft(re.From, re.To, re.Label, "", remote.Owner)
+				log.WithFields(log.Fields{
+					"NodeID":   re.From,
+					"Label":    re.Label,
+					"Position": re.Position,
+					"ClientID": remote.Owner,
+				}).Debug("Adding edge to non-array node")
+				err := g.AddEdge(re.From, re.To, re.Label, remote.Owner)
 				if err != nil {
-					log.WithField("NodeID", re.From).Error("InsertEdge failed")
+					log.WithFields(log.Fields{
+						"NodeID": re.From,
+						"To":     re.To,
+						"Label":  re.Label,
+						"Error":  err,
+					}).Error("AddEdge failed")
 				}
 			}
 		}
@@ -815,7 +758,9 @@ func (g *Graph) Merge(g2 *Graph) {
 }
 
 func (g *Graph) normalize() {
+	log.Debug("Normalizing graph")
+	sortEdgesByLSEQ(g.Root.Edges)
 	for _, node := range g.Nodes {
-		sortEdgesByNodeID(node.Edges)
+		sortEdgesByLSEQ(node.Edges)
 	}
 }

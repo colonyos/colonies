@@ -295,9 +295,9 @@ func TestGraphMergeLitterals(t *testing.T) {
 	// Create shared nodes in both graphs
 	node1 := g1.CreateAttachedNode("sharedA", false, g1.Root.ID, clientA)
 	node2 := g2.CreateAttachedNode("sharedB", false, g2.Root.ID, clientB)
-	err := node2.SetLiteral("B-literal", clientB, 1)
+	err := node1.SetLiteral("A-literal", clientA, 1)
 	assert.Nil(t, err, "SetLiteral should not return an error")
-	err = node1.SetLiteral("A-literal", clientA, 1)
+	err = node2.SetLiteral("B-literal", clientB, 1)
 	assert.Nil(t, err, "SetLiteral should not return an error")
 
 	// Perform merge
@@ -325,10 +325,9 @@ func TestGraphMergeLitterals(t *testing.T) {
 	json, err := g1.ExportToJSON()
 	assert.Nil(t, err, "ExportToJSON should not return an error")
 
-	expectedJSON := []byte(`["A-literal", "B-literal"]`)
+	// Since B-literal did not have any siblings, it will be prepended to the array, that why is it first
+	expectedJSON := []byte(`["B-literal", "A-literal"]`)
 	compareJSON(t, expectedJSON, json)
-
-	assert.Equal(t, sorted, ids, "Edges from root should be sorted by NodeID after merge")
 }
 
 func TestGraphMergeLists(t *testing.T) {
@@ -401,6 +400,16 @@ func TestGraphMergeLists(t *testing.T) {
 	// 3. Merge the graphs
 	g1.Merge(g2)
 	g2.Merge(g1Clone)
+
+	jsom, err := g1.ExportToJSON()
+	assert.Nil(t, err, "ExportToJSON should not return an error")
+	expectedJSON := []byte(`[0, 1, 2, 3, 4]`)
+	compareJSON(t, expectedJSON, jsom)
+
+	json2, err := g2.ExportToJSON()
+	assert.Nil(t, err, "ExportToJSON should not return an error")
+	expectedJSON2 := []byte(`[0, 1, 2, 3, 4]`)
+	compareJSON(t, expectedJSON2, json2)
 
 	// G2 == G1
 	assert.True(t, g1.Equal(g2), "Graphs should be equal after merge")
