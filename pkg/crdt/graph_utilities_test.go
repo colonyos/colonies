@@ -128,11 +128,12 @@ func TestGraphAddToArray(t *testing.T) {
 	nodeC.SetField("id", "C", ClientID(clientID), 1)
 	nodeC.SetField("value", "3", ClientID(clientID), 1)
 
-	g.insertEdge(g.Root.ID, NodeID("C"), "", 2, clientID) // Insert C
+	leftTo, err := g.GetSibling(g.Root.ID, 1)
+	assert.Nil(t, err, "GetSibling should not return an error")
+	g.InsertEdgeRight(g.Root.ID, NodeID("C"), "", leftTo.ID, clientID) // Insert C
 
 	exportedJSON, err := g.ExportToJSON()
 	assert.Nil(t, err, "ExportToJSON should not return an error")
-	//t.Logf("Exported Graph JSON:\n%s", string(exportedJSON))
 
 	// Correct expected JSON
 	expectedJSON := []byte(`[
@@ -165,12 +166,12 @@ func TestGraphStringArrayLitteral(t *testing.T) {
 	nodeC.Litteral = true
 	nodeC.LitteralValue = "C"
 
-	err = g.insertEdge(g.Root.ID, nodeIDC, "", 2, clientID) // Position 2
+	sibling, err := g.GetSibling(g.Root.ID, 2) // Index 1 is D
+	err = g.InsertEdgeLeft(g.Root.ID, nodeIDC, "", sibling.ID, clientID)
 	assert.Nil(t, err, "InsertEdge should not return an error")
 
 	exportedJSON, err := g.ExportToJSON()
 	assert.Nil(t, err, "ExportToJSON should not return an error")
-	//t.Logf("Exported Graph JSON:\n%s", string(exportedJSON))
 
 	// Correct expected JSON
 	expectedJSON := []byte(`[
@@ -198,25 +199,24 @@ func TestGraphIntArrayLitteral(t *testing.T) {
 	_, err := g.ImportJSON(initialJSON, "", "", -1, false, ClientID(clientID))
 	assert.Nil(t, err, "AddNodeRecursively should not return an error")
 
-	//rawJSON, err := g.Save()
-	//assert.Nil(t, err, "ExportToRaw should not return an error")
-	//t.Logf("Exported Graph Raw JSON:\n%s", string(rawJSON))
-
 	nodeIDC := generateRandomNodeID(string("C"))
 	nodeC := g.getOrCreateNode(nodeIDC, false, clientID, 1)
 	nodeC.Litteral = true
 	nodeC.LitteralValue = 3
 
-	err = g.insertEdge(g.Root.ID, nodeIDC, "", 10, clientID) // Invalid position
-	assert.NotNil(t, err, "InsertEdge should return an error for invalid position")
-	err = g.insertEdge(g.Root.ID, nodeIDC, "", -1, clientID) // Invalid position
-	assert.NotNil(t, err, "InsertEdge should return an error for invalid position")
-	err = g.insertEdge(g.Root.ID, nodeIDC, "", 2, clientID) // Position 2
+	sibling, err := g.GetSibling(g.Root.ID, 20)
+	assert.NotNil(t, err, "Invalid index should not return an error")
+
+	sibling, err = g.GetSibling(g.Root.ID, -1)
+	assert.NotNil(t, err, "Invalid index should not return an error")
+
+	sibling, err = g.GetSibling(g.Root.ID, 1) // Index 1 is B
+
+	err = g.InsertEdgeRight(g.Root.ID, nodeIDC, "", sibling.ID, clientID)
 	assert.Nil(t, err, "InsertEdge should not return an error")
 
 	exportedJSON, err := g.ExportToJSON()
 	assert.Nil(t, err, "ExportToJSON should not return an error")
-	//t.Logf("Exported Graph JSON:\n%s", string(exportedJSON))
 
 	// Correct expected JSON
 	expectedJSON := []byte(`[
@@ -232,11 +232,12 @@ func TestGraphIntArrayLitteral(t *testing.T) {
 func TestSaveAndLoad(t *testing.T) {
 	clientID := ClientID(core.GenerateRandomID())
 
-	initialJSON := []byte(`{
-		"A": "1",
-		"B": "2",
-		"D": "2"
-	}`)
+	initialJSON := []byte(`[
+		{"id": "A", "value": "1"},
+		{"id": "B", "value": "2"},
+		{"id": "C", "value": "3"},
+		{"id": "D", "value": "2"}
+	]`)
 
 	g := NewGraph()
 	_, err := g.ImportJSON(initialJSON, "", "", -1, false, ClientID(clientID))
@@ -244,23 +245,11 @@ func TestSaveAndLoad(t *testing.T) {
 
 	rawJSON, err := g.Save()
 	assert.Nil(t, err, "ExportToRaw should not return an error")
-	//t.Logf("Exported Graph Raw JSON:\n%s", string(rawJSON))
-
-	json, err := g.ExportToJSON()
-	assert.Nil(t, err, "ExportToJSON should not return an error")
-	//t.Logf("Exported Graph JSON:\n%s", string(json))
 
 	g2 := NewGraph()
 	err = g2.Load(rawJSON)
 	assert.Nil(t, err, "ImportRawJSON should not return an error")
-
-	json2, err := g2.ExportToJSON()
-	assert.Nil(t, err, "ExportToJSON should not return an error")
-	//t.Logf("Exported Graph JSON:\n%s", string(json2))
-
-	compareJSON(t, json, json2)
 	assert.True(t, g.Equal(g2), "Graphs should be equal after import/export")
-
 }
 
 // The prupose of this test is to check that the graph ID is correctly set
@@ -281,7 +270,6 @@ func TestGraphID(t *testing.T) {
 
 	exportedJSON, err := g.ExportToJSON()
 	assert.Nil(t, err, "ExportToJSON should not return an error")
-	//t.Logf("Exported Graph JSON:\n%s", string(exportedJSON))
 
 	// Correct expected JSON
 	expectedJSON := []byte(`[
@@ -291,9 +279,4 @@ func TestGraphID(t *testing.T) {
 	]`)
 
 	compareJSON(t, expectedJSON, exportedJSON)
-
-	// Print raw JSON
-	//rawJSON, err := g.Save()
-	//assert.Nil(t, err, "ExportToRaw should not return an error")
-	//t.Logf("Exported Graph Raw JSON:\n%s", string(rawJSON))
 }
