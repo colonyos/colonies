@@ -2,6 +2,8 @@ package crdt
 
 import (
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 // LexCompare returns -1 if a < b, 0 if equal, 1 if a > b
@@ -38,6 +40,35 @@ func TestGeneratePositionBetweenLSEQ(t *testing.T) {
 			t.Errorf("Generated position should not be equal to bounds: got %v", pos)
 		}
 	}
+}
+
+func TestGeneratePositionBetweenLSEQ2(t *testing.T) {
+	// Case 1: Space between digits at first level
+	left := Position{2}
+	right := Position{5}
+	pos := generatePositionBetweenLSEQ(left, right)
+	assert.True(t, compareLSEQ(left, pos) < 0, "pos should be > left")
+	assert.True(t, compareLSEQ(pos, right) < 0, "pos should be < right")
+
+	// Case 2: No room at level 0, requires deeper level
+	left = Position{5}
+	right = Position{6}
+	pos = generatePositionBetweenLSEQ(left, right)
+	assert.True(t, compareLSEQ(left, pos) < 0, "pos should be > left")
+	assert.True(t, compareLSEQ(pos, right) < 0, "pos should be < right")
+
+	// Case 3: Deep nesting
+	left = Position{1, 9, 9}
+	right = Position{2}
+	pos = generatePositionBetweenLSEQ(left, right)
+	assert.True(t, compareLSEQ(left, pos) < 0, "pos should be > left")
+	assert.True(t, compareLSEQ(pos, right) < 0, "pos should be < right")
+
+	// Case 4: No right bound (right is empty), treat as [Base]
+	left = Position{3}
+	right = Position{}
+	pos = generatePositionBetweenLSEQ(left, right)
+	assert.True(t, compareLSEQ(left, pos) < 0, "pos should be > left")
 }
 
 func TestGeneratePositionDepth(t *testing.T) {

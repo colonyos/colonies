@@ -218,47 +218,6 @@ func (g *Graph) exportRaw() (map[string]interface{}, error) {
 	}, nil
 }
 
-// func (g *Graph) exportRaw() (map[string]interface{}, error) {
-// 	nodes := make(map[string]interface{})
-//
-// 	for id, node := range g.Nodes {
-// 		nodeData := map[string]interface{}{
-// 			"id":            string(node.ID),
-// 			"isArray":       node.IsArray,
-// 			"litteral":      node.Litteral,
-// 			"litteralValue": node.LitteralValue,
-// 			"owner":         string(node.Owner),
-// 			"clock":         node.Clock,
-// 			"fields":        map[string]interface{}{},
-// 			"edges":         []map[string]interface{}{},
-// 		}
-//
-// 		for key, field := range node.Fields {
-// 			nodeData["fields"].(map[string]interface{})[key] = map[string]interface{}{
-// 				"value": field.Value,
-// 				"clock": field.Clock,
-// 				"owner": string(field.Owner),
-// 			}
-// 		}
-//
-// 		for _, edge := range node.Edges {
-// 			nodeData["edges"] = append(nodeData["edges"].([]map[string]interface{}), map[string]interface{}{
-// 				"label":        edge.Label,
-// 				"lseqposition": edge.LSEQPosition,
-// 				"to":           string(edge.To),
-// 				"from":         string(edge.From),
-// 			})
-// 		}
-//
-// 		nodes[string(id)] = nodeData
-// 	}
-//
-// 	return map[string]interface{}{
-// 		"root":  string(g.Root.ID),
-// 		"nodes": nodes,
-// 	}, nil
-// }
-
 func (g *Graph) Save() ([]byte, error) {
 	exported, err := g.exportRaw()
 	if err != nil {
