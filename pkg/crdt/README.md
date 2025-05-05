@@ -1,10 +1,32 @@
-# Theory
-## LSEQ Positioning: 
-In CRDTs for ordered structures like arrays or text, each element is assigned a **position** — a list of integers (e.g. `[5]`, `[10, 3]`). These positions are ordered **lexicographically**, allowing us to insert new elements between existing ones without rearranging them.
+# JSON
+
+| Format         | Syntax Example       | Purpose                            | Reference                                                                                            |
+|----------------|----------------------|------------------------------------|------------------------------------------------------------------------------------------------------|
+| JSON Pointer   | `/myobj/3/lamp`      | Canonical path referencing in JSON | [RFC 6901](https://datatracker.ietf.org/doc/html/rfc6901)                                            |
+| JSONPath       | `$.myobj[3].lamp`    | Query-like access to JSON data     | [Stefan Goessner](https://goessner.net/articles/JsonPath/)                                           |
+| Dot Notation   | `myobj[3].lamp`      | Informal, human-readable reference | Informal usage in docs & tools                                                                       |
+| JavaScript Expr| `root.myobj[3].lamp` | Used in JS/DOM for property access | [MDN JavaScript](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Working_with_Objects) |
+
+
+# Conflict-Free Replicated Data Type Theory
+## Last-Write-Wins (LWW) Register with Vector Clocks
+A **Last-Write-Wins (LWW) Register** is a CRDT (Conflict-free Replicated Data Type) that stores a single value, where concurrent writes are resolved by selecting the latest write.
+
+**Vector clocks** are used instead of physical timestamps to tract **causal history** and ensure deterministic conflict resolution.
+
+Each register contains:
+- A `value`: the current value
+- A `clock`: a vector clock (`map[replicaID]int`)
+- A `replica`: a globally unique ID of the replica that performed the last write
+
+
+## LSEQ (List Sequence): 
+In ordered structures like arrays or text, each element is assigned a **position** — a list of integers (e.g. `[5]`, `[10, 3]`). These positions are ordered **lexicographically**, allowing us to insert new elements between existing ones without rearranging them.
 
 The `generatePositionBetweenLSEQ(left, right)` function generates a new position **between two given positions**.
 
 CRDTs must support **concurrent inserts**. When two elements are inserted "at the same place," we can’t store both at the same position. LSEQ solves this by creating **new positions between existing ones**.
+
 This is especially important in collaborative systems like:
 - JSON CRDT arrays
 - Real-time collaborative editors (e.g., inserting characters between `A` and `B`)

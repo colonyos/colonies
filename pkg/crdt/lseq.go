@@ -7,8 +7,9 @@ import (
 
 // Constants for LSEQ allocation
 const (
-	Base  = 16 // Base interval range
-	Bound = 10 // Controls probability of depth increase
+	//Base  = 16 // Base interval range
+	Base  = 256 // Base interval range
+	Bound = 10  // Controls probability of depth increase
 )
 
 type Position []int
