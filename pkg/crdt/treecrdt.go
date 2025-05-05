@@ -99,7 +99,11 @@ func generateRandomNodeID(label string) NodeID {
 	return NodeID(id)
 }
 
-func (n *Node) SetField(key string, value interface{}, clientID ClientID, version int) {
+func (n *Node) SetField(key string, value interface{}, clientID ClientID, version int) error {
+	if n.Litteral {
+		return fmt.Errorf("Cannot set field on a literal node: %s", n.ID)
+	}
+
 	currentField := n.Fields[key]
 
 	// Start a fresh clock
@@ -128,6 +132,8 @@ func (n *Node) SetField(key string, value interface{}, clientID ClientID, versio
 			"NewClock":     newClock,
 			"WinningClock": winningClock}).Debug("Conflict detected")
 	}
+
+	return nil
 }
 
 func (n *Node) RemoveField(key string, clientID ClientID, version int) {
@@ -183,6 +189,10 @@ func (c *TreeCRDT) addEdgeWithVersion(from, to NodeID, label string, clientID Cl
 }
 
 func (c *TreeCRDT) AddEdge(from, to NodeID, label string, clientID ClientID) error {
+	if c.validAttachment(from, to) != nil {
+		return fmt.Errorf("Adding edge would create a cycle: %s -> %s or multiple parents", from, to)
+	}
+
 	node, ok := c.Nodes[from]
 	if !ok {
 		return errors.New("Cannot add edge, node not found: " + string(from))
@@ -194,6 +204,10 @@ func (c *TreeCRDT) AddEdge(from, to NodeID, label string, clientID ClientID) err
 }
 
 func (c *TreeCRDT) AppendEdge(from, to NodeID, label string, clientID ClientID) error {
+	if c.validAttachment(from, to) != nil {
+		return fmt.Errorf("Adding edge would create a cycle: %s -> %s or multiple parents", from, to)
+	}
+
 	node, ok := c.Nodes[from]
 	if !ok {
 		return fmt.Errorf("AppendEdge: parent node %s not found", from)
@@ -214,6 +228,10 @@ func (c *TreeCRDT) AppendEdge(from, to NodeID, label string, clientID ClientID) 
 }
 
 func (c *TreeCRDT) PrependEdge(from, to NodeID, label string, clientID ClientID) error {
+	if c.validAttachment(from, to) != nil {
+		return fmt.Errorf("Adding edge would create a cycle: %s -> %s or multiple parents", from, to)
+	}
+
 	node, ok := c.Nodes[from]
 	if !ok {
 		return fmt.Errorf("PrependEdge: parent node %s not found", from)
@@ -234,6 +252,10 @@ func (c *TreeCRDT) PrependEdge(from, to NodeID, label string, clientID ClientID)
 }
 
 func (c *TreeCRDT) InsertEdgeLeft(from, to NodeID, label string, sibling NodeID, clientID ClientID) error {
+	if c.validAttachment(from, to) != nil {
+		return fmt.Errorf("Adding edge would create a cycle: %s -> %s or multiple parents", from, to)
+	}
+
 	node, ok := c.Nodes[from]
 	if !ok {
 		return fmt.Errorf("InsertEdge: parent node %s not found", from)
@@ -245,6 +267,10 @@ func (c *TreeCRDT) InsertEdgeLeft(from, to NodeID, label string, sibling NodeID,
 }
 
 func (c *TreeCRDT) InsertEdgeRight(from, to NodeID, label string, sibling NodeID, clientID ClientID) error {
+	if c.validAttachment(from, to) != nil {
+		return fmt.Errorf("Adding edge would create a cycle: %s -> %s or multiple parents", from, to)
+	}
+
 	node, ok := c.Nodes[from]
 	if !ok {
 		return fmt.Errorf("InsertEdge: parent node %s not found", from)
@@ -474,6 +500,10 @@ func (c *TreeCRDT) RemoveEdge(from, to NodeID, clientID ClientID) error {
 }
 
 func (n *Node) SetLiteral(value interface{}, clientID ClientID, version int) error {
+	if len(n.Fields) > 0 {
+		return fmt.Errorf("Cannot set literal value on a node with fields: %s", n.ID)
+	}
+
 	currentClock := n.Clock
 	newClock := make(VectorClock)
 	newClock[clientID] = version
@@ -776,4 +806,114 @@ func (c *TreeCRDT) normalize() {
 	for _, node := range c.Nodes {
 		sortEdgesByLSEQ(node.Edges)
 	}
+}
+
+func (c *TreeCRDT) validAttachment(from, to NodeID) error {
+	if from == to {
+		return fmt.Errorf("cannot attach node %s to itself", from)
+	}
+
+	// 1. Check for cycle
+	visited := make(map[NodeID]bool)
+	var dfs func(NodeID) bool
+	dfs = func(id NodeID) bool {
+		if id == from {
+			return true
+		}
+		visited[id] = true
+		node := c.Nodes[id]
+		for _, edge := range node.Edges {
+			if !visited[edge.To] && dfs(edge.To) {
+				return true
+			}
+		}
+		return false
+	}
+	if dfs(to) {
+		return fmt.Errorf("adding edge from %s to %s would create a cycle", from, to)
+	}
+
+	// 2. Check if `to` already has a parent
+	for _, parent := range c.Nodes {
+		for _, edge := range parent.Edges {
+			if edge.To == to {
+				return fmt.Errorf("node %s already has a parent", to)
+			}
+		}
+	}
+
+	return nil
+}
+
+func (c *TreeCRDT) ValidateTree() error {
+	parentMap := make(map[NodeID]NodeID)
+	visited := make(map[NodeID]bool)
+
+	var dfs func(current NodeID, ancestors map[NodeID]bool) error
+	dfs = func(current NodeID, ancestors map[NodeID]bool) error {
+		if ancestors[current] {
+			log.WithField("NodeID", current).Debug("Cycle detected")
+			return fmt.Errorf("Cycle detected at node %s", current)
+		}
+		if visited[current] {
+			return nil // Already validated
+		}
+		visited[current] = true
+
+		node, exists := c.Nodes[current]
+		if !exists {
+			log.WithField("NodeID", current).Debug("Node not found in tree")
+			return fmt.Errorf("Node %s not found in tree", current)
+		}
+
+		ancestors[current] = true
+		for _, edge := range node.Edges {
+			childID := edge.To
+
+			if _, ok := c.Nodes[childID]; !ok {
+				log.WithField("ChildID", childID).Debug("Edge to non-existent node")
+				return fmt.Errorf("Edge to non-existent node: %s", childID)
+			}
+
+			if existingParent, ok := parentMap[childID]; ok && existingParent != current {
+				log.WithFields(log.Fields{
+					"ChildID":        childID,
+					"ExistingParent": existingParent,
+					"CurrentParent":  current,
+				}).Debug("Multiple parents detected")
+
+				return fmt.Errorf("Node %s has multiple parents: %s and %s", childID, existingParent, current)
+			}
+			parentMap[childID] = current
+
+			if err := dfs(childID, ancestors); err != nil {
+				return err
+			}
+		}
+		delete(ancestors, current)
+		return nil
+	}
+
+	// Begin DFS from root
+	if err := dfs(c.Root.ID, make(map[NodeID]bool)); err != nil {
+		return err
+	}
+
+	// Ensure all nodes are reachable
+	for id := range c.Nodes {
+		if !visited[id] {
+			log.WithField("NodeID", id).Debug("Unreachable node detected")
+			// Check if the node is not the root
+			if id != c.Root.ID {
+				log.WithFields(log.Fields{
+					"NodeID": id,
+					"Reason": "Unreachable node",
+				}).Debug("Unreachable node detected")
+
+				return fmt.Errorf("Unreachable node found: %s", id)
+			}
+		}
+	}
+
+	return nil
 }

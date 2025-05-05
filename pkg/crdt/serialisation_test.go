@@ -18,7 +18,7 @@ func compareJSON(t *testing.T, expectedJSON, exportedJSON []byte) {
 	assert.True(t, reflect.DeepEqual(expected, actual), "Exported JSON does not match expected.\nExpected:\n%v\n\nGot:\n%v\n", expected, actual)
 }
 
-func TestImportGraph(t *testing.T) {
+func TestTreeCRDTImport(t *testing.T) {
 	clientID := ClientID(core.GenerateRandomID())
 
 	originalJSON := []byte(`{
@@ -50,11 +50,10 @@ func TestImportGraph(t *testing.T) {
 
 	exportedJSON, err := c.ExportJSON()
 	assert.Nil(t, err, "ExportToJSON should not return an error")
-	//t.Logf("Exported Graph JSON:\n%s", string(exportedJSON))
 	compareJSON(t, originalJSON, exportedJSON)
 }
 
-func TestGraphAddToObject(t *testing.T) {
+func TestTreeCRDTSetFieldAfterImport(t *testing.T) {
 	clientID := ClientID(core.GenerateRandomID())
 
 	// Initial JSON with missing "C"
@@ -87,7 +86,6 @@ func TestGraphAddToObject(t *testing.T) {
 
 	exportedJSON, err := c.ExportJSON()
 	assert.Nil(t, err, "ExportToJSON should not return an error")
-	//t.Logf("Exported Graph JSON:\n%s", string(exportedJSON))
 
 	// Define the expected correct JSON
 	expectedJSON := []byte(`{
@@ -100,7 +98,7 @@ func TestGraphAddToObject(t *testing.T) {
 	compareJSON(t, expectedJSON, exportedJSON)
 }
 
-func TestGraphAddToArray(t *testing.T) {
+func TestTreeCRDTAddToArrayAfterImport(t *testing.T) {
 	clientID := ClientID(core.GenerateRandomID())
 
 	// Initial JSON with missing "C"
@@ -146,7 +144,7 @@ func TestGraphAddToArray(t *testing.T) {
 	compareJSON(t, expectedJSON, exportedJSON)
 }
 
-func TestGraphStringArrayLitteral(t *testing.T) {
+func TestTreeCRDTInsertStringAfterImport(t *testing.T) {
 	clientID := ClientID(core.GenerateRandomID())
 
 	initialJSON := []byte(`["A", "B", "D"]`)
@@ -184,7 +182,7 @@ func TestGraphStringArrayLitteral(t *testing.T) {
 	compareJSON(t, expectedJSON, exportedJSON)
 }
 
-func TestGraphIntArrayLitteral(t *testing.T) {
+func TestTreeCRDTInsertIntAfterImport(t *testing.T) {
 	clientID := ClientID(core.GenerateRandomID())
 
 	initialJSON := []byte(`[1, 2, 4]`)
@@ -229,7 +227,7 @@ func TestGraphIntArrayLitteral(t *testing.T) {
 	compareJSON(t, expectedJSON, exportedJSON)
 }
 
-func TestSaveAndLoad(t *testing.T) {
+func TestTreeCRDTSaveAndLoad(t *testing.T) {
 	clientID := ClientID(core.GenerateRandomID())
 
 	initialJSON := []byte(`[
@@ -249,11 +247,11 @@ func TestSaveAndLoad(t *testing.T) {
 	c2 := NewTreeCRDT()
 	err = c2.Load(rawJSON)
 	assert.Nil(t, err, "ImportRawJSON should not return an error")
-	assert.True(t, c.Equal(c2), "Graphs should be equal after import/export")
+	assert.True(t, c.Equal(c2), "Trees should be equal after import/export")
 }
 
 // The prupose of this test is to check that the graph ID is correctly set
-func TestGraphID(t *testing.T) {
+func TestTreeCRDTNodeIDAfterImport(t *testing.T) {
 	clientID := ClientID(core.GenerateRandomID())
 
 	initialJSON := []byte(`["A", "B", "B"]`)
