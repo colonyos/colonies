@@ -42,13 +42,13 @@ func TestImportGraph(t *testing.T) {
 		]
 	}`)
 
-	g := NewGraph()
-	_, err := g.ImportJSON(originalJSON, "", "", -1, false, clientID)
+	c := NewTreeCRDT()
+	_, err := c.ImportJSON(originalJSON, "", "", -1, false, clientID)
 	if err != nil {
 		t.Fatalf("Failed to add node recursively: %v", err)
 	}
 
-	exportedJSON, err := g.ExportToJSON()
+	exportedJSON, err := c.ExportJSON()
 	assert.Nil(t, err, "ExportToJSON should not return an error")
 	//t.Logf("Exported Graph JSON:\n%s", string(exportedJSON))
 	compareJSON(t, originalJSON, exportedJSON)
@@ -71,21 +71,21 @@ func TestGraphAddToObject(t *testing.T) {
 	//     ├── B
 	//     └── D
 
-	g := NewGraph()
+	c := NewTreeCRDT()
 
-	_, err := g.ImportJSON(initialJSON, "", "", -1, false, ClientID(clientID))
+	_, err := c.ImportJSON(initialJSON, "", "", -1, false, ClientID(clientID))
 	assert.Nil(t, err, "AddNodeRecursively should not return an error")
 
 	// Find the root child
-	firstObjID := g.Root.Edges[0].To
-	childNode, ok := g.GetNode(firstObjID)
+	firstObjID := c.Root.Edges[0].To
+	childNode, ok := c.GetNode(firstObjID)
 	if !ok {
 		t.Fatalf("Child node not found")
 	}
 	assert.NotNil(t, childNode, "Child node should not be nil")
 	childNode.SetField("C", "3", ClientID(clientID), 1)
 
-	exportedJSON, err := g.ExportToJSON()
+	exportedJSON, err := c.ExportJSON()
 	assert.Nil(t, err, "ExportToJSON should not return an error")
 	//t.Logf("Exported Graph JSON:\n%s", string(exportedJSON))
 
@@ -116,23 +116,23 @@ func TestGraphAddToArray(t *testing.T) {
 	// ├── B
 	// └── D
 
-	g := NewGraph()
-	_, err := g.ImportJSON(initialJSON, "", "", -1, false, ClientID(clientID))
+	c := NewTreeCRDT()
+	_, err := c.ImportJSON(initialJSON, "", "", -1, false, ClientID(clientID))
 	if err != nil {
 		t.Fatalf("Failed to add node recursively: %v", err)
 	}
 
 	// Create missing C
 	nodeIDC := NodeID("C")
-	nodeC := g.getOrCreateNode(nodeIDC, true, clientID, 1)
+	nodeC := c.getOrCreateNode(nodeIDC, true, clientID, 1)
 	nodeC.SetField("id", "C", ClientID(clientID), 1)
 	nodeC.SetField("value", "3", ClientID(clientID), 1)
 
-	leftTo, err := g.GetSibling(g.Root.ID, 1)
+	leftTo, err := c.GetSibling(c.Root.ID, 1)
 	assert.Nil(t, err, "GetSibling should not return an error")
-	g.InsertEdgeRight(g.Root.ID, NodeID("C"), "", leftTo.ID, clientID) // Insert C
+	c.InsertEdgeRight(c.Root.ID, NodeID("C"), "", leftTo.ID, clientID) // Insert C
 
-	exportedJSON, err := g.ExportToJSON()
+	exportedJSON, err := c.ExportJSON()
 	assert.Nil(t, err, "ExportToJSON should not return an error")
 
 	// Correct expected JSON
@@ -157,20 +157,20 @@ func TestGraphStringArrayLitteral(t *testing.T) {
 	// ├── B
 	// └── D
 
-	g := NewGraph()
-	_, err := g.ImportJSON(initialJSON, "", "", -1, false, ClientID(clientID))
+	c := NewTreeCRDT()
+	_, err := c.ImportJSON(initialJSON, "", "", -1, false, ClientID(clientID))
 	assert.Nil(t, err, "AddNodeRecursively should not return an error")
 
 	nodeIDC := generateRandomNodeID(string("C"))
-	nodeC := g.getOrCreateNode(nodeIDC, false, clientID, 1)
+	nodeC := c.getOrCreateNode(nodeIDC, false, clientID, 1)
 	nodeC.Litteral = true
 	nodeC.LitteralValue = "C"
 
-	sibling, err := g.GetSibling(g.Root.ID, 2) // Index 1 is D
-	err = g.InsertEdgeLeft(g.Root.ID, nodeIDC, "", sibling.ID, clientID)
+	sibling, err := c.GetSibling(c.Root.ID, 2) // Index 1 is D
+	err = c.InsertEdgeLeft(c.Root.ID, nodeIDC, "", sibling.ID, clientID)
 	assert.Nil(t, err, "InsertEdge should not return an error")
 
-	exportedJSON, err := g.ExportToJSON()
+	exportedJSON, err := c.ExportJSON()
 	assert.Nil(t, err, "ExportToJSON should not return an error")
 
 	// Correct expected JSON
@@ -195,27 +195,27 @@ func TestGraphIntArrayLitteral(t *testing.T) {
 	// ├── B
 	// └── D
 
-	g := NewGraph()
-	_, err := g.ImportJSON(initialJSON, "", "", -1, false, ClientID(clientID))
+	c := NewTreeCRDT()
+	_, err := c.ImportJSON(initialJSON, "", "", -1, false, ClientID(clientID))
 	assert.Nil(t, err, "AddNodeRecursively should not return an error")
 
 	nodeIDC := generateRandomNodeID(string("C"))
-	nodeC := g.getOrCreateNode(nodeIDC, false, clientID, 1)
+	nodeC := c.getOrCreateNode(nodeIDC, false, clientID, 1)
 	nodeC.Litteral = true
 	nodeC.LitteralValue = 3
 
-	sibling, err := g.GetSibling(g.Root.ID, 20)
+	sibling, err := c.GetSibling(c.Root.ID, 20)
 	assert.NotNil(t, err, "Invalid index should not return an error")
 
-	sibling, err = g.GetSibling(g.Root.ID, -1)
+	sibling, err = c.GetSibling(c.Root.ID, -1)
 	assert.NotNil(t, err, "Invalid index should not return an error")
 
-	sibling, err = g.GetSibling(g.Root.ID, 1) // Index 1 is B
+	sibling, err = c.GetSibling(c.Root.ID, 1) // Index 1 is B
 
-	err = g.InsertEdgeRight(g.Root.ID, nodeIDC, "", sibling.ID, clientID)
+	err = c.InsertEdgeRight(c.Root.ID, nodeIDC, "", sibling.ID, clientID)
 	assert.Nil(t, err, "InsertEdge should not return an error")
 
-	exportedJSON, err := g.ExportToJSON()
+	exportedJSON, err := c.ExportJSON()
 	assert.Nil(t, err, "ExportToJSON should not return an error")
 
 	// Correct expected JSON
@@ -239,17 +239,17 @@ func TestSaveAndLoad(t *testing.T) {
 		{"id": "D", "value": "2"}
 	]`)
 
-	g := NewGraph()
-	_, err := g.ImportJSON(initialJSON, "", "", -1, false, ClientID(clientID))
+	c := NewTreeCRDT()
+	_, err := c.ImportJSON(initialJSON, "", "", -1, false, ClientID(clientID))
 	assert.Nil(t, err, "AddNodeRecursively should not return an error")
 
-	rawJSON, err := g.Save()
+	rawJSON, err := c.Save()
 	assert.Nil(t, err, "ExportToRaw should not return an error")
 
-	g2 := NewGraph()
-	err = g2.Load(rawJSON)
+	c2 := NewTreeCRDT()
+	err = c2.Load(rawJSON)
 	assert.Nil(t, err, "ImportRawJSON should not return an error")
-	assert.True(t, g.Equal(g2), "Graphs should be equal after import/export")
+	assert.True(t, c.Equal(c2), "Graphs should be equal after import/export")
 }
 
 // The prupose of this test is to check that the graph ID is correctly set
@@ -264,11 +264,11 @@ func TestGraphID(t *testing.T) {
 	// ├── B
 	// └── B <- Duplicate
 
-	g := NewGraph()
-	_, err := g.ImportJSON(initialJSON, "", "", -1, false, ClientID(clientID))
+	c := NewTreeCRDT()
+	_, err := c.ImportJSON(initialJSON, "", "", -1, false, ClientID(clientID))
 	assert.Nil(t, err, "AddNodeRecursively should not return an error")
 
-	exportedJSON, err := g.ExportToJSON()
+	exportedJSON, err := c.ExportJSON()
 	assert.Nil(t, err, "ExportToJSON should not return an error")
 
 	// Correct expected JSON

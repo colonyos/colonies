@@ -6,8 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// LexCompare returns -1 if a < b, 0 if equal, 1 if a > b
-func LexCompare(a, b Position) int {
+func compareLSEQ(a, b []int) int {
 	for i := 0; i < len(a) && i < len(b); i++ {
 		if a[i] < b[i] {
 			return -1
@@ -30,13 +29,13 @@ func TestGeneratePositionBetweenLSEQ(t *testing.T) {
 	for i := 0; i < 100; i++ {
 		pos := generatePositionBetweenLSEQ(left, right)
 
-		if LexCompare(pos, left) <= 0 {
+		if compareLSEQ(pos, left) <= 0 {
 			t.Errorf("Generated position is not greater than left: got %v", pos)
 		}
-		if LexCompare(pos, right) >= 0 {
+		if compareLSEQ(pos, right) >= 0 {
 			t.Errorf("Generated position is not less than right: got %v", pos)
 		}
-		if LexCompare(pos, left) == 0 || LexCompare(pos, right) == 0 {
+		if compareLSEQ(pos, left) == 0 || compareLSEQ(pos, right) == 0 {
 			t.Errorf("Generated position should not be equal to bounds: got %v", pos)
 		}
 	}

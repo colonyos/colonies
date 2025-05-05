@@ -35,21 +35,21 @@ type Edge struct {
 	LSEQPosition []int  `json:"lseqposition"` // LSEQ position
 }
 
-type Graph struct {
+type TreeCRDT struct {
 	Root  *Node
 	Nodes map[NodeID]*Node
 }
 
-func (g *Graph) CreateAttachedNode(name string, isArray bool, parentID NodeID, clientID ClientID) *Node {
+func (c *TreeCRDT) CreateAttachedNode(name string, isArray bool, parentID NodeID, clientID ClientID) *Node {
 	id := generateRandomNodeID(name)
-	node := g.getOrCreateNode(id, isArray, clientID, 1)
-	g.AddEdge(parentID, id, "", clientID)
+	node := c.getOrCreateNode(id, isArray, clientID, 1)
+	c.AddEdge(parentID, id, "", clientID)
 	return node
 }
 
-func (g *Graph) CreateNode(name string, isArray bool, clientID ClientID) *Node {
+func (c *TreeCRDT) CreateNode(name string, isArray bool, clientID ClientID) *Node {
 	id := generateRandomNodeID(name)
-	node := g.getOrCreateNode(id, isArray, clientID, 1)
+	node := c.getOrCreateNode(id, isArray, clientID, 1)
 	return node
 }
 
@@ -64,33 +64,33 @@ func newNodeFromID(id NodeID, isArray bool) *Node {
 	return node
 }
 
-func (g *Graph) getOrCreateNode(id NodeID, isArray bool, clientID ClientID, version int) *Node {
-	if _, ok := g.Nodes[id]; !ok {
+func (c *TreeCRDT) getOrCreateNode(id NodeID, isArray bool, clientID ClientID, version int) *Node {
+	if _, ok := c.Nodes[id]; !ok {
 		node := newNodeFromID(id, isArray)
-		g.Nodes[id] = node
+		c.Nodes[id] = node
 		node.Clock = make(VectorClock)
 		node.Clock[clientID] = version
 		node.Owner = clientID
 	}
-	return g.Nodes[id]
+	return c.Nodes[id]
 }
 
-func (g *Graph) GetNode(id NodeID) (*Node, bool) {
-	node, ok := g.Nodes[id]
+func (c *TreeCRDT) GetNode(id NodeID) (*Node, bool) {
+	node, ok := c.Nodes[id]
 	if !ok {
 		return nil, false
 	}
 	return node, true
 }
 
-func NewGraph() *Graph {
-	g := &Graph{
+func NewTreeCRDT() *TreeCRDT {
+	c := &TreeCRDT{
 		Root:  newNodeFromID(NodeID("root"), false),
 		Nodes: make(map[NodeID]*Node),
 	}
-	g.Nodes[g.Root.ID] = g.Root
+	c.Nodes[c.Root.ID] = c.Root
 
-	return g
+	return c
 }
 
 func generateRandomNodeID(label string) NodeID {
@@ -155,8 +155,8 @@ func (n *Node) RemoveField(key string, clientID ClientID, version int) {
 	}
 }
 
-func (g *Graph) addEdgeWithVersion(from, to NodeID, label string, clientID ClientID, newVersion int) error {
-	node, ok := g.Nodes[from]
+func (c *TreeCRDT) addEdgeWithVersion(from, to NodeID, label string, clientID ClientID, newVersion int) error {
+	node, ok := c.Nodes[from]
 	if !ok {
 		return errors.New("Cannot add edge, node not found: " + string(from))
 	}
@@ -182,19 +182,19 @@ func (g *Graph) addEdgeWithVersion(from, to NodeID, label string, clientID Clien
 	return nil
 }
 
-func (g *Graph) AddEdge(from, to NodeID, label string, clientID ClientID) error {
-	node, ok := g.Nodes[from]
+func (c *TreeCRDT) AddEdge(from, to NodeID, label string, clientID ClientID) error {
+	node, ok := c.Nodes[from]
 	if !ok {
 		return errors.New("Cannot add edge, node not found: " + string(from))
 	}
 	latestVersion := node.Clock[clientID]
 	newVersion := latestVersion + 1
 
-	return g.addEdgeWithVersion(from, to, label, clientID, newVersion)
+	return c.addEdgeWithVersion(from, to, label, clientID, newVersion)
 }
 
-func (g *Graph) AppendEdge(from, to NodeID, label string, clientID ClientID) error {
-	node, ok := g.Nodes[from]
+func (c *TreeCRDT) AppendEdge(from, to NodeID, label string, clientID ClientID) error {
+	node, ok := c.Nodes[from]
 	if !ok {
 		return fmt.Errorf("AppendEdge: parent node %s not found", from)
 	}
@@ -210,11 +210,11 @@ func (g *Graph) AppendEdge(from, to NodeID, label string, clientID ClientID) err
 	}
 
 	newVersion := node.Clock[clientID] + 1
-	return g.insertEdgeWithVersion(from, to, label, lastSibling, false, clientID, newVersion)
+	return c.insertEdgeWithVersion(from, to, label, lastSibling, false, clientID, newVersion)
 }
 
-func (g *Graph) PrependEdge(from, to NodeID, label string, clientID ClientID) error {
-	node, ok := g.Nodes[from]
+func (c *TreeCRDT) PrependEdge(from, to NodeID, label string, clientID ClientID) error {
+	node, ok := c.Nodes[from]
 	if !ok {
 		return fmt.Errorf("PrependEdge: parent node %s not found", from)
 	}
@@ -230,33 +230,33 @@ func (g *Graph) PrependEdge(from, to NodeID, label string, clientID ClientID) er
 	}
 
 	newVersion := node.Clock[clientID] + 1
-	return g.insertEdgeWithVersion(from, to, label, firstSibling, true /* left */, clientID, newVersion)
+	return c.insertEdgeWithVersion(from, to, label, firstSibling, true /* left */, clientID, newVersion)
 }
 
-func (g *Graph) InsertEdgeLeft(from, to NodeID, label string, sibling NodeID, clientID ClientID) error {
-	node, ok := g.Nodes[from]
+func (c *TreeCRDT) InsertEdgeLeft(from, to NodeID, label string, sibling NodeID, clientID ClientID) error {
+	node, ok := c.Nodes[from]
 	if !ok {
 		return fmt.Errorf("InsertEdge: parent node %s not found", from)
 	}
 	latestVersion := node.Clock[clientID]
 	newVersion := latestVersion + 1
 
-	return g.insertEdgeWithVersion(from, to, label, sibling, true, clientID, newVersion)
+	return c.insertEdgeWithVersion(from, to, label, sibling, true, clientID, newVersion)
 }
 
-func (g *Graph) InsertEdgeRight(from, to NodeID, label string, sibling NodeID, clientID ClientID) error {
-	node, ok := g.Nodes[from]
+func (c *TreeCRDT) InsertEdgeRight(from, to NodeID, label string, sibling NodeID, clientID ClientID) error {
+	node, ok := c.Nodes[from]
 	if !ok {
 		return fmt.Errorf("InsertEdge: parent node %s not found", from)
 	}
 	latestVersion := node.Clock[clientID]
 	newVersion := latestVersion + 1
 
-	return g.insertEdgeWithVersion(from, to, label, sibling, false, clientID, newVersion)
+	return c.insertEdgeWithVersion(from, to, label, sibling, false, clientID, newVersion)
 }
 
-func (g *Graph) insertEdgeWithVersion(from, to NodeID, label string, sibling NodeID, left bool, clientID ClientID, newVersion int) error {
-	node, ok := g.Nodes[from]
+func (c *TreeCRDT) insertEdgeWithVersion(from, to NodeID, label string, sibling NodeID, left bool, clientID ClientID, newVersion int) error {
+	node, ok := c.Nodes[from]
 	if !ok {
 		return fmt.Errorf("insertWithVersion: parent node %s not found", from)
 	}
@@ -342,10 +342,10 @@ func (g *Graph) insertEdgeWithVersion(from, to NodeID, label string, sibling Nod
 	return nil
 }
 
-func (g *Graph) GetSibling(nodeID NodeID, index int) (*Node, error) {
-	node, ok := g.Nodes[nodeID]
+func (c *TreeCRDT) GetSibling(parentNodeID NodeID, index int) (*Node, error) {
+	node, ok := c.Nodes[parentNodeID]
 	if !ok {
-		return nil, fmt.Errorf("Cannot find node: %s", nodeID)
+		return nil, fmt.Errorf("Cannot find node: %s", parentNodeID)
 	}
 
 	if len(node.Edges) == 0 {
@@ -362,16 +362,16 @@ func (g *Graph) GetSibling(nodeID NodeID, index int) (*Node, error) {
 	}
 
 	siblingID := sorted[index].To
-	sibling, exists := g.Nodes[siblingID]
+	sibling, exists := c.Nodes[siblingID]
 	if !exists {
-		return nil, fmt.Errorf("Sibling node %s not found in graph", siblingID)
+		return nil, fmt.Errorf("Sibling node %s not found in CRDT tree", siblingID)
 	}
 
 	return sibling, nil
 }
 
-func (g *Graph) insertEdgeLSEQ(from, to NodeID, label string, leftOf NodeID, clientID ClientID, version int) error {
-	parent, ok := g.Nodes[from]
+func (c *TreeCRDT) insertEdgeLSEQ(from, to NodeID, label string, leftOf NodeID, clientID ClientID, version int) error {
+	parent, ok := c.Nodes[from]
 	if !ok {
 		return fmt.Errorf("insertEdgeLSEQ: parent node %s not found", from)
 	}
@@ -412,8 +412,8 @@ func (g *Graph) insertEdgeLSEQ(from, to NodeID, label string, leftOf NodeID, cli
 	return nil
 }
 
-func (g *Graph) removeEdgeWithVersion(from, to NodeID, clientID ClientID, newVersion int) error {
-	node, ok := g.Nodes[from]
+func (c *TreeCRDT) removeEdgeWithVersion(from, to NodeID, clientID ClientID, newVersion int) error {
+	node, ok := c.Nodes[from]
 	if !ok {
 		return fmt.Errorf("Cannot remove edge, node %s not found", from)
 	}
@@ -462,15 +462,15 @@ func (g *Graph) removeEdgeWithVersion(from, to NodeID, clientID ClientID, newVer
 	return nil
 }
 
-func (g *Graph) RemoveEdge(from, to NodeID, clientID ClientID) error {
-	node, ok := g.Nodes[from]
+func (c *TreeCRDT) RemoveEdge(from, to NodeID, clientID ClientID) error {
+	node, ok := c.Nodes[from]
 	if !ok {
 		return fmt.Errorf("Cannot remove edge, node %s not found", from)
 	}
 	latestVersion := node.Clock[clientID]
 	newVersion := latestVersion + 1
 
-	return g.removeEdgeWithVersion(from, to, clientID, newVersion)
+	return c.removeEdgeWithVersion(from, to, clientID, newVersion)
 }
 
 func (n *Node) SetLiteral(value interface{}, clientID ClientID, version int) error {
@@ -507,33 +507,33 @@ func (n *Node) SetLiteral(value interface{}, clientID ClientID, version int) err
 //
 // Recommended usage:
 //   - Call Tidy() manually after a batch of operations is complete,
-//     when the graph is known to be stable.
+//     when the CRDT tree is known to be stable.
 //   - Optionally call Tidy() periodically (e.g., background maintenance) or before persisting to disk.
 //
-// This helps keep the graph compact without risking consistency.
-func (g *Graph) Tidy() {
+// This helps keep the CRDT tree compact without risking consistency.
+func (c *TreeCRDT) Tidy() {
 	referenced := make(map[NodeID]bool)
 
 	// Mark all referenced nodes (target of edges)
-	for _, node := range g.Nodes {
+	for _, node := range c.Nodes {
 		for _, edge := range node.Edges {
 			referenced[edge.To] = true
 		}
 	}
 
 	// Always preserve the root node
-	referenced[g.Root.ID] = true
+	referenced[c.Root.ID] = true
 
 	// Now delete all nodes that are unreferenced
-	for id := range g.Nodes {
+	for id := range c.Nodes {
 		if !referenced[id] {
-			delete(g.Nodes, id)
+			delete(c.Nodes, id)
 			log.WithFields(log.Fields{"NodeID": id}).Debug("Purged unreferenced node")
 		}
 	}
 }
 
-// Requirements for merging graphs containing arrays:
+// Requirements for merging CRDT trees containing arrays:
 //
 //  1. When two nodes with the same parent and label are concurrently added,
 //     they are treated as elements of an array (since JSON has no native set type).
@@ -565,13 +565,13 @@ func (g *Graph) Tidy() {
 //	    Considering the following merge operations leading to inconsistent order:
 //	    [n1] + [n1, n3, n4] + [n1, n5, n6] → [n1, n5, n6, n3, n4]
 //	    [n1] + [n1, n5, n6] + [n1, n3, n4] → [n1, n3, n4, n5, n6]
-func (g *Graph) Merge(g2 *Graph) {
-	for id, remote := range g2.Nodes {
+func (c *TreeCRDT) Merge(c2 *TreeCRDT) {
+	for id, remote := range c2.Nodes {
 		log.WithField("NodeID", id).Debug("Merging node")
 
-		local, exists := g.Nodes[id]
+		local, exists := c.Nodes[id]
 		if !exists {
-			log.WithField("NodeID", id).Debug("Node does not exist in local graph, cloning from remote")
+			log.WithField("NodeID", id).Debug("Node does not exist in local CRDT tree, cloning from remote")
 			cloned := newNodeFromID(id, remote.IsArray)
 			cloned.Fields = make(map[string]VersionedField)
 			for k, v := range remote.Fields {
@@ -581,7 +581,7 @@ func (g *Graph) Merge(g2 *Graph) {
 			cloned.LitteralValue = remote.LitteralValue
 			cloned.Clock = copyClock(remote.Clock)
 			cloned.Owner = remote.Owner
-			g.Nodes[id] = cloned
+			c.Nodes[id] = cloned
 			continue
 		}
 
@@ -600,9 +600,9 @@ func (g *Graph) Merge(g2 *Graph) {
 
 		// Merge edges
 		for _, re := range remote.Edges {
-			// Ensure both from and to nodes exist in local graph
-			if _, exists := g.Nodes[re.From]; !exists {
-				if remoteParentNode, ok := g2.Nodes[re.From]; ok {
+			// Ensure both from and to nodes exist in local CRDT tree
+			if _, exists := c.Nodes[re.From]; !exists {
+				if remoteParentNode, ok := c2.Nodes[re.From]; ok {
 					cloned := newNodeFromID(re.From, remoteParentNode.IsArray)
 					cloned.Fields = make(map[string]VersionedField)
 					for k, v := range remoteParentNode.Fields {
@@ -612,11 +612,11 @@ func (g *Graph) Merge(g2 *Graph) {
 					cloned.LitteralValue = remoteParentNode.LitteralValue
 					cloned.Clock = copyClock(remoteParentNode.Clock)
 					cloned.Owner = remoteParentNode.Owner
-					g.Nodes[re.From] = cloned
+					c.Nodes[re.From] = cloned
 				}
 			}
-			if _, exists := g.Nodes[re.To]; !exists {
-				if remoteNode, ok := g2.Nodes[re.To]; ok {
+			if _, exists := c.Nodes[re.To]; !exists {
+				if remoteNode, ok := c2.Nodes[re.To]; ok {
 					cloned := newNodeFromID(re.To, remoteNode.IsArray)
 					cloned.Fields = make(map[string]VersionedField)
 					for k, v := range remoteNode.Fields {
@@ -626,13 +626,13 @@ func (g *Graph) Merge(g2 *Graph) {
 					cloned.LitteralValue = remoteNode.LitteralValue
 					cloned.Clock = copyClock(remoteNode.Clock)
 					cloned.Owner = remoteNode.Owner
-					g.Nodes[re.To] = cloned
+					c.Nodes[re.To] = cloned
 				}
 			}
 
-			// Get parent and child from local graph
-			parentNode := g.Nodes[re.From]
-			toNode := g.Nodes[re.To]
+			// Get parent and child from local CRDT tree
+			parentNode := c.Nodes[re.From]
+			toNode := c.Nodes[re.To]
 
 			// Avoid adding duplicate edges
 			alreadyExists := false
@@ -649,7 +649,7 @@ func (g *Graph) Merge(g2 *Graph) {
 			// Check if parent has exactly one child and isn't yet an array
 			if len(parentNode.Edges) == 1 {
 				existingEdge := parentNode.Edges[0]
-				existingChild := g.Nodes[existingEdge.To]
+				existingChild := c.Nodes[existingEdge.To]
 
 				// Promote to array
 				parentNode.IsArray = true
@@ -663,11 +663,11 @@ func (g *Graph) Merge(g2 *Graph) {
 				}).Debug("Promoting parent to array due to concurrent insert")
 
 				// Remove and re-insert existing edge
-				err := g.RemoveEdge(re.From, existingEdge.To, remote.Owner)
+				err := c.RemoveEdge(re.From, existingEdge.To, remote.Owner)
 				if err != nil {
 					log.WithError(err).Error("Failed to remove existing edge during array promotion")
 				}
-				err = g.AppendEdge(re.From, existingEdge.To, "", remote.Owner)
+				err = c.AppendEdge(re.From, existingEdge.To, "", remote.Owner)
 				if err != nil {
 					log.WithError(err).Error("Failed to re-insert existing edge after array promotion")
 				}
@@ -675,7 +675,7 @@ func (g *Graph) Merge(g2 *Graph) {
 
 			if toNode.IsArray {
 				// Sort remote parent's edges to find left sibling
-				remoteParent := g2.Nodes[re.From]
+				remoteParent := c2.Nodes[re.From]
 				sortEdgesByLSEQ(remoteParent.Edges)
 
 				var siblingID NodeID
@@ -690,7 +690,7 @@ func (g *Graph) Merge(g2 *Graph) {
 
 				if siblingID != "" {
 					var exists bool
-					sibling, exists = g.Nodes[siblingID]
+					sibling, exists = c.Nodes[siblingID]
 					if !exists {
 						sibling = nil
 					}
@@ -702,8 +702,8 @@ func (g *Graph) Merge(g2 *Graph) {
 						"To":       re.To,
 						"Label":    re.Label,
 						"ClientID": remote.Owner,
-					}).Debug("Appending edge to array (no left sibling found in local graph)")
-					err := g.PrependEdge(re.From, re.To, re.Label, remote.Owner)
+					}).Debug("Appending edge to array (no left sibling found in local CRDT tree)")
+					err := c.PrependEdge(re.From, re.To, re.Label, remote.Owner)
 					if err != nil {
 						log.WithFields(log.Fields{
 							"NodeID": re.From,
@@ -719,8 +719,8 @@ func (g *Graph) Merge(g2 *Graph) {
 						"Label":     re.Label,
 						"SiblingID": sibling.ID,
 						"ClientID":  remote.Owner,
-					}).Debug("Inserting edge to array (right of sibling from remote graph)")
-					err := g.InsertEdgeRight(re.From, re.To, re.Label, sibling.ID, remote.Owner)
+					}).Debug("Inserting edge to array (right of sibling from remote CRDT tree)")
+					err := c.InsertEdgeRight(re.From, re.To, re.Label, sibling.ID, remote.Owner)
 					if err != nil {
 						log.WithFields(log.Fields{
 							"NodeID": re.From,
@@ -737,7 +737,7 @@ func (g *Graph) Merge(g2 *Graph) {
 					"Position": re.Position,
 					"ClientID": remote.Owner,
 				}).Debug("Adding edge to non-array node")
-				err := g.AddEdge(re.From, re.To, re.Label, remote.Owner)
+				err := c.AddEdge(re.From, re.To, re.Label, remote.Owner)
 				if err != nil {
 					log.WithFields(log.Fields{
 						"NodeID": re.From,
@@ -754,13 +754,26 @@ func (g *Graph) Merge(g2 *Graph) {
 		local.Owner = mergedOwner
 	}
 
-	g.normalize()
+	c.normalize()
 }
 
-func (g *Graph) normalize() {
-	log.Debug("Normalizing graph")
-	sortEdgesByLSEQ(g.Root.Edges)
-	for _, node := range g.Nodes {
+func (c *TreeCRDT) Print() {
+	for id, node := range c.Nodes {
+		fmt.Printf("Node %s:\n", id)
+		for k, field := range node.Fields {
+			fmt.Printf("  %s: %v (by %s, clock=%v)\n", k, field.Value, field.Owner, field.Clock)
+		}
+
+		for _, e := range node.Edges {
+			fmt.Printf("  → %s (%s[%d])\n", e.To, e.Label, e.Position)
+		}
+	}
+}
+
+func (c *TreeCRDT) normalize() {
+	log.Debug("Normalizing CRDT tree")
+	sortEdgesByLSEQ(c.Root.Edges)
+	for _, node := range c.Nodes {
 		sortEdgesByLSEQ(node.Edges)
 	}
 }

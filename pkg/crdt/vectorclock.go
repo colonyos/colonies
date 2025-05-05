@@ -58,6 +58,19 @@ func clocksEqual(a, b VectorClock) bool {
 	return true
 }
 
+func mergeClocks(a, b VectorClock) VectorClock {
+	merged := make(VectorClock)
+	for k, v := range a {
+		merged[k] = v
+	}
+	for k, v := range b {
+		if mv, ok := merged[k]; !ok || v > mv {
+			merged[k] = v
+		}
+	}
+	return merged
+}
+
 func lowestClientIDAFirst(a, b VectorClock) bool {
 	minA := findLowestClientID(a)
 	minB := findLowestClientID(b)

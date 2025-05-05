@@ -11,13 +11,13 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func (g *Graph) ImportJSON(rawJSON []byte, parentID NodeID, edgeLabel string, idx int, isArray bool, clientID ClientID) (NodeID, error) {
+func (c *TreeCRDT) ImportJSON(rawJSON []byte, parentID NodeID, edgeLabel string, idx int, isArray bool, clientID ClientID) (NodeID, error) {
 	version := 1
 	var parent *Node
 	if parentID == "" {
-		parent = g.Root
+		parent = c.Root
 	} else {
-		parent = g.getOrCreateNode(parentID, isArray, clientID, version)
+		parent = c.getOrCreateNode(parentID, isArray, clientID, version)
 	}
 
 	var data interface{}
@@ -34,28 +34,28 @@ func (g *Graph) ImportJSON(rawJSON []byte, parentID NodeID, edgeLabel string, id
 		} else {
 			id = generateRandomNodeID(string(parent.ID))
 		}
-		node := g.getOrCreateNode(id, isArray, clientID, version)
+		node := c.getOrCreateNode(id, isArray, clientID, version)
 
 		if parent.ID == "" {
 			return "", errors.New("parent.ID is empty")
 		}
 
 		if isArray {
-			g.AppendEdge(parent.ID, id, edgeLabel, clientID)
+			c.AppendEdge(parent.ID, id, edgeLabel, clientID)
 		} else {
-			g.AddEdge(parent.ID, id, edgeLabel, clientID)
+			c.AddEdge(parent.ID, id, edgeLabel, clientID)
 		}
 
 		for key, val := range v {
 			switch child := val.(type) {
 			case map[string]interface{}:
 				childJSON, _ := json.Marshal(child)
-				_, _ = g.ImportJSON(childJSON, id, key, idx, false, clientID)
+				_, _ = c.ImportJSON(childJSON, id, key, idx, false, clientID)
 			case []interface{}:
 				for i, item := range child {
 					if obj, ok := item.(map[string]interface{}); ok {
 						childJSON, _ := json.Marshal(obj)
-						_, err := g.ImportJSON(childJSON, id, key, i, true, clientID)
+						_, err := c.ImportJSON(childJSON, id, key, i, true, clientID)
 						if err != nil {
 							return "", err
 						}
@@ -69,7 +69,7 @@ func (g *Graph) ImportJSON(rawJSON []byte, parentID NodeID, edgeLabel string, id
 	case []interface{}:
 		for i, item := range v {
 			childJSON, _ := json.Marshal(item)
-			_, err := g.ImportJSON(childJSON, parent.ID, "", i, true, clientID)
+			_, err := c.ImportJSON(childJSON, parent.ID, "", i, true, clientID)
 			if err != nil {
 				return "", err
 			}
@@ -81,14 +81,13 @@ func (g *Graph) ImportJSON(rawJSON []byte, parentID NodeID, edgeLabel string, id
 		}
 		strID := fmt.Sprintf("%v", v)
 		id := generateRandomNodeID(strID)
-		node := g.getOrCreateNode(id, isArray, clientID, version)
+		node := c.getOrCreateNode(id, isArray, clientID, version)
 		node.Litteral = true
 		node.LitteralValue = v
 		if isArray {
-			g.AppendEdge(parent.ID, id, edgeLabel, clientID)
-			//g.insertEdge(parent.ID, id, edgeLabel, idx, clientID)
+			c.AppendEdge(parent.ID, id, edgeLabel, clientID)
 		} else {
-			g.AddEdge(parent.ID, id, edgeLabel, clientID)
+			c.AddEdge(parent.ID, id, edgeLabel, clientID)
 		}
 		return parent.ID, nil
 	default:
@@ -96,26 +95,13 @@ func (g *Graph) ImportJSON(rawJSON []byte, parentID NodeID, edgeLabel string, id
 	}
 }
 
-func (g *Graph) Print() {
-	for id, node := range g.Nodes {
-		fmt.Printf("Node %s:\n", id)
-		for k, field := range node.Fields {
-			fmt.Printf("  %s: %v (by %s, clock=%v)\n", k, field.Value, field.Owner, field.Clock)
-		}
-
-		for _, e := range node.Edges {
-			fmt.Printf("  → %s (%s[%d])\n", e.To, e.Label, e.Position)
-		}
-	}
-}
-
-func (g *Graph) exportNodeOrdered(id NodeID, visited map[NodeID]bool) (interface{}, error) {
+func (c *TreeCRDT) exportNodeOrdered(id NodeID, visited map[NodeID]bool) (interface{}, error) {
 	if visited[id] {
 		return nil, fmt.Errorf("Cycle detected at node %s", id)
 	}
 	visited[id] = true
 
-	node, ok := g.Nodes[id]
+	node, ok := c.Nodes[id]
 	if !ok {
 		return nil, fmt.Errorf("Node %s not found", id)
 	}
@@ -138,7 +124,7 @@ func (g *Graph) exportNodeOrdered(id NodeID, visited map[NodeID]bool) (interface
 	for field, edges := range edgeGroups {
 		isArray := false
 		for _, e := range edges {
-			node := g.Nodes[e.To]
+			node := c.Nodes[e.To]
 			if node != nil {
 				if node.IsArray {
 					isArray = true
@@ -153,7 +139,7 @@ func (g *Graph) exportNodeOrdered(id NodeID, visited map[NodeID]bool) (interface
 			})
 			var arrayItems []interface{}
 			for _, e := range edges {
-				child, err := g.exportNodeOrdered(e.To, visited)
+				child, err := c.exportNodeOrdered(e.To, visited)
 				if err != nil {
 					return nil, err
 				}
@@ -161,7 +147,7 @@ func (g *Graph) exportNodeOrdered(id NodeID, visited map[NodeID]bool) (interface
 			}
 			obj.Set(field, arrayItems)
 		} else {
-			child, err := g.exportNodeOrdered(edges[0].To, visited)
+			child, err := c.exportNodeOrdered(edges[0].To, visited)
 			if err != nil {
 				return nil, err
 			}
@@ -172,10 +158,10 @@ func (g *Graph) exportNodeOrdered(id NodeID, visited map[NodeID]bool) (interface
 	return obj, nil
 }
 
-func (g *Graph) exportRaw() (map[string]interface{}, error) {
+func (c *TreeCRDT) exportRaw() (map[string]interface{}, error) {
 	nodes := make(map[string]interface{})
 
-	for id, node := range g.Nodes {
+	for id, node := range c.Nodes {
 		nodeData := map[string]interface{}{
 			"id":            string(node.ID),
 			"isArray":       node.IsArray,
@@ -213,13 +199,13 @@ func (g *Graph) exportRaw() (map[string]interface{}, error) {
 	}
 
 	return map[string]interface{}{
-		"root":  string(g.Root.ID),
+		"root":  string(c.Root.ID),
 		"nodes": nodes,
 	}, nil
 }
 
-func (g *Graph) Save() ([]byte, error) {
-	exported, err := g.exportRaw()
+func (c *TreeCRDT) Save() ([]byte, error) {
+	exported, err := c.exportRaw()
 	if err != nil {
 		return nil, err
 	}
@@ -227,12 +213,12 @@ func (g *Graph) Save() ([]byte, error) {
 	return json.MarshalIndent(exported, "", "  ")
 }
 
-func (g *Graph) importRaw(data map[string]interface{}) error {
+func (c *TreeCRDT) importRaw(data map[string]interface{}) error {
 	nodesData, ok := data["nodes"].(map[string]interface{})
 	if !ok {
 		return errors.New("invalid raw data: nodes missing")
 	}
-	g.Nodes = make(map[NodeID]*Node)
+	c.Nodes = make(map[NodeID]*Node)
 
 	// First pass: create nodes
 	for idStr, nodeRaw := range nodesData {
@@ -285,14 +271,14 @@ func (g *Graph) importRaw(data map[string]interface{}) error {
 			}
 		}
 
-		g.Nodes[id] = node
+		c.Nodes[id] = node
 	}
 
 	// Second pass: recreate edges
 	for idStr, nodeRaw := range nodesData {
 		nodeMap, _ := nodeRaw.(map[string]interface{})
 		id := NodeID(idStr)
-		node := g.Nodes[id]
+		node := c.Nodes[id]
 
 		if edges, ok := nodeMap["edges"].([]interface{}); ok {
 			for _, e := range edges {
@@ -330,25 +316,25 @@ func (g *Graph) importRaw(data map[string]interface{}) error {
 	if !ok {
 		return errors.New("invalid raw data: root missing")
 	}
-	rootNode, ok := g.Nodes[NodeID(rootID)]
+	rootNode, ok := c.Nodes[NodeID(rootID)]
 	if !ok {
 		return errors.New("root node not found")
 	}
-	g.Root = rootNode
+	c.Root = rootNode
 
 	return nil
 }
 
-func (g *Graph) Load(data []byte) error {
+func (c *TreeCRDT) Load(data []byte) error {
 	var rawData map[string]interface{}
 	if err := json.Unmarshal(data, &rawData); err != nil {
 		return err
 	}
-	return g.importRaw(rawData)
+	return c.importRaw(rawData)
 }
 
-func (g *Graph) ExportToJSON() ([]byte, error) {
-	exported, err := g.Export()
+func (c *TreeCRDT) ExportJSON() ([]byte, error) {
+	exported, err := c.export()
 	if err != nil {
 		return nil, err
 	}
@@ -356,21 +342,21 @@ func (g *Graph) ExportToJSON() ([]byte, error) {
 	return json.MarshalIndent(exported, "", "  ")
 }
 
-func (g *Graph) Export() (interface{}, error) {
+func (c *TreeCRDT) export() (interface{}, error) {
 	visited := make(map[NodeID]bool)
 
-	if len(g.Root.Edges) == 0 {
+	if len(c.Root.Edges) == 0 {
 		return nil, fmt.Errorf("Root node has no edges")
 	}
 
-	if len(g.Root.Edges) == 1 {
-		childID := g.Root.Edges[0].To
-		return g.exportNodeOrdered(childID, visited)
+	if len(c.Root.Edges) == 1 {
+		childID := c.Root.Edges[0].To
+		return c.exportNodeOrdered(childID, visited)
 	}
 
 	isArray := false
-	for _, e := range g.Root.Edges {
-		node := g.Nodes[e.To]
+	for _, e := range c.Root.Edges {
+		node := c.Nodes[e.To]
 		if node.IsArray {
 			isArray = true
 			break
@@ -378,12 +364,11 @@ func (g *Graph) Export() (interface{}, error) {
 	}
 
 	if isArray {
-		// Root points to an array — sort by LSEQ
-		sortEdgesByLSEQ(g.Root.Edges)
+		sortEdgesByLSEQ(c.Root.Edges)
 
 		var arrayItems []interface{}
-		for _, e := range g.Root.Edges {
-			child, err := g.exportNodeOrdered(e.To, visited)
+		for _, e := range c.Root.Edges {
+			child, err := c.exportNodeOrdered(e.To, visited)
 			if err != nil {
 				return nil, err
 			}
@@ -393,8 +378,8 @@ func (g *Graph) Export() (interface{}, error) {
 	} else {
 		// Root points to a map — order by label (in edge order)
 		result := orderedmap.New()
-		for _, e := range g.Root.Edges {
-			child, err := g.exportNodeOrdered(e.To, visited)
+		for _, e := range c.Root.Edges {
+			child, err := c.exportNodeOrdered(e.To, visited)
 			if err != nil {
 				return nil, err
 			}
@@ -404,25 +389,25 @@ func (g *Graph) Export() (interface{}, error) {
 	}
 }
 
-func (g *Graph) Clone() (*Graph, error) {
-	safeCopy, err := g.Save()
+func (c *TreeCRDT) Clone() (*TreeCRDT, error) {
+	safeCopy, err := c.Save()
 	if err != nil {
 		return nil, err
 	}
-	newGraph := NewGraph()
-	if err := newGraph.Load(safeCopy); err != nil {
+	newTreeCRDT := NewTreeCRDT()
+	if err := newTreeCRDT.Load(safeCopy); err != nil {
 		return nil, err
 	}
-	return newGraph, nil
+	return newTreeCRDT, nil
 }
 
-func (g *Graph) Equal(other *Graph) bool {
-	if len(g.Nodes) != len(other.Nodes) {
-		log.WithFields(log.Fields{"Nodes1": len(g.Nodes), "Nodes2": len(other.Nodes)}).Warning("Node counts not equal")
+func (c *TreeCRDT) Equal(other *TreeCRDT) bool {
+	if len(c.Nodes) != len(other.Nodes) {
+		log.WithFields(log.Fields{"Nodes1": len(c.Nodes), "Nodes2": len(other.Nodes)}).Warning("Node counts not equal")
 		return false
 	}
 
-	for id, node := range g.Nodes {
+	for id, node := range c.Nodes {
 		otherNode, ok := other.Nodes[id]
 		if !ok || !nodesSemanticallyEqual(node, otherNode) {
 			log.WithFields(log.Fields{"NodeID": id, "Node1": node, "Node2": otherNode}).Warning("Nodes not equal")
@@ -583,66 +568,4 @@ func sortEdgesByToStable(edges []*Edge) []*Edge {
 		return copied[i].To < copied[j].To
 	})
 	return copied
-}
-
-func copyFields(original map[string]VersionedField) map[string]VersionedField {
-	newFields := make(map[string]VersionedField)
-	for k, v := range original {
-		newFields[k] = v
-	}
-	return newFields
-}
-
-func edgeExists(edges []*Edge, candidate *Edge) bool {
-	for _, e := range edges {
-		if e.From == candidate.From && e.To == candidate.To && e.Label == candidate.Label && e.Position == candidate.Position {
-			return true
-		}
-	}
-	return false
-}
-
-func mergeClocks(a, b VectorClock) VectorClock {
-	merged := make(VectorClock)
-	for k, v := range a {
-		merged[k] = v
-	}
-	for k, v := range b {
-		if mv, ok := merged[k]; !ok || v > mv {
-			merged[k] = v
-		}
-	}
-	return merged
-}
-
-func lowestClientID(a, b ClientID) ClientID {
-	if a < b {
-		return a
-	}
-	return b
-}
-
-func sortEdgesByNodeID(edges []*Edge) {
-	sort.SliceStable(edges, func(i, j int) bool {
-		return edges[i].To < edges[j].To
-	})
-	for i, edge := range edges {
-		edge.Position = i
-	}
-}
-
-func compareLSEQ(a, b []int) int {
-	for i := 0; i < len(a) && i < len(b); i++ {
-		if a[i] < b[i] {
-			return -1
-		} else if a[i] > b[i] {
-			return 1
-		}
-	}
-	if len(a) < len(b) {
-		return -1
-	} else if len(a) > len(b) {
-		return 1
-	}
-	return 0
 }
