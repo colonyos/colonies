@@ -110,10 +110,11 @@ func (n *Node) SetField(key string, value interface{}, clientID ClientID, versio
 	newClock := make(VectorClock)
 	newClock[clientID] = version
 
-	// Resolve conflict
-	winningClock, _ := resolveConflict(currentField.Clock, newClock, currentField.Owner, clientID, false)
+	winningClock, winningOwner := resolveConflict(currentField.Clock, newClock, currentField.Owner, clientID, false)
 
-	if clocksEqual(winningClock, newClock) {
+	if clocksEqual(winningClock, newClock) && (clientID == winningOwner) {
+		// Resolve conflict
+
 		// New value wins
 		n.Fields[key] = VersionedField{
 			Value: value,
@@ -282,16 +283,23 @@ func (c *TreeCRDT) InsertEdgeRight(from, to NodeID, label string, sibling NodeID
 }
 
 func (c *TreeCRDT) insertEdgeWithVersion(from, to NodeID, label string, sibling NodeID, left bool, clientID ClientID, newVersion int) error {
+	// set logging level debug
 	node, ok := c.Nodes[from]
 	if !ok {
 		return fmt.Errorf("insertWithVersion: parent node %s not found", from)
 	}
 
+	fmt.Println("Adding edge from ", from, "to", to)
+	// Current clock is
+	fmt.Println("Current clock: ", node.Clock)
+
 	// Prepare clock
 	newClock := copyClock(node.Clock)
 	newClock[clientID] = newVersion
+
 	winningClock, winningOwner := resolveConflict(node.Clock, newClock, node.Owner, clientID, false)
 	if !clocksEqual(winningClock, newClock) || winningOwner != clientID {
+		fmt.Println("XXXXXXXXXXXXXXXXXXXXXXXXXXX Conflict detected")
 		log.WithFields(log.Fields{
 			"NodeID":  from,
 			"To":      to,
@@ -364,6 +372,8 @@ func (c *TreeCRDT) insertEdgeWithVersion(from, to NodeID, label string, sibling 
 		"LSEQPosition": newPos,
 		"Version":      newVersion,
 	}).Debug("InsertEdge succeeded")
+
+	fmt.Println("After Current clock: ", node.Clock)
 
 	return nil
 }

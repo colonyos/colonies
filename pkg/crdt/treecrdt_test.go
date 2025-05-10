@@ -2,6 +2,7 @@ package crdt
 
 import (
 	"fmt"
+	"log"
 	"sort"
 	"testing"
 
@@ -438,7 +439,7 @@ func TestTreeCRDTMergeLists(t *testing.T) {
 	// G1 + G2:      [0, 1, 2, 3, 4] <- 4 is added to G1, owner of root is B
 	// G2 + G1:      [0, 1, 2, 3, 4] <- 0 is added to G2, owner of root is A
 
-	// 1. Create a new node in g1
+	// 1. Create a new node in c1
 	node0 := c1.CreateNode("0", true, clientA)
 	node0.Litteral = true
 	node0.LitteralValue = 0
@@ -450,7 +451,7 @@ func TestTreeCRDTMergeLists(t *testing.T) {
 	assert.Nil(t, err, "InsertEdge should not return an error")
 	// G1: [0, 1, 2, 4]  <-- 0 added
 
-	// 2. Create a new node in g2
+	// 2. Create a new node in c2
 	node3 := c2.CreateNode("3", true, clientA)
 	node3.Litteral = true
 	node3.LitteralValue = 3
@@ -482,87 +483,112 @@ func TestTreeCRDTMergeLists(t *testing.T) {
 	assert.True(t, c1.Root.Owner == c2.Root.Owner, "Owners should be equal after merge")
 }
 
-// func TestTreeCRDTMergeListsWithConflicts(t *testing.T) {
-// 	clientA := ClientID("clientA")
-// 	clientB := ClientID("clientB")
-//
-// 	initialJSON := []byte(`[
-// 		{"id": "A", "value": "1"},
-// 		{"id": "B", "value": "2"},
-// 		{"id": "C", "value": "3"},
-// 		{"id": "D", "value": "2"}
-// 	]`)
-//
-// 	c1 := NewTreeCRDT()
-// 	_, err := c1.ImportJSON(initialJSON, "", "", -1, false, ClientID(clientA))
-// 	assert.Nil(t, err, "AddNodeRecursively should not return an error")
-//
-// 	rawJSON, err := c1.Save()
-// 	assert.Nil(t, err, "Save should not return an error")
-//
-// 	c2 := NewTreeCRDT()
-// 	c2.Load(rawJSON)
-// 	assert.Nil(t, err, "Load should not return an error")
-//
-// 	rawJSONBefore, err := c1.Save()
-// 	assert.Nil(t, err, "Save should not return an error")
-//
-// 	c1.Merge(c2)
-//
-// 	rawJSONAfter, err := c1.Save()
-// 	assert.Nil(t, err, "Save should not return an error")
-//
-// 	// Trees should be identical before and after merge
-// 	assert.Equal(t, rawJSONBefore, rawJSONAfter, "Trees should be identical before and after merge")
-// 	assert.True(t, c1.Equal(c2), "Trees should be equal after merge")
-//
-// 	// Let's do some modifications on the graph independently
-// 	// Original    :    [1, 2, 4]
-// 	// G1(A):        [0, 1, 2, 4]
-// 	// G2(B):           [1, 2, 3, 4]
-// 	// G1 + G2:      [0, 1, 2, 3, 4] <- 4 is added to G1, owner of root is B
-// 	// G2 + G1:      [0, 1, 2, 3, 4] <- 0 is added to G2, owner of root is A
-//
-// 	// 1. Create a new node in g1
-// 	node0 := c1.CreateNode("0", true, clientA)
-// 	node0.Litteral = true
-// 	node0.LitteralValue = 0
-//
-// 	// Find the node with id "0"
-// 	sibling, err := c1.GetSibling(c1.Root.ID, 0)
-// 	assert.Nil(t, err, "GetSiblingNode should not return an error")
-// 	err = c1.InsertEdgeLeft(c1.Root.ID, node0.ID, "", sibling.ID, clientA)
-// 	assert.Nil(t, err, "InsertEdge should not return an error")
-// 	// G1: [0, 1, 2, 4]  <-- 0 added
-//
-// 	// 2. Create a new node in g2
-// 	node3 := c2.CreateNode("3", true, clientA)
-// 	node3.Litteral = true
-// 	node3.LitteralValue = 3
-// 	sibling, err = c2.GetSibling(c2.Root.ID, 1)
-// 	assert.Nil(t, err, "GetSiblingNode should not return an error")
-// 	err = c2.InsertEdgeRight(c2.Root.ID, node3.ID, "", sibling.ID, clientB)
-// 	assert.Nil(t, err, "InsertEdge should not return an error")
-// 	// G2: [1, 2, 3, 4]   <-- 3 added
-//
-// 	c1Clone, err := c1.Clone()
-// 	assert.Nil(t, err, "Clone should not return an error")
-//
-// 	// 3. Merge the graphs
-// 	c1.Merge(c2)
-// 	c2.Merge(c1Clone)
-//
-// 	jsom, err := c1.ExportJSON()
-// 	assert.Nil(t, err, "ExportToJSON should not return an error")
-// 	expectedJSON := []byte(`[0, 1, 2, 3, 4]`)
-// 	compareJSON(t, expectedJSON, jsom)
-//
-// 	json2, err := c2.ExportJSON()
-// 	assert.Nil(t, err, "ExportToJSON should not return an error")
-// 	expectedJSON2 := []byte(`[0, 1, 2, 3, 4]`)
-// 	compareJSON(t, expectedJSON2, json2)
-//
-// 	// C2 == C1
-// 	assert.True(t, c1.Equal(c2), "Graphs should be equal after merge")
-// 	assert.True(t, c1.Root.Owner == c2.Root.Owner, "Owners should be equal after merge")
-// }
+func TestTreeCRDTMergeListsConflicts(t *testing.T) {
+	clientA := ClientID("A")
+	clientB := ClientID("B")
+
+	initialJSON := []byte(`[2, 3, 4]`)
+
+	c1 := NewTreeCRDT()
+	_, err := c1.ImportJSON(initialJSON, "", "", -1, false, ClientID(clientA))
+	assert.Nil(t, err, "AddNodeRecursively should not return an error")
+
+	c2, err := c1.Clone()
+	assert.Nil(t, err, "Clone should not return an error")
+
+	// C1 prepares nodes
+	node := c1.CreateNode("1", true, clientA)
+	node.Litteral = true
+	node.LitteralValue = 1
+	err = c1.PrependEdge(c1.Root.ID, node.ID, "", clientA)
+	assert.Nil(t, err, "PrependEdge should not return an error")
+
+	node = c1.CreateNode("0", true, clientA)
+	node.Litteral = true
+	node.LitteralValue = 0
+	err = c1.PrependEdge(c1.Root.ID, node.ID, "", clientA)
+	assert.Nil(t, err, "PrependEdge should not return an error")
+
+	// C2 appends nodes
+	node = c2.CreateNode("5", true, clientB)
+	node.Litteral = true
+	node.LitteralValue = 5
+	err = c2.AppendEdge(c2.Root.ID, node.ID, "", clientB)
+	assert.Nil(t, err, "AppendEdge should not return an error")
+
+	node = c2.CreateNode("6", true, clientB)
+	node.Litteral = true
+	node.LitteralValue = 6
+	err = c2.AppendEdge(c2.Root.ID, node.ID, "", clientB)
+	assert.Nil(t, err, "AppendEdge should not return an error")
+
+	//logrus.SetLevel(logrus.DebugLevel)
+	// C1 are now [0, 1, 2, 3, 4] and root has increased it version by 2
+	// C2 are now [2, 3, 4, 5, 6] and root has increased it version by 2
+	// c1Clone, err := c1.Clone()
+	// c1Clone.Merge(c2)
+	//
+	// jsom, err := c1Clone.ExportJSON()
+	// assert.Nil(t, err, "ExportToJSON should not return an error")
+	// log.Println("C1 Clone JSON after merge:", string(jsom))
+
+	c2.Merge(c1)
+
+	json, err := c2.ExportJSON()
+	assert.Nil(t, err, "ExportToJSON should not return an error")
+	log.Println("C2 JSON after merge:", string(json))
+
+}
+
+func TestTreeCRDTMergeKVListsWithConflicts(t *testing.T) {
+	clientA := ClientID("clientA")
+	clientB := ClientID("clientB")
+
+	initialJSON := []byte(`[
+		{"id": "A", "value": "1"},
+		{"id": "B", "value": "2"},
+		{"id": "C", "value": "3"},
+		{"id": "D", "value": "2"}
+	]`)
+
+	c1 := NewTreeCRDT()
+	_, err := c1.ImportJSON(initialJSON, "", "", -1, false, ClientID(clientA))
+	assert.Nil(t, err, "AddNodeRecursively should not return an error")
+
+	c2, err := c1.Clone()
+	assert.Nil(t, err, "Clone should not return an error")
+
+	firstNode := c1.Nodes[c1.Root.Edges[0].To]
+
+	err = firstNode.SetField("value", "11", clientA, 2)
+	assert.Nil(t, err, "SetField should not return an error")
+
+	err = firstNode.SetField("value", "22", clientA, 3)
+	assert.Nil(t, err, "SetField should not return an error")
+
+	json, err := c1.ExportJSON()
+	assert.Nil(t, err, "ExportToJSON should not return an error")
+
+	firstNode2 := c2.Nodes[c2.Root.Edges[0].To]
+	err = firstNode2.SetField("value", "33", clientB, 2)
+	assert.Nil(t, err, "SetField should not return an error")
+
+	c1.Merge(c2)
+	c2.Merge(c1)
+	json, err = c1.ExportJSON()
+	assert.Nil(t, err, "ExportToJSON should not return an error")
+
+	json2, err := c2.ExportJSON()
+	assert.Nil(t, err, "ExportToJSON should not return an error")
+
+	expectedJSON := []byte(`[
+	 	{"id": "A", "value": "22"},
+	 	{"id": "B", "value": "2"},
+	 	{"id": "C", "value": "3"},
+	 	{"id": "D", "value": "2"}
+	]`)
+
+	compareJSON(t, expectedJSON, json)
+	compareJSON(t, expectedJSON, json2)
+
+}
