@@ -31,7 +31,6 @@ type Edge struct {
 	From         NodeID `json:"from"`
 	To           NodeID `json:"to"`
 	Label        string `json:"label"`
-	Position     int    `json:"position"`
 	LSEQPosition []int  `json:"lseqposition"` // LSEQ position
 }
 
@@ -176,7 +175,7 @@ func (c *TreeCRDT) addEdgeWithVersion(from, to NodeID, label string, clientID Cl
 	winningClock, winningOwner := resolveConflict(node.Clock, newClock, node.Owner, clientID, false)
 
 	if clocksEqual(winningClock, newClock) && (clientID == winningOwner) {
-		edge := &Edge{From: from, To: to, Label: label, Position: -1, LSEQPosition: make([]int, 0)}
+		edge := &Edge{From: from, To: to, Label: label, LSEQPosition: make([]int, 0)}
 		node.Edges = append(node.Edges, edge)
 		node.Clock = newClock
 		node.Owner = clientID
@@ -344,7 +343,6 @@ func (c *TreeCRDT) insertEdgeWithVersion(from, to NodeID, label string, sibling 
 		To:           to,
 		Label:        label,
 		LSEQPosition: newPos,
-		Position:     -1, // Deprecated
 	}
 	node.Edges = append(node.Edges, edge)
 	sortEdgesByLSEQ(node.Edges)
@@ -407,26 +405,15 @@ func (c *TreeCRDT) removeEdgeWithVersion(from, to NodeID, clientID ClientID, new
 
 	if clocksEqual(winningClock, newClock) || ignoreConflicts {
 		// New clock wins -> allow edge removal
-		index := -1
 		newEdges := []*Edge{}
 		for _, edge := range node.Edges {
 			if !(edge.To == to) {
 				newEdges = append(newEdges, edge)
 			}
-			if edge.To == to {
-				index = edge.Position
-			}
 		}
 		node.Edges = newEdges
 		node.Clock = newClock
 		node.Owner = clientID
-
-		// TODO: Is this really needed?
-		for _, edge := range newEdges {
-			if edge.Position > index {
-				edge.Position--
-			}
-		}
 
 		log.WithFields(log.Fields{
 			"NodeID":  from,
@@ -730,7 +717,6 @@ func (c *TreeCRDT) Merge(c2 *TreeCRDT) {
 				log.WithFields(log.Fields{
 					"NodeID":   re.From,
 					"Label":    re.Label,
-					"Position": re.Position,
 					"ClientID": remote.Owner,
 				}).Debug("Adding edge to non-array node")
 				err := c.AddEdge(re.From, re.To, re.Label, remote.Owner)
@@ -751,19 +737,6 @@ func (c *TreeCRDT) Merge(c2 *TreeCRDT) {
 	}
 
 	c.normalize()
-}
-
-func (c *TreeCRDT) Print() {
-	for id, node := range c.Nodes {
-		fmt.Printf("Node %s:\n", id)
-		for k, field := range node.Fields {
-			fmt.Printf("  %s: %v (by %s, clock=%v)\n", k, field.Value, field.Owner, field.Clock)
-		}
-
-		for _, e := range node.Edges {
-			fmt.Printf("  → %s (%s[%d])\n", e.To, e.Label, e.Position)
-		}
-	}
 }
 
 func (c *TreeCRDT) normalize() {

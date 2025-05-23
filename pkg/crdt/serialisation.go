@@ -134,9 +134,6 @@ func (c *TreeCRDT) exportNodeOrdered(id NodeID, visited map[NodeID]bool) (interf
 		}
 
 		if isArray {
-			sort.Slice(edges, func(i, j int) bool {
-				return edges[i].Position < edges[j].Position
-			})
 			var arrayItems []interface{}
 			for _, e := range edges {
 				child, err := c.exportNodeOrdered(e.To, visited)
@@ -302,9 +299,6 @@ func (c *TreeCRDT) importRaw(data map[string]interface{}) error {
 							edge.LSEQPosition = append(edge.LSEQPosition, int(intVal))
 						}
 					}
-				}
-				if pos, ok := edgeMap["position"].(float64); ok {
-					edge.Position = int(pos)
 				}
 				edge.From = id
 				node.Edges = append(node.Edges, edge)
