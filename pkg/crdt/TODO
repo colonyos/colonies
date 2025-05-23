@@ -1,5 +1,2 @@
-1. Validate an arrays all nodes contains isArray=true
-2. Relax the LWW rules on arrays
-3. Set isArray also on the parent
-4. Add more merge tests
-5. Implement a Sync functon
+1. Add more merge tests
+2. Implement a Sync functon

@@ -2,8 +2,6 @@ package crdt
 
 import (
 	"fmt"
-	"log"
-	"sort"
 	"testing"
 
 	"github.com/colonyos/colonies/pkg/core"
@@ -150,7 +148,7 @@ func TestTreeCRDTRemoveEdgeWithVersion(t *testing.T) {
 	assert.Equal(t, 1, len(parent.Edges), "Expected 1 edge before removal")
 
 	// Remove the edge with higher version (should succeed)
-	err = c.removeEdgeWithVersion(parent.ID, child.ID, clientID, 2)
+	err = c.removeEdgeWithVersion(parent.ID, child.ID, clientID, 2, false)
 	assert.Nil(t, err, "removeEdgeWithVersion should not return error")
 	assert.Equal(t, 0, len(parent.Edges), "Expected 0 edges after removal")
 
@@ -158,12 +156,12 @@ func TestTreeCRDTRemoveEdgeWithVersion(t *testing.T) {
 	_ = c.addEdgeWithVersion(parent.ID, child.ID, "link", clientID, 3)
 
 	// Try to remove with lower version (should be ignored)
-	err = c.removeEdgeWithVersion(parent.ID, child.ID, clientID, 2)
+	err = c.removeEdgeWithVersion(parent.ID, child.ID, clientID, 2, false)
 	assert.NotNil(t, err, "removeEdgeWithVersion with lower version should error")
 	assert.Equal(t, 1, len(parent.Edges), "Edge should still exist after invalid removal")
 
 	// Tie-break with other client (lower client ID wins)
-	err = c.removeEdgeWithVersion(parent.ID, child.ID, otherClientID, 3)
+	err = c.removeEdgeWithVersion(parent.ID, child.ID, otherClientID, 3, false)
 	assert.Nil(t, err, "removeEdgeWithVersion tie-break should not error")
 
 	if otherClientID < clientID {
@@ -194,7 +192,7 @@ func TestTreeCRDTRemoveIndexInArray(t *testing.T) {
 		node := c.Nodes[edge.To]
 		if node.LitteralValue.(string) == "B" {
 			// Remove the edge with ID "B"
-			err = c.removeEdgeWithVersion(c.Root.ID, node.ID, clientID, 3)
+			err = c.removeEdgeWithVersion(c.Root.ID, node.ID, clientID, 3, false)
 			assert.Nil(t, err, "removeEdgeWithVersion should not return an error")
 			break
 		}
@@ -367,10 +365,12 @@ func TestTreeCRDTMergeLitterals(t *testing.T) {
 	err = node2.SetLiteral("B-literal", clientB, 1)
 	assert.Nil(t, err, "SetLiteral should not return an error")
 
+	c1Copy, err := c1.Clone()
+	c2Copy, err := c2.Clone()
+
 	// Perform merge
-	fmt.Println("11111111111111111111")
 	c1.Merge(c2)
-	fmt.Println("22222222222222 11111111111111111111")
+	c2Copy.Merge(c1Copy)
 
 	// Check that all nodes exist
 	_, ok1 := c1.GetNode(node1.ID)
@@ -382,21 +382,21 @@ func TestTreeCRDTMergeLitterals(t *testing.T) {
 	root := c1.Root
 	assert.GreaterOrEqual(t, len(root.Edges), 2, "Expected at least two edges from root")
 
-	ids := make([]string, 0)
-	for _, edge := range root.Edges {
-		ids = append(ids, string(edge.To))
-	}
-
-	sorted := make([]string, len(ids))
-	copy(sorted, ids)
-	sort.Strings(sorted)
-
 	json, err := c1.ExportJSON()
 	assert.Nil(t, err, "ExportToJSON should not return an error")
 
-	// Since B-literal did not have any siblings, it will be prepended to the array, that why is it first
-	expectedJSON := []byte(`["B-literal", "A-literal"]`)
-	compareJSON(t, expectedJSON, json)
+	json2, err := c2Copy.ExportJSON()
+	assert.Nil(t, err, "ExportToJSON should not return an error")
+
+	compareJSON(t, json, json2)
+
+	if node1.ID < node2.ID {
+		expectedJSON := []byte(`["A-literal", "B-literal"]`)
+		compareJSON(t, expectedJSON, json)
+	} else {
+		expectedJSON := []byte(`["B-literal", "A-literal"]`)
+		compareJSON(t, expectedJSON, json)
+	}
 }
 
 func TestTreeCRDTMergeLists(t *testing.T) {
@@ -525,21 +525,10 @@ func TestTreeCRDTMergeListsConflicts(t *testing.T) {
 	assert.Nil(t, err, "AppendEdge should not return an error")
 
 	//logrus.SetLevel(logrus.DebugLevel)
-	// C1 are now [0, 1, 2, 3, 4] and root has increased it version by 2
-	// C2 are now [2, 3, 4, 5, 6] and root has increased it version by 2
-	// c1Clone, err := c1.Clone()
-	// c1Clone.Merge(c2)
-	//
-	// jsom, err := c1Clone.ExportJSON()
-	// assert.Nil(t, err, "ExportToJSON should not return an error")
-	// log.Println("C1 Clone JSON after merge:", string(jsom))
 
 	c2.Merge(c1)
-
-	json, err := c2.ExportJSON()
+	_, err = c2.ExportJSON()
 	assert.Nil(t, err, "ExportToJSON should not return an error")
-	log.Println("C2 JSON after merge:", string(json))
-
 }
 
 func TestTreeCRDTMergeKVListsWithConflicts(t *testing.T) {

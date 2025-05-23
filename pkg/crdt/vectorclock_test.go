@@ -23,63 +23,56 @@ func TestCopyClock(t *testing.T) {
 	}
 }
 
-// Unit tests for VectorClock comparison and equality functions.
-//
-// In these tests, we verify the behavior of:
-// 1. compareClocks(a, b): Determines if vector clock `a` is less than, greater than, or concurrent with vector clock `b`.
-//   - Returns -1 if `a` is strictly less than `b`
-//   - Returns 1 if `a` is strictly greater than `b`
-//   - Returns 0 if `a` and `b` are concurrent or identical
-//
-// 2. clocksEqual(a, b): Checks if two vector clocks are exactly equal (same keys and values).
-//
-// Vector clocks are used in CRDTs (Conflict-Free Replicated Data Types) to track causality
-// between updates made by different clients in distributed systems.
-// Correct comparison and equality checking are essential to detect conflicts and merge changes correctly.
 func TestCompareClocks(t *testing.T) {
 	tests := []struct {
 		name     string
 		a        VectorClock
 		b        VectorClock
-		expected int
+		expected ClockComparison
 	}{
 		{
-			name:     "equal clocks", // a and b are identical
+			name:     "equal clocks",
 			a:        VectorClock{"1": 1},
 			b:        VectorClock{"1": 1},
-			expected: 0,
+			expected: ClockEqual,
 		},
 		{
-			name:     "a < b", // a is strictly older than b, a happened before b
+			name:     "a < b",
 			a:        VectorClock{"1": 1},
 			b:        VectorClock{"1": 2},
-			expected: -1,
+			expected: ClockIsDominated,
 		},
 		{
-			name:     "a > b", // a is strictly greater than b, a happened after b
+			name:     "a > b",
 			a:        VectorClock{"1": 3},
 			b:        VectorClock{"1": 2},
-			expected: 1,
+			expected: ClockDominates,
 		},
 		{
-			name:     "a < b (different clients)", // "a < b (different clients)" means all updates in 'a' are included in 'b', but 'b' has extra updates from other clients.
+			name:     "a < b (different clients)",
 			a:        VectorClock{"1": 1},
 			b:        VectorClock{"1": 1, "2": 1},
-			expected: -1,
+			expected: ClockIsDominated,
 		},
 		{
-			name:     "a > b (different clients)", // "a > b (different clients)" means all updates in 'b' are included in 'a', but 'a' has extra updates from other clients.
+			name:     "a > b (different clients)",
 			a:        VectorClock{"1": 1, "2": 2},
 			b:        VectorClock{"1": 1, "2": 1},
-			expected: 1,
+			expected: ClockDominates,
+		},
+		{
+			name:     "concurrent clocks",
+			a:        VectorClock{"1": 2},
+			b:        VectorClock{"2": 2},
+			expected: ClockConcurrent,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result := compareClocks(tt.a, tt.b)
-			if result != ClockComparison(tt.expected) {
-				t.Errorf("compareClocks(%v) = %v, want %v", tt.name, result, tt.expected)
+			if result != tt.expected {
+				t.Errorf("compareClocks(%q) = %v, want %v", tt.name, result, tt.expected)
 			}
 		})
 	}
@@ -201,6 +194,15 @@ func TestResolveConflict(t *testing.T) {
 			ownerB: "c2",
 			append: true,
 			want:   VectorClock{"c1": 2, "c2": 3},
+		},
+		{
+			name:   "append merge (b wins)",
+			a:      VectorClock{"c1": 1, "c2": 2},
+			b:      VectorClock{"c1": 2, "c2": 2},
+			ownerA: "c1",
+			ownerB: "c2",
+			append: false,
+			want:   VectorClock{"c1": 2, "c2": 2},
 		},
 		{
 			name:   "tie, lowest client id wins (a lower)",

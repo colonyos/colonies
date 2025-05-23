@@ -205,6 +205,10 @@ func (c *TreeCRDT) AddEdge(from, to NodeID, label string, clientID ClientID) err
 }
 
 func (c *TreeCRDT) AppendEdge(from, to NodeID, label string, clientID ClientID) error {
+	return c.appendEdge(from, to, label, clientID, false)
+}
+
+func (c *TreeCRDT) appendEdge(from, to NodeID, label string, clientID ClientID, ignoreConflicts bool) error {
 	if c.validAttachment(from, to) != nil {
 		return fmt.Errorf("Adding edge would create a cycle: %s -> %s or multiple parents", from, to)
 	}
@@ -283,29 +287,13 @@ func (c *TreeCRDT) InsertEdgeRight(from, to NodeID, label string, sibling NodeID
 }
 
 func (c *TreeCRDT) insertEdgeWithVersion(from, to NodeID, label string, sibling NodeID, left bool, clientID ClientID, newVersion int) error {
-	// set logging level debug
 	node, ok := c.Nodes[from]
 	if !ok {
 		return fmt.Errorf("insertWithVersion: parent node %s not found", from)
 	}
 
-	fmt.Println("Adding edge from ", from, "to", to)
-	// Current clock is
-	fmt.Println("Current clock: ", node.Clock)
-
-	// Prepare clock
 	newClock := copyClock(node.Clock)
 	newClock[clientID] = newVersion
-
-	winningClock, winningOwner := resolveConflict(node.Clock, newClock, node.Owner, clientID, false)
-	if !clocksEqual(winningClock, newClock) || winningOwner != clientID {
-		fmt.Println("XXXXXXXXXXXXXXXXXXXXXXXXXXX Conflict detected")
-		log.WithFields(log.Fields{
-			"NodeID":  from,
-			"To":      to,
-			"Version": newVersion}).Error("insertWithVersion ignored due to conflict")
-		return nil
-	}
 
 	// Sort edges for position lookup
 	sorted := make([]*Edge, len(node.Edges))
@@ -373,8 +361,6 @@ func (c *TreeCRDT) insertEdgeWithVersion(from, to NodeID, label string, sibling 
 		"Version":      newVersion,
 	}).Debug("InsertEdge succeeded")
 
-	fmt.Println("After Current clock: ", node.Clock)
-
 	return nil
 }
 
@@ -406,53 +392,7 @@ func (c *TreeCRDT) GetSibling(parentNodeID NodeID, index int) (*Node, error) {
 	return sibling, nil
 }
 
-func (c *TreeCRDT) insertEdgeLSEQ(from, to NodeID, label string, leftOf NodeID, clientID ClientID, version int) error {
-	parent, ok := c.Nodes[from]
-	if !ok {
-		return fmt.Errorf("insertEdgeLSEQ: parent node %s not found", from)
-	}
-
-	var leftPos, rightPos Position
-	found := false
-
-	// Find LSEQ positions surrounding the insertion point
-	for i, e := range parent.Edges {
-		if e.To == leftOf {
-			found = true
-			leftPos = e.LSEQPosition
-			if i+1 < len(parent.Edges) {
-				rightPos = parent.Edges[i+1].LSEQPosition
-			} else {
-				rightPos = []int{Base}
-			}
-			break
-		}
-	}
-
-	if !found {
-		leftPos = []int{}
-		rightPos = []int{Base}
-	}
-
-	newPos := generatePositionBetweenLSEQ(leftPos, rightPos)
-
-	newEdge := &Edge{
-		From:         from,
-		To:           to,
-		Label:        label,
-		LSEQPosition: newPos,
-	}
-	parent.Edges = append(parent.Edges, newEdge)
-	sortEdgesByLSEQ(parent.Edges)
-
-	return nil
-}
-
-func (c *TreeCRDT) removeEdgeWithVersion(from, to NodeID, clientID ClientID, newVersion int) error {
-	return c.removeEdgeWithVersionForce(from, to, clientID, newVersion, false)
-}
-
-func (c *TreeCRDT) removeEdgeWithVersionForce(from, to NodeID, clientID ClientID, newVersion int, force bool) error {
+func (c *TreeCRDT) removeEdgeWithVersion(from, to NodeID, clientID ClientID, newVersion int, ignoreConflicts bool) error {
 	node, ok := c.Nodes[from]
 	if !ok {
 		return fmt.Errorf("Cannot remove edge, node %s not found", from)
@@ -465,7 +405,7 @@ func (c *TreeCRDT) removeEdgeWithVersionForce(from, to NodeID, clientID ClientID
 	// Resolve clock conflict
 	winningClock, _ := resolveConflict(node.Clock, newClock, node.Owner, clientID, false)
 
-	if clocksEqual(winningClock, newClock) {
+	if clocksEqual(winningClock, newClock) || ignoreConflicts {
 		// New clock wins -> allow edge removal
 		index := -1
 		newEdges := []*Edge{}
@@ -493,7 +433,6 @@ func (c *TreeCRDT) removeEdgeWithVersionForce(from, to NodeID, clientID ClientID
 			"To":      to,
 			"Version": newVersion}).Debug("Edge removed")
 	} else {
-		fmt.Println(node.Clock)
 		log.WithFields(log.Fields{
 			"NodeID":    from,
 			"To":        to,
@@ -514,7 +453,7 @@ func (c *TreeCRDT) RemoveEdge(from, to NodeID, clientID ClientID) error {
 	latestVersion := node.Clock[clientID]
 	newVersion := latestVersion + 1
 
-	return c.removeEdgeWithVersion(from, to, clientID, newVersion)
+	return c.removeEdgeWithVersion(from, to, clientID, newVersion, false)
 }
 
 func (n *Node) SetLiteral(value interface{}, clientID ClientID, version int) error {
@@ -581,38 +520,6 @@ func (c *TreeCRDT) Tidy() {
 	}
 }
 
-// Requirements for merging CRDT trees containing arrays:
-//
-//  1. When two nodes with the same parent and label are concurrently added,
-//     they are treated as elements of an array (since JSON has no native set type).
-//     This ensures deterministic, append-only behavior.
-//
-//     Example:
-//     n1 + n2 → [n1, n2] (becomes an array even if originally a single value)
-//     The nodes must be sorted by ther node ID to ensure deterministic order.
-//
-//  2. When two arrays are merged, their items are combined while preserving order
-//     and deduplicating based on NodeID. Relative sibling order determines final position.
-//
-//     Example:
-//     [n1, n2, n3] + [n0, n1] → [n0, n1, n2, n3]
-//
-// 3. If a sibling (anchor) is not found for a node, the node is inserted at the start.
-//
-//		Example:
-//		  [n1, n2] + [n3] → [n3, n1, n2]
-//
-//	 4. If multiple arrays are merged concurrently, insertion order is resolved by
-//	    using the earliest common sibling (or none, default to front).
-//
-//	    Example:
-//	    [n1, n2] + [n2, n3, n4] + [n1, n5, n6] → [n1, n5, n6, n2, n3, n4]
-//	    [n1, n2] + [n1, n5, n6] + [n2, n3, n4] → [n1, n5, n6, n2, n3, n4]
-//
-//	 5. Concurrent insertions after same anchor.
-//	    Considering the following merge operations leading to inconsistent order:
-//	    [n1] + [n1, n3, n4] + [n1, n5, n6] → [n1, n5, n6, n3, n4]
-//	    [n1] + [n1, n5, n6] + [n1, n3, n4] → [n1, n3, n4, n5, n6]
 func (c *TreeCRDT) Merge(c2 *TreeCRDT) {
 	for id, remote := range c2.Nodes {
 		log.WithField("NodeID", id).Debug("Merging node")
@@ -694,15 +601,16 @@ func (c *TreeCRDT) Merge(c2 *TreeCRDT) {
 				continue
 			}
 
-			dddff
-
 			// Special case: check if parent has exactly one child and isn't yet an array
 			// If so, we need to promote it to an array
 			// And then sort the edge by from nodes lowest ID to make the operation deterministic
+			promotion := false
+			var promotedNode *Node
 			if len(parentNode.Edges) == 1 {
-				fmt.Println("XXXXXXXXXXXXXXXXXX Parent has exactly one child, promoting to array")
+				promotion = true
 				existingEdge := parentNode.Edges[0]
 				existingChild := c.Nodes[existingEdge.To]
+				promotedNode = existingChild
 
 				// Promote to array
 				parentNode.IsArray = false
@@ -713,14 +621,17 @@ func (c *TreeCRDT) Merge(c2 *TreeCRDT) {
 					"Parent":        re.From,
 					"ExistingChild": existingEdge.To,
 					"NewChild":      re.To,
-				}).Error("Promoting parent to array due to concurrent insert")
+				}).Debug("Promoting parent to array due to concurrent insert")
+
+				ignoreConflicts := true
+				clientID := existingChild.Owner
+				err := c.removeEdgeWithVersion(re.From, existingEdge.To, clientID, existingChild.Clock[clientID], ignoreConflicts)
 
 				// Remove and re-insert existing edge
-				err := c.RemoveEdge(re.From, existingEdge.To, existingChild.Owner)
 				if err != nil {
 					log.WithError(err).Error("Failed to remove existing edge during array promotion")
 				}
-				err = c.AppendEdge(re.From, existingEdge.To, "", existingChild.Owner)
+				err = c.appendEdge(re.From, existingEdge.To, "", existingChild.Owner, ignoreConflicts)
 				if err != nil {
 					log.WithError(err).Error("Failed to re-insert existing edge after array promotion")
 				}
@@ -756,15 +667,47 @@ func (c *TreeCRDT) Merge(c2 *TreeCRDT) {
 						"Label":    re.Label,
 						"ClientID": remote.Owner,
 					}).Debug("Appending edge to array (no left sibling found in local CRDT tree)")
-					err := c.PrependEdge(re.From, re.To, re.Label, remote.Owner)
-					if err != nil {
-						log.WithFields(log.Fields{
-							"NodeID": re.From,
-							"To":     re.To,
-							"Label":  re.Label,
-							"Error":  err,
-						}).Error("AppendEdge failed")
+					if promotion {
+						log.WithField("Promotion", promotion).Debug("Promotion detected")
+						if promotedNode == nil {
+							log.WithField("PromotedNode", promotedNode).Error("Promoted node not found")
+						}
+						newNode := c.Nodes[re.To]
+						if promotedNode.ID > newNode.ID {
+							log.WithField("PromotedNode", promotedNode.ID).Debug("Promoted node is greater than remote node")
+							err := c.PrependEdge(re.From, re.To, re.Label, remote.Owner)
+							if err != nil {
+								log.WithFields(log.Fields{
+									"NodeID": re.From,
+									"To":     re.To,
+									"Label":  re.Label,
+									"Error":  err,
+								}).Error("PrependEdge failed")
+							}
+						} else {
+							log.WithField("PromotedNode", promotedNode.ID).Debug("Promoted node is less than remote node")
+							err := c.AppendEdge(re.From, re.To, re.Label, remote.Owner)
+							if err != nil {
+								log.WithFields(log.Fields{
+									"NodeID": re.From,
+									"To":     re.To,
+									"Label":  re.Label,
+									"Error":  err,
+								}).Error("AppendEdge failed")
+							}
+						}
+					} else {
+						err := c.PrependEdge(re.From, re.To, re.Label, remote.Owner)
+						if err != nil {
+							log.WithFields(log.Fields{
+								"NodeID": re.From,
+								"To":     re.To,
+								"Label":  re.Label,
+								"Error":  err,
+							}).Error("AppendEdge failed")
+						}
 					}
+
 				} else {
 					log.WithFields(log.Fields{
 						"From":      re.From,
@@ -784,7 +727,6 @@ func (c *TreeCRDT) Merge(c2 *TreeCRDT) {
 					}
 				}
 			} else {
-				fmt.Println("XXXXXXXXXXXXXXXXXXXXXx")
 				log.WithFields(log.Fields{
 					"NodeID":   re.From,
 					"Label":    re.Label,
