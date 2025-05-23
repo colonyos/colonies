@@ -368,7 +368,9 @@ func TestTreeCRDTMergeLitterals(t *testing.T) {
 	assert.Nil(t, err, "SetLiteral should not return an error")
 
 	// Perform merge
+	fmt.Println("11111111111111111111")
 	c1.Merge(c2)
+	fmt.Println("22222222222222 11111111111111111111")
 
 	// Check that all nodes exist
 	_, ok1 := c1.GetNode(node1.ID)

@@ -449,6 +449,10 @@ func (c *TreeCRDT) insertEdgeLSEQ(from, to NodeID, label string, leftOf NodeID, 
 }
 
 func (c *TreeCRDT) removeEdgeWithVersion(from, to NodeID, clientID ClientID, newVersion int) error {
+	return c.removeEdgeWithVersionForce(from, to, clientID, newVersion, false)
+}
+
+func (c *TreeCRDT) removeEdgeWithVersionForce(from, to NodeID, clientID ClientID, newVersion int, force bool) error {
 	node, ok := c.Nodes[from]
 	if !ok {
 		return fmt.Errorf("Cannot remove edge, node %s not found", from)
@@ -477,6 +481,7 @@ func (c *TreeCRDT) removeEdgeWithVersion(from, to NodeID, clientID ClientID, new
 		node.Clock = newClock
 		node.Owner = clientID
 
+		// TODO: Is this really needed?
 		for _, edge := range newEdges {
 			if edge.Position > index {
 				edge.Position--
@@ -488,10 +493,13 @@ func (c *TreeCRDT) removeEdgeWithVersion(from, to NodeID, clientID ClientID, new
 			"To":      to,
 			"Version": newVersion}).Debug("Edge removed")
 	} else {
+		fmt.Println(node.Clock)
 		log.WithFields(log.Fields{
-			"NodeID":  from,
-			"To":      to,
-			"Version": newVersion}).Debug("Edge remove ignored due to conflict")
+			"NodeID":    from,
+			"To":        to,
+			"NodeClock": node.Clock,
+			"NewClock":  newClock,
+			"Version":   newVersion}).Error("Edge remove ignored due to conflict")
 		return fmt.Errorf("Cannot remove edge, conflict detected: %s", from)
 	}
 
@@ -686,13 +694,18 @@ func (c *TreeCRDT) Merge(c2 *TreeCRDT) {
 				continue
 			}
 
-			// Check if parent has exactly one child and isn't yet an array
+			dddff
+
+			// Special case: check if parent has exactly one child and isn't yet an array
+			// If so, we need to promote it to an array
+			// And then sort the edge by from nodes lowest ID to make the operation deterministic
 			if len(parentNode.Edges) == 1 {
+				fmt.Println("XXXXXXXXXXXXXXXXXX Parent has exactly one child, promoting to array")
 				existingEdge := parentNode.Edges[0]
 				existingChild := c.Nodes[existingEdge.To]
 
 				// Promote to array
-				parentNode.IsArray = true
+				parentNode.IsArray = false
 				existingChild.IsArray = true
 				toNode.IsArray = true
 
@@ -700,14 +713,14 @@ func (c *TreeCRDT) Merge(c2 *TreeCRDT) {
 					"Parent":        re.From,
 					"ExistingChild": existingEdge.To,
 					"NewChild":      re.To,
-				}).Debug("Promoting parent to array due to concurrent insert")
+				}).Error("Promoting parent to array due to concurrent insert")
 
 				// Remove and re-insert existing edge
-				err := c.RemoveEdge(re.From, existingEdge.To, remote.Owner)
+				err := c.RemoveEdge(re.From, existingEdge.To, existingChild.Owner)
 				if err != nil {
 					log.WithError(err).Error("Failed to remove existing edge during array promotion")
 				}
-				err = c.AppendEdge(re.From, existingEdge.To, "", remote.Owner)
+				err = c.AppendEdge(re.From, existingEdge.To, "", existingChild.Owner)
 				if err != nil {
 					log.WithError(err).Error("Failed to re-insert existing edge after array promotion")
 				}
@@ -771,6 +784,7 @@ func (c *TreeCRDT) Merge(c2 *TreeCRDT) {
 					}
 				}
 			} else {
+				fmt.Println("XXXXXXXXXXXXXXXXXXXXXx")
 				log.WithFields(log.Fields{
 					"NodeID":   re.From,
 					"Label":    re.Label,
