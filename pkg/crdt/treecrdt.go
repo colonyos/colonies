@@ -16,17 +16,6 @@ type VersionedField struct {
 	Owner ClientID    `json:"owner"`
 }
 
-type Node struct {
-	ID            NodeID                    `json:"id"`
-	Fields        map[string]VersionedField `json:"fields"`
-	Edges         []*Edge                   `json:"edges"`
-	Clock         VectorClock               `json:"clock"`
-	Owner         ClientID                  `json:"owner"`
-	IsArray       bool                      `json:"isarray"`
-	Litteral      bool                      `json:"litteral"`
-	LitteralValue interface{}               `json:"litteralValue"`
-}
-
 type Edge struct {
 	From         NodeID `json:"from"`
 	To           NodeID `json:"to"`
@@ -83,8 +72,9 @@ func (c *TreeCRDT) GetNode(id NodeID) (*Node, bool) {
 }
 
 func NewTreeCRDT() *TreeCRDT {
+	rootID := "root"
 	c := &TreeCRDT{
-		Root:  newNodeFromID(NodeID("root"), false),
+		Root:  newNodeFromID(NodeID(rootID), false),
 		Nodes: make(map[NodeID]*Node),
 	}
 	c.Nodes[c.Root.ID] = c.Root
@@ -96,6 +86,15 @@ func generateRandomNodeID(label string) NodeID {
 	id := core.GenerateRandomID()
 	id = label + "-" + id
 	return NodeID(id)
+}
+
+func (n *Node) GetValue(key string) (interface{}, bool) {
+	field, ok := n.Fields[key]
+	if !ok {
+		return nil, false
+	}
+
+	return field.Value, true
 }
 
 func (n *Node) SetField(key string, value interface{}, clientID ClientID, version int) error {
@@ -509,7 +508,6 @@ func (c *TreeCRDT) Tidy() {
 
 func (c *TreeCRDT) Merge(c2 *TreeCRDT) {
 	for id, remote := range c2.Nodes {
-		log.WithField("NodeID", id).Debug("Merging node")
 
 		local, exists := c.Nodes[id]
 		if !exists {

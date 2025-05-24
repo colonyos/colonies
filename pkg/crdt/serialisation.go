@@ -1,6 +1,7 @@
 package crdt
 
 import (
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -9,6 +10,7 @@ import (
 
 	"github.com/iancoleman/orderedmap"
 	log "github.com/sirupsen/logrus"
+	"golang.org/x/crypto/sha3"
 )
 
 func (c *TreeCRDT) ImportJSON(rawJSON []byte, parentID NodeID, edgeLabel string, idx int, isArray bool, clientID ClientID) (NodeID, error) {
@@ -562,4 +564,20 @@ func sortEdgesByToStable(edges []*Edge) []*Edge {
 		return copied[i].To < copied[j].To
 	})
 	return copied
+}
+
+func (c *TreeCRDT) SemanticVersion() (string, error) {
+	exported, err := c.export()
+	if err != nil {
+		return "", err
+	}
+
+	// Marshal to canonical JSON using orderedmap and sorted arrays
+	bytes, err := json.Marshal(exported)
+	if err != nil {
+		return "", err
+	}
+
+	hash := sha3.Sum256(bytes)
+	return hex.EncodeToString(hash[:]), nil
 }

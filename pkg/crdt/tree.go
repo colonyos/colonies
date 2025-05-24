@@ -12,6 +12,9 @@ type Tree interface {
 	SetLiteral(value interface{}, clientID ClientID, version int) error
 
 	// Map operations
+	GetValue(key string) (interface{}, bool)
+	GetValueByPath(path string) (interface{}, bool, error)
+	GetStringValueByPath(path string) (string, bool, error)
 	SetField(key string, value interface{}, clientID ClientID, version int)
 	RemoveField(key string, clientID ClientID, version int)
 

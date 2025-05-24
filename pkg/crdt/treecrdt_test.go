@@ -8,7 +8,27 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestTreeCRDTSetFields(t *testing.T) {
+func TestTreeCRDTSetFieldArrays(t *testing.T) {
+	clientID := ClientID(core.GenerateRandomID())
+
+	json := []byte(`{
+	  "a": [
+	    {
+	      "2": "3"
+	    }
+	  ]
+	}`)
+
+	c := NewTreeCRDT()
+	_, err := c.ImportJSON(json, "", "", -1, false, clientID)
+	assert.NoError(t, err)
+
+	rawJSON, err := c.Save()
+	assert.NoError(t, err, "ExportToRaw should not return an error")
+	fmt.Println("Raw JSON:", string(rawJSON))
+}
+
+func TestTreeCRDTSetFieldsConflict(t *testing.T) {
 	c := NewTreeCRDT()
 
 	clientID1 := ClientID(core.GenerateRandomID())
@@ -581,5 +601,116 @@ func TestTreeCRDTMergeKVListsWithConflicts(t *testing.T) {
 
 	compareJSON(t, expectedJSON, json)
 	compareJSON(t, expectedJSON, json2)
+}
 
+// json1 := []byte(`{
+// 	  "k1": "v1",
+// 	  "k2": "v2",
+// 	  "m1": [
+// 	    {
+// 	      "m1_0_k1": "m1_v1",
+// 	      "m1_0_k2": "m1_v2"
+// 	    },
+// 	    {
+// 	      "m1_1_k1": "m1_v1",
+// 	      "m1_1_k2": "m1_v2",
+// 	      "m1_1_m2": [
+// 	        {
+// 	          "m1_1_m2_0_k1": "m1_1_m2_v1",
+// 	          "m1_1_m2_0_k2": "m1_1_m2_v2"
+// 	        }
+// 	      ]
+// 	    }
+// 	  ]
+// 	}`)
+
+func TestTreeCRDTMergeJSON1(t *testing.T) {
+	clientID := ClientID(core.GenerateRandomID())
+
+	json1 := []byte(`{
+	  "1": [
+	    {
+	      "2": "3"
+	    },
+	    {
+	      "4": [
+	        {
+	          "5": "6"
+	        }
+	      ]
+	    }
+	  ]
+	}`)
+
+	// expectedJSON := []byte(`[
+	//   {
+	//     "k1": "v1",
+	//     "k2": "v2",
+	//     "m1": [
+	//       {
+	//         "m1_0_k1": "m1_v1",
+	//         "m1_0_k2": "m1_v2"
+	//       },
+	//       {
+	//         "m1_1_k1": "m1_v1",
+	//         "m1_1_k2": "m1_v2",
+	//         "m1_1_m2": [
+	//           {
+	//             "m1_1_m2_0_k1": "m1_1_m2_v1",
+	//             "m1_1_m2_0_k2": "m1_1_m2_v2"
+	//           }
+	//         ]
+	//       }
+	//     ]
+	//   },
+	//   {
+	//     "k1": "v1",
+	//     "k2": "v2",
+	//     "m1": [
+	//       {
+	//         "m1_0_k1": "m1_v1",
+	//         "m1_0_k2": "m1_v2"
+	//       },
+	//       {
+	//         "m1_1_k1": "m1_v1",
+	//         "m1_1_k2": "m1_v2",
+	//         "m1_1_m2": [
+	//           {
+	//             "m1_1_m2_0_k1": "m1_1_m2_v1",
+	//             "m1_1_m2_0_k2": "m1_1_m2_v2"
+	//           }
+	//         ]
+	//       }
+	//     ]
+	//   }
+	// ]`)
+
+	// Build and merge CRDTs
+	c1 := NewTreeCRDT()
+	_, err := c1.ImportJSON(json1, "", "", -1, false, clientID)
+	assert.NoError(t, err)
+
+	c2 := NewTreeCRDT()
+	_, err = c2.ImportJSON(json1, "", "", -1, false, clientID)
+	assert.NoError(t, err)
+
+	// rawJSON, err := c1.Save()
+	// assert.NoError(t, err, "ExportToRaw should not return an error")
+	// fmt.Println("Raw JSON:", string(rawJSON))
+	//
+	// fmt.Println("---------------------------------")
+
+	c1.Merge(c2)
+
+	exportedJSON, err := c1.ExportJSON()
+	assert.NoError(t, err)
+
+	// rawJSONMerged, err := c1.Save()
+	// assert.Nil(t, err, "ExportToRaw should not return an error")
+	// fmt.Println("Merged Raw JSON:", string(rawJSONMerged))
+
+	fmt.Println("Exported JSON:", string(exportedJSON))
+	//fmt.Println("Expected JSON:", string(expectedJSON))
+
+	//compareJSON(t, expectedJSON, exportedJSON)
 }
