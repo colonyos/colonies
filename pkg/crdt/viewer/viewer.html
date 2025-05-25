@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>CRDT Tree Visualizer</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      font-family: sans-serif;
+    }
+
+    #app {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+    }
+
+    #drop-area {
+      padding: 20px;
+      border: 2px dashed #ccc;
+      text-align: center;
+      color: #666;
+      flex-shrink: 0;
+    }
+
+    .tooltip {
+      position: absolute;
+      max-width: 800px;
+      white-space: pre-wrap;
+      text-align: left;
+      padding: 10px;
+      font: 12px sans-serif;
+      background: #f9f9f9;
+      border: 1px solid #aaa;
+      border-radius: 5px;
+      box-shadow: 2px 2px 6px rgba(0, 0, 0, 0.2);
+      pointer-events: none;
+      z-index: 10;
+    }
+
+    #visualization-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      overflow: hidden;
+    }
+
+    .legend {
+      padding: 10px;
+      font-size: 14px;
+      text-align: center;
+      flex-shrink: 0;
+    }
+
+    .legend-item {
+      margin-right: 20px;
+      display: inline-block;
+    }
+
+    .legend-item svg {
+      vertical-align: middle;
+      border: none;
+      background: none;
+    }
+
+    .legend-item svg * {
+      stroke: none;
+    }
+
+    svg#tree {
+      width: 100%;
+      flex: 1;
+    }
+  </style>
+</head>
+<body>
+
+<div id="app">
+  <div id="drop-area">Drop a CRDT raw JSON file here</div>
+  <div class="tooltip" style="opacity:0;"></div>
+
+  <div id="visualization-container">
+    <div class="legend">
+      <span class="legend-item">
+        <svg width="20" height="20">
+          <circle cx="10" cy="10" r="8" fill="#1f77b4" />
+        </svg>
+        Root Node
+      </span>
+      <span class="legend-item">
+        <svg width="20" height="20">
+          <rect x="3" y="3" width="14" height="14" fill="green" />
+        </svg>
+        Array Node
+      </span>
+      <span class="legend-item">
+        <svg width="20" height="20">
+          <path d="M10,2 L18,18 L2,18 Z" fill="red" />
+        </svg>
+        Literal Node
+      </span>
+      <span class="legend-item">
+        <svg width="20" height="20" viewBox="-10 -10 20 20">
+          <path d="M0,-8 L8,0 L0,8 L-8,0 Z" fill="orange" />
+        </svg>
+        Map Node
+      </span>
+    </div>
+    <svg id="tree"></svg>
+  </div>
+</div>
+
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<script>
+  const dropArea = document.getElementById("drop-area");
+  const svg = d3.select("#tree");
+  const tooltip = d3.select(".tooltip");
+
+  function buildTree(nodesMap, rootId) {
+    const nodeMap = {}, childrenMap = {};
+    for (const [id, node] of Object.entries(nodesMap)) {
+      nodeMap[id] = { id, ...node };
+      childrenMap[id] = [];
+    }
+    for (const node of Object.values(nodeMap)) {
+      for (const edge of node.edges || []) {
+        const child = nodeMap[edge.to];
+        if (child) {
+          child._edgeLabel = edge.label;
+          child._lseq = (edge.lseqposition || []).join(",");
+          childrenMap[edge.from].push(child);
+          child.parent = nodeMap[edge.from];
+        }
+      }
+    }
+    const root = nodeMap[rootId];
+    function toHierarchy(d) {
+      const children = childrenMap[d.id] || [];
+      return {
+        data: d,
+        children: children.map(toHierarchy)
+      };
+    }
+    return toHierarchy(root);
+  }
+
+  function visualizeCRDT(crdt) {
+    svg.selectAll("*").remove();
+    const rootId = crdt.root;
+    const treeData = buildTree(crdt.nodes, rootId);
+
+    const width = svg.node().getBoundingClientRect().width;
+    const height = svg.node().getBoundingClientRect().height;
+    const margin = { top: 50 };
+
+    const root = d3.hierarchy(treeData);
+    const treeLayout = d3.tree().nodeSize([160, 160]);
+    treeLayout(root);
+
+    const xValues = root.descendants().map(d => d.x);
+    const minX = Math.min(...xValues);
+    const maxX = Math.max(...xValues);
+
+    const g = svg.append("g")
+      .attr("transform", `translate(${width / 2 - (minX + maxX) / 2}, ${margin.top})`);
+
+    const links = g.selectAll(".link")
+      .data(root.links())
+      .enter();
+
+    links.append("line")
+      .attr("stroke", "#999")
+      .attr("x1", d => d.source.x)
+      .attr("y1", d => d.source.y)
+      .attr("x2", d => d.target.x)
+      .attr("y2", d => d.target.y);
+
+    links.append("text")
+      .attr("x", d => (d.source.x + d.target.x) / 2)
+      .attr("y", d => (d.source.y + d.target.y) / 2 - 5)
+      .attr("text-anchor", "middle")
+      .attr("font-size", "10px")
+      .attr("fill", "#555")
+      .text(d => {
+        const parent = d.source.data.data;
+        const child = d.target.data.data;
+        const edge = parent.edges?.find(e => e.to === child.id);
+        if (!edge) return "";
+        if (edge.label) return edge.label;
+        if (edge.lseqposition?.length) return `[${edge.lseqposition.join(",")}]`;
+        return "";
+      });
+
+    const node = g.selectAll(".node")
+      .data(root.descendants())
+      .enter().append("g")
+      .attr("class", "node")
+      .attr("transform", d => `translate(${d.x},${d.y})`)
+      .on("mouseover", (event, d) => {
+        tooltip.transition().duration(200).style("opacity", 1);
+        tooltip.html(`<pre>${JSON.stringify(d.data.data, null, 2)}</pre>`)
+          .style("left", (event.pageX + 15) + "px")
+          .style("top", (event.pageY - 30) + "px");
+      })
+      .on("mouseout", () => tooltip.transition().duration(500).style("opacity", 0));
+
+    node.each(function(d) {
+      const n = d.data.data;
+      const shape = d3.select(this);
+      if (n.isLiteral) {
+        shape.append("path")
+          .attr("d", d3.symbol().type(d3.symbolTriangle).size(800))
+          .attr("fill", "red");
+        shape.append("text")
+          .text(String(n.literalValue))
+          .attr("y", 25)
+          .attr("text-anchor", "middle")
+          .style("font-size", "10px")
+          .style("fill", "#222");
+      } else if (n.isMap) {
+        shape.append("path")
+          .attr("d", d3.symbol().type(d3.symbolDiamond).size(800))
+          .attr("fill", "orange");
+      } else if (n.isArray) {
+        shape.append("rect")
+          .attr("x", -15).attr("y", -15).attr("width", 30).attr("height", 30)
+          .attr("fill", "green");
+      } else {
+        shape.append("circle")
+          .attr("r", 20)
+          .attr("fill", "#1f77b4");
+      }
+    });
+  }
+
+  dropArea.addEventListener("dragover", e => {
+    e.preventDefault();
+    dropArea.style.background = "#eee";
+  });
+
+  dropArea.addEventListener("dragleave", () => {
+    dropArea.style.background = "";
+  });
+
+  dropArea.addEventListener("drop", e => {
+    e.preventDefault();
+    dropArea.style.background = "";
+    const file = e.dataTransfer.files[0];
+    if (!file.name.endsWith(".json")) {
+      alert("Please drop a .json file");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = event => {
+      try {
+        const crdt = JSON.parse(event.target.result);
+        visualizeCRDT(crdt);
+      } catch (err) {
+        alert("Invalid JSON format");
+      }
+    };
+    reader.readAsText(file);
+  });
+</script>
+
+</body>
+</html>

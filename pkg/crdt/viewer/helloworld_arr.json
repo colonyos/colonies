@@ -1,0 +1,298 @@
+{
+  "nodes": {
+    " -0ad4179aa2aca344b15cde82cccd648b56deed0cadbc8abd5bf75da347499715": {
+      "clock": {
+        "clientB": 2
+      },
+      "edges": [],
+      "id": " -0ad4179aa2aca344b15cde82cccd648b56deed0cadbc8abd5bf75da347499715",
+      "isArray": true,
+      "isLiteral": true,
+      "isMap": false,
+      "literalValue": " ",
+      "owner": "clientB"
+    },
+    "!-79e11acae4c7a49d00c7635e7b98e478eb77fe0676acfcd4109b56a77688e9a4": {
+      "clock": {
+        "clientB": 2
+      },
+      "edges": [],
+      "id": "!-79e11acae4c7a49d00c7635e7b98e478eb77fe0676acfcd4109b56a77688e9a4",
+      "isArray": true,
+      "isLiteral": true,
+      "isMap": false,
+      "literalValue": "!",
+      "owner": "clientB"
+    },
+    "H-e272035c72113316f0ffbdc0e7c07f323c7db4a0d24d00d8918604955b83be53": {
+      "clock": {
+        "clientA": 2
+      },
+      "edges": [],
+      "id": "H-e272035c72113316f0ffbdc0e7c07f323c7db4a0d24d00d8918604955b83be53",
+      "isArray": true,
+      "isLiteral": true,
+      "isMap": false,
+      "literalValue": "H",
+      "owner": "clientA"
+    },
+    "arr-893e1a3fe1ebc8918cbe5ccfe29ac00c12c93ca58b96b83d6ea39cc935333277": {
+      "clock": {
+        "clientA": 7,
+        "clientB": 6
+      },
+      "edges": [
+        {
+          "from": "arr-893e1a3fe1ebc8918cbe5ccfe29ac00c12c93ca58b96b83d6ea39cc935333277",
+          "label": "",
+          "lseqposition": [
+            14
+          ],
+          "to": "H-e272035c72113316f0ffbdc0e7c07f323c7db4a0d24d00d8918604955b83be53"
+        },
+        {
+          "from": "arr-893e1a3fe1ebc8918cbe5ccfe29ac00c12c93ca58b96b83d6ea39cc935333277",
+          "label": "",
+          "lseqposition": [
+            15
+          ],
+          "to": "e-74a68d427f628141766fd510eb29a3cd80a603004e33826367edbb10e2ff7cb5"
+        },
+        {
+          "from": "arr-893e1a3fe1ebc8918cbe5ccfe29ac00c12c93ca58b96b83d6ea39cc935333277",
+          "label": "",
+          "lseqposition": [
+            15,
+            5
+          ],
+          "to": "l-b8c3737beca043aef0aabe62f7b65ba0ae42bcac2bb6d156a2d01f95627ad9d0"
+        },
+        {
+          "from": "arr-893e1a3fe1ebc8918cbe5ccfe29ac00c12c93ca58b96b83d6ea39cc935333277",
+          "label": "",
+          "lseqposition": [
+            15,
+            6
+          ],
+          "to": "l-d64d9c1014a090dd5ccbaa45dae06be377b7d6fda014b5965ff7776e7013daa0"
+        },
+        {
+          "from": "arr-893e1a3fe1ebc8918cbe5ccfe29ac00c12c93ca58b96b83d6ea39cc935333277",
+          "label": "",
+          "lseqposition": [
+            15,
+            15
+          ],
+          "to": "o-d94eceee5dfbbeb09765560d5f3f8c72c401e120b2fd4a2016b5fd2911cdc45f"
+        },
+        {
+          "from": "arr-893e1a3fe1ebc8918cbe5ccfe29ac00c12c93ca58b96b83d6ea39cc935333277",
+          "label": "",
+          "lseqposition": [
+            15,
+            15,
+            8
+          ],
+          "to": " -0ad4179aa2aca344b15cde82cccd648b56deed0cadbc8abd5bf75da347499715"
+        },
+        {
+          "from": "arr-893e1a3fe1ebc8918cbe5ccfe29ac00c12c93ca58b96b83d6ea39cc935333277",
+          "label": "",
+          "lseqposition": [
+            15,
+            15,
+            9
+          ],
+          "to": "w-e831629d2e2199b1fe611edd74abc6cf91c2790829b8db4313d09547db57eeee"
+        },
+        {
+          "from": "arr-893e1a3fe1ebc8918cbe5ccfe29ac00c12c93ca58b96b83d6ea39cc935333277",
+          "label": "",
+          "lseqposition": [
+            15,
+            15,
+            11
+          ],
+          "to": "o-89e513668bc2acac824bface241a0c6cd35cb7110b14f5b955ea23f0d3fbf572"
+        },
+        {
+          "from": "arr-893e1a3fe1ebc8918cbe5ccfe29ac00c12c93ca58b96b83d6ea39cc935333277",
+          "label": "",
+          "lseqposition": [
+            15,
+            15,
+            15
+          ],
+          "to": "r-8614baa91c02f11c91ff8d24c083b1e5896e997df6146af8634d5558b91829db"
+        },
+        {
+          "from": "arr-893e1a3fe1ebc8918cbe5ccfe29ac00c12c93ca58b96b83d6ea39cc935333277",
+          "label": "",
+          "lseqposition": [
+            15,
+            15,
+            15,
+            5
+          ],
+          "to": "l-95f52ba8eb6d9d387f9621a8cf5e8dfe6aa015010b5cbbf9e7bf302563596223"
+        },
+        {
+          "from": "arr-893e1a3fe1ebc8918cbe5ccfe29ac00c12c93ca58b96b83d6ea39cc935333277",
+          "label": "",
+          "lseqposition": [
+            15,
+            15,
+            15,
+            10
+          ],
+          "to": "d-0786e6d2da9aed3536d6b5fbaf61a525e0b049ba4bef03f906f2e5fffb8a0025"
+        },
+        {
+          "from": "arr-893e1a3fe1ebc8918cbe5ccfe29ac00c12c93ca58b96b83d6ea39cc935333277",
+          "label": "",
+          "lseqposition": [
+            15,
+            15,
+            15,
+            11
+          ],
+          "to": "!-79e11acae4c7a49d00c7635e7b98e478eb77fe0676acfcd4109b56a77688e9a4"
+        }
+      ],
+      "id": "arr-893e1a3fe1ebc8918cbe5ccfe29ac00c12c93ca58b96b83d6ea39cc935333277",
+      "isArray": true,
+      "isLiteral": false,
+      "isMap": false,
+      "literalValue": null,
+      "owner": "clientB"
+    },
+    "d-0786e6d2da9aed3536d6b5fbaf61a525e0b049ba4bef03f906f2e5fffb8a0025": {
+      "clock": {
+        "clientA": 2
+      },
+      "edges": [],
+      "id": "d-0786e6d2da9aed3536d6b5fbaf61a525e0b049ba4bef03f906f2e5fffb8a0025",
+      "isArray": true,
+      "isLiteral": true,
+      "isMap": false,
+      "literalValue": "d",
+      "owner": "clientA"
+    },
+    "e-74a68d427f628141766fd510eb29a3cd80a603004e33826367edbb10e2ff7cb5": {
+      "clock": {
+        "clientB": 2
+      },
+      "edges": [],
+      "id": "e-74a68d427f628141766fd510eb29a3cd80a603004e33826367edbb10e2ff7cb5",
+      "isArray": true,
+      "isLiteral": true,
+      "isMap": false,
+      "literalValue": "e",
+      "owner": "clientB"
+    },
+    "l-95f52ba8eb6d9d387f9621a8cf5e8dfe6aa015010b5cbbf9e7bf302563596223": {
+      "clock": {
+        "clientB": 2
+      },
+      "edges": [],
+      "id": "l-95f52ba8eb6d9d387f9621a8cf5e8dfe6aa015010b5cbbf9e7bf302563596223",
+      "isArray": true,
+      "isLiteral": true,
+      "isMap": false,
+      "literalValue": "l",
+      "owner": "clientB"
+    },
+    "l-b8c3737beca043aef0aabe62f7b65ba0ae42bcac2bb6d156a2d01f95627ad9d0": {
+      "clock": {
+        "clientA": 2
+      },
+      "edges": [],
+      "id": "l-b8c3737beca043aef0aabe62f7b65ba0ae42bcac2bb6d156a2d01f95627ad9d0",
+      "isArray": true,
+      "isLiteral": true,
+      "isMap": false,
+      "literalValue": "l",
+      "owner": "clientA"
+    },
+    "l-d64d9c1014a090dd5ccbaa45dae06be377b7d6fda014b5965ff7776e7013daa0": {
+      "clock": {
+        "clientB": 2
+      },
+      "edges": [],
+      "id": "l-d64d9c1014a090dd5ccbaa45dae06be377b7d6fda014b5965ff7776e7013daa0",
+      "isArray": true,
+      "isLiteral": true,
+      "isMap": false,
+      "literalValue": "l",
+      "owner": "clientB"
+    },
+    "o-89e513668bc2acac824bface241a0c6cd35cb7110b14f5b955ea23f0d3fbf572": {
+      "clock": {
+        "clientB": 2
+      },
+      "edges": [],
+      "id": "o-89e513668bc2acac824bface241a0c6cd35cb7110b14f5b955ea23f0d3fbf572",
+      "isArray": true,
+      "isLiteral": true,
+      "isMap": false,
+      "literalValue": "o",
+      "owner": "clientB"
+    },
+    "o-d94eceee5dfbbeb09765560d5f3f8c72c401e120b2fd4a2016b5fd2911cdc45f": {
+      "clock": {
+        "clientA": 2
+      },
+      "edges": [],
+      "id": "o-d94eceee5dfbbeb09765560d5f3f8c72c401e120b2fd4a2016b5fd2911cdc45f",
+      "isArray": true,
+      "isLiteral": true,
+      "isMap": false,
+      "literalValue": "o",
+      "owner": "clientA"
+    },
+    "r-8614baa91c02f11c91ff8d24c083b1e5896e997df6146af8634d5558b91829db": {
+      "clock": {
+        "clientA": 2
+      },
+      "edges": [],
+      "id": "r-8614baa91c02f11c91ff8d24c083b1e5896e997df6146af8634d5558b91829db",
+      "isArray": true,
+      "isLiteral": true,
+      "isMap": false,
+      "literalValue": "r",
+      "owner": "clientA"
+    },
+    "root": {
+      "clock": {
+        "clientA": 1
+      },
+      "edges": [
+        {
+          "from": "root",
+          "label": "",
+          "lseqposition": [],
+          "to": "arr-893e1a3fe1ebc8918cbe5ccfe29ac00c12c93ca58b96b83d6ea39cc935333277"
+        }
+      ],
+      "id": "root",
+      "isArray": false,
+      "isLiteral": false,
+      "isMap": false,
+      "literalValue": null,
+      "owner": "clientA"
+    },
+    "w-e831629d2e2199b1fe611edd74abc6cf91c2790829b8db4313d09547db57eeee": {
+      "clock": {
+        "clientA": 2
+      },
+      "edges": [],
+      "id": "w-e831629d2e2199b1fe611edd74abc6cf91c2790829b8db4313d09547db57eeee",
+      "isArray": true,
+      "isLiteral": true,
+      "isMap": false,
+      "literalValue": "w",
+      "owner": "clientA"
+    }
+  },
+  "root": "root"
+}

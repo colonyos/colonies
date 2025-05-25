@@ -732,3 +732,137 @@ func TestTreeCRDTMergeJSON1(t *testing.T) {
 
 	compareJSON(t, expectedJSON, exportedJSON)
 }
+
+func TestTreeCRDTMergeHelloWorld(t *testing.T) {
+	clientA := ClientID("clientA")
+	clientB := ClientID("clientB")
+
+	// Step 1: Start from empty CRDT
+	c1 := NewTreeCRDT()
+	_, err := c1.ImportJSON([]byte(`[]`), "", "", -1, false, clientA)
+	assert.Nil(t, err)
+
+	// Step 2: Insert "Hello" in c1
+	charsA := []string{"H", "e", "l", "l", "o"}
+	parentNode := c1.Root.Edges[0].To
+	var leftID NodeID
+	for _, ch := range charsA {
+		n := c1.CreateNode(ch, true, clientA)
+		n.SetLiteral(ch, clientA)
+		err := c1.InsertEdgeRight(parentNode, n.ID, "", leftID, clientA)
+		assert.Nil(t, err)
+		leftID = n.ID
+	}
+	lastAID := leftID
+
+	// Step 3: Clone c1 into c2 (simulate clientB syncing)
+	raw, err := c1.Save()
+	assert.Nil(t, err)
+
+	c2 := NewTreeCRDT()
+	err = c2.Load(raw)
+	assert.Nil(t, err)
+
+	// Step 4: Insert " world!" in c2 after last "o"
+	charsB := []string{" ", "w", "o", "r", "l", "d", "!"}
+	parentNode = c2.Root.Edges[0].To
+	leftID = lastAID
+	for _, ch := range charsB {
+		n := c2.CreateNode(ch, true, clientB)
+		n.SetLiteral(ch, clientB)
+		err := c2.InsertEdgeRight(parentNode, n.ID, "", leftID, clientB)
+		assert.Nil(t, err)
+		leftID = n.ID
+	}
+
+	// Step 5: Merge back both ways
+	c1.Merge(c2)
+	c2.Merge(c1)
+
+	// Step 6: Export and verify
+	json1, err := c1.ExportJSON()
+	assert.Nil(t, err)
+	json2, err := c2.ExportJSON()
+	assert.Nil(t, err)
+
+	expected := []byte(`["H","e","l","l","o"," ","w","o","r","l","d","!"]`)
+	compareJSON(t, expected, json1)
+	compareJSON(t, expected, json2)
+
+	assert.True(t, c1.Equal(c2), "Graphs should be equal after merge")
+	assert.Equal(t, c1.Root.Owner, c2.Root.Owner, "Root owners should match after merge")
+}
+
+func TestTreeCRDTSingleTreeTwoClientsHelloWorld(t *testing.T) {
+	clientA := ClientID("clientA")
+	clientB := ClientID("clientB")
+
+	// Step 1: Initialize TreeCRDT with an empty array
+	tree := NewTreeCRDT()
+	_, err := tree.ImportJSON([]byte(`[]`), "", "", -1, false, clientA)
+	assert.Nil(t, err, "ImportJSON should not return an error")
+
+	parentNode := tree.Root.Edges[0].To
+	var leftID NodeID
+
+	// Step 2: Client A inserts "Hello"
+	charsA := []string{"H", "e", "l", "l", "o"}
+	for _, ch := range charsA {
+		n := tree.CreateNode(ch, true, clientA)
+		n.SetLiteral(ch, clientA)
+		err := tree.InsertEdgeRight(parentNode, n.ID, "", leftID, clientA)
+		assert.Nil(t, err, "InsertEdgeRight (clientA) should not return an error")
+		leftID = n.ID
+	}
+
+	// Step 3: Client B inserts " world!"
+	charsB := []string{" ", "w", "o", "r", "l", "d", "!"}
+	for _, ch := range charsB {
+		n := tree.CreateNode(ch, true, clientB)
+		n.SetLiteral(ch, clientB)
+		err := tree.InsertEdgeRight(parentNode, n.ID, "", leftID, clientB)
+		assert.Nil(t, err, "InsertEdgeRight (clientB) should not return an error")
+		leftID = n.ID
+	}
+
+	// Step 4: Export final tree and validate JSON
+	json, err := tree.ExportJSON()
+	assert.Nil(t, err, "ExportJSON should not return an error")
+
+	expected := []byte(`["H","e","l","l","o"," ","w","o","r","l","d","!"]`)
+	compareJSON(t, expected, json)
+}
+
+func TestTreeCRDTSingleTreeInterleavedClientsHelloWorld(t *testing.T) {
+	clientA := ClientID("clientA")
+	clientB := ClientID("clientB")
+
+	// Step 1: Initialize shared TreeCRDT with an empty array
+	tree := NewTreeCRDT()
+	_, err := tree.ImportJSON([]byte(`[]`), "", "", -1, false, clientA)
+	assert.Nil(t, err, "ImportJSON should not return an error")
+
+	parentNode := tree.Root.Edges[0].To
+	var leftID NodeID
+
+	// Step 2: Interleave clients while inserting "Hello world!"
+	chars := []string{"H", "e", "l", "l", "o", " ", "w", "o", "r", "l", "d", "!"}
+	clients := []ClientID{clientA, clientB} // Alternating clients
+
+	for i, ch := range chars {
+		client := clients[i%2]
+		n := tree.CreateNode(ch, true, client)
+		n.SetLiteral(ch, client)
+
+		err := tree.InsertEdgeRight(parentNode, n.ID, "", leftID, client)
+		assert.Nil(t, err, "InsertEdgeRight (interleaved) should not return an error")
+		leftID = n.ID
+	}
+
+	// Step 3: Export final document and validate JSON structure
+	json, err := tree.ExportJSON()
+	assert.Nil(t, err, "ExportJSON should not return an error")
+
+	expected := []byte(`["H","e","l","l","o"," ","w","o","r","l","d","!"]`)
+	compareJSON(t, expected, json)
+}
