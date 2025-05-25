@@ -18,6 +18,15 @@ func compareJSON(t *testing.T, expectedJSON, exportedJSON []byte) {
 	assert.True(t, reflect.DeepEqual(expected, actual), "Exported JSON does not match expected.\nExpected:\n%v\n\nGot:\n%v\n", expected, actual)
 }
 
+func isJSONEqual(t *testing.T, expectedJSON, exportedJSON []byte) bool {
+	var expected, actual interface{}
+	err := json.Unmarshal(expectedJSON, &expected)
+	assert.Nil(t, err, "Failed to unmarshal expected JSON: %v", err)
+	err = json.Unmarshal(exportedJSON, &actual)
+	assert.Nil(t, err, "Failed to unmarshal exported JSON: %v", err)
+	return reflect.DeepEqual(expected, actual)
+}
+
 func TestTreeCRDTImport(t *testing.T) {
 	clientID := ClientID(core.GenerateRandomID())
 
@@ -53,22 +62,14 @@ func TestTreeCRDTImport(t *testing.T) {
 	compareJSON(t, originalJSON, exportedJSON)
 }
 
-func TestTreeCRDTSetFieldAfterImport(t *testing.T) {
+func TestTreeCRDTSetKeyValueAfterImport(t *testing.T) {
 	clientID := ClientID(core.GenerateRandomID())
 
-	// Initial JSON with missing "C"
 	initialJSON := []byte(`{
         "A": "1",
         "B": "2",
         "D": "2"
     }`)
-
-	// We will create graph that looks like this:
-	// Root
-	// └── FirstChild
-	//     ├── A
-	//     ├── B
-	//     └── D
 
 	c := NewTreeCRDT()
 
@@ -82,12 +83,11 @@ func TestTreeCRDTSetFieldAfterImport(t *testing.T) {
 		t.Fatalf("Child node not found")
 	}
 	assert.NotNil(t, childNode, "Child node should not be nil")
-	childNode.SetField("C", "3", ClientID(clientID), 1)
+	childNode.SetKeyValue("C", "3", ClientID(clientID))
 
 	exportedJSON, err := c.ExportJSON()
 	assert.Nil(t, err, "ExportToJSON should not return an error")
 
-	// Define the expected correct JSON
 	expectedJSON := []byte(`{
         "A": "1",
         "B": "2",
@@ -101,18 +101,11 @@ func TestTreeCRDTSetFieldAfterImport(t *testing.T) {
 func TestTreeCRDTAddToArrayAfterImport(t *testing.T) {
 	clientID := ClientID(core.GenerateRandomID())
 
-	// Initial JSON with missing "C"
 	initialJSON := []byte(`[
 		{"id": "A", "value": "1"},
 		{"id": "B", "value": "2"},
 		{"id": "D", "value": "2"}
 	]`)
-
-	// We will create graph that looks like this:
-	// Root
-	// ├── A
-	// ├── B
-	// └── D
 
 	c := NewTreeCRDT()
 	_, err := c.ImportJSON(initialJSON, "", "", -1, false, ClientID(clientID))
@@ -120,20 +113,19 @@ func TestTreeCRDTAddToArrayAfterImport(t *testing.T) {
 		t.Fatalf("Failed to add node recursively: %v", err)
 	}
 
-	// Create missing C
-	nodeIDC := NodeID("C")
-	nodeC := c.getOrCreateNode(nodeIDC, true, clientID, 1)
-	nodeC.SetField("id", "C", ClientID(clientID), 1)
-	nodeC.SetField("value", "3", ClientID(clientID), 1)
+	nodeC := c.CreateNode("C", false, clientID)
+	nodeC.IsMap = true
+	nodeC.SetKeyValue("id", "C", ClientID(clientID))
+	nodeC.SetKeyValue("value", "3", ClientID(clientID))
 
-	leftTo, err := c.GetSibling(c.Root.ID, 1)
+	arrayNodeID := c.Root.Edges[0].To
+	leftTo, err := c.GetSibling(arrayNodeID, 1)
 	assert.Nil(t, err, "GetSibling should not return an error")
-	c.InsertEdgeRight(c.Root.ID, NodeID("C"), "", leftTo.ID, clientID) // Insert C
+	c.InsertEdgeRight(arrayNodeID, nodeC.ID, "", leftTo.ID, clientID) // Insert C
 
 	exportedJSON, err := c.ExportJSON()
 	assert.Nil(t, err, "ExportToJSON should not return an error")
 
-	// Correct expected JSON
 	expectedJSON := []byte(`[
 		{"id": "A", "value": "1"},
 		{"id": "B", "value": "2"},
@@ -149,29 +141,23 @@ func TestTreeCRDTInsertStringAfterImport(t *testing.T) {
 
 	initialJSON := []byte(`["A", "B", "D"]`)
 
-	// We will create graph that looks like this:
-	// Root
-	// ├── A
-	// ├── B
-	// └── D
-
 	c := NewTreeCRDT()
 	_, err := c.ImportJSON(initialJSON, "", "", -1, false, ClientID(clientID))
 	assert.Nil(t, err, "AddNodeRecursively should not return an error")
 
 	nodeIDC := generateRandomNodeID(string("C"))
 	nodeC := c.getOrCreateNode(nodeIDC, false, clientID, 1)
-	nodeC.Litteral = true
-	nodeC.LitteralValue = "C"
+	nodeC.IsLiteral = true
+	nodeC.LiteralValue = "C"
 
-	sibling, err := c.GetSibling(c.Root.ID, 2) // Index 1 is D
-	err = c.InsertEdgeLeft(c.Root.ID, nodeIDC, "", sibling.ID, clientID)
+	arrayNodeID := c.Root.Edges[0].To
+	sibling, err := c.GetSibling(arrayNodeID, 2) // Index 1 is D
+	err = c.InsertEdgeLeft(arrayNodeID, nodeIDC, "", sibling.ID, clientID)
 	assert.Nil(t, err, "InsertEdge should not return an error")
 
 	exportedJSON, err := c.ExportJSON()
 	assert.Nil(t, err, "ExportToJSON should not return an error")
 
-	// Correct expected JSON
 	expectedJSON := []byte(`[
 		"A",
 		"B",
@@ -187,20 +173,14 @@ func TestTreeCRDTInsertIntAfterImport(t *testing.T) {
 
 	initialJSON := []byte(`[1, 2, 4]`)
 
-	// We will create graph that looks like this:
-	// Root
-	// ├── A
-	// ├── B
-	// └── D
-
 	c := NewTreeCRDT()
 	_, err := c.ImportJSON(initialJSON, "", "", -1, false, ClientID(clientID))
 	assert.Nil(t, err, "AddNodeRecursively should not return an error")
 
 	nodeIDC := generateRandomNodeID(string("C"))
 	nodeC := c.getOrCreateNode(nodeIDC, false, clientID, 1)
-	nodeC.Litteral = true
-	nodeC.LitteralValue = 3
+	nodeC.IsLiteral = true
+	nodeC.LiteralValue = 3
 
 	sibling, err := c.GetSibling(c.Root.ID, 20)
 	assert.NotNil(t, err, "Invalid index should not return an error")
@@ -208,15 +188,16 @@ func TestTreeCRDTInsertIntAfterImport(t *testing.T) {
 	sibling, err = c.GetSibling(c.Root.ID, -1)
 	assert.NotNil(t, err, "Invalid index should not return an error")
 
-	sibling, err = c.GetSibling(c.Root.ID, 1) // Index 1 is B
+	arrayNodeID := c.Root.Edges[0].To
 
-	err = c.InsertEdgeRight(c.Root.ID, nodeIDC, "", sibling.ID, clientID)
+	sibling, err = c.GetSibling(arrayNodeID, 1) // Index 1 is B
+
+	err = c.InsertEdgeRight(arrayNodeID, nodeIDC, "", sibling.ID, clientID)
 	assert.Nil(t, err, "InsertEdge should not return an error")
 
 	exportedJSON, err := c.ExportJSON()
 	assert.Nil(t, err, "ExportToJSON should not return an error")
 
-	// Correct expected JSON
 	expectedJSON := []byte(`[
 		1,
 		2,

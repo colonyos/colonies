@@ -1,5 +1,9 @@
 package crdt
 
+import (
+	log "github.com/sirupsen/logrus"
+)
+
 type ClientID string
 type VectorClock map[ClientID]int
 
@@ -102,13 +106,40 @@ func findLowestClientID(clock VectorClock) ClientID {
 func resolveConflict(a, b VectorClock, ownerA, ownerB ClientID, append bool) (VectorClock, ClientID) {
 	cmp := compareClocks(a, b)
 
+	// log.WithFields(log.Fields{
+	//               "NodeID":         valueNodeID,
+	//               "AttemptedValue": value,
+	//               "ClientID":       clientID,
+	//               "Error":          err,
+	//           }).Warning("SetLiteral failed")
+
 	switch cmp {
 	case ClockDominates:
+		log.WithFields(log.Fields{
+			"OwnerA":         ownerA,
+			"OwnerB":         ownerB,
+			"AttemptedValue": a,
+			"Result":         "Clock dominates",
+		}).Debug("Resolving conflicts")
+
 		return copyClock(a), ownerA
 	case ClockIsDominated:
+		log.WithFields(log.Fields{
+			"OwnerA":         ownerA,
+			"OwnerB":         ownerB,
+			"AttemptedValue": b,
+			"Result":         "Clock is dominated",
+		}).Debug("Resolving conflicts")
 		return copyClock(b), ownerB
 	case ClockEqual, ClockConcurrent:
 		if append {
+			log.WithFields(log.Fields{
+				"OwnerA":         ownerA,
+				"OwnerB":         ownerB,
+				"AttemptedValue": a,
+				"Result":         "Appending clocks, merging",
+			}).Debug("Resolving conflicts")
+
 			// Merge both clocks if appending (e.g., arrays)
 			merged := mergeClocks(a, b)
 			return merged, "" // No definitive winner in append mode
@@ -119,18 +150,51 @@ func resolveConflict(a, b VectorClock, ownerA, ownerB ClientID, append bool) (Ve
 		bVersion := b[ownerB] // defaults to 0 if not present
 
 		if aVersion > bVersion {
+			log.WithFields(log.Fields{
+				"OwnerA":         ownerA,
+				"OwnerB":         ownerB,
+				"AttemptedValue": a,
+				"Result":         "Last writer wins (OwnerA)",
+			}).Debug("Resolving conflicts")
 			return copyClock(a), ownerA
 		} else if bVersion > aVersion {
+			log.WithFields(log.Fields{
+				"OwnerA":         ownerA,
+				"OwnerB":         ownerB,
+				"AttemptedValue": b,
+				"Result":         "Last writer wins (OwnerB)",
+			}).Debug("Resolving conflicts")
 			return copyClock(b), ownerB
 		}
 
 		// Tie-break on ClientID
 		if ownerA < ownerB {
+			log.WithFields(log.Fields{
+				"OwnerA":         ownerA,
+				"OwnerB":         ownerB,
+				"AttemptedValue": a,
+				"Result":         "Tie-break on ClientID (OwnerA)",
+			}).Debug("Resolving conflicts")
 			return copyClock(a), ownerA
 		}
+
+		log.WithFields(log.Fields{
+			"OwnerA":         ownerA,
+			"OwnerB":         ownerB,
+			"AttemptedValue": b,
+			"Result":         "Tie-break on ClientID (OwnerB)",
+		}).Debug("Resolving conflicts")
 		return copyClock(b), ownerB
 	}
 
-	// Should not reach here
+	// TODO: return an error
+
+	log.WithFields(log.Fields{
+		"OwnerA":         ownerA,
+		"OwnerB":         ownerB,
+		"AttemptedValue": a,
+		"Result":         "Unexpected clock comparison result",
+	}).Error("Resolving conflicts")
+
 	return copyClock(a), ownerA
 }

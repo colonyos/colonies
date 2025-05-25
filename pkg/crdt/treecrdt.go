@@ -3,6 +3,7 @@ package crdt
 import (
 	"errors"
 	"fmt"
+	"sort"
 
 	"github.com/colonyos/colonies/pkg/core"
 	log "github.com/sirupsen/logrus"
@@ -10,10 +11,17 @@ import (
 
 type NodeID string
 
-type VersionedField struct {
-	Value interface{} `json:"value"`
-	Clock VectorClock `json:"clock"`
-	Owner ClientID    `json:"owner"`
+// TODO: Implement MarshalJSON() / UnmarshalJSON() manually or via a helper struct to prevent raw access to Node stuct fields
+type Node struct {
+	tree         *TreeCRDT
+	ID           NodeID      `json:"id"`
+	Edges        []*Edge     `json:"edges"`
+	Clock        VectorClock `json:"clock"`
+	Owner        ClientID    `json:"owner"`
+	IsMap        bool        `json:"ismap"`
+	IsArray      bool        `json:"isarray"`
+	IsLiteral    bool        `json:"isliteral"`
+	LiteralValue interface{} `json:"litteralValue"`
 }
 
 type Edge struct {
@@ -41,12 +49,12 @@ func (c *TreeCRDT) CreateNode(name string, isArray bool, clientID ClientID) *Nod
 	return node
 }
 
-func newNodeFromID(id NodeID, isArray bool) *Node {
+func newNodeFromID(id NodeID, isArray bool, tree *TreeCRDT) *Node {
 	node := &Node{
 		ID:      id,
-		Fields:  make(map[string]VersionedField),
 		Edges:   make([]*Edge, 0),
 		IsArray: isArray,
+		tree:    tree,
 	}
 
 	return node
@@ -54,7 +62,7 @@ func newNodeFromID(id NodeID, isArray bool) *Node {
 
 func (c *TreeCRDT) getOrCreateNode(id NodeID, isArray bool, clientID ClientID, version int) *Node {
 	if _, ok := c.Nodes[id]; !ok {
-		node := newNodeFromID(id, isArray)
+		node := newNodeFromID(id, isArray, c)
 		c.Nodes[id] = node
 		node.Clock = make(VectorClock)
 		node.Clock[clientID] = version
@@ -73,11 +81,17 @@ func (c *TreeCRDT) GetNode(id NodeID) (*Node, bool) {
 
 func NewTreeCRDT() *TreeCRDT {
 	rootID := "root"
+	root := &Node{
+		ID:      NodeID(rootID),
+		Edges:   make([]*Edge, 0),
+		IsArray: false,
+	}
 	c := &TreeCRDT{
-		Root:  newNodeFromID(NodeID(rootID), false),
+		Root:  root,
 		Nodes: make(map[NodeID]*Node),
 	}
 	c.Nodes[c.Root.ID] = c.Root
+	root.tree = c
 
 	return c
 }
@@ -88,76 +102,100 @@ func generateRandomNodeID(label string) NodeID {
 	return NodeID(id)
 }
 
-func (n *Node) GetValue(key string) (interface{}, bool) {
-	field, ok := n.Fields[key]
-	if !ok {
-		return nil, false
+// This functions only appends a new node to the tree, no need for conflict resolution
+func (n *Node) CreateMapNode(clientID ClientID) (*Node, error) {
+	mapNode := n.tree.CreateNode("map", false, clientID)
+	mapNode.IsMap = true
+	mapNode.IsArray = false
+	if err := n.tree.AddEdge(n.ID, mapNode.ID, "", clientID); err != nil {
+		return nil, fmt.Errorf("SetKeyValue: failed to attach map node: %w", err)
 	}
 
-	return field.Value, true
+	return mapNode, nil
 }
 
-func (n *Node) SetField(key string, value interface{}, clientID ClientID, version int) error {
-	if n.Litteral {
-		return fmt.Errorf("Cannot set field on a literal node: %s", n.ID)
+func (n *Node) GetNodeForKey(key string) (*Node, bool, error) {
+	if !n.IsMap {
+		return nil, false, fmt.Errorf("GetKeyValue: node %s is not a map node", n.ID)
 	}
 
-	currentField := n.Fields[key]
-
-	// Start a fresh clock
-	newClock := make(VectorClock)
-	newClock[clientID] = version
-
-	winningClock, winningOwner := resolveConflict(currentField.Clock, newClock, currentField.Owner, clientID, false)
-
-	if clocksEqual(winningClock, newClock) && (clientID == winningOwner) {
-		// Resolve conflict
-
-		// New value wins
-		n.Fields[key] = VersionedField{
-			Value: value,
-			Clock: newClock,
-			Owner: clientID,
+	// Search for the key in the edges
+	for _, edge := range n.Edges {
+		if edge.Label == key {
+			valueNodeID := edge.To
+			valueNode, exists := n.tree.Nodes[valueNodeID]
+			if !exists {
+				return nil, false, fmt.Errorf("GetKeyValue: missing node %s", valueNodeID)
+			}
+			return valueNode, true, nil
 		}
-		log.WithFields(log.Fields{
-			"NodeID": n.ID,
-			"Key":    key,
-			"Value":  value}).Debug("Set field")
-	} else {
-		log.WithFields(log.Fields{
-			"NodeID":       n.ID,
-			"Key":          key,
-			"CurrentField": currentField,
-			"NewClock":     newClock,
-			"WinningClock": winningClock}).Debug("Conflict detected")
 	}
-
-	return nil
+	return nil, false, nil
 }
 
-func (n *Node) RemoveField(key string, clientID ClientID, version int) {
-	currentField := n.Fields[key]
-
-	// Start a fresh clock for the removal
-	newClock := make(VectorClock)
-	newClock[clientID] = version
-
-	// Resolve conflict
-	winningClock, _ := resolveConflict(currentField.Clock, newClock, currentField.Owner, clientID, false)
-
-	if clocksEqual(winningClock, newClock) {
-		// New clock wins, so remove the field
-		delete(n.Fields, key)
-		log.WithFields(log.Fields{"NodeID": n.ID, "Key": key}).Debug("Removed field")
-	} else {
-		log.WithFields(log.Fields{
-			"NodeID":       n.ID,
-			"Key":          key,
-			"CurrentField": currentField,
-			"NewClock":     newClock,
-			"WinningClock": winningClock,
-		}).Debug("RemoveField conflict detected — keeping existing field")
+func (n *Node) SetKeyValue(key string, value interface{}, clientID ClientID) (NodeID, error) {
+	if !n.IsMap {
+		return "", fmt.Errorf("SetKeyValue: node %s is not a map node", n.ID)
 	}
+
+	// Check if key already exists
+	for _, edge := range n.Edges {
+		if edge.Label == key {
+			valueNodeID := edge.To
+			valueNode, exists := n.tree.Nodes[valueNodeID]
+			if !exists {
+				return "", fmt.Errorf("SetKeyValue: missing node %s", valueNodeID)
+			}
+			maxVersion := 0
+			for _, v := range valueNode.Clock {
+				if v > maxVersion {
+					maxVersion = v
+				}
+			}
+			version := maxVersion + 1
+
+			err := valueNode.setLiteralWithVersion(value, clientID, version)
+			if err != nil {
+				log.WithFields(log.Fields{
+					"NodeID":         valueNodeID,
+					"AttemptedValue": value,
+					"ClientID":       clientID,
+					"Error":          err,
+				}).Error("SetLiteral failed")
+			}
+
+			return valueNodeID, err
+		}
+	}
+
+	// Create new value node
+	valueNodeID := generateRandomNodeID("val")
+	valueNode := n.tree.getOrCreateNode(valueNodeID, false, clientID, 1)
+	if err := valueNode.setLiteralWithVersion(value, clientID, 1); err != nil {
+		return "", err
+	}
+
+	// Link to map node with key label
+	if err := n.tree.AddEdge(n.ID, valueNodeID, key, clientID); err != nil {
+		return "", err
+	}
+
+	return valueNodeID, nil
+}
+
+func (n *Node) RemoveKeyValue(key string, clientID ClientID) error {
+	if !n.IsMap {
+		return fmt.Errorf("RemoveKeyValue: node %s is not a map node", n.ID)
+	}
+
+	for _, edge := range n.Edges {
+		if edge.Label == key {
+			// Simply unlink the key node by removing the edge
+			return n.tree.RemoveEdge(n.ID, edge.To, clientID)
+		}
+	}
+
+	return fmt.Errorf("RemoveKeyValue: key %s not found", key)
 }
 
 func (c *TreeCRDT) addEdgeWithVersion(from, to NodeID, label string, clientID ClientID, newVersion int) error {
@@ -442,11 +480,28 @@ func (c *TreeCRDT) RemoveEdge(from, to NodeID, clientID ClientID) error {
 	return c.removeEdgeWithVersion(from, to, clientID, newVersion, false)
 }
 
-func (n *Node) SetLiteral(value interface{}, clientID ClientID, version int) error {
-	if len(n.Fields) > 0 {
-		return fmt.Errorf("Cannot set literal value on a node with fields: %s", n.ID)
+func (n *Node) GetLiteral() (interface{}, error) {
+	if !n.IsLiteral {
+		return nil, fmt.Errorf("GetLiteral: node %s is not a literal", n.ID)
 	}
+	return n.LiteralValue, nil
+}
 
+func (n *Node) SetLiteral(value interface{}, clientID ClientID) error {
+	// Find max version for this client
+	maxVersion := 0
+	for _, v := range n.Clock {
+		if v > maxVersion {
+			maxVersion = v
+		}
+	}
+	version := maxVersion + 1
+
+	return n.setLiteralWithVersion(value, clientID, version)
+}
+
+func (n *Node) setLiteralWithVersion(value interface{}, clientID ClientID, version int) error {
+	value = normalizeNumber(value) // If value is a number, normalize it to float64 since JS uses float64 for all numbers
 	currentClock := n.Clock
 	newClock := make(VectorClock)
 	newClock[clientID] = version
@@ -454,16 +509,25 @@ func (n *Node) SetLiteral(value interface{}, clientID ClientID, version int) err
 	winningClock, winningOwner := resolveConflict(currentClock, newClock, n.Owner, clientID, false)
 
 	if clocksEqual(winningClock, newClock) && winningOwner == clientID {
-		n.Litteral = true
-		n.LitteralValue = value
+		n.IsLiteral = true
+		n.LiteralValue = value
 		n.Clock = newClock
 		n.Owner = clientID
 		log.WithFields(log.Fields{
 			"NodeID":       n.ID,
+			"NodeClock":    currentClock,
+			"NewClock":     newClock,
+			"WinningClock": winningClock,
+			"WinningOwner": winningOwner,
+			"ClientID":     clientID,
 			"LiteralValue": value}).Debug("Set literal value")
 	} else {
 		log.WithFields(log.Fields{"NodeID": n.ID,
 			"AttemptedLiteralValue": value,
+			"ClientID":              clientID,
+			"NodeClock":             currentClock,
+			"NewClock":              newClock,
+			"WinningClock":          winningClock,
 			"ExistingOwner":         n.Owner,
 			"WinningOwner":          winningOwner}).Debug("Literal set ignored due to conflict")
 		return fmt.Errorf("Cannot set literal value, conflict detected: %s", n.ID)
@@ -507,122 +571,110 @@ func (c *TreeCRDT) Tidy() {
 }
 
 func (c *TreeCRDT) Merge(c2 *TreeCRDT) {
-	for id, remote := range c2.Nodes {
+	promotions := make(map[NodeID]NodeID) // fromNodeID -> arrayNodeID
 
+	for id, remote := range c2.Nodes {
 		local, exists := c.Nodes[id]
 		if !exists {
-			log.WithField("NodeID", id).Debug("Node does not exist in local CRDT tree, cloning from remote")
-			cloned := newNodeFromID(id, remote.IsArray)
-			cloned.Fields = make(map[string]VersionedField)
-			for k, v := range remote.Fields {
-				cloned.Fields[k] = v
-			}
-			cloned.Litteral = remote.Litteral
-			cloned.LitteralValue = remote.LitteralValue
+			cloned := newNodeFromID(id, remote.IsArray, c)
+			cloned.IsLiteral = remote.IsLiteral
+			cloned.IsMap = remote.IsMap
+			cloned.IsArray = remote.IsArray
+			cloned.LiteralValue = remote.LiteralValue
 			cloned.Clock = copyClock(remote.Clock)
 			cloned.Owner = remote.Owner
 			c.Nodes[id] = cloned
-			continue
+			local = cloned
 		}
 
 		mergedClock := mergeClocks(local.Clock, remote.Clock)
 		mergedOwner := lowestClientID(local.Owner, remote.Owner)
 
-		// Merge fields
-		for k, remoteField := range remote.Fields {
-			local.SetField(k, remoteField.Value, remoteField.Owner, remoteField.Clock[remoteField.Owner])
+		if remote.IsLiteral {
+			err := local.setLiteralWithVersion(remote.LiteralValue, remote.Owner, remote.Clock[remote.Owner])
+			if err != nil {
+				log.WithFields(log.Fields{
+					"NodeID": remote.ID,
+					"Error":  err,
+				}).Debug("Failed to set literal value during merge")
+				continue
+			}
 		}
 
-		// Merge literal
-		if remote.Litteral {
-			_ = local.SetLiteral(remote.LitteralValue, remote.Owner, remote.Clock[remote.Owner])
-		}
-
-		// Merge edges
 		for _, re := range remote.Edges {
-			// Ensure both from and to nodes exist in local CRDT tree
 			if _, exists := c.Nodes[re.From]; !exists {
-				if remoteParentNode, ok := c2.Nodes[re.From]; ok {
-					cloned := newNodeFromID(re.From, remoteParentNode.IsArray)
-					cloned.Fields = make(map[string]VersionedField)
-					for k, v := range remoteParentNode.Fields {
-						cloned.Fields[k] = v
-					}
-					cloned.Litteral = remoteParentNode.Litteral
-					cloned.LitteralValue = remoteParentNode.LitteralValue
-					cloned.Clock = copyClock(remoteParentNode.Clock)
-					cloned.Owner = remoteParentNode.Owner
-					c.Nodes[re.From] = cloned
-				}
+				c.cloneNodeFromRemote(c2, re.From)
 			}
 			if _, exists := c.Nodes[re.To]; !exists {
-				if remoteNode, ok := c2.Nodes[re.To]; ok {
-					cloned := newNodeFromID(re.To, remoteNode.IsArray)
-					cloned.Fields = make(map[string]VersionedField)
-					for k, v := range remoteNode.Fields {
-						cloned.Fields[k] = v
-					}
-					cloned.Litteral = remoteNode.Litteral
-					cloned.LitteralValue = remoteNode.LitteralValue
-					cloned.Clock = copyClock(remoteNode.Clock)
-					cloned.Owner = remoteNode.Owner
-					c.Nodes[re.To] = cloned
-				}
+				c.cloneNodeFromRemote(c2, re.To)
 			}
 
-			// Get parent and child from local CRDT tree
-			parentNode := c.Nodes[re.From]
+			fromNode := c.Nodes[re.From]
 			toNode := c.Nodes[re.To]
 
-			// Avoid adding duplicate edges
-			alreadyExists := false
-			for _, le := range parentNode.Edges {
-				if le.To == re.To {
-					alreadyExists = true
-					break
-				}
-			}
-			if alreadyExists {
+			if c.edgeExists(fromNode, re.To) {
 				continue
 			}
 
-			// Special case: check if parent has exactly one child and isn't yet an array
-			// If so, we need to promote it to an array
-			// And then sort the edge by from nodes lowest ID to make the operation deterministic
-			promotion := false
-			var promotedNode *Node
-			if len(parentNode.Edges) == 1 {
-				promotion = true
-				existingEdge := parentNode.Edges[0]
+			// Promote to array if single child and not already array or map
+			if len(fromNode.Edges) == 1 && !fromNode.IsArray && !fromNode.IsMap {
+				existingEdge := fromNode.Edges[0]
 				existingChild := c.Nodes[existingEdge.To]
-				promotedNode = existingChild
 
-				// Promote to array
-				parentNode.IsArray = false
-				existingChild.IsArray = true
-				toNode.IsArray = true
+				arrayNode := c.CreateNode("arr", true, fromNode.Owner)
+				arrayNode.IsArray = true
 
-				log.WithFields(log.Fields{
-					"Parent":        re.From,
-					"ExistingChild": existingEdge.To,
-					"NewChild":      re.To,
-				}).Debug("Promoting parent to array due to concurrent insert")
+				_ = c.AddEdge(fromNode.ID, arrayNode.ID, "", fromNode.Owner)
+				_ = c.removeEdgeWithVersion(fromNode.ID, existingChild.ID, existingChild.Owner, existingChild.Clock[existingChild.Owner], true)
 
-				ignoreConflicts := true
-				clientID := existingChild.Owner
-				err := c.removeEdgeWithVersion(re.From, existingEdge.To, clientID, existingChild.Clock[clientID], ignoreConflicts)
-
-				// Remove and re-insert existing edge
-				if err != nil {
-					log.WithError(err).Error("Failed to remove existing edge during array promotion")
+				// Insert both existing and new child sorted by NodeID
+				children := []*Node{existingChild, toNode}
+				sort.Slice(children, func(i, j int) bool {
+					return children[i].ID < children[j].ID
+				})
+				for _, child := range children {
+					_ = c.AppendEdge(arrayNode.ID, child.ID, "", fromNode.Owner)
 				}
-				err = c.appendEdge(re.From, existingEdge.To, "", existingChild.Owner, ignoreConflicts)
-				if err != nil {
-					log.WithError(err).Error("Failed to re-insert existing edge after array promotion")
-				}
+
+				promotions[fromNode.ID] = arrayNode.ID
+				continue
 			}
 
-			if toNode.IsArray {
+			if arrayNodeID, promoted := promotions[re.From]; promoted {
+				// Prevent duplicate
+				if c.edgeExists(c.Nodes[arrayNodeID], re.To) {
+					continue
+				}
+
+				// Ensure deterministic order using NodeID
+				arrayNode := c.Nodes[arrayNodeID]
+				existingChildren := make([]*Edge, len(arrayNode.Edges))
+				copy(existingChildren, arrayNode.Edges)
+				sort.SliceStable(existingChildren, func(i, j int) bool {
+					return existingChildren[i].To < existingChildren[j].To
+				})
+
+				inserted := false
+				for i, edge := range existingChildren {
+					if re.To < edge.To {
+						var leftSiblingID NodeID
+						if i > 0 {
+							leftSiblingID = existingChildren[i-1].To
+							_ = c.InsertEdgeRight(arrayNodeID, re.To, re.Label, leftSiblingID, remote.Owner)
+						} else {
+							_ = c.PrependEdge(arrayNodeID, re.To, re.Label, remote.Owner)
+						}
+						inserted = true
+						break
+					}
+				}
+				if !inserted {
+					_ = c.AppendEdge(arrayNodeID, re.To, re.Label, remote.Owner)
+				}
+				continue
+			}
+
+			if fromNode.IsArray {
 				// Sort remote parent's edges to find left sibling
 				remoteParent := c2.Nodes[re.From]
 				sortEdgesByLSEQ(remoteParent.Edges)
@@ -652,47 +704,15 @@ func (c *TreeCRDT) Merge(c2 *TreeCRDT) {
 						"Label":    re.Label,
 						"ClientID": remote.Owner,
 					}).Debug("Appending edge to array (no left sibling found in local CRDT tree)")
-					if promotion {
-						log.WithField("Promotion", promotion).Debug("Promotion detected")
-						if promotedNode == nil {
-							log.WithField("PromotedNode", promotedNode).Error("Promoted node not found")
-						}
-						newNode := c.Nodes[re.To]
-						if promotedNode.ID > newNode.ID {
-							log.WithField("PromotedNode", promotedNode.ID).Debug("Promoted node is greater than remote node")
-							err := c.PrependEdge(re.From, re.To, re.Label, remote.Owner)
-							if err != nil {
-								log.WithFields(log.Fields{
-									"NodeID": re.From,
-									"To":     re.To,
-									"Label":  re.Label,
-									"Error":  err,
-								}).Error("PrependEdge failed")
-							}
-						} else {
-							log.WithField("PromotedNode", promotedNode.ID).Debug("Promoted node is less than remote node")
-							err := c.AppendEdge(re.From, re.To, re.Label, remote.Owner)
-							if err != nil {
-								log.WithFields(log.Fields{
-									"NodeID": re.From,
-									"To":     re.To,
-									"Label":  re.Label,
-									"Error":  err,
-								}).Error("AppendEdge failed")
-							}
-						}
-					} else {
-						err := c.PrependEdge(re.From, re.To, re.Label, remote.Owner)
-						if err != nil {
-							log.WithFields(log.Fields{
-								"NodeID": re.From,
-								"To":     re.To,
-								"Label":  re.Label,
-								"Error":  err,
-							}).Error("AppendEdge failed")
-						}
+					err := c.PrependEdge(re.From, re.To, re.Label, remote.Owner)
+					if err != nil {
+						log.WithFields(log.Fields{
+							"NodeID": re.From,
+							"To":     re.To,
+							"Label":  re.Label,
+							"Error":  err,
+						}).Error("AppendEdge failed")
 					}
-
 				} else {
 					log.WithFields(log.Fields{
 						"From":      re.From,
@@ -711,30 +731,68 @@ func (c *TreeCRDT) Merge(c2 *TreeCRDT) {
 						}).Error("InsertEdgeLeft failed")
 					}
 				}
+
 			} else {
-				log.WithFields(log.Fields{
-					"NodeID":   re.From,
-					"Label":    re.Label,
-					"ClientID": remote.Owner,
-				}).Debug("Adding edge to non-array node")
-				err := c.AddEdge(re.From, re.To, re.Label, remote.Owner)
-				if err != nil {
+				if !c.edgeExists(fromNode, re.To) {
+					version := fromNode.Clock[remote.Owner] + 1
+					err := c.addEdgeWithVersion(fromNode.ID, re.To, re.Label, remote.Owner, version)
+					if err != nil {
+						log.WithFields(log.Fields{
+							"NodeID": re.From,
+							"To":     re.To,
+							"Label":  re.Label,
+							"Error":  err,
+						}).Error("AddEdgeWithVersion failed")
+						continue
+					}
+				} else {
 					log.WithFields(log.Fields{
-						"NodeID": re.From,
-						"To":     re.To,
-						"Label":  re.Label,
-						"Error":  err,
-					}).Error("AddEdge failed")
+						"From":     re.From,
+						"To":       re.To,
+						"Label":    re.Label,
+						"ClientID": remote.Owner,
+					}).Debug("Edge already exists, skipping")
+					continue
 				}
+				_ = c.AddEdge(fromNode.ID, re.To, re.Label, remote.Owner)
 			}
 		}
 
-		// Apply merged values after mutation logic
 		local.Clock = mergedClock
 		local.Owner = mergedOwner
 	}
 
 	c.normalize()
+}
+
+func (c *TreeCRDT) cloneNodeFromRemote(c2 *TreeCRDT, id NodeID) {
+	remote := c2.Nodes[id]
+	cloned := newNodeFromID(id, remote.IsArray, c)
+	cloned.IsLiteral = remote.IsLiteral
+	cloned.IsMap = remote.IsMap
+	cloned.IsArray = remote.IsArray
+	cloned.LiteralValue = remote.LiteralValue
+	cloned.Clock = copyClock(remote.Clock)
+	cloned.Owner = remote.Owner
+	c.Nodes[id] = cloned
+}
+
+func (c *TreeCRDT) edgeExists(node *Node, to NodeID) bool {
+	for _, e := range node.Edges {
+		if e.To == to {
+			return true
+		}
+	}
+	return false
+}
+
+func cloneNodeWithoutEdges(n *Node, crdt *TreeCRDT) *Node {
+	cloned := newNodeFromID(n.ID, n.IsArray, crdt)
+	cloned.IsLiteral = n.IsLiteral
+	cloned.LiteralValue = n.LiteralValue
+	cloned.Clock = copyClock(n.Clock)
+	cloned.Owner = n.Owner
+	return cloned
 }
 
 func (c *TreeCRDT) normalize() {

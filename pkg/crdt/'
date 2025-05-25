@@ -1,0 +1,718 @@
+package crdt
+
+import (
+	"fmt"
+	"testing"
+
+	"github.com/colonyos/colonies/pkg/core"
+	"github.com/stretchr/testify/assert"
+)
+
+func TestTreeCRDTSetFieldArrays(t *testing.T) {
+	clientID := ClientID(core.GenerateRandomID())
+
+	json := []byte(`{
+	  "a": [
+	    {
+	      "2": "3"
+	    }
+	  ]
+	}`)
+
+	c := NewTreeCRDT()
+	_, err := c.ImportJSON(json, "", "", -1, false, clientID)
+	assert.NoError(t, err)
+
+	rawJSON, err := c.Save()
+	assert.NoError(t, err, "ExportToRaw should not return an error")
+	fmt.Println("Raw JSON:", string(rawJSON))
+}
+
+// func TestTreeCRDTSetFieldsConflict(t *testing.T) {
+// 	c := NewTreeCRDT()
+//
+// 	clientID1 := ClientID(core.GenerateRandomID())
+// 	clientID2 := ClientID(core.GenerateRandomID())
+//
+// 	node := c.CreateAttachedNode("obj", false, c.Root.ID, clientID1)
+//
+// 	// 1. Set an initial value
+// 	node.SetField("key", "value1", clientID1, 1)
+//
+// 	// 2. Overwrite with a higher version (should win)
+// 	node.SetField("key", "value2", clientID1, 2)
+//
+// 	field := node.Fields["key"]
+// 	assert.Equal(t, "value2", field.Value, "Expected field to be updated to value2")
+//
+// 	// 3. Lower version from same client (should be ignored)
+// 	node.SetField("key", "value3", clientID1, 1)
+// 	field = node.Fields["key"]
+// 	assert.Equal(t, "value2", field.Value, "Lower version should not overwrite")
+//
+// 	// 4. Simulate a conflict: two different clients, same version
+// 	node.SetField("key", "value4", clientID2, 2)
+//
+// 	field = node.Fields["key"]
+// 	// Tie-breaker: client ID with lowest ID (lexical order)
+// 	var expectedWinner ClientID
+// 	if clientID1 < clientID2 {
+// 		expectedWinner = clientID1
+// 	} else {
+// 		expectedWinner = clientID2
+// 	}
+// 	if field.Owner != expectedWinner {
+// 		t.Errorf("Expected owner %s to win tie-breaker, got %s", expectedWinner, field.Owner)
+// 	}
+// }
+//
+// func TestTreeCRDTNodeRemoveField(t *testing.T) {
+// 	c := NewTreeCRDT()
+//
+// 	clientID := ClientID(core.GenerateRandomID())
+//
+// 	node := c.CreateAttachedNode("obj", false, c.Root.ID, clientID)
+//
+// 	// 1. Set a field initially
+// 	node.SetField("testkey", "testvalue", clientID, 1)
+//
+// 	field, exists := node.Fields["testkey"]
+// 	assert.True(t, exists, "Field should exist after SetField")
+// 	assert.Equal(t, "testvalue", field.Value, "Field value should match what was set")
+//
+// 	// 2. Remove the field with higher version — should succeed
+// 	node.RemoveField("testkey", clientID, 2)
+//
+// 	_, exists = node.Fields["testkey"]
+// 	assert.False(t, exists, "Field should be deleted after RemoveField with higher version")
+//
+// 	// 3. Set the field again
+// 	node.SetField("testkey", "newvalue", clientID, 3)
+//
+// 	field, exists = node.Fields["testkey"]
+// 	assert.True(t, exists, "Field should exist after being set again")
+// 	assert.Equal(t, "newvalue", field.Value, "New value should be set correctly")
+//
+// 	// 4. Try removing it with lower version — should NOT remove
+// 	node.RemoveField("testkey", clientID, 1)
+//
+// 	field, exists = node.Fields["testkey"]
+// 	assert.True(t, exists, "Field should still exist after failed RemoveField with lower version")
+// 	assert.Equal(t, "newvalue", field.Value, "Field value should remain unchanged after failed remove")
+// }
+
+func TestTreeCRDTAddEdgeWithVersion(t *testing.T) {
+	c := NewTreeCRDT()
+
+	// To make the test deterministic, we will use fixed client IDs
+	clientID := ClientID("bbbb")
+	otherClientID := ClientID("aaaa")
+
+	parent := c.CreateAttachedNode("parent", false, c.Root.ID, clientID)
+	child := c.CreateAttachedNode("child", false, c.Root.ID, clientID)
+
+	// 1. Add an edge with version 1
+	err := c.addEdgeWithVersion(parent.ID, child.ID, "link", clientID, 1)
+	assert.Nil(t, err, "AddEdgeWithVersion should not return error")
+
+	assert.Equal(t, 1, len(parent.Edges), "Expected 1 edge")
+	assert.Equal(t, child.ID, parent.Edges[0].To, "Edge should point to child")
+	assert.Equal(t, "link", parent.Edges[0].Label, "Edge label mismatch")
+
+	// 2. Add another edge with higher version (should succeed)
+	anotherChild := c.CreateAttachedNode("another_child", false, c.Root.ID, clientID)
+	err = c.addEdgeWithVersion(parent.ID, anotherChild.ID, "link2", clientID, 2)
+	assert.Nil(t, err, "AddEdgeWithVersion second time should not return error")
+
+	assert.Equal(t, 2, len(parent.Edges), "Expected 2 edges now")
+
+	// 3. Try to add conflicting edge with lower version (should be ignored)
+	fakeChild := c.CreateAttachedNode("fake_child", false, c.Root.ID, clientID)
+	err = c.addEdgeWithVersion(parent.ID, fakeChild.ID, "fake_link", clientID, 1) // lower version
+	assert.Nil(t, err, "AddEdgeWithVersion with lower version should not error")
+
+	found := false
+	for _, edge := range parent.Edges {
+		if edge.To == fakeChild.ID {
+			found = true
+			break
+		}
+	}
+	assert.False(t, found, "Edge with lower version should not overwrite or add")
+
+	// 4. Simulate a tie with another client (new client id)
+	tieChild := c.CreateAttachedNode("tie_child", false, c.Root.ID, otherClientID)
+	err = c.addEdgeWithVersion(parent.ID, tieChild.ID, "tie_link", otherClientID, 2) // same version
+	assert.Nil(t, err, "AddEdgeWithVersion with same version different client should not error")
+
+	if otherClientID < clientID {
+		assert.Equal(t, 3, len(parent.Edges), "Tie-breaker: new client wins")
+	} else {
+		assert.Equal(t, 2, len(parent.Edges), "Tie-breaker: original client keeps ownership")
+	}
+}
+
+func TestTreeCRDTRemoveEdgeWithVersion(t *testing.T) {
+	c := NewTreeCRDT()
+
+	clientID := ClientID("bbbb")
+	otherClientID := ClientID("aaaa")
+
+	parent := c.CreateAttachedNode("parent", false, c.Root.ID, clientID)
+	child := c.CreateAttachedNode("child", false, c.Root.ID, clientID)
+
+	// Add an edge
+	err := c.addEdgeWithVersion(parent.ID, child.ID, "link", clientID, 1)
+	assert.Nil(t, err, "addEdgeWithVersion should not return error")
+
+	assert.Equal(t, 1, len(parent.Edges), "Expected 1 edge before removal")
+
+	// Remove the edge with higher version (should succeed)
+	err = c.removeEdgeWithVersion(parent.ID, child.ID, clientID, 2, false)
+	assert.Nil(t, err, "removeEdgeWithVersion should not return error")
+	assert.Equal(t, 0, len(parent.Edges), "Expected 0 edges after removal")
+
+	// Re-add it for conflict test
+	_ = c.addEdgeWithVersion(parent.ID, child.ID, "link", clientID, 3)
+
+	// Try to remove with lower version (should be ignored)
+	err = c.removeEdgeWithVersion(parent.ID, child.ID, clientID, 2, false)
+	assert.NotNil(t, err, "removeEdgeWithVersion with lower version should error")
+	assert.Equal(t, 1, len(parent.Edges), "Edge should still exist after invalid removal")
+
+	// Tie-break with other client (lower client ID wins)
+	err = c.removeEdgeWithVersion(parent.ID, child.ID, otherClientID, 3, false)
+	assert.Nil(t, err, "removeEdgeWithVersion tie-break should not error")
+
+	if otherClientID < clientID {
+		assert.Equal(t, 0, len(parent.Edges), "Tie-break: other client removed the edge")
+	} else {
+		assert.Equal(t, 1, len(parent.Edges), "Tie-break: original client kept the edge")
+	}
+}
+
+// func TestTreeCRDTRemoveIndexInArray(t *testing.T) {
+// 	clientID := ClientID(core.GenerateRandomID())
+//
+// 	initialJSON := []byte(`["A", "B", "C"]`)
+//
+// 	// We will create graph that looks like this:
+// 	// Root
+// 	// ├── A
+// 	// ├── B
+// 	// └── D
+//
+// 	c := NewTreeCRDT()
+// 	_, err := c.ImportJSON(initialJSON, "", "", -1, false, ClientID(clientID))
+// 	assert.Nil(t, err, "AddNodeRecursively should not return an error")
+//
+// 	// Find the node with ID "B"
+// 	edges := c.Root.Edges
+// 	for _, edge := range edges {
+// 		node := c.Nodes[edge.To]
+// 		if node.LitteralValue.(string) == "B" {
+// 			// Remove the edge with ID "B"
+// 			err = c.removeEdgeWithVersion(c.Root.ID, node.ID, clientID, 3, false)
+// 			assert.Nil(t, err, "removeEdgeWithVersion should not return an error")
+// 			break
+// 		}
+// 	}
+//
+// 	exportedJSON, err := c.ExportJSON()
+// 	assert.Nil(t, err, "ExportToJSON should not return an error")
+//
+// 	// Correct expected JSON
+// 	expectedJSON := []byte(`[
+// 		"A",
+// 		"C"
+// 	]`)
+//
+// 	compareJSON(t, expectedJSON, exportedJSON)
+// }
+//
+// func TestTreeCRDTTidy(t *testing.T) {
+// 	c := NewTreeCRDT()
+//
+// 	clientID := ClientID("client")
+//
+// 	c.CreateAttachedNode("parent", false, c.Root.ID, clientID)
+// 	c.CreateAttachedNode("child", false, c.Root.ID, clientID)
+//
+// 	// Create an orphan node manually (NOT attached)
+// 	orphanID := generateRandomNodeID("orphan")
+// 	orphan := c.getOrCreateNode(orphanID, false, clientID, 1)
+//
+// 	assert.Equal(t, 4, len(c.Nodes), "Expected 4 nodes before purge (root, parent, child, orphan)")
+//
+// 	c.Tidy() // Remove orphan nodes
+//
+// 	// Should only have root, parent, and child left
+// 	_, orphanExists := c.Nodes[orphan.ID]
+// 	assert.False(t, orphanExists, "Orphan should have been purged")
+// 	assert.Equal(t, 3, len(c.Nodes), "Expected 3 nodes after purge (root, parent, child)")
+// }
+
+// func TestTreeCRDTNodeSetLiteral(t *testing.T) {
+// 	c := NewTreeCRDT()
+//
+// 	clientID1 := ClientID("client1")
+// 	clientID2 := ClientID("client2")
+//
+// 	node := c.CreateAttachedNode("literalNode", false, c.Root.ID, clientID1)
+//
+// 	// 1. Set an initial literal value
+// 	node.SetLiteral("hello", clientID1, 1)
+//
+// 	assert.True(t, node.Litteral, "Expected node to be marked as literal")
+// 	assert.Equal(t, "hello", node.LitteralValue, "Expected literal value to be 'hello'")
+//
+// 	// 2. Set a higher version value (should overwrite)
+// 	node.SetLiteral("world", clientID1, 2)
+//
+// 	assert.Equal(t, "world", node.LitteralValue, "Expected literal value to be updated to 'world'")
+//
+// 	// 3. Attempt to set with a lower version (should be ignored)
+// 	node.SetLiteral("ignored", clientID1, 1)
+//
+// 	assert.Equal(t, "world", node.LitteralValue, "Lower version should not overwrite the value")
+//
+// 	// 4. Simulate conflict: different client, same version
+// 	node.SetLiteral("conflict", clientID2, 2)
+//
+// 	// Resolve which client should win
+// 	expectedWinner := clientID1
+// 	if clientID2 < clientID1 {
+// 		expectedWinner = clientID2
+// 	}
+//
+// 	expectedValue := "world"
+// 	if expectedWinner == clientID2 {
+// 		expectedValue = "conflict"
+// 	}
+//
+// 	assert.Equal(t, expectedWinner, node.Owner, fmt.Sprintf("Expected owner %s to win tie-breaker, got %s", expectedWinner, node.Owner))
+// 	assert.Equal(t, expectedValue, node.LitteralValue, fmt.Sprintf("Expected literal value %s after conflict resolution, got %s", expectedValue, node.LitteralValue))
+// }
+//
+// func TestTreeCRDTSetLitteralOnField(t *testing.T) {
+// 	c := NewTreeCRDT()
+//
+// 	clientID := ClientID("client1")
+//
+// 	node := c.CreateAttachedNode("obj", false, c.Root.ID, clientID)
+//
+// 	// 1. Set a field with a literal value
+// 	err := node.SetField("key", "value1", clientID, 1)
+// 	assert.Nil(t, err, "SetField should not return an error")
+// 	err = node.SetLiteral(3, clientID, 2)
+// 	assert.NotNil(t, err, "Should not be able to set literal on field")
+// 	err = c.RemoveEdge(c.Root.ID, node.ID, clientID)
+// 	assert.Nil(t, err, "RemoveEdge should not return an error")
+//
+// 	// 2. Set a literal value on the node
+// 	node = c.CreateAttachedNode("obj", false, c.Root.ID, clientID)
+// 	err = node.SetLiteral("literalValue", clientID, 1)
+// 	assert.Nil(t, err, "SetLiteral should not return an error")
+//
+// 	// 3. Set a field with a literal value
+// 	err = node.SetField("key", "literalValue", clientID, 2)
+// 	assert.NotNil(t, err, "Should not be able to set field with literal value")
+// }
+
+func TestTreeCRDTValidation(t *testing.T) {
+	client := ClientID("clientA")
+
+	// Create a tree: root -> A -> B -> C
+	c := NewTreeCRDT()
+	nodeA := c.CreateAttachedNode("A", false, c.Root.ID, client)
+	nodeB := c.CreateAttachedNode("B", false, nodeA.ID, client)
+	nodeC := c.CreateAttachedNode("C", false, nodeB.ID, client)
+
+	// ---- Test 1: Multiple parents ----
+	// Try to attach nodeC again to nodeA (which is invalid)
+	err := c.AddEdge(nodeA.ID, nodeC.ID, "", client)
+	assert.Error(t, err, "Adding a second parent should fail")
+	assert.Contains(t, err.Error(), "multiple parents")
+
+	// Force a second parent manually (simulate corrupted state)
+	c.Nodes[nodeA.ID].Edges = append(c.Nodes[nodeA.ID].Edges, &Edge{
+		From:         nodeA.ID,
+		To:           nodeC.ID,
+		Label:        "",
+		LSEQPosition: []int{42},
+	})
+
+	err = c.ValidateTree()
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "multiple parents")
+
+	// ---- Test 2: Cycle ----
+	// Force a cycle: C -> A
+	c.Nodes[nodeC.ID].Edges = append(c.Nodes[nodeC.ID].Edges, &Edge{
+		From:         nodeC.ID,
+		To:           nodeA.ID,
+		Label:        "",
+		LSEQPosition: []int{99},
+	})
+
+	// validAttachment should now detect cycle
+	err = c.validAttachment(nodeC.ID, nodeA.ID)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "would create a cycle")
+
+	// ValidateTree should detect *either* cycle or multiple parents
+	err = c.ValidateTree()
+	assert.Error(t, err)
+}
+
+// // Test case:
+// // 1. Create two graphs with shared nodes
+// // 2. Set different literal values on the same node in both graphs
+// // 3. Merge the graphs
+// // 4. The merged graph should be an array of literals since n1 + n2 → [n1, n2] sorted by node ID
+func TestTreeCRDTMergeLitterals(t *testing.T) {
+	c1 := NewTreeCRDT()
+	c2 := NewTreeCRDT()
+
+	clientA := ClientID("clientA")
+	clientB := ClientID("clientB")
+
+	// Create shared nodes in both graphs
+	node1 := c1.CreateAttachedNode("sharedA", false, c1.Root.ID, clientA)
+	node2 := c2.CreateAttachedNode("sharedB", false, c2.Root.ID, clientB)
+	err := node1.SetLiteral("A-literal", clientA, 1)
+	assert.Nil(t, err, "SetLiteral should not return an error")
+	err = node2.SetLiteral("B-literal", clientB, 1)
+	assert.Nil(t, err, "SetLiteral should not return an error")
+
+	c1Copy, err := c1.Clone()
+	c2Copy, err := c2.Clone()
+
+	// Perform merge
+	c1.Merge(c2)
+	c2Copy.Merge(c1Copy)
+
+	// Check that all nodes exist
+	_, ok1 := c1.GetNode(node1.ID)
+	_, ok2 := c1.GetNode(node2.ID)
+	assert.True(t, ok1, "Node1 should exist after merge")
+	assert.True(t, ok2, "Node2 should exist after merge")
+
+	// Check if literal value is merged into array and sorted by NodeID
+	root := c1.Root
+	assert.GreaterOrEqual(t, len(root.Edges), 2, "Expected at least two edges from root")
+
+	json, err := c1.ExportJSON()
+	assert.Nil(t, err, "ExportToJSON should not return an error")
+
+	json2, err := c2Copy.ExportJSON()
+	assert.Nil(t, err, "ExportToJSON should not return an error")
+
+	compareJSON(t, json, json2)
+
+	if node1.ID < node2.ID {
+		expectedJSON := []byte(`["A-literal", "B-literal"]`)
+		compareJSON(t, expectedJSON, json)
+	} else {
+		expectedJSON := []byte(`["B-literal", "A-literal"]`)
+		compareJSON(t, expectedJSON, json)
+	}
+}
+
+func TestTreeCRDTMergeLists(t *testing.T) {
+	clientA := ClientID("clientA")
+	// clientB := ClientID("clientB")
+
+	initialJSON := []byte(`[1, 2, 4]`)
+
+	c1 := NewTreeCRDT()
+	_, err := c1.ImportJSON(initialJSON, "", "", -1, false, ClientID(clientA))
+	assert.Nil(t, err, "AddNodeRecursively should not return an error")
+
+	rawJSON, err := c1.Save()
+	assert.Nil(t, err, "ExportToRaw should not return an error")
+
+	c2 := NewTreeCRDT()
+	c2.Load(rawJSON)
+	assert.Nil(t, err, "ImportRawJSON should not return an error")
+
+	rawJSONBefore, err := c1.Save()
+	assert.Nil(t, err, "ExportToRaw should not return an error")
+
+	c1.Merge(c2)
+
+	rawJSONAfter, err := c1.Save()
+	assert.Nil(t, err, "ExportToRaw should not return an error")
+
+	// Trees should be identical before and after merge
+	assert.Equal(t, rawJSONBefore, rawJSONAfter, "Trees should be identical before and after merge")
+	assert.True(t, c1.Equal(c2), "Trees should be equal after merge")
+
+	// Let's do some modifications on the graph independently
+	// Original    :    [1, 2, 4]
+	// G1(A):        [0, 1, 2, 4]
+	// G2(B):           [1, 2, 3, 4]
+	// G1 + G2:      [0, 1, 2, 3, 4] <- 4 is added to G1, owner of root is B
+	// G2 + G1:      [0, 1, 2, 3, 4] <- 0 is added to G2, owner of root is A
+
+	// 1. Create a new node in c1
+	node0 := c1.CreateNode("0", true, clientA)
+	node0.IsLiteral = true
+	node0.LiteralValue = 0
+
+	// First child is the array
+	assert.Len(t, c1.Root.Edges, 1, "Root should have one edge")
+	c1ArrayNodeID := c1.Root.Edges[0].To
+
+	// Find the node with id "0"
+	sibling, err := c1.GetSibling(c1ArrayNodeID, 0)
+	assert.Nil(t, err, "GetSiblingNode should not return an error")
+	err = c1.InsertEdgeLeft(c1.Root.ID, node0.ID, "", sibling.ID, clientA)
+	assert.Nil(t, err, "InsertEdge should not return an error")
+	// G1: [0, 1, 2, 4]  <-- 0 added
+
+	// 2. Create a new node in c2
+	node3 := c2.CreateNode("3", true, clientA)
+	node3.IsLiteral = true
+	node3.LiteralValue = 3
+
+	// First child is the array
+	assert.Len(t, c2.Root.Edges, 1, "Root should have one edge")
+	c2ArrayNodeID := c2.Root.Edges[0].To
+	sibling, err = c2.GetSibling(c2ArrayNodeID, 1)
+	assert.Nil(t, err, "GetSiblingNode should not return an error")
+	err = c2.InsertEdgeRight(c2.Root.ID, node3.ID, "", sibling.ID, clientB)
+	assert.Nil(t, err, "InsertEdge should not return an error")
+	// G2: [1, 2, 3, 4]   <-- 3 added
+	//
+	// c1Clone, err := c1.Clone()
+	// assert.Nil(t, err, "Clone should not return an error")
+	//
+	// // 3. Merge the graphs
+	// c1.Merge(c2)
+	// c2.Merge(c1Clone)
+	//
+	// jsom, err := c1.ExportJSON()
+	// assert.Nil(t, err, "ExportToJSON should not return an error")
+	// expectedJSON := []byte(`[0, 1, 2, 3, 4]`)
+	// compareJSON(t, expectedJSON, jsom)
+	//
+	// json2, err := c2.ExportJSON()
+	// assert.Nil(t, err, "ExportToJSON should not return an error")
+	// expectedJSON2 := []byte(`[0, 1, 2, 3, 4]`)
+	// compareJSON(t, expectedJSON2, json2)
+	//
+	// // C2 == C1
+	// assert.True(t, c1.Equal(c2), "Graphs should be equal after merge")
+	// assert.True(t, c1.Root.Owner == c2.Root.Owner, "Owners should be equal after merge")
+}
+
+func TestTreeCRDTMergeListsConflicts(t *testing.T) {
+	clientA := ClientID("A")
+	clientB := ClientID("B")
+
+	initialJSON := []byte(`[2, 3, 4]`)
+
+	c1 := NewTreeCRDT()
+	_, err := c1.ImportJSON(initialJSON, "", "", -1, false, ClientID(clientA))
+	assert.Nil(t, err, "AddNodeRecursively should not return an error")
+
+	c2, err := c1.Clone()
+	assert.Nil(t, err, "Clone should not return an error")
+
+	// C1 prepares nodes
+	node := c1.CreateNode("1", true, clientA)
+	node.IsLiteral = true
+	node.LiteralValue = 1
+	err = c1.PrependEdge(c1.Root.ID, node.ID, "", clientA)
+	assert.Nil(t, err, "PrependEdge should not return an error")
+
+	node = c1.CreateNode("0", true, clientA)
+	node.IsLiteral = true
+	node.LiteralValue = 0
+	err = c1.PrependEdge(c1.Root.ID, node.ID, "", clientA)
+	assert.Nil(t, err, "PrependEdge should not return an error")
+
+	// C2 appends nodes
+	node = c2.CreateNode("5", true, clientB)
+	node.IsLiteral = true
+	node.LiteralValue = 5
+	err = c2.AppendEdge(c2.Root.ID, node.ID, "", clientB)
+	assert.Nil(t, err, "AppendEdge should not return an error")
+
+	node = c2.CreateNode("6", true, clientB)
+	node.IsLiteral = true
+	node.LiteralValue = 6
+	err = c2.AppendEdge(c2.Root.ID, node.ID, "", clientB)
+	assert.Nil(t, err, "AppendEdge should not return an error")
+
+	//logrus.SetLevel(logrus.DebugLevel)
+
+	c2.Merge(c1)
+	_, err = c2.ExportJSON()
+	assert.Nil(t, err, "ExportToJSON should not return an error")
+}
+
+// func TestTreeCRDTMergeKVListsWithConflicts(t *testing.T) {
+// 	clientA := ClientID("clientA")
+// 	clientB := ClientID("clientB")
+//
+// 	initialJSON := []byte(`[
+// 		{"id": "A", "value": "1"},
+// 		{"id": "B", "value": "2"},
+// 		{"id": "C", "value": "3"},
+// 		{"id": "D", "value": "2"}
+// 	]`)
+//
+// 	c1 := NewTreeCRDT()
+// 	_, err := c1.ImportJSON(initialJSON, "", "", -1, false, ClientID(clientA))
+// 	assert.Nil(t, err, "AddNodeRecursively should not return an error")
+//
+// 	c2, err := c1.Clone()
+// 	assert.Nil(t, err, "Clone should not return an error")
+//
+// 	firstNode := c1.Nodes[c1.Root.Edges[0].To]
+//
+// 	err = firstNode.SetField("value", "11", clientA, 2)
+// 	assert.Nil(t, err, "SetField should not return an error")
+//
+// 	err = firstNode.SetField("value", "22", clientA, 3)
+// 	assert.Nil(t, err, "SetField should not return an error")
+//
+// 	json, err := c1.ExportJSON()
+// 	assert.Nil(t, err, "ExportToJSON should not return an error")
+//
+// 	firstNode2 := c2.Nodes[c2.Root.Edges[0].To]
+// 	err = firstNode2.SetField("value", "33", clientB, 2)
+// 	assert.Nil(t, err, "SetField should not return an error")
+//
+// 	c1.Merge(c2)
+// 	c2.Merge(c1)
+// 	json, err = c1.ExportJSON()
+// 	assert.Nil(t, err, "ExportToJSON should not return an error")
+//
+// 	json2, err := c2.ExportJSON()
+// 	assert.Nil(t, err, "ExportToJSON should not return an error")
+//
+// 	expectedJSON := []byte(`[
+// 	 	{"id": "A", "value": "22"},
+// 	 	{"id": "B", "value": "2"},
+// 	 	{"id": "C", "value": "3"},
+// 	 	{"id": "D", "value": "2"}
+// 	]`)
+//
+// 	compareJSON(t, expectedJSON, json)
+// 	compareJSON(t, expectedJSON, json2)
+// }
+
+// json1 := []byte(`{
+// 	  "k1": "v1",
+// 	  "k2": "v2",
+// 	  "m1": [
+// 	    {
+// 	      "m1_0_k1": "m1_v1",
+// 	      "m1_0_k2": "m1_v2"
+// 	    },
+// 	    {
+// 	      "m1_1_k1": "m1_v1",
+// 	      "m1_1_k2": "m1_v2",
+// 	      "m1_1_m2": [
+// 	        {
+// 	          "m1_1_m2_0_k1": "m1_1_m2_v1",
+// 	          "m1_1_m2_0_k2": "m1_1_m2_v2"
+// 	        }
+// 	      ]
+// 	    }
+// 	  ]
+// 	}`)
+
+func TestTreeCRDTMergeJSON1(t *testing.T) {
+	clientID := ClientID(core.GenerateRandomID())
+
+	json1 := []byte(`{
+	  "1": [
+	    {
+	      "2": "3"
+	    },
+	    {
+	      "4": [
+	        {
+	          "5": "6"
+	        }
+	      ]
+	    }
+	  ]
+	}`)
+
+	// expectedJSON := []byte(`[
+	//   {
+	//     "k1": "v1",
+	//     "k2": "v2",
+	//     "m1": [
+	//       {
+	//         "m1_0_k1": "m1_v1",
+	//         "m1_0_k2": "m1_v2"
+	//       },
+	//       {
+	//         "m1_1_k1": "m1_v1",
+	//         "m1_1_k2": "m1_v2",
+	//         "m1_1_m2": [
+	//           {
+	//             "m1_1_m2_0_k1": "m1_1_m2_v1",
+	//             "m1_1_m2_0_k2": "m1_1_m2_v2"
+	//           }
+	//         ]
+	//       }
+	//     ]
+	//   },
+	//   {
+	//     "k1": "v1",
+	//     "k2": "v2",
+	//     "m1": [
+	//       {
+	//         "m1_0_k1": "m1_v1",
+	//         "m1_0_k2": "m1_v2"
+	//       },
+	//       {
+	//         "m1_1_k1": "m1_v1",
+	//         "m1_1_k2": "m1_v2",
+	//         "m1_1_m2": [
+	//           {
+	//             "m1_1_m2_0_k1": "m1_1_m2_v1",
+	//             "m1_1_m2_0_k2": "m1_1_m2_v2"
+	//           }
+	//         ]
+	//       }
+	//     ]
+	//   }
+	// ]`)
+
+	// Build and merge CRDTs
+	c1 := NewTreeCRDT()
+	_, err := c1.ImportJSON(json1, "", "", -1, false, clientID)
+	assert.NoError(t, err)
+
+	c2 := NewTreeCRDT()
+	_, err = c2.ImportJSON(json1, "", "", -1, false, clientID)
+	assert.NoError(t, err)
+
+	// rawJSON, err := c1.Save()
+	// assert.NoError(t, err, "ExportToRaw should not return an error")
+	// fmt.Println("Raw JSON:", string(rawJSON))
+	//
+	// fmt.Println("---------------------------------")
+
+	c1.Merge(c2)
+
+	exportedJSON, err := c1.ExportJSON()
+	assert.NoError(t, err)
+
+	// rawJSONMerged, err := c1.Save()
+	// assert.Nil(t, err, "ExportToRaw should not return an error")
+	// fmt.Println("Merged Raw JSON:", string(rawJSONMerged))
+
+	fmt.Println("Exported JSON:", string(exportedJSON))
+	//fmt.Println("Expected JSON:", string(expectedJSON))
+
+	//compareJSON(t, expectedJSON, exportedJSON)
+}

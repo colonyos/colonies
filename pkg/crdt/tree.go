@@ -1,5 +1,10 @@
 package crdt
 
+//func (n *Node) RemoveKeyValue(key string, clientID ClientID) error {
+// (n *Node) GetKeyValue(key string) (*Node, in
+//func (n *Node) SetLiteral(value interface{}, clientID ClientID) error {
+//func (n *Node) GetLiteral() (interface{}, error) {
+
 type Tree interface {
 	// Node and Edge operations
 	CreateAttachedNode(name string, isArray bool, parentID NodeID, clientID ClientID) *Node
