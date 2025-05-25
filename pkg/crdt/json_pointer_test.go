@@ -1,7 +1,6 @@
 package crdt
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/colonyos/colonies/pkg/core"
@@ -56,14 +55,25 @@ func TestTreeCRDTGetByPath(t *testing.T) {
 	assert.Nil(t, err)
 	assert.True(t, node.IsArray)
 
-	raw, err := crdt.Save()
+	node, err = crdt.GetNodeByPath("/friends/0/uid")
 	assert.Nil(t, err)
-	fmt.Println(string(raw))
+	v, err = node.GetLiteral()
+	assert.Nil(t, err)
+	vStr = v.(string)
+	assert.Equal(t, "user_2", vStr)
 
-	// node, err = crdt.GetNodeByPath("/friends/0/uid")
-	// assert.Nil(t, err)
-	// v, err = node.GetLiteral()
-	// assert.Nil(t, err)
-	// vStr = v.(string)
-	// assert.Equal(t, "user_2", vStr)
+	node, err = crdt.GetNodeByPath("/friends/1/friends/0/uid")
+	assert.Nil(t, err)
+	v, err = node.GetLiteral()
+	assert.Nil(t, err)
+	vStr = v.(string)
+	assert.Equal(t, "user_4", vStr)
+
+	node, err = crdt.GetNodeByPath("/friends/1/friends/0/name/doesnotexist")
+	assert.NotNil(t, err)
+	assert.Nil(t, node)
+
+	node, err = crdt.GetNodeByPath("friends/1/friends/0/uid")
+	assert.NotNil(t, err)
+	assert.Nil(t, node)
 }

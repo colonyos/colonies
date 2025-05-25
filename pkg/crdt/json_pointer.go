@@ -2,7 +2,6 @@ package crdt
 
 import (
 	"fmt"
-	"sort"
 	"strconv"
 	"strings"
 )
@@ -36,18 +35,12 @@ func (c *TreeCRDT) GetNodeByPath(path string) (*Node, error) {
 				return nil, fmt.Errorf("invalid array index at '%s': %v", part, err)
 			}
 
-			// Sort edges deterministically by NodeID
-			sorted := make([]*Edge, len(node.Edges))
-			copy(sorted, node.Edges)
-			sort.SliceStable(sorted, func(i, j int) bool {
-				return sorted[i].To < sorted[j].To
-			})
-
-			if index < 0 || index >= len(sorted) {
+			edges := node.Edges
+			if index < 0 || index >= len(edges) {
 				return nil, fmt.Errorf("array index out of bounds at '%s'", part)
 			}
 
-			childID := sorted[index].To
+			childID := edges[index].To
 			child, exists := c.Nodes[childID]
 			if !exists {
 				return nil, fmt.Errorf("node %s at array index not found", childID)
