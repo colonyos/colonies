@@ -41,7 +41,7 @@ func generatePositionBetweenLSEQ(left, right Position) Position {
 	}
 }
 
-func sortEdgesByLSEQ(edges []*Edge) {
+func sortEdgesByLSEQ(edges []*EdgeCRDT) {
 	sort.SliceStable(edges, func(i, j int) bool {
 		p1 := edges[i].LSEQPosition
 		p2 := edges[j].LSEQPosition

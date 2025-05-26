@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-func (c *TreeCRDT) GetNodeByPath(path string) (*Node, error) {
+func (c *TreeCRDT) GetNodeByPath(path string) (*NodeCRDT, error) {
 	if !strings.HasPrefix(path, "/") {
 		return nil, fmt.Errorf("path must start with a slash: %s", path)
 	}

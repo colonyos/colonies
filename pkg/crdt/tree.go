@@ -1,37 +1,40 @@
 package crdt
 
-//func (n *Node) RemoveKeyValue(key string, clientID ClientID) error {
-// (n *Node) GetKeyValue(key string) (*Node, in
-//func (n *Node) SetLiteral(value interface{}, clientID ClientID) error {
-//func (n *Node) GetLiteral() (interface{}, error) {
-
-type Tree interface {
-	// Node and Edge operations
-	CreateAttachedNode(name string, isArray bool, parentID NodeID, clientID ClientID) *Node
-	CreateNode(name string, isArray bool, clientID ClientID) *Node
-	GetNode(id NodeID) (*Node, bool)
-	AddEdge(from, to NodeID, label string, clientID ClientID) error
-	RemoveEdge(from, to NodeID, clientID ClientID) error
-
+type Node interface {
 	// Literal operations
-	SetLiteral(value interface{}, clientID ClientID, version int) error
+	SetLiteral(value interface{}, clientID ClientID) error
+	GetLiteral() (interface{}, error)
 
 	// Map operations
-	GetValue(key string) (interface{}, bool)
-	GetValueByPath(path string) (interface{}, bool, error)
-	GetStringValueByPath(path string) (string, bool, error)
-	SetField(key string, value interface{}, clientID ClientID, version int)
-	RemoveField(key string, clientID ClientID, version int)
+	CreateMapNode(clientID ClientID) (Node, error)
+	SetKeyValue(key string, value interface{}, clientID ClientID) (NodeID, error)
+	GetNodeForKey(key string) (Node, bool, error)
+	RemoveKeyValue(key string, clientID ClientID) error
+}
+
+type Tree interface {
+	// Node operations
+	CreateAttachedNode(name string, isArray bool, parentID NodeID, clientID ClientID) Node
+	CreateNode(name string, isArray bool, clientID ClientID) Node
+	GetNode(id NodeID) (Node, bool)
+	GetSibling(parentNodeID NodeID, index int) (Node, error)
+	GetValueByPath(path string) (interface{}, error)
+	GetNodeByPath(path string) (Node, error)
+	GetStringValueByPath(path string) (string, error)
+
+	// Edge operations
+	AddEdge(from, to NodeID, label string, clientID ClientID) error
+	RemoveEdge(from, to NodeID, clientID ClientID) error
 
 	// List operations
 	AppendEdge(from, to NodeID, label string, clientID ClientID) error
 	PrependEdge(from, to NodeID, label string, clientID ClientID) error
 	InsertEdgeLeft(from, to NodeID, label string, sibling NodeID, clientID ClientID)
 	InsertEdgeRight(from, to NodeID, label string, sibling NodeID, clientID ClientID) error
-	GetSibling(parentNodeID NodeID, index int) (*Node, error)
 
-	// Merge operations
-	Merge(c2 *TreeCRDT)
+	// Merge and operations
+	Sync(c2 Tree, force bool) error
+	Merge(c2 Tree, force bool) error
 
 	// Serialization
 	ImportJSON(rawJSON []byte, parentID NodeID, edgeLabel string, idx int, isArray bool, clientID ClientID) (NodeID, error)
@@ -41,5 +44,4 @@ type Tree interface {
 
 	// Utility functions
 	Tidy()
-	Print()
 }

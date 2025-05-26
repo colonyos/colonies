@@ -56,7 +56,8 @@ func TestTreeCRDTSetFieldsConflictLastWriterWins(t *testing.T) {
 	_, err = mapNodeC1.SetKeyValue("key", "value4", clientID1) // Will be overwritten by c2
 	assert.NoError(t, err, "SetKeyValue should not return an error")
 
-	c1.Merge(c2)
+	err = c1.Merge(c2, false)
+	assert.NoError(t, err, "Merge should not return an error")
 
 	exportedJSON, err := c1.ExportJSON()
 	assert.NoError(t, err, "ExportToJSON should not return an error")
@@ -94,7 +95,8 @@ func TestTreeCRDTSetFieldsConflictNodeIDTieBraker(t *testing.T) {
 	_, err = mapNodeC1.SetKeyValue("key", "value3", clientID1)
 	assert.NoError(t, err, "SetKeyValue should not return an error")
 
-	c1.Merge(c2)
+	err = c1.Merge(c2, true) // Enable conflict resolution with tie-breaker
+	assert.NoError(t, err, "Merge should not return an error")
 
 	exportedJSON, err := c1.ExportJSON()
 	assert.NoError(t, err, "ExportToJSON should not return an error")
@@ -357,7 +359,7 @@ func TestTreeCRDTValidation(t *testing.T) {
 	assert.Contains(t, err.Error(), "multiple parents")
 
 	// Force a second parent manually (simulate corrupted state)
-	c.Nodes[nodeA.ID].Edges = append(c.Nodes[nodeA.ID].Edges, &Edge{
+	c.Nodes[nodeA.ID].Edges = append(c.Nodes[nodeA.ID].Edges, &EdgeCRDT{
 		From:         nodeA.ID,
 		To:           nodeC.ID,
 		Label:        "",
@@ -370,7 +372,7 @@ func TestTreeCRDTValidation(t *testing.T) {
 
 	// ---- Test 2: Cycle ----
 	// Force a cycle: C -> A
-	c.Nodes[nodeC.ID].Edges = append(c.Nodes[nodeC.ID].Edges, &Edge{
+	c.Nodes[nodeC.ID].Edges = append(c.Nodes[nodeC.ID].Edges, &EdgeCRDT{
 		From:         nodeC.ID,
 		To:           nodeA.ID,
 		Label:        "",
@@ -411,8 +413,10 @@ func TestTreeCRDTMergeLitterals(t *testing.T) {
 	c2Copy, err := c2.Clone()
 
 	// Perform merge
-	c1.Merge(c2)
-	c2Copy.Merge(c1Copy)
+	err = c1.Merge(c2, false)
+	assert.Nil(t, err, "Merge should not return an error")
+	err = c2Copy.Merge(c1Copy, false)
+	assert.Nil(t, err, "Merge should not return an error")
 
 	// Check that all nodes exist
 	_, ok1 := c1.GetNode(node1.ID)
@@ -457,7 +461,8 @@ func TestTreeCRDTMergeLists(t *testing.T) {
 	rawJSONBefore, err := c1.Save()
 	assert.Nil(t, err, "ExportToRaw should not return an error")
 
-	c1.Merge(c2)
+	err = c1.Merge(c2, false)
+	assert.Nil(t, err, "Merge should not return an error")
 
 	rawJSONAfter, err := c1.Save()
 	assert.Nil(t, err, "ExportToRaw should not return an error")
@@ -506,9 +511,14 @@ func TestTreeCRDTMergeLists(t *testing.T) {
 	c1Clone, err := c1.Clone()
 	assert.Nil(t, err, "Clone should not return an error")
 
+	// set debug level to see the merge process
+	logrus.SetLevel(logrus.ErrorLevel)
+
 	// 3. Merge the graphs
-	c1.Merge(c2)
-	c2.Merge(c1Clone)
+	err = c1.Merge(c2, false)
+	assert.Nil(t, err, "Merge should not return an error")
+	err = c2.Merge(c1Clone, false)
+	assert.Nil(t, err, "Merge should not return an error")
 
 	json, err := c1.ExportJSON()
 	assert.Nil(t, err, "ExportToJSON should not return an error")
@@ -569,7 +579,8 @@ func TestTreeCRDTMergeListsConflicts(t *testing.T) {
 
 	//logrus.SetLevel(logrus.DebugLevel)
 
-	c2.Merge(c1)
+	err = c2.Merge(c1, false)
+	assert.Nil(t, err, "Merge should not return an error")
 	_, err = c2.ExportJSON()
 	assert.Nil(t, err, "ExportToJSON should not return an error")
 }
@@ -615,8 +626,10 @@ func TestTreeCRDTMergeKVListsWithConflicts(t *testing.T) {
 	_, err = mapNode2.SetKeyValue("value", "33", clientB) // <- Should we overwriting, according to last writer wins policy
 	assert.Nil(t, err, "SetKeyValue should not return an error")
 
-	c1.Merge(c2)
-	c2.Merge(c1)
+	err = c1.Merge(c2, true) // Enable conflict resolution with last writer wins
+	assert.Nil(t, err, "Merge should not return an error")
+	err = c2.Merge(c1, false)
+	assert.Nil(t, err, "Merge should not return an error")
 	json, err = c1.ExportJSON()
 	assert.Nil(t, err, "ExportToJSON should not return an error")
 
@@ -722,7 +735,8 @@ func TestTreeCRDTMergeJSON1(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Since, the node IDs are generated randomly, it imported json will duplicated in an array
-	c1.Merge(c2)
+	err = c1.Merge(c2, true) // Enable conflict resolution with last writer wins
+	assert.NoError(t, err, "Merge should not return an error")
 
 	exportedJSON, err := c1.ExportJSON()
 	assert.NoError(t, err)
@@ -776,8 +790,10 @@ func TestTreeCRDTMergeHelloWorld(t *testing.T) {
 	}
 
 	// Step 5: Merge back both ways
-	c1.Merge(c2)
-	c2.Merge(c1)
+	err = c1.Merge(c2, false)
+	assert.Nil(t, err, "Merge c1 with c2 should not return an error")
+	err = c2.Merge(c1, false)
+	assert.Nil(t, err, "Merge c2 with c1 should not return an error")
 
 	// Step 6: Export and verify
 	json1, err := c1.ExportJSON()
@@ -865,4 +881,81 @@ func TestTreeCRDTSingleTreeInterleavedClientsHelloWorld(t *testing.T) {
 
 	expected := []byte(`["H","e","l","l","o"," ","w","o","r","l","d","!"]`)
 	compareJSON(t, expected, json)
+}
+
+func TestTreeCRTDSync(t *testing.T) {
+	clientID1 := ClientID(core.GenerateRandomID())
+	clientID2 := ClientID(core.GenerateRandomID())
+	clientID3 := ClientID(core.GenerateRandomID())
+
+	json1 := []byte(`[
+		{
+		  "uid": "user_1",
+		   "name": "Bob"
+		},
+		{
+		   "uid": "user_2",
+		   "name": "Charlie",
+		   "friends": [
+			  {  
+				"uid": "user_3",
+				"name": "Dana"
+			  }
+			]
+		}
+	]`)
+
+	json2 := []byte(`[
+		{
+		  "uid": "user_3",
+		   "name": "Dana"
+		},
+		{
+		   "uid": "user_4",
+		   "name": "Charlie",
+		   "friends": [
+			  {  
+				"uid": "user_1",
+				"name": "Bob"
+			  }
+			]
+		}
+	]`)
+
+	c1 := NewTreeCRDT()
+	_, err := c1.ImportJSON(json1, "", "", -1, false, clientID1)
+	assert.NoError(t, err, "ImportJSON should not return an error")
+
+	c2 := NewTreeCRDT()
+	_, err = c2.ImportJSON(json2, "", "", -1, false, clientID2)
+	assert.NoError(t, err, "ImportJSON should not return an error")
+
+	err = c1.Sync(c2, false)
+	assert.NoError(t, err, "Sync should not return an error")
+
+	exportedJSON1, err := c1.ExportJSON()
+	assert.NoError(t, err, "ExportJSON should not return an error")
+
+	exportedJSON2, err := c2.ExportJSON()
+	assert.NoError(t, err, "ExportJSON should not return an error")
+	compareJSON(t, exportedJSON1, exportedJSON2)
+
+	c3 := NewTreeCRDT()
+	_, err = c3.ImportJSON(exportedJSON1, "", "", -1, false, clientID3)
+	assert.NoError(t, err, "Clone should not return an error")
+	err = c3.Sync(c2, false)
+	assert.NoError(t, err, "Sync should not return an error")
+
+	exportedJSON3, err := c3.ExportJSON()
+	assert.NoError(t, err, "ExportJSON should not return an error")
+
+	exportedJSON2, err = c2.ExportJSON()
+	assert.NoError(t, err, "ExportJSON should not return an error")
+	compareJSON(t, exportedJSON2, exportedJSON3)
+
+	err = c3.Sync(c3, false)
+	assert.NoError(t, err, "Sync with itself should not return an error")
+
+	exportedJSON3, err = c3.ExportJSON()
+	compareJSON(t, exportedJSON3, exportedJSON2)
 }

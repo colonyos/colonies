@@ -14,7 +14,7 @@ import (
 
 func (c *TreeCRDT) ImportJSON(rawJSON []byte, parentID NodeID, edgeLabel string, idx int, isArray bool, clientID ClientID) (NodeID, error) {
 	version := 1
-	var parent *Node
+	var parent *NodeCRDT
 	if parentID == "" {
 		parent = c.Root
 	} else {
@@ -29,7 +29,7 @@ func (c *TreeCRDT) ImportJSON(rawJSON []byte, parentID NodeID, edgeLabel string,
 	return c.importRecursive(data, parent, edgeLabel, idx, isArray, clientID)
 }
 
-func (c *TreeCRDT) importRecursive(v interface{}, parent *Node, edgeLabel string, idx int, isArray bool, clientID ClientID) (NodeID, error) {
+func (c *TreeCRDT) importRecursive(v interface{}, parent *NodeCRDT, edgeLabel string, idx int, isArray bool, clientID ClientID) (NodeID, error) {
 	version := 1
 
 	switch val := v.(type) {
@@ -133,7 +133,7 @@ func (c *TreeCRDT) exportRaw() (map[string]interface{}, error) {
 		}
 
 		// Sort edges by LSEQ before exporting
-		sortedEdges := make([]*Edge, len(node.Edges))
+		sortedEdges := make([]*EdgeCRDT, len(node.Edges))
 		copy(sortedEdges, node.Edges)
 		sortEdgesByLSEQ(sortedEdges)
 
@@ -169,7 +169,7 @@ func (c *TreeCRDT) importRaw(data map[string]interface{}) error {
 	if !ok {
 		return errors.New("invalid raw data: nodes missing")
 	}
-	c.Nodes = make(map[NodeID]*Node)
+	c.Nodes = make(map[NodeID]*NodeCRDT)
 
 	// First pass: create nodes
 	for idStr, nodeRaw := range nodesData {
@@ -220,7 +220,7 @@ func (c *TreeCRDT) importRaw(data map[string]interface{}) error {
 				if !ok {
 					continue
 				}
-				edge := &Edge{}
+				edge := &EdgeCRDT{}
 				if toStr, ok := edgeMap["to"].(string); ok {
 					edge.To = NodeID(toStr)
 				}
@@ -320,7 +320,7 @@ func (c *TreeCRDT) export() (interface{}, error) {
 	}
 }
 
-func (n *Node) ExportJSON(crdt *TreeCRDT) ([]byte, error) {
+func (n *NodeCRDT) ExportJSON(crdt *TreeCRDT) ([]byte, error) {
 	visited := make(map[NodeID]bool)
 	result, err := exportNodeRecursive(n, crdt, visited)
 	if err != nil {
@@ -330,7 +330,7 @@ func (n *Node) ExportJSON(crdt *TreeCRDT) ([]byte, error) {
 	return json.MarshalIndent(result, "", "  ")
 }
 
-func exportNodeRecursive(node *Node, crdt *TreeCRDT, visited map[NodeID]bool) (interface{}, error) {
+func exportNodeRecursive(node *NodeCRDT, crdt *TreeCRDT, visited map[NodeID]bool) (interface{}, error) {
 	if visited[node.ID] {
 		return nil, fmt.Errorf("cycle detected at node %s", node.ID)
 	}
@@ -343,7 +343,7 @@ func exportNodeRecursive(node *Node, crdt *TreeCRDT, visited map[NodeID]bool) (i
 	obj := orderedmap.New()
 
 	// Group edges by label (like keys in a JSON object)
-	edgeGroups := make(map[string][]*Edge)
+	edgeGroups := make(map[string][]*EdgeCRDT)
 	for _, edge := range node.Edges {
 		edgeGroups[edge.Label] = append(edgeGroups[edge.Label], edge)
 	}
@@ -468,7 +468,7 @@ func (c *TreeCRDT) Equal(other *TreeCRDT) bool {
 	return true
 }
 
-func nodesSemanticallyEqual(n1, n2 *Node) bool {
+func nodesSemanticallyEqual(n1, n2 *NodeCRDT) bool {
 	if n1.IsArray != n2.IsArray || n1.IsLiteral != n2.IsLiteral || n1.IsMap != n2.IsMap {
 		log.WithFields(log.Fields{
 			"IsArray1": n1.IsArray, "IsArray2": n2.IsArray,
@@ -518,8 +518,8 @@ func nodesSemanticallyEqual(n1, n2 *Node) bool {
 
 	if n1.IsArray {
 		// Compare edges by LSEQ order
-		sorted1 := make([]*Edge, len(n1.Edges))
-		sorted2 := make([]*Edge, len(n2.Edges))
+		sorted1 := make([]*EdgeCRDT, len(n1.Edges))
+		sorted2 := make([]*EdgeCRDT, len(n2.Edges))
 		copy(sorted1, n1.Edges)
 		copy(sorted2, n2.Edges)
 		sortEdgesByLSEQ(sorted1)
