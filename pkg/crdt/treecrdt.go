@@ -27,7 +27,7 @@ type EdgeCRDT struct {
 	From         NodeID `json:"from"`
 	To           NodeID `json:"to"`
 	Label        string `json:"label"`
-	LSEQPosition []int  `json:"lseqposition"` // LSEQ position
+	LSEQPosition []int  `json:"lseqposition"`
 }
 
 type TreeCRDT struct {
@@ -77,10 +77,6 @@ func (c *TreeCRDT) GetNode(id NodeID) (*NodeCRDT, bool) {
 	}
 	return node, true
 }
-
-// func NewTree() Tree {
-// 	return NewTreeCRDT()
-// }
 
 func NewTreeCRDT() *TreeCRDT {
 	rootID := "root"
@@ -965,4 +961,29 @@ func (c *TreeCRDT) ValidateTree() error {
 	}
 
 	return nil
+}
+
+func (t *TreeCRDT) isDescendant(root NodeID, target NodeID) bool {
+	if root == target {
+		return true
+	}
+	visited := make(map[NodeID]bool)
+	var dfs func(NodeID) bool
+	dfs = func(n NodeID) bool {
+		if visited[n] {
+			return false
+		}
+		visited[n] = true
+		node, ok := t.Nodes[n]
+		if !ok {
+			return false
+		}
+		for _, edge := range node.Edges {
+			if edge.To == target || dfs(edge.To) {
+				return true
+			}
+		}
+		return false
+	}
+	return dfs(root)
 }
