@@ -14,8 +14,8 @@ type SecureNode interface {
 
 type SecureTree interface {
 	// Node operations
-	CreateAttachedNode(name string, isArray bool, parentID NodeID, prvKey string) SecureNode
-	CreateNode(name string, isArray bool, prvKey string) SecureNode
+	CreateAttachedNode(name string, nodeType NodeType, parentID NodeID, prvKey string) (SecureNode, error)
+	CreateNode(name string, nodeType NodeType, prvKey string) (SecureNode, error)
 	GetNode(id NodeID) (SecureNode, bool)
 	GetSibling(parentNodeID NodeID, index int) (SecureNode, error)
 	GetValueByPath(path string) (interface{}, error)
@@ -29,15 +29,15 @@ type SecureTree interface {
 	// List operations
 	AppendEdge(from, to NodeID, label string, prvKey string) error
 	PrependEdge(from, to NodeID, label string, prvKey string) error
-	InsertEdgeLeft(from, to NodeID, label string, sibling NodeID, prvKey string)
+	InsertEdgeLeft(from, to NodeID, label string, sibling NodeID, prvKey string) error
 	InsertEdgeRight(from, to NodeID, label string, sibling NodeID, prvKey string) error
 
 	// Merge and operations
-	Sync(c2 Tree, force bool) error
-	Merge(c2 Tree, force bool) error
+	Sync(c2 SecureTree, force bool) error
+	Merge(c2 SecureTree, force bool) error
 
 	// Serialization
-	ImportJSON(rawJSON []byte, parentID NodeID, edgeLabel string, idx int, isArray bool, prvKey string) (NodeID, error)
+	ImportJSON(rawJSON []byte, parentID NodeID, edgeLabel string, idx int, nodeType NodeType, prvKey string) (NodeID, error)
 	ExportJSON() ([]byte, error)
 	Load(data []byte) error
 	Save() ([]byte, error)

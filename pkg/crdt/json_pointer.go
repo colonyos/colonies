@@ -7,6 +7,10 @@ import (
 )
 
 func (c *TreeCRDT) GetNodeByPath(path string) (*NodeCRDT, error) {
+	if path == "/" {
+		return c.Root, nil
+	}
+
 	if !strings.HasPrefix(path, "/") {
 		return nil, fmt.Errorf("path must start with a slash: %s", path)
 	}

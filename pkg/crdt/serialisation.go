@@ -12,13 +12,13 @@ import (
 	"golang.org/x/crypto/sha3"
 )
 
-func (c *TreeCRDT) ImportJSON(rawJSON []byte, parentID NodeID, edgeLabel string, idx int, isArray bool, clientID ClientID) (NodeID, error) {
+func (c *TreeCRDT) ImportJSON(rawJSON []byte, parentID NodeID, edgeLabel string, idx int, nodeType NodeType, clientID ClientID) (NodeID, error) {
 	version := 1
 	var parent *NodeCRDT
 	if parentID == "" {
 		parent = c.Root
 	} else {
-		parent = c.getOrCreateNode(parentID, isArray, clientID, version)
+		parent = c.getOrCreateNode(parentID, nodeType, clientID, version)
 	}
 
 	var data interface{}
@@ -26,10 +26,10 @@ func (c *TreeCRDT) ImportJSON(rawJSON []byte, parentID NodeID, edgeLabel string,
 		return "", err
 	}
 
-	return c.importRecursive(data, parent, edgeLabel, idx, isArray, clientID)
+	return c.importRecursive(data, parent, edgeLabel, idx, nodeType, clientID)
 }
 
-func (c *TreeCRDT) importRecursive(v interface{}, parent *NodeCRDT, edgeLabel string, idx int, isArray bool, clientID ClientID) (NodeID, error) {
+func (c *TreeCRDT) importRecursive(v interface{}, parent *NodeCRDT, edgeLabel string, idx int, nodeType NodeType, clientID ClientID) (NodeID, error) {
 	version := 1
 
 	switch val := v.(type) {
@@ -37,11 +37,10 @@ func (c *TreeCRDT) importRecursive(v interface{}, parent *NodeCRDT, edgeLabel st
 	case map[string]interface{}:
 		// Map node
 		mapNodeID := generateRandomNodeID("map")
-		mapNode := c.getOrCreateNode(mapNodeID, false, clientID, version)
-		mapNode.IsMap = true
+		mapNode := c.getOrCreateNode(mapNodeID, Map, clientID, version)
 
 		if parent != nil {
-			if isArray {
+			if nodeType == Array {
 				err := c.AppendEdge(parent.ID, mapNodeID, edgeLabel, clientID)
 				if err != nil {
 					return "", err
@@ -55,7 +54,7 @@ func (c *TreeCRDT) importRecursive(v interface{}, parent *NodeCRDT, edgeLabel st
 		}
 
 		for key, child := range val {
-			_, err := c.importRecursive(child, mapNode, key, -1, false, clientID)
+			_, err := c.importRecursive(child, mapNode, key, -1, Literal, clientID)
 			if err != nil {
 				return "", err
 			}
@@ -66,11 +65,10 @@ func (c *TreeCRDT) importRecursive(v interface{}, parent *NodeCRDT, edgeLabel st
 	case []interface{}:
 		// Array node
 		arrayNodeID := generateRandomNodeID("arr")
-		arrayNode := c.getOrCreateNode(arrayNodeID, true, clientID, version)
-		arrayNode.IsArray = true
+		arrayNode := c.getOrCreateNode(arrayNodeID, Array, clientID, version)
 
 		if parent != nil {
-			if isArray {
+			if nodeType == Array {
 				err := c.AppendEdge(parent.ID, arrayNodeID, edgeLabel, clientID)
 				if err != nil {
 					return "", err
@@ -84,7 +82,7 @@ func (c *TreeCRDT) importRecursive(v interface{}, parent *NodeCRDT, edgeLabel st
 		}
 
 		for i, item := range val {
-			_, err := c.importRecursive(item, arrayNode, "", i, true, clientID)
+			_, err := c.importRecursive(item, arrayNode, "", i, Array, clientID)
 			if err != nil {
 				return "", err
 			}
@@ -95,13 +93,13 @@ func (c *TreeCRDT) importRecursive(v interface{}, parent *NodeCRDT, edgeLabel st
 	default:
 		// Literal node
 		literalID := generateRandomNodeID("lit")
-		literalNode := c.getOrCreateNode(literalID, false, clientID, version)
+		literalNode := c.getOrCreateNode(literalID, Literal, clientID, version)
 		err := literalNode.setLiteralWithVersion(val, clientID, version)
 		if err != nil {
 			return "", err
 		}
 		if parent != nil {
-			if isArray {
+			if nodeType == Array {
 				err := c.AppendEdge(parent.ID, literalID, edgeLabel, clientID)
 				if err != nil {
 					return "", err
@@ -117,151 +115,152 @@ func (c *TreeCRDT) importRecursive(v interface{}, parent *NodeCRDT, edgeLabel st
 	}
 }
 
-func (c *TreeCRDT) exportRaw() (map[string]interface{}, error) {
+func (c *TreeCRDT) Save() ([]byte, error) {
+	exportable := make(map[string]interface{})
+
 	nodes := make(map[string]interface{})
-
 	for id, node := range c.Nodes {
-		nodeData := map[string]interface{}{
-			"id":           string(node.ID),
-			"isArray":      node.IsArray,
-			"isMap":        node.IsMap,
-			"isLiteral":    node.IsLiteral,
-			"literalValue": node.LiteralValue,
-			"owner":        string(node.Owner),
-			"clock":        node.Clock,
-			"edges":        []map[string]interface{}{},
-		}
-
-		// Sort edges by LSEQ before exporting
-		sortedEdges := make([]*EdgeCRDT, len(node.Edges))
-		copy(sortedEdges, node.Edges)
-		sortEdgesByLSEQ(sortedEdges)
-
-		for _, edge := range sortedEdges {
-			nodeData["edges"] = append(nodeData["edges"].([]map[string]interface{}), map[string]interface{}{
+		edges := make([]map[string]interface{}, len(node.Edges))
+		for i, edge := range node.Edges {
+			edges[i] = map[string]interface{}{
+				"from":         string(edge.From),
+				"to":           string(edge.To),
 				"label":        edge.Label,
 				"lseqposition": edge.LSEQPosition,
-				"to":           string(edge.To),
-				"from":         string(edge.From),
-			})
-		}
-
-		nodes[string(id)] = nodeData
-	}
-
-	return map[string]interface{}{
-		"root":  string(c.Root.ID),
-		"nodes": nodes,
-	}, nil
-}
-
-func (c *TreeCRDT) Save() ([]byte, error) {
-	exported, err := c.exportRaw()
-	if err != nil {
-		return nil, err
-	}
-
-	return json.MarshalIndent(exported, "", "  ")
-}
-
-func (c *TreeCRDT) importRaw(data map[string]interface{}) error {
-	nodesData, ok := data["nodes"].(map[string]interface{})
-	if !ok {
-		return errors.New("invalid raw data: nodes missing")
-	}
-	c.Nodes = make(map[NodeID]*NodeCRDT)
-
-	// First pass: create nodes
-	for idStr, nodeRaw := range nodesData {
-		nodeMap, ok := nodeRaw.(map[string]interface{})
-		if !ok {
-			return errors.New("invalid node data")
-		}
-
-		id := NodeID(idStr)
-		node := newNodeFromID(id, false, c)
-
-		if isArray, ok := nodeMap["isArray"].(bool); ok {
-			node.IsArray = isArray
-		}
-		if isMap, ok := nodeMap["isMap"].(bool); ok {
-			node.IsMap = isMap
-		}
-		if isLiteral, ok := nodeMap["isLiteral"].(bool); ok {
-			node.IsLiteral = isLiteral
-		}
-		node.LiteralValue = nodeMap["literalValue"]
-
-		if ownerStr, ok := nodeMap["owner"].(string); ok {
-			node.Owner = ClientID(ownerStr)
-		}
-
-		if clockMap, ok := nodeMap["clock"].(map[string]interface{}); ok {
-			node.Clock = make(VectorClock)
-			for cid, v := range clockMap {
-				if vInt, ok := v.(float64); ok {
-					node.Clock[ClientID(cid)] = int(vInt)
-				}
+				"signature":    edge.Signature,
+				"opnounce":     edge.Nounce,
 			}
 		}
 
-		c.Nodes[id] = node
-	}
-
-	// Second pass: recreate edges
-	for idStr, nodeRaw := range nodesData {
-		nodeMap := nodeRaw.(map[string]interface{})
-		id := NodeID(idStr)
-		node := c.Nodes[id]
-
-		if edges, ok := nodeMap["edges"].([]interface{}); ok {
-			for _, e := range edges {
-				edgeMap, ok := e.(map[string]interface{})
-				if !ok {
-					continue
-				}
-				edge := &EdgeCRDT{}
-				if toStr, ok := edgeMap["to"].(string); ok {
-					edge.To = NodeID(toStr)
-				}
-				if fromStr, ok := edgeMap["from"].(string); ok {
-					edge.From = NodeID(fromStr)
-				}
-				if labelStr, ok := edgeMap["label"].(string); ok {
-					edge.Label = labelStr
-				}
-				if lseqPos, ok := edgeMap["lseqposition"].([]interface{}); ok {
-					for _, v := range lseqPos {
-						if intVal, ok := v.(float64); ok {
-							edge.LSEQPosition = append(edge.LSEQPosition, int(intVal))
-						}
-					}
-				}
-				edge.From = id // override to ensure consistency
-				node.Edges = append(node.Edges, edge)
-			}
+		nodes[string(id)] = map[string]interface{}{
+			"id":            string(node.ID),
+			"isroot":        node.IsRoot,
+			"isarray":       node.IsArray,
+			"ismap":         node.IsMap,
+			"isliteral":     node.IsLiteral,
+			"litteralValue": node.LiteralValue,
+			"owner":         string(node.Owner),
+			"clock":         node.Clock,
+			"signature":     node.Signature,
+			"opnounce":      node.Nounce,
+			"edges":         edges,
 		}
 	}
 
-	rootID, ok := data["root"].(string)
-	if !ok {
-		return errors.New("invalid raw data: root missing")
-	}
-	rootNode, ok := c.Nodes[NodeID(rootID)]
-	if !ok {
-		return errors.New("root node not found")
-	}
-	c.Root = rootNode
+	exportable["root"] = string(c.Root.ID)
+	exportable["ownerID"] = c.OwnerID
+	exportable["secure"] = c.Secure
+	exportable["clock"] = c.Clock
+	exportable["signature"] = c.Signature
+	exportable["opnounce"] = c.Nounce
+	exportable["nodes"] = nodes
 
-	return nil
+	if c.ABACPolicy != nil {
+		abacJSON, err := c.ABACPolicy.MarshalJSON()
+		if err != nil {
+			return nil, fmt.Errorf("failed to serialize ABAC policy: %w", err)
+		}
+		exportable["abac"] = json.RawMessage(abacJSON)
+	}
+
+	return json.MarshalIndent(exportable, "", "  ")
 }
 
 func (c *TreeCRDT) Load(data []byte) error {
-	var rawData map[string]interface{}
-	if err := json.Unmarshal(data, &rawData); err != nil {
+	var raw map[string]interface{}
+	if err := json.Unmarshal(data, &raw); err != nil {
 		return err
 	}
-	return c.importRaw(rawData)
+
+	nodesRaw, ok := raw["nodes"].(map[string]interface{})
+	if !ok {
+		return errors.New("missing or invalid 'nodes' field")
+	}
+
+	c.Nodes = make(map[NodeID]*NodeCRDT)
+
+	for idStr, val := range nodesRaw {
+		nodeMap := val.(map[string]interface{})
+		node := &NodeCRDT{
+			ID:           NodeID(idStr),
+			Edges:        []*EdgeCRDT{},
+			Clock:        make(VectorClock),
+			IsRoot:       nodeMap["isroot"].(bool),
+			IsArray:      nodeMap["isarray"].(bool),
+			IsMap:        nodeMap["ismap"].(bool),
+			IsLiteral:    nodeMap["isliteral"].(bool),
+			LiteralValue: nodeMap["litteralValue"],
+			Owner:        ClientID(nodeMap["owner"].(string)),
+			Signature:    nodeMap["signature"].(string),
+			Nounce:       nodeMap["opnounce"].(string),
+		}
+		node.tree = c
+
+		if clockMap, ok := nodeMap["clock"].(map[string]interface{}); ok {
+			for k, v := range clockMap {
+				if floatVal, ok := v.(float64); ok {
+					node.Clock[ClientID(k)] = int(floatVal)
+				}
+			}
+		}
+
+		c.Nodes[node.ID] = node
+	}
+
+	for idStr, val := range nodesRaw {
+		node := c.Nodes[NodeID(idStr)]
+		edgeArr := val.(map[string]interface{})["edges"].([]interface{})
+		for _, e := range edgeArr {
+			em := e.(map[string]interface{})
+			edge := &EdgeCRDT{
+				From:         NodeID(em["from"].(string)),
+				To:           NodeID(em["to"].(string)),
+				Label:        em["label"].(string),
+				Signature:    em["signature"].(string),
+				Nounce:       em["opnounce"].(string),
+				LSEQPosition: []int{},
+			}
+			for _, pos := range em["lseqposition"].([]interface{}) {
+				edge.LSEQPosition = append(edge.LSEQPosition, int(pos.(float64)))
+			}
+			node.Edges = append(node.Edges, edge)
+		}
+	}
+
+	if rootStr, ok := raw["root"].(string); ok {
+		c.Root = c.Nodes[NodeID(rootStr)]
+	} else {
+		return errors.New("missing root node ID")
+	}
+
+	if ownerID, ok := raw["ownerID"].(string); ok {
+		c.OwnerID = ownerID
+	}
+	if secure, ok := raw["secure"].(bool); ok {
+		c.Secure = secure
+	}
+	if sig, ok := raw["signature"].(string); ok {
+		c.Signature = sig
+	}
+	if nounce, ok := raw["opnounce"].(string); ok {
+		c.Nounce = nounce
+	}
+	if clockRaw, ok := raw["clock"].(map[string]interface{}); ok {
+		c.Clock = make(VectorClock)
+		for k, v := range clockRaw {
+			if floatVal, ok := v.(float64); ok {
+				c.Clock[ClientID(k)] = int(floatVal)
+			}
+		}
+	}
+	if abacRaw, ok := raw["abac"].(json.RawMessage); ok {
+		c.ABACPolicy = &ABACPolicy{}
+		if err := c.ABACPolicy.UnmarshalJSON(abacRaw); err != nil {
+			return fmt.Errorf("failed to parse ABAC policy: %w", err)
+		}
+	}
+
+	return nil
 }
 
 func (c *TreeCRDT) ExportJSON() ([]byte, error) {
@@ -469,8 +468,9 @@ func (c *TreeCRDT) Equal(other *TreeCRDT) bool {
 }
 
 func nodesSemanticallyEqual(n1, n2 *NodeCRDT) bool {
-	if n1.IsArray != n2.IsArray || n1.IsLiteral != n2.IsLiteral || n1.IsMap != n2.IsMap {
+	if n1.IsArray != n2.IsArray || n1.IsLiteral != n2.IsLiteral || n1.IsMap != n2.IsMap || n1.IsRoot != n2.IsRoot {
 		log.WithFields(log.Fields{
+			"IsRoot1": n1.IsRoot, "IsRoot2": n2.IsArray,
 			"IsArray1": n1.IsArray, "IsArray2": n2.IsArray,
 			"IsLiteral1": n1.IsLiteral, "IsLiteral2": n2.IsLiteral,
 			"IsMap1": n1.IsMap, "IsMap2": n2.IsMap,
@@ -500,15 +500,6 @@ func nodesSemanticallyEqual(n1, n2 *NodeCRDT) bool {
 			}).Warning("Literal values not equal")
 			return false
 		}
-
-		// if n1.IsLiteral {
-		// 	if !reflect.DeepEqual(n1.LiteralValue, n2.LiteralValue) {
-		// 		log.WithFields(log.Fields{
-		// 			"LiteralValue1": n1.LiteralValue,
-		// 			"LiteralValue2": n2.LiteralValue,
-		// 		}).Warning("Literal values not equal")
-		// 		return false
-		// 	}
 	}
 
 	if len(n1.Edges) != len(n2.Edges) {

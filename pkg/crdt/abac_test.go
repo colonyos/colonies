@@ -4,7 +4,7 @@ import "testing"
 
 type mockTree struct{}
 
-func (m *mockTree) IsDescendant(root NodeID, target NodeID) bool {
+func (m *mockTree) isDescendant(root NodeID, target NodeID) bool {
 	return root == "parent" && target == "child"
 }
 

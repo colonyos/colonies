@@ -10,6 +10,14 @@ import (
 )
 
 type NodeID string
+type NodeType int
+
+const (
+	Root NodeType = iota
+	Array
+	Map
+	Literal
+)
 
 type NodeCRDT struct {
 	tree         *TreeCRDT
@@ -17,10 +25,13 @@ type NodeCRDT struct {
 	Edges        []*EdgeCRDT `json:"edges"`
 	Clock        VectorClock `json:"clock"`
 	Owner        ClientID    `json:"owner"`
+	IsRoot       bool        `json:"isroot"`
 	IsMap        bool        `json:"ismap"`
 	IsArray      bool        `json:"isarray"`
 	IsLiteral    bool        `json:"isliteral"`
 	LiteralValue interface{} `json:"litteralValue"`
+	Nounce       string      `json:"opnounce"`
+	Signature    string      `json:"signature"`
 }
 
 type EdgeCRDT struct {
@@ -28,40 +39,69 @@ type EdgeCRDT struct {
 	To           NodeID `json:"to"`
 	Label        string `json:"label"`
 	LSEQPosition []int  `json:"lseqposition"`
+	Nounce       string `json:"opnounce"`
+	Signature    string `json:"signature"`
 }
 
 type TreeCRDT struct {
-	Root  *NodeCRDT
-	Nodes map[NodeID]*NodeCRDT
+	Root       *NodeCRDT            `json:"root"`
+	Nodes      map[NodeID]*NodeCRDT `json:"nodes"`
+	OwnerID    string               `json:"ownerID"`
+	ABACPolicy *ABACPolicy          `json:"abac"`
+	Secure     bool                 `json:"secure"`
+	Clock      VectorClock          `json:"clock"`
+	Nounce     string               `json:"opnounce"`
+	Signature  string               `json:"signature"`
 }
 
-func (c *TreeCRDT) CreateAttachedNode(name string, isArray bool, parentID NodeID, clientID ClientID) *NodeCRDT {
+func newTreeCRDT() *TreeCRDT {
+	rootID := "root"
+	root := &NodeCRDT{
+		ID:     NodeID(rootID),
+		Edges:  make([]*EdgeCRDT, 0),
+		IsRoot: true,
+	}
+	c := &TreeCRDT{
+		Root:  root,
+		Nodes: make(map[NodeID]*NodeCRDT),
+	}
+	c.Nodes[c.Root.ID] = c.Root
+	root.tree = c
+	c.ABACPolicy = nil
+	c.Secure = false
+
+	return c
+}
+
+func (c *TreeCRDT) CreateAttachedNode(name string, nodeType NodeType, parentID NodeID, clientID ClientID) *NodeCRDT {
 	id := generateRandomNodeID(name)
-	node := c.getOrCreateNode(id, isArray, clientID, 1)
+	node := c.getOrCreateNode(id, nodeType, clientID, 1)
 	c.AddEdge(parentID, id, "", clientID)
 	return node
 }
 
-func (c *TreeCRDT) CreateNode(name string, isArray bool, clientID ClientID) *NodeCRDT {
+func (c *TreeCRDT) CreateNode(name string, nodeType NodeType, clientID ClientID) *NodeCRDT {
 	id := generateRandomNodeID(name)
-	node := c.getOrCreateNode(id, isArray, clientID, 1)
+	node := c.getOrCreateNode(id, nodeType, clientID, 1)
+	setNodeTypeFlags(node, nodeType)
+
 	return node
 }
 
-func newNodeFromID(id NodeID, isArray bool, tree *TreeCRDT) *NodeCRDT {
+func newNodeFromID(id NodeID, nodeType NodeType, tree *TreeCRDT) *NodeCRDT {
 	node := &NodeCRDT{
-		ID:      id,
-		Edges:   make([]*EdgeCRDT, 0),
-		IsArray: isArray,
-		tree:    tree,
+		ID:    id,
+		Edges: make([]*EdgeCRDT, 0),
+		tree:  tree,
 	}
+	setNodeTypeFlags(node, nodeType)
 
 	return node
 }
 
-func (c *TreeCRDT) getOrCreateNode(id NodeID, isArray bool, clientID ClientID, version int) *NodeCRDT {
+func (c *TreeCRDT) getOrCreateNode(id NodeID, nodeType NodeType, clientID ClientID, version int) *NodeCRDT {
 	if _, ok := c.Nodes[id]; !ok {
-		node := newNodeFromID(id, isArray, c)
+		node := newNodeFromID(id, nodeType, c)
 		c.Nodes[id] = node
 		node.Clock = make(VectorClock)
 		node.Clock[clientID] = version
@@ -78,23 +118,6 @@ func (c *TreeCRDT) GetNode(id NodeID) (*NodeCRDT, bool) {
 	return node, true
 }
 
-func newTreeCRDT() *TreeCRDT {
-	rootID := "root"
-	root := &NodeCRDT{
-		ID:      NodeID(rootID),
-		Edges:   make([]*EdgeCRDT, 0),
-		IsArray: false,
-	}
-	c := &TreeCRDT{
-		Root:  root,
-		Nodes: make(map[NodeID]*NodeCRDT),
-	}
-	c.Nodes[c.Root.ID] = c.Root
-	root.tree = c
-
-	return c
-}
-
 func generateRandomNodeID(label string) NodeID {
 	id := core.GenerateRandomID()
 	id = label + "-" + id
@@ -103,9 +126,7 @@ func generateRandomNodeID(label string) NodeID {
 
 // This functions only appends a new node to the tree, no need for conflict resolution
 func (n *NodeCRDT) CreateMapNode(clientID ClientID) (*NodeCRDT, error) {
-	mapNode := n.tree.CreateNode("map", false, clientID)
-	mapNode.IsMap = true
-	mapNode.IsArray = false
+	mapNode := n.tree.CreateNode("map", Map, clientID)
 	if err := n.tree.AddEdge(n.ID, mapNode.ID, "", clientID); err != nil {
 		return nil, fmt.Errorf("SetKeyValue: failed to attach map node: %w", err)
 	}
@@ -169,7 +190,7 @@ func (n *NodeCRDT) SetKeyValue(key string, value interface{}, clientID ClientID)
 
 	// Create new value node
 	valueNodeID := generateRandomNodeID("val")
-	valueNode := n.tree.getOrCreateNode(valueNodeID, false, clientID, 1)
+	valueNode := n.tree.getOrCreateNode(valueNodeID, Literal, clientID, 1)
 	if err := valueNode.setLiteralWithVersion(value, clientID, 1); err != nil {
 		return "", err
 	}
@@ -602,7 +623,14 @@ func (c *TreeCRDT) Merge(c2 *TreeCRDT, force bool) error {
 	for id, remote := range c2.Nodes {
 		local, exists := c.Nodes[id]
 		if !exists {
-			cloned := newNodeFromID(id, remote.IsArray, c)
+			nodeType := Literal
+			if remote.IsArray {
+				nodeType = Array
+			} else if remote.IsMap {
+				nodeType = Map
+			}
+
+			cloned := newNodeFromID(id, nodeType, c)
 			cloned.IsLiteral = remote.IsLiteral
 			cloned.IsMap = remote.IsMap
 			cloned.IsArray = remote.IsArray
@@ -650,7 +678,7 @@ func (c *TreeCRDT) Merge(c2 *TreeCRDT, force bool) error {
 				existingEdge := fromNode.Edges[0]
 				existingChild := c.Nodes[existingEdge.To]
 
-				arrayNode := c.CreateNode("arr", true, fromNode.Owner)
+				arrayNode := c.CreateNode("arr", Array, fromNode.Owner)
 				arrayNode.IsArray = true
 
 				_ = c.AddEdge(fromNode.ID, arrayNode.ID, "", fromNode.Owner)
@@ -817,7 +845,13 @@ func (c *TreeCRDT) Merge(c2 *TreeCRDT, force bool) error {
 
 func (c *TreeCRDT) cloneNodeFromRemote(c2 *TreeCRDT, id NodeID) {
 	remote := c2.Nodes[id]
-	cloned := newNodeFromID(id, remote.IsArray, c)
+	nodeType := Literal
+	if remote.IsArray {
+		nodeType = Array
+	} else if remote.IsMap {
+		nodeType = Map
+	}
+	cloned := newNodeFromID(id, nodeType, c)
 	cloned.IsLiteral = remote.IsLiteral
 	cloned.IsMap = remote.IsMap
 	cloned.IsArray = remote.IsArray
@@ -837,7 +871,13 @@ func (c *TreeCRDT) edgeExists(node *NodeCRDT, to NodeID) bool {
 }
 
 func cloneNodeWithoutEdges(n *NodeCRDT, crdt *TreeCRDT) *NodeCRDT {
-	cloned := newNodeFromID(n.ID, n.IsArray, crdt)
+	nodeType := Literal
+	if n.IsArray {
+		nodeType = Array
+	} else if n.IsMap {
+		nodeType = Map
+	}
+	cloned := newNodeFromID(n.ID, nodeType, crdt)
 	cloned.IsLiteral = n.IsLiteral
 	cloned.LiteralValue = n.LiteralValue
 	cloned.Clock = copyClock(n.Clock)
@@ -891,8 +931,52 @@ func (c *TreeCRDT) validAttachment(from, to NodeID) error {
 }
 
 func (c *TreeCRDT) ValidateTree() error {
+	if c.Root == nil {
+		return fmt.Errorf("Tree must have a root node")
+	}
+
 	parentMap := make(map[NodeID]NodeID)
 	visited := make(map[NodeID]bool)
+
+	// Ensure exactly one root node
+	rootCount := 0
+	for _, node := range c.Nodes {
+		if node.IsRoot {
+			rootCount++
+		}
+	}
+	if rootCount != 1 {
+		log.WithField("RootCount", rootCount).Debug("Invalid root node count")
+		return fmt.Errorf("Tree must have exactly one root node, found %d", rootCount)
+	}
+
+	// Helper: Ensure node has exactly one type (Map, Array, or Literal) — skip root
+	validateNodeType := func(node *NodeCRDT) error {
+		if node.IsRoot {
+			return nil
+		}
+
+		types := 0
+		if node.IsMap {
+			types++
+		}
+		if node.IsArray {
+			types++
+		}
+		if node.IsLiteral {
+			types++
+		}
+		if types != 1 {
+			log.WithFields(log.Fields{
+				"NodeID":    node.ID,
+				"IsMap":     node.IsMap,
+				"IsArray":   node.IsArray,
+				"IsLiteral": node.IsLiteral,
+			}).Debug("Node has invalid type combination")
+			return fmt.Errorf("Node %s must have exactly one type: Map, Array, or Literal", node.ID)
+		}
+		return nil
+	}
 
 	var dfs func(current NodeID, ancestors map[NodeID]bool) error
 	dfs = func(current NodeID, ancestors map[NodeID]bool) error {
@@ -901,14 +985,147 @@ func (c *TreeCRDT) ValidateTree() error {
 			return fmt.Errorf("Cycle detected at node %s", current)
 		}
 		if visited[current] {
-			return nil // Already validated
+			return nil
 		}
 		visited[current] = true
 
 		node, exists := c.Nodes[current]
 		if !exists {
-			log.WithField("NodeID", current).Debug("Node not found in tree")
+			log.WithField("NodeID", current).Debug("Node not found")
 			return fmt.Errorf("Node %s not found in tree", current)
+		}
+
+		// Validate type (non-root nodes only)
+		if err := validateNodeType(node); err != nil {
+			return err
+		}
+
+		// Literals must not have children
+		if node.IsLiteral && len(node.Edges) > 0 {
+			log.WithField("NodeID", current).Debug("Literal node has children")
+			return fmt.Errorf("Literal node %s must not have children", current)
+		}
+
+		ancestors[current] = true
+		for _, edge := range node.Edges {
+			childID := edge.To
+
+			childNode, ok := c.Nodes[childID]
+			if !ok {
+				log.WithField("ChildID", childID).Debug("Edge to non-existent node")
+				return fmt.Errorf("Edge to non-existent node: %s", childID)
+			}
+
+			// Root must not have a parent
+			if childNode.IsRoot {
+				log.WithField("ParentNodeID", current).Debug("Root node has a parent")
+				return fmt.Errorf("Root node must not have a parent")
+			}
+
+			if existingParent, ok := parentMap[childID]; ok && existingParent != current {
+				log.WithFields(log.Fields{
+					"ChildID":        childID,
+					"ExistingParent": existingParent,
+					"CurrentParent":  current,
+				}).Debug("Multiple parents detected")
+				return fmt.Errorf("Node %s has multiple parents: %s and %s", childID, existingParent, current)
+			}
+			parentMap[childID] = current
+
+			if err := dfs(childID, ancestors); err != nil {
+				return err
+			}
+		}
+		delete(ancestors, current)
+		return nil
+	}
+
+	// Start DFS from declared root node
+	if err := dfs(c.Root.ID, make(map[NodeID]bool)); err != nil {
+		return err
+	}
+
+	// Ensure all nodes were visited (i.e. reachable from root)
+	for id := range c.Nodes {
+		if !visited[id] {
+			log.WithField("NodeID", id).Debug("Unreachable node detected")
+			return fmt.Errorf("Unreachable node found: %s", id)
+		}
+	}
+
+	return nil
+}
+
+func (c *TreeCRDT) ValidateTreeOld() error {
+	if c.Root == nil {
+		return fmt.Errorf("Tree must have a root node")
+	}
+
+	parentMap := make(map[NodeID]NodeID)
+	visited := make(map[NodeID]bool)
+
+	// Ensure exactly one root node
+	rootCount := 0
+	for _, node := range c.Nodes {
+		if node.IsRoot {
+			rootCount++
+		}
+	}
+	if rootCount != 1 {
+		log.WithField("RootCount", rootCount).Debug("Invalid root node count")
+		return fmt.Errorf("Tree must have exactly one root node, found %d", rootCount)
+	}
+
+	// Helper: Ensure node has exactly one type
+	validateNodeType := func(node *NodeCRDT) error {
+		types := 0
+		if node.IsMap {
+			types++
+		}
+		if node.IsArray {
+			types++
+		}
+		if node.IsLiteral {
+			types++
+		}
+		if types != 1 {
+			log.WithFields(log.Fields{
+				"NodeID":    node.ID,
+				"IsMap":     node.IsMap,
+				"IsArray":   node.IsArray,
+				"IsLiteral": node.IsLiteral,
+			}).Debug("Node has invalid type combination")
+			return fmt.Errorf("Node %s must have exactly one type: Map, Array, or Literal", node.ID)
+		}
+		return nil
+	}
+
+	var dfs func(current NodeID, ancestors map[NodeID]bool) error
+	dfs = func(current NodeID, ancestors map[NodeID]bool) error {
+		if ancestors[current] {
+			log.WithField("NodeID", current).Debug("Cycle detected")
+			return fmt.Errorf("Cycle detected at node %s", current)
+		}
+		if visited[current] {
+			return nil
+		}
+		visited[current] = true
+
+		node, exists := c.Nodes[current]
+		if !exists {
+			log.WithField("NodeID", current).Debug("Node not found")
+			return fmt.Errorf("Node %s not found in tree", current)
+		}
+
+		// Validate type constraint
+		if err := validateNodeType(node); err != nil {
+			return err
+		}
+
+		// Literals must not have children
+		if node.IsLiteral && len(node.Edges) > 0 {
+			log.WithField("NodeID", current).Debug("Literal node has children")
+			return fmt.Errorf("Literal node %s must not have children", current)
 		}
 
 		ancestors[current] = true
@@ -926,7 +1143,6 @@ func (c *TreeCRDT) ValidateTree() error {
 					"ExistingParent": existingParent,
 					"CurrentParent":  current,
 				}).Debug("Multiple parents detected")
-
 				return fmt.Errorf("Node %s has multiple parents: %s and %s", childID, existingParent, current)
 			}
 			parentMap[childID] = current
@@ -939,24 +1155,16 @@ func (c *TreeCRDT) ValidateTree() error {
 		return nil
 	}
 
-	// Begin DFS from root
+	// Start DFS from declared root node
 	if err := dfs(c.Root.ID, make(map[NodeID]bool)); err != nil {
 		return err
 	}
 
-	// Ensure all nodes are reachable
+	// Ensure all nodes were visited
 	for id := range c.Nodes {
 		if !visited[id] {
 			log.WithField("NodeID", id).Debug("Unreachable node detected")
-			// Check if the node is not the root
-			if id != c.Root.ID {
-				log.WithFields(log.Fields{
-					"NodeID": id,
-					"Reason": "Unreachable node",
-				}).Debug("Unreachable node detected")
-
-				return fmt.Errorf("Unreachable node found: %s", id)
-			}
+			return fmt.Errorf("Unreachable node found: %s", id)
 		}
 	}
 

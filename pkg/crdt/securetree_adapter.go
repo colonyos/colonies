@@ -1,12 +1,81 @@
 package crdt
 
+import (
+	"encoding/hex"
+	"fmt"
+
+	"github.com/colonyos/colonies/internal/crypto"
+	"github.com/colonyos/colonies/pkg/core"
+)
+
 type AdapterSecureNodeCRDT struct {
 	nodeCrdt *NodeCRDT
 }
 
+func buildOpString(opName string, args ...interface{}) string {
+	if len(args) == 0 {
+		return opName + "()"
+	}
+
+	str := opName + "("
+	for i, arg := range args {
+		if i > 0 {
+			str += ", "
+		}
+		str += fmt.Sprintf("%v", arg)
+	}
+	str += ")"
+	return str
+}
+
+func performSecureAction(
+	prvKey string,
+	op string,
+	action ABACAction,
+	target NodeID,
+	policy *ABACPolicy,
+	actionFn func(ClientID) error,
+	nounceOut *string,
+	signatureOut *string,
+) error {
+	nounce := core.GenerateRandomID()
+	digest := crypto.GenerateHashFromString(op + nounce)
+
+	identity, err := crypto.CreateIdendityFromString(prvKey)
+	if err != nil {
+		return fmt.Errorf("failed to create identity: %w", err)
+	}
+	clientID := ClientID(identity.ID())
+
+	if policy != nil && !policy.IsAllowed(clientID, action, target) {
+		return fmt.Errorf("identity %s not allowed to perform %s on %s", clientID, action, target)
+	}
+
+	signature, err := crypto.Sign(digest, identity.PrivateKey())
+	if err != nil {
+		return fmt.Errorf("failed to sign digest: %w", err)
+	}
+
+	if err := actionFn(clientID); err != nil {
+		return err
+	}
+
+	*nounceOut = nounce
+	*signatureOut = hex.EncodeToString(signature)
+	return nil
+}
+
 func (n *AdapterSecureNodeCRDT) SetLiteral(value interface{}, prvKey string) error {
-	clientID := ClientID(prvKey)
-	return n.nodeCrdt.SetLiteral(value, clientID)
+	op := buildOpString("SetLiteral", value)
+
+	secureAction := func(clientID ClientID) error {
+		if err := n.nodeCrdt.SetLiteral(value, clientID); err != nil {
+			return fmt.Errorf("failed to set literal: %w", err)
+		}
+		return nil
+	}
+
+	return performSecureAction(prvKey, op, ActionModify, n.nodeCrdt.ID, n.nodeCrdt.tree.ABACPolicy, secureAction, &n.nodeCrdt.Nounce, &n.nodeCrdt.Signature)
 }
 
 func (n *AdapterSecureNodeCRDT) GetLiteral() (interface{}, error) {
@@ -14,17 +83,47 @@ func (n *AdapterSecureNodeCRDT) GetLiteral() (interface{}, error) {
 }
 
 func (n *AdapterSecureNodeCRDT) CreateMapNode(prvKey string) (SecureNode, error) {
-	clientID := ClientID(prvKey)
-	node, err := n.nodeCrdt.CreateMapNode(clientID)
+	op := buildOpString("CreateMapNode")
+
+	var newNode *NodeCRDT
+
+	secureAction := func(clientID ClientID) error {
+		node, err := n.nodeCrdt.CreateMapNode(clientID)
+		if err != nil {
+			return fmt.Errorf("failed to create map node: %w", err)
+		}
+		newNode = node
+		return nil
+	}
+
+	err := performSecureAction(prvKey, op, ActionAdd, n.nodeCrdt.ID, n.nodeCrdt.tree.ABACPolicy, secureAction, &n.nodeCrdt.Nounce, &n.nodeCrdt.Signature)
 	if err != nil {
 		return nil, err
 	}
-	return &AdapterSecureNodeCRDT{nodeCrdt: node}, nil
+
+	return &AdapterSecureNodeCRDT{nodeCrdt: newNode}, nil
 }
 
 func (n *AdapterSecureNodeCRDT) SetKeyValue(key string, value interface{}, prvKey string) (NodeID, error) {
-	clientID := ClientID(prvKey)
-	return n.nodeCrdt.SetKeyValue(key, value, clientID)
+	op := buildOpString("SetKeyValue", key, value)
+
+	var newNodeID NodeID
+
+	secureAction := func(clientID ClientID) error {
+		id, err := n.nodeCrdt.SetKeyValue(key, value, clientID)
+		if err != nil {
+			return fmt.Errorf("failed to set key-value: %w", err)
+		}
+		newNodeID = id
+		return nil
+	}
+
+	err := performSecureAction(prvKey, op, ActionModify, n.nodeCrdt.ID, n.nodeCrdt.tree.ABACPolicy, secureAction, &n.nodeCrdt.Nounce, &n.nodeCrdt.Signature)
+	if err != nil {
+		return "", err
+	}
+
+	return newNodeID, nil
 }
 
 func (n *AdapterSecureNodeCRDT) GetNodeForKey(key string) (SecureNode, bool, error) {
@@ -36,30 +135,112 @@ func (n *AdapterSecureNodeCRDT) GetNodeForKey(key string) (SecureNode, bool, err
 }
 
 func (n *AdapterSecureNodeCRDT) RemoveKeyValue(key string, prvKey string) error {
-	clientID := ClientID(prvKey)
-	return n.nodeCrdt.RemoveKeyValue(key, clientID)
+	op := buildOpString("RemoveKeyValue", key)
+
+	secureAction := func(clientID ClientID) error {
+		if err := n.nodeCrdt.RemoveKeyValue(key, clientID); err != nil {
+			return fmt.Errorf("failed to remove key-value: %w", err)
+		}
+		return nil
+	}
+
+	return performSecureAction(
+		prvKey,
+		op,
+		ActionRemove,
+		n.nodeCrdt.ID,
+		n.nodeCrdt.tree.ABACPolicy,
+		secureAction,
+		&n.nodeCrdt.Nounce,
+		&n.nodeCrdt.Signature,
+	)
 }
 
 type AdapterSecureTreeCRDT struct {
 	treeCrdt *TreeCRDT
 }
 
-func NewSecureTree() SecureTree {
-	return &AdapterSecureTreeCRDT{
-		treeCrdt: newTreeCRDT(),
+func NewSecureTree(prvKey string) (SecureTree, error) {
+	idendity, err := crypto.CreateIdendityFromString(prvKey)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create identity from string: %w", err)
 	}
+
+	c := newTreeCRDT()
+	c.OwnerID = idendity.ID()
+	c.ABACPolicy = NewABACPolicy(c)
+	c.ABACPolicy.Allow(ClientID(c.OwnerID), "*", "root", true) // Allow the owner to have full access to whole tree
+	c.Secure = true
+
+	return &AdapterSecureTreeCRDT{
+		treeCrdt: c,
+	}, nil
 }
 
-func (c *AdapterSecureTreeCRDT) CreateAttachedNode(name string, isArray bool, parentID NodeID, prvKey string) SecureNode {
-	clientID := ClientID(prvKey)
-	node := c.treeCrdt.CreateAttachedNode(name, isArray, parentID, clientID)
-	return &AdapterSecureNodeCRDT{nodeCrdt: node}
+func (c *AdapterSecureTreeCRDT) CreateAttachedNode(name string, nodeType NodeType, parentID NodeID, prvKey string) (SecureNode, error) {
+	var newNode *NodeCRDT
+
+	op := buildOpString("CreateAttachedNode", name, nodeType, parentID)
+
+	secureAction := func(clientID ClientID) error {
+		node := c.treeCrdt.CreateAttachedNode(name, nodeType, parentID, clientID)
+		newNode = node
+		return nil
+	}
+
+	var nounce, signature string
+	err := performSecureAction(
+		prvKey,
+		op,
+		ActionAdd,
+		parentID,
+		c.treeCrdt.ABACPolicy,
+		secureAction,
+		&nounce,
+		&signature,
+	)
+	if err != nil {
+		// If unauthorized or failed, return nil
+		return nil, err
+	}
+
+	// Set signature metadata
+	newNode.Nounce = nounce
+	newNode.Signature = signature
+
+	return &AdapterSecureNodeCRDT{nodeCrdt: newNode}, nil
 }
 
-func (c *AdapterSecureTreeCRDT) CreateNode(name string, isArray bool, prvKey string) SecureNode {
-	clientID := ClientID(prvKey)
-	node := c.treeCrdt.CreateNode(name, isArray, clientID)
-	return &AdapterSecureNodeCRDT{nodeCrdt: node}
+func (c *AdapterSecureTreeCRDT) CreateNode(name string, nodeType NodeType, prvKey string) (SecureNode, error) {
+	var newNode *NodeCRDT
+
+	op := buildOpString("CreateNode", name, nodeType)
+
+	secureAction := func(clientID ClientID) error {
+		node := c.treeCrdt.CreateNode(name, nodeType, clientID)
+		newNode = node
+		return nil
+	}
+
+	var nounce, signature string
+	err := performSecureAction(
+		prvKey,
+		op,
+		ActionAdd,
+		c.treeCrdt.Root.ID, // Treat as adding under root
+		c.treeCrdt.ABACPolicy,
+		secureAction,
+		&nounce,
+		&signature,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	newNode.Nounce = nounce
+	newNode.Signature = signature
+
+	return &AdapterSecureNodeCRDT{nodeCrdt: newNode}, nil
 }
 
 func (c *AdapterSecureTreeCRDT) GetNode(id NodeID) (SecureNode, bool) {
@@ -95,54 +276,180 @@ func (c *AdapterSecureTreeCRDT) GetStringValueByPath(path string) (string, error
 }
 
 func (c *AdapterSecureTreeCRDT) AddEdge(from, to NodeID, label string, prvKey string) error {
-	clientID := ClientID(prvKey)
-	return c.treeCrdt.AddEdge(from, to, label, clientID)
+	op := buildOpString("AddEdge", label, from, to)
+
+	secureAction := func(clientID ClientID) error {
+		// Perform the actual edge addition
+		return c.treeCrdt.AddEdge(from, to, label, clientID)
+	}
+
+	node, ok := c.treeCrdt.Nodes[from]
+	if !ok {
+		return fmt.Errorf("parent node %s not found", from)
+	}
+
+	// Write to the parent's node.Nounce and node.Signature
+	return performSecureAction(
+		prvKey,
+		op,
+		ActionAdd,
+		from, // ABAC checks and signing target is the parent node
+		c.treeCrdt.ABACPolicy,
+		secureAction,
+		&node.Nounce,
+		&node.Signature,
+	)
 }
 
 func (c *AdapterSecureTreeCRDT) RemoveEdge(from, to NodeID, prvKey string) error {
-	clientID := ClientID(prvKey)
-	return c.treeCrdt.RemoveEdge(from, to, clientID)
+	op := buildOpString("RemoveEdge", from, to)
+
+	secureAction := func(clientID ClientID) error {
+		return c.treeCrdt.RemoveEdge(from, to, clientID)
+	}
+
+	node, ok := c.treeCrdt.Nodes[from]
+	if !ok {
+		return fmt.Errorf("parent node %s not found", from)
+	}
+
+	return performSecureAction(
+		prvKey,
+		op,
+		ActionRemove,
+		from, // ABAC is enforced on the parent node
+		c.treeCrdt.ABACPolicy,
+		secureAction,
+		&node.Nounce,
+		&node.Signature,
+	)
 }
 
 func (c *AdapterSecureTreeCRDT) AppendEdge(from, to NodeID, label string, prvKey string) error {
-	clientID := ClientID(prvKey)
-	return c.treeCrdt.AppendEdge(from, to, label, clientID)
+	op := buildOpString("AppendEdge", from, to, label)
+
+	secureAction := func(clientID ClientID) error {
+		return c.treeCrdt.AppendEdge(from, to, label, clientID)
+	}
+
+	node, ok := c.treeCrdt.Nodes[from]
+	if !ok {
+		return fmt.Errorf("parent node %s not found", from)
+	}
+
+	return performSecureAction(
+		prvKey,
+		op,
+		ActionModify, // We treat appending a child as modifying the parent
+		from,
+		c.treeCrdt.ABACPolicy,
+		secureAction,
+		&node.Nounce,
+		&node.Signature,
+	)
 }
 
 func (c *AdapterSecureTreeCRDT) PrependEdge(from, to NodeID, label string, prvKey string) error {
-	clientID := ClientID(prvKey)
-	return c.treeCrdt.PrependEdge(from, to, label, clientID)
+	op := buildOpString("PrependEdge", from, to, label)
+
+	secureAction := func(clientID ClientID) error {
+		return c.treeCrdt.PrependEdge(from, to, label, clientID)
+	}
+
+	node, ok := c.treeCrdt.Nodes[from]
+	if !ok {
+		return fmt.Errorf("parent node %s not found", from)
+	}
+
+	return performSecureAction(
+		prvKey,
+		op,
+		ActionModify, // Modifying the parent node structure
+		from,
+		c.treeCrdt.ABACPolicy,
+		secureAction,
+		&node.Nounce,
+		&node.Signature,
+	)
 }
 
-func (c *AdapterSecureTreeCRDT) InsertEdgeLeft(from, to NodeID, label string, sibling NodeID, prvKey string) {
-	clientID := ClientID(prvKey)
-	c.treeCrdt.InsertEdgeLeft(from, to, label, sibling, clientID)
+func (c *AdapterSecureTreeCRDT) InsertEdgeLeft(from, to NodeID, label string, sibling NodeID, prvKey string) error {
+	op := buildOpString("InsertEdgeLeft", from, to, label, sibling)
+
+	secureAction := func(clientID ClientID) error {
+		return c.treeCrdt.InsertEdgeLeft(from, to, label, sibling, clientID)
+	}
+
+	node, ok := c.treeCrdt.Nodes[from]
+	if !ok {
+		return fmt.Errorf("parent node %s not found", from)
+	}
+
+	return performSecureAction(
+		prvKey,
+		op,
+		ActionModify,
+		from,
+		c.treeCrdt.ABACPolicy,
+		secureAction,
+		&node.Nounce,
+		&node.Signature,
+	)
 }
 
 func (c *AdapterSecureTreeCRDT) InsertEdgeRight(from, to NodeID, label string, sibling NodeID, prvKey string) error {
-	clientID := ClientID(prvKey)
-	return c.treeCrdt.InsertEdgeRight(from, to, label, sibling, clientID)
+	op := buildOpString("InsertEdgeRight", from, to, label, sibling)
+
+	secureAction := func(clientID ClientID) error {
+		return c.treeCrdt.InsertEdgeRight(from, to, label, sibling, clientID)
+	}
+
+	node, ok := c.treeCrdt.Nodes[from]
+	if !ok {
+		return fmt.Errorf("parent node %s not found", from)
+	}
+
+	return performSecureAction(
+		prvKey,
+		op,
+		ActionModify,
+		from,
+		c.treeCrdt.ABACPolicy,
+		secureAction,
+		&node.Nounce,
+		&node.Signature,
+	)
 }
 
-func (c *AdapterSecureTreeCRDT) Sync(c2 Tree, force bool) error {
-	adapter, ok := c2.(*AdapterTreeCRDT)
+func (c *AdapterSecureTreeCRDT) Sync(c2 SecureTree, force bool) error {
+	adapter, ok := c2.(*AdapterSecureTreeCRDT)
 	if !ok {
 		panic("Merge: Tree must be of type *AdapterTreeCRDT")
 	}
 	return c.treeCrdt.Sync(adapter.treeCrdt, force)
 }
 
-func (c *AdapterSecureTreeCRDT) Merge(c2 Tree, force bool) error {
-	adapter, ok := c2.(*AdapterTreeCRDT)
+func (c *AdapterSecureTreeCRDT) Merge(c2 SecureTree, force bool) error {
+	adapter, ok := c2.(*AdapterSecureTreeCRDT)
 	if !ok {
 		panic("Merge: Tree must be of type *AdapterTreeCRDT")
 	}
 	return c.treeCrdt.Merge(adapter.treeCrdt, force)
 }
 
-func (c *AdapterSecureTreeCRDT) ImportJSON(rawJSON []byte, parentID NodeID, edgeLabel string, idx int, isArray bool, prvKey string) (NodeID, error) {
-	clientID := ClientID(prvKey)
-	return c.treeCrdt.ImportJSON(rawJSON, parentID, edgeLabel, idx, isArray, clientID)
+func (c *AdapterSecureTreeCRDT) ImportJSON(rawJSON []byte, parentID NodeID, edgeLabel string, idx int, nodeType NodeType, prvKey string) (NodeID, error) {
+	identity, err := crypto.CreateIdendityFromString(prvKey)
+	if err != nil {
+		return "", fmt.Errorf("failed to create identity from string: %w", err)
+	}
+	clientID := ClientID(identity.ID())
+
+	// Check permission to modify the parent node
+	if !c.treeCrdt.ABACPolicy.IsAllowed(clientID, ActionModify, parentID) {
+		return "", fmt.Errorf("identity %s is not allowed to import under parent %s", clientID, parentID)
+	}
+
+	return c.treeCrdt.ImportJSON(rawJSON, parentID, edgeLabel, idx, nodeType, clientID)
 }
 
 func (c *AdapterSecureTreeCRDT) ExportJSON() ([]byte, error) {
