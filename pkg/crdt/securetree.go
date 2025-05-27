@@ -37,7 +37,9 @@ type SecureTree interface {
 	Merge(c2 SecureTree, force bool) error
 
 	// Serialization
-	ImportJSON(rawJSON []byte, parentID NodeID, edgeLabel string, idx int, nodeType NodeType, prvKey string) (NodeID, error)
+	ImportJSON(rawJSON []byte, prvKey string) (NodeID, error)
+	ImportJSONToMap(rawJSON []byte, parentID NodeID, key string, prvKey string) (NodeID, error)
+	ImportJSONToArray(rawJSON []byte, parentID NodeID, prvKey string) (NodeID, error)
 	ExportJSON() ([]byte, error)
 	Load(data []byte) error
 	Save() ([]byte, error)

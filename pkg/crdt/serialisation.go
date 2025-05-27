@@ -12,7 +12,49 @@ import (
 	"golang.org/x/crypto/sha3"
 )
 
-func (c *TreeCRDT) ImportJSON(rawJSON []byte, parentID NodeID, edgeLabel string, idx int, nodeType NodeType, clientID ClientID) (NodeID, error) {
+func (c *TreeCRDT) ImportJSON(rawJSON []byte, clientID ClientID) (NodeID, error) {
+	return c.importJSON(rawJSON, c.Root.ID, "", -1, Root, clientID)
+}
+
+func (c *TreeCRDT) ImportJSONToMap(rawJSON []byte, parentID NodeID, key string, clientID ClientID) (NodeID, error) {
+	if parentID == "" {
+		if c.Root == nil {
+			return "", errors.New("cannot import JSON without a root node")
+		}
+		parentID = c.Root.ID
+	}
+	parent, ok := c.GetNode(parentID)
+	if !ok {
+		return "", fmt.Errorf("parent node with ID %s not found", parentID)
+	}
+
+	if !parent.IsMap {
+		return "", fmt.Errorf("parent node with ID %s is not a map", parentID)
+	}
+
+	return c.importJSON(rawJSON, parentID, key, -1, Map, clientID)
+}
+
+func (c *TreeCRDT) ImportJSONToArray(rawJSON []byte, parentID NodeID, clientID ClientID) (NodeID, error) {
+	if parentID == "" {
+		if c.Root == nil {
+			return "", errors.New("cannot import JSON without a root node")
+		}
+		parentID = c.Root.ID
+	}
+	parent, ok := c.GetNode(parentID)
+	if !ok {
+		return "", fmt.Errorf("parent node with ID %s not found", parentID)
+	}
+
+	if !parent.IsArray {
+		return "", fmt.Errorf("parent node with ID %s is not a map", parentID)
+	}
+
+	return c.importJSON(rawJSON, parentID, "", -1, Map, clientID)
+}
+
+func (c *TreeCRDT) importJSON(rawJSON []byte, parentID NodeID, edgeLabel string, idx int, nodeType NodeType, clientID ClientID) (NodeID, error) {
 	version := 1
 	var parent *NodeCRDT
 	if parentID == "" {
@@ -26,7 +68,10 @@ func (c *TreeCRDT) ImportJSON(rawJSON []byte, parentID NodeID, edgeLabel string,
 		return "", err
 	}
 
-	return c.importRecursive(data, parent, edgeLabel, idx, nodeType, clientID)
+	nodeID, err := c.importRecursive(data, parent, edgeLabel, idx, nodeType, clientID)
+	c.normalize()
+
+	return nodeID, err
 }
 
 func (c *TreeCRDT) importRecursive(v interface{}, parent *NodeCRDT, edgeLabel string, idx int, nodeType NodeType, clientID ClientID) (NodeID, error) {
@@ -54,7 +99,7 @@ func (c *TreeCRDT) importRecursive(v interface{}, parent *NodeCRDT, edgeLabel st
 		}
 
 		for key, child := range val {
-			_, err := c.importRecursive(child, mapNode, key, -1, Literal, clientID)
+			_, err := c.importRecursive(child, mapNode, key, idx, Literal, clientID)
 			if err != nil {
 				return "", err
 			}

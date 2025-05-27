@@ -66,7 +66,7 @@ func TestTreeCRDTSetFieldArrays(t *testing.T) {
 	}`)
 
 	c := newTreeCRDT()
-	_, err := c.ImportJSON(json, "", "", -1, Root, clientID)
+	_, err := c.ImportJSON(json, clientID)
 	assert.NoError(t, err)
 }
 
@@ -293,7 +293,7 @@ func TestTreeCRDTRemoveIndexInArray(t *testing.T) {
 	initialJSON := []byte(`["A", "B", "C"]`)
 
 	c := newTreeCRDT()
-	_, err := c.ImportJSON(initialJSON, "", "", -1, Root, ClientID(clientID))
+	_, err := c.ImportJSON(initialJSON, ClientID(clientID))
 	assert.Nil(t, err, "AddNodeRecursively should not return an error")
 
 	// Find the node with ID "B"
@@ -387,52 +387,6 @@ func TestTreeCRDTNodeSetLiteral(t *testing.T) {
 	assert.Equal(t, expectedWinner, node.Owner, fmt.Sprintf("Expected owner %s to win tie-breaker, got %s", expectedWinner, node.Owner))
 	assert.Equal(t, expectedValue, node.LiteralValue, fmt.Sprintf("Expected literal value %s after conflict resolution, got %s", expectedValue, node.LiteralValue))
 }
-
-// func TestTreeCRDTValidation(t *testing.T) {
-// 	client := ClientID("clientA")
-//
-// 	// Create a tree: root -> A -> B -> C
-// 	c := newTreeCRDT()
-// 	nodeA := c.CreateAttachedNode("A", Map, c.Root.ID, client)
-// 	nodeB := c.CreateAttachedNode("B", Map, nodeA.ID, client)
-// 	nodeC := c.CreateAttachedNode("C", Map, nodeB.ID, client)
-//
-// 	// ---- Test 1: Multiple parents ----
-// 	// Try to attach nodeC again to nodeA (which is invalid)
-// 	err := c.AddEdge(nodeA.ID, nodeC.ID, "", client)
-// 	assert.Error(t, err, "Adding a second parent should fail")
-// 	assert.Contains(t, err.Error(), "multiple parents")
-//
-// 	// Force a second parent manually (simulate corrupted state)
-// 	c.Nodes[nodeA.ID].Edges = append(c.Nodes[nodeA.ID].Edges, &EdgeCRDT{
-// 		From:         nodeA.ID,
-// 		To:           nodeC.ID,
-// 		Label:        "",
-// 		LSEQPosition: []int{42},
-// 	})
-//
-// 	err = c.ValidateTree()
-// 	assert.Error(t, err)
-// 	assert.Contains(t, err.Error(), "multiple parents")
-//
-// 	// ---- Test 2: Cycle ----
-// 	// Force a cycle: C -> A
-// 	c.Nodes[nodeC.ID].Edges = append(c.Nodes[nodeC.ID].Edges, &EdgeCRDT{
-// 		From:         nodeC.ID,
-// 		To:           nodeA.ID,
-// 		Label:        "",
-// 		LSEQPosition: []int{99},
-// 	})
-//
-// 	// validAttachment should now detect cycle
-// 	err = c.validAttachment(nodeC.ID, nodeA.ID)
-// 	assert.Error(t, err)
-// 	assert.Contains(t, err.Error(), "would create a cycle")
-//
-// 	// ValidateTree should detect *either* cycle or multiple parents
-// 	err = c.ValidateTree()
-// 	assert.Error(t, err)
-// }
 
 func TestTreeCRDTValidation(t *testing.T) {
 	client := ClientID("clientA")
@@ -595,7 +549,7 @@ func TestTreeCRDTMergeLists(t *testing.T) {
 	initialJSON := []byte(`[1, 2, 4]`)
 
 	c1 := newTreeCRDT()
-	_, err := c1.ImportJSON(initialJSON, "", "", -1, Root, ClientID(clientA))
+	_, err := c1.ImportJSON(initialJSON, ClientID(clientA))
 	assert.Nil(t, err, "AddNodeRecursively should not return an error")
 
 	rawJSON, err := c1.Save()
@@ -692,7 +646,7 @@ func TestTreeCRDTMergeListsConflicts(t *testing.T) {
 	initialJSON := []byte(`[2, 3, 4]`)
 
 	c1 := newTreeCRDT()
-	_, err := c1.ImportJSON(initialJSON, "", "", -1, Root, ClientID(clientA))
+	_, err := c1.ImportJSON(initialJSON, ClientID(clientA))
 	assert.Nil(t, err, "AddNodeRecursively should not return an error")
 
 	c2, err := c1.Clone()
@@ -741,7 +695,7 @@ func TestTreeCRDTMergeKVListsWithConflicts(t *testing.T) {
 	]`)
 
 	c1 := newTreeCRDT()
-	_, err := c1.ImportJSON(initialJSON, "", "", -1, Root, ClientID(clientA))
+	_, err := c1.ImportJSON(initialJSON, ClientID(clientA))
 	assert.Nil(t, err, "AddNodeRecursively should not return an error")
 
 	c2, err := c1.Clone()
@@ -874,11 +828,11 @@ func TestTreeCRDTMergeJSON1(t *testing.T) {
 
 	// Build and merge CRDTs
 	c1 := newTreeCRDT()
-	_, err := c1.ImportJSON(json1, "", "", -1, Root, clientID)
+	_, err := c1.ImportJSON(json1, clientID)
 	assert.NoError(t, err)
 
 	c2 := newTreeCRDT()
-	_, err = c2.ImportJSON(json1, "", "", -1, Root, clientID)
+	_, err = c2.ImportJSON(json1, clientID)
 	assert.NoError(t, err)
 
 	// Since, the node IDs are generated randomly, it imported json will duplicated in an array
@@ -900,7 +854,7 @@ func TestTreeCRDTMergeHelloWorld(t *testing.T) {
 
 	// Step 1: Start from empty CRDT
 	c1 := newTreeCRDT()
-	_, err := c1.ImportJSON([]byte(`[]`), "", "", -1, Root, clientA)
+	_, err := c1.ImportJSON([]byte(`[]`), clientA)
 	assert.Nil(t, err)
 
 	// Step 2: Insert "Hello" in c1
@@ -962,7 +916,7 @@ func TestTreeCRDTSingleTreeTwoClientsHelloWorld(t *testing.T) {
 
 	// Step 1: Initialize TreeCRDT with an empty array
 	tree := newTreeCRDT()
-	_, err := tree.ImportJSON([]byte(`[]`), "", "", -1, Root, clientA)
+	_, err := tree.ImportJSON([]byte(`[]`), clientA)
 	assert.Nil(t, err, "ImportJSON should not return an error")
 
 	parentNode := tree.Root.Edges[0].To
@@ -1002,7 +956,7 @@ func TestTreeCRDTSingleTreeInterleavedClientsHelloWorld(t *testing.T) {
 
 	// Step 1: Initialize shared TreeCRDT with an empty array
 	tree := newTreeCRDT()
-	_, err := tree.ImportJSON([]byte(`[]`), "", "", -1, Root, clientA)
+	_, err := tree.ImportJSON([]byte(`[]`), clientA)
 	assert.Nil(t, err, "ImportJSON should not return an error")
 
 	parentNode := tree.Root.Edges[0].To
@@ -1070,11 +1024,11 @@ func TestTreeCRTDSync(t *testing.T) {
 	]`)
 
 	c1 := newTreeCRDT()
-	_, err := c1.ImportJSON(json1, "", "", -1, Root, clientID1)
+	_, err := c1.ImportJSON(json1, clientID1)
 	assert.NoError(t, err, "ImportJSON should not return an error")
 
 	c2 := newTreeCRDT()
-	_, err = c2.ImportJSON(json2, "", "", -1, Root, clientID2)
+	_, err = c2.ImportJSON(json2, clientID2)
 	assert.NoError(t, err, "ImportJSON should not return an error")
 
 	err = c1.Sync(c2, false)
@@ -1088,7 +1042,7 @@ func TestTreeCRTDSync(t *testing.T) {
 	compareJSON(t, exportedJSON1, exportedJSON2)
 
 	c3 := newTreeCRDT()
-	_, err = c3.ImportJSON(exportedJSON1, "", "", -1, Root, clientID3)
+	_, err = c3.ImportJSON(exportedJSON1, clientID3)
 	assert.NoError(t, err, "Clone should not return an error")
 	err = c3.Sync(c2, false)
 	assert.NoError(t, err, "Sync should not return an error")

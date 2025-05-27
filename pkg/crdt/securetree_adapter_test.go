@@ -14,7 +14,7 @@ func TestSecureTreeAdapterBasic(t *testing.T) {
 	c, err := NewSecureTree(prvKey)
 	assert.Nil(t, err, "NewSecureTree should not return an error")
 
-	_, err = c.ImportJSON(initialJSON, "root", "", -1, Root, prvKey)
+	_, err = c.ImportJSON(initialJSON, prvKey)
 	assert.Nil(t, err, "AddNodeRecursively should not return an error")
 
 	aNode, err := c.GetNodeByPath("/0")
@@ -45,7 +45,7 @@ func TestSecureTreeAdapterSetLiteral(t *testing.T) {
 	c, err := NewSecureTree(prvKey)
 	assert.Nil(t, err)
 
-	_, err = c.ImportJSON(initialJSON, "root", "", -1, Root, prvKey)
+	_, err = c.ImportJSON(initialJSON, prvKey)
 	assert.Nil(t, err)
 
 	t.Run("Reject SetLiteral with invalid key", func(t *testing.T) {

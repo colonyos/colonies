@@ -424,7 +424,7 @@ func (c *AdapterSecureTreeCRDT) InsertEdgeRight(from, to NodeID, label string, s
 func (c *AdapterSecureTreeCRDT) Sync(c2 SecureTree, force bool) error {
 	adapter, ok := c2.(*AdapterSecureTreeCRDT)
 	if !ok {
-		panic("Merge: Tree must be of type *AdapterTreeCRDT")
+		panic("Sync: Tree must be of type *AdapterTreeCRDT")
 	}
 	return c.treeCrdt.Sync(adapter.treeCrdt, force)
 }
@@ -437,7 +437,22 @@ func (c *AdapterSecureTreeCRDT) Merge(c2 SecureTree, force bool) error {
 	return c.treeCrdt.Merge(adapter.treeCrdt, force)
 }
 
-func (c *AdapterSecureTreeCRDT) ImportJSON(rawJSON []byte, parentID NodeID, edgeLabel string, idx int, nodeType NodeType, prvKey string) (NodeID, error) {
+func (c *AdapterSecureTreeCRDT) ImportJSON(rawJSON []byte, prvKey string) (NodeID, error) {
+	identity, err := crypto.CreateIdendityFromString(prvKey)
+	if err != nil {
+		return "", fmt.Errorf("failed to create identity from string: %w", err)
+	}
+	clientID := ClientID(identity.ID())
+
+	// Check permission to modify the parent node
+	if !c.treeCrdt.ABACPolicy.IsAllowed(clientID, ActionModify, c.treeCrdt.Root.ID) {
+		return "", fmt.Errorf("identity %s is not allowed to import under root", clientID)
+	}
+
+	return c.treeCrdt.ImportJSON(rawJSON, clientID)
+}
+
+func (c *AdapterSecureTreeCRDT) ImportJSONToMap(rawJSON []byte, parentID NodeID, key string, prvKey string) (NodeID, error) {
 	identity, err := crypto.CreateIdendityFromString(prvKey)
 	if err != nil {
 		return "", fmt.Errorf("failed to create identity from string: %w", err)
@@ -449,7 +464,22 @@ func (c *AdapterSecureTreeCRDT) ImportJSON(rawJSON []byte, parentID NodeID, edge
 		return "", fmt.Errorf("identity %s is not allowed to import under parent %s", clientID, parentID)
 	}
 
-	return c.treeCrdt.ImportJSON(rawJSON, parentID, edgeLabel, idx, nodeType, clientID)
+	return c.treeCrdt.ImportJSONToMap(rawJSON, parentID, key, clientID)
+}
+
+func (c *AdapterSecureTreeCRDT) ImportJSONToArray(rawJSON []byte, parentID NodeID, prvKey string) (NodeID, error) {
+	identity, err := crypto.CreateIdendityFromString(prvKey)
+	if err != nil {
+		return "", fmt.Errorf("failed to create identity from string: %w", err)
+	}
+	clientID := ClientID(identity.ID())
+
+	// Check permission to modify the parent node
+	if !c.treeCrdt.ABACPolicy.IsAllowed(clientID, ActionModify, parentID) {
+		return "", fmt.Errorf("identity %s is not allowed to import under parent %s", clientID, parentID)
+	}
+
+	return c.treeCrdt.ImportJSONToArray(rawJSON, parentID, clientID)
 }
 
 func (c *AdapterSecureTreeCRDT) ExportJSON() ([]byte, error) {
