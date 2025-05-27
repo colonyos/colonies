@@ -31,7 +31,7 @@ func TestTreeCRDTGetByPath(t *testing.T) {
 		]
 	}`)
 
-	crdt := NewTreeCRDT()
+	crdt := newTreeCRDT()
 	_, err := crdt.ImportJSON(originalJSON, "", "", -1, false, clientID)
 	assert.Nil(t, err)
 

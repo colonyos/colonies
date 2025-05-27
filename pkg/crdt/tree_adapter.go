@@ -42,7 +42,7 @@ type AdapterTreeCRDT struct {
 
 func NewTree() Tree {
 	return &AdapterTreeCRDT{
-		treeCrdt: NewTreeCRDT(),
+		treeCrdt: newTreeCRDT(),
 	}
 }
 

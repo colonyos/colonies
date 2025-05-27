@@ -78,7 +78,7 @@ func (c *TreeCRDT) GetNode(id NodeID) (*NodeCRDT, bool) {
 	return node, true
 }
 
-func NewTreeCRDT() *TreeCRDT {
+func newTreeCRDT() *TreeCRDT {
 	rootID := "root"
 	root := &NodeCRDT{
 		ID:      NodeID(rootID),

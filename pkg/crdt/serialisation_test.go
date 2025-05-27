@@ -51,7 +51,7 @@ func TestTreeCRDTImport(t *testing.T) {
 		]
 	}`)
 
-	c := NewTreeCRDT()
+	c := newTreeCRDT()
 	_, err := c.ImportJSON(originalJSON, "", "", -1, false, clientID)
 	if err != nil {
 		t.Fatalf("Failed to add node recursively: %v", err)
@@ -71,7 +71,7 @@ func TestTreeCRDTSetKeyValueAfterImport(t *testing.T) {
         "D": "2"
     }`)
 
-	c := NewTreeCRDT()
+	c := newTreeCRDT()
 
 	_, err := c.ImportJSON(initialJSON, "", "", -1, false, ClientID(clientID))
 	assert.Nil(t, err, "AddNodeRecursively should not return an error")
@@ -107,7 +107,7 @@ func TestTreeCRDTAddToArrayAfterImport(t *testing.T) {
 		{"id": "D", "value": "2"}
 	]`)
 
-	c := NewTreeCRDT()
+	c := newTreeCRDT()
 	_, err := c.ImportJSON(initialJSON, "", "", -1, false, ClientID(clientID))
 	if err != nil {
 		t.Fatalf("Failed to add node recursively: %v", err)
@@ -141,7 +141,7 @@ func TestTreeCRDTInsertStringAfterImport(t *testing.T) {
 
 	initialJSON := []byte(`["A", "B", "D"]`)
 
-	c := NewTreeCRDT()
+	c := newTreeCRDT()
 	_, err := c.ImportJSON(initialJSON, "", "", -1, false, ClientID(clientID))
 	assert.Nil(t, err, "AddNodeRecursively should not return an error")
 
@@ -173,7 +173,7 @@ func TestTreeCRDTInsertIntAfterImport(t *testing.T) {
 
 	initialJSON := []byte(`[1, 2, 4]`)
 
-	c := NewTreeCRDT()
+	c := newTreeCRDT()
 	_, err := c.ImportJSON(initialJSON, "", "", -1, false, ClientID(clientID))
 	assert.Nil(t, err, "AddNodeRecursively should not return an error")
 
@@ -218,14 +218,14 @@ func TestTreeCRDTSaveAndLoad(t *testing.T) {
 		{"id": "D", "value": "2"}
 	]`)
 
-	c := NewTreeCRDT()
+	c := newTreeCRDT()
 	_, err := c.ImportJSON(initialJSON, "", "", -1, false, ClientID(clientID))
 	assert.Nil(t, err, "AddNodeRecursively should not return an error")
 
 	rawJSON, err := c.Save()
 	assert.Nil(t, err, "ExportToRaw should not return an error")
 
-	c2 := NewTreeCRDT()
+	c2 := newTreeCRDT()
 	err = c2.Load(rawJSON)
 	assert.Nil(t, err, "ImportRawJSON should not return an error")
 	assert.True(t, c.Equal(c2), "Trees should be equal after import/export")
@@ -243,7 +243,7 @@ func TestTreeCRDTNodeIDAfterImport(t *testing.T) {
 	// ├── B
 	// └── B <- Duplicate
 
-	c := NewTreeCRDT()
+	c := newTreeCRDT()
 	_, err := c.ImportJSON(initialJSON, "", "", -1, false, ClientID(clientID))
 	assert.Nil(t, err, "AddNodeRecursively should not return an error")
 

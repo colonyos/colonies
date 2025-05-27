@@ -444,7 +444,7 @@ func (c *TreeCRDT) Clone() (*TreeCRDT, error) {
 	if err != nil {
 		return nil, err
 	}
-	newTreeCRDT := NewTreeCRDT()
+	newTreeCRDT := newTreeCRDT()
 	if err := newTreeCRDT.Load(safeCopy); err != nil {
 		return nil, err
 	}
