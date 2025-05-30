@@ -65,7 +65,7 @@ func performSecureAction(
 	return nil
 }
 
-func (n *AdapterSecureNodeCRDT) SetLiteral(value interface{}, prvKey string) error {
+func (n *AdapterSecureNodeCRDT) SetLiteral(value interface{}, prvKey string) error { // Tested
 	op := buildOpString("SetLiteral", value)
 
 	secureAction := func(clientID ClientID) error {
@@ -82,7 +82,7 @@ func (n *AdapterSecureNodeCRDT) GetLiteral() (interface{}, error) {
 	return n.nodeCrdt.GetLiteral()
 }
 
-func (n *AdapterSecureNodeCRDT) CreateMapNode(prvKey string) (SecureNode, error) {
+func (n *AdapterSecureNodeCRDT) CreateMapNode(prvKey string) (SecureNode, error) { // Tested
 	op := buildOpString("CreateMapNode")
 
 	var newNode *NodeCRDT
@@ -104,7 +104,7 @@ func (n *AdapterSecureNodeCRDT) CreateMapNode(prvKey string) (SecureNode, error)
 	return &AdapterSecureNodeCRDT{nodeCrdt: newNode}, nil
 }
 
-func (n *AdapterSecureNodeCRDT) SetKeyValue(key string, value interface{}, prvKey string) (NodeID, error) {
+func (n *AdapterSecureNodeCRDT) SetKeyValue(key string, value interface{}, prvKey string) (NodeID, error) { // Tested
 	op := buildOpString("SetKeyValue", key, value)
 
 	var newNodeID NodeID
@@ -134,7 +134,7 @@ func (n *AdapterSecureNodeCRDT) GetNodeForKey(key string) (SecureNode, bool, err
 	return &AdapterSecureNodeCRDT{nodeCrdt: internalNode}, ok, nil
 }
 
-func (n *AdapterSecureNodeCRDT) RemoveKeyValue(key string, prvKey string) error {
+func (n *AdapterSecureNodeCRDT) RemoveKeyValue(key string, prvKey string) error { // Tested
 	op := buildOpString("RemoveKeyValue", key)
 
 	secureAction := func(clientID ClientID) error {
@@ -177,7 +177,7 @@ func NewSecureTree(prvKey string) (SecureTree, error) {
 	}, nil
 }
 
-func (c *AdapterSecureTreeCRDT) CreateAttachedNode(name string, nodeType NodeType, parentID NodeID, prvKey string) (SecureNode, error) {
+func (c *AdapterSecureTreeCRDT) CreateAttachedNode(name string, nodeType NodeType, parentID NodeID, prvKey string) (SecureNode, error) { // Tested
 	var newNode *NodeCRDT
 
 	op := buildOpString("CreateAttachedNode", name, nodeType, parentID)
@@ -211,7 +211,7 @@ func (c *AdapterSecureTreeCRDT) CreateAttachedNode(name string, nodeType NodeTyp
 	return &AdapterSecureNodeCRDT{nodeCrdt: newNode}, nil
 }
 
-func (c *AdapterSecureTreeCRDT) CreateNode(name string, nodeType NodeType, prvKey string) (SecureNode, error) {
+func (c *AdapterSecureTreeCRDT) CreateNode(name string, nodeType NodeType, prvKey string) (SecureNode, error) { // Tested
 	var newNode *NodeCRDT
 
 	op := buildOpString("CreateNode", name, nodeType)
@@ -275,7 +275,7 @@ func (c *AdapterSecureTreeCRDT) GetStringValueByPath(path string) (string, error
 	return c.treeCrdt.GetStringValueByPath(path)
 }
 
-func (c *AdapterSecureTreeCRDT) AddEdge(from, to NodeID, label string, prvKey string) error {
+func (c *AdapterSecureTreeCRDT) AddEdge(from, to NodeID, label string, prvKey string) error { // Tested
 	op := buildOpString("AddEdge", label, from, to)
 
 	secureAction := func(clientID ClientID) error {
@@ -301,7 +301,7 @@ func (c *AdapterSecureTreeCRDT) AddEdge(from, to NodeID, label string, prvKey st
 	)
 }
 
-func (c *AdapterSecureTreeCRDT) RemoveEdge(from, to NodeID, prvKey string) error {
+func (c *AdapterSecureTreeCRDT) RemoveEdge(from, to NodeID, prvKey string) error { // Tested
 	op := buildOpString("RemoveEdge", from, to)
 
 	secureAction := func(clientID ClientID) error {
@@ -325,7 +325,7 @@ func (c *AdapterSecureTreeCRDT) RemoveEdge(from, to NodeID, prvKey string) error
 	)
 }
 
-func (c *AdapterSecureTreeCRDT) AppendEdge(from, to NodeID, label string, prvKey string) error {
+func (c *AdapterSecureTreeCRDT) AppendEdge(from, to NodeID, label string, prvKey string) error { // Tested
 	op := buildOpString("AppendEdge", from, to, label)
 
 	secureAction := func(clientID ClientID) error {
@@ -349,7 +349,7 @@ func (c *AdapterSecureTreeCRDT) AppendEdge(from, to NodeID, label string, prvKey
 	)
 }
 
-func (c *AdapterSecureTreeCRDT) PrependEdge(from, to NodeID, label string, prvKey string) error {
+func (c *AdapterSecureTreeCRDT) PrependEdge(from, to NodeID, label string, prvKey string) error { // Tested
 	op := buildOpString("PrependEdge", from, to, label)
 
 	secureAction := func(clientID ClientID) error {
@@ -373,7 +373,7 @@ func (c *AdapterSecureTreeCRDT) PrependEdge(from, to NodeID, label string, prvKe
 	)
 }
 
-func (c *AdapterSecureTreeCRDT) InsertEdgeLeft(from, to NodeID, label string, sibling NodeID, prvKey string) error {
+func (c *AdapterSecureTreeCRDT) InsertEdgeLeft(from, to NodeID, label string, sibling NodeID, prvKey string) error { // Tested
 	op := buildOpString("InsertEdgeLeft", from, to, label, sibling)
 
 	secureAction := func(clientID ClientID) error {
@@ -421,7 +421,7 @@ func (c *AdapterSecureTreeCRDT) InsertEdgeRight(from, to NodeID, label string, s
 	)
 }
 
-func (c *AdapterSecureTreeCRDT) Sync(c2 SecureTree, force bool) error {
+func (c *AdapterSecureTreeCRDT) Sync(c2 SecureTree, force bool) error { // TODO: test
 	adapter, ok := c2.(*AdapterSecureTreeCRDT)
 	if !ok {
 		panic("Sync: Tree must be of type *AdapterTreeCRDT")
@@ -429,7 +429,7 @@ func (c *AdapterSecureTreeCRDT) Sync(c2 SecureTree, force bool) error {
 	return c.treeCrdt.Sync(adapter.treeCrdt, force)
 }
 
-func (c *AdapterSecureTreeCRDT) Merge(c2 SecureTree, force bool) error {
+func (c *AdapterSecureTreeCRDT) Merge(c2 SecureTree, force bool) error { // TODO: test
 	adapter, ok := c2.(*AdapterSecureTreeCRDT)
 	if !ok {
 		panic("Merge: Tree must be of type *AdapterTreeCRDT")
@@ -437,7 +437,7 @@ func (c *AdapterSecureTreeCRDT) Merge(c2 SecureTree, force bool) error {
 	return c.treeCrdt.Merge(adapter.treeCrdt, force)
 }
 
-func (c *AdapterSecureTreeCRDT) ImportJSON(rawJSON []byte, prvKey string) (NodeID, error) {
+func (c *AdapterSecureTreeCRDT) ImportJSON(rawJSON []byte, prvKey string) (NodeID, error) { // Tested
 	identity, err := crypto.CreateIdendityFromString(prvKey)
 	if err != nil {
 		return "", fmt.Errorf("failed to create identity from string: %w", err)
@@ -452,7 +452,7 @@ func (c *AdapterSecureTreeCRDT) ImportJSON(rawJSON []byte, prvKey string) (NodeI
 	return c.treeCrdt.ImportJSON(rawJSON, clientID)
 }
 
-func (c *AdapterSecureTreeCRDT) ImportJSONToMap(rawJSON []byte, parentID NodeID, key string, prvKey string) (NodeID, error) {
+func (c *AdapterSecureTreeCRDT) ImportJSONToMap(rawJSON []byte, parentID NodeID, key string, prvKey string) (NodeID, error) { // Tested
 	identity, err := crypto.CreateIdendityFromString(prvKey)
 	if err != nil {
 		return "", fmt.Errorf("failed to create identity from string: %w", err)
