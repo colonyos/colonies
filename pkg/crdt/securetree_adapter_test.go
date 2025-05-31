@@ -533,3 +533,29 @@ func TestSecureTreeAdapterImportJSONToArray(t *testing.T) {
 		assert.NotEmpty(t, nodeID)
 	})
 }
+
+// func TestSecureTreeAdapterMerge(t *testing.T) {
+// 	prvKey := "d6eb959e9aec2e6fdc44b5862b269e987b8a4d6f2baca542d8acaa97ee5e74f6"
+// 	prvKeyInvalid := "ed26531bac1838e519c2c6562ac717b22aac041730f0d753d3ad35b76b5f4924"
+//
+// 	c1, err := NewSecureTree(prvKey)
+// 	assert.Nil(t, err)
+//
+// 	// Example JSON structure
+// 	jsonData := []byte(`{
+// 		"foo": "bar",
+// 		"baz": 123
+// 	}`)
+//
+// 	c1.ImportJSON(jsonData, prvKey)
+//
+// 	c2, err := c1.Clone()
+//
+// 	// mapNode := c2.(*AdapterSecureTreeCRDT).treeCrdt.Root
+// 	// err = mapNode.SetKeyValue("newKey", "newValue", prvKeyInvalid)
+// 	//
+// 	// mapNode.Signature = "e713a1bb015fecabb5a084b0fe6d6e7271fca6f79525a634183cfdb175fe69241f4da161779d8e6b761200e1cf93766010a19072fa778f9643363e2cfadd640900"
+//
+// 	// assert.Nil(t, err, "SetKeyValue should not return an error")
+//
+// }

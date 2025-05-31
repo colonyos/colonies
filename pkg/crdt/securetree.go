@@ -43,6 +43,7 @@ type SecureTree interface {
 	ExportJSON() ([]byte, error)
 	Load(data []byte) error
 	Save() ([]byte, error)
+	Clone() (SecureTree, error)
 
 	// Utility functions
 	Tidy()

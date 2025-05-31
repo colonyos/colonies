@@ -172,8 +172,6 @@ func (c *TreeCRDT) Save() ([]byte, error) {
 				"to":           string(edge.To),
 				"label":        edge.Label,
 				"lseqposition": edge.LSEQPosition,
-				"signature":    edge.Signature,
-				"opnounce":     edge.Nounce,
 			}
 		}
 
@@ -187,7 +185,7 @@ func (c *TreeCRDT) Save() ([]byte, error) {
 			"owner":         string(node.Owner),
 			"clock":         node.Clock,
 			"signature":     node.Signature,
-			"opnounce":      node.Nounce,
+			"nounce":        node.Nounce,
 			"edges":         edges,
 		}
 	}
@@ -197,7 +195,7 @@ func (c *TreeCRDT) Save() ([]byte, error) {
 	exportable["secure"] = c.Secure
 	exportable["clock"] = c.Clock
 	exportable["signature"] = c.Signature
-	exportable["opnounce"] = c.Nounce
+	exportable["nounce"] = c.Nounce
 	exportable["nodes"] = nodes
 
 	if c.ABACPolicy != nil {
@@ -237,7 +235,7 @@ func (c *TreeCRDT) Load(data []byte) error {
 			LiteralValue: nodeMap["litteralValue"],
 			Owner:        ClientID(nodeMap["owner"].(string)),
 			Signature:    nodeMap["signature"].(string),
-			Nounce:       nodeMap["opnounce"].(string),
+			Nounce:       nodeMap["nounce"].(string),
 		}
 		node.tree = c
 
@@ -261,8 +259,6 @@ func (c *TreeCRDT) Load(data []byte) error {
 				From:         NodeID(em["from"].(string)),
 				To:           NodeID(em["to"].(string)),
 				Label:        em["label"].(string),
-				Signature:    em["signature"].(string),
-				Nounce:       em["opnounce"].(string),
 				LSEQPosition: []int{},
 			}
 			for _, pos := range em["lseqposition"].([]interface{}) {
@@ -287,7 +283,7 @@ func (c *TreeCRDT) Load(data []byte) error {
 	if sig, ok := raw["signature"].(string); ok {
 		c.Signature = sig
 	}
-	if nounce, ok := raw["opnounce"].(string); ok {
+	if nounce, ok := raw["nounce"].(string); ok {
 		c.Nounce = nounce
 	}
 	if clockRaw, ok := raw["clock"].(map[string]interface{}); ok {

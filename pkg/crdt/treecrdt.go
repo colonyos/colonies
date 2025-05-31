@@ -1,11 +1,14 @@
 package crdt
 
 import (
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"sort"
 
+	"github.com/colonyos/colonies/internal/crypto"
 	"github.com/colonyos/colonies/pkg/core"
+	"github.com/gibson042/canonicaljson-go"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -31,24 +34,108 @@ type NodeCRDT struct {
 	IsArray      bool        `json:"isarray"`
 	IsLiteral    bool        `json:"isliteral"`
 	LiteralValue interface{} `json:"litteralValue"`
-	Nounce       string      `json:"opnounce"`
+	Nounce       string      `json:"nounce"`
 	Signature    string      `json:"signature"`
 	IsDeleted    bool        `json:"deleted"`
 }
 
-func (n *NodeCRDT) CalcDigest() string {
-	// Calc a digest of the node's ID, edges, isRoot, IsMap, IsArray, IsLiteral, LiteralValue, Clock Owner
-	return fmt.Sprintf(
-		"%s|%v|%v|%v|%v|%v|%v|%s",
-		n.ID,
-		n.IsRoot,
-		n.IsMap,
-		n.IsArray,
-		n.IsLiteral,
-		n.LiteralValue,
-		n.Clock,
-		n.Owner,
-	)
+func (n *NodeCRDT) Sign(identity *crypto.Idendity) error {
+	n.Nounce = core.GenerateRandomID()
+
+	s := n.Signature
+	n.Signature = "" // Clear signature to avoid double signing
+
+	json, err := canonicaljson.Marshal(n)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"NodeID": n.ID,
+			"Error":  err,
+		}).Error("Failed to marshal node for digest")
+		return fmt.Errorf("Failed to marshal node for digest: %w", err)
+	}
+
+	n.Signature = s // Restore signature after clearing
+
+	hash := crypto.GenerateHashFromString(string(json) + n.Nounce)
+
+	signature, err := crypto.Sign(hash, identity.PrivateKey())
+	if err != nil {
+		log.WithFields(log.Fields{
+			"NodeID": n.ID,
+			"Error":  err,
+		}).Error("Failed to sign node")
+		return fmt.Errorf("Failed to sign node: %w", err)
+	}
+
+	signatureStr := hex.EncodeToString(signature)
+	n.Signature = signatureStr
+
+	return nil
+}
+
+func (n *NodeCRDT) Verify() (string, error) {
+	signature := n.Signature
+	n.Signature = "" // Clear signature to avoid double verification
+
+	json, err := canonicaljson.Marshal(n)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"NodeID": n.ID,
+			"Error":  err,
+		}).Error("Failed to marshal node for digest")
+		return "", fmt.Errorf("Failed to marshal node for digest: %w", err)
+	}
+
+	n.Signature = signature // Restore signature after clearing
+
+	hash := crypto.GenerateHashFromString(string(json) + n.Nounce)
+	signatureBytes, err := hex.DecodeString(n.Signature)
+
+	recoveredPublicKey, err := crypto.RecoverPublicKey(hash, signatureBytes)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"NodeID": n.ID,
+			"Error":  err,
+		}).Error("Failed to recover public key from signature")
+		return "", fmt.Errorf("Failed to recover public key from signature: %w", err)
+	}
+
+	valid, err := crypto.Verify(recoveredPublicKey, hash, signatureBytes)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"NodeID": n.ID,
+			"Error":  err,
+		}).Error("Failed to verify signature")
+		return "", fmt.Errorf("Failed to verify signature: %w", err)
+	}
+	if !valid {
+		log.WithFields(log.Fields{
+			"NodeID":    n.ID,
+			"Signature": n.Signature,
+			"Hash":      hash,
+		}).Error("Signature verification failed")
+		return "", fmt.Errorf("Signature verification failed for node %s", n.ID)
+	}
+
+	recoveredID, err := crypto.RecoveredID(hash, signatureBytes)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"NodeID": n.ID,
+			"Error":  err,
+		}).Error("Failed to recover ID from signature")
+		return "", fmt.Errorf("Failed to recover ID from signature: %w", err)
+	}
+
+	if recoveredID != string(n.Owner) {
+		log.WithFields(log.Fields{
+			"NodeID":        n.ID,
+			"RecoveredID":   recoveredID,
+			"ExpectedOwner": n.Owner,
+		}).Error("Recovered ID does not match node owner")
+		return "", fmt.Errorf("Recovered ID %s does not match node owner %s", recoveredID, n.Owner)
+	}
+
+	return recoveredID, nil
 }
 
 type EdgeCRDT struct {
@@ -56,8 +143,6 @@ type EdgeCRDT struct {
 	To           NodeID `json:"to"`
 	Label        string `json:"label"`
 	LSEQPosition []int  `json:"lseqposition"`
-	Nounce       string `json:"opnounce"`
-	Signature    string `json:"signature"`
 }
 
 type TreeCRDT struct {
@@ -67,7 +152,7 @@ type TreeCRDT struct {
 	ABACPolicy *ABACPolicy          `json:"abac"`
 	Secure     bool                 `json:"secure"`
 	Clock      VectorClock          `json:"clock"`
-	Nounce     string               `json:"opnounce"`
+	Nounce     string               `json:"nounce"`
 	Signature  string               `json:"signature"`
 }
 
@@ -726,12 +811,6 @@ func (c *TreeCRDT) Sync(c2 *TreeCRDT, force bool) error {
 
 func (c *TreeCRDT) Merge(c2 *TreeCRDT, force bool) error {
 	return c.SecureMerge(c2, force, false)
-}
-
-func (c *TreeCRDT) verifySignature() error {
-	//
-
-	return nil
 }
 
 func (c *TreeCRDT) SecureMerge(c2 *TreeCRDT, force bool, secure bool) error {
