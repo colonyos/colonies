@@ -1,6 +1,10 @@
 package crdt
 
-import log "github.com/sirupsen/logrus"
+import (
+	"fmt"
+
+	log "github.com/sirupsen/logrus"
+)
 
 func lowestClientID(a, b ClientID) ClientID {
 	if a < b {
@@ -34,4 +38,20 @@ func setNodeTypeFlags(node *NodeCRDT, nodeType NodeType) {
 		log.WithField("NodeType", nodeType).Error("Unknown node type, defaulting to literal")
 		node.IsLiteral = true
 	}
+}
+
+func buildOpString(opName string, args ...interface{}) string {
+	if len(args) == 0 {
+		return opName + "()"
+	}
+
+	str := opName + "("
+	for i, arg := range args {
+		if i > 0 {
+			str += ", "
+		}
+		str += fmt.Sprintf("%v", arg)
+	}
+	str += ")"
+	return str
 }

@@ -410,27 +410,33 @@ func exportNodeRecursive(node *NodeCRDT, crdt *TreeCRDT, visited map[NodeID]bool
 			var arrayItems []interface{}
 			for _, e := range edges {
 				child, ok := crdt.Nodes[e.To]
+				fmt.Println("Exporting child node:", e.To, "IsDeleted:", child.IsDeleted)
 				if !ok {
 					return nil, fmt.Errorf("missing child node %s", e.To)
 				}
-				exportedChild, err := exportNodeRecursive(child, crdt, visited)
-				if err != nil {
-					return nil, err
+				if !child.IsDeleted {
+					exportedChild, err := exportNodeRecursive(child, crdt, visited)
+					if err != nil {
+						return nil, err
+					}
+					arrayItems = append(arrayItems, exportedChild)
+					obj.Set(field, arrayItems)
 				}
-				arrayItems = append(arrayItems, exportedChild)
 			}
-			obj.Set(field, arrayItems)
 		} else {
 			// Export as single value
 			child, ok := crdt.Nodes[edges[0].To]
 			if !ok {
 				return nil, fmt.Errorf("missing child node %s", edges[0].To)
 			}
-			exportedChild, err := exportNodeRecursive(child, crdt, visited)
-			if err != nil {
-				return nil, err
+			fmt.Println("Exporting child node:", edges[0].To, "IsDeleted:", child.IsDeleted)
+			if !child.IsDeleted {
+				exportedChild, err := exportNodeRecursive(child, crdt, visited)
+				if err != nil {
+					return nil, err
+				}
+				obj.Set(field, exportedChild)
 			}
-			obj.Set(field, exportedChild)
 		}
 	}
 
@@ -449,6 +455,10 @@ func (c *TreeCRDT) exportNodeOrdered(id NodeID, visited map[NodeID]bool) (interf
 	}
 
 	// Literal node
+	if node.IsDeleted {
+		log.WithFields(log.Fields{"NodeID": id}).Debug("Skipping deleted node")
+		return nil, nil
+	}
 	if node.IsLiteral {
 		return node.LiteralValue, nil
 	}
@@ -458,11 +468,16 @@ func (c *TreeCRDT) exportNodeOrdered(id NodeID, visited map[NodeID]bool) (interf
 		sortEdgesByLSEQ(node.Edges)
 		var arrayItems []interface{}
 		for _, edge := range node.Edges {
-			child, err := c.exportNodeOrdered(edge.To, visited)
-			if err != nil {
-				return nil, err
+			childNode := c.Nodes[edge.To]
+			if !childNode.IsDeleted {
+				child, err := c.exportNodeOrdered(edge.To, visited)
+				if err != nil {
+					return nil, err
+				}
+				arrayItems = append(arrayItems, child)
+			} else {
+				log.WithFields(log.Fields{"NodeID": edge.To}).Debug("Skipping deleted node in array")
 			}
-			arrayItems = append(arrayItems, child)
 		}
 		return arrayItems, nil
 	}
@@ -471,11 +486,16 @@ func (c *TreeCRDT) exportNodeOrdered(id NodeID, visited map[NodeID]bool) (interf
 	if node.IsMap {
 		result := orderedmap.New()
 		for _, edge := range node.Edges {
-			child, err := c.exportNodeOrdered(edge.To, visited)
-			if err != nil {
-				return nil, err
+			childNode := c.Nodes[edge.To]
+			if !childNode.IsDeleted {
+				child, err := c.exportNodeOrdered(edge.To, visited)
+				if err != nil {
+					return nil, err
+				}
+				result.Set(edge.Label, child)
+			} else {
+				log.WithFields(log.Fields{"NodeID": edge.To}).Debug("Skipping deleted node in map")
 			}
-			result.Set(edge.Label, child)
 		}
 		return result, nil
 	}

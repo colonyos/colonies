@@ -12,22 +12,6 @@ type AdapterSecureNodeCRDT struct {
 	nodeCrdt *NodeCRDT
 }
 
-func buildOpString(opName string, args ...interface{}) string {
-	if len(args) == 0 {
-		return opName + "()"
-	}
-
-	str := opName + "("
-	for i, arg := range args {
-		if i > 0 {
-			str += ", "
-		}
-		str += fmt.Sprintf("%v", arg)
-	}
-	str += ")"
-	return str
-}
-
 func performSecureAction(
 	prvKey string,
 	op string,
@@ -66,7 +50,7 @@ func performSecureAction(
 }
 
 func (n *AdapterSecureNodeCRDT) SetLiteral(value interface{}, prvKey string) error { // Tested
-	op := buildOpString("SetLiteral", value)
+	op := buildOpString("Literal", value, n.nodeCrdt.ID)
 
 	secureAction := func(clientID ClientID) error {
 		if err := n.nodeCrdt.SetLiteral(value, clientID); err != nil {
@@ -135,7 +119,7 @@ func (n *AdapterSecureNodeCRDT) GetNodeForKey(key string) (SecureNode, bool, err
 }
 
 func (n *AdapterSecureNodeCRDT) RemoveKeyValue(key string, prvKey string) error { // Tested
-	op := buildOpString("RemoveKeyValue", key)
+	op := buildOpString("KeyValue", key)
 
 	secureAction := func(clientID ClientID) error {
 		if err := n.nodeCrdt.RemoveKeyValue(key, clientID); err != nil {
@@ -180,7 +164,7 @@ func NewSecureTree(prvKey string) (SecureTree, error) {
 func (c *AdapterSecureTreeCRDT) CreateAttachedNode(name string, nodeType NodeType, parentID NodeID, prvKey string) (SecureNode, error) { // Tested
 	var newNode *NodeCRDT
 
-	op := buildOpString("CreateAttachedNode", name, nodeType, parentID)
+	op := buildOpString("Node", name, nodeType)
 
 	secureAction := func(clientID ClientID) error {
 		node := c.treeCrdt.CreateAttachedNode(name, nodeType, parentID, clientID)
@@ -214,7 +198,7 @@ func (c *AdapterSecureTreeCRDT) CreateAttachedNode(name string, nodeType NodeTyp
 func (c *AdapterSecureTreeCRDT) CreateNode(name string, nodeType NodeType, prvKey string) (SecureNode, error) { // Tested
 	var newNode *NodeCRDT
 
-	op := buildOpString("CreateNode", name, nodeType)
+	op := buildOpString("Node", name, nodeType)
 
 	secureAction := func(clientID ClientID) error {
 		node := c.treeCrdt.CreateNode(name, nodeType, clientID)
@@ -276,7 +260,7 @@ func (c *AdapterSecureTreeCRDT) GetStringValueByPath(path string) (string, error
 }
 
 func (c *AdapterSecureTreeCRDT) AddEdge(from, to NodeID, label string, prvKey string) error { // Tested
-	op := buildOpString("AddEdge", label, from, to)
+	op := buildOpString("Edge", from, to, label, NodeID(""))
 
 	secureAction := func(clientID ClientID) error {
 		// Perform the actual edge addition
@@ -326,7 +310,7 @@ func (c *AdapterSecureTreeCRDT) RemoveEdge(from, to NodeID, prvKey string) error
 }
 
 func (c *AdapterSecureTreeCRDT) AppendEdge(from, to NodeID, label string, prvKey string) error { // Tested
-	op := buildOpString("AppendEdge", from, to, label)
+	op := buildOpString("Edge", from, to, label)
 
 	secureAction := func(clientID ClientID) error {
 		return c.treeCrdt.AppendEdge(from, to, label, clientID)
@@ -350,7 +334,7 @@ func (c *AdapterSecureTreeCRDT) AppendEdge(from, to NodeID, label string, prvKey
 }
 
 func (c *AdapterSecureTreeCRDT) PrependEdge(from, to NodeID, label string, prvKey string) error { // Tested
-	op := buildOpString("PrependEdge", from, to, label)
+	op := buildOpString("Edge", from, to, label, NodeID(""))
 
 	secureAction := func(clientID ClientID) error {
 		return c.treeCrdt.PrependEdge(from, to, label, clientID)
@@ -374,7 +358,7 @@ func (c *AdapterSecureTreeCRDT) PrependEdge(from, to NodeID, label string, prvKe
 }
 
 func (c *AdapterSecureTreeCRDT) InsertEdgeLeft(from, to NodeID, label string, sibling NodeID, prvKey string) error { // Tested
-	op := buildOpString("InsertEdgeLeft", from, to, label, sibling)
+	op := buildOpString("Edge", from, to, label, sibling)
 
 	secureAction := func(clientID ClientID) error {
 		return c.treeCrdt.InsertEdgeLeft(from, to, label, sibling, clientID)
@@ -398,7 +382,7 @@ func (c *AdapterSecureTreeCRDT) InsertEdgeLeft(from, to NodeID, label string, si
 }
 
 func (c *AdapterSecureTreeCRDT) InsertEdgeRight(from, to NodeID, label string, sibling NodeID, prvKey string) error {
-	op := buildOpString("InsertEdgeRight", from, to, label, sibling)
+	op := buildOpString("Edge", from, to, label, sibling)
 
 	secureAction := func(clientID ClientID) error {
 		return c.treeCrdt.InsertEdgeRight(from, to, label, sibling, clientID)

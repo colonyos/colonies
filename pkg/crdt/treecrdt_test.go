@@ -1060,3 +1060,112 @@ func TestTreeCRTDSync(t *testing.T) {
 	exportedJSON3, err = c3.ExportJSON()
 	compareJSON(t, exportedJSON3, exportedJSON2)
 }
+
+func TestTreeCRDTMarkDeletedArray(t *testing.T) {
+	clientID := ClientID("clientA")
+
+	initialJSON := []byte(`[2, 3, 4]`)
+
+	c := newTreeCRDT()
+	_, err := c.ImportJSON(initialJSON, clientID)
+	assert.Nil(t, err, "AddNodeRecursively should not return an error")
+
+	node3, err := c.GetNodeByPath("/1")
+	assert.NoError(t, err, "GetNodeByPath should not return an error")
+
+	// Mark deleted
+	err = node3.MarkDeleted(clientID)
+	assert.NoError(t, err, "SetDeleted should not return an error")
+
+	// Check if the node is marked as deleted
+	assert.True(t, node3.IsDeleted, "Node should be marked as deleted")
+
+	exportedJSON, err := c.ExportJSON()
+	assert.NoError(t, err, "ExportJSON should not return an error")
+
+	expectedJSON := []byte(`[2, 4]`)
+	compareJSON(t, expectedJSON, exportedJSON)
+
+	arrayNodeID := c.Root.Edges[0].To
+	arrayNode, ok := c.GetNode(arrayNodeID)
+	assert.True(t, ok, "Array node should exist in the tree")
+
+	// List number of edges and nodes
+	assert.Equal(t, 3, len(arrayNode.Edges), "Deleted node should have no edges")
+	assert.Equal(t, 5, len(c.Nodes), "Tree should still have the root node after deletion")
+
+	// Tidy the tree
+	c.Tidy()
+
+	assert.Equal(t, 2, len(arrayNode.Edges), "Deleted node should have no edges")
+	assert.Equal(t, 4, len(c.Nodes), "Tree should still have the root node after deletion")
+
+}
+
+func TestTreeCRDTMarkDeletedMap(t *testing.T) {
+	clientID := ClientID("clientA")
+
+	initialJSON := []byte(`{"A": 1, "B": 2, "C": 3}`)
+
+	c := newTreeCRDT()
+	_, err := c.ImportJSON(initialJSON, clientID)
+	assert.Nil(t, err, "AddNodeRecursively should not return an error")
+
+	nodeB, err := c.GetNodeByPath("/B")
+	assert.NoError(t, err, "GetNodeByPath should not return an error")
+
+	// Mark deleted
+	err = nodeB.MarkDeleted(clientID)
+	assert.NoError(t, err, "SetDeleted should not return an error")
+
+	// Check if the node is marked as deleted
+	assert.True(t, nodeB.IsDeleted, "Node should be marked as deleted")
+
+	exportedJSON, err := c.ExportJSON()
+	assert.NoError(t, err, "ExportJSON should not return an error")
+
+	expectedJSON := []byte(`{"A": 1, "C": 3}`)
+	compareJSON(t, expectedJSON, exportedJSON)
+
+	arrayNodeID := c.Root.Edges[0].To
+	arrayNode, ok := c.GetNode(arrayNodeID)
+	assert.True(t, ok, "Array node should exist in the tree")
+
+	// List number of edges and nodes
+	assert.Equal(t, 3, len(arrayNode.Edges), "Deleted node should have no edges")
+	assert.Equal(t, 5, len(c.Nodes), "Tree should still have the root node after deletion")
+
+	// Tidy the tree
+	c.Tidy()
+
+	assert.Equal(t, 2, len(arrayNode.Edges), "Deleted node should have no edges")
+	assert.Equal(t, 4, len(c.Nodes), "Tree should still have the root node after deletion")
+}
+
+func TestTreeCRDTMarkDeletedLitteral(t *testing.T) {
+	clientID := ClientID("clientA")
+
+	initialJSON := []byte(`"A"`)
+
+	c := newTreeCRDT()
+	_, err := c.ImportJSON(initialJSON, clientID)
+	assert.Nil(t, err, "AddNodeRecursively should not return an error")
+
+	nodeAID := c.Root.Edges[0].To
+	assert.NoError(t, err, "GetNodeByPath should not return an error")
+	nodeA, ok := c.GetNode(nodeAID)
+	assert.True(t, ok, "Node A should exist in the tree")
+
+	// Mark deleted
+	err = nodeA.MarkDeleted(clientID)
+	assert.NoError(t, err, "SetDeleted should not return an error")
+
+	// Check if the node is marked as deleted
+	assert.True(t, nodeA.IsDeleted, "Node should be marked as deleted")
+
+	exportedJSON, err := c.ExportJSON()
+	assert.NoError(t, err, "ExportJSON should not return an error")
+
+	expectedJSON := []byte(`null`)
+	compareJSON(t, expectedJSON, exportedJSON)
+}

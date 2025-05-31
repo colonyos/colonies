@@ -77,3 +77,17 @@ func TestTreeCRDTGetByPath(t *testing.T) {
 	assert.NotNil(t, err)
 	assert.Nil(t, node)
 }
+
+func TestTreeCRDTGetByPathArray(t *testing.T) {
+	clientID := ClientID(core.GenerateRandomID())
+	initialJSON := []byte(`[2, 3, 4]`)
+
+	c := newTreeCRDT()
+	_, err := c.ImportJSON(initialJSON, clientID)
+	assert.Nil(t, err, "AddNodeRecursively should not return an error")
+
+	node3, err := c.GetNodeByPath("/1")
+	assert.NoError(t, err, "GetNodeByPath should not return an error")
+	assert.True(t, node3.IsLiteral, "Node should be a literal")
+	assert.True(t, node3.LiteralValue.(float64) == 3, "Node value should be 3")
+}
