@@ -692,63 +692,6 @@ func (c *TreeCRDT) Tidy() {
 
 }
 
-func (c *TreeCRDT) SecureSync(c2 *TreeCRDT, prvKey string) error {
-	cCopy, err := c.Clone()
-	if err != nil {
-		log.WithFields(log.Fields{
-			"Error": err,
-		}).Error("Failed to clone CRDT tree for secure sync")
-		return fmt.Errorf("Failed to clone CRDT tree for secure sync: %w", err)
-	}
-
-	err = c.SecureMerge(c2, prvKey)
-	if err != nil {
-		log.WithFields(log.Fields{
-			"Error": err,
-		}).Error("Failed to secure sync CRDT trees")
-		return fmt.Errorf("Failed to secure sync CRDT trees: %w", err)
-	}
-	err = c2.SecureMerge(cCopy, prvKey)
-	if err != nil {
-		log.WithFields(log.Fields{
-			"Error": err,
-		}).Error("Failed to secure sync CRDT trees (reverse)")
-		return fmt.Errorf("Failed to secure sync CRDT trees (reverse): %w", err)
-	}
-	return nil
-}
-
-func (c *TreeCRDT) Sync(c2 *TreeCRDT) error {
-	return c.sync(c2)
-}
-
-func (c *TreeCRDT) sync(c2 *TreeCRDT) error {
-	cCopy, err := c.Clone()
-	if err != nil {
-		log.WithFields(log.Fields{
-			"Error": err,
-		}).Error("Failed to clone CRDT tree for sync")
-		return fmt.Errorf("Failed to clone CRDT tree for sync: %w", err)
-	}
-
-	err = c.merge(c2, false, "")
-	if err != nil {
-		log.WithFields(log.Fields{
-			"Error": err,
-		}).Error("Failed to sync CRDT trees")
-		return fmt.Errorf("Failed to sync CRDT trees: %w", err)
-	}
-	err = c2.merge(cCopy, false, "")
-	if err != nil {
-		log.WithFields(log.Fields{
-			"Error": err,
-		}).Error("Failed to sync CRDT trees (reverse)")
-		return fmt.Errorf("Failed to sync CRDT trees (reverse): %w", err)
-	}
-
-	return nil
-}
-
 func (c *TreeCRDT) Merge(c2 *TreeCRDT) error {
 	return c.merge(c2, false, "")
 }

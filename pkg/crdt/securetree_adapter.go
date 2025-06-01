@@ -405,14 +405,6 @@ func (c *AdapterSecureTreeCRDT) InsertEdgeRight(from, to NodeID, label string, s
 	)
 }
 
-func (c *AdapterSecureTreeCRDT) Sync(c2 SecureTree, prvKey string) error { // TODO: test
-	adapter, ok := c2.(*AdapterSecureTreeCRDT)
-	if !ok {
-		panic("Sync: Tree must be of type *AdapterTreeCRDT")
-	}
-	return c.treeCrdt.SecureSync(adapter.treeCrdt, prvKey)
-}
-
 func (c *AdapterSecureTreeCRDT) Merge(c2 SecureTree, prvKey string) error { // TODO: test
 	adapter, ok := c2.(*AdapterSecureTreeCRDT)
 	if !ok {
