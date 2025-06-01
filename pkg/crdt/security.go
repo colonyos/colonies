@@ -30,8 +30,8 @@ type nodeDigest struct {
 // We cannot calculate the digest edges and clock here because they will change after a merge operation
 func (n *NodeCRDT) ComputeDigest() (*crypto.Hash, error) {
 	d := nodeDigest{
-		ID:       n.ID,
-		ParentID: n.ParentID,
+		ID: n.ID,
+		//ParentID: n.ParentID,
 		//Edges:    make([]*EdgeCRDT, len(n.Edges)),
 		//Clock:        make(map[string]int),
 		Owner:        n.Owner,

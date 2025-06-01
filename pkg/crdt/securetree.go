@@ -1,6 +1,9 @@
 package crdt
 
 type SecureNode interface {
+	// General operations
+	ID() NodeID
+
 	// Literal operations
 	SetLiteral(value interface{}, prvKey string) error
 	GetLiteral() (interface{}, error)

@@ -691,7 +691,29 @@ func (c *TreeCRDT) Tidy() {
 }
 
 func (c *TreeCRDT) SecureSync(c2 *TreeCRDT) error {
-	panic("Not implemented")
+	cCopy, err := c.Clone()
+	if err != nil {
+		log.WithFields(log.Fields{
+			"Error": err,
+		}).Error("Failed to clone CRDT tree for secure sync")
+		return fmt.Errorf("Failed to clone CRDT tree for secure sync: %w", err)
+	}
+
+	err = c.SecureMerge(c2)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"Error": err,
+		}).Error("Failed to secure sync CRDT trees")
+		return fmt.Errorf("Failed to secure sync CRDT trees: %w", err)
+	}
+	err = c2.SecureMerge(cCopy)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"Error": err,
+		}).Error("Failed to secure sync CRDT trees (reverse)")
+		return fmt.Errorf("Failed to secure sync CRDT trees (reverse): %w", err)
+	}
+	return nil
 }
 
 func (c *TreeCRDT) Sync(c2 *TreeCRDT) error {
@@ -1228,8 +1250,6 @@ func (c *TreeCRDT) VerifyTree() error {
 		}
 
 		// 2.2 Check ABACPolicy for ActionModify
-		//fmt.Println(id, "recoveredID:", recoveredID)
-		//c.ABACPolicy.PrintPolicy()
 		if !c.ABACPolicy.IsAllowed(recoveredID, ActionModify, id) {
 			return fmt.Errorf("VerifyTree: ABAC violation: client %s is not allowed to modify node %s", recoveredID, id)
 		}
