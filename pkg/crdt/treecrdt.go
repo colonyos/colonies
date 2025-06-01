@@ -690,15 +690,15 @@ func (c *TreeCRDT) Tidy() {
 
 }
 
-func (c *TreeCRDT) SecureSync(c2 *TreeCRDT, force bool) error {
-	return c.sync(c2, force, true)
+func (c *TreeCRDT) SecureSync(c2 *TreeCRDT) error {
+	panic("Not implemented")
 }
 
-func (c *TreeCRDT) Sync(c2 *TreeCRDT, force bool) error {
-	return c.sync(c2, force, false)
+func (c *TreeCRDT) Sync(c2 *TreeCRDT) error {
+	return c.sync(c2)
 }
 
-func (c *TreeCRDT) sync(c2 *TreeCRDT, force bool, secure bool) error {
+func (c *TreeCRDT) sync(c2 *TreeCRDT) error {
 	cCopy, err := c.Clone()
 	if err != nil {
 		log.WithFields(log.Fields{
@@ -707,14 +707,14 @@ func (c *TreeCRDT) sync(c2 *TreeCRDT, force bool, secure bool) error {
 		return fmt.Errorf("Failed to clone CRDT tree for sync: %w", err)
 	}
 
-	err = c.merge(c2, force, secure)
+	err = c.merge(c2)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"Error": err,
 		}).Error("Failed to sync CRDT trees")
 		return fmt.Errorf("Failed to sync CRDT trees: %w", err)
 	}
-	err = c2.merge(cCopy, force, secure)
+	err = c2.merge(cCopy)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"Error": err,
@@ -725,11 +725,11 @@ func (c *TreeCRDT) sync(c2 *TreeCRDT, force bool, secure bool) error {
 	return nil
 }
 
-func (c *TreeCRDT) Merge(c2 *TreeCRDT, force bool) error {
-	return c.merge(c2, force, false)
+func (c *TreeCRDT) Merge(c2 *TreeCRDT) error {
+	return c.merge(c2)
 }
 
-func (c *TreeCRDT) SecureMerge(c2 *TreeCRDT, force bool) error {
+func (c *TreeCRDT) SecureMerge(c2 *TreeCRDT) error {
 	c1Copy, err := c.Clone()
 	if err != nil {
 		log.WithFields(log.Fields{
@@ -738,7 +738,7 @@ func (c *TreeCRDT) SecureMerge(c2 *TreeCRDT, force bool) error {
 		return fmt.Errorf("Failed to clone CRDT tree for merge: %w", err)
 	}
 
-	err = c1Copy.merge(c2, force, false)
+	err = c1Copy.merge(c2)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"Error": err,
@@ -754,10 +754,11 @@ func (c *TreeCRDT) SecureMerge(c2 *TreeCRDT, force bool) error {
 		return fmt.Errorf("Failed to verify remote CRDT tree before merge: %w", err)
 	}
 
-	return c.merge(c2, force, force)
+	return c.merge(c2)
 }
 
-func (c *TreeCRDT) merge(c2 *TreeCRDT, force bool, secure bool) error {
+func (c *TreeCRDT) merge(c2 *TreeCRDT) error {
+	force := false
 	promotions := make(map[NodeID]NodeID) // fromNodeID -> arrayNodeID
 
 	//var recoveredID string
@@ -797,10 +798,7 @@ func (c *TreeCRDT) merge(c2 *TreeCRDT, force bool, secure bool) error {
 				log.WithFields(log.Fields{
 					"NodeID": remote.ID,
 					"Error":  err,
-				}).Error("Failed to set literal value during merge")
-				if !force {
-					return fmt.Errorf("Failed to set literal value during merge: %w", err)
-				}
+				}).Warning("Failed to set literal value during merge")
 				continue
 			}
 		}

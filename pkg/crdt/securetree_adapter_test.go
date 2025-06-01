@@ -561,13 +561,13 @@ func TestSecureTreeAdapterMerge(t *testing.T) {
 	valueNode.(*AdapterSecureNodeCRDT).nodeCrdt.Signature = "e713a1bb015fecabb5a084b0fe6d6e7271fca6f79525a634183cfdb175fe69241f4da161779d8e6b761200e1cf93766010a19072fa778f9643363e2cfadd640900" // Invalid signature for testing
 	assert.Nil(t, err, "SetKeyValue should return an error for invalid private key")
 
-	err = c1.Merge(c2, false)
+	err = c1.Merge(c2)
 	assert.NotNil(t, err, "Merge should return an error since c2 has a node with an invalid signature")
 
 	// Restore the original signature for a valid merge
 	valueNode.(*AdapterSecureNodeCRDT).nodeCrdt.Signature = oldSignature
 
-	err = c1.Merge(c2, false)
+	err = c1.Merge(c2)
 	assert.Nil(t, err, "Merge should not return an error after restoring the signature")
 }
 
@@ -621,11 +621,11 @@ func TestSecureTreeAdapterMergeABAC(t *testing.T) {
 	assert.True(t, ok, "GetNode should return the node")
 	assert.NotNil(t, valueNode, "valueNode should not be nil")
 
-	err = c1.Merge(c2, false)
+	err = c1.Merge(c2)
 	assert.NotNil(t, err, "Merge should return an error since identity2 is not allowed to modify the root node")
 
 	c1.ABAC().Allow(identity2.ID(), ActionModify, "root", true)
 
-	err = c1.Merge(c2, false)
+	err = c1.Merge(c2)
 	assert.Nil(t, err, "Merge should not return an error after restoring the signature")
 }
