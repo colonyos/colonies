@@ -271,6 +271,7 @@ func (c *TreeCRDT) Save() ([]byte, error) {
 		nodes[string(id)] = map[string]interface{}{
 			"id":            string(node.ID),
 			"isroot":        node.IsRoot,
+			"deleted":       node.IsDeleted,
 			"parentid":      string(node.ParentID),
 			"isarray":       node.IsArray,
 			"ismap":         node.IsMap,
@@ -326,6 +327,7 @@ func (c *TreeCRDT) Load(data []byte) error {
 			ParentID:     NodeID(nodeMap["parentid"].(string)),
 			IsArray:      nodeMap["isarray"].(bool),
 			IsMap:        nodeMap["ismap"].(bool),
+			IsDeleted:    nodeMap["deleted"].(bool),
 			IsLiteral:    nodeMap["isliteral"].(bool),
 			LiteralValue: nodeMap["litteralValue"],
 			Owner:        ClientID(nodeMap["owner"].(string)),
@@ -389,11 +391,19 @@ func (c *TreeCRDT) Load(data []byte) error {
 			}
 		}
 	}
-	if abacRaw, ok := raw["abac"].(json.RawMessage); ok {
+
+	if abacObj, ok := raw["abac"].(map[string]interface{}); ok {
+		// Re-marshal it to JSON first:
+		abacBytes, err := json.Marshal(abacObj)
+		if err != nil {
+			return fmt.Errorf("failed to re-marshal ABAC policy: %w", err)
+		}
+
 		c.ABACPolicy = &ABACPolicy{}
-		if err := c.ABACPolicy.UnmarshalJSON(abacRaw); err != nil {
+		if err := c.ABACPolicy.UnmarshalJSON(abacBytes); err != nil {
 			return fmt.Errorf("failed to parse ABAC policy: %w", err)
 		}
+		c.ABACPolicy.tree = c // Set the tree reference for ABACPolicy
 	}
 
 	return nil

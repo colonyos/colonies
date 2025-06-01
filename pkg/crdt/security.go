@@ -27,12 +27,13 @@ type nodeDigest struct {
 	IsDeleted    bool           `json:"deleted"`
 }
 
+// We cannot calculate the digest edges and clock here because they will change after a merge operation
 func (n *NodeCRDT) ComputeDigest() (*crypto.Hash, error) {
 	d := nodeDigest{
-		ID:           n.ID,
-		ParentID:     n.ParentID,
-		Edges:        make([]*EdgeCRDT, len(n.Edges)),
-		Clock:        make(map[string]int),
+		ID:       n.ID,
+		ParentID: n.ParentID,
+		//Edges:    make([]*EdgeCRDT, len(n.Edges)),
+		//Clock:        make(map[string]int),
 		Owner:        n.Owner,
 		IsRoot:       n.IsRoot,
 		IsMap:        n.IsMap,
@@ -43,32 +44,32 @@ func (n *NodeCRDT) ComputeDigest() (*crypto.Hash, error) {
 		IsDeleted:    n.IsDeleted,
 	}
 
-	// Copy and sort Clock map
-	for k, v := range n.Clock {
-		d.Clock[string(k)] = v
-	}
-
+	//Copy and sort Clock map
+	// for k, v := range n.Clock {
+	// 	d.Clock[string(k)] = v
+	// }
+	//
 	// Copy and sort Edges (LSEQPosition sorted inside each Edge)
-	for i, edge := range n.Edges {
-		edgeCopy := *edge // shallow copy
-		// Sort LSEQPosition
-		lseqCopy := make([]int, len(edge.LSEQPosition))
-		copy(lseqCopy, edge.LSEQPosition)
-		sort.Ints(lseqCopy)
-		edgeCopy.LSEQPosition = lseqCopy
-		d.Edges[i] = &edgeCopy
-	}
-
-	// Now sort the Edges array
-	sort.Slice(d.Edges, func(i, j int) bool {
-		if d.Edges[i].Label != d.Edges[j].Label {
-			return d.Edges[i].Label < d.Edges[j].Label
-		}
-		if d.Edges[i].To != d.Edges[j].To {
-			return d.Edges[i].To < d.Edges[j].To
-		}
-		return d.Edges[i].From < d.Edges[j].From
-	})
+	// for i, edge := range n.Edges {
+	// 	edgeCopy := *edge // shallow copy
+	// 	// Sort LSEQPosition
+	// 	lseqCopy := make([]int, len(edge.LSEQPosition))
+	// 	copy(lseqCopy, edge.LSEQPosition)
+	// 	sort.Ints(lseqCopy)
+	// 	edgeCopy.LSEQPosition = lseqCopy
+	// 	d.Edges[i] = &edgeCopy
+	// }
+	//
+	// // Now sort the Edges array
+	// sort.Slice(d.Edges, func(i, j int) bool {
+	// 	if d.Edges[i].Label != d.Edges[j].Label {
+	// 		return d.Edges[i].Label < d.Edges[j].Label
+	// 	}
+	// 	if d.Edges[i].To != d.Edges[j].To {
+	// 		return d.Edges[i].To < d.Edges[j].To
+	// 	}
+	// 	return d.Edges[i].From < d.Edges[j].From
+	// })
 
 	// Marshal in canonical form
 	var buf bytes.Buffer
@@ -179,7 +180,21 @@ func (n *NodeCRDT) Sign(identity *crypto.Idendity) error {
 
 func (n *NodeCRDT) Verify() (string, error) {
 	digest, err := n.ComputeDigest()
+	if err != nil {
+		log.WithFields(log.Fields{
+			"NodeID": n.ID,
+			"Error":  err,
+		}).Error("Failed to compute node digest")
+		return "", fmt.Errorf("Failed to compute node digest: %w", err)
+	}
 	signatureBytes, err := hex.DecodeString(n.Signature)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"NodeID": n.ID,
+			"Error":  err,
+		}).Error("Failed to decode signature")
+		return "", fmt.Errorf("Failed to decode signature: %w", err)
+	}
 
 	recoveredPublicKey, err := crypto.RecoverPublicKey(digest, signatureBytes)
 	if err != nil {

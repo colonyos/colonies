@@ -1,7 +1,6 @@
 package crdt
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/colonyos/colonies/internal/crypto"
@@ -572,18 +571,28 @@ func TestSecureTreeAdapterMerge(t *testing.T) {
 	assert.Nil(t, err, "Merge should not return an error after restoring the signature")
 }
 
+func TestCloneABACPolicyIsolation(t *testing.T) {
+	tree := newTreeCRDT()
+	tree.ABACPolicy = NewABACPolicy(tree)
+	tree.ABACPolicy.Allow("client1", ActionModify, "root", true)
+
+	clone, err := tree.Clone()
+	assert.Nil(t, err)
+
+	// Modify clone ABACPolicy
+	clone.ABACPolicy.Allow("client2", ActionModify, "root", true)
+
+	// Original should not have client2
+	allowed := tree.ABACPolicy.IsAllowed("client2", ActionModify, "root")
+	assert.False(t, allowed, "Original tree ABACPolicy should not be affected by clone")
+}
+
 func TestSecureTreeAdapterMergeABAC(t *testing.T) {
 	prvKey1 := "d6eb959e9aec2e6fdc44b5862b269e987b8a4d6f2baca542d8acaa97ee5e74f6"
 	prvKey2 := "ed26531bac1838e519c2c6562ac717b22aac041730f0d753d3ad35b76b5f4924"
 
-	identity1, err := crypto.CreateIdendityFromString(prvKey2)
-	assert.Nil(t, err, "CreateIdendityFromString should not return an error for prvKey2")
-
-	identity2, err := crypto.CreateIdendityFromString(prvKey1)
+	identity2, err := crypto.CreateIdendityFromString(prvKey2)
 	assert.Nil(t, err)
-
-	fmt.Println("identity1:", identity1)
-	fmt.Println("identity2:", identity2)
 
 	c1, err := NewSecureTree(prvKey1)
 	assert.Nil(t, err)
@@ -601,12 +610,19 @@ func TestSecureTreeAdapterMergeABAC(t *testing.T) {
 	assert.Nil(t, err)
 
 	valueNodeID, err := mapNode.SetKeyValue("newKey", "newValue", prvKey2)
+	assert.Error(t, err, "SetKeyValue should return an error for prvKey2 since identity2 is not allowed to modify the root node")
+
+	c2.ABAC().Allow(identity2.ID(), ActionModify, "root", true)
+
+	valueNodeID, err = mapNode.SetKeyValue("newKey", "newValue", prvKey2)
+	assert.NoError(t, err, "SetKeyValue should not return an error for prvKey2")
+
 	valueNode, ok := c2.GetNode(valueNodeID)
 	assert.True(t, ok, "GetNode should return the node")
 	assert.NotNil(t, valueNode, "valueNode should not be nil")
 
-	// err = c1.Merge(c2, false)
-	// assert.NotNil(t, err, "Merge should return an error since identity2 is not allowed to modify the root node")
+	err = c1.Merge(c2, false)
+	assert.NotNil(t, err, "Merge should return an error since identity2 is not allowed to modify the root node")
 
 	c1.ABAC().Allow(identity2.ID(), ActionModify, "root", true)
 

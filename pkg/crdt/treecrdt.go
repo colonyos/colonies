@@ -730,7 +730,31 @@ func (c *TreeCRDT) Merge(c2 *TreeCRDT, force bool) error {
 }
 
 func (c *TreeCRDT) SecureMerge(c2 *TreeCRDT, force bool) error {
-	return c.merge(c2, force, true)
+	c1Copy, err := c.Clone()
+	if err != nil {
+		log.WithFields(log.Fields{
+			"Error": err,
+		}).Error("Failed to clone CRDT tree for merge")
+		return fmt.Errorf("Failed to clone CRDT tree for merge: %w", err)
+	}
+
+	err = c1Copy.merge(c2, force, false)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"Error": err,
+		}).Error("Failed to merge CRDT trees")
+		return fmt.Errorf("Failed to merge CRDT trees: %w", err)
+	}
+
+	err = c1Copy.VerifyTree()
+	if err != nil {
+		log.WithFields(log.Fields{
+			"Error": err,
+		}).Error("Failed to verify remote CRDT tree before merge")
+		return fmt.Errorf("Failed to verify remote CRDT tree before merge: %w", err)
+	}
+
+	return c.merge(c2, force, force)
 }
 
 func (c *TreeCRDT) merge(c2 *TreeCRDT, force bool, secure bool) error {
@@ -738,21 +762,6 @@ func (c *TreeCRDT) merge(c2 *TreeCRDT, force bool, secure bool) error {
 
 	//var recoveredID string
 	for id, remote := range c2.Nodes {
-		if secure {
-			var err error
-			//recoveredID, err = remote.Verify()
-			_, err = remote.Verify()
-			if err != nil {
-				log.WithFields(log.Fields{
-					"NodeID": id,
-					"Error":  err,
-				}).Error("Failed to verify node signature during merge")
-				if !force {
-					return fmt.Errorf("Failed to verify node signature during merge: %w", err)
-				}
-			}
-		}
-
 		local, exists := c.Nodes[id]
 		if !exists {
 			nodeType := Literal
@@ -762,6 +771,7 @@ func (c *TreeCRDT) merge(c2 *TreeCRDT, force bool, secure bool) error {
 				nodeType = Map
 			}
 
+			// TODO: this code is duplicated in cloneNodeFromRemote
 			cloned := newNodeFromID(id, nodeType, c)
 			cloned.IsLiteral = remote.IsLiteral
 			cloned.IsMap = remote.IsMap
@@ -772,6 +782,8 @@ func (c *TreeCRDT) merge(c2 *TreeCRDT, force bool, secure bool) error {
 			cloned.Owner = remote.Owner
 			cloned.IsDeleted = remote.IsDeleted
 			cloned.IsRoot = remote.IsRoot
+			cloned.Nounce = remote.Nounce
+			cloned.Signature = remote.Signature
 			c.Nodes[id] = cloned
 			local = cloned
 		}
@@ -780,16 +792,6 @@ func (c *TreeCRDT) merge(c2 *TreeCRDT, force bool, secure bool) error {
 		mergedOwner := lowestClientID(local.Owner, remote.Owner)
 
 		if remote.IsLiteral {
-			// Check if remote client is allowed to modify the literal value
-			// fmt.Println(exists)
-			// if secure && exists && !c.ABACPolicy.IsAllowed(recoveredID, ActionModify, local.ID) { // We are modifying an existing node
-			// 	log.WithFields(log.Fields{
-			// 		"ClientID": recoveredID,
-			// 		"NodeID":   local.ID,
-			// 	}).Error("Client is not allowed to modify literal value of node")
-			// 	return fmt.Errorf("Client %s is not allowed to modify literal value of node %s", recoveredID, local.ID)
-			// }
-
 			err := local.setLiteralWithVersion(remote.LiteralValue, remote.Owner, remote.Clock[remote.Owner])
 			if err != nil {
 				log.WithFields(log.Fields{
@@ -804,11 +806,8 @@ func (c *TreeCRDT) merge(c2 *TreeCRDT, force bool, secure bool) error {
 		}
 
 		for _, re := range remote.Edges {
-			//parentExists := false
 			if _, exists := c.Nodes[re.From]; !exists {
 				c.cloneNodeFromRemote(c2, re.From)
-			} else {
-				//parentExists = false
 			}
 			if _, exists := c.Nodes[re.To]; !exists {
 				c.cloneNodeFromRemote(c2, re.To)
@@ -816,16 +815,6 @@ func (c *TreeCRDT) merge(c2 *TreeCRDT, force bool, secure bool) error {
 
 			fromNode := c.Nodes[re.From]
 			toNode := c.Nodes[re.To]
-
-			// fmt.Println("Parent exits", parentExists)
-			// // All merge operation below, requires that the remote node is allowed to modify the parent node
-			// if secure && parentExists && !c.ABACPolicy.IsAllowed(recoveredID, ActionModify, fromNode.ID) {
-			// 	log.WithFields(log.Fields{
-			// 		"ClientID": recoveredID,
-			// 		"NodeID":   fromNode.ID,
-			// 	}).Error("Client is not allowed to modify local value of node")
-			// 	return fmt.Errorf("Client %s is not allowed to modify from node %s", recoveredID, fromNode.ID)
-			// }
 
 			if c.edgeExists(fromNode, re.To) {
 				continue
@@ -1019,6 +1008,8 @@ func (c *TreeCRDT) cloneNodeFromRemote(c2 *TreeCRDT, id NodeID) {
 	cloned.IsDeleted = remote.IsDeleted
 	cloned.IsRoot = remote.IsRoot
 	cloned.ParentID = remote.ParentID
+	cloned.Nounce = remote.Nounce
+	cloned.Signature = remote.Signature
 	c.Nodes[id] = cloned
 }
 
@@ -1213,6 +1204,49 @@ func (c *TreeCRDT) ValidateTree() error {
 			return fmt.Errorf("Unreachable node found: %s", id)
 		}
 	}
+
+	return nil
+}
+
+func (c *TreeCRDT) VerifyTree() error {
+	if c.ABACPolicy == nil {
+		return fmt.Errorf("VerifyTree: ABACPolicy is not set")
+	}
+
+	// Step 1: Verify tree structure (optional but recommended)
+	if err := c.ValidateTree(); err != nil {
+		return fmt.Errorf("VerifyTree: tree structure invalid: %w", err)
+	}
+
+	// Step 2: For each node → verify signature and ABAC
+	for id, node := range c.Nodes {
+		// 2.1 Verify signature → recover signer (clientID)
+		if node.Signature == "" {
+			return fmt.Errorf("VerifyTree: node %s has no signature", id)
+		}
+		recoveredID, err := node.Verify()
+		if err != nil {
+			return fmt.Errorf("VerifyTree: signature verification failed for node %s: %w", id, err)
+		}
+
+		// 2.2 Check ABACPolicy for ActionModify
+		//fmt.Println(id, "recoveredID:", recoveredID)
+		//c.ABACPolicy.PrintPolicy()
+		if !c.ABACPolicy.IsAllowed(recoveredID, ActionModify, id) {
+			return fmt.Errorf("VerifyTree: ABAC violation: client %s is not allowed to modify node %s", recoveredID, id)
+		}
+	}
+
+	// Optionally: verify ABACPolicy hash
+	policyHash, err := c.ABACPolicy.Hash()
+	if err != nil {
+		return fmt.Errorf("VerifyTree: failed to compute ABAC policy hash: %w", err)
+	}
+
+	log.WithFields(log.Fields{
+		"TreeOwnerID":    c.OwnerID,
+		"ABACPolicyHash": policyHash,
+	}).Info("VerifyTree: success")
 
 	return nil
 }

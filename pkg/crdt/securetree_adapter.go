@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/colonyos/colonies/internal/crypto"
+	log "github.com/sirupsen/logrus"
 )
 
 type AdapterSecureNodeCRDT struct {
@@ -26,6 +27,11 @@ func performSecureAction(
 	id := identity.ID()
 
 	if policy != nil && !policy.IsAllowed(id, action, target) {
+		log.WithFields(log.Fields{
+			"ID":     id,
+			"Action": action,
+			"Target": target,
+		}).Error("Not allowed to perform action on target")
 		return fmt.Errorf("identity %s not allowed to perform %s on %s", id, action, target)
 	}
 

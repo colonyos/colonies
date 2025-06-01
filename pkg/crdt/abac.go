@@ -4,6 +4,8 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
+	"sort"
 )
 
 type ABACAction string
@@ -122,4 +124,53 @@ func (p *ABACPolicy) Hash() (string, error) {
 
 	hash := sha256.Sum256(rulesJSON)
 	return hex.EncodeToString(hash[:]), nil
+}
+
+func (p *ABACPolicy) PrintPolicy() {
+	fmt.Println("ABAC Policy:")
+	fmt.Println("============")
+
+	if p.Rules == nil || len(p.Rules) == 0 {
+		fmt.Println("(empty)")
+		return
+	}
+
+	// Sort clients for stable output
+	clientIDs := make([]string, 0, len(p.Rules))
+	for clientID := range p.Rules {
+		clientIDs = append(clientIDs, clientID)
+	}
+	sort.Strings(clientIDs)
+
+	for _, clientID := range clientIDs {
+		fmt.Printf("Client: %s\n", clientID)
+
+		// Sort actions for stable output
+		actions := p.Rules[clientID]
+		actionKeys := make([]string, 0, len(actions))
+		for action := range actions {
+			actionKeys = append(actionKeys, string(action))
+		}
+		sort.Strings(actionKeys)
+
+		for _, actionStr := range actionKeys {
+			action := ABACAction(actionStr)
+			fmt.Printf("  Action: %s\n", action)
+
+			// Sort nodeIDs for stable output
+			rules := actions[action]
+			nodeIDs := make([]string, 0, len(rules))
+			for nodeID := range rules {
+				nodeIDs = append(nodeIDs, string(nodeID))
+			}
+			sort.Strings(nodeIDs)
+
+			for _, nodeID := range nodeIDs {
+				rule := rules[NodeID(nodeID)]
+				fmt.Printf("    Node: %s (Recursive: %v)\n", nodeID, rule.Recursive)
+			}
+		}
+	}
+
+	fmt.Println()
 }
