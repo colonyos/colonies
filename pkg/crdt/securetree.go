@@ -38,9 +38,9 @@ type SecureTree interface {
 	InsertEdgeLeft(from, to NodeID, label string, sibling NodeID, prvKey string) error
 	InsertEdgeRight(from, to NodeID, label string, sibling NodeID, prvKey string) error
 
-	// Merge and operations
-	Sync(c2 SecureTree) error
-	Merge(c2 SecureTree) error
+	// Merge operations
+	Sync(c2 SecureTree, prvKey string) error
+	Merge(c2 SecureTree, prvKey string) error
 
 	// Serialization
 	ImportJSON(rawJSON []byte, prvKey string) (NodeID, error)

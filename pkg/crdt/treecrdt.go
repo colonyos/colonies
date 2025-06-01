@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"sort"
 
+	"github.com/colonyos/colonies/internal/crypto"
 	"github.com/colonyos/colonies/pkg/core"
 	log "github.com/sirupsen/logrus"
 )
@@ -29,6 +30,7 @@ type NodeCRDT struct {
 	IsRoot       bool        `json:"isroot"`
 	IsMap        bool        `json:"ismap"`
 	IsArray      bool        `json:"isarray"`
+	IsPromoted   bool        `json:"ispromoted"`
 	IsLiteral    bool        `json:"isliteral"`
 	LiteralValue interface{} `json:"litteralValue"`
 	Nounce       string      `json:"nounce"`
@@ -690,7 +692,7 @@ func (c *TreeCRDT) Tidy() {
 
 }
 
-func (c *TreeCRDT) SecureSync(c2 *TreeCRDT) error {
+func (c *TreeCRDT) SecureSync(c2 *TreeCRDT, prvKey string) error {
 	cCopy, err := c.Clone()
 	if err != nil {
 		log.WithFields(log.Fields{
@@ -699,14 +701,14 @@ func (c *TreeCRDT) SecureSync(c2 *TreeCRDT) error {
 		return fmt.Errorf("Failed to clone CRDT tree for secure sync: %w", err)
 	}
 
-	err = c.SecureMerge(c2)
+	err = c.SecureMerge(c2, prvKey)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"Error": err,
 		}).Error("Failed to secure sync CRDT trees")
 		return fmt.Errorf("Failed to secure sync CRDT trees: %w", err)
 	}
-	err = c2.SecureMerge(cCopy)
+	err = c2.SecureMerge(cCopy, prvKey)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"Error": err,
@@ -729,14 +731,14 @@ func (c *TreeCRDT) sync(c2 *TreeCRDT) error {
 		return fmt.Errorf("Failed to clone CRDT tree for sync: %w", err)
 	}
 
-	err = c.merge(c2)
+	err = c.merge(c2, false, "")
 	if err != nil {
 		log.WithFields(log.Fields{
 			"Error": err,
 		}).Error("Failed to sync CRDT trees")
 		return fmt.Errorf("Failed to sync CRDT trees: %w", err)
 	}
-	err = c2.merge(cCopy)
+	err = c2.merge(cCopy, false, "")
 	if err != nil {
 		log.WithFields(log.Fields{
 			"Error": err,
@@ -748,10 +750,10 @@ func (c *TreeCRDT) sync(c2 *TreeCRDT) error {
 }
 
 func (c *TreeCRDT) Merge(c2 *TreeCRDT) error {
-	return c.merge(c2)
+	return c.merge(c2, false, "")
 }
 
-func (c *TreeCRDT) SecureMerge(c2 *TreeCRDT) error {
+func (c *TreeCRDT) SecureMerge(c2 *TreeCRDT, prvKey string) error {
 	c1Copy, err := c.Clone()
 	if err != nil {
 		log.WithFields(log.Fields{
@@ -760,7 +762,7 @@ func (c *TreeCRDT) SecureMerge(c2 *TreeCRDT) error {
 		return fmt.Errorf("Failed to clone CRDT tree for merge: %w", err)
 	}
 
-	err = c1Copy.merge(c2)
+	err = c1Copy.merge(c2, true, prvKey)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"Error": err,
@@ -776,14 +778,13 @@ func (c *TreeCRDT) SecureMerge(c2 *TreeCRDT) error {
 		return fmt.Errorf("Failed to verify remote CRDT tree before merge: %w", err)
 	}
 
-	return c.merge(c2)
+	return c.merge(c2, true, prvKey)
 }
 
-func (c *TreeCRDT) merge(c2 *TreeCRDT) error {
+func (c *TreeCRDT) merge(c2 *TreeCRDT, secure bool, prvKey string) error {
 	force := false
 	promotions := make(map[NodeID]NodeID) // fromNodeID -> arrayNodeID
 
-	//var recoveredID string
 	for id, remote := range c2.Nodes {
 		local, exists := c.Nodes[id]
 		if !exists {
@@ -800,6 +801,7 @@ func (c *TreeCRDT) merge(c2 *TreeCRDT) error {
 			cloned.IsMap = remote.IsMap
 			cloned.ParentID = remote.ParentID
 			cloned.IsArray = remote.IsArray
+			cloned.IsPromoted = remote.IsPromoted
 			cloned.LiteralValue = remote.LiteralValue
 			cloned.Clock = copyClock(remote.Clock)
 			cloned.Owner = remote.Owner
@@ -847,8 +849,36 @@ func (c *TreeCRDT) merge(c2 *TreeCRDT) error {
 
 				arrayNode := c.CreateNode("arr", Array, fromNode.Owner)
 				arrayNode.IsArray = true
+				arrayNode.IsPromoted = true
 
-				_ = c.AddEdge(fromNode.ID, arrayNode.ID, "", fromNode.Owner)
+				err := c.AddEdge(fromNode.ID, arrayNode.ID, "", fromNode.Owner)
+				if err != nil {
+					log.WithFields(log.Fields{
+						"NodeID": fromNode.ID,
+						"To":     arrayNode.ID,
+						"Label":  "",
+						"Error":  err,
+					}).Error("AddEdge failed during promotion")
+				}
+				if secure {
+					identity, err := crypto.CreateIdendityFromString(prvKey)
+					if err != nil {
+						log.WithFields(log.Fields{
+							"NodeID": fromNode.ID,
+							"Error":  err,
+						}).Error("Failed to create identity for signing")
+						return fmt.Errorf("Failed to create identity for signing: %w", err)
+					}
+					err = arrayNode.Sign(identity)
+					if err != nil {
+						log.WithFields(log.Fields{
+							"NodeID": fromNode.ID,
+							"Error":  err,
+						}).Error("Failed to sign promoted array node")
+						return fmt.Errorf("Failed to sign promoted array node: %w", err)
+					}
+
+				}
 				_ = c.removeEdgeWithVersion(fromNode.ID, existingChild.ID, existingChild.Owner, existingChild.Clock[existingChild.Owner], true)
 
 				// Insert both existing and new child sorted by NodeID
@@ -1022,6 +1052,7 @@ func (c *TreeCRDT) cloneNodeFromRemote(c2 *TreeCRDT, id NodeID) {
 	cloned.IsLiteral = remote.IsLiteral
 	cloned.IsMap = remote.IsMap
 	cloned.IsArray = remote.IsArray
+	cloned.IsPromoted = remote.IsPromoted
 	cloned.LiteralValue = remote.LiteralValue
 	cloned.Clock = copyClock(remote.Clock)
 	cloned.Owner = remote.Owner
@@ -1240,7 +1271,6 @@ func (c *TreeCRDT) VerifyTree() error {
 
 	// Step 2: For each node → verify signature and ABAC
 	for id, node := range c.Nodes {
-		// 2.1 Verify signature → recover signer (clientID)
 		if node.Signature == "" {
 			return fmt.Errorf("VerifyTree: node %s has no signature", id)
 		}

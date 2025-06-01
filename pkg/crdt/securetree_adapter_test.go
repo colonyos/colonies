@@ -560,13 +560,13 @@ func TestSecureTreeAdapterMerge(t *testing.T) {
 	valueNode.(*AdapterSecureNodeCRDT).nodeCrdt.Signature = "e713a1bb015fecabb5a084b0fe6d6e7271fca6f79525a634183cfdb175fe69241f4da161779d8e6b761200e1cf93766010a19072fa778f9643363e2cfadd640900" // Invalid signature for testing
 	assert.Nil(t, err, "SetKeyValue should return an error for invalid private key")
 
-	err = c1.Merge(c2)
+	err = c1.Merge(c2, prvKey)
 	assert.NotNil(t, err, "Merge should return an error since c2 has a node with an invalid signature")
 
 	// Restore the original signature for a valid merge
 	valueNode.(*AdapterSecureNodeCRDT).nodeCrdt.Signature = oldSignature
 
-	err = c1.Merge(c2)
+	err = c1.Merge(c2, prvKey)
 	assert.Nil(t, err, "Merge should not return an error after restoring the signature")
 }
 
@@ -620,12 +620,12 @@ func TestSecureTreeAdapterMergeABAC(t *testing.T) {
 	assert.True(t, ok, "GetNode should return the node")
 	assert.NotNil(t, valueNode, "valueNode should not be nil")
 
-	err = c1.Merge(c2)
+	err = c1.Merge(c2, prvKey1)
 	assert.NotNil(t, err, "Merge should return an error since identity2 is not allowed to modify the root node")
 
 	c1.ABAC().Allow(identity2.ID(), ActionModify, "root", true)
 
-	err = c1.Merge(c2)
+	err = c1.Merge(c2, prvKey1)
 	assert.Nil(t, err, "Merge should not return an error after restoring the signature")
 }
 
@@ -665,7 +665,7 @@ func TestSecureTreeAdapterSyncABAC(t *testing.T) {
 
 	c1.ABAC().Allow(identity2.ID(), ActionModify, "root", true)
 
-	err = c1.Sync(c2)
+	err = c1.Sync(c2, prvKey1)
 	assert.NotNil(t, err, "Merge should return an error since identity2 is not allowed to modify the root node")
 
 	exportedC1JSON, err := c1.ExportJSON()
@@ -704,7 +704,7 @@ func TestSecureTreeAdapterArraySyncABAC(t *testing.T) {
 	err = c2.AppendEdge(arrayNode.ID(), node.ID(), "", prvKey2)
 	assert.Nil(t, err, "AppendEdge should not return an error")
 
-	err = c1.Sync(c2)
+	err = c1.Sync(c2, prvKey1)
 	assert.NotNil(t, err, "Merge should return an error since identity2 is not allowed to modify the root node")
 
 	exportedC1JSON, err := c1.ExportJSON()
@@ -712,4 +712,46 @@ func TestSecureTreeAdapterArraySyncABAC(t *testing.T) {
 	exportedC2JSON, err := c2.ExportJSON()
 	assert.Nil(t, err, "ExportJSON should not return an error")
 	compareJSON(t, exportedC1JSON, exportedC2JSON)
+}
+
+func TestSecureTreeAdapterMergeComplexJSONABAC(t *testing.T) {
+	prvKey1 := "d6eb959e9aec2e6fdc44b5862b269e987b8a4d6f2baca542d8acaa97ee5e74f6"
+	prvKey2 := "ed26531bac1838e519c2c6562ac717b22aac041730f0d753d3ad35b76b5f4924"
+
+	json := []byte(`{
+	  "1": [
+	    {
+	      "2": "3"
+	    },
+	    {
+	      "4": [
+	        {
+	          "5": "6"
+	        }
+	      ]
+	    }
+	  ]
+	}`)
+
+	identity2, err := crypto.CreateIdendityFromString(prvKey2)
+	assert.Nil(t, err)
+
+	c1, err := NewSecureTree(prvKey1)
+	assert.Nil(t, err)
+
+	_, err = c1.ImportJSON(json, prvKey1)
+	assert.Nil(t, err, "ImportJSON should not return an error")
+
+	c2, err := NewSecureTree(prvKey2)
+	assert.Nil(t, err)
+	_, err = c2.ImportJSON(json, prvKey2)
+	assert.Nil(t, err, "ImportJSON should not return an error")
+
+	err = c1.Merge(c2, prvKey1)
+	assert.NotNil(t, err, "Merge should return an error since identity2 is not allowed to modify the root node")
+
+	c1.ABAC().Allow(identity2.ID(), ActionModify, "root", true)
+
+	err = c1.Merge(c2, prvKey1)
+	assert.Nil(t, err, "Merge should not return an error after restoring the signature")
 }
