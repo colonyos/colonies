@@ -9,9 +9,8 @@ import (
 type ABACAction string
 
 const (
-	ActionAdd    ABACAction = "add"
 	ActionModify ABACAction = "modify"
-	ActionRemove ABACAction = "remove"
+	ActionRead   ABACAction = "read"
 )
 
 type ABACRule struct {
@@ -23,13 +22,13 @@ type TreeChecker interface {
 }
 
 type ABACPolicy struct {
-	Rules map[ClientID]map[ABACAction]map[NodeID]ABACRule `json:"rules"`
-	tree  TreeChecker                                     `json:"-"`
+	Rules map[string]map[ABACAction]map[NodeID]ABACRule `json:"rules"`
+	tree  TreeChecker                                   `json:"-"`
 }
 
 func NewABACPolicy(tree TreeChecker) *ABACPolicy {
 	return &ABACPolicy{
-		Rules: make(map[ClientID]map[ABACAction]map[NodeID]ABACRule),
+		Rules: make(map[string]map[ABACAction]map[NodeID]ABACRule),
 		tree:  tree,
 	}
 }
@@ -38,22 +37,22 @@ func (p *ABACPolicy) SetTree(tree TreeChecker) {
 	p.tree = tree
 }
 
-func (p *ABACPolicy) Allow(clientID ClientID, action ABACAction, nodeID NodeID, recursive bool) {
-	if _, ok := p.Rules[clientID]; !ok {
-		p.Rules[clientID] = make(map[ABACAction]map[NodeID]ABACRule)
+func (p *ABACPolicy) Allow(id string, action ABACAction, nodeID NodeID, recursive bool) {
+	if _, ok := p.Rules[id]; !ok {
+		p.Rules[id] = make(map[ABACAction]map[NodeID]ABACRule)
 	}
-	if _, ok := p.Rules[clientID][action]; !ok {
-		p.Rules[clientID][action] = make(map[NodeID]ABACRule)
+	if _, ok := p.Rules[id][action]; !ok {
+		p.Rules[id][action] = make(map[NodeID]ABACRule)
 	}
-	p.Rules[clientID][action][nodeID] = ABACRule{Recursive: recursive}
+	p.Rules[id][action][nodeID] = ABACRule{Recursive: recursive}
 }
 
-func (p *ABACPolicy) UpdateRule(clientID ClientID, action ABACAction, nodeID NodeID, recursive bool) {
-	p.Allow(clientID, action, nodeID, recursive)
+func (p *ABACPolicy) UpdateRule(id string, action ABACAction, nodeID NodeID, recursive bool) {
+	p.Allow(id, action, nodeID, recursive)
 }
 
-func (p *ABACPolicy) RemoveRule(clientID ClientID, action ABACAction, nodeID NodeID) {
-	if actions, ok := p.Rules[clientID]; ok {
+func (p *ABACPolicy) RemoveRule(id string, action ABACAction, nodeID NodeID) {
+	if actions, ok := p.Rules[id]; ok {
 		if nodes, ok := actions[action]; ok {
 			delete(nodes, nodeID)
 			if len(nodes) == 0 {
@@ -61,17 +60,17 @@ func (p *ABACPolicy) RemoveRule(clientID ClientID, action ABACAction, nodeID Nod
 			}
 		}
 		if len(actions) == 0 {
-			delete(p.Rules, clientID)
+			delete(p.Rules, id)
 		}
 	}
 }
 
-func (p *ABACPolicy) IsAllowed(clientID ClientID, action ABACAction, target NodeID) bool {
+func (p *ABACPolicy) IsAllowed(id string, action ABACAction, target NodeID) bool {
 	if p.tree == nil {
 		panic("ABACPolicy.tree is not set")
 	}
 
-	clients := []ClientID{clientID, "*"}
+	clients := []string{id, "*"}
 	for _, c := range clients {
 		if actions, ok := p.Rules[c]; ok {
 			// Check exact action

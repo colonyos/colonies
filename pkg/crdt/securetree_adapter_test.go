@@ -1,8 +1,10 @@
 package crdt
 
 import (
+	"fmt"
 	"testing"
 
+	"github.com/colonyos/colonies/internal/crypto"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -534,28 +536,80 @@ func TestSecureTreeAdapterImportJSONToArray(t *testing.T) {
 	})
 }
 
-// func TestSecureTreeAdapterMerge(t *testing.T) {
-// 	prvKey := "d6eb959e9aec2e6fdc44b5862b269e987b8a4d6f2baca542d8acaa97ee5e74f6"
-// 	prvKeyInvalid := "ed26531bac1838e519c2c6562ac717b22aac041730f0d753d3ad35b76b5f4924"
-//
-// 	c1, err := NewSecureTree(prvKey)
-// 	assert.Nil(t, err)
-//
-// 	// Example JSON structure
-// 	jsonData := []byte(`{
-// 		"foo": "bar",
-// 		"baz": 123
-// 	}`)
-//
-// 	c1.ImportJSON(jsonData, prvKey)
-//
-// 	c2, err := c1.Clone()
-//
-// 	// mapNode := c2.(*AdapterSecureTreeCRDT).treeCrdt.Root
-// 	// err = mapNode.SetKeyValue("newKey", "newValue", prvKeyInvalid)
-// 	//
-// 	// mapNode.Signature = "e713a1bb015fecabb5a084b0fe6d6e7271fca6f79525a634183cfdb175fe69241f4da161779d8e6b761200e1cf93766010a19072fa778f9643363e2cfadd640900"
-//
-// 	// assert.Nil(t, err, "SetKeyValue should not return an error")
-//
-// }
+func TestSecureTreeAdapterMerge(t *testing.T) {
+	prvKey := "d6eb959e9aec2e6fdc44b5862b269e987b8a4d6f2baca542d8acaa97ee5e74f6"
+
+	c1, err := NewSecureTree(prvKey)
+	assert.Nil(t, err)
+
+	jsonData := []byte(`{
+		"foo": "bar",
+		"baz": 123
+	}`)
+
+	c1.ImportJSON(jsonData, prvKey)
+
+	c2, err := c1.Clone()
+
+	mapNode, err := c2.GetNodeByPath("/")
+	assert.Nil(t, err)
+
+	valueNodeID, err := mapNode.SetKeyValue("newKey", "newValue", prvKey)
+	valueNode, ok := c2.GetNode(valueNodeID)
+	assert.True(t, ok, "GetNode should return the node")
+	assert.NotNil(t, valueNode, "valueNode should not be nil")
+	oldSignature := valueNode.(*AdapterSecureNodeCRDT).nodeCrdt.Signature
+	valueNode.(*AdapterSecureNodeCRDT).nodeCrdt.Signature = "e713a1bb015fecabb5a084b0fe6d6e7271fca6f79525a634183cfdb175fe69241f4da161779d8e6b761200e1cf93766010a19072fa778f9643363e2cfadd640900" // Invalid signature for testing
+	assert.Nil(t, err, "SetKeyValue should return an error for invalid private key")
+
+	err = c1.Merge(c2, false)
+	assert.NotNil(t, err, "Merge should return an error since c2 has a node with an invalid signature")
+
+	// Restore the original signature for a valid merge
+	valueNode.(*AdapterSecureNodeCRDT).nodeCrdt.Signature = oldSignature
+
+	err = c1.Merge(c2, false)
+	assert.Nil(t, err, "Merge should not return an error after restoring the signature")
+}
+
+func TestSecureTreeAdapterMergeABAC(t *testing.T) {
+	prvKey1 := "d6eb959e9aec2e6fdc44b5862b269e987b8a4d6f2baca542d8acaa97ee5e74f6"
+	prvKey2 := "ed26531bac1838e519c2c6562ac717b22aac041730f0d753d3ad35b76b5f4924"
+
+	identity1, err := crypto.CreateIdendityFromString(prvKey2)
+	assert.Nil(t, err, "CreateIdendityFromString should not return an error for prvKey2")
+
+	identity2, err := crypto.CreateIdendityFromString(prvKey1)
+	assert.Nil(t, err)
+
+	fmt.Println("identity1:", identity1)
+	fmt.Println("identity2:", identity2)
+
+	c1, err := NewSecureTree(prvKey1)
+	assert.Nil(t, err)
+
+	jsonData := []byte(`{
+		"foo": "bar",
+		"baz": 123
+	}`)
+
+	c1.ImportJSON(jsonData, prvKey1)
+
+	c2, err := c1.Clone()
+
+	mapNode, err := c2.GetNodeByPath("/")
+	assert.Nil(t, err)
+
+	valueNodeID, err := mapNode.SetKeyValue("newKey", "newValue", prvKey2)
+	valueNode, ok := c2.GetNode(valueNodeID)
+	assert.True(t, ok, "GetNode should return the node")
+	assert.NotNil(t, valueNode, "valueNode should not be nil")
+
+	// err = c1.Merge(c2, false)
+	// assert.NotNil(t, err, "Merge should return an error since identity2 is not allowed to modify the root node")
+
+	c1.ABAC().Allow(identity2.ID(), ActionModify, "root", true)
+
+	err = c1.Merge(c2, false)
+	assert.Nil(t, err, "Merge should not return an error after restoring the signature")
+}

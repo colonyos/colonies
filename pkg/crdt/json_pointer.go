@@ -8,7 +8,16 @@ import (
 
 func (c *TreeCRDT) GetNodeByPath(path string) (*NodeCRDT, error) {
 	if path == "/" {
-		return c.Root, nil
+		if len(c.Root.Edges) == 0 {
+			return c.Root, nil
+		} else if len(c.Root.Edges) == 1 {
+			childID := c.Root.Edges[0].To
+			child, exists := c.Nodes[childID]
+			if !exists {
+				return nil, fmt.Errorf("invalid CRDT: root child %s not found", childID)
+			}
+			return child, nil
+		}
 	}
 
 	if !strings.HasPrefix(path, "/") {

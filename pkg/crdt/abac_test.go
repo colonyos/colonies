@@ -8,49 +8,43 @@ func (m *mockTree) isDescendant(root NodeID, target NodeID) bool {
 	return root == "parent" && target == "child"
 }
 
-func TestABACPolicyWithWildcardsAndRecursive(t *testing.T) {
+func TestABACPolicyWithModifyOnly(t *testing.T) {
 	tree := &mockTree{}
 	policy := NewABACPolicy(tree)
 
-	clientA := ClientID("alice")
-	clientB := ClientID("bob")
+	clientA := "alice"
+	clientB := "bob"
 	nodeX := NodeID("node-x")
 	nodeY := NodeID("node-y")
 	parent := NodeID("parent")
 	child := NodeID("child")
 
 	// Setup rules
-	policy.Allow("*", ActionAdd, "*", false)          // Anyone can add anywhere
 	policy.Allow(clientA, ActionModify, "*", false)   // Alice can modify anything
-	policy.Allow("*", ActionRemove, nodeX, false)     // Anyone can remove node-x
-	policy.Allow(clientB, "*", nodeY, false)          // Bob can do anything on node-y
 	policy.Allow(clientA, ActionModify, parent, true) // Alice can modify parent and children
+	policy.Allow(clientB, ActionModify, nodeY, false) // Bob can modify node-y only
 
 	tests := []struct {
 		name     string
-		clientID ClientID
+		id       string
 		action   ABACAction
 		nodeID   NodeID
 		expected bool
 	}{
-		{"Wildcard add (alice on node-x)", clientA, ActionAdd, nodeX, true},
-		{"Wildcard add (bob on node-y)", clientB, ActionAdd, nodeY, true},
-		{"Wildcard modify (alice on node-x)", clientA, ActionModify, nodeX, true},
-		{"Wildcard modify (bob on node-x)", clientB, ActionModify, nodeX, false},
-		{"Wildcard remove (charlie on node-x)", "charlie", ActionRemove, nodeX, true},
-		{"Wildcard remove (charlie on node-y)", "charlie", ActionRemove, nodeY, false},
-		{"Wildcard action (bob on node-y, remove)", clientB, ActionRemove, nodeY, true},
-		{"Wildcard action (bob on node-y, modify)", clientB, ActionModify, nodeY, true},
-		{"No rule (charlie on node-y, modify)", "charlie", ActionModify, nodeY, false},
-		{"Recursive rule (alice on child of parent)", clientA, ActionModify, child, true},
-		{"Recursive rule (bob on child of parent)", clientB, ActionModify, child, false},
+		{"Alice modify node-x", clientA, ActionModify, nodeX, true},
+		{"Alice modify node-y", clientA, ActionModify, nodeY, true},
+		{"Bob modify node-x", clientB, ActionModify, nodeX, false},
+		{"Bob modify node-y", clientB, ActionModify, nodeY, true},
+		{"Charlie modify node-y", "charlie", ActionModify, nodeY, false},
+		{"Alice recursive modify child of parent", clientA, ActionModify, child, true},
+		{"Bob recursive modify child of parent", clientB, ActionModify, child, false},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			result := policy.IsAllowed(test.clientID, test.action, test.nodeID)
+			result := policy.IsAllowed(test.id, test.action, test.nodeID)
 			if result != test.expected {
-				t.Errorf("IsAllowed(%s, %s, %s) = %v; want %v", test.clientID, test.action, test.nodeID, result, test.expected)
+				t.Errorf("IsAllowed(%s, %s, %s) = %v; want %v", test.id, test.action, test.nodeID, result, test.expected)
 			}
 		})
 	}
@@ -59,7 +53,7 @@ func TestABACPolicyWithWildcardsAndRecursive(t *testing.T) {
 func TestABACPolicyUpdateAndRemove(t *testing.T) {
 	tree := &mockTree{}
 	policy := NewABACPolicy(tree)
-	client := ClientID("carol")
+	client := "carol"
 	node := NodeID("node-test")
 
 	// Initially deny

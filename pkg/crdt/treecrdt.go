@@ -1,14 +1,11 @@
 package crdt
 
 import (
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"sort"
 
-	"github.com/colonyos/colonies/internal/crypto"
 	"github.com/colonyos/colonies/pkg/core"
-	"github.com/gibson042/canonicaljson-go"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -37,105 +34,6 @@ type NodeCRDT struct {
 	Nounce       string      `json:"nounce"`
 	Signature    string      `json:"signature"`
 	IsDeleted    bool        `json:"deleted"`
-}
-
-func (n *NodeCRDT) Sign(identity *crypto.Idendity) error {
-	n.Nounce = core.GenerateRandomID()
-
-	s := n.Signature
-	n.Signature = "" // Clear signature to avoid double signing
-
-	json, err := canonicaljson.Marshal(n)
-	if err != nil {
-		log.WithFields(log.Fields{
-			"NodeID": n.ID,
-			"Error":  err,
-		}).Error("Failed to marshal node for digest")
-		return fmt.Errorf("Failed to marshal node for digest: %w", err)
-	}
-
-	n.Signature = s // Restore signature after clearing
-
-	hash := crypto.GenerateHashFromString(string(json) + n.Nounce)
-
-	signature, err := crypto.Sign(hash, identity.PrivateKey())
-	if err != nil {
-		log.WithFields(log.Fields{
-			"NodeID": n.ID,
-			"Error":  err,
-		}).Error("Failed to sign node")
-		return fmt.Errorf("Failed to sign node: %w", err)
-	}
-
-	signatureStr := hex.EncodeToString(signature)
-	n.Signature = signatureStr
-
-	return nil
-}
-
-func (n *NodeCRDT) Verify() (string, error) {
-	signature := n.Signature
-	n.Signature = "" // Clear signature to avoid double verification
-
-	json, err := canonicaljson.Marshal(n)
-	if err != nil {
-		log.WithFields(log.Fields{
-			"NodeID": n.ID,
-			"Error":  err,
-		}).Error("Failed to marshal node for digest")
-		return "", fmt.Errorf("Failed to marshal node for digest: %w", err)
-	}
-
-	n.Signature = signature // Restore signature after clearing
-
-	hash := crypto.GenerateHashFromString(string(json) + n.Nounce)
-	signatureBytes, err := hex.DecodeString(n.Signature)
-
-	recoveredPublicKey, err := crypto.RecoverPublicKey(hash, signatureBytes)
-	if err != nil {
-		log.WithFields(log.Fields{
-			"NodeID": n.ID,
-			"Error":  err,
-		}).Error("Failed to recover public key from signature")
-		return "", fmt.Errorf("Failed to recover public key from signature: %w", err)
-	}
-
-	valid, err := crypto.Verify(recoveredPublicKey, hash, signatureBytes)
-	if err != nil {
-		log.WithFields(log.Fields{
-			"NodeID": n.ID,
-			"Error":  err,
-		}).Error("Failed to verify signature")
-		return "", fmt.Errorf("Failed to verify signature: %w", err)
-	}
-	if !valid {
-		log.WithFields(log.Fields{
-			"NodeID":    n.ID,
-			"Signature": n.Signature,
-			"Hash":      hash,
-		}).Error("Signature verification failed")
-		return "", fmt.Errorf("Signature verification failed for node %s", n.ID)
-	}
-
-	recoveredID, err := crypto.RecoveredID(hash, signatureBytes)
-	if err != nil {
-		log.WithFields(log.Fields{
-			"NodeID": n.ID,
-			"Error":  err,
-		}).Error("Failed to recover ID from signature")
-		return "", fmt.Errorf("Failed to recover ID from signature: %w", err)
-	}
-
-	if recoveredID != string(n.Owner) {
-		log.WithFields(log.Fields{
-			"NodeID":        n.ID,
-			"RecoveredID":   recoveredID,
-			"ExpectedOwner": n.Owner,
-		}).Error("Recovered ID does not match node owner")
-		return "", fmt.Errorf("Recovered ID %s does not match node owner %s", recoveredID, n.Owner)
-	}
-
-	return recoveredID, nil
 }
 
 type EdgeCRDT struct {
@@ -288,6 +186,8 @@ func (n *NodeCRDT) SetKeyValue(key string, value interface{}, clientID ClientID)
 				}).Error("SetLiteral failed")
 			}
 
+			valueNode.ParentID = n.ID // Ensure parent link is set
+
 			return valueNodeID, err
 		}
 	}
@@ -323,28 +223,29 @@ func (n *NodeCRDT) RemoveKeyValue(key string, clientID ClientID) error {
 }
 
 func (c *TreeCRDT) addEdgeWithVersion(from, to NodeID, label string, clientID ClientID, newVersion int) error {
-	node, ok := c.Nodes[from]
+	fromNode, ok := c.Nodes[from]
 	if !ok {
-		return errors.New("Cannot add edge, node not found: " + string(from))
+		return errors.New("Cannot add edge, from node not found: " + string(from))
+	}
+
+	toNode, ok := c.Nodes[to]
+	if !ok {
+		return errors.New("Cannot add edge, to node not found: " + string(from))
 	}
 
 	// Prepare the new clock
-	newClock := copyClock(node.Clock)
+	newClock := copyClock(fromNode.Clock)
 	newClock[clientID] = newVersion
 
 	// Resolve clock conflict
-	winningClock, winningOwner := resolveConflict(node.Clock, newClock, node.Owner, clientID, false)
+	winningClock, winningOwner := resolveConflict(fromNode.Clock, newClock, fromNode.Owner, clientID, false)
 
 	if clocksEqual(winningClock, newClock) && (clientID == winningOwner) {
 		edge := &EdgeCRDT{From: from, To: to, Label: label, LSEQPosition: make([]int, 0)}
-		node.Edges = append(node.Edges, edge)
-		node.Clock = newClock
-		node.Owner = clientID
-		child := c.Nodes[to]
-		if child == nil {
-			return fmt.Errorf("Cannot add edge, child node %s not found", to)
-		}
-		child.ParentID = from
+		fromNode.Edges = append(fromNode.Edges, edge)
+		fromNode.Clock = newClock
+		fromNode.Owner = clientID
+		toNode.ParentID = from
 
 		log.WithFields(log.Fields{"NodeID": from, "To": to, "Label": label, "Version": newVersion}).Debug("Edge added")
 	} else {
@@ -359,11 +260,12 @@ func (c *TreeCRDT) AddEdge(from, to NodeID, label string, clientID ClientID) err
 		return fmt.Errorf("Adding edge would create a cycle: %s -> %s or multiple parents", from, to)
 	}
 
-	node, ok := c.Nodes[from]
+	fromNode, ok := c.Nodes[from]
 	if !ok {
-		return errors.New("Cannot add edge, node not found: " + string(from))
+		return errors.New("Cannot add edge, from node not found: " + string(from))
 	}
-	latestVersion := node.Clock[clientID]
+
+	latestVersion := fromNode.Clock[clientID]
 	newVersion := latestVersion + 1
 
 	return c.addEdgeWithVersion(from, to, label, clientID, newVersion)
@@ -378,22 +280,22 @@ func (c *TreeCRDT) appendEdge(from, to NodeID, label string, clientID ClientID, 
 		return fmt.Errorf("Adding edge would create a cycle: %s -> %s or multiple parents", from, to)
 	}
 
-	node, ok := c.Nodes[from]
+	fromNode, ok := c.Nodes[from]
 	if !ok {
-		return fmt.Errorf("AppendEdge: parent node %s not found", from)
+		return fmt.Errorf("AppendEdge: from parent node %s not found", from)
 	}
 
 	var lastSibling NodeID
-	if len(node.Edges) > 0 {
+	if len(fromNode.Edges) > 0 {
 		// Use the last edge as anchor for right-side insert
-		last := node.Edges[len(node.Edges)-1]
+		last := fromNode.Edges[len(fromNode.Edges)-1]
 		lastSibling = last.To
 	} else {
 		// No siblings yet, insert at the beginning
 		lastSibling = ""
 	}
 
-	newVersion := node.Clock[clientID] + 1
+	newVersion := fromNode.Clock[clientID] + 1
 	return c.insertEdgeWithVersion(from, to, label, lastSibling, false, clientID, newVersion)
 }
 
@@ -563,29 +465,35 @@ func (c *TreeCRDT) GetSibling(parentNodeID NodeID, index int) (*NodeCRDT, error)
 }
 
 func (c *TreeCRDT) removeEdgeWithVersion(from, to NodeID, clientID ClientID, newVersion int, ignoreConflicts bool) error {
-	node, ok := c.Nodes[from]
+	fromNode, ok := c.Nodes[from]
 	if !ok {
-		return fmt.Errorf("Cannot remove edge, node %s not found", from)
+		return fmt.Errorf("Cannot remove edge, from node %s not found", from)
+	}
+	toNode, ok := c.Nodes[from]
+	if !ok {
+		return fmt.Errorf("Cannot remove edge, to node %s not found", from)
 	}
 
 	// Prepare the new clock
-	newClock := copyClock(node.Clock)
+	newClock := copyClock(fromNode.Clock)
 	newClock[clientID] = newVersion
 
 	// Resolve clock conflict
-	winningClock, _ := resolveConflict(node.Clock, newClock, node.Owner, clientID, false)
+	winningClock, _ := resolveConflict(fromNode.Clock, newClock, fromNode.Owner, clientID, false)
 
 	if clocksEqual(winningClock, newClock) || ignoreConflicts {
 		// New clock wins -> allow edge removal
 		newEdges := []*EdgeCRDT{}
-		for _, edge := range node.Edges {
+		for _, edge := range fromNode.Edges {
 			if !(edge.To == to) {
 				newEdges = append(newEdges, edge)
 			}
 		}
-		node.Edges = newEdges
-		node.Clock = newClock
-		node.Owner = clientID
+		fromNode.Edges = newEdges
+		fromNode.Clock = newClock
+		fromNode.Owner = clientID
+
+		toNode.ParentID = "" // Unlink child node from parent
 
 		log.WithFields(log.Fields{
 			"NodeID":  from,
@@ -593,11 +501,11 @@ func (c *TreeCRDT) removeEdgeWithVersion(from, to NodeID, clientID ClientID, new
 			"Version": newVersion}).Debug("Edge removed")
 	} else {
 		log.WithFields(log.Fields{
-			"NodeID":    from,
-			"To":        to,
-			"NodeClock": node.Clock,
-			"NewClock":  newClock,
-			"Version":   newVersion}).Error("Edge remove ignored due to conflict")
+			"NodeID":        from,
+			"To":            to,
+			"FromNodeClock": fromNode.Clock,
+			"NewClock":      newClock,
+			"Version":       newVersion}).Error("Edge remove ignored due to conflict")
 		return fmt.Errorf("Cannot remove edge, conflict detected: %s", from)
 	}
 
@@ -605,11 +513,11 @@ func (c *TreeCRDT) removeEdgeWithVersion(from, to NodeID, clientID ClientID, new
 }
 
 func (c *TreeCRDT) RemoveEdge(from, to NodeID, clientID ClientID) error {
-	node, ok := c.Nodes[from]
+	fromNode, ok := c.Nodes[from]
 	if !ok {
-		return fmt.Errorf("Cannot remove edge, node %s not found", from)
+		return fmt.Errorf("Cannot remove edge, from node %s not found", from)
 	}
-	latestVersion := node.Clock[clientID]
+	latestVersion := fromNode.Clock[clientID]
 	newVersion := latestVersion + 1
 
 	return c.removeEdgeWithVersion(from, to, clientID, newVersion, false)
@@ -782,7 +690,15 @@ func (c *TreeCRDT) Tidy() {
 
 }
 
+func (c *TreeCRDT) SecureSync(c2 *TreeCRDT, force bool) error {
+	return c.sync(c2, force, true)
+}
+
 func (c *TreeCRDT) Sync(c2 *TreeCRDT, force bool) error {
+	return c.sync(c2, force, false)
+}
+
+func (c *TreeCRDT) sync(c2 *TreeCRDT, force bool, secure bool) error {
 	cCopy, err := c.Clone()
 	if err != nil {
 		log.WithFields(log.Fields{
@@ -791,14 +707,14 @@ func (c *TreeCRDT) Sync(c2 *TreeCRDT, force bool) error {
 		return fmt.Errorf("Failed to clone CRDT tree for sync: %w", err)
 	}
 
-	err = c.Merge(c2, force)
+	err = c.merge(c2, force, secure)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"Error": err,
 		}).Error("Failed to sync CRDT trees")
 		return fmt.Errorf("Failed to sync CRDT trees: %w", err)
 	}
-	err = c2.Merge(cCopy, force)
+	err = c2.merge(cCopy, force, secure)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"Error": err,
@@ -810,14 +726,33 @@ func (c *TreeCRDT) Sync(c2 *TreeCRDT, force bool) error {
 }
 
 func (c *TreeCRDT) Merge(c2 *TreeCRDT, force bool) error {
-	return c.SecureMerge(c2, force, false)
+	return c.merge(c2, force, false)
 }
 
-func (c *TreeCRDT) SecureMerge(c2 *TreeCRDT, force bool, secure bool) error {
+func (c *TreeCRDT) SecureMerge(c2 *TreeCRDT, force bool) error {
+	return c.merge(c2, force, true)
+}
+
+func (c *TreeCRDT) merge(c2 *TreeCRDT, force bool, secure bool) error {
 	promotions := make(map[NodeID]NodeID) // fromNodeID -> arrayNodeID
 
+	//var recoveredID string
 	for id, remote := range c2.Nodes {
-		// TODO: verify signature, ABAC policy violation
+		if secure {
+			var err error
+			//recoveredID, err = remote.Verify()
+			_, err = remote.Verify()
+			if err != nil {
+				log.WithFields(log.Fields{
+					"NodeID": id,
+					"Error":  err,
+				}).Error("Failed to verify node signature during merge")
+				if !force {
+					return fmt.Errorf("Failed to verify node signature during merge: %w", err)
+				}
+			}
+		}
+
 		local, exists := c.Nodes[id]
 		if !exists {
 			nodeType := Literal
@@ -830,6 +765,7 @@ func (c *TreeCRDT) SecureMerge(c2 *TreeCRDT, force bool, secure bool) error {
 			cloned := newNodeFromID(id, nodeType, c)
 			cloned.IsLiteral = remote.IsLiteral
 			cloned.IsMap = remote.IsMap
+			cloned.ParentID = remote.ParentID
 			cloned.IsArray = remote.IsArray
 			cloned.LiteralValue = remote.LiteralValue
 			cloned.Clock = copyClock(remote.Clock)
@@ -844,6 +780,16 @@ func (c *TreeCRDT) SecureMerge(c2 *TreeCRDT, force bool, secure bool) error {
 		mergedOwner := lowestClientID(local.Owner, remote.Owner)
 
 		if remote.IsLiteral {
+			// Check if remote client is allowed to modify the literal value
+			// fmt.Println(exists)
+			// if secure && exists && !c.ABACPolicy.IsAllowed(recoveredID, ActionModify, local.ID) { // We are modifying an existing node
+			// 	log.WithFields(log.Fields{
+			// 		"ClientID": recoveredID,
+			// 		"NodeID":   local.ID,
+			// 	}).Error("Client is not allowed to modify literal value of node")
+			// 	return fmt.Errorf("Client %s is not allowed to modify literal value of node %s", recoveredID, local.ID)
+			// }
+
 			err := local.setLiteralWithVersion(remote.LiteralValue, remote.Owner, remote.Clock[remote.Owner])
 			if err != nil {
 				log.WithFields(log.Fields{
@@ -858,8 +804,11 @@ func (c *TreeCRDT) SecureMerge(c2 *TreeCRDT, force bool, secure bool) error {
 		}
 
 		for _, re := range remote.Edges {
+			//parentExists := false
 			if _, exists := c.Nodes[re.From]; !exists {
 				c.cloneNodeFromRemote(c2, re.From)
+			} else {
+				//parentExists = false
 			}
 			if _, exists := c.Nodes[re.To]; !exists {
 				c.cloneNodeFromRemote(c2, re.To)
@@ -867,6 +816,16 @@ func (c *TreeCRDT) SecureMerge(c2 *TreeCRDT, force bool, secure bool) error {
 
 			fromNode := c.Nodes[re.From]
 			toNode := c.Nodes[re.To]
+
+			// fmt.Println("Parent exits", parentExists)
+			// // All merge operation below, requires that the remote node is allowed to modify the parent node
+			// if secure && parentExists && !c.ABACPolicy.IsAllowed(recoveredID, ActionModify, fromNode.ID) {
+			// 	log.WithFields(log.Fields{
+			// 		"ClientID": recoveredID,
+			// 		"NodeID":   fromNode.ID,
+			// 	}).Error("Client is not allowed to modify local value of node")
+			// 	return fmt.Errorf("Client %s is not allowed to modify from node %s", recoveredID, fromNode.ID)
+			// }
 
 			if c.edgeExists(fromNode, re.To) {
 				continue

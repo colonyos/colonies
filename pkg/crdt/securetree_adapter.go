@@ -23,13 +23,13 @@ func performSecureAction(
 		return fmt.Errorf("failed to create identity: %w", err)
 	}
 
-	clientID := ClientID(identity.ID())
+	id := identity.ID()
 
-	if policy != nil && !policy.IsAllowed(clientID, action, target) {
-		return fmt.Errorf("identity %s not allowed to perform %s on %s", clientID, action, target)
+	if policy != nil && !policy.IsAllowed(id, action, target) {
+		return fmt.Errorf("identity %s not allowed to perform %s on %s", id, action, target)
 	}
 
-	node, err := actionFn(clientID)
+	node, err := actionFn(ClientID(id))
 	if err != nil {
 		return err
 	}
@@ -39,12 +39,16 @@ func performSecureAction(
 		return fmt.Errorf("failed to sign node: %w", err)
 	}
 
-	recoveredID, err := node.Verify()
-	if err != nil {
-		return fmt.Errorf("failed to verify node signature: %w", err)
-	}
-	if recoveredID != identity.ID() {
-		return fmt.Errorf("signature verification failed: expected %s, got %s", identity.ID(), recoveredID)
+	if node.ParentID != "" {
+		parentNode, ok := node.tree.GetNode(node.ParentID)
+		if !ok {
+			return fmt.Errorf("parent node %s not found for node %s", node.ParentID, node.ID)
+		}
+
+		// Sign the parent node with the same identity
+		if err := parentNode.Sign(identity); err != nil {
+			return fmt.Errorf("failed to sign parent node: %w", err)
+		}
 	}
 
 	return nil
@@ -81,7 +85,7 @@ func (n *AdapterSecureNodeCRDT) CreateMapNode(prvKey string) (SecureNode, error)
 		return newNode, nil
 	}
 
-	err := performSecureAction(prvKey, op, ActionAdd, n.nodeCrdt.ID, n.nodeCrdt.tree.ABACPolicy, secureAction)
+	err := performSecureAction(prvKey, op, ActionModify, n.nodeCrdt.ID, n.nodeCrdt.tree.ABACPolicy, secureAction)
 	if err != nil {
 		return nil, err
 	}
@@ -100,7 +104,11 @@ func (n *AdapterSecureNodeCRDT) SetKeyValue(key string, value interface{}, prvKe
 			return nil, fmt.Errorf("failed to set key-value: %w", err)
 		}
 		newNodeID = id
-		return n.nodeCrdt, nil
+		newNode, ok := n.nodeCrdt.tree.GetNode(newNodeID)
+		if !ok {
+			return nil, fmt.Errorf("new node %s not found in tree after setting key-value", newNodeID)
+		}
+		return newNode, nil
 	}
 
 	err := performSecureAction(prvKey, op, ActionModify, n.nodeCrdt.ID, n.nodeCrdt.tree.ABACPolicy, secureAction)
@@ -132,7 +140,7 @@ func (n *AdapterSecureNodeCRDT) RemoveKeyValue(key string, prvKey string) error 
 	return performSecureAction(
 		prvKey,
 		op,
-		ActionRemove,
+		ActionModify,
 		n.nodeCrdt.ID,
 		n.nodeCrdt.tree.ABACPolicy,
 		secureAction,
@@ -152,12 +160,16 @@ func NewSecureTree(prvKey string) (SecureTree, error) {
 	c := newTreeCRDT()
 	c.OwnerID = idendity.ID()
 	c.ABACPolicy = NewABACPolicy(c)
-	c.ABACPolicy.Allow(ClientID(c.OwnerID), "*", "root", true) // Allow the owner to have full access to whole tree
+	c.ABACPolicy.Allow(c.OwnerID, "*", "root", true) // Allow the owner to have full access to whole tree
 	c.Secure = true
 
 	return &AdapterSecureTreeCRDT{
 		treeCrdt: c,
 	}, nil
+}
+
+func (c *AdapterSecureTreeCRDT) ABAC() *ABACPolicy {
+	return c.treeCrdt.ABACPolicy
 }
 
 func (c *AdapterSecureTreeCRDT) CreateAttachedNode(name string, nodeType NodeType, parentID NodeID, prvKey string) (SecureNode, error) { // Tested
@@ -174,7 +186,7 @@ func (c *AdapterSecureTreeCRDT) CreateAttachedNode(name string, nodeType NodeTyp
 	err := performSecureAction(
 		prvKey,
 		op,
-		ActionAdd,
+		ActionModify,
 		parentID,
 		c.treeCrdt.ABACPolicy,
 		secureAction,
@@ -201,7 +213,7 @@ func (c *AdapterSecureTreeCRDT) CreateNode(name string, nodeType NodeType, prvKe
 	err := performSecureAction(
 		prvKey,
 		op,
-		ActionAdd,
+		ActionModify,
 		c.treeCrdt.Root.ID, // Treat as adding under root
 		c.treeCrdt.ABACPolicy,
 		secureAction,
@@ -269,7 +281,7 @@ func (c *AdapterSecureTreeCRDT) AddEdge(from, to NodeID, label string, prvKey st
 	return performSecureAction(
 		prvKey,
 		op,
-		ActionAdd,
+		ActionModify,
 		from, // ABAC checks and signing target is the parent node
 		c.treeCrdt.ABACPolicy,
 		secureAction,
@@ -294,7 +306,7 @@ func (c *AdapterSecureTreeCRDT) RemoveEdge(from, to NodeID, prvKey string) error
 	return performSecureAction(
 		prvKey,
 		op,
-		ActionRemove,
+		ActionModify,
 		from, // ABAC is enforced on the parent node
 		c.treeCrdt.ABACPolicy,
 		secureAction,
@@ -406,7 +418,7 @@ func (c *AdapterSecureTreeCRDT) Sync(c2 SecureTree, force bool) error { // TODO:
 	if !ok {
 		panic("Sync: Tree must be of type *AdapterTreeCRDT")
 	}
-	return c.treeCrdt.Sync(adapter.treeCrdt, force)
+	return c.treeCrdt.SecureSync(adapter.treeCrdt, force)
 }
 
 func (c *AdapterSecureTreeCRDT) Merge(c2 SecureTree, force bool) error { // TODO: test
@@ -414,7 +426,7 @@ func (c *AdapterSecureTreeCRDT) Merge(c2 SecureTree, force bool) error { // TODO
 	if !ok {
 		panic("Merge: Tree must be of type *AdapterTreeCRDT")
 	}
-	return c.treeCrdt.Merge(adapter.treeCrdt, force)
+	return c.treeCrdt.SecureMerge(adapter.treeCrdt, force)
 }
 
 func (c *AdapterSecureTreeCRDT) ImportJSON(rawJSON []byte, prvKey string) (NodeID, error) { // Tested
@@ -422,13 +434,14 @@ func (c *AdapterSecureTreeCRDT) ImportJSON(rawJSON []byte, prvKey string) (NodeI
 	if err != nil {
 		return "", fmt.Errorf("failed to create identity from string: %w", err)
 	}
-	clientID := ClientID(identity.ID())
 
-	if !c.treeCrdt.ABACPolicy.IsAllowed(clientID, ActionModify, c.treeCrdt.Root.ID) {
-		return "", fmt.Errorf("identity %s is not allowed to import under root", clientID)
+	id := identity.ID()
+
+	if !c.treeCrdt.ABACPolicy.IsAllowed(id, ActionModify, c.treeCrdt.Root.ID) {
+		return "", fmt.Errorf("identity %s is not allowed to import under root", id)
 	}
 
-	return c.treeCrdt.ImportJSON(rawJSON, clientID)
+	return c.treeCrdt.SecureImportJSON(rawJSON, identity)
 }
 
 func (c *AdapterSecureTreeCRDT) ImportJSONToMap(rawJSON []byte, parentID NodeID, key string, prvKey string) (NodeID, error) { // Tested
@@ -436,13 +449,14 @@ func (c *AdapterSecureTreeCRDT) ImportJSONToMap(rawJSON []byte, parentID NodeID,
 	if err != nil {
 		return "", fmt.Errorf("failed to create identity from string: %w", err)
 	}
-	clientID := ClientID(identity.ID())
 
-	if !c.treeCrdt.ABACPolicy.IsAllowed(clientID, ActionModify, parentID) {
-		return "", fmt.Errorf("identity %s is not allowed to import under parent %s", clientID, parentID)
+	id := identity.ID()
+
+	if !c.treeCrdt.ABACPolicy.IsAllowed(id, ActionModify, parentID) {
+		return "", fmt.Errorf("identity %s is not allowed to import under parent %s", id, parentID)
 	}
 
-	return c.treeCrdt.ImportJSONToMap(rawJSON, parentID, key, clientID)
+	return c.treeCrdt.SecureImportJSONToMap(rawJSON, parentID, key, identity)
 }
 
 func (c *AdapterSecureTreeCRDT) ImportJSONToArray(rawJSON []byte, parentID NodeID, prvKey string) (NodeID, error) {
@@ -450,13 +464,14 @@ func (c *AdapterSecureTreeCRDT) ImportJSONToArray(rawJSON []byte, parentID NodeI
 	if err != nil {
 		return "", fmt.Errorf("failed to create identity from string: %w", err)
 	}
-	clientID := ClientID(identity.ID())
 
-	if !c.treeCrdt.ABACPolicy.IsAllowed(clientID, ActionModify, parentID) {
-		return "", fmt.Errorf("identity %s is not allowed to import under parent %s", clientID, parentID)
+	id := identity.ID()
+
+	if !c.treeCrdt.ABACPolicy.IsAllowed(id, ActionModify, parentID) {
+		return "", fmt.Errorf("identity %s is not allowed to import under parent %s", id, parentID)
 	}
 
-	return c.treeCrdt.ImportJSONToArray(rawJSON, parentID, clientID)
+	return c.treeCrdt.SecureImportJSONToArray(rawJSON, parentID, identity)
 }
 
 func (c *AdapterSecureTreeCRDT) Clone() (SecureTree, error) {

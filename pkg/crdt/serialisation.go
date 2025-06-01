@@ -7,13 +7,19 @@ import (
 	"fmt"
 	"reflect"
 
+	"github.com/colonyos/colonies/internal/crypto"
 	"github.com/iancoleman/orderedmap"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/crypto/sha3"
 )
 
 func (c *TreeCRDT) ImportJSON(rawJSON []byte, clientID ClientID) (NodeID, error) {
-	return c.importJSON(rawJSON, c.Root.ID, "", -1, Root, clientID)
+	return c.importJSON(rawJSON, c.Root.ID, "", -1, Root, clientID, false, nil)
+}
+
+func (c *TreeCRDT) SecureImportJSON(rawJSON []byte, identity *crypto.Idendity) (NodeID, error) {
+	clientID := ClientID(identity.ID())
+	return c.importJSON(rawJSON, c.Root.ID, "", -1, Root, clientID, true, identity)
 }
 
 func (c *TreeCRDT) ImportJSONToMap(rawJSON []byte, parentID NodeID, key string, clientID ClientID) (NodeID, error) {
@@ -32,7 +38,27 @@ func (c *TreeCRDT) ImportJSONToMap(rawJSON []byte, parentID NodeID, key string, 
 		return "", fmt.Errorf("parent node with ID %s is not a map", parentID)
 	}
 
-	return c.importJSON(rawJSON, parentID, key, -1, Map, clientID)
+	return c.importJSON(rawJSON, parentID, key, -1, Map, clientID, false, nil)
+}
+
+func (c *TreeCRDT) SecureImportJSONToMap(rawJSON []byte, parentID NodeID, key string, identity *crypto.Idendity) (NodeID, error) {
+	if parentID == "" {
+		if c.Root == nil {
+			return "", errors.New("cannot import JSON without a root node")
+		}
+		parentID = c.Root.ID
+	}
+	parent, ok := c.GetNode(parentID)
+	if !ok {
+		return "", fmt.Errorf("parent node with ID %s not found", parentID)
+	}
+
+	if !parent.IsMap {
+		return "", fmt.Errorf("parent node with ID %s is not a map", parentID)
+	}
+
+	clientID := ClientID(identity.ID())
+	return c.importJSON(rawJSON, parentID, key, -1, Map, clientID, true, identity)
 }
 
 func (c *TreeCRDT) ImportJSONToArray(rawJSON []byte, parentID NodeID, clientID ClientID) (NodeID, error) {
@@ -51,10 +77,30 @@ func (c *TreeCRDT) ImportJSONToArray(rawJSON []byte, parentID NodeID, clientID C
 		return "", fmt.Errorf("parent node with ID %s is not a map", parentID)
 	}
 
-	return c.importJSON(rawJSON, parentID, "", -1, Map, clientID)
+	return c.importJSON(rawJSON, parentID, "", -1, Map, clientID, false, nil)
 }
 
-func (c *TreeCRDT) importJSON(rawJSON []byte, parentID NodeID, edgeLabel string, idx int, nodeType NodeType, clientID ClientID) (NodeID, error) {
+func (c *TreeCRDT) SecureImportJSONToArray(rawJSON []byte, parentID NodeID, identity *crypto.Idendity) (NodeID, error) {
+	if parentID == "" {
+		if c.Root == nil {
+			return "", errors.New("cannot import JSON without a root node")
+		}
+		parentID = c.Root.ID
+	}
+	parent, ok := c.GetNode(parentID)
+	if !ok {
+		return "", fmt.Errorf("parent node with ID %s not found", parentID)
+	}
+
+	if !parent.IsArray {
+		return "", fmt.Errorf("parent node with ID %s is not a map", parentID)
+	}
+
+	clientID := ClientID(identity.ID())
+	return c.importJSON(rawJSON, parentID, "", -1, Map, clientID, true, identity)
+}
+
+func (c *TreeCRDT) importJSON(rawJSON []byte, parentID NodeID, edgeLabel string, idx int, nodeType NodeType, clientID ClientID, secure bool, identity *crypto.Idendity) (NodeID, error) {
 	version := 1
 	var parent *NodeCRDT
 	if parentID == "" {
@@ -68,21 +114,26 @@ func (c *TreeCRDT) importJSON(rawJSON []byte, parentID NodeID, edgeLabel string,
 		return "", err
 	}
 
-	nodeID, err := c.importRecursive(data, parent, edgeLabel, idx, nodeType, clientID)
+	nodeID, err := c.secureImportRecursive(data, parent, edgeLabel, idx, nodeType, clientID, secure, identity)
 	c.normalize()
 
 	return nodeID, err
 }
 
-func (c *TreeCRDT) importRecursive(v interface{}, parent *NodeCRDT, edgeLabel string, idx int, nodeType NodeType, clientID ClientID) (NodeID, error) {
+func (c *TreeCRDT) secureImportRecursive(v interface{}, parent *NodeCRDT, edgeLabel string, idx int, nodeType NodeType, clientID ClientID, secure bool, identity *crypto.Idendity) (NodeID, error) {
 	version := 1
 
 	switch val := v.(type) {
-
 	case map[string]interface{}:
 		// Map node
 		mapNodeID := generateRandomNodeID("map")
 		mapNode := c.getOrCreateNode(mapNodeID, Map, clientID, version)
+		if secure {
+			err := mapNode.Sign(identity)
+			if err != nil {
+				return "", fmt.Errorf("failed to sign map node: %w", err)
+			}
+		}
 
 		if parent != nil {
 			if nodeType == Array {
@@ -96,10 +147,20 @@ func (c *TreeCRDT) importRecursive(v interface{}, parent *NodeCRDT, edgeLabel st
 					return "", err
 				}
 			}
+			if secure {
+				err := parent.Sign(identity)
+				if err != nil {
+					return "", fmt.Errorf("failed to sign parent node (adding edge): %w", err)
+				}
+				err = mapNode.Sign(identity)
+				if err != nil {
+					return "", fmt.Errorf("failed to sign parent node (adding edge): %w", err)
+				}
+			}
 		}
 
 		for key, child := range val {
-			_, err := c.importRecursive(child, mapNode, key, idx, Literal, clientID)
+			_, err := c.secureImportRecursive(child, mapNode, key, idx, Literal, clientID, secure, identity)
 			if err != nil {
 				return "", err
 			}
@@ -111,6 +172,12 @@ func (c *TreeCRDT) importRecursive(v interface{}, parent *NodeCRDT, edgeLabel st
 		// Array node
 		arrayNodeID := generateRandomNodeID("arr")
 		arrayNode := c.getOrCreateNode(arrayNodeID, Array, clientID, version)
+		if secure {
+			err := arrayNode.Sign(identity)
+			if err != nil {
+				return "", fmt.Errorf("failed to sign array node: %w", err)
+			}
+		}
 
 		if parent != nil {
 			if nodeType == Array {
@@ -124,10 +191,20 @@ func (c *TreeCRDT) importRecursive(v interface{}, parent *NodeCRDT, edgeLabel st
 					return "", err
 				}
 			}
+			if secure {
+				err := parent.Sign(identity)
+				if err != nil {
+					return "", fmt.Errorf("failed to sign parent node (adding edge): %w", err)
+				}
+				err = arrayNode.Sign(identity)
+				if err != nil {
+					return "", fmt.Errorf("failed to sign parent node (adding edge): %w", err)
+				}
+			}
 		}
 
 		for i, item := range val {
-			_, err := c.importRecursive(item, arrayNode, "", i, Array, clientID)
+			_, err := c.secureImportRecursive(item, arrayNode, "", i, Array, clientID, secure, identity)
 			if err != nil {
 				return "", err
 			}
@@ -143,6 +220,12 @@ func (c *TreeCRDT) importRecursive(v interface{}, parent *NodeCRDT, edgeLabel st
 		if err != nil {
 			return "", err
 		}
+		if secure {
+			err := literalNode.Sign(identity)
+			if err != nil {
+				return "", fmt.Errorf("failed to sign literal node: %w", err)
+			}
+		}
 		if parent != nil {
 			if nodeType == Array {
 				err := c.AppendEdge(parent.ID, literalID, edgeLabel, clientID)
@@ -153,6 +236,16 @@ func (c *TreeCRDT) importRecursive(v interface{}, parent *NodeCRDT, edgeLabel st
 				err := c.AddEdge(parent.ID, literalID, edgeLabel, clientID)
 				if err != nil {
 					return "", err
+				}
+			}
+			if secure {
+				err := parent.Sign(identity)
+				if err != nil {
+					return "", fmt.Errorf("failed to sign parent node (adding edge): %w", err)
+				}
+				err = literalNode.Sign(identity) // Resign since we changed parentID
+				if err != nil {
+					return "", fmt.Errorf("failed to sign literal node: %w", err)
 				}
 			}
 		}
@@ -178,6 +271,7 @@ func (c *TreeCRDT) Save() ([]byte, error) {
 		nodes[string(id)] = map[string]interface{}{
 			"id":            string(node.ID),
 			"isroot":        node.IsRoot,
+			"parentid":      string(node.ParentID),
 			"isarray":       node.IsArray,
 			"ismap":         node.IsMap,
 			"isliteral":     node.IsLiteral,
@@ -229,6 +323,7 @@ func (c *TreeCRDT) Load(data []byte) error {
 			Edges:        []*EdgeCRDT{},
 			Clock:        make(VectorClock),
 			IsRoot:       nodeMap["isroot"].(bool),
+			ParentID:     NodeID(nodeMap["parentid"].(string)),
 			IsArray:      nodeMap["isarray"].(bool),
 			IsMap:        nodeMap["ismap"].(bool),
 			IsLiteral:    nodeMap["isliteral"].(bool),
