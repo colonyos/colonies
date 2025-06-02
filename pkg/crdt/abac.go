@@ -160,8 +160,8 @@ func (p *ABACPolicy) UnmarshalJSON(data []byte) error {
 }
 
 func (p *ABACPolicy) ComputeDigest() (*crypto.Hash, error) {
-	// Build an ordered structure
-	ordered := make([]struct {
+	// Build an ordered structure for Rules
+	orderedRules := make([]struct {
 		ClientID  string
 		Action    string
 		NodeID    string
@@ -198,7 +198,7 @@ func (p *ABACPolicy) ComputeDigest() (*crypto.Hash, error) {
 
 			for _, nodeID := range nodeIDs {
 				rule := rules[NodeID(nodeID)]
-				ordered = append(ordered, struct {
+				orderedRules = append(orderedRules, struct {
 					ClientID  string
 					Action    string
 					NodeID    string
@@ -213,12 +213,25 @@ func (p *ABACPolicy) ComputeDigest() (*crypto.Hash, error) {
 		}
 	}
 
-	buf, err := json.Marshal(ordered)
-	if err != nil {
-		return nil, err
+	// Now build the full digest input struct
+	digestInput := struct {
+		Rules   interface{} `json:"rules"`
+		OwnerID string      `json:"ownerID"`
+		Nounce  string      `json:"nounce"`
+	}{
+		Rules:   orderedRules,
+		OwnerID: p.OwnerID,
+		Nounce:  p.Nounce,
 	}
 
-	digest := crypto.GenerateHashFromString(string(buf) + p.Nounce)
+	// Marshal the entire digest input
+	buf, err := json.Marshal(digestInput)
+	if err != nil {
+		return nil, fmt.Errorf("ComputeDigest: failed to marshal digest input: %w", err)
+	}
+
+	// Now generate the hash from the full JSON string
+	digest := crypto.GenerateHashFromString(string(buf))
 
 	return digest, nil
 }
