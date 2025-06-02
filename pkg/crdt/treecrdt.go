@@ -46,10 +46,11 @@ type EdgeCRDT struct {
 }
 
 type TreeCRDT struct {
-	Root       *NodeCRDT            `json:"root"`
-	Nodes      map[NodeID]*NodeCRDT `json:"nodes"`
-	ABACPolicy *ABACPolicy          `json:"abac"`
-	Secure     bool                 `json:"secure"`
+	Root        *NodeCRDT            `json:"root"`
+	Nodes       map[NodeID]*NodeCRDT `json:"nodes"`
+	ABACPolicy  *ABACPolicy          `json:"abac"`
+	Secure      bool                 `json:"secure"`
+	subscribers []subscriber
 }
 
 func newTreeCRDT() *TreeCRDT {
@@ -76,6 +77,9 @@ func (c *TreeCRDT) CreateAttachedNode(name string, nodeType NodeType, parentID N
 	node := c.getOrCreateNode(id, nodeType, clientID, 1)
 	c.AddEdge(parentID, id, "", clientID)
 	node.ParentID = parentID
+
+	c.notifySubscribers(node.ID, EventAdded)
+
 	return node
 }
 
@@ -84,6 +88,7 @@ func (c *TreeCRDT) CreateNode(name string, nodeType NodeType, clientID ClientID)
 	node := c.getOrCreateNode(id, nodeType, clientID, 1)
 	setNodeTypeFlags(node, nodeType)
 
+	// Do not modify since it is not attached to the tree
 	return node
 }
 
@@ -130,6 +135,8 @@ func (n *NodeCRDT) CreateMapNode(clientID ClientID) (*NodeCRDT, error) {
 	if err := n.tree.AddEdge(n.ID, mapNode.ID, "", clientID); err != nil {
 		return nil, fmt.Errorf("SetKeyValue: failed to attach map node: %w", err)
 	}
+
+	n.tree.notifySubscribers(mapNode.ID, EventAdded)
 
 	return mapNode, nil
 }
@@ -193,6 +200,7 @@ func (n *NodeCRDT) SetKeyValue(key string, value interface{}, clientID ClientID)
 	// Create new value node
 	valueNodeID := generateRandomNodeID("val")
 	valueNode := n.tree.getOrCreateNode(valueNodeID, Literal, clientID, 1)
+	// setLiteralWithVersion will notify subscribers, when the values is updated
 	if err := valueNode.setLiteralWithVersion(value, clientID, 1); err != nil {
 		return "", err
 	}
@@ -201,6 +209,8 @@ func (n *NodeCRDT) SetKeyValue(key string, value interface{}, clientID ClientID)
 	if err := n.tree.AddEdge(n.ID, valueNodeID, key, clientID); err != nil {
 		return "", err
 	}
+
+	n.tree.notifySubscribers(valueNodeID, EventAdded)
 
 	return valueNodeID, nil
 }
@@ -244,6 +254,8 @@ func (c *TreeCRDT) addEdgeWithVersion(from, to NodeID, label string, clientID Cl
 		fromNode.Clock = newClock
 		fromNode.Owner = clientID
 		toNode.ParentID = from
+
+		c.notifySubscribers(fromNode.ID, EventAdded)
 
 		log.WithFields(log.Fields{"NodeID": from, "To": to, "Label": label, "Version": newVersion}).Debug("Edge added")
 	} else {
@@ -422,6 +434,8 @@ func (c *TreeCRDT) insertEdgeWithVersion(from, to NodeID, label string, sibling 
 	}
 	child.ParentID = from
 
+	c.notifySubscribers(from, EventAdded)
+
 	log.WithFields(log.Fields{
 		"NodeID":       from,
 		"To":           to,
@@ -493,6 +507,8 @@ func (c *TreeCRDT) removeEdgeWithVersion(from, to NodeID, clientID ClientID, new
 
 		toNode.ParentID = "" // Unlink child node from parent
 
+		c.notifySubscribers(fromNode.ID, EventRemoved)
+
 		log.WithFields(log.Fields{
 			"NodeID":  from,
 			"To":      to,
@@ -562,6 +578,13 @@ func (n *NodeCRDT) setLiteralWithVersion(value interface{}, clientID ClientID, v
 			"WinningOwner": winningOwner,
 			"ClientID":     clientID,
 			"LiteralValue": value}).Debug("Set literal value")
+
+		// XXX: We cannot notify subscribers if node does not have a parent, this will happen when using CreateNode
+		if n.ParentID != "" {
+			n.tree.notifySubscribers(n.ID, EventUpdated)
+		} else {
+			//		panic("SetLiteral called on a node without parent, this should not happen")
+		}
 	} else {
 		log.WithFields(log.Fields{"NodeID": n.ID,
 			"AttemptedLiteralValue": value,
@@ -610,6 +633,8 @@ func (n *NodeCRDT) markDeletedWithVersion(clientID ClientID, version int) error 
 			"WinningOwner":         winningOwner,
 			"AttemptedDeleteValue": true,
 			"ClientID":             clientID}).Debug("Set deleted flag")
+
+		n.tree.notifySubscribers(n.ID, EventUpdated)
 	} else {
 		log.WithFields(log.Fields{
 			"NodeID":               n.ID,

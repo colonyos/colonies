@@ -525,6 +525,10 @@ func (c *AdapterSecureTreeCRDT) Save() ([]byte, error) {
 	return c.treeCrdt.Save()
 }
 
+func (c *AdapterSecureTreeCRDT) Subscribe(path string, ch chan NodeEvent) {
+	c.treeCrdt.Subscribe(path, ch)
+}
+
 func (c *AdapterSecureTreeCRDT) Tidy() {
 	c.treeCrdt.Tidy()
 }

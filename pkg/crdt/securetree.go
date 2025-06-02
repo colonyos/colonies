@@ -19,6 +19,9 @@ type SecureTree interface {
 	// ABAC (Attribute Based Access Control)
 	ABAC() *ABACPolicy
 
+	// Subscription
+	Subscribe(path string, ch chan NodeEvent)
+
 	// Node operations
 	CreateAttachedNode(name string, nodeType NodeType, parentID NodeID, prvKey string) (SecureNode, error)
 	CreateNode(name string, nodeType NodeType, prvKey string) (SecureNode, error)
