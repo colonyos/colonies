@@ -51,21 +51,54 @@ func (p *ABACPolicy) SetTree(tree TreeChecker) {
 }
 
 func (p *ABACPolicy) Allow(id string, action ABACAction, nodeID NodeID, recursive bool) error {
-	if _, ok := p.Rules[id]; !ok {
-		p.Rules[id] = make(map[ABACAction]map[NodeID]ABACRule)
-	}
-	if _, ok := p.Rules[id][action]; !ok {
-		p.Rules[id][action] = make(map[NodeID]ABACRule)
-	}
-	p.Rules[id][action][nodeID] = ABACRule{Recursive: recursive}
+	clientID := ClientID(p.identity.ID())
 
-	err := p.Sign()
-	if err != nil {
+	// Step 1: Prepare new clock
+	newClock := copyClock(p.Clock)
+
+	maxVersion := 0
+	for _, v := range newClock {
+		if v > maxVersion {
+			maxVersion = v
+		}
+	}
+	version := maxVersion + 1
+	newClock[clientID] = version
+
+	// Step 2: Resolve conflict
+	winningClock, winningOwner := resolveConflict(p.Clock, newClock, ClientID(p.OwnerID), clientID, false)
+
+	if clocksEqual(winningClock, newClock) && winningOwner == clientID {
+		// Step 3: Apply update
+		p.Clock = newClock
+
+		if _, ok := p.Rules[id]; !ok {
+			p.Rules[id] = make(map[ABACAction]map[NodeID]ABACRule)
+		}
+		if _, ok := p.Rules[id][action]; !ok {
+			p.Rules[id][action] = make(map[NodeID]ABACRule)
+		}
+		p.Rules[id][action][nodeID] = ABACRule{Recursive: recursive}
+
+		// Step 4: Sign
+		err := p.Sign()
+		if err != nil {
+			log.WithFields(log.Fields{
+				"OwnerID": p.OwnerID,
+				"Error":   err,
+			}).Error("Failed to sign ABACPolicy after allowing rule")
+			return fmt.Errorf("Failed to sign ABACPolicy after allowing rule: %w", err)
+		}
+	} else {
+		// Step 5: Conflict — ignore update
 		log.WithFields(log.Fields{
-			"OwnerID": p.OwnerID,
-			"Error":   err,
-		}).Error("Failed to sign ABACPolicy after allowing rule")
-		return fmt.Errorf("Failed to sign ABACPolicy after allowing rule: %w", err)
+			"OwnerID":      p.OwnerID,
+			"ClientID":     clientID,
+			"WinningOwner": winningOwner,
+			"WinningClock": winningClock,
+			"NewClock":     newClock,
+		}).Debug("ABACPolicy Allow ignored due to conflict resolution")
+		// Do not return an error — just ignore
 	}
 
 	return nil
@@ -76,25 +109,57 @@ func (p *ABACPolicy) UpdateRule(id string, action ABACAction, nodeID NodeID, rec
 }
 
 func (p *ABACPolicy) RemoveRule(id string, action ABACAction, nodeID NodeID) error {
-	if actions, ok := p.Rules[id]; ok {
-		if nodes, ok := actions[action]; ok {
-			delete(nodes, nodeID)
-			if len(nodes) == 0 {
-				delete(actions, action)
-			}
-		}
-		if len(actions) == 0 {
-			delete(p.Rules, id)
+	clientID := ClientID(p.identity.ID())
+
+	// Step 1: Prepare new clock
+	newClock := copyClock(p.Clock)
+
+	maxVersion := 0
+	for _, v := range newClock {
+		if v > maxVersion {
+			maxVersion = v
 		}
 	}
+	version := maxVersion + 1
+	newClock[clientID] = version
 
-	err := p.Sign()
-	if err != nil {
+	// Step 2: Resolve conflict
+	winningClock, winningOwner := resolveConflict(p.Clock, newClock, ClientID(p.OwnerID), clientID, false)
+
+	if clocksEqual(winningClock, newClock) && winningOwner == clientID {
+		// Step 3: Apply update
+		p.Clock = newClock
+
+		if actions, ok := p.Rules[id]; ok {
+			if nodes, ok := actions[action]; ok {
+				delete(nodes, nodeID)
+				if len(nodes) == 0 {
+					delete(actions, action)
+				}
+			}
+			if len(actions) == 0 {
+				delete(p.Rules, id)
+			}
+		}
+
+		// Step 4: Sign
+		err := p.Sign()
+		if err != nil {
+			log.WithFields(log.Fields{
+				"OwnerID": p.OwnerID,
+				"Error":   err,
+			}).Error("Failed to sign ABACPolicy after removing rule")
+			return fmt.Errorf("Failed to sign ABACPolicy after removing rule: %w", err)
+		}
+	} else {
+		// Step 5: Conflict — ignore update
 		log.WithFields(log.Fields{
-			"OwnerID": p.OwnerID,
-			"Error":   err,
-		}).Error("Failed to sign ABACPolicy after allowing rule")
-		return fmt.Errorf("Failed to sign ABACPolicy after allowing rule: %w", err)
+			"OwnerID":      p.OwnerID,
+			"ClientID":     clientID,
+			"WinningOwner": winningOwner,
+			"WinningClock": winningClock,
+			"NewClock":     newClock,
+		}).Debug("ABACPolicy RemoveRule ignored due to conflict resolution")
 	}
 
 	return nil
@@ -137,6 +202,57 @@ func (p *ABACPolicy) IsAllowed(id string, action ABACAction, target NodeID) bool
 		}
 	}
 	return false
+}
+
+func (p *ABACPolicy) Merge(remote *ABACPolicy) error {
+	// Step 1: Resolve policy-level conflict (LWW on full policy)
+	winningClock, winningOwner := resolveConflict(
+		p.Clock,
+		remote.Clock,
+		ClientID(p.OwnerID),
+		ClientID(remote.OwnerID),
+		false, // not append → LWW mode
+	)
+
+	if clocksEqual(winningClock, remote.Clock) && winningOwner == ClientID(remote.OwnerID) {
+		// Remote wins → replace entire ABACPolicy
+		p.Clock = copyClock(remote.Clock)
+		p.Rules = deepCopyRules(remote.Rules)
+		p.OwnerID = remote.OwnerID
+		p.Nounce = remote.Nounce
+		p.Signature = remote.Signature
+
+		log.WithFields(log.Fields{
+			"LocalOwner":  p.OwnerID,
+			"RemoteOwner": remote.OwnerID,
+			"Winning":     "remote",
+		}).Info("ABACPolicy Merge: remote policy wins, replaced local policy")
+	} else {
+		// Local wins → do nothing
+		log.WithFields(log.Fields{
+			"LocalOwner":  p.OwnerID,
+			"RemoteOwner": remote.OwnerID,
+			"Winning":     "local",
+		}).Info("ABACPolicy Merge: local policy wins, no changes applied")
+	}
+
+	return nil
+}
+
+func deepCopyRules(rules map[string]map[ABACAction]map[NodeID]ABACRule) map[string]map[ABACAction]map[NodeID]ABACRule {
+	newRules := make(map[string]map[ABACAction]map[NodeID]ABACRule)
+	for clientID, actions := range rules {
+		newActions := make(map[ABACAction]map[NodeID]ABACRule)
+		for action, nodes := range actions {
+			newNodes := make(map[NodeID]ABACRule)
+			for nodeID, rule := range nodes {
+				newNodes[nodeID] = rule
+			}
+			newActions[action] = newNodes
+		}
+		newRules[clientID] = newActions
+	}
+	return newRules
 }
 
 func (p *ABACPolicy) MarshalJSON() ([]byte, error) {

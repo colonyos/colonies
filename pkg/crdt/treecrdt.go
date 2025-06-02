@@ -693,6 +693,7 @@ func (c *TreeCRDT) Merge(c2 *TreeCRDT) error {
 }
 
 func (c *TreeCRDT) SecureMerge(c2 *TreeCRDT, prvKey string) error {
+	// Step 1: Clone local tree for pre-validation
 	c1Copy, err := c.Clone()
 	if err != nil {
 		log.WithFields(log.Fields{
@@ -701,6 +702,7 @@ func (c *TreeCRDT) SecureMerge(c2 *TreeCRDT, prvKey string) error {
 		return fmt.Errorf("Failed to clone CRDT tree for merge: %w", err)
 	}
 
+	// Step 2: Simulate merge on clone
 	err = c1Copy.merge(c2, true, prvKey)
 	if err != nil {
 		log.WithFields(log.Fields{
@@ -709,6 +711,22 @@ func (c *TreeCRDT) SecureMerge(c2 *TreeCRDT, prvKey string) error {
 		return fmt.Errorf("Failed to merge CRDT trees: %w", err)
 	}
 
+	// Step 3: Verify tree FIRST — before ABACPolicy merge!
+	err = c1Copy.VerifyTree()
+	if err != nil {
+		log.WithFields(log.Fields{
+			"Error": err,
+		}).Error("Failed to verify remote CRDT tree BEFORE ABACPolicy merge")
+		return fmt.Errorf("Failed to verify remote CRDT tree BEFORE ABACPolicy merge: %w", err)
+	}
+
+	// Step 4: Now safe to merge ABACPolicy
+	err = c1Copy.ABACPolicy.Merge(c2.ABACPolicy)
+	if err != nil {
+		return fmt.Errorf("Failed to merge ABACPolicy in clone: %w", err)
+	}
+
+	// Step 5: Verify merged tree + ABAC
 	err = c1Copy.VerifyTree()
 	if err != nil {
 		log.WithFields(log.Fields{
@@ -717,7 +735,25 @@ func (c *TreeCRDT) SecureMerge(c2 *TreeCRDT, prvKey string) error {
 		return fmt.Errorf("Failed to verify remote CRDT tree before merge: %w", err)
 	}
 
-	return c.merge(c2, true, prvKey)
+	// Step 6: Apply merge to live tree
+	err = c.merge(c2, true, prvKey)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"Error": err,
+		}).Error("Failed to apply merge to live CRDT tree")
+		return fmt.Errorf("Failed to apply merge to live CRDT tree: %w", err)
+	}
+
+	// Step 7: Apply ABACPolicy merge to live tree
+	err = c.ABACPolicy.Merge(c2.ABACPolicy)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"Error": err,
+		}).Error("Failed to merge ABACPolicy to live tree")
+		return fmt.Errorf("Failed to merge ABACPolicy to live tree: %w", err)
+	}
+
+	return nil
 }
 
 func (c *TreeCRDT) merge(c2 *TreeCRDT, secure bool, prvKey string) error {

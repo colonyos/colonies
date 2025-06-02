@@ -719,3 +719,77 @@ func TestSecureTreeAdapterSave(t *testing.T) {
 	_, err = mapNode.SetKeyValue("newKey", "newValue", "ff4d4028f7a41edca91c01d17da4c4c3edb18950ac98b465cb918ad5362c5bdc")
 	assert.NotNil(t, err, "SetKeyValue should not return an error when modifying ABAC rules")
 }
+
+type DummyTree struct{}
+
+func (t *DummyTree) isDescendant(root NodeID, target NodeID) bool {
+	// Simple implementation → no hierarchy for this test
+	return false
+}
+
+func TestABACPolicyMerge_LWW(t *testing.T) {
+	// Setup identities
+	identityA, err := crypto.CreateIdendity()
+	assert.NoError(t, err)
+
+	identityB, err := crypto.CreateIdendity()
+	assert.NoError(t, err)
+
+	ownerA := identityA.ID()
+	ownerB := identityB.ID()
+
+	// Setup trees
+	tree := &DummyTree{}
+
+	// Create ABACPolicy A
+	policyA := NewABACPolicy(tree, ownerA, identityA)
+	err = policyA.Allow("client1", ActionModify, "node1", false)
+	assert.NoError(t, err)
+
+	// Simulate more updates → bump clock for A
+	for i := 0; i < 3; i++ {
+		err = policyA.Allow("client1", ActionRead, NodeID("nodeX"), false)
+		assert.NoError(t, err)
+	}
+
+	// Create ABACPolicy B
+	policyB := NewABACPolicy(tree, ownerB, identityB)
+	err = policyB.Allow("client2", ActionModify, "node2", true)
+	assert.NoError(t, err)
+
+	// B will be "newer" → simulate a higher clock
+	for i := 0; i < 5; i++ {
+		err = policyB.Allow("client2", ActionRead, NodeID("nodeY"), true)
+		assert.NoError(t, err)
+	}
+
+	// Sanity: verify signatures
+	_, err = policyA.Verify()
+	assert.NoError(t, err)
+
+	_, err = policyB.Verify()
+	assert.NoError(t, err)
+
+	// Now: Merge B into A
+	err = policyA.Merge(policyB)
+	assert.NoError(t, err)
+
+	// After merge: policyA should now equal policyB
+	assert.Equal(t, policyA.Clock, policyB.Clock)
+	assert.Equal(t, policyA.OwnerID, policyB.OwnerID)
+	assert.Equal(t, policyA.Rules, policyB.Rules)
+
+	// Verify the merged policy signature
+	_, err = policyA.Verify()
+	assert.NoError(t, err)
+
+	// Check that an allowed rule from B is now present
+	allowed := policyA.IsAllowed("client2", ActionModify, "node2")
+	assert.True(t, allowed, "Expected client2 to be allowed after merge")
+
+	// Check that old client1 rule may have been replaced
+	allowedClient1 := policyA.IsAllowed("client1", ActionModify, "node1")
+	// Depending on clock dominance, this may be true or false:
+	// In strict LWW → B wins → client1's rules gone
+	assert.False(t, allowedClient1, "Expected client1 to lose after merge")
+}
