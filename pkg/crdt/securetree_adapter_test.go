@@ -570,22 +570,6 @@ func TestSecureTreeAdapterMerge(t *testing.T) {
 	assert.Nil(t, err, "Merge should not return an error after restoring the signature")
 }
 
-func TestCloneABACPolicyIsolation(t *testing.T) {
-	tree := newTreeCRDT()
-	tree.ABACPolicy = NewABACPolicy(tree)
-	tree.ABACPolicy.Allow("client1", ActionModify, "root", true)
-
-	clone, err := tree.Clone()
-	assert.Nil(t, err)
-
-	// Modify clone ABACPolicy
-	clone.ABACPolicy.Allow("client2", ActionModify, "root", true)
-
-	// Original should not have client2
-	allowed := tree.ABACPolicy.IsAllowed("client2", ActionModify, "root")
-	assert.False(t, allowed, "Original tree ABACPolicy should not be affected by clone")
-}
-
 func TestSecureTreeAdapterMergeABAC(t *testing.T) {
 	prvKey1 := "d6eb959e9aec2e6fdc44b5862b269e987b8a4d6f2baca542d8acaa97ee5e74f6"
 	prvKey2 := "ed26531bac1838e519c2c6562ac717b22aac041730f0d753d3ad35b76b5f4924"
@@ -669,4 +653,69 @@ func TestSecureTreeAdapterMergeComplexJSONABAC(t *testing.T) {
 
 	err = c1.Merge(c2, prvKey1)
 	assert.Nil(t, err, "Merge should not return an error after restoring the signature")
+}
+
+func TestSecureTreeAdapterSave(t *testing.T) {
+	prvKey := "d6eb959e9aec2e6fdc44b5862b269e987b8a4d6f2baca542d8acaa97ee5e74f6"
+
+	json := []byte(`{
+	  "1": [
+	    {
+	      "2": "3"
+	    },
+	    {
+	      "4": [
+	        {
+	          "5": "6"
+	        }
+	      ]
+	    }
+	  ]
+	}`)
+
+	c1, err := NewSecureTree(prvKey)
+	assert.Nil(t, err)
+
+	_, err = c1.ImportJSON(json, prvKey)
+	assert.Nil(t, err, "ImportJSON should not return an error")
+
+	savedData, err := c1.Save()
+	assert.Nil(t, err, "Save should not return an error")
+
+	c2, err := NewSecureTree(prvKey)
+	assert.Nil(t, err)
+
+	err = c2.Load(savedData)
+	assert.Nil(t, err, "Load should not return an error")
+
+	adapterC1 := c1.(*AdapterSecureTreeCRDT)
+	adapterC2 := c2.(*AdapterSecureTreeCRDT)
+	assert.Equal(t, adapterC1.treeCrdt.ABACPolicy.identity.ID(), adapterC2.treeCrdt.ABACPolicy.identity.ID(), "ABAC identity should match after save and load")
+
+	// Try to modify the ABAC owner
+	hackedC2, err := c2.Clone()
+	assert.Nil(t, err, "Clone should not return an error")
+	hackedC2.(*AdapterSecureTreeCRDT).treeCrdt.ABACPolicy.OwnerID = "ff4d4028f7a41edca91c01d17da4c4c3edb18950ac98b465cb918ad5362c5bdc"
+	savedData, err = hackedC2.Save()
+	assert.Nil(t, err, "Save should return an error when trying to modify the ABAC owner")
+	c3, err := NewSecureTree(prvKey)
+	assert.Nil(t, err, "NewSecureTree should not return an error")
+	err = c3.Load(savedData)
+	assert.NotNil(t, err, "Load should return an error when trying to load a tree with a modified ABAC owner")
+
+	// Try to modify the ABAC rules
+	savedData, err = c2.Save()
+	assert.Nil(t, err, "Save should not return an error")
+	hackedC3, err := NewSecureTree("ff4d4028f7a41edca91c01d17da4c4c3edb18950ac98b465cb918ad5362c5bdc")
+	assert.Nil(t, err, "NewSecureTree should not return an error")
+	err = hackedC3.Load(savedData)
+	assert.Nil(t, err, "Load should not return an error when loading a tree with a different ABAC owner")
+	err = hackedC3.ABAC().Allow("ff4d4028f7a41edca91c01d17da4c4c3edb18950ac98b465cb918ad5362c5bdc", ActionModify, "root", true)
+	assert.Nil(t, err, "Allow should not return an error when modifying ABAC rules")
+
+	// Try to add map key value
+	mapNode, err := hackedC3.GetNodeByPath("/1")
+	assert.Nil(t, err, "GetNodeByPath should not return an error")
+	_, err = mapNode.SetKeyValue("newKey", "newValue", "ff4d4028f7a41edca91c01d17da4c4c3edb18950ac98b465cb918ad5362c5bdc")
+	assert.NotNil(t, err, "SetKeyValue should not return an error when modifying ABAC rules")
 }

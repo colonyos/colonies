@@ -16,7 +16,7 @@ func performSecureAction(
 	prvKey string,
 	action ABACAction,
 	target NodeID,
-	policy *ABACPolicy,
+	abac *ABACPolicy,
 	actionFn func(ClientID) (*NodeCRDT, error),
 ) error {
 	identity, err := crypto.CreateIdendityFromString(prvKey)
@@ -27,7 +27,7 @@ func performSecureAction(
 	id := identity.ID()
 
 	if accessControl {
-		if policy != nil && !policy.IsAllowed(id, action, target) {
+		if abac != nil && !abac.IsAllowed(id, action, target) {
 			log.WithFields(log.Fields{
 				"ID":     id,
 				"Action": action,
@@ -78,7 +78,13 @@ func (n *AdapterSecureNodeCRDT) SetLiteral(value interface{}, prvKey string) err
 	if n.nodeCrdt.ParentID == "" {
 		accessControl = false // If the node is not attached to a tree, we skip ABAC checks
 	}
-	return performSecureAction(accessControl, prvKey, ActionModify, n.nodeCrdt.ID, n.nodeCrdt.tree.ABACPolicy, secureAction)
+	return performSecureAction(
+		accessControl,
+		prvKey,
+		ActionModify,
+		n.nodeCrdt.ID,
+		n.nodeCrdt.tree.ABACPolicy,
+		secureAction)
 }
 
 func (n *AdapterSecureNodeCRDT) GetLiteral() (interface{}, error) {
@@ -97,7 +103,13 @@ func (n *AdapterSecureNodeCRDT) CreateMapNode(prvKey string) (SecureNode, error)
 		return newNode, nil
 	}
 
-	err := performSecureAction(true, prvKey, ActionModify, n.nodeCrdt.ID, n.nodeCrdt.tree.ABACPolicy, secureAction)
+	err := performSecureAction(
+		true,
+		prvKey,
+		ActionModify,
+		n.nodeCrdt.ID,
+		n.nodeCrdt.tree.ABACPolicy,
+		secureAction)
 	if err != nil {
 		return nil, err
 	}
@@ -121,7 +133,13 @@ func (n *AdapterSecureNodeCRDT) SetKeyValue(key string, value interface{}, prvKe
 		return newNode, nil
 	}
 
-	err := performSecureAction(true, prvKey, ActionModify, n.nodeCrdt.ID, n.nodeCrdt.tree.ABACPolicy, secureAction)
+	err := performSecureAction(
+		true,
+		prvKey,
+		ActionModify,
+		n.nodeCrdt.ID,
+		n.nodeCrdt.tree.ABACPolicy,
+		secureAction)
 	if err != nil {
 		return "", err
 	}
@@ -160,15 +178,15 @@ type AdapterSecureTreeCRDT struct {
 }
 
 func NewSecureTree(prvKey string) (SecureTree, error) {
-	idendity, err := crypto.CreateIdendityFromString(prvKey)
+	identity, err := crypto.CreateIdendityFromString(prvKey)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create identity from string: %w", err)
 	}
 
 	c := newTreeCRDT()
-	c.OwnerID = idendity.ID()
-	c.ABACPolicy = NewABACPolicy(c)
-	c.ABACPolicy.Allow(c.OwnerID, "*", "root", true) // Allow the owner to have full access to whole tree
+	ownerID := identity.ID()
+	c.ABACPolicy = NewABACPolicy(c, ownerID, identity)
+	c.ABACPolicy.Allow(ownerID, "*", "root", true) // Allow the owner to have full access to whole tree
 	c.Secure = true
 
 	return &AdapterSecureTreeCRDT{
@@ -466,6 +484,12 @@ func (c *AdapterSecureTreeCRDT) Clone() (SecureTree, error) {
 	if newTree == nil {
 		return nil, fmt.Errorf("failed to clone tree")
 	}
+	newTree.ABACPolicy, err = newTree.ABACPolicy.Clone()
+	if err != nil {
+		return nil, fmt.Errorf("failed to clone ABAC policy: %w", err)
+	}
+	newTree.ABACPolicy.tree = newTree
+	newTree.ABACPolicy.identity = c.treeCrdt.ABACPolicy.identity
 	return &AdapterSecureTreeCRDT{treeCrdt: newTree}, nil
 }
 
@@ -474,7 +498,27 @@ func (c *AdapterSecureTreeCRDT) ExportJSON() ([]byte, error) {
 }
 
 func (c *AdapterSecureTreeCRDT) Load(data []byte) error {
-	return c.treeCrdt.Load(data)
+	identity := c.treeCrdt.ABACPolicy.identity
+	err := c.treeCrdt.Load(data)
+	if err != nil {
+		return fmt.Errorf("failed to load tree data: %w", err)
+	}
+	c.treeCrdt.ABACPolicy.tree = c.treeCrdt
+	c.treeCrdt.ABACPolicy.identity = identity
+	recoveredID, err := c.treeCrdt.ABACPolicy.Verify()
+	if err != nil {
+		log.WithFields(log.Fields{
+			"Identity":    identity.ID(),
+			"Action":      "Load",
+			"Owner":       c.treeCrdt.ABACPolicy.OwnerID,
+			"RecoveredID": recoveredID,
+			"Error":       err,
+		}).Error("Failed to verify ABAC policy after loading, recovered ID does not match owner ID")
+
+		return fmt.Errorf("failed to verify ABAC policy after loading: %w", err)
+	}
+
+	return nil
 }
 
 func (c *AdapterSecureTreeCRDT) Save() ([]byte, error) {

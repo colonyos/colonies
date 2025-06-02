@@ -48,12 +48,8 @@ type EdgeCRDT struct {
 type TreeCRDT struct {
 	Root       *NodeCRDT            `json:"root"`
 	Nodes      map[NodeID]*NodeCRDT `json:"nodes"`
-	OwnerID    string               `json:"ownerID"`
 	ABACPolicy *ABACPolicy          `json:"abac"`
 	Secure     bool                 `json:"secure"`
-	Clock      VectorClock          `json:"clock"`
-	Nounce     string               `json:"nounce"`
-	Signature  string               `json:"signature"`
 }
 
 func newTreeCRDT() *TreeCRDT {
@@ -1228,16 +1224,13 @@ func (c *TreeCRDT) VerifyTree() error {
 		}
 	}
 
-	// Optionally: verify ABACPolicy hash
-	policyHash, err := c.ABACPolicy.Hash()
+	_, err := c.ABACPolicy.Verify()
 	if err != nil {
+		log.WithFields(log.Fields{
+			"Error": err,
+		}).Error("Failed to verify ABAC policy")
 		return fmt.Errorf("VerifyTree: failed to compute ABAC policy hash: %w", err)
 	}
-
-	log.WithFields(log.Fields{
-		"TreeOwnerID":    c.OwnerID,
-		"ABACPolicyHash": policyHash,
-	}).Info("VerifyTree: success")
 
 	return nil
 }

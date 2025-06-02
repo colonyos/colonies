@@ -287,11 +287,7 @@ func (c *TreeCRDT) Save() ([]byte, error) {
 	}
 
 	exportable["root"] = string(c.Root.ID)
-	exportable["ownerID"] = c.OwnerID
 	exportable["secure"] = c.Secure
-	exportable["clock"] = c.Clock
-	exportable["signature"] = c.Signature
-	exportable["nounce"] = c.Nounce
 	exportable["nodes"] = nodes
 
 	if c.ABACPolicy != nil {
@@ -373,29 +369,11 @@ func (c *TreeCRDT) Load(data []byte) error {
 		return errors.New("missing root node ID")
 	}
 
-	if ownerID, ok := raw["ownerID"].(string); ok {
-		c.OwnerID = ownerID
-	}
 	if secure, ok := raw["secure"].(bool); ok {
 		c.Secure = secure
 	}
-	if sig, ok := raw["signature"].(string); ok {
-		c.Signature = sig
-	}
-	if nounce, ok := raw["nounce"].(string); ok {
-		c.Nounce = nounce
-	}
-	if clockRaw, ok := raw["clock"].(map[string]interface{}); ok {
-		c.Clock = make(VectorClock)
-		for k, v := range clockRaw {
-			if floatVal, ok := v.(float64); ok {
-				c.Clock[ClientID(k)] = int(floatVal)
-			}
-		}
-	}
 
 	if abacObj, ok := raw["abac"].(map[string]interface{}); ok {
-		// Re-marshal it to JSON first:
 		abacBytes, err := json.Marshal(abacObj)
 		if err != nil {
 			return fmt.Errorf("failed to re-marshal ABAC policy: %w", err)

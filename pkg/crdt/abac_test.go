@@ -1,6 +1,11 @@
 package crdt
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/colonyos/colonies/internal/crypto"
+	"github.com/stretchr/testify/assert"
+)
 
 type mockTree struct{}
 
@@ -10,7 +15,12 @@ func (m *mockTree) isDescendant(root NodeID, target NodeID) bool {
 
 func TestABACPolicyWithModifyOnly(t *testing.T) {
 	tree := &mockTree{}
-	policy := NewABACPolicy(tree)
+
+	prvKey := "d6eb959e9aec2e6fdc44b5862b269e987b8a4d6f2baca542d8acaa97ee5e74f6"
+	identity, err := crypto.CreateIdendityFromString(prvKey)
+	assert.NoError(t, err)
+
+	policy := NewABACPolicy(tree, identity.ID(), identity)
 
 	clientA := "alice"
 	clientB := "bob"
@@ -52,7 +62,12 @@ func TestABACPolicyWithModifyOnly(t *testing.T) {
 
 func TestABACPolicyUpdateAndRemove(t *testing.T) {
 	tree := &mockTree{}
-	policy := NewABACPolicy(tree)
+
+	prvKey := "d6eb959e9aec2e6fdc44b5862b269e987b8a4d6f2baca542d8acaa97ee5e74f6"
+	identity, err := crypto.CreateIdendityFromString(prvKey)
+	assert.NoError(t, err)
+
+	policy := NewABACPolicy(tree, identity.ID(), identity)
 	client := "carol"
 	node := NodeID("node-test")
 
@@ -62,20 +77,23 @@ func TestABACPolicyUpdateAndRemove(t *testing.T) {
 	}
 
 	// Add and verify
-	policy.Allow(client, ActionModify, node, false)
+	err = policy.Allow(client, ActionModify, node, false)
+	assert.NoError(t, err)
 	if !policy.IsAllowed(client, ActionModify, node) {
 		t.Errorf("Expected allowed after rule is added")
 	}
 
 	// Update to recursive
-	policy.UpdateRule(client, ActionModify, node, true)
+	err = policy.UpdateRule(client, ActionModify, node, true)
+	assert.NoError(t, err)
 	rule := policy.Rules[client][ActionModify][node]
 	if !rule.Recursive {
 		t.Errorf("Expected rule to be recursive after update")
 	}
 
 	// Remove and verify
-	policy.RemoveRule(client, ActionModify, node)
+	err = policy.RemoveRule(client, ActionModify, node)
+	assert.NoError(t, err)
 	if policy.IsAllowed(client, ActionModify, node) {
 		t.Errorf("Expected not allowed after rule is removed")
 	}
