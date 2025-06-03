@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>CRDT Tree Visualizer</title>
+  <title>CRDT Tree Visualizer + ABAC Viewer</title>
   <style>
     html, body {
       margin: 0;
@@ -76,11 +76,11 @@
 
     .modal-content {
       background-color: #fff;
-      margin: 10% auto;
+      margin: 5% auto;
       padding: 20px;
       border: 1px solid #888;
       width: 80%;
-      max-height: 70%;
+      max-height: 80%;
       overflow-y: auto;
       border-radius: 8px;
       box-shadow: 0 5px 15px rgba(0,0,0,0.3);
@@ -98,6 +98,38 @@
     .close:focus {
       color: black;
       text-decoration: none;
+    }
+
+    /* ABAC Table */
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      margin-top: 10px;
+    }
+
+    th, td {
+      border: 1px solid #ccc;
+      padding: 8px;
+      text-align: left;
+    }
+
+    th {
+      background-color: #f2f2f2;
+    }
+
+    /* ABAC button */
+    #show-abac-btn {
+      margin: 10px;
+      padding: 8px 12px;
+      background-color: #1f77b4;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    #show-abac-btn:hover {
+      background-color: #155a8a;
     }
   </style>
 </head>
@@ -133,37 +165,98 @@
         Map Node
       </span>
     </div>
+
+    <!-- ABAC button -->
+    <button id="show-abac-btn">Show ABAC Rules</button>
+
     <svg id="tree"></svg>
   </div>
 </div>
 
-<!-- Modal -->
+<!-- Node Modal -->
 <div id="nodeModal" class="modal">
   <div class="modal-content">
-    <span class="close">&times;</span>
+    <span class="close" id="closeNodeModal">&times;</span>
     <pre id="modalContent"></pre>
+  </div>
+</div>
+
+<!-- ABAC Modal -->
+<div id="abacModal" class="modal">
+  <div class="modal-content">
+    <span class="close" id="closeAbacModal">&times;</span>
+    <h2>ABAC Rules</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Subject</th>
+          <th>Action</th>
+          <th>Resource</th>
+          <th>Condition</th>
+        </tr>
+      </thead>
+      <tbody id="abacTableBody">
+      </tbody>
+    </table>
   </div>
 </div>
 
 <script src="https://d3js.org/d3.v7.min.js"></script>
 <script>
+  let currentCRDT = null;
+
   const dropArea = document.getElementById("drop-area");
   const svg = d3.select("#tree");
 
-  const modal = document.getElementById("nodeModal");
+  const nodeModal = document.getElementById("nodeModal");
   const modalContent = document.getElementById("modalContent");
-  const closeModal = document.getElementsByClassName("close")[0];
+  const closeNodeModal = document.getElementById("closeNodeModal");
 
-  closeModal.onclick = function() {
-    modal.style.display = "none";
+  const abacModal = document.getElementById("abacModal");
+  const abacTableBody = document.getElementById("abacTableBody");
+  const closeAbacModal = document.getElementById("closeAbacModal");
+
+  const showAbacButton = document.getElementById("show-abac-btn");
+
+  closeNodeModal.onclick = () => nodeModal.style.display = "none";
+  closeAbacModal.onclick = () => abacModal.style.display = "none";
+
+  window.onclick = event => {
+    if (event.target === nodeModal) nodeModal.style.display = "none";
+    if (event.target === abacModal) abacModal.style.display = "none";
   };
 
-  window.onclick = function(event) {
-    if (event.target == modal) {
-      modal.style.display = "none";
+  // Show ABAC button logic
+  showAbacButton.onclick = function() {
+    if (!currentCRDT || !currentCRDT.abac || !currentCRDT.abac.rules) {
+      alert("No ABAC policy found in the current CRDT.");
+      return;
     }
+
+    // Clear table
+    abacTableBody.innerHTML = "";
+
+    const rules = currentCRDT.abac.rules;
+
+    for (const subject in rules) {
+      const actions = rules[subject];
+      for (const action in actions) {
+        const resources = actions[action];
+        for (const resource in resources) {
+          const condition = JSON.stringify(resources[resource]);
+          const row = abacTableBody.insertRow();
+          row.insertCell(0).innerText = subject;
+          row.insertCell(1).innerText = action;
+          row.insertCell(2).innerText = resource;
+          row.insertCell(3).innerText = condition;
+        }
+      }
+    }
+
+    abacModal.style.display = "block";
   };
 
+  // Build the tree hierarchy
   function buildTree(nodesMap, rootId) {
     const nodeMap = {}, childrenMap = {};
     for (const [id, node] of Object.entries(nodesMap)) {
@@ -192,6 +285,7 @@
     return toHierarchy(root);
   }
 
+  // Visualize CRDT
   function visualizeCRDT(crdt) {
     svg.selectAll("*").remove();
     const rootId = crdt.root;
@@ -221,18 +315,17 @@
       .data(root.links())
       .enter();
 
-	  links.append("path")
-        .attr("fill", "none")
-        .attr("stroke", "#999")
-        .attr("stroke-width", 1.5)
-        .attr("d", d => {
-           return `
-           M${d.source.x},${d.source.y}
-           C${d.source.x},${(d.source.y + d.target.y) / 2}
-           ${d.target.x},${(d.source.y + d.target.y) / 2}
-           ${d.target.x},${d.target.y}
-        `;
-     });
+    links.append("path")
+      .attr("fill", "none")
+      .attr("stroke", "#999")
+      .attr("stroke-width", 1.5)
+      .attr("d", d => `
+        M${d.source.x},${d.source.y}
+        C${d.source.x},${(d.source.y + d.target.y) / 2}
+        ${d.target.x},${(d.source.y + d.target.y) / 2}
+        ${d.target.x},${d.target.y}
+      `);
+
     links.append("text")
       .attr("x", d => (d.source.x + d.target.x) / 2)
       .attr("y", d => (d.source.y + d.target.y) / 2 - 5)
@@ -261,7 +354,7 @@
 
         // Show modal
         modalContent.textContent = JSON.stringify(nodeData, null, 2);
-        modal.style.display = "block";
+        nodeModal.style.display = "block";
       });
 
     node.each(function(d) {
@@ -314,6 +407,7 @@
     reader.onload = event => {
       try {
         const crdt = JSON.parse(event.target.result);
+        currentCRDT = crdt; // Save globally
         visualizeCRDT(crdt);
       } catch (err) {
         alert("Invalid JSON format");
