@@ -1,0 +1,76 @@
+{
+  "productId": "ABC-12345",
+  "productName": "Smart Thermostat X100",
+  "manufacturer": {
+    "name": "ACME Smart Devices",
+    "address": "123 Industry Park, Tech City, EU",
+    "country": "DE",
+    "contact": "support@acmesmart.com"
+  },
+  "productionDate": "2024-05-01",
+  "serialNumber": "SN-9876543210",
+  "batchNumber": "BATCH-20240501-01",
+  "materials": [
+    "Aluminum",
+    "Polycarbonate",
+    "Lithium-Ion Battery"
+  ],
+  "carbonFootprint": {
+    "value": "12.5",
+    "unit": "kg CO2e"
+  },
+  "repairabilityScore": 7,
+  "recyclabilityScore": 85,
+  "certifications": [
+    "CE",
+    "RoHS",
+    "REACH",
+    "Energy Star"
+  ],
+  "warrantyPeriod": "24 months",
+  "ownershipHistory": [
+    {
+      "owner": "ACME Smart Devices (Factory)",
+      "date": "2024-05-01",
+      "location": "Tech City, DE"
+    },
+    {
+      "owner": "Global Distributors Ltd.",
+      "date": "2024-05-10",
+      "location": "Rotterdam Port, NL"
+    },
+    {
+      "owner": "Best Electronics Retailer",
+      "date": "2024-06-01",
+      "location": "Berlin, DE"
+    },
+    {
+      "owner": "End Consumer",
+      "date": "2024-06-05",
+      "location": "Munich, DE"
+    }
+  ],
+  "repairHistory": [
+    {
+      "repairDate": "2025-02-15",
+      "repairer": "SmartFix GmbH",
+      "componentsReplaced": [
+        "Battery Pack"
+      ],
+      "certification": "Authorized Service"
+    }
+  ],
+  "endOfLifeInstructions": {
+    "disassemblyInstructions": "https://acmesmart.com/dpp/x100/disassembly",
+    "recyclingPartners": [
+      "GreenCycle EU",
+      "UrbanRecyclers GmbH"
+    ]
+  },
+  "digitalLinks": {
+    "manual": "https://acmesmart.com/manuals/x100.pdf",
+    "softwareUpdates": "https://acmesmart.com/updates/x100",
+    "dppVersion": "1.0",
+    "dppLastUpdated": "2025-03-01"
+  }
+}

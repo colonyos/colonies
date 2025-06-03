@@ -1,0 +1,1535 @@
+{
+  "abac": {
+    "rules": {
+      "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696": {
+        "*": {
+          "root": {
+            "recursive": true
+          }
+        }
+      }
+    },
+    "ownerID": "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696",
+    "clock": {
+      "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696": 1
+    },
+    "nounce": "3dd0c1d6824c96bd31ed71b80351df6d01dab14abf9ee232209e613543a3c26a",
+    "signature": "241f40bfd9c013db8f16d53bd1fd6fc8cde5624d82719bada7d6e0b44df22d7c2b89ae1f3d9388ea9240edc6b954614cb680fff4992acdc96d3e5e83d1f58bdd01"
+  },
+  "nodes": {
+    "arr-2edee8e464a6236b66bd4e1b6025ce5a62ead5843e5e5d5ce48c4891c1119bb4": {
+      "clock": {
+        "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696": 2
+      },
+      "deleted": false,
+      "edges": [
+        {
+          "from": "arr-2edee8e464a6236b66bd4e1b6025ce5a62ead5843e5e5d5ce48c4891c1119bb4",
+          "label": "",
+          "lseqposition": [
+            8
+          ],
+          "to": "map-338e717fa9072462568eb44df4b71b59ce90ab764cbfd98d60acf266a65b8099"
+        }
+      ],
+      "id": "arr-2edee8e464a6236b66bd4e1b6025ce5a62ead5843e5e5d5ce48c4891c1119bb4",
+      "isarray": true,
+      "isliteral": false,
+      "ismap": false,
+      "ispromoted": false,
+      "isroot": false,
+      "litteralValue": null,
+      "nounce": "cccc191f2920dd0eba02334837a32b2feccb5450c723d3d6894ea48859f15c17",
+      "owner": "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696",
+      "parentid": "map-84cfa7245a3b524d2e0dde32fcbe74c9e93078577b5788afe9c90b566696c021",
+      "signature": "0e078af736978ffd384fabfdb9e13e8d122b5f3de6a8e76c4db20276a7e289a87ec2ce488ccd05e4aa3d0731a9c046402593079e07e2911c6bde343b6dd35eda01"
+    },
+    "arr-5be418791a29ecdb20f0964adb66a4e22e6d4d4f3ee48c25876db1840d384e24": {
+      "clock": {
+        "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696": 5
+      },
+      "deleted": false,
+      "edges": [
+        {
+          "from": "arr-5be418791a29ecdb20f0964adb66a4e22e6d4d4f3ee48c25876db1840d384e24",
+          "label": "",
+          "lseqposition": [
+            15
+          ],
+          "to": "lit-a39c94d2832f71d9796647d69be4519b1a97bff6d3c6087248c3d6ca1eb50827"
+        },
+        {
+          "from": "arr-5be418791a29ecdb20f0964adb66a4e22e6d4d4f3ee48c25876db1840d384e24",
+          "label": "",
+          "lseqposition": [
+            15,
+            6
+          ],
+          "to": "lit-3c7c87299664c172d2d1897defed8f1c47626d7b145fcc14ba77d406a64b7ed1"
+        },
+        {
+          "from": "arr-5be418791a29ecdb20f0964adb66a4e22e6d4d4f3ee48c25876db1840d384e24",
+          "label": "",
+          "lseqposition": [
+            15,
+            9
+          ],
+          "to": "lit-2205d92b1fab82e185379b80d171a95ad734304a8a3f90406e0a6bddc70f5ed5"
+        },
+        {
+          "from": "arr-5be418791a29ecdb20f0964adb66a4e22e6d4d4f3ee48c25876db1840d384e24",
+          "label": "",
+          "lseqposition": [
+            15,
+            10
+          ],
+          "to": "lit-6391543524afca20160476bd10235afc485c5cf4e103d6c8ff9cc59eada5f54e"
+        }
+      ],
+      "id": "arr-5be418791a29ecdb20f0964adb66a4e22e6d4d4f3ee48c25876db1840d384e24",
+      "isarray": true,
+      "isliteral": false,
+      "ismap": false,
+      "ispromoted": false,
+      "isroot": false,
+      "litteralValue": null,
+      "nounce": "793670742eb89c4ffa796f95236032afe43e9d2a03a3e72901e26d4eae443c13",
+      "owner": "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696",
+      "parentid": "map-84cfa7245a3b524d2e0dde32fcbe74c9e93078577b5788afe9c90b566696c021",
+      "signature": "17453c6f4db3e5ed6a82be88289b37cec7d8b4b5be3da22c676529379d9534de19ad897df5e032b2d78fba610e58e79bba46e457cebeb3085ecbca9c5d70e56400"
+    },
+    "arr-621db33f39ca05598af084cb717d4f2ea4e81d523faab66a3554835ff6c3fd57": {
+      "clock": {
+        "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696": 4
+      },
+      "deleted": false,
+      "edges": [
+        {
+          "from": "arr-621db33f39ca05598af084cb717d4f2ea4e81d523faab66a3554835ff6c3fd57",
+          "label": "",
+          "lseqposition": [
+            14
+          ],
+          "to": "lit-1d9b6b265d0ff7d25850d3daad6b97abb231ab2e6d73dcec54ce82e06a46474f"
+        },
+        {
+          "from": "arr-621db33f39ca05598af084cb717d4f2ea4e81d523faab66a3554835ff6c3fd57",
+          "label": "",
+          "lseqposition": [
+            15
+          ],
+          "to": "lit-3172d86e0597a1b85a83a4dbda9873bfee43926b1af44d97f967f4d7b88c9293"
+        },
+        {
+          "from": "arr-621db33f39ca05598af084cb717d4f2ea4e81d523faab66a3554835ff6c3fd57",
+          "label": "",
+          "lseqposition": [
+            15,
+            2
+          ],
+          "to": "lit-3259e27ad87a4fb3fd7c7395d6b15a6df37afbaef33953af1502e04af209a62c"
+        }
+      ],
+      "id": "arr-621db33f39ca05598af084cb717d4f2ea4e81d523faab66a3554835ff6c3fd57",
+      "isarray": true,
+      "isliteral": false,
+      "ismap": false,
+      "ispromoted": false,
+      "isroot": false,
+      "litteralValue": null,
+      "nounce": "ed696b79a4636f22723acf84f682d6e3a8e5d74cd1059015291a7e2fe0db2af7",
+      "owner": "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696",
+      "parentid": "map-84cfa7245a3b524d2e0dde32fcbe74c9e93078577b5788afe9c90b566696c021",
+      "signature": "4efa9f9fb89b1065ef4c6963dcc09e72807b2fa8a31437f9a76227d53c9468c52a66c0dae191e07669e90171753fdce4482a500ff81a3bae9a65201ae100997201"
+    },
+    "arr-e1c9d005befa84ff17c0f3c63af541b989a0c54c87cf538c26c6fa910e496241": {
+      "clock": {
+        "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696": 2
+      },
+      "deleted": false,
+      "edges": [
+        {
+          "from": "arr-e1c9d005befa84ff17c0f3c63af541b989a0c54c87cf538c26c6fa910e496241",
+          "label": "",
+          "lseqposition": [
+            14
+          ],
+          "to": "lit-b28d5a78dc9d03e1b8090edf16a768f2191c50df002a2229f4752e90839b44f0"
+        }
+      ],
+      "id": "arr-e1c9d005befa84ff17c0f3c63af541b989a0c54c87cf538c26c6fa910e496241",
+      "isarray": true,
+      "isliteral": false,
+      "ismap": false,
+      "ispromoted": false,
+      "isroot": false,
+      "litteralValue": null,
+      "nounce": "f41c88b46fe8ec843f8f01a2d1e8f66260deca360b0cae66f519a0a3d2a6a5ac",
+      "owner": "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696",
+      "parentid": "map-338e717fa9072462568eb44df4b71b59ce90ab764cbfd98d60acf266a65b8099",
+      "signature": "4c3547cd0875bd396c439794b3893721749b9d009738da4f781b0d98b58644c657f54b0593f4374ef2842721194f663e0cfe41b7049644cc76c9267ae5ca7f5b00"
+    },
+    "arr-f85bbfd0c8a85045bc43041f29a9f844718c78e24cdc66ee0f4d1333dff1b9b2": {
+      "clock": {
+        "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696": 3
+      },
+      "deleted": false,
+      "edges": [
+        {
+          "from": "arr-f85bbfd0c8a85045bc43041f29a9f844718c78e24cdc66ee0f4d1333dff1b9b2",
+          "label": "",
+          "lseqposition": [
+            2
+          ],
+          "to": "lit-021364f7686ea61f62b2148127acd9ed3bb6d588f824f8041c651c72d92f4dfc"
+        },
+        {
+          "from": "arr-f85bbfd0c8a85045bc43041f29a9f844718c78e24cdc66ee0f4d1333dff1b9b2",
+          "label": "",
+          "lseqposition": [
+            8
+          ],
+          "to": "lit-a48b9f952e59ea450cb856846f23ea9c16f3bbfb1649327327deda3f439f9489"
+        }
+      ],
+      "id": "arr-f85bbfd0c8a85045bc43041f29a9f844718c78e24cdc66ee0f4d1333dff1b9b2",
+      "isarray": true,
+      "isliteral": false,
+      "ismap": false,
+      "ispromoted": false,
+      "isroot": false,
+      "litteralValue": null,
+      "nounce": "37a6b2e20fb5b6ec9d1336a4e52f05c73718d0a9643383fa3eb67ffcfac487f4",
+      "owner": "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696",
+      "parentid": "map-2b8e85168a57c4b722c4ef51ef53cb1734af408d992c8709e4af85bf0e4aa8d6",
+      "signature": "a0c1fb6d0c3f1fe0e43cfafcdec582f08f03a4eb51a6e8d139b7b4cdd004d37134b1aa0e4f958902c54716e32814c591ea32928d9bc5765976ffe5904ca3a95301"
+    },
+    "arr-ffbf34f773e6b64917260c2e580d8486cb861b36790f27b9917be5a6b83afd20": {
+      "clock": {
+        "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696": 5
+      },
+      "deleted": false,
+      "edges": [
+        {
+          "from": "arr-ffbf34f773e6b64917260c2e580d8486cb861b36790f27b9917be5a6b83afd20",
+          "label": "",
+          "lseqposition": [
+            15
+          ],
+          "to": "map-3d191571962be5680ec564e0fce09c1464206be4ce3ef6b560cdac4b5ad10d90"
+        },
+        {
+          "from": "arr-ffbf34f773e6b64917260c2e580d8486cb861b36790f27b9917be5a6b83afd20",
+          "label": "",
+          "lseqposition": [
+            15,
+            2
+          ],
+          "to": "map-fd75859cf7aaf1bbdae1c5e93559bebbea2df943ceee6573c102872cfa7cf900"
+        },
+        {
+          "from": "arr-ffbf34f773e6b64917260c2e580d8486cb861b36790f27b9917be5a6b83afd20",
+          "label": "",
+          "lseqposition": [
+            15,
+            4
+          ],
+          "to": "map-20dcb194c85f10eb658bdb495e3b6f5b0b73b8c99d2328d6dee89d0aa03f8192"
+        },
+        {
+          "from": "arr-ffbf34f773e6b64917260c2e580d8486cb861b36790f27b9917be5a6b83afd20",
+          "label": "",
+          "lseqposition": [
+            15,
+            12
+          ],
+          "to": "map-ee632ece3e9c6aeae04e38062041838399408b86d1f931aa6f32da4eeaf1729b"
+        }
+      ],
+      "id": "arr-ffbf34f773e6b64917260c2e580d8486cb861b36790f27b9917be5a6b83afd20",
+      "isarray": true,
+      "isliteral": false,
+      "ismap": false,
+      "ispromoted": false,
+      "isroot": false,
+      "litteralValue": null,
+      "nounce": "b3d8254872fd84c18ada747d5ab46486af5456ba9af9665b1fd93e16088e3837",
+      "owner": "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696",
+      "parentid": "map-84cfa7245a3b524d2e0dde32fcbe74c9e93078577b5788afe9c90b566696c021",
+      "signature": "65ed0669f4642be16cb021d50c752874523b4faa943821d5e654bd3100c82648643dd4b0ea5751c6440f51f2093ceaec49e2c5c5e33220402805bf13807d8e5101"
+    },
+    "lit-021364f7686ea61f62b2148127acd9ed3bb6d588f824f8041c651c72d92f4dfc": {
+      "clock": {
+        "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696": 1
+      },
+      "deleted": false,
+      "edges": [],
+      "id": "lit-021364f7686ea61f62b2148127acd9ed3bb6d588f824f8041c651c72d92f4dfc",
+      "isarray": false,
+      "isliteral": true,
+      "ismap": false,
+      "ispromoted": false,
+      "isroot": false,
+      "litteralValue": "GreenCycle EU",
+      "nounce": "1b44c39a5e19b9126b0ffff65b725f8490a46718d767857264eaf97ce49832e6",
+      "owner": "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696",
+      "parentid": "arr-f85bbfd0c8a85045bc43041f29a9f844718c78e24cdc66ee0f4d1333dff1b9b2",
+      "signature": "c4a43df33d4d46be1ebdd32ad071872e23db72b50714446785c31a935d150cc777cd34dd1c4fab18c45cb37f8a217c563ca9f949677b0dfaf0343d12a041a3c400"
+    },
+    "lit-0b2214b8357779d84c81e753fe52342f97c32f26b0570c1cf521437906bcf66f": {
+      "clock": {
+        "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696": 1
+      },
+      "deleted": false,
+      "edges": [],
+      "id": "lit-0b2214b8357779d84c81e753fe52342f97c32f26b0570c1cf521437906bcf66f",
+      "isarray": false,
+      "isliteral": true,
+      "ismap": false,
+      "ispromoted": false,
+      "isroot": false,
+      "litteralValue": "ACME Smart Devices",
+      "nounce": "625f3d709af7649e617a4cc0afbc5ff4d8bed9db251adcfb9e56aba3fde864f1",
+      "owner": "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696",
+      "parentid": "map-882631db92d07bf93e01cc39c3380b6ee9240e1be7364621361978ad3fccb5f2",
+      "signature": "d8487b27bbedee482166a49a803bf808fdd109a8fa9d2a1497552b678d060684178de04193e9448b9555513d9a098b49a37e9c9b4cc0e1347035c6969149184900"
+    },
+    "lit-0ba678ea403549874c2d7e9c78189be6d3ee9c571f0cff050de46549ff37878a": {
+      "clock": {
+        "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696": 1
+      },
+      "deleted": false,
+      "edges": [],
+      "id": "lit-0ba678ea403549874c2d7e9c78189be6d3ee9c571f0cff050de46549ff37878a",
+      "isarray": false,
+      "isliteral": true,
+      "ismap": false,
+      "ispromoted": false,
+      "isroot": false,
+      "litteralValue": "https://acmesmart.com/dpp/x100/disassembly",
+      "nounce": "ccd91c9f972bd463aa5a2235a5d3b4a29d7bdc5f2d6535212e80353371ce36f4",
+      "owner": "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696",
+      "parentid": "map-2b8e85168a57c4b722c4ef51ef53cb1734af408d992c8709e4af85bf0e4aa8d6",
+      "signature": "688eb30cca7439b461adf29f8cd3a90b604707bc84e189808652fd997fe1d813795b4533b8137b608db60114ffbf692fa81766a2d12b7b0068e6a51b2e75966100"
+    },
+    "lit-0c6207626ff4f0c940041257231dfff6b0702f890b84f7186b21c305c854197b": {
+      "clock": {
+        "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696": 1
+      },
+      "deleted": false,
+      "edges": [],
+      "id": "lit-0c6207626ff4f0c940041257231dfff6b0702f890b84f7186b21c305c854197b",
+      "isarray": false,
+      "isliteral": true,
+      "ismap": false,
+      "ispromoted": false,
+      "isroot": false,
+      "litteralValue": "1.0",
+      "nounce": "5e0d4fef7ba88dfadd8a11e6bee19f3cb6588b3b3d14606d96250aa467f17a38",
+      "owner": "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696",
+      "parentid": "map-623f304c519989fe308f1255395e2e2b9f0939ff0d2f0a9abdd0fcaf4a2d212f",
+      "signature": "80bf0cde2b87ffdc603f2056f63e4a7598ca41db5448ec75d47d9737cbf3d5711dac84f626fc5018a50def49fb9d24f4e1680c3189ac95c62e680b1ba619556600"
+    },
+    "lit-15043d4929fef11c0f9d23966182506b6c9d3d30809fd3e54c6de0acf7893a7b": {
+      "clock": {
+        "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696": 1
+      },
+      "deleted": false,
+      "edges": [],
+      "id": "lit-15043d4929fef11c0f9d23966182506b6c9d3d30809fd3e54c6de0acf7893a7b",
+      "isarray": false,
+      "isliteral": true,
+      "ismap": false,
+      "ispromoted": false,
+      "isroot": false,
+      "litteralValue": "https://acmesmart.com/updates/x100",
+      "nounce": "353be755e1695421095ea8014a750922fa2ce76e203ea08d3493b61307513980",
+      "owner": "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696",
+      "parentid": "map-623f304c519989fe308f1255395e2e2b9f0939ff0d2f0a9abdd0fcaf4a2d212f",
+      "signature": "29d4cddb1d46ec2ffa9ea37acf63baf0f9f0e8e64859492339c899d755daa9a36e8ec39c103e42c4679bc21f16c096a740e9da0b60d59387e76d39ec6e92622f00"
+    },
+    "lit-1d9b6b265d0ff7d25850d3daad6b97abb231ab2e6d73dcec54ce82e06a46474f": {
+      "clock": {
+        "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696": 1
+      },
+      "deleted": false,
+      "edges": [],
+      "id": "lit-1d9b6b265d0ff7d25850d3daad6b97abb231ab2e6d73dcec54ce82e06a46474f",
+      "isarray": false,
+      "isliteral": true,
+      "ismap": false,
+      "ispromoted": false,
+      "isroot": false,
+      "litteralValue": "Aluminum",
+      "nounce": "6573db0062b64be178613989b95422bf394c0cd32ac328c5479216d8536b6b5f",
+      "owner": "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696",
+      "parentid": "arr-621db33f39ca05598af084cb717d4f2ea4e81d523faab66a3554835ff6c3fd57",
+      "signature": "05c6f417488d9ee93bf3b0e19c13ec0802e9290d9a384e569e36c9f96c9814387f7f00e99624be4d8183d505865b8ea4de2082072baf5065e8ee527fad02067501"
+    },
+    "lit-2205d92b1fab82e185379b80d171a95ad734304a8a3f90406e0a6bddc70f5ed5": {
+      "clock": {
+        "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696": 1
+      },
+      "deleted": false,
+      "edges": [],
+      "id": "lit-2205d92b1fab82e185379b80d171a95ad734304a8a3f90406e0a6bddc70f5ed5",
+      "isarray": false,
+      "isliteral": true,
+      "ismap": false,
+      "ispromoted": false,
+      "isroot": false,
+      "litteralValue": "REACH",
+      "nounce": "28f8c6063bb7d87fcb5aa72454b0d405d8fbcb94eb1653079b04538d1fcb8500",
+      "owner": "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696",
+      "parentid": "arr-5be418791a29ecdb20f0964adb66a4e22e6d4d4f3ee48c25876db1840d384e24",
+      "signature": "45e9c3f7c4550f416c53fedd5b4868c3de190e0f63d130fa7c447fbfe03016106ccd12c5f35edc34e350ad9130e278dc8933cd2b729b09660ec1f1debb6dddff00"
+    },
+    "lit-2a0be3189c4f5538b98abba52fae5d81476639a93152e5827e9a6bb3d857b4e8": {
+      "clock": {
+        "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696": 1
+      },
+      "deleted": false,
+      "edges": [],
+      "id": "lit-2a0be3189c4f5538b98abba52fae5d81476639a93152e5827e9a6bb3d857b4e8",
+      "isarray": false,
+      "isliteral": true,
+      "ismap": false,
+      "ispromoted": false,
+      "isroot": false,
+      "litteralValue": "Global Distributors Ltd.",
+      "nounce": "402738d4a045560abb661b6323a43fa1943cff6129be3c5b1a5c10025fbd3850",
+      "owner": "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696",
+      "parentid": "map-fd75859cf7aaf1bbdae1c5e93559bebbea2df943ceee6573c102872cfa7cf900",
+      "signature": "780c4d69f4866b814e333c06bd03e615f45ab261e8536dd7dfcd6e052948ef0726760bb68a5f25db4a6e34b82be21e27b7f674d0cfd6a170590fdd19fe4757a200"
+    },
+    "lit-304b11dfb1c5ce8fa6832f2eefb146d980b94474c9947197c40dac9371a85270": {
+      "clock": {
+        "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696": 1
+      },
+      "deleted": false,
+      "edges": [],
+      "id": "lit-304b11dfb1c5ce8fa6832f2eefb146d980b94474c9947197c40dac9371a85270",
+      "isarray": false,
+      "isliteral": true,
+      "ismap": false,
+      "ispromoted": false,
+      "isroot": false,
+      "litteralValue": 7,
+      "nounce": "fe7c0e2fb7cf7e971869e9ba9aa02644e63a0650c2468dff05d816fd3e613792",
+      "owner": "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696",
+      "parentid": "map-84cfa7245a3b524d2e0dde32fcbe74c9e93078577b5788afe9c90b566696c021",
+      "signature": "11bb4d38e13458d485952a61f56c0835750b38849aae150c02777eba5a7118831eab4bf562ceac66a16fdcd57cd0af30363a6d22bc5118d7b34df92a328ccc6e00"
+    },
+    "lit-3172d86e0597a1b85a83a4dbda9873bfee43926b1af44d97f967f4d7b88c9293": {
+      "clock": {
+        "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696": 1
+      },
+      "deleted": false,
+      "edges": [],
+      "id": "lit-3172d86e0597a1b85a83a4dbda9873bfee43926b1af44d97f967f4d7b88c9293",
+      "isarray": false,
+      "isliteral": true,
+      "ismap": false,
+      "ispromoted": false,
+      "isroot": false,
+      "litteralValue": "Polycarbonate",
+      "nounce": "735a79319582a72920500171cdbe1fe2c09a8a8cb9929cb6556389417ae9c27f",
+      "owner": "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696",
+      "parentid": "arr-621db33f39ca05598af084cb717d4f2ea4e81d523faab66a3554835ff6c3fd57",
+      "signature": "599ff15ff885d45c8e9c6949e00fdb65f41e74f4d71cdf83c58d925aa6b01c3a68b6737490b68fc3b0b5207fa6cb13874c5858e28ffe566441bdc8c726bb698d00"
+    },
+    "lit-3259e27ad87a4fb3fd7c7395d6b15a6df37afbaef33953af1502e04af209a62c": {
+      "clock": {
+        "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696": 1
+      },
+      "deleted": false,
+      "edges": [],
+      "id": "lit-3259e27ad87a4fb3fd7c7395d6b15a6df37afbaef33953af1502e04af209a62c",
+      "isarray": false,
+      "isliteral": true,
+      "ismap": false,
+      "ispromoted": false,
+      "isroot": false,
+      "litteralValue": "Lithium-Ion Battery",
+      "nounce": "0d206996eb1d5fec9516bb57653303a871058a64b6047fa0e4ab70fb49953a46",
+      "owner": "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696",
+      "parentid": "arr-621db33f39ca05598af084cb717d4f2ea4e81d523faab66a3554835ff6c3fd57",
+      "signature": "f674ae7f41f5df8e66fa0f7f21f8129425649d86d45e2343980274d82a7bb0f32e084aed57a0fab0cec8dd87a04a400e94df9d598a9599b21ebb70ec3949711200"
+    },
+    "lit-3c7c87299664c172d2d1897defed8f1c47626d7b145fcc14ba77d406a64b7ed1": {
+      "clock": {
+        "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696": 1
+      },
+      "deleted": false,
+      "edges": [],
+      "id": "lit-3c7c87299664c172d2d1897defed8f1c47626d7b145fcc14ba77d406a64b7ed1",
+      "isarray": false,
+      "isliteral": true,
+      "ismap": false,
+      "ispromoted": false,
+      "isroot": false,
+      "litteralValue": "RoHS",
+      "nounce": "7366c4928e8737b30008130f4d125e3ffaa4ad0f240a673c78fdd4f6a34f3b3d",
+      "owner": "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696",
+      "parentid": "arr-5be418791a29ecdb20f0964adb66a4e22e6d4d4f3ee48c25876db1840d384e24",
+      "signature": "285f320f7506940f4104a5c754b356b9028c2019b093e4fbddf4ce750148783670e55982b667b9979c8d17770f2bc31e3016e37dfc8b5ed4eea05396ee073d2500"
+    },
+    "lit-40aa259a100fb99ddd3cc22f653d1905f460770b67f0a0ced3d9d2a73c867c62": {
+      "clock": {
+        "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696": 1
+      },
+      "deleted": false,
+      "edges": [],
+      "id": "lit-40aa259a100fb99ddd3cc22f653d1905f460770b67f0a0ced3d9d2a73c867c62",
+      "isarray": false,
+      "isliteral": true,
+      "ismap": false,
+      "ispromoted": false,
+      "isroot": false,
+      "litteralValue": "Smart Thermostat X100",
+      "nounce": "35ab5a489f6f0444526d5c9dd911921fb123dede76241a2403994ce1d0835fc9",
+      "owner": "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696",
+      "parentid": "map-84cfa7245a3b524d2e0dde32fcbe74c9e93078577b5788afe9c90b566696c021",
+      "signature": "5e185409146a760534bc7eb67eb6733e427d4f5452cfb50df3e1c15a609ffaf56ccb80e5032db3010a9b6146d9d617d53d51edc540986d9d0d26d58cca84869101"
+    },
+    "lit-42336d9afdad29f8148b1c07a5a62ee4cfc705357b586a33fc92f3a4a97aebe6": {
+      "clock": {
+        "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696": 1
+      },
+      "deleted": false,
+      "edges": [],
+      "id": "lit-42336d9afdad29f8148b1c07a5a62ee4cfc705357b586a33fc92f3a4a97aebe6",
+      "isarray": false,
+      "isliteral": true,
+      "ismap": false,
+      "ispromoted": false,
+      "isroot": false,
+      "litteralValue": "12.5",
+      "nounce": "7afbb90be1eee7ed5e546bf68553cebbaca05bfdafc67af5b857cd6fe30ff7a2",
+      "owner": "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696",
+      "parentid": "map-e4b9cce8758aec0c5d17bf7b38befcf44aed58483a0a9cbc265be512697e3582",
+      "signature": "3e7d0019303519b27b755c016bd1f672ae4b578aafda6f79ae5d86014a6ef36a74aba80e6b7b3989e249d53d69a6287f33840361b6db4f25ab405d37869f311100"
+    },
+    "lit-4532dffaa7918ab65653d8f478480b321ab226eb931911413e541756cba94b44": {
+      "clock": {
+        "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696": 1
+      },
+      "deleted": false,
+      "edges": [],
+      "id": "lit-4532dffaa7918ab65653d8f478480b321ab226eb931911413e541756cba94b44",
+      "isarray": false,
+      "isliteral": true,
+      "ismap": false,
+      "ispromoted": false,
+      "isroot": false,
+      "litteralValue": "https://acmesmart.com/manuals/x100.pdf",
+      "nounce": "0e3176846ace4e1f3fb169004379c0ae241e4d94d4d609e8ae174ecf21083381",
+      "owner": "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696",
+      "parentid": "map-623f304c519989fe308f1255395e2e2b9f0939ff0d2f0a9abdd0fcaf4a2d212f",
+      "signature": "d44c1621234f9fbb785f0f3537f51f1133b1ecc194f454dbca9f339436dbcb7344b0e566cdaa70b75c17a1ba90d32fd56fd2c80872410d0ff5ae64b45f99f81501"
+    },
+    "lit-49312124ab6f19b8fbc1d21952e4efd15c61fa3b6239774d60122a3d7259c8cd": {
+      "clock": {
+        "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696": 1
+      },
+      "deleted": false,
+      "edges": [],
+      "id": "lit-49312124ab6f19b8fbc1d21952e4efd15c61fa3b6239774d60122a3d7259c8cd",
+      "isarray": false,
+      "isliteral": true,
+      "ismap": false,
+      "ispromoted": false,
+      "isroot": false,
+      "litteralValue": "2025-02-15",
+      "nounce": "092c50ae981002685cbe8c5ec76598c63a06797f264e46935005605fb4304c54",
+      "owner": "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696",
+      "parentid": "map-338e717fa9072462568eb44df4b71b59ce90ab764cbfd98d60acf266a65b8099",
+      "signature": "28c8caae9c4d0900e177abc6fc1c6c260cf00cabe95589e190bb29e99a4177c550f318e18648496ff8b06eece8eb3507d87f1ffd9de6e1173a4125c613a312b201"
+    },
+    "lit-4d0b76940385f44b4b47197607ff302554288b997f377d1cbfb468385b05b804": {
+      "clock": {
+        "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696": 1
+      },
+      "deleted": false,
+      "edges": [],
+      "id": "lit-4d0b76940385f44b4b47197607ff302554288b997f377d1cbfb468385b05b804",
+      "isarray": false,
+      "isliteral": true,
+      "ismap": false,
+      "ispromoted": false,
+      "isroot": false,
+      "litteralValue": "Authorized Service",
+      "nounce": "88bd004bfb51e36c22d053decfe7fa91358e031a3fbe6b0b8b8a9dde609613da",
+      "owner": "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696",
+      "parentid": "map-338e717fa9072462568eb44df4b71b59ce90ab764cbfd98d60acf266a65b8099",
+      "signature": "94d1601880d1d8329506a3addf86d04ea55e929df21f223b28d5ea643ad7c15c01087c3594bfc378725c121dc7ded5665958c299939d087816eaf47c27aa2e1600"
+    },
+    "lit-55e110a672af14aee708ed241a644679d98330adef0e3be8e828385cf80189ae": {
+      "clock": {
+        "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696": 1
+      },
+      "deleted": false,
+      "edges": [],
+      "id": "lit-55e110a672af14aee708ed241a644679d98330adef0e3be8e828385cf80189ae",
+      "isarray": false,
+      "isliteral": true,
+      "ismap": false,
+      "ispromoted": false,
+      "isroot": false,
+      "litteralValue": "2024-05-10",
+      "nounce": "ca579429ae72a1a8c82c93fcfb3a3cd13500f8484143e0f3bcee19fd69716c45",
+      "owner": "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696",
+      "parentid": "map-fd75859cf7aaf1bbdae1c5e93559bebbea2df943ceee6573c102872cfa7cf900",
+      "signature": "7d0da452d94018ed8dc1be16d46cb6501fab62ec7132262d3040c4c30c6997060d96d8a4108e03cd082136c27599c7fa1233e626e994107dd4901db98f016fa200"
+    },
+    "lit-5771dacfa34e97b59041262171e89e9da9df1f4d14ba0a61b1c3d58ea1052b76": {
+      "clock": {
+        "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696": 1
+      },
+      "deleted": false,
+      "edges": [],
+      "id": "lit-5771dacfa34e97b59041262171e89e9da9df1f4d14ba0a61b1c3d58ea1052b76",
+      "isarray": false,
+      "isliteral": true,
+      "ismap": false,
+      "ispromoted": false,
+      "isroot": false,
+      "litteralValue": "DE",
+      "nounce": "6e57d06fa9be0c6b1e7ea3c52289520a7d9eb20eb869b99c3f3d7a97e003bedc",
+      "owner": "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696",
+      "parentid": "map-882631db92d07bf93e01cc39c3380b6ee9240e1be7364621361978ad3fccb5f2",
+      "signature": "3246c82b66a247e3e93353b9235e4d1a08a3c580dca1b504e26ee239dc6180353cc6edc381edd54d0db0517fef51bf557d32d287e7e630ef59369e6db47fc98900"
+    },
+    "lit-5ad2ca0b8f0f8c782fc4f0ea6c2e34dc8a375d8553c2292552add20244c58c95": {
+      "clock": {
+        "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696": 1
+      },
+      "deleted": false,
+      "edges": [],
+      "id": "lit-5ad2ca0b8f0f8c782fc4f0ea6c2e34dc8a375d8553c2292552add20244c58c95",
+      "isarray": false,
+      "isliteral": true,
+      "ismap": false,
+      "ispromoted": false,
+      "isroot": false,
+      "litteralValue": "ACME Smart Devices (Factory)",
+      "nounce": "0918786e236f6c6e96a6fa79bdf0d7151184342443c650236c1c2608b4cbb577",
+      "owner": "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696",
+      "parentid": "map-3d191571962be5680ec564e0fce09c1464206be4ce3ef6b560cdac4b5ad10d90",
+      "signature": "ee1e6ad1e515f644ac80e48280e95c7abccfdd216db4e7d648f31c0f5f4f256b7760adf521055a19ee3e15bcbe3843d160063851c7c0362fe4c0e6bad2c8af2b01"
+    },
+    "lit-6198e9bf9af601ec6aaa29cc61f8be76537842c6389f8800e197d3707e14ff5c": {
+      "clock": {
+        "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696": 1
+      },
+      "deleted": false,
+      "edges": [],
+      "id": "lit-6198e9bf9af601ec6aaa29cc61f8be76537842c6389f8800e197d3707e14ff5c",
+      "isarray": false,
+      "isliteral": true,
+      "ismap": false,
+      "ispromoted": false,
+      "isroot": false,
+      "litteralValue": "2024-06-05",
+      "nounce": "b923a3466a6e60cfe6a50921fc4fdd3d02085a353405beec181c97be89499f31",
+      "owner": "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696",
+      "parentid": "map-ee632ece3e9c6aeae04e38062041838399408b86d1f931aa6f32da4eeaf1729b",
+      "signature": "ce68e57cdd91c210bc405d6efae93c344791d072809720ff8e6ded227e77b8ff58ef8e192e3c051a19debb3e0c5f801b8251631506a7f3993750197ff35ab7da01"
+    },
+    "lit-6391543524afca20160476bd10235afc485c5cf4e103d6c8ff9cc59eada5f54e": {
+      "clock": {
+        "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696": 1
+      },
+      "deleted": false,
+      "edges": [],
+      "id": "lit-6391543524afca20160476bd10235afc485c5cf4e103d6c8ff9cc59eada5f54e",
+      "isarray": false,
+      "isliteral": true,
+      "ismap": false,
+      "ispromoted": false,
+      "isroot": false,
+      "litteralValue": "Energy Star",
+      "nounce": "c18ce8e3b6e7b4c369f1671b6b1afcc36ec8a62a6f60a8f4fda29960706b3f89",
+      "owner": "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696",
+      "parentid": "arr-5be418791a29ecdb20f0964adb66a4e22e6d4d4f3ee48c25876db1840d384e24",
+      "signature": "885a9ac687405fa3df9f31e2a3d6177ac2e01ce41f65a9f2acd813152720c7f86a6180cdbc733079539707c2fa3bdd487852daafdfbe88000a51f1b04d72e65e01"
+    },
+    "lit-6898e33b61f2ad92e38c1e7f324dcb9025368525d0c22bc119a87ce65b23e912": {
+      "clock": {
+        "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696": 1
+      },
+      "deleted": false,
+      "edges": [],
+      "id": "lit-6898e33b61f2ad92e38c1e7f324dcb9025368525d0c22bc119a87ce65b23e912",
+      "isarray": false,
+      "isliteral": true,
+      "ismap": false,
+      "ispromoted": false,
+      "isroot": false,
+      "litteralValue": "SN-9876543210",
+      "nounce": "667d620771d404a893b1a8a396466d55018c598e40878ed08fe09b666bbfbab3",
+      "owner": "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696",
+      "parentid": "map-84cfa7245a3b524d2e0dde32fcbe74c9e93078577b5788afe9c90b566696c021",
+      "signature": "9ddfa0c130feb23e2259b2f759ac603c58e37daeaef900e2172a79c12d92b0ca1e26b613261e4304f8278a74e45ae1fff54a4ec8b49ac173eea0a0b0dce7a8bb00"
+    },
+    "lit-68a61e626ddde3e3f107133881936c91ec8105ddd9c10ffee4fcefd202c72940": {
+      "clock": {
+        "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696": 1
+      },
+      "deleted": false,
+      "edges": [],
+      "id": "lit-68a61e626ddde3e3f107133881936c91ec8105ddd9c10ffee4fcefd202c72940",
+      "isarray": false,
+      "isliteral": true,
+      "ismap": false,
+      "ispromoted": false,
+      "isroot": false,
+      "litteralValue": "BATCH-20240501-01",
+      "nounce": "c4e81bff3603e70f04d90c367979a90af188a239f89bedb0a1b36dc83e6237c3",
+      "owner": "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696",
+      "parentid": "map-84cfa7245a3b524d2e0dde32fcbe74c9e93078577b5788afe9c90b566696c021",
+      "signature": "f2c6a272adc0e69dd3c2ca38f198c3658ebcc267d6ea98d0e61ff6f2460ac0f75150f3ec47a313335eca8bb67518bc7c78f2a9479d2b963b000d9f41437a92a800"
+    },
+    "lit-6903fbd781beab39824146f5d82726e76f1d6cce2df8f341636b17837ab83b14": {
+      "clock": {
+        "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696": 1
+      },
+      "deleted": false,
+      "edges": [],
+      "id": "lit-6903fbd781beab39824146f5d82726e76f1d6cce2df8f341636b17837ab83b14",
+      "isarray": false,
+      "isliteral": true,
+      "ismap": false,
+      "ispromoted": false,
+      "isroot": false,
+      "litteralValue": "End Consumer",
+      "nounce": "0c1cd4d857d70df87f3bd7321fb01a065c204ae3055bb1fe1beda135d68ec088",
+      "owner": "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696",
+      "parentid": "map-ee632ece3e9c6aeae04e38062041838399408b86d1f931aa6f32da4eeaf1729b",
+      "signature": "e57aa014de8dc74db717ab2f10e162fdb3200953dd8b34b6b8b4b470051c755765b2ccf0c68712d9fd25ca5cb83cd2988fd058f420378f1bec2d1f30d0c8cc2b01"
+    },
+    "lit-70ad24260447fc84f6fe788ffd7a4364d02edac226223f2650e2587e56daca0f": {
+      "clock": {
+        "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696": 1
+      },
+      "deleted": false,
+      "edges": [],
+      "id": "lit-70ad24260447fc84f6fe788ffd7a4364d02edac226223f2650e2587e56daca0f",
+      "isarray": false,
+      "isliteral": true,
+      "ismap": false,
+      "ispromoted": false,
+      "isroot": false,
+      "litteralValue": "2024-05-01",
+      "nounce": "8cfa85e2415edf4ab5aaed1fd3993bf859f974c234ae2ea2550f76cf3cb2358d",
+      "owner": "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696",
+      "parentid": "map-84cfa7245a3b524d2e0dde32fcbe74c9e93078577b5788afe9c90b566696c021",
+      "signature": "d0ceca8b23dd9abaa6f8aadfcdce078da693e0673579dcf609789e814afd7fc07b6f00d9112714acb91eaeb804c225f6d18df3a87b21d3f11f15c6483297c3b100"
+    },
+    "lit-819b8add7c1bafccb44a57e9ee3268182a39edda41c828613bafc6c3722c5d54": {
+      "clock": {
+        "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696": 1
+      },
+      "deleted": false,
+      "edges": [],
+      "id": "lit-819b8add7c1bafccb44a57e9ee3268182a39edda41c828613bafc6c3722c5d54",
+      "isarray": false,
+      "isliteral": true,
+      "ismap": false,
+      "ispromoted": false,
+      "isroot": false,
+      "litteralValue": "2025-03-01",
+      "nounce": "31cad46dcd8c0d3264a07dd6211bc371044303b7c3deedf6e3db27708fc74e09",
+      "owner": "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696",
+      "parentid": "map-623f304c519989fe308f1255395e2e2b9f0939ff0d2f0a9abdd0fcaf4a2d212f",
+      "signature": "2e125562e721800cf5932a8ee0340ce69feb8d8d599b1846b2434d881f5fb3cd6e61f07c8ea685f97fb492c94a9a98c1978e76eb9ca0766bd1d87635a5e4f89901"
+    },
+    "lit-8fd1d6b52703bf9b14fdd71907c6bd7d7f5752c5939ac456d53bc603697e59a1": {
+      "clock": {
+        "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696": 1
+      },
+      "deleted": false,
+      "edges": [],
+      "id": "lit-8fd1d6b52703bf9b14fdd71907c6bd7d7f5752c5939ac456d53bc603697e59a1",
+      "isarray": false,
+      "isliteral": true,
+      "ismap": false,
+      "ispromoted": false,
+      "isroot": false,
+      "litteralValue": "Berlin, DE",
+      "nounce": "146147b2e0a3520f15ee0c2c2c302661357d136079d4879da61c411c46bf694c",
+      "owner": "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696",
+      "parentid": "map-20dcb194c85f10eb658bdb495e3b6f5b0b73b8c99d2328d6dee89d0aa03f8192",
+      "signature": "5692cd62f1a2410a5faf61610a7788408c16227095abcffd38bae62df1b3322a14ae04849584e74d3fa415fe8e52e7aab4ee9e2920827287247113397584360301"
+    },
+    "lit-92a56f9896cbe194308f575eff24c8d811c94129a0fdc81a1c0a1b54fed62041": {
+      "clock": {
+        "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696": 1
+      },
+      "deleted": false,
+      "edges": [],
+      "id": "lit-92a56f9896cbe194308f575eff24c8d811c94129a0fdc81a1c0a1b54fed62041",
+      "isarray": false,
+      "isliteral": true,
+      "ismap": false,
+      "ispromoted": false,
+      "isroot": false,
+      "litteralValue": "kg CO2e",
+      "nounce": "233f7639d2e0a3f886bbde9abbfb5d8c4a222a9e8d3f75c1c45de3c9b9bfe26b",
+      "owner": "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696",
+      "parentid": "map-e4b9cce8758aec0c5d17bf7b38befcf44aed58483a0a9cbc265be512697e3582",
+      "signature": "6aa04b9c02a709a4b67a0bc0f79aa9ce9beb8da949cdb022c499a64ffa47f6a65de43944d43244b801dd5e5861e5d00b6e17ee3b99eb284b34ebfc7f935f70ab00"
+    },
+    "lit-9c93919e784016d55383920ae3f2bfc55a8e2f2c9189e600395ba316d1c4b97b": {
+      "clock": {
+        "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696": 1
+      },
+      "deleted": false,
+      "edges": [],
+      "id": "lit-9c93919e784016d55383920ae3f2bfc55a8e2f2c9189e600395ba316d1c4b97b",
+      "isarray": false,
+      "isliteral": true,
+      "ismap": false,
+      "ispromoted": false,
+      "isroot": false,
+      "litteralValue": "2024-06-01",
+      "nounce": "03296b12bb55de97d46b816f28b7c106b5fc8f48ff2de7762be7e5a6bfc3cb7f",
+      "owner": "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696",
+      "parentid": "map-20dcb194c85f10eb658bdb495e3b6f5b0b73b8c99d2328d6dee89d0aa03f8192",
+      "signature": "eb54e17fefccf22ce4e2b68213d80843b7300e318350dbf116993885fdb424d270930d549e588da1cc4726242cd9c1c3776390fcefe5f506cfeecff716241b6f01"
+    },
+    "lit-a2101153a24aace7be0e5dd3de16be0053afca1b11d4597ae7ff17114f7d0b6f": {
+      "clock": {
+        "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696": 1
+      },
+      "deleted": false,
+      "edges": [],
+      "id": "lit-a2101153a24aace7be0e5dd3de16be0053afca1b11d4597ae7ff17114f7d0b6f",
+      "isarray": false,
+      "isliteral": true,
+      "ismap": false,
+      "ispromoted": false,
+      "isroot": false,
+      "litteralValue": "Munich, DE",
+      "nounce": "5b7118b94b3c555baf43fcb05fdee683a667345dde73883473e336beb7cf77ee",
+      "owner": "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696",
+      "parentid": "map-ee632ece3e9c6aeae04e38062041838399408b86d1f931aa6f32da4eeaf1729b",
+      "signature": "829215344b0acf15c35172f035e6e99afc28f0009eddfe0c4e811befddbd341770c5fff259c10e29c94284b427ad79e66d4730bb5727485613a6c9bd5e8947e401"
+    },
+    "lit-a39c94d2832f71d9796647d69be4519b1a97bff6d3c6087248c3d6ca1eb50827": {
+      "clock": {
+        "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696": 1
+      },
+      "deleted": false,
+      "edges": [],
+      "id": "lit-a39c94d2832f71d9796647d69be4519b1a97bff6d3c6087248c3d6ca1eb50827",
+      "isarray": false,
+      "isliteral": true,
+      "ismap": false,
+      "ispromoted": false,
+      "isroot": false,
+      "litteralValue": "CE",
+      "nounce": "1984b1cf26b5c35ad94980c7ed15984c762add4678c0e2ce212a53353d2751bf",
+      "owner": "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696",
+      "parentid": "arr-5be418791a29ecdb20f0964adb66a4e22e6d4d4f3ee48c25876db1840d384e24",
+      "signature": "2a9aa1c720d515b97e9c2bd480fbb777e7515d916297b2e63f281d51a9ad1242788a74886592dca69decd7f4039b70b13f28d6495c21b39f2d43af01ce639d2c00"
+    },
+    "lit-a3d0df5fcedac6a1aa2ba95785aef102395f2a4ba0315fa5ff31506d2ed9a431": {
+      "clock": {
+        "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696": 1
+      },
+      "deleted": false,
+      "edges": [],
+      "id": "lit-a3d0df5fcedac6a1aa2ba95785aef102395f2a4ba0315fa5ff31506d2ed9a431",
+      "isarray": false,
+      "isliteral": true,
+      "ismap": false,
+      "ispromoted": false,
+      "isroot": false,
+      "litteralValue": 85,
+      "nounce": "d081c06794116d386612238cdee77bf2b9bc3306f9904d4ce3e182a6d8870261",
+      "owner": "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696",
+      "parentid": "map-84cfa7245a3b524d2e0dde32fcbe74c9e93078577b5788afe9c90b566696c021",
+      "signature": "3cf38ea9432c4c753f4128ee0072806a7c7083433244f76de7f84ad58265e2202b151084dbe9573975236a5fbcfb1a6e073e7468bd7ce66ff03d616d460d7ca000"
+    },
+    "lit-a48b9f952e59ea450cb856846f23ea9c16f3bbfb1649327327deda3f439f9489": {
+      "clock": {
+        "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696": 1
+      },
+      "deleted": false,
+      "edges": [],
+      "id": "lit-a48b9f952e59ea450cb856846f23ea9c16f3bbfb1649327327deda3f439f9489",
+      "isarray": false,
+      "isliteral": true,
+      "ismap": false,
+      "ispromoted": false,
+      "isroot": false,
+      "litteralValue": "UrbanRecyclers GmbH",
+      "nounce": "efc1bdd95602aabede9ab5adfcb58d2dc742ac937fd6858da49afd49542b0146",
+      "owner": "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696",
+      "parentid": "arr-f85bbfd0c8a85045bc43041f29a9f844718c78e24cdc66ee0f4d1333dff1b9b2",
+      "signature": "942d21788dc4b8f65dc8379c277262b9c7f1120e2b751430136a54b66e9ecd815a0e454dd7cf9c77e071c457cb373090b6eae1f7dbc882548b83080ce098f5e801"
+    },
+    "lit-a9768a9c0ba2055056e2cd70776faa0974778cd1df3e8a030834b1e8e4cf044b": {
+      "clock": {
+        "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696": 1
+      },
+      "deleted": false,
+      "edges": [],
+      "id": "lit-a9768a9c0ba2055056e2cd70776faa0974778cd1df3e8a030834b1e8e4cf044b",
+      "isarray": false,
+      "isliteral": true,
+      "ismap": false,
+      "ispromoted": false,
+      "isroot": false,
+      "litteralValue": "2024-05-01",
+      "nounce": "d10f4baed6bc894bd8607b49802c9ee1e1b70b1b77944b4852bbce9a50bb7cc9",
+      "owner": "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696",
+      "parentid": "map-3d191571962be5680ec564e0fce09c1464206be4ce3ef6b560cdac4b5ad10d90",
+      "signature": "2552957778c0ee0b3dbd7b13aed9c47cf3f0eea2797d5c599a6b45dab911c7c267766536652c5216f999a2c11891e7ee9dacb2f739650326abf3a66c84a6320601"
+    },
+    "lit-ac01cc360bc3263cd5585ce6ccba3211749db655cec0e82ef8ef1e3d06ed6f2b": {
+      "clock": {
+        "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696": 1
+      },
+      "deleted": false,
+      "edges": [],
+      "id": "lit-ac01cc360bc3263cd5585ce6ccba3211749db655cec0e82ef8ef1e3d06ed6f2b",
+      "isarray": false,
+      "isliteral": true,
+      "ismap": false,
+      "ispromoted": false,
+      "isroot": false,
+      "litteralValue": "support@acmesmart.com",
+      "nounce": "9452e4cbd3782e5d4ef4f1ba17e02b0cd00b327d13f88aab49a434ad15b6a403",
+      "owner": "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696",
+      "parentid": "map-882631db92d07bf93e01cc39c3380b6ee9240e1be7364621361978ad3fccb5f2",
+      "signature": "8592eb5e63c1b6a1817f7eb2a299d85ee32fb293d0a114dd5eeec2c9933e4c926abadd90bc5e19d92f4c574db57b5603065a08540ae8adcf637ce5d0b71a1cfb00"
+    },
+    "lit-b28d5a78dc9d03e1b8090edf16a768f2191c50df002a2229f4752e90839b44f0": {
+      "clock": {
+        "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696": 1
+      },
+      "deleted": false,
+      "edges": [],
+      "id": "lit-b28d5a78dc9d03e1b8090edf16a768f2191c50df002a2229f4752e90839b44f0",
+      "isarray": false,
+      "isliteral": true,
+      "ismap": false,
+      "ispromoted": false,
+      "isroot": false,
+      "litteralValue": "Battery Pack",
+      "nounce": "a3c202411c48babcad24a083f5cee798c7991c26eab6975f59c77c171a0f07e6",
+      "owner": "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696",
+      "parentid": "arr-e1c9d005befa84ff17c0f3c63af541b989a0c54c87cf538c26c6fa910e496241",
+      "signature": "abf078010c6c0434df1e4836b402223a5486a3dbd35ee86980c33e32202468370699a78986ecae92f8851551ee7da6f607515537c21a8f3d150964481478e5b301"
+    },
+    "lit-b7a2c86cfdf0a5f3aacae44322e8cef9a3fb6475e22e365a955138ec59a6f3ab": {
+      "clock": {
+        "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696": 1
+      },
+      "deleted": false,
+      "edges": [],
+      "id": "lit-b7a2c86cfdf0a5f3aacae44322e8cef9a3fb6475e22e365a955138ec59a6f3ab",
+      "isarray": false,
+      "isliteral": true,
+      "ismap": false,
+      "ispromoted": false,
+      "isroot": false,
+      "litteralValue": "24 months",
+      "nounce": "d9e6f5404d5cfac61219c9a173f5aff7c59df343fc83411c82351c5101cb9d52",
+      "owner": "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696",
+      "parentid": "map-84cfa7245a3b524d2e0dde32fcbe74c9e93078577b5788afe9c90b566696c021",
+      "signature": "127835a255abe49b873b7e32424de42281508553a25541d1c66f9ad0635e4c7f709d0db9cd86a629ab498c93828c2b166ac20333f10aa6359b549cfc5889535b01"
+    },
+    "lit-bf1c8cb1f0387a73d1ede94c6efcacd7c678c8a1b30c25a12b3a9ad7b42384df": {
+      "clock": {
+        "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696": 1
+      },
+      "deleted": false,
+      "edges": [],
+      "id": "lit-bf1c8cb1f0387a73d1ede94c6efcacd7c678c8a1b30c25a12b3a9ad7b42384df",
+      "isarray": false,
+      "isliteral": true,
+      "ismap": false,
+      "ispromoted": false,
+      "isroot": false,
+      "litteralValue": "Rotterdam Port, NL",
+      "nounce": "1c1f57f8d5eb3d5ecdbf461e832b348070d6e658bd4c0e2835c8e9fa68ee02a5",
+      "owner": "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696",
+      "parentid": "map-fd75859cf7aaf1bbdae1c5e93559bebbea2df943ceee6573c102872cfa7cf900",
+      "signature": "61dee27b195b370edc873ca00729d017ebafdfc1918517a0bd5f44f6256e7fbf0740737c88f057087d821068e716fcc8e7d3cc48138a1078e13616e8f0d2e29401"
+    },
+    "lit-bf5cf72a6576e08d1b23315a885e500f60c5aeb94345d6a1bbbbe94e4c5fc825": {
+      "clock": {
+        "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696": 1
+      },
+      "deleted": false,
+      "edges": [],
+      "id": "lit-bf5cf72a6576e08d1b23315a885e500f60c5aeb94345d6a1bbbbe94e4c5fc825",
+      "isarray": false,
+      "isliteral": true,
+      "ismap": false,
+      "ispromoted": false,
+      "isroot": false,
+      "litteralValue": "ABC-12345",
+      "nounce": "a9d83c0ae2c9e6ca04602fb6486c9c58dbefe79ac50c47bd9988f938a9aa983f",
+      "owner": "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696",
+      "parentid": "map-84cfa7245a3b524d2e0dde32fcbe74c9e93078577b5788afe9c90b566696c021",
+      "signature": "b14403acb034bc5c5df7d4624fd0fff207a9e59bc39304da4b4bfab42b6d618530759f0ffb7ed082d0af154353a3c35afabee54c622c92ee314293185528c72900"
+    },
+    "lit-ccdcbbb43f1b8ad8ddac29ef925851860f6e5b7a82b2a738590b60a27eea8d16": {
+      "clock": {
+        "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696": 1
+      },
+      "deleted": false,
+      "edges": [],
+      "id": "lit-ccdcbbb43f1b8ad8ddac29ef925851860f6e5b7a82b2a738590b60a27eea8d16",
+      "isarray": false,
+      "isliteral": true,
+      "ismap": false,
+      "ispromoted": false,
+      "isroot": false,
+      "litteralValue": "Best Electronics Retailer",
+      "nounce": "c2df31607ab95d46ac78145cdcedcb0d473612f838d4ffcbcb430e55743bbd5c",
+      "owner": "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696",
+      "parentid": "map-20dcb194c85f10eb658bdb495e3b6f5b0b73b8c99d2328d6dee89d0aa03f8192",
+      "signature": "9d463c0d3f50fc0f9bedf88d72b07800d693141d35d2a222186e852f85c329ea7a95aac91532467cbfdb0328a2184ae4ce42f17734b53b5f5fc2d2e9429602c701"
+    },
+    "lit-ceaa786578fc42f2194ac8cc8a78564807910e7b5300b5282315688d5dbaabc7": {
+      "clock": {
+        "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696": 1
+      },
+      "deleted": false,
+      "edges": [],
+      "id": "lit-ceaa786578fc42f2194ac8cc8a78564807910e7b5300b5282315688d5dbaabc7",
+      "isarray": false,
+      "isliteral": true,
+      "ismap": false,
+      "ispromoted": false,
+      "isroot": false,
+      "litteralValue": "123 Industry Park, Tech City, EU",
+      "nounce": "6eba8f6ea598a3c3a5e64634e673f0a9553b8d523b206a56607e67903b3fd97a",
+      "owner": "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696",
+      "parentid": "map-882631db92d07bf93e01cc39c3380b6ee9240e1be7364621361978ad3fccb5f2",
+      "signature": "a0e524a480f345d50acc8cf51d506371b71fe37e6a0e8c97b7a3bf51bdbadcc759ec3e0f4feddaa706965cdd7fa89f9306fc060309de3d0ad10ab6e65777c0c700"
+    },
+    "lit-df3731b93d73a74aeffb4d358d306a9430d1d9d5c3716178966e7a5c22028d14": {
+      "clock": {
+        "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696": 1
+      },
+      "deleted": false,
+      "edges": [],
+      "id": "lit-df3731b93d73a74aeffb4d358d306a9430d1d9d5c3716178966e7a5c22028d14",
+      "isarray": false,
+      "isliteral": true,
+      "ismap": false,
+      "ispromoted": false,
+      "isroot": false,
+      "litteralValue": "SmartFix GmbH",
+      "nounce": "455401cabef5f59d33768e88d6573342dd9978b3dc102b4a706d5b4a3369c9eb",
+      "owner": "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696",
+      "parentid": "map-338e717fa9072462568eb44df4b71b59ce90ab764cbfd98d60acf266a65b8099",
+      "signature": "80e6abe581ad75322ff18094da8c8f9e907b02c36b2375cb561f4d7b97a35d1f3d8376a4c4f1396a8ad83294300058aa06ab50e30e0654f4127cf90e7d7e978001"
+    },
+    "lit-ed42ff0fd6069f382d45c529af995ca26c2356a17269659a02504fd3c94d4a27": {
+      "clock": {
+        "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696": 1
+      },
+      "deleted": false,
+      "edges": [],
+      "id": "lit-ed42ff0fd6069f382d45c529af995ca26c2356a17269659a02504fd3c94d4a27",
+      "isarray": false,
+      "isliteral": true,
+      "ismap": false,
+      "ispromoted": false,
+      "isroot": false,
+      "litteralValue": "Tech City, DE",
+      "nounce": "84c4c06fc289cd66eaa0409bdfb1f83467b654b96d3166571966598a5aff9bad",
+      "owner": "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696",
+      "parentid": "map-3d191571962be5680ec564e0fce09c1464206be4ce3ef6b560cdac4b5ad10d90",
+      "signature": "49e0a268050baf4ed1fd9ece31059b62c3fda6a2455dadba18857e224aca2a217e3069a672da120f3a2431d2babb5fedbab897c7cec02214354ad6fff3300a0500"
+    },
+    "map-20dcb194c85f10eb658bdb495e3b6f5b0b73b8c99d2328d6dee89d0aa03f8192": {
+      "clock": {
+        "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696": 4
+      },
+      "deleted": false,
+      "edges": [
+        {
+          "from": "map-20dcb194c85f10eb658bdb495e3b6f5b0b73b8c99d2328d6dee89d0aa03f8192",
+          "label": "location",
+          "lseqposition": [],
+          "to": "lit-8fd1d6b52703bf9b14fdd71907c6bd7d7f5752c5939ac456d53bc603697e59a1"
+        },
+        {
+          "from": "map-20dcb194c85f10eb658bdb495e3b6f5b0b73b8c99d2328d6dee89d0aa03f8192",
+          "label": "date",
+          "lseqposition": [],
+          "to": "lit-9c93919e784016d55383920ae3f2bfc55a8e2f2c9189e600395ba316d1c4b97b"
+        },
+        {
+          "from": "map-20dcb194c85f10eb658bdb495e3b6f5b0b73b8c99d2328d6dee89d0aa03f8192",
+          "label": "owner",
+          "lseqposition": [],
+          "to": "lit-ccdcbbb43f1b8ad8ddac29ef925851860f6e5b7a82b2a738590b60a27eea8d16"
+        }
+      ],
+      "id": "map-20dcb194c85f10eb658bdb495e3b6f5b0b73b8c99d2328d6dee89d0aa03f8192",
+      "isarray": false,
+      "isliteral": false,
+      "ismap": true,
+      "ispromoted": false,
+      "isroot": false,
+      "litteralValue": null,
+      "nounce": "43a3ea8349ee9ec95ac93fccbbc74a5a7455dbe4c4d56d5713df287db54eba09",
+      "owner": "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696",
+      "parentid": "arr-ffbf34f773e6b64917260c2e580d8486cb861b36790f27b9917be5a6b83afd20",
+      "signature": "5eff406b40455341b5e8c05a7798ffc3e150fc31756dc0304f0446b7e5d70e8546f5af9ec0eb87e17038a1ee54726a80e0b6c6ec152903f688253beb07d29bd501"
+    },
+    "map-2b8e85168a57c4b722c4ef51ef53cb1734af408d992c8709e4af85bf0e4aa8d6": {
+      "clock": {
+        "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696": 3
+      },
+      "deleted": false,
+      "edges": [
+        {
+          "from": "map-2b8e85168a57c4b722c4ef51ef53cb1734af408d992c8709e4af85bf0e4aa8d6",
+          "label": "recyclingPartners",
+          "lseqposition": [],
+          "to": "arr-f85bbfd0c8a85045bc43041f29a9f844718c78e24cdc66ee0f4d1333dff1b9b2"
+        },
+        {
+          "from": "map-2b8e85168a57c4b722c4ef51ef53cb1734af408d992c8709e4af85bf0e4aa8d6",
+          "label": "disassemblyInstructions",
+          "lseqposition": [],
+          "to": "lit-0ba678ea403549874c2d7e9c78189be6d3ee9c571f0cff050de46549ff37878a"
+        }
+      ],
+      "id": "map-2b8e85168a57c4b722c4ef51ef53cb1734af408d992c8709e4af85bf0e4aa8d6",
+      "isarray": false,
+      "isliteral": false,
+      "ismap": true,
+      "ispromoted": false,
+      "isroot": false,
+      "litteralValue": null,
+      "nounce": "133e574afca6c7db410238046aa2ea1f10158bcf9d8239ab76cfa04b325db6f3",
+      "owner": "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696",
+      "parentid": "map-84cfa7245a3b524d2e0dde32fcbe74c9e93078577b5788afe9c90b566696c021",
+      "signature": "ee3f76075b8af937e3620adb691d13170e32f0d795eeb239e88ad4e4a702a1b2224d401e247e3127476c2cca3f4045e03a52acc4c7ab11e1d475e67956f2500401"
+    },
+    "map-338e717fa9072462568eb44df4b71b59ce90ab764cbfd98d60acf266a65b8099": {
+      "clock": {
+        "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696": 5
+      },
+      "deleted": false,
+      "edges": [
+        {
+          "from": "map-338e717fa9072462568eb44df4b71b59ce90ab764cbfd98d60acf266a65b8099",
+          "label": "componentsReplaced",
+          "lseqposition": [],
+          "to": "arr-e1c9d005befa84ff17c0f3c63af541b989a0c54c87cf538c26c6fa910e496241"
+        },
+        {
+          "from": "map-338e717fa9072462568eb44df4b71b59ce90ab764cbfd98d60acf266a65b8099",
+          "label": "repairDate",
+          "lseqposition": [],
+          "to": "lit-49312124ab6f19b8fbc1d21952e4efd15c61fa3b6239774d60122a3d7259c8cd"
+        },
+        {
+          "from": "map-338e717fa9072462568eb44df4b71b59ce90ab764cbfd98d60acf266a65b8099",
+          "label": "certification",
+          "lseqposition": [],
+          "to": "lit-4d0b76940385f44b4b47197607ff302554288b997f377d1cbfb468385b05b804"
+        },
+        {
+          "from": "map-338e717fa9072462568eb44df4b71b59ce90ab764cbfd98d60acf266a65b8099",
+          "label": "repairer",
+          "lseqposition": [],
+          "to": "lit-df3731b93d73a74aeffb4d358d306a9430d1d9d5c3716178966e7a5c22028d14"
+        }
+      ],
+      "id": "map-338e717fa9072462568eb44df4b71b59ce90ab764cbfd98d60acf266a65b8099",
+      "isarray": false,
+      "isliteral": false,
+      "ismap": true,
+      "ispromoted": false,
+      "isroot": false,
+      "litteralValue": null,
+      "nounce": "6d1af9ffee30a73f0676dca240a4c14cc9aa5afa8f9ad4c52c21e364dc49a47c",
+      "owner": "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696",
+      "parentid": "arr-2edee8e464a6236b66bd4e1b6025ce5a62ead5843e5e5d5ce48c4891c1119bb4",
+      "signature": "3de12e6d94b63e9cbcd6eb5e4419b91825e78646e089fe818e103965550c8a79475de3c6f02c0ab656f484b8144521ac3448b6a5a64bdba3493cc37c36aaa90501"
+    },
+    "map-3d191571962be5680ec564e0fce09c1464206be4ce3ef6b560cdac4b5ad10d90": {
+      "clock": {
+        "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696": 4
+      },
+      "deleted": false,
+      "edges": [
+        {
+          "from": "map-3d191571962be5680ec564e0fce09c1464206be4ce3ef6b560cdac4b5ad10d90",
+          "label": "owner",
+          "lseqposition": [],
+          "to": "lit-5ad2ca0b8f0f8c782fc4f0ea6c2e34dc8a375d8553c2292552add20244c58c95"
+        },
+        {
+          "from": "map-3d191571962be5680ec564e0fce09c1464206be4ce3ef6b560cdac4b5ad10d90",
+          "label": "date",
+          "lseqposition": [],
+          "to": "lit-a9768a9c0ba2055056e2cd70776faa0974778cd1df3e8a030834b1e8e4cf044b"
+        },
+        {
+          "from": "map-3d191571962be5680ec564e0fce09c1464206be4ce3ef6b560cdac4b5ad10d90",
+          "label": "location",
+          "lseqposition": [],
+          "to": "lit-ed42ff0fd6069f382d45c529af995ca26c2356a17269659a02504fd3c94d4a27"
+        }
+      ],
+      "id": "map-3d191571962be5680ec564e0fce09c1464206be4ce3ef6b560cdac4b5ad10d90",
+      "isarray": false,
+      "isliteral": false,
+      "ismap": true,
+      "ispromoted": false,
+      "isroot": false,
+      "litteralValue": null,
+      "nounce": "81da3d392de4400c28e381e0266a688d895548275ce3bdbdbdfd3ee80d54d37a",
+      "owner": "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696",
+      "parentid": "arr-ffbf34f773e6b64917260c2e580d8486cb861b36790f27b9917be5a6b83afd20",
+      "signature": "0b039cb084c0671d956c2116f7b6e74ee5c321e0b3bd85fcfabbd151ae2e70a2702dc8287728c3a0b6c7681d1bd599bdefb6a12b9eabc8394166cc1fc35ef50a01"
+    },
+    "map-623f304c519989fe308f1255395e2e2b9f0939ff0d2f0a9abdd0fcaf4a2d212f": {
+      "clock": {
+        "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696": 5
+      },
+      "deleted": false,
+      "edges": [
+        {
+          "from": "map-623f304c519989fe308f1255395e2e2b9f0939ff0d2f0a9abdd0fcaf4a2d212f",
+          "label": "dppVersion",
+          "lseqposition": [],
+          "to": "lit-0c6207626ff4f0c940041257231dfff6b0702f890b84f7186b21c305c854197b"
+        },
+        {
+          "from": "map-623f304c519989fe308f1255395e2e2b9f0939ff0d2f0a9abdd0fcaf4a2d212f",
+          "label": "softwareUpdates",
+          "lseqposition": [],
+          "to": "lit-15043d4929fef11c0f9d23966182506b6c9d3d30809fd3e54c6de0acf7893a7b"
+        },
+        {
+          "from": "map-623f304c519989fe308f1255395e2e2b9f0939ff0d2f0a9abdd0fcaf4a2d212f",
+          "label": "manual",
+          "lseqposition": [],
+          "to": "lit-4532dffaa7918ab65653d8f478480b321ab226eb931911413e541756cba94b44"
+        },
+        {
+          "from": "map-623f304c519989fe308f1255395e2e2b9f0939ff0d2f0a9abdd0fcaf4a2d212f",
+          "label": "dppLastUpdated",
+          "lseqposition": [],
+          "to": "lit-819b8add7c1bafccb44a57e9ee3268182a39edda41c828613bafc6c3722c5d54"
+        }
+      ],
+      "id": "map-623f304c519989fe308f1255395e2e2b9f0939ff0d2f0a9abdd0fcaf4a2d212f",
+      "isarray": false,
+      "isliteral": false,
+      "ismap": true,
+      "ispromoted": false,
+      "isroot": false,
+      "litteralValue": null,
+      "nounce": "318722cd08dce8321d388d14f8fb65184c6191b8f8ca8611ed9e630ae940ddb1",
+      "owner": "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696",
+      "parentid": "map-84cfa7245a3b524d2e0dde32fcbe74c9e93078577b5788afe9c90b566696c021",
+      "signature": "1d26e7c7338915877ecde43086313d4e356cef6a7a52875b3e2a37f250bea0444e90d563f469036a49c52be192ed2319d0e8639b34a24d8a3b7b11e2ffb0f11800"
+    },
+    "map-84cfa7245a3b524d2e0dde32fcbe74c9e93078577b5788afe9c90b566696c021": {
+      "clock": {
+        "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696": 17
+      },
+      "deleted": false,
+      "edges": [
+        {
+          "from": "map-84cfa7245a3b524d2e0dde32fcbe74c9e93078577b5788afe9c90b566696c021",
+          "label": "repairHistory",
+          "lseqposition": [],
+          "to": "arr-2edee8e464a6236b66bd4e1b6025ce5a62ead5843e5e5d5ce48c4891c1119bb4"
+        },
+        {
+          "from": "map-84cfa7245a3b524d2e0dde32fcbe74c9e93078577b5788afe9c90b566696c021",
+          "label": "certifications",
+          "lseqposition": [],
+          "to": "arr-5be418791a29ecdb20f0964adb66a4e22e6d4d4f3ee48c25876db1840d384e24"
+        },
+        {
+          "from": "map-84cfa7245a3b524d2e0dde32fcbe74c9e93078577b5788afe9c90b566696c021",
+          "label": "materials",
+          "lseqposition": [],
+          "to": "arr-621db33f39ca05598af084cb717d4f2ea4e81d523faab66a3554835ff6c3fd57"
+        },
+        {
+          "from": "map-84cfa7245a3b524d2e0dde32fcbe74c9e93078577b5788afe9c90b566696c021",
+          "label": "ownershipHistory",
+          "lseqposition": [],
+          "to": "arr-ffbf34f773e6b64917260c2e580d8486cb861b36790f27b9917be5a6b83afd20"
+        },
+        {
+          "from": "map-84cfa7245a3b524d2e0dde32fcbe74c9e93078577b5788afe9c90b566696c021",
+          "label": "repairabilityScore",
+          "lseqposition": [],
+          "to": "lit-304b11dfb1c5ce8fa6832f2eefb146d980b94474c9947197c40dac9371a85270"
+        },
+        {
+          "from": "map-84cfa7245a3b524d2e0dde32fcbe74c9e93078577b5788afe9c90b566696c021",
+          "label": "productName",
+          "lseqposition": [],
+          "to": "lit-40aa259a100fb99ddd3cc22f653d1905f460770b67f0a0ced3d9d2a73c867c62"
+        },
+        {
+          "from": "map-84cfa7245a3b524d2e0dde32fcbe74c9e93078577b5788afe9c90b566696c021",
+          "label": "serialNumber",
+          "lseqposition": [],
+          "to": "lit-6898e33b61f2ad92e38c1e7f324dcb9025368525d0c22bc119a87ce65b23e912"
+        },
+        {
+          "from": "map-84cfa7245a3b524d2e0dde32fcbe74c9e93078577b5788afe9c90b566696c021",
+          "label": "batchNumber",
+          "lseqposition": [],
+          "to": "lit-68a61e626ddde3e3f107133881936c91ec8105ddd9c10ffee4fcefd202c72940"
+        },
+        {
+          "from": "map-84cfa7245a3b524d2e0dde32fcbe74c9e93078577b5788afe9c90b566696c021",
+          "label": "productionDate",
+          "lseqposition": [],
+          "to": "lit-70ad24260447fc84f6fe788ffd7a4364d02edac226223f2650e2587e56daca0f"
+        },
+        {
+          "from": "map-84cfa7245a3b524d2e0dde32fcbe74c9e93078577b5788afe9c90b566696c021",
+          "label": "recyclabilityScore",
+          "lseqposition": [],
+          "to": "lit-a3d0df5fcedac6a1aa2ba95785aef102395f2a4ba0315fa5ff31506d2ed9a431"
+        },
+        {
+          "from": "map-84cfa7245a3b524d2e0dde32fcbe74c9e93078577b5788afe9c90b566696c021",
+          "label": "warrantyPeriod",
+          "lseqposition": [],
+          "to": "lit-b7a2c86cfdf0a5f3aacae44322e8cef9a3fb6475e22e365a955138ec59a6f3ab"
+        },
+        {
+          "from": "map-84cfa7245a3b524d2e0dde32fcbe74c9e93078577b5788afe9c90b566696c021",
+          "label": "productId",
+          "lseqposition": [],
+          "to": "lit-bf5cf72a6576e08d1b23315a885e500f60c5aeb94345d6a1bbbbe94e4c5fc825"
+        },
+        {
+          "from": "map-84cfa7245a3b524d2e0dde32fcbe74c9e93078577b5788afe9c90b566696c021",
+          "label": "endOfLifeInstructions",
+          "lseqposition": [],
+          "to": "map-2b8e85168a57c4b722c4ef51ef53cb1734af408d992c8709e4af85bf0e4aa8d6"
+        },
+        {
+          "from": "map-84cfa7245a3b524d2e0dde32fcbe74c9e93078577b5788afe9c90b566696c021",
+          "label": "digitalLinks",
+          "lseqposition": [],
+          "to": "map-623f304c519989fe308f1255395e2e2b9f0939ff0d2f0a9abdd0fcaf4a2d212f"
+        },
+        {
+          "from": "map-84cfa7245a3b524d2e0dde32fcbe74c9e93078577b5788afe9c90b566696c021",
+          "label": "manufacturer",
+          "lseqposition": [],
+          "to": "map-882631db92d07bf93e01cc39c3380b6ee9240e1be7364621361978ad3fccb5f2"
+        },
+        {
+          "from": "map-84cfa7245a3b524d2e0dde32fcbe74c9e93078577b5788afe9c90b566696c021",
+          "label": "carbonFootprint",
+          "lseqposition": [],
+          "to": "map-e4b9cce8758aec0c5d17bf7b38befcf44aed58483a0a9cbc265be512697e3582"
+        }
+      ],
+      "id": "map-84cfa7245a3b524d2e0dde32fcbe74c9e93078577b5788afe9c90b566696c021",
+      "isarray": false,
+      "isliteral": false,
+      "ismap": true,
+      "ispromoted": false,
+      "isroot": false,
+      "litteralValue": null,
+      "nounce": "14b4ab0c9ee436ea6f9dfdd0443d31bd557b01bd0414a13b8c3d1aa365739861",
+      "owner": "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696",
+      "parentid": "root",
+      "signature": "49e1d76e37533b97bc917a87ff54404dda4c07c19fe275bfde1b7843b39c460e717c47b16e147dbb0f874514192bf8ac97767c8bb3ddbbb51dcf6f690766e2eb00"
+    },
+    "map-882631db92d07bf93e01cc39c3380b6ee9240e1be7364621361978ad3fccb5f2": {
+      "clock": {
+        "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696": 5
+      },
+      "deleted": false,
+      "edges": [
+        {
+          "from": "map-882631db92d07bf93e01cc39c3380b6ee9240e1be7364621361978ad3fccb5f2",
+          "label": "name",
+          "lseqposition": [],
+          "to": "lit-0b2214b8357779d84c81e753fe52342f97c32f26b0570c1cf521437906bcf66f"
+        },
+        {
+          "from": "map-882631db92d07bf93e01cc39c3380b6ee9240e1be7364621361978ad3fccb5f2",
+          "label": "country",
+          "lseqposition": [],
+          "to": "lit-5771dacfa34e97b59041262171e89e9da9df1f4d14ba0a61b1c3d58ea1052b76"
+        },
+        {
+          "from": "map-882631db92d07bf93e01cc39c3380b6ee9240e1be7364621361978ad3fccb5f2",
+          "label": "contact",
+          "lseqposition": [],
+          "to": "lit-ac01cc360bc3263cd5585ce6ccba3211749db655cec0e82ef8ef1e3d06ed6f2b"
+        },
+        {
+          "from": "map-882631db92d07bf93e01cc39c3380b6ee9240e1be7364621361978ad3fccb5f2",
+          "label": "address",
+          "lseqposition": [],
+          "to": "lit-ceaa786578fc42f2194ac8cc8a78564807910e7b5300b5282315688d5dbaabc7"
+        }
+      ],
+      "id": "map-882631db92d07bf93e01cc39c3380b6ee9240e1be7364621361978ad3fccb5f2",
+      "isarray": false,
+      "isliteral": false,
+      "ismap": true,
+      "ispromoted": false,
+      "isroot": false,
+      "litteralValue": null,
+      "nounce": "1f26fb33c006a614d90b37fab22136ee9c372b46fb272e4472abf7701fc90be3",
+      "owner": "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696",
+      "parentid": "map-84cfa7245a3b524d2e0dde32fcbe74c9e93078577b5788afe9c90b566696c021",
+      "signature": "6da330249918dcaa8de83fdd9f93206cd341e3c11061b5b0e0edb9fba25936240ff7c2356486f2cfcfcf3fe43d6866f4e4206c156d797c5cf39bd284545b714e01"
+    },
+    "map-e4b9cce8758aec0c5d17bf7b38befcf44aed58483a0a9cbc265be512697e3582": {
+      "clock": {
+        "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696": 3
+      },
+      "deleted": false,
+      "edges": [
+        {
+          "from": "map-e4b9cce8758aec0c5d17bf7b38befcf44aed58483a0a9cbc265be512697e3582",
+          "label": "value",
+          "lseqposition": [],
+          "to": "lit-42336d9afdad29f8148b1c07a5a62ee4cfc705357b586a33fc92f3a4a97aebe6"
+        },
+        {
+          "from": "map-e4b9cce8758aec0c5d17bf7b38befcf44aed58483a0a9cbc265be512697e3582",
+          "label": "unit",
+          "lseqposition": [],
+          "to": "lit-92a56f9896cbe194308f575eff24c8d811c94129a0fdc81a1c0a1b54fed62041"
+        }
+      ],
+      "id": "map-e4b9cce8758aec0c5d17bf7b38befcf44aed58483a0a9cbc265be512697e3582",
+      "isarray": false,
+      "isliteral": false,
+      "ismap": true,
+      "ispromoted": false,
+      "isroot": false,
+      "litteralValue": null,
+      "nounce": "c1c3a5af499e76ca9a8f12487b50fac959d41eae0c1a8429d18ed5a6ec4c0502",
+      "owner": "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696",
+      "parentid": "map-84cfa7245a3b524d2e0dde32fcbe74c9e93078577b5788afe9c90b566696c021",
+      "signature": "ed9bfb8c5350bd61a0acf4647204fd14e672a2a2dd58665935c4a0edbf2c9872039f2d580787f3ba9c0437dc15a6b3e5385904833e8c6180a355ce93b574006401"
+    },
+    "map-ee632ece3e9c6aeae04e38062041838399408b86d1f931aa6f32da4eeaf1729b": {
+      "clock": {
+        "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696": 4
+      },
+      "deleted": false,
+      "edges": [
+        {
+          "from": "map-ee632ece3e9c6aeae04e38062041838399408b86d1f931aa6f32da4eeaf1729b",
+          "label": "date",
+          "lseqposition": [],
+          "to": "lit-6198e9bf9af601ec6aaa29cc61f8be76537842c6389f8800e197d3707e14ff5c"
+        },
+        {
+          "from": "map-ee632ece3e9c6aeae04e38062041838399408b86d1f931aa6f32da4eeaf1729b",
+          "label": "owner",
+          "lseqposition": [],
+          "to": "lit-6903fbd781beab39824146f5d82726e76f1d6cce2df8f341636b17837ab83b14"
+        },
+        {
+          "from": "map-ee632ece3e9c6aeae04e38062041838399408b86d1f931aa6f32da4eeaf1729b",
+          "label": "location",
+          "lseqposition": [],
+          "to": "lit-a2101153a24aace7be0e5dd3de16be0053afca1b11d4597ae7ff17114f7d0b6f"
+        }
+      ],
+      "id": "map-ee632ece3e9c6aeae04e38062041838399408b86d1f931aa6f32da4eeaf1729b",
+      "isarray": false,
+      "isliteral": false,
+      "ismap": true,
+      "ispromoted": false,
+      "isroot": false,
+      "litteralValue": null,
+      "nounce": "49b6e9e8e01074f3d6147a03e3d339b90e0a239e7d5f3a38c698d01178029565",
+      "owner": "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696",
+      "parentid": "arr-ffbf34f773e6b64917260c2e580d8486cb861b36790f27b9917be5a6b83afd20",
+      "signature": "ba872b5b9117f7e09231acf2655028c3b97978866b4fa5c6fbfd36ff646f544e35ec7c9d70ef0275f4aa5c72a822deb29c138d8401277961b629f783636978d501"
+    },
+    "map-fd75859cf7aaf1bbdae1c5e93559bebbea2df943ceee6573c102872cfa7cf900": {
+      "clock": {
+        "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696": 4
+      },
+      "deleted": false,
+      "edges": [
+        {
+          "from": "map-fd75859cf7aaf1bbdae1c5e93559bebbea2df943ceee6573c102872cfa7cf900",
+          "label": "owner",
+          "lseqposition": [],
+          "to": "lit-2a0be3189c4f5538b98abba52fae5d81476639a93152e5827e9a6bb3d857b4e8"
+        },
+        {
+          "from": "map-fd75859cf7aaf1bbdae1c5e93559bebbea2df943ceee6573c102872cfa7cf900",
+          "label": "date",
+          "lseqposition": [],
+          "to": "lit-55e110a672af14aee708ed241a644679d98330adef0e3be8e828385cf80189ae"
+        },
+        {
+          "from": "map-fd75859cf7aaf1bbdae1c5e93559bebbea2df943ceee6573c102872cfa7cf900",
+          "label": "location",
+          "lseqposition": [],
+          "to": "lit-bf1c8cb1f0387a73d1ede94c6efcacd7c678c8a1b30c25a12b3a9ad7b42384df"
+        }
+      ],
+      "id": "map-fd75859cf7aaf1bbdae1c5e93559bebbea2df943ceee6573c102872cfa7cf900",
+      "isarray": false,
+      "isliteral": false,
+      "ismap": true,
+      "ispromoted": false,
+      "isroot": false,
+      "litteralValue": null,
+      "nounce": "4b4169e9173046ecefa4a795468225e45e104ec7f3e54eb2275c31df7e2238fc",
+      "owner": "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696",
+      "parentid": "arr-ffbf34f773e6b64917260c2e580d8486cb861b36790f27b9917be5a6b83afd20",
+      "signature": "7a291844e4bb335eba546de12964e9d8b6dd151bf059e84bd63e8bf0f4a0934a2ca2992512fd47e1a75ff0e27a4bdbad4ddfa8f95206dfcd8b3ef9353d47b39801"
+    },
+    "root": {
+      "clock": {
+        "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696": 1
+      },
+      "deleted": false,
+      "edges": [
+        {
+          "from": "root",
+          "label": "",
+          "lseqposition": [],
+          "to": "map-84cfa7245a3b524d2e0dde32fcbe74c9e93078577b5788afe9c90b566696c021"
+        }
+      ],
+      "id": "root",
+      "isarray": false,
+      "isliteral": false,
+      "ismap": false,
+      "ispromoted": false,
+      "isroot": true,
+      "litteralValue": null,
+      "nounce": "38242e95a47dcd51630165b80ed0a574a77d78a9c3e266bea83823f353f419e8",
+      "owner": "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696",
+      "parentid": "",
+      "signature": "d02459e48edeb586387f79c35748a2e6904011c8b3915cd073a4de92c3185797317bc068c6b2837cb8437d537540a595fbf89bf73ced5080f41b09b37f09e0a901"
+    }
+  },
+  "root": "root",
+  "secure": true
+}

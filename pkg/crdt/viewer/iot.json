@@ -1,0 +1,37 @@
+{
+  "home": {
+    "rooms": [
+      {
+        "name": "Living Room",
+        "lamps": [
+          {
+            "id": "lamp1",
+            "name": "Ceiling Lamp",
+            "state": "on",
+            "brightness": 80,
+            "color": "warm white"
+          },
+          {
+            "id": "lamp2",
+            "name": "Corner Lamp",
+            "state": "off",
+            "brightness": 0,
+            "color": "cool white"
+          }
+        ]
+      },
+      {
+        "name": "Bedroom",
+        "lamps": [
+          {
+            "id": "lamp3",
+            "name": "Bedside Lamp",
+            "state": "on",
+            "brightness": 50,
+            "color": "soft yellow"
+          }
+        ]
+      }
+    ]
+  }
+}
