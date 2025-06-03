@@ -72,7 +72,9 @@ func (c *TreeCRDT) computePath(nodeID NodeID) (string, error) {
 					}
 				} else {
 					// Map → label
-					pathParts = append([]string{edge.Label}, pathParts...)
+					if len(edge.Label) > 0 {
+						pathParts = append([]string{edge.Label}, pathParts...)
+					}
 				}
 				found = true
 				break
@@ -102,12 +104,12 @@ func (c *TreeCRDT) notifySubscribers(nodeID NodeID, eventType NodeEventType) {
 
 	evt := NodeEvent{
 		NodeID: nodeID,
-		Path:   strings.ReplaceAll(nodePath, "//", "/"), // TODO: why is this needed?
+		Path:   nodePath,
 		Type:   eventType,
 	}
 
 	for _, sub := range c.subscribers {
-		if sub.path == nodePath || strings.HasPrefix(nodePath, sub.path+"/") {
+		if sub.path == nodePath || strings.HasPrefix(nodePath, sub.path) {
 			select {
 			case sub.ch <- evt:
 				log.WithFields(log.Fields{

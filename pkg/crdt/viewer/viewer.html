@@ -25,21 +25,6 @@
       flex-shrink: 0;
     }
 
-    .tooltip {
-      position: absolute;
-      max-width: 800px;
-      white-space: pre-wrap;
-      text-align: left;
-      padding: 10px;
-      font: 12px sans-serif;
-      background: #f9f9f9;
-      border: 1px solid #aaa;
-      border-radius: 5px;
-      box-shadow: 2px 2px 6px rgba(0, 0, 0, 0.2);
-      pointer-events: none;
-      z-index: 10;
-    }
-
     #visualization-container {
       flex: 1;
       display: flex;
@@ -73,6 +58,46 @@
     svg#tree {
       width: 100%;
       flex: 1;
+      cursor: grab;
+    }
+
+    /* Modal styles */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 100;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      overflow: auto;
+      background-color: rgba(0,0,0,0.5);
+    }
+
+    .modal-content {
+      background-color: #fff;
+      margin: 10% auto;
+      padding: 20px;
+      border: 1px solid #888;
+      width: 80%;
+      max-height: 70%;
+      overflow-y: auto;
+      border-radius: 8px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    }
+
+    .close {
+      color: #aaa;
+      float: right;
+      font-size: 28px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .close:hover,
+    .close:focus {
+      color: black;
+      text-decoration: none;
     }
   </style>
 </head>
@@ -80,7 +105,6 @@
 
 <div id="app">
   <div id="drop-area">Drop a CRDT raw JSON file here</div>
-  <div class="tooltip" style="opacity:0;"></div>
 
   <div id="visualization-container">
     <div class="legend">
@@ -113,11 +137,32 @@
   </div>
 </div>
 
+<!-- Modal -->
+<div id="nodeModal" class="modal">
+  <div class="modal-content">
+    <span class="close">&times;</span>
+    <pre id="modalContent"></pre>
+  </div>
+</div>
+
 <script src="https://d3js.org/d3.v7.min.js"></script>
 <script>
   const dropArea = document.getElementById("drop-area");
   const svg = d3.select("#tree");
-  const tooltip = d3.select(".tooltip");
+
+  const modal = document.getElementById("nodeModal");
+  const modalContent = document.getElementById("modalContent");
+  const closeModal = document.getElementsByClassName("close")[0];
+
+  closeModal.onclick = function() {
+    modal.style.display = "none";
+  };
+
+  window.onclick = function(event) {
+    if (event.target == modal) {
+      modal.style.display = "none";
+    }
+  };
 
   function buildTree(nodesMap, rootId) {
     const nodeMap = {}, childrenMap = {};
@@ -167,17 +212,27 @@
     const g = svg.append("g")
       .attr("transform", `translate(${width / 2 - (minX + maxX) / 2}, ${margin.top})`);
 
+    // Add zoom & pan behavior!
+    svg.call(d3.zoom().on("zoom", (event) => {
+      g.attr("transform", event.transform);
+    }));
+
     const links = g.selectAll(".link")
       .data(root.links())
       .enter();
 
-    links.append("line")
-      .attr("stroke", "#999")
-      .attr("x1", d => d.source.x)
-      .attr("y1", d => d.source.y)
-      .attr("x2", d => d.target.x)
-      .attr("y2", d => d.target.y);
-
+	  links.append("path")
+        .attr("fill", "none")
+        .attr("stroke", "#999")
+        .attr("stroke-width", 1.5)
+        .attr("d", d => {
+           return `
+           M${d.source.x},${d.source.y}
+           C${d.source.x},${(d.source.y + d.target.y) / 2}
+           ${d.target.x},${(d.source.y + d.target.y) / 2}
+           ${d.target.x},${d.target.y}
+        `;
+     });
     links.append("text")
       .attr("x", d => (d.source.x + d.target.x) / 2)
       .attr("y", d => (d.source.y + d.target.y) / 2 - 5)
@@ -199,32 +254,34 @@
       .enter().append("g")
       .attr("class", "node")
       .attr("transform", d => `translate(${d.x},${d.y})`)
-      .on("mouseover", (event, d) => {
-        tooltip.transition().duration(200).style("opacity", 1);
-        tooltip.html(`<pre>${JSON.stringify(d.data.data, null, 2)}</pre>`)
-          .style("left", (event.pageX + 15) + "px")
-          .style("top", (event.pageY - 30) + "px");
-      })
-      .on("mouseout", () => tooltip.transition().duration(500).style("opacity", 0));
+      .on("click", (event, d) => {
+        // Prepare clean data without parent reference
+        const nodeData = { ...d.data.data };
+        delete nodeData.parent;
+
+        // Show modal
+        modalContent.textContent = JSON.stringify(nodeData, null, 2);
+        modal.style.display = "block";
+      });
 
     node.each(function(d) {
       const n = d.data.data;
       const shape = d3.select(this);
-      if (n.isLiteral) {
+      if (n.isliteral) {
         shape.append("path")
           .attr("d", d3.symbol().type(d3.symbolTriangle).size(800))
           .attr("fill", "red");
         shape.append("text")
-          .text(String(n.literalValue))
+          .text(String(n.litteralValue))
           .attr("y", 25)
           .attr("text-anchor", "middle")
           .style("font-size", "10px")
           .style("fill", "#222");
-      } else if (n.isMap) {
+      } else if (n.ismap) {
         shape.append("path")
           .attr("d", d3.symbol().type(d3.symbolDiamond).size(800))
           .attr("fill", "orange");
-      } else if (n.isArray) {
+      } else if (n.isarray) {
         shape.append("rect")
           .attr("x", -15).attr("y", -15).attr("width", 30).attr("height", 30)
           .attr("fill", "green");

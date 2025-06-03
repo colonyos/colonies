@@ -1,0 +1,20 @@
+{
+	"uid": "user_1",
+	"name": "Alice",
+	"friends": [
+		{
+			"uid": "user_2",
+			"name": "Bob"
+		},
+		{
+			"uid": "user_3",
+			"name": "Charlie",
+			"friends": [
+				{
+					"uid": "user_4",
+					"name": "Dana"
+				}
+			]
+		}
+	]
+}

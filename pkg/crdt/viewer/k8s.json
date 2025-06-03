@@ -1,0 +1,56 @@
+{
+  "apiVersion": "apps/v1",
+  "kind": "Deployment",
+  "metadata": {
+    "name": "arrowhead-system",
+    "labels": {
+      "app": "arrowhead-system"
+    }
+  },
+  "spec": {
+    "replicas": 1,
+    "selector": {
+      "matchLabels": {
+        "app": "arrowhead-system"
+      }
+    },
+    "template": {
+      "metadata": {
+        "labels": {
+          "app": "arrowhead-system"
+        }
+      },
+      "spec": {
+        "containers": [
+          {
+            "name": "arrowhead-system",
+            "image": "yourdockerhub/arrowhead-system:latest",
+            "ports": [
+              {
+                "containerPort": 8080
+              }
+            ],
+            "env": [
+              {
+                "name": "SERVICE_REGISTRY_ADDRESS",
+                "value": "service-registry.arrowhead.svc.cluster.local"
+              },
+              {
+                "name": "SERVICE_REGISTRY_PORT",
+                "value": "8443"
+              },
+              {
+                "name": "SYSTEM_NAME",
+                "value": "YourSystemName"
+              },
+              {
+                "name": "ARROWHEAD_SECURE",
+                "value": "true"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  }
+}

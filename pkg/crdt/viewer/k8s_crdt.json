@@ -1,0 +1,961 @@
+ {
+  "abac": {
+    "rules": {
+      "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696": {
+        "*": {
+          "root": {
+            "recursive": true
+          }
+        }
+      }
+    },
+    "ownerID": "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696",
+    "clock": {
+      "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696": 1
+    },
+    "nounce": "aa72f0c228fb710233884b257ff7f621bd31747eb7dd15a09880ef53267876b1",
+    "signature": "1abfae919f9be56aee48fb3a9dcbafcd4cc0dfa241e9844c30fff117d96cfd33402457c719d29fda69be09930bf24f75d89816d3bc1e23d659273b595d57d8ab00"
+  },
+  "nodes": {
+    "arr-8ad50553fc0c07e0b60364aadfba47103d6fc8ba5fe236672f248baa80a98ab8": {
+      "clock": {
+        "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696": 2
+      },
+      "deleted": false,
+      "edges": [
+        {
+          "from": "arr-8ad50553fc0c07e0b60364aadfba47103d6fc8ba5fe236672f248baa80a98ab8",
+          "label": "",
+          "lseqposition": [
+            11
+          ],
+          "to": "map-920b431ac386c221965a779f05150429d7e33e149979a77a41548626f7939fea"
+        }
+      ],
+      "id": "arr-8ad50553fc0c07e0b60364aadfba47103d6fc8ba5fe236672f248baa80a98ab8",
+      "isarray": true,
+      "isliteral": false,
+      "ismap": false,
+      "ispromoted": false,
+      "isroot": false,
+      "litteralValue": null,
+      "nounce": "ea4a9594258071333bc8c7585ac4faf8ed5d2686c93d566742906deac50d7a0f",
+      "owner": "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696",
+      "parentid": "map-ac63fdaad22932e8673b648724fad05aedaf6e0e2e7cace2b67feb7897714cc8",
+      "signature": "77fcd393b350f64cdb909ecd244f91af8c6c9d412ef32c1b23782cfa83a1822a26e502a25582023c5343998f752a4090e7b1a85bb0ed07e8d44346d7b043b4aa00"
+    },
+    "arr-b42378df579cab94ff57565c8e9a8f67cd140baa85a01d31dab79f27568aaff8": {
+      "clock": {
+        "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696": 5
+      },
+      "deleted": false,
+      "edges": [
+        {
+          "from": "arr-b42378df579cab94ff57565c8e9a8f67cd140baa85a01d31dab79f27568aaff8",
+          "label": "",
+          "lseqposition": [
+            1
+          ],
+          "to": "map-291be8d83283b43615338e20b9c32d8022142220f4c520faf29f5bdb814041f9"
+        },
+        {
+          "from": "arr-b42378df579cab94ff57565c8e9a8f67cd140baa85a01d31dab79f27568aaff8",
+          "label": "",
+          "lseqposition": [
+            11
+          ],
+          "to": "map-9f22cad8f30a81745604ccbd925d303386b1db3965212ef1b71ef3db512e2b5d"
+        },
+        {
+          "from": "arr-b42378df579cab94ff57565c8e9a8f67cd140baa85a01d31dab79f27568aaff8",
+          "label": "",
+          "lseqposition": [
+            12
+          ],
+          "to": "map-3e90eb47152b844a1d302fc96c641a677ee04c94b35b7ac5b644ac6e01f74730"
+        },
+        {
+          "from": "arr-b42378df579cab94ff57565c8e9a8f67cd140baa85a01d31dab79f27568aaff8",
+          "label": "",
+          "lseqposition": [
+            13
+          ],
+          "to": "map-9a6effe6fcbdfcaae982ed0616027695031d7232aea52661ec099e2ae66a5178"
+        }
+      ],
+      "id": "arr-b42378df579cab94ff57565c8e9a8f67cd140baa85a01d31dab79f27568aaff8",
+      "isarray": true,
+      "isliteral": false,
+      "ismap": false,
+      "ispromoted": false,
+      "isroot": false,
+      "litteralValue": null,
+      "nounce": "0d840658d7de29cc6b4d1fe69cf83adf831f59649f39ad381ec38145a7ad0e49",
+      "owner": "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696",
+      "parentid": "map-920b431ac386c221965a779f05150429d7e33e149979a77a41548626f7939fea",
+      "signature": "54bfdce70f39fdf6ec4e97709e7c65f8a944d04fad01d30c35eff3263adac01f79f7174710d1001a128bbbe53f638a5d8bcf87fe499e3152eca4eac9929c3bfd00"
+    },
+    "arr-e046d83b9dd1331392c44d816436ce2936f318b99ccebd9c807e91df5812deb1": {
+      "clock": {
+        "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696": 2
+      },
+      "deleted": false,
+      "edges": [
+        {
+          "from": "arr-e046d83b9dd1331392c44d816436ce2936f318b99ccebd9c807e91df5812deb1",
+          "label": "",
+          "lseqposition": [
+            15
+          ],
+          "to": "map-f3df3e943c9d9c3606c9e9b3c1fc3b96eb080992ca0bac892a693539fabd2fb2"
+        }
+      ],
+      "id": "arr-e046d83b9dd1331392c44d816436ce2936f318b99ccebd9c807e91df5812deb1",
+      "isarray": true,
+      "isliteral": false,
+      "ismap": false,
+      "ispromoted": false,
+      "isroot": false,
+      "litteralValue": null,
+      "nounce": "155ec20dd7e8d0c69dd920f63a7aa3ed25c3c916ce26870e38e4f70e2a075964",
+      "owner": "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696",
+      "parentid": "map-920b431ac386c221965a779f05150429d7e33e149979a77a41548626f7939fea",
+      "signature": "0a663d752fd773485d12065cabdd4855e695d7bb34be7006d15baa2446f779c533c5b2bab289fd84ec5753d2e27635bdea085e408f49c12a22294330c9f8e7be01"
+    },
+    "lit-09fa998331618ad411b81fff8d4aedb1c49e72a757b993616895d28c6766027b": {
+      "clock": {
+        "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696": 1
+      },
+      "deleted": false,
+      "edges": [],
+      "id": "lit-09fa998331618ad411b81fff8d4aedb1c49e72a757b993616895d28c6766027b",
+      "isarray": false,
+      "isliteral": true,
+      "ismap": false,
+      "ispromoted": false,
+      "isroot": false,
+      "litteralValue": "SERVICE_REGISTRY_ADDRESS",
+      "nounce": "b5a7b09b2069da46cd5bcb3f7bd8a3636f4f3df8c4e0531d1a467d4f0e95de3d",
+      "owner": "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696",
+      "parentid": "map-291be8d83283b43615338e20b9c32d8022142220f4c520faf29f5bdb814041f9",
+      "signature": "4ac29990aca433cebc2fff3e475a1ce90fe0f07bd4591a847f91e7f21116bfe40b87cec96124efc5e393203826e023979ae49089a1f92e9932202baa6cd61d8801"
+    },
+    "lit-0fe48f58a0e4c4b89d4309f5538d8f5ec83d2780876ae5cc1d6f51f56db34471": {
+      "clock": {
+        "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696": 1
+      },
+      "deleted": false,
+      "edges": [],
+      "id": "lit-0fe48f58a0e4c4b89d4309f5538d8f5ec83d2780876ae5cc1d6f51f56db34471",
+      "isarray": false,
+      "isliteral": true,
+      "ismap": false,
+      "ispromoted": false,
+      "isroot": false,
+      "litteralValue": "SYSTEM_NAME",
+      "nounce": "94ab2b3269e295eb9ce23002a8e9731c6f75fa39c4a5802f7b50b5b0f1ac5b51",
+      "owner": "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696",
+      "parentid": "map-3e90eb47152b844a1d302fc96c641a677ee04c94b35b7ac5b644ac6e01f74730",
+      "signature": "fb4894b7e782f4f409725961e06f38ed93276fbf84754d1e9c0958deed216b81415ce5b17e55c122720910f4f8da1dabaebbfd389f30a0281e098f49dec6f97201"
+    },
+    "lit-11291c7167077c7f1feb35bbd6c0b6cc7d0b6de00e225c8c8208f85410b0094c": {
+      "clock": {
+        "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696": 1
+      },
+      "deleted": false,
+      "edges": [],
+      "id": "lit-11291c7167077c7f1feb35bbd6c0b6cc7d0b6de00e225c8c8208f85410b0094c",
+      "isarray": false,
+      "isliteral": true,
+      "ismap": false,
+      "ispromoted": false,
+      "isroot": false,
+      "litteralValue": "service-registry.arrowhead.svc.cluster.local",
+      "nounce": "32e666b680106449fdf7ab1f54276239b996933c12145065245a6b69d6022460",
+      "owner": "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696",
+      "parentid": "map-291be8d83283b43615338e20b9c32d8022142220f4c520faf29f5bdb814041f9",
+      "signature": "a929e988615b3d9083686e2dc3a022d75818bf7bdf33380a5cfbec4b134cbbfb2e81aa4dff549bb946ac163d7834b6a84446852b33edf88a8b93a86e25822eda00"
+    },
+    "lit-6311e80d15821d68987d0acdb1328079e474afdb4ab289331b6e6f2c14a446e8": {
+      "clock": {
+        "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696": 1
+      },
+      "deleted": false,
+      "edges": [],
+      "id": "lit-6311e80d15821d68987d0acdb1328079e474afdb4ab289331b6e6f2c14a446e8",
+      "isarray": false,
+      "isliteral": true,
+      "ismap": false,
+      "ispromoted": false,
+      "isroot": false,
+      "litteralValue": "arrowhead-system",
+      "nounce": "13cac63ab2f605f19ddb4fa765c992b56dc56d2d339aeabfc201357675604ba8",
+      "owner": "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696",
+      "parentid": "map-96bf33755c4f56dc8ab6417867b764ad1f116361bd57e71a8d568b33868f07f7",
+      "signature": "a9737a7c4384b521bd027c4562c5d7779f047ee7152334e85e80b157288e6a96155d6cdd7e1f9eaeecdbbefb292759c0af44e3e6dba7fd8f736550f5c53aadee01"
+    },
+    "lit-7744e7ab5ad7033650d1d7fd8416e65d67b9ce1451a158a674818f9ce8291f85": {
+      "clock": {
+        "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696": 1
+      },
+      "deleted": false,
+      "edges": [],
+      "id": "lit-7744e7ab5ad7033650d1d7fd8416e65d67b9ce1451a158a674818f9ce8291f85",
+      "isarray": false,
+      "isliteral": true,
+      "ismap": false,
+      "ispromoted": false,
+      "isroot": false,
+      "litteralValue": "arrowhead-system",
+      "nounce": "eae589d95b75c67bd1184dc2d9b676f458cfe122630f238e37788125e86d9ed7",
+      "owner": "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696",
+      "parentid": "map-920b431ac386c221965a779f05150429d7e33e149979a77a41548626f7939fea",
+      "signature": "3af60b3d47d58adb5654bea83c0f0b10fbc11c21bb17dd028d18cb2156ca5da90cc60d9621423fdb6855e486ffa09289336831df56d7271d16ad739b7816fc2400"
+    },
+    "lit-7a0f8e78af890388abe0bc65424ad8fc63f35b94d2abfe74ec66613b8a2876fd": {
+      "clock": {
+        "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696": 1
+      },
+      "deleted": false,
+      "edges": [],
+      "id": "lit-7a0f8e78af890388abe0bc65424ad8fc63f35b94d2abfe74ec66613b8a2876fd",
+      "isarray": false,
+      "isliteral": true,
+      "ismap": false,
+      "ispromoted": false,
+      "isroot": false,
+      "litteralValue": "YourSystemName",
+      "nounce": "435fb66a8e9c2f09a1e8d99698b98e14997639d24e1eb6074523e6555f3db25f",
+      "owner": "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696",
+      "parentid": "map-3e90eb47152b844a1d302fc96c641a677ee04c94b35b7ac5b644ac6e01f74730",
+      "signature": "1cb75dc9592fa93dc0c774ebacbd4bc83588a36d6f2944779541290ab171a1df41dd02c830e93e3f4f290a318be01e5f29f9393b0f8c0f63b2cb7c8e72669aa200"
+    },
+    "lit-96ee5bf4a0136c2119972c6878b4ba5a8145800bb99da8ff7a7a32ec4af78462": {
+      "clock": {
+        "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696": 1
+      },
+      "deleted": false,
+      "edges": [],
+      "id": "lit-96ee5bf4a0136c2119972c6878b4ba5a8145800bb99da8ff7a7a32ec4af78462",
+      "isarray": false,
+      "isliteral": true,
+      "ismap": false,
+      "ispromoted": false,
+      "isroot": false,
+      "litteralValue": "8443",
+      "nounce": "35b711141965aabbb921903bd4e5cf2a9c009040b69aae05226ca1c13241b893",
+      "owner": "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696",
+      "parentid": "map-9f22cad8f30a81745604ccbd925d303386b1db3965212ef1b71ef3db512e2b5d",
+      "signature": "d24fb5e6081131f6ba8cfe0d5675057f4fc85b6af68f25e6977c962d58400b8103444f29973667388a8cf3fc19dbaeca780afdc06c519384e0eb3adb9caacb4701"
+    },
+    "lit-a2c91c83347204fa0a2fff90f290933f6e47566df14254494dae760fbe058c86": {
+      "clock": {
+        "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696": 1
+      },
+      "deleted": false,
+      "edges": [],
+      "id": "lit-a2c91c83347204fa0a2fff90f290933f6e47566df14254494dae760fbe058c86",
+      "isarray": false,
+      "isliteral": true,
+      "ismap": false,
+      "ispromoted": false,
+      "isroot": false,
+      "litteralValue": "yourdockerhub/arrowhead-system:latest",
+      "nounce": "dbddc8da43660fe2509947eb06267321c36334ca4c83bca815e4a8da9ce60185",
+      "owner": "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696",
+      "parentid": "map-920b431ac386c221965a779f05150429d7e33e149979a77a41548626f7939fea",
+      "signature": "22456a79301a2749cb41fde20bda98a997fea6d1f3c20b37fa039527c192e92b2ed286f57562b2971ea683e25cdf8587326f35ff2ebb0e5ad339c837230b005600"
+    },
+    "lit-a996c43d79fa768f393335763fc28250a1c0b588ba1b7ae03dc4c82b3a78a27e": {
+      "clock": {
+        "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696": 1
+      },
+      "deleted": false,
+      "edges": [],
+      "id": "lit-a996c43d79fa768f393335763fc28250a1c0b588ba1b7ae03dc4c82b3a78a27e",
+      "isarray": false,
+      "isliteral": true,
+      "ismap": false,
+      "ispromoted": false,
+      "isroot": false,
+      "litteralValue": "Deployment",
+      "nounce": "0edd757b0e338709d9e396febd406408a16599090963a8a9f2c1598c120faba5",
+      "owner": "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696",
+      "parentid": "map-2d5c5b5fa8d4d5688577b0b41d0cd3ff7ad8a933b46bfe6265f1d1912b01638e",
+      "signature": "c7b47f90ae969d7a00af5f3f818dc1b42e0b709fb2d142922d7e8ff35f5390de4c461e14e11911057ca467efd50cedff0501928b5e33dfb37bbc121d6e12de3801"
+    },
+    "lit-bc69a2aca69b8de8b6903ce40e99d2805b73cef62407f6de0324ff88c723e5eb": {
+      "clock": {
+        "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696": 1
+      },
+      "deleted": false,
+      "edges": [],
+      "id": "lit-bc69a2aca69b8de8b6903ce40e99d2805b73cef62407f6de0324ff88c723e5eb",
+      "isarray": false,
+      "isliteral": true,
+      "ismap": false,
+      "ispromoted": false,
+      "isroot": false,
+      "litteralValue": 8080,
+      "nounce": "1217f89c49b46cb73ed51e128ece9f70796330f7db866fc11845a878ca5c0069",
+      "owner": "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696",
+      "parentid": "map-f3df3e943c9d9c3606c9e9b3c1fc3b96eb080992ca0bac892a693539fabd2fb2",
+      "signature": "c0f9631469eee3c00c8691662ea63bab63c5ad131ba3545d164c42b6f5eb7e1a4379ec9ec10695398a254abee996a5f37b52ac43bb6957d7526dacf8c70f9a8b00"
+    },
+    "lit-c31f964ea1a6c1cc6d036e3d7ebe59bd16ac180c63b439a231d71b2384ed4b45": {
+      "clock": {
+        "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696": 1
+      },
+      "deleted": false,
+      "edges": [],
+      "id": "lit-c31f964ea1a6c1cc6d036e3d7ebe59bd16ac180c63b439a231d71b2384ed4b45",
+      "isarray": false,
+      "isliteral": true,
+      "ismap": false,
+      "ispromoted": false,
+      "isroot": false,
+      "litteralValue": "true",
+      "nounce": "47a5d3155df121cea33cf187a11019054c44be565b971bee4dbf008ae83ecf01",
+      "owner": "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696",
+      "parentid": "map-9a6effe6fcbdfcaae982ed0616027695031d7232aea52661ec099e2ae66a5178",
+      "signature": "54d1f57d5e8e8519a0283ad888faade2566f917b39b26c35bcb238580b0913a64d8f32770e29e0f22f03ccbdcced65392d462db47198fe326f46fbcd6af4cc1801"
+    },
+    "lit-cb08b2295c082010b6a3ebec19bea240acec486346385d130244acc848f78afc": {
+      "clock": {
+        "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696": 1
+      },
+      "deleted": false,
+      "edges": [],
+      "id": "lit-cb08b2295c082010b6a3ebec19bea240acec486346385d130244acc848f78afc",
+      "isarray": false,
+      "isliteral": true,
+      "ismap": false,
+      "ispromoted": false,
+      "isroot": false,
+      "litteralValue": "ARROWHEAD_SECURE",
+      "nounce": "41ee47af727288d771a14752b3ff13b68c12a3e1bdd9fde106aec43163b1a108",
+      "owner": "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696",
+      "parentid": "map-9a6effe6fcbdfcaae982ed0616027695031d7232aea52661ec099e2ae66a5178",
+      "signature": "feacfb21587bf55920507266f3761cbc901deeaafc6c8951ad0ce0a915c38872779882c212c475d22e830eb62d70efe3bc422cc800de6b19330d4be37db901af00"
+    },
+    "lit-cfab805c83a1ab7313302e63e9f3f913d79c1b1d15e01d07361d8b74f6acc0e1": {
+      "clock": {
+        "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696": 1
+      },
+      "deleted": false,
+      "edges": [],
+      "id": "lit-cfab805c83a1ab7313302e63e9f3f913d79c1b1d15e01d07361d8b74f6acc0e1",
+      "isarray": false,
+      "isliteral": true,
+      "ismap": false,
+      "ispromoted": false,
+      "isroot": false,
+      "litteralValue": "arrowhead-system",
+      "nounce": "1eb10912bbacbe1055b16dd7f8729eb989a20b737e18007fa926ed5b9afa72f2",
+      "owner": "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696",
+      "parentid": "map-2d45edb42aa6a7bf1b20cb5728e8ab1eae86ed1f24b12ce17447611cbf7f6e39",
+      "signature": "844a6e4088808728d83328fcd721344147cf8828bcfc0d05b4d0698653e51e0159a9bf57ac4ec0bba2822bf84bf74f6aea408d05ae4cf543fdcff0645cffd57100"
+    },
+    "lit-d599fb94f193ae02f8d3588025be5bf3744a03480e820f67981037ecb485031f": {
+      "clock": {
+        "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696": 1
+      },
+      "deleted": false,
+      "edges": [],
+      "id": "lit-d599fb94f193ae02f8d3588025be5bf3744a03480e820f67981037ecb485031f",
+      "isarray": false,
+      "isliteral": true,
+      "ismap": false,
+      "ispromoted": false,
+      "isroot": false,
+      "litteralValue": "arrowhead-system",
+      "nounce": "b2dd8de3a7d9721c9bba7b8fa0b273c8cc64542339b5b3cb80b02bef5b560734",
+      "owner": "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696",
+      "parentid": "map-34bef5f11bf99a3b399333ea65d5488488e6ec597b76d7addd8232ff424e7195",
+      "signature": "5af43eacaa6cb7add0cca7c823d3f5ceebe41865be70adbf4a4b608e5f013e68173c48915afc84935df206347929b8b97604c88239f0ccee54e2cda0b5f08f9600"
+    },
+    "lit-d9d0e9541ef4327fb7cf23ee5a3233e1c6215ffb1c796e4cb1dd85218aac2b66": {
+      "clock": {
+        "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696": 1
+      },
+      "deleted": false,
+      "edges": [],
+      "id": "lit-d9d0e9541ef4327fb7cf23ee5a3233e1c6215ffb1c796e4cb1dd85218aac2b66",
+      "isarray": false,
+      "isliteral": true,
+      "ismap": false,
+      "ispromoted": false,
+      "isroot": false,
+      "litteralValue": "arrowhead-system",
+      "nounce": "32548b94ac5664eed7be54b54e5c10277b5f94958bb9368b246d9330ae3515a6",
+      "owner": "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696",
+      "parentid": "map-de232511b0e3619d5de5433c208028171a53d01ef7312e19150ff119a1aa87df",
+      "signature": "efaed120746feb3d6ae8742d06d6c58863a6bc52136b7caf59f935911e57082f5eefa43a3237206f03423d12956c1f0a42da2c2e092c2297df8977bfb97ca09801"
+    },
+    "lit-dc1d66082637bb88ebafea9abc66cf25404d149ef2aeccdbbcd97ff095b00026": {
+      "clock": {
+        "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696": 1
+      },
+      "deleted": false,
+      "edges": [],
+      "id": "lit-dc1d66082637bb88ebafea9abc66cf25404d149ef2aeccdbbcd97ff095b00026",
+      "isarray": false,
+      "isliteral": true,
+      "ismap": false,
+      "ispromoted": false,
+      "isroot": false,
+      "litteralValue": "SERVICE_REGISTRY_PORT",
+      "nounce": "00bc8669248ab46d3b08243bb7a532ebbce778ba37a499b0b2136b7010a84a83",
+      "owner": "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696",
+      "parentid": "map-9f22cad8f30a81745604ccbd925d303386b1db3965212ef1b71ef3db512e2b5d",
+      "signature": "2df9241db13d20d57e161fbccf48ec590b2f2a53d776a3b26bfead9c82c9c7dc3ee2c1a3992174083c0b0fe23933d4d69b2272be086154ef86e5c7ac6902550a01"
+    },
+    "lit-e5af99405fce49862e6791d22e3bd9fd8bac8e4fe8c96fc66ecb224439c305b2": {
+      "clock": {
+        "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696": 1
+      },
+      "deleted": false,
+      "edges": [],
+      "id": "lit-e5af99405fce49862e6791d22e3bd9fd8bac8e4fe8c96fc66ecb224439c305b2",
+      "isarray": false,
+      "isliteral": true,
+      "ismap": false,
+      "ispromoted": false,
+      "isroot": false,
+      "litteralValue": 1,
+      "nounce": "b09235e4db741dc6cb062b6df8db075f52e6be6617381afcb903a4fddfc3b89f",
+      "owner": "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696",
+      "parentid": "map-3332fb7def1b44c326ef46c0b15bc951d808300ea11fa089cbd2514e1ef92b6a",
+      "signature": "f7cfb466e615caeb6f80c639143a178cf1f30ba9dfae6fac8670c9458e6f8fbf02030371dbb68d0c4ae8a36f4d3d43cd1ab85eb8bb4324501e53376604b4971401"
+    },
+    "lit-ebe4ac21411ef095bad8f8161028b8da62b6173084c780c364aac4e55cde4745": {
+      "clock": {
+        "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696": 1
+      },
+      "deleted": false,
+      "edges": [],
+      "id": "lit-ebe4ac21411ef095bad8f8161028b8da62b6173084c780c364aac4e55cde4745",
+      "isarray": false,
+      "isliteral": true,
+      "ismap": false,
+      "ispromoted": false,
+      "isroot": false,
+      "litteralValue": "apps/v1",
+      "nounce": "63db577772df7d4476b035fe075661f1b31a94e977e739cd295c0ac19860548a",
+      "owner": "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696",
+      "parentid": "map-2d5c5b5fa8d4d5688577b0b41d0cd3ff7ad8a933b46bfe6265f1d1912b01638e",
+      "signature": "047fab0fdac23c92c198564df27f1ee6cc146aa49cfb9ec906f7c623470349c04c36f7f50f641f055537b79cbed3bd3724bd869ec36b2cb4e8fbda0c4273628301"
+    },
+    "map-291be8d83283b43615338e20b9c32d8022142220f4c520faf29f5bdb814041f9": {
+      "clock": {
+        "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696": 3
+      },
+      "deleted": false,
+      "edges": [
+        {
+          "from": "map-291be8d83283b43615338e20b9c32d8022142220f4c520faf29f5bdb814041f9",
+          "label": "name",
+          "lseqposition": [],
+          "to": "lit-09fa998331618ad411b81fff8d4aedb1c49e72a757b993616895d28c6766027b"
+        },
+        {
+          "from": "map-291be8d83283b43615338e20b9c32d8022142220f4c520faf29f5bdb814041f9",
+          "label": "value",
+          "lseqposition": [],
+          "to": "lit-11291c7167077c7f1feb35bbd6c0b6cc7d0b6de00e225c8c8208f85410b0094c"
+        }
+      ],
+      "id": "map-291be8d83283b43615338e20b9c32d8022142220f4c520faf29f5bdb814041f9",
+      "isarray": false,
+      "isliteral": false,
+      "ismap": true,
+      "ispromoted": false,
+      "isroot": false,
+      "litteralValue": null,
+      "nounce": "70ed8520d9da191b12e11183b48d40d6b3c4bc54942d58bc3669ee46f4b2a13f",
+      "owner": "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696",
+      "parentid": "arr-b42378df579cab94ff57565c8e9a8f67cd140baa85a01d31dab79f27568aaff8",
+      "signature": "882bf3a202f396916ab045024343d6427263d69b6405b7c0a166a58fb60c14973e91bcc9df5eddd7ecfe2c89e5a78b88ca86f9290d464e95077141c5feaa461d01"
+    },
+    "map-2d45edb42aa6a7bf1b20cb5728e8ab1eae86ed1f24b12ce17447611cbf7f6e39": {
+      "clock": {
+        "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696": 2
+      },
+      "deleted": false,
+      "edges": [
+        {
+          "from": "map-2d45edb42aa6a7bf1b20cb5728e8ab1eae86ed1f24b12ce17447611cbf7f6e39",
+          "label": "app",
+          "lseqposition": [],
+          "to": "lit-cfab805c83a1ab7313302e63e9f3f913d79c1b1d15e01d07361d8b74f6acc0e1"
+        }
+      ],
+      "id": "map-2d45edb42aa6a7bf1b20cb5728e8ab1eae86ed1f24b12ce17447611cbf7f6e39",
+      "isarray": false,
+      "isliteral": false,
+      "ismap": true,
+      "ispromoted": false,
+      "isroot": false,
+      "litteralValue": null,
+      "nounce": "a0e542961d063cb53e2df53f5897c9230c0d190088ca75afd240a07edc3b3fcf",
+      "owner": "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696",
+      "parentid": "map-e020ea59829df406166f08c24b75dc73a1357198a7502f0334b8fc3e52d407d4",
+      "signature": "89fb0ec2944835ab136e198f04bdd9422a2c2c7bcd1acaa8691ff3d878bf32103d88c25b284de8e549379cf429029876d240e1da33eaeef17cb9c80ed122626b00"
+    },
+    "map-2d5c5b5fa8d4d5688577b0b41d0cd3ff7ad8a933b46bfe6265f1d1912b01638e": {
+      "clock": {
+        "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696": 5
+      },
+      "deleted": false,
+      "edges": [
+        {
+          "from": "map-2d5c5b5fa8d4d5688577b0b41d0cd3ff7ad8a933b46bfe6265f1d1912b01638e",
+          "label": "kind",
+          "lseqposition": [],
+          "to": "lit-a996c43d79fa768f393335763fc28250a1c0b588ba1b7ae03dc4c82b3a78a27e"
+        },
+        {
+          "from": "map-2d5c5b5fa8d4d5688577b0b41d0cd3ff7ad8a933b46bfe6265f1d1912b01638e",
+          "label": "apiVersion",
+          "lseqposition": [],
+          "to": "lit-ebe4ac21411ef095bad8f8161028b8da62b6173084c780c364aac4e55cde4745"
+        },
+        {
+          "from": "map-2d5c5b5fa8d4d5688577b0b41d0cd3ff7ad8a933b46bfe6265f1d1912b01638e",
+          "label": "spec",
+          "lseqposition": [],
+          "to": "map-3332fb7def1b44c326ef46c0b15bc951d808300ea11fa089cbd2514e1ef92b6a"
+        },
+        {
+          "from": "map-2d5c5b5fa8d4d5688577b0b41d0cd3ff7ad8a933b46bfe6265f1d1912b01638e",
+          "label": "metadata",
+          "lseqposition": [],
+          "to": "map-de232511b0e3619d5de5433c208028171a53d01ef7312e19150ff119a1aa87df"
+        }
+      ],
+      "id": "map-2d5c5b5fa8d4d5688577b0b41d0cd3ff7ad8a933b46bfe6265f1d1912b01638e",
+      "isarray": false,
+      "isliteral": false,
+      "ismap": true,
+      "ispromoted": false,
+      "isroot": false,
+      "litteralValue": null,
+      "nounce": "839ba30453cf785356c42acd536286bce98c48a2f854742b4541b91281cc52e5",
+      "owner": "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696",
+      "parentid": "root",
+      "signature": "e3f91db4b50ee7a408f3bd5104cb9fd885b57a8d93983f46cfde580fb996a6694d9d17eb1dc84329b0ddfa4ce3de15b26217700c2aee37eee53e357d3bf5b20501"
+    },
+    "map-3332fb7def1b44c326ef46c0b15bc951d808300ea11fa089cbd2514e1ef92b6a": {
+      "clock": {
+        "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696": 4
+      },
+      "deleted": false,
+      "edges": [
+        {
+          "from": "map-3332fb7def1b44c326ef46c0b15bc951d808300ea11fa089cbd2514e1ef92b6a",
+          "label": "replicas",
+          "lseqposition": [],
+          "to": "lit-e5af99405fce49862e6791d22e3bd9fd8bac8e4fe8c96fc66ecb224439c305b2"
+        },
+        {
+          "from": "map-3332fb7def1b44c326ef46c0b15bc951d808300ea11fa089cbd2514e1ef92b6a",
+          "label": "template",
+          "lseqposition": [],
+          "to": "map-7150a5dcdf724c9040abcc850c776af99359cfd29c6755d9e2fc332e30054bb1"
+        },
+        {
+          "from": "map-3332fb7def1b44c326ef46c0b15bc951d808300ea11fa089cbd2514e1ef92b6a",
+          "label": "selector",
+          "lseqposition": [],
+          "to": "map-94abad14bff1d2ab3d2ac19873599a554ea06d005ef0886c2b51ee5d95bb2e0e"
+        }
+      ],
+      "id": "map-3332fb7def1b44c326ef46c0b15bc951d808300ea11fa089cbd2514e1ef92b6a",
+      "isarray": false,
+      "isliteral": false,
+      "ismap": true,
+      "ispromoted": false,
+      "isroot": false,
+      "litteralValue": null,
+      "nounce": "fa4a196829b9b9f35f0ea9cd429874fdffb3b84e6503831bcb83f75278d21b7c",
+      "owner": "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696",
+      "parentid": "map-2d5c5b5fa8d4d5688577b0b41d0cd3ff7ad8a933b46bfe6265f1d1912b01638e",
+      "signature": "00b20ca069e552006a2ddaefeb76d1453cb7ebf8a6276301b0dc40d9aabf38b36f49d4a01680efdfddfa061369f506e3a0da71703148a2b2080dfc3ea458232501"
+    },
+    "map-34bef5f11bf99a3b399333ea65d5488488e6ec597b76d7addd8232ff424e7195": {
+      "clock": {
+        "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696": 2
+      },
+      "deleted": false,
+      "edges": [
+        {
+          "from": "map-34bef5f11bf99a3b399333ea65d5488488e6ec597b76d7addd8232ff424e7195",
+          "label": "app",
+          "lseqposition": [],
+          "to": "lit-d599fb94f193ae02f8d3588025be5bf3744a03480e820f67981037ecb485031f"
+        }
+      ],
+      "id": "map-34bef5f11bf99a3b399333ea65d5488488e6ec597b76d7addd8232ff424e7195",
+      "isarray": false,
+      "isliteral": false,
+      "ismap": true,
+      "ispromoted": false,
+      "isroot": false,
+      "litteralValue": null,
+      "nounce": "4306e8874a61ee0956ce89bab928c45e9c85784b09b64ba09141f2bd35142368",
+      "owner": "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696",
+      "parentid": "map-de232511b0e3619d5de5433c208028171a53d01ef7312e19150ff119a1aa87df",
+      "signature": "71faaa705db8ce9dff0b365551ed092031e1da6a9d2688fc9ebb50f44e496d742186e3ef4e8551ff0256ad3462c9bd9d4402fa14bd656f1da633e067d25ad1c500"
+    },
+    "map-3e90eb47152b844a1d302fc96c641a677ee04c94b35b7ac5b644ac6e01f74730": {
+      "clock": {
+        "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696": 3
+      },
+      "deleted": false,
+      "edges": [
+        {
+          "from": "map-3e90eb47152b844a1d302fc96c641a677ee04c94b35b7ac5b644ac6e01f74730",
+          "label": "name",
+          "lseqposition": [],
+          "to": "lit-0fe48f58a0e4c4b89d4309f5538d8f5ec83d2780876ae5cc1d6f51f56db34471"
+        },
+        {
+          "from": "map-3e90eb47152b844a1d302fc96c641a677ee04c94b35b7ac5b644ac6e01f74730",
+          "label": "value",
+          "lseqposition": [],
+          "to": "lit-7a0f8e78af890388abe0bc65424ad8fc63f35b94d2abfe74ec66613b8a2876fd"
+        }
+      ],
+      "id": "map-3e90eb47152b844a1d302fc96c641a677ee04c94b35b7ac5b644ac6e01f74730",
+      "isarray": false,
+      "isliteral": false,
+      "ismap": true,
+      "ispromoted": false,
+      "isroot": false,
+      "litteralValue": null,
+      "nounce": "448e640bd846e8c72e758ebad4227e7a3072fdad87d35ce9430fa4e2c3df99e8",
+      "owner": "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696",
+      "parentid": "arr-b42378df579cab94ff57565c8e9a8f67cd140baa85a01d31dab79f27568aaff8",
+      "signature": "0f290d5c315c55f747533d58103b3d406b0091f5a1576248abfe1501cfb5cd315ba8e54487e9972e648eb4240b48bf75b5b88cb8937ad0163ded773449dfc79e01"
+    },
+    "map-7150a5dcdf724c9040abcc850c776af99359cfd29c6755d9e2fc332e30054bb1": {
+      "clock": {
+        "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696": 3
+      },
+      "deleted": false,
+      "edges": [
+        {
+          "from": "map-7150a5dcdf724c9040abcc850c776af99359cfd29c6755d9e2fc332e30054bb1",
+          "label": "spec",
+          "lseqposition": [],
+          "to": "map-ac63fdaad22932e8673b648724fad05aedaf6e0e2e7cace2b67feb7897714cc8"
+        },
+        {
+          "from": "map-7150a5dcdf724c9040abcc850c776af99359cfd29c6755d9e2fc332e30054bb1",
+          "label": "metadata",
+          "lseqposition": [],
+          "to": "map-e020ea59829df406166f08c24b75dc73a1357198a7502f0334b8fc3e52d407d4"
+        }
+      ],
+      "id": "map-7150a5dcdf724c9040abcc850c776af99359cfd29c6755d9e2fc332e30054bb1",
+      "isarray": false,
+      "isliteral": false,
+      "ismap": true,
+      "ispromoted": false,
+      "isroot": false,
+      "litteralValue": null,
+      "nounce": "f978cd9390e25b3dbe900c7f861ec6147e853f2ccd12b23df05f267705f2db95",
+      "owner": "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696",
+      "parentid": "map-3332fb7def1b44c326ef46c0b15bc951d808300ea11fa089cbd2514e1ef92b6a",
+      "signature": "03e0586a64e694e33ba2522e98b75804c5cb751f3635e5348fe0e1398234364022d853bf9ad00a4e55422e7a0cf07cd5214dba338b1f8dd476f671163fc514b701"
+    },
+    "map-920b431ac386c221965a779f05150429d7e33e149979a77a41548626f7939fea": {
+      "clock": {
+        "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696": 5
+      },
+      "deleted": false,
+      "edges": [
+        {
+          "from": "map-920b431ac386c221965a779f05150429d7e33e149979a77a41548626f7939fea",
+          "label": "env",
+          "lseqposition": [],
+          "to": "arr-b42378df579cab94ff57565c8e9a8f67cd140baa85a01d31dab79f27568aaff8"
+        },
+        {
+          "from": "map-920b431ac386c221965a779f05150429d7e33e149979a77a41548626f7939fea",
+          "label": "ports",
+          "lseqposition": [],
+          "to": "arr-e046d83b9dd1331392c44d816436ce2936f318b99ccebd9c807e91df5812deb1"
+        },
+        {
+          "from": "map-920b431ac386c221965a779f05150429d7e33e149979a77a41548626f7939fea",
+          "label": "name",
+          "lseqposition": [],
+          "to": "lit-7744e7ab5ad7033650d1d7fd8416e65d67b9ce1451a158a674818f9ce8291f85"
+        },
+        {
+          "from": "map-920b431ac386c221965a779f05150429d7e33e149979a77a41548626f7939fea",
+          "label": "image",
+          "lseqposition": [],
+          "to": "lit-a2c91c83347204fa0a2fff90f290933f6e47566df14254494dae760fbe058c86"
+        }
+      ],
+      "id": "map-920b431ac386c221965a779f05150429d7e33e149979a77a41548626f7939fea",
+      "isarray": false,
+      "isliteral": false,
+      "ismap": true,
+      "ispromoted": false,
+      "isroot": false,
+      "litteralValue": null,
+      "nounce": "eec5a92d60c06bf59f7825074c434954831d356b69eb145a77f757afb1298b5c",
+      "owner": "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696",
+      "parentid": "arr-8ad50553fc0c07e0b60364aadfba47103d6fc8ba5fe236672f248baa80a98ab8",
+      "signature": "e597b9862f391768be8a58d05cef75bbb388c248fd5c44ce795f231f5e4423965ac4a8e42bba31a0e84091333901fddc66ef775d1b0110182914f7f9b608b62c00"
+    },
+    "map-94abad14bff1d2ab3d2ac19873599a554ea06d005ef0886c2b51ee5d95bb2e0e": {
+      "clock": {
+        "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696": 2
+      },
+      "deleted": false,
+      "edges": [
+        {
+          "from": "map-94abad14bff1d2ab3d2ac19873599a554ea06d005ef0886c2b51ee5d95bb2e0e",
+          "label": "matchLabels",
+          "lseqposition": [],
+          "to": "map-96bf33755c4f56dc8ab6417867b764ad1f116361bd57e71a8d568b33868f07f7"
+        }
+      ],
+      "id": "map-94abad14bff1d2ab3d2ac19873599a554ea06d005ef0886c2b51ee5d95bb2e0e",
+      "isarray": false,
+      "isliteral": false,
+      "ismap": true,
+      "ispromoted": false,
+      "isroot": false,
+      "litteralValue": null,
+      "nounce": "25d3fc63ad32035feeb43fa039175d4e409886841a7cc354bc49542ef9406fd0",
+      "owner": "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696",
+      "parentid": "map-3332fb7def1b44c326ef46c0b15bc951d808300ea11fa089cbd2514e1ef92b6a",
+      "signature": "187a5f8949599f4cb845e2a0b767172b86b6676312b85b3113bc1165cc5bc5d129cd5ceadc5bcf001fcb55f0706085b6a89e293d511e1f34dbef215b7716e69d00"
+    },
+    "map-96bf33755c4f56dc8ab6417867b764ad1f116361bd57e71a8d568b33868f07f7": {
+      "clock": {
+        "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696": 2
+      },
+      "deleted": false,
+      "edges": [
+        {
+          "from": "map-96bf33755c4f56dc8ab6417867b764ad1f116361bd57e71a8d568b33868f07f7",
+          "label": "app",
+          "lseqposition": [],
+          "to": "lit-6311e80d15821d68987d0acdb1328079e474afdb4ab289331b6e6f2c14a446e8"
+        }
+      ],
+      "id": "map-96bf33755c4f56dc8ab6417867b764ad1f116361bd57e71a8d568b33868f07f7",
+      "isarray": false,
+      "isliteral": false,
+      "ismap": true,
+      "ispromoted": false,
+      "isroot": false,
+      "litteralValue": null,
+      "nounce": "d10c9c872b7625eadc548d077b05ac3559bec5eaad65fdc40eac58d0ef8bae88",
+      "owner": "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696",
+      "parentid": "map-94abad14bff1d2ab3d2ac19873599a554ea06d005ef0886c2b51ee5d95bb2e0e",
+      "signature": "25b5c1bc5606d8c7a76138db6e4feb44bafcb59fb17bea9471a9586eaa877f4a60aadf52d8f41b4c81191326377ae1f1ba761ca02cd1ae5165a15cdd6288981201"
+    },
+    "map-9a6effe6fcbdfcaae982ed0616027695031d7232aea52661ec099e2ae66a5178": {
+      "clock": {
+        "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696": 3
+      },
+      "deleted": false,
+      "edges": [
+        {
+          "from": "map-9a6effe6fcbdfcaae982ed0616027695031d7232aea52661ec099e2ae66a5178",
+          "label": "value",
+          "lseqposition": [],
+          "to": "lit-c31f964ea1a6c1cc6d036e3d7ebe59bd16ac180c63b439a231d71b2384ed4b45"
+        },
+        {
+          "from": "map-9a6effe6fcbdfcaae982ed0616027695031d7232aea52661ec099e2ae66a5178",
+          "label": "name",
+          "lseqposition": [],
+          "to": "lit-cb08b2295c082010b6a3ebec19bea240acec486346385d130244acc848f78afc"
+        }
+      ],
+      "id": "map-9a6effe6fcbdfcaae982ed0616027695031d7232aea52661ec099e2ae66a5178",
+      "isarray": false,
+      "isliteral": false,
+      "ismap": true,
+      "ispromoted": false,
+      "isroot": false,
+      "litteralValue": null,
+      "nounce": "511b6fad2e0c96927360c4ec8f40fe3662bbb685f7de6fbb9f9a17433db040ac",
+      "owner": "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696",
+      "parentid": "arr-b42378df579cab94ff57565c8e9a8f67cd140baa85a01d31dab79f27568aaff8",
+      "signature": "59e8e543f1ae79b1415f1a0983c330b5ea3c5c760b977158b3182603f28c89db193a764a1269f7056dbb388ea3fa726770fa2d7b5ed68bf135c5fcecee39a49500"
+    },
+    "map-9f22cad8f30a81745604ccbd925d303386b1db3965212ef1b71ef3db512e2b5d": {
+      "clock": {
+        "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696": 3
+      },
+      "deleted": false,
+      "edges": [
+        {
+          "from": "map-9f22cad8f30a81745604ccbd925d303386b1db3965212ef1b71ef3db512e2b5d",
+          "label": "value",
+          "lseqposition": [],
+          "to": "lit-96ee5bf4a0136c2119972c6878b4ba5a8145800bb99da8ff7a7a32ec4af78462"
+        },
+        {
+          "from": "map-9f22cad8f30a81745604ccbd925d303386b1db3965212ef1b71ef3db512e2b5d",
+          "label": "name",
+          "lseqposition": [],
+          "to": "lit-dc1d66082637bb88ebafea9abc66cf25404d149ef2aeccdbbcd97ff095b00026"
+        }
+      ],
+      "id": "map-9f22cad8f30a81745604ccbd925d303386b1db3965212ef1b71ef3db512e2b5d",
+      "isarray": false,
+      "isliteral": false,
+      "ismap": true,
+      "ispromoted": false,
+      "isroot": false,
+      "litteralValue": null,
+      "nounce": "32607a7e8cdefac60531cc60a952ed4700f0c1906eb30bcc177753361f26e4c5",
+      "owner": "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696",
+      "parentid": "arr-b42378df579cab94ff57565c8e9a8f67cd140baa85a01d31dab79f27568aaff8",
+      "signature": "7962b1cd0423f9d22e12a7f5d94bffc57b7a15c720cbfda64f325012a12234b5789a5b8738b16043707e55807fe57fb4d70c34dad28f832729b068c108a54f8201"
+    },
+    "map-ac63fdaad22932e8673b648724fad05aedaf6e0e2e7cace2b67feb7897714cc8": {
+      "clock": {
+        "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696": 2
+      },
+      "deleted": false,
+      "edges": [
+        {
+          "from": "map-ac63fdaad22932e8673b648724fad05aedaf6e0e2e7cace2b67feb7897714cc8",
+          "label": "containers",
+          "lseqposition": [],
+          "to": "arr-8ad50553fc0c07e0b60364aadfba47103d6fc8ba5fe236672f248baa80a98ab8"
+        }
+      ],
+      "id": "map-ac63fdaad22932e8673b648724fad05aedaf6e0e2e7cace2b67feb7897714cc8",
+      "isarray": false,
+      "isliteral": false,
+      "ismap": true,
+      "ispromoted": false,
+      "isroot": false,
+      "litteralValue": null,
+      "nounce": "3359bf35575993f138fd25294838264d8daa54572cea133c731c86e8faf1a376",
+      "owner": "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696",
+      "parentid": "map-7150a5dcdf724c9040abcc850c776af99359cfd29c6755d9e2fc332e30054bb1",
+      "signature": "4b59b66dd09f9c4856bd3d147833b19a6811ae10bd4b206c15a348ba42f00e9c070a7a1820f053b53bdebae0f91ed74399cdb83c4ebba6b4e58b9bb07ca3449501"
+    },
+    "map-de232511b0e3619d5de5433c208028171a53d01ef7312e19150ff119a1aa87df": {
+      "clock": {
+        "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696": 3
+      },
+      "deleted": false,
+      "edges": [
+        {
+          "from": "map-de232511b0e3619d5de5433c208028171a53d01ef7312e19150ff119a1aa87df",
+          "label": "name",
+          "lseqposition": [],
+          "to": "lit-d9d0e9541ef4327fb7cf23ee5a3233e1c6215ffb1c796e4cb1dd85218aac2b66"
+        },
+        {
+          "from": "map-de232511b0e3619d5de5433c208028171a53d01ef7312e19150ff119a1aa87df",
+          "label": "labels",
+          "lseqposition": [],
+          "to": "map-34bef5f11bf99a3b399333ea65d5488488e6ec597b76d7addd8232ff424e7195"
+        }
+      ],
+      "id": "map-de232511b0e3619d5de5433c208028171a53d01ef7312e19150ff119a1aa87df",
+      "isarray": false,
+      "isliteral": false,
+      "ismap": true,
+      "ispromoted": false,
+      "isroot": false,
+      "litteralValue": null,
+      "nounce": "413eb6e8bd452030fa125c77037e11e1c6cef83c40cc3403ac3c4b4abd1acf1d",
+      "owner": "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696",
+      "parentid": "map-2d5c5b5fa8d4d5688577b0b41d0cd3ff7ad8a933b46bfe6265f1d1912b01638e",
+      "signature": "472a15fe5a8241c1f482dd2a59ab34b53ee5aaf755b4fd32681318fc8f37a40d29094c60d090cbf5620dc833489034be72e48399ccee05cd17d19561ff48c74100"
+    },
+    "map-e020ea59829df406166f08c24b75dc73a1357198a7502f0334b8fc3e52d407d4": {
+      "clock": {
+        "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696": 2
+      },
+      "deleted": false,
+      "edges": [
+        {
+          "from": "map-e020ea59829df406166f08c24b75dc73a1357198a7502f0334b8fc3e52d407d4",
+          "label": "labels",
+          "lseqposition": [],
+          "to": "map-2d45edb42aa6a7bf1b20cb5728e8ab1eae86ed1f24b12ce17447611cbf7f6e39"
+        }
+      ],
+      "id": "map-e020ea59829df406166f08c24b75dc73a1357198a7502f0334b8fc3e52d407d4",
+      "isarray": false,
+      "isliteral": false,
+      "ismap": true,
+      "ispromoted": false,
+      "isroot": false,
+      "litteralValue": null,
+      "nounce": "a300995a9a36fdab44f6c1bac63518af3137cef2325a00c0e8136c2cc8222654",
+      "owner": "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696",
+      "parentid": "map-7150a5dcdf724c9040abcc850c776af99359cfd29c6755d9e2fc332e30054bb1",
+      "signature": "70c036885f086ca84c58c7af2c46338f562c0a8194c83e76fd6d8a7f587d33cd55880f310ef0e458a36a290ad6601b1b5c1e747734835d7c913767324fdd849e01"
+    },
+    "map-f3df3e943c9d9c3606c9e9b3c1fc3b96eb080992ca0bac892a693539fabd2fb2": {
+      "clock": {
+        "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696": 2
+      },
+      "deleted": false,
+      "edges": [
+        {
+          "from": "map-f3df3e943c9d9c3606c9e9b3c1fc3b96eb080992ca0bac892a693539fabd2fb2",
+          "label": "containerPort",
+          "lseqposition": [],
+          "to": "lit-bc69a2aca69b8de8b6903ce40e99d2805b73cef62407f6de0324ff88c723e5eb"
+        }
+      ],
+      "id": "map-f3df3e943c9d9c3606c9e9b3c1fc3b96eb080992ca0bac892a693539fabd2fb2",
+      "isarray": false,
+      "isliteral": false,
+      "ismap": true,
+      "ispromoted": false,
+      "isroot": false,
+      "litteralValue": null,
+      "nounce": "88507defe9f0026daf08596e78bc05f082d1e470f21288756c417d66e9905124",
+      "owner": "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696",
+      "parentid": "arr-e046d83b9dd1331392c44d816436ce2936f318b99ccebd9c807e91df5812deb1",
+      "signature": "45f3957aa39ead79702a639432a7ee030abc8d01cbf7c56c5f2f5eba64c0b6e0738354d32534e6c7e88834cdec3031b9a831a8b9b8fdb97960766af4ecfeb37f00"
+    },
+    "root": {
+      "clock": {
+        "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696": 1
+      },
+      "deleted": false,
+      "edges": [
+        {
+          "from": "root",
+          "label": "",
+          "lseqposition": [],
+          "to": "map-2d5c5b5fa8d4d5688577b0b41d0cd3ff7ad8a933b46bfe6265f1d1912b01638e"
+        }
+      ],
+      "id": "root",
+      "isarray": false,
+      "isliteral": false,
+      "ismap": false,
+      "ispromoted": false,
+      "isroot": true,
+      "litteralValue": null,
+      "nounce": "5ac21fc3ec58581dcdcd1b1784b6ccaf400c40eeb29c6a3479a6b8836516c04d",
+      "owner": "5d6568f883451ae2e407d1a0a7992e414f2a67b69d0e6e9176d353b98f06f696",
+      "parentid": "",
+      "signature": "a32efdb3e8afb3c766c2d9f9df5402e1309d147695326ebf6a8a7fd70d4c7f37586f93d35639d17a9d7369c3dba5076a85f26f1b32a733004129c5a3fc876a6b00"
+    }
+  },
+  "root": "root",
+  "secure": true
+}

@@ -1,0 +1,48 @@
+{
+  "services": [
+    {
+      "serviceDefinition": "temperature-sensor",
+      "provider": {
+        "systemName": "TempSensorSystem1",
+        "address": "192.168.1.100",
+        "port": 8080
+      },
+      "serviceUri": "/temperature/current",
+      "version": 1,
+      "secure": false,
+      "metadata": {
+        "unit": "celsius",
+        "precision": "0.1"
+      }
+    },
+    {
+      "serviceDefinition": "humidity-sensor",
+      "provider": {
+        "systemName": "HumiditySensorSystem1",
+        "address": "192.168.1.101",
+        "port": 8081
+      },
+      "serviceUri": "/humidity/current",
+      "version": 1,
+      "secure": true,
+      "metadata": {
+        "unit": "percent",
+        "precision": "1"
+      }
+    },
+    {
+      "serviceDefinition": "light-control",
+      "provider": {
+        "systemName": "LightController1",
+        "address": "192.168.1.102",
+        "port": 8090
+      },
+      "serviceUri": "/light/toggle",
+      "version": 2,
+      "secure": true,
+      "metadata": {
+        "supportedCommands": "on,off,toggle"
+      }
+    }
+  ]
+}
