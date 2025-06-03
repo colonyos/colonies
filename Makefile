@@ -47,6 +47,7 @@ test:
 	@cd pkg/cluster; grc go test -v --race
 	@cd pkg/cron; grc go test -v --race
 	@cd pkg/fs; go test -v --race
+	@cd pkg/crdt; go test -v --race
 
 github_test: 
 	@cd tests/reliability; go test -v --race
@@ -64,6 +65,7 @@ github_test:
 	@cd pkg/cluster; go test -v --race
 	@cd pkg/cron; go test -v --race
 	@cd pkg/fs; go test -v --race
+	@cd pkg/crdt; go test -v --race
 
 install:
 	cp ./bin/colonies /usr/local/bin
