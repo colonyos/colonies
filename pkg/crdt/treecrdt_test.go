@@ -20,12 +20,20 @@ func TestIsDescendant(t *testing.T) {
 	// │       └── C
 	// └── X
 	//     └── Y
-	nodeA := tree.CreateAttachedNode("A", Map, tree.Root.ID, client)
-	nodeB := tree.CreateAttachedNode("B", Map, nodeA.ID, client)
-	nodeC := tree.CreateAttachedNode("C", Map, nodeB.ID, client)
+	nodeA, err := tree.CreateAttachedNode("A", Map, tree.Root.ID, client)
+	assert.NoError(t, err, "CreateAttachedNode should not return an error")
 
-	nodeX := tree.CreateAttachedNode("X", Map, tree.Root.ID, client)
-	nodeY := tree.CreateAttachedNode("Y", Map, nodeX.ID, client)
+	nodeB, err := tree.CreateAttachedNode("B", Map, nodeA.ID, client)
+	assert.NoError(t, err, "CreateAttachedNode should not return an error")
+
+	nodeC, err := tree.CreateAttachedNode("C", Map, nodeB.ID, client)
+	assert.NoError(t, err, "CreateAttachedNode should not return an error")
+
+	nodeX, err := tree.CreateAttachedNode("X", Map, tree.Root.ID, client)
+	assert.NoError(t, err, "CreateAttachedNode should not return an error")
+
+	nodeY, err := tree.CreateAttachedNode("Y", Map, nodeX.ID, client)
+	assert.NoError(t, err, "CreateAttachedNode should not return an error")
 
 	tests := []struct {
 		name     string
@@ -204,11 +212,14 @@ func TestTreeCRDTAddEdgeWithVersion(t *testing.T) {
 	clientID := ClientID("bbbb")
 	otherClientID := ClientID("aaaa")
 
-	parent := c.CreateAttachedNode("parent", Map, c.Root.ID, clientID)
-	child := c.CreateAttachedNode("child", Map, c.Root.ID, clientID)
+	parent, err := c.CreateAttachedNode("parent", Map, c.Root.ID, clientID)
+	assert.Nil(t, err, "CreateAttachedNode should not return an error")
+
+	child, err := c.CreateAttachedNode("child", Map, c.Root.ID, clientID)
+	assert.Nil(t, err, "CreateAttachedNode should not return an error")
 
 	// 1. Add an edge with version 1
-	err := c.addEdgeWithVersion(parent.ID, child.ID, "link", clientID, 1)
+	err = c.addEdgeWithVersion(parent.ID, child.ID, "link", clientID, 1)
 	assert.Nil(t, err, "AddEdgeWithVersion should not return error")
 
 	assert.Equal(t, 1, len(parent.Edges), "Expected 1 edge")
@@ -216,14 +227,18 @@ func TestTreeCRDTAddEdgeWithVersion(t *testing.T) {
 	assert.Equal(t, "link", parent.Edges[0].Label, "Edge label mismatch")
 
 	// 2. Add another edge with higher version (should succeed)
-	anotherChild := c.CreateAttachedNode("another_child", Map, c.Root.ID, clientID)
+	anotherChild, err := c.CreateAttachedNode("another_child", Map, c.Root.ID, clientID)
+	assert.Nil(t, err, "CreateAttachedNode should not return an error")
+
 	err = c.addEdgeWithVersion(parent.ID, anotherChild.ID, "link2", clientID, 2)
 	assert.Nil(t, err, "AddEdgeWithVersion second time should not return error")
 
 	assert.Equal(t, 2, len(parent.Edges), "Expected 2 edges now")
 
 	// 3. Try to add conflicting edge with lower version (should be ignored)
-	fakeChild := c.CreateAttachedNode("fake_child", Map, c.Root.ID, clientID)
+	fakeChild, err := c.CreateAttachedNode("fake_child", Map, c.Root.ID, clientID)
+	assert.Nil(t, err, "CreateAttachedNode should not return an error")
+
 	err = c.addEdgeWithVersion(parent.ID, fakeChild.ID, "fake_link", clientID, 1) // lower version
 	assert.Nil(t, err, "AddEdgeWithVersion with lower version should not error")
 
@@ -237,7 +252,9 @@ func TestTreeCRDTAddEdgeWithVersion(t *testing.T) {
 	assert.False(t, found, "Edge with lower version should not overwrite or add")
 
 	// 4. Simulate a tie with another client (new client id)
-	tieChild := c.CreateAttachedNode("tie_child", Map, c.Root.ID, otherClientID)
+	tieChild, err := c.CreateAttachedNode("tie_child", Map, c.Root.ID, otherClientID)
+	assert.Nil(t, err, "CreateAttachedNode should not return an error")
+
 	err = c.addEdgeWithVersion(parent.ID, tieChild.ID, "tie_link", otherClientID, 2) // same version
 	assert.Nil(t, err, "AddEdgeWithVersion with same version different client should not error")
 
@@ -254,11 +271,14 @@ func TestTreeCRDTRemoveEdgeWithVersion(t *testing.T) {
 	clientID := ClientID("bbbb")
 	otherClientID := ClientID("aaaa")
 
-	parent := c.CreateAttachedNode("parent", Map, c.Root.ID, clientID)
-	child := c.CreateAttachedNode("child", Map, c.Root.ID, clientID)
+	parent, err := c.CreateAttachedNode("parent", Map, c.Root.ID, clientID)
+	assert.Nil(t, err, "CreateAttachedNode should not return an error")
+
+	child, err := c.CreateAttachedNode("child", Map, c.Root.ID, clientID)
+	assert.Nil(t, err, "CreateAttachedNode should not return an error")
 
 	// Add an edge
-	err := c.addEdgeWithVersion(parent.ID, child.ID, "link", clientID, 1)
+	err = c.addEdgeWithVersion(parent.ID, child.ID, "link", clientID, 1)
 	assert.Nil(t, err, "addEdgeWithVersion should not return error")
 
 	assert.Equal(t, 1, len(parent.Edges), "Expected 1 edge before removal")
@@ -352,7 +372,8 @@ func TestTreeCRDTNodeSetLiteral(t *testing.T) {
 	clientID1 := ClientID("client1")
 	clientID2 := ClientID("client2")
 
-	node := c.CreateAttachedNode("literalNode", Literal, c.Root.ID, clientID1)
+	node, err := c.CreateAttachedNode("literalNode", Literal, c.Root.ID, clientID1)
+	assert.NoError(t, err, "CreateAttachedNode should not return an error")
 
 	// 1. Set an initial literal value
 	node.setLiteralWithVersion("hello", clientID1, 1)
@@ -393,22 +414,32 @@ func TestTreeCRDTValidation(t *testing.T) {
 
 	t.Run("Valid tree passes validation", func(t *testing.T) {
 		c := newTreeCRDT()
-		nodeA := c.CreateAttachedNode("A", Map, c.Root.ID, client)
-		nodeB := c.CreateAttachedNode("B", Map, nodeA.ID, client)
-		c.CreateAttachedNode("C", Map, nodeB.ID, client)
+		nodeA, err := c.CreateAttachedNode("A", Map, c.Root.ID, client)
+		assert.NoError(t, err, "CreateAttachedNode should not return an error")
 
-		err := c.ValidateTree()
+		nodeB, err := c.CreateAttachedNode("B", Map, nodeA.ID, client)
+		assert.NoError(t, err, "CreateAttachedNode should not return an error")
+
+		_, err = c.CreateAttachedNode("C", Map, nodeB.ID, client)
+		assert.NoError(t, err, "CreateAttachedNode should not return an error")
+
+		err = c.ValidateTree()
 		assert.NoError(t, err, "Valid tree structure should pass validation")
 	})
 
 	t.Run("Multiple parents detected", func(t *testing.T) {
 		c := newTreeCRDT()
-		nodeA := c.CreateAttachedNode("A", Map, c.Root.ID, client)
-		nodeB := c.CreateAttachedNode("B", Map, nodeA.ID, client)
-		nodeC := c.CreateAttachedNode("C", Map, nodeB.ID, client)
+		nodeA, err := c.CreateAttachedNode("A", Map, c.Root.ID, client)
+		assert.NoError(t, err, "CreateAttachedNode should not return an error")
+
+		nodeB, err := c.CreateAttachedNode("B", Map, nodeA.ID, client)
+		assert.NoError(t, err, "CreateAttachedNode should not return an error")
+
+		nodeC, err := c.CreateAttachedNode("C", Map, nodeB.ID, client)
+		assert.NoError(t, err, "CreateAttachedNode should not return an error")
 
 		// Add second parent (invalid) through API
-		err := c.AddEdge(nodeA.ID, nodeC.ID, "", client)
+		err = c.AddEdge(nodeA.ID, nodeC.ID, "", client)
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "multiple parents")
 
@@ -427,9 +458,14 @@ func TestTreeCRDTValidation(t *testing.T) {
 
 	t.Run("Cycle detection", func(t *testing.T) {
 		c := newTreeCRDT()
-		nodeA := c.CreateAttachedNode("A", Map, c.Root.ID, client)
-		nodeB := c.CreateAttachedNode("B", Map, nodeA.ID, client)
-		nodeC := c.CreateAttachedNode("C", Map, nodeB.ID, client)
+		nodeA, err := c.CreateAttachedNode("A", Map, c.Root.ID, client)
+		assert.NoError(t, err, "CreateAttachedNode should not return an error")
+
+		nodeB, err := c.CreateAttachedNode("B", Map, nodeA.ID, client)
+		assert.NoError(t, err, "CreateAttachedNode should not return an error")
+
+		nodeC, err := c.CreateAttachedNode("C", Map, nodeB.ID, client)
+		assert.NoError(t, err, "CreateAttachedNode should not return an error")
 
 		// Create a cycle: C -> A
 		c.Nodes[nodeC.ID].Edges = append(c.Nodes[nodeC.ID].Edges, &EdgeCRDT{
@@ -439,7 +475,7 @@ func TestTreeCRDTValidation(t *testing.T) {
 			LSEQPosition: []int{99},
 		})
 
-		err := c.validAttachment(nodeC.ID, nodeA.ID)
+		err = c.validAttachment(nodeC.ID, nodeA.ID)
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "would create a cycle")
 
@@ -449,27 +485,33 @@ func TestTreeCRDTValidation(t *testing.T) {
 
 	t.Run("Literal node with children fails validation", func(t *testing.T) {
 		c := newTreeCRDT()
-		lit := c.CreateAttachedNode("Literal", Literal, c.Root.ID, client)
-		c.CreateAttachedNode("Child", Map, lit.ID, client)
+		lit, err := c.CreateAttachedNode("Literal", Literal, c.Root.ID, client)
+		assert.NoError(t, err, "CreateAttachedNode should not return an error")
 
-		err := c.ValidateTree()
+		_, err = c.CreateAttachedNode("Child", Map, lit.ID, client)
+		assert.NoError(t, err, "CreateAttachedNode should not return an error")
+
+		err = c.ValidateTree()
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "must not have children")
 	})
 
 	t.Run("Node with multiple types fails validation", func(t *testing.T) {
 		c := newTreeCRDT()
-		node := c.CreateAttachedNode("BadNode", Map, c.Root.ID, client)
+		node, err := c.CreateAttachedNode("BadNode", Map, c.Root.ID, client)
+		assert.NoError(t, err, "CreateAttachedNode should not return an error")
+
 		node.IsArray = true // Invalid: now both map and array
 
-		err := c.ValidateTree()
+		err = c.ValidateTree()
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "must have exactly one type")
 	})
 
 	t.Run("Unreachable node fails validation", func(t *testing.T) {
 		c := newTreeCRDT()
-		_ = c.CreateAttachedNode("A", Map, c.Root.ID, client)
+		_, err := c.CreateAttachedNode("A", Map, c.Root.ID, client)
+		assert.NoError(t, err, "CreateAttachedNode should not return an error")
 
 		// Add isolated node
 		isolated := &NodeCRDT{
@@ -484,7 +526,7 @@ func TestTreeCRDTValidation(t *testing.T) {
 		}
 		c.Nodes[isolated.ID] = isolated
 
-		err := c.ValidateTree()
+		err = c.ValidateTree()
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "Unreachable node")
 	})
@@ -503,9 +545,13 @@ func TestTreeCRDTMergeLitterals(t *testing.T) {
 	clientB := ClientID("clientB")
 
 	// Create shared nodes in both graphs
-	node1 := c1.CreateAttachedNode("sharedA", Literal, c1.Root.ID, clientA)
-	node2 := c2.CreateAttachedNode("sharedB", Literal, c2.Root.ID, clientB)
-	err := node1.SetLiteral("A-literal", clientA)
+	node1, err := c1.CreateAttachedNode("sharedA", Literal, c1.Root.ID, clientA)
+	assert.Nil(t, err, "CreateAttachedNode should not return an error")
+
+	node2, err := c2.CreateAttachedNode("sharedB", Literal, c2.Root.ID, clientB)
+	assert.Nil(t, err, "CreateAttachedNode should not return an error")
+
+	err = node1.SetLiteral("A-literal", clientA)
 	assert.Nil(t, err, "SetLiteral should not return an error")
 	err = node2.SetLiteral("B-literal", clientB)
 	assert.Nil(t, err, "SetLiteral should not return an error")

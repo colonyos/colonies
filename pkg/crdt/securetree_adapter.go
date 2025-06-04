@@ -202,7 +202,10 @@ func (c *AdapterSecureTreeCRDT) CreateAttachedNode(name string, nodeType NodeTyp
 	var newNode *NodeCRDT
 
 	secureAction := func(clientID ClientID) (*NodeCRDT, error) {
-		node := c.treeCrdt.CreateAttachedNode(name, nodeType, parentID, clientID)
+		node, err := c.treeCrdt.CreateAttachedNode(name, nodeType, parentID, clientID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create attached node: %w", err)
+		}
 		newNode = node
 		return newNode, nil
 	}

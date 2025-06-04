@@ -72,15 +72,24 @@ func newTreeCRDT() *TreeCRDT {
 	return c
 }
 
-func (c *TreeCRDT) CreateAttachedNode(name string, nodeType NodeType, parentID NodeID, clientID ClientID) *NodeCRDT {
+func (c *TreeCRDT) CreateAttachedNode(name string, nodeType NodeType, parentID NodeID, clientID ClientID) (*NodeCRDT, error) {
 	id := generateRandomNodeID(name)
 	node := c.getOrCreateNode(id, nodeType, clientID, 1)
-	c.AddEdge(parentID, id, "", clientID)
+	err := c.AddEdge(parentID, id, "", clientID)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"NodeID":   id,
+			"ParentID": parentID,
+			"Label":    "",
+			"Error":    err,
+		}).Error("AddEdge failed while creating attached node")
+		return nil, err
+	}
 	node.ParentID = parentID
 
 	c.notifySubscribers(node.ID, EventAdded)
 
-	return node
+	return node, nil
 }
 
 func (c *TreeCRDT) CreateNode(name string, nodeType NodeType, clientID ClientID) *NodeCRDT {
