@@ -824,6 +824,24 @@ The state attribute can have the following values:
 }
 ```
 
+### Set Process Output
+* PayloadType: **setoutputmsg**
+* Credentials: A valid Executor Private Key and the Executor ID needs to match the ExecutorID assigned to the process
+
+#### Payload 
+```json
+{
+    "msgtype": "setoutputmsg",
+    "processid": "80a98f46c7a364fd33339a6fb2e6c5d8988384fdbf237b4012490c4658bbc9ce",
+    "out": ["result1", "result2", {"key": "value"}]
+}
+```
+
+#### Reply 
+```json
+{}
+```
+
 ### Subscribe Processes Events
 * PayloadType: **subscribeprocessesmsg**
 * Credentials: A valid Executor Private Key
@@ -873,4 +891,1018 @@ The state attribute can have the following values:
         "env": {}
     }
 }
+```
+
+## Workflow & Process Graph API
+
+### Submit Workflow Specification 
+* PayloadType: **submitworkflowspecmsg**
+* Credentials: A valid Executor Private Key
+
+#### Payload 
+```json
+{
+    "msgtype": "submitworkflowspecmsg",
+    "spec": {
+        "name": "my_workflow",
+        "colonyname": "my_colony_name",
+        "funcspecs": [
+            {
+                "timeout": -1,
+                "maxretries": 3,
+                "conditions": {
+                    "colonyname": "my_colony_name",
+                    "executortype": "test_executor_type",
+                    "mem": 1000,
+                    "cores": 10,
+                    "gpus": 1
+                },
+                "env": {
+                    "test_key": "test_value"
+                }
+            }
+        ]
+    }
+}
+```
+
+#### Reply 
+```json
+{
+    "processgraphid": "a-valid-sha256-hash-id",
+    "colonyname": "my_colony_name",
+    "processids": ["process-id-1", "process-id-2"],
+    "state": 0,
+    "submissiontime": "2022-01-02T12:08:16.226133Z",
+    "starttime": "0001-01-01T00:00:00Z",
+    "endtime": "0001-01-01T00:00:00Z"
+}
+```
+
+### Get Process Graph
+* PayloadType: **getprocessgraphmsg**
+* Credentials: A valid Executor Private Key
+
+#### Payload 
+```json
+{
+    "msgtype": "getprocessgraphmsg",
+    "processgraphid": "a-valid-sha256-hash-id"
+}
+```
+
+#### Reply 
+```json
+{
+    "processgraphid": "a-valid-sha256-hash-id",
+    "colonyname": "my_colony_name",
+    "processids": ["process-id-1", "process-id-2"],
+    "state": 2,
+    "submissiontime": "2022-01-02T12:08:16.226133Z",
+    "starttime": "2022-01-02T12:08:20.000000Z",
+    "endtime": "2022-01-02T12:09:30.000000Z"
+}
+```
+
+### List Process Graphs
+* PayloadType: **getprocessgraphsmsg**
+* Credentials: A valid Executor or Colony Private Key
+
+#### Payload 
+```json
+{
+    "msgtype": "getprocessgraphsmsg",
+    "colonyname": "my_colony_name",
+    "count": 10,
+    "state": 2
+}
+```
+
+#### Reply 
+```json
+[
+    {
+        "processgraphid": "a-valid-sha256-hash-id",
+        "colonyname": "my_colony_name",
+        "processids": ["process-id-1", "process-id-2"],
+        "state": 2,
+        "submissiontime": "2022-01-02T12:08:16.226133Z",
+        "starttime": "2022-01-02T12:08:20.000000Z",
+        "endtime": "2022-01-02T12:09:30.000000Z"
+    }
+]
+```
+
+### Remove Process Graph
+* PayloadType: **removeprocessgraphmsg**
+* Credentials: A valid Executor Private Key
+
+#### Payload 
+```json
+{
+    "msgtype": "removeprocessgraphmsg",
+    "processgraphid": "a-valid-sha256-hash-id",
+    "all": false
+}
+```
+
+#### Reply 
+```json
+{}
+```
+
+### Remove All Process Graphs
+* PayloadType: **removeallprocessgraphsmsg**
+* Credentials: A valid Colony Private Key
+
+#### Payload 
+```json
+{
+    "msgtype": "removeallprocessgraphsmsg",
+    "colonyname": "my_colony_name",
+    "state": 2
+}
+```
+
+#### Reply 
+```json
+{}
+```
+
+## Cron API
+
+### Add Cron
+* PayloadType: **addcronmsg**
+* Credentials: A valid Executor Private Key
+
+#### Payload 
+```json
+{
+    "msgtype": "addcronmsg",
+    "cron": {
+        "cronid": "a-valid-sha256-hash-id",
+        "name": "my_cron_job",
+        "colonyname": "my_colony_name",
+        "cronexpression": "0 0 * * *",
+        "interval": 86400,
+        "random": false,
+        "nextrun": "2022-01-03T00:00:00Z",
+        "lastrun": "0001-01-01T00:00:00Z",
+        "prevprocessgraphid": "",
+        "workflowspec": "{\"name\":\"my_workflow\",\"colonyname\":\"my_colony_name\",\"funcspecs\":[{\"timeout\":-1,\"maxretries\":3,\"conditions\":{\"colonyname\":\"my_colony_name\",\"executortype\":\"test_executor_type\",\"mem\":1000,\"cores\":10,\"gpus\":1},\"env\":{\"test_key\":\"test_value\"}}]}"
+    }
+}
+```
+
+#### Reply 
+```json
+{
+    "cronid": "a-valid-sha256-hash-id",
+    "name": "my_cron_job",
+    "colonyname": "my_colony_name",
+    "cronexpression": "0 0 * * *",
+    "interval": 86400,
+    "random": false,
+    "nextrun": "2022-01-03T00:00:00Z",
+    "lastrun": "0001-01-01T00:00:00Z",
+    "prevprocessgraphid": "",
+    "workflowspec": "{\"name\":\"my_workflow\",\"colonyname\":\"my_colony_name\",\"funcspecs\":[{\"timeout\":-1,\"maxretries\":3,\"conditions\":{\"colonyname\":\"my_colony_name\",\"executortype\":\"test_executor_type\",\"mem\":1000,\"cores\":10,\"gpus\":1},\"env\":{\"test_key\":\"test_value\"}}]}"
+}
+```
+
+### Get Cron
+* PayloadType: **getcronmsg**
+* Credentials: A valid Executor Private Key
+
+#### Payload 
+```json
+{
+    "msgtype": "getcronmsg",
+    "cronid": "a-valid-sha256-hash-id"
+}
+```
+
+#### Reply 
+```json
+{
+    "cronid": "a-valid-sha256-hash-id",
+    "name": "my_cron_job",
+    "colonyname": "my_colony_name",
+    "cronexpression": "0 0 * * *",
+    "interval": 86400,
+    "random": false,
+    "nextrun": "2022-01-03T00:00:00Z",
+    "lastrun": "2022-01-02T00:00:00Z",
+    "prevprocessgraphid": "prev-process-graph-id",
+    "workflowspec": "{\"name\":\"my_workflow\",\"colonyname\":\"my_colony_name\",\"funcspecs\":[{\"timeout\":-1,\"maxretries\":3,\"conditions\":{\"colonyname\":\"my_colony_name\",\"executortype\":\"test_executor_type\",\"mem\":1000,\"cores\":10,\"gpus\":1},\"env\":{\"test_key\":\"test_value\"}}]}"
+}
+```
+
+### List Crons
+* PayloadType: **getcronsmsg**
+* Credentials: A valid Executor or Colony Private Key
+
+#### Payload 
+```json
+{
+    "msgtype": "getcronsmsg",
+    "colonyname": "my_colony_name",
+    "count": 10
+}
+```
+
+#### Reply 
+```json
+[
+    {
+        "cronid": "a-valid-sha256-hash-id",
+        "name": "my_cron_job",
+        "colonyname": "my_colony_name",
+        "cronexpression": "0 0 * * *",
+        "interval": 86400,
+        "random": false,
+        "nextrun": "2022-01-03T00:00:00Z",
+        "lastrun": "2022-01-02T00:00:00Z",
+        "prevprocessgraphid": "prev-process-graph-id",
+        "workflowspec": "{\"name\":\"my_workflow\",\"colonyname\":\"my_colony_name\",\"funcspecs\":[{\"timeout\":-1,\"maxretries\":3,\"conditions\":{\"colonyname\":\"my_colony_name\",\"executortype\":\"test_executor_type\",\"mem\":1000,\"cores\":10,\"gpus\":1},\"env\":{\"test_key\":\"test_value\"}}]}"
+    }
+]
+```
+
+### Remove Cron
+* PayloadType: **removecronmsg**
+* Credentials: A valid Executor Private Key
+
+#### Payload 
+```json
+{
+    "msgtype": "removecronmsg",
+    "cronid": "a-valid-sha256-hash-id"
+}
+```
+
+#### Reply 
+```json
+{}
+```
+
+### Run Cron
+* PayloadType: **runcronmsg**
+* Credentials: A valid Executor Private Key
+
+#### Payload 
+```json
+{
+    "msgtype": "runcronmsg",
+    "cronid": "a-valid-sha256-hash-id"
+}
+```
+
+#### Reply 
+```json
+{
+    "cronid": "a-valid-sha256-hash-id",
+    "initiatorid": "initiator-id",
+    "initiatorname": "initiator_name",
+    "colonyname": "my_colony_name",
+    "name": "my_cron_job",
+    "cronexpression": "0 0 * * *",
+    "interval": 86400,
+    "random": false,
+    "nextrun": "2022-01-03T00:00:00Z",
+    "lastrun": "2022-01-02T00:00:00Z",
+    "workflowspec": "{\"name\":\"my_workflow\",\"colonyname\":\"my_colony_name\",\"funcspecs\":[{\"timeout\":-1,\"maxretries\":3,\"conditions\":{\"colonyname\":\"my_colony_name\",\"executortype\":\"test_executor_type\",\"mem\":1000,\"cores\":10,\"gpus\":1},\"env\":{\"test_key\":\"test_value\"}}]}",
+    "prevprocessgraphid": "prev-process-graph-id",
+    "waitforprevprocessgraph": false,
+    "checkerperiod": 60
+}
+```
+
+## Generator API
+
+### Add Generator
+* PayloadType: **addgeneratormsg**
+* Credentials: A valid Executor Private Key
+
+#### Payload 
+```json
+{
+    "msgtype": "addgeneratormsg",
+    "generator": {
+        "generatorid": "a-valid-sha256-hash-id",
+        "name": "my_generator",
+        "colonyname": "my_colony_name",
+        "workflowspec": "{\"name\":\"my_workflow\",\"colonyname\":\"my_colony_name\",\"funcspecs\":[{\"timeout\":-1,\"maxretries\":3,\"conditions\":{\"colonyname\":\"my_colony_name\",\"executortype\":\"test_executor_type\",\"mem\":1000,\"cores\":10,\"gpus\":1},\"env\":{\"test_key\":\"test_value\"}}]}",
+        "trigger": 5,
+        "counter": 0,
+        "lastrun": "0001-01-01T00:00:00Z"
+    }
+}
+```
+
+#### Reply 
+```json
+{
+    "generatorid": "a-valid-sha256-hash-id",
+    "name": "my_generator",
+    "colonyname": "my_colony_name",
+    "workflowspec": "{\"name\":\"my_workflow\",\"colonyname\":\"my_colony_name\",\"funcspecs\":[{\"timeout\":-1,\"maxretries\":3,\"conditions\":{\"colonyname\":\"my_colony_name\",\"executortype\":\"test_executor_type\",\"mem\":1000,\"cores\":10,\"gpus\":1},\"env\":{\"test_key\":\"test_value\"}}]}",
+    "trigger": 5,
+    "counter": 0,
+    "lastrun": "0001-01-01T00:00:00Z"
+}
+```
+
+### Get Generator
+* PayloadType: **getgeneratormsg**
+* Credentials: A valid Executor Private Key
+
+#### Payload 
+```json
+{
+    "msgtype": "getgeneratormsg",
+    "generatorid": "a-valid-sha256-hash-id"
+}
+```
+
+#### Reply 
+```json
+{
+    "generatorid": "a-valid-sha256-hash-id",
+    "name": "my_generator",
+    "colonyname": "my_colony_name",
+    "workflowspec": "{\"name\":\"my_workflow\",\"colonyname\":\"my_colony_name\",\"funcspecs\":[{\"timeout\":-1,\"maxretries\":3,\"conditions\":{\"colonyname\":\"my_colony_name\",\"executortype\":\"test_executor_type\",\"mem\":1000,\"cores\":10,\"gpus\":1},\"env\":{\"test_key\":\"test_value\"}}]}",
+    "trigger": 5,
+    "counter": 3,
+    "lastrun": "2022-01-02T12:00:00Z"
+}
+```
+
+### List Generators
+* PayloadType: **getgeneratorsmsg**
+* Credentials: A valid Executor or Colony Private Key
+
+#### Payload 
+```json
+{
+    "msgtype": "getgeneratorsmsg",
+    "colonyname": "my_colony_name",
+    "count": 10
+}
+```
+
+#### Reply 
+```json
+[
+    {
+        "generatorid": "a-valid-sha256-hash-id",
+        "name": "my_generator",
+        "colonyname": "my_colony_name",
+        "workflowspec": "{\"name\":\"my_workflow\",\"colonyname\":\"my_colony_name\",\"funcspecs\":[{\"timeout\":-1,\"maxretries\":3,\"conditions\":{\"colonyname\":\"my_colony_name\",\"executortype\":\"test_executor_type\",\"mem\":1000,\"cores\":10,\"gpus\":1},\"env\":{\"test_key\":\"test_value\"}}]}",
+        "trigger": 5,
+        "counter": 3,
+        "lastrun": "2022-01-02T12:00:00Z"
+    }
+]
+```
+
+### Remove Generator
+* PayloadType: **removegeneratormsg**
+* Credentials: A valid Executor Private Key
+
+#### Payload 
+```json
+{
+    "msgtype": "removegeneratormsg",
+    "generatorid": "a-valid-sha256-hash-id"
+}
+```
+
+#### Reply 
+```json
+{}
+```
+
+### Pack Generator
+* PayloadType: **packgeneratormsg**
+* Credentials: A valid Executor Private Key
+
+#### Payload 
+```json
+{
+    "msgtype": "packgeneratormsg",
+    "generatorid": "a-valid-sha256-hash-id",
+    "arg": "data-payload-to-add"
+}
+```
+
+#### Reply 
+```json
+{
+    "processgraphid": "a-valid-sha256-hash-id",
+    "colonyname": "my_colony_name",
+    "processids": ["process-id-1", "process-id-2"],
+    "state": 0,
+    "submissiontime": "2022-01-02T12:08:16.226133Z",
+    "starttime": "0001-01-01T00:00:00Z",
+    "endtime": "0001-01-01T00:00:00Z"
+}
+```
+
+## File Management API
+
+### Add File
+* PayloadType: **addfilemsg**
+* Credentials: A valid Executor Private Key
+
+#### Payload 
+```json
+{
+    "msgtype": "addfilemsg",
+    "file": {
+        "fileid": "a-valid-sha256-hash-id",
+        "colonyname": "my_colony_name",
+        "label": "my_file_label",
+        "name": "example.txt",
+        "size": 1024,
+        "checksum": "checksum-hash",
+        "checksumtype": "SHA256",
+        "added": "2022-01-02T12:00:00Z"
+    }
+}
+```
+
+#### Reply 
+```json
+{
+    "fileid": "a-valid-sha256-hash-id",
+    "colonyname": "my_colony_name",
+    "label": "my_file_label",
+    "name": "example.txt",
+    "size": 1024,
+    "checksum": "checksum-hash",
+    "checksumtype": "SHA256",
+    "added": "2022-01-02T12:00:00Z"
+}
+```
+
+### Get File
+* PayloadType: **getfilemsg**
+* Credentials: A valid Executor Private Key
+
+#### Payload 
+```json
+{
+    "msgtype": "getfilemsg",
+    "colonyname": "my_colony_name",
+    "fileid": "a-valid-sha256-hash-id",
+    "label": "my_file_label",
+    "name": "example.txt",
+    "latest": true
+}
+```
+
+#### Reply 
+```json
+{
+    "fileid": "a-valid-sha256-hash-id",
+    "colonyname": "my_colony_name",
+    "label": "my_file_label",
+    "name": "example.txt",
+    "size": 1024,
+    "checksum": "checksum-hash",
+    "checksumtype": "SHA256",
+    "added": "2022-01-02T12:00:00Z"
+}
+```
+
+### List Files
+* PayloadType: **getfilesmsg**
+* Credentials: A valid Executor or Colony Private Key
+
+#### Payload 
+```json
+{
+    "msgtype": "getfilesmsg",
+    "colonyname": "my_colony_name",
+    "label": "my_file_label"
+}
+```
+
+#### Reply 
+```json
+[
+    {
+        "name": "example.txt",
+        "checksum": "checksum-hash",
+        "size": 1024,
+        "s3filename": "s3-object-filename"
+    }
+]
+```
+
+### List File Labels
+* PayloadType: **getfilelabelsmsg**
+* Credentials: A valid Executor or Colony Private Key
+
+#### Payload 
+```json
+{
+    "msgtype": "getfilelabelsmsg",
+    "colonyname": "my_colony_name",
+    "name": "data_files",
+    "exact": false
+}
+```
+
+#### Reply 
+```json
+[
+    {
+        "name": "my_file_label",
+        "files": 5
+    },
+    {
+        "name": "another_label", 
+        "files": 3
+    },
+    {
+        "name": "data_files",
+        "files": 12
+    }
+]
+```
+
+### Remove File
+* PayloadType: **removefilemsg**
+* Credentials: A valid Executor Private Key
+
+#### Payload 
+```json
+{
+    "msgtype": "removefilemsg",
+    "colonyname": "my_colony_name",
+    "fileid": "a-valid-sha256-hash-id",
+    "label": "my_file_label",
+    "name": "example.txt"
+}
+```
+
+#### Reply 
+```json
+{}
+```
+
+## Logging API
+
+### Add Log
+* PayloadType: **addlogmsg**
+* Credentials: A valid Executor Private Key
+
+#### Payload 
+```json
+{
+    "msgtype": "addlogmsg",
+    "processid": "a-valid-sha256-hash-id",
+    "message": "This is a log message"
+}
+```
+
+#### Reply 
+```json
+{}
+```
+
+### Get Logs
+* PayloadType: **getlogsmsg**
+* Credentials: A valid Executor or Colony Private Key
+
+#### Payload 
+```json
+{
+    "msgtype": "getlogsmsg",
+    "colonyname": "my_colony_name",
+    "processid": "a-valid-sha256-hash-id",
+    "executorname": "my_executor_name",
+    "count": 100,
+    "since": 1640995200
+}
+```
+
+#### Reply 
+```json
+[
+    "Log message 1",
+    "Log message 2"
+]
+```
+
+### Search Logs
+* PayloadType: **searchlogsmsg**
+* Credentials: A valid Executor or Colony Private Key
+
+#### Payload 
+```json
+{
+    "msgtype": "searchlogsmsg",
+    "colonyname": "my_colony_name",
+    "text": "error",
+    "count": 50,
+    "days": 7
+}
+```
+
+#### Reply 
+```json
+[
+    {
+        "processid": "a-valid-sha256-hash-id",
+        "colonyname": "my_colony_name",
+        "executorname": "my_executor_name",
+        "message": "Error occurred during processing",
+        "timestamp": 1640995200
+    }
+]
+```
+
+## User Management API
+
+### Add User
+* PayloadType: **addusermsg**
+* Credentials: A valid Colony Private Key
+
+#### Payload 
+```json
+{
+    "msgtype": "addusermsg",
+    "user": {
+        "userid": "a-valid-sha256-hash-id",
+        "colonyname": "my_colony_name",
+        "name": "john_doe",
+        "email": "john@example.com",
+        "phone": "+1234567890"
+    }
+}
+```
+
+#### Reply 
+```json
+{
+    "userid": "a-valid-sha256-hash-id",
+    "colonyname": "my_colony_name",
+    "name": "john_doe",
+    "email": "john@example.com",
+    "phone": "+1234567890"
+}
+```
+
+### Get User
+* PayloadType: **getusermsg**
+* Credentials: A valid Colony Private Key
+
+#### Payload 
+```json
+{
+    "msgtype": "getusermsg",
+    "colonyname": "my_colony_name",
+    "name": "john_doe"
+}
+```
+
+#### Reply 
+```json
+{
+    "userid": "a-valid-sha256-hash-id",
+    "colonyname": "my_colony_name",
+    "name": "john_doe",
+    "email": "john@example.com",
+    "phone": "+1234567890"
+}
+```
+
+### List Users
+* PayloadType: **getusersmsg**
+* Credentials: A valid Colony Private Key
+
+#### Payload 
+```json
+{
+    "msgtype": "getusersmsg",
+    "colonyname": "my_colony_name"
+}
+```
+
+#### Reply 
+```json
+[
+    {
+        "userid": "a-valid-sha256-hash-id",
+        "colonyname": "my_colony_name",
+        "name": "john_doe",
+        "email": "john@example.com",
+        "phone": "+1234567890"
+    }
+]
+```
+
+### Remove User
+* PayloadType: **removeusermsg**
+* Credentials: A valid Colony Private Key
+
+#### Payload 
+```json
+{
+    "msgtype": "removeusermsg",
+    "colonyname": "my_colony_name",
+    "name": "john_doe"
+}
+```
+
+#### Reply 
+```json
+{}
+```
+
+## Snapshot API
+
+### Create Snapshot
+* PayloadType: **createsnapshotmsg**
+* Credentials: A valid Colony Private Key
+
+#### Payload 
+```json
+{
+    "msgtype": "createsnapshotmsg",
+    "colonyname": "my_colony_name",
+    "label": "daily_snapshot",
+    "name": "snapshot_2022_01_02"
+}
+```
+
+#### Reply 
+```json
+{
+    "snapshotid": "a-valid-sha256-hash-id",
+    "colonyname": "my_colony_name",
+    "label": "daily_snapshot",
+    "name": "snapshot_2022_01_02",
+    "timestamp": "2022-01-02T12:00:00Z"
+}
+```
+
+### Get Snapshot
+* PayloadType: **getsnapshotmsg**
+* Credentials: A valid Colony Private Key
+
+#### Payload 
+```json
+{
+    "msgtype": "getsnapshotmsg",
+    "colonyname": "my_colony_name",
+    "snapshotid": "a-valid-sha256-hash-id",
+    "name": "snapshot_2022_01_02"
+}
+```
+
+#### Reply 
+```json
+{
+    "snapshotid": "a-valid-sha256-hash-id",
+    "colonyname": "my_colony_name",
+    "label": "daily_snapshot",
+    "name": "snapshot_2022_01_02",
+    "timestamp": "2022-01-02T12:00:00Z"
+}
+```
+
+### List Snapshots
+* PayloadType: **getsnapshotsmsg**
+* Credentials: A valid Colony Private Key
+
+#### Payload 
+```json
+{
+    "msgtype": "getsnapshotsmsg",
+    "colonyname": "my_colony_name"
+}
+```
+
+#### Reply 
+```json
+[
+    {
+        "snapshotid": "a-valid-sha256-hash-id",
+        "colonyname": "my_colony_name",
+        "label": "daily_snapshot",
+        "name": "snapshot_2022_01_02",
+        "timestamp": "2022-01-02T12:00:00Z"
+    }
+]
+```
+
+### Remove Snapshot
+* PayloadType: **removesnapshotmsg**
+* Credentials: A valid Colony Private Key
+
+#### Payload 
+```json
+{
+    "msgtype": "removesnapshotmsg",
+    "colonyname": "my_colony_name",
+    "snapshotid": "a-valid-sha256-hash-id",
+    "name": "snapshot_2022_01_02"
+}
+```
+
+#### Reply 
+```json
+{}
+```
+
+### Remove All Snapshots
+* PayloadType: **removeallsnapshotsmsg**
+* Credentials: A valid Colony Private Key
+
+#### Payload 
+```json
+{
+    "msgtype": "removeallsnapshotsmsg",
+    "colonyname": "my_colony_name"
+}
+```
+
+#### Reply 
+```json
+{}
+```
+
+## Server & Miscellaneous API
+
+### Get Cluster Info
+* PayloadType: **getclustermsg**
+* Credentials: A valid Server Owner Private Key
+
+#### Payload 
+```json
+{
+    "msgtype": "getclustermsg"
+}
+```
+
+#### Reply 
+```json
+{
+    "nodes": [
+        {
+            "name": "server1",
+            "host": "localhost",
+            "apiport": 50080,
+            "etcdclientport": 23100,
+            "etcdpeerport": 24100,
+            "relayport": 25100,
+            "leader": true
+        }
+    ]
+}
+```
+
+### Get Server Version
+* PayloadType: **versionmsg**
+* Credentials: None required
+
+#### Payload 
+```json
+{
+    "msgtype": "versionmsg"
+}
+```
+
+#### Reply 
+```json
+{
+    "buildversion": "v1.0.0",
+    "buildtime": "2022-01-02T10:00:00Z"
+}
+```
+
+### Get System-Wide Statistics
+* PayloadType: **getstatisticsmsg**
+* Credentials: A valid Server Owner Private Key
+
+#### Payload 
+```json
+{
+    "msgtype": "getstatisticsmsg"
+}
+```
+
+#### Reply 
+```json
+{
+    "colonies": 5,
+    "executors": 25,
+    "waitingprocesses": 10,
+    "runningprocesses": 8,
+    "successfulprocesses": 1500,
+    "failedprocesses": 23,
+    "waitingworkflows": 5,
+    "runningworkflows": 2,
+    "successfulworkflows": 150,
+    "failedworkflows": 3
+}
+```
+
+### Add Function
+* PayloadType: **addfunctionmsg**
+* Credentials: A valid Executor Private Key
+
+#### Payload 
+```json
+{
+    "msgtype": "addfunctionmsg",
+    "fun": {
+        "functionid": "a-valid-sha256-hash-id",
+        "executorname": "my_executor_name",
+        "executortype": "test_executor_type",
+        "colonyname": "my_colony_name",
+        "funcname": "calculate_sum",
+        "counter": 5,
+        "minwaittime": 2.0,
+        "maxwaittime": 3.0,
+        "minexectime": 9.5,
+        "maxexectime": 10.8,
+        "avgwaittime": 2.5,
+        "avgexectime": 10.1
+    }
+}
+```
+
+#### Reply 
+```json
+{
+    "functionid": "a-valid-sha256-hash-id",
+    "executorname": "my_executor_name",
+    "executortype": "test_executor_type",
+    "colonyname": "my_colony_name",
+    "funcname": "calculate_sum",
+    "counter": 5,
+    "minwaittime": 2.0,
+    "maxwaittime": 3.0,
+    "minexectime": 9.5,
+    "maxexectime": 10.8,
+    "avgwaittime": 2.5,
+    "avgexectime": 10.1
+}
+```
+
+### Get Functions
+* PayloadType: **getfunctionsmsg**
+* Credentials: A valid Executor or Colony Private Key
+
+#### Payload 
+```json
+{
+    "msgtype": "getfunctionsmsg",
+    "colonyname": "my_colony_name",
+    "executorname": "my_executor"
+}
+```
+
+**Note**: If `executorname` is not provided, the functions of all executors in the specified colony will be returned.
+
+#### Reply 
+```json
+[
+    {
+        "functionid": "a-valid-sha256-hash-id",
+        "executorname": "my_executor_name",
+        "executortype": "test_executor_type",
+        "colonyname": "my_colony_name",
+        "funcname": "calculate_sum",
+        "counter": 5,
+        "minwaittime": 2.0,
+        "maxwaittime": 3.0,
+        "minexectime": 9.5,
+        "maxexectime": 10.8,
+        "avgwaittime": 2.5,
+        "avgexectime": 10.1
+    }
+]
+```
+
+### Remove Function
+* PayloadType: **removefunctionmsg**
+* Credentials: A valid Executor Private Key
+
+#### Payload 
+```json
+{
+    "msgtype": "removefunctionmsg",
+    "functionid": "a-valid-sha256-hash-id"
+}
+```
+
+#### Reply 
+```json
+{}
 ```
