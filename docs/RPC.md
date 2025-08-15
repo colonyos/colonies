@@ -43,8 +43,9 @@ Else it will contain the reply JSON data, e.g:
 ## Colony API
 
 ### Add Colony
-* PayloadType: **addcolonymsg**
+* PayloadType: [**addcolonymsg**](../pkg/rpc/add_colony_msg.go)
 * Credentials: A valid Server Owner Private Key
+* Returns: A [Colony object](../pkg/core/colony.go)
 
 #### Payload 
 ```json
@@ -66,8 +67,9 @@ Else it will contain the reply JSON data, e.g:
 ```
 
 ### Remove Colony
-* PayloadType: **removecolonymsg**
+* PayloadType: [**removecolonymsg**](../pkg/rpc/remove_colony_msg.go)
 * Credentials: A valid Server Owner Private Key
+* Returns: An empty JSON object {}
 
 #### Payload 
 ```json
@@ -83,8 +85,9 @@ Else it will contain the reply JSON data, e.g:
 ```
 
 ### List Colonies
-* PayloadType: **getcoloniesmsg**
+* PayloadType: [**getcoloniesmsg**](../pkg/rpc/get_colonies_msg.go)
 * Credentials: A valid Server Owner Private Key
+* Returns: An array of [Colony objects](../pkg/core/colony.go)
 
 #### Payload 
 ```json
@@ -110,8 +113,9 @@ Else it will contain the reply JSON data, e.g:
 ```
 
 ### Get Colony info
-* PayloadType: **getcolonymsg**
+* PayloadType: [**getcolonymsg**](../pkg/rpc/get_colony_msg.go)
 * Credentials: A valid Exectutor Private Key
+* Returns: A [Colony object](../pkg/core/colony.go)
 
 #### Payload 
 ```json
@@ -134,6 +138,7 @@ Else it will contain the reply JSON data, e.g:
 ### Add Executor
 * PayloadType: [**addexecutormsg**](../pkg/rpc/add_executor_msg.go)
 * Credentials: A valid Colony Private Key
+* Returns: An [Executor object](../pkg/core/executor.go)
 
 #### Payload 
 ```json
@@ -197,8 +202,9 @@ Else it will contain the reply JSON data, e.g:
 ```
 
 ### List Executors
-* PayloadType: **getexecutorsmsg**
+* PayloadType: [**getexecutorsmsg**](../pkg/rpc/get_executors_msg.go)
 * Credentials: A valid Executor or Colony Private Key
+* Returns: An array of [Executor objects](../pkg/core/executor.go)
 
 #### Payload 
 ```json
@@ -253,8 +259,9 @@ Else it will contain the reply JSON data, e.g:
 ```
 
 ### Get Executor info
-* PayloadType: **getexecutormsg**
+* PayloadType: [**getexecutormsg**](../pkg/rpc/get_executor_msg.go)
 * Credentials: A valid Executor Private Key
+* Returns: An [Executor object](../pkg/core/executor.go)
 
 #### Payload 
 ```json
@@ -308,8 +315,9 @@ Else it will contain the reply JSON data, e.g:
 ```
 
 ### Approve Executor 
-* PayloadType: **approveexecutormsg**
+* PayloadType: [**approveexecutormsg**](../pkg/rpc/approve_executor_msg.go)
 * Credentials: A valid Colony Private Key
+* Returns: An empty JSON object {}
 
 #### Payload
 ```json
@@ -326,8 +334,9 @@ Else it will contain the reply JSON data, e.g:
 ```
 
 ### Reject Executor 
-* PayloadType: **rejectexecutormsg**
+* PayloadType: [**rejectexecutormsg**](../pkg/rpc/reject_executor_msg.go)
 * Credentials: A valid Colony Private Key
+* Returns: An empty JSON object {}
 
 #### Payload 
 ```json
@@ -344,8 +353,9 @@ Else it will contain the reply JSON data, e.g:
 ```
 
 ### Remove Executor 
-* PayloadType: **removeexecutormsg**
+* PayloadType: [**removeexecutormsg**](../pkg/rpc/remove_executor_msg.go)
 * Credentials: A valid Colony Private Key
+* Returns: An empty JSON object {}
 
 #### Payload 
 ```json
@@ -361,11 +371,40 @@ Else it will contain the reply JSON data, e.g:
 {}
 ```
 
+### Report Allocations
+* PayloadType: [**reportallocationmsg**](../pkg/rpc/report_allocation_msg.go)
+* Credentials: A valid Executor Private Key
+* Returns: An empty JSON object {}
+
+#### Payload 
+```json
+{
+    "msgtype": "reportallocationmsg",
+    "colonyname": "my_colony_name",
+    "executorname": "my_executor_name",
+    "allocations": {
+        "projects": {
+            "project-123": {
+                "projectid": "project-123",
+                "cpu": "2000m",
+                "mem": "4Gi"
+            }
+        }
+    }
+}
+```
+
+#### Reply 
+```json
+{}
+```
+
 ## Process API
 
 ### Submit Process Specification 
-* PayloadType: **submitfuncspecmsg**
+* PayloadType: [**submitfuncspecmsg**](../pkg/rpc/submit_funcspec_msg.go)
 * Credentials: A valid Executor Private Key
+* Returns: A [Process object](../pkg/core/process.go)
 
 #### Payload 
 ```json
@@ -429,8 +468,9 @@ Else it will contain the reply JSON data, e.g:
 ```
 
 ### Assign Process to a Executor 
-* PayloadType: **assignprocessmsg**
+* PayloadType: [**assignprocessmsg**](../pkg/rpc/assign_process_msg.go)
 * Credentials: A valid Executor Private Key
+* Returns: A [Process object](../pkg/core/process.go)
 
 #### Payload 
 ```json
@@ -473,8 +513,9 @@ Else it will contain the reply JSON data, e.g:
 ```
 
 ### List process history
-* PayloadType: **getprocesshistmsg**
+* PayloadType: [**getprocesshistmsg**](../pkg/rpc/get_process_hist.go)
 * Credentials: A valid Executor or Colony Private Key
+* Returns: An array of [Process objects](../pkg/core/process.go)
 
 #### Payload 
 The state attribute can have the following values:
@@ -527,8 +568,9 @@ Note, all process will be returned for the entire colony if executorID is not sp
 ```
 
 ### List processes
-* PayloadType: **getprocessesmsg**
+* PayloadType: [**getprocessesmsg**](../pkg/rpc/get_processes_msg.go)
 * Credentials: A valid Executor or Colony Private Key
+* Returns: An array of [Process objects](../pkg/core/process.go)
 
 #### Payload 
 The state attribute can have the following values:
@@ -581,8 +623,9 @@ The state attribute can have the following values:
 ```
 
 ### Get Process info
-* PayloadType: **getprocessmsg**
+* PayloadType: [**getprocessmsg**](../pkg/rpc/get_process_msg.go)
 * Credentials: A valid Executor Private Key
+* Returns: A [Process object](../pkg/core/process.go)
 
 #### Payload 
 ```json
@@ -622,8 +665,9 @@ The state attribute can have the following values:
 ```
 
 ### Remove Process
-* PayloadType: **removeprocessmsg**
+* PayloadType: [**removeprocessmsg**](../pkg/rpc/remove_process_msg.go)
 * Credentials: A valid Executor Private Key
+* Returns: An empty JSON object {}
 
 #### Payload 
 ```json
@@ -639,8 +683,9 @@ The state attribute can have the following values:
 ```
 
 ### Remove all Processes
-* PayloadType: **removeallprocessesmsg**
+* PayloadType: [**removeallprocessesmsg**](../pkg/rpc/remove_all_processes_msg.go)
 * Credentials: A valid Colony Private Key
+* Returns: An empty JSON object {}
 
 #### Payload 
 ```json
@@ -656,8 +701,9 @@ The state attribute can have the following values:
 ```
 
 ### Close Process as Successful 
-* PayloadType: **closesuccessfulmsg**
+* PayloadType: [**closesuccessfulmsg**](../pkg/rpc/close_successful_msg.go)
 * Credentials: A valid Executor Private Key and the Executor ID needs to match the ExecutorID assigned to the process
+* Returns: An empty JSON object {}
 
 #### Payload 
 ```json
@@ -674,8 +720,9 @@ The state attribute can have the following values:
 ```
 
 ### Close a Process as Failed 
-* PayloadType: **closefailedmsg**
+* PayloadType: [**closefailedmsg**](../pkg/rpc/close_failed_msg.go)
 * Credentials: A valid Executor Private Key and the Executor ID needs to match the ExecutorID assigned to the process
+* Returns: An empty JSON object {}
 
 #### Payload 
 ```json
@@ -692,8 +739,9 @@ The state attribute can have the following values:
 ```
 
 ### Get Colony Statistics 
-* PayloadType: **getcolonystatsmsg**
+* PayloadType: [**getcolonystatsmsg**](../pkg/rpc/get_colony_statistics_msg.go)
 * Credentials: A valid Executor or Colony Private Key
+* Returns: A [Statistics object](../pkg/core/statistics.go)
 
 #### Payload 
 ```json
@@ -721,8 +769,9 @@ The state attribute can have the following values:
 
 
 ### Add Attribute to a Process 
-* PayloadType: **addattributemsg**
+* PayloadType: [**addattributemsg**](../pkg/rpc/add_attribute_msg.go)
 * Credentials: A valid Executor Private Key and the Executor ID needs to match the ExecutorID assigned to the process
+* Returns: An [Attribute object](../pkg/core/attribute.go)
 
 #### Payload 
 ```json
@@ -750,8 +799,9 @@ The state attribute can have the following values:
 ```
 
 ### Get Attribute assigned to a Process 
-* PayloadType: **getattributemsg**
+* PayloadType: [**getattributemsg**](../pkg/rpc/get_attribute_msg.go)
 * Credentials: A valid Executor  Private Key
+* Returns: An [Attribute object](../pkg/core/attribute.go)
 
 #### Payload 
 ```json
@@ -773,9 +823,10 @@ The state attribute can have the following values:
 ```
 
 ### Subscribe Process Events
-* PayloadType: **subscribeprocessmsg**
+* PayloadType: [**subscribeprocessmsg**](../pkg/rpc/subscribe_process_msg.go)
 * Credentials: A valid Executor Private Key
 * Comments: Receives an event when a process changes state. The payload needs to be sent over a websocket to: wss://host:port/pubsub
+* Returns: A [Process object](../pkg/core/process.go)
 
 #### Payload 
 The state attribute can have the following values:
@@ -825,8 +876,9 @@ The state attribute can have the following values:
 ```
 
 ### Set Process Output
-* PayloadType: **setoutputmsg**
+* PayloadType: [**setoutputmsg**](../pkg/rpc/set_output_msg.go)
 * Credentials: A valid Executor Private Key and the Executor ID needs to match the ExecutorID assigned to the process
+* Returns: An empty JSON object {}
 
 #### Payload 
 ```json
@@ -843,9 +895,10 @@ The state attribute can have the following values:
 ```
 
 ### Subscribe Processes Events
-* PayloadType: **subscribeprocessesmsg**
+* PayloadType: [**subscribeprocessesmsg**](../pkg/rpc/subscribe_processes_msg.go)
 * Credentials: A valid Executor Private Key
 * Comments: Receives an event when processes are added or change state. The payload needs to be sent over a websocket to: wss://host:port/pubsub
+* Returns: A [Process object](../pkg/core/process.go)
 
 #### Payload 
 The state attribute can have the following values:
@@ -896,8 +949,9 @@ The state attribute can have the following values:
 ## Workflow & Process Graph API
 
 ### Submit Workflow Specification 
-* PayloadType: **submitworkflowspecmsg**
+* PayloadType: [**submitworkflowspecmsg**](../pkg/rpc/submit_workflow_spec.go)
 * Credentials: A valid Executor Private Key
+* Returns: A [ProcessGraph object](../pkg/core/processgraph.go)
 
 #### Payload 
 ```json
@@ -939,9 +993,64 @@ The state attribute can have the following values:
 }
 ```
 
-### Get Process Graph
-* PayloadType: **getprocessgraphmsg**
+### Add Child to Process Graph
+* PayloadType: [**addchildmsg**](../pkg/rpc/add_child_msg.go)
 * Credentials: A valid Executor Private Key
+* Returns: A [Process object](../pkg/core/process.go)
+
+#### Payload 
+```json
+{
+    "msgtype": "addchildmsg",
+    "processgraphid": "a-valid-sha256-hash-id",
+    "parentprocessid": "parent-process-id",
+    "childprocessid": "child-process-id",
+    "insert": false,
+    "spec": {
+        "timeout": -1,
+        "maxretries": 3,
+        "conditions": {
+            "colonyname": "my_colony_name",
+            "executortype": "test_executor_type"
+        },
+        "env": {
+            "child_key": "child_value"
+        }
+    }
+}
+```
+
+#### Reply
+```json
+{
+    "processid": "new-child-process-id",
+    "assignedexecutorid": "",
+    "isassigned": false,
+    "state": 0,
+    "submissiontime": "2022-01-02T12:10:00.000000Z",
+    "starttime": "0001-01-01T00:00:00Z",
+    "endtime": "0001-01-01T00:00:00Z",
+    "deadline": "0001-01-01T00:00:00Z",
+    "retries": 0,
+    "attributes": [],
+    "spec": {
+        "timeout": -1,
+        "maxretries": 3,
+        "conditions": {
+            "colonyname": "my_colony_name",
+            "executortype": "test_executor_type"
+        },
+        "env": {
+            "child_key": "child_value"
+        }
+    }
+}
+```
+
+### Get Process Graph
+* PayloadType: [**getprocessgraphmsg**](../pkg/rpc/get_processgraph.go)
+* Credentials: A valid Executor Private Key
+* Returns: A [ProcessGraph object](../pkg/core/processgraph.go)
 
 #### Payload 
 ```json
@@ -965,8 +1074,9 @@ The state attribute can have the following values:
 ```
 
 ### List Process Graphs
-* PayloadType: **getprocessgraphsmsg**
+* PayloadType: [**getprocessgraphsmsg**](../pkg/rpc/get_processgraphs.go)
 * Credentials: A valid Executor or Colony Private Key
+* Returns: An array of [ProcessGraph objects](../pkg/core/processgraph.go)
 
 #### Payload 
 ```json
@@ -994,8 +1104,9 @@ The state attribute can have the following values:
 ```
 
 ### Remove Process Graph
-* PayloadType: **removeprocessgraphmsg**
+* PayloadType: [**removeprocessgraphmsg**](../pkg/rpc/remove_processgraph_msg.go)
 * Credentials: A valid Executor Private Key
+* Returns: An empty JSON object {}
 
 #### Payload 
 ```json
@@ -1012,8 +1123,9 @@ The state attribute can have the following values:
 ```
 
 ### Remove All Process Graphs
-* PayloadType: **removeallprocessgraphsmsg**
+* PayloadType: [**removeallprocessgraphsmsg**](../pkg/rpc/remove_all_processgraphs_msg.go)
 * Credentials: A valid Colony Private Key
+* Returns: An empty JSON object {}
 
 #### Payload 
 ```json
@@ -1032,8 +1144,9 @@ The state attribute can have the following values:
 ## Cron API
 
 ### Add Cron
-* PayloadType: **addcronmsg**
+* PayloadType: [**addcronmsg**](../pkg/rpc/add_cron_msg.go)
 * Credentials: A valid Executor Private Key
+* Returns: A [Cron object](../pkg/core/cron.go)
 
 #### Payload 
 ```json
@@ -1071,8 +1184,9 @@ The state attribute can have the following values:
 ```
 
 ### Get Cron
-* PayloadType: **getcronmsg**
+* PayloadType: [**getcronmsg**](../pkg/rpc/get_cron_msg.go)
 * Credentials: A valid Executor Private Key
+* Returns: A [Cron object](../pkg/core/cron.go)
 
 #### Payload 
 ```json
@@ -1099,8 +1213,9 @@ The state attribute can have the following values:
 ```
 
 ### List Crons
-* PayloadType: **getcronsmsg**
+* PayloadType: [**getcronsmsg**](../pkg/rpc/get_crons_msg.go)
 * Credentials: A valid Executor or Colony Private Key
+* Returns: An array of [Cron objects](../pkg/core/cron.go)
 
 #### Payload 
 ```json
@@ -1130,8 +1245,9 @@ The state attribute can have the following values:
 ```
 
 ### Remove Cron
-* PayloadType: **removecronmsg**
+* PayloadType: [**removecronmsg**](../pkg/rpc/remove_cron_msg.go)
 * Credentials: A valid Executor Private Key
+* Returns: An empty JSON object {}
 
 #### Payload 
 ```json
@@ -1147,8 +1263,9 @@ The state attribute can have the following values:
 ```
 
 ### Run Cron
-* PayloadType: **runcronmsg**
+* PayloadType: [**runcronmsg**](../pkg/rpc/run_cron_msg.go)
 * Credentials: A valid Executor Private Key
+* Returns: A [Cron object](../pkg/core/cron.go)
 
 #### Payload 
 ```json
@@ -1181,8 +1298,9 @@ The state attribute can have the following values:
 ## Generator API
 
 ### Add Generator
-* PayloadType: **addgeneratormsg**
+* PayloadType: [**addgeneratormsg**](../pkg/rpc/add_generator_msg.go)
 * Credentials: A valid Executor Private Key
+* Returns: A [Generator object](../pkg/core/generator.go)
 
 #### Payload 
 ```json
@@ -1214,8 +1332,9 @@ The state attribute can have the following values:
 ```
 
 ### Get Generator
-* PayloadType: **getgeneratormsg**
+* PayloadType: [**getgeneratormsg**](../pkg/rpc/get_generator_msg.go)
 * Credentials: A valid Executor Private Key
+* Returns: A [Generator object](../pkg/core/generator.go)
 
 #### Payload 
 ```json
@@ -1238,9 +1357,37 @@ The state attribute can have the following values:
 }
 ```
 
+### Resolve Generator by Name
+* PayloadType: [**resolvegeneratormsg**](../pkg/rpc/resolve_generator_msg.go)
+* Credentials: A valid Executor or User Private Key
+* Returns: A [Generator object](../pkg/core/generator.go)
+
+#### Payload 
+```json
+{
+    "msgtype": "resolvegeneratormsg",
+    "colonyname": "my_colony_name",
+    "generatorname": "my_generator"
+}
+```
+
+#### Reply 
+```json
+{
+    "generatorid": "a-valid-sha256-hash-id",
+    "name": "my_generator",
+    "colonyname": "my_colony_name",
+    "workflowspec": "{\"name\":\"my_workflow\",\"colonyname\":\"my_colony_name\",\"funcspecs\":[{\"timeout\":-1,\"maxretries\":3,\"conditions\":{\"colonyname\":\"my_colony_name\",\"executortype\":\"test_executor_type\",\"mem\":1000,\"cores\":10,\"gpus\":1},\"env\":{\"test_key\":\"test_value\"}}]}",
+    "trigger": 5,
+    "counter": 3,
+    "lastrun": "2022-01-02T12:00:00Z"
+}
+```
+
 ### List Generators
-* PayloadType: **getgeneratorsmsg**
+* PayloadType: [**getgeneratorsmsg**](../pkg/rpc/get_generators_msg.go)
 * Credentials: A valid Executor or Colony Private Key
+* Returns: An array of [Generator objects](../pkg/core/generator.go)
 
 #### Payload 
 ```json
@@ -1267,8 +1414,9 @@ The state attribute can have the following values:
 ```
 
 ### Remove Generator
-* PayloadType: **removegeneratormsg**
+* PayloadType: [**removegeneratormsg**](../pkg/rpc/remove_generator_msg.go)
 * Credentials: A valid Executor Private Key
+* Returns: An empty JSON object {}
 
 #### Payload 
 ```json
@@ -1284,8 +1432,9 @@ The state attribute can have the following values:
 ```
 
 ### Pack Generator
-* PayloadType: **packgeneratormsg**
+* PayloadType: [**packgeneratormsg**](../pkg/rpc/pack_generator.go)
 * Credentials: A valid Executor Private Key
+* Returns: A [ProcessGraph object](../pkg/core/processgraph.go)
 
 #### Payload 
 ```json
@@ -1312,8 +1461,9 @@ The state attribute can have the following values:
 ## File Management API
 
 ### Add File
-* PayloadType: **addfilemsg**
+* PayloadType: [**addfilemsg**](../pkg/rpc/add_file_msg.go)
 * Credentials: A valid Executor Private Key
+* Returns: A [File object](../pkg/core/file.go)
 
 #### Payload 
 ```json
@@ -1347,8 +1497,9 @@ The state attribute can have the following values:
 ```
 
 ### Get File
-* PayloadType: **getfilemsg**
+* PayloadType: [**getfilemsg**](../pkg/rpc/get_file_msg.go)
 * Credentials: A valid Executor Private Key
+* Returns: An array of [File objects](../pkg/core/file.go)
 
 #### Payload 
 ```json
@@ -1364,21 +1515,24 @@ The state attribute can have the following values:
 
 #### Reply 
 ```json
-{
-    "fileid": "a-valid-sha256-hash-id",
-    "colonyname": "my_colony_name",
-    "label": "my_file_label",
-    "name": "example.txt",
-    "size": 1024,
-    "checksum": "checksum-hash",
-    "checksumtype": "SHA256",
-    "added": "2022-01-02T12:00:00Z"
-}
+[
+    {
+        "fileid": "a-valid-sha256-hash-id",
+        "colonyname": "my_colony_name",
+        "label": "my_file_label",
+        "name": "example.txt",
+        "size": 1024,
+        "checksum": "checksum-hash",
+        "checksumtype": "SHA256",
+        "added": "2022-01-02T12:00:00Z"
+    }
+]
 ```
 
 ### List Files
-* PayloadType: **getfilesmsg**
+* PayloadType: [**getfilesmsg**](../pkg/rpc/get_files_msg.go)
 * Credentials: A valid Executor or Colony Private Key
+* Returns: An array of [FileData objects](../pkg/core/filedata.go)
 
 #### Payload 
 ```json
@@ -1402,8 +1556,9 @@ The state attribute can have the following values:
 ```
 
 ### List File Labels
-* PayloadType: **getfilelabelsmsg**
+* PayloadType: [**getfilelabelsmsg**](../pkg/rpc/get_filelabels_msg.go)
 * Credentials: A valid Executor or Colony Private Key
+* Returns: An array of [Label objects](../pkg/core/label.go)
 
 #### Payload 
 ```json
@@ -1434,8 +1589,9 @@ The state attribute can have the following values:
 ```
 
 ### Remove File
-* PayloadType: **removefilemsg**
+* PayloadType: [**removefilemsg**](../pkg/rpc/remove_file_msg.go)
 * Credentials: A valid Executor Private Key
+* Returns: An empty JSON object {}
 
 #### Payload 
 ```json
@@ -1456,8 +1612,9 @@ The state attribute can have the following values:
 ## Logging API
 
 ### Add Log
-* PayloadType: **addlogmsg**
+* PayloadType: [**addlogmsg**](../pkg/rpc/add_log_msg.go)
 * Credentials: A valid Executor Private Key
+* Returns: An empty JSON object {}
 
 #### Payload 
 ```json
@@ -1474,8 +1631,9 @@ The state attribute can have the following values:
 ```
 
 ### Get Logs
-* PayloadType: **getlogsmsg**
+* PayloadType: [**getlogsmsg**](../pkg/rpc/get_logs_msg.go)
 * Credentials: A valid Executor or Colony Private Key
+* Returns: An array of [Log objects](../pkg/core/log.go)
 
 #### Payload 
 ```json
@@ -1492,14 +1650,27 @@ The state attribute can have the following values:
 #### Reply 
 ```json
 [
-    "Log message 1",
-    "Log message 2"
+    {
+        "processid": "a-valid-sha256-hash-id",
+        "colonyname": "my_colony_name",
+        "executorname": "my_executor_name",
+        "message": "Log message 1",
+        "timestamp": 1640995200
+    },
+    {
+        "processid": "a-valid-sha256-hash-id",
+        "colonyname": "my_colony_name",
+        "executorname": "my_executor_name",
+        "message": "Log message 2",
+        "timestamp": 1640995201
+    }
 ]
 ```
 
 ### Search Logs
-* PayloadType: **searchlogsmsg**
+* PayloadType: [**searchlogsmsg**](../pkg/rpc/search_logs_msg.go)
 * Credentials: A valid Executor or Colony Private Key
+* Returns: An array of [Log objects](../pkg/core/log.go)
 
 #### Payload 
 ```json
@@ -1528,8 +1699,9 @@ The state attribute can have the following values:
 ## User Management API
 
 ### Add User
-* PayloadType: **addusermsg**
+* PayloadType: [**addusermsg**](../pkg/rpc/add_user_msg.go)
 * Credentials: A valid Colony Private Key
+* Returns: A [User object](../pkg/core/user.go)
 
 #### Payload 
 ```json
@@ -1557,8 +1729,9 @@ The state attribute can have the following values:
 ```
 
 ### Get User
-* PayloadType: **getusermsg**
+* PayloadType: [**getusermsg**](../pkg/rpc/get_user_msg.go)
 * Credentials: A valid Colony Private Key
+* Returns: A [User object](../pkg/core/user.go)
 
 #### Payload 
 ```json
@@ -1581,8 +1754,9 @@ The state attribute can have the following values:
 ```
 
 ### List Users
-* PayloadType: **getusersmsg**
+* PayloadType: [**getusersmsg**](../pkg/rpc/get_users_msg.go)
 * Credentials: A valid Colony Private Key
+* Returns: An array of [User objects](../pkg/core/user.go)
 
 #### Payload 
 ```json
@@ -1606,8 +1780,9 @@ The state attribute can have the following values:
 ```
 
 ### Remove User
-* PayloadType: **removeusermsg**
+* PayloadType: [**removeusermsg**](../pkg/rpc/remove_user_msg.go)
 * Credentials: A valid Colony Private Key
+* Returns: An empty JSON object {}
 
 #### Payload 
 ```json
@@ -1626,8 +1801,9 @@ The state attribute can have the following values:
 ## Snapshot API
 
 ### Create Snapshot
-* PayloadType: **createsnapshotmsg**
+* PayloadType: [**createsnapshotmsg**](../pkg/rpc/create_snapshot_msg.go)
 * Credentials: A valid Colony Private Key
+* Returns: A [Snapshot object](../pkg/core/snapshot.go)
 
 #### Payload 
 ```json
@@ -1651,8 +1827,9 @@ The state attribute can have the following values:
 ```
 
 ### Get Snapshot
-* PayloadType: **getsnapshotmsg**
+* PayloadType: [**getsnapshotmsg**](../pkg/rpc/get_snapshot_msg.go)
 * Credentials: A valid Colony Private Key
+* Returns: A [Snapshot object](../pkg/core/snapshot.go)
 
 #### Payload 
 ```json
@@ -1676,8 +1853,9 @@ The state attribute can have the following values:
 ```
 
 ### List Snapshots
-* PayloadType: **getsnapshotsmsg**
+* PayloadType: [**getsnapshotsmsg**](../pkg/rpc/get_snapshots_msg.go)
 * Credentials: A valid Colony Private Key
+* Returns: An array of [Snapshot objects](../pkg/core/snapshot.go)
 
 #### Payload 
 ```json
@@ -1701,8 +1879,9 @@ The state attribute can have the following values:
 ```
 
 ### Remove Snapshot
-* PayloadType: **removesnapshotmsg**
+* PayloadType: [**removesnapshotmsg**](../pkg/rpc/remove_snapshot_msg.go)
 * Credentials: A valid Colony Private Key
+* Returns: An empty JSON object {}
 
 #### Payload 
 ```json
@@ -1720,8 +1899,9 @@ The state attribute can have the following values:
 ```
 
 ### Remove All Snapshots
-* PayloadType: **removeallsnapshotsmsg**
+* PayloadType: [**removeallsnapshotsmsg**](../pkg/rpc/remove_all_snapshots_msg.go)
 * Credentials: A valid Colony Private Key
+* Returns: An empty JSON object {}
 
 #### Payload 
 ```json
@@ -1739,8 +1919,9 @@ The state attribute can have the following values:
 ## Server & Miscellaneous API
 
 ### Get Cluster Info
-* PayloadType: **getclustermsg**
+* PayloadType: [**getclustermsg**](../pkg/rpc/get_cluster_msg.go)
 * Credentials: A valid Server Owner Private Key
+* Returns: A [cluster Config object](../pkg/cluster/config.go)
 
 #### Payload 
 ```json
@@ -1767,8 +1948,9 @@ The state attribute can have the following values:
 ```
 
 ### Get Server Version
-* PayloadType: **versionmsg**
+* PayloadType: [**versionmsg**](../pkg/rpc/version_msg.go)
 * Credentials: None required
+* Returns: A [version message](../pkg/rpc/version_msg.go)
 
 #### Payload 
 ```json
@@ -1786,8 +1968,9 @@ The state attribute can have the following values:
 ```
 
 ### Get System-Wide Statistics
-* PayloadType: **getstatisticsmsg**
+* PayloadType: [**getstatisticsmsg**](../pkg/rpc/get_statistics_msg.go)
 * Credentials: A valid Server Owner Private Key
+* Returns: A [Statistics object](../pkg/core/statistics.go)
 
 #### Payload 
 ```json
@@ -1813,8 +1996,9 @@ The state attribute can have the following values:
 ```
 
 ### Add Function
-* PayloadType: **addfunctionmsg**
+* PayloadType: [**addfunctionmsg**](../pkg/rpc/add_function_msg.go)
 * Credentials: A valid Executor Private Key
+* Returns: A [Function object](../pkg/core/function.go)
 
 #### Payload 
 ```json
@@ -1856,8 +2040,10 @@ The state attribute can have the following values:
 ```
 
 ### Get Functions
-* PayloadType: **getfunctionsmsg**
+* PayloadType: [**getfunctionsmsg**](../pkg/rpc/get_functions_msg.go)
 * Credentials: A valid Executor or Colony Private Key
+* Returns: An array of [Function objects](../pkg/core/function.go)
+* Comments: If `executorname` is not provided, the functions of all executors in the specified colony will be returned.
 
 #### Payload 
 ```json
@@ -1868,7 +2054,6 @@ The state attribute can have the following values:
 }
 ```
 
-**Note**: If `executorname` is not provided, the functions of all executors in the specified colony will be returned.
 
 #### Reply 
 ```json
@@ -1891,8 +2076,9 @@ The state attribute can have the following values:
 ```
 
 ### Remove Function
-* PayloadType: **removefunctionmsg**
+* PayloadType: [**removefunctionmsg**](../pkg/rpc/remove_function_msg.go)
 * Credentials: A valid Executor Private Key
+* Returns: An empty JSON object {}
 
 #### Payload 
 ```json
@@ -1903,6 +2089,83 @@ The state attribute can have the following values:
 ```
 
 #### Reply 
+```json
+{}
+```
+
+### ID Management
+
+#### Change Colony ID
+* PayloadType: [**changecolonyidmsg**](../pkg/rpc/change_colonyid_msg.go)
+* Credentials: A valid Server Owner Private Key
+* Returns: An empty JSON object {}
+
+##### Payload 
+```json
+{
+    "msgtype": "changecolonyidmsg",
+    "colonyname": "my_colony_name",
+    "colonyid": "a-new-colony-id-hash"
+}
+```
+
+##### Reply 
+```json
+{}
+```
+
+#### Change Executor ID
+* PayloadType: [**changeexecutoridmsg**](../pkg/rpc/change_executorid_msg.go)
+* Credentials: A valid Colony Private Key
+* Returns: An empty JSON object {}
+
+##### Payload 
+```json
+{
+    "msgtype": "changeexecutoridmsg",
+    "colonyname": "my_colony_name",
+    "executorid": "a-new-executor-id-hash"
+}
+```
+
+##### Reply 
+```json
+{}
+```
+
+#### Change User ID
+* PayloadType: [**changeuseridmsg**](../pkg/rpc/change_userid_msg.go)
+* Credentials: A valid Colony Private Key
+* Returns: An empty JSON object {}
+
+##### Payload 
+```json
+{
+    "msgtype": "changeuseridmsg",
+    "colonyname": "my_colony_name",
+    "userid": "a-new-user-id-hash"
+}
+```
+
+##### Reply 
+```json
+{}
+```
+
+#### Change Server ID
+* PayloadType: [**changeserveridmsg**](../pkg/rpc/change_serverid_msg.go)
+* Credentials: A valid Server Owner Private Key
+* Returns: An empty JSON object {}
+
+##### Payload 
+```json
+{
+    "msgtype": "changeserveridmsg",
+    "serverid": "a-new-server-id-hash"
+}
+```
+
+##### Reply 
 ```json
 {}
 ```
