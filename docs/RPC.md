@@ -65,15 +65,15 @@ Else it will contain the reply JSON data, e.g:
 }
 ```
 
-### Delete Colony
-* PayloadType: **deletecolonymsg**
+### Remove Colony
+* PayloadType: **removecolonymsg**
 * Credentials: A valid Server Owner Private Key
 
 #### Payload 
 ```json
 {
-    "msgtype": "deletecolonymsg",
-    "colonyid": "6d61afe7914c63f28a4c97645ce6ab264c3ad3a0e46ebd1f3788e83053934e18"
+    "msgtype": "removecolonymsg",
+    "colonyname": "my_colony_name"
 }
 ```
 
@@ -117,7 +117,7 @@ Else it will contain the reply JSON data, e.g:
 ```json
 {
     "msgtype": "getcolonymsg",
-    "colonyid": "42beaae68830094a4b367b06ef293aca0473ae8cd893da43a50000c98c85c5d8"
+    "colonyname": "my_colony_name"
 }
 ```
 
@@ -130,7 +130,9 @@ Else it will contain the reply JSON data, e.g:
 ```
 
 ## Executor API
-* PayloadType: **addexecutormsg**
+
+### Add Executor
+* PayloadType: [**addexecutormsg**](../pkg/rpc/add_executor_msg.go)
 * Credentials: A valid Colony Private Key
 
 #### Payload 
@@ -157,14 +159,40 @@ Else it will contain the reply JSON data, e.g:
 {
     "executorid": "38df5bbbcf0ccb438d2e4151638e3967bf28a5654af6a7e5acc590c0e49fae06",
     "executortype": "test_executor_type",
-    "name": "test_executor_name",
-    "colonyid": "405acc69052cf19ce23ddd238b73c74bfd78c65cf6ef57613b870470a26d6f95",
-    "cpu": "AMD Ryzen 9 5950X (32) @ 3.400GHz",
-    "cores": 32,
-    "mem": 80326,
-    "gpu": "NVIDIA GeForce RTX 2080 Ti Rev. A",
-    "gpus": 1,
-    "state": 0
+    "executorname": "test_executor_name",
+    "colonyname": "my_colony_name",
+    "state": 0,
+    "requirefuncreg": false,
+    "commissiontime": "2022-01-02T12:00:00Z",
+    "lastheardfromtime": "2022-01-02T12:05:00Z",
+    "location": {
+        "long": 0.0,
+        "lat": 0.0,
+        "desc": "test location"
+    },
+    "capabilities": {
+        "hardware": {
+            "model": "test_model",
+            "nodes": 1,
+            "cpu": "AMD Ryzen 9 5950X (32) @ 3.400GHz",
+            "mem": "80326MB",
+            "storage": "1TB",
+            "gpu": {
+                "name": "NVIDIA GeForce RTX 2080 Ti Rev. A",
+                "mem": "11GB",
+                "count": 1,
+                "nodecount": 1
+            }
+        },
+        "software": {
+            "name": "test_software",
+            "type": "container",
+            "version": "1.0.0"
+        }
+    },
+    "allocations": {
+        "projects": {}
+    }
 }
 ```
 
@@ -176,7 +204,7 @@ Else it will contain the reply JSON data, e.g:
 ```json
 {
     "msgtype": "getexecutorsmsg",
-    "colonyid": "863e313bfd882fe7c0f13c14aff1f3f02ba763bcb48377e50d505289c81e47b6"
+    "colonyname": "my_colony_name"
 }
 ```
 
@@ -186,14 +214,40 @@ Else it will contain the reply JSON data, e.g:
     {
         "executorid": "9525365b67efdbbf37bc1fa7628c7e75bafd2f298cd26f75500bc1364b2c4c1c",
         "executortype": "test_executor_type",
-        "name": "test_executor_name",
-        "colonyid": "863e313bfd882fe7c0f13c14aff1f3f02ba763bcb48377e50d505289c81e47b6",
-        "cpu": "AMD Ryzen 9 5950X (32) @ 3.400GHz",
-        "cores": 32,
-        "mem": 80326,
-        "gpu": "NVIDIA GeForce RTX 2080 Ti Rev. A",
-        "gpus": 1,
-        "state": 1
+        "executorname": "test_executor_name",
+        "colonyname": "my_colony_name",
+        "state": 1,
+        "requirefuncreg": false,
+        "commissiontime": "2022-01-02T12:00:00Z",
+        "lastheardfromtime": "2022-01-02T12:05:00Z",
+        "location": {
+            "long": 0.0,
+            "lat": 0.0,
+            "desc": "test location"
+        },
+        "capabilities": {
+            "hardware": {
+                "model": "test_model",
+                "nodes": 1,
+                "cpu": "AMD Ryzen 9 5950X (32) @ 3.400GHz",
+                "mem": "80326MB",
+                "storage": "1TB",
+                "gpu": {
+                    "name": "NVIDIA GeForce RTX 2080 Ti Rev. A",
+                    "mem": "11GB",
+                    "count": 1,
+                    "nodecount": 1
+                }
+            },
+            "software": {
+                "name": "test_software",
+                "type": "container",
+                "version": "1.0.0"
+            }
+        },
+        "allocations": {
+            "projects": {}
+        }
     }
 ]
 ```
@@ -206,7 +260,8 @@ Else it will contain the reply JSON data, e.g:
 ```json
 {
     "msgtype": "getexecutormsg",
-    "executorid": "ed2aa78eabe3d1f6fd46ef1247199e9a12faf1a8f1bcba0db51265515c3f08e0"
+    "colonyname": "my_colony_name",
+    "executorname": "my_executor_name"
 }
 ```
 
@@ -215,14 +270,40 @@ Else it will contain the reply JSON data, e.g:
 {
     "executorid": "ed2aa78eabe3d1f6fd46ef1247199e9a12faf1a8f1bcba0db51265515c3f08e0",
     "executortype": "test_executor_type",
-    "name": "test_executor_name",
-    "colonyid": "85ae85e8b6fafddfab1a381ea86a5d7f55e818df6cad8a10e5986d87c57b0683",
-    "cpu": "AMD Ryzen 9 5950X (32) @ 3.400GHz",
-    "cores": 32,
-    "mem": 80326,
-    "gpu": "NVIDIA GeForce RTX 2080 Ti Rev. A",
-    "gpus": 1,
-    "state": 2
+    "executorname": "test_executor_name",
+    "colonyname": "my_colony_name",
+    "state": 2,
+    "requirefuncreg": false,
+    "commissiontime": "2022-01-02T12:00:00Z",
+    "lastheardfromtime": "2022-01-02T12:05:00Z",
+    "location": {
+        "long": 0.0,
+        "lat": 0.0,
+        "desc": "test location"
+    },
+    "capabilities": {
+        "hardware": {
+            "model": "test_model",
+            "nodes": 1,
+            "cpu": "AMD Ryzen 9 5950X (32) @ 3.400GHz",
+            "mem": "80326MB",
+            "storage": "1TB",
+            "gpu": {
+                "name": "NVIDIA GeForce RTX 2080 Ti Rev. A",
+                "mem": "11GB",
+                "count": 1,
+                "nodecount": 1
+            }
+        },
+        "software": {
+            "name": "test_software",
+            "type": "container",
+            "version": "1.0.0"
+        }
+    },
+    "allocations": {
+        "projects": {}
+    }
 }
 ```
 
@@ -234,7 +315,8 @@ Else it will contain the reply JSON data, e.g:
 ```json
 {
     "msgtype": "approveexecutormsg",
-    "executorid": "e40e2862e3a68e1c79af4e9475ef64fbf588e13619f4daa7183673b34e189c87"
+    "colonyname": "my_colony_name",
+    "executorname": "my_executor_name"
 }
 ```
 
@@ -251,7 +333,8 @@ Else it will contain the reply JSON data, e.g:
 ```json
 {
     "msgtype": "rejectexecutormsg",
-    "executorid": "7804cea6a50f2a258ad815b0ed37b6b312c813bf7387cef04958971335faae21"
+    "colonyname": "my_colony_name",
+    "executorname": "my_executor_name"
 }
 ```
 
@@ -260,15 +343,16 @@ Else it will contain the reply JSON data, e.g:
 {}
 ```
 
-### Delete Executor 
-* PayloadType: **deleteexecutormsg**
+### Remove Executor 
+* PayloadType: **removeexecutormsg**
 * Credentials: A valid Colony Private Key
 
 #### Payload 
 ```json
 {
-    "msgtype": "deleteexecutormsg",
-    "executorid": "7804cea6a50f2a258ad815b0ed37b6b312c813bf7387cef04958971335faae21"
+    "msgtype": "removeexecutormsg",
+    "colonyname": "my_colony_name",
+    "executorname": "my_executor_name"
 }
 ```
 
@@ -280,13 +364,13 @@ Else it will contain the reply JSON data, e.g:
 ## Process API
 
 ### Submit Process Specification 
-* PayloadType: **submitprocessespecmsg**
+* PayloadType: **submitfuncspecmsg**
 * Credentials: A valid Executor Private Key
 
 #### Payload 
 ```json
 {
-    "msgtype": "submitprocessesspecmsg",
+    "msgtype": "submitfuncspecmsg",
     "spec": {
         "timeout": -1,
         "maxretries": 3,
@@ -352,7 +436,10 @@ Else it will contain the reply JSON data, e.g:
 ```json
 {
     "msgtype": "assignprocessmsg",
-    "colonyid": "326691e2b5fc0651b5d781393c7279ab3dc58c6627d0a7b2a09e9aa0e4a60950"
+    "colonyname": "my_colony_name",
+    "timeout": -1,
+    "availablecpu": "1000m",
+    "availablemem": "1000Mi"
 }
 ```
 
@@ -400,8 +487,8 @@ Note, all process will be returned for the entire colony if executorID is not sp
 
 ```json
 {
-    "msgtype": "getprocessesmsg",
-    "coloyid": "891f0c88e8a00cb103df472e4ece347a41eb0115e5c40f12d565bb24eb3fc71d",
+    "msgtype": "getprocesshistmsg",
+    "colonyname": "891f0c88e8a00cb103df472e4ece347a41eb0115e5c40f12d565bb24eb3fc71d",
     "executorid": "",
     "seconds": 100,
     "state": 3 
@@ -453,9 +540,12 @@ The state attribute can have the following values:
 ```json
 {
     "msgtype": "getprocessesmsg",
-    "coloyid": "891f0c88e8a00cb103df472e4ece347a41eb0115e5c40f12d565bb24eb3fc71d",
+    "colonyname": "891f0c88e8a00cb103df472e4ece347a41eb0115e5c40f12d565bb24eb3fc71d",
     "count": 2,
-    "state": 3 
+    "state": 3,
+    "executortype": "test_executor_type",
+    "label": "",
+    "initiator": ""
 }
 ```
 
@@ -531,14 +621,14 @@ The state attribute can have the following values:
 }
 ```
 
-### Delete Process
-* PayloadType: **deleteprocessmsg**
+### Remove Process
+* PayloadType: **removeprocessmsg**
 * Credentials: A valid Executor Private Key
 
 #### Payload 
 ```json
 {
-    "msgtype": "deleteprocessmsg",
+    "msgtype": "removeprocessmsg",
     "processid": "80a98f46c7a364fd33339a6fb2e6c5d8988384fdbf237b4012490c4658bbc9ce"
 }
 ```
@@ -548,15 +638,15 @@ The state attribute can have the following values:
 {}
 ```
 
-### Delete all Process
-* PayloadType: **deleteallprocessesmsg**
+### Remove all Processes
+* PayloadType: **removeallprocessesmsg**
 * Credentials: A valid Colony Private Key
 
 #### Payload 
 ```json
 {
-    "msgtype": "deleteallprocessesmsg",
-    "colonyid": "863e313bfd882fe7c0f13c14aff1f3f02ba763bcb48377e50d505289c81e47b6"
+    "msgtype": "removeallprocessesmsg",
+    "colonyname": "my_colony_name"
 }
 ```
 
@@ -574,6 +664,7 @@ The state attribute can have the following values:
 {
     "msgtype": "closesuccessfulmsg",
     "processid": "ed041355071d2ee6d0ec27b480e2e4c8006cf465ec408b57fcdaa5dac76af8e2"
+    "out": []
 }
 ```
 
@@ -582,7 +673,7 @@ The state attribute can have the following values:
 {}
 ```
 
-### Close a Proceess as Failed 
+### Close a Process as Failed 
 * PayloadType: **closefailedmsg**
 * Credentials: A valid Executor Private Key and the Executor ID needs to match the ExecutorID assigned to the process
 
@@ -591,6 +682,7 @@ The state attribute can have the following values:
 {
     "msgtype": "closefailedmsg",
     "processid": "24f6d85804e2abde0c85a9e8aef8b308c44a72323565b14f11756d4997acf200"
+    "errors": []
 }
 ```
 
@@ -599,25 +691,31 @@ The state attribute can have the following values:
 {}
 ```
 
-### Process Statistics 
-* PayloadType: **getprocstatmsg**
+### Get Colony Statistics 
+* PayloadType: **getcolonystatsmsg**
 * Credentials: A valid Executor or Colony Private Key
 
 #### Payload 
 ```json
 {
-    "msgtype": "getprocstatmsg",
-    "colonyid": "326691e2b5fc0651b5d781393c7279ab3dc58c6627d0a7b2a09e9aa0e4a60950"
+    "msgtype": "getcolonystatsmsg",
+    "colonyname": "my_colony_name"
 }
 ```
 
 #### Reply 
 ```json
 {
-    "waiting": 1,
-    "running": 2,
-    "success": 3,
-    "failed": 4
+    "colonies": 1,
+    "executors": 5,
+    "waitingprocesses": 1,
+    "runningprocesses": 2,
+    "successfulprocesses": 3,
+    "failedprocesses": 4,
+    "waitingworkflows": 0,
+    "runningworkflows": 0,
+    "successfulworkflows": 0,
+    "failedworkflows": 0
 }
 ```
 
@@ -681,15 +779,17 @@ The state attribute can have the following values:
 
 #### Payload 
 The state attribute can have the following values:
-* 1 : Waiting 
-* 2 : Running 
-* 3 : Success 
-* 4 : Failed 
+* 0 : Waiting 
+* 1 : Running 
+* 2 : Success 
+* 3 : Failed 
 
 ```json
 {
     "msgtype": "subscribeprocessmsg",
+    "colonyname": "my_colony_name",
     "processid": "80a98f46c7a364fd33339a6fb2e6c5d8988384fdbf237b4012490c4658bbc9ce",
+    "executortype": "test_executor_type",
     "state": 1,
     "timeout": -1
 }
@@ -713,7 +813,7 @@ The state attribute can have the following values:
         "maxretries": 3,
         "conditions": {
             "colonyid": "ee193a3f4f3f93bfc87801cf1d01511c12c199cb80bfbf4955bb3d9d4638720d",
-            "executorssids": [],
+            "executornames": [],
             "executortype": "test_executor_type",
             "mem": 1000,
             "cores": 10,
@@ -739,6 +839,7 @@ The state attribute can have the following values:
 ```json
 {
     "msgtype": "subscribeprocessesmsg",
+    "colonyname": "my_colony_name",
     "executortype": "test_executor_type",
     "state": 1,
     "timeout": -1
