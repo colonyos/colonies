@@ -623,7 +623,7 @@ func (client *ColoniesClient) Statistics(prvKey string) (*core.Statistics, error
 		return nil, err
 	}
 
-	respBodyString, err := client.sendMessage(rpc.GetStatisiticsPayloadType, jsonString, prvKey, false, context.TODO())
+	respBodyString, err := client.sendMessage(rpc.GetStatisticsPayloadType, jsonString, prvKey, false, context.TODO())
 	if err != nil {
 		return nil, err
 	}

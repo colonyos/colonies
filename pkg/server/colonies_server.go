@@ -269,7 +269,7 @@ func (server *ColoniesServer) handleAPIRequest(c *gin.Context) {
 		server.handleRemoveCronHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 
 	// Server handlers
-	case rpc.GetStatisiticsPayloadType:
+	case rpc.GetStatisticsPayloadType:
 		server.handleStatisticsHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 	case rpc.GetClusterPayloadType:
 		server.handleGetClusterHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
