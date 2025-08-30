@@ -24,6 +24,8 @@ func init() {
 	processCmd.AddCommand(assignProcessCmd)
 	processCmd.AddCommand(closeSuccessfulCmd)
 	processCmd.AddCommand(closeFailedCmd)
+	processCmd.AddCommand(pauseAssignmentsCmd)
+	processCmd.AddCommand(resumeAssignmentsCmd)
 	rootCmd.AddCommand(processCmd)
 
 	processCmd.PersistentFlags().StringVarP(&ServerHost, "host", "", "localhost", "Server host")
@@ -85,6 +87,11 @@ func init() {
 	closeFailedCmd.Flags().StringVarP(&PrvKey, "prvkey", "", "", "Private key")
 	closeFailedCmd.Flags().StringVarP(&ProcessID, "processid", "p", "", "Process Id")
 	closeFailedCmd.MarkFlagRequired("processid")
+
+	pauseAssignmentsCmd.Flags().StringVarP(&ColonyName, "colonyname", "", "", "Colony name")
+	pauseAssignmentsCmd.Flags().StringVarP(&PrvKey, "prvkey", "", "", "Private key")
+	resumeAssignmentsCmd.Flags().StringVarP(&ColonyName, "colonyname", "", "", "Colony name")
+	resumeAssignmentsCmd.Flags().StringVarP(&PrvKey, "prvkey", "", "", "Private key")
 }
 
 var processCmd = &cobra.Command{
@@ -420,5 +427,29 @@ var closeFailedCmd = &cobra.Command{
 		CheckError(err)
 
 		log.WithFields(log.Fields{"ProcessId": process.ID}).Info("Process closed as failed")
+	},
+}
+
+var pauseAssignmentsCmd = &cobra.Command{
+	Use:   "pause",
+	Short: "Pause process assignments for a colony",
+	Long:  "Pause all process assignments for the specified colony",
+	Run: func(cmd *cobra.Command, args []string) {
+		client := setup()
+		err := client.PauseColonyAssignments(ColonyName, PrvKey)
+		CheckError(err)
+		log.WithFields(log.Fields{"Colony": ColonyName}).Info("Colony process assignments have been paused")
+	},
+}
+
+var resumeAssignmentsCmd = &cobra.Command{
+	Use:   "resume", 
+	Short: "Resume process assignments for a colony",
+	Long:  "Resume all process assignments for the specified colony",
+	Run: func(cmd *cobra.Command, args []string) {
+		client := setup()
+		err := client.ResumeColonyAssignments(ColonyName, PrvKey)
+		CheckError(err)
+		log.WithFields(log.Fields{"Colony": ColonyName}).Info("Colony process assignments have been resumed")
 	},
 }

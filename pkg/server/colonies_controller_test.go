@@ -231,3 +231,57 @@ func TestColoniesControllerAssignExecutorConcurrency(t *testing.T) {
 		}
 	}
 }
+
+func TestColoniesControllerPauseResumeAssignments(t *testing.T) {
+	controller, _ := createFakeColoniesController()
+	defer controller.stop()
+
+	colonyName := "test_colony"
+
+	// Test pause assignments
+	err := controller.pauseColonyAssignments(colonyName)
+	assert.NoError(t, err)
+
+	// Test resume assignments
+	err = controller.resumeColonyAssignments(colonyName)
+	assert.NoError(t, err)
+
+	// Test check assignments paused status
+	paused, err := controller.areColonyAssignmentsPaused(colonyName)
+	assert.NoError(t, err)
+	assert.False(t, paused)
+}
+
+func TestColoniesControllerPauseResumeAssignmentsWithEtcdServer(t *testing.T) {
+	db, err := postgresql.PrepareTestsWithPrefix("TEST_PAUSE_RESUME")
+	defer db.Close()
+	assert.Nil(t, err)
+
+	controller := createTestColoniesController(db)
+	defer controller.stop()
+
+	colonyName := "test_colony"
+
+	// Test initial state - should not be paused
+	paused, err := controller.areColonyAssignmentsPaused(colonyName)
+	assert.NoError(t, err)
+	assert.False(t, paused)
+
+	// Test pause assignments
+	err = controller.pauseColonyAssignments(colonyName)
+	assert.NoError(t, err)
+
+	// Verify assignments are paused
+	paused, err = controller.areColonyAssignmentsPaused(colonyName)
+	assert.NoError(t, err)
+	assert.True(t, paused)
+
+	// Test resume assignments
+	err = controller.resumeColonyAssignments(colonyName)
+	assert.NoError(t, err)
+
+	// Verify assignments are not paused
+	paused, err = controller.areColonyAssignmentsPaused(colonyName)
+	assert.NoError(t, err)
+	assert.False(t, paused)
+}

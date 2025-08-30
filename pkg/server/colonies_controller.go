@@ -1172,7 +1172,21 @@ func (controller *coloniesController) assign(executorID string, colonyName strin
 				return
 			}
 
-			selectedProcess, err := controller.scheduler.Select(colonyName, executor, cpu, mem)
+			// Check if assignments are paused for this colony first
+			paused, err := controller.areColonyAssignmentsPaused(colonyName)
+			if err != nil {
+				cmd.errorChan <- err
+				return
+			}
+
+			var selectedProcess *core.Process
+			if paused {
+				// If paused, act as if no process was found - this will cause timeout behavior
+				err = errors.New("no process found (assigment paused)")
+				selectedProcess = nil
+			} else {
+				selectedProcess, err = controller.scheduler.Select(colonyName, executor, cpu, mem)
+			}
 			if err != nil {
 				cmd.errorChan <- err
 				return
@@ -1606,6 +1620,18 @@ func (controller *coloniesController) resetDatabase() error {
 
 	controller.cmdQueue <- cmd
 	return <-cmd.errorChan
+}
+
+func (controller *coloniesController) pauseColonyAssignments(colonyName string) error {
+	return controller.etcdServer.PauseColonyAssignments(colonyName)
+}
+
+func (controller *coloniesController) resumeColonyAssignments(colonyName string) error {
+	return controller.etcdServer.ResumeColonyAssignments(colonyName)
+}
+
+func (controller *coloniesController) areColonyAssignmentsPaused(colonyName string) (bool, error) {
+	return controller.etcdServer.AreColonyAssignmentsPaused(colonyName)
 }
 
 func (controller *coloniesController) stop() {

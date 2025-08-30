@@ -417,3 +417,25 @@ func TestCloseFailedSecurity(t *testing.T) {
 	server.Shutdown()
 	<-done
 }
+
+func TestPauseResumeAssignmentsSecurity(t *testing.T) {
+	env, client, server, _, done := setupTestEnv2(t)
+
+	// Test pause assignments with wrong key (should fail)
+	err := client.PauseColonyAssignments(env.colonyName, env.executorPrvKey)
+	assert.NotNil(t, err)
+
+	// Test resume assignments with wrong key (should fail)
+	err = client.ResumeColonyAssignments(env.colonyName, env.executorPrvKey)
+	assert.NotNil(t, err)
+
+	// Test with correct colony key (should work)
+	err = client.PauseColonyAssignments(env.colonyName, env.colonyPrvKey)
+	assert.Nil(t, err)
+
+	err = client.ResumeColonyAssignments(env.colonyName, env.colonyPrvKey)
+	assert.Nil(t, err)
+
+	server.Shutdown()
+	<-done
+}
