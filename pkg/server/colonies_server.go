@@ -207,6 +207,8 @@ func (server *ColoniesServer) handleAPIRequest(c *gin.Context) {
 		server.handlePauseAssignmentsHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 	case rpc.ResumeAssignmentsPayloadType:
 		server.handleResumeAssignmentsHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+	case rpc.GetPauseStatusPayloadType:
+		server.handleGetPauseStatusHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 	case rpc.GetProcessHistPayloadType:
 		server.handleGetProcessHistHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 	case rpc.GetProcessesPayloadType:

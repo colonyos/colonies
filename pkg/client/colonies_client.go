@@ -1635,3 +1635,23 @@ func (client *ColoniesClient) ResumeColonyAssignments(colonyName string, prvKey 
 
 	return nil
 }
+
+func (client *ColoniesClient) AreColonyAssignmentsPaused(colonyName string, prvKey string) (bool, error) {
+	msg := rpc.CreateGetPauseStatusMsg(colonyName)
+	jsonString, err := msg.ToJSON()
+	if err != nil {
+		return false, err
+	}
+
+	replyString, err := client.sendMessage(rpc.GetPauseStatusPayloadType, jsonString, prvKey, false, context.TODO())
+	if err != nil {
+		return false, err
+	}
+
+	reply, err := rpc.CreatePauseStatusReplyMsgFromJSON(replyString)
+	if err != nil {
+		return false, err
+	}
+
+	return reply.IsPaused, nil
+}

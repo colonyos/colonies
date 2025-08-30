@@ -26,6 +26,7 @@ func init() {
 	processCmd.AddCommand(closeFailedCmd)
 	processCmd.AddCommand(pauseAssignmentsCmd)
 	processCmd.AddCommand(resumeAssignmentsCmd)
+	processCmd.AddCommand(statusAssignmentsCmd)
 	rootCmd.AddCommand(processCmd)
 
 	processCmd.PersistentFlags().StringVarP(&ServerHost, "host", "", "localhost", "Server host")
@@ -92,6 +93,8 @@ func init() {
 	pauseAssignmentsCmd.Flags().StringVarP(&PrvKey, "prvkey", "", "", "Private key")
 	resumeAssignmentsCmd.Flags().StringVarP(&ColonyName, "colonyname", "", "", "Colony name")
 	resumeAssignmentsCmd.Flags().StringVarP(&PrvKey, "prvkey", "", "", "Private key")
+	statusAssignmentsCmd.Flags().StringVarP(&ColonyName, "colonyname", "", "", "Colony name")
+	statusAssignmentsCmd.Flags().StringVarP(&PrvKey, "prvkey", "", "", "Private key")
 }
 
 var processCmd = &cobra.Command{
@@ -451,5 +454,21 @@ var resumeAssignmentsCmd = &cobra.Command{
 		err := client.ResumeColonyAssignments(ColonyName, PrvKey)
 		CheckError(err)
 		log.WithFields(log.Fields{"Colony": ColonyName}).Info("Colony process assignments have been resumed")
+	},
+}
+
+var statusAssignmentsCmd = &cobra.Command{
+	Use:   "status",
+	Short: "Check if process assignments are paused for a colony",
+	Long:  "Check the pause status of process assignments for the specified colony",
+	Run: func(cmd *cobra.Command, args []string) {
+		client := setup()
+		isPaused, err := client.AreColonyAssignmentsPaused(ColonyName, PrvKey)
+		CheckError(err)
+		if isPaused {
+			log.WithFields(log.Fields{"Colony": ColonyName}).Info("Colony process assignments are PAUSED")
+		} else {
+			log.WithFields(log.Fields{"Colony": ColonyName}).Info("Colony process assignments are ACTIVE")
+		}
 	},
 }

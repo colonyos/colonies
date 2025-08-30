@@ -751,3 +751,37 @@ func (server *ColoniesServer) handleResumeAssignmentsHTTPRequest(c *gin.Context,
 	log.WithFields(log.Fields{"Colony": msg.ColonyName}).Debug("Colony assignments resumed successfully")
 	server.sendEmptyHTTPReply(c, payloadType)
 }
+
+func (server *ColoniesServer) handleGetPauseStatusHTTPRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
+	msg, err := rpc.CreateGetPauseStatusMsgFromJSON(jsonString)
+	if err != nil {
+		log.Warning(err)
+		server.handleHTTPError(c, errors.New("Failed to get pause status, invalid JSON"), http.StatusBadRequest)
+		return
+	}
+
+	if msg.MsgType != payloadType {
+		server.handleHTTPError(c, errors.New("Failed to get pause status, msg.MsgType does not match payloadType"), http.StatusBadRequest)
+		return
+	}
+
+	// Check if user is colony member (less restrictive than owner for status check)
+	err = server.validator.RequireMembership(recoveredID, msg.ColonyName, false)
+	if server.handleHTTPError(c, err, http.StatusForbidden) {
+		return
+	}
+
+	isPaused, err := server.controller.areColonyAssignmentsPaused(msg.ColonyName)
+	if server.handleHTTPError(c, err, http.StatusInternalServerError) {
+		return
+	}
+
+	replyMsg := rpc.CreatePauseStatusReplyMsg(msg.ColonyName, isPaused)
+	jsonString, err = replyMsg.ToJSON()
+	if server.handleHTTPError(c, err, http.StatusInternalServerError) {
+		return
+	}
+
+	log.WithFields(log.Fields{"Colony": msg.ColonyName, "IsPaused": isPaused}).Debug("Got pause status")
+	server.sendHTTPReply(c, rpc.PauseStatusReplyPayloadType, jsonString)
+}
