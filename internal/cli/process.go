@@ -439,19 +439,19 @@ var pauseAssignmentsCmd = &cobra.Command{
 	Long:  "Pause all process assignments for the specified colony",
 	Run: func(cmd *cobra.Command, args []string) {
 		client := setup()
-		err := client.PauseColonyAssignments(ColonyName, PrvKey)
+		err := client.PauseColonyAssignments(ColonyName, ColonyPrvKey)
 		CheckError(err)
 		log.WithFields(log.Fields{"Colony": ColonyName}).Info("Colony process assignments have been paused")
 	},
 }
 
 var resumeAssignmentsCmd = &cobra.Command{
-	Use:   "resume", 
+	Use:   "resume",
 	Short: "Resume process assignments for a colony",
 	Long:  "Resume all process assignments for the specified colony",
 	Run: func(cmd *cobra.Command, args []string) {
 		client := setup()
-		err := client.ResumeColonyAssignments(ColonyName, PrvKey)
+		err := client.ResumeColonyAssignments(ColonyName, ColonyPrvKey)
 		CheckError(err)
 		log.WithFields(log.Fields{"Colony": ColonyName}).Info("Colony process assignments have been resumed")
 	},
