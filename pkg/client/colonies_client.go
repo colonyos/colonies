@@ -1605,3 +1605,33 @@ func (client *ColoniesClient) ChangeServerID(serverID string, prvKey string) err
 
 	return nil
 }
+
+func (client *ColoniesClient) PauseColonyAssignments(colonyName string, prvKey string) error {
+	msg := rpc.CreatePauseAssignmentsMsg(colonyName)
+	jsonString, err := msg.ToJSON()
+	if err != nil {
+		return err
+	}
+
+	_, err = client.sendMessage(rpc.PauseAssignmentsPayloadType, jsonString, prvKey, false, context.TODO())
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (client *ColoniesClient) ResumeColonyAssignments(colonyName string, prvKey string) error {
+	msg := rpc.CreateResumeAssignmentsMsg(colonyName)
+	jsonString, err := msg.ToJSON()
+	if err != nil {
+		return err
+	}
+
+	_, err = client.sendMessage(rpc.ResumeAssignmentsPayloadType, jsonString, prvKey, false, context.TODO())
+	if err != nil {
+		return err
+	}
+
+	return nil
+}

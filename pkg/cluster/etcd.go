@@ -1,23 +1,28 @@
 package cluster
 
 import (
+	"context"
+	"errors"
+	"fmt"
 	"net/url"
 	"strconv"
 	"time"
 
 	log "github.com/sirupsen/logrus"
+	clientv3 "go.etcd.io/etcd/client/v3"
 	"go.etcd.io/etcd/server/v3/embed"
 )
 
 type EtcdServer struct {
-	thisNode Node
-	config   Config
-	ready    chan bool
-	stop     chan bool
-	stopped  chan bool
-	dataPath string
-	etcd     *embed.Etcd
-	cfg      *embed.Config
+	thisNode   Node
+	config     Config
+	ready      chan bool
+	stop       chan bool
+	stopped    chan bool
+	dataPath   string
+	etcd       *embed.Etcd
+	cfg        *embed.Config
+	etcdClient *clientv3.Client
 }
 
 func CreateEtcdServer(thisNode Node, config Config, dataPath string) *EtcdServer {
@@ -88,6 +93,18 @@ func (server *EtcdServer) Start() {
 		server.etcd = etcd
 		select {
 		case <-etcd.Server.ReadyNotify():
+			// Initialize etcd client
+			endpoints := []string{"localhost:" + strconv.Itoa(server.thisNode.EtcdClientPort)}
+			client, err := clientv3.New(clientv3.Config{
+				Endpoints:   endpoints,
+				DialTimeout: 5 * time.Second,
+			})
+			if err != nil {
+				log.WithFields(log.Fields{"Error": err}).Error("Failed to create etcd client")
+				log.Fatal(err)
+			}
+			server.etcdClient = client
+
 			log.WithFields(log.Fields{
 				"Name":           server.thisNode.Name,
 				"Host":           server.thisNode.Host,
@@ -96,6 +113,9 @@ func (server *EtcdServer) Start() {
 				"EtcdPeerPort":   server.thisNode.EtcdPeerPort}).Info("EtcdServer is ready")
 			server.ready <- true
 			<-server.stop
+			if server.etcdClient != nil {
+				server.etcdClient.Close()
+			}
 			etcd.Server.Stop()
 			log.WithFields(log.Fields{
 				"Name":           server.thisNode.Name,
@@ -166,4 +186,61 @@ func (server *EtcdServer) CurrentCluster() Config {
 	}
 
 	return Config{Nodes: nodes, Leader: leaderNode}
+}
+
+func (server *EtcdServer) PauseColonyAssignments(colonyName string) error {
+	if server.etcdClient == nil {
+		return errors.New("etcd client is not initialized")
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	key := fmt.Sprintf("/colonies/colony/%s/assignments-paused", colonyName)
+	_, err := server.etcdClient.Put(ctx, key, "true")
+	if err != nil {
+		log.WithFields(log.Fields{"Error": err, "Colony": colonyName}).Error("Failed to pause colony assignments in etcd")
+		return err
+	}
+
+	log.WithFields(log.Fields{"Colony": colonyName}).Info("Colony process assignments have been paused")
+	return nil
+}
+
+func (server *EtcdServer) ResumeColonyAssignments(colonyName string) error {
+	if server.etcdClient == nil {
+		return errors.New("etcd client is not initialized")
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	key := fmt.Sprintf("/colonies/colony/%s/assignments-paused", colonyName)
+	_, err := server.etcdClient.Delete(ctx, key)
+	if err != nil {
+		log.WithFields(log.Fields{"Error": err, "Colony": colonyName}).Error("Failed to resume colony assignments in etcd")
+		return err
+	}
+
+	log.WithFields(log.Fields{"Colony": colonyName}).Info("Colony process assignments have been resumed")
+	return nil
+}
+
+func (server *EtcdServer) AreColonyAssignmentsPaused(colonyName string) (bool, error) {
+	if server.etcdClient == nil {
+		return false, errors.New("etcd client is not initialized")
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	key := fmt.Sprintf("/colonies/colony/%s/assignments-paused", colonyName)
+	resp, err := server.etcdClient.Get(ctx, key)
+	if err != nil {
+		log.WithFields(log.Fields{"Error": err, "Colony": colonyName}).Error("Failed to check colony assignment pause state in etcd")
+		return false, err
+	}
+
+	// If key doesn't exist, assignments are not paused
+	return len(resp.Kvs) > 0, nil
 }

@@ -1176,3 +1176,134 @@ func TestMaxExecTimeMaxRetries(t *testing.T) {
 	server.Shutdown()
 	<-done
 }
+
+func TestPauseResumeAssignments(t *testing.T) {
+	env, client, server, _, done := setupTestEnv2(t)
+
+	// Test pause assignments
+	err := client.PauseColonyAssignments(env.colonyName, env.colonyPrvKey)
+	assert.Nil(t, err)
+
+	// Submit a process to test assignment blocking
+	funcSpec := utils.CreateTestFunctionSpec(env.colonyName)
+	addedProcess, err := client.Submit(funcSpec, env.executorPrvKey)
+	assert.Nil(t, err)
+
+	// Try to assign process - should fail because assignments are paused
+	_, err = client.Assign(env.colonyName, -1, "", "", env.executorPrvKey)
+	assert.NotNil(t, err)
+
+	// Test resume assignments
+	err = client.ResumeColonyAssignments(env.colonyName, env.colonyPrvKey)
+	assert.Nil(t, err)
+
+	// Now assignment should work
+	assignedProcess, err := client.Assign(env.colonyName, -1, "", "", env.executorPrvKey)
+	assert.Nil(t, err)
+	assert.Equal(t, addedProcess.ID, assignedProcess.ID)
+
+	server.Shutdown()
+	<-done
+}
+
+func TestPauseResumeAssignmentsColonyIsolation(t *testing.T) {
+	client, server, serverPrvKey, done := prepareTests(t)
+
+	// Create first colony
+	colony1, colony1PrvKey, err := utils.CreateTestColonyWithKey()
+	assert.Nil(t, err)
+	_, err = client.AddColony(colony1, serverPrvKey)
+	assert.Nil(t, err)
+
+	executor1, executor1PrvKey, err := utils.CreateTestExecutorWithKey(colony1.Name)
+	assert.Nil(t, err)
+	_, err = client.AddExecutor(executor1, colony1PrvKey)
+	assert.Nil(t, err)
+	err = client.ApproveExecutor(colony1.Name, executor1.Name, colony1PrvKey)
+	assert.Nil(t, err)
+
+	// Create second colony
+	colony2, colony2PrvKey, err := utils.CreateTestColonyWithKey()
+	assert.Nil(t, err)
+	_, err = client.AddColony(colony2, serverPrvKey)
+	assert.Nil(t, err)
+
+	executor2, executor2PrvKey, err := utils.CreateTestExecutorWithKey(colony2.Name)
+	assert.Nil(t, err)
+	_, err = client.AddExecutor(executor2, colony2PrvKey)
+	assert.Nil(t, err)
+	err = client.ApproveExecutor(colony2.Name, executor2.Name, colony2PrvKey)
+	assert.Nil(t, err)
+
+	// Submit processes to both colonies
+	funcSpec1 := utils.CreateTestFunctionSpec(colony1.Name)
+	process1, err := client.Submit(funcSpec1, executor1PrvKey)
+	assert.Nil(t, err)
+
+	funcSpec2 := utils.CreateTestFunctionSpec(colony2.Name)
+	process2, err := client.Submit(funcSpec2, executor2PrvKey)
+	assert.Nil(t, err)
+
+	// Both colonies should allow assignments initially
+	assignedProcess1, err := client.Assign(colony1.Name, -1, "", "", executor1PrvKey)
+	assert.Nil(t, err)
+	assert.NotNil(t, assignedProcess1)
+
+	assignedProcess2, err := client.Assign(colony2.Name, -1, "", "", executor2PrvKey)
+	assert.Nil(t, err)
+	assert.NotNil(t, assignedProcess2)
+
+	// Close the assigned processes to clean up
+	err = client.Close(assignedProcess1.ID, executor1PrvKey)
+	assert.Nil(t, err)
+	err = client.Close(assignedProcess2.ID, executor2PrvKey)
+	assert.Nil(t, err)
+
+	// Submit new processes for the pause test
+	process1, err = client.Submit(funcSpec1, executor1PrvKey)
+	assert.Nil(t, err)
+	process2, err = client.Submit(funcSpec2, executor2PrvKey)
+	assert.Nil(t, err)
+
+	// Pause assignments for colony1 only
+	err = client.PauseColonyAssignments(colony1.Name, colony1PrvKey)
+	assert.Nil(t, err)
+
+	// Colony1 should be blocked from assignments
+	_, err = client.Assign(colony1.Name, -1, "", "", executor1PrvKey)
+	assert.NotNil(t, err)
+
+	// Colony2 should still allow assignments (not affected by colony1's pause)
+	assignedProcess2, err = client.Assign(colony2.Name, -1, "", "", executor2PrvKey)
+	assert.Nil(t, err)
+	assert.NotNil(t, assignedProcess2)
+	assert.Equal(t, process2.ID, assignedProcess2.ID)
+
+	// Resume assignments for colony1
+	err = client.ResumeColonyAssignments(colony1.Name, colony1PrvKey)
+	assert.Nil(t, err)
+
+	// Now colony1 should allow assignments again
+	assignedProcess1, err = client.Assign(colony1.Name, -1, "", "", executor1PrvKey)
+	assert.Nil(t, err)
+	assert.NotNil(t, assignedProcess1)
+	assert.Equal(t, process1.ID, assignedProcess1.ID)
+
+	// Colony2 should still work normally
+	err = client.Close(assignedProcess2.ID, executor2PrvKey)
+	assert.Nil(t, err)
+	process2, err = client.Submit(funcSpec2, executor2PrvKey)
+	assert.Nil(t, err)
+	assignedProcess2, err = client.Assign(colony2.Name, -1, "", "", executor2PrvKey)
+	assert.Nil(t, err)
+	assert.NotNil(t, assignedProcess2)
+
+	// Clean up
+	err = client.Close(assignedProcess1.ID, executor1PrvKey)
+	assert.Nil(t, err)
+	err = client.Close(assignedProcess2.ID, executor2PrvKey)
+	assert.Nil(t, err)
+
+	server.Shutdown()
+	<-done
+}

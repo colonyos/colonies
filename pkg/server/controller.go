@@ -75,6 +75,9 @@ type controller interface {
 	triggerCrons()
 	cronTriggerLoop()
 	resetDatabase() error
+	pauseColonyAssignments(colonyName string) error
+	resumeColonyAssignments(colonyName string) error
+	areColonyAssignmentsPaused(colonyName string) (bool, error)
 	stop()
 	isLeader() bool
 	tryBecomeLeader() bool

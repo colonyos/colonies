@@ -626,3 +626,59 @@ func (server *ColoniesServer) handleCloseFailedHTTPRequest(c *gin.Context, recov
 
 	server.sendEmptyHTTPReply(c, payloadType)
 }
+
+func (server *ColoniesServer) handlePauseAssignmentsHTTPRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
+	msg, err := rpc.CreatePauseAssignmentsMsgFromJSON(jsonString)
+	if err != nil {
+		log.Warning(err)
+		server.handleHTTPError(c, errors.New("Failed to pause assignments, invalid JSON"), http.StatusBadRequest)
+		return
+	}
+
+	if msg.MsgType != payloadType {
+		server.handleHTTPError(c, errors.New("Failed to pause assignments, msg.MsgType does not match payloadType"), http.StatusBadRequest)
+		return
+	}
+
+	// Check if user is colony owner
+	err = server.validator.RequireColonyOwner(recoveredID, msg.ColonyName)
+	if server.handleHTTPError(c, err, http.StatusForbidden) {
+		return
+	}
+
+	err = server.controller.pauseColonyAssignments(msg.ColonyName)
+	if server.handleHTTPError(c, err, http.StatusInternalServerError) {
+		return
+	}
+
+	log.WithFields(log.Fields{"Colony": msg.ColonyName}).Debug("Colony assignments paused successfully")
+	server.sendEmptyHTTPReply(c, payloadType)
+}
+
+func (server *ColoniesServer) handleResumeAssignmentsHTTPRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
+	msg, err := rpc.CreateResumeAssignmentsMsgFromJSON(jsonString)
+	if err != nil {
+		log.Warning(err)
+		server.handleHTTPError(c, errors.New("Failed to resume assignments, invalid JSON"), http.StatusBadRequest)
+		return
+	}
+
+	if msg.MsgType != payloadType {
+		server.handleHTTPError(c, errors.New("Failed to resume assignments, msg.MsgType does not match payloadType"), http.StatusBadRequest)
+		return
+	}
+
+	// Check if user is colony owner
+	err = server.validator.RequireColonyOwner(recoveredID, msg.ColonyName)
+	if server.handleHTTPError(c, err, http.StatusForbidden) {
+		return
+	}
+
+	err = server.controller.resumeColonyAssignments(msg.ColonyName)
+	if server.handleHTTPError(c, err, http.StatusInternalServerError) {
+		return
+	}
+
+	log.WithFields(log.Fields{"Colony": msg.ColonyName}).Debug("Colony assignments resumed successfully")
+	server.sendEmptyHTTPReply(c, payloadType)
+}

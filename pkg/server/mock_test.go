@@ -342,6 +342,30 @@ func (v *controllerMock) retentionWorker() {
 func (v *controllerMock) cmdQueueWorker() {
 }
 
+func (v *controllerMock) pauseColonyAssignments(colonyName string) error {
+	if v.returnError == "pauseColonyAssignments" {
+		return errors.New("mock error")
+	}
+	return nil
+}
+
+func (v *controllerMock) resumeColonyAssignments(colonyName string) error {
+	if v.returnError == "resumeColonyAssignments" {
+		return errors.New("mock error")
+	}
+	return nil
+}
+
+func (v *controllerMock) areColonyAssignmentsPaused(colonyName string) (bool, error) {
+	if v.returnError == "areColonyAssignmentsPaused" {
+		return false, errors.New("mock error")
+	}
+	if v.returnValue == "paused" {
+		return true, nil
+	}
+	return false, nil
+}
+
 // validatorMock
 type validatorMock struct {
 }
