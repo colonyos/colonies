@@ -15,6 +15,13 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+// AssignResult contains the result of a process assignment attempt
+type AssignResult struct {
+	Process       *core.Process
+	IsPaused      bool
+	ResumeChannel <-chan bool // Only set when IsPaused=true
+}
+
 type command struct {
 	stop                   bool
 	errorChan              chan error
@@ -32,6 +39,7 @@ type command struct {
 	logsReplyChan          chan []core.Log
 	executorReplyChan      chan *core.Executor
 	executorsReplyChan     chan []*core.Executor
+	assignResultReplyChan  chan *AssignResult
 	attributeReplyChan     chan *core.Attribute
 	generatorReplyChan     chan *core.Generator
 	generatorsReplyChan    chan []*core.Generator
@@ -63,6 +71,9 @@ type coloniesController struct {
 	retention        bool
 	retentionPolicy  int64
 	retentionPeriod  int
+	// Pause channel management
+	pauseChannels    map[string][]chan bool // colony -> list of waiting channels
+	pauseChannelsMux sync.RWMutex
 }
 
 func createColoniesController(db database.Database,
@@ -88,6 +99,7 @@ func createColoniesController(db database.Database,
 	controller.retention = retention
 	controller.retentionPolicy = retentionPolicy
 	controller.retentionPeriod = retentionPeriod
+	controller.pauseChannels = make(map[string][]chan bool)
 
 	controller.relayServer = cluster.CreateRelayServer(controller.thisNode, controller.clusterConfig)
 	controller.eventHandler = createEventHandler(controller.relayServer)
@@ -1152,8 +1164,8 @@ func (controller *coloniesController) handleDefunctProcessgraph(processGraphID s
 	return nil
 }
 
-func (controller *coloniesController) assign(executorID string, colonyName string, cpu int64, mem int64) (*core.Process, error) {
-	cmd := &command{threaded: false, processReplyChan: make(chan *core.Process),
+func (controller *coloniesController) assign(executorID string, colonyName string, cpu int64, mem int64) (*AssignResult, error) {
+	cmd := &command{threaded: false, assignResultReplyChan: make(chan *AssignResult),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
 			executor, err := controller.db.GetExecutorByID(executorID)
@@ -1179,15 +1191,32 @@ func (controller *coloniesController) assign(executorID string, colonyName strin
 				return
 			}
 
-			var selectedProcess *core.Process
 			if paused {
-				// If paused, act as if no process was found - this will cause timeout behavior
-				err = errors.New("no process found (assigment paused)")
-				selectedProcess = nil
-			} else {
-				selectedProcess, err = controller.scheduler.Select(colonyName, executor, cpu, mem)
+				// Create a resume channel for this colony
+				resumeChannel := controller.createResumeChannel(colonyName)
+				result := &AssignResult{
+					Process:       nil,
+					IsPaused:      true,
+					ResumeChannel: resumeChannel,
+				}
+				cmd.assignResultReplyChan <- result
+				return
 			}
+
+			// Not paused - proceed with normal assignment
+			selectedProcess, err := controller.scheduler.Select(colonyName, executor, cpu, mem)
 			if err != nil {
+				// If no processes can be selected, return a result with nil process (not an error)
+				if err.Error() == "No processes can be selected for executor with Id <"+executorID+">" {
+					result := &AssignResult{
+						Process:       nil,
+						IsPaused:      false,
+						ResumeChannel: nil,
+					}
+					cmd.assignResultReplyChan <- result
+					return
+				}
+				// For other errors, return as error
 				cmd.errorChan <- err
 				return
 			}
@@ -1261,15 +1290,20 @@ func (controller *coloniesController) assign(executorID string, colonyName strin
 				}
 			}
 
-			cmd.processReplyChan <- selectedProcess
+			result := &AssignResult{
+				Process:       selectedProcess,
+				IsPaused:      false,
+				ResumeChannel: nil,
+			}
+			cmd.assignResultReplyChan <- result
 		}}
 
 	controller.blockingCmdQueue <- cmd
 	select {
 	case err := <-cmd.errorChan:
 		return nil, err
-	case processes := <-cmd.processReplyChan:
-		return processes, nil
+	case result := <-cmd.assignResultReplyChan:
+		return result, nil
 	}
 }
 
@@ -1627,11 +1661,50 @@ func (controller *coloniesController) pauseColonyAssignments(colonyName string) 
 }
 
 func (controller *coloniesController) resumeColonyAssignments(colonyName string) error {
-	return controller.etcdServer.ResumeColonyAssignments(colonyName)
+	err := controller.etcdServer.ResumeColonyAssignments(colonyName)
+	if err != nil {
+		return err
+	}
+	
+	// Wake up all waiting executors for this colony
+	controller.wakeupPausedAssignments(colonyName)
+	return nil
 }
 
 func (controller *coloniesController) areColonyAssignmentsPaused(colonyName string) (bool, error) {
 	return controller.etcdServer.AreColonyAssignmentsPaused(colonyName)
+}
+
+// createResumeChannel creates a channel that will be signaled when assignments are resumed for a colony
+func (controller *coloniesController) createResumeChannel(colonyName string) <-chan bool {
+	controller.pauseChannelsMux.Lock()
+	defer controller.pauseChannelsMux.Unlock()
+	
+	resumeChannel := make(chan bool, 1)
+	if controller.pauseChannels[colonyName] == nil {
+		controller.pauseChannels[colonyName] = make([]chan bool, 0)
+	}
+	controller.pauseChannels[colonyName] = append(controller.pauseChannels[colonyName], resumeChannel)
+	
+	return resumeChannel
+}
+
+// wakeupPausedAssignments signals all waiting executors that assignments have been resumed
+func (controller *coloniesController) wakeupPausedAssignments(colonyName string) {
+	controller.pauseChannelsMux.Lock()
+	defer controller.pauseChannelsMux.Unlock()
+	
+	if channels, exists := controller.pauseChannels[colonyName]; exists {
+		for _, ch := range channels {
+			select {
+			case ch <- true:
+			default:
+				// Channel already has a value or is closed, skip
+			}
+		}
+		// Clear the channels slice after waking everyone up
+		delete(controller.pauseChannels, colonyName)
+	}
 }
 
 func (controller *coloniesController) stop() {

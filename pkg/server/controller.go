@@ -44,7 +44,7 @@ type controller interface {
 	notifyChildren(process *core.Process) error
 	closeFailed(processID string, errs []string) error
 	handleDefunctProcessgraph(processGraphID string, processID string, err error) error
-	assign(executorID string, colonyName string, cpu int64, memory int64) (*core.Process, error)
+	assign(executorID string, colonyName string, cpu int64, memory int64) (*AssignResult, error)
 	unassignExecutor(processID string) error
 	resetProcess(processID string) error
 	getColonyStatistics(colonyName string) (*core.Statistics, error)

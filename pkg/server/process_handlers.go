@@ -94,6 +94,30 @@ func (server *ColoniesServer) handleSubmitHTTPRequest(c *gin.Context, recoveredI
 	server.sendHTTPReply(c, payloadType, jsonString)
 }
 
+// handleAssignProcessHTTPRequest handles HTTP requests for process assignment to executors.
+//
+// This function implements leader-based exclusive assignment with retry loop and timeout support.
+// It handles four main scenarios:
+// 1. Non-leader node - redirects request to cluster leader for exclusive assignment
+// 2. Colony assignments are paused - waits for resume signal or timeout
+// 3. Process found - assigns and returns the process immediately  
+// 4. No process available - waits for new processes to be submitted
+//
+// Flow:
+//   - If exclusiveAssign is enabled and this node is not leader: redirect to leader
+//   - Validates request parameters and executor permissions
+//   - Enters retry loop that continues until timeout is reached
+//   - Each iteration calls controller.assign() to attempt process assignment
+//   - If assignments are paused: waits on resume channel or timeout
+//   - If no process found: waits for new process events via waitForProcess()
+//   - Returns assigned process or appropriate error (timeout, forbidden, etc.)
+//
+// Parameters:
+//   - c: Gin HTTP context for the request
+//   - recoveredID: Executor ID recovered from authentication 
+//   - payloadType: Expected message type for validation
+//   - jsonString: Request body containing assignment parameters
+//   - originalRequest: Raw request for leader redirection in cluster mode
 func (server *ColoniesServer) handleAssignProcessHTTPRequest(c *gin.Context, recoveredID string, payloadType string, jsonString string, originalRequest string) {
 	var err error
 	if server.exclusiveAssign && !server.controller.isLeader() {
@@ -179,26 +203,71 @@ func (server *ColoniesServer) handleAssignProcessHTTPRequest(c *gin.Context, rec
 		"Timeout":      msg.Timeout}).
 		Debug("Waiting for processes")
 
-	process, assignErr := server.controller.assign(recoveredID, msg.ColonyName, cpu, memory)
-	if assignErr != nil {
-		if msg.Timeout > 0 {
-			ctx, cancelCtx := context.WithTimeout(c.Request.Context(), time.Duration(msg.Timeout)*time.Second)
-			defer cancelCtx()
+	var process *core.Process
+	var ctx context.Context
+	var cancelCtx context.CancelFunc
 
+	if msg.Timeout > 0 {
+		ctx, cancelCtx = context.WithTimeout(c.Request.Context(), time.Duration(msg.Timeout)*time.Second)
+		defer cancelCtx()
+	}
+
+	for {
+		result, assignErr := server.controller.assign(recoveredID, msg.ColonyName, cpu, memory)
+		if assignErr != nil {
+			server.handleHTTPError(c, assignErr, http.StatusInternalServerError)
+			return
+		}
+
+		if result.IsPaused {
+			// Assignments are paused
+			if msg.Timeout > 0 {
+				// Wait for resume signal or timeout
+				select {
+				case <-result.ResumeChannel:
+					// Assignments resumed, continue to next retry
+					continue
+				case <-ctx.Done():
+					// Timeout
+					server.handleHTTPError(c, errors.New("Assignment timeout: colony assignments are paused"), http.StatusRequestTimeout)
+					return
+				}
+			} else {
+				// No timeout specified, return immediately
+				server.handleHTTPError(c, errors.New("No processes available: colony assignments are paused"), http.StatusServiceUnavailable)
+				return
+			}
+		}
+
+		if result.Process != nil {
+			// Got a process, we're done
+			process = result.Process
+			break
+		}
+
+		// No process available, wait for new processes if timeout is specified
+		if msg.Timeout > 0 {
 			// Wait for a new process to be submitted to a ColoniesServer in the cluster
 			server.controller.getEventHandler().waitForProcess(executor.Type, core.WAITING, "", ctx)
-			process, assignErr = server.controller.assign(recoveredID, msg.ColonyName, cpu, memory)
+			// Check if we timed out during the wait
+			select {
+			case <-ctx.Done():
+				// Timeout occurred while waiting
+				break
+			default:
+				// Continue to next retry to try assignment again
+				continue
+			}
 		}
+		
+		// No timeout specified or timeout occurred, exit loop
+		break
 	}
 
-	if server.handleHTTPError(c, assignErr, http.StatusNotFound) {
-		log.WithFields(log.Fields{"ExecutorId": recoveredID, "ColonyName": msg.ColonyName}).Debug("No process can be assigned")
-		return
-	}
+	// Check if we still don't have a process after all attempts
 	if process == nil {
-		errmsg := "Failed to assign process, process is nil"
-		log.Error(errmsg)
-		server.handleHTTPError(c, errors.New(errmsg), http.StatusInternalServerError)
+		log.WithFields(log.Fields{"ExecutorId": recoveredID, "ColonyName": msg.ColonyName}).Debug("No process can be assigned")
+		server.handleHTTPError(c, errors.New("No process available for assignment"), http.StatusNotFound)
 		return
 	}
 

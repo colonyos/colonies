@@ -114,6 +114,7 @@ func TestAssignProcessWithTimeout(t *testing.T) {
 	// This function call will block for 60 seconds or until the Go-routine above submits a process spec
 	assignProcess, err := client.Assign(env.colonyName, 60, "", "", env.executorPrvKey)
 	assert.Nil(t, err)
+	assert.NotNil(t, assignProcess)
 
 	addedProcess := <-addedProcessChan
 	assert.Equal(t, addedProcess.ID, assignProcess.ID)

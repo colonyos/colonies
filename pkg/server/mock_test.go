@@ -189,8 +189,13 @@ func (v *controllerMock) handleDefunctProcessgraph(processGraphID string, proces
 	return nil
 }
 
-func (v *controllerMock) assign(executorID string, colonyName string, cpu int64, memory int64) (*core.Process, error) {
-	return nil, nil
+func (v *controllerMock) assign(executorID string, colonyName string, cpu int64, memory int64) (*AssignResult, error) {
+	result := &AssignResult{
+		Process:       nil,
+		IsPaused:      false,
+		ResumeChannel: nil,
+	}
+	return result, nil
 }
 
 func (v *controllerMock) unassignExecutor(processID string) error {
