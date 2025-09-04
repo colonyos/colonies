@@ -124,7 +124,7 @@ func (server *ColoniesServer) handleWSRequest(c *gin.Context) {
 				}
 				return
 			}
-			process, err := server.db.GetProcessByID(msg.ProcessID)
+			process, err := server.processDB.GetProcessByID(msg.ProcessID)
 			if err != nil {
 				err := server.sendWSErrorMsg(err, http.StatusForbidden, wsConn, wsMsgType)
 				if err != nil {

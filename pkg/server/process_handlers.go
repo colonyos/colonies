@@ -46,7 +46,7 @@ func (server *ColoniesServer) handleSubmitHTTPRequest(c *gin.Context, recoveredI
 
 	process := core.CreateProcess(msg.FunctionSpec)
 
-	initiatorName, err := resolveInitiator(msg.FunctionSpec.Conditions.ColonyName, recoveredID, server.db)
+	initiatorName, err := resolveInitiator(msg.FunctionSpec.Conditions.ColonyName, recoveredID, server.executorDB, server.userDB)
 	if server.handleHTTPError(c, err, http.StatusInternalServerError) {
 		return
 	}
@@ -54,7 +54,7 @@ func (server *ColoniesServer) handleSubmitHTTPRequest(c *gin.Context, recoveredI
 	process.InitiatorID = recoveredID
 	process.InitiatorName = initiatorName
 
-	executor, err := server.db.GetExecutorByID(recoveredID)
+	executor, err := server.executorDB.GetExecutorByID(recoveredID)
 	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
@@ -62,7 +62,7 @@ func (server *ColoniesServer) handleSubmitHTTPRequest(c *gin.Context, recoveredI
 	if executor != nil {
 		process.InitiatorName = executor.Name
 	} else {
-		user, err := server.db.GetUserByID(msg.FunctionSpec.Conditions.ColonyName, recoveredID)
+		user, err := server.userDB.GetUserByID(msg.FunctionSpec.Conditions.ColonyName, recoveredID)
 		if server.handleHTTPError(c, err, http.StatusBadRequest) {
 			return
 		}
@@ -347,7 +347,7 @@ func (server *ColoniesServer) handleGetProcessesHTTPRequest(c *gin.Context, reco
 	}
 
 	if msg.Initiator != "" {
-		users, err := server.db.GetUsersByColonyName(msg.ColonyName)
+		users, err := server.userDB.GetUsersByColonyName(msg.ColonyName)
 		if server.handleHTTPError(c, err, http.StatusInternalServerError) {
 			return
 		}
@@ -368,7 +368,7 @@ func (server *ColoniesServer) handleGetProcessesHTTPRequest(c *gin.Context, reco
 
 	switch msg.State {
 	case core.WAITING:
-		processes, err := server.db.FindWaitingProcesses(msg.ColonyName, msg.ExecutorType, msg.Label, msg.Initiator, msg.Count)
+		processes, err := server.processDB.FindWaitingProcesses(msg.ColonyName, msg.ExecutorType, msg.Label, msg.Initiator, msg.Count)
 		if server.handleHTTPError(c, err, http.StatusBadRequest) {
 			return
 		}
@@ -378,7 +378,7 @@ func (server *ColoniesServer) handleGetProcessesHTTPRequest(c *gin.Context, reco
 		}
 		server.sendHTTPReply(c, payloadType, jsonString)
 	case core.RUNNING:
-		processes, err := server.db.FindRunningProcesses(msg.ColonyName, msg.ExecutorType, msg.Label, msg.Initiator, msg.Count)
+		processes, err := server.processDB.FindRunningProcesses(msg.ColonyName, msg.ExecutorType, msg.Label, msg.Initiator, msg.Count)
 		if server.handleHTTPError(c, err, http.StatusBadRequest) {
 			return
 		}
@@ -388,7 +388,7 @@ func (server *ColoniesServer) handleGetProcessesHTTPRequest(c *gin.Context, reco
 		}
 		server.sendHTTPReply(c, payloadType, jsonString)
 	case core.SUCCESS:
-		processes, err := server.db.FindSuccessfulProcesses(msg.ColonyName, msg.ExecutorType, msg.Label, msg.Initiator, msg.Count)
+		processes, err := server.processDB.FindSuccessfulProcesses(msg.ColonyName, msg.ExecutorType, msg.Label, msg.Initiator, msg.Count)
 		if server.handleHTTPError(c, err, http.StatusBadRequest) {
 			return
 		}
@@ -398,7 +398,7 @@ func (server *ColoniesServer) handleGetProcessesHTTPRequest(c *gin.Context, reco
 		}
 		server.sendHTTPReply(c, payloadType, jsonString)
 	case core.FAILED:
-		processes, err := server.db.FindFailedProcesses(msg.ColonyName, msg.ExecutorType, msg.Label, msg.Initiator, msg.Count)
+		processes, err := server.processDB.FindFailedProcesses(msg.ColonyName, msg.ExecutorType, msg.Label, msg.Initiator, msg.Count)
 		if server.handleHTTPError(c, err, http.StatusBadRequest) {
 			return
 		}

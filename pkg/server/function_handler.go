@@ -32,7 +32,7 @@ func (server *ColoniesServer) handleAddFunctionHTTPRequest(c *gin.Context, recov
 		return
 	}
 
-	executor, err := server.db.GetExecutorByName(msg.Function.ColonyName, msg.Function.ExecutorName)
+	executor, err := server.executorDB.GetExecutorByName(msg.Function.ColonyName, msg.Function.ExecutorName)
 	if server.handleHTTPError(c, err, http.StatusInternalServerError) {
 		return
 	}
@@ -99,7 +99,7 @@ func (server *ColoniesServer) handleGetFunctionsHTTPRequest(c *gin.Context, reco
 			return
 		}
 	} else {
-		targetExecutor, err := server.db.GetExecutorByName(msg.ColonyName, msg.ExecutorName)
+		targetExecutor, err := server.executorDB.GetExecutorByName(msg.ColonyName, msg.ExecutorName)
 		if server.handleHTTPError(c, err, http.StatusForbidden) {
 			return
 		}
@@ -149,7 +149,7 @@ func (server *ColoniesServer) handleRemoveFunctionHTTPRequest(c *gin.Context, re
 		return
 	}
 
-	executor, err := server.db.GetExecutorByName(function.ColonyName, function.ExecutorName)
+	executor, err := server.executorDB.GetExecutorByName(function.ColonyName, function.ExecutorName)
 	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		return
 	}

@@ -42,7 +42,7 @@ func (server *ColoniesServer) handleAddLogHTTPRequest(c *gin.Context, recoveredI
 		return
 	}
 
-	executor, err := server.db.GetExecutorByID(recoveredID)
+	executor, err := server.executorDB.GetExecutorByID(recoveredID)
 	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		log.Error(err)
 		return
@@ -65,7 +65,7 @@ func (server *ColoniesServer) handleAddLogHTTPRequest(c *gin.Context, recoveredI
 	}
 
 	colonyName := process.FunctionSpec.Conditions.ColonyName
-	err = server.db.AddLog(process.ID, colonyName, executor.Name, time.Now().UTC().UnixNano(), msg.Message)
+	err = server.logDB.AddLog(process.ID, colonyName, executor.Name, time.Now().UTC().UnixNano(), msg.Message)
 	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		log.WithFields(log.Fields{"Error": err}).Debug("Failed to add log")
 		server.handleHTTPError(c, err, http.StatusInternalServerError)
@@ -91,7 +91,7 @@ func (server *ColoniesServer) handleGetLogsHTTPRequest(c *gin.Context, recovered
 	}
 
 	if msg.ExecutorName != "" {
-		executor, err := server.db.GetExecutorByName(msg.ColonyName, msg.ExecutorName)
+		executor, err := server.executorDB.GetExecutorByName(msg.ColonyName, msg.ExecutorName)
 		if server.handleHTTPError(c, err, http.StatusBadRequest) {
 			return
 		}
@@ -136,9 +136,9 @@ func (server *ColoniesServer) handleGetLogsHTTPRequest(c *gin.Context, recovered
 	var logs []*core.Log
 	if msg.ExecutorName != "" {
 		if msg.Since > 0 {
-			logs, err = server.db.GetLogsByExecutorSince(msg.ExecutorName, msg.Count, msg.Since)
+			logs, err = server.logDB.GetLogsByExecutorSince(msg.ExecutorName, msg.Count, msg.Since)
 		} else {
-			logs, err = server.db.GetLogsByExecutor(msg.ExecutorName, msg.Count)
+			logs, err = server.logDB.GetLogsByExecutor(msg.ExecutorName, msg.Count)
 		}
 		if server.handleHTTPError(c, err, http.StatusBadRequest) {
 			log.WithFields(log.Fields{"Error": err, "ColonyName": msg.ColonyName}).Debug("Failed to get logs for executor")
@@ -147,9 +147,9 @@ func (server *ColoniesServer) handleGetLogsHTTPRequest(c *gin.Context, recovered
 		}
 	} else {
 		if msg.Since > 0 {
-			logs, err = server.db.GetLogsByProcessIDSince(msg.ProcessID, msg.Count, msg.Since)
+			logs, err = server.logDB.GetLogsByProcessIDSince(msg.ProcessID, msg.Count, msg.Since)
 		} else {
-			logs, err = server.db.GetLogsByProcessID(msg.ProcessID, msg.Count)
+			logs, err = server.logDB.GetLogsByProcessID(msg.ProcessID, msg.Count)
 		}
 		if server.handleHTTPError(c, err, http.StatusBadRequest) {
 			log.WithFields(log.Fields{"Error": err, "ColonyName": msg.ColonyName}).Debug("Failed to get logs for process")
@@ -200,7 +200,7 @@ func (server *ColoniesServer) handleSearchLogsHTTPRequest(c *gin.Context, recove
 		}
 	}
 
-	logs, err := server.db.SearchLogs(msg.ColonyName, msg.Text, msg.Days, msg.Count)
+	logs, err := server.logDB.SearchLogs(msg.ColonyName, msg.Text, msg.Days, msg.Count)
 	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		log.WithFields(log.Fields{"Error": err, "ColonyName": msg.ColonyName}).Debug("Failed to search logs")
 		return

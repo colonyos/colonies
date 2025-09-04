@@ -32,7 +32,7 @@ func (server *ColoniesServer) handleChangeUserIDHTTPRequest(c *gin.Context, reco
 		return
 	}
 
-	user, err := server.db.GetUserByID(msg.ColonyName, recoveredID)
+	user, err := server.userDB.GetUserByID(msg.ColonyName, recoveredID)
 	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
@@ -47,7 +47,7 @@ func (server *ColoniesServer) handleChangeUserIDHTTPRequest(c *gin.Context, reco
 		return
 	}
 
-	err = server.db.ChangeUserID(msg.ColonyName, user.ID, msg.UserID)
+	err = server.securityDB.ChangeUserID(msg.ColonyName, user.ID, msg.UserID)
 	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		return
 	}
@@ -85,7 +85,7 @@ func (server *ColoniesServer) handleChangeExecutorIDHTTPRequest(c *gin.Context, 
 		return
 	}
 
-	executor, err := server.db.GetExecutorByID(recoveredID) // TODO: GetExecutorByID should take colony name
+	executor, err := server.executorDB.GetExecutorByID(recoveredID) // TODO: GetExecutorByID should take colony name
 	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
@@ -100,7 +100,7 @@ func (server *ColoniesServer) handleChangeExecutorIDHTTPRequest(c *gin.Context, 
 		return
 	}
 
-	err = server.db.ChangeExecutorID(msg.ColonyName, executor.ID, msg.ExecutorID)
+	err = server.securityDB.ChangeExecutorID(msg.ColonyName, executor.ID, msg.ExecutorID)
 	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		return
 	}
@@ -138,7 +138,7 @@ func (server *ColoniesServer) handleChangeColonyIDHTTPRequest(c *gin.Context, re
 		return
 	}
 
-	colony, err := server.db.GetColonyByName(msg.ColonyName)
+	colony, err := server.colonyDB.GetColonyByName(msg.ColonyName)
 	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
@@ -148,7 +148,7 @@ func (server *ColoniesServer) handleChangeColonyIDHTTPRequest(c *gin.Context, re
 		return
 	}
 
-	err = server.db.ChangeColonyID(msg.ColonyName, colony.ID, msg.ColonyID)
+	err = server.securityDB.ChangeColonyID(msg.ColonyName, colony.ID, msg.ColonyID)
 	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		return
 	}
@@ -190,7 +190,7 @@ func (server *ColoniesServer) handleChangeServerIDHTTPRequest(c *gin.Context, re
 		return
 	}
 
-	err = server.db.SetServerID(serverID, msg.ServerID)
+	err = server.securityDB.SetServerID(serverID, msg.ServerID)
 	if server.handleHTTPError(c, err, http.StatusForbidden) {
 		return
 	}

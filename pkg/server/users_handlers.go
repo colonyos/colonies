@@ -28,7 +28,7 @@ func (server *ColoniesServer) handleAddUserHTTPRequest(c *gin.Context, recovered
 		return
 	}
 
-	colony, err := server.db.GetColonyByName(msg.User.ColonyName)
+	colony, err := server.colonyDB.GetColonyByName(msg.User.ColonyName)
 	if err != nil {
 		if server.handleHTTPError(c, errors.New("Failed to resolve colony name"), http.StatusBadRequest) {
 			return
@@ -46,7 +46,7 @@ func (server *ColoniesServer) handleAddUserHTTPRequest(c *gin.Context, recovered
 		return
 	}
 
-	userExist, err := server.db.GetUserByName(msg.User.ColonyName, msg.User.Name)
+	userExist, err := server.userDB.GetUserByName(msg.User.ColonyName, msg.User.Name)
 	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
@@ -57,7 +57,7 @@ func (server *ColoniesServer) handleAddUserHTTPRequest(c *gin.Context, recovered
 		}
 	}
 
-	userExist, err = server.db.GetUserByID(msg.User.ID, msg.User.Name)
+	userExist, err = server.userDB.GetUserByID(msg.User.ID, msg.User.Name)
 	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
@@ -68,12 +68,12 @@ func (server *ColoniesServer) handleAddUserHTTPRequest(c *gin.Context, recovered
 		}
 	}
 
-	err = server.db.AddUser(msg.User)
+	err = server.userDB.AddUser(msg.User)
 	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
 
-	addedUser, err := server.db.GetUserByName(colony.Name, msg.User.Name)
+	addedUser, err := server.userDB.GetUserByName(colony.Name, msg.User.Name)
 	if addedUser == nil {
 		server.handleHTTPError(c, errors.New("Failed to add user, addedUser is nil"), http.StatusInternalServerError)
 		return
@@ -102,7 +102,7 @@ func (server *ColoniesServer) handleGetUsersHTTPRequest(c *gin.Context, recovere
 		return
 	}
 
-	colony, err := server.db.GetColonyByName(msg.ColonyName)
+	colony, err := server.colonyDB.GetColonyByName(msg.ColonyName)
 	if err != nil {
 		if server.handleHTTPError(c, errors.New("Failed to resolve colony name"), http.StatusBadRequest) {
 			return
@@ -120,7 +120,7 @@ func (server *ColoniesServer) handleGetUsersHTTPRequest(c *gin.Context, recovere
 		return
 	}
 
-	users, err := server.db.GetUsersByColonyName(colony.Name)
+	users, err := server.userDB.GetUsersByColonyName(colony.Name)
 	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
@@ -148,7 +148,7 @@ func (server *ColoniesServer) handleGetUserHTTPRequest(c *gin.Context, recovered
 		return
 	}
 
-	colony, err := server.db.GetColonyByName(msg.ColonyName)
+	colony, err := server.colonyDB.GetColonyByName(msg.ColonyName)
 	if err != nil {
 		if server.handleHTTPError(c, errors.New("Failed to resolve colony name"), http.StatusBadRequest) {
 			return
@@ -166,7 +166,7 @@ func (server *ColoniesServer) handleGetUserHTTPRequest(c *gin.Context, recovered
 		return
 	}
 
-	user, err := server.db.GetUserByName(msg.ColonyName, msg.Name)
+	user, err := server.userDB.GetUserByName(msg.ColonyName, msg.Name)
 	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
@@ -194,7 +194,7 @@ func (server *ColoniesServer) handleRemoveUserHTTPRequest(c *gin.Context, recove
 		return
 	}
 
-	colony, err := server.db.GetColonyByName(msg.ColonyName)
+	colony, err := server.colonyDB.GetColonyByName(msg.ColonyName)
 	if err != nil {
 		if server.handleHTTPError(c, errors.New("Failed to resolve colony name"), http.StatusBadRequest) {
 			return
@@ -212,7 +212,7 @@ func (server *ColoniesServer) handleRemoveUserHTTPRequest(c *gin.Context, recove
 		return
 	}
 
-	err = server.db.RemoveUserByName(colony.Name, msg.Name)
+	err = server.userDB.RemoveUserByName(colony.Name, msg.Name)
 	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}

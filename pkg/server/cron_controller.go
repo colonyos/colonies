@@ -12,12 +12,12 @@ func (controller *coloniesController) addCron(cron *core.Cron) (*core.Cron, erro
 	cmd := &command{cronReplyChan: make(chan *core.Cron, 1),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
-			err := controller.db.AddCron(cron)
+			err := controller.cronDB.AddCron(cron)
 			if err != nil {
 				cmd.errorChan <- err
 				return
 			}
-			addedCron, err := controller.db.GetCronByID(cron.ID)
+			addedCron, err := controller.cronDB.GetCronByID(cron.ID)
 			if err != nil {
 				cmd.errorChan <- err
 				return
@@ -37,7 +37,7 @@ func (controller *coloniesController) addCron(cron *core.Cron) (*core.Cron, erro
 func (controller *coloniesController) removeGenerator(generatorID string) error {
 	cmd := &command{errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
-			cmd.errorChan <- controller.db.RemoveGeneratorByID(generatorID)
+			cmd.errorChan <- controller.generatorDB.RemoveGeneratorByID(generatorID)
 		}}
 
 	controller.cmdQueue <- cmd
@@ -48,7 +48,7 @@ func (controller *coloniesController) getCron(cronID string) (*core.Cron, error)
 	cmd := &command{cronReplyChan: make(chan *core.Cron, 1),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
-			cron, err := controller.db.GetCronByID(cronID)
+			cron, err := controller.cronDB.GetCronByID(cronID)
 			if err != nil {
 				cmd.errorChan <- err
 				return
@@ -69,7 +69,7 @@ func (controller *coloniesController) getCrons(colonyName string, count int) ([]
 	cmd := &command{cronsReplyChan: make(chan []*core.Cron, 1),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
-			crons, err := controller.db.FindCronsByColonyName(colonyName, count)
+			crons, err := controller.cronDB.FindCronsByColonyName(colonyName, count)
 			if err != nil {
 				cmd.errorChan <- err
 				return
@@ -90,7 +90,7 @@ func (controller *coloniesController) runCron(cronID string) (*core.Cron, error)
 	cmd := &command{cronReplyChan: make(chan *core.Cron, 1),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
-			cron, err := controller.db.GetCronByID(cronID)
+			cron, err := controller.cronDB.GetCronByID(cronID)
 			if err != nil {
 				cmd.errorChan <- err
 				return
@@ -111,7 +111,7 @@ func (controller *coloniesController) runCron(cronID string) (*core.Cron, error)
 func (controller *coloniesController) removeCron(cronID string) error {
 	cmd := &command{errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
-			err := controller.db.RemoveCronByID(cronID)
+			err := controller.cronDB.RemoveCronByID(cronID)
 			cmd.errorChan <- err
 		}}
 
@@ -153,13 +153,13 @@ func (controller *coloniesController) startCron(cron *core.Cron) {
 	// Pick all outputs from the leaves of the previous processgraph and
 	// then use it as input to the root process in the next processgraph
 	if cron.PrevProcessGraphID != "" {
-		processGraph, err := controller.db.GetProcessGraphByID(cron.PrevProcessGraphID)
+		processGraph, err := controller.processGraphDB.GetProcessGraphByID(cron.PrevProcessGraphID)
 		if err == nil && processGraph != nil {
-			processGraph.SetStorage(controller.db)
+			processGraph.SetStorage(controller.getProcessGraphStorage())
 			leafIDs, err := processGraph.Leaves()
 			if err == nil {
 				for _, leafID := range leafIDs {
-					leaf, err := controller.db.GetProcessByID(leafID)
+					leaf, err := controller.processDB.GetProcessByID(leafID)
 					if err == nil {
 						rootInput = append(rootInput, leaf.Output...)
 					}
@@ -176,12 +176,12 @@ func (controller *coloniesController) startCron(cron *core.Cron) {
 	}
 
 	nextRun := controller.calcNextRun(cron)
-	controller.db.UpdateCron(cron.ID, nextRun, time.Now(), processGraph.ID)
+	controller.cronDB.UpdateCron(cron.ID, nextRun, time.Now(), processGraph.ID)
 }
 
 func (controller *coloniesController) triggerCrons() {
 	cmd := &command{handler: func(cmd *command) {
-		crons, err := controller.db.FindAllCrons()
+		crons, err := controller.cronDB.FindAllCrons()
 		if err != nil {
 			log.WithFields(log.Fields{"Error": err}).Error("Failed getting all crons")
 			return
@@ -190,12 +190,12 @@ func (controller *coloniesController) triggerCrons() {
 			t := time.Time{}
 			if t.Unix() == cron.NextRun.Unix() { // This if-statement will be true the first time the cron is evaluted
 				nextRun := controller.calcNextRun(cron)
-				controller.db.UpdateCron(cron.ID, nextRun, time.Time{}, "")
+				controller.cronDB.UpdateCron(cron.ID, nextRun, time.Time{}, "")
 				cron.NextRun = nextRun
 				continue
 			}
 			if cron.HasExpired() {
-				processgraph, err := controller.db.GetProcessGraphByID(cron.PrevProcessGraphID)
+				processgraph, err := controller.processGraphDB.GetProcessGraphByID(cron.PrevProcessGraphID)
 				if err != nil {
 					log.WithFields(log.Fields{"Error": err, "PrevProcessGraphId": cron.PrevProcessGraphID}).Error("Failed getting all crons")
 					continue

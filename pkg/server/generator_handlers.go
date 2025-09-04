@@ -45,7 +45,7 @@ func (server *ColoniesServer) handleAddGeneratorHTTPRequest(c *gin.Context, reco
 
 	msg.Generator.ID = core.GenerateRandomID()
 
-	initiatorName, err := resolveInitiator(msg.Generator.ColonyName, recoveredID, server.db)
+	initiatorName, err := resolveInitiator(msg.Generator.ColonyName, recoveredID, server.executorDB, server.userDB)
 	if server.handleHTTPError(c, err, http.StatusInternalServerError) {
 		return
 	}
@@ -100,7 +100,7 @@ func (server *ColoniesServer) handleGetGeneratorHTTPRequest(c *gin.Context, reco
 	}
 
 	generator.CheckerPeriod = server.controller.getGeneratorPeriod()
-	queueSize, err := server.db.CountGeneratorArgs(generator.ID)
+	queueSize, err := server.generatorDB.CountGeneratorArgs(generator.ID)
 	if server.handleHTTPError(c, err, http.StatusInternalServerError) {
 		return
 	}

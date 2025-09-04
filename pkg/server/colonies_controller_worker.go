@@ -40,7 +40,7 @@ func (controller *coloniesController) timeoutLoop() {
 		}
 		controller.stopMutex.Unlock()
 
-		processes, err := controller.db.FindAllRunningProcesses()
+		processes, err := controller.processDB.FindAllRunningProcesses()
 		if err != nil {
 			log.Error(err)
 			continue
@@ -70,7 +70,7 @@ func (controller *coloniesController) timeoutLoop() {
 
 		// TODO: FindAllWaitingProcesses will only return max 1000 processes, this is to avoid dumping the entire database
 		// However, the means that maxWaitTime may not work correctly if there are more than 1000 waiting processes.
-		processes, err = controller.db.FindAllWaitingProcesses()
+		processes, err = controller.processDB.FindAllWaitingProcesses()
 		if err != nil {
 			continue
 		}
@@ -115,7 +115,7 @@ func (controller *coloniesController) retentionWorker() {
 
 		if isLeader && controller.retention {
 			log.Debug("Appling retention policy")
-			controller.db.ApplyRetentionPolicy(controller.retentionPolicy)
+			controller.databaseCore.ApplyRetentionPolicy(controller.retentionPolicy)
 		}
 
 		time.Sleep(time.Duration(controller.retentionPeriod) * time.Millisecond)
