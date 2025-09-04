@@ -21,7 +21,19 @@ func setupFakeServer() (*ColoniesServer, *controllerMock, *validatorMock, *dbMoc
 	controllerMock := &controllerMock{}
 	server.controller = controllerMock
 	dbMock := &dbMock{}
-	server.db = dbMock
+	server.colonyDB = dbMock
+	server.executorDB = dbMock
+	server.processDB = dbMock
+	server.userDB = dbMock
+	server.functionDB = dbMock
+	server.attributeDB = dbMock
+	server.processGraphDB = dbMock
+	server.generatorDB = dbMock
+	server.cronDB = dbMock
+	server.logDB = dbMock
+	server.fileDB = dbMock
+	server.snapshotDB = dbMock
+	server.securityDB = dbMock
 	ctx, w := getTestGinContext()
 
 	return server, controllerMock, validatorMock, dbMock, ctx, w

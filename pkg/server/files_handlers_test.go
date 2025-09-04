@@ -246,7 +246,7 @@ func TestRemoveFile(t *testing.T) {
 	_, err = client.GetFileByID(env.colonyName, addedFile.ID, env.executorPrvKey)
 	assert.NotNil(t, err)
 
-	fileCount, err := server.db.CountFiles(env.colonyName)
+	fileCount, err := server.fileDB.CountFiles(env.colonyName)
 	assert.Nil(t, err)
 	assert.Equal(t, fileCount, 2)
 
@@ -262,7 +262,7 @@ func TestRemoveFile(t *testing.T) {
 	err = client.RemoveFileByName(env.colonyName, "/testlabel", "testfile2", env.executorPrvKey)
 	assert.Nil(t, err)
 
-	fileCount, err = server.db.CountFiles(env.colonyName)
+	fileCount, err = server.fileDB.CountFiles(env.colonyName)
 	assert.Nil(t, err)
 	assert.Equal(t, fileCount, 0)
 

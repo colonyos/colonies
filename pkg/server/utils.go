@@ -9,9 +9,10 @@ import (
 func resolveInitiator(
 	colonyName string,
 	recoveredID string,
-	db database.Database) (string, error) {
+	executorDB database.ExecutorDatabase,
+	userDB database.UserDatabase) (string, error) {
 
-	executor, err := db.GetExecutorByID(recoveredID)
+	executor, err := executorDB.GetExecutorByID(recoveredID)
 	if err != nil {
 		return "", err
 	}
@@ -19,7 +20,7 @@ func resolveInitiator(
 	if executor != nil {
 		return executor.Name, nil
 	} else {
-		user, err := db.GetUserByID(colonyName, recoveredID)
+		user, err := userDB.GetUserByID(colonyName, recoveredID)
 		if err != nil {
 			return "", err
 		}

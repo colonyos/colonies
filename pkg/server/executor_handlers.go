@@ -104,7 +104,7 @@ func (server *ColoniesServer) handleGetExecutorHTTPRequest(c *gin.Context, recov
 		return
 	}
 
-	executor, err := server.db.GetExecutorByName(msg.ColonyName, msg.ExecutorName)
+	executor, err := server.executorDB.GetExecutorByName(msg.ColonyName, msg.ExecutorName)
 	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
@@ -141,7 +141,7 @@ func (server *ColoniesServer) handleApproveExecutorHTTPRequest(c *gin.Context, r
 		return
 	}
 
-	executor, err := server.db.GetExecutorByName(msg.ColonyName, msg.ExecutorName)
+	executor, err := server.executorDB.GetExecutorByName(msg.ColonyName, msg.ExecutorName)
 	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
@@ -155,7 +155,7 @@ func (server *ColoniesServer) handleApproveExecutorHTTPRequest(c *gin.Context, r
 		return
 	}
 
-	err = server.db.ApproveExecutor(executor)
+	err = server.executorDB.ApproveExecutor(executor)
 	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
@@ -178,7 +178,7 @@ func (server *ColoniesServer) handleRejectExecutorHTTPRequest(c *gin.Context, re
 		return
 	}
 
-	executor, err := server.db.GetExecutorByName(msg.ColonyName, msg.ExecutorName)
+	executor, err := server.executorDB.GetExecutorByName(msg.ColonyName, msg.ExecutorName)
 	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
@@ -192,7 +192,7 @@ func (server *ColoniesServer) handleRejectExecutorHTTPRequest(c *gin.Context, re
 		return
 	}
 
-	err = server.db.RejectExecutor(executor)
+	err = server.executorDB.RejectExecutor(executor)
 	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
@@ -215,7 +215,7 @@ func (server *ColoniesServer) handleRemoveExecutorHTTPRequest(c *gin.Context, re
 		return
 	}
 
-	executor, err := server.db.GetExecutorByName(msg.ColonyName, msg.ExecutorName)
+	executor, err := server.executorDB.GetExecutorByName(msg.ColonyName, msg.ExecutorName)
 	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
@@ -229,7 +229,7 @@ func (server *ColoniesServer) handleRemoveExecutorHTTPRequest(c *gin.Context, re
 		return
 	}
 
-	err = server.db.RemoveExecutorByName(msg.ColonyName, msg.ExecutorName)
+	err = server.executorDB.RemoveExecutorByName(msg.ColonyName, msg.ExecutorName)
 	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
@@ -257,7 +257,7 @@ func (server *ColoniesServer) handleReportAllocationsHTTPRequest(c *gin.Context,
 		return
 	}
 
-	executor, err := server.db.GetExecutorByName(msg.ColonyName, msg.ExecutorName)
+	executor, err := server.executorDB.GetExecutorByName(msg.ColonyName, msg.ExecutorName)
 	if server.handleHTTPError(c, err, http.StatusInternalServerError) {
 		return
 	}
@@ -273,7 +273,7 @@ func (server *ColoniesServer) handleReportAllocationsHTTPRequest(c *gin.Context,
 		}
 	}
 
-	err = server.db.SetAllocations(msg.ColonyName, executor.Name, msg.Allocations)
+	err = server.executorDB.SetAllocations(msg.ColonyName, executor.Name, msg.Allocations)
 	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}

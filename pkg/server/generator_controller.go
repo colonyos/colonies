@@ -11,12 +11,12 @@ func (controller *coloniesController) addGenerator(generator *core.Generator) (*
 	cmd := &command{generatorReplyChan: make(chan *core.Generator, 1),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
-			err := controller.db.AddGenerator(generator)
+			err := controller.generatorDB.AddGenerator(generator)
 			if err != nil {
 				cmd.errorChan <- err
 				return
 			}
-			addedGenerator, err := controller.db.GetGeneratorByID(generator.ID)
+			addedGenerator, err := controller.generatorDB.GetGeneratorByID(generator.ID)
 			if err != nil {
 				cmd.errorChan <- err
 				return
@@ -35,13 +35,13 @@ func (controller *coloniesController) addGenerator(generator *core.Generator) (*
 
 func (controller *coloniesController) triggerGenerators() {
 	cmd := &command{handler: func(cmd *command) {
-		generatorsFromDB, err := controller.db.FindAllGenerators()
+		generatorsFromDB, err := controller.generatorDB.FindAllGenerators()
 		if err != nil {
 			log.WithFields(log.Fields{"Error": err}).Error("Failed get all generators from db")
 			return
 		}
 		for _, generator := range generatorsFromDB {
-			counter, err := controller.db.CountGeneratorArgs(generator.ID)
+			counter, err := controller.generatorDB.CountGeneratorArgs(generator.ID)
 			if err != nil {
 				log.WithFields(log.Fields{"Error": err}).Error("Failed count generator args from db")
 				continue
@@ -85,7 +85,7 @@ func (controller *coloniesController) getGenerator(generatorID string) (*core.Ge
 	cmd := &command{generatorReplyChan: make(chan *core.Generator, 1),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
-			generator, err := controller.db.GetGeneratorByID(generatorID)
+			generator, err := controller.generatorDB.GetGeneratorByID(generatorID)
 			if err != nil {
 				cmd.errorChan <- err
 				return
@@ -106,7 +106,7 @@ func (controller *coloniesController) resolveGenerator(colonyName string, genera
 	cmd := &command{generatorReplyChan: make(chan *core.Generator, 1),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
-			generator, err := controller.db.GetGeneratorByName(colonyName, generatorName)
+			generator, err := controller.generatorDB.GetGeneratorByName(colonyName, generatorName)
 			if err != nil {
 				cmd.errorChan <- err
 				return
@@ -127,7 +127,7 @@ func (controller *coloniesController) getGenerators(colonyName string, count int
 	cmd := &command{generatorsReplyChan: make(chan []*core.Generator, 1),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
-			generators, err := controller.db.FindGeneratorsByColonyName(colonyName, count)
+			generators, err := controller.generatorDB.FindGeneratorsByColonyName(colonyName, count)
 			if err != nil {
 				cmd.errorChan <- err
 				return
@@ -148,22 +148,22 @@ func (controller *coloniesController) packGenerator(generatorID string, colonyNa
 	cmd := &command{errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
 			generatorArg := core.CreateGeneratorArg(generatorID, colonyName, arg)
-			err := controller.db.AddGeneratorArg(generatorArg)
+			err := controller.generatorDB.AddGeneratorArg(generatorArg)
 			if err != nil {
 				log.WithFields(log.Fields{"Error": err}).Error("Failed add generator args")
 				cmd.errorChan <- err
 			}
-			count, err := controller.db.CountGeneratorArgs(generatorID)
+			count, err := controller.generatorDB.CountGeneratorArgs(generatorID)
 			log.WithFields(log.Fields{"Arg": arg, "Count": count, "GeneratorId": generatorID}).Debug("Added args to generator")
 
-			generator, err := controller.db.GetGeneratorByID(generatorID)
+			generator, err := controller.generatorDB.GetGeneratorByID(generatorID)
 			if err != nil {
 				log.WithFields(log.Fields{"Error": err, "GeneratorId": generatorID}).Error("Failed to get generator")
 				cmd.errorChan <- err
 			}
 
 			if generator.FirstPack.Unix() < 0 {
-				err = controller.db.SetGeneratorFirstPack(generatorID)
+				err = controller.generatorDB.SetGeneratorFirstPack(generatorID)
 				if err != nil {
 					log.WithFields(log.Fields{"Error": err, "GeneratorId": generatorID}).Error("Failed to set generator first pack")
 					cmd.errorChan <- err
@@ -204,7 +204,7 @@ func (controller *coloniesController) submitWorkflow(generator *core.Generator, 
 		return
 	}
 
-	generatorArgs, err := controller.db.GetGeneratorArgs(generator.ID, counter)
+	generatorArgs, err := controller.generatorDB.GetGeneratorArgs(generator.ID, counter)
 	var args []string
 	for _, generatorArg := range generatorArgs {
 		args = append(args, generatorArg.Arg)
@@ -232,7 +232,7 @@ func (controller *coloniesController) submitWorkflow(generator *core.Generator, 
 
 	// Now it safe to remove the args since they are now attached to a process graph
 	for _, generatorArg := range generatorArgs {
-		count, err := controller.db.CountGeneratorArgs(generator.ID)
+		count, err := controller.generatorDB.CountGeneratorArgs(generator.ID)
 		log.WithFields(log.Fields{
 			"GeneratorId": generator.ID,
 			"Trigger":     generator.Trigger,
@@ -240,7 +240,7 @@ func (controller *coloniesController) submitWorkflow(generator *core.Generator, 
 			"Arg":         generatorArg.Arg}).
 			Debug("Removing generator arg")
 
-		err = controller.db.RemoveGeneratorArgByID(generatorArg.ID)
+		err = controller.generatorDB.RemoveGeneratorArgByID(generatorArg.ID)
 		if err != nil {
 			log.WithFields(log.Fields{
 				"Error": err}).
@@ -249,7 +249,7 @@ func (controller *coloniesController) submitWorkflow(generator *core.Generator, 
 		}
 	}
 
-	err = controller.db.SetGeneratorLastRun(generator.ID)
+	err = controller.generatorDB.SetGeneratorLastRun(generator.ID)
 	if err != nil {
 		log.WithFields(log.Fields{"Error": err}).Error("Failed mark generator as run")
 	}

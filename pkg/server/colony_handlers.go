@@ -43,7 +43,7 @@ func (server *ColoniesServer) handleAddColonyHTTPRequest(c *gin.Context, recover
 		return
 	}
 
-	colonyExist, err := server.db.GetColonyByName(msg.Colony.Name)
+	colonyExist, err := server.colonyDB.GetColonyByName(msg.Colony.Name)
 	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
@@ -97,7 +97,7 @@ func (server *ColoniesServer) handleRemoveColonyHTTPRequest(c *gin.Context, reco
 		return
 	}
 
-	colony, err := server.db.GetColonyByName(msg.ColonyName)
+	colony, err := server.colonyDB.GetColonyByName(msg.ColonyName)
 	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
@@ -207,7 +207,7 @@ func (server *ColoniesServer) handleColonyStatisticsHTTPRequest(c *gin.Context, 
 		return
 	}
 
-	colony, err := server.db.GetColonyByName(msg.ColonyName)
+	colony, err := server.colonyDB.GetColonyByName(msg.ColonyName)
 	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}

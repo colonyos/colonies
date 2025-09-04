@@ -37,9 +37,9 @@ func (server *ColoniesServer) handleAddFileHTTPRequest(c *gin.Context, recovered
 	// Bypass colonies controller and use the database directly, no need to synchronize this operation since files are inmutable
 	file := msg.File
 	file.ID = core.GenerateRandomID()
-	server.db.AddFile(msg.File)
+	server.fileDB.AddFile(msg.File)
 
-	addedFile, err := server.db.GetFileByID(msg.File.ColonyName, file.ID)
+	addedFile, err := server.fileDB.GetFileByID(msg.File.ColonyName, file.ID)
 	if server.handleHTTPError(c, err, http.StatusInternalServerError) {
 		log.Error(err)
 		return
@@ -78,7 +78,7 @@ func (server *ColoniesServer) handleGetFileHTTPRequest(c *gin.Context, recovered
 	// Bypass colonies controller and use the database directly, no need to synchronize this operation since files are inmutable
 	var files []*core.File
 	if msg.FileID != "" {
-		file, err := server.db.GetFileByID(msg.ColonyName, msg.FileID)
+		file, err := server.fileDB.GetFileByID(msg.ColonyName, msg.FileID)
 		if server.handleHTTPError(c, err, http.StatusBadRequest) {
 			log.WithFields(log.Fields{"Error": err}).Debug("Failed to get file")
 			server.handleHTTPError(c, err, http.StatusInternalServerError)
@@ -94,14 +94,14 @@ func (server *ColoniesServer) handleGetFileHTTPRequest(c *gin.Context, recovered
 		files = []*core.File{file}
 	} else if msg.Label != "" && msg.Name != "" {
 		if msg.Latest {
-			files, err = server.db.GetLatestFileByName(msg.ColonyName, msg.Label, msg.Name)
+			files, err = server.fileDB.GetLatestFileByName(msg.ColonyName, msg.Label, msg.Name)
 			if server.handleHTTPError(c, err, http.StatusBadRequest) {
 				log.WithFields(log.Fields{"Error": err}).Debug("Failed to get file")
 				server.handleHTTPError(c, err, http.StatusInternalServerError)
 				return
 			}
 		} else {
-			files, err = server.db.GetFileByName(msg.ColonyName, msg.Label, msg.Name)
+			files, err = server.fileDB.GetFileByName(msg.ColonyName, msg.Label, msg.Name)
 			if server.handleHTTPError(c, err, http.StatusBadRequest) {
 				log.WithFields(log.Fields{"Error": err}).Debug("Failed to get file")
 				server.handleHTTPError(c, err, http.StatusInternalServerError)
@@ -164,7 +164,7 @@ func (server *ColoniesServer) handleGetFilesHTTPRequest(c *gin.Context, recovere
 		return
 	}
 
-	fileDataArr, err := server.db.GetFileDataByLabel(msg.ColonyName, msg.Label)
+	fileDataArr, err := server.fileDB.GetFileDataByLabel(msg.ColonyName, msg.Label)
 	if server.handleHTTPError(c, err, http.StatusBadRequest) {
 		log.Error(err)
 		return
@@ -200,13 +200,13 @@ func (server *ColoniesServer) handleGetFileLabelsHTTPRequest(c *gin.Context, rec
 
 	var labels []*core.Label
 	if msg.Name == "" {
-		labels, err = server.db.GetFileLabels(msg.ColonyName)
+		labels, err = server.fileDB.GetFileLabels(msg.ColonyName)
 		if server.handleHTTPError(c, err, http.StatusBadRequest) {
 			log.Error(err)
 			return
 		}
 	} else {
-		labels, err = server.db.GetFileLabelsByName(msg.ColonyName, msg.Name, msg.Exact)
+		labels, err = server.fileDB.GetFileLabelsByName(msg.ColonyName, msg.Name, msg.Exact)
 		if server.handleHTTPError(c, err, http.StatusBadRequest) {
 			log.Error(err)
 			return
@@ -243,12 +243,12 @@ func (server *ColoniesServer) handleRemoveFileHTTPRequest(c *gin.Context, recove
 	}
 
 	if msg.FileID != "" {
-		err = server.db.RemoveFileByID(msg.ColonyName, msg.FileID)
+		err = server.fileDB.RemoveFileByID(msg.ColonyName, msg.FileID)
 		if server.handleHTTPError(c, err, http.StatusBadRequest) {
 			return
 		}
 	} else if msg.Label != "" && msg.Name != "" {
-		err = server.db.RemoveFileByName(msg.ColonyName, msg.Label, msg.Name)
+		err = server.fileDB.RemoveFileByName(msg.ColonyName, msg.Label, msg.Name)
 		if server.handleHTTPError(c, err, http.StatusBadRequest) {
 			return
 		}

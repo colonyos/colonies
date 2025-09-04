@@ -33,7 +33,19 @@ type ColoniesServer struct {
 	httpServer              *http.Server
 	crypto                  security.Crypto
 	validator               security.Validator
-	db                      database.Database
+	userDB                  database.UserDatabase
+	colonyDB                database.ColonyDatabase
+	executorDB              database.ExecutorDatabase
+	functionDB              database.FunctionDatabase
+	processDB               database.ProcessDatabase
+	attributeDB             database.AttributeDatabase
+	processGraphDB          database.ProcessGraphDatabase
+	generatorDB             database.GeneratorDatabase
+	cronDB                  database.CronDatabase
+	logDB                   database.LogDatabase
+	fileDB                  database.FileDatabase
+	snapshotDB              database.SnapshotDatabase
+	securityDB              database.SecurityDatabase
 	exclusiveAssign         bool
 	allowExecutorReregister bool
 	retention               bool
@@ -60,7 +72,20 @@ func CreateColoniesServer(db database.Database,
 	server.ginHandler = gin.Default()
 	server.ginHandler.Use(cors.Default())
 
-	server.db = db
+	// Set all the specific database interfaces
+	server.userDB = db
+	server.colonyDB = db
+	server.executorDB = db
+	server.functionDB = db
+	server.processDB = db
+	server.attributeDB = db
+	server.processGraphDB = db
+	server.generatorDB = db
+	server.cronDB = db
+	server.logDB = db
+	server.fileDB = db
+	server.snapshotDB = db
+	server.securityDB = db
 
 	httpServer := &http.Server{
 		Addr:    ":" + strconv.Itoa(port),
@@ -106,7 +131,7 @@ func CreateColoniesServer(db database.Database,
 }
 
 func (server *ColoniesServer) getServerID() (string, error) {
-	return server.db.GetServerID()
+	return server.securityDB.GetServerID()
 }
 
 func (server *ColoniesServer) setupRoutes() {

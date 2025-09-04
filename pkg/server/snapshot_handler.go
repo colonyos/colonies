@@ -29,7 +29,7 @@ func (server *ColoniesServer) handleCreateSnapshotHTTPRequest(c *gin.Context, re
 		return
 	}
 
-	snapshot, err := server.db.CreateSnapshot(msg.ColonyName, msg.Label, msg.Name)
+	snapshot, err := server.snapshotDB.CreateSnapshot(msg.ColonyName, msg.Label, msg.Name)
 	if server.handleHTTPError(c, err, http.StatusInternalServerError) {
 		log.Error(err)
 		return
@@ -67,13 +67,13 @@ func (server *ColoniesServer) handleGetSnapshotHTTPRequest(c *gin.Context, recov
 
 	var snapshot *core.Snapshot
 	if msg.SnapshotID != "" {
-		snapshot, err = server.db.GetSnapshotByID(msg.ColonyName, msg.SnapshotID)
+		snapshot, err = server.snapshotDB.GetSnapshotByID(msg.ColonyName, msg.SnapshotID)
 		if server.handleHTTPError(c, err, http.StatusInternalServerError) {
 			log.Error(err)
 			return
 		}
 	} else if msg.Name != "" {
-		snapshot, err = server.db.GetSnapshotByName(msg.ColonyName, msg.Name)
+		snapshot, err = server.snapshotDB.GetSnapshotByName(msg.ColonyName, msg.Name)
 		if server.handleHTTPError(c, err, http.StatusInternalServerError) {
 			log.Error(err)
 			return
@@ -115,7 +115,7 @@ func (server *ColoniesServer) handleGetSnapshotsHTTPRequest(c *gin.Context, reco
 		return
 	}
 
-	snapshots, err := server.db.GetSnapshotsByColonyName(msg.ColonyName)
+	snapshots, err := server.snapshotDB.GetSnapshotsByColonyName(msg.ColonyName)
 	if server.handleHTTPError(c, err, http.StatusInternalServerError) {
 		log.Error(err)
 		return
@@ -152,13 +152,13 @@ func (server *ColoniesServer) handleRemoveSnapshotHTTPRequest(c *gin.Context, re
 	}
 
 	if msg.SnapshotID != "" {
-		err = server.db.RemoveSnapshotByID(msg.ColonyName, msg.SnapshotID)
+		err = server.snapshotDB.RemoveSnapshotByID(msg.ColonyName, msg.SnapshotID)
 		if server.handleHTTPError(c, err, http.StatusInternalServerError) {
 			log.Error(err)
 			return
 		}
 	} else if msg.Name != "" {
-		err = server.db.RemoveSnapshotByName(msg.ColonyName, msg.Name)
+		err = server.snapshotDB.RemoveSnapshotByName(msg.ColonyName, msg.Name)
 		if server.handleHTTPError(c, err, http.StatusInternalServerError) {
 			log.Error(err)
 			return
@@ -194,7 +194,7 @@ func (server *ColoniesServer) handleRemoveAllSnapshotsHTTPRequest(c *gin.Context
 		return
 	}
 
-	err = server.db.RemoveSnapshotsByColonyName(msg.ColonyName)
+	err = server.snapshotDB.RemoveSnapshotsByColonyName(msg.ColonyName)
 	if server.handleHTTPError(c, err, http.StatusInternalServerError) {
 		log.Error(err)
 		return
