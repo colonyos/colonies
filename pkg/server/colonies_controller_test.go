@@ -5,6 +5,7 @@ import (
 
 	"github.com/colonyos/colonies/pkg/core"
 	"github.com/colonyos/colonies/pkg/database/postgresql"
+	websockethandlers "github.com/colonyos/colonies/pkg/server/handlers/websocket"
 	"github.com/colonyos/colonies/pkg/utils"
 	"github.com/stretchr/testify/assert"
 )
@@ -13,7 +14,7 @@ func TestColoniesControllerInvalidDB(t *testing.T) {
 	controller, dbMock := createFakeColoniesController()
 
 	dbMock.returnError = "GetProcessByID"
-	err := controller.subscribeProcess("invalid_id", &subscription{})
+	err := controller.subscribeProcess("invalid_id", &websockethandlers.Subscription{})
 	assert.NotNil(t, err)
 
 	dbMock.returnError = "GetColonies"

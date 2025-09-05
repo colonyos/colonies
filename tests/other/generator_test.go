@@ -1,4 +1,15 @@
 
+package other
+
+import (
+	"testing"
+	"time"
+
+	"github.com/colonyos/colonies/pkg/core"
+	"github.com/colonyos/colonies/pkg/utils"
+	"github.com/stretchr/testify/assert"
+)
+
 func TestAddGeneratorCounter(t *testing.T) {
 	env, client, server, _, done := setupTestEnv2(t)
 

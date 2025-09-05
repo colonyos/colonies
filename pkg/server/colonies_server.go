@@ -16,6 +16,21 @@ import (
 	"github.com/colonyos/colonies/pkg/security"
 	"github.com/colonyos/colonies/pkg/security/crypto"
 	"github.com/colonyos/colonies/pkg/security/validator"
+	attributehandlers "github.com/colonyos/colonies/pkg/server/handlers/attribute"
+	cronhandlers "github.com/colonyos/colonies/pkg/server/handlers/cron"
+	filehandlers "github.com/colonyos/colonies/pkg/server/handlers/file"
+	functionhandlers "github.com/colonyos/colonies/pkg/server/handlers/function"
+	generatorhandlers "github.com/colonyos/colonies/pkg/server/handlers/generator"
+	securityhandlers "github.com/colonyos/colonies/pkg/server/handlers/security"
+	"github.com/colonyos/colonies/pkg/server/handlers/user"
+	"github.com/colonyos/colonies/pkg/server/handlers/colony"
+	"github.com/colonyos/colonies/pkg/server/handlers/executor"
+	loghandlers "github.com/colonyos/colonies/pkg/server/handlers/log"
+	"github.com/colonyos/colonies/pkg/server/handlers/process"
+	"github.com/colonyos/colonies/pkg/server/handlers/processgraph"
+	serverhandlers "github.com/colonyos/colonies/pkg/server/handlers/server"
+	snapshothandlers "github.com/colonyos/colonies/pkg/server/handlers/snapshot"
+	websockethandlers "github.com/colonyos/colonies/pkg/server/handlers/websocket"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -51,6 +66,24 @@ type ColoniesServer struct {
 	retention               bool
 	retentionPolicy         int64
 	retentionPeriod         int
+	
+	// Handler composition
+	serverAdapter        *ServerAdapter
+	userHandlers         *user.Handlers
+	colonyHandlers       *colony.Handlers
+	executorHandlers     *executor.Handlers
+	processHandlers      *process.Handlers
+	processgraphHandlers *processgraph.Handlers
+	serverHandlers       *serverhandlers.Handlers
+	logHandlers          *loghandlers.Handlers
+	snapshotHandlers     *snapshothandlers.Handlers
+	attributeHandlers    *attributehandlers.Handlers
+	cronHandlers         *cronhandlers.Handlers
+	functionHandlers     *functionhandlers.Handlers
+	generatorHandlers    *generatorhandlers.Handlers
+	securityHandlers     *securityhandlers.Handlers
+	fileHandlers         *filehandlers.Handlers
+	websocketHandlers    *websockethandlers.Handlers
 }
 
 func CreateColoniesServer(db database.Database,
@@ -106,6 +139,24 @@ func CreateColoniesServer(db database.Database,
 	server.retention = retention
 	server.retentionPolicy = retentionPolicy
 
+	// Initialize server adapter and handler structs
+	server.serverAdapter = NewServerAdapter(server)
+	server.userHandlers = user.NewHandlers(server.serverAdapter)
+	server.colonyHandlers = colony.NewHandlers(server.serverAdapter)
+	server.executorHandlers = executor.NewHandlers(server.serverAdapter)
+	server.processHandlers = process.NewHandlers(server.serverAdapter)
+	server.processgraphHandlers = processgraph.NewHandlers(server.serverAdapter.ProcessgraphServer())
+	server.serverHandlers = serverhandlers.NewHandlers(server.serverAdapter.ServerServer())
+	server.logHandlers = loghandlers.NewHandlers(server.serverAdapter)
+	server.snapshotHandlers = snapshothandlers.NewHandlers(server.serverAdapter)
+	server.attributeHandlers = attributehandlers.NewHandlers(server.serverAdapter)
+	server.cronHandlers = cronhandlers.NewHandlers(server.serverAdapter)
+	server.fileHandlers = filehandlers.NewHandlers(server.serverAdapter)
+	server.functionHandlers = functionhandlers.NewHandlers(server.serverAdapter)
+	server.generatorHandlers = generatorhandlers.NewHandlers(server.serverAdapter)
+	server.securityHandlers = securityhandlers.NewHandlers(server.serverAdapter)
+	server.websocketHandlers = websockethandlers.NewHandlers(server.serverAdapter)
+
 	log.WithFields(log.Fields{"Port": port,
 		"TLS":                     tls,
 		"TLSPrivateKeyPath":       tlsPrivateKeyPath,
@@ -130,6 +181,10 @@ func CreateColoniesServer(db database.Database,
 	return server
 }
 
+func (server *ColoniesServer) SetAllowExecutorReregister(allow bool) {
+	server.allowExecutorReregister = allow
+}
+
 func (server *ColoniesServer) getServerID() (string, error) {
 	return server.securityDB.GetServerID()
 }
@@ -137,7 +192,7 @@ func (server *ColoniesServer) getServerID() (string, error) {
 func (server *ColoniesServer) setupRoutes() {
 	server.ginHandler.POST("/api", server.handleAPIRequest)
 	server.ginHandler.GET("/health", server.handleHealthRequest)
-	server.ginHandler.GET("/pubsub", server.handleWSRequest)
+	server.ginHandler.GET("/pubsub", server.websocketHandlers.HandleWSRequest)
 }
 
 func (server *ColoniesServer) parseSignature(jsonString string, signature string) (string, error) {
@@ -168,7 +223,7 @@ func (server *ColoniesServer) handleAPIRequest(c *gin.Context) {
 
 	// Version does not require a valid private key
 	if rpcMsg.PayloadType == rpc.VersionPayloadType {
-		server.handleVersionHTTPRequest(c, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+		server.serverHandlers.HandleVersion(c, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 		return
 	}
 
@@ -181,171 +236,171 @@ func (server *ColoniesServer) handleAPIRequest(c *gin.Context) {
 
 	// User handlers
 	case rpc.AddUserPayloadType:
-		server.handleAddUserHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+		server.userHandlers.HandleAddUser(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 	case rpc.GetUsersPayloadType:
-		server.handleGetUsersHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+		server.userHandlers.HandleGetUsers(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 	case rpc.GetUserPayloadType:
-		server.handleGetUserHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+		server.userHandlers.HandleGetUser(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 	case rpc.RemoveUserPayloadType:
-		server.handleRemoveUserHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+		server.userHandlers.HandleRemoveUser(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 
 	// Colony handlers
 	case rpc.AddColonyPayloadType:
-		server.handleAddColonyHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+		server.colonyHandlers.HandleAddColony(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 	case rpc.RemoveColonyPayloadType:
-		server.handleRemoveColonyHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+		server.colonyHandlers.HandleRemoveColony(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 	case rpc.GetColoniesPayloadType:
-		server.handleGetColoniesHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+		server.colonyHandlers.HandleGetColonies(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 	case rpc.GetColonyPayloadType:
-		server.handleGetColonyHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+		server.colonyHandlers.HandleGetColony(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 
 	// Executor handlers
 	case rpc.AddExecutorPayloadType:
-		server.handleAddExecutorHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+		server.executorHandlers.HandleAddExecutor(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 	case rpc.GetExecutorsPayloadType:
-		server.handleGetExecutorsHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+		server.executorHandlers.HandleGetExecutors(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 	case rpc.GetExecutorPayloadType:
-		server.handleGetExecutorHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+		server.executorHandlers.HandleGetExecutor(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 	case rpc.ApproveExecutorPayloadType:
-		server.handleApproveExecutorHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+		server.executorHandlers.HandleApproveExecutor(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 	case rpc.RejectExecutorPayloadType:
-		server.handleRejectExecutorHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+		server.executorHandlers.HandleRejectExecutor(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 	case rpc.RemoveExecutorPayloadType:
-		server.handleRemoveExecutorHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+		server.executorHandlers.HandleRemoveExecutor(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 	case rpc.ReportAllocationsPayloadType:
-		server.handleReportAllocationsHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+		server.executorHandlers.HandleReportAllocations(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 
 	//Function handlers
 	case rpc.AddFunctionPayloadType:
-		server.handleAddFunctionHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+		server.functionHandlers.HandleAddFunction(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 	case rpc.GetFunctionsPayloadType:
-		server.handleGetFunctionsHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+		server.functionHandlers.HandleGetFunctions(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 	case rpc.RemoveFunctionPayloadType:
-		server.handleRemoveFunctionHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+		server.functionHandlers.HandleRemoveFunction(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 
 	// Process handlers
 	case rpc.SubmitFunctionSpecPayloadType:
-		server.handleSubmitHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+		server.processHandlers.HandleSubmit(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 	case rpc.AssignProcessPayloadType:
-		server.handleAssignProcessHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload(), string(jsonBytes))
+		server.processHandlers.HandleAssignProcess(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload(), string(jsonBytes))
 	case rpc.PauseAssignmentsPayloadType:
-		server.handlePauseAssignmentsHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+		server.processHandlers.HandlePauseAssignments(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 	case rpc.ResumeAssignmentsPayloadType:
-		server.handleResumeAssignmentsHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+		server.processHandlers.HandleResumeAssignments(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 	case rpc.GetPauseStatusPayloadType:
-		server.handleGetPauseStatusHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+		server.processHandlers.HandleGetPauseStatus(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 	case rpc.GetProcessHistPayloadType:
-		server.handleGetProcessHistHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+		server.processHandlers.HandleGetProcessHist(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 	case rpc.GetProcessesPayloadType:
-		server.handleGetProcessesHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+		server.processHandlers.HandleGetProcesses(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 	case rpc.GetProcessPayloadType:
-		server.handleGetProcessHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+		server.processHandlers.HandleGetProcess(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 	case rpc.RemoveProcessPayloadType:
-		server.handleRemoveProcessHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+		server.processHandlers.HandleRemoveProcess(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 	case rpc.RemoveAllProcessesPayloadType:
-		server.handleRemoveAllProcessesHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+		server.processHandlers.HandleRemoveAllProcesses(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 	case rpc.CloseSuccessfulPayloadType:
-		server.handleCloseSuccessfulHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+		server.processHandlers.HandleCloseSuccessful(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 	case rpc.CloseFailedPayloadType:
-		server.handleCloseFailedHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+		server.processHandlers.HandleCloseFailed(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 	case rpc.SetOutputPayloadType:
-		server.handleSetOutputHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+		server.processHandlers.HandleSetOutput(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 	case rpc.GetColonyStatisticsPayloadType:
-		server.handleColonyStatisticsHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+		server.colonyHandlers.HandleColonyStatistics(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 
 	// Attribute handlers
 	case rpc.AddAttributePayloadType:
-		server.handleAddAttributeHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+		server.attributeHandlers.HandleAddAttribute(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 	case rpc.GetAttributePayloadType:
-		server.handleGetAttributeHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+		server.attributeHandlers.HandleGetAttribute(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 
 	// Workflow and processgraph handlers
 	case rpc.SubmitWorkflowSpecPayloadType:
-		server.handleSubmitWorkflowHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+		server.processgraphHandlers.HandleSubmitWorkflow(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 	case rpc.GetProcessGraphPayloadType:
-		server.handleGetProcessGraphHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+		server.processgraphHandlers.HandleGetProcessGraph(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 	case rpc.GetProcessGraphsPayloadType:
-		server.handleGetProcessGraphsHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+		server.processgraphHandlers.HandleGetProcessGraphs(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 	case rpc.RemoveProcessGraphPayloadType:
-		server.handleRemoveProcessGraphHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+		server.processgraphHandlers.HandleRemoveProcessGraph(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 	case rpc.RemoveAllProcessGraphsPayloadType:
-		server.handleRemoveAllProcessGraphsHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+		server.processgraphHandlers.HandleRemoveAllProcessGraphs(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 	case rpc.AddChildPayloadType:
-		server.handleAddChildHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+		server.processgraphHandlers.HandleAddChild(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 
 	// Generators handlers
 	case rpc.AddGeneratorPayloadType:
-		server.handleAddGeneratorHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+		server.generatorHandlers.HandleAddGenerator(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 	case rpc.GetGeneratorPayloadType:
-		server.handleGetGeneratorHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+		server.generatorHandlers.HandleGetGenerator(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 	case rpc.ResolveGeneratorPayloadType:
-		server.handleResolveGeneratorHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+		server.generatorHandlers.HandleResolveGenerator(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 	case rpc.GetGeneratorsPayloadType:
-		server.handleGetGeneratorsHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+		server.generatorHandlers.HandleGetGenerators(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 	case rpc.PackGeneratorPayloadType:
-		server.handlePackGeneratorHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+		server.generatorHandlers.HandlePackGenerator(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 	case rpc.RemoveGeneratorPayloadType:
-		server.handleRemoveGeneratorHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+		server.generatorHandlers.HandleRemoveGenerator(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 
 	// Cron handlers
 	case rpc.AddCronPayloadType:
-		server.handleAddCronHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+		server.cronHandlers.HandleAddCron(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 	case rpc.GetCronPayloadType:
-		server.handleGetCronHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+		server.cronHandlers.HandleGetCron(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 	case rpc.GetCronsPayloadType:
-		server.handleGetCronsHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+		server.cronHandlers.HandleGetCrons(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 	case rpc.RunCronPayloadType:
-		server.handleRunCronHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+		server.cronHandlers.HandleRunCron(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 	case rpc.RemoveCronPayloadType:
-		server.handleRemoveCronHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+		server.cronHandlers.HandleRemoveCron(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 
 	// Server handlers
 	case rpc.GetStatisiticsPayloadType:
-		server.handleStatisticsHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+		server.serverHandlers.HandleStatistics(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 	case rpc.GetClusterPayloadType:
-		server.handleGetClusterHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+		server.serverHandlers.HandleGetCluster(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 
 	// Log handlers
 	case rpc.AddLogPayloadType:
-		server.handleAddLogHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+		server.logHandlers.HandleAddLog(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 	case rpc.GetLogsPayloadType:
-		server.handleGetLogsHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+		server.logHandlers.HandleGetLogs(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 	case rpc.SearchLogsPayloadType:
-		server.handleSearchLogsHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+		server.logHandlers.HandleSearchLogs(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 
 		// File handlers
 	case rpc.AddFilePayloadType:
-		server.handleAddFileHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+		server.fileHandlers.HandleAddFile(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 	case rpc.GetFilePayloadType:
-		server.handleGetFileHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+		server.fileHandlers.HandleGetFile(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 	case rpc.GetFilesPayloadType:
-		server.handleGetFilesHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+		server.fileHandlers.HandleGetFiles(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 	case rpc.GetFileLabelsPayloadType:
-		server.handleGetFileLabelsHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+		server.fileHandlers.HandleGetFileLabels(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 	case rpc.RemoveFilePayloadType:
-		server.handleRemoveFileHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+		server.fileHandlers.HandleRemoveFile(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 
 		// Snapshot handlers
 	case rpc.CreateSnapshotPayloadType:
-		server.handleCreateSnapshotHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+		server.snapshotHandlers.HandleCreateSnapshot(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 	case rpc.GetSnapshotPayloadType:
-		server.handleGetSnapshotHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+		server.snapshotHandlers.HandleGetSnapshot(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 	case rpc.GetSnapshotsPayloadType:
-		server.handleGetSnapshotsHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+		server.snapshotHandlers.HandleGetSnapshots(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 	case rpc.RemoveSnapshotPayloadType:
-		server.handleRemoveSnapshotHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+		server.snapshotHandlers.HandleRemoveSnapshot(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 	case rpc.RemoveAllSnapshotsPayloadType:
-		server.handleRemoveAllSnapshotsHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+		server.snapshotHandlers.HandleRemoveAllSnapshots(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 
 		// Security handlers
 	case rpc.ChangeUserIDPayloadType:
-		server.handleChangeUserIDHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+		server.securityHandlers.HandleChangeUserID(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 	case rpc.ChangeExecutorIDPayloadType:
-		server.handleChangeExecutorIDHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+		server.securityHandlers.HandleChangeExecutorID(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 	case rpc.ChangeColonyIDPayloadType:
-		server.handleChangeColonyIDHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+		server.securityHandlers.HandleChangeColonyID(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 	case rpc.ChangeServerIDPayloadType:
-		server.handleChangeServerIDHTTPRequest(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+		server.securityHandlers.HandleChangeServerID(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 
 	default:
 		errMsg := "invalid rpcMsg.PayloadType, " + rpcMsg.PayloadType
@@ -430,6 +485,10 @@ func (server *ColoniesServer) ServeForever() error {
 	}
 
 	return nil
+}
+
+func (server *ColoniesServer) FileDB() database.FileDatabase {
+	return server.fileDB
 }
 
 func (server *ColoniesServer) Shutdown() {

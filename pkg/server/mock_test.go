@@ -8,8 +8,11 @@ import (
 	"time"
 
 	"github.com/colonyos/colonies/pkg/cluster"
+	"github.com/colonyos/colonies/pkg/constants"
 	"github.com/colonyos/colonies/pkg/core"
 	"github.com/colonyos/colonies/pkg/rpc"
+	websockethandlers "github.com/colonyos/colonies/pkg/server/handlers/websocket"
+	servercommunication "github.com/colonyos/colonies/pkg/server/websocket"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 )
@@ -40,11 +43,11 @@ func setupFakeServer() (*ColoniesServer, *controllerMock, *validatorMock, *dbMoc
 }
 
 func createFakeColoniesController() (*coloniesController, *dbMock) {
-	node := cluster.Node{Name: "etcd", Host: "localhost", EtcdClientPort: 24100, EtcdPeerPort: 23100, RelayPort: 25100, APIPort: TESTPORT}
+	node := cluster.Node{Name: "etcd", Host: "localhost", EtcdClientPort: 24100, EtcdPeerPort: 23100, RelayPort: 25100, APIPort: constants.TESTPORT}
 	clusterConfig := cluster.Config{}
 	clusterConfig.AddNode(node)
 	dbMock := &dbMock{}
-	return createColoniesController(dbMock, node, clusterConfig, "/tmp/colonies/etcd", GENERATOR_TRIGGER_PERIOD, CRON_TRIGGER_PERIOD, false, -1, 500), dbMock
+	return createColoniesController(dbMock, node, clusterConfig, "/tmp/colonies/etcd", constants.GENERATOR_TRIGGER_PERIOD, constants.CRON_TRIGGER_PERIOD, false, -1, 500), dbMock
 }
 
 // controllerMock
@@ -65,7 +68,7 @@ func (v *controllerMock) getEtcdServer() *cluster.EtcdServer {
 	return nil
 }
 
-func (v *controllerMock) getEventHandler() *eventHandler {
+func (v *controllerMock) getEventHandler() *servercommunication.EventHandler {
 	return nil
 }
 
@@ -73,11 +76,11 @@ func (v *controllerMock) getThisNode() cluster.Node {
 	return cluster.Node{}
 }
 
-func (v *controllerMock) subscribeProcesses(executorID string, subscription *subscription) error {
+func (v *controllerMock) subscribeProcesses(executorID string, subscription *websockethandlers.Subscription) error {
 	return nil
 }
 
-func (v *controllerMock) subscribeProcess(executorID string, subscription *subscription) error {
+func (v *controllerMock) subscribeProcess(executorID string, subscription *websockethandlers.Subscription) error {
 	return nil
 }
 
