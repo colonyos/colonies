@@ -10,8 +10,8 @@ import (
 
 	"github.com/colonyos/colonies/pkg/build"
 	"github.com/colonyos/colonies/pkg/client"
+	"github.com/colonyos/colonies/pkg/constants"
 	"github.com/colonyos/colonies/pkg/core"
-	"github.com/colonyos/colonies/pkg/server"
 	"github.com/colonyos/colonies/pkg/validate"
 	"github.com/gin-gonic/gin"
 	log "github.com/sirupsen/logrus"
@@ -218,7 +218,7 @@ func parseEnv() {
 		}
 		CheckError(err)
 	} else {
-		CronCheckerPeriod = server.CRON_TRIGGER_PERIOD
+		CronCheckerPeriod = constants.CRON_TRIGGER_PERIOD
 	}
 
 	GeneratorPeriodCheckerEnvStr := os.Getenv("COLONIES_GENERATOR_CHECKER_PERIOD")
@@ -229,7 +229,7 @@ func parseEnv() {
 		}
 		CheckError(err)
 	} else {
-		GeneratorCheckerPeriod = server.GENERATOR_TRIGGER_PERIOD
+		GeneratorCheckerPeriod = constants.GENERATOR_TRIGGER_PERIOD
 	}
 
 	ExclusiveAssignEnvStr := os.Getenv("COLONIES_EXCLUSIVE_ASSIGN")

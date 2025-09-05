@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/colonyos/colonies/pkg/core"
 	"github.com/colonyos/colonies/pkg/utils"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
@@ -35,6 +36,7 @@ func TestRetention(t *testing.T) {
 
 	process, err := client.Assign(colony.Name, -1, "", "", executorPrvKey)
 	assert.Nil(t, err)
+	assert.NotNil(t, process)
 
 	err = client.Close(process.ID, executorPrvKey)
 	assert.Nil(t, err)
@@ -51,4 +53,18 @@ func TestRetention(t *testing.T) {
 
 	server.Shutdown()
 	<-done
+}
+
+// generateSingleWorkflowSpec creates a simple workflow spec with a single task for testing
+func generateSingleWorkflowSpec(colonyName string) *core.WorkflowSpec {
+	workflowSpec := core.CreateWorkflowSpec(colonyName)
+
+	funcSpec := core.CreateEmptyFunctionSpec()
+	funcSpec.NodeName = "task1"
+	funcSpec.Conditions.ColonyName = colonyName
+	funcSpec.Conditions.ExecutorType = "test_executor_type"
+
+	workflowSpec.AddFunctionSpec(funcSpec)
+
+	return workflowSpec
 }

@@ -3,6 +3,7 @@ package server
 import (
 	"time"
 
+	"github.com/colonyos/colonies/pkg/constants"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -32,7 +33,7 @@ func (controller *coloniesController) tryBecomeLeader() bool {
 
 func (controller *coloniesController) timeoutLoop() {
 	for {
-		time.Sleep(RELEASE_PERIOD * time.Second)
+		time.Sleep(constants.RELEASE_PERIOD * time.Second)
 
 		controller.stopMutex.Lock()
 		if controller.stopFlag {

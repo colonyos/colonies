@@ -9,9 +9,12 @@ import (
 	"time"
 
 	"github.com/colonyos/colonies/pkg/cluster"
+	"github.com/colonyos/colonies/pkg/constants"
 	"github.com/colonyos/colonies/pkg/core"
 	"github.com/colonyos/colonies/pkg/database"
 	"github.com/colonyos/colonies/pkg/scheduler"
+	websockethandlers "github.com/colonyos/colonies/pkg/server/handlers/websocket"
+	servercommunication "github.com/colonyos/colonies/pkg/server/websocket"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -100,9 +103,9 @@ type coloniesController struct {
 	cmdQueue         chan *command
 	blockingCmdQueue chan *command
 	scheduler        *scheduler.Scheduler
-	wsSubCtrl        *wsSubscriptionController
+	wsSubCtrl        *websockethandlers.WSSubscriptionController
 	relayServer      *cluster.RelayServer
-	eventHandler     *eventHandler
+	eventHandler     *servercommunication.EventHandler
 	stopFlag         bool
 	stopMutex        sync.Mutex
 	leaderMutex      sync.Mutex
@@ -160,8 +163,8 @@ func createColoniesController(db database.Database,
 	controller.pauseChannels = make(map[string][]chan bool)
 
 	controller.relayServer = cluster.CreateRelayServer(controller.thisNode, controller.clusterConfig)
-	controller.eventHandler = createEventHandler(controller.relayServer)
-	controller.wsSubCtrl = createWSSubscriptionController(controller.eventHandler)
+	controller.eventHandler = servercommunication.CreateEventHandler(controller.relayServer)
+	controller.wsSubCtrl = websockethandlers.CreateWSSubscriptionController(controller.eventHandler)
 	controller.scheduler = scheduler.CreateScheduler(controller.processDB)
 
 	controller.cmdQueue = make(chan *command)
@@ -190,7 +193,7 @@ func (controller *coloniesController) getEtcdServer() *cluster.EtcdServer {
 	return controller.etcdServer
 }
 
-func (controller *coloniesController) getEventHandler() *eventHandler {
+func (controller *coloniesController) getEventHandler() *servercommunication.EventHandler {
 	return controller.eventHandler
 }
 
@@ -198,10 +201,10 @@ func (controller *coloniesController) getThisNode() cluster.Node {
 	return controller.thisNode
 }
 
-func (controller *coloniesController) subscribeProcesses(executorID string, subscription *subscription) error {
+func (controller *coloniesController) subscribeProcesses(executorID string, subscription *websockethandlers.Subscription) error {
 	cmd := &command{threaded: false, errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
-			controller.wsSubCtrl.addProcessesSubscriber(executorID, subscription)
+			controller.wsSubCtrl.AddProcessesSubscriber(executorID, subscription)
 			cmd.errorChan <- nil
 		}}
 	controller.blockingCmdQueue <- cmd
@@ -209,20 +212,20 @@ func (controller *coloniesController) subscribeProcesses(executorID string, subs
 	return <-cmd.errorChan
 }
 
-func (controller *coloniesController) subscribeProcess(executorID string, subscription *subscription) error {
+func (controller *coloniesController) subscribeProcess(executorID string, subscription *websockethandlers.Subscription) error {
 	cmd := &command{threaded: false, errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
-			process, err := controller.processDB.GetProcessByID(subscription.processID)
+			process, err := controller.processDB.GetProcessByID(subscription.ProcessID)
 			if err != nil {
 				cmd.errorChan <- err
 				return
 			}
 			if process == nil {
-				cmd.errorChan <- errors.New("Invalid process with Id " + subscription.processID)
+				cmd.errorChan <- errors.New("Invalid process with Id " + subscription.ProcessID)
 				return
 			}
 
-			controller.wsSubCtrl.addProcessSubscriber(executorID, process, subscription)
+			controller.wsSubCtrl.AddProcessSubscriber(executorID, process, subscription)
 			cmd.errorChan <- nil
 		}}
 	controller.blockingCmdQueue <- cmd
@@ -441,7 +444,7 @@ func (controller *coloniesController) addProcess(process *core.Process) (*core.P
 			}
 
 			if !addedProcess.WaitForParents {
-				controller.eventHandler.signal(addedProcess)
+				controller.eventHandler.Signal(addedProcess)
 			}
 			cmd.processReplyChan <- addedProcess
 		}}
@@ -533,7 +536,7 @@ func (controller *coloniesController) addChild(
 			}
 
 			if !addedProcess.WaitForParents {
-				controller.eventHandler.signal(addedProcess)
+				controller.eventHandler.Signal(addedProcess)
 			}
 
 			updatedProcess, err := controller.processDB.GetProcessByID(addedProcess.ID)
@@ -727,7 +730,7 @@ func (controller *coloniesController) createProcessGraph(workflowSpec *core.Work
 			return nil, errors.New(msg)
 		}
 		if !addedProcess.WaitForParents {
-			controller.eventHandler.signal(addedProcess)
+			controller.eventHandler.Signal(addedProcess)
 		}
 	}
 
@@ -791,8 +794,8 @@ func (controller *coloniesController) findWaitingProcessGraphs(colonyName string
 	cmd := &command{threaded: true, processGraphsReplyChan: make(chan []*core.ProcessGraph),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
-			if count > MAX_COUNT {
-				cmd.errorChan <- errors.New("Count is larger than MaxCount limit <" + strconv.Itoa(MAX_COUNT) + ">")
+			if count > constants.MAX_COUNT {
+				cmd.errorChan <- errors.New("Count is larger than MaxCount limit <" + strconv.Itoa(constants.MAX_COUNT) + ">")
 				return
 			}
 			graphs, err := controller.processGraphDB.FindWaitingProcessGraphs(colonyName, count)
@@ -825,8 +828,8 @@ func (controller *coloniesController) findRunningProcessGraphs(colonyName string
 	cmd := &command{threaded: true, processGraphsReplyChan: make(chan []*core.ProcessGraph),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
-			if count > MAX_COUNT {
-				cmd.errorChan <- errors.New("Count is larger than MaxCount limit <" + strconv.Itoa(MAX_COUNT) + ">")
+			if count > constants.MAX_COUNT {
+				cmd.errorChan <- errors.New("Count is larger than MaxCount limit <" + strconv.Itoa(constants.MAX_COUNT) + ">")
 				return
 			}
 			graphs, err := controller.processGraphDB.FindRunningProcessGraphs(colonyName, count)
@@ -858,8 +861,8 @@ func (controller *coloniesController) findSuccessfulProcessGraphs(colonyName str
 	cmd := &command{threaded: true, processGraphsReplyChan: make(chan []*core.ProcessGraph),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
-			if count > MAX_COUNT {
-				cmd.errorChan <- errors.New("Count is larger than MaxCount limit <" + strconv.Itoa(MAX_COUNT) + ">")
+			if count > constants.MAX_COUNT {
+				cmd.errorChan <- errors.New("Count is larger than MaxCount limit <" + strconv.Itoa(constants.MAX_COUNT) + ">")
 				return
 			}
 			graphs, err := controller.processGraphDB.FindSuccessfulProcessGraphs(colonyName, count)
@@ -891,8 +894,8 @@ func (controller *coloniesController) findFailedProcessGraphs(colonyName string,
 	cmd := &command{threaded: true, processGraphsReplyChan: make(chan []*core.ProcessGraph),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
-			if count > MAX_COUNT {
-				cmd.errorChan <- errors.New("Count is larger than MaxCount limit <" + strconv.Itoa(MAX_COUNT) + ">")
+			if count > constants.MAX_COUNT {
+				cmd.errorChan <- errors.New("Count is larger than MaxCount limit <" + strconv.Itoa(constants.MAX_COUNT) + ">")
 				return
 			}
 			graphs, err := controller.processGraphDB.FindFailedProcessGraphs(colonyName, count)
@@ -1125,7 +1128,7 @@ func (controller *coloniesController) closeSuccessful(processID string, executor
 					avgExecTime)
 			}
 
-			controller.eventHandler.signal(process)
+			controller.eventHandler.Signal(process)
 			cmd.errorChan <- nil
 		}}
 
@@ -1153,7 +1156,7 @@ func (controller *coloniesController) notifyChildren(process *core.Process) erro
 			if err != nil {
 				return err
 			}
-			controller.eventHandler.signal(childProcess)
+			controller.eventHandler.Signal(childProcess)
 		}
 	}
 
@@ -1201,7 +1204,7 @@ func (controller *coloniesController) closeFailed(processID string, errs []strin
 
 			process.State = core.FAILED
 
-			controller.eventHandler.signal(process)
+			controller.eventHandler.Signal(process)
 			cmd.errorChan <- nil
 		}}
 
@@ -1375,7 +1378,7 @@ func (controller *coloniesController) unassignExecutor(processID string) error {
 			}
 
 			cmd.errorChan <- controller.processDB.Unassign(process)
-			controller.eventHandler.signal(process)
+			controller.eventHandler.Signal(process)
 		}}
 
 	controller.cmdQueue <- cmd
@@ -1392,7 +1395,7 @@ func (controller *coloniesController) resetProcess(processID string) error {
 			}
 
 			cmd.errorChan <- controller.processDB.ResetProcess(process)
-			controller.eventHandler.signal(process)
+			controller.eventHandler.Signal(process)
 		}}
 
 	controller.cmdQueue <- cmd
@@ -1770,7 +1773,7 @@ func (controller *coloniesController) stop() {
 	controller.stopFlag = true
 	controller.stopMutex.Unlock()
 	controller.cmdQueue <- &command{stop: true}
-	controller.eventHandler.stop()
+	controller.eventHandler.Stop()
 	controller.relayServer.Shutdown()
 	controller.etcdServer.Stop()
 	controller.etcdServer.WaitToStop()

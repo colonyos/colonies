@@ -12,6 +12,7 @@ import (
 
 	"github.com/colonyos/colonies/pkg/client"
 	"github.com/colonyos/colonies/pkg/cluster"
+	"github.com/colonyos/colonies/pkg/constants"
 	"github.com/colonyos/colonies/pkg/core"
 	"github.com/colonyos/colonies/pkg/database"
 	"github.com/colonyos/colonies/pkg/database/postgresql"
@@ -22,6 +23,21 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 )
+
+type TestEnv1 struct {
+	Colony1PrvKey   string
+	Colony1Name     string
+	Colony1ID       string
+	Colony2PrvKey   string
+	Colony2Name     string
+	Colony2ID       string
+	Executor1PrvKey string
+	Executor1Name   string
+	Executor1ID     string
+	Executor2PrvKey string
+	Executor2Name   string
+	Executor2ID     string
+}
 
 type testEnv1 struct {
 	colony1PrvKey   string
@@ -38,6 +54,17 @@ type testEnv1 struct {
 	executor2ID     string
 }
 
+type TestEnv2 struct {
+	ColonyID       string
+	ColonyName     string
+	Colony         *core.Colony
+	ColonyPrvKey   string
+	ExecutorName   string
+	ExecutorID     string
+	Executor       *core.Executor
+	ExecutorPrvKey string
+}
+
 type testEnv2 struct {
 	colonyID       string
 	colonyName     string
@@ -49,9 +76,27 @@ type testEnv2 struct {
 	executorPrvKey string
 }
 
-const EnableTLS = true
-const Insecure = false
-const SkipTLSVerify = true
+const EnableTLS = false
+const Insecure = true
+const SkipTLSVerify = false
+
+func SetupTestEnv1(t *testing.T) (*TestEnv1, *client.ColoniesClient, *ColoniesServer, string, chan bool) {
+	env, client, server, serverPrvKey, done := setupTestEnv1(t)
+	return &TestEnv1{
+		Colony1PrvKey:   env.colony1PrvKey,
+		Colony1Name:     env.colony1Name,
+		Colony1ID:       env.colony1ID,
+		Colony2PrvKey:   env.colony2PrvKey,
+		Colony2Name:     env.colony2Name,
+		Colony2ID:       env.colony2ID,
+		Executor1PrvKey: env.executor1PrvKey,
+		Executor1Name:   env.executor1Name,
+		Executor1ID:     env.executor1ID,
+		Executor2PrvKey: env.executor2PrvKey,
+		Executor2Name:   env.executor2Name,
+		Executor2ID:     env.executor2ID,
+	}, client, server, serverPrvKey, done
+}
 
 func setupTestEnv1(t *testing.T) (*testEnv1, *client.ColoniesClient, *ColoniesServer, string, chan bool) {
 	rand.Seed(time.Now().UTC().UnixNano())
@@ -137,6 +182,20 @@ func setupTestEnv2(t *testing.T) (*testEnv2, *client.ColoniesClient, *ColoniesSe
 	return env, client, server, serverPrvKey, done
 }
 
+func SetupTestEnv2(t *testing.T) (*TestEnv2, *client.ColoniesClient, *ColoniesServer, string, chan bool) {
+	env, client, server, serverPrvKey, done := setupTestEnv2(t)
+	return &TestEnv2{
+		ColonyID:       env.colonyID,
+		ColonyName:     env.colonyName,
+		Colony:         env.colony,
+		ColonyPrvKey:   env.colonyPrvKey,
+		ExecutorName:   env.executorName,
+		ExecutorID:     env.executorID,
+		Executor:       env.executor,
+		ExecutorPrvKey: env.executorPrvKey,
+	}, client, server, serverPrvKey, done
+}
+
 func PrepareTests(t *testing.T) (*client.ColoniesClient, *ColoniesServer, string, chan bool) {
 	return prepareTests(t)
 }
@@ -147,7 +206,7 @@ func prepareTests(t *testing.T) (*client.ColoniesClient, *ColoniesServer, string
 
 func prepareTestsWithRetention(t *testing.T, retention bool) (*client.ColoniesClient, *ColoniesServer, string, chan bool) {
 	os.RemoveAll("/tmp/colonies")
-	client := client.CreateColoniesClient(TESTHOST, TESTPORT, Insecure, SkipTLSVerify)
+	client := client.CreateColoniesClient(constants.TESTHOST, constants.TESTPORT, Insecure, SkipTLSVerify)
 
 	db, err := postgresql.PrepareTests()
 	assert.Nil(t, err)
@@ -161,10 +220,10 @@ func prepareTestsWithRetention(t *testing.T, retention bool) (*client.ColoniesCl
 	err = db.SetServerID("", serverID)
 	assert.Nil(t, err)
 
-	node := cluster.Node{Name: "etcd", Host: "localhost", EtcdClientPort: 24100, EtcdPeerPort: 23100, RelayPort: 25100, APIPort: TESTPORT}
+	node := cluster.Node{Name: "etcd", Host: "localhost", EtcdClientPort: 24100, EtcdPeerPort: 23100, RelayPort: 25100, APIPort: constants.TESTPORT}
 	clusterConfig := cluster.Config{}
 	clusterConfig.AddNode(node)
-	server := CreateColoniesServer(db, TESTPORT, EnableTLS, "../../cert/key.pem", "../../cert/cert.pem", node, clusterConfig, "/tmp/colonies/etcd", GENERATOR_TRIGGER_PERIOD, CRON_TRIGGER_PERIOD, true, false, retention, 1, 500)
+	server := CreateColoniesServer(db, constants.TESTPORT, EnableTLS, "", "", node, clusterConfig, "/tmp/colonies/etcd", constants.GENERATOR_TRIGGER_PERIOD, constants.CRON_TRIGGER_PERIOD, true, false, retention, 1, 500)
 
 	done := make(chan bool)
 	go func() {
@@ -177,20 +236,20 @@ func prepareTestsWithRetention(t *testing.T, retention bool) (*client.ColoniesCl
 }
 
 func createTestColoniesController(db database.Database) *coloniesController {
-	node := cluster.Node{Name: "etcd", Host: "localhost", EtcdClientPort: 24100, EtcdPeerPort: 23100, RelayPort: 25100, APIPort: TESTPORT}
+	node := cluster.Node{Name: "etcd", Host: "localhost", EtcdClientPort: 24100, EtcdPeerPort: 23100, RelayPort: 25100, APIPort: constants.TESTPORT}
 	clusterConfig := cluster.Config{}
 	clusterConfig.AddNode(node)
-	return createColoniesController(db, node, clusterConfig, "/tmp/colonies/etcd", GENERATOR_TRIGGER_PERIOD, CRON_TRIGGER_PERIOD, false, -1, 500)
+	return createColoniesController(db, node, clusterConfig, "/tmp/colonies/etcd", constants.GENERATOR_TRIGGER_PERIOD, constants.CRON_TRIGGER_PERIOD, false, -1, 500)
 }
 
 func createTestColoniesController2(db database.Database) *coloniesController {
-	node := cluster.Node{Name: "etcd2", Host: "localhost", EtcdClientPort: 26100, EtcdPeerPort: 27100, RelayPort: 28100, APIPort: TESTPORT}
+	node := cluster.Node{Name: "etcd2", Host: "localhost", EtcdClientPort: 26100, EtcdPeerPort: 27100, RelayPort: 28100, APIPort: constants.TESTPORT}
 	clusterConfig := cluster.Config{}
 	clusterConfig.AddNode(node)
-	return createColoniesController(db, node, clusterConfig, "/tmp/colonies/etcd", GENERATOR_TRIGGER_PERIOD, CRON_TRIGGER_PERIOD, false, -1, 500)
+	return createColoniesController(db, node, clusterConfig, "/tmp/colonies/etcd", constants.GENERATOR_TRIGGER_PERIOD, constants.CRON_TRIGGER_PERIOD, false, -1, 500)
 }
 
-func generateDiamondtWorkflowSpec(colonyName string) *core.WorkflowSpec {
+func GenerateDiamondtWorkflowSpec(colonyName string) *core.WorkflowSpec {
 	//         task1
 	//          / \
 	//     task2   task3
@@ -232,7 +291,7 @@ func generateDiamondtWorkflowSpec(colonyName string) *core.WorkflowSpec {
 	return workflowSpec
 }
 
-func generateTreeWorkflowSpec(colonyName string) *core.WorkflowSpec {
+func GenerateTreeWorkflowSpec(colonyName string) *core.WorkflowSpec {
 	//         task1
 	//          / \
 	//     task2   task3
@@ -264,7 +323,7 @@ func generateTreeWorkflowSpec(colonyName string) *core.WorkflowSpec {
 	return workflowSpec
 }
 
-func generateSingleWorkflowSpec(colonyName string) *core.WorkflowSpec {
+func GenerateSingleWorkflowSpec(colonyName string) *core.WorkflowSpec {
 	workflowSpec := core.CreateWorkflowSpec(colonyName)
 	funcSpec1 := core.CreateEmptyFunctionSpec()
 	funcSpec1.NodeName = "task1"
@@ -276,13 +335,13 @@ func generateSingleWorkflowSpec(colonyName string) *core.WorkflowSpec {
 	return workflowSpec
 }
 
-func waitForProcesses(t *testing.T, server *ColoniesServer, processes []*core.Process, state int) {
+func WaitForProcesses(t *testing.T, server *ColoniesServer, processes []*core.Process, state int) {
 	ctx, cancelCtx := context.WithTimeout(context.Background(), 200*time.Second)
 	defer cancelCtx()
 	wait := make(chan error)
 	for _, process := range processes {
 		go func(process *core.Process) {
-			_, err := server.controller.getEventHandler().waitForProcess(process.FunctionSpec.Conditions.ExecutorType, state, process.ID, ctx)
+			_, err := server.controller.getEventHandler().WaitForProcess(process.FunctionSpec.Conditions.ExecutorType, state, process.ID, ctx)
 			wait <- err
 		}(process)
 	}
@@ -339,7 +398,7 @@ func StartCluster(t *testing.T, db database.Database, size int) []ServerInfo {
 	for i, node := range clusterConfig.Nodes {
 		go func(i int, node cluster.Node) {
 			log.WithFields(log.Fields{"APIPort": node.APIPort}).Info("Starting ColoniesServer")
-			server := CreateColoniesServer(db, node.APIPort, false, "", "", node, clusterConfig, "/tmp/colonies/etcd"+strconv.Itoa(i), GENERATOR_TRIGGER_PERIOD, CRON_TRIGGER_PERIOD, true, false, false, -1, 500)
+			server := CreateColoniesServer(db, node.APIPort, false, "", "", node, clusterConfig, "/tmp/colonies/etcd"+strconv.Itoa(i), constants.GENERATOR_TRIGGER_PERIOD, constants.CRON_TRIGGER_PERIOD, true, false, false, -1, 500)
 			done := make(chan struct{})
 			s := ServerInfo{ServerID: serverID, ServerPrvKey: serverPrvKey, Server: server, Node: node, Done: done}
 			go func(i int) {
