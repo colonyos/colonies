@@ -16,6 +16,7 @@ import (
 	"github.com/colonyos/colonies/pkg/security"
 	"github.com/colonyos/colonies/pkg/security/crypto"
 	"github.com/colonyos/colonies/pkg/security/validator"
+	"github.com/colonyos/colonies/pkg/server/controllers"
 	attributehandlers "github.com/colonyos/colonies/pkg/server/handlers/attribute"
 	cronhandlers "github.com/colonyos/colonies/pkg/server/handlers/cron"
 	filehandlers "github.com/colonyos/colonies/pkg/server/handlers/file"
@@ -39,7 +40,7 @@ import (
 
 type ColoniesServer struct {
 	ginHandler              *gin.Engine
-	controller              controller
+	controller              controllers.Controller
 	serverID                string
 	tls                     bool
 	tlsPrivateKeyPath       string
@@ -126,7 +127,7 @@ func CreateColoniesServer(db database.Database,
 	}
 
 	server.httpServer = httpServer
-	server.controller = createColoniesController(db, thisNode, clusterConfig, etcdDataPath, generatorPeriod, cronPeriod, retention, retentionPolicy, retentionPeriod)
+	server.controller = controllers.CreateColoniesController(db, thisNode, clusterConfig, etcdDataPath, generatorPeriod, cronPeriod, retention, retentionPolicy, retentionPeriod)
 
 	server.tls = tls
 	server.port = port
@@ -492,7 +493,7 @@ func (server *ColoniesServer) FileDB() database.FileDatabase {
 }
 
 func (server *ColoniesServer) Shutdown() {
-	server.controller.stop()
+	server.controller.Stop()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()

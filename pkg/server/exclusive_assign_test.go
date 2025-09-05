@@ -25,9 +25,9 @@ func TestExclusiveAssign(t *testing.T) {
 	WaitForCluster(t, runningCluster)
 	log.Info("Cluster ready")
 
-	isServer0Leader := runningCluster[0].Server.controller.isLeader()
-	isServer1Leader := runningCluster[1].Server.controller.isLeader()
-	isServer2Leader := runningCluster[2].Server.controller.isLeader()
+	isServer0Leader := runningCluster[0].Server.controller.IsLeader()
+	isServer1Leader := runningCluster[1].Server.controller.IsLeader()
+	isServer2Leader := runningCluster[2].Server.controller.IsLeader()
 
 	testServerIndex := 0
 	if isServer0Leader {
@@ -42,8 +42,8 @@ func TestExclusiveAssign(t *testing.T) {
 	}
 
 	testServer := runningCluster[testServerIndex].Server
-	host := testServer.controller.getThisNode().Host
-	apiPort := testServer.controller.getThisNode().APIPort
+	host := testServer.controller.GetThisNode().Host
+	apiPort := testServer.controller.GetThisNode().APIPort
 
 	client := client.CreateColoniesClient(host, apiPort, true, true)
 

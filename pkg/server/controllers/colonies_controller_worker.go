@@ -1,4 +1,4 @@
-package server
+package controllers
 
 import (
 	"time"
@@ -7,7 +7,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func (controller *coloniesController) isLeader() bool {
+func (controller *ColoniesController) IsLeader() bool {
 	areWeLeader := controller.etcdServer.Leader() == controller.thisNode.Name
 	if areWeLeader && !controller.leader {
 		log.WithFields(log.Fields{"EtcdNode": controller.thisNode.Name}).Debug("ColoniesServer became leader")
@@ -22,16 +22,16 @@ func (controller *coloniesController) isLeader() bool {
 	return areWeLeader
 }
 
-func (controller *coloniesController) tryBecomeLeader() bool {
+func (controller *ColoniesController) TryBecomeLeader() bool {
 	var isLeader bool
 	controller.leaderMutex.Lock()
-	isLeader = controller.isLeader()
+	isLeader = controller.IsLeader()
 	controller.leaderMutex.Unlock()
 
 	return isLeader
 }
 
-func (controller *coloniesController) timeoutLoop() {
+func (controller *ColoniesController) TimeoutLoop() {
 	for {
 		time.Sleep(constants.RELEASE_PERIOD * time.Second)
 
@@ -52,7 +52,7 @@ func (controller *coloniesController) timeoutLoop() {
 			}
 			if time.Now().Unix() > process.ExecDeadline.Unix() {
 				if process.Retries >= process.FunctionSpec.MaxRetries && process.FunctionSpec.MaxRetries > -1 {
-					err := controller.closeFailed(process.ID, []string{"Maximum execution time limit exceeded"})
+					err := controller.CloseFailed(process.ID, []string{"Maximum execution time limit exceeded"})
 					if err != nil {
 						log.WithFields(log.Fields{"ProcessId": process.ID, "Error": err}).Debug("Max retries reached, but failed to close process")
 						continue
@@ -61,7 +61,7 @@ func (controller *coloniesController) timeoutLoop() {
 					continue
 				}
 
-				err := controller.unassignExecutor(process.ID)
+				err := controller.UnassignExecutor(process.ID)
 				if err != nil {
 					log.WithFields(log.Fields{"ProcessId": process.ID, "Error": err}).Error("Failed to unassign process")
 				}
@@ -81,7 +81,7 @@ func (controller *coloniesController) timeoutLoop() {
 			}
 
 			if time.Now().Unix() > process.WaitDeadline.Unix() {
-				err := controller.closeFailed(process.ID, []string{"Maximum waiting time limit exceeded"})
+				err := controller.CloseFailed(process.ID, []string{"Maximum waiting time limit exceeded"})
 				if err != nil {
 					log.WithFields(log.Fields{"ProcessId": process.ID, "Error": err}).Debug("Max waiting time reached, but failed to close process")
 					continue
@@ -92,7 +92,7 @@ func (controller *coloniesController) timeoutLoop() {
 	}
 }
 
-func (controller *coloniesController) blockingCmdQueueWorker() {
+func (controller *ColoniesController) BlockingCmdQueueWorker() {
 	for {
 		select {
 		case cmd := <-controller.blockingCmdQueue:
@@ -110,9 +110,9 @@ func (controller *coloniesController) blockingCmdQueueWorker() {
 	}
 }
 
-func (controller *coloniesController) retentionWorker() {
+func (controller *ColoniesController) RetentionWorker() {
 	for {
-		isLeader := controller.tryBecomeLeader()
+		isLeader := controller.TryBecomeLeader()
 
 		if isLeader && controller.retention {
 			log.Debug("Appling retention policy")
@@ -123,7 +123,7 @@ func (controller *coloniesController) retentionWorker() {
 	}
 }
 
-func (controller *coloniesController) cmdQueueWorker() {
+func (controller *ColoniesController) CmdQueueWorker() {
 	for {
 		select {
 		case cmd := <-controller.cmdQueue:
