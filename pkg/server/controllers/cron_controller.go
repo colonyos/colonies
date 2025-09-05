@@ -1,4 +1,4 @@
-package server
+package controllers
 
 import (
 	"time"
@@ -8,7 +8,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func (controller *coloniesController) addCron(cron *core.Cron) (*core.Cron, error) {
+func (controller *ColoniesController) AddCron(cron *core.Cron) (*core.Cron, error) {
 	cmd := &command{cronReplyChan: make(chan *core.Cron, 1),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
@@ -34,7 +34,7 @@ func (controller *coloniesController) addCron(cron *core.Cron) (*core.Cron, erro
 	}
 }
 
-func (controller *coloniesController) removeGenerator(generatorID string) error {
+func (controller *ColoniesController) RemoveGenerator(generatorID string) error {
 	cmd := &command{errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
 			cmd.errorChan <- controller.generatorDB.RemoveGeneratorByID(generatorID)
@@ -44,7 +44,7 @@ func (controller *coloniesController) removeGenerator(generatorID string) error 
 	return <-cmd.errorChan
 }
 
-func (controller *coloniesController) getCron(cronID string) (*core.Cron, error) {
+func (controller *ColoniesController) GetCron(cronID string) (*core.Cron, error) {
 	cmd := &command{cronReplyChan: make(chan *core.Cron, 1),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
@@ -65,7 +65,7 @@ func (controller *coloniesController) getCron(cronID string) (*core.Cron, error)
 	}
 }
 
-func (controller *coloniesController) getCrons(colonyName string, count int) ([]*core.Cron, error) {
+func (controller *ColoniesController) GetCrons(colonyName string, count int) ([]*core.Cron, error) {
 	cmd := &command{cronsReplyChan: make(chan []*core.Cron, 1),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
@@ -86,7 +86,7 @@ func (controller *coloniesController) getCrons(colonyName string, count int) ([]
 	}
 }
 
-func (controller *coloniesController) runCron(cronID string) (*core.Cron, error) {
+func (controller *ColoniesController) RunCron(cronID string) (*core.Cron, error) {
 	cmd := &command{cronReplyChan: make(chan *core.Cron, 1),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
@@ -95,7 +95,7 @@ func (controller *coloniesController) runCron(cronID string) (*core.Cron, error)
 				cmd.errorChan <- err
 				return
 			}
-			controller.startCron(cron)
+			controller.StartCron(cron)
 			cmd.cronReplyChan <- cron
 		}}
 
@@ -108,7 +108,7 @@ func (controller *coloniesController) runCron(cronID string) (*core.Cron, error)
 	}
 }
 
-func (controller *coloniesController) removeCron(cronID string) error {
+func (controller *ColoniesController) RemoveCron(cronID string) error {
 	cmd := &command{errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
 			err := controller.cronDB.RemoveCronByID(cronID)
@@ -119,7 +119,7 @@ func (controller *coloniesController) removeCron(cronID string) error {
 	return <-cmd.errorChan
 }
 
-func (controller *coloniesController) calcNextRun(cron *core.Cron) time.Time {
+func (controller *ColoniesController) CalcNextRun(cron *core.Cron) time.Time {
 	nextRun := time.Time{}
 	var err error
 	if cron.Interval > 0 {
@@ -142,7 +142,7 @@ func (controller *coloniesController) calcNextRun(cron *core.Cron) time.Time {
 	return nextRun
 }
 
-func (controller *coloniesController) startCron(cron *core.Cron) {
+func (controller *ColoniesController) StartCron(cron *core.Cron) {
 	workflowSpec, err := core.ConvertJSONToWorkflowSpec(cron.WorkflowSpec)
 	if err != nil {
 		log.WithFields(log.Fields{"Error": err}).Error("Failed to parsing WorkflowSpec")
@@ -155,7 +155,7 @@ func (controller *coloniesController) startCron(cron *core.Cron) {
 	if cron.PrevProcessGraphID != "" {
 		processGraph, err := controller.processGraphDB.GetProcessGraphByID(cron.PrevProcessGraphID)
 		if err == nil && processGraph != nil {
-			processGraph.SetStorage(controller.getProcessGraphStorage())
+			processGraph.SetStorage(controller.GetProcessGraphStorage())
 			leafIDs, err := processGraph.Leaves()
 			if err == nil {
 				for _, leafID := range leafIDs {
@@ -169,17 +169,17 @@ func (controller *coloniesController) startCron(cron *core.Cron) {
 		}
 	}
 
-	processGraph, err := controller.createProcessGraph(workflowSpec, make([]interface{}, 0), make(map[string]interface{}), rootInput, cron.InitiatorID)
+	processGraph, err := controller.CreateProcessGraph(workflowSpec, make([]interface{}, 0), make(map[string]interface{}), rootInput, cron.InitiatorID)
 	if err != nil {
 		log.WithFields(log.Fields{"Error": err, "CronId": cron.ID}).Error("Failed to create cron processgraph")
 		return
 	}
 
-	nextRun := controller.calcNextRun(cron)
+	nextRun := controller.CalcNextRun(cron)
 	controller.cronDB.UpdateCron(cron.ID, nextRun, time.Now(), processGraph.ID)
 }
 
-func (controller *coloniesController) triggerCrons() {
+func (controller *ColoniesController) TriggerCrons() {
 	cmd := &command{handler: func(cmd *command) {
 		crons, err := controller.cronDB.FindAllCrons()
 		if err != nil {
@@ -189,7 +189,7 @@ func (controller *coloniesController) triggerCrons() {
 		for _, cron := range crons {
 			t := time.Time{}
 			if t.Unix() == cron.NextRun.Unix() { // This if-statement will be true the first time the cron is evaluted
-				nextRun := controller.calcNextRun(cron)
+				nextRun := controller.CalcNextRun(cron)
 				controller.cronDB.UpdateCron(cron.ID, nextRun, time.Time{}, "")
 				cron.NextRun = nextRun
 				continue
@@ -201,17 +201,17 @@ func (controller *coloniesController) triggerCrons() {
 					continue
 				}
 				if processgraph == nil {
-					controller.startCron(cron)
+					controller.StartCron(cron)
 					continue
 				}
 				if cron.WaitForPrevProcessGraph {
 					if processgraph.State == core.SUCCESS || processgraph.State == core.FAILED {
 						log.WithFields(log.Fields{"CronId": cron.ID}).Debug("Triggering cron workflow")
-						controller.startCron(cron)
+						controller.StartCron(cron)
 					}
 				} else {
 					log.WithFields(log.Fields{"CronId": cron.ID}).Debug("Triggering cron workflow")
-					controller.startCron(cron)
+					controller.StartCron(cron)
 				}
 			}
 		}
@@ -220,7 +220,7 @@ func (controller *coloniesController) triggerCrons() {
 	controller.cmdQueue <- cmd
 }
 
-func (controller *coloniesController) cronTriggerLoop() {
+func (controller *ColoniesController) CronTriggerLoop() {
 	for {
 		time.Sleep(time.Duration(controller.cronPeriod) * time.Millisecond)
 
@@ -230,9 +230,9 @@ func (controller *coloniesController) cronTriggerLoop() {
 		}
 		controller.stopMutex.Unlock()
 
-		isLeader := controller.tryBecomeLeader()
+		isLeader := controller.TryBecomeLeader()
 		if isLeader {
-			controller.triggerCrons()
+			controller.TriggerCrons()
 		}
 	}
 }

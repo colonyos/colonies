@@ -18,6 +18,7 @@ import (
 	"github.com/colonyos/colonies/pkg/database/postgresql"
 	"github.com/colonyos/colonies/pkg/rpc"
 	"github.com/colonyos/colonies/pkg/security/crypto"
+	"github.com/colonyos/colonies/pkg/server/controllers"
 	"github.com/colonyos/colonies/pkg/utils"
 	"github.com/gin-gonic/gin"
 	log "github.com/sirupsen/logrus"
@@ -235,18 +236,18 @@ func prepareTestsWithRetention(t *testing.T, retention bool) (*client.ColoniesCl
 	return client, server, serverPrvKey, done
 }
 
-func createTestColoniesController(db database.Database) *coloniesController {
+func createTestColoniesController(db database.Database) *controllers.ColoniesController {
 	node := cluster.Node{Name: "etcd", Host: "localhost", EtcdClientPort: 24100, EtcdPeerPort: 23100, RelayPort: 25100, APIPort: constants.TESTPORT}
 	clusterConfig := cluster.Config{}
 	clusterConfig.AddNode(node)
-	return createColoniesController(db, node, clusterConfig, "/tmp/colonies/etcd", constants.GENERATOR_TRIGGER_PERIOD, constants.CRON_TRIGGER_PERIOD, false, -1, 500)
+	return controllers.CreateColoniesController(db, node, clusterConfig, "/tmp/colonies/etcd", constants.GENERATOR_TRIGGER_PERIOD, constants.CRON_TRIGGER_PERIOD, false, -1, 500)
 }
 
-func createTestColoniesController2(db database.Database) *coloniesController {
+func createTestColoniesController2(db database.Database) *controllers.ColoniesController {
 	node := cluster.Node{Name: "etcd2", Host: "localhost", EtcdClientPort: 26100, EtcdPeerPort: 27100, RelayPort: 28100, APIPort: constants.TESTPORT}
 	clusterConfig := cluster.Config{}
 	clusterConfig.AddNode(node)
-	return createColoniesController(db, node, clusterConfig, "/tmp/colonies/etcd", constants.GENERATOR_TRIGGER_PERIOD, constants.CRON_TRIGGER_PERIOD, false, -1, 500)
+	return controllers.CreateColoniesController(db, node, clusterConfig, "/tmp/colonies/etcd", constants.GENERATOR_TRIGGER_PERIOD, constants.CRON_TRIGGER_PERIOD, false, -1, 500)
 }
 
 func GenerateDiamondtWorkflowSpec(colonyName string) *core.WorkflowSpec {
@@ -341,7 +342,7 @@ func WaitForProcesses(t *testing.T, server *ColoniesServer, processes []*core.Pr
 	wait := make(chan error)
 	for _, process := range processes {
 		go func(process *core.Process) {
-			_, err := server.controller.getEventHandler().WaitForProcess(process.FunctionSpec.Conditions.ExecutorType, state, process.ID, ctx)
+			_, err := server.controller.GetEventHandler().WaitForProcess(process.FunctionSpec.Conditions.ExecutorType, state, process.ID, ctx)
 			wait <- err
 		}(process)
 	}

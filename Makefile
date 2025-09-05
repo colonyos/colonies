@@ -41,6 +41,23 @@ test:
 	@cd pkg/security/crypto; grc go test -v --race
 	@cd pkg/security/validator; grc go test -v --race
 	@cd pkg/server; grc go test -v --race
+	@cd pkg/server/controllers; grc go test -v --race
+	@cd pkg/server/handlers/attribute; grc go test -v --race
+	@cd pkg/server/handlers/colony; grc go test -v --race
+	@cd pkg/server/handlers/cron; grc go test -v --race
+	@cd pkg/server/handlers/executor; grc go test -v --race
+	@cd pkg/server/handlers/file; grc go test -v --race
+	@cd pkg/server/handlers/function; grc go test -v --race
+	@cd pkg/server/handlers/generator; grc go test -v --race
+	@cd pkg/server/handlers/log; grc go test -v --race
+	@cd pkg/server/handlers/process; grc go test -v --race
+	@cd pkg/server/handlers/processgraph; grc go test -v --race
+	@cd pkg/server/handlers/security; grc go test -v --race
+	@cd pkg/server/handlers/server; grc go test -v --race
+	@cd pkg/server/handlers/snapshot; grc go test -v --race
+	@cd pkg/server/handlers/user; grc go test -v --race
+	@cd pkg/server/handlers/websocket; grc go test -v --race
+	@cd pkg/server/utils; grc go test -v --race
 	@cd pkg/scheduler; grc go test -v --race
 	@cd pkg/parsers; grc go test -v --race
 	@cd pkg/utils; grc go test -v --race
@@ -58,6 +75,23 @@ github_test:
 	@cd pkg/security/crypto; go test -v --race
 	@cd pkg/security/validator; go test -v --race
 	@cd pkg/server; go test -v --race
+	@cd pkg/server/controllers; go test -v --race
+	@cd pkg/server/handlers/attribute; go test -v --race
+	@cd pkg/server/handlers/colony; go test -v --race
+	@cd pkg/server/handlers/cron; go test -v --race
+	@cd pkg/server/handlers/executor; go test -v --race
+	@cd pkg/server/handlers/file; go test -v --race
+	@cd pkg/server/handlers/function; go test -v --race
+	@cd pkg/server/handlers/generator; go test -v --race
+	@cd pkg/server/handlers/log; go test -v --race
+	@cd pkg/server/handlers/process; go test -v --race
+	@cd pkg/server/handlers/processgraph; go test -v --race
+	@cd pkg/server/handlers/security; go test -v --race
+	@cd pkg/server/handlers/server; go test -v --race
+	@cd pkg/server/handlers/snapshot; go test -v --race
+	@cd pkg/server/handlers/user; go test -v --race
+	@cd pkg/server/handlers/websocket; go test -v --race
+	@cd pkg/server/utils; go test -v --race
 	@cd pkg/scheduler; go test -v --race
 	@cd pkg/parsers; go test -v --race
 	@cd pkg/utils; go test -v --race

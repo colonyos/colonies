@@ -1,4 +1,4 @@
-package server
+package controllers
 
 import (
 	"time"
@@ -7,7 +7,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func (controller *coloniesController) addGenerator(generator *core.Generator) (*core.Generator, error) {
+func (controller *ColoniesController) AddGenerator(generator *core.Generator) (*core.Generator, error) {
 	cmd := &command{generatorReplyChan: make(chan *core.Generator, 1),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
@@ -33,7 +33,7 @@ func (controller *coloniesController) addGenerator(generator *core.Generator) (*
 	}
 }
 
-func (controller *coloniesController) triggerGenerators() {
+func (controller *ColoniesController) TriggerGenerators() {
 	cmd := &command{handler: func(cmd *command) {
 		generatorsFromDB, err := controller.generatorDB.FindAllGenerators()
 		if err != nil {
@@ -66,14 +66,14 @@ func (controller *coloniesController) triggerGenerators() {
 						"GeneratorId": generator.ID,
 						"Counter":     counter}).
 						Debug("Generator threshold reached, submitting workflow")
-					controller.submitWorkflow(generator, generator.Trigger, generator.InitiatorID)
+					controller.SubmitWorkflow(generator, generator.Trigger, generator.InitiatorID)
 				}
 			} else if counter >= 1 && generator.Timeout > 0 && timeout {
 				log.WithFields(log.Fields{
 					"GeneratorId": generator.ID,
 					"Counter":     counter}).
 					Debug("Generator threshold reached, submitting workflow")
-				controller.submitWorkflow(generator, counter, generator.InitiatorID)
+				controller.SubmitWorkflow(generator, counter, generator.InitiatorID)
 			}
 		}
 	}}
@@ -81,7 +81,7 @@ func (controller *coloniesController) triggerGenerators() {
 	controller.cmdQueue <- cmd
 }
 
-func (controller *coloniesController) getGenerator(generatorID string) (*core.Generator, error) {
+func (controller *ColoniesController) GetGenerator(generatorID string) (*core.Generator, error) {
 	cmd := &command{generatorReplyChan: make(chan *core.Generator, 1),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
@@ -102,7 +102,7 @@ func (controller *coloniesController) getGenerator(generatorID string) (*core.Ge
 	}
 }
 
-func (controller *coloniesController) resolveGenerator(colonyName string, generatorName string) (*core.Generator, error) {
+func (controller *ColoniesController) ResolveGenerator(colonyName string, generatorName string) (*core.Generator, error) {
 	cmd := &command{generatorReplyChan: make(chan *core.Generator, 1),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
@@ -123,7 +123,7 @@ func (controller *coloniesController) resolveGenerator(colonyName string, genera
 	}
 }
 
-func (controller *coloniesController) getGenerators(colonyName string, count int) ([]*core.Generator, error) {
+func (controller *ColoniesController) GetGenerators(colonyName string, count int) ([]*core.Generator, error) {
 	cmd := &command{generatorsReplyChan: make(chan []*core.Generator, 1),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
@@ -144,7 +144,7 @@ func (controller *coloniesController) getGenerators(colonyName string, count int
 	}
 }
 
-func (controller *coloniesController) packGenerator(generatorID string, colonyName, arg string) error {
+func (controller *ColoniesController) PackGenerator(generatorID string, colonyName, arg string) error {
 	cmd := &command{errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
 			generatorArg := core.CreateGeneratorArg(generatorID, colonyName, arg)
@@ -180,7 +180,7 @@ func (controller *coloniesController) packGenerator(generatorID string, colonyNa
 	}
 }
 
-func (controller *coloniesController) generatorTriggerLoop() {
+func (controller *ColoniesController) GeneratorTriggerLoop() {
 	for {
 		time.Sleep(time.Duration(controller.generatorPeriod) * time.Millisecond)
 
@@ -190,14 +190,14 @@ func (controller *coloniesController) generatorTriggerLoop() {
 		}
 		controller.stopMutex.Unlock()
 
-		isLeader := controller.tryBecomeLeader()
+		isLeader := controller.TryBecomeLeader()
 		if isLeader {
-			controller.triggerGenerators()
+			controller.TriggerGenerators()
 		}
 	}
 }
 
-func (controller *coloniesController) submitWorkflow(generator *core.Generator, counter int, recoveredID string) {
+func (controller *ColoniesController) SubmitWorkflow(generator *core.Generator, counter int, recoveredID string) {
 	workflowSpec, err := core.ConvertJSONToWorkflowSpec(generator.WorkflowSpec)
 	if err != nil {
 		log.WithFields(log.Fields{"Error": err}).Error("Failed to parse workflow spec")
@@ -222,7 +222,7 @@ func (controller *coloniesController) submitWorkflow(generator *core.Generator, 
 		argsif[i] = v
 	}
 
-	_, err = controller.createProcessGraph(workflowSpec, argsif, make(map[string]interface{}), make([]interface{}, 0), recoveredID)
+	_, err = controller.CreateProcessGraph(workflowSpec, argsif, make(map[string]interface{}), make([]interface{}, 0), recoveredID)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"Error": err}).

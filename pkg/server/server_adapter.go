@@ -6,6 +6,7 @@ import (
 	"github.com/colonyos/colonies/pkg/database"
 	"github.com/colonyos/colonies/pkg/rpc"
 	"github.com/colonyos/colonies/pkg/security"
+	"github.com/colonyos/colonies/pkg/server/controllers"
 	attributehandlers "github.com/colonyos/colonies/pkg/server/handlers/attribute"
 	"github.com/colonyos/colonies/pkg/server/handlers/colony"
 	"github.com/colonyos/colonies/pkg/server/handlers/executor"
@@ -50,11 +51,11 @@ func (s *ServerAdapter) GetValidator() security.Validator {
 
 // Controller access for handlers
 func (s *ServerAdapter) GetController() interface{
-	addColony(colony *core.Colony) (*core.Colony, error)
-	removeColony(colonyName string) error
-	getColonies() ([]*core.Colony, error)
-	getColony(colonyName string) (*core.Colony, error)
-	getColonyStatistics(colonyName string) (*core.Statistics, error)
+	AddColony(colony *core.Colony) (*core.Colony, error)
+	RemoveColony(colonyName string) error
+	GetColonies() ([]*core.Colony, error)
+	GetColony(colonyName string) (*core.Colony, error)
+	GetColonyStatistics(colonyName string) (*core.Statistics, error)
 } {
 	return s.server.controller
 }
@@ -85,32 +86,32 @@ func (s *ServerAdapter) ColonyDB() database.ColonyDatabase {
 
 type controllerAdapter struct {
 	controller interface {
-		addColony(colony *core.Colony) (*core.Colony, error)
-		removeColony(colonyName string) error
-		getColonies() ([]*core.Colony, error)
-		getColony(colonyName string) (*core.Colony, error)
-		getColonyStatistics(colonyName string) (*core.Statistics, error)
+		AddColony(colony *core.Colony) (*core.Colony, error)
+		RemoveColony(colonyName string) error
+		GetColonies() ([]*core.Colony, error)
+		GetColony(colonyName string) (*core.Colony, error)
+		GetColonyStatistics(colonyName string) (*core.Statistics, error)
 	}
 }
 
 func (c *controllerAdapter) AddColony(colony *core.Colony) (*core.Colony, error) {
-	return c.controller.addColony(colony)
+	return c.controller.AddColony(colony)
 }
 
 func (c *controllerAdapter) RemoveColony(colonyName string) error {
-	return c.controller.removeColony(colonyName)
+	return c.controller.RemoveColony(colonyName)
 }
 
 func (c *controllerAdapter) GetColonies() ([]*core.Colony, error) {
-	return c.controller.getColonies()
+	return c.controller.GetColonies()
 }
 
 func (c *controllerAdapter) GetColony(colonyName string) (*core.Colony, error) {
-	return c.controller.getColony(colonyName)
+	return c.controller.GetColony(colonyName)
 }
 
 func (c *controllerAdapter) GetColonyStatistics(colonyName string) (*core.Statistics, error) {
-	return c.controller.getColonyStatistics(colonyName)
+	return c.controller.GetColonyStatistics(colonyName)
 }
 
 func (s *ServerAdapter) Controller() colony.Controller {
@@ -132,22 +133,22 @@ func (s *ServerAdapter) SetAllowExecutorReregister(allow bool) {
 
 type executorControllerAdapter struct {
 	controller interface {
-		addExecutor(executor *core.Executor, allowReregister bool) (*core.Executor, error)
-		getExecutor(executorID string) (*core.Executor, error)
-		getExecutorByColonyName(colonyName string) ([]*core.Executor, error)
+		AddExecutor(executor *core.Executor, allowReregister bool) (*core.Executor, error)
+		GetExecutor(executorID string) (*core.Executor, error)
+		GetExecutorByColonyName(colonyName string) ([]*core.Executor, error)
 	}
 }
 
 func (c *executorControllerAdapter) AddExecutor(executor *core.Executor, allowReregister bool) (*core.Executor, error) {
-	return c.controller.addExecutor(executor, allowReregister)
+	return c.controller.AddExecutor(executor, allowReregister)
 }
 
 func (c *executorControllerAdapter) GetExecutor(executorID string) (*core.Executor, error) {
-	return c.controller.getExecutor(executorID)
+	return c.controller.GetExecutor(executorID)
 }
 
 func (c *executorControllerAdapter) GetExecutorByColonyName(colonyName string) ([]*core.Executor, error) {
-	return c.controller.getExecutorByColonyName(colonyName)
+	return c.controller.GetExecutorByColonyName(colonyName)
 }
 
 func (s *ServerAdapter) ExecutorController() executor.Controller {
@@ -169,22 +170,22 @@ func (s *ServerAdapter) SnapshotDB() database.SnapshotDatabase {
 
 type attributeControllerAdapter struct {
 	controller interface {
-		getProcess(processID string) (*core.Process, error)
-		addAttribute(attribute *core.Attribute) (*core.Attribute, error)
-		getAttribute(attributeID string) (*core.Attribute, error)
+		GetProcess(processID string) (*core.Process, error)
+		AddAttribute(attribute *core.Attribute) (*core.Attribute, error)
+		GetAttribute(attributeID string) (*core.Attribute, error)
 	}
 }
 
 func (c *attributeControllerAdapter) GetProcess(processID string) (*core.Process, error) {
-	return c.controller.getProcess(processID)
+	return c.controller.GetProcess(processID)
 }
 
 func (c *attributeControllerAdapter) AddAttribute(attribute *core.Attribute) (*core.Attribute, error) {
-	return c.controller.addAttribute(attribute)
+	return c.controller.AddAttribute(attribute)
 }
 
 func (c *attributeControllerAdapter) GetAttribute(attributeID string) (*core.Attribute, error) {
-	return c.controller.getAttribute(attributeID)
+	return c.controller.GetAttribute(attributeID)
 }
 
 func (s *ServerAdapter) AttributeController() attributehandlers.Controller {
@@ -201,72 +202,72 @@ func (s *ServerAdapter) GeneratorDB() database.GeneratorDatabase {
 
 type functionControllerAdapter struct {
 	controller interface {
-		addFunction(function *core.Function) (*core.Function, error)
-		getFunctionByID(functionID string) (*core.Function, error)
-		getFunctionsByExecutorName(colonyName string, executorName string) ([]*core.Function, error)
-		getFunctionsByColonyName(colonyName string) ([]*core.Function, error)
-		removeFunction(functionID string) error
+		AddFunction(function *core.Function) (*core.Function, error)
+		GetFunctionByID(functionID string) (*core.Function, error)
+		GetFunctionsByExecutorName(colonyName string, executorName string) ([]*core.Function, error)
+		GetFunctionsByColonyName(colonyName string) ([]*core.Function, error)
+		RemoveFunction(functionID string) error
 	}
 }
 
 type generatorControllerAdapter struct {
 	controller interface {
-		addGenerator(generator *core.Generator) (*core.Generator, error)
-		getGenerator(generatorID string) (*core.Generator, error)
-		resolveGenerator(colonyName string, generatorName string) (*core.Generator, error)
-		getGenerators(colonyName string, count int) ([]*core.Generator, error)
-		packGenerator(generatorID string, colonyName string, arg string) error
-		removeGenerator(generatorID string) error
-		getGeneratorPeriod() int
+		AddGenerator(generator *core.Generator) (*core.Generator, error)
+		GetGenerator(generatorID string) (*core.Generator, error)
+		ResolveGenerator(colonyName string, generatorName string) (*core.Generator, error)
+		GetGenerators(colonyName string, count int) ([]*core.Generator, error)
+		PackGenerator(generatorID string, colonyName string, arg string) error
+		RemoveGenerator(generatorID string) error
+		GetGeneratorPeriod() int
 	}
 }
 
 func (c *functionControllerAdapter) AddFunction(function *core.Function) (*core.Function, error) {
-	return c.controller.addFunction(function)
+	return c.controller.AddFunction(function)
 }
 
 func (c *functionControllerAdapter) GetFunction(functionID string) (*core.Function, error) {
-	return c.controller.getFunctionByID(functionID)
+	return c.controller.GetFunctionByID(functionID)
 }
 
 func (c *functionControllerAdapter) GetFunctions(colonyName string, executorName string, count int) ([]*core.Function, error) {
-	return c.controller.getFunctionsByExecutorName(colonyName, executorName)
+	return c.controller.GetFunctionsByExecutorName(colonyName, executorName)
 }
 
 func (c *functionControllerAdapter) GetFunctionsByColonyName(colonyName string) ([]*core.Function, error) {
-	return c.controller.getFunctionsByColonyName(colonyName)
+	return c.controller.GetFunctionsByColonyName(colonyName)
 }
 
 func (c *functionControllerAdapter) RemoveFunction(functionID string, initiatorID string) error {
-	return c.controller.removeFunction(functionID)
+	return c.controller.RemoveFunction(functionID)
 }
 
 func (c *generatorControllerAdapter) AddGenerator(generator *core.Generator) (*core.Generator, error) {
-	return c.controller.addGenerator(generator)
+	return c.controller.AddGenerator(generator)
 }
 
 func (c *generatorControllerAdapter) GetGenerator(generatorID string) (*core.Generator, error) {
-	return c.controller.getGenerator(generatorID)
+	return c.controller.GetGenerator(generatorID)
 }
 
 func (c *generatorControllerAdapter) ResolveGenerator(colonyName string, generatorName string) (*core.Generator, error) {
-	return c.controller.resolveGenerator(colonyName, generatorName)
+	return c.controller.ResolveGenerator(colonyName, generatorName)
 }
 
 func (c *generatorControllerAdapter) GetGenerators(colonyName string, count int) ([]*core.Generator, error) {
-	return c.controller.getGenerators(colonyName, count)
+	return c.controller.GetGenerators(colonyName, count)
 }
 
 func (c *generatorControllerAdapter) PackGenerator(generatorID string, colonyName string, arg string) error {
-	return c.controller.packGenerator(generatorID, colonyName, arg)
+	return c.controller.PackGenerator(generatorID, colonyName, arg)
 }
 
 func (c *generatorControllerAdapter) RemoveGenerator(generatorID string) error {
-	return c.controller.removeGenerator(generatorID)
+	return c.controller.RemoveGenerator(generatorID)
 }
 
 func (c *generatorControllerAdapter) GetGeneratorPeriod() int {
-	return c.controller.getGeneratorPeriod()
+	return c.controller.GetGeneratorPeriod()
 }
 
 func (s *ServerAdapter) FunctionController() functionhandlers.Controller {
@@ -287,69 +288,69 @@ func (s *ServerAdapter) TLS() bool {
 
 type processControllerAdapter struct {
 	controller interface {
-		addProcessToDB(process *core.Process) (*core.Process, error)
-		addProcess(process *core.Process) (*core.Process, error)
-		getProcess(processID string) (*core.Process, error)
-		getExecutor(executorID string) (*core.Executor, error)
-		findProcessHistory(colonyName string, executorID string, seconds int, state int) ([]*core.Process, error)
-		removeProcess(processID string) error
-		removeAllProcesses(colonyName string, state int) error
-		setOutput(processID string, output []interface{}) error
-		closeSuccessful(processID string, executorID string, output []interface{}) error
-		closeFailed(processID string, errs []string) error
-		assign(executorID string, colonyName string, cpu int64, memory int64) (*AssignResult, error)
-		unassignExecutor(processID string) error
-		pauseColonyAssignments(colonyName string) error
-		resumeColonyAssignments(colonyName string) error
-		areColonyAssignmentsPaused(colonyName string) (bool, error)
-		getEventHandler() *servercommunication.EventHandler
-		isLeader() bool
-		getEtcdServer() *cluster.EtcdServer
+		AddProcessToDB(process *core.Process) (*core.Process, error)
+		AddProcess(process *core.Process) (*core.Process, error)
+		GetProcess(processID string) (*core.Process, error)
+		GetExecutor(executorID string) (*core.Executor, error)
+		FindProcessHistory(colonyName string, executorID string, seconds int, state int) ([]*core.Process, error)
+		RemoveProcess(processID string) error
+		RemoveAllProcesses(colonyName string, state int) error
+		SetOutput(processID string, output []interface{}) error
+		CloseSuccessful(processID string, executorID string, output []interface{}) error
+		CloseFailed(processID string, errs []string) error
+		Assign(executorID string, colonyName string, cpu int64, memory int64) (*controllers.AssignResult, error)
+		UnassignExecutor(processID string) error
+		PauseColonyAssignments(colonyName string) error
+		ResumeColonyAssignments(colonyName string) error
+		AreColonyAssignmentsPaused(colonyName string) (bool, error)
+		GetEventHandler() *servercommunication.EventHandler
+		IsLeader() bool
+		GetEtcdServer() *cluster.EtcdServer
 	}
 }
 
 func (c *processControllerAdapter) AddProcessToDB(process *core.Process) (*core.Process, error) {
-	return c.controller.addProcessToDB(process)
+	return c.controller.AddProcessToDB(process)
 }
 
 func (c *processControllerAdapter) AddProcess(process *core.Process) (*core.Process, error) {
-	return c.controller.addProcess(process)
+	return c.controller.AddProcess(process)
 }
 
 func (c *processControllerAdapter) GetProcess(processID string) (*core.Process, error) {
-	return c.controller.getProcess(processID)
+	return c.controller.GetProcess(processID)
 }
 
 func (c *processControllerAdapter) GetExecutor(executorID string) (*core.Executor, error) {
-	return c.controller.getExecutor(executorID)
+	return c.controller.GetExecutor(executorID)
 }
 
 func (c *processControllerAdapter) FindProcessHistory(colonyName string, executorID string, seconds int, state int) ([]*core.Process, error) {
-	return c.controller.findProcessHistory(colonyName, executorID, seconds, state)
+	return c.controller.FindProcessHistory(colonyName, executorID, seconds, state)
 }
 
 func (c *processControllerAdapter) RemoveProcess(processID string) error {
-	return c.controller.removeProcess(processID)
+	return c.controller.RemoveProcess(processID)
 }
 
 func (c *processControllerAdapter) RemoveAllProcesses(colonyName string, state int) error {
-	return c.controller.removeAllProcesses(colonyName, state)
+	return c.controller.RemoveAllProcesses(colonyName, state)
 }
 
 func (c *processControllerAdapter) SetOutput(processID string, output []interface{}) error {
-	return c.controller.setOutput(processID, output)
+	return c.controller.SetOutput(processID, output)
 }
 
 func (c *processControllerAdapter) CloseSuccessful(processID string, executorID string, output []interface{}) error {
-	return c.controller.closeSuccessful(processID, executorID, output)
+	return c.controller.CloseSuccessful(processID, executorID, output)
 }
 
 func (c *processControllerAdapter) CloseFailed(processID string, errs []string) error {
-	return c.controller.closeFailed(processID, errs)
+	return c.controller.CloseFailed(processID, errs)
 }
 
 func (c *processControllerAdapter) Assign(executorID string, colonyName string, cpu int64, memory int64) (*process.AssignResult, error) {
-	result, err := c.controller.assign(executorID, colonyName, cpu, memory)
+	result, err := c.controller.Assign(executorID, colonyName, cpu, memory)
 	if err != nil {
 		return nil, err
 	}
@@ -362,19 +363,19 @@ func (c *processControllerAdapter) Assign(executorID string, colonyName string, 
 }
 
 func (c *processControllerAdapter) UnassignExecutor(processID string) error {
-	return c.controller.unassignExecutor(processID)
+	return c.controller.UnassignExecutor(processID)
 }
 
 func (c *processControllerAdapter) PauseColonyAssignments(colonyName string) error {
-	return c.controller.pauseColonyAssignments(colonyName)
+	return c.controller.PauseColonyAssignments(colonyName)
 }
 
 func (c *processControllerAdapter) ResumeColonyAssignments(colonyName string) error {
-	return c.controller.resumeColonyAssignments(colonyName)
+	return c.controller.ResumeColonyAssignments(colonyName)
 }
 
 func (c *processControllerAdapter) AreColonyAssignmentsPaused(colonyName string) (bool, error) {
-	return c.controller.areColonyAssignmentsPaused(colonyName)
+	return c.controller.AreColonyAssignmentsPaused(colonyName)
 }
 
 func (c *processControllerAdapter) GetEventHandler() *process.EventHandler {
@@ -383,22 +384,22 @@ func (c *processControllerAdapter) GetEventHandler() *process.EventHandler {
 }
 
 func (c *processControllerAdapter) IsLeader() bool {
-	return c.controller.isLeader()
+	return c.controller.IsLeader()
 }
 
 func (c *processControllerAdapter) GetEtcdServer() process.EtcdServer {
-	etcdServer := c.controller.getEtcdServer()
+	etcdServer := c.controller.GetEtcdServer()
 	return &etcdServerAdapter{etcdServer: etcdServer}
 }
 
 type logControllerAdapter struct {
 	controller interface {
-		getProcess(processID string) (*core.Process, error)
+		GetProcess(processID string) (*core.Process, error)
 	}
 }
 
 func (c *logControllerAdapter) GetProcess(processID string) (*core.Process, error) {
-	return c.controller.getProcess(processID)
+	return c.controller.GetProcess(processID)
 }
 
 type etcdServerAdapter struct {
@@ -463,53 +464,53 @@ type WSController interface {
 // wsControllerAdapter adapter for WebSocket handlers
 type wsControllerAdapter struct {
 	controller interface {
-		subscribeProcesses(executorID string, subscription *websockethandlers.Subscription) error
-		subscribeProcess(executorID string, subscription *websockethandlers.Subscription) error
+		SubscribeProcesses(executorID string, subscription *websockethandlers.Subscription) error
+		SubscribeProcess(executorID string, subscription *websockethandlers.Subscription) error
 	}
 }
 
 func (c *wsControllerAdapter) SubscribeProcesses(executorID string, subscription *websockethandlers.Subscription) error {
-	return c.controller.subscribeProcesses(executorID, subscription)
+	return c.controller.SubscribeProcesses(executorID, subscription)
 }
 
 func (c *wsControllerAdapter) SubscribeProcess(executorID string, subscription *websockethandlers.Subscription) error {
-	return c.controller.subscribeProcess(executorID, subscription)
+	return c.controller.SubscribeProcess(executorID, subscription)
 }
 
 // Cron controller adapter
 type cronControllerAdapter struct {
 	controller interface {
-		addCron(cron *core.Cron) (*core.Cron, error)
-		getCron(cronID string) (*core.Cron, error)
-		getCrons(colonyName string, count int) ([]*core.Cron, error)
-		runCron(cronID string) (*core.Cron, error)
-		removeCron(cronID string) error
-		getCronPeriod() int
+		AddCron(cron *core.Cron) (*core.Cron, error)
+		GetCron(cronID string) (*core.Cron, error)
+		GetCrons(colonyName string, count int) ([]*core.Cron, error)
+		RunCron(cronID string) (*core.Cron, error)
+		RemoveCron(cronID string) error
+		GetCronPeriod() int
 	}
 }
 
 func (c *cronControllerAdapter) AddCron(cron *core.Cron) (*core.Cron, error) {
-	return c.controller.addCron(cron)
+	return c.controller.AddCron(cron)
 }
 
 func (c *cronControllerAdapter) GetCron(cronID string) (*core.Cron, error) {
-	return c.controller.getCron(cronID)
+	return c.controller.GetCron(cronID)
 }
 
 func (c *cronControllerAdapter) GetCrons(colonyName string, count int) ([]*core.Cron, error) {
-	return c.controller.getCrons(colonyName, count)
+	return c.controller.GetCrons(colonyName, count)
 }
 
 func (c *cronControllerAdapter) RunCron(cronID string) (*core.Cron, error) {
-	return c.controller.runCron(cronID)
+	return c.controller.RunCron(cronID)
 }
 
 func (c *cronControllerAdapter) RemoveCron(cronID string) error {
-	return c.controller.removeCron(cronID)
+	return c.controller.RemoveCron(cronID)
 }
 
 func (c *cronControllerAdapter) GetCronPeriod() int {
-	return c.controller.getCronPeriod()
+	return c.controller.GetCronPeriod()
 }
 
 // CronController returns the server's controller interface for cron operations
@@ -527,52 +528,52 @@ func (s *ServerAdapter) CronController() interface {
 // ProcessGraph controller adapter
 type processgraphControllerAdapter struct {
 	controller interface {
-		submitWorkflowSpec(workflowSpec *core.WorkflowSpec, initiatorID string) (*core.ProcessGraph, error)
-		getProcessGraphByID(processGraphID string) (*core.ProcessGraph, error)
-		findWaitingProcessGraphs(colonyName string, count int) ([]*core.ProcessGraph, error)
-		findRunningProcessGraphs(colonyName string, count int) ([]*core.ProcessGraph, error)
-		findSuccessfulProcessGraphs(colonyName string, count int) ([]*core.ProcessGraph, error)
-		findFailedProcessGraphs(colonyName string, count int) ([]*core.ProcessGraph, error)
-		removeProcessGraph(processGraphID string) error
-		removeAllProcessGraphs(colonyName string, state int) error
-		addChild(processGraphID string, parentProcessID string, childProcessID string, process *core.Process, initiatorID string, insert bool) (*core.Process, error)
+		SubmitWorkflowSpec(workflowSpec *core.WorkflowSpec, initiatorID string) (*core.ProcessGraph, error)
+		GetProcessGraphByID(processGraphID string) (*core.ProcessGraph, error)
+		FindWaitingProcessGraphs(colonyName string, count int) ([]*core.ProcessGraph, error)
+		FindRunningProcessGraphs(colonyName string, count int) ([]*core.ProcessGraph, error)
+		FindSuccessfulProcessGraphs(colonyName string, count int) ([]*core.ProcessGraph, error)
+		FindFailedProcessGraphs(colonyName string, count int) ([]*core.ProcessGraph, error)
+		RemoveProcessGraph(processGraphID string) error
+		RemoveAllProcessGraphs(colonyName string, state int) error
+		AddChild(processGraphID string, parentProcessID string, childProcessID string, process *core.Process, initiatorID string, insert bool) (*core.Process, error)
 	}
 }
 
 func (c *processgraphControllerAdapter) SubmitWorkflowSpec(workflowSpec *core.WorkflowSpec, initiatorID string) (*core.ProcessGraph, error) {
-	return c.controller.submitWorkflowSpec(workflowSpec, initiatorID)
+	return c.controller.SubmitWorkflowSpec(workflowSpec, initiatorID)
 }
 
 func (c *processgraphControllerAdapter) GetProcessGraphByID(processGraphID string) (*core.ProcessGraph, error) {
-	return c.controller.getProcessGraphByID(processGraphID)
+	return c.controller.GetProcessGraphByID(processGraphID)
 }
 
 func (c *processgraphControllerAdapter) FindWaitingProcessGraphs(colonyName string, count int) ([]*core.ProcessGraph, error) {
-	return c.controller.findWaitingProcessGraphs(colonyName, count)
+	return c.controller.FindWaitingProcessGraphs(colonyName, count)
 }
 
 func (c *processgraphControllerAdapter) FindRunningProcessGraphs(colonyName string, count int) ([]*core.ProcessGraph, error) {
-	return c.controller.findRunningProcessGraphs(colonyName, count)
+	return c.controller.FindRunningProcessGraphs(colonyName, count)
 }
 
 func (c *processgraphControllerAdapter) FindSuccessfulProcessGraphs(colonyName string, count int) ([]*core.ProcessGraph, error) {
-	return c.controller.findSuccessfulProcessGraphs(colonyName, count)
+	return c.controller.FindSuccessfulProcessGraphs(colonyName, count)
 }
 
 func (c *processgraphControllerAdapter) FindFailedProcessGraphs(colonyName string, count int) ([]*core.ProcessGraph, error) {
-	return c.controller.findFailedProcessGraphs(colonyName, count)
+	return c.controller.FindFailedProcessGraphs(colonyName, count)
 }
 
 func (c *processgraphControllerAdapter) RemoveProcessGraph(processGraphID string) error {
-	return c.controller.removeProcessGraph(processGraphID)
+	return c.controller.RemoveProcessGraph(processGraphID)
 }
 
 func (c *processgraphControllerAdapter) RemoveAllProcessGraphs(colonyName string, state int) error {
-	return c.controller.removeAllProcessGraphs(colonyName, state)
+	return c.controller.RemoveAllProcessGraphs(colonyName, state)
 }
 
 func (c *processgraphControllerAdapter) AddChild(processGraphID string, parentProcessID string, childProcessID string, process *core.Process, initiatorID string, insert bool) (*core.Process, error) {
-	return c.controller.addChild(processGraphID, parentProcessID, childProcessID, process, initiatorID, insert)
+	return c.controller.AddChild(processGraphID, parentProcessID, childProcessID, process, initiatorID, insert)
 }
 
 func (s *ServerAdapter) ProcessgraphController() processgraph.Controller {
@@ -632,17 +633,17 @@ func (s *ServerAdapter) ProcessgraphServer() processgraph.ColoniesServer {
 // Server handler controller adapter
 type serverControllerAdapter struct {
 	controller interface {
-		getStatistics() (*core.Statistics, error)
-		getEtcdServer() *cluster.EtcdServer
+		GetStatistics() (*core.Statistics, error)
+		GetEtcdServer() *cluster.EtcdServer
 	}
 }
 
 func (c *serverControllerAdapter) GetStatistics() (*core.Statistics, error) {
-	return c.controller.getStatistics()
+	return c.controller.GetStatistics()
 }
 
 func (c *serverControllerAdapter) GetEtcdServer() serverhandlers.EtcdServer {
-	etcdServer := c.controller.getEtcdServer()
+	etcdServer := c.controller.GetEtcdServer()
 	return &serverEtcdServerAdapter{etcdServer: etcdServer}
 }
 

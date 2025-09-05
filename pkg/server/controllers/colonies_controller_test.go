@@ -1,4 +1,4 @@
-package server
+package controllers
 
 import (
 	"testing"
@@ -13,78 +13,78 @@ import (
 func TestColoniesControllerInvalidDB(t *testing.T) {
 	controller, dbMock := createFakeColoniesController()
 
-	dbMock.returnError = "GetProcessByID"
-	err := controller.subscribeProcess("invalid_id", &websockethandlers.Subscription{})
+	dbMock.ReturnError = "GetProcessByID"
+	err := controller.SubscribeProcess("invalid_id", &websockethandlers.Subscription{})
 	assert.NotNil(t, err)
 
-	dbMock.returnError = "GetColonies"
-	_, err = controller.getColonies()
+	dbMock.ReturnError = "GetColonies"
+	_, err = controller.GetColonies()
 	assert.NotNil(t, err)
 
-	dbMock.returnError = "GetColonyByName"
-	_, err = controller.getColony("invalid_id")
+	dbMock.ReturnError = "GetColonyByName"
+	_, err = controller.GetColony("invalid_id")
 	assert.NotNil(t, err)
 
-	dbMock.returnError = "AddColony"
-	_, err = controller.addColony(nil)
+	dbMock.ReturnError = "AddColony"
+	_, err = controller.AddColony(nil)
 	assert.NotNil(t, err)
 
-	dbMock.returnError = ""
-	_, err = controller.addColony(nil)
+	dbMock.ReturnError = ""
+	_, err = controller.AddColony(nil)
 	assert.NotNil(t, err)
 
-	dbMock.returnError = "GetColonyByID"
-	_, err = controller.addColony(&core.Colony{})
+	dbMock.ReturnError = "GetColonyByID"
+	_, err = controller.AddColony(&core.Colony{})
 	assert.NotNil(t, err)
 
-	dbMock.returnError = "RemoveColonyByName"
-	err = controller.removeColony("invalid_id")
+	dbMock.ReturnError = "RemoveColonyByName"
+	err = controller.RemoveColony("invalid_id")
 	assert.NotNil(t, err)
 
-	_, err = controller.addExecutor(nil, false)
+	_, err = controller.AddExecutor(nil, false)
 	assert.NotNil(t, err)
 
-	dbMock.returnError = "GetExecutorByName"
-	_, err = controller.addExecutor(&core.Executor{}, false)
+	dbMock.ReturnError = "GetExecutorByName"
+	_, err = controller.AddExecutor(&core.Executor{}, false)
 	assert.NotNil(t, err)
 
-	dbMock.returnValue = "GetExecutorByName"
-	_, err = controller.addExecutor(&core.Executor{}, false)
+	dbMock.ReturnValue = "GetExecutorByName"
+	_, err = controller.AddExecutor(&core.Executor{}, false)
 	assert.NotNil(t, err)
-	dbMock.returnValue = ""
+	dbMock.ReturnValue = ""
 
-	dbMock.returnError = "AddExecutor"
-	_, err = controller.addExecutor(&core.Executor{}, false)
-	assert.NotNil(t, err)
-
-	dbMock.returnError = "GetExecutorByID"
-	_, err = controller.addExecutor(&core.Executor{}, false)
+	dbMock.ReturnError = "AddExecutor"
+	_, err = controller.AddExecutor(&core.Executor{}, false)
 	assert.NotNil(t, err)
 
-	dbMock.returnError = "GetExecutorByID"
-	_, err = controller.getExecutor("invalid_id")
+	dbMock.ReturnError = "GetExecutorByID"
+	_, err = controller.AddExecutor(&core.Executor{}, false)
 	assert.NotNil(t, err)
 
-	dbMock.returnError = "GetExecutorByColonyName"
-	_, err = controller.getExecutorByColonyName("invalid_id")
+	dbMock.ReturnError = "GetExecutorByID"
+	_, err = controller.GetExecutor("invalid_id")
 	assert.NotNil(t, err)
 
-	_, err = controller.addProcessToDB(nil)
+	dbMock.ReturnError = "GetExecutorByColonyName"
+	_, err = controller.GetExecutorByColonyName("invalid_id")
 	assert.NotNil(t, err)
 
-	dbMock.returnError = "AddProcess"
-	_, err = controller.addProcessToDB(&core.Process{})
+	_, err = controller.AddProcessToDB(nil)
 	assert.NotNil(t, err)
 
-	dbMock.returnError = "GetProcessByID"
-	_, err = controller.addProcessToDB(&core.Process{})
+	dbMock.ReturnError = "AddProcess"
+	_, err = controller.AddProcessToDB(&core.Process{})
 	assert.NotNil(t, err)
 
-	dbMock.returnError = "AddProcess"
-	_, err = controller.addProcess(&core.Process{})
+	dbMock.ReturnError = "GetProcessByID"
+	_, err = controller.AddProcessToDB(&core.Process{})
 	assert.NotNil(t, err)
 
-	controller.stop()
+	dbMock.ReturnError = "AddProcess"
+	_, err = controller.AddProcess(&core.Process{})
+	assert.NotNil(t, err)
+
+	controller.Stop()
 }
 
 func TestColoniesControllerAddColony(t *testing.T) {
@@ -93,11 +93,11 @@ func TestColoniesControllerAddColony(t *testing.T) {
 	assert.Nil(t, err)
 
 	controller := createTestColoniesController(db)
-	defer controller.stop()
+	defer controller.Stop()
 
 	colony, _, err := utils.CreateTestColonyWithKey()
 	assert.Nil(t, err)
-	addedColony, err := controller.addColony(colony)
+	addedColony, err := controller.AddColony(colony)
 	assert.Nil(t, err)
 	assert.True(t, colony.Equals(addedColony))
 }
@@ -108,12 +108,12 @@ func TestColoniesControllerAddExecutor(t *testing.T) {
 	assert.Nil(t, err)
 
 	controller := createTestColoniesController(db)
-	defer controller.stop()
+	defer controller.Stop()
 
 	executor, _, err := utils.CreateTestExecutorWithKey(core.GenerateRandomID())
 	assert.Nil(t, err)
 
-	addedExecutor, err := controller.addExecutor(executor, false)
+	addedExecutor, err := controller.AddExecutor(executor, false)
 	assert.Nil(t, err)
 	assert.True(t, executor.Equals(addedExecutor))
 }
@@ -124,20 +124,20 @@ func TestColoniesControllerAddProcess(t *testing.T) {
 	assert.Nil(t, err)
 
 	controller := createTestColoniesController(db)
-	defer controller.stop()
+	defer controller.Stop()
 
 	colonyName := core.GenerateRandomID()
 
 	executor, _, err := utils.CreateTestExecutorWithKey(colonyName)
 	assert.Nil(t, err)
 
-	_, err = controller.addExecutor(executor, false)
+	_, err = controller.AddExecutor(executor, false)
 	assert.Nil(t, err)
 
 	funcSpec := utils.CreateTestFunctionSpecWithEnv(colonyName, make(map[string]string))
 	process := core.CreateProcess(funcSpec)
 
-	addedProcess, err := controller.addProcess(process)
+	addedProcess, err := controller.AddProcess(process)
 	assert.Nil(t, err)
 	assert.True(t, process.ID == addedProcess.ID)
 }
@@ -148,22 +148,22 @@ func TestColoniesControllerAssignExecutor(t *testing.T) {
 	assert.Nil(t, err)
 
 	controller := createTestColoniesController(db)
-	defer controller.stop()
+	defer controller.Stop()
 
 	colonyName := core.GenerateRandomID()
 
 	executor, _, err := utils.CreateTestExecutorWithKey(colonyName)
 	assert.Nil(t, err)
 
-	_, err = controller.addExecutor(executor, false)
+	_, err = controller.AddExecutor(executor, false)
 	assert.Nil(t, err)
 
 	funcSpec := utils.CreateTestFunctionSpecWithEnv(colonyName, make(map[string]string))
 	process := core.CreateProcess(funcSpec)
-	_, err = controller.addProcess(process)
+	_, err = controller.AddProcess(process)
 	assert.Nil(t, err)
 
-	result, err := controller.assign(executor.ID, colonyName, 0, 0)
+	result, err := controller.Assign(executor.ID, colonyName, 0, 0)
 	assert.Nil(t, err)
 	assert.False(t, result.IsPaused)
 	assert.NotNil(t, result.Process)
@@ -179,26 +179,26 @@ func TestColoniesControllerAssignExecutorConcurrency(t *testing.T) {
 	processCount := 100
 
 	controller1 := createTestColoniesController(db)
-	defer controller1.stop()
+	defer controller1.Stop()
 	controller2 := createTestColoniesController2(db)
-	defer controller2.stop()
+	defer controller2.Stop()
 
 	colonyName := core.GenerateRandomID()
 
 	executor1, _, err := utils.CreateTestExecutorWithKey(colonyName)
 	assert.Nil(t, err)
-	_, err = controller1.addExecutor(executor1, false)
+	_, err = controller1.AddExecutor(executor1, false)
 	assert.Nil(t, err)
 
 	executor2, _, err := utils.CreateTestExecutorWithKey(colonyName)
 	assert.Nil(t, err)
-	_, err = controller1.addExecutor(executor2, false)
+	_, err = controller1.AddExecutor(executor2, false)
 	assert.Nil(t, err)
 
 	for i := 0; i < processCount; i++ {
 		funcSpec := utils.CreateTestFunctionSpecWithEnv(colonyName, make(map[string]string))
 		process := core.CreateProcess(funcSpec)
-		_, err = controller1.addProcess(process)
+		_, err = controller1.AddProcess(process)
 		assert.Nil(t, err)
 	}
 
@@ -206,7 +206,7 @@ func TestColoniesControllerAssignExecutorConcurrency(t *testing.T) {
 
 	go func() {
 		for {
-			result, err := controller1.assign(executor1.ID, colonyName, 0, 0)
+			result, err := controller1.Assign(executor1.ID, colonyName, 0, 0)
 			if err == nil && !result.IsPaused && result.Process != nil {
 				countChan <- 1
 			}
@@ -219,7 +219,7 @@ func TestColoniesControllerAssignExecutorConcurrency(t *testing.T) {
 
 	go func() {
 		for {
-			result, err := controller2.assign(executor2.ID, colonyName, 0, 0)
+			result, err := controller2.Assign(executor2.ID, colonyName, 0, 0)
 			if err == nil && !result.IsPaused && result.Process != nil {
 				countChan <- 1
 			}
@@ -237,20 +237,20 @@ func TestColoniesControllerAssignExecutorConcurrency(t *testing.T) {
 
 func TestColoniesControllerPauseResumeAssignments(t *testing.T) {
 	controller, _ := createFakeColoniesController()
-	defer controller.stop()
+	defer controller.Stop()
 
 	colonyName := "test_colony"
 
 	// Test pause assignments
-	err := controller.pauseColonyAssignments(colonyName)
+	err := controller.PauseColonyAssignments(colonyName)
 	assert.NoError(t, err)
 
 	// Test resume assignments
-	err = controller.resumeColonyAssignments(colonyName)
+	err = controller.ResumeColonyAssignments(colonyName)
 	assert.NoError(t, err)
 
 	// Test check assignments paused status
-	paused, err := controller.areColonyAssignmentsPaused(colonyName)
+	paused, err := controller.AreColonyAssignmentsPaused(colonyName)
 	assert.NoError(t, err)
 	assert.False(t, paused)
 }
@@ -261,30 +261,30 @@ func TestColoniesControllerPauseResumeAssignmentsWithEtcdServer(t *testing.T) {
 	assert.Nil(t, err)
 
 	controller := createTestColoniesController(db)
-	defer controller.stop()
+	defer controller.Stop()
 
 	colonyName := "test_colony"
 
 	// Test initial state - should not be paused
-	paused, err := controller.areColonyAssignmentsPaused(colonyName)
+	paused, err := controller.AreColonyAssignmentsPaused(colonyName)
 	assert.NoError(t, err)
 	assert.False(t, paused)
 
 	// Test pause assignments
-	err = controller.pauseColonyAssignments(colonyName)
+	err = controller.PauseColonyAssignments(colonyName)
 	assert.NoError(t, err)
 
 	// Verify assignments are paused
-	paused, err = controller.areColonyAssignmentsPaused(colonyName)
+	paused, err = controller.AreColonyAssignmentsPaused(colonyName)
 	assert.NoError(t, err)
 	assert.True(t, paused)
 
 	// Test resume assignments
-	err = controller.resumeColonyAssignments(colonyName)
+	err = controller.ResumeColonyAssignments(colonyName)
 	assert.NoError(t, err)
 
 	// Verify assignments are not paused
-	paused, err = controller.areColonyAssignmentsPaused(colonyName)
+	paused, err = controller.AreColonyAssignmentsPaused(colonyName)
 	assert.NoError(t, err)
 	assert.False(t, paused)
 }
