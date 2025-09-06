@@ -1,0 +1,435 @@
+package cron_test
+
+import (
+	"fmt"
+	"testing"
+	"time"
+
+	"github.com/colonyos/colonies/pkg/service"
+	"github.com/colonyos/colonies/pkg/utils"
+	"github.com/stretchr/testify/assert"
+)
+
+func TestAddCronDebug(t *testing.T) {
+	env, client, server, _, done := server.SetupTestEnv2(t)
+
+	cron := utils.FakeCron(t, env.ColonyName, env.ExecutorID, env.ExecutorName)
+	cron.Interval = 2
+
+	addedCron, err := client.AddCron(cron, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.NotNil(t, addedCron)
+
+	// If the cron is successful, there should be a process we can assign
+	process, err := client.Assign(env.ColonyName, 100, "", "", env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.NotNil(t, process)
+
+	server.Shutdown()
+	<-done
+}
+
+func TestAddCronRemoveAllProcesses(t *testing.T) {
+	env, client, server, _, done := server.SetupTestEnv2(t)
+
+	cron := utils.FakeCron(t, env.ColonyName, env.ExecutorID, env.ExecutorName)
+	cron.Interval = 1
+	cron.WaitForPrevProcessGraph = true
+
+	addedCron, err := client.AddCron(cron, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.NotNil(t, addedCron)
+
+	time.Sleep(2 * time.Second)
+
+	err = client.RemoveAllProcesses(env.ColonyName, env.ColonyPrvKey)
+	assert.Nil(t, err)
+
+	// If the cron is successful, there should be a process we can assign
+	process, err := client.Assign(env.ColonyName, 100, "", "", env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.NotNil(t, process)
+
+	server.Shutdown()
+	<-done
+}
+
+func TestAddCronRemoveAllProcessGraphs(t *testing.T) {
+	env, client, server, _, done := server.SetupTestEnv2(t)
+
+	cron := utils.FakeCron(t, env.ColonyName, env.ExecutorID, env.ExecutorName)
+	cron.Interval = 1
+	cron.WaitForPrevProcessGraph = true
+
+	addedCron, err := client.AddCron(cron, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.NotNil(t, addedCron)
+
+	time.Sleep(2 * time.Second)
+
+	err = client.RemoveAllProcessGraphs(env.ColonyName, env.ColonyPrvKey)
+	assert.Nil(t, err)
+
+	// If the cron is successful, there should be a process we can assign
+	process, err := client.Assign(env.ColonyName, 100, "", "", env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.NotNil(t, process)
+
+	server.Shutdown()
+	<-done
+}
+
+func TestFailCron(t *testing.T) {
+	env, client, server, _, done := server.SetupTestEnv2(t)
+
+	cron := utils.FakeCron(t, env.ColonyName, env.ExecutorID, env.ExecutorName)
+	cron.Interval = 2
+
+	addedCron, err := client.AddCron(cron, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.NotNil(t, addedCron)
+
+	// If the cron is successful, there should be a process we can assign
+	process, err := client.Assign(env.ColonyName, 100, "", "", env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.NotNil(t, process)
+
+	err = client.Fail(process.ID, []string{}, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+
+	// Cron should still generate a cron workflow even if the last process fails
+	process, err = client.Assign(env.ColonyName, 100, "", "", env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.NotNil(t, process)
+
+	server.Shutdown()
+	<-done
+}
+
+func TestAddCronWaitForPrevProcessGraph(t *testing.T) {
+	env, client, server, _, done := server.SetupTestEnv2(t)
+
+	cron := utils.FakeSingleCron(t, env.ColonyName, env.ExecutorID, env.ExecutorName)
+	cron.Interval = 1
+	cron.WaitForPrevProcessGraph = true
+
+	addedCron, err := client.AddCron(cron, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.NotNil(t, addedCron)
+
+	// Wait for 5 seconds, we should only have 1 cron workflow since WaitForPrevProcessGraph is true
+	time.Sleep(5 * time.Second)
+
+	processes, err := client.GetWaitingProcesses(env.ColonyName, "", "", "", 100, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.Len(t, processes, 1)
+
+	firstProcessID := processes[0]
+
+	processgraphs, err := client.GetWaitingProcessGraphs(env.ColonyName, 100, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.Len(t, processgraphs, 1)
+
+	// Now assign a the cron process, then a new cron should be triggered
+	process, err := client.Assign(env.ColonyName, 100, "", "", env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.NotNil(t, process)
+	err = client.Close(process.ID, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+
+	time.Sleep(5 * time.Second)
+
+	processes, err = client.GetWaitingProcesses(env.ColonyName, "", "", "", 100, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.Len(t, processes, 1)
+
+	secondProcessID := processes[0]
+
+	assert.NotEqual(t, firstProcessID, secondProcessID)
+
+	stat, err := client.ColonyStatistics(env.ColonyName, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.Equal(t, stat.WaitingWorkflows, 1)
+	assert.Equal(t, stat.SuccessfulWorkflows, 1)
+	assert.Equal(t, stat.WaitingWorkflows, 1)
+
+	server.Shutdown()
+	<-done
+}
+
+func TestAddCronWaitForPrevProcessGraphFail(t *testing.T) {
+	env, client, server, _, done := server.SetupTestEnv2(t)
+
+	cron := utils.FakeSingleCron(t, env.ColonyName, env.ExecutorID, env.ExecutorName)
+	cron.Interval = 1
+	cron.WaitForPrevProcessGraph = true
+
+	addedCron, err := client.AddCron(cron, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.NotNil(t, addedCron)
+
+	// Wait for 5 seconds, we should only have 1 cron workflow since WaitForPrevProcessGraph is true
+	time.Sleep(5 * time.Second)
+
+	processes, err := client.GetWaitingProcesses(env.ColonyName, "", "", "", 100, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.Len(t, processes, 1)
+
+	firstProcessID := processes[0]
+
+	processgraphs, err := client.GetWaitingProcessGraphs(env.ColonyName, 100, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.Len(t, processgraphs, 1)
+
+	// Now assign a the cron process, then a new cron should be triggered
+	process, err := client.Assign(env.ColonyName, 100, "", "", env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.NotNil(t, process)
+	err = client.Fail(process.ID, []string{""}, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+
+	time.Sleep(5 * time.Second)
+
+	processes, err = client.GetWaitingProcesses(env.ColonyName, "", "", "", 100, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.Len(t, processes, 1)
+
+	secondProcessID := processes[0]
+
+	assert.NotEqual(t, firstProcessID, secondProcessID)
+
+	stat, err := client.ColonyStatistics(env.ColonyName, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.Equal(t, stat.WaitingWorkflows, 1)
+	assert.Equal(t, stat.SuccessfulWorkflows, 0)
+	assert.Equal(t, stat.FailedWorkflows, 1)
+	assert.Equal(t, stat.WaitingWorkflows, 1)
+
+	server.Shutdown()
+	<-done
+}
+
+func TestAddCronInputOutput(t *testing.T) {
+	env, client, server, _, done := server.SetupTestEnv2(t)
+
+	cron := utils.FakeSingleCron(t, env.ColonyName, env.ExecutorID, env.ExecutorName)
+	cron.Interval = 1
+	cron.WaitForPrevProcessGraph = true
+
+	addedCron, err := client.AddCron(cron, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.NotNil(t, addedCron)
+
+	process, err := client.Assign(env.ColonyName, 100, "", "", env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.NotNil(t, process)
+	output := make([]interface{}, 1)
+	output[0] = "result_cron1"
+	err = client.CloseWithOutput(process.ID, output, env.ExecutorPrvKey)
+
+	process, err = client.Assign(env.ColonyName, 100, "", "", env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.NotNil(t, process)
+	assert.Len(t, process.Input, 1)
+	assert.Equal(t, process.Input[0], "result_cron1")
+
+	stat, err := client.ColonyStatistics(env.ColonyName, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.Equal(t, stat.WaitingWorkflows, 0)
+	assert.Equal(t, stat.RunningWorkflows, 1)
+	assert.Equal(t, stat.SuccessfulWorkflows, 1)
+
+	server.Shutdown()
+	<-done
+}
+
+func TestAddCronInputOutput2(t *testing.T) {
+	env, client, server, _, done := server.SetupTestEnv2(t)
+
+	cron := utils.FakeCron(t, env.ColonyName, env.ExecutorID, env.ExecutorName)
+	cron.Interval = 1
+	cron.WaitForPrevProcessGraph = true
+
+	addedCron, err := client.AddCron(cron, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.NotNil(t, addedCron)
+
+	process, err := client.Assign(env.ColonyName, 100, "", "", env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.NotNil(t, process)
+	err = client.Close(process.ID, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+
+	process, err = client.Assign(env.ColonyName, 100, "", "", env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.NotNil(t, process)
+	output := make([]interface{}, 1)
+	output[0] = "result_cron1"
+	err = client.CloseWithOutput(process.ID, output, env.ExecutorPrvKey)
+
+	process, err = client.Assign(env.ColonyName, 100, "", "", env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.NotNil(t, process)
+	assert.Len(t, process.Input, 1)
+	assert.Equal(t, process.Input[0], "result_cron1")
+
+	stat, err := client.ColonyStatistics(env.ColonyName, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.Equal(t, stat.WaitingWorkflows, 0)
+	assert.Equal(t, stat.RunningWorkflows, 1)
+	assert.Equal(t, stat.SuccessfulWorkflows, 1)
+
+	server.Shutdown()
+	<-done
+}
+
+func TestAddCronWithCronExpr(t *testing.T) {
+	env, client, server, _, done := server.SetupTestEnv2(t)
+
+	cron := utils.FakeCron(t, env.ColonyName, env.ExecutorID, env.ExecutorName)
+	cron.CronExpression = "0/1 * * * * *" // every second
+
+	addedCron, err := client.AddCron(cron, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.NotNil(t, addedCron)
+
+	// If the cron is successful, there should be a process we can assign
+	process, err := client.Assign(env.ColonyName, 100, "", "", env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.NotNil(t, process)
+
+	server.Shutdown()
+	<-done
+}
+
+func TestAddCronFail(t *testing.T) {
+	env, client, server, _, done := server.SetupTestEnv2(t)
+
+	cron := utils.FakeCron(t, env.ColonyName, env.ExecutorID, env.ExecutorName)
+	cron.WorkflowSpec = "error"
+	addedCron, err := client.AddCron(cron, env.ExecutorPrvKey)
+	assert.NotNil(t, err)
+	assert.Nil(t, addedCron)
+
+	cron = utils.FakeCron(t, env.ColonyName, env.ExecutorID, env.ExecutorName)
+	cron.CronExpression = "error"
+	addedCron, err = client.AddCron(cron, env.ExecutorPrvKey)
+	assert.NotNil(t, err)
+	assert.Nil(t, addedCron)
+
+	server.Shutdown()
+	<-done
+}
+
+func TestGetCron(t *testing.T) {
+	env, client, server, _, done := server.SetupTestEnv2(t)
+
+	cron := utils.FakeCron(t, env.ColonyName, env.ExecutorID, env.ExecutorName)
+	cron.Interval = 2
+
+	addedCron, err := client.AddCron(cron, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.NotNil(t, addedCron)
+
+	cronFromServer, err := client.GetCron(addedCron.ID, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.Equal(t, addedCron.ID, cronFromServer.ID)
+
+	server.Shutdown()
+	<-done
+}
+
+func TestCronArgs(t *testing.T) {
+	env, client, server, _, done := server.SetupTestEnv2(t)
+
+	cron := utils.FakeCron(t, env.ColonyName, env.ExecutorID, env.ExecutorName)
+	cron.Interval = 2
+
+	addedCron, err := client.AddCron(cron, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.NotNil(t, addedCron)
+
+	process, err := client.Assign(env.ColonyName, 100, "", "", env.ExecutorPrvKey)
+	assert.Nil(t, err)
+
+	// TODO:
+	fmt.Println(process)
+
+	server.Shutdown()
+	<-done
+}
+
+func TestGetCrons(t *testing.T) {
+	env, client, server, _, done := server.SetupTestEnv2(t)
+
+	cron1 := utils.FakeCron(t, env.ColonyName, env.ExecutorID, env.ExecutorName)
+	cron1.Name = "test_cron_1"
+	addedCron1, err := client.AddCron(cron1, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.NotNil(t, addedCron1)
+	cron2 := utils.FakeCron(t, env.ColonyName, env.ExecutorID, env.ExecutorName)
+	cron2.Name = "test_cron_2"
+	addedCron2, err := client.AddCron(cron2, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.NotNil(t, addedCron2)
+
+	cronsFromServer, err := client.GetCrons(env.ColonyName, 100, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+
+	assert.Len(t, cronsFromServer, 2)
+
+	counter := 0
+	for _, cron := range cronsFromServer {
+		if cron.Name == "test_cron_1" {
+			counter++
+		}
+		if cron.Name == "test_cron_2" {
+			counter++
+		}
+	}
+
+	assert.Equal(t, counter, 2)
+
+	server.Shutdown()
+	<-done
+}
+
+func TestRemoveCron(t *testing.T) {
+	env, client, server, _, done := server.SetupTestEnv2(t)
+
+	cron := utils.FakeCron(t, env.ColonyName, env.ExecutorID, env.ExecutorName)
+	addedCron, err := client.AddCron(cron, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.NotNil(t, addedCron)
+
+	err = client.RemoveCron(addedCron.ID, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+
+	cronFromServer, err := client.GetCron(addedCron.ID, env.ExecutorPrvKey)
+	assert.NotNil(t, err)
+	assert.Nil(t, cronFromServer)
+
+	server.Shutdown()
+	<-done
+}
+
+func TestRunCron(t *testing.T) {
+	env, client, server, _, done := server.SetupTestEnv2(t)
+
+	cron := utils.FakeCron(t, env.ColonyName, env.ExecutorID, env.ExecutorName)
+	cron.Interval = 1000 // Will be triggered in 1000 seconds
+
+	addedCron, err := client.AddCron(cron, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.NotNil(t, addedCron)
+
+	_, err = client.RunCron(addedCron.ID, env.ExecutorPrvKey)
+
+	// If the cron is successful, there should be a process we can assign
+	process, err := client.Assign(env.ColonyName, 10, "", "", env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.NotNil(t, process)
+
+	server.Shutdown()
+	<-done
+}

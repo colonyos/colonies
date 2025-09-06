@@ -10,7 +10,7 @@ import (
 	"github.com/colonyos/colonies/pkg/client"
 	"github.com/colonyos/colonies/pkg/cluster"
 	"github.com/colonyos/colonies/pkg/database/postgresql"
-	"github.com/colonyos/colonies/pkg/server"
+	"github.com/colonyos/colonies/pkg/service"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -166,7 +166,7 @@ var serverStartCmd = &cobra.Command{
 
 		setupProfiler()
 
-		server := server.CreateColoniesServer(db,
+		server := service.CreateColoniesServer(db,
 			ServerPort,
 			UseTLS,
 			TLSKey,
