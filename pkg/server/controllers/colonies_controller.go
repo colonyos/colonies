@@ -204,6 +204,15 @@ func (controller *ColoniesController) GetThisNode() cluster.Node {
 func (controller *ColoniesController) SubscribeProcesses(executorID string, subscription *websockethandlers.Subscription) error {
 	cmd := &command{threaded: false, errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
+			executor, err := controller.executorDB.GetExecutorByID(executorID)
+			if err != nil {
+				cmd.errorChan <- err
+				return
+			}
+			if executor == nil {
+				cmd.errorChan <- errors.New("executor not found")
+				return
+			}
 			controller.wsSubCtrl.AddProcessesSubscriber(executorID, subscription)
 			cmd.errorChan <- nil
 		}}

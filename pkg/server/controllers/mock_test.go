@@ -367,7 +367,8 @@ func (db *DatabaseMock) GetExecutors() ([]*core.Executor, error) {
 }
 func (db *DatabaseMock) GetExecutorByID(executorID string) (*core.Executor, error) {
 	if db.ReturnError == "GetExecutorByID" { return nil, errors.New("mock error") }
-	return nil, nil
+	// Return a dummy executor when no error is set
+	return &core.Executor{ID: executorID, ColonyName: "test-colony"}, nil
 }
 func (db *DatabaseMock) GetExecutorsByColonyName(colonyName string) ([]*core.Executor, error) {
 	if db.ReturnError == "GetExecutorsByColonyName" || db.ReturnError == "GetExecutorByColonyName" { return nil, errors.New("mock error") }
@@ -399,6 +400,18 @@ func (db *DatabaseMock) GetProcessByID(processID string) (*core.Process, error) 
 	if db.ReturnError == "GetProcessByID" { return nil, errors.New("mock error") }
 	return nil, nil
 }
+func (db *DatabaseMock) SetProcessState(processID string, state int) error {
+	if db.ReturnError == "SetProcessState" { return errors.New("mock error") }
+	return nil
+}
+func (db *DatabaseMock) SetWaitForParents(processID string, waitForParent bool) error {
+	if db.ReturnError == "SetWaitForParents" { return errors.New("mock error") }
+	return nil
+}
+func (db *DatabaseMock) MarkSuccessful(processID string) (float64, float64, error) {
+	if db.ReturnError == "MarkSuccessful" { return 0, 0, errors.New("mock error") }
+	return 1.0, 1.0, nil
+}
 func (db *DatabaseMock) FindProcessesByColonyName(colonyName string, seconds int, state int) ([]*core.Process, error) { return nil, nil }
 func (db *DatabaseMock) FindProcessesByExecutorID(colonyName string, executorID string, seconds int, state int) ([]*core.Process, error) { return nil, nil }
 func (db *DatabaseMock) FindWaitingProcesses(colonyName string, executorType string, label string, initiator string, count int) ([]*core.Process, error) { return nil, nil }
@@ -422,13 +435,10 @@ func (db *DatabaseMock) ResetProcess(process *core.Process) error { return nil }
 func (db *DatabaseMock) SetInput(processID string, input []interface{}) error { return nil }
 func (db *DatabaseMock) SetOutput(processID string, output []interface{}) error { return nil }
 func (db *DatabaseMock) SetErrors(processID string, errs []string) error { return nil }
-func (db *DatabaseMock) SetProcessState(processID string, state int) error { return nil }
 func (db *DatabaseMock) SetParents(processID string, parents []string) error { return nil }
 func (db *DatabaseMock) SetChildren(processID string, children []string) error { return nil }
-func (db *DatabaseMock) SetWaitForParents(processID string, waitingForParent bool) error { return nil }
 func (db *DatabaseMock) Assign(executorID string, process *core.Process) error { return nil }
 func (db *DatabaseMock) Unassign(process *core.Process) error { return nil }
-func (db *DatabaseMock) MarkSuccessful(processID string) (float64, float64, error) { return 0, 0, nil }
 func (db *DatabaseMock) MarkFailed(processID string, errs []string) error { return nil }
 func (db *DatabaseMock) CountProcesses() (int, error) { return 0, nil }
 func (db *DatabaseMock) CountWaitingProcesses() (int, error) { return 0, nil }
@@ -486,7 +496,10 @@ func (db *DatabaseMock) CountFunctions() (int, error) { return 0, nil }
 // ProcessGraphDatabase interface
 func (db *DatabaseMock) AddProcessGraph(processGraph *core.ProcessGraph) error { return nil }
 func (db *DatabaseMock) GetProcessGraphByID(processGraphID string) (*core.ProcessGraph, error) { return nil, nil }
-func (db *DatabaseMock) SetProcessGraphState(processGraphID string, state int) error { return nil }
+func (db *DatabaseMock) SetProcessGraphState(processGraphID string, state int) error {
+	if db.ReturnError == "SetProcessGraphState" { return errors.New("mock error") }
+	return nil
+}
 func (db *DatabaseMock) FindWaitingProcessGraphs(colonyName string, count int) ([]*core.ProcessGraph, error) { return nil, nil }
 func (db *DatabaseMock) FindRunningProcessGraphs(colonyName string, count int) ([]*core.ProcessGraph, error) { return nil, nil }
 func (db *DatabaseMock) FindSuccessfulProcessGraphs(colonyName string, count int) ([]*core.ProcessGraph, error) { return nil, nil }
@@ -507,9 +520,18 @@ func (db *DatabaseMock) CountSuccessfulProcessGraphsByColonyName(colonyName stri
 func (db *DatabaseMock) CountFailedProcessGraphsByColonyName(colonyName string) (int, error) { return 0, nil }
 
 // GeneratorDatabase interface
-func (db *DatabaseMock) AddGenerator(generator *core.Generator) error { return nil }
-func (db *DatabaseMock) GetGeneratorByID(generatorID string) (*core.Generator, error) { return nil, nil }
-func (db *DatabaseMock) GetGeneratorByName(colonyName string, generatorName string) (*core.Generator, error) { return nil, nil }
+func (db *DatabaseMock) AddGenerator(generator *core.Generator) error {
+	if db.ReturnError == "AddGenerator" { return errors.New("mock error") }
+	return nil
+}
+func (db *DatabaseMock) GetGeneratorByID(generatorID string) (*core.Generator, error) {
+	if db.ReturnError == "GetGeneratorByID" { return nil, errors.New("mock error") }
+	return &core.Generator{ID: generatorID, ColonyName: "test-colony"}, nil
+}
+func (db *DatabaseMock) GetGeneratorByName(colonyName string, generatorName string) (*core.Generator, error) {
+	if db.ReturnError == "GetGeneratorByName" { return nil, errors.New("mock error") }
+	return &core.Generator{ID: generatorName, ColonyName: colonyName}, nil
+}
 func (db *DatabaseMock) FindAllGenerators() ([]*core.Generator, error) { return nil, nil }
 func (db *DatabaseMock) FindGeneratorsByColonyName(colonyName string, count int) ([]*core.Generator, error) { return nil, nil }
 func (db *DatabaseMock) RemoveGeneratorByID(generatorID string) error { return nil }
@@ -524,11 +546,20 @@ func (db *DatabaseMock) RemoveAllGeneratorArgsByGeneratorID(generatorID string) 
 func (db *DatabaseMock) RemoveAllGeneratorArgsByColonyName(colonyName string) error { return nil }
 
 // CronDatabase interface
-func (db *DatabaseMock) AddCron(cron *core.Cron) error { return nil }
-func (db *DatabaseMock) GetCronByID(cronID string) (*core.Cron, error) { return nil, nil }
+func (db *DatabaseMock) AddCron(cron *core.Cron) error {
+	if db.ReturnError == "AddCron" { return errors.New("mock error") }
+	return nil
+}
+func (db *DatabaseMock) GetCronByID(cronID string) (*core.Cron, error) {
+	if db.ReturnError == "GetCronByID" { return nil, errors.New("mock error") }
+	return &core.Cron{ID: cronID, ColonyName: "test-colony"}, nil
+}
 func (db *DatabaseMock) FindAllCrons() ([]*core.Cron, error) { return nil, nil }
 func (db *DatabaseMock) FindCronsByColonyName(colonyName string, count int) ([]*core.Cron, error) { return nil, nil }
-func (db *DatabaseMock) RemoveCronByID(cronID string) error { return nil }
+func (db *DatabaseMock) RemoveCronByID(cronID string) error {
+	if db.ReturnError == "RemoveCronByID" { return errors.New("mock error") }
+	return nil
+}
 func (db *DatabaseMock) UpdateCron(cronID string, nextRun time.Time, lastRun time.Time, processGraphID string) error { return nil }
 func (db *DatabaseMock) GetCronByName(colonyName string, cronName string) (*core.Cron, error) { return nil, nil }
 func (db *DatabaseMock) RemoveAllCronsByColonyName(colonyName string) error { return nil }
