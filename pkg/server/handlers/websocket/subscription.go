@@ -2,6 +2,7 @@ package websocket
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/colonyos/colonies/pkg/core"
@@ -95,7 +96,11 @@ func (wsSubCtrl *WSSubscriptionController) sendProcessToWS(executorID string,
 			Error("Failed to create RPCReplyMsg JSON when subscribing to processes")
 		cancel()
 	}
-	err = wsConn.WriteMessage(wsMsgType, []byte(rpcReplyJSONString))
+	if wsConn != nil {
+		err = wsConn.WriteMessage(wsMsgType, []byte(rpcReplyJSONString))
+	} else {
+		err = errors.New("WebSocket connection is nil")
+	}
 	if err != nil {
 		log.WithFields(log.Fields{
 			"ExecutorID":   executorID,
@@ -123,7 +128,9 @@ func (wsSubCtrl *WSSubscriptionController) Subscribe(executorID string, processI
 					"State":        subscription.State,
 					"Error":        err}).
 					Debug("Subscriber timed out")
-				subscription.WsConn.Close()
+				if subscription.WsConn != nil {
+					subscription.WsConn.Close()
+				}
 				return // This will kill the go-routine, also note all cancelCtx will result in an err to errChan
 			case process := <-processChan:
 				wsSubCtrl.sendProcessToWS(executorID, process, subscription.WsConn, subscription.WsMsgType, func() { cancelCtx() })
