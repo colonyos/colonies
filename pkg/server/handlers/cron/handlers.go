@@ -8,6 +8,7 @@ import (
 	"github.com/colonyos/colonies/pkg/database"
 	"github.com/colonyos/colonies/pkg/rpc"
 	"github.com/colonyos/colonies/pkg/security"
+	"github.com/colonyos/colonies/pkg/server/registry"
 	cronlib "github.com/colonyos/colonies/pkg/cron"
 	serverutils "github.com/colonyos/colonies/pkg/server/utils"
 	"github.com/gin-gonic/gin"
@@ -37,6 +38,26 @@ type Handlers struct {
 
 func NewHandlers(server ColoniesServer) *Handlers {
 	return &Handlers{server: server}
+}
+
+// RegisterHandlers implements the HandlerRegistrar interface
+func (h *Handlers) RegisterHandlers(handlerRegistry *registry.HandlerRegistry) error {
+	if err := handlerRegistry.Register(rpc.AddCronPayloadType, h.HandleAddCron); err != nil {
+		return err
+	}
+	if err := handlerRegistry.Register(rpc.GetCronPayloadType, h.HandleGetCron); err != nil {
+		return err
+	}
+	if err := handlerRegistry.Register(rpc.GetCronsPayloadType, h.HandleGetCrons); err != nil {
+		return err
+	}
+	if err := handlerRegistry.Register(rpc.RunCronPayloadType, h.HandleRunCron); err != nil {
+		return err
+	}
+	if err := handlerRegistry.Register(rpc.RemoveCronPayloadType, h.HandleRemoveCron); err != nil {
+		return err
+	}
+	return nil
 }
 
 // resolveInitiator resolves the initiator name from the recoveredID

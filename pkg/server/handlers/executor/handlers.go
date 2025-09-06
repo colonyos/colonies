@@ -8,6 +8,7 @@ import (
 	"github.com/colonyos/colonies/pkg/database"
 	"github.com/colonyos/colonies/pkg/rpc"
 	"github.com/colonyos/colonies/pkg/security"
+	"github.com/colonyos/colonies/pkg/server/registry"
 	"github.com/gin-gonic/gin"
 	log "github.com/sirupsen/logrus"
 )
@@ -36,6 +37,32 @@ func NewHandlers(server ColoniesServer) *Handlers {
 	return &Handlers{
 		server: server,
 	}
+}
+
+// RegisterHandlers implements the HandlerRegistrar interface
+func (h *Handlers) RegisterHandlers(handlerRegistry *registry.HandlerRegistry) error {
+	if err := handlerRegistry.Register(rpc.AddExecutorPayloadType, h.HandleAddExecutor); err != nil {
+		return err
+	}
+	if err := handlerRegistry.Register(rpc.GetExecutorsPayloadType, h.HandleGetExecutors); err != nil {
+		return err
+	}
+	if err := handlerRegistry.Register(rpc.GetExecutorPayloadType, h.HandleGetExecutor); err != nil {
+		return err
+	}
+	if err := handlerRegistry.Register(rpc.ApproveExecutorPayloadType, h.HandleApproveExecutor); err != nil {
+		return err
+	}
+	if err := handlerRegistry.Register(rpc.RejectExecutorPayloadType, h.HandleRejectExecutor); err != nil {
+		return err
+	}
+	if err := handlerRegistry.Register(rpc.RemoveExecutorPayloadType, h.HandleRemoveExecutor); err != nil {
+		return err
+	}
+	if err := handlerRegistry.Register(rpc.ReportAllocationsPayloadType, h.HandleReportAllocations); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (h *Handlers) HandleAddExecutor(c *gin.Context, recoveredID string, payloadType string, jsonString string) {

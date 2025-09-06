@@ -8,6 +8,7 @@ import (
 	"github.com/colonyos/colonies/pkg/cluster"
 	"github.com/colonyos/colonies/pkg/core"
 	"github.com/colonyos/colonies/pkg/rpc"
+	"github.com/colonyos/colonies/pkg/server/registry"
 	"github.com/gin-gonic/gin"
 	log "github.com/sirupsen/logrus"
 )
@@ -41,6 +42,17 @@ func NewHandlers(server ColoniesServer) *Handlers {
 	return &Handlers{
 		server: server,
 	}
+}
+
+// RegisterHandlers implements the HandlerRegistrar interface
+func (h *Handlers) RegisterHandlers(handlerRegistry *registry.HandlerRegistry) error {
+	if err := handlerRegistry.Register(rpc.GetStatisiticsPayloadType, h.HandleStatistics); err != nil {
+		return err
+	}
+	if err := handlerRegistry.Register(rpc.GetClusterPayloadType, h.HandleGetCluster); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (h *Handlers) HandleVersion(c *gin.Context, payloadType string, jsonString string) {

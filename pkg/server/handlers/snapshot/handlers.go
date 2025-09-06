@@ -8,6 +8,7 @@ import (
 	"github.com/colonyos/colonies/pkg/database"
 	"github.com/colonyos/colonies/pkg/rpc"
 	"github.com/colonyos/colonies/pkg/security"
+	"github.com/colonyos/colonies/pkg/server/registry"
 	"github.com/gin-gonic/gin"
 	log "github.com/sirupsen/logrus"
 )
@@ -28,6 +29,26 @@ func NewHandlers(server ColoniesServer) *Handlers {
 	return &Handlers{
 		server: server,
 	}
+}
+
+// RegisterHandlers implements the HandlerRegistrar interface
+func (h *Handlers) RegisterHandlers(handlerRegistry *registry.HandlerRegistry) error {
+	if err := handlerRegistry.Register(rpc.CreateSnapshotPayloadType, h.HandleCreateSnapshot); err != nil {
+		return err
+	}
+	if err := handlerRegistry.Register(rpc.GetSnapshotPayloadType, h.HandleGetSnapshot); err != nil {
+		return err
+	}
+	if err := handlerRegistry.Register(rpc.GetSnapshotsPayloadType, h.HandleGetSnapshots); err != nil {
+		return err
+	}
+	if err := handlerRegistry.Register(rpc.RemoveSnapshotPayloadType, h.HandleRemoveSnapshot); err != nil {
+		return err
+	}
+	if err := handlerRegistry.Register(rpc.RemoveAllSnapshotsPayloadType, h.HandleRemoveAllSnapshots); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (h *Handlers) HandleCreateSnapshot(c *gin.Context, recoveredID string, payloadType string, jsonString string) {

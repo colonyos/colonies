@@ -6,6 +6,7 @@ import (
 
 	"github.com/colonyos/colonies/pkg/core"
 	"github.com/colonyos/colonies/pkg/rpc"
+	"github.com/colonyos/colonies/pkg/server/registry"
 	"github.com/gin-gonic/gin"
 	log "github.com/sirupsen/logrus"
 )
@@ -43,6 +44,29 @@ func NewHandlers(server ColoniesServer) *Handlers {
 	return &Handlers{
 		server: server,
 	}
+}
+
+// RegisterHandlers implements the HandlerRegistrar interface
+func (h *Handlers) RegisterHandlers(handlerRegistry *registry.HandlerRegistry) error {
+	if err := handlerRegistry.Register(rpc.SubmitWorkflowSpecPayloadType, h.HandleSubmitWorkflow); err != nil {
+		return err
+	}
+	if err := handlerRegistry.Register(rpc.GetProcessGraphPayloadType, h.HandleGetProcessGraph); err != nil {
+		return err
+	}
+	if err := handlerRegistry.Register(rpc.GetProcessGraphsPayloadType, h.HandleGetProcessGraphs); err != nil {
+		return err
+	}
+	if err := handlerRegistry.Register(rpc.RemoveProcessGraphPayloadType, h.HandleRemoveProcessGraph); err != nil {
+		return err
+	}
+	if err := handlerRegistry.Register(rpc.RemoveAllProcessGraphsPayloadType, h.HandleRemoveAllProcessGraphs); err != nil {
+		return err
+	}
+	if err := handlerRegistry.Register(rpc.AddChildPayloadType, h.HandleAddChild); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (h *Handlers) HandleSubmitWorkflow(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
