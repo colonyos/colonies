@@ -8,7 +8,7 @@ coverage.txt
 *.sw*
 pkg/database/postgresql/*.sw*
 pkg/database/*.sw*
-pkg/server/*.sw*
+pkg/service/*.sw*
 pkg/core/*.sw*
 pkg/security/*.sw*
 pkg/logging/*.sw*

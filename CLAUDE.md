@@ -40,7 +40,7 @@ ColonyOS is a distributed meta-orchestrator framework that creates compute conti
 
 ### Key Packages
 - `pkg/core/`: Core domain models (Process, Executor, Colony, FunctionSpec)
-- `pkg/server/`: HTTP RPC server implementation 
+- `pkg/service/`: HTTP RPC service implementation 
 - `pkg/client/`: Go SDK for Colonies API
 - `pkg/database/postgresql/`: PostgreSQL database layer with TimescaleDB support
 - `pkg/security/`: Zero-trust security protocol implementation

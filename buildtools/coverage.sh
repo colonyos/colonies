@@ -53,7 +53,7 @@ if [ -f profile.out ]; then
   cat profile.out >> coverage.txt
   rm profile.out
 fi
-go test -race -coverprofile=profile.out -covermode=atomic ./pkg/server
+go test -race -coverprofile=profile.out -covermode=atomic ./pkg/service
 if [ -f profile.out ]; then
   cat profile.out >> coverage.txt
   rm profile.out
