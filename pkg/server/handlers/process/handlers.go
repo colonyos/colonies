@@ -15,6 +15,7 @@ import (
 	"github.com/colonyos/colonies/pkg/rpc"
 	"github.com/colonyos/colonies/pkg/security"
 	"github.com/colonyos/colonies/pkg/constants"
+	"github.com/colonyos/colonies/pkg/server/registry"
 	"github.com/gin-gonic/gin"
 	log "github.com/sirupsen/logrus"
 )
@@ -123,6 +124,51 @@ func NewHandlers(server ColoniesServer) *Handlers {
 		server: server,
 	}
 }
+
+// RegisterHandlers implements the HandlerRegistrar interface
+func (h *Handlers) RegisterHandlers(handlerRegistry *registry.HandlerRegistry) error {
+	if err := handlerRegistry.Register(rpc.SubmitFunctionSpecPayloadType, h.HandleSubmit); err != nil {
+		return err
+	}
+	if err := handlerRegistry.RegisterWithRawRequest(rpc.AssignProcessPayloadType, h.HandleAssignProcess); err != nil {
+		return err
+	}
+	if err := handlerRegistry.Register(rpc.PauseAssignmentsPayloadType, h.HandlePauseAssignments); err != nil {
+		return err
+	}
+	if err := handlerRegistry.Register(rpc.ResumeAssignmentsPayloadType, h.HandleResumeAssignments); err != nil {
+		return err
+	}
+	if err := handlerRegistry.Register(rpc.GetPauseStatusPayloadType, h.HandleGetPauseStatus); err != nil {
+		return err
+	}
+	if err := handlerRegistry.Register(rpc.GetProcessHistPayloadType, h.HandleGetProcessHist); err != nil {
+		return err
+	}
+	if err := handlerRegistry.Register(rpc.GetProcessesPayloadType, h.HandleGetProcesses); err != nil {
+		return err
+	}
+	if err := handlerRegistry.Register(rpc.GetProcessPayloadType, h.HandleGetProcess); err != nil {
+		return err
+	}
+	if err := handlerRegistry.Register(rpc.RemoveProcessPayloadType, h.HandleRemoveProcess); err != nil {
+		return err
+	}
+	if err := handlerRegistry.Register(rpc.RemoveAllProcessesPayloadType, h.HandleRemoveAllProcesses); err != nil {
+		return err
+	}
+	if err := handlerRegistry.Register(rpc.CloseSuccessfulPayloadType, h.HandleCloseSuccessful); err != nil {
+		return err
+	}
+	if err := handlerRegistry.Register(rpc.CloseFailedPayloadType, h.HandleCloseFailed); err != nil {
+		return err
+	}
+	if err := handlerRegistry.Register(rpc.SetOutputPayloadType, h.HandleSetOutput); err != nil {
+		return err
+	}
+	return nil
+}
+
 
 func (h *Handlers) HandleSubmit(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
 	msg, err := rpc.CreateSubmitFunctionSpecMsgFromJSON(jsonString)

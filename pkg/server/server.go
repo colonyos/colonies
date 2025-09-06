@@ -17,6 +17,7 @@ import (
 	"github.com/colonyos/colonies/pkg/security/crypto"
 	"github.com/colonyos/colonies/pkg/security/validator"
 	"github.com/colonyos/colonies/pkg/server/controllers"
+	"github.com/colonyos/colonies/pkg/server/registry"
 	attributehandlers "github.com/colonyos/colonies/pkg/server/handlers/attribute"
 	cronhandlers "github.com/colonyos/colonies/pkg/server/handlers/cron"
 	filehandlers "github.com/colonyos/colonies/pkg/server/handlers/file"
@@ -70,6 +71,7 @@ type ColoniesServer struct {
 	
 	// Handler composition
 	serverAdapter        *ServerAdapter
+	handlerRegistry      *registry.HandlerRegistry
 	userHandlers         *user.Handlers
 	colonyHandlers       *colony.Handlers
 	executorHandlers     *executor.Handlers
@@ -142,6 +144,7 @@ func CreateColoniesServer(db database.Database,
 
 	// Initialize server adapter and handler structs
 	server.serverAdapter = NewServerAdapter(server)
+	server.handlerRegistry = registry.NewHandlerRegistry()
 	server.userHandlers = user.NewHandlers(server.serverAdapter)
 	server.colonyHandlers = colony.NewHandlers(server.serverAdapter)
 	server.executorHandlers = executor.NewHandlers(server.serverAdapter)
@@ -157,6 +160,9 @@ func CreateColoniesServer(db database.Database,
 	server.generatorHandlers = generatorhandlers.NewHandlers(server.serverAdapter)
 	server.securityHandlers = securityhandlers.NewHandlers(server.serverAdapter)
 	server.websocketHandlers = websockethandlers.NewHandlers(server.serverAdapter)
+	
+	// Register all handlers that implement self-registration
+	server.registerHandlers()
 
 	log.WithFields(log.Fields{"Port": port,
 		"TLS":                     tls,
@@ -184,6 +190,84 @@ func CreateColoniesServer(db database.Database,
 
 func (server *ColoniesServer) SetAllowExecutorReregister(allow bool) {
 	server.allowExecutorReregister = allow
+}
+
+// registerHandlers registers all handlers that support self-registration
+func (server *ColoniesServer) registerHandlers() {
+	// Register attribute handlers
+	if err := server.attributeHandlers.RegisterHandlers(server.handlerRegistry); err != nil {
+		log.WithFields(log.Fields{"Error": err}).Fatal("Failed to register attribute handlers")
+	}
+
+	// Register user handlers
+	if err := server.userHandlers.RegisterHandlers(server.handlerRegistry); err != nil {
+		log.WithFields(log.Fields{"Error": err}).Fatal("Failed to register user handlers")
+	}
+
+	// Register colony handlers
+	if err := server.colonyHandlers.RegisterHandlers(server.handlerRegistry); err != nil {
+		log.WithFields(log.Fields{"Error": err}).Fatal("Failed to register colony handlers")
+	}
+
+	// Register executor handlers
+	if err := server.executorHandlers.RegisterHandlers(server.handlerRegistry); err != nil {
+		log.WithFields(log.Fields{"Error": err}).Fatal("Failed to register executor handlers")
+	}
+
+	// Register function handlers
+	if err := server.functionHandlers.RegisterHandlers(server.handlerRegistry); err != nil {
+		log.WithFields(log.Fields{"Error": err}).Fatal("Failed to register function handlers")
+	}
+
+	// Register cron handlers
+	if err := server.cronHandlers.RegisterHandlers(server.handlerRegistry); err != nil {
+		log.WithFields(log.Fields{"Error": err}).Fatal("Failed to register cron handlers")
+	}
+
+	// Register generator handlers
+	if err := server.generatorHandlers.RegisterHandlers(server.handlerRegistry); err != nil {
+		log.WithFields(log.Fields{"Error": err}).Fatal("Failed to register generator handlers")
+	}
+
+	// Register server handlers
+	if err := server.serverHandlers.RegisterHandlers(server.handlerRegistry); err != nil {
+		log.WithFields(log.Fields{"Error": err}).Fatal("Failed to register server handlers")
+	}
+
+	// Register process graph handlers
+	if err := server.processgraphHandlers.RegisterHandlers(server.handlerRegistry); err != nil {
+		log.WithFields(log.Fields{"Error": err}).Fatal("Failed to register process graph handlers")
+	}
+
+	// Register log handlers
+	if err := server.logHandlers.RegisterHandlers(server.handlerRegistry); err != nil {
+		log.WithFields(log.Fields{"Error": err}).Fatal("Failed to register log handlers")
+	}
+
+	// Register process handlers
+	if err := server.processHandlers.RegisterHandlers(server.handlerRegistry); err != nil {
+		log.WithFields(log.Fields{"Error": err}).Fatal("Failed to register process handlers")
+	}
+
+	// Register file handlers
+	if err := server.fileHandlers.RegisterHandlers(server.handlerRegistry); err != nil {
+		log.WithFields(log.Fields{"Error": err}).Fatal("Failed to register file handlers")
+	}
+
+	// Register snapshot handlers
+	if err := server.snapshotHandlers.RegisterHandlers(server.handlerRegistry); err != nil {
+		log.WithFields(log.Fields{"Error": err}).Fatal("Failed to register snapshot handlers")
+	}
+
+	// Register security handlers
+	if err := server.securityHandlers.RegisterHandlers(server.handlerRegistry); err != nil {
+		log.WithFields(log.Fields{"Error": err}).Fatal("Failed to register security handlers")
+	}
+
+	log.WithFields(log.Fields{
+		"RegisteredHandlers": len(server.handlerRegistry.GetRegisteredTypes()),
+		"HandlerTypes":      server.handlerRegistry.GetRegisteredTypes(),
+	}).Info("Handler registration completed")
 }
 
 func (server *ColoniesServer) getServerID() (string, error) {
@@ -233,182 +317,16 @@ func (server *ColoniesServer) handleAPIRequest(c *gin.Context) {
 		return
 	}
 
-	switch rpcMsg.PayloadType {
+	// Handle with registered handlers
+	if server.handlerRegistry.HandleRequestWithRaw(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload(), string(jsonBytes)) {
+		return
+	}
 
-	// User handlers
-	case rpc.AddUserPayloadType:
-		server.userHandlers.HandleAddUser(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
-	case rpc.GetUsersPayloadType:
-		server.userHandlers.HandleGetUsers(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
-	case rpc.GetUserPayloadType:
-		server.userHandlers.HandleGetUser(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
-	case rpc.RemoveUserPayloadType:
-		server.userHandlers.HandleRemoveUser(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
-
-	// Colony handlers
-	case rpc.AddColonyPayloadType:
-		server.colonyHandlers.HandleAddColony(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
-	case rpc.RemoveColonyPayloadType:
-		server.colonyHandlers.HandleRemoveColony(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
-	case rpc.GetColoniesPayloadType:
-		server.colonyHandlers.HandleGetColonies(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
-	case rpc.GetColonyPayloadType:
-		server.colonyHandlers.HandleGetColony(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
-
-	// Executor handlers
-	case rpc.AddExecutorPayloadType:
-		server.executorHandlers.HandleAddExecutor(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
-	case rpc.GetExecutorsPayloadType:
-		server.executorHandlers.HandleGetExecutors(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
-	case rpc.GetExecutorPayloadType:
-		server.executorHandlers.HandleGetExecutor(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
-	case rpc.ApproveExecutorPayloadType:
-		server.executorHandlers.HandleApproveExecutor(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
-	case rpc.RejectExecutorPayloadType:
-		server.executorHandlers.HandleRejectExecutor(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
-	case rpc.RemoveExecutorPayloadType:
-		server.executorHandlers.HandleRemoveExecutor(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
-	case rpc.ReportAllocationsPayloadType:
-		server.executorHandlers.HandleReportAllocations(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
-
-	//Function handlers
-	case rpc.AddFunctionPayloadType:
-		server.functionHandlers.HandleAddFunction(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
-	case rpc.GetFunctionsPayloadType:
-		server.functionHandlers.HandleGetFunctions(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
-	case rpc.RemoveFunctionPayloadType:
-		server.functionHandlers.HandleRemoveFunction(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
-
-	// Process handlers
-	case rpc.SubmitFunctionSpecPayloadType:
-		server.processHandlers.HandleSubmit(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
-	case rpc.AssignProcessPayloadType:
-		server.processHandlers.HandleAssignProcess(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload(), string(jsonBytes))
-	case rpc.PauseAssignmentsPayloadType:
-		server.processHandlers.HandlePauseAssignments(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
-	case rpc.ResumeAssignmentsPayloadType:
-		server.processHandlers.HandleResumeAssignments(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
-	case rpc.GetPauseStatusPayloadType:
-		server.processHandlers.HandleGetPauseStatus(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
-	case rpc.GetProcessHistPayloadType:
-		server.processHandlers.HandleGetProcessHist(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
-	case rpc.GetProcessesPayloadType:
-		server.processHandlers.HandleGetProcesses(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
-	case rpc.GetProcessPayloadType:
-		server.processHandlers.HandleGetProcess(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
-	case rpc.RemoveProcessPayloadType:
-		server.processHandlers.HandleRemoveProcess(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
-	case rpc.RemoveAllProcessesPayloadType:
-		server.processHandlers.HandleRemoveAllProcesses(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
-	case rpc.CloseSuccessfulPayloadType:
-		server.processHandlers.HandleCloseSuccessful(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
-	case rpc.CloseFailedPayloadType:
-		server.processHandlers.HandleCloseFailed(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
-	case rpc.SetOutputPayloadType:
-		server.processHandlers.HandleSetOutput(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
-	case rpc.GetColonyStatisticsPayloadType:
-		server.colonyHandlers.HandleColonyStatistics(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
-
-	// Attribute handlers
-	case rpc.AddAttributePayloadType:
-		server.attributeHandlers.HandleAddAttribute(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
-	case rpc.GetAttributePayloadType:
-		server.attributeHandlers.HandleGetAttribute(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
-
-	// Workflow and processgraph handlers
-	case rpc.SubmitWorkflowSpecPayloadType:
-		server.processgraphHandlers.HandleSubmitWorkflow(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
-	case rpc.GetProcessGraphPayloadType:
-		server.processgraphHandlers.HandleGetProcessGraph(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
-	case rpc.GetProcessGraphsPayloadType:
-		server.processgraphHandlers.HandleGetProcessGraphs(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
-	case rpc.RemoveProcessGraphPayloadType:
-		server.processgraphHandlers.HandleRemoveProcessGraph(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
-	case rpc.RemoveAllProcessGraphsPayloadType:
-		server.processgraphHandlers.HandleRemoveAllProcessGraphs(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
-	case rpc.AddChildPayloadType:
-		server.processgraphHandlers.HandleAddChild(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
-
-	// Generators handlers
-	case rpc.AddGeneratorPayloadType:
-		server.generatorHandlers.HandleAddGenerator(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
-	case rpc.GetGeneratorPayloadType:
-		server.generatorHandlers.HandleGetGenerator(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
-	case rpc.ResolveGeneratorPayloadType:
-		server.generatorHandlers.HandleResolveGenerator(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
-	case rpc.GetGeneratorsPayloadType:
-		server.generatorHandlers.HandleGetGenerators(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
-	case rpc.PackGeneratorPayloadType:
-		server.generatorHandlers.HandlePackGenerator(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
-	case rpc.RemoveGeneratorPayloadType:
-		server.generatorHandlers.HandleRemoveGenerator(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
-
-	// Cron handlers
-	case rpc.AddCronPayloadType:
-		server.cronHandlers.HandleAddCron(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
-	case rpc.GetCronPayloadType:
-		server.cronHandlers.HandleGetCron(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
-	case rpc.GetCronsPayloadType:
-		server.cronHandlers.HandleGetCrons(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
-	case rpc.RunCronPayloadType:
-		server.cronHandlers.HandleRunCron(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
-	case rpc.RemoveCronPayloadType:
-		server.cronHandlers.HandleRemoveCron(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
-
-	// Server handlers
-	case rpc.GetStatisiticsPayloadType:
-		server.serverHandlers.HandleStatistics(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
-	case rpc.GetClusterPayloadType:
-		server.serverHandlers.HandleGetCluster(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
-
-	// Log handlers
-	case rpc.AddLogPayloadType:
-		server.logHandlers.HandleAddLog(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
-	case rpc.GetLogsPayloadType:
-		server.logHandlers.HandleGetLogs(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
-	case rpc.SearchLogsPayloadType:
-		server.logHandlers.HandleSearchLogs(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
-
-		// File handlers
-	case rpc.AddFilePayloadType:
-		server.fileHandlers.HandleAddFile(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
-	case rpc.GetFilePayloadType:
-		server.fileHandlers.HandleGetFile(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
-	case rpc.GetFilesPayloadType:
-		server.fileHandlers.HandleGetFiles(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
-	case rpc.GetFileLabelsPayloadType:
-		server.fileHandlers.HandleGetFileLabels(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
-	case rpc.RemoveFilePayloadType:
-		server.fileHandlers.HandleRemoveFile(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
-
-		// Snapshot handlers
-	case rpc.CreateSnapshotPayloadType:
-		server.snapshotHandlers.HandleCreateSnapshot(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
-	case rpc.GetSnapshotPayloadType:
-		server.snapshotHandlers.HandleGetSnapshot(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
-	case rpc.GetSnapshotsPayloadType:
-		server.snapshotHandlers.HandleGetSnapshots(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
-	case rpc.RemoveSnapshotPayloadType:
-		server.snapshotHandlers.HandleRemoveSnapshot(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
-	case rpc.RemoveAllSnapshotsPayloadType:
-		server.snapshotHandlers.HandleRemoveAllSnapshots(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
-
-		// Security handlers
-	case rpc.ChangeUserIDPayloadType:
-		server.securityHandlers.HandleChangeUserID(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
-	case rpc.ChangeExecutorIDPayloadType:
-		server.securityHandlers.HandleChangeExecutorID(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
-	case rpc.ChangeColonyIDPayloadType:
-		server.securityHandlers.HandleChangeColonyID(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
-	case rpc.ChangeServerIDPayloadType:
-		server.securityHandlers.HandleChangeServerID(c, recoveredID, rpcMsg.PayloadType, rpcMsg.DecodePayload())
-
-	default:
-		errMsg := "invalid rpcMsg.PayloadType, " + rpcMsg.PayloadType
-		if server.handleHTTPError(c, errors.New(errMsg), http.StatusForbidden) {
-			log.Error(errMsg)
-			return
-		}
+	// No handler found for this payload type
+	errMsg := "invalid rpcMsg.PayloadType, " + rpcMsg.PayloadType
+	if server.handleHTTPError(c, errors.New(errMsg), http.StatusForbidden) {
+		log.Error(errMsg)
+		return
 	}
 }
 
