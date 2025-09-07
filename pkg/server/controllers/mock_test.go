@@ -8,8 +8,7 @@ import (
 	"github.com/colonyos/colonies/pkg/constants"
 	"github.com/colonyos/colonies/pkg/core"
 	"github.com/colonyos/colonies/pkg/database/postgresql"
-	websockethandlers "github.com/colonyos/colonies/pkg/server/handlers/websocket"
-	servercommunication "github.com/colonyos/colonies/pkg/server/websocket"
+	"github.com/colonyos/colonies/pkg/backends"
 )
 
 // ControllerMock implements the Controller interface for testing
@@ -30,7 +29,7 @@ func (v *ControllerMock) GetEtcdServer() *cluster.EtcdServer {
 	return nil
 }
 
-func (v *ControllerMock) GetEventHandler() *servercommunication.EventHandler {
+func (v *ControllerMock) GetEventHandler() backends.RealtimeEventHandler {
 	return nil
 }
 
@@ -38,11 +37,11 @@ func (v *ControllerMock) GetThisNode() cluster.Node {
 	return cluster.Node{}
 }
 
-func (v *ControllerMock) SubscribeProcesses(executorID string, subscription *websockethandlers.Subscription) error {
+func (v *ControllerMock) SubscribeProcesses(executorID string, subscription *backends.RealtimeSubscription) error {
 	return nil
 }
 
-func (v *ControllerMock) SubscribeProcess(executorID string, subscription *websockethandlers.Subscription) error {
+func (v *ControllerMock) SubscribeProcess(executorID string, subscription *backends.RealtimeSubscription) error {
 	return nil
 }
 

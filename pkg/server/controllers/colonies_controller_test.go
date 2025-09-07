@@ -7,7 +7,7 @@ import (
 	"github.com/colonyos/colonies/pkg/constants"
 	"github.com/colonyos/colonies/pkg/core"
 	"github.com/colonyos/colonies/pkg/database/postgresql"
-	websockethandlers "github.com/colonyos/colonies/pkg/server/handlers/websocket"
+	"github.com/colonyos/colonies/pkg/backends"
 	"github.com/colonyos/colonies/pkg/utils"
 	"github.com/stretchr/testify/assert"
 )
@@ -16,7 +16,7 @@ func TestColoniesControllerInvalidDB(t *testing.T) {
 	controller, dbMock := createFakeColoniesController()
 
 	dbMock.ReturnError = "GetProcessByID"
-	err := controller.SubscribeProcess("invalid_id", &websockethandlers.Subscription{})
+	err := controller.SubscribeProcess("invalid_id", &backends.RealtimeSubscription{})
 	assert.NotNil(t, err)
 
 	dbMock.ReturnError = "GetColonies"
@@ -368,7 +368,7 @@ func TestColoniesControllerSubscribeProcesses(t *testing.T) {
 	controller, dbMock := createFakeColoniesController()
 	defer controller.Stop()
 
-	subscription := &websockethandlers.Subscription{}
+	subscription := &backends.RealtimeSubscription{}
 
 	// Test with database error
 	dbMock.ReturnError = "GetExecutorByID"
@@ -469,7 +469,7 @@ func TestColoniesControllerWebSocketHandling(t *testing.T) {
 	defer controller.Stop()
 
 	// Test SubscribeProcess with invalid process ID
-	subscription := &websockethandlers.Subscription{}
+	subscription := &backends.RealtimeSubscription{}
 	
 	dbMock.ReturnError = "GetProcessByID"
 	err := controller.SubscribeProcess("invalid-process-id", subscription)

@@ -102,7 +102,7 @@ func (e *Engine) GinEngine() *gin.Engine {
 // convertToGinHandler converts our HandlerFunc to gin.HandlerFunc
 func convertToGinHandler(handler HandlerFunc) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		ctx := &Context{ginContext: c}
+		ctx := NewContext(c)
 		handler(ctx)
 	}
 }

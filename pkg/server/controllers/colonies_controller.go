@@ -13,8 +13,8 @@ import (
 	"github.com/colonyos/colonies/pkg/core"
 	"github.com/colonyos/colonies/pkg/database"
 	"github.com/colonyos/colonies/pkg/scheduler"
-	websockethandlers "github.com/colonyos/colonies/pkg/server/handlers/websocket"
-	servercommunication "github.com/colonyos/colonies/pkg/server/websocket"
+	"github.com/colonyos/colonies/pkg/backends"
+	backendGin "github.com/colonyos/colonies/pkg/backends/gin"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -103,9 +103,9 @@ type ColoniesController struct {
 	cmdQueue         chan *command
 	blockingCmdQueue chan *command
 	scheduler        *scheduler.Scheduler
-	wsSubCtrl        *websockethandlers.WSSubscriptionController
+	wsSubCtrl        backends.RealtimeSubscriptionController
 	relayServer      *cluster.RelayServer
-	eventHandler     *servercommunication.EventHandler
+	eventHandler     backends.RealtimeEventHandler
 	stopFlag         bool
 	stopMutex        sync.Mutex
 	leaderMutex      sync.Mutex
@@ -163,8 +163,9 @@ func CreateColoniesController(db database.Database,
 	controller.pauseChannels = make(map[string][]chan bool)
 
 	controller.relayServer = cluster.CreateRelayServer(controller.thisNode, controller.clusterConfig)
-	controller.eventHandler = servercommunication.CreateEventHandler(controller.relayServer)
-	controller.wsSubCtrl = websockethandlers.CreateWSSubscriptionController(controller.eventHandler)
+	factory := backendGin.NewFactory()
+	controller.eventHandler = factory.CreateEventHandler(controller.relayServer)
+	controller.wsSubCtrl = factory.CreateSubscriptionController(controller.eventHandler)
 	controller.scheduler = scheduler.CreateScheduler(controller.processDB)
 
 	controller.cmdQueue = make(chan *command)
@@ -193,7 +194,7 @@ func (controller *ColoniesController) GetEtcdServer() *cluster.EtcdServer {
 	return controller.etcdServer
 }
 
-func (controller *ColoniesController) GetEventHandler() *servercommunication.EventHandler {
+func (controller *ColoniesController) GetEventHandler() backends.RealtimeEventHandler {
 	return controller.eventHandler
 }
 
@@ -201,7 +202,7 @@ func (controller *ColoniesController) GetThisNode() cluster.Node {
 	return controller.thisNode
 }
 
-func (controller *ColoniesController) SubscribeProcesses(executorID string, subscription *websockethandlers.Subscription) error {
+func (controller *ColoniesController) SubscribeProcesses(executorID string, subscription *backends.RealtimeSubscription) error {
 	cmd := &command{threaded: false, errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
 			executor, err := controller.executorDB.GetExecutorByID(executorID)
@@ -213,7 +214,11 @@ func (controller *ColoniesController) SubscribeProcesses(executorID string, subs
 				cmd.errorChan <- errors.New("executor not found")
 				return
 			}
-			controller.wsSubCtrl.AddProcessesSubscriber(executorID, subscription)
+			err = controller.wsSubCtrl.AddProcessesSubscriber(executorID, subscription)
+			if err != nil {
+				cmd.errorChan <- err
+				return
+			}
 			cmd.errorChan <- nil
 		}}
 	controller.blockingCmdQueue <- cmd
@@ -221,7 +226,7 @@ func (controller *ColoniesController) SubscribeProcesses(executorID string, subs
 	return <-cmd.errorChan
 }
 
-func (controller *ColoniesController) SubscribeProcess(executorID string, subscription *websockethandlers.Subscription) error {
+func (controller *ColoniesController) SubscribeProcess(executorID string, subscription *backends.RealtimeSubscription) error {
 	cmd := &command{threaded: false, errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
 			process, err := controller.processDB.GetProcessByID(subscription.ProcessID)
@@ -234,7 +239,11 @@ func (controller *ColoniesController) SubscribeProcess(executorID string, subscr
 				return
 			}
 
-			controller.wsSubCtrl.AddProcessSubscriber(executorID, process, subscription)
+			err = controller.wsSubCtrl.AddProcessSubscriber(executorID, process, subscription)
+			if err != nil {
+				cmd.errorChan <- err
+				return
+			}
 			cmd.errorChan <- nil
 		}}
 	controller.blockingCmdQueue <- cmd

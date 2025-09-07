@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/colonyos/colonies/pkg/backends"
+	"github.com/colonyos/colonies/pkg/backends/gin"
 	"github.com/colonyos/colonies/pkg/cluster"
 	"github.com/colonyos/colonies/pkg/core"
 	"github.com/colonyos/colonies/pkg/database"
@@ -30,11 +31,17 @@ import (
 	"github.com/colonyos/colonies/pkg/server/handlers/processgraph"
 	serverhandlers "github.com/colonyos/colonies/pkg/server/handlers/server"
 	snapshothandlers "github.com/colonyos/colonies/pkg/server/handlers/snapshot"
-	websockethandlers "github.com/colonyos/colonies/pkg/server/handlers/websocket"
+	realtimehandlers "github.com/colonyos/colonies/pkg/server/handlers/realtime"
 
-	"github.com/gin-gonic/gin"
+	backendGin "github.com/colonyos/colonies/pkg/backends/gin"
 	log "github.com/sirupsen/logrus"
 )
+
+// WSController interface for WebSocket subscription management
+type WSController interface {
+	SubscribeProcesses(executorID string, subscription *backends.RealtimeSubscription) error
+	SubscribeProcess(executorID string, subscription *backends.RealtimeSubscription) error
+}
 
 type Server struct {
 	backend                 backends.CORSBackend
@@ -84,7 +91,8 @@ type Server struct {
 	generatorHandlers    *generatorhandlers.Handlers
 	securityHandlers     *securityhandlers.Handlers
 	fileHandlers         *filehandlers.Handlers
-	websocketHandlers    *websockethandlers.Handlers
+	realtimeHandlers     *realtimehandlers.Handlers
+	realtimeHandler      *backendGin.RealtimeHandler
 }
 
 func CreateServer(db database.Database,
@@ -104,9 +112,8 @@ func CreateServer(db database.Database,
 	retentionPeriod int) *Server {
 	server := &Server{}
 	
-	// Initialize backend using factory pattern
-	factory := backends.NewBackendFactory()
-	server.backend = factory.CreateCORSBackend(backends.GinBackendType)
+	// Initialize backend using direct instantiation
+	server.backend = gin.NewCORSBackend()
 	server.engine = server.backend.NewEngineWithDefaults()
 	
 	// Add CORS middleware
@@ -159,7 +166,8 @@ func CreateServer(db database.Database,
 	server.functionHandlers = functionhandlers.NewHandlers(server.serverAdapter)
 	server.generatorHandlers = generatorhandlers.NewHandlers(server.serverAdapter)
 	server.securityHandlers = securityhandlers.NewHandlers(server.serverAdapter)
-	server.websocketHandlers = websockethandlers.NewHandlers(server.serverAdapter)
+	server.realtimeHandlers = realtimehandlers.NewHandlers(server.serverAdapter)
+	server.realtimeHandler = backendGin.NewRealtimeHandler(server.serverAdapter)
 	
 	// Register all handlers that implement self-registration
 	server.registerHandlers()
@@ -277,9 +285,9 @@ func (server *Server) getServerID() (string, error) {
 func (server *Server) setupRoutes() {
 	server.engine.POST("/api", server.handleAPIRequest)
 	server.engine.GET("/health", server.handleHealthRequest)
-	// Note: websocket handler now uses backend abstraction
+	// Note: realtime handler now uses backend abstraction (but maintains /pubsub endpoint for compatibility)
 	server.engine.GET("/pubsub", func(c backends.Context) {
-		server.websocketHandlers.HandleWSRequest(c)
+		server.realtimeHandlers.HandleWSRequest(c)
 	})
 }
 
@@ -293,19 +301,39 @@ func (server *Server) parseSignature(jsonString string, signature string) (strin
 	return recoveredID, nil
 }
 
+// RealtimeHandler returns the backend-specific realtime handler
+func (server *Server) RealtimeHandler() *backendGin.RealtimeHandler {
+	return server.realtimeHandler
+}
+
+// WSController returns the WebSocket controller for realtime subscriptions
+func (server *Server) WSController() WSController {
+	return server.serverAdapter.WSControllerCompat()
+}
+
+// ParseSignature exposes the signature parsing functionality
+func (server *Server) ParseSignature(payload string, signature string) (string, error) {
+	return server.parseSignature(payload, signature)
+}
+
+// GenerateRPCErrorMsg exposes the RPC error message generation
+func (server *Server) GenerateRPCErrorMsg(err error, errorCode int) (*rpc.RPCReplyMsg, error) {
+	return server.generateRPCErrorMsg(err, errorCode)
+}
+
 func (server *Server) handleHealthRequest(c backends.Context) {
 	c.String(http.StatusOK, "")
 }
 
 func (server *Server) handleAPIRequest(c backends.Context) {
 	jsonBytes, err := c.ReadBody()
-	if server.handleHTTPError(c, err, http.StatusBadRequest) {
+	if server.HandleHTTPError(c, err, http.StatusBadRequest) {
 		log.WithFields(log.Fields{"Error": err}).Error("Bad request")
 		return
 	}
 
 	rpcMsg, err := rpc.CreateRPCMsgFromJSON(string(jsonBytes))
-	if server.handleHTTPError(c, err, http.StatusBadRequest) {
+	if server.HandleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
 
@@ -316,7 +344,7 @@ func (server *Server) handleAPIRequest(c backends.Context) {
 	}
 
 	recoveredID, err := server.parseSignature(rpcMsg.Payload, rpcMsg.Signature)
-	if server.handleHTTPError(c, err, http.StatusForbidden) {
+	if server.HandleHTTPError(c, err, http.StatusForbidden) {
 		return
 	}
 
@@ -327,7 +355,7 @@ func (server *Server) handleAPIRequest(c backends.Context) {
 
 	// No handler found for this payload type
 	errMsg := "invalid rpcMsg.PayloadType, " + rpcMsg.PayloadType
-	if server.handleHTTPError(c, errors.New(errMsg), http.StatusForbidden) {
+	if server.HandleHTTPError(c, errors.New(errMsg), http.StatusForbidden) {
 		log.Error(errMsg)
 		return
 	}
@@ -347,20 +375,7 @@ func (server *Server) generateRPCErrorMsg(err error, errorCode int) (*rpc.RPCRep
 	return rpcReplyMsg, nil
 }
 
-func (server *Server) handleHTTPError(c interface{}, err error, errorCode int) bool {
-	// Handle both gin.Context and backends.Context
-	switch ctx := c.(type) {
-	case *gin.Context:
-		return server.handleHTTPErrorGin(ctx, err, errorCode)
-	case backends.Context:
-		return server.handleHTTPErrorBackend(ctx, err, errorCode)
-	default:
-		// This shouldn't happen
-		panic("Unsupported context type")
-	}
-}
-
-func (server *Server) handleHTTPErrorGin(c *gin.Context, err error, errorCode int) bool {
+func (server *Server) HandleHTTPError(c backends.Context, err error, errorCode int) bool {
 	if err != nil {
 		if !strings.HasPrefix(err.Error(), "No processes can be selected for executor with Id") {
 			log.Debug(err)
@@ -382,48 +397,26 @@ func (server *Server) handleHTTPErrorGin(c *gin.Context, err error, errorCode in
 	return false
 }
 
-func (server *Server) handleHTTPErrorBackend(c backends.Context, err error, errorCode int) bool {
-	if err != nil {
-		if !strings.HasPrefix(err.Error(), "No processes can be selected for executor with Id") {
-			log.Debug(err)
-		}
-
-		rpcReplyMsg, err := server.generateRPCErrorMsg(err, errorCode)
-		if err != nil {
-			log.WithFields(log.Fields{"Error": err}).Error("Failed to call server.generateRPCErrorMsg()")
-		}
-		rpcReplyMsgJSONString, err := rpcReplyMsg.ToJSON()
-		if err != nil {
-			log.WithFields(log.Fields{"Error": err}).Error("Failed to call pcReplyMsg.ToJSON()")
-		}
-
-		c.String(errorCode, rpcReplyMsgJSONString)
-		return true
-	}
-
-	return false
-}
-
-func (server *Server) sendHTTPReply(c *gin.Context, payloadType string, jsonString string) {
+func (server *Server) SendHTTPReply(c backends.Context, payloadType string, jsonString string) {
 	rpcReplyMsg, err := rpc.CreateRPCReplyMsg(payloadType, jsonString)
-	if server.handleHTTPError(c, err, http.StatusBadRequest) {
+	if server.HandleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
 	rpcReplyMsgJSONString, err := rpcReplyMsg.ToJSON()
-	if server.handleHTTPError(c, err, http.StatusBadRequest) {
+	if server.HandleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
 
 	c.String(http.StatusOK, rpcReplyMsgJSONString)
 }
 
-func (server *Server) sendEmptyHTTPReply(c *gin.Context, payloadType string) {
+func (server *Server) SendEmptyHTTPReply(c backends.Context, payloadType string) {
 	rpcReplyMsg, err := rpc.CreateRPCReplyMsg(payloadType, "{}")
-	if server.handleHTTPError(c, err, http.StatusBadRequest) {
+	if server.HandleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
 	rpcReplyMsgJSONString, err := rpcReplyMsg.ToJSON()
-	if server.handleHTTPError(c, err, http.StatusBadRequest) {
+	if server.HandleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
 

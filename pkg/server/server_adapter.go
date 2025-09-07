@@ -1,6 +1,8 @@
 package server
 
 import (
+	"github.com/colonyos/colonies/pkg/backends"
+	"github.com/colonyos/colonies/pkg/backends/gin"
 	"github.com/colonyos/colonies/pkg/cluster"
 	"github.com/colonyos/colonies/pkg/core"
 	"github.com/colonyos/colonies/pkg/database"
@@ -16,9 +18,7 @@ import (
 	"github.com/colonyos/colonies/pkg/server/handlers/process"
 	"github.com/colonyos/colonies/pkg/server/handlers/processgraph"
 	serverhandlers "github.com/colonyos/colonies/pkg/server/handlers/server"
-	websockethandlers "github.com/colonyos/colonies/pkg/server/handlers/websocket"
-	servercommunication "github.com/colonyos/colonies/pkg/server/websocket"
-	"github.com/colonyos/colonies/pkg/backends"
+	realtimehandlers "github.com/colonyos/colonies/pkg/server/handlers/realtime"
 )
 
 // ServerAdapter implements interfaces needed by handler packages
@@ -61,18 +61,15 @@ func (s *ServerAdapter) GetController() interface{
 }
 
 func (s *ServerAdapter) HandleHTTPError(c backends.Context, err error, errorCode int) bool {
-	ginContext := c.(*backends.GinContextAdapter).GinContext()
-	return s.server.handleHTTPError(ginContext, err, errorCode)
+	return s.server.HandleHTTPError(c, err, errorCode)
 }
 
 func (s *ServerAdapter) SendHTTPReply(c backends.Context, payloadType string, jsonString string) {
-	ginContext := c.(*backends.GinContextAdapter).GinContext()
-	s.server.sendHTTPReply(ginContext, payloadType, jsonString)
+	s.server.SendHTTPReply(c, payloadType, jsonString)
 }
 
 func (s *ServerAdapter) SendEmptyHTTPReply(c backends.Context, payloadType string) {
-	ginContext := c.(*backends.GinContextAdapter).GinContext()
-	s.server.sendEmptyHTTPReply(ginContext, payloadType)
+	s.server.SendEmptyHTTPReply(c, payloadType)
 }
 
 func (s *ServerAdapter) GetServerID() (string, error) {
@@ -306,7 +303,7 @@ type processControllerAdapter struct {
 		PauseColonyAssignments(colonyName string) error
 		ResumeColonyAssignments(colonyName string) error
 		AreColonyAssignmentsPaused(colonyName string) (bool, error)
-		GetEventHandler() *servercommunication.EventHandler
+		GetEventHandler() backends.RealtimeEventHandler
 		IsLeader() bool
 		GetEtcdServer() *cluster.EtcdServer
 	}
@@ -446,8 +443,16 @@ func (s *ServerAdapter) SecurityDB() database.SecurityDatabase {
 	return s.server.securityDB
 }
 
-func (s *ServerAdapter) WSController() websockethandlers.WSController {
+func (s *ServerAdapter) WSController() gin.WSController {
 	return &wsControllerAdapter{controller: s.server.controller}
+}
+
+func (s *ServerAdapter) WSControllerCompat() WSController {
+	return &wsControllerAdapter{controller: s.server.controller}
+}
+
+func (s *ServerAdapter) RealtimeHandler() realtimehandlers.RealtimeHandler {
+	return s.server.realtimeHandler
 }
 
 func (s *ServerAdapter) ParseSignature(payload string, signature string) (string, error) {
@@ -458,25 +463,20 @@ func (s *ServerAdapter) GenerateRPCErrorMsg(err error, errorCode int) (*rpc.RPCR
 	return s.server.generateRPCErrorMsg(err, errorCode)
 }
 
-// WSController interface for WebSocket handlers
-type WSController interface {
-	SubscribeProcesses(executorID string, subscription *websockethandlers.Subscription) error
-	SubscribeProcess(executorID string, subscription *websockethandlers.Subscription) error
-}
 
 // wsControllerAdapter adapter for WebSocket handlers
 type wsControllerAdapter struct {
 	controller interface {
-		SubscribeProcesses(executorID string, subscription *websockethandlers.Subscription) error
-		SubscribeProcess(executorID string, subscription *websockethandlers.Subscription) error
+		SubscribeProcesses(executorID string, subscription *backends.RealtimeSubscription) error
+		SubscribeProcess(executorID string, subscription *backends.RealtimeSubscription) error
 	}
 }
 
-func (c *wsControllerAdapter) SubscribeProcesses(executorID string, subscription *websockethandlers.Subscription) error {
+func (c *wsControllerAdapter) SubscribeProcesses(executorID string, subscription *backends.RealtimeSubscription) error {
 	return c.controller.SubscribeProcesses(executorID, subscription)
 }
 
-func (c *wsControllerAdapter) SubscribeProcess(executorID string, subscription *websockethandlers.Subscription) error {
+func (c *wsControllerAdapter) SubscribeProcess(executorID string, subscription *backends.RealtimeSubscription) error {
 	return c.controller.SubscribeProcess(executorID, subscription)
 }
 
@@ -607,18 +607,15 @@ type processgraphServerAdapter struct {
 }
 
 func (s *processgraphServerAdapter) HandleHTTPError(c backends.Context, err error, errorCode int) bool {
-	ginContext := c.(*backends.GinContextAdapter).GinContext()
-	return s.server.handleHTTPError(ginContext, err, errorCode)
+	return s.server.HandleHTTPError(c, err, errorCode)
 }
 
 func (s *processgraphServerAdapter) SendHTTPReply(c backends.Context, payloadType string, jsonString string) {
-	ginContext := c.(*backends.GinContextAdapter).GinContext()
-	s.server.sendHTTPReply(ginContext, payloadType, jsonString)
+	s.server.SendHTTPReply(c, payloadType, jsonString)
 }
 
 func (s *processgraphServerAdapter) SendEmptyHTTPReply(c backends.Context, payloadType string) {
-	ginContext := c.(*backends.GinContextAdapter).GinContext()
-	s.server.sendEmptyHTTPReply(ginContext, payloadType)
+	s.server.SendEmptyHTTPReply(c, payloadType)
 }
 
 func (s *processgraphServerAdapter) Validator() processgraph.Validator {
@@ -685,13 +682,11 @@ type serverServerAdapter struct {
 }
 
 func (s *serverServerAdapter) HandleHTTPError(c backends.Context, err error, errorCode int) bool {
-	ginContext := c.(*backends.GinContextAdapter).GinContext()
-	return s.server.handleHTTPError(ginContext, err, errorCode)
+	return s.server.HandleHTTPError(c, err, errorCode)
 }
 
 func (s *serverServerAdapter) SendHTTPReply(c backends.Context, payloadType string, jsonString string) {
-	ginContext := c.(*backends.GinContextAdapter).GinContext()
-	s.server.sendHTTPReply(ginContext, payloadType, jsonString)
+	s.server.SendHTTPReply(c, payloadType, jsonString)
 }
 
 func (s *serverServerAdapter) GetServerID() (string, error) {
