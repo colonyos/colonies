@@ -12,7 +12,7 @@ import (
 
 	"github.com/colonyos/colonies/pkg/client"
 	"github.com/colonyos/colonies/pkg/core"
-	"github.com/colonyos/colonies/pkg/service"
+	"github.com/colonyos/colonies/pkg/server"
 	"github.com/colonyos/colonies/pkg/utils"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
@@ -28,13 +28,13 @@ type testEnv struct {
 	executorPrvKey string
 }
 
-func setupTestEnv(t *testing.T) (*testEnv, *client.ColoniesClient, *service.ColoniesServer, string, chan bool) {
+func setupTestEnv(t *testing.T) (*testEnv, *client.ColoniesClient, *server.Server, string, chan bool) {
 	rand.Seed(time.Now().UTC().UnixNano())
 
 	gin.SetMode(gin.ReleaseMode)
 	gin.DefaultWriter = ioutil.Discard
 	//log.SetLevel(log.DebugLevel)
-	client, server, serverPrvKey, done := service.PrepareTests(t)
+	client, server, serverPrvKey, done := server.PrepareTests(t)
 
 	colony, colonyPrvKey, err := utils.CreateTestColonyWithKey()
 	assert.Nil(t, err)

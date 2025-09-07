@@ -6,7 +6,7 @@ import (
 	"github.com/colonyos/colonies/pkg/client"
 	"github.com/colonyos/colonies/pkg/core"
 	"github.com/colonyos/colonies/pkg/database/postgresql"
-	"github.com/colonyos/colonies/pkg/service"
+	"github.com/colonyos/colonies/pkg/server"
 	"github.com/colonyos/colonies/pkg/utils"
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
@@ -21,10 +21,10 @@ func TestReliability(t *testing.T) {
 	selectServerIndex := 0
 
 	// Create a cluster
-	runningCluster := service.StartCluster(t, db, clusterSize)
+	runningCluster := server.StartCluster(t, db, clusterSize)
 	assert.Len(t, runningCluster, clusterSize)
 
-	service.WaitForCluster(t, runningCluster)
+	server.WaitForCluster(t, runningCluster)
 	log.Info("Cluster ready")
 
 	// Create a client connected to one of the servers
@@ -45,7 +45,7 @@ func TestReliability(t *testing.T) {
 
 	// Now kill server 1
 	runningCluster[0].Server.Shutdown()
-	service.WaitForServerToDie(t, runningCluster[0])
+	server.WaitForServerToDie(t, runningCluster[0])
 	log.Info("Server ", selectServerIndex, " is dead now")
 
 	_, err = c.GetColonyByName(colony.Name, executorPrvKey)
@@ -77,10 +77,10 @@ func TestGeneratorReliability(t *testing.T) {
 	selectServerIndex := 0
 
 	// Create a cluster
-	runningCluster := service.StartCluster(t, db, clusterSize)
+	runningCluster := server.StartCluster(t, db, clusterSize)
 	assert.Len(t, runningCluster, clusterSize)
 
-	service.WaitForCluster(t, runningCluster)
+	server.WaitForCluster(t, runningCluster)
 	log.Info("Cluster ready")
 
 	// Create a client connected to one of the servers
@@ -112,7 +112,7 @@ func TestGeneratorReliability(t *testing.T) {
 	err = c.PackGenerator(addedGenerator.ID, "arg", executorPrvKey)
 	assert.Nil(t, err)
 
-	nrOfgraphs := service.WaitForProcessGraphs(t, c, colony.Name, addedGenerator.Name, executorPrvKey, 1)
+	nrOfgraphs := server.WaitForProcessGraphs(t, c, colony.Name, addedGenerator.Name, executorPrvKey, 1)
 	assert.Equal(t, nrOfgraphs, 1) // Ok we got a generator
 
 	// The leader is reponsible for the generator engine
@@ -122,7 +122,7 @@ func TestGeneratorReliability(t *testing.T) {
 	leaderName := clusterInfo.Leader.Name
 
 	// Ok, now we now who name of the leader, find out which server that is
-	var leaderS service.ServerInfo
+	var leaderS server.ServerInfo
 	for _, s := range runningCluster {
 		if s.Node.Name == leaderName {
 			leaderS = s
@@ -132,7 +132,7 @@ func TestGeneratorReliability(t *testing.T) {
 
 	// Now kill leader server
 	leaderS.Server.Shutdown()
-	service.WaitForServerToDie(t, leaderS)
+	server.WaitForServerToDie(t, leaderS)
 	log.Info("ColoniesServer Leader is ", leaderS.Node.Name, " is dead")
 
 	// The problem now is that our client might be connected to that ColoniesServer
@@ -146,7 +146,7 @@ func TestGeneratorReliability(t *testing.T) {
 
 	c.PackGenerator(addedGenerator.ID, "arg", executorPrvKey)
 
-	nrOfgraphs = service.WaitForProcessGraphs(t, c, colony.Name, addedGenerator.Name, executorPrvKey, 2)
+	nrOfgraphs = server.WaitForProcessGraphs(t, c, colony.Name, addedGenerator.Name, executorPrvKey, 2)
 	log.WithFields(log.Fields{"nrOfgraphs": nrOfgraphs}).Info("Done waiting for processgraphs")
 	assert.Equal(t, nrOfgraphs, 2)
 
@@ -171,10 +171,10 @@ func TestCronReliability(t *testing.T) {
 	selectServerIndex := 0
 
 	// Create a cluster
-	runningCluster := service.StartCluster(t, db, clusterSize)
+	runningCluster := server.StartCluster(t, db, clusterSize)
 	assert.Len(t, runningCluster, clusterSize)
 
-	service.WaitForCluster(t, runningCluster)
+	server.WaitForCluster(t, runningCluster)
 	log.Info("Cluster ready")
 
 	// Create a client connected to one of the servers
@@ -203,7 +203,7 @@ func TestCronReliability(t *testing.T) {
 	graphs, err = c.GetWaitingProcessGraphs(colony.Name, 100, executorPrvKey)
 	assert.Len(t, graphs, 0) // Since we have not triggered any cron yet
 
-	nrOfgraphs := service.WaitForProcessGraphs(t, c, colony.Name, "", executorPrvKey, 1)
+	nrOfgraphs := server.WaitForProcessGraphs(t, c, colony.Name, "", executorPrvKey, 1)
 	assert.Equal(t, nrOfgraphs, 1) // Ok we got a cron
 
 	// The leader is reponsible for the generator engine
@@ -213,7 +213,7 @@ func TestCronReliability(t *testing.T) {
 	leaderName := clusterInfo.Leader.Name
 
 	// Ok, now we now who name of the leader, find out which server that is
-	var leaderS service.ServerInfo
+	var leaderS server.ServerInfo
 	for _, s := range runningCluster {
 		if s.Node.Name == leaderName {
 			leaderS = s
@@ -223,7 +223,7 @@ func TestCronReliability(t *testing.T) {
 
 	// Now kill leader server
 	leaderS.Server.Shutdown()
-	service.WaitForServerToDie(t, leaderS)
+	server.WaitForServerToDie(t, leaderS)
 	log.Info("ColoniesServer Leader is ", leaderS.Node.Name, " is dead")
 
 	// The problem now is that our client might be connected to that ColoniesServer
@@ -235,7 +235,7 @@ func TestCronReliability(t *testing.T) {
 		c = client.CreateColoniesClient("localhost", selectedServer.Node.APIPort, true, true) // Connect to another server
 	}
 
-	nrOfgraphs2 := service.WaitForProcessGraphs(t, c, colony.Name, "", executorPrvKey, 2)
+	nrOfgraphs2 := server.WaitForProcessGraphs(t, c, colony.Name, "", executorPrvKey, 2)
 	log.WithFields(log.Fields{"nrOfgraphs": nrOfgraphs, "nrOfgraphs2": nrOfgraphs2}).Info("Done waiting for processgraphs")
 	assert.Equal(t, nrOfgraphs2, 2)
 
