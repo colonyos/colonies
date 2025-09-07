@@ -73,7 +73,7 @@ type segments struct {
 }
 
 func (ss *segments) get(p peer.ID) *segment {
-	return ss.buckets[byte(p[len(p)-1])]
+	return ss.buckets[p[len(p)-1]]
 }
 
 func (ss *segments) countPeers() (count int) {
@@ -592,7 +592,7 @@ func (cm *BasicConnMgr) UntagPeer(p peer.ID, tag string) {
 
 	pi, ok := s.peers[p]
 	if !ok {
-		log.Info("tried to remove tag from untracked peer: ", p)
+		log.Debug("tried to remove tag from untracked peer: ", p, tag)
 		return
 	}
 

@@ -55,16 +55,23 @@ const (
 	// Connected means has an open, live connection to peer
 	Connected
 
+	// Deprecated: CanConnect is deprecated and will be removed in a future release.
+	//
 	// CanConnect means recently connected to peer, terminated gracefully
 	CanConnect
 
+	// Deprecated: CannotConnect is deprecated and will be removed in a future release.
+	//
 	// CannotConnect means recently attempted connecting but failed to connect.
 	// (should signal "made effort, failed")
 	CannotConnect
+
+	// Limited means we have a transient connection to the peer, but aren't fully connected.
+	Limited
 )
 
 func (c Connectedness) String() string {
-	str := [...]string{"NotConnected", "Connected", "CanConnect", "CannotConnect"}
+	str := [...]string{"NotConnected", "Connected", "CanConnect", "CannotConnect", "Limited"}
 	if c < 0 || int(c) >= len(str) {
 		return unrecognized
 	}
@@ -111,8 +118,10 @@ type Stats struct {
 	Direction Direction
 	// Opened is the timestamp when this connection was opened.
 	Opened time.Time
-	// Transient indicates that this connection is transient and may be closed soon.
-	Transient bool
+	// Limited indicates that this connection is Limited. It maybe limited by
+	// bytes or time. In practice, this is a connection formed over a circuit v2
+	// relay.
+	Limited bool
 	// Extra stores additional metadata about this connection.
 	Extra map[interface{}]interface{}
 }
@@ -152,6 +161,14 @@ type Network interface {
 	ResourceManager() ResourceManager
 }
 
+type MultiaddrDNSResolver interface {
+	// ResolveDNSAddr resolves the first /dnsaddr component in a multiaddr.
+	// Recurisvely resolves DNSADDRs up to the recursion limit
+	ResolveDNSAddr(ctx context.Context, expectedPeerID peer.ID, maddr ma.Multiaddr, recursionLimit, outputLimit int) ([]ma.Multiaddr, error)
+	// ResolveDNSComponent resolves the first /{dns,dns4,dns6} component in a multiaddr.
+	ResolveDNSComponent(ctx context.Context, maddr ma.Multiaddr, outputLimit int) ([]ma.Multiaddr, error)
+}
+
 // Dialer represents a service that can dial out to peers
 // (this is usually just a Network, but other services may not need the whole
 // stack, and thus it becomes easier to mock)
@@ -185,6 +202,9 @@ type Dialer interface {
 	// Notify/StopNotify register and unregister a notifiee for signals
 	Notify(Notifiee)
 	StopNotify(Notifiee)
+
+	// CanDial returns whether the dialer can dial peer p at addr
+	CanDial(p peer.ID, addr ma.Multiaddr) bool
 }
 
 // AddrDelay provides an address along with the delay after which the address

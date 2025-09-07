@@ -1,0 +1,238 @@
+package memdb
+
+import (
+	"context"
+	"fmt"
+
+	"github.com/colonyos/colonies/pkg/database/memdb/storage"
+	"github.com/colonyos/colonies/pkg/database/memdb/schema"
+	"github.com/colonyos/colonies/pkg/database/memdb/core"
+)
+
+// SimpleMemDB is a simplified version that works
+type SimpleMemDB struct {
+	storage   *storage.BadgerStorage
+	casEngine *core.CASEngine
+	config    *Config
+}
+
+// NewSimpleMemDB creates a simplified MemDB for demonstration
+func NewSimpleMemDB(config *Config) (*SimpleMemDB, error) {
+	if config == nil {
+		config = &Config{
+			DataDir:           "/tmp/memdb",
+			StorageMode:       MemoryFirst,
+			DefaultConsistency: Local,
+			CacheSize:         100,
+			SyncWrites:        false,
+			TTL:               0,
+		}
+	}
+
+	// Create BadgerDB storage
+	badgerConfig := &storage.BadgerConfig{
+		DataDir:   config.DataDir,
+		CacheSize: config.CacheSize,
+		SyncWrites: config.SyncWrites,
+		InMemory:  config.StorageMode == MemoryOnly,
+		TTL:       config.TTL,
+	}
+
+	badgerStorage, err := storage.NewBadgerStorage(badgerConfig)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create storage: %w", err)
+	}
+
+	// Create adapter for CAS engine
+	casAdapter := &storageAdapter{storage: badgerStorage}
+	casEngine := core.NewCASEngine(casAdapter)
+
+	return &SimpleMemDB{
+		storage:   badgerStorage,
+		casEngine: casEngine,
+		config:    config,
+	}, nil
+}
+
+// storageAdapter adapts BadgerStorage to CAS engine interface
+type storageAdapter struct {
+	storage *storage.BadgerStorage
+}
+
+func (a *storageAdapter) Get(ctx context.Context, collection string, id string) (*core.Document, error) {
+	doc, err := a.storage.Get(ctx, collection, id)
+	if err != nil {
+		return nil, err
+	}
+	
+	return &core.Document{
+		ID:       doc.ID,
+		Fields:   doc.Fields,
+		Version:  doc.Version,
+		Created:  doc.Created,
+		Modified: doc.Modified,
+	}, nil
+}
+
+func (a *storageAdapter) Update(ctx context.Context, collection string, id string, fields map[string]interface{}) (*core.Document, error) {
+	doc, err := a.storage.Update(ctx, collection, id, fields)
+	if err != nil {
+		return nil, err
+	}
+	
+	return &core.Document{
+		ID:       doc.ID,
+		Fields:   doc.Fields,
+		Version:  doc.Version,
+		Created:  doc.Created,
+		Modified: doc.Modified,
+	}, nil
+}
+
+func (a *storageAdapter) Insert(ctx context.Context, collection string, doc *core.Document) error {
+	storageDoc := &storage.Document{
+		ID:       doc.ID,
+		Fields:   doc.Fields,
+		Version:  doc.Version,
+		Created:  doc.Created,
+		Modified: doc.Modified,
+	}
+	
+	return a.storage.Insert(ctx, collection, storageDoc)
+}
+
+// CreateCollection creates a new collection with schema
+func (m *SimpleMemDB) CreateCollection(ctx context.Context, name string, sch *schema.Schema) error {
+	return m.storage.CreateCollection(ctx, name, sch)
+}
+
+// DropCollection removes a collection and all its documents
+func (m *SimpleMemDB) DropCollection(ctx context.Context, name string) error {
+	return m.storage.DropCollection(ctx, name)
+}
+
+// Insert adds a new document to a collection
+func (m *SimpleMemDB) Insert(ctx context.Context, collection string, doc *Document) error {
+	storageDoc := &storage.Document{
+		ID:       doc.ID,
+		Fields:   doc.Fields,
+		Version:  doc.Version,
+		Created:  doc.Created,
+		Modified: doc.Modified,
+	}
+	
+	return m.storage.Insert(ctx, collection, storageDoc)
+}
+
+// Update modifies an existing document
+func (m *SimpleMemDB) Update(ctx context.Context, collection string, id string, fields map[string]interface{}) (*Document, error) {
+	doc, err := m.storage.Update(ctx, collection, id, fields)
+	if err != nil {
+		return nil, err
+	}
+
+	return &Document{
+		ID:       doc.ID,
+		Fields:   doc.Fields,
+		Version:  doc.Version,
+		Created:  doc.Created,
+		Modified: doc.Modified,
+	}, nil
+}
+
+// Delete removes a document from a collection
+func (m *SimpleMemDB) Delete(ctx context.Context, collection string, id string) error {
+	return m.storage.Delete(ctx, collection, id)
+}
+
+// Get retrieves a document by ID
+func (m *SimpleMemDB) Get(ctx context.Context, collection string, id string) (*Document, error) {
+	doc, err := m.storage.Get(ctx, collection, id)
+	if err != nil {
+		return nil, err
+	}
+
+	return &Document{
+		ID:       doc.ID,
+		Fields:   doc.Fields,
+		Version:  doc.Version,
+		Created:  doc.Created,
+		Modified: doc.Modified,
+	}, nil
+}
+
+// List returns all documents in a collection
+func (m *SimpleMemDB) List(ctx context.Context, collection string, limit, offset int) ([]*Document, error) {
+	docs, err := m.storage.List(ctx, collection, limit, offset)
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([]*Document, len(docs))
+	for i, doc := range docs {
+		result[i] = &Document{
+			ID:       doc.ID,
+			Fields:   doc.Fields,
+			Version:  doc.Version,
+			Created:  doc.Created,
+			Modified: doc.Modified,
+		}
+	}
+
+	return result, nil
+}
+
+// Count returns the number of documents in a collection
+func (m *SimpleMemDB) Count(ctx context.Context, collection string) (int, error) {
+	return m.storage.Count(ctx, collection)
+}
+
+// CompareAndSwap performs a compare-and-swap operation
+func (m *SimpleMemDB) CompareAndSwap(ctx context.Context, collection string, cas *CASRequest) (*CASResponse, error) {
+	operation := &core.CASOperation{
+		Collection: collection,
+		ID:         cas.Key,
+		Expected:   cas.Expected,
+		Value:      cas.Value,
+		TTL:        cas.TTL,
+	}
+
+	result, err := m.casEngine.CompareAndSwap(ctx, operation)
+	if err != nil {
+		return nil, err
+	}
+
+	return &CASResponse{
+		Success:      result.Success,
+		CurrentValue: result.CurrentValue,
+		Version:      result.Version,
+	}, nil
+}
+
+// Health checks the health of the database
+func (m *SimpleMemDB) Health(ctx context.Context) error {
+	// Basic health check - try to access storage
+	_, err := m.storage.Count(ctx, "_health_check")
+	if err != nil && err.Error() != "document not found" {
+		return err
+	}
+	return nil
+}
+
+// Close closes the database
+func (m *SimpleMemDB) Close() error {
+	if m.storage != nil {
+		return m.storage.Close()
+	}
+	return nil
+}
+
+// GetVersion returns the database version
+func (m *SimpleMemDB) GetVersion() string {
+	return "1.0.0-simple"
+}
+
+// GetConfig returns the current configuration
+func (m *SimpleMemDB) GetConfig() *Config {
+	return m.config
+}

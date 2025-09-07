@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"strings"
 
 	"golang.org/x/exp/slices"
 )
@@ -49,6 +48,9 @@ func NewMultiaddrBytes(b []byte) (a Multiaddr, err error) {
 
 // Equal tests whether two multiaddrs are equal
 func (m *multiaddr) Equal(m2 Multiaddr) bool {
+	if m2 == nil {
+		return false
+	}
 	return bytes.Equal(m.bytes, m2.Bytes())
 }
 
@@ -140,6 +142,10 @@ func (m *multiaddr) Protocols() []Protocol {
 
 // Encapsulate wraps a given Multiaddr, returning the resulting joined Multiaddr
 func (m *multiaddr) Encapsulate(o Multiaddr) Multiaddr {
+	if o == nil {
+		return m
+	}
+
 	mb := m.bytes
 	ob := o.Bytes()
 
@@ -150,26 +156,46 @@ func (m *multiaddr) Encapsulate(o Multiaddr) Multiaddr {
 }
 
 // Decapsulate unwraps Multiaddr up until the given Multiaddr is found.
-func (m *multiaddr) Decapsulate(o Multiaddr) Multiaddr {
-	s1 := m.String()
-	s2 := o.String()
-	i := strings.LastIndex(s1, s2)
-	if i < 0 {
+func (m *multiaddr) Decapsulate(right Multiaddr) Multiaddr {
+	if right == nil {
+		return m
+	}
+
+	leftParts := Split(m)
+	rightParts := Split(right)
+
+	lastIndex := -1
+	for i := range leftParts {
+		foundMatch := false
+		for j, rightC := range rightParts {
+			if len(leftParts) <= i+j {
+				foundMatch = false
+				break
+			}
+
+			foundMatch = rightC.Equal(leftParts[i+j])
+			if !foundMatch {
+				break
+			}
+		}
+
+		if foundMatch {
+			lastIndex = i
+		}
+	}
+
+	if lastIndex == 0 {
+		return nil
+	}
+
+	if lastIndex < 0 {
 		// if multiaddr not contained, returns a copy.
 		cpy := make([]byte, len(m.bytes))
 		copy(cpy, m.bytes)
 		return &multiaddr{bytes: cpy}
 	}
 
-	if i == 0 {
-		return nil
-	}
-
-	ma, err := NewMultiaddr(s1[:i])
-	if err != nil {
-		panic("Multiaddr.Decapsulate incorrect byte boundaries.")
-	}
-	return ma
+	return Join(leftParts[:lastIndex]...)
 }
 
 var ErrProtocolNotFound = fmt.Errorf("protocol not found in multiaddr")
