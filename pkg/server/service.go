@@ -277,11 +277,9 @@ func (server *Server) getServerID() (string, error) {
 func (server *Server) setupRoutes() {
 	server.engine.POST("/api", server.handleAPIRequest)
 	server.engine.GET("/health", server.handleHealthRequest)
-	// Note: websocket handler still needs to use raw gin context
-	// TODO: Convert websocket handler to use backend abstraction
+	// Note: websocket handler now uses backend abstraction
 	server.engine.GET("/pubsub", func(c backends.Context) {
-		ginContext := c.(*backends.GinContextAdapter).GinContext()
-		server.websocketHandlers.HandleWSRequest(ginContext)
+		server.websocketHandlers.HandleWSRequest(c)
 	})
 }
 
@@ -313,9 +311,7 @@ func (server *Server) handleAPIRequest(c backends.Context) {
 
 	// Version does not require a valid private key
 	if rpcMsg.PayloadType == rpc.VersionPayloadType {
-		// Convert backend context to gin context for legacy handler
-		ginContext := c.(*backends.GinContextAdapter).GinContext()
-		server.serverHandlers.HandleVersion(ginContext, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+		server.serverHandlers.HandleVersion(c, rpcMsg.PayloadType, rpcMsg.DecodePayload())
 		return
 	}
 
@@ -459,3 +455,4 @@ func (server *Server) Shutdown() {
 		log.WithFields(log.Fields{"Error": err}).Warning("Server forced to shutdown")
 	}
 }
+

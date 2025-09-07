@@ -3,21 +3,21 @@ package attribute
 import (
 	"testing"
 
+	"github.com/colonyos/colonies/pkg/backends"
 	"github.com/colonyos/colonies/pkg/rpc"
 	"github.com/colonyos/colonies/pkg/security"
 	"github.com/colonyos/colonies/pkg/server/registry"
-	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 )
 
 // SimpleTestServer implements the minimal ColoniesServer interface for testing
 type SimpleTestServer struct{}
 
-func (s *SimpleTestServer) HandleHTTPError(c *gin.Context, err error, errorCode int) bool {
+func (s *SimpleTestServer) HandleHTTPError(c backends.Context, err error, errorCode int) bool {
 	return false
 }
 
-func (s *SimpleTestServer) SendHTTPReply(c *gin.Context, payloadType string, jsonString string) {
+func (s *SimpleTestServer) SendHTTPReply(c backends.Context, payloadType string, jsonString string) {
 }
 
 func (s *SimpleTestServer) Validator() security.Validator {

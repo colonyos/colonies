@@ -9,14 +9,14 @@ import (
 	"github.com/colonyos/colonies/pkg/rpc"
 	"github.com/colonyos/colonies/pkg/security"
 	"github.com/colonyos/colonies/pkg/server/registry"
-	"github.com/gin-gonic/gin"
+	"github.com/colonyos/colonies/pkg/backends"
 	log "github.com/sirupsen/logrus"
 )
 
 type Server interface {
-	HandleHTTPError(c *gin.Context, err error, errorCode int) bool
-	SendHTTPReply(c *gin.Context, payloadType string, jsonString string)
-	SendEmptyHTTPReply(c *gin.Context, payloadType string)
+	HandleHTTPError(c backends.Context, err error, errorCode int) bool
+	SendHTTPReply(c backends.Context, payloadType string, jsonString string)
+	SendEmptyHTTPReply(c backends.Context, payloadType string)
 	Validator() security.Validator
 	FunctionController() Controller
 	FunctionDB() database.FunctionDatabase
@@ -42,19 +42,19 @@ func NewHandlers(server Server) *Handlers {
 
 // RegisterHandlers implements the HandlerRegistrar interface
 func (h *Handlers) RegisterHandlers(handlerRegistry *registry.HandlerRegistry) error {
-	if err := handlerRegistry.RegisterGin(rpc.AddFunctionPayloadType, h.HandleAddFunction); err != nil {
+	if err := handlerRegistry.Register(rpc.AddFunctionPayloadType, h.HandleAddFunction); err != nil {
 		return err
 	}
-	if err := handlerRegistry.RegisterGin(rpc.GetFunctionsPayloadType, h.HandleGetFunctions); err != nil {
+	if err := handlerRegistry.Register(rpc.GetFunctionsPayloadType, h.HandleGetFunctions); err != nil {
 		return err
 	}
-	if err := handlerRegistry.RegisterGin(rpc.RemoveFunctionPayloadType, h.HandleRemoveFunction); err != nil {
+	if err := handlerRegistry.Register(rpc.RemoveFunctionPayloadType, h.HandleRemoveFunction); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (h *Handlers) HandleAddFunction(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
+func (h *Handlers) HandleAddFunction(c backends.Context, recoveredID string, payloadType string, jsonString string) {
 	msg, err := rpc.CreateAddFunctionMsgFromJSON(jsonString)
 	if err != nil {
 		if h.server.HandleHTTPError(c, errors.New("Failed to add function, invalid JSON"), http.StatusBadRequest) {
@@ -118,7 +118,7 @@ func (h *Handlers) HandleAddFunction(c *gin.Context, recoveredID string, payload
 	h.server.SendHTTPReply(c, payloadType, jsonString)
 }
 
-func (h *Handlers) HandleGetFunctions(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
+func (h *Handlers) HandleGetFunctions(c backends.Context, recoveredID string, payloadType string, jsonString string) {
 	msg, err := rpc.CreateGetFunctionsMsgFromJSON(jsonString)
 	if err != nil {
 		if h.server.HandleHTTPError(c, errors.New("Failed to get function, invalid JSON"), http.StatusBadRequest) {
@@ -159,7 +159,7 @@ func (h *Handlers) HandleGetFunctions(c *gin.Context, recoveredID string, payloa
 	h.server.SendHTTPReply(c, payloadType, jsonString)
 }
 
-func (h *Handlers) HandleRemoveFunction(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
+func (h *Handlers) HandleRemoveFunction(c backends.Context, recoveredID string, payloadType string, jsonString string) {
 	msg, err := rpc.CreateRemoveFunctionMsgFromJSON(jsonString)
 	if err != nil {
 		if h.server.HandleHTTPError(c, errors.New("Failed to remove function, invalid JSON"), http.StatusBadRequest) {

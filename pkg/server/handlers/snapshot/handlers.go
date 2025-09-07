@@ -4,19 +4,19 @@ import (
 	"errors"
 	"net/http"
 
+	"github.com/colonyos/colonies/pkg/backends"
 	"github.com/colonyos/colonies/pkg/core"
 	"github.com/colonyos/colonies/pkg/database"
 	"github.com/colonyos/colonies/pkg/rpc"
 	"github.com/colonyos/colonies/pkg/security"
 	"github.com/colonyos/colonies/pkg/server/registry"
-	"github.com/gin-gonic/gin"
 	log "github.com/sirupsen/logrus"
 )
 
 type Server interface {
-	HandleHTTPError(c *gin.Context, err error, errorCode int) bool
-	SendHTTPReply(c *gin.Context, payloadType string, jsonString string)
-	SendEmptyHTTPReply(c *gin.Context, payloadType string)
+	HandleHTTPError(c backends.Context, err error, errorCode int) bool
+	SendHTTPReply(c backends.Context, payloadType string, jsonString string)
+	SendEmptyHTTPReply(c backends.Context, payloadType string)
 	Validator() security.Validator
 	SnapshotDB() database.SnapshotDatabase
 }
@@ -33,25 +33,25 @@ func NewHandlers(server Server) *Handlers {
 
 // RegisterHandlers implements the HandlerRegistrar interface
 func (h *Handlers) RegisterHandlers(handlerRegistry *registry.HandlerRegistry) error {
-	if err := handlerRegistry.RegisterGin(rpc.CreateSnapshotPayloadType, h.HandleCreateSnapshot); err != nil {
+	if err := handlerRegistry.Register(rpc.CreateSnapshotPayloadType, h.HandleCreateSnapshot); err != nil {
 		return err
 	}
-	if err := handlerRegistry.RegisterGin(rpc.GetSnapshotPayloadType, h.HandleGetSnapshot); err != nil {
+	if err := handlerRegistry.Register(rpc.GetSnapshotPayloadType, h.HandleGetSnapshot); err != nil {
 		return err
 	}
-	if err := handlerRegistry.RegisterGin(rpc.GetSnapshotsPayloadType, h.HandleGetSnapshots); err != nil {
+	if err := handlerRegistry.Register(rpc.GetSnapshotsPayloadType, h.HandleGetSnapshots); err != nil {
 		return err
 	}
-	if err := handlerRegistry.RegisterGin(rpc.RemoveSnapshotPayloadType, h.HandleRemoveSnapshot); err != nil {
+	if err := handlerRegistry.Register(rpc.RemoveSnapshotPayloadType, h.HandleRemoveSnapshot); err != nil {
 		return err
 	}
-	if err := handlerRegistry.RegisterGin(rpc.RemoveAllSnapshotsPayloadType, h.HandleRemoveAllSnapshots); err != nil {
+	if err := handlerRegistry.Register(rpc.RemoveAllSnapshotsPayloadType, h.HandleRemoveAllSnapshots); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (h *Handlers) HandleCreateSnapshot(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
+func (h *Handlers) HandleCreateSnapshot(c backends.Context, recoveredID string, payloadType string, jsonString string) {
 	msg, err := rpc.CreateCreateSnapshotMsgFromJSON(jsonString)
 	if err != nil {
 		if h.server.HandleHTTPError(c, errors.New("Failed to create snapshot, invalid JSON"), http.StatusBadRequest) {
@@ -87,7 +87,7 @@ func (h *Handlers) HandleCreateSnapshot(c *gin.Context, recoveredID string, payl
 	h.server.SendHTTPReply(c, payloadType, jsonStr)
 }
 
-func (h *Handlers) HandleGetSnapshot(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
+func (h *Handlers) HandleGetSnapshot(c backends.Context, recoveredID string, payloadType string, jsonString string) {
 	msg, err := rpc.CreateGetSnapshotMsgFromJSON(jsonString)
 	if err != nil {
 		if h.server.HandleHTTPError(c, errors.New("Failed to get snapshot, invalid JSON"), http.StatusBadRequest) {
@@ -137,7 +137,7 @@ func (h *Handlers) HandleGetSnapshot(c *gin.Context, recoveredID string, payload
 	h.server.SendHTTPReply(c, payloadType, jsonStr)
 }
 
-func (h *Handlers) HandleGetSnapshots(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
+func (h *Handlers) HandleGetSnapshots(c backends.Context, recoveredID string, payloadType string, jsonString string) {
 	msg, err := rpc.CreateGetSnapshotsMsgFromJSON(jsonString)
 	if err != nil {
 		if h.server.HandleHTTPError(c, errors.New("Failed to get snapshots, invalid JSON"), http.StatusBadRequest) {
@@ -173,7 +173,7 @@ func (h *Handlers) HandleGetSnapshots(c *gin.Context, recoveredID string, payloa
 	h.server.SendHTTPReply(c, payloadType, jsonStr)
 }
 
-func (h *Handlers) HandleRemoveSnapshot(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
+func (h *Handlers) HandleRemoveSnapshot(c backends.Context, recoveredID string, payloadType string, jsonString string) {
 	msg, err := rpc.CreateRemoveSnapshotMsgFromJSON(jsonString)
 	if err != nil {
 		if h.server.HandleHTTPError(c, errors.New("Failed to remove snapshot, invalid JSON"), http.StatusBadRequest) {
@@ -216,7 +216,7 @@ func (h *Handlers) HandleRemoveSnapshot(c *gin.Context, recoveredID string, payl
 	h.server.SendEmptyHTTPReply(c, payloadType)
 }
 
-func (h *Handlers) HandleRemoveAllSnapshots(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
+func (h *Handlers) HandleRemoveAllSnapshots(c backends.Context, recoveredID string, payloadType string, jsonString string) {
 	msg, err := rpc.CreateRemoveAllSnapshotsMsgFromJSON(jsonString)
 	if err != nil {
 		if h.server.HandleHTTPError(c, errors.New("Failed to remove snapshot, invalid JSON"), http.StatusBadRequest) {

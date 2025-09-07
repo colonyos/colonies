@@ -7,7 +7,7 @@ import (
 	"github.com/colonyos/colonies/pkg/core"
 	"github.com/colonyos/colonies/pkg/rpc"
 	"github.com/colonyos/colonies/pkg/server/registry"
-	"github.com/gin-gonic/gin"
+	"github.com/colonyos/colonies/pkg/backends"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -29,9 +29,9 @@ type Validator interface {
 }
 
 type Server interface {
-	HandleHTTPError(c *gin.Context, err error, errorCode int) bool
-	SendHTTPReply(c *gin.Context, payloadType string, jsonString string)
-	SendEmptyHTTPReply(c *gin.Context, payloadType string)
+	HandleHTTPError(c backends.Context, err error, errorCode int) bool
+	SendHTTPReply(c backends.Context, payloadType string, jsonString string)
+	SendEmptyHTTPReply(c backends.Context, payloadType string)
 	Validator() Validator
 	Controller() Controller
 }
@@ -48,28 +48,28 @@ func NewHandlers(server Server) *Handlers {
 
 // RegisterHandlers implements the HandlerRegistrar interface
 func (h *Handlers) RegisterHandlers(handlerRegistry *registry.HandlerRegistry) error {
-	if err := handlerRegistry.RegisterGin(rpc.SubmitWorkflowSpecPayloadType, h.HandleSubmitWorkflow); err != nil {
+	if err := handlerRegistry.Register(rpc.SubmitWorkflowSpecPayloadType, h.HandleSubmitWorkflow); err != nil {
 		return err
 	}
-	if err := handlerRegistry.RegisterGin(rpc.GetProcessGraphPayloadType, h.HandleGetProcessGraph); err != nil {
+	if err := handlerRegistry.Register(rpc.GetProcessGraphPayloadType, h.HandleGetProcessGraph); err != nil {
 		return err
 	}
-	if err := handlerRegistry.RegisterGin(rpc.GetProcessGraphsPayloadType, h.HandleGetProcessGraphs); err != nil {
+	if err := handlerRegistry.Register(rpc.GetProcessGraphsPayloadType, h.HandleGetProcessGraphs); err != nil {
 		return err
 	}
-	if err := handlerRegistry.RegisterGin(rpc.RemoveProcessGraphPayloadType, h.HandleRemoveProcessGraph); err != nil {
+	if err := handlerRegistry.Register(rpc.RemoveProcessGraphPayloadType, h.HandleRemoveProcessGraph); err != nil {
 		return err
 	}
-	if err := handlerRegistry.RegisterGin(rpc.RemoveAllProcessGraphsPayloadType, h.HandleRemoveAllProcessGraphs); err != nil {
+	if err := handlerRegistry.Register(rpc.RemoveAllProcessGraphsPayloadType, h.HandleRemoveAllProcessGraphs); err != nil {
 		return err
 	}
-	if err := handlerRegistry.RegisterGin(rpc.AddChildPayloadType, h.HandleAddChild); err != nil {
+	if err := handlerRegistry.Register(rpc.AddChildPayloadType, h.HandleAddChild); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (h *Handlers) HandleSubmitWorkflow(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
+func (h *Handlers) HandleSubmitWorkflow(c backends.Context, recoveredID string, payloadType string, jsonString string) {
 	msg, err := rpc.CreateSubmitWorkflowSpecMsgFromJSON(jsonString)
 	if err != nil {
 		if h.server.HandleHTTPError(c, errors.New("Failed to submit workkflow, invalid JSON"), http.StatusBadRequest) {
@@ -105,7 +105,7 @@ func (h *Handlers) HandleSubmitWorkflow(c *gin.Context, recoveredID string, payl
 	h.server.SendHTTPReply(c, payloadType, jsonString)
 }
 
-func (h *Handlers) HandleGetProcessGraph(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
+func (h *Handlers) HandleGetProcessGraph(c backends.Context, recoveredID string, payloadType string, jsonString string) {
 	msg, err := rpc.CreateGetProcessGraphMsgFromJSON(jsonString)
 	if err != nil {
 		if h.server.HandleHTTPError(c, errors.New("Failed to get processgraph, invalid JSON"), http.StatusBadRequest) {
@@ -142,7 +142,7 @@ func (h *Handlers) HandleGetProcessGraph(c *gin.Context, recoveredID string, pay
 	h.server.SendHTTPReply(c, payloadType, jsonString)
 }
 
-func (h *Handlers) HandleGetProcessGraphs(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
+func (h *Handlers) HandleGetProcessGraphs(c backends.Context, recoveredID string, payloadType string, jsonString string) {
 	msg, err := rpc.CreateGetProcessGraphsMsgFromJSON(jsonString)
 	if err != nil {
 		if h.server.HandleHTTPError(c, errors.New("Failed to get processgraphs, invalid JSON"), http.StatusBadRequest) {
@@ -210,7 +210,7 @@ func (h *Handlers) HandleGetProcessGraphs(c *gin.Context, recoveredID string, pa
 	}
 }
 
-func (h *Handlers) HandleRemoveProcessGraph(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
+func (h *Handlers) HandleRemoveProcessGraph(c backends.Context, recoveredID string, payloadType string, jsonString string) {
 	msg, err := rpc.CreateRemoveProcessGraphMsgFromJSON(jsonString)
 	if err != nil {
 		if h.server.HandleHTTPError(c, errors.New("Failed to remove processgraph, invalid JSON"), http.StatusBadRequest) {
@@ -247,7 +247,7 @@ func (h *Handlers) HandleRemoveProcessGraph(c *gin.Context, recoveredID string, 
 	h.server.SendEmptyHTTPReply(c, payloadType)
 }
 
-func (h *Handlers) HandleRemoveAllProcessGraphs(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
+func (h *Handlers) HandleRemoveAllProcessGraphs(c backends.Context, recoveredID string, payloadType string, jsonString string) {
 	msg, err := rpc.CreateRemoveAllProcessGraphsMsgFromJSON(jsonString)
 	if err != nil {
 		if h.server.HandleHTTPError(c, errors.New("Failed to remove all processgraphs, invalid JSON"), http.StatusBadRequest) {
@@ -275,7 +275,7 @@ func (h *Handlers) HandleRemoveAllProcessGraphs(c *gin.Context, recoveredID stri
 	h.server.SendEmptyHTTPReply(c, payloadType)
 }
 
-func (h *Handlers) HandleAddChild(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
+func (h *Handlers) HandleAddChild(c backends.Context, recoveredID string, payloadType string, jsonString string) {
 	msg, err := rpc.CreateAddChildMsgFromJSON(jsonString)
 	if err != nil {
 		if h.server.HandleHTTPError(c, errors.New("Failed to add child to processgraph, invalid JSON"), http.StatusBadRequest) {

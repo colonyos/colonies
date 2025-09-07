@@ -4,19 +4,19 @@ import (
 	"errors"
 	"net/http"
 
+	"github.com/colonyos/colonies/pkg/backends"
 	"github.com/colonyos/colonies/pkg/core"
 	"github.com/colonyos/colonies/pkg/database"
 	"github.com/colonyos/colonies/pkg/rpc"
 	"github.com/colonyos/colonies/pkg/security"
 	"github.com/colonyos/colonies/pkg/server/registry"
-	"github.com/gin-gonic/gin"
 	log "github.com/sirupsen/logrus"
 )
 
 type Server interface {
-	HandleHTTPError(c *gin.Context, err error, errorCode int) bool
-	SendHTTPReply(c *gin.Context, payloadType string, jsonString string)
-	SendEmptyHTTPReply(c *gin.Context, payloadType string)
+	HandleHTTPError(c backends.Context, err error, errorCode int) bool
+	SendHTTPReply(c backends.Context, payloadType string, jsonString string)
+	SendEmptyHTTPReply(c backends.Context, payloadType string)
 	GetUserDB() database.UserDatabase
 	GetColonyDB() database.ColonyDatabase
 	GetValidator() security.Validator
@@ -34,22 +34,22 @@ func NewHandlers(server Server) *Handlers {
 
 // RegisterHandlers implements the HandlerRegistrar interface
 func (h *Handlers) RegisterHandlers(handlerRegistry *registry.HandlerRegistry) error {
-	if err := handlerRegistry.RegisterGin(rpc.AddUserPayloadType, h.HandleAddUser); err != nil {
+	if err := handlerRegistry.Register(rpc.AddUserPayloadType, h.HandleAddUser); err != nil {
 		return err
 	}
-	if err := handlerRegistry.RegisterGin(rpc.GetUsersPayloadType, h.HandleGetUsers); err != nil {
+	if err := handlerRegistry.Register(rpc.GetUsersPayloadType, h.HandleGetUsers); err != nil {
 		return err
 	}
-	if err := handlerRegistry.RegisterGin(rpc.GetUserPayloadType, h.HandleGetUser); err != nil {
+	if err := handlerRegistry.Register(rpc.GetUserPayloadType, h.HandleGetUser); err != nil {
 		return err
 	}
-	if err := handlerRegistry.RegisterGin(rpc.RemoveUserPayloadType, h.HandleRemoveUser); err != nil {
+	if err := handlerRegistry.Register(rpc.RemoveUserPayloadType, h.HandleRemoveUser); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (h *Handlers) HandleAddUser(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
+func (h *Handlers) HandleAddUser(c backends.Context, recoveredID string, payloadType string, jsonString string) {
 	msg, err := rpc.CreateAddUserMsgFromJSON(jsonString)
 	if err != nil {
 		if h.server.HandleHTTPError(c, errors.New("Failed to add user, invalid JSON"), http.StatusBadRequest) {
@@ -128,7 +128,7 @@ func (h *Handlers) HandleAddUser(c *gin.Context, recoveredID string, payloadType
 	h.server.SendHTTPReply(c, payloadType, jsonString)
 }
 
-func (h *Handlers) HandleGetUsers(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
+func (h *Handlers) HandleGetUsers(c backends.Context, recoveredID string, payloadType string, jsonString string) {
 	msg, err := rpc.CreateGetUsersMsgFromJSON(jsonString)
 	if err != nil {
 		if h.server.HandleHTTPError(c, errors.New("Failed to get users, invalid JSON"), http.StatusBadRequest) {
@@ -174,7 +174,7 @@ func (h *Handlers) HandleGetUsers(c *gin.Context, recoveredID string, payloadTyp
 	h.server.SendHTTPReply(c, payloadType, jsonString)
 }
 
-func (h *Handlers) HandleGetUser(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
+func (h *Handlers) HandleGetUser(c backends.Context, recoveredID string, payloadType string, jsonString string) {
 	msg, err := rpc.CreateGetUserMsgFromJSON(jsonString)
 	if err != nil {
 		if h.server.HandleHTTPError(c, errors.New("Failed to get user, invalid JSON"), http.StatusBadRequest) {
@@ -225,7 +225,7 @@ func (h *Handlers) HandleGetUser(c *gin.Context, recoveredID string, payloadType
 	h.server.SendHTTPReply(c, payloadType, jsonString)
 }
 
-func (h *Handlers) HandleRemoveUser(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
+func (h *Handlers) HandleRemoveUser(c backends.Context, recoveredID string, payloadType string, jsonString string) {
 	msg, err := rpc.CreateRemoveUserMsgFromJSON(jsonString)
 	if err != nil {
 		if h.server.HandleHTTPError(c, errors.New("Failed to remove user, invalid JSON"), http.StatusBadRequest) {

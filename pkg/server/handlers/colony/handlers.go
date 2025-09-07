@@ -9,7 +9,7 @@ import (
 	"github.com/colonyos/colonies/pkg/rpc"
 	"github.com/colonyos/colonies/pkg/security"
 	"github.com/colonyos/colonies/pkg/server/registry"
-	"github.com/gin-gonic/gin"
+	"github.com/colonyos/colonies/pkg/backends"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -22,10 +22,10 @@ type Controller interface {
 }
 
 type Server interface {
-	HandleHTTPError(c *gin.Context, err error, errorCode int) bool
+	HandleHTTPError(c backends.Context, err error, errorCode int) bool
 	GetServerID() (string, error)
-	SendHTTPReply(c *gin.Context, payloadType string, jsonString string)
-	SendEmptyHTTPReply(c *gin.Context, payloadType string)
+	SendHTTPReply(c backends.Context, payloadType string, jsonString string)
+	SendEmptyHTTPReply(c backends.Context, payloadType string)
 	Validator() security.Validator
 	ColonyDB() database.ColonyDatabase
 	Controller() Controller
@@ -43,25 +43,25 @@ func NewHandlers(server Server) *Handlers {
 
 // RegisterHandlers implements the HandlerRegistrar interface
 func (h *Handlers) RegisterHandlers(handlerRegistry *registry.HandlerRegistry) error {
-	if err := handlerRegistry.RegisterGin(rpc.AddColonyPayloadType, h.HandleAddColony); err != nil {
+	if err := handlerRegistry.Register(rpc.AddColonyPayloadType, h.HandleAddColony); err != nil {
 		return err
 	}
-	if err := handlerRegistry.RegisterGin(rpc.RemoveColonyPayloadType, h.HandleRemoveColony); err != nil {
+	if err := handlerRegistry.Register(rpc.RemoveColonyPayloadType, h.HandleRemoveColony); err != nil {
 		return err
 	}
-	if err := handlerRegistry.RegisterGin(rpc.GetColoniesPayloadType, h.HandleGetColonies); err != nil {
+	if err := handlerRegistry.Register(rpc.GetColoniesPayloadType, h.HandleGetColonies); err != nil {
 		return err
 	}
-	if err := handlerRegistry.RegisterGin(rpc.GetColonyPayloadType, h.HandleGetColony); err != nil {
+	if err := handlerRegistry.Register(rpc.GetColonyPayloadType, h.HandleGetColony); err != nil {
 		return err
 	}
-	if err := handlerRegistry.RegisterGin(rpc.GetColonyStatisticsPayloadType, h.HandleColonyStatistics); err != nil {
+	if err := handlerRegistry.Register(rpc.GetColonyStatisticsPayloadType, h.HandleColonyStatistics); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (h *Handlers) HandleAddColony(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
+func (h *Handlers) HandleAddColony(c backends.Context, recoveredID string, payloadType string, jsonString string) {
 	msg, err := rpc.CreateAddColonyMsgFromJSON(jsonString)
 	if err != nil {
 		if h.server.HandleHTTPError(c, errors.New("Failed to add colony, invalid JSON"), http.StatusBadRequest) {
@@ -125,7 +125,7 @@ func (h *Handlers) HandleAddColony(c *gin.Context, recoveredID string, payloadTy
 	h.server.SendHTTPReply(c, payloadType, jsonString)
 }
 
-func (h *Handlers) HandleRemoveColony(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
+func (h *Handlers) HandleRemoveColony(c backends.Context, recoveredID string, payloadType string, jsonString string) {
 	msg, err := rpc.CreateRemoveColonyMsgFromJSON(jsonString)
 	if err != nil {
 		if h.server.HandleHTTPError(c, errors.New("Failed to remove colony, invalid JSON"), http.StatusBadRequest) {
@@ -169,7 +169,7 @@ func (h *Handlers) HandleRemoveColony(c *gin.Context, recoveredID string, payloa
 	h.server.SendEmptyHTTPReply(c, payloadType)
 }
 
-func (h *Handlers) HandleGetColonies(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
+func (h *Handlers) HandleGetColonies(c backends.Context, recoveredID string, payloadType string, jsonString string) {
 	msg, err := rpc.CreateGetColoniesMsgFromJSON(jsonString)
 	if err != nil {
 		if h.server.HandleHTTPError(c, errors.New("Failed to get colonies, invalid JSON"), http.StatusBadRequest) {
@@ -208,7 +208,7 @@ func (h *Handlers) HandleGetColonies(c *gin.Context, recoveredID string, payload
 	h.server.SendHTTPReply(c, payloadType, jsonString)
 }
 
-func (h *Handlers) HandleGetColony(c *gin.Context, recoveredID, payloadType string, jsonString string) {
+func (h *Handlers) HandleGetColony(c backends.Context, recoveredID, payloadType string, jsonString string) {
 	msg, err := rpc.CreateGetColonyMsgFromJSON(jsonString)
 	if err != nil {
 		if h.server.HandleHTTPError(c, errors.New("Failed to get colony, invalid JSON"), http.StatusBadRequest) {
@@ -245,7 +245,7 @@ func (h *Handlers) HandleGetColony(c *gin.Context, recoveredID, payloadType stri
 	h.server.SendHTTPReply(c, payloadType, jsonString)
 }
 
-func (h *Handlers) HandleColonyStatistics(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
+func (h *Handlers) HandleColonyStatistics(c backends.Context, recoveredID string, payloadType string, jsonString string) {
 	msg, err := rpc.CreateGetColonyStatisticsMsgFromJSON(jsonString)
 	if err != nil {
 		if h.server.HandleHTTPError(c, errors.New("Failed to get colony statistics, invalid JSON"), http.StatusBadRequest) {

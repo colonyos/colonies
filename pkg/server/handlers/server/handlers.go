@@ -9,7 +9,7 @@ import (
 	"github.com/colonyos/colonies/pkg/core"
 	"github.com/colonyos/colonies/pkg/rpc"
 	"github.com/colonyos/colonies/pkg/server/registry"
-	"github.com/gin-gonic/gin"
+	"github.com/colonyos/colonies/pkg/backends"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -27,8 +27,8 @@ type Validator interface {
 }
 
 type Server interface {
-	HandleHTTPError(c *gin.Context, err error, errorCode int) bool
-	SendHTTPReply(c *gin.Context, payloadType string, jsonString string)
+	HandleHTTPError(c backends.Context, err error, errorCode int) bool
+	SendHTTPReply(c backends.Context, payloadType string, jsonString string)
 	GetServerID() (string, error)
 	Validator() Validator
 	Controller() Controller
@@ -46,16 +46,16 @@ func NewHandlers(server Server) *Handlers {
 
 // RegisterHandlers implements the HandlerRegistrar interface
 func (h *Handlers) RegisterHandlers(handlerRegistry *registry.HandlerRegistry) error {
-	if err := handlerRegistry.RegisterGin(rpc.GetStatisiticsPayloadType, h.HandleStatistics); err != nil {
+	if err := handlerRegistry.Register(rpc.GetStatisiticsPayloadType, h.HandleStatistics); err != nil {
 		return err
 	}
-	if err := handlerRegistry.RegisterGin(rpc.GetClusterPayloadType, h.HandleGetCluster); err != nil {
+	if err := handlerRegistry.Register(rpc.GetClusterPayloadType, h.HandleGetCluster); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (h *Handlers) HandleVersion(c *gin.Context, payloadType string, jsonString string) {
+func (h *Handlers) HandleVersion(c backends.Context, payloadType string, jsonString string) {
 	msg, err := rpc.CreateVersionMsgFromJSON(jsonString)
 	if err != nil {
 		if h.server.HandleHTTPError(c, errors.New("Failed to get server version, invalid JSON"), http.StatusBadRequest) {
@@ -80,7 +80,7 @@ func (h *Handlers) HandleVersion(c *gin.Context, payloadType string, jsonString 
 	h.server.SendHTTPReply(c, payloadType, jsonString)
 }
 
-func (h *Handlers) HandleStatistics(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
+func (h *Handlers) HandleStatistics(c backends.Context, recoveredID string, payloadType string, jsonString string) {
 	msg, err := rpc.CreateGetStatisticsMsgFromJSON(jsonString)
 	if err != nil {
 		if h.server.HandleHTTPError(c, errors.New("Failed to get statistics, invalid JSON"), http.StatusBadRequest) {
@@ -116,7 +116,7 @@ func (h *Handlers) HandleStatistics(c *gin.Context, recoveredID string, payloadT
 	h.server.SendHTTPReply(c, payloadType, jsonString)
 }
 
-func (h *Handlers) HandleGetCluster(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
+func (h *Handlers) HandleGetCluster(c backends.Context, recoveredID string, payloadType string, jsonString string) {
 	msg, err := rpc.CreateGetClusterMsgFromJSON(jsonString)
 	if err != nil {
 		if h.server.HandleHTTPError(c, errors.New("Failed to get cluster info, invalid JSON"), http.StatusBadRequest) {

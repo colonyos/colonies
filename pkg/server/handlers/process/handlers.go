@@ -16,7 +16,7 @@ import (
 	"github.com/colonyos/colonies/pkg/security"
 	"github.com/colonyos/colonies/pkg/constants"
 	"github.com/colonyos/colonies/pkg/server/registry"
-	"github.com/gin-gonic/gin"
+	"github.com/colonyos/colonies/pkg/backends"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -103,9 +103,9 @@ func (e *EventHandler) WaitForProcess(executorType string, state int, processID 
 }
 
 type Server interface {
-	HandleHTTPError(c *gin.Context, err error, errorCode int) bool
-	SendHTTPReply(c *gin.Context, payloadType string, jsonString string)
-	SendEmptyHTTPReply(c *gin.Context, payloadType string)
+	HandleHTTPError(c backends.Context, err error, errorCode int) bool
+	SendHTTPReply(c backends.Context, payloadType string, jsonString string)
+	SendEmptyHTTPReply(c backends.Context, payloadType string)
 	Validator() security.Validator
 	ExecutorDB() database.ExecutorDatabase
 	UserDB() database.UserDatabase
@@ -127,50 +127,50 @@ func NewHandlers(server Server) *Handlers {
 
 // RegisterHandlers implements the HandlerRegistrar interface
 func (h *Handlers) RegisterHandlers(handlerRegistry *registry.HandlerRegistry) error {
-	if err := handlerRegistry.RegisterGin(rpc.SubmitFunctionSpecPayloadType, h.HandleSubmit); err != nil {
+	if err := handlerRegistry.Register(rpc.SubmitFunctionSpecPayloadType, h.HandleSubmit); err != nil {
 		return err
 	}
-	if err := handlerRegistry.RegisterGinWithRawRequest(rpc.AssignProcessPayloadType, h.HandleAssignProcess); err != nil {
+	if err := handlerRegistry.RegisterWithRawRequest(rpc.AssignProcessPayloadType, h.HandleAssignProcess); err != nil {
 		return err
 	}
-	if err := handlerRegistry.RegisterGin(rpc.PauseAssignmentsPayloadType, h.HandlePauseAssignments); err != nil {
+	if err := handlerRegistry.Register(rpc.PauseAssignmentsPayloadType, h.HandlePauseAssignments); err != nil {
 		return err
 	}
-	if err := handlerRegistry.RegisterGin(rpc.ResumeAssignmentsPayloadType, h.HandleResumeAssignments); err != nil {
+	if err := handlerRegistry.Register(rpc.ResumeAssignmentsPayloadType, h.HandleResumeAssignments); err != nil {
 		return err
 	}
-	if err := handlerRegistry.RegisterGin(rpc.GetPauseStatusPayloadType, h.HandleGetPauseStatus); err != nil {
+	if err := handlerRegistry.Register(rpc.GetPauseStatusPayloadType, h.HandleGetPauseStatus); err != nil {
 		return err
 	}
-	if err := handlerRegistry.RegisterGin(rpc.GetProcessHistPayloadType, h.HandleGetProcessHist); err != nil {
+	if err := handlerRegistry.Register(rpc.GetProcessHistPayloadType, h.HandleGetProcessHist); err != nil {
 		return err
 	}
-	if err := handlerRegistry.RegisterGin(rpc.GetProcessesPayloadType, h.HandleGetProcesses); err != nil {
+	if err := handlerRegistry.Register(rpc.GetProcessesPayloadType, h.HandleGetProcesses); err != nil {
 		return err
 	}
-	if err := handlerRegistry.RegisterGin(rpc.GetProcessPayloadType, h.HandleGetProcess); err != nil {
+	if err := handlerRegistry.Register(rpc.GetProcessPayloadType, h.HandleGetProcess); err != nil {
 		return err
 	}
-	if err := handlerRegistry.RegisterGin(rpc.RemoveProcessPayloadType, h.HandleRemoveProcess); err != nil {
+	if err := handlerRegistry.Register(rpc.RemoveProcessPayloadType, h.HandleRemoveProcess); err != nil {
 		return err
 	}
-	if err := handlerRegistry.RegisterGin(rpc.RemoveAllProcessesPayloadType, h.HandleRemoveAllProcesses); err != nil {
+	if err := handlerRegistry.Register(rpc.RemoveAllProcessesPayloadType, h.HandleRemoveAllProcesses); err != nil {
 		return err
 	}
-	if err := handlerRegistry.RegisterGin(rpc.CloseSuccessfulPayloadType, h.HandleCloseSuccessful); err != nil {
+	if err := handlerRegistry.Register(rpc.CloseSuccessfulPayloadType, h.HandleCloseSuccessful); err != nil {
 		return err
 	}
-	if err := handlerRegistry.RegisterGin(rpc.CloseFailedPayloadType, h.HandleCloseFailed); err != nil {
+	if err := handlerRegistry.Register(rpc.CloseFailedPayloadType, h.HandleCloseFailed); err != nil {
 		return err
 	}
-	if err := handlerRegistry.RegisterGin(rpc.SetOutputPayloadType, h.HandleSetOutput); err != nil {
+	if err := handlerRegistry.Register(rpc.SetOutputPayloadType, h.HandleSetOutput); err != nil {
 		return err
 	}
 	return nil
 }
 
 
-func (h *Handlers) HandleSubmit(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
+func (h *Handlers) HandleSubmit(c backends.Context, recoveredID string, payloadType string, jsonString string) {
 	msg, err := rpc.CreateSubmitFunctionSpecMsgFromJSON(jsonString)
 	if err != nil {
 		log.Warning(err)
@@ -272,7 +272,7 @@ func (h *Handlers) HandleSubmit(c *gin.Context, recoveredID string, payloadType 
 //   - payloadType: Expected message type for validation
 //   - jsonString: Request body containing assignment parameters
 //   - originalRequest: Raw request for leader redirection in cluster mode
-func (h *Handlers) HandleAssignProcess(c *gin.Context, recoveredID string, payloadType string, jsonString string, originalRequest string) {
+func (h *Handlers) HandleAssignProcess(c backends.Context, recoveredID string, payloadType string, jsonString string, originalRequest string) {
 	var err error
 	if h.server.ExclusiveAssign() && !h.server.ProcessController().IsLeader() {
 		// Find out who is the leader
@@ -362,7 +362,7 @@ func (h *Handlers) HandleAssignProcess(c *gin.Context, recoveredID string, paylo
 	var cancelCtx context.CancelFunc
 
 	if msg.Timeout > 0 {
-		ctx, cancelCtx = context.WithTimeout(c.Request.Context(), time.Duration(msg.Timeout)*time.Second)
+		ctx, cancelCtx = context.WithTimeout(c.Request().Context(), time.Duration(msg.Timeout)*time.Second)
 		defer cancelCtx()
 	}
 
@@ -435,7 +435,7 @@ func (h *Handlers) HandleAssignProcess(c *gin.Context, recoveredID string, paylo
 	h.server.SendHTTPReply(c, payloadType, jsonString)
 }
 
-func (h *Handlers) HandleGetProcessHist(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
+func (h *Handlers) HandleGetProcessHist(c backends.Context, recoveredID string, payloadType string, jsonString string) {
 	msg, err := rpc.CreateGetProcessHistMsgFromJSON(jsonString)
 	if err != nil {
 		if h.server.HandleHTTPError(c, errors.New("Failed to get process hist, invalid JSON"), http.StatusBadRequest) {
@@ -472,7 +472,7 @@ func (h *Handlers) HandleGetProcessHist(c *gin.Context, recoveredID string, payl
 	h.server.SendHTTPReply(c, payloadType, jsonString)
 }
 
-func (h *Handlers) HandleGetProcesses(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
+func (h *Handlers) HandleGetProcesses(c backends.Context, recoveredID string, payloadType string, jsonString string) {
 	msg, err := rpc.CreateGetProcessesMsgFromJSON(jsonString)
 	if err != nil {
 		if h.server.HandleHTTPError(c, errors.New("Failed to get processes, invalid JSON"), http.StatusBadRequest) {
@@ -568,7 +568,7 @@ func (h *Handlers) HandleGetProcesses(c *gin.Context, recoveredID string, payloa
 	}
 }
 
-func (h *Handlers) HandleGetProcess(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
+func (h *Handlers) HandleGetProcess(c backends.Context, recoveredID string, payloadType string, jsonString string) {
 	msg, err := rpc.CreateGetProcessMsgFromJSON(jsonString)
 	if err != nil {
 		if h.server.HandleHTTPError(c, errors.New("Failed to get process, invalid JSON"), http.StatusBadRequest) {
@@ -605,7 +605,7 @@ func (h *Handlers) HandleGetProcess(c *gin.Context, recoveredID string, payloadT
 	h.server.SendHTTPReply(c, payloadType, jsonString)
 }
 
-func (h *Handlers) HandleRemoveProcess(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
+func (h *Handlers) HandleRemoveProcess(c backends.Context, recoveredID string, payloadType string, jsonString string) {
 	msg, err := rpc.CreateRemoveProcessMsgFromJSON(jsonString)
 	if err != nil {
 		if h.server.HandleHTTPError(c, errors.New("Failed to remove process, invalid JSON"), http.StatusBadRequest) {
@@ -649,7 +649,7 @@ func (h *Handlers) HandleRemoveProcess(c *gin.Context, recoveredID string, paylo
 	h.server.SendEmptyHTTPReply(c, payloadType)
 }
 
-func (h *Handlers) HandleRemoveAllProcesses(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
+func (h *Handlers) HandleRemoveAllProcesses(c backends.Context, recoveredID string, payloadType string, jsonString string) {
 	msg, err := rpc.CreateRemoveAllProcessesMsgFromJSON(jsonString)
 	if err != nil {
 		if h.server.HandleHTTPError(c, errors.New("Failed to remove all processes, invalid JSON"), http.StatusBadRequest) {
@@ -677,7 +677,7 @@ func (h *Handlers) HandleRemoveAllProcesses(c *gin.Context, recoveredID string, 
 	h.server.SendEmptyHTTPReply(c, payloadType)
 }
 
-func (h *Handlers) HandleSetOutput(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
+func (h *Handlers) HandleSetOutput(c backends.Context, recoveredID string, payloadType string, jsonString string) {
 	msg, err := rpc.CreateSetOutputMsgFromJSON(jsonString)
 	if err != nil {
 		if h.server.HandleHTTPError(c, errors.New("Failed to set output, invalid JSON"), http.StatusBadRequest) {
@@ -735,7 +735,7 @@ func (h *Handlers) HandleSetOutput(c *gin.Context, recoveredID string, payloadTy
 	h.server.SendEmptyHTTPReply(c, payloadType)
 }
 
-func (h *Handlers) HandleCloseSuccessful(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
+func (h *Handlers) HandleCloseSuccessful(c backends.Context, recoveredID string, payloadType string, jsonString string) {
 	msg, err := rpc.CreateCloseSuccessfulMsgFromJSON(jsonString)
 	if err != nil {
 		if h.server.HandleHTTPError(c, errors.New("Failed to close successful, invalid JSON"), http.StatusBadRequest) {
@@ -793,7 +793,7 @@ func (h *Handlers) HandleCloseSuccessful(c *gin.Context, recoveredID string, pay
 	h.server.SendEmptyHTTPReply(c, payloadType)
 }
 
-func (h *Handlers) HandleCloseFailed(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
+func (h *Handlers) HandleCloseFailed(c backends.Context, recoveredID string, payloadType string, jsonString string) {
 	msg, err := rpc.CreateCloseFailedMsgFromJSON(jsonString)
 	if err != nil {
 		if h.server.HandleHTTPError(c, errors.New("Failed to close failed, invalid JSON"), http.StatusBadRequest) {
@@ -850,7 +850,7 @@ func (h *Handlers) HandleCloseFailed(c *gin.Context, recoveredID string, payload
 	h.server.SendEmptyHTTPReply(c, payloadType)
 }
 
-func (h *Handlers) HandlePauseAssignments(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
+func (h *Handlers) HandlePauseAssignments(c backends.Context, recoveredID string, payloadType string, jsonString string) {
 	msg, err := rpc.CreatePauseAssignmentsMsgFromJSON(jsonString)
 	if err != nil {
 		log.Warning(err)
@@ -878,7 +878,7 @@ func (h *Handlers) HandlePauseAssignments(c *gin.Context, recoveredID string, pa
 	h.server.SendEmptyHTTPReply(c, payloadType)
 }
 
-func (h *Handlers) HandleResumeAssignments(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
+func (h *Handlers) HandleResumeAssignments(c backends.Context, recoveredID string, payloadType string, jsonString string) {
 	msg, err := rpc.CreateResumeAssignmentsMsgFromJSON(jsonString)
 	if err != nil {
 		log.Warning(err)
@@ -906,7 +906,7 @@ func (h *Handlers) HandleResumeAssignments(c *gin.Context, recoveredID string, p
 	h.server.SendEmptyHTTPReply(c, payloadType)
 }
 
-func (h *Handlers) HandleGetPauseStatus(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
+func (h *Handlers) HandleGetPauseStatus(c backends.Context, recoveredID string, payloadType string, jsonString string) {
 	msg, err := rpc.CreateGetPauseStatusMsgFromJSON(jsonString)
 	if err != nil {
 		log.Warning(err)
