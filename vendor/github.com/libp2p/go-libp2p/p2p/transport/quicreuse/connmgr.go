@@ -4,20 +4,41 @@ import (
 	"context"
 	"crypto/tls"
 	"errors"
+	"io"
 	"net"
 	"sync"
 
 	ma "github.com/multiformats/go-multiaddr"
 	manet "github.com/multiformats/go-multiaddr/net"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/quic-go/quic-go"
 	quiclogging "github.com/quic-go/quic-go/logging"
+	quicmetrics "github.com/quic-go/quic-go/metrics"
 )
+
+type QUICListener interface {
+	Accept(ctx context.Context) (quic.Connection, error)
+	Close() error
+	Addr() net.Addr
+}
+
+var _ QUICListener = &quic.Listener{}
+
+type QUICTransport interface {
+	Listen(tlsConf *tls.Config, conf *quic.Config) (QUICListener, error)
+	Dial(ctx context.Context, addr net.Addr, tlsConf *tls.Config, conf *quic.Config) (quic.Connection, error)
+	WriteTo(b []byte, addr net.Addr) (int, error)
+	ReadNonQUICPacket(ctx context.Context, b []byte) (int, net.Addr, error)
+	io.Closer
+}
 
 type ConnManager struct {
 	reuseUDP4       *reuse
 	reuseUDP6       *reuse
 	enableReuseport bool
-	enableMetrics   bool
+
+	enableMetrics bool
+	registerer    prometheus.Registerer
 
 	serverConfig *quic.Config
 	clientConfig *quic.Config
@@ -40,6 +61,7 @@ func NewConnManager(statelessResetKey quic.StatelessResetKey, tokenKey quic.Toke
 		quicListeners:   make(map[string]quicListenerEntry),
 		srk:             statelessResetKey,
 		tokenKey:        tokenKey,
+		registerer:      prometheus.DefaultRegisterer,
 	}
 	for _, o := range opts {
 		if err := o(cm); err != nil {
@@ -48,14 +70,7 @@ func NewConnManager(statelessResetKey quic.StatelessResetKey, tokenKey quic.Toke
 	}
 
 	quicConf := quicConfig.Clone()
-
-	quicConf.Tracer = func(ctx context.Context, p quiclogging.Perspective, ci quic.ConnectionID) *quiclogging.ConnectionTracer {
-		var tracer *quiclogging.ConnectionTracer
-		if qlogTracerDir != "" {
-			tracer = qloggerForDir(qlogTracerDir, p, ci)
-		}
-		return tracer
-	}
+	quicConf.Tracer = cm.getTracer()
 	serverConfig := quicConf.Clone()
 
 	cm.clientConfig = quicConf
@@ -65,6 +80,31 @@ func NewConnManager(statelessResetKey quic.StatelessResetKey, tokenKey quic.Toke
 		cm.reuseUDP6 = newReuse(&statelessResetKey, &tokenKey)
 	}
 	return cm, nil
+}
+
+func (c *ConnManager) getTracer() func(context.Context, quiclogging.Perspective, quic.ConnectionID) *quiclogging.ConnectionTracer {
+	return func(ctx context.Context, p quiclogging.Perspective, ci quic.ConnectionID) *quiclogging.ConnectionTracer {
+		var promTracer *quiclogging.ConnectionTracer
+		if c.enableMetrics {
+			switch p {
+			case quiclogging.PerspectiveClient:
+				promTracer = quicmetrics.NewClientConnectionTracerWithRegisterer(c.registerer)
+			case quiclogging.PerspectiveServer:
+				promTracer = quicmetrics.NewServerConnectionTracerWithRegisterer(c.registerer)
+			default:
+				log.Error("invalid logging perspective: %s", p)
+			}
+		}
+		var tracer *quiclogging.ConnectionTracer
+		if qlogTracerDir != "" {
+			tracer = qloggerForDir(qlogTracerDir, p, ci)
+			if promTracer != nil {
+				tracer = quiclogging.NewMultiplexedConnectionTracer(promTracer,
+					tracer)
+			}
+		}
+		return tracer
+	}
 }
 
 func (c *ConnManager) getReuse(network string) (*reuse, error) {
@@ -78,7 +118,38 @@ func (c *ConnManager) getReuse(network string) (*reuse, error) {
 	}
 }
 
+// LendTransport is an advanced method used to lend an existing QUICTransport
+// to the ConnManager. The ConnManager will close the returned channel when it
+// is done with the transport, so that the owner may safely close the transport.
+func (c *ConnManager) LendTransport(network string, tr QUICTransport, conn net.PacketConn) (<-chan struct{}, error) {
+	c.quicListenersMu.Lock()
+	defer c.quicListenersMu.Unlock()
+
+	localAddr, ok := conn.LocalAddr().(*net.UDPAddr)
+	if !ok {
+		return nil, errors.New("expected a conn.LocalAddr() to return a *net.UDPAddr")
+	}
+
+	refCountedTr := &refcountedTransport{
+		QUICTransport:    tr,
+		packetConn:       conn,
+		borrowDoneSignal: make(chan struct{}),
+	}
+
+	var reuse *reuse
+	reuse, err := c.getReuse(network)
+	if err != nil {
+		return nil, err
+	}
+	return refCountedTr.borrowDoneSignal, reuse.AddTransport(refCountedTr, localAddr)
+}
+
 func (c *ConnManager) ListenQUIC(addr ma.Multiaddr, tlsConf *tls.Config, allowWindowIncrease func(conn quic.Connection, delta uint64) bool) (Listener, error) {
+	return c.ListenQUICAndAssociate(nil, addr, tlsConf, allowWindowIncrease)
+}
+
+// ListenQUICAndAssociate returns a QUIC listener and associates the underlying transport with the given association.
+func (c *ConnManager) ListenQUICAndAssociate(association any, addr ma.Multiaddr, tlsConf *tls.Config, allowWindowIncrease func(conn quic.Connection, delta uint64) bool) (Listener, error) {
 	netw, host, err := manet.DialArgs(addr)
 	if err != nil {
 		return nil, err
@@ -94,7 +165,7 @@ func (c *ConnManager) ListenQUIC(addr ma.Multiaddr, tlsConf *tls.Config, allowWi
 	key := laddr.String()
 	entry, ok := c.quicListeners[key]
 	if !ok {
-		tr, err := c.transportForListen(netw, laddr)
+		tr, err := c.transportForListen(association, netw, laddr)
 		if err != nil {
 			return nil, err
 		}
@@ -131,13 +202,40 @@ func (c *ConnManager) onListenerClosed(key string) {
 	}
 }
 
-func (c *ConnManager) transportForListen(network string, laddr *net.UDPAddr) (refCountedQuicTransport, error) {
+func (c *ConnManager) SharedNonQUICPacketConn(network string, laddr *net.UDPAddr) (net.PacketConn, error) {
+	c.quicListenersMu.Lock()
+	defer c.quicListenersMu.Unlock()
+	key := laddr.String()
+	entry, ok := c.quicListeners[key]
+	if !ok {
+		return nil, errors.New("expected to be able to share with a QUIC listener, but no QUIC listener found. The QUIC listener should start first")
+	}
+	t := entry.ln.transport
+	if t, ok := t.(*refcountedTransport); ok {
+		t.IncreaseCount()
+		ctx, cancel := context.WithCancel(context.Background())
+		return &nonQUICPacketConn{
+			ctx:             ctx,
+			ctxCancel:       cancel,
+			owningTransport: t,
+			tr:              t.QUICTransport,
+		}, nil
+	}
+	return nil, errors.New("expected to be able to share with a QUIC listener, but the QUIC listener is not using a refcountedTransport. `DisableReuseport` should not be set")
+}
+
+func (c *ConnManager) transportForListen(association any, network string, laddr *net.UDPAddr) (refCountedQuicTransport, error) {
 	if c.enableReuseport {
 		reuse, err := c.getReuse(network)
 		if err != nil {
 			return nil, err
 		}
-		return reuse.TransportForListen(network, laddr)
+		tr, err := reuse.TransportForListen(network, laddr)
+		if err != nil {
+			return nil, err
+		}
+		tr.associate(association)
+		return tr, nil
 	}
 
 	conn, err := net.ListenUDP(network, laddr)
@@ -146,12 +244,22 @@ func (c *ConnManager) transportForListen(network string, laddr *net.UDPAddr) (re
 	}
 	return &singleOwnerTransport{
 		packetConn: conn,
-		Transport: quic.Transport{
-			Conn:              conn,
-			StatelessResetKey: &c.srk,
-			TokenGeneratorKey: &c.tokenKey,
+		Transport: &wrappedQUICTransport{
+			&quic.Transport{
+				Conn:              conn,
+				StatelessResetKey: &c.srk,
+				TokenGeneratorKey: &c.tokenKey,
+			},
 		},
 	}, nil
+}
+
+type associationKey struct{}
+
+// WithAssociation returns a new context with the given association. Used in
+// DialQUIC to prefer a transport that has the given association.
+func WithAssociation(ctx context.Context, association any) context.Context {
+	return context.WithValue(ctx, associationKey{}, association)
 }
 
 func (c *ConnManager) DialQUIC(ctx context.Context, raddr ma.Multiaddr, tlsConf *tls.Config, allowWindowIncrease func(conn quic.Connection, delta uint64) bool) (quic.Connection, error) {
@@ -169,12 +277,17 @@ func (c *ConnManager) DialQUIC(ctx context.Context, raddr ma.Multiaddr, tlsConf 
 
 	if v == quic.Version1 {
 		// The endpoint has explicit support for QUIC v1, so we'll only use that version.
-		quicConf.Versions = []quic.VersionNumber{quic.Version1}
+		quicConf.Versions = []quic.Version{quic.Version1}
 	} else {
 		return nil, errors.New("unknown QUIC version")
 	}
 
-	tr, err := c.TransportForDial(netw, naddr)
+	var tr refCountedQuicTransport
+	if association := ctx.Value(associationKey{}); association != nil {
+		tr, err = c.TransportWithAssociationForDial(association, netw, naddr)
+	} else {
+		tr, err = c.TransportForDial(netw, naddr)
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -187,12 +300,17 @@ func (c *ConnManager) DialQUIC(ctx context.Context, raddr ma.Multiaddr, tlsConf 
 }
 
 func (c *ConnManager) TransportForDial(network string, raddr *net.UDPAddr) (refCountedQuicTransport, error) {
+	return c.TransportWithAssociationForDial(nil, network, raddr)
+}
+
+// TransportWithAssociationForDial returns a QUIC transport for dialing, preferring a transport with the given association.
+func (c *ConnManager) TransportWithAssociationForDial(association any, network string, raddr *net.UDPAddr) (refCountedQuicTransport, error) {
 	if c.enableReuseport {
 		reuse, err := c.getReuse(network)
 		if err != nil {
 			return nil, err
 		}
-		return reuse.TransportForDial(network, raddr)
+		return reuse.transportWithAssociationForDial(association, network, raddr)
 	}
 
 	var laddr *net.UDPAddr
@@ -206,7 +324,7 @@ func (c *ConnManager) TransportForDial(network string, raddr *net.UDPAddr) (refC
 	if err != nil {
 		return nil, err
 	}
-	return &singleOwnerTransport{Transport: quic.Transport{Conn: conn, StatelessResetKey: &c.srk}, packetConn: conn}, nil
+	return &singleOwnerTransport{Transport: &wrappedQUICTransport{&quic.Transport{Conn: conn, StatelessResetKey: &c.srk}}, packetConn: conn}, nil
 }
 
 func (c *ConnManager) Protocols() []int {
@@ -221,4 +339,16 @@ func (c *ConnManager) Close() error {
 		return err
 	}
 	return c.reuseUDP4.Close()
+}
+
+func (c *ConnManager) ClientConfig() *quic.Config {
+	return c.clientConfig
+}
+
+type wrappedQUICTransport struct {
+	*quic.Transport
+}
+
+func (t *wrappedQUICTransport) Listen(tlsConf *tls.Config, conf *quic.Config) (QUICListener, error) {
+	return t.Transport.Listen(tlsConf, conf)
 }

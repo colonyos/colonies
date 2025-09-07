@@ -1,0 +1,194 @@
+package memdb
+
+import (
+	"context"
+	"os"
+	"testing"
+
+	"github.com/colonyos/colonies/pkg/database/memdb/schema"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+func TestSimpleMemDB_BasicOperations(t *testing.T) {
+	// Create test database
+	config := &Config{
+		DataDir:     "/tmp/simple_memdb_test",
+		StorageMode: MemoryOnly, // Use memory-only for tests
+		CacheSize:   10,         // Small cache for tests
+	}
+
+	db, err := NewSimpleMemDB(config)
+	require.NoError(t, err)
+	defer db.Close()
+
+	ctx := context.Background()
+
+	// Create a test collection with schema
+	testSchema := schema.NewSchema("test_collection").
+		AddField("name", schema.StringType, true, true, false, nil).
+		AddField("age", schema.IntType, false, true, false, 0).
+		AddField("email", schema.StringType, false, false, true, nil)
+
+	err = db.CreateCollection(ctx, "users", testSchema)
+	require.NoError(t, err)
+
+	// Test Insert
+	doc := &Document{
+		ID: "user1",
+		Fields: map[string]interface{}{
+			"name":  "John Doe",
+			"age":   30,
+			"email": "john@example.com",
+		},
+	}
+
+	err = db.Insert(ctx, "users", doc)
+	assert.NoError(t, err)
+
+	// Test Get
+	retrieved, err := db.Get(ctx, "users", "user1")
+	assert.NoError(t, err)
+	assert.Equal(t, "user1", retrieved.ID)
+	assert.Equal(t, "John Doe", retrieved.Fields["name"])
+	assert.Equal(t, float64(30), retrieved.Fields["age"]) // JSON numbers are float64
+	assert.Equal(t, "john@example.com", retrieved.Fields["email"])
+
+	// Test Update
+	updatedFields := map[string]interface{}{
+		"age": 31,
+	}
+
+	updated, err := db.Update(ctx, "users", "user1", updatedFields)
+	assert.NoError(t, err)
+	assert.Equal(t, float64(31), updated.Fields["age"])
+	assert.Equal(t, uint64(2), updated.Version) // Version should increment
+
+	// Test List
+	docs, err := db.List(ctx, "users", 10, 0)
+	assert.NoError(t, err)
+	assert.Len(t, docs, 1)
+	assert.Equal(t, "user1", docs[0].ID)
+
+	// Test Count
+	count, err := db.Count(ctx, "users")
+	assert.NoError(t, err)
+	assert.Equal(t, 1, count)
+
+	// Test Delete
+	err = db.Delete(ctx, "users", "user1")
+	assert.NoError(t, err)
+
+	// Verify deletion
+	_, err = db.Get(ctx, "users", "user1")
+	assert.Error(t, err)
+}
+
+func TestSimpleMemDB_CASOperations(t *testing.T) {
+	config := &Config{
+		DataDir:     "/tmp/simple_memdb_test_cas",
+		StorageMode: MemoryOnly,
+		CacheSize:   10,
+	}
+
+	db, err := NewSimpleMemDB(config)
+	require.NoError(t, err)
+	defer db.Close()
+
+	ctx := context.Background()
+
+	// Create collection
+	testSchema := schema.NewSchema("processes").
+		AddField("id", schema.StringType, true, true, true, nil).
+		AddField("executor_id", schema.StringType, false, true, false, nil).
+		AddField("state", schema.StringType, true, true, false, "waiting")
+
+	err = db.CreateCollection(ctx, "processes", testSchema)
+	require.NoError(t, err)
+
+	// Insert a process
+	doc := &Document{
+		ID: "process1",
+		Fields: map[string]interface{}{
+			"state": "waiting",
+		},
+	}
+
+	err = db.Insert(ctx, "processes", doc)
+	require.NoError(t, err)
+
+	// Test successful CAS - assign process to executor
+	cas := &CASRequest{
+		Key:      "process1",
+		Expected: map[string]interface{}{"state": "waiting"},
+		Value: map[string]interface{}{
+			"state":       "running",
+			"executor_id": "executor1",
+		},
+	}
+
+	result, err := db.CompareAndSwap(ctx, "processes", cas)
+	assert.NoError(t, err)
+	assert.True(t, result.Success)
+
+	// Verify the change
+	retrieved, err := db.Get(ctx, "processes", "process1")
+	assert.NoError(t, err)
+	assert.Equal(t, "running", retrieved.Fields["state"])
+	assert.Equal(t, "executor1", retrieved.Fields["executor_id"])
+
+	// Test failed CAS - try to assign to another executor
+	cas2 := &CASRequest{
+		Key:      "process1",
+		Expected: map[string]interface{}{"state": "waiting"}, // This should fail
+		Value: map[string]interface{}{
+			"state":       "running",
+			"executor_id": "executor2",
+		},
+	}
+
+	result2, err := db.CompareAndSwap(ctx, "processes", cas2)
+	assert.NoError(t, err)
+	assert.False(t, result2.Success)
+
+	// Verify no change occurred
+	retrieved2, err := db.Get(ctx, "processes", "process1")
+	assert.NoError(t, err)
+	assert.Equal(t, "running", retrieved2.Fields["state"])
+	assert.Equal(t, "executor1", retrieved2.Fields["executor_id"]) // Still executor1
+}
+
+func TestSimpleMemDB_HealthAndVersion(t *testing.T) {
+	config := &Config{
+		DataDir:     "/tmp/simple_memdb_test_health",
+		StorageMode: MemoryOnly,
+		CacheSize:   10,
+	}
+
+	db, err := NewSimpleMemDB(config)
+	require.NoError(t, err)
+	defer db.Close()
+
+	ctx := context.Background()
+
+	// Test health check
+	err = db.Health(ctx)
+	assert.NoError(t, err)
+
+	// Test version
+	version := db.GetVersion()
+	assert.Equal(t, "1.0.0-simple", version)
+
+	// Test config
+	config_retrieved := db.GetConfig()
+	assert.NotNil(t, config_retrieved)
+	assert.Equal(t, config.DataDir, config_retrieved.DataDir)
+}
+
+// Cleanup after all tests
+func TestCleanup(t *testing.T) {
+	// Cleanup test directories
+	os.RemoveAll("/tmp/simple_memdb_test")
+	os.RemoveAll("/tmp/simple_memdb_test_cas")
+	os.RemoveAll("/tmp/simple_memdb_test_health")
+}
