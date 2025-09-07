@@ -13,7 +13,7 @@ import (
 	"github.com/colonyos/colonies/pkg/core"
 	"github.com/colonyos/colonies/pkg/database/postgresql"
 	"github.com/colonyos/colonies/pkg/monitoring"
-	"github.com/colonyos/colonies/pkg/service"
+	"github.com/colonyos/colonies/pkg/server"
 	embeddedpostgres "github.com/fergusstrange/embedded-postgres"
 	"github.com/gin-gonic/gin"
 
@@ -104,7 +104,7 @@ var devCmd = &cobra.Command{
 
 		coloniesDB.SetServerID("", serverIdentity.ID())
 
-		coloniesServer := service.CreateColoniesServer(coloniesDB,
+		coloniesServer := server.CreateServer(coloniesDB,
 			ServerPort,
 			false,
 			"",
