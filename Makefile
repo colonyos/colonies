@@ -56,7 +56,7 @@ test:
 	@cd pkg/server/handlers/server; grc go test -v --race
 	@cd pkg/server/handlers/snapshot; grc go test -v --race
 	@cd pkg/server/handlers/user; grc go test -v --race
-	@cd pkg/server/handlers/websocket; grc go test -v --race
+	@cd pkg/server/handlers/realtime; grc go test -v --race
 	@cd pkg/server/utils; grc go test -v --race
 	@cd pkg/scheduler; grc go test -v --race
 	@cd pkg/parsers; grc go test -v --race
@@ -90,7 +90,7 @@ github_test:
 	@cd pkg/server/handlers/server; go test -v --race
 	@cd pkg/server/handlers/snapshot; go test -v --race
 	@cd pkg/server/handlers/user; go test -v --race
-	@cd pkg/server/handlers/websocket; go test -v --race
+	@cd pkg/server/handlers/realtime; go test -v --race
 	@cd pkg/server/utils; go test -v --race
 	@cd pkg/scheduler; go test -v --race
 	@cd pkg/parsers; go test -v --race
