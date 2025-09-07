@@ -7,6 +7,8 @@ import (
 	"io"
 	"net/http"
 	"time"
+
+	"github.com/colonyos/colonies/pkg/core"
 )
 
 // Context represents a generic HTTP request/response context
@@ -180,4 +182,76 @@ type AuthBackend interface {
 	
 	// Authentication middleware
 	BasicAuth(accounts map[string]string) MiddlewareFunc
+}
+
+// =============================================================================
+// Realtime Communication Interfaces
+// =============================================================================
+
+// RealtimeConnection represents a generic realtime connection interface
+// This abstracts away specific transport implementations (WebSocket, gRPC, libp2p, etc.)
+type RealtimeConnection interface {
+	// WriteMessage sends a message through the connection
+	WriteMessage(msgType int, data []byte) error
+	// Close closes the connection
+	Close() error
+	// IsOpen returns true if the connection is still open
+	IsOpen() bool
+}
+
+// RealtimeSubscription represents a subscription to process events
+type RealtimeSubscription struct {
+	Connection   RealtimeConnection
+	MsgType      int
+	Timeout      int
+	ExecutorType string
+	State        int
+	ProcessID    string
+}
+
+// RealtimeEventHandler handles process events and manages subscriptions
+type RealtimeEventHandler interface {
+	// Signal sends a process event to all registered listeners
+	Signal(process *core.Process)
+	// Subscribe registers a subscription and returns channels for process events and errors
+	Subscribe(executorType string, state int, processID string, ctx context.Context) (chan *core.Process, chan error)
+	// WaitForProcess waits for a specific process state change
+	WaitForProcess(executorType string, state int, processID string, ctx context.Context) (*core.Process, error)
+	// Stop stops the event handler
+	Stop()
+}
+
+// TestableRealtimeEventHandler extends RealtimeEventHandler with methods for testing
+type TestableRealtimeEventHandler interface {
+	RealtimeEventHandler
+	// NumberOfListeners returns listener counts for testing
+	NumberOfListeners(executorType string, state int) (int, int, int)
+	// HasStopped returns whether the handler has stopped for testing
+	HasStopped() bool
+}
+
+// RealtimeSubscriptionController manages subscriptions using the abstract Connection interface
+type RealtimeSubscriptionController interface {
+	// AddProcessesSubscriber adds a subscription for all processes of a certain type
+	AddProcessesSubscriber(executorID string, subscription *RealtimeSubscription) error
+	// AddProcessSubscriber adds a subscription for a specific process
+	AddProcessSubscriber(executorID string, process *core.Process, subscription *RealtimeSubscription) error
+}
+
+// RealtimeBackend represents a backend that supports realtime communication
+type RealtimeBackend interface {
+	// CreateConnection creates a connection from a raw connection (e.g., *websocket.Conn)
+	CreateConnection(rawConn interface{}) (RealtimeConnection, error)
+	// CreateEventHandler creates an event handler
+	CreateEventHandler(relayServer interface{}) RealtimeEventHandler
+	// CreateTestableEventHandler creates a testable event handler
+	CreateTestableEventHandler(relayServer interface{}) TestableRealtimeEventHandler
+	// CreateSubscriptionController creates a subscription controller
+	CreateSubscriptionController(eventHandler RealtimeEventHandler) RealtimeSubscriptionController
+}
+
+// FullBackend represents a complete backend implementation with both HTTP and realtime support
+type FullBackend interface {
+	Backend
+	RealtimeBackend
 }

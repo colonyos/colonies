@@ -5,18 +5,17 @@ import (
 
 	"github.com/colonyos/colonies/pkg/cluster"
 	"github.com/colonyos/colonies/pkg/core"
-	websockethandlers "github.com/colonyos/colonies/pkg/server/handlers/websocket"
-	servercommunication "github.com/colonyos/colonies/pkg/server/websocket"
+	"github.com/colonyos/colonies/pkg/backends"
 )
 
 type Controller interface {
 	GetCronPeriod() int
 	GetGeneratorPeriod() int
 	GetEtcdServer() *cluster.EtcdServer
-	GetEventHandler() *servercommunication.EventHandler
+	GetEventHandler() backends.RealtimeEventHandler
 	GetThisNode() cluster.Node
-	SubscribeProcesses(executorID string, subscription *websockethandlers.Subscription) error
-	SubscribeProcess(executorID string, subscription *websockethandlers.Subscription) error
+	SubscribeProcesses(executorID string, subscription *backends.RealtimeSubscription) error
+	SubscribeProcess(executorID string, subscription *backends.RealtimeSubscription) error
 	GetColonies() ([]*core.Colony, error)
 	GetColony(colonyName string) (*core.Colony, error)
 	AddColony(colony *core.Colony) (*core.Colony, error)

@@ -1,4 +1,4 @@
-package websocket
+package gin
 
 import (
 	"context"
@@ -6,12 +6,14 @@ import (
 	"strconv"
 	"sync"
 
+	"github.com/colonyos/colonies/pkg/backends"
 	"github.com/colonyos/colonies/pkg/cluster"
 	"github.com/colonyos/colonies/pkg/core"
 	log "github.com/sirupsen/logrus"
 )
 
-type EventHandler struct {
+// DefaultEventHandler implements the backends.RealtimeEventHandler interface
+type DefaultEventHandler struct {
 	listeners         map[string]map[string]chan *core.Process
 	processIDs        map[string]string
 	msgQueue          chan *message
@@ -38,8 +40,9 @@ type replyMessage struct {
 	stopped      bool // Just for testing purposes
 }
 
-func CreateEventHandler(relayServer *cluster.RelayServer) *EventHandler {
-	handler := &EventHandler{}
+// CreateEventHandler creates a new DefaultEventHandler
+func CreateEventHandler(relayServer *cluster.RelayServer) backends.RealtimeEventHandler {
+	handler := &DefaultEventHandler{}
 	handler.listeners = make(map[string]map[string]chan *core.Process)
 	handler.processIDs = make(map[string]string)
 	handler.msgQueue = make(chan *message)
@@ -61,7 +64,31 @@ func CreateEventHandler(relayServer *cluster.RelayServer) *EventHandler {
 	return handler
 }
 
-func (handler *EventHandler) relayListener() {
+// CreateTestableEventHandler creates a new DefaultEventHandler that implements TestableRealtimeEventHandler for testing
+func CreateTestableEventHandler(relayServer *cluster.RelayServer) backends.TestableRealtimeEventHandler {
+	handler := &DefaultEventHandler{}
+	handler.listeners = make(map[string]map[string]chan *core.Process)
+	handler.processIDs = make(map[string]string)
+	handler.msgQueue = make(chan *message)
+	handler.relayServer = relayServer
+
+	handler.mutex.Lock()
+	handler.stopped = true
+	handler.mutex.Unlock()
+
+	// Start master worker
+	go handler.masterWorker()
+
+	if relayServer != nil {
+		handler.stopRelayListener = make(chan struct{})
+		handler.relayChan = relayServer.Receive()
+		go handler.relayListener()
+	}
+
+	return handler
+}
+
+func (handler *DefaultEventHandler) relayListener() {
 	for {
 		select {
 		case msg := <-handler.relayChan:
@@ -75,10 +102,9 @@ func (handler *EventHandler) relayListener() {
 			return
 		}
 	}
-
 }
 
-func (handler *EventHandler) masterWorker() {
+func (handler *DefaultEventHandler) masterWorker() {
 	handler.mutex.Lock()
 	handler.stopped = false
 	handler.mutex.Unlock()
@@ -99,11 +125,11 @@ func (handler *EventHandler) masterWorker() {
 	}
 }
 
-func (handler *EventHandler) target(executorType string, state int) string {
+func (handler *DefaultEventHandler) target(executorType string, state int) string {
 	return executorType + strconv.Itoa(state)
 }
 
-func (handler *EventHandler) register(executorType string, state int, processID string) (string, chan *core.Process) {
+func (handler *DefaultEventHandler) register(executorType string, state int, processID string) (string, chan *core.Process) {
 	t := handler.target(executorType, state)
 	if _, ok := handler.listeners[t]; !ok {
 		handler.listeners[t] = make(map[string]chan *core.Process)
@@ -119,7 +145,7 @@ func (handler *EventHandler) register(executorType string, state int, processID 
 	return listenerID, c
 }
 
-func (handler *EventHandler) unregister(executorType string, state int, listenerID string) {
+func (handler *DefaultEventHandler) unregister(executorType string, state int, listenerID string) {
 	t := handler.target(executorType, state)
 	if _, ok := handler.listeners[t]; ok {
 		delete(handler.listeners[t], listenerID)
@@ -131,7 +157,7 @@ func (handler *EventHandler) unregister(executorType string, state int, listener
 	}
 }
 
-func (handler *EventHandler) sendSignal(process *core.Process) {
+func (handler *DefaultEventHandler) sendSignal(process *core.Process) {
 	msg := &message{reply: make(chan replyMessage, 100), handler: func(msg *message) {
 		t := handler.target(process.FunctionSpec.Conditions.ExecutorType, process.State)
 		if _, ok := handler.listeners[t]; ok {
@@ -150,11 +176,12 @@ func (handler *EventHandler) sendSignal(process *core.Process) {
 	handler.msgQueue <- msg // Send the message to the masterworker
 }
 
-func (handler *EventHandler) signalNoRelay(process *core.Process) {
+func (handler *DefaultEventHandler) signalNoRelay(process *core.Process) {
 	handler.sendSignal(process)
 }
 
-func (handler *EventHandler) Signal(process *core.Process) {
+// Signal implements EventHandler interface
+func (handler *DefaultEventHandler) Signal(process *core.Process) {
 	handler.sendSignal(process)
 
 	// broadcast the msg to the relayServer
@@ -169,7 +196,8 @@ func (handler *EventHandler) Signal(process *core.Process) {
 	}()
 }
 
-func (handler *EventHandler) WaitForProcess(executorType string, state int, processID string, ctx context.Context) (*core.Process, error) {
+// WaitForProcess implements EventHandler interface
+func (handler *DefaultEventHandler) WaitForProcess(executorType string, state int, processID string, ctx context.Context) (*core.Process, error) {
 	// Register
 	msg := &message{reply: make(chan replyMessage, 100), handler: func(msg *message) {
 		listenerID, c := handler.register(executorType, state, processID)
@@ -199,7 +227,8 @@ func (handler *EventHandler) WaitForProcess(executorType string, state int, proc
 	}
 }
 
-func (handler *EventHandler) Subscribe(executorType string, state int, processID string, ctx context.Context) (chan *core.Process, chan error) {
+// Subscribe implements EventHandler interface
+func (handler *DefaultEventHandler) Subscribe(executorType string, state int, processID string, ctx context.Context) (chan *core.Process, chan error) {
 	// Register
 	msg := &message{reply: make(chan replyMessage, 100), handler: func(msg *message) {
 		listenerID, c := handler.register(executorType, state, processID)
@@ -234,7 +263,8 @@ func (handler *EventHandler) Subscribe(executorType string, state int, processID
 	return processChan, errChan
 }
 
-func (handler *EventHandler) Stop() {
+// Stop implements EventHandler interface
+func (handler *DefaultEventHandler) Stop() {
 	handler.msgQueue <- &message{stop: true}
 	if handler.relayServer != nil {
 		handler.stopRelayListener <- struct{}{}
@@ -242,7 +272,8 @@ func (handler *EventHandler) Stop() {
 	}
 }
 
-func (handler *EventHandler) NumberOfListeners(executorType string, state int) (int, int, int) { // Just for testing purposes
+// Additional methods for testing (not part of interface)
+func (handler *DefaultEventHandler) NumberOfListeners(executorType string, state int) (int, int, int) {
 	msg := &message{reply: make(chan replyMessage, 100), handler: func(msg *message) {
 		allListeners := len(handler.listeners)
 		processIDs := len(handler.processIDs)
@@ -257,7 +288,7 @@ func (handler *EventHandler) NumberOfListeners(executorType string, state int) (
 	return r.allListeners, r.listeners, r.processIDs
 }
 
-func (handler *EventHandler) HasStopped() bool { // Just for testing purposes
+func (handler *DefaultEventHandler) HasStopped() bool {
 	handler.mutex.Lock()
 	defer handler.mutex.Unlock()
 	return handler.stopped

@@ -1,4 +1,4 @@
-package websocket_test
+package realtime_test
 
 import (
 	"context"
@@ -7,7 +7,7 @@ import (
 
 	"github.com/colonyos/colonies/pkg/cluster"
 	"github.com/colonyos/colonies/pkg/core"
-	"github.com/colonyos/colonies/pkg/server/websocket"
+	backendGin "github.com/colonyos/colonies/pkg/backends/gin"
 	"github.com/colonyos/colonies/pkg/utils"
 	"github.com/stretchr/testify/assert"
 )
@@ -25,7 +25,8 @@ func TestEventHandler(t *testing.T) {
 	ctx, cancelCtx := context.WithTimeout(context.Background(), 3000*time.Millisecond)
 	defer cancelCtx()
 
-	handler := websocket.CreateEventHandler(nil)
+	factory := backendGin.NewFactory()
+	handler := factory.CreateTestableEventHandler(nil)
 	retChan := make(chan retValues)
 	go func() {
 		process, err := handler.WaitForProcess("test_executor_type", core.WAITING, "", ctx)
@@ -48,7 +49,8 @@ func TestEventHandlerTimeout(t *testing.T) {
 	ctx, cancelCtx := context.WithTimeout(context.Background(), 1*time.Millisecond)
 	defer cancelCtx()
 
-	handler := websocket.CreateEventHandler(nil)
+	factory := backendGin.NewFactory()
+	handler := factory.CreateTestableEventHandler(nil)
 	retChan := make(chan retValues)
 	go func() {
 		process, err := handler.WaitForProcess("test_executor_type", core.WAITING, "", ctx)
@@ -63,7 +65,8 @@ func TestEventHandlerTimeout(t *testing.T) {
 }
 
 func TestEventHandlerStop(t *testing.T) {
-	handler := websocket.CreateEventHandler(nil)
+	factory := backendGin.NewFactory()
+	handler := factory.CreateTestableEventHandler(nil)
 
 	handler.Stop()
 
@@ -81,7 +84,8 @@ func TestEventHandlerTimeout2(t *testing.T) {
 	ctx, cancelCtx := context.WithTimeout(context.Background(), 3000*time.Millisecond)
 	defer cancelCtx()
 
-	handler := websocket.CreateEventHandler(nil)
+	factory := backendGin.NewFactory()
+	handler := factory.CreateTestableEventHandler(nil)
 	retChan := make(chan retValues)
 	go func() {
 		process, err := handler.WaitForProcess("test_executor_type", core.WAITING, "", ctx)
@@ -106,7 +110,8 @@ func TestEventHandlerTimeout3(t *testing.T) {
 	ctx, cancelCtx := context.WithTimeout(context.Background(), 3000*time.Millisecond)
 	defer cancelCtx()
 
-	handler := websocket.CreateEventHandler(nil)
+	factory := backendGin.NewFactory()
+	handler := factory.CreateTestableEventHandler(nil)
 	retChan := make(chan retValues)
 	go func() {
 		process, err := handler.WaitForProcess("test_executor_type", core.WAITING, "", ctx)
@@ -135,7 +140,8 @@ func TestEventHandlerMany(t *testing.T) {
 	ctx, cancelCtx := context.WithTimeout(context.Background(), 2000*time.Millisecond)
 	defer cancelCtx()
 
-	handler := websocket.CreateEventHandler(nil)
+	factory := backendGin.NewFactory()
+	handler := factory.CreateTestableEventHandler(nil)
 
 	var retChans []chan retValues
 
@@ -178,7 +184,8 @@ func TestEventHandlerUpdate(t *testing.T) {
 	ctx, cancelCtx := context.WithTimeout(context.Background(), 3000*time.Millisecond)
 	defer cancelCtx()
 
-	handler := websocket.CreateEventHandler(nil)
+	factory := backendGin.NewFactory()
+	handler := factory.CreateTestableEventHandler(nil)
 	retChan := make(chan retValues)
 	go func() {
 		process, err := handler.WaitForProcess("test_executor_type", core.WAITING, process.ID, ctx)
@@ -205,7 +212,8 @@ func TestEventHandlerUpdateTimeout(t *testing.T) {
 	ctx, cancelCtx := context.WithTimeout(context.Background(), 3000*time.Millisecond)
 	defer cancelCtx()
 
-	handler := websocket.CreateEventHandler(nil)
+	factory := backendGin.NewFactory()
+	handler := factory.CreateTestableEventHandler(nil)
 	retChan := make(chan retValues)
 	go func() {
 		// Wait for another process with random ID, i.e. we will time out
@@ -232,7 +240,8 @@ func TestEventHandlerSubscribe(t *testing.T) {
 	defer cancelCtx()
 
 	retChan := make(chan retValues)
-	handler := websocket.CreateEventHandler(nil)
+	factory := backendGin.NewFactory()
+	handler := factory.CreateTestableEventHandler(nil)
 	processChan, errChan := handler.Subscribe("test_executor_type", core.WAITING, "", ctx)
 	go func() {
 		select {
@@ -256,7 +265,8 @@ func TestEventHandlerSubscribeCancel(t *testing.T) {
 	ctx, cancelCtx := context.WithTimeout(context.Background(), 3000*time.Millisecond)
 
 	retChan := make(chan retValues)
-	handler := websocket.CreateEventHandler(nil)
+	factory := backendGin.NewFactory()
+	handler := factory.CreateTestableEventHandler(nil)
 	processChan, errChan := handler.Subscribe("test_executor_type", core.WAITING, "", ctx) // Subscribe to all processes
 	go func() {
 		select {
@@ -280,7 +290,8 @@ func TestEventHandlerSubscribeTimeout(t *testing.T) {
 	defer cancelCtx()
 
 	retChan := make(chan retValues)
-	handler := websocket.CreateEventHandler(nil)
+	factory := backendGin.NewFactory()
+	handler := factory.CreateTestableEventHandler(nil)
 	processChan, errChan := handler.Subscribe("test_executor_type", core.WAITING, "", ctx) // Subscribe to all processes
 	go func() {
 		select {
@@ -303,7 +314,8 @@ func TestEventHandlerSubscribeProcessID(t *testing.T) {
 	defer cancelCtx()
 
 	retChan := make(chan retValues)
-	handler := websocket.CreateEventHandler(nil)
+	factory := backendGin.NewFactory()
+	handler := factory.CreateTestableEventHandler(nil)
 	processChan, errChan := handler.Subscribe("test_executor_type", core.WAITING, process.ID, ctx)
 	go func() {
 		select {
@@ -328,7 +340,8 @@ func TestEventHandlerSubscribeProcessIDFailed(t *testing.T) {
 	defer cancelCtx()
 
 	retChan := make(chan retValues)
-	handler := websocket.CreateEventHandler(nil)
+	factory := backendGin.NewFactory()
+	handler := factory.CreateTestableEventHandler(nil)
 	processChan, errChan := handler.Subscribe("test_executor_type", core.WAITING, core.GenerateRandomID(), ctx)
 	go func() {
 		select {
@@ -358,9 +371,12 @@ func TestEventHandleRelayServer(t *testing.T) {
 	relayServer2 := cluster.CreateRelayServer(node2, config)
 	relayServer3 := cluster.CreateRelayServer(node3, config)
 
-	handler1 := websocket.CreateEventHandler(relayServer1)
-	handler2 := websocket.CreateEventHandler(relayServer2)
-	handler3 := websocket.CreateEventHandler(relayServer3)
+	factory1 := backendGin.NewFactory()
+	handler1 := factory1.CreateTestableEventHandler(relayServer1)
+	factory2 := backendGin.NewFactory()
+	handler2 := factory2.CreateTestableEventHandler(relayServer2)
+	factory3 := backendGin.NewFactory()
+	handler3 := factory3.CreateTestableEventHandler(relayServer3)
 
 	retChan1 := make(chan retValues)
 	go func() {
