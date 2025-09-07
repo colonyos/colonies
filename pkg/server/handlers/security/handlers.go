@@ -4,24 +4,32 @@ import (
 	"errors"
 	"net/http"
 
+	"github.com/colonyos/colonies/pkg/backends"
 	"github.com/colonyos/colonies/pkg/database"
 	"github.com/colonyos/colonies/pkg/rpc"
 	"github.com/colonyos/colonies/pkg/security"
 	"github.com/colonyos/colonies/pkg/server/registry"
-	"github.com/gin-gonic/gin"
 	log "github.com/sirupsen/logrus"
 )
 
+// Server defines the interface that this handler needs from the server
 type Server interface {
-	HandleHTTPError(c *gin.Context, err error, errorCode int) bool
-	SendHTTPReply(c *gin.Context, payloadType string, jsonString string)
-	SendEmptyHTTPReply(c *gin.Context, payloadType string)
+	// HTTP Response methods using backend abstraction
+	HandleHTTPError(c backends.Context, err error, errorCode int) bool
+	SendHTTPReply(c backends.Context, payloadType string, jsonString string)
+	SendEmptyHTTPReply(c backends.Context, payloadType string)
+	
+	// Server identity
+	GetServerID() (string, error)
+	
+	// Security and validation
 	Validator() security.Validator
+	
+	// Database access
 	UserDB() database.UserDatabase
 	ExecutorDB() database.ExecutorDatabase
 	ColonyDB() database.ColonyDatabase
 	SecurityDB() database.SecurityDatabase
-	GetServerID() (string, error)
 }
 
 type Handlers struct {
@@ -34,22 +42,22 @@ func NewHandlers(server Server) *Handlers {
 
 // RegisterHandlers implements the HandlerRegistrar interface
 func (h *Handlers) RegisterHandlers(handlerRegistry *registry.HandlerRegistry) error {
-	if err := handlerRegistry.RegisterGin(rpc.ChangeUserIDPayloadType, h.HandleChangeUserID); err != nil {
+	if err := handlerRegistry.Register(rpc.ChangeUserIDPayloadType, h.HandleChangeUserID); err != nil {
 		return err
 	}
-	if err := handlerRegistry.RegisterGin(rpc.ChangeExecutorIDPayloadType, h.HandleChangeExecutorID); err != nil {
+	if err := handlerRegistry.Register(rpc.ChangeExecutorIDPayloadType, h.HandleChangeExecutorID); err != nil {
 		return err
 	}
-	if err := handlerRegistry.RegisterGin(rpc.ChangeColonyIDPayloadType, h.HandleChangeColonyID); err != nil {
+	if err := handlerRegistry.Register(rpc.ChangeColonyIDPayloadType, h.HandleChangeColonyID); err != nil {
 		return err
 	}
-	if err := handlerRegistry.RegisterGin(rpc.ChangeServerIDPayloadType, h.HandleChangeServerID); err != nil {
+	if err := handlerRegistry.Register(rpc.ChangeServerIDPayloadType, h.HandleChangeServerID); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (h *Handlers) HandleChangeUserID(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
+func (h *Handlers) HandleChangeUserID(c backends.Context, recoveredID string, payloadType string, jsonString string) {
 	msg, err := rpc.CreateChangeUserIDMsgFromJSON(jsonString)
 	if err != nil {
 		if h.server.HandleHTTPError(c, errors.New("Failed to add log, invalid JSON"), http.StatusBadRequest) {
@@ -102,7 +110,7 @@ func (h *Handlers) HandleChangeUserID(c *gin.Context, recoveredID string, payloa
 	h.server.SendHTTPReply(c, payloadType, jsonString)
 }
 
-func (h *Handlers) HandleChangeExecutorID(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
+func (h *Handlers) HandleChangeExecutorID(c backends.Context, recoveredID string, payloadType string, jsonString string) {
 	msg, err := rpc.CreateChangeExecutorIDMsgFromJSON(jsonString)
 	if err != nil {
 		if h.server.HandleHTTPError(c, errors.New("Failed to change executor Id, invalid JSON"), http.StatusBadRequest) {
@@ -155,7 +163,7 @@ func (h *Handlers) HandleChangeExecutorID(c *gin.Context, recoveredID string, pa
 	h.server.SendHTTPReply(c, payloadType, jsonString)
 }
 
-func (h *Handlers) HandleChangeColonyID(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
+func (h *Handlers) HandleChangeColonyID(c backends.Context, recoveredID string, payloadType string, jsonString string) {
 	msg, err := rpc.CreateChangeColonyIDMsgFromJSON(jsonString)
 	if err != nil {
 		if h.server.HandleHTTPError(c, errors.New("Failed to change colony Id, invalid JSON"), http.StatusBadRequest) {
@@ -202,7 +210,7 @@ func (h *Handlers) HandleChangeColonyID(c *gin.Context, recoveredID string, payl
 	h.server.SendHTTPReply(c, payloadType, jsonString)
 }
 
-func (h *Handlers) HandleChangeServerID(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
+func (h *Handlers) HandleChangeServerID(c backends.Context, recoveredID string, payloadType string, jsonString string) {
 	msg, err := rpc.CreateChangeServerIDMsgFromJSON(jsonString)
 	if err != nil {
 		if h.server.HandleHTTPError(c, errors.New("Failed to change colony Id, invalid JSON"), http.StatusBadRequest) {

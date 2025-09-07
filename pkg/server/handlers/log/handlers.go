@@ -11,7 +11,7 @@ import (
 	"github.com/colonyos/colonies/pkg/rpc"
 	"github.com/colonyos/colonies/pkg/security"
 	"github.com/colonyos/colonies/pkg/server/registry"
-	"github.com/gin-gonic/gin"
+	"github.com/colonyos/colonies/pkg/backends"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -20,9 +20,9 @@ const MAX_COUNT = 100
 const MAX_DAYS = 30
 
 type Server interface {
-	HandleHTTPError(c *gin.Context, err error, errorCode int) bool
-	SendHTTPReply(c *gin.Context, payloadType string, jsonString string)
-	SendEmptyHTTPReply(c *gin.Context, payloadType string)
+	HandleHTTPError(c backends.Context, err error, errorCode int) bool
+	SendHTTPReply(c backends.Context, payloadType string, jsonString string)
+	SendEmptyHTTPReply(c backends.Context, payloadType string)
 	Validator() security.Validator
 	ExecutorDB() database.ExecutorDatabase
 	ProcessDB() database.ProcessDatabase
@@ -46,19 +46,19 @@ func NewHandlers(server Server) *Handlers {
 
 // RegisterHandlers implements the HandlerRegistrar interface
 func (h *Handlers) RegisterHandlers(handlerRegistry *registry.HandlerRegistry) error {
-	if err := handlerRegistry.RegisterGin(rpc.AddLogPayloadType, h.HandleAddLog); err != nil {
+	if err := handlerRegistry.Register(rpc.AddLogPayloadType, h.HandleAddLog); err != nil {
 		return err
 	}
-	if err := handlerRegistry.RegisterGin(rpc.GetLogsPayloadType, h.HandleGetLogs); err != nil {
+	if err := handlerRegistry.Register(rpc.GetLogsPayloadType, h.HandleGetLogs); err != nil {
 		return err
 	}
-	if err := handlerRegistry.RegisterGin(rpc.SearchLogsPayloadType, h.HandleSearchLogs); err != nil {
+	if err := handlerRegistry.Register(rpc.SearchLogsPayloadType, h.HandleSearchLogs); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (h *Handlers) HandleAddLog(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
+func (h *Handlers) HandleAddLog(c backends.Context, recoveredID string, payloadType string, jsonString string) {
 	msg, err := rpc.CreateAddLogMsgFromJSON(jsonString)
 	if err != nil {
 		if h.server.HandleHTTPError(c, errors.New("Failed to add log, invalid JSON"), http.StatusBadRequest) {
@@ -123,7 +123,7 @@ func (h *Handlers) HandleAddLog(c *gin.Context, recoveredID string, payloadType 
 	h.server.SendEmptyHTTPReply(c, rpc.AddLogPayloadType)
 }
 
-func (h *Handlers) HandleGetLogs(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
+func (h *Handlers) HandleGetLogs(c backends.Context, recoveredID string, payloadType string, jsonString string) {
 	msg, err := rpc.CreateGetLogsMsgFromJSON(jsonString)
 	if err != nil {
 		h.server.HandleHTTPError(c, errors.New("Failed to get logs, invalid JSON"), http.StatusBadRequest)
@@ -214,7 +214,7 @@ func (h *Handlers) HandleGetLogs(c *gin.Context, recoveredID string, payloadType
 	h.server.SendHTTPReply(c, payloadType, jsonStr)
 }
 
-func (h *Handlers) HandleSearchLogs(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
+func (h *Handlers) HandleSearchLogs(c backends.Context, recoveredID string, payloadType string, jsonString string) {
 	msg, err := rpc.CreateSearchLogsMsgFromJSON(jsonString)
 	if err != nil {
 		h.server.HandleHTTPError(c, errors.New("Failed to search logs, invalid JSON"), http.StatusBadRequest)

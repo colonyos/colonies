@@ -4,18 +4,18 @@ import (
 	"errors"
 	"net/http"
 
+	"github.com/colonyos/colonies/pkg/backends"
 	"github.com/colonyos/colonies/pkg/database"
 	"github.com/colonyos/colonies/pkg/rpc"
 	"github.com/colonyos/colonies/pkg/security"
-	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
 )
 
 type Server interface {
-	HandleHTTPError(c *gin.Context, err error, errorCode int) bool
-	SendHTTPReply(c *gin.Context, payloadType string, jsonString string)
-	SendEmptyHTTPReply(c *gin.Context, payloadType string)
+	HandleHTTPError(c backends.Context, err error, errorCode int) bool
+	SendHTTPReply(c backends.Context, payloadType string, jsonString string)
+	SendEmptyHTTPReply(c backends.Context, payloadType string)
 	Validator() security.Validator
 	ProcessDB() database.ProcessDatabase
 	WSController() WSController
@@ -58,9 +58,17 @@ func (h *Handlers) sendWSErrorMsg(err error, errorCode int, wsConn *websocket.Co
 	return nil
 }
 
-func (h *Handlers) HandleWSRequest(c *gin.Context) {
-	w := c.Writer
-	r := c.Request
+func (h *Handlers) HandleWSRequest(c backends.Context) {
+	// For WebSocket handling, we need to access the underlying gin context
+	// Cast to GinContextAdapter to get the underlying gin.Context
+	ginAdapter, ok := c.(*backends.GinContextAdapter)
+	if !ok {
+		log.Error("WebSocket handler requires gin context adapter")
+		return
+	}
+	ginCtx := ginAdapter.GinContext()
+	w := ginCtx.Writer
+	r := ginCtx.Request
 	var wsupgrader = websocket.Upgrader{}
 	wsupgrader.CheckOrigin = func(r *http.Request) bool { return true } // TODO: Insecure
 	var err error

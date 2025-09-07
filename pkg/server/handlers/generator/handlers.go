@@ -4,20 +4,20 @@ import (
 	"errors"
 	"net/http"
 
+	"github.com/colonyos/colonies/pkg/backends"
 	"github.com/colonyos/colonies/pkg/core"
 	"github.com/colonyos/colonies/pkg/database"
 	"github.com/colonyos/colonies/pkg/rpc"
 	"github.com/colonyos/colonies/pkg/security"
 	"github.com/colonyos/colonies/pkg/server/registry"
 	serverutils "github.com/colonyos/colonies/pkg/server/utils"
-	"github.com/gin-gonic/gin"
 	log "github.com/sirupsen/logrus"
 )
 
 type Server interface {
-	HandleHTTPError(c *gin.Context, err error, errorCode int) bool
-	SendHTTPReply(c *gin.Context, payloadType string, jsonString string)
-	SendEmptyHTTPReply(c *gin.Context, payloadType string)
+	HandleHTTPError(c backends.Context, err error, errorCode int) bool
+	SendHTTPReply(c backends.Context, payloadType string, jsonString string)
+	SendEmptyHTTPReply(c backends.Context, payloadType string)
 	Validator() security.Validator
 	GeneratorController() Controller
 	GeneratorDB() database.GeneratorDatabase
@@ -47,28 +47,28 @@ func NewHandlers(server Server) *Handlers {
 
 // RegisterHandlers implements the HandlerRegistrar interface
 func (h *Handlers) RegisterHandlers(handlerRegistry *registry.HandlerRegistry) error {
-	if err := handlerRegistry.RegisterGin(rpc.AddGeneratorPayloadType, h.HandleAddGenerator); err != nil {
+	if err := handlerRegistry.Register(rpc.AddGeneratorPayloadType, h.HandleAddGenerator); err != nil {
 		return err
 	}
-	if err := handlerRegistry.RegisterGin(rpc.GetGeneratorPayloadType, h.HandleGetGenerator); err != nil {
+	if err := handlerRegistry.Register(rpc.GetGeneratorPayloadType, h.HandleGetGenerator); err != nil {
 		return err
 	}
-	if err := handlerRegistry.RegisterGin(rpc.ResolveGeneratorPayloadType, h.HandleResolveGenerator); err != nil {
+	if err := handlerRegistry.Register(rpc.ResolveGeneratorPayloadType, h.HandleResolveGenerator); err != nil {
 		return err
 	}
-	if err := handlerRegistry.RegisterGin(rpc.GetGeneratorsPayloadType, h.HandleGetGenerators); err != nil {
+	if err := handlerRegistry.Register(rpc.GetGeneratorsPayloadType, h.HandleGetGenerators); err != nil {
 		return err
 	}
-	if err := handlerRegistry.RegisterGin(rpc.PackGeneratorPayloadType, h.HandlePackGenerator); err != nil {
+	if err := handlerRegistry.Register(rpc.PackGeneratorPayloadType, h.HandlePackGenerator); err != nil {
 		return err
 	}
-	if err := handlerRegistry.RegisterGin(rpc.RemoveGeneratorPayloadType, h.HandleRemoveGenerator); err != nil {
+	if err := handlerRegistry.Register(rpc.RemoveGeneratorPayloadType, h.HandleRemoveGenerator); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (h *Handlers) HandleAddGenerator(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
+func (h *Handlers) HandleAddGenerator(c backends.Context, recoveredID string, payloadType string, jsonString string) {
 	msg, err := rpc.CreateAddGeneratorMsgFromJSON(jsonString)
 	if err != nil {
 		if h.server.HandleHTTPError(c, errors.New("Failed to add generator, invalid JSON"), http.StatusBadRequest) {
@@ -130,7 +130,7 @@ func (h *Handlers) HandleAddGenerator(c *gin.Context, recoveredID string, payloa
 	h.server.SendHTTPReply(c, payloadType, jsonString)
 }
 
-func (h *Handlers) HandleGetGenerator(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
+func (h *Handlers) HandleGetGenerator(c backends.Context, recoveredID string, payloadType string, jsonString string) {
 	msg, err := rpc.CreateGetGeneratorMsgFromJSON(jsonString)
 	if err != nil {
 		if h.server.HandleHTTPError(c, errors.New("Failed to get generator, invalid JSON"), http.StatusBadRequest) {
@@ -174,7 +174,7 @@ func (h *Handlers) HandleGetGenerator(c *gin.Context, recoveredID string, payloa
 	h.server.SendHTTPReply(c, payloadType, jsonString)
 }
 
-func (h *Handlers) HandleResolveGenerator(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
+func (h *Handlers) HandleResolveGenerator(c backends.Context, recoveredID string, payloadType string, jsonString string) {
 	msg, err := rpc.CreateResolveGeneratorMsgFromJSON(jsonString)
 	if err != nil {
 		if h.server.HandleHTTPError(c, errors.New("Failed to resolve generator, invalid JSON"), http.StatusBadRequest) {
@@ -211,7 +211,7 @@ func (h *Handlers) HandleResolveGenerator(c *gin.Context, recoveredID string, pa
 	h.server.SendHTTPReply(c, payloadType, jsonString)
 }
 
-func (h *Handlers) HandleGetGenerators(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
+func (h *Handlers) HandleGetGenerators(c backends.Context, recoveredID string, payloadType string, jsonString string) {
 	msg, err := rpc.CreateGetGeneratorsMsgFromJSON(jsonString)
 	if err != nil {
 		if h.server.HandleHTTPError(c, errors.New("Failed to get generators, invalid JSON"), http.StatusBadRequest) {
@@ -244,7 +244,7 @@ func (h *Handlers) HandleGetGenerators(c *gin.Context, recoveredID string, paylo
 	h.server.SendHTTPReply(c, payloadType, jsonString)
 }
 
-func (h *Handlers) HandlePackGenerator(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
+func (h *Handlers) HandlePackGenerator(c backends.Context, recoveredID string, payloadType string, jsonString string) {
 	msg, err := rpc.CreatePackGeneratorMsgFromJSON(jsonString)
 	if err != nil {
 		if h.server.HandleHTTPError(c, errors.New("Failed to inc generator, invalid JSON"), http.StatusBadRequest) {
@@ -281,7 +281,7 @@ func (h *Handlers) HandlePackGenerator(c *gin.Context, recoveredID string, paylo
 	h.server.SendEmptyHTTPReply(c, payloadType)
 }
 
-func (h *Handlers) HandleRemoveGenerator(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
+func (h *Handlers) HandleRemoveGenerator(c backends.Context, recoveredID string, payloadType string, jsonString string) {
 	msg, err := rpc.CreateRemoveGeneratorMsgFromJSON(jsonString)
 	if err != nil {
 		if h.server.HandleHTTPError(c, errors.New("Failed to remove generator, invalid JSON"), http.StatusBadRequest) {

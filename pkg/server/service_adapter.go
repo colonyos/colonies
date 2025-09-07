@@ -18,7 +18,7 @@ import (
 	serverhandlers "github.com/colonyos/colonies/pkg/server/handlers/server"
 	websockethandlers "github.com/colonyos/colonies/pkg/server/handlers/websocket"
 	servercommunication "github.com/colonyos/colonies/pkg/server/websocket"
-	"github.com/gin-gonic/gin"
+	"github.com/colonyos/colonies/pkg/backends"
 )
 
 // ServerAdapter implements interfaces needed by handler packages
@@ -60,16 +60,19 @@ func (s *ServerAdapter) GetController() interface{
 	return s.server.controller
 }
 
-func (s *ServerAdapter) HandleHTTPError(c *gin.Context, err error, errorCode int) bool {
-	return s.server.handleHTTPError(c, err, errorCode)
+func (s *ServerAdapter) HandleHTTPError(c backends.Context, err error, errorCode int) bool {
+	ginContext := c.(*backends.GinContextAdapter).GinContext()
+	return s.server.handleHTTPError(ginContext, err, errorCode)
 }
 
-func (s *ServerAdapter) SendHTTPReply(c *gin.Context, payloadType string, jsonString string) {
-	s.server.sendHTTPReply(c, payloadType, jsonString)
+func (s *ServerAdapter) SendHTTPReply(c backends.Context, payloadType string, jsonString string) {
+	ginContext := c.(*backends.GinContextAdapter).GinContext()
+	s.server.sendHTTPReply(ginContext, payloadType, jsonString)
 }
 
-func (s *ServerAdapter) SendEmptyHTTPReply(c *gin.Context, payloadType string) {
-	s.server.sendEmptyHTTPReply(c, payloadType)
+func (s *ServerAdapter) SendEmptyHTTPReply(c backends.Context, payloadType string) {
+	ginContext := c.(*backends.GinContextAdapter).GinContext()
+	s.server.sendEmptyHTTPReply(ginContext, payloadType)
 }
 
 func (s *ServerAdapter) GetServerID() (string, error) {
@@ -603,16 +606,19 @@ type processgraphServerAdapter struct {
 	adapter *ServerAdapter
 }
 
-func (s *processgraphServerAdapter) HandleHTTPError(c *gin.Context, err error, errorCode int) bool {
-	return s.server.handleHTTPError(c, err, errorCode)
+func (s *processgraphServerAdapter) HandleHTTPError(c backends.Context, err error, errorCode int) bool {
+	ginContext := c.(*backends.GinContextAdapter).GinContext()
+	return s.server.handleHTTPError(ginContext, err, errorCode)
 }
 
-func (s *processgraphServerAdapter) SendHTTPReply(c *gin.Context, payloadType string, jsonString string) {
-	s.server.sendHTTPReply(c, payloadType, jsonString)
+func (s *processgraphServerAdapter) SendHTTPReply(c backends.Context, payloadType string, jsonString string) {
+	ginContext := c.(*backends.GinContextAdapter).GinContext()
+	s.server.sendHTTPReply(ginContext, payloadType, jsonString)
 }
 
-func (s *processgraphServerAdapter) SendEmptyHTTPReply(c *gin.Context, payloadType string) {
-	s.server.sendEmptyHTTPReply(c, payloadType)
+func (s *processgraphServerAdapter) SendEmptyHTTPReply(c backends.Context, payloadType string) {
+	ginContext := c.(*backends.GinContextAdapter).GinContext()
+	s.server.sendEmptyHTTPReply(ginContext, payloadType)
 }
 
 func (s *processgraphServerAdapter) Validator() processgraph.Validator {
@@ -678,12 +684,14 @@ type serverServerAdapter struct {
 	adapter *ServerAdapter
 }
 
-func (s *serverServerAdapter) HandleHTTPError(c *gin.Context, err error, errorCode int) bool {
-	return s.server.handleHTTPError(c, err, errorCode)
+func (s *serverServerAdapter) HandleHTTPError(c backends.Context, err error, errorCode int) bool {
+	ginContext := c.(*backends.GinContextAdapter).GinContext()
+	return s.server.handleHTTPError(ginContext, err, errorCode)
 }
 
-func (s *serverServerAdapter) SendHTTPReply(c *gin.Context, payloadType string, jsonString string) {
-	s.server.sendHTTPReply(c, payloadType, jsonString)
+func (s *serverServerAdapter) SendHTTPReply(c backends.Context, payloadType string, jsonString string) {
+	ginContext := c.(*backends.GinContextAdapter).GinContext()
+	s.server.sendHTTPReply(ginContext, payloadType, jsonString)
 }
 
 func (s *serverServerAdapter) GetServerID() (string, error) {

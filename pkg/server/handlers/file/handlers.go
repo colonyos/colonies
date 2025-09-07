@@ -4,19 +4,19 @@ import (
 	"errors"
 	"net/http"
 
+	"github.com/colonyos/colonies/pkg/backends"
 	"github.com/colonyos/colonies/pkg/core"
 	"github.com/colonyos/colonies/pkg/database"
 	"github.com/colonyos/colonies/pkg/rpc"
 	"github.com/colonyos/colonies/pkg/security"
 	"github.com/colonyos/colonies/pkg/server/registry"
-	"github.com/gin-gonic/gin"
 	log "github.com/sirupsen/logrus"
 )
 
 type Server interface {
-	HandleHTTPError(c *gin.Context, err error, errorCode int) bool
-	SendHTTPReply(c *gin.Context, payloadType string, jsonString string)
-	SendEmptyHTTPReply(c *gin.Context, payloadType string)
+	HandleHTTPError(c backends.Context, err error, errorCode int) bool
+	SendHTTPReply(c backends.Context, payloadType string, jsonString string)
+	SendEmptyHTTPReply(c backends.Context, payloadType string)
 	Validator() security.Validator
 	FileDB() database.FileDatabase
 }
@@ -31,25 +31,25 @@ func NewHandlers(server Server) *Handlers {
 
 // RegisterHandlers implements the HandlerRegistrar interface
 func (h *Handlers) RegisterHandlers(handlerRegistry *registry.HandlerRegistry) error {
-	if err := handlerRegistry.RegisterGin(rpc.AddFilePayloadType, h.HandleAddFile); err != nil {
+	if err := handlerRegistry.Register(rpc.AddFilePayloadType, h.HandleAddFile); err != nil {
 		return err
 	}
-	if err := handlerRegistry.RegisterGin(rpc.GetFilePayloadType, h.HandleGetFile); err != nil {
+	if err := handlerRegistry.Register(rpc.GetFilePayloadType, h.HandleGetFile); err != nil {
 		return err
 	}
-	if err := handlerRegistry.RegisterGin(rpc.GetFilesPayloadType, h.HandleGetFiles); err != nil {
+	if err := handlerRegistry.Register(rpc.GetFilesPayloadType, h.HandleGetFiles); err != nil {
 		return err
 	}
-	if err := handlerRegistry.RegisterGin(rpc.GetFileLabelsPayloadType, h.HandleGetFileLabels); err != nil {
+	if err := handlerRegistry.Register(rpc.GetFileLabelsPayloadType, h.HandleGetFileLabels); err != nil {
 		return err
 	}
-	if err := handlerRegistry.RegisterGin(rpc.RemoveFilePayloadType, h.HandleRemoveFile); err != nil {
+	if err := handlerRegistry.Register(rpc.RemoveFilePayloadType, h.HandleRemoveFile); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (h *Handlers) HandleAddFile(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
+func (h *Handlers) HandleAddFile(c backends.Context, recoveredID string, payloadType string, jsonString string) {
 	msg, err := rpc.CreateAddFileMsgFromJSON(jsonString)
 	if err != nil {
 		if h.server.HandleHTTPError(c, errors.New("Failed to add log, invalid JSON"), http.StatusBadRequest) {
@@ -95,7 +95,7 @@ func (h *Handlers) HandleAddFile(c *gin.Context, recoveredID string, payloadType
 	h.server.SendHTTPReply(c, payloadType, jsonStr)
 }
 
-func (h *Handlers) HandleGetFile(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
+func (h *Handlers) HandleGetFile(c backends.Context, recoveredID string, payloadType string, jsonString string) {
 	msg, err := rpc.CreateGetFileMsgFromJSON(jsonString)
 	if err != nil {
 		if h.server.HandleHTTPError(c, errors.New("Failed to add log, invalid JSON"), http.StatusBadRequest) {
@@ -184,7 +184,7 @@ func (h *Handlers) HandleGetFile(c *gin.Context, recoveredID string, payloadType
 	h.server.SendHTTPReply(c, payloadType, jsonStr)
 }
 
-func (h *Handlers) HandleGetFiles(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
+func (h *Handlers) HandleGetFiles(c backends.Context, recoveredID string, payloadType string, jsonString string) {
 	msg, err := rpc.CreateGetFilesMsgFromJSON(jsonString)
 	if err != nil {
 		if h.server.HandleHTTPError(c, errors.New("Failed to get files, invalid JSON"), http.StatusBadRequest) {
@@ -218,7 +218,7 @@ func (h *Handlers) HandleGetFiles(c *gin.Context, recoveredID string, payloadTyp
 	h.server.SendHTTPReply(c, payloadType, string(jsonBytes))
 }
 
-func (h *Handlers) HandleGetFileLabels(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
+func (h *Handlers) HandleGetFileLabels(c backends.Context, recoveredID string, payloadType string, jsonString string) {
 	msg, err := rpc.CreateGetFileLabelsMsgFromJSON(jsonString)
 	if err != nil {
 		if h.server.HandleHTTPError(c, errors.New("Failed to get files, invalid JSON"), http.StatusBadRequest) {
@@ -262,7 +262,7 @@ func (h *Handlers) HandleGetFileLabels(c *gin.Context, recoveredID string, paylo
 	h.server.SendHTTPReply(c, payloadType, jsonStr)
 }
 
-func (h *Handlers) HandleRemoveFile(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
+func (h *Handlers) HandleRemoveFile(c backends.Context, recoveredID string, payloadType string, jsonString string) {
 	msg, err := rpc.CreateRemoveFileMsgFromJSON(jsonString)
 	if err != nil {
 		if h.server.HandleHTTPError(c, errors.New("Failed to remove file, invalid JSON"), http.StatusBadRequest) {

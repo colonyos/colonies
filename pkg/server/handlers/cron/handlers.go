@@ -4,6 +4,7 @@ import (
 	"errors"
 	"net/http"
 
+	"github.com/colonyos/colonies/pkg/backends"
 	"github.com/colonyos/colonies/pkg/core"
 	"github.com/colonyos/colonies/pkg/database"
 	"github.com/colonyos/colonies/pkg/rpc"
@@ -11,14 +12,13 @@ import (
 	"github.com/colonyos/colonies/pkg/server/registry"
 	cronlib "github.com/colonyos/colonies/pkg/cron"
 	serverutils "github.com/colonyos/colonies/pkg/server/utils"
-	"github.com/gin-gonic/gin"
 	log "github.com/sirupsen/logrus"
 )
 
 type Server interface {
-	HandleHTTPError(c *gin.Context, err error, errorCode int) bool
-	SendHTTPReply(c *gin.Context, payloadType string, jsonString string)
-	SendEmptyHTTPReply(c *gin.Context, payloadType string)
+	HandleHTTPError(c backends.Context, err error, errorCode int) bool
+	SendHTTPReply(c backends.Context, payloadType string, jsonString string)
+	SendEmptyHTTPReply(c backends.Context, payloadType string)
 	Validator() security.Validator
 	CronController() interface {
 		AddCron(cron *core.Cron) (*core.Cron, error)
@@ -42,19 +42,19 @@ func NewHandlers(server Server) *Handlers {
 
 // RegisterHandlers implements the HandlerRegistrar interface
 func (h *Handlers) RegisterHandlers(handlerRegistry *registry.HandlerRegistry) error {
-	if err := handlerRegistry.RegisterGin(rpc.AddCronPayloadType, h.HandleAddCron); err != nil {
+	if err := handlerRegistry.Register(rpc.AddCronPayloadType, h.HandleAddCron); err != nil {
 		return err
 	}
-	if err := handlerRegistry.RegisterGin(rpc.GetCronPayloadType, h.HandleGetCron); err != nil {
+	if err := handlerRegistry.Register(rpc.GetCronPayloadType, h.HandleGetCron); err != nil {
 		return err
 	}
-	if err := handlerRegistry.RegisterGin(rpc.GetCronsPayloadType, h.HandleGetCrons); err != nil {
+	if err := handlerRegistry.Register(rpc.GetCronsPayloadType, h.HandleGetCrons); err != nil {
 		return err
 	}
-	if err := handlerRegistry.RegisterGin(rpc.RunCronPayloadType, h.HandleRunCron); err != nil {
+	if err := handlerRegistry.Register(rpc.RunCronPayloadType, h.HandleRunCron); err != nil {
 		return err
 	}
-	if err := handlerRegistry.RegisterGin(rpc.RemoveCronPayloadType, h.HandleRemoveCron); err != nil {
+	if err := handlerRegistry.Register(rpc.RemoveCronPayloadType, h.HandleRemoveCron); err != nil {
 		return err
 	}
 	return nil
@@ -82,7 +82,7 @@ func (h *Handlers) resolveInitiator(colonyName string, recoveredID string) (stri
 	}
 }
 
-func (h *Handlers) HandleAddCron(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
+func (h *Handlers) HandleAddCron(c backends.Context, recoveredID string, payloadType string, jsonString string) {
 	msg, err := rpc.CreateAddCronMsgFromJSON(jsonString)
 	if err != nil {
 		if h.server.HandleHTTPError(c, errors.New("Failed to add cron, invalid JSON"), http.StatusBadRequest) {
@@ -163,7 +163,7 @@ func (h *Handlers) HandleAddCron(c *gin.Context, recoveredID string, payloadType
 	h.server.SendHTTPReply(c, payloadType, jsonString)
 }
 
-func (h *Handlers) HandleGetCron(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
+func (h *Handlers) HandleGetCron(c backends.Context, recoveredID string, payloadType string, jsonString string) {
 	msg, err := rpc.CreateGetCronMsgFromJSON(jsonString)
 	if err != nil {
 		if h.server.HandleHTTPError(c, errors.New("Failed to get cron, invalid JSON"), http.StatusBadRequest) {
@@ -202,7 +202,7 @@ func (h *Handlers) HandleGetCron(c *gin.Context, recoveredID string, payloadType
 	h.server.SendHTTPReply(c, payloadType, jsonString)
 }
 
-func (h *Handlers) HandleGetCrons(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
+func (h *Handlers) HandleGetCrons(c backends.Context, recoveredID string, payloadType string, jsonString string) {
 	msg, err := rpc.CreateGetCronsMsgFromJSON(jsonString)
 	if err != nil {
 		if h.server.HandleHTTPError(c, errors.New("Failed to get crons, invalid JSON"), http.StatusBadRequest) {
@@ -239,7 +239,7 @@ func (h *Handlers) HandleGetCrons(c *gin.Context, recoveredID string, payloadTyp
 	h.server.SendHTTPReply(c, payloadType, jsonString)
 }
 
-func (h *Handlers) HandleRunCron(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
+func (h *Handlers) HandleRunCron(c backends.Context, recoveredID string, payloadType string, jsonString string) {
 	msg, err := rpc.CreateRunCronMsgFromJSON(jsonString)
 	if err != nil {
 		if h.server.HandleHTTPError(c, errors.New("Failed to run cron, invalid JSON"), http.StatusBadRequest) {
@@ -276,7 +276,7 @@ func (h *Handlers) HandleRunCron(c *gin.Context, recoveredID string, payloadType
 	h.server.SendHTTPReply(c, payloadType, jsonString)
 }
 
-func (h *Handlers) HandleRemoveCron(c *gin.Context, recoveredID string, payloadType string, jsonString string) {
+func (h *Handlers) HandleRemoveCron(c backends.Context, recoveredID string, payloadType string, jsonString string) {
 	msg, err := rpc.CreateRemoveCronMsgFromJSON(jsonString)
 	if err != nil {
 		if h.server.HandleHTTPError(c, errors.New("Failed to remove cron, invalid JSON"), http.StatusBadRequest) {
