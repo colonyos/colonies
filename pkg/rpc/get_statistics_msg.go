@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 )
 
-const GetStatisiticsPayloadType = "getstatisticsmsg"
+const GetStatisticsPayloadType = "getstatisticsmsg"
 
 type GetStatisticsMsg struct {
 	MsgType string `json:"msgtype"`
@@ -12,7 +12,7 @@ type GetStatisticsMsg struct {
 
 func CreateGetStatisticsMsg() *GetStatisticsMsg {
 	msg := &GetStatisticsMsg{}
-	msg.MsgType = GetStatisiticsPayloadType
+	msg.MsgType = GetStatisticsPayloadType
 
 	return msg
 }
