@@ -176,6 +176,14 @@ func (server *ColoniesServer) handleGetGeneratorsHTTPRequest(c *gin.Context, rec
 		return
 	}
 
+	for _, generator := range generators {
+		generator.CheckerPeriod = server.controller.getGeneratorPeriod()
+		queueSize, err := server.db.CountGeneratorArgs(generator.ID)
+		if server.handleHTTPError(c, err, http.StatusInternalServerError) {
+			return
+		}
+		generator.QueueSize = queueSize
+	}
 	jsonString, err = core.ConvertGeneratorArrayToJSON(generators)
 	if server.handleHTTPError(c, err, http.StatusInternalServerError) {
 		return
