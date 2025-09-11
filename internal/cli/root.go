@@ -22,6 +22,8 @@ const DefaultCount = 20
 var mutex sync.Mutex
 
 var DBName = "postgres"
+var DBType string
+var DataDir string
 var Verbose bool
 var DBHost string
 var DBPort int

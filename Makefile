@@ -70,6 +70,7 @@ github_test:
 	@cd internal/crypto; go test -v --race
 	@cd pkg/core; go test -v --race
 	@cd pkg/database/postgresql; go test -v --race
+	@cd pkg/database/memdb/adapter; go test -v --race
 	@cd pkg/rpc; go test -v --race
 	@cd pkg/security; go test -v --race
 	@cd pkg/security/crypto; go test -v --race
@@ -106,3 +107,10 @@ install:
 
 startdb: 
 	docker run -d -p 5432:5432 -e POSTGRES_PASSWORD=rFcLGNkgsNtksg6Pgtn9CumL4xXBQ7 --restart unless-stopped timescale/timescaledb:latest-pg16
+
+nukedb:
+	@echo "🗑️  Nuking TimescaleDB containers and volumes..."
+	@docker stop $$(docker ps -aq --filter ancestor=timescale/timescaledb:latest-pg16) 2>/dev/null || true
+	@docker rm $$(docker ps -aq --filter ancestor=timescale/timescaledb:latest-pg16) 2>/dev/null || true
+	@docker volume rm $$(docker volume ls -q --filter dangling=true) 2>/dev/null || true
+	@echo "✅ TimescaleDB containers and volumes destroyed"

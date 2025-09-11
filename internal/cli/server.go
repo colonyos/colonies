@@ -9,6 +9,7 @@ import (
 
 	"github.com/colonyos/colonies/pkg/client"
 	"github.com/colonyos/colonies/pkg/cluster"
+	"github.com/colonyos/colonies/pkg/database"
 	"github.com/colonyos/colonies/pkg/database/postgresql"
 	"github.com/colonyos/colonies/pkg/server"
 	log "github.com/sirupsen/logrus"
@@ -26,10 +27,12 @@ func init() {
 	chServerIDCmd.Flags().StringVarP(&TargetServerID, "serverid", "", "", "Server Id")
 	chServerIDCmd.MarkFlagRequired("serverid")
 
+	serverCmd.PersistentFlags().StringVarP(&DBType, "dbtype", "", "postgresql", "Database type (postgresql or velocitydb)")
 	serverCmd.PersistentFlags().StringVarP(&DBHost, "dbhost", "", "", "Colonies database host")
 	serverCmd.PersistentFlags().IntVarP(&DBPort, "dbport", "", DefaultDBPort, "Colonies database port")
 	serverCmd.PersistentFlags().StringVarP(&DBUser, "dbuser", "", "", "Colonies database user")
 	serverCmd.PersistentFlags().StringVarP(&DBPassword, "dbpassword", "", "", "Colonies database password")
+	serverCmd.PersistentFlags().StringVarP(&DataDir, "datadir", "", "", "Data directory")
 	serverCmd.PersistentFlags().StringVarP(&TLSCert, "tlscert", "", "", "TLS certificate")
 	serverCmd.PersistentFlags().StringVarP(&TLSKey, "tlskey", "", "", "TLS key")
 	serverCmd.PersistentFlags().IntVarP(&ServerPort, "port", "", -1, "Server HTTP port")
@@ -41,6 +44,7 @@ func init() {
 	serverCmd.PersistentFlags().StringSliceVarP(&EtcdCluster, "initial-cluster", "", make([]string, 0), "Cluster config, e.g. --etcdcluster server1=localhost:peerport:relayport:apiport,server2=localhost:peerport:relayport:apiport")
 	serverCmd.PersistentFlags().StringVarP(&EtcdDataDir, "etcddatadir", "", "", "Etcd data dir")
 	serverCmd.PersistentFlags().BoolVarP(&InitDB, "initdb", "", false, "Initialize DB")
+	serverCmd.PersistentFlags().BoolVarP(&Insecure, "insecure", "", false, "Disable TLS")
 
 	serverStatusCmd.PersistentFlags().StringVarP(&ServerHost, "host", "", "localhost", "Server host")
 	serverStatusCmd.PersistentFlags().IntVarP(&ServerPort, "port", "", -1, "Server HTTP port")
@@ -96,7 +100,14 @@ var serverStartCmd = &cobra.Command{
 		parseDBEnv()
 		parseEnv()
 
+		log.WithFields(log.Fields{
+			"Insecure": Insecure,
+			"TLSKey":   TLSKey,
+			"TLSCert":  TLSCert,
+		}).Debug("TLS configuration check")
+
 		if !Insecure {
+			log.Info("TLS mode enabled, checking certificates...")
 			_, err := os.Stat(TLSKey)
 			if err != nil {
 				CheckError(errors.New("Failed to load TLS Key: " + TLSKey))
@@ -108,21 +119,63 @@ var serverStartCmd = &cobra.Command{
 				CheckError(errors.New("Failed to load TLS Cert: " + TLSCert))
 				os.Exit(-1)
 			}
+		} else {
+			log.Info("Insecure mode enabled, skipping TLS certificate checks")
 		}
 
-		var db *postgresql.PQDatabase
-		for {
-			db = postgresql.CreatePQDatabase(DBHost, DBPort, DBUser, DBPassword, DBName, DBPrefix, TimescaleDB)
-			err := db.Connect()
-			if err != nil {
-				log.WithFields(log.Fields{"Error": err}).Error("Failed to connect to PostgreSQL database")
-				time.Sleep(1 * time.Second)
-			} else {
-				break
+		log.WithFields(log.Fields{
+			"DBType":      DBType,
+			"DBHost":      DBHost,
+			"DBPort":      DBPort,
+			"DBName":      DBName,
+			"DBPrefix":    DBPrefix,
+			"TimescaleDB": TimescaleDB,
+			"DataDir":     DataDir,
+		}).Info("Server starting with database configuration")
+
+		dbConfig := database.DatabaseConfig{
+			Type:        database.DatabaseType(DBType),
+			Host:        DBHost,
+			Port:        DBPort,
+			User:        DBUser,
+			Password:    DBPassword,
+			Name:        DBName,
+			Prefix:      DBPrefix,
+			TimescaleDB: TimescaleDB,
+			DataDir:     DataDir,
+		}
+
+		log.WithField("DatabaseType", DBType).Info("Creating database using factory")
+		db, err := database.CreateDatabase(dbConfig)
+		CheckError(err)
+
+		// Connect to database (only needed for PostgreSQL)
+		if DBType == "postgresql" {
+			log.Info("Connecting to PostgreSQL database...")
+			for {
+				if postgresDB, ok := db.(*postgresql.PQDatabase); ok {
+					err := postgresDB.Connect()
+					if err != nil {
+						log.WithFields(log.Fields{"Error": err}).Error("Failed to connect to PostgreSQL database, retrying...")
+						time.Sleep(1 * time.Second)
+					} else {
+						log.Info("Successfully connected to PostgreSQL database")
+						break
+					}
+				}
 			}
 		}
 
-		log.WithFields(log.Fields{"DBHost": DBHost, "DBPort": DBPort, "DBUser": DBUser, "DBPassword": "*******************", "DBName": DBName, "UseTLS": UseTLS, "TimescaleDB": TimescaleDB}).Info("Connected to PostgreSQL database")
+		log.WithFields(log.Fields{
+			"DatabaseType": DBType,
+			"Host":         DBHost,
+			"Port":         DBPort,
+			"User":         DBUser,
+			"Password":     "*******************",
+			"Name":         DBName,
+			"UseTLS":       UseTLS,
+			"TimescaleDB":  TimescaleDB,
+		}).Info("Database connection established")
 
 		node := cluster.Node{Name: EtcdName, Host: EtcdHost, APIPort: ServerPort, EtcdClientPort: EtcdClientPort, EtcdPeerPort: EtcdPeerPort, RelayPort: RelayPort}
 		clusterConfig := cluster.Config{}
