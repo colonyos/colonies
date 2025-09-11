@@ -30,6 +30,11 @@ var dbCmd = &cobra.Command{
 }
 
 func parseDBEnv() {
+	DBTypeEnv := os.Getenv("COLONIES_DB_TYPE")
+	if DBTypeEnv != "" {
+		DBType = DBTypeEnv
+	}
+
 	DBHostEnv := os.Getenv("COLONIES_DB_HOST")
 	if DBHostEnv != "" {
 		DBHost = DBHostEnv
