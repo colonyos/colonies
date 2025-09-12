@@ -869,3 +869,280 @@ func TestRecursiveSearchEdgeCases(t *testing.T) {
 		t.Errorf("Expected 1 result with '/' path, got %d", len(slashResults))
 	}
 }
+
+// Test all new CRUD operations
+func TestCRUDOperations(t *testing.T) {
+	kv := NewKVStore[*User]()
+
+	// Test CREATE operations
+	user1 := &User{
+		ColonyName: "test-colony",
+		ID:         "user1",
+		Name:       "Alice",
+		Email:      "alice@example.com",
+		Active:     true,
+	}
+
+	user2 := &User{
+		ColonyName: "test-colony",
+		ID:         "user2",
+		Name:       "Bob",
+		Email:      "bob@example.com",
+		Active:     false,
+	}
+
+	// Create individual items
+	err := kv.Put("users/alice", user1)
+	if err != nil {
+		t.Errorf("Failed to create user alice: %v", err)
+	}
+
+	err = kv.Put("users/bob", user2)
+	if err != nil {
+		t.Errorf("Failed to create user bob: %v", err)
+	}
+
+	// Create array and add items
+	err = kv.CreateArray("active_users")
+	if err != nil {
+		t.Errorf("Failed to create array: %v", err)
+	}
+
+	err = kv.AppendToArray("active_users", user1)
+	if err != nil {
+		t.Errorf("Failed to append to array: %v", err)
+	}
+
+	// Test READ operations
+	retrievedAlice, err := kv.Get("users/alice")
+	if err != nil {
+		t.Errorf("Failed to get alice: %v", err)
+	}
+	if retrievedAlice.Name != "Alice" {
+		t.Errorf("Expected 'Alice', got '%s'", retrievedAlice.Name)
+	}
+
+	// Test Exists
+	if !kv.Exists("users/alice") {
+		t.Error("Alice should exist")
+	}
+
+	if kv.Exists("users/nonexistent") {
+		t.Error("Nonexistent user should not exist")
+	}
+
+	// Test List
+	userKeys, err := kv.List("users")
+	if err != nil {
+		t.Errorf("Failed to list users: %v", err)
+	}
+	if len(userKeys) != 2 {
+		t.Errorf("Expected 2 user keys, got %d", len(userKeys))
+	}
+
+	// Test Count
+	count, err := kv.Count("active_users")
+	if err != nil {
+		t.Errorf("Failed to count active users: %v", err)
+	}
+	if count != 1 {
+		t.Errorf("Expected 1 active user, got %d", count)
+	}
+
+	// Test UPDATE operations
+	err = kv.UpdateField("users/alice", "active", false)
+	if err != nil {
+		t.Errorf("Failed to update alice active field: %v", err)
+	}
+
+	updatedAlice, err := kv.Get("users/alice")
+	if err != nil {
+		t.Errorf("Failed to get updated alice: %v", err)
+	}
+	if updatedAlice.Active != false {
+		t.Error("Alice should be inactive after update")
+	}
+
+	// Test Copy
+	err = kv.Copy("users/alice", "users/alice_backup")
+	if err != nil {
+		t.Errorf("Failed to copy alice: %v", err)
+	}
+
+	copiedAlice, err := kv.Get("users/alice_backup")
+	if err != nil {
+		t.Errorf("Failed to get copied alice: %v", err)
+	}
+	if copiedAlice.Name != "Alice" {
+		t.Errorf("Expected copied name 'Alice', got '%s'", copiedAlice.Name)
+	}
+
+	// Test DELETE operations
+	err = kv.Delete("users/bob")
+	if err != nil {
+		t.Errorf("Failed to delete bob: %v", err)
+	}
+
+	if kv.Exists("users/bob") {
+		t.Error("Bob should not exist after deletion")
+	}
+
+	// Test RemoveFromArray
+	err = kv.AppendToArray("active_users", user2)
+	if err != nil {
+		t.Errorf("Failed to add user2 to array: %v", err)
+	}
+
+	count, _ = kv.Count("active_users")
+	if count != 2 {
+		t.Errorf("Expected 2 items in array, got %d", count)
+	}
+
+	err = kv.RemoveFromArray("active_users", 0)
+	if err != nil {
+		t.Errorf("Failed to remove from array: %v", err)
+	}
+
+	count, _ = kv.Count("active_users")
+	if count != 1 {
+		t.Errorf("Expected 1 item in array after removal, got %d", count)
+	}
+
+	// Test Move
+	err = kv.Move("users/alice_backup", "archived/alice")
+	if err != nil {
+		t.Errorf("Failed to move alice_backup: %v", err)
+	}
+
+	if kv.Exists("users/alice_backup") {
+		t.Error("alice_backup should not exist after move")
+	}
+
+	if !kv.Exists("archived/alice") {
+		t.Error("archived/alice should exist after move")
+	}
+
+	// Test Clear
+	err = kv.Clear()
+	if err != nil {
+		t.Errorf("Failed to clear store: %v", err)
+	}
+
+	if kv.Exists("users/alice") {
+		t.Error("Store should be empty after clear")
+	}
+}
+
+func TestCRUDErrorCases(t *testing.T) {
+	kv := NewKVStore[*User]()
+
+	// Test deleting non-existent path
+	err := kv.Delete("nonexistent/path")
+	if err == nil {
+		t.Error("Expected error when deleting non-existent path")
+	}
+
+	// Test updating non-existent object
+	err = kv.UpdateField("nonexistent/user", "name", "test")
+	if err == nil {
+		t.Error("Expected error when updating non-existent object")
+	}
+
+	// Test removing from non-array
+	user := &User{Name: "Test"}
+	kv.Put("single_user", user)
+	
+	err = kv.RemoveFromArray("single_user", 0)
+	if err == nil {
+		t.Error("Expected error when removing from non-array")
+	}
+
+	// Test counting non-array
+	_, err = kv.Count("single_user")
+	if err == nil {
+		t.Error("Expected error when counting non-array")
+	}
+
+	// Test out of bounds array access
+	kv.CreateArray("test_array")
+	kv.AppendToArray("test_array", user)
+	
+	err = kv.RemoveFromArray("test_array", 5)
+	if err == nil {
+		t.Error("Expected error for out of bounds array access")
+	}
+
+	// Test copying non-existent source
+	err = kv.Copy("nonexistent", "destination")
+	if err == nil {
+		t.Error("Expected error when copying non-existent source")
+	}
+}
+
+func TestMixedStoreCRUD(t *testing.T) {
+	kv := NewMixedKVStore()
+
+	// Test mixed-type CRUD operations
+	err := kv.Put("config/host", "localhost")
+	if err != nil {
+		t.Errorf("Failed to put string: %v", err)
+	}
+
+	err = kv.Put("config/port", 8080)
+	if err != nil {
+		t.Errorf("Failed to put int: %v", err)
+	}
+
+	// Test List with mixed types
+	keys, err := kv.List("config")
+	if err != nil {
+		t.Errorf("Failed to list config keys: %v", err)
+	}
+
+	if len(keys) != 2 {
+		t.Errorf("Expected 2 config keys, got %d", len(keys))
+	}
+
+	// Test Delete with mixed types
+	err = kv.Delete("config/port")
+	if err != nil {
+		t.Errorf("Failed to delete port: %v", err)
+	}
+
+	if kv.Exists("config/port") {
+		t.Error("Port should not exist after deletion")
+	}
+
+	// Test array operations with mixed data
+	err = kv.CreateArray("mixed_array")
+	if err != nil {
+		t.Errorf("Failed to create mixed array: %v", err)
+	}
+
+	err = kv.AppendToArrayMixed("mixed_array", map[string]interface{}{
+		"type": "string_item",
+		"value": "hello",
+		"active": true,
+	})
+	if err != nil {
+		t.Errorf("Failed to append mixed map: %v", err)
+	}
+
+	count, err := kv.Count("mixed_array")
+	if err != nil {
+		t.Errorf("Failed to count mixed array: %v", err)
+	}
+	if count != 1 {
+		t.Errorf("Expected 1 item in mixed array, got %d", count)
+	}
+
+	err = kv.RemoveFromArray("mixed_array", 0)
+	if err != nil {
+		t.Errorf("Failed to remove from mixed array: %v", err)
+	}
+
+	count, _ = kv.Count("mixed_array")
+	if count != 0 {
+		t.Errorf("Expected 0 items after removal, got %d", count)
+	}
+}

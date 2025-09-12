@@ -437,6 +437,234 @@ func (kv *KVStore[T]) GetFieldValue(objectPath string, jsonFieldName string) (in
 	return fieldValue, nil
 }
 
+// Delete removes a value or entire subtree at the specified path
+func (kv *KVStore[T]) Delete(path string) error {
+	kv.mu.Lock()
+	defer kv.mu.Unlock()
+
+	parent, key, err := kv.navigateToParentForRead(path)
+	if err != nil {
+		return err
+	}
+
+	// Try to remove as a child node first
+	if mapNode, ok := parent.(*MapNode[T]); ok {
+		// Remove from children if it exists
+		if _, exists := mapNode.children[key]; exists {
+			delete(mapNode.children, key)
+			return nil
+		}
+		// Remove from values if it exists
+		if _, exists := mapNode.values[key]; exists {
+			delete(mapNode.values, key)
+			return nil
+		}
+	}
+
+	return errors.New("path not found")
+}
+
+// DeleteRecursive removes an entire subtree at the specified path
+func (kv *KVStore[T]) DeleteRecursive(path string) error {
+	return kv.Delete(path) // Same as Delete since our Delete already removes subtrees
+}
+
+// RemoveFromArray removes an item from an array at the specified index
+func (kv *KVStore[T]) RemoveFromArray(arrayPath string, index int) error {
+	kv.mu.Lock()
+	defer kv.mu.Unlock()
+
+	node, err := kv.navigateTo(arrayPath)
+	if err != nil {
+		return err
+	}
+
+	arrayNode, ok := node.(*ArrayNode[T])
+	if !ok {
+		return errors.New("path does not point to an array")
+	}
+
+	if index < 0 || index >= len(arrayNode.items) {
+		return errors.New("index out of bounds")
+	}
+
+	// Remove the item by slicing
+	arrayNode.items = append(arrayNode.items[:index], arrayNode.items[index+1:]...)
+	return nil
+}
+
+// Clear removes all data from the store
+func (kv *KVStore[T]) Clear() error {
+	kv.mu.Lock()
+	defer kv.mu.Unlock()
+
+	kv.root = NewMapNode[T]()
+	return nil
+}
+
+// Exists checks if a path exists in the store (either as a node or value)
+func (kv *KVStore[T]) Exists(path string) bool {
+	kv.mu.RLock()
+	defer kv.mu.RUnlock()
+
+	// First try to navigate to the path as a node
+	_, err := kv.navigateTo(path)
+	if err == nil {
+		return true
+	}
+
+	// If that fails, check if it exists as a value
+	parent, key, err := kv.navigateToParentForRead(path)
+	if err != nil {
+		return false
+	}
+
+	// Check if it exists as a value in the parent
+	_, exists := parent.GetValue(key)
+	return exists
+}
+
+// Count returns the number of items in an array
+func (kv *KVStore[T]) Count(arrayPath string) (int, error) {
+	kv.mu.RLock()
+	defer kv.mu.RUnlock()
+
+	node, err := kv.navigateTo(arrayPath)
+	if err != nil {
+		return 0, err
+	}
+
+	if arrayNode, ok := node.(*ArrayNode[T]); ok {
+		return arrayNode.Length(), nil
+	}
+
+	return 0, errors.New("path does not point to an array")
+}
+
+// List returns all child keys/indices at the specified path
+func (kv *KVStore[T]) List(path string) ([]string, error) {
+	kv.mu.RLock()
+	defer kv.mu.RUnlock()
+
+	node, err := kv.navigateTo(path)
+	if err != nil {
+		return nil, err
+	}
+
+	var keys []string
+
+	switch n := node.(type) {
+	case *MapNode[T]:
+		// Add all child keys
+		for key := range n.children {
+			keys = append(keys, key)
+		}
+		// Add all value keys
+		for key := range n.values {
+			keys = append(keys, key)
+		}
+	case *ArrayNode[T]:
+		// Add array indices as strings
+		for i := 0; i < len(n.items); i++ {
+			keys = append(keys, strconv.Itoa(i))
+		}
+	}
+
+	return keys, nil
+}
+
+// UpdateField updates a specific field in an object (for objects with JSON tags)
+func (kv *KVStore[T]) UpdateField(objectPath string, fieldName string, newValue interface{}) error {
+	kv.mu.Lock()
+	defer kv.mu.Unlock()
+
+	parent, key, err := kv.navigateToParentForRead(objectPath)
+	if err != nil {
+		return err
+	}
+
+	currentValue, exists := parent.GetValue(key)
+	if !exists {
+		return errors.New("object not found")
+	}
+
+	// Use reflection to update the field
+	objValue := reflect.ValueOf(currentValue)
+	if objValue.Kind() == reflect.Ptr {
+		if objValue.IsNil() {
+			return errors.New("object is nil")
+		}
+		objValue = objValue.Elem()
+	}
+
+	if objValue.Kind() != reflect.Struct {
+		return errors.New("object is not a struct")
+	}
+
+	objType := objValue.Type()
+	for i := 0; i < objValue.NumField(); i++ {
+		field := objType.Field(i)
+		jsonFieldName := getJSONFieldName(field)
+
+		if jsonFieldName == fieldName {
+			fieldValue := objValue.Field(i)
+			if !fieldValue.CanSet() {
+				return errors.New("field cannot be set")
+			}
+
+			newVal := reflect.ValueOf(newValue)
+			if !newVal.Type().AssignableTo(fieldValue.Type()) {
+				return errors.New("new value type is not assignable to field")
+			}
+
+			fieldValue.Set(newVal)
+			return nil
+		}
+	}
+
+	return errors.New("field not found")
+}
+
+// Copy copies data from source path to destination path
+func (kv *KVStore[T]) Copy(srcPath, dstPath string) error {
+	kv.mu.Lock()
+	defer kv.mu.Unlock()
+
+	// Get the source value
+	srcParent, srcKey, err := kv.navigateToParentForRead(srcPath)
+	if err != nil {
+		return err
+	}
+
+	var srcValue T
+	var srcExists bool
+
+	// Try to get from values first
+	srcValue, srcExists = srcParent.GetValue(srcKey)
+	if !srcExists {
+		// Try to get from children (this is more complex as we need to deep copy nodes)
+		return errors.New("copying nodes not yet implemented, only values supported")
+	}
+
+	// Set at destination
+	dstParent, dstKey, err := kv.navigateToParent(dstPath)
+	if err != nil {
+		return err
+	}
+
+	return dstParent.SetValue(dstKey, srcValue)
+}
+
+// Move moves data from source path to destination path
+func (kv *KVStore[T]) Move(srcPath, dstPath string) error {
+	err := kv.Copy(srcPath, dstPath)
+	if err != nil {
+		return err
+	}
+
+	return kv.Delete(srcPath)
+}
+
 // FindRecursive searches recursively from root (or specified path) for objects with JSON field matching value
 func (kv *KVStore[T]) FindRecursive(startPath string, jsonFieldName string, searchValue interface{}) ([]SearchResult[T], error) {
 	kv.mu.RLock()
