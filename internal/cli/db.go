@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/colonyos/colonies/pkg/database"
 	"github.com/colonyos/colonies/pkg/database/postgresql"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -76,25 +77,34 @@ var dbCreateCmd = &cobra.Command{
 		parseEnv()
 		parseDBEnv()
 
-		var db *postgresql.PQDatabase
+		if DBType == "kvstore" {
+			log.Info("KVStore database doesn't require initialization")
+			return
+		}
+
+		var db database.Database
 		for {
-			db = postgresql.CreatePQDatabase(DBHost, DBPort, DBUser, DBPassword, DBName, DBPrefix, TimescaleDB)
-			err := db.Connect()
+			config := database.DatabaseConfig{
+				Type:        database.PostgreSQL,
+				Host:        DBHost,
+				Port:        DBPort,
+				User:        DBUser,
+				Password:    DBPassword,
+				Name:        DBName,
+				Prefix:      DBPrefix,
+				TimescaleDB: TimescaleDB,
+			}
+			var err error
+			db, err = database.CreateDatabase(config)
 			if err != nil {
-				log.WithFields(log.Fields{"Error": err}).Error("Failed to call db.Connect(), retrying in 1 second ...")
+				log.WithFields(log.Fields{"Error": err}).Error("Failed to create database, retrying in 1 second ...")
 				time.Sleep(1 * time.Second)
 			} else {
 				break
 			}
 		}
 
-		log.WithFields(log.Fields{"Host": DBHost, "Port": DBPort, "User": DBUser, "Password": "**********************", "Prefix": DBPrefix}).Error("Connected to PostgreSQL database")
-
-		err := db.Initialize()
-		if err != nil {
-			log.WithFields(log.Fields{"Error": err}).Error("Failed to call db.Initialize()")
-			os.Exit(0)
-		}
+		log.WithFields(log.Fields{"Host": DBHost, "Port": DBPort, "User": DBUser, "Password": "**********************", "Prefix": DBPrefix}).Info("Connected to database")
 
 		log.WithFields(log.Fields{"ServerID": ServerID}).Info("Setting server ID")
 		CheckError(db.SetServerID("", ServerID))
@@ -109,6 +119,11 @@ var dbDropCmd = &cobra.Command{
 	Long:  "Drop the database",
 	Run: func(cmd *cobra.Command, args []string) {
 		parseDBEnv()
+
+		if DBType == "kvstore" {
+			log.Info("KVStore database is in-memory and doesn't require dropping")
+			return
+		}
 
 		fmt.Print("WARNING!!! Are you sure you want to drop the database? This operation cannot be undone! (YES,no): ")
 

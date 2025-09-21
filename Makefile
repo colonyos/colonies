@@ -32,6 +32,43 @@ build_cryptolib_ubuntu_2020:
 	cd buildtools; ./build_cryptolib_ubuntu.sh 
 
 test:
+ifeq ($(COLONIES_DB_TYPE),kvstore)
+	@echo "Running tests with KVStore database"
+	@cd tests/reliability; COLONIES_DB_TYPE=kvstore grc go test -v --race
+	@cd internal/crypto; grc go test -v --race
+	@cd pkg/core; grc go test -v --race
+	@cd pkg/database/kvstore; COLONIES_DB_TYPE=kvstore grc go test -v --race
+	@cd pkg/database; COLONIES_DB_TYPE=kvstore grc go test -v --race -run TestCreateKVStoreDatabase
+	@cd pkg/rpc; grc go test -v --race
+	@cd pkg/security; grc go test -v --race
+	@cd pkg/security/crypto; grc go test -v --race
+	@cd pkg/security/validator; grc go test -v --race
+	@cd pkg/server; COLONIES_DB_TYPE=kvstore grc go test -v --race
+	@cd pkg/server/controllers; COLONIES_DB_TYPE=kvstore grc go test -v --race
+	@cd pkg/server/handlers/attribute; COLONIES_DB_TYPE=kvstore grc go test -v --race
+	@cd pkg/server/handlers/colony; COLONIES_DB_TYPE=kvstore grc go test -v --race
+	@cd pkg/server/handlers/cron; COLONIES_DB_TYPE=kvstore grc go test -v --race
+	@cd pkg/server/handlers/executor; COLONIES_DB_TYPE=kvstore grc go test -v --race
+	@cd pkg/server/handlers/file; COLONIES_DB_TYPE=kvstore grc go test -v --race
+	@cd pkg/server/handlers/function; COLONIES_DB_TYPE=kvstore grc go test -v --race
+	@cd pkg/server/handlers/generator; COLONIES_DB_TYPE=kvstore grc go test -v --race
+	@cd pkg/server/handlers/log; COLONIES_DB_TYPE=kvstore grc go test -v --race
+	@cd pkg/server/handlers/process; COLONIES_DB_TYPE=kvstore grc go test -v --race
+	@cd pkg/server/handlers/processgraph; COLONIES_DB_TYPE=kvstore grc go test -v --race
+	@cd pkg/server/handlers/security; COLONIES_DB_TYPE=kvstore grc go test -v --race
+	@cd pkg/server/handlers/server; COLONIES_DB_TYPE=kvstore grc go test -v --race
+	@cd pkg/server/handlers/snapshot; COLONIES_DB_TYPE=kvstore grc go test -v --race
+	@cd pkg/server/handlers/user; COLONIES_DB_TYPE=kvstore grc go test -v --race
+	@cd pkg/server/handlers/realtime; COLONIES_DB_TYPE=kvstore grc go test -v --race
+	@cd pkg/server/utils; grc go test -v --race
+	@cd pkg/scheduler; grc go test -v --race
+	@cd pkg/parsers; grc go test -v --race
+	@cd pkg/utils; grc go test -v --race
+	@cd pkg/cluster; grc go test -v --race
+	@cd pkg/cron; grc go test -v --race
+	@cd pkg/fs; go test -v --race
+else
+	@echo "Running tests with PostgreSQL database"
 	@cd tests/reliability; grc go test -v --race
 	@cd internal/crypto; grc go test -v --race
 	@cd pkg/core; grc go test -v --race
@@ -64,6 +101,7 @@ test:
 	@cd pkg/cluster; grc go test -v --race
 	@cd pkg/cron; grc go test -v --race
 	@cd pkg/fs; go test -v --race
+endif
 
 github_test: 
 	@cd tests/reliability; go test -v --race
@@ -99,6 +137,39 @@ github_test:
 	@cd pkg/cluster; go test -v --race
 	@cd pkg/cron; go test -v --race
 	@cd pkg/fs; go test -v --race
+
+kvstore_test:
+	# @cd internal/crypto; go test -v --race
+	# @cd pkg/core; go test -v --race
+	# @cd pkg/database/kvstore; COLONIES_DB_TYPE=kvstore go test -v --race
+	# @cd pkg/database; COLONIES_DB_TYPE=kvstore go test -v --race -run TestCreateKVStoreDatabase
+	# @cd pkg/rpc; go test -v --race
+	# @cd pkg/security; go test -v --race
+	# @cd pkg/security/crypto; go test -v --race
+	# @cd pkg/security/validator; go test -v --race
+	
+##	@cd pkg/server/handlers/attribute; COLONIES_DB_TYPE=kvstore go test -v --race
+##	@cd pkg/server/handlers/colony; COLONIES_DB_TYPE=kvstore go test -v --race
+	@cd pkg/server/handlers/cron; COLONIES_DB_TYPE=kvstore go test -v --race
+	# @cd pkg/server/handlers/executor; COLONIES_DB_TYPE=kvstore go test -v --race
+	# @cd pkg/server/handlers/file; COLONIES_DB_TYPE=kvstore go test -v --race
+	# @cd pkg/server/handlers/function; COLONIES_DB_TYPE=kvstore go test -v --race
+	# @cd pkg/server/handlers/generator; COLONIES_DB_TYPE=kvstore go test -v --race
+	# @cd pkg/server/handlers/log; COLONIES_DB_TYPE=kvstore go test -v --race
+	# @cd pkg/server/handlers/process; COLONIES_DB_TYPE=kvstore go test -v --race
+	# @cd pkg/server/handlers/processgraph; COLONIES_DB_TYPE=kvstore go test -v --race
+	# @cd pkg/server/handlers/security; COLONIES_DB_TYPE=kvstore go test -v --race
+	# @cd pkg/server/handlers/server; COLONIES_DB_TYPE=kvstore go test -v --race
+	# @cd pkg/server/handlers/snapshot; COLONIES_DB_TYPE=kvstore go test -v --race
+	# @cd pkg/server/handlers/user; COLONIES_DB_TYPE=kvstore go test -v --race
+	# @cd pkg/server/handlers/realtime; COLONIES_DB_TYPE=kvstore go test -v --race
+	# @cd pkg/server/utils; go test -v --race
+	# @cd pkg/scheduler; go test -v --race
+	# @cd pkg/parsers; go test -v --race
+	# @cd pkg/utils; go test -v --race
+	# @cd pkg/cluster; go test -v --race
+	# @cd pkg/cron; go test -v --race
+	# @cd pkg/fs; go test -v --race
 
 install:
 	cp ./bin/colonies /usr/local/bin

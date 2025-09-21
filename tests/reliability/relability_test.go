@@ -5,7 +5,7 @@ import (
 
 	"github.com/colonyos/colonies/pkg/client"
 	"github.com/colonyos/colonies/pkg/core"
-	"github.com/colonyos/colonies/pkg/database/postgresql"
+	"github.com/colonyos/colonies/pkg/database"
 	"github.com/colonyos/colonies/pkg/server"
 	"github.com/colonyos/colonies/pkg/utils"
 	log "github.com/sirupsen/logrus"
@@ -13,7 +13,7 @@ import (
 )
 
 func TestReliability(t *testing.T) {
-	db, err := postgresql.PrepareTests()
+	db, err := database.PrepareTests()
 	defer db.Close()
 	assert.Nil(t, err)
 
@@ -69,7 +69,7 @@ func TestReliability(t *testing.T) {
 }
 
 func TestGeneratorReliability(t *testing.T) {
-	db, err := postgresql.PrepareTests()
+	db, err := database.PrepareTests()
 	defer db.Close()
 	assert.Nil(t, err)
 
@@ -163,7 +163,7 @@ func TestGeneratorReliability(t *testing.T) {
 }
 
 func TestCronReliability(t *testing.T) {
-	db, err := postgresql.PrepareTests()
+	db, err := database.PrepareTests()
 	defer db.Close()
 	assert.Nil(t, err)
 

@@ -11,7 +11,7 @@ import (
 	"github.com/colonyos/colonies/pkg/client"
 	"github.com/colonyos/colonies/pkg/cluster"
 	"github.com/colonyos/colonies/pkg/core"
-	"github.com/colonyos/colonies/pkg/database/postgresql"
+	"github.com/colonyos/colonies/pkg/database"
 	"github.com/colonyos/colonies/pkg/monitoring"
 	"github.com/colonyos/colonies/pkg/server"
 	embeddedpostgres "github.com/fergusstrange/embedded-postgres"
@@ -35,52 +35,71 @@ var devCmd = &cobra.Command{
 		parseEnv()
 		parseDBEnv()
 
-		coloniesPath := "/tmp/coloniesdev/"
-		log.WithFields(log.Fields{"Path": coloniesPath}).Info("Creating Colonies data directory, this directory will be deleted every time the development server is restarted")
-		err := os.Mkdir(coloniesPath, 0700)
-		if err != nil {
-			os.RemoveAll(coloniesPath)
-			err = os.Mkdir(coloniesPath, 0700)
+		var coloniesDB database.Database
+		var postgres *embeddedpostgres.EmbeddedPostgres
+
+		if DBType == "kvstore" {
+			log.Info("Using KVStore in-memory database")
+			config := database.DatabaseConfig{
+				Type: database.KVStore,
+			}
+			var err error
+			coloniesDB, err = database.CreateDatabase(config)
+			CheckError(err)
+		} else {
+			coloniesPath := "/tmp/coloniesdev/"
+			log.WithFields(log.Fields{"Path": coloniesPath}).Info("Creating Colonies data directory, this directory will be deleted every time the development server is restarted")
+			err := os.Mkdir(coloniesPath, 0700)
+			if err != nil {
+				os.RemoveAll(coloniesPath)
+				err = os.Mkdir(coloniesPath, 0700)
+				CheckError(err)
+			}
+
+			err = os.Mkdir(coloniesPath+"embedded-postgres-go", 0700)
+			CheckError(err)
+			err = os.Mkdir(coloniesPath+"embedded-postgres-go/extracted", 0700)
+			CheckError(err)
+			err = os.Mkdir(coloniesPath+"embedded-postgres-go/extracted/data", 0700)
+			CheckError(err)
+
+			log.WithFields(log.Fields{"DBHost": DBHost, "DBPort": DBPort, "DBUser": DBUser, "DBPassword": DBPassword, "DBName": DBName}).Info("Starting embedded PostgreSQL server")
+			postgres = embeddedpostgres.NewDatabase(embeddedpostgres.DefaultConfig().
+				RuntimePath(coloniesPath + "embedded-postgres-go/extracted").
+				BinariesPath(coloniesPath + "embedded-postgres-go/extracted").
+				DataPath(coloniesPath + "embedded-postgres-go/extracted/data").
+				Username(DBUser).
+				Version(embeddedpostgres.V12).
+				Password(DBPassword).
+				Port(50070))
+			defer postgres.Stop()
+			err = postgres.Start()
+			CheckError(err)
+
+			log.WithFields(log.Fields{"DBHost": DBHost, "DBPort": DBPort, "DBUser": DBUser, "DBPassword": DBPassword, "DBName": DBName}).Info("Connecting to PostgreSQL server")
+			config := database.DatabaseConfig{
+				Type:     database.PostgreSQL,
+				Host:     DBHost,
+				Port:     DBPort,
+				User:     DBUser,
+				Password: DBPassword,
+				Name:     DBName,
+				Prefix:   DBPrefix,
+			}
+			coloniesDB, err = database.CreateDatabase(config)
 			CheckError(err)
 		}
-
-		err = os.Mkdir(coloniesPath+"embedded-postgres-go", 0700)
-		CheckError(err)
-		err = os.Mkdir(coloniesPath+"embedded-postgres-go/extracted", 0700)
-		CheckError(err)
-		err = os.Mkdir(coloniesPath+"embedded-postgres-go/extracted/data", 0700)
-		CheckError(err)
-
-		log.WithFields(log.Fields{"DBHost": DBHost, "DBPort": DBPort, "DBUser": DBUser, "DBPassword": DBPassword, "DBName": DBName}).Info("Starting embedded PostgreSQL server")
-		postgres := embeddedpostgres.NewDatabase(embeddedpostgres.DefaultConfig().
-			RuntimePath(coloniesPath + "embedded-postgres-go/extracted").
-			BinariesPath(coloniesPath + "embedded-postgres-go/extracted").
-			DataPath(coloniesPath + "embedded-postgres-go/extracted/data").
-			Username(DBUser).
-			Version(embeddedpostgres.V12).
-			Password(DBPassword).
-			Port(50070))
-		defer postgres.Stop()
-		err = postgres.Start()
-		CheckError(err)
 
 		c := make(chan os.Signal)
 		signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 		go func() {
 			<-c
-			postgres.Stop()
+			if postgres != nil {
+				postgres.Stop()
+			}
 			log.Info("Colonies development server stopped")
 			os.Exit(0)
 		}()
-
-		log.WithFields(log.Fields{"DBHost": DBHost, "DBPort": DBPort, "DBUser": DBUser, "DBPassword": DBPassword, "DBName": DBName}).Info("Connecting to PostgreSQL server")
-		coloniesDB := postgresql.CreatePQDatabase(DBHost, DBPort, DBUser, DBPassword, DBName, DBPrefix, false)
-		err = coloniesDB.Connect()
-		CheckError(err)
-
-		log.Info("Initialize a Colonies PostgreSQL database")
-		err = coloniesDB.Initialize()
-		CheckError(err)
 
 		log.WithFields(log.Fields{"Port": ServerPort}).Info("Starting a Colonies server")
 
