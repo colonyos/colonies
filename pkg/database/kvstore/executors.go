@@ -87,7 +87,8 @@ func (db *KVStoreDatabase) GetExecutorByID(executorID string) (*core.Executor, e
 	executorPath := fmt.Sprintf("/executors/%s", executorID)
 	
 	if !db.store.Exists(executorPath) {
-		return nil, fmt.Errorf("executor with ID %s not found", executorID)
+		// Return (nil, nil) when executor not found, like PostgreSQL
+		return nil, nil
 	}
 
 	executorInterface, err := db.store.Get(executorPath)
@@ -126,7 +127,8 @@ func (db *KVStoreDatabase) GetExecutorByName(colonyName string, executorName str
 	// Search for executor by colony name and then filter by name
 	executors, err := db.store.FindRecursive("/executors", "colonyname", colonyName)
 	if err != nil {
-		return nil, fmt.Errorf("executor with name %s not found in colony %s", executorName, colonyName)
+		// Return (nil, nil) when no executors found, like PostgreSQL
+		return nil, nil
 	}
 
 	for _, searchResult := range executors {
@@ -137,7 +139,8 @@ func (db *KVStoreDatabase) GetExecutorByName(colonyName string, executorName str
 		}
 	}
 
-	return nil, fmt.Errorf("executor with name %s not found in colony %s", executorName, colonyName)
+	// Return (nil, nil) when executor not found, like PostgreSQL
+	return nil, nil
 }
 
 // ApproveExecutor approves an executor

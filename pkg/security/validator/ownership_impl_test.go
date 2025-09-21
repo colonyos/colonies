@@ -4,13 +4,13 @@ import (
 	"testing"
 
 	"github.com/colonyos/colonies/pkg/core"
-	"github.com/colonyos/colonies/pkg/database/postgresql"
+	"github.com/colonyos/colonies/pkg/database"
 	"github.com/colonyos/colonies/pkg/utils"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestCheckIfExecutorIsValid(t *testing.T) {
-	db, err := postgresql.PrepareTests()
+	db, err := database.PrepareTests()
 	assert.Nil(t, err)
 
 	ownership := createOwnership(db)

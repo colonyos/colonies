@@ -56,7 +56,8 @@ func (db *KVStoreDatabase) GetUserByID(colonyName string, userID string) (*core.
 	userPath := fmt.Sprintf("/users/%s", userID)
 	
 	if !db.store.Exists(userPath) {
-		return nil, fmt.Errorf("user with ID %s not found in colony %s", userID, colonyName)
+		// Return (nil, nil) when user not found, like PostgreSQL
+		return nil, nil
 	}
 
 	userInterface, err := db.store.Get(userPath)
@@ -71,7 +72,8 @@ func (db *KVStoreDatabase) GetUserByID(colonyName string, userID string) (*core.
 
 	// Check if user belongs to the specified colony
 	if user.ColonyName != colonyName {
-		return nil, fmt.Errorf("user with ID %s not found in colony %s", userID, colonyName)
+		// Return (nil, nil) when user not in specified colony, like PostgreSQL
+		return nil, nil
 	}
 
 	return user, nil

@@ -3,6 +3,7 @@ package database
 import (
 	"fmt"
 
+	"github.com/colonyos/colonies/pkg/database/kvstore"
 	"github.com/colonyos/colonies/pkg/database/postgresql"
 	log "github.com/sirupsen/logrus"
 )
@@ -11,6 +12,7 @@ type DatabaseType string
 
 const (
 	PostgreSQL DatabaseType = "postgresql"
+	KVStore    DatabaseType = "kvstore"
 )
 
 type DatabaseConfig struct {
@@ -47,6 +49,16 @@ func CreateDatabase(config DatabaseConfig) (Database, error) {
 		}).Info("Initializing PostgreSQL database")
 
 		db := postgresql.CreatePQDatabase(config.Host, config.Port, config.User, config.Password, config.Name, config.Prefix, config.TimescaleDB)
+		return db, nil
+
+	case KVStore:
+		log.Info("Initializing KVStore in-memory database")
+
+		db := kvstore.NewKVStoreDatabase()
+		err := db.Initialize()
+		if err != nil {
+			return nil, fmt.Errorf("failed to initialize KVStore database: %w", err)
+		}
 		return db, nil
 
 	default:

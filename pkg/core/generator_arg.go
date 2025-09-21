@@ -6,10 +6,10 @@ import (
 )
 
 type GeneratorArg struct {
-	ID          string
-	GeneratorID string
-	ColonyName  string
-	Arg         string
+	ID          string `json:"id"`
+	GeneratorID string `json:"generatorid"`
+	ColonyName  string `json:"colonyname"`
+	Arg         string `json:"arg"`
 }
 
 func CreateGeneratorArg(generatorID string, colonyName string, arg string) *GeneratorArg {

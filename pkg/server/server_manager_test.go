@@ -7,13 +7,13 @@ import (
 
 	"github.com/colonyos/colonies/pkg/cluster"
 	"github.com/colonyos/colonies/pkg/constants"
-	"github.com/colonyos/colonies/pkg/database/postgresql"
+	"github.com/colonyos/colonies/pkg/database"
 	"github.com/colonyos/colonies/pkg/security/crypto"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestServerManagerCreation(t *testing.T) {
-	db, err := postgresql.PrepareTests()
+	db, err := database.PrepareTests()
 	assert.Nil(t, err)
 	defer db.Close()
 

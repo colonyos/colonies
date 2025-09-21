@@ -1318,6 +1318,7 @@ func (controller *ColoniesController) Assign(executorID string, colonyName strin
 					errMsg := "Failed to resolve processgraph from controller, processGraph is nil (should not be)"
 					log.Error(errMsg)
 					cmd.errorChan <- errors.New(errMsg)
+					return
 				}
 				processGraph.SetStorage(controller.GetProcessGraphStorage())
 

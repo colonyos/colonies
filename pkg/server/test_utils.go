@@ -15,7 +15,6 @@ import (
 	"github.com/colonyos/colonies/pkg/constants"
 	"github.com/colonyos/colonies/pkg/core"
 	"github.com/colonyos/colonies/pkg/database"
-	"github.com/colonyos/colonies/pkg/database/postgresql"
 	"github.com/colonyos/colonies/pkg/rpc"
 	"github.com/colonyos/colonies/pkg/security/crypto"
 	"github.com/colonyos/colonies/pkg/server/controllers"
@@ -209,7 +208,7 @@ func prepareTestsWithRetention(t *testing.T, retention bool) (*client.ColoniesCl
 	os.RemoveAll("/tmp/colonies")
 	client := client.CreateColoniesClient(constants.TESTHOST, constants.TESTPORT, Insecure, SkipTLSVerify)
 
-	db, err := postgresql.PrepareTests()
+	db, err := database.PrepareTests()
 	assert.Nil(t, err)
 
 	crypto := crypto.CreateCrypto()
