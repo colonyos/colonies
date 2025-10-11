@@ -37,6 +37,7 @@ var TLSCert string
 var TLSKey string
 var ServerHost string
 var ServerPort int
+var LibP2PPort int  // Port for LibP2P transport (required when using libp2p backend)
 var MonitorPort int
 var MonitorInterval int
 var ServerID string

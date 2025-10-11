@@ -32,45 +32,10 @@ build_cryptolib_ubuntu_2020:
 	cd buildtools; ./build_cryptolib_ubuntu.sh 
 
 test:
-	@cd tests/reliability; grc go test -v --race
-	@cd internal/crypto; grc go test -v --race
-	@cd pkg/core; grc go test -v --race
-	@cd pkg/database/postgresql; grc go test -v --race
-	@cd pkg/rpc; grc go test -v --race
-	@cd pkg/security; grc go test -v --race
-	@cd pkg/security/crypto; grc go test -v --race
-	@cd pkg/security/validator; grc go test -v --race
-	@cd pkg/server; grc go test -v --race
-	@cd pkg/server/controllers; grc go test -v --race
-	@cd pkg/server/handlers/attribute; grc go test -v --race
-	@cd pkg/server/handlers/colony; grc go test -v --race
-	@cd pkg/server/handlers/cron; grc go test -v --race
-	@cd pkg/server/handlers/executor; grc go test -v --race
-	@cd pkg/server/handlers/file; grc go test -v --race
-	@cd pkg/server/handlers/function; grc go test -v --race
-	@cd pkg/server/handlers/generator; grc go test -v --race
-	@cd pkg/server/handlers/log; grc go test -v --race
-	@cd pkg/server/handlers/process; grc go test -v --race
-	@cd pkg/server/handlers/processgraph; grc go test -v --race
-	@cd pkg/server/handlers/security; grc go test -v --race
-	@cd pkg/server/handlers/server; grc go test -v --race
-	@cd pkg/server/handlers/snapshot; grc go test -v --race
-	@cd pkg/server/handlers/user; grc go test -v --race
-	@cd pkg/server/handlers/realtime; grc go test -v --race
-	@cd pkg/server/utils; grc go test -v --race
-	@cd pkg/scheduler; grc go test -v --race
-	@cd pkg/parsers; grc go test -v --race
-	@cd pkg/utils; grc go test -v --race
-	@cd pkg/cluster; grc go test -v --race
-	@cd pkg/cron; grc go test -v --race
-	@cd pkg/fs; go test -v --race
-
-github_test: 
 	@cd tests/reliability; go test -v --race
 	@cd internal/crypto; go test -v --race
 	@cd pkg/core; go test -v --race
 	@cd pkg/database/postgresql; go test -v --race
-	@cd pkg/database/memdb/adapter; go test -v --race
 	@cd pkg/rpc; go test -v --race
 	@cd pkg/security; go test -v --race
 	@cd pkg/security/crypto; go test -v --race
@@ -99,6 +64,11 @@ github_test:
 	@cd pkg/cluster; go test -v --race
 	@cd pkg/cron; go test -v --race
 	@cd pkg/fs; go test -v --race
+	@cd pkg/p2p; go test -v --race
+	@cd pkg/p2p/dht; go test -v --race
+	@cd pkg/p2p/libp2p; go test -v --race
+	@cd pkg/p2p/mock; go test -v --race
+	@cd pkg/p2p/test; go test -v --race
 
 install:
 	cp ./bin/colonies /usr/local/bin

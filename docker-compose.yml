@@ -51,12 +51,18 @@ services:
       "
 
   colonies-server:
-    image: colonyos/colonies:v1.8.19
+    image: colonyos/colonies
     depends_on:
       - timescaledb
     environment:
+      COLONIES_BACKEND_TYPE: "libp2p"
       COLONIES_SERVER_TLS: "false"
       COLONIES_SERVER_ID: ${COLONIES_SERVER_ID}
+      COLONIES_CLIENT_BACKEND: ${COLONIES_CLIENT_BACKEND}
+      COLONIES_LIBP2P_PORT: ${COLONIES_LIBP2P_PORT}
+      COLONIES_LIBP2P_IDENTITY: ${COLONIES_LIBP2P_IDENTITY}
+      COLONIES_LIBP2P_BOOTSTRAP_PEERS: ${COLONIES_LIBP2P_BOOTSTRAP_PEERS}
+      COLONIES_SERVER_HOST: ${COLONIES_SERVER_HOST}
       COLONIES_SERVER_PORT: ${COLONIES_SERVER_PORT}
       COLONIES_DB_HOST: timescaledb
       COLONIES_DB_PORT: 5432
@@ -78,11 +84,12 @@ services:
     volumes:
       - colonies_etcd:/var/colonies/etcd
     ports:
-      - "0.0.0.0:${COLONIES_SERVER_PORT}:${COLONIES_SERVER_PORT}"
+      - "${COLONIES_SERVER_PORT}:${COLONIES_SERVER_PORT}"
+      - "${COLONIES_LIBP2P_PORT}:${COLONIES_LIBP2P_PORT}"
     command: sh -c "colonies server start --initdb --port ${COLONIES_SERVER_PORT} --relayport 25100 --etcdname server1 --etcdhost colonies-server --etcdclientport 23100 --etcdpeerport 24100 --initial-cluster server1=colonies-server:24100:25100:${COLONIES_SERVER_PORT} --etcddatadir /var/colonies/etcd --insecure"
 
   colonies-setup:
-    image: colonyos/colonies:v1.8.19
+    image: colonyos/colonies:latest
     depends_on:
       - colonies-server
     environment:

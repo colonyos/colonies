@@ -1,7 +1,9 @@
 package cli
 
 import (
+	"encoding/hex"
 	"errors"
+	"fmt"
 	"os"
 	"strconv"
 	"strings"
@@ -12,6 +14,8 @@ import (
 	"github.com/colonyos/colonies/pkg/database"
 	"github.com/colonyos/colonies/pkg/database/postgresql"
 	"github.com/colonyos/colonies/pkg/server"
+	libp2pcrypto "github.com/libp2p/go-libp2p/core/crypto"
+	"github.com/libp2p/go-libp2p/core/peer"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -22,6 +26,7 @@ func init() {
 	serverCmd.AddCommand(serverStatusCmd)
 	serverCmd.AddCommand(serverStatisticsCmd)
 	serverCmd.AddCommand(serverAliveCmd)
+	serverCmd.AddCommand(genLibP2PIdentityCmd)
 	rootCmd.AddCommand(serverCmd)
 
 	chServerIDCmd.Flags().StringVarP(&TargetServerID, "serverid", "", "", "Server Id")
@@ -219,7 +224,7 @@ var serverStartCmd = &cobra.Command{
 
 		setupProfiler()
 
-		server := server.CreateServer(db,
+		server := server.CreateServerFromEnv(db,
 			ServerPort,
 			UseTLS,
 			TLSKey,
@@ -280,5 +285,46 @@ var serverAliveCmd = &cobra.Command{
 	Long:  "Check if a server is alive",
 	Run: func(cmd *cobra.Command, args []string) {
 		os.Exit(0)
+	},
+}
+
+var genLibP2PIdentityCmd = &cobra.Command{
+	Use:   "genp2pid",
+	Short: "Generate a LibP2P identity (private key)",
+	Long:  "Generate a LibP2P identity that can be used with COLONIES_LIBP2P_IDENTITY environment variable",
+	Run: func(cmd *cobra.Command, args []string) {
+		// Import crypto from libp2p
+		privKey, _, err := libp2pcrypto.GenerateEd25519Key(nil)
+		CheckError(err)
+
+		// Marshal the private key to bytes
+		privKeyBytes, err := libp2pcrypto.MarshalPrivateKey(privKey)
+		CheckError(err)
+
+		// Get the peer ID from the private key
+		peerID, err := peer.IDFromPrivateKey(privKey)
+		CheckError(err)
+
+		// Print the results
+		fmt.Println("LibP2P Identity Generated Successfully!")
+		fmt.Println("=====================================")
+		fmt.Printf("\nPrivate Key (save this securely):\n")
+		fmt.Printf("COLONIES_LIBP2P_IDENTITY=%s\n", hex.EncodeToString(privKeyBytes))
+		fmt.Printf("\nPeer ID (this is derived from the private key):\n")
+		fmt.Printf("%s\n", peerID.String())
+		fmt.Printf("\nPort Configuration:\n")
+		fmt.Printf("- LibP2P port must be explicitly configured via COLONIES_LIBP2P_PORT\n")
+		fmt.Printf("- Example: HTTP on 4000, LibP2P on 5000\n")
+		fmt.Printf("\nExample multiaddress:\n")
+		fmt.Printf("/ip4/127.0.0.1/tcp/5000/p2p/%s\n", peerID.String())
+		fmt.Printf("\nUsage:\n")
+		fmt.Printf("1. Start the server with LibP2P identity:\n")
+		fmt.Printf("   export COLONIES_LIBP2P_IDENTITY=%s\n", hex.EncodeToString(privKeyBytes))
+		fmt.Printf("   export COLONIES_BACKEND_TYPE=libp2p\n")
+		fmt.Printf("   export COLONIES_LIBP2P_PORT=5000  # Required for LibP2P backend\n")
+		fmt.Printf("   colonies server start --port 4000 --insecure\n\n")
+		fmt.Printf("2. Connect the CLI using the multiaddress:\n")
+		fmt.Printf("   export COLONIES_CLIENT_BACKEND=libp2p\n")
+		fmt.Printf("   export COLONIES_SERVER_HOST=\"/ip4/127.0.0.1/tcp/5000/p2p/%s\"\n", peerID.String())
 	},
 }
