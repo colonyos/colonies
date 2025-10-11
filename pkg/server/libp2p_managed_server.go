@@ -2,7 +2,9 @@ package server
 
 import (
 	"context"
+	"encoding/hex"
 	"fmt"
+	"os"
 	"sync"
 	"time"
 
@@ -10,6 +12,7 @@ import (
 	libp2pbackend "github.com/colonyos/colonies/pkg/backends/libp2p"
 	"github.com/libp2p/go-libp2p"
 	"github.com/libp2p/go-libp2p-pubsub"
+	"github.com/libp2p/go-libp2p/core/crypto"
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/protocol"
@@ -68,18 +71,46 @@ func NewLibP2PManagedServer(config *ServerConfig, sharedResources *SharedResourc
 		config.RetentionPeriod,
 	)
 	
-	// Create libp2p host
-	h, err := libp2p.New(
+	// Build libp2p options
+	// LibP2PPort must be explicitly configured
+	if config.LibP2PPort == 0 {
+		cancel()
+		return nil, fmt.Errorf("LibP2PPort must be configured (set COLONIES_LIBP2P_PORT environment variable)")
+	}
+
+	libp2pPort := config.LibP2PPort
+	opts := []libp2p.Option{
 		libp2p.ListenAddrStrings(
-			fmt.Sprintf("/ip4/0.0.0.0/tcp/%d", config.Port),
-			fmt.Sprintf("/ip4/0.0.0.0/udp/%d/quic-v1", config.Port+1),
+			fmt.Sprintf("/ip4/0.0.0.0/tcp/%d", libp2pPort),
+			fmt.Sprintf("/ip4/0.0.0.0/udp/%d/quic-v1", libp2pPort+1),
 		),
 		libp2p.DefaultTransports,
 		libp2p.DefaultMuxers,
 		libp2p.DefaultSecurity,
 		libp2p.EnableNATService(),
 		libp2p.EnableRelay(),
-	)
+	}
+
+	log.WithFields(log.Fields{
+		"HTTPPort":    config.Port,
+		"LibP2PPort":  libp2pPort,
+		"QUICPort":    libp2pPort + 1,
+	}).Info("LibP2P port configuration")
+
+	// Check for predefined identity from environment
+	// This allows for deterministic peer IDs
+	if identityKey := getLibP2PIdentityFromEnv(); identityKey != "" {
+		privKey, err := parseLibP2PPrivateKey(identityKey)
+		if err != nil {
+			cancel()
+			return nil, fmt.Errorf("failed to parse libp2p identity: %w", err)
+		}
+		opts = append(opts, libp2p.Identity(privKey))
+		log.Info("Using predefined LibP2P identity from COLONIES_LIBP2P_IDENTITY")
+	}
+
+	// Create libp2p host
+	h, err := libp2p.New(opts...)
 	if err != nil {
 		cancel()
 		return nil, fmt.Errorf("failed to create libp2p host: %w", err)
@@ -210,7 +241,7 @@ func (lms *LibP2PManagedServer) GetAddr() string {
 	if lms.host != nil && len(lms.host.Addrs()) > 0 {
 		return fmt.Sprintf("%s/p2p/%s", lms.host.Addrs()[0].String(), lms.host.ID().String())
 	}
-	return fmt.Sprintf("/ip4/0.0.0.0/tcp/%d", lms.config.Port)
+	return fmt.Sprintf("/ip4/0.0.0.0/tcp/%d", lms.config.LibP2PPort)
 }
 
 // IsRunning returns whether the server is running
@@ -361,4 +392,26 @@ func (lbf *LibP2PBackendFactory) CreateServer(config *ServerConfig, sharedResour
 // GetBackendType returns the backend type this factory creates
 func (lbf *LibP2PBackendFactory) GetBackendType() BackendType {
 	return LibP2PBackendType
+}
+
+// getLibP2PIdentityFromEnv retrieves the LibP2P identity from environment
+func getLibP2PIdentityFromEnv() string {
+	return os.Getenv("COLONIES_LIBP2P_IDENTITY")
+}
+
+// parseLibP2PPrivateKey parses a hex-encoded private key for LibP2P
+func parseLibP2PPrivateKey(hexKey string) (crypto.PrivKey, error) {
+	// Decode hex string to bytes
+	keyBytes, err := hex.DecodeString(hexKey)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode hex key: %w", err)
+	}
+
+	// Unmarshal the private key
+	privKey, err := crypto.UnmarshalPrivateKey(keyBytes)
+	if err != nil {
+		return nil, fmt.Errorf("failed to unmarshal private key: %w", err)
+	}
+
+	return privKey, nil
 }

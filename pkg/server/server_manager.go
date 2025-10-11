@@ -40,6 +40,7 @@ type ManagedServer interface {
 type ServerConfig struct {
 	BackendType             BackendType
 	Port                   int
+	LibP2PPort             int  // Port for LibP2P transport (required for LibP2P backend)
 	TLS                    bool
 	TLSPrivateKeyPath      string
 	TLSCertPath            string

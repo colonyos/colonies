@@ -10,12 +10,19 @@ import (
 
 	"github.com/colonyos/colonies/pkg/build"
 	"github.com/colonyos/colonies/pkg/client"
+	"github.com/colonyos/colonies/pkg/client/backends"
+	"github.com/colonyos/colonies/pkg/client/libp2p"
 	"github.com/colonyos/colonies/pkg/constants"
 	"github.com/colonyos/colonies/pkg/core"
 	"github.com/colonyos/colonies/pkg/validate"
 	"github.com/gin-gonic/gin"
 	log "github.com/sirupsen/logrus"
 )
+
+func init() {
+	// Register the LibP2P backend factory
+	client.RegisterBackendFactory(libp2p.NewLibP2PClientBackendFactory())
+}
 
 func StrArr2Str(args []string) string {
 	if len(args) == 0 {
@@ -176,6 +183,15 @@ func parseEnv() {
 			}
 			CheckError(err)
 		}
+	}
+
+	LibP2PPortEnvStr := os.Getenv("COLONIES_LIBP2P_PORT")
+	if LibP2PPortEnvStr != "" {
+		LibP2PPort, err = strconv.Atoi(LibP2PPortEnvStr)
+		if err != nil {
+			log.Error("Failed to parse COLONIES_LIBP2P_PORT")
+		}
+		CheckError(err)
 	}
 
 	TLSEnv := os.Getenv("COLONIES_SERVER_TLS")
@@ -486,7 +502,22 @@ func setup() *client.ColoniesClient {
 		envError()
 	}
 
-	log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Debug("Starting a Colonies client")
+	// Check if LibP2P client backend is requested
+	clientBackend := os.Getenv("COLONIES_CLIENT_BACKEND")
+	if clientBackend == "libp2p" {
+		log.WithFields(log.Fields{"ServerHost": ServerHost, "Backend": "libp2p"}).Debug("Starting a Colonies LibP2P client")
+		// For LibP2P, ServerHost can be:
+		// - A multiaddr like "/ip4/127.0.0.1/tcp/5000/p2p/12D3KooW..."
+		// - "dht" for DHT-based discovery
+		// - "dht:rendezvous-name" for custom rendezvous point
+		config := backends.CreateLibP2PClientConfig(ServerHost)
+		// Add bootstrap peers from environment if specified
+		config.BootstrapPeers = os.Getenv("COLONIES_LIBP2P_BOOTSTRAP_PEERS")
+		return client.CreateColoniesClientWithConfig(config)
+	}
+
+	// Default to HTTP/Gin backend
+	log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Debug("Starting a Colonies HTTP client")
 	return client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
 }
 

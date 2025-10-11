@@ -41,11 +41,12 @@ type ClientBackendFactory interface {
 
 // ClientConfig holds configuration for client backends
 type ClientConfig struct {
-	BackendType   ClientBackendType
-	Host          string
-	Port          int
-	Insecure      bool
-	SkipTLSVerify bool
+	BackendType    ClientBackendType
+	Host           string
+	Port           int
+	Insecure       bool
+	SkipTLSVerify  bool
+	BootstrapPeers string // Comma-separated multiaddresses for LibP2P bootstrap peers
 }
 
 // CreateDefaultClientConfig creates a default client config for HTTP/Gin backend
@@ -56,5 +57,17 @@ func CreateDefaultClientConfig(host string, port int, insecure bool, skipTLSVeri
 		Port:          port,
 		Insecure:      insecure,
 		SkipTLSVerify: skipTLSVerify,
+	}
+}
+
+// CreateLibP2PClientConfig creates a client config for LibP2P backend
+// host parameter should be a libp2p multiaddr (e.g., "/ip4/127.0.0.1/tcp/5000/p2p/12D3KooW...")
+func CreateLibP2PClientConfig(host string) *ClientConfig {
+	return &ClientConfig{
+		BackendType:   LibP2PClientBackendType,
+		Host:          host,
+		Port:          0, // Not used for LibP2P
+		Insecure:      false,
+		SkipTLSVerify: false,
 	}
 }
