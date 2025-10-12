@@ -174,12 +174,16 @@ func parseEnv() {
 		ServerHost = ServerHostEnv
 	}
 
-	ServerPortEnvStr := os.Getenv("COLONIES_SERVER_PORT")
+	// Try new variable COLONIES_SERVER_HTTP_PORT first, fall back to legacy COLONIES_SERVER_PORT
+	ServerPortEnvStr := os.Getenv("COLONIES_SERVER_HTTP_PORT")
+	if ServerPortEnvStr == "" {
+		ServerPortEnvStr = os.Getenv("COLONIES_SERVER_PORT") // Backward compatibility
+	}
 	if ServerPortEnvStr != "" {
 		if ServerPort == -1 {
 			ServerPort, err = strconv.Atoi(ServerPortEnvStr)
 			if err != nil {
-				log.Error("Failed to parse COLONIES_SERVER_PORT")
+				log.Error("Failed to parse COLONIES_SERVER_HTTP_PORT/COLONIES_SERVER_PORT")
 			}
 			CheckError(err)
 		}
@@ -502,7 +506,33 @@ func setup() *client.ColoniesClient {
 		envError()
 	}
 
-	// Check if LibP2P client backend is requested
+	// Check for multiple backends (new format: COLONIES_CLIENT_BACKENDS="libp2p,http")
+	backendsEnv := os.Getenv("COLONIES_CLIENT_BACKENDS")
+	if backendsEnv != "" {
+		backendTypes := backends.ParseClientBackendsFromEnv(backendsEnv)
+		configs := make([]*backends.ClientConfig, 0, len(backendTypes))
+
+		for _, backendType := range backendTypes {
+			switch backendType {
+			case backends.LibP2PClientBackendType:
+				log.WithFields(log.Fields{"ServerHost": ServerHost, "Backend": "libp2p"}).Debug("Adding LibP2P backend")
+				config := backends.CreateLibP2PClientConfig(ServerHost)
+				config.BootstrapPeers = os.Getenv("COLONIES_LIBP2P_BOOTSTRAP_PEERS")
+				configs = append(configs, config)
+			case backends.GinClientBackendType:
+				log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Backend": "http"}).Debug("Adding HTTP backend")
+				config := backends.CreateDefaultClientConfig(ServerHost, ServerPort, Insecure, SkipTLSVerify)
+				configs = append(configs, config)
+			}
+		}
+
+		if len(configs) > 0 {
+			log.WithField("backend_count", len(configs)).Info("Creating multi-backend client")
+			return client.CreateColoniesClientWithMultipleBackends(configs)
+		}
+	}
+
+	// Fall back to legacy COLONIES_CLIENT_BACKEND for backward compatibility
 	clientBackend := os.Getenv("COLONIES_CLIENT_BACKEND")
 	if clientBackend == "libp2p" {
 		log.WithFields(log.Fields{"ServerHost": ServerHost, "Backend": "libp2p"}).Debug("Starting a Colonies LibP2P client")
