@@ -16,6 +16,7 @@ import (
 	"github.com/libp2p/go-libp2p/core/host"
 	dht "github.com/libp2p/go-libp2p-kad-dht"
 	"github.com/libp2p/go-libp2p/p2p/protocol/circuitv2/relay"
+	"github.com/multiformats/go-multiaddr"
 )
 
 func main() {
@@ -27,8 +28,10 @@ func main() {
 		log.Fatal(err)
 	}
 
-	// Create libp2p host with relay support
-	h, err := libp2p.New(
+	// Check for public IP from environment
+	publicIP := os.Getenv("PUBLIC_IP")
+
+	opts := []libp2p.Option{
 		libp2p.Identity(privKey),
 		libp2p.ListenAddrStrings(
 			"/ip4/0.0.0.0/tcp/4001",        // TCP on all interfaces
@@ -42,7 +45,35 @@ func main() {
 		libp2p.DefaultTransports,
 		libp2p.DefaultMuxers,
 		libp2p.DefaultSecurity,
-	)
+	}
+
+	// If public IP is provided, announce it
+	if publicIP != "" {
+		log.Printf("Using public IP from environment: %s", publicIP)
+		opts = append(opts, libp2p.AddrsFactory(func(addrs []multiaddr.Multiaddr) []multiaddr.Multiaddr {
+			// Replace private IPs with public IP
+			publicAddrs := []multiaddr.Multiaddr{}
+
+			// Add public IP announcements
+			publicTCP, _ := multiaddr.NewMultiaddr(fmt.Sprintf("/ip4/%s/tcp/4001", publicIP))
+			publicQUIC, _ := multiaddr.NewMultiaddr(fmt.Sprintf("/ip4/%s/udp/4001/quic-v1", publicIP))
+
+			if publicTCP != nil {
+				publicAddrs = append(publicAddrs, publicTCP)
+			}
+			if publicQUIC != nil {
+				publicAddrs = append(publicAddrs, publicQUIC)
+			}
+
+			return publicAddrs
+		}))
+	} else {
+		log.Println("WARNING: PUBLIC_IP not set - relay will announce private IP addresses")
+		log.Println("Set PUBLIC_IP environment variable: export PUBLIC_IP=your.public.ip.address")
+	}
+
+	// Create libp2p host with relay support
+	h, err := libp2p.New(opts...)
 	if err != nil {
 		log.Fatalf("Failed to create libp2p host: %v", err)
 	}
