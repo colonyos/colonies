@@ -40,6 +40,10 @@ test:
 	@cd pkg/security; go test -v --race
 	@cd pkg/security/crypto; go test -v --race
 	@cd pkg/security/validator; go test -v --race
+	@cd pkg/backends/gin; go test -v --race
+	@cd pkg/backends/libp2p; go test -v --race
+	@cd pkg/client/gin; go test -v --race
+	@cd pkg/client/libp2p; go test -v --race
 	@cd pkg/server; go test -v --race
 	@cd pkg/server/controllers; go test -v --race
 	@cd pkg/server/handlers/attribute; go test -v --race
