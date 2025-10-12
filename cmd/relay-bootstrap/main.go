@@ -8,6 +8,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -80,6 +81,20 @@ func main() {
 
 	log.Printf("✓ Relay host created")
 	log.Printf("  Peer ID: %s", h.ID().String())
+
+	// Verify relay protocols are registered
+	protocols := h.Mux().Protocols()
+	hasCircuitV2 := false
+	for _, proto := range protocols {
+		if proto == "/libp2p/circuit/relay/0.2.0/hop" {
+			hasCircuitV2 = true
+			log.Printf("  ✓ Circuit v2 relay protocol registered: %s", proto)
+		}
+	}
+	if !hasCircuitV2 {
+		log.Println("  ⚠️  WARNING: Circuit v2 relay protocol NOT found!")
+	}
+
 	log.Printf("  Listening on:")
 	for _, addr := range h.Addrs() {
 		log.Printf("    %s/p2p/%s", addr, h.ID().String())
@@ -194,6 +209,16 @@ func monitorStats(h host.Host) {
 		peers := h.Network().Peers()
 		conns := h.Network().Conns()
 
-		log.Printf("Stats: %d connected peers, %d connections", len(peers), len(conns))
+		// Count relay circuits
+		relayConns := 0
+		for _, conn := range conns {
+			// Check if this is a relay connection by looking at the remote address
+			remoteAddr := conn.RemoteMultiaddr().String()
+			if strings.Contains(remoteAddr, "/p2p-circuit") {
+				relayConns++
+			}
+		}
+
+		log.Printf("Stats: %d peers, %d connections (%d relay circuits)", len(peers), len(conns), relayConns)
 	}
 }
