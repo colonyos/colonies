@@ -17,8 +17,8 @@ build:
 	@GOOS=js GOARCH=wasm go build -o ./lib/libcryptolib.wasm internal/cryptolib.wasm/cryptolib.go
 
 container:
-	@echo "Building Linux binary for container..."
-	@CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -ldflags="-s -w $(GOLDFLAGS)" -o ./bin/colonies ./cmd/main.go
+	#@echo "Building Linux binary for container..."
+	#@CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -ldflags="-s -w $(GOLDFLAGS)" -o ./bin/colonies ./cmd/main.go
 	docker build -t $(BUILD_IMAGE) .
 
 push:
