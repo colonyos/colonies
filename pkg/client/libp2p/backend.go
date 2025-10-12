@@ -197,13 +197,18 @@ func NewLibP2PClientBackend(config *backends.ClientConfig) (*LibP2PClientBackend
 	// Start peer discovery
 	go backend.discoverPeers()
 
-	// If using DHT discovery and no cached peers found, do an initial search immediately
+	// If using DHT discovery and no cached peers found, do an initial search after a delay
+	// This gives the DHT time to sync with the network and discover advertised peers
 	backend.serverPeersLock.RLock()
 	hasCachedPeers := len(backend.serverPeers) > 0
 	backend.serverPeersLock.RUnlock()
 
 	if backend.useDHTDiscovery && backend.routingDiscovery != nil && !hasCachedPeers {
-		go backend.discoverViaDHT()
+		go func() {
+			// Wait for DHT to sync with bootstrap peers and propagate advertisement
+			time.Sleep(5 * time.Second)
+			backend.discoverViaDHT()
+		}()
 	}
 
 	logrus.WithFields(logrus.Fields{
