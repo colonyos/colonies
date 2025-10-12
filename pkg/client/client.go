@@ -43,6 +43,29 @@ func CreateColoniesClientWithConfig(config *backends.ClientConfig) *ColoniesClie
 	return client
 }
 
+// CreateColoniesClientWithMultipleBackends creates a client that tries multiple backends with fallback
+func CreateColoniesClientWithMultipleBackends(configs []*backends.ClientConfig) *ColoniesClient {
+	if len(configs) == 0 {
+		panic("At least one backend configuration required")
+	}
+
+	// If only one config, use single backend
+	if len(configs) == 1 {
+		return CreateColoniesClientWithConfig(configs[0])
+	}
+
+	// Create multi-backend client
+	multiBackend, err := backends.NewMultiBackendClient(configs, backendFactories)
+	if err != nil {
+		panic(fmt.Sprintf("Failed to create multi-backend client: %v", err))
+	}
+
+	return &ColoniesClient{
+		backend: multiBackend,
+		config:  configs[0], // Use first config for compatibility
+	}
+}
+
 // SendRawMessage sends a raw JSON message using the underlying backend
 func (client *ColoniesClient) SendRawMessage(jsonString string, insecure bool) (string, error) {
 	return client.backend.SendRawMessage(jsonString, insecure)

@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -62,6 +64,21 @@ type ServerPeer struct {
 	Active   bool
 }
 
+// CachedPeer represents a cached peer entry for serialization
+type CachedPeer struct {
+	PeerID    string    `json:"peer_id"`
+	Addrs     []string  `json:"addrs"`
+	LastSeen  time.Time `json:"last_seen"`
+	Rendezvous string   `json:"rendezvous"`
+}
+
+// DHTCache represents the DHT peer cache structure
+type DHTCache struct {
+	Version int          `json:"version"`
+	Updated time.Time    `json:"updated"`
+	Peers   []CachedPeer `json:"peers"`
+}
+
 // NewLibP2PClientBackend creates a new libp2p client backend
 func NewLibP2PClientBackend(config *backends.ClientConfig) (*LibP2PClientBackend, error) {
 	if config.BackendType != backends.LibP2PClientBackendType {
@@ -104,7 +121,8 @@ func NewLibP2PClientBackend(config *backends.ClientConfig) (*LibP2PClientBackend
 	// Parse config.Host - it can be:
 	// 1. A full multiaddress: /dns/localhost/tcp/5000/p2p/12D3Koo... (direct connect)
 	// 2. Just "dht" or "dht:rendezvous-name" (DHT-based discovery)
-	// 3. Empty (will use DHT with default rendezvous)
+	// 3. Plain hostname like "localhost" (will use DHT discovery)
+	// 4. Empty (will use DHT with default rendezvous)
 	if config.Host != "" {
 		if config.Host == "dht" || (len(config.Host) >= 4 && config.Host[:4] == "dht:") {
 			// DHT-based discovery
@@ -113,13 +131,18 @@ func NewLibP2PClientBackend(config *backends.ClientConfig) (*LibP2PClientBackend
 				backend.dhtRendezvous = config.Host[4:]
 			}
 			logrus.WithField("rendezvous", backend.dhtRendezvous).Info("Using DHT-based peer discovery")
+		} else if addr, err := multiaddr.NewMultiaddr(config.Host); err == nil {
+			// Successfully parsed as multiaddress - this is a direct connection target
+			backend.bootstrapPeers = []multiaddr.Multiaddr{addr}
+			logrus.WithField("addr", addr.String()).Info("Using direct multiaddress connection")
 		} else {
-			// Try to parse as multiaddress - this is a direct connection target
-			if addr, err := multiaddr.NewMultiaddr(config.Host); err == nil {
-				backend.bootstrapPeers = []multiaddr.Multiaddr{addr}
-			} else {
-				logrus.WithError(err).Warn("Failed to parse server host as multiaddress")
-			}
+			// Not a valid multiaddress - treat as plain hostname and use DHT discovery
+			// This handles cases like "localhost" or "example.com" gracefully
+			backend.useDHTDiscovery = true
+			logrus.WithFields(logrus.Fields{
+				"host":       config.Host,
+				"rendezvous": backend.dhtRendezvous,
+			}).Info("Plain hostname provided, using DHT-based peer discovery")
 		}
 	} else {
 		// No host specified, default to DHT discovery
@@ -164,11 +187,22 @@ func NewLibP2PClientBackend(config *backends.ClientConfig) (*LibP2PClientBackend
 		logrus.Info("DHT initialized for client")
 	}
 
+	// Load DHT cache if using DHT discovery
+	if backend.useDHTDiscovery {
+		if err := backend.loadDHTCache(); err != nil {
+			logrus.WithError(err).Warn("Failed to load DHT cache, will perform fresh discovery")
+		}
+	}
+
 	// Start peer discovery
 	go backend.discoverPeers()
 
-	// If using DHT discovery, do an initial search immediately
-	if backend.useDHTDiscovery && backend.routingDiscovery != nil {
+	// If using DHT discovery and no cached peers found, do an initial search immediately
+	backend.serverPeersLock.RLock()
+	hasCachedPeers := len(backend.serverPeers) > 0
+	backend.serverPeersLock.RUnlock()
+
+	if backend.useDHTDiscovery && backend.routingDiscovery != nil && !hasCachedPeers {
 		go backend.discoverViaDHT()
 	}
 
@@ -506,6 +540,13 @@ func (l *LibP2PClientBackend) probeBootstrapPeersForColoniesProtocol() {
 					"peer_id": peerID.String(),
 					"addrs":   addrs,
 				}).Info("Bootstrap peer supports Colonies protocol, added as server")
+
+				// Save cache since we found a working server peer
+				l.serverPeersLock.Unlock()
+				if err := l.saveDHTCache(); err != nil {
+					logrus.WithError(err).Warn("Failed to save DHT cache after discovering bootstrap peer")
+				}
+				l.serverPeersLock.Lock()
 			}
 			l.serverPeersLock.Unlock()
 		}
@@ -601,6 +642,13 @@ func (l *LibP2PClientBackend) discoverViaDHT() {
 		"rendezvous":    l.dhtRendezvous,
 		"peers_found":   found,
 	}).Info("DHT peer discovery completed")
+
+	// Save cache if we found any peers
+	if found > 0 {
+		if err := l.saveDHTCache(); err != nil {
+			logrus.WithError(err).Warn("Failed to save DHT cache")
+		}
+	}
 }
 
 // getTopicForSubscription determines the appropriate pubsub topic based on the subscription request
@@ -625,6 +673,180 @@ func (l *LibP2PClientBackend) getTopicForSubscription(rpcMsg *rpc.RPCMsg) (strin
 	default:
 		return "", fmt.Errorf("unsupported subscription type: %s", rpcMsg.PayloadType)
 	}
+}
+
+// getDHTCachePath returns the path to the DHT cache file
+func getDHTCachePath() (string, error) {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return "", fmt.Errorf("failed to get user home directory: %w", err)
+	}
+
+	// Create .colonies directory if it doesn't exist
+	coloniesDir := filepath.Join(home, ".colonies")
+	if err := os.MkdirAll(coloniesDir, 0700); err != nil {
+		return "", fmt.Errorf("failed to create .colonies directory: %w", err)
+	}
+
+	return filepath.Join(coloniesDir, "dht_cache"), nil
+}
+
+// loadDHTCache loads cached DHT peers from disk
+func (l *LibP2PClientBackend) loadDHTCache() error {
+	cachePath, err := getDHTCachePath()
+	if err != nil {
+		return err
+	}
+
+	// Check if cache file exists
+	if _, err := os.Stat(cachePath); os.IsNotExist(err) {
+		logrus.Debug("No DHT cache file found")
+		return nil
+	}
+
+	// Read cache file
+	data, err := os.ReadFile(cachePath)
+	if err != nil {
+		return fmt.Errorf("failed to read cache file: %w", err)
+	}
+
+	// Parse cache
+	var cache DHTCache
+	if err := json.Unmarshal(data, &cache); err != nil {
+		return fmt.Errorf("failed to parse cache file: %w", err)
+	}
+
+	// Cache is valid for 24 hours
+	cacheExpiry := 24 * time.Hour
+	if time.Since(cache.Updated) > cacheExpiry {
+		logrus.WithField("age", time.Since(cache.Updated)).Info("DHT cache expired, will perform fresh discovery")
+		return nil
+	}
+
+	// Try cached peers that match our rendezvous point
+	loaded := 0
+	for _, cachedPeer := range cache.Peers {
+		// Only use peers from the same rendezvous point
+		if cachedPeer.Rendezvous != l.dhtRendezvous {
+			continue
+		}
+
+		// Parse peer ID
+		peerID, err := peer.Decode(cachedPeer.PeerID)
+		if err != nil {
+			logrus.WithError(err).WithField("peer_id", cachedPeer.PeerID).Debug("Failed to decode cached peer ID")
+			continue
+		}
+
+		// Parse multiaddrs
+		var addrs []multiaddr.Multiaddr
+		for _, addrStr := range cachedPeer.Addrs {
+			addr, err := multiaddr.NewMultiaddr(addrStr)
+			if err != nil {
+				logrus.WithError(err).WithField("addr", addrStr).Debug("Failed to parse cached address")
+				continue
+			}
+			addrs = append(addrs, addr)
+		}
+
+		if len(addrs) == 0 {
+			continue
+		}
+
+		// Try to connect to cached peer
+		peerInfo := peer.AddrInfo{
+			ID:    peerID,
+			Addrs: addrs,
+		}
+
+		ctx, cancel := context.WithTimeout(l.ctx, ConnectTimeout)
+		err = l.host.Connect(ctx, peerInfo)
+		cancel()
+
+		if err != nil {
+			logrus.WithError(err).WithField("peer_id", peerID.String()).Debug("Failed to connect to cached peer")
+			continue
+		}
+
+		// Successfully connected - add to server peers
+		l.serverPeersLock.Lock()
+		l.serverPeers[peerID] = &ServerPeer{
+			ID:       peerID,
+			Addrs:    addrs,
+			LastSeen: time.Now(),
+			Active:   true,
+		}
+		l.serverPeersLock.Unlock()
+
+		loaded++
+		logrus.WithFields(logrus.Fields{
+			"peer_id": peerID.String(),
+			"addrs":   addrs,
+		}).Info("Successfully connected to cached peer")
+	}
+
+	if loaded > 0 {
+		logrus.WithField("peers_loaded", loaded).Info("Loaded peers from DHT cache")
+	}
+
+	return nil
+}
+
+// saveDHTCache saves current DHT peers to disk
+func (l *LibP2PClientBackend) saveDHTCache() error {
+	cachePath, err := getDHTCachePath()
+	if err != nil {
+		return err
+	}
+
+	l.serverPeersLock.RLock()
+	defer l.serverPeersLock.RUnlock()
+
+	// Build cache from active server peers
+	var cachedPeers []CachedPeer
+	for _, serverPeer := range l.serverPeers {
+		if !serverPeer.Active {
+			continue
+		}
+
+		// Convert multiaddrs to strings
+		var addrStrs []string
+		for _, addr := range serverPeer.Addrs {
+			addrStrs = append(addrStrs, addr.String())
+		}
+
+		cachedPeers = append(cachedPeers, CachedPeer{
+			PeerID:     serverPeer.ID.String(),
+			Addrs:      addrStrs,
+			LastSeen:   serverPeer.LastSeen,
+			Rendezvous: l.dhtRendezvous,
+		})
+	}
+
+	// Create cache structure
+	cache := DHTCache{
+		Version: 1,
+		Updated: time.Now(),
+		Peers:   cachedPeers,
+	}
+
+	// Serialize to JSON
+	data, err := json.MarshalIndent(cache, "", "  ")
+	if err != nil {
+		return fmt.Errorf("failed to marshal cache: %w", err)
+	}
+
+	// Write to file
+	if err := os.WriteFile(cachePath, data, 0600); err != nil {
+		return fmt.Errorf("failed to write cache file: %w", err)
+	}
+
+	logrus.WithFields(logrus.Fields{
+		"path":  cachePath,
+		"peers": len(cachedPeers),
+	}).Debug("Saved DHT cache")
+
+	return nil
 }
 
 // LibP2PClientBackendFactory creates libp2p client backends

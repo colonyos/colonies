@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"strconv"
 	"strings"
 	"time"
 
@@ -56,6 +55,13 @@ import (
 type WSController interface {
 	SubscribeProcesses(executorID string, subscription *backends.RealtimeSubscription) error
 	SubscribeProcess(executorID string, subscription *backends.RealtimeSubscription) error
+}
+
+// LibP2PConfig holds LibP2P-specific configuration
+type LibP2PConfig struct {
+	Port           int    // LibP2P TCP port (QUIC will be port+1)
+	Identity       string // Hex-encoded LibP2P identity key (optional)
+	BootstrapPeers string // Comma-separated bootstrap peer multiaddresses (optional)
 }
 
 type Server struct {
@@ -119,34 +125,46 @@ type Server struct {
 	libp2pQUICAddr string // QUIC multiaddress
 }
 
-// GetBackendTypeFromEnv returns the backend type from environment variables
-// Supports: COLONIES_BACKEND_TYPE environment variable
-// Valid values: "gin", "libp2p"
-// Default: "gin"
-func GetBackendTypeFromEnv() BackendType {
-	backendEnv := strings.ToLower(os.Getenv("COLONIES_BACKEND_TYPE"))
-
-	var backendType BackendType
-	switch backendEnv {
-	case "gin", "":
-		backendType = GinBackendType
-	case "libp2p":
-		backendType = LibP2PBackendType
-	default:
-		log.WithField("COLONIES_BACKEND_TYPE", backendEnv).Warn("Unknown backend type, defaulting to Gin")
-		backendType = GinBackendType
+// ParseServerBackendsFromEnv parses COLONIES_SERVER_BACKENDS environment variable
+// Returns the appropriate BackendType based on comma-separated backend list
+// Supports: "http", "libp2p", "http,libp2p", "libp2p,http"
+func ParseServerBackendsFromEnv(backendsEnv string) BackendType {
+	if backendsEnv == "" {
+		return GinBackendType // Default to HTTP
 	}
 
-	log.WithFields(log.Fields{
-		"COLONIES_BACKEND_TYPE": backendEnv,
-		"SelectedBackend":       backendType,
-	}).Info("Backend type determined from environment")
+	parts := strings.Split(backendsEnv, ",")
+	hasHTTP := false
+	hasLibP2P := false
 
-	return backendType
+	for _, part := range parts {
+		part = strings.TrimSpace(strings.ToLower(part))
+		switch part {
+		case "http", "gin":
+			hasHTTP = true
+		case "libp2p", "p2p":
+			hasLibP2P = true
+		default:
+			log.WithField("backend", part).Warn("Unknown backend type in COLONIES_SERVER_BACKENDS, ignoring")
+		}
+	}
+
+	// Determine backend type
+	// Note: LibP2P backend currently always includes HTTP for backward compatibility
+	if hasLibP2P {
+		return LibP2PBackendType // Runs both HTTP and LibP2P
+	} else if hasHTTP {
+		return GinBackendType // HTTP only
+	}
+
+	log.Warn("No valid backends specified in COLONIES_SERVER_BACKENDS, defaulting to HTTP")
+	return GinBackendType
 }
 
-// CreateServerFromEnv creates a server using backend type from environment variables
-func CreateServerFromEnv(db database.Database,
+// CreateServerWithBackendType creates a server with the specified backend type
+// This is the main server creation function that should be called from CLI
+// libp2pConfig is optional and only used when backendType is LibP2PBackendType
+func CreateServerWithBackendType(db database.Database,
 	port int,
 	tls bool,
 	tlsPrivateKeyPath string,
@@ -160,10 +178,11 @@ func CreateServerFromEnv(db database.Database,
 	allowExecutorReregister bool,
 	retention bool,
 	retentionPolicy int64,
-	retentionPeriod int) *Server {
-	backendType := GetBackendTypeFromEnv()
-	log.WithField("BackendType", backendType).Info("Creating server with backend from environment")
-	return CreateServerWithBackend(db, port, tls, tlsPrivateKeyPath, tlsCertPath, thisNode, clusterConfig, etcdDataPath, generatorPeriod, cronPeriod, exclusiveAssign, allowExecutorReregister, retention, retentionPolicy, retentionPeriod, backendType)
+	retentionPeriod int,
+	backendType BackendType,
+	libp2pConfig *LibP2PConfig) *Server {
+	log.WithField("BackendType", backendType).Info("Creating server with specified backend type")
+	return CreateServerWithBackend(db, port, tls, tlsPrivateKeyPath, tlsCertPath, thisNode, clusterConfig, etcdDataPath, generatorPeriod, cronPeriod, exclusiveAssign, allowExecutorReregister, retention, retentionPolicy, retentionPeriod, backendType, libp2pConfig)
 }
 
 func CreateServer(db database.Database,
@@ -182,7 +201,7 @@ func CreateServer(db database.Database,
 	retentionPolicy int64,
 	retentionPeriod int) *Server {
 	// Default to Gin backend for backward compatibility
-	return CreateServerWithBackend(db, port, tls, tlsPrivateKeyPath, tlsCertPath, thisNode, clusterConfig, etcdDataPath, generatorPeriod, cronPeriod, exclusiveAssign, allowExecutorReregister, retention, retentionPolicy, retentionPeriod, GinBackendType)
+	return CreateServerWithBackend(db, port, tls, tlsPrivateKeyPath, tlsCertPath, thisNode, clusterConfig, etcdDataPath, generatorPeriod, cronPeriod, exclusiveAssign, allowExecutorReregister, retention, retentionPolicy, retentionPeriod, GinBackendType, nil)
 }
 
 func CreateServerWithBackend(db database.Database,
@@ -200,14 +219,19 @@ func CreateServerWithBackend(db database.Database,
 	retention bool,
 	retentionPolicy int64,
 	retentionPeriod int,
-	backendType BackendType) *Server {
+	backendType BackendType,
+	libp2pConfig *LibP2PConfig) *Server {
 	server := &Server{}
 
 	// Initialize backend based on type
+	libp2pPort := 0
+	if libp2pConfig != nil {
+		libp2pPort = libp2pConfig.Port
+	}
 	log.WithFields(log.Fields{
 		"BackendType": backendType,
 		"HTTPPort":    port,
-		"LibP2PPort":  os.Getenv("COLONIES_LIBP2P_PORT"),
+		"LibP2PPort":  libp2pPort,
 	}).Info("=== INITIALIZING COLONIES SERVER BACKEND ===")
 
 	switch backendType {
@@ -221,11 +245,15 @@ func CreateServerWithBackend(db database.Database,
 		server.libp2pEnabled = false
 		log.Info("✓ Gin HTTP backend initialized successfully")
 	case LibP2PBackendType:
+		identitySet := false
+		if libp2pConfig != nil && libp2pConfig.Identity != "" {
+			identitySet = true
+		}
 		log.WithFields(log.Fields{
-			"BackendType":      backendType,
-			"HTTPPort":         port,
-			"LibP2PPort":       os.Getenv("COLONIES_LIBP2P_PORT"),
-			"LibP2PIdentitySet": os.Getenv("COLONIES_LIBP2P_IDENTITY") != "",
+			"BackendType":       backendType,
+			"HTTPPort":          port,
+			"LibP2PPort":        libp2pPort,
+			"LibP2PIdentitySet": identitySet,
 		}).Info("✓ Creating server with LibP2P backend (with HTTP fallback)")
 		// LibP2P backend also initializes HTTP endpoints for compatibility
 		// This allows existing clients to continue working while adding P2P capabilities
@@ -314,7 +342,10 @@ func CreateServerWithBackend(db database.Database,
 
 	// Initialize LibP2P if enabled
 	if server.libp2pEnabled {
-		if err := server.setupLibP2P(port, thisNode); err != nil {
+		if libp2pConfig == nil {
+			log.Fatal("LibP2P backend selected but no LibP2PConfig provided")
+		}
+		if err := server.setupLibP2P(port, thisNode, libp2pConfig); err != nil {
 			log.WithError(err).Fatal("Failed to setup LibP2P")
 		}
 	}
@@ -426,20 +457,13 @@ func (server *Server) setupRoutes() {
 	}
 }
 
-func (server *Server) setupLibP2P(port int, thisNode cluster.Node) error {
+func (server *Server) setupLibP2P(port int, thisNode cluster.Node, config *LibP2PConfig) error {
 	log.WithField("Port", port).Info("Initializing LibP2P networking")
 
-	// Get LibP2P port from environment
-	libp2pPortStr := os.Getenv("COLONIES_LIBP2P_PORT")
-	if libp2pPortStr == "" {
-		err := errors.New("COLONIES_LIBP2P_PORT environment variable must be set for LibP2P backend")
+	libp2pPort := config.Port
+	if libp2pPort == 0 {
+		err := errors.New("LibP2P port must be specified in LibP2PConfig")
 		log.Error(err)
-		return err
-	}
-
-	libp2pPort, err := strconv.Atoi(libp2pPortStr)
-	if err != nil {
-		log.WithError(err).Error("Failed to parse COLONIES_LIBP2P_PORT")
 		return err
 	}
 
@@ -465,10 +489,10 @@ func (server *Server) setupLibP2P(port int, thisNode cluster.Node) error {
 		"QUICPort":   libp2pPort + 1,
 	}).Info("LibP2P port configuration")
 
-	// Check for predefined identity from environment
-	if identityKey := os.Getenv("COLONIES_LIBP2P_IDENTITY"); identityKey != "" {
+	// Check for predefined identity
+	if config.Identity != "" {
 		// Decode hex string to bytes
-		keyBytes, err := hex.DecodeString(identityKey)
+		keyBytes, err := hex.DecodeString(config.Identity)
 		if err != nil {
 			log.WithError(err).Error("Failed to decode LibP2P identity hex string")
 			return err
@@ -482,7 +506,7 @@ func (server *Server) setupLibP2P(port int, thisNode cluster.Node) error {
 		}
 
 		opts = append(opts, libp2p.Identity(privKey))
-		log.Info("Using predefined LibP2P identity from COLONIES_LIBP2P_IDENTITY")
+		log.Info("Using predefined LibP2P identity")
 	}
 
 	// Create libp2p host
@@ -521,10 +545,10 @@ func (server *Server) setupLibP2P(port int, thisNode cluster.Node) error {
 	}).Info("LibP2P host created successfully with DHT")
 
 	// Connect to bootstrap peers if specified
-	if bootstrapPeers := os.Getenv("COLONIES_LIBP2P_BOOTSTRAP_PEERS"); bootstrapPeers != "" {
-		go server.connectToBootstrapPeers(bootstrapPeers)
+	if config.BootstrapPeers != "" {
+		go server.connectToBootstrapPeers(config.BootstrapPeers)
 	} else {
-		log.Info("No bootstrap peers configured (COLONIES_LIBP2P_BOOTSTRAP_PEERS not set)")
+		log.Info("No bootstrap peers configured")
 		log.Info("Server will be discoverable via DHT but won't proactively connect to other peers")
 	}
 

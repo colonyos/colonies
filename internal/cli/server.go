@@ -1,9 +1,7 @@
 package cli
 
 import (
-	"encoding/hex"
 	"errors"
-	"fmt"
 	"os"
 	"strconv"
 	"strings"
@@ -14,8 +12,6 @@ import (
 	"github.com/colonyos/colonies/pkg/database"
 	"github.com/colonyos/colonies/pkg/database/postgresql"
 	"github.com/colonyos/colonies/pkg/server"
-	libp2pcrypto "github.com/libp2p/go-libp2p/core/crypto"
-	"github.com/libp2p/go-libp2p/core/peer"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -26,7 +22,6 @@ func init() {
 	serverCmd.AddCommand(serverStatusCmd)
 	serverCmd.AddCommand(serverStatisticsCmd)
 	serverCmd.AddCommand(serverAliveCmd)
-	serverCmd.AddCommand(genLibP2PIdentityCmd)
 	rootCmd.AddCommand(serverCmd)
 
 	chServerIDCmd.Flags().StringVarP(&TargetServerID, "serverid", "", "", "Server Id")
@@ -38,9 +33,9 @@ func init() {
 	serverCmd.PersistentFlags().StringVarP(&DBUser, "dbuser", "", "", "Colonies database user")
 	serverCmd.PersistentFlags().StringVarP(&DBPassword, "dbpassword", "", "", "Colonies database password")
 	serverCmd.PersistentFlags().StringVarP(&DataDir, "datadir", "", "", "Data directory")
-	serverCmd.PersistentFlags().StringVarP(&TLSCert, "tlscert", "", "", "TLS certificate")
-	serverCmd.PersistentFlags().StringVarP(&TLSKey, "tlskey", "", "", "TLS key")
-	serverCmd.PersistentFlags().IntVarP(&ServerPort, "port", "", -1, "Server HTTP port")
+	serverCmd.PersistentFlags().StringVarP(&TLSCert, "tlscert", "", "", "TLS certificate (can also use COLONIES_SERVER_HTTP_TLS_CERT)")
+	serverCmd.PersistentFlags().StringVarP(&TLSKey, "tlskey", "", "", "TLS key (can also use COLONIES_SERVER_HTTP_TLS_KEY)")
+	serverCmd.PersistentFlags().IntVarP(&ServerPort, "port", "", -1, "Server HTTP port (can also use COLONIES_SERVER_HTTP_PORT)")
 	serverCmd.PersistentFlags().StringVarP(&EtcdName, "etcdname", "", "etcd", "Etcd name")
 	serverCmd.PersistentFlags().StringVarP(&EtcdHost, "etcdhost", "", "0.0.0.0", "Etcd host name")
 	serverCmd.PersistentFlags().IntVarP(&EtcdClientPort, "etcdclientport", "", 2379, "Etcd port")
@@ -55,6 +50,103 @@ func init() {
 	serverStatusCmd.PersistentFlags().IntVarP(&ServerPort, "port", "", -1, "Server HTTP port")
 
 	serverStatisticsCmd.Flags().StringVarP(&ServerPrvKey, "serverprvkey", "", "", "Colonies server private key")
+}
+
+// getServerBackendTypeFromEnv reads backend configuration from environment variables
+// and returns the appropriate BackendType for server initialization.
+// This function encapsulates all environment variable reading for backend configuration.
+//
+// Supports:
+//   - COLONIES_SERVER_BACKENDS (new): "http", "libp2p", "http,libp2p"
+//   - COLONIES_BACKEND_TYPE (legacy): "gin", "libp2p"
+//
+// Default: GinBackendType (HTTP only)
+func getServerBackendTypeFromEnv() server.BackendType {
+	// Try new COLONIES_SERVER_BACKENDS first
+	backendsEnv := os.Getenv("COLONIES_SERVER_BACKENDS")
+	if backendsEnv != "" {
+		backendType := server.ParseServerBackendsFromEnv(backendsEnv)
+		log.WithFields(log.Fields{
+			"COLONIES_SERVER_BACKENDS": backendsEnv,
+			"SelectedBackend":          backendType,
+		}).Info("Backend type determined from COLONIES_SERVER_BACKENDS")
+		return backendType
+	}
+
+	// Fall back to legacy COLONIES_BACKEND_TYPE
+	backendEnv := strings.ToLower(os.Getenv("COLONIES_BACKEND_TYPE"))
+	if backendEnv != "" {
+		var backendType server.BackendType
+		switch backendEnv {
+		case "gin":
+			backendType = server.GinBackendType
+		case "libp2p":
+			backendType = server.LibP2PBackendType
+		default:
+			log.WithField("COLONIES_BACKEND_TYPE", backendEnv).Warn("Unknown backend type, defaulting to Gin")
+			backendType = server.GinBackendType
+		}
+
+		log.WithFields(log.Fields{
+			"COLONIES_BACKEND_TYPE": backendEnv,
+			"SelectedBackend":       backendType,
+		}).Info("Backend type determined from COLONIES_BACKEND_TYPE (legacy)")
+		return backendType
+	}
+
+	// Default to HTTP if no environment variable is set
+	log.Info("No backend environment variable set, defaulting to HTTP")
+	return server.GinBackendType
+}
+
+// getLibP2PConfigFromEnv reads LibP2P-specific configuration from environment variables.
+// Returns nil if LibP2P is not configured or configuration is incomplete.
+//
+// Supports both new and legacy environment variable names for backward compatibility:
+//   - COLONIES_SERVER_LIBP2P_PORT (new) or COLONIES_LIBP2P_PORT (legacy)
+//   - COLONIES_SERVER_LIBP2P_IDENTITY (new) or COLONIES_LIBP2P_IDENTITY (legacy)
+//   - COLONIES_SERVER_LIBP2P_BOOTSTRAP_PEERS (new) or COLONIES_LIBP2P_BOOTSTRAP_PEERS (legacy)
+func getLibP2PConfigFromEnv() *server.LibP2PConfig {
+	// Try new variable names first, fall back to legacy
+	portStr := os.Getenv("COLONIES_SERVER_LIBP2P_PORT")
+	if portStr == "" {
+		portStr = os.Getenv("COLONIES_LIBP2P_PORT") // Backward compatibility
+	}
+
+	if portStr == "" {
+		log.Debug("No LibP2P port configured (COLONIES_SERVER_LIBP2P_PORT not set)")
+		return nil
+	}
+
+	port, err := strconv.Atoi(portStr)
+	if err != nil {
+		log.WithError(err).Error("Failed to parse LibP2P port, LibP2P backend will not be available")
+		return nil
+	}
+
+	identity := os.Getenv("COLONIES_SERVER_LIBP2P_IDENTITY")
+	if identity == "" {
+		identity = os.Getenv("COLONIES_LIBP2P_IDENTITY") // Backward compatibility
+	}
+
+	bootstrapPeers := os.Getenv("COLONIES_SERVER_LIBP2P_BOOTSTRAP_PEERS")
+	if bootstrapPeers == "" {
+		bootstrapPeers = os.Getenv("COLONIES_LIBP2P_BOOTSTRAP_PEERS") // Backward compatibility
+	}
+
+	config := &server.LibP2PConfig{
+		Port:           port,
+		Identity:       identity,
+		BootstrapPeers: bootstrapPeers,
+	}
+
+	log.WithFields(log.Fields{
+		"Port":                port,
+		"IdentityConfigured":  identity != "",
+		"BootstrapPeersCount": len(strings.Split(bootstrapPeers, ",")),
+	}).Info("LibP2P configuration loaded from environment")
+
+	return config
 }
 
 var serverCmd = &cobra.Command{
@@ -104,6 +196,40 @@ var serverStartCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		parseDBEnv()
 		parseEnv()
+
+		// Read HTTP server configuration from environment if not set via flags
+		if ServerPort == -1 {
+			if portStr := os.Getenv("COLONIES_SERVER_HTTP_PORT"); portStr != "" {
+				port, err := strconv.Atoi(portStr)
+				if err == nil {
+					ServerPort = port
+					log.WithField("Port", ServerPort).Info("Using COLONIES_SERVER_HTTP_PORT from environment")
+				}
+			}
+		}
+
+		if TLSCert == "" {
+			if cert := os.Getenv("COLONIES_SERVER_HTTP_TLS_CERT"); cert != "" {
+				TLSCert = cert
+				log.WithField("Cert", TLSCert).Info("Using COLONIES_SERVER_HTTP_TLS_CERT from environment")
+			}
+		}
+
+		if TLSKey == "" {
+			if key := os.Getenv("COLONIES_SERVER_HTTP_TLS_KEY"); key != "" {
+				TLSKey = key
+				log.WithField("Key", TLSKey).Info("Using COLONIES_SERVER_HTTP_TLS_KEY from environment")
+			}
+		}
+
+		// Check TLS setting from environment
+		if tlsStr := os.Getenv("COLONIES_SERVER_HTTP_TLS"); tlsStr != "" {
+			if tlsStr == "true" {
+				Insecure = false
+			} else if tlsStr == "false" {
+				Insecure = true
+			}
+		}
 
 		log.WithFields(log.Fields{
 			"Insecure": Insecure,
@@ -224,7 +350,20 @@ var serverStartCmd = &cobra.Command{
 
 		setupProfiler()
 
-		server := server.CreateServerFromEnv(db,
+		// Determine backend type from environment
+		backendType := getServerBackendTypeFromEnv()
+		log.WithField("BackendType", backendType).Info("Server backend type determined from environment")
+
+		// Get LibP2P configuration if LibP2P backend is selected
+		var libp2pConfig *server.LibP2PConfig
+		if backendType == server.LibP2PBackendType {
+			libp2pConfig = getLibP2PConfigFromEnv()
+			if libp2pConfig == nil {
+				CheckError(errors.New("LibP2P backend selected but LibP2P configuration is incomplete (COLONIES_SERVER_LIBP2P_PORT must be set)"))
+			}
+		}
+
+		server := server.CreateServerWithBackendType(db,
 			ServerPort,
 			UseTLS,
 			TLSKey,
@@ -238,7 +377,9 @@ var serverStartCmd = &cobra.Command{
 			AllowExecutorReregister,
 			Retention,
 			RetentionPolicy,
-			retentionPeriod)
+			retentionPeriod,
+			backendType,
+			libp2pConfig)
 
 		if InitDB {
 			err := db.Initialize()
@@ -288,43 +429,3 @@ var serverAliveCmd = &cobra.Command{
 	},
 }
 
-var genLibP2PIdentityCmd = &cobra.Command{
-	Use:   "genp2pid",
-	Short: "Generate a LibP2P identity (private key)",
-	Long:  "Generate a LibP2P identity that can be used with COLONIES_LIBP2P_IDENTITY environment variable",
-	Run: func(cmd *cobra.Command, args []string) {
-		// Import crypto from libp2p
-		privKey, _, err := libp2pcrypto.GenerateEd25519Key(nil)
-		CheckError(err)
-
-		// Marshal the private key to bytes
-		privKeyBytes, err := libp2pcrypto.MarshalPrivateKey(privKey)
-		CheckError(err)
-
-		// Get the peer ID from the private key
-		peerID, err := peer.IDFromPrivateKey(privKey)
-		CheckError(err)
-
-		// Print the results
-		fmt.Println("LibP2P Identity Generated Successfully!")
-		fmt.Println("=====================================")
-		fmt.Printf("\nPrivate Key (save this securely):\n")
-		fmt.Printf("COLONIES_LIBP2P_IDENTITY=%s\n", hex.EncodeToString(privKeyBytes))
-		fmt.Printf("\nPeer ID (this is derived from the private key):\n")
-		fmt.Printf("%s\n", peerID.String())
-		fmt.Printf("\nPort Configuration:\n")
-		fmt.Printf("- LibP2P port must be explicitly configured via COLONIES_LIBP2P_PORT\n")
-		fmt.Printf("- Example: HTTP on 4000, LibP2P on 5000\n")
-		fmt.Printf("\nExample multiaddress:\n")
-		fmt.Printf("/ip4/127.0.0.1/tcp/5000/p2p/%s\n", peerID.String())
-		fmt.Printf("\nUsage:\n")
-		fmt.Printf("1. Start the server with LibP2P identity:\n")
-		fmt.Printf("   export COLONIES_LIBP2P_IDENTITY=%s\n", hex.EncodeToString(privKeyBytes))
-		fmt.Printf("   export COLONIES_BACKEND_TYPE=libp2p\n")
-		fmt.Printf("   export COLONIES_LIBP2P_PORT=5000  # Required for LibP2P backend\n")
-		fmt.Printf("   colonies server start --port 4000 --insecure\n\n")
-		fmt.Printf("2. Connect the CLI using the multiaddress:\n")
-		fmt.Printf("   export COLONIES_CLIENT_BACKEND=libp2p\n")
-		fmt.Printf("   export COLONIES_SERVER_HOST=\"/ip4/127.0.0.1/tcp/5000/p2p/%s\"\n", peerID.String())
-	},
-}
