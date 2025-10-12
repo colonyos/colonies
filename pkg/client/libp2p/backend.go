@@ -564,12 +564,29 @@ func (l *LibP2PClientBackend) probeBootstrapPeersForColoniesProtocol() {
 
 // performPeerDiscovery performs periodic peer discovery
 func (l *LibP2PClientBackend) performPeerDiscovery() {
-	// Check connectivity to known peers
+	// Check connectivity to known peers and try to reconnect to inactive ones
 	l.serverPeersLock.Lock()
 	for peerID, serverPeer := range l.serverPeers {
 		// Check if peer is still connected
 		if l.host.Network().Connectedness(peerID) != network.Connected {
-			serverPeer.Active = false
+			// Peer disconnected - try to reconnect
+			peerInfo := peer.AddrInfo{
+				ID:    peerID,
+				Addrs: serverPeer.Addrs,
+			}
+
+			ctx, cancel := context.WithTimeout(l.ctx, ConnectTimeout)
+			err := l.host.Connect(ctx, peerInfo)
+			cancel()
+
+			if err != nil {
+				serverPeer.Active = false
+				logrus.WithError(err).WithField("peer_id", peerID.String()).Debug("Failed to reconnect to peer")
+			} else {
+				serverPeer.Active = true
+				serverPeer.LastSeen = time.Now()
+				logrus.WithField("peer_id", peerID.String()).Info("Successfully reconnected to peer")
+			}
 		} else {
 			serverPeer.Active = true
 			serverPeer.LastSeen = time.Now()
@@ -612,11 +629,15 @@ func (l *LibP2PClientBackend) discoverViaDHT() {
 	}
 
 	found := 0
+	connected := 0
 	for peer := range peerChan {
 		// Skip ourselves
 		if peer.ID == l.host.ID() {
 			continue
 		}
+
+		found++
+		isConnected := false
 
 		// Try to connect to the peer
 		if l.host.Network().Connectedness(peer.ID) != network.Connected {
@@ -625,31 +646,44 @@ func (l *LibP2PClientBackend) discoverViaDHT() {
 			cancel()
 
 			if err != nil {
-				logrus.WithError(err).WithField("peer_id", peer.ID.String()).Debug("Failed to connect to discovered peer")
-				continue
+				logrus.WithError(err).WithFields(logrus.Fields{
+					"peer_id": peer.ID.String(),
+					"addrs":   peer.Addrs,
+				}).Warn("Failed initial connection to discovered peer (will retry later)")
+				// Don't skip! Add peer with Active=false so we can retry later
+			} else {
+				isConnected = true
+				connected++
+				logrus.WithFields(logrus.Fields{
+					"peer_id": peer.ID.String(),
+					"addrs":   peer.Addrs,
+				}).Info("Discovered and connected to peer via DHT")
 			}
+		} else {
+			isConnected = true
+			connected++
+			logrus.WithFields(logrus.Fields{
+				"peer_id": peer.ID.String(),
+				"addrs":   peer.Addrs,
+			}).Info("Discovered peer via DHT (already connected)")
 		}
 
-		// Add to known server peers
+		// Add to known server peers (even if initial connection failed)
+		// performPeerDiscovery() will retry connections to inactive peers
 		l.serverPeersLock.Lock()
 		l.serverPeers[peer.ID] = &ServerPeer{
 			ID:       peer.ID,
 			Addrs:    peer.Addrs,
 			LastSeen: time.Now(),
-			Active:   true,
+			Active:   isConnected,
 		}
 		l.serverPeersLock.Unlock()
-
-		found++
-		logrus.WithFields(logrus.Fields{
-			"peer_id": peer.ID.String(),
-			"addrs":   peer.Addrs,
-		}).Info("Discovered and connected to peer via DHT")
 	}
 
 	logrus.WithFields(logrus.Fields{
-		"rendezvous":    l.dhtRendezvous,
-		"peers_found":   found,
+		"rendezvous":      l.dhtRendezvous,
+		"peers_found":     found,
+		"peers_connected": connected,
 	}).Info("DHT peer discovery completed")
 
 	// Save cache if we found any peers
