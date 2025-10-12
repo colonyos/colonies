@@ -1,0 +1,36 @@
+syntax = "proto3";
+
+package colonies;
+
+option go_package = "github.com/colonyos/colonies/pkg/client/grpc/proto";
+
+// ColoniesService provides RPC methods for Colonies communication
+service ColoniesService {
+  // SendMessage sends an RPC message and returns the response
+  rpc SendMessage(RPCRequest) returns (RPCResponse);
+
+  // CheckHealth checks if the server is healthy
+  rpc CheckHealth(HealthRequest) returns (HealthResponse);
+}
+
+// RPCRequest wraps a JSON RPC message
+message RPCRequest {
+  string json_payload = 1;
+}
+
+// RPCResponse wraps a JSON RPC response
+message RPCResponse {
+  string json_payload = 1;
+  string error_message = 2;
+}
+
+// HealthRequest for health check
+message HealthRequest {
+  // Empty for now
+}
+
+// HealthResponse for health check
+message HealthResponse {
+  bool healthy = 1;
+  string version = 2;
+}

@@ -2,6 +2,7 @@ package cli
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"strconv"
 	"strings"
@@ -12,6 +13,8 @@ import (
 	"github.com/colonyos/colonies/pkg/database"
 	"github.com/colonyos/colonies/pkg/database/postgresql"
 	"github.com/colonyos/colonies/pkg/server"
+	grpcPkg "github.com/colonyos/colonies/pkg/backends/grpc"
+	coapPkg "github.com/colonyos/colonies/pkg/backends/coap"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -149,6 +152,336 @@ func getLibP2PConfigFromEnv() *server.LibP2PConfig {
 	return config
 }
 
+// getCoAPConfigFromEnv reads CoAP-specific configuration from environment variables.
+// Returns nil if CoAP is not configured or configuration is incomplete.
+//
+// Supports:
+//   - COLONIES_SERVER_COAP_PORT: CoAP server port (required)
+func getCoAPConfigFromEnv() *server.CoAPConfig {
+	portStr := os.Getenv("COLONIES_SERVER_COAP_PORT")
+	if portStr == "" {
+		log.Debug("No CoAP port configured (COLONIES_SERVER_COAP_PORT not set)")
+		return nil
+	}
+
+	port, err := strconv.Atoi(portStr)
+	if err != nil {
+		log.WithError(err).Error("Failed to parse CoAP port, CoAP backend will not be available")
+		return nil
+	}
+
+	config := &server.CoAPConfig{
+		Port: port,
+	}
+
+	log.WithFields(log.Fields{
+		"Port": port,
+	}).Info("CoAP configuration loaded from environment")
+
+	return config
+}
+
+// getGRPCConfigFromEnv reads gRPC-specific configuration from environment variables.
+// Returns nil if gRPC is not configured or configuration is incomplete.
+//
+// Supports:
+//   - COLONIES_SERVER_GRPC_PORT: gRPC server port (required)
+//   - COLONIES_SERVER_GRPC_TLS_CERT: Path to TLS certificate file (optional)
+//   - COLONIES_SERVER_GRPC_TLS_KEY: Path to TLS private key file (optional)
+//   - COLONIES_SERVER_GRPC_INSECURE: Run without TLS (default: false)
+func getGRPCConfigFromEnv() *server.GRPCConfig {
+	portStr := os.Getenv("COLONIES_SERVER_GRPC_PORT")
+	if portStr == "" {
+		log.Debug("No gRPC port configured (COLONIES_SERVER_GRPC_PORT not set)")
+		return nil
+	}
+
+	port, err := strconv.Atoi(portStr)
+	if err != nil {
+		log.WithError(err).Error("Failed to parse gRPC port, gRPC backend will not be available")
+		return nil
+	}
+
+	tlsCert := os.Getenv("COLONIES_SERVER_GRPC_TLS_CERT")
+	tlsKey := os.Getenv("COLONIES_SERVER_GRPC_TLS_KEY")
+
+	insecureStr := os.Getenv("COLONIES_SERVER_GRPC_INSECURE")
+	insecure := false
+	if insecureStr == "true" {
+		insecure = true
+	}
+
+	config := &server.GRPCConfig{
+		Port:     port,
+		TLSCert:  tlsCert,
+		TLSKey:   tlsKey,
+		Insecure: insecure,
+	}
+
+	log.WithFields(log.Fields{
+		"Port":              port,
+		"TLSCertConfigured": tlsCert != "",
+		"TLSKeyConfigured":  tlsKey != "",
+		"Insecure":          insecure,
+	}).Info("gRPC configuration loaded from environment")
+
+	return config
+}
+
+// startSingleBackendServer starts a server with a single backend (original behavior)
+func startSingleBackendServer(
+	db database.Database,
+	node cluster.Node,
+	clusterConfig cluster.Config,
+	etcdDataPath string,
+	backendType server.BackendType,
+	libp2pConfig *server.LibP2PConfig,
+	grpcConfig *server.GRPCConfig,
+	coapConfig *server.CoAPConfig,
+) {
+	retentionPeriod := 60000 // Run retention worker once a minute
+
+	srv := server.CreateServerWithBackendType(
+		db,
+		ServerPort,
+		UseTLS,
+		TLSKey,
+		TLSCert,
+		node,
+		clusterConfig,
+		etcdDataPath,
+		GeneratorCheckerPeriod,
+		CronCheckerPeriod,
+		ExclusiveAssign,
+		AllowExecutorReregister,
+		Retention,
+		RetentionPolicy,
+		retentionPeriod,
+		backendType,
+		libp2pConfig,
+		grpcConfig,
+		coapConfig,
+	)
+
+	for {
+		err := srv.ServeForever()
+		if err != nil {
+			log.WithFields(log.Fields{"Error": err}).Error("Failed to start Colonies Server")
+			time.Sleep(1 * time.Second)
+		}
+	}
+}
+
+// startHTTPAndGRPCServer starts both HTTP and gRPC servers sharing the same base Server
+func startHTTPAndGRPCServer(
+	db database.Database,
+	node cluster.Node,
+	clusterConfig cluster.Config,
+	etcdDataPath string,
+	grpcConfig *server.GRPCConfig,
+) {
+	retentionPeriod := 60000 // Run retention worker once a minute
+
+	// Create ONE HTTP server with all the controller/database logic
+	httpServer := server.CreateServerWithBackendType(
+		db,
+		ServerPort,
+		UseTLS,
+		TLSKey,
+		TLSCert,
+		node,
+		clusterConfig,
+		etcdDataPath,
+		GeneratorCheckerPeriod,
+		CronCheckerPeriod,
+		ExclusiveAssign,
+		AllowExecutorReregister,
+		Retention,
+		RetentionPolicy,
+		retentionPeriod,
+		server.GinBackendType, // Create as HTTP server
+		nil,                   // no libp2p
+		nil,                   // no grpc in Server struct
+		nil,                   // no coap in Server struct
+	)
+
+	// Create a gRPC backend and server that shares the HTTP server's handlers
+	grpcBackend := grpcPkg.NewBackend().(*grpcPkg.Backend)
+	grpcServer := grpcBackend.NewServerWithAddrAndHandler(
+		fmt.Sprintf(":%d", grpcConfig.Port),
+		httpServer, // httpServer implements RPCHandler interface via HandleRPC method
+	)
+
+	log.WithFields(log.Fields{
+		"HTTPPort": ServerPort,
+		"GRPCPort": grpcConfig.Port,
+	}).Info("Starting HTTP and gRPC servers with shared controller")
+
+	// Start gRPC server in background
+	go func() {
+		log.WithField("Port", grpcConfig.Port).Info("Starting gRPC server")
+		if err := grpcServer.ListenAndServe(); err != nil {
+			log.WithError(err).Fatal("gRPC server failed")
+		}
+	}()
+
+	// Start HTTP server (blocking)
+	for {
+		err := httpServer.ServeForever()
+		if err != nil {
+			log.WithFields(log.Fields{"Error": err}).Error("Failed to start HTTP server")
+			time.Sleep(1 * time.Second)
+		}
+	}
+}
+
+// startHTTPGRPCAndLibP2PServer starts HTTP (with LibP2P) and gRPC servers sharing the same base Server
+func startHTTPGRPCAndLibP2PServer(
+	db database.Database,
+	node cluster.Node,
+	clusterConfig cluster.Config,
+	etcdDataPath string,
+	libp2pConfig *server.LibP2PConfig,
+	grpcConfig *server.GRPCConfig,
+) {
+	retentionPeriod := 60000 // Run retention worker once a minute
+
+	// Create ONE HTTP server with LibP2P enabled (combines HTTP + LibP2P functionality)
+	httpServer := server.CreateServerWithBackendType(
+		db,
+		ServerPort,
+		UseTLS,
+		TLSKey,
+		TLSCert,
+		node,
+		clusterConfig,
+		etcdDataPath,
+		GeneratorCheckerPeriod,
+		CronCheckerPeriod,
+		ExclusiveAssign,
+		AllowExecutorReregister,
+		Retention,
+		RetentionPolicy,
+		retentionPeriod,
+		server.LibP2PBackendType, // This creates HTTP + LibP2P
+		libp2pConfig,
+		nil, // no grpc in Server struct
+		nil, // no coap in Server struct
+	)
+
+	// Create a gRPC backend and server that shares the HTTP server's handlers
+	grpcBackend := grpcPkg.NewBackend().(*grpcPkg.Backend)
+	grpcServer := grpcBackend.NewServerWithAddrAndHandler(
+		fmt.Sprintf(":%d", grpcConfig.Port),
+		httpServer, // httpServer implements RPCHandler interface via HandleRPC method
+	)
+
+	log.WithFields(log.Fields{
+		"HTTPPort":   ServerPort,
+		"GRPCPort":   grpcConfig.Port,
+		"LibP2PPort": libp2pConfig.Port,
+	}).Info("Starting HTTP, gRPC, and LibP2P servers with shared controller")
+
+	// Start gRPC server in background
+	go func() {
+		log.WithField("Port", grpcConfig.Port).Info("Starting gRPC server")
+		if err := grpcServer.ListenAndServe(); err != nil {
+			log.WithError(err).Fatal("gRPC server failed")
+		}
+	}()
+
+	// Start HTTP server with LibP2P (blocking)
+	for {
+		err := httpServer.ServeForever()
+		if err != nil {
+			log.WithFields(log.Fields{"Error": err}).Error("Failed to start HTTP/LibP2P server")
+			time.Sleep(1 * time.Second)
+		}
+	}
+}
+
+// startAllBackendsServer starts all four backends: HTTP (with LibP2P), gRPC, and CoAP - all sharing the same base Server
+func startAllBackendsServer(
+	db database.Database,
+	node cluster.Node,
+	clusterConfig cluster.Config,
+	etcdDataPath string,
+	libp2pConfig *server.LibP2PConfig,
+	grpcConfig *server.GRPCConfig,
+	coapConfig *server.CoAPConfig,
+) {
+	retentionPeriod := 60000 // Run retention worker once a minute
+
+	// Create ONE HTTP server with LibP2P enabled (combines HTTP + LibP2P functionality)
+	httpServer := server.CreateServerWithBackendType(
+		db,
+		ServerPort,
+		UseTLS,
+		TLSKey,
+		TLSCert,
+		node,
+		clusterConfig,
+		etcdDataPath,
+		GeneratorCheckerPeriod,
+		CronCheckerPeriod,
+		ExclusiveAssign,
+		AllowExecutorReregister,
+		Retention,
+		RetentionPolicy,
+		retentionPeriod,
+		server.LibP2PBackendType, // This creates HTTP + LibP2P
+		libp2pConfig,
+		nil, // no grpc in Server struct
+		nil, // no coap in Server struct
+	)
+
+	// Create a gRPC backend and server that shares the HTTP server's handlers
+	grpcBackend := grpcPkg.NewBackend().(*grpcPkg.Backend)
+	grpcServer := grpcBackend.NewServerWithAddrAndHandler(
+		fmt.Sprintf(":%d", grpcConfig.Port),
+		httpServer, // httpServer implements RPCHandler interface via HandleRPC method
+	)
+
+	// Create a CoAP backend and server that shares the HTTP server's handlers
+	coapBackend := coapPkg.NewBackend().(*coapPkg.Backend)
+	coapServer := coapBackend.NewServerWithAddrAndHandler(
+		fmt.Sprintf(":%d", coapConfig.Port),
+		httpServer, // httpServer implements RPCHandler interface via HandleRPC method
+	)
+
+	log.WithFields(log.Fields{
+		"HTTPPort":   ServerPort,
+		"GRPCPort":   grpcConfig.Port,
+		"CoAPPort":   coapConfig.Port,
+		"LibP2PPort": libp2pConfig.Port,
+	}).Info("Starting HTTP, gRPC, CoAP, and LibP2P servers with shared controller")
+
+	// Start gRPC server in background
+	go func() {
+		log.WithField("Port", grpcConfig.Port).Info("Starting gRPC server")
+		if err := grpcServer.ListenAndServe(); err != nil {
+			log.WithError(err).Fatal("gRPC server failed")
+		}
+	}()
+
+	// Start CoAP server in background
+	go func() {
+		log.WithField("Port", coapConfig.Port).Info("Starting CoAP server")
+		if err := coapServer.ListenAndServe(); err != nil {
+			log.WithError(err).Fatal("CoAP server failed")
+		}
+	}()
+
+	// Start HTTP server with LibP2P (blocking)
+	for {
+		err := httpServer.ServeForever()
+		if err != nil {
+			log.WithFields(log.Fields{"Error": err}).Error("Failed to start HTTP/LibP2P server")
+			time.Sleep(1 * time.Second)
+		}
+	}
+}
+
 var serverCmd = &cobra.Command{
 	Use:   "server",
 	Short: "Manage production server",
@@ -182,10 +515,11 @@ var serverStatusCmd = &cobra.Command{
 		parseDBEnv()
 		client := setup()
 
-		serverBuildVersion, serverBuildTime, err := client.Version()
+		// Get server info from the running server via RPC
+		serverInfo, err := client.GetServerInfo()
 		CheckError(err)
 
-		printServerStatusTable(serverBuildVersion, serverBuildTime)
+		printServerStatusTable(serverInfo)
 	},
 }
 
@@ -346,8 +680,6 @@ var serverStartCmd = &cobra.Command{
 			log.Warning("EtcdDataDir not specified, setting it to " + EtcdDataDir)
 		}
 
-		retentionPeriod := 60000 // Run retention worker once a minute
-
 		setupProfiler()
 
 		// Determine backend type from environment
@@ -356,30 +688,30 @@ var serverStartCmd = &cobra.Command{
 
 		// Get LibP2P configuration if LibP2P backend is selected
 		var libp2pConfig *server.LibP2PConfig
-		if backendType == server.LibP2PBackendType {
+		if backendType == server.LibP2PBackendType || backendType == server.HTTPGRPCLibP2PBackendType || backendType == server.HTTPGRPCLibP2PCoAPBackendType {
 			libp2pConfig = getLibP2PConfigFromEnv()
 			if libp2pConfig == nil {
 				CheckError(errors.New("LibP2P backend selected but LibP2P configuration is incomplete (COLONIES_SERVER_LIBP2P_PORT must be set)"))
 			}
 		}
 
-		server := server.CreateServerWithBackendType(db,
-			ServerPort,
-			UseTLS,
-			TLSKey,
-			TLSCert,
-			node,
-			clusterConfig,
-			EtcdDataDir,
-			GeneratorCheckerPeriod,
-			CronCheckerPeriod,
-			ExclusiveAssign,
-			AllowExecutorReregister,
-			Retention,
-			RetentionPolicy,
-			retentionPeriod,
-			backendType,
-			libp2pConfig)
+		// Get gRPC configuration if needed
+		var grpcConfig *server.GRPCConfig
+		if backendType == server.GRPCBackendType || backendType == server.HTTPGRPCBackendType || backendType == server.HTTPGRPCLibP2PBackendType || backendType == server.HTTPGRPCLibP2PCoAPBackendType {
+			grpcConfig = getGRPCConfigFromEnv()
+			if grpcConfig == nil {
+				CheckError(errors.New("gRPC backend selected but gRPC configuration is incomplete (COLONIES_SERVER_GRPC_PORT must be set)"))
+			}
+		}
+
+		// Get CoAP configuration if needed
+		var coapConfig *server.CoAPConfig
+		if backendType == server.CoAPBackendType || backendType == server.HTTPGRPCLibP2PCoAPBackendType {
+			coapConfig = getCoAPConfigFromEnv()
+			if coapConfig == nil {
+				CheckError(errors.New("CoAP backend selected but CoAP configuration is incomplete (COLONIES_SERVER_COAP_PORT must be set)"))
+			}
+		}
 
 		if InitDB {
 			err := db.Initialize()
@@ -393,12 +725,20 @@ var serverStartCmd = &cobra.Command{
 			}
 		}
 
-		for {
-			err := server.ServeForever()
-			if err != nil {
-				log.WithFields(log.Fields{"Error": err}).Error("Failed to start Colonies Server")
-				time.Sleep(1 * time.Second)
-			}
+		// Route to appropriate startup function based on backend type
+		if backendType == server.HTTPGRPCLibP2PCoAPBackendType {
+			log.Info("Starting server with all four backends (HTTP + gRPC + LibP2P + CoAP)")
+			startAllBackendsServer(db, node, clusterConfig, EtcdDataDir, libp2pConfig, grpcConfig, coapConfig)
+		} else if backendType == server.HTTPGRPCLibP2PBackendType {
+			log.Info("Starting server with all three backends (HTTP + gRPC + LibP2P)")
+			startHTTPGRPCAndLibP2PServer(db, node, clusterConfig, EtcdDataDir, libp2pConfig, grpcConfig)
+		} else if backendType == server.HTTPGRPCBackendType {
+			log.Info("Starting server with multiple backends (HTTP + gRPC)")
+			startHTTPAndGRPCServer(db, node, clusterConfig, EtcdDataDir, grpcConfig)
+		} else {
+			// Single backend - use existing approach
+			log.WithField("BackendType", backendType).Info("Starting server with single backend")
+			startSingleBackendServer(db, node, clusterConfig, EtcdDataDir, backendType, libp2pConfig, grpcConfig, coapConfig)
 		}
 	},
 }

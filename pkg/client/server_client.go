@@ -43,6 +43,26 @@ func (client *ColoniesClient) Version() (string, string, error) {
 	return version.BuildVersion, version.BuildTime, nil
 }
 
+func (client *ColoniesClient) GetServerInfo() (*core.ServerInfo, error) {
+	msg := rpc.CreateGetServerInfoMsg()
+	jsonString, err := msg.ToJSON()
+	if err != nil {
+		return nil, err
+	}
+
+	respBodyString, err := client.sendMessage(rpc.GetServerInfoPayloadType, jsonString, "", true, context.TODO())
+	if err != nil {
+		return nil, err
+	}
+
+	serverInfo, err := core.CreateServerInfoFromJSON(respBodyString)
+	if err != nil {
+		return nil, err
+	}
+
+	return serverInfo, nil
+}
+
 func (client *ColoniesClient) CheckHealth() error {
 	return client.backend.CheckHealth()
 }

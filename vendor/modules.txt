@@ -63,6 +63,9 @@ github.com/davidlazar/go-crypto/salsa20
 ## explicit; go 1.17
 github.com/decred/dcrd/dcrec/secp256k1/v4
 github.com/decred/dcrd/dcrec/secp256k1/v4/ecdsa
+# github.com/dsnet/golib/memfile v1.0.0
+## explicit; go 1.12
+github.com/dsnet/golib/memfile
 # github.com/dustin/go-humanize v1.0.1
 ## explicit; go 1.16
 github.com/dustin/go-humanize
@@ -663,6 +666,38 @@ github.com/pion/webrtc/v4/pkg/rtcerr
 # github.com/pkg/errors v0.9.1
 ## explicit
 github.com/pkg/errors
+# github.com/plgd-dev/go-coap/v3 v3.4.0
+## explicit; go 1.20
+github.com/plgd-dev/go-coap/v3/dtls/server
+github.com/plgd-dev/go-coap/v3/message
+github.com/plgd-dev/go-coap/v3/message/codes
+github.com/plgd-dev/go-coap/v3/message/noresponse
+github.com/plgd-dev/go-coap/v3/message/pool
+github.com/plgd-dev/go-coap/v3/mux
+github.com/plgd-dev/go-coap/v3/net
+github.com/plgd-dev/go-coap/v3/net/blockwise
+github.com/plgd-dev/go-coap/v3/net/client
+github.com/plgd-dev/go-coap/v3/net/client/limitParallelRequests
+github.com/plgd-dev/go-coap/v3/net/monitor/inactivity
+github.com/plgd-dev/go-coap/v3/net/observation
+github.com/plgd-dev/go-coap/v3/net/responsewriter
+github.com/plgd-dev/go-coap/v3/options
+github.com/plgd-dev/go-coap/v3/options/config
+github.com/plgd-dev/go-coap/v3/pkg/cache
+github.com/plgd-dev/go-coap/v3/pkg/connections
+github.com/plgd-dev/go-coap/v3/pkg/errors
+github.com/plgd-dev/go-coap/v3/pkg/fn
+github.com/plgd-dev/go-coap/v3/pkg/math
+github.com/plgd-dev/go-coap/v3/pkg/rand
+github.com/plgd-dev/go-coap/v3/pkg/runner/periodic
+github.com/plgd-dev/go-coap/v3/pkg/sync
+github.com/plgd-dev/go-coap/v3/tcp/client
+github.com/plgd-dev/go-coap/v3/tcp/coder
+github.com/plgd-dev/go-coap/v3/tcp/server
+github.com/plgd-dev/go-coap/v3/udp
+github.com/plgd-dev/go-coap/v3/udp/client
+github.com/plgd-dev/go-coap/v3/udp/coder
+github.com/plgd-dev/go-coap/v3/udp/server
 # github.com/pmezard/go-difflib v1.0.0
 ## explicit
 github.com/pmezard/go-difflib/difflib
@@ -940,6 +975,9 @@ go.opentelemetry.io/proto/otlp/collector/trace/v1
 go.opentelemetry.io/proto/otlp/common/v1
 go.opentelemetry.io/proto/otlp/resource/v1
 go.opentelemetry.io/proto/otlp/trace/v1
+# go.uber.org/atomic v1.11.0
+## explicit; go 1.18
+go.uber.org/atomic
 # go.uber.org/dig v1.19.0
 ## explicit; go 1.20
 go.uber.org/dig
@@ -1000,6 +1038,8 @@ golang.org/x/crypto/salsa20/salsa
 golang.org/x/crypto/sha3
 # golang.org/x/exp v0.0.0-20250911091902-df9299821621
 ## explicit; go 1.24.0
+golang.org/x/exp/constraints
+golang.org/x/exp/maps
 golang.org/x/exp/slices
 # golang.org/x/mod v0.28.0
 ## explicit; go 1.24.0
@@ -1031,6 +1071,7 @@ golang.org/x/net/trace
 # golang.org/x/sync v0.17.0
 ## explicit; go 1.24.0
 golang.org/x/sync/errgroup
+golang.org/x/sync/semaphore
 # golang.org/x/sys v0.36.0
 ## explicit; go 1.24.0
 golang.org/x/sys/cpu

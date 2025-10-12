@@ -31,6 +31,8 @@ type ClientBackendType string
 const (
 	GinClientBackendType    ClientBackendType = "gin"
 	LibP2PClientBackendType ClientBackendType = "libp2p"
+	GRPCClientBackendType   ClientBackendType = "grpc"
+	CoAPClientBackendType   ClientBackendType = "coap"
 )
 
 // ClientBackendFactory creates backend-specific clients
@@ -69,5 +71,27 @@ func CreateLibP2PClientConfig(host string) *ClientConfig {
 		Port:          0, // Not used for LibP2P
 		Insecure:      false,
 		SkipTLSVerify: false,
+	}
+}
+
+// CreateGRPCClientConfig creates a client config for gRPC backend
+func CreateGRPCClientConfig(host string, port int, insecure bool, skipTLSVerify bool) *ClientConfig {
+	return &ClientConfig{
+		BackendType:   GRPCClientBackendType,
+		Host:          host,
+		Port:          port,
+		Insecure:      insecure,
+		SkipTLSVerify: skipTLSVerify,
+	}
+}
+
+// CreateCoAPClientConfig creates a client config for CoAP backend
+func CreateCoAPClientConfig(host string, port int, insecure bool, skipTLSVerify bool) *ClientConfig {
+	return &ClientConfig{
+		BackendType:   CoAPClientBackendType,
+		Host:          host,
+		Port:          port,
+		Insecure:      insecure,
+		SkipTLSVerify: skipTLSVerify,
 	}
 }

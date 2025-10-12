@@ -9,6 +9,7 @@ import (
 
 	"github.com/colonyos/colonies/pkg/cluster"
 	"github.com/colonyos/colonies/pkg/database"
+	"github.com/colonyos/colonies/pkg/server/controllers"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -16,8 +17,13 @@ import (
 type BackendType string
 
 const (
-	GinBackendType   BackendType = "gin"
-	LibP2PBackendType BackendType = "libp2p"
+	GinBackendType                   BackendType = "gin"
+	LibP2PBackendType                BackendType = "libp2p"
+	GRPCBackendType                  BackendType = "grpc"
+	CoAPBackendType                  BackendType = "coap"
+	HTTPGRPCBackendType              BackendType = "http+grpc"
+	HTTPGRPCLibP2PBackendType        BackendType = "http+grpc+libp2p"
+	HTTPGRPCLibP2PCoAPBackendType    BackendType = "http+grpc+libp2p+coap"
 )
 
 // ManagedServer represents a server instance managed by ServerManager
@@ -44,6 +50,7 @@ type ServerConfig struct {
 	TLS                    bool
 	TLSPrivateKeyPath      string
 	TLSCertPath            string
+	GRPCConfig             *GRPCConfig  // gRPC-specific configuration (required for gRPC backend)
 	ExclusiveAssign        bool
 	AllowExecutorReregister bool
 	Retention              bool
@@ -88,6 +95,8 @@ type SharedResources struct {
 	EtcdDataPath    string
 	GeneratorPeriod int
 	CronPeriod      int
+	Controller      controllers.Controller  // Shared controller to avoid etcd port conflicts
+	BaseServer      *Server                  // Shared base server for handler registration
 }
 
 // NewServerManager creates a new ServerManager

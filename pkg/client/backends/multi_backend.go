@@ -168,8 +168,12 @@ func ParseClientBackendsFromEnv(backendsEnv string) []ClientBackendType {
 		switch part {
 		case "http", "gin":
 			backends = append(backends, GinClientBackendType)
+		case "grpc":
+			backends = append(backends, GRPCClientBackendType)
 		case "libp2p", "p2p":
 			backends = append(backends, LibP2PClientBackendType)
+		case "coap":
+			backends = append(backends, CoAPClientBackendType)
 		default:
 			logrus.WithField("backend", part).Warn("Unknown backend type, ignoring")
 		}
