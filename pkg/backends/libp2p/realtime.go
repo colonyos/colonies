@@ -88,8 +88,8 @@ func (h *P2PRealtimeHandler) HandleRealtimeRequest(c backends.Context, jsonStrin
 		logrus.WithError(err).Error("Failed to create subscription confirmation")
 		return
 	}
-	
-	streamCtx.String(200, confirmationJSON)
+
+	streamCtx.String(200, "%s", confirmationJSON)
 
 	// Start forwarding messages from pubsub to the stream
 	for {
