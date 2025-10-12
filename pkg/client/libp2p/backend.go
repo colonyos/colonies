@@ -58,10 +58,12 @@ type LibP2PClientBackend struct {
 
 // ServerPeer represents a known Colonies server peer
 type ServerPeer struct {
-	ID       peer.ID
-	Addrs    []multiaddr.Multiaddr
-	LastSeen time.Time
-	Active   bool
+	ID              peer.ID
+	Addrs           []multiaddr.Multiaddr
+	LastSeen        time.Time
+	Active          bool
+	LastAttempt     time.Time // Last connection attempt
+	FailedAttempts  int       // Number of consecutive failed attempts
 }
 
 // CachedPeer represents a cached peer entry for serialization
@@ -87,7 +89,7 @@ func NewLibP2PClientBackend(config *backends.ClientConfig) (*LibP2PClientBackend
 
 	ctx, cancel := context.WithCancel(context.Background())
 
-	// Create libp2p host with minimal configuration for client
+	// Create libp2p host with relay support for client
 	h, err := libp2p.New(
 		libp2p.DefaultTransports,
 		libp2p.DefaultMuxers,
@@ -427,9 +429,9 @@ func (l *LibP2PClientBackend) getActivePeer() (*ServerPeer, error) {
 				go l.discoverViaDHT()
 			}
 
-			// Aggressively retry connection to inactive peers every 10 seconds
-			if hasInactivePeers && attempt%10 == 0 {
-				logrus.Info("Retrying connection to discovered peers...")
+			// Retry connection to inactive peers every 30 seconds (respects backoff in performPeerDiscovery)
+			if hasInactivePeers && attempt%30 == 0 {
+				logrus.Info("Checking for peers ready to retry connection...")
 				go l.performPeerDiscovery()
 			}
 
@@ -573,12 +575,37 @@ func (l *LibP2PClientBackend) probeBootstrapPeersForColoniesProtocol() {
 
 // performPeerDiscovery performs periodic peer discovery
 func (l *LibP2PClientBackend) performPeerDiscovery() {
-	// Check connectivity to known peers and try to reconnect to inactive ones
+	// Check connectivity to known peers and try to reconnect to inactive ones with exponential backoff
 	l.serverPeersLock.Lock()
 	for peerID, serverPeer := range l.serverPeers {
 		// Check if peer is still connected
 		if l.host.Network().Connectedness(peerID) != network.Connected {
+			// Calculate backoff delay based on failed attempts
+			// 0 attempts: 0s, 1: 30s, 2: 60s, 3: 120s, 4+: 300s
+			var backoffDelay time.Duration
+			switch serverPeer.FailedAttempts {
+			case 0:
+				backoffDelay = 0
+			case 1:
+				backoffDelay = 30 * time.Second
+			case 2:
+				backoffDelay = 60 * time.Second
+			case 3:
+				backoffDelay = 120 * time.Second
+			default:
+				backoffDelay = 300 * time.Second
+			}
+
+			// Check if enough time has passed since last attempt
+			timeSinceLastAttempt := time.Since(serverPeer.LastAttempt)
+			if timeSinceLastAttempt < backoffDelay {
+				// Still in backoff period, skip this peer
+				continue
+			}
+
 			// Peer disconnected - try to reconnect
+			serverPeer.LastAttempt = time.Now()
+
 			peerInfo := peer.AddrInfo{
 				ID:    peerID,
 				Addrs: serverPeer.Addrs,
@@ -590,15 +617,22 @@ func (l *LibP2PClientBackend) performPeerDiscovery() {
 
 			if err != nil {
 				serverPeer.Active = false
-				logrus.WithError(err).WithField("peer_id", peerID.String()).Debug("Failed to reconnect to peer")
+				serverPeer.FailedAttempts++
+				logrus.WithError(err).WithFields(logrus.Fields{
+					"peer_id":        peerID.String(),
+					"failed_attempts": serverPeer.FailedAttempts,
+					"next_retry":     backoffDelay,
+				}).Debug("Failed to reconnect to peer")
 			} else {
 				serverPeer.Active = true
 				serverPeer.LastSeen = time.Now()
+				serverPeer.FailedAttempts = 0 // Reset on success
 				logrus.WithField("peer_id", peerID.String()).Info("Successfully reconnected to peer")
 			}
 		} else {
 			serverPeer.Active = true
 			serverPeer.LastSeen = time.Now()
+			serverPeer.FailedAttempts = 0 // Reset on success
 		}
 	}
 	l.serverPeersLock.Unlock()
@@ -678,13 +712,18 @@ func (l *LibP2PClientBackend) discoverViaDHT() {
 		}
 
 		// Add to known server peers (even if initial connection failed)
-		// performPeerDiscovery() will retry connections to inactive peers
+		// performPeerDiscovery() will retry connections to inactive peers with backoff
 		l.serverPeersLock.Lock()
 		l.serverPeers[peer.ID] = &ServerPeer{
-			ID:       peer.ID,
-			Addrs:    peer.Addrs,
-			LastSeen: time.Now(),
-			Active:   isConnected,
+			ID:             peer.ID,
+			Addrs:          peer.Addrs,
+			LastSeen:       time.Now(),
+			Active:         isConnected,
+			LastAttempt:    time.Now(),
+			FailedAttempts: 0,
+		}
+		if !isConnected {
+			l.serverPeers[peer.ID].FailedAttempts = 1 // Mark first failure
 		}
 		l.serverPeersLock.Unlock()
 	}
@@ -820,10 +859,15 @@ func (l *LibP2PClientBackend) loadDHTCache() error {
 		// Add to server peers (even if connection failed - will retry later)
 		l.serverPeersLock.Lock()
 		l.serverPeers[peerID] = &ServerPeer{
-			ID:       peerID,
-			Addrs:    addrs,
-			LastSeen: time.Now(),
-			Active:   isConnected,
+			ID:             peerID,
+			Addrs:          addrs,
+			LastSeen:       time.Now(),
+			Active:         isConnected,
+			LastAttempt:    time.Now(),
+			FailedAttempts: 0,
+		}
+		if !isConnected {
+			l.serverPeers[peerID].FailedAttempts = 1 // Mark first failure
 		}
 		l.serverPeersLock.Unlock()
 
