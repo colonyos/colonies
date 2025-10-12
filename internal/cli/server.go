@@ -106,9 +106,13 @@ func getServerBackendTypeFromEnv() server.BackendType {
 // Returns nil if LibP2P is not configured or configuration is incomplete.
 //
 // Supports both new and legacy environment variable names for backward compatibility:
-//   - COLONIES_SERVER_LIBP2P_PORT (new) or COLONIES_LIBP2P_PORT (legacy)
-//   - COLONIES_SERVER_LIBP2P_IDENTITY (new) or COLONIES_LIBP2P_IDENTITY (legacy)
-//   - COLONIES_SERVER_LIBP2P_BOOTSTRAP_PEERS (new) or COLONIES_LIBP2P_BOOTSTRAP_PEERS (legacy)
+//   - COLONIES_SERVER_LIBP2P_PORT (new) or COLONIES_LIBP2P_PORT (legacy) - REQUIRED
+//   - COLONIES_SERVER_LIBP2P_IDENTITY (new) or COLONIES_LIBP2P_IDENTITY (legacy) - optional
+//   - COLONIES_SERVER_LIBP2P_BOOTSTRAP_PEERS (new) or COLONIES_LIBP2P_BOOTSTRAP_PEERS (legacy) - optional
+//   - COLONIES_SERVER_LIBP2P_ANNOUNCE_ADDRS (new) or COLONIES_LIBP2P_ANNOUNCE_ADDRS (legacy) - optional
+//
+// Note: Announce addresses are optional. LibP2P will automatically detect external addresses
+// using AutoNAT, UPnP/NAT-PMP, and NAT hole punching (DCUtR).
 func getLibP2PConfigFromEnv() *server.LibP2PConfig {
 	// Try new variable names first, fall back to legacy
 	portStr := os.Getenv("COLONIES_SERVER_LIBP2P_PORT")
@@ -137,16 +141,23 @@ func getLibP2PConfigFromEnv() *server.LibP2PConfig {
 		bootstrapPeers = os.Getenv("COLONIES_LIBP2P_BOOTSTRAP_PEERS") // Backward compatibility
 	}
 
+	announceAddrs := os.Getenv("COLONIES_SERVER_LIBP2P_ANNOUNCE_ADDRS")
+	if announceAddrs == "" {
+		announceAddrs = os.Getenv("COLONIES_LIBP2P_ANNOUNCE_ADDRS") // Backward compatibility
+	}
+
 	config := &server.LibP2PConfig{
-		Port:           port,
-		Identity:       identity,
-		BootstrapPeers: bootstrapPeers,
+		Port:            port,
+		Identity:        identity,
+		BootstrapPeers:  bootstrapPeers,
+		AnnounceAddrs:   announceAddrs,
 	}
 
 	log.WithFields(log.Fields{
 		"Port":                port,
 		"IdentityConfigured":  identity != "",
 		"BootstrapPeersCount": len(strings.Split(bootstrapPeers, ",")),
+		"AnnounceAddrs":       announceAddrs,
 	}).Info("LibP2P configuration loaded from environment")
 
 	return config
