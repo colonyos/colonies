@@ -61,9 +61,10 @@ type WSController interface {
 
 // LibP2PConfig holds LibP2P-specific configuration
 type LibP2PConfig struct {
-	Port           int    // LibP2P TCP port (QUIC will be port+1)
-	Identity       string // Hex-encoded LibP2P identity key (optional)
-	BootstrapPeers string // Comma-separated bootstrap peer multiaddresses (optional)
+	Port            int    // LibP2P TCP port (QUIC will be port+1)
+	Identity        string // Hex-encoded LibP2P identity key (optional)
+	BootstrapPeers  string // Comma-separated bootstrap peer multiaddresses (optional)
+	AnnounceAddrs   string // Comma-separated multiaddresses to announce for external discovery (optional)
 }
 
 // GRPCConfig holds gRPC-specific configuration
@@ -579,7 +580,7 @@ func (server *Server) setupLibP2P(port int, thisNode cluster.Node, config *LibP2
 	// Create context for LibP2P
 	server.libp2pCtx, server.libp2pCancel = context.WithCancel(context.Background())
 
-	// Build libp2p options
+	// Build libp2p options with automatic NAT traversal and address detection
 	opts := []libp2p.Option{
 		libp2p.ListenAddrStrings(
 			fmt.Sprintf("/ip4/0.0.0.0/tcp/%d", libp2pPort),
@@ -588,8 +589,43 @@ func (server *Server) setupLibP2P(port int, thisNode cluster.Node, config *LibP2
 		libp2p.DefaultTransports,
 		libp2p.DefaultMuxers,
 		libp2p.DefaultSecurity,
-		libp2p.EnableNATService(),
-		libp2p.EnableRelay(),
+		libp2p.EnableNATService(),      // Enable UPnP/NAT-PMP for automatic port mapping
+		libp2p.NATPortMap(),             // Attempt to open ports via NAT
+		libp2p.EnableAutoNATv2(),        // Enable AutoNAT v2 for automatic external address detection
+		libp2p.EnableRelay(),            // Enable relay for NAT traversal fallback
+		libp2p.EnableHolePunching(),     // Enable DCUtR hole punching for NAT traversal
+	}
+
+	// Optionally add manual announce addresses (only if specified)
+	// These will be added in addition to auto-detected addresses
+	if config.AnnounceAddrs != "" {
+		announceAddrs := strings.Split(config.AnnounceAddrs, ",")
+		var maddrs []multiaddr.Multiaddr
+		for _, addr := range announceAddrs {
+			addr = strings.TrimSpace(addr)
+			if addr == "" {
+				continue
+			}
+			maddr, err := multiaddr.NewMultiaddr(addr)
+			if err != nil {
+				log.WithFields(log.Fields{
+					"Address": addr,
+					"Error":   err,
+				}).Warn("Failed to parse announce address, skipping")
+				continue
+			}
+			maddrs = append(maddrs, maddr)
+		}
+		if len(maddrs) > 0 {
+			// Add manual addresses in addition to auto-detected ones
+			opts = append(opts, libp2p.AddrsFactory(func(addrs []multiaddr.Multiaddr) []multiaddr.Multiaddr {
+				// Keep auto-detected addresses and append manual ones
+				return append(addrs, maddrs...)
+			}))
+			log.WithField("ManualAnnounceAddrs", config.AnnounceAddrs).Info("Adding manual announce addresses (in addition to auto-detected)")
+		}
+	} else {
+		log.Info("No manual announce addresses configured - using automatic address detection (AutoNAT, UPnP, hole punching)")
 	}
 
 	log.WithFields(log.Fields{
