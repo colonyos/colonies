@@ -390,8 +390,8 @@ func (l *LibP2PClientBackend) Close() error {
 
 // getActivePeer returns an active server peer
 func (l *LibP2PClientBackend) getActivePeer() (*ServerPeer, error) {
-	// If using DHT discovery, retry for up to 30 seconds
-	maxRetries := 30
+	// Wait longer for relay circuits - up to 90 seconds
+	maxRetries := 90
 	retryDelay := 1 * time.Second
 
 	for attempt := 0; attempt < maxRetries; attempt++ {
@@ -399,11 +399,15 @@ func (l *LibP2PClientBackend) getActivePeer() (*ServerPeer, error) {
 		// Find the most recently seen active peer
 		var bestPeer *ServerPeer
 		var latestTime time.Time
+		hasInactivePeers := false
 
 		for _, peer := range l.serverPeers {
 			if peer.Active && peer.LastSeen.After(latestTime) {
 				bestPeer = peer
 				latestTime = peer.LastSeen
+			}
+			if !peer.Active {
+				hasInactivePeers = true
 			}
 		}
 		l.serverPeersLock.RUnlock()
@@ -415,13 +419,18 @@ func (l *LibP2PClientBackend) getActivePeer() (*ServerPeer, error) {
 		// If using DHT discovery and no peers found, trigger discovery and wait
 		if l.useDHTDiscovery && attempt < maxRetries-1 {
 			if attempt == 0 {
-				logrus.Info("No active peers found, waiting for DHT discovery...")
+				logrus.Info("No active peers found, waiting for DHT discovery and relay connection establishment...")
 			}
 
-			// Trigger DHT search every 5 attempts to increase chances of finding peers
-			// DHT advertisements take time to propagate through the network
-			if attempt%5 == 0 && l.routingDiscovery != nil {
+			// Trigger DHT search every 5 attempts if no peers discovered yet
+			if !hasInactivePeers && attempt%5 == 0 && l.routingDiscovery != nil {
 				go l.discoverViaDHT()
+			}
+
+			// Aggressively retry connection to inactive peers every 10 seconds
+			if hasInactivePeers && attempt%10 == 0 {
+				logrus.Info("Retrying connection to discovered peers...")
+				go l.performPeerDiscovery()
 			}
 
 			time.Sleep(retryDelay)
@@ -806,26 +815,30 @@ func (l *LibP2PClientBackend) loadDHTCache() error {
 		err = l.host.Connect(ctx, peerInfo)
 		cancel()
 
-		if err != nil {
-			logrus.WithError(err).WithField("peer_id", peerID.String()).Debug("Failed to connect to cached peer")
-			continue
-		}
+		isConnected := (err == nil)
 
-		// Successfully connected - add to server peers
+		// Add to server peers (even if connection failed - will retry later)
 		l.serverPeersLock.Lock()
 		l.serverPeers[peerID] = &ServerPeer{
 			ID:       peerID,
 			Addrs:    addrs,
 			LastSeen: time.Now(),
-			Active:   true,
+			Active:   isConnected,
 		}
 		l.serverPeersLock.Unlock()
 
 		loaded++
-		logrus.WithFields(logrus.Fields{
-			"peer_id": peerID.String(),
-			"addrs":   addrs,
-		}).Info("Successfully connected to cached peer")
+		if isConnected {
+			logrus.WithFields(logrus.Fields{
+				"peer_id": peerID.String(),
+				"addrs":   addrs,
+			}).Info("Successfully connected to cached peer")
+		} else {
+			logrus.WithError(err).WithFields(logrus.Fields{
+				"peer_id": peerID.String(),
+				"addrs":   addrs,
+			}).Warn("Failed to connect to cached peer (will retry later)")
+		}
 	}
 
 	if loaded > 0 {
@@ -845,13 +858,10 @@ func (l *LibP2PClientBackend) saveDHTCache() error {
 	l.serverPeersLock.RLock()
 	defer l.serverPeersLock.RUnlock()
 
-	// Build cache from active server peers
+	// Build cache from ALL server peers (active and inactive)
+	// Inactive peers can become active on retry, so we cache them too
 	var cachedPeers []CachedPeer
 	for _, serverPeer := range l.serverPeers {
-		if !serverPeer.Active {
-			continue
-		}
-
 		// Convert multiaddrs to strings
 		var addrStrs []string
 		for _, addr := range serverPeer.Addrs {
