@@ -49,6 +49,7 @@ import (
 	"github.com/libp2p/go-libp2p/core/protocol"
 	"github.com/libp2p/go-libp2p/p2p/discovery/routing"
 	"github.com/libp2p/go-libp2p/p2p/discovery/util"
+	"github.com/libp2p/go-libp2p/p2p/host/autorelay"
 	"github.com/multiformats/go-multiaddr"
 	log "github.com/sirupsen/logrus"
 )
@@ -592,8 +593,51 @@ func (server *Server) setupLibP2P(port int, thisNode cluster.Node, config *LibP2
 		libp2p.EnableNATService(),      // Enable UPnP/NAT-PMP for automatic port mapping
 		libp2p.NATPortMap(),             // Attempt to open ports via NAT
 		libp2p.EnableAutoNATv2(),        // Enable AutoNAT v2 for automatic external address detection
-		libp2p.EnableRelay(),            // Enable relay for NAT traversal fallback
+		libp2p.EnableRelay(),            // Enable relay service (act as relay for others)
 		libp2p.EnableHolePunching(),     // Enable DCUtR hole punching for NAT traversal
+	}
+
+	// Configure AutoRelay if bootstrap peers are provided
+	// Parse bootstrap peers and use them as static relays for AutoRelay
+	if config.BootstrapPeers != "" {
+		bootstrapAddrs := strings.Split(config.BootstrapPeers, ",")
+		var staticRelays []peer.AddrInfo
+
+		for _, addr := range bootstrapAddrs {
+			addr = strings.TrimSpace(addr)
+			if addr == "" {
+				continue
+			}
+
+			maddr, err := multiaddr.NewMultiaddr(addr)
+			if err != nil {
+				log.WithFields(log.Fields{
+					"Address": addr,
+					"Error":   err,
+				}).Warn("Failed to parse bootstrap peer for AutoRelay, skipping")
+				continue
+			}
+
+			peerInfo, err := peer.AddrInfoFromP2pAddr(maddr)
+			if err != nil {
+				log.WithFields(log.Fields{
+					"Address": addr,
+					"Error":   err,
+				}).Warn("Failed to extract peer info for AutoRelay, skipping")
+				continue
+			}
+
+			staticRelays = append(staticRelays, *peerInfo)
+		}
+
+		if len(staticRelays) > 0 {
+			opts = append(opts, libp2p.EnableAutoRelay(autorelay.WithStaticRelays(staticRelays)))
+			log.WithField("RelayCount", len(staticRelays)).Info("AutoRelay enabled with static relays - will use bootstrap peers when behind NAT")
+		} else {
+			log.Warn("AutoRelay disabled - no valid bootstrap peers could be parsed")
+		}
+	} else {
+		log.Info("AutoRelay disabled - no bootstrap peers configured")
 	}
 
 	// Optionally add manual announce addresses (only if specified)
@@ -700,6 +744,9 @@ func (server *Server) setupLibP2P(port int, thisNode cluster.Node, config *LibP2
 	// Start DHT advertisement
 	go server.advertiseSelfInDHT()
 
+	// Start address monitoring (logs relay addresses when they become available)
+	go server.monitorAddresses()
+
 	return nil
 }
 
@@ -764,6 +811,25 @@ func (server *Server) connectToBootstrapPeers(bootstrapPeers string) {
 	}).Info("Bootstrap peer connection completed")
 }
 
+// advertiseNow performs a single DHT advertisement
+func (server *Server) advertiseNow() {
+	if server.libp2pDHT == nil {
+		log.Debug("DHT not initialized, skipping advertisement")
+		return
+	}
+
+	routingDiscovery := routing.NewRoutingDiscovery(server.libp2pDHT)
+	rendezvous := "colonies-server"
+
+	util.Advertise(server.libp2pCtx, routingDiscovery, rendezvous)
+
+	log.WithFields(log.Fields{
+		"Rendezvous": rendezvous,
+		"PeerID":     server.libp2pHost.ID().String(),
+		"Addrs":      server.libp2pHost.Addrs(),
+	}).Debug("DHT advertisement completed")
+}
+
 // advertiseSelfInDHT advertises this server in the DHT for peer discovery
 func (server *Server) advertiseSelfInDHT() {
 	if server.libp2pDHT == nil {
@@ -771,19 +837,11 @@ func (server *Server) advertiseSelfInDHT() {
 		return
 	}
 
-	// Create a routing discovery service
-	routingDiscovery := routing.NewRoutingDiscovery(server.libp2pDHT)
-
-	// Advertise with a rendezvous string
-	rendezvous := "colonies-server"
-	log.WithField("Rendezvous", rendezvous).Info("Starting DHT advertisement...")
+	log.WithField("Rendezvous", "colonies-server").Info("Starting DHT advertisement...")
 
 	// Initial advertisement
-	util.Advertise(server.libp2pCtx, routingDiscovery, rendezvous)
-	log.WithFields(log.Fields{
-		"Rendezvous": rendezvous,
-		"PeerID":     server.libp2pHost.ID().String(),
-	}).Info("Initial DHT advertisement completed")
+	server.advertiseNow()
+	log.WithField("PeerID", server.libp2pHost.ID().String()).Info("Initial DHT advertisement completed")
 
 	// Re-advertise periodically (every 30 minutes)
 	ticker := time.NewTicker(30 * time.Minute)
@@ -792,13 +850,86 @@ func (server *Server) advertiseSelfInDHT() {
 	for {
 		select {
 		case <-ticker.C:
-			util.Advertise(server.libp2pCtx, routingDiscovery, rendezvous)
-			log.WithFields(log.Fields{
-				"Rendezvous": rendezvous,
-				"PeerID":     server.libp2pHost.ID().String(),
-			}).Debug("Re-advertised in DHT")
+			server.advertiseNow()
 		case <-server.libp2pCtx.Done():
 			log.Info("DHT advertisement goroutine stopped")
+			return
+		}
+	}
+}
+
+// monitorAddresses monitors the host's advertised addresses and logs when relay addresses become available
+func (server *Server) monitorAddresses() {
+	if server.libp2pHost == nil {
+		return
+	}
+
+	hasRelayAddrs := false
+
+	// Check every 30 seconds for the first 10 minutes, then every 5 minutes
+	initialCheckDuration := 10 * time.Minute
+	initialCheckInterval := 30 * time.Second
+	longTermCheckInterval := 5 * time.Minute
+
+	startTime := time.Now()
+	ticker := time.NewTicker(initialCheckInterval)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ticker.C:
+			// Switch to longer interval after initial period
+			if time.Since(startTime) > initialCheckDuration && ticker.C != nil {
+				ticker.Stop()
+				ticker = time.NewTicker(longTermCheckInterval)
+			}
+
+			addrs := server.libp2pHost.Addrs()
+			relayAddrs := []multiaddr.Multiaddr{}
+			directAddrs := []multiaddr.Multiaddr{}
+
+			// Categorize addresses
+			for _, addr := range addrs {
+				addrStr := addr.String()
+				if strings.Contains(addrStr, "/p2p-circuit") {
+					relayAddrs = append(relayAddrs, addr)
+				} else {
+					directAddrs = append(directAddrs, addr)
+				}
+			}
+
+			// Log relay status changes and re-advertise to DHT when relay addresses become available
+			if len(relayAddrs) > 0 && !hasRelayAddrs {
+				log.WithFields(log.Fields{
+					"RelayCount": len(relayAddrs),
+					"Relays":     relayAddrs,
+				}).Info("✓ AutoRelay successfully reserved relay circuits - server is now reachable behind NAT/CGNAT")
+				hasRelayAddrs = true
+
+				// Trigger immediate DHT re-advertisement with new relay addresses
+				log.Info("Re-advertising to DHT with relay circuit addresses...")
+				server.advertiseNow()
+				log.Info("DHT re-advertisement completed - relay addresses are now discoverable")
+			} else if len(relayAddrs) == 0 && hasRelayAddrs {
+				log.Warn("Relay circuits lost - server may not be reachable behind NAT/CGNAT")
+				hasRelayAddrs = false
+
+				// Re-advertise to DHT when relay addresses are lost (to update with current addresses)
+				log.Info("Re-advertising to DHT after losing relay circuits...")
+				server.advertiseNow()
+			}
+
+			// Periodic status log (every 5 minutes)
+			if time.Since(startTime) > initialCheckDuration {
+				log.WithFields(log.Fields{
+					"DirectAddrs": len(directAddrs),
+					"RelayAddrs":  len(relayAddrs),
+					"TotalAddrs":  len(addrs),
+				}).Debug("LibP2P address status")
+			}
+
+		case <-server.libp2pCtx.Done():
+			log.Debug("Address monitoring goroutine stopped")
 			return
 		}
 	}

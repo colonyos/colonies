@@ -28,8 +28,8 @@ import (
 
 const (
 	ColoniesProcotolID = protocol.ID("/colonies/rpc/1.0.0")
-	ConnectTimeout     = 30 * time.Second
-	StreamTimeout      = 60 * time.Second
+	ConnectTimeout     = 60 * time.Second  // Increased for relay circuit establishment
+	StreamTimeout      = 90 * time.Second  // Increased for relay latency
 )
 
 // LibP2PClientBackend implements peer-to-peer client backend using libp2p
@@ -197,18 +197,15 @@ func NewLibP2PClientBackend(config *backends.ClientConfig) (*LibP2PClientBackend
 	// Start peer discovery
 	go backend.discoverPeers()
 
-	// If using DHT discovery and no cached peers found, do an initial search after a delay
-	// This gives the DHT time to sync with the network and discover advertised peers
+	// If using DHT discovery and no cached peers found, start searching
 	backend.serverPeersLock.RLock()
 	hasCachedPeers := len(backend.serverPeers) > 0
 	backend.serverPeersLock.RUnlock()
 
 	if backend.useDHTDiscovery && backend.routingDiscovery != nil && !hasCachedPeers {
-		go func() {
-			// Wait for DHT to sync with bootstrap peers and propagate advertisement
-			time.Sleep(5 * time.Second)
-			backend.discoverViaDHT()
-		}()
+		// Start initial DHT search in background
+		// If no peers found initially, getActivePeer() will trigger more searches
+		go backend.discoverViaDHT()
 	}
 
 	logrus.WithFields(logrus.Fields{
@@ -420,6 +417,13 @@ func (l *LibP2PClientBackend) getActivePeer() (*ServerPeer, error) {
 			if attempt == 0 {
 				logrus.Info("No active peers found, waiting for DHT discovery...")
 			}
+
+			// Trigger DHT search every 5 attempts to increase chances of finding peers
+			// DHT advertisements take time to propagate through the network
+			if attempt%5 == 0 && l.routingDiscovery != nil {
+				go l.discoverViaDHT()
+			}
+
 			time.Sleep(retryDelay)
 			continue
 		}
