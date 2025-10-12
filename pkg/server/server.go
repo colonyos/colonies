@@ -11,7 +11,9 @@ import (
 	"time"
 
 	"github.com/colonyos/colonies/pkg/backends"
+	"github.com/colonyos/colonies/pkg/backends/coap"
 	"github.com/colonyos/colonies/pkg/backends/gin"
+	"github.com/colonyos/colonies/pkg/backends/grpc"
 	"github.com/colonyos/colonies/pkg/cluster"
 	"github.com/colonyos/colonies/pkg/core"
 	"github.com/colonyos/colonies/pkg/database"
@@ -62,6 +64,19 @@ type LibP2PConfig struct {
 	Port           int    // LibP2P TCP port (QUIC will be port+1)
 	Identity       string // Hex-encoded LibP2P identity key (optional)
 	BootstrapPeers string // Comma-separated bootstrap peer multiaddresses (optional)
+}
+
+// GRPCConfig holds gRPC-specific configuration
+type GRPCConfig struct {
+	Port     int    // gRPC server port
+	TLSCert  string // Path to TLS certificate file (optional)
+	TLSKey   string // Path to TLS private key file (optional)
+	Insecure bool   // Run without TLS (default: false)
+}
+
+// CoAPConfig holds CoAP-specific configuration
+type CoAPConfig struct {
+	Port int // CoAP server port (UDP)
 }
 
 type Server struct {
@@ -127,7 +142,7 @@ type Server struct {
 
 // ParseServerBackendsFromEnv parses COLONIES_SERVER_BACKENDS environment variable
 // Returns the appropriate BackendType based on comma-separated backend list
-// Supports: "http", "libp2p", "http,libp2p", "libp2p,http"
+// Supports: "http", "libp2p", "grpc", "http,libp2p", "libp2p,http"
 func ParseServerBackendsFromEnv(backendsEnv string) BackendType {
 	if backendsEnv == "" {
 		return GinBackendType // Default to HTTP
@@ -136,6 +151,8 @@ func ParseServerBackendsFromEnv(backendsEnv string) BackendType {
 	parts := strings.Split(backendsEnv, ",")
 	hasHTTP := false
 	hasLibP2P := false
+	hasGRPC := false
+	hasCoAP := false
 
 	for _, part := range parts {
 		part = strings.TrimSpace(strings.ToLower(part))
@@ -144,6 +161,10 @@ func ParseServerBackendsFromEnv(backendsEnv string) BackendType {
 			hasHTTP = true
 		case "libp2p", "p2p":
 			hasLibP2P = true
+		case "grpc":
+			hasGRPC = true
+		case "coap":
+			hasCoAP = true
 		default:
 			log.WithField("backend", part).Warn("Unknown backend type in COLONIES_SERVER_BACKENDS, ignoring")
 		}
@@ -151,8 +172,21 @@ func ParseServerBackendsFromEnv(backendsEnv string) BackendType {
 
 	// Determine backend type
 	// Note: LibP2P backend currently always includes HTTP for backward compatibility
-	if hasLibP2P {
+	if hasHTTP && hasGRPC && hasLibP2P && hasCoAP {
+		return HTTPGRPCLibP2PCoAPBackendType // Runs all four: HTTP + gRPC + LibP2P + CoAP
+	} else if hasHTTP && hasGRPC && hasLibP2P {
+		return HTTPGRPCLibP2PBackendType // Runs all three: HTTP + gRPC + LibP2P
+	} else if hasLibP2P && hasHTTP {
 		return LibP2PBackendType // Runs both HTTP and LibP2P
+	} else if hasLibP2P {
+		// LibP2P without HTTP specified still runs HTTP for backward compatibility
+		return LibP2PBackendType
+	} else if hasHTTP && hasGRPC {
+		return HTTPGRPCBackendType // Runs both HTTP and gRPC on different ports
+	} else if hasGRPC {
+		return GRPCBackendType // gRPC only
+	} else if hasCoAP {
+		return CoAPBackendType // CoAP only
 	} else if hasHTTP {
 		return GinBackendType // HTTP only
 	}
@@ -164,6 +198,8 @@ func ParseServerBackendsFromEnv(backendsEnv string) BackendType {
 // CreateServerWithBackendType creates a server with the specified backend type
 // This is the main server creation function that should be called from CLI
 // libp2pConfig is optional and only used when backendType is LibP2PBackendType
+// grpcConfig is optional and only used when backendType is GRPCBackendType
+// coapConfig is optional and only used when backendType is CoAPBackendType
 func CreateServerWithBackendType(db database.Database,
 	port int,
 	tls bool,
@@ -180,9 +216,11 @@ func CreateServerWithBackendType(db database.Database,
 	retentionPolicy int64,
 	retentionPeriod int,
 	backendType BackendType,
-	libp2pConfig *LibP2PConfig) *Server {
+	libp2pConfig *LibP2PConfig,
+	grpcConfig *GRPCConfig,
+	coapConfig *CoAPConfig) *Server {
 	log.WithField("BackendType", backendType).Info("Creating server with specified backend type")
-	return CreateServerWithBackend(db, port, tls, tlsPrivateKeyPath, tlsCertPath, thisNode, clusterConfig, etcdDataPath, generatorPeriod, cronPeriod, exclusiveAssign, allowExecutorReregister, retention, retentionPolicy, retentionPeriod, backendType, libp2pConfig)
+	return CreateServerWithBackend(db, port, tls, tlsPrivateKeyPath, tlsCertPath, thisNode, clusterConfig, etcdDataPath, generatorPeriod, cronPeriod, exclusiveAssign, allowExecutorReregister, retention, retentionPolicy, retentionPeriod, backendType, libp2pConfig, grpcConfig, coapConfig)
 }
 
 func CreateServer(db database.Database,
@@ -201,7 +239,7 @@ func CreateServer(db database.Database,
 	retentionPolicy int64,
 	retentionPeriod int) *Server {
 	// Default to Gin backend for backward compatibility
-	return CreateServerWithBackend(db, port, tls, tlsPrivateKeyPath, tlsCertPath, thisNode, clusterConfig, etcdDataPath, generatorPeriod, cronPeriod, exclusiveAssign, allowExecutorReregister, retention, retentionPolicy, retentionPeriod, GinBackendType, nil)
+	return CreateServerWithBackend(db, port, tls, tlsPrivateKeyPath, tlsCertPath, thisNode, clusterConfig, etcdDataPath, generatorPeriod, cronPeriod, exclusiveAssign, allowExecutorReregister, retention, retentionPolicy, retentionPeriod, GinBackendType, nil, nil, nil)
 }
 
 func CreateServerWithBackend(db database.Database,
@@ -220,7 +258,9 @@ func CreateServerWithBackend(db database.Database,
 	retentionPolicy int64,
 	retentionPeriod int,
 	backendType BackendType,
-	libp2pConfig *LibP2PConfig) *Server {
+	libp2pConfig *LibP2PConfig,
+	grpcConfig *GRPCConfig,
+	coapConfig *CoAPConfig) *Server {
 	server := &Server{}
 
 	// Initialize backend based on type
@@ -228,10 +268,20 @@ func CreateServerWithBackend(db database.Database,
 	if libp2pConfig != nil {
 		libp2pPort = libp2pConfig.Port
 	}
+	grpcPort := 0
+	if grpcConfig != nil {
+		grpcPort = grpcConfig.Port
+	}
+	coapPort := 0
+	if coapConfig != nil {
+		coapPort = coapConfig.Port
+	}
 	log.WithFields(log.Fields{
 		"BackendType": backendType,
 		"HTTPPort":    port,
 		"LibP2PPort":  libp2pPort,
+		"GRPCPort":    grpcPort,
+		"CoAPPort":    coapPort,
 	}).Info("=== INITIALIZING COLONIES SERVER BACKEND ===")
 
 	switch backendType {
@@ -264,6 +314,43 @@ func CreateServerWithBackend(db database.Database,
 		// Enable LibP2P networking in addition to HTTP
 		server.libp2pEnabled = true
 		log.Info("✓ LibP2P backend initialized successfully (HTTP + P2P)")
+	case GRPCBackendType:
+		if grpcConfig == nil {
+			log.Fatal("gRPC backend selected but no GRPCConfig provided")
+		}
+		tlsEnabled := grpcConfig.TLSCert != "" && grpcConfig.TLSKey != ""
+		log.WithFields(log.Fields{
+			"BackendType": backendType,
+			"GRPCPort":    grpcPort,
+			"TLSEnabled":  tlsEnabled,
+		}).Info("✓ Creating server with gRPC backend")
+		grpcBackend := grpc.NewBackend().(*grpc.Backend)
+		// Create server with RPC handler - will be connected later via serverAdapter
+		server.server = grpcBackend.NewServerWithAddrAndHandler(
+			fmt.Sprintf(":%d", grpcPort),
+			nil, // Handler will be set up after serverAdapter is created
+		)
+		server.backend = nil // gRPC doesn't use CORS backend
+		server.engine = nil  // gRPC doesn't use Engine pattern
+		server.libp2pEnabled = false
+		log.Info("✓ gRPC backend initialized successfully")
+	case CoAPBackendType:
+		if coapConfig == nil {
+			log.Fatal("CoAP backend selected but no CoAPConfig provided")
+		}
+		log.WithFields(log.Fields{
+			"BackendType": backendType,
+			"CoAPPort":    coapConfig.Port,
+		}).Info("✓ Creating server with CoAP backend")
+		coapBackend := coap.NewBackend().(*coap.Backend)
+		server.server = coapBackend.NewServerWithAddrAndHandler(
+			fmt.Sprintf(":%d", coapConfig.Port),
+			nil, // Handler will be set up after serverAdapter is created
+		)
+		server.backend = nil // CoAP doesn't use CORS backend
+		server.engine = nil  // CoAP doesn't use Engine pattern
+		server.libp2pEnabled = false
+		log.Info("✓ CoAP backend initialized successfully")
 	default:
 		log.WithField("BackendType", backendType).Fatal("Unknown backend type")
 	}
@@ -318,6 +405,28 @@ func CreateServerWithBackend(db database.Database,
 
 	// Register all handlers that implement self-registration
 	server.registerHandlers()
+
+	// For gRPC backend, set the RPC handler after serverAdapter is created
+	if backendType == GRPCBackendType {
+		log.WithField("ServerType", fmt.Sprintf("%T", server.server)).Info("Attempting to set gRPC handler")
+		if grpcServer, ok := server.server.(*grpc.GRPCServer); ok {
+			grpcServer.SetHandler(server)
+			log.Info("gRPC RPC handler connected successfully")
+		} else {
+			log.Warn("Failed to cast server to *grpc.GRPCServer")
+		}
+	}
+
+	// For CoAP backend, set the RPC handler after serverAdapter is created
+	if backendType == CoAPBackendType {
+		log.WithField("ServerType", fmt.Sprintf("%T", server.server)).Info("Attempting to set CoAP handler")
+		if coapServer, ok := server.server.(*coap.CoAPServer); ok {
+			coapServer.SetHandler(server)
+			log.Info("CoAP RPC handler connected successfully")
+		} else {
+			log.Warn("Failed to cast server to *coap.CoAPServer")
+		}
+	}
 
 	log.WithFields(log.Fields{"Port": port,
 		"TLS":                     tls,
@@ -717,6 +826,12 @@ func (server *Server) handleLibP2PStream(stream network.Stream) {
 		return
 	}
 
+	// Handle GetServerInfo requests without signature validation
+	if rpcMsg.PayloadType == rpc.GetServerInfoPayloadType {
+		server.processLibP2PGetServerInfoRequest(stream)
+		return
+	}
+
 	// Validate signature
 	recoveredID, err := server.parseSignature(rpcMsg.Payload, rpcMsg.Signature)
 	if err != nil {
@@ -974,6 +1089,151 @@ func (server *Server) processLibP2PVersionRequest(stream network.Stream) {
 	}).Debug("Sent version response via LibP2P")
 }
 
+// buildServerInfoFromEnv builds a ServerInfo object by reading server configuration from environment variables
+func (server *Server) buildServerInfoFromEnv() *core.ServerInfo {
+	buildVersion := os.Getenv("BUILD_VERSION")
+	if buildVersion == "" {
+		buildVersion = "dev"
+	}
+	buildTime := os.Getenv("BUILD_TIME")
+	if buildTime == "" {
+		buildTime = time.Now().Format(time.RFC3339)
+	}
+
+	serverInfo := core.CreateServerInfo(buildVersion, buildTime)
+
+	// Parse COLONIES_SERVER_BACKENDS to determine which backends are configured
+	backendsEnv := os.Getenv("COLONIES_SERVER_BACKENDS")
+	if backendsEnv == "" {
+		backendsEnv = "http" // Default
+	}
+
+	backends := strings.Split(backendsEnv, ",")
+	for _, backend := range backends {
+		backend = strings.TrimSpace(strings.ToLower(backend))
+
+		switch backend {
+		case "http", "gin":
+			// Add HTTP backend info
+			host := os.Getenv("COLONIES_SERVER_HTTP_HOST")
+			if host == "" {
+				host = "0.0.0.0"
+			}
+			portStr := os.Getenv("COLONIES_SERVER_HTTP_PORT")
+			port := 50080
+			if portStr != "" {
+				fmt.Sscanf(portStr, "%d", &port)
+			}
+			tlsStr := os.Getenv("COLONIES_SERVER_HTTP_TLS")
+			tls := tlsStr == "true"
+			serverInfo.AddBackend("http", port, host, tls, false)
+
+		case "grpc":
+			// Add gRPC backend info
+			portStr := os.Getenv("COLONIES_SERVER_GRPC_PORT")
+			port := 50051
+			if portStr != "" {
+				fmt.Sscanf(portStr, "%d", &port)
+			}
+			insecureStr := os.Getenv("COLONIES_SERVER_GRPC_INSECURE")
+			insecure := insecureStr == "true"
+			serverInfo.AddBackend("grpc", port, "", false, insecure)
+
+		case "libp2p", "p2p":
+			// Add LibP2P backend info
+			portStr := os.Getenv("COLONIES_SERVER_LIBP2P_PORT")
+			port := 5000
+			if portStr != "" {
+				fmt.Sscanf(portStr, "%d", &port)
+			}
+			serverInfo.AddBackend("libp2p", port, "", false, false)
+
+		case "coap":
+			// Add CoAP backend info
+			portStr := os.Getenv("COLONIES_SERVER_COAP_PORT")
+			port := 5683 // Default CoAP port
+			if portStr != "" {
+				fmt.Sscanf(portStr, "%d", &port)
+			}
+			serverInfo.AddBackend("coap", port, "", false, false)
+		}
+	}
+
+	return serverInfo
+}
+
+// handleGetServerInfoHTTP handles GetServerInfo requests for HTTP backend
+func (server *Server) handleGetServerInfoHTTP(c backends.Context) {
+	serverInfo := server.buildServerInfoFromEnv()
+
+	jsonString, err := serverInfo.ToJSON()
+	if server.HandleHTTPError(c, err, http.StatusInternalServerError) {
+		return
+	}
+
+	rpcReplyMsg, err := rpc.CreateRPCReplyMsg(rpc.GetServerInfoPayloadType, jsonString)
+	if server.HandleHTTPError(c, err, http.StatusInternalServerError) {
+		return
+	}
+
+	rpcReplyMsgJSONString, err := rpcReplyMsg.ToJSON()
+	if server.HandleHTTPError(c, err, http.StatusInternalServerError) {
+		return
+	}
+
+	c.String(http.StatusOK, rpcReplyMsgJSONString)
+}
+
+// processLibP2PGetServerInfoRequest handles GetServerInfo requests for LibP2P backend
+func (server *Server) processLibP2PGetServerInfoRequest(stream network.Stream) {
+	serverInfo := server.buildServerInfoFromEnv()
+
+	jsonString, err := serverInfo.ToJSON()
+	if err != nil {
+		log.WithError(err).Error("Failed to serialize server info")
+		server.sendLibP2PError(stream, err, http.StatusInternalServerError)
+		return
+	}
+
+	rpcReplyMsg, err := rpc.CreateRPCReplyMsg(rpc.GetServerInfoPayloadType, jsonString)
+	if err != nil {
+		log.WithError(err).Error("Failed to create server info RPC reply")
+		server.sendLibP2PError(stream, err, http.StatusInternalServerError)
+		return
+	}
+
+	rpcReplyMsgJSON, err := rpcReplyMsg.ToJSON()
+	if err != nil {
+		log.WithError(err).Error("Failed to serialize server info RPC reply")
+		server.sendLibP2PError(stream, err, http.StatusInternalServerError)
+		return
+	}
+
+	_, err = stream.Write([]byte(rpcReplyMsgJSON))
+	if err != nil {
+		log.WithError(err).Error("Failed to write server info response to LibP2P stream")
+	}
+
+	log.Debug("Sent server info response via LibP2P")
+}
+
+// handleGetServerInfoGRPC handles GetServerInfo requests for gRPC backend
+func (server *Server) handleGetServerInfoGRPC() (string, error) {
+	serverInfo := server.buildServerInfoFromEnv()
+
+	jsonString, err := serverInfo.ToJSON()
+	if err != nil {
+		return server.generateRPCErrorJSON(err, http.StatusInternalServerError)
+	}
+
+	rpcReplyMsg, err := rpc.CreateRPCReplyMsg(rpc.GetServerInfoPayloadType, jsonString)
+	if err != nil {
+		return server.generateRPCErrorJSON(err, http.StatusInternalServerError)
+	}
+
+	return rpcReplyMsg.ToJSON()
+}
+
 func (server *Server) parseSignature(jsonString string, signature string) (string, error) {
 	recoveredID, err := server.crypto.RecoverID(jsonString, signature)
 	if err != nil {
@@ -1004,6 +1264,232 @@ func (server *Server) GenerateRPCErrorMsg(err error, errorCode int) (*rpc.RPCRep
 	return server.generateRPCErrorMsg(err, errorCode)
 }
 
+// HandleRPC implements the RPCHandler interface for gRPC backend
+func (server *Server) HandleRPC(jsonPayload string) (string, error) {
+	// Parse the RPC message
+	rpcMsg, err := rpc.CreateRPCMsgFromJSON(jsonPayload)
+	if err != nil {
+		return server.generateRPCErrorJSON(err, http.StatusBadRequest)
+	}
+
+	// Version does not require a valid private key
+	if rpcMsg.PayloadType == rpc.VersionPayloadType {
+		// Get version info
+		buildVersion := os.Getenv("BUILD_VERSION")
+		if buildVersion == "" {
+			buildVersion = "dev"
+		}
+		buildTime := os.Getenv("BUILD_TIME")
+		if buildTime == "" {
+			buildTime = time.Now().Format(time.RFC3339)
+		}
+		response := fmt.Sprintf(`{"BuildVersion":"%s","BuildTime":"%s"}`, buildVersion, buildTime)
+		rpcReplyMsg, _ := rpc.CreateRPCReplyMsg(rpc.VersionPayloadType, response)
+		return rpcReplyMsg.ToJSON()
+	}
+
+	// GetServerInfo does not require a valid private key
+	if rpcMsg.PayloadType == rpc.GetServerInfoPayloadType {
+		return server.handleGetServerInfoGRPC()
+	}
+
+	// Validate signature
+	recoveredID, err := server.parseSignature(rpcMsg.Payload, rpcMsg.Signature)
+	if err != nil {
+		return server.generateRPCErrorJSON(err, http.StatusForbidden)
+	}
+
+	// Create a response writer that captures the RPC response
+	responseCapture := &grpcResponseCapture{data: make(map[string]interface{})}
+
+	// Try to handle with registered handlers
+	handled := server.handlerRegistry.HandleRequestWithRaw(
+		responseCapture,
+		recoveredID,
+		rpcMsg.PayloadType,
+		rpcMsg.DecodePayload(),
+		jsonPayload,
+	)
+
+	if !handled {
+		errMsg := "invalid rpcMsg.PayloadType: " + rpcMsg.PayloadType
+		return server.generateRPCErrorJSON(errors.New(errMsg), http.StatusForbidden)
+	}
+
+	// Return the captured response
+	return responseCapture.response, nil
+}
+
+// generateRPCErrorJSON generates an RPC error response as JSON string
+func (server *Server) generateRPCErrorJSON(err error, errorCode int) (string, error) {
+	rpcReplyMsg, genErr := server.generateRPCErrorMsg(err, errorCode)
+	if genErr != nil {
+		return "", genErr
+	}
+	return rpcReplyMsg.ToJSON()
+}
+
+// grpcResponseCapture captures RPC responses for gRPC backend
+type grpcResponseCapture struct {
+	statusCode int
+	response   string
+	data       map[string]interface{}
+	aborted    bool
+}
+
+func (w *grpcResponseCapture) String(code int, format string, values ...interface{}) {
+	w.statusCode = code
+	w.response = fmt.Sprintf(format, values...)
+}
+
+func (w *grpcResponseCapture) JSON(code int, obj interface{}) {
+	w.statusCode = code
+	w.response = fmt.Sprintf("%v", obj)
+}
+
+func (w *grpcResponseCapture) XML(code int, obj interface{}) {
+	w.statusCode = code
+	w.response = fmt.Sprintf("%v", obj)
+}
+
+func (w *grpcResponseCapture) Data(code int, contentType string, data []byte) {
+	w.statusCode = code
+	w.response = string(data)
+}
+
+func (w *grpcResponseCapture) Status(code int) {
+	w.statusCode = code
+}
+
+func (w *grpcResponseCapture) Request() *http.Request {
+	return nil
+}
+
+func (w *grpcResponseCapture) ReadBody() ([]byte, error) {
+	return nil, errors.New("ReadBody not supported in gRPC context")
+}
+
+func (w *grpcResponseCapture) GetHeader(key string) string {
+	return ""
+}
+
+func (w *grpcResponseCapture) Header(key, value string) {
+	// No-op
+}
+
+func (w *grpcResponseCapture) Param(key string) string {
+	return ""
+}
+
+func (w *grpcResponseCapture) Query(key string) string {
+	return ""
+}
+
+func (w *grpcResponseCapture) DefaultQuery(key, defaultValue string) string {
+	return defaultValue
+}
+
+func (w *grpcResponseCapture) PostForm(key string) string {
+	return ""
+}
+
+func (w *grpcResponseCapture) DefaultPostForm(key, defaultValue string) string {
+	return defaultValue
+}
+
+func (w *grpcResponseCapture) Bind(obj interface{}) error {
+	return errors.New("Bind not supported in gRPC context")
+}
+
+func (w *grpcResponseCapture) ShouldBind(obj interface{}) error {
+	return errors.New("ShouldBind not supported in gRPC context")
+}
+
+func (w *grpcResponseCapture) BindJSON(obj interface{}) error {
+	return errors.New("BindJSON not supported in gRPC context")
+}
+
+func (w *grpcResponseCapture) ShouldBindJSON(obj interface{}) error {
+	return errors.New("ShouldBindJSON not supported in gRPC context")
+}
+
+func (w *grpcResponseCapture) Set(key string, value interface{}) {
+	w.data[key] = value
+}
+
+func (w *grpcResponseCapture) Get(key string) (interface{}, bool) {
+	val, exists := w.data[key]
+	return val, exists
+}
+
+func (w *grpcResponseCapture) GetString(key string) string {
+	if val, exists := w.data[key]; exists {
+		if str, ok := val.(string); ok {
+			return str
+		}
+	}
+	return ""
+}
+
+func (w *grpcResponseCapture) GetBool(key string) bool {
+	if val, exists := w.data[key]; exists {
+		if b, ok := val.(bool); ok {
+			return b
+		}
+	}
+	return false
+}
+
+func (w *grpcResponseCapture) GetInt(key string) int {
+	if val, exists := w.data[key]; exists {
+		if i, ok := val.(int); ok {
+			return i
+		}
+	}
+	return 0
+}
+
+func (w *grpcResponseCapture) GetInt64(key string) int64 {
+	if val, exists := w.data[key]; exists {
+		if i, ok := val.(int64); ok {
+			return i
+		}
+	}
+	return 0
+}
+
+func (w *grpcResponseCapture) GetFloat64(key string) float64 {
+	if val, exists := w.data[key]; exists {
+		if f, ok := val.(float64); ok {
+			return f
+		}
+	}
+	return 0.0
+}
+
+func (w *grpcResponseCapture) Abort() {
+	w.aborted = true
+}
+
+func (w *grpcResponseCapture) AbortWithStatus(code int) {
+	w.statusCode = code
+	w.aborted = true
+}
+
+func (w *grpcResponseCapture) AbortWithStatusJSON(code int, jsonObj interface{}) {
+	w.statusCode = code
+	w.response = fmt.Sprintf("%v", jsonObj)
+	w.aborted = true
+}
+
+func (w *grpcResponseCapture) IsAborted() bool {
+	return w.aborted
+}
+
+func (w *grpcResponseCapture) Next() {
+	// No-op for gRPC context
+}
+
 func (server *Server) handleHealthRequest(c backends.Context) {
 	c.String(http.StatusOK, "")
 }
@@ -1023,6 +1509,12 @@ func (server *Server) handleAPIRequest(c backends.Context) {
 	// Version does not require a valid private key
 	if rpcMsg.PayloadType == rpc.VersionPayloadType {
 		server.serverHandlers.HandleVersion(c, rpcMsg.PayloadType, rpcMsg.DecodePayload())
+		return
+	}
+
+	// GetServerInfo does not require a valid private key
+	if rpcMsg.PayloadType == rpc.GetServerInfoPayloadType {
+		server.handleGetServerInfoHTTP(c)
 		return
 	}
 
@@ -1113,19 +1605,12 @@ func (server *Server) ServeForever() error {
 		go server.startLibP2PNetworking()
 	}
 
-	// Start HTTP server (blocking) - runs for both Gin and LibP2P backends
-	log.Info("Starting HTTP server")
-	if server.tls {
-		if err := server.server.ListenAndServeTLS(server.tlsCertPath, server.tlsPrivateKeyPath); err != nil && errors.Is(err, http.ErrServerClosed) {
-			return err
-		}
-	} else {
-		if err := server.server.ListenAndServe(); err != nil && errors.Is(err, http.ErrServerClosed) {
-			return err
-		}
+	// Start the backend server (blocking) - each backend implementation handles its own protocol
+	if server.server != nil {
+		return server.server.ListenAndServe()
 	}
 
-	return nil
+	return errors.New("no server configured")
 }
 
 func (server *Server) FileDB() database.FileDatabase {

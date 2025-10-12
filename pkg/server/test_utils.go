@@ -225,7 +225,7 @@ func prepareTestsWithRetention(t *testing.T, retention bool) (*client.ColoniesCl
 	clusterConfig := cluster.Config{}
 	clusterConfig.AddNode(node)
 	// Tests use HTTP backend by default for simplicity (no LibP2P config needed)
-	server := CreateServerWithBackend(db, constants.TESTPORT, EnableTLS, "", "", node, clusterConfig, "/tmp/colonies/etcd", constants.GENERATOR_TRIGGER_PERIOD, constants.CRON_TRIGGER_PERIOD, true, false, retention, 1, 500, GinBackendType, nil)
+	server := CreateServerWithBackend(db, constants.TESTPORT, EnableTLS, "", "", node, clusterConfig, "/tmp/colonies/etcd", constants.GENERATOR_TRIGGER_PERIOD, constants.CRON_TRIGGER_PERIOD, true, false, retention, 1, 500, GinBackendType, nil, nil, nil)
 
 	done := make(chan bool)
 	go func() {
@@ -401,7 +401,7 @@ func StartCluster(t *testing.T, db database.Database, size int) []ServerInfo {
 		go func(i int, node cluster.Node) {
 			log.WithFields(log.Fields{"APIPort": node.APIPort}).Info("Starting ColoniesServer")
 			// Cluster tests use HTTP backend by default for simplicity (no LibP2P config needed)
-			server := CreateServerWithBackend(db, node.APIPort, false, "", "", node, clusterConfig, "/tmp/colonies/etcd"+strconv.Itoa(i), constants.GENERATOR_TRIGGER_PERIOD, constants.CRON_TRIGGER_PERIOD, true, false, false, -1, 500, GinBackendType, nil)
+			server := CreateServerWithBackend(db, node.APIPort, false, "", "", node, clusterConfig, "/tmp/colonies/etcd"+strconv.Itoa(i), constants.GENERATOR_TRIGGER_PERIOD, constants.CRON_TRIGGER_PERIOD, true, false, false, -1, 500, GinBackendType, nil, nil, nil)
 			done := make(chan struct{})
 			s := ServerInfo{ServerID: serverID, ServerPrvKey: serverPrvKey, Server: server, Node: node, Done: done}
 			go func(i int) {
