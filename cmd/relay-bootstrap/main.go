@@ -15,6 +15,8 @@ import (
 	"github.com/libp2p/go-libp2p"
 	"github.com/libp2p/go-libp2p/core/crypto"
 	"github.com/libp2p/go-libp2p/core/host"
+	"github.com/libp2p/go-libp2p/core/network"
+	"github.com/libp2p/go-libp2p/core/peer"
 	dht "github.com/libp2p/go-libp2p-kad-dht"
 	"github.com/libp2p/go-libp2p/p2p/protocol/circuitv2/relay"
 	"github.com/multiformats/go-multiaddr"
@@ -74,52 +76,75 @@ func main() {
 	}
 
 	// Create libp2p host with relay support
+	log.Println("Creating libp2p host with options:")
+	log.Printf("  - Identity: %v", privKey != nil)
+	log.Printf("  - Listen: /ip4/0.0.0.0/tcp/4001, /ip4/0.0.0.0/udp/4001/quic-v1")
+	log.Printf("  - Relay: enabled (client)")
+	log.Printf("  - Relay Service: enabled (server)")
+	log.Printf("  - NAT Service: enabled")
+	log.Printf("  - Public IP: %s", publicIP)
+
 	h, err := libp2p.New(opts...)
 	if err != nil {
 		log.Fatalf("Failed to create libp2p host: %v", err)
 	}
 
-	log.Printf("✓ Relay host created")
+	log.Printf("✓ Relay host created successfully")
 	log.Printf("  Peer ID: %s", h.ID().String())
 
+	// Set up network event notifications
+	setupNetworkNotifications(h)
+
 	// Verify relay protocols are registered
-	// Note: Stream protocols are registered on the host, not the mux
 	streamProtos := h.Mux().Protocols()
 	log.Printf("  Registered mux protocols (%d total):", len(streamProtos))
 	for _, proto := range streamProtos {
 		log.Printf("    - %s", proto)
 	}
 
-	// Check if relay service is available by looking at network capabilities
+	// Check relay service configuration
 	log.Println("  Relay service configuration:")
 	log.Println("    - EnableRelay() ✓")
 	log.Println("    - EnableRelayService() ✓")
 	log.Println("    - Circuit v2 protocol: /libp2p/circuit/relay/0.2.0/hop")
-	log.Println("  Note: Relay protocols are registered as stream handlers, not mux protocols")
+	log.Println("  Note: Relay protocols are registered as stream handlers")
 
-	log.Printf("  Listening on:")
+	log.Printf("  Listening addresses (%d):", len(h.Addrs()))
 	for _, addr := range h.Addrs() {
-		log.Printf("    %s/p2p/%s", addr, h.ID().String())
+		fullAddr := fmt.Sprintf("%s/p2p/%s", addr, h.ID().String())
+		log.Printf("    %s", fullAddr)
 	}
+
+	// Log network configuration
+	log.Println("  Network configuration:")
+	log.Printf("    - Connectedness: %v", h.Network().Connectedness(h.ID()))
+	log.Printf("    - Network peers: %d", len(h.Network().Peers()))
+	log.Printf("    - Network conns: %d", len(h.Network().Conns()))
 
 	// Start DHT in server mode
 	ctx := context.Background()
+	log.Println("Initializing DHT...")
+	log.Printf("  - Mode: Server")
+	log.Printf("  - Protocol: /kad/1.0.0")
+
 	kadDHT, err := dht.New(ctx, h, dht.Mode(dht.ModeServer))
 	if err != nil {
 		log.Fatalf("Failed to create DHT: %v", err)
 	}
 
+	log.Println("Bootstrapping DHT...")
 	if err = kadDHT.Bootstrap(ctx); err != nil {
 		log.Fatalf("Failed to bootstrap DHT: %v", err)
 	}
 
-	log.Println("✓ DHT bootstrap node started")
+	log.Println("✓ DHT bootstrap node started successfully")
+	log.Printf("  - Routing table size: %d", kadDHT.RoutingTable().Size())
 
 	// Print configuration instructions
 	printConfigurationInstructions(h)
 
-	// Monitor relay statistics
-	go monitorStats(h)
+	// Monitor relay statistics with detailed logging
+	go monitorStats(h, kadDHT)
 
 	// Wait for interrupt
 	log.Println("\nRelay/Bootstrap node is running. Press Ctrl+C to stop.")
@@ -134,23 +159,49 @@ func main() {
 
 func loadOrGenerateIdentity() (crypto.PrivKey, error) {
 	identityFile := "relay-identity.key"
+	log.Printf("Looking for identity file: %s", identityFile)
 
 	// Try to load existing identity
 	if data, err := os.ReadFile(identityFile); err == nil {
-		log.Printf("Loading existing identity from %s", identityFile)
+		log.Printf("✓ Found existing identity file")
+		log.Printf("  File size: %d bytes", len(data))
+
 		privKeyBytes, err := base64.StdEncoding.DecodeString(string(data))
 		if err != nil {
 			return nil, fmt.Errorf("failed to decode identity: %w", err)
 		}
-		return crypto.UnmarshalPrivateKey(privKeyBytes)
+		log.Printf("  Decoded %d bytes", len(privKeyBytes))
+
+		privKey, err := crypto.UnmarshalPrivateKey(privKeyBytes)
+		if err != nil {
+			return nil, fmt.Errorf("failed to unmarshal private key: %w", err)
+		}
+
+		// Derive peer ID from private key
+		pid, err := peer.IDFromPrivateKey(privKey)
+		if err != nil {
+			return nil, fmt.Errorf("failed to derive peer ID: %w", err)
+		}
+		log.Printf("✓ Identity loaded successfully")
+		log.Printf("  Peer ID: %s", pid.String())
+
+		return privKey, nil
 	}
 
 	// Generate new identity
-	log.Printf("Generating new identity...")
-	privKey, _, err := crypto.GenerateEd25519Key(rand.Reader)
+	log.Printf("No existing identity found, generating new one...")
+	privKey, pubKey, err := crypto.GenerateEd25519Key(rand.Reader)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate key: %w", err)
 	}
+	log.Printf("✓ Generated Ed25519 key pair")
+
+	// Derive peer ID
+	pid, err := peer.IDFromPublicKey(pubKey)
+	if err != nil {
+		return nil, fmt.Errorf("failed to derive peer ID: %w", err)
+	}
+	log.Printf("  New Peer ID: %s", pid.String())
 
 	// Save identity
 	privKeyBytes, err := crypto.MarshalPrivateKey(privKey)
@@ -163,7 +214,7 @@ func loadOrGenerateIdentity() (crypto.PrivKey, error) {
 		return nil, fmt.Errorf("failed to save identity: %w", err)
 	}
 
-	log.Printf("✓ Identity saved to %s", identityFile)
+	log.Printf("✓ Identity saved to %s (%d bytes)", identityFile, len(encoded))
 	return privKey, nil
 }
 
@@ -203,7 +254,45 @@ func printConfigurationInstructions(h host.Host) {
 	fmt.Println("═══════════════════════════════════════════════════════════════\n")
 }
 
-func monitorStats(h host.Host) {
+func setupNetworkNotifications(h host.Host) {
+	log.Println("Setting up network event notifications...")
+
+	notifee := &network.NotifyBundle{
+		ConnectedF: func(n network.Network, c network.Conn) {
+			log.Printf("🔗 CONNECTED: Peer %s connected", c.RemotePeer().ShortString())
+			log.Printf("   Remote addr: %s", c.RemoteMultiaddr())
+			log.Printf("   Local addr: %s", c.LocalMultiaddr())
+			log.Printf("   Direction: %s", c.Stat().Direction)
+
+			// Log active streams on this connection
+			streams := c.GetStreams()
+			if len(streams) > 0 {
+				log.Printf("   Active streams: %d", len(streams))
+				for _, s := range streams {
+					proto := s.Protocol()
+					log.Printf("     - %s", proto)
+					if strings.Contains(string(proto), "circuit") || strings.Contains(string(proto), "relay") {
+						log.Printf("       ⚡ RELAY/CIRCUIT STREAM DETECTED!")
+					}
+				}
+			}
+		},
+		DisconnectedF: func(n network.Network, c network.Conn) {
+			log.Printf("❌ DISCONNECTED: Peer %s disconnected", c.RemotePeer().ShortString())
+		},
+		ListenF: func(n network.Network, addr multiaddr.Multiaddr) {
+			log.Printf("👂 LISTENING on: %s", addr)
+		},
+		ListenCloseF: func(n network.Network, addr multiaddr.Multiaddr) {
+			log.Printf("👂 LISTEN CLOSED: %s", addr)
+		},
+	}
+
+	h.Network().Notify(notifee)
+	log.Println("✓ Network event notifications enabled")
+}
+
+func monitorStats(h host.Host, kadDHT *dht.IpfsDHT) {
 	ticker := time.NewTicker(30 * time.Second)
 	defer ticker.Stop()
 
@@ -211,16 +300,59 @@ func monitorStats(h host.Host) {
 		peers := h.Network().Peers()
 		conns := h.Network().Conns()
 
-		// Count relay circuits
+		// Count relay circuits and protocol types
 		relayConns := 0
+		tcpConns := 0
+		quicConns := 0
+		protocolCounts := make(map[string]int)
+
 		for _, conn := range conns {
-			// Check if this is a relay connection by looking at the remote address
 			remoteAddr := conn.RemoteMultiaddr().String()
 			if strings.Contains(remoteAddr, "/p2p-circuit") {
 				relayConns++
 			}
+			if strings.Contains(remoteAddr, "/tcp/") {
+				tcpConns++
+			}
+			if strings.Contains(remoteAddr, "/quic") {
+				quicConns++
+			}
+
+			// Count streams by protocol
+			streams := conn.GetStreams()
+			for _, stream := range streams {
+				protocolCounts[string(stream.Protocol())]++
+			}
 		}
 
-		log.Printf("Stats: %d peers, %d connections (%d relay circuits)", len(peers), len(conns), relayConns)
+		log.Println("═══════════════════════════════════════════════════════")
+		log.Printf("📊 RELAY STATISTICS")
+		log.Printf("  Peers: %d", len(peers))
+		log.Printf("  Connections: %d (TCP: %d, QUIC: %d, Relay: %d)", len(conns), tcpConns, quicConns, relayConns)
+		log.Printf("  DHT Routing Table: %d entries", kadDHT.RoutingTable().Size())
+
+		if len(protocolCounts) > 0 {
+			log.Printf("  Active protocols:")
+			for proto, count := range protocolCounts {
+				log.Printf("    - %s: %d streams", proto, count)
+			}
+		}
+
+		// List connected peers with details
+		if len(peers) > 0 {
+			log.Printf("  Connected peers:")
+			for i, p := range peers {
+				if i >= 5 { // Limit to first 5 peers
+					log.Printf("    ... and %d more", len(peers)-5)
+					break
+				}
+				peerConns := h.Network().ConnsToPeer(p)
+				log.Printf("    - %s (%d conns)", p.ShortString(), len(peerConns))
+				for _, conn := range peerConns {
+					log.Printf("      %s", conn.RemoteMultiaddr())
+				}
+			}
+		}
+		log.Println("═══════════════════════════════════════════════════════")
 	}
 }
