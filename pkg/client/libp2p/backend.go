@@ -672,18 +672,31 @@ func (l *LibP2PClientBackend) performPeerDiscovery() {
 			cancel()
 
 			if err != nil {
-				serverPeer.Active = false
-				serverPeer.FailedAttempts++
-				logrus.WithError(err).WithFields(logrus.Fields{
-					"peer_id":        peerID.String(),
-					"failed_attempts": serverPeer.FailedAttempts,
-					"next_retry":     backoffDelay,
-				}).Debug("Failed to reconnect to peer")
+				// Direct connection failed - try via relay circuit
+				logrus.WithError(err).WithField("peer_id", peerID.String()).Debug("Failed direct reconnection, trying relay...")
+				err = l.tryRelayConnection(peerID, serverPeer.Addrs)
+				if err != nil {
+					serverPeer.Active = false
+					serverPeer.FailedAttempts++
+					logrus.WithError(err).WithFields(logrus.Fields{
+						"peer_id":         peerID.String(),
+						"failed_attempts": serverPeer.FailedAttempts,
+						"next_retry":      backoffDelay,
+					}).Debug("Failed to reconnect to peer (direct and relay)")
+				} else {
+					serverPeer.Active = true
+					serverPeer.LastSeen = time.Now()
+					serverPeer.FailedAttempts = 0
+					logrus.WithFields(logrus.Fields{
+						"peer_id": peerID.String(),
+						"method":  "relay-circuit",
+					}).Info("Successfully reconnected to peer via relay")
+				}
 			} else {
 				serverPeer.Active = true
 				serverPeer.LastSeen = time.Now()
 				serverPeer.FailedAttempts = 0 // Reset on success
-				logrus.WithField("peer_id", peerID.String()).Info("Successfully reconnected to peer")
+				logrus.WithField("peer_id", peerID.String()).Info("Successfully reconnected to peer (direct)")
 			}
 		} else {
 			serverPeer.Active = true
@@ -748,15 +761,29 @@ func (l *LibP2PClientBackend) discoverViaDHT() {
 				logrus.WithError(err).WithFields(logrus.Fields{
 					"peer_id": peer.ID.String(),
 					"addrs":   peer.Addrs,
-				}).Warn("Failed initial connection to discovered peer (will retry later)")
-				// Don't skip! Add peer with Active=false so we can retry later
+				}).Warn("Failed direct connection to discovered peer, trying relay circuits...")
+
+				// Direct connection failed - try via relay circuits
+				// This is critical for clients behind NAT/CGNAT (like 5G networks)
+				err = l.tryRelayConnection(peer.ID, peer.Addrs)
+				if err != nil {
+					logrus.WithError(err).WithField("peer_id", peer.ID.String()).Warn("Failed relay connection (will retry later)")
+					// Don't skip! Add peer with Active=false so we can retry later
+				} else {
+					isConnected = true
+					connected++
+					logrus.WithFields(logrus.Fields{
+						"peer_id": peer.ID.String(),
+						"method":  "relay-circuit",
+					}).Info("Successfully connected to peer via relay circuit")
+				}
 			} else {
 				isConnected = true
 				connected++
 				logrus.WithFields(logrus.Fields{
 					"peer_id": peer.ID.String(),
 					"addrs":   peer.Addrs,
-				}).Info("Discovered and connected to peer via DHT")
+				}).Info("Discovered and connected to peer via DHT (direct)")
 			}
 		} else {
 			isConnected = true
@@ -796,6 +823,85 @@ func (l *LibP2PClientBackend) discoverViaDHT() {
 			logrus.WithError(err).Warn("Failed to save DHT cache")
 		}
 	}
+}
+
+// tryRelayConnection attempts to connect to a peer via relay circuits
+// This is essential for clients behind NAT/CGNAT (like 5G networks) to reach servers
+func (l *LibP2PClientBackend) tryRelayConnection(targetPeerID peer.ID, targetAddrs []multiaddr.Multiaddr) error {
+	// Get all connected peers that could act as relays
+	connectedPeers := l.host.Network().Peers()
+
+	if len(connectedPeers) == 0 {
+		return fmt.Errorf("no relay peers available (not connected to any peers)")
+	}
+
+	logrus.WithFields(logrus.Fields{
+		"target_peer": targetPeerID.ShortString(),
+		"relay_peers": len(connectedPeers),
+	}).Debug("Attempting relay circuit connection")
+
+	var lastErr error
+	for _, relayPeerID := range connectedPeers {
+		// Skip if trying to relay through the target itself
+		if relayPeerID == targetPeerID {
+			continue
+		}
+
+		// Check if this peer is actually connected
+		if l.host.Network().Connectedness(relayPeerID) != network.Connected {
+			continue
+		}
+
+		// Construct relay circuit address: /p2p/RELAY_ID/p2p-circuit/p2p/TARGET_ID
+		relayCircuitAddr, err := multiaddr.NewMultiaddr(fmt.Sprintf("/p2p/%s/p2p-circuit/p2p/%s",
+			relayPeerID.String(), targetPeerID.String()))
+		if err != nil {
+			logrus.WithError(err).WithFields(logrus.Fields{
+				"relay_peer":  relayPeerID.ShortString(),
+				"target_peer": targetPeerID.ShortString(),
+			}).Debug("Failed to construct relay circuit address")
+			lastErr = err
+			continue
+		}
+
+		// Try to connect via this relay
+		peerInfo := peer.AddrInfo{
+			ID:    targetPeerID,
+			Addrs: []multiaddr.Multiaddr{relayCircuitAddr},
+		}
+
+		logrus.WithFields(logrus.Fields{
+			"relay_peer":   relayPeerID.ShortString(),
+			"target_peer":  targetPeerID.ShortString(),
+			"circuit_addr": relayCircuitAddr.String(),
+		}).Info("Attempting connection via relay circuit")
+
+		ctx, cancel := context.WithTimeout(l.ctx, ConnectTimeout)
+		err = l.host.Connect(ctx, peerInfo)
+		cancel()
+
+		if err != nil {
+			logrus.WithError(err).WithFields(logrus.Fields{
+				"relay_peer":  relayPeerID.ShortString(),
+				"target_peer": targetPeerID.ShortString(),
+			}).Debug("Failed to connect via this relay, trying next")
+			lastErr = err
+			continue
+		}
+
+		// Success!
+		logrus.WithFields(logrus.Fields{
+			"relay_peer":   relayPeerID.ShortString(),
+			"target_peer":  targetPeerID.ShortString(),
+			"circuit_addr": relayCircuitAddr.String(),
+		}).Info("Successfully connected via relay circuit!")
+		return nil
+	}
+
+	if lastErr != nil {
+		return fmt.Errorf("all relay connection attempts failed, last error: %w", lastErr)
+	}
+	return fmt.Errorf("no suitable relay peers found")
 }
 
 // getTopicForSubscription determines the appropriate pubsub topic based on the subscription request
