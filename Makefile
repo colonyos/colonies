@@ -18,7 +18,7 @@ build:
 
 container:
 	@echo "Building Linux binary for container..."
-	@CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -ldflags="-s -w $(GOLDFLAGS)" -o ./bin/colonies ./cmd/main.go
+	#@CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -ldflags="-s -w $(GOLDFLAGS)" -o ./bin/colonies ./cmd/main.go
 	docker build -t $(BUILD_IMAGE) .
 
 push:
