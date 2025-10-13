@@ -298,15 +298,21 @@ func setupNetworkNotifications(h host.Host) {
 
 	notifee := &network.NotifyBundle{
 		ConnectedF: func(n network.Network, c network.Conn) {
-			log.Printf("🔗 CONNECTED: Peer %s connected", c.RemotePeer().ShortString())
-			log.Printf("   Remote addr: %s", c.RemoteMultiaddr())
-			log.Printf("   Local addr: %s", c.LocalMultiaddr())
-			log.Printf("   Direction: %s", c.Stat().Direction)
-			log.Printf("   Transport: %s", c.ConnState().Transport)
-
-			// Log active streams on this connection
+			// Only log connections with active relay/circuit streams
 			streams := c.GetStreams()
-			if len(streams) > 0 {
+			hasRelayStream := false
+			for _, s := range streams {
+				proto := s.Protocol()
+				if strings.Contains(string(proto), "circuit") || strings.Contains(string(proto), "relay") {
+					hasRelayStream = true
+					break
+				}
+			}
+
+			if hasRelayStream || len(streams) > 1 {
+				// This is likely a real Colonies client, log it
+				log.Printf("🔗 COLONIES CLIENT CONNECTED: Peer %s", c.RemotePeer().ShortString())
+				log.Printf("   Remote addr: %s", c.RemoteMultiaddr())
 				log.Printf("   Active streams: %d", len(streams))
 				for _, s := range streams {
 					proto := s.Protocol()
@@ -316,11 +322,24 @@ func setupNetworkNotifications(h host.Host) {
 					}
 				}
 			}
+			// Silently ignore random DHT scanner connections
 		},
 		DisconnectedF: func(n network.Network, c network.Conn) {
-			log.Printf("❌ DISCONNECTED: Peer %s disconnected", c.RemotePeer().ShortString())
-			log.Printf("   Remote addr: %s", c.RemoteMultiaddr())
-			log.Printf("   Connection duration: %v", time.Since(c.Stat().Opened))
+			// Only log disconnections if it was a relay connection
+			streams := c.GetStreams()
+			hadRelayStream := false
+			for _, s := range streams {
+				proto := s.Protocol()
+				if strings.Contains(string(proto), "circuit") || strings.Contains(string(proto), "relay") {
+					hadRelayStream = true
+					break
+				}
+			}
+
+			if hadRelayStream {
+				log.Printf("❌ DISCONNECTED: Peer %s disconnected", c.RemotePeer().ShortString())
+				log.Printf("   Connection duration: %v", time.Since(c.Stat().Opened))
+			}
 		},
 		ListenF: func(n network.Network, addr multiaddr.Multiaddr) {
 			log.Printf("👂 LISTENING on: %s", addr)
@@ -331,7 +350,7 @@ func setupNetworkNotifications(h host.Host) {
 	}
 
 	h.Network().Notify(notifee)
-	log.Println("✓ Network event notifications enabled")
+	log.Println("✓ Network event notifications enabled (only logging relay connections)")
 }
 
 func monitorStats(h host.Host, kadDHT *dht.IpfsDHT) {
