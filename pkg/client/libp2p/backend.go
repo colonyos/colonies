@@ -22,6 +22,7 @@ import (
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/libp2p/go-libp2p/core/protocol"
 	"github.com/libp2p/go-libp2p/p2p/discovery/routing"
+	"github.com/libp2p/go-libp2p/p2p/host/autorelay"
 	"github.com/multiformats/go-multiaddr"
 	"github.com/sirupsen/logrus"
 )
@@ -89,18 +90,73 @@ func NewLibP2PClientBackend(config *backends.ClientConfig) (*LibP2PClientBackend
 
 	ctx, cancel := context.WithCancel(context.Background())
 
-	// Create libp2p host with relay support for client
-	h, err := libp2p.New(
+	// Build libp2p options with NAT traversal support
+	opts := []libp2p.Option{
 		libp2p.DefaultTransports,
 		libp2p.DefaultMuxers,
 		libp2p.DefaultSecurity,
-		libp2p.EnableNATService(),
-		libp2p.EnableRelay(),
-	)
+		libp2p.EnableNATService(),      // Enable UPnP/NAT-PMP
+		libp2p.NATPortMap(),             // Attempt to open ports via NAT
+		libp2p.EnableAutoNATv2(),        // AutoNAT v2 for external address detection
+		libp2p.EnableRelay(),            // Enable relay transport (use relays for connections)
+		libp2p.EnableHolePunching(),     // Enable DCUtR hole punching for NAT traversal
+	}
+
+	// Parse bootstrap peers for AutoRelay (if configured)
+	// These peers will act as relays when client is behind NAT
+	if config.BootstrapPeers != "" {
+		var staticRelays []peer.AddrInfo
+		peerAddrs := strings.Split(config.BootstrapPeers, ",")
+
+		for _, peerAddr := range peerAddrs {
+			peerAddr = strings.TrimSpace(peerAddr)
+			if peerAddr == "" {
+				continue
+			}
+
+			maddr, err := multiaddr.NewMultiaddr(peerAddr)
+			if err != nil {
+				logrus.WithFields(logrus.Fields{
+					"Address": peerAddr,
+					"Error":   err,
+				}).Warn("Failed to parse bootstrap peer multiaddress for AutoRelay")
+				continue
+			}
+
+			addrInfo, err := peer.AddrInfoFromP2pAddr(maddr)
+			if err != nil {
+				logrus.WithFields(logrus.Fields{
+					"Address": peerAddr,
+					"Error":   err,
+				}).Warn("Failed to extract peer info from multiaddress for AutoRelay")
+				continue
+			}
+
+			staticRelays = append(staticRelays, *addrInfo)
+		}
+
+		// Enable AutoRelay with static relays
+		if len(staticRelays) > 0 {
+			opts = append(opts, libp2p.EnableAutoRelay(autorelay.WithStaticRelays(staticRelays)))
+			logrus.WithField("RelayCount", len(staticRelays)).Info("Client AutoRelay enabled with static relays - will use relay when behind NAT")
+		} else {
+			logrus.Warn("Client AutoRelay disabled - no valid bootstrap peers could be parsed")
+		}
+	} else {
+		logrus.Info("Client AutoRelay disabled - no bootstrap peers configured")
+	}
+
+	// Create libp2p host
+	h, err := libp2p.New(opts...)
 	if err != nil {
 		cancel()
 		return nil, fmt.Errorf("failed to create libp2p host: %w", err)
 	}
+
+	logrus.WithFields(logrus.Fields{
+		"PeerID": h.ID().String(),
+		"Addrs":  h.Addrs(),
+	}).Info("LibP2P client host created with NAT traversal support")
 
 	// Create pubsub for realtime communication
 	ps, err := pubsub.NewGossipSub(ctx, h)
