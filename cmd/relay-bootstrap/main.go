@@ -313,6 +313,12 @@ func setupNetworkNotifications(h host.Host) {
 				// This is likely a real Colonies client, log it
 				log.Printf("🔗 COLONIES CLIENT CONNECTED: Peer %s", c.RemotePeer().ShortString())
 				log.Printf("   Remote addr: %s", c.RemoteMultiaddr())
+				log.Printf("   Transport: %s", c.ConnState().Transport)
+
+				// Log security protocol
+				security := c.ConnState().Security
+				log.Printf("   Security: %s", security)
+
 				log.Printf("   Active streams: %d", len(streams))
 				for _, s := range streams {
 					proto := s.Protocol()
