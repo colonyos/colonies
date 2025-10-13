@@ -102,12 +102,37 @@ func main() {
 		log.Printf("    - %s", proto)
 	}
 
-	// Check relay service configuration
-	log.Println("  Relay service configuration:")
-	log.Println("    - EnableRelay() ✓")
-	log.Println("    - EnableRelayService() ✓")
-	log.Println("    - Circuit v2 protocol: /libp2p/circuit/relay/0.2.0/hop")
-	log.Println("  Note: Relay protocols are registered as stream handlers")
+	// Try to open a test stream to verify relay service is actually running
+	log.Println("  Checking relay service protocols...")
+	relayHopProto := "/libp2p/circuit/relay/0.2.0/hop"
+	relayStopProto := "/libp2p/circuit/relay/0.2.0/stop"
+
+	// We can't directly check stream handlers, but we can verify by checking
+	// if the protocols are in the supported protocols list
+	supportsHop := false
+	supportsStop := false
+	for _, proto := range streamProtos {
+		if string(proto) == relayHopProto {
+			supportsHop = true
+		}
+		if string(proto) == relayStopProto {
+			supportsStop = true
+		}
+	}
+
+	if supportsHop {
+		log.Println("    ✓ Relay HOP protocol registered (relay server)")
+	} else {
+		log.Println("    ⚠️  Relay HOP protocol NOT FOUND - relay server will not work!")
+	}
+
+	if supportsStop {
+		log.Println("    ✓ Relay STOP protocol registered (relay client)")
+	} else {
+		log.Println("    ⚠️  Relay STOP protocol NOT FOUND")
+	}
+
+	log.Println("  Note: Circuit v2 hop may be registered as stream handler, not visible in Mux().Protocols()")
 
 	log.Printf("  Listening addresses (%d):", len(h.Addrs()))
 	for _, addr := range h.Addrs() {
@@ -299,6 +324,7 @@ func setupNetworkNotifications(h host.Host) {
 			log.Printf("   Remote addr: %s", c.RemoteMultiaddr())
 			log.Printf("   Local addr: %s", c.LocalMultiaddr())
 			log.Printf("   Direction: %s", c.Stat().Direction)
+			log.Printf("   Transport: %s", c.ConnState().Transport)
 
 			// Log active streams on this connection
 			streams := c.GetStreams()
@@ -315,6 +341,8 @@ func setupNetworkNotifications(h host.Host) {
 		},
 		DisconnectedF: func(n network.Network, c network.Conn) {
 			log.Printf("❌ DISCONNECTED: Peer %s disconnected", c.RemotePeer().ShortString())
+			log.Printf("   Remote addr: %s", c.RemoteMultiaddr())
+			log.Printf("   Connection duration: %v", time.Since(c.Stat().Opened))
 		},
 		ListenF: func(n network.Network, addr multiaddr.Multiaddr) {
 			log.Printf("👂 LISTENING on: %s", addr)
