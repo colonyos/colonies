@@ -33,11 +33,13 @@ func main() {
 	// Check for public IP from environment
 	publicIP := os.Getenv("PUBLIC_IP")
 
+	// Use non-standard ports to avoid random public libp2p nodes
+	// Standard port 4001 attracts scanners and public DHT crawlers
 	opts := []libp2p.Option{
 		libp2p.Identity(privKey),
 		libp2p.ListenAddrStrings(
-			"/ip4/0.0.0.0/tcp/4001",        // TCP on all interfaces
-			"/ip4/0.0.0.0/udp/4001/quic-v1", // QUIC on all interfaces
+			"/ip4/0.0.0.0/tcp/4002",        // TCP on all interfaces (non-standard port)
+			"/ip4/0.0.0.0/udp/4002/quic-v1", // QUIC on all interfaces (non-standard port)
 		),
 		libp2p.EnableRelay(),       // Enable relay transport (client)
 		libp2p.EnableRelayService(), // Provide relay service (server) - use default limits
@@ -54,9 +56,9 @@ func main() {
 			// Replace private IPs with public IP
 			publicAddrs := []multiaddr.Multiaddr{}
 
-			// Add public IP announcements
-			publicTCP, _ := multiaddr.NewMultiaddr(fmt.Sprintf("/ip4/%s/tcp/4001", publicIP))
-			publicQUIC, _ := multiaddr.NewMultiaddr(fmt.Sprintf("/ip4/%s/udp/4001/quic-v1", publicIP))
+			// Add public IP announcements with non-standard port
+			publicTCP, _ := multiaddr.NewMultiaddr(fmt.Sprintf("/ip4/%s/tcp/4002", publicIP))
+			publicQUIC, _ := multiaddr.NewMultiaddr(fmt.Sprintf("/ip4/%s/udp/4002/quic-v1", publicIP))
 
 			if publicTCP != nil {
 				publicAddrs = append(publicAddrs, publicTCP)
@@ -75,7 +77,7 @@ func main() {
 	// Create libp2p host with relay support
 	log.Println("Creating libp2p host with options:")
 	log.Printf("  - Identity: %v", privKey != nil)
-	log.Printf("  - Listen: /ip4/0.0.0.0/tcp/4001, /ip4/0.0.0.0/udp/4001/quic-v1")
+	log.Printf("  - Listen: /ip4/0.0.0.0/tcp/4002, /ip4/0.0.0.0/udp/4002/quic-v1")
 	log.Printf("  - Relay: enabled (client)")
 	log.Printf("  - Relay Service: enabled (server)")
 	log.Printf("  - NAT Service: enabled")
