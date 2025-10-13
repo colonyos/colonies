@@ -264,32 +264,41 @@ func printConfigurationInstructions(h host.Host) {
 	fmt.Println("\nAdd these lines to your docker-compose.env file:")
 	fmt.Println()
 
-	// Get the first multiaddr (typically the public one)
+	// Find TCP and QUIC addresses
 	if len(h.Addrs()) > 0 {
-		// Try to find a non-localhost address
-		var publicAddr string
+		var tcpAddr, quicAddr string
+
 		for _, addr := range h.Addrs() {
 			addrStr := addr.String()
-			if addrStr != "/ip4/127.0.0.1/tcp/4001" && addrStr != "/ip4/127.0.0.1/udp/4001/quic-v1" {
-				publicAddr = fmt.Sprintf("%s/p2p/%s", addr, h.ID())
-				break
+			// Skip localhost
+			if strings.Contains(addrStr, "127.0.0.1") {
+				continue
+			}
+
+			if strings.Contains(addrStr, "/tcp/") {
+				tcpAddr = fmt.Sprintf("%s/p2p/%s", addr, h.ID())
+			} else if strings.Contains(addrStr, "/quic") {
+				quicAddr = fmt.Sprintf("%s/p2p/%s", addr, h.ID())
 			}
 		}
 
-		if publicAddr == "" {
-			publicAddr = fmt.Sprintf("%s/p2p/%s", h.Addrs()[0], h.ID())
+		if tcpAddr != "" {
+			fmt.Printf("# Server configuration (TCP works on home networks)\n")
+			fmt.Printf("export COLONIES_SERVER_LIBP2P_BOOTSTRAP_PEERS=\"%s\"\n", tcpAddr)
 		}
-
-		fmt.Printf("# Server configuration\n")
-		fmt.Printf("export COLONIES_SERVER_LIBP2P_BOOTSTRAP_PEERS=\"%s\"\n", publicAddr)
 		fmt.Println()
-		fmt.Printf("# Client configuration\n")
-		fmt.Printf("export COLONIES_CLIENT_LIBP2P_BOOTSTRAP_PEERS=\"%s\"\n", publicAddr)
+		if quicAddr != "" {
+			fmt.Printf("# Client configuration (QUIC recommended for 5G/mobile networks)\n")
+			fmt.Printf("export COLONIES_CLIENT_LIBP2P_BOOTSTRAP_PEERS=\"%s\"\n", quicAddr)
+		} else if tcpAddr != "" {
+			fmt.Printf("# Client configuration (fallback to TCP if QUIC not available)\n")
+			fmt.Printf("export COLONIES_CLIENT_LIBP2P_BOOTSTRAP_PEERS=\"%s\"\n", tcpAddr)
+		}
 	}
 
 	fmt.Println()
-	fmt.Println("NOTE: Replace the IP address with your PUBLIC IP if this relay is behind NAT")
-	fmt.Printf("Example: /ip4/YOUR_PUBLIC_IP/tcp/4001/p2p/%s\n", h.ID())
+	fmt.Println("NOTE: QUIC (UDP) is recommended for clients behind carrier-grade NAT (5G/mobile)")
+	fmt.Println("      TCP works for servers on stable networks with port forwarding")
 	fmt.Println("═══════════════════════════════════════════════════════════════\n")
 }
 
