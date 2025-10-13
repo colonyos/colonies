@@ -18,7 +18,6 @@ import (
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/peer"
 	dht "github.com/libp2p/go-libp2p-kad-dht"
-	"github.com/libp2p/go-libp2p/p2p/protocol/circuitv2/relay"
 	"github.com/multiformats/go-multiaddr"
 )
 
@@ -40,10 +39,8 @@ func main() {
 			"/ip4/0.0.0.0/tcp/4001",        // TCP on all interfaces
 			"/ip4/0.0.0.0/udp/4001/quic-v1", // QUIC on all interfaces
 		),
-		libp2p.EnableRelay(),              // Enable relay transport
-		libp2p.EnableRelayService(         // Provide relay service
-			relay.WithLimit(nil), // No limits (adjust for production)
-		),
+		libp2p.EnableRelay(),       // Enable relay transport (client)
+		libp2p.EnableRelayService(), // Provide relay service (server) - use default limits
 		libp2p.EnableNATService(),
 		libp2p.DefaultTransports,
 		libp2p.DefaultMuxers,
