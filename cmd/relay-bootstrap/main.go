@@ -137,8 +137,44 @@ func main() {
 		log.Fatalf("Failed to bootstrap DHT: %v", err)
 	}
 
+	// Connect to public libp2p bootstrap nodes to join the wider DHT network
+	log.Println("Connecting to public DHT bootstrap nodes...")
+	publicBootstrapPeers := []string{
+		"/dnsaddr/bootstrap.libp2p.io/p2p/QmNnooDu7bfjPFoTZYxMNLWUQJyrVwtbZg5gBMjTezGAJN",
+		"/dnsaddr/bootstrap.libp2p.io/p2p/QmQCU2EcMqAqQPR2i9bChDtGNJchTbq5TbXJJ16u19uLTa",
+		"/dnsaddr/bootstrap.libp2p.io/p2p/QmbLHAnMoJPWSCR5Zhtx6BHJX9KiKNN6tpvbUcqanj75Nb",
+		"/dnsaddr/bootstrap.libp2p.io/p2p/QmcZf59bWwK5XFi76CZX8cbJ4BhTzzA3gU1ZjYZcYW3dwt",
+	}
+
+	connectedToPublic := 0
+	for _, addrStr := range publicBootstrapPeers {
+		addr, err := multiaddr.NewMultiaddr(addrStr)
+		if err != nil {
+			log.Printf("  ⚠️  Invalid bootstrap address: %s", addrStr)
+			continue
+		}
+
+		peerInfo, err := peer.AddrInfoFromP2pAddr(addr)
+		if err != nil {
+			log.Printf("  ⚠️  Failed to parse peer info: %s", err)
+			continue
+		}
+
+		connectCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
+		err = h.Connect(connectCtx, *peerInfo)
+		cancel()
+
+		if err != nil {
+			log.Printf("  ⚠️  Failed to connect to %s: %v", peerInfo.ID.ShortString(), err)
+		} else {
+			connectedToPublic++
+			log.Printf("  ✓ Connected to public bootstrap: %s", peerInfo.ID.ShortString())
+		}
+	}
+
 	log.Println("✓ DHT bootstrap node started successfully")
 	log.Printf("  - Routing table size: %d", kadDHT.RoutingTable().Size())
+	log.Printf("  - Connected to public DHT nodes: %d/%d", connectedToPublic, len(publicBootstrapPeers))
 
 	// Print configuration instructions
 	printConfigurationInstructions(h)
