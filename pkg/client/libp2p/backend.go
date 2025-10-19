@@ -1064,10 +1064,15 @@ func (l *LibP2PClientBackend) saveDHTCache() error {
 	l.serverPeersLock.RLock()
 	defer l.serverPeersLock.RUnlock()
 
-	// Build cache from ALL server peers (active and inactive)
-	// Inactive peers can become active on retry, so we cache them too
+	// Build cache from active server peers only
+	// Inactive peers are not cached to avoid stale connections
 	var cachedPeers []CachedPeer
 	for _, serverPeer := range l.serverPeers {
+		// Skip inactive peers - they shouldn't be cached
+		if !serverPeer.Active {
+			continue
+		}
+
 		// Convert multiaddrs to strings
 		var addrStrs []string
 		for _, addr := range serverPeer.Addrs {
