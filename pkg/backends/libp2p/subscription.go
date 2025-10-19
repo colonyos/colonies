@@ -98,8 +98,10 @@ func (s *SubscriptionController) notifySubscriptionList(subscriptions []*backend
 			err = subscription.Connection.WriteMessage(subscription.MsgType, []byte(data))
 			if err != nil {
 				logrus.WithError(err).Error("Failed to send process update via libp2p")
-				// Close the connection if it failed
-				subscription.Connection.Close()
+				// Close the connection if it failed (check nil first to avoid panic during cleanup)
+				if subscription.Connection != nil {
+					subscription.Connection.Close()
+				}
 			}
 		}
 	}

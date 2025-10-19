@@ -64,7 +64,7 @@ func (ctrl *SubscriptionController) sendProcessToConnection(executorID string,
 		return err
 	}
 	
-	if !conn.IsOpen() {
+	if conn == nil || !conn.IsOpen() {
 		err = errors.New("connection is closed")
 		log.WithFields(log.Fields{
 			"ExecutorID":   executorID,
@@ -106,7 +106,7 @@ func (ctrl *SubscriptionController) subscribe(executorID string, processID strin
 					"State":        subscription.State,
 					"Error":        err}).
 					Debug("Subscriber timed out")
-				if subscription.Connection.IsOpen() {
+				if subscription.Connection != nil && subscription.Connection.IsOpen() {
 					subscription.Connection.Close()
 				}
 				return // This will kill the go-routine, also note all cancelCtx will result in an err to errChan
