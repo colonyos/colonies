@@ -36,7 +36,7 @@ func TestDHTCacheSaveAndLoad(t *testing.T) {
 	}
 
 	// Create test peer ID
-	testPeerID := "12D3KooWBrsnBU9rZ8ZBaniVexPfdLmYyF34doTRtSJ7XqfC3JfM"
+	testPeerID := "12D3KooWSBx1mxbu7rJ8AMsSGHDhG8GRhwqHSVnHPbhZypPLFjgK"
 	peerID, err := peer.Decode(testPeerID)
 	assert.NoError(t, err)
 
@@ -74,7 +74,7 @@ func TestDHTCacheSaveAndLoad(t *testing.T) {
 	assert.Equal(t, 1, cache.Version)
 	assert.NotZero(t, cache.Updated)
 	assert.Len(t, cache.Peers, 1)
-	assert.Equal(t, testPeerID, cache.Peers[0].PeerID)
+	assert.Equal(t, "12D3KooWSBx1mxbu7rJ8AMsSGHDhG8GRhwqHSVnHPbhZypPLFjgK", cache.Peers[0].PeerID)
 	assert.Equal(t, "test-rendezvous", cache.Peers[0].Rendezvous)
 	assert.Contains(t, cache.Peers[0].Addrs, "/ip4/127.0.0.1/tcp/5000")
 
@@ -92,7 +92,7 @@ func TestDHTCacheExpiry(t *testing.T) {
 		Updated: time.Now().Add(-25 * time.Hour),
 		Peers: []CachedPeer{
 			{
-				PeerID:     "12D3KooWBrsnBU9rZ8ZBaniVexPfdLmYyF34doTRtSJ7XqfC3JfM",
+				PeerID:     "12D3KooWSBx1mxbu7rJ8AMsSGHDhG8GRhwqHSVnHPbhZypPLFjgK",
 				Addrs:      []string{"/ip4/127.0.0.1/tcp/5000"},
 				LastSeen:   time.Now().Add(-25 * time.Hour),
 				Rendezvous: "test-rendezvous",
@@ -181,7 +181,7 @@ func TestDHTCacheInactivePeersNotSaved(t *testing.T) {
 	}
 
 	// Create test peer ID
-	testPeerID := "12D3KooWBrsnBU9rZ8ZBaniVexPfdLmYyF34doTRtSJ7XqfC3JfM"
+	testPeerID := "12D3KooWSBx1mxbu7rJ8AMsSGHDhG8GRhwqHSVnHPbhZypPLFjgK"
 	peerID, err := peer.Decode(testPeerID)
 	assert.NoError(t, err)
 
@@ -226,7 +226,7 @@ func TestDHTCacheFilePermissions(t *testing.T) {
 	}
 
 	// Create test peer
-	testPeerID := "12D3KooWBrsnBU9rZ8ZBaniVexPfdLmYyF34doTRtSJ7XqfC3JfM"
+	testPeerID := "12D3KooWSBx1mxbu7rJ8AMsSGHDhG8GRhwqHSVnHPbhZypPLFjgK"
 	peerID, err := peer.Decode(testPeerID)
 	assert.NoError(t, err)
 
