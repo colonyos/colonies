@@ -7,6 +7,7 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"net/http/httptrace"
 	"strconv"
 	"strings"
 	"sync"
@@ -16,8 +17,6 @@ import (
 	"golang.org/x/net/idna"
 
 	"github.com/quic-go/qpack"
-	"github.com/quic-go/quic-go"
-	"github.com/quic-go/quic-go/internal/utils"
 )
 
 const bodyCopyBufferSize = 8 * 1024
@@ -26,28 +25,29 @@ type requestWriter struct {
 	mutex     sync.Mutex
 	encoder   *qpack.Encoder
 	headerBuf *bytes.Buffer
-
-	logger utils.Logger
 }
 
-func newRequestWriter(logger utils.Logger) *requestWriter {
+func newRequestWriter() *requestWriter {
 	headerBuf := &bytes.Buffer{}
 	encoder := qpack.NewEncoder(headerBuf)
 	return &requestWriter{
 		encoder:   encoder,
 		headerBuf: headerBuf,
-		logger:    logger,
 	}
 }
 
-func (w *requestWriter) WriteRequestHeader(str quic.Stream, req *http.Request, gzip bool) error {
+func (w *requestWriter) WriteRequestHeader(wr io.Writer, req *http.Request, gzip bool) error {
 	// TODO: figure out how to add support for trailers
 	buf := &bytes.Buffer{}
 	if err := w.writeHeaders(buf, req, gzip); err != nil {
 		return err
 	}
-	_, err := str.Write(buf.Bytes())
-	return err
+	if _, err := wr.Write(buf.Bytes()); err != nil {
+		return err
+	}
+	trace := httptrace.ContextClientTrace(req.Context())
+	traceWroteHeaders(trace)
+	return nil
 }
 
 func (w *requestWriter) writeHeaders(wr io.Writer, req *http.Request, gzip bool) error {
@@ -69,6 +69,10 @@ func (w *requestWriter) writeHeaders(wr io.Writer, req *http.Request, gzip bool)
 	return err
 }
 
+func isExtendedConnectRequest(req *http.Request) bool {
+	return req.Method == http.MethodConnect && req.Proto != "" && req.Proto != "HTTP/1.1"
+}
+
 // copied from net/transport.go
 // Modified to support Extended CONNECT:
 // Contrary to what the godoc for the http.Request says,
@@ -87,7 +91,7 @@ func (w *requestWriter) encodeHeaders(req *http.Request, addGzipHeader bool, tra
 	}
 
 	// http.NewRequest sets this field to HTTP/1.1
-	isExtendedConnect := req.Method == http.MethodConnect && req.Proto != "" && req.Proto != "HTTP/1.1"
+	isExtendedConnect := isExtendedConnectRequest(req)
 
 	var path string
 	if req.Method != http.MethodConnect || isExtendedConnect {
@@ -198,16 +202,16 @@ func (w *requestWriter) encodeHeaders(req *http.Request, addGzipHeader bool, tra
 	// 	return errRequestHeaderListSize
 	// }
 
-	// trace := httptrace.ContextClientTrace(req.Context())
-	// traceHeaders := traceHasWroteHeaderField(trace)
+	trace := httptrace.ContextClientTrace(req.Context())
+	traceHeaders := traceHasWroteHeaderField(trace)
 
 	// Header list size is ok. Write the headers.
 	enumerateHeaders(func(name, value string) {
 		name = strings.ToLower(name)
 		w.encoder.WriteField(qpack.HeaderField{Name: name, Value: value})
-		// if traceHeaders {
-		// 	traceWroteHeaderField(trace, name, value)
-		// }
+		if traceHeaders {
+			traceWroteHeaderField(trace, name, value)
+		}
 	})
 
 	return nil
@@ -215,13 +219,10 @@ func (w *requestWriter) encodeHeaders(req *http.Request, addGzipHeader bool, tra
 
 // authorityAddr returns a given authority (a host/IP, or host:port / ip:port)
 // and returns a host:port. The port 443 is added if needed.
-func authorityAddr(scheme string, authority string) (addr string) {
+func authorityAddr(authority string) (addr string) {
 	host, port, err := net.SplitHostPort(authority)
 	if err != nil { // authority didn't have a port
 		port = "443"
-		if scheme == "http" {
-			port = "80"
-		}
 		host = authority
 	}
 	if a, err := idna.ToASCII(host); err == nil {

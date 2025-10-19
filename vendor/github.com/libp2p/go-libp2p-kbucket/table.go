@@ -13,13 +13,15 @@ import (
 
 	"github.com/libp2p/go-libp2p-kbucket/peerdiversity"
 
-	logging "github.com/ipfs/go-log"
+	logging "github.com/ipfs/go-log/v2"
 )
 
 var log = logging.Logger("table")
 
-var ErrPeerRejectedHighLatency = errors.New("peer rejected; latency too high")
-var ErrPeerRejectedNoCapacity = errors.New("peer rejected; insufficient capacity")
+var (
+	ErrPeerRejectedHighLatency = errors.New("peer rejected; latency too high")
+	ErrPeerRejectedNoCapacity  = errors.New("peer rejected; insufficient capacity")
+)
 
 // RoutingTable defines the routing table.
 type RoutingTable struct {
@@ -61,7 +63,8 @@ type RoutingTable struct {
 
 // NewRoutingTable creates a new routing table with a given bucketsize, local ID, and latency tolerance.
 func NewRoutingTable(bucketsize int, localID ID, latency time.Duration, m peerstore.Metrics, usefulnessGracePeriod time.Duration,
-	df *peerdiversity.Filter) (*RoutingTable, error) {
+	df *peerdiversity.Filter,
+) (*RoutingTable, error) {
 	rt := &RoutingTable{
 		buckets:    []*bucket{newBucket()},
 		bucketsize: bucketsize,
@@ -72,8 +75,12 @@ func NewRoutingTable(bucketsize int, localID ID, latency time.Duration, m peerst
 
 		cplRefreshedAt: make(map[uint]time.Time),
 
-		PeerRemoved: func(peer.ID) {},
-		PeerAdded:   func(peer.ID) {},
+		PeerRemoved: func(p peer.ID) {
+			log.Debugw("peer removed", "peer", p)
+		},
+		PeerAdded: func(p peer.ID) {
+			log.Debugw("peer added", "peer", p)
+		},
 
 		usefulnessGracePeriod: usefulnessGracePeriod,
 

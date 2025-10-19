@@ -3,7 +3,6 @@ package multistream
 import (
 	"fmt"
 	"io"
-	"sync"
 )
 
 // NewMSSelect returns a new Multistream which is able to perform
@@ -12,6 +11,9 @@ func NewMSSelect[T StringLike](c io.ReadWriteCloser, proto T) LazyConn {
 	return &lazyClientConn[T]{
 		protos: []T{ProtocolID, proto},
 		con:    c,
+
+		rhandshakeOnce: newOnce(),
+		whandshakeOnce: newOnce(),
 	}
 }
 
@@ -22,7 +24,38 @@ func NewMultistream[T StringLike](c io.ReadWriteCloser, proto T) LazyConn {
 	return &lazyClientConn[T]{
 		protos: []T{proto},
 		con:    c,
+
+		rhandshakeOnce: newOnce(),
+		whandshakeOnce: newOnce(),
 	}
+}
+
+// once is a sync.Once that can be used by synctest.
+// For Multistream, it is a bit better than sync.Once because it doesn't
+// spin when acquiring the lock.
+type once struct {
+	sem chan struct{}
+}
+
+func newOnce() *once {
+	o := once{
+		sem: make(chan struct{}, 1),
+	}
+	o.sem <- struct{}{}
+	return &o
+}
+
+func (o *once) Do(f func()) {
+	// We only ever pull a single value from the channel. But we want to block
+	// Do until the first call to Do has completed. The first call will close
+	// the channel, so by checking if it's closed we know we don't need to do
+	// anything.
+	_, ok := <-o.sem
+	if !ok {
+		return
+	}
+	defer close(o.sem)
+	f()
 }
 
 // lazyClientConn is a ReadWriteCloser adapter that lazily negotiates a protocol
@@ -33,11 +66,11 @@ func NewMultistream[T StringLike](c io.ReadWriteCloser, proto T) LazyConn {
 // See: https://github.com/multiformats/go-multistream/issues/20
 type lazyClientConn[T StringLike] struct {
 	// Used to ensure we only trigger the write half of the handshake once.
-	rhandshakeOnce sync.Once
+	rhandshakeOnce *once
 	rerr           error
 
 	// Used to ensure we only trigger the read half of the handshake once.
-	whandshakeOnce sync.Once
+	whandshakeOnce *once
 	werr           error
 
 	// The sequence of protocols to negotiate.
@@ -134,9 +167,7 @@ func (l *lazyClientConn[T]) Write(b []byte) (int, error) {
 	return l.con.Write(b)
 }
 
-// Close closes the underlying io.ReadWriteCloser
-//
-// This does not flush anything.
+// Close closes the underlying io.ReadWriteCloser after finishing the handshake.
 func (l *lazyClientConn[T]) Close() error {
 	// As the client, we flush the handshake on close to cover an
 	// interesting edge-case where the server only speaks a single protocol
@@ -147,6 +178,22 @@ func (l *lazyClientConn[T]) Close() error {
 	// closed the stream for reading. I mean, we're the initiator so that's
 	// strange... but it's still allowed
 	_ = l.Flush()
+
+	// Finish reading the handshake before we close the connection/stream. This
+	// is necessary so that the other side can finish sending its response to our
+	// multistream header before we tell it we are done reading.
+	//
+	// Example:
+	// We open a QUIC stream, write the protocol `/a`, send 1 byte of application
+	// data, and immediately close.
+	//
+	// This can result in a single packet that contains the stream data along
+	// with a STOP_SENDING frame. The other side may be unable to negotiate
+	// multistream select since it can't write to the stream anymore and may
+	// drop the stream.
+	//
+	// Note: We currently handle this case in Go(https://github.com/multiformats/go-multistream/pull/87), but rust-libp2p does not.
+	l.rhandshakeOnce.Do(l.doReadHandshake)
 	return l.con.Close()
 }
 

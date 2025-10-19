@@ -27,11 +27,6 @@ type RTTStats struct {
 	maxAckDelay time.Duration
 }
 
-// NewRTTStats makes a properly initialized RTTStats object
-func NewRTTStats() *RTTStats {
-	return &RTTStats{}
-}
-
 // MinRTT Returns the minRTT for the entire connection.
 // May return Zero if no valid updates have occurred.
 func (r *RTTStats) MinRTT() time.Duration { return r.minRTT }
@@ -63,8 +58,8 @@ func (r *RTTStats) PTO(includeMaxAckDelay bool) time.Duration {
 }
 
 // UpdateRTT updates the RTT based on a new sample.
-func (r *RTTStats) UpdateRTT(sendDelta, ackDelay time.Duration, now time.Time) {
-	if sendDelta == InfDuration || sendDelta <= 0 {
+func (r *RTTStats) UpdateRTT(sendDelta, ackDelay time.Duration) {
+	if sendDelta <= 0 {
 		return
 	}
 
@@ -101,7 +96,7 @@ func (r *RTTStats) SetMaxAckDelay(mad time.Duration) {
 }
 
 // SetInitialRTT sets the initial RTT.
-// It is used during the 0-RTT handshake when restoring the RTT stats from the session state.
+// It is used during handshake when restoring the RTT stats from the token.
 func (r *RTTStats) SetInitialRTT(t time.Duration) {
 	// On the server side, by the time we get to process the session ticket,
 	// we might already have obtained an RTT measurement.
@@ -114,18 +109,11 @@ func (r *RTTStats) SetInitialRTT(t time.Duration) {
 	r.latestRTT = t
 }
 
-// OnConnectionMigration is called when connection migrates and rtt measurement needs to be reset.
-func (r *RTTStats) OnConnectionMigration() {
-	r.latestRTT = 0
+func (r *RTTStats) ResetForPathMigration() {
+	r.hasMeasurement = false
 	r.minRTT = 0
+	r.latestRTT = 0
 	r.smoothedRTT = 0
 	r.meanDeviation = 0
-}
-
-// ExpireSmoothedMetrics causes the smoothed_rtt to be increased to the latest_rtt if the latest_rtt
-// is larger. The mean deviation is increased to the most recent deviation if
-// it's larger.
-func (r *RTTStats) ExpireSmoothedMetrics() {
-	r.meanDeviation = max(r.meanDeviation, (r.smoothedRTT - r.latestRTT).Abs())
-	r.smoothedRTT = max(r.smoothedRTT, r.latestRTT)
+	// max_ack_delay remains valid
 }

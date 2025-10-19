@@ -28,7 +28,7 @@ type testEnv struct {
 	executorPrvKey string
 }
 
-func setupTestEnv(t *testing.T) (*testEnv, *client.ColoniesClient, *server.ColoniesServer, string, chan bool) {
+func setupTestEnv(t *testing.T) (*testEnv, *client.ColoniesClient, *server.Server, string, chan bool) {
 	rand.Seed(time.Now().UTC().UnixNano())
 
 	gin.SetMode(gin.ReleaseMode)

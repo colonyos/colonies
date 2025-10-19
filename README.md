@@ -110,3 +110,6 @@ Follow the instructions at [Installation Guide](./docs/Installation.md) then typ
 ```console
 make test
 ```
+
+COLONIES_BACKEND_TYPE=gin make test
+COLONIES_BACKEND_TYPE=libp2p make test 

@@ -5,7 +5,6 @@ import (
 	"crypto/rand"
 	"encoding/binary"
 	"fmt"
-	"hash"
 	"os"
 	"runtime/debug"
 	"time"
@@ -13,7 +12,6 @@ import (
 	"github.com/libp2p/go-libp2p/core/crypto"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/libp2p/go-libp2p/core/sec"
-	"github.com/libp2p/go-libp2p/internal/sha256"
 	"github.com/libp2p/go-libp2p/p2p/security/noise/pb"
 
 	"github.com/flynn/noise"
@@ -21,21 +19,12 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-//go:generate protoc --go_out=. --go_opt=Mpb/payload.proto=./pb pb/payload.proto
-
 // payloadSigPrefix is prepended to our Noise static key before signing with
 // our libp2p identity key.
 const payloadSigPrefix = "noise-libp2p-static-key:"
 
-type minioSHAFn struct{}
-
-func (h minioSHAFn) Hash() hash.Hash  { return sha256.New() }
-func (h minioSHAFn) HashName() string { return "SHA256" }
-
-var shaHashFn noise.HashFunc = minioSHAFn{}
-
 // All noise session share a fixed cipher suite
-var cipherSuite = noise.NewCipherSuite(noise.DH25519, noise.CipherChaChaPoly, shaHashFn)
+var cipherSuite = noise.NewCipherSuite(noise.DH25519, noise.CipherChaChaPoly, noise.HashSHA256)
 
 // runHandshake exchanges handshake messages with the remote peer to establish
 // a noise-libp2p session. It blocks until the handshake completes or fails.

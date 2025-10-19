@@ -1,25 +1,25 @@
 package client
 
 import (
+	"github.com/colonyos/colonies/pkg/client/backends"
 	"github.com/colonyos/colonies/pkg/core"
-	"github.com/gorilla/websocket"
 )
 
 type ProcessSubscription struct {
 	ProcessChan chan *core.Process
 	ErrChan     chan error
-	wsConn      *websocket.Conn
+	conn        backends.RealtimeConnection
 }
 
-func createProcessSubscription(wsConn *websocket.Conn) *ProcessSubscription {
+func createProcessSubscription(conn backends.RealtimeConnection) *ProcessSubscription {
 	subscription := &ProcessSubscription{}
 	subscription.ProcessChan = make(chan *core.Process)
 	subscription.ErrChan = make(chan error)
-	subscription.wsConn = wsConn
+	subscription.conn = conn
 
 	return subscription
 }
 
 func (subscription *ProcessSubscription) Close() error {
-	return subscription.wsConn.Close()
+	return subscription.conn.Close()
 }
