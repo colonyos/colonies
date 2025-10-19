@@ -18,6 +18,8 @@ import (
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/peer"
 	dht "github.com/libp2p/go-libp2p-kad-dht"
+	rcmgr "github.com/libp2p/go-libp2p/p2p/host/resource-manager"
+	relayv2 "github.com/libp2p/go-libp2p/p2p/protocol/circuitv2/relay"
 	"github.com/multiformats/go-multiaddr"
 )
 
@@ -33,47 +35,87 @@ func main() {
 	// Check for public IP from environment
 	publicIP := os.Getenv("PUBLIC_IP")
 
+	// Configure relay service with infinite limits for testing
+	// Without relaxed limits, the resource manager blocks relay reservations
+	relayOpts := []relayv2.Option{
+		relayv2.WithInfiniteLimits(), // Use infinite limits for testing
+	}
+
+	// Create resource manager with infinite limits
+	// This prevents the resource manager from blocking relay operations
+	rmgr, err := rcmgr.NewResourceManager(rcmgr.NewFixedLimiter(rcmgr.InfiniteLimits))
+	if err != nil {
+		log.Fatalf("Failed to create resource manager: %v", err)
+	}
+
 	// Use non-standard ports to avoid random public libp2p nodes
 	// Standard port 4001 attracts scanners and public DHT crawlers
 	opts := []libp2p.Option{
 		libp2p.Identity(privKey),
 		libp2p.ListenAddrStrings(
-			"/ip4/0.0.0.0/tcp/4002",        // TCP on all interfaces (non-standard port)
+			"/ip4/0.0.0.0/tcp/4002",         // TCP on all interfaces (non-standard port)
 			"/ip4/0.0.0.0/udp/4002/quic-v1", // QUIC on all interfaces (non-standard port)
 		),
-		libp2p.ForceReachabilityPublic(), // FORCE public reachability (MUST come before EnableRelayService)
-		libp2p.EnableRelay(),             // Enable relay transport (client)
-		libp2p.EnableRelayService(),      // Provide relay service (server) - use defaults
+		libp2p.DefaultTransports,            // Includes TCP and QUIC
+		libp2p.EnableRelay(),                // Enable relay transport (client)
+		libp2p.EnableRelayService(relayOpts...), // Provide relay service with infinite limits
+		libp2p.ResourceManager(rmgr),        // Relaxed resource manager
 		libp2p.EnableNATService(),
-		libp2p.DefaultTransports,
+		libp2p.NATPortMap(), // Try UPnP/PCP port mapping
 		libp2p.DefaultMuxers,
 		libp2p.DefaultSecurity,
 	}
 
-	// If public IP is provided, announce it
-	if publicIP != "" {
-		log.Printf("Using public IP from environment: %s", publicIP)
-		opts = append(opts, libp2p.AddrsFactory(func(addrs []multiaddr.Multiaddr) []multiaddr.Multiaddr {
-			// Replace private IPs with public IP
+	// Configure address announcement
+	opts = append(opts, libp2p.AddrsFactory(func(addrs []multiaddr.Multiaddr) []multiaddr.Multiaddr {
+		if publicIP != "" {
+			// Use explicit public IP
+			log.Printf("Using public IP from environment: %s", publicIP)
 			publicAddrs := []multiaddr.Multiaddr{}
-
-			// Add public IP announcements with non-standard port
 			publicTCP, _ := multiaddr.NewMultiaddr(fmt.Sprintf("/ip4/%s/tcp/4002", publicIP))
 			publicQUIC, _ := multiaddr.NewMultiaddr(fmt.Sprintf("/ip4/%s/udp/4002/quic-v1", publicIP))
-
 			if publicTCP != nil {
 				publicAddrs = append(publicAddrs, publicTCP)
 			}
 			if publicQUIC != nil {
 				publicAddrs = append(publicAddrs, publicQUIC)
 			}
-
 			return publicAddrs
-		}))
-	} else {
-		log.Println("WARNING: PUBLIC_IP not set - relay will announce private IP addresses")
-		log.Println("Set PUBLIC_IP environment variable: export PUBLIC_IP=your.public.ip.address")
-	}
+		}
+
+		// Filter out private IPs to avoid poisoning DHT
+		var filtered []multiaddr.Multiaddr
+		for _, addr := range addrs {
+			s := addr.String()
+			// Skip private IPv4 ranges
+			if strings.Contains(s, "/ip4/10.") ||
+				strings.Contains(s, "/ip4/192.168.") ||
+				strings.Contains(s, "/ip4/172.16.") ||
+				strings.Contains(s, "/ip4/172.17.") ||
+				strings.Contains(s, "/ip4/172.18.") ||
+				strings.Contains(s, "/ip4/172.19.") ||
+				strings.Contains(s, "/ip4/172.20.") ||
+				strings.Contains(s, "/ip4/172.21.") ||
+				strings.Contains(s, "/ip4/172.22.") ||
+				strings.Contains(s, "/ip4/172.23.") ||
+				strings.Contains(s, "/ip4/172.24.") ||
+				strings.Contains(s, "/ip4/172.25.") ||
+				strings.Contains(s, "/ip4/172.26.") ||
+				strings.Contains(s, "/ip4/172.27.") ||
+				strings.Contains(s, "/ip4/172.28.") ||
+				strings.Contains(s, "/ip4/172.29.") ||
+				strings.Contains(s, "/ip4/172.30.") ||
+				strings.Contains(s, "/ip4/172.31.") ||
+				strings.Contains(s, "/ip4/127.") {
+				continue // Skip private/localhost addresses
+			}
+			filtered = append(filtered, addr)
+		}
+		if len(filtered) == 0 {
+			log.Println("WARNING: No public addresses detected - set PUBLIC_IP environment variable")
+		}
+		return filtered
+	}))
 
 	// Create libp2p host with relay support
 	log.Println("Creating libp2p host with options:")
