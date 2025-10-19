@@ -22,6 +22,8 @@ const DefaultCount = 20
 var mutex sync.Mutex
 
 var DBName = "postgres"
+var DBType string
+var DataDir string
 var Verbose bool
 var DBHost string
 var DBPort int
@@ -35,6 +37,7 @@ var TLSCert string
 var TLSKey string
 var ServerHost string
 var ServerPort int
+var LibP2PPort int  // Port for LibP2P transport (required when using libp2p backend)
 var MonitorPort int
 var MonitorInterval int
 var ServerID string

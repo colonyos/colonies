@@ -66,16 +66,20 @@ type constructorNode struct {
 
 	// Callback for this provided function, if there is one.
 	callback Callback
+
+	// BeforeCallback for this provided function, if there is one.
+	beforeCallback BeforeCallback
 }
 
 type constructorOptions struct {
 	// If specified, all values produced by this constructor have the provided name
 	// belong to the specified value group or implement any of the interfaces.
-	ResultName  string
-	ResultGroup string
-	ResultAs    []interface{}
-	Location    *digreflect.Func
-	Callback    Callback
+	ResultName     string
+	ResultGroup    string
+	ResultAs       []interface{}
+	Location       *digreflect.Func
+	Callback       Callback
+	BeforeCallback BeforeCallback
 }
 
 func newConstructorNode(ctor interface{}, s *Scope, origS *Scope, opts constructorOptions) (*constructorNode, error) {
@@ -106,16 +110,17 @@ func newConstructorNode(ctor interface{}, s *Scope, origS *Scope, opts construct
 	}
 
 	n := &constructorNode{
-		ctor:       ctor,
-		ctype:      ctype,
-		location:   location,
-		id:         dot.CtorID(cptr),
-		paramList:  params,
-		resultList: results,
-		orders:     make(map[*Scope]int),
-		s:          s,
-		origS:      origS,
-		callback:   opts.Callback,
+		ctor:           ctor,
+		ctype:          ctype,
+		location:       location,
+		id:             dot.CtorID(cptr),
+		paramList:      params,
+		resultList:     results,
+		orders:         make(map[*Scope]int),
+		s:              s,
+		origS:          origS,
+		callback:       opts.Callback,
+		beforeCallback: opts.BeforeCallback,
 	}
 	s.newGraphNode(n, n.orders)
 	return n, nil
@@ -160,12 +165,20 @@ func (n *constructorNode) Call(c containerStore) (err error) {
 		}
 	}
 
+	if n.beforeCallback != nil {
+		n.beforeCallback(BeforeCallbackInfo{
+			Name: fmt.Sprintf("%v.%v", n.location.Package, n.location.Name),
+		})
+	}
+
 	if n.callback != nil {
+		start := c.clock().Now()
 		// Wrap in separate func to include PanicErrors
 		defer func() {
 			n.callback(CallbackInfo{
-				Name:  fmt.Sprintf("%v.%v", n.location.Package, n.location.Name),
-				Error: err,
+				Name:    fmt.Sprintf("%v.%v", n.location.Package, n.location.Name),
+				Error:   err,
+				Runtime: c.clock().Since(start),
 			})
 		}()
 	}

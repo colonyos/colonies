@@ -1,10 +1,14 @@
 package query
 
 import (
+	"context"
 	"fmt"
 	"time"
+)
 
-	goprocess "github.com/jbenet/goprocess"
+const (
+	NormalBufSize   = 1
+	KeysOnlyBufSize = 128
 )
 
 /*
@@ -12,9 +16,9 @@ Query represents storage for any key-value pair.
 
 tl;dr:
 
-  queries are supported across datastores.
-  Cheap on top of relational dbs, and expensive otherwise.
-  Pick the right tool for the job!
+	queries are supported across datastores.
+	Cheap on top of relational dbs, and expensive otherwise.
+	Pick the right tool for the job!
 
 In addition to the key-value store get and set semantics, datastore
 provides an interface to retrieve multiple records at a time through
@@ -24,11 +28,11 @@ database research, let’s summarize the operations datastore supports.
 
 Query Operations, applied in-order:
 
-  * prefix - scope the query to a given path prefix
-  * filters - select a subset of values by applying constraints
-  * orders - sort the results by applying sort conditions, hierarchically.
-  * offset - skip a number of results (for efficient pagination)
-  * limit - impose a numeric limit on the number of results
+  - prefix - scope the query to a given path prefix
+  - filters - select a subset of values by applying constraints
+  - orders - sort the results by applying sort conditions, hierarchically.
+  - offset - skip a number of results (for efficient pagination)
+  - limit - impose a numeric limit on the number of results
 
 Datastore combines these operations into a simple Query class that allows
 applications to define their constraints in a simple, generic, way without
@@ -41,13 +45,13 @@ backed datastore.
 
 Notes:
 
-  * Prefix: When a query filters by prefix, it selects keys that are strict
+  - Prefix: When a query filters by prefix, it selects keys that are strict
     children of the prefix. For example, a prefix "/foo" would select "/foo/bar"
     but not "/foobar" or "/foo",
-  * Orders: Orders are applied hierarchically. Results are sorted by the first
+  - Orders: Orders are applied hierarchically. Results are sorted by the first
     ordering, then entries equal under the first ordering are sorted with the
     second ordering, etc.
-  * Limits & Offset: Limits and offsets are applied after everything else.
+  - Limits & Offset: Limits and offsets are applied after everything else.
 */
 type Query struct {
 	Prefix            string   // namespaces the query to results whose keys have Prefix
@@ -127,43 +131,39 @@ type Result struct {
 // Results is a set of Query results. This is the interface for clients.
 // Example:
 //
-//   qr, _ := myds.Query(q)
-//   for r := range qr.Next() {
-//     if r.Error != nil {
-//       // handle.
-//       break
-//     }
+//	qr, _ := myds.Query(q)
+//	for r := range qr.Next() {
+//	  if r.Error != nil {
+//	    // handle.
+//	    break
+//	  }
 //
-//     fmt.Println(r.Entry.Key, r.Entry.Value)
-//   }
+//	  fmt.Println(r.Entry.Key, r.Entry.Value)
+//	}
 //
 // or, wait on all results at once:
 //
-//   qr, _ := myds.Query(q)
-//   es, _ := qr.Rest()
-//   for _, e := range es {
-//     	fmt.Println(e.Key, e.Value)
-//   }
-//
+//	qr, _ := myds.Query(q)
+//	es, _ := qr.Rest()
+//	for _, e := range es {
+//	  	fmt.Println(e.Key, e.Value)
+//	}
 type Results interface {
 	Query() Query             // the query these Results correspond to
 	Next() <-chan Result      // returns a channel to wait for the next result
 	NextSync() (Result, bool) // blocks and waits to return the next result, second parameter returns false when results are exhausted
 	Rest() ([]Entry, error)   // waits till processing finishes, returns all entries at once.
 	Close() error             // client may call Close to signal early exit
-
-	// Process returns a goprocess.Process associated with these results.
-	// most users will not need this function (Close is all they want),
-	// but it's here in case you want to connect the results to other
-	// goprocess-friendly things.
-	Process() goprocess.Process
+	Done() <-chan struct{}    // signals that Results is closed
 }
 
 // results implements Results
 type results struct {
 	query Query
-	proc  goprocess.Process
 	res   <-chan Result
+
+	cancel context.CancelFunc
+	closed chan struct{}
 }
 
 func (r *results) Next() <-chan Result {
@@ -183,105 +183,47 @@ func (r *results) Rest() ([]Entry, error) {
 		}
 		es = append(es, e.Entry)
 	}
-	<-r.proc.Closed() // wait till the processing finishes.
+	<-r.Done() // wait till the processing finishes.
 	return es, nil
 }
 
-func (r *results) Process() goprocess.Process {
-	return r.proc
-}
-
 func (r *results) Close() error {
-	return r.proc.Close()
+	r.cancel()
+	<-r.closed
+	return nil
 }
 
 func (r *results) Query() Query {
 	return r.query
 }
 
-// ResultBuilder is what implementors use to construct results
-// Implementors of datastores and their clients must respect the
-// Process of the Request:
-//
-//   * clients must call r.Process().Close() on an early exit, so
-//     implementations can reclaim resources.
-//   * if the Entries are read to completion (channel closed), Process
-//     should be closed automatically.
-//   * datastores must respect <-Process.Closing(), which intermediates
-//     an early close signal from the client.
-//
-type ResultBuilder struct {
-	Query   Query
-	Process goprocess.Process
-	Output  chan Result
+func (r *results) Done() <-chan struct{} {
+	return r.closed
 }
 
-// Results returns a Results to to this builder.
-func (rb *ResultBuilder) Results() Results {
-	return &results{
-		query: rb.Query,
-		proc:  rb.Process,
-		res:   rb.Output,
-	}
-}
-
-const NormalBufSize = 1
-const KeysOnlyBufSize = 128
-
-func NewResultBuilder(q Query) *ResultBuilder {
+// ResultsWithContext returns a Results object with the results generated by
+// the passed proc function called in a separate goroutine.
+func ResultsWithContext(q Query, proc func(context.Context, chan<- Result)) Results {
 	bufSize := NormalBufSize
 	if q.KeysOnly {
 		bufSize = KeysOnlyBufSize
 	}
-	b := &ResultBuilder{
-		Query:  q,
-		Output: make(chan Result, bufSize),
+	output := make(chan Result, bufSize)
+	closed := make(chan struct{})
+	ctx, cancel := context.WithCancel(context.Background())
+
+	go func() {
+		proc(ctx, output)
+		close(output)
+		close(closed)
+	}()
+
+	return &results{
+		query:  q,
+		res:    output,
+		cancel: cancel,
+		closed: closed,
 	}
-	b.Process = goprocess.WithTeardown(func() error {
-		close(b.Output)
-		return nil
-	})
-	return b
-}
-
-// ResultsWithChan returns a Results object from a channel
-// of Result entries.
-//
-// DEPRECATED: This iterator is impossible to cancel correctly. Canceling it
-// will leave anything trying to write to the result channel hanging.
-func ResultsWithChan(q Query, res <-chan Result) Results {
-	return ResultsWithProcess(q, func(worker goprocess.Process, out chan<- Result) {
-		for {
-			select {
-			case <-worker.Closing(): // client told us to close early
-				return
-			case e, more := <-res:
-				if !more {
-					return
-				}
-
-				select {
-				case out <- e:
-				case <-worker.Closing(): // client told us to close early
-					return
-				}
-			}
-		}
-	})
-}
-
-// ResultsWithProcess returns a Results object with the results generated by the
-// passed subprocess.
-func ResultsWithProcess(q Query, proc func(goprocess.Process, chan<- Result)) Results {
-	b := NewResultBuilder(q)
-
-	// go consume all the entries and add them to the results.
-	b.Process.Go(func(worker goprocess.Process) {
-		proc(worker, b.Output)
-	})
-
-	go b.Process.CloseAfterChildren() //nolint
-	return b.Results()
 }
 
 // ResultsWithEntries returns a Results object from a list of entries
@@ -303,14 +245,14 @@ func ResultsReplaceQuery(r Results, q Query) Results {
 	switch r := r.(type) {
 	case *results:
 		// note: not using field names to make sure all fields are copied
-		return &results{q, r.proc, r.res}
+		return &results{q, r.res, r.cancel, r.closed}
 	case *resultsIter:
 		// note: not using field names to make sure all fields are copied
-		lr := r.legacyResults
-		if lr != nil {
-			lr = &results{q, lr.proc, lr.res}
+		oldr := r.results
+		if oldr != nil {
+			oldr = &results{q, oldr.res, oldr.cancel, oldr.closed}
 		}
-		return &resultsIter{q, r.next, r.close, lr}
+		return &resultsIter{q, r.next, r.close, oldr}
 	default:
 		panic("unknown results type")
 	}
@@ -332,9 +274,7 @@ func ResultsFromIterator(q Query, iter Iterator) Results {
 	}
 }
 
-func noopClose() error {
-	return nil
-}
+func noopClose() error { return nil }
 
 type Iterator struct {
 	Next  func() (Result, bool)
@@ -342,27 +282,26 @@ type Iterator struct {
 }
 
 type resultsIter struct {
-	query         Query
-	next          func() (Result, bool)
-	close         func() error
-	legacyResults *results
+	query   Query
+	next    func() (Result, bool)
+	close   func() error
+	results *results
 }
 
 func (r *resultsIter) Next() <-chan Result {
-	r.useLegacyResults()
-	return r.legacyResults.Next()
+	r.collectResults()
+	return r.results.Next()
 }
 
 func (r *resultsIter) NextSync() (Result, bool) {
-	if r.legacyResults != nil {
-		return r.legacyResults.NextSync()
-	} else {
-		res, ok := r.next()
-		if !ok {
-			r.close()
-		}
-		return res, ok
+	if r.results != nil {
+		return r.results.NextSync()
 	}
+	res, ok := r.next()
+	if !ok {
+		r.close()
+	}
+	return res, ok
 }
 
 func (r *resultsIter) Rest() ([]Entry, error) {
@@ -380,47 +319,44 @@ func (r *resultsIter) Rest() ([]Entry, error) {
 	return es, nil
 }
 
-func (r *resultsIter) Process() goprocess.Process {
-	r.useLegacyResults()
-	return r.legacyResults.Process()
-}
-
 func (r *resultsIter) Close() error {
-	if r.legacyResults != nil {
-		return r.legacyResults.Close()
+	if r.results != nil {
+		// Close results collector. It will call r.close().
+		r.results.Close()
 	} else {
-		return r.close()
+		// Call r.close() since there is no collector to call it when closed.
+		r.close()
 	}
+	return nil
 }
 
 func (r *resultsIter) Query() Query {
 	return r.query
 }
 
-func (r *resultsIter) useLegacyResults() {
-	if r.legacyResults != nil {
+func (r *resultsIter) Done() <-chan struct{} {
+	r.collectResults()
+	return r.results.Done()
+}
+
+func (r *resultsIter) collectResults() {
+	if r.results != nil {
 		return
 	}
 
-	b := NewResultBuilder(r.query)
-
 	// go consume all the entries and add them to the results.
-	b.Process.Go(func(worker goprocess.Process) {
+	r.results = ResultsWithContext(r.query, func(ctx context.Context, out chan<- Result) {
 		defer r.close()
 		for {
 			e, ok := r.next()
 			if !ok {
-				break
+				return
 			}
 			select {
-			case b.Output <- e:
-			case <-worker.Closing(): // client told us to close early
+			case out <- e:
+			case <-ctx.Done(): // client told us to close early
 				return
 			}
 		}
-	})
-
-	go b.Process.CloseAfterChildren() //nolint
-
-	r.legacyResults = b.Results().(*results)
+	}).(*results)
 }

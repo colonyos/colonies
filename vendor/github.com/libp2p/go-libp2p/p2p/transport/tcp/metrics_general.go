@@ -1,4 +1,4 @@
-//go:build !linux && !darwin && !windows && !riscv64
+//go:build !linux && !darwin && !windows && !riscv64 && !loong64
 
 package tcp
 
@@ -9,7 +9,7 @@ const (
 	hasByteCounter    = false
 )
 
-func getSegmentsSent(info *tcpinfo.Info) uint64 { return 0 }
-func getSegmentsRcvd(info *tcpinfo.Info) uint64 { return 0 }
-func getBytesSent(info *tcpinfo.Info) uint64    { return 0 }
-func getBytesRcvd(info *tcpinfo.Info) uint64    { return 0 }
+func getSegmentsSent(_ *tcpinfo.Info) uint64 { return 0 }
+func getSegmentsRcvd(_ *tcpinfo.Info) uint64 { return 0 }
+func getBytesSent(_ *tcpinfo.Info) uint64    { return 0 }
+func getBytesRcvd(_ *tcpinfo.Info) uint64    { return 0 }

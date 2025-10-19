@@ -104,7 +104,7 @@ var devCmd = &cobra.Command{
 
 		coloniesDB.SetServerID("", serverIdentity.ID())
 
-		coloniesServer := server.CreateColoniesServer(coloniesDB,
+		coloniesServer := server.CreateServer(coloniesDB,
 			ServerPort,
 			false,
 			"",

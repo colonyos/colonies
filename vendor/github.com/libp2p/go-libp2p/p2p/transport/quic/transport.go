@@ -26,13 +26,13 @@ import (
 	"github.com/quic-go/quic-go"
 )
 
+const ListenOrder = 1
+
 var log = logging.Logger("quic-transport")
 
 var ErrHolePunching = errors.New("hole punching attempted; no active dial")
 
 var HolePunchTimeout = 5 * time.Second
-
-const errorCodeConnectionGating = 0x47415445 // GATE in ASCII
 
 // The Transport implements the tpt.Transport interface for QUIC connections.
 type transport struct {
@@ -50,7 +50,7 @@ type transport struct {
 	rnd   rand.Rand
 
 	connMx sync.Mutex
-	conns  map[quic.Connection]*conn
+	conns  map[*quic.Conn]*conn
 
 	listenersMu sync.Mutex
 	// map of UDPAddr as string to a virtualListeners
@@ -95,12 +95,16 @@ func NewTransport(key ic.PrivKey, connManager *quicreuse.ConnManager, psk pnet.P
 		connManager:  connManager,
 		gater:        gater,
 		rcmgr:        rcmgr,
-		conns:        make(map[quic.Connection]*conn),
+		conns:        make(map[*quic.Conn]*conn),
 		holePunching: make(map[holePunchKey]*activeHolePunch),
 		rnd:          *rand.New(rand.NewSource(time.Now().UnixNano())),
 
 		listeners: make(map[string][]*virtualListener),
 	}, nil
+}
+
+func (t *transport) ListenOrder() int {
+	return ListenOrder
 }
 
 // Dial dials a new QUIC connection
@@ -130,6 +134,7 @@ func (t *transport) dialWithScope(ctx context.Context, raddr ma.Multiaddr, p pee
 	}
 
 	tlsConf, keyCh := t.identity.ConfigForPeer(p)
+	ctx = quicreuse.WithAssociation(ctx, t)
 	pconn, err := t.connManager.DialQUIC(ctx, raddr, tlsConf, t.allowWindowIncrease)
 	if err != nil {
 		return nil, err
@@ -162,20 +167,20 @@ func (t *transport) dialWithScope(ctx context.Context, raddr ma.Multiaddr, p pee
 		remoteMultiaddr: raddr,
 	}
 	if t.gater != nil && !t.gater.InterceptSecured(network.DirOutbound, p, c) {
-		pconn.CloseWithError(errorCodeConnectionGating, "connection gated")
+		pconn.CloseWithError(quic.ApplicationErrorCode(network.ConnGated), "connection gated")
 		return nil, fmt.Errorf("secured connection gated")
 	}
 	t.addConn(pconn, c)
 	return c, nil
 }
 
-func (t *transport) addConn(conn quic.Connection, c *conn) {
+func (t *transport) addConn(conn *quic.Conn, c *conn) {
 	t.connMx.Lock()
 	t.conns[conn] = c
 	t.connMx.Unlock()
 }
 
-func (t *transport) removeConn(conn quic.Connection) {
+func (t *transport) removeConn(conn *quic.Conn) {
 	t.connMx.Lock()
 	delete(t.conns, conn)
 	t.connMx.Unlock()
@@ -190,7 +195,7 @@ func (t *transport) holePunch(ctx context.Context, raddr ma.Multiaddr, p peer.ID
 	if err != nil {
 		return nil, err
 	}
-	tr, err := t.connManager.TransportForDial(network, addr)
+	tr, err := t.connManager.TransportWithAssociationForDial(t, network, addr)
 	if err != nil {
 		return nil, err
 	}
@@ -307,7 +312,7 @@ func (t *transport) Listen(addr ma.Multiaddr) (tpt.Listener, error) {
 			return nil, fmt.Errorf("can't listen on quic version %v, underlying listener doesn't support it", version)
 		}
 	} else {
-		ln, err := t.connManager.ListenQUIC(addr, &tlsConf, t.allowWindowIncrease)
+		ln, err := t.connManager.ListenQUICAndAssociate(t, addr, &tlsConf, t.allowWindowIncrease)
 		if err != nil {
 			return nil, err
 		}
@@ -320,7 +325,7 @@ func (t *transport) Listen(addr ma.Multiaddr) (tpt.Listener, error) {
 
 		acceptRunner = &acceptLoopRunner{
 			acceptSem: make(chan struct{}, 1),
-			muxer:     make(map[quic.VersionNumber]chan acceptVal),
+			muxer:     make(map[quic.Version]chan acceptVal),
 		}
 	}
 
@@ -339,7 +344,7 @@ func (t *transport) Listen(addr ma.Multiaddr) (tpt.Listener, error) {
 	return l, nil
 }
 
-func (t *transport) allowWindowIncrease(conn quic.Connection, size uint64) bool {
+func (t *transport) allowWindowIncrease(conn *quic.Conn, size uint64) bool {
 	// If the QUIC connection tries to increase the window before we've inserted it
 	// into our connections map (which we do right after dialing / accepting it),
 	// we have no way to account for that memory. This should be very rare.

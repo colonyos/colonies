@@ -3,6 +3,7 @@ package datastore
 import (
 	"encoding/json"
 	"path"
+	"slices"
 	"strings"
 
 	dsq "github.com/ipfs/go-datastore/query"
@@ -18,17 +19,16 @@ Keys are meant to be unique across a system. Keys are hierarchical,
 incorporating more and more specific namespaces. Thus keys can be deemed
 'children' or 'ancestors' of other keys::
 
-    Key("/Comedy")
-    Key("/Comedy/MontyPython")
+	Key("/Comedy")
+	Key("/Comedy/MontyPython")
 
 Also, every namespace can be parametrized to embed relevant object
 information. For example, the Key `name` (most specific namespace) could
 include the object type::
 
-    Key("/Comedy/MontyPython/Actor:JohnCleese")
-    Key("/Comedy/MontyPython/Sketch:CheeseShop")
-    Key("/Comedy/MontyPython/Sketch:CheeseShop/Character:Mousebender")
-
+	Key("/Comedy/MontyPython/Actor:JohnCleese")
+	Key("/Comedy/MontyPython/Sketch:CheeseShop")
+	Key("/Comedy/MontyPython/Sketch:CheeseShop/Character:Mousebender")
 */
 type Key struct {
 	string
@@ -91,94 +91,124 @@ func (k Key) Equal(k2 Key) bool {
 	return k.string == k2.string
 }
 
-// Less checks whether this key is sorted lower than another.
-func (k Key) Less(k2 Key) bool {
+// Compare returns -1 if this key is sorted lower than another, 1 if this key
+// is sorted greater that another, and 0 if the two keys sort the same.
+func (k Key) Compare(k2 Key) int {
 	list1 := k.List()
 	list2 := k2.List()
+	list2end := len(list2) - 1
 	for i, c1 := range list1 {
-		if len(list2) < (i + 1) {
-			return false
+		if list2end < i {
+			return 1
 		}
-
 		c2 := list2[i]
 		if c1 < c2 {
-			return true
-		} else if c1 > c2 {
-			return false
+			return -1
+		}
+		if c1 > c2 {
+			return 1
 		}
 		// c1 == c2, continue
 	}
 
-	// list1 is shorter or exactly the same.
-	return len(list1) < len(list2)
+	// if list1 is shorter.
+	if len(list1) < len(list2) {
+		return -1
+	}
+	// Lists are the same.
+	return 0
+}
+
+// Less checks whether this key is sorted lower than another.
+func (k Key) Less(k2 Key) bool {
+	return k.Compare(k2) == -1
 }
 
 // List returns the `list` representation of this Key.
-//   NewKey("/Comedy/MontyPython/Actor:JohnCleese").List()
-//   ["Comedy", "MontyPythong", "Actor:JohnCleese"]
+//
+//	NewKey("/Comedy/MontyPython/Actor:JohnCleese").List()
+//	["Comedy", "MontyPythong", "Actor:JohnCleese"]
 func (k Key) List() []string {
 	return strings.Split(k.string, "/")[1:]
 }
 
 // Reverse returns the reverse of this Key.
-//   NewKey("/Comedy/MontyPython/Actor:JohnCleese").Reverse()
-//   NewKey("/Actor:JohnCleese/MontyPython/Comedy")
+//
+//	NewKey("/Comedy/MontyPython/Actor:JohnCleese").Reverse()
+//	NewKey("/Actor:JohnCleese/MontyPython/Comedy")
 func (k Key) Reverse() Key {
 	l := k.List()
-	r := make([]string, len(l))
-	for i, e := range l {
-		r[len(l)-i-1] = e
-	}
-	return KeyWithNamespaces(r)
+	slices.Reverse(l)
+	return KeyWithNamespaces(l)
 }
 
 // Namespaces returns the `namespaces` making up this Key.
-//   NewKey("/Comedy/MontyPython/Actor:JohnCleese").Namespaces()
-//   ["Comedy", "MontyPython", "Actor:JohnCleese"]
+//
+//	NewKey("/Comedy/MontyPython/Actor:JohnCleese").Namespaces()
+//	["Comedy", "MontyPython", "Actor:JohnCleese"]
 func (k Key) Namespaces() []string {
 	return k.List()
 }
 
 // BaseNamespace returns the "base" namespace of this key (path.Base(filename))
-//   NewKey("/Comedy/MontyPython/Actor:JohnCleese").BaseNamespace()
-//   "Actor:JohnCleese"
+//
+//	NewKey("/Comedy/MontyPython/Actor:JohnCleese").BaseNamespace()
+//	"Actor:JohnCleese"
 func (k Key) BaseNamespace() string {
 	n := k.Namespaces()
 	return n[len(n)-1]
 }
 
+// RootNamespace returns the "root" namespace of this key
+//
+//	NewKey("/Comedy/MontyPython/Actor:JohnCleese").RootNamespace()
+//	"Comedy"
+//	NewKey("/").RootNamespace()
+//	""
+//	NewKey("/Comedy:MontyPython").RootNamespace()
+//	"Comedy:MontyPython"
+func (k Key) RootNamespace() string {
+	n := k.Namespaces()
+	return n[0]
+}
+
 // Type returns the "type" of this key (value of last namespace).
-//   NewKey("/Comedy/MontyPython/Actor:JohnCleese").Type()
-//   "Actor"
+//
+//	NewKey("/Comedy/MontyPython/Actor:JohnCleese").Type()
+//	"Actor"
 func (k Key) Type() string {
 	return NamespaceType(k.BaseNamespace())
 }
 
 // Name returns the "name" of this key (field of last namespace).
-//   NewKey("/Comedy/MontyPython/Actor:JohnCleese").Name()
-//   "JohnCleese"
+//
+//	NewKey("/Comedy/MontyPython/Actor:JohnCleese").Name()
+//	"JohnCleese"
 func (k Key) Name() string {
 	return NamespaceValue(k.BaseNamespace())
 }
 
 // Instance returns an "instance" of this type key (appends value to namespace).
-//   NewKey("/Comedy/MontyPython/Actor").Instance("JohnClesse")
-//   NewKey("/Comedy/MontyPython/Actor:JohnCleese")
+//
+//	NewKey("/Comedy/MontyPython/Actor").Instance("JohnClesse")
+//	NewKey("/Comedy/MontyPython/Actor:JohnCleese")
 func (k Key) Instance(s string) Key {
 	return NewKey(k.string + ":" + s)
 }
 
 // Path returns the "path" of this key (parent + type).
-//   NewKey("/Comedy/MontyPython/Actor:JohnCleese").Path()
-//   NewKey("/Comedy/MontyPython/Actor")
+//
+//	NewKey("/Comedy/MontyPython/Actor:JohnCleese").Path()
+//	NewKey("/Comedy/MontyPython/Actor")
 func (k Key) Path() Key {
 	s := k.Parent().string + "/" + NamespaceType(k.BaseNamespace())
 	return NewKey(s)
 }
 
 // Parent returns the `parent` Key of this Key.
-//   NewKey("/Comedy/MontyPython/Actor:JohnCleese").Parent()
-//   NewKey("/Comedy/MontyPython")
+//
+//	NewKey("/Comedy/MontyPython/Actor:JohnCleese").Parent()
+//	NewKey("/Comedy/MontyPython")
 func (k Key) Parent() Key {
 	n := k.List()
 	if len(n) == 1 {
@@ -188,8 +218,9 @@ func (k Key) Parent() Key {
 }
 
 // Child returns the `child` Key of this Key.
-//   NewKey("/Comedy/MontyPython").Child(NewKey("Actor:JohnCleese"))
-//   NewKey("/Comedy/MontyPython/Actor:JohnCleese")
+//
+//	NewKey("/Comedy/MontyPython").Child(NewKey("Actor:JohnCleese"))
+//	NewKey("/Comedy/MontyPython/Actor:JohnCleese")
 func (k Key) Child(k2 Key) Key {
 	switch {
 	case k.string == "/":
@@ -202,15 +233,17 @@ func (k Key) Child(k2 Key) Key {
 }
 
 // ChildString returns the `child` Key of this Key -- string helper.
-//   NewKey("/Comedy/MontyPython").ChildString("Actor:JohnCleese")
-//   NewKey("/Comedy/MontyPython/Actor:JohnCleese")
+//
+//	NewKey("/Comedy/MontyPython").ChildString("Actor:JohnCleese")
+//	NewKey("/Comedy/MontyPython/Actor:JohnCleese")
 func (k Key) ChildString(s string) Key {
 	return NewKey(k.string + "/" + s)
 }
 
 // IsAncestorOf returns whether this key is a prefix of `other`
-//   NewKey("/Comedy").IsAncestorOf("/Comedy/MontyPython")
-//   true
+//
+//	NewKey("/Comedy").IsAncestorOf("/Comedy/MontyPython")
+//	true
 func (k Key) IsAncestorOf(other Key) bool {
 	// equivalent to HasPrefix(other, k.string + "/")
 
@@ -229,8 +262,9 @@ func (k Key) IsAncestorOf(other Key) bool {
 }
 
 // IsDescendantOf returns whether this key contains another as a prefix.
-//   NewKey("/Comedy/MontyPython").IsDescendantOf("/Comedy")
-//   true
+//
+//	NewKey("/Comedy/MontyPython").IsDescendantOf("/Comedy")
+//	true
 func (k Key) IsDescendantOf(other Key) bool {
 	return other.IsAncestorOf(k)
 }
@@ -258,8 +292,9 @@ func (k *Key) UnmarshalJSON(data []byte) error {
 }
 
 // RandomKey returns a randomly (uuid) generated key.
-//   RandomKey()
-//   NewKey("/f98719ea086343f7b71f32ea9d9d521d")
+//
+//	RandomKey()
+//	NewKey("/f98719ea086343f7b71f32ea9d9d521d")
 func RandomKey() Key {
 	return NewKey(strings.Replace(uuid.New().String(), "-", "", -1))
 }
