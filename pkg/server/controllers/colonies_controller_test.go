@@ -90,7 +90,7 @@ func TestColoniesControllerInvalidDB(t *testing.T) {
 }
 
 func TestColoniesControllerAddColony(t *testing.T) {
-	db, err := postgresql.PrepareTestsWithPrefix("TEST_2")
+	db, err := postgresql.PrepareTestsWithPrefix("TEST_ADD_COLONY")
 	defer db.Close()
 	assert.Nil(t, err)
 
@@ -105,7 +105,7 @@ func TestColoniesControllerAddColony(t *testing.T) {
 }
 
 func TestColoniesControllerAddExecutor(t *testing.T) {
-	db, err := postgresql.PrepareTestsWithPrefix("TEST_2")
+	db, err := postgresql.PrepareTestsWithPrefix("TEST_ADD_EXECUTOR")
 	defer db.Close()
 	assert.Nil(t, err)
 
@@ -121,7 +121,7 @@ func TestColoniesControllerAddExecutor(t *testing.T) {
 }
 
 func TestColoniesControllerAddProcess(t *testing.T) {
-	db, err := postgresql.PrepareTestsWithPrefix("TEST_2")
+	db, err := postgresql.PrepareTestsWithPrefix("TEST_ADD_PROCESS")
 	defer db.Close()
 	assert.Nil(t, err)
 
@@ -145,7 +145,7 @@ func TestColoniesControllerAddProcess(t *testing.T) {
 }
 
 func TestColoniesControllerAssignExecutor(t *testing.T) {
-	db, err := postgresql.PrepareTestsWithPrefix("TEST_2")
+	db, err := postgresql.PrepareTestsWithPrefix("TEST_ASSIGN_EXECUTOR")
 	defer db.Close()
 	assert.Nil(t, err)
 
@@ -174,7 +174,7 @@ func TestColoniesControllerAssignExecutor(t *testing.T) {
 
 // notest
 func TestColoniesControllerAssignExecutorConcurrency(t *testing.T) {
-	db, err := postgresql.PrepareTestsWithPrefix("TEST_2")
+	db, err := postgresql.PrepareTestsWithPrefix("TEST_ASSIGN_CONCURRENCY")
 	defer db.Close()
 	assert.Nil(t, err)
 
