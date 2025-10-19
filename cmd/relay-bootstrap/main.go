@@ -168,23 +168,47 @@ func main() {
 		log.Fatalf("Failed to bootstrap DHT: %v", err)
 	}
 
-	// NOTE: NOT connecting to public libp2p bootstrap nodes
-	// This relay operates as a private DHT island for your Colonies network
-	// If you want to join the wider libp2p DHT network, uncomment the code below:
+	// Connect to public libp2p bootstrap nodes to join the wider DHT network
+	// This populates routing tables and enables DHT queries to work properly
+	log.Println("Connecting to public DHT bootstrap nodes...")
+	publicBootstrapPeers := []string{
+		"/dnsaddr/bootstrap.libp2p.io/p2p/QmNnooDu7bfjPFoTZYxMNLWUQJyrVwtbZg5gBMjTezGAJN",
+		"/dnsaddr/bootstrap.libp2p.io/p2p/QmQCU2EcMqAqQPR2i9bChDtGNJchTbq5TbXJJ16u19uLTa",
+		"/dnsaddr/bootstrap.libp2p.io/p2p/QmbLHAnMoJPWSCR5Zhtx6BHJX9KiKNN6tpvbUcqanj75Nb",
+		"/dnsaddr/bootstrap.libp2p.io/p2p/QmcZf59bWwK5XFi76CZX8cbJ4BhTzzA3gU1ZjYZcYW3dwt",
+	}
 
-	// publicBootstrapPeers := []string{
-	//     "/dnsaddr/bootstrap.libp2p.io/p2p/QmNnooDu7bfjPFoTZYxMNLWUQJyrVwtbZg5gBMjTezGAJN",
-	//     "/dnsaddr/bootstrap.libp2p.io/p2p/QmQCU2EcMqAqQPR2i9bChDtGNJchTbq5TbXJJ16u19uLTa",
-	//     "/dnsaddr/bootstrap.libp2p.io/p2p/QmbLHAnMoJPWSCR5Zhtx6BHJX9KiKNN6tpvbUcqanj75Nb",
-	//     "/dnsaddr/bootstrap.libp2p.io/p2p/QmcZf59bWwK5XFi76CZX8cbJ4BhTzzA3gU1ZjYZcYW3dwt",
-	// }
-	// for _, addrStr := range publicBootstrapPeers {
-	//     ... connection code ...
-	// }
+	connectedCount := 0
+	for _, addrStr := range publicBootstrapPeers {
+		addr, err := multiaddr.NewMultiaddr(addrStr)
+		if err != nil {
+			log.Printf("  ⚠️  Failed to parse bootstrap peer address %s: %v", addrStr, err)
+			continue
+		}
 
-	log.Println("✓ Private DHT bootstrap node started successfully")
+		peerInfo, err := peer.AddrInfoFromP2pAddr(addr)
+		if err != nil {
+			log.Printf("  ⚠️  Failed to get peer info from %s: %v", addrStr, err)
+			continue
+		}
+
+		connectCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
+		if err := h.Connect(connectCtx, *peerInfo); err != nil {
+			log.Printf("  ⚠️  Failed to connect to bootstrap peer %s: %v", peerInfo.ID.ShortString(), err)
+			cancel()
+			continue
+		}
+		cancel()
+
+		connectedCount++
+		log.Printf("  ✓ Connected to public bootstrap peer: %s", peerInfo.ID.ShortString())
+	}
+
+	log.Println("✓ DHT bootstrap node started successfully")
+	log.Printf("  - Connected to %d/%d public bootstrap peers", connectedCount, len(publicBootstrapPeers))
 	log.Printf("  - Routing table size: %d", kadDHT.RoutingTable().Size())
-	log.Println("  - Operating as private DHT island (not connected to public DHT)")
+	log.Println("  - Operating on public DHT network (enables proper routing tables)")
+	log.Println("  - Your Colonies network uses private rendezvous point for security")
 
 	// Print configuration instructions
 	printConfigurationInstructions(h)
