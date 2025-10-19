@@ -286,11 +286,11 @@ func TestStreamContextNext(t *testing.T) {
 
 func TestStreamContextGetPeerID(t *testing.T) {
 	ctx := &StreamContext{
-		peerID: "12D3KooWBrsnBU9rZ8ZBaniVexPfdLmYyF34doTRtSJ7XqfC3JfM",
+		peerID: "12D3KooWSBx1mxbu7rJ8AMsSGHDhG8GRhwqHSVnHPbhZypPLFjgK",
 		store:  make(map[string]interface{}),
 	}
 
-	assert.Equal(t, "12D3KooWBrsnBU9rZ8ZBaniVexPfdLmYyF34doTRtSJ7XqfC3JfM", ctx.GetPeerID())
+	assert.Equal(t, "12D3KooWSBx1mxbu7rJ8AMsSGHDhG8GRhwqHSVnHPbhZypPLFjgK", ctx.GetPeerID())
 }
 
 func TestStreamContextGetStream(t *testing.T) {
