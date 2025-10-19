@@ -411,7 +411,6 @@ Example:
 		// Configure address announcement
 		opts = append(opts, libp2p.AddrsFactory(func(addrs []multiaddr.Multiaddr) []multiaddr.Multiaddr {
 			if publicIP != "" {
-				log.WithField("PublicIP", publicIP).Info("Using public IP from environment")
 				publicAddrs := []multiaddr.Multiaddr{}
 				publicTCP, _ := multiaddr.NewMultiaddr(fmt.Sprintf("/ip4/%s/tcp/%s", publicIP, port))
 				publicQUIC, _ := multiaddr.NewMultiaddr(fmt.Sprintf("/ip4/%s/udp/%s/quic-v1", publicIP, port))
