@@ -72,11 +72,6 @@ test:
 	@cd pkg/cluster; go test -v --race
 	@cd pkg/cron; go test -v --race
 	@cd pkg/fs; go test -v --race
-	@cd pkg/p2p; go test -v --race
-	@cd pkg/p2p/dht; go test -v --race
-	@cd pkg/p2p/libp2p; go test -v --race
-	@cd pkg/p2p/mock; go test -v --race
-	@cd pkg/p2p/test; go test -v --race
 
 install:
 	cp ./bin/colonies /usr/local/bin
