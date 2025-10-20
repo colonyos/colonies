@@ -168,6 +168,10 @@ func (s *ServerAdapter) SnapshotDB() database.SnapshotDatabase {
 	return s.server.snapshotDB
 }
 
+func (s *ServerAdapter) ResourceDB() database.ResourceDatabase {
+	return s.server.resourceDB
+}
+
 type attributeControllerAdapter struct {
 	controller interface {
 		GetProcess(processID string) (*core.Process, error)

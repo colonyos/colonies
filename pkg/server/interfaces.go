@@ -36,6 +36,7 @@ type GenericServer interface {
 	GeneratorDB() database.GeneratorDatabase
 	CronDB() database.CronDatabase
 	SnapshotDB() database.SnapshotDatabase
+	ResourceDB() database.ResourceDatabase
 	
 	// Controllers
 	ColonyController() controllers.ColoniesController

@@ -33,6 +33,7 @@ import (
 	"github.com/colonyos/colonies/pkg/server/handlers/process"
 	"github.com/colonyos/colonies/pkg/server/handlers/processgraph"
 	realtimehandlers "github.com/colonyos/colonies/pkg/server/handlers/realtime"
+	resourcehandlers "github.com/colonyos/colonies/pkg/server/handlers/resource"
 	securityhandlers "github.com/colonyos/colonies/pkg/server/handlers/security"
 	serverhandlers "github.com/colonyos/colonies/pkg/server/handlers/server"
 	snapshothandlers "github.com/colonyos/colonies/pkg/server/handlers/snapshot"
@@ -105,6 +106,7 @@ type Server struct {
 	logDB                   database.LogDatabase
 	fileDB                  database.FileDatabase
 	snapshotDB              database.SnapshotDatabase
+	resourceDB              database.ResourceDatabase
 	securityDB              database.SecurityDatabase
 	exclusiveAssign         bool
 	allowExecutorReregister bool
@@ -127,6 +129,7 @@ type Server struct {
 	cronHandlers         *cronhandlers.Handlers
 	functionHandlers     *functionhandlers.Handlers
 	generatorHandlers    *generatorhandlers.Handlers
+	resourceHandlers     *resourcehandlers.Handlers
 	securityHandlers     *securityhandlers.Handlers
 	fileHandlers         *filehandlers.Handlers
 	realtimeHandlers     *realtimehandlers.Handlers
@@ -370,6 +373,7 @@ func CreateServerWithBackend(db database.Database,
 	server.logDB = db
 	server.fileDB = db
 	server.snapshotDB = db
+	server.resourceDB = db
 	server.securityDB = db
 
 	server.controller = controllers.CreateColoniesController(db, thisNode, clusterConfig, etcdDataPath, generatorPeriod, cronPeriod, retention, retentionPolicy, retentionPeriod)
@@ -401,6 +405,7 @@ func CreateServerWithBackend(db database.Database,
 	server.fileHandlers = filehandlers.NewHandlers(server.serverAdapter)
 	server.functionHandlers = functionhandlers.NewHandlers(server.serverAdapter)
 	server.generatorHandlers = generatorhandlers.NewHandlers(server.serverAdapter)
+	server.resourceHandlers = resourcehandlers.NewHandlers(server.serverAdapter)
 	server.securityHandlers = securityhandlers.NewHandlers(server.serverAdapter)
 	server.realtimeHandlers = realtimehandlers.NewHandlers(server.serverAdapter)
 	server.realtimeHandler = backendGin.NewRealtimeHandler(server.serverAdapter)
@@ -533,6 +538,11 @@ func (server *Server) registerHandlers() {
 	// Register snapshot handlers
 	if err := server.snapshotHandlers.RegisterHandlers(server.handlerRegistry); err != nil {
 		log.WithFields(log.Fields{"Error": err}).Fatal("Failed to register snapshot handlers")
+	}
+
+	// Register resource handlers
+	if err := server.resourceHandlers.RegisterHandlers(server.handlerRegistry); err != nil {
+		log.WithFields(log.Fields{"Error": err}).Fatal("Failed to register resource handlers")
 	}
 
 	// Register security handlers

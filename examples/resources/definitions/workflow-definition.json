@@ -1,0 +1,24 @@
+{
+  "apiVersion": "colonies.io/v1",
+  "kind": "ResourceDefinition",
+  "metadata": {
+    "name": "workflows.automation.colonies.io"
+  },
+  "spec": {
+    "group": "automation.colonies.io",
+    "version": "v1",
+    "names": {
+      "kind": "Workflow",
+      "listKind": "WorkflowList",
+      "singular": "workflow",
+      "plural": "workflows",
+      "shortNames": ["wf"]
+    },
+    "scope": "Namespaced",
+    "handler": {
+      "executorType": "workflow-controller",
+      "functionName": "execute_workflow",
+      "reconcileInterval": 10
+    }
+  }
+}

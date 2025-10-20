@@ -1,0 +1,47 @@
+{
+  "apiVersion": "colonies.io/v1",
+  "kind": "ResourceDefinition",
+  "metadata": {
+    "name": "executordeployments.compute.colonies.io"
+  },
+  "spec": {
+    "group": "compute.colonies.io",
+    "version": "v1",
+    "names": {
+      "kind": "ExecutorDeployment",
+      "listKind": "ExecutorDeploymentList",
+      "singular": "executordeployment",
+      "plural": "executordeployments",
+      "shortNames": ["execdeploy", "ed"]
+    },
+    "scope": "Namespaced",
+    "handler": {
+      "executorType": "executor-deployment-controller",
+      "functionName": "reconcile_executor_deployment",
+      "reconcileInterval": 30
+    },
+    "schema": {
+      "type": "object",
+      "properties": {
+        "runtime": {
+          "type": "string",
+          "description": "Target runtime platform",
+          "enum": ["kubernetes", "docker", "local"]
+        },
+        "replicas": {
+          "type": "integer",
+          "description": "Number of executor instances"
+        },
+        "executorType": {
+          "type": "string",
+          "description": "Type of executor to deploy"
+        },
+        "image": {
+          "type": "string",
+          "description": "Container image for the executor"
+        }
+      },
+      "required": ["runtime", "replicas", "executorType"]
+    }
+  }
+}

@@ -1,0 +1,5 @@
+crd-example
+*.exe
+*.test
+*.prof
+go.sum

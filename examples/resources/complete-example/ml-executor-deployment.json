@@ -1,0 +1,33 @@
+{
+  "apiVersion": "compute.colonies.io/v1",
+  "kind": "ExecutorDeployment",
+  "metadata": {
+    "name": "ml-training-executors",
+    "namespace": "dev",
+    "labels": {
+      "app": "ml-training",
+      "environment": "development"
+    },
+    "annotations": {
+      "description": "ML training executors for development"
+    }
+  },
+  "spec": {
+    "runtime": "docker",
+    "replicas": 3,
+    "executorType": "ml-executor",
+    "image": "colonyos/ml-executor:latest",
+    "config": {
+      "env": {
+        "MODEL_CACHE_DIR": "/models",
+        "BATCH_SIZE": "32"
+      },
+      "volumes": [
+        {
+          "source": "/tmp/models",
+          "target": "/models"
+        }
+      ]
+    }
+  }
+}

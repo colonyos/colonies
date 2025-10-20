@@ -1,0 +1,63 @@
+{
+  "apiVersion": "colonies.io/v1",
+  "kind": "ResourceDefinition",
+  "metadata": {
+    "name": "databases.storage.colonies.io"
+  },
+  "spec": {
+    "group": "storage.colonies.io",
+    "version": "v1",
+    "names": {
+      "kind": "Database",
+      "listKind": "DatabaseList",
+      "singular": "database",
+      "plural": "databases",
+      "shortNames": ["db"]
+    },
+    "scope": "Namespaced",
+    "handler": {
+      "executorType": "database-operator",
+      "functionName": "reconcile_database"
+    },
+    "schema": {
+      "type": "object",
+      "properties": {
+        "engine": {
+          "type": "string",
+          "enum": ["postgresql", "mysql", "mongodb", "redis", "timescaledb"]
+        },
+        "version": {
+          "type": "string",
+          "description": "Database version"
+        },
+        "size": {
+          "type": "string",
+          "description": "Storage size (e.g., '100Gi')"
+        },
+        "replicas": {
+          "type": "integer",
+          "description": "Number of replicas for HA",
+          "default": 1
+        },
+        "backup": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "default": false
+            },
+            "schedule": {
+              "type": "string",
+              "description": "Cron schedule for backups"
+            },
+            "retention": {
+              "type": "string",
+              "description": "Backup retention period"
+            }
+          }
+        }
+      },
+      "required": ["engine", "version", "size"]
+    }
+  }
+}

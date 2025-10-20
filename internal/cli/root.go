@@ -73,6 +73,9 @@ var GeneratorTrigger int
 var GeneratorTimeout int
 var GeneratorCheckerPeriod int
 var FuncName string
+var ResourceDefinitionName string
+var ResourceName string
+var Kind string
 var Arg string
 var Args []string
 var Output []string
@@ -148,6 +151,7 @@ func init() {
 	rootCmd.PersistentFlags().BoolVarP(&Verbose, "verbose", "v", false, "Verbose (debugging)")
 	rootCmd.PersistentFlags().BoolVarP(&Insecure, "insecure", "", false, "Disable TLS and use HTTP")
 	rootCmd.PersistentFlags().BoolVarP(&SkipTLSVerify, "skip-tls-verify", "", false, "Skip TLS certificate verification")
+	rootCmd.PersistentFlags().BoolVarP(&JSON, "json", "", false, "Output raw JSON instead of tables")
 
 	rootCmd.AddCommand(configCmd)
 	rootCmd.AddCommand(versionCmd)

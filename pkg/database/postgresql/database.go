@@ -214,6 +214,26 @@ func (db *PQDatabase) dropCronsTable() error {
 	return nil
 }
 
+func (db *PQDatabase) dropResourceDefinitionsTable() error {
+	sqlStatement := `DROP TABLE IF EXISTS ` + db.dbPrefix + `RESOURCEDEFINITIONS`
+	_, err := db.postgresql.Exec(sqlStatement)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (db *PQDatabase) dropResourcesTable() error {
+	sqlStatement := `DROP TABLE IF EXISTS ` + db.dbPrefix + `RESOURCES`
+	_, err := db.postgresql.Exec(sqlStatement)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (db *PQDatabase) dropServerTable() error {
 	sqlStatement := `DROP TABLE ` + db.dbPrefix + `SERVER`
 	_, err := db.postgresql.Exec(sqlStatement)
@@ -290,6 +310,16 @@ func (db *PQDatabase) Drop() error {
 		return err
 	}
 
+	err = db.dropResourceDefinitionsTable()
+	if err != nil {
+		return err
+	}
+
+	err = db.dropResourcesTable()
+	if err != nil {
+		return err
+	}
+
 	err = db.dropServerTable()
 	if err != nil {
 		return err
@@ -360,7 +390,7 @@ func (db *PQDatabase) createFunctionsTable() error {
 }
 
 func (db *PQDatabase) createProcessesTable() error {
-	sqlStatement := `CREATE TABLE ` + db.dbPrefix + `PROCESSES (PROCESS_ID TEXT PRIMARY KEY NOT NULL, TARGET_COLONY_NAME TEXT NOT NULL, TARGET_EXECUTOR_NAMES TEXT[], ASSIGNED_EXECUTOR_ID TEXT, STATE INTEGER, IS_ASSIGNED BOOLEAN, EXECUTOR_TYPE TEXT, SUBMISSION_TIME TIMESTAMPTZ, START_TIME TIMESTAMPTZ, END_TIME TIMESTAMPTZ, WAIT_DEADLINE TIMESTAMPTZ, EXEC_DEADLINE TIMESTAMPTZ, ERRORS TEXT[], NODENAME TEXT, FUNCNAME TEXT, ARGS TEXT, KWARGS TEXT, MAX_WAIT_TIME INTEGER, MAX_EXEC_TIME INTEGER, RETRIES INTEGER, MAX_RETRIES INTEGER, DEPENDENCIES TEXT[], PRIORITY INTEGER, PRIORITYTIME BIGINT, WAIT_FOR_PARENTS BOOLEAN, PARENTS TEXT[], CHILDREN TEXT[], PROCESSGRAPH_ID TEXT, INPUT TEXT, OUTPUT TEXT, LABEL TEXT, FS TEXT, NODES INTEGER, CPU BIGINT, PROCESSES INTEGER, PROCESSES_PER_NODE INTEGER, MEMORY BIGINT, STORAGE BIGINT, GPUNAME TEXT, GPUCOUNT TEXT, GPUMEM BIGINT, WALLTIME BIGINT, INITIATOR_ID TEXT NOT NULL, INITIATOR_NAME TEXT NOT NULL)`
+	sqlStatement := `CREATE TABLE ` + db.dbPrefix + `PROCESSES (PROCESS_ID TEXT PRIMARY KEY NOT NULL, TARGET_COLONY_NAME TEXT NOT NULL, TARGET_EXECUTOR_NAMES TEXT[], ASSIGNED_EXECUTOR_ID TEXT, STATE INTEGER, IS_ASSIGNED BOOLEAN, EXECUTOR_TYPE TEXT, SUBMISSION_TIME TIMESTAMPTZ, START_TIME TIMESTAMPTZ, END_TIME TIMESTAMPTZ, WAIT_DEADLINE TIMESTAMPTZ, EXEC_DEADLINE TIMESTAMPTZ, ERRORS TEXT[], NODENAME TEXT, FUNCNAME TEXT, ARGS TEXT, KWARGS TEXT, MAX_WAIT_TIME INTEGER, MAX_EXEC_TIME INTEGER, RETRIES INTEGER, MAX_RETRIES INTEGER, DEPENDENCIES TEXT[], PRIORITY INTEGER, PRIORITYTIME BIGINT, WAIT_FOR_PARENTS BOOLEAN, PARENTS TEXT[], CHILDREN TEXT[], PROCESSGRAPH_ID TEXT, INPUT TEXT, OUTPUT TEXT, LABEL TEXT, FS TEXT, NODES INTEGER, CPU BIGINT, PROCESSES INTEGER, PROCESSES_PER_NODE INTEGER, MEMORY BIGINT, STORAGE BIGINT, GPUNAME TEXT, GPUCOUNT TEXT, GPUMEM BIGINT, WALLTIME BIGINT, INITIATOR_ID TEXT NOT NULL, INITIATOR_NAME TEXT NOT NULL, RECONCILIATION TEXT, RESOURCE TEXT)`
 	_, err := db.postgresql.Exec(sqlStatement)
 	if err != nil {
 		return err
@@ -447,6 +477,26 @@ func (db *PQDatabase) createGeneratorArgsTable() error {
 
 func (db *PQDatabase) createCronsTable() error {
 	sqlStatement := `CREATE TABLE ` + db.dbPrefix + `CRONS (CRON_ID TEXT PRIMARY KEY NOT NULL, COLONY_NAME TEXT NOT NULL, NAME TEXT NOT NULL UNIQUE, CRON_EXPR TEXT NOT NULL, INTERVAL INT, RANDOM BOOLEAN, NEXT_RUN TIMESTAMPTZ, LAST_RUN TIMESTAMPTZ, WORKFLOW_SPEC TEXT NOT NULL, PREV_PROCESSGRAPH_ID TEXT NOT NULL, WAIT_FOR_PREV_PROCESSGRAPH BOOLEAN, INITIATOR_ID TEXT NOT NULL, INITIATOR_NAME TEXT NOT NULL)`
+	_, err := db.postgresql.Exec(sqlStatement)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (db *PQDatabase) createResourceDefinitionsTable() error {
+	sqlStatement := `CREATE TABLE IF NOT EXISTS ` + db.dbPrefix + `RESOURCEDEFINITIONS (ID TEXT PRIMARY KEY NOT NULL, COLONY_NAME TEXT NOT NULL, NAME TEXT NOT NULL, API_GROUP TEXT NOT NULL, VERSION TEXT NOT NULL, KIND TEXT NOT NULL, DATA TEXT NOT NULL, UNIQUE(COLONY_NAME, NAME))`
+	_, err := db.postgresql.Exec(sqlStatement)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (db *PQDatabase) createResourcesTable() error {
+	sqlStatement := `CREATE TABLE IF NOT EXISTS ` + db.dbPrefix + `RESOURCES (ID TEXT PRIMARY KEY NOT NULL, COLONY_NAME TEXT NOT NULL, NAME TEXT NOT NULL, KIND TEXT NOT NULL, DATA TEXT NOT NULL, UNIQUE(COLONY_NAME, NAME))`
 	_, err := db.postgresql.Exec(sqlStatement)
 	if err != nil {
 		return err
@@ -724,6 +774,16 @@ func (db *PQDatabase) Initialize() error {
 	}
 
 	err = db.createCronsTable()
+	if err != nil {
+		return err
+	}
+
+	err = db.createResourceDefinitionsTable()
+	if err != nil {
+		return err
+	}
+
+	err = db.createResourcesTable()
 	if err != nil {
 		return err
 	}

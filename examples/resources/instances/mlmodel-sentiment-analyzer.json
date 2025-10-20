@@ -1,0 +1,54 @@
+{
+  "apiVersion": "ml.colonies.io/v1beta1",
+  "kind": "MLModel",
+  "metadata": {
+    "name": "sentiment-analyzer",
+    "namespace": "ml-colony",
+    "labels": {
+      "model-type": "nlp",
+      "task": "sentiment-analysis",
+      "version": "v2.1"
+    },
+    "annotations": {
+      "description": "BERT-based sentiment analysis model",
+      "training-date": "2025-10-15",
+      "accuracy": "0.94"
+    }
+  },
+  "spec": {
+    "modelUri": "s3://ml-models/sentiment/bert-sentiment-v2.1.pt",
+    "framework": "pytorch",
+    "servingConfig": {
+      "batchSize": 32,
+      "gpuMemory": "8Gi",
+      "autoscaling": {
+        "minReplicas": 2,
+        "maxReplicas": 10,
+        "targetCPU": 70
+      },
+      "preprocessing": {
+        "tokenizer": "bert-base-uncased",
+        "maxLength": 512
+      },
+      "postprocessing": {
+        "format": "json",
+        "includeConfidence": true
+      }
+    }
+  },
+  "status": {
+    "endpoint": "http://sentiment-analyzer.ml-colony.svc.cluster.local:8080/predict",
+    "ready": true,
+    "replicas": {
+      "current": 3,
+      "ready": 3,
+      "available": 3
+    },
+    "lastUpdateTime": "2025-10-20T11:00:00Z",
+    "metrics": {
+      "requestsPerSecond": 45.3,
+      "avgLatencyMs": 23.5,
+      "p99LatencyMs": 67.8
+    }
+  }
+}

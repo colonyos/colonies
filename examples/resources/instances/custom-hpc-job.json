@@ -1,0 +1,79 @@
+{
+  "apiVersion": "hpc.research.org/v1alpha1",
+  "kind": "SlurmJob",
+  "metadata": {
+    "name": "protein-folding-simulation",
+    "namespace": "research-colony",
+    "labels": {
+      "project": "protein-research",
+      "priority": "high",
+      "grant": "NIH-2024-12345"
+    },
+    "annotations": {
+      "description": "Large-scale protein folding simulation using AlphaFold",
+      "pi": "dr.smith@university.edu",
+      "estimatedCost": "$2500"
+    }
+  },
+  "spec": {
+    "partition": "gpu",
+    "qos": "high-priority",
+    "account": "protein-research",
+    "nodes": 32,
+    "ntasks": 128,
+    "cpusPerTask": 8,
+    "gpusPerNode": 4,
+    "memory": "512G",
+    "time": "72:00:00",
+    "modules": [
+      "cuda/11.8",
+      "openmpi/4.1.5",
+      "python/3.10",
+      "alphafold/2.3"
+    ],
+    "environment": {
+      "ALPHAFOLD_DATA_DIR": "/shared/alphafold-data",
+      "OUTPUT_DIR": "/scratch/protein-folding-001",
+      "INPUT_SEQUENCES": "/data/proteins/batch-2024-10.fasta"
+    },
+    "script": "#!/bin/bash\n#SBATCH --job-name=protein-folding\n\nsource $ALPHAFOLD_ENV/bin/activate\n\nmpirun -np 128 python -m alphafold.main \\\n  --fasta_paths=$INPUT_SEQUENCES \\\n  --output_dir=$OUTPUT_DIR \\\n  --data_dir=$ALPHAFOLD_DATA_DIR \\\n  --max_template_date=2024-01-01 \\\n  --db_preset=full_dbs \\\n  --model_preset=multimer \\\n  --benchmark=False\n\necho \"Job completed at $(date)\"\n",
+    "dependencies": {
+      "afterok": ["job-12345"]
+    },
+    "notifications": {
+      "email": "dr.smith@university.edu",
+      "events": ["BEGIN", "END", "FAIL"]
+    }
+  },
+  "status": {
+    "jobId": "3456789",
+    "state": "RUNNING",
+    "nodeList": "node[001-032]",
+    "startTime": "2025-10-20T08:00:00Z",
+    "estimatedEndTime": "2025-10-23T08:00:00Z",
+    "elapsedTime": "06:30:00",
+    "progress": {
+      "sequencesProcessed": 234,
+      "totalSequences": 1000,
+      "percentComplete": 23.4
+    },
+    "resources": {
+      "cpuUtilization": 94.5,
+      "gpuUtilization": 87.2,
+      "memoryUsed": "14.2T",
+      "storageUsed": "3.2T"
+    },
+    "conditions": [
+      {
+        "type": "Scheduled",
+        "status": "True",
+        "lastTransitionTime": "2025-10-20T07:45:00Z"
+      },
+      {
+        "type": "Running",
+        "status": "True",
+        "lastTransitionTime": "2025-10-20T08:00:00Z"
+      }
+    ]
+  }
+}
