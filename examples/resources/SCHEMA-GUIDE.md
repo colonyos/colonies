@@ -6,12 +6,12 @@ This guide explains how schemas work in ColonyOS Custom Resource Definitions.
 
 ResourceDefinitions can include an **optional** JSON Schema that validates CustomResource instances. This provides:
 
-- ✅ Type safety
-- ✅ Required field validation
-- ✅ Enum constraints
-- ✅ Default values
-- ✅ Documentation
-- ✅ Nested object validation
+- Type safety
+- Required field validation
+- Enum constraints
+- Default values
+- Documentation
+- Nested object validation
 
 ## Schema Structure
 

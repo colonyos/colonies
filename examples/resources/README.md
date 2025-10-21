@@ -1,176 +1,180 @@
-# Custom Resources Examples
+# Resource Management Examples
 
-This directory contains examples of Custom Resource Definitions (CRDs) and Custom Resource instances for ColonyOS.
+This directory contains examples for managing custom resources in ColonyOS, similar to Kubernetes Custom Resource Definitions (CRDs).
 
 ## Overview
 
-ColonyOS supports a Kubernetes-inspired Custom Resource Definition (CRD) system that allows you to extend the platform with your own resource types. This enables:
+The resource management system consists of two main components:
 
-- **Declarative Infrastructure**: Define executors, services, and workflows as resources
-- **Operator Pattern**: Special executors act as controllers/operators to manage resources
-- **Extensibility**: Create new resource types without modifying ColonyOS core
-- **Runtime Flexibility**: Support any deployment target (K8s, Docker, HPC, Lambda, etc.)
+1. **ResourceDefinitions** - Define the schema and structure of custom resources (like Kubernetes CRDs)
+2. **Resources** - Instances of custom resources based on ResourceDefinitions
 
-## Structure
+## Files
 
-- `definitions/` - Custom Resource Definition examples
-- `instances/` - Custom Resource instance examples
-
-## Basic Concepts
-
-### Custom Resource Definition (CRD)
-
-A ResourceDefinition defines a new resource type. It specifies:
-- The schema (group, version, kind)
-- Which executor type handles the resource
-- Optional validation schema
-
-### Custom Resource (CR)
-
-A CR is an instance of a ResourceDefinition. It contains:
-- `apiVersion` and `kind` (defined by the ResourceDefinition)
-- `metadata` (name, namespace, labels, annotations)
-- `spec` (desired state - completely flexible)
-- `status` (current state - managed by controller)
-
-## Resource Processing Flow
-
-1. User creates a CustomResource instance
-2. ColonyOS creates a Process with the resource data
-3. Process is assigned to an executor matching the ResourceDefinition's handler type
-4. Executor reconciles the resource (creates, updates, or deletes infrastructure)
-5. Executor updates the resource status
-
-## Examples
-
-### 1. Executor Deployment CRD
-Defines how to deploy executors across different runtimes.
-
-### 2. ML Model CRD
-Defines how to deploy machine learning models as services.
-
-### 3. HPC Job CRD
-Defines batch jobs for HPC systems (Slurm, PBS, etc.).
-
-### 4. Workflow CRD
-Defines complex multi-step workflows.
-
-### 5. Database CRD
-Defines database provisioning and management.
+- `executor-deployment-definition.json` - Defines the ExecutorDeployment resource type
+- `executor-deployment-instance.json` - An instance of an ExecutorDeployment resource
 
 ## Usage
 
-### Registering a ResourceDefinition
+### 1. Add a ResourceDefinition (Colony Owner Only)
+
+ResourceDefinitions can only be added by colony owners:
 
 ```bash
-colonies crd create -f definitions/executor-deployment-crd.json
-colonies crd list
+# Set colony owner private key
+export COLONIES_PRVKEY=${COLONIES_COLONY_PRVKEY}
+
+# Add the ResourceDefinition
+colonies resource definition add --spec examples/deployment/executor-deployment-definition.json
 ```
 
-### Creating a Custom Resource
+### 2. List ResourceDefinitions
 
 ```bash
-colonies resource create -f instances/ml-executor-deployment.json
-colonies resource get ml-executors -n ml-colony
-colonies resource list -n ml-colony
+# Members or colony owners can list
+colonies resource definition ls
 ```
 
-### Implementing a Resource Controller
+### 3. Get a Specific ResourceDefinition
 
-A controller is a special executor that watches for custom resources:
-
-```go
-type ResourceController struct {
-    coloniesClient *client.ColoniesClient
-}
-
-func (rc *ResourceController) Run() {
-    // Poll for processes with resource reconciliation
-    for {
-        funcSpec := rc.coloniesClient.Assign(...)
-
-        // Extract resource from kwargs
-        apiVersion := funcSpec.KwArgs["apiVersion"].(string)
-        kind := funcSpec.KwArgs["kind"].(string)
-        spec := funcSpec.KwArgs["spec"].(map[string]interface{})
-
-        // Reconcile resource
-        err := rc.reconcile(apiVersion, kind, spec)
-
-        // Update status
-        if err != nil {
-            rc.coloniesClient.Failed(...)
-        } else {
-            rc.coloniesClient.Success(...)
-        }
-    }
-}
+```bash
+colonies resource definition get --name executordeployments.compute.colonies.io
 ```
 
-## Best Practices
+### 4. Add a Resource Instance
 
-1. **Use meaningful names**: Group names should be domain-like (e.g., `compute.colonies.io`)
-2. **Version your APIs**: Start with `v1alpha1`, move to `v1beta1`, then `v1`
-3. **Validate schemas**: Define optional validation schemas in CRDs
-4. **Use labels**: Add labels for filtering and organization
-5. **Update status**: Controllers should update resource status with current state
-6. **Idempotent reconciliation**: Controllers should be idempotent
-7. **Use generations**: Track resource versions with `metadata.generation`
+Members can add resource instances:
 
-## Advanced Patterns
+```bash
+# Use member private key
+export COLONIES_PRVKEY=${COLONIES_PRVKEY}
 
-### Composite Resources
-
-Create resources that spawn other resources:
-
-```json
-{
-  "apiVersion": "app.colonies.io/v1",
-  "kind": "Application",
-  "spec": {
-    "components": [
-      {"kind": "Database", "spec": {...}},
-      {"kind": "WebService", "spec": {...}},
-      {"kind": "WorkerPool", "spec": {...}}
-    ]
-  }
-}
+# Add a resource
+colonies resource add --spec examples/deployment/executor-deployment-instance.json
 ```
 
-### Status Conditions
+### 5. List Resources
 
-Use structured status conditions:
+```bash
+# List all resources
+colonies resource ls
 
-```json
-{
-  "status": {
-    "conditions": [
-      {
-        "type": "Ready",
-        "status": "True",
-        "lastTransitionTime": "2025-10-20T10:00:00Z",
-        "reason": "AllReplicasReady"
-      }
-    ]
-  }
-}
+# Filter by kind
+colonies resource ls --kind ExecutorDeployment
 ```
 
-### Owner References
+### 6. Get a Specific Resource
 
-Track resource ownership for cleanup:
+```bash
+colonies resource get --name web-server-deployment
+```
+
+### 7. Update a Resource
+
+```bash
+# Modify the JSON file, then:
+colonies resource update --spec examples/deployment/executor-deployment-instance.json
+```
+
+### 8. Remove a Resource
+
+```bash
+colonies resource remove --name web-server-deployment
+```
+
+## Authorization
+
+- **ResourceDefinition operations**: Only colony owners can create ResourceDefinitions
+- **Resource operations**: Both members and colony owners can manage Resources
+- **Read operations**: Members and colony owners can read both ResourceDefinitions and Resources
+
+## Example ResourceDefinition Structure
 
 ```json
 {
   "metadata": {
-    "annotations": {
-      "ownerReferences": "[{\"kind\":\"Application\",\"name\":\"my-app\"}]"
+    "name": "executordeployments.compute.colonies.io"
+  },
+  "spec": {
+    "group": "compute.colonies.io",
+    "version": "v1",
+    "names": {
+      "kind": "ExecutorDeployment",
+      "plural": "executordeployments",
+      "singular": "executordeployment"
+    },
+    "scope": "Namespaced",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "image": {
+          "type": "string",
+          "description": "Container image to deploy"
+        },
+        "replicas": {
+          "type": "number",
+          "description": "Number of executor replicas to run",
+          "default": 1
+        },
+        "executorType": {
+          "type": "string",
+          "description": "Type of executor to deploy"
+        },
+        "cpu": {
+          "type": "string",
+          "description": "CPU resource request"
+        },
+        "memory": {
+          "type": "string",
+          "description": "Memory resource request"
+        }
+      },
+      "required": ["image", "executorType"]
+    },
+    "handler": {
+      "executorType": "executor-controller",
+      "functionName": "reconcile"
     }
   }
 }
 ```
 
-## See Also
+### Schema Definition
 
-- [ColonyOS Documentation](https://colonyos.io/docs)
-- [Kubernetes ResourceDefinition Documentation](https://kubernetes.io/docs/concepts/extend-kubernetes/api-extension/custom-resources/)
+The `schema` field defines the structure and validation rules for Resource instances:
+
+- **type**: Data type (object, string, number, array, boolean)
+- **properties**: Nested field definitions
+- **required**: List of required field names
+- **description**: Human-readable description
+- **default**: Default value if not specified
+- **enum**: List of allowed values
+- **items**: Schema for array elements
+
+This ensures that Resource instances conform to the expected structure.
+
+## Example Resource Structure
+
+```json
+{
+  "apiVersion": "compute.colonies.io/v1",
+  "kind": "ExecutorDeployment",
+  "metadata": {
+    "name": "web-server-deployment"
+  },
+  "spec": {
+    "image": "nginx:1.21",
+    "replicas": 3,
+    "executorType": "container-executor",
+    "cpu": "500m",
+    "memory": "512Mi"
+  }
+}
+```
+
+## Reconciliation
+
+Resources can trigger reconciliation by executors:
+- The `handler.executorType` specifies which executor type handles this resource
+- The `handler.functionName` specifies the function to call for reconciliation
+- Executors can watch for resource changes and reconcile the desired state

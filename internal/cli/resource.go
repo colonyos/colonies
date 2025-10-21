@@ -107,9 +107,6 @@ var addResourceDefinitionCmd = &cobra.Command{
 			"ColonyName":           addedRD.Metadata.Namespace,
 		}).Info("ResourceDefinition added")
 
-		jsonString, err := addedRD.ToJSON()
-		CheckError(err)
-		fmt.Println(jsonString)
 	},
 }
 
@@ -222,9 +219,6 @@ var addResourceCmd = &cobra.Command{
 			"Namespace":  addedResource.Metadata.Namespace,
 		}).Info("Resource added")
 
-		jsonString, err := addedResource.ToJSON()
-		CheckError(err)
-		fmt.Println(jsonString)
 	},
 }
 
@@ -321,9 +315,6 @@ var updateResourceCmd = &cobra.Command{
 			"Generation": updatedResource.Metadata.Generation,
 		}).Info("Resource updated")
 
-		jsonString, err := updatedResource.ToJSON()
-		CheckError(err)
-		fmt.Println(jsonString)
 	},
 }
 

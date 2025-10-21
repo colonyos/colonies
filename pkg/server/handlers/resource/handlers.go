@@ -296,6 +296,28 @@ func (h *Handlers) HandleRemoveResourceDefinition(c backends.Context, recoveredI
 		return
 	}
 
+	// Get the ResourceDefinition to find its Kind
+	rd, err := h.server.ResourceDB().GetResourceDefinitionByName(msg.Namespace, msg.Name)
+	if h.server.HandleHTTPError(c, err, http.StatusInternalServerError) {
+		return
+	}
+
+	if rd == nil {
+		h.server.HandleHTTPError(c, fmt.Errorf("ResourceDefinition '%s' not found in namespace '%s'", msg.Name, msg.Namespace), http.StatusNotFound)
+		return
+	}
+
+	// Check if there are any resources using this ResourceDefinition
+	resources, err := h.server.ResourceDB().GetResourcesByNamespaceAndKind(msg.Namespace, rd.Spec.Names.Kind)
+	if h.server.HandleHTTPError(c, err, http.StatusInternalServerError) {
+		return
+	}
+
+	if len(resources) > 0 {
+		h.server.HandleHTTPError(c, fmt.Errorf("cannot remove ResourceDefinition '%s': %d resource(s) of kind '%s' still exist", msg.Name, len(resources), rd.Spec.Names.Kind), http.StatusConflict)
+		return
+	}
+
 	err = h.server.ResourceDB().RemoveResourceDefinitionByName(msg.Namespace, msg.Name)
 	if h.server.HandleHTTPError(c, err, http.StatusInternalServerError) {
 		return
@@ -343,32 +365,39 @@ func (h *Handlers) HandleAddResource(c backends.Context, recoveredID string, pay
 	}
 
 	// Validate resource against its ResourceDefinition schema
-	// Construct the ResourceDefinition name from apiVersion and kind
-	// Format: <plural>.<group>
+	// Resource Kind is required
+	if msg.Resource.Kind == "" {
+		h.server.HandleHTTPError(c, errors.New("resource kind is required"), http.StatusBadRequest)
+		return
+	}
+
+	// Fetch all ResourceDefinitions in the namespace
+	rds, err := h.server.ResourceDB().GetResourceDefinitionsByNamespace(msg.Resource.Metadata.Namespace)
+	if err != nil {
+		h.server.HandleHTTPError(c, err, http.StatusInternalServerError)
+		return
+	}
+
+	// Find matching ResourceDefinition - REQUIRED
 	var matchedRD *core.ResourceDefinition
-	if msg.Resource.Kind != "" {
-		// Try to find the ResourceDefinition by group/version/kind
-		// For now, we'll fetch all definitions and match by kind
-		rds, err := h.server.ResourceDB().GetResourceDefinitionsByNamespace(msg.Resource.Metadata.Namespace)
-		if err != nil {
-			h.server.HandleHTTPError(c, err, http.StatusInternalServerError)
+	for _, rd := range rds {
+		if rd.Spec.Names.Kind == msg.Resource.Kind {
+			matchedRD = rd
+			break
+		}
+	}
+
+	// ResourceDefinition must exist
+	if matchedRD == nil {
+		h.server.HandleHTTPError(c, fmt.Errorf("ResourceDefinition for kind '%s' not found in namespace '%s'", msg.Resource.Kind, msg.Resource.Metadata.Namespace), http.StatusBadRequest)
+		return
+	}
+
+	// Validate against schema if defined
+	if matchedRD.Spec.Schema != nil {
+		if err := core.ValidateResourceAgainstSchema(msg.Resource, matchedRD.Spec.Schema); err != nil {
+			h.server.HandleHTTPError(c, fmt.Errorf("resource validation failed: %v", err), http.StatusBadRequest)
 			return
-		}
-
-		// Find matching ResourceDefinition
-		for _, rd := range rds {
-			if rd.Spec.Names.Kind == msg.Resource.Kind {
-				matchedRD = rd
-				break
-			}
-		}
-
-		// If ResourceDefinition found and has a schema, validate
-		if matchedRD != nil && matchedRD.Spec.Schema != nil {
-			if err := core.ValidateResourceAgainstSchema(msg.Resource, matchedRD.Spec.Schema); err != nil {
-				h.server.HandleHTTPError(c, fmt.Errorf("resource validation failed: %v", err), http.StatusBadRequest)
-				return
-			}
 		}
 	}
 
@@ -535,6 +564,43 @@ func (h *Handlers) HandleUpdateResource(c backends.Context, recoveredID string, 
 		return
 	}
 
+	// Validate resource against its ResourceDefinition schema
+	// Resource Kind is required
+	if msg.Resource.Kind == "" {
+		h.server.HandleHTTPError(c, errors.New("resource kind is required"), http.StatusBadRequest)
+		return
+	}
+
+	// Fetch all ResourceDefinitions in the namespace
+	rds, err := h.server.ResourceDB().GetResourceDefinitionsByNamespace(msg.Resource.Metadata.Namespace)
+	if err != nil {
+		h.server.HandleHTTPError(c, err, http.StatusInternalServerError)
+		return
+	}
+
+	// Find matching ResourceDefinition - REQUIRED
+	var matchedRD *core.ResourceDefinition
+	for _, rd := range rds {
+		if rd.Spec.Names.Kind == msg.Resource.Kind {
+			matchedRD = rd
+			break
+		}
+	}
+
+	// ResourceDefinition must exist
+	if matchedRD == nil {
+		h.server.HandleHTTPError(c, fmt.Errorf("ResourceDefinition for kind '%s' not found in namespace '%s'", msg.Resource.Kind, msg.Resource.Metadata.Namespace), http.StatusBadRequest)
+		return
+	}
+
+	// Validate against schema if defined
+	if matchedRD.Spec.Schema != nil {
+		if err := core.ValidateResourceAgainstSchema(msg.Resource, matchedRD.Spec.Schema); err != nil {
+			h.server.HandleHTTPError(c, fmt.Errorf("resource validation failed: %v", err), http.StatusBadRequest)
+			return
+		}
+	}
+
 	err = h.server.ResourceDB().UpdateResource(msg.Resource)
 	if h.server.HandleHTTPError(c, err, http.StatusInternalServerError) {
 		return
@@ -546,31 +612,15 @@ func (h *Handlers) HandleUpdateResource(c backends.Context, recoveredID string, 
 		"Name":      msg.Resource.Metadata.Name,
 	}).Debug("Updating resource")
 
-	// Submit reconciliation function if handler is defined
-	if msg.Resource.Kind != "" {
-		// Find the ResourceDefinition
-		rds, err := h.server.ResourceDB().GetResourceDefinitionsByNamespace(msg.Resource.Metadata.Namespace)
-		if err == nil {
-			var matchedRD *core.ResourceDefinition
-			for _, rd := range rds {
-				if rd.Spec.Names.Kind == msg.Resource.Kind {
-					matchedRD = rd
-					break
-				}
-			}
-
-			if matchedRD != nil {
-				reconciliation := core.CreateReconciliation(oldResource, msg.Resource)
-				err = h.submitReconciliationFunc(reconciliation, matchedRD)
-				if err != nil {
-					log.WithFields(log.Fields{
-						"Error": err,
-						"Kind":  msg.Resource.Kind,
-					}).Warn("Failed to submit reconciliation after resource update")
-					// Don't fail the request if reconciliation submission fails
-				}
-			}
-		}
+	// Submit reconciliation function (matchedRD already validated above)
+	reconciliation := core.CreateReconciliation(oldResource, msg.Resource)
+	err = h.submitReconciliationFunc(reconciliation, matchedRD)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"Error": err,
+			"Kind":  msg.Resource.Kind,
+		}).Warn("Failed to submit reconciliation after resource update")
+		// Don't fail the request if reconciliation submission fails
 	}
 
 	jsonString, err = msg.Resource.ToJSON()
