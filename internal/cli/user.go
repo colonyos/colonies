@@ -130,6 +130,10 @@ var getUserCmd = &cobra.Command{
 		user, err := client.GetUser(ColonyName, Username, PrvKey)
 		CheckError(err)
 
+		if user == nil {
+			CheckError(errors.New("User not found"))
+		}
+
 		printUserTable(user)
 	},
 }
