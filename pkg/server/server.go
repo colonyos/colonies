@@ -63,10 +63,10 @@ type WSController interface {
 
 // LibP2PConfig holds LibP2P-specific configuration
 type LibP2PConfig struct {
-	Port            int    // LibP2P TCP port (QUIC will be port+1)
-	Identity        string // Hex-encoded LibP2P identity key (optional)
-	BootstrapPeers  string // Comma-separated bootstrap peer multiaddresses (optional)
-	AnnounceAddrs   string // Comma-separated multiaddresses to announce for external discovery (optional)
+	Port           int    // LibP2P TCP port (QUIC will be port+1)
+	Identity       string // Hex-encoded LibP2P identity key (optional)
+	BootstrapPeers string // Comma-separated bootstrap peer multiaddresses (optional)
+	AnnounceAddrs  string // Comma-separated multiaddresses to announce for external discovery (optional)
 }
 
 // GRPCConfig holds gRPC-specific configuration
@@ -115,25 +115,25 @@ type Server struct {
 	retentionPeriod         int
 
 	// Handler composition
-	serverAdapter        *ServerAdapter
-	handlerRegistry      *registry.HandlerRegistry
-	userHandlers         *user.Handlers
-	colonyHandlers       *colony.Handlers
-	executorHandlers     *executor.Handlers
-	processHandlers      *process.Handlers
-	processgraphHandlers *processgraph.Handlers
-	serverHandlers       *serverhandlers.Handlers
-	logHandlers          *loghandlers.Handlers
-	snapshotHandlers     *snapshothandlers.Handlers
-	attributeHandlers    *attributehandlers.Handlers
-	cronHandlers         *cronhandlers.Handlers
-	functionHandlers     *functionhandlers.Handlers
-	generatorHandlers    *generatorhandlers.Handlers
-	resourceHandlers     *resourcehandlers.Handlers
-	securityHandlers     *securityhandlers.Handlers
-	fileHandlers         *filehandlers.Handlers
-	realtimeHandlers     *realtimehandlers.Handlers
-	realtimeHandler      *backendGin.RealtimeHandler
+	serverAdapter          *ServerAdapter
+	handlerRegistry        *registry.HandlerRegistry
+	userHandlers           *user.Handlers
+	colonyHandlers         *colony.Handlers
+	executorHandlers       *executor.Handlers
+	processHandlers        *process.Handlers
+	processgraphHandlers   *processgraph.Handlers
+	serverHandlers         *serverhandlers.Handlers
+	logHandlers            *loghandlers.Handlers
+	snapshotHandlers       *snapshothandlers.Handlers
+	attributeHandlers      *attributehandlers.Handlers
+	cronHandlers           *cronhandlers.Handlers
+	functionHandlers       *functionhandlers.Handlers
+	generatorHandlers      *generatorhandlers.Handlers
+	resourceHandlers       *resourcehandlers.Handlers
+	securityHandlers       *securityhandlers.Handlers
+	fileHandlers           *filehandlers.Handlers
+	realtimeHandlers       *realtimehandlers.Handlers
+	backendRealtimeHandler realtimehandlers.RealtimeHandler
 
 	// LibP2P components (if using LibP2P backend)
 	libp2pEnabled  bool
@@ -291,14 +291,14 @@ func CreateServerWithBackend(db database.Database,
 
 	switch backendType {
 	case GinBackendType:
-		log.WithField("BackendType", backendType).Info("✓ Creating server with Gin HTTP backend")
+		log.WithField("BackendType", backendType).Info("Creating server with Gin HTTP backend")
 		server.backend = gin.NewCORSBackend()
 		server.engine = server.backend.NewEngineWithDefaults()
 		// Add CORS middleware
 		server.engine.Use(server.backend.CORS())
 		server.server = server.backend.NewServer(port, server.engine)
 		server.libp2pEnabled = false
-		log.Info("✓ Gin HTTP backend initialized successfully")
+		log.Info("Gin HTTP backend initialized successfully")
 	case LibP2PBackendType:
 		identitySet := false
 		if libp2pConfig != nil && libp2pConfig.Identity != "" {
@@ -309,7 +309,7 @@ func CreateServerWithBackend(db database.Database,
 			"HTTPPort":          port,
 			"LibP2PPort":        libp2pPort,
 			"LibP2PIdentitySet": identitySet,
-		}).Info("✓ Creating server with LibP2P backend (with HTTP fallback)")
+		}).Info("Creating server with LibP2P backend (with HTTP fallback)")
 		// LibP2P backend also initializes HTTP endpoints for compatibility
 		// This allows existing clients to continue working while adding P2P capabilities
 		server.backend = gin.NewCORSBackend()
@@ -318,7 +318,7 @@ func CreateServerWithBackend(db database.Database,
 		server.server = server.backend.NewServer(port, server.engine)
 		// Enable LibP2P networking in addition to HTTP
 		server.libp2pEnabled = true
-		log.Info("✓ LibP2P backend initialized successfully (HTTP + P2P)")
+		log.Info("LibP2P backend initialized successfully (HTTP + P2P)")
 	case GRPCBackendType:
 		if grpcConfig == nil {
 			log.Fatal("gRPC backend selected but no GRPCConfig provided")
@@ -328,7 +328,7 @@ func CreateServerWithBackend(db database.Database,
 			"BackendType": backendType,
 			"GRPCPort":    grpcPort,
 			"TLSEnabled":  tlsEnabled,
-		}).Info("✓ Creating server with gRPC backend")
+		}).Info("Creating server with gRPC backend")
 		grpcBackend := grpc.NewBackend().(*grpc.Backend)
 		// Create server with RPC handler - will be connected later via serverAdapter
 		server.server = grpcBackend.NewServerWithAddrAndHandler(
@@ -338,7 +338,7 @@ func CreateServerWithBackend(db database.Database,
 		server.backend = nil // gRPC doesn't use CORS backend
 		server.engine = nil  // gRPC doesn't use Engine pattern
 		server.libp2pEnabled = false
-		log.Info("✓ gRPC backend initialized successfully")
+		log.Info("gRPC backend initialized successfully")
 	case CoAPBackendType:
 		if coapConfig == nil {
 			log.Fatal("CoAP backend selected but no CoAPConfig provided")
@@ -346,7 +346,7 @@ func CreateServerWithBackend(db database.Database,
 		log.WithFields(log.Fields{
 			"BackendType": backendType,
 			"CoAPPort":    coapConfig.Port,
-		}).Info("✓ Creating server with CoAP backend")
+		}).Info("Creating server with CoAP backend")
 		coapBackend := coap.NewBackend().(*coap.Backend)
 		server.server = coapBackend.NewServerWithAddrAndHandler(
 			fmt.Sprintf(":%d", coapConfig.Port),
@@ -355,7 +355,7 @@ func CreateServerWithBackend(db database.Database,
 		server.backend = nil // CoAP doesn't use CORS backend
 		server.engine = nil  // CoAP doesn't use Engine pattern
 		server.libp2pEnabled = false
-		log.Info("✓ CoAP backend initialized successfully")
+		log.Info("CoAP backend initialized successfully")
 	default:
 		log.WithField("BackendType", backendType).Fatal("Unknown backend type")
 	}
@@ -408,7 +408,9 @@ func CreateServerWithBackend(db database.Database,
 	server.resourceHandlers = resourcehandlers.NewHandlers(server.serverAdapter)
 	server.securityHandlers = securityhandlers.NewHandlers(server.serverAdapter)
 	server.realtimeHandlers = realtimehandlers.NewHandlers(server.serverAdapter)
-	server.realtimeHandler = backendGin.NewRealtimeHandler(server.serverAdapter)
+
+	// Create backend-specific realtime handler (currently only Gin/WebSocket is implemented)
+	server.backendRealtimeHandler = backendGin.NewRealtimeHandler(server.serverAdapter)
 
 	// Register all handlers that implement self-registration
 	server.registerHandlers()
@@ -600,11 +602,11 @@ func (server *Server) setupLibP2P(port int, thisNode cluster.Node, config *LibP2
 		libp2p.DefaultTransports,
 		libp2p.DefaultMuxers,
 		libp2p.DefaultSecurity,
-		libp2p.EnableNATService(),      // Enable UPnP/NAT-PMP for automatic port mapping
-		libp2p.NATPortMap(),             // Attempt to open ports via NAT
-		libp2p.EnableAutoNATv2(),        // Enable AutoNAT v2 for automatic external address detection
-		libp2p.EnableRelay(),            // Enable relay service (act as relay for others)
-		libp2p.EnableHolePunching(),     // Enable DCUtR hole punching for NAT traversal
+		libp2p.EnableNATService(),   // Enable UPnP/NAT-PMP for automatic port mapping
+		libp2p.NATPortMap(),         // Attempt to open ports via NAT
+		libp2p.EnableAutoNATv2(),    // Enable AutoNAT v2 for automatic external address detection
+		libp2p.EnableRelay(),        // Enable relay service (act as relay for others)
+		libp2p.EnableHolePunching(), // Enable DCUtR hole punching for NAT traversal
 	}
 
 	// Configure AutoRelay if bootstrap peers are provided
@@ -913,7 +915,7 @@ func (server *Server) monitorAddresses() {
 				log.WithFields(log.Fields{
 					"RelayCount": len(relayAddrs),
 					"Relays":     relayAddrs,
-				}).Info("✓ AutoRelay successfully reserved relay circuits - server is now reachable behind NAT/CGNAT")
+				}).Info("AutoRelay successfully reserved relay circuits - server is now reachable behind NAT/CGNAT")
 				hasRelayAddrs = true
 
 				// Trigger immediate DHT re-advertisement with new relay addresses
@@ -1419,11 +1421,6 @@ func (server *Server) parseSignature(jsonString string, signature string) (strin
 	}
 
 	return recoveredID, nil
-}
-
-// RealtimeHandler returns the backend-specific realtime handler
-func (server *Server) RealtimeHandler() *backendGin.RealtimeHandler {
-	return server.realtimeHandler
 }
 
 // WSController returns the WebSocket controller for realtime subscriptions

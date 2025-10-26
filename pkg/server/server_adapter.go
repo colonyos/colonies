@@ -456,7 +456,7 @@ func (s *ServerAdapter) WSControllerCompat() WSController {
 }
 
 func (s *ServerAdapter) RealtimeHandler() realtimehandlers.RealtimeHandler {
-	return s.server.realtimeHandler
+	return s.server.backendRealtimeHandler
 }
 
 func (s *ServerAdapter) ParseSignature(payload string, signature string) (string, error) {

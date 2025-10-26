@@ -19,9 +19,9 @@ make github_test       # Run tests without grc (for CI)
 
 ### Development Environment
 ```bash
-source devenv          # Set up development environment
-colonies dev           # Start development server
-make startdb          # Start PostgreSQL TimescaleDB container
+docker-compose up -d   # Start Colonies server with dependencies (TimescaleDB, MinIO)
+docker-compose down    # Stop all services
+docker-compose logs -f # View logs
 ```
 
 ### Coverage
@@ -34,8 +34,8 @@ ColonyOS is a distributed meta-orchestrator framework that creates compute conti
 
 ### Core Components
 - **Colony**: A distributed runtime environment consisting of networked Executors
-- **Process**: A computational workload defined by a FunctionSpec, with states (WAITING, RUNNING, SUCCESS, FAILED)  
-- **Executor**: Distributed microservices that execute processes, can run anywhere on the Internet
+- **Process**: A computational workload defined by a FunctionSpec, with states (WAITING, RUNNING, SUCCESS, FAILED)
+- **Executor**: Distributed workers that pull and execute processes, can run anywhere on the Internet
 - **FunctionSpec**: Specification defining what computation to run and execution conditions
 
 ### Key Packages

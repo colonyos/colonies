@@ -2,7 +2,7 @@ all: build
 .PHONY: all build
 
 BUILD_IMAGE ?= colonyos/colonies
-PUSH_IMAGE ?= colonyos/colonies:v1.8.19
+PUSH_IMAGE ?= colonyos/colonies:v1.9.0
 
 VERSION := $(shell git rev-parse --short HEAD)
 BUILDTIME := $(shell date -u '+%Y-%m-%dT%H:%M:%SZ')
@@ -17,12 +17,19 @@ build:
 	@GOOS=js GOARCH=wasm go build -o ./lib/libcryptolib.wasm internal/cryptolib.wasm/cryptolib.go
 
 container:
-	@echo "Building Linux binary for container..."
-	#@CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -ldflags="-s -w $(GOLDFLAGS)" -o ./bin/colonies ./cmd/main.go
-	docker build -t $(BUILD_IMAGE) .
+	@echo "Building container for local architecture..."
+	docker build --build-arg VERSION=$(VERSION) --build-arg BUILDTIME=$(BUILDTIME) -t $(BUILD_IMAGE) .
+
+container-multiplatform:
+	@echo "Building multiplatform container (amd64, arm64)..."
+	docker buildx build --platform linux/amd64,linux/arm64 --build-arg VERSION=$(VERSION) --build-arg BUILDTIME=$(BUILDTIME) -t $(BUILD_IMAGE) .
+
+container-multiplatform-push:
+	@echo "Building and pushing multiplatform container (amd64, arm64)..."
+	docker buildx build --platform linux/amd64,linux/arm64 --build-arg VERSION=$(VERSION) --build-arg BUILDTIME=$(BUILDTIME) -t $(BUILD_IMAGE) -t $(PUSH_IMAGE) --push .
 
 push:
-	docker tag $(BUILD_IMAGE) $(PUSH_IMAGE) 
+	docker tag $(BUILD_IMAGE) $(PUSH_IMAGE)
 	docker push $(BUILD_IMAGE)
 	docker push $(PUSH_IMAGE)
 
@@ -82,7 +89,7 @@ startdb:
 	docker run -d -p 5432:5432 -e POSTGRES_PASSWORD=rFcLGNkgsNtksg6Pgtn9CumL4xXBQ7 --restart unless-stopped timescale/timescaledb:latest-pg16
 
 nukedb:
-	@echo "🗑️  Nuking TimescaleDB containers and volumes..."
+	@echo "Nuking TimescaleDB containers and volumes..."
 	@docker stop $$(docker ps -aq --filter ancestor=timescale/timescaledb:latest-pg16) 2>/dev/null || true
 	@docker rm $$(docker ps -aq --filter ancestor=timescale/timescaledb:latest-pg16) 2>/dev/null || true
 	@docker volume rm $$(docker volume ls -q --filter dangling=true) 2>/dev/null || true

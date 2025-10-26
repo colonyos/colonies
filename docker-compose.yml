@@ -51,7 +51,7 @@ services:
       "
 
   colonies-server:
-    image: colonyos/colonies
+    image: colonyos/colonies:v1.9.0
     depends_on:
       - timescaledb
     environment:

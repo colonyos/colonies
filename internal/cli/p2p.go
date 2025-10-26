@@ -18,8 +18,8 @@ import (
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/peer"
-	rcmgr "github.com/libp2p/go-libp2p/p2p/host/resource-manager"
 	"github.com/libp2p/go-libp2p/p2p/discovery/routing"
+	rcmgr "github.com/libp2p/go-libp2p/p2p/host/resource-manager"
 	relayv2 "github.com/libp2p/go-libp2p/p2p/protocol/circuitv2/relay"
 	"github.com/multiformats/go-multiaddr"
 	log "github.com/sirupsen/logrus"
@@ -174,9 +174,9 @@ func performDHTLookup(rendezvous string, timeout time.Duration) error {
 			}
 
 			discoveredPeers[peer.ID] = &DiscoveredPeerInfo{
-				PeerID:      peer.ID.String(),
-				Addrs:       peer.Addrs,
-				Connected:   connected,
+				PeerID:       peer.ID.String(),
+				Addrs:        peer.Addrs,
+				Connected:    connected,
 				DiscoveredAt: time.Now(),
 			}
 
@@ -585,11 +585,11 @@ func verifyRelayProtocols(h host.Host) {
 
 	// Circuit Relay v2 HOP protocol is registered as a stream handler, not in Mux protocols
 	// So we assume it's working if EnableRelayService was called
-	log.Info("✓ Relay HOP service enabled (Circuit Relay v2 server)")
+	log.Info("Relay HOP service enabled (Circuit Relay v2 server)")
 	log.Info("  Note: HOP protocol registered as stream handler (not visible in Mux)")
 
 	if supportsStop {
-		log.Info("✓ Relay STOP protocol registered (relay client)")
+		log.Info("Relay STOP protocol registered (relay client)")
 	}
 }
 
@@ -612,7 +612,7 @@ func setupRelayNetworkNotifications(h host.Host) {
 					"Addr":      c.RemoteMultiaddr(),
 					"Transport": c.ConnState().Transport,
 					"Streams":   len(streams),
-				}).Info("🔗 Client connected")
+				}).Info("Client connected")
 			}
 		},
 		DisconnectedF: func(n network.Network, c network.Conn) {
@@ -630,7 +630,7 @@ func setupRelayNetworkNotifications(h host.Host) {
 				log.WithFields(log.Fields{
 					"Peer":     c.RemotePeer().ShortString(),
 					"Duration": time.Since(c.Stat().Opened),
-				}).Info("❌ Client disconnected")
+				}).Info("Client disconnected")
 			}
 		},
 	}
@@ -671,7 +671,7 @@ func connectToPublicBootstrap(ctx context.Context, h host.Host) {
 		cancel()
 
 		connectedCount++
-		log.WithField("Peer", peerInfo.ID.ShortString()).Info("✓ Connected to public bootstrap peer")
+		log.WithField("Peer", peerInfo.ID.ShortString()).Info("Connected to public bootstrap peer")
 	}
 
 	log.WithField("Connected", fmt.Sprintf("%d/%d", connectedCount, len(publicBootstrapPeers))).Info("Bootstrap connection complete")
@@ -755,7 +755,7 @@ func monitorRelayStats(h host.Host, kadDHT *dht.IpfsDHT) {
 			"QUIC":        quicConns,
 			"Relay":       relayConns,
 			"DHT":         kadDHT.RoutingTable().Size(),
-		}).Info("📊 Relay Statistics")
+		}).Info("Relay Statistics")
 
 		if len(peers) > 0 && len(peers) <= 5 {
 			log.Info("Connected peers:")
