@@ -13,13 +13,13 @@ Traditional orchestration systems are tied to specific platforms (Kubernetes for
 
 Example of use cases:
 
-- ** Scientific Computing**: Process satellite imagery, analyze sensor data, run simulations across HPC clusters
-- ** AI/ML Pipelines**: Distribute training jobs, run inference on edge devices, orchestrate multi-agent LLM systems
-- ** Serverless at Scale**: Build FaaS platforms that span cloud, edge, and on-premise infrastructure
-- ** Data Processing**: ETL pipelines, batch processing, real-time stream processing with ColonyFS integration
-- ** Industrial IoT**: Coordinate computations across factory floor devices, edge gateways, and cloud
-- ** Earth Observation**: Automated satellite image processing and analysis workflows
-- ** Infrastructure as Code**: Declaratively manage infrastructure across computing continuums - define resources spanning cloud, edge, HPC, and IoT with GitOps workflows, automatic drift detection, and self-healing reconciliation
+- **Scientific Computing**: Process satellite imagery, analyze sensor data, run simulations across HPC clusters
+- **AI/ML Pipelines**: Distribute training jobs, run inference on edge devices, orchestrate multi-agent LLM systems
+- **Serverless at Scale**: Build FaaS platforms that span cloud, edge, and on-premise infrastructure
+- **Data Processing**: ETL pipelines, batch processing, real-time stream processing with ColonyFS integration
+- **Industrial IoT**: Coordinate computations across factory floor devices, edge gateways, and cloud
+- **Earth Observation**: Automated satellite image processing and analysis workflows
+- **Infrastructure as Code**: Declaratively manage infrastructure across computing continuums - define resources spanning cloud, edge, HPC, and IoT with GitOps workflows, automatic drift detection, and self-healing reconciliation
 
 ### The Core Idea
 
@@ -29,13 +29,13 @@ Instead of writing platform-specific code, you declare **WHAT** you want to comp
 
 ### Key Advantages
 
-- ** Platform Agnostic**: Same function specification runs on Kubernetes, HPC, edge devices, IoT - executors translate to platform-specific execution
-- ** Decoupled Architecture**: Submit work anytime, execute asynchronously - temporal and spatial decoupling via broker
-- ** Zero-Trust by Design**: No session tokens, no passwords - every request cryptographically signed with Ed25519
-- ** Protocol Flexibility**: Choose HTTP/REST, gRPC, CoAP (IoT), or LibP2P (P2P) - or run them all simultaneously
-- ** Pull-Based Execution**: Executors connect from anywhere (even behind NAT/firewalls) and pull work - no need for inbound access
-- ** Built-in Audit Trail**: Every execution recorded as an immutable ledger for compliance and debugging
-- ** Real-Time Reactive**: WebSocket subscriptions for instant notifications on workflow state changes
+- **Platform Agnostic**: Same function specification runs on Kubernetes, HPC, edge devices, IoT - executors translate to platform-specific execution
+- **Decoupled Architecture**: Submit work anytime, execute asynchronously - temporal and spatial decoupling via broker
+- **Zero-Trust by Design**: No session tokens, no passwords - every request cryptographically signed with Ed25519
+- **Protocol Flexibility**: Choose HTTP/REST, gRPC, CoAP (IoT), or LibP2P (P2P) - or run them all simultaneously
+- **Pull-Based Execution**: Executors connect from anywhere (even behind NAT/firewalls) and pull work - no need for inbound access
+- **Built-in Audit Trail**: Every execution recorded as an immutable ledger for compliance and debugging
+- **Real-Time Reactive**: WebSocket subscriptions for instant notifications on workflow state changes
 
 ## Key Features
 
@@ -97,48 +97,9 @@ Configure via environment variable:
 export COLONIES_SERVER_BACKENDS="http,grpc,libp2p"  # Run multiple protocols simultaneously
 ```
 
-## Quick Start
+## Tutorials
 
-### 1. Start a Colonies Server
-
-```bash
-# Download configuration and docker-compose file
-wget https://raw.githubusercontent.com/colonyos/colonies/main/docker-compose.env
-wget https://raw.githubusercontent.com/colonyos/colonies/main/docker-compose.yml
-
-# Start the server (TimescaleDB + MinIO + Colonies Server + Docker Executor)
-docker-compose up -d
-
-# Load environment variables for CLI
-source docker-compose.env
-```
-
-### 2. Install Colonies CLI
-
-Download the CLI from [releases](https://github.com/colonyos/colonies/releases) (Linux/Mac/Windows):
-
-```bash
-sudo cp colonies /usr/local/bin
-colonies --help
-```
-
-### 3. Submit and Execute a Function
-
-```bash
-# List available executors
-colonies executor ls
-
-# Submit a simple function
-colonies function submit --spec examples/hello.json --follow
-
-# The Docker executor will automatically pick it up and execute it
-```
-
-**What just happened?**
-1. You submitted a function specification to the Colonies server
-2. The scheduler assigned it to an available Docker executor
-3. The executor pulled the task, executed it in a container, and reported results
-4. All execution history is stored in the ledger for auditability
+Comprehensive step-by-step tutorials are available in the [tutorials repository](https://github.com/colonyos/tutorials):
 
 ## Dashboard
 
@@ -147,10 +108,6 @@ The [Colonies Dashboard](https://github.com/colonyos/dashboard) provides a web U
 ![Dashboard](docs/images/dashboard1.png)
 ![Dashboard](docs/images/dashboard2.png)
 ![Dashboard](docs/images/dashboard3.png)
-
-## Tutorials
-
-Comprehensive step-by-step tutorials are available in the [tutorials repository](https://github.com/colonyos/tutorials):
 
 ## Documentation
 
@@ -176,6 +133,7 @@ Comprehensive step-by-step tutorials are available in the [tutorials repository]
 - [Security Design](docs/Security.md) - Zero-trust security model
 
 ### Deployment
+- [Container Building](docs/ContainerBuilding.md) - Build Docker containers for single and multi-platform
 - [High-Availability Deployment](docs/HADeployment.md) - Production cluster setup
 - [Monitoring](docs/Monitoring.md) - Grafana and Prometheus integration
 - [Kubernetes Helm Charts](https://github.com/colonyos/helm) - Deploy on Kubernetes
@@ -195,9 +153,12 @@ Comprehensive step-by-step tutorials are available in the [tutorials repository]
 
 ```bash
 make build              # Build the main colonies binary
-make container          # Build Docker container
+make container          # Build Docker container for local architecture
+make container-multiplatform  # Build for amd64 and arm64
 make install            # Install to /usr/local/bin
 ```
+
+For detailed instructions on building containers including multi-platform builds, see the [Container Building Guide](docs/ContainerBuilding.md).
 
 ### Testing
 
