@@ -10,7 +10,6 @@ import (
 func TestCreateResource(t *testing.T) {
 	cr := CreateResource("ExecutorDeployment", "test-deploy", "test-colony")
 
-	assert.Equal(t, "compute.colonies.io/v1", cr.APIVersion)
 	assert.Equal(t, "ExecutorDeployment", cr.Kind)
 	assert.Equal(t, "test-deploy", cr.Metadata.Name)
 	assert.Equal(t, "test-colony", cr.Metadata.Namespace)
@@ -113,12 +112,6 @@ func TestResourceValidation(t *testing.T) {
 	err := cr.Validate()
 	assert.NoError(t, err)
 
-	// Missing APIVersion
-	cr2 := CreateResource("TestResource", "test", "ns")
-	err = cr2.Validate()
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "apiVersion is required")
-
 	// Missing Kind
 	cr3 := CreateResource("", "test", "ns")
 	err = cr3.Validate()
@@ -153,7 +146,6 @@ func TestResourceJSONConversion(t *testing.T) {
 	// Convert back from JSON
 	cr2, err := ConvertJSONToResource(jsonStr)
 	assert.NoError(t, err)
-	assert.Equal(t, cr.APIVersion, cr2.APIVersion)
 	assert.Equal(t, cr.Kind, cr2.Kind)
 	assert.Equal(t, cr.Metadata.Name, cr2.Metadata.Name)
 	assert.Equal(t, cr.Metadata.Namespace, cr2.Metadata.Namespace)
@@ -185,7 +177,6 @@ func TestCreateResourceDefinition(t *testing.T) {
 		"reconcile_executor_deployment",
 	)
 
-	assert.Equal(t, "colonies.io/v1", crd.APIVersion)
 	assert.Equal(t, "ResourceDefinition", crd.Kind)
 	assert.Equal(t, "executordeployments.compute.colonies.io", crd.Metadata.Name)
 	assert.Equal(t, "compute.colonies.io", crd.Spec.Group)
@@ -292,7 +283,6 @@ func TestResourceInFunctionSpec(t *testing.T) {
 
 	// Verify the resource is properly attached
 	assert.NotNil(t, funcSpec.Resource)
-	assert.Equal(t, "test.io/v1", funcSpec.Resource.APIVersion)
 	assert.Equal(t, "TestResource", funcSpec.Resource.Kind)
 	assert.Equal(t, "test-resource", funcSpec.Resource.Metadata.Name)
 	assert.Equal(t, "test-colony", funcSpec.Resource.Metadata.Namespace)
@@ -376,7 +366,6 @@ func TestComplexCustomResourceScenario(t *testing.T) {
 
 	cr2, err := ConvertJSONToResource(jsonStr)
 	assert.NoError(t, err)
-	assert.Equal(t, cr.APIVersion, cr2.APIVersion)
 	assert.Equal(t, cr.Kind, cr2.Kind)
 
 	// Verify all data made it through
@@ -631,26 +620,6 @@ func TestSchemaValidationArray(t *testing.T) {
 	err = cr2.ValidateAgainstRD(crd)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "must be an integer")
-}
-
-func TestSchemaValidationAPIVersionMismatch(t *testing.T) {
-	crd := CreateResourceDefinition(
-		"testresources.test.io",
-		"test.io",
-		"v1",
-		"TestResource",
-		"testresources",
-		"Namespaced",
-		"test-controller",
-		"reconcile",
-	)
-
-	// Wrong apiVersion
-	cr := CreateResource("TestResource", "test", "ns")
-
-	err := cr.ValidateAgainstRD(crd)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "apiVersion mismatch")
 }
 
 func TestSchemaValidationKindMismatch(t *testing.T) {

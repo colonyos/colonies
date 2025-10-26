@@ -21,7 +21,7 @@ func TestValidateResourceAgainstSchema_RequiredFields(t *testing.T) {
 	}
 
 	// Test 1: Valid resource with required field
-	resource := CreateResource("v1", "Test", "test-resource", "default")
+	resource := CreateResource("Test", "test-resource", "default")
 	resource.SetSpec("image", "nginx:1.21")
 	resource.SetSpec("replicas", 3)
 
@@ -31,7 +31,7 @@ func TestValidateResourceAgainstSchema_RequiredFields(t *testing.T) {
 	}
 
 	// Test 2: Missing required field
-	invalidResource := CreateResource("v1", "Test", "invalid-resource", "default")
+	invalidResource := CreateResource("Test", "invalid-resource", "default")
 	invalidResource.SetSpec("replicas", 3) // Missing 'image'
 
 	err = ValidateResourceAgainstSchema(invalidResource, schema)
@@ -57,7 +57,7 @@ func TestValidateResourceAgainstSchema_TypeValidation(t *testing.T) {
 	}
 
 	// Test string type
-	resource := CreateResource("v1", "Test", "test", "default")
+	resource := CreateResource("Test", "test", "default")
 	resource.SetSpec("name", "test-name")
 	resource.SetSpec("count", 5)
 	resource.SetSpec("enabled", true)
@@ -68,7 +68,7 @@ func TestValidateResourceAgainstSchema_TypeValidation(t *testing.T) {
 	}
 
 	// Test invalid string type
-	invalidResource := CreateResource("v1", "Test", "invalid", "default")
+	invalidResource := CreateResource("Test", "invalid", "default")
 	invalidResource.SetSpec("name", 123) // Should be string
 
 	err = ValidateResourceAgainstSchema(invalidResource, schema)
@@ -77,7 +77,7 @@ func TestValidateResourceAgainstSchema_TypeValidation(t *testing.T) {
 	}
 
 	// Test invalid number type
-	invalidResource2 := CreateResource("v1", "Test", "invalid2", "default")
+	invalidResource2 := CreateResource("Test", "invalid2", "default")
 	invalidResource2.SetSpec("count", "not-a-number") // Should be number
 
 	err = ValidateResourceAgainstSchema(invalidResource2, schema)
@@ -86,7 +86,7 @@ func TestValidateResourceAgainstSchema_TypeValidation(t *testing.T) {
 	}
 
 	// Test invalid boolean type
-	invalidResource3 := CreateResource("v1", "Test", "invalid3", "default")
+	invalidResource3 := CreateResource("Test", "invalid3", "default")
 	invalidResource3.SetSpec("enabled", "not-a-boolean") // Should be boolean
 
 	err = ValidateResourceAgainstSchema(invalidResource3, schema)
@@ -107,7 +107,7 @@ func TestValidateResourceAgainstSchema_EnumValidation(t *testing.T) {
 	}
 
 	// Test valid enum value
-	resource := CreateResource("v1", "Test", "test", "default")
+	resource := CreateResource("Test", "test", "default")
 	resource.SetSpec("protocol", "TCP")
 
 	err := ValidateResourceAgainstSchema(resource, schema)
@@ -116,7 +116,7 @@ func TestValidateResourceAgainstSchema_EnumValidation(t *testing.T) {
 	}
 
 	// Test invalid enum value
-	invalidResource := CreateResource("v1", "Test", "invalid", "default")
+	invalidResource := CreateResource("Test", "invalid", "default")
 	invalidResource.SetSpec("protocol", "HTTP") // Not in enum
 
 	err = ValidateResourceAgainstSchema(invalidResource, schema)
@@ -139,7 +139,7 @@ func TestValidateResourceAgainstSchema_ArrayValidation(t *testing.T) {
 	}
 
 	// Test valid array
-	resource := CreateResource("v1", "Test", "test", "default")
+	resource := CreateResource("Test", "test", "default")
 	resource.SetSpec("ports", []interface{}{80, 443, 8080})
 
 	err := ValidateResourceAgainstSchema(resource, schema)
@@ -148,7 +148,7 @@ func TestValidateResourceAgainstSchema_ArrayValidation(t *testing.T) {
 	}
 
 	// Test invalid array item type
-	invalidResource := CreateResource("v1", "Test", "invalid", "default")
+	invalidResource := CreateResource("Test", "invalid", "default")
 	invalidResource.SetSpec("ports", []interface{}{80, "not-a-number", 8080})
 
 	err = ValidateResourceAgainstSchema(invalidResource, schema)
@@ -157,7 +157,7 @@ func TestValidateResourceAgainstSchema_ArrayValidation(t *testing.T) {
 	}
 
 	// Test non-array value
-	invalidResource2 := CreateResource("v1", "Test", "invalid2", "default")
+	invalidResource2 := CreateResource("Test", "invalid2", "default")
 	invalidResource2.SetSpec("ports", "not-an-array")
 
 	err = ValidateResourceAgainstSchema(invalidResource2, schema)
@@ -185,7 +185,7 @@ func TestValidateResourceAgainstSchema_NestedObjectValidation(t *testing.T) {
 	}
 
 	// Test valid nested object
-	resource := CreateResource("v1", "Test", "test", "default")
+	resource := CreateResource("Test", "test", "default")
 	config := map[string]interface{}{
 		"host": "localhost",
 		"port": 8080,
@@ -198,7 +198,7 @@ func TestValidateResourceAgainstSchema_NestedObjectValidation(t *testing.T) {
 	}
 
 	// Test invalid nested field type
-	invalidResource := CreateResource("v1", "Test", "invalid", "default")
+	invalidResource := CreateResource("Test", "invalid", "default")
 	invalidConfig := map[string]interface{}{
 		"host": "localhost",
 		"port": "not-a-number", // Should be number
@@ -213,7 +213,7 @@ func TestValidateResourceAgainstSchema_NestedObjectValidation(t *testing.T) {
 
 func TestValidateResourceAgainstSchema_NoSchema(t *testing.T) {
 	// Test with nil schema - should pass
-	resource := CreateResource("v1", "Test", "test", "default")
+	resource := CreateResource("Test", "test", "default")
 	resource.SetSpec("anything", "goes")
 
 	err := ValidateResourceAgainstSchema(resource, nil)
