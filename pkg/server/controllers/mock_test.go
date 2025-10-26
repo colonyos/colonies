@@ -610,6 +610,34 @@ func (db *DatabaseMock) ChangeColonyID(colonyName string, oldColonyID, newColony
 func (db *DatabaseMock) ChangeUserID(colonyName string, oldUserID, newUserID string) error { return nil }
 func (db *DatabaseMock) ChangeExecutorID(colonyName string, oldExecutorID, newExecutorID string) error { return nil }
 
+// ResourceDatabase interface - ResourceDefinition methods
+func (db *DatabaseMock) AddResourceDefinition(rd *core.ResourceDefinition) error { return nil }
+func (db *DatabaseMock) GetResourceDefinitionByID(id string) (*core.ResourceDefinition, error) { return nil, nil }
+func (db *DatabaseMock) GetResourceDefinitionByName(namespace, name string) (*core.ResourceDefinition, error) { return nil, nil }
+func (db *DatabaseMock) GetResourceDefinitions() ([]*core.ResourceDefinition, error) { return nil, nil }
+func (db *DatabaseMock) GetResourceDefinitionsByNamespace(namespace string) ([]*core.ResourceDefinition, error) { return nil, nil }
+func (db *DatabaseMock) GetResourceDefinitionsByGroup(group string) ([]*core.ResourceDefinition, error) { return nil, nil }
+func (db *DatabaseMock) UpdateResourceDefinition(rd *core.ResourceDefinition) error { return nil }
+func (db *DatabaseMock) RemoveResourceDefinitionByID(id string) error { return nil }
+func (db *DatabaseMock) RemoveResourceDefinitionByName(namespace, name string) error { return nil }
+func (db *DatabaseMock) CountResourceDefinitions() (int, error) { return 0, nil }
+
+// ResourceDatabase interface - Resource methods
+func (db *DatabaseMock) AddResource(resource *core.Resource) error { return nil }
+func (db *DatabaseMock) GetResourceByID(id string) (*core.Resource, error) { return nil, nil }
+func (db *DatabaseMock) GetResourceByName(namespace, name string) (*core.Resource, error) { return nil, nil }
+func (db *DatabaseMock) GetResources() ([]*core.Resource, error) { return nil, nil }
+func (db *DatabaseMock) GetResourcesByNamespace(namespace string) ([]*core.Resource, error) { return nil, nil }
+func (db *DatabaseMock) GetResourcesByKind(kind string) ([]*core.Resource, error) { return nil, nil }
+func (db *DatabaseMock) GetResourcesByNamespaceAndKind(namespace, kind string) ([]*core.Resource, error) { return nil, nil }
+func (db *DatabaseMock) UpdateResource(resource *core.Resource) error { return nil }
+func (db *DatabaseMock) UpdateResourceStatus(id string, status map[string]interface{}) error { return nil }
+func (db *DatabaseMock) RemoveResourceByID(id string) error { return nil }
+func (db *DatabaseMock) RemoveResourceByName(namespace, name string) error { return nil }
+func (db *DatabaseMock) RemoveResourcesByNamespace(namespace string) error { return nil }
+func (db *DatabaseMock) CountResources() (int, error) { return 0, nil }
+func (db *DatabaseMock) CountResourcesByNamespace(namespace string) (int, error) { return 0, nil }
+
 // Implement the database.Database interface
 func (db *DatabaseMock) CreateTables() error { return nil }
 func (db *DatabaseMock) DropTables() error { return nil }
