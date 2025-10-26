@@ -1,13 +1,15 @@
 package websocket
 
 import (
+	"errors"
 	"io"
 	"net"
 	"sync"
 	"time"
 
 	"github.com/libp2p/go-libp2p/core/network"
-	"github.com/libp2p/go-libp2p/core/transport"
+	ma "github.com/multiformats/go-multiaddr"
+	manet "github.com/multiformats/go-multiaddr/net"
 
 	ws "github.com/gorilla/websocket"
 )
@@ -19,23 +21,56 @@ var GracefulCloseTimeout = 100 * time.Millisecond
 // Conn implements net.Conn interface for gorilla/websocket.
 type Conn struct {
 	*ws.Conn
+	Scope              network.ConnManagementScope
 	secure             bool
 	DefaultMessageType int
 	reader             io.Reader
-	closeOnce          sync.Once
+	closeOnceVal       func() error
+	laddr              ma.Multiaddr
+	raddr              ma.Multiaddr
 
 	readLock, writeLock sync.Mutex
 }
 
 var _ net.Conn = (*Conn)(nil)
+var _ manet.Conn = (*Conn)(nil)
 
-// NewConn creates a Conn given a regular gorilla/websocket Conn.
-func NewConn(raw *ws.Conn, secure bool) *Conn {
-	return &Conn{
+// newConn creates a Conn given a regular gorilla/websocket Conn.
+func newConn(raw *ws.Conn, secure bool, scope network.ConnManagementScope) *Conn {
+	lna := NewAddrWithScheme(raw.LocalAddr().String(), secure)
+	laddr, err := manet.FromNetAddr(lna)
+	if err != nil {
+		log.Errorf("BUG: invalid localaddr on websocket conn", raw.LocalAddr())
+		return nil
+	}
+
+	rna := NewAddrWithScheme(raw.RemoteAddr().String(), secure)
+	raddr, err := manet.FromNetAddr(rna)
+	if err != nil {
+		log.Errorf("BUG: invalid remoteaddr on websocket conn", raw.RemoteAddr())
+		return nil
+	}
+
+	c := &Conn{
 		Conn:               raw,
+		Scope:              scope,
 		secure:             secure,
 		DefaultMessageType: ws.BinaryMessage,
+		laddr:              laddr,
+		raddr:              raddr,
 	}
+	c.closeOnceVal = sync.OnceValue(c.closeOnceFn)
+	return c
+}
+
+// LocalMultiaddr implements manet.Conn.
+func (c *Conn) LocalMultiaddr() ma.Multiaddr {
+	return c.laddr
+}
+
+// RemoteMultiaddr implements manet.Conn.
+func (c *Conn) RemoteMultiaddr() ma.Multiaddr {
+	return c.raddr
 }
 
 func (c *Conn) Read(b []byte) (int, error) {
@@ -99,26 +134,21 @@ func (c *Conn) Write(b []byte) (n int, err error) {
 	return len(b), nil
 }
 
-// Close closes the connection. Only the first call to Close will receive the
-// close error, subsequent and concurrent calls will return nil.
+// Close closes the connection.
+// subsequent and concurrent calls will return the same error value.
 // This method is thread-safe.
 func (c *Conn) Close() error {
-	var err error
-	c.closeOnce.Do(func() {
-		err1 := c.Conn.WriteControl(
-			ws.CloseMessage,
-			ws.FormatCloseMessage(ws.CloseNormalClosure, "closed"),
-			time.Now().Add(GracefulCloseTimeout),
-		)
-		err2 := c.Conn.Close()
-		switch {
-		case err1 != nil:
-			err = err1
-		case err2 != nil:
-			err = err2
-		}
-	})
-	return err
+	return c.closeOnceVal()
+}
+
+func (c *Conn) closeOnceFn() error {
+	err1 := c.Conn.WriteControl(
+		ws.CloseMessage,
+		ws.FormatCloseMessage(ws.CloseNormalClosure, "closed"),
+		time.Now().Add(GracefulCloseTimeout),
+	)
+	err2 := c.Conn.Close()
+	return errors.Join(err1, err2)
 }
 
 func (c *Conn) LocalAddr() net.Addr {
@@ -151,14 +181,4 @@ func (c *Conn) SetWriteDeadline(t time.Time) error {
 	defer c.writeLock.Unlock()
 
 	return c.Conn.SetWriteDeadline(t)
-}
-
-type capableConn struct {
-	transport.CapableConn
-}
-
-func (c *capableConn) ConnState() network.ConnectionState {
-	cs := c.CapableConn.ConnState()
-	cs.Transport = "websocket"
-	return cs
 }

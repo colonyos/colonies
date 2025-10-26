@@ -60,6 +60,13 @@ func WithTLSClientConfig(c *tls.Config) Option {
 	}
 }
 
+func WithHandshakeTimeout(d time.Duration) Option {
+	return func(t *transport) error {
+		t.handshakeTimeout = d
+		return nil
+	}
+}
+
 type transport struct {
 	privKey ic.PrivKey
 	pid     peer.ID
@@ -78,8 +85,9 @@ type transport struct {
 
 	noise *noise.Transport
 
-	connMx sync.Mutex
-	conns  map[uint64]*conn // using quic-go's ConnectionTracingKey as map key
+	connMx           sync.Mutex
+	conns            map[*quic.Conn]*conn // quic connection -> *conn
+	handshakeTimeout time.Duration
 }
 
 var _ tpt.Transport = &transport{}
@@ -99,13 +107,14 @@ func New(key ic.PrivKey, psk pnet.PSK, connManager *quicreuse.ConnManager, gater
 		return nil, err
 	}
 	t := &transport{
-		pid:         id,
-		privKey:     key,
-		rcmgr:       rcmgr,
-		gater:       gater,
-		clock:       clock.New(),
-		connManager: connManager,
-		conns:       map[uint64]*conn{},
+		pid:              id,
+		privKey:          key,
+		rcmgr:            rcmgr,
+		gater:            gater,
+		clock:            clock.New(),
+		connManager:      connManager,
+		conns:            map[*quic.Conn]*conn{},
+		handshakeTimeout: handshakeTimeout,
 	}
 	for _, opt := range opts {
 		if err := opt(t); err != nil {
@@ -159,25 +168,27 @@ func (t *transport) dialWithScope(ctx context.Context, raddr ma.Multiaddr, p pee
 	}
 
 	maddr, _ := ma.SplitFunc(raddr, func(c ma.Component) bool { return c.Protocol().Code == ma.P_WEBTRANSPORT })
-	sess, err := t.dial(ctx, maddr, url, sni, certHashes)
+	sess, qconn, err := t.dial(ctx, maddr, url, sni, certHashes)
 	if err != nil {
 		return nil, err
 	}
 	sconn, err := t.upgrade(ctx, sess, p, certHashes)
 	if err != nil {
 		sess.CloseWithError(1, "")
+		qconn.CloseWithError(1, "")
 		return nil, err
 	}
 	if t.gater != nil && !t.gater.InterceptSecured(network.DirOutbound, p, sconn) {
 		sess.CloseWithError(errorCodeConnectionGating, "")
+		qconn.CloseWithError(errorCodeConnectionGating, "")
 		return nil, fmt.Errorf("secured connection gated")
 	}
-	conn := newConn(t, sess, sconn, scope)
-	t.addConn(sess, conn)
+	conn := newConn(t, sess, sconn, scope, qconn)
+	t.addConn(qconn, conn)
 	return conn, nil
 }
 
-func (t *transport) dial(ctx context.Context, addr ma.Multiaddr, url, sni string, certHashes []multihash.DecodedMultihash) (*webtransport.Session, error) {
+func (t *transport) dial(ctx context.Context, addr ma.Multiaddr, url, sni string, certHashes []multihash.DecodedMultihash) (*webtransport.Session, *quic.Conn, error) {
 	var tlsConf *tls.Config
 	if t.tlsClientConf != nil {
 		tlsConf = t.tlsClientConf.Clone()
@@ -198,25 +209,27 @@ func (t *transport) dial(ctx context.Context, addr ma.Multiaddr, url, sni string
 			return verifyRawCerts(rawCerts, certHashes)
 		}
 	}
+	ctx = quicreuse.WithAssociation(ctx, t)
 	conn, err := t.connManager.DialQUIC(ctx, addr, tlsConf, t.allowWindowIncrease)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	dialer := webtransport.Dialer{
-		RoundTripper: &http3.RoundTripper{
-			Dial: func(ctx context.Context, addr string, tlsCfg *tls.Config, cfg *quic.Config) (quic.EarlyConnection, error) {
-				return conn.(quic.EarlyConnection), nil
-			},
+		DialAddr: func(_ context.Context, _ string, _ *tls.Config, _ *quic.Config) (*quic.Conn, error) {
+			return conn, nil
 		},
+		QUICConfig: t.connManager.ClientConfig().Clone(),
 	}
 	rsp, sess, err := dialer.Dial(ctx, url, nil)
 	if err != nil {
-		return nil, err
+		conn.CloseWithError(1, "")
+		return nil, nil, err
 	}
 	if rsp.StatusCode < 200 || rsp.StatusCode > 299 {
-		return nil, fmt.Errorf("invalid response status code: %d", rsp.StatusCode)
+		conn.CloseWithError(1, "")
+		return nil, nil, fmt.Errorf("invalid response status code: %d", rsp.StatusCode)
 	}
-	return sess, err
+	return sess, conn, err
 }
 
 func (t *transport) upgrade(ctx context.Context, sess *webtransport.Session, p peer.ID, certHashes []multihash.DecodedMultihash) (*connSecurityMultiaddrs, error) {
@@ -261,7 +274,7 @@ func (t *transport) upgrade(ctx context.Context, sess *webtransport.Session, p p
 	if err != nil {
 		return nil, fmt.Errorf("failed to create Noise transport: %w", err)
 	}
-	c, err := n.SecureOutbound(ctx, &webtransportStream{Stream: str, wsess: sess}, p)
+	c, err := n.SecureOutbound(ctx, webtransportStream{Stream: str, wsess: sess}, p)
 	if err != nil {
 		return nil, err
 	}
@@ -321,7 +334,7 @@ func (t *transport) Listen(laddr ma.Multiaddr) (tpt.Listener, error) {
 	}
 	tlsConf.NextProtos = append(tlsConf.NextProtos, http3.NextProtoH3)
 
-	ln, err := t.connManager.ListenQUIC(laddr, tlsConf, t.allowWindowIncrease)
+	ln, err := t.connManager.ListenQUICAndAssociate(t, laddr, tlsConf, t.allowWindowIncrease)
 	if err != nil {
 		return nil, err
 	}
@@ -344,26 +357,26 @@ func (t *transport) Close() error {
 	return nil
 }
 
-func (t *transport) allowWindowIncrease(conn quic.Connection, size uint64) bool {
+func (t *transport) allowWindowIncrease(conn *quic.Conn, size uint64) bool {
 	t.connMx.Lock()
 	defer t.connMx.Unlock()
 
-	c, ok := t.conns[conn.Context().Value(quic.ConnectionTracingKey).(uint64)]
+	c, ok := t.conns[conn]
 	if !ok {
 		return false
 	}
 	return c.allowWindowIncrease(size)
 }
 
-func (t *transport) addConn(sess *webtransport.Session, c *conn) {
+func (t *transport) addConn(conn *quic.Conn, c *conn) {
 	t.connMx.Lock()
-	t.conns[sess.Context().Value(quic.ConnectionTracingKey).(uint64)] = c
+	t.conns[conn] = c
 	t.connMx.Unlock()
 }
 
-func (t *transport) removeConn(sess *webtransport.Session) {
+func (t *transport) removeConn(conn *quic.Conn) {
 	t.connMx.Lock()
-	delete(t.conns, sess.Context().Value(quic.ConnectionTracingKey).(uint64))
+	delete(t.conns, conn)
 	t.connMx.Unlock()
 }
 
@@ -401,12 +414,21 @@ func (t *transport) Resolve(_ context.Context, maddr ma.Multiaddr) ([]ma.Multiad
 	beforeQuicMA, afterIncludingQuicMA := ma.SplitFunc(maddr, func(c ma.Component) bool {
 		return c.Protocol().Code == ma.P_QUIC_V1
 	})
+	if len(afterIncludingQuicMA) == 0 {
+		return nil, fmt.Errorf("no quic component found in %s", maddr)
+	}
 	quicComponent, afterQuicMA := ma.SplitFirst(afterIncludingQuicMA)
+	if quicComponent == nil {
+		// Should not happen since we split on P_QUIC_V1 already
+		return nil, fmt.Errorf("no quic component found in %s", maddr)
+	}
 	sniComponent, err := ma.NewComponent(ma.ProtocolWithCode(ma.P_SNI).Name, sni)
 	if err != nil {
 		return nil, err
 	}
-	return []ma.Multiaddr{beforeQuicMA.Encapsulate(quicComponent).Encapsulate(sniComponent).Encapsulate(afterQuicMA)}, nil
+	result := beforeQuicMA.AppendComponent(quicComponent, sniComponent)
+	result = append(result, afterQuicMA...)
+	return []ma.Multiaddr{result}, nil
 }
 
 // AddCertHashes adds the current certificate hashes to a multiaddress.

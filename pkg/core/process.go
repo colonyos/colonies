@@ -105,7 +105,7 @@ func ConvertJSONToProcess(jsonString string) (*Process, error) {
 }
 
 func ConvertProcessArrayToJSON(processes []*Process) (string, error) {
-	jsonBytes, err := json.Marshal(processes)
+	jsonBytes, err := json.MarshalIndent(processes, "", "  ")
 	if err != nil {
 		return "", err
 	}
@@ -329,7 +329,7 @@ func (process *Process) AddChild(childID string) {
 }
 
 func (process *Process) ToJSON() (string, error) {
-	jsonBytes, err := json.Marshal(process)
+	jsonBytes, err := json.MarshalIndent(process, "", "  ")
 	if err != nil {
 		return "", err
 	}

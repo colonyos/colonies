@@ -22,6 +22,8 @@ const DefaultCount = 20
 var mutex sync.Mutex
 
 var DBName = "postgres"
+var DBType string
+var DataDir string
 var Verbose bool
 var DBHost string
 var DBPort int
@@ -35,6 +37,7 @@ var TLSCert string
 var TLSKey string
 var ServerHost string
 var ServerPort int
+var LibP2PPort int  // Port for LibP2P transport (required when using libp2p backend)
 var MonitorPort int
 var MonitorInterval int
 var ServerID string
@@ -70,6 +73,9 @@ var GeneratorTrigger int
 var GeneratorTimeout int
 var GeneratorCheckerPeriod int
 var FuncName string
+var ResourceDefinitionName string
+var ResourceName string
+var Kind string
 var Arg string
 var Args []string
 var Output []string
@@ -145,6 +151,7 @@ func init() {
 	rootCmd.PersistentFlags().BoolVarP(&Verbose, "verbose", "v", false, "Verbose (debugging)")
 	rootCmd.PersistentFlags().BoolVarP(&Insecure, "insecure", "", false, "Disable TLS and use HTTP")
 	rootCmd.PersistentFlags().BoolVarP(&SkipTLSVerify, "skip-tls-verify", "", false, "Skip TLS certificate verification")
+	rootCmd.PersistentFlags().BoolVarP(&JSON, "json", "", false, "Output raw JSON instead of tables")
 
 	rootCmd.AddCommand(configCmd)
 	rootCmd.AddCommand(versionCmd)

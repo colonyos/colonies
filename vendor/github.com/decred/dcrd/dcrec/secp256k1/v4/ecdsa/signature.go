@@ -1,5 +1,5 @@
 // Copyright (c) 2013-2014 The btcsuite developers
-// Copyright (c) 2015-2022 The Decred developers
+// Copyright (c) 2015-2024 The Decred developers
 // Use of this source code is governed by an ISC
 // license that can be found in the LICENSE file.
 
@@ -57,6 +57,16 @@ type Signature struct {
 // NewSignature instantiates a new signature given some r and s values.
 func NewSignature(r, s *secp256k1.ModNScalar) *Signature {
 	return &Signature{*r, *s}
+}
+
+// R returns the r value of the signature.
+func (sig *Signature) R() secp256k1.ModNScalar {
+	return sig.r
+}
+
+// S returns the s value of the signature.
+func (sig *Signature) S() secp256k1.ModNScalar {
+	return sig.s
 }
 
 // Serialize returns the ECDSA signature in the Distinguished Encoding Rules
@@ -921,6 +931,7 @@ func RecoverCompact(signature, hash []byte) (*secp256k1.PublicKey, bool, error) 
 		// r = r + N (mod P)
 		fieldR.Add(&orderAsFieldVal)
 	}
+	fieldR.Normalize()
 
 	// Step 4.
 	//
@@ -942,8 +953,8 @@ func RecoverCompact(signature, hash []byte) (*secp256k1.PublicKey, bool, error) 
 	//
 	// X = (r, y)
 	var X secp256k1.JacobianPoint
-	X.X.Set(fieldR.Normalize())
-	X.Y.Set(y.Normalize())
+	X.X.Set(&fieldR)
+	X.Y.Set(&y)
 	X.Z.SetInt(1)
 
 	// Step 6.

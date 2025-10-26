@@ -54,18 +54,20 @@ type Conditions struct {
 }
 
 type FunctionSpec struct {
-	NodeName    string                 `json:"nodename"`
-	FuncName    string                 `json:"funcname"`
-	Args        []interface{}          `json:"args"`
-	KwArgs      map[string]interface{} `json:"kwargs"`
-	Priority    int                    `json:"priority"`
-	MaxWaitTime int                    `json:"maxwaittime"`
-	MaxExecTime int                    `json:"maxexectime"`
-	MaxRetries  int                    `json:"maxretries"`
-	Conditions  Conditions             `json:"conditions"`
-	Label       string                 `json:"label"`
-	Filesystem  Filesystem             `json:"fs"`
-	Env         map[string]string      `json:"env"`
+	NodeName       string                 `json:"nodename"`
+	FuncName       string                 `json:"funcname"`
+	Args           []interface{}          `json:"args"`
+	KwArgs         map[string]interface{} `json:"kwargs"`
+	Priority       int                    `json:"priority"`
+	MaxWaitTime    int                    `json:"maxwaittime"`
+	MaxExecTime    int                    `json:"maxexectime"`
+	MaxRetries     int                    `json:"maxretries"`
+	Conditions     Conditions             `json:"conditions"`
+	Label          string                 `json:"label"`
+	Filesystem     Filesystem             `json:"fs"`
+	Env            map[string]string      `json:"env"`
+	Resource       *Resource              `json:"resource,omitempty"`
+	Reconciliation *Reconciliation        `json:"reconciliation,omitempty"`
 }
 
 func CreateEmptyFunctionSpec() *FunctionSpec {

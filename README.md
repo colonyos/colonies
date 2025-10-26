@@ -3,110 +3,197 @@
 
 ![ColonyOSLogo](docs/images/ColonyOsLogoNoShaddow2.png)
 
-# Tutorials
-This [repo](https://github.com/colonyos/tutorials) contains several tutorials to help you get started with ColonyOS.
+# ColonyOS - Distributed Meta-Orchestrator
 
-# What is Colonies?
-ColonyOS is an open-source framework designed to facilitate seamless execution of computational workloads across platforms, e.g. cloud, edge, devices, or High-Performance Computing (HPC), creating so-called *Compute Continuums*. Colonies is key component of ColonyOS and provides a **Meta-Orchestrator**, delivering functionalities like a traditional operating system, but functions as an overlay on top of existing platforms. 
+ColonyOS is an open-source framework for seamless execution of computational workloads across heterogeneous platforms - cloud, edge, HPC, IoT devices, and beyond. It creates **Compute Continuums** by providing a unified orchestration layer that operates as a meta-orchestrator on top of existing infrastructure.
 
-At its core, Colonies provides a **distributed runtime environment**, called a **Colony**, consisting of a network of loosely connected **Executors**. Executors are distributed microservices that can easily integrate with any third-party application or system. They can be implemented in any language and run anywhere on the Internet, e.g. on supercomputers or in a web browser on a smart phone.
+## Why ColonyOS?
 
-Colonies has been developed with a strong emphasis on security and robustness to ensure scalability and reliability.
+Traditional orchestration systems are tied to specific platforms (Kubernetes for cloud, Slurm for HPC, etc.). ColonyOS breaks these silos through **meta-process management** - a broker-based architecture that separates computational intent from execution.
 
-## How does it work? 
-* Users submit function specifications to a Colonies server specifying computations they wish to run. These functions will then be assigned and executed by the Executors.
-* Developers can focus on implementing Executors as independent microservices. The system can then easily scale just by deploying more Executors, enabling parallel execution. Failed processes are automatically re-assigned to other Executors.
-* Developers can define and submit workflows describing a sequence of computations carried out by several Executors.
-* Colonies makes it possible to develop a *loosely-decoupled* architecture that spans multiple platforms and infrastructures, with all coordination managed by Colonies.
-* Colonies also functions as a ledger, containing full execution history. This enables developers to keep track of the system and more easily debug it.
+Example of use cases:
 
-## Design
-* Colonies serves as an intermediary layer to indirectly control and integrate with other computer systems. This enables Executors (or users) to publish instructions and subsequently assign these instructions to other Executors.
-* By chaining instructions together, it becomes possible to execute workloads that can operate seamlessly across different platforms
-* A build-in **[zero-trust](https://en.wikipedia.org/wiki/Zero_trust_security_model)** protocol makes it possible to organize remote Exectors as a single unit (a Colony). This feature empowers users to maintain control, even when distributed are deployed on multiple platforms.
+- **Scientific Computing**: Process satellite imagery, analyze sensor data, run simulations across HPC clusters
+- **AI/ML Pipelines**: Distribute training jobs, run inference on edge devices, orchestrate multi-agent LLM systems
+- **Serverless at Scale**: Build FaaS platforms that span cloud, edge, and on-premise infrastructure
+- **Data Processing**: ETL pipelines, batch processing, real-time stream processing with ColonyFS integration
+- **Industrial IoT**: Coordinate computations across factory floor devices, edge gateways, and cloud
+- **Earth Observation**: Automated satellite image processing and analysis workflows
+- **Infrastructure as Code**: Declaratively manage infrastructure across computing continuums - define resources spanning cloud, edge, HPC, and IoT with GitOps workflows, automatic drift detection, and self-healing reconciliation
+
+### The Core Idea
+
+**Declarative Intent + Broker + Distributed Execution = Computing Continuums**
+
+Instead of writing platform-specific code, you declare **WHAT** you want to compute using Function Specifications. The Colonies Server acts as a **broker** that matches your intent with available **Executors** (distributed workers) that know **HOW** to execute on their specific platforms. This separation creates seamless **Computing Continuums** across heterogeneous infrastructure.
+
+### Key Advantages
+
+- **Platform Agnostic**: Same function specification runs on Kubernetes, HPC, edge devices, IoT - executors translate to platform-specific execution
+- **Decoupled Architecture**: Submit work anytime, execute asynchronously - temporal and spatial decoupling via broker
+- **Zero-Trust by Design**: No session tokens, no passwords - every request cryptographically signed with Ed25519
+- **Protocol Flexibility**: Choose HTTP/REST, gRPC, CoAP (IoT), or LibP2P (P2P) - or run them all simultaneously
+- **Pull-Based Execution**: Executors connect from anywhere (even behind NAT/firewalls) and pull work - no need for inbound access
+- **Built-in Audit Trail**: Every execution recorded as an immutable ledger for compliance and debugging
+- **Real-Time Reactive**: WebSocket subscriptions for instant notifications on workflow state changes
+
+## Key Features
+
+- **Multi-Protocol Architecture**: Native support for HTTP/REST, gRPC, CoAP (IoT), and LibP2P (peer-to-peer)
+- **Distributed Execution**: Executors run anywhere on the Internet - supercomputers, edge devices, browsers, embedded systems
+- **Zero-Trust Security**: All communication cryptographically signed with Ed25519
+- **Workflow DAGs**: Complex computational pipelines with parent-child dependencies
+- **Event-Driven**: Real-time WebSocket subscriptions for process state changes
+- **Scheduled Execution**: Cron-based and interval-based job scheduling
+- **Dynamic Batching**: Generators that pack arguments and trigger workflows based on counter or timeout conditions
+- **Resource Reconciliation**: Kubernetes-style declarative resource management with automatic drift detection and correction
+- **Full Audit Trail**: Complete execution history stored as an immutable ledger
+- **High Availability**: Etcd-based clustering with automatic failover
+- **Multi-Language SDKs**: Go, Rust, Python, Julia, JavaScript, Haskell
+
+## Architecture
+
+### Core Concepts
+
+- **Colony**: A distributed runtime environment - a network of loosely connected Executors
+- **Executor**: Distributed worker that pulls and executes workloads (can be implemented in any language, runs anywhere)
+- **Process**: Computational workload with states: WAITING → RUNNING → SUCCESS/FAILED
+- **FunctionSpec**: Specification defining what computation to run and execution conditions
+- **ProcessGraph**: Workflow represented as a Directed Acyclic Graph (DAG)
+- **Resource**: Declarative infrastructure specification with desired state management
+- **Reconciliation**: Automatic drift detection and correction that maintains resources in their desired state
+
+### How It Works
+
+1. **Submit**: Users submit function specifications to the Colonies server
+2. **Schedule**: The scheduler assigns processes to available Executors based on conditions
+3. **Execute**: Executors pull assigned processes, execute them, and report results
+4. **Chain**: Complex workflows span multiple platforms by chaining processes together
+5. **Monitor**: Real-time subscriptions and full execution history enable observability
 
 ![MetaOS](docs/images/arch.png)
 
-## Example
-### Start a Colonier server
-```console
-source devenv
-colonies dev 
+### Zero-Trust Security Model
+
+Colonies implements a **zero-trust architecture** where all communication is cryptographically signed:
+- No traditional authentication tokens or session management
+- Each request signed with Ed25519 private keys
+- Server validates signatures and enforces role-based access control
+- Executors can operate on untrusted infrastructure while maintaining security
+
+### Multi-Backend Support
+
+Run Colonies server with any combination of protocols:
+
+| Backend | Use Case | Port |
+|---------|----------|------|
+| **HTTP/REST** | Web APIs, dashboards, traditional clients | 8080 |
+| **gRPC** | High-performance, low-latency communication | 50051 |
+| **CoAP** | IoT devices, constrained environments | 5683 |
+| **LibP2P** | Peer-to-peer, decentralized, NAT traversal | 4001 |
+
+Configure via environment variable:
+```bash
+export COLONIES_SERVER_BACKENDS="http,grpc,libp2p"  # Run multiple protocols simultaneously
 ```
 
-### Submit a meta-process
-```json
-{
-    "conditions": {
-        "executortype": "cli"
-    },
-    "funcname": "echo sayhello"
-}
-```
+## Tutorials
 
-```console
-colonies function submit --spec sayhello.json 
-```
+Comprehensive step-by-step tutorials are available in the [tutorials repository](https://github.com/colonyos/tutorials):
 
-### Start a Unix executor (executes functions as Unix commands)
-See [Unix executor repo](https://github.com/colonyos/executors) how to install an Unix executor. 
+## Dashboard
 
-```console
-./bin/unix_executor start 
+The [Colonies Dashboard](https://github.com/colonyos/dashboard) provides a web UI for monitoring and managing your compute continuum:
 
-INFO[0000] Lauching process                              Args="[]" Func="echo sayhello"
-sayhello
-```
-
-See [this guide](docs/Executor.md) how to implement executors in Python, Julia, Go, and JavaScript.
-
-## Dashboard screenshots
-Below are some screenshots from the [Colonies Dashboard](https://github.com/colonyos/dashboard):
 ![Dashboard](docs/images/dashboard1.png)
 ![Dashboard](docs/images/dashboard2.png)
 ![Dashboard](docs/images/dashboard3.png)
 
-# More information
-## Installation
-* [Installation](docs/Installation.md)
-* [Configuration](docs/Configuration.md)
-## Presentations
-* [Process Orchestration with ColonyOS](docs/Colonies.pptx)
-## Guides
-* [Introduction](docs/Introduction.md)
-* [Getting started](docs/GettingStarted.md)
-* [How to implement a Colonies executor](docs/Executor.md)
-* [How to implement a Fibonacci executor in Go](docs/GoTutorial.md)
-* [How to create workflows DAGs](docs/Workflows.md)
-* [How to use generators](docs/Generators.md)
-* [How to use crons](docs/Crons.md)
-* [How to use the Colonies CLI](docs/CLI.md)
-* [Logging](docs/Logging.md)
-## Design
-* [Overall design](docs/Design.md)
-* [HTTP RPC protocol](docs/RPC.md)
-* [Security design](docs/Security.md)
-## Executors
-* [Executors repo](https://github.com/colonyos/executors)
-## SDKs
-* [Golang Colonies SDK](https://github.com/colonyos/colonies/tree/main/pkg/client)
-* [Rust Colonies SDK](https://github.com/colonyos/rust)
-* [Julia Colonies SDK](https://github.com/colonyos/Colonies.jl)
-* [JavaScript Colonies SDK](https://github.com/colonyos/colonies.js)
-* [Python Colonies SDK](https://github.com/colonyos/pycolonies)
-* [Haskell Colonies SDK](https://github.com/colonyos/haskell)
-## Deployment
-* [High-availability deployment](docs/HADeployment.md)
-* [Grafana/Prometheus monitoring](docs/Monitoring.md)
-* [Kubernetes Helm charts](https://github.com/colonyos/helm)
+## Documentation
 
-More information can also be found [here](https://colonyos.io).
+### Getting Started
+- [Installation Guide](docs/Installation.md) - Install and configure Colonies
+- [Getting Started](docs/GettingStarted.md) - Your first Colonies application
+- [Configuration](docs/Configuration.md) - Environment variables and settings
+- [Backend Configuration](docs/BackendConfigs.md) - HTTP, gRPC, CoAP, LibP2P setup
 
-# Current users
-* ColonyOS is currently being used by **[RockSigma AB](https://www.rocksigma.com)** to build a compute engine for automatic seismic processing in underground mines. 
+### Guides
+- [Introduction](docs/Introduction.md) - Core concepts and architecture
+- [Implementing Executors](docs/Executor.md) - Create executors in Python, Go, Julia, JavaScript
+- [Fibonacci Tutorial (Go)](docs/GoTutorial.md) - Complete example application
+- [Workflow DAGs](docs/Workflows.md) - Create complex computational pipelines
+- [Generators](docs/Generators.md) - Batch processing and dynamic workflows
+- [Cron Jobs](docs/Crons.md) - Schedule recurring tasks
+- [CLI Usage](docs/CLI.md) - Command-line interface reference
+- [Logging](docs/Logging.md) - Process logging and monitoring
 
-# Running the tests
-Follow the instructions at [Installation Guide](./docs/Installation.md) then type:
-```console
-make test
+### Architecture & Design
+- [Overall Design](docs/Design.md) - System architecture and design patterns
+- [RPC Protocol](docs/RPC.md) - HTTP RPC protocol specification
+- [Security Design](docs/Security.md) - Zero-trust security model
+
+### Deployment
+- [Container Building](docs/ContainerBuilding.md) - Build Docker containers for single and multi-platform
+- [High-Availability Deployment](docs/HADeployment.md) - Production cluster setup
+- [Monitoring](docs/Monitoring.md) - Grafana and Prometheus integration
+- [Kubernetes Helm Charts](https://github.com/colonyos/helm) - Deploy on Kubernetes
+
+### SDKs & Tools
+- [Go SDK](https://github.com/colonyos/colonies/tree/main/pkg/client) - Official Go client library
+- [Python SDK](https://github.com/colonyos/pycolonies) - Python client library
+- [Rust SDK](https://github.com/colonyos/rust) - Rust client library
+- [Julia SDK](https://github.com/colonyos/Colonies.jl) - Julia client library
+- [JavaScript SDK](https://github.com/colonyos/colonies.js) - JavaScript/Node.js library
+- [Haskell SDK](https://github.com/colonyos/haskell) - Haskell client library
+- [Executors](https://github.com/colonyos/executors) - Pre-built executor implementations
+
+## Development
+
+### Building
+
+```bash
+make build              # Build the main colonies binary
+make container          # Build Docker container for local architecture
+make container-multiplatform  # Build for amd64 and arm64
+make install            # Install to /usr/local/bin
 ```
+
+For detailed instructions on building containers including multi-platform builds, see the [Container Building Guide](docs/ContainerBuilding.md).
+
+### Testing
+
+```bash
+make test              # Run all tests
+make github_test       # Run tests for CI (no color output)
+
+# Test specific backends
+COLONIES_BACKEND_TYPE=gin make test
+COLONIES_BACKEND_TYPE=grpc make test
+COLONIES_BACKEND_TYPE=libp2p make test
+```
+
+### Code Coverage
+
+```bash
+make coverage         # Generate coverage reports
+```
+
+## Production Usage
+
+ColonyOS is currently used in production by:
+
+- **[RockSigma AB](https://www.rocksigma.com)** - Automatic seismic processing engine for underground mines, orchestrating workloads across cloud and edge infrastructure
+
+## Contributing
+
+Contributions are welcome! Please see our contributing guidelines and code of conduct.
+
+## Community
+
+- Website: [colonyos.io](https://colonyos.io)
+- GitHub: [github.com/colonyos](https://github.com/colonyos)
+- Tutorials: [github.com/colonyos/tutorials](https://github.com/colonyos/tutorials)
+
+## License
+
+See LICENSE file for details.

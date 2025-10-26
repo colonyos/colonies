@@ -61,7 +61,7 @@ func (db *PQDatabase) GetFunctionByID(functionID string) (*core.Function, error)
 		return functions[0], nil
 	}
 
-	return functions[0], nil
+	return nil, nil
 }
 
 func (db *PQDatabase) GetFunctionsByExecutorName(colonyName string, executorID string) ([]*core.Function, error) {

@@ -125,7 +125,7 @@ func TestSearchLogs(t *testing.T) {
 	timestamp = time.Now().UTC()
 	err = db.addHistoricalLog("test_processid2", "test_colony", "test_executor_name1", timestamp.UnixNano(), "test", timestamp)
 	assert.Nil(t, err)
-	timestamp = time.Now().Add(-24 * time.Hour * 3).UTC()
+	timestamp = time.Now().Add(-24*time.Hour*3 - time.Hour).UTC()
 	err = db.addHistoricalLog("test_processid3", "test_colony", "test_executor_name2", timestamp.UnixNano(), "error", timestamp)
 	assert.Nil(t, err)
 

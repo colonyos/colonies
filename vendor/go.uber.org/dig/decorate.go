@@ -68,6 +68,9 @@ type decoratorNode struct {
 
 	// Callback for this decorator, if there is one.
 	callback Callback
+
+	// BeforeCallback for this decorator, if there is one
+	beforeCallback BeforeCallback
 }
 
 func newDecoratorNode(dcor interface{}, s *Scope, opts decorateOptions) (*decoratorNode, error) {
@@ -86,15 +89,16 @@ func newDecoratorNode(dcor interface{}, s *Scope, opts decorateOptions) (*decora
 	}
 
 	n := &decoratorNode{
-		dcor:     dcor,
-		dtype:    dtype,
-		id:       dot.CtorID(dptr),
-		location: digreflect.InspectFunc(dcor),
-		orders:   make(map[*Scope]int),
-		params:   pl,
-		results:  rl,
-		s:        s,
-		callback: opts.Callback,
+		dcor:           dcor,
+		dtype:          dtype,
+		id:             dot.CtorID(dptr),
+		location:       digreflect.InspectFunc(dcor),
+		orders:         make(map[*Scope]int),
+		params:         pl,
+		results:        rl,
+		s:              s,
+		callback:       opts.Callback,
+		beforeCallback: opts.BeforeCallback,
 	}
 	return n, nil
 }
@@ -120,13 +124,20 @@ func (n *decoratorNode) Call(s containerStore) (err error) {
 			Reason: err,
 		}
 	}
+	if n.beforeCallback != nil {
+		n.beforeCallback(BeforeCallbackInfo{
+			Name: fmt.Sprintf("%v.%v", n.location.Package, n.location.Name),
+		})
+	}
 
 	if n.callback != nil {
+		start := s.clock().Now()
 		// Wrap in separate func to include PanicErrors
 		defer func() {
 			n.callback(CallbackInfo{
-				Name:  fmt.Sprintf("%v.%v", n.location.Package, n.location.Name),
-				Error: err,
+				Name:    fmt.Sprintf("%v.%v", n.location.Package, n.location.Name),
+				Error:   err,
+				Runtime: s.clock().Since(start),
 			})
 		}()
 	}
@@ -160,8 +171,9 @@ type DecorateOption interface {
 }
 
 type decorateOptions struct {
-	Info     *DecorateInfo
-	Callback Callback
+	Info           *DecorateInfo
+	Callback       Callback
+	BeforeCallback BeforeCallback
 }
 
 // FillDecorateInfo is a DecorateOption that writes info on what Dig was

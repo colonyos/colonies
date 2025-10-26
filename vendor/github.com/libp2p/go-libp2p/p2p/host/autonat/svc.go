@@ -167,8 +167,8 @@ func (as *autoNATService) handleDial(p peer.ID, obsaddr ma.Multiaddr, mpi *pb.Me
 			default:
 				continue
 			}
-			addr = hostIP
-			if rest != nil {
+			addr = hostIP.Multiaddr()
+			if len(rest) > 0 {
 				addr = addr.Encapsulate(rest)
 			}
 		}
@@ -271,6 +271,11 @@ func (as *autoNATService) Disable() {
 		as.instance = nil
 		<-as.backgroundRunning
 	}
+}
+
+func (as *autoNATService) Close() error {
+	as.Disable()
+	return as.config.dialer.Close()
 }
 
 func (as *autoNATService) background(ctx context.Context) {
