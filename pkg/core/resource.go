@@ -17,6 +17,14 @@ type Resource struct {
 	Metadata ResourceMetadata       `json:"metadata"`
 	Spec     map[string]interface{} `json:"spec"`
 	Status   map[string]interface{} `json:"status,omitempty"`
+	GitSync  *GitSyncStatus         `json:"gitSync,omitempty"`
+}
+
+// GitSyncStatus tracks the status of GitOps synchronization
+type GitSyncStatus struct {
+	LastSyncTime  time.Time `json:"lastSyncTime,omitempty"`
+	LastCommitSHA string    `json:"lastCommitSHA,omitempty"`
+	SyncError     string    `json:"syncError,omitempty"`
 }
 
 // ResourceMetadata contains metadata for resources
@@ -40,12 +48,22 @@ type ResourceDefinition struct {
 
 // ResourceDefinitionSpec defines the specification for a ResourceDefinition
 type ResourceDefinitionSpec struct {
-	Group   string            `json:"group"`
-	Version string            `json:"version"`
-	Names   ResourceDefinitionNames           `json:"names"`
-	Scope   string            `json:"scope"` // "Namespaced" or "Cluster"
-	Schema  *ValidationSchema `json:"schema,omitempty"`
-	Handler HandlerSpec       `json:"handler"`
+	Group   string                     `json:"group"`
+	Version string                     `json:"version"`
+	Names   ResourceDefinitionNames    `json:"names"`
+	Scope   string                     `json:"scope"` // "Namespaced" or "Cluster"
+	Schema  *ValidationSchema          `json:"schema,omitempty"`
+	Handler HandlerSpec                `json:"handler"`
+	GitOps  *GitOpsSpec                `json:"gitops,omitempty"`
+}
+
+// GitOpsSpec defines Git repository configuration for GitOps
+type GitOpsSpec struct {
+	RepoURL    string `json:"repoURL"`              // Git repository URL
+	Branch     string `json:"branch,omitempty"`     // Git branch (default: main)
+	Path       string `json:"path,omitempty"`       // Path within repo (default: /)
+	SecretName string `json:"secretName,omitempty"` // Name of secret for auth (optional)
+	Interval   int    `json:"interval,omitempty"`   // Sync interval in seconds (default: 300)
 }
 
 // ResourceDefinitionNames defines resource names

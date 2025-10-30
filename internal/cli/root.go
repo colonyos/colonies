@@ -78,6 +78,7 @@ var ResourceName string
 var Kind string
 var Arg string
 var Args []string
+var DryRun bool
 var Output []string
 var Errors []string
 var Env []string

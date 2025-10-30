@@ -13,6 +13,10 @@ The resource management system consists of two main components:
 
 - `executor-deployment-definition.json` - Defines the ExecutorDeployment resource type
 - `executor-deployment-instance.json` - An instance of an ExecutorDeployment resource
+- `gitops-example-definition.json` - Example ResourceDefinition with GitOps configuration
+- `example-deployment-resource.json` - Example resource that would be stored in a Git repository
+- `GITOPS.md` - Complete guide to using GitOps with ColonyOS resources
+- `SCHEMA-GUIDE.md` - Guide to schema validation
 
 ## Usage
 
@@ -81,6 +85,20 @@ colonies resource update --spec examples/deployment/executor-deployment-instance
 ```bash
 colonies resource remove --name web-server-deployment
 ```
+
+### 9. Sync Resources from Git (GitOps)
+
+If a ResourceDefinition has GitOps configuration, you can sync resources from a Git repository:
+
+```bash
+# Dry run to see what would be synced
+colonies resource sync --definition deployments.example.io --dry-run
+
+# Sync resources from Git
+colonies resource sync --definition deployments.example.io
+```
+
+See [GITOPS.md](GITOPS.md) for complete GitOps documentation.
 
 ## Authorization
 

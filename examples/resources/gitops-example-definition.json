@@ -1,0 +1,40 @@
+{
+  "metadata": {
+    "name": "deployments.example.io"
+  },
+  "spec": {
+    "group": "example.io",
+    "version": "v1",
+    "names": {
+      "kind": "Deployment",
+      "plural": "deployments",
+      "singular": "deployment"
+    },
+    "scope": "Namespaced",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "image": {
+          "type": "string",
+          "description": "Container image to deploy"
+        },
+        "replicas": {
+          "type": "number",
+          "description": "Number of replicas to run",
+          "default": 1
+        }
+      },
+      "required": ["image"]
+    },
+    "handler": {
+      "executorType": "deployment-controller",
+      "functionName": "reconcile"
+    },
+    "gitops": {
+      "repoURL": "https://github.com/example/deployments.git",
+      "branch": "main",
+      "path": "/resources",
+      "interval": 300
+    }
+  }
+}

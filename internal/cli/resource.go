@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/colonyos/colonies/pkg/core"
+	"github.com/colonyos/colonies/pkg/gitops"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -27,6 +28,7 @@ func init() {
 	resourceCmd.AddCommand(listResourcesCmd)
 	resourceCmd.AddCommand(updateResourceCmd)
 	resourceCmd.AddCommand(removeResourceCmd)
+	resourceCmd.AddCommand(syncResourceCmd)
 
 	// ResourceDefinition flags
 	addResourceDefinitionCmd.Flags().StringVarP(&PrvKey, "prvkey", "", "", "Private key (colony owner)")
@@ -62,6 +64,12 @@ func init() {
 	removeResourceCmd.Flags().StringVarP(&PrvKey, "prvkey", "", "", "Private key")
 	removeResourceCmd.Flags().StringVarP(&ResourceName, "name", "", "", "Resource name")
 	removeResourceCmd.MarkFlagRequired("name")
+
+	// Sync resource flags
+	syncResourceCmd.Flags().StringVarP(&PrvKey, "prvkey", "", "", "Private key")
+	syncResourceCmd.Flags().StringVarP(&ResourceDefinitionName, "definition", "", "", "ResourceDefinition name to sync")
+	syncResourceCmd.Flags().BoolVarP(&DryRun, "dry-run", "", false, "Show what would be synced without applying")
+	syncResourceCmd.MarkFlagRequired("definition")
 }
 
 var resourceCmd = &cobra.Command{
@@ -332,5 +340,123 @@ var removeResourceCmd = &cobra.Command{
 			"Name":       ResourceName,
 			"ColonyName": ColonyName,
 		}).Info("Resource removed")
+	},
+}
+
+var syncResourceCmd = &cobra.Command{
+	Use:   "sync",
+	Short: "Sync resources from Git",
+	Long:  "Synchronize resources from a Git repository based on ResourceDefinition GitOps configuration",
+	Run: func(cmd *cobra.Command, args []string) {
+		client := setup()
+
+		// Get the ResourceDefinition
+		rd, err := client.GetResourceDefinition(ColonyName, ResourceDefinitionName, PrvKey)
+		CheckError(err)
+
+		if rd == nil {
+			CheckError(errors.New("ResourceDefinition not found"))
+		}
+
+		// Check if GitOps is configured
+		if rd.Spec.GitOps == nil {
+			CheckError(errors.New("ResourceDefinition does not have GitOps configuration"))
+		}
+
+		log.WithFields(log.Fields{
+			"ResourceDefinition": rd.Metadata.Name,
+			"RepoURL":            rd.Spec.GitOps.RepoURL,
+			"Branch":             rd.Spec.GitOps.Branch,
+			"Path":               rd.Spec.GitOps.Path,
+		}).Info("Starting GitOps sync")
+
+		// Create GitOps sync
+		sync := gitops.NewGitOpsSync("")
+
+		// Sync resources from Git
+		resources, err := sync.SyncResources(rd)
+		CheckError(err)
+
+		if len(resources) == 0 {
+			log.Info("No resources found in Git repository")
+			return
+		}
+
+		log.WithFields(log.Fields{
+			"Count": len(resources),
+		}).Info("Resources loaded from Git")
+
+		if DryRun {
+			// Dry run - just display what would be synced
+			log.Info("Dry run mode - showing resources that would be synced:")
+			for _, resource := range resources {
+				log.WithFields(log.Fields{
+					"Name":      resource.Metadata.Name,
+					"Kind":      resource.Kind,
+					"Namespace": resource.Metadata.Namespace,
+					"CommitSHA": resource.GitSync.LastCommitSHA,
+				}).Info("Would sync resource")
+			}
+			return
+		}
+
+		// Apply resources
+		syncedCount := 0
+		updatedCount := 0
+		errorCount := 0
+
+		for _, resource := range resources {
+			// Set namespace if not specified
+			if resource.Metadata.Namespace == "" {
+				resource.Metadata.Namespace = ColonyName
+			}
+
+			// Try to get existing resource
+			existing, err := client.GetResource(ColonyName, resource.Metadata.Name, PrvKey)
+			if err == nil && existing != nil {
+				// Resource exists, update it
+				updated, err := client.UpdateResource(resource, PrvKey)
+				if err != nil {
+					log.WithFields(log.Fields{
+						"Name":  resource.Metadata.Name,
+						"Error": err.Error(),
+					}).Error("Failed to update resource")
+					errorCount++
+					continue
+				}
+				log.WithFields(log.Fields{
+					"Name":       updated.Metadata.Name,
+					"Kind":       updated.Kind,
+					"Generation": updated.Metadata.Generation,
+					"CommitSHA":  updated.GitSync.LastCommitSHA,
+				}).Info("Resource updated from Git")
+				updatedCount++
+			} else {
+				// Resource doesn't exist, add it
+				added, err := client.AddResource(resource, PrvKey)
+				if err != nil {
+					log.WithFields(log.Fields{
+						"Name":  resource.Metadata.Name,
+						"Error": err.Error(),
+					}).Error("Failed to add resource")
+					errorCount++
+					continue
+				}
+				log.WithFields(log.Fields{
+					"ResourceID": added.ID,
+					"Name":       added.Metadata.Name,
+					"Kind":       added.Kind,
+					"CommitSHA":  added.GitSync.LastCommitSHA,
+				}).Info("Resource created from Git")
+				syncedCount++
+			}
+		}
+
+		log.WithFields(log.Fields{
+			"Created": syncedCount,
+			"Updated": updatedCount,
+			"Errors":  errorCount,
+			"Total":   len(resources),
+		}).Info("GitOps sync completed")
 	},
 }

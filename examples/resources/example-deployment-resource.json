@@ -1,0 +1,18 @@
+{
+  "kind": "Deployment",
+  "metadata": {
+    "name": "web-app-deployment",
+    "namespace": "production",
+    "labels": {
+      "app": "web-app",
+      "env": "production"
+    },
+    "annotations": {
+      "description": "Main web application deployment"
+    }
+  },
+  "spec": {
+    "image": "myorg/webapp:v2.1.0",
+    "replicas": 5
+  }
+}
