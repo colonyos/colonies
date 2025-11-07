@@ -5,7 +5,7 @@
   },
   "spec": {
     "image": "nginx:1.21",
-    "replicas": 2,
+    "replicas": 5,
     "executorType": "deployment-controller",
     "cpu": "500m",
     "memory": "512Mi"

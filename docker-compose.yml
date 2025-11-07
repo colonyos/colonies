@@ -97,7 +97,7 @@ services:
     command: sh -c "colonies server start --initdb --port ${COLONIES_SERVER_HTTP_PORT} --relayport 25100 --etcdname server1 --etcdhost colonies-server --etcdclientport 23100 --etcdpeerport 24100 --initial-cluster server1=colonies-server:24100:25100:${COLONIES_SERVER_HTTP_PORT} --etcddatadir /var/colonies/etcd --insecure"
 
   colonies-setup:
-    image: colonyos/colonies:latest
+    image: colonyos/colonies:v1.9.0
     depends_on:
       - colonies-server
     environment:
@@ -137,8 +137,51 @@ services:
       colonies user add --name='myuser' --email='' --phone='' --userid=${COLONIES_ID};
       "
 
+  deployment-controller:
+    build:
+      context: ./executors
+      dockerfile: deployment-controller/Dockerfile
+    container_name: deployment-controller
+    restart: unless-stopped
+    depends_on:
+      - colonies-server
+      - colonies-setup
+    environment:
+      COLONIES_CLIENT_BACKENDS: ${COLONIES_CLIENT_BACKENDS}
+      # HTTP client config (inside docker, always use colonies-server as host)
+      COLONIES_CLIENT_HTTP_HOST: "colonies-server"
+      COLONIES_CLIENT_HTTP_PORT: ${COLONIES_SERVER_HTTP_PORT}
+      COLONIES_CLIENT_HTTP_INSECURE: "true"
+      # gRPC client config (inside docker, always use colonies-server as host)
+      COLONIES_CLIENT_GRPC_HOST: "colonies-server"
+      COLONIES_CLIENT_GRPC_PORT: ${COLONIES_SERVER_GRPC_PORT}
+      COLONIES_CLIENT_GRPC_INSECURE: "true"
+      # LibP2P client config
+      COLONIES_CLIENT_LIBP2P_HOST: "/dns/colonies-server/tcp/${COLONIES_SERVER_LIBP2P_PORT}/p2p/12D3KooWSBx1mxbu7rJ8AMsSGHDhG8GRhwqHSVnHPbhZypPLFjgK"
+      COLONIES_CLIENT_LIBP2P_BOOTSTRAP_PEERS: ${COLONIES_CLIENT_LIBP2P_BOOTSTRAP_PEERS}
+      # Backward compatibility (hardcode colonies-server for docker containers)
+      COLONIES_SERVER_HOST: "colonies-server"
+      COLONIES_SERVER_PORT: ${COLONIES_SERVER_HTTP_PORT}
+      COLONIES_SERVER_TLS: "false"
+      COLONIES_TLS: "false"
+      # Auth config
+      COLONIES_COLONY_NAME: ${COLONIES_COLONY_NAME}
+      COLONIES_COLONY_PRVKEY: ${COLONIES_COLONY_PRVKEY}
+      COLONIES_EXECUTOR_NAME: "deployment-controller-1"
+      COLONIES_EXECUTOR_TYPE: "deployment-controller"
+      COLONIES_INSECURE: "true"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:rw
+    entrypoint: >
+      /bin/sh -c "
+      echo 'Waiting for Colonies server to be ready...';
+      sleep 10;
+      echo 'Starting deployment-controller...';
+      deployment-controller start -v
+      "
+
   docker-executor:
-    image: colonyos/dockerexecutor:v1.0.4
+    image: colonyos/dockerexecutor:v1.0.5
     privileged: true
     environment:
       LANG: ${LANG:-en_US.UTF-8}
