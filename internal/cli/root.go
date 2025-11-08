@@ -146,6 +146,7 @@ var SecondsBack int
 var Snapshot bool
 var IDPath string
 var PrvKeyPath string
+var Generation int
 
 func init() {
 	rootCmd.PersistentFlags().BoolVarP(&Verbose, "verbose", "v", false, "Verbose (debugging)")

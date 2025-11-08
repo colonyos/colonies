@@ -283,3 +283,236 @@ func TestRemoveResourcesByNamespace(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, 1, stagingCount)
 }
+
+func TestAddGetResourceHistory(t *testing.T) {
+	db, err := PrepareTests()
+	assert.Nil(t, err)
+
+	defer db.Close()
+
+	// Create a resource
+	resource := core.CreateResource("ExecutorDeployment", "web-server", "production")
+	resource.SetSpec("replicas", 3)
+	resource.SetStatus("phase", "Running")
+
+	err = db.AddResource(resource)
+	assert.Nil(t, err)
+
+	t.Logf("Resource generation after creation: %d", resource.Metadata.Generation)
+
+	// Create history entry for resource creation
+	history := core.CreateResourceHistory(resource, "test-user", "create")
+	t.Logf("Creating history with generation: %d, ID: %s", history.Generation, history.ID)
+	err = db.AddResourceHistory(history)
+	assert.Nil(t, err)
+
+	// Get history
+	histories, err := db.GetResourceHistory(resource.ID, 10)
+	assert.Nil(t, err)
+	t.Logf("Got %d history entries:", len(histories))
+	for i, h := range histories {
+		t.Logf("  History[%d]: ID=%s, Generation=%d, ChangeType=%s, ChangedBy=%s", i, h.ID, h.Generation, h.ChangeType, h.ChangedBy)
+	}
+	assert.Equal(t, 1, len(histories))
+	assert.Equal(t, resource.ID, histories[0].ResourceID)
+	assert.Equal(t, "ExecutorDeployment", histories[0].Kind)
+	assert.Equal(t, "production", histories[0].Namespace)
+	assert.Equal(t, "web-server", histories[0].Name)
+	assert.Equal(t, resource.Metadata.Generation, histories[0].Generation)
+	assert.Equal(t, "test-user", histories[0].ChangedBy)
+	assert.Equal(t, "create", histories[0].ChangeType)
+
+	// Verify spec in history
+	replicas, ok := histories[0].Spec["replicas"]
+	assert.True(t, ok)
+	assert.Equal(t, float64(3), replicas)
+
+	// Verify status in history
+	phase, ok := histories[0].Status["phase"]
+	assert.True(t, ok)
+	assert.Equal(t, "Running", phase)
+}
+
+func TestResourceHistoryMultipleVersions(t *testing.T) {
+	db, err := PrepareTests()
+	assert.Nil(t, err)
+
+	defer db.Close()
+
+	// Create a resource
+	resource := core.CreateResource("ExecutorDeployment", "web-server", "production")
+	resource.SetSpec("replicas", 3)
+
+	err = db.AddResource(resource)
+	assert.Nil(t, err)
+
+	initialGen := resource.Metadata.Generation
+
+	// Create initial history entry
+	history1 := core.CreateResourceHistory(resource, "user1", "create")
+	err = db.AddResourceHistory(history1)
+	assert.Nil(t, err)
+
+	// Update resource
+	resource.SetSpec("replicas", 5)
+	resource.Metadata.Generation = initialGen + 1
+
+	// Create second history entry
+	history2 := core.CreateResourceHistory(resource, "user2", "update")
+	err = db.AddResourceHistory(history2)
+	assert.Nil(t, err)
+
+	// Update again
+	resource.SetSpec("replicas", 10)
+	resource.Metadata.Generation = initialGen + 2
+
+	// Create third history entry
+	history3 := core.CreateResourceHistory(resource, "user3", "update")
+	err = db.AddResourceHistory(history3)
+	assert.Nil(t, err)
+
+	// Get all history (no limit)
+	allHistories, err := db.GetResourceHistory(resource.ID, 0)
+	assert.Nil(t, err)
+	assert.Equal(t, 3, len(allHistories))
+
+	// Verify they're ordered by timestamp DESC (most recent first)
+	assert.Equal(t, initialGen+2, allHistories[0].Generation)
+	assert.Equal(t, initialGen+1, allHistories[1].Generation)
+	assert.Equal(t, initialGen, allHistories[2].Generation)
+
+	// Get limited history
+	limitedHistories, err := db.GetResourceHistory(resource.ID, 2)
+	assert.Nil(t, err)
+	assert.Equal(t, 2, len(limitedHistories))
+	assert.Equal(t, initialGen+2, limitedHistories[0].Generation)
+	assert.Equal(t, initialGen+1, limitedHistories[1].Generation)
+}
+
+func TestGetResourceHistoryByGeneration(t *testing.T) {
+	db, err := PrepareTests()
+	assert.Nil(t, err)
+
+	defer db.Close()
+
+	// Create a resource
+	resource := core.CreateResource("ExecutorDeployment", "web-server", "production")
+	resource.SetSpec("replicas", 3)
+
+	err = db.AddResource(resource)
+	assert.Nil(t, err)
+
+	// Create multiple history entries
+	history1 := core.CreateResourceHistory(resource, "user1", "create")
+	err = db.AddResourceHistory(history1)
+	assert.Nil(t, err)
+
+	resource.SetSpec("replicas", 5)
+	resource.Metadata.Generation = 2
+	history2 := core.CreateResourceHistory(resource, "user2", "update")
+	err = db.AddResourceHistory(history2)
+	assert.Nil(t, err)
+
+	// Get specific generation
+	historyGen2, err := db.GetResourceHistoryByGeneration(resource.ID, 2)
+	assert.Nil(t, err)
+	assert.NotNil(t, historyGen2)
+	assert.Equal(t, int64(2), historyGen2.Generation)
+	assert.Equal(t, "user2", historyGen2.ChangedBy)
+
+	replicas, ok := historyGen2.Spec["replicas"]
+	assert.True(t, ok)
+	assert.Equal(t, float64(5), replicas)
+
+	// Get generation that doesn't exist
+	historyGen99, err := db.GetResourceHistoryByGeneration(resource.ID, 99)
+	assert.Nil(t, err)
+	assert.Nil(t, historyGen99)
+}
+
+func TestRemoveResourceHistory(t *testing.T) {
+	db, err := PrepareTests()
+	assert.Nil(t, err)
+
+	defer db.Close()
+
+	// Create a resource
+	resource := core.CreateResource("ExecutorDeployment", "web-server", "production")
+	err = db.AddResource(resource)
+	assert.Nil(t, err)
+
+	// Create history entries
+	history1 := core.CreateResourceHistory(resource, "user1", "create")
+	err = db.AddResourceHistory(history1)
+	assert.Nil(t, err)
+
+	resource.Metadata.Generation = 2
+	history2 := core.CreateResourceHistory(resource, "user2", "update")
+	err = db.AddResourceHistory(history2)
+	assert.Nil(t, err)
+
+	// Verify history exists
+	histories, err := db.GetResourceHistory(resource.ID, 0)
+	assert.Nil(t, err)
+	assert.Equal(t, 2, len(histories))
+
+	// Remove all history for this resource
+	err = db.RemoveResourceHistory(resource.ID)
+	assert.Nil(t, err)
+
+	// Verify history is removed
+	historiesAfter, err := db.GetResourceHistory(resource.ID, 0)
+	assert.Nil(t, err)
+	assert.Equal(t, 0, len(historiesAfter))
+}
+
+func TestResourceHistoryWithStatusChanges(t *testing.T) {
+	db, err := PrepareTests()
+	assert.Nil(t, err)
+
+	defer db.Close()
+
+	// Create a resource
+	resource := core.CreateResource("ExecutorDeployment", "web-server", "production")
+	resource.SetSpec("replicas", 3)
+	resource.SetStatus("phase", "Pending")
+	resource.SetStatus("ready", 0)
+
+	err = db.AddResource(resource)
+	assert.Nil(t, err)
+
+	// Create initial history
+	history1 := core.CreateResourceHistory(resource, "controller", "create")
+	err = db.AddResourceHistory(history1)
+	assert.Nil(t, err)
+
+	// Update status only (status update via reconciliation)
+	resource.SetStatus("phase", "Running")
+	resource.SetStatus("ready", 3)
+	resource.Metadata.Generation = 2
+
+	history2 := core.CreateResourceHistory(resource, "reconciler", "status-update")
+	err = db.AddResourceHistory(history2)
+	assert.Nil(t, err)
+
+	// Get history and verify status changes are tracked
+	histories, err := db.GetResourceHistory(resource.ID, 0)
+	assert.Nil(t, err)
+	assert.Equal(t, 2, len(histories))
+
+	// Check latest status
+	phase, ok := histories[0].Status["phase"]
+	assert.True(t, ok)
+	assert.Equal(t, "Running", phase)
+	ready, ok := histories[0].Status["ready"]
+	assert.True(t, ok)
+	assert.Equal(t, float64(3), ready)
+
+	// Check original status
+	phaseOld, ok := histories[1].Status["phase"]
+	assert.True(t, ok)
+	assert.Equal(t, "Pending", phaseOld)
+	readyOld, ok := histories[1].Status["ready"]
+	assert.True(t, ok)
+	assert.Equal(t, float64(0), readyOld)
+}

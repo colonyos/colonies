@@ -21,13 +21,15 @@ type Resource struct {
 
 // ResourceMetadata contains metadata for resources
 type ResourceMetadata struct {
-	Name        string            `json:"name"`
-	Namespace   string            `json:"namespace"`
-	Labels      map[string]string `json:"labels,omitempty"`
-	Annotations map[string]string `json:"annotations,omitempty"`
-	Generation  int64             `json:"generation,omitempty"`
-	CreatedAt   time.Time         `json:"createdAt,omitempty"`
-	UpdatedAt   time.Time         `json:"updatedAt,omitempty"`
+	Name                      string            `json:"name"`
+	Namespace                 string            `json:"namespace"`
+	Labels                    map[string]string `json:"labels,omitempty"`
+	Annotations               map[string]string `json:"annotations,omitempty"`
+	Generation                int64             `json:"generation,omitempty"`
+	CreatedAt                 time.Time         `json:"createdAt,omitempty"`
+	UpdatedAt                 time.Time         `json:"updatedAt,omitempty"`
+	LastReconciliationProcess string            `json:"lastReconciliationProcess,omitempty"`
+	LastReconciliationTime    time.Time         `json:"lastReconciliationTime,omitempty"`
 }
 
 // ResourceDefinition defines a resource type
@@ -769,4 +771,112 @@ func validateField(fieldName string, value interface{}, prop *SchemaProperty) er
 	}
 
 	return nil
+}
+
+// ResourceHistory represents a historical snapshot of a resource
+type ResourceHistory struct {
+	ID         string                 `json:"historyid"`
+	ResourceID string                 `json:"resourceid"`
+	Kind       string                 `json:"kind"`
+	Namespace  string                 `json:"namespace"`
+	Name       string                 `json:"name"`
+	Generation int64                  `json:"generation"`
+	Spec       map[string]interface{} `json:"spec"`
+	Status     map[string]interface{} `json:"status,omitempty"`
+	Timestamp  time.Time              `json:"timestamp"`
+	ChangedBy  string                 `json:"changedby"` // Executor or User ID
+	ChangeType string                 `json:"changetype"` // "create", "update", "delete"
+}
+
+// CreateResourceHistory creates a new ResourceHistory from a Resource
+func CreateResourceHistory(resource *Resource, changedBy string, changeType string) *ResourceHistory {
+	return &ResourceHistory{
+		ID:         uuid.New().String(),
+		ResourceID: resource.ID,
+		Kind:       resource.Kind,
+		Namespace:  resource.Metadata.Namespace,
+		Name:       resource.Metadata.Name,
+		Generation: resource.Metadata.Generation,
+		Spec:       copyMap(resource.Spec),
+		Status:     copyMap(resource.Status),
+		Timestamp:  time.Now(),
+		ChangedBy:  changedBy,
+		ChangeType: changeType,
+	}
+}
+
+// copyMap creates a deep copy of a map[string]interface{}
+func copyMap(m map[string]interface{}) map[string]interface{} {
+	if m == nil {
+		return nil
+	}
+	result := make(map[string]interface{})
+	for k, v := range m {
+		switch val := v.(type) {
+		case map[string]interface{}:
+			result[k] = copyMap(val)
+		case []interface{}:
+			result[k] = copySlice(val)
+		default:
+			result[k] = v
+		}
+	}
+	return result
+}
+
+// copySlice creates a deep copy of a []interface{}
+func copySlice(s []interface{}) []interface{} {
+	if s == nil {
+		return nil
+	}
+	result := make([]interface{}, len(s))
+	for i, v := range s {
+		switch val := v.(type) {
+		case map[string]interface{}:
+			result[i] = copyMap(val)
+		case []interface{}:
+			result[i] = copySlice(val)
+		default:
+			result[i] = v
+		}
+	}
+	return result
+}
+
+// ToJSON converts ResourceHistory to JSON
+func (rh *ResourceHistory) ToJSON() (string, error) {
+	jsonBytes, err := json.Marshal(rh)
+	if err != nil {
+		return "", err
+	}
+	return string(jsonBytes), nil
+}
+
+// ConvertJSONToResourceHistory converts JSON to ResourceHistory
+func ConvertJSONToResourceHistory(jsonString string) (*ResourceHistory, error) {
+	var history ResourceHistory
+	err := json.Unmarshal([]byte(jsonString), &history)
+	if err != nil {
+		return nil, err
+	}
+	return &history, nil
+}
+
+// ConvertJSONToResourceHistoryArray converts JSON array to ResourceHistory array
+func ConvertJSONToResourceHistoryArray(jsonString string) ([]*ResourceHistory, error) {
+	var histories []*ResourceHistory
+	err := json.Unmarshal([]byte(jsonString), &histories)
+	if err != nil {
+		return nil, err
+	}
+	return histories, nil
+}
+
+// ConvertResourceHistoryArrayToJSON converts ResourceHistory array to JSON
+func ConvertResourceHistoryArrayToJSON(histories []*ResourceHistory) (string, error) {
+	jsonBytes, err := json.Marshal(histories)
+	if err != nil {
+		return "", err
+	}
+	return string(jsonBytes), nil
 }

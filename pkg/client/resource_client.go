@@ -135,6 +135,22 @@ func (client *ColoniesClient) UpdateResource(resource *core.Resource, prvKey str
 	return core.ConvertJSONToResource(respBodyString)
 }
 
+// GetResourceHistory retrieves history for a resource
+func (client *ColoniesClient) GetResourceHistory(resourceID string, limit int, prvKey string) ([]*core.ResourceHistory, error) {
+	msg := rpc.CreateGetResourceHistoryMsg(resourceID, limit)
+	jsonString, err := msg.ToJSON()
+	if err != nil {
+		return nil, err
+	}
+
+	respBodyString, err := client.sendMessage(rpc.GetResourceHistoryPayloadType, jsonString, prvKey, false, context.TODO())
+	if err != nil {
+		return nil, err
+	}
+
+	return core.ConvertJSONToResourceHistoryArray(respBodyString)
+}
+
 // RemoveResource removes a Resource by namespace and name
 func (client *ColoniesClient) RemoveResource(namespace, name string, prvKey string) error {
 	msg := rpc.CreateRemoveResourceMsg(namespace, name)

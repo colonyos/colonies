@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/colonyos/colonies/pkg/backends"
 	"github.com/colonyos/colonies/pkg/core"
@@ -35,7 +36,8 @@ func NewHandlers(server Server) *Handlers {
 }
 
 // submitReconciliationFunc submits a reconciliation function spec based on the ResourceDefinition handler
-func (h *Handlers) submitReconciliationFunc(reconciliation *core.Reconciliation, rd *core.ResourceDefinition) error {
+// Returns the process ID of the created reconciliation process
+func (h *Handlers) submitReconciliationFunc(reconciliation *core.Reconciliation, rd *core.ResourceDefinition) (string, error) {
 	if rd == nil || rd.Spec.Handler.ExecutorType == "" || rd.Spec.Handler.FunctionName == "" {
 		// No handler defined, skip reconciliation
 		log.WithFields(log.Fields{
@@ -43,7 +45,7 @@ func (h *Handlers) submitReconciliationFunc(reconciliation *core.Reconciliation,
 			"ExecutorType":   func() string { if rd != nil { return rd.Spec.Handler.ExecutorType }; return "" }(),
 			"FunctionName":   func() string { if rd != nil { return rd.Spec.Handler.FunctionName }; return "" }(),
 		}).Info("Skipping reconciliation - no handler defined")
-		return nil
+		return "", nil
 	}
 
 	// Skip reconciliation if action is noop (no changes detected)
@@ -52,7 +54,7 @@ func (h *Handlers) submitReconciliationFunc(reconciliation *core.Reconciliation,
 			"ExecutorType": rd.Spec.Handler.ExecutorType,
 			"FunctionName": rd.Spec.Handler.FunctionName,
 		}).Info("Skipping reconciliation - no changes detected (noop)")
-		return nil
+		return "", nil
 	}
 
 	log.WithFields(log.Fields{
@@ -91,7 +93,7 @@ func (h *Handlers) submitReconciliationFunc(reconciliation *core.Reconciliation,
 			"ExecutorType": rd.Spec.Handler.ExecutorType,
 			"FunctionName": rd.Spec.Handler.FunctionName,
 		}).Error("Failed to submit reconciliation function")
-		return err
+		return "", err
 	}
 
 	log.WithFields(log.Fields{
@@ -101,7 +103,7 @@ func (h *Handlers) submitReconciliationFunc(reconciliation *core.Reconciliation,
 		"Action":       reconciliation.Action,
 	}).Info("Successfully submitted reconciliation function")
 
-	return nil
+	return addedProcess.ID, nil
 }
 
 // RegisterHandlers implements the HandlerRegistrar interface
@@ -134,6 +136,9 @@ func (h *Handlers) RegisterHandlers(handlerRegistry *registry.HandlerRegistry) e
 		return err
 	}
 	if err := handlerRegistry.Register(rpc.RemoveResourcePayloadType, h.HandleRemoveResource); err != nil {
+		return err
+	}
+	if err := handlerRegistry.Register(rpc.GetResourceHistoryPayloadType, h.HandleGetResourceHistory); err != nil {
 		return err
 	}
 
@@ -406,6 +411,13 @@ func (h *Handlers) HandleAddResource(c backends.Context, recoveredID string, pay
 		return
 	}
 
+	// Save resource history for create action
+	history := core.CreateResourceHistory(msg.Resource, recoveredID, "create")
+	if err := h.server.ResourceDB().AddResourceHistory(history); err != nil {
+		log.WithFields(log.Fields{"Error": err, "ResourceID": msg.Resource.ID}).Warn("Failed to save resource history")
+		// Don't fail the request if history saving fails
+	}
+
 	log.WithFields(log.Fields{
 		"ID":        msg.Resource.ID,
 		"Namespace": msg.Resource.Metadata.Namespace,
@@ -416,13 +428,29 @@ func (h *Handlers) HandleAddResource(c backends.Context, recoveredID string, pay
 	// Submit reconciliation function if handler is defined
 	if matchedRD != nil {
 		reconciliation := core.CreateReconciliation(nil, msg.Resource)
-		err = h.submitReconciliationFunc(reconciliation, matchedRD)
+		processID, err := h.submitReconciliationFunc(reconciliation, matchedRD)
 		if err != nil {
 			log.WithFields(log.Fields{
 				"Error": err,
 				"Kind":  msg.Resource.Kind,
 			}).Warn("Failed to submit reconciliation after resource add")
 			// Don't fail the request if reconciliation submission fails
+		} else if processID != "" {
+			// Update resource with reconciliation tracking info
+			msg.Resource.Metadata.LastReconciliationProcess = processID
+			msg.Resource.Metadata.LastReconciliationTime = time.Now()
+			err = h.server.ResourceDB().UpdateResource(msg.Resource)
+			if err != nil {
+				log.WithFields(log.Fields{
+					"Error": err,
+					"ProcessID": processID,
+				}).Warn("Failed to update resource with reconciliation tracking info")
+			} else {
+				log.WithFields(log.Fields{
+					"ProcessID": processID,
+					"ResourceName": msg.Resource.Metadata.Name,
+				}).Info("Updated resource with reconciliation tracking info")
+			}
 		}
 	}
 
@@ -601,9 +629,28 @@ func (h *Handlers) HandleUpdateResource(c backends.Context, recoveredID string, 
 		}
 	}
 
+	// Check if spec changed and increment generation if it did
+	if oldResource != nil {
+		reconciliation := core.CreateReconciliation(oldResource, msg.Resource)
+		if reconciliation.Diff != nil && len(reconciliation.Diff.SpecChanges) > 0 {
+			// Spec changed, increment generation
+			msg.Resource.Metadata.Generation = oldResource.Metadata.Generation + 1
+		} else {
+			// Preserve old generation if spec didn't change
+			msg.Resource.Metadata.Generation = oldResource.Metadata.Generation
+		}
+	}
+
 	err = h.server.ResourceDB().UpdateResource(msg.Resource)
 	if h.server.HandleHTTPError(c, err, http.StatusInternalServerError) {
 		return
+	}
+
+	// Save resource history for update action
+	history := core.CreateResourceHistory(msg.Resource, recoveredID, "update")
+	if err := h.server.ResourceDB().AddResourceHistory(history); err != nil {
+		log.WithFields(log.Fields{"Error": err, "ResourceID": msg.Resource.ID}).Warn("Failed to save resource history")
+		// Don't fail the request if history saving fails
 	}
 
 	log.WithFields(log.Fields{
@@ -614,13 +661,29 @@ func (h *Handlers) HandleUpdateResource(c backends.Context, recoveredID string, 
 
 	// Submit reconciliation function (matchedRD already validated above)
 	reconciliation := core.CreateReconciliation(oldResource, msg.Resource)
-	err = h.submitReconciliationFunc(reconciliation, matchedRD)
+	processID, err := h.submitReconciliationFunc(reconciliation, matchedRD)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"Error": err,
 			"Kind":  msg.Resource.Kind,
 		}).Warn("Failed to submit reconciliation after resource update")
 		// Don't fail the request if reconciliation submission fails
+	} else if processID != "" {
+		// Update resource with reconciliation tracking info
+		msg.Resource.Metadata.LastReconciliationProcess = processID
+		msg.Resource.Metadata.LastReconciliationTime = time.Now()
+		err = h.server.ResourceDB().UpdateResource(msg.Resource)
+		if err != nil {
+			log.WithFields(log.Fields{
+				"Error": err,
+				"ProcessID": processID,
+			}).Warn("Failed to update resource with reconciliation tracking info")
+		} else {
+			log.WithFields(log.Fields{
+				"ProcessID": processID,
+				"ResourceName": msg.Resource.Metadata.Name,
+			}).Info("Updated resource with reconciliation tracking info")
+		}
 	}
 
 	jsonString, err = msg.Resource.ToJSON()
@@ -665,4 +728,56 @@ func (h *Handlers) HandleRemoveResource(c backends.Context, recoveredID string, 
 	}).Debug("Removing resource")
 
 	h.server.SendEmptyHTTPReply(c, payloadType)
+}
+
+// HandleGetResourceHistory retrieves history for a resource
+func (h *Handlers) HandleGetResourceHistory(c backends.Context, recoveredID string, payloadType string, jsonString string) {
+	msg, err := rpc.CreateGetResourceHistoryMsgFromJSON(jsonString)
+	if err != nil {
+		h.server.HandleHTTPError(c, errors.New("Failed to get resource history, invalid JSON"), http.StatusBadRequest)
+		return
+	}
+
+	if msg.MsgType != payloadType {
+		h.server.HandleHTTPError(c, errors.New("Failed to get resource history, msg.MsgType does not match payloadType"), http.StatusBadRequest)
+		return
+	}
+
+	// Get the resource to check permissions
+	resource, err := h.server.ResourceDB().GetResourceByID(msg.ResourceID)
+	if h.server.HandleHTTPError(c, err, http.StatusInternalServerError) {
+		return
+	}
+	if resource == nil {
+		h.server.HandleHTTPError(c, errors.New("Resource not found"), http.StatusNotFound)
+		return
+	}
+
+	// Require membership or colony owner to view history
+	err = h.server.Validator().RequireMembership(recoveredID, resource.Metadata.Namespace, true)
+	if err != nil {
+		// If not a member, check if colony owner
+		err = h.server.Validator().RequireColonyOwner(recoveredID, resource.Metadata.Namespace)
+		if h.server.HandleHTTPError(c, err, http.StatusForbidden) {
+			return
+		}
+	}
+
+	histories, err := h.server.ResourceDB().GetResourceHistory(msg.ResourceID, msg.Limit)
+	if h.server.HandleHTTPError(c, err, http.StatusInternalServerError) {
+		return
+	}
+
+	jsonString, err = core.ConvertResourceHistoryArrayToJSON(histories)
+	if h.server.HandleHTTPError(c, err, http.StatusInternalServerError) {
+		return
+	}
+
+	log.WithFields(log.Fields{
+		"ResourceID": msg.ResourceID,
+		"Limit":      msg.Limit,
+		"Count":      len(histories),
+	}).Debug("Getting resource history")
+
+	h.server.SendHTTPReply(c, payloadType, jsonString)
 }

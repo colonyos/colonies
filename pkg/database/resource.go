@@ -30,4 +30,10 @@ type ResourceDatabase interface {
 	RemoveResourcesByNamespace(namespace string) error
 	CountResources() (int, error)
 	CountResourcesByNamespace(namespace string) (int, error)
+
+	// ResourceHistory methods
+	AddResourceHistory(history *core.ResourceHistory) error
+	GetResourceHistory(resourceID string, limit int) ([]*core.ResourceHistory, error)
+	GetResourceHistoryByGeneration(resourceID string, generation int64) (*core.ResourceHistory, error)
+	RemoveResourceHistory(resourceID string) error
 }

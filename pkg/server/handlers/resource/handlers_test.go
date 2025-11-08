@@ -494,3 +494,60 @@ func TestRemoveResourceDefinitionWithActiveResources(t *testing.T) {
 	server.Shutdown()
 	<-done
 }
+
+func TestGetResourceHistory(t *testing.T) {
+	env, client, server, _, done := server.SetupTestEnv2(t)
+
+	// First create a ResourceDefinition
+	rd := core.CreateResourceDefinition(
+		"testresource",
+		"example.com",
+		"v1",
+		"TestResource",
+		"testresources",
+		"Namespaced",
+		"test_controller",
+		"reconcile_testresource",
+	)
+	rd.Metadata.Namespace = env.ColonyName
+
+	_, err := client.AddResourceDefinition(rd, env.ColonyPrvKey)
+	assert.Nil(t, err)
+
+	// Create a Resource
+	resource := core.CreateResource("TestResource", "test-resource-1", env.ColonyName)
+	resource.SetSpec("replicas", 3)
+	resource.SetStatus("phase", "Running")
+
+	// Add Resource
+	addedResource, err := client.AddResource(resource, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.NotNil(t, addedResource)
+
+	// Update the resource to create more history
+	addedResource.SetSpec("replicas", 5)
+	updatedResource, err := client.UpdateResource(addedResource, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.NotNil(t, updatedResource)
+
+	// Get resource history
+	histories, err := client.GetResourceHistory(addedResource.ID, 10, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.NotNil(t, histories)
+
+	t.Logf("Retrieved %d history entries", len(histories))
+	for i, h := range histories {
+		t.Logf("  History[%d]: Generation=%d, ChangeType=%s, ChangedBy=%s", i, h.Generation, h.ChangeType, h.ChangedBy)
+	}
+
+	// We should have at least 2 history entries (create and update)
+	assert.GreaterOrEqual(t, len(histories), 2, "Should have at least 2 history entries")
+
+	// Verify history is ordered by timestamp DESC (most recent first)
+	if len(histories) >= 2 {
+		assert.GreaterOrEqual(t, histories[0].Generation, histories[1].Generation, "History should be ordered by generation DESC")
+	}
+
+	server.Shutdown()
+	<-done
+}

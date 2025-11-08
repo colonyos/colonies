@@ -2,7 +2,9 @@ package postgresql
 
 import (
 	"database/sql"
+	"encoding/json"
 	"errors"
+	"fmt"
 
 	"github.com/colonyos/colonies/pkg/core"
 	_ "github.com/lib/pq"
@@ -439,4 +441,152 @@ func (db *PQDatabase) CountResourcesByNamespace(namespace string) (int, error) {
 	}
 
 	return count, nil
+}
+
+// AddResourceHistory adds a new ResourceHistory entry
+func (db *PQDatabase) AddResourceHistory(history *core.ResourceHistory) error {
+	specJSON, err := json.Marshal(history.Spec)
+	if err != nil {
+		return err
+	}
+
+	statusJSON, err := json.Marshal(history.Status)
+	if err != nil {
+		return err
+	}
+
+	sqlStatement := `INSERT INTO ` + db.dbPrefix + `RESOURCE_HISTORY (
+		ID, RESOURCE_ID, KIND, NAMESPACE, NAME, GENERATION, SPEC, STATUS,
+		TIMESTAMP, CHANGED_BY, CHANGE_TYPE)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`
+
+	_, err = db.postgresql.Exec(
+		sqlStatement,
+		history.ID,
+		history.ResourceID,
+		history.Kind,
+		history.Namespace,
+		history.Name,
+		history.Generation,
+		specJSON,
+		statusJSON,
+		history.Timestamp,
+		history.ChangedBy,
+		history.ChangeType,
+	)
+
+	return err
+}
+
+// GetResourceHistory retrieves history for a resource (most recent first)
+func (db *PQDatabase) GetResourceHistory(resourceID string, limit int) ([]*core.ResourceHistory, error) {
+	sqlStatement := `SELECT ID, RESOURCE_ID, KIND, NAMESPACE, NAME, GENERATION,
+		SPEC, STATUS, TIMESTAMP, CHANGED_BY, CHANGE_TYPE
+		FROM ` + db.dbPrefix + `RESOURCE_HISTORY
+		WHERE RESOURCE_ID=$1
+		ORDER BY TIMESTAMP DESC`
+
+	if limit > 0 {
+		sqlStatement += fmt.Sprintf(" LIMIT %d", limit)
+	}
+
+	rows, err := db.postgresql.Query(sqlStatement, resourceID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var histories []*core.ResourceHistory
+	for rows.Next() {
+		var history core.ResourceHistory
+		var specJSON, statusJSON []byte
+
+		err := rows.Scan(
+			&history.ID,
+			&history.ResourceID,
+			&history.Kind,
+			&history.Namespace,
+			&history.Name,
+			&history.Generation,
+			&specJSON,
+			&statusJSON,
+			&history.Timestamp,
+			&history.ChangedBy,
+			&history.ChangeType,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		if err := json.Unmarshal(specJSON, &history.Spec); err != nil {
+			return nil, err
+		}
+
+		if len(statusJSON) > 0 {
+			if err := json.Unmarshal(statusJSON, &history.Status); err != nil {
+				return nil, err
+			}
+		}
+
+		histories = append(histories, &history)
+	}
+
+	return histories, nil
+}
+
+// GetResourceHistoryByGeneration retrieves a specific generation of a resource
+func (db *PQDatabase) GetResourceHistoryByGeneration(resourceID string, generation int64) (*core.ResourceHistory, error) {
+	sqlStatement := `SELECT ID, RESOURCE_ID, KIND, NAMESPACE, NAME, GENERATION,
+		SPEC, STATUS, TIMESTAMP, CHANGED_BY, CHANGE_TYPE
+		FROM ` + db.dbPrefix + `RESOURCE_HISTORY
+		WHERE RESOURCE_ID=$1 AND GENERATION=$2`
+
+	rows, err := db.postgresql.Query(sqlStatement, resourceID, generation)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var history core.ResourceHistory
+	var specJSON, statusJSON []byte
+
+	if rows.Next() {
+		err := rows.Scan(
+			&history.ID,
+			&history.ResourceID,
+			&history.Kind,
+			&history.Namespace,
+			&history.Name,
+			&history.Generation,
+			&specJSON,
+			&statusJSON,
+			&history.Timestamp,
+			&history.ChangedBy,
+			&history.ChangeType,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		if err := json.Unmarshal(specJSON, &history.Spec); err != nil {
+			return nil, err
+		}
+
+		if len(statusJSON) > 0 {
+			if err := json.Unmarshal(statusJSON, &history.Status); err != nil {
+				return nil, err
+			}
+		}
+
+		return &history, nil
+	}
+
+	return nil, nil
+}
+
+// RemoveResourceHistory removes all history for a resource
+func (db *PQDatabase) RemoveResourceHistory(resourceID string) error {
+	sqlStatement := `DELETE FROM ` + db.dbPrefix + `RESOURCE_HISTORY WHERE RESOURCE_ID=$1`
+	_, err := db.postgresql.Exec(sqlStatement, resourceID)
+	return err
 }

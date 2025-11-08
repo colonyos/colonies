@@ -3,8 +3,10 @@ package cli
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/colonyos/colonies/internal/table"
+	"github.com/colonyos/colonies/pkg/client"
 	"github.com/colonyos/colonies/pkg/core"
 	"github.com/muesli/termenv"
 )
@@ -207,7 +209,7 @@ func printResourcesTable(resources []*core.Resource) {
 }
 
 // printResourceTable displays a single Resource with details
-func printResourceTable(resource *core.Resource) {
+func printResourceTable(client *client.ColoniesClient, resource *core.Resource) {
 	t, theme := createTable(0)
 	t.SetTitle("Resource")
 
@@ -234,6 +236,63 @@ func printResourceTable(resource *core.Resource) {
 		termenv.String(fmt.Sprintf("%d", resource.Metadata.Generation)).Foreground(theme.ColorGray),
 	}
 	t.AddRow(row)
+
+	// Reconciliation status
+	if resource.Metadata.LastReconciliationProcess != "" {
+		process, err := client.GetProcess(resource.Metadata.LastReconciliationProcess, PrvKey)
+		if err == nil && process != nil {
+			// Display reconciliation process ID
+			row = []interface{}{
+				termenv.String("Last Reconciliation").Foreground(theme.ColorCyan),
+				termenv.String(process.ID).Foreground(theme.ColorGray),
+			}
+			t.AddRow(row)
+
+			// Display reconciliation status with color coding
+			statusColor := theme.ColorGray
+			statusText := fmt.Sprintf("%d", process.State)
+			switch process.State {
+			case 0: // WAITING
+				statusColor = theme.ColorYellow
+				statusText = "WAITING"
+			case 1: // RUNNING
+				statusColor = theme.ColorCyan
+				statusText = "RUNNING"
+			case 2: // SUCCESS
+				statusColor = theme.ColorGreen
+				statusText = "SUCCESS"
+			case 3: // FAILED
+				statusColor = theme.ColorRed
+				statusText = "FAILED"
+			}
+
+			row = []interface{}{
+				termenv.String("Reconciliation Status").Foreground(theme.ColorCyan),
+				termenv.String(statusText).Foreground(statusColor),
+			}
+			t.AddRow(row)
+
+			// Display when reconciliation started
+			if !resource.Metadata.LastReconciliationTime.IsZero() {
+				row = []interface{}{
+					termenv.String("Reconciliation Time").Foreground(theme.ColorCyan),
+					termenv.String(resource.Metadata.LastReconciliationTime.Format(TimeLayout)).Foreground(theme.ColorGray),
+				}
+				t.AddRow(row)
+			}
+
+			// Display when process ended (if completed)
+			if process.State == 2 || process.State == 3 { // SUCCESS or FAILED
+				if !process.EndTime.IsZero() {
+					row = []interface{}{
+						termenv.String("Reconciliation Ended").Foreground(theme.ColorCyan),
+						termenv.String(process.EndTime.Format(TimeLayout)).Foreground(theme.ColorGray),
+					}
+					t.AddRow(row)
+				}
+			}
+		}
+	}
 
 	if !resource.Metadata.CreatedAt.IsZero() {
 		row = []interface{}{
@@ -308,10 +367,226 @@ func printResourceTable(resource *core.Resource) {
 
 	// Status section
 	if len(resource.Status) > 0 {
+		// Check if this is a deployment status with containers
+		if containers, ok := resource.Status["containers"].([]interface{}); ok && len(containers) > 0 {
+			// Display deployment status summary
+			t, theme = createTable(0)
+			t.SetTitle("Deployment Status")
+
+			if running, ok := resource.Status["runningReplicas"]; ok {
+				row = []interface{}{
+					termenv.String("Running Replicas").Foreground(theme.ColorBlue),
+					termenv.String(fmt.Sprintf("%v", running)).Foreground(theme.ColorGreen),
+				}
+				t.AddRow(row)
+			}
+
+			if total, ok := resource.Status["totalReplicas"]; ok {
+				row = []interface{}{
+					termenv.String("Total Replicas").Foreground(theme.ColorBlue),
+					termenv.String(fmt.Sprintf("%v", total)).Foreground(theme.ColorGray),
+				}
+				t.AddRow(row)
+			}
+
+			if lastUpdated, ok := resource.Status["lastUpdated"]; ok {
+				row = []interface{}{
+					termenv.String("Last Updated").Foreground(theme.ColorBlue),
+					termenv.String(fmt.Sprintf("%v", lastUpdated)).Foreground(theme.ColorGray),
+				}
+				t.AddRow(row)
+			}
+
+			t.Render()
+
+			// Display containers table
+			t, theme = createTable(0)
+			t.SetTitle("Containers")
+
+			var containerCols = []table.Column{
+				{ID: "name", Name: "Name", SortIndex: 1},
+				{ID: "id", Name: "ID", SortIndex: 2},
+				{ID: "state", Name: "State", SortIndex: 3},
+				{ID: "image", Name: "Image", SortIndex: 4},
+				{ID: "lastcheck", Name: "Last Check", SortIndex: 5},
+			}
+			t.SetCols(containerCols)
+
+			for _, container := range containers {
+				if containerMap, ok := container.(map[string]interface{}); ok {
+					name := fmt.Sprintf("%v", containerMap["name"])
+					id := fmt.Sprintf("%v", containerMap["id"])
+					state := fmt.Sprintf("%v", containerMap["state"])
+					image := fmt.Sprintf("%v", containerMap["image"])
+					lastCheck := fmt.Sprintf("%v", containerMap["lastCheck"])
+
+					// Parse and format lastCheck if it's a valid timestamp
+					if lastCheck != "" && lastCheck != "<nil>" {
+						if t, err := time.Parse(time.RFC3339, lastCheck); err == nil {
+							lastCheck = t.Format("2006-01-02 15:04:05")
+						}
+					} else {
+						lastCheck = "-"
+					}
+
+					// Color-code state
+					stateColor := theme.ColorGray
+					if state == "running" {
+						stateColor = theme.ColorGreen
+					} else if state == "stopped" {
+						stateColor = theme.ColorRed
+					}
+
+					row = []interface{}{
+						termenv.String(name).Foreground(theme.ColorCyan),
+						termenv.String(id).Foreground(theme.ColorGray),
+						termenv.String(state).Foreground(stateColor),
+						termenv.String(image).Foreground(theme.ColorMagenta),
+						termenv.String(lastCheck).Foreground(theme.ColorGray),
+					}
+					t.AddRow(row)
+				}
+			}
+
+			t.Render()
+		} else {
+			// Generic status display for non-deployment resources
+			t, theme = createTable(0)
+			t.SetTitle("Status")
+
+			for key, value := range resource.Status {
+				valueStr := fmt.Sprintf("%v", value)
+				if len(valueStr) > 60 {
+					valueStr = valueStr[:57] + "..."
+				}
+
+				row = []interface{}{
+					termenv.String(key).Foreground(theme.ColorBlue),
+					termenv.String(valueStr).Foreground(theme.ColorGray),
+				}
+				t.AddRow(row)
+			}
+
+			t.Render()
+		}
+	}
+}
+
+// printResourceHistoryTable displays a list of ResourceHistory entries in a table
+func printResourceHistoryTable(histories []*core.ResourceHistory) {
+	t, theme := createTable(1)
+
+	var cols = []table.Column{
+		{ID: "generation", Name: "Generation", SortIndex: 1},
+		{ID: "timestamp", Name: "Timestamp", SortIndex: 2},
+		{ID: "changetype", Name: "Change Type", SortIndex: 3},
+		{ID: "changedby", Name: "Changed By", SortIndex: 4},
+	}
+	t.SetCols(cols)
+
+	for _, history := range histories {
+		row := []interface{}{
+			termenv.String(fmt.Sprintf("%d", history.Generation)).Foreground(theme.ColorCyan),
+			termenv.String(history.Timestamp.Format("2006-01-02 15:04:05")).Foreground(theme.ColorGray),
+			termenv.String(history.ChangeType).Foreground(theme.ColorViolet),
+			termenv.String(truncateString(history.ChangedBy, 40)).Foreground(theme.ColorBlue),
+		}
+		t.AddRow(row)
+	}
+
+	t.Render()
+}
+
+// truncateString truncates a string if it's longer than maxLen
+func truncateString(s string, maxLen int) string {
+	if len(s) > maxLen {
+		return s[:maxLen-3] + "..."
+	}
+	return s
+}
+
+// printResourceHistoryDetail displays detailed information for a specific resource history entry
+func printResourceHistoryDetail(history *core.ResourceHistory) {
+	t, theme := createTable(0)
+	t.SetTitle(fmt.Sprintf("Resource History - Generation %d", history.Generation))
+
+	row := []interface{}{
+		termenv.String("Resource ID").Foreground(theme.ColorCyan),
+		termenv.String(history.ResourceID).Foreground(theme.ColorGray),
+	}
+	t.AddRow(row)
+
+	row = []interface{}{
+		termenv.String("Kind").Foreground(theme.ColorCyan),
+		termenv.String(history.Kind).Foreground(theme.ColorGray),
+	}
+	t.AddRow(row)
+
+	row = []interface{}{
+		termenv.String("Name").Foreground(theme.ColorCyan),
+		termenv.String(history.Name).Foreground(theme.ColorGray),
+	}
+	t.AddRow(row)
+
+	row = []interface{}{
+		termenv.String("Namespace").Foreground(theme.ColorCyan),
+		termenv.String(history.Namespace).Foreground(theme.ColorGray),
+	}
+	t.AddRow(row)
+
+	row = []interface{}{
+		termenv.String("Generation").Foreground(theme.ColorCyan),
+		termenv.String(fmt.Sprintf("%d", history.Generation)).Foreground(theme.ColorGray),
+	}
+	t.AddRow(row)
+
+	row = []interface{}{
+		termenv.String("Timestamp").Foreground(theme.ColorCyan),
+		termenv.String(history.Timestamp.Format("2006-01-02 15:04:05")).Foreground(theme.ColorGray),
+	}
+	t.AddRow(row)
+
+	row = []interface{}{
+		termenv.String("Change Type").Foreground(theme.ColorCyan),
+		termenv.String(history.ChangeType).Foreground(theme.ColorGray),
+	}
+	t.AddRow(row)
+
+	row = []interface{}{
+		termenv.String("Changed By").Foreground(theme.ColorCyan),
+		termenv.String(history.ChangedBy).Foreground(theme.ColorGray),
+	}
+	t.AddRow(row)
+
+	t.Render()
+
+	// Spec section
+	if len(history.Spec) > 0 {
+		t, theme = createTable(0)
+		t.SetTitle("Spec")
+
+		for key, value := range history.Spec {
+			valueStr := fmt.Sprintf("%v", value)
+			if len(valueStr) > 60 {
+				valueStr = valueStr[:57] + "..."
+			}
+
+			row = []interface{}{
+				termenv.String(key).Foreground(theme.ColorMagenta),
+				termenv.String(valueStr).Foreground(theme.ColorGray),
+			}
+			t.AddRow(row)
+		}
+
+		t.Render()
+	}
+
+	// Status section
+	if len(history.Status) > 0 {
 		t, theme = createTable(0)
 		t.SetTitle("Status")
 
-		for key, value := range resource.Status {
+		for key, value := range history.Status {
 			valueStr := fmt.Sprintf("%v", value)
 			if len(valueStr) > 60 {
 				valueStr = valueStr[:57] + "..."

@@ -505,6 +505,31 @@ func (db *PQDatabase) createResourcesTable() error {
 	return nil
 }
 
+func (db *PQDatabase) createResourceHistoryTable() error {
+	sqlStatement := `CREATE TABLE IF NOT EXISTS ` + db.dbPrefix + `RESOURCE_HISTORY (
+		ID TEXT PRIMARY KEY NOT NULL,
+		RESOURCE_ID TEXT NOT NULL,
+		KIND TEXT NOT NULL,
+		NAMESPACE TEXT NOT NULL,
+		NAME TEXT NOT NULL,
+		GENERATION BIGINT NOT NULL,
+		SPEC TEXT NOT NULL,
+		STATUS TEXT,
+		TIMESTAMP TIMESTAMP NOT NULL,
+		CHANGED_BY TEXT NOT NULL,
+		CHANGE_TYPE TEXT NOT NULL
+	)`
+	_, err := db.postgresql.Exec(sqlStatement)
+	if err != nil {
+		return err
+	}
+
+	// Create index for faster queries by resource_id
+	indexStatement := `CREATE INDEX IF NOT EXISTS ` + db.dbPrefix + `RESOURCE_HISTORY_INDEX1 ON ` + db.dbPrefix + `RESOURCE_HISTORY (RESOURCE_ID, TIMESTAMP DESC)`
+	_, err = db.postgresql.Exec(indexStatement)
+	return err
+}
+
 func (db *PQDatabase) createProcessesIndex1() error {
 	sqlStatement := `CREATE INDEX ` + db.dbPrefix + `PROCESSES_INDEX1 ON ` + db.dbPrefix + `PROCESSES (TARGET_COLONY_NAME, STATE, SUBMISSION_TIME)`
 	_, err := db.postgresql.Exec(sqlStatement)
@@ -784,6 +809,11 @@ func (db *PQDatabase) Initialize() error {
 	}
 
 	err = db.createResourcesTable()
+	if err != nil {
+		return err
+	}
+
+	err = db.createResourceHistoryTable()
 	if err != nil {
 		return err
 	}

@@ -6,7 +6,7 @@
   "spec": {
     "image": "nginx:1.21",
     "replicas": 5,
-    "executorType": "deployment-controller",
+    "executorType": "docker-executor-reconciler",
     "cpu": "500m",
     "memory": "512Mi"
   }

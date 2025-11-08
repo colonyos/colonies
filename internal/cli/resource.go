@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/colonyos/colonies/pkg/core"
 	log "github.com/sirupsen/logrus"
@@ -26,7 +27,9 @@ func init() {
 	resourceCmd.AddCommand(getResourceCmd)
 	resourceCmd.AddCommand(listResourcesCmd)
 	resourceCmd.AddCommand(updateResourceCmd)
+	resourceCmd.AddCommand(setResourceCmd)
 	resourceCmd.AddCommand(removeResourceCmd)
+	resourceCmd.AddCommand(historyResourceCmd)
 
 	// ResourceDefinition flags
 	addResourceDefinitionCmd.Flags().StringVarP(&PrvKey, "prvkey", "", "", "Private key (colony owner)")
@@ -59,9 +62,23 @@ func init() {
 	updateResourceCmd.Flags().StringVarP(&SpecFile, "spec", "", "", "JSON specification file")
 	updateResourceCmd.MarkFlagRequired("spec")
 
+	setResourceCmd.Flags().StringVarP(&PrvKey, "prvkey", "", "", "Private key")
+	setResourceCmd.Flags().StringVarP(&ResourceName, "name", "", "", "Resource name")
+	setResourceCmd.Flags().StringVarP(&Key, "key", "", "", "Field key (use dot notation for nested fields, e.g., 'spec.replicas')")
+	setResourceCmd.Flags().StringVarP(&Value, "value", "", "", "New value for the field")
+	setResourceCmd.MarkFlagRequired("name")
+	setResourceCmd.MarkFlagRequired("key")
+	setResourceCmd.MarkFlagRequired("value")
+
 	removeResourceCmd.Flags().StringVarP(&PrvKey, "prvkey", "", "", "Private key")
 	removeResourceCmd.Flags().StringVarP(&ResourceName, "name", "", "", "Resource name")
 	removeResourceCmd.MarkFlagRequired("name")
+
+	historyResourceCmd.Flags().StringVarP(&PrvKey, "prvkey", "", "", "Private key")
+	historyResourceCmd.Flags().StringVarP(&ResourceName, "name", "", "", "Resource name")
+	historyResourceCmd.Flags().IntVarP(&Count, "limit", "l", 10, "Limit number of history entries")
+	historyResourceCmd.Flags().IntVarP(&Generation, "generation", "g", -1, "Show details for specific generation")
+	historyResourceCmd.MarkFlagRequired("name")
 }
 
 var resourceCmd = &cobra.Command{
@@ -96,7 +113,12 @@ var addResourceDefinitionCmd = &cobra.Command{
 		}
 
 		addedRD, err := client.AddResourceDefinition(&rd, ColonyPrvKey)
-		CheckError(err)
+		if err != nil {
+			if strings.Contains(err.Error(), "duplicate key") {
+				CheckError(errors.New("ResourceDefinition with name '" + rd.Metadata.Name + "' already exists in colony '" + rd.Metadata.Namespace + "'"))
+			}
+			CheckError(err)
+		}
 
 		log.WithFields(log.Fields{
 			"ResourceDefinitionID": addedRD.ID,
@@ -248,7 +270,7 @@ var getResourceCmd = &cobra.Command{
 			CheckError(err)
 			fmt.Println(jsonString)
 		} else {
-			printResourceTable(resource)
+			printResourceTable(client, resource)
 		}
 	},
 }
@@ -318,6 +340,84 @@ var updateResourceCmd = &cobra.Command{
 	},
 }
 
+var setResourceCmd = &cobra.Command{
+	Use:   "set",
+	Short: "Set a field value in a Resource",
+	Long:  "Set a specific field value in a resource using dot notation (e.g., 'replicas' or 'env.TZ')",
+	Run: func(cmd *cobra.Command, args []string) {
+		client := setup()
+
+		// Get the existing resource
+		resource, err := client.GetResource(ColonyName, ResourceName, PrvKey)
+		CheckError(err)
+
+		// Parse the resource spec into a map for easy manipulation
+		specMap := make(map[string]interface{})
+		specBytes, err := json.Marshal(resource.Spec)
+		CheckError(err)
+		err = json.Unmarshal(specBytes, &specMap)
+		CheckError(err)
+
+		// Remove "spec." prefix if present (for convenience)
+		keyPath := Key
+		if strings.HasPrefix(keyPath, "spec.") {
+			keyPath = strings.TrimPrefix(keyPath, "spec.")
+		}
+
+		// Split the key by dots to handle nested fields
+		keyParts := strings.Split(keyPath, ".")
+
+		// First, validate that the key path exists in the current spec
+		// We don't allow creating new fields to prevent corrupting the resource
+		current := specMap
+		for i := 0; i < len(keyParts)-1; i++ {
+			key := keyParts[i]
+			if _, ok := current[key]; !ok {
+				CheckError(errors.New("Invalid key path: '" + Key + "' (field '" + key + "' does not exist in resource spec)"))
+			}
+			var ok bool
+			current, ok = current[key].(map[string]interface{})
+			if !ok {
+				CheckError(errors.New("Invalid key path: " + Key + " (cannot navigate through non-object at '" + key + "')"))
+			}
+		}
+
+		// Set the final value
+		finalKey := keyParts[len(keyParts)-1]
+
+		// Validate that the final key exists
+		if _, ok := current[finalKey]; !ok {
+			CheckError(errors.New("Invalid key: '" + Key + "' (field '" + finalKey + "' does not exist in resource spec)"))
+		}
+
+		// Try to parse the value as JSON to support numbers, booleans, etc.
+		var parsedValue interface{}
+		err = json.Unmarshal([]byte(Value), &parsedValue)
+		if err != nil {
+			// If it's not valid JSON, treat it as a string
+			parsedValue = Value
+		}
+
+		current[finalKey] = parsedValue
+
+		// Update the resource spec
+		resource.Spec = specMap
+
+		// Update the resource in the colony
+		updatedResource, err := client.UpdateResource(resource, PrvKey)
+		CheckError(err)
+
+		log.WithFields(log.Fields{
+			"ResourceID": updatedResource.ID,
+			"Name":       updatedResource.Metadata.Name,
+			"Kind":       updatedResource.Kind,
+			"Key":        Key,
+			"Value":      Value,
+		}).Info("Resource field updated")
+
+	},
+}
+
 var removeResourceCmd = &cobra.Command{
 	Use:   "remove",
 	Short: "Remove a Resource",
@@ -332,5 +432,59 @@ var removeResourceCmd = &cobra.Command{
 			"Name":       ResourceName,
 			"ColonyName": ColonyName,
 		}).Info("Resource removed")
+	},
+}
+
+var historyResourceCmd = &cobra.Command{
+	Use:   "history",
+	Short: "Show resource history",
+	Long:  "Display the history of changes to a resource",
+	Run: func(cmd *cobra.Command, args []string) {
+		client := setup()
+
+		// Get the resource to find its ID
+		resource, err := client.GetResource(ColonyName, ResourceName, PrvKey)
+		CheckError(err)
+
+		// Get the resource history
+		histories, err := client.GetResourceHistory(resource.ID, Count, PrvKey)
+		CheckError(err)
+
+		if len(histories) == 0 {
+			log.Info("No history found for this resource")
+			return
+		}
+
+		// If generation is specified, show detailed view of that generation
+		if Generation >= 0 {
+			var selectedHistory *core.ResourceHistory
+			for _, h := range histories {
+				if h.Generation == int64(Generation) {
+					selectedHistory = h
+					break
+				}
+			}
+
+			if selectedHistory == nil {
+				CheckError(errors.New(fmt.Sprintf("Generation %d not found in history", Generation)))
+			}
+
+			if JSON {
+				jsonString, err := selectedHistory.ToJSON()
+				CheckError(err)
+				fmt.Println(jsonString)
+			} else {
+				printResourceHistoryDetail(selectedHistory)
+			}
+		} else {
+			// Print history table
+			if JSON {
+				jsonString, err := core.ConvertResourceHistoryArrayToJSON(histories)
+				CheckError(err)
+				fmt.Println(jsonString)
+			} else {
+				printResourceHistoryTable(histories)
+			}
+		}
 	},
 }
