@@ -20,18 +20,18 @@ func TestValidateResourceAgainstSchema_RequiredFields(t *testing.T) {
 		Required: []string{"image"},
 	}
 
-	// Test 1: Valid resource with required field
-	resource := CreateResource("Test", "test-resource", "default")
-	resource.SetSpec("image", "nginx:1.21")
-	resource.SetSpec("replicas", 3)
+	// Test 1: Valid service with required field
+	service := CreateResource("Test", "test-service", "default")
+	service.SetSpec("image", "nginx:1.21")
+	service.SetSpec("replicas", 3)
 
-	err := ValidateResourceAgainstSchema(resource, schema)
+	err := ValidateResourceAgainstSchema(service, schema)
 	if err != nil {
 		t.Errorf("Expected validation to pass, got error: %v", err)
 	}
 
 	// Test 2: Missing required field
-	invalidResource := CreateResource("Test", "invalid-resource", "default")
+	invalidResource := CreateResource("Test", "invalid-service", "default")
 	invalidResource.SetSpec("replicas", 3) // Missing 'image'
 
 	err = ValidateResourceAgainstSchema(invalidResource, schema)
@@ -57,12 +57,12 @@ func TestValidateResourceAgainstSchema_TypeValidation(t *testing.T) {
 	}
 
 	// Test string type
-	resource := CreateResource("Test", "test", "default")
-	resource.SetSpec("name", "test-name")
-	resource.SetSpec("count", 5)
-	resource.SetSpec("enabled", true)
+	service := CreateResource("Test", "test", "default")
+	service.SetSpec("name", "test-name")
+	service.SetSpec("count", 5)
+	service.SetSpec("enabled", true)
 
-	err := ValidateResourceAgainstSchema(resource, schema)
+	err := ValidateResourceAgainstSchema(service, schema)
 	if err != nil {
 		t.Errorf("Expected validation to pass, got error: %v", err)
 	}
@@ -107,10 +107,10 @@ func TestValidateResourceAgainstSchema_EnumValidation(t *testing.T) {
 	}
 
 	// Test valid enum value
-	resource := CreateResource("Test", "test", "default")
-	resource.SetSpec("protocol", "TCP")
+	service := CreateResource("Test", "test", "default")
+	service.SetSpec("protocol", "TCP")
 
-	err := ValidateResourceAgainstSchema(resource, schema)
+	err := ValidateResourceAgainstSchema(service, schema)
 	if err != nil {
 		t.Errorf("Expected validation to pass for valid enum, got error: %v", err)
 	}
@@ -139,10 +139,10 @@ func TestValidateResourceAgainstSchema_ArrayValidation(t *testing.T) {
 	}
 
 	// Test valid array
-	resource := CreateResource("Test", "test", "default")
-	resource.SetSpec("ports", []interface{}{80, 443, 8080})
+	service := CreateResource("Test", "test", "default")
+	service.SetSpec("ports", []interface{}{80, 443, 8080})
 
-	err := ValidateResourceAgainstSchema(resource, schema)
+	err := ValidateResourceAgainstSchema(service, schema)
 	if err != nil {
 		t.Errorf("Expected validation to pass for valid array, got error: %v", err)
 	}
@@ -185,14 +185,14 @@ func TestValidateResourceAgainstSchema_NestedObjectValidation(t *testing.T) {
 	}
 
 	// Test valid nested object
-	resource := CreateResource("Test", "test", "default")
+	service := CreateResource("Test", "test", "default")
 	config := map[string]interface{}{
 		"host": "localhost",
 		"port": 8080,
 	}
-	resource.SetSpec("config", config)
+	service.SetSpec("config", config)
 
-	err := ValidateResourceAgainstSchema(resource, schema)
+	err := ValidateResourceAgainstSchema(service, schema)
 	if err != nil {
 		t.Errorf("Expected validation to pass for valid nested object, got error: %v", err)
 	}
@@ -213,10 +213,10 @@ func TestValidateResourceAgainstSchema_NestedObjectValidation(t *testing.T) {
 
 func TestValidateResourceAgainstSchema_NoSchema(t *testing.T) {
 	// Test with nil schema - should pass
-	resource := CreateResource("Test", "test", "default")
-	resource.SetSpec("anything", "goes")
+	service := CreateResource("Test", "test", "default")
+	service.SetSpec("anything", "goes")
 
-	err := ValidateResourceAgainstSchema(resource, nil)
+	err := ValidateResourceAgainstSchema(service, nil)
 	if err != nil {
 		t.Errorf("Expected validation to pass with nil schema, got error: %v", err)
 	}
@@ -242,11 +242,11 @@ func TestValidateResourceAgainstSchema_ComplexExample(t *testing.T) {
 			},
 			"cpu": {
 				Type:        "string",
-				Description: "CPU resource request",
+				Description: "CPU service request",
 			},
 			"memory": {
 				Type:        "string",
-				Description: "Memory resource request",
+				Description: "Memory service request",
 			},
 			"ports": {
 				Type:        "array",
@@ -271,14 +271,14 @@ func TestValidateResourceAgainstSchema_ComplexExample(t *testing.T) {
 		Required: []string{"image", "executorType"},
 	}
 
-	// Test valid complex resource
-	resource := CreateResource("ExecutorDeployment", "web-server", "production")
-	resource.SetSpec("image", "nginx:1.21")
-	resource.SetSpec("replicas", 3)
-	resource.SetSpec("executorType", "container-executor")
-	resource.SetSpec("cpu", "500m")
-	resource.SetSpec("memory", "512Mi")
-	resource.SetSpec("ports", []interface{}{
+	// Test valid complex service
+	service := CreateResource("ExecutorDeployment", "web-server", "production")
+	service.SetSpec("image", "nginx:1.21")
+	service.SetSpec("replicas", 3)
+	service.SetSpec("executorType", "container-executor")
+	service.SetSpec("cpu", "500m")
+	service.SetSpec("memory", "512Mi")
+	service.SetSpec("ports", []interface{}{
 		map[string]interface{}{
 			"name":     "http",
 			"port":     80,
@@ -291,9 +291,9 @@ func TestValidateResourceAgainstSchema_ComplexExample(t *testing.T) {
 		},
 	})
 
-	err := ValidateResourceAgainstSchema(resource, schema)
+	err := ValidateResourceAgainstSchema(service, schema)
 	if err != nil {
-		t.Errorf("Expected validation to pass for complex valid resource, got error: %v", err)
+		t.Errorf("Expected validation to pass for complex valid service, got error: %v", err)
 	}
 
 	// Test missing required field

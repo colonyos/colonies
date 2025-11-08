@@ -33,7 +33,7 @@ import (
 	"github.com/colonyos/colonies/pkg/server/handlers/process"
 	"github.com/colonyos/colonies/pkg/server/handlers/processgraph"
 	realtimehandlers "github.com/colonyos/colonies/pkg/server/handlers/realtime"
-	resourcehandlers "github.com/colonyos/colonies/pkg/server/handlers/resource"
+	resourcehandlers "github.com/colonyos/colonies/pkg/server/handlers/service"
 	securityhandlers "github.com/colonyos/colonies/pkg/server/handlers/security"
 	serverhandlers "github.com/colonyos/colonies/pkg/server/handlers/server"
 	snapshothandlers "github.com/colonyos/colonies/pkg/server/handlers/snapshot"
@@ -542,9 +542,9 @@ func (server *Server) registerHandlers() {
 		log.WithFields(log.Fields{"Error": err}).Fatal("Failed to register snapshot handlers")
 	}
 
-	// Register resource handlers
+	// Register service handlers
 	if err := server.resourceHandlers.RegisterHandlers(server.handlerRegistry); err != nil {
-		log.WithFields(log.Fields{"Error": err}).Fatal("Failed to register resource handlers")
+		log.WithFields(log.Fields{"Error": err}).Fatal("Failed to register service handlers")
 	}
 
 	// Register security handlers

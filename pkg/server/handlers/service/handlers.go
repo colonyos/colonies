@@ -1,4 +1,4 @@
-package resource
+package service
 
 import (
 	"errors"
@@ -122,7 +122,7 @@ func (h *Handlers) RegisterHandlers(handlerRegistry *registry.HandlerRegistry) e
 		return err
 	}
 
-	// Resource handlers
+	// Service handlers
 	if err := handlerRegistry.Register(rpc.AddResourcePayloadType, h.HandleAddResource); err != nil {
 		return err
 	}
@@ -149,17 +149,17 @@ func (h *Handlers) RegisterHandlers(handlerRegistry *registry.HandlerRegistry) e
 func (h *Handlers) HandleAddResourceDefinition(c backends.Context, recoveredID string, payloadType string, jsonString string) {
 	msg, err := rpc.CreateAddResourceDefinitionMsgFromJSON(jsonString)
 	if err != nil {
-		h.server.HandleHTTPError(c, errors.New("Failed to add resource definition, invalid JSON"), http.StatusBadRequest)
+		h.server.HandleHTTPError(c, errors.New("Failed to add service definition, invalid JSON"), http.StatusBadRequest)
 		return
 	}
 
 	if msg.MsgType != payloadType {
-		h.server.HandleHTTPError(c, errors.New("Failed to add resource definition, msg.MsgType does not match payloadType"), http.StatusBadRequest)
+		h.server.HandleHTTPError(c, errors.New("Failed to add service definition, msg.MsgType does not match payloadType"), http.StatusBadRequest)
 		return
 	}
 
 	if msg.ResourceDefinition == nil {
-		h.server.HandleHTTPError(c, errors.New("Failed to add resource definition, resource definition is nil"), http.StatusBadRequest)
+		h.server.HandleHTTPError(c, errors.New("Failed to add service definition, service definition is nil"), http.StatusBadRequest)
 		return
 	}
 
@@ -185,7 +185,7 @@ func (h *Handlers) HandleAddResourceDefinition(c backends.Context, recoveredID s
 		"Name":       msg.ResourceDefinition.Metadata.Name,
 		"Kind":       msg.ResourceDefinition.Kind,
 		"ColonyName": msg.ResourceDefinition.Metadata.Namespace,
-	}).Debug("Adding resource definition")
+	}).Debug("Adding service definition")
 
 	jsonString, err = msg.ResourceDefinition.ToJSON()
 	if h.server.HandleHTTPError(c, err, http.StatusInternalServerError) {
@@ -199,16 +199,16 @@ func (h *Handlers) HandleAddResourceDefinition(c backends.Context, recoveredID s
 func (h *Handlers) HandleGetResourceDefinition(c backends.Context, recoveredID string, payloadType string, jsonString string) {
 	msg, err := rpc.CreateGetResourceDefinitionMsgFromJSON(jsonString)
 	if err != nil {
-		h.server.HandleHTTPError(c, errors.New("Failed to get resource definition, invalid JSON"), http.StatusBadRequest)
+		h.server.HandleHTTPError(c, errors.New("Failed to get service definition, invalid JSON"), http.StatusBadRequest)
 		return
 	}
 
 	if msg.MsgType != payloadType {
-		h.server.HandleHTTPError(c, errors.New("Failed to get resource definition, msg.MsgType does not match payloadType"), http.StatusBadRequest)
+		h.server.HandleHTTPError(c, errors.New("Failed to get service definition, msg.MsgType does not match payloadType"), http.StatusBadRequest)
 		return
 	}
 
-	// Require membership or colony owner to view resource definitions
+	// Require membership or colony owner to view service definitions
 	err = h.server.Validator().RequireMembership(recoveredID, msg.ColonyName, true)
 	if err != nil {
 		// If not a member, check if colony owner
@@ -224,14 +224,14 @@ func (h *Handlers) HandleGetResourceDefinition(c backends.Context, recoveredID s
 	}
 
 	if rd == nil {
-		h.server.HandleHTTPError(c, errors.New("Resource definition not found"), http.StatusNotFound)
+		h.server.HandleHTTPError(c, errors.New("Service definition not found"), http.StatusNotFound)
 		return
 	}
 
 	log.WithFields(log.Fields{
 		"Name":       msg.Name,
 		"ColonyName": msg.ColonyName,
-	}).Debug("Getting resource definition")
+	}).Debug("Getting service definition")
 
 	jsonString, err = rd.ToJSON()
 	if h.server.HandleHTTPError(c, err, http.StatusInternalServerError) {
@@ -245,16 +245,16 @@ func (h *Handlers) HandleGetResourceDefinition(c backends.Context, recoveredID s
 func (h *Handlers) HandleGetResourceDefinitions(c backends.Context, recoveredID string, payloadType string, jsonString string) {
 	msg, err := rpc.CreateGetResourceDefinitionsMsgFromJSON(jsonString)
 	if err != nil {
-		h.server.HandleHTTPError(c, errors.New("Failed to get resource definitions, invalid JSON"), http.StatusBadRequest)
+		h.server.HandleHTTPError(c, errors.New("Failed to get service definitions, invalid JSON"), http.StatusBadRequest)
 		return
 	}
 
 	if msg.MsgType != payloadType {
-		h.server.HandleHTTPError(c, errors.New("Failed to get resource definitions, msg.MsgType does not match payloadType"), http.StatusBadRequest)
+		h.server.HandleHTTPError(c, errors.New("Failed to get service definitions, msg.MsgType does not match payloadType"), http.StatusBadRequest)
 		return
 	}
 
-	// Require membership or colony owner to view resource definitions
+	// Require membership or colony owner to view service definitions
 	err = h.server.Validator().RequireMembership(recoveredID, msg.ColonyName, true)
 	if err != nil {
 		// If not a member, check if colony owner
@@ -272,7 +272,7 @@ func (h *Handlers) HandleGetResourceDefinitions(c backends.Context, recoveredID 
 	log.WithFields(log.Fields{
 		"ColonyName": msg.ColonyName,
 		"Count":      len(rds),
-	}).Debug("Getting resource definitions")
+	}).Debug("Getting service definitions")
 
 	jsonString, err = core.ConvertResourceDefinitionArrayToJSON(rds)
 	if h.server.HandleHTTPError(c, err, http.StatusInternalServerError) {
@@ -286,12 +286,12 @@ func (h *Handlers) HandleGetResourceDefinitions(c backends.Context, recoveredID 
 func (h *Handlers) HandleRemoveResourceDefinition(c backends.Context, recoveredID string, payloadType string, jsonString string) {
 	msg, err := rpc.CreateRemoveResourceDefinitionMsgFromJSON(jsonString)
 	if err != nil {
-		h.server.HandleHTTPError(c, errors.New("Failed to remove resource definition, invalid JSON"), http.StatusBadRequest)
+		h.server.HandleHTTPError(c, errors.New("Failed to remove service definition, invalid JSON"), http.StatusBadRequest)
 		return
 	}
 
 	if msg.MsgType != payloadType {
-		h.server.HandleHTTPError(c, errors.New("Failed to remove resource definition, msg.MsgType does not match payloadType"), http.StatusBadRequest)
+		h.server.HandleHTTPError(c, errors.New("Failed to remove service definition, msg.MsgType does not match payloadType"), http.StatusBadRequest)
 		return
 	}
 
@@ -312,14 +312,14 @@ func (h *Handlers) HandleRemoveResourceDefinition(c backends.Context, recoveredI
 		return
 	}
 
-	// Check if there are any resources using this ResourceDefinition
-	resources, err := h.server.ResourceDB().GetResourcesByNamespaceAndKind(msg.Namespace, rd.Spec.Names.Kind)
+	// Check if there are any services using this ResourceDefinition
+	services, err := h.server.ResourceDB().GetResourcesByNamespaceAndKind(msg.Namespace, rd.Spec.Names.Kind)
 	if h.server.HandleHTTPError(c, err, http.StatusInternalServerError) {
 		return
 	}
 
-	if len(resources) > 0 {
-		h.server.HandleHTTPError(c, fmt.Errorf("cannot remove ResourceDefinition '%s': %d resource(s) of kind '%s' still exist", msg.Name, len(resources), rd.Spec.Names.Kind), http.StatusConflict)
+	if len(services) > 0 {
+		h.server.HandleHTTPError(c, fmt.Errorf("cannot remove ResourceDefinition '%s': %d service(s) of kind '%s' still exist", msg.Name, len(services), rd.Spec.Names.Kind), http.StatusConflict)
 		return
 	}
 
@@ -331,53 +331,53 @@ func (h *Handlers) HandleRemoveResourceDefinition(c backends.Context, recoveredI
 	log.WithFields(log.Fields{
 		"Namespace": msg.Namespace,
 		"Name":      msg.Name,
-	}).Debug("Removing resource definition")
+	}).Debug("Removing service definition")
 
 	h.server.SendEmptyHTTPReply(c, payloadType)
 }
 
-// HandleAddResource adds a new Resource instance
+// HandleAddResource adds a new Service instance
 func (h *Handlers) HandleAddResource(c backends.Context, recoveredID string, payloadType string, jsonString string) {
 	msg, err := rpc.CreateAddResourceMsgFromJSON(jsonString)
 	if err != nil {
-		h.server.HandleHTTPError(c, errors.New("Failed to add resource, invalid JSON"), http.StatusBadRequest)
+		h.server.HandleHTTPError(c, errors.New("Failed to add service, invalid JSON"), http.StatusBadRequest)
 		return
 	}
 
 	if msg.MsgType != payloadType {
-		h.server.HandleHTTPError(c, errors.New("Failed to add resource, msg.MsgType does not match payloadType"), http.StatusBadRequest)
+		h.server.HandleHTTPError(c, errors.New("Failed to add service, msg.MsgType does not match payloadType"), http.StatusBadRequest)
 		return
 	}
 
-	if msg.Resource == nil {
-		h.server.HandleHTTPError(c, errors.New("Failed to add resource, resource is nil"), http.StatusBadRequest)
+	if msg.Service == nil {
+		h.server.HandleHTTPError(c, errors.New("Failed to add service, service is nil"), http.StatusBadRequest)
 		return
 	}
 
-	// Require membership or colony owner to add resources
-	err = h.server.Validator().RequireMembership(recoveredID, msg.Resource.Metadata.Namespace, true)
+	// Require membership or colony owner to add services
+	err = h.server.Validator().RequireMembership(recoveredID, msg.Service.Metadata.Namespace, true)
 	if err != nil {
 		// If not a member, check if colony owner
-		err = h.server.Validator().RequireColonyOwner(recoveredID, msg.Resource.Metadata.Namespace)
+		err = h.server.Validator().RequireColonyOwner(recoveredID, msg.Service.Metadata.Namespace)
 		if h.server.HandleHTTPError(c, err, http.StatusForbidden) {
 			return
 		}
 	}
 
 	// Generate ID if not provided
-	if msg.Resource.ID == "" {
-		msg.Resource.ID = core.GenerateRandomID()
+	if msg.Service.ID == "" {
+		msg.Service.ID = core.GenerateRandomID()
 	}
 
-	// Validate resource against its ResourceDefinition schema
-	// Resource Kind is required
-	if msg.Resource.Kind == "" {
-		h.server.HandleHTTPError(c, errors.New("resource kind is required"), http.StatusBadRequest)
+	// Validate service against its ResourceDefinition schema
+	// Service Kind is required
+	if msg.Service.Kind == "" {
+		h.server.HandleHTTPError(c, errors.New("service kind is required"), http.StatusBadRequest)
 		return
 	}
 
 	// Fetch all ResourceDefinitions in the namespace
-	rds, err := h.server.ResourceDB().GetResourceDefinitionsByNamespace(msg.Resource.Metadata.Namespace)
+	rds, err := h.server.ResourceDB().GetResourceDefinitionsByNamespace(msg.Service.Metadata.Namespace)
 	if err != nil {
 		h.server.HandleHTTPError(c, err, http.StatusInternalServerError)
 		return
@@ -386,7 +386,7 @@ func (h *Handlers) HandleAddResource(c backends.Context, recoveredID string, pay
 	// Find matching ResourceDefinition - REQUIRED
 	var matchedRD *core.ResourceDefinition
 	for _, rd := range rds {
-		if rd.Spec.Names.Kind == msg.Resource.Kind {
+		if rd.Spec.Names.Kind == msg.Service.Kind {
 			matchedRD = rd
 			break
 		}
@@ -394,67 +394,67 @@ func (h *Handlers) HandleAddResource(c backends.Context, recoveredID string, pay
 
 	// ResourceDefinition must exist
 	if matchedRD == nil {
-		h.server.HandleHTTPError(c, fmt.Errorf("ResourceDefinition for kind '%s' not found in namespace '%s'", msg.Resource.Kind, msg.Resource.Metadata.Namespace), http.StatusBadRequest)
+		h.server.HandleHTTPError(c, fmt.Errorf("ResourceDefinition for kind '%s' not found in namespace '%s'", msg.Service.Kind, msg.Service.Metadata.Namespace), http.StatusBadRequest)
 		return
 	}
 
 	// Validate against schema if defined
 	if matchedRD.Spec.Schema != nil {
-		if err := core.ValidateResourceAgainstSchema(msg.Resource, matchedRD.Spec.Schema); err != nil {
-			h.server.HandleHTTPError(c, fmt.Errorf("resource validation failed: %v", err), http.StatusBadRequest)
+		if err := core.ValidateResourceAgainstSchema(msg.Service, matchedRD.Spec.Schema); err != nil {
+			h.server.HandleHTTPError(c, fmt.Errorf("service validation failed: %v", err), http.StatusBadRequest)
 			return
 		}
 	}
 
-	err = h.server.ResourceDB().AddResource(msg.Resource)
+	err = h.server.ResourceDB().AddResource(msg.Service)
 	if h.server.HandleHTTPError(c, err, http.StatusInternalServerError) {
 		return
 	}
 
-	// Save resource history for create action
-	history := core.CreateResourceHistory(msg.Resource, recoveredID, "create")
+	// Save service history for create action
+	history := core.CreateResourceHistory(msg.Service, recoveredID, "create")
 	if err := h.server.ResourceDB().AddResourceHistory(history); err != nil {
-		log.WithFields(log.Fields{"Error": err, "ResourceID": msg.Resource.ID}).Warn("Failed to save resource history")
+		log.WithFields(log.Fields{"Error": err, "ResourceID": msg.Service.ID}).Warn("Failed to save service history")
 		// Don't fail the request if history saving fails
 	}
 
 	log.WithFields(log.Fields{
-		"ID":        msg.Resource.ID,
-		"Namespace": msg.Resource.Metadata.Namespace,
-		"Name":      msg.Resource.Metadata.Name,
-		"Kind":      msg.Resource.Kind,
-	}).Debug("Adding resource")
+		"ID":        msg.Service.ID,
+		"Namespace": msg.Service.Metadata.Namespace,
+		"Name":      msg.Service.Metadata.Name,
+		"Kind":      msg.Service.Kind,
+	}).Debug("Adding service")
 
 	// Submit reconciliation function if handler is defined
 	if matchedRD != nil {
-		reconciliation := core.CreateReconciliation(nil, msg.Resource)
+		reconciliation := core.CreateReconciliation(nil, msg.Service)
 		processID, err := h.submitReconciliationFunc(reconciliation, matchedRD)
 		if err != nil {
 			log.WithFields(log.Fields{
 				"Error": err,
-				"Kind":  msg.Resource.Kind,
-			}).Warn("Failed to submit reconciliation after resource add")
+				"Kind":  msg.Service.Kind,
+			}).Warn("Failed to submit reconciliation after service add")
 			// Don't fail the request if reconciliation submission fails
 		} else if processID != "" {
-			// Update resource with reconciliation tracking info
-			msg.Resource.Metadata.LastReconciliationProcess = processID
-			msg.Resource.Metadata.LastReconciliationTime = time.Now()
-			err = h.server.ResourceDB().UpdateResource(msg.Resource)
+			// Update service with reconciliation tracking info
+			msg.Service.Metadata.LastReconciliationProcess = processID
+			msg.Service.Metadata.LastReconciliationTime = time.Now()
+			err = h.server.ResourceDB().UpdateResource(msg.Service)
 			if err != nil {
 				log.WithFields(log.Fields{
 					"Error": err,
 					"ProcessID": processID,
-				}).Warn("Failed to update resource with reconciliation tracking info")
+				}).Warn("Failed to update service with reconciliation tracking info")
 			} else {
 				log.WithFields(log.Fields{
 					"ProcessID": processID,
-					"ResourceName": msg.Resource.Metadata.Name,
-				}).Info("Updated resource with reconciliation tracking info")
+					"ResourceName": msg.Service.Metadata.Name,
+				}).Info("Updated service with reconciliation tracking info")
 			}
 		}
 	}
 
-	jsonString, err = msg.Resource.ToJSON()
+	jsonString, err = msg.Service.ToJSON()
 	if h.server.HandleHTTPError(c, err, http.StatusInternalServerError) {
 		return
 	}
@@ -462,20 +462,20 @@ func (h *Handlers) HandleAddResource(c backends.Context, recoveredID string, pay
 	h.server.SendHTTPReply(c, payloadType, jsonString)
 }
 
-// HandleGetResource retrieves a Resource by namespace and name
+// HandleGetResource retrieves a Service by namespace and name
 func (h *Handlers) HandleGetResource(c backends.Context, recoveredID string, payloadType string, jsonString string) {
 	msg, err := rpc.CreateGetResourceMsgFromJSON(jsonString)
 	if err != nil {
-		h.server.HandleHTTPError(c, errors.New("Failed to get resource, invalid JSON"), http.StatusBadRequest)
+		h.server.HandleHTTPError(c, errors.New("Failed to get service, invalid JSON"), http.StatusBadRequest)
 		return
 	}
 
 	if msg.MsgType != payloadType {
-		h.server.HandleHTTPError(c, errors.New("Failed to get resource, msg.MsgType does not match payloadType"), http.StatusBadRequest)
+		h.server.HandleHTTPError(c, errors.New("Failed to get service, msg.MsgType does not match payloadType"), http.StatusBadRequest)
 		return
 	}
 
-	// Require membership or colony owner to view resources
+	// Require membership or colony owner to view services
 	err = h.server.Validator().RequireMembership(recoveredID, msg.Namespace, true)
 	if err != nil {
 		// If not a member, check if colony owner
@@ -485,22 +485,22 @@ func (h *Handlers) HandleGetResource(c backends.Context, recoveredID string, pay
 		}
 	}
 
-	resource, err := h.server.ResourceDB().GetResourceByName(msg.Namespace, msg.Name)
+	service, err := h.server.ResourceDB().GetResourceByName(msg.Namespace, msg.Name)
 	if h.server.HandleHTTPError(c, err, http.StatusInternalServerError) {
 		return
 	}
 
-	if resource == nil {
-		h.server.HandleHTTPError(c, errors.New("Resource not found"), http.StatusNotFound)
+	if service == nil {
+		h.server.HandleHTTPError(c, errors.New("Service not found"), http.StatusNotFound)
 		return
 	}
 
 	log.WithFields(log.Fields{
 		"Namespace": msg.Namespace,
 		"Name":      msg.Name,
-	}).Debug("Getting resource")
+	}).Debug("Getting service")
 
-	jsonString, err = resource.ToJSON()
+	jsonString, err = service.ToJSON()
 	if h.server.HandleHTTPError(c, err, http.StatusInternalServerError) {
 		return
 	}
@@ -508,20 +508,20 @@ func (h *Handlers) HandleGetResource(c backends.Context, recoveredID string, pay
 	h.server.SendHTTPReply(c, payloadType, jsonString)
 }
 
-// HandleGetResources retrieves Resources by namespace and/or kind
+// HandleGetResources retrieves Services by namespace and/or kind
 func (h *Handlers) HandleGetResources(c backends.Context, recoveredID string, payloadType string, jsonString string) {
 	msg, err := rpc.CreateGetResourcesMsgFromJSON(jsonString)
 	if err != nil {
-		h.server.HandleHTTPError(c, errors.New("Failed to get resources, invalid JSON"), http.StatusBadRequest)
+		h.server.HandleHTTPError(c, errors.New("Failed to get services, invalid JSON"), http.StatusBadRequest)
 		return
 	}
 
 	if msg.MsgType != payloadType {
-		h.server.HandleHTTPError(c, errors.New("Failed to get resources, msg.MsgType does not match payloadType"), http.StatusBadRequest)
+		h.server.HandleHTTPError(c, errors.New("Failed to get services, msg.MsgType does not match payloadType"), http.StatusBadRequest)
 		return
 	}
 
-	// Require membership or colony owner to view resources
+	// Require membership or colony owner to view services
 	err = h.server.Validator().RequireMembership(recoveredID, msg.Namespace, true)
 	if err != nil {
 		// If not a member, check if colony owner
@@ -531,13 +531,13 @@ func (h *Handlers) HandleGetResources(c backends.Context, recoveredID string, pa
 		}
 	}
 
-	var resources []*core.Resource
+	var services []*core.Service
 	if msg.Kind == "" {
-		// Get all resources in namespace
-		resources, err = h.server.ResourceDB().GetResourcesByNamespace(msg.Namespace)
+		// Get all services in namespace
+		services, err = h.server.ResourceDB().GetResourcesByNamespace(msg.Namespace)
 	} else {
-		// Get resources by namespace and kind
-		resources, err = h.server.ResourceDB().GetResourcesByNamespaceAndKind(msg.Namespace, msg.Kind)
+		// Get services by namespace and kind
+		services, err = h.server.ResourceDB().GetResourcesByNamespaceAndKind(msg.Namespace, msg.Kind)
 	}
 
 	if h.server.HandleHTTPError(c, err, http.StatusInternalServerError) {
@@ -547,10 +547,10 @@ func (h *Handlers) HandleGetResources(c backends.Context, recoveredID string, pa
 	log.WithFields(log.Fields{
 		"Namespace": msg.Namespace,
 		"Kind":      msg.Kind,
-		"Count":     len(resources),
-	}).Debug("Getting resources")
+		"Count":     len(services),
+	}).Debug("Getting services")
 
-	jsonString, err = core.ConvertResourceArrayToJSON(resources)
+	jsonString, err = core.ConvertResourceArrayToJSON(services)
 	if h.server.HandleHTTPError(c, err, http.StatusInternalServerError) {
 		return
 	}
@@ -558,49 +558,49 @@ func (h *Handlers) HandleGetResources(c backends.Context, recoveredID string, pa
 	h.server.SendHTTPReply(c, payloadType, jsonString)
 }
 
-// HandleUpdateResource updates an existing Resource
+// HandleUpdateResource updates an existing Service
 func (h *Handlers) HandleUpdateResource(c backends.Context, recoveredID string, payloadType string, jsonString string) {
 	msg, err := rpc.CreateUpdateResourceMsgFromJSON(jsonString)
 	if err != nil {
-		h.server.HandleHTTPError(c, errors.New("Failed to update resource, invalid JSON"), http.StatusBadRequest)
+		h.server.HandleHTTPError(c, errors.New("Failed to update service, invalid JSON"), http.StatusBadRequest)
 		return
 	}
 
 	if msg.MsgType != payloadType {
-		h.server.HandleHTTPError(c, errors.New("Failed to update resource, msg.MsgType does not match payloadType"), http.StatusBadRequest)
+		h.server.HandleHTTPError(c, errors.New("Failed to update service, msg.MsgType does not match payloadType"), http.StatusBadRequest)
 		return
 	}
 
-	if msg.Resource == nil {
-		h.server.HandleHTTPError(c, errors.New("Failed to update resource, resource is nil"), http.StatusBadRequest)
+	if msg.Service == nil {
+		h.server.HandleHTTPError(c, errors.New("Failed to update service, service is nil"), http.StatusBadRequest)
 		return
 	}
 
-	// Require membership or colony owner to update resources
-	err = h.server.Validator().RequireMembership(recoveredID, msg.Resource.Metadata.Namespace, true)
+	// Require membership or colony owner to update services
+	err = h.server.Validator().RequireMembership(recoveredID, msg.Service.Metadata.Namespace, true)
 	if err != nil {
 		// If not a member, check if colony owner
-		err = h.server.Validator().RequireColonyOwner(recoveredID, msg.Resource.Metadata.Namespace)
+		err = h.server.Validator().RequireColonyOwner(recoveredID, msg.Service.Metadata.Namespace)
 		if h.server.HandleHTTPError(c, err, http.StatusForbidden) {
 			return
 		}
 	}
 
-	// Get the old resource for reconciliation
-	oldResource, err := h.server.ResourceDB().GetResourceByName(msg.Resource.Metadata.Namespace, msg.Resource.Metadata.Name)
+	// Get the old service for reconciliation
+	oldResource, err := h.server.ResourceDB().GetResourceByName(msg.Service.Metadata.Namespace, msg.Service.Metadata.Name)
 	if h.server.HandleHTTPError(c, err, http.StatusInternalServerError) {
 		return
 	}
 
-	// Validate resource against its ResourceDefinition schema
-	// Resource Kind is required
-	if msg.Resource.Kind == "" {
-		h.server.HandleHTTPError(c, errors.New("resource kind is required"), http.StatusBadRequest)
+	// Validate service against its ResourceDefinition schema
+	// Service Kind is required
+	if msg.Service.Kind == "" {
+		h.server.HandleHTTPError(c, errors.New("service kind is required"), http.StatusBadRequest)
 		return
 	}
 
 	// Fetch all ResourceDefinitions in the namespace
-	rds, err := h.server.ResourceDB().GetResourceDefinitionsByNamespace(msg.Resource.Metadata.Namespace)
+	rds, err := h.server.ResourceDB().GetResourceDefinitionsByNamespace(msg.Service.Metadata.Namespace)
 	if err != nil {
 		h.server.HandleHTTPError(c, err, http.StatusInternalServerError)
 		return
@@ -609,7 +609,7 @@ func (h *Handlers) HandleUpdateResource(c backends.Context, recoveredID string, 
 	// Find matching ResourceDefinition - REQUIRED
 	var matchedRD *core.ResourceDefinition
 	for _, rd := range rds {
-		if rd.Spec.Names.Kind == msg.Resource.Kind {
+		if rd.Spec.Names.Kind == msg.Service.Kind {
 			matchedRD = rd
 			break
 		}
@@ -617,76 +617,82 @@ func (h *Handlers) HandleUpdateResource(c backends.Context, recoveredID string, 
 
 	// ResourceDefinition must exist
 	if matchedRD == nil {
-		h.server.HandleHTTPError(c, fmt.Errorf("ResourceDefinition for kind '%s' not found in namespace '%s'", msg.Resource.Kind, msg.Resource.Metadata.Namespace), http.StatusBadRequest)
+		h.server.HandleHTTPError(c, fmt.Errorf("ResourceDefinition for kind '%s' not found in namespace '%s'", msg.Service.Kind, msg.Service.Metadata.Namespace), http.StatusBadRequest)
 		return
 	}
 
 	// Validate against schema if defined
 	if matchedRD.Spec.Schema != nil {
-		if err := core.ValidateResourceAgainstSchema(msg.Resource, matchedRD.Spec.Schema); err != nil {
-			h.server.HandleHTTPError(c, fmt.Errorf("resource validation failed: %v", err), http.StatusBadRequest)
+		if err := core.ValidateResourceAgainstSchema(msg.Service, matchedRD.Spec.Schema); err != nil {
+			h.server.HandleHTTPError(c, fmt.Errorf("service validation failed: %v", err), http.StatusBadRequest)
 			return
 		}
 	}
 
 	// Check if spec changed and increment generation if it did
+	specChanged := false
 	if oldResource != nil {
-		reconciliation := core.CreateReconciliation(oldResource, msg.Resource)
+		reconciliation := core.CreateReconciliation(oldResource, msg.Service)
 		if reconciliation.Diff != nil && len(reconciliation.Diff.SpecChanges) > 0 {
 			// Spec changed, increment generation
-			msg.Resource.Metadata.Generation = oldResource.Metadata.Generation + 1
+			msg.Service.Metadata.Generation = oldResource.Metadata.Generation + 1
+			specChanged = true
 		} else {
 			// Preserve old generation if spec didn't change
-			msg.Resource.Metadata.Generation = oldResource.Metadata.Generation
+			msg.Service.Metadata.Generation = oldResource.Metadata.Generation
 		}
 	}
 
-	err = h.server.ResourceDB().UpdateResource(msg.Resource)
+	err = h.server.ResourceDB().UpdateResource(msg.Service)
 	if h.server.HandleHTTPError(c, err, http.StatusInternalServerError) {
 		return
 	}
 
-	// Save resource history for update action
-	history := core.CreateResourceHistory(msg.Resource, recoveredID, "update")
-	if err := h.server.ResourceDB().AddResourceHistory(history); err != nil {
-		log.WithFields(log.Fields{"Error": err, "ResourceID": msg.Resource.ID}).Warn("Failed to save resource history")
-		// Don't fail the request if history saving fails
-	}
-
-	log.WithFields(log.Fields{
-		"ID":        msg.Resource.ID,
-		"Namespace": msg.Resource.Metadata.Namespace,
-		"Name":      msg.Resource.Metadata.Name,
-	}).Debug("Updating resource")
-
-	// Submit reconciliation function (matchedRD already validated above)
-	reconciliation := core.CreateReconciliation(oldResource, msg.Resource)
-	processID, err := h.submitReconciliationFunc(reconciliation, matchedRD)
-	if err != nil {
-		log.WithFields(log.Fields{
-			"Error": err,
-			"Kind":  msg.Resource.Kind,
-		}).Warn("Failed to submit reconciliation after resource update")
-		// Don't fail the request if reconciliation submission fails
-	} else if processID != "" {
-		// Update resource with reconciliation tracking info
-		msg.Resource.Metadata.LastReconciliationProcess = processID
-		msg.Resource.Metadata.LastReconciliationTime = time.Now()
-		err = h.server.ResourceDB().UpdateResource(msg.Resource)
-		if err != nil {
-			log.WithFields(log.Fields{
-				"Error": err,
-				"ProcessID": processID,
-			}).Warn("Failed to update resource with reconciliation tracking info")
-		} else {
-			log.WithFields(log.Fields{
-				"ProcessID": processID,
-				"ResourceName": msg.Resource.Metadata.Name,
-			}).Info("Updated resource with reconciliation tracking info")
+	// Save service history only if spec changed (not for status-only updates)
+	if specChanged {
+		history := core.CreateResourceHistory(msg.Service, recoveredID, "update")
+		if err := h.server.ResourceDB().AddResourceHistory(history); err != nil {
+			log.WithFields(log.Fields{"Error": err, "ResourceID": msg.Service.ID}).Warn("Failed to save service history")
+			// Don't fail the request if history saving fails
 		}
 	}
 
-	jsonString, err = msg.Resource.ToJSON()
+	log.WithFields(log.Fields{
+		"ID":        msg.Service.ID,
+		"Namespace": msg.Service.Metadata.Namespace,
+		"Name":      msg.Service.Metadata.Name,
+	}).Debug("Updating service")
+
+	// Submit reconciliation function only if spec changed (matchedRD already validated above)
+	if specChanged {
+		reconciliation := core.CreateReconciliation(oldResource, msg.Service)
+		processID, err := h.submitReconciliationFunc(reconciliation, matchedRD)
+		if err != nil {
+			log.WithFields(log.Fields{
+				"Error": err,
+				"Kind":  msg.Service.Kind,
+			}).Warn("Failed to submit reconciliation after service update")
+			// Don't fail the request if reconciliation submission fails
+		} else if processID != "" {
+			// Update service with reconciliation tracking info
+			msg.Service.Metadata.LastReconciliationProcess = processID
+			msg.Service.Metadata.LastReconciliationTime = time.Now()
+			err = h.server.ResourceDB().UpdateResource(msg.Service)
+			if err != nil {
+				log.WithFields(log.Fields{
+					"Error": err,
+					"ProcessID": processID,
+				}).Warn("Failed to update service with reconciliation tracking info")
+			} else {
+				log.WithFields(log.Fields{
+					"ProcessID": processID,
+					"ResourceName": msg.Service.Metadata.Name,
+				}).Info("Updated service with reconciliation tracking info")
+			}
+		}
+	}
+
+	jsonString, err = msg.Service.ToJSON()
 	if h.server.HandleHTTPError(c, err, http.StatusInternalServerError) {
 		return
 	}
@@ -694,20 +700,20 @@ func (h *Handlers) HandleUpdateResource(c backends.Context, recoveredID string, 
 	h.server.SendHTTPReply(c, payloadType, jsonString)
 }
 
-// HandleRemoveResource removes a Resource by namespace and name
+// HandleRemoveResource removes a Service by namespace and name
 func (h *Handlers) HandleRemoveResource(c backends.Context, recoveredID string, payloadType string, jsonString string) {
 	msg, err := rpc.CreateRemoveResourceMsgFromJSON(jsonString)
 	if err != nil {
-		h.server.HandleHTTPError(c, errors.New("Failed to remove resource, invalid JSON"), http.StatusBadRequest)
+		h.server.HandleHTTPError(c, errors.New("Failed to remove service, invalid JSON"), http.StatusBadRequest)
 		return
 	}
 
 	if msg.MsgType != payloadType {
-		h.server.HandleHTTPError(c, errors.New("Failed to remove resource, msg.MsgType does not match payloadType"), http.StatusBadRequest)
+		h.server.HandleHTTPError(c, errors.New("Failed to remove service, msg.MsgType does not match payloadType"), http.StatusBadRequest)
 		return
 	}
 
-	// Require membership or colony owner to remove resources
+	// Require membership or colony owner to remove services
 	err = h.server.Validator().RequireMembership(recoveredID, msg.Namespace, true)
 	if err != nil {
 		// If not a member, check if colony owner
@@ -725,39 +731,39 @@ func (h *Handlers) HandleRemoveResource(c backends.Context, recoveredID string, 
 	log.WithFields(log.Fields{
 		"Namespace": msg.Namespace,
 		"Name":      msg.Name,
-	}).Debug("Removing resource")
+	}).Debug("Removing service")
 
 	h.server.SendEmptyHTTPReply(c, payloadType)
 }
 
-// HandleGetResourceHistory retrieves history for a resource
+// HandleGetResourceHistory retrieves history for a service
 func (h *Handlers) HandleGetResourceHistory(c backends.Context, recoveredID string, payloadType string, jsonString string) {
 	msg, err := rpc.CreateGetResourceHistoryMsgFromJSON(jsonString)
 	if err != nil {
-		h.server.HandleHTTPError(c, errors.New("Failed to get resource history, invalid JSON"), http.StatusBadRequest)
+		h.server.HandleHTTPError(c, errors.New("Failed to get service history, invalid JSON"), http.StatusBadRequest)
 		return
 	}
 
 	if msg.MsgType != payloadType {
-		h.server.HandleHTTPError(c, errors.New("Failed to get resource history, msg.MsgType does not match payloadType"), http.StatusBadRequest)
+		h.server.HandleHTTPError(c, errors.New("Failed to get service history, msg.MsgType does not match payloadType"), http.StatusBadRequest)
 		return
 	}
 
-	// Get the resource to check permissions
-	resource, err := h.server.ResourceDB().GetResourceByID(msg.ResourceID)
+	// Get the service to check permissions
+	service, err := h.server.ResourceDB().GetResourceByID(msg.ResourceID)
 	if h.server.HandleHTTPError(c, err, http.StatusInternalServerError) {
 		return
 	}
-	if resource == nil {
-		h.server.HandleHTTPError(c, errors.New("Resource not found"), http.StatusNotFound)
+	if service == nil {
+		h.server.HandleHTTPError(c, errors.New("Service not found"), http.StatusNotFound)
 		return
 	}
 
 	// Require membership or colony owner to view history
-	err = h.server.Validator().RequireMembership(recoveredID, resource.Metadata.Namespace, true)
+	err = h.server.Validator().RequireMembership(recoveredID, service.Metadata.Namespace, true)
 	if err != nil {
 		// If not a member, check if colony owner
-		err = h.server.Validator().RequireColonyOwner(recoveredID, resource.Metadata.Namespace)
+		err = h.server.Validator().RequireColonyOwner(recoveredID, service.Metadata.Namespace)
 		if h.server.HandleHTTPError(c, err, http.StatusForbidden) {
 			return
 		}
@@ -777,7 +783,7 @@ func (h *Handlers) HandleGetResourceHistory(c backends.Context, recoveredID stri
 		"ResourceID": msg.ResourceID,
 		"Limit":      msg.Limit,
 		"Count":      len(histories),
-	}).Debug("Getting resource history")
+	}).Debug("Getting service history")
 
 	h.server.SendHTTPReply(c, payloadType, jsonString)
 }

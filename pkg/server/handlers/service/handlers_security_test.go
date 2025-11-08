@@ -1,4 +1,4 @@
-package resource_test
+package service_test
 
 import (
 	"testing"
@@ -18,7 +18,7 @@ func TestAddResourceDefinitionSecurity(t *testing.T) {
 
 	// Create a ResourceDefinition for colony1
 	rd := core.CreateResourceDefinition(
-		"test-resource",
+		"test-service",
 		"example.com",
 		"v1",
 		"TestResource",
@@ -56,7 +56,7 @@ func TestGetResourceDefinitionSecurity(t *testing.T) {
 
 	// Create and add ResourceDefinition for colony1
 	rd := core.CreateResourceDefinition(
-		"test-resource",
+		"test-service",
 		"example.com",
 		"v1",
 		"TestResource",
@@ -115,25 +115,25 @@ func TestAddResourceSecurity(t *testing.T) {
 	_, err := client.AddResourceDefinition(rd, env.Colony1PrvKey)
 	assert.Nil(t, err)
 
-	// Create a Resource instance for colony1
-	resource := core.CreateResource("Database", "my-database", env.Colony1Name)
-	resource.SetSpec("host", "localhost")
+	// Create a Service instance for colony1
+	service := core.CreateResource("Database", "my-database", env.Colony1Name)
+	service.SetSpec("host", "localhost")
 
-	// Colony members should be able to add Resources
+	// Colony members should be able to add Services
 
 	// Try with executor from different colony - should FAIL
-	_, err = client.AddResource(resource, env.Executor2PrvKey)
+	_, err = client.AddResource(service, env.Executor2PrvKey)
 	assert.NotNil(t, err)
 
 	// Try with colony owner from different colony - should FAIL
-	_, err = client.AddResource(resource, env.Colony2PrvKey)
+	_, err = client.AddResource(service, env.Colony2PrvKey)
 	assert.NotNil(t, err)
 
 	// Try with executor from same colony - should SUCCEED
-	_, err = client.AddResource(resource, env.Executor1PrvKey)
+	_, err = client.AddResource(service, env.Executor1PrvKey)
 	assert.Nil(t, err)
 
-	// Create another resource to test with colony owner
+	// Create another service to test with colony owner
 	resource2 := core.CreateResource("Database", "another-database", env.Colony1Name)
 	resource2.SetSpec("host", "remotehost")
 
@@ -163,26 +163,26 @@ func TestGetResourceSecurity(t *testing.T) {
 	_, err := client.AddResourceDefinition(rd, env.Colony1PrvKey)
 	assert.Nil(t, err)
 
-	// Add Resource to colony1
-	resource := core.CreateResource("Database", "my-database", env.Colony1Name)
-	resource.SetSpec("host", "localhost")
-	_, err = client.AddResource(resource, env.Executor1PrvKey)
+	// Add Service to colony1
+	service := core.CreateResource("Database", "my-database", env.Colony1Name)
+	service.SetSpec("host", "localhost")
+	_, err = client.AddResource(service, env.Executor1PrvKey)
 	assert.Nil(t, err)
 
-	// Try to get resource from different colony - should FAIL
-	_, err = client.GetResource(env.Colony1Name, resource.Metadata.Name, env.Executor2PrvKey)
+	// Try to get service from different colony - should FAIL
+	_, err = client.GetResource(env.Colony1Name, service.Metadata.Name, env.Executor2PrvKey)
 	assert.NotNil(t, err)
 
 	// Try with colony owner from different colony - should FAIL
-	_, err = client.GetResource(env.Colony1Name, resource.Metadata.Name, env.Colony2PrvKey)
+	_, err = client.GetResource(env.Colony1Name, service.Metadata.Name, env.Colony2PrvKey)
 	assert.NotNil(t, err)
 
 	// Try with executor from same colony - should SUCCEED
-	_, err = client.GetResource(env.Colony1Name, resource.Metadata.Name, env.Executor1PrvKey)
+	_, err = client.GetResource(env.Colony1Name, service.Metadata.Name, env.Executor1PrvKey)
 	assert.Nil(t, err)
 
 	// Try with colony owner - should SUCCEED
-	_, err = client.GetResource(env.Colony1Name, resource.Metadata.Name, env.Colony1PrvKey)
+	_, err = client.GetResource(env.Colony1Name, service.Metadata.Name, env.Colony1PrvKey)
 	assert.Nil(t, err)
 
 	server.Shutdown()
@@ -207,7 +207,7 @@ func TestGetResourcesSecurity(t *testing.T) {
 	_, err := client.AddResourceDefinition(rd, env.Colony1PrvKey)
 	assert.Nil(t, err)
 
-	// Add Resources to colony1
+	// Add Services to colony1
 	resource1 := core.CreateResource("Database", "db1", env.Colony1Name)
 	_, err = client.AddResource(resource1, env.Executor1PrvKey)
 	assert.Nil(t, err)
@@ -216,7 +216,7 @@ func TestGetResourcesSecurity(t *testing.T) {
 	_, err = client.AddResource(resource2, env.Executor1PrvKey)
 	assert.Nil(t, err)
 
-	// Try to list resources from different colony - should FAIL
+	// Try to list services from different colony - should FAIL
 	_, err = client.GetResources(env.Colony1Name, "Database", env.Executor2PrvKey)
 	assert.NotNil(t, err)
 
@@ -225,14 +225,14 @@ func TestGetResourcesSecurity(t *testing.T) {
 	assert.NotNil(t, err)
 
 	// Try with executor from same colony - should SUCCEED
-	resources, err := client.GetResources(env.Colony1Name, "Database", env.Executor1PrvKey)
+	services, err := client.GetResources(env.Colony1Name, "Database", env.Executor1PrvKey)
 	assert.Nil(t, err)
-	assert.Len(t, resources, 2)
+	assert.Len(t, services, 2)
 
 	// Try with colony owner - should SUCCEED
-	resources, err = client.GetResources(env.Colony1Name, "Database", env.Colony1PrvKey)
+	services, err = client.GetResources(env.Colony1Name, "Database", env.Colony1PrvKey)
 	assert.Nil(t, err)
-	assert.Len(t, resources, 2)
+	assert.Len(t, services, 2)
 
 	server.Shutdown()
 	<-done
@@ -256,13 +256,13 @@ func TestUpdateResourceSecurity(t *testing.T) {
 	_, err := client.AddResourceDefinition(rd, env.Colony1PrvKey)
 	assert.Nil(t, err)
 
-	// Add Resource to colony1
-	resource := core.CreateResource("Database", "my-database", env.Colony1Name)
-	resource.SetSpec("host", "localhost")
-	addedResource, err := client.AddResource(resource, env.Executor1PrvKey)
+	// Add Service to colony1
+	service := core.CreateResource("Database", "my-database", env.Colony1Name)
+	service.SetSpec("host", "localhost")
+	addedResource, err := client.AddResource(service, env.Executor1PrvKey)
 	assert.Nil(t, err)
 
-	// Update the resource spec
+	// Update the service spec
 	addedResource.SetSpec("port", 5432)
 
 	// Try to update from different colony executor - should FAIL
@@ -304,7 +304,7 @@ func TestRemoveResourceSecurity(t *testing.T) {
 	_, err := client.AddResourceDefinition(rd, env.Colony1PrvKey)
 	assert.Nil(t, err)
 
-	// Add Resources to colony1
+	// Add Services to colony1
 	resource1 := core.CreateResource("Database", "db1", env.Colony1Name)
 	_, err = client.AddResource(resource1, env.Executor1PrvKey)
 	assert.Nil(t, err)
@@ -369,7 +369,7 @@ func TestCrossColonyResourceIsolation(t *testing.T) {
 	_, err = client.AddResourceDefinition(rd2, env.Colony2PrvKey)
 	assert.Nil(t, err)
 
-	// Add Resources to both colonies with same name
+	// Add Services to both colonies with same name
 	resource1 := core.CreateResource("Database", "shared-name", env.Colony1Name)
 	resource1.SetSpec("colonyId", "colony1")
 	_, err = client.AddResource(resource1, env.Executor1PrvKey)
@@ -380,7 +380,7 @@ func TestCrossColonyResourceIsolation(t *testing.T) {
 	_, err = client.AddResource(resource2, env.Executor2PrvKey)
 	assert.Nil(t, err)
 
-	// Each colony should only see its own resource
+	// Each colony should only see its own service
 	r1, err := client.GetResource(env.Colony1Name, "shared-name", env.Executor1PrvKey)
 	assert.Nil(t, err)
 	colonyId1, _ := r1.GetSpec("colonyId")
@@ -391,11 +391,11 @@ func TestCrossColonyResourceIsolation(t *testing.T) {
 	colonyId2, _ := r2.GetSpec("colonyId")
 	assert.Equal(t, "colony2", colonyId2)
 
-	// Verify isolation - executor1 cannot see colony2 resources
+	// Verify isolation - executor1 cannot see colony2 services
 	_, err = client.GetResource(env.Colony2Name, "shared-name", env.Executor1PrvKey)
 	assert.NotNil(t, err)
 
-	// Verify isolation - executor2 cannot see colony1 resources
+	// Verify isolation - executor2 cannot see colony1 services
 	_, err = client.GetResource(env.Colony1Name, "shared-name", env.Executor2PrvKey)
 	assert.NotNil(t, err)
 
@@ -416,7 +416,7 @@ func TestResourceDefinitionOnlyColonyOwner(t *testing.T) {
 
 	// Create ResourceDefinition
 	rd := core.CreateResourceDefinition(
-		"test-resource",
+		"test-service",
 		"example.com",
 		"v1",
 		"TestResource",

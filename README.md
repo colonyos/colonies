@@ -19,7 +19,7 @@ Example of use cases:
 - **Data Processing**: ETL pipelines, batch processing, real-time stream processing with ColonyFS integration
 - **Industrial IoT**: Coordinate computations across factory floor devices, edge gateways, and cloud
 - **Earth Observation**: Automated satellite image processing and analysis workflows
-- **Infrastructure as Code**: Declaratively manage infrastructure across computing continuums - define resources spanning cloud, edge, HPC, and IoT with GitOps workflows, automatic drift detection, and self-healing reconciliation
+- **Infrastructure as Code**: Declaratively manage infrastructure across computing continuums - define services spanning cloud, edge, HPC, and IoT with GitOps workflows, automatic drift detection, and self-healing reconciliation
 
 ### The Core Idea
 
@@ -46,7 +46,7 @@ Instead of writing platform-specific code, you declare **WHAT** you want to comp
 - **Event-Driven**: Real-time WebSocket subscriptions for process state changes
 - **Scheduled Execution**: Cron-based and interval-based job scheduling
 - **Dynamic Batching**: Generators that pack arguments and trigger workflows based on counter or timeout conditions
-- **Resource Reconciliation**: Kubernetes-style declarative resource management with automatic drift detection and correction
+- **Service Reconciliation**: Kubernetes-style declarative service management with automatic drift detection and correction
 - **Full Audit Trail**: Complete execution history stored as an immutable ledger
 - **High Availability**: Etcd-based clustering with automatic failover
 - **Multi-Language SDKs**: Go, Rust, Python, Julia, JavaScript, Haskell
@@ -60,8 +60,8 @@ Instead of writing platform-specific code, you declare **WHAT** you want to comp
 - **Process**: Computational workload with states: WAITING → RUNNING → SUCCESS/FAILED
 - **FunctionSpec**: Specification defining what computation to run and execution conditions
 - **ProcessGraph**: Workflow represented as a Directed Acyclic Graph (DAG)
-- **Resource**: Declarative infrastructure specification with desired state management
-- **Reconciliation**: Automatic drift detection and correction that maintains resources in their desired state
+- **Service**: Declarative infrastructure specification with desired state management
+- **Reconciliation**: Automatic drift detection and correction that maintains services in their desired state
 
 ### How It Works
 

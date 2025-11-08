@@ -1,4 +1,4 @@
-package resource
+package service
 
 import (
 	"testing"
@@ -39,38 +39,38 @@ func TestSchemaValidation_Integration(t *testing.T) {
 		Required: []string{"image"},
 	}
 
-	// Test 1: Valid resource should pass validation
+	// Test 1: Valid service should pass validation
 	validResource := core.CreateResource("Deployment", "valid-deployment", "test-colony")
 	validResource.SetSpec("image", "nginx:1.21")
 	validResource.SetSpec("replicas", 3)
 	validResource.SetSpec("protocol", "TCP")
 
 	err := core.ValidateResourceAgainstSchema(validResource, rd.Spec.Schema)
-	assert.NoError(t, err, "Valid resource should pass validation")
+	assert.NoError(t, err, "Valid service should pass validation")
 
-	// Test 2: Resource missing required field should fail
+	// Test 2: Service missing required field should fail
 	invalidResource := core.CreateResource("Deployment", "invalid-deployment", "test-colony")
 	invalidResource.SetSpec("replicas", 3) // Missing required 'image'
 
 	err = core.ValidateResourceAgainstSchema(invalidResource, rd.Spec.Schema)
-	assert.Error(t, err, "Resource missing required field should fail validation")
+	assert.Error(t, err, "Service missing required field should fail validation")
 	assert.Contains(t, err.Error(), "required field 'image' is missing")
 
-	// Test 3: Resource with invalid type should fail
+	// Test 3: Service with invalid type should fail
 	invalidTypeResource := core.CreateResource("Deployment", "invalid-type", "test-colony")
 	invalidTypeResource.SetSpec("image", "nginx:1.21")
 	invalidTypeResource.SetSpec("replicas", "not-a-number") // Should be number
 
 	err = core.ValidateResourceAgainstSchema(invalidTypeResource, rd.Spec.Schema)
-	assert.Error(t, err, "Resource with invalid type should fail validation")
+	assert.Error(t, err, "Service with invalid type should fail validation")
 	assert.Contains(t, err.Error(), "must be a number")
 
-	// Test 4: Resource with invalid enum value should fail
+	// Test 4: Service with invalid enum value should fail
 	invalidEnumResource := core.CreateResource("Deployment", "invalid-enum", "test-colony")
 	invalidEnumResource.SetSpec("image", "nginx:1.21")
 	invalidEnumResource.SetSpec("protocol", "HTTP") // Not in enum [TCP, UDP]
 
 	err = core.ValidateResourceAgainstSchema(invalidEnumResource, rd.Spec.Schema)
-	assert.Error(t, err, "Resource with invalid enum value should fail validation")
+	assert.Error(t, err, "Service with invalid enum value should fail validation")
 	assert.Contains(t, err.Error(), "must be one of")
 }

@@ -85,7 +85,7 @@ func (client *ColoniesClient) establishRealtimeConn(jsonString string) (backends
 	return nil, errors.New("backend does not support realtime connections")
 }
 
-// CloseClient closes the client and cleans up resources
+// CloseClient closes the client and cleans up services
 func (client *ColoniesClient) CloseClient() error {
 	if client.backend != nil {
 		return client.backend.Close()

@@ -15,15 +15,15 @@ type ResourceDatabase interface {
 	RemoveResourceDefinitionByName(namespace, name string) error
 	CountResourceDefinitions() (int, error)
 
-	// Resource methods
-	AddResource(resource *core.Resource) error
-	GetResourceByID(id string) (*core.Resource, error)
-	GetResourceByName(namespace, name string) (*core.Resource, error)
-	GetResources() ([]*core.Resource, error)
-	GetResourcesByNamespace(namespace string) ([]*core.Resource, error)
-	GetResourcesByKind(kind string) ([]*core.Resource, error)
-	GetResourcesByNamespaceAndKind(namespace, kind string) ([]*core.Resource, error)
-	UpdateResource(resource *core.Resource) error
+	// Service methods
+	AddResource(service *core.Service) error
+	GetResourceByID(id string) (*core.Service, error)
+	GetResourceByName(namespace, name string) (*core.Service, error)
+	GetResources() ([]*core.Service, error)
+	GetResourcesByNamespace(namespace string) ([]*core.Service, error)
+	GetResourcesByKind(kind string) ([]*core.Service, error)
+	GetResourcesByNamespaceAndKind(namespace, kind string) ([]*core.Service, error)
+	UpdateResource(service *core.Service) error
 	UpdateResourceStatus(id string, status map[string]interface{}) error
 	RemoveResourceByID(id string) error
 	RemoveResourceByName(namespace, name string) error

@@ -47,6 +47,26 @@ func (client *ColoniesClient) GetUser(colonyName string, username string, prvKey
 	return userFromServer, nil
 }
 
+func (client *ColoniesClient) GetUserByID(colonyName string, userID string, prvKey string) (*core.User, error) {
+	msg := rpc.CreateGetUserByIDMsg(colonyName, userID)
+	jsonString, err := msg.ToJSON()
+	if err != nil {
+		return nil, err
+	}
+
+	respBodyString, err := client.sendMessage(rpc.GetUserByIDPayloadType, jsonString, prvKey, false, context.TODO())
+	if err != nil {
+		return nil, err
+	}
+
+	userFromServer, err := core.ConvertJSONToUser(respBodyString)
+	if err != nil {
+		return nil, err
+	}
+
+	return userFromServer, nil
+}
+
 func (client *ColoniesClient) GetUsers(colonyName string, prvKey string) ([]*core.User, error) {
 	msg := rpc.CreateGetUsersMsg(colonyName)
 	jsonString, err := msg.ToJSON()

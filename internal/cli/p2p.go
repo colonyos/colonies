@@ -379,7 +379,7 @@ Example:
 			relayv2.WithInfiniteLimits(), // Use infinite limits for testing
 		}
 
-		// Create resource manager with infinite limits
+		// Create service manager with infinite limits
 		rmgr, err := rcmgr.NewResourceManager(rcmgr.NewFixedLimiter(rcmgr.InfiniteLimits))
 		CheckError(err)
 

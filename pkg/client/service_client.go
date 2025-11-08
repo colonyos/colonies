@@ -71,9 +71,9 @@ func (client *ColoniesClient) RemoveResourceDefinition(namespace, name string, p
 	return nil
 }
 
-// AddResource adds a new Resource instance
-func (client *ColoniesClient) AddResource(resource *core.Resource, prvKey string) (*core.Resource, error) {
-	msg := rpc.CreateAddResourceMsg(resource)
+// AddResource adds a new Service instance
+func (client *ColoniesClient) AddResource(service *core.Service, prvKey string) (*core.Service, error) {
+	msg := rpc.CreateAddResourceMsg(service)
 	jsonString, err := msg.ToJSON()
 	if err != nil {
 		return nil, err
@@ -87,8 +87,8 @@ func (client *ColoniesClient) AddResource(resource *core.Resource, prvKey string
 	return core.ConvertJSONToResource(respBodyString)
 }
 
-// GetResource retrieves a Resource by namespace and name
-func (client *ColoniesClient) GetResource(namespace, name string, prvKey string) (*core.Resource, error) {
+// GetResource retrieves a Service by namespace and name
+func (client *ColoniesClient) GetResource(namespace, name string, prvKey string) (*core.Service, error) {
 	msg := rpc.CreateGetResourceMsg(namespace, name)
 	jsonString, err := msg.ToJSON()
 	if err != nil {
@@ -103,8 +103,8 @@ func (client *ColoniesClient) GetResource(namespace, name string, prvKey string)
 	return core.ConvertJSONToResource(respBodyString)
 }
 
-// GetResources retrieves Resources by namespace and optionally by kind
-func (client *ColoniesClient) GetResources(namespace, kind string, prvKey string) ([]*core.Resource, error) {
+// GetResources retrieves Services by namespace and optionally by kind
+func (client *ColoniesClient) GetResources(namespace, kind string, prvKey string) ([]*core.Service, error) {
 	msg := rpc.CreateGetResourcesMsg(namespace, kind)
 	jsonString, err := msg.ToJSON()
 	if err != nil {
@@ -119,9 +119,9 @@ func (client *ColoniesClient) GetResources(namespace, kind string, prvKey string
 	return core.ConvertJSONToResourceArray(respBodyString)
 }
 
-// UpdateResource updates an existing Resource
-func (client *ColoniesClient) UpdateResource(resource *core.Resource, prvKey string) (*core.Resource, error) {
-	msg := rpc.CreateUpdateResourceMsg(resource)
+// UpdateResource updates an existing Service
+func (client *ColoniesClient) UpdateResource(service *core.Service, prvKey string) (*core.Service, error) {
+	msg := rpc.CreateUpdateResourceMsg(service)
 	jsonString, err := msg.ToJSON()
 	if err != nil {
 		return nil, err
@@ -135,7 +135,7 @@ func (client *ColoniesClient) UpdateResource(resource *core.Resource, prvKey str
 	return core.ConvertJSONToResource(respBodyString)
 }
 
-// GetResourceHistory retrieves history for a resource
+// GetResourceHistory retrieves history for a service
 func (client *ColoniesClient) GetResourceHistory(resourceID string, limit int, prvKey string) ([]*core.ResourceHistory, error) {
 	msg := rpc.CreateGetResourceHistoryMsg(resourceID, limit)
 	jsonString, err := msg.ToJSON()
@@ -151,7 +151,7 @@ func (client *ColoniesClient) GetResourceHistory(resourceID string, limit int, p
 	return core.ConvertJSONToResourceHistoryArray(respBodyString)
 }
 
-// RemoveResource removes a Resource by namespace and name
+// RemoveResource removes a Service by namespace and name
 func (client *ColoniesClient) RemoveResource(namespace, name string, prvKey string) error {
 	msg := rpc.CreateRemoveResourceMsg(namespace, name)
 	jsonString, err := msg.ToJSON()

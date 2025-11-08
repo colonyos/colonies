@@ -50,6 +50,9 @@ func (h *Handlers) RegisterHandlers(handlerRegistry *registry.HandlerRegistry) e
 	if err := handlerRegistry.Register(rpc.GetExecutorPayloadType, h.HandleGetExecutor); err != nil {
 		return err
 	}
+	if err := handlerRegistry.Register(rpc.GetExecutorByIDPayloadType, h.HandleGetExecutorByID); err != nil {
+		return err
+	}
 	if err := handlerRegistry.Register(rpc.ApproveExecutorPayloadType, h.HandleApproveExecutor); err != nil {
 		return err
 	}
@@ -179,6 +182,43 @@ func (h *Handlers) HandleGetExecutor(c backends.Context, recoveredID string, pay
 	}
 
 	log.WithFields(log.Fields{"ExecutorId": executor.ID}).Debug("Getting executor")
+
+	h.server.SendHTTPReply(c, payloadType, jsonString)
+}
+
+func (h *Handlers) HandleGetExecutorByID(c backends.Context, recoveredID string, payloadType string, jsonString string) {
+	msg, err := rpc.CreateGetExecutorByIDMsgFromJSON(jsonString)
+	if err != nil {
+		if h.server.HandleHTTPError(c, errors.New("Failed to get executor by ID, invalid JSON"), http.StatusBadRequest) {
+			return
+		}
+	}
+
+	if msg.MsgType != payloadType {
+		h.server.HandleHTTPError(c, errors.New("Failed to get executor by ID, msg.MsgType does not match payloadType"), http.StatusBadRequest)
+		return
+	}
+
+	executor, err := h.server.ExecutorDB().GetExecutorByID(msg.ExecutorID)
+	if h.server.HandleHTTPError(c, err, http.StatusBadRequest) {
+		return
+	}
+	if executor == nil {
+		h.server.HandleHTTPError(c, errors.New("Failed to get executor by ID, executor is nil"), http.StatusNotFound)
+		return
+	}
+
+	err = h.server.Validator().RequireMembership(recoveredID, executor.ColonyName, true)
+	if h.server.HandleHTTPError(c, err, http.StatusForbidden) {
+		return
+	}
+
+	jsonString, err = executor.ToJSON()
+	if h.server.HandleHTTPError(c, err, http.StatusInternalServerError) {
+		return
+	}
+
+	log.WithFields(log.Fields{"ExecutorId": executor.ID}).Debug("Getting executor by ID")
 
 	h.server.SendHTTPReply(c, payloadType, jsonString)
 }

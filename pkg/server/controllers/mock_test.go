@@ -622,15 +622,15 @@ func (db *DatabaseMock) RemoveResourceDefinitionByID(id string) error { return n
 func (db *DatabaseMock) RemoveResourceDefinitionByName(namespace, name string) error { return nil }
 func (db *DatabaseMock) CountResourceDefinitions() (int, error) { return 0, nil }
 
-// ResourceDatabase interface - Resource methods
-func (db *DatabaseMock) AddResource(resource *core.Resource) error { return nil }
-func (db *DatabaseMock) GetResourceByID(id string) (*core.Resource, error) { return nil, nil }
-func (db *DatabaseMock) GetResourceByName(namespace, name string) (*core.Resource, error) { return nil, nil }
-func (db *DatabaseMock) GetResources() ([]*core.Resource, error) { return nil, nil }
-func (db *DatabaseMock) GetResourcesByNamespace(namespace string) ([]*core.Resource, error) { return nil, nil }
-func (db *DatabaseMock) GetResourcesByKind(kind string) ([]*core.Resource, error) { return nil, nil }
-func (db *DatabaseMock) GetResourcesByNamespaceAndKind(namespace, kind string) ([]*core.Resource, error) { return nil, nil }
-func (db *DatabaseMock) UpdateResource(resource *core.Resource) error { return nil }
+// ResourceDatabase interface - Service methods
+func (db *DatabaseMock) AddResource(service *core.Service) error { return nil }
+func (db *DatabaseMock) GetResourceByID(id string) (*core.Service, error) { return nil, nil }
+func (db *DatabaseMock) GetResourceByName(namespace, name string) (*core.Service, error) { return nil, nil }
+func (db *DatabaseMock) GetResources() ([]*core.Service, error) { return nil, nil }
+func (db *DatabaseMock) GetResourcesByNamespace(namespace string) ([]*core.Service, error) { return nil, nil }
+func (db *DatabaseMock) GetResourcesByKind(kind string) ([]*core.Service, error) { return nil, nil }
+func (db *DatabaseMock) GetResourcesByNamespaceAndKind(namespace, kind string) ([]*core.Service, error) { return nil, nil }
+func (db *DatabaseMock) UpdateResource(service *core.Service) error { return nil }
 func (db *DatabaseMock) UpdateResourceStatus(id string, status map[string]interface{}) error { return nil }
 func (db *DatabaseMock) RemoveResourceByID(id string) error { return nil }
 func (db *DatabaseMock) RemoveResourceByName(namespace, name string) error { return nil }

@@ -95,10 +95,10 @@ func TestResourceLabelsAndAnnotations(t *testing.T) {
 	assert.False(t, ok)
 
 	// Test annotations
-	cr.Metadata.Annotations["description"] = "Test resource"
+	cr.Metadata.Annotations["description"] = "Test service"
 	cr.Metadata.Annotations["owner"] = "admin"
 
-	assert.Equal(t, "Test resource", cr.Metadata.Annotations["description"])
+	assert.Equal(t, "Test service", cr.Metadata.Annotations["description"])
 	assert.Equal(t, "admin", cr.Metadata.Annotations["owner"])
 
 	// Test non-existent annotation
@@ -107,7 +107,7 @@ func TestResourceLabelsAndAnnotations(t *testing.T) {
 }
 
 func TestResourceValidation(t *testing.T) {
-	// Valid resource
+	// Valid service
 	cr := CreateResource("TestResource", "test", "ns")
 	err := cr.Validate()
 	assert.NoError(t, err)
@@ -173,7 +173,7 @@ func TestCreateResourceDefinition(t *testing.T) {
 		"ExecutorDeployment",
 		"executordeployments",
 		"Namespaced",
-		"resource-controller",
+		"service-controller",
 		"reconcile_executor_deployment",
 	)
 
@@ -186,7 +186,7 @@ func TestCreateResourceDefinition(t *testing.T) {
 	assert.Equal(t, "executordeployment", crd.Spec.Names.Singular)
 	assert.Equal(t, "executordeployments", crd.Spec.Names.Plural)
 	assert.Equal(t, "Namespaced", crd.Spec.Scope)
-	assert.Equal(t, "resource-controller", crd.Spec.Handler.ExecutorType)
+	assert.Equal(t, "service-controller", crd.Spec.Handler.ExecutorType)
 	assert.Equal(t, "reconcile_executor_deployment", crd.Spec.Handler.FunctionName)
 }
 
@@ -273,21 +273,21 @@ func TestResourceDefinitionHelperMethods(t *testing.T) {
 }
 
 func TestResourceInFunctionSpec(t *testing.T) {
-	cr := CreateResource("TestResource", "test-resource", "test-colony")
+	cr := CreateResource("TestResource", "test-service", "test-colony")
 	cr.SetSpec("replicas", 3)
 	cr.SetSpec("image", "test:latest")
 
-	// Create a FunctionSpec with the Resource attached
+	// Create a FunctionSpec with the Service attached
 	funcSpec := CreateEmptyFunctionSpec()
-	funcSpec.Resource = cr
+	funcSpec.Service = cr
 
-	// Verify the resource is properly attached
-	assert.NotNil(t, funcSpec.Resource)
-	assert.Equal(t, "TestResource", funcSpec.Resource.Kind)
-	assert.Equal(t, "test-resource", funcSpec.Resource.Metadata.Name)
-	assert.Equal(t, "test-colony", funcSpec.Resource.Metadata.Namespace)
+	// Verify the service is properly attached
+	assert.NotNil(t, funcSpec.Service)
+	assert.Equal(t, "TestResource", funcSpec.Service.Kind)
+	assert.Equal(t, "test-service", funcSpec.Service.Metadata.Name)
+	assert.Equal(t, "test-colony", funcSpec.Service.Metadata.Namespace)
 
-	replicas, ok := funcSpec.Resource.GetSpec("replicas")
+	replicas, ok := funcSpec.Service.GetSpec("replicas")
 	assert.True(t, ok)
 	assert.Equal(t, 3, replicas)
 }
@@ -301,7 +301,7 @@ func TestComplexCustomResourceScenario(t *testing.T) {
 		"ExecutorDeployment",
 		"executordeployments",
 		"Namespaced",
-		"resource-controller",
+		"service-controller",
 		"reconcile_executor_deployment",
 	)
 	crd.Spec.Handler.ReconcileInterval = 30
@@ -327,7 +327,7 @@ func TestComplexCustomResourceScenario(t *testing.T) {
 	err := crd.Validate()
 	assert.NoError(t, err)
 
-	// Create a custom resource instance
+	// Create a custom service instance
 	cr := CreateResource("ExecutorDeployment", "ml-executors", "ml-colony")
 	cr.Metadata.Labels["app"] = "ml-training"
 	cr.Metadata.Labels["environment"] = "production"
@@ -344,7 +344,7 @@ func TestComplexCustomResourceScenario(t *testing.T) {
 	})
 	cr.SetSpec("config", map[string]interface{}{
 		"image": "ml-executor:latest",
-		"resources": map[string]interface{}{
+		"services": map[string]interface{}{
 			"gpu":    2,
 			"memory": "64Gi",
 		},
@@ -438,7 +438,7 @@ func TestSchemaValidation(t *testing.T) {
 		Required: []string{"runtime", "replicas"},
 	}
 
-	// Valid resource
+	// Valid service
 	cr := CreateResource("TestResource", "test", "ns")
 	cr.SetSpec("runtime", "docker")
 	cr.SetSpec("replicas", 3)

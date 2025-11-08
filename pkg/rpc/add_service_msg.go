@@ -9,13 +9,13 @@ import (
 const AddResourcePayloadType = "addresourcemsg"
 
 type AddResourceMsg struct {
-	Resource *core.Resource `json:"resource"`
+	Service *core.Service `json:"service"`
 	MsgType  string         `json:"msgtype"`
 }
 
-func CreateAddResourceMsg(resource *core.Resource) *AddResourceMsg {
+func CreateAddResourceMsg(service *core.Service) *AddResourceMsg {
 	msg := &AddResourceMsg{}
-	msg.Resource = resource
+	msg.Service = service
 	msg.MsgType = AddResourcePayloadType
 
 	return msg
@@ -48,15 +48,15 @@ func (msg *AddResourceMsg) Equals(msg2 *AddResourceMsg) bool {
 		return false
 	}
 
-	if msg.Resource == nil && msg2.Resource == nil {
+	if msg.Service == nil && msg2.Service == nil {
 		return true
 	}
 
-	if msg.Resource == nil || msg2.Resource == nil {
+	if msg.Service == nil || msg2.Service == nil {
 		return false
 	}
 
-	return msg.Resource.ID == msg2.Resource.ID
+	return msg.Service.ID == msg2.Service.ID
 }
 
 func CreateAddResourceMsgFromJSON(jsonString string) (*AddResourceMsg, error) {

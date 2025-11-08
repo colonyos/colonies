@@ -789,7 +789,7 @@ func (h *Handlers) HandleCloseSuccessful(c backends.Context, recoveredID string,
 		return
 	}
 
-	// If this was a reconciliation process, update the resource status from the output
+	// If this was a reconciliation process, update the service status from the output
 	if process.FunctionSpec.Reconciliation != nil {
 		var resourceID string
 		if process.FunctionSpec.Reconciliation.New != nil {
@@ -809,12 +809,12 @@ func (h *Handlers) HandleCloseSuccessful(c backends.Context, recoveredID string,
 								"Error":      err,
 								"ResourceID": resourceID,
 								"ProcessID":  process.ID,
-							}).Warn("Failed to update resource status from reconciliation output")
+							}).Warn("Failed to update service status from reconciliation output")
 						} else {
 							log.WithFields(log.Fields{
 								"ResourceID": resourceID,
 								"ProcessID":  process.ID,
-							}).Debug("Updated resource status from reconciliation output")
+							}).Debug("Updated service status from reconciliation output")
 						}
 					}
 				}

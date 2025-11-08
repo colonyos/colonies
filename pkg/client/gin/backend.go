@@ -150,7 +150,7 @@ func (g *GinClientBackend) CheckHealth() error {
 	return err
 }
 
-// Close closes the backend and cleans up resources
+// Close closes the backend and cleans up services
 func (g *GinClientBackend) Close() error {
 	// Resty client doesn't need explicit cleanup
 	return nil

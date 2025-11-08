@@ -97,7 +97,7 @@ services:
     command: sh -c "colonies server start --initdb --port ${COLONIES_SERVER_HTTP_PORT} --relayport 25100 --etcdname server1 --etcdhost colonies-server --etcdclientport 23100 --etcdpeerport 24100 --initial-cluster server1=colonies-server:24100:25100:${COLONIES_SERVER_HTTP_PORT} --etcddatadir /var/colonies/etcd --insecure"
 
   colonies-setup:
-    image: colonyos/colonies:v1.9.0
+    image: colonyos/colonies:latest
     depends_on:
       - colonies-server
     environment:
@@ -137,17 +137,17 @@ services:
       colonies colony add --name ${COLONIES_COLONY_NAME} --colonyid ${COLONIES_COLONY_ID};
       echo 'Executing: colonies user add --name=myuser --email= --phone= --userid=${COLONIES_ID}';
       colonies user add --name='myuser' --email='' --phone='' --userid=${COLONIES_ID};
-      echo 'Adding resource definition...';
-      colonies resource definition add --spec /catalog/executor-deployment-definition.json;
-      echo 'Waiting for docker-executor-reconciler to be ready...';
+      echo 'Adding service definition...';
+      colonies service definition add --spec /catalog/executor-deployment-definition.json;
+      echo 'Waiting for docker-reconciler to be ready...';
       sleep 5;
       echo 'Adding docker-executor deployment with 1 replica...';
-      colonies resource add --spec /catalog/docker-executor-deployment.json;
+      colonies service add --spec /catalog/docker-executor-deployment.json;
       "
 
-  docker-executor-reconciler:
-    image: colonyos/docker-executor-reconciler:latest
-    container_name: docker-executor-reconciler
+  docker-reconciler:
+    image: colonyos/docker-reconciler:latest
+    container_name: docker-reconciler
     restart: unless-stopped
     depends_on:
       - colonies-server
@@ -173,23 +173,27 @@ services:
       # Auth config
       COLONIES_COLONY_NAME: ${COLONIES_COLONY_NAME}
       COLONIES_COLONY_PRVKEY: ${COLONIES_COLONY_PRVKEY}
-      COLONIES_EXECUTOR_TYPE: "docker-executor-reconciler"
+      COLONIES_EXECUTOR_TYPE: "docker-reconciler"
       COLONIES_INSECURE: "true"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:rw
     entrypoint: >
       /bin/sh -c "
       echo 'Waiting for Colonies server to be ready...';
-      sleep 10;
+      until wget --spider -q http://colonies-server:50080/health 2>/dev/null; do
+        echo 'Server not ready, retrying in 2 seconds...';
+        sleep 2;
+      done;
+      echo 'Server is ready!';
       HASH=$$(echo $$RANDOM | md5sum | head -c 5);
-      export COLONIES_EXECUTOR_NAME=\"docker-executor-reconciler-$$HASH\";
-      echo \"Starting docker-executor-reconciler with name: $$COLONIES_EXECUTOR_NAME\";
-      docker-executor-reconciler start -v
+      export COLONIES_EXECUTOR_NAME=\"docker-reconciler-$$HASH\";
+      echo \"Starting docker-reconciler with name: $$COLONIES_EXECUTOR_NAME\";
+      docker-reconciler start -v
       "
 
-  # docker-executor is now managed by docker-executor-reconciler
-  # See executors/docker-executor-reconciler/examples/docker-executor-deployment.json
-  # To deploy: colonies resource add --spec executors/docker-executor-reconciler/examples/docker-executor-deployment.json
+  # docker-executor is now managed by docker-reconciler
+  # See executors/docker-reconciler/examples/docker-executor-deployment.json
+  # To deploy: colonies service add --spec executors/docker-reconciler/examples/docker-executor-deployment.json
 
 volumes:
   timescaledb_data:

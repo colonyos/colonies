@@ -22,7 +22,7 @@ func init() {
 	resourceDefinitionCmd.AddCommand(listResourceDefinitionsCmd)
 	resourceDefinitionCmd.AddCommand(removeResourceDefinitionCmd)
 
-	// Resource commands
+	// Service commands
 	resourceCmd.AddCommand(addResourceCmd)
 	resourceCmd.AddCommand(getResourceCmd)
 	resourceCmd.AddCommand(listResourcesCmd)
@@ -46,24 +46,24 @@ func init() {
 	removeResourceDefinitionCmd.Flags().StringVarP(&ResourceDefinitionName, "name", "", "", "ResourceDefinition name")
 	removeResourceDefinitionCmd.MarkFlagRequired("name")
 
-	// Resource flags
+	// Service flags
 	addResourceCmd.Flags().StringVarP(&PrvKey, "prvkey", "", "", "Private key")
 	addResourceCmd.Flags().StringVarP(&SpecFile, "spec", "", "", "JSON specification file")
 	addResourceCmd.MarkFlagRequired("spec")
 
 	getResourceCmd.Flags().StringVarP(&PrvKey, "prvkey", "", "", "Private key")
-	getResourceCmd.Flags().StringVarP(&ResourceName, "name", "", "", "Resource name")
+	getResourceCmd.Flags().StringVarP(&ResourceName, "name", "", "", "Service name")
 	getResourceCmd.MarkFlagRequired("name")
 
 	listResourcesCmd.Flags().StringVarP(&PrvKey, "prvkey", "", "", "Private key")
-	listResourcesCmd.Flags().StringVarP(&Kind, "kind", "", "", "Filter by resource kind")
+	listResourcesCmd.Flags().StringVarP(&Kind, "kind", "", "", "Filter by service kind")
 
 	updateResourceCmd.Flags().StringVarP(&PrvKey, "prvkey", "", "", "Private key")
 	updateResourceCmd.Flags().StringVarP(&SpecFile, "spec", "", "", "JSON specification file")
 	updateResourceCmd.MarkFlagRequired("spec")
 
 	setResourceCmd.Flags().StringVarP(&PrvKey, "prvkey", "", "", "Private key")
-	setResourceCmd.Flags().StringVarP(&ResourceName, "name", "", "", "Resource name")
+	setResourceCmd.Flags().StringVarP(&ResourceName, "name", "", "", "Service name")
 	setResourceCmd.Flags().StringVarP(&Key, "key", "", "", "Field key (use dot notation for nested fields, e.g., 'spec.replicas')")
 	setResourceCmd.Flags().StringVarP(&Value, "value", "", "", "New value for the field")
 	setResourceCmd.MarkFlagRequired("name")
@@ -71,26 +71,26 @@ func init() {
 	setResourceCmd.MarkFlagRequired("value")
 
 	removeResourceCmd.Flags().StringVarP(&PrvKey, "prvkey", "", "", "Private key")
-	removeResourceCmd.Flags().StringVarP(&ResourceName, "name", "", "", "Resource name")
+	removeResourceCmd.Flags().StringVarP(&ResourceName, "name", "", "", "Service name")
 	removeResourceCmd.MarkFlagRequired("name")
 
 	historyResourceCmd.Flags().StringVarP(&PrvKey, "prvkey", "", "", "Private key")
-	historyResourceCmd.Flags().StringVarP(&ResourceName, "name", "", "", "Resource name")
+	historyResourceCmd.Flags().StringVarP(&ResourceName, "name", "", "", "Service name")
 	historyResourceCmd.Flags().IntVarP(&Count, "limit", "l", 10, "Limit number of history entries")
 	historyResourceCmd.Flags().IntVarP(&Generation, "generation", "g", -1, "Show details for specific generation")
 	historyResourceCmd.MarkFlagRequired("name")
 }
 
 var resourceCmd = &cobra.Command{
-	Use:   "resource",
-	Short: "Manage resources",
-	Long:  "Manage custom resources and resource definitions",
+	Use:   "service",
+	Short: "Manage services",
+	Long:  "Manage custom services and service definitions",
 }
 
 var resourceDefinitionCmd = &cobra.Command{
 	Use:   "definition",
-	Short: "Manage resource definitions",
-	Long:  "Manage custom resource definitions (CRDs)",
+	Short: "Manage service definitions",
+	Long:  "Manage custom service definitions (CRDs)",
 }
 
 var addResourceDefinitionCmd = &cobra.Command{
@@ -174,7 +174,7 @@ var listResourceDefinitionsCmd = &cobra.Command{
 		CheckError(err)
 
 		if len(rds) == 0 {
-			log.Info("No resource definitions found")
+			log.Info("No service definitions found")
 			return
 		}
 
@@ -214,24 +214,24 @@ var removeResourceDefinitionCmd = &cobra.Command{
 
 var addResourceCmd = &cobra.Command{
 	Use:   "add",
-	Short: "Add a Resource",
-	Long:  "Add a custom resource instance",
+	Short: "Add a Service",
+	Long:  "Add a custom service instance",
 	Run: func(cmd *cobra.Command, args []string) {
 		client := setup()
 
 		jsonBytes, err := os.ReadFile(SpecFile)
 		CheckError(err)
 
-		var resource core.Resource
-		err = json.Unmarshal(jsonBytes, &resource)
+		var service core.Service
+		err = json.Unmarshal(jsonBytes, &service)
 		CheckError(err)
 
 		// Set namespace (colony name) if not specified
-		if resource.Metadata.Namespace == "" {
-			resource.Metadata.Namespace = ColonyName
+		if service.Metadata.Namespace == "" {
+			service.Metadata.Namespace = ColonyName
 		}
 
-		addedResource, err := client.AddResource(&resource, PrvKey)
+		addedResource, err := client.AddResource(&service, PrvKey)
 		CheckError(err)
 
 		log.WithFields(log.Fields{
@@ -239,95 +239,95 @@ var addResourceCmd = &cobra.Command{
 			"Name":       addedResource.Metadata.Name,
 			"Kind":       addedResource.Kind,
 			"Namespace":  addedResource.Metadata.Namespace,
-		}).Info("Resource added")
+		}).Info("Service added")
 
 	},
 }
 
 var getResourceCmd = &cobra.Command{
 	Use:   "get",
-	Short: "Get a Resource",
-	Long:  "Get a resource by name",
+	Short: "Get a Service",
+	Long:  "Get a service by name",
 	Run: func(cmd *cobra.Command, args []string) {
 		client := setup()
 
-		resource, err := client.GetResource(ColonyName, ResourceName, PrvKey)
+		service, err := client.GetResource(ColonyName, ResourceName, PrvKey)
 		CheckError(err)
 
-		if resource == nil {
-			CheckError(errors.New("Resource not found"))
+		if service == nil {
+			CheckError(errors.New("Service not found"))
 		}
 
 		log.WithFields(log.Fields{
-			"ResourceID": resource.ID,
-			"Name":       resource.Metadata.Name,
-			"Kind":       resource.Kind,
-			"Namespace":  resource.Metadata.Namespace,
-		}).Info("Resource retrieved")
+			"ResourceID": service.ID,
+			"Name":       service.Metadata.Name,
+			"Kind":       service.Kind,
+			"Namespace":  service.Metadata.Namespace,
+		}).Info("Service retrieved")
 
 		if JSON {
-			jsonString, err := resource.ToJSON()
+			jsonString, err := service.ToJSON()
 			CheckError(err)
 			fmt.Println(jsonString)
 		} else {
-			printResourceTable(client, resource)
+			printResourceTable(client, service)
 		}
 	},
 }
 
 var listResourcesCmd = &cobra.Command{
 	Use:   "ls",
-	Short: "List Resources",
-	Long:  "List all resources in the colony (optionally filtered by kind)",
+	Short: "List Services",
+	Long:  "List all services in the colony (optionally filtered by kind)",
 	Run: func(cmd *cobra.Command, args []string) {
 		client := setup()
 
-		resources, err := client.GetResources(ColonyName, Kind, PrvKey)
+		services, err := client.GetResources(ColonyName, Kind, PrvKey)
 		CheckError(err)
 
-		if len(resources) == 0 {
-			log.Info("No resources found")
+		if len(services) == 0 {
+			log.Info("No services found")
 			return
 		}
 
 		log.WithFields(log.Fields{
-			"Count":      len(resources),
+			"Count":      len(services),
 			"ColonyName": ColonyName,
 			"Kind":       Kind,
-		}).Info("Resources retrieved")
+		}).Info("Services retrieved")
 
 		if JSON {
 			// Print as JSON array
-			jsonBytes, err := json.MarshalIndent(resources, "", "  ")
+			jsonBytes, err := json.MarshalIndent(services, "", "  ")
 			CheckError(err)
 			fmt.Println(string(jsonBytes))
 		} else {
 			// Print as table
-			printResourcesTable(resources)
+			printResourcesTable(services)
 		}
 	},
 }
 
 var updateResourceCmd = &cobra.Command{
 	Use:   "update",
-	Short: "Update a Resource",
-	Long:  "Update an existing resource",
+	Short: "Update a Service",
+	Long:  "Update an existing service",
 	Run: func(cmd *cobra.Command, args []string) {
 		client := setup()
 
 		jsonBytes, err := os.ReadFile(SpecFile)
 		CheckError(err)
 
-		var resource core.Resource
-		err = json.Unmarshal(jsonBytes, &resource)
+		var service core.Service
+		err = json.Unmarshal(jsonBytes, &service)
 		CheckError(err)
 
 		// Set namespace (colony name) if not specified
-		if resource.Metadata.Namespace == "" {
-			resource.Metadata.Namespace = ColonyName
+		if service.Metadata.Namespace == "" {
+			service.Metadata.Namespace = ColonyName
 		}
 
-		updatedResource, err := client.UpdateResource(&resource, PrvKey)
+		updatedResource, err := client.UpdateResource(&service, PrvKey)
 		CheckError(err)
 
 		log.WithFields(log.Fields{
@@ -335,25 +335,25 @@ var updateResourceCmd = &cobra.Command{
 			"Name":       updatedResource.Metadata.Name,
 			"Kind":       updatedResource.Kind,
 			"Generation": updatedResource.Metadata.Generation,
-		}).Info("Resource updated")
+		}).Info("Service updated")
 
 	},
 }
 
 var setResourceCmd = &cobra.Command{
 	Use:   "set",
-	Short: "Set a field value in a Resource",
-	Long:  "Set a specific field value in a resource using dot notation (e.g., 'replicas' or 'env.TZ')",
+	Short: "Set a field value in a Service",
+	Long:  "Set a specific field value in a service using dot notation (e.g., 'replicas' or 'env.TZ')",
 	Run: func(cmd *cobra.Command, args []string) {
 		client := setup()
 
-		// Get the existing resource
-		resource, err := client.GetResource(ColonyName, ResourceName, PrvKey)
+		// Get the existing service
+		service, err := client.GetResource(ColonyName, ResourceName, PrvKey)
 		CheckError(err)
 
-		// Parse the resource spec into a map for easy manipulation
+		// Parse the service spec into a map for easy manipulation
 		specMap := make(map[string]interface{})
-		specBytes, err := json.Marshal(resource.Spec)
+		specBytes, err := json.Marshal(service.Spec)
 		CheckError(err)
 		err = json.Unmarshal(specBytes, &specMap)
 		CheckError(err)
@@ -368,12 +368,12 @@ var setResourceCmd = &cobra.Command{
 		keyParts := strings.Split(keyPath, ".")
 
 		// First, validate that the key path exists in the current spec
-		// We don't allow creating new fields to prevent corrupting the resource
+		// We don't allow creating new fields to prevent corrupting the service
 		current := specMap
 		for i := 0; i < len(keyParts)-1; i++ {
 			key := keyParts[i]
 			if _, ok := current[key]; !ok {
-				CheckError(errors.New("Invalid key path: '" + Key + "' (field '" + key + "' does not exist in resource spec)"))
+				CheckError(errors.New("Invalid key path: '" + Key + "' (field '" + key + "' does not exist in service spec)"))
 			}
 			var ok bool
 			current, ok = current[key].(map[string]interface{})
@@ -387,7 +387,7 @@ var setResourceCmd = &cobra.Command{
 
 		// Validate that the final key exists
 		if _, ok := current[finalKey]; !ok {
-			CheckError(errors.New("Invalid key: '" + Key + "' (field '" + finalKey + "' does not exist in resource spec)"))
+			CheckError(errors.New("Invalid key: '" + Key + "' (field '" + finalKey + "' does not exist in service spec)"))
 		}
 
 		// Try to parse the value as JSON to support numbers, booleans, etc.
@@ -400,11 +400,11 @@ var setResourceCmd = &cobra.Command{
 
 		current[finalKey] = parsedValue
 
-		// Update the resource spec
-		resource.Spec = specMap
+		// Update the service spec
+		service.Spec = specMap
 
-		// Update the resource in the colony
-		updatedResource, err := client.UpdateResource(resource, PrvKey)
+		// Update the service in the colony
+		updatedResource, err := client.UpdateResource(service, PrvKey)
 		CheckError(err)
 
 		log.WithFields(log.Fields{
@@ -413,15 +413,15 @@ var setResourceCmd = &cobra.Command{
 			"Kind":       updatedResource.Kind,
 			"Key":        Key,
 			"Value":      Value,
-		}).Info("Resource field updated")
+		}).Info("Service field updated")
 
 	},
 }
 
 var removeResourceCmd = &cobra.Command{
 	Use:   "remove",
-	Short: "Remove a Resource",
-	Long:  "Remove a resource by name",
+	Short: "Remove a Service",
+	Long:  "Remove a service by name",
 	Run: func(cmd *cobra.Command, args []string) {
 		client := setup()
 
@@ -431,27 +431,27 @@ var removeResourceCmd = &cobra.Command{
 		log.WithFields(log.Fields{
 			"Name":       ResourceName,
 			"ColonyName": ColonyName,
-		}).Info("Resource removed")
+		}).Info("Service removed")
 	},
 }
 
 var historyResourceCmd = &cobra.Command{
 	Use:   "history",
-	Short: "Show resource history",
-	Long:  "Display the history of changes to a resource",
+	Short: "Show service history",
+	Long:  "Display the history of changes to a service",
 	Run: func(cmd *cobra.Command, args []string) {
 		client := setup()
 
-		// Get the resource to find its ID
-		resource, err := client.GetResource(ColonyName, ResourceName, PrvKey)
+		// Get the service to find its ID
+		service, err := client.GetResource(ColonyName, ResourceName, PrvKey)
 		CheckError(err)
 
-		// Get the resource history
-		histories, err := client.GetResourceHistory(resource.ID, Count, PrvKey)
+		// Get the service history
+		histories, err := client.GetResourceHistory(service.ID, Count, PrvKey)
 		CheckError(err)
 
 		if len(histories) == 0 {
-			log.Info("No history found for this resource")
+			log.Info("No history found for this service")
 			return
 		}
 
@@ -483,7 +483,7 @@ var historyResourceCmd = &cobra.Command{
 				CheckError(err)
 				fmt.Println(jsonString)
 			} else {
-				printResourceHistoryTable(histories)
+				printResourceHistoryTable(client, histories)
 			}
 		}
 	},

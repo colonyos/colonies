@@ -6,7 +6,7 @@
   "spec": {
     "image": "colonyos/dockerexecutor:v1.0.5",
     "replicas": 1,
-    "executorType": "docker-executor-reconciler",
+    "executorType": "docker-reconciler",
     "executorName": "docker-executor",
     "env": {
       "LANG": "en_US.UTF-8",

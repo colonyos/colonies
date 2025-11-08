@@ -172,7 +172,7 @@ func (c *CoAPClientBackend) CheckHealth() error {
 	return nil
 }
 
-// Close closes the CoAP connection and cleans up resources
+// Close closes the CoAP connection and cleans up services
 func (c *CoAPClientBackend) Close() error {
 	// CoAP UDP client doesn't maintain persistent connections
 	return nil

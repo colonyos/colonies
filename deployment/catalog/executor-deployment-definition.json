@@ -63,7 +63,7 @@
       "required": ["image", "executorType"]
     },
     "handler": {
-      "executorType": "docker-executor-reconciler",
+      "executorType": "docker-reconciler",
       "functionName": "reconcile"
     }
   }
