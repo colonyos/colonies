@@ -2,25 +2,25 @@ package rpc
 
 import "encoding/json"
 
-const GetResourceHistoryPayloadType = "getresourcehistorymsg"
+const GetServiceHistoryPayloadType = "getservicehistorymsg"
 
-type GetResourceHistoryMsg struct {
-	ResourceID string `json:"resourceid"`
-	Limit      int    `json:"limit,omitempty"`
-	MsgType    string `json:"msgtype"`
+type GetServiceHistoryMsg struct {
+	ServiceID string `json:"serviceid"`
+	Limit     int    `json:"limit,omitempty"`
+	MsgType   string `json:"msgtype"`
 }
 
-func CreateGetResourceHistoryMsg(resourceID string, limit int) *GetResourceHistoryMsg {
-	msg := &GetResourceHistoryMsg{}
-	msg.ResourceID = resourceID
+func CreateGetServiceHistoryMsg(serviceID string, limit int) *GetServiceHistoryMsg {
+	msg := &GetServiceHistoryMsg{}
+	msg.ServiceID = serviceID
 	msg.Limit = limit
-	msg.MsgType = GetResourceHistoryPayloadType
+	msg.MsgType = GetServiceHistoryPayloadType
 
 	return msg
 }
 
-func CreateGetResourceHistoryMsgFromJSON(jsonString string) (*GetResourceHistoryMsg, error) {
-	var msg GetResourceHistoryMsg
+func CreateGetServiceHistoryMsgFromJSON(jsonString string) (*GetServiceHistoryMsg, error) {
+	var msg GetServiceHistoryMsg
 
 	err := json.Unmarshal([]byte(jsonString), &msg)
 	if err != nil {
@@ -30,7 +30,7 @@ func CreateGetResourceHistoryMsgFromJSON(jsonString string) (*GetResourceHistory
 	return &msg, nil
 }
 
-func (msg *GetResourceHistoryMsg) ToJSON() (string, error) {
+func (msg *GetServiceHistoryMsg) ToJSON() (string, error) {
 	jsonBytes, err := json.Marshal(msg)
 	if err != nil {
 		return "", err

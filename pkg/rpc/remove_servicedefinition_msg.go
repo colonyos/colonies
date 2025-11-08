@@ -4,24 +4,24 @@ import (
 	"encoding/json"
 )
 
-const RemoveResourceDefinitionPayloadType = "removeresourcedefinitionmsg"
+const RemoveServiceDefinitionPayloadType = "removeservicedefinitionmsg"
 
-type RemoveResourceDefinitionMsg struct {
+type RemoveServiceDefinitionMsg struct {
 	Namespace string `json:"namespace"`
 	Name      string `json:"name"`
 	MsgType   string `json:"msgtype"`
 }
 
-func CreateRemoveResourceDefinitionMsg(namespace, name string) *RemoveResourceDefinitionMsg {
-	msg := &RemoveResourceDefinitionMsg{}
+func CreateRemoveServiceDefinitionMsg(namespace, name string) *RemoveServiceDefinitionMsg {
+	msg := &RemoveServiceDefinitionMsg{}
 	msg.Namespace = namespace
 	msg.Name = name
-	msg.MsgType = RemoveResourceDefinitionPayloadType
+	msg.MsgType = RemoveServiceDefinitionPayloadType
 
 	return msg
 }
 
-func (msg *RemoveResourceDefinitionMsg) ToJSON() (string, error) {
+func (msg *RemoveServiceDefinitionMsg) ToJSON() (string, error) {
 	jsonBytes, err := json.Marshal(msg)
 	if err != nil {
 		return "", err
@@ -30,7 +30,7 @@ func (msg *RemoveResourceDefinitionMsg) ToJSON() (string, error) {
 	return string(jsonBytes), nil
 }
 
-func (msg *RemoveResourceDefinitionMsg) ToJSONIndent() (string, error) {
+func (msg *RemoveServiceDefinitionMsg) ToJSONIndent() (string, error) {
 	jsonBytes, err := json.MarshalIndent(msg, "", "    ")
 	if err != nil {
 		return "", err
@@ -39,7 +39,7 @@ func (msg *RemoveResourceDefinitionMsg) ToJSONIndent() (string, error) {
 	return string(jsonBytes), nil
 }
 
-func (msg *RemoveResourceDefinitionMsg) Equals(msg2 *RemoveResourceDefinitionMsg) bool {
+func (msg *RemoveServiceDefinitionMsg) Equals(msg2 *RemoveServiceDefinitionMsg) bool {
 	if msg2 == nil {
 		return false
 	}
@@ -49,8 +49,8 @@ func (msg *RemoveResourceDefinitionMsg) Equals(msg2 *RemoveResourceDefinitionMsg
 		msg.Name == msg2.Name
 }
 
-func CreateRemoveResourceDefinitionMsgFromJSON(jsonString string) (*RemoveResourceDefinitionMsg, error) {
-	var msg *RemoveResourceDefinitionMsg
+func CreateRemoveServiceDefinitionMsgFromJSON(jsonString string) (*RemoveServiceDefinitionMsg, error) {
+	var msg *RemoveServiceDefinitionMsg
 
 	err := json.Unmarshal([]byte(jsonString), &msg)
 	if err != nil {

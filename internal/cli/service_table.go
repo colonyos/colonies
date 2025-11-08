@@ -12,8 +12,8 @@ import (
 	"github.com/muesli/termenv"
 )
 
-// printResourceDefinitionsTable displays a list of ResourceDefinitions in a table
-func printResourceDefinitionsTable(rds []*core.ResourceDefinition) {
+// printServiceDefinitionsTable displays a list of ServiceDefinitions in a table
+func printServiceDefinitionsTable(sds []*core.ServiceDefinition) {
 	t, theme := createTable(1)
 
 	var cols = []table.Column{
@@ -24,12 +24,12 @@ func printResourceDefinitionsTable(rds []*core.ResourceDefinition) {
 	}
 	t.SetCols(cols)
 
-	for _, rd := range rds {
+	for _, sd := range sds {
 		row := []interface{}{
-			termenv.String(rd.Metadata.Name).Foreground(theme.ColorCyan),
-			termenv.String(rd.Spec.Names.Kind).Foreground(theme.ColorViolet),
-			termenv.String(rd.Spec.Handler.ExecutorType).Foreground(theme.ColorMagenta),
-			termenv.String(rd.Spec.Handler.FunctionName).Foreground(theme.ColorBlue),
+			termenv.String(sd.Metadata.Name).Foreground(theme.ColorCyan),
+			termenv.String(sd.Spec.Names.Kind).Foreground(theme.ColorViolet),
+			termenv.String(sd.Spec.Handler.ExecutorType).Foreground(theme.ColorMagenta),
+			termenv.String(sd.Spec.Handler.FunctionName).Foreground(theme.ColorBlue),
 		}
 		t.AddRow(row)
 	}
@@ -37,50 +37,50 @@ func printResourceDefinitionsTable(rds []*core.ResourceDefinition) {
 	t.Render()
 }
 
-// printResourceDefinitionTable displays a single ResourceDefinition with details
-func printResourceDefinitionTable(rd *core.ResourceDefinition) {
+// printServiceDefinitionTable displays a single ServiceDefinition with details
+func printServiceDefinitionTable(sd *core.ServiceDefinition) {
 	t, theme := createTable(0)
-	t.SetTitle("ResourceDefinition")
+	t.SetTitle("ServiceDefinition")
 
 	row := []interface{}{
 		termenv.String("Name").Foreground(theme.ColorCyan),
-		termenv.String(rd.Metadata.Name).Foreground(theme.ColorGray),
+		termenv.String(sd.Metadata.Name).Foreground(theme.ColorGray),
 	}
 	t.AddRow(row)
 
 	row = []interface{}{
 		termenv.String("ID").Foreground(theme.ColorCyan),
-		termenv.String(rd.ID).Foreground(theme.ColorGray),
+		termenv.String(sd.ID).Foreground(theme.ColorGray),
 	}
 	t.AddRow(row)
 
 	row = []interface{}{
 		termenv.String("Kind").Foreground(theme.ColorCyan),
-		termenv.String(rd.Spec.Names.Kind).Foreground(theme.ColorGray),
+		termenv.String(sd.Spec.Names.Kind).Foreground(theme.ColorGray),
 	}
 	t.AddRow(row)
 
 	row = []interface{}{
 		termenv.String("Plural").Foreground(theme.ColorCyan),
-		termenv.String(rd.Spec.Names.Plural).Foreground(theme.ColorGray),
+		termenv.String(sd.Spec.Names.Plural).Foreground(theme.ColorGray),
 	}
 	t.AddRow(row)
 
 	row = []interface{}{
 		termenv.String("Group").Foreground(theme.ColorCyan),
-		termenv.String(rd.Spec.Group).Foreground(theme.ColorGray),
+		termenv.String(sd.Spec.Group).Foreground(theme.ColorGray),
 	}
 	t.AddRow(row)
 
 	row = []interface{}{
 		termenv.String("Version").Foreground(theme.ColorCyan),
-		termenv.String(rd.Spec.Version).Foreground(theme.ColorGray),
+		termenv.String(sd.Spec.Version).Foreground(theme.ColorGray),
 	}
 	t.AddRow(row)
 
 	row = []interface{}{
 		termenv.String("Scope").Foreground(theme.ColorCyan),
-		termenv.String(rd.Spec.Scope).Foreground(theme.ColorGray),
+		termenv.String(sd.Spec.Scope).Foreground(theme.ColorGray),
 	}
 	t.AddRow(row)
 
@@ -92,20 +92,20 @@ func printResourceDefinitionTable(rd *core.ResourceDefinition) {
 
 	row = []interface{}{
 		termenv.String("Executor Type").Foreground(theme.ColorViolet),
-		termenv.String(rd.Spec.Handler.ExecutorType).Foreground(theme.ColorGray),
+		termenv.String(sd.Spec.Handler.ExecutorType).Foreground(theme.ColorGray),
 	}
 	t.AddRow(row)
 
 	row = []interface{}{
 		termenv.String("Function Name").Foreground(theme.ColorViolet),
-		termenv.String(rd.Spec.Handler.FunctionName).Foreground(theme.ColorGray),
+		termenv.String(sd.Spec.Handler.FunctionName).Foreground(theme.ColorGray),
 	}
 	t.AddRow(row)
 
-	if rd.Spec.Handler.ReconcileInterval > 0 {
+	if sd.Spec.Handler.ReconcileInterval > 0 {
 		row = []interface{}{
 			termenv.String("Reconcile Interval").Foreground(theme.ColorViolet),
-			termenv.String(fmt.Sprintf("%d seconds", rd.Spec.Handler.ReconcileInterval)).Foreground(theme.ColorGray),
+			termenv.String(fmt.Sprintf("%d seconds", sd.Spec.Handler.ReconcileInterval)).Foreground(theme.ColorGray),
 		}
 		t.AddRow(row)
 	}
@@ -113,28 +113,28 @@ func printResourceDefinitionTable(rd *core.ResourceDefinition) {
 	t.Render()
 
 	// Schema section
-	if rd.Spec.Schema != nil {
+	if sd.Spec.Schema != nil {
 		t, theme = createTable(0)
 		t.SetTitle("Schema")
 
-		if len(rd.Spec.Schema.Required) > 0 {
+		if len(sd.Spec.Schema.Required) > 0 {
 			row = []interface{}{
 				termenv.String("Required Fields").Foreground(theme.ColorBlue),
-				termenv.String(strings.Join(rd.Spec.Schema.Required, ", ")).Foreground(theme.ColorGray),
+				termenv.String(strings.Join(sd.Spec.Schema.Required, ", ")).Foreground(theme.ColorGray),
 			}
 			t.AddRow(row)
 		}
 
 		row = []interface{}{
 			termenv.String("Properties").Foreground(theme.ColorBlue),
-			termenv.String(fmt.Sprintf("%d fields defined", len(rd.Spec.Schema.Properties))).Foreground(theme.ColorGray),
+			termenv.String(fmt.Sprintf("%d fields defined", len(sd.Spec.Schema.Properties))).Foreground(theme.ColorGray),
 		}
 		t.AddRow(row)
 
 		t.Render()
 
 		// Properties details
-		if len(rd.Spec.Schema.Properties) > 0 {
+		if len(sd.Spec.Schema.Properties) > 0 {
 			t, theme = createTable(0)
 			t.SetTitle("Schema Properties")
 
@@ -145,7 +145,7 @@ func printResourceDefinitionTable(rd *core.ResourceDefinition) {
 			}
 			t.SetCols(propCols)
 
-			for propName, prop := range rd.Spec.Schema.Properties {
+			for propName, prop := range sd.Spec.Schema.Properties {
 				desc := prop.Description
 				if len(desc) > 50 {
 					desc = desc[:47] + "..."
@@ -167,40 +167,63 @@ func printResourceDefinitionTable(rd *core.ResourceDefinition) {
 	}
 }
 
-// printResourcesTable displays a list of Services in a table
-func printResourcesTable(services []*core.Service) {
+// printServicesTable displays a list of Services in a table
+func printServicesTable(services []*core.Service) {
 	t, theme := createTable(1)
 
 	var cols = []table.Column{
 		{ID: "name", Name: "Name", SortIndex: 1},
 		{ID: "kind", Name: "Kind", SortIndex: 2},
-		{ID: "executortype", Name: "ExecutorType", SortIndex: 3},
-		{ID: "functionname", Name: "FunctionName", SortIndex: 4},
-		{ID: "generation", Name: "Gen", SortIndex: 5},
+		{ID: "info", Name: "Info", SortIndex: 3},
+		{ID: "generation", Name: "Gen", SortIndex: 4},
 	}
 	t.SetCols(cols)
 
 	for _, service := range services {
-		// Extract executorType and functionName from spec if they exist
-		executorType := ""
-		if val, ok := service.GetSpec("executorType"); ok {
-			if str, ok := val.(string); ok {
-				executorType = str
+		// Build info column based on service kind
+		info := ""
+		switch service.Kind {
+		case "ExecutorDeployment":
+			// For ExecutorDeployment, show executor type and replicas
+			executorType := ""
+			if val, ok := service.GetSpec("executorType"); ok {
+				if str, ok := val.(string); ok {
+					executorType = str
+				}
 			}
-		}
-
-		functionName := ""
-		if val, ok := service.GetSpec("functionName"); ok {
-			if str, ok := val.(string); ok {
-				functionName = str
+			replicas := ""
+			if val, ok := service.GetSpec("replicas"); ok {
+				replicas = fmt.Sprintf("replicas=%v", val)
+			}
+			if executorType != "" && replicas != "" {
+				info = fmt.Sprintf("%s (%s)", executorType, replicas)
+			} else if executorType != "" {
+				info = executorType
+			} else if replicas != "" {
+				info = replicas
+			}
+		case "DockerDeployment":
+			// For DockerDeployment, show number of instances
+			if instances, ok := service.GetSpec("instances"); ok {
+				if instArray, ok := instances.([]interface{}); ok {
+					if len(instArray) == 1 {
+						info = "1 instance"
+					} else {
+						info = fmt.Sprintf("%d instances", len(instArray))
+					}
+				}
+			}
+		default:
+			// For other kinds, try to extract a descriptive field
+			if val, ok := service.GetSpec("description"); ok {
+				info = fmt.Sprintf("%v", val)
 			}
 		}
 
 		row := []interface{}{
 			termenv.String(service.Metadata.Name).Foreground(theme.ColorCyan),
 			termenv.String(service.Kind).Foreground(theme.ColorViolet),
-			termenv.String(executorType).Foreground(theme.ColorMagenta),
-			termenv.String(functionName).Foreground(theme.ColorBlue),
+			termenv.String(info).Foreground(theme.ColorMagenta),
 			termenv.String(fmt.Sprintf("%d", service.Metadata.Generation)).Foreground(theme.ColorYellow),
 		}
 		t.AddRow(row)
@@ -209,8 +232,8 @@ func printResourcesTable(services []*core.Service) {
 	t.Render()
 }
 
-// printResourceTable displays a single Service with details
-func printResourceTable(client *client.ColoniesClient, service *core.Service) {
+// printServiceTable displays a single Service with details
+func printServiceTable(client *client.ColoniesClient, service *core.Service) {
 	t, theme := createTable(0)
 	t.SetTitle("Service")
 
@@ -352,9 +375,10 @@ func printResourceTable(client *client.ColoniesClient, service *core.Service) {
 
 		// Define special keys that need formatted display
 		complexKeys := map[string]bool{
-			"env":     true,
-			"volumes": true,
-			"ports":   true,
+			"env":       true,
+			"volumes":   true,
+			"ports":     true,
+			"instances": true, // DockerDeployment
 		}
 
 		for key, value := range service.Spec {
@@ -468,6 +492,149 @@ func printResourceTable(client *client.ColoniesClient, service *core.Service) {
 			}
 
 			t.Render()
+		}
+
+		// Render instances if present (DockerDeployment)
+		if instances, ok := service.Spec["instances"].([]interface{}); ok && len(instances) > 0 {
+			t, theme = createTable(0)
+			t.SetTitle("Instances (DockerDeployment)")
+
+			var instCols = []table.Column{
+				{ID: "name", Name: "Name", SortIndex: 1},
+				{ID: "image", Name: "Image", SortIndex: 2},
+				{ID: "type", Name: "Type", SortIndex: 3},
+			}
+			t.SetCols(instCols)
+
+			for _, inst := range instances {
+				if instMap, ok := inst.(map[string]interface{}); ok {
+					name := fmt.Sprintf("%v", instMap["name"])
+					image := fmt.Sprintf("%v", instMap["image"])
+					instType := fmt.Sprintf("%v", instMap["type"])
+
+					row = []interface{}{
+						termenv.String(name).Foreground(theme.ColorCyan),
+						termenv.String(image).Foreground(theme.ColorMagenta),
+						termenv.String(instType).Foreground(theme.ColorGray),
+					}
+					t.AddRow(row)
+				}
+			}
+
+			t.Render()
+
+			// Render detailed info for each instance
+			for _, inst := range instances {
+				if instMap, ok := inst.(map[string]interface{}); ok {
+					name := fmt.Sprintf("%v", instMap["name"])
+
+					// Environment variables for this instance
+					if env, ok := instMap["environment"].(map[string]interface{}); ok && len(env) > 0 {
+						t, theme = createTable(0)
+						t.SetTitle(fmt.Sprintf("Instance '%s' - Environment", name))
+
+						var envCols = []table.Column{
+							{ID: "key", Name: "Key", SortIndex: 1},
+							{ID: "value", Name: "Value", SortIndex: 2},
+						}
+						t.SetCols(envCols)
+
+						keys := make([]string, 0, len(env))
+						for k := range env {
+							keys = append(keys, k)
+						}
+						sort.Strings(keys)
+
+						for _, k := range keys {
+							valueStr := fmt.Sprintf("%v", env[k])
+							row = []interface{}{
+								termenv.String(k).Foreground(theme.ColorCyan),
+								termenv.String(valueStr).Foreground(theme.ColorGray),
+							}
+							t.AddRow(row)
+						}
+
+						t.Render()
+					}
+
+					// Volumes for this instance
+					if volumes, ok := instMap["volumes"].([]interface{}); ok && len(volumes) > 0 {
+						t, theme = createTable(0)
+						t.SetTitle(fmt.Sprintf("Instance '%s' - Volumes", name))
+
+						var volCols = []table.Column{
+							{ID: "type", Name: "Type", SortIndex: 1},
+							{ID: "source", Name: "Source", SortIndex: 2},
+							{ID: "mount", Name: "Mount Path", SortIndex: 3},
+							{ID: "readonly", Name: "RO", SortIndex: 4},
+						}
+						t.SetCols(volCols)
+
+						for _, vol := range volumes {
+							if volMap, ok := vol.(map[string]interface{}); ok {
+								volType := fmt.Sprintf("%v", volMap["type"])
+								source := ""
+								if hostPath, ok := volMap["hostPath"]; ok {
+									source = fmt.Sprintf("%v", hostPath)
+								} else if volName, ok := volMap["name"]; ok {
+									source = fmt.Sprintf("%v", volName)
+								}
+								mountPath := fmt.Sprintf("%v", volMap["mountPath"])
+								readOnly := "false"
+								if ro, ok := volMap["readOnly"].(bool); ok && ro {
+									readOnly = "true"
+								}
+
+								row = []interface{}{
+									termenv.String(volType).Foreground(theme.ColorYellow),
+									termenv.String(source).Foreground(theme.ColorCyan),
+									termenv.String(mountPath).Foreground(theme.ColorMagenta),
+									termenv.String(readOnly).Foreground(theme.ColorGray),
+								}
+								t.AddRow(row)
+							}
+						}
+
+						t.Render()
+					}
+
+					// Ports for this instance
+					if ports, ok := instMap["ports"].([]interface{}); ok && len(ports) > 0 {
+						t, theme = createTable(0)
+						t.SetTitle(fmt.Sprintf("Instance '%s' - Ports", name))
+
+						var portCols = []table.Column{
+							{ID: "container", Name: "Container", SortIndex: 1},
+							{ID: "host", Name: "Host", SortIndex: 2},
+							{ID: "protocol", Name: "Protocol", SortIndex: 3},
+						}
+						t.SetCols(portCols)
+
+						for _, port := range ports {
+							if portMap, ok := port.(map[string]interface{}); ok {
+								container := fmt.Sprintf("%v", portMap["container"])
+								host := "-"
+								if hostPort, ok := portMap["host"]; ok {
+									host = fmt.Sprintf("%v", hostPort)
+								}
+								protocol := "tcp"
+								if proto, ok := portMap["protocol"]; ok {
+									protocol = fmt.Sprintf("%v", proto)
+								}
+
+								row = []interface{}{
+									termenv.String(container).Foreground(theme.ColorYellow),
+									termenv.String(host).Foreground(theme.ColorCyan),
+									termenv.String(protocol).Foreground(theme.ColorGray),
+								}
+								t.AddRow(row)
+							}
+						}
+
+						t.Render()
+					}
+				}
+			}
 		}
 	}
 
@@ -597,8 +764,8 @@ func printResourceTable(client *client.ColoniesClient, service *core.Service) {
 	}
 }
 
-// printResourceHistoryTable displays a list of ResourceHistory entries in a table
-func printResourceHistoryTable(c *client.ColoniesClient, histories []*core.ResourceHistory) {
+// printServiceHistoryTable displays a list of ServiceHistory entries in a table
+func printServiceHistoryTable(c *client.ColoniesClient, histories []*core.ServiceHistory) {
 	t, theme := createTable(1)
 
 	var cols = []table.Column{
@@ -644,14 +811,14 @@ func truncateString(s string, maxLen int) string {
 	return s
 }
 
-// printResourceHistoryDetail displays detailed information for a specific service history entry
-func printResourceHistoryDetail(history *core.ResourceHistory) {
+// printServiceHistoryDetail displays detailed information for a specific service history entry
+func printServiceHistoryDetail(history *core.ServiceHistory) {
 	t, theme := createTable(0)
 	t.SetTitle(fmt.Sprintf("Service History - Generation %d", history.Generation))
 
 	row := []interface{}{
 		termenv.String("Service ID").Foreground(theme.ColorCyan),
-		termenv.String(history.ResourceID).Foreground(theme.ColorGray),
+		termenv.String(history.ServiceID).Foreground(theme.ColorGray),
 	}
 	t.AddRow(row)
 

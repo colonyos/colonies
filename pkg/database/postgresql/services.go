@@ -10,20 +10,20 @@ import (
 	_ "github.com/lib/pq"
 )
 
-// ResourceDefinition methods
+// ServiceDefinition methods
 
-func (db *PQDatabase) AddResourceDefinition(rd *core.ResourceDefinition) error {
-	if rd == nil {
-		return errors.New("ResourceDefinition is nil")
+func (db *PQDatabase) AddServiceDefinition(sd *core.ServiceDefinition) error {
+	if sd == nil {
+		return errors.New("ServiceDefinition is nil")
 	}
 
-	rdJSON, err := rd.ToJSON()
+	sdJSON, err := sd.ToJSON()
 	if err != nil {
 		return err
 	}
 
 	sqlStatement := `INSERT INTO ` + db.dbPrefix + `SERVICEDEFINITIONS (ID, COLONY_NAME, NAME, API_GROUP, VERSION, KIND, DATA) VALUES ($1, $2, $3, $4, $5, $6, $7)`
-	_, err = db.postgresql.Exec(sqlStatement, rd.ID, rd.Metadata.Namespace, rd.Metadata.Name, rd.Spec.Group, rd.Spec.Version, rd.Spec.Names.Kind, rdJSON)
+	_, err = db.postgresql.Exec(sqlStatement, sd.ID, sd.Metadata.Namespace, sd.Metadata.Name, sd.Spec.Group, sd.Spec.Version, sd.Spec.Names.Kind, sdJSON)
 	if err != nil {
 		return err
 	}
@@ -31,8 +31,8 @@ func (db *PQDatabase) AddResourceDefinition(rd *core.ResourceDefinition) error {
 	return nil
 }
 
-func (db *PQDatabase) parseResourceDefinitions(rows *sql.Rows) ([]*core.ResourceDefinition, error) {
-	var rds []*core.ResourceDefinition
+func (db *PQDatabase) parseServiceDefinitions(rows *sql.Rows) ([]*core.ServiceDefinition, error) {
+	var sds []*core.ServiceDefinition
 
 	for rows.Next() {
 		var id string
@@ -47,18 +47,18 @@ func (db *PQDatabase) parseResourceDefinitions(rows *sql.Rows) ([]*core.Resource
 			return nil, err
 		}
 
-		rd, err := core.ConvertJSONToResourceDefinition(data)
+		sd, err := core.ConvertJSONToServiceDefinition(data)
 		if err != nil {
 			return nil, err
 		}
 
-		rds = append(rds, rd)
+		sds = append(sds, sd)
 	}
 
-	return rds, nil
+	return sds, nil
 }
 
-func (db *PQDatabase) GetResourceDefinitionByID(id string) (*core.ResourceDefinition, error) {
+func (db *PQDatabase) GetServiceDefinitionByID(id string) (*core.ServiceDefinition, error) {
 	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `SERVICEDEFINITIONS WHERE ID=$1`
 	rows, err := db.postgresql.Query(sqlStatement, id)
 	if err != nil {
@@ -67,19 +67,19 @@ func (db *PQDatabase) GetResourceDefinitionByID(id string) (*core.ResourceDefini
 
 	defer rows.Close()
 
-	rds, err := db.parseResourceDefinitions(rows)
+	sds, err := db.parseServiceDefinitions(rows)
 	if err != nil {
 		return nil, err
 	}
 
-	if len(rds) == 0 {
+	if len(sds) == 0 {
 		return nil, nil
 	}
 
-	return rds[0], nil
+	return sds[0], nil
 }
 
-func (db *PQDatabase) GetResourceDefinitionByName(namespace, name string) (*core.ResourceDefinition, error) {
+func (db *PQDatabase) GetServiceDefinitionByName(namespace, name string) (*core.ServiceDefinition, error) {
 	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `SERVICEDEFINITIONS WHERE COLONY_NAME=$1 AND NAME=$2`
 	rows, err := db.postgresql.Query(sqlStatement, namespace, name)
 	if err != nil {
@@ -88,19 +88,19 @@ func (db *PQDatabase) GetResourceDefinitionByName(namespace, name string) (*core
 
 	defer rows.Close()
 
-	rds, err := db.parseResourceDefinitions(rows)
+	sds, err := db.parseServiceDefinitions(rows)
 	if err != nil {
 		return nil, err
 	}
 
-	if len(rds) == 0 {
+	if len(sds) == 0 {
 		return nil, nil
 	}
 
-	return rds[0], nil
+	return sds[0], nil
 }
 
-func (db *PQDatabase) GetResourceDefinitions() ([]*core.ResourceDefinition, error) {
+func (db *PQDatabase) GetServiceDefinitions() ([]*core.ServiceDefinition, error) {
 	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `SERVICEDEFINITIONS ORDER BY NAME`
 	rows, err := db.postgresql.Query(sqlStatement)
 	if err != nil {
@@ -109,10 +109,10 @@ func (db *PQDatabase) GetResourceDefinitions() ([]*core.ResourceDefinition, erro
 
 	defer rows.Close()
 
-	return db.parseResourceDefinitions(rows)
+	return db.parseServiceDefinitions(rows)
 }
 
-func (db *PQDatabase) GetResourceDefinitionsByNamespace(namespace string) ([]*core.ResourceDefinition, error) {
+func (db *PQDatabase) GetServiceDefinitionsByNamespace(namespace string) ([]*core.ServiceDefinition, error) {
 	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `SERVICEDEFINITIONS WHERE COLONY_NAME=$1 ORDER BY NAME`
 	rows, err := db.postgresql.Query(sqlStatement, namespace)
 	if err != nil {
@@ -121,10 +121,10 @@ func (db *PQDatabase) GetResourceDefinitionsByNamespace(namespace string) ([]*co
 
 	defer rows.Close()
 
-	return db.parseResourceDefinitions(rows)
+	return db.parseServiceDefinitions(rows)
 }
 
-func (db *PQDatabase) GetResourceDefinitionsByGroup(group string) ([]*core.ResourceDefinition, error) {
+func (db *PQDatabase) GetServiceDefinitionsByGroup(group string) ([]*core.ServiceDefinition, error) {
 	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `SERVICEDEFINITIONS WHERE API_GROUP=$1 ORDER BY NAME`
 	rows, err := db.postgresql.Query(sqlStatement, group)
 	if err != nil {
@@ -133,21 +133,21 @@ func (db *PQDatabase) GetResourceDefinitionsByGroup(group string) ([]*core.Resou
 
 	defer rows.Close()
 
-	return db.parseResourceDefinitions(rows)
+	return db.parseServiceDefinitions(rows)
 }
 
-func (db *PQDatabase) UpdateResourceDefinition(rd *core.ResourceDefinition) error {
-	if rd == nil {
-		return errors.New("ResourceDefinition is nil")
+func (db *PQDatabase) UpdateServiceDefinition(sd *core.ServiceDefinition) error {
+	if sd == nil {
+		return errors.New("ServiceDefinition is nil")
 	}
 
-	rdJSON, err := rd.ToJSON()
+	sdJSON, err := sd.ToJSON()
 	if err != nil {
 		return err
 	}
 
 	sqlStatement := `UPDATE ` + db.dbPrefix + `SERVICEDEFINITIONS SET NAME=$1, API_GROUP=$2, VERSION=$3, KIND=$4, DATA=$5 WHERE ID=$6`
-	_, err = db.postgresql.Exec(sqlStatement, rd.Metadata.Name, rd.Spec.Group, rd.Spec.Version, rd.Spec.Names.Kind, rdJSON, rd.ID)
+	_, err = db.postgresql.Exec(sqlStatement, sd.Metadata.Name, sd.Spec.Group, sd.Spec.Version, sd.Spec.Names.Kind, sdJSON, sd.ID)
 	if err != nil {
 		return err
 	}
@@ -155,7 +155,7 @@ func (db *PQDatabase) UpdateResourceDefinition(rd *core.ResourceDefinition) erro
 	return nil
 }
 
-func (db *PQDatabase) RemoveResourceDefinitionByID(id string) error {
+func (db *PQDatabase) RemoveServiceDefinitionByID(id string) error {
 	sqlStatement := `DELETE FROM ` + db.dbPrefix + `SERVICEDEFINITIONS WHERE ID=$1`
 	_, err := db.postgresql.Exec(sqlStatement, id)
 	if err != nil {
@@ -165,7 +165,7 @@ func (db *PQDatabase) RemoveResourceDefinitionByID(id string) error {
 	return nil
 }
 
-func (db *PQDatabase) RemoveResourceDefinitionByName(namespace, name string) error {
+func (db *PQDatabase) RemoveServiceDefinitionByName(namespace, name string) error {
 	sqlStatement := `DELETE FROM ` + db.dbPrefix + `SERVICEDEFINITIONS WHERE COLONY_NAME=$1 AND NAME=$2`
 	_, err := db.postgresql.Exec(sqlStatement, namespace, name)
 	if err != nil {
@@ -175,7 +175,7 @@ func (db *PQDatabase) RemoveResourceDefinitionByName(namespace, name string) err
 	return nil
 }
 
-func (db *PQDatabase) CountResourceDefinitions() (int, error) {
+func (db *PQDatabase) CountServiceDefinitions() (int, error) {
 	sqlStatement := `SELECT COUNT(*) FROM ` + db.dbPrefix + `SERVICEDEFINITIONS`
 	rows, err := db.postgresql.Query(sqlStatement)
 	if err != nil {
@@ -196,27 +196,27 @@ func (db *PQDatabase) CountResourceDefinitions() (int, error) {
 
 // Service methods
 
-func (db *PQDatabase) AddResource(service *core.Service) error {
+func (db *PQDatabase) AddService(service *core.Service) error {
 	if service == nil {
 		return errors.New("Service is nil")
 	}
 
-	existingResource, err := db.GetResourceByName(service.Metadata.Namespace, service.Metadata.Name)
+	existingService, err := db.GetServiceByName(service.Metadata.Namespace, service.Metadata.Name)
 	if err != nil {
 		return err
 	}
 
-	if existingResource != nil {
+	if existingService != nil {
 		return errors.New("Service with name <" + service.Metadata.Name + "> in namespace <" + service.Metadata.Namespace + "> already exists")
 	}
 
-	resourceJSON, err := service.ToJSON()
+	serviceJSON, err := service.ToJSON()
 	if err != nil {
 		return err
 	}
 
 	sqlStatement := `INSERT INTO ` + db.dbPrefix + `SERVICES (ID, COLONY_NAME, NAME, KIND, DATA) VALUES ($1, $2, $3, $4, $5)`
-	_, err = db.postgresql.Exec(sqlStatement, service.ID, service.Metadata.Namespace, service.Metadata.Name, service.Kind, resourceJSON)
+	_, err = db.postgresql.Exec(sqlStatement, service.ID, service.Metadata.Namespace, service.Metadata.Name, service.Kind, serviceJSON)
 	if err != nil {
 		return err
 	}
@@ -224,7 +224,7 @@ func (db *PQDatabase) AddResource(service *core.Service) error {
 	return nil
 }
 
-func (db *PQDatabase) parseResources(rows *sql.Rows) ([]*core.Service, error) {
+func (db *PQDatabase) parseServices(rows *sql.Rows) ([]*core.Service, error) {
 	var services []*core.Service
 
 	for rows.Next() {
@@ -238,10 +238,13 @@ func (db *PQDatabase) parseResources(rows *sql.Rows) ([]*core.Service, error) {
 			return nil, err
 		}
 
-		service, err := core.ConvertJSONToResource(data)
+		service, err := core.ConvertJSONToService(data)
 		if err != nil {
 			return nil, err
 		}
+
+		// Set the ID from the database (not stored in the JSON DATA column)
+		service.ID = id
 
 		services = append(services, service)
 	}
@@ -249,7 +252,7 @@ func (db *PQDatabase) parseResources(rows *sql.Rows) ([]*core.Service, error) {
 	return services, nil
 }
 
-func (db *PQDatabase) GetResourceByID(id string) (*core.Service, error) {
+func (db *PQDatabase) GetServiceByID(id string) (*core.Service, error) {
 	sqlStatement := `SELECT ID, COLONY_NAME, NAME, KIND, DATA FROM ` + db.dbPrefix + `SERVICES WHERE ID=$1`
 	rows, err := db.postgresql.Query(sqlStatement, id)
 	if err != nil {
@@ -258,7 +261,7 @@ func (db *PQDatabase) GetResourceByID(id string) (*core.Service, error) {
 
 	defer rows.Close()
 
-	services, err := db.parseResources(rows)
+	services, err := db.parseServices(rows)
 	if err != nil {
 		return nil, err
 	}
@@ -270,7 +273,7 @@ func (db *PQDatabase) GetResourceByID(id string) (*core.Service, error) {
 	return services[0], nil
 }
 
-func (db *PQDatabase) GetResourceByName(namespace, name string) (*core.Service, error) {
+func (db *PQDatabase) GetServiceByName(namespace, name string) (*core.Service, error) {
 	sqlStatement := `SELECT ID, COLONY_NAME, NAME, KIND, DATA FROM ` + db.dbPrefix + `SERVICES WHERE COLONY_NAME=$1 AND NAME=$2`
 	rows, err := db.postgresql.Query(sqlStatement, namespace, name)
 	if err != nil {
@@ -279,7 +282,7 @@ func (db *PQDatabase) GetResourceByName(namespace, name string) (*core.Service, 
 
 	defer rows.Close()
 
-	services, err := db.parseResources(rows)
+	services, err := db.parseServices(rows)
 	if err != nil {
 		return nil, err
 	}
@@ -291,7 +294,7 @@ func (db *PQDatabase) GetResourceByName(namespace, name string) (*core.Service, 
 	return services[0], nil
 }
 
-func (db *PQDatabase) GetResources() ([]*core.Service, error) {
+func (db *PQDatabase) GetServices() ([]*core.Service, error) {
 	sqlStatement := `SELECT ID, COLONY_NAME, NAME, KIND, DATA FROM ` + db.dbPrefix + `SERVICES ORDER BY COLONY_NAME, NAME`
 	rows, err := db.postgresql.Query(sqlStatement)
 	if err != nil {
@@ -300,10 +303,10 @@ func (db *PQDatabase) GetResources() ([]*core.Service, error) {
 
 	defer rows.Close()
 
-	return db.parseResources(rows)
+	return db.parseServices(rows)
 }
 
-func (db *PQDatabase) GetResourcesByNamespace(namespace string) ([]*core.Service, error) {
+func (db *PQDatabase) GetServicesByNamespace(namespace string) ([]*core.Service, error) {
 	sqlStatement := `SELECT ID, COLONY_NAME, NAME, KIND, DATA FROM ` + db.dbPrefix + `SERVICES WHERE COLONY_NAME=$1 ORDER BY NAME`
 	rows, err := db.postgresql.Query(sqlStatement, namespace)
 	if err != nil {
@@ -312,10 +315,10 @@ func (db *PQDatabase) GetResourcesByNamespace(namespace string) ([]*core.Service
 
 	defer rows.Close()
 
-	return db.parseResources(rows)
+	return db.parseServices(rows)
 }
 
-func (db *PQDatabase) GetResourcesByKind(kind string) ([]*core.Service, error) {
+func (db *PQDatabase) GetServicesByKind(kind string) ([]*core.Service, error) {
 	sqlStatement := `SELECT ID, COLONY_NAME, NAME, KIND, DATA FROM ` + db.dbPrefix + `SERVICES WHERE KIND=$1 ORDER BY COLONY_NAME, NAME`
 	rows, err := db.postgresql.Query(sqlStatement, kind)
 	if err != nil {
@@ -324,10 +327,10 @@ func (db *PQDatabase) GetResourcesByKind(kind string) ([]*core.Service, error) {
 
 	defer rows.Close()
 
-	return db.parseResources(rows)
+	return db.parseServices(rows)
 }
 
-func (db *PQDatabase) GetResourcesByNamespaceAndKind(namespace, kind string) ([]*core.Service, error) {
+func (db *PQDatabase) GetServicesByNamespaceAndKind(namespace, kind string) ([]*core.Service, error) {
 	sqlStatement := `SELECT ID, COLONY_NAME, NAME, KIND, DATA FROM ` + db.dbPrefix + `SERVICES WHERE COLONY_NAME=$1 AND KIND=$2 ORDER BY NAME`
 	rows, err := db.postgresql.Query(sqlStatement, namespace, kind)
 	if err != nil {
@@ -336,21 +339,21 @@ func (db *PQDatabase) GetResourcesByNamespaceAndKind(namespace, kind string) ([]
 
 	defer rows.Close()
 
-	return db.parseResources(rows)
+	return db.parseServices(rows)
 }
 
-func (db *PQDatabase) UpdateResource(service *core.Service) error {
+func (db *PQDatabase) UpdateService(service *core.Service) error {
 	if service == nil {
 		return errors.New("Service is nil")
 	}
 
-	resourceJSON, err := service.ToJSON()
+	serviceJSON, err := service.ToJSON()
 	if err != nil {
 		return err
 	}
 
 	sqlStatement := `UPDATE ` + db.dbPrefix + `SERVICES SET COLONY_NAME=$1, NAME=$2, KIND=$3, DATA=$4 WHERE ID=$5`
-	_, err = db.postgresql.Exec(sqlStatement, service.Metadata.Namespace, service.Metadata.Name, service.Kind, resourceJSON, service.ID)
+	_, err = db.postgresql.Exec(sqlStatement, service.Metadata.Namespace, service.Metadata.Name, service.Kind, serviceJSON, service.ID)
 	if err != nil {
 		return err
 	}
@@ -358,24 +361,61 @@ func (db *PQDatabase) UpdateResource(service *core.Service) error {
 	return nil
 }
 
-func (db *PQDatabase) UpdateResourceStatus(id string, status map[string]interface{}) error {
-	// Get the current service
-	service, err := db.GetResourceByID(id)
+func (db *PQDatabase) UpdateServiceStatus(id string, status map[string]interface{}) error {
+	// Get the current service data to preserve spec and metadata
+	sqlStatement := `SELECT DATA FROM ` + db.dbPrefix + `SERVICES WHERE ID=$1`
+	rows, err := db.postgresql.Query(sqlStatement, id)
 	if err != nil {
 		return err
 	}
-	if service == nil {
+	defer rows.Close()
+
+	if !rows.Next() {
 		return errors.New("Service not found")
 	}
 
-	// Update status
-	service.Status = status
+	var dataStr string
+	if err := rows.Scan(&dataStr); err != nil {
+		return err
+	}
 
-	// Save back
-	return db.UpdateResource(service)
+	// Parse the JSON data
+	var serviceData map[string]interface{}
+	if err := json.Unmarshal([]byte(dataStr), &serviceData); err != nil {
+		return fmt.Errorf("failed to unmarshal service data: %w", err)
+	}
+
+	// Update only the status field
+	serviceData["status"] = status
+
+	// Convert back to JSON
+	updatedJSON, err := json.Marshal(serviceData)
+	if err != nil {
+		return fmt.Errorf("failed to marshal updated service data: %w", err)
+	}
+
+	// Update the database
+	// Note: This still has a potential race condition, but it's much smaller window
+	// than the original read-modify-write pattern
+	updateStatement := `UPDATE ` + db.dbPrefix + `SERVICES SET DATA=$1 WHERE ID=$2`
+	result, err := db.postgresql.Exec(updateStatement, string(updatedJSON), id)
+	if err != nil {
+		return err
+	}
+
+	// Check if any rows were affected
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rowsAffected == 0 {
+		return errors.New("Service not found")
+	}
+
+	return nil
 }
 
-func (db *PQDatabase) RemoveResourceByID(id string) error {
+func (db *PQDatabase) RemoveServiceByID(id string) error {
 	sqlStatement := `DELETE FROM ` + db.dbPrefix + `SERVICES WHERE ID=$1`
 	_, err := db.postgresql.Exec(sqlStatement, id)
 	if err != nil {
@@ -385,7 +425,7 @@ func (db *PQDatabase) RemoveResourceByID(id string) error {
 	return nil
 }
 
-func (db *PQDatabase) RemoveResourceByName(namespace, name string) error {
+func (db *PQDatabase) RemoveServiceByName(namespace, name string) error {
 	sqlStatement := `DELETE FROM ` + db.dbPrefix + `SERVICES WHERE COLONY_NAME=$1 AND NAME=$2`
 	_, err := db.postgresql.Exec(sqlStatement, namespace, name)
 	if err != nil {
@@ -395,7 +435,7 @@ func (db *PQDatabase) RemoveResourceByName(namespace, name string) error {
 	return nil
 }
 
-func (db *PQDatabase) RemoveResourcesByNamespace(namespace string) error {
+func (db *PQDatabase) RemoveServicesByNamespace(namespace string) error {
 	sqlStatement := `DELETE FROM ` + db.dbPrefix + `SERVICES WHERE COLONY_NAME=$1`
 	_, err := db.postgresql.Exec(sqlStatement, namespace)
 	if err != nil {
@@ -405,7 +445,7 @@ func (db *PQDatabase) RemoveResourcesByNamespace(namespace string) error {
 	return nil
 }
 
-func (db *PQDatabase) CountResources() (int, error) {
+func (db *PQDatabase) CountServices() (int, error) {
 	sqlStatement := `SELECT COUNT(*) FROM ` + db.dbPrefix + `SERVICES`
 	rows, err := db.postgresql.Query(sqlStatement)
 	if err != nil {
@@ -424,7 +464,7 @@ func (db *PQDatabase) CountResources() (int, error) {
 	return count, nil
 }
 
-func (db *PQDatabase) CountResourcesByNamespace(namespace string) (int, error) {
+func (db *PQDatabase) CountServicesByNamespace(namespace string) (int, error) {
 	sqlStatement := `SELECT COUNT(*) FROM ` + db.dbPrefix + `SERVICES WHERE COLONY_NAME=$1`
 	rows, err := db.postgresql.Query(sqlStatement, namespace)
 	if err != nil {
@@ -443,8 +483,8 @@ func (db *PQDatabase) CountResourcesByNamespace(namespace string) (int, error) {
 	return count, nil
 }
 
-// AddResourceHistory adds a new ResourceHistory entry
-func (db *PQDatabase) AddResourceHistory(history *core.ResourceHistory) error {
+// AddServiceHistory adds a new ServiceHistory entry
+func (db *PQDatabase) AddServiceHistory(history *core.ServiceHistory) error {
 	specJSON, err := json.Marshal(history.Spec)
 	if err != nil {
 		return err
@@ -463,7 +503,7 @@ func (db *PQDatabase) AddResourceHistory(history *core.ResourceHistory) error {
 	_, err = db.postgresql.Exec(
 		sqlStatement,
 		history.ID,
-		history.ResourceID,
+		history.ServiceID,
 		history.Kind,
 		history.Namespace,
 		history.Name,
@@ -478,8 +518,8 @@ func (db *PQDatabase) AddResourceHistory(history *core.ResourceHistory) error {
 	return err
 }
 
-// GetResourceHistory retrieves history for a service (most recent first)
-func (db *PQDatabase) GetResourceHistory(resourceID string, limit int) ([]*core.ResourceHistory, error) {
+// GetServiceHistory retrieves history for a service (most recent first)
+func (db *PQDatabase) GetServiceHistory(serviceID string, limit int) ([]*core.ServiceHistory, error) {
 	sqlStatement := `SELECT ID, SERVICE_ID, KIND, NAMESPACE, NAME, GENERATION,
 		SPEC, STATUS, TIMESTAMP, CHANGED_BY, CHANGE_TYPE
 		FROM ` + db.dbPrefix + `SERVICE_HISTORY
@@ -490,20 +530,20 @@ func (db *PQDatabase) GetResourceHistory(resourceID string, limit int) ([]*core.
 		sqlStatement += fmt.Sprintf(" LIMIT %d", limit)
 	}
 
-	rows, err := db.postgresql.Query(sqlStatement, resourceID)
+	rows, err := db.postgresql.Query(sqlStatement, serviceID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	var histories []*core.ResourceHistory
+	var histories []*core.ServiceHistory
 	for rows.Next() {
-		var history core.ResourceHistory
+		var history core.ServiceHistory
 		var specJSON, statusJSON []byte
 
 		err := rows.Scan(
 			&history.ID,
-			&history.ResourceID,
+			&history.ServiceID,
 			&history.Kind,
 			&history.Namespace,
 			&history.Name,
@@ -534,26 +574,26 @@ func (db *PQDatabase) GetResourceHistory(resourceID string, limit int) ([]*core.
 	return histories, nil
 }
 
-// GetResourceHistoryByGeneration retrieves a specific generation of a service
-func (db *PQDatabase) GetResourceHistoryByGeneration(resourceID string, generation int64) (*core.ResourceHistory, error) {
+// GetServiceHistoryByGeneration retrieves a specific generation of a service
+func (db *PQDatabase) GetServiceHistoryByGeneration(serviceID string, generation int64) (*core.ServiceHistory, error) {
 	sqlStatement := `SELECT ID, SERVICE_ID, KIND, NAMESPACE, NAME, GENERATION,
 		SPEC, STATUS, TIMESTAMP, CHANGED_BY, CHANGE_TYPE
 		FROM ` + db.dbPrefix + `SERVICE_HISTORY
 		WHERE SERVICE_ID=$1 AND GENERATION=$2`
 
-	rows, err := db.postgresql.Query(sqlStatement, resourceID, generation)
+	rows, err := db.postgresql.Query(sqlStatement, serviceID, generation)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	var history core.ResourceHistory
+	var history core.ServiceHistory
 	var specJSON, statusJSON []byte
 
 	if rows.Next() {
 		err := rows.Scan(
 			&history.ID,
-			&history.ResourceID,
+			&history.ServiceID,
 			&history.Kind,
 			&history.Namespace,
 			&history.Name,
@@ -584,9 +624,9 @@ func (db *PQDatabase) GetResourceHistoryByGeneration(resourceID string, generati
 	return nil, nil
 }
 
-// RemoveResourceHistory removes all history for a service
-func (db *PQDatabase) RemoveResourceHistory(resourceID string) error {
+// RemoveServiceHistory removes all history for a service
+func (db *PQDatabase) RemoveServiceHistory(serviceID string) error {
 	sqlStatement := `DELETE FROM ` + db.dbPrefix + `SERVICE_HISTORY WHERE SERVICE_ID=$1`
-	_, err := db.postgresql.Exec(sqlStatement, resourceID)
+	_, err := db.postgresql.Exec(sqlStatement, serviceID)
 	return err
 }

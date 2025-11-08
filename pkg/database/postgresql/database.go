@@ -214,7 +214,7 @@ func (db *PQDatabase) dropCronsTable() error {
 	return nil
 }
 
-func (db *PQDatabase) dropResourceDefinitionsTable() error {
+func (db *PQDatabase) dropServiceDefinitionsTable() error {
 	sqlStatement := `DROP TABLE IF EXISTS ` + db.dbPrefix + `SERVICEDEFINITIONS`
 	_, err := db.postgresql.Exec(sqlStatement)
 	if err != nil {
@@ -224,7 +224,7 @@ func (db *PQDatabase) dropResourceDefinitionsTable() error {
 	return nil
 }
 
-func (db *PQDatabase) dropResourcesTable() error {
+func (db *PQDatabase) dropServicesTable() error {
 	sqlStatement := `DROP TABLE IF EXISTS ` + db.dbPrefix + `SERVICES`
 	_, err := db.postgresql.Exec(sqlStatement)
 	if err != nil {
@@ -310,12 +310,12 @@ func (db *PQDatabase) Drop() error {
 		return err
 	}
 
-	err = db.dropResourceDefinitionsTable()
+	err = db.dropServiceDefinitionsTable()
 	if err != nil {
 		return err
 	}
 
-	err = db.dropResourcesTable()
+	err = db.dropServicesTable()
 	if err != nil {
 		return err
 	}
@@ -485,7 +485,7 @@ func (db *PQDatabase) createCronsTable() error {
 	return nil
 }
 
-func (db *PQDatabase) createResourceDefinitionsTable() error {
+func (db *PQDatabase) createServiceDefinitionsTable() error {
 	sqlStatement := `CREATE TABLE IF NOT EXISTS ` + db.dbPrefix + `SERVICEDEFINITIONS (ID TEXT PRIMARY KEY NOT NULL, COLONY_NAME TEXT NOT NULL, NAME TEXT NOT NULL, API_GROUP TEXT NOT NULL, VERSION TEXT NOT NULL, KIND TEXT NOT NULL, DATA TEXT NOT NULL, UNIQUE(COLONY_NAME, NAME))`
 	_, err := db.postgresql.Exec(sqlStatement)
 	if err != nil {
@@ -495,7 +495,7 @@ func (db *PQDatabase) createResourceDefinitionsTable() error {
 	return nil
 }
 
-func (db *PQDatabase) createResourcesTable() error {
+func (db *PQDatabase) createServicesTable() error {
 	sqlStatement := `CREATE TABLE IF NOT EXISTS ` + db.dbPrefix + `SERVICES (ID TEXT PRIMARY KEY NOT NULL, COLONY_NAME TEXT NOT NULL, NAME TEXT NOT NULL, KIND TEXT NOT NULL, DATA TEXT NOT NULL, UNIQUE(COLONY_NAME, NAME))`
 	_, err := db.postgresql.Exec(sqlStatement)
 	if err != nil {
@@ -505,7 +505,7 @@ func (db *PQDatabase) createResourcesTable() error {
 	return nil
 }
 
-func (db *PQDatabase) createResourceHistoryTable() error {
+func (db *PQDatabase) createServiceHistoryTable() error {
 	sqlStatement := `CREATE TABLE IF NOT EXISTS ` + db.dbPrefix + `SERVICE_HISTORY (
 		ID TEXT PRIMARY KEY NOT NULL,
 		SERVICE_ID TEXT NOT NULL,
@@ -803,17 +803,17 @@ func (db *PQDatabase) Initialize() error {
 		return err
 	}
 
-	err = db.createResourceDefinitionsTable()
+	err = db.createServiceDefinitionsTable()
 	if err != nil {
 		return err
 	}
 
-	err = db.createResourcesTable()
+	err = db.createServicesTable()
 	if err != nil {
 		return err
 	}
 
-	err = db.createResourceHistoryTable()
+	err = db.createServiceHistoryTable()
 	if err != nil {
 		return err
 	}

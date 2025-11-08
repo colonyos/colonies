@@ -6,22 +6,22 @@ import (
 	"github.com/colonyos/colonies/pkg/core"
 )
 
-const AddResourceDefinitionPayloadType = "addresourcedefinitionmsg"
+const AddServiceDefinitionPayloadType = "addservicedefinitionmsg"
 
-type AddResourceDefinitionMsg struct {
-	ResourceDefinition *core.ResourceDefinition `json:"resourcedefinition"`
-	MsgType            string                   `json:"msgtype"`
+type AddServiceDefinitionMsg struct {
+	ServiceDefinition *core.ServiceDefinition `json:"servicedefinition"`
+	MsgType           string                  `json:"msgtype"`
 }
 
-func CreateAddResourceDefinitionMsg(rd *core.ResourceDefinition) *AddResourceDefinitionMsg {
-	msg := &AddResourceDefinitionMsg{}
-	msg.ResourceDefinition = rd
-	msg.MsgType = AddResourceDefinitionPayloadType
+func CreateAddServiceDefinitionMsg(sd *core.ServiceDefinition) *AddServiceDefinitionMsg {
+	msg := &AddServiceDefinitionMsg{}
+	msg.ServiceDefinition = sd
+	msg.MsgType = AddServiceDefinitionPayloadType
 
 	return msg
 }
 
-func (msg *AddResourceDefinitionMsg) ToJSON() (string, error) {
+func (msg *AddServiceDefinitionMsg) ToJSON() (string, error) {
 	jsonBytes, err := json.Marshal(msg)
 	if err != nil {
 		return "", err
@@ -30,7 +30,7 @@ func (msg *AddResourceDefinitionMsg) ToJSON() (string, error) {
 	return string(jsonBytes), nil
 }
 
-func (msg *AddResourceDefinitionMsg) ToJSONIndent() (string, error) {
+func (msg *AddServiceDefinitionMsg) ToJSONIndent() (string, error) {
 	jsonBytes, err := json.MarshalIndent(msg, "", "    ")
 	if err != nil {
 		return "", err
@@ -39,7 +39,7 @@ func (msg *AddResourceDefinitionMsg) ToJSONIndent() (string, error) {
 	return string(jsonBytes), nil
 }
 
-func (msg *AddResourceDefinitionMsg) Equals(msg2 *AddResourceDefinitionMsg) bool {
+func (msg *AddServiceDefinitionMsg) Equals(msg2 *AddServiceDefinitionMsg) bool {
 	if msg2 == nil {
 		return false
 	}
@@ -48,19 +48,19 @@ func (msg *AddResourceDefinitionMsg) Equals(msg2 *AddResourceDefinitionMsg) bool
 		return false
 	}
 
-	if msg.ResourceDefinition == nil && msg2.ResourceDefinition == nil {
+	if msg.ServiceDefinition == nil && msg2.ServiceDefinition == nil {
 		return true
 	}
 
-	if msg.ResourceDefinition == nil || msg2.ResourceDefinition == nil {
+	if msg.ServiceDefinition == nil || msg2.ServiceDefinition == nil {
 		return false
 	}
 
-	return msg.ResourceDefinition.ID == msg2.ResourceDefinition.ID
+	return msg.ServiceDefinition.ID == msg2.ServiceDefinition.ID
 }
 
-func CreateAddResourceDefinitionMsgFromJSON(jsonString string) (*AddResourceDefinitionMsg, error) {
-	var msg *AddResourceDefinitionMsg
+func CreateAddServiceDefinitionMsgFromJSON(jsonString string) (*AddServiceDefinitionMsg, error) {
+	var msg *AddServiceDefinitionMsg
 
 	err := json.Unmarshal([]byte(jsonString), &msg)
 	if err != nil {

@@ -8,73 +8,73 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestAddResourceDefinition(t *testing.T) {
+func TestAddServiceDefinition(t *testing.T) {
 	env, client, server, _, done := server.SetupTestEnv2(t)
 
-	// Create a ResourceDefinition
-	rd := core.CreateResourceDefinition(
+	// Create a ServiceDefinition
+	sd := core.CreateServiceDefinition(
 		"test-service",
 		"example.com",
 		"v1",
-		"TestResource",
-		"testresources",
+		"TestService",
+		"testservices",
 		"Namespaced",
 		"test_executor_type",
 		"reconcile_test_resource",
 	)
-	rd.Metadata.Namespace = env.ColonyName
+	sd.Metadata.Namespace = env.ColonyName
 
-	// Add ResourceDefinition with colony owner key
-	addedRD, err := client.AddResourceDefinition(rd, env.ColonyPrvKey)
+	// Add ServiceDefinition with colony owner key
+	addedSD, err := client.AddServiceDefinition(sd, env.ColonyPrvKey)
 	assert.Nil(t, err)
-	assert.NotNil(t, addedRD)
-	assert.Equal(t, rd.Metadata.Name, addedRD.Metadata.Name)
-	assert.Equal(t, rd.Spec.Group, addedRD.Spec.Group)
-	assert.Equal(t, rd.Spec.Version, addedRD.Spec.Version)
+	assert.NotNil(t, addedSD)
+	assert.Equal(t, sd.Metadata.Name, addedSD.Metadata.Name)
+	assert.Equal(t, sd.Spec.Group, addedSD.Spec.Group)
+	assert.Equal(t, sd.Spec.Version, addedSD.Spec.Version)
 
-	// Try to add duplicate ResourceDefinition - should fail
-	_, err = client.AddResourceDefinition(rd, env.ColonyPrvKey)
+	// Try to add duplicate ServiceDefinition - should fail
+	_, err = client.AddServiceDefinition(sd, env.ColonyPrvKey)
 	assert.NotNil(t, err)
 
 	server.Shutdown()
 	<-done
 }
 
-func TestGetResourceDefinition(t *testing.T) {
+func TestGetServiceDefinition(t *testing.T) {
 	env, client, server, _, done := server.SetupTestEnv2(t)
 
-	// Create and add ResourceDefinition
-	rd := core.CreateResourceDefinition(
+	// Create and add ServiceDefinition
+	sd := core.CreateServiceDefinition(
 		"test-service",
 		"example.com",
 		"v1",
-		"TestResource",
-		"testresources",
+		"TestService",
+		"testservices",
 		"Namespaced",
 		"test_executor_type",
 		"reconcile_test_resource",
 	)
-	rd.Metadata.Namespace = env.ColonyName
+	sd.Metadata.Namespace = env.ColonyName
 
-	addedRD, err := client.AddResourceDefinition(rd, env.ColonyPrvKey)
+	addedSD, err := client.AddServiceDefinition(sd, env.ColonyPrvKey)
 	assert.Nil(t, err)
 
-	// Get ResourceDefinition (using executor key since only members can get)
-	retrievedRD, err := client.GetResourceDefinition(env.ColonyName, rd.Metadata.Name, env.ExecutorPrvKey)
+	// Get ServiceDefinition (using executor key since only members can get)
+	retrievedSD, err := client.GetServiceDefinition(env.ColonyName, sd.Metadata.Name, env.ExecutorPrvKey)
 	assert.Nil(t, err)
-	assert.NotNil(t, retrievedRD)
-	assert.Equal(t, addedRD.ID, retrievedRD.ID)
-	assert.Equal(t, addedRD.Metadata.Name, retrievedRD.Metadata.Name)
+	assert.NotNil(t, retrievedSD)
+	assert.Equal(t, addedSD.ID, retrievedSD.ID)
+	assert.Equal(t, addedSD.Metadata.Name, retrievedSD.Metadata.Name)
 
 	server.Shutdown()
 	<-done
 }
 
-func TestAddResource(t *testing.T) {
+func TestAddService(t *testing.T) {
 	env, client, server, _, done := server.SetupTestEnv2(t)
 
-	// First add a ResourceDefinition
-	rd := core.CreateResourceDefinition(
+	// First add a ServiceDefinition
+	sd := core.CreateServiceDefinition(
 		"database",
 		"example.com",
 		"v1",
@@ -84,25 +84,25 @@ func TestAddResource(t *testing.T) {
 		"database_controller",
 		"reconcile_database",
 	)
-	rd.Metadata.Namespace = env.ColonyName
+	sd.Metadata.Namespace = env.ColonyName
 
-	_, err := client.AddResourceDefinition(rd, env.ColonyPrvKey)
+	_, err := client.AddServiceDefinition(sd, env.ColonyPrvKey)
 	assert.Nil(t, err)
 
 	// Create a Service instance
-	service := core.CreateResource("Database", "test-database", env.ColonyName)
+	service := core.CreateService("Database", "test-database", env.ColonyName)
 	service.SetSpec("host", "localhost")
 	service.SetSpec("port", 5432)
 
 	// Add Service
-	addedResource, err := client.AddResource(service, env.ExecutorPrvKey)
+	addedService, err := client.AddService(service, env.ExecutorPrvKey)
 	assert.Nil(t, err)
-	assert.NotNil(t, addedResource)
-	assert.Equal(t, service.Metadata.Name, addedResource.Metadata.Name)
-	assert.Equal(t, service.Kind, addedResource.Kind)
+	assert.NotNil(t, addedService)
+	assert.Equal(t, service.Metadata.Name, addedService.Metadata.Name)
+	assert.Equal(t, service.Kind, addedService.Kind)
 
 	// Verify spec was preserved
-	host, ok := addedResource.GetSpec("host")
+	host, ok := addedService.GetSpec("host")
 	assert.True(t, ok)
 	assert.Equal(t, "localhost", host)
 
@@ -110,11 +110,11 @@ func TestAddResource(t *testing.T) {
 	<-done
 }
 
-func TestGetResource(t *testing.T) {
+func TestGetService(t *testing.T) {
 	env, client, server, _, done := server.SetupTestEnv2(t)
 
-	// Add ResourceDefinition
-	rd := core.CreateResourceDefinition(
+	// Add ServiceDefinition
+	sd := core.CreateServiceDefinition(
 		"service",
 		"example.com",
 		"v1",
@@ -124,32 +124,32 @@ func TestGetResource(t *testing.T) {
 		"service_controller",
 		"reconcile_service",
 	)
-	rd.Metadata.Namespace = env.ColonyName
-	_, err := client.AddResourceDefinition(rd, env.ColonyPrvKey)
+	sd.Metadata.Namespace = env.ColonyName
+	_, err := client.AddServiceDefinition(sd, env.ColonyPrvKey)
 	assert.Nil(t, err)
 
 	// Add Service
-	service := core.CreateResource("Service", "web-service", env.ColonyName)
+	service := core.CreateService("Service", "web-service", env.ColonyName)
 	service.SetSpec("port", 8080)
-	addedResource, err := client.AddResource(service, env.ExecutorPrvKey)
+	addedService, err := client.AddService(service, env.ExecutorPrvKey)
 	assert.Nil(t, err)
 
 	// Get Service
-	retrievedResource, err := client.GetResource(env.ColonyName, service.Metadata.Name, env.ExecutorPrvKey)
+	retrievedService, err := client.GetService(env.ColonyName, service.Metadata.Name, env.ExecutorPrvKey)
 	assert.Nil(t, err)
-	assert.NotNil(t, retrievedResource)
-	assert.Equal(t, addedResource.ID, retrievedResource.ID)
-	assert.Equal(t, addedResource.Metadata.Name, retrievedResource.Metadata.Name)
+	assert.NotNil(t, retrievedService)
+	assert.Equal(t, addedService.ID, retrievedService.ID)
+	assert.Equal(t, addedService.Metadata.Name, retrievedService.Metadata.Name)
 
 	server.Shutdown()
 	<-done
 }
 
-func TestGetResources(t *testing.T) {
+func TestGetServices(t *testing.T) {
 	env, client, server, _, done := server.SetupTestEnv2(t)
 
-	// Add ResourceDefinition for Database
-	rdDB := core.CreateResourceDefinition(
+	// Add ServiceDefinition for Database
+	sdDB := core.CreateServiceDefinition(
 		"database",
 		"example.com",
 		"v1",
@@ -159,12 +159,12 @@ func TestGetResources(t *testing.T) {
 		"database_controller",
 		"reconcile_database",
 	)
-	rdDB.Metadata.Namespace = env.ColonyName
-	_, err := client.AddResourceDefinition(rdDB, env.ColonyPrvKey)
+	sdDB.Metadata.Namespace = env.ColonyName
+	_, err := client.AddServiceDefinition(sdDB, env.ColonyPrvKey)
 	assert.Nil(t, err)
 
-	// Add ResourceDefinition for Service
-	rdSvc := core.CreateResourceDefinition(
+	// Add ServiceDefinition for Service
+	sdSvc := core.CreateServiceDefinition(
 		"service",
 		"example.com",
 		"v1",
@@ -174,47 +174,47 @@ func TestGetResources(t *testing.T) {
 		"service_controller",
 		"reconcile_service",
 	)
-	rdSvc.Metadata.Namespace = env.ColonyName
-	_, err = client.AddResourceDefinition(rdSvc, env.ColonyPrvKey)
+	sdSvc.Metadata.Namespace = env.ColonyName
+	_, err = client.AddServiceDefinition(sdSvc, env.ColonyPrvKey)
 	assert.Nil(t, err)
 
 	// Add some Database services
-	db1 := core.CreateResource("Database", "db1", env.ColonyName)
-	db2 := core.CreateResource("Database", "db2", env.ColonyName)
-	_, err = client.AddResource(db1, env.ExecutorPrvKey)
+	db1 := core.CreateService("Database", "db1", env.ColonyName)
+	db2 := core.CreateService("Database", "db2", env.ColonyName)
+	_, err = client.AddService(db1, env.ExecutorPrvKey)
 	assert.Nil(t, err)
-	_, err = client.AddResource(db2, env.ExecutorPrvKey)
+	_, err = client.AddService(db2, env.ExecutorPrvKey)
 	assert.Nil(t, err)
 
 	// Add some Service services
-	svc1 := core.CreateResource("Service", "svc1", env.ColonyName)
-	_, err = client.AddResource(svc1, env.ExecutorPrvKey)
+	svc1 := core.CreateService("Service", "svc1", env.ColonyName)
+	_, err = client.AddService(svc1, env.ExecutorPrvKey)
 	assert.Nil(t, err)
 
 	// Get all services
-	allResources, err := client.GetResources(env.ColonyName, "", env.ExecutorPrvKey)
+	allServices, err := client.GetServices(env.ColonyName, "", env.ExecutorPrvKey)
 	assert.Nil(t, err)
-	assert.Equal(t, 3, len(allResources))
+	assert.Equal(t, 3, len(allServices))
 
 	// Get only Database services
-	dbResources, err := client.GetResources(env.ColonyName, "Database", env.ExecutorPrvKey)
+	dbServices, err := client.GetServices(env.ColonyName, "Database", env.ExecutorPrvKey)
 	assert.Nil(t, err)
-	assert.Equal(t, 2, len(dbResources))
+	assert.Equal(t, 2, len(dbServices))
 
 	// Get only Service services
-	svcResources, err := client.GetResources(env.ColonyName, "Service", env.ExecutorPrvKey)
+	svcServices, err := client.GetServices(env.ColonyName, "Service", env.ExecutorPrvKey)
 	assert.Nil(t, err)
-	assert.Equal(t, 1, len(svcResources))
+	assert.Equal(t, 1, len(svcServices))
 
 	server.Shutdown()
 	<-done
 }
 
-func TestUpdateResource(t *testing.T) {
+func TestUpdateService(t *testing.T) {
 	env, client, server, _, done := server.SetupTestEnv2(t)
 
-	// Add ResourceDefinition
-	rd := core.CreateResourceDefinition(
+	// Add ServiceDefinition
+	sd := core.CreateServiceDefinition(
 		"application",
 		"example.com",
 		"v1",
@@ -224,23 +224,23 @@ func TestUpdateResource(t *testing.T) {
 		"app_controller",
 		"reconcile_application",
 	)
-	rd.Metadata.Namespace = env.ColonyName
-	_, err := client.AddResourceDefinition(rd, env.ColonyPrvKey)
+	sd.Metadata.Namespace = env.ColonyName
+	_, err := client.AddServiceDefinition(sd, env.ColonyPrvKey)
 	assert.Nil(t, err)
 
 	// Add Service
-	service := core.CreateResource("Application", "my-app", env.ColonyName)
+	service := core.CreateService("Application", "my-app", env.ColonyName)
 	service.SetSpec("version", "1.0.0")
-	addedResource, err := client.AddResource(service, env.ExecutorPrvKey)
+	addedService, err := client.AddService(service, env.ExecutorPrvKey)
 	assert.Nil(t, err)
 
 	// Update Service
-	addedResource.SetSpec("version", "1.1.0")
-	updatedResource, err := client.UpdateResource(addedResource, env.ExecutorPrvKey)
+	addedService.SetSpec("version", "1.1.0")
+	updatedService, err := client.UpdateService(addedService, env.ExecutorPrvKey)
 	assert.Nil(t, err)
-	assert.NotNil(t, updatedResource)
+	assert.NotNil(t, updatedService)
 
-	version, ok := updatedResource.GetSpec("version")
+	version, ok := updatedService.GetSpec("version")
 	assert.True(t, ok)
 	assert.Equal(t, "1.1.0", version)
 
@@ -248,11 +248,11 @@ func TestUpdateResource(t *testing.T) {
 	<-done
 }
 
-func TestRemoveResource(t *testing.T) {
+func TestRemoveService(t *testing.T) {
 	env, client, server, _, done := server.SetupTestEnv2(t)
 
-	// Add ResourceDefinition
-	rd := core.CreateResourceDefinition(
+	// Add ServiceDefinition
+	sd := core.CreateServiceDefinition(
 		"cache",
 		"example.com",
 		"v1",
@@ -262,32 +262,32 @@ func TestRemoveResource(t *testing.T) {
 		"cache_controller",
 		"reconcile_cache",
 	)
-	rd.Metadata.Namespace = env.ColonyName
-	_, err := client.AddResourceDefinition(rd, env.ColonyPrvKey)
+	sd.Metadata.Namespace = env.ColonyName
+	_, err := client.AddServiceDefinition(sd, env.ColonyPrvKey)
 	assert.Nil(t, err)
 
 	// Add Service
-	service := core.CreateResource("Cache", "redis-cache", env.ColonyName)
-	addedResource, err := client.AddResource(service, env.ExecutorPrvKey)
+	service := core.CreateService("Cache", "redis-cache", env.ColonyName)
+	addedService, err := client.AddService(service, env.ExecutorPrvKey)
 	assert.Nil(t, err)
 
 	// Remove Service
-	err = client.RemoveResource(env.ColonyName, addedResource.Metadata.Name, env.ExecutorPrvKey)
+	err = client.RemoveService(env.ColonyName, addedService.Metadata.Name, env.ExecutorPrvKey)
 	assert.Nil(t, err)
 
 	// Verify it's removed
-	_, err = client.GetResource(env.ColonyName, addedResource.Metadata.Name, env.ExecutorPrvKey)
+	_, err = client.GetService(env.ColonyName, addedService.Metadata.Name, env.ExecutorPrvKey)
 	assert.NotNil(t, err) // Should fail because service doesn't exist
 
 	server.Shutdown()
 	<-done
 }
 
-func TestResourceWithComplexSpec(t *testing.T) {
+func TestServiceWithComplexSpec(t *testing.T) {
 	env, client, server, _, done := server.SetupTestEnv2(t)
 
-	// Add ResourceDefinition
-	rd := core.CreateResourceDefinition(
+	// Add ServiceDefinition
+	sd := core.CreateServiceDefinition(
 		"deployment",
 		"compute.io",
 		"v1",
@@ -297,12 +297,12 @@ func TestResourceWithComplexSpec(t *testing.T) {
 		"deployment_controller",
 		"reconcile_deployment",
 	)
-	rd.Metadata.Namespace = env.ColonyName
-	_, err := client.AddResourceDefinition(rd, env.ColonyPrvKey)
+	sd.Metadata.Namespace = env.ColonyName
+	_, err := client.AddServiceDefinition(sd, env.ColonyPrvKey)
 	assert.Nil(t, err)
 
 	// Create Service with complex spec
-	service := core.CreateResource("Deployment", "web-deployment", env.ColonyName)
+	service := core.CreateService("Deployment", "web-deployment", env.ColonyName)
 	service.SetSpec("image", "nginx:1.21")
 	service.SetSpec("replicas", 3)
 	service.SetSpec("env", map[string]interface{}{
@@ -318,67 +318,67 @@ func TestResourceWithComplexSpec(t *testing.T) {
 	}
 
 	// Add Service
-	_, err = client.AddResource(service, env.ExecutorPrvKey)
+	_, err = client.AddService(service, env.ExecutorPrvKey)
 	assert.Nil(t, err)
 
 	// Retrieve and verify
-	retrievedResource, err := client.GetResource(env.ColonyName, service.Metadata.Name, env.ExecutorPrvKey)
+	retrievedService, err := client.GetService(env.ColonyName, service.Metadata.Name, env.ExecutorPrvKey)
 	assert.Nil(t, err)
 
-	image, ok := retrievedResource.GetSpec("image")
+	image, ok := retrievedService.GetSpec("image")
 	assert.True(t, ok)
 	assert.Equal(t, "nginx:1.21", image)
 
-	replicas, ok := retrievedResource.GetSpec("replicas")
+	replicas, ok := retrievedService.GetSpec("replicas")
 	assert.True(t, ok)
 	assert.Equal(t, float64(3), replicas) // JSON unmarshaling converts to float64
 
-	envSpec, ok := retrievedResource.GetSpec("env")
+	envSpec, ok := retrievedService.GetSpec("env")
 	assert.True(t, ok)
 	envMap := envSpec.(map[string]interface{})
 	assert.Equal(t, "postgres://localhost/db", envMap["DATABASE_URL"])
 
-	assert.Equal(t, "v1.0.0", retrievedResource.Metadata.Labels["version"])
-	assert.Equal(t, "My test application", retrievedResource.Metadata.Annotations["description"])
+	assert.Equal(t, "v1.0.0", retrievedService.Metadata.Labels["version"])
+	assert.Equal(t, "My test application", retrievedService.Metadata.Annotations["description"])
 
 	server.Shutdown()
 	<-done
 }
 
-// TestAddResourceRequiresResourceDefinition tests that adding a service without a ResourceDefinition fails
-func TestAddResourceRequiresResourceDefinition(t *testing.T) {
+// TestAddServiceRequiresServiceDefinition tests that adding a service without a ServiceDefinition fails
+func TestAddServiceRequiresServiceDefinition(t *testing.T) {
 	env, client, server, _, done := server.SetupTestEnv2(t)
 
-	// Try to add a Service WITHOUT adding its ResourceDefinition first
-	service := core.CreateResource("NonExistentKind", "test-service", env.ColonyName)
+	// Try to add a Service WITHOUT adding its ServiceDefinition first
+	service := core.CreateService("NonExistentKind", "test-service", env.ColonyName)
 	service.SetSpec("field", "value")
 
-	// This should fail because ResourceDefinition doesn't exist
-	_, err := client.AddResource(service, env.ExecutorPrvKey)
-	assert.NotNil(t, err, "Adding service without ResourceDefinition should fail")
-	assert.Contains(t, err.Error(), "ResourceDefinition for kind 'NonExistentKind' not found")
+	// This should fail because ServiceDefinition doesn't exist
+	_, err := client.AddService(service, env.ExecutorPrvKey)
+	assert.NotNil(t, err, "Adding service without ServiceDefinition should fail")
+	assert.Contains(t, err.Error(), "ServiceDefinition for kind 'NonExistentKind' not found")
 
 	server.Shutdown()
 	<-done
 }
 
-// TestAddResourceWithSchemaValidation tests that services are validated against the ResourceDefinition schema
-func TestAddResourceWithSchemaValidation(t *testing.T) {
+// TestAddServiceWithSchemaValidation tests that services are validated against the ServiceDefinition schema
+func TestAddServiceWithSchemaValidation(t *testing.T) {
 	env, client, server, _, done := server.SetupTestEnv2(t)
 
-	// Create ResourceDefinition with schema validation
-	rd := core.CreateResourceDefinition(
+	// Create ServiceDefinition with schema validation
+	sd := core.CreateServiceDefinition(
 		"validated-service",
 		"example.com",
 		"v1",
-		"ValidatedResource",
-		"validatedresources",
+		"ValidatedService",
+		"validatedservices",
 		"Namespaced",
 		"validator_controller",
 		"reconcile_validated",
 	)
-	rd.Metadata.Namespace = env.ColonyName
-	rd.Spec.Schema = &core.ValidationSchema{
+	sd.Metadata.Namespace = env.ColonyName
+	sd.Spec.Schema = &core.ValidationSchema{
 		Type: "object",
 		Properties: map[string]core.SchemaProperty{
 			"name": {
@@ -397,43 +397,43 @@ func TestAddResourceWithSchemaValidation(t *testing.T) {
 		Required: []string{"name", "replicas"},
 	}
 
-	_, err := client.AddResourceDefinition(rd, env.ColonyPrvKey)
+	_, err := client.AddServiceDefinition(sd, env.ColonyPrvKey)
 	assert.Nil(t, err)
 
 	// Test 1: Valid service should succeed
-	validResource := core.CreateResource("ValidatedResource", "valid-res", env.ColonyName)
-	validResource.SetSpec("name", "test")
-	validResource.SetSpec("replicas", 3)
-	validResource.SetSpec("protocol", "TCP")
+	validService := core.CreateService("ValidatedService", "valid-res", env.ColonyName)
+	validService.SetSpec("name", "test")
+	validService.SetSpec("replicas", 3)
+	validService.SetSpec("protocol", "TCP")
 
-	addedResource, err := client.AddResource(validResource, env.ExecutorPrvKey)
+	addedService, err := client.AddService(validService, env.ExecutorPrvKey)
 	assert.Nil(t, err, "Valid service should be added successfully")
-	assert.NotNil(t, addedResource)
+	assert.NotNil(t, addedService)
 
 	// Test 2: Service missing required field should fail
-	invalidResource1 := core.CreateResource("ValidatedResource", "invalid-res-1", env.ColonyName)
-	invalidResource1.SetSpec("name", "test") // Missing required 'replicas'
+	invalidService1 := core.CreateService("ValidatedService", "invalid-res-1", env.ColonyName)
+	invalidService1.SetSpec("name", "test") // Missing required 'replicas'
 
-	_, err = client.AddResource(invalidResource1, env.ExecutorPrvKey)
+	_, err = client.AddService(invalidService1, env.ExecutorPrvKey)
 	assert.NotNil(t, err, "Service missing required field should fail")
 	assert.Contains(t, err.Error(), "required field 'replicas' is missing")
 
 	// Test 3: Service with invalid type should fail
-	invalidResource2 := core.CreateResource("ValidatedResource", "invalid-res-2", env.ColonyName)
-	invalidResource2.SetSpec("name", "test")
-	invalidResource2.SetSpec("replicas", "not-a-number") // Should be number
+	invalidService2 := core.CreateService("ValidatedService", "invalid-res-2", env.ColonyName)
+	invalidService2.SetSpec("name", "test")
+	invalidService2.SetSpec("replicas", "not-a-number") // Should be number
 
-	_, err = client.AddResource(invalidResource2, env.ExecutorPrvKey)
+	_, err = client.AddService(invalidService2, env.ExecutorPrvKey)
 	assert.NotNil(t, err, "Service with invalid type should fail")
 	assert.Contains(t, err.Error(), "must be a number")
 
 	// Test 4: Service with invalid enum value should fail
-	invalidResource3 := core.CreateResource("ValidatedResource", "invalid-res-3", env.ColonyName)
-	invalidResource3.SetSpec("name", "test")
-	invalidResource3.SetSpec("replicas", 3)
-	invalidResource3.SetSpec("protocol", "HTTP") // Not in enum [TCP, UDP]
+	invalidService3 := core.CreateService("ValidatedService", "invalid-res-3", env.ColonyName)
+	invalidService3.SetSpec("name", "test")
+	invalidService3.SetSpec("replicas", 3)
+	invalidService3.SetSpec("protocol", "HTTP") // Not in enum [TCP, UDP]
 
-	_, err = client.AddResource(invalidResource3, env.ExecutorPrvKey)
+	_, err = client.AddService(invalidService3, env.ExecutorPrvKey)
 	assert.NotNil(t, err, "Service with invalid enum value should fail")
 	assert.Contains(t, err.Error(), "must be one of")
 
@@ -441,97 +441,97 @@ func TestAddResourceWithSchemaValidation(t *testing.T) {
 	<-done
 }
 
-// TestRemoveResourceDefinitionWithActiveResources tests that removing a ResourceDefinition with active services fails
-func TestRemoveResourceDefinitionWithActiveResources(t *testing.T) {
+// TestRemoveServiceDefinitionWithActiveServices tests that removing a ServiceDefinition with active services fails
+func TestRemoveServiceDefinitionWithActiveServices(t *testing.T) {
 	env, client, server, _, done := server.SetupTestEnv2(t)
 
-	// Add ResourceDefinition
-	rd := core.CreateResourceDefinition(
+	// Add ServiceDefinition
+	sd := core.CreateServiceDefinition(
 		"protected-service",
 		"example.com",
 		"v1",
-		"ProtectedResource",
-		"protectedresources",
+		"ProtectedService",
+		"protectedservices",
 		"Namespaced",
 		"protected_controller",
 		"reconcile_protected",
 	)
-	rd.Metadata.Namespace = env.ColonyName
-	addedRD, err := client.AddResourceDefinition(rd, env.ColonyPrvKey)
+	sd.Metadata.Namespace = env.ColonyName
+	addedSD, err := client.AddServiceDefinition(sd, env.ColonyPrvKey)
 	assert.Nil(t, err)
 
 	// Add some services of this kind
-	resource1 := core.CreateResource("ProtectedResource", "res-1", env.ColonyName)
-	_, err = client.AddResource(resource1, env.ExecutorPrvKey)
+	service1 := core.CreateService("ProtectedService", "res-1", env.ColonyName)
+	_, err = client.AddService(service1, env.ExecutorPrvKey)
 	assert.Nil(t, err)
 
-	resource2 := core.CreateResource("ProtectedResource", "res-2", env.ColonyName)
-	_, err = client.AddResource(resource2, env.ExecutorPrvKey)
+	service2 := core.CreateService("ProtectedService", "res-2", env.ColonyName)
+	_, err = client.AddService(service2, env.ExecutorPrvKey)
 	assert.Nil(t, err)
 
-	// Try to remove ResourceDefinition while services exist - should fail
-	err = client.RemoveResourceDefinition(env.ColonyName, addedRD.Metadata.Name, env.ColonyPrvKey)
-	assert.NotNil(t, err, "Removing ResourceDefinition with active services should fail")
-	assert.Contains(t, err.Error(), "2 service(s) of kind 'ProtectedResource' still exist")
+	// Try to remove ServiceDefinition while services exist - should fail
+	err = client.RemoveServiceDefinition(env.ColonyName, addedSD.Metadata.Name, env.ColonyPrvKey)
+	assert.NotNil(t, err, "Removing ServiceDefinition with active services should fail")
+	assert.Contains(t, err.Error(), "2 service(s) of kind 'ProtectedService' still exist")
 
 	// Remove one service
-	err = client.RemoveResource(env.ColonyName, resource1.Metadata.Name, env.ExecutorPrvKey)
+	err = client.RemoveService(env.ColonyName, service1.Metadata.Name, env.ExecutorPrvKey)
 	assert.Nil(t, err)
 
 	// Try again - should still fail because one service remains
-	err = client.RemoveResourceDefinition(env.ColonyName, addedRD.Metadata.Name, env.ColonyPrvKey)
-	assert.NotNil(t, err, "Removing ResourceDefinition with 1 active service should still fail")
-	assert.Contains(t, err.Error(), "1 service(s) of kind 'ProtectedResource' still exist")
+	err = client.RemoveServiceDefinition(env.ColonyName, addedSD.Metadata.Name, env.ColonyPrvKey)
+	assert.NotNil(t, err, "Removing ServiceDefinition with 1 active service should still fail")
+	assert.Contains(t, err.Error(), "1 service(s) of kind 'ProtectedService' still exist")
 
 	// Remove the last service
-	err = client.RemoveResource(env.ColonyName, resource2.Metadata.Name, env.ExecutorPrvKey)
+	err = client.RemoveService(env.ColonyName, service2.Metadata.Name, env.ExecutorPrvKey)
 	assert.Nil(t, err)
 
 	// Now removal should succeed
-	err = client.RemoveResourceDefinition(env.ColonyName, addedRD.Metadata.Name, env.ColonyPrvKey)
-	assert.Nil(t, err, "Removing ResourceDefinition with no active services should succeed")
+	err = client.RemoveServiceDefinition(env.ColonyName, addedSD.Metadata.Name, env.ColonyPrvKey)
+	assert.Nil(t, err, "Removing ServiceDefinition with no active services should succeed")
 
 	server.Shutdown()
 	<-done
 }
 
-func TestGetResourceHistory(t *testing.T) {
+func TestGetServiceHistory(t *testing.T) {
 	env, client, server, _, done := server.SetupTestEnv2(t)
 
-	// First create a ResourceDefinition
-	rd := core.CreateResourceDefinition(
+	// First create a ServiceDefinition
+	sd := core.CreateServiceDefinition(
 		"testresource",
 		"example.com",
 		"v1",
-		"TestResource",
-		"testresources",
+		"TestService",
+		"testservices",
 		"Namespaced",
 		"test_controller",
 		"reconcile_testresource",
 	)
-	rd.Metadata.Namespace = env.ColonyName
+	sd.Metadata.Namespace = env.ColonyName
 
-	_, err := client.AddResourceDefinition(rd, env.ColonyPrvKey)
+	_, err := client.AddServiceDefinition(sd, env.ColonyPrvKey)
 	assert.Nil(t, err)
 
 	// Create a Service
-	service := core.CreateResource("TestResource", "test-service-1", env.ColonyName)
+	service := core.CreateService("TestService", "test-service-1", env.ColonyName)
 	service.SetSpec("replicas", 3)
 	service.SetStatus("phase", "Running")
 
 	// Add Service
-	addedResource, err := client.AddResource(service, env.ExecutorPrvKey)
+	addedService, err := client.AddService(service, env.ExecutorPrvKey)
 	assert.Nil(t, err)
-	assert.NotNil(t, addedResource)
+	assert.NotNil(t, addedService)
 
 	// Update the service to create more history
-	addedResource.SetSpec("replicas", 5)
-	updatedResource, err := client.UpdateResource(addedResource, env.ExecutorPrvKey)
+	addedService.SetSpec("replicas", 5)
+	updatedService, err := client.UpdateService(addedService, env.ExecutorPrvKey)
 	assert.Nil(t, err)
-	assert.NotNil(t, updatedResource)
+	assert.NotNil(t, updatedService)
 
 	// Get service history
-	histories, err := client.GetResourceHistory(addedResource.ID, 10, env.ExecutorPrvKey)
+	histories, err := client.GetServiceHistory(addedService.ID, 10, env.ExecutorPrvKey)
 	assert.Nil(t, err)
 	assert.NotNil(t, histories)
 

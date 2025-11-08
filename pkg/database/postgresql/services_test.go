@@ -7,13 +7,13 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestAddGetResourceDefinition(t *testing.T) {
+func TestAddGetServiceDefinition(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
 
 	defer db.Close()
 
-	rd := core.CreateResourceDefinition(
+	sd := core.CreateServiceDefinition(
 		"executordeployments.compute.colonies.io",
 		"compute.colonies.io",
 		"v1",
@@ -23,191 +23,191 @@ func TestAddGetResourceDefinition(t *testing.T) {
 		"executor-controller",
 		"reconcile",
 	)
-	rd.Metadata.Namespace = "test-colony"
+	sd.Metadata.Namespace = "test-colony"
 
-	err = db.AddResourceDefinition(rd)
+	err = db.AddServiceDefinition(sd)
 	assert.Nil(t, err)
 
 	// Get by ID
-	rdFromDB, err := db.GetResourceDefinitionByID(rd.ID)
+	sdFromDB, err := db.GetServiceDefinitionByID(sd.ID)
 	assert.Nil(t, err)
-	assert.NotNil(t, rdFromDB)
-	assert.Equal(t, rd.ID, rdFromDB.ID)
-	assert.Equal(t, rd.Metadata.Name, rdFromDB.Metadata.Name)
-	assert.Equal(t, rd.Spec.Group, rdFromDB.Spec.Group)
-	assert.Equal(t, rd.Spec.Version, rdFromDB.Spec.Version)
+	assert.NotNil(t, sdFromDB)
+	assert.Equal(t, sd.ID, sdFromDB.ID)
+	assert.Equal(t, sd.Metadata.Name, sdFromDB.Metadata.Name)
+	assert.Equal(t, sd.Spec.Group, sdFromDB.Spec.Group)
+	assert.Equal(t, sd.Spec.Version, sdFromDB.Spec.Version)
 
 	// Get by name
-	rdFromDB2, err := db.GetResourceDefinitionByName(rd.Metadata.Namespace, rd.Metadata.Name)
+	sdFromDB2, err := db.GetServiceDefinitionByName(sd.Metadata.Namespace, sd.Metadata.Name)
 	assert.Nil(t, err)
-	assert.NotNil(t, rdFromDB2)
-	assert.Equal(t, rd.ID, rdFromDB2.ID)
+	assert.NotNil(t, sdFromDB2)
+	assert.Equal(t, sd.ID, sdFromDB2.ID)
 
 	// Get all
-	rds, err := db.GetResourceDefinitions()
+	sds, err := db.GetServiceDefinitions()
 	assert.Nil(t, err)
-	assert.Equal(t, 1, len(rds))
+	assert.Equal(t, 1, len(sds))
 
 	// Count
-	count, err := db.CountResourceDefinitions()
+	count, err := db.CountServiceDefinitions()
 	assert.Nil(t, err)
 	assert.Equal(t, 1, count)
 }
 
-func TestAddGetResource(t *testing.T) {
+func TestAddGetService(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
 
 	defer db.Close()
 
-	service := core.CreateResource("ExecutorDeployment", "web-server", "production")
+	service := core.CreateService("ExecutorDeployment", "web-server", "production")
 	service.SetSpec("image", "nginx:1.21")
 	service.SetSpec("replicas", 3)
 	service.SetStatus("phase", "Running")
 
-	err = db.AddResource(service)
+	err = db.AddService(service)
 	assert.Nil(t, err)
 
 	// Get by ID
-	resourceFromDB, err := db.GetResourceByID(service.ID)
+	serviceFromDB, err := db.GetServiceByID(service.ID)
 	assert.Nil(t, err)
-	assert.NotNil(t, resourceFromDB)
-	assert.Equal(t, service.ID, resourceFromDB.ID)
-	assert.Equal(t, service.Metadata.Name, resourceFromDB.Metadata.Name)
-	assert.Equal(t, service.Metadata.Namespace, resourceFromDB.Metadata.Namespace)
-	assert.Equal(t, service.Kind, resourceFromDB.Kind)
+	assert.NotNil(t, serviceFromDB)
+	assert.Equal(t, service.ID, serviceFromDB.ID)
+	assert.Equal(t, service.Metadata.Name, serviceFromDB.Metadata.Name)
+	assert.Equal(t, service.Metadata.Namespace, serviceFromDB.Metadata.Namespace)
+	assert.Equal(t, service.Kind, serviceFromDB.Kind)
 
 	// Verify spec
-	image, ok := resourceFromDB.GetSpec("image")
+	image, ok := serviceFromDB.GetSpec("image")
 	assert.True(t, ok)
 	assert.Equal(t, "nginx:1.21", image)
 
-	replicas, ok := resourceFromDB.GetSpec("replicas")
+	replicas, ok := serviceFromDB.GetSpec("replicas")
 	assert.True(t, ok)
 	assert.Equal(t, float64(3), replicas) // JSON unmarshaling converts to float64
 
 	// Verify status
-	phase, ok := resourceFromDB.GetStatus("phase")
+	phase, ok := serviceFromDB.GetStatus("phase")
 	assert.True(t, ok)
 	assert.Equal(t, "Running", phase)
 
 	// Get by name
-	resourceFromDB2, err := db.GetResourceByName(service.Metadata.Namespace, service.Metadata.Name)
+	serviceFromDB2, err := db.GetServiceByName(service.Metadata.Namespace, service.Metadata.Name)
 	assert.Nil(t, err)
-	assert.NotNil(t, resourceFromDB2)
-	assert.Equal(t, service.ID, resourceFromDB2.ID)
+	assert.NotNil(t, serviceFromDB2)
+	assert.Equal(t, service.ID, serviceFromDB2.ID)
 
 	// Get all
-	services, err := db.GetResources()
+	services, err := db.GetServices()
 	assert.Nil(t, err)
 	assert.Equal(t, 1, len(services))
 
 	// Count
-	count, err := db.CountResources()
+	count, err := db.CountServices()
 	assert.Nil(t, err)
 	assert.Equal(t, 1, count)
 }
 
-func TestGetResourcesByNamespace(t *testing.T) {
+func TestGetServicesByNamespace(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
 
 	defer db.Close()
 
-	resource1 := core.CreateResource("ExecutorDeployment", "web-1", "production")
-	resource1.SetSpec("image", "nginx:1.21")
+	service1 := core.CreateService("ExecutorDeployment", "web-1", "production")
+	service1.SetSpec("image", "nginx:1.21")
 
-	resource2 := core.CreateResource("ExecutorDeployment", "web-2", "production")
-	resource2.SetSpec("image", "nginx:1.22")
+	service2 := core.CreateService("ExecutorDeployment", "web-2", "production")
+	service2.SetSpec("image", "nginx:1.22")
 
-	resource3 := core.CreateResource("ExecutorDeployment", "web-3", "staging")
-	resource3.SetSpec("image", "nginx:1.21")
+	service3 := core.CreateService("ExecutorDeployment", "web-3", "staging")
+	service3.SetSpec("image", "nginx:1.21")
 
-	err = db.AddResource(resource1)
+	err = db.AddService(service1)
 	assert.Nil(t, err)
-	err = db.AddResource(resource2)
+	err = db.AddService(service2)
 	assert.Nil(t, err)
-	err = db.AddResource(resource3)
+	err = db.AddService(service3)
 	assert.Nil(t, err)
 
 	// Get by namespace
-	prodResources, err := db.GetResourcesByNamespace("production")
+	prodServices, err := db.GetServicesByNamespace("production")
 	assert.Nil(t, err)
-	assert.Equal(t, 2, len(prodResources))
+	assert.Equal(t, 2, len(prodServices))
 
-	stagingResources, err := db.GetResourcesByNamespace("staging")
+	stagingServices, err := db.GetServicesByNamespace("staging")
 	assert.Nil(t, err)
-	assert.Equal(t, 1, len(stagingResources))
+	assert.Equal(t, 1, len(stagingServices))
 
 	// Count by namespace
-	prodCount, err := db.CountResourcesByNamespace("production")
+	prodCount, err := db.CountServicesByNamespace("production")
 	assert.Nil(t, err)
 	assert.Equal(t, 2, prodCount)
 }
 
-func TestGetResourcesByKind(t *testing.T) {
+func TestGetServicesByKind(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
 
 	defer db.Close()
 
-	resource1 := core.CreateResource("ExecutorDeployment", "web-1", "production")
-	resource1.SetSpec("image", "nginx:1.21")
+	service1 := core.CreateService("ExecutorDeployment", "web-1", "production")
+	service1.SetSpec("image", "nginx:1.21")
 
-	resource2 := core.CreateResource("Database", "db-1", "production")
-	resource2.SetSpec("engine", "postgres")
+	service2 := core.CreateService("Database", "db-1", "production")
+	service2.SetSpec("engine", "postgres")
 
-	err = db.AddResource(resource1)
+	err = db.AddService(service1)
 	assert.Nil(t, err)
-	err = db.AddResource(resource2)
+	err = db.AddService(service2)
 	assert.Nil(t, err)
 
 	// Get by kind
-	executorDeployments, err := db.GetResourcesByKind("ExecutorDeployment")
+	executorDeployments, err := db.GetServicesByKind("ExecutorDeployment")
 	assert.Nil(t, err)
 	assert.Equal(t, 1, len(executorDeployments))
 
-	databases, err := db.GetResourcesByKind("Database")
+	databases, err := db.GetServicesByKind("Database")
 	assert.Nil(t, err)
 	assert.Equal(t, 1, len(databases))
 }
 
-func TestUpdateResource(t *testing.T) {
+func TestUpdateService(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
 
 	defer db.Close()
 
-	service := core.CreateResource("ExecutorDeployment", "web-server", "production")
+	service := core.CreateService("ExecutorDeployment", "web-server", "production")
 	service.SetSpec("replicas", 3)
 
-	err = db.AddResource(service)
+	err = db.AddService(service)
 	assert.Nil(t, err)
 
 	// Update service
 	service.SetSpec("replicas", 5)
-	err = db.UpdateResource(service)
+	err = db.UpdateService(service)
 	assert.Nil(t, err)
 
 	// Verify update
-	resourceFromDB, err := db.GetResourceByID(service.ID)
+	serviceFromDB, err := db.GetServiceByID(service.ID)
 	assert.Nil(t, err)
-	replicas, ok := resourceFromDB.GetSpec("replicas")
+	replicas, ok := serviceFromDB.GetSpec("replicas")
 	assert.True(t, ok)
 	assert.Equal(t, float64(5), replicas)
 }
 
-func TestUpdateResourceStatus(t *testing.T) {
+func TestUpdateServiceStatus(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
 
 	defer db.Close()
 
-	service := core.CreateResource("ExecutorDeployment", "web-server", "production")
+	service := core.CreateService("ExecutorDeployment", "web-server", "production")
 	service.SetSpec("replicas", 3)
 	service.SetStatus("phase", "Pending")
 
-	err = db.AddResource(service)
+	err = db.AddService(service)
 	assert.Nil(t, err)
 
 	// Update status only
@@ -215,106 +215,106 @@ func TestUpdateResourceStatus(t *testing.T) {
 		"phase": "Running",
 		"ready": 3,
 	}
-	err = db.UpdateResourceStatus(service.ID, newStatus)
+	err = db.UpdateServiceStatus(service.ID, newStatus)
 	assert.Nil(t, err)
 
 	// Verify update
-	resourceFromDB, err := db.GetResourceByID(service.ID)
+	serviceFromDB, err := db.GetServiceByID(service.ID)
 	assert.Nil(t, err)
-	phase, ok := resourceFromDB.GetStatus("phase")
+	phase, ok := serviceFromDB.GetStatus("phase")
 	assert.True(t, ok)
 	assert.Equal(t, "Running", phase)
-	ready, ok := resourceFromDB.GetStatus("ready")
+	ready, ok := serviceFromDB.GetStatus("ready")
 	assert.True(t, ok)
 	assert.Equal(t, float64(3), ready)
 }
 
-func TestRemoveResource(t *testing.T) {
+func TestRemoveService(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
 
 	defer db.Close()
 
-	service := core.CreateResource("ExecutorDeployment", "web-server", "production")
-	err = db.AddResource(service)
+	service := core.CreateService("ExecutorDeployment", "web-server", "production")
+	err = db.AddService(service)
 	assert.Nil(t, err)
 
 	// Remove by ID
-	err = db.RemoveResourceByID(service.ID)
+	err = db.RemoveServiceByID(service.ID)
 	assert.Nil(t, err)
 
 	// Verify removed
-	resourceFromDB, err := db.GetResourceByID(service.ID)
+	serviceFromDB, err := db.GetServiceByID(service.ID)
 	assert.Nil(t, err)
-	assert.Nil(t, resourceFromDB)
+	assert.Nil(t, serviceFromDB)
 
-	count, err := db.CountResources()
+	count, err := db.CountServices()
 	assert.Nil(t, err)
 	assert.Equal(t, 0, count)
 }
 
-func TestRemoveResourcesByNamespace(t *testing.T) {
+func TestRemoveServicesByNamespace(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
 
 	defer db.Close()
 
-	resource1 := core.CreateResource("ExecutorDeployment", "web-1", "production")
-	resource2 := core.CreateResource("ExecutorDeployment", "web-2", "production")
-	resource3 := core.CreateResource("ExecutorDeployment", "web-3", "staging")
+	service1 := core.CreateService("ExecutorDeployment", "web-1", "production")
+	service2 := core.CreateService("ExecutorDeployment", "web-2", "production")
+	service3 := core.CreateService("ExecutorDeployment", "web-3", "staging")
 
-	err = db.AddResource(resource1)
+	err = db.AddService(service1)
 	assert.Nil(t, err)
-	err = db.AddResource(resource2)
+	err = db.AddService(service2)
 	assert.Nil(t, err)
-	err = db.AddResource(resource3)
+	err = db.AddService(service3)
 	assert.Nil(t, err)
 
 	// Remove production namespace
-	err = db.RemoveResourcesByNamespace("production")
+	err = db.RemoveServicesByNamespace("production")
 	assert.Nil(t, err)
 
 	// Verify
-	prodCount, err := db.CountResourcesByNamespace("production")
+	prodCount, err := db.CountServicesByNamespace("production")
 	assert.Nil(t, err)
 	assert.Equal(t, 0, prodCount)
 
-	stagingCount, err := db.CountResourcesByNamespace("staging")
+	stagingCount, err := db.CountServicesByNamespace("staging")
 	assert.Nil(t, err)
 	assert.Equal(t, 1, stagingCount)
 }
 
-func TestAddGetResourceHistory(t *testing.T) {
+func TestAddGetServiceHistory(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
 
 	defer db.Close()
 
 	// Create a service
-	service := core.CreateResource("ExecutorDeployment", "web-server", "production")
+	service := core.CreateService("ExecutorDeployment", "web-server", "production")
 	service.SetSpec("replicas", 3)
 	service.SetStatus("phase", "Running")
 
-	err = db.AddResource(service)
+	err = db.AddService(service)
 	assert.Nil(t, err)
 
 	t.Logf("Service generation after creation: %d", service.Metadata.Generation)
 
 	// Create history entry for service creation
-	history := core.CreateResourceHistory(service, "test-user", "create")
+	history := core.CreateServiceHistory(service, "test-user", "create")
 	t.Logf("Creating history with generation: %d, ID: %s", history.Generation, history.ID)
-	err = db.AddResourceHistory(history)
+	err = db.AddServiceHistory(history)
 	assert.Nil(t, err)
 
 	// Get history
-	histories, err := db.GetResourceHistory(service.ID, 10)
+	histories, err := db.GetServiceHistory(service.ID, 10)
 	assert.Nil(t, err)
 	t.Logf("Got %d history entries:", len(histories))
 	for i, h := range histories {
 		t.Logf("  History[%d]: ID=%s, Generation=%d, ChangeType=%s, ChangedBy=%s", i, h.ID, h.Generation, h.ChangeType, h.ChangedBy)
 	}
 	assert.Equal(t, 1, len(histories))
-	assert.Equal(t, service.ID, histories[0].ResourceID)
+	assert.Equal(t, service.ID, histories[0].ServiceID)
 	assert.Equal(t, "ExecutorDeployment", histories[0].Kind)
 	assert.Equal(t, "production", histories[0].Namespace)
 	assert.Equal(t, "web-server", histories[0].Name)
@@ -333,24 +333,24 @@ func TestAddGetResourceHistory(t *testing.T) {
 	assert.Equal(t, "Running", phase)
 }
 
-func TestResourceHistoryMultipleVersions(t *testing.T) {
+func TestServiceHistoryMultipleVersions(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
 
 	defer db.Close()
 
 	// Create a service
-	service := core.CreateResource("ExecutorDeployment", "web-server", "production")
+	service := core.CreateService("ExecutorDeployment", "web-server", "production")
 	service.SetSpec("replicas", 3)
 
-	err = db.AddResource(service)
+	err = db.AddService(service)
 	assert.Nil(t, err)
 
 	initialGen := service.Metadata.Generation
 
 	// Create initial history entry
-	history1 := core.CreateResourceHistory(service, "user1", "create")
-	err = db.AddResourceHistory(history1)
+	history1 := core.CreateServiceHistory(service, "user1", "create")
+	err = db.AddServiceHistory(history1)
 	assert.Nil(t, err)
 
 	// Update service
@@ -358,8 +358,8 @@ func TestResourceHistoryMultipleVersions(t *testing.T) {
 	service.Metadata.Generation = initialGen + 1
 
 	// Create second history entry
-	history2 := core.CreateResourceHistory(service, "user2", "update")
-	err = db.AddResourceHistory(history2)
+	history2 := core.CreateServiceHistory(service, "user2", "update")
+	err = db.AddServiceHistory(history2)
 	assert.Nil(t, err)
 
 	// Update again
@@ -367,12 +367,12 @@ func TestResourceHistoryMultipleVersions(t *testing.T) {
 	service.Metadata.Generation = initialGen + 2
 
 	// Create third history entry
-	history3 := core.CreateResourceHistory(service, "user3", "update")
-	err = db.AddResourceHistory(history3)
+	history3 := core.CreateServiceHistory(service, "user3", "update")
+	err = db.AddServiceHistory(history3)
 	assert.Nil(t, err)
 
 	// Get all history (no limit)
-	allHistories, err := db.GetResourceHistory(service.ID, 0)
+	allHistories, err := db.GetServiceHistory(service.ID, 0)
 	assert.Nil(t, err)
 	assert.Equal(t, 3, len(allHistories))
 
@@ -382,39 +382,39 @@ func TestResourceHistoryMultipleVersions(t *testing.T) {
 	assert.Equal(t, initialGen, allHistories[2].Generation)
 
 	// Get limited history
-	limitedHistories, err := db.GetResourceHistory(service.ID, 2)
+	limitedHistories, err := db.GetServiceHistory(service.ID, 2)
 	assert.Nil(t, err)
 	assert.Equal(t, 2, len(limitedHistories))
 	assert.Equal(t, initialGen+2, limitedHistories[0].Generation)
 	assert.Equal(t, initialGen+1, limitedHistories[1].Generation)
 }
 
-func TestGetResourceHistoryByGeneration(t *testing.T) {
+func TestGetServiceHistoryByGeneration(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
 
 	defer db.Close()
 
 	// Create a service
-	service := core.CreateResource("ExecutorDeployment", "web-server", "production")
+	service := core.CreateService("ExecutorDeployment", "web-server", "production")
 	service.SetSpec("replicas", 3)
 
-	err = db.AddResource(service)
+	err = db.AddService(service)
 	assert.Nil(t, err)
 
 	// Create multiple history entries
-	history1 := core.CreateResourceHistory(service, "user1", "create")
-	err = db.AddResourceHistory(history1)
+	history1 := core.CreateServiceHistory(service, "user1", "create")
+	err = db.AddServiceHistory(history1)
 	assert.Nil(t, err)
 
 	service.SetSpec("replicas", 5)
 	service.Metadata.Generation = 2
-	history2 := core.CreateResourceHistory(service, "user2", "update")
-	err = db.AddResourceHistory(history2)
+	history2 := core.CreateServiceHistory(service, "user2", "update")
+	err = db.AddServiceHistory(history2)
 	assert.Nil(t, err)
 
 	// Get specific generation
-	historyGen2, err := db.GetResourceHistoryByGeneration(service.ID, 2)
+	historyGen2, err := db.GetServiceHistoryByGeneration(service.ID, 2)
 	assert.Nil(t, err)
 	assert.NotNil(t, historyGen2)
 	assert.Equal(t, int64(2), historyGen2.Generation)
@@ -425,65 +425,65 @@ func TestGetResourceHistoryByGeneration(t *testing.T) {
 	assert.Equal(t, float64(5), replicas)
 
 	// Get generation that doesn't exist
-	historyGen99, err := db.GetResourceHistoryByGeneration(service.ID, 99)
+	historyGen99, err := db.GetServiceHistoryByGeneration(service.ID, 99)
 	assert.Nil(t, err)
 	assert.Nil(t, historyGen99)
 }
 
-func TestRemoveResourceHistory(t *testing.T) {
+func TestRemoveServiceHistory(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
 
 	defer db.Close()
 
 	// Create a service
-	service := core.CreateResource("ExecutorDeployment", "web-server", "production")
-	err = db.AddResource(service)
+	service := core.CreateService("ExecutorDeployment", "web-server", "production")
+	err = db.AddService(service)
 	assert.Nil(t, err)
 
 	// Create history entries
-	history1 := core.CreateResourceHistory(service, "user1", "create")
-	err = db.AddResourceHistory(history1)
+	history1 := core.CreateServiceHistory(service, "user1", "create")
+	err = db.AddServiceHistory(history1)
 	assert.Nil(t, err)
 
 	service.Metadata.Generation = 2
-	history2 := core.CreateResourceHistory(service, "user2", "update")
-	err = db.AddResourceHistory(history2)
+	history2 := core.CreateServiceHistory(service, "user2", "update")
+	err = db.AddServiceHistory(history2)
 	assert.Nil(t, err)
 
 	// Verify history exists
-	histories, err := db.GetResourceHistory(service.ID, 0)
+	histories, err := db.GetServiceHistory(service.ID, 0)
 	assert.Nil(t, err)
 	assert.Equal(t, 2, len(histories))
 
 	// Remove all history for this service
-	err = db.RemoveResourceHistory(service.ID)
+	err = db.RemoveServiceHistory(service.ID)
 	assert.Nil(t, err)
 
 	// Verify history is removed
-	historiesAfter, err := db.GetResourceHistory(service.ID, 0)
+	historiesAfter, err := db.GetServiceHistory(service.ID, 0)
 	assert.Nil(t, err)
 	assert.Equal(t, 0, len(historiesAfter))
 }
 
-func TestResourceHistoryWithStatusChanges(t *testing.T) {
+func TestServiceHistoryWithStatusChanges(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
 
 	defer db.Close()
 
 	// Create a service
-	service := core.CreateResource("ExecutorDeployment", "web-server", "production")
+	service := core.CreateService("ExecutorDeployment", "web-server", "production")
 	service.SetSpec("replicas", 3)
 	service.SetStatus("phase", "Pending")
 	service.SetStatus("ready", 0)
 
-	err = db.AddResource(service)
+	err = db.AddService(service)
 	assert.Nil(t, err)
 
 	// Create initial history
-	history1 := core.CreateResourceHistory(service, "controller", "create")
-	err = db.AddResourceHistory(history1)
+	history1 := core.CreateServiceHistory(service, "controller", "create")
+	err = db.AddServiceHistory(history1)
 	assert.Nil(t, err)
 
 	// Update status only (status update via reconciliation)
@@ -491,12 +491,12 @@ func TestResourceHistoryWithStatusChanges(t *testing.T) {
 	service.SetStatus("ready", 3)
 	service.Metadata.Generation = 2
 
-	history2 := core.CreateResourceHistory(service, "reconciler", "status-update")
-	err = db.AddResourceHistory(history2)
+	history2 := core.CreateServiceHistory(service, "reconciler", "status-update")
+	err = db.AddServiceHistory(history2)
 	assert.Nil(t, err)
 
 	// Get history and verify status changes are tracked
-	histories, err := db.GetResourceHistory(service.ID, 0)
+	histories, err := db.GetServiceHistory(service.ID, 0)
 	assert.Nil(t, err)
 	assert.Equal(t, 2, len(histories))
 

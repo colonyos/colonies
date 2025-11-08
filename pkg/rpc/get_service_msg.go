@@ -4,24 +4,24 @@ import (
 	"encoding/json"
 )
 
-const GetResourcePayloadType = "getresourcemsg"
+const GetServicePayloadType = "getservicemsg"
 
-type GetResourceMsg struct {
+type GetServiceMsg struct {
 	Namespace string `json:"namespace"`
 	Name      string `json:"name"`
 	MsgType   string `json:"msgtype"`
 }
 
-func CreateGetResourceMsg(namespace, name string) *GetResourceMsg {
-	msg := &GetResourceMsg{}
+func CreateGetServiceMsg(namespace, name string) *GetServiceMsg {
+	msg := &GetServiceMsg{}
 	msg.Namespace = namespace
 	msg.Name = name
-	msg.MsgType = GetResourcePayloadType
+	msg.MsgType = GetServicePayloadType
 
 	return msg
 }
 
-func (msg *GetResourceMsg) ToJSON() (string, error) {
+func (msg *GetServiceMsg) ToJSON() (string, error) {
 	jsonBytes, err := json.Marshal(msg)
 	if err != nil {
 		return "", err
@@ -30,7 +30,7 @@ func (msg *GetResourceMsg) ToJSON() (string, error) {
 	return string(jsonBytes), nil
 }
 
-func (msg *GetResourceMsg) ToJSONIndent() (string, error) {
+func (msg *GetServiceMsg) ToJSONIndent() (string, error) {
 	jsonBytes, err := json.MarshalIndent(msg, "", "    ")
 	if err != nil {
 		return "", err
@@ -39,7 +39,7 @@ func (msg *GetResourceMsg) ToJSONIndent() (string, error) {
 	return string(jsonBytes), nil
 }
 
-func (msg *GetResourceMsg) Equals(msg2 *GetResourceMsg) bool {
+func (msg *GetServiceMsg) Equals(msg2 *GetServiceMsg) bool {
 	if msg2 == nil {
 		return false
 	}
@@ -49,8 +49,8 @@ func (msg *GetResourceMsg) Equals(msg2 *GetResourceMsg) bool {
 		msg.Name == msg2.Name
 }
 
-func CreateGetResourceMsgFromJSON(jsonString string) (*GetResourceMsg, error) {
-	var msg *GetResourceMsg
+func CreateGetServiceMsgFromJSON(jsonString string) (*GetServiceMsg, error) {
+	var msg *GetServiceMsg
 
 	err := json.Unmarshal([]byte(jsonString), &msg)
 	if err != nil {

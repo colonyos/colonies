@@ -7,63 +7,63 @@ import (
 	"github.com/colonyos/colonies/pkg/rpc"
 )
 
-// AddResourceDefinition adds a new ResourceDefinition (requires colony owner privileges)
-func (client *ColoniesClient) AddResourceDefinition(rd *core.ResourceDefinition, prvKey string) (*core.ResourceDefinition, error) {
-	msg := rpc.CreateAddResourceDefinitionMsg(rd)
+// AddServiceDefinition adds a new ServiceDefinition (requires colony owner privileges)
+func (client *ColoniesClient) AddServiceDefinition(sd *core.ServiceDefinition, prvKey string) (*core.ServiceDefinition, error) {
+	msg := rpc.CreateAddServiceDefinitionMsg(sd)
 	jsonString, err := msg.ToJSON()
 	if err != nil {
 		return nil, err
 	}
 
-	respBodyString, err := client.sendMessage(rpc.AddResourceDefinitionPayloadType, jsonString, prvKey, false, context.TODO())
+	respBodyString, err := client.sendMessage(rpc.AddServiceDefinitionPayloadType, jsonString, prvKey, false, context.TODO())
 	if err != nil {
 		return nil, err
 	}
 
-	return core.ConvertJSONToResourceDefinition(respBodyString)
+	return core.ConvertJSONToServiceDefinition(respBodyString)
 }
 
-// GetResourceDefinition retrieves a ResourceDefinition by name
-func (client *ColoniesClient) GetResourceDefinition(colonyName, name string, prvKey string) (*core.ResourceDefinition, error) {
-	msg := rpc.CreateGetResourceDefinitionMsg(colonyName, name)
+// GetServiceDefinition retrieves a ServiceDefinition by name
+func (client *ColoniesClient) GetServiceDefinition(colonyName, name string, prvKey string) (*core.ServiceDefinition, error) {
+	msg := rpc.CreateGetServiceDefinitionMsg(colonyName, name)
 	jsonString, err := msg.ToJSON()
 	if err != nil {
 		return nil, err
 	}
 
-	respBodyString, err := client.sendMessage(rpc.GetResourceDefinitionPayloadType, jsonString, prvKey, false, context.TODO())
+	respBodyString, err := client.sendMessage(rpc.GetServiceDefinitionPayloadType, jsonString, prvKey, false, context.TODO())
 	if err != nil {
 		return nil, err
 	}
 
-	return core.ConvertJSONToResourceDefinition(respBodyString)
+	return core.ConvertJSONToServiceDefinition(respBodyString)
 }
 
-// GetResourceDefinitions retrieves all ResourceDefinitions in a colony
-func (client *ColoniesClient) GetResourceDefinitions(colonyName string, prvKey string) ([]*core.ResourceDefinition, error) {
-	msg := rpc.CreateGetResourceDefinitionsMsg(colonyName)
+// GetServiceDefinitions retrieves all ServiceDefinitions in a colony
+func (client *ColoniesClient) GetServiceDefinitions(colonyName string, prvKey string) ([]*core.ServiceDefinition, error) {
+	msg := rpc.CreateGetServiceDefinitionsMsg(colonyName)
 	jsonString, err := msg.ToJSON()
 	if err != nil {
 		return nil, err
 	}
 
-	respBodyString, err := client.sendMessage(rpc.GetResourceDefinitionsPayloadType, jsonString, prvKey, false, context.TODO())
+	respBodyString, err := client.sendMessage(rpc.GetServiceDefinitionsPayloadType, jsonString, prvKey, false, context.TODO())
 	if err != nil {
 		return nil, err
 	}
 
-	return core.ConvertJSONToResourceDefinitionArray(respBodyString)
+	return core.ConvertJSONToServiceDefinitionArray(respBodyString)
 }
 
-// RemoveResourceDefinition removes a ResourceDefinition by namespace and name (requires colony owner privileges)
-func (client *ColoniesClient) RemoveResourceDefinition(namespace, name string, prvKey string) error {
-	msg := rpc.CreateRemoveResourceDefinitionMsg(namespace, name)
+// RemoveServiceDefinition removes a ServiceDefinition by namespace and name (requires colony owner privileges)
+func (client *ColoniesClient) RemoveServiceDefinition(namespace, name string, prvKey string) error {
+	msg := rpc.CreateRemoveServiceDefinitionMsg(namespace, name)
 	jsonString, err := msg.ToJSON()
 	if err != nil {
 		return err
 	}
 
-	_, err = client.sendMessage(rpc.RemoveResourceDefinitionPayloadType, jsonString, prvKey, false, context.TODO())
+	_, err = client.sendMessage(rpc.RemoveServiceDefinitionPayloadType, jsonString, prvKey, false, context.TODO())
 	if err != nil {
 		return err
 	}
@@ -71,95 +71,95 @@ func (client *ColoniesClient) RemoveResourceDefinition(namespace, name string, p
 	return nil
 }
 
-// AddResource adds a new Service instance
-func (client *ColoniesClient) AddResource(service *core.Service, prvKey string) (*core.Service, error) {
-	msg := rpc.CreateAddResourceMsg(service)
+// AddService adds a new Service instance
+func (client *ColoniesClient) AddService(service *core.Service, prvKey string) (*core.Service, error) {
+	msg := rpc.CreateAddServiceMsg(service)
 	jsonString, err := msg.ToJSON()
 	if err != nil {
 		return nil, err
 	}
 
-	respBodyString, err := client.sendMessage(rpc.AddResourcePayloadType, jsonString, prvKey, false, context.TODO())
+	respBodyString, err := client.sendMessage(rpc.AddServicePayloadType, jsonString, prvKey, false, context.TODO())
 	if err != nil {
 		return nil, err
 	}
 
-	return core.ConvertJSONToResource(respBodyString)
+	return core.ConvertJSONToService(respBodyString)
 }
 
-// GetResource retrieves a Service by namespace and name
-func (client *ColoniesClient) GetResource(namespace, name string, prvKey string) (*core.Service, error) {
-	msg := rpc.CreateGetResourceMsg(namespace, name)
+// GetService retrieves a Service by namespace and name
+func (client *ColoniesClient) GetService(namespace, name string, prvKey string) (*core.Service, error) {
+	msg := rpc.CreateGetServiceMsg(namespace, name)
 	jsonString, err := msg.ToJSON()
 	if err != nil {
 		return nil, err
 	}
 
-	respBodyString, err := client.sendMessage(rpc.GetResourcePayloadType, jsonString, prvKey, false, context.TODO())
+	respBodyString, err := client.sendMessage(rpc.GetServicePayloadType, jsonString, prvKey, false, context.TODO())
 	if err != nil {
 		return nil, err
 	}
 
-	return core.ConvertJSONToResource(respBodyString)
+	return core.ConvertJSONToService(respBodyString)
 }
 
-// GetResources retrieves Services by namespace and optionally by kind
-func (client *ColoniesClient) GetResources(namespace, kind string, prvKey string) ([]*core.Service, error) {
-	msg := rpc.CreateGetResourcesMsg(namespace, kind)
+// GetServices retrieves Services by namespace and optionally by kind
+func (client *ColoniesClient) GetServices(namespace, kind string, prvKey string) ([]*core.Service, error) {
+	msg := rpc.CreateGetServicesMsg(namespace, kind)
 	jsonString, err := msg.ToJSON()
 	if err != nil {
 		return nil, err
 	}
 
-	respBodyString, err := client.sendMessage(rpc.GetResourcesPayloadType, jsonString, prvKey, false, context.TODO())
+	respBodyString, err := client.sendMessage(rpc.GetServicesPayloadType, jsonString, prvKey, false, context.TODO())
 	if err != nil {
 		return nil, err
 	}
 
-	return core.ConvertJSONToResourceArray(respBodyString)
+	return core.ConvertJSONToServiceArray(respBodyString)
 }
 
-// UpdateResource updates an existing Service
-func (client *ColoniesClient) UpdateResource(service *core.Service, prvKey string) (*core.Service, error) {
-	msg := rpc.CreateUpdateResourceMsg(service)
+// UpdateService updates an existing Service
+func (client *ColoniesClient) UpdateService(service *core.Service, prvKey string) (*core.Service, error) {
+	msg := rpc.CreateUpdateServiceMsg(service)
 	jsonString, err := msg.ToJSON()
 	if err != nil {
 		return nil, err
 	}
 
-	respBodyString, err := client.sendMessage(rpc.UpdateResourcePayloadType, jsonString, prvKey, false, context.TODO())
+	respBodyString, err := client.sendMessage(rpc.UpdateServicePayloadType, jsonString, prvKey, false, context.TODO())
 	if err != nil {
 		return nil, err
 	}
 
-	return core.ConvertJSONToResource(respBodyString)
+	return core.ConvertJSONToService(respBodyString)
 }
 
-// GetResourceHistory retrieves history for a service
-func (client *ColoniesClient) GetResourceHistory(resourceID string, limit int, prvKey string) ([]*core.ResourceHistory, error) {
-	msg := rpc.CreateGetResourceHistoryMsg(resourceID, limit)
+// GetServiceHistory retrieves history for a service
+func (client *ColoniesClient) GetServiceHistory(serviceID string, limit int, prvKey string) ([]*core.ServiceHistory, error) {
+	msg := rpc.CreateGetServiceHistoryMsg(serviceID, limit)
 	jsonString, err := msg.ToJSON()
 	if err != nil {
 		return nil, err
 	}
 
-	respBodyString, err := client.sendMessage(rpc.GetResourceHistoryPayloadType, jsonString, prvKey, false, context.TODO())
+	respBodyString, err := client.sendMessage(rpc.GetServiceHistoryPayloadType, jsonString, prvKey, false, context.TODO())
 	if err != nil {
 		return nil, err
 	}
 
-	return core.ConvertJSONToResourceHistoryArray(respBodyString)
+	return core.ConvertJSONToServiceHistoryArray(respBodyString)
 }
 
-// RemoveResource removes a Service by namespace and name
-func (client *ColoniesClient) RemoveResource(namespace, name string, prvKey string) error {
-	msg := rpc.CreateRemoveResourceMsg(namespace, name)
+// RemoveService removes a Service by namespace and name
+func (client *ColoniesClient) RemoveService(namespace, name string, prvKey string) error {
+	msg := rpc.CreateRemoveServiceMsg(namespace, name)
 	jsonString, err := msg.ToJSON()
 	if err != nil {
 		return err
 	}
 
-	_, err = client.sendMessage(rpc.RemoveResourcePayloadType, jsonString, prvKey, false, context.TODO())
+	_, err = client.sendMessage(rpc.RemoveServicePayloadType, jsonString, prvKey, false, context.TODO())
 	if err != nil {
 		return err
 	}

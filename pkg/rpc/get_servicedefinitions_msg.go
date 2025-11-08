@@ -6,22 +6,22 @@ import (
 	"github.com/colonyos/colonies/pkg/core"
 )
 
-const GetResourceDefinitionsPayloadType = "getresourcedefinitionsmsg"
+const GetServiceDefinitionsPayloadType = "getservicedefinitionsmsg"
 
-type GetResourceDefinitionsMsg struct {
+type GetServiceDefinitionsMsg struct {
 	ColonyName string `json:"colonyname"`
 	MsgType    string `json:"msgtype"`
 }
 
-func CreateGetResourceDefinitionsMsg(colonyName string) *GetResourceDefinitionsMsg {
-	msg := &GetResourceDefinitionsMsg{}
+func CreateGetServiceDefinitionsMsg(colonyName string) *GetServiceDefinitionsMsg {
+	msg := &GetServiceDefinitionsMsg{}
 	msg.ColonyName = colonyName
-	msg.MsgType = GetResourceDefinitionsPayloadType
+	msg.MsgType = GetServiceDefinitionsPayloadType
 
 	return msg
 }
 
-func (msg *GetResourceDefinitionsMsg) ToJSON() (string, error) {
+func (msg *GetServiceDefinitionsMsg) ToJSON() (string, error) {
 	jsonBytes, err := json.Marshal(msg)
 	if err != nil {
 		return "", err
@@ -30,7 +30,7 @@ func (msg *GetResourceDefinitionsMsg) ToJSON() (string, error) {
 	return string(jsonBytes), nil
 }
 
-func (msg *GetResourceDefinitionsMsg) Equals(msg2 *GetResourceDefinitionsMsg) bool {
+func (msg *GetServiceDefinitionsMsg) Equals(msg2 *GetServiceDefinitionsMsg) bool {
 	if msg2 == nil {
 		return false
 	}
@@ -43,8 +43,8 @@ func (msg *GetResourceDefinitionsMsg) Equals(msg2 *GetResourceDefinitionsMsg) bo
 	return false
 }
 
-func CreateGetResourceDefinitionsMsgFromJSON(jsonString string) (*GetResourceDefinitionsMsg, error) {
-	var msg *GetResourceDefinitionsMsg
+func CreateGetServiceDefinitionsMsgFromJSON(jsonString string) (*GetServiceDefinitionsMsg, error) {
+	var msg *GetServiceDefinitionsMsg
 
 	err := json.Unmarshal([]byte(jsonString), &msg)
 	if err != nil {
@@ -54,20 +54,20 @@ func CreateGetResourceDefinitionsMsgFromJSON(jsonString string) (*GetResourceDef
 	return msg, nil
 }
 
-type GetResourceDefinitionsReplyMsg struct {
-	ResourceDefinitions []*core.ResourceDefinition `json:"resourcedefinitions"`
-	MsgType             string                     `json:"msgtype"`
+type GetServiceDefinitionsReplyMsg struct {
+	ServiceDefinitions []*core.ServiceDefinition `json:"servicedefinitions"`
+	MsgType            string                    `json:"msgtype"`
 }
 
-func CreateGetResourceDefinitionsReplyMsg(rds []*core.ResourceDefinition) *GetResourceDefinitionsReplyMsg {
-	msg := &GetResourceDefinitionsReplyMsg{}
-	msg.ResourceDefinitions = rds
-	msg.MsgType = GetResourceDefinitionsPayloadType
+func CreateGetServiceDefinitionsReplyMsg(sds []*core.ServiceDefinition) *GetServiceDefinitionsReplyMsg {
+	msg := &GetServiceDefinitionsReplyMsg{}
+	msg.ServiceDefinitions = sds
+	msg.MsgType = GetServiceDefinitionsPayloadType
 
 	return msg
 }
 
-func (msg *GetResourceDefinitionsReplyMsg) ToJSON() (string, error) {
+func (msg *GetServiceDefinitionsReplyMsg) ToJSON() (string, error) {
 	jsonBytes, err := json.Marshal(msg)
 	if err != nil {
 		return "", err
@@ -76,7 +76,7 @@ func (msg *GetResourceDefinitionsReplyMsg) ToJSON() (string, error) {
 	return string(jsonBytes), nil
 }
 
-func (msg *GetResourceDefinitionsReplyMsg) Equals(msg2 *GetResourceDefinitionsReplyMsg) bool {
+func (msg *GetServiceDefinitionsReplyMsg) Equals(msg2 *GetServiceDefinitionsReplyMsg) bool {
 	if msg2 == nil {
 		return false
 	}
@@ -85,13 +85,13 @@ func (msg *GetResourceDefinitionsReplyMsg) Equals(msg2 *GetResourceDefinitionsRe
 		return false
 	}
 
-	if len(msg.ResourceDefinitions) != len(msg2.ResourceDefinitions) {
+	if len(msg.ServiceDefinitions) != len(msg2.ServiceDefinitions) {
 		return false
 	}
 
 	// Simple comparison - check IDs match
-	for i := range msg.ResourceDefinitions {
-		if msg.ResourceDefinitions[i].ID != msg2.ResourceDefinitions[i].ID {
+	for i := range msg.ServiceDefinitions {
+		if msg.ServiceDefinitions[i].ID != msg2.ServiceDefinitions[i].ID {
 			return false
 		}
 	}
@@ -99,8 +99,8 @@ func (msg *GetResourceDefinitionsReplyMsg) Equals(msg2 *GetResourceDefinitionsRe
 	return true
 }
 
-func CreateGetResourceDefinitionsReplyMsgFromJSON(jsonString string) (*GetResourceDefinitionsReplyMsg, error) {
-	var msg *GetResourceDefinitionsReplyMsg
+func CreateGetServiceDefinitionsReplyMsgFromJSON(jsonString string) (*GetServiceDefinitionsReplyMsg, error) {
+	var msg *GetServiceDefinitionsReplyMsg
 
 	err := json.Unmarshal([]byte(jsonString), &msg)
 	if err != nil {

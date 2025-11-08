@@ -12,15 +12,15 @@ import (
 
 // Service is a generic container for services
 type Service struct {
-	ID       string                 `json:"resourceid"`
+	ID       string                 `json:"serviceid"`
 	Kind     string                 `json:"kind"`
-	Metadata ResourceMetadata       `json:"metadata"`
+	Metadata ServiceMetadata        `json:"metadata"`
 	Spec     map[string]interface{} `json:"spec"`
 	Status   map[string]interface{} `json:"status,omitempty"`
 }
 
-// ResourceMetadata contains metadata for services
-type ResourceMetadata struct {
+// ServiceMetadata contains metadata for services
+type ServiceMetadata struct {
 	Name                      string            `json:"name"`
 	Namespace                 string            `json:"namespace"`
 	Labels                    map[string]string `json:"labels,omitempty"`
@@ -32,26 +32,26 @@ type ResourceMetadata struct {
 	LastReconciliationTime    time.Time         `json:"lastReconciliationTime,omitempty"`
 }
 
-// ResourceDefinition defines a service type
-type ResourceDefinition struct {
-	ID       string                 `json:"resourcedefinitionid"`
-	Kind     string                 `json:"kind"`
-	Metadata ResourceMetadata       `json:"metadata"`
-	Spec     ResourceDefinitionSpec `json:"spec"`
+// ServiceDefinition defines a service type
+type ServiceDefinition struct {
+	ID       string                  `json:"servicedefinitionid"`
+	Kind     string                  `json:"kind"`
+	Metadata ServiceMetadata         `json:"metadata"`
+	Spec     ServiceDefinitionSpec   `json:"spec"`
 }
 
-// ResourceDefinitionSpec defines the specification for a ResourceDefinition
-type ResourceDefinitionSpec struct {
-	Group   string            `json:"group"`
-	Version string            `json:"version"`
-	Names   ResourceDefinitionNames           `json:"names"`
-	Scope   string            `json:"scope"` // "Namespaced" or "Cluster"
-	Schema  *ValidationSchema `json:"schema,omitempty"`
-	Handler HandlerSpec       `json:"handler"`
+// ServiceDefinitionSpec defines the specification for a ServiceDefinition
+type ServiceDefinitionSpec struct {
+	Group   string                   `json:"group"`
+	Version string                   `json:"version"`
+	Names   ServiceDefinitionNames   `json:"names"`
+	Scope   string                   `json:"scope"` // "Namespaced" or "Cluster"
+	Schema  *ValidationSchema        `json:"schema,omitempty"`
+	Handler HandlerSpec              `json:"handler"`
 }
 
-// ResourceDefinitionNames defines service names
-type ResourceDefinitionNames struct {
+// ServiceDefinitionNames defines service names
+type ServiceDefinitionNames struct {
 	Kind       string   `json:"kind"`
 	ListKind   string   `json:"listKind"`
 	Singular   string   `json:"singular"`
@@ -85,9 +85,9 @@ type SchemaProperty struct {
 
 // Reconciliation contains the old and new state of a service with computed diff
 type Reconciliation struct {
-	Old    *Service            `json:"old,omitempty"`
-	New    *Service            `json:"new,omitempty"`
-	Diff   *ResourceDiff        `json:"diff,omitempty"`
+	Old    *Service             `json:"old,omitempty"`
+	New    *Service             `json:"new,omitempty"`
+	Diff   *ServiceDiff         `json:"diff,omitempty"`
 	Action ReconciliationAction `json:"action"`
 }
 
@@ -101,8 +101,8 @@ const (
 	ReconciliationNoop   ReconciliationAction = "noop"
 )
 
-// ResourceDiff contains the differences between two services
-type ResourceDiff struct {
+// ServiceDiff contains the differences between two services
+type ServiceDiff struct {
 	SpecChanges     []FieldChange `json:"specChanges,omitempty"`
 	StatusChanges   []FieldChange `json:"statusChanges,omitempty"`
 	MetadataChanges []FieldChange `json:"metadataChanges,omitempty"`
@@ -126,8 +126,8 @@ const (
 	ChangeRemoved  ChangeType = "removed"
 )
 
-// CreateResource creates a new service
-func CreateResource(kind, name, namespace string) *Service {
+// CreateService creates a new service
+func CreateService(kind, name, namespace string) *Service {
 	uid := uuid.New()
 	c := crypto.CreateCrypto()
 	id := c.GenerateHash(uid.String())
@@ -135,7 +135,7 @@ func CreateResource(kind, name, namespace string) *Service {
 	return &Service{
 		ID:   id,
 		Kind: kind,
-		Metadata: ResourceMetadata{
+		Metadata: ServiceMetadata{
 			Name:        name,
 			Namespace:   namespace,
 			Labels:      make(map[string]string),
@@ -149,16 +149,16 @@ func CreateResource(kind, name, namespace string) *Service {
 	}
 }
 
-// CreateResourceDefinition creates a new ResourceDefinition
-func CreateResourceDefinition(name, group, version, kind, plural, scope, executorType, functionName string) *ResourceDefinition {
+// CreateServiceDefinition creates a new ServiceDefinition
+func CreateServiceDefinition(name, group, version, kind, plural, scope, executorType, functionName string) *ServiceDefinition {
 	uid := uuid.New()
 	c := crypto.CreateCrypto()
 	id := c.GenerateHash(uid.String())
 
-	return &ResourceDefinition{
+	return &ServiceDefinition{
 		ID:   id,
-		Kind: "ResourceDefinition",
-		Metadata: ResourceMetadata{
+		Kind: "ServiceDefinition",
+		Metadata: ServiceMetadata{
 			Name:        name,
 			Labels:      make(map[string]string),
 			Annotations: make(map[string]string),
@@ -166,10 +166,10 @@ func CreateResourceDefinition(name, group, version, kind, plural, scope, executo
 			CreatedAt:   time.Now(),
 			UpdatedAt:   time.Now(),
 		},
-		Spec: ResourceDefinitionSpec{
+		Spec: ServiceDefinitionSpec{
 			Group:   group,
 			Version: version,
-			Names: ResourceDefinitionNames{
+			Names: ServiceDefinitionNames{
 				Kind:     kind,
 				ListKind: kind + "List",
 				Singular: strings.ToLower(kind),
@@ -235,16 +235,16 @@ func (r *Service) ToJSON() (string, error) {
 	return toJSON(r)
 }
 
-// ValidateAgainstRD validates the Service against its ResourceDefinition schema
-func (r *Service) ValidateAgainstRD(rd *ResourceDefinition) error {
+// ValidateAgainstSD validates the Service against its ServiceDefinition schema
+func (r *Service) ValidateAgainstSD(sd *ServiceDefinition) error {
 	// Check that kind matches
-	if r.Kind != rd.Spec.Names.Kind {
-		return fmt.Errorf("kind mismatch: service has '%s' but ResourceDefinition defines '%s'", r.Kind, rd.Spec.Names.Kind)
+	if r.Kind != sd.Spec.Names.Kind {
+		return fmt.Errorf("kind mismatch: service has '%s' but ServiceDefinition defines '%s'", r.Kind, sd.Spec.Names.Kind)
 	}
 
 	// Validate against schema if one is defined
-	if rd.Spec.Schema != nil {
-		if err := validateAgainstSchema(r.Spec, rd.Spec.Schema); err != nil {
+	if sd.Spec.Schema != nil {
+		if err := validateAgainstSchema(r.Spec, sd.Spec.Schema); err != nil {
 			return fmt.Errorf("spec validation failed: %w", err)
 		}
 	}
@@ -372,71 +372,71 @@ func validateEnum(key string, value interface{}, enum []interface{}) error {
 	return fmt.Errorf("field '%s' has invalid value '%v', must be one of %v", key, value, enum)
 }
 
-// Validate validates the ResourceDefinition
-func (rd *ResourceDefinition) Validate() error {
-	if rd.Kind != "ResourceDefinition" {
-		return fmt.Errorf("kind must be ResourceDefinition")
+// Validate validates the ServiceDefinition
+func (sd *ServiceDefinition) Validate() error {
+	if sd.Kind != "ServiceDefinition" {
+		return fmt.Errorf("kind must be ServiceDefinition")
 	}
-	if rd.Spec.Group == "" {
+	if sd.Spec.Group == "" {
 		return fmt.Errorf("spec.group is required")
 	}
-	if rd.Spec.Version == "" {
+	if sd.Spec.Version == "" {
 		return fmt.Errorf("spec.version is required")
 	}
-	if rd.Spec.Names.Kind == "" {
+	if sd.Spec.Names.Kind == "" {
 		return fmt.Errorf("spec.names.kind is required")
 	}
-	if rd.Spec.Names.Plural == "" {
+	if sd.Spec.Names.Plural == "" {
 		return fmt.Errorf("spec.names.plural is required")
 	}
-	if rd.Spec.Scope != "Namespaced" && rd.Spec.Scope != "Cluster" {
+	if sd.Spec.Scope != "Namespaced" && sd.Spec.Scope != "Cluster" {
 		return fmt.Errorf("spec.scope must be 'Namespaced' or 'Cluster'")
 	}
-	if rd.Spec.Handler.ExecutorType == "" {
+	if sd.Spec.Handler.ExecutorType == "" {
 		return fmt.Errorf("spec.handler.executorType is required")
 	}
-	if rd.Spec.Handler.FunctionName == "" {
+	if sd.Spec.Handler.FunctionName == "" {
 		return fmt.Errorf("spec.handler.functionName is required")
 	}
-	if rd.Metadata.Name == "" {
+	if sd.Metadata.Name == "" {
 		return fmt.Errorf("metadata.name is required")
 	}
 	return nil
 }
 
 // GetAPIVersion returns the full API version
-func (rd *ResourceDefinition) GetAPIVersion() string {
-	return rd.Spec.Group + "/" + rd.Spec.Version
+func (sd *ServiceDefinition) GetAPIVersion() string {
+	return sd.Spec.Group + "/" + sd.Spec.Version
 }
 
 // ToJSON converts to JSON string
-func (rd *ResourceDefinition) ToJSON() (string, error) {
-	return toJSON(rd)
+func (sd *ServiceDefinition) ToJSON() (string, error) {
+	return toJSON(sd)
 }
 
-// ConvertJSONToResource parses JSON to Service
-func ConvertJSONToResource(jsonString string) (*Service, error) {
+// ConvertJSONToService parses JSON to Service
+func ConvertJSONToService(jsonString string) (*Service, error) {
 	var service Service
 	if err := json.Unmarshal([]byte(jsonString), &service); err != nil {
 		return nil, err
 	}
-	initResource(&service)
+	initService(&service)
 	return &service, nil
 }
 
-// ConvertJSONToResourceDefinition parses JSON to ResourceDefinition
-func ConvertJSONToResourceDefinition(jsonString string) (*ResourceDefinition, error) {
-	var rd ResourceDefinition
-	if err := json.Unmarshal([]byte(jsonString), &rd); err != nil {
+// ConvertJSONToServiceDefinition parses JSON to ServiceDefinition
+func ConvertJSONToServiceDefinition(jsonString string) (*ServiceDefinition, error) {
+	var sd ServiceDefinition
+	if err := json.Unmarshal([]byte(jsonString), &sd); err != nil {
 		return nil, err
 	}
-	initMetadata(&rd.Metadata)
-	return &rd, nil
+	initMetadata(&sd.Metadata)
+	return &sd, nil
 }
 
 // Helper functions
 
-func initResource(r *Service) {
+func initService(r *Service) {
 	initMetadata(&r.Metadata)
 	if r.Spec == nil {
 		r.Spec = make(map[string]interface{})
@@ -446,7 +446,7 @@ func initResource(r *Service) {
 	}
 }
 
-func initMetadata(m *ResourceMetadata) {
+func initMetadata(m *ServiceMetadata) {
 	if m.Labels == nil {
 		m.Labels = make(map[string]string)
 	}
@@ -495,12 +495,12 @@ func CreateReconciliation(old, new *Service) *Reconciliation {
 }
 
 // Diff computes the differences between this service and another
-func (r *Service) Diff(other *Service) *ResourceDiff {
+func (r *Service) Diff(other *Service) *ServiceDiff {
 	if other == nil {
-		return &ResourceDiff{HasChanges: false}
+		return &ServiceDiff{HasChanges: false}
 	}
 
-	diff := &ResourceDiff{
+	diff := &ServiceDiff{
 		SpecChanges:     []FieldChange{},
 		StatusChanges:   []FieldChange{},
 		MetadataChanges: []FieldChange{},
@@ -597,12 +597,12 @@ func deepEqual(a, b interface{}) bool {
 	return string(aJSON) == string(bJSON)
 }
 
-// ResourceDiff helper methods
+// ServiceDiff helper methods
 
 // HasFieldChange checks if a specific field has changed
-func (rd *ResourceDiff) HasFieldChange(path string) bool {
-	allChanges := append(rd.SpecChanges, rd.StatusChanges...)
-	allChanges = append(allChanges, rd.MetadataChanges...)
+func (sd *ServiceDiff) HasFieldChange(path string) bool {
+	allChanges := append(sd.SpecChanges, sd.StatusChanges...)
+	allChanges = append(allChanges, sd.MetadataChanges...)
 
 	for _, change := range allChanges {
 		if change.Path == path {
@@ -613,9 +613,9 @@ func (rd *ResourceDiff) HasFieldChange(path string) bool {
 }
 
 // GetFieldChange retrieves a specific field change
-func (rd *ResourceDiff) GetFieldChange(path string) *FieldChange {
-	allChanges := append(rd.SpecChanges, rd.StatusChanges...)
-	allChanges = append(allChanges, rd.MetadataChanges...)
+func (sd *ServiceDiff) GetFieldChange(path string) *FieldChange {
+	allChanges := append(sd.SpecChanges, sd.StatusChanges...)
+	allChanges = append(allChanges, sd.MetadataChanges...)
 
 	for _, change := range allChanges {
 		if change.Path == path {
@@ -626,17 +626,17 @@ func (rd *ResourceDiff) GetFieldChange(path string) *FieldChange {
 }
 
 // OnlyMetadataChanged returns true if only metadata changed
-func (rd *ResourceDiff) OnlyMetadataChanged() bool {
-	return len(rd.MetadataChanges) > 0 && len(rd.SpecChanges) == 0 && len(rd.StatusChanges) == 0
+func (sd *ServiceDiff) OnlyMetadataChanged() bool {
+	return len(sd.MetadataChanges) > 0 && len(sd.SpecChanges) == 0 && len(sd.StatusChanges) == 0
 }
 
 // OnlyStatusChanged returns true if only status changed
-func (rd *ResourceDiff) OnlyStatusChanged() bool {
-	return len(rd.StatusChanges) > 0 && len(rd.SpecChanges) == 0 && len(rd.MetadataChanges) == 0
+func (sd *ServiceDiff) OnlyStatusChanged() bool {
+	return len(sd.StatusChanges) > 0 && len(sd.SpecChanges) == 0 && len(sd.MetadataChanges) == 0
 }
 
-// ConvertResourceArrayToJSON converts a slice of Services to JSON
-func ConvertResourceArrayToJSON(services []*Service) (string, error) {
+// ConvertServiceArrayToJSON converts a slice of Services to JSON
+func ConvertServiceArrayToJSON(services []*Service) (string, error) {
 	jsonBytes, err := json.MarshalIndent(services, "", "  ")
 	if err != nil {
 		return "", err
@@ -644,38 +644,38 @@ func ConvertResourceArrayToJSON(services []*Service) (string, error) {
 	return string(jsonBytes), nil
 }
 
-// ConvertJSONToResourceArray parses JSON to a slice of Services
-func ConvertJSONToResourceArray(jsonString string) ([]*Service, error) {
+// ConvertJSONToServiceArray parses JSON to a slice of Services
+func ConvertJSONToServiceArray(jsonString string) ([]*Service, error) {
 	var services []*Service
 	if err := json.Unmarshal([]byte(jsonString), &services); err != nil {
 		return nil, err
 	}
 	for _, service := range services {
-		initResource(service)
+		initService(service)
 	}
 	return services, nil
 }
 
-// ConvertResourceDefinitionArrayToJSON converts a slice of ResourceDefinitions to JSON
-func ConvertResourceDefinitionArrayToJSON(rds []*ResourceDefinition) (string, error) {
-	jsonBytes, err := json.MarshalIndent(rds, "", "  ")
+// ConvertServiceDefinitionArrayToJSON converts a slice of ServiceDefinitions to JSON
+func ConvertServiceDefinitionArrayToJSON(sds []*ServiceDefinition) (string, error) {
+	jsonBytes, err := json.MarshalIndent(sds, "", "  ")
 	if err != nil {
 		return "", err
 	}
 	return string(jsonBytes), nil
 }
 
-// ConvertJSONToResourceDefinitionArray parses JSON to a slice of ResourceDefinitions
-func ConvertJSONToResourceDefinitionArray(jsonString string) ([]*ResourceDefinition, error) {
-	var rds []*ResourceDefinition
-	if err := json.Unmarshal([]byte(jsonString), &rds); err != nil {
+// ConvertJSONToServiceDefinitionArray parses JSON to a slice of ServiceDefinitions
+func ConvertJSONToServiceDefinitionArray(jsonString string) ([]*ServiceDefinition, error) {
+	var sds []*ServiceDefinition
+	if err := json.Unmarshal([]byte(jsonString), &sds); err != nil {
 		return nil, err
 	}
-	return rds, nil
+	return sds, nil
 }
 
-// ValidateResourceAgainstSchema validates a Service's spec against a ResourceDefinition's schema
-func ValidateResourceAgainstSchema(service *Service, schema *ValidationSchema) error {
+// ValidateServiceAgainstSchema validates a Service's spec against a ServiceDefinition's schema
+func ValidateServiceAgainstSchema(service *Service, schema *ValidationSchema) error {
 	if schema == nil {
 		return nil // No schema means no validation
 	}
@@ -773,14 +773,14 @@ func validateField(fieldName string, value interface{}, prop *SchemaProperty) er
 	return nil
 }
 
-// ResourceHistory represents a historical snapshot of a service
-type ResourceHistory struct {
-	ID         string                 `json:"historyid"`
-	ResourceID string                 `json:"resourceid"`
-	Kind       string                 `json:"kind"`
-	Namespace  string                 `json:"namespace"`
-	Name       string                 `json:"name"`
-	Generation int64                  `json:"generation"`
+// ServiceHistory represents a historical snapshot of a service
+type ServiceHistory struct {
+	ID        string                 `json:"historyid"`
+	ServiceID string                 `json:"serviceid"`
+	Kind      string                 `json:"kind"`
+	Namespace string                 `json:"namespace"`
+	Name      string                 `json:"name"`
+	Generation int64                 `json:"generation"`
 	Spec       map[string]interface{} `json:"spec"`
 	Status     map[string]interface{} `json:"status,omitempty"`
 	Timestamp  time.Time              `json:"timestamp"`
@@ -788,11 +788,11 @@ type ResourceHistory struct {
 	ChangeType string                 `json:"changetype"` // "create", "update", "delete"
 }
 
-// CreateResourceHistory creates a new ResourceHistory from a Service
-func CreateResourceHistory(service *Service, changedBy string, changeType string) *ResourceHistory {
-	return &ResourceHistory{
+// CreateServiceHistory creates a new ServiceHistory from a Service
+func CreateServiceHistory(service *Service, changedBy string, changeType string) *ServiceHistory {
+	return &ServiceHistory{
 		ID:         uuid.New().String(),
-		ResourceID: service.ID,
+		ServiceID:  service.ID,
 		Kind:       service.Kind,
 		Namespace:  service.Metadata.Namespace,
 		Name:       service.Metadata.Name,
@@ -843,18 +843,18 @@ func copySlice(s []interface{}) []interface{} {
 	return result
 }
 
-// ToJSON converts ResourceHistory to JSON
-func (rh *ResourceHistory) ToJSON() (string, error) {
-	jsonBytes, err := json.Marshal(rh)
+// ToJSON converts ServiceHistory to JSON
+func (sh *ServiceHistory) ToJSON() (string, error) {
+	jsonBytes, err := json.Marshal(sh)
 	if err != nil {
 		return "", err
 	}
 	return string(jsonBytes), nil
 }
 
-// ConvertJSONToResourceHistory converts JSON to ResourceHistory
-func ConvertJSONToResourceHistory(jsonString string) (*ResourceHistory, error) {
-	var history ResourceHistory
+// ConvertJSONToServiceHistory converts JSON to ServiceHistory
+func ConvertJSONToServiceHistory(jsonString string) (*ServiceHistory, error) {
+	var history ServiceHistory
 	err := json.Unmarshal([]byte(jsonString), &history)
 	if err != nil {
 		return nil, err
@@ -862,9 +862,9 @@ func ConvertJSONToResourceHistory(jsonString string) (*ResourceHistory, error) {
 	return &history, nil
 }
 
-// ConvertJSONToResourceHistoryArray converts JSON array to ResourceHistory array
-func ConvertJSONToResourceHistoryArray(jsonString string) ([]*ResourceHistory, error) {
-	var histories []*ResourceHistory
+// ConvertJSONToServiceHistoryArray converts JSON array to ServiceHistory array
+func ConvertJSONToServiceHistoryArray(jsonString string) ([]*ServiceHistory, error) {
+	var histories []*ServiceHistory
 	err := json.Unmarshal([]byte(jsonString), &histories)
 	if err != nil {
 		return nil, err
@@ -872,8 +872,8 @@ func ConvertJSONToResourceHistoryArray(jsonString string) ([]*ResourceHistory, e
 	return histories, nil
 }
 
-// ConvertResourceHistoryArrayToJSON converts ResourceHistory array to JSON
-func ConvertResourceHistoryArrayToJSON(histories []*ResourceHistory) (string, error) {
+// ConvertServiceHistoryArrayToJSON converts ServiceHistory array to JSON
+func ConvertServiceHistoryArrayToJSON(histories []*ServiceHistory) (string, error) {
 	jsonBytes, err := json.Marshal(histories)
 	if err != nil {
 		return "", err

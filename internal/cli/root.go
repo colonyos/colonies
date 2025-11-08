@@ -73,8 +73,8 @@ var GeneratorTrigger int
 var GeneratorTimeout int
 var GeneratorCheckerPeriod int
 var FuncName string
-var ResourceDefinitionName string
-var ResourceName string
+var ServiceDefinitionName string
+var ServiceName string
 var Kind string
 var Arg string
 var Args []string

@@ -7,8 +7,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestCreateResource(t *testing.T) {
-	cr := CreateResource("ExecutorDeployment", "test-deploy", "test-colony")
+func TestCreateService(t *testing.T) {
+	cr := CreateService("ExecutorDeployment", "test-deploy", "test-colony")
 
 	assert.Equal(t, "ExecutorDeployment", cr.Kind)
 	assert.Equal(t, "test-deploy", cr.Metadata.Name)
@@ -21,8 +21,8 @@ func TestCreateResource(t *testing.T) {
 	assert.NotNil(t, cr.Metadata.Annotations)
 }
 
-func TestResourceSpecOperations(t *testing.T) {
-	cr := CreateResource("TestResource", "test", "ns")
+func TestServiceSpecOperations(t *testing.T) {
+	cr := CreateService("TestService", "test", "ns")
 
 	// Test SetSpec
 	cr.SetSpec("replicas", 3)
@@ -55,8 +55,8 @@ func TestResourceSpecOperations(t *testing.T) {
 	assert.Equal(t, int64(4), cr.Metadata.Generation)
 }
 
-func TestResourceStatusOperations(t *testing.T) {
-	cr := CreateResource("TestResource", "test", "ns")
+func TestServiceStatusOperations(t *testing.T) {
+	cr := CreateService("TestService", "test", "ns")
 
 	// Test SetStatus
 	cr.SetStatus("phase", "Running")
@@ -80,8 +80,8 @@ func TestResourceStatusOperations(t *testing.T) {
 	assert.Equal(t, int64(1), cr.Metadata.Generation)
 }
 
-func TestResourceLabelsAndAnnotations(t *testing.T) {
-	cr := CreateResource("TestResource", "test", "ns")
+func TestServiceLabelsAndAnnotations(t *testing.T) {
+	cr := CreateService("TestService", "test", "ns")
 
 	// Test labels
 	cr.Metadata.Labels["app"] = "my-app"
@@ -106,33 +106,33 @@ func TestResourceLabelsAndAnnotations(t *testing.T) {
 	assert.False(t, ok)
 }
 
-func TestResourceValidation(t *testing.T) {
+func TestServiceValidation(t *testing.T) {
 	// Valid service
-	cr := CreateResource("TestResource", "test", "ns")
+	cr := CreateService("TestService", "test", "ns")
 	err := cr.Validate()
 	assert.NoError(t, err)
 
 	// Missing Kind
-	cr3 := CreateResource("", "test", "ns")
+	cr3 := CreateService("", "test", "ns")
 	err = cr3.Validate()
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "kind is required")
 
 	// Missing Name
-	cr4 := CreateResource("TestResource", "", "ns")
+	cr4 := CreateService("TestService", "", "ns")
 	err = cr4.Validate()
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "metadata.name is required")
 
 	// Missing Namespace
-	cr5 := CreateResource("TestResource", "test", "")
+	cr5 := CreateService("TestService", "test", "")
 	err = cr5.Validate()
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "metadata.namespace is required")
 }
 
-func TestResourceJSONConversion(t *testing.T) {
-	cr := CreateResource("ExecutorDeployment", "test-deploy", "test-colony")
+func TestServiceJSONConversion(t *testing.T) {
+	cr := CreateService("ExecutorDeployment", "test-deploy", "test-colony")
 	cr.SetSpec("runtime", "kubernetes")
 	cr.SetSpec("replicas", 3)
 	cr.Metadata.Labels["app"] = "test"
@@ -144,7 +144,7 @@ func TestResourceJSONConversion(t *testing.T) {
 	assert.NotEmpty(t, jsonStr)
 
 	// Convert back from JSON
-	cr2, err := ConvertJSONToResource(jsonStr)
+	cr2, err := ConvertJSONToService(jsonStr)
 	assert.NoError(t, err)
 	assert.Equal(t, cr.Kind, cr2.Kind)
 	assert.Equal(t, cr.Metadata.Name, cr2.Metadata.Name)
@@ -165,8 +165,8 @@ func TestResourceJSONConversion(t *testing.T) {
 	assert.Equal(t, "Running", phase)
 }
 
-func TestCreateResourceDefinition(t *testing.T) {
-	crd := CreateResourceDefinition(
+func TestCreateServiceDefinition(t *testing.T) {
+	crd := CreateServiceDefinition(
 		"executordeployments.compute.colonies.io",
 		"compute.colonies.io",
 		"v1",
@@ -177,7 +177,7 @@ func TestCreateResourceDefinition(t *testing.T) {
 		"reconcile_executor_deployment",
 	)
 
-	assert.Equal(t, "ResourceDefinition", crd.Kind)
+	assert.Equal(t, "ServiceDefinition", crd.Kind)
 	assert.Equal(t, "executordeployments.compute.colonies.io", crd.Metadata.Name)
 	assert.Equal(t, "compute.colonies.io", crd.Spec.Group)
 	assert.Equal(t, "v1", crd.Spec.Version)
@@ -190,14 +190,14 @@ func TestCreateResourceDefinition(t *testing.T) {
 	assert.Equal(t, "reconcile_executor_deployment", crd.Spec.Handler.FunctionName)
 }
 
-func TestResourceDefinitionValidation(t *testing.T) {
+func TestServiceDefinitionValidation(t *testing.T) {
 	// Valid CRD
-	crd := CreateResourceDefinition(
-		"testresources.test.io",
+	crd := CreateServiceDefinition(
+		"testservices.test.io",
 		"test.io",
 		"v1",
-		"TestResource",
-		"testresources",
+		"TestService",
+		"testservices",
 		"Namespaced",
 		"test-controller",
 		"reconcile",
@@ -206,37 +206,37 @@ func TestResourceDefinitionValidation(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Missing group
-	crd2 := CreateResourceDefinition("", "", "v1", "TestResource", "testresources", "Namespaced", "test-controller", "reconcile")
+	crd2 := CreateServiceDefinition("", "", "v1", "TestService", "testservices", "Namespaced", "test-controller", "reconcile")
 	err = crd2.Validate()
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "spec.group is required")
 
 	// Missing version
-	crd3 := CreateResourceDefinition("", "test.io", "", "TestResource", "testresources", "Namespaced", "test-controller", "reconcile")
+	crd3 := CreateServiceDefinition("", "test.io", "", "TestService", "testservices", "Namespaced", "test-controller", "reconcile")
 	err = crd3.Validate()
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "spec.version is required")
 
 	// Invalid scope
-	crd4 := CreateResourceDefinition("", "test.io", "v1", "TestResource", "testresources", "Invalid", "test-controller", "reconcile")
+	crd4 := CreateServiceDefinition("", "test.io", "v1", "TestService", "testservices", "Invalid", "test-controller", "reconcile")
 	err = crd4.Validate()
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "spec.scope must be")
 
 	// Missing executor type
-	crd5 := CreateResourceDefinition("", "test.io", "v1", "TestResource", "testresources", "Namespaced", "", "reconcile")
+	crd5 := CreateServiceDefinition("", "test.io", "v1", "TestService", "testservices", "Namespaced", "", "reconcile")
 	err = crd5.Validate()
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "spec.handler.executorType is required")
 }
 
-func TestResourceDefinitionJSONConversion(t *testing.T) {
-	crd := CreateResourceDefinition(
-		"testresources.test.io",
+func TestServiceDefinitionJSONConversion(t *testing.T) {
+	crd := CreateServiceDefinition(
+		"testservices.test.io",
 		"test.io",
 		"v1",
-		"TestResource",
-		"testresources",
+		"TestService",
+		"testservices",
 		"Namespaced",
 		"test-controller",
 		"reconcile",
@@ -248,7 +248,7 @@ func TestResourceDefinitionJSONConversion(t *testing.T) {
 	assert.NotEmpty(t, jsonStr)
 
 	// Convert back from JSON
-	crd2, err := ConvertJSONToResourceDefinition(jsonStr)
+	crd2, err := ConvertJSONToServiceDefinition(jsonStr)
 	assert.NoError(t, err)
 	assert.Equal(t, crd.Metadata.Name, crd2.Metadata.Name)
 	assert.Equal(t, crd.Spec.Group, crd2.Spec.Group)
@@ -257,13 +257,13 @@ func TestResourceDefinitionJSONConversion(t *testing.T) {
 	assert.Equal(t, crd.Spec.Handler.ExecutorType, crd2.Spec.Handler.ExecutorType)
 }
 
-func TestResourceDefinitionHelperMethods(t *testing.T) {
-	crd := CreateResourceDefinition(
-		"testresources.test.io",
+func TestServiceDefinitionHelperMethods(t *testing.T) {
+	crd := CreateServiceDefinition(
+		"testservices.test.io",
 		"test.io",
 		"v1",
-		"TestResource",
-		"testresources",
+		"TestService",
+		"testservices",
 		"Namespaced",
 		"test-controller",
 		"reconcile",
@@ -272,8 +272,8 @@ func TestResourceDefinitionHelperMethods(t *testing.T) {
 	assert.Equal(t, "test.io/v1", crd.GetAPIVersion())
 }
 
-func TestResourceInFunctionSpec(t *testing.T) {
-	cr := CreateResource("TestResource", "test-service", "test-colony")
+func TestServiceInFunctionSpec(t *testing.T) {
+	cr := CreateService("TestService", "test-service", "test-colony")
 	cr.SetSpec("replicas", 3)
 	cr.SetSpec("image", "test:latest")
 
@@ -283,7 +283,7 @@ func TestResourceInFunctionSpec(t *testing.T) {
 
 	// Verify the service is properly attached
 	assert.NotNil(t, funcSpec.Service)
-	assert.Equal(t, "TestResource", funcSpec.Service.Kind)
+	assert.Equal(t, "TestService", funcSpec.Service.Kind)
 	assert.Equal(t, "test-service", funcSpec.Service.Metadata.Name)
 	assert.Equal(t, "test-colony", funcSpec.Service.Metadata.Namespace)
 
@@ -292,9 +292,9 @@ func TestResourceInFunctionSpec(t *testing.T) {
 	assert.Equal(t, 3, replicas)
 }
 
-func TestComplexCustomResourceScenario(t *testing.T) {
+func TestComplexServiceScenario(t *testing.T) {
 	// Create a CRD for ExecutorDeployment
-	crd := CreateResourceDefinition(
+	crd := CreateServiceDefinition(
 		"executordeployments.compute.colonies.io",
 		"compute.colonies.io",
 		"v1",
@@ -328,7 +328,7 @@ func TestComplexCustomResourceScenario(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Create a custom service instance
-	cr := CreateResource("ExecutorDeployment", "ml-executors", "ml-colony")
+	cr := CreateService("ExecutorDeployment", "ml-executors", "ml-colony")
 	cr.Metadata.Labels["app"] = "ml-training"
 	cr.Metadata.Labels["environment"] = "production"
 	cr.Metadata.Annotations["description"] = "GPU-enabled ML training executors"
@@ -364,7 +364,7 @@ func TestComplexCustomResourceScenario(t *testing.T) {
 	jsonStr, err := cr.ToJSON()
 	assert.NoError(t, err)
 
-	cr2, err := ConvertJSONToResource(jsonStr)
+	cr2, err := ConvertJSONToService(jsonStr)
 	assert.NoError(t, err)
 	assert.Equal(t, cr.Kind, cr2.Kind)
 
@@ -385,7 +385,7 @@ func TestComplexCustomResourceScenario(t *testing.T) {
 }
 
 func TestUpdateGeneration(t *testing.T) {
-	cr := CreateResource("TestResource", "test", "ns")
+	cr := CreateService("TestService", "test", "ns")
 
 	initialGen := cr.Metadata.Generation
 	assert.Equal(t, int64(1), initialGen)
@@ -407,12 +407,12 @@ func TestUpdateGeneration(t *testing.T) {
 
 func TestSchemaValidation(t *testing.T) {
 	// Create CRD with schema
-	crd := CreateResourceDefinition(
-		"testresources.test.io",
+	crd := CreateServiceDefinition(
+		"testservices.test.io",
 		"test.io",
 		"v1",
-		"TestResource",
-		"testresources",
+		"TestService",
+		"testservices",
 		"Namespaced",
 		"test-controller",
 		"reconcile",
@@ -439,22 +439,22 @@ func TestSchemaValidation(t *testing.T) {
 	}
 
 	// Valid service
-	cr := CreateResource("TestResource", "test", "ns")
+	cr := CreateService("TestService", "test", "ns")
 	cr.SetSpec("runtime", "docker")
 	cr.SetSpec("replicas", 3)
 	cr.SetSpec("enabled", true)
 
-	err := cr.ValidateAgainstRD(crd)
+	err := cr.ValidateAgainstSD(crd)
 	assert.NoError(t, err)
 }
 
 func TestSchemaValidationMissingRequired(t *testing.T) {
-	crd := CreateResourceDefinition(
-		"testresources.test.io",
+	crd := CreateServiceDefinition(
+		"testservices.test.io",
 		"test.io",
 		"v1",
-		"TestResource",
-		"testresources",
+		"TestService",
+		"testservices",
 		"Namespaced",
 		"test-controller",
 		"reconcile",
@@ -471,21 +471,21 @@ func TestSchemaValidationMissingRequired(t *testing.T) {
 	}
 
 	// Missing required field
-	cr := CreateResource("TestResource", "test", "ns")
+	cr := CreateService("TestService", "test", "ns")
 	// Not setting runtime
 
-	err := cr.ValidateAgainstRD(crd)
+	err := cr.ValidateAgainstSD(crd)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "required field 'runtime' is missing")
 }
 
 func TestSchemaValidationInvalidType(t *testing.T) {
-	crd := CreateResourceDefinition(
-		"testresources.test.io",
+	crd := CreateServiceDefinition(
+		"testservices.test.io",
 		"test.io",
 		"v1",
-		"TestResource",
-		"testresources",
+		"TestService",
+		"testservices",
 		"Namespaced",
 		"test-controller",
 		"reconcile",
@@ -501,21 +501,21 @@ func TestSchemaValidationInvalidType(t *testing.T) {
 	}
 
 	// Wrong type (string instead of integer)
-	cr := CreateResource("TestResource", "test", "ns")
+	cr := CreateService("TestService", "test", "ns")
 	cr.SetSpec("replicas", "not-a-number")
 
-	err := cr.ValidateAgainstRD(crd)
+	err := cr.ValidateAgainstSD(crd)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "must be an integer")
 }
 
 func TestSchemaValidationInvalidEnum(t *testing.T) {
-	crd := CreateResourceDefinition(
-		"testresources.test.io",
+	crd := CreateServiceDefinition(
+		"testservices.test.io",
 		"test.io",
 		"v1",
-		"TestResource",
-		"testresources",
+		"TestService",
+		"testservices",
 		"Namespaced",
 		"test-controller",
 		"reconcile",
@@ -533,22 +533,22 @@ func TestSchemaValidationInvalidEnum(t *testing.T) {
 	}
 
 	// Invalid enum value
-	cr := CreateResource("TestResource", "test", "ns")
+	cr := CreateService("TestService", "test", "ns")
 	cr.SetSpec("runtime", "invalid-runtime")
 
-	err := cr.ValidateAgainstRD(crd)
+	err := cr.ValidateAgainstSD(crd)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid value")
 	assert.Contains(t, err.Error(), "must be one of")
 }
 
 func TestSchemaValidationNestedObject(t *testing.T) {
-	crd := CreateResourceDefinition(
-		"testresources.test.io",
+	crd := CreateServiceDefinition(
+		"testservices.test.io",
 		"test.io",
 		"v1",
-		"TestResource",
-		"testresources",
+		"TestService",
+		"testservices",
 		"Namespaced",
 		"test-controller",
 		"reconcile",
@@ -572,23 +572,23 @@ func TestSchemaValidationNestedObject(t *testing.T) {
 	}
 
 	// Valid nested object
-	cr := CreateResource("TestResource", "test", "ns")
+	cr := CreateService("TestService", "test", "ns")
 	cr.SetSpec("config", map[string]interface{}{
 		"cpu":    "2",
 		"memory": "4Gi",
 	})
 
-	err := cr.ValidateAgainstRD(crd)
+	err := cr.ValidateAgainstSD(crd)
 	assert.NoError(t, err)
 }
 
 func TestSchemaValidationArray(t *testing.T) {
-	crd := CreateResourceDefinition(
-		"testresources.test.io",
+	crd := CreateServiceDefinition(
+		"testservices.test.io",
 		"test.io",
 		"v1",
-		"TestResource",
-		"testresources",
+		"TestService",
+		"testservices",
 		"Namespaced",
 		"test-controller",
 		"reconcile",
@@ -607,59 +607,59 @@ func TestSchemaValidationArray(t *testing.T) {
 	}
 
 	// Valid array
-	cr := CreateResource("TestResource", "test", "ns")
+	cr := CreateService("TestService", "test", "ns")
 	cr.SetSpec("ports", []interface{}{80, 443, 8080})
 
-	err := cr.ValidateAgainstRD(crd)
+	err := cr.ValidateAgainstSD(crd)
 	assert.NoError(t, err)
 
 	// Invalid array item type
-	cr2 := CreateResource("TestResource", "test2", "ns")
+	cr2 := CreateService("TestService", "test2", "ns")
 	cr2.SetSpec("ports", []interface{}{80, "not-a-number", 8080})
 
-	err = cr2.ValidateAgainstRD(crd)
+	err = cr2.ValidateAgainstSD(crd)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "must be an integer")
 }
 
 func TestSchemaValidationKindMismatch(t *testing.T) {
-	crd := CreateResourceDefinition(
-		"testresources.test.io",
+	crd := CreateServiceDefinition(
+		"testservices.test.io",
 		"test.io",
 		"v1",
-		"TestResource",
-		"testresources",
+		"TestService",
+		"testservices",
 		"Namespaced",
 		"test-controller",
 		"reconcile",
 	)
 
 	// Wrong kind
-	cr := CreateResource("WrongResource", "test", "ns")
+	cr := CreateService("WrongService", "test", "ns")
 
-	err := cr.ValidateAgainstRD(crd)
+	err := cr.ValidateAgainstSD(crd)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "kind mismatch")
 }
 
 func TestSchemaValidationNoSchema(t *testing.T) {
-	crd := CreateResourceDefinition(
-		"testresources.test.io",
+	crd := CreateServiceDefinition(
+		"testservices.test.io",
 		"test.io",
 		"v1",
-		"TestResource",
-		"testresources",
+		"TestService",
+		"testservices",
 		"Namespaced",
 		"test-controller",
 		"reconcile",
 	)
 	// No schema defined
 
-	cr := CreateResource("TestResource", "test", "ns")
+	cr := CreateService("TestService", "test", "ns")
 	cr.SetSpec("anything", "goes")
 
 	// Should pass validation when no schema is defined
-	err := cr.ValidateAgainstRD(crd)
+	err := cr.ValidateAgainstSD(crd)
 	assert.NoError(t, err)
 }
 
@@ -667,10 +667,10 @@ func TestSchemaValidationNoSchema(t *testing.T) {
 
 func TestCreateReconciliationCreate(t *testing.T) {
 	// Test create action (old is nil, new exists)
-	newResource := CreateResource("TestResource", "test", "ns")
-	newResource.SetSpec("replicas", 3)
+	newService := CreateService("TestService", "test", "ns")
+	newService.SetSpec("replicas", 3)
 
-	reconciliation := CreateReconciliation(nil, newResource)
+	reconciliation := CreateReconciliation(nil, newService)
 
 	assert.Nil(t, reconciliation.Old)
 	assert.NotNil(t, reconciliation.New)
@@ -680,10 +680,10 @@ func TestCreateReconciliationCreate(t *testing.T) {
 
 func TestCreateReconciliationDelete(t *testing.T) {
 	// Test delete action (old exists, new is nil)
-	oldResource := CreateResource("TestResource", "test", "ns")
-	oldResource.SetSpec("replicas", 3)
+	oldService := CreateService("TestService", "test", "ns")
+	oldService.SetSpec("replicas", 3)
 
-	reconciliation := CreateReconciliation(oldResource, nil)
+	reconciliation := CreateReconciliation(oldService, nil)
 
 	assert.NotNil(t, reconciliation.Old)
 	assert.Nil(t, reconciliation.New)
@@ -693,15 +693,15 @@ func TestCreateReconciliationDelete(t *testing.T) {
 
 func TestCreateReconciliationUpdate(t *testing.T) {
 	// Test update action (both exist with changes)
-	oldResource := CreateResource("TestResource", "test", "ns")
-	oldResource.SetSpec("replicas", 3)
-	oldResource.SetSpec("image", "nginx:1.0")
+	oldService := CreateService("TestService", "test", "ns")
+	oldService.SetSpec("replicas", 3)
+	oldService.SetSpec("image", "nginx:1.0")
 
-	newResource := CreateResource("TestResource", "test", "ns")
-	newResource.SetSpec("replicas", 5)
-	newResource.SetSpec("image", "nginx:2.0")
+	newService := CreateService("TestService", "test", "ns")
+	newService.SetSpec("replicas", 5)
+	newService.SetSpec("image", "nginx:2.0")
 
-	reconciliation := CreateReconciliation(oldResource, newResource)
+	reconciliation := CreateReconciliation(oldService, newService)
 
 	assert.NotNil(t, reconciliation.Old)
 	assert.NotNil(t, reconciliation.New)
@@ -713,15 +713,15 @@ func TestCreateReconciliationUpdate(t *testing.T) {
 
 func TestCreateReconciliationNoop(t *testing.T) {
 	// Test noop action (both exist with no changes)
-	oldResource := CreateResource("TestResource", "test", "ns")
-	oldResource.SetSpec("replicas", 3)
-	oldResource.SetSpec("image", "nginx:1.0")
+	oldService := CreateService("TestService", "test", "ns")
+	oldService.SetSpec("replicas", 3)
+	oldService.SetSpec("image", "nginx:1.0")
 
-	newResource := CreateResource("TestResource", "test", "ns")
-	newResource.SetSpec("replicas", 3)
-	newResource.SetSpec("image", "nginx:1.0")
+	newService := CreateService("TestService", "test", "ns")
+	newService.SetSpec("replicas", 3)
+	newService.SetSpec("image", "nginx:1.0")
 
-	reconciliation := CreateReconciliation(oldResource, newResource)
+	reconciliation := CreateReconciliation(oldService, newService)
 
 	assert.NotNil(t, reconciliation.Old)
 	assert.NotNil(t, reconciliation.New)
@@ -730,19 +730,19 @@ func TestCreateReconciliationNoop(t *testing.T) {
 	assert.False(t, reconciliation.Diff.HasChanges)
 }
 
-func TestResourceDiffSpecChanges(t *testing.T) {
-	oldResource := CreateResource("TestResource", "test", "ns")
-	oldResource.SetSpec("replicas", 3)
-	oldResource.SetSpec("image", "nginx:1.0")
-	oldResource.SetSpec("port", 8080)
+func TestServiceDiffSpecChanges(t *testing.T) {
+	oldService := CreateService("TestService", "test", "ns")
+	oldService.SetSpec("replicas", 3)
+	oldService.SetSpec("image", "nginx:1.0")
+	oldService.SetSpec("port", 8080)
 
-	newResource := CreateResource("TestResource", "test", "ns")
-	newResource.SetSpec("replicas", 5)           // Modified
-	newResource.SetSpec("image", "nginx:1.0")    // Unchanged
-	newResource.SetSpec("command", []string{"run"}) // Added
+	newService := CreateService("TestService", "test", "ns")
+	newService.SetSpec("replicas", 5)           // Modified
+	newService.SetSpec("image", "nginx:1.0")    // Unchanged
+	newService.SetSpec("command", []string{"run"}) // Added
 	// port removed
 
-	diff := oldResource.Diff(newResource)
+	diff := oldService.Diff(newService)
 
 	assert.True(t, diff.HasChanges)
 	assert.Equal(t, 3, len(diff.SpecChanges))
@@ -768,16 +768,16 @@ func TestResourceDiffSpecChanges(t *testing.T) {
 	assert.Nil(t, portChange.NewValue)
 }
 
-func TestResourceDiffStatusChanges(t *testing.T) {
-	oldResource := CreateResource("TestResource", "test", "ns")
-	oldResource.SetStatus("phase", "Pending")
-	oldResource.SetStatus("ready", 0)
+func TestServiceDiffStatusChanges(t *testing.T) {
+	oldService := CreateService("TestService", "test", "ns")
+	oldService.SetStatus("phase", "Pending")
+	oldService.SetStatus("ready", 0)
 
-	newResource := CreateResource("TestResource", "test", "ns")
-	newResource.SetStatus("phase", "Running")
-	newResource.SetStatus("ready", 3)
+	newService := CreateService("TestService", "test", "ns")
+	newService.SetStatus("phase", "Running")
+	newService.SetStatus("ready", 3)
 
-	diff := oldResource.Diff(newResource)
+	diff := oldService.Diff(newService)
 
 	assert.True(t, diff.HasChanges)
 	assert.Equal(t, 2, len(diff.StatusChanges))
@@ -791,18 +791,18 @@ func TestResourceDiffStatusChanges(t *testing.T) {
 	assert.Equal(t, "Running", phaseChange.NewValue)
 }
 
-func TestResourceDiffMetadataChanges(t *testing.T) {
-	oldResource := CreateResource("TestResource", "test", "ns")
-	oldResource.Metadata.Labels["app"] = "old-app"
-	oldResource.Metadata.Labels["version"] = "1.0"
-	oldResource.Metadata.Annotations["description"] = "old description"
+func TestServiceDiffMetadataChanges(t *testing.T) {
+	oldService := CreateService("TestService", "test", "ns")
+	oldService.Metadata.Labels["app"] = "old-app"
+	oldService.Metadata.Labels["version"] = "1.0"
+	oldService.Metadata.Annotations["description"] = "old description"
 
-	newResource := CreateResource("TestResource", "test", "ns")
-	newResource.Metadata.Labels["app"] = "new-app"
-	newResource.Metadata.Labels["environment"] = "production"
-	newResource.Metadata.Annotations["description"] = "new description"
+	newService := CreateService("TestService", "test", "ns")
+	newService.Metadata.Labels["app"] = "new-app"
+	newService.Metadata.Labels["environment"] = "production"
+	newService.Metadata.Annotations["description"] = "new description"
 
-	diff := oldResource.Diff(newResource)
+	diff := oldService.Diff(newService)
 
 	assert.True(t, diff.HasChanges)
 	assert.Greater(t, len(diff.MetadataChanges), 0)
@@ -820,57 +820,57 @@ func TestResourceDiffMetadataChanges(t *testing.T) {
 	assert.True(t, diff.HasFieldChange("metadata.annotations.description"))
 }
 
-func TestResourceDiffHelperMethods(t *testing.T) {
-	oldResource := CreateResource("TestResource", "test", "ns")
-	oldResource.SetSpec("replicas", 3)
-	oldResource.SetStatus("phase", "Running")
-	oldResource.Metadata.Labels["app"] = "test"
+func TestServiceDiffHelperMethods(t *testing.T) {
+	oldService := CreateService("TestService", "test", "ns")
+	oldService.SetSpec("replicas", 3)
+	oldService.SetStatus("phase", "Running")
+	oldService.Metadata.Labels["app"] = "test"
 
 	// Test OnlyStatusChanged
-	newResource1 := CreateResource("TestResource", "test", "ns")
-	newResource1.SetSpec("replicas", 3)
-	newResource1.SetStatus("phase", "Succeeded")
-	newResource1.Metadata.Labels["app"] = "test"
+	newService1 := CreateService("TestService", "test", "ns")
+	newService1.SetSpec("replicas", 3)
+	newService1.SetStatus("phase", "Succeeded")
+	newService1.Metadata.Labels["app"] = "test"
 
-	diff1 := oldResource.Diff(newResource1)
+	diff1 := oldService.Diff(newService1)
 	assert.True(t, diff1.OnlyStatusChanged())
 	assert.False(t, diff1.OnlyMetadataChanged())
 
 	// Test OnlyMetadataChanged
-	newResource2 := CreateResource("TestResource", "test", "ns")
-	newResource2.SetSpec("replicas", 3)
-	newResource2.SetStatus("phase", "Running")
-	newResource2.Metadata.Labels["app"] = "new-app"
+	newService2 := CreateService("TestService", "test", "ns")
+	newService2.SetSpec("replicas", 3)
+	newService2.SetStatus("phase", "Running")
+	newService2.Metadata.Labels["app"] = "new-app"
 
-	diff2 := oldResource.Diff(newResource2)
+	diff2 := oldService.Diff(newService2)
 	assert.True(t, diff2.OnlyMetadataChanged())
 	assert.False(t, diff2.OnlyStatusChanged())
 
 	// Test mixed changes
-	newResource3 := CreateResource("TestResource", "test", "ns")
-	newResource3.SetSpec("replicas", 5)
-	newResource3.SetStatus("phase", "Failed")
-	newResource3.Metadata.Labels["app"] = "new-app"
+	newService3 := CreateService("TestService", "test", "ns")
+	newService3.SetSpec("replicas", 5)
+	newService3.SetStatus("phase", "Failed")
+	newService3.Metadata.Labels["app"] = "new-app"
 
-	diff3 := oldResource.Diff(newResource3)
+	diff3 := oldService.Diff(newService3)
 	assert.False(t, diff3.OnlyStatusChanged())
 	assert.False(t, diff3.OnlyMetadataChanged())
 }
 
-func TestResourceDiffComplexChanges(t *testing.T) {
-	oldResource := CreateResource("TestResource", "test", "ns")
-	oldResource.SetSpec("config", map[string]interface{}{
+func TestServiceDiffComplexChanges(t *testing.T) {
+	oldService := CreateService("TestService", "test", "ns")
+	oldService.SetSpec("config", map[string]interface{}{
 		"cpu":    "2",
 		"memory": "4Gi",
 	})
 
-	newResource := CreateResource("TestResource", "test", "ns")
-	newResource.SetSpec("config", map[string]interface{}{
+	newService := CreateService("TestService", "test", "ns")
+	newService.SetSpec("config", map[string]interface{}{
 		"cpu":    "4",
 		"memory": "4Gi",
 	})
 
-	diff := oldResource.Diff(newResource)
+	diff := oldService.Diff(newService)
 
 	assert.True(t, diff.HasChanges)
 	assert.Equal(t, 1, len(diff.SpecChanges))
@@ -883,13 +883,13 @@ func TestResourceDiffComplexChanges(t *testing.T) {
 
 func TestReconciliationInFunctionSpec(t *testing.T) {
 	// Create a reconciliation
-	oldResource := CreateResource("TestResource", "test", "ns")
-	oldResource.SetSpec("replicas", 3)
+	oldService := CreateService("TestService", "test", "ns")
+	oldService.SetSpec("replicas", 3)
 
-	newResource := CreateResource("TestResource", "test", "ns")
-	newResource.SetSpec("replicas", 5)
+	newService := CreateService("TestService", "test", "ns")
+	newService.SetSpec("replicas", 5)
 
-	reconciliation := CreateReconciliation(oldResource, newResource)
+	reconciliation := CreateReconciliation(oldService, newService)
 
 	// Create a FunctionSpec with reconciliation
 	funcSpec := CreateEmptyFunctionSpec()
@@ -908,13 +908,13 @@ func TestReconciliationInFunctionSpec(t *testing.T) {
 }
 
 func TestReconciliationJSONConversion(t *testing.T) {
-	oldResource := CreateResource("TestResource", "test", "ns")
-	oldResource.SetSpec("replicas", 3)
+	oldService := CreateService("TestService", "test", "ns")
+	oldService.SetSpec("replicas", 3)
 
-	newResource := CreateResource("TestResource", "test", "ns")
-	newResource.SetSpec("replicas", 5)
+	newService := CreateService("TestService", "test", "ns")
+	newService.SetSpec("replicas", 5)
 
-	reconciliation := CreateReconciliation(oldResource, newResource)
+	reconciliation := CreateReconciliation(oldService, newService)
 
 	// Create FunctionSpec with reconciliation
 	funcSpec := CreateEmptyFunctionSpec()
@@ -935,15 +935,15 @@ func TestReconciliationJSONConversion(t *testing.T) {
 }
 
 func TestHasFieldChange(t *testing.T) {
-	oldResource := CreateResource("TestResource", "test", "ns")
-	oldResource.SetSpec("replicas", 3)
-	oldResource.SetStatus("phase", "Running")
+	oldService := CreateService("TestService", "test", "ns")
+	oldService.SetSpec("replicas", 3)
+	oldService.SetStatus("phase", "Running")
 
-	newResource := CreateResource("TestResource", "test", "ns")
-	newResource.SetSpec("replicas", 5)
-	newResource.SetStatus("phase", "Running")
+	newService := CreateService("TestService", "test", "ns")
+	newService.SetSpec("replicas", 5)
+	newService.SetStatus("phase", "Running")
 
-	diff := oldResource.Diff(newResource)
+	diff := oldService.Diff(newService)
 
 	assert.True(t, diff.HasFieldChange("spec.replicas"))
 	assert.False(t, diff.HasFieldChange("spec.image"))
@@ -951,13 +951,13 @@ func TestHasFieldChange(t *testing.T) {
 }
 
 func TestGetFieldChange(t *testing.T) {
-	oldResource := CreateResource("TestResource", "test", "ns")
-	oldResource.SetSpec("image", "nginx:1.0")
+	oldService := CreateService("TestService", "test", "ns")
+	oldService.SetSpec("image", "nginx:1.0")
 
-	newResource := CreateResource("TestResource", "test", "ns")
-	newResource.SetSpec("image", "nginx:2.0")
+	newService := CreateService("TestService", "test", "ns")
+	newService.SetSpec("image", "nginx:2.0")
 
-	diff := oldResource.Diff(newResource)
+	diff := oldService.Diff(newService)
 
 	change := diff.GetFieldChange("spec.image")
 	assert.NotNil(t, change)

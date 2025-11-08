@@ -4,24 +4,24 @@ import (
 	"encoding/json"
 )
 
-const GetResourceDefinitionPayloadType = "getresourcedefinitionmsg"
+const GetServiceDefinitionPayloadType = "getservicedefinitionmsg"
 
-type GetResourceDefinitionMsg struct {
+type GetServiceDefinitionMsg struct {
 	ColonyName string `json:"colonyname"`
 	Name       string `json:"name"`
 	MsgType    string `json:"msgtype"`
 }
 
-func CreateGetResourceDefinitionMsg(colonyName, name string) *GetResourceDefinitionMsg {
-	msg := &GetResourceDefinitionMsg{}
+func CreateGetServiceDefinitionMsg(colonyName, name string) *GetServiceDefinitionMsg {
+	msg := &GetServiceDefinitionMsg{}
 	msg.ColonyName = colonyName
 	msg.Name = name
-	msg.MsgType = GetResourceDefinitionPayloadType
+	msg.MsgType = GetServiceDefinitionPayloadType
 
 	return msg
 }
 
-func (msg *GetResourceDefinitionMsg) ToJSON() (string, error) {
+func (msg *GetServiceDefinitionMsg) ToJSON() (string, error) {
 	jsonBytes, err := json.Marshal(msg)
 	if err != nil {
 		return "", err
@@ -30,7 +30,7 @@ func (msg *GetResourceDefinitionMsg) ToJSON() (string, error) {
 	return string(jsonBytes), nil
 }
 
-func (msg *GetResourceDefinitionMsg) ToJSONIndent() (string, error) {
+func (msg *GetServiceDefinitionMsg) ToJSONIndent() (string, error) {
 	jsonBytes, err := json.MarshalIndent(msg, "", "    ")
 	if err != nil {
 		return "", err
@@ -39,7 +39,7 @@ func (msg *GetResourceDefinitionMsg) ToJSONIndent() (string, error) {
 	return string(jsonBytes), nil
 }
 
-func (msg *GetResourceDefinitionMsg) Equals(msg2 *GetResourceDefinitionMsg) bool {
+func (msg *GetServiceDefinitionMsg) Equals(msg2 *GetServiceDefinitionMsg) bool {
 	if msg2 == nil {
 		return false
 	}
@@ -49,8 +49,8 @@ func (msg *GetResourceDefinitionMsg) Equals(msg2 *GetResourceDefinitionMsg) bool
 		msg.Name == msg2.Name
 }
 
-func CreateGetResourceDefinitionMsgFromJSON(jsonString string) (*GetResourceDefinitionMsg, error) {
-	var msg *GetResourceDefinitionMsg
+func CreateGetServiceDefinitionMsgFromJSON(jsonString string) (*GetServiceDefinitionMsg, error) {
+	var msg *GetServiceDefinitionMsg
 
 	err := json.Unmarshal([]byte(jsonString), &msg)
 	if err != nil {

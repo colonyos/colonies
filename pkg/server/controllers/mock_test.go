@@ -610,33 +610,33 @@ func (db *DatabaseMock) ChangeColonyID(colonyName string, oldColonyID, newColony
 func (db *DatabaseMock) ChangeUserID(colonyName string, oldUserID, newUserID string) error { return nil }
 func (db *DatabaseMock) ChangeExecutorID(colonyName string, oldExecutorID, newExecutorID string) error { return nil }
 
-// ResourceDatabase interface - ResourceDefinition methods
-func (db *DatabaseMock) AddResourceDefinition(rd *core.ResourceDefinition) error { return nil }
-func (db *DatabaseMock) GetResourceDefinitionByID(id string) (*core.ResourceDefinition, error) { return nil, nil }
-func (db *DatabaseMock) GetResourceDefinitionByName(namespace, name string) (*core.ResourceDefinition, error) { return nil, nil }
-func (db *DatabaseMock) GetResourceDefinitions() ([]*core.ResourceDefinition, error) { return nil, nil }
-func (db *DatabaseMock) GetResourceDefinitionsByNamespace(namespace string) ([]*core.ResourceDefinition, error) { return nil, nil }
-func (db *DatabaseMock) GetResourceDefinitionsByGroup(group string) ([]*core.ResourceDefinition, error) { return nil, nil }
-func (db *DatabaseMock) UpdateResourceDefinition(rd *core.ResourceDefinition) error { return nil }
-func (db *DatabaseMock) RemoveResourceDefinitionByID(id string) error { return nil }
-func (db *DatabaseMock) RemoveResourceDefinitionByName(namespace, name string) error { return nil }
-func (db *DatabaseMock) CountResourceDefinitions() (int, error) { return 0, nil }
+// ServiceDatabase interface - ServiceDefinition methods
+func (db *DatabaseMock) AddServiceDefinition(sd *core.ServiceDefinition) error { return nil }
+func (db *DatabaseMock) GetServiceDefinitionByID(id string) (*core.ServiceDefinition, error) { return nil, nil }
+func (db *DatabaseMock) GetServiceDefinitionByName(namespace, name string) (*core.ServiceDefinition, error) { return nil, nil }
+func (db *DatabaseMock) GetServiceDefinitions() ([]*core.ServiceDefinition, error) { return nil, nil }
+func (db *DatabaseMock) GetServiceDefinitionsByNamespace(namespace string) ([]*core.ServiceDefinition, error) { return nil, nil }
+func (db *DatabaseMock) GetServiceDefinitionsByGroup(group string) ([]*core.ServiceDefinition, error) { return nil, nil }
+func (db *DatabaseMock) UpdateServiceDefinition(sd *core.ServiceDefinition) error { return nil }
+func (db *DatabaseMock) RemoveServiceDefinitionByID(id string) error { return nil }
+func (db *DatabaseMock) RemoveServiceDefinitionByName(namespace, name string) error { return nil }
+func (db *DatabaseMock) CountServiceDefinitions() (int, error) { return 0, nil }
 
-// ResourceDatabase interface - Service methods
-func (db *DatabaseMock) AddResource(service *core.Service) error { return nil }
-func (db *DatabaseMock) GetResourceByID(id string) (*core.Service, error) { return nil, nil }
-func (db *DatabaseMock) GetResourceByName(namespace, name string) (*core.Service, error) { return nil, nil }
-func (db *DatabaseMock) GetResources() ([]*core.Service, error) { return nil, nil }
-func (db *DatabaseMock) GetResourcesByNamespace(namespace string) ([]*core.Service, error) { return nil, nil }
-func (db *DatabaseMock) GetResourcesByKind(kind string) ([]*core.Service, error) { return nil, nil }
-func (db *DatabaseMock) GetResourcesByNamespaceAndKind(namespace, kind string) ([]*core.Service, error) { return nil, nil }
-func (db *DatabaseMock) UpdateResource(service *core.Service) error { return nil }
-func (db *DatabaseMock) UpdateResourceStatus(id string, status map[string]interface{}) error { return nil }
-func (db *DatabaseMock) RemoveResourceByID(id string) error { return nil }
-func (db *DatabaseMock) RemoveResourceByName(namespace, name string) error { return nil }
-func (db *DatabaseMock) RemoveResourcesByNamespace(namespace string) error { return nil }
-func (db *DatabaseMock) CountResources() (int, error) { return 0, nil }
-func (db *DatabaseMock) CountResourcesByNamespace(namespace string) (int, error) { return 0, nil }
+// ServiceDatabase interface - Service methods
+func (db *DatabaseMock) AddService(service *core.Service) error { return nil }
+func (db *DatabaseMock) GetServiceByID(id string) (*core.Service, error) { return nil, nil }
+func (db *DatabaseMock) GetServiceByName(namespace, name string) (*core.Service, error) { return nil, nil }
+func (db *DatabaseMock) GetServices() ([]*core.Service, error) { return nil, nil }
+func (db *DatabaseMock) GetServicesByNamespace(namespace string) ([]*core.Service, error) { return nil, nil }
+func (db *DatabaseMock) GetServicesByKind(kind string) ([]*core.Service, error) { return nil, nil }
+func (db *DatabaseMock) GetServicesByNamespaceAndKind(namespace, kind string) ([]*core.Service, error) { return nil, nil }
+func (db *DatabaseMock) UpdateService(service *core.Service) error { return nil }
+func (db *DatabaseMock) UpdateServiceStatus(id string, status map[string]interface{}) error { return nil }
+func (db *DatabaseMock) RemoveServiceByID(id string) error { return nil }
+func (db *DatabaseMock) RemoveServiceByName(namespace, name string) error { return nil }
+func (db *DatabaseMock) RemoveServicesByNamespace(namespace string) error { return nil }
+func (db *DatabaseMock) CountServices() (int, error) { return 0, nil }
+func (db *DatabaseMock) CountServicesByNamespace(namespace string) (int, error) { return 0, nil }
 
 // Implement the database.Database interface
 func (db *DatabaseMock) CreateTables() error { return nil }

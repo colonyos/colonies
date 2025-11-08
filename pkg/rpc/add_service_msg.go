@@ -6,22 +6,22 @@ import (
 	"github.com/colonyos/colonies/pkg/core"
 )
 
-const AddResourcePayloadType = "addresourcemsg"
+const AddServicePayloadType = "addservicemsg"
 
-type AddResourceMsg struct {
+type AddServiceMsg struct {
 	Service *core.Service `json:"service"`
 	MsgType  string         `json:"msgtype"`
 }
 
-func CreateAddResourceMsg(service *core.Service) *AddResourceMsg {
-	msg := &AddResourceMsg{}
+func CreateAddServiceMsg(service *core.Service) *AddServiceMsg {
+	msg := &AddServiceMsg{}
 	msg.Service = service
-	msg.MsgType = AddResourcePayloadType
+	msg.MsgType = AddServicePayloadType
 
 	return msg
 }
 
-func (msg *AddResourceMsg) ToJSON() (string, error) {
+func (msg *AddServiceMsg) ToJSON() (string, error) {
 	jsonBytes, err := json.Marshal(msg)
 	if err != nil {
 		return "", err
@@ -30,7 +30,7 @@ func (msg *AddResourceMsg) ToJSON() (string, error) {
 	return string(jsonBytes), nil
 }
 
-func (msg *AddResourceMsg) ToJSONIndent() (string, error) {
+func (msg *AddServiceMsg) ToJSONIndent() (string, error) {
 	jsonBytes, err := json.MarshalIndent(msg, "", "    ")
 	if err != nil {
 		return "", err
@@ -39,7 +39,7 @@ func (msg *AddResourceMsg) ToJSONIndent() (string, error) {
 	return string(jsonBytes), nil
 }
 
-func (msg *AddResourceMsg) Equals(msg2 *AddResourceMsg) bool {
+func (msg *AddServiceMsg) Equals(msg2 *AddServiceMsg) bool {
 	if msg2 == nil {
 		return false
 	}
@@ -59,8 +59,8 @@ func (msg *AddResourceMsg) Equals(msg2 *AddResourceMsg) bool {
 	return msg.Service.ID == msg2.Service.ID
 }
 
-func CreateAddResourceMsgFromJSON(jsonString string) (*AddResourceMsg, error) {
-	var msg *AddResourceMsg
+func CreateAddServiceMsgFromJSON(jsonString string) (*AddServiceMsg, error) {
+	var msg *AddServiceMsg
 
 	err := json.Unmarshal([]byte(jsonString), &msg)
 	if err != nil {

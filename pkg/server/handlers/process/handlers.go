@@ -110,7 +110,7 @@ type Server interface {
 	ExecutorDB() database.ExecutorDatabase
 	UserDB() database.UserDatabase
 	ProcessDB() database.ProcessDatabase
-	ResourceDB() database.ResourceDatabase
+	ServiceDB() database.ServiceDatabase
 	ProcessController() Controller
 	ExclusiveAssign() bool
 	TLS() bool
@@ -791,29 +791,29 @@ func (h *Handlers) HandleCloseSuccessful(c backends.Context, recoveredID string,
 
 	// If this was a reconciliation process, update the service status from the output
 	if process.FunctionSpec.Reconciliation != nil {
-		var resourceID string
+		var serviceID string
 		if process.FunctionSpec.Reconciliation.New != nil {
-			resourceID = process.FunctionSpec.Reconciliation.New.ID
+			serviceID = process.FunctionSpec.Reconciliation.New.ID
 		} else if process.FunctionSpec.Reconciliation.Old != nil {
-			resourceID = process.FunctionSpec.Reconciliation.Old.ID
+			serviceID = process.FunctionSpec.Reconciliation.Old.ID
 		}
 
-		if resourceID != "" && len(msg.Output) > 0 {
+		if serviceID != "" && len(msg.Output) > 0 {
 			// The first output entry should contain the status map
 			if statusMap, ok := msg.Output[0].(map[string]interface{}); ok {
 				if status, ok := statusMap["status"]; ok {
 					if statusData, ok := status.(map[string]interface{}); ok {
-						err = h.server.ResourceDB().UpdateResourceStatus(resourceID, statusData)
+						err = h.server.ServiceDB().UpdateServiceStatus(serviceID, statusData)
 						if err != nil {
 							log.WithFields(log.Fields{
-								"Error":      err,
-								"ResourceID": resourceID,
-								"ProcessID":  process.ID,
+								"Error":     err,
+								"ServiceID": serviceID,
+								"ProcessID": process.ID,
 							}).Warn("Failed to update service status from reconciliation output")
 						} else {
 							log.WithFields(log.Fields{
-								"ResourceID": resourceID,
-								"ProcessID":  process.ID,
+								"ServiceID": serviceID,
+								"ProcessID": process.ID,
 							}).Debug("Updated service status from reconciliation output")
 						}
 					}
