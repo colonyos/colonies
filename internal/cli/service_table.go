@@ -695,6 +695,14 @@ func printServiceTable(client *client.ColoniesClient, service *core.Service) {
 					image := fmt.Sprintf("%v", instanceMap["image"])
 					lastCheck := fmt.Sprintf("%v", instanceMap["lastCheck"])
 
+					// Capitalize state and type for display
+					if state != "" && state != "<nil>" {
+						state = strings.Title(strings.ToLower(state))
+					}
+					if instanceType != "" && instanceType != "<nil>" {
+						instanceType = strings.Title(strings.ToLower(instanceType))
+					}
+
 					// Parse and format lastCheck if it's a valid timestamp
 					if lastCheck != "" && lastCheck != "<nil>" {
 						if t, err := time.Parse(time.RFC3339, lastCheck); err == nil {
@@ -706,9 +714,9 @@ func printServiceTable(client *client.ColoniesClient, service *core.Service) {
 
 					// Color-code state
 					stateColor := theme.ColorGray
-					if state == "running" {
+					if strings.ToLower(state) == "running" {
 						stateColor = theme.ColorGreen
-					} else if state == "stopped" {
+					} else if strings.ToLower(state) == "stopped" {
 						stateColor = theme.ColorRed
 					}
 
@@ -866,17 +874,26 @@ func printServiceHistoryDetail(history *core.ServiceHistory) {
 
 	t.Render()
 
-	// Spec section
+	// Spec section - render with same logic as service view
 	if len(history.Spec) > 0 {
 		t, theme = createTable(0)
 		t.SetTitle("Spec")
 
+		// Complex keys that need special rendering
+		complexKeys := map[string]bool{
+			"env":       true,
+			"volumes":   true,
+			"ports":     true,
+			"instances": true, // DockerDeployment
+		}
+
+		// Render simple fields first
 		for key, value := range history.Spec {
-			valueStr := fmt.Sprintf("%v", value)
-			if len(valueStr) > 60 {
-				valueStr = valueStr[:57] + "..."
+			if complexKeys[key] {
+				continue
 			}
 
+			valueStr := fmt.Sprintf("%v", value)
 			row = []interface{}{
 				termenv.String(key).Foreground(theme.ColorMagenta),
 				termenv.String(valueStr).Foreground(theme.ColorGray),
@@ -885,26 +902,211 @@ func printServiceHistoryDetail(history *core.ServiceHistory) {
 		}
 
 		t.Render()
-	}
 
-	// Status section
-	if len(history.Status) > 0 {
-		t, theme = createTable(0)
-		t.SetTitle("Status")
+		// Render environment variables if present
+		if env, ok := history.Spec["env"].(map[string]interface{}); ok && len(env) > 0 {
+			t, theme = createTable(0)
+			t.SetTitle("Environment Variables")
 
-		for key, value := range history.Status {
-			valueStr := fmt.Sprintf("%v", value)
-			if len(valueStr) > 60 {
-				valueStr = valueStr[:57] + "..."
+			var envCols = []table.Column{
+				{ID: "key", Name: "Key", SortIndex: 1},
+				{ID: "value", Name: "Value", SortIndex: 2},
+			}
+			t.SetCols(envCols)
+
+			for key, value := range env {
+				row = []interface{}{
+					termenv.String(key).Foreground(theme.ColorCyan),
+					termenv.String(fmt.Sprintf("%v", value)).Foreground(theme.ColorGray),
+				}
+				t.AddRow(row)
 			}
 
-			row = []interface{}{
-				termenv.String(key).Foreground(theme.ColorBlue),
-				termenv.String(valueStr).Foreground(theme.ColorGray),
-			}
-			t.AddRow(row)
+			t.Render()
 		}
 
-		t.Render()
+		// Render volumes if present
+		if volumes, ok := history.Spec["volumes"].([]interface{}); ok && len(volumes) > 0 {
+			t, theme = createTable(0)
+			t.SetTitle("Volumes")
+
+			var volCols = []table.Column{
+				{ID: "host", Name: "Host Path", SortIndex: 1},
+				{ID: "container", Name: "Container Path", SortIndex: 2},
+				{ID: "readonly", Name: "Read Only", SortIndex: 3},
+			}
+			t.SetCols(volCols)
+
+			for _, vol := range volumes {
+				if volMap, ok := vol.(map[string]interface{}); ok {
+					host := fmt.Sprintf("%v", volMap["host"])
+					container := fmt.Sprintf("%v", volMap["container"])
+					readonly := "false"
+					if ro, ok := volMap["readonly"]; ok {
+						readonly = fmt.Sprintf("%v", ro)
+					}
+
+					row = []interface{}{
+						termenv.String(host).Foreground(theme.ColorYellow),
+						termenv.String(container).Foreground(theme.ColorCyan),
+						termenv.String(readonly).Foreground(theme.ColorGray),
+					}
+					t.AddRow(row)
+				}
+			}
+
+			t.Render()
+		}
+
+		// Render ports if present
+		if ports, ok := history.Spec["ports"].([]interface{}); ok && len(ports) > 0 {
+			t, theme = createTable(0)
+			t.SetTitle("Ports")
+
+			var portCols = []table.Column{
+				{ID: "container", Name: "Container", SortIndex: 1},
+				{ID: "host", Name: "Host", SortIndex: 2},
+				{ID: "protocol", Name: "Protocol", SortIndex: 3},
+			}
+			t.SetCols(portCols)
+
+			for _, port := range ports {
+				if portMap, ok := port.(map[string]interface{}); ok {
+					container := fmt.Sprintf("%v", portMap["container"])
+					host := fmt.Sprintf("%v", portMap["host"])
+					protocol := "tcp"
+					if p, ok := portMap["protocol"]; ok {
+						protocol = fmt.Sprintf("%v", p)
+					}
+
+					row = []interface{}{
+						termenv.String(container).Foreground(theme.ColorCyan),
+						termenv.String(host).Foreground(theme.ColorYellow),
+						termenv.String(protocol).Foreground(theme.ColorGray),
+					}
+					t.AddRow(row)
+				}
+			}
+
+			t.Render()
+		}
+	}
+
+	// Status section - render with same logic as service view
+	if len(history.Status) > 0 {
+		// For ExecutorDeployment, render deployment status
+		if history.Kind == "ExecutorDeployment" {
+			t, theme = createTable(0)
+			t.SetTitle("Deployment Status")
+
+			if running, ok := history.Status["runningInstances"]; ok {
+				row = []interface{}{
+					termenv.String("Running Instances").Foreground(theme.ColorBlue),
+					termenv.String(fmt.Sprintf("%v", running)).Foreground(theme.ColorGreen),
+				}
+				t.AddRow(row)
+			}
+
+			if total, ok := history.Status["totalInstances"]; ok {
+				row = []interface{}{
+					termenv.String("Total Instances").Foreground(theme.ColorBlue),
+					termenv.String(fmt.Sprintf("%v", total)).Foreground(theme.ColorGray),
+				}
+				t.AddRow(row)
+			}
+
+			if lastUpdated, ok := history.Status["lastUpdated"]; ok {
+				row = []interface{}{
+					termenv.String("Last Updated").Foreground(theme.ColorBlue),
+					termenv.String(fmt.Sprintf("%v", lastUpdated)).Foreground(theme.ColorGray),
+				}
+				t.AddRow(row)
+			}
+
+			t.Render()
+
+			// Display instances table
+			if instances, ok := history.Status["instances"].([]interface{}); ok && len(instances) > 0 {
+				t, theme = createTable(0)
+				t.SetTitle("Instances")
+
+				var instanceCols = []table.Column{
+					{ID: "name", Name: "Name", SortIndex: 1},
+					{ID: "id", Name: "ID", SortIndex: 2},
+					{ID: "type", Name: "Type", SortIndex: 3},
+					{ID: "state", Name: "State", SortIndex: 4},
+					{ID: "image", Name: "Image", SortIndex: 5},
+					{ID: "lastcheck", Name: "Last Check", SortIndex: 6},
+				}
+				t.SetCols(instanceCols)
+
+				for _, instance := range instances {
+					if instanceMap, ok := instance.(map[string]interface{}); ok {
+						name := fmt.Sprintf("%v", instanceMap["name"])
+						id := fmt.Sprintf("%v", instanceMap["id"])
+						instanceType := fmt.Sprintf("%v", instanceMap["type"])
+						state := fmt.Sprintf("%v", instanceMap["state"])
+						image := fmt.Sprintf("%v", instanceMap["image"])
+						lastCheck := fmt.Sprintf("%v", instanceMap["lastCheck"])
+
+						// Capitalize state and type for display
+						if state != "" && state != "<nil>" {
+							state = strings.Title(strings.ToLower(state))
+						}
+						if instanceType != "" && instanceType != "<nil>" {
+							instanceType = strings.Title(strings.ToLower(instanceType))
+						}
+
+						// Parse and format lastCheck if it's a valid timestamp
+						if lastCheck != "" && lastCheck != "<nil>" {
+							if t, err := time.Parse(time.RFC3339, lastCheck); err == nil {
+								lastCheck = t.Format("2006-01-02 15:04:05")
+							}
+						} else {
+							lastCheck = "-"
+						}
+
+						// Color-code state
+						stateColor := theme.ColorGray
+						if strings.ToLower(state) == "running" {
+							stateColor = theme.ColorGreen
+						} else if strings.ToLower(state) == "stopped" {
+							stateColor = theme.ColorRed
+						}
+
+						row = []interface{}{
+							termenv.String(name).Foreground(theme.ColorCyan),
+							termenv.String(id).Foreground(theme.ColorGray),
+							termenv.String(instanceType).Foreground(theme.ColorYellow),
+							termenv.String(state).Foreground(stateColor),
+							termenv.String(image).Foreground(theme.ColorMagenta),
+							termenv.String(lastCheck).Foreground(theme.ColorGray),
+						}
+						t.AddRow(row)
+					}
+				}
+
+				t.Render()
+			}
+		} else {
+			// Generic status display
+			t, theme = createTable(0)
+			t.SetTitle("Status")
+
+			for key, value := range history.Status {
+				valueStr := fmt.Sprintf("%v", value)
+				if len(valueStr) > 60 {
+					valueStr = valueStr[:57] + "..."
+				}
+
+				row = []interface{}{
+					termenv.String(key).Foreground(theme.ColorBlue),
+					termenv.String(valueStr).Foreground(theme.ColorGray),
+				}
+				t.AddRow(row)
+			}
+
+			t.Render()
+		}
 	}
 }
