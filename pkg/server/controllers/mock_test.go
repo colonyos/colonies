@@ -637,6 +637,22 @@ func (db *DatabaseMock) RemoveBlueprintByName(namespace, name string) error { re
 func (db *DatabaseMock) RemoveBlueprintsByNamespace(namespace string) error { return nil }
 func (db *DatabaseMock) CountBlueprints() (int, error) { return 0, nil }
 func (db *DatabaseMock) CountBlueprintsByNamespace(namespace string) (int, error) { return 0, nil }
+func (db *DatabaseMock) AddBlueprintHistory(history *core.BlueprintHistory) error { return nil }
+func (db *DatabaseMock) GetBlueprintHistory(blueprintID string, limit int) ([]*core.BlueprintHistory, error) { return nil, nil }
+func (db *DatabaseMock) GetBlueprintHistoryByGeneration(blueprintID string, generation int64) (*core.BlueprintHistory, error) { return nil, nil }
+func (db *DatabaseMock) RemoveBlueprintHistory(blueprintID string) error { return nil }
+
+// NodeDatabase interface - Node methods
+func (db *DatabaseMock) AddNode(node *core.Node) error { return nil }
+func (db *DatabaseMock) GetNodeByID(nodeID string) (*core.Node, error) { return nil, nil }
+func (db *DatabaseMock) GetNodeByName(colonyName string, nodeName string) (*core.Node, error) { return nil, nil }
+func (db *DatabaseMock) GetNodes(colonyName string) ([]*core.Node, error) { return nil, nil }
+func (db *DatabaseMock) GetNodesByLocation(colonyName string, location string) ([]*core.Node, error) { return nil, nil }
+func (db *DatabaseMock) UpdateNode(node *core.Node) error { return nil }
+func (db *DatabaseMock) RemoveNodeByID(nodeID string) error { return nil }
+func (db *DatabaseMock) RemoveNodeByName(colonyName string, nodeName string) error { return nil }
+func (db *DatabaseMock) RemoveNodesByColonyName(colonyName string) error { return nil }
+func (db *DatabaseMock) CountNodes(colonyName string) (int, error) { return 0, nil }
 
 // Implement the database.Database interface
 func (db *DatabaseMock) CreateTables() error { return nil }
