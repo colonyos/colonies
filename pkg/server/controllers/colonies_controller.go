@@ -90,6 +90,7 @@ type ColoniesController struct {
 	userDB           database.UserDatabase
 	colonyDB         database.ColonyDatabase
 	executorDB       database.ExecutorDatabase
+	nodeDB           database.NodeDatabase
 	functionDB       database.FunctionDatabase
 	processDB        database.ProcessDatabase
 	attributeDB      database.AttributeDatabase
@@ -139,6 +140,7 @@ func CreateColoniesController(db database.Database,
 	controller.userDB = db
 	controller.colonyDB = db
 	controller.executorDB = db
+	controller.nodeDB = db
 	controller.functionDB = db
 	controller.processDB = db
 	controller.attributeDB = db
@@ -178,6 +180,7 @@ func CreateColoniesController(db database.Database,
 	go controller.GeneratorTriggerLoop()
 	go controller.CronTriggerLoop()
 	go controller.RetentionWorker()
+	go controller.CleanupWorker()
 
 	return controller
 }
@@ -378,6 +381,9 @@ func (controller *ColoniesController) AddExecutor(executor *core.Executor, allow
 				cmd.errorChan <- err
 				return
 			}
+			// Preserve NodeMetadata since it's not stored in the executor database table
+			addedExecutor.NodeMetadata = executor.NodeMetadata
+			addedExecutor.NodeID = executor.NodeID
 			cmd.executorReplyChan <- addedExecutor
 		}}
 
@@ -1261,6 +1267,23 @@ func (controller *ColoniesController) Assign(executorID string, colonyName strin
 			if err != nil {
 				cmd.errorChan <- err
 				return
+			}
+
+			// Update node LastSeen if executor is associated with a node
+			if executor.NodeID != "" {
+				node, err := controller.nodeDB.GetNodeByID(executor.NodeID)
+				if err == nil && node != nil {
+					node.TouchLastSeen()
+					err = controller.nodeDB.UpdateNode(node)
+					if err != nil {
+						log.WithFields(log.Fields{
+							"Error":      err,
+							"NodeID":     node.ID,
+							"NodeName":   node.Name,
+							"ExecutorID": executor.ID,
+						}).Warn("Failed to update node LastSeen during executor heartbeat")
+					}
+				}
 			}
 
 			// Check if assignments are paused for this colony first

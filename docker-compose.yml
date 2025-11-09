@@ -137,12 +137,12 @@ services:
       colonies colony add --name ${COLONIES_COLONY_NAME} --colonyid ${COLONIES_COLONY_ID};
       echo 'Executing: colonies user add --name=myuser --email= --phone= --userid=${COLONIES_ID}';
       colonies user add --name='myuser' --email='' --phone='' --userid=${COLONIES_ID};
-      echo 'Adding service definition...';
-      colonies service definition add --spec /catalog/executor-deployment-definition.json;
+      echo 'Adding blueprint definition...';
+      colonies blueprint definition add --spec /catalog/executor-deployment-definition.json;
       echo 'Waiting for docker-reconciler to be ready...';
       sleep 5;
       echo 'Adding docker-executor deployment with 1 replica...';
-      colonies service add --spec /catalog/docker-executor-deployment.json;
+      colonies blueprint add --spec /catalog/docker-executor-deployment.json;
       "
 
   docker-reconciler:
@@ -174,25 +174,28 @@ services:
       COLONIES_COLONY_NAME: ${COLONIES_COLONY_NAME}
       COLONIES_COLONY_PRVKEY: ${COLONIES_COLONY_PRVKEY}
       COLONIES_EXECUTOR_TYPE: "docker-reconciler"
+      COLONIES_EXECUTOR_NAME: "local-docker-node-reconciler"
       COLONIES_INSECURE: "true"
+      # Node config - Fixed node name to prevent new nodes on restart
+      COLONIES_NODE_NAME: "local-docker-node"
+      COLONIES_NODE_LOCATION: "local"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:rw
     entrypoint: >
       /bin/sh -c "
       echo 'Waiting for Colonies server to be ready...';
-      until wget --spider -q http://colonies-server:50080/health 2>/dev/null; do
+      until wget -q -O /dev/null http://colonies-server:50080/health 2>/dev/null; do
         echo 'Server not ready, retrying in 2 seconds...';
         sleep 2;
       done;
       echo 'Server is ready!';
-      export COLONIES_EXECUTOR_NAME=\"docker-reconciler\";
       echo \"Starting docker-reconciler with name: $$COLONIES_EXECUTOR_NAME\";
       docker-reconciler start -v
       "
 
   # docker-executor is now managed by docker-reconciler
   # See executors/docker-reconciler/examples/docker-executor-deployment.json
-  # To deploy: colonies service add --spec executors/docker-reconciler/examples/docker-executor-deployment.json
+  # To deploy: colonies blueprint add --spec executors/docker-reconciler/examples/docker-executor-deployment.json
 
 volumes:
   timescaledb_data:

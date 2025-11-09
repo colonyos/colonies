@@ -25,6 +25,7 @@ type Server interface {
 	SendEmptyHTTPReply(c backends.Context, payloadType string)
 	Validator() security.Validator
 	ExecutorDB() database.ExecutorDatabase
+	NodeDB() database.NodeDatabase
 	ExecutorController() Controller
 	AllowExecutorReregister() bool
 }
@@ -89,6 +90,62 @@ func (h *Handlers) HandleAddExecutor(c backends.Context, recoveredID string, pay
 	err = h.server.Validator().RequireColonyOwner(recoveredID, msg.Executor.ColonyName)
 	if h.server.HandleHTTPError(c, err, http.StatusForbidden) {
 		return
+	}
+
+	// Handle node registration BEFORE adding executor, so we can set the NodeID
+	if msg.Executor.NodeMetadata != nil {
+		nodeName := msg.Executor.NodeMetadata.Hostname
+		if nodeName != "" {
+			// Try to get existing node
+			node, err := h.server.NodeDB().GetNodeByName(msg.Executor.ColonyName, nodeName)
+			if err != nil && err.Error() != "sql: no rows in result set" {
+				log.WithFields(log.Fields{
+					"Error": err,
+					"Node":  nodeName,
+				}).Warn("Failed to query node during executor registration")
+			}
+
+			if node == nil {
+				// Create new node
+				node = core.CreateNode(nodeName, msg.Executor.ColonyName, msg.Executor.NodeMetadata.Location)
+				node.UpdateFromMetadata(msg.Executor.NodeMetadata)
+				node.TouchLastSeen()
+
+				err = h.server.NodeDB().AddNode(node)
+				if err != nil {
+					log.WithFields(log.Fields{
+						"Error": err,
+						"Node":  nodeName,
+					}).Warn("Failed to create node during executor registration")
+				} else {
+					msg.Executor.NodeID = node.ID
+					log.WithFields(log.Fields{
+						"NodeID":   node.ID,
+						"NodeName": node.Name,
+						"Executor": msg.Executor.Name,
+					}).Debug("Created node for executor")
+				}
+			} else {
+				// Update existing node
+				node.UpdateFromMetadata(msg.Executor.NodeMetadata)
+				node.TouchLastSeen()
+
+				err = h.server.NodeDB().UpdateNode(node)
+				if err != nil {
+					log.WithFields(log.Fields{
+						"Error": err,
+						"Node":  nodeName,
+					}).Warn("Failed to update node during executor registration")
+				} else {
+					msg.Executor.NodeID = node.ID
+					log.WithFields(log.Fields{
+						"NodeID":   node.ID,
+						"NodeName": node.Name,
+						"Executor": msg.Executor.Name,
+					}).Debug("Updated node for executor")
+				}
+			}
+		}
 	}
 
 	addedExecutor, err := h.server.ExecutorController().AddExecutor(msg.Executor, h.server.AllowExecutorReregister())

@@ -108,6 +108,16 @@ func (db *PQDatabase) dropExecutorsTable() error {
 	return nil
 }
 
+func (db *PQDatabase) dropNodesTable() error {
+	sqlStatement := `DROP TABLE ` + db.dbPrefix + `NODES`
+	_, err := db.postgresql.Exec(sqlStatement)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (db *PQDatabase) dropFunctionsTable() error {
 	sqlStatement := `DROP TABLE ` + db.dbPrefix + `FUNCTIONS`
 	_, err := db.postgresql.Exec(sqlStatement)
@@ -260,6 +270,11 @@ func (db *PQDatabase) Drop() error {
 		return err
 	}
 
+	err = db.dropNodesTable()
+	if err != nil {
+		return err
+	}
+
 	err = db.dropFunctionsTable()
 	if err != nil {
 		return err
@@ -341,7 +356,7 @@ func (db *PQDatabase) createHypertables() error {
 }
 
 func (db *PQDatabase) createServerTable() error {
-	sqlStatement := `CREATE TABLE ` + db.dbPrefix + `SERVER (SERVER_ID TEXT PRIMARY KEY NOT NULL)`
+	sqlStatement := `CREATE TABLE IF NOT EXISTS ` + db.dbPrefix + `SERVER (SERVER_ID TEXT PRIMARY KEY NOT NULL)`
 	_, err := db.postgresql.Exec(sqlStatement)
 	if err != nil {
 		return err
@@ -351,7 +366,7 @@ func (db *PQDatabase) createServerTable() error {
 }
 
 func (db *PQDatabase) createColoniesTable() error {
-	sqlStatement := `CREATE TABLE ` + db.dbPrefix + `COLONIES (NAME TEXT PRIMARY KEY NOT NULL, COLONY_ID TEXT NOT NULL)`
+	sqlStatement := `CREATE TABLE IF NOT EXISTS ` + db.dbPrefix + `COLONIES (NAME TEXT PRIMARY KEY NOT NULL, COLONY_ID TEXT NOT NULL)`
 	_, err := db.postgresql.Exec(sqlStatement)
 	if err != nil {
 		return err
@@ -361,7 +376,7 @@ func (db *PQDatabase) createColoniesTable() error {
 }
 
 func (db *PQDatabase) createUsersTable() error {
-	sqlStatement := `CREATE TABLE ` + db.dbPrefix + `USERS (NAME TEXT PRIMARY KEY NOT NULL, USER_ID TEXT NOT NULL, COLONY_NAME TEXT NOT NULL, EMAIL TEXT NOT NULL, PHONE TEXT NOT NULL)`
+	sqlStatement := `CREATE TABLE IF NOT EXISTS ` + db.dbPrefix + `USERS (NAME TEXT PRIMARY KEY NOT NULL, USER_ID TEXT NOT NULL, COLONY_NAME TEXT NOT NULL, EMAIL TEXT NOT NULL, PHONE TEXT NOT NULL)`
 	_, err := db.postgresql.Exec(sqlStatement)
 	if err != nil {
 		return err
@@ -371,7 +386,24 @@ func (db *PQDatabase) createUsersTable() error {
 }
 
 func (db *PQDatabase) createExecutorsTable() error {
-	sqlStatement := `CREATE TABLE ` + db.dbPrefix + `EXECUTORS (NAME TEXT PRIMARY KEY NOT NULL, EXECUTOR_TYPE TEXT NOT NULL, EXECUTOR_ID TEXT NOT NULL, COLONY_NAME TEXT NOT NULL, STATE INTEGER, REQUIRE_FUNC_REG BOOLEAN, COMMISSIONTIME TIMESTAMPTZ, LASTHEARDFROM TIMESTAMPTZ, LONG DOUBLE PRECISION, LAT DOUBLE PRECISION, LOCDESC TEXT, HWMODEL TEXT, HWNODES INT, HWCPU TEXT, HWMEM TEXT, HWSTORAGE TEXT, HWGPUNAME TEXT, HWGPUCOUNT TEXT, HWGPUNODECOUNT INTEGER, HWGPUMEM TEXT, SWNAME TEXT, SWTYPE TEXT, SWVERSION TEXT, ALLOCATIONS TEXT NOT NULL)`
+	sqlStatement := `CREATE TABLE IF NOT EXISTS ` + db.dbPrefix + `EXECUTORS (NAME TEXT PRIMARY KEY NOT NULL, EXECUTOR_TYPE TEXT NOT NULL, EXECUTOR_ID TEXT NOT NULL, COLONY_NAME TEXT NOT NULL, STATE INTEGER, REQUIRE_FUNC_REG BOOLEAN, COMMISSIONTIME TIMESTAMPTZ, LASTHEARDFROM TIMESTAMPTZ, LONG DOUBLE PRECISION, LAT DOUBLE PRECISION, LOCDESC TEXT, HWMODEL TEXT, HWNODES INT, HWCPU TEXT, HWMEM TEXT, HWSTORAGE TEXT, HWGPUNAME TEXT, HWGPUCOUNT TEXT, HWGPUNODECOUNT INTEGER, HWGPUMEM TEXT, SWNAME TEXT, SWTYPE TEXT, SWVERSION TEXT, ALLOCATIONS TEXT NOT NULL, NODE_ID TEXT)`
+	_, err := db.postgresql.Exec(sqlStatement)
+	if err != nil {
+		return err
+	}
+
+	// Add NODE_ID column to existing tables if it doesn't exist
+	alterStatement := `ALTER TABLE ` + db.dbPrefix + `EXECUTORS ADD COLUMN IF NOT EXISTS NODE_ID TEXT`
+	_, err = db.postgresql.Exec(alterStatement)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (db *PQDatabase) createNodesTable() error {
+	sqlStatement := `CREATE TABLE IF NOT EXISTS ` + db.dbPrefix + `NODES (ID TEXT PRIMARY KEY NOT NULL, NAME TEXT NOT NULL, COLONY_NAME TEXT NOT NULL, LOCATION TEXT, PLATFORM TEXT, ARCHITECTURE TEXT, CPU INTEGER, MEMORY BIGINT, GPU INTEGER, CAPABILITIES TEXT[], LABELS JSONB, EXECUTORS TEXT[], STATE TEXT, LAST_SEEN TIMESTAMPTZ, CREATED TIMESTAMPTZ)`
 	_, err := db.postgresql.Exec(sqlStatement)
 	if err != nil {
 		return err
@@ -749,6 +781,11 @@ func (db *PQDatabase) Initialize() error {
 	}
 
 	err = db.createExecutorsTable()
+	if err != nil {
+		return err
+	}
+
+	err = db.createNodesTable()
 	if err != nil {
 		return err
 	}

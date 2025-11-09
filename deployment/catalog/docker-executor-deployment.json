@@ -4,7 +4,7 @@
     "name": "docker-executor"
   },
   "spec": {
-    "image": "colonyos/dockerexecutor:v1.0.5",
+    "image": "colonyos/dockerexecutor:local-node-test",
     "replicas": 1,
     "executorType": "docker-reconciler",
     "executorName": "docker-executor",

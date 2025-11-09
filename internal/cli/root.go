@@ -56,7 +56,10 @@ var NewColonyName string
 var TargetExecutorID string
 var TargetExecutorType string
 var TargetExecutorName string
+var TargetLocation string
 var WorkflowID string
+var NodeName string
+var Location string
 var ColonyPrvKey string
 var ColonyName string
 var ProcessID string

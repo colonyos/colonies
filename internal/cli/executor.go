@@ -49,6 +49,8 @@ func init() {
 
 	lsExecutorsCmd.Flags().BoolVarP(&JSON, "json", "", false, "Print JSON instead of tables")
 	lsExecutorsCmd.Flags().BoolVarP(&Full, "full", "", false, "Print detail info")
+	lsExecutorsCmd.Flags().StringVarP(&TargetExecutorType, "type", "", "", "Filter by executor type")
+	lsExecutorsCmd.Flags().StringVarP(&TargetLocation, "location", "", "", "Filter by node location")
 
 	getExecutorCmd.Flags().StringVarP(&TargetExecutorName, "name", "", "", "Executor name")
 
@@ -271,23 +273,56 @@ var lsExecutorsCmd = &cobra.Command{
 		executorsFromServer, err := client.GetExecutors(ColonyName, PrvKey)
 		CheckError(err)
 
-		if len(executorsFromServer) == 0 {
+		// Get nodes if we need to filter by location
+		var nodeMap map[string]*core.Node
+		if TargetLocation != "" {
+			nodes, err := client.GetNodes(ColonyName, PrvKey)
+			CheckError(err)
+			nodeMap = make(map[string]*core.Node)
+			for _, node := range nodes {
+				nodeMap[node.ID] = node
+			}
+		}
+
+		// Filter by type and/or location if specified
+		var filteredExecutors []*core.Executor
+		for _, executor := range executorsFromServer {
+			// Filter by type
+			if TargetExecutorType != "" && executor.Type != TargetExecutorType {
+				continue
+			}
+
+			// Filter by location (via node)
+			if TargetLocation != "" {
+				if executor.NodeID == "" {
+					continue // Executor not associated with any node
+				}
+				node, exists := nodeMap[executor.NodeID]
+				if !exists || node.Location != TargetLocation {
+					continue
+				}
+			}
+
+			filteredExecutors = append(filteredExecutors, executor)
+		}
+
+		if len(filteredExecutors) == 0 {
 			log.Info("No Executors found")
 			os.Exit(0)
 		}
 
 		if Full {
 			if JSON {
-				jsonString, err := core.ConvertExecutorArrayToJSON(executorsFromServer)
+				jsonString, err := core.ConvertExecutorArrayToJSON(filteredExecutors)
 				CheckError(err)
 				fmt.Println(jsonString)
 				os.Exit(0)
 			}
 
-			for counter, executor := range executorsFromServer {
+			for counter, executor := range filteredExecutors {
 				printExecutorTable(client, executor)
 
-				if counter != len(executorsFromServer)-1 {
+				if counter != len(filteredExecutors)-1 {
 					fmt.Println()
 					fmt.Println("==============================================================================================")
 					fmt.Println()
@@ -295,7 +330,7 @@ var lsExecutorsCmd = &cobra.Command{
 				}
 			}
 		} else {
-			printExecutorsTable(executorsFromServer)
+			printExecutorsTable(filteredExecutors)
 		}
 	},
 }

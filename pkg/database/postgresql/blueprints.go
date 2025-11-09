@@ -22,7 +22,7 @@ func (db *PQDatabase) AddBlueprintDefinition(sd *core.BlueprintDefinition) error
 		return err
 	}
 
-	sqlStatement := `INSERT INTO ` + db.dbPrefix + `SERVICEDEFINITIONS (ID, COLONY_NAME, NAME, API_GROUP, VERSION, KIND, DATA) VALUES ($1, $2, $3, $4, $5, $6, $7)`
+	sqlStatement := `INSERT INTO ` + db.dbPrefix + `BLUEPRINTDEFINITIONS (ID, COLONY_NAME, NAME, API_GROUP, VERSION, KIND, DATA) VALUES ($1, $2, $3, $4, $5, $6, $7)`
 	_, err = db.postgresql.Exec(sqlStatement, sd.ID, sd.Metadata.Namespace, sd.Metadata.Name, sd.Spec.Group, sd.Spec.Version, sd.Spec.Names.Kind, sdJSON)
 	if err != nil {
 		return err
@@ -59,7 +59,7 @@ func (db *PQDatabase) parseBlueprintDefinitions(rows *sql.Rows) ([]*core.Bluepri
 }
 
 func (db *PQDatabase) GetBlueprintDefinitionByID(id string) (*core.BlueprintDefinition, error) {
-	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `SERVICEDEFINITIONS WHERE ID=$1`
+	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `BLUEPRINTDEFINITIONS WHERE ID=$1`
 	rows, err := db.postgresql.Query(sqlStatement, id)
 	if err != nil {
 		return nil, err
@@ -80,7 +80,7 @@ func (db *PQDatabase) GetBlueprintDefinitionByID(id string) (*core.BlueprintDefi
 }
 
 func (db *PQDatabase) GetBlueprintDefinitionByName(namespace, name string) (*core.BlueprintDefinition, error) {
-	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `SERVICEDEFINITIONS WHERE COLONY_NAME=$1 AND NAME=$2`
+	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `BLUEPRINTDEFINITIONS WHERE COLONY_NAME=$1 AND NAME=$2`
 	rows, err := db.postgresql.Query(sqlStatement, namespace, name)
 	if err != nil {
 		return nil, err
@@ -101,7 +101,7 @@ func (db *PQDatabase) GetBlueprintDefinitionByName(namespace, name string) (*cor
 }
 
 func (db *PQDatabase) GetBlueprintDefinitions() ([]*core.BlueprintDefinition, error) {
-	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `SERVICEDEFINITIONS ORDER BY NAME`
+	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `BLUEPRINTDEFINITIONS ORDER BY NAME`
 	rows, err := db.postgresql.Query(sqlStatement)
 	if err != nil {
 		return nil, err
@@ -113,7 +113,7 @@ func (db *PQDatabase) GetBlueprintDefinitions() ([]*core.BlueprintDefinition, er
 }
 
 func (db *PQDatabase) GetBlueprintDefinitionsByNamespace(namespace string) ([]*core.BlueprintDefinition, error) {
-	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `SERVICEDEFINITIONS WHERE COLONY_NAME=$1 ORDER BY NAME`
+	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `BLUEPRINTDEFINITIONS WHERE COLONY_NAME=$1 ORDER BY NAME`
 	rows, err := db.postgresql.Query(sqlStatement, namespace)
 	if err != nil {
 		return nil, err
@@ -125,7 +125,7 @@ func (db *PQDatabase) GetBlueprintDefinitionsByNamespace(namespace string) ([]*c
 }
 
 func (db *PQDatabase) GetBlueprintDefinitionsByGroup(group string) ([]*core.BlueprintDefinition, error) {
-	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `SERVICEDEFINITIONS WHERE API_GROUP=$1 ORDER BY NAME`
+	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `BLUEPRINTDEFINITIONS WHERE API_GROUP=$1 ORDER BY NAME`
 	rows, err := db.postgresql.Query(sqlStatement, group)
 	if err != nil {
 		return nil, err
@@ -146,7 +146,7 @@ func (db *PQDatabase) UpdateBlueprintDefinition(sd *core.BlueprintDefinition) er
 		return err
 	}
 
-	sqlStatement := `UPDATE ` + db.dbPrefix + `SERVICEDEFINITIONS SET NAME=$1, API_GROUP=$2, VERSION=$3, KIND=$4, DATA=$5 WHERE ID=$6`
+	sqlStatement := `UPDATE ` + db.dbPrefix + `BLUEPRINTDEFINITIONS SET NAME=$1, API_GROUP=$2, VERSION=$3, KIND=$4, DATA=$5 WHERE ID=$6`
 	_, err = db.postgresql.Exec(sqlStatement, sd.Metadata.Name, sd.Spec.Group, sd.Spec.Version, sd.Spec.Names.Kind, sdJSON, sd.ID)
 	if err != nil {
 		return err
@@ -156,7 +156,7 @@ func (db *PQDatabase) UpdateBlueprintDefinition(sd *core.BlueprintDefinition) er
 }
 
 func (db *PQDatabase) RemoveBlueprintDefinitionByID(id string) error {
-	sqlStatement := `DELETE FROM ` + db.dbPrefix + `SERVICEDEFINITIONS WHERE ID=$1`
+	sqlStatement := `DELETE FROM ` + db.dbPrefix + `BLUEPRINTDEFINITIONS WHERE ID=$1`
 	_, err := db.postgresql.Exec(sqlStatement, id)
 	if err != nil {
 		return err
@@ -166,7 +166,7 @@ func (db *PQDatabase) RemoveBlueprintDefinitionByID(id string) error {
 }
 
 func (db *PQDatabase) RemoveBlueprintDefinitionByName(namespace, name string) error {
-	sqlStatement := `DELETE FROM ` + db.dbPrefix + `SERVICEDEFINITIONS WHERE COLONY_NAME=$1 AND NAME=$2`
+	sqlStatement := `DELETE FROM ` + db.dbPrefix + `BLUEPRINTDEFINITIONS WHERE COLONY_NAME=$1 AND NAME=$2`
 	_, err := db.postgresql.Exec(sqlStatement, namespace, name)
 	if err != nil {
 		return err
@@ -176,7 +176,7 @@ func (db *PQDatabase) RemoveBlueprintDefinitionByName(namespace, name string) er
 }
 
 func (db *PQDatabase) CountBlueprintDefinitions() (int, error) {
-	sqlStatement := `SELECT COUNT(*) FROM ` + db.dbPrefix + `SERVICEDEFINITIONS`
+	sqlStatement := `SELECT COUNT(*) FROM ` + db.dbPrefix + `BLUEPRINTDEFINITIONS`
 	rows, err := db.postgresql.Query(sqlStatement)
 	if err != nil {
 		return -1, err
@@ -215,7 +215,7 @@ func (db *PQDatabase) AddBlueprint(blueprint *core.Blueprint) error {
 		return err
 	}
 
-	sqlStatement := `INSERT INTO ` + db.dbPrefix + `SERVICES (ID, COLONY_NAME, NAME, KIND, DATA) VALUES ($1, $2, $3, $4, $5)`
+	sqlStatement := `INSERT INTO ` + db.dbPrefix + `BLUEPRINTS (ID, COLONY_NAME, NAME, KIND, DATA) VALUES ($1, $2, $3, $4, $5)`
 	_, err = db.postgresql.Exec(sqlStatement, blueprint.ID, blueprint.Metadata.Namespace, blueprint.Metadata.Name, blueprint.Kind, blueprintJSON)
 	if err != nil {
 		return err
@@ -253,7 +253,7 @@ func (db *PQDatabase) parseBlueprints(rows *sql.Rows) ([]*core.Blueprint, error)
 }
 
 func (db *PQDatabase) GetBlueprintByID(id string) (*core.Blueprint, error) {
-	sqlStatement := `SELECT ID, COLONY_NAME, NAME, KIND, DATA FROM ` + db.dbPrefix + `SERVICES WHERE ID=$1`
+	sqlStatement := `SELECT ID, COLONY_NAME, NAME, KIND, DATA FROM ` + db.dbPrefix + `BLUEPRINTS WHERE ID=$1`
 	rows, err := db.postgresql.Query(sqlStatement, id)
 	if err != nil {
 		return nil, err
@@ -274,7 +274,7 @@ func (db *PQDatabase) GetBlueprintByID(id string) (*core.Blueprint, error) {
 }
 
 func (db *PQDatabase) GetBlueprintByName(namespace, name string) (*core.Blueprint, error) {
-	sqlStatement := `SELECT ID, COLONY_NAME, NAME, KIND, DATA FROM ` + db.dbPrefix + `SERVICES WHERE COLONY_NAME=$1 AND NAME=$2`
+	sqlStatement := `SELECT ID, COLONY_NAME, NAME, KIND, DATA FROM ` + db.dbPrefix + `BLUEPRINTS WHERE COLONY_NAME=$1 AND NAME=$2`
 	rows, err := db.postgresql.Query(sqlStatement, namespace, name)
 	if err != nil {
 		return nil, err
@@ -295,7 +295,7 @@ func (db *PQDatabase) GetBlueprintByName(namespace, name string) (*core.Blueprin
 }
 
 func (db *PQDatabase) GetBlueprints() ([]*core.Blueprint, error) {
-	sqlStatement := `SELECT ID, COLONY_NAME, NAME, KIND, DATA FROM ` + db.dbPrefix + `SERVICES ORDER BY COLONY_NAME, NAME`
+	sqlStatement := `SELECT ID, COLONY_NAME, NAME, KIND, DATA FROM ` + db.dbPrefix + `BLUEPRINTS ORDER BY COLONY_NAME, NAME`
 	rows, err := db.postgresql.Query(sqlStatement)
 	if err != nil {
 		return nil, err
@@ -307,7 +307,7 @@ func (db *PQDatabase) GetBlueprints() ([]*core.Blueprint, error) {
 }
 
 func (db *PQDatabase) GetBlueprintsByNamespace(namespace string) ([]*core.Blueprint, error) {
-	sqlStatement := `SELECT ID, COLONY_NAME, NAME, KIND, DATA FROM ` + db.dbPrefix + `SERVICES WHERE COLONY_NAME=$1 ORDER BY NAME`
+	sqlStatement := `SELECT ID, COLONY_NAME, NAME, KIND, DATA FROM ` + db.dbPrefix + `BLUEPRINTS WHERE COLONY_NAME=$1 ORDER BY NAME`
 	rows, err := db.postgresql.Query(sqlStatement, namespace)
 	if err != nil {
 		return nil, err
@@ -319,7 +319,7 @@ func (db *PQDatabase) GetBlueprintsByNamespace(namespace string) ([]*core.Bluepr
 }
 
 func (db *PQDatabase) GetBlueprintsByKind(kind string) ([]*core.Blueprint, error) {
-	sqlStatement := `SELECT ID, COLONY_NAME, NAME, KIND, DATA FROM ` + db.dbPrefix + `SERVICES WHERE KIND=$1 ORDER BY COLONY_NAME, NAME`
+	sqlStatement := `SELECT ID, COLONY_NAME, NAME, KIND, DATA FROM ` + db.dbPrefix + `BLUEPRINTS WHERE KIND=$1 ORDER BY COLONY_NAME, NAME`
 	rows, err := db.postgresql.Query(sqlStatement, kind)
 	if err != nil {
 		return nil, err
@@ -331,7 +331,7 @@ func (db *PQDatabase) GetBlueprintsByKind(kind string) ([]*core.Blueprint, error
 }
 
 func (db *PQDatabase) GetBlueprintsByNamespaceAndKind(namespace, kind string) ([]*core.Blueprint, error) {
-	sqlStatement := `SELECT ID, COLONY_NAME, NAME, KIND, DATA FROM ` + db.dbPrefix + `SERVICES WHERE COLONY_NAME=$1 AND KIND=$2 ORDER BY NAME`
+	sqlStatement := `SELECT ID, COLONY_NAME, NAME, KIND, DATA FROM ` + db.dbPrefix + `BLUEPRINTS WHERE COLONY_NAME=$1 AND KIND=$2 ORDER BY NAME`
 	rows, err := db.postgresql.Query(sqlStatement, namespace, kind)
 	if err != nil {
 		return nil, err
@@ -352,7 +352,7 @@ func (db *PQDatabase) UpdateBlueprint(blueprint *core.Blueprint) error {
 		return err
 	}
 
-	sqlStatement := `UPDATE ` + db.dbPrefix + `SERVICES SET COLONY_NAME=$1, NAME=$2, KIND=$3, DATA=$4 WHERE ID=$5`
+	sqlStatement := `UPDATE ` + db.dbPrefix + `BLUEPRINTS SET COLONY_NAME=$1, NAME=$2, KIND=$3, DATA=$4 WHERE ID=$5`
 	_, err = db.postgresql.Exec(sqlStatement, blueprint.Metadata.Namespace, blueprint.Metadata.Name, blueprint.Kind, blueprintJSON, blueprint.ID)
 	if err != nil {
 		return err
@@ -363,7 +363,7 @@ func (db *PQDatabase) UpdateBlueprint(blueprint *core.Blueprint) error {
 
 func (db *PQDatabase) UpdateBlueprintStatus(id string, status map[string]interface{}) error {
 	// Get the current blueprint data to preserve spec and metadata
-	sqlStatement := `SELECT DATA FROM ` + db.dbPrefix + `SERVICES WHERE ID=$1`
+	sqlStatement := `SELECT DATA FROM ` + db.dbPrefix + `BLUEPRINTS WHERE ID=$1`
 	rows, err := db.postgresql.Query(sqlStatement, id)
 	if err != nil {
 		return err
@@ -397,7 +397,7 @@ func (db *PQDatabase) UpdateBlueprintStatus(id string, status map[string]interfa
 	// Update the database
 	// Note: This still has a potential race condition, but it's much smaller window
 	// than the original read-modify-write pattern
-	updateStatement := `UPDATE ` + db.dbPrefix + `SERVICES SET DATA=$1 WHERE ID=$2`
+	updateStatement := `UPDATE ` + db.dbPrefix + `BLUEPRINTS SET DATA=$1 WHERE ID=$2`
 	result, err := db.postgresql.Exec(updateStatement, string(updatedJSON), id)
 	if err != nil {
 		return err
@@ -416,7 +416,7 @@ func (db *PQDatabase) UpdateBlueprintStatus(id string, status map[string]interfa
 }
 
 func (db *PQDatabase) RemoveBlueprintByID(id string) error {
-	sqlStatement := `DELETE FROM ` + db.dbPrefix + `SERVICES WHERE ID=$1`
+	sqlStatement := `DELETE FROM ` + db.dbPrefix + `BLUEPRINTS WHERE ID=$1`
 	_, err := db.postgresql.Exec(sqlStatement, id)
 	if err != nil {
 		return err
@@ -426,7 +426,7 @@ func (db *PQDatabase) RemoveBlueprintByID(id string) error {
 }
 
 func (db *PQDatabase) RemoveBlueprintByName(namespace, name string) error {
-	sqlStatement := `DELETE FROM ` + db.dbPrefix + `SERVICES WHERE COLONY_NAME=$1 AND NAME=$2`
+	sqlStatement := `DELETE FROM ` + db.dbPrefix + `BLUEPRINTS WHERE COLONY_NAME=$1 AND NAME=$2`
 	_, err := db.postgresql.Exec(sqlStatement, namespace, name)
 	if err != nil {
 		return err
@@ -436,7 +436,7 @@ func (db *PQDatabase) RemoveBlueprintByName(namespace, name string) error {
 }
 
 func (db *PQDatabase) RemoveBlueprintsByNamespace(namespace string) error {
-	sqlStatement := `DELETE FROM ` + db.dbPrefix + `SERVICES WHERE COLONY_NAME=$1`
+	sqlStatement := `DELETE FROM ` + db.dbPrefix + `BLUEPRINTS WHERE COLONY_NAME=$1`
 	_, err := db.postgresql.Exec(sqlStatement, namespace)
 	if err != nil {
 		return err
@@ -446,7 +446,7 @@ func (db *PQDatabase) RemoveBlueprintsByNamespace(namespace string) error {
 }
 
 func (db *PQDatabase) CountBlueprints() (int, error) {
-	sqlStatement := `SELECT COUNT(*) FROM ` + db.dbPrefix + `SERVICES`
+	sqlStatement := `SELECT COUNT(*) FROM ` + db.dbPrefix + `BLUEPRINTS`
 	rows, err := db.postgresql.Query(sqlStatement)
 	if err != nil {
 		return -1, err
@@ -465,7 +465,7 @@ func (db *PQDatabase) CountBlueprints() (int, error) {
 }
 
 func (db *PQDatabase) CountBlueprintsByNamespace(namespace string) (int, error) {
-	sqlStatement := `SELECT COUNT(*) FROM ` + db.dbPrefix + `SERVICES WHERE COLONY_NAME=$1`
+	sqlStatement := `SELECT COUNT(*) FROM ` + db.dbPrefix + `BLUEPRINTS WHERE COLONY_NAME=$1`
 	rows, err := db.postgresql.Query(sqlStatement, namespace)
 	if err != nil {
 		return -1, err
@@ -495,8 +495,8 @@ func (db *PQDatabase) AddBlueprintHistory(history *core.BlueprintHistory) error 
 		return err
 	}
 
-	sqlStatement := `INSERT INTO ` + db.dbPrefix + `SERVICE_HISTORY (
-		ID, SERVICE_ID, KIND, NAMESPACE, NAME, GENERATION, SPEC, STATUS,
+	sqlStatement := `INSERT INTO ` + db.dbPrefix + `BLUEPRINT_HISTORY (
+		ID, BLUEPRINT_ID, KIND, NAMESPACE, NAME, GENERATION, SPEC, STATUS,
 		TIMESTAMP, CHANGED_BY, CHANGE_TYPE)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`
 
@@ -520,10 +520,10 @@ func (db *PQDatabase) AddBlueprintHistory(history *core.BlueprintHistory) error 
 
 // GetBlueprintHistory retrieves history for a blueprint (most recent first)
 func (db *PQDatabase) GetBlueprintHistory(blueprintID string, limit int) ([]*core.BlueprintHistory, error) {
-	sqlStatement := `SELECT ID, SERVICE_ID, KIND, NAMESPACE, NAME, GENERATION,
+	sqlStatement := `SELECT ID, BLUEPRINT_ID, KIND, NAMESPACE, NAME, GENERATION,
 		SPEC, STATUS, TIMESTAMP, CHANGED_BY, CHANGE_TYPE
-		FROM ` + db.dbPrefix + `SERVICE_HISTORY
-		WHERE SERVICE_ID=$1
+		FROM ` + db.dbPrefix + `BLUEPRINT_HISTORY
+		WHERE BLUEPRINT_ID=$1
 		ORDER BY TIMESTAMP DESC`
 
 	if limit > 0 {
@@ -576,10 +576,10 @@ func (db *PQDatabase) GetBlueprintHistory(blueprintID string, limit int) ([]*cor
 
 // GetBlueprintHistoryByGeneration retrieves a specific generation of a blueprint
 func (db *PQDatabase) GetBlueprintHistoryByGeneration(blueprintID string, generation int64) (*core.BlueprintHistory, error) {
-	sqlStatement := `SELECT ID, SERVICE_ID, KIND, NAMESPACE, NAME, GENERATION,
+	sqlStatement := `SELECT ID, BLUEPRINT_ID, KIND, NAMESPACE, NAME, GENERATION,
 		SPEC, STATUS, TIMESTAMP, CHANGED_BY, CHANGE_TYPE
-		FROM ` + db.dbPrefix + `SERVICE_HISTORY
-		WHERE SERVICE_ID=$1 AND GENERATION=$2`
+		FROM ` + db.dbPrefix + `BLUEPRINT_HISTORY
+		WHERE BLUEPRINT_ID=$1 AND GENERATION=$2`
 
 	rows, err := db.postgresql.Query(sqlStatement, blueprintID, generation)
 	if err != nil {
@@ -626,7 +626,7 @@ func (db *PQDatabase) GetBlueprintHistoryByGeneration(blueprintID string, genera
 
 // RemoveBlueprintHistory removes all history for a blueprint
 func (db *PQDatabase) RemoveBlueprintHistory(blueprintID string) error {
-	sqlStatement := `DELETE FROM ` + db.dbPrefix + `SERVICE_HISTORY WHERE SERVICE_ID=$1`
+	sqlStatement := `DELETE FROM ` + db.dbPrefix + `BLUEPRINT_HISTORY WHERE BLUEPRINT_ID=$1`
 	_, err := db.postgresql.Exec(sqlStatement, blueprintID)
 	return err
 }
