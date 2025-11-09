@@ -21,11 +21,32 @@ func printExecutorsTable(executors []*core.Executor) {
 	}
 	t.SetCols(cols)
 
+	// Get nodes to map NodeID to location
+	client := setup()
+	nodes, err := client.GetNodes(ColonyName, PrvKey)
+	nodeMap := make(map[string]*core.Node)
+	if err == nil {
+		for _, node := range nodes {
+			nodeMap[node.ID] = node
+		}
+	}
+
 	for _, executor := range executors {
+		// Determine location to display
+		location := executor.Location.Description
+		if executor.NodeID != "" {
+			if node, exists := nodeMap[executor.NodeID]; exists && node.Location != "" {
+				location = node.Location
+			}
+		}
+		if location == "" {
+			location = "n/a"
+		}
+
 		row := []interface{}{
 			termenv.String(executor.Name).Foreground(theme.ColorCyan),
 			termenv.String(executor.Type).Foreground(theme.ColorViolet),
-			termenv.String(executor.Location.Description).Foreground(theme.ColorMagenta),
+			termenv.String(location).Foreground(theme.ColorMagenta),
 			termenv.String(executor.LastHeardFromTime.Format(TimeLayout)).Foreground(theme.ColorGreen),
 		}
 		t.AddRow(row)

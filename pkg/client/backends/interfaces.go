@@ -15,7 +15,7 @@ type ClientBackend interface {
 	// Check the health of the backend connection
 	CheckHealth() error
 	
-	// Close the backend and clean up resources
+	// Close the backend and clean up blueprints
 	Close() error
 }
 

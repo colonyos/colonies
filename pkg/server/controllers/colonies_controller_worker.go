@@ -1,6 +1,8 @@
 package controllers
 
 import (
+	"os"
+	"strconv"
 	"time"
 
 	"github.com/colonyos/colonies/pkg/constants"
@@ -138,5 +140,165 @@ func (controller *ColoniesController) CmdQueueWorker() {
 				}
 			}
 		}
+	}
+}
+
+func (controller *ColoniesController) CleanupWorker() {
+	cleanupInterval := 60 * time.Second      // 60 second interval
+	staleExecutorDuration := 10 * time.Minute // Executors not heard from in 10 minutes are stale
+	staleNodeDuration := 24 * time.Hour       // Nodes with no executors for 24 hours are stale
+
+	// Read cleanup intervals from environment if set
+	if envInterval := os.Getenv("COLONIES_CLEANUP_INTERVAL"); envInterval != "" {
+		if interval, err := strconv.Atoi(envInterval); err == nil {
+			cleanupInterval = time.Duration(interval) * time.Second
+		}
+	}
+	if envStaleExecutor := os.Getenv("COLONIES_STALE_EXECUTOR_DURATION"); envStaleExecutor != "" {
+		if duration, err := strconv.Atoi(envStaleExecutor); err == nil {
+			staleExecutorDuration = time.Duration(duration) * time.Second
+		}
+	}
+	if envStaleNode := os.Getenv("COLONIES_STALE_NODE_DURATION"); envStaleNode != "" {
+		if duration, err := strconv.Atoi(envStaleNode); err == nil {
+			staleNodeDuration = time.Duration(duration) * time.Second
+		}
+	}
+
+	log.WithFields(log.Fields{
+		"CleanupInterval":       cleanupInterval,
+		"StaleExecutorDuration": staleExecutorDuration,
+		"StaleNodeDuration":     staleNodeDuration,
+	}).Info("Starting cleanup worker")
+
+	ticker := time.NewTicker(cleanupInterval)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ticker.C:
+			controller.stopMutex.Lock()
+			shouldStop := controller.stopFlag
+			controller.stopMutex.Unlock()
+
+			if shouldStop {
+				return
+			}
+
+			// Only run cleanup if this node is the leader
+			controller.leaderMutex.Lock()
+			isLeader := controller.leader
+			controller.leaderMutex.Unlock()
+
+			if isLeader {
+				controller.cleanupStaleExecutors(staleExecutorDuration)
+				controller.cleanupStaleNodes(staleNodeDuration)
+			}
+		}
+	}
+}
+
+func (controller *ColoniesController) cleanupStaleExecutors(staleDuration time.Duration) {
+	executors, err := controller.executorDB.GetExecutors()
+	if err != nil {
+		log.WithFields(log.Fields{"Error": err}).Warn("Failed to get executors for cleanup")
+		return
+	}
+
+	now := time.Now()
+	cleanedCount := 0
+
+	for _, executor := range executors {
+		timeSinceLastHeard := now.Sub(executor.LastHeardFromTime)
+		if timeSinceLastHeard > staleDuration {
+			log.WithFields(log.Fields{
+				"ExecutorName":       executor.Name,
+				"ExecutorID":         executor.ID,
+				"ColonyName":         executor.ColonyName,
+				"TimeSinceLastHeard": timeSinceLastHeard,
+			}).Info("Auto-removing stale executor")
+
+			err := controller.executorDB.RemoveExecutorByName(executor.ColonyName, executor.Name)
+			if err != nil {
+				log.WithFields(log.Fields{
+					"Error":        err,
+					"ExecutorName": executor.Name,
+				}).Warn("Failed to remove stale executor")
+			} else {
+				cleanedCount++
+			}
+		}
+	}
+
+	if cleanedCount > 0 {
+		log.WithFields(log.Fields{"CleanedExecutors": cleanedCount}).Info("Completed executor cleanup")
+	}
+}
+
+func (controller *ColoniesController) cleanupStaleNodes(staleDuration time.Duration) {
+	colonies, err := controller.colonyDB.GetColonies()
+	if err != nil {
+		log.WithFields(log.Fields{"Error": err}).Warn("Failed to get colonies for node cleanup")
+		return
+	}
+
+	cleanedCount := 0
+	now := time.Now()
+
+	for _, colony := range colonies {
+		nodes, err := controller.nodeDB.GetNodes(colony.Name)
+		if err != nil {
+			log.WithFields(log.Fields{
+				"Error":      err,
+				"ColonyName": colony.Name,
+			}).Warn("Failed to get nodes for cleanup")
+			continue
+		}
+
+		executors, err := controller.executorDB.GetExecutorsByColonyName(colony.Name)
+		if err != nil {
+			log.WithFields(log.Fields{
+				"Error":      err,
+				"ColonyName": colony.Name,
+			}).Warn("Failed to get executors for node cleanup")
+			continue
+		}
+
+		// Build map of nodeID -> executor count
+		nodeExecutorCount := make(map[string]int)
+		for _, executor := range executors {
+			if executor.NodeID != "" {
+				nodeExecutorCount[executor.NodeID]++
+			}
+		}
+
+		// Remove nodes with no executors that haven't been seen in a while
+		for _, node := range nodes {
+			if nodeExecutorCount[node.ID] == 0 {
+				nodeAge := now.Sub(node.LastSeen)
+				if nodeAge > staleDuration {
+					log.WithFields(log.Fields{
+						"NodeName":   node.Name,
+						"NodeID":     node.ID,
+						"ColonyName": colony.Name,
+						"Age":        nodeAge,
+					}).Info("Auto-removing stale node")
+
+					err := controller.nodeDB.RemoveNodeByID(node.ID)
+					if err != nil {
+						log.WithFields(log.Fields{
+							"Error":    err,
+							"NodeName": node.Name,
+						}).Warn("Failed to remove stale node")
+					} else {
+						cleanedCount++
+					}
+				}
+			}
+		}
+	}
+
+	if cleanedCount > 0 {
+		log.WithFields(log.Fields{"CleanedNodes": cleanedCount}).Info("Completed node cleanup")
 	}
 }

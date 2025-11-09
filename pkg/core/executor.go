@@ -58,17 +58,19 @@ type Allocations struct {
 }
 
 type Executor struct {
-	ID                string       `json:"executorid"`
-	Type              string       `json:"executortype"`
-	Name              string       `json:"executorname"`
-	ColonyName        string       `json:"colonyname"`
-	State             int          `json:"state"`
-	RequireFuncReg    bool         `json:"requirefuncreg"`
-	CommissionTime    time.Time    `json:"commissiontime"`
-	LastHeardFromTime time.Time    `json:"lastheardfromtime"`
-	Location          Location     `json:"location"`
-	Capabilities      Capabilities `json:"capabilities"`
-	Allocations       Allocations  `json:"allocations"`
+	ID                string        `json:"executorid"`
+	Type              string        `json:"executortype"`
+	Name              string        `json:"executorname"`
+	ColonyName        string        `json:"colonyname"`
+	State             int           `json:"state"`
+	RequireFuncReg    bool          `json:"requirefuncreg"`
+	CommissionTime    time.Time     `json:"commissiontime"`
+	LastHeardFromTime time.Time     `json:"lastheardfromtime"`
+	Location          Location      `json:"location"`
+	Capabilities      Capabilities  `json:"capabilities"`
+	Allocations       Allocations   `json:"allocations"`
+	NodeMetadata      *NodeMetadata `json:"nodemetadata,omitempty"`
+	NodeID            string        `json:"nodeid,omitempty"` // Reference to Node
 }
 
 func CreateExecutor(id string,

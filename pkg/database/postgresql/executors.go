@@ -30,8 +30,8 @@ func (db *PQDatabase) AddExecutor(executor *core.Executor) error {
 		return err
 	}
 
-	sqlStatement := `INSERT INTO  ` + db.dbPrefix + `EXECUTORS (NAME, EXECUTOR_TYPE, EXECUTOR_ID, COLONY_NAME, STATE, REQUIRE_FUNC_REG, COMMISSIONTIME, LASTHEARDFROM, LONG, LAT, LOCDESC, HWMODEL, HWNODES, HWCPU, HWMEM, HWSTORAGE, HWGPUNAME, HWGPUCOUNT, HWGPUNODECOUNT, HWGPUMEM, SWNAME, SWTYPE, SWVERSION, ALLOCATIONS) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24)`
-	_, err = db.postgresql.Exec(sqlStatement, executor.ColonyName+":"+executor.Name, executor.Type, executor.ID, executor.ColonyName, 0, executor.RequireFuncReg, time.Now(), executor.LastHeardFromTime, executor.Location.Long, executor.Location.Lat, executor.Location.Description, executor.Capabilities.Hardware.Model, executor.Capabilities.Hardware.Nodes, executor.Capabilities.Hardware.CPU, executor.Capabilities.Hardware.Memory, executor.Capabilities.Hardware.Storage, executor.Capabilities.Hardware.GPU.Name, executor.Capabilities.Hardware.GPU.Count, executor.Capabilities.Hardware.GPU.NodeCount, executor.Capabilities.Hardware.GPU.Memory, executor.Capabilities.Software.Name, executor.Capabilities.Software.Type, executor.Capabilities.Software.Version, string(allocationsJSONBytes))
+	sqlStatement := `INSERT INTO  ` + db.dbPrefix + `EXECUTORS (NAME, EXECUTOR_TYPE, EXECUTOR_ID, COLONY_NAME, STATE, REQUIRE_FUNC_REG, COMMISSIONTIME, LASTHEARDFROM, LONG, LAT, LOCDESC, HWMODEL, HWNODES, HWCPU, HWMEM, HWSTORAGE, HWGPUNAME, HWGPUCOUNT, HWGPUNODECOUNT, HWGPUMEM, SWNAME, SWTYPE, SWVERSION, ALLOCATIONS, NODE_ID) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25)`
+	_, err = db.postgresql.Exec(sqlStatement, executor.ColonyName+":"+executor.Name, executor.Type, executor.ID, executor.ColonyName, 0, executor.RequireFuncReg, time.Now(), executor.LastHeardFromTime, executor.Location.Long, executor.Location.Lat, executor.Location.Description, executor.Capabilities.Hardware.Model, executor.Capabilities.Hardware.Nodes, executor.Capabilities.Hardware.CPU, executor.Capabilities.Hardware.Memory, executor.Capabilities.Hardware.Storage, executor.Capabilities.Hardware.GPU.Name, executor.Capabilities.Hardware.GPU.Count, executor.Capabilities.Hardware.GPU.NodeCount, executor.Capabilities.Hardware.GPU.Memory, executor.Capabilities.Software.Name, executor.Capabilities.Software.Type, executor.Capabilities.Software.Version, string(allocationsJSONBytes), executor.NodeID)
 
 	if err != nil {
 		if strings.HasPrefix(err.Error(), "pq: duplicate key value violates unique constraint") {
@@ -95,8 +95,9 @@ func (db *PQDatabase) parseExecutors(rows *sql.Rows) ([]*core.Executor, error) {
 		var swType string
 		var swVersion string
 		var allocationsJSONStr string
+		var nodeID sql.NullString
 
-		if err := rows.Scan(&name, &executorType, &id, &colonyName, &state, &requireRunReg, &commissionTime, &lastHeardFromTime, &long, &lat, &desc, &hwModel, &hwNodes, &hwCPU, &hwMem, &hwStorage, &hwGPUName, &hwGPUCount, &hwGPUNodeCount, &hwGPUMem, &swName, &swType, &swVersion, &allocationsJSONStr); err != nil {
+		if err := rows.Scan(&name, &executorType, &id, &colonyName, &state, &requireRunReg, &commissionTime, &lastHeardFromTime, &long, &lat, &desc, &hwModel, &hwNodes, &hwCPU, &hwMem, &hwStorage, &hwGPUName, &hwGPUCount, &hwGPUNodeCount, &hwGPUMem, &swName, &swType, &swVersion, &allocationsJSONStr, &nodeID); err != nil {
 			return nil, err
 		}
 
@@ -121,6 +122,9 @@ func (db *PQDatabase) parseExecutors(rows *sql.Rows) ([]*core.Executor, error) {
 		capabilities := core.Capabilities{Hardware: hw, Software: sw}
 		executor.Capabilities = capabilities
 		executor.Allocations = allocations
+		if nodeID.Valid {
+			executor.NodeID = nodeID.String
+		}
 
 		executors = append(executors, executor)
 	}

@@ -43,6 +43,9 @@ func (h *Handlers) RegisterHandlers(handlerRegistry *registry.HandlerRegistry) e
 	if err := handlerRegistry.Register(rpc.GetUserPayloadType, h.HandleGetUser); err != nil {
 		return err
 	}
+	if err := handlerRegistry.Register(rpc.GetUserByIDPayloadType, h.HandleGetUserByID); err != nil {
+		return err
+	}
 	if err := handlerRegistry.Register(rpc.RemoveUserPayloadType, h.HandleRemoveUser); err != nil {
 		return err
 	}
@@ -221,6 +224,57 @@ func (h *Handlers) HandleGetUser(c backends.Context, recoveredID string, payload
 	}
 
 	log.WithFields(log.Fields{"ColonyName": msg.ColonyName, "Name": msg.Name}).Debug("Getting user")
+
+	h.server.SendHTTPReply(c, payloadType, jsonString)
+}
+
+func (h *Handlers) HandleGetUserByID(c backends.Context, recoveredID string, payloadType string, jsonString string) {
+	msg, err := rpc.CreateGetUserByIDMsgFromJSON(jsonString)
+	if err != nil {
+		if h.server.HandleHTTPError(c, errors.New("Failed to get user by ID, invalid JSON"), http.StatusBadRequest) {
+			return
+		}
+	}
+
+	if msg.MsgType != payloadType {
+		h.server.HandleHTTPError(c, errors.New("Failed to get user by ID, msg.MsgType does not match payloadType"), http.StatusBadRequest)
+		return
+	}
+
+	colony, err := h.server.GetColonyDB().GetColonyByName(msg.ColonyName)
+	if err != nil {
+		if h.server.HandleHTTPError(c, errors.New("Failed to resolve colony name"), http.StatusBadRequest) {
+			return
+		}
+	}
+
+	if colony == nil {
+		if h.server.HandleHTTPError(c, errors.New("Colony with name <"+msg.ColonyName+"> does not exists"), http.StatusBadRequest) {
+			return
+		}
+	}
+
+	err = h.server.GetValidator().RequireMembership(recoveredID, msg.ColonyName, false)
+	if h.server.HandleHTTPError(c, err, http.StatusForbidden) {
+		return
+	}
+
+	user, err := h.server.GetUserDB().GetUserByID(msg.ColonyName, msg.UserID)
+	if h.server.HandleHTTPError(c, err, http.StatusBadRequest) {
+		return
+	}
+
+	if user == nil {
+		h.server.HandleHTTPError(c, errors.New("Failed to get user by ID, user is nil"), http.StatusNotFound)
+		return
+	}
+
+	jsonString, err = user.ToJSON()
+	if h.server.HandleHTTPError(c, err, http.StatusInternalServerError) {
+		return
+	}
+
+	log.WithFields(log.Fields{"ColonyName": msg.ColonyName, "UserID": msg.UserID}).Debug("Getting user by ID")
 
 	h.server.SendHTTPReply(c, payloadType, jsonString)
 }

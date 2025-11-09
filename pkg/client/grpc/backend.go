@@ -168,7 +168,7 @@ func (g *GRPCClientBackend) CheckHealth() error {
 	return nil
 }
 
-// Close closes the gRPC connection and cleans up resources
+// Close closes the gRPC connection and cleans up blueprints
 func (g *GRPCClientBackend) Close() error {
 	if g.conn != nil {
 		return g.conn.Close()

@@ -38,7 +38,7 @@ type Style struct {
 	Background string `json:"background"`
 }
 
-type Node struct {
+type GraphNode struct {
 	ID       string   `json:"id"`
 	Data     Data     `json:"data"`
 	Position Position `json:"position"`
@@ -58,23 +58,23 @@ type ProcessGraph struct {
 	StartTime      time.Time `json:"starttime"`
 	EndTime        time.Time `json:"endtime"`
 	ProcessIDs     []string  `json:"processids"`
-	Nodes          []Node    `json:"nodes"`
+	Nodes          []GraphNode    `json:"nodes"`
 	Edges          []Edge    `json:"edges"`
-	nodesMap       map[string]*Node
+	nodesMap       map[string]*GraphNode
 }
 
 func CreateProcessGraph(colonyName string) (*ProcessGraph, error) {
 	graph := &ProcessGraph{}
 	graph.ColonyName = colonyName
 	graph.Edges = make([]Edge, 0)
-	graph.Nodes = make([]Node, 0)
+	graph.Nodes = make([]GraphNode, 0)
 
 	uuid := uuid.New()
 	crypto := crypto.CreateCrypto()
 	id := crypto.GenerateHash(uuid.String())
 	graph.ID = id
 
-	graph.nodesMap = make(map[string]*Node)
+	graph.nodesMap = make(map[string]*GraphNode)
 
 	return graph, nil
 }
@@ -261,7 +261,7 @@ func (graph *ProcessGraph) calcNodes() error {
 	}
 
 	paddingsPerLevel := make(map[int]int)
-	nodesPerDepth := make(map[int][]*Node)
+	nodesPerDepth := make(map[int][]*GraphNode)
 
 	boxwidth := 150
 	padding := 50
@@ -301,7 +301,7 @@ func (graph *ProcessGraph) calcNodes() error {
 		}
 
 		style := Style{Background: background}
-		node := &Node{ID: process.ID, Data: Data{Label: process.FunctionSpec.NodeName}, Position: Position{X: x, Y: y}, Type: t, Style: style}
+		node := &GraphNode{ID: process.ID, Data: Data{Label: process.FunctionSpec.NodeName}, Position: Position{X: x, Y: y}, Type: t, Style: style}
 		graph.nodesMap[process.ID] = node
 		nodesPerDepth[depth] = append(nodesPerDepth[depth], node)
 		return nil

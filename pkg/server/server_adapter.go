@@ -168,8 +168,12 @@ func (s *ServerAdapter) SnapshotDB() database.SnapshotDatabase {
 	return s.server.snapshotDB
 }
 
-func (s *ServerAdapter) ResourceDB() database.ResourceDatabase {
+func (s *ServerAdapter) BlueprintDB() database.BlueprintDatabase {
 	return s.server.resourceDB
+}
+
+func (s *ServerAdapter) NodeDB() database.NodeDatabase {
+	return s.server.nodeDB
 }
 
 type attributeControllerAdapter struct {

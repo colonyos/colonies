@@ -1,0 +1,1112 @@
+package cli
+
+import (
+	"fmt"
+	"sort"
+	"strings"
+	"time"
+
+	"github.com/colonyos/colonies/internal/table"
+	"github.com/colonyos/colonies/pkg/client"
+	"github.com/colonyos/colonies/pkg/core"
+	"github.com/muesli/termenv"
+)
+
+// printBlueprintDefinitionsTable displays a list of BlueprintDefinitions in a table
+func printBlueprintDefinitionsTable(sds []*core.BlueprintDefinition) {
+	t, theme := createTable(1)
+
+	var cols = []table.Column{
+		{ID: "name", Name: "Name", SortIndex: 1},
+		{ID: "kind", Name: "Kind", SortIndex: 2},
+		{ID: "executortype", Name: "ExecutorType", SortIndex: 3},
+		{ID: "functionname", Name: "FunctionName", SortIndex: 4},
+	}
+	t.SetCols(cols)
+
+	for _, sd := range sds {
+		row := []interface{}{
+			termenv.String(sd.Metadata.Name).Foreground(theme.ColorCyan),
+			termenv.String(sd.Spec.Names.Kind).Foreground(theme.ColorViolet),
+			termenv.String(sd.Spec.Handler.ExecutorType).Foreground(theme.ColorMagenta),
+			termenv.String(sd.Spec.Handler.FunctionName).Foreground(theme.ColorBlue),
+		}
+		t.AddRow(row)
+	}
+
+	t.Render()
+}
+
+// printBlueprintDefinitionTable displays a single BlueprintDefinition with details
+func printBlueprintDefinitionTable(sd *core.BlueprintDefinition) {
+	t, theme := createTable(0)
+	t.SetTitle("BlueprintDefinition")
+
+	row := []interface{}{
+		termenv.String("Name").Foreground(theme.ColorCyan),
+		termenv.String(sd.Metadata.Name).Foreground(theme.ColorGray),
+	}
+	t.AddRow(row)
+
+	row = []interface{}{
+		termenv.String("ID").Foreground(theme.ColorCyan),
+		termenv.String(sd.ID).Foreground(theme.ColorGray),
+	}
+	t.AddRow(row)
+
+	row = []interface{}{
+		termenv.String("Kind").Foreground(theme.ColorCyan),
+		termenv.String(sd.Spec.Names.Kind).Foreground(theme.ColorGray),
+	}
+	t.AddRow(row)
+
+	row = []interface{}{
+		termenv.String("Plural").Foreground(theme.ColorCyan),
+		termenv.String(sd.Spec.Names.Plural).Foreground(theme.ColorGray),
+	}
+	t.AddRow(row)
+
+	row = []interface{}{
+		termenv.String("Group").Foreground(theme.ColorCyan),
+		termenv.String(sd.Spec.Group).Foreground(theme.ColorGray),
+	}
+	t.AddRow(row)
+
+	row = []interface{}{
+		termenv.String("Version").Foreground(theme.ColorCyan),
+		termenv.String(sd.Spec.Version).Foreground(theme.ColorGray),
+	}
+	t.AddRow(row)
+
+	row = []interface{}{
+		termenv.String("Scope").Foreground(theme.ColorCyan),
+		termenv.String(sd.Spec.Scope).Foreground(theme.ColorGray),
+	}
+	t.AddRow(row)
+
+	t.Render()
+
+	// Handler section
+	t, theme = createTable(0)
+	t.SetTitle("Handler")
+
+	row = []interface{}{
+		termenv.String("Executor Type").Foreground(theme.ColorViolet),
+		termenv.String(sd.Spec.Handler.ExecutorType).Foreground(theme.ColorGray),
+	}
+	t.AddRow(row)
+
+	row = []interface{}{
+		termenv.String("Function Name").Foreground(theme.ColorViolet),
+		termenv.String(sd.Spec.Handler.FunctionName).Foreground(theme.ColorGray),
+	}
+	t.AddRow(row)
+
+	if sd.Spec.Handler.ReconcileInterval > 0 {
+		row = []interface{}{
+			termenv.String("Reconcile Interval").Foreground(theme.ColorViolet),
+			termenv.String(fmt.Sprintf("%d seconds", sd.Spec.Handler.ReconcileInterval)).Foreground(theme.ColorGray),
+		}
+		t.AddRow(row)
+	}
+
+	t.Render()
+
+	// Schema section
+	if sd.Spec.Schema != nil {
+		t, theme = createTable(0)
+		t.SetTitle("Schema")
+
+		if len(sd.Spec.Schema.Required) > 0 {
+			row = []interface{}{
+				termenv.String("Required Fields").Foreground(theme.ColorBlue),
+				termenv.String(strings.Join(sd.Spec.Schema.Required, ", ")).Foreground(theme.ColorGray),
+			}
+			t.AddRow(row)
+		}
+
+		row = []interface{}{
+			termenv.String("Properties").Foreground(theme.ColorBlue),
+			termenv.String(fmt.Sprintf("%d fields defined", len(sd.Spec.Schema.Properties))).Foreground(theme.ColorGray),
+		}
+		t.AddRow(row)
+
+		t.Render()
+
+		// Properties details
+		if len(sd.Spec.Schema.Properties) > 0 {
+			t, theme = createTable(0)
+			t.SetTitle("Schema Properties")
+
+			var propCols = []table.Column{
+				{ID: "field", Name: "Field", SortIndex: 1},
+				{ID: "type", Name: "Type", SortIndex: 2},
+				{ID: "description", Name: "Description", SortIndex: 3},
+			}
+			t.SetCols(propCols)
+
+			for propName, prop := range sd.Spec.Schema.Properties {
+				desc := prop.Description
+				if len(desc) > 50 {
+					desc = desc[:47] + "..."
+				}
+				if desc == "" {
+					desc = "-"
+				}
+
+				row = []interface{}{
+					termenv.String(propName).Foreground(theme.ColorMagenta),
+					termenv.String(prop.Type).Foreground(theme.ColorCyan),
+					termenv.String(desc).Foreground(theme.ColorGray),
+				}
+				t.AddRow(row)
+			}
+
+			t.Render()
+		}
+	}
+}
+
+// printBlueprintsTable displays a list of Blueprints in a table
+func printBlueprintsTable(blueprints []*core.Blueprint) {
+	t, theme := createTable(1)
+
+	var cols = []table.Column{
+		{ID: "name", Name: "Name", SortIndex: 1},
+		{ID: "kind", Name: "Kind", SortIndex: 2},
+		{ID: "info", Name: "Info", SortIndex: 3},
+		{ID: "generation", Name: "Gen", SortIndex: 4},
+	}
+	t.SetCols(cols)
+
+	for _, blueprint := range blueprints {
+		// Build info column based on blueprint kind
+		info := ""
+		switch blueprint.Kind {
+		case "ExecutorDeployment":
+			// For ExecutorDeployment, show executor type and replicas
+			executorType := ""
+			if val, ok := blueprint.GetSpec("executorType"); ok {
+				if str, ok := val.(string); ok {
+					executorType = str
+				}
+			}
+			replicas := ""
+			if val, ok := blueprint.GetSpec("replicas"); ok {
+				replicas = fmt.Sprintf("replicas=%v", val)
+			}
+			if executorType != "" && replicas != "" {
+				info = fmt.Sprintf("%s (%s)", executorType, replicas)
+			} else if executorType != "" {
+				info = executorType
+			} else if replicas != "" {
+				info = replicas
+			}
+		case "DockerDeployment":
+			// For DockerDeployment, show number of instances
+			if instances, ok := blueprint.GetSpec("instances"); ok {
+				if instArray, ok := instances.([]interface{}); ok {
+					if len(instArray) == 1 {
+						info = "1 instance"
+					} else {
+						info = fmt.Sprintf("%d instances", len(instArray))
+					}
+				}
+			}
+		default:
+			// For other kinds, try to extract a descriptive field
+			if val, ok := blueprint.GetSpec("description"); ok {
+				info = fmt.Sprintf("%v", val)
+			}
+		}
+
+		row := []interface{}{
+			termenv.String(blueprint.Metadata.Name).Foreground(theme.ColorCyan),
+			termenv.String(blueprint.Kind).Foreground(theme.ColorViolet),
+			termenv.String(info).Foreground(theme.ColorMagenta),
+			termenv.String(fmt.Sprintf("%d", blueprint.Metadata.Generation)).Foreground(theme.ColorYellow),
+		}
+		t.AddRow(row)
+	}
+
+	t.Render()
+}
+
+// printBlueprintTable displays a single Blueprint with details
+func printBlueprintTable(client *client.ColoniesClient, blueprint *core.Blueprint) {
+	t, theme := createTable(0)
+	t.SetTitle("Blueprint")
+
+	row := []interface{}{
+		termenv.String("Name").Foreground(theme.ColorCyan),
+		termenv.String(blueprint.Metadata.Name).Foreground(theme.ColorGray),
+	}
+	t.AddRow(row)
+
+	row = []interface{}{
+		termenv.String("ID").Foreground(theme.ColorCyan),
+		termenv.String(blueprint.ID).Foreground(theme.ColorGray),
+	}
+	t.AddRow(row)
+
+	row = []interface{}{
+		termenv.String("Kind").Foreground(theme.ColorCyan),
+		termenv.String(blueprint.Kind).Foreground(theme.ColorGray),
+	}
+	t.AddRow(row)
+
+	row = []interface{}{
+		termenv.String("Generation").Foreground(theme.ColorCyan),
+		termenv.String(fmt.Sprintf("%d", blueprint.Metadata.Generation)).Foreground(theme.ColorGray),
+	}
+	t.AddRow(row)
+
+	// Reconciliation status
+	if blueprint.Metadata.LastReconciliationProcess != "" {
+		process, err := client.GetProcess(blueprint.Metadata.LastReconciliationProcess, PrvKey)
+		if err == nil && process != nil {
+			// Display reconciliation process ID
+			row = []interface{}{
+				termenv.String("Last Reconciliation").Foreground(theme.ColorCyan),
+				termenv.String(process.ID).Foreground(theme.ColorGray),
+			}
+			t.AddRow(row)
+
+			// Display reconciliation status with color coding
+			statusColor := theme.ColorGray
+			statusText := fmt.Sprintf("%d", process.State)
+			switch process.State {
+			case 0: // WAITING
+				statusColor = theme.ColorYellow
+				statusText = "WAITING"
+			case 1: // RUNNING
+				statusColor = theme.ColorCyan
+				statusText = "RUNNING"
+			case 2: // SUCCESS
+				statusColor = theme.ColorGreen
+				statusText = "SUCCESS"
+			case 3: // FAILED
+				statusColor = theme.ColorRed
+				statusText = "FAILED"
+			}
+
+			row = []interface{}{
+				termenv.String("Reconciliation Status").Foreground(theme.ColorCyan),
+				termenv.String(statusText).Foreground(statusColor),
+			}
+			t.AddRow(row)
+
+			// Display when reconciliation started
+			if !blueprint.Metadata.LastReconciliationTime.IsZero() {
+				row = []interface{}{
+					termenv.String("Reconciliation Time").Foreground(theme.ColorCyan),
+					termenv.String(blueprint.Metadata.LastReconciliationTime.Format(TimeLayout)).Foreground(theme.ColorGray),
+				}
+				t.AddRow(row)
+			}
+
+			// Display when process ended (if completed)
+			if process.State == 2 || process.State == 3 { // SUCCESS or FAILED
+				if !process.EndTime.IsZero() {
+					row = []interface{}{
+						termenv.String("Reconciliation Ended").Foreground(theme.ColorCyan),
+						termenv.String(process.EndTime.Format(TimeLayout)).Foreground(theme.ColorGray),
+					}
+					t.AddRow(row)
+				}
+			}
+		}
+	}
+
+	if !blueprint.Metadata.CreatedAt.IsZero() {
+		row = []interface{}{
+			termenv.String("Created At").Foreground(theme.ColorCyan),
+			termenv.String(blueprint.Metadata.CreatedAt.Format(TimeLayout)).Foreground(theme.ColorGray),
+		}
+		t.AddRow(row)
+	}
+
+	if !blueprint.Metadata.UpdatedAt.IsZero() {
+		row = []interface{}{
+			termenv.String("Updated At").Foreground(theme.ColorCyan),
+			termenv.String(blueprint.Metadata.UpdatedAt.Format(TimeLayout)).Foreground(theme.ColorGray),
+		}
+		t.AddRow(row)
+	}
+
+	t.Render()
+
+	// Labels section
+	if len(blueprint.Metadata.Labels) > 0 {
+		t, theme = createTable(0)
+		t.SetTitle("Labels")
+
+		for key, value := range blueprint.Metadata.Labels {
+			row = []interface{}{
+				termenv.String(key).Foreground(theme.ColorViolet),
+				termenv.String(value).Foreground(theme.ColorGray),
+			}
+			t.AddRow(row)
+		}
+
+		t.Render()
+	}
+
+	// Annotations section
+	if len(blueprint.Metadata.Annotations) > 0 {
+		t, theme = createTable(0)
+		t.SetTitle("Annotations")
+
+		for key, value := range blueprint.Metadata.Annotations {
+			row = []interface{}{
+				termenv.String(key).Foreground(theme.ColorViolet),
+				termenv.String(value).Foreground(theme.ColorGray),
+			}
+			t.AddRow(row)
+		}
+
+		t.Render()
+	}
+
+	// Spec section
+	if len(blueprint.Spec) > 0 {
+		t, theme = createTable(0)
+		t.SetTitle("Spec")
+
+		// Define special keys that need formatted display
+		complexKeys := map[string]bool{
+			"env":       true,
+			"volumes":   true,
+			"ports":     true,
+			"instances": true, // DockerDeployment
+		}
+
+		for key, value := range blueprint.Spec {
+			// Skip complex fields - they'll be rendered separately
+			if complexKeys[key] {
+				continue
+			}
+
+			valueStr := fmt.Sprintf("%v", value)
+			if len(valueStr) > 60 {
+				valueStr = valueStr[:57] + "..."
+			}
+
+			row = []interface{}{
+				termenv.String(key).Foreground(theme.ColorMagenta),
+				termenv.String(valueStr).Foreground(theme.ColorGray),
+			}
+			t.AddRow(row)
+		}
+
+		t.Render()
+
+		// Render environment variables if present
+		if env, ok := blueprint.Spec["env"].(map[string]interface{}); ok && len(env) > 0 {
+			t, theme = createTable(0)
+			t.SetTitle("Environment Variables")
+
+			var envCols = []table.Column{
+				{ID: "key", Name: "Key", SortIndex: 1},
+				{ID: "value", Name: "Value", SortIndex: 2},
+			}
+			t.SetCols(envCols)
+
+			// Sort keys alphabetically
+			keys := make([]string, 0, len(env))
+			for k := range env {
+				keys = append(keys, k)
+			}
+			sort.Strings(keys)
+
+			for _, k := range keys {
+				valueStr := fmt.Sprintf("%v", env[k])
+				row = []interface{}{
+					termenv.String(k).Foreground(theme.ColorCyan),
+					termenv.String(valueStr).Foreground(theme.ColorGray),
+				}
+				t.AddRow(row)
+			}
+
+			t.Render()
+		}
+
+		// Render volumes if present
+		if volumes, ok := blueprint.Spec["volumes"].([]interface{}); ok && len(volumes) > 0 {
+			t, theme = createTable(0)
+			t.SetTitle("Volumes")
+
+			var volCols = []table.Column{
+				{ID: "host", Name: "Host Path", SortIndex: 1},
+				{ID: "container", Name: "Container Path", SortIndex: 2},
+				{ID: "readonly", Name: "Read Only", SortIndex: 3},
+			}
+			t.SetCols(volCols)
+
+			for _, vol := range volumes {
+				if volMap, ok := vol.(map[string]interface{}); ok {
+					host := fmt.Sprintf("%v", volMap["host"])
+					container := fmt.Sprintf("%v", volMap["container"])
+					readOnly := "false"
+					if ro, ok := volMap["readOnly"].(bool); ok && ro {
+						readOnly = "true"
+					}
+
+					row = []interface{}{
+						termenv.String(host).Foreground(theme.ColorCyan),
+						termenv.String(container).Foreground(theme.ColorMagenta),
+						termenv.String(readOnly).Foreground(theme.ColorGray),
+					}
+					t.AddRow(row)
+				}
+			}
+
+			t.Render()
+		}
+
+		// Render ports if present
+		if ports, ok := blueprint.Spec["ports"].([]interface{}); ok && len(ports) > 0 {
+			t, theme = createTable(0)
+			t.SetTitle("Ports")
+
+			var portCols = []table.Column{
+				{ID: "name", Name: "Name", SortIndex: 1},
+				{ID: "port", Name: "Port", SortIndex: 2},
+				{ID: "protocol", Name: "Protocol", SortIndex: 3},
+			}
+			t.SetCols(portCols)
+
+			for _, port := range ports {
+				if portMap, ok := port.(map[string]interface{}); ok {
+					name := fmt.Sprintf("%v", portMap["name"])
+					portNum := fmt.Sprintf("%v", portMap["port"])
+					protocol := fmt.Sprintf("%v", portMap["protocol"])
+
+					row = []interface{}{
+						termenv.String(name).Foreground(theme.ColorCyan),
+						termenv.String(portNum).Foreground(theme.ColorYellow),
+						termenv.String(protocol).Foreground(theme.ColorGray),
+					}
+					t.AddRow(row)
+				}
+			}
+
+			t.Render()
+		}
+
+		// Render instances if present (DockerDeployment)
+		if instances, ok := blueprint.Spec["instances"].([]interface{}); ok && len(instances) > 0 {
+			t, theme = createTable(0)
+			t.SetTitle("Instances (DockerDeployment)")
+
+			var instCols = []table.Column{
+				{ID: "name", Name: "Name", SortIndex: 1},
+				{ID: "image", Name: "Image", SortIndex: 2},
+				{ID: "type", Name: "Type", SortIndex: 3},
+			}
+			t.SetCols(instCols)
+
+			for _, inst := range instances {
+				if instMap, ok := inst.(map[string]interface{}); ok {
+					name := fmt.Sprintf("%v", instMap["name"])
+					image := fmt.Sprintf("%v", instMap["image"])
+					instType := fmt.Sprintf("%v", instMap["type"])
+
+					row = []interface{}{
+						termenv.String(name).Foreground(theme.ColorCyan),
+						termenv.String(image).Foreground(theme.ColorMagenta),
+						termenv.String(instType).Foreground(theme.ColorGray),
+					}
+					t.AddRow(row)
+				}
+			}
+
+			t.Render()
+
+			// Render detailed info for each instance
+			for _, inst := range instances {
+				if instMap, ok := inst.(map[string]interface{}); ok {
+					name := fmt.Sprintf("%v", instMap["name"])
+
+					// Environment variables for this instance
+					if env, ok := instMap["environment"].(map[string]interface{}); ok && len(env) > 0 {
+						t, theme = createTable(0)
+						t.SetTitle(fmt.Sprintf("Instance '%s' - Environment", name))
+
+						var envCols = []table.Column{
+							{ID: "key", Name: "Key", SortIndex: 1},
+							{ID: "value", Name: "Value", SortIndex: 2},
+						}
+						t.SetCols(envCols)
+
+						keys := make([]string, 0, len(env))
+						for k := range env {
+							keys = append(keys, k)
+						}
+						sort.Strings(keys)
+
+						for _, k := range keys {
+							valueStr := fmt.Sprintf("%v", env[k])
+							row = []interface{}{
+								termenv.String(k).Foreground(theme.ColorCyan),
+								termenv.String(valueStr).Foreground(theme.ColorGray),
+							}
+							t.AddRow(row)
+						}
+
+						t.Render()
+					}
+
+					// Volumes for this instance
+					if volumes, ok := instMap["volumes"].([]interface{}); ok && len(volumes) > 0 {
+						t, theme = createTable(0)
+						t.SetTitle(fmt.Sprintf("Instance '%s' - Volumes", name))
+
+						var volCols = []table.Column{
+							{ID: "type", Name: "Type", SortIndex: 1},
+							{ID: "source", Name: "Source", SortIndex: 2},
+							{ID: "mount", Name: "Mount Path", SortIndex: 3},
+							{ID: "readonly", Name: "RO", SortIndex: 4},
+						}
+						t.SetCols(volCols)
+
+						for _, vol := range volumes {
+							if volMap, ok := vol.(map[string]interface{}); ok {
+								volType := fmt.Sprintf("%v", volMap["type"])
+								source := ""
+								if hostPath, ok := volMap["hostPath"]; ok {
+									source = fmt.Sprintf("%v", hostPath)
+								} else if volName, ok := volMap["name"]; ok {
+									source = fmt.Sprintf("%v", volName)
+								}
+								mountPath := fmt.Sprintf("%v", volMap["mountPath"])
+								readOnly := "false"
+								if ro, ok := volMap["readOnly"].(bool); ok && ro {
+									readOnly = "true"
+								}
+
+								row = []interface{}{
+									termenv.String(volType).Foreground(theme.ColorYellow),
+									termenv.String(source).Foreground(theme.ColorCyan),
+									termenv.String(mountPath).Foreground(theme.ColorMagenta),
+									termenv.String(readOnly).Foreground(theme.ColorGray),
+								}
+								t.AddRow(row)
+							}
+						}
+
+						t.Render()
+					}
+
+					// Ports for this instance
+					if ports, ok := instMap["ports"].([]interface{}); ok && len(ports) > 0 {
+						t, theme = createTable(0)
+						t.SetTitle(fmt.Sprintf("Instance '%s' - Ports", name))
+
+						var portCols = []table.Column{
+							{ID: "container", Name: "Container", SortIndex: 1},
+							{ID: "host", Name: "Host", SortIndex: 2},
+							{ID: "protocol", Name: "Protocol", SortIndex: 3},
+						}
+						t.SetCols(portCols)
+
+						for _, port := range ports {
+							if portMap, ok := port.(map[string]interface{}); ok {
+								container := fmt.Sprintf("%v", portMap["container"])
+								host := "-"
+								if hostPort, ok := portMap["host"]; ok {
+									host = fmt.Sprintf("%v", hostPort)
+								}
+								protocol := "tcp"
+								if proto, ok := portMap["protocol"]; ok {
+									protocol = fmt.Sprintf("%v", proto)
+								}
+
+								row = []interface{}{
+									termenv.String(container).Foreground(theme.ColorYellow),
+									termenv.String(host).Foreground(theme.ColorCyan),
+									termenv.String(protocol).Foreground(theme.ColorGray),
+								}
+								t.AddRow(row)
+							}
+						}
+
+						t.Render()
+					}
+				}
+			}
+		}
+	}
+
+	// Status section
+	if len(blueprint.Status) > 0 {
+		// Check if this is a deployment status with instances
+		if instances, ok := blueprint.Status["instances"].([]interface{}); ok && len(instances) > 0 {
+			// Display deployment status summary
+			t, theme = createTable(0)
+			t.SetTitle("Deployment Status")
+
+			if running, ok := blueprint.Status["runningInstances"]; ok {
+				row = []interface{}{
+					termenv.String("Running Instances").Foreground(theme.ColorBlue),
+					termenv.String(fmt.Sprintf("%v", running)).Foreground(theme.ColorGreen),
+				}
+				t.AddRow(row)
+			}
+
+			if total, ok := blueprint.Status["totalInstances"]; ok {
+				row = []interface{}{
+					termenv.String("Total Instances").Foreground(theme.ColorBlue),
+					termenv.String(fmt.Sprintf("%v", total)).Foreground(theme.ColorGray),
+				}
+				t.AddRow(row)
+			}
+
+			if lastUpdated, ok := blueprint.Status["lastUpdated"]; ok {
+				row = []interface{}{
+					termenv.String("Last Updated").Foreground(theme.ColorBlue),
+					termenv.String(fmt.Sprintf("%v", lastUpdated)).Foreground(theme.ColorGray),
+				}
+				t.AddRow(row)
+			}
+
+			t.Render()
+
+			// Display instances table
+			t, theme = createTable(0)
+			t.SetTitle("Instances")
+
+			var instanceCols = []table.Column{
+				{ID: "name", Name: "Name", SortIndex: 1},
+				{ID: "id", Name: "ID", SortIndex: 2},
+				{ID: "type", Name: "Type", SortIndex: 3},
+				{ID: "state", Name: "State", SortIndex: 4},
+				{ID: "image", Name: "Image", SortIndex: 5},
+				{ID: "lastcheck", Name: "Last Check", SortIndex: 6},
+			}
+			t.SetCols(instanceCols)
+
+			for _, instance := range instances {
+				if instanceMap, ok := instance.(map[string]interface{}); ok {
+					name := fmt.Sprintf("%v", instanceMap["name"])
+					id := fmt.Sprintf("%v", instanceMap["id"])
+					instanceType := fmt.Sprintf("%v", instanceMap["type"])
+					state := fmt.Sprintf("%v", instanceMap["state"])
+					image := fmt.Sprintf("%v", instanceMap["image"])
+					lastCheck := fmt.Sprintf("%v", instanceMap["lastCheck"])
+
+					// Capitalize state and type for display
+					if state != "" && state != "<nil>" {
+						state = strings.Title(strings.ToLower(state))
+					}
+					if instanceType != "" && instanceType != "<nil>" {
+						instanceType = strings.Title(strings.ToLower(instanceType))
+					}
+
+					// Parse and format lastCheck if it's a valid timestamp
+					if lastCheck != "" && lastCheck != "<nil>" {
+						if t, err := time.Parse(time.RFC3339, lastCheck); err == nil {
+							lastCheck = t.Format("2006-01-02 15:04:05")
+						}
+					} else {
+						lastCheck = "-"
+					}
+
+					// Color-code state
+					stateColor := theme.ColorGray
+					if strings.ToLower(state) == "running" {
+						stateColor = theme.ColorGreen
+					} else if strings.ToLower(state) == "stopped" {
+						stateColor = theme.ColorRed
+					}
+
+					row = []interface{}{
+						termenv.String(name).Foreground(theme.ColorCyan),
+						termenv.String(id).Foreground(theme.ColorGray),
+						termenv.String(instanceType).Foreground(theme.ColorYellow),
+						termenv.String(state).Foreground(stateColor),
+						termenv.String(image).Foreground(theme.ColorMagenta),
+						termenv.String(lastCheck).Foreground(theme.ColorGray),
+					}
+					t.AddRow(row)
+				}
+			}
+
+			t.Render()
+		} else {
+			// Generic status display for non-deployment blueprints
+			t, theme = createTable(0)
+			t.SetTitle("Status")
+
+			// Filter out instance-related fields that should only show in the instances table
+			excludeKeys := map[string]bool{
+				"instances":        true,
+				"runningInstances": true,
+				"stoppedInstances": true,
+				"totalInstances":   true,
+			}
+
+			for key, value := range blueprint.Status {
+				// Skip instance-related fields
+				if excludeKeys[key] {
+					continue
+				}
+
+				valueStr := fmt.Sprintf("%v", value)
+				if len(valueStr) > 60 {
+					valueStr = valueStr[:57] + "..."
+				}
+
+				row = []interface{}{
+					termenv.String(key).Foreground(theme.ColorBlue),
+					termenv.String(valueStr).Foreground(theme.ColorGray),
+				}
+				t.AddRow(row)
+			}
+
+			// Only render if there are actually rows to display
+			if len(blueprint.Status) > len(excludeKeys) {
+				t.Render()
+			}
+		}
+	}
+}
+
+// printBlueprintHistoryTable displays a list of BlueprintHistory entries in a table
+func printBlueprintHistoryTable(c *client.ColoniesClient, histories []*core.BlueprintHistory) {
+	t, theme := createTable(1)
+
+	var cols = []table.Column{
+		{ID: "generation", Name: "Generation", SortIndex: 1},
+		{ID: "timestamp", Name: "Timestamp", SortIndex: 2},
+		{ID: "changetype", Name: "Change Type", SortIndex: 3},
+		{ID: "changedby", Name: "Changed By", SortIndex: 4},
+	}
+	t.SetCols(cols)
+
+	for _, history := range histories {
+		changedByStr := truncateString(history.ChangedBy, 12)
+
+		// Try to resolve ChangedBy ID to executor or user name
+		executor, err := c.GetExecutorByID(ColonyName, history.ChangedBy, PrvKey)
+		if err == nil && executor != nil {
+			changedByStr = fmt.Sprintf("executor: %s", executor.Name)
+		} else {
+			// Try user lookup
+			user, err := c.GetUserByID(ColonyName, history.ChangedBy, PrvKey)
+			if err == nil && user != nil {
+				changedByStr = fmt.Sprintf("user: %s", user.Name)
+			}
+		}
+
+		row := []interface{}{
+			termenv.String(fmt.Sprintf("%d", history.Generation)).Foreground(theme.ColorCyan),
+			termenv.String(history.Timestamp.Format("2006-01-02 15:04:05")).Foreground(theme.ColorGray),
+			termenv.String(history.ChangeType).Foreground(theme.ColorViolet),
+			termenv.String(changedByStr).Foreground(theme.ColorBlue),
+		}
+		t.AddRow(row)
+	}
+
+	t.Render()
+}
+
+// truncateString truncates a string if it's longer than maxLen
+func truncateString(s string, maxLen int) string {
+	if len(s) > maxLen {
+		return s[:maxLen-3] + "..."
+	}
+	return s
+}
+
+// printBlueprintHistoryDetail displays detailed information for a specific blueprint history entry
+func printBlueprintHistoryDetail(history *core.BlueprintHistory) {
+	t, theme := createTable(0)
+	t.SetTitle(fmt.Sprintf("Blueprint History - Generation %d", history.Generation))
+
+	row := []interface{}{
+		termenv.String("Blueprint ID").Foreground(theme.ColorCyan),
+		termenv.String(history.BlueprintID).Foreground(theme.ColorGray),
+	}
+	t.AddRow(row)
+
+	row = []interface{}{
+		termenv.String("Kind").Foreground(theme.ColorCyan),
+		termenv.String(history.Kind).Foreground(theme.ColorGray),
+	}
+	t.AddRow(row)
+
+	row = []interface{}{
+		termenv.String("Name").Foreground(theme.ColorCyan),
+		termenv.String(history.Name).Foreground(theme.ColorGray),
+	}
+	t.AddRow(row)
+
+	row = []interface{}{
+		termenv.String("Namespace").Foreground(theme.ColorCyan),
+		termenv.String(history.Namespace).Foreground(theme.ColorGray),
+	}
+	t.AddRow(row)
+
+	row = []interface{}{
+		termenv.String("Generation").Foreground(theme.ColorCyan),
+		termenv.String(fmt.Sprintf("%d", history.Generation)).Foreground(theme.ColorGray),
+	}
+	t.AddRow(row)
+
+	row = []interface{}{
+		termenv.String("Timestamp").Foreground(theme.ColorCyan),
+		termenv.String(history.Timestamp.Format("2006-01-02 15:04:05")).Foreground(theme.ColorGray),
+	}
+	t.AddRow(row)
+
+	row = []interface{}{
+		termenv.String("Change Type").Foreground(theme.ColorCyan),
+		termenv.String(history.ChangeType).Foreground(theme.ColorGray),
+	}
+	t.AddRow(row)
+
+	row = []interface{}{
+		termenv.String("Changed By").Foreground(theme.ColorCyan),
+		termenv.String(history.ChangedBy).Foreground(theme.ColorGray),
+	}
+	t.AddRow(row)
+
+	t.Render()
+
+	// Spec section - render with same logic as blueprint view
+	if len(history.Spec) > 0 {
+		t, theme = createTable(0)
+		t.SetTitle("Spec")
+
+		// Complex keys that need special rendering
+		complexKeys := map[string]bool{
+			"env":       true,
+			"volumes":   true,
+			"ports":     true,
+			"instances": true, // DockerDeployment
+		}
+
+		// Render simple fields first
+		for key, value := range history.Spec {
+			if complexKeys[key] {
+				continue
+			}
+
+			valueStr := fmt.Sprintf("%v", value)
+			row = []interface{}{
+				termenv.String(key).Foreground(theme.ColorMagenta),
+				termenv.String(valueStr).Foreground(theme.ColorGray),
+			}
+			t.AddRow(row)
+		}
+
+		t.Render()
+
+		// Render environment variables if present
+		if env, ok := history.Spec["env"].(map[string]interface{}); ok && len(env) > 0 {
+			t, theme = createTable(0)
+			t.SetTitle("Environment Variables")
+
+			var envCols = []table.Column{
+				{ID: "key", Name: "Key", SortIndex: 1},
+				{ID: "value", Name: "Value", SortIndex: 2},
+			}
+			t.SetCols(envCols)
+
+			for key, value := range env {
+				row = []interface{}{
+					termenv.String(key).Foreground(theme.ColorCyan),
+					termenv.String(fmt.Sprintf("%v", value)).Foreground(theme.ColorGray),
+				}
+				t.AddRow(row)
+			}
+
+			t.Render()
+		}
+
+		// Render volumes if present
+		if volumes, ok := history.Spec["volumes"].([]interface{}); ok && len(volumes) > 0 {
+			t, theme = createTable(0)
+			t.SetTitle("Volumes")
+
+			var volCols = []table.Column{
+				{ID: "host", Name: "Host Path", SortIndex: 1},
+				{ID: "container", Name: "Container Path", SortIndex: 2},
+				{ID: "readonly", Name: "Read Only", SortIndex: 3},
+			}
+			t.SetCols(volCols)
+
+			for _, vol := range volumes {
+				if volMap, ok := vol.(map[string]interface{}); ok {
+					host := fmt.Sprintf("%v", volMap["host"])
+					container := fmt.Sprintf("%v", volMap["container"])
+					readonly := "false"
+					if ro, ok := volMap["readonly"]; ok {
+						readonly = fmt.Sprintf("%v", ro)
+					}
+
+					row = []interface{}{
+						termenv.String(host).Foreground(theme.ColorYellow),
+						termenv.String(container).Foreground(theme.ColorCyan),
+						termenv.String(readonly).Foreground(theme.ColorGray),
+					}
+					t.AddRow(row)
+				}
+			}
+
+			t.Render()
+		}
+
+		// Render ports if present
+		if ports, ok := history.Spec["ports"].([]interface{}); ok && len(ports) > 0 {
+			t, theme = createTable(0)
+			t.SetTitle("Ports")
+
+			var portCols = []table.Column{
+				{ID: "container", Name: "Container", SortIndex: 1},
+				{ID: "host", Name: "Host", SortIndex: 2},
+				{ID: "protocol", Name: "Protocol", SortIndex: 3},
+			}
+			t.SetCols(portCols)
+
+			for _, port := range ports {
+				if portMap, ok := port.(map[string]interface{}); ok {
+					container := fmt.Sprintf("%v", portMap["container"])
+					host := fmt.Sprintf("%v", portMap["host"])
+					protocol := "tcp"
+					if p, ok := portMap["protocol"]; ok {
+						protocol = fmt.Sprintf("%v", p)
+					}
+
+					row = []interface{}{
+						termenv.String(container).Foreground(theme.ColorCyan),
+						termenv.String(host).Foreground(theme.ColorYellow),
+						termenv.String(protocol).Foreground(theme.ColorGray),
+					}
+					t.AddRow(row)
+				}
+			}
+
+			t.Render()
+		}
+	}
+
+	// Status section - render with same logic as blueprint view
+	if len(history.Status) > 0 {
+		// For ExecutorDeployment, render deployment status
+		if history.Kind == "ExecutorDeployment" {
+			t, theme = createTable(0)
+			t.SetTitle("Deployment Status")
+
+			if running, ok := history.Status["runningInstances"]; ok {
+				row = []interface{}{
+					termenv.String("Running Instances").Foreground(theme.ColorBlue),
+					termenv.String(fmt.Sprintf("%v", running)).Foreground(theme.ColorGreen),
+				}
+				t.AddRow(row)
+			}
+
+			if total, ok := history.Status["totalInstances"]; ok {
+				row = []interface{}{
+					termenv.String("Total Instances").Foreground(theme.ColorBlue),
+					termenv.String(fmt.Sprintf("%v", total)).Foreground(theme.ColorGray),
+				}
+				t.AddRow(row)
+			}
+
+			if lastUpdated, ok := history.Status["lastUpdated"]; ok {
+				row = []interface{}{
+					termenv.String("Last Updated").Foreground(theme.ColorBlue),
+					termenv.String(fmt.Sprintf("%v", lastUpdated)).Foreground(theme.ColorGray),
+				}
+				t.AddRow(row)
+			}
+
+			t.Render()
+
+			// Display instances table
+			if instances, ok := history.Status["instances"].([]interface{}); ok && len(instances) > 0 {
+				t, theme = createTable(0)
+				t.SetTitle("Instances")
+
+				var instanceCols = []table.Column{
+					{ID: "name", Name: "Name", SortIndex: 1},
+					{ID: "id", Name: "ID", SortIndex: 2},
+					{ID: "type", Name: "Type", SortIndex: 3},
+					{ID: "state", Name: "State", SortIndex: 4},
+					{ID: "image", Name: "Image", SortIndex: 5},
+					{ID: "lastcheck", Name: "Last Check", SortIndex: 6},
+				}
+				t.SetCols(instanceCols)
+
+				for _, instance := range instances {
+					if instanceMap, ok := instance.(map[string]interface{}); ok {
+						name := fmt.Sprintf("%v", instanceMap["name"])
+						id := fmt.Sprintf("%v", instanceMap["id"])
+						instanceType := fmt.Sprintf("%v", instanceMap["type"])
+						state := fmt.Sprintf("%v", instanceMap["state"])
+						image := fmt.Sprintf("%v", instanceMap["image"])
+						lastCheck := fmt.Sprintf("%v", instanceMap["lastCheck"])
+
+						// Capitalize state and type for display
+						if state != "" && state != "<nil>" {
+							state = strings.Title(strings.ToLower(state))
+						}
+						if instanceType != "" && instanceType != "<nil>" {
+							instanceType = strings.Title(strings.ToLower(instanceType))
+						}
+
+						// Parse and format lastCheck if it's a valid timestamp
+						if lastCheck != "" && lastCheck != "<nil>" {
+							if t, err := time.Parse(time.RFC3339, lastCheck); err == nil {
+								lastCheck = t.Format("2006-01-02 15:04:05")
+							}
+						} else {
+							lastCheck = "-"
+						}
+
+						// Color-code state
+						stateColor := theme.ColorGray
+						if strings.ToLower(state) == "running" {
+							stateColor = theme.ColorGreen
+						} else if strings.ToLower(state) == "stopped" {
+							stateColor = theme.ColorRed
+						}
+
+						row = []interface{}{
+							termenv.String(name).Foreground(theme.ColorCyan),
+							termenv.String(id).Foreground(theme.ColorGray),
+							termenv.String(instanceType).Foreground(theme.ColorYellow),
+							termenv.String(state).Foreground(stateColor),
+							termenv.String(image).Foreground(theme.ColorMagenta),
+							termenv.String(lastCheck).Foreground(theme.ColorGray),
+						}
+						t.AddRow(row)
+					}
+				}
+
+				t.Render()
+			}
+		} else {
+			// Generic status display
+			t, theme = createTable(0)
+			t.SetTitle("Status")
+
+			for key, value := range history.Status {
+				valueStr := fmt.Sprintf("%v", value)
+				if len(valueStr) > 60 {
+					valueStr = valueStr[:57] + "..."
+				}
+
+				row = []interface{}{
+					termenv.String(key).Foreground(theme.ColorBlue),
+					termenv.String(valueStr).Foreground(theme.ColorGray),
+				}
+				t.AddRow(row)
+			}
+
+			t.Render()
+		}
+	}
+}

@@ -110,6 +110,7 @@ type Server interface {
 	ExecutorDB() database.ExecutorDatabase
 	UserDB() database.UserDatabase
 	ProcessDB() database.ProcessDatabase
+	BlueprintDB() database.BlueprintDatabase
 	ProcessController() Controller
 	ExclusiveAssign() bool
 	TLS() bool
@@ -786,6 +787,39 @@ func (h *Handlers) HandleCloseSuccessful(c backends.Context, recoveredID string,
 		log.WithFields(log.Fields{"Error": err}).Debug("Failed to close process as successful")
 		h.server.HandleHTTPError(c, err, http.StatusInternalServerError)
 		return
+	}
+
+	// If this was a reconciliation process, update the blueprint status from the output
+	if process.FunctionSpec.Reconciliation != nil {
+		var blueprintID string
+		if process.FunctionSpec.Reconciliation.New != nil {
+			blueprintID = process.FunctionSpec.Reconciliation.New.ID
+		} else if process.FunctionSpec.Reconciliation.Old != nil {
+			blueprintID = process.FunctionSpec.Reconciliation.Old.ID
+		}
+
+		if blueprintID != "" && len(msg.Output) > 0 {
+			// The first output entry should contain the status map
+			if statusMap, ok := msg.Output[0].(map[string]interface{}); ok {
+				if status, ok := statusMap["status"]; ok {
+					if statusData, ok := status.(map[string]interface{}); ok {
+						err = h.server.BlueprintDB().UpdateBlueprintStatus(blueprintID, statusData)
+						if err != nil {
+							log.WithFields(log.Fields{
+								"Error":     err,
+								"BlueprintID": blueprintID,
+								"ProcessID": process.ID,
+							}).Warn("Failed to update blueprint status from reconciliation output")
+						} else {
+							log.WithFields(log.Fields{
+								"BlueprintID": blueprintID,
+								"ProcessID": process.ID,
+							}).Debug("Updated blueprint status from reconciliation output")
+						}
+					}
+				}
+			}
+		}
 	}
 
 	log.WithFields(log.Fields{"ProcessId": process.ID}).Debug("Close successful")

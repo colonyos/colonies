@@ -265,10 +265,10 @@ var file_colonies_proto_goTypes = []any{
 	(*HealthResponse)(nil), // 3: colonies.HealthResponse
 }
 var file_colonies_proto_depIdxs = []int32{
-	0, // 0: colonies.ColoniesService.SendMessage:input_type -> colonies.RPCRequest
-	2, // 1: colonies.ColoniesService.CheckHealth:input_type -> colonies.HealthRequest
-	1, // 2: colonies.ColoniesService.SendMessage:output_type -> colonies.RPCResponse
-	3, // 3: colonies.ColoniesService.CheckHealth:output_type -> colonies.HealthResponse
+	0, // 0: colonies.ColoniesBlueprint.SendMessage:input_type -> colonies.RPCRequest
+	2, // 1: colonies.ColoniesBlueprint.CheckHealth:input_type -> colonies.HealthRequest
+	1, // 2: colonies.ColoniesBlueprint.SendMessage:output_type -> colonies.RPCResponse
+	3, // 3: colonies.ColoniesBlueprint.CheckHealth:output_type -> colonies.HealthResponse
 	2, // [2:4] is the sub-list for method output_type
 	0, // [0:2] is the sub-list for method input_type
 	0, // [0:0] is the sub-list for extension type_name

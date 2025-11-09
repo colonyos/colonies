@@ -1,0 +1,70 @@
+{
+  "metadata": {
+    "name": "executordeployments.compute.colonies.io"
+  },
+  "spec": {
+    "group": "compute.colonies.io",
+    "version": "v1",
+    "names": {
+      "kind": "ExecutorDeployment",
+      "plural": "executordeployments",
+      "singular": "executordeployment"
+    },
+    "scope": "Namespaced",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "image": {
+          "type": "string",
+          "description": "Container image to deploy"
+        },
+        "replicas": {
+          "type": "number",
+          "description": "Number of executor replicas to run",
+          "default": 1
+        },
+        "executorType": {
+          "type": "string",
+          "description": "Type of executor to deploy"
+        },
+        "cpu": {
+          "type": "string",
+          "description": "CPU resource request (e.g., '500m', '1')"
+        },
+        "memory": {
+          "type": "string",
+          "description": "Memory resource request (e.g., '512Mi', '1Gi')"
+        },
+        "env": {
+          "type": "object",
+          "description": "Environment variables",
+          "properties": {}
+        },
+        "ports": {
+          "type": "array",
+          "description": "Ports to expose",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "port": {
+                "type": "number"
+              },
+              "protocol": {
+                "type": "string",
+                "enum": ["TCP", "UDP"]
+              }
+            }
+          }
+        }
+      },
+      "required": ["image", "executorType"]
+    },
+    "handler": {
+      "executorType": "docker-executor-reconciler",
+      "functionName": "reconcile"
+    }
+  }
+}

@@ -2,32 +2,38 @@ package database
 
 import "github.com/colonyos/colonies/pkg/core"
 
-type ResourceDatabase interface {
-	// ResourceDefinition methods
-	AddResourceDefinition(rd *core.ResourceDefinition) error
-	GetResourceDefinitionByID(id string) (*core.ResourceDefinition, error)
-	GetResourceDefinitionByName(namespace, name string) (*core.ResourceDefinition, error)
-	GetResourceDefinitions() ([]*core.ResourceDefinition, error)
-	GetResourceDefinitionsByNamespace(namespace string) ([]*core.ResourceDefinition, error)
-	GetResourceDefinitionsByGroup(group string) ([]*core.ResourceDefinition, error)
-	UpdateResourceDefinition(rd *core.ResourceDefinition) error
-	RemoveResourceDefinitionByID(id string) error
-	RemoveResourceDefinitionByName(namespace, name string) error
-	CountResourceDefinitions() (int, error)
+type BlueprintDatabase interface {
+	// BlueprintDefinition methods
+	AddBlueprintDefinition(sd *core.BlueprintDefinition) error
+	GetBlueprintDefinitionByID(id string) (*core.BlueprintDefinition, error)
+	GetBlueprintDefinitionByName(namespace, name string) (*core.BlueprintDefinition, error)
+	GetBlueprintDefinitions() ([]*core.BlueprintDefinition, error)
+	GetBlueprintDefinitionsByNamespace(namespace string) ([]*core.BlueprintDefinition, error)
+	GetBlueprintDefinitionsByGroup(group string) ([]*core.BlueprintDefinition, error)
+	UpdateBlueprintDefinition(sd *core.BlueprintDefinition) error
+	RemoveBlueprintDefinitionByID(id string) error
+	RemoveBlueprintDefinitionByName(namespace, name string) error
+	CountBlueprintDefinitions() (int, error)
 
-	// Resource methods
-	AddResource(resource *core.Resource) error
-	GetResourceByID(id string) (*core.Resource, error)
-	GetResourceByName(namespace, name string) (*core.Resource, error)
-	GetResources() ([]*core.Resource, error)
-	GetResourcesByNamespace(namespace string) ([]*core.Resource, error)
-	GetResourcesByKind(kind string) ([]*core.Resource, error)
-	GetResourcesByNamespaceAndKind(namespace, kind string) ([]*core.Resource, error)
-	UpdateResource(resource *core.Resource) error
-	UpdateResourceStatus(id string, status map[string]interface{}) error
-	RemoveResourceByID(id string) error
-	RemoveResourceByName(namespace, name string) error
-	RemoveResourcesByNamespace(namespace string) error
-	CountResources() (int, error)
-	CountResourcesByNamespace(namespace string) (int, error)
+	// Blueprint methods
+	AddBlueprint(blueprint *core.Blueprint) error
+	GetBlueprintByID(id string) (*core.Blueprint, error)
+	GetBlueprintByName(namespace, name string) (*core.Blueprint, error)
+	GetBlueprints() ([]*core.Blueprint, error)
+	GetBlueprintsByNamespace(namespace string) ([]*core.Blueprint, error)
+	GetBlueprintsByKind(kind string) ([]*core.Blueprint, error)
+	GetBlueprintsByNamespaceAndKind(namespace, kind string) ([]*core.Blueprint, error)
+	UpdateBlueprint(blueprint *core.Blueprint) error
+	UpdateBlueprintStatus(id string, status map[string]interface{}) error
+	RemoveBlueprintByID(id string) error
+	RemoveBlueprintByName(namespace, name string) error
+	RemoveBlueprintsByNamespace(namespace string) error
+	CountBlueprints() (int, error)
+	CountBlueprintsByNamespace(namespace string) (int, error)
+
+	// BlueprintHistory methods
+	AddBlueprintHistory(history *core.BlueprintHistory) error
+	GetBlueprintHistory(blueprintID string, limit int) ([]*core.BlueprintHistory, error)
+	GetBlueprintHistoryByGeneration(blueprintID string, generation int64) (*core.BlueprintHistory, error)
+	RemoveBlueprintHistory(blueprintID string) error
 }

@@ -26,6 +26,7 @@ import (
 	"github.com/colonyos/colonies/pkg/server/handlers/colony"
 	cronhandlers "github.com/colonyos/colonies/pkg/server/handlers/cron"
 	"github.com/colonyos/colonies/pkg/server/handlers/executor"
+	"github.com/colonyos/colonies/pkg/server/handlers/node"
 	filehandlers "github.com/colonyos/colonies/pkg/server/handlers/file"
 	functionhandlers "github.com/colonyos/colonies/pkg/server/handlers/function"
 	generatorhandlers "github.com/colonyos/colonies/pkg/server/handlers/generator"
@@ -33,7 +34,7 @@ import (
 	"github.com/colonyos/colonies/pkg/server/handlers/process"
 	"github.com/colonyos/colonies/pkg/server/handlers/processgraph"
 	realtimehandlers "github.com/colonyos/colonies/pkg/server/handlers/realtime"
-	resourcehandlers "github.com/colonyos/colonies/pkg/server/handlers/resource"
+	blueprinthandlers "github.com/colonyos/colonies/pkg/server/handlers/blueprint"
 	securityhandlers "github.com/colonyos/colonies/pkg/server/handlers/security"
 	serverhandlers "github.com/colonyos/colonies/pkg/server/handlers/server"
 	snapshothandlers "github.com/colonyos/colonies/pkg/server/handlers/snapshot"
@@ -106,7 +107,8 @@ type Server struct {
 	logDB                   database.LogDatabase
 	fileDB                  database.FileDatabase
 	snapshotDB              database.SnapshotDatabase
-	resourceDB              database.ResourceDatabase
+	resourceDB              database.BlueprintDatabase
+	nodeDB                  database.NodeDatabase
 	securityDB              database.SecurityDatabase
 	exclusiveAssign         bool
 	allowExecutorReregister bool
@@ -120,6 +122,7 @@ type Server struct {
 	userHandlers           *user.Handlers
 	colonyHandlers         *colony.Handlers
 	executorHandlers       *executor.Handlers
+	nodeHandlers           *node.Handlers
 	processHandlers        *process.Handlers
 	processgraphHandlers   *processgraph.Handlers
 	serverHandlers         *serverhandlers.Handlers
@@ -129,7 +132,7 @@ type Server struct {
 	cronHandlers           *cronhandlers.Handlers
 	functionHandlers       *functionhandlers.Handlers
 	generatorHandlers      *generatorhandlers.Handlers
-	resourceHandlers       *resourcehandlers.Handlers
+	blueprintHandlers       *blueprinthandlers.Handlers
 	securityHandlers       *securityhandlers.Handlers
 	fileHandlers           *filehandlers.Handlers
 	realtimeHandlers       *realtimehandlers.Handlers
@@ -374,6 +377,7 @@ func CreateServerWithBackend(db database.Database,
 	server.fileDB = db
 	server.snapshotDB = db
 	server.resourceDB = db
+	server.nodeDB = db
 	server.securityDB = db
 
 	server.controller = controllers.CreateColoniesController(db, thisNode, clusterConfig, etcdDataPath, generatorPeriod, cronPeriod, retention, retentionPolicy, retentionPeriod)
@@ -395,6 +399,7 @@ func CreateServerWithBackend(db database.Database,
 	server.userHandlers = user.NewHandlers(server.serverAdapter)
 	server.colonyHandlers = colony.NewHandlers(server.serverAdapter)
 	server.executorHandlers = executor.NewHandlers(server.serverAdapter)
+	server.nodeHandlers = node.NewHandlers(server.serverAdapter)
 	server.processHandlers = process.NewHandlers(server.serverAdapter)
 	server.processgraphHandlers = processgraph.NewHandlers(server.serverAdapter.ProcessgraphServer())
 	server.serverHandlers = serverhandlers.NewHandlers(server.serverAdapter.ServerServer())
@@ -405,7 +410,7 @@ func CreateServerWithBackend(db database.Database,
 	server.fileHandlers = filehandlers.NewHandlers(server.serverAdapter)
 	server.functionHandlers = functionhandlers.NewHandlers(server.serverAdapter)
 	server.generatorHandlers = generatorhandlers.NewHandlers(server.serverAdapter)
-	server.resourceHandlers = resourcehandlers.NewHandlers(server.serverAdapter)
+	server.blueprintHandlers = blueprinthandlers.NewHandlers(server.serverAdapter)
 	server.securityHandlers = securityhandlers.NewHandlers(server.serverAdapter)
 	server.realtimeHandlers = realtimehandlers.NewHandlers(server.serverAdapter)
 
@@ -497,6 +502,11 @@ func (server *Server) registerHandlers() {
 		log.WithFields(log.Fields{"Error": err}).Fatal("Failed to register executor handlers")
 	}
 
+	// Register node handlers
+	if err := server.nodeHandlers.RegisterHandlers(server.handlerRegistry); err != nil {
+		log.WithFields(log.Fields{"Error": err}).Fatal("Failed to register node handlers")
+	}
+
 	// Register function handlers
 	if err := server.functionHandlers.RegisterHandlers(server.handlerRegistry); err != nil {
 		log.WithFields(log.Fields{"Error": err}).Fatal("Failed to register function handlers")
@@ -542,9 +552,9 @@ func (server *Server) registerHandlers() {
 		log.WithFields(log.Fields{"Error": err}).Fatal("Failed to register snapshot handlers")
 	}
 
-	// Register resource handlers
-	if err := server.resourceHandlers.RegisterHandlers(server.handlerRegistry); err != nil {
-		log.WithFields(log.Fields{"Error": err}).Fatal("Failed to register resource handlers")
+	// Register blueprint handlers
+	if err := server.blueprintHandlers.RegisterHandlers(server.handlerRegistry); err != nil {
+		log.WithFields(log.Fields{"Error": err}).Fatal("Failed to register blueprint handlers")
 	}
 
 	// Register security handlers
@@ -605,7 +615,7 @@ func (server *Server) setupLibP2P(port int, thisNode cluster.Node, config *LibP2
 		libp2p.EnableNATService(),   // Enable UPnP/NAT-PMP for automatic port mapping
 		libp2p.NATPortMap(),         // Attempt to open ports via NAT
 		libp2p.EnableAutoNATv2(),    // Enable AutoNAT v2 for automatic external address detection
-		libp2p.EnableRelay(),        // Enable relay service (act as relay for others)
+		libp2p.EnableRelay(),        // Enable relay blueprint (act as relay for others)
 		libp2p.EnableHolePunching(), // Enable DCUtR hole punching for NAT traversal
 	}
 

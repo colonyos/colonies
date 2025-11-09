@@ -25,6 +25,7 @@ type Server interface {
 	SendEmptyHTTPReply(c backends.Context, payloadType string)
 	Validator() security.Validator
 	ExecutorDB() database.ExecutorDatabase
+	NodeDB() database.NodeDatabase
 	ExecutorController() Controller
 	AllowExecutorReregister() bool
 }
@@ -48,6 +49,9 @@ func (h *Handlers) RegisterHandlers(handlerRegistry *registry.HandlerRegistry) e
 		return err
 	}
 	if err := handlerRegistry.Register(rpc.GetExecutorPayloadType, h.HandleGetExecutor); err != nil {
+		return err
+	}
+	if err := handlerRegistry.Register(rpc.GetExecutorByIDPayloadType, h.HandleGetExecutorByID); err != nil {
 		return err
 	}
 	if err := handlerRegistry.Register(rpc.ApproveExecutorPayloadType, h.HandleApproveExecutor); err != nil {
@@ -86,6 +90,62 @@ func (h *Handlers) HandleAddExecutor(c backends.Context, recoveredID string, pay
 	err = h.server.Validator().RequireColonyOwner(recoveredID, msg.Executor.ColonyName)
 	if h.server.HandleHTTPError(c, err, http.StatusForbidden) {
 		return
+	}
+
+	// Handle node registration BEFORE adding executor, so we can set the NodeID
+	if msg.Executor.NodeMetadata != nil {
+		nodeName := msg.Executor.NodeMetadata.Hostname
+		if nodeName != "" {
+			// Try to get existing node
+			node, err := h.server.NodeDB().GetNodeByName(msg.Executor.ColonyName, nodeName)
+			if err != nil && err.Error() != "sql: no rows in result set" {
+				log.WithFields(log.Fields{
+					"Error": err,
+					"Node":  nodeName,
+				}).Warn("Failed to query node during executor registration")
+			}
+
+			if node == nil {
+				// Create new node
+				node = core.CreateNode(nodeName, msg.Executor.ColonyName, msg.Executor.NodeMetadata.Location)
+				node.UpdateFromMetadata(msg.Executor.NodeMetadata)
+				node.TouchLastSeen()
+
+				err = h.server.NodeDB().AddNode(node)
+				if err != nil {
+					log.WithFields(log.Fields{
+						"Error": err,
+						"Node":  nodeName,
+					}).Warn("Failed to create node during executor registration")
+				} else {
+					msg.Executor.NodeID = node.ID
+					log.WithFields(log.Fields{
+						"NodeID":   node.ID,
+						"NodeName": node.Name,
+						"Executor": msg.Executor.Name,
+					}).Debug("Created node for executor")
+				}
+			} else {
+				// Update existing node
+				node.UpdateFromMetadata(msg.Executor.NodeMetadata)
+				node.TouchLastSeen()
+
+				err = h.server.NodeDB().UpdateNode(node)
+				if err != nil {
+					log.WithFields(log.Fields{
+						"Error": err,
+						"Node":  nodeName,
+					}).Warn("Failed to update node during executor registration")
+				} else {
+					msg.Executor.NodeID = node.ID
+					log.WithFields(log.Fields{
+						"NodeID":   node.ID,
+						"NodeName": node.Name,
+						"Executor": msg.Executor.Name,
+					}).Debug("Updated node for executor")
+				}
+			}
+		}
 	}
 
 	addedExecutor, err := h.server.ExecutorController().AddExecutor(msg.Executor, h.server.AllowExecutorReregister())
@@ -179,6 +239,43 @@ func (h *Handlers) HandleGetExecutor(c backends.Context, recoveredID string, pay
 	}
 
 	log.WithFields(log.Fields{"ExecutorId": executor.ID}).Debug("Getting executor")
+
+	h.server.SendHTTPReply(c, payloadType, jsonString)
+}
+
+func (h *Handlers) HandleGetExecutorByID(c backends.Context, recoveredID string, payloadType string, jsonString string) {
+	msg, err := rpc.CreateGetExecutorByIDMsgFromJSON(jsonString)
+	if err != nil {
+		if h.server.HandleHTTPError(c, errors.New("Failed to get executor by ID, invalid JSON"), http.StatusBadRequest) {
+			return
+		}
+	}
+
+	if msg.MsgType != payloadType {
+		h.server.HandleHTTPError(c, errors.New("Failed to get executor by ID, msg.MsgType does not match payloadType"), http.StatusBadRequest)
+		return
+	}
+
+	executor, err := h.server.ExecutorDB().GetExecutorByID(msg.ExecutorID)
+	if h.server.HandleHTTPError(c, err, http.StatusBadRequest) {
+		return
+	}
+	if executor == nil {
+		h.server.HandleHTTPError(c, errors.New("Failed to get executor by ID, executor is nil"), http.StatusNotFound)
+		return
+	}
+
+	err = h.server.Validator().RequireMembership(recoveredID, executor.ColonyName, true)
+	if h.server.HandleHTTPError(c, err, http.StatusForbidden) {
+		return
+	}
+
+	jsonString, err = executor.ToJSON()
+	if h.server.HandleHTTPError(c, err, http.StatusInternalServerError) {
+		return
+	}
+
+	log.WithFields(log.Fields{"ExecutorId": executor.ID}).Debug("Getting executor by ID")
 
 	h.server.SendHTTPReply(c, payloadType, jsonString)
 }

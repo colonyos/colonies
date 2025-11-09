@@ -66,7 +66,7 @@ type FunctionSpec struct {
 	Label          string                 `json:"label"`
 	Filesystem     Filesystem             `json:"fs"`
 	Env            map[string]string      `json:"env"`
-	Resource       *Resource              `json:"resource,omitempty"`
+	Blueprint       *Blueprint              `json:"blueprint,omitempty"`
 	Reconciliation *Reconciliation        `json:"reconciliation,omitempty"`
 }
 

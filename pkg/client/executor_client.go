@@ -64,6 +64,21 @@ func (client *ColoniesClient) GetExecutor(colonyName string, executorName string
 	return core.ConvertJSONToExecutor(respBodyString)
 }
 
+func (client *ColoniesClient) GetExecutorByID(colonyName string, executorID string, prvKey string) (*core.Executor, error) {
+	msg := rpc.CreateGetExecutorByIDMsg(colonyName, executorID)
+	jsonString, err := msg.ToJSON()
+	if err != nil {
+		return nil, err
+	}
+
+	respBodyString, err := client.sendMessage(rpc.GetExecutorByIDPayloadType, jsonString, prvKey, false, context.TODO())
+	if err != nil {
+		return nil, err
+	}
+
+	return core.ConvertJSONToExecutor(respBodyString)
+}
+
 func (client *ColoniesClient) ApproveExecutor(colonyName string, executorName string, prvKey string) error {
 	msg := rpc.CreateApproveExecutorMsg(colonyName, executorName)
 	jsonString, err := msg.ToJSON()

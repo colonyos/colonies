@@ -56,7 +56,10 @@ var NewColonyName string
 var TargetExecutorID string
 var TargetExecutorType string
 var TargetExecutorName string
+var TargetLocation string
 var WorkflowID string
+var NodeName string
+var Location string
 var ColonyPrvKey string
 var ColonyName string
 var ProcessID string
@@ -73,8 +76,8 @@ var GeneratorTrigger int
 var GeneratorTimeout int
 var GeneratorCheckerPeriod int
 var FuncName string
-var ResourceDefinitionName string
-var ResourceName string
+var BlueprintDefinitionName string
+var BlueprintName string
 var Kind string
 var Arg string
 var Args []string
@@ -146,6 +149,7 @@ var SecondsBack int
 var Snapshot bool
 var IDPath string
 var PrvKeyPath string
+var Generation int
 
 func init() {
 	rootCmd.PersistentFlags().BoolVarP(&Verbose, "verbose", "v", false, "Verbose (debugging)")

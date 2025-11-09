@@ -435,7 +435,7 @@ func (l *LibP2PClientBackend) CheckHealth() error {
 	return nil
 }
 
-// Close closes the libp2p backend and cleans up resources
+// Close closes the libp2p backend and cleans up blueprints
 func (l *LibP2PClientBackend) Close() error {
 	l.cancel()
 	

@@ -51,7 +51,7 @@ services:
       "
 
   colonies-server:
-    image: colonyos/colonies:v1.9.0
+    image: colonyos/colonies:latest
     depends_on:
       - timescaledb
     environment:
@@ -97,7 +97,7 @@ services:
     command: sh -c "colonies server start --initdb --port ${COLONIES_SERVER_HTTP_PORT} --relayport 25100 --etcdname server1 --etcdhost colonies-server --etcdclientport 23100 --etcdpeerport 24100 --initial-cluster server1=colonies-server:24100:25100:${COLONIES_SERVER_HTTP_PORT} --etcddatadir /var/colonies/etcd --insecure"
 
   colonies-setup:
-    image: colonyos/colonies:latest
+    image: colonyos/colonies:v1.9.1
     depends_on:
       - colonies-server
     environment:
@@ -128,6 +128,8 @@ services:
       COLONIES_COLONY_PRVKEY: ${COLONIES_COLONY_PRVKEY}
       COLONIES_ID: ${COLONIES_ID}
       TZ: ${TZ}
+    volumes:
+      - ./deployment/catalog:/catalog:ro
     entrypoint: >
       /bin/sh -c "
       echo 'Executing: colonies colony add --name ${COLONIES_COLONY_NAME} --colonyid ${COLONIES_COLONY_ID}';
@@ -135,17 +137,22 @@ services:
       colonies colony add --name ${COLONIES_COLONY_NAME} --colonyid ${COLONIES_COLONY_ID};
       echo 'Executing: colonies user add --name=myuser --email= --phone= --userid=${COLONIES_ID}';
       colonies user add --name='myuser' --email='' --phone='' --userid=${COLONIES_ID};
+      echo 'Adding blueprint definition...';
+      colonies blueprint definition add --spec /catalog/executor-deployment-definition.json;
+      echo 'Waiting for docker-reconciler to be ready...';
+      sleep 5;
+      echo 'Adding docker-executor deployment with 1 replica...';
+      colonies blueprint add --spec /catalog/docker-executor-deployment.json;
       "
 
-  docker-executor:
-    image: colonyos/dockerexecutor:v1.0.4
-    privileged: true
+  docker-reconciler:
+    image: colonyos/docker-reconciler:v1.0.2
+    container_name: docker-reconciler
+    restart: unless-stopped
+    depends_on:
+      - colonies-server
+      - colonies-setup
     environment:
-      LANG: ${LANG:-en_US.UTF-8}
-      LANGUAGE: ${LANGUAGE:-en_US.UTF-8}
-      LC_ALL: ${LC_ALL:-en_US.UTF-8}
-      LC_CTYPE: ${LC_CTYPE:-UTF-8}
-      TZ: ${TZ:-Europe/Stockholm}
       COLONIES_CLIENT_BACKENDS: ${COLONIES_CLIENT_BACKENDS}
       # HTTP client config (inside docker, always use colonies-server as host)
       COLONIES_CLIENT_HTTP_HOST: "colonies-server"
@@ -166,43 +173,29 @@ services:
       # Auth config
       COLONIES_COLONY_NAME: ${COLONIES_COLONY_NAME}
       COLONIES_COLONY_PRVKEY: ${COLONIES_COLONY_PRVKEY}
-      COLONIES_PRVKEY: ${COLONIES_PRVKEY}
-      COLONIES_EXECUTOR_NAME: ${COLONIES_EXECUTOR_NAME}
-      AWS_S3_TLS: ${AWS_S3_TLS}
-      AWS_S3_SKIPVERIFY: ${AWS_S3_SKIPVERIFY}
-      AWS_S3_ENDPOINT: minio:9000 
-      AWS_S3_ACCESSKEY: ${AWS_S3_ACCESSKEY}
-      AWS_S3_SECRETKEY: ${AWS_S3_SECRETKEY}
-      AWS_S3_REGION_KEY: ${AWS_S3_REGION_KEY}
-      AWS_S3_BUCKET: ${AWS_S3_BUCKET:-hpc}
-      EXECUTOR_ADD_DEBUG_LOGS: "false"
-      EXECUTOR_TYPE: "container-executor"
-      EXECUTOR_GPU: ${EXECUTOR_GPU}
-      EXECUTOR_SW_NAME: "colonyos/dockerexecutor:v1.0.1"
-      EXECUTOR_SW_TYPE: "docker"
-      EXECUTOR_SW_VERSION: "colonyos/dockerexecutor:v1.0.1"
-      EXECUTOR_HW_CPU: ""
-      EXECUTOR_HW_MODEL: "n/a"
-      EXECUTOR_HW_NODES: "1"
-      EXECUTOR_HW_MEM: ""
-      EXECUTOR_HW_STORAGE: ""
-      EXECUTOR_HW_GPU_COUNT: "0"
-      EXECUTOR_HW_GPU_MEM: ""
-      EXECUTOR_HW_GPU_NODES_COUNT: "0"
-      EXECUTOR_HW_GPU_NAME: ""
-      EXECUTOR_LOCATION_LONG: ""
-      EXECUTOR_LOCATION_LAT: ""
-      EXECUTOR_LOCATION_DESC: "n/a"
-      EXECUTOR_FS_DIR: ${EXECUTOR_FS_DIR}
+      COLONIES_EXECUTOR_TYPE: "docker-reconciler"
+      COLONIES_EXECUTOR_NAME: "local-docker-node-reconciler"
+      COLONIES_INSECURE: "true"
+      # Node config - Fixed node name to prevent new nodes on restart
+      COLONIES_NODE_NAME: "local-docker-node"
+      COLONIES_NODE_LOCATION: "local"
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-      - ${EXECUTOR_FS_DIR}:${EXECUTOR_FS_DIR}
-    command: >
+      - /var/run/docker.sock:/var/run/docker.sock:rw
+    entrypoint: >
       /bin/sh -c "
-      until (colonies colony check --name ${COLONIES_COLONY_NAME}); do echo 'Waiting for Colonies server...'; sleep 3; done;
-      colonies executor remove --name dev-docker;
-      docker_executor start -v
+      echo 'Waiting for Colonies server to be ready...';
+      until wget -q -O /dev/null http://colonies-server:50080/health 2>/dev/null; do
+        echo 'Server not ready, retrying in 2 seconds...';
+        sleep 2;
+      done;
+      echo 'Server is ready!';
+      echo \"Starting docker-reconciler with name: $$COLONIES_EXECUTOR_NAME\";
+      docker-reconciler start -v
       "
+
+  # docker-executor is now managed by docker-reconciler
+  # See executors/docker-reconciler/examples/docker-executor-deployment.json
+  # To deploy: colonies blueprint add --spec executors/docker-reconciler/examples/docker-executor-deployment.json
 
 volumes:
   timescaledb_data:
