@@ -7,7 +7,7 @@
     "image": "colonyos/dockerexecutor:v1.0.7",
     "replicas": 1,
     "executorType": "docker-reconciler",
-    "executorName": "docker-executor",
+    "executorName": "local-docker-node-reconciler",
     "env": {
       "LANG": "en_US.UTF-8",
       "LANGUAGE": "en_US.UTF-8",

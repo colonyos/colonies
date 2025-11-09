@@ -146,7 +146,7 @@ services:
       "
 
   docker-reconciler:
-    image: colonyos/docker-reconciler:v1.0.0
+    image: colonyos/docker-reconciler:v1.0.2
     container_name: docker-reconciler
     restart: unless-stopped
     depends_on:
