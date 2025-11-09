@@ -374,12 +374,12 @@ Example:
 			port = "4002" // Default port
 		}
 
-		// Configure relay service with infinite limits for testing
+		// Configure relay blueprint with infinite limits for testing
 		relayOpts := []relayv2.Option{
 			relayv2.WithInfiniteLimits(), // Use infinite limits for testing
 		}
 
-		// Create service manager with infinite limits
+		// Create blueprint manager with infinite limits
 		rmgr, err := rcmgr.NewResourceManager(rcmgr.NewFixedLimiter(rcmgr.InfiniteLimits))
 		CheckError(err)
 
@@ -458,7 +458,7 @@ Example:
 		}))
 
 		// Create libp2p host
-		log.Info("Creating libp2p host with relay service...")
+		log.Info("Creating libp2p host with relay blueprint...")
 		h, err := libp2p.New(opts...)
 		CheckError(err)
 
@@ -584,8 +584,8 @@ func verifyRelayProtocols(h host.Host) {
 	}
 
 	// Circuit Relay v2 HOP protocol is registered as a stream handler, not in Mux protocols
-	// So we assume it's working if EnableRelayService was called
-	log.Info("Relay HOP service enabled (Circuit Relay v2 server)")
+	// So we assume it's working if EnableRelayBlueprint was called
+	log.Info("Relay HOP blueprint enabled (Circuit Relay v2 server)")
 	log.Info("  Note: HOP protocol registered as stream handler (not visible in Mux)")
 
 	if supportsStop {

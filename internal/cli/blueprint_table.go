@@ -12,8 +12,8 @@ import (
 	"github.com/muesli/termenv"
 )
 
-// printServiceDefinitionsTable displays a list of ServiceDefinitions in a table
-func printServiceDefinitionsTable(sds []*core.ServiceDefinition) {
+// printBlueprintDefinitionsTable displays a list of BlueprintDefinitions in a table
+func printBlueprintDefinitionsTable(sds []*core.BlueprintDefinition) {
 	t, theme := createTable(1)
 
 	var cols = []table.Column{
@@ -37,10 +37,10 @@ func printServiceDefinitionsTable(sds []*core.ServiceDefinition) {
 	t.Render()
 }
 
-// printServiceDefinitionTable displays a single ServiceDefinition with details
-func printServiceDefinitionTable(sd *core.ServiceDefinition) {
+// printBlueprintDefinitionTable displays a single BlueprintDefinition with details
+func printBlueprintDefinitionTable(sd *core.BlueprintDefinition) {
 	t, theme := createTable(0)
-	t.SetTitle("ServiceDefinition")
+	t.SetTitle("BlueprintDefinition")
 
 	row := []interface{}{
 		termenv.String("Name").Foreground(theme.ColorCyan),
@@ -167,8 +167,8 @@ func printServiceDefinitionTable(sd *core.ServiceDefinition) {
 	}
 }
 
-// printServicesTable displays a list of Services in a table
-func printServicesTable(services []*core.Service) {
+// printBlueprintsTable displays a list of Blueprints in a table
+func printBlueprintsTable(blueprints []*core.Blueprint) {
 	t, theme := createTable(1)
 
 	var cols = []table.Column{
@@ -179,20 +179,20 @@ func printServicesTable(services []*core.Service) {
 	}
 	t.SetCols(cols)
 
-	for _, service := range services {
-		// Build info column based on service kind
+	for _, blueprint := range blueprints {
+		// Build info column based on blueprint kind
 		info := ""
-		switch service.Kind {
+		switch blueprint.Kind {
 		case "ExecutorDeployment":
 			// For ExecutorDeployment, show executor type and replicas
 			executorType := ""
-			if val, ok := service.GetSpec("executorType"); ok {
+			if val, ok := blueprint.GetSpec("executorType"); ok {
 				if str, ok := val.(string); ok {
 					executorType = str
 				}
 			}
 			replicas := ""
-			if val, ok := service.GetSpec("replicas"); ok {
+			if val, ok := blueprint.GetSpec("replicas"); ok {
 				replicas = fmt.Sprintf("replicas=%v", val)
 			}
 			if executorType != "" && replicas != "" {
@@ -204,7 +204,7 @@ func printServicesTable(services []*core.Service) {
 			}
 		case "DockerDeployment":
 			// For DockerDeployment, show number of instances
-			if instances, ok := service.GetSpec("instances"); ok {
+			if instances, ok := blueprint.GetSpec("instances"); ok {
 				if instArray, ok := instances.([]interface{}); ok {
 					if len(instArray) == 1 {
 						info = "1 instance"
@@ -215,16 +215,16 @@ func printServicesTable(services []*core.Service) {
 			}
 		default:
 			// For other kinds, try to extract a descriptive field
-			if val, ok := service.GetSpec("description"); ok {
+			if val, ok := blueprint.GetSpec("description"); ok {
 				info = fmt.Sprintf("%v", val)
 			}
 		}
 
 		row := []interface{}{
-			termenv.String(service.Metadata.Name).Foreground(theme.ColorCyan),
-			termenv.String(service.Kind).Foreground(theme.ColorViolet),
+			termenv.String(blueprint.Metadata.Name).Foreground(theme.ColorCyan),
+			termenv.String(blueprint.Kind).Foreground(theme.ColorViolet),
 			termenv.String(info).Foreground(theme.ColorMagenta),
-			termenv.String(fmt.Sprintf("%d", service.Metadata.Generation)).Foreground(theme.ColorYellow),
+			termenv.String(fmt.Sprintf("%d", blueprint.Metadata.Generation)).Foreground(theme.ColorYellow),
 		}
 		t.AddRow(row)
 	}
@@ -232,38 +232,38 @@ func printServicesTable(services []*core.Service) {
 	t.Render()
 }
 
-// printServiceTable displays a single Service with details
-func printServiceTable(client *client.ColoniesClient, service *core.Service) {
+// printBlueprintTable displays a single Blueprint with details
+func printBlueprintTable(client *client.ColoniesClient, blueprint *core.Blueprint) {
 	t, theme := createTable(0)
-	t.SetTitle("Service")
+	t.SetTitle("Blueprint")
 
 	row := []interface{}{
 		termenv.String("Name").Foreground(theme.ColorCyan),
-		termenv.String(service.Metadata.Name).Foreground(theme.ColorGray),
+		termenv.String(blueprint.Metadata.Name).Foreground(theme.ColorGray),
 	}
 	t.AddRow(row)
 
 	row = []interface{}{
 		termenv.String("ID").Foreground(theme.ColorCyan),
-		termenv.String(service.ID).Foreground(theme.ColorGray),
+		termenv.String(blueprint.ID).Foreground(theme.ColorGray),
 	}
 	t.AddRow(row)
 
 	row = []interface{}{
 		termenv.String("Kind").Foreground(theme.ColorCyan),
-		termenv.String(service.Kind).Foreground(theme.ColorGray),
+		termenv.String(blueprint.Kind).Foreground(theme.ColorGray),
 	}
 	t.AddRow(row)
 
 	row = []interface{}{
 		termenv.String("Generation").Foreground(theme.ColorCyan),
-		termenv.String(fmt.Sprintf("%d", service.Metadata.Generation)).Foreground(theme.ColorGray),
+		termenv.String(fmt.Sprintf("%d", blueprint.Metadata.Generation)).Foreground(theme.ColorGray),
 	}
 	t.AddRow(row)
 
 	// Reconciliation status
-	if service.Metadata.LastReconciliationProcess != "" {
-		process, err := client.GetProcess(service.Metadata.LastReconciliationProcess, PrvKey)
+	if blueprint.Metadata.LastReconciliationProcess != "" {
+		process, err := client.GetProcess(blueprint.Metadata.LastReconciliationProcess, PrvKey)
 		if err == nil && process != nil {
 			// Display reconciliation process ID
 			row = []interface{}{
@@ -297,10 +297,10 @@ func printServiceTable(client *client.ColoniesClient, service *core.Service) {
 			t.AddRow(row)
 
 			// Display when reconciliation started
-			if !service.Metadata.LastReconciliationTime.IsZero() {
+			if !blueprint.Metadata.LastReconciliationTime.IsZero() {
 				row = []interface{}{
 					termenv.String("Reconciliation Time").Foreground(theme.ColorCyan),
-					termenv.String(service.Metadata.LastReconciliationTime.Format(TimeLayout)).Foreground(theme.ColorGray),
+					termenv.String(blueprint.Metadata.LastReconciliationTime.Format(TimeLayout)).Foreground(theme.ColorGray),
 				}
 				t.AddRow(row)
 			}
@@ -318,18 +318,18 @@ func printServiceTable(client *client.ColoniesClient, service *core.Service) {
 		}
 	}
 
-	if !service.Metadata.CreatedAt.IsZero() {
+	if !blueprint.Metadata.CreatedAt.IsZero() {
 		row = []interface{}{
 			termenv.String("Created At").Foreground(theme.ColorCyan),
-			termenv.String(service.Metadata.CreatedAt.Format(TimeLayout)).Foreground(theme.ColorGray),
+			termenv.String(blueprint.Metadata.CreatedAt.Format(TimeLayout)).Foreground(theme.ColorGray),
 		}
 		t.AddRow(row)
 	}
 
-	if !service.Metadata.UpdatedAt.IsZero() {
+	if !blueprint.Metadata.UpdatedAt.IsZero() {
 		row = []interface{}{
 			termenv.String("Updated At").Foreground(theme.ColorCyan),
-			termenv.String(service.Metadata.UpdatedAt.Format(TimeLayout)).Foreground(theme.ColorGray),
+			termenv.String(blueprint.Metadata.UpdatedAt.Format(TimeLayout)).Foreground(theme.ColorGray),
 		}
 		t.AddRow(row)
 	}
@@ -337,11 +337,11 @@ func printServiceTable(client *client.ColoniesClient, service *core.Service) {
 	t.Render()
 
 	// Labels section
-	if len(service.Metadata.Labels) > 0 {
+	if len(blueprint.Metadata.Labels) > 0 {
 		t, theme = createTable(0)
 		t.SetTitle("Labels")
 
-		for key, value := range service.Metadata.Labels {
+		for key, value := range blueprint.Metadata.Labels {
 			row = []interface{}{
 				termenv.String(key).Foreground(theme.ColorViolet),
 				termenv.String(value).Foreground(theme.ColorGray),
@@ -353,11 +353,11 @@ func printServiceTable(client *client.ColoniesClient, service *core.Service) {
 	}
 
 	// Annotations section
-	if len(service.Metadata.Annotations) > 0 {
+	if len(blueprint.Metadata.Annotations) > 0 {
 		t, theme = createTable(0)
 		t.SetTitle("Annotations")
 
-		for key, value := range service.Metadata.Annotations {
+		for key, value := range blueprint.Metadata.Annotations {
 			row = []interface{}{
 				termenv.String(key).Foreground(theme.ColorViolet),
 				termenv.String(value).Foreground(theme.ColorGray),
@@ -369,7 +369,7 @@ func printServiceTable(client *client.ColoniesClient, service *core.Service) {
 	}
 
 	// Spec section
-	if len(service.Spec) > 0 {
+	if len(blueprint.Spec) > 0 {
 		t, theme = createTable(0)
 		t.SetTitle("Spec")
 
@@ -381,7 +381,7 @@ func printServiceTable(client *client.ColoniesClient, service *core.Service) {
 			"instances": true, // DockerDeployment
 		}
 
-		for key, value := range service.Spec {
+		for key, value := range blueprint.Spec {
 			// Skip complex fields - they'll be rendered separately
 			if complexKeys[key] {
 				continue
@@ -402,7 +402,7 @@ func printServiceTable(client *client.ColoniesClient, service *core.Service) {
 		t.Render()
 
 		// Render environment variables if present
-		if env, ok := service.Spec["env"].(map[string]interface{}); ok && len(env) > 0 {
+		if env, ok := blueprint.Spec["env"].(map[string]interface{}); ok && len(env) > 0 {
 			t, theme = createTable(0)
 			t.SetTitle("Environment Variables")
 
@@ -432,7 +432,7 @@ func printServiceTable(client *client.ColoniesClient, service *core.Service) {
 		}
 
 		// Render volumes if present
-		if volumes, ok := service.Spec["volumes"].([]interface{}); ok && len(volumes) > 0 {
+		if volumes, ok := blueprint.Spec["volumes"].([]interface{}); ok && len(volumes) > 0 {
 			t, theme = createTable(0)
 			t.SetTitle("Volumes")
 
@@ -465,7 +465,7 @@ func printServiceTable(client *client.ColoniesClient, service *core.Service) {
 		}
 
 		// Render ports if present
-		if ports, ok := service.Spec["ports"].([]interface{}); ok && len(ports) > 0 {
+		if ports, ok := blueprint.Spec["ports"].([]interface{}); ok && len(ports) > 0 {
 			t, theme = createTable(0)
 			t.SetTitle("Ports")
 
@@ -495,7 +495,7 @@ func printServiceTable(client *client.ColoniesClient, service *core.Service) {
 		}
 
 		// Render instances if present (DockerDeployment)
-		if instances, ok := service.Spec["instances"].([]interface{}); ok && len(instances) > 0 {
+		if instances, ok := blueprint.Spec["instances"].([]interface{}); ok && len(instances) > 0 {
 			t, theme = createTable(0)
 			t.SetTitle("Instances (DockerDeployment)")
 
@@ -639,14 +639,14 @@ func printServiceTable(client *client.ColoniesClient, service *core.Service) {
 	}
 
 	// Status section
-	if len(service.Status) > 0 {
+	if len(blueprint.Status) > 0 {
 		// Check if this is a deployment status with instances
-		if instances, ok := service.Status["instances"].([]interface{}); ok && len(instances) > 0 {
+		if instances, ok := blueprint.Status["instances"].([]interface{}); ok && len(instances) > 0 {
 			// Display deployment status summary
 			t, theme = createTable(0)
 			t.SetTitle("Deployment Status")
 
-			if running, ok := service.Status["runningInstances"]; ok {
+			if running, ok := blueprint.Status["runningInstances"]; ok {
 				row = []interface{}{
 					termenv.String("Running Instances").Foreground(theme.ColorBlue),
 					termenv.String(fmt.Sprintf("%v", running)).Foreground(theme.ColorGreen),
@@ -654,7 +654,7 @@ func printServiceTable(client *client.ColoniesClient, service *core.Service) {
 				t.AddRow(row)
 			}
 
-			if total, ok := service.Status["totalInstances"]; ok {
+			if total, ok := blueprint.Status["totalInstances"]; ok {
 				row = []interface{}{
 					termenv.String("Total Instances").Foreground(theme.ColorBlue),
 					termenv.String(fmt.Sprintf("%v", total)).Foreground(theme.ColorGray),
@@ -662,7 +662,7 @@ func printServiceTable(client *client.ColoniesClient, service *core.Service) {
 				t.AddRow(row)
 			}
 
-			if lastUpdated, ok := service.Status["lastUpdated"]; ok {
+			if lastUpdated, ok := blueprint.Status["lastUpdated"]; ok {
 				row = []interface{}{
 					termenv.String("Last Updated").Foreground(theme.ColorBlue),
 					termenv.String(fmt.Sprintf("%v", lastUpdated)).Foreground(theme.ColorGray),
@@ -734,7 +734,7 @@ func printServiceTable(client *client.ColoniesClient, service *core.Service) {
 
 			t.Render()
 		} else {
-			// Generic status display for non-deployment services
+			// Generic status display for non-deployment blueprints
 			t, theme = createTable(0)
 			t.SetTitle("Status")
 
@@ -746,7 +746,7 @@ func printServiceTable(client *client.ColoniesClient, service *core.Service) {
 				"totalInstances":   true,
 			}
 
-			for key, value := range service.Status {
+			for key, value := range blueprint.Status {
 				// Skip instance-related fields
 				if excludeKeys[key] {
 					continue
@@ -765,15 +765,15 @@ func printServiceTable(client *client.ColoniesClient, service *core.Service) {
 			}
 
 			// Only render if there are actually rows to display
-			if len(service.Status) > len(excludeKeys) {
+			if len(blueprint.Status) > len(excludeKeys) {
 				t.Render()
 			}
 		}
 	}
 }
 
-// printServiceHistoryTable displays a list of ServiceHistory entries in a table
-func printServiceHistoryTable(c *client.ColoniesClient, histories []*core.ServiceHistory) {
+// printBlueprintHistoryTable displays a list of BlueprintHistory entries in a table
+func printBlueprintHistoryTable(c *client.ColoniesClient, histories []*core.BlueprintHistory) {
 	t, theme := createTable(1)
 
 	var cols = []table.Column{
@@ -819,14 +819,14 @@ func truncateString(s string, maxLen int) string {
 	return s
 }
 
-// printServiceHistoryDetail displays detailed information for a specific service history entry
-func printServiceHistoryDetail(history *core.ServiceHistory) {
+// printBlueprintHistoryDetail displays detailed information for a specific blueprint history entry
+func printBlueprintHistoryDetail(history *core.BlueprintHistory) {
 	t, theme := createTable(0)
-	t.SetTitle(fmt.Sprintf("Service History - Generation %d", history.Generation))
+	t.SetTitle(fmt.Sprintf("Blueprint History - Generation %d", history.Generation))
 
 	row := []interface{}{
-		termenv.String("Service ID").Foreground(theme.ColorCyan),
-		termenv.String(history.ServiceID).Foreground(theme.ColorGray),
+		termenv.String("Blueprint ID").Foreground(theme.ColorCyan),
+		termenv.String(history.BlueprintID).Foreground(theme.ColorGray),
 	}
 	t.AddRow(row)
 
@@ -874,7 +874,7 @@ func printServiceHistoryDetail(history *core.ServiceHistory) {
 
 	t.Render()
 
-	// Spec section - render with same logic as service view
+	// Spec section - render with same logic as blueprint view
 	if len(history.Spec) > 0 {
 		t, theme = createTable(0)
 		t.SetTitle("Spec")
@@ -992,7 +992,7 @@ func printServiceHistoryDetail(history *core.ServiceHistory) {
 		}
 	}
 
-	// Status section - render with same logic as service view
+	// Status section - render with same logic as blueprint view
 	if len(history.Status) > 0 {
 		// For ExecutorDeployment, render deployment status
 		if history.Kind == "ExecutorDeployment" {

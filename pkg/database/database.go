@@ -14,6 +14,6 @@ type Database interface {
 	LogDatabase
 	FileDatabase
 	SnapshotDatabase
-	ServiceDatabase
+	BlueprintDatabase
 	SecurityDatabase
 }

@@ -214,8 +214,8 @@ func (db *PQDatabase) dropCronsTable() error {
 	return nil
 }
 
-func (db *PQDatabase) dropServiceDefinitionsTable() error {
-	sqlStatement := `DROP TABLE IF EXISTS ` + db.dbPrefix + `SERVICEDEFINITIONS`
+func (db *PQDatabase) dropBlueprintDefinitionsTable() error {
+	sqlStatement := `DROP TABLE IF EXISTS ` + db.dbPrefix + `BLUEPRINTDEFINITIONS`
 	_, err := db.postgresql.Exec(sqlStatement)
 	if err != nil {
 		return err
@@ -224,8 +224,8 @@ func (db *PQDatabase) dropServiceDefinitionsTable() error {
 	return nil
 }
 
-func (db *PQDatabase) dropServicesTable() error {
-	sqlStatement := `DROP TABLE IF EXISTS ` + db.dbPrefix + `SERVICES`
+func (db *PQDatabase) dropBlueprintsTable() error {
+	sqlStatement := `DROP TABLE IF EXISTS ` + db.dbPrefix + `BLUEPRINTS`
 	_, err := db.postgresql.Exec(sqlStatement)
 	if err != nil {
 		return err
@@ -310,12 +310,12 @@ func (db *PQDatabase) Drop() error {
 		return err
 	}
 
-	err = db.dropServiceDefinitionsTable()
+	err = db.dropBlueprintDefinitionsTable()
 	if err != nil {
 		return err
 	}
 
-	err = db.dropServicesTable()
+	err = db.dropBlueprintsTable()
 	if err != nil {
 		return err
 	}
@@ -390,7 +390,7 @@ func (db *PQDatabase) createFunctionsTable() error {
 }
 
 func (db *PQDatabase) createProcessesTable() error {
-	sqlStatement := `CREATE TABLE ` + db.dbPrefix + `PROCESSES (PROCESS_ID TEXT PRIMARY KEY NOT NULL, TARGET_COLONY_NAME TEXT NOT NULL, TARGET_EXECUTOR_NAMES TEXT[], ASSIGNED_EXECUTOR_ID TEXT, STATE INTEGER, IS_ASSIGNED BOOLEAN, EXECUTOR_TYPE TEXT, SUBMISSION_TIME TIMESTAMPTZ, START_TIME TIMESTAMPTZ, END_TIME TIMESTAMPTZ, WAIT_DEADLINE TIMESTAMPTZ, EXEC_DEADLINE TIMESTAMPTZ, ERRORS TEXT[], NODENAME TEXT, FUNCNAME TEXT, ARGS TEXT, KWARGS TEXT, MAX_WAIT_TIME INTEGER, MAX_EXEC_TIME INTEGER, RETRIES INTEGER, MAX_RETRIES INTEGER, DEPENDENCIES TEXT[], PRIORITY INTEGER, PRIORITYTIME BIGINT, WAIT_FOR_PARENTS BOOLEAN, PARENTS TEXT[], CHILDREN TEXT[], PROCESSGRAPH_ID TEXT, INPUT TEXT, OUTPUT TEXT, LABEL TEXT, FS TEXT, NODES INTEGER, CPU BIGINT, PROCESSES INTEGER, PROCESSES_PER_NODE INTEGER, MEMORY BIGINT, STORAGE BIGINT, GPUNAME TEXT, GPUCOUNT TEXT, GPUMEM BIGINT, WALLTIME BIGINT, INITIATOR_ID TEXT NOT NULL, INITIATOR_NAME TEXT NOT NULL, RECONCILIATION TEXT, SERVICE TEXT)`
+	sqlStatement := `CREATE TABLE ` + db.dbPrefix + `PROCESSES (PROCESS_ID TEXT PRIMARY KEY NOT NULL, TARGET_COLONY_NAME TEXT NOT NULL, TARGET_EXECUTOR_NAMES TEXT[], ASSIGNED_EXECUTOR_ID TEXT, STATE INTEGER, IS_ASSIGNED BOOLEAN, EXECUTOR_TYPE TEXT, SUBMISSION_TIME TIMESTAMPTZ, START_TIME TIMESTAMPTZ, END_TIME TIMESTAMPTZ, WAIT_DEADLINE TIMESTAMPTZ, EXEC_DEADLINE TIMESTAMPTZ, ERRORS TEXT[], NODENAME TEXT, FUNCNAME TEXT, ARGS TEXT, KWARGS TEXT, MAX_WAIT_TIME INTEGER, MAX_EXEC_TIME INTEGER, RETRIES INTEGER, MAX_RETRIES INTEGER, DEPENDENCIES TEXT[], PRIORITY INTEGER, PRIORITYTIME BIGINT, WAIT_FOR_PARENTS BOOLEAN, PARENTS TEXT[], CHILDREN TEXT[], PROCESSGRAPH_ID TEXT, INPUT TEXT, OUTPUT TEXT, LABEL TEXT, FS TEXT, NODES INTEGER, CPU BIGINT, PROCESSES INTEGER, PROCESSES_PER_NODE INTEGER, MEMORY BIGINT, STORAGE BIGINT, GPUNAME TEXT, GPUCOUNT TEXT, GPUMEM BIGINT, WALLTIME BIGINT, INITIATOR_ID TEXT NOT NULL, INITIATOR_NAME TEXT NOT NULL, RECONCILIATION TEXT, BLUEPRINT TEXT)`
 	_, err := db.postgresql.Exec(sqlStatement)
 	if err != nil {
 		return err
@@ -485,8 +485,8 @@ func (db *PQDatabase) createCronsTable() error {
 	return nil
 }
 
-func (db *PQDatabase) createServiceDefinitionsTable() error {
-	sqlStatement := `CREATE TABLE IF NOT EXISTS ` + db.dbPrefix + `SERVICEDEFINITIONS (ID TEXT PRIMARY KEY NOT NULL, COLONY_NAME TEXT NOT NULL, NAME TEXT NOT NULL, API_GROUP TEXT NOT NULL, VERSION TEXT NOT NULL, KIND TEXT NOT NULL, DATA TEXT NOT NULL, UNIQUE(COLONY_NAME, NAME))`
+func (db *PQDatabase) createBlueprintDefinitionsTable() error {
+	sqlStatement := `CREATE TABLE IF NOT EXISTS ` + db.dbPrefix + `BLUEPRINTDEFINITIONS (ID TEXT PRIMARY KEY NOT NULL, COLONY_NAME TEXT NOT NULL, NAME TEXT NOT NULL, API_GROUP TEXT NOT NULL, VERSION TEXT NOT NULL, KIND TEXT NOT NULL, DATA TEXT NOT NULL, UNIQUE(COLONY_NAME, NAME))`
 	_, err := db.postgresql.Exec(sqlStatement)
 	if err != nil {
 		return err
@@ -495,8 +495,8 @@ func (db *PQDatabase) createServiceDefinitionsTable() error {
 	return nil
 }
 
-func (db *PQDatabase) createServicesTable() error {
-	sqlStatement := `CREATE TABLE IF NOT EXISTS ` + db.dbPrefix + `SERVICES (ID TEXT PRIMARY KEY NOT NULL, COLONY_NAME TEXT NOT NULL, NAME TEXT NOT NULL, KIND TEXT NOT NULL, DATA TEXT NOT NULL, UNIQUE(COLONY_NAME, NAME))`
+func (db *PQDatabase) createBlueprintsTable() error {
+	sqlStatement := `CREATE TABLE IF NOT EXISTS ` + db.dbPrefix + `BLUEPRINTS (ID TEXT PRIMARY KEY NOT NULL, COLONY_NAME TEXT NOT NULL, NAME TEXT NOT NULL, KIND TEXT NOT NULL, DATA TEXT NOT NULL, UNIQUE(COLONY_NAME, NAME))`
 	_, err := db.postgresql.Exec(sqlStatement)
 	if err != nil {
 		return err
@@ -505,10 +505,10 @@ func (db *PQDatabase) createServicesTable() error {
 	return nil
 }
 
-func (db *PQDatabase) createServiceHistoryTable() error {
-	sqlStatement := `CREATE TABLE IF NOT EXISTS ` + db.dbPrefix + `SERVICE_HISTORY (
+func (db *PQDatabase) createBlueprintHistoryTable() error {
+	sqlStatement := `CREATE TABLE IF NOT EXISTS ` + db.dbPrefix + `BLUEPRINT_HISTORY (
 		ID TEXT PRIMARY KEY NOT NULL,
-		SERVICE_ID TEXT NOT NULL,
+		BLUEPRINT_ID TEXT NOT NULL,
 		KIND TEXT NOT NULL,
 		NAMESPACE TEXT NOT NULL,
 		NAME TEXT NOT NULL,
@@ -525,7 +525,7 @@ func (db *PQDatabase) createServiceHistoryTable() error {
 	}
 
 	// Create index for faster queries by resource_id
-	indexStatement := `CREATE INDEX IF NOT EXISTS ` + db.dbPrefix + `SERVICE_HISTORY_INDEX1 ON ` + db.dbPrefix + `SERVICE_HISTORY (SERVICE_ID, TIMESTAMP DESC)`
+	indexStatement := `CREATE INDEX IF NOT EXISTS ` + db.dbPrefix + `BLUEPRINT_HISTORY_INDEX1 ON ` + db.dbPrefix + `BLUEPRINT_HISTORY (BLUEPRINT_ID, TIMESTAMP DESC)`
 	_, err = db.postgresql.Exec(indexStatement)
 	return err
 }
@@ -803,17 +803,17 @@ func (db *PQDatabase) Initialize() error {
 		return err
 	}
 
-	err = db.createServiceDefinitionsTable()
+	err = db.createBlueprintDefinitionsTable()
 	if err != nil {
 		return err
 	}
 
-	err = db.createServicesTable()
+	err = db.createBlueprintsTable()
 	if err != nil {
 		return err
 	}
 
-	err = db.createServiceHistoryTable()
+	err = db.createBlueprintHistoryTable()
 	if err != nil {
 		return err
 	}

@@ -4,24 +4,24 @@ import (
 	"encoding/json"
 )
 
-const GetServicesPayloadType = "getservicesmsg"
+const GetBlueprintPayloadType = "getblueprintmsg"
 
-type GetServicesMsg struct {
+type GetBlueprintMsg struct {
 	Namespace string `json:"namespace"`
-	Kind      string `json:"kind"`
+	Name      string `json:"name"`
 	MsgType   string `json:"msgtype"`
 }
 
-func CreateGetServicesMsg(namespace, kind string) *GetServicesMsg {
-	msg := &GetServicesMsg{}
+func CreateGetBlueprintMsg(namespace, name string) *GetBlueprintMsg {
+	msg := &GetBlueprintMsg{}
 	msg.Namespace = namespace
-	msg.Kind = kind
-	msg.MsgType = GetServicesPayloadType
+	msg.Name = name
+	msg.MsgType = GetBlueprintPayloadType
 
 	return msg
 }
 
-func (msg *GetServicesMsg) ToJSON() (string, error) {
+func (msg *GetBlueprintMsg) ToJSON() (string, error) {
 	jsonBytes, err := json.Marshal(msg)
 	if err != nil {
 		return "", err
@@ -30,7 +30,7 @@ func (msg *GetServicesMsg) ToJSON() (string, error) {
 	return string(jsonBytes), nil
 }
 
-func (msg *GetServicesMsg) ToJSONIndent() (string, error) {
+func (msg *GetBlueprintMsg) ToJSONIndent() (string, error) {
 	jsonBytes, err := json.MarshalIndent(msg, "", "    ")
 	if err != nil {
 		return "", err
@@ -39,18 +39,18 @@ func (msg *GetServicesMsg) ToJSONIndent() (string, error) {
 	return string(jsonBytes), nil
 }
 
-func (msg *GetServicesMsg) Equals(msg2 *GetServicesMsg) bool {
+func (msg *GetBlueprintMsg) Equals(msg2 *GetBlueprintMsg) bool {
 	if msg2 == nil {
 		return false
 	}
 
 	return msg.MsgType == msg2.MsgType &&
 		msg.Namespace == msg2.Namespace &&
-		msg.Kind == msg2.Kind
+		msg.Name == msg2.Name
 }
 
-func CreateGetServicesMsgFromJSON(jsonString string) (*GetServicesMsg, error) {
-	var msg *GetServicesMsg
+func CreateGetBlueprintMsgFromJSON(jsonString string) (*GetBlueprintMsg, error) {
+	var msg *GetBlueprintMsg
 
 	err := json.Unmarshal([]byte(jsonString), &msg)
 	if err != nil {

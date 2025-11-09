@@ -168,7 +168,7 @@ func (s *ServerAdapter) SnapshotDB() database.SnapshotDatabase {
 	return s.server.snapshotDB
 }
 
-func (s *ServerAdapter) ServiceDB() database.ServiceDatabase {
+func (s *ServerAdapter) BlueprintDB() database.BlueprintDatabase {
 	return s.server.resourceDB
 }
 

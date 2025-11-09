@@ -610,33 +610,33 @@ func (db *DatabaseMock) ChangeColonyID(colonyName string, oldColonyID, newColony
 func (db *DatabaseMock) ChangeUserID(colonyName string, oldUserID, newUserID string) error { return nil }
 func (db *DatabaseMock) ChangeExecutorID(colonyName string, oldExecutorID, newExecutorID string) error { return nil }
 
-// ServiceDatabase interface - ServiceDefinition methods
-func (db *DatabaseMock) AddServiceDefinition(sd *core.ServiceDefinition) error { return nil }
-func (db *DatabaseMock) GetServiceDefinitionByID(id string) (*core.ServiceDefinition, error) { return nil, nil }
-func (db *DatabaseMock) GetServiceDefinitionByName(namespace, name string) (*core.ServiceDefinition, error) { return nil, nil }
-func (db *DatabaseMock) GetServiceDefinitions() ([]*core.ServiceDefinition, error) { return nil, nil }
-func (db *DatabaseMock) GetServiceDefinitionsByNamespace(namespace string) ([]*core.ServiceDefinition, error) { return nil, nil }
-func (db *DatabaseMock) GetServiceDefinitionsByGroup(group string) ([]*core.ServiceDefinition, error) { return nil, nil }
-func (db *DatabaseMock) UpdateServiceDefinition(sd *core.ServiceDefinition) error { return nil }
-func (db *DatabaseMock) RemoveServiceDefinitionByID(id string) error { return nil }
-func (db *DatabaseMock) RemoveServiceDefinitionByName(namespace, name string) error { return nil }
-func (db *DatabaseMock) CountServiceDefinitions() (int, error) { return 0, nil }
+// BlueprintDatabase interface - BlueprintDefinition methods
+func (db *DatabaseMock) AddBlueprintDefinition(sd *core.BlueprintDefinition) error { return nil }
+func (db *DatabaseMock) GetBlueprintDefinitionByID(id string) (*core.BlueprintDefinition, error) { return nil, nil }
+func (db *DatabaseMock) GetBlueprintDefinitionByName(namespace, name string) (*core.BlueprintDefinition, error) { return nil, nil }
+func (db *DatabaseMock) GetBlueprintDefinitions() ([]*core.BlueprintDefinition, error) { return nil, nil }
+func (db *DatabaseMock) GetBlueprintDefinitionsByNamespace(namespace string) ([]*core.BlueprintDefinition, error) { return nil, nil }
+func (db *DatabaseMock) GetBlueprintDefinitionsByGroup(group string) ([]*core.BlueprintDefinition, error) { return nil, nil }
+func (db *DatabaseMock) UpdateBlueprintDefinition(sd *core.BlueprintDefinition) error { return nil }
+func (db *DatabaseMock) RemoveBlueprintDefinitionByID(id string) error { return nil }
+func (db *DatabaseMock) RemoveBlueprintDefinitionByName(namespace, name string) error { return nil }
+func (db *DatabaseMock) CountBlueprintDefinitions() (int, error) { return 0, nil }
 
-// ServiceDatabase interface - Service methods
-func (db *DatabaseMock) AddService(service *core.Service) error { return nil }
-func (db *DatabaseMock) GetServiceByID(id string) (*core.Service, error) { return nil, nil }
-func (db *DatabaseMock) GetServiceByName(namespace, name string) (*core.Service, error) { return nil, nil }
-func (db *DatabaseMock) GetServices() ([]*core.Service, error) { return nil, nil }
-func (db *DatabaseMock) GetServicesByNamespace(namespace string) ([]*core.Service, error) { return nil, nil }
-func (db *DatabaseMock) GetServicesByKind(kind string) ([]*core.Service, error) { return nil, nil }
-func (db *DatabaseMock) GetServicesByNamespaceAndKind(namespace, kind string) ([]*core.Service, error) { return nil, nil }
-func (db *DatabaseMock) UpdateService(service *core.Service) error { return nil }
-func (db *DatabaseMock) UpdateServiceStatus(id string, status map[string]interface{}) error { return nil }
-func (db *DatabaseMock) RemoveServiceByID(id string) error { return nil }
-func (db *DatabaseMock) RemoveServiceByName(namespace, name string) error { return nil }
-func (db *DatabaseMock) RemoveServicesByNamespace(namespace string) error { return nil }
-func (db *DatabaseMock) CountServices() (int, error) { return 0, nil }
-func (db *DatabaseMock) CountServicesByNamespace(namespace string) (int, error) { return 0, nil }
+// BlueprintDatabase interface - Blueprint methods
+func (db *DatabaseMock) AddBlueprint(blueprint *core.Blueprint) error { return nil }
+func (db *DatabaseMock) GetBlueprintByID(id string) (*core.Blueprint, error) { return nil, nil }
+func (db *DatabaseMock) GetBlueprintByName(namespace, name string) (*core.Blueprint, error) { return nil, nil }
+func (db *DatabaseMock) GetBlueprints() ([]*core.Blueprint, error) { return nil, nil }
+func (db *DatabaseMock) GetBlueprintsByNamespace(namespace string) ([]*core.Blueprint, error) { return nil, nil }
+func (db *DatabaseMock) GetBlueprintsByKind(kind string) ([]*core.Blueprint, error) { return nil, nil }
+func (db *DatabaseMock) GetBlueprintsByNamespaceAndKind(namespace, kind string) ([]*core.Blueprint, error) { return nil, nil }
+func (db *DatabaseMock) UpdateBlueprint(blueprint *core.Blueprint) error { return nil }
+func (db *DatabaseMock) UpdateBlueprintStatus(id string, status map[string]interface{}) error { return nil }
+func (db *DatabaseMock) RemoveBlueprintByID(id string) error { return nil }
+func (db *DatabaseMock) RemoveBlueprintByName(namespace, name string) error { return nil }
+func (db *DatabaseMock) RemoveBlueprintsByNamespace(namespace string) error { return nil }
+func (db *DatabaseMock) CountBlueprints() (int, error) { return 0, nil }
+func (db *DatabaseMock) CountBlueprintsByNamespace(namespace string) (int, error) { return 0, nil }
 
 // Implement the database.Database interface
 func (db *DatabaseMock) CreateTables() error { return nil }

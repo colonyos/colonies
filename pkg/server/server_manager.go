@@ -61,7 +61,7 @@ type ServerConfig struct {
 
 // ServerManager manages multiple server backends
 type ServerManager struct {
-	// Shared services
+	// Shared blueprints
 	db              database.Database
 	thisNode        cluster.Node
 	clusterConfig   cluster.Config
@@ -87,7 +87,7 @@ type BackendFactory interface {
 	GetBackendType() BackendType
 }
 
-// SharedResources contains services shared between all server backends
+// SharedResources contains blueprints shared between all server backends
 type SharedResources struct {
 	DB              database.Database
 	ThisNode        cluster.Node

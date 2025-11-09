@@ -1,10 +1,10 @@
-# ServiceDefinition Schema Validation Guide
+# BlueprintDefinition Schema Validation Guide
 
 This guide explains how schema validation works in ColonyOS services.
 
 ## Overview
 
-ServiceDefinitions can include an **optional** JSON Schema that validates service instances on the server side. This provides:
+BlueprintDefinitions can include an **optional** JSON Schema that validates blueprint instances on the server side. This provides:
 
 - Type safety
 - Required field validation
@@ -18,11 +18,11 @@ ServiceDefinitions can include an **optional** JSON Schema that validates servic
 
 ### Server-Side Enforcement
 
-**All service validation happens on the server**, not in the CLI. When you create or update a service:
+**All blueprint validation happens on the server**, not in the CLI. When you create or update a service:
 
-1. Client sends service JSON to server
-2. Server looks up the ServiceDefinition for the service's `kind`
-3. If a schema is defined, server validates the service spec against it
+1. Client sends blueprint JSON to server
+2. Server looks up the BlueprintDefinition for the service's `kind`
+3. If a schema is defined, server validates the blueprint spec against it
 4. If validation fails, server returns HTTP 400 Bad Request
 5. If validation passes, server saves the service
 
@@ -40,11 +40,11 @@ CLI sends JSON to server
         ↓
 Server receives service
         ↓
-Server finds ServiceDefinition by kind
+Server finds BlueprintDefinition by kind
         ↓
 [Server validates against schema]
         ↓
-Validation passes → Save service → Trigger reconciliation
+Validation passes → Save blueprint → Trigger reconciliation
         ↓
 Validation fails → Return 400 error with details
 ```
@@ -80,7 +80,7 @@ Validation fails → Return 400 error with details
     "properties": {
       "name": {
         "type": "string",
-        "description": "Service name"
+        "description": "Blueprint name"
       },
       "replicas": {
         "type": "number",
@@ -88,7 +88,7 @@ Validation fails → Return 400 error with details
       },
       "enabled": {
         "type": "boolean",
-        "description": "Whether service is enabled"
+        "description": "Whether blueprint is enabled"
       }
     },
     "required": ["name", "replicas"]
@@ -109,9 +109,9 @@ Validation fails → Return 400 error with details
 
 **Invalid - Wrong Type:**
 ```bash
-$ colonies service add --spec invalid.json
+$ colonies blueprint add --spec invalid.json
 
-Error: service validation failed: field 'replicas' must be a number, got string
+Error: blueprint validation failed: field 'replicas' must be a number, got string
 ```
 
 ```json
@@ -126,9 +126,9 @@ Error: service validation failed: field 'replicas' must be a number, got string
 
 **Invalid - Missing Required:**
 ```bash
-$ colonies service add --spec invalid.json
+$ colonies blueprint add --spec invalid.json
 
-Error: service validation failed: required field 'replicas' is missing
+Error: blueprint validation failed: required field 'replicas' is missing
 ```
 
 ```json
@@ -172,9 +172,9 @@ Error: service validation failed: required field 'replicas' is missing
 
 **Invalid:**
 ```bash
-$ colonies service add --spec invalid.json
+$ colonies blueprint add --spec invalid.json
 
-Error: service validation failed: field 'size' must be one of [small medium large], got extra-large
+Error: blueprint validation failed: field 'size' must be one of [small medium large], got extra-large
 ```
 
 ```json
@@ -237,16 +237,16 @@ Error: service validation failed: field 'size' must be one of [small medium larg
 
 **Invalid - Missing Nested Required:**
 ```bash
-$ colonies service add --spec invalid.json
+$ colonies blueprint add --spec invalid.json
 
-Error: service validation failed: required field 'version' is missing
+Error: blueprint validation failed: required field 'version' is missing
 ```
 
 **Invalid - Wrong Enum in Nested Object:**
 ```bash
-$ colonies service add --spec invalid.json
+$ colonies blueprint add --spec invalid.json
 
-Error: service validation failed: field 'engine' must be one of [postgresql mysql], got mongodb
+Error: blueprint validation failed: field 'engine' must be one of [postgresql mysql], got mongodb
 ```
 
 ### 4. Arrays
@@ -305,9 +305,9 @@ Error: service validation failed: field 'engine' must be one of [postgresql mysq
 
 **Invalid - Wrong Array Item Type:**
 ```bash
-$ colonies service add --spec invalid.json
+$ colonies blueprint add --spec invalid.json
 
-Error: service validation failed: field 'ports[1]' must be a number, got string
+Error: blueprint validation failed: field 'ports[1]' must be a number, got string
 ```
 
 ```json
@@ -320,7 +320,7 @@ Error: service validation failed: field 'ports[1]' must be a number, got string
 
 ### 5. Complex Real-World Example
 
-**ServiceDefinition:**
+**BlueprintDefinition:**
 ```json
 {
   "schema": {
@@ -422,7 +422,7 @@ Error: service validation failed: field 'ports[1]' must be a number, got string
 
 ## Schema is Optional
 
-ServiceDefinitions can work **without** a schema for maximum flexibility:
+BlueprintDefinitions can work **without** a schema for maximum flexibility:
 
 ```json
 {
@@ -439,7 +439,7 @@ ServiceDefinitions can work **without** a schema for maximum flexibility:
 }
 ```
 
-Then your Service can have any structure:
+Then your Blueprint can have any structure:
 
 ```json
 {
@@ -470,7 +470,7 @@ This is useful when:
 2. **User-facing services** - Help users avoid mistakes early
 3. **Multiple teams** - Enforce consistency across teams
 4. **Production systems** - Prevent configuration errors before deployment
-5. **Self-service** - Users create services via UI/API
+5. **Self-service** - Users create blueprints via UI/API
 6. **Clear errors** - Get immediate feedback on what's wrong
 
 ### ⚠️ Skip Schema When:
@@ -490,7 +490,7 @@ The validation is implemented in the server at:
 The validator checks:
 
 ```go
-func ValidateResourceAgainstSchema(service *Service, schema *ValidationSchema) error {
+func ValidateResourceAgainstSchema(blueprint *Service, schema *ValidationSchema) error {
     // Check required fields
     for _, requiredField := range schema.Required {
         if _, ok := service.Spec[requiredField]; !ok {
@@ -539,7 +539,7 @@ These can be added in future enhancements if needed.
 5. **Make optional when possible** - Only require what's truly essential
 6. **Nest logically** - Group related fields in objects
 7. **Test validation** - Verify schema catches invalid configurations
-8. **Version your schemas** - Use different ServiceDefinition names for breaking changes
+8. **Version your schemas** - Use different BlueprintDefinition names for breaking changes
 
 ## Testing Your Schema
 
@@ -558,8 +558,8 @@ cat > test-missing-required.json <<EOF
 }
 EOF
 
-colonies service add --spec test-missing-required.json
-# Expected: Error: service validation failed: required field 'image' is missing
+colonies blueprint add --spec test-missing-required.json
+# Expected: Error: blueprint validation failed: required field 'image' is missing
 
 # Test wrong type
 cat > test-wrong-type.json <<EOF
@@ -573,8 +573,8 @@ cat > test-wrong-type.json <<EOF
 }
 EOF
 
-colonies service add --spec test-wrong-type.json
-# Expected: Error: service validation failed: field 'replicas' must be a number, got string
+colonies blueprint add --spec test-wrong-type.json
+# Expected: Error: blueprint validation failed: field 'replicas' must be a number, got string
 
 # Test invalid enum
 cat > test-invalid-enum.json <<EOF
@@ -587,8 +587,8 @@ cat > test-invalid-enum.json <<EOF
 }
 EOF
 
-colonies service add --spec test-invalid-enum.json
-# Expected: Error: service validation failed: field 'size' must be one of [small medium large], got extra-large
+colonies blueprint add --spec test-invalid-enum.json
+# Expected: Error: blueprint validation failed: field 'size' must be one of [small medium large], got extra-large
 ```
 
 ## See Also
@@ -596,4 +596,4 @@ colonies service add --spec test-invalid-enum.json
 - [JSON Schema Documentation](https://json-schema.org/)
 - [Kubernetes CRD Schema](https://kubernetes.io/docs/tasks/extend-kubernetes/custom-resources/custom-resource-definitions/#specifying-a-structural-schema)
 - [OpenAPI 3.0 Schema](https://spec.openapis.org/oas/v3.0.0#schema-object)
-- [Service Management Guide](Services.md)
+- [Blueprint Management Guide](Services.md)

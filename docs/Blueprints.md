@@ -1,55 +1,55 @@
-# Service Management
+# Blueprint Management
 
-ColonyOS provides a Kubernetes-inspired service management system that allows you to define and manage custom resources with declarative specifications, schema validation, and automated reconciliation.
+ColonyOS provides a Kubernetes-inspired blueprint management system that allows you to define and manage custom resources with declarative specifications, schema validation, and automated reconciliation.
 
 ## Overview
 
-The service management system consists of three main components:
+The blueprint management system consists of three main components:
 
-1. **ServiceDefinitions** - Define the schema and structure of custom services (similar to Kubernetes Custom Resource Definitions)
-2. **Services** - Instances of custom services based on ServiceDefinitions
+1. **BlueprintDefinitions** - Define the schema and structure of custom blueprints (similar to Kubernetes Custom Resource Definitions)
+2. **Blueprints** - Instances of custom blueprints based on BlueprintDefinitions
 3. **Reconcilers** - Executors that receive reconciliation processes and reconcile the desired state
 
 ## Core Concepts
 
-### ServiceDefinition
+### BlueprintDefinition
 
-A ServiceDefinition defines:
-- The **kind** of service (e.g., `ExecutorDeployment`, `Database`, `MLModel`)
-- The **schema** that validates service instances
-- The **handler** that specifies which executor type reconciles this service kind
+A BlueprintDefinition defines:
+- The **kind** of blueprint (e.g., `ExecutorDeployment`, `Database`, `MLModel`)
+- The **schema** that validates blueprint instances
+- The **handler** that specifies which executor type reconciles this blueprint kind
 
-### Service
+### Blueprint
 
-A Service is an instance of a ServiceDefinition that contains:
+A Blueprint is an instance of a BlueprintDefinition that contains:
 - **Metadata** - Name, namespace, labels, annotations
-- **Spec** - The desired state (validated against the ServiceDefinition schema)
+- **Spec** - The desired state (validated against the BlueprintDefinition schema)
 - **Status** - The current state (populated by reconcilers)
 
 ### Reconciler
 
 A reconciler is an executor that:
-- Registers with a specific `executorType` to handle a service kind
-- Receives reconciliation processes assigned by the server when services are created, updated, or deleted
-- Processes contain the reconciliation action (create/update/delete) and old/new service state
+- Registers with a specific `executorType` to handle a blueprint kind
+- Receives reconciliation processes assigned by the server when blueprints are created, updated, or deleted
+- Processes contain the reconciliation action (create/update/delete) and old/new blueprint state
 - Takes actions to make the actual state match the desired state
-- Updates the service status with current state information
+- Updates the blueprint status with current state information
 
 ## Quick Start
 
-### 1. Add a ServiceDefinition (Colony Owner Only)
+### 1. Add a BlueprintDefinition (Colony Owner Only)
 
-ServiceDefinitions can only be added by colony owners:
+BlueprintDefinitions can only be added by colony owners:
 
 ```bash
 # Set colony owner private key
 export COLONIES_PRVKEY=${COLONIES_COLONY_PRVKEY}
 
-# Add the ServiceDefinition
-colonies service definition add --spec executor-deployment-definition.json
+# Add the BlueprintDefinition
+colonies blueprint definition add --spec executor-deployment-definition.json
 ```
 
-Example ServiceDefinition:
+Example BlueprintDefinition:
 ```json
 {
   "metadata": {
@@ -91,28 +91,28 @@ Example ServiceDefinition:
 }
 ```
 
-### 2. List ServiceDefinitions
+### 2. List BlueprintDefinitions
 
 ```bash
-colonies service definition ls
+colonies blueprint definition ls
 ```
 
-### 3. Get a Specific ServiceDefinition
+### 3. Get a Specific BlueprintDefinition
 
 ```bash
-colonies service definition get --name executordeployments.compute.colonies.io
+colonies blueprint definition get --name executordeployments.compute.colonies.io
 ```
 
-### 4. Add a Service Instance
+### 4. Add a Blueprint Instance
 
-Members and colony owners can add service instances:
+Members and colony owners can add blueprint instances:
 
 ```bash
-# Add a service
-colonies service add --spec docker-executor-deployment.json
+# Add a blueprint
+colonies blueprint add --spec docker-executor-deployment.json
 ```
 
-Example Service:
+Example Blueprint:
 ```json
 {
   "kind": "ExecutorDeployment",
@@ -138,24 +138,24 @@ Example Service:
 }
 ```
 
-### 5. List Services
+### 5. List Blueprints
 
 ```bash
-# List all services
-colonies service ls
+# List all blueprints
+colonies blueprint ls
 
 # Filter by kind
-colonies service ls --kind ExecutorDeployment
+colonies blueprint ls --kind ExecutorDeployment
 ```
 
-### 6. Get Service Status
+### 6. Get Blueprint Status
 
 ```bash
-colonies service get --name docker-executor
+colonies blueprint get --name docker-executor
 ```
 
 This displays:
-- **Service metadata** - Name, ID, kind, generation
+- **Blueprint metadata** - Name, ID, kind, generation
 - **Spec** - Desired configuration (image, replicas, env vars, volumes)
 - **Deployment Status** - Running/total instances
 - **Instances** - Detailed information about each running instance
@@ -181,33 +181,33 @@ Example output:
 ╰──────────────┴────────┴───────────┴─────────┴──────────┴────────────╯
 ```
 
-### 7. Update a Service
+### 7. Update a Blueprint
 
 ```bash
 # Modify a field (e.g., scale replicas)
-colonies service set --name docker-executor --key spec.replicas --value 5
+colonies blueprint set --name docker-executor --key spec.replicas --value 5
 
 # Or update entire spec
-colonies service update --spec updated-deployment.json
+colonies blueprint update --spec updated-deployment.json
 ```
 
-### 8. Remove a Service
+### 8. Remove a Blueprint
 
 ```bash
-colonies service remove --name docker-executor
+colonies blueprint remove --name docker-executor
 ```
 
 ## Authorization
 
-- **ServiceDefinition operations**: Only colony owners can create/update/delete ServiceDefinitions
-- **Service operations**: Both members and colony owners can manage Services
-- **Read operations**: Members and colony owners can read both ServiceDefinitions and Services
+- **BlueprintDefinition operations**: Only colony owners can create/update/delete BlueprintDefinitions
+- **Blueprint operations**: Both members and colony owners can manage Blueprints
+- **Read operations**: Members and colony owners can read both BlueprintDefinitions and Blueprints
 
 ## Schema Validation
 
 ### Server-Side Validation
 
-The ColonyOS server **automatically validates** all service instances against their ServiceDefinition schema before saving them. This ensures data integrity and catches errors early.
+The ColonyOS server **automatically validates** all blueprint instances against their BlueprintDefinition schema before saving them. This ensures data integrity and catches errors early.
 
 Validation checks:
 - **Required fields** - All fields in `schema.required` must be present
@@ -221,9 +221,9 @@ If validation fails, the server returns HTTP 400 Bad Request with a detailed err
 ### Example Validation Error
 
 ```bash
-$ colonies service add --spec invalid-service.json
+$ colonies blueprint add --spec invalid-blueprint.json
 
-Error: service validation failed: required field 'image' is missing
+Error: blueprint validation failed: required field 'image' is missing
 ```
 
 ### Schema Features
@@ -311,7 +311,7 @@ The schema system supports full JSON Schema features:
 
 ### Optional Schema
 
-Schemas are **optional**. ServiceDefinitions without schemas accept any structure in the service spec. This is useful for:
+Schemas are **optional**. BlueprintDefinitions without schemas accept any structure in the blueprint spec. This is useful for:
 - Rapid prototyping where structure is evolving
 - Highly dynamic configurations
 - When validation happens in reconciler code
@@ -320,15 +320,15 @@ Schemas are **optional**. ServiceDefinitions without schemas accept any structur
 
 ### How Reconciliation Works
 
-1. User creates/updates/deletes a service
-2. Server validates the service against the schema
+1. User creates/updates/deletes a blueprint
+2. Server validates the blueprint against the schema
 3. Server creates a reconciliation process with:
    - `reconciliation.action` - "create", "update", or "delete"
-   - `reconciliation.old` - Previous service state (null for create)
+   - `reconciliation.old` - Previous blueprint state (null for create)
    - `reconciliation.new` - New desired state (null for delete)
 4. Process is assigned to an executor matching the handler's `executorType`
 5. Reconciler receives the process and reconciles the state
-6. Reconciler updates service status with current state
+6. Reconciler updates blueprint status with current state
 
 ### Reconciliation Process Example
 
@@ -360,7 +360,7 @@ The reconciler sees:
 
 ### Status Updates
 
-Reconcilers update service status to reflect current state:
+Reconcilers update blueprint status to reflect current state:
 
 ```json
 {
@@ -382,7 +382,7 @@ Reconcilers update service status to reflect current state:
 }
 ```
 
-The `type` field allows the same service abstraction to work with:
+The `type` field allows the same blueprint abstraction to work with:
 - **Docker containers** - `type: "container"`
 - **Kubernetes pods** - `type: "pod"`
 - **WebAssembly modules** - `type: "wasm"`
@@ -397,7 +397,7 @@ The `docker-reconciler` manages Docker container deployments.
 
 **ExecutorType:** `docker-reconciler`
 
-**Supported ServiceDefinition:** `ExecutorDeployment`
+**Supported BlueprintDefinition:** `ExecutorDeployment`
 
 **Features:**
 - Deploys Docker containers on the same host as the reconciler
@@ -408,17 +408,17 @@ The `docker-reconciler` manages Docker container deployments.
 
 **Example Usage:**
 ```bash
-# Add ExecutorDeployment ServiceDefinition
-colonies service definition add --spec executor-deployment-definition.json
+# Add ExecutorDeployment BlueprintDefinition
+colonies blueprint definition add --spec executor-deployment-definition.json
 
 # Deploy docker executors
-colonies service add --spec docker-executor-deployment.json
+colonies blueprint add --spec docker-executor-deployment.json
 
 # Scale the deployment
-colonies service set --name docker-executor --key spec.replicas --value 5
+colonies blueprint set --name docker-executor --key spec.replicas --value 5
 
 # Check status
-colonies service get --name docker-executor
+colonies blueprint get --name docker-executor
 ```
 
 ## Creating Custom Reconcilers
@@ -429,9 +429,9 @@ To create your own reconciler:
    - Registers as an executor with a specific `executorType`
    - Implements the `reconcile` function
    - Handles create/update/delete actions
-   - Updates service status
+   - Updates blueprint status
 
-2. **Define a ServiceDefinition** with:
+2. **Define a BlueprintDefinition** with:
    - A unique `kind` for your resource type
    - A schema defining valid configurations
    - A handler pointing to your reconciler's executorType
@@ -440,7 +440,7 @@ To create your own reconciler:
 
 Example reconciler skeleton:
 ```go
-func (r *Reconciler) Reconcile(process *core.Process, service *core.Service) error {
+func (r *Reconciler) Reconcile(process *core.Process, blueprint *core.Blueprint) error {
     reconciliation := process.FunctionSpec.Reconciliation
 
     switch reconciliation.Action {
@@ -455,9 +455,9 @@ func (r *Reconciler) Reconcile(process *core.Process, service *core.Service) err
     return nil
 }
 
-func (r *Reconciler) CollectStatus(service *core.Service) (map[string]interface{}, error) {
+func (r *Reconciler) CollectStatus(blueprint *core.Blueprint) (map[string]interface{}, error) {
     // Collect current state
-    instances := r.listRunningInstances(service)
+    instances := r.listRunningInstances(blueprint)
 
     return map[string]interface{}{
         "instances": instances,
@@ -479,11 +479,11 @@ func (r *Reconciler) CollectStatus(service *core.Service) (map[string]interface{
 5. **Make optional when possible** - Only require essential fields
 6. **Nest logically** - Group related fields in objects
 
-### Service Management
+### Blueprint Management
 
-1. **Use meaningful names** - Service names should be descriptive
+1. **Use meaningful names** - Blueprint names should be descriptive
 2. **Add labels** - Use labels for grouping and filtering
-3. **Version your ServiceDefinitions** - Use different names for breaking changes
+3. **Version your BlueprintDefinitions** - Use different names for breaking changes
 4. **Monitor reconciliation** - Check reconciliation status and process logs
 5. **Test validation** - Verify schema catches invalid configurations
 

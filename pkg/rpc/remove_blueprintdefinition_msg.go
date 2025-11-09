@@ -4,24 +4,24 @@ import (
 	"encoding/json"
 )
 
-const RemoveServiceDefinitionPayloadType = "removeservicedefinitionmsg"
+const RemoveBlueprintDefinitionPayloadType = "removeblueprintdefinitionmsg"
 
-type RemoveServiceDefinitionMsg struct {
+type RemoveBlueprintDefinitionMsg struct {
 	Namespace string `json:"namespace"`
 	Name      string `json:"name"`
 	MsgType   string `json:"msgtype"`
 }
 
-func CreateRemoveServiceDefinitionMsg(namespace, name string) *RemoveServiceDefinitionMsg {
-	msg := &RemoveServiceDefinitionMsg{}
+func CreateRemoveBlueprintDefinitionMsg(namespace, name string) *RemoveBlueprintDefinitionMsg {
+	msg := &RemoveBlueprintDefinitionMsg{}
 	msg.Namespace = namespace
 	msg.Name = name
-	msg.MsgType = RemoveServiceDefinitionPayloadType
+	msg.MsgType = RemoveBlueprintDefinitionPayloadType
 
 	return msg
 }
 
-func (msg *RemoveServiceDefinitionMsg) ToJSON() (string, error) {
+func (msg *RemoveBlueprintDefinitionMsg) ToJSON() (string, error) {
 	jsonBytes, err := json.Marshal(msg)
 	if err != nil {
 		return "", err
@@ -30,7 +30,7 @@ func (msg *RemoveServiceDefinitionMsg) ToJSON() (string, error) {
 	return string(jsonBytes), nil
 }
 
-func (msg *RemoveServiceDefinitionMsg) ToJSONIndent() (string, error) {
+func (msg *RemoveBlueprintDefinitionMsg) ToJSONIndent() (string, error) {
 	jsonBytes, err := json.MarshalIndent(msg, "", "    ")
 	if err != nil {
 		return "", err
@@ -39,7 +39,7 @@ func (msg *RemoveServiceDefinitionMsg) ToJSONIndent() (string, error) {
 	return string(jsonBytes), nil
 }
 
-func (msg *RemoveServiceDefinitionMsg) Equals(msg2 *RemoveServiceDefinitionMsg) bool {
+func (msg *RemoveBlueprintDefinitionMsg) Equals(msg2 *RemoveBlueprintDefinitionMsg) bool {
 	if msg2 == nil {
 		return false
 	}
@@ -49,8 +49,8 @@ func (msg *RemoveServiceDefinitionMsg) Equals(msg2 *RemoveServiceDefinitionMsg) 
 		msg.Name == msg2.Name
 }
 
-func CreateRemoveServiceDefinitionMsgFromJSON(jsonString string) (*RemoveServiceDefinitionMsg, error) {
-	var msg *RemoveServiceDefinitionMsg
+func CreateRemoveBlueprintDefinitionMsgFromJSON(jsonString string) (*RemoveBlueprintDefinitionMsg, error) {
+	var msg *RemoveBlueprintDefinitionMsg
 
 	err := json.Unmarshal([]byte(jsonString), &msg)
 	if err != nil {

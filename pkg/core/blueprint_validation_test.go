@@ -4,7 +4,7 @@ import (
 	"testing"
 )
 
-func TestValidateServiceAgainstSchema_RequiredFields(t *testing.T) {
+func TestValidateBlueprintAgainstSchema_RequiredFields(t *testing.T) {
 	schema := &ValidationSchema{
 		Type: "object",
 		Properties: map[string]SchemaProperty{
@@ -21,26 +21,26 @@ func TestValidateServiceAgainstSchema_RequiredFields(t *testing.T) {
 	}
 
 	// Test 1: Valid service with required field
-	service := CreateService("Test", "test-service", "default")
+	service := CreateBlueprint("Test", "test-service", "default")
 	service.SetSpec("image", "nginx:1.21")
 	service.SetSpec("replicas", 3)
 
-	err := ValidateServiceAgainstSchema(service, schema)
+	err := ValidateBlueprintAgainstSchema(service, schema)
 	if err != nil {
 		t.Errorf("Expected validation to pass, got error: %v", err)
 	}
 
 	// Test 2: Missing required field
-	invalidService := CreateService("Test", "invalid-service", "default")
-	invalidService.SetSpec("replicas", 3) // Missing 'image'
+	invalidBlueprint := CreateBlueprint("Test", "invalid-service", "default")
+	invalidBlueprint.SetSpec("replicas", 3) // Missing 'image'
 
-	err = ValidateServiceAgainstSchema(invalidService, schema)
+	err = ValidateBlueprintAgainstSchema(invalidBlueprint, schema)
 	if err == nil {
 		t.Error("Expected validation to fail for missing required field")
 	}
 }
 
-func TestValidateServiceAgainstSchema_TypeValidation(t *testing.T) {
+func TestValidateBlueprintAgainstSchema_TypeValidation(t *testing.T) {
 	schema := &ValidationSchema{
 		Type: "object",
 		Properties: map[string]SchemaProperty{
@@ -57,45 +57,45 @@ func TestValidateServiceAgainstSchema_TypeValidation(t *testing.T) {
 	}
 
 	// Test string type
-	service := CreateService("Test", "test", "default")
+	service := CreateBlueprint("Test", "test", "default")
 	service.SetSpec("name", "test-name")
 	service.SetSpec("count", 5)
 	service.SetSpec("enabled", true)
 
-	err := ValidateServiceAgainstSchema(service, schema)
+	err := ValidateBlueprintAgainstSchema(service, schema)
 	if err != nil {
 		t.Errorf("Expected validation to pass, got error: %v", err)
 	}
 
 	// Test invalid string type
-	invalidService := CreateService("Test", "invalid", "default")
-	invalidService.SetSpec("name", 123) // Should be string
+	invalidBlueprint := CreateBlueprint("Test", "invalid", "default")
+	invalidBlueprint.SetSpec("name", 123) // Should be string
 
-	err = ValidateServiceAgainstSchema(invalidService, schema)
+	err = ValidateBlueprintAgainstSchema(invalidBlueprint, schema)
 	if err == nil {
 		t.Error("Expected validation to fail for invalid string type")
 	}
 
 	// Test invalid number type
-	invalidService2 := CreateService("Test", "invalid2", "default")
-	invalidService2.SetSpec("count", "not-a-number") // Should be number
+	invalidBlueprint2 := CreateBlueprint("Test", "invalid2", "default")
+	invalidBlueprint2.SetSpec("count", "not-a-number") // Should be number
 
-	err = ValidateServiceAgainstSchema(invalidService2, schema)
+	err = ValidateBlueprintAgainstSchema(invalidBlueprint2, schema)
 	if err == nil {
 		t.Error("Expected validation to fail for invalid number type")
 	}
 
 	// Test invalid boolean type
-	invalidService3 := CreateService("Test", "invalid3", "default")
-	invalidService3.SetSpec("enabled", "not-a-boolean") // Should be boolean
+	invalidBlueprint3 := CreateBlueprint("Test", "invalid3", "default")
+	invalidBlueprint3.SetSpec("enabled", "not-a-boolean") // Should be boolean
 
-	err = ValidateServiceAgainstSchema(invalidService3, schema)
+	err = ValidateBlueprintAgainstSchema(invalidBlueprint3, schema)
 	if err == nil {
 		t.Error("Expected validation to fail for invalid boolean type")
 	}
 }
 
-func TestValidateServiceAgainstSchema_EnumValidation(t *testing.T) {
+func TestValidateBlueprintAgainstSchema_EnumValidation(t *testing.T) {
 	schema := &ValidationSchema{
 		Type: "object",
 		Properties: map[string]SchemaProperty{
@@ -107,25 +107,25 @@ func TestValidateServiceAgainstSchema_EnumValidation(t *testing.T) {
 	}
 
 	// Test valid enum value
-	service := CreateService("Test", "test", "default")
+	service := CreateBlueprint("Test", "test", "default")
 	service.SetSpec("protocol", "TCP")
 
-	err := ValidateServiceAgainstSchema(service, schema)
+	err := ValidateBlueprintAgainstSchema(service, schema)
 	if err != nil {
 		t.Errorf("Expected validation to pass for valid enum, got error: %v", err)
 	}
 
 	// Test invalid enum value
-	invalidService := CreateService("Test", "invalid", "default")
-	invalidService.SetSpec("protocol", "HTTP") // Not in enum
+	invalidBlueprint := CreateBlueprint("Test", "invalid", "default")
+	invalidBlueprint.SetSpec("protocol", "HTTP") // Not in enum
 
-	err = ValidateServiceAgainstSchema(invalidService, schema)
+	err = ValidateBlueprintAgainstSchema(invalidBlueprint, schema)
 	if err == nil {
 		t.Error("Expected validation to fail for invalid enum value")
 	}
 }
 
-func TestValidateServiceAgainstSchema_ArrayValidation(t *testing.T) {
+func TestValidateBlueprintAgainstSchema_ArrayValidation(t *testing.T) {
 	schema := &ValidationSchema{
 		Type: "object",
 		Properties: map[string]SchemaProperty{
@@ -139,34 +139,34 @@ func TestValidateServiceAgainstSchema_ArrayValidation(t *testing.T) {
 	}
 
 	// Test valid array
-	service := CreateService("Test", "test", "default")
+	service := CreateBlueprint("Test", "test", "default")
 	service.SetSpec("ports", []interface{}{80, 443, 8080})
 
-	err := ValidateServiceAgainstSchema(service, schema)
+	err := ValidateBlueprintAgainstSchema(service, schema)
 	if err != nil {
 		t.Errorf("Expected validation to pass for valid array, got error: %v", err)
 	}
 
 	// Test invalid array item type
-	invalidService := CreateService("Test", "invalid", "default")
-	invalidService.SetSpec("ports", []interface{}{80, "not-a-number", 8080})
+	invalidBlueprint := CreateBlueprint("Test", "invalid", "default")
+	invalidBlueprint.SetSpec("ports", []interface{}{80, "not-a-number", 8080})
 
-	err = ValidateServiceAgainstSchema(invalidService, schema)
+	err = ValidateBlueprintAgainstSchema(invalidBlueprint, schema)
 	if err == nil {
 		t.Error("Expected validation to fail for invalid array item type")
 	}
 
 	// Test non-array value
-	invalidService2 := CreateService("Test", "invalid2", "default")
-	invalidService2.SetSpec("ports", "not-an-array")
+	invalidBlueprint2 := CreateBlueprint("Test", "invalid2", "default")
+	invalidBlueprint2.SetSpec("ports", "not-an-array")
 
-	err = ValidateServiceAgainstSchema(invalidService2, schema)
+	err = ValidateBlueprintAgainstSchema(invalidBlueprint2, schema)
 	if err == nil {
 		t.Error("Expected validation to fail for non-array value")
 	}
 }
 
-func TestValidateServiceAgainstSchema_NestedObjectValidation(t *testing.T) {
+func TestValidateBlueprintAgainstSchema_NestedObjectValidation(t *testing.T) {
 	schema := &ValidationSchema{
 		Type: "object",
 		Properties: map[string]SchemaProperty{
@@ -185,44 +185,44 @@ func TestValidateServiceAgainstSchema_NestedObjectValidation(t *testing.T) {
 	}
 
 	// Test valid nested object
-	service := CreateService("Test", "test", "default")
+	service := CreateBlueprint("Test", "test", "default")
 	config := map[string]interface{}{
 		"host": "localhost",
 		"port": 8080,
 	}
 	service.SetSpec("config", config)
 
-	err := ValidateServiceAgainstSchema(service, schema)
+	err := ValidateBlueprintAgainstSchema(service, schema)
 	if err != nil {
 		t.Errorf("Expected validation to pass for valid nested object, got error: %v", err)
 	}
 
 	// Test invalid nested field type
-	invalidService := CreateService("Test", "invalid", "default")
+	invalidBlueprint := CreateBlueprint("Test", "invalid", "default")
 	invalidConfig := map[string]interface{}{
 		"host": "localhost",
 		"port": "not-a-number", // Should be number
 	}
-	invalidService.SetSpec("config", invalidConfig)
+	invalidBlueprint.SetSpec("config", invalidConfig)
 
-	err = ValidateServiceAgainstSchema(invalidService, schema)
+	err = ValidateBlueprintAgainstSchema(invalidBlueprint, schema)
 	if err == nil {
 		t.Error("Expected validation to fail for invalid nested field type")
 	}
 }
 
-func TestValidateServiceAgainstSchema_NoSchema(t *testing.T) {
+func TestValidateBlueprintAgainstSchema_NoSchema(t *testing.T) {
 	// Test with nil schema - should pass
-	service := CreateService("Test", "test", "default")
+	service := CreateBlueprint("Test", "test", "default")
 	service.SetSpec("anything", "goes")
 
-	err := ValidateServiceAgainstSchema(service, nil)
+	err := ValidateBlueprintAgainstSchema(service, nil)
 	if err != nil {
 		t.Errorf("Expected validation to pass with nil schema, got error: %v", err)
 	}
 }
 
-func TestValidateServiceAgainstSchema_ComplexExample(t *testing.T) {
+func TestValidateBlueprintAgainstSchema_ComplexExample(t *testing.T) {
 	// Test the ExecutorDeployment example schema
 	schema := &ValidationSchema{
 		Type: "object",
@@ -272,7 +272,7 @@ func TestValidateServiceAgainstSchema_ComplexExample(t *testing.T) {
 	}
 
 	// Test valid complex service
-	service := CreateService("ExecutorDeployment", "web-server", "production")
+	service := CreateBlueprint("ExecutorDeployment", "web-server", "production")
 	service.SetSpec("image", "nginx:1.21")
 	service.SetSpec("replicas", 3)
 	service.SetSpec("executorType", "container-executor")
@@ -291,26 +291,26 @@ func TestValidateServiceAgainstSchema_ComplexExample(t *testing.T) {
 		},
 	})
 
-	err := ValidateServiceAgainstSchema(service, schema)
+	err := ValidateBlueprintAgainstSchema(service, schema)
 	if err != nil {
 		t.Errorf("Expected validation to pass for complex valid service, got error: %v", err)
 	}
 
 	// Test missing required field
-	invalidService := CreateService("ExecutorDeployment", "invalid", "production")
-	invalidService.SetSpec("image", "nginx:1.21")
+	invalidBlueprint := CreateBlueprint("ExecutorDeployment", "invalid", "production")
+	invalidBlueprint.SetSpec("image", "nginx:1.21")
 	// Missing executorType
 
-	err = ValidateServiceAgainstSchema(invalidService, schema)
+	err = ValidateBlueprintAgainstSchema(invalidBlueprint, schema)
 	if err == nil {
 		t.Error("Expected validation to fail for missing required field 'executorType'")
 	}
 
 	// Test invalid port protocol enum
-	invalidService2 := CreateService("ExecutorDeployment", "invalid2", "production")
-	invalidService2.SetSpec("image", "nginx:1.21")
-	invalidService2.SetSpec("executorType", "container-executor")
-	invalidService2.SetSpec("ports", []interface{}{
+	invalidBlueprint2 := CreateBlueprint("ExecutorDeployment", "invalid2", "production")
+	invalidBlueprint2.SetSpec("image", "nginx:1.21")
+	invalidBlueprint2.SetSpec("executorType", "container-executor")
+	invalidBlueprint2.SetSpec("ports", []interface{}{
 		map[string]interface{}{
 			"name":     "http",
 			"port":     80,
@@ -318,7 +318,7 @@ func TestValidateServiceAgainstSchema_ComplexExample(t *testing.T) {
 		},
 	})
 
-	err = ValidateServiceAgainstSchema(invalidService2, schema)
+	err = ValidateBlueprintAgainstSchema(invalidBlueprint2, schema)
 	if err == nil {
 		t.Error("Expected validation to fail for invalid enum value in nested array")
 	}

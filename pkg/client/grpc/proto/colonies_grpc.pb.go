@@ -23,7 +23,7 @@ const (
 	ColoniesService_CheckHealth_FullMethodName = "/colonies.ColoniesService/CheckHealth"
 )
 
-// ColoniesServiceClient is the client API for ColoniesService service.
+// ColoniesServiceClient is the client API for ColoniesService blueprint.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 //
@@ -35,15 +35,15 @@ type ColoniesServiceClient interface {
 	CheckHealth(ctx context.Context, in *HealthRequest, opts ...grpc.CallOption) (*HealthResponse, error)
 }
 
-type coloniesServiceClient struct {
+type coloniesBlueprintClient struct {
 	cc grpc.ClientConnInterface
 }
 
 func NewColoniesServiceClient(cc grpc.ClientConnInterface) ColoniesServiceClient {
-	return &coloniesServiceClient{cc}
+	return &coloniesBlueprintClient{cc}
 }
 
-func (c *coloniesServiceClient) SendMessage(ctx context.Context, in *RPCRequest, opts ...grpc.CallOption) (*RPCResponse, error) {
+func (c *coloniesBlueprintClient) SendMessage(ctx context.Context, in *RPCRequest, opts ...grpc.CallOption) (*RPCResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(RPCResponse)
 	err := c.cc.Invoke(ctx, ColoniesService_SendMessage_FullMethodName, in, out, cOpts...)
@@ -53,7 +53,7 @@ func (c *coloniesServiceClient) SendMessage(ctx context.Context, in *RPCRequest,
 	return out, nil
 }
 
-func (c *coloniesServiceClient) CheckHealth(ctx context.Context, in *HealthRequest, opts ...grpc.CallOption) (*HealthResponse, error) {
+func (c *coloniesBlueprintClient) CheckHealth(ctx context.Context, in *HealthRequest, opts ...grpc.CallOption) (*HealthResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(HealthResponse)
 	err := c.cc.Invoke(ctx, ColoniesService_CheckHealth_FullMethodName, in, out, cOpts...)
@@ -63,7 +63,7 @@ func (c *coloniesServiceClient) CheckHealth(ctx context.Context, in *HealthReque
 	return out, nil
 }
 
-// ColoniesServiceServer is the server API for ColoniesService service.
+// ColoniesServiceServer is the server API for ColoniesService blueprint.
 // All implementations must embed UnimplementedColoniesServiceServer
 // for forward compatibility.
 //
@@ -92,7 +92,7 @@ func (UnimplementedColoniesServiceServer) CheckHealth(context.Context, *HealthRe
 func (UnimplementedColoniesServiceServer) mustEmbedUnimplementedColoniesServiceServer() {}
 func (UnimplementedColoniesServiceServer) testEmbeddedByValue()                         {}
 
-// UnsafeColoniesServiceServer may be embedded to opt out of forward compatibility for this service.
+// UnsafeColoniesServiceServer may be embedded to opt out of forward compatibility for this blueprint.
 // Use of this interface is not recommended, as added methods to ColoniesServiceServer will
 // result in compilation errors.
 type UnsafeColoniesServiceServer interface {
@@ -107,7 +107,7 @@ func RegisterColoniesServiceServer(s grpc.ServiceRegistrar, srv ColoniesServiceS
 	if t, ok := srv.(interface{ testEmbeddedByValue() }); ok {
 		t.testEmbeddedByValue()
 	}
-	s.RegisterService(&ColoniesService_ServiceDesc, srv)
+	s.RegisterService(&ColoniesService_BlueprintDesc, srv)
 }
 
 func _ColoniesService_SendMessage_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -146,10 +146,10 @@ func _ColoniesService_CheckHealth_Handler(srv interface{}, ctx context.Context, 
 	return interceptor(ctx, in, info, handler)
 }
 
-// ColoniesService_ServiceDesc is the grpc.ServiceDesc for ColoniesService service.
+// ColoniesService_BlueprintDesc is the grpc.ServiceDesc for ColoniesService blueprint.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
-var ColoniesService_ServiceDesc = grpc.ServiceDesc{
+var ColoniesService_BlueprintDesc = grpc.ServiceDesc{
 	ServiceName: "colonies.ColoniesService",
 	HandlerType: (*ColoniesServiceServer)(nil),
 	Methods: []grpc.MethodDesc{

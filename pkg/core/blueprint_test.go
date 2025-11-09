@@ -7,8 +7,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestCreateService(t *testing.T) {
-	cr := CreateService("ExecutorDeployment", "test-deploy", "test-colony")
+func TestCreateBlueprint(t *testing.T) {
+	cr := CreateBlueprint("ExecutorDeployment", "test-deploy", "test-colony")
 
 	assert.Equal(t, "ExecutorDeployment", cr.Kind)
 	assert.Equal(t, "test-deploy", cr.Metadata.Name)
@@ -21,8 +21,8 @@ func TestCreateService(t *testing.T) {
 	assert.NotNil(t, cr.Metadata.Annotations)
 }
 
-func TestServiceSpecOperations(t *testing.T) {
-	cr := CreateService("TestService", "test", "ns")
+func TestBlueprintSpecOperations(t *testing.T) {
+	cr := CreateBlueprint("TestBlueprint", "test", "ns")
 
 	// Test SetSpec
 	cr.SetSpec("replicas", 3)
@@ -55,8 +55,8 @@ func TestServiceSpecOperations(t *testing.T) {
 	assert.Equal(t, int64(4), cr.Metadata.Generation)
 }
 
-func TestServiceStatusOperations(t *testing.T) {
-	cr := CreateService("TestService", "test", "ns")
+func TestBlueprintStatusOperations(t *testing.T) {
+	cr := CreateBlueprint("TestBlueprint", "test", "ns")
 
 	// Test SetStatus
 	cr.SetStatus("phase", "Running")
@@ -80,8 +80,8 @@ func TestServiceStatusOperations(t *testing.T) {
 	assert.Equal(t, int64(1), cr.Metadata.Generation)
 }
 
-func TestServiceLabelsAndAnnotations(t *testing.T) {
-	cr := CreateService("TestService", "test", "ns")
+func TestBlueprintLabelsAndAnnotations(t *testing.T) {
+	cr := CreateBlueprint("TestBlueprint", "test", "ns")
 
 	// Test labels
 	cr.Metadata.Labels["app"] = "my-app"
@@ -95,10 +95,10 @@ func TestServiceLabelsAndAnnotations(t *testing.T) {
 	assert.False(t, ok)
 
 	// Test annotations
-	cr.Metadata.Annotations["description"] = "Test service"
+	cr.Metadata.Annotations["description"] = "Test blueprint"
 	cr.Metadata.Annotations["owner"] = "admin"
 
-	assert.Equal(t, "Test service", cr.Metadata.Annotations["description"])
+	assert.Equal(t, "Test blueprint", cr.Metadata.Annotations["description"])
 	assert.Equal(t, "admin", cr.Metadata.Annotations["owner"])
 
 	// Test non-existent annotation
@@ -106,33 +106,33 @@ func TestServiceLabelsAndAnnotations(t *testing.T) {
 	assert.False(t, ok)
 }
 
-func TestServiceValidation(t *testing.T) {
-	// Valid service
-	cr := CreateService("TestService", "test", "ns")
+func TestBlueprintValidation(t *testing.T) {
+	// Valid blueprint
+	cr := CreateBlueprint("TestBlueprint", "test", "ns")
 	err := cr.Validate()
 	assert.NoError(t, err)
 
 	// Missing Kind
-	cr3 := CreateService("", "test", "ns")
+	cr3 := CreateBlueprint("", "test", "ns")
 	err = cr3.Validate()
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "kind is required")
 
 	// Missing Name
-	cr4 := CreateService("TestService", "", "ns")
+	cr4 := CreateBlueprint("TestBlueprint", "", "ns")
 	err = cr4.Validate()
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "metadata.name is required")
 
 	// Missing Namespace
-	cr5 := CreateService("TestService", "test", "")
+	cr5 := CreateBlueprint("TestBlueprint", "test", "")
 	err = cr5.Validate()
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "metadata.namespace is required")
 }
 
-func TestServiceJSONConversion(t *testing.T) {
-	cr := CreateService("ExecutorDeployment", "test-deploy", "test-colony")
+func TestBlueprintJSONConversion(t *testing.T) {
+	cr := CreateBlueprint("ExecutorDeployment", "test-deploy", "test-colony")
 	cr.SetSpec("runtime", "kubernetes")
 	cr.SetSpec("replicas", 3)
 	cr.Metadata.Labels["app"] = "test"
@@ -144,7 +144,7 @@ func TestServiceJSONConversion(t *testing.T) {
 	assert.NotEmpty(t, jsonStr)
 
 	// Convert back from JSON
-	cr2, err := ConvertJSONToService(jsonStr)
+	cr2, err := ConvertJSONToBlueprint(jsonStr)
 	assert.NoError(t, err)
 	assert.Equal(t, cr.Kind, cr2.Kind)
 	assert.Equal(t, cr.Metadata.Name, cr2.Metadata.Name)
@@ -165,19 +165,19 @@ func TestServiceJSONConversion(t *testing.T) {
 	assert.Equal(t, "Running", phase)
 }
 
-func TestCreateServiceDefinition(t *testing.T) {
-	crd := CreateServiceDefinition(
+func TestCreateBlueprintDefinition(t *testing.T) {
+	crd := CreateBlueprintDefinition(
 		"executordeployments.compute.colonies.io",
 		"compute.colonies.io",
 		"v1",
 		"ExecutorDeployment",
 		"executordeployments",
 		"Namespaced",
-		"service-controller",
+		"blueprint-controller",
 		"reconcile_executor_deployment",
 	)
 
-	assert.Equal(t, "ServiceDefinition", crd.Kind)
+	assert.Equal(t, "BlueprintDefinition", crd.Kind)
 	assert.Equal(t, "executordeployments.compute.colonies.io", crd.Metadata.Name)
 	assert.Equal(t, "compute.colonies.io", crd.Spec.Group)
 	assert.Equal(t, "v1", crd.Spec.Version)
@@ -186,18 +186,18 @@ func TestCreateServiceDefinition(t *testing.T) {
 	assert.Equal(t, "executordeployment", crd.Spec.Names.Singular)
 	assert.Equal(t, "executordeployments", crd.Spec.Names.Plural)
 	assert.Equal(t, "Namespaced", crd.Spec.Scope)
-	assert.Equal(t, "service-controller", crd.Spec.Handler.ExecutorType)
+	assert.Equal(t, "blueprint-controller", crd.Spec.Handler.ExecutorType)
 	assert.Equal(t, "reconcile_executor_deployment", crd.Spec.Handler.FunctionName)
 }
 
-func TestServiceDefinitionValidation(t *testing.T) {
+func TestBlueprintDefinitionValidation(t *testing.T) {
 	// Valid CRD
-	crd := CreateServiceDefinition(
-		"testservices.test.io",
+	crd := CreateBlueprintDefinition(
+		"testblueprints.test.io",
 		"test.io",
 		"v1",
-		"TestService",
-		"testservices",
+		"TestBlueprint",
+		"testblueprints",
 		"Namespaced",
 		"test-controller",
 		"reconcile",
@@ -206,37 +206,37 @@ func TestServiceDefinitionValidation(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Missing group
-	crd2 := CreateServiceDefinition("", "", "v1", "TestService", "testservices", "Namespaced", "test-controller", "reconcile")
+	crd2 := CreateBlueprintDefinition("", "", "v1", "TestBlueprint", "testblueprints", "Namespaced", "test-controller", "reconcile")
 	err = crd2.Validate()
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "spec.group is required")
 
 	// Missing version
-	crd3 := CreateServiceDefinition("", "test.io", "", "TestService", "testservices", "Namespaced", "test-controller", "reconcile")
+	crd3 := CreateBlueprintDefinition("", "test.io", "", "TestBlueprint", "testblueprints", "Namespaced", "test-controller", "reconcile")
 	err = crd3.Validate()
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "spec.version is required")
 
 	// Invalid scope
-	crd4 := CreateServiceDefinition("", "test.io", "v1", "TestService", "testservices", "Invalid", "test-controller", "reconcile")
+	crd4 := CreateBlueprintDefinition("", "test.io", "v1", "TestBlueprint", "testblueprints", "Invalid", "test-controller", "reconcile")
 	err = crd4.Validate()
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "spec.scope must be")
 
 	// Missing executor type
-	crd5 := CreateServiceDefinition("", "test.io", "v1", "TestService", "testservices", "Namespaced", "", "reconcile")
+	crd5 := CreateBlueprintDefinition("", "test.io", "v1", "TestBlueprint", "testblueprints", "Namespaced", "", "reconcile")
 	err = crd5.Validate()
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "spec.handler.executorType is required")
 }
 
-func TestServiceDefinitionJSONConversion(t *testing.T) {
-	crd := CreateServiceDefinition(
-		"testservices.test.io",
+func TestBlueprintDefinitionJSONConversion(t *testing.T) {
+	crd := CreateBlueprintDefinition(
+		"testblueprints.test.io",
 		"test.io",
 		"v1",
-		"TestService",
-		"testservices",
+		"TestBlueprint",
+		"testblueprints",
 		"Namespaced",
 		"test-controller",
 		"reconcile",
@@ -248,7 +248,7 @@ func TestServiceDefinitionJSONConversion(t *testing.T) {
 	assert.NotEmpty(t, jsonStr)
 
 	// Convert back from JSON
-	crd2, err := ConvertJSONToServiceDefinition(jsonStr)
+	crd2, err := ConvertJSONToBlueprintDefinition(jsonStr)
 	assert.NoError(t, err)
 	assert.Equal(t, crd.Metadata.Name, crd2.Metadata.Name)
 	assert.Equal(t, crd.Spec.Group, crd2.Spec.Group)
@@ -257,13 +257,13 @@ func TestServiceDefinitionJSONConversion(t *testing.T) {
 	assert.Equal(t, crd.Spec.Handler.ExecutorType, crd2.Spec.Handler.ExecutorType)
 }
 
-func TestServiceDefinitionHelperMethods(t *testing.T) {
-	crd := CreateServiceDefinition(
-		"testservices.test.io",
+func TestBlueprintDefinitionHelperMethods(t *testing.T) {
+	crd := CreateBlueprintDefinition(
+		"testblueprints.test.io",
 		"test.io",
 		"v1",
-		"TestService",
-		"testservices",
+		"TestBlueprint",
+		"testblueprints",
 		"Namespaced",
 		"test-controller",
 		"reconcile",
@@ -272,36 +272,36 @@ func TestServiceDefinitionHelperMethods(t *testing.T) {
 	assert.Equal(t, "test.io/v1", crd.GetAPIVersion())
 }
 
-func TestServiceInFunctionSpec(t *testing.T) {
-	cr := CreateService("TestService", "test-service", "test-colony")
+func TestBlueprintInFunctionSpec(t *testing.T) {
+	cr := CreateBlueprint("TestBlueprint", "test-blueprint", "test-colony")
 	cr.SetSpec("replicas", 3)
 	cr.SetSpec("image", "test:latest")
 
-	// Create a FunctionSpec with the Service attached
+	// Create a FunctionSpec with the Blueprint attached
 	funcSpec := CreateEmptyFunctionSpec()
-	funcSpec.Service = cr
+	funcSpec.Blueprint = cr
 
-	// Verify the service is properly attached
-	assert.NotNil(t, funcSpec.Service)
-	assert.Equal(t, "TestService", funcSpec.Service.Kind)
-	assert.Equal(t, "test-service", funcSpec.Service.Metadata.Name)
-	assert.Equal(t, "test-colony", funcSpec.Service.Metadata.Namespace)
+	// Verify the blueprint is properly attached
+	assert.NotNil(t, funcSpec.Blueprint)
+	assert.Equal(t, "TestBlueprint", funcSpec.Blueprint.Kind)
+	assert.Equal(t, "test-blueprint", funcSpec.Blueprint.Metadata.Name)
+	assert.Equal(t, "test-colony", funcSpec.Blueprint.Metadata.Namespace)
 
-	replicas, ok := funcSpec.Service.GetSpec("replicas")
+	replicas, ok := funcSpec.Blueprint.GetSpec("replicas")
 	assert.True(t, ok)
 	assert.Equal(t, 3, replicas)
 }
 
-func TestComplexServiceScenario(t *testing.T) {
+func TestComplexBlueprintScenario(t *testing.T) {
 	// Create a CRD for ExecutorDeployment
-	crd := CreateServiceDefinition(
+	crd := CreateBlueprintDefinition(
 		"executordeployments.compute.colonies.io",
 		"compute.colonies.io",
 		"v1",
 		"ExecutorDeployment",
 		"executordeployments",
 		"Namespaced",
-		"service-controller",
+		"blueprint-controller",
 		"reconcile_executor_deployment",
 	)
 	crd.Spec.Handler.ReconcileInterval = 30
@@ -327,8 +327,8 @@ func TestComplexServiceScenario(t *testing.T) {
 	err := crd.Validate()
 	assert.NoError(t, err)
 
-	// Create a custom service instance
-	cr := CreateService("ExecutorDeployment", "ml-executors", "ml-colony")
+	// Create a custom blueprint instance
+	cr := CreateBlueprint("ExecutorDeployment", "ml-executors", "ml-colony")
 	cr.Metadata.Labels["app"] = "ml-training"
 	cr.Metadata.Labels["environment"] = "production"
 	cr.Metadata.Annotations["description"] = "GPU-enabled ML training executors"
@@ -364,7 +364,7 @@ func TestComplexServiceScenario(t *testing.T) {
 	jsonStr, err := cr.ToJSON()
 	assert.NoError(t, err)
 
-	cr2, err := ConvertJSONToService(jsonStr)
+	cr2, err := ConvertJSONToBlueprint(jsonStr)
 	assert.NoError(t, err)
 	assert.Equal(t, cr.Kind, cr2.Kind)
 
@@ -385,7 +385,7 @@ func TestComplexServiceScenario(t *testing.T) {
 }
 
 func TestUpdateGeneration(t *testing.T) {
-	cr := CreateService("TestService", "test", "ns")
+	cr := CreateBlueprint("TestBlueprint", "test", "ns")
 
 	initialGen := cr.Metadata.Generation
 	assert.Equal(t, int64(1), initialGen)
@@ -407,12 +407,12 @@ func TestUpdateGeneration(t *testing.T) {
 
 func TestSchemaValidation(t *testing.T) {
 	// Create CRD with schema
-	crd := CreateServiceDefinition(
-		"testservices.test.io",
+	crd := CreateBlueprintDefinition(
+		"testblueprints.test.io",
 		"test.io",
 		"v1",
-		"TestService",
-		"testservices",
+		"TestBlueprint",
+		"testblueprints",
 		"Namespaced",
 		"test-controller",
 		"reconcile",
@@ -438,8 +438,8 @@ func TestSchemaValidation(t *testing.T) {
 		Required: []string{"runtime", "replicas"},
 	}
 
-	// Valid service
-	cr := CreateService("TestService", "test", "ns")
+	// Valid blueprint
+	cr := CreateBlueprint("TestBlueprint", "test", "ns")
 	cr.SetSpec("runtime", "docker")
 	cr.SetSpec("replicas", 3)
 	cr.SetSpec("enabled", true)
@@ -449,12 +449,12 @@ func TestSchemaValidation(t *testing.T) {
 }
 
 func TestSchemaValidationMissingRequired(t *testing.T) {
-	crd := CreateServiceDefinition(
-		"testservices.test.io",
+	crd := CreateBlueprintDefinition(
+		"testblueprints.test.io",
 		"test.io",
 		"v1",
-		"TestService",
-		"testservices",
+		"TestBlueprint",
+		"testblueprints",
 		"Namespaced",
 		"test-controller",
 		"reconcile",
@@ -471,7 +471,7 @@ func TestSchemaValidationMissingRequired(t *testing.T) {
 	}
 
 	// Missing required field
-	cr := CreateService("TestService", "test", "ns")
+	cr := CreateBlueprint("TestBlueprint", "test", "ns")
 	// Not setting runtime
 
 	err := cr.ValidateAgainstSD(crd)
@@ -480,12 +480,12 @@ func TestSchemaValidationMissingRequired(t *testing.T) {
 }
 
 func TestSchemaValidationInvalidType(t *testing.T) {
-	crd := CreateServiceDefinition(
-		"testservices.test.io",
+	crd := CreateBlueprintDefinition(
+		"testblueprints.test.io",
 		"test.io",
 		"v1",
-		"TestService",
-		"testservices",
+		"TestBlueprint",
+		"testblueprints",
 		"Namespaced",
 		"test-controller",
 		"reconcile",
@@ -501,7 +501,7 @@ func TestSchemaValidationInvalidType(t *testing.T) {
 	}
 
 	// Wrong type (string instead of integer)
-	cr := CreateService("TestService", "test", "ns")
+	cr := CreateBlueprint("TestBlueprint", "test", "ns")
 	cr.SetSpec("replicas", "not-a-number")
 
 	err := cr.ValidateAgainstSD(crd)
@@ -510,12 +510,12 @@ func TestSchemaValidationInvalidType(t *testing.T) {
 }
 
 func TestSchemaValidationInvalidEnum(t *testing.T) {
-	crd := CreateServiceDefinition(
-		"testservices.test.io",
+	crd := CreateBlueprintDefinition(
+		"testblueprints.test.io",
 		"test.io",
 		"v1",
-		"TestService",
-		"testservices",
+		"TestBlueprint",
+		"testblueprints",
 		"Namespaced",
 		"test-controller",
 		"reconcile",
@@ -533,7 +533,7 @@ func TestSchemaValidationInvalidEnum(t *testing.T) {
 	}
 
 	// Invalid enum value
-	cr := CreateService("TestService", "test", "ns")
+	cr := CreateBlueprint("TestBlueprint", "test", "ns")
 	cr.SetSpec("runtime", "invalid-runtime")
 
 	err := cr.ValidateAgainstSD(crd)
@@ -543,12 +543,12 @@ func TestSchemaValidationInvalidEnum(t *testing.T) {
 }
 
 func TestSchemaValidationNestedObject(t *testing.T) {
-	crd := CreateServiceDefinition(
-		"testservices.test.io",
+	crd := CreateBlueprintDefinition(
+		"testblueprints.test.io",
 		"test.io",
 		"v1",
-		"TestService",
-		"testservices",
+		"TestBlueprint",
+		"testblueprints",
 		"Namespaced",
 		"test-controller",
 		"reconcile",
@@ -572,7 +572,7 @@ func TestSchemaValidationNestedObject(t *testing.T) {
 	}
 
 	// Valid nested object
-	cr := CreateService("TestService", "test", "ns")
+	cr := CreateBlueprint("TestBlueprint", "test", "ns")
 	cr.SetSpec("config", map[string]interface{}{
 		"cpu":    "2",
 		"memory": "4Gi",
@@ -583,12 +583,12 @@ func TestSchemaValidationNestedObject(t *testing.T) {
 }
 
 func TestSchemaValidationArray(t *testing.T) {
-	crd := CreateServiceDefinition(
-		"testservices.test.io",
+	crd := CreateBlueprintDefinition(
+		"testblueprints.test.io",
 		"test.io",
 		"v1",
-		"TestService",
-		"testservices",
+		"TestBlueprint",
+		"testblueprints",
 		"Namespaced",
 		"test-controller",
 		"reconcile",
@@ -607,14 +607,14 @@ func TestSchemaValidationArray(t *testing.T) {
 	}
 
 	// Valid array
-	cr := CreateService("TestService", "test", "ns")
+	cr := CreateBlueprint("TestBlueprint", "test", "ns")
 	cr.SetSpec("ports", []interface{}{80, 443, 8080})
 
 	err := cr.ValidateAgainstSD(crd)
 	assert.NoError(t, err)
 
 	// Invalid array item type
-	cr2 := CreateService("TestService", "test2", "ns")
+	cr2 := CreateBlueprint("TestBlueprint", "test2", "ns")
 	cr2.SetSpec("ports", []interface{}{80, "not-a-number", 8080})
 
 	err = cr2.ValidateAgainstSD(crd)
@@ -623,19 +623,19 @@ func TestSchemaValidationArray(t *testing.T) {
 }
 
 func TestSchemaValidationKindMismatch(t *testing.T) {
-	crd := CreateServiceDefinition(
-		"testservices.test.io",
+	crd := CreateBlueprintDefinition(
+		"testblueprints.test.io",
 		"test.io",
 		"v1",
-		"TestService",
-		"testservices",
+		"TestBlueprint",
+		"testblueprints",
 		"Namespaced",
 		"test-controller",
 		"reconcile",
 	)
 
 	// Wrong kind
-	cr := CreateService("WrongService", "test", "ns")
+	cr := CreateBlueprint("WrongBlueprint", "test", "ns")
 
 	err := cr.ValidateAgainstSD(crd)
 	assert.Error(t, err)
@@ -643,19 +643,19 @@ func TestSchemaValidationKindMismatch(t *testing.T) {
 }
 
 func TestSchemaValidationNoSchema(t *testing.T) {
-	crd := CreateServiceDefinition(
-		"testservices.test.io",
+	crd := CreateBlueprintDefinition(
+		"testblueprints.test.io",
 		"test.io",
 		"v1",
-		"TestService",
-		"testservices",
+		"TestBlueprint",
+		"testblueprints",
 		"Namespaced",
 		"test-controller",
 		"reconcile",
 	)
 	// No schema defined
 
-	cr := CreateService("TestService", "test", "ns")
+	cr := CreateBlueprint("TestBlueprint", "test", "ns")
 	cr.SetSpec("anything", "goes")
 
 	// Should pass validation when no schema is defined
@@ -667,10 +667,10 @@ func TestSchemaValidationNoSchema(t *testing.T) {
 
 func TestCreateReconciliationCreate(t *testing.T) {
 	// Test create action (old is nil, new exists)
-	newService := CreateService("TestService", "test", "ns")
-	newService.SetSpec("replicas", 3)
+	newBlueprint := CreateBlueprint("TestBlueprint", "test", "ns")
+	newBlueprint.SetSpec("replicas", 3)
 
-	reconciliation := CreateReconciliation(nil, newService)
+	reconciliation := CreateReconciliation(nil, newBlueprint)
 
 	assert.Nil(t, reconciliation.Old)
 	assert.NotNil(t, reconciliation.New)
@@ -680,10 +680,10 @@ func TestCreateReconciliationCreate(t *testing.T) {
 
 func TestCreateReconciliationDelete(t *testing.T) {
 	// Test delete action (old exists, new is nil)
-	oldService := CreateService("TestService", "test", "ns")
-	oldService.SetSpec("replicas", 3)
+	oldBlueprint := CreateBlueprint("TestBlueprint", "test", "ns")
+	oldBlueprint.SetSpec("replicas", 3)
 
-	reconciliation := CreateReconciliation(oldService, nil)
+	reconciliation := CreateReconciliation(oldBlueprint, nil)
 
 	assert.NotNil(t, reconciliation.Old)
 	assert.Nil(t, reconciliation.New)
@@ -693,15 +693,15 @@ func TestCreateReconciliationDelete(t *testing.T) {
 
 func TestCreateReconciliationUpdate(t *testing.T) {
 	// Test update action (both exist with changes)
-	oldService := CreateService("TestService", "test", "ns")
-	oldService.SetSpec("replicas", 3)
-	oldService.SetSpec("image", "nginx:1.0")
+	oldBlueprint := CreateBlueprint("TestBlueprint", "test", "ns")
+	oldBlueprint.SetSpec("replicas", 3)
+	oldBlueprint.SetSpec("image", "nginx:1.0")
 
-	newService := CreateService("TestService", "test", "ns")
-	newService.SetSpec("replicas", 5)
-	newService.SetSpec("image", "nginx:2.0")
+	newBlueprint := CreateBlueprint("TestBlueprint", "test", "ns")
+	newBlueprint.SetSpec("replicas", 5)
+	newBlueprint.SetSpec("image", "nginx:2.0")
 
-	reconciliation := CreateReconciliation(oldService, newService)
+	reconciliation := CreateReconciliation(oldBlueprint, newBlueprint)
 
 	assert.NotNil(t, reconciliation.Old)
 	assert.NotNil(t, reconciliation.New)
@@ -713,15 +713,15 @@ func TestCreateReconciliationUpdate(t *testing.T) {
 
 func TestCreateReconciliationNoop(t *testing.T) {
 	// Test noop action (both exist with no changes)
-	oldService := CreateService("TestService", "test", "ns")
-	oldService.SetSpec("replicas", 3)
-	oldService.SetSpec("image", "nginx:1.0")
+	oldBlueprint := CreateBlueprint("TestBlueprint", "test", "ns")
+	oldBlueprint.SetSpec("replicas", 3)
+	oldBlueprint.SetSpec("image", "nginx:1.0")
 
-	newService := CreateService("TestService", "test", "ns")
-	newService.SetSpec("replicas", 3)
-	newService.SetSpec("image", "nginx:1.0")
+	newBlueprint := CreateBlueprint("TestBlueprint", "test", "ns")
+	newBlueprint.SetSpec("replicas", 3)
+	newBlueprint.SetSpec("image", "nginx:1.0")
 
-	reconciliation := CreateReconciliation(oldService, newService)
+	reconciliation := CreateReconciliation(oldBlueprint, newBlueprint)
 
 	assert.NotNil(t, reconciliation.Old)
 	assert.NotNil(t, reconciliation.New)
@@ -730,19 +730,19 @@ func TestCreateReconciliationNoop(t *testing.T) {
 	assert.False(t, reconciliation.Diff.HasChanges)
 }
 
-func TestServiceDiffSpecChanges(t *testing.T) {
-	oldService := CreateService("TestService", "test", "ns")
-	oldService.SetSpec("replicas", 3)
-	oldService.SetSpec("image", "nginx:1.0")
-	oldService.SetSpec("port", 8080)
+func TestBlueprintDiffSpecChanges(t *testing.T) {
+	oldBlueprint := CreateBlueprint("TestBlueprint", "test", "ns")
+	oldBlueprint.SetSpec("replicas", 3)
+	oldBlueprint.SetSpec("image", "nginx:1.0")
+	oldBlueprint.SetSpec("port", 8080)
 
-	newService := CreateService("TestService", "test", "ns")
-	newService.SetSpec("replicas", 5)           // Modified
-	newService.SetSpec("image", "nginx:1.0")    // Unchanged
-	newService.SetSpec("command", []string{"run"}) // Added
+	newBlueprint := CreateBlueprint("TestBlueprint", "test", "ns")
+	newBlueprint.SetSpec("replicas", 5)           // Modified
+	newBlueprint.SetSpec("image", "nginx:1.0")    // Unchanged
+	newBlueprint.SetSpec("command", []string{"run"}) // Added
 	// port removed
 
-	diff := oldService.Diff(newService)
+	diff := oldBlueprint.Diff(newBlueprint)
 
 	assert.True(t, diff.HasChanges)
 	assert.Equal(t, 3, len(diff.SpecChanges))
@@ -768,16 +768,16 @@ func TestServiceDiffSpecChanges(t *testing.T) {
 	assert.Nil(t, portChange.NewValue)
 }
 
-func TestServiceDiffStatusChanges(t *testing.T) {
-	oldService := CreateService("TestService", "test", "ns")
-	oldService.SetStatus("phase", "Pending")
-	oldService.SetStatus("ready", 0)
+func TestBlueprintDiffStatusChanges(t *testing.T) {
+	oldBlueprint := CreateBlueprint("TestBlueprint", "test", "ns")
+	oldBlueprint.SetStatus("phase", "Pending")
+	oldBlueprint.SetStatus("ready", 0)
 
-	newService := CreateService("TestService", "test", "ns")
-	newService.SetStatus("phase", "Running")
-	newService.SetStatus("ready", 3)
+	newBlueprint := CreateBlueprint("TestBlueprint", "test", "ns")
+	newBlueprint.SetStatus("phase", "Running")
+	newBlueprint.SetStatus("ready", 3)
 
-	diff := oldService.Diff(newService)
+	diff := oldBlueprint.Diff(newBlueprint)
 
 	assert.True(t, diff.HasChanges)
 	assert.Equal(t, 2, len(diff.StatusChanges))
@@ -791,18 +791,18 @@ func TestServiceDiffStatusChanges(t *testing.T) {
 	assert.Equal(t, "Running", phaseChange.NewValue)
 }
 
-func TestServiceDiffMetadataChanges(t *testing.T) {
-	oldService := CreateService("TestService", "test", "ns")
-	oldService.Metadata.Labels["app"] = "old-app"
-	oldService.Metadata.Labels["version"] = "1.0"
-	oldService.Metadata.Annotations["description"] = "old description"
+func TestBlueprintDiffMetadataChanges(t *testing.T) {
+	oldBlueprint := CreateBlueprint("TestBlueprint", "test", "ns")
+	oldBlueprint.Metadata.Labels["app"] = "old-app"
+	oldBlueprint.Metadata.Labels["version"] = "1.0"
+	oldBlueprint.Metadata.Annotations["description"] = "old description"
 
-	newService := CreateService("TestService", "test", "ns")
-	newService.Metadata.Labels["app"] = "new-app"
-	newService.Metadata.Labels["environment"] = "production"
-	newService.Metadata.Annotations["description"] = "new description"
+	newBlueprint := CreateBlueprint("TestBlueprint", "test", "ns")
+	newBlueprint.Metadata.Labels["app"] = "new-app"
+	newBlueprint.Metadata.Labels["environment"] = "production"
+	newBlueprint.Metadata.Annotations["description"] = "new description"
 
-	diff := oldService.Diff(newService)
+	diff := oldBlueprint.Diff(newBlueprint)
 
 	assert.True(t, diff.HasChanges)
 	assert.Greater(t, len(diff.MetadataChanges), 0)
@@ -820,57 +820,57 @@ func TestServiceDiffMetadataChanges(t *testing.T) {
 	assert.True(t, diff.HasFieldChange("metadata.annotations.description"))
 }
 
-func TestServiceDiffHelperMethods(t *testing.T) {
-	oldService := CreateService("TestService", "test", "ns")
-	oldService.SetSpec("replicas", 3)
-	oldService.SetStatus("phase", "Running")
-	oldService.Metadata.Labels["app"] = "test"
+func TestBlueprintDiffHelperMethods(t *testing.T) {
+	oldBlueprint := CreateBlueprint("TestBlueprint", "test", "ns")
+	oldBlueprint.SetSpec("replicas", 3)
+	oldBlueprint.SetStatus("phase", "Running")
+	oldBlueprint.Metadata.Labels["app"] = "test"
 
 	// Test OnlyStatusChanged
-	newService1 := CreateService("TestService", "test", "ns")
-	newService1.SetSpec("replicas", 3)
-	newService1.SetStatus("phase", "Succeeded")
-	newService1.Metadata.Labels["app"] = "test"
+	newBlueprint1 := CreateBlueprint("TestBlueprint", "test", "ns")
+	newBlueprint1.SetSpec("replicas", 3)
+	newBlueprint1.SetStatus("phase", "Succeeded")
+	newBlueprint1.Metadata.Labels["app"] = "test"
 
-	diff1 := oldService.Diff(newService1)
+	diff1 := oldBlueprint.Diff(newBlueprint1)
 	assert.True(t, diff1.OnlyStatusChanged())
 	assert.False(t, diff1.OnlyMetadataChanged())
 
 	// Test OnlyMetadataChanged
-	newService2 := CreateService("TestService", "test", "ns")
-	newService2.SetSpec("replicas", 3)
-	newService2.SetStatus("phase", "Running")
-	newService2.Metadata.Labels["app"] = "new-app"
+	newBlueprint2 := CreateBlueprint("TestBlueprint", "test", "ns")
+	newBlueprint2.SetSpec("replicas", 3)
+	newBlueprint2.SetStatus("phase", "Running")
+	newBlueprint2.Metadata.Labels["app"] = "new-app"
 
-	diff2 := oldService.Diff(newService2)
+	diff2 := oldBlueprint.Diff(newBlueprint2)
 	assert.True(t, diff2.OnlyMetadataChanged())
 	assert.False(t, diff2.OnlyStatusChanged())
 
 	// Test mixed changes
-	newService3 := CreateService("TestService", "test", "ns")
-	newService3.SetSpec("replicas", 5)
-	newService3.SetStatus("phase", "Failed")
-	newService3.Metadata.Labels["app"] = "new-app"
+	newBlueprint3 := CreateBlueprint("TestBlueprint", "test", "ns")
+	newBlueprint3.SetSpec("replicas", 5)
+	newBlueprint3.SetStatus("phase", "Failed")
+	newBlueprint3.Metadata.Labels["app"] = "new-app"
 
-	diff3 := oldService.Diff(newService3)
+	diff3 := oldBlueprint.Diff(newBlueprint3)
 	assert.False(t, diff3.OnlyStatusChanged())
 	assert.False(t, diff3.OnlyMetadataChanged())
 }
 
-func TestServiceDiffComplexChanges(t *testing.T) {
-	oldService := CreateService("TestService", "test", "ns")
-	oldService.SetSpec("config", map[string]interface{}{
+func TestBlueprintDiffComplexChanges(t *testing.T) {
+	oldBlueprint := CreateBlueprint("TestBlueprint", "test", "ns")
+	oldBlueprint.SetSpec("config", map[string]interface{}{
 		"cpu":    "2",
 		"memory": "4Gi",
 	})
 
-	newService := CreateService("TestService", "test", "ns")
-	newService.SetSpec("config", map[string]interface{}{
+	newBlueprint := CreateBlueprint("TestBlueprint", "test", "ns")
+	newBlueprint.SetSpec("config", map[string]interface{}{
 		"cpu":    "4",
 		"memory": "4Gi",
 	})
 
-	diff := oldService.Diff(newService)
+	diff := oldBlueprint.Diff(newBlueprint)
 
 	assert.True(t, diff.HasChanges)
 	assert.Equal(t, 1, len(diff.SpecChanges))
@@ -883,13 +883,13 @@ func TestServiceDiffComplexChanges(t *testing.T) {
 
 func TestReconciliationInFunctionSpec(t *testing.T) {
 	// Create a reconciliation
-	oldService := CreateService("TestService", "test", "ns")
-	oldService.SetSpec("replicas", 3)
+	oldBlueprint := CreateBlueprint("TestBlueprint", "test", "ns")
+	oldBlueprint.SetSpec("replicas", 3)
 
-	newService := CreateService("TestService", "test", "ns")
-	newService.SetSpec("replicas", 5)
+	newBlueprint := CreateBlueprint("TestBlueprint", "test", "ns")
+	newBlueprint.SetSpec("replicas", 5)
 
-	reconciliation := CreateReconciliation(oldService, newService)
+	reconciliation := CreateReconciliation(oldBlueprint, newBlueprint)
 
 	// Create a FunctionSpec with reconciliation
 	funcSpec := CreateEmptyFunctionSpec()
@@ -908,13 +908,13 @@ func TestReconciliationInFunctionSpec(t *testing.T) {
 }
 
 func TestReconciliationJSONConversion(t *testing.T) {
-	oldService := CreateService("TestService", "test", "ns")
-	oldService.SetSpec("replicas", 3)
+	oldBlueprint := CreateBlueprint("TestBlueprint", "test", "ns")
+	oldBlueprint.SetSpec("replicas", 3)
 
-	newService := CreateService("TestService", "test", "ns")
-	newService.SetSpec("replicas", 5)
+	newBlueprint := CreateBlueprint("TestBlueprint", "test", "ns")
+	newBlueprint.SetSpec("replicas", 5)
 
-	reconciliation := CreateReconciliation(oldService, newService)
+	reconciliation := CreateReconciliation(oldBlueprint, newBlueprint)
 
 	// Create FunctionSpec with reconciliation
 	funcSpec := CreateEmptyFunctionSpec()
@@ -935,15 +935,15 @@ func TestReconciliationJSONConversion(t *testing.T) {
 }
 
 func TestHasFieldChange(t *testing.T) {
-	oldService := CreateService("TestService", "test", "ns")
-	oldService.SetSpec("replicas", 3)
-	oldService.SetStatus("phase", "Running")
+	oldBlueprint := CreateBlueprint("TestBlueprint", "test", "ns")
+	oldBlueprint.SetSpec("replicas", 3)
+	oldBlueprint.SetStatus("phase", "Running")
 
-	newService := CreateService("TestService", "test", "ns")
-	newService.SetSpec("replicas", 5)
-	newService.SetStatus("phase", "Running")
+	newBlueprint := CreateBlueprint("TestBlueprint", "test", "ns")
+	newBlueprint.SetSpec("replicas", 5)
+	newBlueprint.SetStatus("phase", "Running")
 
-	diff := oldService.Diff(newService)
+	diff := oldBlueprint.Diff(newBlueprint)
 
 	assert.True(t, diff.HasFieldChange("spec.replicas"))
 	assert.False(t, diff.HasFieldChange("spec.image"))
@@ -951,13 +951,13 @@ func TestHasFieldChange(t *testing.T) {
 }
 
 func TestGetFieldChange(t *testing.T) {
-	oldService := CreateService("TestService", "test", "ns")
-	oldService.SetSpec("image", "nginx:1.0")
+	oldBlueprint := CreateBlueprint("TestBlueprint", "test", "ns")
+	oldBlueprint.SetSpec("image", "nginx:1.0")
 
-	newService := CreateService("TestService", "test", "ns")
-	newService.SetSpec("image", "nginx:2.0")
+	newBlueprint := CreateBlueprint("TestBlueprint", "test", "ns")
+	newBlueprint.SetSpec("image", "nginx:2.0")
 
-	diff := oldService.Diff(newService)
+	diff := oldBlueprint.Diff(newBlueprint)
 
 	change := diff.GetFieldChange("spec.image")
 	assert.NotNil(t, change)

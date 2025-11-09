@@ -73,8 +73,8 @@ var GeneratorTrigger int
 var GeneratorTimeout int
 var GeneratorCheckerPeriod int
 var FuncName string
-var ServiceDefinitionName string
-var ServiceName string
+var BlueprintDefinitionName string
+var BlueprintName string
 var Kind string
 var Arg string
 var Args []string

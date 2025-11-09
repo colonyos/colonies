@@ -10,17 +10,17 @@ import (
 	"github.com/google/uuid"
 )
 
-// Service is a generic container for services
-type Service struct {
-	ID       string                 `json:"serviceid"`
+// Blueprint is a generic container for blueprints
+type Blueprint struct {
+	ID       string                 `json:"blueprintid"`
 	Kind     string                 `json:"kind"`
-	Metadata ServiceMetadata        `json:"metadata"`
+	Metadata BlueprintMetadata        `json:"metadata"`
 	Spec     map[string]interface{} `json:"spec"`
 	Status   map[string]interface{} `json:"status,omitempty"`
 }
 
-// ServiceMetadata contains metadata for services
-type ServiceMetadata struct {
+// BlueprintMetadata contains metadata for blueprints
+type BlueprintMetadata struct {
 	Name                      string            `json:"name"`
 	Namespace                 string            `json:"namespace"`
 	Labels                    map[string]string `json:"labels,omitempty"`
@@ -32,26 +32,26 @@ type ServiceMetadata struct {
 	LastReconciliationTime    time.Time         `json:"lastReconciliationTime,omitempty"`
 }
 
-// ServiceDefinition defines a service type
-type ServiceDefinition struct {
-	ID       string                  `json:"servicedefinitionid"`
+// BlueprintDefinition defines a blueprint type
+type BlueprintDefinition struct {
+	ID       string                  `json:"blueprintdefinitionid"`
 	Kind     string                  `json:"kind"`
-	Metadata ServiceMetadata         `json:"metadata"`
-	Spec     ServiceDefinitionSpec   `json:"spec"`
+	Metadata BlueprintMetadata         `json:"metadata"`
+	Spec     BlueprintDefinitionSpec   `json:"spec"`
 }
 
-// ServiceDefinitionSpec defines the specification for a ServiceDefinition
-type ServiceDefinitionSpec struct {
+// BlueprintDefinitionSpec defines the specification for a BlueprintDefinition
+type BlueprintDefinitionSpec struct {
 	Group   string                   `json:"group"`
 	Version string                   `json:"version"`
-	Names   ServiceDefinitionNames   `json:"names"`
+	Names   BlueprintDefinitionNames   `json:"names"`
 	Scope   string                   `json:"scope"` // "Namespaced" or "Cluster"
 	Schema  *ValidationSchema        `json:"schema,omitempty"`
 	Handler HandlerSpec              `json:"handler"`
 }
 
-// ServiceDefinitionNames defines service names
-type ServiceDefinitionNames struct {
+// BlueprintDefinitionNames defines blueprint names
+type BlueprintDefinitionNames struct {
 	Kind       string   `json:"kind"`
 	ListKind   string   `json:"listKind"`
 	Singular   string   `json:"singular"`
@@ -83,11 +83,11 @@ type SchemaProperty struct {
 	Items       *SchemaProperty           `json:"items,omitempty"`
 }
 
-// Reconciliation contains the old and new state of a service with computed diff
+// Reconciliation contains the old and new state of a blueprint with computed diff
 type Reconciliation struct {
-	Old    *Service             `json:"old,omitempty"`
-	New    *Service             `json:"new,omitempty"`
-	Diff   *ServiceDiff         `json:"diff,omitempty"`
+	Old    *Blueprint             `json:"old,omitempty"`
+	New    *Blueprint             `json:"new,omitempty"`
+	Diff   *BlueprintDiff         `json:"diff,omitempty"`
 	Action ReconciliationAction `json:"action"`
 }
 
@@ -101,8 +101,8 @@ const (
 	ReconciliationNoop   ReconciliationAction = "noop"
 )
 
-// ServiceDiff contains the differences between two services
-type ServiceDiff struct {
+// BlueprintDiff contains the differences between two blueprints
+type BlueprintDiff struct {
 	SpecChanges     []FieldChange `json:"specChanges,omitempty"`
 	StatusChanges   []FieldChange `json:"statusChanges,omitempty"`
 	MetadataChanges []FieldChange `json:"metadataChanges,omitempty"`
@@ -126,16 +126,16 @@ const (
 	ChangeRemoved  ChangeType = "removed"
 )
 
-// CreateService creates a new service
-func CreateService(kind, name, namespace string) *Service {
+// CreateBlueprint creates a new blueprint
+func CreateBlueprint(kind, name, namespace string) *Blueprint {
 	uid := uuid.New()
 	c := crypto.CreateCrypto()
 	id := c.GenerateHash(uid.String())
 
-	return &Service{
+	return &Blueprint{
 		ID:   id,
 		Kind: kind,
-		Metadata: ServiceMetadata{
+		Metadata: BlueprintMetadata{
 			Name:        name,
 			Namespace:   namespace,
 			Labels:      make(map[string]string),
@@ -149,16 +149,16 @@ func CreateService(kind, name, namespace string) *Service {
 	}
 }
 
-// CreateServiceDefinition creates a new ServiceDefinition
-func CreateServiceDefinition(name, group, version, kind, plural, scope, executorType, functionName string) *ServiceDefinition {
+// CreateBlueprintDefinition creates a new BlueprintDefinition
+func CreateBlueprintDefinition(name, group, version, kind, plural, scope, executorType, functionName string) *BlueprintDefinition {
 	uid := uuid.New()
 	c := crypto.CreateCrypto()
 	id := c.GenerateHash(uid.String())
 
-	return &ServiceDefinition{
+	return &BlueprintDefinition{
 		ID:   id,
-		Kind: "ServiceDefinition",
-		Metadata: ServiceMetadata{
+		Kind: "BlueprintDefinition",
+		Metadata: BlueprintMetadata{
 			Name:        name,
 			Labels:      make(map[string]string),
 			Annotations: make(map[string]string),
@@ -166,10 +166,10 @@ func CreateServiceDefinition(name, group, version, kind, plural, scope, executor
 			CreatedAt:   time.Now(),
 			UpdatedAt:   time.Now(),
 		},
-		Spec: ServiceDefinitionSpec{
+		Spec: BlueprintDefinitionSpec{
 			Group:   group,
 			Version: version,
-			Names: ServiceDefinitionNames{
+			Names: BlueprintDefinitionNames{
 				Kind:     kind,
 				ListKind: kind + "List",
 				Singular: strings.ToLower(kind),
@@ -185,7 +185,7 @@ func CreateServiceDefinition(name, group, version, kind, plural, scope, executor
 }
 
 // SetSpec sets a spec value and increments generation
-func (r *Service) SetSpec(key string, value interface{}) {
+func (r *Blueprint) SetSpec(key string, value interface{}) {
 	if r.Spec == nil {
 		r.Spec = make(map[string]interface{})
 	}
@@ -195,13 +195,13 @@ func (r *Service) SetSpec(key string, value interface{}) {
 }
 
 // GetSpec retrieves a spec value
-func (r *Service) GetSpec(key string) (interface{}, bool) {
+func (r *Blueprint) GetSpec(key string) (interface{}, bool) {
 	val, ok := r.Spec[key]
 	return val, ok
 }
 
 // SetStatus sets a status value
-func (r *Service) SetStatus(key string, value interface{}) {
+func (r *Blueprint) SetStatus(key string, value interface{}) {
 	if r.Status == nil {
 		r.Status = make(map[string]interface{})
 	}
@@ -210,13 +210,13 @@ func (r *Service) SetStatus(key string, value interface{}) {
 }
 
 // GetStatus retrieves a status value
-func (r *Service) GetStatus(key string) (interface{}, bool) {
+func (r *Blueprint) GetStatus(key string) (interface{}, bool) {
 	val, ok := r.Status[key]
 	return val, ok
 }
 
-// Validate validates the service
-func (r *Service) Validate() error {
+// Validate validates the blueprint
+func (r *Blueprint) Validate() error {
 	if r.Kind == "" {
 		return fmt.Errorf("kind is required")
 	}
@@ -231,15 +231,15 @@ func (r *Service) Validate() error {
 
 
 // ToJSON converts to JSON string
-func (r *Service) ToJSON() (string, error) {
+func (r *Blueprint) ToJSON() (string, error) {
 	return toJSON(r)
 }
 
-// ValidateAgainstSD validates the Service against its ServiceDefinition schema
-func (r *Service) ValidateAgainstSD(sd *ServiceDefinition) error {
+// ValidateAgainstSD validates the Blueprint against its BlueprintDefinition schema
+func (r *Blueprint) ValidateAgainstSD(sd *BlueprintDefinition) error {
 	// Check that kind matches
 	if r.Kind != sd.Spec.Names.Kind {
-		return fmt.Errorf("kind mismatch: service has '%s' but ServiceDefinition defines '%s'", r.Kind, sd.Spec.Names.Kind)
+		return fmt.Errorf("kind mismatch: blueprint has '%s' but BlueprintDefinition defines '%s'", r.Kind, sd.Spec.Names.Kind)
 	}
 
 	// Validate against schema if one is defined
@@ -372,10 +372,10 @@ func validateEnum(key string, value interface{}, enum []interface{}) error {
 	return fmt.Errorf("field '%s' has invalid value '%v', must be one of %v", key, value, enum)
 }
 
-// Validate validates the ServiceDefinition
-func (sd *ServiceDefinition) Validate() error {
-	if sd.Kind != "ServiceDefinition" {
-		return fmt.Errorf("kind must be ServiceDefinition")
+// Validate validates the BlueprintDefinition
+func (sd *BlueprintDefinition) Validate() error {
+	if sd.Kind != "BlueprintDefinition" {
+		return fmt.Errorf("kind must be BlueprintDefinition")
 	}
 	if sd.Spec.Group == "" {
 		return fmt.Errorf("spec.group is required")
@@ -405,28 +405,28 @@ func (sd *ServiceDefinition) Validate() error {
 }
 
 // GetAPIVersion returns the full API version
-func (sd *ServiceDefinition) GetAPIVersion() string {
+func (sd *BlueprintDefinition) GetAPIVersion() string {
 	return sd.Spec.Group + "/" + sd.Spec.Version
 }
 
 // ToJSON converts to JSON string
-func (sd *ServiceDefinition) ToJSON() (string, error) {
+func (sd *BlueprintDefinition) ToJSON() (string, error) {
 	return toJSON(sd)
 }
 
-// ConvertJSONToService parses JSON to Service
-func ConvertJSONToService(jsonString string) (*Service, error) {
-	var service Service
-	if err := json.Unmarshal([]byte(jsonString), &service); err != nil {
+// ConvertJSONToBlueprint parses JSON to Blueprint
+func ConvertJSONToBlueprint(jsonString string) (*Blueprint, error) {
+	var blueprint Blueprint
+	if err := json.Unmarshal([]byte(jsonString), &blueprint); err != nil {
 		return nil, err
 	}
-	initService(&service)
-	return &service, nil
+	initBlueprint(&blueprint)
+	return &blueprint, nil
 }
 
-// ConvertJSONToServiceDefinition parses JSON to ServiceDefinition
-func ConvertJSONToServiceDefinition(jsonString string) (*ServiceDefinition, error) {
-	var sd ServiceDefinition
+// ConvertJSONToBlueprintDefinition parses JSON to BlueprintDefinition
+func ConvertJSONToBlueprintDefinition(jsonString string) (*BlueprintDefinition, error) {
+	var sd BlueprintDefinition
 	if err := json.Unmarshal([]byte(jsonString), &sd); err != nil {
 		return nil, err
 	}
@@ -436,7 +436,7 @@ func ConvertJSONToServiceDefinition(jsonString string) (*ServiceDefinition, erro
 
 // Helper functions
 
-func initService(r *Service) {
+func initBlueprint(r *Blueprint) {
 	initMetadata(&r.Metadata)
 	if r.Spec == nil {
 		r.Spec = make(map[string]interface{})
@@ -446,7 +446,7 @@ func initService(r *Service) {
 	}
 }
 
-func initMetadata(m *ServiceMetadata) {
+func initMetadata(m *BlueprintMetadata) {
 	if m.Labels == nil {
 		m.Labels = make(map[string]string)
 	}
@@ -465,8 +465,8 @@ func toJSON(v interface{}) (string, error) {
 
 // Reconciliation helper methods
 
-// CreateReconciliation creates a Reconciliation from old and new services
-func CreateReconciliation(old, new *Service) *Reconciliation {
+// CreateReconciliation creates a Reconciliation from old and new blueprints
+func CreateReconciliation(old, new *Blueprint) *Reconciliation {
 	reconciliation := &Reconciliation{
 		Old: old,
 		New: new,
@@ -494,13 +494,13 @@ func CreateReconciliation(old, new *Service) *Reconciliation {
 	return reconciliation
 }
 
-// Diff computes the differences between this service and another
-func (r *Service) Diff(other *Service) *ServiceDiff {
+// Diff computes the differences between this blueprint and another
+func (r *Blueprint) Diff(other *Blueprint) *BlueprintDiff {
 	if other == nil {
-		return &ServiceDiff{HasChanges: false}
+		return &BlueprintDiff{HasChanges: false}
 	}
 
-	diff := &ServiceDiff{
+	diff := &BlueprintDiff{
 		SpecChanges:     []FieldChange{},
 		StatusChanges:   []FieldChange{},
 		MetadataChanges: []FieldChange{},
@@ -597,10 +597,10 @@ func deepEqual(a, b interface{}) bool {
 	return string(aJSON) == string(bJSON)
 }
 
-// ServiceDiff helper methods
+// BlueprintDiff helper methods
 
 // HasFieldChange checks if a specific field has changed
-func (sd *ServiceDiff) HasFieldChange(path string) bool {
+func (sd *BlueprintDiff) HasFieldChange(path string) bool {
 	allChanges := append(sd.SpecChanges, sd.StatusChanges...)
 	allChanges = append(allChanges, sd.MetadataChanges...)
 
@@ -613,7 +613,7 @@ func (sd *ServiceDiff) HasFieldChange(path string) bool {
 }
 
 // GetFieldChange retrieves a specific field change
-func (sd *ServiceDiff) GetFieldChange(path string) *FieldChange {
+func (sd *BlueprintDiff) GetFieldChange(path string) *FieldChange {
 	allChanges := append(sd.SpecChanges, sd.StatusChanges...)
 	allChanges = append(allChanges, sd.MetadataChanges...)
 
@@ -626,38 +626,38 @@ func (sd *ServiceDiff) GetFieldChange(path string) *FieldChange {
 }
 
 // OnlyMetadataChanged returns true if only metadata changed
-func (sd *ServiceDiff) OnlyMetadataChanged() bool {
+func (sd *BlueprintDiff) OnlyMetadataChanged() bool {
 	return len(sd.MetadataChanges) > 0 && len(sd.SpecChanges) == 0 && len(sd.StatusChanges) == 0
 }
 
 // OnlyStatusChanged returns true if only status changed
-func (sd *ServiceDiff) OnlyStatusChanged() bool {
+func (sd *BlueprintDiff) OnlyStatusChanged() bool {
 	return len(sd.StatusChanges) > 0 && len(sd.SpecChanges) == 0 && len(sd.MetadataChanges) == 0
 }
 
-// ConvertServiceArrayToJSON converts a slice of Services to JSON
-func ConvertServiceArrayToJSON(services []*Service) (string, error) {
-	jsonBytes, err := json.MarshalIndent(services, "", "  ")
+// ConvertBlueprintArrayToJSON converts a slice of Blueprints to JSON
+func ConvertBlueprintArrayToJSON(blueprints []*Blueprint) (string, error) {
+	jsonBytes, err := json.MarshalIndent(blueprints, "", "  ")
 	if err != nil {
 		return "", err
 	}
 	return string(jsonBytes), nil
 }
 
-// ConvertJSONToServiceArray parses JSON to a slice of Services
-func ConvertJSONToServiceArray(jsonString string) ([]*Service, error) {
-	var services []*Service
-	if err := json.Unmarshal([]byte(jsonString), &services); err != nil {
+// ConvertJSONToBlueprintArray parses JSON to a slice of Blueprints
+func ConvertJSONToBlueprintArray(jsonString string) ([]*Blueprint, error) {
+	var blueprints []*Blueprint
+	if err := json.Unmarshal([]byte(jsonString), &blueprints); err != nil {
 		return nil, err
 	}
-	for _, service := range services {
-		initService(service)
+	for _, blueprint := range blueprints {
+		initBlueprint(blueprint)
 	}
-	return services, nil
+	return blueprints, nil
 }
 
-// ConvertServiceDefinitionArrayToJSON converts a slice of ServiceDefinitions to JSON
-func ConvertServiceDefinitionArrayToJSON(sds []*ServiceDefinition) (string, error) {
+// ConvertBlueprintDefinitionArrayToJSON converts a slice of BlueprintDefinitions to JSON
+func ConvertBlueprintDefinitionArrayToJSON(sds []*BlueprintDefinition) (string, error) {
 	jsonBytes, err := json.MarshalIndent(sds, "", "  ")
 	if err != nil {
 		return "", err
@@ -665,30 +665,30 @@ func ConvertServiceDefinitionArrayToJSON(sds []*ServiceDefinition) (string, erro
 	return string(jsonBytes), nil
 }
 
-// ConvertJSONToServiceDefinitionArray parses JSON to a slice of ServiceDefinitions
-func ConvertJSONToServiceDefinitionArray(jsonString string) ([]*ServiceDefinition, error) {
-	var sds []*ServiceDefinition
+// ConvertJSONToBlueprintDefinitionArray parses JSON to a slice of BlueprintDefinitions
+func ConvertJSONToBlueprintDefinitionArray(jsonString string) ([]*BlueprintDefinition, error) {
+	var sds []*BlueprintDefinition
 	if err := json.Unmarshal([]byte(jsonString), &sds); err != nil {
 		return nil, err
 	}
 	return sds, nil
 }
 
-// ValidateServiceAgainstSchema validates a Service's spec against a ServiceDefinition's schema
-func ValidateServiceAgainstSchema(service *Service, schema *ValidationSchema) error {
+// ValidateBlueprintAgainstSchema validates a Blueprint's spec against a BlueprintDefinition's schema
+func ValidateBlueprintAgainstSchema(blueprint *Blueprint, schema *ValidationSchema) error {
 	if schema == nil {
 		return nil // No schema means no validation
 	}
 
 	// Check required fields
 	for _, requiredField := range schema.Required {
-		if _, ok := service.Spec[requiredField]; !ok {
+		if _, ok := blueprint.Spec[requiredField]; !ok {
 			return fmt.Errorf("required field '%s' is missing", requiredField)
 		}
 	}
 
 	// Validate each field in the spec
-	for fieldName, fieldValue := range service.Spec {
+	for fieldName, fieldValue := range blueprint.Spec {
 		if schemaProp, ok := schema.Properties[fieldName]; ok {
 			if err := validateField(fieldName, fieldValue, &schemaProp); err != nil {
 				return err
@@ -773,10 +773,10 @@ func validateField(fieldName string, value interface{}, prop *SchemaProperty) er
 	return nil
 }
 
-// ServiceHistory represents a historical snapshot of a service
-type ServiceHistory struct {
+// BlueprintHistory represents a historical snapshot of a blueprint
+type BlueprintHistory struct {
 	ID        string                 `json:"historyid"`
-	ServiceID string                 `json:"serviceid"`
+	BlueprintID string                 `json:"blueprintid"`
 	Kind      string                 `json:"kind"`
 	Namespace string                 `json:"namespace"`
 	Name      string                 `json:"name"`
@@ -788,17 +788,17 @@ type ServiceHistory struct {
 	ChangeType string                 `json:"changetype"` // "create", "update", "delete"
 }
 
-// CreateServiceHistory creates a new ServiceHistory from a Service
-func CreateServiceHistory(service *Service, changedBy string, changeType string) *ServiceHistory {
-	return &ServiceHistory{
+// CreateBlueprintHistory creates a new BlueprintHistory from a Blueprint
+func CreateBlueprintHistory(blueprint *Blueprint, changedBy string, changeType string) *BlueprintHistory {
+	return &BlueprintHistory{
 		ID:         uuid.New().String(),
-		ServiceID:  service.ID,
-		Kind:       service.Kind,
-		Namespace:  service.Metadata.Namespace,
-		Name:       service.Metadata.Name,
-		Generation: service.Metadata.Generation,
-		Spec:       copyMap(service.Spec),
-		Status:     copyMap(service.Status),
+		BlueprintID:  blueprint.ID,
+		Kind:       blueprint.Kind,
+		Namespace:  blueprint.Metadata.Namespace,
+		Name:       blueprint.Metadata.Name,
+		Generation: blueprint.Metadata.Generation,
+		Spec:       copyMap(blueprint.Spec),
+		Status:     copyMap(blueprint.Status),
 		Timestamp:  time.Now(),
 		ChangedBy:  changedBy,
 		ChangeType: changeType,
@@ -843,8 +843,8 @@ func copySlice(s []interface{}) []interface{} {
 	return result
 }
 
-// ToJSON converts ServiceHistory to JSON
-func (sh *ServiceHistory) ToJSON() (string, error) {
+// ToJSON converts BlueprintHistory to JSON
+func (sh *BlueprintHistory) ToJSON() (string, error) {
 	jsonBytes, err := json.Marshal(sh)
 	if err != nil {
 		return "", err
@@ -852,9 +852,9 @@ func (sh *ServiceHistory) ToJSON() (string, error) {
 	return string(jsonBytes), nil
 }
 
-// ConvertJSONToServiceHistory converts JSON to ServiceHistory
-func ConvertJSONToServiceHistory(jsonString string) (*ServiceHistory, error) {
-	var history ServiceHistory
+// ConvertJSONToBlueprintHistory converts JSON to BlueprintHistory
+func ConvertJSONToBlueprintHistory(jsonString string) (*BlueprintHistory, error) {
+	var history BlueprintHistory
 	err := json.Unmarshal([]byte(jsonString), &history)
 	if err != nil {
 		return nil, err
@@ -862,9 +862,9 @@ func ConvertJSONToServiceHistory(jsonString string) (*ServiceHistory, error) {
 	return &history, nil
 }
 
-// ConvertJSONToServiceHistoryArray converts JSON array to ServiceHistory array
-func ConvertJSONToServiceHistoryArray(jsonString string) ([]*ServiceHistory, error) {
-	var histories []*ServiceHistory
+// ConvertJSONToBlueprintHistoryArray converts JSON array to BlueprintHistory array
+func ConvertJSONToBlueprintHistoryArray(jsonString string) ([]*BlueprintHistory, error) {
+	var histories []*BlueprintHistory
 	err := json.Unmarshal([]byte(jsonString), &histories)
 	if err != nil {
 		return nil, err
@@ -872,8 +872,8 @@ func ConvertJSONToServiceHistoryArray(jsonString string) ([]*ServiceHistory, err
 	return histories, nil
 }
 
-// ConvertServiceHistoryArrayToJSON converts ServiceHistory array to JSON
-func ConvertServiceHistoryArrayToJSON(histories []*ServiceHistory) (string, error) {
+// ConvertBlueprintHistoryArrayToJSON converts BlueprintHistory array to JSON
+func ConvertBlueprintHistoryArrayToJSON(histories []*BlueprintHistory) (string, error) {
 	jsonBytes, err := json.Marshal(histories)
 	if err != nil {
 		return "", err

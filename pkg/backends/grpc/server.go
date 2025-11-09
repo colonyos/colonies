@@ -54,9 +54,9 @@ func (s *GRPCServer) ListenAndServe() error {
 	// Create gRPC server
 	s.grpcServer = grpclib.NewServer()
 
-	// Register service
-	service := NewColoniesServiceImpl(s.handler)
-	proto.RegisterColoniesServiceServer(s.grpcServer, service)
+	// Register blueprint
+	blueprint := NewColoniesServiceImpl(s.handler)
+	proto.RegisterColoniesServiceServer(s.grpcServer, blueprint)
 
 	// Start serving
 	return s.grpcServer.Serve(listener)
@@ -82,9 +82,9 @@ func (s *GRPCServer) ListenAndServeTLS(certFile, keyFile string) error {
 	// Create gRPC server with TLS
 	s.grpcServer = grpclib.NewServer(grpclib.Creds(creds))
 
-	// Register service
-	service := NewColoniesServiceImpl(s.handler)
-	proto.RegisterColoniesServiceServer(s.grpcServer, service)
+	// Register blueprint
+	blueprint := NewColoniesServiceImpl(s.handler)
+	proto.RegisterColoniesServiceServer(s.grpcServer, blueprint)
 
 	// Start serving
 	return s.grpcServer.Serve(listener)

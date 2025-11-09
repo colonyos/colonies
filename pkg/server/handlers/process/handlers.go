@@ -110,7 +110,7 @@ type Server interface {
 	ExecutorDB() database.ExecutorDatabase
 	UserDB() database.UserDatabase
 	ProcessDB() database.ProcessDatabase
-	ServiceDB() database.ServiceDatabase
+	BlueprintDB() database.BlueprintDatabase
 	ProcessController() Controller
 	ExclusiveAssign() bool
 	TLS() bool
@@ -789,32 +789,32 @@ func (h *Handlers) HandleCloseSuccessful(c backends.Context, recoveredID string,
 		return
 	}
 
-	// If this was a reconciliation process, update the service status from the output
+	// If this was a reconciliation process, update the blueprint status from the output
 	if process.FunctionSpec.Reconciliation != nil {
-		var serviceID string
+		var blueprintID string
 		if process.FunctionSpec.Reconciliation.New != nil {
-			serviceID = process.FunctionSpec.Reconciliation.New.ID
+			blueprintID = process.FunctionSpec.Reconciliation.New.ID
 		} else if process.FunctionSpec.Reconciliation.Old != nil {
-			serviceID = process.FunctionSpec.Reconciliation.Old.ID
+			blueprintID = process.FunctionSpec.Reconciliation.Old.ID
 		}
 
-		if serviceID != "" && len(msg.Output) > 0 {
+		if blueprintID != "" && len(msg.Output) > 0 {
 			// The first output entry should contain the status map
 			if statusMap, ok := msg.Output[0].(map[string]interface{}); ok {
 				if status, ok := statusMap["status"]; ok {
 					if statusData, ok := status.(map[string]interface{}); ok {
-						err = h.server.ServiceDB().UpdateServiceStatus(serviceID, statusData)
+						err = h.server.BlueprintDB().UpdateBlueprintStatus(blueprintID, statusData)
 						if err != nil {
 							log.WithFields(log.Fields{
 								"Error":     err,
-								"ServiceID": serviceID,
+								"BlueprintID": blueprintID,
 								"ProcessID": process.ID,
-							}).Warn("Failed to update service status from reconciliation output")
+							}).Warn("Failed to update blueprint status from reconciliation output")
 						} else {
 							log.WithFields(log.Fields{
-								"ServiceID": serviceID,
+								"BlueprintID": blueprintID,
 								"ProcessID": process.ID,
-							}).Debug("Updated service status from reconciliation output")
+							}).Debug("Updated blueprint status from reconciliation output")
 						}
 					}
 				}
