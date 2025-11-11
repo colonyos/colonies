@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/colonyos/colonies/internal/table"
+	"github.com/colonyos/colonies/pkg/client"
 	"github.com/colonyos/colonies/pkg/core"
 	"github.com/muesli/termenv"
 )
@@ -366,6 +367,10 @@ func printConditionsTable(funcSpec *core.FunctionSpec) {
 }
 
 func printProcessesTable(processes []*core.Process, mode int) {
+	printProcessesTableWithClient(processes, mode, nil)
+}
+
+func printProcessesTableWithClient(processes []*core.Process, mode int, client *client.ColoniesClient) {
 	t, theme := createTable(0)
 
 	var timeid string
@@ -436,7 +441,18 @@ func printProcessesTable(processes []*core.Process, mode int) {
 			CheckError(errors.New("Invalid table type"))
 		}
 
-		executorNames := StrArr2Str(process.FunctionSpec.Conditions.ExecutorNames)
+		// For assigned/completed processes with a client, look up the actual executor name
+		executorNames := ""
+		if process.AssignedExecutorID != "" && client != nil {
+			executor, err := client.GetExecutorByID(ColonyName, process.AssignedExecutorID, PrvKey)
+			if err == nil && executor != nil {
+				executorNames = executor.Name
+			}
+		}
+		// Fall back to showing allowed executors from conditions if not assigned or lookup failed
+		if executorNames == "" {
+			executorNames = StrArr2Str(process.FunctionSpec.Conditions.ExecutorNames)
+		}
 
 		if ShowIDs {
 			row := []interface{}{

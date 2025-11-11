@@ -146,7 +146,7 @@ services:
       "
 
   docker-reconciler:
-    image: colonyos/docker-reconciler:v1.0.2
+    image: colonyos/docker-reconciler:latest
     container_name: docker-reconciler
     restart: unless-stopped
     depends_on:
@@ -174,11 +174,19 @@ services:
       COLONIES_COLONY_NAME: ${COLONIES_COLONY_NAME}
       COLONIES_COLONY_PRVKEY: ${COLONIES_COLONY_PRVKEY}
       COLONIES_EXECUTOR_TYPE: "docker-reconciler"
-      COLONIES_EXECUTOR_NAME: "local-docker-node-reconciler"
+      COLONIES_EXECUTOR_NAME: "local-node-docker-reconciler"
       COLONIES_INSECURE: "true"
       # Node config - Fixed node name to prevent new nodes on restart
-      COLONIES_NODE_NAME: "local-docker-node"
-      COLONIES_NODE_LOCATION: "local"
+      COLONIES_NODE_NAME: "local-node"
+      COLONIES_NODE_LOCATION: "local-node"
+      # S3/MinIO config for auto-injection into deployed containers
+      AWS_S3_ENDPOINT: "minio:9000"
+      AWS_S3_ACCESSKEY: "RrXN2vcLeHjBptG8a3Ay"
+      AWS_S3_SECRETKEY: "ivwLB0Luqomq65nNVmoo8fTBgxXgNvqYGC50VQN6"
+      AWS_S3_REGION_KEY: ""
+      AWS_S3_BUCKET: "colonies-prod"
+      AWS_S3_TLS: "false"
+      AWS_S3_SKIPVERIFY: "false"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:rw
     entrypoint: >

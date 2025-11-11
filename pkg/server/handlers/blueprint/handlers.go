@@ -74,6 +74,64 @@ func (h *Handlers) submitReconciliationFunc(reconciliation *core.Reconciliation,
 	funcSpec.FuncName = sd.Spec.Handler.FunctionName
 	funcSpec.Reconciliation = reconciliation
 
+	// Check if blueprint instance specifies executor targeting
+	// Priority: 1) root handler field, 2) spec fields (backward compatibility)
+	// This allows targeting specific reconciler nodes (e.g., edge-node raspberry pi)
+	// while keeping blueprint definitions generic
+	if reconciliation.New != nil {
+		var targetExecutors []string
+
+		// Check root-level handler first (preferred, cleaner separation)
+		if reconciliation.New.Handler != nil {
+			if len(reconciliation.New.Handler.ExecutorNames) > 0 {
+				targetExecutors = reconciliation.New.Handler.ExecutorNames
+				log.WithFields(log.Fields{
+					"ExecutorNames":  targetExecutors,
+					"BlueprintName":  reconciliation.New.Metadata.Name,
+					"Source":         "handler.executorNames",
+				}).Info("Targeting specific executors for reconciliation")
+			} else if reconciliation.New.Handler.ExecutorName != "" {
+				targetExecutors = []string{reconciliation.New.Handler.ExecutorName}
+				log.WithFields(log.Fields{
+					"ExecutorName":   reconciliation.New.Handler.ExecutorName,
+					"BlueprintName":  reconciliation.New.Metadata.Name,
+					"Source":         "handler.executorName",
+				}).Info("Targeting specific executor for reconciliation")
+			}
+		}
+
+		// Fall back to spec fields for backward compatibility
+		if len(targetExecutors) == 0 && reconciliation.New.Spec != nil {
+			if executorNames, ok := reconciliation.New.Spec["executorNames"].([]interface{}); ok {
+				// Convert []interface{} to []string
+				for _, name := range executorNames {
+					if nameStr, ok := name.(string); ok {
+						targetExecutors = append(targetExecutors, nameStr)
+					}
+				}
+				if len(targetExecutors) > 0 {
+					log.WithFields(log.Fields{
+						"ExecutorNames":  targetExecutors,
+						"BlueprintName":  reconciliation.New.Metadata.Name,
+						"Source":         "spec.executorNames (deprecated)",
+					}).Info("Targeting specific executors for reconciliation")
+				}
+			} else if executorName, ok := reconciliation.New.Spec["executorName"].(string); ok {
+				targetExecutors = []string{executorName}
+				log.WithFields(log.Fields{
+					"ExecutorName":   executorName,
+					"BlueprintName":  reconciliation.New.Metadata.Name,
+					"Source":         "spec.executorName (deprecated)",
+				}).Info("Targeting specific executor for reconciliation")
+			}
+		}
+
+		// Apply targeting if found
+		if len(targetExecutors) > 0 {
+			funcSpec.Conditions.ExecutorNames = targetExecutors
+		}
+	}
+
 	log.WithFields(log.Fields{
 		"FuncSpecReconciliationNil": funcSpec.Reconciliation == nil,
 	}).Info("Set reconciliation on FunctionSpec")
