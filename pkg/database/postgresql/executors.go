@@ -21,7 +21,21 @@ func (db *PQDatabase) AddExecutor(executor *core.Executor) error {
 		return err
 	}
 
+	// If an UNREGISTERED executor exists with the same name, reactivate it instead of creating a new record
+	// This supports executors without generation-based naming (e.g., static-named reconcilers)
 	if existingExecutor != nil {
+		if existingExecutor.State == core.UNREGISTERED {
+			// Reactivate the executor by updating its state to PENDING and other fields
+			sqlStatement := `UPDATE ` + db.dbPrefix + `EXECUTORS SET EXECUTOR_ID=$1, STATE=$2, COMMISSIONTIME=$3, LASTHEARDFROM=$4, LONG=$5, LAT=$6, LOCDESC=$7, HWMODEL=$8, HWNODES=$9, HWCPU=$10, HWMEM=$11, HWSTORAGE=$12, HWGPUNAME=$13, HWGPUCOUNT=$14, HWGPUNODECOUNT=$15, HWGPUMEM=$16, SWNAME=$17, SWTYPE=$18, SWVERSION=$19, ALLOCATIONS=$20, NODE_ID=$21 WHERE COLONY_NAME=$22 AND NAME=$23`
+
+			allocationsJSONBytes, err := json.Marshal(executor.Allocations)
+			if err != nil {
+				return err
+			}
+
+			_, err = db.postgresql.Exec(sqlStatement, executor.ID, core.PENDING, time.Now(), executor.LastHeardFromTime, executor.Location.Long, executor.Location.Lat, executor.Location.Description, executor.Capabilities.Hardware.Model, executor.Capabilities.Hardware.Nodes, executor.Capabilities.Hardware.CPU, executor.Capabilities.Hardware.Memory, executor.Capabilities.Hardware.Storage, executor.Capabilities.Hardware.GPU.Name, executor.Capabilities.Hardware.GPU.Count, executor.Capabilities.Hardware.GPU.NodeCount, executor.Capabilities.Hardware.GPU.Memory, executor.Capabilities.Software.Name, executor.Capabilities.Software.Type, executor.Capabilities.Software.Version, string(allocationsJSONBytes), executor.NodeID, executor.ColonyName, executor.ColonyName+":"+executor.Name)
+			return err
+		}
 		return errors.New("Executor with name <" + executor.Name + "> already exists in Colony with name <" + executor.ColonyName + ">")
 	}
 
@@ -133,8 +147,9 @@ func (db *PQDatabase) parseExecutors(rows *sql.Rows) ([]*core.Executor, error) {
 }
 
 func (db *PQDatabase) GetExecutors() ([]*core.Executor, error) {
-	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `EXECUTORS`
-	rows, err := db.postgresql.Query(sqlStatement)
+	// Only return registered executors (exclude unregistered for traceability)
+	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `EXECUTORS WHERE STATE!=$1`
+	rows, err := db.postgresql.Query(sqlStatement, core.UNREGISTERED)
 	if err != nil {
 		return nil, err
 	}
@@ -166,6 +181,7 @@ func (db *PQDatabase) GetExecutorByID(executorID string) (*core.Executor, error)
 }
 
 func (db *PQDatabase) GetExecutorsByColonyName(colonyName string) ([]*core.Executor, error) {
+	// Return all executors (filtering happens in CLI layer)
 	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `EXECUTORS WHERE COLONY_NAME=$1`
 	rows, err := db.postgresql.Query(sqlStatement, colonyName)
 	if err != nil {
@@ -257,8 +273,9 @@ func (db *PQDatabase) RemoveExecutorByName(colonyName string, executorName strin
 		return errors.New("Executor <" + executorName + "> does not exists")
 	}
 
-	sqlStatement := `DELETE FROM ` + db.dbPrefix + `EXECUTORS WHERE COLONY_NAME=$1 AND NAME=$2`
-	_, err = db.postgresql.Exec(sqlStatement, colonyName, colonyName+":"+executorName)
+	// Mark executor as unregistered instead of deleting it (for traceability)
+	sqlStatement := `UPDATE ` + db.dbPrefix + `EXECUTORS SET STATE=$1 WHERE COLONY_NAME=$2 AND NAME=$3`
+	_, err = db.postgresql.Exec(sqlStatement, core.UNREGISTERED, colonyName, colonyName+":"+executorName)
 	if err != nil {
 		return err
 	}
@@ -279,8 +296,9 @@ func (db *PQDatabase) RemoveExecutorByName(colonyName string, executorName strin
 }
 
 func (db *PQDatabase) RemoveExecutorsByColonyName(colonyName string) error {
-	sqlStatement := `DELETE FROM ` + db.dbPrefix + `EXECUTORS WHERE COLONY_NAME=$1`
-	_, err := db.postgresql.Exec(sqlStatement, colonyName)
+	// Mark all executors in colony as unregistered instead of deleting them (for traceability)
+	sqlStatement := `UPDATE ` + db.dbPrefix + `EXECUTORS SET STATE=$1 WHERE COLONY_NAME=$2`
+	_, err := db.postgresql.Exec(sqlStatement, core.UNREGISTERED, colonyName)
 	if err != nil {
 		return err
 	}
