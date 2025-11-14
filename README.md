@@ -148,6 +148,14 @@ The [Colonies Dashboard](https://github.com/colonyos/dashboard) provides a web U
 - [Executors](https://github.com/colonyos/executors) - Pre-built executor implementations
 
 ## Development
+The repository contains a development container configuration to simplify development environment setup. You can use it on your local machine with any compatible tooling or by creating a [GitHub Codespace](https://docs.github.com/en/codespaces).
+
+If you are using VisualStudio Code you can get a local development environment up and running using the following steps.
+- Ensure that you have Docker installed
+- Ensure that you have the Dev Containers extension installed in VisualStudio Code
+- Clone the repository
+- Open it in Visual Studio Code and select "Reopen in container" when prompted or select the "Dev Containers: Open Folder In Container..." -command.
+
 
 ### Building
 

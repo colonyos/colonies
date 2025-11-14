@@ -27,10 +27,9 @@ echo "export COLONIES_COLONY_ID=$COLONY_ID" >> /configuration/colonyos.env
 echo "export COLONIES_COLONY_PRVKEY=$COLONY_PRVKEY" >> /configuration/colonyos.env
 
 MINIO_ROOT_PASSWORD=$(head -c 16 /dev/urandom | base64)
-echo "export MINIO_ROOT_PASSWORD=$MINIO_ROOT_PASSWORD" >> /configuration/minio.env
-
 AWS_S3_ACCESSKEY=$(head -c 16 /dev/urandom | base64 | tr -d '=.' )
 AWS_S3_SECRETKEY=$(head -c 32 /dev/urandom | base64 | tr -d '=.' )
 
+echo "export MINIO_ROOT_PASSWORD=$MINIO_ROOT_PASSWORD" >> /configuration/minio.env
 echo "export AWS_S3_ACCESSKEY=$AWS_S3_ACCESSKEY" >> /configuration/minio.env
 echo "export AWS_S3_SECRETKEY=$AWS_S3_SECRETKEY" >> /configuration/minio.env
