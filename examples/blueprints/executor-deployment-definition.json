@@ -1,6 +1,6 @@
 {
   "metadata": {
-    "name": "executordeployments.compute.colonies.io"
+    "name": "executor-deployment"
   },
   "spec": {
     "group": "compute.colonies.io",

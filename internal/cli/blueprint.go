@@ -302,8 +302,8 @@ var listBlueprintsCmd = &cobra.Command{
 			CheckError(err)
 			fmt.Println(string(jsonBytes))
 		} else {
-			// Print as table
-			printBlueprintsTable(blueprints)
+			// Print as table with client for runtime information
+			printBlueprintsTableWithClient(client, blueprints)
 		}
 	},
 }

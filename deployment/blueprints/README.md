@@ -1,4 +1,4 @@
-# Blueprint Catalog
+# Blueprints
 
 This directory contains reusable blueprint specifications for common deployments.
 
@@ -13,7 +13,7 @@ export COLONIES_PRVKEY=${COLONIES_COLONY_PRVKEY}
 colonies blueprint definition add --spec executor-deployment-definition.json
 ```
 
-### docker-executor-deployment.json
+### local-docker-executor-deployment.json
 Deploys a docker executor specifically on the **local/main node**.
 
 **Key Settings:**
@@ -23,7 +23,7 @@ Deploys a docker executor specifically on the **local/main node**.
 
 **Deploy:**
 ```bash
-colonies blueprint add --spec docker-executor-deployment.json
+colonies blueprint add --spec local-docker-executor-deployment.json
 ```
 
 **Result:** The deployment will run specifically on the `local-docker-node-reconciler` (main node from colonies docker-compose).
@@ -111,7 +111,7 @@ colonies blueprint definition add --spec executor-deployment-definition.json
 ### 2. Deploy Executor
 ```bash
 # Deploy to any available node
-colonies blueprint add --spec docker-executor-deployment.json
+colonies blueprint add --spec local-docker-executor-deployment.json
 
 # Check status
 colonies blueprint get --name docker-executor

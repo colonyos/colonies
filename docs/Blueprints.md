@@ -53,7 +53,7 @@ Example BlueprintDefinition:
 ```json
 {
   "metadata": {
-    "name": "executordeployments.compute.colonies.io"
+    "name": "executor-deployment"
   },
   "spec": {
     "group": "compute.colonies.io",
@@ -100,7 +100,7 @@ colonies blueprint definition ls
 ### 3. Get a Specific BlueprintDefinition
 
 ```bash
-colonies blueprint definition get --name executordeployments.compute.colonies.io
+colonies blueprint definition get --name executor-deployment
 ```
 
 ### 4. Add a Blueprint Instance
@@ -109,7 +109,7 @@ Members and colony owners can add blueprint instances:
 
 ```bash
 # Add a blueprint
-colonies blueprint add --spec docker-executor-deployment.json
+colonies blueprint add --spec local-docker-executor-deployment.json
 ```
 
 Example Blueprint:
@@ -412,7 +412,7 @@ The `docker-reconciler` manages Docker container deployments.
 colonies blueprint definition add --spec executor-deployment-definition.json
 
 # Deploy docker executors
-colonies blueprint add --spec docker-executor-deployment.json
+colonies blueprint add --spec local-docker-executor-deployment.json
 
 # Scale the deployment
 colonies blueprint set --name docker-executor --key spec.replicas --value 5

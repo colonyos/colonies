@@ -7,6 +7,8 @@ import (
 type Statistics struct {
 	Colonies            int `json:"colonies"`
 	Executors           int `json:"executors"`
+	ActiveExecutors     int `json:"activeexecutors"`
+	UnregisteredExecutors int `json:"unregisteredexecutors"`
 	WaitingProcesses    int `json:"waitingprocesses"`
 	RunningProcesses    int `json:"runningprocesses"`
 	SuccessfulProcesses int `json:"successfulprocesses"`
@@ -19,6 +21,8 @@ type Statistics struct {
 
 func CreateStatistics(colonies int,
 	executors int,
+	activeExecutors int,
+	unregisteredExecutors int,
 	waitingProcesses int,
 	runningProcesses int,
 	successfulProcesses int,
@@ -30,6 +34,8 @@ func CreateStatistics(colonies int,
 	stat := &Statistics{
 		Colonies:            colonies,
 		Executors:           executors,
+		ActiveExecutors:     activeExecutors,
+		UnregisteredExecutors: unregisteredExecutors,
 		WaitingProcesses:    waitingProcesses,
 		RunningProcesses:    runningProcesses,
 		SuccessfulProcesses: successfulProcesses,
@@ -59,6 +65,8 @@ func (stat *Statistics) Equals(stat2 *Statistics) bool {
 
 	if stat.Colonies == stat2.Colonies &&
 		stat.Executors == stat2.Executors &&
+		stat.ActiveExecutors == stat2.ActiveExecutors &&
+		stat.UnregisteredExecutors == stat2.UnregisteredExecutors &&
 		stat.WaitingProcesses == stat2.WaitingProcesses &&
 		stat.RunningProcesses == stat2.RunningProcesses &&
 		stat.SuccessfulProcesses == stat2.SuccessfulProcesses &&

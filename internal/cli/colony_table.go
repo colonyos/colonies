@@ -44,6 +44,18 @@ func printColonyStatTable(stat *core.Statistics) {
 	t.AddRow(row)
 
 	row = []interface{}{
+		termenv.String("Active executors").Foreground(theme.ColorCyan),
+		termenv.String(strconv.Itoa(stat.ActiveExecutors)).Foreground(theme.ColorGray),
+	}
+	t.AddRow(row)
+
+	row = []interface{}{
+		termenv.String("Unregistered executors").Foreground(theme.ColorCyan),
+		termenv.String(strconv.Itoa(stat.UnregisteredExecutors)).Foreground(theme.ColorGray),
+	}
+	t.AddRow(row)
+
+	row = []interface{}{
 		termenv.String("Waiting processes").Foreground(theme.ColorCyan),
 		termenv.String(strconv.Itoa(stat.WaitingProcesses)).Foreground(theme.ColorGray),
 	}

@@ -72,6 +72,8 @@ type Executor struct {
 	Allocations       Allocations   `json:"allocations"`
 	NodeMetadata      *NodeMetadata `json:"nodemetadata,omitempty"`
 	NodeID            string        `json:"nodeid,omitempty"` // Reference to Node
+	BlueprintID       string        `json:"blueprintid,omitempty"` // Reference to Blueprint (for managed executors)
+	BlueprintGen      int64         `json:"blueprintgen,omitempty"` // Blueprint generation this executor belongs to
 }
 
 func CreateExecutor(id string,

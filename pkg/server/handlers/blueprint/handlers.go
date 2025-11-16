@@ -787,6 +787,50 @@ func (h *Handlers) HandleRemoveBlueprint(c backends.Context, recoveredID string,
 		}
 	}
 
+	// Get the blueprint before removing it so we can trigger delete reconciliation
+	blueprint, err := h.server.BlueprintDB().GetBlueprintByName(msg.Namespace, msg.Name)
+	if h.server.HandleHTTPError(c, err, http.StatusInternalServerError) {
+		return
+	}
+
+	if blueprint == nil {
+		h.server.HandleHTTPError(c, errors.New("Blueprint not found"), http.StatusNotFound)
+		return
+	}
+
+	// Get the BlueprintDefinition to find the handler
+	var matchedSD *core.BlueprintDefinition
+	sds, err := h.server.BlueprintDB().GetBlueprintDefinitions()
+	if err == nil {
+		for _, sd := range sds {
+			if sd.Spec.Names.Kind == blueprint.Kind {
+				matchedSD = sd
+				break
+			}
+		}
+	}
+
+	// Trigger delete reconciliation BEFORE removing from database
+	if matchedSD != nil {
+		reconciliation := core.CreateReconciliation(blueprint, nil) // old=blueprint, new=nil => delete action
+		processID, err := h.submitReconciliationFunc(reconciliation, matchedSD)
+		if err != nil {
+			log.WithFields(log.Fields{
+				"Error": err,
+				"Kind":  blueprint.Kind,
+				"Name":  blueprint.Metadata.Name,
+			}).Warn("Failed to submit delete reconciliation")
+			// Don't fail the request if reconciliation submission fails
+		} else if processID != "" {
+			log.WithFields(log.Fields{
+				"ProcessID":     processID,
+				"BlueprintName": blueprint.Metadata.Name,
+				"Action":        "delete",
+			}).Info("Submitted delete reconciliation process")
+		}
+	}
+
+	// Now remove the blueprint from database
 	err = h.server.BlueprintDB().RemoveBlueprintByName(msg.Namespace, msg.Name)
 	if h.server.HandleHTTPError(c, err, http.StatusInternalServerError) {
 		return

@@ -1453,6 +1453,16 @@ func (controller *ColoniesController) GetColonyStatistics(colonyName string) (*c
 				cmd.errorChan <- err
 				return
 			}
+			activeExecutors, err := controller.executorDB.CountExecutorsByColonyNameAndState(colonyName, core.APPROVED)
+			if err != nil {
+				cmd.errorChan <- err
+				return
+			}
+			unregisteredExecutors, err := controller.executorDB.CountExecutorsByColonyNameAndState(colonyName, core.UNREGISTERED)
+			if err != nil {
+				cmd.errorChan <- err
+				return
+			}
 			waitingProcesses, err := controller.processDB.CountWaitingProcessesByColonyName(colonyName)
 			if err != nil {
 				cmd.errorChan <- err
@@ -1496,6 +1506,8 @@ func (controller *ColoniesController) GetColonyStatistics(colonyName string) (*c
 
 			cmd.statisticsReplyChan <- core.CreateStatistics(colonies,
 				executors,
+				activeExecutors,
+				unregisteredExecutors,
 				waitingProcesses,
 				runningProcesses,
 				successProcesses,
@@ -1570,8 +1582,12 @@ func (controller *ColoniesController) GetStatistics() (*core.Statistics, error) 
 				return
 			}
 
+			// For global statistics, active/unregistered counts are not meaningful across colonies
+			// These fields are populated at the colony level
 			cmd.statisticsReplyChan <- core.CreateStatistics(colonies,
 				executors,
+				0, // activeExecutors (not applicable for global stats)
+				0, // unregisteredExecutors (not applicable for global stats)
 				waitingProcesses,
 				runningProcesses,
 				successProcesses,

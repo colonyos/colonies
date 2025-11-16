@@ -551,3 +551,84 @@ func TestGetBlueprintHistory(t *testing.T) {
 	server.Shutdown()
 	<-done
 }
+
+// TestRemoveBlueprintTriggersDeleteReconciliation verifies that removing a blueprint triggers a delete reconciliation process
+func TestRemoveBlueprintTriggersDeleteReconciliation(t *testing.T) {
+	env, client, server, _, done := server.SetupTestEnv2(t)
+
+	// Add BlueprintDefinition with a handler (so reconciliation will be triggered)
+	sd := core.CreateBlueprintDefinition(
+		"docker-deployment",
+		"compute.io",
+		"v1",
+		"DockerDeployment",
+		"dockerdeployments",
+		"Namespaced",
+		"docker-reconciler",
+		"reconcile",
+	)
+	sd.Metadata.Namespace = env.ColonyName
+	_, err := client.AddBlueprintDefinition(sd, env.ColonyPrvKey)
+	assert.Nil(t, err)
+
+	// Add Blueprint instance
+	blueprint := core.CreateBlueprint("DockerDeployment", "test-deployment", env.ColonyName)
+	blueprint.SetSpec("replicas", 3)
+	blueprint.SetSpec("image", "nginx:alpine")
+	addedBlueprint, err := client.AddBlueprint(blueprint, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.NotNil(t, addedBlueprint)
+
+	// Get waiting processes - should have 1 (create reconciliation from add)
+	waitingProcs, err := client.GetWaitingProcesses(env.ColonyName, "", "", "", 100, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	initialWaitingCount := len(waitingProcs)
+	assert.Equal(t, 1, initialWaitingCount, "Should have 1 waiting process from create reconciliation")
+
+	// Verify the create reconciliation
+	if len(waitingProcs) > 0 {
+		createProc := waitingProcs[0]
+		assert.NotNil(t, createProc.FunctionSpec.Reconciliation)
+		assert.Equal(t, core.ReconciliationCreate, createProc.FunctionSpec.Reconciliation.Action)
+		assert.Nil(t, createProc.FunctionSpec.Reconciliation.Old)
+		assert.NotNil(t, createProc.FunctionSpec.Reconciliation.New)
+	}
+
+	// Remove the Blueprint
+	err = client.RemoveBlueprint(env.ColonyName, addedBlueprint.Metadata.Name, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+
+	// Get waiting processes again - should now have 2 (create + delete)
+	waitingProcs, err = client.GetWaitingProcesses(env.ColonyName, "", "", "", 100, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.Equal(t, 2, len(waitingProcs), "Should have 2 waiting processes after remove (create + delete)")
+
+	// Find the delete reconciliation process (should be the newest one)
+	var deleteProc *core.Process
+	for _, proc := range waitingProcs {
+		if proc.FunctionSpec.Reconciliation != nil {
+			if proc.FunctionSpec.Reconciliation.Action == core.ReconciliationDelete {
+				deleteProc = proc
+				break
+			}
+		}
+	}
+
+	// Verify delete reconciliation was created
+	assert.NotNil(t, deleteProc, "Delete reconciliation process should have been created")
+	assert.NotNil(t, deleteProc.FunctionSpec.Reconciliation)
+	assert.Equal(t, core.ReconciliationDelete, deleteProc.FunctionSpec.Reconciliation.Action)
+	assert.NotNil(t, deleteProc.FunctionSpec.Reconciliation.Old, "Delete reconciliation should have old blueprint")
+	assert.Nil(t, deleteProc.FunctionSpec.Reconciliation.New, "Delete reconciliation should have nil new blueprint")
+
+	// Verify the old blueprint in reconciliation matches what we deleted
+	assert.Equal(t, addedBlueprint.Metadata.Name, deleteProc.FunctionSpec.Reconciliation.Old.Metadata.Name)
+	assert.Equal(t, "DockerDeployment", deleteProc.FunctionSpec.Reconciliation.Old.Kind)
+
+	// Verify the blueprint was removed from database
+	_, err = client.GetBlueprint(env.ColonyName, addedBlueprint.Metadata.Name, env.ExecutorPrvKey)
+	assert.NotNil(t, err, "Blueprint should not exist in database after removal")
+
+	server.Shutdown()
+	<-done
+}

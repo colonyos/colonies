@@ -129,7 +129,7 @@ services:
       COLONIES_ID: ${COLONIES_ID}
       TZ: ${TZ}
     volumes:
-      - ./deployment/catalog:/catalog:ro
+      - ./deployment/blueprints:/blueprints:ro
     entrypoint: >
       /bin/sh -c "
       echo 'Executing: colonies colony add --name ${COLONIES_COLONY_NAME} --colonyid ${COLONIES_COLONY_ID}';
@@ -137,12 +137,13 @@ services:
       colonies colony add --name ${COLONIES_COLONY_NAME} --colonyid ${COLONIES_COLONY_ID};
       echo 'Executing: colonies user add --name=myuser --email= --phone= --userid=${COLONIES_ID}';
       colonies user add --name='myuser' --email='' --phone='' --userid=${COLONIES_ID};
-      echo 'Adding blueprint definition...';
-      colonies blueprint definition add --spec /catalog/executor-deployment-definition.json;
+      echo 'Adding blueprint definitions...';
+      colonies blueprint definition add --spec /blueprints/executor-deployment-definition.json;
+      colonies blueprint definition add --spec /blueprints/docker-deployment-definition.json;
       echo 'Waiting for docker-reconciler to be ready...';
       sleep 5;
       echo 'Adding docker-executor deployment with 1 replica...';
-      colonies blueprint add --spec /catalog/docker-executor-deployment.json;
+      colonies blueprint add --spec /blueprints/local-docker-executor-deployment.json;
       "
 
   docker-reconciler:
@@ -202,8 +203,8 @@ services:
       "
 
   # docker-executor is now managed by docker-reconciler
-  # See executors/docker-reconciler/examples/docker-executor-deployment.json
-  # To deploy: colonies blueprint add --spec executors/docker-reconciler/examples/docker-executor-deployment.json
+  # See deployment/blueprints/local-docker-executor-deployment.json
+  # To deploy: colonies blueprint add --spec deployment/blueprints/local-docker-executor-deployment.json
 
 volumes:
   timescaledb_data:
