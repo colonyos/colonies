@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/colonyos/colonies/pkg/core"
@@ -87,14 +88,23 @@ func (controller *ColoniesController) GetCrons(colonyName string, count int) ([]
 }
 
 func (controller *ColoniesController) RunCron(cronID string) (*core.Cron, error) {
+	log.WithFields(log.Fields{"CronID": cronID}).Info("RunCron called in controller")
 	cmd := &command{cronReplyChan: make(chan *core.Cron, 1),
 		errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
+			log.WithFields(log.Fields{"CronID": cronID}).Info("RunCron handler executing")
 			cron, err := controller.cronDB.GetCronByID(cronID)
 			if err != nil {
+				log.WithFields(log.Fields{"Error": err}).Warn("Failed to get cron by ID")
 				cmd.errorChan <- err
 				return
 			}
+			if cron == nil {
+				log.WithFields(log.Fields{"CronID": cronID}).Warn("Cron not found")
+				cmd.errorChan <- fmt.Errorf("cron not found")
+				return
+			}
+			log.WithFields(log.Fields{"CronID": cron.ID, "CronName": cron.Name}).Info("Got cron, calling StartCron")
 			controller.StartCron(cron)
 			cmd.cronReplyChan <- cron
 		}}
@@ -104,6 +114,7 @@ func (controller *ColoniesController) RunCron(cronID string) (*core.Cron, error)
 	case err := <-cmd.errorChan:
 		return nil, err
 	case cron := <-cmd.cronReplyChan:
+		log.WithFields(log.Fields{"CronID": cron.ID}).Info("RunCron completed")
 		return cron, nil
 	}
 }
@@ -143,11 +154,13 @@ func (controller *ColoniesController) CalcNextRun(cron *core.Cron) time.Time {
 }
 
 func (controller *ColoniesController) StartCron(cron *core.Cron) {
+	log.WithFields(log.Fields{"CronID": cron.ID, "CronName": cron.Name}).Info("StartCron called")
 	workflowSpec, err := core.ConvertJSONToWorkflowSpec(cron.WorkflowSpec)
 	if err != nil {
 		log.WithFields(log.Fields{"Error": err}).Error("Failed to parsing WorkflowSpec")
 		return
 	}
+	log.WithFields(log.Fields{"FunctionSpecs": len(workflowSpec.FunctionSpecs)}).Info("WorkflowSpec parsed")
 
 	var rootInput []interface{}
 	// Pick all outputs from the leaves of the previous processgraph and
@@ -173,6 +186,51 @@ func (controller *ColoniesController) StartCron(cron *core.Cron) {
 	if err != nil {
 		log.WithFields(log.Fields{"Error": err, "CronId": cron.ID}).Error("Failed to create cron processgraph")
 		return
+	}
+
+	log.WithFields(log.Fields{
+		"FunctionSpecsLen": len(workflowSpec.FunctionSpecs),
+		"FuncName":         workflowSpec.FunctionSpecs[0].FuncName,
+	}).Info("Checking if this is a reconciliation cron")
+
+	// Update blueprint metadata for reconciliation crons (cron-based reconciliation)
+	if len(workflowSpec.FunctionSpecs) > 0 && workflowSpec.FunctionSpecs[0].FuncName == "reconcile" {
+		log.WithFields(log.Fields{
+			"FuncName": workflowSpec.FunctionSpecs[0].FuncName,
+		}).Info("Detected reconcile function in cron")
+		if blueprintName, ok := workflowSpec.FunctionSpecs[0].KwArgs["blueprintName"].(string); ok {
+			log.WithFields(log.Fields{
+				"BlueprintName": blueprintName,
+				"ColonyName":    workflowSpec.ColonyName,
+			}).Info("Attempting to update blueprint metadata")
+			blueprint, err := controller.blueprintDB.GetBlueprintByName(workflowSpec.ColonyName, blueprintName)
+			if err == nil && blueprint != nil && len(processGraph.Roots) > 0 {
+				blueprint.Metadata.LastReconciliationProcess = processGraph.Roots[0]
+				blueprint.Metadata.LastReconciliationTime = time.Now()
+				err = controller.blueprintDB.UpdateBlueprint(blueprint)
+				if err != nil {
+					log.WithFields(log.Fields{
+						"Error":         err,
+						"BlueprintName": blueprintName,
+						"ProcessID":     processGraph.Roots[0],
+					}).Warn("Failed to update blueprint reconciliation metadata")
+				} else {
+					log.WithFields(log.Fields{
+						"BlueprintName": blueprintName,
+						"ProcessID":     processGraph.Roots[0],
+					}).Info("Successfully updated blueprint reconciliation metadata")
+				}
+			} else {
+				log.WithFields(log.Fields{
+					"Error":           err,
+					"BlueprintName":   blueprintName,
+					"BlueprintNil":    blueprint == nil,
+					"ProcessGraphLen": len(processGraph.Roots),
+				}).Warn("Failed to get blueprint or process graph roots")
+			}
+		} else {
+			log.Warn("blueprintName not found in KwArgs")
+		}
 	}
 
 	nextRun := controller.CalcNextRun(cron)

@@ -100,6 +100,7 @@ type ColoniesController struct {
 	logDB            database.LogDatabase
 	fileDB           database.FileDatabase
 	snapshotDB       database.SnapshotDatabase
+	blueprintDB      database.BlueprintDatabase
 	securityDB       database.SecurityDatabase
 	cmdQueue         chan *command
 	blockingCmdQueue chan *command
@@ -150,6 +151,7 @@ func CreateColoniesController(db database.Database,
 	controller.logDB = db
 	controller.fileDB = db
 	controller.snapshotDB = db
+	controller.blueprintDB = db
 	controller.securityDB = db
 	controller.thisNode = thisNode
 	controller.clusterConfig = clusterConfig

@@ -29,6 +29,7 @@ func init() {
 	blueprintCmd.AddCommand(updateBlueprintCmd)
 	blueprintCmd.AddCommand(setBlueprintCmd)
 	blueprintCmd.AddCommand(removeBlueprintCmd)
+	blueprintCmd.AddCommand(reconcileBlueprintCmd)
 	blueprintCmd.AddCommand(historyBlueprintCmd)
 
 	// BlueprintDefinition flags
@@ -73,6 +74,10 @@ func init() {
 	removeBlueprintCmd.Flags().StringVarP(&PrvKey, "prvkey", "", "", "Private key")
 	removeBlueprintCmd.Flags().StringVarP(&BlueprintName, "name", "", "", "Blueprint name")
 	removeBlueprintCmd.MarkFlagRequired("name")
+
+	reconcileBlueprintCmd.Flags().StringVarP(&PrvKey, "prvkey", "", "", "Private key")
+	reconcileBlueprintCmd.Flags().StringVarP(&BlueprintName, "name", "", "", "Blueprint name")
+	reconcileBlueprintCmd.MarkFlagRequired("name")
 
 	historyBlueprintCmd.Flags().StringVarP(&PrvKey, "prvkey", "", "", "Private key")
 	historyBlueprintCmd.Flags().StringVarP(&BlueprintName, "name", "", "", "Blueprint name")
@@ -432,6 +437,50 @@ var removeBlueprintCmd = &cobra.Command{
 			"Name":       BlueprintName,
 			"ColonyName": ColonyName,
 		}).Info("Blueprint removed")
+	},
+}
+
+var reconcileBlueprintCmd = &cobra.Command{
+	Use:   "reconcile",
+	Short: "Trigger immediate reconciliation of a blueprint",
+	Long:  "Trigger immediate reconciliation of a blueprint by running its associated cron",
+	Run: func(cmd *cobra.Command, args []string) {
+		client := setup()
+
+		// Get blueprint
+		blueprint, err := client.GetBlueprint(ColonyName, BlueprintName, PrvKey)
+		CheckError(err)
+
+		// Get cron name from blueprint annotations
+		cronName := blueprint.Metadata.Annotations["reconciliation.cron.name"]
+		if cronName == "" {
+			CheckError(errors.New("Blueprint has no associated reconciliation cron"))
+		}
+
+		// Get all crons in the colony to find the one by name
+		crons, err := client.GetCrons(ColonyName, 1000, PrvKey)
+		CheckError(err)
+
+		var cronID string
+		for _, c := range crons {
+			if c.Name == cronName {
+				cronID = c.ID
+				break
+			}
+		}
+
+		if cronID == "" {
+			CheckError(errors.New("Reconciliation cron not found: " + cronName))
+		}
+
+		// Run the cron
+		_, err = client.RunCron(cronID, PrvKey)
+		CheckError(err)
+
+		log.WithFields(log.Fields{
+			"BlueprintName": BlueprintName,
+			"CronName":      cronName,
+		}).Info("Triggered immediate reconciliation")
 	},
 }
 

@@ -790,34 +790,64 @@ func (h *Handlers) HandleCloseSuccessful(c backends.Context, recoveredID string,
 	}
 
 	// If this was a reconciliation process, update the blueprint status from the output
+	var blueprintID string
+	var blueprintName string
+	var colonyName string
+
+	// Check for old-style reconciliation (embedded blueprint)
 	if process.FunctionSpec.Reconciliation != nil {
-		var blueprintID string
 		if process.FunctionSpec.Reconciliation.New != nil {
 			blueprintID = process.FunctionSpec.Reconciliation.New.ID
 		} else if process.FunctionSpec.Reconciliation.Old != nil {
 			blueprintID = process.FunctionSpec.Reconciliation.Old.ID
 		}
+	}
 
-		if blueprintID != "" && len(msg.Output) > 0 {
-			// The first output entry should contain the status map
+	// Check for new cron-based reconciliation (fetch-based)
+	if blueprintID == "" && process.FunctionSpec.FuncName == "reconcile" {
+		if bpName, ok := process.FunctionSpec.KwArgs["blueprintName"].(string); ok {
+			blueprintName = bpName
+			colonyName = process.FunctionSpec.Conditions.ColonyName
+		}
+	}
+
+	// Update blueprint if we have identification (either ID or name+colony)
+	if (blueprintID != "" || (blueprintName != "" && colonyName != "")) && len(msg.Output) > 0 {
+		// Get blueprint by ID or by name
+		var blueprint *core.Blueprint
+		var err error
+		if blueprintID != "" {
+			blueprint, err = h.server.BlueprintDB().GetBlueprintByID(blueprintID)
+		} else {
+			blueprint, err = h.server.BlueprintDB().GetBlueprintByName(colonyName, blueprintName)
+		}
+
+		if err == nil && blueprint != nil {
+			// The first output entry should contain the status map and metadata
 			if statusMap, ok := msg.Output[0].(map[string]interface{}); ok {
+				// Update status if present
 				if status, ok := statusMap["status"]; ok {
 					if statusData, ok := status.(map[string]interface{}); ok {
-						err = h.server.BlueprintDB().UpdateBlueprintStatus(blueprintID, statusData)
+						err = h.server.BlueprintDB().UpdateBlueprintStatus(blueprint.ID, statusData)
 						if err != nil {
 							log.WithFields(log.Fields{
-								"Error":     err,
-								"BlueprintID": blueprintID,
-								"ProcessID": process.ID,
+								"Error":       err,
+								"BlueprintID": blueprint.ID,
+								"ProcessID":   process.ID,
 							}).Warn("Failed to update blueprint status from reconciliation output")
 						} else {
 							log.WithFields(log.Fields{
-								"BlueprintID": blueprintID,
-								"ProcessID": process.ID,
+								"BlueprintID": blueprint.ID,
+								"ProcessID":   process.ID,
 							}).Debug("Updated blueprint status from reconciliation output")
 						}
 					}
 				}
+
+				// NOTE: We do NOT update LastReconciliationProcess here to avoid race conditions.
+				// The cron controller already updates it when creating the processgraph.
+				// Updating it here can cause older processes to overwrite newer process IDs
+				// when they complete out of order.
 			}
 		}
 	}

@@ -224,9 +224,10 @@ func (h *Handlers) HandleGetCrons(c backends.Context, recoveredID string, payloa
 	if h.server.HandleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
+
+	// If crons is nil, convert to empty array (similar to how executors are handled)
 	if crons == nil {
-		h.server.HandleHTTPError(c, errors.New("Failed to get crons, crons is nil"), http.StatusInternalServerError)
-		return
+		crons = []*core.Cron{}
 	}
 
 	jsonString, err = core.ConvertCronArrayToJSON(crons)

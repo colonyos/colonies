@@ -151,7 +151,7 @@ var getCronsCmd = &cobra.Command{
 
 		crons, err := client.GetCrons(ColonyName, Count, PrvKey)
 		CheckError(err)
-		if crons == nil {
+		if crons == nil || len(crons) == 0 {
 			log.WithFields(log.Fields{"ColonyName": ColonyName}).Info("No crons found")
 			os.Exit(0)
 		}

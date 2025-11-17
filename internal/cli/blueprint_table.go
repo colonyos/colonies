@@ -272,7 +272,8 @@ func printBlueprintsTableWithClient(c *client.ColoniesClient, blueprints []*core
 				process, err := c.GetProcess(blueprint.Metadata.LastReconciliationProcess, PrvKey)
 				if err == nil && process != nil {
 					// State: 0=WAITING, 1=RUNNING, 2=SUCCESS, 3=FAILED
-					if process.State == 1 {
+					// Consider both WAITING and RUNNING as "reconciling"
+					if process.State == 0 || process.State == 1 {
 						reconcilingStr = "yes"
 					} else {
 						reconcilingStr = "no"
