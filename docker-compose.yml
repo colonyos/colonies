@@ -51,7 +51,7 @@ services:
       "
 
   colonies-server:
-    image: colonyos/colonies:latest
+    image: colonyos/colonies:v1.9.2
     depends_on:
       - timescaledb
     environment:
@@ -97,7 +97,7 @@ services:
     command: sh -c "colonies server start --initdb --port ${COLONIES_SERVER_HTTP_PORT} --relayport 25100 --etcdname server1 --etcdhost colonies-server --etcdclientport 23100 --etcdpeerport 24100 --initial-cluster server1=colonies-server:24100:25100:${COLONIES_SERVER_HTTP_PORT} --etcddatadir /var/colonies/etcd --insecure"
 
   colonies-setup:
-    image: colonyos/colonies:v1.9.1
+    image: colonyos/colonies:v1.9.2
     depends_on:
       - colonies-server
     environment:
@@ -147,7 +147,7 @@ services:
       "
 
   docker-reconciler:
-    image: colonyos/docker-reconciler:latest
+    image: colonyos/docker-reconciler:v1.0.4
     container_name: docker-reconciler
     restart: unless-stopped
     depends_on:

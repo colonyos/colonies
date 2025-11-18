@@ -18,7 +18,7 @@ Deploys a docker executor specifically on the **local/main node**.
 
 **Key Settings:**
 - `executorType`: `docker-reconciler` - Requires a docker-reconciler
-- `executorName`: `local-docker-node-reconciler` - Targets the main node
+- `executorName`: `local-node-docker-reconciler` - Targets the main node
 - `replicas`: 1 - Single executor instance
 
 **Deploy:**
@@ -26,7 +26,7 @@ Deploys a docker executor specifically on the **local/main node**.
 colonies blueprint add --spec local-docker-executor-deployment.json
 ```
 
-**Result:** The deployment will run specifically on the `local-docker-node-reconciler` (main node from colonies docker-compose).
+**Result:** The deployment will run specifically on the `local-node-docker-reconciler` (main node from colonies docker-compose).
 
 ## Executor Targeting Examples
 
@@ -39,7 +39,7 @@ colonies blueprint add --spec local-docker-executor-deployment.json
   },
   "spec": {
     "executorType": "docker-reconciler",
-    "executorName": "local-docker-node-reconciler"  // Main node
+    "executorName": "local-node-docker-reconciler"  // Main node
   }
 }
 ```
@@ -72,7 +72,7 @@ colonies blueprint add --spec local-docker-executor-deployment.json
   },
   "spec": {
     "executorType": "docker-reconciler",
-    "executorName": "local-docker-node-reconciler"  // Specific node
+    "executorName": "local-node-docker-reconciler"  // Specific node
   }
 }
 ```
@@ -80,7 +80,7 @@ colonies blueprint add --spec local-docker-executor-deployment.json
 ⚠️ Fails if that reconciler is down
 
 **Available reconcilers in default setup:**
-- `local-docker-node-reconciler` - Main node (in colonies docker-compose)
+- `local-node-docker-reconciler` - Main node (in colonies docker-compose)
 - `docker-reconciler-edge` - Edge node (in docker-reconciler docker-compose)
 
 ### Example 3: Target Edge Node
