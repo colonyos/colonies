@@ -269,6 +269,11 @@ func (h *Handlers) HandleGetBlueprintDefinitions(c backends.Context, recoveredID
 		return
 	}
 
+	// If sds is nil, convert to empty array (similar to how crons/executors are handled)
+	if sds == nil {
+		sds = []*core.BlueprintDefinition{}
+	}
+
 	log.WithFields(log.Fields{
 		"ColonyName": msg.ColonyName,
 		"Count":      len(sds),
@@ -427,7 +432,8 @@ func (h *Handlers) HandleAddBlueprint(c backends.Context, recoveredID string, pa
 
 	// Auto-create reconciliation cron if handler is defined
 	if matchedSD != nil && matchedSD.Spec.Handler.ExecutorType != "" {
-		cronName := "reconcile-" + msg.Blueprint.Metadata.Name
+		// Include namespace in cron name to ensure uniqueness across colonies
+		cronName := "reconcile-" + msg.Blueprint.Metadata.Namespace + "-" + msg.Blueprint.Metadata.Name
 
 		// Create workflow spec for reconciliation
 		workflowSpec, err := h.createReconciliationWorkflowSpec(msg.Blueprint, matchedSD)
