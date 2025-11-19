@@ -224,7 +224,7 @@ var listRunningProcessesCmd = &cobra.Command{
 				os.Exit(0)
 			}
 
-			printProcessesTable(processes, core.RUNNING)
+			printProcessesTableWithClient(processes, core.RUNNING, client)
 		}
 	},
 }
@@ -251,7 +251,7 @@ var listSuccessfulProcessesCmd = &cobra.Command{
 				os.Exit(0)
 			}
 
-			printProcessesTable(processes, core.WAITING)
+			printProcessesTableWithClient(processes, core.SUCCESS, client)
 		}
 	},
 }
@@ -278,7 +278,7 @@ var listFailedProcessesCmd = &cobra.Command{
 				os.Exit(0)
 			}
 
-			printProcessesTable(processes, core.FAILED)
+			printProcessesTableWithClient(processes, core.FAILED, client)
 		}
 	},
 }

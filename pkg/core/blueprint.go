@@ -15,8 +15,16 @@ type Blueprint struct {
 	ID       string                 `json:"blueprintid"`
 	Kind     string                 `json:"kind"`
 	Metadata BlueprintMetadata        `json:"metadata"`
+	Handler  *BlueprintHandler      `json:"handler,omitempty"`
 	Spec     map[string]interface{} `json:"spec"`
 	Status   map[string]interface{} `json:"status,omitempty"`
+}
+
+// BlueprintHandler defines executor targeting for blueprint instances
+// This allows targeting specific executor(s) at the instance level
+type BlueprintHandler struct {
+	ExecutorName  string   `json:"executorName,omitempty"`
+	ExecutorNames []string `json:"executorNames,omitempty"`
 }
 
 // BlueprintMetadata contains metadata for blueprints

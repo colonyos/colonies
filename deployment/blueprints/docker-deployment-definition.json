@@ -1,0 +1,146 @@
+{
+  "metadata": {
+    "name": "docker-deployment"
+  },
+  "spec": {
+    "group": "colonyos.io",
+    "version": "v1",
+    "names": {
+      "kind": "DockerDeployment",
+      "plural": "dockerdeployments",
+      "singular": "dockerdeployment"
+    },
+    "scope": "Namespaced",
+    "schema": {
+      "type": "object",
+      "required": ["instances"],
+      "properties": {
+        "replicas": {
+          "type": "integer",
+          "description": "Number of replicas to deploy (optional, defaults to number of instances specified)",
+          "minimum": 0,
+          "default": 1
+        },
+        "executorName": {
+          "type": "string",
+          "description": "Optional: Target specific reconciler node (e.g., 'edge-node-docker-reconciler'). If omitted, any reconciler with matching executorType can handle this deployment."
+        },
+        "executorNames": {
+          "type": "array",
+          "description": "Optional: Target multiple specific reconciler nodes. First available node gets the deployment. Alternative to 'executorName' for multi-node targeting.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "instances": {
+          "type": "array",
+          "description": "List of container instances to deploy",
+          "items": {
+            "type": "object",
+            "required": ["name", "type", "image"],
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Name of the container instance"
+              },
+              "type": {
+                "type": "string",
+                "enum": ["container"],
+                "description": "Instance type (currently only 'container' is supported)"
+              },
+              "image": {
+                "type": "string",
+                "description": "Docker image to use (e.g., 'nginx:latest')"
+              },
+              "environment": {
+                "type": "object",
+                "description": "Environment variables for the container",
+                "additionalProperties": {
+                  "type": "string"
+                }
+              },
+              "ports": {
+                "type": "array",
+                "description": "Port mappings",
+                "items": {
+                  "type": "object",
+                  "required": ["container", "protocol"],
+                  "properties": {
+                    "host": {
+                      "type": "integer",
+                      "description": "Host port (optional, will auto-assign if not specified)"
+                    },
+                    "container": {
+                      "type": "integer",
+                      "description": "Container port"
+                    },
+                    "protocol": {
+                      "type": "string",
+                      "enum": ["tcp", "udp"],
+                      "description": "Protocol (tcp or udp)"
+                    }
+                  }
+                }
+              },
+              "volumes": {
+                "type": "array",
+                "description": "Volume mounts",
+                "items": {
+                  "type": "object",
+                  "required": ["type", "mountPath"],
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "enum": ["named", "bind"],
+                      "description": "Volume type: 'named' for Docker volumes, 'bind' for host paths"
+                    },
+                    "name": {
+                      "type": "string",
+                      "description": "Volume name (for named volumes) or host path (for bind mounts)"
+                    },
+                    "mountPath": {
+                      "type": "string",
+                      "description": "Container mount path"
+                    },
+                    "readOnly": {
+                      "type": "boolean",
+                      "description": "Mount as read-only",
+                      "default": false
+                    }
+                  }
+                }
+              },
+              "command": {
+                "type": "array",
+                "description": "Override container command",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "args": {
+                "type": "array",
+                "description": "Override container arguments",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "privileged": {
+                "type": "boolean",
+                "description": "Run container in privileged mode",
+                "default": false
+              },
+              "networkMode": {
+                "type": "string",
+                "description": "Docker network mode (e.g., 'bridge', 'host', 'none')"
+              }
+            }
+          }
+        }
+      }
+    },
+    "handler": {
+      "executorType": "docker-reconciler",
+      "functionName": "reconcile"
+    }
+  }
+}

@@ -6,9 +6,10 @@ import (
 )
 
 const (
-	PENDING  int = 0
-	APPROVED     = 1
-	REJECTED     = 2
+	PENDING      int = 0
+	APPROVED         = 1
+	REJECTED         = 2
+	UNREGISTERED     = 3
 )
 
 type Location struct {
@@ -71,6 +72,8 @@ type Executor struct {
 	Allocations       Allocations   `json:"allocations"`
 	NodeMetadata      *NodeMetadata `json:"nodemetadata,omitempty"`
 	NodeID            string        `json:"nodeid,omitempty"` // Reference to Node
+	BlueprintID       string        `json:"blueprintid,omitempty"` // Reference to Blueprint (for managed executors)
+	BlueprintGen      int64         `json:"blueprintgen,omitempty"` // Blueprint generation this executor belongs to
 }
 
 func CreateExecutor(id string,
@@ -330,6 +333,18 @@ func (executor *Executor) Approve() {
 
 func (executor *Executor) Reject() {
 	executor.State = REJECTED
+}
+
+func (executor *Executor) IsUnregistered() bool {
+	if executor.State == UNREGISTERED {
+		return true
+	}
+
+	return false
+}
+
+func (executor *Executor) Unregister() {
+	executor.State = UNREGISTERED
 }
 
 func (executor *Executor) SetID(id string) {

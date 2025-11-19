@@ -551,3 +551,295 @@ func TestGetBlueprintHistory(t *testing.T) {
 	server.Shutdown()
 	<-done
 }
+
+// TestRemoveBlueprintTriggersDeleteReconciliation verifies that removing a blueprint triggers a delete reconciliation process
+func TestRemoveBlueprintTriggersDeleteReconciliation(t *testing.T) {
+	t.Skip("Event-driven reconciliation with action metadata not yet implemented - using cron-based reconciliation instead")
+	env, client, server, _, done := server.SetupTestEnv2(t)
+
+	// Add BlueprintDefinition with a handler (so reconciliation will be triggered)
+	sd := core.CreateBlueprintDefinition(
+		"docker-deployment",
+		"compute.io",
+		"v1",
+		"DockerDeployment",
+		"dockerdeployments",
+		"Namespaced",
+		"docker-reconciler",
+		"reconcile",
+	)
+	sd.Metadata.Namespace = env.ColonyName
+	_, err := client.AddBlueprintDefinition(sd, env.ColonyPrvKey)
+	assert.Nil(t, err)
+
+	// Add Blueprint instance
+	blueprint := core.CreateBlueprint("DockerDeployment", "test-deployment", env.ColonyName)
+	blueprint.SetSpec("replicas", 3)
+	blueprint.SetSpec("image", "nginx:alpine")
+	addedBlueprint, err := client.AddBlueprint(blueprint, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.NotNil(t, addedBlueprint)
+
+	// Get waiting processes - should have 1 (create reconciliation from add)
+	waitingProcs, err := client.GetWaitingProcesses(env.ColonyName, "", "", "", 100, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	initialWaitingCount := len(waitingProcs)
+	assert.Equal(t, 1, initialWaitingCount, "Should have 1 waiting process from create reconciliation")
+
+	// Verify the create reconciliation
+	if len(waitingProcs) > 0 {
+		createProc := waitingProcs[0]
+		assert.NotNil(t, createProc.FunctionSpec.Reconciliation)
+		assert.Equal(t, core.ReconciliationCreate, createProc.FunctionSpec.Reconciliation.Action)
+		assert.Nil(t, createProc.FunctionSpec.Reconciliation.Old)
+		assert.NotNil(t, createProc.FunctionSpec.Reconciliation.New)
+	}
+
+	// Remove the Blueprint
+	err = client.RemoveBlueprint(env.ColonyName, addedBlueprint.Metadata.Name, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+
+	// Get waiting processes again - should now have 2 (create + delete)
+	waitingProcs, err = client.GetWaitingProcesses(env.ColonyName, "", "", "", 100, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.Equal(t, 2, len(waitingProcs), "Should have 2 waiting processes after remove (create + delete)")
+
+	// Find the delete reconciliation process (should be the newest one)
+	var deleteProc *core.Process
+	for _, proc := range waitingProcs {
+		if proc.FunctionSpec.Reconciliation != nil {
+			if proc.FunctionSpec.Reconciliation.Action == core.ReconciliationDelete {
+				deleteProc = proc
+				break
+			}
+		}
+	}
+
+	// Verify delete reconciliation was created
+	assert.NotNil(t, deleteProc, "Delete reconciliation process should have been created")
+	assert.NotNil(t, deleteProc.FunctionSpec.Reconciliation)
+	assert.Equal(t, core.ReconciliationDelete, deleteProc.FunctionSpec.Reconciliation.Action)
+	assert.NotNil(t, deleteProc.FunctionSpec.Reconciliation.Old, "Delete reconciliation should have old blueprint")
+	assert.Nil(t, deleteProc.FunctionSpec.Reconciliation.New, "Delete reconciliation should have nil new blueprint")
+
+	// Verify the old blueprint in reconciliation matches what we deleted
+	assert.Equal(t, addedBlueprint.Metadata.Name, deleteProc.FunctionSpec.Reconciliation.Old.Metadata.Name)
+	assert.Equal(t, "DockerDeployment", deleteProc.FunctionSpec.Reconciliation.Old.Kind)
+
+	// Verify the blueprint was removed from database
+	_, err = client.GetBlueprint(env.ColonyName, addedBlueprint.Metadata.Name, env.ExecutorPrvKey)
+	assert.NotNil(t, err, "Blueprint should not exist in database after removal")
+
+	server.Shutdown()
+	<-done
+}
+
+func TestGetBlueprintDefinitions(t *testing.T) {
+	env, client, server, _, done := server.SetupTestEnv2(t)
+
+	// Initially should be empty
+	definitions, err := client.GetBlueprintDefinitions(env.ColonyName, env.ColonyPrvKey)
+	assert.Nil(t, err)
+	assert.NotNil(t, definitions)
+	assert.Equal(t, 0, len(definitions))
+
+	// Add first BlueprintDefinition
+	sd1 := core.CreateBlueprintDefinition(
+		"test-blueprint-1",
+		"example.com",
+		"v1",
+		"TestBlueprint1",
+		"testblueprints1",
+		"Namespaced",
+		"test_executor_type",
+		"reconcile_test_resource",
+	)
+	sd1.Metadata.Namespace = env.ColonyName
+	_, err = client.AddBlueprintDefinition(sd1, env.ColonyPrvKey)
+	assert.Nil(t, err)
+
+	// Add second BlueprintDefinition
+	sd2 := core.CreateBlueprintDefinition(
+		"test-blueprint-2",
+		"example.com",
+		"v1",
+		"TestBlueprint2",
+		"testblueprints2",
+		"Namespaced",
+		"test_executor_type",
+		"reconcile_test_resource",
+	)
+	sd2.Metadata.Namespace = env.ColonyName
+	_, err = client.AddBlueprintDefinition(sd2, env.ColonyPrvKey)
+	assert.Nil(t, err)
+
+	// Get all definitions
+	definitions, err = client.GetBlueprintDefinitions(env.ColonyName, env.ColonyPrvKey)
+	assert.Nil(t, err)
+	assert.NotNil(t, definitions)
+	assert.Equal(t, 2, len(definitions))
+
+	// Verify both definitions are present
+	foundSD1 := false
+	foundSD2 := false
+	for _, sd := range definitions {
+		if sd.Metadata.Name == "test-blueprint-1" {
+			foundSD1 = true
+			assert.Equal(t, "TestBlueprint1", sd.Spec.Names.Kind)
+		}
+		if sd.Metadata.Name == "test-blueprint-2" {
+			foundSD2 = true
+			assert.Equal(t, "TestBlueprint2", sd.Spec.Names.Kind)
+		}
+	}
+	assert.True(t, foundSD1, "Should find first blueprint definition")
+	assert.True(t, foundSD2, "Should find second blueprint definition")
+
+	server.Shutdown()
+	<-done
+}
+
+func TestGetBlueprintDefinitionsAsExecutor(t *testing.T) {
+	env, client, server, _, done := server.SetupTestEnv2(t)
+
+	// Add BlueprintDefinition as colony owner
+	sd := core.CreateBlueprintDefinition(
+		"test-blueprint",
+		"example.com",
+		"v1",
+		"TestBlueprint",
+		"testblueprints",
+		"Namespaced",
+		"test_executor_type",
+		"reconcile_test_resource",
+	)
+	sd.Metadata.Namespace = env.ColonyName
+	_, err := client.AddBlueprintDefinition(sd, env.ColonyPrvKey)
+	assert.Nil(t, err)
+
+	// Executors (members) should also be able to list definitions
+	definitions, err := client.GetBlueprintDefinitions(env.ColonyName, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.NotNil(t, definitions)
+	assert.Equal(t, 1, len(definitions))
+	assert.Equal(t, "test-blueprint", definitions[0].Metadata.Name)
+
+	server.Shutdown()
+	<-done
+}
+
+func TestGetBlueprintHistoryNotFound(t *testing.T) {
+	env, client, server, _, done := server.SetupTestEnv2(t)
+
+	// Try to get history for non-existent blueprint
+	_, err := client.GetBlueprintHistory("nonexistent-blueprint-id", 10, env.ExecutorPrvKey)
+	assert.NotNil(t, err)
+
+	server.Shutdown()
+	<-done
+}
+
+func TestAddBlueprintWithInvalidSchema(t *testing.T) {
+	env, client, server, _, done := server.SetupTestEnv2(t)
+
+	// Create a BlueprintDefinition with schema validation
+	sd := core.CreateBlueprintDefinition(
+		"validated-deployment",
+		"compute.io",
+		"v1",
+		"ValidatedDeployment",
+		"validateddeployments",
+		"Namespaced",
+		"test_executor_type",
+		"reconcile",
+	)
+	sd.Metadata.Namespace = env.ColonyName
+
+	// Add schema requiring "replicas" field
+	sd.Spec.Schema = &core.ValidationSchema{
+		Type: "object",
+		Properties: map[string]core.SchemaProperty{
+			"replicas": {
+				Type: "integer",
+			},
+		},
+		Required: []string{"replicas"},
+	}
+
+	_, err := client.AddBlueprintDefinition(sd, env.ColonyPrvKey)
+	assert.Nil(t, err)
+
+	// Try to add blueprint without required field - should fail
+	blueprint := core.CreateBlueprint("ValidatedDeployment", "test-deployment", env.ColonyName)
+	blueprint.SetSpec("image", "nginx:alpine") // missing required "replicas"
+	_, err = client.AddBlueprint(blueprint, env.ExecutorPrvKey)
+	assert.NotNil(t, err, "Should fail validation for missing required field")
+
+	// Add blueprint with valid schema
+	blueprint2 := core.CreateBlueprint("ValidatedDeployment", "test-deployment-2", env.ColonyName)
+	blueprint2.SetSpec("replicas", 3)
+	_, err = client.AddBlueprint(blueprint2, env.ExecutorPrvKey)
+	assert.Nil(t, err, "Should pass validation with required field")
+
+	server.Shutdown()
+	<-done
+}
+
+func TestUpdateBlueprintWithoutHandler(t *testing.T) {
+	env, client, server, _, done := server.SetupTestEnv2(t)
+
+	// Create a BlueprintDefinition without handler (no reconciliation)
+	sd := core.CreateBlueprintDefinition(
+		"simple-config",
+		"config.io",
+		"v1",
+		"SimpleConfig",
+		"simpleconfigs",
+		"Namespaced",
+		"", // No executor type
+		"", // No reconciliation function
+	)
+	sd.Metadata.Namespace = env.ColonyName
+
+	_, err := client.AddBlueprintDefinition(sd, env.ColonyPrvKey)
+	assert.Nil(t, err)
+
+	// Add blueprint
+	blueprint := core.CreateBlueprint("SimpleConfig", "test-config", env.ColonyName)
+	blueprint.SetSpec("key", "value1")
+	addedBlueprint, err := client.AddBlueprint(blueprint, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+
+	// Update blueprint - should work even without handler
+	addedBlueprint.SetSpec("key", "value2")
+	updatedBlueprint, err := client.UpdateBlueprint(addedBlueprint, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.NotNil(t, updatedBlueprint)
+	val, _ := updatedBlueprint.GetSpec("key")
+	assert.Equal(t, "value2", val)
+
+	server.Shutdown()
+	<-done
+}
+
+func TestRemoveBlueprintDefinitionNotFound(t *testing.T) {
+	env, client, server, _, done := server.SetupTestEnv2(t)
+
+	// Try to remove non-existent definition
+	err := client.RemoveBlueprintDefinition(env.ColonyName, "nonexistent-definition", env.ColonyPrvKey)
+	assert.NotNil(t, err)
+
+	server.Shutdown()
+	<-done
+}
+
+func TestGetBlueprintNotFound(t *testing.T) {
+	env, client, server, _, done := server.SetupTestEnv2(t)
+
+	// Try to get non-existent blueprint
+	_, err := client.GetBlueprint(env.ColonyName, "nonexistent-blueprint", env.ExecutorPrvKey)
+	assert.NotNil(t, err)
+
+	server.Shutdown()
+	<-done
+}

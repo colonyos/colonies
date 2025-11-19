@@ -3,10 +3,13 @@
   "metadata": {
     "name": "web-server-deployment"
   },
+  "handler": {
+    "executorName": "my-docker-reconciler"
+  },
   "spec": {
     "image": "nginx:1.21",
     "replicas": 5,
-    "executorType": "docker-executor-reconciler",
+    "executorType": "container-executor",
     "cpu": "500m",
     "memory": "512Mi"
   }

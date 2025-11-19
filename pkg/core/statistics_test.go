@@ -7,7 +7,7 @@ import (
 )
 
 func TestStatistics(t *testing.T) {
-	stat := CreateStatistics(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+	stat := CreateStatistics(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12)
 	jsonString, err := stat.ToJSON()
 	assert.Nil(t, err)
 
@@ -20,18 +20,20 @@ func TestStatistics(t *testing.T) {
 
 	assert.True(t, stat2.Colonies == 1)
 	assert.True(t, stat2.Executors == 2)
-	assert.True(t, stat2.WaitingProcesses == 3)
-	assert.True(t, stat2.RunningProcesses == 4)
-	assert.True(t, stat2.SuccessfulProcesses == 5)
-	assert.True(t, stat2.FailedProcesses == 6)
-	assert.True(t, stat2.WaitingWorkflows == 7)
-	assert.True(t, stat2.RunningWorkflows == 8)
-	assert.True(t, stat2.SuccessfulWorkflows == 9)
-	assert.True(t, stat2.FailedWorkflows == 10)
+	assert.True(t, stat2.ActiveExecutors == 3)
+	assert.True(t, stat2.UnregisteredExecutors == 4)
+	assert.True(t, stat2.WaitingProcesses == 5)
+	assert.True(t, stat2.RunningProcesses == 6)
+	assert.True(t, stat2.SuccessfulProcesses == 7)
+	assert.True(t, stat2.FailedProcesses == 8)
+	assert.True(t, stat2.WaitingWorkflows == 9)
+	assert.True(t, stat2.RunningWorkflows == 10)
+	assert.True(t, stat2.SuccessfulWorkflows == 11)
+	assert.True(t, stat2.FailedWorkflows == 12)
 }
 
 func TestStatisticsEquals(t *testing.T) {
-	stat := CreateStatistics(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+	stat := CreateStatistics(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12)
 
 	assert.True(t, stat.Equals(stat))
 	assert.False(t, stat.Equals(nil))

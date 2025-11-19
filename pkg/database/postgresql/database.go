@@ -399,6 +399,20 @@ func (db *PQDatabase) createExecutorsTable() error {
 		return err
 	}
 
+	// Add BLUEPRINT_ID column to existing tables if it doesn't exist
+	alterStatement = `ALTER TABLE ` + db.dbPrefix + `EXECUTORS ADD COLUMN IF NOT EXISTS BLUEPRINT_ID TEXT`
+	_, err = db.postgresql.Exec(alterStatement)
+	if err != nil {
+		return err
+	}
+
+	// Add BLUEPRINT_GEN column to existing tables if it doesn't exist
+	alterStatement = `ALTER TABLE ` + db.dbPrefix + `EXECUTORS ADD COLUMN IF NOT EXISTS BLUEPRINT_GEN BIGINT`
+	_, err = db.postgresql.Exec(alterStatement)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 

@@ -70,6 +70,7 @@ var JSON bool
 var Wait bool
 var PrintOutput bool
 var Full bool
+var All bool
 var GeneratorID string
 var GeneratorName string
 var GeneratorTrigger int

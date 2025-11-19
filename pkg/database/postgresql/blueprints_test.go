@@ -14,7 +14,7 @@ func TestAddGetBlueprintDefinition(t *testing.T) {
 	defer db.Close()
 
 	sd := core.CreateBlueprintDefinition(
-		"executordeployments.compute.colonies.io",
+		"executor-deployment",
 		"compute.colonies.io",
 		"v1",
 		"ExecutorDeployment",

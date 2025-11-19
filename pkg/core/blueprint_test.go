@@ -167,7 +167,7 @@ func TestBlueprintJSONConversion(t *testing.T) {
 
 func TestCreateBlueprintDefinition(t *testing.T) {
 	crd := CreateBlueprintDefinition(
-		"executordeployments.compute.colonies.io",
+		"executor-deployment",
 		"compute.colonies.io",
 		"v1",
 		"ExecutorDeployment",
@@ -178,7 +178,7 @@ func TestCreateBlueprintDefinition(t *testing.T) {
 	)
 
 	assert.Equal(t, "BlueprintDefinition", crd.Kind)
-	assert.Equal(t, "executordeployments.compute.colonies.io", crd.Metadata.Name)
+	assert.Equal(t, "executor-deployment", crd.Metadata.Name)
 	assert.Equal(t, "compute.colonies.io", crd.Spec.Group)
 	assert.Equal(t, "v1", crd.Spec.Version)
 	assert.Equal(t, "ExecutorDeployment", crd.Spec.Names.Kind)
@@ -295,7 +295,7 @@ func TestBlueprintInFunctionSpec(t *testing.T) {
 func TestComplexBlueprintScenario(t *testing.T) {
 	// Create a CRD for ExecutorDeployment
 	crd := CreateBlueprintDefinition(
-		"executordeployments.compute.colonies.io",
+		"executor-deployment",
 		"compute.colonies.io",
 		"v1",
 		"ExecutorDeployment",

@@ -1,0 +1,25 @@
+{
+  "kind": "ExecutorDeployment",
+  "metadata": {
+    "name": "docker-executor"
+  },
+  "handler": {
+    "executorName": "local-node-docker-reconciler"
+  },
+  "spec": {
+    "image": "colonyos/dockerexecutor:v1.0.7",
+    "replicas": 1,
+    "executorType": "container-executor",
+    "volumes": [
+      {
+        "host": "/var/run/docker.sock",
+        "container": "/var/run/docker.sock"
+      },
+      {
+        "host": "/tmp/colonies",
+        "container": "/tmp/colonies"
+      }
+    ],
+    "privileged": true
+  }
+}

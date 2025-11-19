@@ -10,14 +10,25 @@ import (
 	"github.com/muesli/termenv"
 )
 
-func printExecutorsTable(executors []*core.Executor) {
+func printExecutorsTable(executors []*core.Executor, showState bool) {
 	t, theme := createTable(2)
 
-	var cols = []table.Column{
-		{ID: "name", Name: "Name", SortIndex: 1},
-		{ID: "type", Name: "Type", SortIndex: 2},
-		{ID: "Location", Name: "Location", SortIndex: 3},
-		{ID: "lastheardfrom", Name: "Last Heard From", SortIndex: 3},
+	var cols []table.Column
+	if showState {
+		cols = []table.Column{
+			{ID: "name", Name: "Name", SortIndex: 1},
+			{ID: "type", Name: "Type", SortIndex: 2},
+			{ID: "state", Name: "State", SortIndex: 3},
+			{ID: "Location", Name: "Location", SortIndex: 4},
+			{ID: "lastheardfrom", Name: "Last Heard From", SortIndex: 5},
+		}
+	} else {
+		cols = []table.Column{
+			{ID: "name", Name: "Name", SortIndex: 1},
+			{ID: "type", Name: "Type", SortIndex: 2},
+			{ID: "Location", Name: "Location", SortIndex: 3},
+			{ID: "lastheardfrom", Name: "Last Heard From", SortIndex: 4},
+		}
 	}
 	t.SetCols(cols)
 
@@ -43,11 +54,43 @@ func printExecutorsTable(executors []*core.Executor) {
 			location = "n/a"
 		}
 
-		row := []interface{}{
-			termenv.String(executor.Name).Foreground(theme.ColorCyan),
-			termenv.String(executor.Type).Foreground(theme.ColorViolet),
-			termenv.String(location).Foreground(theme.ColorMagenta),
-			termenv.String(executor.LastHeardFromTime.Format(TimeLayout)).Foreground(theme.ColorGreen),
+		// Determine state string
+		var stateStr string
+		var stateColor termenv.Color
+		switch executor.State {
+		case core.PENDING:
+			stateStr = "Pending"
+			stateColor = theme.ColorYellow
+		case core.APPROVED:
+			stateStr = "Approved"
+			stateColor = theme.ColorGreen
+		case core.REJECTED:
+			stateStr = "Rejected"
+			stateColor = theme.ColorRed
+		case core.UNREGISTERED:
+			stateStr = "Unregistered"
+			stateColor = theme.ColorGray
+		default:
+			stateStr = "Unknown"
+			stateColor = theme.ColorGray
+		}
+
+		var row []interface{}
+		if showState {
+			row = []interface{}{
+				termenv.String(executor.Name).Foreground(theme.ColorCyan),
+				termenv.String(executor.Type).Foreground(theme.ColorViolet),
+				termenv.String(stateStr).Foreground(stateColor),
+				termenv.String(location).Foreground(theme.ColorMagenta),
+				termenv.String(executor.LastHeardFromTime.Format(TimeLayout)).Foreground(theme.ColorGreen),
+			}
+		} else {
+			row = []interface{}{
+				termenv.String(executor.Name).Foreground(theme.ColorCyan),
+				termenv.String(executor.Type).Foreground(theme.ColorViolet),
+				termenv.String(location).Foreground(theme.ColorMagenta),
+				termenv.String(executor.LastHeardFromTime.Format(TimeLayout)).Foreground(theme.ColorGreen),
+			}
 		}
 		t.AddRow(row)
 	}
@@ -64,6 +107,8 @@ func printExecutorTable(client *client.ColoniesClient, executor *core.Executor) 
 		state = "Approved"
 	case core.REJECTED:
 		state = "Rejected"
+	case core.UNREGISTERED:
+		state = "Unregistered"
 	default:
 		state = "Unknown"
 	}

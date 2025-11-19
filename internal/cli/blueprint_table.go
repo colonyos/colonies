@@ -169,67 +169,191 @@ func printBlueprintDefinitionTable(sd *core.BlueprintDefinition) {
 
 // printBlueprintsTable displays a list of Blueprints in a table
 func printBlueprintsTable(blueprints []*core.Blueprint) {
+	printBlueprintsTableWithClient(nil, blueprints)
+}
+
+// printBlueprintsTableWithClient displays a list of Blueprints with additional runtime information
+func printBlueprintsTableWithClient(c *client.ColoniesClient, blueprints []*core.Blueprint) {
 	t, theme := createTable(1)
 
 	var cols = []table.Column{
 		{ID: "name", Name: "Name", SortIndex: 1},
 		{ID: "kind", Name: "Kind", SortIndex: 2},
-		{ID: "info", Name: "Info", SortIndex: 3},
-		{ID: "generation", Name: "Gen", SortIndex: 4},
+		{ID: "replicas", Name: "Replicas", SortIndex: 3},
+		{ID: "reconciling", Name: "Reconciling", SortIndex: 4},
+		{ID: "oldgen", Name: "OldGen", SortIndex: 5},
+		{ID: "generation", Name: "Gen", SortIndex: 6},
 	}
 	t.SetCols(cols)
 
 	for _, blueprint := range blueprints {
-		// Build info column based on blueprint kind
-		info := ""
-		switch blueprint.Kind {
-		case "ExecutorDeployment":
-			// For ExecutorDeployment, show executor type and replicas
-			executorType := ""
-			if val, ok := blueprint.GetSpec("executorType"); ok {
-				if str, ok := val.(string); ok {
-					executorType = str
+		// Get replica information
+		replicasStr := "-"
+		reconcilingStr := "-"
+		oldGenStr := "-"
+
+		if blueprint.Kind == "ExecutorDeployment" {
+			// Get desired replicas from spec (-1 means not specified)
+			desiredReplicas := -1
+			if val, ok := blueprint.GetSpec("replicas"); ok {
+				if floatVal, ok := val.(float64); ok {
+					desiredReplicas = int(floatVal)
+				} else if intVal, ok := val.(int); ok {
+					desiredReplicas = intVal
 				}
 			}
-			replicas := ""
-			if val, ok := blueprint.GetSpec("replicas"); ok {
-				replicas = fmt.Sprintf("replicas=%v", val)
-			}
-			if executorType != "" && replicas != "" {
-				info = fmt.Sprintf("%s (%s)", executorType, replicas)
-			} else if executorType != "" {
-				info = executorType
-			} else if replicas != "" {
-				info = replicas
-			}
-		case "DockerDeployment":
-			// For DockerDeployment, show number of instances
-			if instances, ok := blueprint.GetSpec("instances"); ok {
-				if instArray, ok := instances.([]interface{}); ok {
-					if len(instArray) == 1 {
-						info = "1 instance"
-					} else {
-						info = fmt.Sprintf("%d instances", len(instArray))
+
+			// If replicas not specified, show "n/a"
+			if desiredReplicas == -1 {
+				replicasStr = "n/a"
+			} else {
+				// Get actual replicas from executors (if client available)
+				actualReplicas := 0
+				oldGenCount := 0
+				if c != nil {
+					executors, err := c.GetExecutors(ColonyName, PrvKey)
+				if err == nil {
+					// Count executors matching this blueprint (only APPROVED ones)
+					currentGen := blueprint.Metadata.Generation
+					for _, executor := range executors {
+						// Only count approved executors (state 1 = APPROVED)
+						if !executor.IsApproved() {
+							continue
+						}
+
+						// Try BlueprintID match first (more reliable)
+						if executor.BlueprintID == blueprint.ID {
+							if executor.BlueprintGen == currentGen {
+								actualReplicas++
+							} else if executor.BlueprintGen < currentGen {
+								oldGenCount++
+							}
+						} else if executor.BlueprintID == "" {
+							// Fallback to name-based matching for executors without BlueprintID
+							if strings.HasPrefix(executor.Name, blueprint.Metadata.Name+"-") {
+								// Parse generation from executor name (format: name-hash-gen)
+								parts := strings.Split(executor.Name, "-")
+								if len(parts) >= 2 {
+									// Last part should be generation
+									lastPart := parts[len(parts)-1]
+									var gen int
+									_, err := fmt.Sscanf(lastPart, "%d", &gen)
+									if err == nil {
+										if int64(gen) == currentGen {
+											actualReplicas++
+										} else if int64(gen) < currentGen {
+											oldGenCount++
+										}
+									} else {
+										// If no generation suffix, count as current
+										actualReplicas++
+									}
+								}
+							}
+						}
 					}
 				}
 			}
-		default:
-			// For other kinds, try to extract a descriptive field
-			if val, ok := blueprint.GetSpec("description"); ok {
-				info = fmt.Sprintf("%v", val)
+
+			if c != nil {
+					replicasStr = fmt.Sprintf("%d/%d", actualReplicas, desiredReplicas)
+					if oldGenCount > 0 {
+						oldGenStr = fmt.Sprintf("%d", oldGenCount)
+					} else {
+						oldGenStr = "-"
+					}
+				} else {
+					replicasStr = fmt.Sprintf("-/%d", desiredReplicas)
+				}
+			}
+
+			// Check reconciliation status
+			if c != nil && blueprint.Metadata.LastReconciliationProcess != "" {
+				process, err := c.GetProcess(blueprint.Metadata.LastReconciliationProcess, PrvKey)
+				if err == nil && process != nil {
+					// State: 0=WAITING, 1=RUNNING, 2=SUCCESS, 3=FAILED
+					// Consider both WAITING and RUNNING as "reconciling"
+					if process.State == 0 || process.State == 1 {
+						reconcilingStr = "yes"
+					} else {
+						reconcilingStr = "no"
+					}
+				}
+			}
+		}
+		if blueprint.Kind == "DockerDeployment" {
+			// Get desired replicas from spec
+			desiredReplicas := -1
+			if val, ok := blueprint.GetSpec("replicas"); ok {
+				if floatVal, ok := val.(float64); ok {
+					desiredReplicas = int(floatVal)
+				} else if intVal, ok := val.(int); ok {
+					desiredReplicas = intVal
+				}
+			}
+
+			// If replicas not specified, count instances
+			if desiredReplicas == -1 {
+				if instances, ok := blueprint.GetSpec("instances"); ok {
+					if instArray, ok := instances.([]interface{}); ok {
+						desiredReplicas = len(instArray)
+					}
+				}
+			}
+
+			// Get actual running instances from status
+			actualReplicas := 0
+			if c != nil && blueprint.Status != nil {
+				if running, ok := blueprint.Status["runningInstances"]; ok {
+					if floatVal, ok := running.(float64); ok {
+						actualReplicas = int(floatVal)
+					} else if intVal, ok := running.(int); ok {
+						actualReplicas = intVal
+					}
+				}
+			}
+
+			if desiredReplicas > 0 {
+				if c != nil {
+					replicasStr = fmt.Sprintf("%d/%d", actualReplicas, desiredReplicas)
+				} else {
+					replicasStr = fmt.Sprintf("-/%d", desiredReplicas)
+				}
 			}
 		}
 
 		row := []interface{}{
 			termenv.String(blueprint.Metadata.Name).Foreground(theme.ColorCyan),
 			termenv.String(blueprint.Kind).Foreground(theme.ColorViolet),
-			termenv.String(info).Foreground(theme.ColorMagenta),
+			termenv.String(replicasStr).Foreground(theme.ColorMagenta),
+			termenv.String(reconcilingStr).Foreground(getReconcilingColor(reconcilingStr, theme)),
+			termenv.String(oldGenStr).Foreground(getOldGenColor(oldGenStr, theme)),
 			termenv.String(fmt.Sprintf("%d", blueprint.Metadata.Generation)).Foreground(theme.ColorYellow),
 		}
 		t.AddRow(row)
 	}
 
 	t.Render()
+}
+
+// getReconcilingColor returns appropriate color based on reconciliation status
+func getReconcilingColor(status string, theme table.Theme) termenv.Color {
+	switch status {
+	case "yes":
+		return theme.ColorYellow
+	case "no":
+		return theme.ColorGreen
+	default:
+		return theme.ColorGray
+	}
+}
+
+// getOldGenColor returns appropriate color based on old generation count
+func getOldGenColor(oldGen string, theme table.Theme) termenv.Color {
+	if oldGen == "-" || oldGen == "0" {
+		return theme.ColorGray
+	}
+	return theme.ColorRed
 }
 
 // printBlueprintTable displays a single Blueprint with details

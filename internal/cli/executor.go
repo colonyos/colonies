@@ -49,6 +49,7 @@ func init() {
 
 	lsExecutorsCmd.Flags().BoolVarP(&JSON, "json", "", false, "Print JSON instead of tables")
 	lsExecutorsCmd.Flags().BoolVarP(&Full, "full", "", false, "Print detail info")
+	lsExecutorsCmd.Flags().BoolVarP(&All, "all", "", false, "Show all executors including unregistered ones")
 	lsExecutorsCmd.Flags().StringVarP(&TargetExecutorType, "type", "", "", "Filter by executor type")
 	lsExecutorsCmd.Flags().StringVarP(&TargetLocation, "location", "", "", "Filter by node location")
 
@@ -284,9 +285,14 @@ var lsExecutorsCmd = &cobra.Command{
 			}
 		}
 
-		// Filter by type and/or location if specified
+		// Filter by state, type and/or location
 		var filteredExecutors []*core.Executor
 		for _, executor := range executorsFromServer {
+			// Filter out UNREGISTERED executors unless --all flag is set
+			if !All && executor.State == core.UNREGISTERED {
+				continue
+			}
+
 			// Filter by type
 			if TargetExecutorType != "" && executor.Type != TargetExecutorType {
 				continue
@@ -330,7 +336,7 @@ var lsExecutorsCmd = &cobra.Command{
 				}
 			}
 		} else {
-			printExecutorsTable(filteredExecutors)
+			printExecutorsTable(filteredExecutors, All)
 		}
 	},
 }
