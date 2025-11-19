@@ -4,6 +4,7 @@ import (
 	"io/ioutil"
 	"log"
 	"math/rand"
+	"os"
 	"time"
 )
 
@@ -16,10 +17,10 @@ func PrepareTestsWithPrefix(prefix string) (*PQDatabase, error) {
 
 	rand.Seed(time.Now().UTC().UnixNano())
 
-	dbHost := "localhost"
+	dbHost := os.Getenv("COLONIES_DB_HOST")
 	dbPort := 5432
-	dbUser := "postgres"
-	dbPassword := "rFcLGNkgsNtksg6Pgtn9CumL4xXBQ7"
+	dbUser := os.Getenv("COLONIES_DB_USER")
+	dbPassword := os.Getenv("COLONIES_DB_PASSWORD")
 	dbName := "postgres"
 	dbPrefix := prefix
 
