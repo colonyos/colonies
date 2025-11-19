@@ -686,7 +686,9 @@ func TestRemoveExecutors(t *testing.T) {
 	executorFromDB, err := db.GetExecutorByID(executor2.ID)
 	assert.Nil(t, err)
 
-	assert.Nil(t, executorFromDB)
+	// After RemoveExecutorByName, executor should still exist but be UNREGISTERED (soft delete)
+	assert.NotNil(t, executorFromDB)
+	assert.Equal(t, core.UNREGISTERED, executorFromDB.State)
 
 	err = db.AddExecutor(executor2)
 	assert.Nil(t, err)
