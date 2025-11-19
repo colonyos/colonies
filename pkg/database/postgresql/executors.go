@@ -321,16 +321,17 @@ func (db *PQDatabase) RemoveExecutorByName(colonyName string, executorName strin
 }
 
 func (db *PQDatabase) RemoveExecutorsByColonyName(colonyName string) error {
-	// Mark all executors in colony as unregistered instead of deleting them (for traceability)
-	sqlStatement := `UPDATE ` + db.dbPrefix + `EXECUTORS SET STATE=$1 WHERE COLONY_NAME=$2`
-	_, err := db.postgresql.Exec(sqlStatement, core.UNREGISTERED, colonyName)
+	// When called during colony removal, we permanently delete executors (not just unregister)
+	// Move back any currently running processes back to the queue first
+	sqlStatement := `UPDATE ` + db.dbPrefix + `PROCESSES SET IS_ASSIGNED=FALSE, START_TIME=$1, END_TIME=$2, ASSIGNED_EXECUTOR_ID=$3, STATE=$4 WHERE TARGET_COLONY_NAME=$5 AND STATE=$6`
+	_, err := db.postgresql.Exec(sqlStatement, time.Time{}, time.Time{}, "", core.WAITING, colonyName, core.RUNNING)
 	if err != nil {
 		return err
 	}
 
-	// Move back the executor currently running process back to the queue
-	sqlStatement = `UPDATE ` + db.dbPrefix + `PROCESSES SET IS_ASSIGNED=FALSE, START_TIME=$1, END_TIME=$2, ASSIGNED_EXECUTOR_ID=$3, STATE=$4 WHERE TARGET_COLONY_NAME=$5 AND STATE=$6`
-	_, err = db.postgresql.Exec(sqlStatement, time.Time{}, time.Time{}, "", core.WAITING, colonyName, core.RUNNING)
+	// Permanently delete all executors in this colony
+	sqlStatement = `DELETE FROM ` + db.dbPrefix + `EXECUTORS WHERE COLONY_NAME=$1`
+	_, err = db.postgresql.Exec(sqlStatement, colonyName)
 	if err != nil {
 		return err
 	}
