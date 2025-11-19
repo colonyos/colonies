@@ -385,6 +385,7 @@ func (db *DatabaseMock) RemoveExecutorByName(colonyName string, executorName str
 func (db *DatabaseMock) RemoveExecutorsByColonyName(colonyName string) error { return nil }
 func (db *DatabaseMock) CountExecutors() (int, error) { return 0, nil }
 func (db *DatabaseMock) CountExecutorsByColonyName(colonyName string) (int, error) { return 0, nil }
+func (db *DatabaseMock) CountExecutorsByColonyNameAndState(colonyName string, state int) (int, error) { return 0, nil }
 
 // ProcessDatabase interface
 func (db *DatabaseMock) AddProcess(process *core.Process) error {
