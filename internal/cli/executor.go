@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"strings"
 
 	"github.com/colonyos/colonies/pkg/core"
 	"github.com/colonyos/colonies/pkg/security/crypto"
@@ -52,6 +53,7 @@ func init() {
 	lsExecutorsCmd.Flags().BoolVarP(&All, "all", "", false, "Show all executors including unregistered ones")
 	lsExecutorsCmd.Flags().StringVarP(&TargetExecutorType, "type", "", "", "Filter by executor type")
 	lsExecutorsCmd.Flags().StringVarP(&TargetLocation, "location", "", "", "Filter by node location")
+	lsExecutorsCmd.Flags().StringVarP(&Filter, "filter", "f", "", "Filter by name or type containing string")
 
 	getExecutorCmd.Flags().StringVarP(&TargetExecutorName, "name", "", "", "Executor name")
 
@@ -274,17 +276,6 @@ var lsExecutorsCmd = &cobra.Command{
 		executorsFromServer, err := client.GetExecutors(ColonyName, PrvKey)
 		CheckError(err)
 
-		// Get nodes if we need to filter by location
-		var nodeMap map[string]*core.Node
-		if TargetLocation != "" {
-			nodes, err := client.GetNodes(ColonyName, PrvKey)
-			CheckError(err)
-			nodeMap = make(map[string]*core.Node)
-			for _, node := range nodes {
-				nodeMap[node.ID] = node
-			}
-		}
-
 		// Filter by state, type and/or location
 		var filteredExecutors []*core.Executor
 		for _, executor := range executorsFromServer {
@@ -298,13 +289,19 @@ var lsExecutorsCmd = &cobra.Command{
 				continue
 			}
 
-			// Filter by location (via node)
+			// Filter by location
 			if TargetLocation != "" {
-				if executor.NodeID == "" {
-					continue // Executor not associated with any node
+				if executor.Location.Description != TargetLocation {
+					continue
 				}
-				node, exists := nodeMap[executor.NodeID]
-				if !exists || node.Location != TargetLocation {
+			}
+
+			// Filter by name or type containing string
+			if Filter != "" {
+				filterLower := strings.ToLower(Filter)
+				nameLower := strings.ToLower(executor.Name)
+				typeLower := strings.ToLower(executor.Type)
+				if !strings.Contains(nameLower, filterLower) && !strings.Contains(typeLower, filterLower) {
 					continue
 				}
 			}

@@ -37,7 +37,6 @@ type GenericServer interface {
 	CronDB() database.CronDatabase
 	SnapshotDB() database.SnapshotDatabase
 	BlueprintDB() database.BlueprintDatabase
-	NodeDB() database.NodeDatabase
 
 	// Controllers
 	ColonyController() controllers.ColoniesController

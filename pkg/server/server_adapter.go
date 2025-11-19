@@ -172,10 +172,6 @@ func (s *ServerAdapter) BlueprintDB() database.BlueprintDatabase {
 	return s.server.resourceDB
 }
 
-func (s *ServerAdapter) NodeDB() database.NodeDatabase {
-	return s.server.nodeDB
-}
-
 type attributeControllerAdapter struct {
 	controller interface {
 		GetProcess(processID string) (*core.Process, error)

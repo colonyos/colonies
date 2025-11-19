@@ -32,12 +32,14 @@ type Software struct {
 }
 
 type Hardware struct {
-	Model   string `json:"model"`
-	Nodes   int    `json:"nodes"`
-	CPU     string `json:"cpu"`
-	Memory  string `json:"mem"`
-	Storage string `json:"storage"`
-	GPU     GPU    `json:"gpu"`
+	Model        string `json:"model"`
+	Nodes        int    `json:"nodes"`
+	CPU          string `json:"cpu"`
+	Memory       string `json:"mem"`
+	Storage      string `json:"storage"`
+	GPU          GPU    `json:"gpu"`
+	Platform     string `json:"platform"`     // "linux", "darwin", "windows"
+	Architecture string `json:"architecture"` // "amd64", "arm64", "riscv64"
 }
 
 type Capabilities struct {
@@ -59,21 +61,19 @@ type Allocations struct {
 }
 
 type Executor struct {
-	ID                string        `json:"executorid"`
-	Type              string        `json:"executortype"`
-	Name              string        `json:"executorname"`
-	ColonyName        string        `json:"colonyname"`
-	State             int           `json:"state"`
-	RequireFuncReg    bool          `json:"requirefuncreg"`
-	CommissionTime    time.Time     `json:"commissiontime"`
-	LastHeardFromTime time.Time     `json:"lastheardfromtime"`
-	Location          Location      `json:"location"`
-	Capabilities      Capabilities  `json:"capabilities"`
-	Allocations       Allocations   `json:"allocations"`
-	NodeMetadata      *NodeMetadata `json:"nodemetadata,omitempty"`
-	NodeID            string        `json:"nodeid,omitempty"` // Reference to Node
-	BlueprintID       string        `json:"blueprintid,omitempty"` // Reference to Blueprint (for managed executors)
-	BlueprintGen      int64         `json:"blueprintgen,omitempty"` // Blueprint generation this executor belongs to
+	ID                string       `json:"executorid"`
+	Type              string       `json:"executortype"`
+	Name              string       `json:"executorname"`
+	ColonyName        string       `json:"colonyname"`
+	State             int          `json:"state"`
+	RequireFuncReg    bool         `json:"requirefuncreg"`
+	CommissionTime    time.Time    `json:"commissiontime"`
+	LastHeardFromTime time.Time    `json:"lastheardfromtime"`
+	Location          Location     `json:"location"`
+	Capabilities      Capabilities `json:"capabilities"`
+	Allocations       Allocations  `json:"allocations"`
+	BlueprintID       string       `json:"blueprintid,omitempty"`  // Reference to Blueprint (for managed executors)
+	BlueprintGen      int64        `json:"blueprintgen,omitempty"` // Blueprint generation this executor belongs to
 }
 
 func CreateExecutor(id string,
