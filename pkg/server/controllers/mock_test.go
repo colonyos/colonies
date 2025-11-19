@@ -386,6 +386,7 @@ func (db *DatabaseMock) RemoveExecutorsByColonyName(colonyName string) error { r
 func (db *DatabaseMock) CountExecutors() (int, error) { return 0, nil }
 func (db *DatabaseMock) CountExecutorsByColonyName(colonyName string) (int, error) { return 0, nil }
 func (db *DatabaseMock) CountExecutorsByColonyNameAndState(colonyName string, state int) (int, error) { return 0, nil }
+func (db *DatabaseMock) GetExecutorsByBlueprintID(blueprintID string) ([]*core.Executor, error) { return nil, nil }
 
 // ProcessDatabase interface
 func (db *DatabaseMock) AddProcess(process *core.Process) error {
