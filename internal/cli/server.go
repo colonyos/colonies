@@ -216,10 +216,13 @@ func getGRPCConfigFromEnv() *server.GRPCConfig {
 	tlsCert := os.Getenv("COLONIES_SERVER_GRPC_TLS_CERT")
 	tlsKey := os.Getenv("COLONIES_SERVER_GRPC_TLS_KEY")
 
-	insecureStr := os.Getenv("COLONIES_SERVER_GRPC_INSECURE")
+	// Use COLONIES_TLS for consistency: "true" = TLS enabled, "false" = no TLS
+	tlsStr := os.Getenv("COLONIES_TLS")
 	insecure := false
-	if insecureStr == "true" {
+	if tlsStr == "false" {
 		insecure = true
+	} else if tlsStr == "true" {
+		insecure = false
 	}
 
 	config := &server.GRPCConfig{
@@ -567,8 +570,8 @@ var serverStartCmd = &cobra.Command{
 			}
 		}
 
-		// Check TLS setting from environment
-		if tlsStr := os.Getenv("COLONIES_SERVER_HTTP_TLS"); tlsStr != "" {
+		// Check TLS setting from environment - use single COLONIES_TLS variable
+		if tlsStr := os.Getenv("COLONIES_TLS"); tlsStr != "" {
 			if tlsStr == "true" {
 				Insecure = false
 			} else if tlsStr == "false" {

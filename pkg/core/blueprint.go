@@ -30,7 +30,7 @@ type BlueprintHandler struct {
 // BlueprintMetadata contains metadata for blueprints
 type BlueprintMetadata struct {
 	Name                      string            `json:"name"`
-	Namespace                 string            `json:"namespace"`
+	ColonyName                string            `json:"colonyname"`
 	Labels                    map[string]string `json:"labels,omitempty"`
 	Annotations               map[string]string `json:"annotations,omitempty"`
 	Generation                int64             `json:"generation,omitempty"`
@@ -144,8 +144,8 @@ func CreateBlueprint(kind, name, namespace string) *Blueprint {
 		ID:   id,
 		Kind: kind,
 		Metadata: BlueprintMetadata{
-			Name:        name,
-			Namespace:   namespace,
+			Name:       name,
+			ColonyName: namespace,
 			Labels:      make(map[string]string),
 			Annotations: make(map[string]string),
 			Generation:  1,
@@ -231,7 +231,7 @@ func (r *Blueprint) Validate() error {
 	if r.Metadata.Name == "" {
 		return fmt.Errorf("metadata.name is required")
 	}
-	if r.Metadata.Namespace == "" {
+	if r.Metadata.ColonyName == "" {
 		return fmt.Errorf("metadata.namespace is required")
 	}
 	return nil
@@ -802,7 +802,7 @@ func CreateBlueprintHistory(blueprint *Blueprint, changedBy string, changeType s
 		ID:         uuid.New().String(),
 		BlueprintID:  blueprint.ID,
 		Kind:       blueprint.Kind,
-		Namespace:  blueprint.Metadata.Namespace,
+		Namespace:  blueprint.Metadata.ColonyName,
 		Name:       blueprint.Metadata.Name,
 		Generation: blueprint.Metadata.Generation,
 		Spec:       copyMap(blueprint.Spec),

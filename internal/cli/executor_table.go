@@ -3,6 +3,7 @@ package cli
 import (
 	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/colonyos/colonies/internal/table"
 	"github.com/colonyos/colonies/pkg/client"
@@ -234,6 +235,26 @@ func printExecutorTable(client *client.ColoniesClient, executor *core.Executor) 
 		termenv.String(executor.Capabilities.Hardware.GPU.Memory).Foreground(theme.ColorGray),
 	}
 	t.AddRow(row)
+
+	row = []interface{}{
+		termenv.String("Platform").Foreground(theme.ColorMagenta),
+		termenv.String(executor.Capabilities.Hardware.Platform).Foreground(theme.ColorGray),
+	}
+	t.AddRow(row)
+
+	row = []interface{}{
+		termenv.String("Architecture").Foreground(theme.ColorMagenta),
+		termenv.String(executor.Capabilities.Hardware.Architecture).Foreground(theme.ColorGray),
+	}
+	t.AddRow(row)
+
+	if len(executor.Capabilities.Hardware.Network) > 0 {
+		row = []interface{}{
+			termenv.String("Network").Foreground(theme.ColorMagenta),
+			termenv.String(strings.Join(executor.Capabilities.Hardware.Network, ", ")).Foreground(theme.ColorGray),
+		}
+		t.AddRow(row)
+	}
 
 	t.Render()
 

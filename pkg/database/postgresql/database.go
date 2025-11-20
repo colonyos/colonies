@@ -413,6 +413,27 @@ func (db *PQDatabase) createExecutorsTable() error {
 		return err
 	}
 
+	// Add HWPLATFORM column to existing tables if it doesn't exist
+	alterStatement = `ALTER TABLE ` + db.dbPrefix + `EXECUTORS ADD COLUMN IF NOT EXISTS HWPLATFORM TEXT`
+	_, err = db.postgresql.Exec(alterStatement)
+	if err != nil {
+		return err
+	}
+
+	// Add HWARCHITECTURE column to existing tables if it doesn't exist
+	alterStatement = `ALTER TABLE ` + db.dbPrefix + `EXECUTORS ADD COLUMN IF NOT EXISTS HWARCHITECTURE TEXT`
+	_, err = db.postgresql.Exec(alterStatement)
+	if err != nil {
+		return err
+	}
+
+	// Add HWNETWORK column to existing tables if it doesn't exist (JSON array of network addresses)
+	alterStatement = `ALTER TABLE ` + db.dbPrefix + `EXECUTORS ADD COLUMN IF NOT EXISTS HWNETWORK TEXT`
+	_, err = db.postgresql.Exec(alterStatement)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 

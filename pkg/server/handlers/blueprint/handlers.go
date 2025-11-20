@@ -76,7 +76,7 @@ func (h *Handlers) createReconciliationWorkflowSpec(blueprint *core.Blueprint, s
 	// Create a function spec that tells the reconciler to fetch and reconcile this blueprint
 	funcSpec := core.CreateEmptyFunctionSpec()
 	funcSpec.NodeName = "reconcile"
-	funcSpec.Conditions.ColonyName = blueprint.Metadata.Namespace
+	funcSpec.Conditions.ColonyName = blueprint.Metadata.ColonyName
 	funcSpec.Conditions.ExecutorType = sd.Spec.Handler.ExecutorType
 	funcSpec.FuncName = "reconcile"
 	funcSpec.KwArgs = map[string]interface{}{
@@ -87,14 +87,26 @@ func (h *Handlers) createReconciliationWorkflowSpec(blueprint *core.Blueprint, s
 	if blueprint.Handler != nil {
 		if len(blueprint.Handler.ExecutorNames) > 0 {
 			funcSpec.Conditions.ExecutorNames = blueprint.Handler.ExecutorNames
+			log.WithFields(log.Fields{
+				"BlueprintName":  blueprint.Metadata.Name,
+				"ExecutorNames":  blueprint.Handler.ExecutorNames,
+			}).Debug("Applied executor targeting from ExecutorNames")
 		} else if blueprint.Handler.ExecutorName != "" {
 			funcSpec.Conditions.ExecutorNames = []string{blueprint.Handler.ExecutorName}
+			log.WithFields(log.Fields{
+				"BlueprintName": blueprint.Metadata.Name,
+				"ExecutorName":  blueprint.Handler.ExecutorName,
+			}).Debug("Applied executor targeting from ExecutorName")
 		}
+	} else {
+		log.WithFields(log.Fields{
+			"BlueprintName": blueprint.Metadata.Name,
+		}).Debug("No handler specified for blueprint, no executor targeting applied")
 	}
 
 	// Create a simple workflow with one function
 	workflowSpec := &core.WorkflowSpec{
-		ColonyName:    blueprint.Metadata.Namespace,
+		ColonyName:    blueprint.Metadata.ColonyName,
 		FunctionSpecs: []core.FunctionSpec{*funcSpec},
 	}
 
@@ -165,7 +177,7 @@ func (h *Handlers) HandleAddBlueprintDefinition(c backends.Context, recoveredID 
 
 	// IMPORTANT: Only colony owner can add BlueprintDefinitions
 	// Namespace field holds the colony name
-	err = h.server.Validator().RequireColonyOwner(recoveredID, msg.BlueprintDefinition.Metadata.Namespace)
+	err = h.server.Validator().RequireColonyOwner(recoveredID, msg.BlueprintDefinition.Metadata.ColonyName)
 	if h.server.HandleHTTPError(c, err, http.StatusForbidden) {
 		return
 	}
@@ -184,7 +196,7 @@ func (h *Handlers) HandleAddBlueprintDefinition(c backends.Context, recoveredID 
 		"ID":         msg.BlueprintDefinition.ID,
 		"Name":       msg.BlueprintDefinition.Metadata.Name,
 		"Kind":       msg.BlueprintDefinition.Kind,
-		"ColonyName": msg.BlueprintDefinition.Metadata.Namespace,
+		"ColonyName": msg.BlueprintDefinition.Metadata.ColonyName,
 	}).Debug("Adding blueprint definition")
 
 	jsonString, err = msg.BlueprintDefinition.ToJSON()
@@ -360,10 +372,10 @@ func (h *Handlers) HandleAddBlueprint(c backends.Context, recoveredID string, pa
 	}
 
 	// Require membership or colony owner to add blueprints
-	err = h.server.Validator().RequireMembership(recoveredID, msg.Blueprint.Metadata.Namespace, true)
+	err = h.server.Validator().RequireMembership(recoveredID, msg.Blueprint.Metadata.ColonyName, true)
 	if err != nil {
 		// If not a member, check if colony owner
-		err = h.server.Validator().RequireColonyOwner(recoveredID, msg.Blueprint.Metadata.Namespace)
+		err = h.server.Validator().RequireColonyOwner(recoveredID, msg.Blueprint.Metadata.ColonyName)
 		if h.server.HandleHTTPError(c, err, http.StatusForbidden) {
 			return
 		}
@@ -382,7 +394,7 @@ func (h *Handlers) HandleAddBlueprint(c backends.Context, recoveredID string, pa
 	}
 
 	// Fetch all BlueprintDefinitions in the namespace
-	sds, err := h.server.BlueprintDB().GetBlueprintDefinitionsByNamespace(msg.Blueprint.Metadata.Namespace)
+	sds, err := h.server.BlueprintDB().GetBlueprintDefinitionsByNamespace(msg.Blueprint.Metadata.ColonyName)
 	if err != nil {
 		h.server.HandleHTTPError(c, err, http.StatusInternalServerError)
 		return
@@ -399,7 +411,7 @@ func (h *Handlers) HandleAddBlueprint(c backends.Context, recoveredID string, pa
 
 	// BlueprintDefinition must exist
 	if matchedSD == nil {
-		h.server.HandleHTTPError(c, fmt.Errorf("BlueprintDefinition for kind '%s' not found in namespace '%s'", msg.Blueprint.Kind, msg.Blueprint.Metadata.Namespace), http.StatusBadRequest)
+		h.server.HandleHTTPError(c, fmt.Errorf("BlueprintDefinition for kind '%s' not found in namespace '%s'", msg.Blueprint.Kind, msg.Blueprint.Metadata.ColonyName), http.StatusBadRequest)
 		return
 	}
 
@@ -425,15 +437,15 @@ func (h *Handlers) HandleAddBlueprint(c backends.Context, recoveredID string, pa
 
 	log.WithFields(log.Fields{
 		"ID":        msg.Blueprint.ID,
-		"Namespace": msg.Blueprint.Metadata.Namespace,
+		"Namespace": msg.Blueprint.Metadata.ColonyName,
 		"Name":      msg.Blueprint.Metadata.Name,
 		"Kind":      msg.Blueprint.Kind,
 	}).Debug("Adding blueprint")
 
 	// Auto-create reconciliation cron if handler is defined
 	if matchedSD != nil && matchedSD.Spec.Handler.ExecutorType != "" {
-		// Include namespace in cron name to ensure uniqueness across colonies
-		cronName := "reconcile-" + msg.Blueprint.Metadata.Namespace + "-" + msg.Blueprint.Metadata.Name
+		// Use blueprint name for cron name
+		cronName := "reconcile-" + msg.Blueprint.Metadata.Name
 
 		// Create workflow spec for reconciliation
 		workflowSpec, err := h.createReconciliationWorkflowSpec(msg.Blueprint, matchedSD)
@@ -445,7 +457,7 @@ func (h *Handlers) HandleAddBlueprint(c backends.Context, recoveredID string, pa
 			// Don't fail the request if workflow spec creation fails
 		} else {
 			// Resolve initiator name
-			initiatorName, err := h.resolveInitiator(msg.Blueprint.Metadata.Namespace, recoveredID)
+			initiatorName, err := h.resolveInitiator(msg.Blueprint.Metadata.ColonyName, recoveredID)
 			if err != nil {
 				log.WithFields(log.Fields{
 					"Error":         err,
@@ -459,7 +471,7 @@ func (h *Handlers) HandleAddBlueprint(c backends.Context, recoveredID string, pa
 			// Create cron for periodic self-healing
 			cron := &core.Cron{
 				ID:                      core.GenerateRandomID(),
-				ColonyName:              msg.Blueprint.Metadata.Namespace,
+				ColonyName:              msg.Blueprint.Metadata.ColonyName,
 				Name:                    cronName,
 				Interval:                60, // 60 seconds
 				WaitForPrevProcessGraph: true,
@@ -634,17 +646,17 @@ func (h *Handlers) HandleUpdateBlueprint(c backends.Context, recoveredID string,
 	}
 
 	// Require membership or colony owner to update blueprints
-	err = h.server.Validator().RequireMembership(recoveredID, msg.Blueprint.Metadata.Namespace, true)
+	err = h.server.Validator().RequireMembership(recoveredID, msg.Blueprint.Metadata.ColonyName, true)
 	if err != nil {
 		// If not a member, check if colony owner
-		err = h.server.Validator().RequireColonyOwner(recoveredID, msg.Blueprint.Metadata.Namespace)
+		err = h.server.Validator().RequireColonyOwner(recoveredID, msg.Blueprint.Metadata.ColonyName)
 		if h.server.HandleHTTPError(c, err, http.StatusForbidden) {
 			return
 		}
 	}
 
 	// Get the old blueprint for reconciliation
-	oldBlueprint, err := h.server.BlueprintDB().GetBlueprintByName(msg.Blueprint.Metadata.Namespace, msg.Blueprint.Metadata.Name)
+	oldBlueprint, err := h.server.BlueprintDB().GetBlueprintByName(msg.Blueprint.Metadata.ColonyName, msg.Blueprint.Metadata.Name)
 	if h.server.HandleHTTPError(c, err, http.StatusInternalServerError) {
 		return
 	}
@@ -657,7 +669,7 @@ func (h *Handlers) HandleUpdateBlueprint(c backends.Context, recoveredID string,
 	}
 
 	// Fetch all BlueprintDefinitions in the namespace
-	sds, err := h.server.BlueprintDB().GetBlueprintDefinitionsByNamespace(msg.Blueprint.Metadata.Namespace)
+	sds, err := h.server.BlueprintDB().GetBlueprintDefinitionsByNamespace(msg.Blueprint.Metadata.ColonyName)
 	if err != nil {
 		h.server.HandleHTTPError(c, err, http.StatusInternalServerError)
 		return
@@ -674,7 +686,7 @@ func (h *Handlers) HandleUpdateBlueprint(c backends.Context, recoveredID string,
 
 	// BlueprintDefinition must exist
 	if matchedSD == nil {
-		h.server.HandleHTTPError(c, fmt.Errorf("BlueprintDefinition for kind '%s' not found in namespace '%s'", msg.Blueprint.Kind, msg.Blueprint.Metadata.Namespace), http.StatusBadRequest)
+		h.server.HandleHTTPError(c, fmt.Errorf("BlueprintDefinition for kind '%s' not found in namespace '%s'", msg.Blueprint.Kind, msg.Blueprint.Metadata.ColonyName), http.StatusBadRequest)
 		return
 	}
 
@@ -719,7 +731,7 @@ func (h *Handlers) HandleUpdateBlueprint(c backends.Context, recoveredID string,
 
 	log.WithFields(log.Fields{
 		"ID":        msg.Blueprint.ID,
-		"Namespace": msg.Blueprint.Metadata.Namespace,
+		"Namespace": msg.Blueprint.Metadata.ColonyName,
 		"Name":      msg.Blueprint.Metadata.Name,
 		"Generation": msg.Blueprint.Metadata.Generation,
 	}).Debug("Updating blueprint")
@@ -727,7 +739,7 @@ func (h *Handlers) HandleUpdateBlueprint(c backends.Context, recoveredID string,
 	// Trigger immediate reconciliation by running the cron
 	cronName := msg.Blueprint.Metadata.Annotations["reconciliation.cron.name"]
 	if cronName != "" {
-		cron, err := h.server.CronController().GetCrons(msg.Blueprint.Metadata.Namespace, 1000)
+		cron, err := h.server.CronController().GetCrons(msg.Blueprint.Metadata.ColonyName, 1000)
 		if err == nil {
 			// Find the cron by name
 			for _, c := range cron {
@@ -843,6 +855,60 @@ func (h *Handlers) HandleRemoveBlueprint(c backends.Context, recoveredID string,
 		}
 	}
 
+	// Submit cleanup process to reconciler (best-effort)
+	// Look up the BlueprintDefinition by Kind to get the ExecutorType
+	var blueprintDef *core.BlueprintDefinition
+	blueprintDefs, err := h.server.BlueprintDB().GetBlueprintDefinitions()
+	if err == nil {
+		for _, def := range blueprintDefs {
+			if def.Spec.Names.Kind == blueprint.Kind {
+				blueprintDef = def
+				break
+			}
+		}
+	}
+	if blueprintDef != nil && blueprintDef.Spec.Handler.ExecutorType != "" {
+		// Create cleanup function spec
+		funcSpec := core.CreateEmptyFunctionSpec()
+		funcSpec.NodeName = "cleanup"
+		funcSpec.Conditions.ColonyName = msg.Namespace
+		funcSpec.Conditions.ExecutorType = blueprintDef.Spec.Handler.ExecutorType
+		funcSpec.FuncName = "cleanup"
+		funcSpec.KwArgs = map[string]interface{}{
+			"blueprintName": msg.Name,
+		}
+
+		// Apply executor targeting if specified
+		if blueprint.Handler != nil {
+			if len(blueprint.Handler.ExecutorNames) > 0 {
+				funcSpec.Conditions.ExecutorNames = blueprint.Handler.ExecutorNames
+			} else if blueprint.Handler.ExecutorName != "" {
+				funcSpec.Conditions.ExecutorNames = []string{blueprint.Handler.ExecutorName}
+			}
+		}
+
+		// Resolve initiator name for the process
+		initiatorName, _ := h.resolveInitiator(msg.Namespace, recoveredID)
+
+		// Create and submit the process
+		cleanupProcess := core.CreateProcess(funcSpec)
+		cleanupProcess.InitiatorID = recoveredID
+		cleanupProcess.InitiatorName = initiatorName
+
+		_, err = h.server.ProcessController().AddProcess(cleanupProcess)
+		if err != nil {
+			log.WithFields(log.Fields{
+				"Error":         err,
+				"BlueprintName": msg.Name,
+			}).Warn("Failed to submit cleanup process")
+		} else {
+			log.WithFields(log.Fields{
+				"BlueprintName": msg.Name,
+				"ExecutorType":  blueprintDef.Spec.Handler.ExecutorType,
+			}).Info("Submitted cleanup process for deleted blueprint")
+		}
+	}
+
 	log.WithFields(log.Fields{
 		"Namespace": msg.Namespace,
 		"Name":      msg.Name,
@@ -875,10 +941,10 @@ func (h *Handlers) HandleGetBlueprintHistory(c backends.Context, recoveredID str
 	}
 
 	// Require membership or colony owner to view history
-	err = h.server.Validator().RequireMembership(recoveredID, blueprint.Metadata.Namespace, true)
+	err = h.server.Validator().RequireMembership(recoveredID, blueprint.Metadata.ColonyName, true)
 	if err != nil {
 		// If not a member, check if colony owner
-		err = h.server.Validator().RequireColonyOwner(recoveredID, blueprint.Metadata.Namespace)
+		err = h.server.Validator().RequireColonyOwner(recoveredID, blueprint.Metadata.ColonyName)
 		if h.server.HandleHTTPError(c, err, http.StatusForbidden) {
 			return
 		}

@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -56,6 +57,7 @@ func init() {
 	lsExecutorsCmd.Flags().StringVarP(&Filter, "filter", "f", "", "Filter by name or type containing string")
 
 	getExecutorCmd.Flags().StringVarP(&TargetExecutorName, "name", "", "", "Executor name")
+	getExecutorCmd.Flags().BoolVarP(&JSON, "json", "", false, "Output raw JSON instead of tables")
 
 	approveExecutorCmd.Flags().StringVarP(&TargetExecutorName, "name", "", "", "Colony Executor Id")
 	approveExecutorCmd.MarkFlagRequired("name")
@@ -352,7 +354,13 @@ var getExecutorCmd = &cobra.Command{
 		executorFromServer, err := client.GetExecutor(ColonyName, TargetExecutorName, PrvKey)
 		CheckError(err)
 
-		printExecutorTable(client, executorFromServer)
+		if JSON {
+			jsonBytes, err := json.MarshalIndent(executorFromServer, "", "  ")
+			CheckError(err)
+			fmt.Println(string(jsonBytes))
+		} else {
+			printExecutorTable(client, executorFromServer)
+		}
 	},
 }
 

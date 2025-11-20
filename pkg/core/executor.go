@@ -32,14 +32,15 @@ type Software struct {
 }
 
 type Hardware struct {
-	Model        string `json:"model"`
-	Nodes        int    `json:"nodes"`
-	CPU          string `json:"cpu"`
-	Memory       string `json:"mem"`
-	Storage      string `json:"storage"`
-	GPU          GPU    `json:"gpu"`
-	Platform     string `json:"platform"`     // "linux", "darwin", "windows"
-	Architecture string `json:"architecture"` // "amd64", "arm64", "riscv64"
+	Model        string   `json:"model"`
+	Nodes        int      `json:"nodes"`
+	CPU          string   `json:"cpu"`
+	Memory       string   `json:"mem"`
+	Storage      string   `json:"storage"`
+	GPU          GPU      `json:"gpu"`
+	Platform     string   `json:"platform"`     // "linux", "darwin", "windows"
+	Architecture string   `json:"architecture"` // "amd64", "arm64", "riscv64"
+	Network      []string `json:"network"`      // Local network addresses (e.g., "192.168.1.100", "10.0.0.5")
 }
 
 type Capabilities struct {
