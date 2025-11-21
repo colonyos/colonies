@@ -23,7 +23,7 @@ func TestAddGetBlueprintDefinition(t *testing.T) {
 		"executor-controller",
 		"reconcile",
 	)
-	sd.Metadata.Namespace = "test-colony"
+	sd.Metadata.ColonyName = "test-colony"
 
 	err = db.AddBlueprintDefinition(sd)
 	assert.Nil(t, err)
@@ -38,7 +38,7 @@ func TestAddGetBlueprintDefinition(t *testing.T) {
 	assert.Equal(t, sd.Spec.Version, sdFromDB.Spec.Version)
 
 	// Get by name
-	sdFromDB2, err := db.GetBlueprintDefinitionByName(sd.Metadata.Namespace, sd.Metadata.Name)
+	sdFromDB2, err := db.GetBlueprintDefinitionByName(sd.Metadata.ColonyName, sd.Metadata.Name)
 	assert.Nil(t, err)
 	assert.NotNil(t, sdFromDB2)
 	assert.Equal(t, sd.ID, sdFromDB2.ID)
@@ -74,7 +74,7 @@ func TestAddGetBlueprint(t *testing.T) {
 	assert.NotNil(t, blueprintFromDB)
 	assert.Equal(t, blueprint.ID, blueprintFromDB.ID)
 	assert.Equal(t, blueprint.Metadata.Name, blueprintFromDB.Metadata.Name)
-	assert.Equal(t, blueprint.Metadata.Namespace, blueprintFromDB.Metadata.Namespace)
+	assert.Equal(t, blueprint.Metadata.ColonyName, blueprintFromDB.Metadata.ColonyName)
 	assert.Equal(t, blueprint.Kind, blueprintFromDB.Kind)
 
 	// Verify spec
@@ -92,7 +92,7 @@ func TestAddGetBlueprint(t *testing.T) {
 	assert.Equal(t, "Running", phase)
 
 	// Get by name
-	blueprintFromDB2, err := db.GetBlueprintByName(blueprint.Metadata.Namespace, blueprint.Metadata.Name)
+	blueprintFromDB2, err := db.GetBlueprintByName(blueprint.Metadata.ColonyName, blueprint.Metadata.Name)
 	assert.Nil(t, err)
 	assert.NotNil(t, blueprintFromDB2)
 	assert.Equal(t, blueprint.ID, blueprintFromDB2.ID)
