@@ -12,7 +12,7 @@ func TestCreateBlueprint(t *testing.T) {
 
 	assert.Equal(t, "ExecutorDeployment", cr.Kind)
 	assert.Equal(t, "test-deploy", cr.Metadata.Name)
-	assert.Equal(t, "test-colony", cr.Metadata.Namespace)
+	assert.Equal(t, "test-colony", cr.Metadata.ColonyName)
 	assert.NotEmpty(t, cr.ID)
 	assert.Equal(t, int64(1), cr.Metadata.Generation)
 	assert.NotNil(t, cr.Spec)
@@ -148,7 +148,7 @@ func TestBlueprintJSONConversion(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, cr.Kind, cr2.Kind)
 	assert.Equal(t, cr.Metadata.Name, cr2.Metadata.Name)
-	assert.Equal(t, cr.Metadata.Namespace, cr2.Metadata.Namespace)
+	assert.Equal(t, cr.Metadata.ColonyName, cr2.Metadata.ColonyName)
 
 	runtime, ok := cr2.GetSpec("runtime")
 	assert.True(t, ok)
@@ -285,7 +285,7 @@ func TestBlueprintInFunctionSpec(t *testing.T) {
 	assert.NotNil(t, funcSpec.Blueprint)
 	assert.Equal(t, "TestBlueprint", funcSpec.Blueprint.Kind)
 	assert.Equal(t, "test-blueprint", funcSpec.Blueprint.Metadata.Name)
-	assert.Equal(t, "test-colony", funcSpec.Blueprint.Metadata.Namespace)
+	assert.Equal(t, "test-colony", funcSpec.Blueprint.Metadata.ColonyName)
 
 	replicas, ok := funcSpec.Blueprint.GetSpec("replicas")
 	assert.True(t, ok)
