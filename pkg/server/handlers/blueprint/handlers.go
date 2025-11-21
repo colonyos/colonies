@@ -66,14 +66,46 @@ func (h *Handlers) resolveInitiator(colonyName string, recoveredID string) (stri
 	}
 }
 
-// createReconciliationWorkflowSpec creates a workflow spec for blueprint reconciliation
-// This workflow contains a single process that fetches and reconciles the blueprint
-func (h *Handlers) createReconciliationWorkflowSpec(blueprint *core.Blueprint, sd *core.BlueprintDefinition) (string, error) {
+// createConsolidatedReconciliationWorkflowSpec creates a workflow spec for consolidated blueprint reconciliation
+// This workflow creates a single process that reconciles ALL blueprints of a given Kind
+// The reconciler will fetch all blueprints and reconcile them in parallel
+func (h *Handlers) createConsolidatedReconciliationWorkflowSpec(colonyName string, kind string, sd *core.BlueprintDefinition) (string, error) {
 	if sd == nil || sd.Spec.Handler.ExecutorType == "" {
-		return "", fmt.Errorf("no handler defined for blueprint kind: %s", blueprint.Kind)
+		return "", fmt.Errorf("no handler defined for blueprint kind: %s", kind)
 	}
 
-	// Create a function spec that tells the reconciler to fetch and reconcile this blueprint
+	// Create a function spec that tells the reconciler to fetch and reconcile all blueprints of this Kind
+	funcSpec := core.CreateEmptyFunctionSpec()
+	funcSpec.NodeName = "reconcile-all"
+	funcSpec.Conditions.ColonyName = colonyName
+	funcSpec.Conditions.ExecutorType = sd.Spec.Handler.ExecutorType
+	funcSpec.FuncName = "reconcile"
+	funcSpec.KwArgs = map[string]interface{}{
+		"kind": kind, // Reconciler will fetch all blueprints of this Kind
+	}
+
+	// Create a simple workflow with one function
+	workflowSpec := &core.WorkflowSpec{
+		ColonyName:    colonyName,
+		FunctionSpecs: []core.FunctionSpec{*funcSpec},
+	}
+
+	workflowJSON, err := workflowSpec.ToJSON()
+	if err != nil {
+		return "", fmt.Errorf("failed to create workflow spec: %w", err)
+	}
+
+	return workflowJSON, nil
+}
+
+// createImmediateReconciliationProcess creates a process for immediate reconciliation of a specific blueprint
+// This is used when a blueprint is added to trigger immediate reconciliation
+func (h *Handlers) createImmediateReconciliationProcess(blueprint *core.Blueprint, sd *core.BlueprintDefinition, recoveredID string, initiatorName string) (*core.Process, error) {
+	if sd == nil || sd.Spec.Handler.ExecutorType == "" {
+		return nil, fmt.Errorf("no handler defined for blueprint kind: %s", blueprint.Kind)
+	}
+
+	// Create a function spec for this specific blueprint
 	funcSpec := core.CreateEmptyFunctionSpec()
 	funcSpec.NodeName = "reconcile"
 	funcSpec.Conditions.ColonyName = blueprint.Metadata.ColonyName
@@ -87,35 +119,17 @@ func (h *Handlers) createReconciliationWorkflowSpec(blueprint *core.Blueprint, s
 	if blueprint.Handler != nil {
 		if len(blueprint.Handler.ExecutorNames) > 0 {
 			funcSpec.Conditions.ExecutorNames = blueprint.Handler.ExecutorNames
-			log.WithFields(log.Fields{
-				"BlueprintName":  blueprint.Metadata.Name,
-				"ExecutorNames":  blueprint.Handler.ExecutorNames,
-			}).Debug("Applied executor targeting from ExecutorNames")
 		} else if blueprint.Handler.ExecutorName != "" {
 			funcSpec.Conditions.ExecutorNames = []string{blueprint.Handler.ExecutorName}
-			log.WithFields(log.Fields{
-				"BlueprintName": blueprint.Metadata.Name,
-				"ExecutorName":  blueprint.Handler.ExecutorName,
-			}).Debug("Applied executor targeting from ExecutorName")
 		}
-	} else {
-		log.WithFields(log.Fields{
-			"BlueprintName": blueprint.Metadata.Name,
-		}).Debug("No handler specified for blueprint, no executor targeting applied")
 	}
 
-	// Create a simple workflow with one function
-	workflowSpec := &core.WorkflowSpec{
-		ColonyName:    blueprint.Metadata.ColonyName,
-		FunctionSpecs: []core.FunctionSpec{*funcSpec},
-	}
+	// Create and return the process
+	process := core.CreateProcess(funcSpec)
+	process.InitiatorID = recoveredID
+	process.InitiatorName = initiatorName
 
-	workflowJSON, err := workflowSpec.ToJSON()
-	if err != nil {
-		return "", fmt.Errorf("failed to create workflow spec: %w", err)
-	}
-
-	return workflowJSON, nil
+	return process, nil
 }
 
 // RegisterHandlers implements the HandlerRegistrar interface
@@ -444,81 +458,99 @@ func (h *Handlers) HandleAddBlueprint(c backends.Context, recoveredID string, pa
 
 	// Auto-create reconciliation cron if handler is defined
 	if matchedSD != nil && matchedSD.Spec.Handler.ExecutorType != "" {
-		// Use blueprint name for cron name
-		cronName := "reconcile-" + msg.Blueprint.Metadata.Name
+		// Use Kind for consolidated cron name (one cron per Kind, not per blueprint)
+		cronName := "reconcile-" + msg.Blueprint.Kind
 
-		// Create workflow spec for reconciliation
-		workflowSpec, err := h.createReconciliationWorkflowSpec(msg.Blueprint, matchedSD)
+		// Resolve initiator name
+		initiatorName, err := h.resolveInitiator(msg.Blueprint.Metadata.ColonyName, recoveredID)
 		if err != nil {
 			log.WithFields(log.Fields{
 				"Error":         err,
+				"RecoveredID":   recoveredID,
 				"BlueprintName": msg.Blueprint.Metadata.Name,
-			}).Warn("Failed to create reconciliation workflow spec")
-			// Don't fail the request if workflow spec creation fails
+			}).Warn("Failed to resolve initiator name for cron")
+			initiatorName = ""
+		}
+
+		// Check if consolidated cron for this Kind already exists
+		crons, err := h.server.CronController().GetCrons(msg.Blueprint.Metadata.ColonyName, 1000)
+		var existingCron *core.Cron
+		if err == nil {
+			for _, cron := range crons {
+				if cron.Name == cronName {
+					existingCron = cron
+					break
+				}
+			}
+		}
+
+		if existingCron == nil {
+			// Create consolidated workflow spec for this Kind
+			workflowSpec, err := h.createConsolidatedReconciliationWorkflowSpec(msg.Blueprint.Metadata.ColonyName, msg.Blueprint.Kind, matchedSD)
+			if err != nil {
+				log.WithFields(log.Fields{
+					"Error": err,
+					"Kind":  msg.Blueprint.Kind,
+				}).Warn("Failed to create consolidated reconciliation workflow spec")
+			} else {
+				// Create cron for periodic self-healing of all blueprints of this Kind
+				cron := &core.Cron{
+					ID:                      core.GenerateRandomID(),
+					ColonyName:              msg.Blueprint.Metadata.ColonyName,
+					Name:                    cronName,
+					Interval:                60, // 60 seconds
+					WaitForPrevProcessGraph: true,
+					WorkflowSpec:            workflowSpec,
+					InitiatorID:             recoveredID,
+					InitiatorName:           initiatorName,
+				}
+
+				addedCron, err := h.server.CronController().AddCron(cron)
+				if err != nil {
+					// Rollback: remove blueprint if cron creation fails
+					h.server.BlueprintDB().RemoveBlueprintByID(msg.Blueprint.ID)
+					h.server.HandleHTTPError(c, fmt.Errorf("failed to create reconciliation cron: %w", err), http.StatusInternalServerError)
+					return
+				}
+
+				log.WithFields(log.Fields{
+					"Kind":     msg.Blueprint.Kind,
+					"CronName": cronName,
+					"CronID":   addedCron.ID,
+					"Interval": 60,
+				}).Info("Auto-created consolidated reconciliation cron for Kind")
+
+				existingCron = addedCron
+			}
 		} else {
-			// Resolve initiator name
-			initiatorName, err := h.resolveInitiator(msg.Blueprint.Metadata.ColonyName, recoveredID)
+			log.WithFields(log.Fields{
+				"BlueprintName": msg.Blueprint.Metadata.Name,
+				"Kind":          msg.Blueprint.Kind,
+				"CronName":      cronName,
+			}).Debug("Consolidated cron already exists for Kind")
+		}
+
+		// Submit immediate reconciliation process for this specific blueprint
+		if existingCron != nil {
+			immediateProcess, err := h.createImmediateReconciliationProcess(msg.Blueprint, matchedSD, recoveredID, initiatorName)
 			if err != nil {
 				log.WithFields(log.Fields{
 					"Error":         err,
-					"RecoveredID":   recoveredID,
 					"BlueprintName": msg.Blueprint.Metadata.Name,
-				}).Warn("Failed to resolve initiator name for cron")
-				// Don't fail the request, use empty string
-				initiatorName = ""
-			}
-
-			// Create cron for periodic self-healing
-			cron := &core.Cron{
-				ID:                      core.GenerateRandomID(),
-				ColonyName:              msg.Blueprint.Metadata.ColonyName,
-				Name:                    cronName,
-				Interval:                60, // 60 seconds
-				WaitForPrevProcessGraph: true,
-				WorkflowSpec:            workflowSpec,
-				InitiatorID:             recoveredID,
-				InitiatorName:           initiatorName,
-			}
-
-			addedCron, err := h.server.CronController().AddCron(cron)
-			if err != nil {
-				// Rollback: remove blueprint if cron creation fails
-				h.server.BlueprintDB().RemoveBlueprintByID(msg.Blueprint.ID)
-				h.server.HandleHTTPError(c, fmt.Errorf("failed to create reconciliation cron: %w", err), http.StatusInternalServerError)
-				return
-			}
-
-			// Store cron reference in blueprint annotations
-			if msg.Blueprint.Metadata.Annotations == nil {
-				msg.Blueprint.Metadata.Annotations = make(map[string]string)
-			}
-			msg.Blueprint.Metadata.Annotations["reconciliation.cron.id"] = addedCron.ID
-			msg.Blueprint.Metadata.Annotations["reconciliation.cron.name"] = addedCron.Name
-
-			err = h.server.BlueprintDB().UpdateBlueprint(msg.Blueprint)
-			if err != nil {
-				// Rollback: remove cron if annotation update fails
-				h.server.CronController().RemoveCron(addedCron.ID)
-				h.server.BlueprintDB().RemoveBlueprintByID(msg.Blueprint.ID)
-				h.server.HandleHTTPError(c, fmt.Errorf("failed to update blueprint with cron reference: %w", err), http.StatusInternalServerError)
-				return
-			}
-
-			log.WithFields(log.Fields{
-				"BlueprintName": msg.Blueprint.Metadata.Name,
-				"CronName":      cronName,
-				"CronID":        addedCron.ID,
-				"Interval":      60,
-			}).Info("Auto-created reconciliation cron for blueprint")
-
-			// Trigger immediate reconciliation for initial create
-			_, err = h.server.CronController().RunCron(addedCron.ID)
-			if err != nil {
-				log.WithFields(log.Fields{
-					"Error":    err,
-					"CronName": cronName,
-				}).Warn("Failed to trigger initial reconciliation")
-				// Don't fail the request if immediate trigger fails
+				}).Warn("Failed to create immediate reconciliation process")
+			} else {
+				_, err = h.server.ProcessController().AddProcess(immediateProcess)
+				if err != nil {
+					log.WithFields(log.Fields{
+						"Error":         err,
+						"BlueprintName": msg.Blueprint.Metadata.Name,
+					}).Warn("Failed to submit immediate reconciliation process")
+				} else {
+					log.WithFields(log.Fields{
+						"BlueprintName": msg.Blueprint.Metadata.Name,
+						"ProcessID":     immediateProcess.ID,
+					}).Info("Submitted immediate reconciliation process for new blueprint")
+				}
 			}
 		}
 	}
@@ -736,42 +768,36 @@ func (h *Handlers) HandleUpdateBlueprint(c backends.Context, recoveredID string,
 		"Generation": msg.Blueprint.Metadata.Generation,
 	}).Debug("Updating blueprint")
 
-	// Trigger immediate reconciliation by running the cron
-	cronName := msg.Blueprint.Metadata.Annotations["reconciliation.cron.name"]
-	if cronName != "" {
-		cron, err := h.server.CronController().GetCrons(msg.Blueprint.Metadata.ColonyName, 1000)
-		if err == nil {
-			// Find the cron by name
-			for _, c := range cron {
-				if c.Name == cronName {
-					log.WithFields(log.Fields{
-						"BlueprintName": msg.Blueprint.Metadata.Name,
-						"Generation":    msg.Blueprint.Metadata.Generation,
-						"CronName":      cronName,
-					}).Info("Triggering immediate reconciliation after blueprint update")
+	// Trigger immediate reconciliation by submitting a single-blueprint process
+	if matchedSD != nil && matchedSD.Spec.Handler.ExecutorType != "" {
+		// Resolve initiator name
+		initiatorName, err := h.resolveInitiator(msg.Blueprint.Metadata.ColonyName, recoveredID)
+		if err != nil {
+			initiatorName = ""
+		}
 
-					_, err = h.server.CronController().RunCron(c.ID)
-					if err != nil {
-						log.WithFields(log.Fields{
-							"Error":    err,
-							"CronName": cronName,
-						}).Warn("Failed to trigger reconciliation cron - reconciliation will happen on next periodic trigger")
-						// Don't fail the request if cron trigger fails
-					}
-					break
-				}
-			}
-		} else {
+		// Submit immediate reconciliation process for this specific blueprint
+		immediateProcess, err := h.createImmediateReconciliationProcess(msg.Blueprint, matchedSD, recoveredID, initiatorName)
+		if err != nil {
 			log.WithFields(log.Fields{
 				"Error":         err,
 				"BlueprintName": msg.Blueprint.Metadata.Name,
-				"CronName":      cronName,
-			}).Warn("Failed to get crons for reconciliation trigger")
+			}).Warn("Failed to create immediate reconciliation process")
+		} else {
+			_, err = h.server.ProcessController().AddProcess(immediateProcess)
+			if err != nil {
+				log.WithFields(log.Fields{
+					"Error":         err,
+					"BlueprintName": msg.Blueprint.Metadata.Name,
+				}).Warn("Failed to submit immediate reconciliation process")
+			} else {
+				log.WithFields(log.Fields{
+					"BlueprintName": msg.Blueprint.Metadata.Name,
+					"Generation":    msg.Blueprint.Metadata.Generation,
+					"ProcessID":     immediateProcess.ID,
+				}).Info("Submitted immediate reconciliation process after blueprint update")
+			}
 		}
-	} else {
-		log.WithFields(log.Fields{
-			"BlueprintName": msg.Blueprint.Metadata.Name,
-		}).Debug("No reconciliation cron found for blueprint (may be old blueprint without cron)")
 	}
 
 	jsonString, err = msg.Blueprint.ToJSON()
@@ -816,8 +842,8 @@ func (h *Handlers) HandleRemoveBlueprint(c backends.Context, recoveredID string,
 		return
 	}
 
-	// Get cron reference before deleting blueprint
-	cronName := blueprint.Metadata.Annotations["reconciliation.cron.name"]
+	// Use consolidated cron name based on Kind
+	cronName := "reconcile-" + blueprint.Kind
 
 	// Remove the blueprint from database first
 	err = h.server.BlueprintDB().RemoveBlueprintByName(msg.Namespace, msg.Name)
@@ -825,8 +851,18 @@ func (h *Handlers) HandleRemoveBlueprint(c backends.Context, recoveredID string,
 		return
 	}
 
-	// Auto-remove the reconciliation cron (best-effort, don't fail if cron missing)
-	if cronName != "" {
+	// Check if there are any remaining blueprints of this Kind
+	remainingBlueprints, err := h.server.BlueprintDB().GetBlueprintsByNamespaceAndKind(msg.Namespace, blueprint.Kind)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"Error": err,
+			"Kind":  blueprint.Kind,
+		}).Warn("Failed to check remaining blueprints")
+		remainingBlueprints = []*core.Blueprint{} // Assume none remaining on error
+	}
+
+	// Only remove consolidated cron if no blueprints of this Kind remain
+	if len(remainingBlueprints) == 0 {
 		crons, err := h.server.CronController().GetCrons(msg.Namespace, 1000)
 		if err == nil {
 			for _, c := range crons {
@@ -834,15 +870,15 @@ func (h *Handlers) HandleRemoveBlueprint(c backends.Context, recoveredID string,
 					err = h.server.CronController().RemoveCron(c.ID)
 					if err != nil {
 						log.WithFields(log.Fields{
-							"Error":         err,
-							"BlueprintName": msg.Name,
-							"CronName":      cronName,
-						}).Warn("Failed to remove reconciliation cron (may already be deleted)")
+							"Error":    err,
+							"Kind":     blueprint.Kind,
+							"CronName": cronName,
+						}).Warn("Failed to remove consolidated cron")
 					} else {
 						log.WithFields(log.Fields{
-							"BlueprintName": msg.Name,
-							"CronName":      cronName,
-						}).Info("Auto-removed reconciliation cron for deleted blueprint")
+							"Kind":     blueprint.Kind,
+							"CronName": cronName,
+						}).Info("Auto-removed consolidated cron (last blueprint of Kind deleted)")
 					}
 					break
 				}
@@ -853,6 +889,12 @@ func (h *Handlers) HandleRemoveBlueprint(c backends.Context, recoveredID string,
 				"CronName": cronName,
 			}).Warn("Failed to get crons for deletion")
 		}
+	} else {
+		log.WithFields(log.Fields{
+			"BlueprintName":       msg.Name,
+			"Kind":                blueprint.Kind,
+			"RemainingBlueprints": len(remainingBlueprints),
+		}).Debug("Consolidated cron kept (other blueprints of same Kind exist)")
 	}
 
 	// Submit cleanup process to reconciler (best-effort)

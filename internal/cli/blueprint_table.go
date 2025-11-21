@@ -187,11 +187,37 @@ func printBlueprintsTableWithClient(c *client.ColoniesClient, blueprints []*core
 	}
 	t.SetCols(cols)
 
+	// Build map of Kind -> ExecutorType from BlueprintDefinitions
+	kindToExecutorType := make(map[string]string)
+	if c != nil && len(blueprints) > 0 {
+		defs, err := c.GetBlueprintDefinitions(ColonyName, PrvKey)
+		if err == nil {
+			for _, def := range defs {
+				if def.Spec.Handler.ExecutorType != "" {
+					kindToExecutorType[def.Spec.Names.Kind] = def.Spec.Handler.ExecutorType
+				}
+			}
+		}
+	}
+
 	for _, blueprint := range blueprints {
-		// Get reconciler name from handler
+		// Get reconciler name from handler or definition
 		reconcilerStr := "-"
-		if blueprint.Handler.ExecutorName != "" {
-			reconcilerStr = blueprint.Handler.ExecutorName
+		if blueprint.Handler != nil {
+			if blueprint.Handler.ExecutorName != "" {
+				reconcilerStr = blueprint.Handler.ExecutorName
+			} else if len(blueprint.Handler.ExecutorNames) > 0 {
+				reconcilerStr = blueprint.Handler.ExecutorNames[0]
+				if len(blueprint.Handler.ExecutorNames) > 1 {
+					reconcilerStr += "..."
+				}
+			}
+		}
+		// Fall back to executor type from definition
+		if reconcilerStr == "-" {
+			if execType, ok := kindToExecutorType[blueprint.Kind]; ok {
+				reconcilerStr = "[" + execType + "]"
+			}
 		}
 
 		// Get replica information
