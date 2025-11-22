@@ -26,14 +26,19 @@ func (db *PQDatabase) AddExecutor(executor *core.Executor) error {
 	if existingExecutor != nil {
 		if existingExecutor.State == core.UNREGISTERED {
 			// Reactivate the executor by updating its state to PENDING and other fields
-			sqlStatement := `UPDATE ` + db.dbPrefix + `EXECUTORS SET EXECUTOR_ID=$1, STATE=$2, COMMISSIONTIME=$3, LASTHEARDFROM=$4, LONG=$5, LAT=$6, LOCDESC=$7, HWMODEL=$8, HWNODES=$9, HWCPU=$10, HWMEM=$11, HWSTORAGE=$12, HWGPUNAME=$13, HWGPUCOUNT=$14, HWGPUNODECOUNT=$15, HWGPUMEM=$16, SWNAME=$17, SWTYPE=$18, SWVERSION=$19, ALLOCATIONS=$20, NODE_ID=$21, BLUEPRINT_ID=$22, BLUEPRINT_GEN=$23 WHERE COLONY_NAME=$24 AND NAME=$25`
+			sqlStatement := `UPDATE ` + db.dbPrefix + `EXECUTORS SET EXECUTOR_ID=$1, STATE=$2, COMMISSIONTIME=$3, LASTHEARDFROM=$4, LONG=$5, LAT=$6, LOCDESC=$7, HWMODEL=$8, HWNODES=$9, HWCPU=$10, HWMEM=$11, HWSTORAGE=$12, HWGPUNAME=$13, HWGPUCOUNT=$14, HWGPUNODECOUNT=$15, HWGPUMEM=$16, SWNAME=$17, SWTYPE=$18, SWVERSION=$19, ALLOCATIONS=$20, BLUEPRINT_ID=$21, BLUEPRINT_GEN=$22, HWPLATFORM=$23, HWARCHITECTURE=$24, HWNETWORK=$25 WHERE COLONY_NAME=$26 AND NAME=$27`
 
 			allocationsJSONBytes, err := json.Marshal(executor.Allocations)
 			if err != nil {
 				return err
 			}
 
-			_, err = db.postgresql.Exec(sqlStatement, executor.ID, core.PENDING, time.Now(), executor.LastHeardFromTime, executor.Location.Long, executor.Location.Lat, executor.Location.Description, executor.Capabilities.Hardware.Model, executor.Capabilities.Hardware.Nodes, executor.Capabilities.Hardware.CPU, executor.Capabilities.Hardware.Memory, executor.Capabilities.Hardware.Storage, executor.Capabilities.Hardware.GPU.Name, executor.Capabilities.Hardware.GPU.Count, executor.Capabilities.Hardware.GPU.NodeCount, executor.Capabilities.Hardware.GPU.Memory, executor.Capabilities.Software.Name, executor.Capabilities.Software.Type, executor.Capabilities.Software.Version, string(allocationsJSONBytes), executor.NodeID, executor.BlueprintID, executor.BlueprintGen, executor.ColonyName, executor.ColonyName+":"+executor.Name)
+			networkJSONBytes, err := json.Marshal(executor.Capabilities.Hardware.Network)
+			if err != nil {
+				return err
+			}
+
+			_, err = db.postgresql.Exec(sqlStatement, executor.ID, core.PENDING, time.Now(), executor.LastHeardFromTime, executor.Location.Long, executor.Location.Lat, executor.Location.Description, executor.Capabilities.Hardware.Model, executor.Capabilities.Hardware.Nodes, executor.Capabilities.Hardware.CPU, executor.Capabilities.Hardware.Memory, executor.Capabilities.Hardware.Storage, executor.Capabilities.Hardware.GPU.Name, executor.Capabilities.Hardware.GPU.Count, executor.Capabilities.Hardware.GPU.NodeCount, executor.Capabilities.Hardware.GPU.Memory, executor.Capabilities.Software.Name, executor.Capabilities.Software.Type, executor.Capabilities.Software.Version, string(allocationsJSONBytes), executor.BlueprintID, executor.BlueprintGen, executor.Capabilities.Hardware.Platform, executor.Capabilities.Hardware.Architecture, string(networkJSONBytes), executor.ColonyName, executor.ColonyName+":"+executor.Name)
 			return err
 		}
 		return errors.New("Executor with name <" + executor.Name + "> already exists in Colony with name <" + executor.ColonyName + ">")
@@ -44,8 +49,13 @@ func (db *PQDatabase) AddExecutor(executor *core.Executor) error {
 		return err
 	}
 
-	sqlStatement := `INSERT INTO  ` + db.dbPrefix + `EXECUTORS (NAME, EXECUTOR_TYPE, EXECUTOR_ID, COLONY_NAME, STATE, REQUIRE_FUNC_REG, COMMISSIONTIME, LASTHEARDFROM, LONG, LAT, LOCDESC, HWMODEL, HWNODES, HWCPU, HWMEM, HWSTORAGE, HWGPUNAME, HWGPUCOUNT, HWGPUNODECOUNT, HWGPUMEM, SWNAME, SWTYPE, SWVERSION, ALLOCATIONS, NODE_ID, BLUEPRINT_ID, BLUEPRINT_GEN) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27)`
-	_, err = db.postgresql.Exec(sqlStatement, executor.ColonyName+":"+executor.Name, executor.Type, executor.ID, executor.ColonyName, 0, executor.RequireFuncReg, time.Now(), executor.LastHeardFromTime, executor.Location.Long, executor.Location.Lat, executor.Location.Description, executor.Capabilities.Hardware.Model, executor.Capabilities.Hardware.Nodes, executor.Capabilities.Hardware.CPU, executor.Capabilities.Hardware.Memory, executor.Capabilities.Hardware.Storage, executor.Capabilities.Hardware.GPU.Name, executor.Capabilities.Hardware.GPU.Count, executor.Capabilities.Hardware.GPU.NodeCount, executor.Capabilities.Hardware.GPU.Memory, executor.Capabilities.Software.Name, executor.Capabilities.Software.Type, executor.Capabilities.Software.Version, string(allocationsJSONBytes), executor.NodeID, executor.BlueprintID, executor.BlueprintGen)
+	networkJSONBytes, err := json.Marshal(executor.Capabilities.Hardware.Network)
+	if err != nil {
+		return err
+	}
+
+	sqlStatement := `INSERT INTO  ` + db.dbPrefix + `EXECUTORS (NAME, EXECUTOR_TYPE, EXECUTOR_ID, COLONY_NAME, STATE, REQUIRE_FUNC_REG, COMMISSIONTIME, LASTHEARDFROM, LONG, LAT, LOCDESC, HWMODEL, HWNODES, HWCPU, HWMEM, HWSTORAGE, HWGPUNAME, HWGPUCOUNT, HWGPUNODECOUNT, HWGPUMEM, SWNAME, SWTYPE, SWVERSION, ALLOCATIONS, BLUEPRINT_ID, BLUEPRINT_GEN, HWPLATFORM, HWARCHITECTURE, HWNETWORK) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29)`
+	_, err = db.postgresql.Exec(sqlStatement, executor.ColonyName+":"+executor.Name, executor.Type, executor.ID, executor.ColonyName, 0, executor.RequireFuncReg, time.Now(), executor.LastHeardFromTime, executor.Location.Long, executor.Location.Lat, executor.Location.Description, executor.Capabilities.Hardware.Model, executor.Capabilities.Hardware.Nodes, executor.Capabilities.Hardware.CPU, executor.Capabilities.Hardware.Memory, executor.Capabilities.Hardware.Storage, executor.Capabilities.Hardware.GPU.Name, executor.Capabilities.Hardware.GPU.Count, executor.Capabilities.Hardware.GPU.NodeCount, executor.Capabilities.Hardware.GPU.Memory, executor.Capabilities.Software.Name, executor.Capabilities.Software.Type, executor.Capabilities.Software.Version, string(allocationsJSONBytes), executor.BlueprintID, executor.BlueprintGen, executor.Capabilities.Hardware.Platform, executor.Capabilities.Hardware.Architecture, string(networkJSONBytes))
 
 	if err != nil {
 		if strings.HasPrefix(err.Error(), "pq: duplicate key value violates unique constraint") {
@@ -109,13 +119,17 @@ func (db *PQDatabase) parseExecutors(rows *sql.Rows) ([]*core.Executor, error) {
 		var swType string
 		var swVersion string
 		var allocationsJSONStr string
-		var nodeID sql.NullString
+		var nodeID sql.NullString // kept for backward compatibility with existing database schema (unused)
 		var blueprintID sql.NullString
 		var blueprintGen sql.NullInt64
+		var hwPlatform sql.NullString
+		var hwArchitecture sql.NullString
+		var hwNetwork sql.NullString
 
-		if err := rows.Scan(&name, &executorType, &id, &colonyName, &state, &requireRunReg, &commissionTime, &lastHeardFromTime, &long, &lat, &desc, &hwModel, &hwNodes, &hwCPU, &hwMem, &hwStorage, &hwGPUName, &hwGPUCount, &hwGPUNodeCount, &hwGPUMem, &swName, &swType, &swVersion, &allocationsJSONStr, &nodeID, &blueprintID, &blueprintGen); err != nil {
+		if err := rows.Scan(&name, &executorType, &id, &colonyName, &state, &requireRunReg, &commissionTime, &lastHeardFromTime, &long, &lat, &desc, &hwModel, &hwNodes, &hwCPU, &hwMem, &hwStorage, &hwGPUName, &hwGPUCount, &hwGPUNodeCount, &hwGPUMem, &swName, &swType, &swVersion, &allocationsJSONStr, &nodeID, &blueprintID, &blueprintGen, &hwPlatform, &hwArchitecture, &hwNetwork); err != nil {
 			return nil, err
 		}
+		_ = nodeID // Intentionally unused - kept for database schema compatibility
 
 		s := strings.Split(name, ":")
 		if len(s) != 2 {
@@ -133,14 +147,28 @@ func (db *PQDatabase) parseExecutors(rows *sql.Rows) ([]*core.Executor, error) {
 		location := core.Location{Long: long, Lat: lat, Description: desc}
 		executor.Location = location
 		gpu := core.GPU{Name: hwGPUName, Count: hwGPUCount, Memory: hwGPUMem, NodeCount: hwGPUNodeCount}
-		hw := core.Hardware{Model: hwModel, CPU: hwCPU, Memory: hwMem, Storage: hwStorage, GPU: gpu, Nodes: hwNodes}
+
+		// Parse network addresses from JSON
+		var networkAddresses []string
+		if hwNetwork.Valid && hwNetwork.String != "" {
+			json.Unmarshal([]byte(hwNetwork.String), &networkAddresses)
+		}
+
+		hw := core.Hardware{
+			Model:        hwModel,
+			CPU:          hwCPU,
+			Memory:       hwMem,
+			Storage:      hwStorage,
+			GPU:          gpu,
+			Nodes:        hwNodes,
+			Platform:     hwPlatform.String,
+			Architecture: hwArchitecture.String,
+			Network:      networkAddresses,
+		}
 		sw := core.Software{Name: swName, Type: swType, Version: swVersion}
 		capabilities := core.Capabilities{Hardware: hw, Software: sw}
 		executor.Capabilities = capabilities
 		executor.Allocations = allocations
-		if nodeID.Valid {
-			executor.NodeID = nodeID.String
-		}
 		if blueprintID.Valid {
 			executor.BlueprintID = blueprintID.String
 		}

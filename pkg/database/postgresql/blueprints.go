@@ -23,7 +23,7 @@ func (db *PQDatabase) AddBlueprintDefinition(sd *core.BlueprintDefinition) error
 	}
 
 	sqlStatement := `INSERT INTO ` + db.dbPrefix + `BLUEPRINTDEFINITIONS (ID, COLONY_NAME, NAME, API_GROUP, VERSION, KIND, DATA) VALUES ($1, $2, $3, $4, $5, $6, $7)`
-	_, err = db.postgresql.Exec(sqlStatement, sd.ID, sd.Metadata.Namespace, sd.Metadata.Name, sd.Spec.Group, sd.Spec.Version, sd.Spec.Names.Kind, sdJSON)
+	_, err = db.postgresql.Exec(sqlStatement, sd.ID, sd.Metadata.ColonyName, sd.Metadata.Name, sd.Spec.Group, sd.Spec.Version, sd.Spec.Names.Kind, sdJSON)
 	if err != nil {
 		return err
 	}
@@ -201,13 +201,13 @@ func (db *PQDatabase) AddBlueprint(blueprint *core.Blueprint) error {
 		return errors.New("Blueprint is nil")
 	}
 
-	existingBlueprint, err := db.GetBlueprintByName(blueprint.Metadata.Namespace, blueprint.Metadata.Name)
+	existingBlueprint, err := db.GetBlueprintByName(blueprint.Metadata.ColonyName, blueprint.Metadata.Name)
 	if err != nil {
 		return err
 	}
 
 	if existingBlueprint != nil {
-		return errors.New("Blueprint with name <" + blueprint.Metadata.Name + "> in namespace <" + blueprint.Metadata.Namespace + "> already exists")
+		return errors.New("Blueprint with name <" + blueprint.Metadata.Name + "> in namespace <" + blueprint.Metadata.ColonyName + "> already exists")
 	}
 
 	blueprintJSON, err := blueprint.ToJSON()
@@ -216,7 +216,7 @@ func (db *PQDatabase) AddBlueprint(blueprint *core.Blueprint) error {
 	}
 
 	sqlStatement := `INSERT INTO ` + db.dbPrefix + `BLUEPRINTS (ID, COLONY_NAME, NAME, KIND, DATA) VALUES ($1, $2, $3, $4, $5)`
-	_, err = db.postgresql.Exec(sqlStatement, blueprint.ID, blueprint.Metadata.Namespace, blueprint.Metadata.Name, blueprint.Kind, blueprintJSON)
+	_, err = db.postgresql.Exec(sqlStatement, blueprint.ID, blueprint.Metadata.ColonyName, blueprint.Metadata.Name, blueprint.Kind, blueprintJSON)
 	if err != nil {
 		return err
 	}
@@ -353,7 +353,7 @@ func (db *PQDatabase) UpdateBlueprint(blueprint *core.Blueprint) error {
 	}
 
 	sqlStatement := `UPDATE ` + db.dbPrefix + `BLUEPRINTS SET COLONY_NAME=$1, NAME=$2, KIND=$3, DATA=$4 WHERE ID=$5`
-	_, err = db.postgresql.Exec(sqlStatement, blueprint.Metadata.Namespace, blueprint.Metadata.Name, blueprint.Kind, blueprintJSON, blueprint.ID)
+	_, err = db.postgresql.Exec(sqlStatement, blueprint.Metadata.ColonyName, blueprint.Metadata.Name, blueprint.Kind, blueprintJSON, blueprint.ID)
 	if err != nil {
 		return err
 	}

@@ -57,6 +57,7 @@ var TargetExecutorID string
 var TargetExecutorType string
 var TargetExecutorName string
 var TargetLocation string
+var Filter string
 var WorkflowID string
 var NodeName string
 var Location string

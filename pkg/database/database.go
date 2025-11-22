@@ -5,7 +5,6 @@ type Database interface {
 	UserDatabase
 	ColonyDatabase
 	ExecutorDatabase
-	NodeDatabase
 	FunctionDatabase
 	ProcessDatabase
 	AttributeDatabase

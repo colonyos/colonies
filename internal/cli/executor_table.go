@@ -3,6 +3,7 @@ package cli
 import (
 	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/colonyos/colonies/internal/table"
 	"github.com/colonyos/colonies/pkg/client"
@@ -32,24 +33,9 @@ func printExecutorsTable(executors []*core.Executor, showState bool) {
 	}
 	t.SetCols(cols)
 
-	// Get nodes to map NodeID to location
-	client := setup()
-	nodes, err := client.GetNodes(ColonyName, PrvKey)
-	nodeMap := make(map[string]*core.Node)
-	if err == nil {
-		for _, node := range nodes {
-			nodeMap[node.ID] = node
-		}
-	}
-
 	for _, executor := range executors {
 		// Determine location to display
 		location := executor.Location.Description
-		if executor.NodeID != "" {
-			if node, exists := nodeMap[executor.NodeID]; exists && node.Location != "" {
-				location = node.Location
-			}
-		}
 		if location == "" {
 			location = "n/a"
 		}
@@ -249,6 +235,26 @@ func printExecutorTable(client *client.ColoniesClient, executor *core.Executor) 
 		termenv.String(executor.Capabilities.Hardware.GPU.Memory).Foreground(theme.ColorGray),
 	}
 	t.AddRow(row)
+
+	row = []interface{}{
+		termenv.String("Platform").Foreground(theme.ColorMagenta),
+		termenv.String(executor.Capabilities.Hardware.Platform).Foreground(theme.ColorGray),
+	}
+	t.AddRow(row)
+
+	row = []interface{}{
+		termenv.String("Architecture").Foreground(theme.ColorMagenta),
+		termenv.String(executor.Capabilities.Hardware.Architecture).Foreground(theme.ColorGray),
+	}
+	t.AddRow(row)
+
+	if len(executor.Capabilities.Hardware.Network) > 0 {
+		row = []interface{}{
+			termenv.String("Network").Foreground(theme.ColorMagenta),
+			termenv.String(strings.Join(executor.Capabilities.Hardware.Network, ", ")).Foreground(theme.ColorGray),
+		}
+		t.AddRow(row)
+	}
 
 	t.Render()
 

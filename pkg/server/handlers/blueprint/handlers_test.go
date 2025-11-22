@@ -22,7 +22,7 @@ func TestAddBlueprintDefinition(t *testing.T) {
 		"test_executor_type",
 		"reconcile_test_resource",
 	)
-	sd.Metadata.Namespace = env.ColonyName
+	sd.Metadata.ColonyName = env.ColonyName
 
 	// Add BlueprintDefinition with colony owner key
 	addedSD, err := client.AddBlueprintDefinition(sd, env.ColonyPrvKey)
@@ -54,7 +54,7 @@ func TestGetBlueprintDefinition(t *testing.T) {
 		"test_executor_type",
 		"reconcile_test_resource",
 	)
-	sd.Metadata.Namespace = env.ColonyName
+	sd.Metadata.ColonyName = env.ColonyName
 
 	addedSD, err := client.AddBlueprintDefinition(sd, env.ColonyPrvKey)
 	assert.Nil(t, err)
@@ -84,7 +84,7 @@ func TestAddBlueprint(t *testing.T) {
 		"database_controller",
 		"reconcile_database",
 	)
-	sd.Metadata.Namespace = env.ColonyName
+	sd.Metadata.ColonyName = env.ColonyName
 
 	_, err := client.AddBlueprintDefinition(sd, env.ColonyPrvKey)
 	assert.Nil(t, err)
@@ -124,7 +124,7 @@ func TestGetBlueprint(t *testing.T) {
 		"blueprint_controller",
 		"reconcile_blueprint",
 	)
-	sd.Metadata.Namespace = env.ColonyName
+	sd.Metadata.ColonyName = env.ColonyName
 	_, err := client.AddBlueprintDefinition(sd, env.ColonyPrvKey)
 	assert.Nil(t, err)
 
@@ -159,7 +159,7 @@ func TestGetBlueprints(t *testing.T) {
 		"database_controller",
 		"reconcile_database",
 	)
-	sdDB.Metadata.Namespace = env.ColonyName
+	sdDB.Metadata.ColonyName = env.ColonyName
 	_, err := client.AddBlueprintDefinition(sdDB, env.ColonyPrvKey)
 	assert.Nil(t, err)
 
@@ -174,7 +174,7 @@ func TestGetBlueprints(t *testing.T) {
 		"blueprint_controller",
 		"reconcile_blueprint",
 	)
-	sdSvc.Metadata.Namespace = env.ColonyName
+	sdSvc.Metadata.ColonyName = env.ColonyName
 	_, err = client.AddBlueprintDefinition(sdSvc, env.ColonyPrvKey)
 	assert.Nil(t, err)
 
@@ -224,7 +224,7 @@ func TestUpdateBlueprint(t *testing.T) {
 		"app_controller",
 		"reconcile_application",
 	)
-	sd.Metadata.Namespace = env.ColonyName
+	sd.Metadata.ColonyName = env.ColonyName
 	_, err := client.AddBlueprintDefinition(sd, env.ColonyPrvKey)
 	assert.Nil(t, err)
 
@@ -262,7 +262,7 @@ func TestRemoveBlueprint(t *testing.T) {
 		"cache_controller",
 		"reconcile_cache",
 	)
-	sd.Metadata.Namespace = env.ColonyName
+	sd.Metadata.ColonyName = env.ColonyName
 	_, err := client.AddBlueprintDefinition(sd, env.ColonyPrvKey)
 	assert.Nil(t, err)
 
@@ -297,7 +297,7 @@ func TestBlueprintWithComplexSpec(t *testing.T) {
 		"deployment_controller",
 		"reconcile_deployment",
 	)
-	sd.Metadata.Namespace = env.ColonyName
+	sd.Metadata.ColonyName = env.ColonyName
 	_, err := client.AddBlueprintDefinition(sd, env.ColonyPrvKey)
 	assert.Nil(t, err)
 
@@ -377,7 +377,7 @@ func TestAddBlueprintWithSchemaValidation(t *testing.T) {
 		"validator_controller",
 		"reconcile_validated",
 	)
-	sd.Metadata.Namespace = env.ColonyName
+	sd.Metadata.ColonyName = env.ColonyName
 	sd.Spec.Schema = &core.ValidationSchema{
 		Type: "object",
 		Properties: map[string]core.SchemaProperty{
@@ -456,7 +456,7 @@ func TestRemoveBlueprintDefinitionWithActiveBlueprints(t *testing.T) {
 		"protected_controller",
 		"reconcile_protected",
 	)
-	sd.Metadata.Namespace = env.ColonyName
+	sd.Metadata.ColonyName = env.ColonyName
 	addedSD, err := client.AddBlueprintDefinition(sd, env.ColonyPrvKey)
 	assert.Nil(t, err)
 
@@ -509,7 +509,7 @@ func TestGetBlueprintHistory(t *testing.T) {
 		"test_controller",
 		"reconcile_testresource",
 	)
-	sd.Metadata.Namespace = env.ColonyName
+	sd.Metadata.ColonyName = env.ColonyName
 
 	_, err := client.AddBlueprintDefinition(sd, env.ColonyPrvKey)
 	assert.Nil(t, err)
@@ -568,7 +568,7 @@ func TestRemoveBlueprintTriggersDeleteReconciliation(t *testing.T) {
 		"docker-reconciler",
 		"reconcile",
 	)
-	sd.Metadata.Namespace = env.ColonyName
+	sd.Metadata.ColonyName = env.ColonyName
 	_, err := client.AddBlueprintDefinition(sd, env.ColonyPrvKey)
 	assert.Nil(t, err)
 
@@ -654,7 +654,7 @@ func TestGetBlueprintDefinitions(t *testing.T) {
 		"test_executor_type",
 		"reconcile_test_resource",
 	)
-	sd1.Metadata.Namespace = env.ColonyName
+	sd1.Metadata.ColonyName = env.ColonyName
 	_, err = client.AddBlueprintDefinition(sd1, env.ColonyPrvKey)
 	assert.Nil(t, err)
 
@@ -669,7 +669,7 @@ func TestGetBlueprintDefinitions(t *testing.T) {
 		"test_executor_type",
 		"reconcile_test_resource",
 	)
-	sd2.Metadata.Namespace = env.ColonyName
+	sd2.Metadata.ColonyName = env.ColonyName
 	_, err = client.AddBlueprintDefinition(sd2, env.ColonyPrvKey)
 	assert.Nil(t, err)
 
@@ -713,7 +713,7 @@ func TestGetBlueprintDefinitionsAsExecutor(t *testing.T) {
 		"test_executor_type",
 		"reconcile_test_resource",
 	)
-	sd.Metadata.Namespace = env.ColonyName
+	sd.Metadata.ColonyName = env.ColonyName
 	_, err := client.AddBlueprintDefinition(sd, env.ColonyPrvKey)
 	assert.Nil(t, err)
 
@@ -753,7 +753,7 @@ func TestAddBlueprintWithInvalidSchema(t *testing.T) {
 		"test_executor_type",
 		"reconcile",
 	)
-	sd.Metadata.Namespace = env.ColonyName
+	sd.Metadata.ColonyName = env.ColonyName
 
 	// Add schema requiring "replicas" field
 	sd.Spec.Schema = &core.ValidationSchema{
@@ -799,7 +799,7 @@ func TestUpdateBlueprintWithoutHandler(t *testing.T) {
 		"", // No executor type
 		"", // No reconciliation function
 	)
-	sd.Metadata.Namespace = env.ColonyName
+	sd.Metadata.ColonyName = env.ColonyName
 
 	_, err := client.AddBlueprintDefinition(sd, env.ColonyPrvKey)
 	assert.Nil(t, err)
@@ -839,6 +839,74 @@ func TestGetBlueprintNotFound(t *testing.T) {
 	// Try to get non-existent blueprint
 	_, err := client.GetBlueprint(env.ColonyName, "nonexistent-blueprint", env.ExecutorPrvKey)
 	assert.NotNil(t, err)
+
+	server.Shutdown()
+	<-done
+}
+
+func TestRemoveBlueprintCreatesCleanupProcess(t *testing.T) {
+	env, client, server, _, done := server.SetupTestEnv2(t)
+
+	// Add BlueprintDefinition with a handler (so cleanup process will be triggered)
+	sd := core.CreateBlueprintDefinition(
+		"executor-deployment",
+		"compute.io",
+		"v1",
+		"ExecutorDeployment",
+		"executordeployments",
+		"Namespaced",
+		"docker-reconciler",
+		"reconcile",
+	)
+	sd.Metadata.ColonyName = env.ColonyName
+	_, err := client.AddBlueprintDefinition(sd, env.ColonyPrvKey)
+	assert.Nil(t, err)
+
+	// Add Blueprint instance
+	blueprint := core.CreateBlueprint("ExecutorDeployment", "test-executor", env.ColonyName)
+	blueprint.SetSpec("replicas", 3)
+	blueprint.SetSpec("image", "alpine:latest")
+	addedBlueprint, err := client.AddBlueprint(blueprint, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.NotNil(t, addedBlueprint)
+
+	// Get waiting processes before removal - should have 1 (create reconciliation)
+	waitingProcs, err := client.GetWaitingProcesses(env.ColonyName, "", "", "", 100, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	initialWaitingCount := len(waitingProcs)
+	assert.Equal(t, 1, initialWaitingCount, "Should have 1 waiting process from create reconciliation")
+
+	// Remove the Blueprint
+	err = client.RemoveBlueprint(env.ColonyName, addedBlueprint.Metadata.Name, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+
+	// Get waiting processes again - should now have at least a cleanup process
+	waitingProcs, err = client.GetWaitingProcesses(env.ColonyName, "", "", "", 100, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.GreaterOrEqual(t, len(waitingProcs), 2, "Should have at least 2 waiting processes after remove")
+
+	// Find the cleanup process
+	var cleanupProc *core.Process
+	for _, proc := range waitingProcs {
+		if proc.FunctionSpec.FuncName == "cleanup" {
+			cleanupProc = proc
+			break
+		}
+	}
+
+	// Verify cleanup process was created
+	assert.NotNil(t, cleanupProc, "Cleanup process should have been created")
+	assert.Equal(t, "cleanup", cleanupProc.FunctionSpec.FuncName)
+	assert.Equal(t, "docker-reconciler", cleanupProc.FunctionSpec.Conditions.ExecutorType)
+
+	// Verify blueprintName is in kwargs
+	blueprintName, ok := cleanupProc.FunctionSpec.KwArgs["blueprintName"].(string)
+	assert.True(t, ok, "blueprintName should be in kwargs")
+	assert.Equal(t, "test-executor", blueprintName)
+
+	// Verify the blueprint was removed from database
+	_, err = client.GetBlueprint(env.ColonyName, addedBlueprint.Metadata.Name, env.ExecutorPrvKey)
+	assert.NotNil(t, err, "Blueprint should not exist in database after removal")
 
 	server.Shutdown()
 	<-done

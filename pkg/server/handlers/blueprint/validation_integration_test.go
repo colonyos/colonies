@@ -19,7 +19,7 @@ func TestSchemaValidation_Integration(t *testing.T) {
 		"controller",
 		"reconcile",
 	)
-	sd.Metadata.Namespace = "test-colony"
+	sd.Metadata.ColonyName = "test-colony"
 	sd.Spec.Schema = &core.ValidationSchema{
 		Type: "object",
 		Properties: map[string]core.SchemaProperty{

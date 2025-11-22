@@ -179,14 +179,47 @@ func printBlueprintsTableWithClient(c *client.ColoniesClient, blueprints []*core
 	var cols = []table.Column{
 		{ID: "name", Name: "Name", SortIndex: 1},
 		{ID: "kind", Name: "Kind", SortIndex: 2},
-		{ID: "replicas", Name: "Replicas", SortIndex: 3},
-		{ID: "reconciling", Name: "Reconciling", SortIndex: 4},
-		{ID: "oldgen", Name: "OldGen", SortIndex: 5},
-		{ID: "generation", Name: "Gen", SortIndex: 6},
+		{ID: "reconciler", Name: "Reconciler", SortIndex: 3},
+		{ID: "replicas", Name: "Replicas", SortIndex: 4},
+		{ID: "reconciling", Name: "Reconciling", SortIndex: 5},
+		{ID: "oldgen", Name: "OldGen", SortIndex: 6},
+		{ID: "generation", Name: "Gen", SortIndex: 7},
 	}
 	t.SetCols(cols)
 
+	// Build map of Kind -> ExecutorType from BlueprintDefinitions
+	kindToExecutorType := make(map[string]string)
+	if c != nil && len(blueprints) > 0 {
+		defs, err := c.GetBlueprintDefinitions(ColonyName, PrvKey)
+		if err == nil {
+			for _, def := range defs {
+				if def.Spec.Handler.ExecutorType != "" {
+					kindToExecutorType[def.Spec.Names.Kind] = def.Spec.Handler.ExecutorType
+				}
+			}
+		}
+	}
+
 	for _, blueprint := range blueprints {
+		// Get reconciler name from handler or definition
+		reconcilerStr := "-"
+		if blueprint.Handler != nil {
+			if blueprint.Handler.ExecutorName != "" {
+				reconcilerStr = blueprint.Handler.ExecutorName
+			} else if len(blueprint.Handler.ExecutorNames) > 0 {
+				reconcilerStr = blueprint.Handler.ExecutorNames[0]
+				if len(blueprint.Handler.ExecutorNames) > 1 {
+					reconcilerStr += "..."
+				}
+			}
+		}
+		// Fall back to executor type from definition
+		if reconcilerStr == "-" {
+			if execType, ok := kindToExecutorType[blueprint.Kind]; ok {
+				reconcilerStr = "[" + execType + "]"
+			}
+		}
+
 		// Get replica information
 		replicasStr := "-"
 		reconcilingStr := "-"
@@ -325,6 +358,7 @@ func printBlueprintsTableWithClient(c *client.ColoniesClient, blueprints []*core
 		row := []interface{}{
 			termenv.String(blueprint.Metadata.Name).Foreground(theme.ColorCyan),
 			termenv.String(blueprint.Kind).Foreground(theme.ColorViolet),
+			termenv.String(reconcilerStr).Foreground(theme.ColorBlue),
 			termenv.String(replicasStr).Foreground(theme.ColorMagenta),
 			termenv.String(reconcilingStr).Foreground(getReconcilingColor(reconcilingStr, theme)),
 			termenv.String(oldGenStr).Foreground(getOldGenColor(oldGenStr, theme)),

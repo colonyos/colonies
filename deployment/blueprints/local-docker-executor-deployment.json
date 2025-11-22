@@ -1,10 +1,10 @@
 {
   "kind": "ExecutorDeployment",
   "metadata": {
-    "name": "docker-executor"
+    "name": "local-docker-executor"
   },
   "handler": {
-    "executorName": "local-node-docker-reconciler"
+    "executorName": "local-docker-reconciler"
   },
   "spec": {
     "image": "colonyos/dockerexecutor:v1.0.7",

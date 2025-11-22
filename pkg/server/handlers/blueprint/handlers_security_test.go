@@ -27,7 +27,7 @@ func TestAddBlueprintDefinitionSecurity(t *testing.T) {
 		"test_executor_type",
 		"reconcile_test_resource",
 	)
-	sd.Metadata.Namespace = env.Colony1Name
+	sd.Metadata.ColonyName = env.Colony1Name
 
 	// Only colony owner should be able to add BlueprintDefinitions
 
@@ -65,7 +65,7 @@ func TestGetBlueprintDefinitionSecurity(t *testing.T) {
 		"test_executor_type",
 		"reconcile_test_resource",
 	)
-	sd.Metadata.Namespace = env.Colony1Name
+	sd.Metadata.ColonyName = env.Colony1Name
 
 	_, err := client.AddBlueprintDefinition(sd, env.Colony1PrvKey)
 	assert.Nil(t, err)
@@ -110,7 +110,7 @@ func TestAddBlueprintSecurity(t *testing.T) {
 		"test_executor_type",
 		"reconcile_database",
 	)
-	sd.Metadata.Namespace = env.Colony1Name
+	sd.Metadata.ColonyName = env.Colony1Name
 
 	_, err := client.AddBlueprintDefinition(sd, env.Colony1PrvKey)
 	assert.Nil(t, err)
@@ -159,7 +159,7 @@ func TestGetBlueprintSecurity(t *testing.T) {
 		"test_executor_type",
 		"reconcile_database",
 	)
-	sd.Metadata.Namespace = env.Colony1Name
+	sd.Metadata.ColonyName = env.Colony1Name
 	_, err := client.AddBlueprintDefinition(sd, env.Colony1PrvKey)
 	assert.Nil(t, err)
 
@@ -203,7 +203,7 @@ func TestGetBlueprintsSecurity(t *testing.T) {
 		"test_executor_type",
 		"reconcile_database",
 	)
-	sd.Metadata.Namespace = env.Colony1Name
+	sd.Metadata.ColonyName = env.Colony1Name
 	_, err := client.AddBlueprintDefinition(sd, env.Colony1PrvKey)
 	assert.Nil(t, err)
 
@@ -252,7 +252,7 @@ func TestUpdateBlueprintSecurity(t *testing.T) {
 		"test_executor_type",
 		"reconcile_database",
 	)
-	sd.Metadata.Namespace = env.Colony1Name
+	sd.Metadata.ColonyName = env.Colony1Name
 	_, err := client.AddBlueprintDefinition(sd, env.Colony1PrvKey)
 	assert.Nil(t, err)
 
@@ -300,7 +300,7 @@ func TestRemoveBlueprintSecurity(t *testing.T) {
 		"test_executor_type",
 		"reconcile_database",
 	)
-	sd.Metadata.Namespace = env.Colony1Name
+	sd.Metadata.ColonyName = env.Colony1Name
 	_, err := client.AddBlueprintDefinition(sd, env.Colony1PrvKey)
 	assert.Nil(t, err)
 
@@ -351,7 +351,7 @@ func TestCrossColonyBlueprintIsolation(t *testing.T) {
 		"test_executor_type",
 		"reconcile_database",
 	)
-	sd1.Metadata.Namespace = env.Colony1Name
+	sd1.Metadata.ColonyName = env.Colony1Name
 	_, err := client.AddBlueprintDefinition(sd1, env.Colony1PrvKey)
 	assert.Nil(t, err)
 
@@ -365,7 +365,7 @@ func TestCrossColonyBlueprintIsolation(t *testing.T) {
 		"test_executor_type",
 		"reconcile_database",
 	)
-	sd2.Metadata.Namespace = env.Colony2Name
+	sd2.Metadata.ColonyName = env.Colony2Name
 	_, err = client.AddBlueprintDefinition(sd2, env.Colony2PrvKey)
 	assert.Nil(t, err)
 
@@ -425,7 +425,7 @@ func TestBlueprintDefinitionOnlyColonyOwner(t *testing.T) {
 		"test_executor_type",
 		"reconcile_test_resource",
 	)
-	sd.Metadata.Namespace = env.Colony1Name
+	sd.Metadata.ColonyName = env.Colony1Name
 
 	// None of the executors should be able to add BlueprintDefinitions
 	_, err = client.AddBlueprintDefinition(sd, env.Executor1PrvKey)

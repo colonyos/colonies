@@ -113,14 +113,14 @@ var addBlueprintDefinitionCmd = &cobra.Command{
 		CheckError(err)
 
 		// Set colony name if not specified
-		if sd.Metadata.Namespace == "" {
-			sd.Metadata.Namespace = ColonyName
+		if sd.Metadata.ColonyName == "" {
+			sd.Metadata.ColonyName = ColonyName
 		}
 
 		addedSD, err := client.AddBlueprintDefinition(&sd, ColonyPrvKey)
 		if err != nil {
 			if strings.Contains(err.Error(), "duplicate key") {
-				CheckError(errors.New("BlueprintDefinition with name '" + sd.Metadata.Name + "' already exists in colony '" + sd.Metadata.Namespace + "'"))
+				CheckError(errors.New("BlueprintDefinition with name '" + sd.Metadata.Name + "' already exists in colony '" + sd.Metadata.ColonyName + "'"))
 			}
 			CheckError(err)
 		}
@@ -131,7 +131,7 @@ var addBlueprintDefinitionCmd = &cobra.Command{
 			"Kind":                 addedSD.Spec.Names.Kind,
 			"Group":                addedSD.Spec.Group,
 			"Version":              addedSD.Spec.Version,
-			"ColonyName":           addedSD.Metadata.Namespace,
+			"ColonyName":           addedSD.Metadata.ColonyName,
 		}).Info("BlueprintDefinition added")
 
 	},
@@ -155,7 +155,7 @@ var getBlueprintDefinitionCmd = &cobra.Command{
 			"BlueprintDefinitionID": sd.ID,
 			"Name":                 sd.Metadata.Name,
 			"Kind":                 sd.Spec.Names.Kind,
-			"ColonyName":           sd.Metadata.Namespace,
+			"ColonyName":           sd.Metadata.ColonyName,
 		}).Info("BlueprintDefinition retrieved")
 
 		if JSON {
@@ -232,8 +232,8 @@ var addBlueprintCmd = &cobra.Command{
 		CheckError(err)
 
 		// Set namespace (colony name) if not specified
-		if blueprint.Metadata.Namespace == "" {
-			blueprint.Metadata.Namespace = ColonyName
+		if blueprint.Metadata.ColonyName == "" {
+			blueprint.Metadata.ColonyName = ColonyName
 		}
 
 		addedBlueprint, err := client.AddBlueprint(&blueprint, PrvKey)
@@ -243,7 +243,7 @@ var addBlueprintCmd = &cobra.Command{
 			"BlueprintID": addedBlueprint.ID,
 			"Name":       addedBlueprint.Metadata.Name,
 			"Kind":       addedBlueprint.Kind,
-			"Namespace":  addedBlueprint.Metadata.Namespace,
+			"Namespace":  addedBlueprint.Metadata.ColonyName,
 		}).Info("Blueprint added")
 
 	},
@@ -267,7 +267,7 @@ var getBlueprintCmd = &cobra.Command{
 			"BlueprintID": blueprint.ID,
 			"Name":       blueprint.Metadata.Name,
 			"Kind":       blueprint.Kind,
-			"Namespace":  blueprint.Metadata.Namespace,
+			"Namespace":  blueprint.Metadata.ColonyName,
 		}).Info("Blueprint retrieved")
 
 		if JSON {
@@ -328,8 +328,8 @@ var updateBlueprintCmd = &cobra.Command{
 		CheckError(err)
 
 		// Set namespace (colony name) if not specified
-		if blueprint.Metadata.Namespace == "" {
-			blueprint.Metadata.Namespace = ColonyName
+		if blueprint.Metadata.ColonyName == "" {
+			blueprint.Metadata.ColonyName = ColonyName
 		}
 
 		updatedBlueprint, err := client.UpdateBlueprint(&blueprint, PrvKey)
