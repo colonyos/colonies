@@ -1,0 +1,14 @@
+{
+  "kind": "ExecutorDeployment",
+  "metadata": {
+    "name": "chatexecutor"
+  },
+  "handler": {
+    "executorName": "local-docker-reconciler"
+  },
+  "spec": {
+    "image": "colonyos/chatexecutor:latest",
+    "replicas": 2,
+    "executorType": "chatexecutor"
+  }
+}

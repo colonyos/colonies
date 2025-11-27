@@ -768,35 +768,43 @@ func (h *Handlers) HandleUpdateBlueprint(c backends.Context, recoveredID string,
 		"Generation": msg.Blueprint.Metadata.Generation,
 	}).Debug("Updating blueprint")
 
-	// Trigger immediate reconciliation by submitting a single-blueprint process
+	// Trigger immediate reconciliation by running the consolidated cron for this Kind
 	if matchedSD != nil && matchedSD.Spec.Handler.ExecutorType != "" {
-		// Resolve initiator name
-		initiatorName, err := h.resolveInitiator(msg.Blueprint.Metadata.ColonyName, recoveredID)
-		if err != nil {
-			initiatorName = ""
+		// Find the cron for this Kind
+		cronName := "reconcile-" + msg.Blueprint.Kind
+		crons, err := h.server.CronController().GetCrons(msg.Blueprint.Metadata.ColonyName, 1000)
+		var existingCron *core.Cron
+		if err == nil {
+			for _, cron := range crons {
+				if cron.Name == cronName {
+					existingCron = cron
+					break
+				}
+			}
 		}
 
-		// Submit immediate reconciliation process for this specific blueprint
-		immediateProcess, err := h.createImmediateReconciliationProcess(msg.Blueprint, matchedSD, recoveredID, initiatorName)
-		if err != nil {
-			log.WithFields(log.Fields{
-				"Error":         err,
-				"BlueprintName": msg.Blueprint.Metadata.Name,
-			}).Warn("Failed to create immediate reconciliation process")
-		} else {
-			_, err = h.server.ProcessController().AddProcess(immediateProcess)
+		if existingCron != nil {
+			// Trigger the cron immediately
+			_, err := h.server.CronController().RunCron(existingCron.ID)
 			if err != nil {
 				log.WithFields(log.Fields{
 					"Error":         err,
 					"BlueprintName": msg.Blueprint.Metadata.Name,
-				}).Warn("Failed to submit immediate reconciliation process")
+					"CronName":      cronName,
+				}).Warn("Failed to trigger reconciliation cron after blueprint update")
 			} else {
 				log.WithFields(log.Fields{
 					"BlueprintName": msg.Blueprint.Metadata.Name,
 					"Generation":    msg.Blueprint.Metadata.Generation,
-					"ProcessID":     immediateProcess.ID,
-				}).Info("Submitted immediate reconciliation process after blueprint update")
+					"CronName":      cronName,
+					"CronID":        existingCron.ID,
+				}).Info("Triggered reconciliation cron immediately after blueprint update")
 			}
+		} else {
+			log.WithFields(log.Fields{
+				"BlueprintName": msg.Blueprint.Metadata.Name,
+				"CronName":      cronName,
+			}).Debug("No reconciliation cron found for Kind")
 		}
 	}
 

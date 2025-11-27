@@ -23,8 +23,10 @@ import (
 	"github.com/colonyos/colonies/pkg/security/validator"
 	"github.com/colonyos/colonies/pkg/server/controllers"
 	attributehandlers "github.com/colonyos/colonies/pkg/server/handlers/attribute"
+	channelhandlers "github.com/colonyos/colonies/pkg/server/handlers/channel"
 	"github.com/colonyos/colonies/pkg/server/handlers/colony"
 	cronhandlers "github.com/colonyos/colonies/pkg/server/handlers/cron"
+	"github.com/colonyos/colonies/pkg/channel"
 	"github.com/colonyos/colonies/pkg/server/handlers/executor"
 	filehandlers "github.com/colonyos/colonies/pkg/server/handlers/file"
 	functionhandlers "github.com/colonyos/colonies/pkg/server/handlers/function"
@@ -133,7 +135,9 @@ type Server struct {
 	securityHandlers       *securityhandlers.Handlers
 	fileHandlers           *filehandlers.Handlers
 	realtimeHandlers       *realtimehandlers.Handlers
+	channelHandlers        *channelhandlers.Handlers
 	backendRealtimeHandler realtimehandlers.RealtimeHandler
+	channelRouter          *channel.Router
 
 	// LibP2P components (if using LibP2P backend)
 	libp2pEnabled  bool
@@ -408,6 +412,8 @@ func CreateServerWithBackend(db database.Database,
 	server.blueprintHandlers = blueprinthandlers.NewHandlers(server.serverAdapter)
 	server.securityHandlers = securityhandlers.NewHandlers(server.serverAdapter)
 	server.realtimeHandlers = realtimehandlers.NewHandlers(server.serverAdapter)
+	server.channelRouter = server.controller.GetChannelRouter()
+	server.channelHandlers = channelhandlers.NewHandlers(server.serverAdapter)
 
 	// Create backend-specific realtime handler (currently only Gin/WebSocket is implemented)
 	server.backendRealtimeHandler = backendGin.NewRealtimeHandler(server.serverAdapter)
@@ -525,6 +531,11 @@ func (server *Server) registerHandlers() {
 	// Register log handlers
 	if err := server.logHandlers.RegisterHandlers(server.handlerRegistry); err != nil {
 		log.WithFields(log.Fields{"Error": err}).Fatal("Failed to register log handlers")
+	}
+
+	// Register channel handlers
+	if err := server.channelHandlers.RegisterHandlers(server.handlerRegistry); err != nil {
+		log.WithFields(log.Fields{"Error": err}).Fatal("Failed to register channel handlers")
 	}
 
 	// Register process handlers

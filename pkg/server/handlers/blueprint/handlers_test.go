@@ -911,3 +911,88 @@ func TestRemoveBlueprintCreatesCleanupProcess(t *testing.T) {
 	server.Shutdown()
 	<-done
 }
+
+func TestUpdateBlueprintTriggersCron(t *testing.T) {
+	env, client, server, _, done := server.SetupTestEnv2(t)
+
+	// Add BlueprintDefinition with handler configured
+	sd := core.CreateBlueprintDefinition(
+		"worker",
+		"example.com",
+		"v1",
+		"Worker",
+		"workers",
+		"Namespaced",
+		"worker_reconciler", // ExecutorType
+		"reconcile_worker",  // FunctionName
+	)
+	sd.Spec.Handler.ReconcileInterval = 60 // Configure reconcile interval
+	sd.Metadata.ColonyName = env.ColonyName
+	_, err := client.AddBlueprintDefinition(sd, env.ColonyPrvKey)
+	assert.Nil(t, err)
+
+	// Add Blueprint - this should auto-create a cron
+	blueprint := core.CreateBlueprint("Worker", "my-worker", env.ColonyName)
+	blueprint.SetSpec("replicas", 3)
+	addedBlueprint, err := client.AddBlueprint(blueprint, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+
+	// Verify cron was created
+	crons, err := client.GetCrons(env.ColonyName, 100, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.Equal(t, 1, len(crons), "Should have one cron for the Worker kind")
+	assert.Equal(t, "reconcile-Worker", crons[0].Name)
+	cronID := crons[0].ID
+
+	// Get initial waiting process count (from blueprint create)
+	waitingProcs, err := client.GetWaitingProcesses(env.ColonyName, "", "", "", 100, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	initialWaitingCount := len(waitingProcs)
+
+	// Update Blueprint spec to trigger reconciliation
+	addedBlueprint.SetSpec("replicas", 5)
+	updatedBlueprint, err := client.UpdateBlueprint(addedBlueprint, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.NotNil(t, updatedBlueprint)
+
+	// Verify replicas updated
+	replicas, ok := updatedBlueprint.GetSpec("replicas")
+	assert.True(t, ok)
+	assert.Equal(t, float64(5), replicas) // JSON unmarshals numbers as float64
+
+	// Verify that a new reconciliation process was created (cron was triggered)
+	waitingProcs, err = client.GetWaitingProcesses(env.ColonyName, "", "", "", 100, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+
+	// Should have more processes than before (the reconciliation process created by the cron trigger)
+	assert.Greater(t, len(waitingProcs), initialWaitingCount, "Should have created a new reconciliation process")
+
+	// Find the most recent reconciliation process
+	var reconProcess *core.Process
+	for _, proc := range waitingProcs {
+		// Check if it's a reconciliation process with the right kind
+		if kind, ok := proc.FunctionSpec.KwArgs["kind"].(string); ok && kind == "Worker" {
+			reconProcess = proc
+			break
+		}
+	}
+
+	// Verify reconciliation process was created
+	assert.NotNil(t, reconProcess, "Should have created a reconciliation process")
+	assert.Equal(t, "reconcile", reconProcess.FunctionSpec.FuncName) // Consolidated reconciliation always uses "reconcile"
+	assert.Equal(t, "worker_reconciler", reconProcess.FunctionSpec.Conditions.ExecutorType)
+
+	// Verify the process has the correct kwargs
+	kind, ok := reconProcess.FunctionSpec.KwArgs["kind"].(string)
+	assert.True(t, ok, "Process should have 'kind' kwarg")
+	assert.Equal(t, "Worker", kind)
+
+	// Verify the cron still exists and has the same ID (not recreated)
+	cronsAfter, err := client.GetCrons(env.ColonyName, 100, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.Equal(t, 1, len(cronsAfter), "Should still have only one cron")
+	assert.Equal(t, cronID, cronsAfter[0].ID, "Cron ID should not have changed")
+
+	server.Shutdown()
+	<-done
+}

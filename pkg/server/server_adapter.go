@@ -3,6 +3,7 @@ package server
 import (
 	"github.com/colonyos/colonies/pkg/backends"
 	"github.com/colonyos/colonies/pkg/backends/gin"
+	"github.com/colonyos/colonies/pkg/channel"
 	"github.com/colonyos/colonies/pkg/cluster"
 	"github.com/colonyos/colonies/pkg/core"
 	"github.com/colonyos/colonies/pkg/database"
@@ -710,4 +711,9 @@ func (s *ServerAdapter) ServerServer() serverhandlers.Server {
 		server: s.server,
 		adapter: s,
 	}
+}
+
+// ChannelRouter returns the channel router for channel operations
+func (s *ServerAdapter) ChannelRouter() *channel.Router {
+	return s.server.channelRouter
 }

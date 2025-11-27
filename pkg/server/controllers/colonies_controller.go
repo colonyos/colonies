@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/colonyos/colonies/pkg/channel"
 	"github.com/colonyos/colonies/pkg/cluster"
 	"github.com/colonyos/colonies/pkg/constants"
 	"github.com/colonyos/colonies/pkg/core"
@@ -122,6 +123,8 @@ type ColoniesController struct {
 	// Pause channel management
 	pauseChannels    map[string][]chan bool // colony -> list of waiting channels
 	pauseChannelsMux sync.RWMutex
+	// Channel router for bidirectional communication
+	channelRouter *channel.Router
 }
 
 func CreateColoniesController(db database.Database,
@@ -163,8 +166,13 @@ func CreateColoniesController(db database.Database,
 	controller.retentionPolicy = retentionPolicy
 	controller.retentionPeriod = retentionPeriod
 	controller.pauseChannels = make(map[string][]chan bool)
+	controller.channelRouter = channel.NewRouter()
 
 	controller.relayServer = cluster.CreateRelayServer(controller.thisNode, controller.clusterConfig)
+
+	// Set up channel replication using the relay server
+	channelReplicator := channel.NewRelayReplicator(controller.relayServer, controller.channelRouter)
+	controller.channelRouter.SetReplicator(channelReplicator)
 	factory := backendGin.NewFactory()
 	controller.eventHandler = factory.CreateEventHandler(controller.relayServer)
 	controller.wsSubCtrl = factory.CreateSubscriptionController(controller.eventHandler)
@@ -451,7 +459,28 @@ func (controller *ColoniesController) AddProcessToDB(process *core.Process) (*co
 		return nil, err
 	}
 
+	// Create channels defined in FunctionSpec
+	if addedProcess.FunctionSpec.Channels != nil {
+		for _, channelName := range addedProcess.FunctionSpec.Channels {
+			ch := &channel.Channel{
+				ID:          core.GenerateRandomID(),
+				ProcessID:   addedProcess.ID,
+				Name:        channelName,
+				SubmitterID: addedProcess.InitiatorID,
+				ExecutorID:  "", // Will be set when process is assigned
+			}
+			if err := controller.channelRouter.Create(ch); err != nil {
+				log.WithFields(log.Fields{"Error": err, "ProcessID": addedProcess.ID, "Channel": channelName}).Error("Failed to create channel")
+			}
+		}
+	}
+
 	return addedProcess, nil
+}
+
+// GetChannelRouter returns the channel router
+func (controller *ColoniesController) GetChannelRouter() *channel.Router {
+	return controller.channelRouter
 }
 
 func (controller *ColoniesController) AddProcess(process *core.Process) (*core.Process, error) {
@@ -1149,6 +1178,9 @@ func (controller *ColoniesController) CloseSuccessful(processID string, executor
 					avgExecTime)
 			}
 
+			// Cleanup channels for this process
+			controller.channelRouter.CleanupProcess(processID)
+
 			controller.eventHandler.Signal(process)
 			cmd.errorChan <- nil
 		}}
@@ -1224,6 +1256,9 @@ func (controller *ColoniesController) CloseFailed(processID string, errs []strin
 			}
 
 			process.State = core.FAILED
+
+			// Cleanup channels for this process
+			controller.channelRouter.CleanupProcess(processID)
 
 			controller.eventHandler.Signal(process)
 			cmd.errorChan <- nil
@@ -1308,6 +1343,9 @@ func (controller *ColoniesController) Assign(executorID string, colonyName strin
 				cmd.errorChan <- err
 				return
 			}
+
+			// Update executor ID on all channels for this process
+			controller.channelRouter.SetExecutorIDForProcess(selectedProcess.ID, executorID)
 
 			if selectedProcess.ProcessGraphID != "" {
 				log.WithFields(log.Fields{"ProcessGraphId": selectedProcess.ProcessGraphID}).Debug("Resolving processgraph (assigned)")

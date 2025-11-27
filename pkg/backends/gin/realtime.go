@@ -1,11 +1,16 @@
 package gin
 
 import (
+	"encoding/json"
 	"errors"
 	"net/http"
+	"time"
 
 	"github.com/colonyos/colonies/pkg/backends"
+	"github.com/colonyos/colonies/pkg/channel"
+	"github.com/colonyos/colonies/pkg/database"
 	"github.com/colonyos/colonies/pkg/rpc"
+	"github.com/colonyos/colonies/pkg/security"
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
 )
@@ -16,6 +21,9 @@ type RealtimeServer interface {
 	ParseSignature(payload string, signature string) (string, error)
 	GenerateRPCErrorMsg(err error, errorCode int) (*rpc.RPCReplyMsg, error)
 	WSController() WSController
+	ChannelRouter() *channel.Router
+	ProcessDB() database.ProcessDatabase
+	Validator() security.Validator
 }
 
 // WSController interface for WebSocket handlers
@@ -101,6 +109,8 @@ func (h *RealtimeHandler) HandleWSRequest(c backends.Context) {
 			h.handleSubscribeProcesses(c, rpcMsg, recoveredID, wsConn, wsMsgType)
 		case rpc.SubscribeProcessPayloadType:
 			h.handleSubscribeProcess(c, rpcMsg, recoveredID, wsConn, wsMsgType)
+		case rpc.SubscribeChannelPayloadType:
+			h.handleSubscribeChannel(c, rpcMsg, recoveredID, wsConn, wsMsgType)
 		}
 	}
 }
@@ -157,4 +167,129 @@ func (h *RealtimeHandler) handleSubscribeProcess(c backends.Context, rpcMsg *rpc
 		}
 		return
 	}
+}
+
+func (h *RealtimeHandler) handleSubscribeChannel(c backends.Context, rpcMsg *rpc.RPCMsg, recoveredID string, wsConn *websocket.Conn, wsMsgType int) {
+	msg, err := rpc.CreateSubscribeChannelMsgFromJSON(rpcMsg.DecodePayload())
+	if h.server.HandleHTTPError(c, err, http.StatusBadRequest) {
+		err := h.sendWSErrorMsg(err, http.StatusBadRequest, wsConn, wsMsgType)
+		if err != nil {
+			log.WithFields(log.Fields{"Error": err}).Error("Failed to subscribe to channel, failed to send error message")
+		}
+		return
+	}
+
+	if msg.MsgType != rpcMsg.PayloadType {
+		err := h.sendWSErrorMsg(errors.New("Failed to subscribe to channel, msg.MsgType does not match rpcMsg.PayloadType"), http.StatusBadRequest, wsConn, wsMsgType)
+		if err != nil {
+			log.WithFields(log.Fields{"Error": err}).Error("Failed to subscribe to channel, failed to send error message")
+		}
+		return
+	}
+
+	// Get the process to verify membership
+	process, err := h.server.ProcessDB().GetProcessByID(msg.ProcessID)
+	if err != nil || process == nil {
+		err := h.sendWSErrorMsg(errors.New("Process not found"), http.StatusNotFound, wsConn, wsMsgType)
+		if err != nil {
+			log.WithFields(log.Fields{"Error": err}).Error("Failed to subscribe to channel, process not found")
+		}
+		return
+	}
+
+	// Verify colony membership
+	err = h.server.Validator().RequireMembership(recoveredID, process.FunctionSpec.Conditions.ColonyName, true)
+	if err != nil {
+		err := h.sendWSErrorMsg(err, http.StatusForbidden, wsConn, wsMsgType)
+		if err != nil {
+			log.WithFields(log.Fields{"Error": err}).Error("Failed to subscribe to channel, membership check failed")
+		}
+		return
+	}
+
+	// Get channel by process and name
+	ch, err := h.server.ChannelRouter().GetByProcessAndName(msg.ProcessID, msg.Name)
+	if err != nil {
+		err := h.sendWSErrorMsg(errors.New("Channel not found"), http.StatusNotFound, wsConn, wsMsgType)
+		if err != nil {
+			log.WithFields(log.Fields{"Error": err}).Error("Failed to subscribe to channel, channel not found")
+		}
+		return
+	}
+
+	// Determine caller ID - either submitter or executor
+	callerID := recoveredID
+	if recoveredID == process.InitiatorID {
+		callerID = process.InitiatorID
+	} else if recoveredID == process.AssignedExecutorID {
+		callerID = process.AssignedExecutorID
+	}
+
+	log.WithFields(log.Fields{"ProcessID": msg.ProcessID, "Channel": msg.Name, "CallerID": callerID}).Debug("WebSocket channel subscription started")
+
+	// Long-poll loop: continuously check for new messages
+	// AfterSeq is now used as index (position in log)
+	lastIndex := msg.AfterSeq
+	timeout := time.Duration(msg.Timeout) * time.Second
+	if timeout == 0 {
+		timeout = 30 * time.Second // Default timeout
+	}
+
+	deadline := time.Now().Add(timeout)
+	pollInterval := 100 * time.Millisecond
+
+	for time.Now().Before(deadline) {
+		entries, err := h.server.ChannelRouter().ReadAfter(ch.ID, callerID, lastIndex, 0)
+		if err != nil {
+			if err == channel.ErrUnauthorized {
+				h.sendWSErrorMsg(errors.New("Not authorized to read from channel"), http.StatusForbidden, wsConn, wsMsgType)
+			} else {
+				h.sendWSErrorMsg(err, http.StatusInternalServerError, wsConn, wsMsgType)
+			}
+			return
+		}
+
+		if len(entries) > 0 {
+			// Send entries to client
+			jsonBytes, err := json.Marshal(entries)
+			if err != nil {
+				h.sendWSErrorMsg(err, http.StatusInternalServerError, wsConn, wsMsgType)
+				return
+			}
+
+			replyMsg, err := rpc.CreateRPCReplyMsg(rpc.SubscribeChannelPayloadType, string(jsonBytes))
+			if err != nil {
+				h.sendWSErrorMsg(err, http.StatusInternalServerError, wsConn, wsMsgType)
+				return
+			}
+
+			jsonString, err := replyMsg.ToJSON()
+			if err != nil {
+				h.sendWSErrorMsg(err, http.StatusInternalServerError, wsConn, wsMsgType)
+				return
+			}
+
+			err = wsConn.WriteMessage(wsMsgType, []byte(jsonString))
+			if err != nil {
+				log.WithFields(log.Fields{"Error": err}).Error("Failed to send channel entries to WebSocket")
+				return
+			}
+
+			// Update last index for next poll
+			lastIndex += int64(len(entries))
+		}
+
+		time.Sleep(pollInterval)
+	}
+
+	// Send empty response on timeout
+	replyMsg, err := rpc.CreateRPCReplyMsg(rpc.SubscribeChannelPayloadType, "[]")
+	if err != nil {
+		return
+	}
+	jsonString, err := replyMsg.ToJSON()
+	if err != nil {
+		return
+	}
+	wsConn.WriteMessage(wsMsgType, []byte(jsonString))
 }
