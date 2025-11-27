@@ -54,6 +54,24 @@ func (client *ColoniesClient) GetLogsByProcessSince(colonyName string, processID
 	return core.ConvertJSONToLogArray(respBodyString)
 }
 
+// GetLogsByProcessLatest returns the latest logs for a process (most recent count logs)
+func (client *ColoniesClient) GetLogsByProcessLatest(colonyName string, processID string, count int, prvKey string) ([]*core.Log, error) {
+	msg := rpc.CreateGetLogsMsg(colonyName, processID, count, 0)
+	msg.ExecutorName = ""
+	msg.Latest = true
+	jsonString, err := msg.ToJSON()
+	if err != nil {
+		return []*core.Log{}, err
+	}
+
+	respBodyString, err := client.sendMessage(rpc.GetLogsPayloadType, jsonString, prvKey, false, context.TODO())
+	if err != nil {
+		return []*core.Log{}, err
+	}
+
+	return core.ConvertJSONToLogArray(respBodyString)
+}
+
 func (client *ColoniesClient) SearchLogs(colonyName, text string, days int, count int, prvKey string) ([]*core.Log, error) {
 	msg := rpc.CreateSearchLogsMsg(colonyName, text, days, count)
 	msg.ColonyName = colonyName

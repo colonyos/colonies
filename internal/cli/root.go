@@ -116,6 +116,8 @@ var TimescaleDB bool
 var LogMsg string
 var Since int64
 var Follow bool
+var Latest bool
+var First bool
 var SyncDir string
 var StorageDriver string
 var Label string
@@ -152,6 +154,7 @@ var Snapshot bool
 var IDPath string
 var PrvKeyPath string
 var Generation int
+var Force bool
 
 func init() {
 	rootCmd.PersistentFlags().BoolVarP(&Verbose, "verbose", "v", false, "Verbose (debugging)")

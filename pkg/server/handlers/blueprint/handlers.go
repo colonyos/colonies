@@ -98,21 +98,21 @@ func (h *Handlers) createConsolidatedReconciliationWorkflowSpec(colonyName strin
 	return workflowJSON, nil
 }
 
-// createImmediateReconciliationProcess creates a process for immediate reconciliation of a specific blueprint
-// This is used when a blueprint is added to trigger immediate reconciliation
+// createImmediateReconciliationProcess creates a process for immediate reconciliation of a blueprint's Kind
+// This is used when a blueprint is added to trigger immediate reconciliation of all blueprints of that Kind
 func (h *Handlers) createImmediateReconciliationProcess(blueprint *core.Blueprint, sd *core.BlueprintDefinition, recoveredID string, initiatorName string) (*core.Process, error) {
 	if sd == nil || sd.Spec.Handler.ExecutorType == "" {
 		return nil, fmt.Errorf("no handler defined for blueprint kind: %s", blueprint.Kind)
 	}
 
-	// Create a function spec for this specific blueprint
+	// Create a function spec for consolidated reconciliation by Kind
 	funcSpec := core.CreateEmptyFunctionSpec()
 	funcSpec.NodeName = "reconcile"
 	funcSpec.Conditions.ColonyName = blueprint.Metadata.ColonyName
 	funcSpec.Conditions.ExecutorType = sd.Spec.Handler.ExecutorType
 	funcSpec.FuncName = "reconcile"
 	funcSpec.KwArgs = map[string]interface{}{
-		"blueprintName": blueprint.Metadata.Name,
+		"kind": blueprint.Kind,
 	}
 
 	// Apply executor targeting if specified
@@ -165,6 +165,9 @@ func (h *Handlers) RegisterHandlers(handlerRegistry *registry.HandlerRegistry) e
 		return err
 	}
 	if err := handlerRegistry.Register(rpc.GetBlueprintHistoryPayloadType, h.HandleGetBlueprintHistory); err != nil {
+		return err
+	}
+	if err := handlerRegistry.Register(rpc.UpdateBlueprintStatusPayloadType, h.HandleUpdateBlueprintStatus); err != nil {
 		return err
 	}
 
@@ -741,6 +744,15 @@ func (h *Handlers) HandleUpdateBlueprint(c backends.Context, recoveredID string,
 			// Spec changed, increment generation
 			msg.Blueprint.Metadata.Generation = oldBlueprint.Metadata.Generation + 1
 			specChanged = true
+		} else if msg.ForceGeneration {
+			// Force generation bump requested (for force reconciliation)
+			msg.Blueprint.Metadata.Generation = oldBlueprint.Metadata.Generation + 1
+			specChanged = true
+			log.WithFields(log.Fields{
+				"BlueprintName": msg.Blueprint.Metadata.Name,
+				"OldGeneration": oldBlueprint.Metadata.Generation,
+				"NewGeneration": msg.Blueprint.Metadata.Generation,
+			}).Info("Force generation bump requested")
 		} else {
 			// Preserve old generation if spec didn't change
 			msg.Blueprint.Metadata.Generation = oldBlueprint.Metadata.Generation
@@ -1017,4 +1029,49 @@ func (h *Handlers) HandleGetBlueprintHistory(c backends.Context, recoveredID str
 	}).Debug("Getting blueprint history")
 
 	h.server.SendHTTPReply(c, payloadType, jsonString)
+}
+
+// HandleUpdateBlueprintStatus updates only the status field of a blueprint
+// This is used by reconcilers to report status without triggering a full update
+func (h *Handlers) HandleUpdateBlueprintStatus(c backends.Context, recoveredID string, payloadType string, jsonString string) {
+	msg, err := rpc.CreateUpdateBlueprintStatusMsgFromJSON(jsonString)
+	if err != nil {
+		h.server.HandleHTTPError(c, errors.New("Failed to update blueprint status, invalid JSON"), http.StatusBadRequest)
+		return
+	}
+
+	if msg.MsgType != payloadType {
+		h.server.HandleHTTPError(c, errors.New("Failed to update blueprint status, msg.MsgType does not match payloadType"), http.StatusBadRequest)
+		return
+	}
+
+	// Require membership to update blueprint status (typically done by executors/reconcilers)
+	err = h.server.Validator().RequireMembership(recoveredID, msg.ColonyName, true)
+	if h.server.HandleHTTPError(c, err, http.StatusForbidden) {
+		return
+	}
+
+	// Get the blueprint by name
+	blueprint, err := h.server.BlueprintDB().GetBlueprintByName(msg.ColonyName, msg.BlueprintName)
+	if h.server.HandleHTTPError(c, err, http.StatusInternalServerError) {
+		return
+	}
+
+	if blueprint == nil {
+		h.server.HandleHTTPError(c, errors.New("Blueprint not found"), http.StatusNotFound)
+		return
+	}
+
+	// Update only the status
+	err = h.server.BlueprintDB().UpdateBlueprintStatus(blueprint.ID, msg.Status)
+	if h.server.HandleHTTPError(c, err, http.StatusInternalServerError) {
+		return
+	}
+
+	log.WithFields(log.Fields{
+		"ColonyName":    msg.ColonyName,
+		"BlueprintName": msg.BlueprintName,
+	}).Debug("Updated blueprint status")
+
+	h.server.SendEmptyHTTPReply(c, payloadType)
 }

@@ -180,7 +180,10 @@ func (h *Handlers) HandleGetLogs(c backends.Context, recoveredID string, payload
 
 	var logs []*core.Log
 	if msg.ExecutorName != "" {
-		if msg.Since > 0 {
+		if msg.Latest {
+			// Get latest logs (most recent count logs)
+			logs, err = h.server.LogDB().GetLogsByExecutorLatest(msg.ExecutorName, msg.Count)
+		} else if msg.Since > 0 {
 			logs, err = h.server.LogDB().GetLogsByExecutorSince(msg.ExecutorName, msg.Count, msg.Since)
 		} else {
 			logs, err = h.server.LogDB().GetLogsByExecutor(msg.ExecutorName, msg.Count)
@@ -191,7 +194,10 @@ func (h *Handlers) HandleGetLogs(c backends.Context, recoveredID string, payload
 			return
 		}
 	} else {
-		if msg.Since > 0 {
+		if msg.Latest {
+			// Get latest logs (most recent count logs)
+			logs, err = h.server.LogDB().GetLogsByProcessIDLatest(msg.ProcessID, msg.Count)
+		} else if msg.Since > 0 {
 			logs, err = h.server.LogDB().GetLogsByProcessIDSince(msg.ProcessID, msg.Count, msg.Since)
 		} else {
 			logs, err = h.server.LogDB().GetLogsByProcessID(msg.ProcessID, msg.Count)

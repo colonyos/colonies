@@ -171,6 +171,24 @@ func (client *ColoniesClient) GetLogsByExecutorSince(colonyName, executorName st
 	return core.ConvertJSONToLogArray(respBodyString)
 }
 
+// GetLogsByExecutorLatest returns the latest logs for an executor (most recent count logs)
+func (client *ColoniesClient) GetLogsByExecutorLatest(colonyName, executorName string, count int, prvKey string) ([]*core.Log, error) {
+	msg := rpc.CreateGetLogsMsg(colonyName, "", count, 0)
+	msg.ExecutorName = executorName
+	msg.Latest = true
+	jsonString, err := msg.ToJSON()
+	if err != nil {
+		return []*core.Log{}, err
+	}
+
+	respBodyString, err := client.sendMessage(rpc.GetLogsPayloadType, jsonString, prvKey, false, context.TODO())
+	if err != nil {
+		return []*core.Log{}, err
+	}
+
+	return core.ConvertJSONToLogArray(respBodyString)
+}
+
 func (client *ColoniesClient) ChangeExecutorID(colonyName, executorID string, prvKey string) error {
 	msg := rpc.CreateChangeExecutorIDMsg(colonyName, executorID)
 	jsonString, err := msg.ToJSON()

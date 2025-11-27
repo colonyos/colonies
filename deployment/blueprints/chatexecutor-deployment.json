@@ -7,7 +7,7 @@
     "executorName": "local-docker-reconciler"
   },
   "spec": {
-    "image": "colonyos/chatexecutor:latest",
+    "image": "colonyspace/chatexecutor:latest",
     "replicas": 2,
     "executorType": "chatexecutor"
   }

@@ -12,6 +12,7 @@ type GetLogsMsg struct {
 	ExecutorName string `json:"executorname"`
 	Count        int    `json:"count"`
 	Since        int64  `json:"since"`
+	Latest       bool   `json:"latest"` // If true, return latest logs (descending order)
 	MsgType      string `json:"msgtype"`
 }
 
@@ -45,7 +46,8 @@ func (msg *GetLogsMsg) Equals(msg2 *GetLogsMsg) bool {
 		msg.ProcessID == msg2.ProcessID &&
 		msg.Count == msg2.Count &&
 		msg.Since == msg2.Since &&
-		msg.ExecutorName == msg2.ExecutorName {
+		msg.ExecutorName == msg2.ExecutorName &&
+		msg.Latest == msg2.Latest {
 		return true
 	}
 

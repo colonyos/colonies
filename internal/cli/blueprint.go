@@ -77,6 +77,7 @@ func init() {
 
 	reconcileBlueprintCmd.Flags().StringVarP(&PrvKey, "prvkey", "", "", "Private key")
 	reconcileBlueprintCmd.Flags().StringVarP(&BlueprintName, "name", "", "", "Blueprint name")
+	reconcileBlueprintCmd.Flags().BoolVarP(&Force, "force", "f", false, "Force recreation of all containers (restarts with fresh image)")
 	reconcileBlueprintCmd.MarkFlagRequired("name")
 
 	historyBlueprintCmd.Flags().StringVarP(&PrvKey, "prvkey", "", "", "Private key")
@@ -443,7 +444,7 @@ var removeBlueprintCmd = &cobra.Command{
 var reconcileBlueprintCmd = &cobra.Command{
 	Use:   "reconcile",
 	Short: "Trigger immediate reconciliation of a blueprint",
-	Long:  "Trigger immediate reconciliation of a blueprint by running its associated cron",
+	Long:  "Trigger immediate reconciliation of a blueprint. Use --force to recreate all containers with fresh images.",
 	Run: func(cmd *cobra.Command, args []string) {
 		client := setup()
 
@@ -451,36 +452,60 @@ var reconcileBlueprintCmd = &cobra.Command{
 		blueprint, err := client.GetBlueprint(ColonyName, BlueprintName, PrvKey)
 		CheckError(err)
 
-		// Get cron name from blueprint annotations
-		cronName := blueprint.Metadata.Annotations["reconciliation.cron.name"]
-		if cronName == "" {
-			CheckError(errors.New("Blueprint has no associated reconciliation cron"))
+		// If force flag is set, bump the generation first
+		if Force {
+			log.Info("Force flag enabled - bumping blueprint generation to trigger redeployment")
+
+			// Update the blueprint with force generation bump
+			updatedBlueprint, err := client.UpdateBlueprintWithForce(blueprint, true, PrvKey)
+			CheckError(err)
+
+			log.WithFields(log.Fields{
+				"BlueprintName": BlueprintName,
+				"OldGeneration": blueprint.Metadata.Generation,
+				"NewGeneration": updatedBlueprint.Metadata.Generation,
+			}).Info("Blueprint generation bumped")
+
+			// Use the updated blueprint for reconciliation
+			blueprint = updatedBlueprint
 		}
 
-		// Get all crons in the colony to find the one by name
-		crons, err := client.GetCrons(ColonyName, 1000, PrvKey)
+		// Get the blueprint definition to find the handler
+		sd, err := client.GetBlueprintDefinitionByKind(ColonyName, blueprint.Kind, PrvKey)
 		CheckError(err)
 
-		var cronID string
-		for _, c := range crons {
-			if c.Name == cronName {
-				cronID = c.ID
-				break
-			}
+		if sd == nil || sd.Spec.Handler.ExecutorType == "" {
+			CheckError(errors.New("Blueprint kind has no handler defined"))
 		}
 
-		if cronID == "" {
-			CheckError(errors.New("Reconciliation cron not found: " + cronName))
+		// Submit a direct reconciliation process
+		funcSpec := core.CreateEmptyFunctionSpec()
+		funcSpec.NodeName = "reconcile"
+		funcSpec.Conditions.ColonyName = ColonyName
+		funcSpec.Conditions.ExecutorType = sd.Spec.Handler.ExecutorType
+		funcSpec.FuncName = "reconcile"
+		funcSpec.KwArgs = map[string]interface{}{
+			"kind": blueprint.Kind,
 		}
 
-		// Run the cron
-		_, err = client.RunCron(cronID, PrvKey)
+		// Pass force flag to reconciler so it can pull fresh images
+		if Force {
+			funcSpec.KwArgs["force"] = true
+		}
+
+		process, err := client.Submit(funcSpec, PrvKey)
 		CheckError(err)
 
 		log.WithFields(log.Fields{
 			"BlueprintName": BlueprintName,
-			"CronName":      cronName,
-		}).Info("Triggered immediate reconciliation")
+			"Kind":          blueprint.Kind,
+			"Generation":    blueprint.Metadata.Generation,
+			"ProcessID":     process.ID,
+			"Force":         Force,
+		}).Info("Submitted reconciliation process")
+
+		fmt.Printf("Reconciliation process submitted: %s\n", process.ID)
+		fmt.Printf("Use 'colonies log get -p %s' to view progress\n", process.ID)
 	},
 }
 

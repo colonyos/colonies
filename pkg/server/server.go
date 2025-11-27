@@ -1044,6 +1044,9 @@ func (server *Server) handleLibP2PStream(stream network.Stream) {
 
 	if !handled {
 		errMsg := "invalid rpcMsg.PayloadType: " + rpcMsg.PayloadType
+		if rpcMsg.PayloadType == "" {
+			errMsg = "invalid rpcMsg.PayloadType: empty (this usually means the client is misconfigured - check that COLONIES_PRVKEY and other environment variables are set correctly)"
+		}
 		log.Error(errMsg)
 		server.sendLibP2PError(stream, errors.New(errMsg), http.StatusForbidden)
 		return
@@ -1498,6 +1501,9 @@ func (server *Server) HandleRPC(jsonPayload string) (string, error) {
 
 	if !handled {
 		errMsg := "invalid rpcMsg.PayloadType: " + rpcMsg.PayloadType
+		if rpcMsg.PayloadType == "" {
+			errMsg = "invalid rpcMsg.PayloadType: empty (this usually means the client is misconfigured - check that COLONIES_PRVKEY and other environment variables are set correctly)"
+		}
 		return server.generateRPCErrorJSON(errors.New(errMsg), http.StatusForbidden)
 	}
 
@@ -1714,7 +1720,10 @@ func (server *Server) handleAPIRequest(c backends.Context) {
 	}
 
 	// No handler found for this payload type
-	errMsg := "invalid rpcMsg.PayloadType, " + rpcMsg.PayloadType
+	errMsg := "invalid rpcMsg.PayloadType: " + rpcMsg.PayloadType
+	if rpcMsg.PayloadType == "" {
+		errMsg = "invalid rpcMsg.PayloadType: empty (this usually means the client is misconfigured - check that COLONIES_PRVKEY and other environment variables are set correctly)"
+	}
 	if server.HandleHTTPError(c, errors.New(errMsg), http.StatusForbidden) {
 		log.Error(errMsg)
 		return

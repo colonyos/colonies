@@ -201,7 +201,7 @@ func printBlueprintsTableWithClient(c *client.ColoniesClient, blueprints []*core
 	}
 
 	for _, blueprint := range blueprints {
-		// Get reconciler name from handler or definition
+		// Get reconciler name from handler, spec, or definition
 		reconcilerStr := "-"
 		if blueprint.Handler != nil {
 			if blueprint.Handler.ExecutorName != "" {
@@ -213,7 +213,15 @@ func printBlueprintsTableWithClient(c *client.ColoniesClient, blueprints []*core
 				}
 			}
 		}
-		// Fall back to executor type from definition
+		// Check spec.executorName as fallback (used by docker-reconciler)
+		if reconcilerStr == "-" {
+			if execName, ok := blueprint.GetSpec("executorName"); ok {
+				if nameStr, ok := execName.(string); ok && nameStr != "" {
+					reconcilerStr = nameStr
+				}
+			}
+		}
+		// Fall back to executor type from definition (shown in brackets)
 		if reconcilerStr == "-" {
 			if execType, ok := kindToExecutorType[blueprint.Kind]; ok {
 				reconcilerStr = "[" + execType + "]"
