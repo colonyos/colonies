@@ -1,21 +1,27 @@
 package postgresql
 
 import (
+	"os"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 )
 
-func TestLockClosedDB(t *testing.T) {
-	dbHost := "localhost"
+func createDatabase() *PQDatabase {
+	dbHost := os.Getenv("COLONIES_DB_HOST")
 	dbPort := 5432
-	dbUser := "postgres"
-	dbPassword := "rFcLGNkgsNtksg6Pgtn9CumL4xXBQ7"
+	dbUser := os.Getenv("COLONIES_DB_USER")
+	dbPassword := os.Getenv("COLONIES_DB_PASSWORD")
 	dbName := "postgres"
 	dbPrefix := "TEST_"
 
-	db := CreatePQDatabase(dbHost, dbPort, dbUser, dbPassword, dbName, dbPrefix, false)
+	return CreatePQDatabase(dbHost, dbPort, dbUser, dbPassword, dbName, dbPrefix, false)
+}
+
+func TestLockClosedDB(t *testing.T) {
+	db := createDatabase()
+
 	err := db.Connect()
 	assert.Nil(t, err)
 
@@ -29,14 +35,7 @@ func TestLockClosedDB(t *testing.T) {
 }
 
 func TestLock(t *testing.T) {
-	dbHost := "localhost"
-	dbPort := 5432
-	dbUser := "postgres"
-	dbPassword := "rFcLGNkgsNtksg6Pgtn9CumL4xXBQ7"
-	dbName := "postgres"
-	dbPrefix := "TEST_"
-
-	db := CreatePQDatabase(dbHost, dbPort, dbUser, dbPassword, dbName, dbPrefix, false)
+	db := createDatabase()
 
 	err := db.Connect()
 	assert.Nil(t, err)
@@ -56,7 +55,7 @@ func TestLock(t *testing.T) {
 	err = db.Lock(10000)
 	assert.Nil(t, err)
 
-	db2 := CreatePQDatabase(dbHost, dbPort, dbUser, dbPassword, dbName, dbPrefix, false)
+	db2 := createDatabase()
 
 	err = db2.Connect()
 	assert.Nil(t, err)
@@ -68,14 +67,7 @@ func TestLock(t *testing.T) {
 }
 
 func TestLockClose(t *testing.T) {
-	dbHost := "localhost"
-	dbPort := 5432
-	dbUser := "postgres"
-	dbPassword := "rFcLGNkgsNtksg6Pgtn9CumL4xXBQ7"
-	dbName := "postgres"
-	dbPrefix := "TEST_"
-
-	db := CreatePQDatabase(dbHost, dbPort, dbUser, dbPassword, dbName, dbPrefix, false)
+	db := createDatabase()
 
 	err := db.Connect()
 	assert.Nil(t, err)
@@ -93,7 +85,7 @@ func TestLockClose(t *testing.T) {
 	err = db.Lock(10000)
 	assert.Nil(t, err)
 
-	db2 := CreatePQDatabase(dbHost, dbPort, dbUser, dbPassword, dbName, dbPrefix, false)
+	db2 := createDatabase()
 
 	err = db2.Connect()
 	assert.Nil(t, err)
@@ -106,14 +98,7 @@ func TestLockClose(t *testing.T) {
 }
 
 func TestLockTimeout(t *testing.T) {
-	dbHost := "localhost"
-	dbPort := 5432
-	dbUser := "postgres"
-	dbPassword := "rFcLGNkgsNtksg6Pgtn9CumL4xXBQ7"
-	dbName := "postgres"
-	dbPrefix := "TEST_"
-
-	db := CreatePQDatabase(dbHost, dbPort, dbUser, dbPassword, dbName, dbPrefix, false)
+	db := createDatabase()
 
 	err := db.Connect()
 	assert.Nil(t, err)
@@ -130,7 +115,7 @@ func TestLockTimeout(t *testing.T) {
 	err = db.Lock(10000)
 	assert.Nil(t, err)
 
-	db2 := CreatePQDatabase(dbHost, dbPort, dbUser, dbPassword, dbName, dbPrefix, false)
+	db2 := createDatabase()
 
 	err = db2.Connect()
 	assert.Nil(t, err)

@@ -55,3 +55,7 @@ jobs:
         AWS_S3_TLS: false
         AWS_S3_SKIPVERIFY: false
         AWS_S3_BUCKET: test
+        COLONIES_DB_USER: postgres
+        COLONIES_DB_PASSWORD: rFcLGNkgsNtksg6Pgtn9CumL4xXBQ7
+        COLONIES_DB_HOST: localhost
+        

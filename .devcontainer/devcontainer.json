@@ -1,0 +1,9 @@
+{
+    "name": "ColonyOS ",
+    "dockerComposeFile": [
+        "docker-compose.yml"
+    ],
+    "service": "devcontainer",
+    "workspaceFolder": "/workspaces",
+    "postCreateCommand": "if [ -f .devcontainer/devenv.sh ]; then .devcontainer/devenv.sh; elif [ -f colonies/.devcontainer/devenv.sh ]; then colonies/.devcontainer/devenv.sh; fi"
+}
