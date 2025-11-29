@@ -203,3 +203,18 @@ func (client *ColoniesClient) ChangeExecutorID(colonyName, executorID string, pr
 
 	return nil
 }
+
+func (client *ColoniesClient) UpdateExecutorCapabilities(colonyName, executorName string, capabilities core.Capabilities, prvKey string) error {
+	msg := rpc.CreateUpdateExecutorMsg(colonyName, executorName, capabilities)
+	jsonString, err := msg.ToJSON()
+	if err != nil {
+		return err
+	}
+
+	_, err = client.sendMessage(rpc.UpdateExecutorPayloadType, jsonString, prvKey, false, context.TODO())
+	if err != nil {
+		return err
+	}
+
+	return nil
+}

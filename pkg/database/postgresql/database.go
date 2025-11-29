@@ -386,50 +386,8 @@ func (db *PQDatabase) createUsersTable() error {
 }
 
 func (db *PQDatabase) createExecutorsTable() error {
-	sqlStatement := `CREATE TABLE IF NOT EXISTS ` + db.dbPrefix + `EXECUTORS (NAME TEXT PRIMARY KEY NOT NULL, EXECUTOR_TYPE TEXT NOT NULL, EXECUTOR_ID TEXT NOT NULL, COLONY_NAME TEXT NOT NULL, STATE INTEGER, REQUIRE_FUNC_REG BOOLEAN, COMMISSIONTIME TIMESTAMPTZ, LASTHEARDFROM TIMESTAMPTZ, LONG DOUBLE PRECISION, LAT DOUBLE PRECISION, LOCDESC TEXT, HWMODEL TEXT, HWNODES INT, HWCPU TEXT, HWMEM TEXT, HWSTORAGE TEXT, HWGPUNAME TEXT, HWGPUCOUNT TEXT, HWGPUNODECOUNT INTEGER, HWGPUMEM TEXT, SWNAME TEXT, SWTYPE TEXT, SWVERSION TEXT, ALLOCATIONS TEXT NOT NULL, NODE_ID TEXT)`
+	sqlStatement := `CREATE TABLE IF NOT EXISTS ` + db.dbPrefix + `EXECUTORS (NAME TEXT PRIMARY KEY NOT NULL, EXECUTOR_TYPE TEXT NOT NULL, EXECUTOR_ID TEXT NOT NULL, COLONY_NAME TEXT NOT NULL, STATE INTEGER, REQUIRE_FUNC_REG BOOLEAN, COMMISSIONTIME TIMESTAMPTZ, LASTHEARDFROM TIMESTAMPTZ, LONG DOUBLE PRECISION, LAT DOUBLE PRECISION, LOCDESC TEXT, HARDWARE TEXT, SOFTWARE TEXT, ALLOCATIONS TEXT NOT NULL, NODE_ID TEXT, BLUEPRINT_ID TEXT, BLUEPRINT_GEN BIGINT)`
 	_, err := db.postgresql.Exec(sqlStatement)
-	if err != nil {
-		return err
-	}
-
-	// Add NODE_ID column to existing tables if it doesn't exist
-	alterStatement := `ALTER TABLE ` + db.dbPrefix + `EXECUTORS ADD COLUMN IF NOT EXISTS NODE_ID TEXT`
-	_, err = db.postgresql.Exec(alterStatement)
-	if err != nil {
-		return err
-	}
-
-	// Add BLUEPRINT_ID column to existing tables if it doesn't exist
-	alterStatement = `ALTER TABLE ` + db.dbPrefix + `EXECUTORS ADD COLUMN IF NOT EXISTS BLUEPRINT_ID TEXT`
-	_, err = db.postgresql.Exec(alterStatement)
-	if err != nil {
-		return err
-	}
-
-	// Add BLUEPRINT_GEN column to existing tables if it doesn't exist
-	alterStatement = `ALTER TABLE ` + db.dbPrefix + `EXECUTORS ADD COLUMN IF NOT EXISTS BLUEPRINT_GEN BIGINT`
-	_, err = db.postgresql.Exec(alterStatement)
-	if err != nil {
-		return err
-	}
-
-	// Add HWPLATFORM column to existing tables if it doesn't exist
-	alterStatement = `ALTER TABLE ` + db.dbPrefix + `EXECUTORS ADD COLUMN IF NOT EXISTS HWPLATFORM TEXT`
-	_, err = db.postgresql.Exec(alterStatement)
-	if err != nil {
-		return err
-	}
-
-	// Add HWARCHITECTURE column to existing tables if it doesn't exist
-	alterStatement = `ALTER TABLE ` + db.dbPrefix + `EXECUTORS ADD COLUMN IF NOT EXISTS HWARCHITECTURE TEXT`
-	_, err = db.postgresql.Exec(alterStatement)
-	if err != nil {
-		return err
-	}
-
-	// Add HWNETWORK column to existing tables if it doesn't exist (JSON array of network addresses)
-	alterStatement = `ALTER TABLE ` + db.dbPrefix + `EXECUTORS ADD COLUMN IF NOT EXISTS HWNETWORK TEXT`
-	_, err = db.postgresql.Exec(alterStatement)
 	if err != nil {
 		return err
 	}

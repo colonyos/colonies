@@ -179,107 +179,121 @@ func printExecutorTable(client *client.ColoniesClient, executor *core.Executor) 
 
 	t.Render()
 
-	t, theme = createTable(0)
-	t.SetTitle("Hardware")
+	// Display hardware capabilities (iterate over array)
+	for i, hw := range executor.Capabilities.Hardware {
+		t, theme = createTable(0)
+		if len(executor.Capabilities.Hardware) > 1 {
+			t.SetTitle("Hardware [" + strconv.Itoa(i+1) + "]")
+		} else {
+			t.SetTitle("Hardware")
+		}
 
-	row = []interface{}{
-		termenv.String("Nodes").Foreground(theme.ColorMagenta),
-		termenv.String(strconv.Itoa(executor.Capabilities.Hardware.Nodes)).Foreground(theme.ColorGray),
-	}
-	t.AddRow(row)
-
-	row = []interface{}{
-		termenv.String("Model").Foreground(theme.ColorMagenta),
-		termenv.String(executor.Capabilities.Hardware.Model).Foreground(theme.ColorGray),
-	}
-	t.AddRow(row)
-
-	row = []interface{}{
-		termenv.String("CPU").Foreground(theme.ColorMagenta),
-		termenv.String(executor.Capabilities.Hardware.CPU).Foreground(theme.ColorGray),
-	}
-	t.AddRow(row)
-
-	row = []interface{}{
-		termenv.String("Memory").Foreground(theme.ColorMagenta),
-		termenv.String(executor.Capabilities.Hardware.Memory).Foreground(theme.ColorGray),
-	}
-	t.AddRow(row)
-
-	row = []interface{}{
-		termenv.String("Storage").Foreground(theme.ColorMagenta),
-		termenv.String(executor.Capabilities.Hardware.Storage).Foreground(theme.ColorGray),
-	}
-	t.AddRow(row)
-
-	row = []interface{}{
-		termenv.String("GPU").Foreground(theme.ColorMagenta),
-		termenv.String(executor.Capabilities.Hardware.GPU.Name).Foreground(theme.ColorGray),
-	}
-	t.AddRow(row)
-
-	row = []interface{}{
-		termenv.String("GPUs").Foreground(theme.ColorMagenta),
-		termenv.String(strconv.Itoa(executor.Capabilities.Hardware.GPU.Count)).Foreground(theme.ColorGray),
-	}
-	t.AddRow(row)
-
-	row = []interface{}{
-		termenv.String("GPU/Node").Foreground(theme.ColorMagenta),
-		termenv.String(strconv.Itoa(executor.Capabilities.Hardware.GPU.NodeCount)).Foreground(theme.ColorGray),
-	}
-	t.AddRow(row)
-
-	row = []interface{}{
-		termenv.String("GPU Memory").Foreground(theme.ColorMagenta),
-		termenv.String(executor.Capabilities.Hardware.GPU.Memory).Foreground(theme.ColorGray),
-	}
-	t.AddRow(row)
-
-	row = []interface{}{
-		termenv.String("Platform").Foreground(theme.ColorMagenta),
-		termenv.String(executor.Capabilities.Hardware.Platform).Foreground(theme.ColorGray),
-	}
-	t.AddRow(row)
-
-	row = []interface{}{
-		termenv.String("Architecture").Foreground(theme.ColorMagenta),
-		termenv.String(executor.Capabilities.Hardware.Architecture).Foreground(theme.ColorGray),
-	}
-	t.AddRow(row)
-
-	if len(executor.Capabilities.Hardware.Network) > 0 {
 		row = []interface{}{
-			termenv.String("Network").Foreground(theme.ColorMagenta),
-			termenv.String(strings.Join(executor.Capabilities.Hardware.Network, ", ")).Foreground(theme.ColorGray),
+			termenv.String("Nodes").Foreground(theme.ColorMagenta),
+			termenv.String(strconv.Itoa(hw.Nodes)).Foreground(theme.ColorGray),
 		}
 		t.AddRow(row)
+
+		row = []interface{}{
+			termenv.String("Model").Foreground(theme.ColorMagenta),
+			termenv.String(hw.Model).Foreground(theme.ColorGray),
+		}
+		t.AddRow(row)
+
+		row = []interface{}{
+			termenv.String("CPU").Foreground(theme.ColorMagenta),
+			termenv.String(hw.CPU).Foreground(theme.ColorGray),
+		}
+		t.AddRow(row)
+
+		row = []interface{}{
+			termenv.String("Memory").Foreground(theme.ColorMagenta),
+			termenv.String(hw.Memory).Foreground(theme.ColorGray),
+		}
+		t.AddRow(row)
+
+		row = []interface{}{
+			termenv.String("Storage").Foreground(theme.ColorMagenta),
+			termenv.String(hw.Storage).Foreground(theme.ColorGray),
+		}
+		t.AddRow(row)
+
+		row = []interface{}{
+			termenv.String("GPU").Foreground(theme.ColorMagenta),
+			termenv.String(hw.GPU.Name).Foreground(theme.ColorGray),
+		}
+		t.AddRow(row)
+
+		row = []interface{}{
+			termenv.String("GPUs").Foreground(theme.ColorMagenta),
+			termenv.String(strconv.Itoa(hw.GPU.Count)).Foreground(theme.ColorGray),
+		}
+		t.AddRow(row)
+
+		row = []interface{}{
+			termenv.String("GPU/Node").Foreground(theme.ColorMagenta),
+			termenv.String(strconv.Itoa(hw.GPU.NodeCount)).Foreground(theme.ColorGray),
+		}
+		t.AddRow(row)
+
+		row = []interface{}{
+			termenv.String("GPU Memory").Foreground(theme.ColorMagenta),
+			termenv.String(hw.GPU.Memory).Foreground(theme.ColorGray),
+		}
+		t.AddRow(row)
+
+		row = []interface{}{
+			termenv.String("Platform").Foreground(theme.ColorMagenta),
+			termenv.String(hw.Platform).Foreground(theme.ColorGray),
+		}
+		t.AddRow(row)
+
+		row = []interface{}{
+			termenv.String("Architecture").Foreground(theme.ColorMagenta),
+			termenv.String(hw.Architecture).Foreground(theme.ColorGray),
+		}
+		t.AddRow(row)
+
+		if len(hw.Network) > 0 {
+			row = []interface{}{
+				termenv.String("Network").Foreground(theme.ColorMagenta),
+				termenv.String(strings.Join(hw.Network, ", ")).Foreground(theme.ColorGray),
+			}
+			t.AddRow(row)
+		}
+
+		t.Render()
 	}
 
-	t.Render()
+	// Display software capabilities (iterate over array)
+	for i, sw := range executor.Capabilities.Software {
+		t, theme = createTable(0)
+		if len(executor.Capabilities.Software) > 1 {
+			t.SetTitle("Software [" + strconv.Itoa(i+1) + "]")
+		} else {
+			t.SetTitle("Software")
+		}
 
-	t, theme = createTable(0)
-	t.SetTitle("Software")
+		row = []interface{}{
+			termenv.String("Name").Foreground(theme.ColorBlue),
+			termenv.String(sw.Name).Foreground(theme.ColorGray),
+		}
+		t.AddRow(row)
 
-	row = []interface{}{
-		termenv.String("Name").Foreground(theme.ColorBlue),
-		termenv.String(executor.Capabilities.Software.Name).Foreground(theme.ColorGray),
+		row = []interface{}{
+			termenv.String("Type").Foreground(theme.ColorBlue),
+			termenv.String(sw.Type).Foreground(theme.ColorGray),
+		}
+		t.AddRow(row)
+
+		row = []interface{}{
+			termenv.String("Version").Foreground(theme.ColorBlue),
+			termenv.String(sw.Version).Foreground(theme.ColorGray),
+		}
+		t.AddRow(row)
+
+		t.Render()
 	}
-	t.AddRow(row)
-
-	row = []interface{}{
-		termenv.String("Type").Foreground(theme.ColorBlue),
-		termenv.String(executor.Capabilities.Software.Type).Foreground(theme.ColorGray),
-	}
-	t.AddRow(row)
-
-	row = []interface{}{
-		termenv.String("Version").Foreground(theme.ColorBlue),
-		termenv.String(executor.Capabilities.Software.Version).Foreground(theme.ColorGray),
-	}
-	t.AddRow(row)
-
-	t.Render()
 
 	functions, err := client.GetFunctionsByExecutor(ColonyName, executor.Name, PrvKey)
 	CheckError(err)

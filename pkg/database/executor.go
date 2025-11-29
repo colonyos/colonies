@@ -18,4 +18,5 @@ type ExecutorDatabase interface {
 	CountExecutors() (int, error)
 	CountExecutorsByColonyName(colonyName string) (int, error)
 	CountExecutorsByColonyNameAndState(colonyName string, state int) (int, error)
+	UpdateExecutorCapabilities(colonyName string, executorName string, capabilities core.Capabilities) error
 }

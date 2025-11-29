@@ -159,7 +159,7 @@ func CreateTestExecutor(colonyName string) *core.Executor {
 	gpu := core.GPU{Name: "test_name1", Count: 1}
 	hw := core.Hardware{Model: "test_model", CPU: "0m", Memory: "0m", Storage: "test_storage", GPU: gpu}
 	sw := core.Software{Name: "test_name1", Type: "test_type1", Version: "test_version1"}
-	capabilities := core.Capabilities{Hardware: hw, Software: sw}
+	capabilities := core.Capabilities{Hardware: []core.Hardware{hw}, Software: []core.Software{sw}}
 	executor.Location = location
 	executor.Capabilities = capabilities
 
