@@ -488,6 +488,15 @@ var reconcileBlueprintCmd = &cobra.Command{
 			"kind": blueprint.Kind,
 		}
 
+		// Apply executor targeting if the blueprint has a handler with specific executor names
+		if blueprint.Handler != nil {
+			if len(blueprint.Handler.ExecutorNames) > 0 {
+				funcSpec.Conditions.ExecutorNames = blueprint.Handler.ExecutorNames
+			} else if blueprint.Handler.ExecutorName != "" {
+				funcSpec.Conditions.ExecutorNames = []string{blueprint.Handler.ExecutorName}
+			}
+		}
+
 		// Pass force flag to reconciler so it can pull fresh images
 		if Force {
 			funcSpec.KwArgs["force"] = true
