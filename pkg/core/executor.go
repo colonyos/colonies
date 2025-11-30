@@ -15,6 +15,7 @@ const (
 type Location struct {
 	Long        float64 `json:"long"`
 	Lat         float64 `json:"lat"`
+	Name        string  `json:"name"`
 	Description string  `json:"desc"`
 }
 
@@ -35,6 +36,7 @@ type Hardware struct {
 	Model        string   `json:"model"`
 	Nodes        int      `json:"nodes"`
 	CPU          string   `json:"cpu"`
+	Cores        int      `json:"cores"`
 	Memory       string   `json:"mem"`
 	Storage      string   `json:"storage"`
 	GPU          GPU      `json:"gpu"`
@@ -197,6 +199,10 @@ func (executor *Executor) Equals(executor2 *Executor) bool {
 		same = false
 	}
 
+	if executor.Location.Name != executor2.Location.Name {
+		same = false
+	}
+
 	if !IsHardwareArraysEqual(executor.Capabilities.Hardware, executor2.Capabilities.Hardware) {
 		same = false
 	}
@@ -234,6 +240,9 @@ func IsHardwareEqual(hw1 Hardware, hw2 Hardware) bool {
 		return false
 	}
 	if hw1.CPU != hw2.CPU {
+		return false
+	}
+	if hw1.Cores != hw2.Cores {
 		return false
 	}
 	if hw1.Memory != hw2.Memory {

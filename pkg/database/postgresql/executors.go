@@ -26,7 +26,7 @@ func (db *PQDatabase) AddExecutor(executor *core.Executor) error {
 	if existingExecutor != nil {
 		if existingExecutor.State == core.UNREGISTERED {
 			// Reactivate the executor by updating its state to PENDING and other fields
-			sqlStatement := `UPDATE ` + db.dbPrefix + `EXECUTORS SET EXECUTOR_ID=$1, STATE=$2, COMMISSIONTIME=$3, LASTHEARDFROM=$4, LONG=$5, LAT=$6, LOCDESC=$7, HARDWARE=$8, SOFTWARE=$9, ALLOCATIONS=$10, BLUEPRINT_ID=$11, BLUEPRINT_GEN=$12 WHERE COLONY_NAME=$13 AND NAME=$14`
+			sqlStatement := `UPDATE ` + db.dbPrefix + `EXECUTORS SET EXECUTOR_ID=$1, STATE=$2, COMMISSIONTIME=$3, LASTHEARDFROM=$4, LONG=$5, LAT=$6, LOCNAME=$7, LOCDESC=$8, HARDWARE=$9, SOFTWARE=$10, ALLOCATIONS=$11, BLUEPRINT_ID=$12, BLUEPRINT_GEN=$13 WHERE COLONY_NAME=$14 AND NAME=$15`
 
 			allocationsJSONBytes, err := json.Marshal(executor.Allocations)
 			if err != nil {
@@ -43,7 +43,7 @@ func (db *PQDatabase) AddExecutor(executor *core.Executor) error {
 				return err
 			}
 
-			_, err = db.postgresql.Exec(sqlStatement, executor.ID, core.PENDING, time.Now(), executor.LastHeardFromTime, executor.Location.Long, executor.Location.Lat, executor.Location.Description, string(hardwareJSONBytes), string(softwareJSONBytes), string(allocationsJSONBytes), executor.BlueprintID, executor.BlueprintGen, executor.ColonyName, executor.ColonyName+":"+executor.Name)
+			_, err = db.postgresql.Exec(sqlStatement, executor.ID, core.PENDING, time.Now(), executor.LastHeardFromTime, executor.Location.Long, executor.Location.Lat, executor.Location.Name, executor.Location.Description, string(hardwareJSONBytes), string(softwareJSONBytes), string(allocationsJSONBytes), executor.BlueprintID, executor.BlueprintGen, executor.ColonyName, executor.ColonyName+":"+executor.Name)
 			return err
 		}
 		return errors.New("Executor with name <" + executor.Name + "> already exists in Colony with name <" + executor.ColonyName + ">")
@@ -64,8 +64,8 @@ func (db *PQDatabase) AddExecutor(executor *core.Executor) error {
 		return err
 	}
 
-	sqlStatement := `INSERT INTO  ` + db.dbPrefix + `EXECUTORS (NAME, EXECUTOR_TYPE, EXECUTOR_ID, COLONY_NAME, STATE, REQUIRE_FUNC_REG, COMMISSIONTIME, LASTHEARDFROM, LONG, LAT, LOCDESC, HARDWARE, SOFTWARE, ALLOCATIONS, BLUEPRINT_ID, BLUEPRINT_GEN) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)`
-	_, err = db.postgresql.Exec(sqlStatement, executor.ColonyName+":"+executor.Name, executor.Type, executor.ID, executor.ColonyName, 0, executor.RequireFuncReg, time.Now(), executor.LastHeardFromTime, executor.Location.Long, executor.Location.Lat, executor.Location.Description, string(hardwareJSONBytes), string(softwareJSONBytes), string(allocationsJSONBytes), executor.BlueprintID, executor.BlueprintGen)
+	sqlStatement := `INSERT INTO  ` + db.dbPrefix + `EXECUTORS (NAME, EXECUTOR_TYPE, EXECUTOR_ID, COLONY_NAME, STATE, REQUIRE_FUNC_REG, COMMISSIONTIME, LASTHEARDFROM, LONG, LAT, LOCNAME, LOCDESC, HARDWARE, SOFTWARE, ALLOCATIONS, BLUEPRINT_ID, BLUEPRINT_GEN) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)`
+	_, err = db.postgresql.Exec(sqlStatement, executor.ColonyName+":"+executor.Name, executor.Type, executor.ID, executor.ColonyName, 0, executor.RequireFuncReg, time.Now(), executor.LastHeardFromTime, executor.Location.Long, executor.Location.Lat, executor.Location.Name, executor.Location.Description, string(hardwareJSONBytes), string(softwareJSONBytes), string(allocationsJSONBytes), executor.BlueprintID, executor.BlueprintGen)
 
 	if err != nil {
 		if strings.HasPrefix(err.Error(), "pq: duplicate key value violates unique constraint") {
@@ -115,7 +115,8 @@ func (db *PQDatabase) parseExecutors(rows *sql.Rows) ([]*core.Executor, error) {
 		var lastHeardFromTime time.Time
 		var long float64
 		var lat float64
-		var desc string
+		var locName sql.NullString
+		var desc sql.NullString
 		var hardwareJSONStr sql.NullString
 		var softwareJSONStr sql.NullString
 		var allocationsJSONStr string
@@ -123,7 +124,7 @@ func (db *PQDatabase) parseExecutors(rows *sql.Rows) ([]*core.Executor, error) {
 		var blueprintID sql.NullString
 		var blueprintGen sql.NullInt64
 
-		if err := rows.Scan(&name, &executorType, &id, &colonyName, &state, &requireRunReg, &commissionTime, &lastHeardFromTime, &long, &lat, &desc, &hardwareJSONStr, &softwareJSONStr, &allocationsJSONStr, &nodeID, &blueprintID, &blueprintGen); err != nil {
+		if err := rows.Scan(&name, &executorType, &id, &colonyName, &state, &requireRunReg, &commissionTime, &lastHeardFromTime, &long, &lat, &locName, &desc, &hardwareJSONStr, &softwareJSONStr, &allocationsJSONStr, &nodeID, &blueprintID, &blueprintGen); err != nil {
 			return nil, err
 		}
 		_ = nodeID // Intentionally unused - kept for database schema compatibility
@@ -141,7 +142,13 @@ func (db *PQDatabase) parseExecutors(rows *sql.Rows) ([]*core.Executor, error) {
 		}
 
 		executor := core.CreateExecutorFromDB(id, executorType, name, colonyName, state, requireRunReg, commissionTime, lastHeardFromTime)
-		location := core.Location{Long: long, Lat: lat, Description: desc}
+		location := core.Location{Long: long, Lat: lat}
+		if locName.Valid {
+			location.Name = locName.String
+		}
+		if desc.Valid {
+			location.Description = desc.String
+		}
 		executor.Location = location
 
 		// Parse hardware array from JSON

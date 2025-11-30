@@ -108,6 +108,36 @@ func TestAddExecutor(t *testing.T) {
 	assert.Equal(t, executor.Capabilities.Hardware[0].GPU.Memory, "10G")
 }
 
+func TestAddExecutorWithLocation(t *testing.T) {
+	db, err := PrepareTests()
+	assert.Nil(t, err)
+
+	defer db.Close()
+
+	colony := core.CreateColony(core.GenerateRandomID(), "test_colony_name_1")
+	err = db.AddColony(colony)
+	assert.Nil(t, err)
+
+	executor := utils.CreateTestExecutor(colony.Name)
+	executor.Location = core.Location{
+		Long:        12.34,
+		Lat:         56.78,
+		Name:        "Home",
+		Description: "Intel i9 + RTX 3080 Ti Server",
+	}
+
+	err = db.AddExecutor(executor)
+	assert.Nil(t, err)
+
+	executorFromDB, err := db.GetExecutorByID(executor.ID)
+	assert.Nil(t, err)
+	assert.NotNil(t, executorFromDB)
+	assert.Equal(t, "Home", executorFromDB.Location.Name)
+	assert.Equal(t, "Intel i9 + RTX 3080 Ti Server", executorFromDB.Location.Description)
+	assert.Equal(t, 12.34, executorFromDB.Location.Long)
+	assert.Equal(t, 56.78, executorFromDB.Location.Lat)
+}
+
 func TestAddExecutorWithAllocations(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)

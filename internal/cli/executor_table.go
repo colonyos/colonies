@@ -207,6 +207,12 @@ func printExecutorTable(client *client.ColoniesClient, executor *core.Executor) 
 		t.AddRow(row)
 
 		row = []interface{}{
+			termenv.String("Cores").Foreground(theme.ColorMagenta),
+			termenv.String(strconv.Itoa(hw.Cores)).Foreground(theme.ColorGray),
+		}
+		t.AddRow(row)
+
+		row = []interface{}{
 			termenv.String("Memory").Foreground(theme.ColorMagenta),
 			termenv.String(hw.Memory).Foreground(theme.ColorGray),
 		}
