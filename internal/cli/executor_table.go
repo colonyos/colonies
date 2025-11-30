@@ -160,6 +160,12 @@ func printExecutorTable(client *client.ColoniesClient, executor *core.Executor) 
 	t.SetTitle("Location")
 
 	row = []interface{}{
+		termenv.String("Name").Foreground(theme.ColorViolet),
+		termenv.String(executor.Location.Name).Foreground(theme.ColorGray),
+	}
+	t.AddRow(row)
+
+	row = []interface{}{
 		termenv.String("Longitude").Foreground(theme.ColorViolet),
 		termenv.String(fmt.Sprintf("%f", executor.Location.Long)).Foreground(theme.ColorGray),
 	}

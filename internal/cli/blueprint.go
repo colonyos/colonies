@@ -485,7 +485,8 @@ var reconcileBlueprintCmd = &cobra.Command{
 		funcSpec.Conditions.ExecutorType = sd.Spec.Handler.ExecutorType
 		funcSpec.FuncName = "reconcile"
 		funcSpec.KwArgs = map[string]interface{}{
-			"kind": blueprint.Kind,
+			"kind":          blueprint.Kind,
+			"blueprintName": blueprint.Metadata.Name,
 		}
 
 		// Apply executor targeting if the blueprint has a handler with specific executor names
