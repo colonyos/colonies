@@ -271,12 +271,19 @@ func printBlueprintsTableWithClient(c *client.ColoniesClient, blueprints []*core
 							}
 						} else if executor.BlueprintID == "" {
 							// Fallback to name-based matching for executors without BlueprintID
-							if strings.HasPrefix(executor.Name, blueprint.Metadata.Name+"-") {
-								// Parse generation from executor name (format: name-hash-gen)
-								parts := strings.Split(executor.Name, "-")
-								if len(parts) >= 2 {
+							// Executor name format: <deployment>-<hash>-<generation>
+							// We need to match the deployment name exactly, not just as a prefix
+							// Count hyphens in blueprint name to determine expected executor name structure
+							blueprintHyphens := strings.Count(blueprint.Metadata.Name, "-")
+							executorParts := strings.Split(executor.Name, "-")
+							// Expected parts: deployment parts (blueprintHyphens+1) + hash (1) + generation (1)
+							expectedParts := blueprintHyphens + 3
+							if len(executorParts) == expectedParts {
+								// Reconstruct deployment name from executor name parts
+								deploymentName := strings.Join(executorParts[:blueprintHyphens+1], "-")
+								if deploymentName == blueprint.Metadata.Name {
 									// Last part should be generation
-									lastPart := parts[len(parts)-1]
+									lastPart := executorParts[len(executorParts)-1]
 									var gen int
 									_, err := fmt.Sscanf(lastPart, "%d", &gen)
 									if err == nil {
