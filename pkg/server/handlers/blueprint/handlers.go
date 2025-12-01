@@ -67,76 +67,90 @@ func (h *Handlers) resolveInitiator(colonyName string, recoveredID string) (stri
 }
 
 // createConsolidatedReconciliationWorkflowSpec creates a workflow spec for consolidated blueprint reconciliation
-// This workflow creates a single process that reconciles ALL blueprints of a given Kind
-// The reconciler will fetch all blueprints and reconcile them in parallel
+// This workflow creates processes for each unique executor type, routing blueprints to their handlers
+// Blueprints can specify handler.executorType to target location-specific reconcilers
 func (h *Handlers) createConsolidatedReconciliationWorkflowSpec(colonyName string, kind string, sd *core.BlueprintDefinition) (string, error) {
 	if sd == nil || sd.Spec.Handler.ExecutorType == "" {
 		return "", fmt.Errorf("no handler defined for blueprint kind: %s", kind)
 	}
 
-	// Get all blueprints of this Kind to find unique handler executors
+	defaultExecutorType := sd.Spec.Handler.ExecutorType
+
+	// Get all blueprints of this Kind to find unique handler configurations
 	blueprints, err := h.server.BlueprintDB().GetBlueprintsByNamespaceAndKind(colonyName, kind)
 	if err != nil {
 		return "", fmt.Errorf("failed to get blueprints for kind %s: %w", kind, err)
 	}
 
 	log.WithFields(log.Fields{
-		"ColonyName":      colonyName,
-		"Kind":            kind,
-		"BlueprintCount":  len(blueprints),
+		"ColonyName":          colonyName,
+		"Kind":                kind,
+		"BlueprintCount":      len(blueprints),
+		"DefaultExecutorType": defaultExecutorType,
 	}).Info("Creating consolidated workflow spec")
 
-	// Collect unique handler executor names
-	executorNames := make(map[string]bool)
+	// Group blueprints by their handler configuration (executor type + executor name)
+	// Key format: "executorType" or "executorType:executorName"
+	type handlerConfig struct {
+		executorType string
+		executorName string
+	}
+	handlers := make(map[handlerConfig]bool)
+
 	for _, bp := range blueprints {
+		config := handlerConfig{
+			executorType: defaultExecutorType,
+		}
+
 		if bp.Handler != nil {
-			if bp.Handler.ExecutorName != "" {
-				executorNames[bp.Handler.ExecutorName] = true
-				log.WithFields(log.Fields{
-					"BlueprintName": bp.Metadata.Name,
-					"ExecutorName":  bp.Handler.ExecutorName,
-				}).Info("Found handler executor")
+			// Use blueprint's executor type if specified, otherwise use default
+			if bp.Handler.ExecutorType != "" {
+				config.executorType = bp.Handler.ExecutorType
 			}
-			for _, name := range bp.Handler.ExecutorNames {
-				executorNames[name] = true
+			// Add executor name if specified for more specific targeting
+			if bp.Handler.ExecutorName != "" {
+				config.executorName = bp.Handler.ExecutorName
 			}
 		}
+
+		handlers[config] = true
+		log.WithFields(log.Fields{
+			"BlueprintName": bp.Metadata.Name,
+			"ExecutorType":  config.executorType,
+			"ExecutorName":  config.executorName,
+		}).Debug("Blueprint handler configuration")
 	}
 
 	log.WithFields(log.Fields{
-		"UniqueExecutors": len(executorNames),
-	}).Info("Collected unique handler executors")
+		"UniqueHandlers": len(handlers),
+	}).Info("Collected unique handler configurations")
 
-	// Create function specs - one for each unique handler executor (or one for all if none specified)
+	// Create function specs - one for each unique handler configuration
 	var functionSpecs []core.FunctionSpec
-
-	if len(executorNames) == 0 {
-		// No specific handlers - create single function targeting executor type
+	i := 0
+	for config := range handlers {
 		funcSpec := core.CreateEmptyFunctionSpec()
-		funcSpec.NodeName = "reconcile-all"
+		funcSpec.NodeName = fmt.Sprintf("reconcile-%d", i)
 		funcSpec.Conditions.ColonyName = colonyName
-		funcSpec.Conditions.ExecutorType = sd.Spec.Handler.ExecutorType
+		funcSpec.Conditions.ExecutorType = config.executorType
 		funcSpec.FuncName = "reconcile"
 		funcSpec.KwArgs = map[string]interface{}{
 			"kind": kind,
 		}
-		functionSpecs = append(functionSpecs, *funcSpec)
-	} else {
-		// Create one function spec per unique handler executor
-		i := 0
-		for executorName := range executorNames {
-			funcSpec := core.CreateEmptyFunctionSpec()
-			funcSpec.NodeName = fmt.Sprintf("reconcile-%d", i)
-			funcSpec.Conditions.ColonyName = colonyName
-			funcSpec.Conditions.ExecutorType = sd.Spec.Handler.ExecutorType
-			funcSpec.Conditions.ExecutorNames = []string{executorName}
-			funcSpec.FuncName = "reconcile"
-			funcSpec.KwArgs = map[string]interface{}{
-				"kind": kind,
-			}
-			functionSpecs = append(functionSpecs, *funcSpec)
-			i++
+
+		// Target specific executor by name if specified
+		if config.executorName != "" {
+			funcSpec.Conditions.ExecutorNames = []string{config.executorName}
 		}
+
+		log.WithFields(log.Fields{
+			"NodeName":      funcSpec.NodeName,
+			"ExecutorType":  config.executorType,
+			"ExecutorName":  config.executorName,
+		}).Info("Created function spec for handler")
+
+		functionSpecs = append(functionSpecs, *funcSpec)
+		i++
 	}
 
 	// Create workflow with functions for each handler
@@ -194,17 +208,23 @@ func (h *Handlers) createImmediateReconciliationProcess(blueprint *core.Blueprin
 		return nil, fmt.Errorf("no handler defined for blueprint kind: %s", blueprint.Kind)
 	}
 
+	// Determine executor type - use blueprint's handler type if specified, otherwise use definition default
+	executorType := sd.Spec.Handler.ExecutorType
+	if blueprint.Handler != nil && blueprint.Handler.ExecutorType != "" {
+		executorType = blueprint.Handler.ExecutorType
+	}
+
 	// Create a function spec for consolidated reconciliation by Kind
 	funcSpec := core.CreateEmptyFunctionSpec()
 	funcSpec.NodeName = "reconcile"
 	funcSpec.Conditions.ColonyName = blueprint.Metadata.ColonyName
-	funcSpec.Conditions.ExecutorType = sd.Spec.Handler.ExecutorType
+	funcSpec.Conditions.ExecutorType = executorType
 	funcSpec.FuncName = "reconcile"
 	funcSpec.KwArgs = map[string]interface{}{
 		"kind": blueprint.Kind,
 	}
 
-	// Apply executor targeting if specified
+	// Apply executor targeting by name if specified
 	if blueprint.Handler != nil {
 		if len(blueprint.Handler.ExecutorNames) > 0 {
 			funcSpec.Conditions.ExecutorNames = blueprint.Handler.ExecutorNames
