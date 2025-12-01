@@ -139,7 +139,6 @@
       }
     },
     "handler": {
-      "executorType": "docker-reconciler",
       "functionName": "reconcile"
     }
   }

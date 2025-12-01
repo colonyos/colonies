@@ -1,13 +1,14 @@
 {
   "kind": "ExecutorDeployment",
   "metadata": {
-    "name": "local-docker-executor"
+    "name": "docker-executor-linux-server"
   },
   "handler": {
-    "executorName": "local-docker-reconciler"
+    "executorType": "docker-reconciler-home-linux-server",
+    "executorName": "docker-reconciler-home-linux-server"
   },
   "spec": {
-    "image": "colonyos/dockerexecutor:v1.0.7",
+    "image": "colonyspaces/dockerexecutor:latest",
     "replicas": 1,
     "executorType": "container-executor",
     "volumes": [
@@ -37,7 +38,7 @@
       "EXECUTOR_HW_GPU_NODES_COUNT": "1",
       "EXECUTOR_LOCATION_LONG": "0",
       "EXECUTOR_LOCATION_LAT": "0",
-      "EXECUTOR_LOCATION_NAME": "Local",
+      "EXECUTOR_LOCATION_NAME": "Home",
       "EXECUTOR_LOCATION_DESC": "Intel i9 + RTX 3080 Ti Server"
     }
   }

@@ -474,7 +474,13 @@ var reconcileBlueprintCmd = &cobra.Command{
 		sd, err := client.GetBlueprintDefinitionByKind(ColonyName, blueprint.Kind, PrvKey)
 		CheckError(err)
 
-		if sd == nil || sd.Spec.Handler.ExecutorType == "" {
+		// Determine executorType - prefer BlueprintDefinition, fall back to Blueprint handler
+		var executorType string
+		if sd != nil && sd.Spec.Handler.ExecutorType != "" {
+			executorType = sd.Spec.Handler.ExecutorType
+		} else if blueprint.Handler != nil && blueprint.Handler.ExecutorType != "" {
+			executorType = blueprint.Handler.ExecutorType
+		} else {
 			CheckError(errors.New("Blueprint kind has no handler defined"))
 		}
 
@@ -482,7 +488,7 @@ var reconcileBlueprintCmd = &cobra.Command{
 		funcSpec := core.CreateEmptyFunctionSpec()
 		funcSpec.NodeName = "reconcile"
 		funcSpec.Conditions.ColonyName = ColonyName
-		funcSpec.Conditions.ExecutorType = sd.Spec.Handler.ExecutorType
+		funcSpec.Conditions.ExecutorType = executorType
 		funcSpec.FuncName = "reconcile"
 		funcSpec.KwArgs = map[string]interface{}{
 			"kind":          blueprint.Kind,

@@ -4,7 +4,8 @@
     "name": "chatexecutor"
   },
   "handler": {
-    "executorName": "local-docker-reconciler"
+    "executorType": "docker-reconciler-home-linux-server",
+    "executorName": "docker-reconciler-home-linux-server"
   },
   "spec": {
     "image": "colonyspace/chatexecutor:latest",

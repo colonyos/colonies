@@ -169,15 +169,15 @@ func (h *Handlers) createConsolidatedReconciliationWorkflowSpec(colonyName strin
 
 // createReconcilerCronWorkflowSpec creates a workflow spec for a specific reconciler
 // This creates a single process targeting one specific handler executor
-func (h *Handlers) createReconcilerCronWorkflowSpec(colonyName string, kind string, sd *core.BlueprintDefinition, handlerExecutorName string) (string, error) {
-	if sd == nil || sd.Spec.Handler.ExecutorType == "" {
-		return "", fmt.Errorf("no handler defined for blueprint kind: %s", kind)
+func (h *Handlers) createReconcilerCronWorkflowSpec(colonyName string, kind string, executorType string, handlerExecutorName string) (string, error) {
+	if executorType == "" {
+		return "", fmt.Errorf("no handler executorType defined for blueprint kind: %s", kind)
 	}
 
 	funcSpec := core.CreateEmptyFunctionSpec()
 	funcSpec.NodeName = "reconcile"
 	funcSpec.Conditions.ColonyName = colonyName
-	funcSpec.Conditions.ExecutorType = sd.Spec.Handler.ExecutorType
+	funcSpec.Conditions.ExecutorType = executorType
 	funcSpec.FuncName = "reconcile"
 	funcSpec.KwArgs = map[string]interface{}{
 		"kind": kind,
@@ -204,12 +204,19 @@ func (h *Handlers) createReconcilerCronWorkflowSpec(colonyName string, kind stri
 // createImmediateReconciliationProcess creates a process for immediate reconciliation of a blueprint's Kind
 // This is used when a blueprint is added to trigger immediate reconciliation of all blueprints of that Kind
 func (h *Handlers) createImmediateReconciliationProcess(blueprint *core.Blueprint, sd *core.BlueprintDefinition, recoveredID string, initiatorName string) (*core.Process, error) {
-	if sd == nil || sd.Spec.Handler.ExecutorType == "" {
+	// Determine executor type - prefer BlueprintDefinition, fall back to Blueprint handler
+	executorType := ""
+	if sd != nil && sd.Spec.Handler.ExecutorType != "" {
+		executorType = sd.Spec.Handler.ExecutorType
+	} else if blueprint.Handler != nil && blueprint.Handler.ExecutorType != "" {
+		executorType = blueprint.Handler.ExecutorType
+	}
+
+	if executorType == "" {
 		return nil, fmt.Errorf("no handler defined for blueprint kind: %s", blueprint.Kind)
 	}
 
-	// Determine executor type - use blueprint's handler type if specified, otherwise use definition default
-	executorType := sd.Spec.Handler.ExecutorType
+	// Use blueprint's handler type if specified (override definition default)
 	if blueprint.Handler != nil && blueprint.Handler.ExecutorType != "" {
 		executorType = blueprint.Handler.ExecutorType
 	}
@@ -569,7 +576,15 @@ func (h *Handlers) HandleAddBlueprint(c backends.Context, recoveredID string, pa
 	}).Debug("Adding blueprint")
 
 	// Auto-create reconciliation cron if handler is defined
+	// Check BlueprintDefinition handler first, then fall back to Blueprint handler
+	executorType := ""
 	if matchedSD != nil && matchedSD.Spec.Handler.ExecutorType != "" {
+		executorType = matchedSD.Spec.Handler.ExecutorType
+	} else if msg.Blueprint.Handler != nil && msg.Blueprint.Handler.ExecutorType != "" {
+		executorType = msg.Blueprint.Handler.ExecutorType
+	}
+
+	if executorType != "" {
 		// Get the handler executor name for this blueprint
 		handlerExecutorName := ""
 		if msg.Blueprint.Handler != nil {
@@ -611,7 +626,7 @@ func (h *Handlers) HandleAddBlueprint(c backends.Context, recoveredID string, pa
 
 		if existingCron == nil {
 			// Create workflow spec targeting this specific handler executor
-			workflowSpec, err := h.createReconcilerCronWorkflowSpec(msg.Blueprint.Metadata.ColonyName, msg.Blueprint.Kind, matchedSD, handlerExecutorName)
+			workflowSpec, err := h.createReconcilerCronWorkflowSpec(msg.Blueprint.Metadata.ColonyName, msg.Blueprint.Kind, executorType, handlerExecutorName)
 			if err != nil {
 				log.WithFields(log.Fields{
 					"Error":           err,
@@ -906,7 +921,15 @@ func (h *Handlers) HandleUpdateBlueprint(c backends.Context, recoveredID string,
 	}).Debug("Updating blueprint")
 
 	// Trigger immediate reconciliation by running the cron for this blueprint's handler
+	// Check BlueprintDefinition handler first, then fall back to Blueprint handler
+	updateExecutorType := ""
 	if matchedSD != nil && matchedSD.Spec.Handler.ExecutorType != "" {
+		updateExecutorType = matchedSD.Spec.Handler.ExecutorType
+	} else if msg.Blueprint.Handler != nil && msg.Blueprint.Handler.ExecutorType != "" {
+		updateExecutorType = msg.Blueprint.Handler.ExecutorType
+	}
+
+	if updateExecutorType != "" {
 		// Get the handler executor name for this blueprint
 		handlerExecutorName := ""
 		if msg.Blueprint.Handler != nil {

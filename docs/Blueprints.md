@@ -84,7 +84,7 @@ Example BlueprintDefinition:
       "required": ["image", "executorType"]
     },
     "handler": {
-      "executorType": "docker-reconciler",
+      "executorType": "docker-reconciler-home-linux-server",
       "functionName": "reconcile"
     }
   }
@@ -119,11 +119,14 @@ Example Blueprint:
   "metadata": {
     "name": "docker-executor"
   },
+  "handler": {
+    "executorType": "docker-reconciler-home-linux-server",
+    "executorName": "docker-reconciler-home-linux-server"
+  },
   "spec": {
     "image": "colonyos/dockerexecutor:v1.0.5",
     "replicas": 3,
-    "executorType": "docker-reconciler",
-    "executorName": "docker-executor",
+    "executorType": "container-executor",
     "env": {
       "COLONIES_SERVER_HOST": "colonies-server",
       "COLONIES_SERVER_PORT": "50080"

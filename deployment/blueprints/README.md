@@ -17,8 +17,8 @@ colonies blueprint definition add --spec executor-deployment-definition.json
 Deploys a docker executor specifically on the **local/main node**.
 
 **Key Settings:**
-- `executorType`: `docker-reconciler` - Requires a docker-reconciler
-- `executorName`: `local-docker-reconciler` - Targets the main node
+- `executorType`: `docker-reconciler-home-linux-server` - Uses the home Linux server reconciler
+- `executorName`: `docker-reconciler-home-linux-server` - Targets the home Linux server
 - `replicas`: 1 - Single executor instance
 
 **Deploy:**
@@ -26,7 +26,7 @@ Deploys a docker executor specifically on the **local/main node**.
 colonies blueprint add --spec local-docker-executor-deployment.json
 ```
 
-**Result:** The deployment will run specifically on the `local-docker-reconciler` (main node from colonies docker-compose).
+**Result:** The deployment will run specifically on the `docker-reconciler-home-linux-server`.
 
 ## Executor Targeting Examples
 
@@ -37,51 +37,42 @@ colonies blueprint add --spec local-docker-executor-deployment.json
   "metadata": {
     "name": "docker-executor"
   },
+  "handler": {
+    "executorType": "docker-reconciler-home-linux-server",
+    "executorName": "docker-reconciler-home-linux-server"
+  },
   "spec": {
-    "executorType": "docker-reconciler",
-    "executorName": "local-docker-reconciler"  // Main node
+    "image": "colonyos/dockerexecutor:latest",
+    "executorType": "container-executor"
   }
 }
 ```
 ✅ Guaranteed deployment on specific node
 ⚠️ Fails if that reconciler is down
 
-### Example 2: Any Node (Load Balanced)
+### Example 2: Target Apple Ultra Node
 ```json
 {
   "kind": "ExecutorDeployment",
   "metadata": {
-    "name": "docker-executor-any"
+    "name": "docker-executor-apple"
+  },
+  "handler": {
+    "executorType": "docker-reconciler-apple-ultra",
+    "executorName": "docker-reconciler-apple-ultra"
   },
   "spec": {
-    "executorType": "docker-reconciler"
-    // No executorName - any reconciler can handle it
+    "image": "colonyos/dockerexecutor:latest",
+    "executorType": "container-executor"
   }
 }
 ```
-✅ High availability - survives individual node failures
-✅ Automatic load distribution
-⚠️ You don't control which node runs it
-
-### Example 3: Target Local Node Alternative
-```json
-{
-  "kind": "ExecutorDeployment",
-  "metadata": {
-    "name": "docker-executor-local"
-  },
-  "spec": {
-    "executorType": "docker-reconciler",
-    "executorName": "local-docker-reconciler"  // Specific node
-  }
-}
-```
-✅ Guaranteed deployment on specific node
+✅ Guaranteed deployment on Apple Ultra
 ⚠️ Fails if that reconciler is down
 
 **Available reconcilers in default setup:**
-- `local-docker-reconciler` - Main node (in colonies docker-compose)
-- `docker-reconciler-edge` - Edge node (in docker-reconciler docker-compose)
+- `docker-reconciler-home-linux-server` - Home Linux server (Intel i9 + RTX 3080 Ti)
+- `docker-reconciler-apple-ultra` - Home Apple Ultra (Mac Studio M2 Ultra)
 
 ### Example 3: Target Edge Node
 ```json
@@ -90,9 +81,13 @@ colonies blueprint add --spec local-docker-executor-deployment.json
   "metadata": {
     "name": "docker-executor-edge"
   },
+  "handler": {
+    "executorType": "docker-reconciler-edge",
+    "executorName": "docker-reconciler-edge"
+  },
   "spec": {
-    "executorType": "docker-reconciler",
-    "executorName": "docker-reconciler-edge"  // Edge datacenter
+    "image": "colonyos/dockerexecutor:latest",
+    "executorType": "container-executor"
   }
 }
 ```
