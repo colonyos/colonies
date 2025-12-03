@@ -19,8 +19,7 @@ func printBlueprintDefinitionsTable(sds []*core.BlueprintDefinition) {
 	var cols = []table.Column{
 		{ID: "name", Name: "Name", SortIndex: 1},
 		{ID: "kind", Name: "Kind", SortIndex: 2},
-		{ID: "executortype", Name: "ExecutorType", SortIndex: 3},
-		{ID: "functionname", Name: "FunctionName", SortIndex: 4},
+		{ID: "functionname", Name: "FunctionName", SortIndex: 3},
 	}
 	t.SetCols(cols)
 
@@ -28,7 +27,6 @@ func printBlueprintDefinitionsTable(sds []*core.BlueprintDefinition) {
 		row := []interface{}{
 			termenv.String(sd.Metadata.Name).Foreground(theme.ColorCyan),
 			termenv.String(sd.Spec.Names.Kind).Foreground(theme.ColorViolet),
-			termenv.String(sd.Spec.Handler.ExecutorType).Foreground(theme.ColorMagenta),
 			termenv.String(sd.Spec.Handler.FunctionName).Foreground(theme.ColorBlue),
 		}
 		t.AddRow(row)

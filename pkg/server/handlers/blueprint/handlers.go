@@ -576,11 +576,13 @@ func (h *Handlers) HandleAddBlueprint(c backends.Context, recoveredID string, pa
 	}).Debug("Adding blueprint")
 
 	// Auto-create reconciliation cron if handler is defined
-	// Check BlueprintDefinition handler first, then fall back to Blueprint handler
+	// Start with BlueprintDefinition handler as default, then override with Blueprint handler if specified
 	executorType := ""
 	if matchedSD != nil && matchedSD.Spec.Handler.ExecutorType != "" {
 		executorType = matchedSD.Spec.Handler.ExecutorType
-	} else if msg.Blueprint.Handler != nil && msg.Blueprint.Handler.ExecutorType != "" {
+	}
+	// Override with blueprint's handler type if specified (blueprint handler takes precedence)
+	if msg.Blueprint.Handler != nil && msg.Blueprint.Handler.ExecutorType != "" {
 		executorType = msg.Blueprint.Handler.ExecutorType
 	}
 
@@ -921,30 +923,18 @@ func (h *Handlers) HandleUpdateBlueprint(c backends.Context, recoveredID string,
 	}).Debug("Updating blueprint")
 
 	// Trigger immediate reconciliation by running the cron for this blueprint's handler
-	// Check BlueprintDefinition handler first, then fall back to Blueprint handler
+	// Use the stored blueprint's handler (source of truth), fall back to definition for new blueprints
 	updateExecutorType := ""
-	if matchedSD != nil && matchedSD.Spec.Handler.ExecutorType != "" {
+	if oldBlueprint != nil && oldBlueprint.Handler != nil && oldBlueprint.Handler.ExecutorType != "" {
+		updateExecutorType = oldBlueprint.Handler.ExecutorType
+	} else if matchedSD != nil && matchedSD.Spec.Handler.ExecutorType != "" {
 		updateExecutorType = matchedSD.Spec.Handler.ExecutorType
-	} else if msg.Blueprint.Handler != nil && msg.Blueprint.Handler.ExecutorType != "" {
-		updateExecutorType = msg.Blueprint.Handler.ExecutorType
 	}
 
 	if updateExecutorType != "" {
-		// Get the handler executor name for this blueprint
-		handlerExecutorName := ""
-		if msg.Blueprint.Handler != nil {
-			if msg.Blueprint.Handler.ExecutorName != "" {
-				handlerExecutorName = msg.Blueprint.Handler.ExecutorName
-			} else if len(msg.Blueprint.Handler.ExecutorNames) > 0 {
-				handlerExecutorName = msg.Blueprint.Handler.ExecutorNames[0]
-			}
-		}
-
 		// Find the cron for this specific handler
-		cronName := "reconcile-" + msg.Blueprint.Kind
-		if handlerExecutorName != "" {
-			cronName = cronName + "-" + handlerExecutorName
-		}
+		// Cron is named by executor type: reconcile-{Kind}-{executorType}
+		cronName := "reconcile-" + msg.Blueprint.Kind + "-" + updateExecutorType
 
 		crons, err := h.server.CronController().GetCrons(msg.Blueprint.Metadata.ColonyName, 1000)
 		var existingCron *core.Cron
@@ -962,25 +952,25 @@ func (h *Handlers) HandleUpdateBlueprint(c backends.Context, recoveredID string,
 			_, err := h.server.CronController().RunCron(existingCron.ID)
 			if err != nil {
 				log.WithFields(log.Fields{
-					"Error":           err,
-					"BlueprintName":   msg.Blueprint.Metadata.Name,
-					"CronName":        cronName,
-					"HandlerExecutor": handlerExecutorName,
+					"Error":         err,
+					"BlueprintName": msg.Blueprint.Metadata.Name,
+					"CronName":      cronName,
+					"ExecutorType":  updateExecutorType,
 				}).Warn("Failed to trigger reconciliation cron after blueprint update")
 			} else {
 				log.WithFields(log.Fields{
-					"BlueprintName":   msg.Blueprint.Metadata.Name,
-					"Generation":      msg.Blueprint.Metadata.Generation,
-					"CronName":        cronName,
-					"CronID":          existingCron.ID,
-					"HandlerExecutor": handlerExecutorName,
+					"BlueprintName": msg.Blueprint.Metadata.Name,
+					"Generation":    msg.Blueprint.Metadata.Generation,
+					"CronName":      cronName,
+					"CronID":        existingCron.ID,
+					"ExecutorType":  updateExecutorType,
 				}).Info("Triggered reconciliation cron immediately after blueprint update")
 			}
 		} else {
 			log.WithFields(log.Fields{
-				"BlueprintName":   msg.Blueprint.Metadata.Name,
-				"CronName":        cronName,
-				"HandlerExecutor": handlerExecutorName,
+				"BlueprintName": msg.Blueprint.Metadata.Name,
+				"CronName":      cronName,
+				"ExecutorType":  updateExecutorType,
 			}).Debug("No reconciliation cron found for handler")
 		}
 	}
