@@ -464,7 +464,7 @@ This is useful when:
 
 ## When to Use Schema
 
-### ✅ Use Schema When:
+### Use Schema When:
 
 1. **Well-defined structure** - You know exactly what fields are needed
 2. **User-facing services** - Help users avoid mistakes early
@@ -473,7 +473,7 @@ This is useful when:
 5. **Self-service** - Users create blueprints via UI/API
 6. **Clear errors** - Get immediate feedback on what's wrong
 
-### ⚠️ Skip Schema When:
+### Skip Schema When:
 
 1. **Rapid prototyping** - Structure is still evolving
 2. **Highly dynamic** - Runtime-specific configurations vary widely
