@@ -448,74 +448,12 @@ var reconcileBlueprintCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		client := setup()
 
-		// Get blueprint
-		blueprint, err := client.GetBlueprint(ColonyName, BlueprintName, PrvKey)
-		CheckError(err)
-
-		// If force flag is set, bump the generation first
-		if Force {
-			log.Info("Force flag enabled - bumping blueprint generation to trigger redeployment")
-
-			// Update the blueprint with force generation bump
-			updatedBlueprint, err := client.UpdateBlueprintWithForce(blueprint, true, PrvKey)
-			CheckError(err)
-
-			log.WithFields(log.Fields{
-				"BlueprintName": BlueprintName,
-				"OldGeneration": blueprint.Metadata.Generation,
-				"NewGeneration": updatedBlueprint.Metadata.Generation,
-			}).Info("Blueprint generation bumped")
-
-			// Use the updated blueprint for reconciliation
-			blueprint = updatedBlueprint
-		}
-
-		// Get the blueprint definition to find the handler
-		sd, err := client.GetBlueprintDefinitionByKind(ColonyName, blueprint.Kind, PrvKey)
-		CheckError(err)
-
-		// Determine executorType - prefer BlueprintDefinition, fall back to Blueprint handler
-		var executorType string
-		if sd != nil && sd.Spec.Handler.ExecutorType != "" {
-			executorType = sd.Spec.Handler.ExecutorType
-		} else if blueprint.Handler != nil && blueprint.Handler.ExecutorType != "" {
-			executorType = blueprint.Handler.ExecutorType
-		} else {
-			CheckError(errors.New("Blueprint kind has no handler defined"))
-		}
-
-		// Submit a direct reconciliation process
-		funcSpec := core.CreateEmptyFunctionSpec()
-		funcSpec.NodeName = "reconcile"
-		funcSpec.Conditions.ColonyName = ColonyName
-		funcSpec.Conditions.ExecutorType = executorType
-		funcSpec.FuncName = "reconcile"
-		funcSpec.KwArgs = map[string]interface{}{
-			"kind":          blueprint.Kind,
-			"blueprintName": blueprint.Metadata.Name,
-		}
-
-		// Apply executor targeting if the blueprint has a handler with specific executor names
-		if blueprint.Handler != nil {
-			if len(blueprint.Handler.ExecutorNames) > 0 {
-				funcSpec.Conditions.ExecutorNames = blueprint.Handler.ExecutorNames
-			} else if blueprint.Handler.ExecutorName != "" {
-				funcSpec.Conditions.ExecutorNames = []string{blueprint.Handler.ExecutorName}
-			}
-		}
-
-		// Pass force flag to reconciler so it can pull fresh images
-		if Force {
-			funcSpec.KwArgs["force"] = true
-		}
-
-		process, err := client.Submit(funcSpec, PrvKey)
+		// Call server-side reconciliation which looks up executor type from the blueprint handler
+		process, err := client.ReconcileBlueprint(ColonyName, BlueprintName, Force, PrvKey)
 		CheckError(err)
 
 		log.WithFields(log.Fields{
 			"BlueprintName": BlueprintName,
-			"Kind":          blueprint.Kind,
-			"Generation":    blueprint.Metadata.Generation,
 			"ProcessID":     process.ID,
 			"Force":         Force,
 		}).Info("Submitted reconciliation process")

@@ -13,9 +13,16 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### Building
 ```bash
 make build              # Build the main colonies binary and libraries
-make container          # Build Docker container  
+make container          # Build Docker container
 make install            # Install binaries to /usr/local/bin
 ```
+
+**IMPORTANT: Container Image Name**
+When building Docker containers, NEVER change the image name. Always use:
+```bash
+BUILD_IMAGE=colonyos/colonies:latest make container
+```
+The deployment docker-compose files expect `colonyos/colonies:latest`. Using a different image name will cause the container to not be updated when restarting.
 
 ### Testing
 ```bash

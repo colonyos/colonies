@@ -225,7 +225,7 @@ func (h *RealtimeHandler) handleSubscribeChannel(c backends.Context, rpcMsg *rpc
 		callerID = process.AssignedExecutorID
 	}
 
-	log.WithFields(log.Fields{"ProcessID": msg.ProcessID, "Channel": msg.Name, "CallerID": callerID}).Debug("WebSocket channel subscription started")
+	log.WithFields(log.Fields{"ProcessID": msg.ProcessID, "Channel": msg.Name, "CallerID": callerID, "Timeout": msg.Timeout}).Info("WebSocket channel subscription started")
 
 	// Long-poll loop: continuously check for new messages
 	// AfterSeq is now used as index (position in log)
@@ -250,6 +250,7 @@ func (h *RealtimeHandler) handleSubscribeChannel(c backends.Context, rpcMsg *rpc
 		}
 
 		if len(entries) > 0 {
+			log.WithFields(log.Fields{"ProcessID": msg.ProcessID, "Channel": msg.Name, "EntryCount": len(entries), "LastIndex": lastIndex}).Info("Sending channel entries to WebSocket")
 			// Send entries to client
 			jsonBytes, err := json.Marshal(entries)
 			if err != nil {

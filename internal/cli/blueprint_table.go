@@ -179,9 +179,8 @@ func printBlueprintsTableWithClient(c *client.ColoniesClient, blueprints []*core
 		{ID: "kind", Name: "Kind", SortIndex: 2},
 		{ID: "reconciler", Name: "Reconciler", SortIndex: 3},
 		{ID: "replicas", Name: "Replicas", SortIndex: 4},
-		{ID: "reconciling", Name: "Reconciling", SortIndex: 5},
-		{ID: "oldgen", Name: "OldGen", SortIndex: 6},
-		{ID: "generation", Name: "Gen", SortIndex: 7},
+		{ID: "oldgen", Name: "OldGen", SortIndex: 5},
+		{ID: "generation", Name: "Gen", SortIndex: 6},
 	}
 	t.SetCols(cols)
 
@@ -228,7 +227,6 @@ func printBlueprintsTableWithClient(c *client.ColoniesClient, blueprints []*core
 
 		// Get replica information
 		replicasStr := "-"
-		reconcilingStr := "-"
 		oldGenStr := "-"
 
 		if blueprint.Kind == "ExecutorDeployment" {
@@ -313,19 +311,6 @@ func printBlueprintsTableWithClient(c *client.ColoniesClient, blueprints []*core
 				}
 			}
 
-			// Check reconciliation status
-			if c != nil && blueprint.Metadata.LastReconciliationProcess != "" {
-				process, err := c.GetProcess(blueprint.Metadata.LastReconciliationProcess, PrvKey)
-				if err == nil && process != nil {
-					// State: 0=WAITING, 1=RUNNING, 2=SUCCESS, 3=FAILED
-					// Consider both WAITING and RUNNING as "reconciling"
-					if process.State == 0 || process.State == 1 {
-						reconcilingStr = "yes"
-					} else {
-						reconcilingStr = "no"
-					}
-				}
-			}
 		}
 		if blueprint.Kind == "DockerDeployment" {
 			// Get desired replicas from spec
@@ -373,7 +358,6 @@ func printBlueprintsTableWithClient(c *client.ColoniesClient, blueprints []*core
 			termenv.String(blueprint.Kind).Foreground(theme.ColorViolet),
 			termenv.String(reconcilerStr).Foreground(theme.ColorBlue),
 			termenv.String(replicasStr).Foreground(theme.ColorMagenta),
-			termenv.String(reconcilingStr).Foreground(getReconcilingColor(reconcilingStr, theme)),
 			termenv.String(oldGenStr).Foreground(getOldGenColor(oldGenStr, theme)),
 			termenv.String(fmt.Sprintf("%d", blueprint.Metadata.Generation)).Foreground(theme.ColorYellow),
 		}
@@ -381,18 +365,6 @@ func printBlueprintsTableWithClient(c *client.ColoniesClient, blueprints []*core
 	}
 
 	t.Render()
-}
-
-// getReconcilingColor returns appropriate color based on reconciliation status
-func getReconcilingColor(status string, theme table.Theme) termenv.Color {
-	switch status {
-	case "yes":
-		return theme.ColorYellow
-	case "no":
-		return theme.ColorGreen
-	default:
-		return theme.ColorGray
-	}
 }
 
 // getOldGenColor returns appropriate color based on old generation count

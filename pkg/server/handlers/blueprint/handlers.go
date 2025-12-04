@@ -286,6 +286,9 @@ func (h *Handlers) RegisterHandlers(handlerRegistry *registry.HandlerRegistry) e
 	if err := handlerRegistry.Register(rpc.UpdateBlueprintStatusPayloadType, h.HandleUpdateBlueprintStatus); err != nil {
 		return err
 	}
+	if err := handlerRegistry.Register(rpc.ReconcileBlueprintPayloadType, h.HandleReconcileBlueprint); err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -1229,4 +1232,124 @@ func (h *Handlers) HandleUpdateBlueprintStatus(c backends.Context, recoveredID s
 	}).Debug("Updated blueprint status")
 
 	h.server.SendEmptyHTTPReply(c, payloadType)
+}
+
+// HandleReconcileBlueprint triggers immediate reconciliation of a specific blueprint
+// The server looks up the executor type from the blueprint's handler configuration
+func (h *Handlers) HandleReconcileBlueprint(c backends.Context, recoveredID string, payloadType string, jsonString string) {
+	msg, err := rpc.CreateReconcileBlueprintMsgFromJSON(jsonString)
+	if err != nil {
+		h.server.HandleHTTPError(c, errors.New("Failed to reconcile blueprint, invalid JSON"), http.StatusBadRequest)
+		return
+	}
+
+	if msg.MsgType != payloadType {
+		h.server.HandleHTTPError(c, errors.New("Failed to reconcile blueprint, msg.MsgType does not match payloadType"), http.StatusBadRequest)
+		return
+	}
+
+	// Require membership to trigger reconciliation
+	err = h.server.Validator().RequireMembership(recoveredID, msg.Namespace, true)
+	if h.server.HandleHTTPError(c, err, http.StatusForbidden) {
+		return
+	}
+
+	// Get the blueprint by name
+	blueprint, err := h.server.BlueprintDB().GetBlueprintByName(msg.Namespace, msg.Name)
+	if h.server.HandleHTTPError(c, err, http.StatusInternalServerError) {
+		return
+	}
+
+	if blueprint == nil {
+		h.server.HandleHTTPError(c, errors.New("Blueprint not found"), http.StatusNotFound)
+		return
+	}
+
+	// If force flag is set, bump the generation first
+	if msg.Force {
+		blueprint.Metadata.Generation++
+		err = h.server.BlueprintDB().UpdateBlueprint(blueprint)
+		if h.server.HandleHTTPError(c, err, http.StatusInternalServerError) {
+			return
+		}
+
+		log.WithFields(log.Fields{
+			"BlueprintName": blueprint.Metadata.Name,
+			"Generation":    blueprint.Metadata.Generation,
+		}).Debug("Bumped blueprint generation for force reconciliation")
+	}
+
+	// Resolve initiator name for the process
+	initiatorName, err := h.resolveInitiator(msg.Namespace, recoveredID)
+	if h.server.HandleHTTPError(c, err, http.StatusInternalServerError) {
+		return
+	}
+
+	// Determine executor type - use blueprint's handler first, then fall back to definition
+	var executorType string
+	if blueprint.Handler != nil && blueprint.Handler.ExecutorType != "" {
+		executorType = blueprint.Handler.ExecutorType
+	} else {
+		// Try to get from blueprint definition
+		sd, err := h.server.BlueprintDB().GetBlueprintDefinitionByName(msg.Namespace, blueprint.Kind)
+		if err == nil && sd != nil && sd.Spec.Handler.ExecutorType != "" {
+			executorType = sd.Spec.Handler.ExecutorType
+		}
+	}
+
+	if executorType == "" {
+		h.server.HandleHTTPError(c, errors.New("Blueprint has no handler with executor type defined"), http.StatusBadRequest)
+		return
+	}
+
+	// Create the reconciliation process
+	funcSpec := core.CreateEmptyFunctionSpec()
+	funcSpec.NodeName = "reconcile"
+	funcSpec.Conditions.ColonyName = msg.Namespace
+	funcSpec.Conditions.ExecutorType = executorType
+	funcSpec.FuncName = "reconcile"
+	funcSpec.KwArgs = map[string]interface{}{
+		"kind":          blueprint.Kind,
+		"blueprintName": blueprint.Metadata.Name,
+	}
+
+	// Apply executor targeting by name if specified
+	if blueprint.Handler != nil {
+		if len(blueprint.Handler.ExecutorNames) > 0 {
+			funcSpec.Conditions.ExecutorNames = blueprint.Handler.ExecutorNames
+		} else if blueprint.Handler.ExecutorName != "" {
+			funcSpec.Conditions.ExecutorNames = []string{blueprint.Handler.ExecutorName}
+		}
+	}
+
+	// Pass force flag to reconciler
+	if msg.Force {
+		funcSpec.KwArgs["force"] = true
+	}
+
+	// Create and submit the process
+	process := core.CreateProcess(funcSpec)
+	process.InitiatorID = recoveredID
+	process.InitiatorName = initiatorName
+
+	addedProcess, err := h.server.ProcessController().AddProcess(process)
+	if h.server.HandleHTTPError(c, err, http.StatusInternalServerError) {
+		return
+	}
+
+	log.WithFields(log.Fields{
+		"BlueprintName": blueprint.Metadata.Name,
+		"Kind":          blueprint.Kind,
+		"ExecutorType":  executorType,
+		"ProcessID":     addedProcess.ID,
+		"Force":         msg.Force,
+	}).Debug("Submitted reconciliation process")
+
+	// Return the process so client can track it
+	jsonString, err = addedProcess.ToJSON()
+	if h.server.HandleHTTPError(c, err, http.StatusInternalServerError) {
+		return
+	}
+
+	h.server.SendHTTPReply(c, payloadType, jsonString)
 }

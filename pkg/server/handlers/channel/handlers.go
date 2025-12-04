@@ -89,9 +89,12 @@ func (h *Handlers) HandleChannelAppend(c backends.Context, recoveredID string, p
 	// Determine caller ID - either submitter or executor
 	callerID := getCallerID(recoveredID, process)
 
+	log.WithFields(log.Fields{"ProcessID": msg.ProcessID, "Channel": msg.Name, "Sequence": msg.Sequence, "PayloadLen": len(msg.Payload), "CallerID": callerID}).Info("Appending to channel")
+
 	// Append to channel with client-assigned sequence
 	err = h.server.ChannelRouter().Append(ch.ID, callerID, msg.Sequence, msg.InReplyTo, msg.Payload)
 	if err != nil {
+		log.WithFields(log.Fields{"ProcessID": msg.ProcessID, "Channel": msg.Name, "Error": err}).Error("Failed to append to channel")
 		if err == channel.ErrUnauthorized {
 			h.server.HandleHTTPError(c, errors.New("Not authorized to write to channel"), http.StatusForbidden)
 		} else {
@@ -100,6 +103,7 @@ func (h *Handlers) HandleChannelAppend(c backends.Context, recoveredID string, p
 		return
 	}
 
+	log.WithFields(log.Fields{"ProcessID": msg.ProcessID, "Channel": msg.Name, "Sequence": msg.Sequence}).Info("Successfully appended to channel")
 	h.server.SendEmptyHTTPReply(c, payloadType)
 }
 

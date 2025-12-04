@@ -95,11 +95,19 @@ type AssignResult struct {
 	ResumeChannel <-chan bool
 }
 
-type EventHandler struct{}
+type EventHandler struct {
+	realHandler backends.RealtimeEventHandler
+}
+
+func NewEventHandler(handler backends.RealtimeEventHandler) *EventHandler {
+	return &EventHandler{realHandler: handler}
+}
 
 func (e *EventHandler) WaitForProcess(executorType string, state int, processID string, ctx context.Context) (*core.Process, error) {
-	// This is a placeholder - actual implementation would be in the server adapter
-	return nil, nil
+	if e.realHandler == nil {
+		return nil, nil
+	}
+	return e.realHandler.WaitForProcess(executorType, state, processID, ctx)
 }
 
 type Server interface {

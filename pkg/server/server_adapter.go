@@ -384,8 +384,8 @@ func (c *processControllerAdapter) AreColonyAssignmentsPaused(colonyName string)
 }
 
 func (c *processControllerAdapter) GetEventHandler() *process.EventHandler {
-	// Convert the internal event handler to the process handler's EventHandler
-	return &process.EventHandler{}
+	// Wrap the real event handler from the controller
+	return process.NewEventHandler(c.controller.GetEventHandler())
 }
 
 func (c *processControllerAdapter) IsLeader() bool {

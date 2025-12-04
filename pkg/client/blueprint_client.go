@@ -216,3 +216,21 @@ func (client *ColoniesClient) UpdateBlueprintStatus(colonyName, blueprintName st
 
 	return nil
 }
+
+// ReconcileBlueprint triggers immediate reconciliation of a blueprint
+// The server looks up the executor type from the blueprint's handler configuration
+// If force is true, the generation will be bumped to trigger redeployment
+func (client *ColoniesClient) ReconcileBlueprint(namespace, name string, force bool, prvKey string) (*core.Process, error) {
+	msg := rpc.CreateReconcileBlueprintMsg(namespace, name, force)
+	jsonString, err := msg.ToJSON()
+	if err != nil {
+		return nil, err
+	}
+
+	respBodyString, err := client.sendMessage(rpc.ReconcileBlueprintPayloadType, jsonString, prvKey, false, context.TODO())
+	if err != nil {
+		return nil, err
+	}
+
+	return core.ConvertJSONToProcess(respBodyString)
+}

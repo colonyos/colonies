@@ -13,37 +13,80 @@ import (
 
 var ErrEventHandlerStopped = errors.New("event handler has been stopped")
 
-// EventHandler implements backends.RealtimeEventHandler for libp2p
+// EventHandler implements backends.RealtimeEventHandler for libp2p.
+//
+// Signal Distribution Strategy (Thundering Herd Prevention):
+//
+// This event handler uses a two-pass signal distribution to prevent the "thundering herd"
+// problem that can cause massive database load amplification.
+//
+// The Problem:
+// When a new process is submitted, executors waiting for work need to be notified.
+// If ALL waiting executors wake up simultaneously (broadcast), they all call Assign()
+// at once, creating a stampede of database operations. With 8 executors and buffered
+// channels allowing rapid re-wake, this caused 1,840x amplification in production
+// (19.7M database updates for 1,341 processes instead of ~10K expected).
+//
+// The Solution - Two-Pass Distribution:
+//
+// Pass 1 (Broadcast): Notify ALL listeners waiting for a SPECIFIC processID.
+// This is used for state change notifications (e.g., process completed) where
+// the caller needs to know about their specific process.
+//
+// Pass 2 (Single Wake-up with Round-Robin): Wake exactly ONE general listener.
+// General listeners are executors waiting for ANY process of their type.
+// Only one executor should wake up per signal to attempt assignment.
+// Round-robin ensures fair distribution across executors.
+//
+// Round-Robin Load Balancing:
+// The nextExecutor map tracks which executor should receive the next signal
+// for each target (executorType+state combination). This ensures all executors
+// get equal opportunity to receive work, preventing any single executor from
+// being starved or overloaded.
 type EventHandler struct {
-	relayServer interface{}
-	listeners   map[string][]chan *core.Process
-	listenersMu sync.RWMutex
-	stopped     bool
-	stopChan    chan struct{}
+	relayServer  interface{}
+	listeners    map[string][]chan *core.Process // key -> list of listener channels
+	nextExecutor map[string]int                  // key -> round-robin index for fair distribution
+	listenersMu  sync.RWMutex
+	stopped      bool
+	stopChan     chan struct{}
 }
 
 // NewEventHandler creates a new libp2p event handler
 func NewEventHandler(relayServer interface{}) backends.RealtimeEventHandler {
 	return &EventHandler{
-		relayServer: relayServer,
-		listeners:   make(map[string][]chan *core.Process),
-		stopChan:    make(chan struct{}),
+		relayServer:  relayServer,
+		listeners:    make(map[string][]chan *core.Process),
+		nextExecutor: make(map[string]int),
+		stopChan:     make(chan struct{}),
 	}
 }
 
-// Signal sends a process event to all registered listeners
+// Signal distributes a process event to registered listeners using two-pass distribution.
+//
+// This is the core of the thundering herd prevention mechanism. See EventHandler
+// documentation for the full explanation of the problem and solution.
+//
+// Algorithm:
+//  1. Pass 1: Broadcast to all listeners waiting for this specific processID
+//  2. Pass 2: Wake exactly ONE general listener using round-robin selection
+//
+// The round-robin selection ensures fair distribution:
+//   - Listeners are stored in slice order (stable for libp2p unlike gin's map)
+//   - nextExecutor[key] tracks which listener is next in rotation
+//   - If the selected listener's channel is full, try the next one
+//   - After successful send, advance the index for next time
 func (e *EventHandler) Signal(process *core.Process) {
 	e.listenersMu.RLock()
 	defer e.listenersMu.RUnlock()
-	
+
 	if e.stopped {
 		return
 	}
-	
-	// Create key for this process type and state
+
+	// Pass 1: Broadcast to all listeners waiting for this specific processID.
+	// These are callers waiting for state changes on a process they submitted/own.
 	key := e.getListenerKey(process.FunctionSpec.Conditions.ExecutorType, process.State, process.ID)
-	
-	// Send to specific listeners
 	if listeners, exists := e.listeners[key]; exists {
 		for _, ch := range listeners {
 			select {
@@ -54,15 +97,28 @@ func (e *EventHandler) Signal(process *core.Process) {
 			}
 		}
 	}
-	
-	// Send to general listeners (without specific process ID)
+
+	// Pass 2: Wake ONE general listener using round-robin.
+	// General listeners are executors waiting for ANY process of their type.
 	generalKey := e.getListenerKey(process.FunctionSpec.Conditions.ExecutorType, process.State, "")
 	if listeners, exists := e.listeners[generalKey]; exists {
-		for _, ch := range listeners {
+		if len(listeners) == 0 {
+			return
+		}
+
+		// Get current round-robin index and ensure it's valid
+		idx := e.nextExecutor[generalKey] % len(listeners)
+
+		// Try each listener starting from idx, wrapping around if channel is full
+		for i := 0; i < len(listeners); i++ {
+			ch := listeners[(idx+i)%len(listeners)]
 			select {
 			case ch <- process:
+				// Success - advance round-robin index for next signal
+				e.nextExecutor[generalKey] = (idx + i + 1) % len(listeners)
+				return
 			default:
-				logrus.Warn("Listener channel full, dropping process event")
+				continue // Channel full, try next listener
 			}
 		}
 	}
@@ -173,9 +229,10 @@ type TestableEventHandler struct {
 func NewTestableEventHandler(relayServer interface{}) backends.TestableRealtimeEventHandler {
 	return &TestableEventHandler{
 		EventHandler: &EventHandler{
-			relayServer: relayServer,
-			listeners:   make(map[string][]chan *core.Process),
-			stopChan:    make(chan struct{}),
+			relayServer:  relayServer,
+			listeners:    make(map[string][]chan *core.Process),
+			nextExecutor: make(map[string]int),
+			stopChan:     make(chan struct{}),
 		},
 	}
 }

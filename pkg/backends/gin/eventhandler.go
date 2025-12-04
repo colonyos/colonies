@@ -3,6 +3,7 @@ package gin
 import (
 	"context"
 	"errors"
+	"sort"
 	"strconv"
 	"sync"
 
@@ -12,10 +13,40 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// DefaultEventHandler implements the backends.RealtimeEventHandler interface
+// DefaultEventHandler implements the backends.RealtimeEventHandler interface.
+//
+// Signal Distribution Strategy (Thundering Herd Prevention):
+//
+// This event handler uses a two-pass signal distribution to prevent the "thundering herd"
+// problem that can cause massive database load amplification.
+//
+// The Problem:
+// When a new process is submitted, executors waiting for work need to be notified.
+// If ALL waiting executors wake up simultaneously (broadcast), they all call Assign()
+// at once, creating a stampede of database operations. With 8 executors and buffered
+// channels allowing rapid re-wake, this caused 1,840x amplification in production
+// (19.7M database updates for 1,341 processes instead of ~10K expected).
+//
+// The Solution - Two-Pass Distribution:
+//
+// Pass 1 (Broadcast): Notify ALL listeners waiting for a SPECIFIC processID.
+// This is used for state change notifications (e.g., process completed) where
+// the caller needs to know about their specific process.
+//
+// Pass 2 (Single Wake-up with Round-Robin): Wake exactly ONE general listener.
+// General listeners are executors waiting for ANY process of their type.
+// Only one executor should wake up per signal to attempt assignment.
+// Round-robin ensures fair distribution across executors.
+//
+// Round-Robin Load Balancing:
+// The nextExecutor map tracks which executor should receive the next signal
+// for each target (executorType+state combination). This ensures all executors
+// get equal opportunity to receive work, preventing any single executor from
+// being starved or overloaded.
 type DefaultEventHandler struct {
-	listeners         map[string]map[string]chan *core.Process
-	processIDs        map[string]string
+	listeners         map[string]map[string]chan *core.Process // target -> listenerID -> channel
+	processIDs        map[string]string                        // listenerID -> processID (for specific process listeners)
+	nextExecutor      map[string]int                           // target -> round-robin index for fair distribution
 	msgQueue          chan *message
 	idCounter         int
 	stopped           bool
@@ -45,6 +76,7 @@ func CreateEventHandler(relayServer *cluster.RelayServer) backends.RealtimeEvent
 	handler := &DefaultEventHandler{}
 	handler.listeners = make(map[string]map[string]chan *core.Process)
 	handler.processIDs = make(map[string]string)
+	handler.nextExecutor = make(map[string]int)
 	handler.msgQueue = make(chan *message)
 	handler.relayServer = relayServer
 
@@ -69,6 +101,7 @@ func CreateTestableEventHandler(relayServer *cluster.RelayServer) backends.Testa
 	handler := &DefaultEventHandler{}
 	handler.listeners = make(map[string]map[string]chan *core.Process)
 	handler.processIDs = make(map[string]string)
+	handler.nextExecutor = make(map[string]int)
 	handler.msgQueue = make(chan *message)
 	handler.relayServer = relayServer
 
@@ -157,17 +190,70 @@ func (handler *DefaultEventHandler) unregister(executorType string, state int, l
 	}
 }
 
+// sendSignal distributes a process event to registered listeners using two-pass distribution.
+//
+// This is the core of the thundering herd prevention mechanism. See DefaultEventHandler
+// documentation for the full explanation of the problem and solution.
+//
+// Algorithm:
+//  1. Find all listeners for this process's executorType and state
+//  2. Pass 1: Broadcast to all listeners waiting for this specific processID
+//  3. Pass 2: Wake exactly ONE general listener using round-robin selection
+//
+// The round-robin selection ensures fair distribution:
+//   - Listener IDs are sorted for deterministic ordering
+//   - nextExecutor[target] tracks which listener is next in rotation
+//   - If the selected listener's channel is full, try the next one
+//   - After successful send, advance the index for next time
 func (handler *DefaultEventHandler) sendSignal(process *core.Process) {
 	msg := &message{reply: make(chan replyMessage, 100), handler: func(msg *message) {
 		t := handler.target(process.FunctionSpec.Conditions.ExecutorType, process.State)
 		if _, ok := handler.listeners[t]; ok {
+			// Pass 1: Broadcast to all listeners waiting for this specific processID.
+			// These are callers waiting for state changes on a process they submitted/own.
 			for listenerID, c := range handler.listeners[t] {
 				if processID, ok := handler.processIDs[listenerID]; ok {
 					if process.ID == processID {
-						c <- process.Clone() // Send a copy of the process to all listeners interested in this particular processID
+						select {
+						case c <- process.Clone():
+						default:
+							// Channel full, skip
+						}
 					}
-				} else {
-					c <- process.Clone() // Send a copy of the process to all listeners
+				}
+			}
+
+			// Pass 2: Wake ONE general listener using round-robin.
+			// General listeners are executors waiting for ANY process of their type.
+			// Collect general listener IDs (those without specific processID)
+			var generalListeners []string
+			for listenerID := range handler.listeners[t] {
+				if _, ok := handler.processIDs[listenerID]; !ok {
+					generalListeners = append(generalListeners, listenerID)
+				}
+			}
+
+			if len(generalListeners) == 0 {
+				return
+			}
+
+			// Sort for deterministic round-robin order (Go maps iterate randomly)
+			sort.Strings(generalListeners)
+
+			// Get current round-robin index and ensure it's valid
+			idx := handler.nextExecutor[t] % len(generalListeners)
+
+			// Try each listener starting from idx, wrapping around if channel is full
+			for i := 0; i < len(generalListeners); i++ {
+				listenerID := generalListeners[(idx+i)%len(generalListeners)]
+				c := handler.listeners[t][listenerID]
+				select {
+				case c <- process.Clone():
+					// Success - advance round-robin index for next signal
+					handler.nextExecutor[t] = (idx + i + 1) % len(generalListeners)
+					return
+				default:
+					continue // Channel full, try next listener
 				}
 			}
 		}
