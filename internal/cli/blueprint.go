@@ -77,6 +77,7 @@ func init() {
 
 	reconcileBlueprintCmd.Flags().StringVarP(&PrvKey, "prvkey", "", "", "Private key")
 	reconcileBlueprintCmd.Flags().StringVarP(&BlueprintName, "name", "", "", "Blueprint name")
+	reconcileBlueprintCmd.Flags().BoolVarP(&Force, "force", "f", false, "Force recreation of all containers (restarts with fresh image)")
 	reconcileBlueprintCmd.MarkFlagRequired("name")
 
 	historyBlueprintCmd.Flags().StringVarP(&PrvKey, "prvkey", "", "", "Private key")
@@ -443,44 +444,22 @@ var removeBlueprintCmd = &cobra.Command{
 var reconcileBlueprintCmd = &cobra.Command{
 	Use:   "reconcile",
 	Short: "Trigger immediate reconciliation of a blueprint",
-	Long:  "Trigger immediate reconciliation of a blueprint by running its associated cron",
+	Long:  "Trigger immediate reconciliation of a blueprint. Use --force to recreate all containers with fresh images.",
 	Run: func(cmd *cobra.Command, args []string) {
 		client := setup()
 
-		// Get blueprint
-		blueprint, err := client.GetBlueprint(ColonyName, BlueprintName, PrvKey)
-		CheckError(err)
-
-		// Get cron name from blueprint annotations
-		cronName := blueprint.Metadata.Annotations["reconciliation.cron.name"]
-		if cronName == "" {
-			CheckError(errors.New("Blueprint has no associated reconciliation cron"))
-		}
-
-		// Get all crons in the colony to find the one by name
-		crons, err := client.GetCrons(ColonyName, 1000, PrvKey)
-		CheckError(err)
-
-		var cronID string
-		for _, c := range crons {
-			if c.Name == cronName {
-				cronID = c.ID
-				break
-			}
-		}
-
-		if cronID == "" {
-			CheckError(errors.New("Reconciliation cron not found: " + cronName))
-		}
-
-		// Run the cron
-		_, err = client.RunCron(cronID, PrvKey)
+		// Call server-side reconciliation which looks up executor type from the blueprint handler
+		process, err := client.ReconcileBlueprint(ColonyName, BlueprintName, Force, PrvKey)
 		CheckError(err)
 
 		log.WithFields(log.Fields{
 			"BlueprintName": BlueprintName,
-			"CronName":      cronName,
-		}).Info("Triggered immediate reconciliation")
+			"ProcessID":     process.ID,
+			"Force":         Force,
+		}).Info("Submitted reconciliation process")
+
+		fmt.Printf("Reconciliation process submitted: %s\n", process.ID)
+		fmt.Printf("Use 'colonies log get -p %s' to view progress\n", process.ID)
 	},
 }
 

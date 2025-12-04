@@ -68,6 +68,7 @@ type FunctionSpec struct {
 	Env            map[string]string      `json:"env"`
 	Blueprint       *Blueprint              `json:"blueprint,omitempty"`
 	Reconciliation *Reconciliation        `json:"reconciliation,omitempty"`
+	Channels       []string               `json:"channels,omitempty"`
 }
 
 func CreateEmptyFunctionSpec() *FunctionSpec {

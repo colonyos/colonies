@@ -19,8 +19,7 @@ func printBlueprintDefinitionsTable(sds []*core.BlueprintDefinition) {
 	var cols = []table.Column{
 		{ID: "name", Name: "Name", SortIndex: 1},
 		{ID: "kind", Name: "Kind", SortIndex: 2},
-		{ID: "executortype", Name: "ExecutorType", SortIndex: 3},
-		{ID: "functionname", Name: "FunctionName", SortIndex: 4},
+		{ID: "functionname", Name: "FunctionName", SortIndex: 3},
 	}
 	t.SetCols(cols)
 
@@ -28,7 +27,6 @@ func printBlueprintDefinitionsTable(sds []*core.BlueprintDefinition) {
 		row := []interface{}{
 			termenv.String(sd.Metadata.Name).Foreground(theme.ColorCyan),
 			termenv.String(sd.Spec.Names.Kind).Foreground(theme.ColorViolet),
-			termenv.String(sd.Spec.Handler.ExecutorType).Foreground(theme.ColorMagenta),
 			termenv.String(sd.Spec.Handler.FunctionName).Foreground(theme.ColorBlue),
 		}
 		t.AddRow(row)
@@ -181,9 +179,8 @@ func printBlueprintsTableWithClient(c *client.ColoniesClient, blueprints []*core
 		{ID: "kind", Name: "Kind", SortIndex: 2},
 		{ID: "reconciler", Name: "Reconciler", SortIndex: 3},
 		{ID: "replicas", Name: "Replicas", SortIndex: 4},
-		{ID: "reconciling", Name: "Reconciling", SortIndex: 5},
-		{ID: "oldgen", Name: "OldGen", SortIndex: 6},
-		{ID: "generation", Name: "Gen", SortIndex: 7},
+		{ID: "oldgen", Name: "OldGen", SortIndex: 5},
+		{ID: "generation", Name: "Gen", SortIndex: 6},
 	}
 	t.SetCols(cols)
 
@@ -201,7 +198,7 @@ func printBlueprintsTableWithClient(c *client.ColoniesClient, blueprints []*core
 	}
 
 	for _, blueprint := range blueprints {
-		// Get reconciler name from handler or definition
+		// Get reconciler name from handler, spec, or definition
 		reconcilerStr := "-"
 		if blueprint.Handler != nil {
 			if blueprint.Handler.ExecutorName != "" {
@@ -213,7 +210,15 @@ func printBlueprintsTableWithClient(c *client.ColoniesClient, blueprints []*core
 				}
 			}
 		}
-		// Fall back to executor type from definition
+		// Check spec.executorName as fallback (used by docker-reconciler)
+		if reconcilerStr == "-" {
+			if execName, ok := blueprint.GetSpec("executorName"); ok {
+				if nameStr, ok := execName.(string); ok && nameStr != "" {
+					reconcilerStr = nameStr
+				}
+			}
+		}
+		// Fall back to executor type from definition (shown in brackets)
 		if reconcilerStr == "-" {
 			if execType, ok := kindToExecutorType[blueprint.Kind]; ok {
 				reconcilerStr = "[" + execType + "]"
@@ -222,7 +227,6 @@ func printBlueprintsTableWithClient(c *client.ColoniesClient, blueprints []*core
 
 		// Get replica information
 		replicasStr := "-"
-		reconcilingStr := "-"
 		oldGenStr := "-"
 
 		if blueprint.Kind == "ExecutorDeployment" {
@@ -263,12 +267,19 @@ func printBlueprintsTableWithClient(c *client.ColoniesClient, blueprints []*core
 							}
 						} else if executor.BlueprintID == "" {
 							// Fallback to name-based matching for executors without BlueprintID
-							if strings.HasPrefix(executor.Name, blueprint.Metadata.Name+"-") {
-								// Parse generation from executor name (format: name-hash-gen)
-								parts := strings.Split(executor.Name, "-")
-								if len(parts) >= 2 {
+							// Executor name format: <deployment>-<hash>-<generation>
+							// We need to match the deployment name exactly, not just as a prefix
+							// Count hyphens in blueprint name to determine expected executor name structure
+							blueprintHyphens := strings.Count(blueprint.Metadata.Name, "-")
+							executorParts := strings.Split(executor.Name, "-")
+							// Expected parts: deployment parts (blueprintHyphens+1) + hash (1) + generation (1)
+							expectedParts := blueprintHyphens + 3
+							if len(executorParts) == expectedParts {
+								// Reconstruct deployment name from executor name parts
+								deploymentName := strings.Join(executorParts[:blueprintHyphens+1], "-")
+								if deploymentName == blueprint.Metadata.Name {
 									// Last part should be generation
-									lastPart := parts[len(parts)-1]
+									lastPart := executorParts[len(executorParts)-1]
 									var gen int
 									_, err := fmt.Sscanf(lastPart, "%d", &gen)
 									if err == nil {
@@ -300,19 +311,6 @@ func printBlueprintsTableWithClient(c *client.ColoniesClient, blueprints []*core
 				}
 			}
 
-			// Check reconciliation status
-			if c != nil && blueprint.Metadata.LastReconciliationProcess != "" {
-				process, err := c.GetProcess(blueprint.Metadata.LastReconciliationProcess, PrvKey)
-				if err == nil && process != nil {
-					// State: 0=WAITING, 1=RUNNING, 2=SUCCESS, 3=FAILED
-					// Consider both WAITING and RUNNING as "reconciling"
-					if process.State == 0 || process.State == 1 {
-						reconcilingStr = "yes"
-					} else {
-						reconcilingStr = "no"
-					}
-				}
-			}
 		}
 		if blueprint.Kind == "DockerDeployment" {
 			// Get desired replicas from spec
@@ -360,7 +358,6 @@ func printBlueprintsTableWithClient(c *client.ColoniesClient, blueprints []*core
 			termenv.String(blueprint.Kind).Foreground(theme.ColorViolet),
 			termenv.String(reconcilerStr).Foreground(theme.ColorBlue),
 			termenv.String(replicasStr).Foreground(theme.ColorMagenta),
-			termenv.String(reconcilingStr).Foreground(getReconcilingColor(reconcilingStr, theme)),
 			termenv.String(oldGenStr).Foreground(getOldGenColor(oldGenStr, theme)),
 			termenv.String(fmt.Sprintf("%d", blueprint.Metadata.Generation)).Foreground(theme.ColorYellow),
 		}
@@ -368,18 +365,6 @@ func printBlueprintsTableWithClient(c *client.ColoniesClient, blueprints []*core
 	}
 
 	t.Render()
-}
-
-// getReconcilingColor returns appropriate color based on reconciliation status
-func getReconcilingColor(status string, theme table.Theme) termenv.Color {
-	switch status {
-	case "yes":
-		return theme.ColorYellow
-	case "no":
-		return theme.ColorGreen
-	default:
-		return theme.ColorGray
-	}
 }
 
 // getOldGenColor returns appropriate color based on old generation count

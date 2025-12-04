@@ -23,6 +23,7 @@ type Blueprint struct {
 // BlueprintHandler defines executor targeting for blueprint instances
 // This allows targeting specific executor(s) at the instance level
 type BlueprintHandler struct {
+	ExecutorType  string   `json:"executorType,omitempty"`
 	ExecutorName  string   `json:"executorName,omitempty"`
 	ExecutorNames []string `json:"executorNames,omitempty"`
 }

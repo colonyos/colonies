@@ -2,6 +2,8 @@ package realtime_test
 
 import (
 	"context"
+	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -133,6 +135,9 @@ func TestEventHandlerTimeout3(t *testing.T) {
 }
 
 func TestEventHandlerMany(t *testing.T) {
+	// Test that multiple listeners waiting for a SPECIFIC processID all receive the signal.
+	// This tests Pass 1 (broadcast) of the thundering herd prevention mechanism.
+	// Note: General listeners (empty processID) only wake ONE at a time via Pass 2.
 	process := utils.CreateTestProcess(core.GenerateRandomID())
 	process.FunctionSpec.Conditions.ExecutorType = "test_executor_type"
 	process.State = core.WAITING
@@ -149,7 +154,8 @@ func TestEventHandlerMany(t *testing.T) {
 		retChan := make(chan retValues)
 		retChans = append(retChans, retChan)
 		go func() {
-			process, err := handler.WaitForProcess("test_executor_type", core.WAITING, "", ctx)
+			// Use specific processID so all listeners receive the signal (Pass 1 broadcast)
+			process, err := handler.WaitForProcess("test_executor_type", core.WAITING, process.ID, ctx)
 			retChan <- retValues{process: process, err: err}
 		}()
 	}
@@ -164,16 +170,55 @@ func TestEventHandlerMany(t *testing.T) {
 		handler.Signal(process)
 	}()
 
-	// Wait for listers
+	// Wait for listeners - all should receive the signal since they're waiting for specific processID
 	for _, retChan := range retChans {
 		retVal := <-retChan
 		assert.Nil(t, retVal.err) // OK
 		assert.True(t, process.Equals(retVal.process))
 	}
 	allListeners, listeners, processIDs := handler.NumberOfListeners("test_executor_type", core.WAITING)
-	assert.Equal(t, allListeners, 1) // Note 1, as test_executor_type2 was never Signaled
-	assert.Equal(t, listeners, 0)
-	assert.Equal(t, processIDs, 0)
+	assert.Equal(t, 1, allListeners) // Note 1, as test_executor_type2 was never Signaled
+	assert.Equal(t, 0, listeners)
+	assert.Equal(t, 0, processIDs)
+}
+
+func TestEventHandlerThunderingHerdPrevention(t *testing.T) {
+	// Test that general listeners (empty processID) only wake ONE at a time.
+	// This tests Pass 2 (single wake-up) of the thundering herd prevention mechanism.
+	process := utils.CreateTestProcess(core.GenerateRandomID())
+	process.FunctionSpec.Conditions.ExecutorType = "test_executor_type"
+	process.State = core.WAITING
+
+	ctx, cancelCtx := context.WithTimeout(context.Background(), 500*time.Millisecond)
+	defer cancelCtx()
+
+	factory := backendGin.NewFactory()
+	handler := factory.CreateTestableEventHandler(nil)
+
+	// Create 5 general listeners (empty processID)
+	successCount := int32(0)
+	var wg sync.WaitGroup
+	for i := 0; i < 5; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			_, err := handler.WaitForProcess("test_executor_type", core.WAITING, "", ctx)
+			if err == nil {
+				atomic.AddInt32(&successCount, 1)
+			}
+		}()
+	}
+
+	time.Sleep(100 * time.Millisecond)
+
+	// Signal once - only ONE listener should wake up
+	handler.Signal(process)
+
+	// Wait for all goroutines to finish (either success or timeout)
+	wg.Wait()
+
+	// Exactly ONE should have succeeded (thundering herd prevention)
+	assert.Equal(t, int32(1), successCount)
 }
 
 func TestEventHandlerUpdate(t *testing.T) {

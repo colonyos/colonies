@@ -23,8 +23,10 @@ import (
 	"github.com/colonyos/colonies/pkg/security/validator"
 	"github.com/colonyos/colonies/pkg/server/controllers"
 	attributehandlers "github.com/colonyos/colonies/pkg/server/handlers/attribute"
+	channelhandlers "github.com/colonyos/colonies/pkg/server/handlers/channel"
 	"github.com/colonyos/colonies/pkg/server/handlers/colony"
 	cronhandlers "github.com/colonyos/colonies/pkg/server/handlers/cron"
+	"github.com/colonyos/colonies/pkg/channel"
 	"github.com/colonyos/colonies/pkg/server/handlers/executor"
 	filehandlers "github.com/colonyos/colonies/pkg/server/handlers/file"
 	functionhandlers "github.com/colonyos/colonies/pkg/server/handlers/function"
@@ -133,7 +135,9 @@ type Server struct {
 	securityHandlers       *securityhandlers.Handlers
 	fileHandlers           *filehandlers.Handlers
 	realtimeHandlers       *realtimehandlers.Handlers
+	channelHandlers        *channelhandlers.Handlers
 	backendRealtimeHandler realtimehandlers.RealtimeHandler
+	channelRouter          *channel.Router
 
 	// LibP2P components (if using LibP2P backend)
 	libp2pEnabled  bool
@@ -408,6 +412,8 @@ func CreateServerWithBackend(db database.Database,
 	server.blueprintHandlers = blueprinthandlers.NewHandlers(server.serverAdapter)
 	server.securityHandlers = securityhandlers.NewHandlers(server.serverAdapter)
 	server.realtimeHandlers = realtimehandlers.NewHandlers(server.serverAdapter)
+	server.channelRouter = server.controller.GetChannelRouter()
+	server.channelHandlers = channelhandlers.NewHandlers(server.serverAdapter)
 
 	// Create backend-specific realtime handler (currently only Gin/WebSocket is implemented)
 	server.backendRealtimeHandler = backendGin.NewRealtimeHandler(server.serverAdapter)
@@ -525,6 +531,11 @@ func (server *Server) registerHandlers() {
 	// Register log handlers
 	if err := server.logHandlers.RegisterHandlers(server.handlerRegistry); err != nil {
 		log.WithFields(log.Fields{"Error": err}).Fatal("Failed to register log handlers")
+	}
+
+	// Register channel handlers
+	if err := server.channelHandlers.RegisterHandlers(server.handlerRegistry); err != nil {
+		log.WithFields(log.Fields{"Error": err}).Fatal("Failed to register channel handlers")
 	}
 
 	// Register process handlers
@@ -1033,6 +1044,9 @@ func (server *Server) handleLibP2PStream(stream network.Stream) {
 
 	if !handled {
 		errMsg := "invalid rpcMsg.PayloadType: " + rpcMsg.PayloadType
+		if rpcMsg.PayloadType == "" {
+			errMsg = "invalid rpcMsg.PayloadType: empty (this usually means the client is misconfigured - check that COLONIES_PRVKEY and other environment variables are set correctly)"
+		}
 		log.Error(errMsg)
 		server.sendLibP2PError(stream, errors.New(errMsg), http.StatusForbidden)
 		return
@@ -1487,6 +1501,9 @@ func (server *Server) HandleRPC(jsonPayload string) (string, error) {
 
 	if !handled {
 		errMsg := "invalid rpcMsg.PayloadType: " + rpcMsg.PayloadType
+		if rpcMsg.PayloadType == "" {
+			errMsg = "invalid rpcMsg.PayloadType: empty (this usually means the client is misconfigured - check that COLONIES_PRVKEY and other environment variables are set correctly)"
+		}
 		return server.generateRPCErrorJSON(errors.New(errMsg), http.StatusForbidden)
 	}
 
@@ -1703,7 +1720,10 @@ func (server *Server) handleAPIRequest(c backends.Context) {
 	}
 
 	// No handler found for this payload type
-	errMsg := "invalid rpcMsg.PayloadType, " + rpcMsg.PayloadType
+	errMsg := "invalid rpcMsg.PayloadType: " + rpcMsg.PayloadType
+	if rpcMsg.PayloadType == "" {
+		errMsg = "invalid rpcMsg.PayloadType: empty (this usually means the client is misconfigured - check that COLONIES_PRVKEY and other environment variables are set correctly)"
+	}
 	if server.HandleHTTPError(c, errors.New(errMsg), http.StatusForbidden) {
 		log.Error(errMsg)
 		return

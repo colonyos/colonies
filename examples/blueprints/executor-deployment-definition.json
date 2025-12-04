@@ -74,7 +74,7 @@
       "required": ["image", "executorType"]
     },
     "handler": {
-      "executorType": "docker-reconciler",
+      "executorType": "docker-reconciler-home-linux-server",
       "functionName": "reconcile"
     }
   }

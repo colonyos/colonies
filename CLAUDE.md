@@ -2,14 +2,27 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Code Style Guidelines
+
+- Do not use emojis in code, comments, commit messages, or documentation
+- Keep log messages concise and informative
+- Use structured logging with fields (e.g., `log.WithFields`) for context
+
 ## Development Commands
 
 ### Building
 ```bash
 make build              # Build the main colonies binary and libraries
-make container          # Build Docker container  
+make container          # Build Docker container
 make install            # Install binaries to /usr/local/bin
 ```
+
+**IMPORTANT: Container Image Name**
+When building Docker containers, NEVER change the image name. Always use:
+```bash
+BUILD_IMAGE=colonyos/colonies:latest make container
+```
+The deployment docker-compose files expect `colonyos/colonies:latest`. Using a different image name will cause the container to not be updated when restarting.
 
 ### Testing
 ```bash
@@ -61,3 +74,78 @@ The main binary is built from `cmd/main.go` which delegates to `internal/cli/` f
 
 ### Testing Philosophy
 Tests are co-located with source files using `_test.go` suffix. The test suite covers reliability, crypto, core domain models, database layer, RPC protocol, security, and scheduling components.
+
+## Debugging Reconciliation Mechanism
+
+The reconciliation system uses blueprints to manage container deployments. When debugging reconciliation issues:
+
+### Viewing Reconciler Logs
+
+```bash
+# View logs from a specific reconciler executor
+colonies log get -e local-docker-reconciler
+
+# View logs for a specific reconciliation process
+colonies log get -p <processID>
+
+# Follow logs in real-time (requires process ID)
+colonies log get -p <processID> --follow
+```
+
+### Triggering Reconciliation
+
+```bash
+# Normal reconciliation (checks if changes needed)
+colonies blueprint reconcile --name <blueprint-name>
+
+# Force reconciliation (recreates all containers with fresh images)
+colonies blueprint reconcile --name <blueprint-name> --force
+```
+
+### Checking Blueprint and Process Status
+
+```bash
+# List all blueprints
+colonies blueprint ls
+
+# Get blueprint details
+colonies blueprint get --name <blueprint-name>
+
+# Check running processes
+colonies process ps
+
+# Get process details (includes output and errors)
+colonies process get -p <processID>
+```
+
+### Docker Reconciler Container Logs
+
+```bash
+# Find reconciler containers
+docker ps | grep reconciler
+
+# View container logs directly
+docker logs <container-name>
+
+# Follow container logs
+docker logs -f <container-name>
+```
+
+### Common Debugging Scenarios
+
+1. **Process not closing**: Check if executor received the close message via `colonies log get -e <executor>`. Verify channels are cleaned up when process closes.
+
+2. **Containers not starting**: Check reconciler logs for image pull errors or container start failures. Use `colonies log get -p <processID>` to see detailed reconciliation steps.
+
+3. **Force reconcile not working**: Ensure the `--force` flag is being passed. Check logs for "Force flag enabled" message.
+
+4. **Executor not registering**: Check reconciler logs for registration errors. Verify colony owner key has permissions.
+
+### Key Files for Reconciliation
+
+- `pkg/server/handlers/blueprint/handlers.go`: Blueprint CRUD and reconciliation triggering
+- `pkg/channel/router.go`: Channel management (cleanup on process close)
+- Docker reconciler repo (`colonyos/executors/docker-reconciler`):
+  - `pkg/executor/process_handler.go`: Handles reconcile/cleanup processes
+  - `pkg/reconciler/reconciler.go`: Core reconciliation logic
+  - `pkg/reconciler/executor_deployment.go`: ExecutorDeployment handling

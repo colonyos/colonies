@@ -99,6 +99,30 @@ func (db *PQDatabase) GetLogsByProcessIDSince(processID string, limit int, since
 	return logs, nil
 }
 
+// GetLogsByProcessIDLatest returns the latest logs for a process (newest first, then reversed for chronological display)
+func (db *PQDatabase) GetLogsByProcessIDLatest(processID string, limit int) ([]*core.Log, error) {
+	// Get latest logs in descending order, then reverse for chronological display
+	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `LOGS WHERE PROCESS_ID=$1 ORDER BY TS DESC LIMIT $2`
+	rows, err := db.postgresql.Query(sqlStatement, processID, limit)
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	logs, err := db.parseLogs(rows)
+	if err != nil {
+		return nil, err
+	}
+
+	// Reverse to get chronological order (oldest of the latest first)
+	for i, j := 0, len(logs)-1; i < j; i, j = i+1, j-1 {
+		logs[i], logs[j] = logs[j], logs[i]
+	}
+
+	return logs, nil
+}
+
 func (db *PQDatabase) GetLogsByExecutorSince(executorName string, limit int, since int64) ([]*core.Log, error) {
 	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `LOGS WHERE EXECUTOR_NAME=$1 AND TS>$2 ORDER BY TS ASC LIMIT $3`
 	rows, err := db.postgresql.Query(sqlStatement, executorName, since, limit)
@@ -111,6 +135,30 @@ func (db *PQDatabase) GetLogsByExecutorSince(executorName string, limit int, sin
 	logs, err := db.parseLogs(rows)
 	if err != nil {
 		return nil, err
+	}
+
+	return logs, nil
+}
+
+// GetLogsByExecutorLatest returns the latest logs for an executor (newest first, then reversed for chronological display)
+func (db *PQDatabase) GetLogsByExecutorLatest(executorName string, limit int) ([]*core.Log, error) {
+	// Get latest logs in descending order, then reverse for chronological display
+	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `LOGS WHERE EXECUTOR_NAME=$1 ORDER BY TS DESC LIMIT $2`
+	rows, err := db.postgresql.Query(sqlStatement, executorName, limit)
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	logs, err := db.parseLogs(rows)
+	if err != nil {
+		return nil, err
+	}
+
+	// Reverse to get chronological order (oldest of the latest first)
+	for i, j := 0, len(logs)-1; i < j; i, j = i+1, j-1 {
+		logs[i], logs[j] = logs[j], logs[i]
 	}
 
 	return logs, nil

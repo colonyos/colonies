@@ -248,6 +248,138 @@ func TestUpdateBlueprint(t *testing.T) {
 	<-done
 }
 
+func TestUpdateBlueprintGenerationIncrementsOnSpecChange(t *testing.T) {
+	env, client, server, _, done := server.SetupTestEnv2(t)
+
+	// Add BlueprintDefinition
+	sd := core.CreateBlueprintDefinition(
+		"gen-test",
+		"example.com",
+		"v1",
+		"GenTest",
+		"gentests",
+		"Namespaced",
+		"test_controller",
+		"reconcile",
+	)
+	sd.Metadata.ColonyName = env.ColonyName
+	_, err := client.AddBlueprintDefinition(sd, env.ColonyPrvKey)
+	assert.Nil(t, err)
+
+	// Add Blueprint
+	blueprint := core.CreateBlueprint("GenTest", "test-app", env.ColonyName)
+	blueprint.SetSpec("version", "1.0.0")
+	addedBlueprint, err := client.AddBlueprint(blueprint, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	initialGeneration := addedBlueprint.Metadata.Generation
+
+	// Update Blueprint with spec change - generation should increment
+	addedBlueprint.SetSpec("version", "1.1.0")
+	updatedBlueprint, err := client.UpdateBlueprint(addedBlueprint, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.Equal(t, initialGeneration+1, updatedBlueprint.Metadata.Generation, "Generation should increment on spec change")
+
+	// Update Blueprint without spec change - generation should NOT increment
+	unchangedBlueprint, err := client.UpdateBlueprint(updatedBlueprint, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.Equal(t, updatedBlueprint.Metadata.Generation, unchangedBlueprint.Metadata.Generation, "Generation should NOT increment without spec change")
+
+	server.Shutdown()
+	<-done
+}
+
+func TestUpdateBlueprintWithForceGeneration(t *testing.T) {
+	env, client, server, _, done := server.SetupTestEnv2(t)
+
+	// Add BlueprintDefinition
+	sd := core.CreateBlueprintDefinition(
+		"force-gen-test",
+		"example.com",
+		"v1",
+		"ForceGenTest",
+		"forcegentests",
+		"Namespaced",
+		"test_controller",
+		"reconcile",
+	)
+	sd.Metadata.ColonyName = env.ColonyName
+	_, err := client.AddBlueprintDefinition(sd, env.ColonyPrvKey)
+	assert.Nil(t, err)
+
+	// Add Blueprint
+	blueprint := core.CreateBlueprint("ForceGenTest", "test-app", env.ColonyName)
+	blueprint.SetSpec("replicas", 3)
+	addedBlueprint, err := client.AddBlueprint(blueprint, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	initialGeneration := addedBlueprint.Metadata.Generation
+
+	// Update Blueprint WITHOUT spec change and WITHOUT force - generation should NOT increment
+	unchangedBlueprint, err := client.UpdateBlueprint(addedBlueprint, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.Equal(t, initialGeneration, unchangedBlueprint.Metadata.Generation, "Generation should NOT increment without spec change or force")
+
+	// Update Blueprint WITHOUT spec change but WITH force - generation SHOULD increment
+	forcedBlueprint, err := client.UpdateBlueprintWithForce(unchangedBlueprint, true, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.Equal(t, initialGeneration+1, forcedBlueprint.Metadata.Generation, "Generation should increment with force=true even without spec change")
+
+	// Force again - should increment again
+	forcedBlueprint2, err := client.UpdateBlueprintWithForce(forcedBlueprint, true, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.Equal(t, initialGeneration+2, forcedBlueprint2.Metadata.Generation, "Generation should increment again with force=true")
+
+	// Update with force=false and no spec change - should NOT increment
+	noForcedBlueprint, err := client.UpdateBlueprintWithForce(forcedBlueprint2, false, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.Equal(t, forcedBlueprint2.Metadata.Generation, noForcedBlueprint.Metadata.Generation, "Generation should NOT increment with force=false and no spec change")
+
+	server.Shutdown()
+	<-done
+}
+
+func TestUpdateBlueprintWithForceTriggersReconciliation(t *testing.T) {
+	env, client, server, _, done := server.SetupTestEnv2(t)
+
+	// Add BlueprintDefinition with handler
+	sd := core.CreateBlueprintDefinition(
+		"force-recon-test",
+		"example.com",
+		"v1",
+		"ForceReconTest",
+		"forcerecontests",
+		"Namespaced",
+		"recon_controller",
+		"reconcile",
+	)
+	sd.Spec.Handler.ReconcileInterval = 60
+	sd.Metadata.ColonyName = env.ColonyName
+	_, err := client.AddBlueprintDefinition(sd, env.ColonyPrvKey)
+	assert.Nil(t, err)
+
+	// Add Blueprint
+	blueprint := core.CreateBlueprint("ForceReconTest", "test-app", env.ColonyName)
+	blueprint.SetSpec("replicas", 3)
+	addedBlueprint, err := client.AddBlueprint(blueprint, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+
+	// Get initial waiting process count (from blueprint create)
+	waitingProcs, err := client.GetWaitingProcesses(env.ColonyName, "", "", "", 100, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	initialWaitingCount := len(waitingProcs)
+
+	// Force update (no spec change) - should trigger reconciliation
+	_, err = client.UpdateBlueprintWithForce(addedBlueprint, true, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+
+	// Verify that a new reconciliation process was created
+	waitingProcsAfter, err := client.GetWaitingProcesses(env.ColonyName, "", "", "", 100, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.Greater(t, len(waitingProcsAfter), initialWaitingCount, "Should have created a new reconciliation process after force update")
+
+	server.Shutdown()
+	<-done
+}
+
 func TestRemoveBlueprint(t *testing.T) {
 	env, client, server, _, done := server.SetupTestEnv2(t)
 
@@ -907,6 +1039,147 @@ func TestRemoveBlueprintCreatesCleanupProcess(t *testing.T) {
 	// Verify the blueprint was removed from database
 	_, err = client.GetBlueprint(env.ColonyName, addedBlueprint.Metadata.Name, env.ExecutorPrvKey)
 	assert.NotNil(t, err, "Blueprint should not exist in database after removal")
+
+	server.Shutdown()
+	<-done
+}
+
+func TestUpdateBlueprintTriggersCron(t *testing.T) {
+	env, client, server, _, done := server.SetupTestEnv2(t)
+
+	// Add BlueprintDefinition with handler configured
+	sd := core.CreateBlueprintDefinition(
+		"worker",
+		"example.com",
+		"v1",
+		"Worker",
+		"workers",
+		"Namespaced",
+		"worker_reconciler", // ExecutorType
+		"reconcile_worker",  // FunctionName
+	)
+	sd.Spec.Handler.ReconcileInterval = 60 // Configure reconcile interval
+	sd.Metadata.ColonyName = env.ColonyName
+	_, err := client.AddBlueprintDefinition(sd, env.ColonyPrvKey)
+	assert.Nil(t, err)
+
+	// Add Blueprint - this should auto-create a cron
+	blueprint := core.CreateBlueprint("Worker", "my-worker", env.ColonyName)
+	blueprint.SetSpec("replicas", 3)
+	addedBlueprint, err := client.AddBlueprint(blueprint, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+
+	// Verify cron was created
+	crons, err := client.GetCrons(env.ColonyName, 100, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.Equal(t, 1, len(crons), "Should have one cron for the Worker kind")
+	assert.Equal(t, "reconcile-Worker", crons[0].Name)
+	cronID := crons[0].ID
+
+	// Get initial waiting process count (from blueprint create)
+	waitingProcs, err := client.GetWaitingProcesses(env.ColonyName, "", "", "", 100, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	initialWaitingCount := len(waitingProcs)
+
+	// Update Blueprint spec to trigger reconciliation
+	addedBlueprint.SetSpec("replicas", 5)
+	updatedBlueprint, err := client.UpdateBlueprint(addedBlueprint, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.NotNil(t, updatedBlueprint)
+
+	// Verify replicas updated
+	replicas, ok := updatedBlueprint.GetSpec("replicas")
+	assert.True(t, ok)
+	assert.Equal(t, float64(5), replicas) // JSON unmarshals numbers as float64
+
+	// Verify that a new reconciliation process was created (cron was triggered)
+	waitingProcs, err = client.GetWaitingProcesses(env.ColonyName, "", "", "", 100, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+
+	// Should have more processes than before (the reconciliation process created by the cron trigger)
+	assert.Greater(t, len(waitingProcs), initialWaitingCount, "Should have created a new reconciliation process")
+
+	// Find the most recent reconciliation process
+	var reconProcess *core.Process
+	for _, proc := range waitingProcs {
+		// Check if it's a reconciliation process with the right kind
+		if kind, ok := proc.FunctionSpec.KwArgs["kind"].(string); ok && kind == "Worker" {
+			reconProcess = proc
+			break
+		}
+	}
+
+	// Verify reconciliation process was created
+	assert.NotNil(t, reconProcess, "Should have created a reconciliation process")
+	assert.Equal(t, "reconcile", reconProcess.FunctionSpec.FuncName) // Consolidated reconciliation always uses "reconcile"
+	assert.Equal(t, "worker_reconciler", reconProcess.FunctionSpec.Conditions.ExecutorType)
+
+	// Verify the process has the correct kwargs
+	kind, ok := reconProcess.FunctionSpec.KwArgs["kind"].(string)
+	assert.True(t, ok, "Process should have 'kind' kwarg")
+	assert.Equal(t, "Worker", kind)
+
+	// Verify the cron still exists and has the same ID (not recreated)
+	cronsAfter, err := client.GetCrons(env.ColonyName, 100, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.Equal(t, 1, len(cronsAfter), "Should still have only one cron")
+	assert.Equal(t, cronID, cronsAfter[0].ID, "Cron ID should not have changed")
+
+	server.Shutdown()
+	<-done
+}
+
+func TestGetBlueprintDefinitionByKind(t *testing.T) {
+	env, client, server, _, done := server.SetupTestEnv2(t)
+
+	// Create and add BlueprintDefinition for "ExecutorDeployment"
+	sd1 := core.CreateBlueprintDefinition(
+		"executor-deployment",
+		"colonies.io",
+		"v1",
+		"ExecutorDeployment",
+		"executordeployments",
+		"Namespaced",
+		"docker_reconciler",
+		"reconcile",
+	)
+	sd1.Metadata.ColonyName = env.ColonyName
+	_, err := client.AddBlueprintDefinition(sd1, env.ColonyPrvKey)
+	assert.Nil(t, err)
+
+	// Create and add BlueprintDefinition for "DockerDeployment"
+	sd2 := core.CreateBlueprintDefinition(
+		"docker-deployment",
+		"colonies.io",
+		"v1",
+		"DockerDeployment",
+		"dockerdeployments",
+		"Namespaced",
+		"docker_reconciler",
+		"reconcile",
+	)
+	sd2.Metadata.ColonyName = env.ColonyName
+	_, err = client.AddBlueprintDefinition(sd2, env.ColonyPrvKey)
+	assert.Nil(t, err)
+
+	// Test GetBlueprintDefinitionByKind - find ExecutorDeployment
+	foundSD, err := client.GetBlueprintDefinitionByKind(env.ColonyName, "ExecutorDeployment", env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.NotNil(t, foundSD)
+	assert.Equal(t, "ExecutorDeployment", foundSD.Spec.Names.Kind)
+	assert.Equal(t, "executor-deployment", foundSD.Metadata.Name)
+
+	// Test GetBlueprintDefinitionByKind - find DockerDeployment
+	foundSD2, err := client.GetBlueprintDefinitionByKind(env.ColonyName, "DockerDeployment", env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.NotNil(t, foundSD2)
+	assert.Equal(t, "DockerDeployment", foundSD2.Spec.Names.Kind)
+	assert.Equal(t, "docker-deployment", foundSD2.Metadata.Name)
+
+	// Test GetBlueprintDefinitionByKind - non-existent kind returns nil
+	notFoundSD, err := client.GetBlueprintDefinitionByKind(env.ColonyName, "NonExistentKind", env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.Nil(t, notFoundSD)
 
 	server.Shutdown()
 	<-done

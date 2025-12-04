@@ -15,6 +15,7 @@ const (
 type Location struct {
 	Long        float64 `json:"long"`
 	Lat         float64 `json:"lat"`
+	Name        string  `json:"name"`
 	Description string  `json:"desc"`
 }
 
@@ -35,6 +36,7 @@ type Hardware struct {
 	Model        string   `json:"model"`
 	Nodes        int      `json:"nodes"`
 	CPU          string   `json:"cpu"`
+	Cores        int      `json:"cores"`
 	Memory       string   `json:"mem"`
 	Storage      string   `json:"storage"`
 	GPU          GPU      `json:"gpu"`
@@ -44,8 +46,8 @@ type Hardware struct {
 }
 
 type Capabilities struct {
-	Hardware Hardware `json:"hardware"`
-	Software Software `json:"software"`
+	Hardware []Hardware `json:"hardware"`
+	Software []Software `json:"software"`
 }
 
 type Project struct {
@@ -197,47 +199,15 @@ func (executor *Executor) Equals(executor2 *Executor) bool {
 		same = false
 	}
 
-	if executor.Capabilities.Hardware.Nodes != executor2.Capabilities.Hardware.Nodes {
+	if executor.Location.Name != executor2.Location.Name {
 		same = false
 	}
 
-	if executor.Capabilities.Hardware.CPU != executor2.Capabilities.Hardware.CPU {
+	if !IsHardwareArraysEqual(executor.Capabilities.Hardware, executor2.Capabilities.Hardware) {
 		same = false
 	}
 
-	if executor.Capabilities.Hardware.Memory != executor2.Capabilities.Hardware.Memory {
-		same = false
-	}
-
-	if executor.Capabilities.Hardware.Storage != executor2.Capabilities.Hardware.Storage {
-		same = false
-	}
-
-	if executor.Capabilities.Hardware.GPU.Name != executor2.Capabilities.Hardware.GPU.Name {
-		same = false
-	}
-
-	if executor.Capabilities.Hardware.GPU.Memory != executor2.Capabilities.Hardware.GPU.Memory {
-		same = false
-	}
-
-	if executor.Capabilities.Hardware.GPU.Count != executor2.Capabilities.Hardware.GPU.Count {
-		same = false
-	}
-
-	if executor.Capabilities.Hardware.GPU.NodeCount != executor2.Capabilities.Hardware.GPU.NodeCount {
-		same = false
-	}
-
-	if executor.Capabilities.Software.Name != executor2.Capabilities.Software.Name {
-		same = false
-	}
-
-	if executor.Capabilities.Software.Type != executor2.Capabilities.Software.Type {
-		same = false
-	}
-
-	if executor.Capabilities.Software.Version != executor2.Capabilities.Software.Version {
+	if !IsSoftwareArraysEqual(executor.Capabilities.Software, executor2.Capabilities.Software) {
 		same = false
 	}
 
@@ -260,6 +230,91 @@ func (executor *Executor) Equals(executor2 *Executor) bool {
 	}
 
 	return same
+}
+
+func IsHardwareEqual(hw1 Hardware, hw2 Hardware) bool {
+	if hw1.Model != hw2.Model {
+		return false
+	}
+	if hw1.Nodes != hw2.Nodes {
+		return false
+	}
+	if hw1.CPU != hw2.CPU {
+		return false
+	}
+	if hw1.Cores != hw2.Cores {
+		return false
+	}
+	if hw1.Memory != hw2.Memory {
+		return false
+	}
+	if hw1.Storage != hw2.Storage {
+		return false
+	}
+	if hw1.Platform != hw2.Platform {
+		return false
+	}
+	if hw1.Architecture != hw2.Architecture {
+		return false
+	}
+	if hw1.GPU.Name != hw2.GPU.Name {
+		return false
+	}
+	if hw1.GPU.Memory != hw2.GPU.Memory {
+		return false
+	}
+	if hw1.GPU.Count != hw2.GPU.Count {
+		return false
+	}
+	if hw1.GPU.NodeCount != hw2.GPU.NodeCount {
+		return false
+	}
+	if len(hw1.Network) != len(hw2.Network) {
+		return false
+	}
+	for i, n := range hw1.Network {
+		if n != hw2.Network[i] {
+			return false
+		}
+	}
+	return true
+}
+
+func IsHardwareArraysEqual(hw1 []Hardware, hw2 []Hardware) bool {
+	if len(hw1) != len(hw2) {
+		return false
+	}
+	for i, h := range hw1 {
+		if !IsHardwareEqual(h, hw2[i]) {
+			return false
+		}
+	}
+	return true
+}
+
+func IsSoftwareEqual(sw1 Software, sw2 Software) bool {
+	if sw1.Name != sw2.Name {
+		return false
+	}
+	if sw1.Type != sw2.Type {
+		return false
+	}
+	if sw1.Version != sw2.Version {
+		return false
+	}
+	return true
+}
+
+func IsSoftwareArraysEqual(sw1 []Software, sw2 []Software) bool {
+	if len(sw1) != len(sw2) {
+		return false
+	}
+	for i, s := range sw1 {
+		if !IsSoftwareEqual(s, sw2[i]) {
+			return false
+		}
+	}
+	return true
 }
 
 func IsProjectEqual(project1 Project, project2 Project) bool {

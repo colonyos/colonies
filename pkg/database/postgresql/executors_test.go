@@ -64,19 +64,19 @@ func TestAddExecutor(t *testing.T) {
 	assert.Nil(t, err)
 
 	executor := utils.CreateTestExecutor(colony.Name)
-	executor.Capabilities.Software.Name = "sw_name"
-	executor.Capabilities.Software.Type = "sw_type"
-	executor.Capabilities.Software.Version = "sw_version"
+	executor.Capabilities.Software[0].Name = "sw_name"
+	executor.Capabilities.Software[0].Type = "sw_type"
+	executor.Capabilities.Software[0].Version = "sw_version"
 
-	executor.Capabilities.Hardware.Model = "model"
-	executor.Capabilities.Hardware.Nodes = 10
-	executor.Capabilities.Hardware.CPU = "1000m"
-	executor.Capabilities.Hardware.Memory = "10G"
-	executor.Capabilities.Hardware.Storage = "1000G"
-	executor.Capabilities.Hardware.GPU.Name = "nvidia_2080ti"
-	executor.Capabilities.Hardware.GPU.Count = 4000
-	executor.Capabilities.Hardware.GPU.NodeCount = 4
-	executor.Capabilities.Hardware.GPU.Memory = "10G"
+	executor.Capabilities.Hardware[0].Model = "model"
+	executor.Capabilities.Hardware[0].Nodes = 10
+	executor.Capabilities.Hardware[0].CPU = "1000m"
+	executor.Capabilities.Hardware[0].Memory = "10G"
+	executor.Capabilities.Hardware[0].Storage = "1000G"
+	executor.Capabilities.Hardware[0].GPU.Name = "nvidia_2080ti"
+	executor.Capabilities.Hardware[0].GPU.Count = 4000
+	executor.Capabilities.Hardware[0].GPU.NodeCount = 4
+	executor.Capabilities.Hardware[0].GPU.Memory = "10G"
 
 	err = db.AddExecutor(executor)
 	assert.Nil(t, err)
@@ -91,19 +91,51 @@ func TestAddExecutor(t *testing.T) {
 	assert.False(t, executorFromDB.IsApproved())
 	assert.False(t, executorFromDB.IsRejected())
 
-	assert.Equal(t, executor.Capabilities.Software.Name, "sw_name")
-	assert.Equal(t, executor.Capabilities.Software.Type, "sw_type")
-	assert.Equal(t, executor.Capabilities.Software.Version, "sw_version")
+	assert.Len(t, executor.Capabilities.Software, 1)
+	assert.Equal(t, executor.Capabilities.Software[0].Name, "sw_name")
+	assert.Equal(t, executor.Capabilities.Software[0].Type, "sw_type")
+	assert.Equal(t, executor.Capabilities.Software[0].Version, "sw_version")
 
-	assert.Equal(t, executor.Capabilities.Hardware.Model, "model")
-	assert.Equal(t, executor.Capabilities.Hardware.Nodes, 10)
-	assert.Equal(t, executor.Capabilities.Hardware.CPU, "1000m")
-	assert.Equal(t, executor.Capabilities.Hardware.Memory, "10G")
-	assert.Equal(t, executor.Capabilities.Hardware.Storage, "1000G")
-	assert.Equal(t, executor.Capabilities.Hardware.GPU.Name, "nvidia_2080ti")
-	assert.Equal(t, executor.Capabilities.Hardware.GPU.Count, 4000)
-	assert.Equal(t, executor.Capabilities.Hardware.GPU.NodeCount, 4)
-	assert.Equal(t, executor.Capabilities.Hardware.GPU.Memory, "10G")
+	assert.Len(t, executor.Capabilities.Hardware, 1)
+	assert.Equal(t, executor.Capabilities.Hardware[0].Model, "model")
+	assert.Equal(t, executor.Capabilities.Hardware[0].Nodes, 10)
+	assert.Equal(t, executor.Capabilities.Hardware[0].CPU, "1000m")
+	assert.Equal(t, executor.Capabilities.Hardware[0].Memory, "10G")
+	assert.Equal(t, executor.Capabilities.Hardware[0].Storage, "1000G")
+	assert.Equal(t, executor.Capabilities.Hardware[0].GPU.Name, "nvidia_2080ti")
+	assert.Equal(t, executor.Capabilities.Hardware[0].GPU.Count, 4000)
+	assert.Equal(t, executor.Capabilities.Hardware[0].GPU.NodeCount, 4)
+	assert.Equal(t, executor.Capabilities.Hardware[0].GPU.Memory, "10G")
+}
+
+func TestAddExecutorWithLocation(t *testing.T) {
+	db, err := PrepareTests()
+	assert.Nil(t, err)
+
+	defer db.Close()
+
+	colony := core.CreateColony(core.GenerateRandomID(), "test_colony_name_1")
+	err = db.AddColony(colony)
+	assert.Nil(t, err)
+
+	executor := utils.CreateTestExecutor(colony.Name)
+	executor.Location = core.Location{
+		Long:        12.34,
+		Lat:         56.78,
+		Name:        "Home",
+		Description: "Intel i9 + RTX 3080 Ti Server",
+	}
+
+	err = db.AddExecutor(executor)
+	assert.Nil(t, err)
+
+	executorFromDB, err := db.GetExecutorByID(executor.ID)
+	assert.Nil(t, err)
+	assert.NotNil(t, executorFromDB)
+	assert.Equal(t, "Home", executorFromDB.Location.Name)
+	assert.Equal(t, "Intel i9 + RTX 3080 Ti Server", executorFromDB.Location.Description)
+	assert.Equal(t, 12.34, executorFromDB.Location.Long)
+	assert.Equal(t, 56.78, executorFromDB.Location.Lat)
 }
 
 func TestAddExecutorWithAllocations(t *testing.T) {

@@ -3,9 +3,10 @@ package controllers
 import (
 	"time"
 
+	"github.com/colonyos/colonies/pkg/backends"
+	"github.com/colonyos/colonies/pkg/channel"
 	"github.com/colonyos/colonies/pkg/cluster"
 	"github.com/colonyos/colonies/pkg/core"
-	"github.com/colonyos/colonies/pkg/backends"
 )
 
 type Controller interface {
@@ -86,4 +87,5 @@ type Controller interface {
 	BlockingCmdQueueWorker()
 	RetentionWorker()
 	CmdQueueWorker()
+	GetChannelRouter() *channel.Router
 }

@@ -473,37 +473,38 @@ func checkDevEnv() {
 }
 
 func envError() {
-	env := `export COLONIES_SERVER_TLS="true"
-export COLONIES_SERVER_HOST=""
-export COLONIES_SERVER_PORT=""
-export COLONIES_COLONY_NAME=""
-export COLONIES_PRVKEY=""
-    `
-
-	log.Error("Please set the following environmental variable: \n\n" + env)
-	os.Exit(-1)
+	fmt.Fprintln(os.Stderr, "")
+	fmt.Fprintln(os.Stderr, "Missing required environment variables. Did you forget to source your env file?")
+	fmt.Fprintln(os.Stderr, "")
+	fmt.Fprintln(os.Stderr, "  source docker-compose.env")
+	fmt.Fprintln(os.Stderr, "")
+	fmt.Fprintln(os.Stderr, "Required variables:")
+	fmt.Fprintln(os.Stderr, "  COLONIES_SERVER_HOST   - Colonies server hostname")
+	fmt.Fprintln(os.Stderr, "  COLONIES_SERVER_PORT   - Colonies server port (e.g., 50080)")
+	fmt.Fprintln(os.Stderr, "  COLONIES_COLONY_NAME   - Name of the colony")
+	fmt.Fprintln(os.Stderr, "  COLONIES_PRVKEY        - Your private key for authentication")
+	fmt.Fprintln(os.Stderr, "")
+	os.Exit(1)
 }
 
 func setup() *client.ColoniesClient {
 	parseEnv()
 
-	if ColonyName == "" {
-		log.Error("COLONIES_COLONY_NAME not set")
-		envError()
-	}
-
-	if PrvKey == "" {
-		log.Error("COLONIES_PRVKEY not set")
-		envError()
-	}
-
+	missingVars := []string{}
 	if ServerHost == "" {
-		log.Error("COLONIES_SERVER_HOST not set")
-		envError()
+		missingVars = append(missingVars, "COLONIES_SERVER_HOST")
+	}
+	if ColonyName == "" {
+		missingVars = append(missingVars, "COLONIES_COLONY_NAME")
+	}
+	if PrvKey == "" {
+		missingVars = append(missingVars, "COLONIES_PRVKEY")
 	}
 
-	if ColonyName == "" {
-		log.Error("COLONIES_COLONY_NAME not set")
+	if len(missingVars) > 0 {
+		for _, v := range missingVars {
+			log.Errorf("%s not set", v)
+		}
 		envError()
 	}
 

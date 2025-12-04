@@ -387,6 +387,7 @@ func (db *DatabaseMock) CountExecutors() (int, error) { return 0, nil }
 func (db *DatabaseMock) CountExecutorsByColonyName(colonyName string) (int, error) { return 0, nil }
 func (db *DatabaseMock) CountExecutorsByColonyNameAndState(colonyName string, state int) (int, error) { return 0, nil }
 func (db *DatabaseMock) GetExecutorsByBlueprintID(blueprintID string) ([]*core.Executor, error) { return nil, nil }
+func (db *DatabaseMock) UpdateExecutorCapabilities(colonyName string, executorName string, capabilities core.Capabilities) error { return nil }
 
 // ProcessDatabase interface
 func (db *DatabaseMock) AddProcess(process *core.Process) error {
@@ -571,6 +572,8 @@ func (db *DatabaseMock) GetLogsByProcessID(processID string, limit int) ([]*core
 func (db *DatabaseMock) GetLogsByProcessIDSince(processID string, limit int, since int64) ([]*core.Log, error) { return nil, nil }
 func (db *DatabaseMock) GetLogsByExecutor(executorName string, limit int) ([]*core.Log, error) { return nil, nil }
 func (db *DatabaseMock) GetLogsByExecutorSince(executorName string, limit int, since int64) ([]*core.Log, error) { return nil, nil }
+func (db *DatabaseMock) GetLogsByProcessIDLatest(processID string, limit int) ([]*core.Log, error) { return nil, nil }
+func (db *DatabaseMock) GetLogsByExecutorLatest(executorName string, limit int) ([]*core.Log, error) { return nil, nil }
 func (db *DatabaseMock) RemoveLogsByColonyName(colonyName string) error { return nil }
 func (db *DatabaseMock) CountLogs(colonyName string) (int, error) { return 0, nil }
 func (db *DatabaseMock) SearchLogs(colonyName string, text string, days int, count int) ([]*core.Log, error) { return nil, nil }
