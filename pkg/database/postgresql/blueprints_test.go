@@ -516,3 +516,64 @@ func TestBlueprintHistoryWithStatusChanges(t *testing.T) {
 	assert.True(t, ok)
 	assert.Equal(t, float64(0), readyOld)
 }
+
+func TestGetBlueprintsByLocationCaseInsensitive(t *testing.T) {
+	db, err := PrepareTests()
+	assert.Nil(t, err)
+
+	defer db.Close()
+
+	// Create blueprint with lowercase location "home"
+	blueprint1 := core.CreateBlueprint("ExecutorDeployment", "web-1", "production")
+	blueprint1.Metadata.LocationName = "home"
+	blueprint1.SetSpec("image", "nginx:1.21")
+	err = db.AddBlueprint(blueprint1)
+	assert.Nil(t, err)
+
+	// Create blueprint with uppercase location "HOME"
+	blueprint2 := core.CreateBlueprint("ExecutorDeployment", "web-2", "production")
+	blueprint2.Metadata.LocationName = "HOME"
+	blueprint2.SetSpec("image", "nginx:1.22")
+	err = db.AddBlueprint(blueprint2)
+	assert.Nil(t, err)
+
+	// Create blueprint with mixed case location "Home"
+	blueprint3 := core.CreateBlueprint("ExecutorDeployment", "web-3", "production")
+	blueprint3.Metadata.LocationName = "Home"
+	blueprint3.SetSpec("image", "nginx:1.23")
+	err = db.AddBlueprint(blueprint3)
+	assert.Nil(t, err)
+
+	// Create blueprint at different location "office"
+	blueprint4 := core.CreateBlueprint("ExecutorDeployment", "web-4", "production")
+	blueprint4.Metadata.LocationName = "office"
+	blueprint4.SetSpec("image", "nginx:1.24")
+	err = db.AddBlueprint(blueprint4)
+	assert.Nil(t, err)
+
+	// Query with "Home" should return all three home blueprints (case-insensitive)
+	blueprints, err := db.GetBlueprintsByNamespaceKindAndLocation("production", "ExecutorDeployment", "Home")
+	assert.Nil(t, err)
+	assert.Equal(t, 3, len(blueprints))
+
+	// Query with "home" should also return all three
+	blueprints, err = db.GetBlueprintsByNamespaceKindAndLocation("production", "ExecutorDeployment", "home")
+	assert.Nil(t, err)
+	assert.Equal(t, 3, len(blueprints))
+
+	// Query with "HOME" should also return all three
+	blueprints, err = db.GetBlueprintsByNamespaceKindAndLocation("production", "ExecutorDeployment", "HOME")
+	assert.Nil(t, err)
+	assert.Equal(t, 3, len(blueprints))
+
+	// Query with "office" should return only blueprint4
+	blueprints, err = db.GetBlueprintsByNamespaceKindAndLocation("production", "ExecutorDeployment", "office")
+	assert.Nil(t, err)
+	assert.Equal(t, 1, len(blueprints))
+	assert.Equal(t, "web-4", blueprints[0].Metadata.Name)
+
+	// Query with empty location should return all four
+	blueprints, err = db.GetBlueprintsByNamespaceKindAndLocation("production", "ExecutorDeployment", "")
+	assert.Nil(t, err)
+	assert.Equal(t, 4, len(blueprints))
+}

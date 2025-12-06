@@ -127,9 +127,6 @@ func startExecutor(client *client.ColoniesClient, colonyID string, colonyPrvKey 
 
 	executor := core.CreateExecutor(executorID, "bemisexecutor", core.GenerateRandomID(), colonyID, time.Now(), time.Now())
 
-	executor.Location.Long = 65.6120464058654 + rand.Float64()
-	executor.Location.Lat = 22.132275667285477 + rand.Float64()
-
 	_, err = client.AddExecutor(executor, colonyPrvKey)
 	checkError(err)
 

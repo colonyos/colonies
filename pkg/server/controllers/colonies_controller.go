@@ -364,20 +364,17 @@ func (controller *ColoniesController) AddExecutor(executor *core.Executor, allow
 				cmd.errorChan <- err
 				return
 			}
-			if allowExecutorReregister {
-				if executorFromDB != nil {
+			if executorFromDB != nil {
+				if allowExecutorReregister {
 					err := controller.executorDB.RemoveExecutorByName(executor.ColonyName, executorFromDB.Name)
 					if err != nil {
 						cmd.errorChan <- err
 						return
 					}
-				}
-			} else {
-				if executorFromDB != nil {
+				} else {
 					cmd.errorChan <- errors.New("Executor with name <" + executorFromDB.Name + "> in Colony <" + executorFromDB.ColonyName + "> already exists")
 					return
 				}
-
 			}
 			err = controller.executorDB.AddExecutor(executor)
 			if err != nil {

@@ -6,8 +6,11 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
+	"github.com/colonyos/colonies/internal/table"
 	"github.com/colonyos/colonies/pkg/core"
+	"github.com/muesli/termenv"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -31,6 +34,8 @@ func init() {
 	blueprintCmd.AddCommand(removeBlueprintCmd)
 	blueprintCmd.AddCommand(reconcileBlueprintCmd)
 	blueprintCmd.AddCommand(historyBlueprintCmd)
+	blueprintCmd.AddCommand(logBlueprintCmd)
+	blueprintCmd.AddCommand(doctorBlueprintCmd)
 
 	// BlueprintDefinition flags
 	addBlueprintDefinitionCmd.Flags().StringVarP(&PrvKey, "prvkey", "", "", "Private key (colony owner)")
@@ -85,6 +90,14 @@ func init() {
 	historyBlueprintCmd.Flags().IntVarP(&Count, "limit", "l", 10, "Limit number of history entries")
 	historyBlueprintCmd.Flags().IntVarP(&Generation, "generation", "g", -1, "Show details for specific generation")
 	historyBlueprintCmd.MarkFlagRequired("name")
+
+	logBlueprintCmd.Flags().StringVarP(&PrvKey, "prvkey", "", "", "Private key")
+	logBlueprintCmd.Flags().StringVarP(&BlueprintName, "name", "", "", "Blueprint name (optional, shows all reconciler logs if omitted)")
+	logBlueprintCmd.Flags().IntVarP(&Count, "count", "c", 100, "Number of log messages to fetch")
+	logBlueprintCmd.Flags().BoolVarP(&Follow, "follow", "f", false, "Follow logs in real-time")
+
+	doctorBlueprintCmd.Flags().StringVarP(&PrvKey, "prvkey", "", "", "Private key")
+	doctorBlueprintCmd.Flags().StringVarP(&BlueprintName, "name", "", "", "Blueprint name (optional, checks all blueprints if omitted)")
 }
 
 var blueprintCmd = &cobra.Command{
@@ -421,6 +434,17 @@ var setBlueprintCmd = &cobra.Command{
 			"Value":      Value,
 		}).Info("Blueprint field updated")
 
+		// Trigger immediate reconciliation (idempotent operation)
+		process, err := client.ReconcileBlueprint(ColonyName, BlueprintName, false, PrvKey)
+		if err != nil {
+			log.WithFields(log.Fields{
+				"Error": err,
+			}).Warn("Failed to trigger reconciliation")
+		} else {
+			log.WithFields(log.Fields{
+				"ProcessID": process.ID,
+			}).Info("Reconciliation triggered")
+		}
 	},
 }
 
@@ -513,6 +537,305 @@ var historyBlueprintCmd = &cobra.Command{
 			} else {
 				printBlueprintHistoryTable(client, histories)
 			}
+		}
+	},
+}
+
+var logBlueprintCmd = &cobra.Command{
+	Use:   "log",
+	Short: "Show logs from blueprint reconcilers",
+	Long:  "Display logs from reconciler executors. Optionally filter by blueprint name to show logs from the specific reconciler handling that blueprint's location.",
+	Run: func(cmd *cobra.Command, args []string) {
+		client := setup()
+
+		theme, err := table.LoadTheme("solarized-dark")
+		CheckError(err)
+
+		var reconcilerNames []string
+
+		if BlueprintName != "" {
+			// Get the blueprint to find its location and handler type
+			blueprint, err := client.GetBlueprint(ColonyName, BlueprintName, PrvKey)
+			CheckError(err)
+
+			locationName := blueprint.Metadata.LocationName
+			executorType := ""
+
+			// Get handler type from blueprint or its definition
+			if blueprint.Handler != nil && blueprint.Handler.ExecutorType != "" {
+				executorType = blueprint.Handler.ExecutorType
+			}
+
+			// Find reconciler executors at this location
+			executors, err := client.GetExecutors(ColonyName, PrvKey)
+			CheckError(err)
+
+			for _, exec := range executors {
+				if exec.LocationName == locationName {
+					if executorType == "" || exec.Type == executorType {
+						reconcilerNames = append(reconcilerNames, exec.Name)
+					}
+				}
+			}
+
+			if len(reconcilerNames) == 0 {
+				log.WithFields(log.Fields{
+					"BlueprintName": BlueprintName,
+					"Location":      locationName,
+					"ExecutorType":  executorType,
+				}).Warn("No reconciler found for this blueprint's location")
+				return
+			}
+
+			log.WithFields(log.Fields{
+				"BlueprintName": BlueprintName,
+				"Location":      locationName,
+				"Reconcilers":   reconcilerNames,
+			}).Info("Fetching logs from reconcilers")
+		} else {
+			// Get all reconciler-type executors
+			executors, err := client.GetExecutors(ColonyName, PrvKey)
+			CheckError(err)
+
+			for _, exec := range executors {
+				if strings.Contains(exec.Type, "reconciler") {
+					reconcilerNames = append(reconcilerNames, exec.Name)
+				}
+			}
+
+			if len(reconcilerNames) == 0 {
+				log.Info("No reconciler executors found")
+				return
+			}
+
+			log.WithFields(log.Fields{
+				"Reconcilers": reconcilerNames,
+			}).Info("Fetching logs from all reconcilers")
+		}
+
+		if Follow {
+			// Follow mode - continuously fetch new logs
+			lastTimestamps := make(map[string]int64)
+			for _, name := range reconcilerNames {
+				lastTimestamps[name] = 0
+			}
+
+			for {
+				for _, reconcilerName := range reconcilerNames {
+					logs, err := client.GetLogsByExecutorSince(ColonyName, reconcilerName, Count, lastTimestamps[reconcilerName], PrvKey)
+					if err != nil {
+						continue
+					}
+					for _, logEntry := range logs {
+						prefix := termenv.String("[" + reconcilerName + "] ").Foreground(theme.ColorCyan).String()
+						fmt.Print(prefix + formatLogMessage(logEntry.Message, theme))
+					}
+					if len(logs) > 0 {
+						lastTimestamps[reconcilerName] = logs[len(logs)-1].Timestamp
+					}
+				}
+				time.Sleep(1 * time.Second)
+			}
+		} else {
+			// One-shot mode - fetch latest logs from each reconciler
+			for _, reconcilerName := range reconcilerNames {
+				logs, err := client.GetLogsByExecutorLatest(ColonyName, reconcilerName, Count, PrvKey)
+				if err != nil {
+					log.WithFields(log.Fields{
+						"Reconciler": reconcilerName,
+						"Error":      err,
+					}).Warn("Failed to fetch logs")
+					continue
+				}
+
+				if len(logs) > 0 {
+					fmt.Println(termenv.String("=== " + reconcilerName + " ===").Foreground(theme.ColorViolet).Bold().String())
+					for _, logEntry := range logs {
+						fmt.Print(formatLogMessage(logEntry.Message, theme))
+					}
+					fmt.Println()
+				}
+			}
+		}
+	},
+}
+
+var doctorBlueprintCmd = &cobra.Command{
+	Use:   "doctor",
+	Short: "Diagnose blueprint configuration issues",
+	Long:  "Analyze blueprint configuration and identify potential problems like missing reconcilers, location mismatches, or configuration errors.",
+	Run: func(cmd *cobra.Command, args []string) {
+		client := setup()
+
+		theme, err := table.LoadTheme("solarized-dark")
+		CheckError(err)
+
+		var blueprintsToCheck []*core.Blueprint
+
+		if BlueprintName != "" {
+			blueprint, err := client.GetBlueprint(ColonyName, BlueprintName, PrvKey)
+			CheckError(err)
+			blueprintsToCheck = append(blueprintsToCheck, blueprint)
+		} else {
+			blueprints, err := client.GetBlueprints(ColonyName, "", PrvKey)
+			CheckError(err)
+			blueprintsToCheck = blueprints
+		}
+
+		// Get all executors for checking
+		executors, err := client.GetExecutors(ColonyName, PrvKey)
+		CheckError(err)
+
+		// Build location -> reconciler map
+		reconcilersByLocation := make(map[string][]*core.Executor)
+		reconcilersByType := make(map[string][]*core.Executor)
+		for _, exec := range executors {
+			if strings.Contains(exec.Type, "reconciler") {
+				reconcilersByLocation[exec.LocationName] = append(reconcilersByLocation[exec.LocationName], exec)
+				reconcilersByType[exec.Type] = append(reconcilersByType[exec.Type], exec)
+			}
+		}
+
+		issuesFound := 0
+
+		for _, blueprint := range blueprintsToCheck {
+			fmt.Println(termenv.String("=== " + blueprint.Metadata.Name + " ===").Foreground(theme.ColorViolet).Bold().String())
+
+			locationName := blueprint.Metadata.LocationName
+			handlerType := ""
+			if blueprint.Handler != nil {
+				handlerType = blueprint.Handler.ExecutorType
+			}
+
+			// Check 1: Does a reconciler exist at this location?
+			reconcilersAtLocation := reconcilersByLocation[locationName]
+			if len(reconcilersAtLocation) == 0 {
+				issuesFound++
+				fmt.Print(termenv.String("  [ERROR] ").Foreground(theme.ColorRed).Bold().String())
+				fmt.Printf("No reconciler found at location '%s'\n", locationName)
+
+				// Suggest available locations
+				if len(reconcilersByLocation) > 0 {
+					fmt.Print(termenv.String("          ").String())
+					fmt.Print("Available locations with reconcilers: ")
+					locs := []string{}
+					for loc := range reconcilersByLocation {
+						locs = append(locs, loc)
+					}
+					fmt.Println(strings.Join(locs, ", "))
+				}
+			} else {
+				fmt.Print(termenv.String("  [OK] ").Foreground(theme.ColorGreen).String())
+				fmt.Printf("Reconciler found at location '%s': %s\n", locationName, reconcilersAtLocation[0].Name)
+			}
+
+			// Check 2: Does the handler type match an available reconciler?
+			if handlerType != "" {
+				reconcilersOfType := reconcilersByType[handlerType]
+				if len(reconcilersOfType) == 0 {
+					issuesFound++
+					fmt.Print(termenv.String("  [ERROR] ").Foreground(theme.ColorRed).Bold().String())
+					fmt.Printf("No executor of type '%s' found\n", handlerType)
+
+					// Suggest available types
+					if len(reconcilersByType) > 0 {
+						fmt.Print(termenv.String("          ").String())
+						fmt.Print("Available reconciler types: ")
+						types := []string{}
+						for t := range reconcilersByType {
+							types = append(types, t)
+						}
+						fmt.Println(strings.Join(types, ", "))
+					}
+				} else {
+					// Check if any reconciler of this type is at the right location
+					matchFound := false
+					for _, rec := range reconcilersOfType {
+						if rec.LocationName == locationName {
+							matchFound = true
+							break
+						}
+					}
+					if !matchFound {
+						issuesFound++
+						fmt.Print(termenv.String("  [ERROR] ").Foreground(theme.ColorRed).Bold().String())
+						fmt.Printf("Reconciler type '%s' exists but not at location '%s'\n", handlerType, locationName)
+						fmt.Print(termenv.String("          ").String())
+						fmt.Print("Reconcilers of this type are at: ")
+						locs := []string{}
+						for _, rec := range reconcilersOfType {
+							locs = append(locs, rec.LocationName)
+						}
+						fmt.Println(strings.Join(locs, ", "))
+					} else {
+						fmt.Print(termenv.String("  [OK] ").Foreground(theme.ColorGreen).String())
+						fmt.Printf("Handler type '%s' matches reconciler at location\n", handlerType)
+					}
+				}
+			}
+
+			// Check 3: Reconciler heartbeat (is it actively connected?)
+			if len(reconcilersAtLocation) > 0 {
+				rec := reconcilersAtLocation[0]
+				timeSinceHeard := time.Since(rec.LastHeardFromTime)
+				if timeSinceHeard > 2*time.Minute {
+					issuesFound++
+					fmt.Print(termenv.String("  [WARN] ").Foreground(theme.ColorYellow).Bold().String())
+					fmt.Printf("Reconciler '%s' last heard from %s ago (may be offline)\n", rec.Name, timeSinceHeard.Round(time.Second))
+				} else {
+					fmt.Print(termenv.String("  [OK] ").Foreground(theme.ColorGreen).String())
+					fmt.Printf("Reconciler '%s' is active (last heard %s ago)\n", rec.Name, timeSinceHeard.Round(time.Second))
+				}
+			}
+
+			// Check 4: Replica status
+			replicas, ok := blueprint.Spec["replicas"]
+			if ok {
+				desiredReplicas := 0
+				switch v := replicas.(type) {
+				case float64:
+					desiredReplicas = int(v)
+				case int:
+					desiredReplicas = v
+				}
+
+				// Get actual running replicas by searching for executors with matching pattern
+				runningCount := 0
+				blueprintNamePrefix := blueprint.Metadata.Name
+				for _, exec := range executors {
+					if strings.HasPrefix(exec.Name, blueprintNamePrefix) {
+						runningCount++
+					}
+				}
+
+				if runningCount < desiredReplicas {
+					issuesFound++
+					fmt.Print(termenv.String("  [WARN] ").Foreground(theme.ColorYellow).Bold().String())
+					fmt.Printf("Only %d/%d replicas running\n", runningCount, desiredReplicas)
+					// Add actionable suggestions
+					fmt.Print(termenv.String("          ").String())
+					fmt.Printf("Run: colonies blueprint log --name %s\n", blueprint.Metadata.Name)
+					fmt.Print(termenv.String("          ").String())
+					fmt.Printf("Try: colonies blueprint reconcile --name %s --force\n", blueprint.Metadata.Name)
+				} else if runningCount == desiredReplicas && desiredReplicas > 0 {
+					fmt.Print(termenv.String("  [OK] ").Foreground(theme.ColorGreen).String())
+					fmt.Printf("All %d replicas running\n", desiredReplicas)
+				}
+			}
+
+			fmt.Println()
+		}
+
+		// Summary
+		if issuesFound == 0 {
+			fmt.Println(termenv.String("No issues found!").Foreground(theme.ColorGreen).Bold().String())
+		} else {
+			fmt.Println(termenv.String(fmt.Sprintf("Found %d issue(s)", issuesFound)).Foreground(theme.ColorRed).Bold().String())
+			fmt.Println()
+			fmt.Println(termenv.String("Hints:").Bold().String())
+			fmt.Println("  - Check reconciler logs: colonies blueprint log --name <blueprint>")
+			fmt.Println("  - Force reconciliation:  colonies blueprint reconcile --name <blueprint> --force")
+			fmt.Println("  - List all executors:    colonies executor ls")
 		}
 	},
 }

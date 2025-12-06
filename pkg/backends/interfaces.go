@@ -207,6 +207,7 @@ type RealtimeSubscription struct {
 	ExecutorType string
 	State        int
 	ProcessID    string
+	Location     string
 }
 
 // RealtimeEventHandler handles process events and manages subscriptions
@@ -214,9 +215,9 @@ type RealtimeEventHandler interface {
 	// Signal sends a process event to all registered listeners
 	Signal(process *core.Process)
 	// Subscribe registers a subscription and returns channels for process events and errors
-	Subscribe(executorType string, state int, processID string, ctx context.Context) (chan *core.Process, chan error)
+	Subscribe(executorType string, state int, processID string, location string, ctx context.Context) (chan *core.Process, chan error)
 	// WaitForProcess waits for a specific process state change
-	WaitForProcess(executorType string, state int, processID string, ctx context.Context) (*core.Process, error)
+	WaitForProcess(executorType string, state int, processID string, location string, ctx context.Context) (*core.Process, error)
 	// Stop stops the event handler
 	Stop()
 }
@@ -225,7 +226,7 @@ type RealtimeEventHandler interface {
 type TestableRealtimeEventHandler interface {
 	RealtimeEventHandler
 	// NumberOfListeners returns listener counts for testing
-	NumberOfListeners(executorType string, state int) (int, int, int)
+	NumberOfListeners(executorType string, state int, location string) (int, int, int)
 	// HasStopped returns whether the handler has stopped for testing
 	HasStopped() bool
 }

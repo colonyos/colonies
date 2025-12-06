@@ -35,7 +35,7 @@ func printExecutorsTable(executors []*core.Executor, showState bool) {
 
 	for _, executor := range executors {
 		// Determine location to display
-		location := executor.Location.Description
+		location := executor.LocationName
 		if location == "" {
 			location = "n/a"
 		}
@@ -154,32 +154,9 @@ func printExecutorTable(client *client.ColoniesClient, executor *core.Executor) 
 	}
 	t.AddRow(row)
 
-	t.Render()
-
-	t, theme = createTable(0)
-	t.SetTitle("Location")
-
 	row = []interface{}{
-		termenv.String("Name").Foreground(theme.ColorViolet),
-		termenv.String(executor.Location.Name).Foreground(theme.ColorGray),
-	}
-	t.AddRow(row)
-
-	row = []interface{}{
-		termenv.String("Longitude").Foreground(theme.ColorViolet),
-		termenv.String(fmt.Sprintf("%f", executor.Location.Long)).Foreground(theme.ColorGray),
-	}
-	t.AddRow(row)
-
-	row = []interface{}{
-		termenv.String("Latitude").Foreground(theme.ColorViolet),
-		termenv.String(fmt.Sprintf("%f", executor.Location.Lat)).Foreground(theme.ColorGray),
-	}
-	t.AddRow(row)
-
-	row = []interface{}{
-		termenv.String("Description").Foreground(theme.ColorViolet),
-		termenv.String(executor.Location.Description).Foreground(theme.ColorGray),
+		termenv.String("Location").Foreground(theme.ColorCyan),
+		termenv.String(executor.LocationName).Foreground(theme.ColorGray),
 	}
 	t.AddRow(row)
 

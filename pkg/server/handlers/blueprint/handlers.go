@@ -21,6 +21,7 @@ type Server interface {
 	SendEmptyHTTPReply(c backends.Context, payloadType string)
 	Validator() security.Validator
 	BlueprintDB() database.BlueprintDatabase
+	LocationDB() database.LocationDatabase
 	ProcessController() process.Controller
 	CronController() interface {
 		AddCron(cron *core.Cron) (*core.Cron, error)
@@ -89,35 +90,24 @@ func (h *Handlers) createConsolidatedReconciliationWorkflowSpec(colonyName strin
 		"DefaultExecutorType": defaultExecutorType,
 	}).Info("Creating consolidated workflow spec")
 
-	// Group blueprints by their handler configuration (executor type + executor name)
-	// Key format: "executorType" or "executorType:executorName"
-	type handlerConfig struct {
-		executorType string
-		executorName string
-	}
-	handlers := make(map[handlerConfig]bool)
+	// Group blueprints by their handler configuration (executor type only)
+	// Reconciliation is based on executor type + location, not specific executor names
+	handlers := make(map[string]bool)
 
 	for _, bp := range blueprints {
-		config := handlerConfig{
-			executorType: defaultExecutorType,
-		}
+		executorType := defaultExecutorType
 
 		if bp.Handler != nil {
 			// Use blueprint's executor type if specified, otherwise use default
 			if bp.Handler.ExecutorType != "" {
-				config.executorType = bp.Handler.ExecutorType
-			}
-			// Add executor name if specified for more specific targeting
-			if bp.Handler.ExecutorName != "" {
-				config.executorName = bp.Handler.ExecutorName
+				executorType = bp.Handler.ExecutorType
 			}
 		}
 
-		handlers[config] = true
+		handlers[executorType] = true
 		log.WithFields(log.Fields{
 			"BlueprintName": bp.Metadata.Name,
-			"ExecutorType":  config.executorType,
-			"ExecutorName":  config.executorName,
+			"ExecutorType":  executorType,
 		}).Debug("Blueprint handler configuration")
 	}
 
@@ -125,28 +115,22 @@ func (h *Handlers) createConsolidatedReconciliationWorkflowSpec(colonyName strin
 		"UniqueHandlers": len(handlers),
 	}).Info("Collected unique handler configurations")
 
-	// Create function specs - one for each unique handler configuration
+	// Create function specs - one for each unique executor type
 	var functionSpecs []core.FunctionSpec
 	i := 0
-	for config := range handlers {
+	for executorType := range handlers {
 		funcSpec := core.CreateEmptyFunctionSpec()
 		funcSpec.NodeName = fmt.Sprintf("reconcile-%d", i)
 		funcSpec.Conditions.ColonyName = colonyName
-		funcSpec.Conditions.ExecutorType = config.executorType
+		funcSpec.Conditions.ExecutorType = executorType
 		funcSpec.FuncName = "reconcile"
 		funcSpec.KwArgs = map[string]interface{}{
 			"kind": kind,
 		}
 
-		// Target specific executor by name if specified
-		if config.executorName != "" {
-			funcSpec.Conditions.ExecutorNames = []string{config.executorName}
-		}
-
 		log.WithFields(log.Fields{
-			"NodeName":      funcSpec.NodeName,
-			"ExecutorType":  config.executorType,
-			"ExecutorName":  config.executorName,
+			"NodeName":     funcSpec.NodeName,
+			"ExecutorType": executorType,
 		}).Info("Created function spec for handler")
 
 		functionSpecs = append(functionSpecs, *funcSpec)
@@ -168,8 +152,8 @@ func (h *Handlers) createConsolidatedReconciliationWorkflowSpec(colonyName strin
 }
 
 // createReconcilerCronWorkflowSpec creates a workflow spec for a specific reconciler
-// This creates a single process targeting one specific handler executor
-func (h *Handlers) createReconcilerCronWorkflowSpec(colonyName string, kind string, executorType string, handlerExecutorName string) (string, error) {
+// This creates a single process targeting handler executors by type and location
+func (h *Handlers) createReconcilerCronWorkflowSpec(colonyName string, kind string, executorType string, locationName string) (string, error) {
 	if executorType == "" {
 		return "", fmt.Errorf("no handler executorType defined for blueprint kind: %s", kind)
 	}
@@ -178,14 +162,10 @@ func (h *Handlers) createReconcilerCronWorkflowSpec(colonyName string, kind stri
 	funcSpec.NodeName = "reconcile"
 	funcSpec.Conditions.ColonyName = colonyName
 	funcSpec.Conditions.ExecutorType = executorType
+	funcSpec.Conditions.LocationName = locationName
 	funcSpec.FuncName = "reconcile"
 	funcSpec.KwArgs = map[string]interface{}{
 		"kind": kind,
-	}
-
-	// Target specific executor if specified
-	if handlerExecutorName != "" {
-		funcSpec.Conditions.ExecutorNames = []string{handlerExecutorName}
 	}
 
 	workflowSpec := &core.WorkflowSpec{
@@ -226,18 +206,10 @@ func (h *Handlers) createImmediateReconciliationProcess(blueprint *core.Blueprin
 	funcSpec.NodeName = "reconcile"
 	funcSpec.Conditions.ColonyName = blueprint.Metadata.ColonyName
 	funcSpec.Conditions.ExecutorType = executorType
+	funcSpec.Conditions.LocationName = blueprint.Metadata.LocationName
 	funcSpec.FuncName = "reconcile"
 	funcSpec.KwArgs = map[string]interface{}{
 		"kind": blueprint.Kind,
-	}
-
-	// Apply executor targeting by name if specified
-	if blueprint.Handler != nil {
-		if len(blueprint.Handler.ExecutorNames) > 0 {
-			funcSpec.Conditions.ExecutorNames = blueprint.Handler.ExecutorNames
-		} else if blueprint.Handler.ExecutorName != "" {
-			funcSpec.Conditions.ExecutorNames = []string{blueprint.Handler.ExecutorName}
-		}
 	}
 
 	// Create and return the process
@@ -559,6 +531,49 @@ func (h *Handlers) HandleAddBlueprint(c backends.Context, recoveredID string, pa
 		}
 	}
 
+	// Check if blueprint with same name already exists
+	existingBlueprint, err := h.server.BlueprintDB().GetBlueprintByName(msg.Blueprint.Metadata.ColonyName, msg.Blueprint.Metadata.Name)
+	if err != nil {
+		h.server.HandleHTTPError(c, fmt.Errorf("failed to check for existing blueprint: %w", err), http.StatusInternalServerError)
+		return
+	}
+	if existingBlueprint != nil {
+		h.server.HandleHTTPError(c, fmt.Errorf("blueprint with name '%s' already exists in colony '%s'", msg.Blueprint.Metadata.Name, msg.Blueprint.Metadata.ColonyName), http.StatusConflict)
+		return
+	}
+
+	// Auto-create location if specified and doesn't exist
+	if msg.Blueprint.Metadata.LocationName != "" {
+		existingLocation, err := h.server.LocationDB().GetLocationByName(msg.Blueprint.Metadata.ColonyName, msg.Blueprint.Metadata.LocationName)
+		if err != nil {
+			h.server.HandleHTTPError(c, fmt.Errorf("failed to check location: %w", err), http.StatusInternalServerError)
+			return
+		}
+
+		if existingLocation == nil {
+			// Create new location
+			newLocation := core.CreateLocation(
+				core.GenerateRandomID(),
+				msg.Blueprint.Metadata.LocationName,
+				msg.Blueprint.Metadata.ColonyName,
+				"Auto-created from blueprint "+msg.Blueprint.Metadata.Name,
+				0.0, // Default longitude
+				0.0, // Default latitude
+			)
+			err = h.server.LocationDB().AddLocation(newLocation)
+			if err != nil {
+				h.server.HandleHTTPError(c, fmt.Errorf("failed to create location: %w", err), http.StatusInternalServerError)
+				return
+			}
+
+			log.WithFields(log.Fields{
+				"LocationName": msg.Blueprint.Metadata.LocationName,
+				"ColonyName":   msg.Blueprint.Metadata.ColonyName,
+				"BlueprintName": msg.Blueprint.Metadata.Name,
+			}).Info("Auto-created location for blueprint")
+		}
+	}
+
 	err = h.server.BlueprintDB().AddBlueprint(msg.Blueprint)
 	if h.server.HandleHTTPError(c, err, http.StatusInternalServerError) {
 		return
@@ -590,20 +605,11 @@ func (h *Handlers) HandleAddBlueprint(c backends.Context, recoveredID string, pa
 	}
 
 	if executorType != "" {
-		// Get the handler executor name for this blueprint
-		handlerExecutorName := ""
-		if msg.Blueprint.Handler != nil {
-			if msg.Blueprint.Handler.ExecutorName != "" {
-				handlerExecutorName = msg.Blueprint.Handler.ExecutorName
-			} else if len(msg.Blueprint.Handler.ExecutorNames) > 0 {
-				handlerExecutorName = msg.Blueprint.Handler.ExecutorNames[0]
-			}
-		}
-
-		// Use Kind + handler executor for cron name (one cron per reconciler)
+		// Use Kind + location for cron name (one cron per reconciler per location)
+		locationName := msg.Blueprint.Metadata.LocationName
 		cronName := "reconcile-" + msg.Blueprint.Kind
-		if handlerExecutorName != "" {
-			cronName = cronName + "-" + handlerExecutorName
+		if locationName != "" {
+			cronName = cronName + "-" + locationName
 		}
 
 		// Resolve initiator name
@@ -630,16 +636,16 @@ func (h *Handlers) HandleAddBlueprint(c backends.Context, recoveredID string, pa
 		}
 
 		if existingCron == nil {
-			// Create workflow spec targeting this specific handler executor
-			workflowSpec, err := h.createReconcilerCronWorkflowSpec(msg.Blueprint.Metadata.ColonyName, msg.Blueprint.Kind, executorType, handlerExecutorName)
+			// Create workflow spec targeting handler executors by type and location
+			workflowSpec, err := h.createReconcilerCronWorkflowSpec(msg.Blueprint.Metadata.ColonyName, msg.Blueprint.Kind, executorType, locationName)
 			if err != nil {
 				log.WithFields(log.Fields{
-					"Error":           err,
-					"Kind":            msg.Blueprint.Kind,
-					"HandlerExecutor": handlerExecutorName,
+					"Error":        err,
+					"Kind":         msg.Blueprint.Kind,
+					"LocationName": locationName,
 				}).Warn("Failed to create reconciliation workflow spec")
 			} else {
-				// Create cron for periodic self-healing by this specific reconciler
+				// Create cron for periodic self-healing by reconcilers at this location
 				cron := &core.Cron{
 					ID:                      core.GenerateRandomID(),
 					ColonyName:              msg.Blueprint.Metadata.ColonyName,
@@ -660,21 +666,21 @@ func (h *Handlers) HandleAddBlueprint(c backends.Context, recoveredID string, pa
 				}
 
 				log.WithFields(log.Fields{
-					"Kind":            msg.Blueprint.Kind,
-					"CronName":        cronName,
-					"CronID":          addedCron.ID,
-					"HandlerExecutor": handlerExecutorName,
-					"Interval":        60,
+					"Kind":         msg.Blueprint.Kind,
+					"CronName":     cronName,
+					"CronID":       addedCron.ID,
+					"LocationName": locationName,
+					"Interval":     60,
 				}).Info("Auto-created reconciliation cron for handler")
 
 				existingCron = addedCron
 			}
 		} else {
 			log.WithFields(log.Fields{
-				"BlueprintName":   msg.Blueprint.Metadata.Name,
-				"Kind":            msg.Blueprint.Kind,
-				"CronName":        cronName,
-				"HandlerExecutor": handlerExecutorName,
+				"BlueprintName": msg.Blueprint.Metadata.Name,
+				"Kind":          msg.Blueprint.Kind,
+				"CronName":      cronName,
+				"LocationName":  locationName,
 			}).Debug("Cron already exists for handler")
 		}
 
@@ -784,6 +790,9 @@ func (h *Handlers) HandleGetBlueprints(c backends.Context, recoveredID string, p
 	if msg.Kind == "" {
 		// Get all blueprints in namespace
 		blueprints, err = h.server.BlueprintDB().GetBlueprintsByNamespace(msg.Namespace)
+	} else if msg.LocationName != "" {
+		// Get blueprints by namespace, kind, and location
+		blueprints, err = h.server.BlueprintDB().GetBlueprintsByNamespaceKindAndLocation(msg.Namespace, msg.Kind, msg.LocationName)
 	} else {
 		// Get blueprints by namespace and kind
 		blueprints, err = h.server.BlueprintDB().GetBlueprintsByNamespaceAndKind(msg.Namespace, msg.Kind)
@@ -794,9 +803,10 @@ func (h *Handlers) HandleGetBlueprints(c backends.Context, recoveredID string, p
 	}
 
 	log.WithFields(log.Fields{
-		"Namespace": msg.Namespace,
-		"Kind":      msg.Kind,
-		"Count":     len(blueprints),
+		"Namespace":    msg.Namespace,
+		"Kind":         msg.Kind,
+		"LocationName": msg.LocationName,
+		"Count":        len(blueprints),
 	}).Debug("Getting blueprints")
 
 	jsonString, err = core.ConvertBlueprintArrayToJSON(blueprints)
@@ -1098,15 +1108,6 @@ func (h *Handlers) HandleRemoveBlueprint(c backends.Context, recoveredID string,
 			"blueprintName": msg.Name,
 		}
 
-		// Apply executor targeting if specified
-		if blueprint.Handler != nil {
-			if len(blueprint.Handler.ExecutorNames) > 0 {
-				funcSpec.Conditions.ExecutorNames = blueprint.Handler.ExecutorNames
-			} else if blueprint.Handler.ExecutorName != "" {
-				funcSpec.Conditions.ExecutorNames = []string{blueprint.Handler.ExecutorName}
-			}
-		}
-
 		// Resolve initiator name for the process
 		initiatorName, _ := h.resolveInitiator(msg.Namespace, recoveredID)
 
@@ -1307,19 +1308,11 @@ func (h *Handlers) HandleReconcileBlueprint(c backends.Context, recoveredID stri
 	funcSpec.NodeName = "reconcile"
 	funcSpec.Conditions.ColonyName = msg.Namespace
 	funcSpec.Conditions.ExecutorType = executorType
+	funcSpec.Conditions.LocationName = blueprint.Metadata.LocationName
 	funcSpec.FuncName = "reconcile"
 	funcSpec.KwArgs = map[string]interface{}{
 		"kind":          blueprint.Kind,
 		"blueprintName": blueprint.Metadata.Name,
-	}
-
-	// Apply executor targeting by name if specified
-	if blueprint.Handler != nil {
-		if len(blueprint.Handler.ExecutorNames) > 0 {
-			funcSpec.Conditions.ExecutorNames = blueprint.Handler.ExecutorNames
-		} else if blueprint.Handler.ExecutorName != "" {
-			funcSpec.Conditions.ExecutorNames = []string{blueprint.Handler.ExecutorName}
-		}
 	}
 
 	// Pass force flag to reconciler

@@ -49,7 +49,7 @@ func TestProcessClosedDB(t *testing.T) {
 	_, err = db.FindFailedProcesses("invalid_id", "", "", "", 1)
 	assert.NotNil(t, err)
 
-	_, err = db.FindCandidates("invalid_id", "invalid_type", 0, 0, 0, 0, 0, 0, 1)
+	_, err = db.FindCandidates("invalid_id", "invalid_type", "", 0, 0, 0, 0, 0, 0, 1)
 	assert.NotNil(t, err)
 
 	err = db.RemoveProcessByID("invalid_id")
@@ -1189,7 +1189,7 @@ func TestFindCandidates1(t *testing.T) {
 	err = db.AddProcess(process2)
 	assert.Nil(t, err)
 
-	processsFromDB, err := db.FindCandidates(colony.Name, executor.Type, 0, 0, 0, 0, 0, 0, 100)
+	processsFromDB, err := db.FindCandidates(colony.Name, executor.Type, "", 0, 0, 0, 0, 0, 0, 100)
 	assert.Nil(t, err)
 	assert.Len(t, processsFromDB, 1)
 }
@@ -1228,12 +1228,12 @@ func TestFindCandidates2(t *testing.T) {
 
 	time.Sleep(50 * time.Millisecond)
 
-	processesFromDB, err := db.FindCandidates(colony.Name, executor2.Type, 0, 0, 0, 0, 0, 0, 2)
+	processesFromDB, err := db.FindCandidates(colony.Name, executor2.Type, "", 0, 0, 0, 0, 0, 0, 2)
 	assert.Nil(t, err)
 	assert.Len(t, processesFromDB, 1)
 	assert.Equal(t, processesFromDB[0].ID, process1.ID)
 
-	processesFromDB, err = db.FindCandidatesByName(colony.Name, executor2.Name, executor2.Type, 0, 0, 0, 0, 0, 0, 2)
+	processesFromDB, err = db.FindCandidatesByName(colony.Name, executor2.Name, executor2.Type, "", 0, 0, 0, 0, 0, 0, 2)
 	assert.Nil(t, err)
 	assert.Len(t, processesFromDB, 2)
 
@@ -1281,16 +1281,16 @@ func TestFindCandidates3(t *testing.T) {
 	err = db.AddProcess(process2)
 	assert.Nil(t, err)
 
-	processesFromDB, err := db.FindCandidates(colony.Name, executor1.Type, 0, 0, 0, 0, 0, 9, 1)
+	processesFromDB, err := db.FindCandidates(colony.Name, executor1.Type, "", 0, 0, 0, 0, 0, 9, 1)
 	assert.Nil(t, err)
 	assert.Len(t, processesFromDB, 0)
 
-	processesFromDB, err = db.FindCandidatesByName(colony.Name, executor1.Name, executor1.Type, 0, 0, 0, 0, 0, 0, 1)
+	processesFromDB, err = db.FindCandidatesByName(colony.Name, executor1.Name, executor1.Type, "", 0, 0, 0, 0, 0, 0, 1)
 	assert.Nil(t, err)
 	assert.Len(t, processesFromDB, 1)
 	assert.Equal(t, processesFromDB[0].ID, process1.ID)
 
-	processesFromDB, err = db.FindCandidatesByName(colony.Name, executor2.Name, executor1.Type, 0, 0, 0, 0, 0, 0, 1)
+	processesFromDB, err = db.FindCandidatesByName(colony.Name, executor2.Name, executor1.Type, "", 0, 0, 0, 0, 0, 0, 1)
 	assert.Nil(t, err)
 	assert.Len(t, processesFromDB, 1)
 	assert.Equal(t, processesFromDB[0].ID, process1.ID)
@@ -1326,12 +1326,12 @@ func TestFindCandidates4(t *testing.T) {
 	err = db.AddProcess(process2)
 	assert.Nil(t, err)
 
-	processsFromDB, err := db.FindCandidates(colony.Name, executor1.Type, 0, 0, 0, 0, 0, 0, 1)
+	processsFromDB, err := db.FindCandidates(colony.Name, executor1.Type, "", 0, 0, 0, 0, 0, 0, 1)
 	assert.Nil(t, err)
 	assert.Len(t, processsFromDB, 1)
 	assert.Equal(t, process1.ID, processsFromDB[0].ID)
 
-	processsFromDB, err = db.FindCandidates(colony.Name, executor2.Type, 0, 0, 0, 0, 0, 0, 1)
+	processsFromDB, err = db.FindCandidates(colony.Name, executor2.Type, "", 0, 0, 0, 0, 0, 0, 1)
 	assert.Nil(t, err)
 	assert.Len(t, processsFromDB, 1)
 	assert.Equal(t, process2.ID, processsFromDB[0].ID)
@@ -1360,7 +1360,7 @@ func TestFindCandidatesOldest(t *testing.T) {
 	err = db.AddProcess(process2)
 	assert.Nil(t, err)
 
-	processsFromDB, err := db.FindCandidates(colony.Name, executor.Type, 0, 0, 0, 0, 0, 0, 100)
+	processsFromDB, err := db.FindCandidates(colony.Name, executor.Type, "", 0, 0, 0, 0, 0, 0, 100)
 	assert.Nil(t, err)
 	assert.Len(t, processsFromDB, 1)
 	assert.Equal(t, processsFromDB[0].ID, process1.ID)
@@ -1400,11 +1400,11 @@ func TestFindCandidatesByName(t *testing.T) {
 	err = db.AddProcess(process3)
 	assert.Nil(t, err)
 
-	processsFromDB, err := db.FindCandidates(colony.Name, executor1.Type, 0, 0, 0, 0, 0, 0, 100)
+	processsFromDB, err := db.FindCandidates(colony.Name, executor1.Type, "", 0, 0, 0, 0, 0, 0, 100)
 	assert.Nil(t, err)
 	assert.Len(t, processsFromDB, 1)
 
-	processsFromDB, err = db.FindCandidatesByName(colony.Name, "executor1", executor1.Type, 0, 0, 0, 0, 0, 0, 100)
+	processsFromDB, err = db.FindCandidatesByName(colony.Name, "executor1", executor1.Type, "", 0, 0, 0, 0, 0, 0, 100)
 	assert.Nil(t, err)
 	assert.Len(t, processsFromDB, 2)
 
@@ -1461,7 +1461,7 @@ func TestFindProcessAssigned(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, 0, numberOfFailedProcesses)
 
-	processsFromDB1, err := db.FindCandidates(colony.Name, executor.Type, 0, 0, 0, 0, 0, 0, 1)
+	processsFromDB1, err := db.FindCandidates(colony.Name, executor.Type, "", 0, 0, 0, 0, 0, 0, 1)
 	assert.Nil(t, err)
 	assert.Equal(t, process1.ID, processsFromDB1[0].ID)
 	assert.Len(t, processsFromDB1, 1)
@@ -1473,7 +1473,7 @@ func TestFindProcessAssigned(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, 1, numberOfRunningProcesses)
 
-	processsFromDB2, err := db.FindCandidates(colony.Name, executor.Type, 0, 0, 0, 0, 0, 0, 1)
+	processsFromDB2, err := db.FindCandidates(colony.Name, executor.Type, "", 0, 0, 0, 0, 0, 0, 1)
 	assert.Nil(t, err)
 	assert.Equal(t, process2.ID, processsFromDB2[0].ID)
 
@@ -2033,4 +2033,370 @@ func TestFindProcessesByColonyName(t *testing.T) {
 	processesFromDB, err = db.FindProcessesByColonyName(colony.Name, 1, core.SUCCESS) // last second
 	assert.Nil(t, err)
 	assert.Equal(t, len(processesFromDB), 1)
+}
+
+// Location-based scheduling tests
+
+func TestFindCandidatesWithLocationFilter(t *testing.T) {
+	db, err := PrepareTests()
+	assert.Nil(t, err)
+
+	defer db.Close()
+
+	colony := core.CreateColony(core.GenerateRandomID(), "test_colony_name_1")
+	err = db.AddColony(colony)
+	assert.Nil(t, err)
+
+	executor := utils.CreateTestExecutorWithType(colony.Name, "test_executor_type")
+	err = db.AddExecutor(executor)
+	assert.Nil(t, err)
+
+	// Create process with no location filter (should be picked by any executor)
+	funcSpec1 := utils.CreateTestFunctionSpec(colony.Name)
+	funcSpec1.Conditions.ExecutorType = "test_executor_type"
+	funcSpec1.Conditions.LocationName = "" // No location filter
+	process1 := core.CreateProcess(funcSpec1)
+	err = db.AddProcess(process1)
+	assert.Nil(t, err)
+
+	// Create process with location filter "location1"
+	funcSpec2 := utils.CreateTestFunctionSpec(colony.Name)
+	funcSpec2.Conditions.ExecutorType = "test_executor_type"
+	funcSpec2.Conditions.LocationName = "location1"
+	process2 := core.CreateProcess(funcSpec2)
+	err = db.AddProcess(process2)
+	assert.Nil(t, err)
+
+	// Create process with location filter "location2"
+	funcSpec3 := utils.CreateTestFunctionSpec(colony.Name)
+	funcSpec3.Conditions.ExecutorType = "test_executor_type"
+	funcSpec3.Conditions.LocationName = "location2"
+	process3 := core.CreateProcess(funcSpec3)
+	err = db.AddProcess(process3)
+	assert.Nil(t, err)
+
+	// Executor with no location should only get process1 (no location filter)
+	candidates, err := db.FindCandidates(colony.Name, executor.Type, "", 0, 0, 0, 0, 0, 0, 100)
+	assert.Nil(t, err)
+	assert.Len(t, candidates, 1)
+	assert.Equal(t, process1.ID, candidates[0].ID)
+
+	// Executor at location1 should get process1 AND process2
+	candidates, err = db.FindCandidates(colony.Name, executor.Type, "location1", 0, 0, 0, 0, 0, 0, 100)
+	assert.Nil(t, err)
+	assert.Len(t, candidates, 2)
+	foundProcess1 := false
+	foundProcess2 := false
+	for _, c := range candidates {
+		if c.ID == process1.ID {
+			foundProcess1 = true
+		}
+		if c.ID == process2.ID {
+			foundProcess2 = true
+		}
+	}
+	assert.True(t, foundProcess1)
+	assert.True(t, foundProcess2)
+
+	// Executor at location2 should get process1 AND process3
+	candidates, err = db.FindCandidates(colony.Name, executor.Type, "location2", 0, 0, 0, 0, 0, 0, 100)
+	assert.Nil(t, err)
+	assert.Len(t, candidates, 2)
+	foundProcess1 = false
+	foundProcess3 := false
+	for _, c := range candidates {
+		if c.ID == process1.ID {
+			foundProcess1 = true
+		}
+		if c.ID == process3.ID {
+			foundProcess3 = true
+		}
+	}
+	assert.True(t, foundProcess1)
+	assert.True(t, foundProcess3)
+
+	// Executor at location3 should only get process1 (no location filter)
+	candidates, err = db.FindCandidates(colony.Name, executor.Type, "location3", 0, 0, 0, 0, 0, 0, 100)
+	assert.Nil(t, err)
+	assert.Len(t, candidates, 1)
+	assert.Equal(t, process1.ID, candidates[0].ID)
+}
+
+func TestFindCandidatesByNameWithLocationFilter(t *testing.T) {
+	db, err := PrepareTests()
+	assert.Nil(t, err)
+
+	defer db.Close()
+
+	colony := core.CreateColony(core.GenerateRandomID(), "test_colony_name_1")
+	err = db.AddColony(colony)
+	assert.Nil(t, err)
+
+	executor := utils.CreateTestExecutorWithType(colony.Name, "test_executor_type")
+	executor.Name = "specific_executor"
+	err = db.AddExecutor(executor)
+	assert.Nil(t, err)
+
+	// Create process targeting specific executor with location filter
+	funcSpec1 := utils.CreateTestFunctionSpec(colony.Name)
+	funcSpec1.Conditions.ExecutorType = "test_executor_type"
+	funcSpec1.Conditions.ExecutorNames = []string{"specific_executor"}
+	funcSpec1.Conditions.LocationName = "location1"
+	process1 := core.CreateProcess(funcSpec1)
+	err = db.AddProcess(process1)
+	assert.Nil(t, err)
+
+	// Create process targeting specific executor without location filter
+	funcSpec2 := utils.CreateTestFunctionSpec(colony.Name)
+	funcSpec2.Conditions.ExecutorType = "test_executor_type"
+	funcSpec2.Conditions.ExecutorNames = []string{"specific_executor"}
+	funcSpec2.Conditions.LocationName = ""
+	process2 := core.CreateProcess(funcSpec2)
+	err = db.AddProcess(process2)
+	assert.Nil(t, err)
+
+	// Executor with no location should only get process2
+	candidates, err := db.FindCandidatesByName(colony.Name, "specific_executor", executor.Type, "", 0, 0, 0, 0, 0, 0, 100)
+	assert.Nil(t, err)
+	assert.Len(t, candidates, 1)
+	assert.Equal(t, process2.ID, candidates[0].ID)
+
+	// Executor at location1 should get both process1 and process2
+	candidates, err = db.FindCandidatesByName(colony.Name, "specific_executor", executor.Type, "location1", 0, 0, 0, 0, 0, 0, 100)
+	assert.Nil(t, err)
+	assert.Len(t, candidates, 2)
+
+	// Executor at location2 should only get process2 (no location filter)
+	candidates, err = db.FindCandidatesByName(colony.Name, "specific_executor", executor.Type, "location2", 0, 0, 0, 0, 0, 0, 100)
+	assert.Nil(t, err)
+	assert.Len(t, candidates, 1)
+	assert.Equal(t, process2.ID, candidates[0].ID)
+}
+
+func TestLocationNamePersistedInProcess(t *testing.T) {
+	db, err := PrepareTests()
+	assert.Nil(t, err)
+
+	defer db.Close()
+
+	colony := core.CreateColony(core.GenerateRandomID(), "test_colony_name_1")
+	err = db.AddColony(colony)
+	assert.Nil(t, err)
+
+	// Create process with location filter
+	funcSpec := utils.CreateTestFunctionSpec(colony.Name)
+	funcSpec.Conditions.LocationName = "test_location_name"
+	process := core.CreateProcess(funcSpec)
+	err = db.AddProcess(process)
+	assert.Nil(t, err)
+
+	// Retrieve process and verify LocationName is persisted
+	processFromDB, err := db.GetProcessByID(process.ID)
+	assert.Nil(t, err)
+	assert.Equal(t, "test_location_name", processFromDB.FunctionSpec.Conditions.LocationName)
+}
+
+func TestLocationNameEmptyByDefault(t *testing.T) {
+	db, err := PrepareTests()
+	assert.Nil(t, err)
+
+	defer db.Close()
+
+	colony := core.CreateColony(core.GenerateRandomID(), "test_colony_name_1")
+	err = db.AddColony(colony)
+	assert.Nil(t, err)
+
+	// Create process without setting location filter
+	funcSpec := utils.CreateTestFunctionSpec(colony.Name)
+	// Don't set funcSpec.Conditions.LocationName - should be empty by default
+	process := core.CreateProcess(funcSpec)
+	err = db.AddProcess(process)
+	assert.Nil(t, err)
+
+	// Retrieve process and verify LocationName is empty
+	processFromDB, err := db.GetProcessByID(process.ID)
+	assert.Nil(t, err)
+	assert.Equal(t, "", processFromDB.FunctionSpec.Conditions.LocationName)
+}
+
+func TestBackwardCompatibilityNoLocationFilter(t *testing.T) {
+	db, err := PrepareTests()
+	assert.Nil(t, err)
+
+	defer db.Close()
+
+	colony := core.CreateColony(core.GenerateRandomID(), "test_colony_name_1")
+	err = db.AddColony(colony)
+	assert.Nil(t, err)
+
+	executor := utils.CreateTestExecutorWithType(colony.Name, "test_executor_type")
+	err = db.AddExecutor(executor)
+	assert.Nil(t, err)
+
+	// Create multiple processes without location filter (backward compatible)
+	for i := 0; i < 5; i++ {
+		funcSpec := utils.CreateTestFunctionSpec(colony.Name)
+		funcSpec.Conditions.ExecutorType = "test_executor_type"
+		funcSpec.Conditions.LocationName = "" // Explicitly empty
+		process := core.CreateProcess(funcSpec)
+		err = db.AddProcess(process)
+		assert.Nil(t, err)
+	}
+
+	// Executor with no location should get all 5 processes
+	candidates, err := db.FindCandidates(colony.Name, executor.Type, "", 0, 0, 0, 0, 0, 0, 100)
+	assert.Nil(t, err)
+	assert.Len(t, candidates, 5)
+
+	// Executor at any location should still get all 5 processes
+	candidates, err = db.FindCandidates(colony.Name, executor.Type, "any_location", 0, 0, 0, 0, 0, 0, 100)
+	assert.Nil(t, err)
+	assert.Len(t, candidates, 5)
+}
+
+func TestLocationFilterWithDifferentExecutorTypes(t *testing.T) {
+	db, err := PrepareTests()
+	assert.Nil(t, err)
+
+	defer db.Close()
+
+	colony := core.CreateColony(core.GenerateRandomID(), "test_colony_name_1")
+	err = db.AddColony(colony)
+	assert.Nil(t, err)
+
+	// Create process with location filter and executor type A
+	funcSpec1 := utils.CreateTestFunctionSpec(colony.Name)
+	funcSpec1.Conditions.ExecutorType = "type_a"
+	funcSpec1.Conditions.LocationName = "location1"
+	process1 := core.CreateProcess(funcSpec1)
+	err = db.AddProcess(process1)
+	assert.Nil(t, err)
+
+	// Create process with location filter and executor type B
+	funcSpec2 := utils.CreateTestFunctionSpec(colony.Name)
+	funcSpec2.Conditions.ExecutorType = "type_b"
+	funcSpec2.Conditions.LocationName = "location1"
+	process2 := core.CreateProcess(funcSpec2)
+	err = db.AddProcess(process2)
+	assert.Nil(t, err)
+
+	// Executor type A at location1 should only get process1
+	candidates, err := db.FindCandidates(colony.Name, "type_a", "location1", 0, 0, 0, 0, 0, 0, 100)
+	assert.Nil(t, err)
+	assert.Len(t, candidates, 1)
+	assert.Equal(t, process1.ID, candidates[0].ID)
+
+	// Executor type B at location1 should only get process2
+	candidates, err = db.FindCandidates(colony.Name, "type_b", "location1", 0, 0, 0, 0, 0, 0, 100)
+	assert.Nil(t, err)
+	assert.Len(t, candidates, 1)
+	assert.Equal(t, process2.ID, candidates[0].ID)
+
+	// Executor type A at location2 should get nothing
+	candidates, err = db.FindCandidates(colony.Name, "type_a", "location2", 0, 0, 0, 0, 0, 0, 100)
+	assert.Nil(t, err)
+	assert.Len(t, candidates, 0)
+}
+
+func TestFindCandidatesCaseInsensitiveLocation(t *testing.T) {
+	db, err := PrepareTests()
+	assert.Nil(t, err)
+
+	defer db.Close()
+
+	colony := core.CreateColony(core.GenerateRandomID(), "test_colony_name_1")
+	err = db.AddColony(colony)
+	assert.Nil(t, err)
+
+	executor := utils.CreateTestExecutorWithType(colony.Name, "test_executor_type")
+	err = db.AddExecutor(executor)
+	assert.Nil(t, err)
+
+	// Create process with lowercase location "home"
+	funcSpec1 := utils.CreateTestFunctionSpec(colony.Name)
+	funcSpec1.Conditions.ExecutorType = "test_executor_type"
+	funcSpec1.Conditions.LocationName = "home"
+	process1 := core.CreateProcess(funcSpec1)
+	err = db.AddProcess(process1)
+	assert.Nil(t, err)
+
+	// Create process with uppercase location "HOME"
+	funcSpec2 := utils.CreateTestFunctionSpec(colony.Name)
+	funcSpec2.Conditions.ExecutorType = "test_executor_type"
+	funcSpec2.Conditions.LocationName = "HOME"
+	process2 := core.CreateProcess(funcSpec2)
+	err = db.AddProcess(process2)
+	assert.Nil(t, err)
+
+	// Create process with mixed case location "Home"
+	funcSpec3 := utils.CreateTestFunctionSpec(colony.Name)
+	funcSpec3.Conditions.ExecutorType = "test_executor_type"
+	funcSpec3.Conditions.LocationName = "Home"
+	process3 := core.CreateProcess(funcSpec3)
+	err = db.AddProcess(process3)
+	assert.Nil(t, err)
+
+	// Executor at "Home" should match all three processes (case-insensitive)
+	candidates, err := db.FindCandidates(colony.Name, executor.Type, "Home", 0, 0, 0, 0, 0, 0, 100)
+	assert.Nil(t, err)
+	assert.Len(t, candidates, 3)
+
+	// Executor at "home" should also match all three processes
+	candidates, err = db.FindCandidates(colony.Name, executor.Type, "home", 0, 0, 0, 0, 0, 0, 100)
+	assert.Nil(t, err)
+	assert.Len(t, candidates, 3)
+
+	// Executor at "HOME" should also match all three processes
+	candidates, err = db.FindCandidates(colony.Name, executor.Type, "HOME", 0, 0, 0, 0, 0, 0, 100)
+	assert.Nil(t, err)
+	assert.Len(t, candidates, 3)
+
+	// Executor at different location should not match any
+	candidates, err = db.FindCandidates(colony.Name, executor.Type, "office", 0, 0, 0, 0, 0, 0, 100)
+	assert.Nil(t, err)
+	assert.Len(t, candidates, 0)
+}
+
+func TestFindCandidatesByNameCaseInsensitiveLocation(t *testing.T) {
+	db, err := PrepareTests()
+	assert.Nil(t, err)
+
+	defer db.Close()
+
+	colony := core.CreateColony(core.GenerateRandomID(), "test_colony_name_1")
+	err = db.AddColony(colony)
+	assert.Nil(t, err)
+
+	executor := utils.CreateTestExecutorWithType(colony.Name, "test_executor_type")
+	executor.Name = "specific_executor"
+	err = db.AddExecutor(executor)
+	assert.Nil(t, err)
+
+	// Create process targeting specific executor with lowercase location "home"
+	funcSpec1 := utils.CreateTestFunctionSpec(colony.Name)
+	funcSpec1.Conditions.ExecutorType = "test_executor_type"
+	funcSpec1.Conditions.ExecutorNames = []string{"specific_executor"}
+	funcSpec1.Conditions.LocationName = "home"
+	process1 := core.CreateProcess(funcSpec1)
+	err = db.AddProcess(process1)
+	assert.Nil(t, err)
+
+	// Create process targeting specific executor with mixed case location "Home"
+	funcSpec2 := utils.CreateTestFunctionSpec(colony.Name)
+	funcSpec2.Conditions.ExecutorType = "test_executor_type"
+	funcSpec2.Conditions.ExecutorNames = []string{"specific_executor"}
+	funcSpec2.Conditions.LocationName = "Home"
+	process2 := core.CreateProcess(funcSpec2)
+	err = db.AddProcess(process2)
+	assert.Nil(t, err)
+
+	// Executor at "HOME" should match both processes (case-insensitive)
+	candidates, err := db.FindCandidatesByName(colony.Name, "specific_executor", executor.Type, "HOME", 0, 0, 0, 0, 0, 0, 100)
+	assert.Nil(t, err)
+	assert.Len(t, candidates, 2)
+
+	// Executor at "home" should also match both processes
+	candidates, err = db.FindCandidatesByName(colony.Name, "specific_executor", executor.Type, "home", 0, 0, 0, 0, 0, 0, 100)
+	assert.Nil(t, err)
+	assert.Len(t, candidates, 2)
 }

@@ -22,6 +22,23 @@ func (client *ColoniesClient) AddLog(processID string, logmsg string, prvKey str
 	return nil
 }
 
+// AddLogToExecutor adds a log entry for an executor without requiring a process context.
+// This is useful for executor startup logs, background operations, and diagnostics.
+func (client *ColoniesClient) AddLogToExecutor(colonyName, executorName, logmsg, prvKey string) error {
+	msg := rpc.CreateAddExecutorLogMsg(colonyName, executorName, logmsg)
+	jsonString, err := msg.ToJSON()
+	if err != nil {
+		return err
+	}
+
+	_, err = client.sendMessage(rpc.AddExecutorLogPayloadType, jsonString, prvKey, false, context.TODO())
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (client *ColoniesClient) GetLogsByProcess(colonyName string, processID string, count int, prvKey string) ([]*core.Log, error) {
 	msg := rpc.CreateGetLogsMsg(colonyName, processID, count, 0)
 	msg.ExecutorName = ""

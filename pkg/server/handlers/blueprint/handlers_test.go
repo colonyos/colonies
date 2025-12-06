@@ -1184,3 +1184,174 @@ func TestGetBlueprintDefinitionByKind(t *testing.T) {
 	server.Shutdown()
 	<-done
 }
+
+func TestBlueprintWithLocationCreatesCronWithLocation(t *testing.T) {
+	env, client, server, _, done := server.SetupTestEnv2(t)
+
+	// Add BlueprintDefinition with handler configured
+	sd := core.CreateBlueprintDefinition(
+		"executor-deployment",
+		"colonies.io",
+		"v1",
+		"ExecutorDeployment",
+		"executordeployments",
+		"Namespaced",
+		"docker_reconciler", // ExecutorType
+		"reconcile",         // FunctionName
+	)
+	sd.Spec.Handler.ReconcileInterval = 60
+	sd.Metadata.ColonyName = env.ColonyName
+	_, err := client.AddBlueprintDefinition(sd, env.ColonyPrvKey)
+	assert.Nil(t, err)
+
+	// Add Blueprint WITH location - this should create a cron with location suffix
+	blueprint := core.CreateBlueprint("ExecutorDeployment", "my-deployment", env.ColonyName)
+	blueprint.Metadata.LocationName = "datacenter-east" // Set location
+	blueprint.SetSpec("replicas", 2)
+	addedBlueprint, err := client.AddBlueprint(blueprint, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.NotNil(t, addedBlueprint)
+
+	// Verify cron was created with location in name
+	crons, err := client.GetCrons(env.ColonyName, 100, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.Equal(t, 1, len(crons), "Should have one cron for the ExecutorDeployment kind at datacenter-east")
+	assert.Equal(t, "reconcile-ExecutorDeployment-datacenter-east", crons[0].Name, "Cron name should include location suffix")
+
+	// Get waiting processes to verify reconciliation process was created
+	waitingProcs, err := client.GetWaitingProcesses(env.ColonyName, "", "", "", 100, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.Greater(t, len(waitingProcs), 0, "Should have at least one waiting reconciliation process")
+
+	// Find the reconciliation process and verify location is set correctly
+	var reconProcess *core.Process
+	for _, proc := range waitingProcs {
+		if kind, ok := proc.FunctionSpec.KwArgs["kind"].(string); ok && kind == "ExecutorDeployment" {
+			reconProcess = proc
+			break
+		}
+	}
+
+	assert.NotNil(t, reconProcess, "Should have created a reconciliation process")
+	assert.Equal(t, "reconcile", reconProcess.FunctionSpec.FuncName)
+	assert.Equal(t, "docker_reconciler", reconProcess.FunctionSpec.Conditions.ExecutorType)
+	assert.Equal(t, "datacenter-east", reconProcess.FunctionSpec.Conditions.LocationName, "Process should have LocationName condition set")
+
+	// Verify KwArgs has kind
+	kind, ok := reconProcess.FunctionSpec.KwArgs["kind"].(string)
+	assert.True(t, ok, "Process should have 'kind' kwarg")
+	assert.Equal(t, "ExecutorDeployment", kind)
+
+	server.Shutdown()
+	<-done
+}
+
+func TestBlueprintWithLocationCreatesSeparateCronsPerLocation(t *testing.T) {
+	env, client, server, _, done := server.SetupTestEnv2(t)
+
+	// Add BlueprintDefinition
+	sd := core.CreateBlueprintDefinition(
+		"container-deployment",
+		"colonies.io",
+		"v1",
+		"ContainerDeployment",
+		"containerdeployments",
+		"Namespaced",
+		"container_reconciler",
+		"reconcile",
+	)
+	sd.Spec.Handler.ReconcileInterval = 60
+	sd.Metadata.ColonyName = env.ColonyName
+	_, err := client.AddBlueprintDefinition(sd, env.ColonyPrvKey)
+	assert.Nil(t, err)
+
+	// Add first Blueprint at location "east"
+	blueprint1 := core.CreateBlueprint("ContainerDeployment", "deployment-east", env.ColonyName)
+	blueprint1.Metadata.LocationName = "east"
+	blueprint1.SetSpec("replicas", 1)
+	_, err = client.AddBlueprint(blueprint1, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+
+	// Add second Blueprint at location "west"
+	blueprint2 := core.CreateBlueprint("ContainerDeployment", "deployment-west", env.ColonyName)
+	blueprint2.Metadata.LocationName = "west"
+	blueprint2.SetSpec("replicas", 1)
+	_, err = client.AddBlueprint(blueprint2, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+
+	// Add third Blueprint at location "east" (same location as first)
+	blueprint3 := core.CreateBlueprint("ContainerDeployment", "deployment-east-2", env.ColonyName)
+	blueprint3.Metadata.LocationName = "east"
+	blueprint3.SetSpec("replicas", 1)
+	_, err = client.AddBlueprint(blueprint3, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+
+	// Verify two crons were created (one per unique location)
+	crons, err := client.GetCrons(env.ColonyName, 100, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.Equal(t, 2, len(crons), "Should have two crons - one for each unique location")
+
+	// Verify cron names
+	cronNames := make(map[string]bool)
+	for _, cron := range crons {
+		cronNames[cron.Name] = true
+	}
+	assert.True(t, cronNames["reconcile-ContainerDeployment-east"], "Should have cron for east location")
+	assert.True(t, cronNames["reconcile-ContainerDeployment-west"], "Should have cron for west location")
+
+	server.Shutdown()
+	<-done
+}
+
+func TestBlueprintWithoutLocationCreatesCronWithoutSuffix(t *testing.T) {
+	env, client, server, _, done := server.SetupTestEnv2(t)
+
+	// Add BlueprintDefinition
+	sd := core.CreateBlueprintDefinition(
+		"service-deployment",
+		"colonies.io",
+		"v1",
+		"ServiceDeployment",
+		"servicedeployments",
+		"Namespaced",
+		"service_reconciler",
+		"reconcile",
+	)
+	sd.Spec.Handler.ReconcileInterval = 60
+	sd.Metadata.ColonyName = env.ColonyName
+	_, err := client.AddBlueprintDefinition(sd, env.ColonyPrvKey)
+	assert.Nil(t, err)
+
+	// Add Blueprint WITHOUT location
+	blueprint := core.CreateBlueprint("ServiceDeployment", "my-service", env.ColonyName)
+	// Explicitly NOT setting location
+	blueprint.SetSpec("replicas", 1)
+	_, err = client.AddBlueprint(blueprint, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+
+	// Verify cron was created WITHOUT location suffix
+	crons, err := client.GetCrons(env.ColonyName, 100, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.Equal(t, 1, len(crons))
+	assert.Equal(t, "reconcile-ServiceDeployment", crons[0].Name, "Cron name should NOT have location suffix when no location specified")
+
+	// Get waiting processes
+	waitingProcs, err := client.GetWaitingProcesses(env.ColonyName, "", "", "", 100, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.Greater(t, len(waitingProcs), 0)
+
+	// Find reconciliation process
+	var reconProcess *core.Process
+	for _, proc := range waitingProcs {
+		if kind, ok := proc.FunctionSpec.KwArgs["kind"].(string); ok && kind == "ServiceDeployment" {
+			reconProcess = proc
+			break
+		}
+	}
+
+	assert.NotNil(t, reconProcess)
+	assert.Equal(t, "", reconProcess.FunctionSpec.Conditions.LocationName, "Process should have empty LocationName when blueprint has no location")
+
+	server.Shutdown()
+	<-done
+}

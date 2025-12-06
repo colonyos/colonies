@@ -103,11 +103,11 @@ func NewEventHandler(handler backends.RealtimeEventHandler) *EventHandler {
 	return &EventHandler{realHandler: handler}
 }
 
-func (e *EventHandler) WaitForProcess(executorType string, state int, processID string, ctx context.Context) (*core.Process, error) {
+func (e *EventHandler) WaitForProcess(executorType string, state int, processID string, location string, ctx context.Context) (*core.Process, error) {
 	if e.realHandler == nil {
 		return nil, nil
 	}
-	return e.realHandler.WaitForProcess(executorType, state, processID, ctx)
+	return e.realHandler.WaitForProcess(executorType, state, processID, location, ctx)
 }
 
 type Server interface {
@@ -411,7 +411,7 @@ func (h *Handlers) HandleAssignProcess(c backends.Context, recoveredID string, p
 		// No process available, wait for new processes if timeout is specified
 		if msg.Timeout > 0 {
 			// Wait for a new process to be submitted to a ColoniesServer in the cluster
-			h.server.ProcessController().GetEventHandler().WaitForProcess(executor.Type, core.WAITING, "", ctx)
+			h.server.ProcessController().GetEventHandler().WaitForProcess(executor.Type, core.WAITING, "", executor.LocationName, ctx)
 			// Check if we timed out during the wait
 			select {
 			case <-ctx.Done():

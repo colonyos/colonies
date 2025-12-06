@@ -342,6 +342,29 @@ func (db *PQDatabase) GetBlueprintsByNamespaceAndKind(namespace, kind string) ([
 	return db.parseBlueprints(rows)
 }
 
+func (db *PQDatabase) GetBlueprintsByNamespaceKindAndLocation(namespace, kind, locationName string) ([]*core.Blueprint, error) {
+	var rows *sql.Rows
+	var err error
+
+	if locationName == "" {
+		// If no location filter, return all blueprints for namespace and kind
+		sqlStatement := `SELECT ID, COLONY_NAME, NAME, KIND, DATA FROM ` + db.dbPrefix + `BLUEPRINTS WHERE COLONY_NAME=$1 AND KIND=$2 ORDER BY NAME`
+		rows, err = db.postgresql.Query(sqlStatement, namespace, kind)
+	} else {
+		// Filter by location using JSONB query (case-insensitive)
+		sqlStatement := `SELECT ID, COLONY_NAME, NAME, KIND, DATA FROM ` + db.dbPrefix + `BLUEPRINTS WHERE COLONY_NAME=$1 AND KIND=$2 AND LOWER((DATA::jsonb)->'metadata'->>'locationname')=LOWER($3) ORDER BY NAME`
+		rows, err = db.postgresql.Query(sqlStatement, namespace, kind, locationName)
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	return db.parseBlueprints(rows)
+}
+
 func (db *PQDatabase) UpdateBlueprint(blueprint *core.Blueprint) error {
 	if blueprint == nil {
 		return errors.New("Blueprint is nil")

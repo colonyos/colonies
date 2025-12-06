@@ -42,6 +42,7 @@ type Conditions struct {
 	ColonyName       string   `json:"colonyname"`
 	ExecutorNames    []string `json:"executornames"`
 	ExecutorType     string   `json:"executortype"`
+	LocationName     string   `json:"locationname,omitempty"` // Optional filter by location
 	Dependencies     []string `json:"dependencies"`
 	Nodes            int      `json:"nodes"`
 	CPU              string   `json:"cpu"`

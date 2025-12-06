@@ -293,7 +293,7 @@ var lsExecutorsCmd = &cobra.Command{
 
 			// Filter by location
 			if TargetLocation != "" {
-				if executor.Location.Description != TargetLocation {
+				if executor.LocationName != TargetLocation {
 					continue
 				}
 			}

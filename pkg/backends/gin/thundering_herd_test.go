@@ -38,7 +38,7 @@ func TestSingleWakeUp(t *testing.T) {
 			defer cancel()
 
 			// Simulate executor waiting for process
-			_, err := handler.WaitForProcess(executorType, core.WAITING, "", ctx)
+			_, err := handler.WaitForProcess(executorType, core.WAITING, "", "", ctx)
 			if err == nil {
 				// Executor woke up from signal
 				atomic.AddInt32(&wakeUpCount, 1)
@@ -50,7 +50,7 @@ func TestSingleWakeUp(t *testing.T) {
 	time.Sleep(100 * time.Millisecond)
 
 	// Verify all executors are registered as listeners
-	allListeners, listeners, _ := handler.NumberOfListeners(executorType, core.WAITING)
+	allListeners, listeners, _ := handler.NumberOfListeners(executorType, core.WAITING, "")
 	t.Logf("Registered listeners: %d (for target: %d)", allListeners, listeners)
 	assert.Equal(t, numExecutors, listeners, "All executors should be registered")
 
@@ -91,7 +91,7 @@ func TestNoAmplification(t *testing.T) {
 			defer wg.Done()
 			for j := 0; j < numSignals; j++ {
 				ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-				_, err := handler.WaitForProcess(executorType, core.WAITING, "", ctx)
+				_, err := handler.WaitForProcess(executorType, core.WAITING, "", "", ctx)
 				cancel()
 				if err == nil {
 					atomic.AddInt32(&totalWakeUps, 1)
@@ -146,7 +146,7 @@ func TestBufferedChannelExhaustion(t *testing.T) {
 	done := make(chan struct{})
 	go func() {
 		for {
-			_, err := handler.WaitForProcess(executorType, core.WAITING, "", ctx)
+			_, err := handler.WaitForProcess(executorType, core.WAITING, "", "", ctx)
 			if err != nil {
 				break
 			}

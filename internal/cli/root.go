@@ -147,6 +147,8 @@ var Quite bool
 var TargetServerID string
 var Text string
 var Days int
+var LocationName string
+var LocationDesc string
 var ASCII bool
 var Print bool
 var SecondsBack int

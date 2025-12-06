@@ -121,7 +121,13 @@ func (client *ColoniesClient) GetBlueprint(namespace, name string, prvKey string
 
 // GetBlueprints retrieves Blueprints by namespace and optionally by kind
 func (client *ColoniesClient) GetBlueprints(namespace, kind string, prvKey string) ([]*core.Blueprint, error) {
-	msg := rpc.CreateGetBlueprintsMsg(namespace, kind)
+	return client.GetBlueprintsByLocation(namespace, kind, "", prvKey)
+}
+
+// GetBlueprintsByLocation retrieves Blueprints by namespace, kind, and location
+// If locationName is empty, all blueprints matching namespace and kind are returned
+func (client *ColoniesClient) GetBlueprintsByLocation(namespace, kind, locationName string, prvKey string) ([]*core.Blueprint, error) {
+	msg := rpc.CreateGetBlueprintsMsg(namespace, kind, locationName)
 	jsonString, err := msg.ToJSON()
 	if err != nil {
 		return nil, err

@@ -12,13 +12,6 @@ const (
 	UNREGISTERED     = 3
 )
 
-type Location struct {
-	Long        float64 `json:"long"`
-	Lat         float64 `json:"lat"`
-	Name        string  `json:"name"`
-	Description string  `json:"desc"`
-}
-
 type GPU struct {
 	Name      string `json:"name"`
 	Memory    string `json:"mem"`
@@ -72,7 +65,7 @@ type Executor struct {
 	RequireFuncReg    bool         `json:"requirefuncreg"`
 	CommissionTime    time.Time    `json:"commissiontime"`
 	LastHeardFromTime time.Time    `json:"lastheardfromtime"`
-	Location          Location     `json:"location"`
+	LocationName      string       `json:"locationname,omitempty"` // Reference to a Location entity
 	Capabilities      Capabilities `json:"capabilities"`
 	Allocations       Allocations  `json:"allocations"`
 	BlueprintID       string       `json:"blueprintid,omitempty"`  // Reference to Blueprint (for managed executors)
@@ -187,19 +180,7 @@ func (executor *Executor) Equals(executor2 *Executor) bool {
 		same = false
 	}
 
-	if executor.Location.Lat != executor2.Location.Lat {
-		same = false
-	}
-
-	if executor.Location.Long != executor2.Location.Long {
-		same = false
-	}
-
-	if executor.Location.Description != executor2.Location.Description {
-		same = false
-	}
-
-	if executor.Location.Name != executor2.Location.Name {
+	if executor.LocationName != executor2.LocationName {
 		same = false
 	}
 

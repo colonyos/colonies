@@ -23,6 +23,7 @@ type BlueprintDatabase interface {
 	GetBlueprintsByNamespace(namespace string) ([]*core.Blueprint, error)
 	GetBlueprintsByKind(kind string) ([]*core.Blueprint, error)
 	GetBlueprintsByNamespaceAndKind(namespace, kind string) ([]*core.Blueprint, error)
+	GetBlueprintsByNamespaceKindAndLocation(namespace, kind, locationName string) ([]*core.Blueprint, error)
 	UpdateBlueprint(blueprint *core.Blueprint) error
 	UpdateBlueprintStatus(id string, status map[string]interface{}) error
 	RemoveBlueprintByID(id string) error

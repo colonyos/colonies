@@ -177,10 +177,11 @@ func printBlueprintsTableWithClient(c *client.ColoniesClient, blueprints []*core
 	var cols = []table.Column{
 		{ID: "name", Name: "Name", SortIndex: 1},
 		{ID: "kind", Name: "Kind", SortIndex: 2},
-		{ID: "reconciler", Name: "Reconciler", SortIndex: 3},
-		{ID: "replicas", Name: "Replicas", SortIndex: 4},
-		{ID: "oldgen", Name: "OldGen", SortIndex: 5},
-		{ID: "generation", Name: "Gen", SortIndex: 6},
+		{ID: "location", Name: "Location", SortIndex: 3},
+		{ID: "executortype", Name: "Executor Type", SortIndex: 4},
+		{ID: "replicas", Name: "Replicas", SortIndex: 5},
+		{ID: "oldgen", Name: "OldGen", SortIndex: 6},
+		{ID: "generation", Name: "Gen", SortIndex: 7},
 	}
 	t.SetCols(cols)
 
@@ -198,30 +199,21 @@ func printBlueprintsTableWithClient(c *client.ColoniesClient, blueprints []*core
 	}
 
 	for _, blueprint := range blueprints {
-		// Get reconciler name from handler, spec, or definition
-		reconcilerStr := "-"
-		if blueprint.Handler != nil {
-			if blueprint.Handler.ExecutorName != "" {
-				reconcilerStr = blueprint.Handler.ExecutorName
-			} else if len(blueprint.Handler.ExecutorNames) > 0 {
-				reconcilerStr = blueprint.Handler.ExecutorNames[0]
-				if len(blueprint.Handler.ExecutorNames) > 1 {
-					reconcilerStr += "..."
-				}
-			}
+		// Get location from metadata
+		locationStr := "-"
+		if blueprint.Metadata.LocationName != "" {
+			locationStr = blueprint.Metadata.LocationName
 		}
-		// Check spec.executorName as fallback (used by docker-reconciler)
-		if reconcilerStr == "-" {
-			if execName, ok := blueprint.GetSpec("executorName"); ok {
-				if nameStr, ok := execName.(string); ok && nameStr != "" {
-					reconcilerStr = nameStr
-				}
-			}
+
+		// Get executor type from handler or definition
+		executorTypeStr := "-"
+		if blueprint.Handler != nil && blueprint.Handler.ExecutorType != "" {
+			executorTypeStr = blueprint.Handler.ExecutorType
 		}
-		// Fall back to executor type from definition (shown in brackets)
-		if reconcilerStr == "-" {
+		// Fall back to executor type from definition
+		if executorTypeStr == "-" {
 			if execType, ok := kindToExecutorType[blueprint.Kind]; ok {
-				reconcilerStr = "[" + execType + "]"
+				executorTypeStr = execType
 			}
 		}
 
@@ -356,7 +348,8 @@ func printBlueprintsTableWithClient(c *client.ColoniesClient, blueprints []*core
 		row := []interface{}{
 			termenv.String(blueprint.Metadata.Name).Foreground(theme.ColorCyan),
 			termenv.String(blueprint.Kind).Foreground(theme.ColorViolet),
-			termenv.String(reconcilerStr).Foreground(theme.ColorBlue),
+			termenv.String(locationStr).Foreground(theme.ColorGreen),
+			termenv.String(executorTypeStr).Foreground(theme.ColorBlue),
 			termenv.String(replicasStr).Foreground(theme.ColorMagenta),
 			termenv.String(oldGenStr).Foreground(getOldGenColor(oldGenStr, theme)),
 			termenv.String(fmt.Sprintf("%d", blueprint.Metadata.Generation)).Foreground(theme.ColorYellow),

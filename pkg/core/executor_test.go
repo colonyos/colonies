@@ -36,25 +36,23 @@ func TestCreateExecutor2(t *testing.T) {
 	lastHeardFromTime := time.Now()
 
 	executor1 := CreateExecutor(id, executorType, name, colonyName, commissionTime, lastHeardFromTime)
-	executor1Location := Location{Long: 1.0, Lat: 2.0, Description: "test_desc"}
 	executor1GPU := GPU{Name: "test_name1", Count: 1, Memory: "11G", NodeCount: 1}
 	executor1HW := Hardware{Model: "test_model", CPU: "test_cpu", Cores: 8, Memory: "test_mem", Storage: "test_storage", GPU: executor1GPU, Nodes: 1}
 	executor1SW := Software{Name: "test_name1", Type: "test_type1", Version: "test_version1"}
 	executor1CAP := Capabilities{Hardware: []Hardware{executor1HW}, Software: []Software{executor1SW}}
-	executor1.Location = executor1Location
+	executor1.LocationName = "test_location"
 	executor1.Capabilities = executor1CAP
 
 	executor2 := CreateExecutor(id, executorType, name, colonyName, commissionTime, lastHeardFromTime)
-	executor2Location := Location{Long: 1.0, Lat: 2.0, Description: "test_desc"}
 	executor2GPU := GPU{Name: "test_name1", Count: 1, Memory: "11G", NodeCount: 1}
 	executor2HW := Hardware{Model: "test_model", CPU: "test_cpu", Cores: 8, Memory: "test_mem", Storage: "test_storage", GPU: executor2GPU, Nodes: 1}
 	executor2SW := Software{Name: "test_name1", Type: "test_type1", Version: "test_version1"}
 	executor2CAP := Capabilities{Hardware: []Hardware{executor2HW}, Software: []Software{executor2SW}}
-	executor2.Location = executor2Location
+	executor2.LocationName = "test_location"
 	executor2.Capabilities = executor2CAP
 
 	assert.True(t, executor1.Equals(executor2))
-	executor2.Location.Description = "changed_location"
+	executor2.LocationName = "changed_location"
 	assert.False(t, executor1.Equals(executor2))
 }
 

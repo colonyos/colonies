@@ -20,18 +20,16 @@ type Blueprint struct {
 	Status   map[string]interface{} `json:"status,omitempty"`
 }
 
-// BlueprintHandler defines executor targeting for blueprint instances
-// This allows targeting specific executor(s) at the instance level
+// BlueprintHandler defines executor type targeting for blueprint instances
 type BlueprintHandler struct {
-	ExecutorType  string   `json:"executorType,omitempty"`
-	ExecutorName  string   `json:"executorName,omitempty"`
-	ExecutorNames []string `json:"executorNames,omitempty"`
+	ExecutorType string `json:"executorType,omitempty"`
 }
 
 // BlueprintMetadata contains metadata for blueprints
 type BlueprintMetadata struct {
 	Name                      string            `json:"name"`
 	ColonyName                string            `json:"colonyname"`
+	LocationName              string            `json:"locationname,omitempty"`
 	Labels                    map[string]string `json:"labels,omitempty"`
 	Annotations               map[string]string `json:"annotations,omitempty"`
 	Generation                int64             `json:"generation,omitempty"`

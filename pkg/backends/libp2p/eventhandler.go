@@ -86,7 +86,7 @@ func (e *EventHandler) Signal(process *core.Process) {
 
 	// Pass 1: Broadcast to all listeners waiting for this specific processID.
 	// These are callers waiting for state changes on a process they submitted/own.
-	key := e.getListenerKey(process.FunctionSpec.Conditions.ExecutorType, process.State, process.ID)
+	key := e.getListenerKey(process.FunctionSpec.Conditions.ExecutorType, process.State, process.ID, process.FunctionSpec.Conditions.LocationName)
 	if listeners, exists := e.listeners[key]; exists {
 		for _, ch := range listeners {
 			select {
@@ -100,7 +100,7 @@ func (e *EventHandler) Signal(process *core.Process) {
 
 	// Pass 2: Wake ONE general listener using round-robin.
 	// General listeners are executors waiting for ANY process of their type.
-	generalKey := e.getListenerKey(process.FunctionSpec.Conditions.ExecutorType, process.State, "")
+	generalKey := e.getListenerKey(process.FunctionSpec.Conditions.ExecutorType, process.State, "", process.FunctionSpec.Conditions.LocationName)
 	if listeners, exists := e.listeners[generalKey]; exists {
 		if len(listeners) == 0 {
 			return
@@ -125,35 +125,35 @@ func (e *EventHandler) Signal(process *core.Process) {
 }
 
 // Subscribe registers a subscription and returns channels for process events and errors
-func (e *EventHandler) Subscribe(executorType string, state int, processID string, ctx context.Context) (chan *core.Process, chan error) {
+func (e *EventHandler) Subscribe(executorType string, state int, processID string, location string, ctx context.Context) (chan *core.Process, chan error) {
 	e.listenersMu.Lock()
 	defer e.listenersMu.Unlock()
-	
+
 	if e.stopped {
 		errCh := make(chan error, 1)
 		errCh <- ErrEventHandlerStopped
 		return nil, errCh
 	}
-	
+
 	processCh := make(chan *core.Process, 100) // Buffered channel
 	errCh := make(chan error, 1)
-	
-	key := e.getListenerKey(executorType, state, processID)
+
+	key := e.getListenerKey(executorType, state, processID, location)
 	e.listeners[key] = append(e.listeners[key], processCh)
-	
+
 	// Handle context cancellation
 	go func() {
 		<-ctx.Done()
 		e.unsubscribe(key, processCh)
 		close(processCh)
 	}()
-	
+
 	return processCh, errCh
 }
 
 // WaitForProcess waits for a specific process state change
-func (e *EventHandler) WaitForProcess(executorType string, state int, processID string, ctx context.Context) (*core.Process, error) {
-	processCh, errCh := e.Subscribe(executorType, state, processID, ctx)
+func (e *EventHandler) WaitForProcess(executorType string, state int, processID string, location string, ctx context.Context) (*core.Process, error) {
+	processCh, errCh := e.Subscribe(executorType, state, processID, location, ctx)
 	
 	select {
 	case process := <-processCh:
@@ -189,11 +189,11 @@ func (e *EventHandler) Stop() {
 }
 
 // getListenerKey creates a key for the listeners map
-func (e *EventHandler) getListenerKey(executorType string, state int, processID string) string {
+func (e *EventHandler) getListenerKey(executorType string, state int, processID string, location string) string {
 	if processID == "" {
-		return fmt.Sprintf("%s_%d", executorType, state)
+		return fmt.Sprintf("%s_%d_%s", executorType, state, location)
 	}
-	return fmt.Sprintf("%s_%d_%s", executorType, state, processID)
+	return fmt.Sprintf("%s_%d_%s_%s", executorType, state, processID, location)
 }
 
 // unsubscribe removes a channel from the listeners
@@ -238,13 +238,13 @@ func NewTestableEventHandler(relayServer interface{}) backends.TestableRealtimeE
 }
 
 // NumberOfListeners returns listener counts for testing
-func (t *TestableEventHandler) NumberOfListeners(executorType string, state int) (int, int, int) {
+func (t *TestableEventHandler) NumberOfListeners(executorType string, state int, location string) (int, int, int) {
 	t.listenersMu.RLock()
 	defer t.listenersMu.RUnlock()
-	
-	key := t.getListenerKey(executorType, state, "")
+
+	key := t.getListenerKey(executorType, state, "", location)
 	count := len(t.listeners[key])
-	
+
 	// For libp2p, return same count for all three values (simplified)
 	return count, count, count
 }

@@ -119,12 +119,7 @@ func TestAddExecutorWithLocation(t *testing.T) {
 	assert.Nil(t, err)
 
 	executor := utils.CreateTestExecutor(colony.Name)
-	executor.Location = core.Location{
-		Long:        12.34,
-		Lat:         56.78,
-		Name:        "Home",
-		Description: "Intel i9 + RTX 3080 Ti Server",
-	}
+	executor.LocationName = "Home"
 
 	err = db.AddExecutor(executor)
 	assert.Nil(t, err)
@@ -132,10 +127,7 @@ func TestAddExecutorWithLocation(t *testing.T) {
 	executorFromDB, err := db.GetExecutorByID(executor.ID)
 	assert.Nil(t, err)
 	assert.NotNil(t, executorFromDB)
-	assert.Equal(t, "Home", executorFromDB.Location.Name)
-	assert.Equal(t, "Intel i9 + RTX 3080 Ti Server", executorFromDB.Location.Description)
-	assert.Equal(t, 12.34, executorFromDB.Location.Long)
-	assert.Equal(t, 56.78, executorFromDB.Location.Lat)
+	assert.Equal(t, "Home", executorFromDB.LocationName)
 }
 
 func TestAddExecutorWithAllocations(t *testing.T) {
