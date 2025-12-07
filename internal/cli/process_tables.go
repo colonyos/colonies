@@ -291,6 +291,16 @@ func printConditionsTable(funcSpec *core.FunctionSpec) {
 	}
 	t.AddRow(row)
 
+	locationName := funcSpec.Conditions.LocationName
+	if locationName == "" {
+		locationName = "None"
+	}
+	row = []interface{}{
+		termenv.String("Location").Foreground(theme.ColorCyan),
+		termenv.String(locationName).Foreground(theme.ColorGray),
+	}
+	t.AddRow(row)
+
 	row = []interface{}{
 		termenv.String("Dependencies").Foreground(theme.ColorCyan),
 		termenv.String(dep).Foreground(theme.ColorGray),

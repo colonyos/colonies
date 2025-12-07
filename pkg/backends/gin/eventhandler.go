@@ -211,8 +211,34 @@ func (handler *DefaultEventHandler) unregister(executorType string, state int, l
 //   - After successful send, advance the index for next time
 func (handler *DefaultEventHandler) sendSignal(process *core.Process) {
 	msg := &message{reply: make(chan replyMessage, 100), handler: func(msg *message) {
-		t := handler.target(process.FunctionSpec.Conditions.ExecutorType, process.State, process.FunctionSpec.Conditions.LocationName)
-		if _, ok := handler.listeners[t]; ok {
+		processLocation := process.FunctionSpec.Conditions.LocationName
+		targetPrefix := process.FunctionSpec.Conditions.ExecutorType + strconv.Itoa(process.State)
+
+		// Build list of targets to signal based on process location:
+		// - Process WITH location: signal that location + general (no location) executors
+		// - Process WITHOUT location: signal ALL targets (can run on any executor)
+		var targets []string
+		if processLocation != "" {
+			// Process has a specific location requirement
+			targets = append(targets, handler.target(process.FunctionSpec.Conditions.ExecutorType, process.State, processLocation))
+			targets = append(targets, handler.target(process.FunctionSpec.Conditions.ExecutorType, process.State, ""))
+		} else {
+			// Process has no location - can run anywhere
+			// Find all targets matching this executorType+state (any location)
+			for t := range handler.listeners {
+				if len(t) >= len(targetPrefix) && t[:len(targetPrefix)] == targetPrefix {
+					targets = append(targets, t)
+				}
+			}
+		}
+
+		generalWoken := false // Track if we've already woken a general listener
+
+		for _, t := range targets {
+			if _, ok := handler.listeners[t]; !ok {
+				continue
+			}
+
 			// Pass 1: Broadcast to all listeners waiting for this specific processID.
 			// These are callers waiting for state changes on a process they submitted/own.
 			for listenerID, c := range handler.listeners[t] {
@@ -229,6 +255,11 @@ func (handler *DefaultEventHandler) sendSignal(process *core.Process) {
 
 			// Pass 2: Wake ONE general listener using round-robin.
 			// General listeners are executors waiting for ANY process of their type.
+			// Only wake one general listener across all targets to prevent thundering herd.
+			if generalWoken {
+				continue
+			}
+
 			// Collect general listener IDs (those without specific processID)
 			var generalListeners []string
 			for listenerID := range handler.listeners[t] {
@@ -238,7 +269,7 @@ func (handler *DefaultEventHandler) sendSignal(process *core.Process) {
 			}
 
 			if len(generalListeners) == 0 {
-				return
+				continue
 			}
 
 			// Sort for deterministic round-robin order (Go maps iterate randomly)
@@ -248,6 +279,7 @@ func (handler *DefaultEventHandler) sendSignal(process *core.Process) {
 			idx := handler.nextExecutor[t] % len(generalListeners)
 
 			// Try each listener starting from idx, wrapping around if channel is full
+		listenerLoop:
 			for i := 0; i < len(generalListeners); i++ {
 				listenerID := generalListeners[(idx+i)%len(generalListeners)]
 				c := handler.listeners[t][listenerID]
@@ -255,7 +287,8 @@ func (handler *DefaultEventHandler) sendSignal(process *core.Process) {
 				case c <- process.Clone():
 					// Success - advance round-robin index for next signal
 					handler.nextExecutor[t] = (idx + i + 1) % len(generalListeners)
-					return
+					generalWoken = true
+					break listenerLoop
 				default:
 					continue // Channel full, try next listener
 				}

@@ -788,38 +788,67 @@ var doctorBlueprintCmd = &cobra.Command{
 				}
 			}
 
-			// Check 4: Replica status
-			replicas, ok := blueprint.Spec["replicas"]
-			if ok {
-				desiredReplicas := 0
-				switch v := replicas.(type) {
-				case float64:
-					desiredReplicas = int(v)
-				case int:
-					desiredReplicas = v
-				}
-
-				// Get actual running replicas by searching for executors with matching pattern
-				runningCount := 0
-				blueprintNamePrefix := blueprint.Metadata.Name
-				for _, exec := range executors {
-					if strings.HasPrefix(exec.Name, blueprintNamePrefix) {
-						runningCount++
+			// Check 4: Replica status (for ExecutorDeployment kind)
+			if blueprint.Kind == "ExecutorDeployment" {
+				desiredReplicas := -1
+				if val, ok := blueprint.GetSpec("replicas"); ok {
+					if floatVal, ok := val.(float64); ok {
+						desiredReplicas = int(floatVal)
+					} else if intVal, ok := val.(int); ok {
+						desiredReplicas = intVal
 					}
 				}
 
-				if runningCount < desiredReplicas {
-					issuesFound++
-					fmt.Print(termenv.String("  [WARN] ").Foreground(theme.ColorYellow).Bold().String())
-					fmt.Printf("Only %d/%d replicas running\n", runningCount, desiredReplicas)
-					// Add actionable suggestions
-					fmt.Print(termenv.String("          ").String())
-					fmt.Printf("Run: colonies blueprint log --name %s\n", blueprint.Metadata.Name)
-					fmt.Print(termenv.String("          ").String())
-					fmt.Printf("Try: colonies blueprint reconcile --name %s --force\n", blueprint.Metadata.Name)
-				} else if runningCount == desiredReplicas && desiredReplicas > 0 {
-					fmt.Print(termenv.String("  [OK] ").Foreground(theme.ColorGreen).String())
-					fmt.Printf("All %d replicas running\n", desiredReplicas)
+				if desiredReplicas > 0 {
+					// Get actual running replicas using BlueprintID matching (same as table)
+					runningCount := 0
+					currentGen := blueprint.Metadata.Generation
+					for _, exec := range executors {
+						// Only count approved executors
+						if !exec.IsApproved() {
+							continue
+						}
+						// Try BlueprintID match first (more reliable)
+						if exec.BlueprintID == blueprint.ID {
+							if exec.BlueprintGen == currentGen {
+								runningCount++
+							}
+						} else if exec.BlueprintID == "" {
+							// Fallback to name-based matching for executors without BlueprintID
+							blueprintHyphens := strings.Count(blueprint.Metadata.Name, "-")
+							executorParts := strings.Split(exec.Name, "-")
+							expectedParts := blueprintHyphens + 3
+							if len(executorParts) == expectedParts {
+								deploymentName := strings.Join(executorParts[:blueprintHyphens+1], "-")
+								if deploymentName == blueprint.Metadata.Name {
+									lastPart := executorParts[len(executorParts)-1]
+									var gen int
+									_, err := fmt.Sscanf(lastPart, "%d", &gen)
+									if err == nil {
+										if int64(gen) == currentGen {
+											runningCount++
+										}
+									} else {
+										runningCount++
+									}
+								}
+							}
+						}
+					}
+
+					if runningCount < desiredReplicas {
+						issuesFound++
+						fmt.Print(termenv.String("  [WARN] ").Foreground(theme.ColorYellow).Bold().String())
+						fmt.Printf("Only %d/%d replicas running\n", runningCount, desiredReplicas)
+						// Add actionable suggestions
+						fmt.Print(termenv.String("          ").String())
+						fmt.Printf("Run: colonies blueprint log --name %s\n", blueprint.Metadata.Name)
+						fmt.Print(termenv.String("          ").String())
+						fmt.Printf("Try: colonies blueprint reconcile --name %s --force\n", blueprint.Metadata.Name)
+					} else if runningCount == desiredReplicas {
+						fmt.Print(termenv.String("  [OK] ").Foreground(theme.ColorGreen).String())
+						fmt.Printf("All %d replicas running\n", desiredReplicas)
+					}
 				}
 			}
 

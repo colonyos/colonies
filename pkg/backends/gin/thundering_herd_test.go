@@ -219,3 +219,309 @@ func TestExpectedVsActualDatabaseOperations(t *testing.T) {
 	assert.True(t, actualOperations > idealOperations,
 		"Thundering herd causes %dx more operations than ideal", numActiveExecutors)
 }
+
+// TestProcessWithLocationWakesGeneralExecutor verifies that a process WITH a location
+// can wake an executor that registered WITHOUT a location filter (accepts any location).
+func TestProcessWithLocationWakesGeneralExecutor(t *testing.T) {
+	handler := CreateTestableEventHandler(nil)
+	defer handler.Stop()
+
+	executorType := "test-executor"
+	var wakeUpCount int32
+	var wg sync.WaitGroup
+
+	// Create a process WITH location
+	funcSpec := core.CreateEmptyFunctionSpec()
+	funcSpec.Conditions.ExecutorType = executorType
+	funcSpec.Conditions.LocationName = "datacenter-1"
+	process := core.CreateProcess(funcSpec)
+	process.State = core.WAITING
+
+	// Start executor WITHOUT location filter (accepts any location)
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		defer cancel()
+
+		// Executor waiting without location filter
+		_, err := handler.WaitForProcess(executorType, core.WAITING, "", "", ctx)
+		if err == nil {
+			atomic.AddInt32(&wakeUpCount, 1)
+		}
+	}()
+
+	time.Sleep(100 * time.Millisecond)
+
+	// Verify executor registered
+	_, listeners, _ := handler.NumberOfListeners(executorType, core.WAITING, "")
+	assert.Equal(t, 1, listeners, "Executor should be registered without location")
+
+	// Signal process with location
+	handler.Signal(process)
+
+	wg.Wait()
+
+	assert.Equal(t, int32(1), wakeUpCount,
+		"Process with location should wake executor without location filter")
+}
+
+// TestProcessWithLocationWakesLocationSpecificExecutor verifies that a process WITH a location
+// wakes an executor that registered WITH the same location filter.
+func TestProcessWithLocationWakesLocationSpecificExecutor(t *testing.T) {
+	handler := CreateTestableEventHandler(nil)
+	defer handler.Stop()
+
+	executorType := "test-executor"
+	location := "datacenter-1"
+	var wakeUpCount int32
+	var wg sync.WaitGroup
+
+	// Create a process WITH location
+	funcSpec := core.CreateEmptyFunctionSpec()
+	funcSpec.Conditions.ExecutorType = executorType
+	funcSpec.Conditions.LocationName = location
+	process := core.CreateProcess(funcSpec)
+	process.State = core.WAITING
+
+	// Start executor WITH matching location filter
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		defer cancel()
+
+		// Executor waiting with location filter
+		_, err := handler.WaitForProcess(executorType, core.WAITING, "", location, ctx)
+		if err == nil {
+			atomic.AddInt32(&wakeUpCount, 1)
+		}
+	}()
+
+	time.Sleep(100 * time.Millisecond)
+
+	// Verify executor registered with location
+	_, listeners, _ := handler.NumberOfListeners(executorType, core.WAITING, location)
+	assert.Equal(t, 1, listeners, "Executor should be registered with location")
+
+	// Signal process with location
+	handler.Signal(process)
+
+	wg.Wait()
+
+	assert.Equal(t, int32(1), wakeUpCount,
+		"Process with location should wake executor with matching location filter")
+}
+
+// TestProcessWithoutLocationWakesAnyExecutor verifies that a process WITHOUT
+// a location can wake executors at any location (since "no location" means "can run anywhere").
+// This is critical for production where executors have locations but processes don't specify one.
+func TestProcessWithoutLocationWakesAnyExecutor(t *testing.T) {
+	handler := CreateTestableEventHandler(nil)
+	defer handler.Stop()
+
+	executorType := "test-executor"
+	var totalWakeUp int32
+	var wg sync.WaitGroup
+
+	// Create a process WITHOUT location
+	funcSpec := core.CreateEmptyFunctionSpec()
+	funcSpec.Conditions.ExecutorType = executorType
+	// No location set - means "can run anywhere"
+	process := core.CreateProcess(funcSpec)
+	process.State = core.WAITING
+
+	// Start executor WITH location filter (simulates production scenario)
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		defer cancel()
+
+		_, err := handler.WaitForProcess(executorType, core.WAITING, "", "datacenter-1", ctx)
+		if err == nil {
+			atomic.AddInt32(&totalWakeUp, 1)
+		}
+	}()
+
+	time.Sleep(100 * time.Millisecond)
+
+	// Signal process without location
+	handler.Signal(process)
+
+	wg.Wait()
+
+	assert.Equal(t, int32(1), totalWakeUp,
+		"Process without location should wake location-specific executor")
+}
+
+// TestProcessWithLocationDoesNotWakeDifferentLocationExecutor verifies that a process
+// with location X does NOT wake an executor filtering for location Y.
+func TestProcessWithLocationDoesNotWakeDifferentLocationExecutor(t *testing.T) {
+	handler := CreateTestableEventHandler(nil)
+	defer handler.Stop()
+
+	executorType := "test-executor"
+	var wakeUpCount int32
+	var wg sync.WaitGroup
+
+	// Create a process with location "datacenter-1"
+	funcSpec := core.CreateEmptyFunctionSpec()
+	funcSpec.Conditions.ExecutorType = executorType
+	funcSpec.Conditions.LocationName = "datacenter-1"
+	process := core.CreateProcess(funcSpec)
+	process.State = core.WAITING
+
+	// Start executor filtering for DIFFERENT location "datacenter-2"
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+		defer cancel()
+
+		_, err := handler.WaitForProcess(executorType, core.WAITING, "", "datacenter-2", ctx)
+		if err == nil {
+			atomic.AddInt32(&wakeUpCount, 1)
+		}
+	}()
+
+	time.Sleep(100 * time.Millisecond)
+
+	// Signal process with datacenter-1
+	handler.Signal(process)
+
+	wg.Wait()
+
+	assert.Equal(t, int32(0), wakeUpCount,
+		"Process with location should NOT wake executor filtering for different location")
+}
+
+// TestMixedLocationExecutors verifies correct signal routing when executors have
+// different location filters and a process with location is signaled.
+func TestMixedLocationExecutors(t *testing.T) {
+	handler := CreateTestableEventHandler(nil)
+	defer handler.Stop()
+
+	executorType := "test-executor"
+	var generalWakeUp int32
+	var matchingWakeUp int32
+	var differentWakeUp int32
+	var wg sync.WaitGroup
+
+	// Create a process with location "datacenter-1"
+	funcSpec := core.CreateEmptyFunctionSpec()
+	funcSpec.Conditions.ExecutorType = executorType
+	funcSpec.Conditions.LocationName = "datacenter-1"
+	process := core.CreateProcess(funcSpec)
+	process.State = core.WAITING
+
+	// Start executor WITHOUT location filter (general)
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		defer cancel()
+
+		_, err := handler.WaitForProcess(executorType, core.WAITING, "", "", ctx)
+		if err == nil {
+			atomic.AddInt32(&generalWakeUp, 1)
+		}
+	}()
+
+	// Start executor WITH matching location filter
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		defer cancel()
+
+		_, err := handler.WaitForProcess(executorType, core.WAITING, "", "datacenter-1", ctx)
+		if err == nil {
+			atomic.AddInt32(&matchingWakeUp, 1)
+		}
+	}()
+
+	// Start executor WITH different location filter
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+		defer cancel()
+
+		_, err := handler.WaitForProcess(executorType, core.WAITING, "", "datacenter-2", ctx)
+		if err == nil {
+			atomic.AddInt32(&differentWakeUp, 1)
+		}
+	}()
+
+	time.Sleep(100 * time.Millisecond)
+
+	// Signal process with datacenter-1
+	handler.Signal(process)
+
+	wg.Wait()
+
+	t.Logf("General wake-up: %d, Matching wake-up: %d, Different wake-up: %d",
+		generalWakeUp, matchingWakeUp, differentWakeUp)
+
+	// Only ONE executor should wake up (either general or matching, not both)
+	// to prevent thundering herd
+	totalWakeUps := generalWakeUp + matchingWakeUp + differentWakeUp
+	assert.Equal(t, int32(1), totalWakeUps,
+		"Only ONE executor should wake up to prevent thundering herd")
+	assert.Equal(t, int32(0), differentWakeUp,
+		"Executor with different location should NOT wake up")
+}
+
+// TestMultipleSignalsWithLocation verifies round-robin works correctly
+// when multiple signals are sent for processes with location.
+func TestMultipleSignalsWithLocation(t *testing.T) {
+	handler := CreateTestableEventHandler(nil)
+	defer handler.Stop()
+
+	executorType := "test-executor"
+	numExecutors := 3
+	numSignals := 3
+	var totalWakeUps int32
+	var wg sync.WaitGroup
+
+	// Create a process with location
+	funcSpec := core.CreateEmptyFunctionSpec()
+	funcSpec.Conditions.ExecutorType = executorType
+	funcSpec.Conditions.LocationName = "datacenter-1"
+	process := core.CreateProcess(funcSpec)
+	process.State = core.WAITING
+
+	// Start multiple general executors (no location filter)
+	for i := 0; i < numExecutors; i++ {
+		wg.Add(1)
+		go func(id int) {
+			defer wg.Done()
+			for j := 0; j < numSignals; j++ {
+				ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+				_, err := handler.WaitForProcess(executorType, core.WAITING, "", "", ctx)
+				cancel()
+				if err == nil {
+					atomic.AddInt32(&totalWakeUps, 1)
+				} else {
+					break
+				}
+			}
+		}(i)
+	}
+
+	time.Sleep(100 * time.Millisecond)
+
+	// Send multiple signals
+	for i := 0; i < numSignals; i++ {
+		handler.Signal(process)
+		time.Sleep(50 * time.Millisecond)
+	}
+
+	wg.Wait()
+
+	t.Logf("Total wake-ups: %d (signals=%d, executors=%d)", totalWakeUps, numSignals, numExecutors)
+
+	assert.Equal(t, int32(numSignals), totalWakeUps,
+		"Each signal should wake exactly 1 executor (1:1 ratio with location)")
+}
