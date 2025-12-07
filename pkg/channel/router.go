@@ -19,6 +19,7 @@ type Router struct {
 	channels   map[string]*Channel
 	byProcess  map[string][]string // processID → []channelID
 	replicator Replicator
+	syncMode   bool // If true, replication is synchronous (for testing)
 }
 
 // NewRouter creates a new channel router
@@ -46,6 +47,13 @@ func (r *Router) SetReplicator(replicator Replicator) {
 	r.replicator = replicator
 }
 
+// SetSyncMode enables synchronous replication (useful for testing)
+func (r *Router) SetSyncMode(sync bool) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.syncMode = sync
+}
+
 // Create creates a new channel
 func (r *Router) Create(channel *Channel) error {
 	r.mu.Lock()
@@ -65,9 +73,37 @@ func (r *Router) Create(channel *Channel) error {
 	// Index by process
 	r.byProcess[channel.ProcessID] = append(r.byProcess[channel.ProcessID], channel.ID)
 
-	// Replicate to peers (async)
-	go r.replicator.ReplicateChannel(channel)
+	// Replicate to peers
+	if r.syncMode {
+		r.replicator.ReplicateChannel(channel)
+	} else {
+		go r.replicator.ReplicateChannel(channel)
+	}
 
+	return nil
+}
+
+// CreateIfNotExists creates a channel only if it doesn't already exist
+// Returns nil on success or if channel already exists (idempotent)
+func (r *Router) CreateIfNotExists(channel *Channel) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	if _, exists := r.channels[channel.ID]; exists {
+		return nil // Already exists, success
+	}
+
+	// Initialize log if nil
+	if channel.Log == nil {
+		channel.Log = make([]*MsgEntry, 0)
+	}
+
+	r.channels[channel.ID] = channel
+
+	// Index by process
+	r.byProcess[channel.ProcessID] = append(r.byProcess[channel.ProcessID], channel.ID)
+
+	// Note: No replication here - this is called from replication handler
 	return nil
 }
 
@@ -161,8 +197,12 @@ func (r *Router) Append(channelID string, senderID string, sequence int64, inRep
 		return channel.Log[i].Timestamp.Before(channel.Log[j].Timestamp)
 	})
 
-	// Replicate to peers (async)
-	go r.replicator.ReplicateEntry(channelID, entry)
+	// Replicate to peers - include channel info to handle race conditions
+	if r.syncMode {
+		r.replicator.ReplicateEntry(channel, entry)
+	} else {
+		go r.replicator.ReplicateEntry(channel, entry)
+	}
 
 	return nil
 }
@@ -244,8 +284,12 @@ func (r *Router) SetExecutorIDForProcess(processID string, executorID string) er
 		}
 	}
 
-	// Replicate to peers (async)
-	go r.replicator.ReplicateExecutorAssignment(processID, executorID)
+	// Replicate to peers
+	if r.syncMode {
+		r.replicator.ReplicateExecutorAssignment(processID, executorID)
+	} else {
+		go r.replicator.ReplicateExecutorAssignment(processID, executorID)
+	}
 
 	return nil
 }
@@ -266,8 +310,12 @@ func (r *Router) CleanupProcess(processID string) {
 
 	delete(r.byProcess, processID)
 
-	// Replicate to peers (async)
-	go r.replicator.ReplicateCleanup(processID)
+	// Replicate to peers
+	if r.syncMode {
+		r.replicator.ReplicateCleanup(processID)
+	} else {
+		go r.replicator.ReplicateCleanup(processID)
+	}
 }
 
 // GetSequence returns the current sequence number for a channel

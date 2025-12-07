@@ -17,12 +17,12 @@ const (
 
 // ReplicationMessage is sent between servers via RelayServer
 type ReplicationMessage struct {
-	Type       string      `json:"type"`
-	ChannelID  string      `json:"channelid,omitempty"`
-	ProcessID  string      `json:"processid,omitempty"`
-	ExecutorID string      `json:"executorid,omitempty"`
-	Entry      *MsgEntry   `json:"entry,omitempty"`
-	Channel    *Channel    `json:"channel,omitempty"`
+	Type       string    `json:"type"`
+	ChannelID  string    `json:"channelid,omitempty"`
+	ProcessID  string    `json:"processid,omitempty"`
+	ExecutorID string    `json:"executorid,omitempty"`
+	Entry      *MsgEntry `json:"entry,omitempty"`
+	Channel    *Channel  `json:"channel,omitempty"`
 }
 
 // RelayReplicator replicates channel operations using the cluster RelayServer
@@ -49,19 +49,38 @@ func (r *RelayReplicator) handleIncoming() {
 	incoming := r.relayServer.Receive()
 	for msg := range incoming {
 		var repMsg ReplicationMessage
-		err := json.Unmarshal(msg, &repMsg)
+		err := json.Unmarshal(msg.Data, &repMsg)
 		if err != nil {
 			log.WithFields(log.Fields{"Error": err}).Error("Failed to unmarshal replication message")
+			if msg.Done != nil {
+				close(msg.Done)
+			}
 			continue
 		}
 
+		log.WithFields(log.Fields{"Type": repMsg.Type, "ChannelID": repMsg.ChannelID}).Debug("Received replication message")
+
 		switch repMsg.Type {
 		case ReplicateEntryType:
+			// Ensure channel exists before replicating entry (race condition fix)
+			if repMsg.Channel != nil {
+				ch := &Channel{
+					ID:          repMsg.Channel.ID,
+					ProcessID:   repMsg.Channel.ProcessID,
+					Name:        repMsg.Channel.Name,
+					SubmitterID: repMsg.Channel.SubmitterID,
+					ExecutorID:  repMsg.Channel.ExecutorID,
+					Sequence:    0,
+					Log:         make([]*MsgEntry, 0),
+				}
+				r.localRouter.CreateIfNotExists(ch)
+			}
 			if err := r.localRouter.ReplicateEntry(repMsg.ChannelID, repMsg.Entry); err != nil {
 				log.WithFields(log.Fields{"Error": err, "ChannelID": repMsg.ChannelID}).Error("Failed to replicate entry")
 			}
 		case ReplicateChannelType:
 			// Create a copy without the log entries
+			// Use CreateIfNotExists to avoid re-replicating to peers
 			ch := &Channel{
 				ID:          repMsg.Channel.ID,
 				ProcessID:   repMsg.Channel.ProcessID,
@@ -71,7 +90,7 @@ func (r *RelayReplicator) handleIncoming() {
 				Sequence:    0,
 				Log:         make([]*MsgEntry, 0),
 			}
-			if err := r.localRouter.Create(ch); err != nil && err != ErrChannelExists {
+			if err := r.localRouter.CreateIfNotExists(ch); err != nil {
 				log.WithFields(log.Fields{"Error": err, "ChannelID": ch.ID}).Error("Failed to replicate channel creation")
 			}
 		case ReplicateCleanupType:
@@ -83,6 +102,11 @@ func (r *RelayReplicator) handleIncoming() {
 		default:
 			log.WithFields(log.Fields{"Type": repMsg.Type}).Warn("Unknown replication message type")
 		}
+
+		// Signal that processing is complete (if Done channel exists)
+		if msg.Done != nil {
+			close(msg.Done)
+		}
 	}
 }
 
@@ -91,14 +115,22 @@ func (r *RelayReplicator) broadcast(msg *ReplicationMessage) error {
 	if err != nil {
 		return err
 	}
-	return r.relayServer.Broadcast(data)
+	log.WithFields(log.Fields{"Type": msg.Type, "ChannelID": msg.ChannelID}).Debug("Broadcasting replication message")
+	err = r.relayServer.Broadcast(data)
+	if err != nil {
+		log.WithFields(log.Fields{"Error": err, "Type": msg.Type}).Error("Failed to broadcast replication message")
+	}
+	return err
 }
 
-func (r *RelayReplicator) ReplicateEntry(channelID string, entry *MsgEntry) error {
+func (r *RelayReplicator) ReplicateEntry(channel *Channel, entry *MsgEntry) error {
+	// Include channel info so receiving server can create channel if it doesn't exist
+	// This fixes the race condition where entry arrives before channel creation
 	msg := &ReplicationMessage{
 		Type:      ReplicateEntryType,
-		ChannelID: channelID,
+		ChannelID: channel.ID,
 		Entry:     entry,
+		Channel:   channel, // Include channel for race condition handling
 	}
 	return r.broadcast(msg)
 }

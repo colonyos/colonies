@@ -457,10 +457,12 @@ func (controller *ColoniesController) AddProcessToDB(process *core.Process) (*co
 	}
 
 	// Create channels defined in FunctionSpec
+	// Use deterministic IDs (processID_channelName) so channels can be created
+	// consistently across cluster servers (lazy creation on any server)
 	if addedProcess.FunctionSpec.Channels != nil {
 		for _, channelName := range addedProcess.FunctionSpec.Channels {
 			ch := &channel.Channel{
-				ID:          core.GenerateRandomID(),
+				ID:          addedProcess.ID + "_" + channelName, // Deterministic ID for cluster consistency
 				ProcessID:   addedProcess.ID,
 				Name:        channelName,
 				SubmitterID: addedProcess.InitiatorID,

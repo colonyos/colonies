@@ -75,15 +75,25 @@ func (h *Handlers) HandleChannelAppend(c backends.Context, recoveredID string, p
 		return
 	}
 
-	// Get channel by process and name
+	// Get channel by process and name, creating on demand if necessary for cluster scenarios
 	ch, err := h.server.ChannelRouter().GetByProcessAndName(msg.ProcessID, msg.Name)
 	if err != nil {
 		if err == channel.ErrChannelNotFound {
-			h.server.HandleHTTPError(c, errors.New("Channel not found"), http.StatusNotFound)
+			// Try lazy creation - channel may not have replicated to this server yet
+			ch, err = h.ensureChannelExists(process, msg.Name)
+			if err != nil {
+				if err == channel.ErrChannelNotFound {
+					h.server.HandleHTTPError(c, errors.New("Channel not found"), http.StatusNotFound)
+				} else {
+					h.server.HandleHTTPError(c, err, http.StatusInternalServerError)
+				}
+				return
+			}
+			log.WithFields(log.Fields{"ProcessID": msg.ProcessID, "Channel": msg.Name}).Info("Created channel on demand (cluster lazy creation)")
 		} else {
 			h.server.HandleHTTPError(c, err, http.StatusInternalServerError)
+			return
 		}
-		return
 	}
 
 	// Determine caller ID - either submitter or executor
@@ -137,15 +147,25 @@ func (h *Handlers) HandleChannelRead(c backends.Context, recoveredID string, pay
 		return
 	}
 
-	// Get channel by process and name
+	// Get channel by process and name, creating on demand if necessary for cluster scenarios
 	ch, err := h.server.ChannelRouter().GetByProcessAndName(msg.ProcessID, msg.Name)
 	if err != nil {
 		if err == channel.ErrChannelNotFound {
-			h.server.HandleHTTPError(c, errors.New("Channel not found"), http.StatusNotFound)
+			// Try lazy creation - channel may not have replicated to this server yet
+			ch, err = h.ensureChannelExists(process, msg.Name)
+			if err != nil {
+				if err == channel.ErrChannelNotFound {
+					h.server.HandleHTTPError(c, errors.New("Channel not found"), http.StatusNotFound)
+				} else {
+					h.server.HandleHTTPError(c, err, http.StatusInternalServerError)
+				}
+				return
+			}
+			log.WithFields(log.Fields{"ProcessID": msg.ProcessID, "Channel": msg.Name}).Info("Created channel on demand (cluster lazy creation)")
 		} else {
 			h.server.HandleHTTPError(c, err, http.StatusInternalServerError)
+			return
 		}
-		return
 	}
 
 	// Determine caller ID - either submitter or executor
@@ -184,4 +204,39 @@ func getCallerID(recoveredID string, process *core.Process) string {
 	}
 	// Default to recovered ID (for user-based access)
 	return recoveredID
+}
+
+// ensureChannelExists creates a channel on demand if it's defined in the process spec
+// but doesn't exist locally. This handles cluster scenarios where a client connects
+// to a different server than where the process was originally submitted.
+func (h *Handlers) ensureChannelExists(process *core.Process, channelName string) (*channel.Channel, error) {
+	// Check if this channel is defined in the process spec
+	channelDefined := false
+	for _, ch := range process.FunctionSpec.Channels {
+		if ch == channelName {
+			channelDefined = true
+			break
+		}
+	}
+
+	if !channelDefined {
+		return nil, channel.ErrChannelNotFound
+	}
+
+	// Create the channel on demand
+	ch := &channel.Channel{
+		ID:          process.ID + "_" + channelName, // Deterministic ID
+		ProcessID:   process.ID,
+		Name:        channelName,
+		SubmitterID: process.InitiatorID,
+		ExecutorID:  process.AssignedExecutorID,
+	}
+
+	// Use CreateIfNotExists to handle concurrent creation
+	if err := h.server.ChannelRouter().CreateIfNotExists(ch); err != nil {
+		return nil, err
+	}
+
+	// Return the channel (might have been created by another goroutine)
+	return h.server.ChannelRouter().GetByProcessAndName(process.ID, channelName)
 }

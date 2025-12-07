@@ -3,7 +3,8 @@ package channel
 // Replicator defines the interface for replicating channel operations across servers
 type Replicator interface {
 	// ReplicateEntry sends a new entry to peer servers
-	ReplicateEntry(channelID string, entry *MsgEntry) error
+	// Includes channel info so peers can create channel if it doesn't exist (race condition fix)
+	ReplicateEntry(channel *Channel, entry *MsgEntry) error
 
 	// ReplicateChannel sends channel creation to peer servers
 	ReplicateChannel(channel *Channel) error
@@ -18,7 +19,7 @@ type Replicator interface {
 // NoOpReplicator is a replicator that does nothing (for single-server setup)
 type NoOpReplicator struct{}
 
-func (r *NoOpReplicator) ReplicateEntry(channelID string, entry *MsgEntry) error {
+func (r *NoOpReplicator) ReplicateEntry(channel *Channel, entry *MsgEntry) error {
 	return nil
 }
 
@@ -46,9 +47,22 @@ func NewInMemoryReplicator(peers []*Router) *InMemoryReplicator {
 	}
 }
 
-func (r *InMemoryReplicator) ReplicateEntry(channelID string, entry *MsgEntry) error {
+func (r *InMemoryReplicator) ReplicateEntry(channel *Channel, entry *MsgEntry) error {
 	for _, peer := range r.peers {
-		if err := peer.ReplicateEntry(channelID, entry); err != nil {
+		// Ensure channel exists on peer before replicating entry
+		peerChannel := &Channel{
+			ID:          channel.ID,
+			ProcessID:   channel.ProcessID,
+			Name:        channel.Name,
+			SubmitterID: channel.SubmitterID,
+			ExecutorID:  channel.ExecutorID,
+			Sequence:    0,
+			Log:         make([]*MsgEntry, 0),
+		}
+		// Create channel if it doesn't exist (ignore ErrChannelExists)
+		peer.CreateIfNotExists(peerChannel)
+
+		if err := peer.ReplicateEntry(channel.ID, entry); err != nil {
 			// In production, log error but continue to other peers
 			continue
 		}

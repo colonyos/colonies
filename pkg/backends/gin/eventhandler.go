@@ -52,7 +52,7 @@ type DefaultEventHandler struct {
 	stopped           bool
 	mutex             sync.Mutex
 	relayServer       *cluster.RelayServer
-	relayChan         chan []byte
+	relayChan         chan cluster.RelayMessage
 	stopRelayListener chan struct{}
 }
 
@@ -125,11 +125,15 @@ func (handler *DefaultEventHandler) relayListener() {
 	for {
 		select {
 		case msg := <-handler.relayChan:
-			process, err := core.ConvertJSONToProcess(string(msg))
+			process, err := core.ConvertJSONToProcess(string(msg.Data))
 			if err != nil {
-				log.WithFields(log.Fields{"Error": err}).Warning("relayListener received invalid process JSON")
+				log.WithFields(log.Fields{"Error": err}).Debug("relayListener received non-process message, ignoring")
 			} else {
 				handler.signalNoRelay(process)
+			}
+			// Signal completion if Done channel exists
+			if msg.Done != nil {
+				close(msg.Done)
 			}
 		case <-handler.stopRelayListener:
 			return

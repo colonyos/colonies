@@ -1821,6 +1821,11 @@ func (server *Server) FileDB() database.FileDatabase {
 	return server.fileDB
 }
 
+// SetChannelSyncMode enables synchronous channel replication (for testing)
+func (server *Server) SetChannelSyncMode(sync bool) {
+	server.channelRouter.SetSyncMode(sync)
+}
+
 func (server *Server) Shutdown() {
 	server.controller.Stop()
 
