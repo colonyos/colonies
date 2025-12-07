@@ -1852,6 +1852,11 @@ func (server *Server) Shutdown() {
 		}).Info("LibP2P networking stopped")
 	}
 
+	// Shutdown channel router (stops pending replications)
+	if server.channelRouter != nil {
+		server.channelRouter.Shutdown()
+	}
+
 	// Shutdown HTTP server (runs for both backends)
 	if server.server != nil {
 		if err := server.server.ShutdownWithTimeout(5 * time.Second); err != nil {

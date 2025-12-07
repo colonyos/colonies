@@ -2,6 +2,8 @@ package channel
 
 import (
 	"encoding/json"
+	"sync"
+	"sync/atomic"
 
 	"github.com/colonyos/colonies/pkg/cluster"
 	log "github.com/sirupsen/logrus"
@@ -9,10 +11,10 @@ import (
 
 // ReplicationMessage types
 const (
-	ReplicateEntryType      = "replicate_entry"
-	ReplicateChannelType    = "replicate_channel"
-	ReplicateCleanupType    = "replicate_cleanup"
-	ReplicateExecutorType   = "replicate_executor"
+	ReplicateEntryType    = "replicate_entry"
+	ReplicateChannelType  = "replicate_channel"
+	ReplicateCleanupType  = "replicate_cleanup"
+	ReplicateExecutorType = "replicate_executor"
 )
 
 // ReplicationMessage is sent between servers via RelayServer
@@ -29,6 +31,8 @@ type ReplicationMessage struct {
 type RelayReplicator struct {
 	relayServer *cluster.RelayServer
 	localRouter *Router
+	shutdown    atomic.Bool
+	wg          sync.WaitGroup
 }
 
 // NewRelayReplicator creates a replicator that uses RelayServer for cluster communication
@@ -100,7 +104,10 @@ func (r *RelayReplicator) handleIncoming() {
 				log.WithFields(log.Fields{"Error": err, "ProcessID": repMsg.ProcessID}).Error("Failed to replicate executor assignment")
 			}
 		default:
-			log.WithFields(log.Fields{"Type": repMsg.Type}).Warn("Unknown replication message type")
+			// Ignore empty types (can happen during shutdown)
+			if repMsg.Type != "" {
+				log.WithFields(log.Fields{"Type": repMsg.Type}).Warn("Unknown replication message type")
+			}
 		}
 
 		// Signal that processing is complete (if Done channel exists)
@@ -111,6 +118,19 @@ func (r *RelayReplicator) handleIncoming() {
 }
 
 func (r *RelayReplicator) broadcast(msg *ReplicationMessage) error {
+	// Check if shutting down - skip broadcast silently
+	if r.shutdown.Load() {
+		return nil
+	}
+
+	r.wg.Add(1)
+	defer r.wg.Done()
+
+	// Double-check after adding to wait group
+	if r.shutdown.Load() {
+		return nil
+	}
+
 	data, err := json.Marshal(msg)
 	if err != nil {
 		return err
@@ -118,9 +138,18 @@ func (r *RelayReplicator) broadcast(msg *ReplicationMessage) error {
 	log.WithFields(log.Fields{"Type": msg.Type, "ChannelID": msg.ChannelID}).Debug("Broadcasting replication message")
 	err = r.relayServer.Broadcast(data)
 	if err != nil {
-		log.WithFields(log.Fields{"Error": err, "Type": msg.Type}).Error("Failed to broadcast replication message")
+		// Only log errors if not shutting down
+		if !r.shutdown.Load() {
+			log.WithFields(log.Fields{"Error": err, "Type": msg.Type}).Error("Failed to broadcast replication message")
+		}
 	}
 	return err
+}
+
+// Shutdown stops accepting new replications and waits for pending ones
+func (r *RelayReplicator) Shutdown() {
+	r.shutdown.Store(true)
+	r.wg.Wait()
 }
 
 func (r *RelayReplicator) ReplicateEntry(channel *Channel, entry *MsgEntry) error {

@@ -185,21 +185,21 @@ func (r *Router) GetChannelsByProcess(processID string) []*Channel {
 
 // Append adds a message to a channel with client-assigned sequence number
 func (r *Router) Append(channelID string, senderID string, sequence int64, inReplyTo int64, payload []byte) error {
-	r.mu.RLock()
+	r.mu.Lock()
 	channel, exists := r.channels[channelID]
-	r.mu.RUnlock()
 
 	if !exists {
+		r.mu.Unlock()
 		return ErrChannelNotFound
 	}
 
-	// Check authorization
+	// Check authorization (while holding lock to avoid race with SetExecutorIDForProcess)
 	if err := r.authorize(channel, senderID); err != nil {
+		r.mu.Unlock()
 		return err
 	}
 
-	// Lock channel for writing
-	r.mu.Lock()
+	// Continue with write operation (already holding write lock)
 
 	entry := &MsgEntry{
 		Sequence:  sequence, // Client-assigned
@@ -249,20 +249,17 @@ func (r *Router) Append(channelID string, senderID string, sequence int64, inRep
 // Since sequences are per-sender, we use index-based reading
 func (r *Router) ReadAfter(channelID string, callerID string, afterIndex int64, limit int) ([]*MsgEntry, error) {
 	r.mu.RLock()
-	channel, exists := r.channels[channelID]
-	r.mu.RUnlock()
+	defer r.mu.RUnlock()
 
+	channel, exists := r.channels[channelID]
 	if !exists {
 		return nil, ErrChannelNotFound
 	}
 
-	// Check authorization
+	// Check authorization (while holding lock to avoid race with SetExecutorIDForProcess)
 	if err := r.authorize(channel, callerID); err != nil {
 		return nil, err
 	}
-
-	r.mu.RLock()
-	defer r.mu.RUnlock()
 
 	// afterIndex is the last index read, so we start from afterIndex+1
 	startIdx := int(afterIndex)
@@ -449,16 +446,17 @@ func (r *Router) Stats() (channelCount int, processCount int) {
 func (r *Router) Subscribe(channelID string, callerID string) (chan *MsgEntry, error) {
 	r.mu.RLock()
 	channel, exists := r.channels[channelID]
-	r.mu.RUnlock()
-
 	if !exists {
+		r.mu.RUnlock()
 		return nil, ErrChannelNotFound
 	}
 
-	// Verify authorization
+	// Verify authorization (while holding lock to avoid race with SetExecutorIDForProcess)
 	if err := r.authorize(channel, callerID); err != nil {
+		r.mu.RUnlock()
 		return nil, err
 	}
+	r.mu.RUnlock()
 
 	ch := make(chan *MsgEntry, 100)
 	sub := &Subscriber{ch: ch, channelID: channelID}
@@ -511,4 +509,15 @@ func (r *Router) SubscriberCount(channelID string) int {
 	r.subMu.RLock()
 	defer r.subMu.RUnlock()
 	return len(r.subscribers[channelID])
+}
+
+// Shutdown gracefully shuts down the router, waiting for pending replications
+func (r *Router) Shutdown() {
+	r.mu.Lock()
+	replicator := r.replicator
+	r.mu.Unlock()
+
+	if replicator != nil {
+		replicator.Shutdown()
+	}
 }

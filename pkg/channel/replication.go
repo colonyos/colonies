@@ -14,6 +14,9 @@ type Replicator interface {
 
 	// ReplicateExecutorAssignment notifies peers of executor assignment
 	ReplicateExecutorAssignment(processID string, executorID string) error
+
+	// Shutdown stops accepting new replications and waits for pending ones
+	Shutdown()
 }
 
 // NoOpReplicator is a replicator that does nothing (for single-server setup)
@@ -33,6 +36,10 @@ func (r *NoOpReplicator) ReplicateCleanup(processID string) error {
 
 func (r *NoOpReplicator) ReplicateExecutorAssignment(processID string, executorID string) error {
 	return nil
+}
+
+func (r *NoOpReplicator) Shutdown() {
+	// No-op
 }
 
 // InMemoryReplicator replicates to a list of peer routers (for testing)
@@ -104,4 +111,8 @@ func (r *InMemoryReplicator) ReplicateExecutorAssignment(processID string, execu
 		peer.SetExecutorIDForProcess(processID, executorID)
 	}
 	return nil
+}
+
+func (r *InMemoryReplicator) Shutdown() {
+	// No-op for in-memory replicator
 }
