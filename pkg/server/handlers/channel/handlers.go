@@ -210,6 +210,12 @@ func getCallerID(recoveredID string, process *core.Process) string {
 // but doesn't exist locally. This handles cluster scenarios where a client connects
 // to a different server than where the process was originally submitted.
 func (h *Handlers) ensureChannelExists(process *core.Process, channelName string) (*channel.Channel, error) {
+	// Don't create channels for closed processes (SUCCESS or FAILED)
+	// Channels are cleaned up when processes close
+	if process.State == core.SUCCESS || process.State == core.FAILED {
+		return nil, channel.ErrChannelNotFound
+	}
+
 	// Check if this channel is defined in the process spec
 	channelDefined := false
 	for _, ch := range process.FunctionSpec.Channels {
