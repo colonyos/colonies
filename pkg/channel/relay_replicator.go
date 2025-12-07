@@ -124,21 +124,41 @@ func (r *RelayReplicator) broadcast(msg *ReplicationMessage) error {
 }
 
 func (r *RelayReplicator) ReplicateEntry(channel *Channel, entry *MsgEntry) error {
-	// Include channel info so receiving server can create channel if it doesn't exist
+	// Include channel metadata so receiving server can create channel if it doesn't exist
 	// This fixes the race condition where entry arrives before channel creation
+	// Note: We create a shallow copy WITHOUT the Log to avoid data races
+	channelMeta := &Channel{
+		ID:          channel.ID,
+		ProcessID:   channel.ProcessID,
+		Name:        channel.Name,
+		SubmitterID: channel.SubmitterID,
+		ExecutorID:  channel.ExecutorID,
+		Sequence:    0,
+		Log:         nil, // Explicitly nil - we don't need the log for replication
+	}
 	msg := &ReplicationMessage{
 		Type:      ReplicateEntryType,
 		ChannelID: channel.ID,
 		Entry:     entry,
-		Channel:   channel, // Include channel for race condition handling
+		Channel:   channelMeta, // Include channel metadata for race condition handling
 	}
 	return r.broadcast(msg)
 }
 
 func (r *RelayReplicator) ReplicateChannel(channel *Channel) error {
+	// Create a copy without the Log to avoid data races
+	channelMeta := &Channel{
+		ID:          channel.ID,
+		ProcessID:   channel.ProcessID,
+		Name:        channel.Name,
+		SubmitterID: channel.SubmitterID,
+		ExecutorID:  channel.ExecutorID,
+		Sequence:    0,
+		Log:         nil,
+	}
 	msg := &ReplicationMessage{
 		Type:    ReplicateChannelType,
-		Channel: channel,
+		Channel: channelMeta,
 	}
 	return r.broadcast(msg)
 }

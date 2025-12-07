@@ -225,72 +225,87 @@ func (h *RealtimeHandler) handleSubscribeChannel(c backends.Context, rpcMsg *rpc
 		callerID = process.AssignedExecutorID
 	}
 
-	log.WithFields(log.Fields{"ProcessID": msg.ProcessID, "Channel": msg.Name, "CallerID": callerID, "Timeout": msg.Timeout}).Info("WebSocket channel subscription started")
+	log.WithFields(log.Fields{"ProcessID": msg.ProcessID, "Channel": msg.Name, "CallerID": callerID, "Timeout": msg.Timeout}).Info("WebSocket channel subscription started (push-based)")
 
-	// Long-poll loop: continuously check for new messages
-	// AfterSeq is now used as index (position in log)
+	// Subscribe to push notifications
+	entryChan, err := h.server.ChannelRouter().Subscribe(ch.ID, callerID)
+	if err != nil {
+		if err == channel.ErrUnauthorized {
+			h.sendWSErrorMsg(errors.New("Not authorized to subscribe to channel"), http.StatusForbidden, wsConn, wsMsgType)
+		} else {
+			h.sendWSErrorMsg(err, http.StatusInternalServerError, wsConn, wsMsgType)
+		}
+		return
+	}
+	defer h.server.ChannelRouter().Unsubscribe(ch.ID, entryChan)
+
+	// First, send any existing entries after the requested index
 	lastIndex := msg.AfterSeq
+	existingEntries, err := h.server.ChannelRouter().ReadAfter(ch.ID, callerID, lastIndex, 0)
+	if err == nil && len(existingEntries) > 0 {
+		if err := h.sendChannelEntries(existingEntries, wsConn, wsMsgType); err != nil {
+			log.WithFields(log.Fields{"Error": err}).Error("Failed to send existing channel entries")
+			return
+		}
+		lastIndex += int64(len(existingEntries))
+	}
+
+	// Set up timeout
 	timeout := time.Duration(msg.Timeout) * time.Second
 	if timeout == 0 {
 		timeout = 30 * time.Second // Default timeout
 	}
+	timer := time.NewTimer(timeout)
+	defer timer.Stop()
 
-	deadline := time.Now().Add(timeout)
-	pollInterval := 100 * time.Millisecond
-
-	for time.Now().Before(deadline) {
-		entries, err := h.server.ChannelRouter().ReadAfter(ch.ID, callerID, lastIndex, 0)
-		if err != nil {
-			if err == channel.ErrUnauthorized {
-				h.sendWSErrorMsg(errors.New("Not authorized to read from channel"), http.StatusForbidden, wsConn, wsMsgType)
-			} else {
-				h.sendWSErrorMsg(err, http.StatusInternalServerError, wsConn, wsMsgType)
-			}
-			return
-		}
-
-		if len(entries) > 0 {
-			log.WithFields(log.Fields{"ProcessID": msg.ProcessID, "Channel": msg.Name, "EntryCount": len(entries), "LastIndex": lastIndex}).Info("Sending channel entries to WebSocket")
-			// Send entries to client
-			jsonBytes, err := json.Marshal(entries)
-			if err != nil {
-				h.sendWSErrorMsg(err, http.StatusInternalServerError, wsConn, wsMsgType)
+	// Push-based streaming loop
+	for {
+		select {
+		case entry, ok := <-entryChan:
+			if !ok {
+				// Channel closed (unsubscribed)
 				return
 			}
 
-			replyMsg, err := rpc.CreateRPCReplyMsg(rpc.SubscribeChannelPayloadType, string(jsonBytes))
-			if err != nil {
-				h.sendWSErrorMsg(err, http.StatusInternalServerError, wsConn, wsMsgType)
+			// Send entry immediately to WebSocket
+			if err := h.sendChannelEntries([]*channel.MsgEntry{entry}, wsConn, wsMsgType); err != nil {
+				log.WithFields(log.Fields{"Error": err}).Error("Failed to send channel entry to WebSocket")
 				return
 			}
 
+		case <-timer.C:
+			// Timeout - send empty response and close
+			log.WithFields(log.Fields{"ProcessID": msg.ProcessID, "Channel": msg.Name}).Debug("WebSocket channel subscription timeout")
+			replyMsg, err := rpc.CreateRPCReplyMsg(rpc.SubscribeChannelPayloadType, "[]")
+			if err != nil {
+				return
+			}
 			jsonString, err := replyMsg.ToJSON()
 			if err != nil {
-				h.sendWSErrorMsg(err, http.StatusInternalServerError, wsConn, wsMsgType)
 				return
 			}
-
-			err = wsConn.WriteMessage(wsMsgType, []byte(jsonString))
-			if err != nil {
-				log.WithFields(log.Fields{"Error": err}).Error("Failed to send channel entries to WebSocket")
-				return
-			}
-
-			// Update last index for next poll
-			lastIndex += int64(len(entries))
+			wsConn.WriteMessage(wsMsgType, []byte(jsonString))
+			return
 		}
-
-		time.Sleep(pollInterval)
 	}
+}
 
-	// Send empty response on timeout
-	replyMsg, err := rpc.CreateRPCReplyMsg(rpc.SubscribeChannelPayloadType, "[]")
+// sendChannelEntries sends channel entries to a WebSocket connection
+func (h *RealtimeHandler) sendChannelEntries(entries []*channel.MsgEntry, wsConn *websocket.Conn, wsMsgType int) error {
+	jsonBytes, err := json.Marshal(entries)
 	if err != nil {
-		return
+		return err
 	}
+
+	replyMsg, err := rpc.CreateRPCReplyMsg(rpc.SubscribeChannelPayloadType, string(jsonBytes))
+	if err != nil {
+		return err
+	}
+
 	jsonString, err := replyMsg.ToJSON()
 	if err != nil {
-		return
+		return err
 	}
-	wsConn.WriteMessage(wsMsgType, []byte(jsonString))
+
+	return wsConn.WriteMessage(wsMsgType, []byte(jsonString))
 }

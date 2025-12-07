@@ -48,6 +48,8 @@ func NewInMemoryReplicator(peers []*Router) *InMemoryReplicator {
 }
 
 func (r *InMemoryReplicator) ReplicateEntry(channel *Channel, entry *MsgEntry) error {
+	// Note: channel fields are already copied by caller before passing to ReplicateEntry
+	// to avoid data races (see relay_replicator.go for the pattern)
 	for _, peer := range r.peers {
 		// Ensure channel exists on peer before replicating entry
 		peerChannel := &Channel{
@@ -57,7 +59,7 @@ func (r *InMemoryReplicator) ReplicateEntry(channel *Channel, entry *MsgEntry) e
 			SubmitterID: channel.SubmitterID,
 			ExecutorID:  channel.ExecutorID,
 			Sequence:    0,
-			Log:         make([]*MsgEntry, 0),
+			Log:         nil, // Don't copy log
 		}
 		// Create channel if it doesn't exist (ignore ErrChannelExists)
 		peer.CreateIfNotExists(peerChannel)

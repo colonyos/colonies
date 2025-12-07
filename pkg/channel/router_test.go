@@ -534,3 +534,194 @@ func TestChannelNotFound(t *testing.T) {
 	_, err = router.ReadAfter("nonexistent", "user", 0, 0)
 	assert.Equal(t, ErrChannelNotFound, err)
 }
+
+func TestSubscribe(t *testing.T) {
+	router := NewRouter()
+
+	channel := &Channel{
+		ID:          "ch-123",
+		ProcessID:   "proc-456",
+		Name:        "chat",
+		SubmitterID: "user-789",
+		ExecutorID:  "exec-abc",
+	}
+	router.Create(channel)
+
+	// Submitter can subscribe
+	ch, err := router.Subscribe("ch-123", "user-789")
+	assert.Nil(t, err)
+	assert.NotNil(t, ch)
+
+	// Verify subscriber count
+	assert.Equal(t, 1, router.SubscriberCount("ch-123"))
+
+	// Unsubscribe
+	router.Unsubscribe("ch-123", ch)
+	assert.Equal(t, 0, router.SubscriberCount("ch-123"))
+}
+
+func TestSubscribeUnauthorized(t *testing.T) {
+	router := NewRouter()
+
+	channel := &Channel{
+		ID:          "ch-123",
+		ProcessID:   "proc-456",
+		Name:        "chat",
+		SubmitterID: "user-789",
+		ExecutorID:  "exec-abc",
+	}
+	router.Create(channel)
+
+	// Unauthorized user cannot subscribe
+	_, err := router.Subscribe("ch-123", "other-user")
+	assert.Equal(t, ErrUnauthorized, err)
+}
+
+func TestSubscribeNotFound(t *testing.T) {
+	router := NewRouter()
+
+	_, err := router.Subscribe("nonexistent", "user")
+	assert.Equal(t, ErrChannelNotFound, err)
+}
+
+func TestSubscribePushNotification(t *testing.T) {
+	router := NewRouter()
+
+	channel := &Channel{
+		ID:          "ch-123",
+		ProcessID:   "proc-456",
+		Name:        "chat",
+		SubmitterID: "user-789",
+		ExecutorID:  "exec-abc",
+	}
+	router.Create(channel)
+
+	// Subscribe
+	subChan, err := router.Subscribe("ch-123", "user-789")
+	assert.Nil(t, err)
+
+	// Append message - should trigger push notification
+	err = router.Append("ch-123", "exec-abc", 1, 0, []byte("hello"))
+	assert.Nil(t, err)
+
+	// Should receive the entry on the subscription channel
+	select {
+	case entry := <-subChan:
+		assert.Equal(t, int64(1), entry.Sequence)
+		assert.Equal(t, []byte("hello"), entry.Payload)
+	default:
+		t.Fatal("Expected to receive entry on subscription channel")
+	}
+
+	router.Unsubscribe("ch-123", subChan)
+}
+
+func TestSubscribeMultipleSubscribers(t *testing.T) {
+	router := NewRouter()
+
+	channel := &Channel{
+		ID:          "ch-123",
+		ProcessID:   "proc-456",
+		Name:        "chat",
+		SubmitterID: "user-789",
+		ExecutorID:  "exec-abc",
+	}
+	router.Create(channel)
+
+	// Multiple subscribers
+	sub1, _ := router.Subscribe("ch-123", "user-789")
+	sub2, _ := router.Subscribe("ch-123", "exec-abc")
+
+	assert.Equal(t, 2, router.SubscriberCount("ch-123"))
+
+	// Append message - both should receive
+	router.Append("ch-123", "user-789", 1, 0, []byte("broadcast"))
+
+	// Both subscribers should receive
+	select {
+	case entry := <-sub1:
+		assert.Equal(t, []byte("broadcast"), entry.Payload)
+	default:
+		t.Fatal("Subscriber 1 did not receive entry")
+	}
+
+	select {
+	case entry := <-sub2:
+		assert.Equal(t, []byte("broadcast"), entry.Payload)
+	default:
+		t.Fatal("Subscriber 2 did not receive entry")
+	}
+
+	// Unsubscribe one
+	router.Unsubscribe("ch-123", sub1)
+	assert.Equal(t, 1, router.SubscriberCount("ch-123"))
+
+	// Remaining subscriber should still receive
+	router.Append("ch-123", "user-789", 2, 0, []byte("second"))
+	select {
+	case entry := <-sub2:
+		assert.Equal(t, []byte("second"), entry.Payload)
+	default:
+		t.Fatal("Subscriber 2 did not receive second entry")
+	}
+
+	router.Unsubscribe("ch-123", sub2)
+}
+
+func TestSubscribeReplicatedEntry(t *testing.T) {
+	router := NewRouter()
+
+	channel := &Channel{
+		ID:          "ch-123",
+		ProcessID:   "proc-456",
+		Name:        "chat",
+		SubmitterID: "user-789",
+	}
+	router.Create(channel)
+
+	// Subscribe
+	subChan, _ := router.Subscribe("ch-123", "user-789")
+
+	// Replicate entry - should also trigger notification
+	entry := &MsgEntry{
+		Sequence:  1,
+		SenderID:  "remote-exec",
+		Payload:   []byte("replicated"),
+	}
+	router.ReplicateEntry("ch-123", entry)
+
+	// Should receive the replicated entry
+	select {
+	case received := <-subChan:
+		assert.Equal(t, []byte("replicated"), received.Payload)
+	default:
+		t.Fatal("Expected to receive replicated entry")
+	}
+
+	router.Unsubscribe("ch-123", subChan)
+}
+
+func TestSubscribeCleanup(t *testing.T) {
+	router := NewRouter()
+
+	channel := &Channel{
+		ID:          "ch-123",
+		ProcessID:   "proc-456",
+		Name:        "chat",
+		SubmitterID: "user-789",
+	}
+	router.Create(channel)
+
+	// Subscribe
+	subChan, _ := router.Subscribe("ch-123", "user-789")
+	assert.Equal(t, 1, router.SubscriberCount("ch-123"))
+
+	// Cleanup process - should remove channel and subscribers
+	router.CleanupProcess("proc-456")
+
+	// Subscriber count should be 0 (channel gone)
+	assert.Equal(t, 0, router.SubscriberCount("ch-123"))
+
+	// Unsubscribe should not panic on cleaned up channel
+	router.Unsubscribe("ch-123", subChan)
+}
