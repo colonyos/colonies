@@ -123,7 +123,12 @@ func (server *RelayServer) Receive() chan RelayMessage {
 		copy(dataCopy, data)
 		// Dispatch in goroutine to avoid blocking HTTP handler while ensuring delivery
 		go func() {
-			ch <- RelayMessage{Data: dataCopy, Done: nil}
+			// Non-blocking send - drop message if channel is full (receiver stopped)
+			select {
+			case ch <- RelayMessage{Data: dataCopy, Done: nil}:
+			default:
+				// Channel full, receiver likely stopped - drop message silently
+			}
 		}()
 	})
 	return ch
