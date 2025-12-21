@@ -475,6 +475,145 @@ func TestChannelWaitingProcessCannotUseChannel(t *testing.T) {
 	<-done
 }
 
+// TestChannelUnauthorizedExecutorSameColony tests that an executor in the same colony
+// but NOT the assigned executor cannot access the channel
+func TestChannelUnauthorizedExecutorSameColony(t *testing.T) {
+	env, client, srv, _, done := server.SetupTestEnv2(t)
+
+	// Create a second executor in the same colony
+	executor2, executor2PrvKey, err := utils.CreateTestExecutorWithKey(env.ColonyName)
+	assert.Nil(t, err)
+	executor2.Name = "executor2"
+	executor2.Type = env.Executor.Type
+	_, err = client.AddExecutor(executor2, env.ColonyPrvKey)
+	assert.Nil(t, err)
+	err = client.ApproveExecutor(env.ColonyName, executor2.Name, env.ColonyPrvKey)
+	assert.Nil(t, err)
+
+	// Create a process with a channel - submitted by first executor
+	funcSpec := utils.CreateTestFunctionSpec(env.ColonyName)
+	funcSpec.Channels = []string{"secure-channel"}
+	funcSpec.Conditions.ExecutorType = env.Executor.Type
+
+	process, err := client.Submit(funcSpec, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+
+	// First executor assigns the process
+	_, err = client.Assign(env.ColonyName, 10, "", "", env.ExecutorPrvKey)
+	assert.Nil(t, err)
+
+	// First executor (submitter and assigned) can append
+	err = client.ChannelAppend(process.ID, "secure-channel", 1, 0, []byte("secret data"), env.ExecutorPrvKey)
+	assert.Nil(t, err)
+
+	// Second executor (same colony, but NOT assigned) should NOT be able to append
+	err = client.ChannelAppend(process.ID, "secure-channel", 2, 0, []byte("unauthorized"), executor2PrvKey)
+	assert.NotNil(t, err, "Executor in same colony but not assigned should not be able to append")
+
+	// Second executor should NOT be able to read
+	_, err = client.ChannelRead(process.ID, "secure-channel", 0, 0, executor2PrvKey)
+	assert.NotNil(t, err, "Executor in same colony but not assigned should not be able to read")
+
+	srv.Shutdown()
+	<-done
+}
+
+// TestChannelUnauthorizedUserSameColony tests that a user in the same colony
+// but NOT the submitter cannot access the channel
+func TestChannelUnauthorizedUserSameColony(t *testing.T) {
+	env, client, srv, _, done := server.SetupTestEnv2(t)
+
+	// Create first user who will submit the process
+	user1, user1PrvKey, err := utils.CreateTestUserWithKey(env.ColonyName, "user1")
+	assert.Nil(t, err)
+	_, err = client.AddUser(user1, env.ColonyPrvKey)
+	assert.Nil(t, err)
+
+	// Create second user in the same colony
+	user2, user2PrvKey, err := utils.CreateTestUserWithKey(env.ColonyName, "user2")
+	assert.Nil(t, err)
+	_, err = client.AddUser(user2, env.ColonyPrvKey)
+	assert.Nil(t, err)
+
+	// User1 submits a process with a channel
+	funcSpec := utils.CreateTestFunctionSpec(env.ColonyName)
+	funcSpec.Channels = []string{"private-channel"}
+	funcSpec.Conditions.ExecutorType = env.Executor.Type
+
+	process, err := client.Submit(funcSpec, user1PrvKey)
+	assert.Nil(t, err)
+
+	// Executor assigns the process
+	_, err = client.Assign(env.ColonyName, 10, "", "", env.ExecutorPrvKey)
+	assert.Nil(t, err)
+
+	// User1 (submitter) can append
+	err = client.ChannelAppend(process.ID, "private-channel", 1, 0, []byte("from submitter"), user1PrvKey)
+	assert.Nil(t, err)
+
+	// User2 (same colony, but NOT submitter) should NOT be able to append
+	err = client.ChannelAppend(process.ID, "private-channel", 2, 0, []byte("unauthorized"), user2PrvKey)
+	assert.NotNil(t, err, "User in same colony but not submitter should not be able to append")
+
+	// User2 should NOT be able to read
+	_, err = client.ChannelRead(process.ID, "private-channel", 0, 0, user2PrvKey)
+	assert.NotNil(t, err, "User in same colony but not submitter should not be able to read")
+
+	// Assigned executor can access
+	err = client.ChannelAppend(process.ID, "private-channel", 2, 0, []byte("from executor"), env.ExecutorPrvKey)
+	assert.Nil(t, err)
+
+	entries, err := client.ChannelRead(process.ID, "private-channel", 0, 0, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.Len(t, entries, 2)
+
+	srv.Shutdown()
+	<-done
+}
+
+// TestChannelOnlyAssignedExecutorCanAccess tests that only the specifically assigned
+// executor can access the channel, not other executors even if they could run the process
+func TestChannelOnlyAssignedExecutorCanAccess(t *testing.T) {
+	env, client, srv, _, done := server.SetupTestEnv2(t)
+
+	// Create two executors of the same type
+	executor2, executor2PrvKey, err := utils.CreateTestExecutorWithKey(env.ColonyName)
+	assert.Nil(t, err)
+	executor2.Name = "executor2"
+	executor2.Type = env.Executor.Type // Same type as first executor
+	_, err = client.AddExecutor(executor2, env.ColonyPrvKey)
+	assert.Nil(t, err)
+	err = client.ApproveExecutor(env.ColonyName, executor2.Name, env.ColonyPrvKey)
+	assert.Nil(t, err)
+
+	// Submit process - either executor could potentially run it
+	funcSpec := utils.CreateTestFunctionSpec(env.ColonyName)
+	funcSpec.Channels = []string{"exclusive-channel"}
+	funcSpec.Conditions.ExecutorType = env.Executor.Type
+
+	process, err := client.Submit(funcSpec, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+
+	// First executor assigns the process
+	assignedProcess, err := client.Assign(env.ColonyName, 10, "", "", env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.Equal(t, process.ID, assignedProcess.ID)
+
+	// Assigned executor can access
+	err = client.ChannelAppend(process.ID, "exclusive-channel", 1, 0, []byte("assigned"), env.ExecutorPrvKey)
+	assert.Nil(t, err)
+
+	// Second executor (same type, could have been assigned, but wasn't) cannot access
+	err = client.ChannelAppend(process.ID, "exclusive-channel", 2, 0, []byte("not assigned"), executor2PrvKey)
+	assert.NotNil(t, err, "Executor that was not assigned should not be able to access channel")
+
+	_, err = client.ChannelRead(process.ID, "exclusive-channel", 0, 0, executor2PrvKey)
+	assert.NotNil(t, err, "Executor that was not assigned should not be able to read channel")
+
+	srv.Shutdown()
+	<-done
+}
+
 // TestChannelSequenceOrdering tests that messages are ordered by sequence
 func TestChannelSequenceOrdering(t *testing.T) {
 	env, client, srv, _, done := server.SetupTestEnv2(t)

@@ -9,6 +9,13 @@ type ChannelSpec struct {
 	Name string `json:"name"`
 }
 
+// Message types for MsgEntry
+const (
+	MsgTypeData  = "data"  // Regular data message
+	MsgTypeEnd   = "end"   // End-of-stream marker - signals streaming complete
+	MsgTypeError = "error" // Error message
+)
+
 // MsgEntry represents a single message in a channel
 type MsgEntry struct {
 	Sequence  int64     `json:"sequence"`
@@ -16,6 +23,8 @@ type MsgEntry struct {
 	Timestamp time.Time `json:"timestamp"`
 	SenderID  string    `json:"senderid"`
 	Payload   []byte    `json:"payload"`
+	Type      string    `json:"type,omitempty"` // Message type: "data", "end", "error"
+	Error     string    `json:"error,omitempty"` // Error details when Type="error" or subscriber disconnected
 }
 
 // Channel represents an append-only message log

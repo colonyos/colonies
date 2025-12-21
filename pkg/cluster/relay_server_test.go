@@ -48,12 +48,12 @@ func TestRelayServer(t *testing.T) {
 		for {
 			select {
 			case msg := <-incomingRelayServer1:
-				if val, ok := relayServer1Received[string(msg)]; ok {
+				if val, ok := relayServer1Received[string(msg.Data)]; ok {
 					val++
-					relayServer1Received[string(msg)] = val
+					relayServer1Received[string(msg.Data)] = val
 					counter++
 				} else {
-					relayServer1Received[string(msg)] = 1
+					relayServer1Received[string(msg.Data)] = 1
 					counter++
 				}
 				if counter == expectedNrMessage {
@@ -67,12 +67,12 @@ func TestRelayServer(t *testing.T) {
 		for {
 			select {
 			case msg := <-incomingRelayServer2:
-				if val, ok := relayServer2Received[string(msg)]; ok {
+				if val, ok := relayServer2Received[string(msg.Data)]; ok {
 					val++
-					relayServer2Received[string(msg)] = val
+					relayServer2Received[string(msg.Data)] = val
 					counter++
 				} else {
-					relayServer2Received[string(msg)] = 1
+					relayServer2Received[string(msg.Data)] = 1
 					counter++
 				}
 				if counter == expectedNrMessage {
@@ -86,12 +86,12 @@ func TestRelayServer(t *testing.T) {
 		for {
 			select {
 			case msg := <-incomingRelayServer3:
-				if val, ok := relayServer3Received[string(msg)]; ok {
+				if val, ok := relayServer3Received[string(msg.Data)]; ok {
 					val++
-					relayServer3Received[string(msg)] = val
+					relayServer3Received[string(msg.Data)] = val
 					counter++
 				} else {
-					relayServer3Received[string(msg)] = 1
+					relayServer3Received[string(msg.Data)] = 1
 					counter++
 				}
 				if counter == expectedNrMessage {

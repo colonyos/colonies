@@ -207,3 +207,133 @@ func TestChannelEndToEndIntegration(t *testing.T) {
 	// Stop server
 	server.Shutdown()
 }
+
+// TestChannelCleanupOnProcessFail verifies channels are properly cleaned up
+// when a process fails (not just when it succeeds).
+func TestChannelCleanupOnProcessFail(t *testing.T) {
+	// Setup test database
+	db, err := postgresql.PrepareTestsWithPrefix("CHANNEL_FAIL_TEST_")
+	assert.Nil(t, err)
+	defer db.Close()
+
+	// Create server
+	port := 8082
+	thisNode := cluster.Node{
+		Name:           "test-node",
+		Host:           "localhost",
+		APIPort:        port,
+		EtcdClientPort: 2379,
+		EtcdPeerPort:   2380,
+		RelayPort:      25101,
+	}
+	clusterConfig := cluster.Config{
+		Nodes: []cluster.Node{thisNode},
+	}
+
+	server := CreateServer(
+		db,
+		port,
+		false, // no TLS
+		"",
+		"",
+		thisNode,
+		clusterConfig,
+		"/tmp/test-etcd-fail-"+time.Now().Format("20060102150405"),
+		10,    // generator period
+		10,    // cron period
+		false, // exclusive assign
+		true,  // allow executor reregister
+		false, // retention
+		0,     // retention policy
+		0,     // retention period
+	)
+
+	// Start server in background
+	go server.ServeForever()
+	time.Sleep(500 * time.Millisecond)
+
+	// Create client
+	colonies := client.CreateColoniesClient("localhost", port, true, true)
+
+	// Create server private key and register it
+	serverCrypto := crypto.CreateCrypto()
+	serverPrvKey, err := serverCrypto.GeneratePrivateKey()
+	assert.Nil(t, err)
+	serverID, err := serverCrypto.GenerateID(serverPrvKey)
+	assert.Nil(t, err)
+	err = db.SetServerID("", serverID)
+	assert.Nil(t, err)
+
+	// Create colony
+	colonyCrypto := crypto.CreateCrypto()
+	colonyPrvKey, err := colonyCrypto.GeneratePrivateKey()
+	assert.Nil(t, err)
+	colonyID, err := colonyCrypto.GenerateID(colonyPrvKey)
+	assert.Nil(t, err)
+
+	colony := core.CreateColony(colonyID, "test-colony-fail")
+	_, err = colonies.AddColony(colony, serverPrvKey)
+	assert.Nil(t, err)
+
+	// Create user
+	userCrypto := crypto.CreateCrypto()
+	userPrvKey, err := userCrypto.GeneratePrivateKey()
+	assert.Nil(t, err)
+	userID, err := userCrypto.GenerateID(userPrvKey)
+	assert.Nil(t, err)
+
+	user := core.CreateUser(colony.Name, userID, "test-user", "user@test.com", "")
+	_, err = colonies.AddUser(user, colonyPrvKey)
+	assert.Nil(t, err)
+
+	// Create executor
+	executor, executorPrvKey, err := utils.CreateTestExecutorWithKey(colony.Name)
+	assert.Nil(t, err)
+	executor.Type = "test-executor"
+	_, err = colonies.AddExecutor(executor, colonyPrvKey)
+	assert.Nil(t, err)
+	err = colonies.ApproveExecutor(colony.Name, executor.Name, colonyPrvKey)
+	assert.Nil(t, err)
+
+	// Submit process with channels
+	funcSpec := utils.CreateTestFunctionSpec(colony.Name)
+	funcSpec.Channels = []string{"data", "control"}
+	funcSpec.Conditions.ExecutorType = "test-executor"
+
+	submittedProcess, err := colonies.Submit(funcSpec, userPrvKey)
+	assert.Nil(t, err)
+	assert.NotNil(t, submittedProcess)
+
+	// Executor assigns the process
+	assignedProcess, err := colonies.Assign(colony.Name, 10, "", "", executorPrvKey)
+	assert.Nil(t, err)
+	assert.Equal(t, submittedProcess.ID, assignedProcess.ID)
+
+	// User sends message to channel
+	err = colonies.ChannelAppend(submittedProcess.ID, "data", 1, 0, []byte("test data"), userPrvKey)
+	assert.Nil(t, err)
+
+	// Verify channel is accessible
+	entries, err := colonies.ChannelRead(submittedProcess.ID, "data", 0, 0, executorPrvKey)
+	assert.Nil(t, err)
+	assert.Len(t, entries, 1)
+
+	// Fail the process
+	err = colonies.Fail(submittedProcess.ID, []string{"simulated error"}, executorPrvKey)
+	assert.Nil(t, err)
+
+	// Verify process is in FAILED state
+	failedProcess, err := colonies.GetProcess(submittedProcess.ID, userPrvKey)
+	assert.Nil(t, err)
+	assert.Equal(t, core.FAILED, failedProcess.State)
+
+	// Verify channels are cleaned up (try to read - should fail)
+	_, err = colonies.ChannelRead(submittedProcess.ID, "data", 0, 0, userPrvKey)
+	assert.NotNil(t, err, "Channel should be cleaned up after process failure")
+
+	_, err = colonies.ChannelRead(submittedProcess.ID, "control", 0, 0, userPrvKey)
+	assert.NotNil(t, err, "All channels should be cleaned up after process failure")
+
+	// Stop server
+	server.Shutdown()
+}

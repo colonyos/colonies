@@ -2,35 +2,38 @@
 
 ## Overview
 
-Channels provide bidirectional message passing between users and executors, with ColonyOS acting as a relay server. This enables interactive patterns like chat, Jupyter kernels, and any request/response or streaming workload.
+Channels provide bidirectional message passing between process submitters and executors, with ColonyOS acting as a relay server. This enables interactive patterns like chat, Jupyter kernels, and any request/response or streaming workload.
 
 ## Architecture
 
 ```
-┌──────────┐         ┌──────────────┐         ┌──────────┐
-│  User/   │ ──────► │   ColonyOS   │ ──────► │ Executor │
-│  Client  │ ◄────── │   (relay)    │ ◄────── │          │
-└──────────┘         └──────────────┘         └──────────┘
-                           │
++----------+         +--------------+         +----------+
+|  User/   | ------> |   ColonyOS   | ------> | Executor |
+|  Client  | <------ |    Server    | <------ |          |
++----------+         +--------------+         +----------+
+                           |
                     In-memory only
                     No persistence
-                    Replicated across servers
+                    Single server per channel
 ```
+
+**Note**: Channels are scoped to a single ColonyOS server. Both the client and executor must connect to the same server for channel communication. In Kubernetes deployments, use sticky sessions or consistent routing to ensure this.
 
 ## Core Concepts
 
 ### Channels as Append-Only Logs
 - Messages are immutable once appended
-- Server assigns sequence numbers
+- Client assigns sequence numbers (per-sender ordering)
+- InReplyTo field enables request-response correlation
 - Multiple readers, tagged senders
-- Simple replication (just append to all replicas)
 - Automatic cleanup when process completes
 
 ### Process Integration
-- Channels defined in FunctionSpec
+- Channels defined in FunctionSpec as string array
 - Auto-created when process is submitted
+- Deterministic channel IDs: `processID_channelName`
 - Scoped to process lifecycle
-- Accessed by name via Process
+- Accessed by name via process ID
 
 ---
 
@@ -40,13 +43,9 @@ Channels provide bidirectional message passing between users and executors, with
 
 ```go
 type FunctionSpec struct {
-    FuncName    string        `json:"funcname"`
+    FuncName    string   `json:"funcname"`
     // ... existing fields
-    Channels    []ChannelSpec `json:"channels,omitempty"`
-}
-
-type ChannelSpec struct {
-    Name string `json:"name"`
+    Channels    []string `json:"channels,omitempty"`
 }
 ```
 
@@ -54,30 +53,21 @@ type ChannelSpec struct {
 
 ```go
 type Channel struct {
-    ID        string
-    ProcessID string
-    Name      string
-    Sequence  int64       // Server-assigned counter
-    Log       []LogEntry
-    mu        sync.RWMutex
+    ID          string      `json:"id"`          // Deterministic: processID_channelName
+    ProcessID   string      `json:"processid"`
+    Name        string      `json:"name"`
+    SubmitterID string      `json:"submitterid"` // Process submitter
+    ExecutorID  string      `json:"executorid"`  // Assigned executor
+    Sequence    int64       `json:"sequence"`
+    Log         []*MsgEntry `json:"log"`
 }
 
-type LogEntry struct {
-    Sequence  int64     `json:"sequence"`
+type MsgEntry struct {
+    Sequence  int64     `json:"sequence"`            // Client-assigned sequence number
+    InReplyTo int64     `json:"inreplyto,omitempty"` // References sequence from other sender
     Timestamp time.Time `json:"timestamp"`
     SenderID  string    `json:"senderid"`
     Payload   []byte    `json:"payload"`
-}
-```
-
-### Process with Channels
-
-```go
-type Process struct {
-    ID           string
-    FunctionSpec FunctionSpec
-    // ... existing fields
-    Channels     map[string]string `json:"channels"` // name → channelID
 }
 ```
 
@@ -88,37 +78,40 @@ type Process struct {
 ### Channel Operations
 
 ```go
-// Get channel by process and name
-GetChannel(processID string, name string) → channelID
+// Append message with client-assigned sequence
+ChannelAppend(processID string, channelName string, sequence int64, inReplyTo int64, payload []byte) error
 
-// Append message (server assigns sequence)
-Append(channelID string, payload []byte) → sequence int64
+// Read entries after a given index (position in log)
+// limit=0 means no limit
+ChannelRead(processID string, channelName string, afterIndex int64, limit int) ([]*MsgEntry, error)
 
-// Read entries after sequence
-ReadAfter(channelID string, afterSeq int64, limit int) → []LogEntry
+// Subscribe for push notifications (server-side only)
+Subscribe(channelID string, callerID string) (chan *MsgEntry, error)
 ```
 
 ### Automatic Channel Creation
 
-When process is submitted, channels are auto-created:
+When a process is submitted, channels are auto-created with deterministic IDs:
 
 ```go
-func (h *Handlers) HandleSubmit(funcSpec *FunctionSpec) (*Process, error) {
-    process := createProcess(funcSpec)
-    process.Channels = make(map[string]string)
+func (controller *ColoniesController) AddProcess(process *core.Process) error {
+    // ... add process to database ...
 
     // Auto-create channels from spec
-    for _, chSpec := range funcSpec.Channels {
-        channelID := generateID()
-        h.channelRouter.Create(&Channel{
-            ID:        channelID,
-            ProcessID: process.ID,
-            Name:      chSpec.Name,
-        })
-        process.Channels[chSpec.Name] = channelID
+    if process.FunctionSpec.Channels != nil {
+        for _, channelName := range process.FunctionSpec.Channels {
+            ch := &channel.Channel{
+                ID:          process.ID + "_" + channelName, // Deterministic ID
+                ProcessID:   process.ID,
+                Name:        channelName,
+                SubmitterID: process.InitiatorID,
+                ExecutorID:  "", // Set when process is assigned
+            }
+            controller.channelRouter.Create(ch)
+        }
     }
 
-    return process, nil
+    return nil
 }
 ```
 
@@ -126,51 +119,34 @@ func (h *Handlers) HandleSubmit(funcSpec *FunctionSpec) (*Process, error) {
 
 ## RPC Messages
 
-### GetChannelMsg
+### ChannelAppendMsg
 
 ```go
-type GetChannelMsg struct {
+type ChannelAppendMsg struct {
     ProcessID string `json:"processid"`
     Name      string `json:"name"`
-}
-
-type GetChannelReplyMsg struct {
-    ChannelID string `json:"channelid"`
-}
-```
-
-**PayloadType:** `getchannelmsg`
-
-### AppendMsg
-
-```go
-type AppendMsg struct {
-    ChannelID string `json:"channelid"`
+    Sequence  int64  `json:"sequence"`            // Client-assigned sequence number
+    InReplyTo int64  `json:"inreplyto,omitempty"` // References sequence from other sender
     Payload   []byte `json:"payload"`
-}
-
-type AppendReplyMsg struct {
-    Sequence int64 `json:"sequence"`
+    MsgType   string `json:"msgtype"`
 }
 ```
 
-**PayloadType:** `appendmsg`
+**PayloadType:** `channelappendmsg`
 
-### ReadAfterMsg
+### ChannelReadMsg
 
 ```go
-type ReadAfterMsg struct {
-    ChannelID string `json:"channelid"`
+type ChannelReadMsg struct {
+    ProcessID string `json:"processid"`
+    Name      string `json:"name"`
     AfterSeq  int64  `json:"afterseq"`
     Limit     int    `json:"limit"`
-}
-
-type ReadAfterReplyMsg struct {
-    Entries []LogEntry `json:"entries"`
+    MsgType   string `json:"msgtype"`
 }
 ```
 
-**PayloadType:** `readaftermsg`
+**PayloadType:** `channelreadmsg`
 
 ---
 
@@ -178,169 +154,113 @@ type ReadAfterReplyMsg struct {
 
 ### Channel Router
 
+The router manages channels in memory:
+
 ```go
-type ChannelRouter struct {
-    mu       sync.RWMutex
-    channels map[string]*Channel
+type Router struct {
+    mu          sync.RWMutex
+    channels    map[string]*Channel
+    byProcess   map[string][]string          // processID -> []channelID
+    subMu       sync.RWMutex
+    subscribers map[string][]*Subscriber     // channelID -> subscribers
 }
+```
 
-func (r *ChannelRouter) Create(channel *Channel) {
-    r.mu.Lock()
-    defer r.mu.Unlock()
-    r.channels[channel.ID] = channel
-}
+### Key Operations
 
-func (r *ChannelRouter) Append(channelID string, senderID string, payload []byte) (int64, error) {
-    r.mu.Lock()
-    channel := r.channels[channelID]
-    r.mu.Unlock()
-
-    if channel == nil {
-        return 0, ErrChannelNotFound
+```go
+// Append with client-assigned sequence and optional reply reference
+func (r *Router) Append(channelID string, senderID string, sequence int64, inReplyTo int64, payload []byte) error {
+    // Check authorization
+    if err := r.authorize(channel, senderID); err != nil {
+        return err
     }
 
-    channel.mu.Lock()
-    defer channel.mu.Unlock()
-
-    // Server assigns sequence
-    channel.Sequence++
-    entry := LogEntry{
-        Sequence:  channel.Sequence,
+    entry := &MsgEntry{
+        Sequence:  sequence, // Client-assigned
+        InReplyTo: inReplyTo,
         Timestamp: time.Now(),
         SenderID:  senderID,
         Payload:   payload,
     }
     channel.Log = append(channel.Log, entry)
 
-    // Replicate to peers
-    go r.replicateToPeers(channelID, entry)
+    // Keep sorted by (SenderID, Sequence) for causal ordering
+    sort.Slice(channel.Log, func(i, j int) bool {
+        if channel.Log[i].SenderID == channel.Log[j].SenderID {
+            return channel.Log[i].Sequence < channel.Log[j].Sequence
+        }
+        return channel.Log[i].Timestamp.Before(channel.Log[j].Timestamp)
+    })
 
-    return channel.Sequence, nil
+    // Notify subscribers
+    r.notifySubscribers(channelID, entry)
+
+    return nil
 }
 
-func (r *ChannelRouter) ReadAfter(channelID string, afterSeq int64, limit int) ([]LogEntry, error) {
-    r.mu.RLock()
-    channel := r.channels[channelID]
-    r.mu.RUnlock()
-
-    if channel == nil {
-        return nil, ErrChannelNotFound
+// ReadAfter reads entries starting from a given index
+func (r *Router) ReadAfter(channelID string, callerID string, afterIndex int64, limit int) ([]*MsgEntry, error) {
+    // Check authorization
+    if err := r.authorize(channel, callerID); err != nil {
+        return nil, err
     }
 
-    channel.mu.RLock()
-    defer channel.mu.RUnlock()
-
-    var result []LogEntry
-    for _, entry := range channel.Log {
-        if entry.Sequence > afterSeq {
-            result = append(result, entry)
-            if limit > 0 && len(result) >= limit {
-                break
-            }
-        }
-    }
-
-    return result, nil
+    // Return entries from afterIndex to afterIndex+limit
+    return channel.Log[afterIndex:endIndex], nil
 }
 ```
 
 ### Cleanup on Process Completion
 
 ```go
-func (r *ChannelRouter) CleanupProcess(processID string) {
-    r.mu.Lock()
-    defer r.mu.Unlock()
-
-    for id, channel := range r.channels {
-        if channel.ProcessID == processID {
-            delete(r.channels, id)
-        }
+func (r *Router) CleanupProcess(processID string) {
+    // Remove all channels for process
+    for _, id := range r.byProcess[processID] {
+        delete(r.channels, id)
     }
+    delete(r.byProcess, processID)
 
-    // Notify peers to cleanup
-    r.replicateCleanup(processID)
+    // Close subscriber channels
+    for _, id := range channelIDs {
+        for _, sub := range r.subscribers[id] {
+            close(sub.ch)
+        }
+        delete(r.subscribers, id)
+    }
 }
 ```
 
 ---
 
-## Distributed Replication
+## Push-Based Notifications
 
-### Server-Assigned Sequences
-
-Since server assigns sequence numbers, replication is simple:
+Subscribers receive real-time push notifications via Go channels:
 
 ```go
-func (r *ChannelRouter) replicateToPeers(channelID string, entry LogEntry) {
-    for _, peer := range r.peers {
-        go func(p *Peer) {
-            p.ReplicateEntry(channelID, entry)
-        }(peer)
+// Subscribe returns a buffered channel for receiving entries
+func (r *Router) Subscribe(channelID string, callerID string) (chan *MsgEntry, error) {
+    if err := r.authorize(channel, callerID); err != nil {
+        return nil, err
     }
+
+    ch := make(chan *MsgEntry, 100)
+    r.subscribers[channelID] = append(r.subscribers[channelID], &Subscriber{ch: ch})
+    return ch, nil
 }
 
-// Peer receives replicated entry
-func (r *ChannelRouter) ReplicateEntry(channelID string, entry LogEntry) {
-    r.mu.Lock()
-    channel := r.channels[channelID]
-    r.mu.Unlock()
-
-    if channel == nil {
-        // Create channel if doesn't exist (late replication)
-        channel = &Channel{ID: channelID}
-        r.channels[channelID] = channel
-    }
-
-    channel.mu.Lock()
-    defer channel.mu.Unlock()
-
-    // Idempotent - check if already have this sequence
-    for _, e := range channel.Log {
-        if e.Sequence == entry.Sequence {
-            return // Already have it
+// Non-blocking notification to avoid slow subscribers blocking writers
+func (r *Router) notifySubscribers(channelID string, entry *MsgEntry) {
+    for _, sub := range r.subscribers[channelID] {
+        select {
+        case sub.ch <- entry:
+            // Sent
+        default:
+            // Channel full, skip to avoid blocking
         }
     }
-
-    channel.Log = append(channel.Log, entry)
-
-    // Keep sorted by sequence
-    sort.Slice(channel.Log, func(i, j int) bool {
-        return channel.Log[i].Sequence < channel.Log[j].Sequence
-    })
 }
 ```
-
-### Handling Multiple ColonyOS Servers
-
-Challenge: Client writes to Server A, executor reads from Server B.
-
-Solution: **Leader per channel with routing**
-
-```go
-// On channel creation, register leader in etcd
-func (r *ChannelRouter) Create(channel *Channel) {
-    r.channels[channel.ID] = channel
-    etcd.Put("channels/"+channel.ID+"/leader", r.serverID)
-}
-
-// On append, route to leader
-func (s *Server) HandleAppend(channelID string, payload []byte) (int64, error) {
-    leader := etcd.Get("channels/" + channelID + "/leader")
-
-    if leader == s.id {
-        // We're the leader - append locally
-        return s.router.Append(channelID, senderID, payload)
-    } else {
-        // Forward to leader
-        return s.forwardAppend(leader, channelID, payload)
-    }
-}
-```
-
-This ensures:
-- One server assigns sequences (no conflicts)
-- All reads can go to any replica
-- Simple replication
 
 ---
 
@@ -349,219 +269,140 @@ This ensures:
 ### Go Client
 
 ```go
-func (c *Client) GetChannel(processID string, name string, prvKey string) (string, error) {
-    msg := &rpc.GetChannelMsg{ProcessID: processID, Name: name}
-    reply, err := c.sendRPC("getchannelmsg", msg, prvKey)
-    return reply.ChannelID, err
-}
+// Append message to channel
+func (client *ColoniesClient) ChannelAppend(
+    processID string,
+    channelName string,
+    sequence int64,
+    inReplyTo int64,
+    payload []byte,
+    prvKey string,
+) error
 
-func (c *Client) Append(channelID string, payload []byte, prvKey string) (int64, error) {
-    msg := &rpc.AppendMsg{ChannelID: channelID, Payload: payload}
-    reply, err := c.sendRPC("appendmsg", msg, prvKey)
-    return reply.Sequence, err
-}
-
-func (c *Client) ReadAfter(channelID string, afterSeq int64, limit int, prvKey string) ([]LogEntry, error) {
-    msg := &rpc.ReadAfterMsg{ChannelID: channelID, AfterSeq: afterSeq, Limit: limit}
-    reply, err := c.sendRPC("readaftermsg", msg, prvKey)
-    return reply.Entries, err
-}
+// Read messages from channel
+func (client *ColoniesClient) ChannelRead(
+    processID string,
+    channelName string,
+    afterIndex int64,
+    limit int,
+    prvKey string,
+) ([]*channel.MsgEntry, error)
 ```
 
-### Channel Wrapper
+### Usage Pattern
 
 ```go
-type Channel struct {
-    id     string
-    cursor int64
-    client *Client
-    prvKey string
-}
+// Client-side: maintain sequence counter and poll for responses
+sequenceCounter := int64(0)
+readIndex := int64(0)
 
-func (ch *Channel) Send(payload interface{}) (int64, error) {
-    data, _ := json.Marshal(payload)
-    seq, err := ch.client.Append(ch.id, data, ch.prvKey)
-    return seq, err
-}
+// Send message
+sequenceCounter++
+client.ChannelAppend(processID, "chat", sequenceCounter, 0, []byte("Hello"), prvKey)
 
-func (ch *Channel) Receive(limit int) ([]LogEntry, error) {
-    entries, err := ch.client.ReadAfter(ch.id, ch.cursor, limit, ch.prvKey)
-    if len(entries) > 0 {
-        ch.cursor = entries[len(entries)-1].Sequence
-    }
-    return entries, err
-}
-
-func (ch *Channel) WaitForMessage(timeout time.Duration) (*LogEntry, error) {
-    deadline := time.Now().Add(timeout)
-
-    for time.Now().Before(deadline) {
-        entries, err := ch.Receive(1)
-        if err != nil {
-            return nil, err
+// Poll for response
+for {
+    entries, _ := client.ChannelRead(processID, "chat", readIndex, 100, prvKey)
+    for _, entry := range entries {
+        if entry.SenderID != myID {
+            fmt.Print(string(entry.Payload))
         }
-        if len(entries) > 0 {
-            return &entries[0], nil
-        }
-        time.Sleep(50 * time.Millisecond)
+        readIndex++
     }
-
-    return nil, ErrTimeout
-}
-```
-
-### JavaScript Client
-
-```javascript
-class ColoniesClient {
-    async getChannel(processId, name) {
-        const reply = await this.rpc('getchannelmsg', {
-            processid: processId,
-            name: name
-        });
-        return reply.channelid;
-    }
-
-    async append(channelId, payload) {
-        const reply = await this.rpc('appendmsg', {
-            channelid: channelId,
-            payload: JSON.stringify(payload)
-        });
-        return reply.sequence;
-    }
-
-    async readAfter(channelId, afterSeq, limit = 100) {
-        const reply = await this.rpc('readaftermsg', {
-            channelid: channelId,
-            afterseq: afterSeq,
-            limit: limit
-        });
-        return reply.entries.map(e => ({
-            sequence: e.sequence,
-            senderId: e.senderid,
-            payload: JSON.parse(e.payload),
-            timestamp: new Date(e.timestamp)
-        }));
-    }
-}
-
-// Convenience wrapper
-class Channel {
-    constructor(client, channelId) {
-        this.client = client;
-        this.channelId = channelId;
-        this.cursor = 0;
-    }
-
-    async send(payload) {
-        return await this.client.append(this.channelId, payload);
-    }
-
-    async receive(limit = 100) {
-        const entries = await this.client.readAfter(
-            this.channelId,
-            this.cursor,
-            limit
-        );
-        if (entries.length > 0) {
-            this.cursor = entries[entries.length - 1].sequence;
-        }
-        return entries;
-    }
-
-    async poll(callback, interval = 100) {
-        while (true) {
-            const entries = await this.receive();
-            for (const entry of entries) {
-                callback(entry);
-            }
-            await sleep(interval);
-        }
-    }
+    time.Sleep(100 * time.Millisecond)
 }
 ```
 
 ---
 
-## CLI Commands
+## Causal Ordering
 
-```bash
-# Get channel ID
-colonies channel get --processid <pid> --name input
+Messages maintain causal ordering using client-assigned sequence numbers:
 
-# Send message
-colonies channel send --channelid <cid> --data '{"text":"hello"}'
-colonies channel send --processid <pid> --name input --data '{"text":"hello"}'
+1. Each sender maintains their own sequence counter
+2. Messages sorted by (SenderID, Sequence) within each sender
+3. Timestamps used as tiebreaker between different senders
+4. InReplyTo field references another sender's sequence for correlation
 
-# Read messages
-colonies channel read --channelid <cid>
-colonies channel read --channelid <cid> --after 10 --limit 50
+### Example Flow
 
-# Follow (poll continuously)
-colonies channel follow --channelid <cid>
-colonies channel follow --processid <pid> --name output
+```
+Client seq 1:                  "What is 2+2?"
+Executor seq 1 (InReplyTo: 1): "4"
+Client seq 2:                  "What is 3+3?"
+Executor seq 2 (InReplyTo: 2): "6"
 ```
 
 ---
 
 ## Use Cases
 
-### 1. Chat with Ollama
+### 1. Chat with Ollama (Streaming)
 
 ```go
 // Submit with channels
-funcSpec := &FunctionSpec{
-    FuncName: "chat",
-    Channels: []ChannelSpec{
-        {Name: "input"},
-        {Name: "output"},
-    },
-    KwArgs: map[string]interface{}{
+funcSpec := &core.FunctionSpec{
+    FuncName: "ollama-chat",
+    Channels: []string{"chat", "control"},
+    Kwargs: map[string]interface{}{
         "model": "llama3",
     },
 }
-process := client.Submit(funcSpec)
-
-// Get channels
-inputCh := client.GetChannel(process.ID, "input")
-outputCh := client.GetChannel(process.ID, "output")
+process, _ := client.Submit(funcSpec, prvKey)
 
 // Send message
-client.Append(inputCh, {text: "Hello!"})
+client.ChannelAppend(process.ID, "chat", 1, 0, []byte("Hello!"), prvKey)
 
-// Read response
-cursor := int64(0)
+// Stream response tokens
+readIndex := int64(0)
 for {
-    entries := client.ReadAfter(outputCh, cursor, 100)
+    entries, _ := client.ChannelRead(process.ID, "chat", readIndex, 100, prvKey)
     for _, entry := range entries {
-        fmt.Print(entry.Payload.text)
-        cursor = entry.Sequence
+        if entry.SenderID != myID {
+            fmt.Print(string(entry.Payload)) // Print streaming tokens
+        }
+        readIndex++
     }
+
+    // Check for done signal on control channel
+    controlEntries, _ := client.ChannelRead(process.ID, "control", 0, 10, prvKey)
+    for _, e := range controlEntries {
+        if string(e.Payload) == "done" {
+            // Send ack and exit
+            client.ChannelAppend(process.ID, "control", 1, e.Sequence, []byte("ack"), prvKey)
+            return
+        }
+    }
+
     time.Sleep(100 * time.Millisecond)
 }
 ```
 
-**Executor:**
+**Executor side:**
 
 ```go
-func (e *Executor) handleChat(process *Process) {
-    inputCh := e.client.GetChannel(process.ID, "input")
-    outputCh := e.client.GetChannel(process.ID, "output")
+func (e *Executor) handleChat(process *core.Process) {
+    readIndex := int64(0)
+    seqCounter := int64(0)
 
-    cursor := int64(0)
     for {
-        entries := e.client.ReadAfter(inputCh, cursor, 10)
+        entries, _ := e.client.ChannelRead(process.ID, "chat", readIndex, 10, e.prvKey)
 
         for _, entry := range entries {
-            msg := parseMessage(entry.Payload)
+            if entry.SenderID == process.InitiatorID {
+                // Stream response tokens
+                for token := range e.ollama.Stream(string(entry.Payload)) {
+                    seqCounter++
+                    e.client.ChannelAppend(process.ID, "chat", seqCounter, entry.Sequence,
+                        []byte(token), e.prvKey)
+                }
 
-            // Stream response tokens
-            for token := range e.ollama.Stream(msg.text) {
-                e.client.Append(outputCh, {type: "token", text: token})
+                // Send done signal
+                seqCounter++
+                e.client.ChannelAppend(process.ID, "control", seqCounter, 0,
+                    []byte("done"), e.prvKey)
             }
-            e.client.Append(outputCh, {type: "done"})
-
-            cursor = entry.Sequence
+            readIndex++
         }
 
         time.Sleep(100 * time.Millisecond)
@@ -572,137 +413,35 @@ func (e *Executor) handleChat(process *Process) {
 ### 2. Jupyter Kernel
 
 ```go
-// Submit kernel with multiple channels
-funcSpec := &FunctionSpec{
+funcSpec := &core.FunctionSpec{
     FuncName: "python-kernel",
-    Channels: []ChannelSpec{
-        {Name: "shell"},    // execute requests
-        {Name: "iopub"},    // outputs
-        {Name: "control"},  // interrupt/shutdown
-    },
+    Channels: []string{"shell", "iopub", "control"},
 }
-process := client.Submit(funcSpec)
+process, _ := client.Submit(funcSpec, prvKey)
 
 // Execute code
-shell := client.GetChannel(process.ID, "shell")
-iopub := client.GetChannel(process.ID, "iopub")
+client.ChannelAppend(process.ID, "shell", 1, 0,
+    []byte(`{"type":"execute_request","code":"print('hello')"}`), prvKey)
 
-client.Append(shell, {
-    type: "execute_request",
-    code: "print('hello')\n2+2",
-})
-
-// Stream outputs
-cursor := int64(0)
-for {
-    entries := client.ReadAfter(iopub, cursor, 100)
-    for _, entry := range entries {
-        switch entry.Payload.type {
-        case "stream":
-            fmt.Print(entry.Payload.text)
-        case "execute_result":
-            display(entry.Payload.data)
-        }
-        cursor = entry.Sequence
-    }
-}
+// Stream outputs from iopub
+// ...
 ```
 
 ### 3. Remote Terminal
 
 ```go
-funcSpec := &FunctionSpec{
+funcSpec := &core.FunctionSpec{
     FuncName: "terminal",
-    Channels: []ChannelSpec{
-        {Name: "stdin"},
-        {Name: "stdout"},
-        {Name: "stderr"},
-    },
+    Channels: []string{"stdin", "stdout", "stderr"},
 }
-process := client.Submit(funcSpec)
-
-stdin := client.GetChannel(process.ID, "stdin")
-stdout := client.GetChannel(process.ID, "stdout")
+process, _ := client.Submit(funcSpec, prvKey)
 
 // Send command
-client.Append(stdin, []byte("ls -la\n"))
+client.ChannelAppend(process.ID, "stdin", 1, 0, []byte("ls -la\n"), prvKey)
 
-// Read output
+// Read output from stdout/stderr
 // ...
 ```
-
----
-
-## Implementation Plan
-
-### Phase 1: Core Infrastructure (1 week)
-
-**Tasks:**
-- [ ] Add Channels field to FunctionSpec
-- [ ] Add Channels field to Process
-- [ ] Define RPC message types in `pkg/rpc/channel_msgs.go`
-- [ ] Implement ChannelRouter in `pkg/server/channel_router.go`
-- [ ] Create handlers in `pkg/server/handlers/channel/`
-- [ ] Auto-create channels on process submit
-- [ ] Cleanup channels on process completion
-- [ ] Unit tests
-
-**Files:**
-```
-pkg/rpc/channel_msgs.go
-pkg/rpc/channel_msgs_test.go
-pkg/server/channel_router.go
-pkg/server/handlers/channel/handlers.go
-pkg/server/handlers/channel/handlers_test.go
-```
-
-### Phase 2: Distributed Replication (1 week)
-
-**Tasks:**
-- [ ] Implement leader election per channel (etcd)
-- [ ] Implement routing to leader
-- [ ] Implement async replication to followers
-- [ ] Handle leader failover
-- [ ] Integration tests with multiple servers
-
-### Phase 3: Client SDKs (1 week)
-
-**Tasks:**
-- [ ] Go client in `pkg/client/channels.go`
-- [ ] JavaScript/TypeScript client
-- [ ] Python client (if exists)
-- [ ] Client tests
-
-### Phase 4: CLI Commands (2-3 days)
-
-**Tasks:**
-- [ ] `colonies channel get`
-- [ ] `colonies channel send`
-- [ ] `colonies channel read`
-- [ ] `colonies channel follow`
-
-**Files:**
-```
-internal/cli/channel.go
-```
-
-### Phase 5: Ollama Executor (1 week)
-
-**Tasks:**
-- [ ] Create executor project
-- [ ] Implement Ollama client with streaming
-- [ ] Implement chat handler using channels
-- [ ] Dockerfile
-- [ ] Examples
-
-### Phase 6: Chat Application (1-2 weeks)
-
-**Tasks:**
-- [ ] User auth
-- [ ] Session management
-- [ ] WebSocket proxy to channels
-- [ ] REST API
-- [ ] Basic UI
 
 ---
 
@@ -710,62 +449,95 @@ internal/cli/channel.go
 
 ### Crypto-Based Authorization
 
-ColonyOS uses cryptographic signatures for access control - no ACLs needed.
+ColonyOS uses cryptographic signatures for access control.
 
 **Process ownership:**
 ```go
-type Process struct {
-    ID          string
+type Channel struct {
     SubmitterID string  // Derived from signature on submit
     ExecutorID  string  // Assigned executor
-    Channels    map[string]string
 }
 ```
 
 **Access rules:**
-- Only **submitter** and **assigned executor** can access channels
+- Only submitter and assigned executor can access channels
 - Identity derived from cryptographic signature
-- No configuration needed - identity IS the authorization
+- No ACL configuration needed
 
 **Authorization check:**
 ```go
-func (h *Handlers) authorizeChannelAccess(channelID string, callerID string) error {
-    channel := h.router.Get(channelID)
-    process := h.db.GetProcess(channel.ProcessID)
-
-    // Only submitter or assigned executor can access
-    if callerID != process.SubmitterID && callerID != process.ExecutorID {
+func (r *Router) authorize(channel *Channel, callerID string) error {
+    if callerID != channel.SubmitterID && callerID != channel.ExecutorID {
         return ErrUnauthorized
     }
-
     return nil
 }
 ```
 
-**Flow:**
-1. User submits function spec (signed with private key)
-2. Server recovers user ID from signature → `SubmitterID`
-3. Process assigned to executor → `ExecutorID`
-4. All channel operations verify: `callerID == SubmitterID || callerID == ExecutorID`
-
 ### Additional Security Considerations
 
 1. **Rate limiting**: Prevent message flooding per identity
-2. **Payload size**: Max message size limit (e.g., 1MB)
+2. **Payload size**: Max message size limit
 3. **Channel limits**: Max channels per process
 4. **Memory limits**: Max log size per channel
 
 ---
 
-## Timeline Summary
+## Deployment Considerations
 
-| Phase | Duration | Description |
-|-------|----------|-------------|
-| 1 | 1 week | Core infrastructure |
-| 2 | 1 week | Distributed replication |
-| 3 | 1 week | Client SDKs |
-| 4 | 2-3 days | CLI commands |
-| 5 | 1 week | Ollama executor |
-| 6 | 1-2 weeks | Chat application |
+### Single Server
+Channels work out of the box with single-server deployments.
 
-**Total: 6-8 weeks**
+### Multi-Server / Kubernetes
+For multi-server deployments, ensure client and executor connect to the same server:
+
+```yaml
+# Traefik example - sticky sessions
+http:
+  services:
+    colonies:
+      loadBalancer:
+        sticky:
+          cookie:
+            name: colony_affinity
+```
+
+Or use consistent hashing based on process ID to route both parties to the same server.
+
+---
+
+## Key Files
+
+```
+pkg/channel/
+    types.go           - Core data structures (Channel, MsgEntry)
+    router.go          - In-memory channel management
+
+pkg/rpc/
+    channel_append_msg.go - Append message type
+    channel_read_msg.go   - Read message type
+
+pkg/server/handlers/channel/
+    handlers.go        - HTTP request handlers
+
+pkg/server/controllers/
+    colonies_controller.go - Channel lifecycle (create, assign, cleanup)
+
+pkg/client/
+    channel_client.go  - Go SDK channel methods
+```
+
+---
+
+## Design Characteristics
+
+1. **Append-Only Logs**: Channels are immutable message logs
+2. **Client-Assigned Sequences**: Clients control ordering for their messages
+3. **InReplyTo Correlation**: Request-response patterns via sequence references
+4. **Bidirectional Communication**: Both submitter and executor can send/receive
+5. **Causal Ordering**: Per-sender sequences maintain message causality
+6. **In-Memory**: Fast local access, no persistence
+7. **Authorization Built-In**: Access control at channel level
+8. **Push Notifications**: Real-time updates via Go channels to subscribers
+9. **Deterministic IDs**: Enable consistent routing in multi-server setups
+10. **Polling-Based Clients**: Stateless HTTP polling, no WebSocket state

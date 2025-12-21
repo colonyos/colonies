@@ -5,72 +5,190 @@ import (
 	"sort"
 	"sync"
 	"time"
+
+	"github.com/colonyos/colonies/pkg/constants"
+	log "github.com/sirupsen/logrus"
 )
 
 var (
-	ErrChannelNotFound = errors.New("channel not found")
-	ErrUnauthorized    = errors.New("unauthorized access to channel")
-	ErrChannelExists   = errors.New("channel already exists")
+	ErrChannelNotFound      = errors.New("channel not found")
+	ErrUnauthorized         = errors.New("unauthorized access to channel")
+	ErrChannelExists        = errors.New("channel already exists")
+	ErrRateLimitExceeded    = errors.New("rate limit exceeded")
+	ErrMessageTooLarge      = errors.New("message payload exceeds maximum size")
+	ErrChannelFull          = errors.New("channel log is full")
+	ErrTooManyChannels      = errors.New("process has too many channels")
+	ErrSubscriberTooSlow    = errors.New("subscriber disconnected: buffer full")
 )
 
 // Subscriber represents a channel subscriber waiting for new entries
 type Subscriber struct {
 	ch        chan *MsgEntry
 	channelID string
+	closed    bool // Set to true when subscriber is disconnected for being too slow
+}
+
+// RateLimiter implements a token bucket rate limiter
+type RateLimiter struct {
+	tokens     float64
+	maxTokens  float64
+	refillRate float64   // tokens per second
+	lastRefill time.Time
+	mu         sync.Mutex
+}
+
+// NewRateLimiter creates a new token bucket rate limiter
+func NewRateLimiter(maxTokens float64, refillRate float64) *RateLimiter {
+	return &RateLimiter{
+		tokens:     maxTokens, // Start with full bucket
+		maxTokens:  maxTokens,
+		refillRate: refillRate,
+		lastRefill: time.Now(),
+	}
+}
+
+// Allow checks if a request is allowed and consumes a token if so
+func (rl *RateLimiter) Allow() bool {
+	rl.mu.Lock()
+	defer rl.mu.Unlock()
+
+	// Refill tokens based on time elapsed
+	now := time.Now()
+	elapsed := now.Sub(rl.lastRefill).Seconds()
+	rl.tokens += elapsed * rl.refillRate
+	if rl.tokens > rl.maxTokens {
+		rl.tokens = rl.maxTokens
+	}
+	rl.lastRefill = now
+
+	// Check if we have tokens available
+	if rl.tokens >= 1.0 {
+		rl.tokens -= 1.0
+		return true
+	}
+
+	return false
+}
+
+// Tokens returns the current number of tokens (for testing)
+func (rl *RateLimiter) Tokens() float64 {
+	rl.mu.Lock()
+	defer rl.mu.Unlock()
+	return rl.tokens
 }
 
 // Router manages channels in memory
 type Router struct {
 	mu          sync.RWMutex
 	channels    map[string]*Channel
-	byProcess   map[string][]string // processID → []channelID
-	replicator  Replicator
-	syncMode    bool // If true, replication is synchronous (for testing)
+	byProcess   map[string][]string      // processID -> []channelID
 	subMu       sync.RWMutex
-	subscribers map[string][]*Subscriber // channelID → subscribers
+	subscribers map[string][]*Subscriber // channelID -> subscribers
+
+	// Rate limiting
+	rateLimitMu      sync.RWMutex
+	rateLimiters     map[string]*RateLimiter // processID -> limiter
+	rateLimitEnabled bool
+
+	// Log size limiting
+	maxLogEntries int
+
+	// Channel count limiting
+	maxChannelsPerProcess int
+
+	// Subscriber buffer size
+	subscriberBufferSize int
 }
 
-// NewRouter creates a new channel router
+// NewRouter creates a new channel router with rate limiting enabled
 func NewRouter() *Router {
 	return &Router{
-		channels:    make(map[string]*Channel),
-		byProcess:   make(map[string][]string),
-		replicator:  &NoOpReplicator{},
-		subscribers: make(map[string][]*Subscriber),
+		channels:              make(map[string]*Channel),
+		byProcess:             make(map[string][]string),
+		subscribers:           make(map[string][]*Subscriber),
+		rateLimiters:          make(map[string]*RateLimiter),
+		rateLimitEnabled:      true,
+		maxLogEntries:         constants.CHANNEL_MAX_LOG_ENTRIES,
+		maxChannelsPerProcess: constants.CHANNEL_MAX_CHANNELS_PER_PROCESS,
+		subscriberBufferSize:  constants.CHANNEL_SUBSCRIBER_BUFFER_SIZE,
 	}
 }
 
-// NewRouterWithReplicator creates a router with a custom replicator
-func NewRouterWithReplicator(replicator Replicator) *Router {
+// NewRouterWithoutRateLimit creates a router without rate limiting (for testing)
+func NewRouterWithoutRateLimit() *Router {
 	return &Router{
-		channels:    make(map[string]*Channel),
-		byProcess:   make(map[string][]string),
-		replicator:  replicator,
-		subscribers: make(map[string][]*Subscriber),
+		channels:              make(map[string]*Channel),
+		byProcess:             make(map[string][]string),
+		subscribers:           make(map[string][]*Subscriber),
+		rateLimiters:          make(map[string]*RateLimiter),
+		rateLimitEnabled:      false,
+		maxLogEntries:         constants.CHANNEL_MAX_LOG_ENTRIES,
+		maxChannelsPerProcess: constants.CHANNEL_MAX_CHANNELS_PER_PROCESS,
+		subscriberBufferSize:  constants.CHANNEL_SUBSCRIBER_BUFFER_SIZE,
 	}
 }
 
-// SetReplicator sets the replicator for this router
-func (r *Router) SetReplicator(replicator Replicator) {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-	r.replicator = replicator
+// SetMaxLogEntries sets the maximum log entries per channel (for testing)
+func (r *Router) SetMaxLogEntries(max int) {
+	r.maxLogEntries = max
 }
 
-// SetSyncMode enables synchronous replication (useful for testing)
-func (r *Router) SetSyncMode(sync bool) {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-	r.syncMode = sync
+// SetSubscriberBufferSize sets the subscriber buffer size (for testing)
+func (r *Router) SetSubscriberBufferSize(size int) {
+	r.subscriberBufferSize = size
+}
+
+// SetMaxChannelsPerProcess sets the maximum channels per process (for testing)
+func (r *Router) SetMaxChannelsPerProcess(max int) {
+	r.maxChannelsPerProcess = max
+}
+
+// SetRateLimitEnabled enables or disables rate limiting
+func (r *Router) SetRateLimitEnabled(enabled bool) {
+	r.rateLimitMu.Lock()
+	defer r.rateLimitMu.Unlock()
+	r.rateLimitEnabled = enabled
+}
+
+// getRateLimiter returns the rate limiter for a process, creating one if needed
+func (r *Router) getRateLimiter(processID string) *RateLimiter {
+	r.rateLimitMu.RLock()
+	limiter, exists := r.rateLimiters[processID]
+	r.rateLimitMu.RUnlock()
+
+	if exists {
+		return limiter
+	}
+
+	// Create new limiter
+	r.rateLimitMu.Lock()
+	defer r.rateLimitMu.Unlock()
+
+	// Double-check after acquiring write lock
+	if limiter, exists := r.rateLimiters[processID]; exists {
+		return limiter
+	}
+
+	limiter = NewRateLimiter(
+		float64(constants.CHANNEL_RATE_LIMIT_BURST_SIZE),
+		constants.CHANNEL_RATE_LIMIT_MESSAGES_PER_SECOND,
+	)
+	r.rateLimiters[processID] = limiter
+	return limiter
 }
 
 // Create creates a new channel
 func (r *Router) Create(channel *Channel) error {
 	r.mu.Lock()
+	defer r.mu.Unlock()
 
 	if _, exists := r.channels[channel.ID]; exists {
-		r.mu.Unlock()
 		return ErrChannelExists
+	}
+
+	// Check channel count limit per process
+	if len(r.byProcess[channel.ProcessID]) >= r.maxChannelsPerProcess {
+		return ErrTooManyChannels
 	}
 
 	// Initialize log if nil
@@ -82,26 +200,6 @@ func (r *Router) Create(channel *Channel) error {
 
 	// Index by process
 	r.byProcess[channel.ProcessID] = append(r.byProcess[channel.ProcessID], channel.ID)
-
-	// Copy channel metadata for replication (avoid data race)
-	channelMeta := &Channel{
-		ID:          channel.ID,
-		ProcessID:   channel.ProcessID,
-		Name:        channel.Name,
-		SubmitterID: channel.SubmitterID,
-		ExecutorID:  channel.ExecutorID,
-		Sequence:    0,
-		Log:         nil,
-	}
-
-	r.mu.Unlock()
-
-	// Replicate to peers
-	if r.syncMode {
-		r.replicator.ReplicateChannel(channelMeta)
-	} else {
-		go r.replicator.ReplicateChannel(channelMeta)
-	}
 
 	return nil
 }
@@ -116,6 +214,11 @@ func (r *Router) CreateIfNotExists(channel *Channel) error {
 		return nil // Already exists, success
 	}
 
+	// Check channel count limit per process
+	if len(r.byProcess[channel.ProcessID]) >= r.maxChannelsPerProcess {
+		return ErrTooManyChannels
+	}
+
 	// Initialize log if nil
 	if channel.Log == nil {
 		channel.Log = make([]*MsgEntry, 0)
@@ -126,7 +229,6 @@ func (r *Router) CreateIfNotExists(channel *Channel) error {
 	// Index by process
 	r.byProcess[channel.ProcessID] = append(r.byProcess[channel.ProcessID], channel.ID)
 
-	// Note: No replication here - this is called from replication handler
 	return nil
 }
 
@@ -185,6 +287,11 @@ func (r *Router) GetChannelsByProcess(processID string) []*Channel {
 
 // Append adds a message to a channel with client-assigned sequence number
 func (r *Router) Append(channelID string, senderID string, sequence int64, inReplyTo int64, payload []byte) error {
+	// Check message size before acquiring lock
+	if len(payload) > constants.CHANNEL_MAX_MESSAGE_SIZE {
+		return ErrMessageTooLarge
+	}
+
 	r.mu.Lock()
 	channel, exists := r.channels[channelID]
 
@@ -194,12 +301,29 @@ func (r *Router) Append(channelID string, senderID string, sequence int64, inRep
 	}
 
 	// Check authorization (while holding lock to avoid race with SetExecutorIDForProcess)
-	if err := r.authorize(channel, senderID); err != nil {
+	if err := r.authorize(channel, senderID, "append"); err != nil {
 		r.mu.Unlock()
 		return err
 	}
 
-	// Continue with write operation (already holding write lock)
+	// Check rate limit (per process)
+	r.rateLimitMu.RLock()
+	rateLimitEnabled := r.rateLimitEnabled
+	r.rateLimitMu.RUnlock()
+
+	if rateLimitEnabled {
+		limiter := r.getRateLimiter(channel.ProcessID)
+		if !limiter.Allow() {
+			r.mu.Unlock()
+			return ErrRateLimitExceeded
+		}
+	}
+
+	// Check channel log size limit
+	if len(channel.Log) >= r.maxLogEntries {
+		r.mu.Unlock()
+		return ErrChannelFull
+	}
 
 	entry := &MsgEntry{
 		Sequence:  sequence, // Client-assigned
@@ -207,6 +331,7 @@ func (r *Router) Append(channelID string, senderID string, sequence int64, inRep
 		Timestamp: time.Now(),
 		SenderID:  senderID,
 		Payload:   payload,
+		Type:      MsgTypeData,
 	}
 	channel.Log = append(channel.Log, entry)
 
@@ -219,34 +344,84 @@ func (r *Router) Append(channelID string, senderID string, sequence int64, inRep
 		return channel.Log[i].Timestamp.Before(channel.Log[j].Timestamp)
 	})
 
-	// Copy channel metadata for replication (avoid data race)
-	channelMeta := &Channel{
-		ID:          channel.ID,
-		ProcessID:   channel.ProcessID,
-		Name:        channel.Name,
-		SubmitterID: channel.SubmitterID,
-		ExecutorID:  channel.ExecutorID,
-		Sequence:    0,
-		Log:         nil,
+	r.mu.Unlock()
+
+	// Notify subscribers (push-based)
+	r.notifySubscribers(channelID, entry)
+
+	return nil
+}
+
+// AppendWithType adds a typed message to a channel (e.g., "end" for end-of-stream)
+func (r *Router) AppendWithType(channelID string, senderID string, sequence int64, inReplyTo int64, payload []byte, msgType string) error {
+	// Check message size before acquiring lock
+	if len(payload) > constants.CHANNEL_MAX_MESSAGE_SIZE {
+		return ErrMessageTooLarge
 	}
+
+	r.mu.Lock()
+	channel, exists := r.channels[channelID]
+
+	if !exists {
+		r.mu.Unlock()
+		return ErrChannelNotFound
+	}
+
+	// Check authorization (while holding lock to avoid race with SetExecutorIDForProcess)
+	if err := r.authorize(channel, senderID, "append"); err != nil {
+		r.mu.Unlock()
+		return err
+	}
+
+	// Check rate limit (per process)
+	r.rateLimitMu.RLock()
+	rateLimitEnabled := r.rateLimitEnabled
+	r.rateLimitMu.RUnlock()
+
+	if rateLimitEnabled {
+		limiter := r.getRateLimiter(channel.ProcessID)
+		if !limiter.Allow() {
+			r.mu.Unlock()
+			return ErrRateLimitExceeded
+		}
+	}
+
+	// Check channel log size limit
+	if len(channel.Log) >= r.maxLogEntries {
+		r.mu.Unlock()
+		return ErrChannelFull
+	}
+
+	entry := &MsgEntry{
+		Sequence:  sequence, // Client-assigned
+		InReplyTo: inReplyTo,
+		Timestamp: time.Now(),
+		SenderID:  senderID,
+		Payload:   payload,
+		Type:      msgType,
+	}
+	channel.Log = append(channel.Log, entry)
+
+	// Keep sorted by (SenderID, Sequence) for causal ordering
+	sort.Slice(channel.Log, func(i, j int) bool {
+		if channel.Log[i].SenderID == channel.Log[j].SenderID {
+			return channel.Log[i].Sequence < channel.Log[j].Sequence
+		}
+		// For different senders, sort by timestamp
+		return channel.Log[i].Timestamp.Before(channel.Log[j].Timestamp)
+	})
 
 	r.mu.Unlock()
 
 	// Notify subscribers (push-based)
 	r.notifySubscribers(channelID, entry)
 
-	// Replicate to peers - include channel info to handle race conditions
-	if r.syncMode {
-		r.replicator.ReplicateEntry(channelMeta, entry)
-	} else {
-		go r.replicator.ReplicateEntry(channelMeta, entry)
-	}
-
 	return nil
 }
 
 // ReadAfter reads entries after a given index (position in log)
 // Since sequences are per-sender, we use index-based reading
+// limit=0 means no limit
 func (r *Router) ReadAfter(channelID string, callerID string, afterIndex int64, limit int) ([]*MsgEntry, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
@@ -257,7 +432,7 @@ func (r *Router) ReadAfter(channelID string, callerID string, afterIndex int64, 
 	}
 
 	// Check authorization (while holding lock to avoid race with SetExecutorIDForProcess)
-	if err := r.authorize(channel, callerID); err != nil {
+	if err := r.authorize(channel, callerID, "read"); err != nil {
 		return nil, err
 	}
 
@@ -282,8 +457,17 @@ func (r *Router) ReadAfter(channelID string, callerID string, afterIndex int64, 
 }
 
 // authorize checks if caller has access to channel
-func (r *Router) authorize(channel *Channel, callerID string) error {
+func (r *Router) authorize(channel *Channel, callerID string, operation string) error {
 	if callerID != channel.SubmitterID && callerID != channel.ExecutorID {
+		log.WithFields(log.Fields{
+			"channelID":   channel.ID,
+			"channelName": channel.Name,
+			"processID":   channel.ProcessID,
+			"callerID":    callerID,
+			"submitterID": channel.SubmitterID,
+			"executorID":  channel.ExecutorID,
+			"operation":   operation,
+		}).Warn("Channel authorization failed")
 		return ErrUnauthorized
 	}
 	return nil
@@ -319,13 +503,6 @@ func (r *Router) SetExecutorIDForProcess(processID string, executorID string) er
 		}
 	}
 
-	// Replicate to peers
-	if r.syncMode {
-		r.replicator.ReplicateExecutorAssignment(processID, executorID)
-	} else {
-		go r.replicator.ReplicateExecutorAssignment(processID, executorID)
-	}
-
 	return nil
 }
 
@@ -356,18 +533,19 @@ func (r *Router) CleanupProcess(processID string) {
 	for _, id := range idsToClean {
 		// Close all subscriber channels
 		for _, sub := range r.subscribers[id] {
-			close(sub.ch)
+			// Only close if not already closed (could be closed due to slow subscriber)
+			if !sub.closed {
+				close(sub.ch)
+			}
 		}
 		delete(r.subscribers, id)
 	}
 	r.subMu.Unlock()
 
-	// Replicate to peers
-	if r.syncMode {
-		r.replicator.ReplicateCleanup(processID)
-	} else {
-		go r.replicator.ReplicateCleanup(processID)
-	}
+	// Clean up rate limiter for this process
+	r.rateLimitMu.Lock()
+	delete(r.rateLimiters, processID)
+	r.rateLimitMu.Unlock()
 }
 
 // GetSequence returns the current sequence number for a channel
@@ -396,43 +574,6 @@ func (r *Router) GetLogSize(channelID string) (int, error) {
 	return len(channel.Log), nil
 }
 
-// ReplicateEntry adds an entry from replication (used for distributed setup)
-func (r *Router) ReplicateEntry(channelID string, entry *MsgEntry) error {
-	r.mu.Lock()
-
-	channel, exists := r.channels[channelID]
-	if !exists {
-		r.mu.Unlock()
-		return ErrChannelNotFound
-	}
-
-	// Idempotent - check if already have this entry (same sender + sequence)
-	for _, e := range channel.Log {
-		if e.SenderID == entry.SenderID && e.Sequence == entry.Sequence {
-			r.mu.Unlock()
-			return nil // Already have it
-		}
-	}
-
-	channel.Log = append(channel.Log, entry)
-
-	// Keep sorted by (SenderID, Sequence) for causal ordering
-	sort.Slice(channel.Log, func(i, j int) bool {
-		if channel.Log[i].SenderID == channel.Log[j].SenderID {
-			return channel.Log[i].Sequence < channel.Log[j].Sequence
-		}
-		// For different senders, sort by timestamp
-		return channel.Log[i].Timestamp.Before(channel.Log[j].Timestamp)
-	})
-
-	r.mu.Unlock()
-
-	// Notify subscribers (push replicated entries to local subscribers)
-	r.notifySubscribers(channelID, entry)
-
-	return nil
-}
-
 // Stats returns statistics about the router
 func (r *Router) Stats() (channelCount int, processCount int) {
 	r.mu.RLock()
@@ -452,13 +593,13 @@ func (r *Router) Subscribe(channelID string, callerID string) (chan *MsgEntry, e
 	}
 
 	// Verify authorization (while holding lock to avoid race with SetExecutorIDForProcess)
-	if err := r.authorize(channel, callerID); err != nil {
+	if err := r.authorize(channel, callerID, "subscribe"); err != nil {
 		r.mu.RUnlock()
 		return nil, err
 	}
 	r.mu.RUnlock()
 
-	ch := make(chan *MsgEntry, 100)
+	ch := make(chan *MsgEntry, r.subscriberBufferSize)
 	sub := &Subscriber{ch: ch, channelID: channelID}
 
 	r.subMu.Lock()
@@ -478,7 +619,10 @@ func (r *Router) Unsubscribe(channelID string, ch chan *MsgEntry) {
 		if sub.ch == ch {
 			// Remove subscriber by replacing with last element and truncating
 			r.subscribers[channelID] = append(subs[:i], subs[i+1:]...)
-			close(ch)
+			// Only close if not already closed (could be closed due to slow subscriber)
+			if !sub.closed {
+				close(ch)
+			}
 			break
 		}
 	}
@@ -491,16 +635,66 @@ func (r *Router) Unsubscribe(channelID string, ch chan *MsgEntry) {
 
 // notifySubscribers sends an entry to all subscribers of a channel
 func (r *Router) notifySubscribers(channelID string, entry *MsgEntry) {
-	r.subMu.RLock()
-	defer r.subMu.RUnlock()
+	var slowSubscribers []*Subscriber
 
+	r.subMu.RLock()
 	for _, sub := range r.subscribers[channelID] {
+		if sub.closed {
+			continue // Already disconnected
+		}
 		select {
 		case sub.ch <- entry:
 			// Successfully sent
 		default:
-			// Channel full, subscriber too slow - skip to avoid blocking
+			// Channel full, subscriber too slow - mark for disconnection
+			log.WithFields(log.Fields{
+				"channelID":  channelID,
+				"bufferSize": r.subscriberBufferSize,
+			}).Warn("Subscriber disconnected: buffer full, too slow to consume messages")
+			sub.closed = true
+			// Drain one message to make room for error message
+			select {
+			case <-sub.ch:
+			default:
+			}
+			// Send error message so client knows why they were disconnected
+			sub.ch <- &MsgEntry{Error: ErrSubscriberTooSlow.Error()}
+			close(sub.ch)
+			slowSubscribers = append(slowSubscribers, sub)
 		}
+	}
+	r.subMu.RUnlock()
+
+	// Clean up disconnected subscribers
+	if len(slowSubscribers) > 0 {
+		r.cleanupSlowSubscribers(channelID, slowSubscribers)
+	}
+}
+
+// cleanupSlowSubscribers removes disconnected subscribers from the list
+func (r *Router) cleanupSlowSubscribers(channelID string, toRemove []*Subscriber) {
+	r.subMu.Lock()
+	defer r.subMu.Unlock()
+
+	subs := r.subscribers[channelID]
+	remaining := make([]*Subscriber, 0, len(subs))
+	for _, sub := range subs {
+		found := false
+		for _, remove := range toRemove {
+			if sub == remove {
+				found = true
+				break
+			}
+		}
+		if !found {
+			remaining = append(remaining, sub)
+		}
+	}
+
+	if len(remaining) == 0 {
+		delete(r.subscribers, channelID)
+	} else {
+		r.subscribers[channelID] = remaining
 	}
 }
 
@@ -509,15 +703,4 @@ func (r *Router) SubscriberCount(channelID string) int {
 	r.subMu.RLock()
 	defer r.subMu.RUnlock()
 	return len(r.subscribers[channelID])
-}
-
-// Shutdown gracefully shuts down the router, waiting for pending replications
-func (r *Router) Shutdown() {
-	r.mu.Lock()
-	replicator := r.replicator
-	r.mu.Unlock()
-
-	if replicator != nil {
-		replicator.Shutdown()
-	}
 }

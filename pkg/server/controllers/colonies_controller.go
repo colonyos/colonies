@@ -170,9 +170,6 @@ func CreateColoniesController(db database.Database,
 
 	controller.relayServer = cluster.CreateRelayServer(controller.thisNode, controller.clusterConfig)
 
-	// Set up channel replication using the relay server
-	channelReplicator := channel.NewRelayReplicator(controller.relayServer, controller.channelRouter)
-	controller.channelRouter.SetReplicator(channelReplicator)
 	factory := backendGin.NewFactory()
 	controller.eventHandler = factory.CreateEventHandler(controller.relayServer)
 	controller.wsSubCtrl = factory.CreateSubscriptionController(controller.eventHandler)

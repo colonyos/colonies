@@ -1821,11 +1821,6 @@ func (server *Server) FileDB() database.FileDatabase {
 	return server.fileDB
 }
 
-// SetChannelSyncMode enables synchronous channel replication (for testing)
-func (server *Server) SetChannelSyncMode(sync bool) {
-	server.channelRouter.SetSyncMode(sync)
-}
-
 func (server *Server) Shutdown() {
 	server.controller.Stop()
 
@@ -1850,11 +1845,6 @@ func (server *Server) Shutdown() {
 			"Status":        "STOPPED",
 			"ReleasedPorts": []string{server.libp2pTCPAddr, server.libp2pQUICAddr},
 		}).Info("LibP2P networking stopped")
-	}
-
-	// Shutdown channel router (stops pending replications)
-	if server.channelRouter != nil {
-		server.channelRouter.Shutdown()
 	}
 
 	// Shutdown HTTP server (runs for both backends)

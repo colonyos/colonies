@@ -99,10 +99,15 @@ func (h *Handlers) HandleChannelAppend(c backends.Context, recoveredID string, p
 	// Determine caller ID - either submitter or executor
 	callerID := getCallerID(recoveredID, process)
 
-	log.WithFields(log.Fields{"ProcessID": msg.ProcessID, "Channel": msg.Name, "Sequence": msg.Sequence, "PayloadLen": len(msg.Payload), "CallerID": callerID}).Info("Appending to channel")
+	log.WithFields(log.Fields{"ProcessID": msg.ProcessID, "Channel": msg.Name, "Sequence": msg.Sequence, "PayloadLen": len(msg.Payload), "CallerID": callerID, "PayloadType": msg.PayloadType}).Info("Appending to channel")
 
 	// Append to channel with client-assigned sequence
-	err = h.server.ChannelRouter().Append(ch.ID, callerID, msg.Sequence, msg.InReplyTo, msg.Payload)
+	// Use AppendWithType if a payload type is specified (e.g., "end" for end-of-stream)
+	if msg.PayloadType != "" {
+		err = h.server.ChannelRouter().AppendWithType(ch.ID, callerID, msg.Sequence, msg.InReplyTo, msg.Payload, msg.PayloadType)
+	} else {
+		err = h.server.ChannelRouter().Append(ch.ID, callerID, msg.Sequence, msg.InReplyTo, msg.Payload)
+	}
 	if err != nil {
 		log.WithFields(log.Fields{"ProcessID": msg.ProcessID, "Channel": msg.Name, "Error": err}).Error("Failed to append to channel")
 		if err == channel.ErrUnauthorized {

@@ -18,3 +18,19 @@ const CRON_TRIGGER_PERIOD = 1000      // Period in milliseconds when cron jobs a
 // Process Priority Limits - Valid range for process priority values
 const MIN_PRIORITY = -50000 // Minimum allowed priority for processes (lower numbers = lower priority)
 const MAX_PRIORITY = 50000  // Maximum allowed priority for processes (higher numbers = higher priority)
+
+// Channel Rate Limiting - Token bucket configuration for channel message rate limiting
+const CHANNEL_RATE_LIMIT_MESSAGES_PER_SECOND = 100.0 // Maximum sustained message rate per process
+const CHANNEL_RATE_LIMIT_BURST_SIZE = 500            // Maximum burst size (token bucket capacity)
+
+// Channel Message Size - Maximum payload size for channel messages
+const CHANNEL_MAX_MESSAGE_SIZE = 10 * 1024 * 1024 // 10 MB - allows large payloads for database results, file transfers, etc.
+
+// Channel Subscriber Buffer - Buffer size for push notification channels
+const CHANNEL_SUBSCRIBER_BUFFER_SIZE = 10000 // Number of messages buffered per subscriber before disconnection
+
+// Channel Log Size - Maximum number of entries per channel log
+const CHANNEL_MAX_LOG_ENTRIES = 10000 // Maximum entries per channel, oldest removed when exceeded
+
+// Channel Limit - Maximum number of channels per process
+const CHANNEL_MAX_CHANNELS_PER_PROCESS = 100 // Maximum channels a single process can have

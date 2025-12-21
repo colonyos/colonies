@@ -7,12 +7,13 @@ import (
 const ChannelAppendPayloadType = "channelappendmsg"
 
 type ChannelAppendMsg struct {
-	ProcessID string `json:"processid"`
-	Name      string `json:"name"`
-	Sequence  int64  `json:"sequence"`           // Client-assigned sequence number
-	InReplyTo int64  `json:"inreplyto,omitempty"` // References sequence from other sender
-	Payload   []byte `json:"payload"`
-	MsgType   string `json:"msgtype"`
+	ProcessID   string `json:"processid"`
+	Name        string `json:"name"`
+	Sequence    int64  `json:"sequence"`            // Client-assigned sequence number
+	InReplyTo   int64  `json:"inreplyto,omitempty"` // References sequence from other sender
+	Payload     []byte `json:"payload"`
+	MsgType     string `json:"msgtype"`
+	PayloadType string `json:"payloadtype,omitempty"` // Message type: "", "end", "error"
 }
 
 func CreateChannelAppendMsg(processID string, name string, sequence int64, inReplyTo int64, payload []byte) *ChannelAppendMsg {
@@ -23,6 +24,20 @@ func CreateChannelAppendMsg(processID string, name string, sequence int64, inRep
 	msg.InReplyTo = inReplyTo
 	msg.Payload = payload
 	msg.MsgType = ChannelAppendPayloadType
+	msg.PayloadType = "" // Regular message
+
+	return msg
+}
+
+func CreateChannelAppendMsgWithType(processID string, name string, sequence int64, inReplyTo int64, payload []byte, payloadType string) *ChannelAppendMsg {
+	msg := &ChannelAppendMsg{}
+	msg.ProcessID = processID
+	msg.Name = name
+	msg.Sequence = sequence
+	msg.InReplyTo = inReplyTo
+	msg.Payload = payload
+	msg.MsgType = ChannelAppendPayloadType
+	msg.PayloadType = payloadType
 
 	return msg
 }
