@@ -24,6 +24,7 @@ type Server interface {
 		AddCron(cron *core.Cron) (*core.Cron, error)
 		GetCron(cronID string) (*core.Cron, error)
 		GetCrons(colonyName string, count int) ([]*core.Cron, error)
+		GetCronByName(colonyName string, cronName string) (*core.Cron, error)
 		RunCron(cronID string) (*core.Cron, error)
 		RemoveCron(cronID string) error
 		GetCronPeriod() int

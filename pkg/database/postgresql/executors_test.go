@@ -130,6 +130,122 @@ func TestAddExecutorWithLocation(t *testing.T) {
 	assert.Equal(t, "Home", executorFromDB.LocationName)
 }
 
+func TestAddDuplicateExecutorRejected(t *testing.T) {
+	db, err := PrepareTests()
+	assert.Nil(t, err)
+
+	defer db.Close()
+
+	colony := core.CreateColony(core.GenerateRandomID(), "test_colony_name_1")
+	err = db.AddColony(colony)
+	assert.Nil(t, err)
+
+	// Create and add first executor
+	executor1 := utils.CreateTestExecutor(colony.Name)
+	executor1.Name = "test-executor-same-name"
+	err = db.AddExecutor(executor1)
+	assert.Nil(t, err)
+
+	// Try to add second executor with same name - should be rejected
+	executor2 := utils.CreateTestExecutor(colony.Name)
+	executor2.Name = "test-executor-same-name"
+	executor2.ID = core.GenerateRandomID() // Different ID, same name
+	err = db.AddExecutor(executor2)
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "already exists")
+
+	// Verify only one executor exists
+	executors, err := db.GetExecutorsByColonyName(colony.Name)
+	assert.Nil(t, err)
+	assert.Len(t, executors, 1)
+	assert.Equal(t, executor1.ID, executors[0].ID)
+}
+
+func TestAddDuplicateExecutorConcurrentRejected(t *testing.T) {
+	db, err := PrepareTests()
+	assert.Nil(t, err)
+
+	defer db.Close()
+
+	colony := core.CreateColony(core.GenerateRandomID(), "test_colony_name_1")
+	err = db.AddColony(colony)
+	assert.Nil(t, err)
+
+	// Launch 10 concurrent attempts to add executor with same name
+	const numGoroutines = 10
+	results := make(chan error, numGoroutines)
+	executorName := "concurrent-test-executor"
+
+	for i := 0; i < numGoroutines; i++ {
+		go func(idx int) {
+			executor := utils.CreateTestExecutor(colony.Name)
+			executor.Name = executorName
+			executor.ID = core.GenerateRandomID()
+			results <- db.AddExecutor(executor)
+		}(i)
+	}
+
+	// Collect results
+	successCount := 0
+	failureCount := 0
+	for i := 0; i < numGoroutines; i++ {
+		err := <-results
+		if err == nil {
+			successCount++
+		} else {
+			failureCount++
+			// All failures should be "already exists" errors
+			assert.Contains(t, err.Error(), "already exists")
+		}
+	}
+
+	// Exactly one should succeed, rest should fail
+	assert.Equal(t, 1, successCount, "Exactly one executor should be added successfully")
+	assert.Equal(t, numGoroutines-1, failureCount, "All other attempts should fail with duplicate error")
+
+	// Verify only one executor exists in database
+	executors, err := db.GetExecutorsByColonyName(colony.Name)
+	assert.Nil(t, err)
+	assert.Len(t, executors, 1)
+	assert.Equal(t, executorName, executors[0].Name)
+}
+
+func TestSameExecutorNameDifferentColoniesAllowed(t *testing.T) {
+	db, err := PrepareTests()
+	assert.Nil(t, err)
+
+	defer db.Close()
+
+	// Create two colonies
+	colony1 := core.CreateColony(core.GenerateRandomID(), "test_colony_1")
+	err = db.AddColony(colony1)
+	assert.Nil(t, err)
+
+	colony2 := core.CreateColony(core.GenerateRandomID(), "test_colony_2")
+	err = db.AddColony(colony2)
+	assert.Nil(t, err)
+
+	// Add executor with same name to both colonies - should succeed
+	executor1 := utils.CreateTestExecutor(colony1.Name)
+	executor1.Name = "shared-executor-name"
+	err = db.AddExecutor(executor1)
+	assert.Nil(t, err)
+
+	executor2 := utils.CreateTestExecutor(colony2.Name)
+	executor2.Name = "shared-executor-name"
+	err = db.AddExecutor(executor2)
+	assert.Nil(t, err)
+
+	// Verify both executors exist
+	executorsColony1, err := db.GetExecutorsByColonyName(colony1.Name)
+	assert.Nil(t, err)
+	assert.Len(t, executorsColony1, 1)
+
+	executorsColony2, err := db.GetExecutorsByColonyName(colony2.Name)
+	assert.Nil(t, err)
+	assert.Len(t, executorsColony2, 1)
+}
+
 func TestAddExecutorWithAllocations(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)

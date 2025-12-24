@@ -70,6 +70,7 @@ type Controller interface {
 	RemoveGenerator(generatorID string) error
 	GetCron(cronID string) (*core.Cron, error)
 	GetCrons(colonyName string, count int) ([]*core.Cron, error)
+	GetCronByName(colonyName string, cronName string) (*core.Cron, error)
 	RunCron(cronID string) (*core.Cron, error)
 	RemoveCron(cronID string) error
 	CalcNextRun(cron *core.Cron) time.Time

@@ -500,6 +500,7 @@ type cronControllerAdapter struct {
 		AddCron(cron *core.Cron) (*core.Cron, error)
 		GetCron(cronID string) (*core.Cron, error)
 		GetCrons(colonyName string, count int) ([]*core.Cron, error)
+		GetCronByName(colonyName string, cronName string) (*core.Cron, error)
 		RunCron(cronID string) (*core.Cron, error)
 		RemoveCron(cronID string) error
 		GetCronPeriod() int
@@ -516,6 +517,10 @@ func (c *cronControllerAdapter) GetCron(cronID string) (*core.Cron, error) {
 
 func (c *cronControllerAdapter) GetCrons(colonyName string, count int) ([]*core.Cron, error) {
 	return c.controller.GetCrons(colonyName, count)
+}
+
+func (c *cronControllerAdapter) GetCronByName(colonyName string, cronName string) (*core.Cron, error) {
+	return c.controller.GetCronByName(colonyName, cronName)
 }
 
 func (c *cronControllerAdapter) RunCron(cronID string) (*core.Cron, error) {
@@ -535,6 +540,7 @@ func (s *ServerAdapter) CronController() interface {
 	AddCron(cron *core.Cron) (*core.Cron, error)
 	GetCron(cronID string) (*core.Cron, error)
 	GetCrons(colonyName string, count int) ([]*core.Cron, error)
+	GetCronByName(colonyName string, cronName string) (*core.Cron, error)
 	RunCron(cronID string) (*core.Cron, error)
 	RemoveCron(cronID string) error
 	GetCronPeriod() int

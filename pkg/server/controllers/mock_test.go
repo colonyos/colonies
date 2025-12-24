@@ -254,6 +254,10 @@ func (v *ControllerMock) GetCrons(colonyName string, count int) ([]*core.Cron, e
 	return nil, nil
 }
 
+func (v *ControllerMock) GetCronByName(colonyName string, cronName string) (*core.Cron, error) {
+	return nil, nil
+}
+
 func (v *ControllerMock) RunCron(cronID string) (*core.Cron, error) {
 	return nil, nil
 }
@@ -631,6 +635,7 @@ func (db *DatabaseMock) GetBlueprintDefinitionByName(namespace, name string) (*c
 func (db *DatabaseMock) GetBlueprintDefinitions() ([]*core.BlueprintDefinition, error) { return nil, nil }
 func (db *DatabaseMock) GetBlueprintDefinitionsByNamespace(namespace string) ([]*core.BlueprintDefinition, error) { return nil, nil }
 func (db *DatabaseMock) GetBlueprintDefinitionsByGroup(group string) ([]*core.BlueprintDefinition, error) { return nil, nil }
+func (db *DatabaseMock) GetBlueprintDefinitionByKind(kind string) (*core.BlueprintDefinition, error) { return nil, nil }
 func (db *DatabaseMock) UpdateBlueprintDefinition(sd *core.BlueprintDefinition) error { return nil }
 func (db *DatabaseMock) RemoveBlueprintDefinitionByID(id string) error { return nil }
 func (db *DatabaseMock) RemoveBlueprintDefinitionByName(namespace, name string) error { return nil }

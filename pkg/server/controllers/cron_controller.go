@@ -87,6 +87,27 @@ func (controller *ColoniesController) GetCrons(colonyName string, count int) ([]
 	}
 }
 
+func (controller *ColoniesController) GetCronByName(colonyName string, cronName string) (*core.Cron, error) {
+	cmd := &command{cronReplyChan: make(chan *core.Cron, 1),
+		errorChan: make(chan error, 1),
+		handler: func(cmd *command) {
+			cron, err := controller.cronDB.GetCronByName(colonyName, cronName)
+			if err != nil {
+				cmd.errorChan <- err
+				return
+			}
+			cmd.cronReplyChan <- cron
+		}}
+
+	controller.cmdQueue <- cmd
+	select {
+	case err := <-cmd.errorChan:
+		return nil, err
+	case cron := <-cmd.cronReplyChan:
+		return cron, nil
+	}
+}
+
 func (controller *ColoniesController) RunCron(cronID string) (*core.Cron, error) {
 	log.WithFields(log.Fields{"CronID": cronID}).Info("RunCron called in controller")
 	cmd := &command{cronReplyChan: make(chan *core.Cron, 1),

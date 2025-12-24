@@ -136,6 +136,27 @@ func (db *PQDatabase) GetBlueprintDefinitionsByGroup(group string) ([]*core.Blue
 	return db.parseBlueprintDefinitions(rows)
 }
 
+func (db *PQDatabase) GetBlueprintDefinitionByKind(kind string) (*core.BlueprintDefinition, error) {
+	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `BLUEPRINTDEFINITIONS WHERE KIND=$1 LIMIT 1`
+	rows, err := db.postgresql.Query(sqlStatement, kind)
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	sds, err := db.parseBlueprintDefinitions(rows)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(sds) == 0 {
+		return nil, nil
+	}
+
+	return sds[0], nil
+}
+
 func (db *PQDatabase) UpdateBlueprintDefinition(sd *core.BlueprintDefinition) error {
 	if sd == nil {
 		return errors.New("BlueprintDefinition is nil")
@@ -385,43 +406,17 @@ func (db *PQDatabase) UpdateBlueprint(blueprint *core.Blueprint) error {
 }
 
 func (db *PQDatabase) UpdateBlueprintStatus(id string, status map[string]interface{}) error {
-	// Get the current blueprint data to preserve spec and metadata
-	sqlStatement := `SELECT DATA FROM ` + db.dbPrefix + `BLUEPRINTS WHERE ID=$1`
-	rows, err := db.postgresql.Query(sqlStatement, id)
+	// Convert status to JSON
+	statusJSON, err := json.Marshal(status)
 	if err != nil {
-		return err
-	}
-	defer rows.Close()
-
-	if !rows.Next() {
-		return errors.New("Blueprint not found")
+		return fmt.Errorf("failed to marshal status: %w", err)
 	}
 
-	var dataStr string
-	if err := rows.Scan(&dataStr); err != nil {
-		return err
-	}
-
-	// Parse the JSON data
-	var blueprintData map[string]interface{}
-	if err := json.Unmarshal([]byte(dataStr), &blueprintData); err != nil {
-		return fmt.Errorf("failed to unmarshal blueprint data: %w", err)
-	}
-
-	// Update only the status field
-	blueprintData["status"] = status
-
-	// Convert back to JSON
-	updatedJSON, err := json.Marshal(blueprintData)
-	if err != nil {
-		return fmt.Errorf("failed to marshal updated blueprint data: %w", err)
-	}
-
-	// Update the database
-	// Note: This still has a potential race condition, but it's much smaller window
-	// than the original read-modify-write pattern
-	updateStatement := `UPDATE ` + db.dbPrefix + `BLUEPRINTS SET DATA=$1 WHERE ID=$2`
-	result, err := db.postgresql.Exec(updateStatement, string(updatedJSON), id)
+	// Use PostgreSQL's jsonb_set to atomically update only the status field
+	// This eliminates the read-modify-write race condition by doing the update
+	// in a single atomic SQL statement
+	updateStatement := `UPDATE ` + db.dbPrefix + `BLUEPRINTS SET DATA = jsonb_set(DATA::jsonb, '{status}', $1::jsonb) WHERE ID=$2`
+	result, err := db.postgresql.Exec(updateStatement, string(statusJSON), id)
 	if err != nil {
 		return err
 	}
@@ -543,17 +538,25 @@ func (db *PQDatabase) AddBlueprintHistory(history *core.BlueprintHistory) error 
 
 // GetBlueprintHistory retrieves history for a blueprint (most recent first)
 func (db *PQDatabase) GetBlueprintHistory(blueprintID string, limit int) ([]*core.BlueprintHistory, error) {
-	sqlStatement := `SELECT ID, BLUEPRINT_ID, KIND, NAMESPACE, NAME, GENERATION,
-		SPEC, STATUS, TIMESTAMP, CHANGED_BY, CHANGE_TYPE
-		FROM ` + db.dbPrefix + `BLUEPRINT_HISTORY
-		WHERE BLUEPRINT_ID=$1
-		ORDER BY TIMESTAMP DESC`
+	var rows *sql.Rows
+	var err error
 
 	if limit > 0 {
-		sqlStatement += fmt.Sprintf(" LIMIT %d", limit)
+		sqlStatement := `SELECT ID, BLUEPRINT_ID, KIND, NAMESPACE, NAME, GENERATION,
+			SPEC, STATUS, TIMESTAMP, CHANGED_BY, CHANGE_TYPE
+			FROM ` + db.dbPrefix + `BLUEPRINT_HISTORY
+			WHERE BLUEPRINT_ID=$1
+			ORDER BY TIMESTAMP DESC
+			LIMIT $2`
+		rows, err = db.postgresql.Query(sqlStatement, blueprintID, limit)
+	} else {
+		sqlStatement := `SELECT ID, BLUEPRINT_ID, KIND, NAMESPACE, NAME, GENERATION,
+			SPEC, STATUS, TIMESTAMP, CHANGED_BY, CHANGE_TYPE
+			FROM ` + db.dbPrefix + `BLUEPRINT_HISTORY
+			WHERE BLUEPRINT_ID=$1
+			ORDER BY TIMESTAMP DESC`
+		rows, err = db.postgresql.Query(sqlStatement, blueprintID)
 	}
-
-	rows, err := db.postgresql.Query(sqlStatement, blueprintID)
 	if err != nil {
 		return nil, err
 	}

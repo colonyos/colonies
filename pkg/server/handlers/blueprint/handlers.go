@@ -27,6 +27,7 @@ type Server interface {
 		AddCron(cron *core.Cron) (*core.Cron, error)
 		GetCron(cronID string) (*core.Cron, error)
 		GetCrons(colonyName string, count int) ([]*core.Cron, error)
+		GetCronByName(colonyName string, cronName string) (*core.Cron, error)
 		RunCron(cronID string) (*core.Cron, error)
 		RemoveCron(cronID string) error
 		GetCronPeriod() int
@@ -543,6 +544,7 @@ func (h *Handlers) HandleAddBlueprint(c backends.Context, recoveredID string, pa
 	}
 
 	// Auto-create location if specified and doesn't exist
+	var locationWasAutoCreated bool
 	if msg.Blueprint.Metadata.LocationName != "" {
 		existingLocation, err := h.server.LocationDB().GetLocationByName(msg.Blueprint.Metadata.ColonyName, msg.Blueprint.Metadata.LocationName)
 		if err != nil {
@@ -565,25 +567,44 @@ func (h *Handlers) HandleAddBlueprint(c backends.Context, recoveredID string, pa
 				h.server.HandleHTTPError(c, fmt.Errorf("failed to create location: %w", err), http.StatusInternalServerError)
 				return
 			}
+			locationWasAutoCreated = true
 
 			log.WithFields(log.Fields{
-				"LocationName": msg.Blueprint.Metadata.LocationName,
-				"ColonyName":   msg.Blueprint.Metadata.ColonyName,
+				"LocationName":  msg.Blueprint.Metadata.LocationName,
+				"ColonyName":    msg.Blueprint.Metadata.ColonyName,
 				"BlueprintName": msg.Blueprint.Metadata.Name,
 			}).Info("Auto-created location for blueprint")
 		}
 	}
 
 	err = h.server.BlueprintDB().AddBlueprint(msg.Blueprint)
-	if h.server.HandleHTTPError(c, err, http.StatusInternalServerError) {
+	if err != nil {
+		// Clean up auto-created location if blueprint creation fails
+		if locationWasAutoCreated {
+			if removeErr := h.server.LocationDB().RemoveLocationByName(msg.Blueprint.Metadata.ColonyName, msg.Blueprint.Metadata.LocationName); removeErr != nil {
+				log.WithFields(log.Fields{
+					"Error":        removeErr,
+					"LocationName": msg.Blueprint.Metadata.LocationName,
+					"ColonyName":   msg.Blueprint.Metadata.ColonyName,
+				}).Warn("Failed to cleanup auto-created location after blueprint creation failure")
+			} else {
+				log.WithFields(log.Fields{
+					"LocationName":  msg.Blueprint.Metadata.LocationName,
+					"ColonyName":    msg.Blueprint.Metadata.ColonyName,
+					"BlueprintName": msg.Blueprint.Metadata.Name,
+				}).Info("Cleaned up auto-created location after blueprint creation failure")
+			}
+		}
+		h.server.HandleHTTPError(c, err, http.StatusInternalServerError)
 		return
 	}
 
 	// Save blueprint history for create action
 	history := core.CreateBlueprintHistory(msg.Blueprint, recoveredID, "create")
 	if err := h.server.BlueprintDB().AddBlueprintHistory(history); err != nil {
-		log.WithFields(log.Fields{"Error": err, "BlueprintID": msg.Blueprint.ID}).Warn("Failed to save blueprint history")
-		// Don't fail the request if history saving fails
+		log.WithFields(log.Fields{"Error": err, "BlueprintID": msg.Blueprint.ID}).Error("Failed to save blueprint history")
+		h.server.HandleHTTPError(c, fmt.Errorf("blueprint created but failed to save audit history: %w", err), http.StatusInternalServerError)
+		return
 	}
 
 	log.WithFields(log.Fields{
@@ -624,15 +645,12 @@ func (h *Handlers) HandleAddBlueprint(c backends.Context, recoveredID string, pa
 		}
 
 		// Check if cron for this handler already exists
-		crons, err := h.server.CronController().GetCrons(msg.Blueprint.Metadata.ColonyName, 1000)
-		var existingCron *core.Cron
-		if err == nil {
-			for _, cron := range crons {
-				if cron.Name == cronName {
-					existingCron = cron
-					break
-				}
-			}
+		existingCron, err := h.server.CronController().GetCronByName(msg.Blueprint.Metadata.ColonyName, cronName)
+		if err != nil {
+			log.WithFields(log.Fields{
+				"Error":    err,
+				"CronName": cronName,
+			}).Warn("Failed to check for existing cron")
 		}
 
 		if existingCron == nil {
@@ -691,21 +709,23 @@ func (h *Handlers) HandleAddBlueprint(c backends.Context, recoveredID string, pa
 				log.WithFields(log.Fields{
 					"Error":         err,
 					"BlueprintName": msg.Blueprint.Metadata.Name,
-				}).Warn("Failed to create immediate reconciliation process")
-			} else {
-				_, err = h.server.ProcessController().AddProcess(immediateProcess)
-				if err != nil {
-					log.WithFields(log.Fields{
-						"Error":         err,
-						"BlueprintName": msg.Blueprint.Metadata.Name,
-					}).Warn("Failed to submit immediate reconciliation process")
-				} else {
-					log.WithFields(log.Fields{
-						"BlueprintName": msg.Blueprint.Metadata.Name,
-						"ProcessID":     immediateProcess.ID,
-					}).Info("Submitted immediate reconciliation process for new blueprint")
-				}
+				}).Error("Failed to create immediate reconciliation process")
+				h.server.HandleHTTPError(c, fmt.Errorf("blueprint created but failed to create reconciliation process: %w", err), http.StatusInternalServerError)
+				return
 			}
+			_, err = h.server.ProcessController().AddProcess(immediateProcess)
+			if err != nil {
+				log.WithFields(log.Fields{
+					"Error":         err,
+					"BlueprintName": msg.Blueprint.Metadata.Name,
+				}).Error("Failed to submit immediate reconciliation process")
+				h.server.HandleHTTPError(c, fmt.Errorf("blueprint created but failed to submit reconciliation process: %w", err), http.StatusInternalServerError)
+				return
+			}
+			log.WithFields(log.Fields{
+				"BlueprintName": msg.Blueprint.Metadata.Name,
+				"ProcessID":     immediateProcess.ID,
+			}).Info("Submitted immediate reconciliation process for new blueprint")
 		}
 	}
 
@@ -851,6 +871,12 @@ func (h *Handlers) HandleUpdateBlueprint(c backends.Context, recoveredID string,
 		return
 	}
 
+	// Blueprint must exist for update - return 404 if not found
+	if oldBlueprint == nil {
+		h.server.HandleHTTPError(c, fmt.Errorf("blueprint '%s' not found in namespace '%s'", msg.Blueprint.Metadata.Name, msg.Blueprint.Metadata.ColonyName), http.StatusNotFound)
+		return
+	}
+
 	// Validate blueprint against its BlueprintDefinition schema
 	// Blueprint Kind is required
 	if msg.Blueprint.Kind == "" {
@@ -923,8 +949,9 @@ func (h *Handlers) HandleUpdateBlueprint(c backends.Context, recoveredID string,
 	if specChanged {
 		history := core.CreateBlueprintHistory(msg.Blueprint, recoveredID, "update")
 		if err := h.server.BlueprintDB().AddBlueprintHistory(history); err != nil {
-			log.WithFields(log.Fields{"Error": err, "BlueprintID": msg.Blueprint.ID}).Warn("Failed to save blueprint history")
-			// Don't fail the request if history saving fails
+			log.WithFields(log.Fields{"Error": err, "BlueprintID": msg.Blueprint.ID}).Error("Failed to save blueprint history")
+			h.server.HandleHTTPError(c, fmt.Errorf("blueprint updated but failed to save audit history: %w", err), http.StatusInternalServerError)
+			return
 		}
 	}
 
@@ -936,28 +963,29 @@ func (h *Handlers) HandleUpdateBlueprint(c backends.Context, recoveredID string,
 	}).Debug("Updating blueprint")
 
 	// Trigger immediate reconciliation by running the cron for this blueprint's handler
-	// Use the stored blueprint's handler (source of truth), fall back to definition for new blueprints
-	updateExecutorType := ""
+	// Check if handler is configured (from blueprint or definition)
+	hasHandler := false
 	if oldBlueprint != nil && oldBlueprint.Handler != nil && oldBlueprint.Handler.ExecutorType != "" {
-		updateExecutorType = oldBlueprint.Handler.ExecutorType
+		hasHandler = true
 	} else if matchedSD != nil && matchedSD.Spec.Handler.ExecutorType != "" {
-		updateExecutorType = matchedSD.Spec.Handler.ExecutorType
+		hasHandler = true
 	}
 
-	if updateExecutorType != "" {
-		// Find the cron for this specific handler
-		// Cron is named by executor type: reconcile-{Kind}-{executorType}
-		cronName := "reconcile-" + msg.Blueprint.Kind + "-" + updateExecutorType
+	if hasHandler {
+		// Find the cron for this handler
+		// Cron naming must match AddBlueprint: reconcile-{Kind}-{locationName}
+		locationName := msg.Blueprint.Metadata.LocationName
+		cronName := "reconcile-" + msg.Blueprint.Kind
+		if locationName != "" {
+			cronName = cronName + "-" + locationName
+		}
 
-		crons, err := h.server.CronController().GetCrons(msg.Blueprint.Metadata.ColonyName, 1000)
-		var existingCron *core.Cron
-		if err == nil {
-			for _, cron := range crons {
-				if cron.Name == cronName {
-					existingCron = cron
-					break
-				}
-			}
+		existingCron, err := h.server.CronController().GetCronByName(msg.Blueprint.Metadata.ColonyName, cronName)
+		if err != nil {
+			log.WithFields(log.Fields{
+				"Error":    err,
+				"CronName": cronName,
+			}).Warn("Failed to check for existing cron")
 		}
 
 		if existingCron != nil {
@@ -968,7 +996,7 @@ func (h *Handlers) HandleUpdateBlueprint(c backends.Context, recoveredID string,
 					"Error":         err,
 					"BlueprintName": msg.Blueprint.Metadata.Name,
 					"CronName":      cronName,
-					"ExecutorType":  updateExecutorType,
+					"LocationName":  locationName,
 				}).Warn("Failed to trigger reconciliation cron after blueprint update")
 			} else {
 				log.WithFields(log.Fields{
@@ -976,14 +1004,14 @@ func (h *Handlers) HandleUpdateBlueprint(c backends.Context, recoveredID string,
 					"Generation":    msg.Blueprint.Metadata.Generation,
 					"CronName":      cronName,
 					"CronID":        existingCron.ID,
-					"ExecutorType":  updateExecutorType,
+					"LocationName":  locationName,
 				}).Info("Triggered reconciliation cron immediately after blueprint update")
 			}
 		} else {
 			log.WithFields(log.Fields{
 				"BlueprintName": msg.Blueprint.Metadata.Name,
 				"CronName":      cronName,
-				"ExecutorType":  updateExecutorType,
+				"LocationName":  locationName,
 			}).Debug("No reconciliation cron found for handler")
 		}
 	}
@@ -1030,8 +1058,12 @@ func (h *Handlers) HandleRemoveBlueprint(c backends.Context, recoveredID string,
 		return
 	}
 
-	// Use consolidated cron name based on Kind
+	// Cron naming must match AddBlueprint: reconcile-{Kind}-{locationName}
+	locationName := blueprint.Metadata.LocationName
 	cronName := "reconcile-" + blueprint.Kind
+	if locationName != "" {
+		cronName = cronName + "-" + locationName
+	}
 
 	// Remove the blueprint from database first
 	err = h.server.BlueprintDB().RemoveBlueprintByName(msg.Namespace, msg.Name)
@@ -1039,7 +1071,7 @@ func (h *Handlers) HandleRemoveBlueprint(c backends.Context, recoveredID string,
 		return
 	}
 
-	// Check if there are any remaining blueprints of this Kind
+	// Check if there are any remaining blueprints of this Kind at this location
 	remainingBlueprints, err := h.server.BlueprintDB().GetBlueprintsByNamespaceAndKind(msg.Namespace, blueprint.Kind)
 	if err != nil {
 		log.WithFields(log.Fields{
@@ -1049,54 +1081,51 @@ func (h *Handlers) HandleRemoveBlueprint(c backends.Context, recoveredID string,
 		remainingBlueprints = []*core.Blueprint{} // Assume none remaining on error
 	}
 
-	// Only remove consolidated cron if no blueprints of this Kind remain
-	if len(remainingBlueprints) == 0 {
-		crons, err := h.server.CronController().GetCrons(msg.Namespace, 1000)
-		if err == nil {
-			for _, c := range crons {
-				if c.Name == cronName {
-					err = h.server.CronController().RemoveCron(c.ID)
-					if err != nil {
-						log.WithFields(log.Fields{
-							"Error":    err,
-							"Kind":     blueprint.Kind,
-							"CronName": cronName,
-						}).Warn("Failed to remove consolidated cron")
-					} else {
-						log.WithFields(log.Fields{
-							"Kind":     blueprint.Kind,
-							"CronName": cronName,
-						}).Info("Auto-removed consolidated cron (last blueprint of Kind deleted)")
-					}
-					break
-				}
-			}
-		} else {
+	// Filter to only blueprints at the same location
+	remainingAtLocation := 0
+	for _, bp := range remainingBlueprints {
+		if bp.Metadata.LocationName == locationName {
+			remainingAtLocation++
+		}
+	}
+
+	// Only remove cron if no blueprints of this Kind remain at this location
+	if remainingAtLocation == 0 {
+		existingCron, err := h.server.CronController().GetCronByName(msg.Namespace, cronName)
+		if err != nil {
 			log.WithFields(log.Fields{
 				"Error":    err,
 				"CronName": cronName,
-			}).Warn("Failed to get crons for deletion")
+			}).Warn("Failed to get cron for deletion")
+		} else if existingCron != nil {
+			err = h.server.CronController().RemoveCron(existingCron.ID)
+			if err != nil {
+				log.WithFields(log.Fields{
+					"Error":        err,
+					"Kind":         blueprint.Kind,
+					"CronName":     cronName,
+					"LocationName": locationName,
+				}).Warn("Failed to remove cron")
+			} else {
+				log.WithFields(log.Fields{
+					"Kind":         blueprint.Kind,
+					"CronName":     cronName,
+					"LocationName": locationName,
+				}).Info("Auto-removed cron (last blueprint of Kind at location deleted)")
+			}
 		}
 	} else {
 		log.WithFields(log.Fields{
 			"BlueprintName":       msg.Name,
 			"Kind":                blueprint.Kind,
-			"RemainingBlueprints": len(remainingBlueprints),
-		}).Debug("Consolidated cron kept (other blueprints of same Kind exist)")
+			"LocationName":        locationName,
+			"RemainingBlueprints": remainingAtLocation,
+		}).Debug("Cron kept (other blueprints of same Kind at location exist)")
 	}
 
 	// Submit cleanup process to reconciler (best-effort)
 	// Look up the BlueprintDefinition by Kind to get the ExecutorType
-	var blueprintDef *core.BlueprintDefinition
-	blueprintDefs, err := h.server.BlueprintDB().GetBlueprintDefinitions()
-	if err == nil {
-		for _, def := range blueprintDefs {
-			if def.Spec.Names.Kind == blueprint.Kind {
-				blueprintDef = def
-				break
-			}
-		}
-	}
+	blueprintDef, err := h.server.BlueprintDB().GetBlueprintDefinitionByKind(blueprint.Kind)
 	if blueprintDef != nil && blueprintDef.Spec.Handler.ExecutorType != "" {
 		// Create cleanup function spec
 		funcSpec := core.CreateEmptyFunctionSpec()

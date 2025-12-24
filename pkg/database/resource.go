@@ -10,6 +10,7 @@ type BlueprintDatabase interface {
 	GetBlueprintDefinitions() ([]*core.BlueprintDefinition, error)
 	GetBlueprintDefinitionsByNamespace(namespace string) ([]*core.BlueprintDefinition, error)
 	GetBlueprintDefinitionsByGroup(group string) ([]*core.BlueprintDefinition, error)
+	GetBlueprintDefinitionByKind(kind string) (*core.BlueprintDefinition, error)
 	UpdateBlueprintDefinition(sd *core.BlueprintDefinition) error
 	RemoveBlueprintDefinitionByID(id string) error
 	RemoveBlueprintDefinitionByName(namespace, name string) error

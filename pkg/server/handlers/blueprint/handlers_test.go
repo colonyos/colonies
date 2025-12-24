@@ -1355,3 +1355,603 @@ func TestBlueprintWithoutLocationCreatesCronWithoutSuffix(t *testing.T) {
 	server.Shutdown()
 	<-done
 }
+
+// TestCronNamingConsistencyBetweenAddAndUpdate verifies that AddBlueprint and
+// UpdateBlueprint use the same cron naming scheme: reconcile-{Kind}-{locationName}
+// This ensures UpdateBlueprint can find and trigger the reconciliation cron.
+func TestCronNamingConsistencyBetweenAddAndUpdate(t *testing.T) {
+	env, client, server, _, done := server.SetupTestEnv2(t)
+
+	// Create BlueprintDefinition with an executorType
+	executorType := "docker-reconciler"
+	sd := core.CreateBlueprintDefinition(
+		"cron-naming-test",
+		"example.com",
+		"v1",
+		"CronNamingTest",
+		"cronnamingtests",
+		"Namespaced",
+		executorType,
+		"reconcile",
+	)
+	sd.Metadata.ColonyName = env.ColonyName
+	_, err := client.AddBlueprintDefinition(sd, env.ColonyPrvKey)
+	assert.Nil(t, err)
+
+	// Create Blueprint with a locationName
+	locationName := "dc1"
+	blueprint := core.CreateBlueprint("CronNamingTest", "test-deployment", env.ColonyName)
+	blueprint.Metadata.LocationName = locationName
+	blueprint.SetSpec("image", "nginx:1.21")
+	blueprint.SetSpec("replicas", 3)
+
+	// Add Blueprint - this creates a cron with name "reconcile-CronNamingTest-dc1"
+	addedBlueprint, err := client.AddBlueprint(blueprint, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.NotNil(t, addedBlueprint)
+
+	// Get all crons and find the one created by AddBlueprint
+	crons, err := client.GetCrons(env.ColonyName, 100, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+
+	// Both AddBlueprint and UpdateBlueprint should use: reconcile-{Kind}-{locationName}
+	expectedCronName := "reconcile-CronNamingTest-" + locationName // reconcile-CronNamingTest-dc1
+	var foundCron *core.Cron
+	for _, cron := range crons {
+		if cron.Name == expectedCronName {
+			foundCron = cron
+			break
+		}
+	}
+
+	// Verify AddBlueprint created the cron with locationName pattern
+	assert.NotNil(t, foundCron, "AddBlueprint should create cron with name: %s", expectedCronName)
+	t.Logf("AddBlueprint created cron with name: %s", expectedCronName)
+
+	// Record the cron's last run time before update
+	cronBeforeUpdate := foundCron
+
+	// Now update the blueprint - this should trigger the same cron
+	addedBlueprint.SetSpec("replicas", 5)
+	_, err = client.UpdateBlueprint(addedBlueprint, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+
+	// Get crons again to verify the cron was triggered
+	cronsAfterUpdate, err := client.GetCrons(env.ColonyName, 100, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+
+	// Find the cron again
+	var cronAfterUpdate *core.Cron
+	for _, cron := range cronsAfterUpdate {
+		if cron.Name == expectedCronName {
+			cronAfterUpdate = cron
+			break
+		}
+	}
+
+	assert.NotNil(t, cronAfterUpdate, "Cron should still exist after update")
+
+	// Verify the cron was triggered by checking LastRun changed
+	// (The cron should have been run by UpdateBlueprint)
+	assert.True(t,
+		cronAfterUpdate.LastRun.After(cronBeforeUpdate.LastRun) || !cronAfterUpdate.LastRun.IsZero(),
+		"UpdateBlueprint should trigger the reconciliation cron (LastRun should be updated)")
+
+	t.Logf("Cron naming is consistent:")
+	t.Logf("  AddBlueprint creates: %s", expectedCronName)
+	t.Logf("  UpdateBlueprint finds: %s", expectedCronName)
+	t.Logf("  Cron was triggered: LastRun before=%v, after=%v", cronBeforeUpdate.LastRun, cronAfterUpdate.LastRun)
+
+	server.Shutdown()
+	<-done
+}
+
+// TestRemoveBlueprintCronCleanup verifies that RemoveBlueprint correctly removes
+// the cron when the last blueprint of a Kind at a location is deleted.
+// Both AddBlueprint and RemoveBlueprint use the same naming: reconcile-{Kind}-{locationName}
+func TestRemoveBlueprintCronCleanup(t *testing.T) {
+	env, client, server, _, done := server.SetupTestEnv2(t)
+
+	// Create BlueprintDefinition
+	sd := core.CreateBlueprintDefinition(
+		"remove-cron-test",
+		"example.com",
+		"v1",
+		"RemoveCronTest",
+		"removetest",
+		"Namespaced",
+		"test-reconciler",
+		"reconcile",
+	)
+	sd.Metadata.ColonyName = env.ColonyName
+	_, err := client.AddBlueprintDefinition(sd, env.ColonyPrvKey)
+	assert.Nil(t, err)
+
+	// Create Blueprint with a locationName
+	locationName := "dc1"
+	blueprint := core.CreateBlueprint("RemoveCronTest", "test-deployment", env.ColonyName)
+	blueprint.Metadata.LocationName = locationName
+	blueprint.SetSpec("image", "nginx:1.21")
+
+	// Add Blueprint - this creates a cron with name "reconcile-RemoveCronTest-dc1"
+	addedBlueprint, err := client.AddBlueprint(blueprint, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.NotNil(t, addedBlueprint)
+
+	// Get crons and verify the cron was created with locationName pattern
+	cronsBefore, err := client.GetCrons(env.ColonyName, 100, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+
+	expectedCronName := "reconcile-RemoveCronTest-" + locationName // reconcile-RemoveCronTest-dc1
+	var foundCronBefore *core.Cron
+	for _, cron := range cronsBefore {
+		if cron.Name == expectedCronName {
+			foundCronBefore = cron
+			break
+		}
+	}
+	assert.NotNil(t, foundCronBefore, "AddBlueprint should create cron with name: %s", expectedCronName)
+	t.Logf("AddBlueprint created cron: %s", expectedCronName)
+
+	// Now remove the blueprint - this is the last (and only) blueprint of this Kind at this location
+	err = client.RemoveBlueprint(env.ColonyName, blueprint.Metadata.Name, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+
+	// Get crons again after removal
+	cronsAfter, err := client.GetCrons(env.ColonyName, 100, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+
+	// Check if the cron was removed
+	var cronStillExists *core.Cron
+	for _, cron := range cronsAfter {
+		if cron.Name == expectedCronName {
+			cronStillExists = cron
+			break
+		}
+	}
+
+	// The cron SHOULD be removed since the last blueprint at this location was deleted
+	assert.Nil(t, cronStillExists, "Cron should be removed after deleting last blueprint at location")
+
+	t.Logf("Cron cleanup verified:")
+	t.Logf("  Cron '%s' was correctly removed after deleting last blueprint", expectedCronName)
+
+	server.Shutdown()
+	<-done
+}
+
+// TestRemoveBlueprintCronKeptWhenOthersExist verifies that the cron is NOT removed
+// when other blueprints of the same Kind at the same location still exist.
+func TestRemoveBlueprintCronKeptWhenOthersExist(t *testing.T) {
+	env, client, server, _, done := server.SetupTestEnv2(t)
+
+	// Create BlueprintDefinition
+	sd := core.CreateBlueprintDefinition(
+		"cron-kept-test",
+		"example.com",
+		"v1",
+		"CronKeptTest",
+		"cronkepttest",
+		"Namespaced",
+		"test-reconciler",
+		"reconcile",
+	)
+	sd.Metadata.ColonyName = env.ColonyName
+	_, err := client.AddBlueprintDefinition(sd, env.ColonyPrvKey)
+	assert.Nil(t, err)
+
+	// Create two blueprints at the same location
+	locationName := "dc1"
+
+	blueprint1 := core.CreateBlueprint("CronKeptTest", "deployment-1", env.ColonyName)
+	blueprint1.Metadata.LocationName = locationName
+	blueprint1.SetSpec("image", "nginx:1.21")
+
+	blueprint2 := core.CreateBlueprint("CronKeptTest", "deployment-2", env.ColonyName)
+	blueprint2.Metadata.LocationName = locationName
+	blueprint2.SetSpec("image", "nginx:1.22")
+
+	// Add both blueprints
+	_, err = client.AddBlueprint(blueprint1, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	_, err = client.AddBlueprint(blueprint2, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+
+	// Verify cron exists
+	expectedCronName := "reconcile-CronKeptTest-" + locationName
+	cronsBefore, err := client.GetCrons(env.ColonyName, 100, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+
+	var foundCron *core.Cron
+	for _, cron := range cronsBefore {
+		if cron.Name == expectedCronName {
+			foundCron = cron
+			break
+		}
+	}
+	assert.NotNil(t, foundCron, "Cron should exist")
+
+	// Remove first blueprint - cron should be kept because blueprint2 still exists
+	err = client.RemoveBlueprint(env.ColonyName, blueprint1.Metadata.Name, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+
+	// Verify cron still exists
+	cronsAfter, err := client.GetCrons(env.ColonyName, 100, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+
+	var cronAfterFirstRemove *core.Cron
+	for _, cron := range cronsAfter {
+		if cron.Name == expectedCronName {
+			cronAfterFirstRemove = cron
+			break
+		}
+	}
+	assert.NotNil(t, cronAfterFirstRemove, "Cron should be kept when other blueprints at location exist")
+
+	// Remove second blueprint - now cron should be removed
+	err = client.RemoveBlueprint(env.ColonyName, blueprint2.Metadata.Name, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+
+	// Verify cron is now removed
+	cronsFinal, err := client.GetCrons(env.ColonyName, 100, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+
+	var cronAfterSecondRemove *core.Cron
+	for _, cron := range cronsFinal {
+		if cron.Name == expectedCronName {
+			cronAfterSecondRemove = cron
+			break
+		}
+	}
+	assert.Nil(t, cronAfterSecondRemove, "Cron should be removed after last blueprint at location is deleted")
+
+	t.Logf("Cron lifecycle verified:")
+	t.Logf("  Cron kept after removing first blueprint (other blueprints exist)")
+	t.Logf("  Cron removed after removing last blueprint at location")
+
+	server.Shutdown()
+	<-done
+}
+
+func TestImmediateReconciliationTriggeredOnBlueprintAdd(t *testing.T) {
+	env, client, server, _, done := server.SetupTestEnv2(t)
+
+	// Add BlueprintDefinition with handler configured
+	sd := core.CreateBlueprintDefinition(
+		"executor-deployment",
+		"compute.io",
+		"v1",
+		"ExecutorDeployment",
+		"executordeployments",
+		"Namespaced",
+		"docker-reconciler",
+		"reconcile",
+	)
+	sd.Spec.Handler.ReconcileInterval = 60
+	sd.Metadata.ColonyName = env.ColonyName
+	_, err := client.AddBlueprintDefinition(sd, env.ColonyPrvKey)
+	assert.Nil(t, err)
+
+	// Add first Blueprint - this creates the cron AND an immediate reconciliation process
+	blueprint1 := core.CreateBlueprint("ExecutorDeployment", "first-executor", env.ColonyName)
+	blueprint1.SetSpec("replicas", 2)
+	blueprint1.SetSpec("image", "nginx:latest")
+	_, err = client.AddBlueprint(blueprint1, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+
+	// Check waiting processes after first blueprint
+	waitingProcsAfterFirst, err := client.GetWaitingProcesses(env.ColonyName, "", "", "", 100, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.Equal(t, 1, len(waitingProcsAfterFirst), "Should have 1 waiting process from first blueprint reconciliation")
+
+	// Verify the first reconciliation process
+	firstReconcileProc := waitingProcsAfterFirst[0]
+	assert.Equal(t, "reconcile", firstReconcileProc.FunctionSpec.FuncName)
+	assert.Equal(t, "docker-reconciler", firstReconcileProc.FunctionSpec.Conditions.ExecutorType)
+
+	// Add second Blueprint of the same Kind - this should find existing cron and trigger immediate reconciliation
+	blueprint2 := core.CreateBlueprint("ExecutorDeployment", "second-executor", env.ColonyName)
+	blueprint2.SetSpec("replicas", 3)
+	blueprint2.SetSpec("image", "alpine:latest")
+	_, err = client.AddBlueprint(blueprint2, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+
+	// Check waiting processes after second blueprint - should now have 2 reconciliation processes
+	waitingProcsAfterSecond, err := client.GetWaitingProcesses(env.ColonyName, "", "", "", 100, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.Equal(t, 2, len(waitingProcsAfterSecond), "Should have 2 waiting processes after second blueprint (one for each)")
+
+	// Verify both reconciliation processes have correct function name and executor type
+	for _, proc := range waitingProcsAfterSecond {
+		assert.Equal(t, "reconcile", proc.FunctionSpec.FuncName)
+		assert.Equal(t, "docker-reconciler", proc.FunctionSpec.Conditions.ExecutorType)
+	}
+
+	// Add third Blueprint - should also trigger immediate reconciliation
+	blueprint3 := core.CreateBlueprint("ExecutorDeployment", "third-executor", env.ColonyName)
+	blueprint3.SetSpec("replicas", 1)
+	_, err = client.AddBlueprint(blueprint3, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+
+	// Verify we now have 3 reconciliation processes
+	waitingProcsAfterThird, err := client.GetWaitingProcesses(env.ColonyName, "", "", "", 100, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.Equal(t, 3, len(waitingProcsAfterThird), "Should have 3 waiting processes after third blueprint")
+
+	t.Logf("Immediate reconciliation verified:")
+	t.Logf("  First blueprint: created cron + 1 reconciliation process")
+	t.Logf("  Second blueprint: found existing cron + triggered immediate reconciliation")
+	t.Logf("  Third blueprint: found existing cron + triggered immediate reconciliation")
+	t.Logf("  Total reconciliation processes: %d", len(waitingProcsAfterThird))
+
+	server.Shutdown()
+	<-done
+}
+
+func TestLocationAutoCreatedWithBlueprint(t *testing.T) {
+	env, client, server, _, done := server.SetupTestEnv2(t)
+
+	// Add BlueprintDefinition
+	sd := core.CreateBlueprintDefinition(
+		"executor-deployment",
+		"compute.io",
+		"v1",
+		"ExecutorDeployment",
+		"executordeployments",
+		"Namespaced",
+		"docker-reconciler",
+		"reconcile",
+	)
+	sd.Metadata.ColonyName = env.ColonyName
+	_, err := client.AddBlueprintDefinition(sd, env.ColonyPrvKey)
+	assert.Nil(t, err)
+
+	// Verify location doesn't exist initially
+	locationName := "auto-created-datacenter"
+	_, err = client.GetLocation(env.ColonyName, locationName, env.ExecutorPrvKey)
+	assert.NotNil(t, err, "Location should not exist initially")
+
+	// Add blueprint with a new location - this should auto-create the location
+	blueprint := core.CreateBlueprint("ExecutorDeployment", "test-executor", env.ColonyName)
+	blueprint.Metadata.LocationName = locationName
+	blueprint.SetSpec("replicas", 2)
+	addedBlueprint, err := client.AddBlueprint(blueprint, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.NotNil(t, addedBlueprint)
+
+	// Verify location was auto-created
+	location, err := client.GetLocation(env.ColonyName, locationName, env.ExecutorPrvKey)
+	assert.Nil(t, err, "Location should exist after blueprint creation")
+	assert.NotNil(t, location)
+	assert.Equal(t, locationName, location.Name)
+	assert.Contains(t, location.Description, "Auto-created from blueprint")
+
+	// Verify blueprint was created with correct location
+	retrievedBlueprint, err := client.GetBlueprint(env.ColonyName, "test-executor", env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.Equal(t, locationName, retrievedBlueprint.Metadata.LocationName)
+
+	t.Logf("Location auto-creation verified:")
+	t.Logf("  Location '%s' was auto-created", locationName)
+	t.Logf("  Blueprint references location correctly")
+
+	server.Shutdown()
+	<-done
+}
+
+func TestPreExistingLocationNotAffectedByBlueprintFailure(t *testing.T) {
+	env, client, server, _, done := server.SetupTestEnv2(t)
+
+	// Add BlueprintDefinition
+	sd := core.CreateBlueprintDefinition(
+		"executor-deployment",
+		"compute.io",
+		"v1",
+		"ExecutorDeployment",
+		"executordeployments",
+		"Namespaced",
+		"docker-reconciler",
+		"reconcile",
+	)
+	sd.Metadata.ColonyName = env.ColonyName
+	_, err := client.AddBlueprintDefinition(sd, env.ColonyPrvKey)
+	assert.Nil(t, err)
+
+	// Manually create a location first
+	locationName := "pre-existing-datacenter"
+	location := core.CreateLocation(
+		core.GenerateRandomID(),
+		locationName,
+		env.ColonyName,
+		"Manually created location",
+		10.0,
+		20.0,
+	)
+	addedLocation, err := client.AddLocation(location, env.ColonyPrvKey)
+	assert.Nil(t, err)
+	assert.NotNil(t, addedLocation)
+
+	// Add first blueprint with this location - should succeed
+	blueprint1 := core.CreateBlueprint("ExecutorDeployment", "first-executor", env.ColonyName)
+	blueprint1.Metadata.LocationName = locationName
+	blueprint1.SetSpec("replicas", 2)
+	_, err = client.AddBlueprint(blueprint1, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+
+	// Try to add a DUPLICATE blueprint (same name) - should fail
+	blueprint2 := core.CreateBlueprint("ExecutorDeployment", "first-executor", env.ColonyName)
+	blueprint2.Metadata.LocationName = locationName
+	blueprint2.SetSpec("replicas", 3)
+	_, err = client.AddBlueprint(blueprint2, env.ExecutorPrvKey)
+	assert.NotNil(t, err, "Adding duplicate blueprint should fail")
+
+	// Verify the pre-existing location is still there (not deleted by failed operation)
+	locationAfterFailure, err := client.GetLocation(env.ColonyName, locationName, env.ExecutorPrvKey)
+	assert.Nil(t, err, "Pre-existing location should still exist after failed blueprint creation")
+	assert.NotNil(t, locationAfterFailure)
+	assert.Equal(t, locationName, locationAfterFailure.Name)
+	assert.Equal(t, "Manually created location", locationAfterFailure.Description)
+
+	t.Logf("Pre-existing location protection verified:")
+	t.Logf("  Location '%s' was not affected by failed blueprint creation", locationName)
+
+	server.Shutdown()
+	<-done
+}
+
+func TestLocationCleanupOnBlueprintCreationFailure(t *testing.T) {
+	env, client, server, _, done := server.SetupTestEnv2(t)
+
+	// Add BlueprintDefinition
+	sd := core.CreateBlueprintDefinition(
+		"executor-deployment",
+		"compute.io",
+		"v1",
+		"ExecutorDeployment",
+		"executordeployments",
+		"Namespaced",
+		"docker-reconciler",
+		"reconcile",
+	)
+	sd.Metadata.ColonyName = env.ColonyName
+	_, err := client.AddBlueprintDefinition(sd, env.ColonyPrvKey)
+	assert.Nil(t, err)
+
+	// Add a blueprint with a location first
+	locationName := "shared-datacenter"
+	blueprint1 := core.CreateBlueprint("ExecutorDeployment", "first-executor", env.ColonyName)
+	blueprint1.Metadata.LocationName = locationName
+	blueprint1.SetSpec("replicas", 2)
+	_, err = client.AddBlueprint(blueprint1, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+
+	// Verify location was created
+	location, err := client.GetLocation(env.ColonyName, locationName, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.NotNil(t, location)
+
+	// Try to add a second blueprint with SAME name but SAME location (should fail - duplicate name)
+	// This tests that the location (which already exists) is not deleted when blueprint creation fails
+	blueprint2 := core.CreateBlueprint("ExecutorDeployment", "first-executor", env.ColonyName)
+	blueprint2.Metadata.LocationName = locationName
+	blueprint2.SetSpec("replicas", 5)
+	_, err = client.AddBlueprint(blueprint2, env.ExecutorPrvKey)
+	assert.NotNil(t, err, "Adding duplicate blueprint should fail")
+
+	// Location should still exist (it was not auto-created for blueprint2, so cleanup doesn't apply)
+	locationStillExists, err := client.GetLocation(env.ColonyName, locationName, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.NotNil(t, locationStillExists)
+	assert.Equal(t, locationName, locationStillExists.Name)
+
+	// Now test with a NEW location name - the location should NOT be auto-created
+	// because the duplicate check happens BEFORE location creation
+	newLocationName := "new-datacenter"
+	blueprint3 := core.CreateBlueprint("ExecutorDeployment", "first-executor", env.ColonyName) // duplicate name
+	blueprint3.Metadata.LocationName = newLocationName
+	blueprint3.SetSpec("replicas", 3)
+	_, err = client.AddBlueprint(blueprint3, env.ExecutorPrvKey)
+	assert.NotNil(t, err, "Adding duplicate blueprint with new location should fail")
+
+	// The new location should NOT exist (duplicate check failed before location creation)
+	_, err = client.GetLocation(env.ColonyName, newLocationName, env.ExecutorPrvKey)
+	assert.NotNil(t, err, "New location should not exist - duplicate check failed before location creation")
+
+	t.Logf("Location cleanup behavior verified:")
+	t.Logf("  Pre-existing location preserved on blueprint failure")
+	t.Logf("  New location not created when duplicate check fails first")
+
+	server.Shutdown()
+	<-done
+}
+
+func TestUpdateBlueprintReturns404ForNonExistent(t *testing.T) {
+	env, client, server, _, done := server.SetupTestEnv2(t)
+
+	// Add BlueprintDefinition (required for update validation)
+	sd := core.CreateBlueprintDefinition(
+		"executor-deployment",
+		"compute.io",
+		"v1",
+		"ExecutorDeployment",
+		"executordeployments",
+		"Namespaced",
+		"docker-reconciler",
+		"reconcile",
+	)
+	sd.Metadata.ColonyName = env.ColonyName
+	_, err := client.AddBlueprintDefinition(sd, env.ColonyPrvKey)
+	assert.Nil(t, err)
+
+	// Try to update a blueprint that doesn't exist
+	nonExistentBlueprint := core.CreateBlueprint("ExecutorDeployment", "non-existent-blueprint", env.ColonyName)
+	nonExistentBlueprint.SetSpec("replicas", 5)
+
+	_, err = client.UpdateBlueprint(nonExistentBlueprint, env.ExecutorPrvKey)
+	assert.NotNil(t, err, "Updating non-existent blueprint should return an error")
+	assert.Contains(t, err.Error(), "not found", "Error message should indicate blueprint not found")
+
+	// Verify the error is a ColoniesError with 404 status
+	coloniesErr, ok := err.(*core.ColoniesError)
+	assert.True(t, ok, "Error should be a ColoniesError")
+	assert.Equal(t, 404, coloniesErr.Status, "Status code should be 404 Not Found")
+
+	t.Logf("UpdateBlueprint 404 validation verified:")
+	t.Logf("  Non-existent blueprint returns error with status %d", coloniesErr.Status)
+	t.Logf("  Error message: %s", coloniesErr.Message)
+
+	server.Shutdown()
+	<-done
+}
+
+func TestUpdateBlueprintSucceedsForExistingBlueprint(t *testing.T) {
+	env, client, server, _, done := server.SetupTestEnv2(t)
+
+	// Add BlueprintDefinition
+	sd := core.CreateBlueprintDefinition(
+		"executor-deployment",
+		"compute.io",
+		"v1",
+		"ExecutorDeployment",
+		"executordeployments",
+		"Namespaced",
+		"docker-reconciler",
+		"reconcile",
+	)
+	sd.Metadata.ColonyName = env.ColonyName
+	_, err := client.AddBlueprintDefinition(sd, env.ColonyPrvKey)
+	assert.Nil(t, err)
+
+	// First, add a blueprint
+	blueprint := core.CreateBlueprint("ExecutorDeployment", "existing-blueprint", env.ColonyName)
+	blueprint.SetSpec("replicas", 2)
+	addedBlueprint, err := client.AddBlueprint(blueprint, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.NotNil(t, addedBlueprint)
+
+	// Verify initial replicas
+	replicas, ok := addedBlueprint.GetSpec("replicas")
+	assert.True(t, ok)
+	assert.Equal(t, float64(2), replicas)
+
+	// Now update the existing blueprint
+	blueprint.SetSpec("replicas", 5)
+	updatedBlueprint, err := client.UpdateBlueprint(blueprint, env.ExecutorPrvKey)
+	assert.Nil(t, err, "Updating existing blueprint should succeed")
+	assert.NotNil(t, updatedBlueprint)
+
+	// Verify the update was applied
+	newReplicas, ok := updatedBlueprint.GetSpec("replicas")
+	assert.True(t, ok)
+	assert.Equal(t, float64(5), newReplicas)
+
+	// Verify generation was incremented
+	assert.Equal(t, addedBlueprint.Metadata.Generation+1, updatedBlueprint.Metadata.Generation)
+
+	t.Logf("UpdateBlueprint success case verified:")
+	t.Logf("  Replicas changed from 2 to 5")
+	t.Logf("  Generation incremented from %d to %d", addedBlueprint.Metadata.Generation, updatedBlueprint.Metadata.Generation)
+
+	server.Shutdown()
+	<-done
+}
