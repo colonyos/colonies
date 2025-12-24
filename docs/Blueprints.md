@@ -120,8 +120,7 @@ Example Blueprint:
     "name": "docker-executor"
   },
   "handler": {
-    "executorType": "docker-reconciler-home-linux-server",
-    "executorName": "docker-reconciler-home-linux-server"
+    "executorType": "docker-reconciler-home-linux-server"
   },
   "spec": {
     "image": "colonyos/dockerexecutor:v1.0.5",
