@@ -247,6 +247,12 @@ func (controller *ColoniesController) SubscribeProcess(executorID string, subscr
 				return
 			}
 
+			// If executorType is empty, use the process's executorType
+			// This ensures the subscription target matches the signal target
+			if subscription.ExecutorType == "" {
+				subscription.ExecutorType = process.FunctionSpec.Conditions.ExecutorType
+			}
+
 			err = controller.wsSubCtrl.AddProcessSubscriber(executorID, process, subscription)
 			if err != nil {
 				cmd.errorChan <- err
