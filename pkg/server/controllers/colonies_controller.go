@@ -1406,6 +1406,9 @@ func (controller *ColoniesController) Assign(executorID string, colonyName strin
 				}
 			}
 
+			// Signal that the process is now RUNNING so subscribers are notified
+			controller.eventHandler.Signal(selectedProcess)
+
 			result := &AssignResult{
 				Process:       selectedProcess,
 				IsPaused:      false,
