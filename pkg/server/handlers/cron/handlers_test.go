@@ -433,3 +433,52 @@ func TestRunCron(t *testing.T) {
 	server.Shutdown()
 	<-done
 }
+
+func TestRunCronWaitForPrevProcessGraph(t *testing.T) {
+	env, client, server, _, done := server.SetupTestEnv2(t)
+
+	cron := utils.FakeSingleCron(t, env.ColonyName, env.ExecutorID, env.ExecutorName)
+	cron.Interval = 1000 // Long interval so it won't trigger automatically
+	cron.WaitForPrevProcessGraph = true
+
+	addedCron, err := client.AddCron(cron, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.NotNil(t, addedCron)
+
+	// First RunCron should succeed and create a process
+	_, err = client.RunCron(addedCron.ID, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+
+	// Verify a process was created
+	processes, err := client.GetWaitingProcesses(env.ColonyName, "", "", "", 100, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.Len(t, processes, 1)
+
+	// Second RunCron should be skipped because previous process is still running
+	_, err = client.RunCron(addedCron.ID, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+
+	// Should still only have 1 process (second RunCron was skipped)
+	processes, err = client.GetWaitingProcesses(env.ColonyName, "", "", "", 100, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.Len(t, processes, 1)
+
+	// Now complete the process
+	process, err := client.Assign(env.ColonyName, 10, "", "", env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.NotNil(t, process)
+	err = client.Close(process.ID, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+
+	// Now RunCron should work again
+	_, err = client.RunCron(addedCron.ID, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+
+	// Should now have a new waiting process
+	processes, err = client.GetWaitingProcesses(env.ColonyName, "", "", "", 100, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.Len(t, processes, 1)
+
+	server.Shutdown()
+	<-done
+}

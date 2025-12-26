@@ -125,6 +125,25 @@ func (controller *ColoniesController) RunCron(cronID string) (*core.Cron, error)
 				cmd.errorChan <- fmt.Errorf("cron not found")
 				return
 			}
+
+			// Respect WaitForPrevProcessGraph flag to prevent duplicate processes
+			if cron.WaitForPrevProcessGraph && cron.PrevProcessGraphID != "" {
+				processgraph, err := controller.processGraphDB.GetProcessGraphByID(cron.PrevProcessGraphID)
+				if err != nil {
+					log.WithFields(log.Fields{"Error": err, "ProcessGraphID": cron.PrevProcessGraphID}).Warn("Failed to get previous process graph")
+					// Continue anyway - don't block on lookup errors
+				} else if processgraph != nil && processgraph.State != core.SUCCESS && processgraph.State != core.FAILED {
+					log.WithFields(log.Fields{
+						"CronID":             cron.ID,
+						"CronName":           cron.Name,
+						"PrevProcessGraphID": cron.PrevProcessGraphID,
+						"PrevState":          processgraph.State,
+					}).Info("Skipping RunCron - previous process graph still running")
+					cmd.cronReplyChan <- cron
+					return
+				}
+			}
+
 			log.WithFields(log.Fields{"CronID": cron.ID, "CronName": cron.Name}).Info("Got cron, calling StartCron")
 			controller.StartCron(cron)
 			cmd.cronReplyChan <- cron

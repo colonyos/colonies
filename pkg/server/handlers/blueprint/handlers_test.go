@@ -1119,6 +1119,11 @@ func TestUpdateBlueprintTriggersCron(t *testing.T) {
 	assert.True(t, ok, "Process should have 'kind' kwarg")
 	assert.Equal(t, "Worker", kind)
 
+	// Verify the process has the blueprintName kwarg (for targeted reconciliation)
+	blueprintName, ok := reconProcess.FunctionSpec.KwArgs["blueprintName"].(string)
+	assert.True(t, ok, "Process should have 'blueprintName' kwarg for targeted reconciliation")
+	assert.Equal(t, "my-worker", blueprintName, "blueprintName should match the updated blueprint")
+
 	// Verify the cron still exists and has the same ID (not recreated)
 	cronsAfter, err := client.GetCrons(env.ColonyName, 100, env.ExecutorPrvKey)
 	assert.Nil(t, err)

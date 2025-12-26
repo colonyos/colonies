@@ -202,7 +202,7 @@ func (h *Handlers) createImmediateReconciliationProcess(blueprint *core.Blueprin
 		executorType = blueprint.Handler.ExecutorType
 	}
 
-	// Create a function spec for consolidated reconciliation by Kind
+	// Create a function spec for reconciliation of this specific blueprint
 	funcSpec := core.CreateEmptyFunctionSpec()
 	funcSpec.NodeName = "reconcile"
 	funcSpec.Conditions.ColonyName = blueprint.Metadata.ColonyName
@@ -210,7 +210,8 @@ func (h *Handlers) createImmediateReconciliationProcess(blueprint *core.Blueprin
 	funcSpec.Conditions.LocationName = blueprint.Metadata.LocationName
 	funcSpec.FuncName = "reconcile"
 	funcSpec.KwArgs = map[string]interface{}{
-		"kind": blueprint.Kind,
+		"kind":          blueprint.Kind,
+		"blueprintName": blueprint.Metadata.Name,
 	}
 
 	// Create and return the process
@@ -962,57 +963,37 @@ func (h *Handlers) HandleUpdateBlueprint(c backends.Context, recoveredID string,
 		"Generation": msg.Blueprint.Metadata.Generation,
 	}).Debug("Updating blueprint")
 
-	// Trigger immediate reconciliation by running the cron for this blueprint's handler
-	// Check if handler is configured (from blueprint or definition)
-	hasHandler := false
-	if oldBlueprint != nil && oldBlueprint.Handler != nil && oldBlueprint.Handler.ExecutorType != "" {
-		hasHandler = true
-	} else if matchedSD != nil && matchedSD.Spec.Handler.ExecutorType != "" {
-		hasHandler = true
-	}
-
-	if hasHandler {
-		// Find the cron for this handler
-		// Cron naming must match AddBlueprint: reconcile-{Kind}-{locationName}
-		locationName := msg.Blueprint.Metadata.LocationName
-		cronName := "reconcile-" + msg.Blueprint.Kind
-		if locationName != "" {
-			cronName = cronName + "-" + locationName
-		}
-
-		existingCron, err := h.server.CronController().GetCronByName(msg.Blueprint.Metadata.ColonyName, cronName)
+	// Trigger immediate reconciliation for this specific blueprint
+	// This creates a process with blueprintName so the reconciler knows exactly which blueprint changed
+	if specChanged {
+		initiatorName, err := h.resolveInitiator(msg.Blueprint.Metadata.ColonyName, recoveredID)
 		if err != nil {
 			log.WithFields(log.Fields{
-				"Error":    err,
-				"CronName": cronName,
-			}).Warn("Failed to check for existing cron")
-		}
-
-		if existingCron != nil {
-			// Trigger the cron immediately
-			_, err := h.server.CronController().RunCron(existingCron.ID)
+				"Error":         err,
+				"BlueprintName": msg.Blueprint.Metadata.Name,
+			}).Warn("Failed to resolve initiator for reconciliation")
+		} else {
+			immediateProcess, err := h.createImmediateReconciliationProcess(msg.Blueprint, matchedSD, recoveredID, initiatorName)
 			if err != nil {
 				log.WithFields(log.Fields{
 					"Error":         err,
 					"BlueprintName": msg.Blueprint.Metadata.Name,
-					"CronName":      cronName,
-					"LocationName":  locationName,
-				}).Warn("Failed to trigger reconciliation cron after blueprint update")
+				}).Warn("Failed to create immediate reconciliation process after blueprint update")
 			} else {
-				log.WithFields(log.Fields{
-					"BlueprintName": msg.Blueprint.Metadata.Name,
-					"Generation":    msg.Blueprint.Metadata.Generation,
-					"CronName":      cronName,
-					"CronID":        existingCron.ID,
-					"LocationName":  locationName,
-				}).Info("Triggered reconciliation cron immediately after blueprint update")
+				_, err = h.server.ProcessController().AddProcess(immediateProcess)
+				if err != nil {
+					log.WithFields(log.Fields{
+						"Error":         err,
+						"BlueprintName": msg.Blueprint.Metadata.Name,
+					}).Warn("Failed to submit immediate reconciliation process after blueprint update")
+				} else {
+					log.WithFields(log.Fields{
+						"BlueprintName": msg.Blueprint.Metadata.Name,
+						"Generation":    msg.Blueprint.Metadata.Generation,
+						"ProcessID":     immediateProcess.ID,
+					}).Info("Submitted immediate reconciliation process for updated blueprint")
+				}
 			}
-		} else {
-			log.WithFields(log.Fields{
-				"BlueprintName": msg.Blueprint.Metadata.Name,
-				"CronName":      cronName,
-				"LocationName":  locationName,
-			}).Debug("No reconciliation cron found for handler")
 		}
 	}
 
