@@ -29,10 +29,7 @@ type ClientBackendWithRealtime interface {
 type ClientBackendType string
 
 const (
-	GinClientBackendType    ClientBackendType = "gin"
-	LibP2PClientBackendType ClientBackendType = "libp2p"
-	GRPCClientBackendType   ClientBackendType = "grpc"
-	CoAPClientBackendType   ClientBackendType = "coap"
+	GinClientBackendType ClientBackendType = "gin"
 )
 
 // ClientBackendFactory creates backend-specific clients
@@ -43,52 +40,17 @@ type ClientBackendFactory interface {
 
 // ClientConfig holds configuration for client backends
 type ClientConfig struct {
-	BackendType    ClientBackendType
-	Host           string
-	Port           int
-	Insecure       bool
-	SkipTLSVerify  bool
-	BootstrapPeers string // Comma-separated multiaddresses for LibP2P bootstrap peers
+	BackendType   ClientBackendType
+	Host          string
+	Port          int
+	Insecure      bool
+	SkipTLSVerify bool
 }
 
 // CreateDefaultClientConfig creates a default client config for HTTP/Gin backend
 func CreateDefaultClientConfig(host string, port int, insecure bool, skipTLSVerify bool) *ClientConfig {
 	return &ClientConfig{
 		BackendType:   GinClientBackendType,
-		Host:          host,
-		Port:          port,
-		Insecure:      insecure,
-		SkipTLSVerify: skipTLSVerify,
-	}
-}
-
-// CreateLibP2PClientConfig creates a client config for LibP2P backend
-// host parameter should be a libp2p multiaddr (e.g., "/ip4/127.0.0.1/tcp/5000/p2p/12D3KooW...")
-func CreateLibP2PClientConfig(host string) *ClientConfig {
-	return &ClientConfig{
-		BackendType:   LibP2PClientBackendType,
-		Host:          host,
-		Port:          0, // Not used for LibP2P
-		Insecure:      false,
-		SkipTLSVerify: false,
-	}
-}
-
-// CreateGRPCClientConfig creates a client config for gRPC backend
-func CreateGRPCClientConfig(host string, port int, insecure bool, skipTLSVerify bool) *ClientConfig {
-	return &ClientConfig{
-		BackendType:   GRPCClientBackendType,
-		Host:          host,
-		Port:          port,
-		Insecure:      insecure,
-		SkipTLSVerify: skipTLSVerify,
-	}
-}
-
-// CreateCoAPClientConfig creates a client config for CoAP backend
-func CreateCoAPClientConfig(host string, port int, insecure bool, skipTLSVerify bool) *ClientConfig {
-	return &ClientConfig{
-		BackendType:   CoAPClientBackendType,
 		Host:          host,
 		Port:          port,
 		Insecure:      insecure,

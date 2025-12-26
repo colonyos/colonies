@@ -55,18 +55,8 @@ services:
     depends_on:
       - timescaledb
     environment:
-      COLONIES_SERVER_BACKENDS: ${COLONIES_SERVER_BACKENDS}
-      COLONIES_SERVER_HTTP_TLS: ${COLONIES_SERVER_HTTP_TLS}
-      COLONIES_SERVER_HTTP_PORT: ${COLONIES_SERVER_HTTP_PORT}
-      COLONIES_SERVER_GRPC_PORT: ${COLONIES_SERVER_GRPC_PORT}
-      COLONIES_SERVER_GRPC_INSECURE: ${COLONIES_SERVER_GRPC_INSECURE}
-      COLONIES_SERVER_GRPC_TLS_CERT: ${COLONIES_SERVER_GRPC_TLS_CERT:-}
-      COLONIES_SERVER_GRPC_TLS_KEY: ${COLONIES_SERVER_GRPC_TLS_KEY:-}
-      COLONIES_SERVER_LIBP2P_PORT: ${COLONIES_SERVER_LIBP2P_PORT}
-      COLONIES_SERVER_LIBP2P_IDENTITY: ${COLONIES_SERVER_LIBP2P_IDENTITY}
-      COLONIES_SERVER_COAP_PORT: ${COLONIES_SERVER_COAP_PORT}
-      COLONIES_SERVER_LIBP2P_BOOTSTRAP_PEERS: ${COLONIES_SERVER_LIBP2P_BOOTSTRAP_PEERS}
-      COLONIES_SERVER_LIBP2P_ANNOUNCE_ADDRS: ${COLONIES_SERVER_LIBP2P_ANNOUNCE_ADDRS:-}
+      COLONIES_TLS: ${COLONIES_TLS}
+      COLONIES_SERVER_PORT: ${COLONIES_SERVER_PORT}
       COLONIES_SERVER_ID: ${COLONIES_SERVER_ID}
       COLONIES_SERVER_HOST: ${COLONIES_SERVER_HOST}
       COLONIES_DB_HOST: timescaledb
@@ -74,8 +64,8 @@ services:
       COLONIES_DB_USER: ${COLONIES_DB_USER}
       COLONIES_DB_PASSWORD: ${COLONIES_DB_PASSWORD}
       COLONIES_DB_TIMESCALEDB: "true"
-      COLONIES_TLSCERT: "/run/secrets/tls/tls.crt"
-      COLONIES_TLSKEY: "/run/secrets/tls/tls.key"
+      # COLONIES_TLSCERT: "/path/to/cert.pem"
+      # COLONIES_TLSKEY: "/path/to/key.pem"
       COLONIES_VERBOSE: "true"
       COLONIES_SERVER_PROFILER: "false"
       COLONIES_SERVER_PROFILER_PORT: "6060"
@@ -89,36 +79,17 @@ services:
     volumes:
       - colonies_etcd:/var/colonies/etcd
     ports:
-      - "${COLONIES_SERVER_HTTP_PORT}:${COLONIES_SERVER_HTTP_PORT}"
-      - "${COLONIES_SERVER_GRPC_PORT}:${COLONIES_SERVER_GRPC_PORT}"
-      - "${COLONIES_SERVER_LIBP2P_PORT}:${COLONIES_SERVER_LIBP2P_PORT}"
-      - "50001:50001/udp"  # QUIC port (LibP2P port + 1)
-      - "${COLONIES_SERVER_COAP_PORT}:${COLONIES_SERVER_COAP_PORT}/udp"
-    command: sh -c "colonies server start --initdb --port ${COLONIES_SERVER_HTTP_PORT} --relayport 25100 --etcdname server1 --etcdhost colonies-server --etcdclientport 23100 --etcdpeerport 24100 --initial-cluster server1=colonies-server:24100:25100:${COLONIES_SERVER_HTTP_PORT} --etcddatadir /var/colonies/etcd --insecure"
+      - "${COLONIES_SERVER_PORT}:${COLONIES_SERVER_PORT}"
+    command: sh -c "colonies server start --initdb --port ${COLONIES_SERVER_PORT} --relayport 25100 --etcdname server1 --etcdhost colonies-server --etcdclientport 23100 --etcdpeerport 24100 --initial-cluster server1=colonies-server:24100:25100:${COLONIES_SERVER_PORT} --etcddatadir /var/colonies/etcd --insecure"
 
   colonies-setup:
     image: colonyos/colonies:v1.9.5
     depends_on:
       - colonies-server
     environment:
-      COLONIES_CLIENT_BACKENDS: "http"
-      # HTTP client config (inside docker, always use colonies-server as host)
-      COLONIES_CLIENT_HTTP_HOST: "colonies-server"
-      COLONIES_CLIENT_HTTP_PORT: ${COLONIES_SERVER_HTTP_PORT}
-      COLONIES_CLIENT_HTTP_INSECURE: "true"
-      # gRPC client config (inside docker, always use colonies-server as host)
-      COLONIES_CLIENT_GRPC_HOST: "colonies-server"
-      COLONIES_CLIENT_GRPC_PORT: ${COLONIES_SERVER_GRPC_PORT}
-      COLONIES_CLIENT_GRPC_INSECURE: "true"
-      # LibP2P client config
-      COLONIES_CLIENT_LIBP2P_HOST: "/dns/colonies-server/tcp/${COLONIES_SERVER_LIBP2P_PORT}/p2p/12D3KooWSBx1mxbu7rJ8AMsSGHDhG8GRhwqHSVnHPbhZypPLFjgK"
-      COLONIES_CLIENT_LIBP2P_BOOTSTRAP_PEERS: ${COLONIES_CLIENT_LIBP2P_BOOTSTRAP_PEERS}
-      # Backward compatibility (hardcode colonies-server for docker containers)
       COLONIES_SERVER_HOST: "colonies-server"
-      COLONIES_SERVER_PORT: ${COLONIES_SERVER_HTTP_PORT}
-      COLONIES_SERVER_TLS: "false"
+      COLONIES_SERVER_PORT: ${COLONIES_SERVER_PORT}
       COLONIES_TLS: "false"
-      # Server and auth config
       COLONIES_SERVER_ID: ${COLONIES_SERVER_ID}
       COLONIES_SERVER_PRVKEY: ${COLONIES_SERVER_PRVKEY}
       COLONIES_PRVKEY: ${COLONIES_PRVKEY}
@@ -138,7 +109,7 @@ services:
       "
 
   docker-executor:
-    image: colonyos/dockerexecutor:v1.0.8
+    image: colonyos/dockerexecutor:v1.0.9
     privileged: true
     environment:
       LANG: ${LANG:-en_US.UTF-8}
@@ -146,31 +117,16 @@ services:
       LC_ALL: ${LC_ALL:-en_US.UTF-8}
       LC_CTYPE: ${LC_CTYPE:-UTF-8}
       TZ: ${TZ:-Europe/Stockholm}
-      COLONIES_CLIENT_BACKENDS: ${COLONIES_CLIENT_BACKENDS}
-      # HTTP client config (inside docker, always use colonies-server as host)
-      COLONIES_CLIENT_HTTP_HOST: "colonies-server"
-      COLONIES_CLIENT_HTTP_PORT: ${COLONIES_SERVER_HTTP_PORT}
-      COLONIES_CLIENT_HTTP_INSECURE: "true"
-      # gRPC client config (inside docker, always use colonies-server as host)
-      COLONIES_CLIENT_GRPC_HOST: "colonies-server"
-      COLONIES_CLIENT_GRPC_PORT: ${COLONIES_SERVER_GRPC_PORT}
-      COLONIES_CLIENT_GRPC_INSECURE: "true"
-      # LibP2P client config
-      COLONIES_CLIENT_LIBP2P_HOST: "/dns/colonies-server/tcp/${COLONIES_SERVER_LIBP2P_PORT}/p2p/12D3KooWSBx1mxbu7rJ8AMsSGHDhG8GRhwqHSVnHPbhZypPLFjgK"
-      COLONIES_CLIENT_LIBP2P_BOOTSTRAP_PEERS: ${COLONIES_CLIENT_LIBP2P_BOOTSTRAP_PEERS}
-      # Backward compatibility (hardcode colonies-server for docker containers)
       COLONIES_SERVER_HOST: "colonies-server"
-      COLONIES_SERVER_PORT: ${COLONIES_SERVER_HTTP_PORT}
-      COLONIES_SERVER_TLS: "false"
+      COLONIES_SERVER_PORT: ${COLONIES_SERVER_PORT}
       COLONIES_TLS: "false"
-      # Auth config
       COLONIES_COLONY_NAME: ${COLONIES_COLONY_NAME}
       COLONIES_COLONY_PRVKEY: ${COLONIES_COLONY_PRVKEY}
       COLONIES_PRVKEY: ${COLONIES_PRVKEY}
       COLONIES_EXECUTOR_NAME: ${COLONIES_EXECUTOR_NAME:-dev-docker}
       AWS_S3_TLS: ${AWS_S3_TLS}
       AWS_S3_SKIPVERIFY: ${AWS_S3_SKIPVERIFY}
-      AWS_S3_ENDPOINT: minio:9000 
+      AWS_S3_ENDPOINT: minio:9000
       AWS_S3_ACCESSKEY: ${AWS_S3_ACCESSKEY}
       AWS_S3_SECRETKEY: ${AWS_S3_SECRETKEY}
       AWS_S3_REGION_KEY: ${AWS_S3_REGION_KEY}

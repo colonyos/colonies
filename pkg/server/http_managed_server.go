@@ -25,8 +25,8 @@ func NewHTTPManagedServer(config *ServerConfig, sharedResources *SharedResources
 		return nil, fmt.Errorf("invalid backend type for HTTP server: %s", config.BackendType)
 	}
 
-	// Create the underlying server using the existing CreateServerWithBackendType function
-	server := CreateServerWithBackendType(
+	// Create the underlying server
+	server := CreateServer(
 		sharedResources.DB,
 		config.Port,
 		config.TLS,
@@ -42,10 +42,6 @@ func NewHTTPManagedServer(config *ServerConfig, sharedResources *SharedResources
 		config.Retention,
 		config.RetentionPolicy,
 		config.RetentionPeriod,
-		GinBackendType,
-		nil, // libp2pConfig
-		nil, // grpcConfig
-		nil, // coapConfig
 	)
 
 	return &HTTPManagedServer{

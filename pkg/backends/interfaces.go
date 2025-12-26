@@ -189,7 +189,7 @@ type AuthBackend interface {
 // =============================================================================
 
 // RealtimeConnection represents a generic realtime connection interface
-// This abstracts away specific transport implementations (WebSocket, gRPC, libp2p, etc.)
+// This abstracts away specific transport implementations (e.g., WebSocket)
 type RealtimeConnection interface {
 	// WriteMessage sends a message through the connection
 	WriteMessage(msgType int, data []byte) error

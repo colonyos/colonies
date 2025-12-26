@@ -1,7 +1,7 @@
 package backends
 
 // RealtimeConnection represents a generic realtime connection interface
-// Different backends can implement this using WebSockets, libp2p pubsub, etc.
+// Different backends can implement this using WebSockets.
 type RealtimeConnection interface {
 	// WriteMessage writes a message to the realtime connection
 	WriteMessage(messageType int, data []byte) error

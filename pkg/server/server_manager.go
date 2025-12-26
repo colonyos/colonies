@@ -17,13 +17,7 @@ import (
 type BackendType string
 
 const (
-	GinBackendType                   BackendType = "gin"
-	LibP2PBackendType                BackendType = "libp2p"
-	GRPCBackendType                  BackendType = "grpc"
-	CoAPBackendType                  BackendType = "coap"
-	HTTPGRPCBackendType              BackendType = "http+grpc"
-	HTTPGRPCLibP2PBackendType        BackendType = "http+grpc+libp2p"
-	HTTPGRPCLibP2PCoAPBackendType    BackendType = "http+grpc+libp2p+coap"
+	GinBackendType BackendType = "gin"
 )
 
 // ManagedServer represents a server instance managed by ServerManager
@@ -45,18 +39,16 @@ type ManagedServer interface {
 // ServerConfig holds configuration for a managed server
 type ServerConfig struct {
 	BackendType             BackendType
-	Port                   int
-	LibP2PPort             int  // Port for LibP2P transport (required for LibP2P backend)
-	TLS                    bool
-	TLSPrivateKeyPath      string
-	TLSCertPath            string
-	GRPCConfig             *GRPCConfig  // gRPC-specific configuration (required for gRPC backend)
-	ExclusiveAssign        bool
+	Port                    int
+	TLS                     bool
+	TLSPrivateKeyPath       string
+	TLSCertPath             string
+	ExclusiveAssign         bool
 	AllowExecutorReregister bool
-	Retention              bool
-	RetentionPolicy        int64
-	RetentionPeriod        int
-	Enabled                bool
+	Retention               bool
+	RetentionPolicy         int64
+	RetentionPeriod         int
+	Enabled                 bool
 }
 
 // ServerManager manages multiple server backends

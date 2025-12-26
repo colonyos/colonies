@@ -748,7 +748,7 @@ async function submitProcess() {
     const client = new ColonyClient(
         endpoint,
         crypto,
-        process.env.COLONIES_SERVER_TLS === "true"
+        process.env.COLONIES_TLS === "true"
     );
 
     // Set the private key
@@ -1407,7 +1407,7 @@ function getConfig(): Config {
     return {
         host: process.env.COLONIES_SERVER_HOST || "localhost",
         port: process.env.COLONIES_SERVER_PORT || "4000",
-        tls: process.env.COLONIES_SERVER_TLS === "true",
+        tls: process.env.COLONIES_TLS === "true",
         prvKey,
         colonyName
     };
