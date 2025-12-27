@@ -852,7 +852,7 @@ func TestRateLimitEnabledByDefault(t *testing.T) {
 }
 
 func TestRateLimitExceeded(t *testing.T) {
-	router := NewRouter()
+	router := NewRouterForTesting()
 
 	channel := &Channel{
 		ID:          "ch-123",
@@ -894,7 +894,7 @@ func TestRateLimitDisabled(t *testing.T) {
 }
 
 func TestRateLimitPerProcess(t *testing.T) {
-	router := NewRouter()
+	router := NewRouterForTesting()
 
 	// Create channels for two different processes
 	channel1 := &Channel{

@@ -86,9 +86,11 @@ type Router struct {
 	subscribers map[string][]*Subscriber // channelID -> subscribers
 
 	// Rate limiting
-	rateLimitMu      sync.RWMutex
-	rateLimiters     map[string]*RateLimiter // processID -> limiter
-	rateLimitEnabled bool
+	rateLimitMu        sync.RWMutex
+	rateLimiters       map[string]*RateLimiter // processID -> limiter
+	rateLimitEnabled   bool
+	rateLimitBurstSize float64
+	rateLimitRefillRate float64
 
 	// Log size limiting
 	maxLogEntries int
@@ -108,6 +110,8 @@ func NewRouter() *Router {
 		subscribers:           make(map[string][]*Subscriber),
 		rateLimiters:          make(map[string]*RateLimiter),
 		rateLimitEnabled:      true,
+		rateLimitBurstSize:    float64(constants.CHANNEL_RATE_LIMIT_BURST_SIZE),
+		rateLimitRefillRate:   constants.CHANNEL_RATE_LIMIT_MESSAGES_PER_SECOND,
 		maxLogEntries:         constants.CHANNEL_MAX_LOG_ENTRIES,
 		maxChannelsPerProcess: constants.CHANNEL_MAX_CHANNELS_PER_PROCESS,
 		subscriberBufferSize:  constants.CHANNEL_SUBSCRIBER_BUFFER_SIZE,
@@ -122,6 +126,25 @@ func NewRouterWithoutRateLimit() *Router {
 		subscribers:           make(map[string][]*Subscriber),
 		rateLimiters:          make(map[string]*RateLimiter),
 		rateLimitEnabled:      false,
+		rateLimitBurstSize:    float64(constants.CHANNEL_RATE_LIMIT_BURST_SIZE),
+		rateLimitRefillRate:   constants.CHANNEL_RATE_LIMIT_MESSAGES_PER_SECOND,
+		maxLogEntries:         constants.CHANNEL_MAX_LOG_ENTRIES,
+		maxChannelsPerProcess: constants.CHANNEL_MAX_CHANNELS_PER_PROCESS,
+		subscriberBufferSize:  constants.CHANNEL_SUBSCRIBER_BUFFER_SIZE,
+	}
+}
+
+// NewRouterForTesting creates a router for testing with no token refilling
+// This ensures deterministic behavior in tests by preventing time-based token replenishment
+func NewRouterForTesting() *Router {
+	return &Router{
+		channels:              make(map[string]*Channel),
+		byProcess:             make(map[string][]string),
+		subscribers:           make(map[string][]*Subscriber),
+		rateLimiters:          make(map[string]*RateLimiter),
+		rateLimitEnabled:      true,
+		rateLimitBurstSize:    float64(constants.CHANNEL_RATE_LIMIT_BURST_SIZE),
+		rateLimitRefillRate:   0, // No refilling for deterministic tests
 		maxLogEntries:         constants.CHANNEL_MAX_LOG_ENTRIES,
 		maxChannelsPerProcess: constants.CHANNEL_MAX_CHANNELS_PER_PROCESS,
 		subscriberBufferSize:  constants.CHANNEL_SUBSCRIBER_BUFFER_SIZE,
@@ -170,8 +193,8 @@ func (r *Router) getRateLimiter(processID string) *RateLimiter {
 	}
 
 	limiter = NewRateLimiter(
-		float64(constants.CHANNEL_RATE_LIMIT_BURST_SIZE),
-		constants.CHANNEL_RATE_LIMIT_MESSAGES_PER_SECOND,
+		r.rateLimitBurstSize,
+		r.rateLimitRefillRate,
 	)
 	r.rateLimiters[processID] = limiter
 	return limiter
