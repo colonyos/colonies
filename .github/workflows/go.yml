@@ -58,4 +58,27 @@ jobs:
         COLONIES_DB_USER: postgres
         COLONIES_DB_PASSWORD: rFcLGNkgsNtksg6Pgtn9CumL4xXBQ7
         COLONIES_DB_HOST: localhost
-        
+
+    - name: Generate coverage
+      run: |
+        go test -race -coverprofile=coverage.out -covermode=atomic ./...
+      env:
+        AWS_S3_ENDPOINT: localhost:9000
+        AWS_S3_ACCESSKEY: minioadmin
+        AWS_S3_SECRETKEY: minioadmin
+        AWS_S3_TLS: false
+        AWS_S3_SKIPVERIFY: false
+        AWS_S3_BUCKET: test
+        COLONIES_DB_USER: postgres
+        COLONIES_DB_PASSWORD: rFcLGNkgsNtksg6Pgtn9CumL4xXBQ7
+        COLONIES_DB_HOST: localhost
+
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v4
+      with:
+        files: ./coverage.out
+        fail_ci_if_error: false
+        verbose: true
+      env:
+        CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
