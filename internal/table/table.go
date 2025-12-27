@@ -4,11 +4,17 @@ import (
 	"os"
 
 	"github.com/jedib0t/go-pretty/v6/table"
+	"golang.org/x/term"
 )
 
-var (
-	width = 0 // max width
-)
+// GetTerminalWidth returns the current terminal width, or 0 if it cannot be determined
+func GetTerminalWidth() int {
+	width, _, err := term.GetSize(int(os.Stdout.Fd()))
+	if err != nil {
+		return 0 // let go-pretty use unlimited width
+	}
+	return width
+}
 
 type TableOptions struct {
 	Columns []int
@@ -32,7 +38,7 @@ type Table struct {
 func NewTable(theme Theme, opts TableOptions, ascii bool) *Table {
 	t := &Table{}
 	t.tab = table.NewWriter()
-	t.tab.SetAllowedRowLength(width)
+	t.tab.SetAllowedRowLength(GetTerminalWidth())
 	t.tab.SetOutputMirror(os.Stdout)
 	t.tab.Style().Options.SeparateColumns = true
 
