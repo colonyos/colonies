@@ -3,6 +3,7 @@ package server
 import (
 	"github.com/colonyos/colonies/pkg/backends"
 	"github.com/colonyos/colonies/pkg/backends/gin"
+	"github.com/colonyos/colonies/pkg/channel"
 	"github.com/colonyos/colonies/pkg/cluster"
 	"github.com/colonyos/colonies/pkg/core"
 	"github.com/colonyos/colonies/pkg/database"
@@ -19,6 +20,7 @@ import (
 	"github.com/colonyos/colonies/pkg/server/handlers/processgraph"
 	serverhandlers "github.com/colonyos/colonies/pkg/server/handlers/server"
 	realtimehandlers "github.com/colonyos/colonies/pkg/server/handlers/realtime"
+	log "github.com/sirupsen/logrus"
 )
 
 // ServerAdapter implements interfaces needed by handler packages
@@ -43,6 +45,14 @@ func (s *ServerAdapter) GetColonyDB() database.ColonyDatabase {
 
 func (s *ServerAdapter) GetSecurityDB() database.SecurityDatabase {
 	return s.server.securityDB
+}
+
+func (s *ServerAdapter) GetLocationDB() database.LocationDatabase {
+	return s.server.locationDB
+}
+
+func (s *ServerAdapter) LocationDB() database.LocationDatabase {
+	return s.server.locationDB
 }
 
 func (s *ServerAdapter) GetValidator() security.Validator {
@@ -303,6 +313,7 @@ type processControllerAdapter struct {
 		CloseSuccessful(processID string, executorID string, output []interface{}) error
 		CloseFailed(processID string, errs []string) error
 		Assign(executorID string, colonyName string, cpu int64, memory int64) (*controllers.AssignResult, error)
+		DistributedAssign(executor *core.Executor, colonyName string, cpu int64, memory int64, storage int64) (*controllers.AssignResult, error)
 		UnassignExecutor(processID string) error
 		PauseColonyAssignments(colonyName string) error
 		ResumeColonyAssignments(colonyName string) error
@@ -366,6 +377,19 @@ func (c *processControllerAdapter) Assign(executorID string, colonyName string, 
 	}, nil
 }
 
+func (c *processControllerAdapter) DistributedAssign(executor *core.Executor, colonyName string, cpu int64, memory int64, storage int64) (*process.AssignResult, error) {
+	result, err := c.controller.DistributedAssign(executor, colonyName, cpu, memory, storage)
+	if err != nil {
+		return nil, err
+	}
+	// Convert the internal assign result to the process handler's AssignResult
+	return &process.AssignResult{
+		Process:       result.Process,
+		IsPaused:      result.IsPaused,
+		ResumeChannel: result.ResumeChannel,
+	}, nil
+}
+
 func (c *processControllerAdapter) UnassignExecutor(processID string) error {
 	return c.controller.UnassignExecutor(processID)
 }
@@ -383,8 +407,8 @@ func (c *processControllerAdapter) AreColonyAssignmentsPaused(colonyName string)
 }
 
 func (c *processControllerAdapter) GetEventHandler() *process.EventHandler {
-	// Convert the internal event handler to the process handler's EventHandler
-	return &process.EventHandler{}
+	// Wrap the real event handler from the controller
+	return process.NewEventHandler(c.controller.GetEventHandler())
 }
 
 func (c *processControllerAdapter) IsLeader() bool {
@@ -490,6 +514,7 @@ type cronControllerAdapter struct {
 		AddCron(cron *core.Cron) (*core.Cron, error)
 		GetCron(cronID string) (*core.Cron, error)
 		GetCrons(colonyName string, count int) ([]*core.Cron, error)
+		GetCronByName(colonyName string, cronName string) (*core.Cron, error)
 		RunCron(cronID string) (*core.Cron, error)
 		RemoveCron(cronID string) error
 		GetCronPeriod() int
@@ -506,6 +531,10 @@ func (c *cronControllerAdapter) GetCron(cronID string) (*core.Cron, error) {
 
 func (c *cronControllerAdapter) GetCrons(colonyName string, count int) ([]*core.Cron, error) {
 	return c.controller.GetCrons(colonyName, count)
+}
+
+func (c *cronControllerAdapter) GetCronByName(colonyName string, cronName string) (*core.Cron, error) {
+	return c.controller.GetCronByName(colonyName, cronName)
 }
 
 func (c *cronControllerAdapter) RunCron(cronID string) (*core.Cron, error) {
@@ -525,6 +554,7 @@ func (s *ServerAdapter) CronController() interface {
 	AddCron(cron *core.Cron) (*core.Cron, error)
 	GetCron(cronID string) (*core.Cron, error)
 	GetCrons(colonyName string, count int) ([]*core.Cron, error)
+	GetCronByName(colonyName string, cronName string) (*core.Cron, error)
 	RunCron(cronID string) (*core.Cron, error)
 	RemoveCron(cronID string) error
 	GetCronPeriod() int
@@ -710,4 +740,79 @@ func (s *ServerAdapter) ServerServer() serverhandlers.Server {
 		server: s.server,
 		adapter: s,
 	}
+}
+
+// ChannelRouter returns the channel router for channel operations
+func (s *ServerAdapter) ChannelRouter() *channel.Router {
+	return s.server.channelRouter
+}
+
+// TriggerReconciliationForReconciler submits reconcile processes for all blueprints
+// that match the given reconciler's executor type and location.
+// This is called when a new reconciler registers to immediately reconcile any pending blueprints.
+func (s *ServerAdapter) TriggerReconciliationForReconciler(colonyName, executorType, locationName string) error {
+	// Get all blueprints
+	blueprints, err := s.server.resourceDB.GetBlueprints()
+	if err != nil {
+		return err
+	}
+
+	triggeredCount := 0
+	for _, blueprint := range blueprints {
+		// Check if this blueprint matches the reconciler's colony
+		if blueprint.Metadata.ColonyName != colonyName {
+			continue
+		}
+		// Check if this blueprint has a handler
+		if blueprint.Handler == nil {
+			continue
+		}
+		if blueprint.Handler.ExecutorType != executorType {
+			continue
+		}
+		if blueprint.Metadata.LocationName != locationName {
+			continue
+		}
+
+		// Create a reconcile process for this blueprint
+		funcSpec := core.CreateEmptyFunctionSpec()
+		funcSpec.NodeName = "reconcile"
+		funcSpec.Conditions.ColonyName = colonyName
+		funcSpec.Conditions.ExecutorType = executorType
+		funcSpec.Conditions.LocationName = locationName
+		funcSpec.FuncName = "reconcile"
+		funcSpec.KwArgs = map[string]interface{}{
+			"kind":          blueprint.Kind,
+			"blueprintName": blueprint.Metadata.Name,
+		}
+
+		process := core.CreateProcess(funcSpec)
+		process.InitiatorName = "system"
+
+		_, err := s.server.controller.AddProcess(process)
+		if err != nil {
+			log.WithFields(log.Fields{
+				"BlueprintName": blueprint.Metadata.Name,
+				"Error":         err,
+			}).Warn("Failed to trigger reconciliation for blueprint")
+			continue
+		}
+
+		triggeredCount++
+		log.WithFields(log.Fields{
+			"BlueprintName": blueprint.Metadata.Name,
+			"ExecutorType":  executorType,
+			"Location":      locationName,
+		}).Info("Triggered reconciliation for blueprint")
+	}
+
+	if triggeredCount > 0 {
+		log.WithFields(log.Fields{
+			"Count":        triggeredCount,
+			"ExecutorType": executorType,
+			"Location":     locationName,
+		}).Info("Triggered reconciliation for blueprints on reconciler registration")
+	}
+
+	return nil
 }

@@ -76,11 +76,6 @@ func TestServerManagerBackendFactoryRegistration(t *testing.T) {
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), "already registered")
 
-	// Register libp2p backend factory
-	libp2pFactory := NewLibP2PBackendFactory()
-	err = sm.RegisterBackendFactory(libp2pFactory)
-	assert.Nil(t, err)
-
 	// Cannot register after starting
 	sm.running = true
 	err = sm.RegisterBackendFactory(NewGinBackendFactory())
@@ -135,15 +130,6 @@ func TestServerManagerConfigManagement(t *testing.T) {
 	err = sm.AddServerConfig(ginConfig)
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), "already exists")
-
-	// Add disabled config - should succeed but not be tracked
-	disabledConfig := &ServerConfig{
-		BackendType: LibP2PBackendType,
-		Port:       constants.TESTPORT + 200,
-		Enabled:    false,
-	}
-	err = sm.AddServerConfig(disabledConfig)
-	assert.Nil(t, err)
 
 	// Cannot add config after starting
 	sm.running = true

@@ -155,12 +155,11 @@ func CreateTestFunctionSpecWithTargets(colonyID string, targetExecutorNames []st
 
 func CreateTestExecutor(colonyName string) *core.Executor {
 	executor := core.CreateExecutor(core.GenerateRandomID(), "test_executor_type", core.GenerateRandomID(), colonyName, time.Now(), time.Now())
-	location := core.Location{Long: 1.0, Lat: 2.0, Description: "test_desc"}
 	gpu := core.GPU{Name: "test_name1", Count: 1}
 	hw := core.Hardware{Model: "test_model", CPU: "0m", Memory: "0m", Storage: "test_storage", GPU: gpu}
 	sw := core.Software{Name: "test_name1", Type: "test_type1", Version: "test_version1"}
-	capabilities := core.Capabilities{Hardware: hw, Software: sw}
-	executor.Location = location
+	capabilities := core.Capabilities{Hardware: []core.Hardware{hw}, Software: []core.Software{sw}}
+	executor.LocationName = "test_location"
 	executor.Capabilities = capabilities
 
 	return executor
@@ -262,4 +261,9 @@ func FakeSingleCron(t *testing.T, colonyID string, initiatorID string, initiator
 	cron.InitiatorID = initiatorID
 	cron.InitiatorName = initiatorName
 	return cron
+}
+
+func CreateTestLocation(colonyName string, name string) *core.Location {
+	locationID := core.GenerateRandomID()
+	return core.CreateLocation(locationID, name, colonyName, "test_description", 12.34, 56.78)
 }

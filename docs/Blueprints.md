@@ -84,7 +84,7 @@ Example BlueprintDefinition:
       "required": ["image", "executorType"]
     },
     "handler": {
-      "executorType": "docker-reconciler",
+      "executorType": "docker-reconciler-home-linux-server",
       "functionName": "reconcile"
     }
   }
@@ -119,11 +119,13 @@ Example Blueprint:
   "metadata": {
     "name": "docker-executor"
   },
+  "handler": {
+    "executorType": "docker-reconciler-home-linux-server"
+  },
   "spec": {
     "image": "colonyos/dockerexecutor:v1.0.5",
     "replicas": 3,
-    "executorType": "docker-reconciler",
-    "executorName": "docker-executor",
+    "executorType": "container-executor",
     "env": {
       "COLONIES_SERVER_HOST": "colonies-server",
       "COLONIES_SERVER_PORT": "50080"
@@ -330,12 +332,37 @@ Schemas are **optional**. BlueprintDefinitions without schemas accept any struct
 5. Reconciler receives the process and reconciles the state
 6. Reconciler updates blueprint status with current state
 
+### Reconciliation Process KwArgs
+
+When a blueprint is created or updated, the server creates a reconciliation process with the following kwargs:
+
+| Kwarg | Description |
+|-------|-------------|
+| `kind` | The blueprint kind (e.g., "ExecutorDeployment") |
+| `blueprintName` | The specific blueprint name that was changed |
+
+This allows reconcilers to either:
+1. **Targeted reconciliation**: When `blueprintName` is provided, reconcile only that specific blueprint
+2. **Kind-based reconciliation**: When only `kind` is provided (e.g., from periodic crons), reconcile all blueprints of that kind
+
+Example process kwargs:
+```json
+{
+  "kind": "ExecutorDeployment",
+  "blueprintName": "docker-executor"
+}
+```
+
 ### Reconciliation Process Example
 
 ```json
 {
   "functionSpec": {
     "funcName": "reconcile",
+    "kwargs": {
+      "kind": "ExecutorDeployment",
+      "blueprintName": "docker-executor"
+    },
     "reconciliation": {
       "action": "update",
       "old": {

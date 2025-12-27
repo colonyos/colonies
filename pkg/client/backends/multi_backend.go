@@ -154,7 +154,7 @@ func (m *MultiBackendClient) Close() error {
 }
 
 // ParseClientBackendsFromEnv parses comma-separated backend types from environment variable
-// e.g., "libp2p,http" or "http" or "libp2p"
+// e.g., "http" or "gin"
 func ParseClientBackendsFromEnv(backendsEnv string) []ClientBackendType {
 	if backendsEnv == "" {
 		return []ClientBackendType{GinClientBackendType} // Default to HTTP
@@ -168,12 +168,6 @@ func ParseClientBackendsFromEnv(backendsEnv string) []ClientBackendType {
 		switch part {
 		case "http", "gin":
 			backends = append(backends, GinClientBackendType)
-		case "grpc":
-			backends = append(backends, GRPCClientBackendType)
-		case "libp2p", "p2p":
-			backends = append(backends, LibP2PClientBackendType)
-		case "coap":
-			backends = append(backends, CoAPClientBackendType)
 		default:
 			logrus.WithField("backend", part).Warn("Unknown backend type, ignoring")
 		}

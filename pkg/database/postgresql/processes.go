@@ -47,7 +47,7 @@ func (db *PQDatabase) AddProcess(process *core.Process) error {
 		blueprintJSONStr = string(blueprintJSON)
 	}
 
-	sqlStatement := `INSERT INTO  ` + db.dbPrefix + `PROCESSES (PROCESS_ID, TARGET_COLONY_NAME, TARGET_EXECUTOR_NAMES, ASSIGNED_EXECUTOR_ID, STATE, IS_ASSIGNED, EXECUTOR_TYPE, SUBMISSION_TIME, START_TIME, END_TIME, WAIT_DEADLINE, EXEC_DEADLINE, ERRORS, RETRIES, NODENAME, FUNCNAME, ARGS, KWARGS, MAX_WAIT_TIME, MAX_EXEC_TIME, MAX_RETRIES, DEPENDENCIES, PRIORITY, PRIORITYTIME, WAIT_FOR_PARENTS, PARENTS, CHILDREN, PROCESSGRAPH_ID, INPUT, OUTPUT, LABEL, FS, NODES, CPU, PROCESSES, PROCESSES_PER_NODE, MEMORY, STORAGE, GPUNAME, GPUCOUNT, GPUMEM, WALLTIME, INITIATOR_ID, INITIATOR_NAME, RECONCILIATION, BLUEPRINT) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35, $36, $37, $38, $39, $40, $41, $42, $43, $44, $45, $46)`
+	sqlStatement := `INSERT INTO  ` + db.dbPrefix + `PROCESSES (PROCESS_ID, TARGET_COLONY_NAME, TARGET_EXECUTOR_NAMES, ASSIGNED_EXECUTOR_ID, STATE, IS_ASSIGNED, EXECUTOR_TYPE, SUBMISSION_TIME, START_TIME, END_TIME, WAIT_DEADLINE, EXEC_DEADLINE, ERRORS, RETRIES, NODENAME, FUNCNAME, ARGS, KWARGS, MAX_WAIT_TIME, MAX_EXEC_TIME, MAX_RETRIES, DEPENDENCIES, PRIORITY, PRIORITYTIME, WAIT_FOR_PARENTS, PARENTS, CHILDREN, PROCESSGRAPH_ID, INPUT, OUTPUT, LABEL, FS, NODES, CPU, PROCESSES, PROCESSES_PER_NODE, MEMORY, STORAGE, GPUNAME, GPUCOUNT, GPUMEM, WALLTIME, INITIATOR_ID, INITIATOR_NAME, RECONCILIATION, BLUEPRINT, CHANNELS, LOCATION_NAME) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35, $36, $37, $38, $39, $40, $41, $42, $43, $44, $45, $46, $47, $48)`
 
 	argsJSON, err := json.Marshal(process.FunctionSpec.Args)
 	if err != nil {
@@ -95,7 +95,7 @@ func (db *PQDatabase) AddProcess(process *core.Process) error {
 		return err
 	}
 
-	_, err = db.postgresql.Exec(sqlStatement, process.ID, process.FunctionSpec.Conditions.ColonyName, pq.Array(targetExecutorNames), process.AssignedExecutorID, process.State, process.IsAssigned, process.FunctionSpec.Conditions.ExecutorType, submissionTime, time.Time{}, time.Time{}, deadline, process.ExecDeadline, pq.Array(process.Errors), 0, process.FunctionSpec.NodeName, process.FunctionSpec.FuncName, argsJSONStr, kwargsJSONStr, process.FunctionSpec.MaxWaitTime, process.FunctionSpec.MaxExecTime, process.FunctionSpec.MaxRetries, pq.Array(process.FunctionSpec.Conditions.Dependencies), process.FunctionSpec.Priority, process.PriorityTime, process.WaitForParents, pq.Array(process.Parents), pq.Array(process.Children), process.ProcessGraphID, inJSONStr, outJSONStr, process.FunctionSpec.Label, fsJSONStr, process.FunctionSpec.Conditions.Nodes, cpu, process.FunctionSpec.Conditions.Processes, process.FunctionSpec.Conditions.ProcessesPerNode, memory, storage, process.FunctionSpec.Conditions.GPU.Name, process.FunctionSpec.Conditions.GPU.Count, gpuMem, process.FunctionSpec.Conditions.WallTime, process.InitiatorID, process.InitiatorName, reconciliationJSONStr, blueprintJSONStr)
+	_, err = db.postgresql.Exec(sqlStatement, process.ID, process.FunctionSpec.Conditions.ColonyName, pq.Array(targetExecutorNames), process.AssignedExecutorID, process.State, process.IsAssigned, process.FunctionSpec.Conditions.ExecutorType, submissionTime, time.Time{}, time.Time{}, deadline, process.ExecDeadline, pq.Array(process.Errors), 0, process.FunctionSpec.NodeName, process.FunctionSpec.FuncName, argsJSONStr, kwargsJSONStr, process.FunctionSpec.MaxWaitTime, process.FunctionSpec.MaxExecTime, process.FunctionSpec.MaxRetries, pq.Array(process.FunctionSpec.Conditions.Dependencies), process.FunctionSpec.Priority, process.PriorityTime, process.WaitForParents, pq.Array(process.Parents), pq.Array(process.Children), process.ProcessGraphID, inJSONStr, outJSONStr, process.FunctionSpec.Label, fsJSONStr, process.FunctionSpec.Conditions.Nodes, cpu, process.FunctionSpec.Conditions.Processes, process.FunctionSpec.Conditions.ProcessesPerNode, memory, storage, process.FunctionSpec.Conditions.GPU.Name, process.FunctionSpec.Conditions.GPU.Count, gpuMem, process.FunctionSpec.Conditions.WallTime, process.InitiatorID, process.InitiatorName, reconciliationJSONStr, blueprintJSONStr, pq.Array(process.FunctionSpec.Channels), process.FunctionSpec.Conditions.LocationName)
 	if err != nil {
 		return err
 	}
@@ -163,8 +163,10 @@ func (db *PQDatabase) parseProcesses(rows *sql.Rows) ([]*core.Process, error) {
 		var initiatorName string
 		var reconciliationJSONStr sql.NullString
 		var blueprintJSONStr sql.NullString
+		var channels []string
+		var locationName sql.NullString
 
-		if err := rows.Scan(&processID, &targetColonyName, pq.Array(&targetExecutorNames), &assignedExecutorID, &state, &isAssigned, &executorType, &submissionTime, &startTime, &endTime, &waitDeadline, &execDeadline, pq.Array(&errs), &nodeName, &funcName, &argsJSONStr, &kwargsJSONStr, &maxWaitTime, &maxExecTime, &retries, &maxRetries, pq.Array(&dependencies), &priority, &priorityTime, &waitForParent, pq.Array(&parents), pq.Array(&children), &processGraphID, &inputJSONStr, &outputJSONStr, &label, &fsJSONStr, &nodes, &cpu, &processesCount, &processesPerNode, &memory, &storage, &gpuName, &gpuCount, &gpuMemory, &walltime, &initiatorID, &initiatorName, &reconciliationJSONStr, &blueprintJSONStr); err != nil {
+		if err := rows.Scan(&processID, &targetColonyName, pq.Array(&targetExecutorNames), &assignedExecutorID, &state, &isAssigned, &executorType, &submissionTime, &startTime, &endTime, &waitDeadline, &execDeadline, pq.Array(&errs), &nodeName, &funcName, &argsJSONStr, &kwargsJSONStr, &maxWaitTime, &maxExecTime, &retries, &maxRetries, pq.Array(&dependencies), &priority, &priorityTime, &waitForParent, pq.Array(&parents), pq.Array(&children), &processGraphID, &inputJSONStr, &outputJSONStr, &label, &fsJSONStr, &nodes, &cpu, &processesCount, &processesPerNode, &memory, &storage, &gpuName, &gpuCount, &gpuMemory, &walltime, &initiatorID, &initiatorName, &reconciliationJSONStr, &blueprintJSONStr, pq.Array(&channels), &locationName); err != nil {
 			return nil, err
 		}
 
@@ -222,6 +224,13 @@ func (db *PQDatabase) parseProcesses(rows *sql.Rows) ([]*core.Process, error) {
 
 		functionSpec := core.CreateFunctionSpec(nodeName, funcName, argsif, kwargsif, targetColonyName, targetExecutorNames, executorType, maxWaitTime, maxExecTime, maxRetries, env, dependencies, priority, label)
 
+		// Set channels
+		if len(channels) == 0 {
+			functionSpec.Channels = make([]string, 0)
+		} else {
+			functionSpec.Channels = channels
+		}
+
 		functionSpec.Conditions.Nodes = nodes
 		functionSpec.Conditions.CPU = parsers.ConvertCPUToString(cpu)
 		functionSpec.Conditions.Processes = processesCount
@@ -232,6 +241,9 @@ func (db *PQDatabase) parseProcesses(rows *sql.Rows) ([]*core.Process, error) {
 		functionSpec.Conditions.GPU.Count = gpuCount
 		functionSpec.Conditions.GPU.Memory = parsers.ConvertMemoryToString(gpuMemory)
 		functionSpec.Conditions.WallTime = walltime
+		if locationName.Valid {
+			functionSpec.Conditions.LocationName = locationName.String
+		}
 
 		fs := core.Filesystem{}
 		err = json.Unmarshal([]byte(fsJSONStr), &fs)
@@ -562,11 +574,11 @@ func (db *PQDatabase) FindAllWaitingProcesses() ([]*core.Process, error) {
 	return matches, nil
 }
 
-func (db *PQDatabase) FindCandidates(colonyName string, executorType string, cpu int64, memory int64, storage int64, nodes int, processes int, processesPerNode int, count int) ([]*core.Process, error) {
+func (db *PQDatabase) FindCandidates(colonyName string, executorType string, executorLocationName string, cpu int64, memory int64, storage int64, nodes int, processes int, processesPerNode int, count int) ([]*core.Process, error) {
 	var sqlStatement string
 
-	sqlStatement = `SELECT * FROM ` + db.dbPrefix + `PROCESSES WHERE STATE=$1 AND EXECUTOR_TYPE=$2 AND IS_ASSIGNED=FALSE AND WAIT_FOR_PARENTS=FALSE AND TARGET_COLONY_NAME=$3 AND array_length(TARGET_EXECUTOR_NAMES, 1) IS NULL AND CPU<=$4 AND MEMORY<=$5 AND STORAGE<=$6 AND NODES<=$7 AND PROCESSES<=$8 AND PROCESSES_PER_NODE<=$9 ORDER BY PRIORITYTIME LIMIT $10`
-	rows, err := db.postgresql.Query(sqlStatement, core.WAITING, executorType, colonyName, cpu, memory, storage, nodes, processes, processesPerNode, count)
+	sqlStatement = `SELECT * FROM ` + db.dbPrefix + `PROCESSES WHERE STATE=$1 AND EXECUTOR_TYPE=$2 AND IS_ASSIGNED=FALSE AND WAIT_FOR_PARENTS=FALSE AND TARGET_COLONY_NAME=$3 AND array_length(TARGET_EXECUTOR_NAMES, 1) IS NULL AND CPU<=$4 AND MEMORY<=$5 AND STORAGE<=$6 AND NODES<=$7 AND PROCESSES<=$8 AND PROCESSES_PER_NODE<=$9 AND (LOCATION_NAME IS NULL OR LOCATION_NAME = '' OR LOWER(LOCATION_NAME) = LOWER($10)) ORDER BY PRIORITYTIME LIMIT $11`
+	rows, err := db.postgresql.Query(sqlStatement, core.WAITING, executorType, colonyName, cpu, memory, storage, nodes, processes, processesPerNode, executorLocationName, count)
 	if err != nil {
 		return nil, err
 	}
@@ -580,11 +592,11 @@ func (db *PQDatabase) FindCandidates(colonyName string, executorType string, cpu
 	return matches, nil
 }
 
-func (db *PQDatabase) FindCandidatesByName(colonyName string, executorName string, executorType string, cpu int64, memory int64, storage int64, nodes int, processes int, processesPerNode int, count int) ([]*core.Process, error) {
+func (db *PQDatabase) FindCandidatesByName(colonyName string, executorName string, executorType string, executorLocationName string, cpu int64, memory int64, storage int64, nodes int, processes int, processesPerNode int, count int) ([]*core.Process, error) {
 	var sqlStatement string
 
-	sqlStatement = `SELECT * FROM ` + db.dbPrefix + `PROCESSES WHERE STATE=$1 AND $2=ANY(TARGET_EXECUTOR_NAMES) AND EXECUTOR_TYPE=$3 AND IS_ASSIGNED=FALSE AND WAIT_FOR_PARENTS=FALSE AND TARGET_COLONY_NAME=$4 AND CPU<=$5 AND MEMORY<=$6 AND STORAGE<=$7 AND NODES<=$8 AND PROCESSES<=$9 AND PROCESSES_PER_NODE<=$10 ORDER BY PRIORITYTIME LIMIT $11`
-	rows, err := db.postgresql.Query(sqlStatement, core.WAITING, executorName, executorType, colonyName, cpu, memory, storage, nodes, processes, processesPerNode, count)
+	sqlStatement = `SELECT * FROM ` + db.dbPrefix + `PROCESSES WHERE STATE=$1 AND $2=ANY(TARGET_EXECUTOR_NAMES) AND EXECUTOR_TYPE=$3 AND IS_ASSIGNED=FALSE AND WAIT_FOR_PARENTS=FALSE AND TARGET_COLONY_NAME=$4 AND CPU<=$5 AND MEMORY<=$6 AND STORAGE<=$7 AND NODES<=$8 AND PROCESSES<=$9 AND PROCESSES_PER_NODE<=$10 AND (LOCATION_NAME IS NULL OR LOCATION_NAME = '' OR LOWER(LOCATION_NAME) = LOWER($11)) ORDER BY PRIORITYTIME LIMIT $12`
+	rows, err := db.postgresql.Query(sqlStatement, core.WAITING, executorName, executorType, colonyName, cpu, memory, storage, nodes, processes, processesPerNode, executorLocationName, count)
 	if err != nil {
 		return nil, err
 	}
@@ -925,6 +937,90 @@ func (db *PQDatabase) Assign(executorID string, process *core.Process) error {
 	process.SetState(core.RUNNING)
 
 	return nil
+}
+
+// SelectAndAssign atomically selects a candidate process and assigns it to the executor.
+// Uses FOR UPDATE SKIP LOCKED to handle concurrent access without race conditions.
+// This enables distributed assignment across multiple server replicas.
+func (db *PQDatabase) SelectAndAssign(colonyName string, executorID string, executorName string, executorType string, executorLocation string, cpu int64, memory int64, storage int64, nodes int, processes int, processesPerNode int, count int) (*core.Process, error) {
+	// Atomic SELECT FOR UPDATE SKIP LOCKED + UPDATE in a single statement
+	// The subquery locks the row, preventing other transactions from selecting it.
+	// Uses OR to combine both FindCandidatesByName and FindCandidates logic:
+	// - Matches processes targeting this specific executor by name
+	// - OR matches general pool processes (no specific executor names)
+	sqlStatement := `
+		UPDATE ` + db.dbPrefix + `PROCESSES
+		SET IS_ASSIGNED = TRUE,
+		    START_TIME = NOW(),
+		    ASSIGNED_EXECUTOR_ID = $12,
+		    STATE = $13,
+		    EXEC_DEADLINE = CASE
+		        WHEN MAX_EXEC_TIME > 0 THEN NOW() + (MAX_EXEC_TIME * INTERVAL '1 second')
+		        ELSE EXEC_DEADLINE
+		    END
+		WHERE PROCESS_ID = (
+			SELECT PROCESS_ID FROM ` + db.dbPrefix + `PROCESSES
+			WHERE (
+				-- By executor name (processes targeting this specific executor)
+				$1 = ANY(TARGET_EXECUTOR_NAMES)
+				OR
+				-- By executor type (general pool - processes not targeting specific executors)
+				(array_length(TARGET_EXECUTOR_NAMES, 1) IS NULL OR TARGET_EXECUTOR_NAMES = ARRAY['*']::text[])
+			)
+			  AND EXECUTOR_TYPE = $2
+			  AND STATE = $3
+			  AND IS_ASSIGNED = FALSE
+			  AND WAIT_FOR_PARENTS = FALSE
+			  AND TARGET_COLONY_NAME = $4
+			  AND CPU <= $5 AND MEMORY <= $6 AND STORAGE <= $7
+			  AND NODES <= $8 AND PROCESSES <= $9 AND PROCESSES_PER_NODE <= $10
+			  AND (LOCATION_NAME IS NULL OR LOCATION_NAME = '' OR LOWER(LOCATION_NAME) = LOWER($11))
+			ORDER BY PRIORITYTIME ASC
+			LIMIT 1
+			FOR UPDATE SKIP LOCKED
+		)
+		RETURNING *
+	`
+
+	rows, err := db.postgresql.Query(sqlStatement,
+		executorName,     // $1
+		executorType,     // $2
+		core.WAITING,     // $3
+		colonyName,       // $4
+		cpu,              // $5
+		memory,           // $6
+		storage,          // $7
+		nodes,            // $8
+		processes,        // $9
+		processesPerNode, // $10
+		executorLocation, // $11
+		executorID,       // $12
+		core.RUNNING,     // $13
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	selectedProcesses, err := db.parseProcesses(rows)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(selectedProcesses) == 0 {
+		// No process could be selected (either none available or all locked by other transactions)
+		return nil, nil
+	}
+
+	process := selectedProcesses[0]
+
+	// Update attribute state
+	err = db.SetAttributeState(process.ID, core.RUNNING)
+	if err != nil {
+		return nil, err
+	}
+
+	return process, nil
 }
 
 func (db *PQDatabase) Unassign(process *core.Process) error {

@@ -9,13 +9,24 @@ import (
 const UpdateBlueprintPayloadType = "updateblueprintmsg"
 
 type UpdateBlueprintMsg struct {
-	Blueprint *core.Blueprint `json:"blueprint"`
-	MsgType  string         `json:"msgtype"`
+	Blueprint       *core.Blueprint `json:"blueprint"`
+	ForceGeneration bool            `json:"forcegeneration"` // If true, increment generation even if spec hasn't changed
+	MsgType         string          `json:"msgtype"`
 }
 
 func CreateUpdateBlueprintMsg(blueprint *core.Blueprint) *UpdateBlueprintMsg {
 	msg := &UpdateBlueprintMsg{}
 	msg.Blueprint = blueprint
+	msg.ForceGeneration = false
+	msg.MsgType = UpdateBlueprintPayloadType
+
+	return msg
+}
+
+func CreateUpdateBlueprintMsgWithForce(blueprint *core.Blueprint, forceGeneration bool) *UpdateBlueprintMsg {
+	msg := &UpdateBlueprintMsg{}
+	msg.Blueprint = blueprint
+	msg.ForceGeneration = forceGeneration
 	msg.MsgType = UpdateBlueprintPayloadType
 
 	return msg

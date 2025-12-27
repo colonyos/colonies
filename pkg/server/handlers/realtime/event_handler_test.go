@@ -2,6 +2,8 @@ package realtime_test
 
 import (
 	"context"
+	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -29,7 +31,7 @@ func TestEventHandler(t *testing.T) {
 	handler := factory.CreateTestableEventHandler(nil)
 	retChan := make(chan retValues)
 	go func() {
-		process, err := handler.WaitForProcess("test_executor_type", core.WAITING, "", ctx)
+		process, err := handler.WaitForProcess("test_executor_type", core.WAITING, "", "", ctx)
 		retChan <- retValues{process: process, err: err}
 	}()
 	time.Sleep(100 * time.Millisecond)
@@ -39,7 +41,7 @@ func TestEventHandler(t *testing.T) {
 	retVal := <-retChan
 	assert.Nil(t, retVal.err) // OK
 	assert.True(t, process.Equals(retVal.process))
-	allListeners, listeners, processIDs := handler.NumberOfListeners("test_executor_type", core.WAITING)
+	allListeners, listeners, processIDs := handler.NumberOfListeners("test_executor_type", core.WAITING, "")
 	assert.Equal(t, allListeners, 0)
 	assert.Equal(t, listeners, 0)
 	assert.Equal(t, processIDs, 0)
@@ -53,12 +55,12 @@ func TestEventHandlerTimeout(t *testing.T) {
 	handler := factory.CreateTestableEventHandler(nil)
 	retChan := make(chan retValues)
 	go func() {
-		process, err := handler.WaitForProcess("test_executor_type", core.WAITING, "", ctx)
+		process, err := handler.WaitForProcess("test_executor_type", core.WAITING, "", "", ctx)
 		retChan <- retValues{process: process, err: err}
 	}()
 	retVal := <-retChan
 	assert.NotNil(t, retVal.err) // Not OK, will timeout
-	allListeners, listeners, processIDs := handler.NumberOfListeners("test_executor_type", core.WAITING)
+	allListeners, listeners, processIDs := handler.NumberOfListeners("test_executor_type", core.WAITING, "")
 	assert.Equal(t, allListeners, 0)
 	assert.Equal(t, listeners, 0)
 	assert.Equal(t, processIDs, 0)
@@ -88,7 +90,7 @@ func TestEventHandlerTimeout2(t *testing.T) {
 	handler := factory.CreateTestableEventHandler(nil)
 	retChan := make(chan retValues)
 	go func() {
-		process, err := handler.WaitForProcess("test_executor_type", core.WAITING, "", ctx)
+		process, err := handler.WaitForProcess("test_executor_type", core.WAITING, "", "", ctx)
 		retChan <- retValues{process: process, err: err}
 	}()
 	time.Sleep(100 * time.Millisecond)
@@ -100,7 +102,7 @@ func TestEventHandlerTimeout2(t *testing.T) {
 	}()
 	retVal := <-retChan
 	assert.NotNil(t, retVal.err) // Not OK, will timeout
-	allListeners, listeners, processIDs := handler.NumberOfListeners("test_executor_type", core.WAITING)
+	allListeners, listeners, processIDs := handler.NumberOfListeners("test_executor_type", core.WAITING, "")
 	assert.Equal(t, allListeners, 0)
 	assert.Equal(t, listeners, 0)
 	assert.Equal(t, processIDs, 0)
@@ -114,7 +116,7 @@ func TestEventHandlerTimeout3(t *testing.T) {
 	handler := factory.CreateTestableEventHandler(nil)
 	retChan := make(chan retValues)
 	go func() {
-		process, err := handler.WaitForProcess("test_executor_type", core.WAITING, "", ctx)
+		process, err := handler.WaitForProcess("test_executor_type", core.WAITING, "", "", ctx)
 		retChan <- retValues{process: process, err: err}
 	}()
 	time.Sleep(100 * time.Millisecond)
@@ -126,13 +128,16 @@ func TestEventHandlerTimeout3(t *testing.T) {
 	}()
 	retVal := <-retChan
 	assert.NotNil(t, retVal.err) // Not OK, will timeout
-	allListeners, listeners, processIDs := handler.NumberOfListeners("test_executor_type", core.WAITING)
+	allListeners, listeners, processIDs := handler.NumberOfListeners("test_executor_type", core.WAITING, "")
 	assert.Equal(t, allListeners, 0)
 	assert.Equal(t, listeners, 0)
 	assert.Equal(t, processIDs, 0)
 }
 
 func TestEventHandlerMany(t *testing.T) {
+	// Test that multiple listeners waiting for a SPECIFIC processID all receive the signal.
+	// This tests Pass 1 (broadcast) of the thundering herd prevention mechanism.
+	// Note: General listeners (empty processID) only wake ONE at a time via Pass 2.
 	process := utils.CreateTestProcess(core.GenerateRandomID())
 	process.FunctionSpec.Conditions.ExecutorType = "test_executor_type"
 	process.State = core.WAITING
@@ -149,13 +154,14 @@ func TestEventHandlerMany(t *testing.T) {
 		retChan := make(chan retValues)
 		retChans = append(retChans, retChan)
 		go func() {
-			process, err := handler.WaitForProcess("test_executor_type", core.WAITING, "", ctx)
+			// Use specific processID so all listeners receive the signal (Pass 1 broadcast)
+			process, err := handler.WaitForProcess("test_executor_type", core.WAITING, process.ID, "", ctx)
 			retChan <- retValues{process: process, err: err}
 		}()
 	}
 
 	go func() {
-		handler.WaitForProcess("test_executor_type2", core.WAITING, "", ctx)
+		handler.WaitForProcess("test_executor_type2", core.WAITING, "", "", ctx)
 	}()
 
 	time.Sleep(1000 * time.Millisecond)
@@ -164,16 +170,55 @@ func TestEventHandlerMany(t *testing.T) {
 		handler.Signal(process)
 	}()
 
-	// Wait for listers
+	// Wait for listeners - all should receive the signal since they're waiting for specific processID
 	for _, retChan := range retChans {
 		retVal := <-retChan
 		assert.Nil(t, retVal.err) // OK
 		assert.True(t, process.Equals(retVal.process))
 	}
-	allListeners, listeners, processIDs := handler.NumberOfListeners("test_executor_type", core.WAITING)
-	assert.Equal(t, allListeners, 1) // Note 1, as test_executor_type2 was never Signaled
-	assert.Equal(t, listeners, 0)
-	assert.Equal(t, processIDs, 0)
+	allListeners, listeners, processIDs := handler.NumberOfListeners("test_executor_type", core.WAITING, "")
+	assert.Equal(t, 1, allListeners) // Note 1, as test_executor_type2 was never Signaled
+	assert.Equal(t, 0, listeners)
+	assert.Equal(t, 0, processIDs)
+}
+
+func TestEventHandlerThunderingHerdPrevention(t *testing.T) {
+	// Test that general listeners (empty processID) only wake ONE at a time.
+	// This tests Pass 2 (single wake-up) of the thundering herd prevention mechanism.
+	process := utils.CreateTestProcess(core.GenerateRandomID())
+	process.FunctionSpec.Conditions.ExecutorType = "test_executor_type"
+	process.State = core.WAITING
+
+	ctx, cancelCtx := context.WithTimeout(context.Background(), 500*time.Millisecond)
+	defer cancelCtx()
+
+	factory := backendGin.NewFactory()
+	handler := factory.CreateTestableEventHandler(nil)
+
+	// Create 5 general listeners (empty processID)
+	successCount := int32(0)
+	var wg sync.WaitGroup
+	for i := 0; i < 5; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			_, err := handler.WaitForProcess("test_executor_type", core.WAITING, "", "", ctx)
+			if err == nil {
+				atomic.AddInt32(&successCount, 1)
+			}
+		}()
+	}
+
+	time.Sleep(100 * time.Millisecond)
+
+	// Signal once - only ONE listener should wake up
+	handler.Signal(process)
+
+	// Wait for all goroutines to finish (either success or timeout)
+	wg.Wait()
+
+	// Exactly ONE should have succeeded (thundering herd prevention)
+	assert.Equal(t, int32(1), successCount)
 }
 
 func TestEventHandlerUpdate(t *testing.T) {
@@ -188,7 +233,7 @@ func TestEventHandlerUpdate(t *testing.T) {
 	handler := factory.CreateTestableEventHandler(nil)
 	retChan := make(chan retValues)
 	go func() {
-		process, err := handler.WaitForProcess("test_executor_type", core.WAITING, process.ID, ctx)
+		process, err := handler.WaitForProcess("test_executor_type", core.WAITING, process.ID, "", ctx)
 		retChan <- retValues{process: process, err: err}
 	}()
 	time.Sleep(100 * time.Millisecond)
@@ -198,7 +243,7 @@ func TestEventHandlerUpdate(t *testing.T) {
 	retVal := <-retChan
 	assert.Nil(t, retVal.err) // OK
 	assert.True(t, process.Equals(retVal.process))
-	allListeners, listeners, processIDs := handler.NumberOfListeners("test_executor_type", core.WAITING)
+	allListeners, listeners, processIDs := handler.NumberOfListeners("test_executor_type", core.WAITING, "")
 	assert.Equal(t, allListeners, 0)
 	assert.Equal(t, listeners, 0)
 	assert.Equal(t, processIDs, 0)
@@ -217,7 +262,7 @@ func TestEventHandlerUpdateTimeout(t *testing.T) {
 	retChan := make(chan retValues)
 	go func() {
 		// Wait for another process with random ID, i.e. we will time out
-		process, err := handler.WaitForProcess("test_executor_type", core.WAITING, core.GenerateRandomID(), ctx)
+		process, err := handler.WaitForProcess("test_executor_type", core.WAITING, core.GenerateRandomID(), "", ctx)
 		retChan <- retValues{process: process, err: err}
 	}()
 	time.Sleep(100 * time.Millisecond)
@@ -226,7 +271,7 @@ func TestEventHandlerUpdateTimeout(t *testing.T) {
 	}()
 	retVal := <-retChan
 	assert.NotNil(t, retVal.err) // OK
-	allListeners, listeners, processIDs := handler.NumberOfListeners("test_executor_type", core.WAITING)
+	allListeners, listeners, processIDs := handler.NumberOfListeners("test_executor_type", core.WAITING, "")
 	assert.Equal(t, allListeners, 0)
 	assert.Equal(t, listeners, 0)
 	assert.Equal(t, processIDs, 0)
@@ -242,7 +287,7 @@ func TestEventHandlerSubscribe(t *testing.T) {
 	retChan := make(chan retValues)
 	factory := backendGin.NewFactory()
 	handler := factory.CreateTestableEventHandler(nil)
-	processChan, errChan := handler.Subscribe("test_executor_type", core.WAITING, "", ctx)
+	processChan, errChan := handler.Subscribe("test_executor_type", core.WAITING, "", "", ctx)
 	go func() {
 		select {
 		case err := <-errChan:
@@ -267,7 +312,7 @@ func TestEventHandlerSubscribeCancel(t *testing.T) {
 	retChan := make(chan retValues)
 	factory := backendGin.NewFactory()
 	handler := factory.CreateTestableEventHandler(nil)
-	processChan, errChan := handler.Subscribe("test_executor_type", core.WAITING, "", ctx) // Subscribe to all processes
+	processChan, errChan := handler.Subscribe("test_executor_type", core.WAITING, "", "", ctx) // Subscribe to all processes
 	go func() {
 		select {
 		case err := <-errChan:
@@ -292,7 +337,7 @@ func TestEventHandlerSubscribeTimeout(t *testing.T) {
 	retChan := make(chan retValues)
 	factory := backendGin.NewFactory()
 	handler := factory.CreateTestableEventHandler(nil)
-	processChan, errChan := handler.Subscribe("test_executor_type", core.WAITING, "", ctx) // Subscribe to all processes
+	processChan, errChan := handler.Subscribe("test_executor_type", core.WAITING, "", "", ctx) // Subscribe to all processes
 	go func() {
 		select {
 		case err := <-errChan:
@@ -316,7 +361,7 @@ func TestEventHandlerSubscribeProcessID(t *testing.T) {
 	retChan := make(chan retValues)
 	factory := backendGin.NewFactory()
 	handler := factory.CreateTestableEventHandler(nil)
-	processChan, errChan := handler.Subscribe("test_executor_type", core.WAITING, process.ID, ctx)
+	processChan, errChan := handler.Subscribe("test_executor_type", core.WAITING, process.ID, "", ctx)
 	go func() {
 		select {
 		case err := <-errChan:
@@ -342,7 +387,7 @@ func TestEventHandlerSubscribeProcessIDFailed(t *testing.T) {
 	retChan := make(chan retValues)
 	factory := backendGin.NewFactory()
 	handler := factory.CreateTestableEventHandler(nil)
-	processChan, errChan := handler.Subscribe("test_executor_type", core.WAITING, core.GenerateRandomID(), ctx)
+	processChan, errChan := handler.Subscribe("test_executor_type", core.WAITING, core.GenerateRandomID(), "", ctx)
 	go func() {
 		select {
 		case err := <-errChan:
@@ -382,7 +427,7 @@ func TestEventHandleRelayServer(t *testing.T) {
 	go func() {
 		ctx, cancelCtx := context.WithTimeout(context.Background(), 3000*time.Millisecond)
 		defer cancelCtx()
-		process, err := handler1.WaitForProcess("test_executor_type", core.WAITING, "", ctx)
+		process, err := handler1.WaitForProcess("test_executor_type", core.WAITING, "", "", ctx)
 		retChan1 <- retValues{process: process, err: err}
 	}()
 
@@ -390,7 +435,7 @@ func TestEventHandleRelayServer(t *testing.T) {
 	go func() {
 		ctx, cancelCtx := context.WithTimeout(context.Background(), 3000*time.Millisecond)
 		defer cancelCtx()
-		process, err := handler2.WaitForProcess("test_executor_type", core.WAITING, "", ctx)
+		process, err := handler2.WaitForProcess("test_executor_type", core.WAITING, "", "", ctx)
 		retChan2 <- retValues{process: process, err: err}
 	}()
 
@@ -398,7 +443,7 @@ func TestEventHandleRelayServer(t *testing.T) {
 	go func() {
 		ctx, cancelCtx := context.WithTimeout(context.Background(), 3000*time.Millisecond)
 		defer cancelCtx()
-		process, err := handler3.WaitForProcess("test_executor_type", core.WAITING, "", ctx)
+		process, err := handler3.WaitForProcess("test_executor_type", core.WAITING, "", "", ctx)
 		retChan3 <- retValues{process: process, err: err}
 	}()
 

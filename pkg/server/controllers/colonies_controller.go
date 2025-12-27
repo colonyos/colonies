@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/colonyos/colonies/pkg/channel"
 	"github.com/colonyos/colonies/pkg/cluster"
 	"github.com/colonyos/colonies/pkg/constants"
 	"github.com/colonyos/colonies/pkg/core"
@@ -122,6 +123,8 @@ type ColoniesController struct {
 	// Pause channel management
 	pauseChannels    map[string][]chan bool // colony -> list of waiting channels
 	pauseChannelsMux sync.RWMutex
+	// Channel router for bidirectional communication
+	channelRouter *channel.Router
 }
 
 func CreateColoniesController(db database.Database,
@@ -163,8 +166,10 @@ func CreateColoniesController(db database.Database,
 	controller.retentionPolicy = retentionPolicy
 	controller.retentionPeriod = retentionPeriod
 	controller.pauseChannels = make(map[string][]chan bool)
+	controller.channelRouter = channel.NewRouter()
 
 	controller.relayServer = cluster.CreateRelayServer(controller.thisNode, controller.clusterConfig)
+
 	factory := backendGin.NewFactory()
 	controller.eventHandler = factory.CreateEventHandler(controller.relayServer)
 	controller.wsSubCtrl = factory.CreateSubscriptionController(controller.eventHandler)
@@ -240,6 +245,12 @@ func (controller *ColoniesController) SubscribeProcess(executorID string, subscr
 			if process == nil {
 				cmd.errorChan <- errors.New("Invalid process with Id " + subscription.ProcessID)
 				return
+			}
+
+			// If executorType is empty, use the process's executorType
+			// This ensures the subscription target matches the signal target
+			if subscription.ExecutorType == "" {
+				subscription.ExecutorType = process.FunctionSpec.Conditions.ExecutorType
 			}
 
 			err = controller.wsSubCtrl.AddProcessSubscriber(executorID, process, subscription)
@@ -356,20 +367,17 @@ func (controller *ColoniesController) AddExecutor(executor *core.Executor, allow
 				cmd.errorChan <- err
 				return
 			}
-			if allowExecutorReregister {
-				if executorFromDB != nil {
+			if executorFromDB != nil {
+				if allowExecutorReregister {
 					err := controller.executorDB.RemoveExecutorByName(executor.ColonyName, executorFromDB.Name)
 					if err != nil {
 						cmd.errorChan <- err
 						return
 					}
-				}
-			} else {
-				if executorFromDB != nil {
+				} else {
 					cmd.errorChan <- errors.New("Executor with name <" + executorFromDB.Name + "> in Colony <" + executorFromDB.ColonyName + "> already exists")
 					return
 				}
-
 			}
 			err = controller.executorDB.AddExecutor(executor)
 			if err != nil {
@@ -451,7 +459,30 @@ func (controller *ColoniesController) AddProcessToDB(process *core.Process) (*co
 		return nil, err
 	}
 
+	// Create channels defined in FunctionSpec
+	// Use deterministic IDs (processID_channelName) so channels can be created
+	// consistently across cluster servers (lazy creation on any server)
+	if addedProcess.FunctionSpec.Channels != nil {
+		for _, channelName := range addedProcess.FunctionSpec.Channels {
+			ch := &channel.Channel{
+				ID:          addedProcess.ID + "_" + channelName, // Deterministic ID for cluster consistency
+				ProcessID:   addedProcess.ID,
+				Name:        channelName,
+				SubmitterID: addedProcess.InitiatorID,
+				ExecutorID:  "", // Will be set when process is assigned
+			}
+			if err := controller.channelRouter.Create(ch); err != nil {
+				log.WithFields(log.Fields{"Error": err, "ProcessID": addedProcess.ID, "Channel": channelName}).Error("Failed to create channel")
+			}
+		}
+	}
+
 	return addedProcess, nil
+}
+
+// GetChannelRouter returns the channel router
+func (controller *ColoniesController) GetChannelRouter() *channel.Router {
+	return controller.channelRouter
 }
 
 func (controller *ColoniesController) AddProcess(process *core.Process) (*core.Process, error) {
@@ -1149,6 +1180,9 @@ func (controller *ColoniesController) CloseSuccessful(processID string, executor
 					avgExecTime)
 			}
 
+			// Cleanup channels for this process
+			controller.channelRouter.CleanupProcess(processID)
+
 			controller.eventHandler.Signal(process)
 			cmd.errorChan <- nil
 		}}
@@ -1224,6 +1258,9 @@ func (controller *ColoniesController) CloseFailed(processID string, errs []strin
 			}
 
 			process.State = core.FAILED
+
+			// Cleanup channels for this process
+			controller.channelRouter.CleanupProcess(processID)
 
 			controller.eventHandler.Signal(process)
 			cmd.errorChan <- nil
@@ -1309,6 +1346,9 @@ func (controller *ColoniesController) Assign(executorID string, colonyName strin
 				return
 			}
 
+			// Update executor ID on all channels for this process
+			controller.channelRouter.SetExecutorIDForProcess(selectedProcess.ID, executorID)
+
 			if selectedProcess.ProcessGraphID != "" {
 				log.WithFields(log.Fields{"ProcessGraphId": selectedProcess.ProcessGraphID}).Debug("Resolving processgraph (assigned)")
 				processGraph, err := controller.processGraphDB.GetProcessGraphByID(selectedProcess.ProcessGraphID)
@@ -1372,6 +1412,9 @@ func (controller *ColoniesController) Assign(executorID string, colonyName strin
 				}
 			}
 
+			// Signal that the process is now RUNNING so subscribers are notified
+			controller.eventHandler.Signal(selectedProcess)
+
 			result := &AssignResult{
 				Process:       selectedProcess,
 				IsPaused:      false,
@@ -1387,6 +1430,127 @@ func (controller *ColoniesController) Assign(executorID string, colonyName strin
 	case result := <-cmd.assignResultReplyChan:
 		return result, nil
 	}
+}
+
+// DistributedAssign performs atomic process assignment using database-level locking.
+// This method bypasses the scheduler and blocking queue, enabling horizontal scaling
+// of the assign operation across multiple server replicas.
+// Uses SELECT FOR UPDATE SKIP LOCKED to handle concurrent access without race conditions.
+func (controller *ColoniesController) DistributedAssign(executor *core.Executor, colonyName string, cpu int64, memory int64, storage int64) (*AssignResult, error) {
+	err := controller.executorDB.MarkAlive(executor)
+	if err != nil {
+		return nil, err
+	}
+
+	// Check if assignments are paused for this colony
+	paused, err := controller.AreColonyAssignmentsPaused(colonyName)
+	if err != nil {
+		return nil, err
+	}
+
+	if paused {
+		resumeChannel := controller.CreateResumeChannel(colonyName)
+		return &AssignResult{
+			Process:       nil,
+			IsPaused:      true,
+			ResumeChannel: resumeChannel,
+		}, nil
+	}
+
+	// Use atomic SelectAndAssign - bypasses scheduler and blocking queue
+	selectedProcess, err := controller.processDB.SelectAndAssign(
+		colonyName,
+		executor.ID,
+		executor.Name,
+		executor.Type,
+		executor.LocationName,
+		cpu,
+		memory,
+		storage,
+		math.MaxInt8, // nodes
+		math.MaxInt8, // processes
+		math.MaxInt8, // processesPerNode
+		1,            // count
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	if selectedProcess == nil {
+		// No process available
+		return &AssignResult{
+			Process:       nil,
+			IsPaused:      false,
+			ResumeChannel: nil,
+		}, nil
+	}
+
+	// Update executor ID on all channels for this process
+	controller.channelRouter.SetExecutorIDForProcess(selectedProcess.ID, executor.ID)
+
+	// Handle process graph if this process is part of one
+	if selectedProcess.ProcessGraphID != "" {
+		log.WithFields(log.Fields{"ProcessGraphId": selectedProcess.ProcessGraphID}).Debug("Resolving processgraph (distributed assign)")
+		processGraph, err := controller.processGraphDB.GetProcessGraphByID(selectedProcess.ProcessGraphID)
+		if err != nil {
+			log.Error(err)
+			return nil, err
+		}
+		if processGraph == nil {
+			errMsg := "Failed to resolve processgraph from controller, processGraph is nil (should not be)"
+			log.Error(errMsg)
+			return nil, errors.New(errMsg)
+		}
+		processGraph.SetStorage(controller.GetProcessGraphStorage())
+
+		maxRetries := 10
+		timeBetweenRetries := 500 * time.Millisecond
+		retries := 0
+
+		for {
+			if retries >= maxRetries {
+				err2 := controller.HandleDefunctProcessgraph(processGraph.ID, selectedProcess.ID, err)
+				if err2 != nil {
+					log.Error(err2)
+					return nil, err2
+				}
+				log.Error(err)
+				return nil, err
+			}
+			err = processGraph.Resolve()
+			if err != nil {
+				retries++
+				time.Sleep(timeBetweenRetries)
+				continue
+			} else {
+				break
+			}
+		}
+
+		// Collect output from parents and use as input
+		var output []interface{}
+		for _, parentID := range selectedProcess.Parents {
+			parentProcess, err := controller.processDB.GetProcessByID(parentID)
+			if err != nil {
+				log.Error(err)
+				return nil, err
+			}
+			output = append(output, parentProcess.Output...)
+		}
+		if len(selectedProcess.Parents) > 0 {
+			controller.processDB.SetInput(selectedProcess.ID, output)
+			selectedProcess.Input = output
+		}
+	}
+
+	// Signal that the process is now RUNNING so subscribers are notified
+	controller.eventHandler.Signal(selectedProcess)
+
+	return &AssignResult{
+		Process:       selectedProcess,
+		IsPaused:      false,
+		ResumeChannel: nil,
+	}, nil
 }
 
 func (controller *ColoniesController) UnassignExecutor(processID string) error {

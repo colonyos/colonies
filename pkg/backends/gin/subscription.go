@@ -96,7 +96,7 @@ func (ctrl *SubscriptionController) subscribe(executorID string, processID strin
 		ctx, cancelCtx := context.WithTimeout(context.Background(), time.Duration(subscription.Timeout)*time.Second)
 		defer cancelCtx()
 
-		processChan, errChan := ctrl.eventHandler.Subscribe(subscription.ExecutorType, subscription.State, processID, ctx)
+		processChan, errChan := ctrl.eventHandler.Subscribe(subscription.ExecutorType, subscription.State, processID, subscription.Location, ctx)
 		for {
 			select {
 			case err := <-errChan:

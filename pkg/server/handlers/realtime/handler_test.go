@@ -88,6 +88,52 @@ func TestSubscribeChangeStateProcess(t *testing.T) {
 	<-done
 }
 
+// Test subscribing to RUNNING state - subscriber should receive event when process is assigned
+// Executor 1 submits a process
+// Executor 2 subscribes on RUNNING state events
+// Executor 1 gets assigned the process
+// Executor 2 receives an event when process transitions to RUNNING
+func TestSubscribeChangeStateProcessRunning(t *testing.T) {
+	env, client, server, _, done := server.SetupTestEnv1(t)
+
+	funcSpec := utils.CreateTestFunctionSpec(env.Colony1Name)
+	addedProcess, err := client.Submit(funcSpec, env.Executor1PrvKey)
+	assert.Nil(t, err)
+	assert.Equal(t, core.PENDING, addedProcess.State)
+
+	subscription, err := client.SubscribeProcess(env.Colony1Name,
+		addedProcess.ID,
+		addedProcess.FunctionSpec.Conditions.ExecutorType,
+		core.RUNNING,
+		100,
+		env.Executor2PrvKey)
+	assert.Nil(t, err)
+
+	waitForProcess := make(chan error)
+	var receivedProcess *core.Process
+	go func() {
+		select {
+		case p := <-subscription.ProcessChan:
+			receivedProcess = p
+			waitForProcess <- nil
+		case err := <-subscription.ErrChan:
+			fmt.Println(err)
+			waitForProcess <- err
+		}
+	}()
+
+	// Assign the process - this should trigger the RUNNING state notification
+	_, err = client.Assign(env.Colony1Name, -1, "", "", env.Executor1PrvKey)
+	assert.Nil(t, err)
+
+	err = <-waitForProcess
+	assert.Nil(t, err)
+	assert.NotNil(t, receivedProcess)
+	assert.Equal(t, core.RUNNING, receivedProcess.State)
+	server.Shutdown()
+	<-done
+}
+
 func TestSubscribeChangeStateProcessInvalidID(t *testing.T) {
 	env, client, server, _, done := server.SetupTestEnv1(t)
 

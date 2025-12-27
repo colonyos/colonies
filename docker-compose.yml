@@ -51,19 +51,12 @@ services:
       "
 
   colonies-server:
-    image: colonyos/colonies:v1.9.4
+    image: colonyos/colonies:v1.9.5
     depends_on:
       - timescaledb
     environment:
-      COLONIES_SERVER_BACKENDS: ${COLONIES_SERVER_BACKENDS}
-      COLONIES_SERVER_HTTP_PORT: ${COLONIES_SERVER_HTTP_PORT}
-      COLONIES_SERVER_GRPC_PORT: ${COLONIES_SERVER_GRPC_PORT}
-      COLONIES_TLS: "false"
-      COLONIES_SERVER_LIBP2P_PORT: ${COLONIES_SERVER_LIBP2P_PORT}
-      COLONIES_SERVER_LIBP2P_IDENTITY: ${COLONIES_SERVER_LIBP2P_IDENTITY}
-      COLONIES_SERVER_COAP_PORT: ${COLONIES_SERVER_COAP_PORT}
-      COLONIES_SERVER_LIBP2P_BOOTSTRAP_PEERS: ${COLONIES_SERVER_LIBP2P_BOOTSTRAP_PEERS}
-      COLONIES_SERVER_LIBP2P_ANNOUNCE_ADDRS: ${COLONIES_SERVER_LIBP2P_ANNOUNCE_ADDRS:-}
+      COLONIES_TLS: ${COLONIES_TLS}
+      COLONIES_SERVER_PORT: ${COLONIES_SERVER_PORT}
       COLONIES_SERVER_ID: ${COLONIES_SERVER_ID}
       COLONIES_SERVER_HOST: ${COLONIES_SERVER_HOST}
       COLONIES_DB_HOST: timescaledb
@@ -71,8 +64,8 @@ services:
       COLONIES_DB_USER: ${COLONIES_DB_USER}
       COLONIES_DB_PASSWORD: ${COLONIES_DB_PASSWORD}
       COLONIES_DB_TIMESCALEDB: "true"
-      COLONIES_TLSCERT: "/run/secrets/tls/tls.crt"
-      COLONIES_TLSKEY: "/run/secrets/tls/tls.key"
+      # COLONIES_TLSCERT: "/path/to/cert.pem"
+      # COLONIES_TLSKEY: "/path/to/key.pem"
       COLONIES_VERBOSE: "true"
       COLONIES_SERVER_PROFILER: "false"
       COLONIES_SERVER_PROFILER_PORT: "6060"
@@ -86,33 +79,17 @@ services:
     volumes:
       - colonies_etcd:/var/colonies/etcd
     ports:
-      - "${COLONIES_SERVER_HTTP_PORT}:${COLONIES_SERVER_HTTP_PORT}"
-      - "${COLONIES_SERVER_GRPC_PORT}:${COLONIES_SERVER_GRPC_PORT}"
-      - "${COLONIES_SERVER_LIBP2P_PORT}:${COLONIES_SERVER_LIBP2P_PORT}"
-      - "50001:50001/udp"  # QUIC port (LibP2P port + 1)
-      - "${COLONIES_SERVER_COAP_PORT}:${COLONIES_SERVER_COAP_PORT}/udp"
-    command: sh -c "colonies server start --initdb --port ${COLONIES_SERVER_HTTP_PORT} --relayport 25100 --etcdname server1 --etcdhost colonies-server --etcdclientport 23100 --etcdpeerport 24100 --initial-cluster server1=colonies-server:24100:25100:${COLONIES_SERVER_HTTP_PORT} --etcddatadir /var/colonies/etcd --insecure"
+      - "${COLONIES_SERVER_PORT}:${COLONIES_SERVER_PORT}"
+    command: sh -c "colonies server start --initdb --port ${COLONIES_SERVER_PORT} --relayport 25100 --etcdname server1 --etcdhost colonies-server --etcdclientport 23100 --etcdpeerport 24100 --initial-cluster server1=colonies-server:24100:25100:${COLONIES_SERVER_PORT} --etcddatadir /var/colonies/etcd --insecure"
 
   colonies-setup:
-    image: colonyos/colonies:v1.9.4
+    image: colonyos/colonies:v1.9.5
     depends_on:
       - colonies-server
     environment:
-      COLONIES_CLIENT_BACKENDS: "http"
-      # HTTP client config (inside docker, always use colonies-server as host)
-      COLONIES_CLIENT_HTTP_HOST: "colonies-server"
-      COLONIES_CLIENT_HTTP_PORT: ${COLONIES_SERVER_HTTP_PORT}
-      # gRPC client config (inside docker, always use colonies-server as host)
-      COLONIES_CLIENT_GRPC_HOST: "colonies-server"
-      COLONIES_CLIENT_GRPC_PORT: ${COLONIES_SERVER_GRPC_PORT}
-      # LibP2P client config
-      COLONIES_CLIENT_LIBP2P_HOST: "/dns/colonies-server/tcp/${COLONIES_SERVER_LIBP2P_PORT}/p2p/12D3KooWSBx1mxbu7rJ8AMsSGHDhG8GRhwqHSVnHPbhZypPLFjgK"
-      COLONIES_CLIENT_LIBP2P_BOOTSTRAP_PEERS: ${COLONIES_CLIENT_LIBP2P_BOOTSTRAP_PEERS}
-      # Backward compatibility (hardcode colonies-server for docker containers)
       COLONIES_SERVER_HOST: "colonies-server"
-      COLONIES_SERVER_PORT: ${COLONIES_SERVER_HTTP_PORT}
+      COLONIES_SERVER_PORT: ${COLONIES_SERVER_PORT}
       COLONIES_TLS: "false"
-      # Server and auth config
       COLONIES_SERVER_ID: ${COLONIES_SERVER_ID}
       COLONIES_SERVER_PRVKEY: ${COLONIES_SERVER_PRVKEY}
       COLONIES_PRVKEY: ${COLONIES_PRVKEY}
@@ -122,8 +99,6 @@ services:
       COLONIES_COLONY_PRVKEY: ${COLONIES_COLONY_PRVKEY}
       COLONIES_ID: ${COLONIES_ID}
       TZ: ${TZ}
-    volumes:
-      - ./deployment/blueprints:/blueprints:ro
     entrypoint: >
       /bin/sh -c "
       echo 'Executing: colonies colony add --name ${COLONIES_COLONY_NAME} --colonyid ${COLONIES_COLONY_ID}';
@@ -131,68 +106,61 @@ services:
       colonies colony add --name ${COLONIES_COLONY_NAME} --colonyid ${COLONIES_COLONY_ID};
       echo 'Executing: colonies user add --name=myuser --email= --phone= --userid=${COLONIES_ID}';
       colonies user add --name='myuser' --email='' --phone='' --userid=${COLONIES_ID};
-      echo 'Adding blueprint definitions...';
-      colonies blueprint definition add --spec /blueprints/executor-deployment-definition.json;
-      colonies blueprint definition add --spec /blueprints/docker-deployment-definition.json;
-      echo 'Waiting for docker-reconciler to be ready...';
-      sleep 5;
-      echo 'Adding docker-executor deployment with 1 replica...';
-      colonies blueprint add --spec /blueprints/local-docker-executor-deployment.json;
       "
 
-  docker-reconciler:
-    image: colonyos/docker-reconciler:v1.0.6
-    container_name: docker-reconciler
-    restart: unless-stopped
-    depends_on:
-      - colonies-server
-      - colonies-setup
+  docker-executor:
+    image: colonyos/dockerexecutor:v1.0.9
+    privileged: true
     environment:
-      COLONIES_CLIENT_BACKENDS: ${COLONIES_CLIENT_BACKENDS}
-      # HTTP client config (inside docker, always use colonies-server as host)
-      COLONIES_CLIENT_HTTP_HOST: "colonies-server"
-      COLONIES_CLIENT_HTTP_PORT: ${COLONIES_SERVER_HTTP_PORT}
-      # gRPC client config (inside docker, always use colonies-server as host)
-      COLONIES_CLIENT_GRPC_HOST: "colonies-server"
-      COLONIES_CLIENT_GRPC_PORT: ${COLONIES_SERVER_GRPC_PORT}
-      # LibP2P client config
-      COLONIES_CLIENT_LIBP2P_HOST: "/dns/colonies-server/tcp/${COLONIES_SERVER_LIBP2P_PORT}/p2p/12D3KooWSBx1mxbu7rJ8AMsSGHDhG8GRhwqHSVnHPbhZypPLFjgK"
-      COLONIES_CLIENT_LIBP2P_BOOTSTRAP_PEERS: ${COLONIES_CLIENT_LIBP2P_BOOTSTRAP_PEERS}
-      # Backward compatibility (hardcode colonies-server for docker containers)
+      LANG: ${LANG:-en_US.UTF-8}
+      LANGUAGE: ${LANGUAGE:-en_US.UTF-8}
+      LC_ALL: ${LC_ALL:-en_US.UTF-8}
+      LC_CTYPE: ${LC_CTYPE:-UTF-8}
+      TZ: ${TZ:-Europe/Stockholm}
       COLONIES_SERVER_HOST: "colonies-server"
-      COLONIES_SERVER_PORT: ${COLONIES_SERVER_HTTP_PORT}
+      COLONIES_SERVER_PORT: ${COLONIES_SERVER_PORT}
       COLONIES_TLS: "false"
-      # Auth config
       COLONIES_COLONY_NAME: ${COLONIES_COLONY_NAME}
       COLONIES_COLONY_PRVKEY: ${COLONIES_COLONY_PRVKEY}
-      COLONIES_EXECUTOR_TYPE: "docker-reconciler"
-      COLONIES_EXECUTOR_NAME: "local-docker-reconciler"
-      COLONIES_EXECUTOR_LOCATION: "local"
-      # S3/MinIO config for auto-injection into deployed containers
-      AWS_S3_ENDPOINT: "minio:9000"
-      AWS_S3_ACCESSKEY: "RrXN2vcLeHjBptG8a3Ay"
-      AWS_S3_SECRETKEY: "ivwLB0Luqomq65nNVmoo8fTBgxXgNvqYGC50VQN6"
-      AWS_S3_REGION_KEY: ""
-      AWS_S3_BUCKET: "colonies-prod"
-      AWS_S3_TLS: "false"
-      AWS_S3_SKIPVERIFY: "false"
+      COLONIES_PRVKEY: ${COLONIES_PRVKEY}
+      COLONIES_EXECUTOR_NAME: ${COLONIES_EXECUTOR_NAME:-dev-docker}
+      AWS_S3_TLS: ${AWS_S3_TLS}
+      AWS_S3_SKIPVERIFY: ${AWS_S3_SKIPVERIFY}
+      AWS_S3_ENDPOINT: minio:9000
+      AWS_S3_ACCESSKEY: ${AWS_S3_ACCESSKEY}
+      AWS_S3_SECRETKEY: ${AWS_S3_SECRETKEY}
+      AWS_S3_REGION_KEY: ${AWS_S3_REGION_KEY}
+      AWS_S3_BUCKET: ${AWS_S3_BUCKET:-hpc}
+      EXECUTOR_ADD_DEBUG_LOGS: "false"
+      EXECUTOR_TYPE: "container-executor"
+      EXECUTOR_GPU: ${EXECUTOR_GPU}
+      EXECUTOR_SW_NAME: "colonyos/dockerexecutor:v1.0.1"
+      EXECUTOR_SW_TYPE: "docker"
+      EXECUTOR_SW_VERSION: "colonyos/dockerexecutor:v1.0.1"
+      EXECUTOR_HW_CPU: "AMD Ryzen 9 5900X"
+      EXECUTOR_HW_MODEL: "Workstation"
+      EXECUTOR_HW_NODES: "1"
+      EXECUTOR_HW_MEM: "64GB"
+      EXECUTOR_HW_STORAGE: "1TB NVMe"
+      EXECUTOR_HW_GPU_COUNT: "1"
+      EXECUTOR_HW_GPU_MEM: "24GB"
+      EXECUTOR_HW_GPU_NODES_COUNT: "1"
+      EXECUTOR_HW_GPU_NAME: "NVIDIA RTX 4090"
+      EXECUTOR_HW_PLATFORM: "linux"
+      EXECUTOR_HW_ARCHITECTURE: "amd64"
+      EXECUTOR_LOCATION_LONG: "0"
+      EXECUTOR_LOCATION_LAT: "0"
+      EXECUTOR_LOCATION_DESC: "Local"
+      EXECUTOR_FS_DIR: ${EXECUTOR_FS_DIR}
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:rw
-    entrypoint: >
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ${EXECUTOR_FS_DIR}:${EXECUTOR_FS_DIR}
+    command: >
       /bin/sh -c "
-      echo 'Waiting for Colonies server to be ready...';
-      until wget -q -O /dev/null http://colonies-server:50080/health 2>/dev/null; do
-        echo 'Server not ready, retrying in 2 seconds...';
-        sleep 2;
-      done;
-      echo 'Server is ready!';
-      echo \"Starting docker-reconciler with name: $$COLONIES_EXECUTOR_NAME\";
-      docker-reconciler start -v
+      until (colonies colony check --name ${COLONIES_COLONY_NAME}); do echo 'Waiting for Colonies server...'; sleep 3; done;
+      colonies executor remove --name dev-docker;
+      docker_executor start -v
       "
-
-  # docker-executor is now managed by docker-reconciler
-  # See deployment/blueprints/local-docker-executor-deployment.json
-  # To deploy: colonies blueprint add --spec deployment/blueprints/local-docker-executor-deployment.json
 
 volumes:
   timescaledb_data:

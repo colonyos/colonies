@@ -1,0 +1,10 @@
+# Binaries
+assign_benchmark
+
+# Results
+*.csv
+results_*/
+k8s/results/
+
+# Generated test keys (never commit)
+k8s/.test-keys

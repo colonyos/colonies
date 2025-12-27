@@ -49,6 +49,9 @@ func (h *Handlers) RegisterHandlers(handlerRegistry *registry.HandlerRegistry) e
 	if err := handlerRegistry.Register(rpc.AddLogPayloadType, h.HandleAddLog); err != nil {
 		return err
 	}
+	if err := handlerRegistry.Register(rpc.AddExecutorLogPayloadType, h.HandleAddExecutorLog); err != nil {
+		return err
+	}
 	if err := handlerRegistry.Register(rpc.GetLogsPayloadType, h.HandleGetLogs); err != nil {
 		return err
 	}
@@ -123,6 +126,63 @@ func (h *Handlers) HandleAddLog(c backends.Context, recoveredID string, payloadT
 	h.server.SendEmptyHTTPReply(c, rpc.AddLogPayloadType)
 }
 
+// HandleAddExecutorLog adds a log entry for an executor without requiring a process context.
+// This is useful for executor startup logs, background operations, and diagnostics.
+func (h *Handlers) HandleAddExecutorLog(c backends.Context, recoveredID string, payloadType string, jsonString string) {
+	msg, err := rpc.CreateAddExecutorLogMsgFromJSON(jsonString)
+	if err != nil {
+		if h.server.HandleHTTPError(c, errors.New("Failed to add executor log, invalid JSON"), http.StatusBadRequest) {
+			return
+		}
+	}
+
+	if msg.MsgType != payloadType {
+		h.server.HandleHTTPError(c, errors.New("Failed to add executor log, msg.MsgType does not match payloadType"), http.StatusBadRequest)
+		return
+	}
+
+	// Verify the caller is a member of the colony
+	err = h.server.Validator().RequireMembership(recoveredID, msg.ColonyName, true)
+	if h.server.HandleHTTPError(c, err, http.StatusForbidden) {
+		log.Error(err)
+		return
+	}
+
+	// Verify the caller is the executor they claim to be
+	executor, err := h.server.ExecutorDB().GetExecutorByID(recoveredID)
+	if h.server.HandleHTTPError(c, err, http.StatusForbidden) {
+		log.Error(err)
+		return
+	}
+
+	if executor == nil {
+		errmsg := "Failed to add executor log, executor not found"
+		log.Error(errmsg)
+		h.server.HandleHTTPError(c, errors.New(errmsg), http.StatusForbidden)
+		return
+	}
+
+	if executor.Name != msg.ExecutorName {
+		errmsg := "Failed to add executor log, executor name mismatch"
+		log.Error(errmsg)
+		h.server.HandleHTTPError(c, errors.New(errmsg), http.StatusForbidden)
+		return
+	}
+
+	// Add the log with a special process ID to indicate executor-level log
+	// Using empty processID which will be stored and retrievable via executor name
+	err = h.server.LogDB().AddLog("", msg.ColonyName, executor.Name, time.Now().UTC().UnixNano(), msg.Message)
+	if h.server.HandleHTTPError(c, err, http.StatusBadRequest) {
+		log.WithFields(log.Fields{"Error": err}).Debug("Failed to add executor log")
+		h.server.HandleHTTPError(c, err, http.StatusInternalServerError)
+		return
+	}
+
+	log.WithFields(log.Fields{"ExecutorName": executor.Name}).Debug("Adding executor log")
+
+	h.server.SendEmptyHTTPReply(c, rpc.AddExecutorLogPayloadType)
+}
+
 func (h *Handlers) HandleGetLogs(c backends.Context, recoveredID string, payloadType string, jsonString string) {
 	msg, err := rpc.CreateGetLogsMsgFromJSON(jsonString)
 	if err != nil {
@@ -180,7 +240,10 @@ func (h *Handlers) HandleGetLogs(c backends.Context, recoveredID string, payload
 
 	var logs []*core.Log
 	if msg.ExecutorName != "" {
-		if msg.Since > 0 {
+		if msg.Latest {
+			// Get latest logs (most recent count logs)
+			logs, err = h.server.LogDB().GetLogsByExecutorLatest(msg.ExecutorName, msg.Count)
+		} else if msg.Since > 0 {
 			logs, err = h.server.LogDB().GetLogsByExecutorSince(msg.ExecutorName, msg.Count, msg.Since)
 		} else {
 			logs, err = h.server.LogDB().GetLogsByExecutor(msg.ExecutorName, msg.Count)
@@ -191,7 +254,10 @@ func (h *Handlers) HandleGetLogs(c backends.Context, recoveredID string, payload
 			return
 		}
 	} else {
-		if msg.Since > 0 {
+		if msg.Latest {
+			// Get latest logs (most recent count logs)
+			logs, err = h.server.LogDB().GetLogsByProcessIDLatest(msg.ProcessID, msg.Count)
+		} else if msg.Since > 0 {
 			logs, err = h.server.LogDB().GetLogsByProcessIDSince(msg.ProcessID, msg.Count, msg.Since)
 		} else {
 			logs, err = h.server.LogDB().GetLogsByProcessID(msg.ProcessID, msg.Count)

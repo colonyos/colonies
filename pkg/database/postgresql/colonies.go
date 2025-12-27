@@ -142,6 +142,11 @@ func (db *PQDatabase) RemoveColonyByName(colonyName string) error {
 		return err
 	}
 
+	err = db.RemoveLocationsByColonyName(colony.Name)
+	if err != nil {
+		return err
+	}
+
 	sqlStatement := `DELETE FROM ` + db.dbPrefix + `COLONIES WHERE NAME=$1`
 	_, err = db.postgresql.Exec(sqlStatement, colonyName)
 	if err != nil {

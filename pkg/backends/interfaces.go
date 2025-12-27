@@ -4,7 +4,6 @@ package backends
 
 import (
 	"context"
-	"io"
 	"net/http"
 	"time"
 
@@ -103,23 +102,6 @@ type Server interface {
 	HTTPServer() *http.Server
 }
 
-// Backend represents a complete HTTP backend implementation
-type Backend interface {
-	// Factory methods
-	NewEngine() Engine
-	NewEngineWithDefaults() Engine
-	NewServer(port int, engine Engine) Server
-	NewServerWithAddr(addr string, engine Engine) Server
-	
-	// Backend-specific configuration
-	SetMode(mode string)
-	GetMode() string
-	
-	// Common middleware
-	Logger() MiddlewareFunc
-	Recovery() MiddlewareFunc
-}
-
 // CORSConfig represents CORS configuration options
 type CORSConfig struct {
 	AllowOrigins     []string
@@ -130,66 +112,12 @@ type CORSConfig struct {
 	MaxAge           time.Duration
 }
 
-// CORSBackend represents a backend that supports CORS middleware
-type CORSBackend interface {
-	Backend
-	
-	// CORS middleware
-	CORS() MiddlewareFunc
-	CORSWithConfig(config CORSConfig) MiddlewareFunc
-}
-
-// ResponseWriter represents a generic response writer interface
-type ResponseWriter interface {
-	http.ResponseWriter
-	
-	// Additional methods that some frameworks provide
-	Size() int
-	Status() int
-	Written() bool
-	WriteHeaderNow()
-}
-
-// LogFormatter represents a log formatter function
-type LogFormatter func(params LogFormatterParams) string
-
-// LogFormatterParams contains the parameters for log formatting
-type LogFormatterParams struct {
-	Request      *http.Request
-	TimeStamp    time.Time
-	StatusCode   int
-	Latency      time.Duration
-	ClientIP     string
-	Method       string
-	Path         string
-	ErrorMessage string
-	BodySize     int
-	Keys         map[string]interface{}
-}
-
-// LoggingBackend represents a backend that supports custom logging
-type LoggingBackend interface {
-	Backend
-	
-	// Logging middleware with custom configuration
-	LoggerWithFormatter(formatter LogFormatter) MiddlewareFunc
-	LoggerWithWriter(out io.Writer, notlogged ...string) MiddlewareFunc
-}
-
-// AuthBackend represents a backend that supports authentication middleware
-type AuthBackend interface {
-	Backend
-	
-	// Authentication middleware
-	BasicAuth(accounts map[string]string) MiddlewareFunc
-}
-
 // =============================================================================
 // Realtime Communication Interfaces
 // =============================================================================
 
 // RealtimeConnection represents a generic realtime connection interface
-// This abstracts away specific transport implementations (WebSocket, gRPC, libp2p, etc.)
+// This abstracts away specific transport implementations (e.g., WebSocket)
 type RealtimeConnection interface {
 	// WriteMessage sends a message through the connection
 	WriteMessage(msgType int, data []byte) error
@@ -207,6 +135,7 @@ type RealtimeSubscription struct {
 	ExecutorType string
 	State        int
 	ProcessID    string
+	Location     string
 }
 
 // RealtimeEventHandler handles process events and manages subscriptions
@@ -214,9 +143,9 @@ type RealtimeEventHandler interface {
 	// Signal sends a process event to all registered listeners
 	Signal(process *core.Process)
 	// Subscribe registers a subscription and returns channels for process events and errors
-	Subscribe(executorType string, state int, processID string, ctx context.Context) (chan *core.Process, chan error)
+	Subscribe(executorType string, state int, processID string, location string, ctx context.Context) (chan *core.Process, chan error)
 	// WaitForProcess waits for a specific process state change
-	WaitForProcess(executorType string, state int, processID string, ctx context.Context) (*core.Process, error)
+	WaitForProcess(executorType string, state int, processID string, location string, ctx context.Context) (*core.Process, error)
 	// Stop stops the event handler
 	Stop()
 }
@@ -225,7 +154,7 @@ type RealtimeEventHandler interface {
 type TestableRealtimeEventHandler interface {
 	RealtimeEventHandler
 	// NumberOfListeners returns listener counts for testing
-	NumberOfListeners(executorType string, state int) (int, int, int)
+	NumberOfListeners(executorType string, state int, location string) (int, int, int)
 	// HasStopped returns whether the handler has stopped for testing
 	HasStopped() bool
 }
@@ -248,10 +177,4 @@ type RealtimeBackend interface {
 	CreateTestableEventHandler(relayServer interface{}) TestableRealtimeEventHandler
 	// CreateSubscriptionController creates a subscription controller
 	CreateSubscriptionController(eventHandler RealtimeEventHandler) RealtimeSubscriptionController
-}
-
-// FullBackend represents a complete backend implementation with both HTTP and realtime support
-type FullBackend interface {
-	Backend
-	RealtimeBackend
 }

@@ -64,19 +64,19 @@ func TestAddExecutor(t *testing.T) {
 	assert.Nil(t, err)
 
 	executor := utils.CreateTestExecutor(colony.Name)
-	executor.Capabilities.Software.Name = "sw_name"
-	executor.Capabilities.Software.Type = "sw_type"
-	executor.Capabilities.Software.Version = "sw_version"
+	executor.Capabilities.Software[0].Name = "sw_name"
+	executor.Capabilities.Software[0].Type = "sw_type"
+	executor.Capabilities.Software[0].Version = "sw_version"
 
-	executor.Capabilities.Hardware.Model = "model"
-	executor.Capabilities.Hardware.Nodes = 10
-	executor.Capabilities.Hardware.CPU = "1000m"
-	executor.Capabilities.Hardware.Memory = "10G"
-	executor.Capabilities.Hardware.Storage = "1000G"
-	executor.Capabilities.Hardware.GPU.Name = "nvidia_2080ti"
-	executor.Capabilities.Hardware.GPU.Count = 4000
-	executor.Capabilities.Hardware.GPU.NodeCount = 4
-	executor.Capabilities.Hardware.GPU.Memory = "10G"
+	executor.Capabilities.Hardware[0].Model = "model"
+	executor.Capabilities.Hardware[0].Nodes = 10
+	executor.Capabilities.Hardware[0].CPU = "1000m"
+	executor.Capabilities.Hardware[0].Memory = "10G"
+	executor.Capabilities.Hardware[0].Storage = "1000G"
+	executor.Capabilities.Hardware[0].GPU.Name = "nvidia_2080ti"
+	executor.Capabilities.Hardware[0].GPU.Count = 4000
+	executor.Capabilities.Hardware[0].GPU.NodeCount = 4
+	executor.Capabilities.Hardware[0].GPU.Memory = "10G"
 
 	err = db.AddExecutor(executor)
 	assert.Nil(t, err)
@@ -91,19 +91,159 @@ func TestAddExecutor(t *testing.T) {
 	assert.False(t, executorFromDB.IsApproved())
 	assert.False(t, executorFromDB.IsRejected())
 
-	assert.Equal(t, executor.Capabilities.Software.Name, "sw_name")
-	assert.Equal(t, executor.Capabilities.Software.Type, "sw_type")
-	assert.Equal(t, executor.Capabilities.Software.Version, "sw_version")
+	assert.Len(t, executor.Capabilities.Software, 1)
+	assert.Equal(t, executor.Capabilities.Software[0].Name, "sw_name")
+	assert.Equal(t, executor.Capabilities.Software[0].Type, "sw_type")
+	assert.Equal(t, executor.Capabilities.Software[0].Version, "sw_version")
 
-	assert.Equal(t, executor.Capabilities.Hardware.Model, "model")
-	assert.Equal(t, executor.Capabilities.Hardware.Nodes, 10)
-	assert.Equal(t, executor.Capabilities.Hardware.CPU, "1000m")
-	assert.Equal(t, executor.Capabilities.Hardware.Memory, "10G")
-	assert.Equal(t, executor.Capabilities.Hardware.Storage, "1000G")
-	assert.Equal(t, executor.Capabilities.Hardware.GPU.Name, "nvidia_2080ti")
-	assert.Equal(t, executor.Capabilities.Hardware.GPU.Count, 4000)
-	assert.Equal(t, executor.Capabilities.Hardware.GPU.NodeCount, 4)
-	assert.Equal(t, executor.Capabilities.Hardware.GPU.Memory, "10G")
+	assert.Len(t, executor.Capabilities.Hardware, 1)
+	assert.Equal(t, executor.Capabilities.Hardware[0].Model, "model")
+	assert.Equal(t, executor.Capabilities.Hardware[0].Nodes, 10)
+	assert.Equal(t, executor.Capabilities.Hardware[0].CPU, "1000m")
+	assert.Equal(t, executor.Capabilities.Hardware[0].Memory, "10G")
+	assert.Equal(t, executor.Capabilities.Hardware[0].Storage, "1000G")
+	assert.Equal(t, executor.Capabilities.Hardware[0].GPU.Name, "nvidia_2080ti")
+	assert.Equal(t, executor.Capabilities.Hardware[0].GPU.Count, 4000)
+	assert.Equal(t, executor.Capabilities.Hardware[0].GPU.NodeCount, 4)
+	assert.Equal(t, executor.Capabilities.Hardware[0].GPU.Memory, "10G")
+}
+
+func TestAddExecutorWithLocation(t *testing.T) {
+	db, err := PrepareTests()
+	assert.Nil(t, err)
+
+	defer db.Close()
+
+	colony := core.CreateColony(core.GenerateRandomID(), "test_colony_name_1")
+	err = db.AddColony(colony)
+	assert.Nil(t, err)
+
+	executor := utils.CreateTestExecutor(colony.Name)
+	executor.LocationName = "Home"
+
+	err = db.AddExecutor(executor)
+	assert.Nil(t, err)
+
+	executorFromDB, err := db.GetExecutorByID(executor.ID)
+	assert.Nil(t, err)
+	assert.NotNil(t, executorFromDB)
+	assert.Equal(t, "Home", executorFromDB.LocationName)
+}
+
+func TestAddDuplicateExecutorRejected(t *testing.T) {
+	db, err := PrepareTests()
+	assert.Nil(t, err)
+
+	defer db.Close()
+
+	colony := core.CreateColony(core.GenerateRandomID(), "test_colony_name_1")
+	err = db.AddColony(colony)
+	assert.Nil(t, err)
+
+	// Create and add first executor
+	executor1 := utils.CreateTestExecutor(colony.Name)
+	executor1.Name = "test-executor-same-name"
+	err = db.AddExecutor(executor1)
+	assert.Nil(t, err)
+
+	// Try to add second executor with same name - should be rejected
+	executor2 := utils.CreateTestExecutor(colony.Name)
+	executor2.Name = "test-executor-same-name"
+	executor2.ID = core.GenerateRandomID() // Different ID, same name
+	err = db.AddExecutor(executor2)
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "already exists")
+
+	// Verify only one executor exists
+	executors, err := db.GetExecutorsByColonyName(colony.Name)
+	assert.Nil(t, err)
+	assert.Len(t, executors, 1)
+	assert.Equal(t, executor1.ID, executors[0].ID)
+}
+
+func TestAddDuplicateExecutorConcurrentRejected(t *testing.T) {
+	db, err := PrepareTests()
+	assert.Nil(t, err)
+
+	defer db.Close()
+
+	colony := core.CreateColony(core.GenerateRandomID(), "test_colony_name_1")
+	err = db.AddColony(colony)
+	assert.Nil(t, err)
+
+	// Launch 10 concurrent attempts to add executor with same name
+	const numGoroutines = 10
+	results := make(chan error, numGoroutines)
+	executorName := "concurrent-test-executor"
+
+	for i := 0; i < numGoroutines; i++ {
+		go func(idx int) {
+			executor := utils.CreateTestExecutor(colony.Name)
+			executor.Name = executorName
+			executor.ID = core.GenerateRandomID()
+			results <- db.AddExecutor(executor)
+		}(i)
+	}
+
+	// Collect results
+	successCount := 0
+	failureCount := 0
+	for i := 0; i < numGoroutines; i++ {
+		err := <-results
+		if err == nil {
+			successCount++
+		} else {
+			failureCount++
+			// All failures should be "already exists" errors
+			assert.Contains(t, err.Error(), "already exists")
+		}
+	}
+
+	// Exactly one should succeed, rest should fail
+	assert.Equal(t, 1, successCount, "Exactly one executor should be added successfully")
+	assert.Equal(t, numGoroutines-1, failureCount, "All other attempts should fail with duplicate error")
+
+	// Verify only one executor exists in database
+	executors, err := db.GetExecutorsByColonyName(colony.Name)
+	assert.Nil(t, err)
+	assert.Len(t, executors, 1)
+	assert.Equal(t, executorName, executors[0].Name)
+}
+
+func TestSameExecutorNameDifferentColoniesAllowed(t *testing.T) {
+	db, err := PrepareTests()
+	assert.Nil(t, err)
+
+	defer db.Close()
+
+	// Create two colonies
+	colony1 := core.CreateColony(core.GenerateRandomID(), "test_colony_1")
+	err = db.AddColony(colony1)
+	assert.Nil(t, err)
+
+	colony2 := core.CreateColony(core.GenerateRandomID(), "test_colony_2")
+	err = db.AddColony(colony2)
+	assert.Nil(t, err)
+
+	// Add executor with same name to both colonies - should succeed
+	executor1 := utils.CreateTestExecutor(colony1.Name)
+	executor1.Name = "shared-executor-name"
+	err = db.AddExecutor(executor1)
+	assert.Nil(t, err)
+
+	executor2 := utils.CreateTestExecutor(colony2.Name)
+	executor2.Name = "shared-executor-name"
+	err = db.AddExecutor(executor2)
+	assert.Nil(t, err)
+
+	// Verify both executors exist
+	executorsColony1, err := db.GetExecutorsByColonyName(colony1.Name)
+	assert.Nil(t, err)
+	assert.Len(t, executorsColony1, 1)
+
+	executorsColony2, err := db.GetExecutorsByColonyName(colony2.Name)
+	assert.Nil(t, err)
+	assert.Len(t, executorsColony2, 1)
 }
 
 func TestAddExecutorWithAllocations(t *testing.T) {

@@ -9,7 +9,6 @@ import (
 )
 
 const DBPrefix = "PROD_"
-const KEYCHAIN_PATH = ".colonies"
 const TimeLayout = "2006-01-02 15:04:05"
 const DefaultDBHost = "localhost"
 const DefaultDBPort = 5432
@@ -37,7 +36,6 @@ var TLSCert string
 var TLSKey string
 var ServerHost string
 var ServerPort int
-var LibP2PPort int  // Port for LibP2P transport (required when using libp2p backend)
 var MonitorPort int
 var MonitorInterval int
 var ServerID string
@@ -116,6 +114,8 @@ var TimescaleDB bool
 var LogMsg string
 var Since int64
 var Follow bool
+var Latest bool
+var First bool
 var SyncDir string
 var StorageDriver string
 var Label string
@@ -145,6 +145,8 @@ var Quite bool
 var TargetServerID string
 var Text string
 var Days int
+var LocationName string
+var LocationDesc string
 var ASCII bool
 var Print bool
 var SecondsBack int
@@ -152,6 +154,8 @@ var Snapshot bool
 var IDPath string
 var PrvKeyPath string
 var Generation int
+var Force bool
+var Fix bool
 
 func init() {
 	rootCmd.PersistentFlags().BoolVarP(&Verbose, "verbose", "v", false, "Verbose (debugging)")

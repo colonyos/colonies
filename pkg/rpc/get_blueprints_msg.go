@@ -7,15 +7,17 @@ import (
 const GetBlueprintsPayloadType = "getblueprintsmsg"
 
 type GetBlueprintsMsg struct {
-	Namespace string `json:"namespace"`
-	Kind      string `json:"kind"`
-	MsgType   string `json:"msgtype"`
+	Namespace    string `json:"namespace"`
+	Kind         string `json:"kind"`
+	LocationName string `json:"locationname"`
+	MsgType      string `json:"msgtype"`
 }
 
-func CreateGetBlueprintsMsg(namespace, kind string) *GetBlueprintsMsg {
+func CreateGetBlueprintsMsg(namespace, kind, locationName string) *GetBlueprintsMsg {
 	msg := &GetBlueprintsMsg{}
 	msg.Namespace = namespace
 	msg.Kind = kind
+	msg.LocationName = locationName
 	msg.MsgType = GetBlueprintsPayloadType
 
 	return msg
@@ -46,7 +48,8 @@ func (msg *GetBlueprintsMsg) Equals(msg2 *GetBlueprintsMsg) bool {
 
 	return msg.MsgType == msg2.MsgType &&
 		msg.Namespace == msg2.Namespace &&
-		msg.Kind == msg2.Kind
+		msg.Kind == msg2.Kind &&
+		msg.LocationName == msg2.LocationName
 }
 
 func CreateGetBlueprintsMsgFromJSON(jsonString string) (*GetBlueprintsMsg, error) {

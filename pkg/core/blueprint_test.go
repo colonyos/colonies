@@ -971,3 +971,101 @@ func TestGetFieldChange(t *testing.T) {
 	assert.Nil(t, change2)
 }
 
+func TestDeepEqualWithJSONSerializableValues(t *testing.T) {
+	// Test equal values
+	a := map[string]interface{}{"key": "value", "num": 42}
+	b := map[string]interface{}{"key": "value", "num": 42}
+	assert.True(t, deepEqual(a, b), "Equal maps should return true")
+
+	// Test unequal values
+	c := map[string]interface{}{"key": "different", "num": 42}
+	assert.False(t, deepEqual(a, c), "Different maps should return false")
+
+	// Test with nested structures
+	nested1 := map[string]interface{}{
+		"outer": map[string]interface{}{
+			"inner": "value",
+		},
+	}
+	nested2 := map[string]interface{}{
+		"outer": map[string]interface{}{
+			"inner": "value",
+		},
+	}
+	assert.True(t, deepEqual(nested1, nested2), "Equal nested structures should return true")
+
+	// Test with different nested values
+	nested3 := map[string]interface{}{
+		"outer": map[string]interface{}{
+			"inner": "different",
+		},
+	}
+	assert.False(t, deepEqual(nested1, nested3), "Different nested structures should return false")
+}
+
+func TestDeepEqualWithUnmarshalableValues(t *testing.T) {
+	// Create values that can't be JSON marshaled (channels)
+	ch1 := make(chan int)
+	ch2 := make(chan int)
+
+	// Same channel should be equal (reflect.DeepEqual fallback)
+	assert.True(t, deepEqual(ch1, ch1), "Same channel should be equal via reflect.DeepEqual")
+
+	// Different channels should not be equal
+	assert.False(t, deepEqual(ch1, ch2), "Different channels should not be equal")
+
+	// Note: Functions are NOT tested here because reflect.DeepEqual returns false
+	// for all function comparisons in Go, even for the same function reference.
+	// This is by design in Go's reflect package.
+}
+
+func TestDeepEqualDoesNotReturnTrueForDifferentUnmarshalableValues(t *testing.T) {
+	// This test verifies the bug fix: before the fix, different unmarshable values
+	// would both marshal to empty strings and incorrectly compare as equal
+
+	// Create two different channels
+	ch1 := make(chan int)
+	ch2 := make(chan int)
+
+	// Before the fix: both would marshal to "" and return true (BUG!)
+	// After the fix: falls back to reflect.DeepEqual and returns false
+	result := deepEqual(ch1, ch2)
+	assert.False(t, result, "Different unmarshable values should NOT be equal (bug fix verification)")
+
+	// Also test with a mix: one marshable, one not
+	normalValue := map[string]string{"key": "value"}
+	unmarshalableValue := make(chan int)
+
+	// These should definitely not be equal
+	assert.False(t, deepEqual(normalValue, unmarshalableValue),
+		"Marshable and unmarshable values should not be equal")
+}
+
+func TestDeepEqualWithBlueprintSpec(t *testing.T) {
+	// Test with actual blueprint-like structures
+	spec1 := map[string]interface{}{
+		"replicas": 3,
+		"image":    "nginx:1.21",
+		"env": map[string]interface{}{
+			"PORT": "8080",
+		},
+	}
+	spec2 := map[string]interface{}{
+		"replicas": 3,
+		"image":    "nginx:1.21",
+		"env": map[string]interface{}{
+			"PORT": "8080",
+		},
+	}
+	spec3 := map[string]interface{}{
+		"replicas": 5, // Different
+		"image":    "nginx:1.21",
+		"env": map[string]interface{}{
+			"PORT": "8080",
+		},
+	}
+
+	assert.True(t, deepEqual(spec1, spec2), "Identical specs should be equal")
+	assert.False(t, deepEqual(spec1, spec3), "Different specs should not be equal")
+}
+

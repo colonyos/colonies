@@ -1,6 +1,7 @@
 package postgresql
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/colonyos/colonies/pkg/core"
@@ -52,6 +53,62 @@ func TestAddGetBlueprintDefinition(t *testing.T) {
 	count, err := db.CountBlueprintDefinitions()
 	assert.Nil(t, err)
 	assert.Equal(t, 1, count)
+}
+
+func TestGetBlueprintDefinitionByKind(t *testing.T) {
+	db, err := PrepareTests()
+	assert.Nil(t, err)
+
+	defer db.Close()
+
+	// Create two blueprint definitions with different kinds
+	sd1 := core.CreateBlueprintDefinition(
+		"executor-deployment",
+		"compute.colonies.io",
+		"v1",
+		"ExecutorDeployment",
+		"executordeployments",
+		"Namespaced",
+		"executor-controller",
+		"reconcile",
+	)
+	sd1.Metadata.ColonyName = "test-colony"
+
+	sd2 := core.CreateBlueprintDefinition(
+		"service-deployment",
+		"compute.colonies.io",
+		"v1",
+		"ServiceDeployment",
+		"servicedeployments",
+		"Namespaced",
+		"service-controller",
+		"reconcile",
+	)
+	sd2.Metadata.ColonyName = "test-colony"
+
+	err = db.AddBlueprintDefinition(sd1)
+	assert.Nil(t, err)
+	err = db.AddBlueprintDefinition(sd2)
+	assert.Nil(t, err)
+
+	// Test GetBlueprintDefinitionByKind - find ExecutorDeployment
+	foundDef, err := db.GetBlueprintDefinitionByKind("ExecutorDeployment")
+	assert.Nil(t, err)
+	assert.NotNil(t, foundDef)
+	assert.Equal(t, "ExecutorDeployment", foundDef.Spec.Names.Kind)
+	assert.Equal(t, sd1.ID, foundDef.ID)
+
+	// Test GetBlueprintDefinitionByKind - find ServiceDeployment
+	foundDef2, err := db.GetBlueprintDefinitionByKind("ServiceDeployment")
+	assert.Nil(t, err)
+	assert.NotNil(t, foundDef2)
+	assert.Equal(t, "ServiceDeployment", foundDef2.Spec.Names.Kind)
+	assert.Equal(t, sd2.ID, foundDef2.ID)
+
+	// Test GetBlueprintDefinitionByKind - non-existent kind returns nil
+	notFound, err := db.GetBlueprintDefinitionByKind("NonExistentKind")
+	assert.Nil(t, err)
+	assert.Nil(t, notFound)
 }
 
 func TestAddGetBlueprint(t *testing.T) {
@@ -515,4 +572,297 @@ func TestBlueprintHistoryWithStatusChanges(t *testing.T) {
 	readyOld, ok := histories[1].Status["ready"]
 	assert.True(t, ok)
 	assert.Equal(t, float64(0), readyOld)
+}
+
+func TestGetBlueprintsByLocationCaseInsensitive(t *testing.T) {
+	db, err := PrepareTests()
+	assert.Nil(t, err)
+
+	defer db.Close()
+
+	// Create blueprint with lowercase location "home"
+	blueprint1 := core.CreateBlueprint("ExecutorDeployment", "web-1", "production")
+	blueprint1.Metadata.LocationName = "home"
+	blueprint1.SetSpec("image", "nginx:1.21")
+	err = db.AddBlueprint(blueprint1)
+	assert.Nil(t, err)
+
+	// Create blueprint with uppercase location "HOME"
+	blueprint2 := core.CreateBlueprint("ExecutorDeployment", "web-2", "production")
+	blueprint2.Metadata.LocationName = "HOME"
+	blueprint2.SetSpec("image", "nginx:1.22")
+	err = db.AddBlueprint(blueprint2)
+	assert.Nil(t, err)
+
+	// Create blueprint with mixed case location "Home"
+	blueprint3 := core.CreateBlueprint("ExecutorDeployment", "web-3", "production")
+	blueprint3.Metadata.LocationName = "Home"
+	blueprint3.SetSpec("image", "nginx:1.23")
+	err = db.AddBlueprint(blueprint3)
+	assert.Nil(t, err)
+
+	// Create blueprint at different location "office"
+	blueprint4 := core.CreateBlueprint("ExecutorDeployment", "web-4", "production")
+	blueprint4.Metadata.LocationName = "office"
+	blueprint4.SetSpec("image", "nginx:1.24")
+	err = db.AddBlueprint(blueprint4)
+	assert.Nil(t, err)
+
+	// Query with "Home" should return all three home blueprints (case-insensitive)
+	blueprints, err := db.GetBlueprintsByNamespaceKindAndLocation("production", "ExecutorDeployment", "Home")
+	assert.Nil(t, err)
+	assert.Equal(t, 3, len(blueprints))
+
+	// Query with "home" should also return all three
+	blueprints, err = db.GetBlueprintsByNamespaceKindAndLocation("production", "ExecutorDeployment", "home")
+	assert.Nil(t, err)
+	assert.Equal(t, 3, len(blueprints))
+
+	// Query with "HOME" should also return all three
+	blueprints, err = db.GetBlueprintsByNamespaceKindAndLocation("production", "ExecutorDeployment", "HOME")
+	assert.Nil(t, err)
+	assert.Equal(t, 3, len(blueprints))
+
+	// Query with "office" should return only blueprint4
+	blueprints, err = db.GetBlueprintsByNamespaceKindAndLocation("production", "ExecutorDeployment", "office")
+	assert.Nil(t, err)
+	assert.Equal(t, 1, len(blueprints))
+	assert.Equal(t, "web-4", blueprints[0].Metadata.Name)
+
+	// Query with empty location should return all four
+	blueprints, err = db.GetBlueprintsByNamespaceKindAndLocation("production", "ExecutorDeployment", "")
+	assert.Nil(t, err)
+	assert.Equal(t, 4, len(blueprints))
+}
+
+// TestUpdateBlueprintStatusConcurrent tests that concurrent updates to UpdateBlueprintStatus
+// do not lose updates. This test verifies the fix for the race condition where the previous
+// read-modify-write pattern caused lost updates.
+//
+// The fix uses PostgreSQL's jsonb_set to atomically update the status field in a single
+// SQL statement, eliminating the race condition.
+//
+// Note: Each call to UpdateBlueprintStatus replaces the entire status object, so this test
+// verifies that the last write wins correctly (no corruption), not that all fields merge.
+func TestUpdateBlueprintStatusConcurrent(t *testing.T) {
+	db, err := PrepareTests()
+	assert.Nil(t, err)
+	defer db.Close()
+
+	// Create a blueprint
+	blueprint := core.CreateBlueprint("ExecutorDeployment", "concurrent-test", "test-colony")
+	blueprint.SetSpec("image", "nginx:1.21")
+	blueprint.SetStatus("initial", "value")
+
+	err = db.AddBlueprint(blueprint)
+	assert.Nil(t, err)
+
+	// Number of concurrent updaters
+	numUpdaters := 10
+
+	// Channel to synchronize goroutine start
+	startChan := make(chan struct{})
+
+	// Channel to collect errors
+	errChan := make(chan error, numUpdaters)
+
+	// Launch goroutines that will update status concurrently
+	for i := 0; i < numUpdaters; i++ {
+		go func(index int) {
+			// Wait for start signal
+			<-startChan
+
+			// Each goroutine sets a complete status with its index
+			status := map[string]interface{}{
+				"updater": index,
+				"value":   fmt.Sprintf("update_%d", index),
+			}
+
+			err := db.UpdateBlueprintStatus(blueprint.ID, status)
+			errChan <- err
+		}(i)
+	}
+
+	// Start all goroutines simultaneously
+	close(startChan)
+
+	// Wait for all updates to complete - all should succeed without error
+	for i := 0; i < numUpdaters; i++ {
+		err := <-errChan
+		assert.Nil(t, err, "Update should not return error")
+	}
+
+	// Read the final blueprint state
+	finalBlueprint, err := db.GetBlueprintByID(blueprint.ID)
+	assert.Nil(t, err)
+
+	// Verify that the status has valid data from one of the updaters
+	// (last write wins, but should be consistent)
+	updater, ok := finalBlueprint.GetStatus("updater")
+	assert.True(t, ok, "Status should have 'updater' field")
+	assert.NotNil(t, updater, "Updater value should not be nil")
+
+	value, ok := finalBlueprint.GetStatus("value")
+	assert.True(t, ok, "Status should have 'value' field")
+	assert.NotNil(t, value, "Value should not be nil")
+
+	t.Logf("Final status from updater: %v, value: %v", updater, value)
+}
+
+// TestUpdateBlueprintStatusAtomicUpdate verifies that the atomic update using jsonb_set
+// works correctly and preserves other fields in the blueprint data.
+func TestUpdateBlueprintStatusAtomicUpdate(t *testing.T) {
+	db, err := PrepareTests()
+	assert.Nil(t, err)
+	defer db.Close()
+
+	// Create a blueprint with spec and initial status
+	blueprint := core.CreateBlueprint("ExecutorDeployment", "atomic-test", "test-colony")
+	blueprint.SetSpec("image", "nginx:1.21")
+	blueprint.SetSpec("replicas", 3)
+	blueprint.SetStatus("phase", "Pending")
+
+	err = db.AddBlueprint(blueprint)
+	assert.Nil(t, err)
+
+	// Update status
+	newStatus := map[string]interface{}{
+		"phase":    "Running",
+		"replicas": 3,
+		"ready":    true,
+	}
+	err = db.UpdateBlueprintStatus(blueprint.ID, newStatus)
+	assert.Nil(t, err)
+
+	// Read back and verify spec is preserved
+	updatedBlueprint, err := db.GetBlueprintByID(blueprint.ID)
+	assert.Nil(t, err)
+
+	// Verify spec is still intact
+	image, ok := updatedBlueprint.GetSpec("image")
+	assert.True(t, ok, "Spec 'image' should be preserved")
+	assert.Equal(t, "nginx:1.21", image)
+
+	replicas, ok := updatedBlueprint.GetSpec("replicas")
+	assert.True(t, ok, "Spec 'replicas' should be preserved")
+	assert.Equal(t, float64(3), replicas)
+
+	// Verify status was updated
+	phase, ok := updatedBlueprint.GetStatus("phase")
+	assert.True(t, ok, "Status 'phase' should exist")
+	assert.Equal(t, "Running", phase)
+
+	ready, ok := updatedBlueprint.GetStatus("ready")
+	assert.True(t, ok, "Status 'ready' should exist")
+	assert.Equal(t, true, ready)
+
+	// Verify metadata is preserved
+	assert.Equal(t, "atomic-test", updatedBlueprint.Metadata.Name)
+	assert.Equal(t, "test-colony", updatedBlueprint.Metadata.ColonyName)
+}
+
+// TestUpdateBlueprintStatusSequentialUpdates verifies that sequential updates
+// each properly replace the previous status.
+func TestUpdateBlueprintStatusSequentialUpdates(t *testing.T) {
+	db, err := PrepareTests()
+	assert.Nil(t, err)
+	defer db.Close()
+
+	blueprint := core.CreateBlueprint("ExecutorDeployment", "sequential-test", "test-colony")
+	blueprint.SetSpec("image", "nginx:1.21")
+
+	err = db.AddBlueprint(blueprint)
+	assert.Nil(t, err)
+
+	// Perform sequential updates
+	statuses := []map[string]interface{}{
+		{"phase": "Pending", "message": "Waiting for resources"},
+		{"phase": "Creating", "message": "Creating containers"},
+		{"phase": "Running", "message": "All containers running", "ready": true},
+	}
+
+	for i, status := range statuses {
+		err = db.UpdateBlueprintStatus(blueprint.ID, status)
+		assert.Nil(t, err, "Update %d should succeed", i)
+
+		// Verify the update took effect
+		bp, err := db.GetBlueprintByID(blueprint.ID)
+		assert.Nil(t, err)
+
+		phase, ok := bp.GetStatus("phase")
+		assert.True(t, ok)
+		assert.Equal(t, status["phase"], phase)
+
+		message, ok := bp.GetStatus("message")
+		assert.True(t, ok)
+		assert.Equal(t, status["message"], message)
+	}
+
+	// Final verification
+	finalBp, err := db.GetBlueprintByID(blueprint.ID)
+	assert.Nil(t, err)
+
+	phase, _ := finalBp.GetStatus("phase")
+	assert.Equal(t, "Running", phase)
+
+	ready, ok := finalBp.GetStatus("ready")
+	assert.True(t, ok)
+	assert.Equal(t, true, ready)
+}
+
+func TestGetBlueprintHistoryParameterizedLimit(t *testing.T) {
+	db, err := PrepareTests()
+	assert.Nil(t, err)
+
+	defer db.Close()
+
+	// Create a blueprint
+	blueprint := core.CreateBlueprint("ExecutorDeployment", "limit-test", "production")
+	blueprint.SetSpec("replicas", 1)
+
+	err = db.AddBlueprint(blueprint)
+	assert.Nil(t, err)
+
+	// Create 5 history entries
+	for i := 1; i <= 5; i++ {
+		blueprint.SetSpec("replicas", i)
+		blueprint.Metadata.Generation = int64(i)
+		history := core.CreateBlueprintHistory(blueprint, "user", "update")
+		err = db.AddBlueprintHistory(history)
+		assert.Nil(t, err)
+	}
+
+	// Test: limit = 0 returns all entries
+	allHistories, err := db.GetBlueprintHistory(blueprint.ID, 0)
+	assert.Nil(t, err)
+	assert.Equal(t, 5, len(allHistories), "limit=0 should return all 5 entries")
+
+	// Test: limit = 1 returns exactly 1 entry
+	oneHistory, err := db.GetBlueprintHistory(blueprint.ID, 1)
+	assert.Nil(t, err)
+	assert.Equal(t, 1, len(oneHistory), "limit=1 should return exactly 1 entry")
+	assert.Equal(t, int64(5), oneHistory[0].Generation, "Should return most recent (generation 5)")
+
+	// Test: limit = 3 returns exactly 3 entries
+	threeHistories, err := db.GetBlueprintHistory(blueprint.ID, 3)
+	assert.Nil(t, err)
+	assert.Equal(t, 3, len(threeHistories), "limit=3 should return exactly 3 entries")
+	assert.Equal(t, int64(5), threeHistories[0].Generation, "First should be generation 5")
+	assert.Equal(t, int64(4), threeHistories[1].Generation, "Second should be generation 4")
+	assert.Equal(t, int64(3), threeHistories[2].Generation, "Third should be generation 3")
+
+	// Test: limit > total entries returns all entries
+	manyHistories, err := db.GetBlueprintHistory(blueprint.ID, 100)
+	assert.Nil(t, err)
+	assert.Equal(t, 5, len(manyHistories), "limit=100 should return all 5 entries (not more)")
+
+	// Test: negative limit treated as no limit (returns all)
+	negativeLimit, err := db.GetBlueprintHistory(blueprint.ID, -1)
+	assert.Nil(t, err)
+	assert.Equal(t, 5, len(negativeLimit), "negative limit should return all entries")
+
+	// Test: non-existent blueprint returns empty slice
+	noHistories, err := db.GetBlueprintHistory("nonexistent-id", 10)
+	assert.Nil(t, err)
+	assert.Equal(t, 0, len(noHistories), "non-existent blueprint should return empty slice")
 }

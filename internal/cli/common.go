@@ -10,19 +10,12 @@ import (
 
 	"github.com/colonyos/colonies/pkg/build"
 	"github.com/colonyos/colonies/pkg/client"
-	"github.com/colonyos/colonies/pkg/client/backends"
-	"github.com/colonyos/colonies/pkg/client/libp2p"
 	"github.com/colonyos/colonies/pkg/constants"
 	"github.com/colonyos/colonies/pkg/core"
 	"github.com/colonyos/colonies/pkg/validate"
 	"github.com/gin-gonic/gin"
 	log "github.com/sirupsen/logrus"
 )
-
-func init() {
-	// Register the LibP2P backend factory
-	client.RegisterBackendFactory(libp2p.NewLibP2PClientBackendFactory())
-}
 
 func StrArr2Str(args []string) string {
 	if len(args) == 0 {
@@ -189,15 +182,6 @@ func parseEnv() {
 		}
 	}
 
-	LibP2PPortEnvStr := os.Getenv("COLONIES_LIBP2P_PORT")
-	if LibP2PPortEnvStr != "" {
-		LibP2PPort, err = strconv.Atoi(LibP2PPortEnvStr)
-		if err != nil {
-			log.Error("Failed to parse COLONIES_LIBP2P_PORT")
-		}
-		CheckError(err)
-	}
-
 	// COLONIES_TLS controls whether to use HTTPS (true) or HTTP (false)
 	TLSEnv := os.Getenv("COLONIES_TLS")
 	if TLSEnv == "true" {
@@ -209,11 +193,11 @@ func parseEnv() {
 	}
 
 	if TLSKey == "" {
-		TLSKey = os.Getenv("COLONIES_SERVER_TLSKEY")
+		TLSKey = os.Getenv("COLONIES_TLSKEY")
 	}
 
 	if TLSCert == "" {
-		TLSCert = os.Getenv("COLONIES_SERVER_TLSCERT")
+		TLSCert = os.Getenv("COLONIES_TLSCERT")
 	}
 
 	VerboseEnv := os.Getenv("COLONIES_VERBOSE")
@@ -453,7 +437,7 @@ func checkDevEnv() {
 		envProposal += "export LC_ALL=en_US.UTF-8\n"
 		envProposal += "export LC_CTYPE=UTF-8\n"
 		envProposal += "export TZ=Europe/Stockholm\n"
-		envProposal += "export COLONIES_SERVER_TLS=\"false\"\n"
+		envProposal += "export COLONIES_TLS=\"false\"\n"
 		envProposal += "export COLONIES_SERVER_HOST=\"localhost\"\n"
 		envProposal += "export COLONIES_SERVER_PORT=\"50080\"\n"
 		envProposal += "export COLONIES_MONITOR_PORT=\"21120\"\n"
@@ -473,243 +457,42 @@ func checkDevEnv() {
 }
 
 func envError() {
-	env := `export COLONIES_SERVER_TLS="true"
-export COLONIES_SERVER_HOST=""
-export COLONIES_SERVER_PORT=""
-export COLONIES_COLONY_NAME=""
-export COLONIES_PRVKEY=""
-    `
-
-	log.Error("Please set the following environmental variable: \n\n" + env)
-	os.Exit(-1)
+	fmt.Fprintln(os.Stderr, "")
+	fmt.Fprintln(os.Stderr, "Missing required environment variables. Did you forget to source your env file?")
+	fmt.Fprintln(os.Stderr, "")
+	fmt.Fprintln(os.Stderr, "  source docker-compose.env")
+	fmt.Fprintln(os.Stderr, "")
+	fmt.Fprintln(os.Stderr, "Required variables:")
+	fmt.Fprintln(os.Stderr, "  COLONIES_SERVER_HOST   - Colonies server hostname")
+	fmt.Fprintln(os.Stderr, "  COLONIES_SERVER_PORT   - Colonies server port (e.g., 50080)")
+	fmt.Fprintln(os.Stderr, "  COLONIES_COLONY_NAME   - Name of the colony")
+	fmt.Fprintln(os.Stderr, "  COLONIES_PRVKEY        - Your private key for authentication")
+	fmt.Fprintln(os.Stderr, "")
+	os.Exit(1)
 }
 
 func setup() *client.ColoniesClient {
 	parseEnv()
 
-	if ColonyName == "" {
-		log.Error("COLONIES_COLONY_NAME not set")
-		envError()
-	}
-
-	if PrvKey == "" {
-		log.Error("COLONIES_PRVKEY not set")
-		envError()
-	}
-
+	missingVars := []string{}
 	if ServerHost == "" {
-		log.Error("COLONIES_SERVER_HOST not set")
-		envError()
+		missingVars = append(missingVars, "COLONIES_SERVER_HOST")
 	}
-
 	if ColonyName == "" {
-		log.Error("COLONIES_COLONY_NAME not set")
+		missingVars = append(missingVars, "COLONIES_COLONY_NAME")
+	}
+	if PrvKey == "" {
+		missingVars = append(missingVars, "COLONIES_PRVKEY")
+	}
+
+	if len(missingVars) > 0 {
+		for _, v := range missingVars {
+			log.Errorf("%s not set", v)
+		}
 		envError()
 	}
 
-	// Check for multiple backends (new format: COLONIES_CLIENT_BACKENDS="libp2p,http,grpc")
-	backendsEnv := os.Getenv("COLONIES_CLIENT_BACKENDS")
-	if backendsEnv != "" {
-		backendTypes := backends.ParseClientBackendsFromEnv(backendsEnv)
-		configs := make([]*backends.ClientConfig, 0, len(backendTypes))
-
-		for _, backendType := range backendTypes {
-			switch backendType {
-			case backends.LibP2PClientBackendType:
-				// LibP2P client configuration - completely separate from server
-				libp2pHost := os.Getenv("COLONIES_CLIENT_LIBP2P_HOST")
-				if libp2pHost == "" {
-					libp2pHost = os.Getenv("COLONIES_SERVER_HOST") // Backward compatibility
-					if libp2pHost == "" {
-						libp2pHost = ServerHost
-					}
-				}
-				log.WithFields(log.Fields{"Host": libp2pHost, "Backend": "libp2p"}).Debug("Adding LibP2P backend")
-				config := backends.CreateLibP2PClientConfig(libp2pHost)
-
-				// LibP2P-specific bootstrap peers
-				bootstrapPeers := os.Getenv("COLONIES_CLIENT_LIBP2P_BOOTSTRAP_PEERS")
-				if bootstrapPeers == "" {
-					bootstrapPeers = os.Getenv("COLONIES_LIBP2P_BOOTSTRAP_PEERS") // Backward compatibility
-				}
-				config.BootstrapPeers = bootstrapPeers
-				configs = append(configs, config)
-
-			case backends.GinClientBackendType:
-				// HTTP client configuration - completely separate from server
-				httpHost := os.Getenv("COLONIES_CLIENT_HTTP_HOST")
-				if httpHost == "" {
-					httpHost = os.Getenv("COLONIES_SERVER_HOST") // Backward compatibility
-					if httpHost == "" {
-						httpHost = ServerHost
-					}
-				}
-
-				httpPort := 50080 // Default HTTP port
-				httpPortStr := os.Getenv("COLONIES_CLIENT_HTTP_PORT")
-				if httpPortStr != "" {
-					var err error
-					httpPort, err = strconv.Atoi(httpPortStr)
-					if err != nil {
-						log.WithError(err).Error("Failed to parse COLONIES_CLIENT_HTTP_PORT, using default 50080")
-						httpPort = 50080
-					}
-				} else {
-					// Backward compatibility: try old variable names
-					httpPortStr = os.Getenv("COLONIES_SERVER_HTTP_PORT")
-					if httpPortStr != "" {
-						var err error
-						httpPort, err = strconv.Atoi(httpPortStr)
-						if err != nil {
-							log.WithError(err).Error("Failed to parse COLONIES_SERVER_HTTP_PORT, using default 50080")
-							httpPort = 50080
-						}
-					} else if ServerPort != -1 {
-						httpPort = ServerPort
-					}
-				}
-
-				// HTTP-specific TLS settings
-				httpInsecure := Insecure
-				httpInsecureStr := os.Getenv("COLONIES_CLIENT_HTTP_INSECURE")
-				if httpInsecureStr != "" {
-					httpInsecure = (httpInsecureStr == "true")
-				}
-
-				httpSkipTLSVerify := SkipTLSVerify
-				httpSkipTLSVerifyStr := os.Getenv("COLONIES_CLIENT_HTTP_SKIP_TLS_VERIFY")
-				if httpSkipTLSVerifyStr != "" {
-					httpSkipTLSVerify = (httpSkipTLSVerifyStr == "true")
-				}
-
-				log.WithFields(log.Fields{"Host": httpHost, "Port": httpPort, "Backend": "http"}).Debug("Adding HTTP backend")
-				config := backends.CreateDefaultClientConfig(httpHost, httpPort, httpInsecure, httpSkipTLSVerify)
-				configs = append(configs, config)
-
-			case backends.GRPCClientBackendType:
-				// gRPC client configuration - completely separate from server
-				grpcHost := os.Getenv("COLONIES_CLIENT_GRPC_HOST")
-				if grpcHost == "" {
-					grpcHost = os.Getenv("COLONIES_SERVER_HOST") // Backward compatibility
-					if grpcHost == "" {
-						grpcHost = ServerHost
-					}
-				}
-
-				grpcPortStr := os.Getenv("COLONIES_CLIENT_GRPC_PORT")
-				if grpcPortStr == "" {
-					// Backward compatibility
-					grpcPortStr = os.Getenv("COLONIES_SERVER_GRPC_PORT")
-				}
-				if grpcPortStr == "" {
-					log.Error("COLONIES_CLIENT_GRPC_PORT must be set when using gRPC backend")
-					continue
-				}
-				grpcPort, err := strconv.Atoi(grpcPortStr)
-				if err != nil {
-					log.WithError(err).Error("Failed to parse COLONIES_CLIENT_GRPC_PORT")
-					continue
-				}
-
-				// gRPC-specific TLS settings
-				grpcInsecure := Insecure
-				grpcInsecureStr := os.Getenv("COLONIES_CLIENT_GRPC_INSECURE")
-				if grpcInsecureStr != "" {
-					grpcInsecure = (grpcInsecureStr == "true")
-				}
-
-				grpcSkipTLSVerify := SkipTLSVerify
-				grpcSkipTLSVerifyStr := os.Getenv("COLONIES_CLIENT_GRPC_SKIP_TLS_VERIFY")
-				if grpcSkipTLSVerifyStr != "" {
-					grpcSkipTLSVerify = (grpcSkipTLSVerifyStr == "true")
-				}
-
-				log.WithFields(log.Fields{"Host": grpcHost, "Port": grpcPort, "Backend": "grpc"}).Debug("Adding gRPC backend")
-				config := backends.CreateGRPCClientConfig(grpcHost, grpcPort, grpcInsecure, grpcSkipTLSVerify)
-				configs = append(configs, config)
-
-			case backends.CoAPClientBackendType:
-				// CoAP client configuration - completely separate from server
-				coapHost := os.Getenv("COLONIES_CLIENT_COAP_HOST")
-				if coapHost == "" {
-					coapHost = os.Getenv("COLONIES_SERVER_HOST") // Backward compatibility
-					if coapHost == "" {
-						coapHost = ServerHost
-					}
-				}
-
-				coapPortStr := os.Getenv("COLONIES_CLIENT_COAP_PORT")
-				if coapPortStr == "" {
-					// Backward compatibility
-					coapPortStr = os.Getenv("COLONIES_SERVER_COAP_PORT")
-				}
-				if coapPortStr == "" {
-					log.Error("COLONIES_CLIENT_COAP_PORT must be set when using CoAP backend")
-					continue
-				}
-				coapPort, err := strconv.Atoi(coapPortStr)
-				if err != nil {
-					log.WithError(err).Error("Failed to parse COLONIES_CLIENT_COAP_PORT")
-					continue
-				}
-
-				// CoAP-specific TLS settings (though CoAP typically uses DTLS)
-				coapInsecure := Insecure
-				coapInsecureStr := os.Getenv("COLONIES_CLIENT_COAP_INSECURE")
-				if coapInsecureStr != "" {
-					coapInsecure = (coapInsecureStr == "true")
-				}
-
-				coapSkipTLSVerify := SkipTLSVerify
-				coapSkipTLSVerifyStr := os.Getenv("COLONIES_CLIENT_COAP_SKIP_TLS_VERIFY")
-				if coapSkipTLSVerifyStr != "" {
-					coapSkipTLSVerify = (coapSkipTLSVerifyStr == "true")
-				}
-
-				log.WithFields(log.Fields{"Host": coapHost, "Port": coapPort, "Backend": "coap"}).Debug("Adding CoAP backend")
-				config := backends.CreateCoAPClientConfig(coapHost, coapPort, coapInsecure, coapSkipTLSVerify)
-				configs = append(configs, config)
-			}
-		}
-
-		if len(configs) > 0 {
-			// Build detailed backend information for logging
-			backendDetails := make([]string, 0, len(configs))
-			for _, cfg := range configs {
-				switch cfg.BackendType {
-				case backends.GinClientBackendType:
-					backendDetails = append(backendDetails, fmt.Sprintf("HTTP(%s:%d,insecure=%t)", cfg.Host, cfg.Port, cfg.Insecure))
-				case backends.GRPCClientBackendType:
-					backendDetails = append(backendDetails, fmt.Sprintf("gRPC(%s:%d,insecure=%t)", cfg.Host, cfg.Port, cfg.Insecure))
-				case backends.LibP2PClientBackendType:
-					backendDetails = append(backendDetails, fmt.Sprintf("LibP2P(%s)", cfg.Host))
-				case backends.CoAPClientBackendType:
-					backendDetails = append(backendDetails, fmt.Sprintf("CoAP(%s:%d,insecure=%t)", cfg.Host, cfg.Port, cfg.Insecure))
-				}
-			}
-			log.WithFields(log.Fields{
-				"backends": strings.Join(backendDetails, " → "),
-				"count":    len(configs),
-			}).Info("Creating multi-backend client with fallback chain")
-			return client.CreateColoniesClientWithMultipleBackends(configs)
-		}
-	}
-
-	// Fall back to legacy COLONIES_CLIENT_BACKEND for backward compatibility
-	clientBackend := os.Getenv("COLONIES_CLIENT_BACKEND")
-	if clientBackend == "libp2p" {
-		log.WithFields(log.Fields{"ServerHost": ServerHost, "Backend": "libp2p"}).Debug("Starting a Colonies LibP2P client")
-		// For LibP2P, ServerHost can be:
-		// - A multiaddr like "/ip4/127.0.0.1/tcp/5000/p2p/12D3KooW..."
-		// - "dht" for DHT-based discovery
-		// - "dht:rendezvous-name" for custom rendezvous point
-		config := backends.CreateLibP2PClientConfig(ServerHost)
-		// Add bootstrap peers from environment if specified
-		config.BootstrapPeers = os.Getenv("COLONIES_LIBP2P_BOOTSTRAP_PEERS")
-		return client.CreateColoniesClientWithConfig(config)
-	}
-
-	// Default to HTTP/Gin backend
+	// HTTP/Gin backend
 	log.WithFields(log.Fields{"ServerHost": ServerHost, "ServerPort": ServerPort, "Insecure": Insecure}).Debug("Starting a Colonies HTTP client")
 	return client.CreateColoniesClient(ServerHost, ServerPort, Insecure, SkipTLSVerify)
 }

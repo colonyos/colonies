@@ -16,4 +16,5 @@ type Database interface {
 	SnapshotDatabase
 	BlueprintDatabase
 	SecurityDatabase
+	LocationDatabase
 }

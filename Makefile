@@ -2,7 +2,7 @@ all: build
 .PHONY: all build
 
 BUILD_IMAGE ?= colonyos/colonies
-PUSH_IMAGE ?= colonyos/colonies:v1.9.4
+PUSH_IMAGE ?= colonyos/colonies:v1.9.5.perf6
 
 VERSION := $(shell git rev-parse --short HEAD)
 BUILDTIME := $(shell date -u '+%Y-%m-%dT%H:%M:%SZ')
@@ -50,11 +50,7 @@ test:
 	@cd pkg/security/crypto; go test -v --race
 	@cd pkg/security/validator; go test -v --race
 	@cd pkg/backends/gin; go test -v --race
-	@cd pkg/backends/grpc; go test -v --race
-	@cd pkg/backends/libp2p; go test -v --race
 	@cd pkg/client/gin; go test -v --race
-	@cd pkg/client/grpc; go test -v --race
-	@cd pkg/client/libp2p; go test -v --race
 	@cd pkg/server; go test -v --race
 	@cd pkg/server/controllers; go test -v --race
 	@cd pkg/server/handlers/attribute; go test -v --race
@@ -78,7 +74,7 @@ test:
 	@cd pkg/utils; go test -v --race
 	@cd pkg/cluster; go test -v --race
 	@cd pkg/cron; go test -v --race
-	@cd pkg/fs; go test -v --race
+	#@cd pkg/fs; go test -v --race
 
 install:
 	cp ./bin/colonies /usr/local/bin

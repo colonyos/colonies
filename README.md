@@ -32,14 +32,14 @@ Instead of writing platform-specific code, you declare **WHAT** you want to comp
 - **Platform Agnostic**: Same function specification runs on Kubernetes, HPC, edge devices, IoT - executors translate to platform-specific execution
 - **Decoupled Architecture**: Submit work anytime, execute asynchronously - temporal and spatial decoupling via broker
 - **Zero-Trust by Design**: No session tokens, no passwords - every request cryptographically signed with Ed25519
-- **Protocol Flexibility**: Choose HTTP/REST, gRPC, CoAP (IoT), or LibP2P (P2P) - or run them all simultaneously
+- **Protocol Flexibility**: HTTP/REST API with WebSocket support for real-time communication
 - **Pull-Based Execution**: Executors connect from anywhere (even behind NAT/firewalls) and pull work - no need for inbound access
 - **Built-in Audit Trail**: Every execution recorded as an immutable ledger for compliance and debugging
 - **Real-Time Reactive**: WebSocket subscriptions for instant notifications on workflow state changes
 
 ## Key Features
 
-- **Multi-Protocol Architecture**: Native support for HTTP/REST, gRPC, CoAP (IoT), and LibP2P (peer-to-peer)
+- **HTTP/REST Architecture**: Clean REST API with WebSocket support for real-time subscriptions
 - **Distributed Execution**: Executors run anywhere on the Internet - supercomputers, edge devices, browsers, embedded systems
 - **Zero-Trust Security**: All communication cryptographically signed with Ed25519
 - **Workflow DAGs**: Complex computational pipelines with parent-child dependencies
@@ -81,20 +81,14 @@ Colonies implements a **zero-trust architecture** where all communication is cry
 - Server validates signatures and enforces role-based access control
 - Executors can operate on untrusted infrastructure while maintaining security
 
-### Multi-Backend Support
+### Server Configuration
 
-Run Colonies server with any combination of protocols:
+The Colonies server exposes an HTTP/REST API with WebSocket support:
 
-| Backend | Use Case | Port |
-|---------|----------|------|
-| **HTTP/REST** | Web APIs, dashboards, traditional clients | 8080 |
-| **gRPC** | High-performance, low-latency communication | 50051 |
-| **CoAP** | IoT devices, constrained environments | 5683 |
-| **LibP2P** | Peer-to-peer, decentralized, NAT traversal | 4001 |
-
-Configure via environment variable:
 ```bash
-export COLONIES_SERVER_BACKENDS="http,grpc,libp2p"  # Run multiple protocols simultaneously
+export COLONIES_SERVER_HOST="0.0.0.0"
+export COLONIES_SERVER_PORT="50080"
+export COLONIES_TLS="false"
 ```
 
 ## Tutorials
@@ -115,7 +109,6 @@ The [Colonies Dashboard](https://github.com/colonyos/dashboard) provides a web U
 - [Installation Guide](docs/Installation.md) - Install and configure Colonies
 - [Getting Started](docs/GettingStarted.md) - Your first Colonies application
 - [Configuration](docs/Configuration.md) - Environment variables and settings
-- [Backend Configuration](docs/BackendConfigs.md) - HTTP, gRPC, CoAP, LibP2P setup
 
 ### Guides
 - [Introduction](docs/Introduction.md) - Core concepts and architecture
@@ -178,11 +171,6 @@ For detailed instructions on building containers including multi-platform builds
 ```bash
 make test              # Run all tests
 make github_test       # Run tests for CI (no color output)
-
-# Test specific backends
-COLONIES_BACKEND_TYPE=gin make test
-COLONIES_BACKEND_TYPE=grpc make test
-COLONIES_BACKEND_TYPE=libp2p make test
 ```
 
 ### Code Coverage

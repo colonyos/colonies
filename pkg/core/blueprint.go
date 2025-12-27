@@ -3,6 +3,7 @@ package core
 import (
 	"encoding/json"
 	"fmt"
+	"reflect"
 	"strings"
 	"time"
 
@@ -20,17 +21,16 @@ type Blueprint struct {
 	Status   map[string]interface{} `json:"status,omitempty"`
 }
 
-// BlueprintHandler defines executor targeting for blueprint instances
-// This allows targeting specific executor(s) at the instance level
+// BlueprintHandler defines executor type targeting for blueprint instances
 type BlueprintHandler struct {
-	ExecutorName  string   `json:"executorName,omitempty"`
-	ExecutorNames []string `json:"executorNames,omitempty"`
+	ExecutorType string `json:"executorType,omitempty"`
 }
 
 // BlueprintMetadata contains metadata for blueprints
 type BlueprintMetadata struct {
 	Name                      string            `json:"name"`
 	ColonyName                string            `json:"colonyname"`
+	LocationName              string            `json:"locationname,omitempty"`
 	Labels                    map[string]string `json:"labels,omitempty"`
 	Annotations               map[string]string `json:"annotations,omitempty"`
 	Generation                int64             `json:"generation,omitempty"`
@@ -598,10 +598,15 @@ func convertStringMap(m map[string]string) map[string]interface{} {
 	return result
 }
 
-// deepEqual performs deep equality check
+// deepEqual performs deep equality check using JSON serialization.
+// Falls back to reflect.DeepEqual if JSON marshaling fails.
 func deepEqual(a, b interface{}) bool {
-	aJSON, _ := json.Marshal(a)
-	bJSON, _ := json.Marshal(b)
+	aJSON, errA := json.Marshal(a)
+	bJSON, errB := json.Marshal(b)
+	if errA != nil || errB != nil {
+		// Fall back to reflect.DeepEqual if JSON serialization fails
+		return reflect.DeepEqual(a, b)
+	}
 	return string(aJSON) == string(bJSON)
 }
 

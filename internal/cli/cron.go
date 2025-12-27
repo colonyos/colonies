@@ -1,7 +1,9 @@
 package cli
 
 import (
+	"encoding/json"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"os"
 
@@ -35,6 +37,7 @@ func init() {
 
 	getCronCmd.Flags().StringVarP(&CronID, "cronid", "", "", "Cron Id")
 	getCronCmd.MarkFlagRequired("cronid")
+	getCronCmd.Flags().BoolVarP(&JSON, "json", "", false, "Print JSON instead of tables")
 
 	getCronsCmd.Flags().IntVarP(&Count, "count", "", DefaultCount, "Number of crons to list")
 
@@ -127,17 +130,24 @@ var getCronCmd = &cobra.Command{
 		}
 
 		cron, err := client.GetCron(CronID, PrvKey)
+		CheckError(err)
 		if cron == nil {
 			log.WithFields(log.Fields{"CronId": CronID}).Error("Cron not found")
 			os.Exit(0)
 		}
 
-		printCronTable(cron)
+		if JSON {
+			jsonBytes, err := json.MarshalIndent(cron, "", "  ")
+			CheckError(err)
+			fmt.Println(string(jsonBytes))
+		} else {
+			printCronTable(cron)
 
-		workflowSpec, err := core.ConvertJSONToWorkflowSpec(cron.WorkflowSpec)
-		CheckError(err)
-		for _, funcSpec := range workflowSpec.FunctionSpecs {
-			printFunctionSpecTable(&funcSpec)
+			workflowSpec, err := core.ConvertJSONToWorkflowSpec(cron.WorkflowSpec)
+			CheckError(err)
+			for _, funcSpec := range workflowSpec.FunctionSpecs {
+				printFunctionSpecTable(&funcSpec)
+			}
 		}
 	},
 }

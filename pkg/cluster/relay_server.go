@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/gin-contrib/cors"
@@ -14,13 +15,23 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+// RelayMessage contains the message data and a channel to signal processing completion
+type RelayMessage struct {
+	Data []byte
+	Done chan struct{}
+}
+
+// MessageHandler is a function that processes relay messages
+type MessageHandler func(data []byte)
+
 type RelayServer struct {
 	ginHandler    *gin.Engine
 	httpServer    *http.Server
 	restyClient   *resty.Client
 	clusterConfig Config
 	thisNode      Node
-	incoming      chan []byte
+	handlers      []MessageHandler
+	handlersMu    sync.RWMutex
 }
 
 func CreateRelayServer(thisNode Node, clusterConfig Config) *RelayServer {
@@ -30,7 +41,7 @@ func CreateRelayServer(thisNode Node, clusterConfig Config) *RelayServer {
 	server.restyClient = resty.New()
 	server.clusterConfig = clusterConfig
 	server.thisNode = thisNode
-	server.incoming = make(chan []byte)
+	server.handlers = make([]MessageHandler, 0)
 
 	httpServer := &http.Server{
 		Addr:    ":" + strconv.Itoa(thisNode.RelayPort),
@@ -62,9 +73,18 @@ func (server *RelayServer) handleRelayRequest(c *gin.Context) {
 		errMsg := "Bad relay request"
 		log.WithFields(log.Fields{"Error": err}).Error(errMsg)
 		c.String(http.StatusBadRequest, errMsg)
+		return
 	}
 
-	server.incoming <- jsonBytes
+	// Call all registered handlers synchronously
+	server.handlersMu.RLock()
+	handlers := make([]MessageHandler, len(server.handlers))
+	copy(handlers, server.handlers)
+	server.handlersMu.RUnlock()
+
+	for _, handler := range handlers {
+		handler(jsonBytes)
+	}
 
 	c.String(http.StatusOK, "")
 }
@@ -85,8 +105,33 @@ func (server *RelayServer) Broadcast(msg []byte) error {
 	return nil
 }
 
-func (server *RelayServer) Receive() chan []byte {
-	return server.incoming
+// Subscribe registers a handler to receive relay messages
+// The handler is called synchronously for each incoming message
+func (server *RelayServer) Subscribe(handler MessageHandler) {
+	server.handlersMu.Lock()
+	defer server.handlersMu.Unlock()
+	server.handlers = append(server.handlers, handler)
+}
+
+// Receive returns a channel for receiving relay messages (legacy interface)
+// Messages are dispatched asynchronously to avoid blocking the HTTP handler
+func (server *RelayServer) Receive() chan RelayMessage {
+	ch := make(chan RelayMessage, 1000) // Large buffer to handle bursts
+	server.Subscribe(func(data []byte) {
+		// Make a copy of data for async dispatch
+		dataCopy := make([]byte, len(data))
+		copy(dataCopy, data)
+		// Dispatch in goroutine to avoid blocking HTTP handler while ensuring delivery
+		go func() {
+			// Non-blocking send - drop message if channel is full (receiver stopped)
+			select {
+			case ch <- RelayMessage{Data: dataCopy, Done: nil}:
+			default:
+				// Channel full, receiver likely stopped - drop message silently
+			}
+		}()
+	})
+	return ch
 }
 
 func (server *RelayServer) Shutdown() { // TODO: unittest

@@ -200,3 +200,183 @@ func TestRemoveExecutor(t *testing.T) {
 	server.Shutdown()
 	<-done
 }
+
+// TestReconcilerWorkflow simulates the docker-reconciler workflow:
+// 1. Reconciler (with colony owner key) adds executor
+// 2. Reconciler approves executor
+// 3. Child executor (inside container) calls GetExecutor
+// 4. Child executor calls UpdateExecutorCapabilities
+// 5. Verify executor is still APPROVED after all operations
+func TestReconcilerWorkflow(t *testing.T) {
+	client, server, serverPrvKey, done := server.PrepareTests(t)
+
+	// Create colony
+	colony, colonyPrvKey, err := utils.CreateTestColonyWithKey()
+	assert.Nil(t, err)
+	_, err = client.AddColony(colony, serverPrvKey)
+	assert.Nil(t, err)
+
+	// Step 1: Reconciler adds executor (using colony owner key)
+	executor, executorPrvKey, err := utils.CreateTestExecutorWithKey(colony.Name)
+	assert.Nil(t, err)
+	addedExecutor, err := client.AddExecutor(executor, colonyPrvKey)
+	assert.Nil(t, err)
+	assert.NotNil(t, addedExecutor)
+	t.Logf("Added executor: Name=%s, ID=%s, State=%d", addedExecutor.Name, addedExecutor.ID, addedExecutor.State)
+
+	// Verify initial state is PENDING
+	assert.Equal(t, core.PENDING, addedExecutor.State)
+
+	// Step 2: Reconciler approves executor (using colony owner key)
+	err = client.ApproveExecutor(colony.Name, executor.Name, colonyPrvKey)
+	assert.Nil(t, err)
+	t.Log("ApproveExecutor returned success")
+
+	// Verify state is APPROVED immediately after approval (using executor key since it's now approved)
+	executorAfterApprove, err := client.GetExecutor(colony.Name, executor.Name, executorPrvKey)
+	assert.Nil(t, err)
+	assert.NotNil(t, executorAfterApprove)
+	t.Logf("After approve: Name=%s, ID=%s, State=%d", executorAfterApprove.Name, executorAfterApprove.ID, executorAfterApprove.State)
+	assert.Equal(t, core.APPROVED, executorAfterApprove.State, "Executor should be APPROVED after ApproveExecutor")
+
+	// Step 3: Child executor calls GetExecutor again (using its own key)
+	executorFromChild, err := client.GetExecutor(colony.Name, executor.Name, executorPrvKey)
+	assert.Nil(t, err)
+	assert.NotNil(t, executorFromChild)
+	t.Logf("Child GetExecutor: Name=%s, ID=%s, State=%d", executorFromChild.Name, executorFromChild.ID, executorFromChild.State)
+	assert.Equal(t, core.APPROVED, executorFromChild.State, "Executor should still be APPROVED after child GetExecutor")
+
+	// Step 4: Child executor calls UpdateExecutorCapabilities (using its own key)
+	newCapabilities := core.Capabilities{
+		Hardware: []core.Hardware{
+			{
+				Model: "Test Model",
+				CPU:   "Test CPU",
+				Cores: 8,
+			},
+		},
+		Software: []core.Software{
+			{
+				Name:    "ollama",
+				Type:    "llm",
+				Version: "0.1.0",
+			},
+		},
+	}
+	err = client.UpdateExecutorCapabilities(colony.Name, executor.Name, newCapabilities, executorPrvKey)
+	assert.Nil(t, err)
+	t.Log("UpdateExecutorCapabilities returned success")
+
+	// Step 5: Verify executor is still APPROVED after all operations
+	executorFinal, err := client.GetExecutor(colony.Name, executor.Name, executorPrvKey)
+	assert.Nil(t, err)
+	assert.NotNil(t, executorFinal)
+	t.Logf("Final state: Name=%s, ID=%s, State=%d", executorFinal.Name, executorFinal.ID, executorFinal.State)
+	assert.Equal(t, core.APPROVED, executorFinal.State, "Executor should still be APPROVED after UpdateExecutorCapabilities")
+
+	// Verify capabilities were updated
+	assert.Len(t, executorFinal.Capabilities.Hardware, 1)
+	assert.Equal(t, "Test Model", executorFinal.Capabilities.Hardware[0].Model)
+	assert.Len(t, executorFinal.Capabilities.Software, 1)
+	assert.Equal(t, "ollama", executorFinal.Capabilities.Software[0].Name)
+
+	server.Shutdown()
+	<-done
+}
+
+// TestApproveExecutorWithUnregisteredExecutor tests that re-registering an UNREGISTERED
+// executor and then approving it works correctly
+func TestApproveExecutorWithUnregisteredExecutor(t *testing.T) {
+	client, server, serverPrvKey, done := server.PrepareTests(t)
+
+	// Create colony
+	colony, colonyPrvKey, err := utils.CreateTestColonyWithKey()
+	assert.Nil(t, err)
+	_, err = client.AddColony(colony, serverPrvKey)
+	assert.Nil(t, err)
+
+	// Create and add executor
+	executor, executorPrvKey, err := utils.CreateTestExecutorWithKey(colony.Name)
+	assert.Nil(t, err)
+	_, err = client.AddExecutor(executor, colonyPrvKey)
+	assert.Nil(t, err)
+
+	// Approve executor
+	err = client.ApproveExecutor(colony.Name, executor.Name, colonyPrvKey)
+	assert.Nil(t, err)
+
+	// Verify APPROVED
+	executorFromServer, err := client.GetExecutor(colony.Name, executor.Name, executorPrvKey)
+	assert.Nil(t, err)
+	assert.Equal(t, core.APPROVED, executorFromServer.State)
+	t.Logf("Initial executor ID: %s, State: %d", executorFromServer.ID, executorFromServer.State)
+
+	// Remove executor (marks as UNREGISTERED)
+	err = client.RemoveExecutor(colony.Name, executor.Name, colonyPrvKey)
+	assert.Nil(t, err)
+
+	// Enable re-registration
+	server.SetAllowExecutorReregister(true)
+
+	// Re-add the same executor (should reactivate the UNREGISTERED one)
+	executor2, executor2PrvKey, err := utils.CreateTestExecutorWithKey(colony.Name)
+	executor2.Name = executor.Name // Same name
+	assert.Nil(t, err)
+	addedExecutor2, err := client.AddExecutor(executor2, colonyPrvKey)
+	assert.Nil(t, err)
+	t.Logf("Re-added executor ID: %s, State: %d", addedExecutor2.ID, addedExecutor2.State)
+
+	// The re-added executor should have a NEW ID and be PENDING
+	assert.NotEqual(t, executorFromServer.ID, addedExecutor2.ID, "Re-added executor should have new ID")
+	assert.Equal(t, core.PENDING, addedExecutor2.State, "Re-added executor should be PENDING")
+
+	// Approve the re-added executor
+	err = client.ApproveExecutor(colony.Name, executor2.Name, colonyPrvKey)
+	assert.Nil(t, err)
+
+	// Verify APPROVED with the new key
+	executorFinal, err := client.GetExecutor(colony.Name, executor2.Name, executor2PrvKey)
+	assert.Nil(t, err)
+	assert.Equal(t, core.APPROVED, executorFinal.State, "Re-added executor should be APPROVED")
+	assert.Equal(t, addedExecutor2.ID, executorFinal.ID, "Executor ID should match the re-added one")
+
+	server.Shutdown()
+	<-done
+}
+
+// TestApproveExecutorVerifyDatabaseUpdate verifies that ApproveExecutor actually
+// updates the database and the change persists
+func TestApproveExecutorVerifyDatabaseUpdate(t *testing.T) {
+	client, server, serverPrvKey, done := server.PrepareTests(t)
+
+	// Create colony
+	colony, colonyPrvKey, err := utils.CreateTestColonyWithKey()
+	assert.Nil(t, err)
+	_, err = client.AddColony(colony, serverPrvKey)
+	assert.Nil(t, err)
+
+	// Create executor
+	executor, executorPrvKey, err := utils.CreateTestExecutorWithKey(colony.Name)
+	assert.Nil(t, err)
+	addedExecutor, err := client.AddExecutor(executor, colonyPrvKey)
+	assert.Nil(t, err)
+
+	// Store the executor ID
+	executorID := addedExecutor.ID
+	t.Logf("Executor ID: %s", executorID)
+
+	// Approve
+	err = client.ApproveExecutor(colony.Name, executor.Name, colonyPrvKey)
+	assert.Nil(t, err)
+
+	// Get executor multiple times to ensure consistency
+	for i := 0; i < 5; i++ {
+		executorFromServer, err := client.GetExecutor(colony.Name, executor.Name, executorPrvKey)
+		assert.Nil(t, err)
+		assert.Equal(t, core.APPROVED, executorFromServer.State, "Iteration %d: Executor should be APPROVED", i)
+		assert.Equal(t, executorID, executorFromServer.ID, "Iteration %d: Executor ID should not change", i)
+	}
+
+	server.Shutdown()
+	<-done
+}

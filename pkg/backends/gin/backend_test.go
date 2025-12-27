@@ -14,50 +14,25 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestNewBackend(t *testing.T) {
-	backend := NewBackend()
-	assert.NotNil(t, backend)
-
-	// Verify it implements backends.Backend interface
-	var _ backends.Backend = backend
-}
-
-func TestBackendSetGetMode(t *testing.T) {
-	backend := NewBackend()
-
-	// Test setting different modes
-	backend.SetMode(ginframework.DebugMode)
-	assert.Equal(t, ginframework.DebugMode, backend.GetMode())
-
-	backend.SetMode(ginframework.ReleaseMode)
-	assert.Equal(t, ginframework.ReleaseMode, backend.GetMode())
-
-	backend.SetMode(ginframework.TestMode)
-	assert.Equal(t, ginframework.TestMode, backend.GetMode())
-}
-
-func TestBackendNewEngine(t *testing.T) {
-	backend := NewBackend()
-	engine := backend.NewEngine()
+func TestCreateEngine(t *testing.T) {
+	engine := CreateEngine()
 	assert.NotNil(t, engine)
 
 	// Verify it implements backends.Engine interface
 	var _ backends.Engine = engine
 }
 
-func TestBackendNewEngineWithDefaults(t *testing.T) {
-	backend := NewBackend()
-	engine := backend.NewEngineWithDefaults()
+func TestCreateEngineWithDefaults(t *testing.T) {
+	engine := CreateEngineWithDefaults()
 	assert.NotNil(t, engine)
 
 	// Verify it implements backends.Engine interface
 	var _ backends.Engine = engine
 }
 
-func TestBackendNewServer(t *testing.T) {
-	backend := NewBackend()
-	engine := backend.NewEngine()
-	server := backend.NewServer(8080, engine)
+func TestNewBackendServer(t *testing.T) {
+	engine := CreateEngine()
+	server := NewBackendServer(8080, engine)
 	assert.NotNil(t, server)
 
 	// Verify it implements backends.Server interface
@@ -67,10 +42,9 @@ func TestBackendNewServer(t *testing.T) {
 	assert.Equal(t, ":8080", server.GetAddr())
 }
 
-func TestBackendNewServerWithAddr(t *testing.T) {
-	backend := NewBackend()
-	engine := backend.NewEngine()
-	server := backend.NewServerWithAddr("localhost:9090", engine)
+func TestNewBackendServerWithAddr(t *testing.T) {
+	engine := CreateEngine()
+	server := NewBackendServerWithAddr("localhost:9090", engine)
 	assert.NotNil(t, server)
 
 	// Verify it implements backends.Server interface
@@ -80,35 +54,12 @@ func TestBackendNewServerWithAddr(t *testing.T) {
 	assert.Equal(t, "localhost:9090", server.GetAddr())
 }
 
-func TestBackendLogger(t *testing.T) {
-	backend := NewBackend()
-	logger := backend.Logger()
-	assert.NotNil(t, logger)
-}
-
-func TestBackendRecovery(t *testing.T) {
-	backend := NewBackend()
-	recovery := backend.Recovery()
-	assert.NotNil(t, recovery)
-}
-
-func TestNewCORSBackend(t *testing.T) {
-	corsBackend := NewCORSBackend()
-	assert.NotNil(t, corsBackend)
-
-	// Verify it implements backends.CORSBackend interface
-	var _ backends.CORSBackend = corsBackend
-}
-
-func TestCORSBackendCORS(t *testing.T) {
-	corsBackend := NewCORSBackend()
-	corsMiddleware := corsBackend.CORS()
+func TestCORS(t *testing.T) {
+	corsMiddleware := CORS()
 	assert.NotNil(t, corsMiddleware)
 }
 
-func TestCORSBackendCORSWithConfig(t *testing.T) {
-	corsBackend := NewCORSBackend()
-
+func TestCORSWithConfig(t *testing.T) {
 	config := backends.CORSConfig{
 		AllowOrigins:     []string{"http://localhost:3000"},
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE"},
@@ -118,7 +69,7 @@ func TestCORSBackendCORSWithConfig(t *testing.T) {
 		MaxAge:           12 * time.Hour,
 	}
 
-	corsMiddleware := corsBackend.CORSWithConfig(config)
+	corsMiddleware := CORSWithConfig(config)
 	assert.NotNil(t, corsMiddleware)
 }
 
@@ -486,8 +437,7 @@ func TestContextAdapterGinContext(t *testing.T) {
 }
 
 func TestEngineAdapterHTTPMethods(t *testing.T) {
-	backend := NewBackend()
-	engine := backend.NewEngine()
+	engine := CreateEngine()
 
 	// Test all HTTP methods
 	engine.GET("/get", func(c backends.Context) {
@@ -547,8 +497,7 @@ func TestEngineAdapterHTTPMethods(t *testing.T) {
 }
 
 func TestEngineAdapterUseMiddleware(t *testing.T) {
-	backend := NewBackend()
-	engine := backend.NewEngine()
+	engine := CreateEngine()
 
 	// Add middleware that sets a custom header
 	engine.Use(func(c backends.Context) {
@@ -569,9 +518,8 @@ func TestEngineAdapterUseMiddleware(t *testing.T) {
 }
 
 func TestServerAdapterSetGetAddr(t *testing.T) {
-	backend := NewBackend()
-	engine := backend.NewEngine()
-	server := backend.NewServer(8080, engine)
+	engine := CreateEngine()
+	server := NewBackendServer(8080, engine)
 
 	assert.Equal(t, ":8080", server.GetAddr())
 
@@ -580,9 +528,8 @@ func TestServerAdapterSetGetAddr(t *testing.T) {
 }
 
 func TestServerAdapterTimeouts(t *testing.T) {
-	backend := NewBackend()
-	engine := backend.NewEngine()
-	server := backend.NewServer(8080, engine)
+	engine := CreateEngine()
+	server := NewBackendServer(8080, engine)
 
 	// Set various timeouts
 	assert.NotPanics(t, func() {
@@ -594,18 +541,16 @@ func TestServerAdapterTimeouts(t *testing.T) {
 }
 
 func TestServerAdapterEngine(t *testing.T) {
-	backend := NewBackend()
-	engine := backend.NewEngine()
-	server := backend.NewServer(8080, engine)
+	engine := CreateEngine()
+	server := NewBackendServer(8080, engine)
 
 	// Should return the same engine
 	assert.NotNil(t, server.Engine())
 }
 
 func TestServerAdapterHTTPServer(t *testing.T) {
-	backend := NewBackend()
-	engine := backend.NewEngine()
-	server := backend.NewServer(8080, engine)
+	engine := CreateEngine()
+	server := NewBackendServer(8080, engine)
 
 	httpServer := server.HTTPServer()
 	assert.NotNil(t, httpServer)
@@ -613,9 +558,8 @@ func TestServerAdapterHTTPServer(t *testing.T) {
 }
 
 func TestServerAdapterShutdown(t *testing.T) {
-	backend := NewBackend()
-	engine := backend.NewEngine()
-	server := backend.NewServer(0, engine) // Use port 0 for dynamic allocation
+	engine := CreateEngine()
+	server := NewBackendServer(0, engine) // Use port 0 for dynamic allocation
 
 	// Start server in background
 	go func() {
@@ -634,9 +578,8 @@ func TestServerAdapterShutdown(t *testing.T) {
 }
 
 func TestServerAdapterShutdownWithTimeout(t *testing.T) {
-	backend := NewBackend()
-	engine := backend.NewEngine()
-	server := backend.NewServer(0, engine)
+	engine := CreateEngine()
+	server := NewBackendServer(0, engine)
 
 	// Start server in background
 	go func() {
@@ -668,11 +611,10 @@ func TestContextAdapterReadBody(t *testing.T) {
 
 func TestFullBackendWorkflow(t *testing.T) {
 	// Create a complete workflow test
-	backend := NewBackend()
-	backend.SetMode(ginframework.TestMode)
+	ginframework.SetMode(ginframework.TestMode)
 
 	// Create engine with middleware
-	engine := backend.NewEngineWithDefaults()
+	engine := CreateEngineWithDefaults()
 
 	// Add custom middleware
 	engine.Use(func(c backends.Context) {
@@ -691,7 +633,7 @@ func TestFullBackendWorkflow(t *testing.T) {
 	})
 
 	// Create server
-	server := backend.NewServerWithAddr(":8888", engine)
+	server := NewBackendServerWithAddr(":8888", engine)
 	assert.Equal(t, ":8888", server.GetAddr())
 
 	// Test request

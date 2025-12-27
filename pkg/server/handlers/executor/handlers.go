@@ -3,6 +3,7 @@ package executor
 import (
 	"errors"
 	"net/http"
+	"strings"
 
 	"github.com/colonyos/colonies/pkg/core"
 	"github.com/colonyos/colonies/pkg/database"
@@ -27,6 +28,7 @@ type Server interface {
 	ExecutorDB() database.ExecutorDatabase
 	ExecutorController() Controller
 	AllowExecutorReregister() bool
+	TriggerReconciliationForReconciler(colonyName, executorType, locationName string) error
 }
 
 type Handlers struct {
@@ -63,6 +65,9 @@ func (h *Handlers) RegisterHandlers(handlerRegistry *registry.HandlerRegistry) e
 		return err
 	}
 	if err := handlerRegistry.Register(rpc.ReportAllocationsPayloadType, h.HandleReportAllocations); err != nil {
+		return err
+	}
+	if err := handlerRegistry.Register(rpc.UpdateExecutorPayloadType, h.HandleUpdateExecutor); err != nil {
 		return err
 	}
 	return nil
@@ -112,6 +117,24 @@ func (h *Handlers) HandleAddExecutor(c backends.Context, recoveredID string, pay
 		"ExecutorType": addedExecutor.Type,
 		"ExecutorId":   addedExecutor.ID}).
 		Debug("Adding executor")
+
+	// If this is a reconciler registering, trigger reconciliation for blueprints at its location
+	if strings.Contains(addedExecutor.Type, "reconciler") && addedExecutor.LocationName != "" {
+		go func() {
+			if err := h.server.TriggerReconciliationForReconciler(
+				addedExecutor.ColonyName,
+				addedExecutor.Type,
+				addedExecutor.LocationName,
+			); err != nil {
+				log.WithFields(log.Fields{
+					"ExecutorName": addedExecutor.Name,
+					"ExecutorType": addedExecutor.Type,
+					"Location":     addedExecutor.LocationName,
+					"Error":        err,
+				}).Warn("Failed to trigger reconciliation on reconciler registration")
+			}
+		}()
+	}
 
 	h.server.SendHTTPReply(c, payloadType, jsonString)
 }
@@ -374,6 +397,51 @@ func (h *Handlers) HandleReportAllocations(c backends.Context, recoveredID strin
 	}
 
 	log.WithFields(log.Fields{"ExecutorName": executor.Name, "ColonyName": msg.ColonyName}).Debug("Reporting allocations")
+
+	h.server.SendEmptyHTTPReply(c, payloadType)
+}
+
+func (h *Handlers) HandleUpdateExecutor(c backends.Context, recoveredID string, payloadType string, jsonString string) {
+	msg, err := rpc.CreateUpdateExecutorMsgFromJSON(jsonString)
+	if err != nil {
+		if h.server.HandleHTTPError(c, errors.New("Failed to update executor, invalid JSON"), http.StatusBadRequest) {
+			return
+		}
+	}
+
+	if msg.MsgType != payloadType {
+		h.server.HandleHTTPError(c, errors.New("Failed to update executor, msg.MsgType does not match payloadType"), http.StatusBadRequest)
+		return
+	}
+
+	err = h.server.Validator().RequireMembership(recoveredID, msg.ColonyName, false)
+	if h.server.HandleHTTPError(c, err, http.StatusForbidden) {
+		return
+	}
+
+	executor, err := h.server.ExecutorDB().GetExecutorByName(msg.ColonyName, msg.ExecutorName)
+	if h.server.HandleHTTPError(c, err, http.StatusInternalServerError) {
+		return
+	}
+	if executor == nil {
+		if h.server.HandleHTTPError(c, errors.New("Executor with name <"+msg.ExecutorName+"> does not exist"), http.StatusBadRequest) {
+			return
+		}
+	}
+
+	// Only the executor itself can update its own capabilities
+	if executor.ID != recoveredID {
+		if h.server.HandleHTTPError(c, errors.New("Only an executor can update its own capabilities"), http.StatusBadRequest) {
+			return
+		}
+	}
+
+	err = h.server.ExecutorDB().UpdateExecutorCapabilities(msg.ColonyName, msg.ExecutorName, msg.Capabilities)
+	if h.server.HandleHTTPError(c, err, http.StatusBadRequest) {
+		return
+	}
+
+	log.WithFields(log.Fields{"ExecutorName": msg.ExecutorName, "ColonyName": msg.ColonyName}).Debug("Updating executor capabilities")
 
 	h.server.SendEmptyHTTPReply(c, payloadType)
 }

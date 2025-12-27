@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -65,6 +66,46 @@ func (db *PQDatabase) Connect() error {
 		return err
 	}
 	db.postgresql = postgresql
+
+	// Configure connection pool
+	// Defaults: 100 max open, 100 max idle, 5 min lifetime, 1 min idle time
+	maxOpenConns := 100
+	maxIdleConns := 100
+	connMaxLifetime := 5 * time.Minute
+	connMaxIdleTime := 1 * time.Minute
+
+	if v := os.Getenv("COLONIES_DB_MAX_OPEN_CONNS"); v != "" {
+		if n, err := strconv.Atoi(v); err == nil && n > 0 {
+			maxOpenConns = n
+		}
+	}
+	if v := os.Getenv("COLONIES_DB_MAX_IDLE_CONNS"); v != "" {
+		if n, err := strconv.Atoi(v); err == nil && n > 0 {
+			maxIdleConns = n
+		}
+	}
+	if v := os.Getenv("COLONIES_DB_CONN_MAX_LIFETIME"); v != "" {
+		if n, err := strconv.Atoi(v); err == nil && n > 0 {
+			connMaxLifetime = time.Duration(n) * time.Second
+		}
+	}
+	if v := os.Getenv("COLONIES_DB_CONN_MAX_IDLE_TIME"); v != "" {
+		if n, err := strconv.Atoi(v); err == nil && n > 0 {
+			connMaxIdleTime = time.Duration(n) * time.Second
+		}
+	}
+
+	db.postgresql.SetMaxOpenConns(maxOpenConns)
+	db.postgresql.SetMaxIdleConns(maxIdleConns)
+	db.postgresql.SetConnMaxLifetime(connMaxLifetime)
+	db.postgresql.SetConnMaxIdleTime(connMaxIdleTime)
+
+	log.WithFields(log.Fields{
+		"MaxOpenConns":    maxOpenConns,
+		"MaxIdleConns":    maxIdleConns,
+		"ConnMaxLifetime": connMaxLifetime,
+		"ConnMaxIdleTime": connMaxIdleTime,
+	}).Info("Database connection pool configured")
 
 	err = db.postgresql.Ping()
 	if err != nil {
@@ -244,6 +285,16 @@ func (db *PQDatabase) dropBlueprintsTable() error {
 	return nil
 }
 
+func (db *PQDatabase) dropLocationsTable() error {
+	sqlStatement := `DROP TABLE IF EXISTS ` + db.dbPrefix + `LOCATIONS`
+	_, err := db.postgresql.Exec(sqlStatement)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (db *PQDatabase) dropServerTable() error {
 	sqlStatement := `DROP TABLE ` + db.dbPrefix + `SERVER`
 	_, err := db.postgresql.Exec(sqlStatement)
@@ -335,6 +386,11 @@ func (db *PQDatabase) Drop() error {
 		return err
 	}
 
+	err = db.dropLocationsTable()
+	if err != nil {
+		return err
+	}
+
 	err = db.dropServerTable()
 	if err != nil {
 		return err
@@ -386,50 +442,8 @@ func (db *PQDatabase) createUsersTable() error {
 }
 
 func (db *PQDatabase) createExecutorsTable() error {
-	sqlStatement := `CREATE TABLE IF NOT EXISTS ` + db.dbPrefix + `EXECUTORS (NAME TEXT PRIMARY KEY NOT NULL, EXECUTOR_TYPE TEXT NOT NULL, EXECUTOR_ID TEXT NOT NULL, COLONY_NAME TEXT NOT NULL, STATE INTEGER, REQUIRE_FUNC_REG BOOLEAN, COMMISSIONTIME TIMESTAMPTZ, LASTHEARDFROM TIMESTAMPTZ, LONG DOUBLE PRECISION, LAT DOUBLE PRECISION, LOCDESC TEXT, HWMODEL TEXT, HWNODES INT, HWCPU TEXT, HWMEM TEXT, HWSTORAGE TEXT, HWGPUNAME TEXT, HWGPUCOUNT TEXT, HWGPUNODECOUNT INTEGER, HWGPUMEM TEXT, SWNAME TEXT, SWTYPE TEXT, SWVERSION TEXT, ALLOCATIONS TEXT NOT NULL, NODE_ID TEXT)`
+	sqlStatement := `CREATE TABLE IF NOT EXISTS ` + db.dbPrefix + `EXECUTORS (NAME TEXT PRIMARY KEY NOT NULL, EXECUTOR_TYPE TEXT NOT NULL, EXECUTOR_ID TEXT NOT NULL, COLONY_NAME TEXT NOT NULL, STATE INTEGER, REQUIRE_FUNC_REG BOOLEAN, COMMISSIONTIME TIMESTAMPTZ, LASTHEARDFROM TIMESTAMPTZ, LONG DOUBLE PRECISION, LAT DOUBLE PRECISION, LOCNAME TEXT, LOCDESC TEXT, HARDWARE TEXT, SOFTWARE TEXT, ALLOCATIONS TEXT NOT NULL, NODE_ID TEXT, BLUEPRINT_ID TEXT, BLUEPRINT_GEN BIGINT, LOCATION_NAME TEXT)`
 	_, err := db.postgresql.Exec(sqlStatement)
-	if err != nil {
-		return err
-	}
-
-	// Add NODE_ID column to existing tables if it doesn't exist
-	alterStatement := `ALTER TABLE ` + db.dbPrefix + `EXECUTORS ADD COLUMN IF NOT EXISTS NODE_ID TEXT`
-	_, err = db.postgresql.Exec(alterStatement)
-	if err != nil {
-		return err
-	}
-
-	// Add BLUEPRINT_ID column to existing tables if it doesn't exist
-	alterStatement = `ALTER TABLE ` + db.dbPrefix + `EXECUTORS ADD COLUMN IF NOT EXISTS BLUEPRINT_ID TEXT`
-	_, err = db.postgresql.Exec(alterStatement)
-	if err != nil {
-		return err
-	}
-
-	// Add BLUEPRINT_GEN column to existing tables if it doesn't exist
-	alterStatement = `ALTER TABLE ` + db.dbPrefix + `EXECUTORS ADD COLUMN IF NOT EXISTS BLUEPRINT_GEN BIGINT`
-	_, err = db.postgresql.Exec(alterStatement)
-	if err != nil {
-		return err
-	}
-
-	// Add HWPLATFORM column to existing tables if it doesn't exist
-	alterStatement = `ALTER TABLE ` + db.dbPrefix + `EXECUTORS ADD COLUMN IF NOT EXISTS HWPLATFORM TEXT`
-	_, err = db.postgresql.Exec(alterStatement)
-	if err != nil {
-		return err
-	}
-
-	// Add HWARCHITECTURE column to existing tables if it doesn't exist
-	alterStatement = `ALTER TABLE ` + db.dbPrefix + `EXECUTORS ADD COLUMN IF NOT EXISTS HWARCHITECTURE TEXT`
-	_, err = db.postgresql.Exec(alterStatement)
-	if err != nil {
-		return err
-	}
-
-	// Add HWNETWORK column to existing tables if it doesn't exist (JSON array of network addresses)
-	alterStatement = `ALTER TABLE ` + db.dbPrefix + `EXECUTORS ADD COLUMN IF NOT EXISTS HWNETWORK TEXT`
-	_, err = db.postgresql.Exec(alterStatement)
 	if err != nil {
 		return err
 	}
@@ -457,7 +471,7 @@ func (db *PQDatabase) createFunctionsTable() error {
 }
 
 func (db *PQDatabase) createProcessesTable() error {
-	sqlStatement := `CREATE TABLE ` + db.dbPrefix + `PROCESSES (PROCESS_ID TEXT PRIMARY KEY NOT NULL, TARGET_COLONY_NAME TEXT NOT NULL, TARGET_EXECUTOR_NAMES TEXT[], ASSIGNED_EXECUTOR_ID TEXT, STATE INTEGER, IS_ASSIGNED BOOLEAN, EXECUTOR_TYPE TEXT, SUBMISSION_TIME TIMESTAMPTZ, START_TIME TIMESTAMPTZ, END_TIME TIMESTAMPTZ, WAIT_DEADLINE TIMESTAMPTZ, EXEC_DEADLINE TIMESTAMPTZ, ERRORS TEXT[], NODENAME TEXT, FUNCNAME TEXT, ARGS TEXT, KWARGS TEXT, MAX_WAIT_TIME INTEGER, MAX_EXEC_TIME INTEGER, RETRIES INTEGER, MAX_RETRIES INTEGER, DEPENDENCIES TEXT[], PRIORITY INTEGER, PRIORITYTIME BIGINT, WAIT_FOR_PARENTS BOOLEAN, PARENTS TEXT[], CHILDREN TEXT[], PROCESSGRAPH_ID TEXT, INPUT TEXT, OUTPUT TEXT, LABEL TEXT, FS TEXT, NODES INTEGER, CPU BIGINT, PROCESSES INTEGER, PROCESSES_PER_NODE INTEGER, MEMORY BIGINT, STORAGE BIGINT, GPUNAME TEXT, GPUCOUNT TEXT, GPUMEM BIGINT, WALLTIME BIGINT, INITIATOR_ID TEXT NOT NULL, INITIATOR_NAME TEXT NOT NULL, RECONCILIATION TEXT, BLUEPRINT TEXT)`
+	sqlStatement := `CREATE TABLE ` + db.dbPrefix + `PROCESSES (PROCESS_ID TEXT PRIMARY KEY NOT NULL, TARGET_COLONY_NAME TEXT NOT NULL, TARGET_EXECUTOR_NAMES TEXT[], ASSIGNED_EXECUTOR_ID TEXT, STATE INTEGER, IS_ASSIGNED BOOLEAN, EXECUTOR_TYPE TEXT, SUBMISSION_TIME TIMESTAMPTZ, START_TIME TIMESTAMPTZ, END_TIME TIMESTAMPTZ, WAIT_DEADLINE TIMESTAMPTZ, EXEC_DEADLINE TIMESTAMPTZ, ERRORS TEXT[], NODENAME TEXT, FUNCNAME TEXT, ARGS TEXT, KWARGS TEXT, MAX_WAIT_TIME INTEGER, MAX_EXEC_TIME INTEGER, RETRIES INTEGER, MAX_RETRIES INTEGER, DEPENDENCIES TEXT[], PRIORITY INTEGER, PRIORITYTIME BIGINT, WAIT_FOR_PARENTS BOOLEAN, PARENTS TEXT[], CHILDREN TEXT[], PROCESSGRAPH_ID TEXT, INPUT TEXT, OUTPUT TEXT, LABEL TEXT, FS TEXT, NODES INTEGER, CPU BIGINT, PROCESSES INTEGER, PROCESSES_PER_NODE INTEGER, MEMORY BIGINT, STORAGE BIGINT, GPUNAME TEXT, GPUCOUNT TEXT, GPUMEM BIGINT, WALLTIME BIGINT, INITIATOR_ID TEXT NOT NULL, INITIATOR_NAME TEXT NOT NULL, RECONCILIATION TEXT, BLUEPRINT TEXT, CHANNELS TEXT[], LOCATION_NAME TEXT)`
 	_, err := db.postgresql.Exec(sqlStatement)
 	if err != nil {
 		return err
@@ -543,7 +557,7 @@ func (db *PQDatabase) createGeneratorArgsTable() error {
 }
 
 func (db *PQDatabase) createCronsTable() error {
-	sqlStatement := `CREATE TABLE ` + db.dbPrefix + `CRONS (CRON_ID TEXT PRIMARY KEY NOT NULL, COLONY_NAME TEXT NOT NULL, NAME TEXT NOT NULL UNIQUE, CRON_EXPR TEXT NOT NULL, INTERVAL INT, RANDOM BOOLEAN, NEXT_RUN TIMESTAMPTZ, LAST_RUN TIMESTAMPTZ, WORKFLOW_SPEC TEXT NOT NULL, PREV_PROCESSGRAPH_ID TEXT NOT NULL, WAIT_FOR_PREV_PROCESSGRAPH BOOLEAN, INITIATOR_ID TEXT NOT NULL, INITIATOR_NAME TEXT NOT NULL)`
+	sqlStatement := `CREATE TABLE ` + db.dbPrefix + `CRONS (CRON_ID TEXT PRIMARY KEY NOT NULL, COLONY_NAME TEXT NOT NULL, NAME TEXT NOT NULL, CRON_EXPR TEXT NOT NULL, INTERVAL INT, RANDOM BOOLEAN, NEXT_RUN TIMESTAMPTZ, LAST_RUN TIMESTAMPTZ, WORKFLOW_SPEC TEXT NOT NULL, PREV_PROCESSGRAPH_ID TEXT NOT NULL, WAIT_FOR_PREV_PROCESSGRAPH BOOLEAN, INITIATOR_ID TEXT NOT NULL, INITIATOR_NAME TEXT NOT NULL, UNIQUE(COLONY_NAME, NAME))`
 	_, err := db.postgresql.Exec(sqlStatement)
 	if err != nil {
 		return err
@@ -564,6 +578,16 @@ func (db *PQDatabase) createBlueprintDefinitionsTable() error {
 
 func (db *PQDatabase) createBlueprintsTable() error {
 	sqlStatement := `CREATE TABLE IF NOT EXISTS ` + db.dbPrefix + `BLUEPRINTS (ID TEXT PRIMARY KEY NOT NULL, COLONY_NAME TEXT NOT NULL, NAME TEXT NOT NULL, KIND TEXT NOT NULL, DATA TEXT NOT NULL, UNIQUE(COLONY_NAME, NAME))`
+	_, err := db.postgresql.Exec(sqlStatement)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (db *PQDatabase) createLocationsTable() error {
+	sqlStatement := `CREATE TABLE IF NOT EXISTS ` + db.dbPrefix + `LOCATIONS (NAME TEXT PRIMARY KEY NOT NULL, LOCATION_ID TEXT NOT NULL, COLONY_NAME TEXT NOT NULL, DESCRIPTION TEXT, LONG DOUBLE PRECISION, LAT DOUBLE PRECISION)`
 	_, err := db.postgresql.Exec(sqlStatement)
 	if err != nil {
 		return err
@@ -648,7 +672,7 @@ func (db *PQDatabase) createProcessesIndex5() error {
 }
 
 func (db *PQDatabase) createProcessesIndex6() error {
-	sqlStatement := `CREATE INDEX ` + db.dbPrefix + `PROCESSES_INDEX6 ON ` + db.dbPrefix + `PROCESSES (STATE, EXECUTOR_TYPE, IS_ASSIGNED, WAIT_FOR_PARENTS, TARGET_COLONY_NAME, PRIORITYTIME)`
+	sqlStatement := `CREATE INDEX ` + db.dbPrefix + `PROCESSES_INDEX6 ON ` + db.dbPrefix + `PROCESSES (STATE, EXECUTOR_TYPE, IS_ASSIGNED, WAIT_FOR_PARENTS, TARGET_COLONY_NAME, LOCATION_NAME, PRIORITYTIME)`
 	_, err := db.postgresql.Exec(sqlStatement)
 	if err != nil {
 		return err
@@ -698,7 +722,33 @@ func (db *PQDatabase) createProcessesIndex10() error {
 }
 
 func (db *PQDatabase) createProcessesIndex11() error {
-	sqlStatement := `CREATE INDEX ` + db.dbPrefix + `PROCESSES_INDEX11 ON ` + db.dbPrefix + `PROCESSES (STATE, EXECUTOR_TYPE, IS_ASSIGNED, WAIT_FOR_PARENTS, TARGET_COLONY_NAME, EXECUTOR_TYPE, IS_ASSIGNED, TARGET_EXECUTOR_NAMES, CPU, MEMORY, GPUNAME, GPUMEM, GPUCOUNT, STORAGE, NODES, PROCESSES, PROCESSES_PER_NODE, PRIORITYTIME)`
+	sqlStatement := `CREATE INDEX ` + db.dbPrefix + `PROCESSES_INDEX11 ON ` + db.dbPrefix + `PROCESSES (STATE, EXECUTOR_TYPE, IS_ASSIGNED, WAIT_FOR_PARENTS, TARGET_COLONY_NAME, LOCATION_NAME, EXECUTOR_TYPE, IS_ASSIGNED, TARGET_EXECUTOR_NAMES, CPU, MEMORY, GPUNAME, GPUMEM, GPUCOUNT, STORAGE, NODES, PROCESSES, PROCESSES_PER_NODE, PRIORITYTIME)`
+	_, err := db.postgresql.Exec(sqlStatement)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// createProcessesAssignGIN creates a GIN index for efficient array membership searches
+// on TARGET_EXECUTOR_NAMES. This optimizes the "$1 = ANY(TARGET_EXECUTOR_NAMES)" condition
+// in SelectAndAssign. Partial index only includes waiting, unassigned processes.
+func (db *PQDatabase) createProcessesAssignGIN() error {
+	sqlStatement := `CREATE INDEX ` + db.dbPrefix + `PROCESSES_ASSIGN_GIN ON ` + db.dbPrefix + `PROCESSES USING GIN (TARGET_EXECUTOR_NAMES) WHERE STATE = 0 AND IS_ASSIGNED = FALSE`
+	_, err := db.postgresql.Exec(sqlStatement)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// createProcessesAssignBTree creates a partial B-tree index optimized for the
+// SelectAndAssign hot path. Only includes waiting, unassigned processes that
+// are not waiting for parents.
+func (db *PQDatabase) createProcessesAssignBTree() error {
+	sqlStatement := `CREATE INDEX ` + db.dbPrefix + `PROCESSES_ASSIGN_BTREE ON ` + db.dbPrefix + `PROCESSES (TARGET_COLONY_NAME, EXECUTOR_TYPE, PRIORITYTIME) WHERE STATE = 0 AND IS_ASSIGNED = FALSE AND WAIT_FOR_PARENTS = FALSE`
 	_, err := db.postgresql.Exec(sqlStatement)
 	if err != nil {
 		return err
@@ -890,6 +940,11 @@ func (db *PQDatabase) Initialize() error {
 		return err
 	}
 
+	err = db.createLocationsTable()
+	if err != nil {
+		return err
+	}
+
 	err = db.createProcessesIndex1()
 	if err != nil {
 		return err
@@ -941,6 +996,16 @@ func (db *PQDatabase) Initialize() error {
 	}
 
 	err = db.createProcessesIndex11()
+	if err != nil {
+		return err
+	}
+
+	err = db.createProcessesAssignGIN()
+	if err != nil {
+		return err
+	}
+
+	err = db.createProcessesAssignBTree()
 	if err != nil {
 		return err
 	}

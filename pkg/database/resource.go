@@ -10,6 +10,7 @@ type BlueprintDatabase interface {
 	GetBlueprintDefinitions() ([]*core.BlueprintDefinition, error)
 	GetBlueprintDefinitionsByNamespace(namespace string) ([]*core.BlueprintDefinition, error)
 	GetBlueprintDefinitionsByGroup(group string) ([]*core.BlueprintDefinition, error)
+	GetBlueprintDefinitionByKind(kind string) (*core.BlueprintDefinition, error)
 	UpdateBlueprintDefinition(sd *core.BlueprintDefinition) error
 	RemoveBlueprintDefinitionByID(id string) error
 	RemoveBlueprintDefinitionByName(namespace, name string) error
@@ -23,6 +24,7 @@ type BlueprintDatabase interface {
 	GetBlueprintsByNamespace(namespace string) ([]*core.Blueprint, error)
 	GetBlueprintsByKind(kind string) ([]*core.Blueprint, error)
 	GetBlueprintsByNamespaceAndKind(namespace, kind string) ([]*core.Blueprint, error)
+	GetBlueprintsByNamespaceKindAndLocation(namespace, kind, locationName string) ([]*core.Blueprint, error)
 	UpdateBlueprint(blueprint *core.Blueprint) error
 	UpdateBlueprintStatus(id string, status map[string]interface{}) error
 	RemoveBlueprintByID(id string) error

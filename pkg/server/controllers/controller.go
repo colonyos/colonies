@@ -3,9 +3,10 @@ package controllers
 import (
 	"time"
 
+	"github.com/colonyos/colonies/pkg/backends"
+	"github.com/colonyos/colonies/pkg/channel"
 	"github.com/colonyos/colonies/pkg/cluster"
 	"github.com/colonyos/colonies/pkg/core"
-	"github.com/colonyos/colonies/pkg/backends"
 )
 
 type Controller interface {
@@ -46,6 +47,7 @@ type Controller interface {
 	CloseFailed(processID string, errs []string) error
 	HandleDefunctProcessgraph(processGraphID string, processID string, err error) error
 	Assign(executorID string, colonyName string, cpu int64, memory int64) (*AssignResult, error)
+	DistributedAssign(executor *core.Executor, colonyName string, cpu int64, memory int64, storage int64) (*AssignResult, error)
 	UnassignExecutor(processID string) error
 	ResetProcess(processID string) error
 	GetColonyStatistics(colonyName string) (*core.Statistics, error)
@@ -69,6 +71,7 @@ type Controller interface {
 	RemoveGenerator(generatorID string) error
 	GetCron(cronID string) (*core.Cron, error)
 	GetCrons(colonyName string, count int) ([]*core.Cron, error)
+	GetCronByName(colonyName string, cronName string) (*core.Cron, error)
 	RunCron(cronID string) (*core.Cron, error)
 	RemoveCron(cronID string) error
 	CalcNextRun(cron *core.Cron) time.Time
@@ -86,4 +89,5 @@ type Controller interface {
 	BlockingCmdQueueWorker()
 	RetentionWorker()
 	CmdQueueWorker()
+	GetChannelRouter() *channel.Router
 }

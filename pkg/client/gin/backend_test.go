@@ -33,7 +33,7 @@ func TestNewGinClientBackend(t *testing.T) {
 
 func TestNewGinClientBackendInvalidType(t *testing.T) {
 	config := &backends.ClientConfig{
-		BackendType: backends.LibP2PClientBackendType, // Wrong type
+		BackendType: backends.ClientBackendType("invalid"), // Wrong type
 		Host:        "localhost",
 		Port:        8080,
 	}
@@ -193,7 +193,7 @@ func TestGinClientBackendFactoryInvalidConfig(t *testing.T) {
 	factory := NewGinClientBackendFactory()
 
 	config := &backends.ClientConfig{
-		BackendType: backends.LibP2PClientBackendType, // Wrong type
+		BackendType: backends.ClientBackendType("invalid"), // Wrong type
 		Host:        "localhost",
 		Port:        8080,
 	}

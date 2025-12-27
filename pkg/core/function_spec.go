@@ -42,6 +42,7 @@ type Conditions struct {
 	ColonyName       string   `json:"colonyname"`
 	ExecutorNames    []string `json:"executornames"`
 	ExecutorType     string   `json:"executortype"`
+	LocationName     string   `json:"locationname,omitempty"` // Optional filter by location
 	Dependencies     []string `json:"dependencies"`
 	Nodes            int      `json:"nodes"`
 	CPU              string   `json:"cpu"`
@@ -68,6 +69,7 @@ type FunctionSpec struct {
 	Env            map[string]string      `json:"env"`
 	Blueprint       *Blueprint              `json:"blueprint,omitempty"`
 	Reconciliation *Reconciliation        `json:"reconciliation,omitempty"`
+	Channels       []string               `json:"channels,omitempty"`
 }
 
 func CreateEmptyFunctionSpec() *FunctionSpec {

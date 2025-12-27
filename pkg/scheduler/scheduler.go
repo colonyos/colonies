@@ -67,12 +67,12 @@ func (scheduler *Scheduler) Prioritize(colonyName string, executor *core.Executo
 	processes := math.MaxInt8
 	processesPerNode := math.MaxInt8
 
-	candidates, err := scheduler.db.FindCandidatesByName(colonyName, executor.Name, executor.Type, cpu, memory, storage, nodes, processes, processesPerNode, count)
+	candidates, err := scheduler.db.FindCandidatesByName(colonyName, executor.Name, executor.Type, executor.LocationName, cpu, memory, storage, nodes, processes, processesPerNode, count)
 	if err != nil {
 		return nil, err
 	}
 
-	candidates2, err := scheduler.db.FindCandidates(colonyName, executor.Type, cpu, memory, storage, nodes, processes, processesPerNode, count)
+	candidates2, err := scheduler.db.FindCandidates(colonyName, executor.Type, executor.LocationName, cpu, memory, storage, nodes, processes, processesPerNode, count)
 	if err != nil {
 		return nil, err
 	}

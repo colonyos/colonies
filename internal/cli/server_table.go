@@ -59,8 +59,7 @@ func printServerStatusTable(serverInfo *core.ServerInfo) {
 
 		// Show details for each backend
 		for _, backend := range serverInfo.Backends {
-			switch backend.Type {
-			case "http":
+			if backend.Type == "http" {
 				row = []interface{}{
 					termenv.String("  HTTP Host").Foreground(theme.ColorCyan),
 					termenv.String(backend.Host).Foreground(theme.ColorGray),
@@ -78,26 +77,6 @@ func printServerStatusTable(serverInfo *core.ServerInfo) {
 					termenv.String(strconv.FormatBool(backend.TLS)).Foreground(theme.ColorGray),
 				}
 				t.AddRow(row)
-
-			case "grpc":
-				row = []interface{}{
-					termenv.String("  gRPC Port").Foreground(theme.ColorCyan),
-					termenv.String(strconv.Itoa(backend.Port)).Foreground(theme.ColorGray),
-				}
-				t.AddRow(row)
-
-				row = []interface{}{
-					termenv.String("  gRPC Insecure").Foreground(theme.ColorCyan),
-					termenv.String(strconv.FormatBool(backend.Insecure)).Foreground(theme.ColorGray),
-				}
-				t.AddRow(row)
-
-			case "libp2p":
-				row = []interface{}{
-					termenv.String("  LibP2P Port").Foreground(theme.ColorCyan),
-					termenv.String(strconv.Itoa(backend.Port)).Foreground(theme.ColorGray),
-				}
-				t.AddRow(row)
 			}
 		}
 	}
@@ -110,61 +89,28 @@ func printServerStatusTable(serverInfo *core.ServerInfo) {
 	t.AddRow(row)
 
 	row = []interface{}{
-		termenv.String("Client Backends").Foreground(theme.ColorYellow).Bold(),
-		termenv.String(getEnvWithDefault("COLONIES_CLIENT_BACKENDS", "http")).Foreground(theme.ColorGray),
+		termenv.String("Client Configuration").Foreground(theme.ColorYellow).Bold(),
+		termenv.String("").Foreground(theme.ColorGray),
 	}
 	t.AddRow(row)
 
-	// HTTP Client Configuration
-	if strings.Contains(getEnvWithDefault("COLONIES_CLIENT_BACKENDS", "http"), "http") {
-		row = []interface{}{
-			termenv.String("  HTTP Host").Foreground(theme.ColorCyan),
-			termenv.String(getEnvWithDefault("COLONIES_CLIENT_HTTP_HOST", "localhost")).Foreground(theme.ColorGray),
-		}
-		t.AddRow(row)
-
-		row = []interface{}{
-			termenv.String("  HTTP Port").Foreground(theme.ColorCyan),
-			termenv.String(getEnvWithDefault("COLONIES_CLIENT_HTTP_PORT", "50080")).Foreground(theme.ColorGray),
-		}
-		t.AddRow(row)
-
-		row = []interface{}{
-			termenv.String("  HTTP Insecure").Foreground(theme.ColorCyan),
-			termenv.String(getEnvWithDefault("COLONIES_CLIENT_HTTP_INSECURE", "false")).Foreground(theme.ColorGray),
-		}
-		t.AddRow(row)
+	row = []interface{}{
+		termenv.String("  HTTP Host").Foreground(theme.ColorCyan),
+		termenv.String(getEnvWithDefault("COLONIES_SERVER_HOST", "localhost")).Foreground(theme.ColorGray),
 	}
+	t.AddRow(row)
 
-	// gRPC Client Configuration
-	if strings.Contains(getEnvWithDefault("COLONIES_CLIENT_BACKENDS", ""), "grpc") {
-		row = []interface{}{
-			termenv.String("  gRPC Host").Foreground(theme.ColorCyan),
-			termenv.String(getEnvWithDefault("COLONIES_CLIENT_GRPC_HOST", "localhost")).Foreground(theme.ColorGray),
-		}
-		t.AddRow(row)
-
-		row = []interface{}{
-			termenv.String("  gRPC Port").Foreground(theme.ColorCyan),
-			termenv.String(getEnvWithDefault("COLONIES_CLIENT_GRPC_PORT", "50051")).Foreground(theme.ColorGray),
-		}
-		t.AddRow(row)
-
-		row = []interface{}{
-			termenv.String("  gRPC Insecure").Foreground(theme.ColorCyan),
-			termenv.String(getEnvWithDefault("COLONIES_CLIENT_GRPC_INSECURE", "false")).Foreground(theme.ColorGray),
-		}
-		t.AddRow(row)
+	row = []interface{}{
+		termenv.String("  HTTP Port").Foreground(theme.ColorCyan),
+		termenv.String(getEnvWithDefault("COLONIES_SERVER_PORT", "50080")).Foreground(theme.ColorGray),
 	}
+	t.AddRow(row)
 
-	// LibP2P Client Configuration
-	if strings.Contains(getEnvWithDefault("COLONIES_CLIENT_BACKENDS", ""), "libp2p") {
-		row = []interface{}{
-			termenv.String("  LibP2P Host").Foreground(theme.ColorCyan),
-			termenv.String(getEnvWithDefault("COLONIES_CLIENT_LIBP2P_HOST", "dht")).Foreground(theme.ColorGray),
-		}
-		t.AddRow(row)
+	row = []interface{}{
+		termenv.String("  TLS").Foreground(theme.ColorCyan),
+		termenv.String(getEnvWithDefault("COLONIES_TLS", "false")).Foreground(theme.ColorGray),
 	}
+	t.AddRow(row)
 
 	t.Render()
 }

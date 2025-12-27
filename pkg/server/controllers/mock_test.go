@@ -165,6 +165,10 @@ func (v *ControllerMock) Assign(executorID string, colonyName string, cpu int64,
 	return nil, nil
 }
 
+func (v *ControllerMock) DistributedAssign(executor *core.Executor, colonyName string, cpu int64, memory int64, storage int64) (*AssignResult, error) {
+	return nil, nil
+}
+
 func (v *ControllerMock) UnassignExecutor(processID string) error {
 	return nil
 }
@@ -251,6 +255,10 @@ func (v *ControllerMock) GetCron(cronID string) (*core.Cron, error) {
 }
 
 func (v *ControllerMock) GetCrons(colonyName string, count int) ([]*core.Cron, error) {
+	return nil, nil
+}
+
+func (v *ControllerMock) GetCronByName(colonyName string, cronName string) (*core.Cron, error) {
 	return nil, nil
 }
 
@@ -387,6 +395,16 @@ func (db *DatabaseMock) CountExecutors() (int, error) { return 0, nil }
 func (db *DatabaseMock) CountExecutorsByColonyName(colonyName string) (int, error) { return 0, nil }
 func (db *DatabaseMock) CountExecutorsByColonyNameAndState(colonyName string, state int) (int, error) { return 0, nil }
 func (db *DatabaseMock) GetExecutorsByBlueprintID(blueprintID string) ([]*core.Executor, error) { return nil, nil }
+func (db *DatabaseMock) UpdateExecutorCapabilities(colonyName string, executorName string, capabilities core.Capabilities) error { return nil }
+
+// LocationDatabase interface
+func (db *DatabaseMock) AddLocation(location *core.Location) error { return nil }
+func (db *DatabaseMock) GetLocationsByColonyName(colonyName string) ([]*core.Location, error) { return nil, nil }
+func (db *DatabaseMock) GetLocationByID(locationID string) (*core.Location, error) { return nil, nil }
+func (db *DatabaseMock) GetLocationByName(colonyName string, name string) (*core.Location, error) { return nil, nil }
+func (db *DatabaseMock) RemoveLocationByID(locationID string) error { return nil }
+func (db *DatabaseMock) RemoveLocationByName(colonyName string, name string) error { return nil }
+func (db *DatabaseMock) RemoveLocationsByColonyName(colonyName string) error { return nil }
 
 // ProcessDatabase interface
 func (db *DatabaseMock) AddProcess(process *core.Process) error {
@@ -421,8 +439,8 @@ func (db *DatabaseMock) FindSuccessfulProcesses(colonyName string, executorType 
 func (db *DatabaseMock) FindFailedProcesses(colonyName string, executorType string, label string, initiator string, count int) ([]*core.Process, error) { return nil, nil }
 func (db *DatabaseMock) FindAllRunningProcesses() ([]*core.Process, error) { return nil, nil }
 func (db *DatabaseMock) FindAllWaitingProcesses() ([]*core.Process, error) { return nil, nil }
-func (db *DatabaseMock) FindCandidates(colonyName string, executorType string, cpu int64, memory int64, storage int64, nodes int, processes int, processesPerNode int, count int) ([]*core.Process, error) { return nil, nil }
-func (db *DatabaseMock) FindCandidatesByName(colonyName string, executorName string, executorType string, cpu int64, memory int64, storage int64, nodes int, processes int, processesPerNode int, count int) ([]*core.Process, error) { return nil, nil }
+func (db *DatabaseMock) FindCandidates(colonyName string, executorType string, executorLocationName string, cpu int64, memory int64, storage int64, nodes int, processes int, processesPerNode int, count int) ([]*core.Process, error) { return nil, nil }
+func (db *DatabaseMock) FindCandidatesByName(colonyName string, executorName string, executorType string, executorLocationName string, cpu int64, memory int64, storage int64, nodes int, processes int, processesPerNode int, count int) ([]*core.Process, error) { return nil, nil }
 func (db *DatabaseMock) RemoveProcessByID(processID string) error { return nil }
 func (db *DatabaseMock) RemoveAllProcesses() error { return nil }
 func (db *DatabaseMock) RemoveAllWaitingProcessesByColonyName(colonyName string) error { return nil }
@@ -439,6 +457,7 @@ func (db *DatabaseMock) SetErrors(processID string, errs []string) error { retur
 func (db *DatabaseMock) SetParents(processID string, parents []string) error { return nil }
 func (db *DatabaseMock) SetChildren(processID string, children []string) error { return nil }
 func (db *DatabaseMock) Assign(executorID string, process *core.Process) error { return nil }
+func (db *DatabaseMock) SelectAndAssign(colonyName string, executorID string, executorName string, executorType string, executorLocation string, cpu int64, memory int64, storage int64, nodes int, processes int, processesPerNode int, count int) (*core.Process, error) { return nil, nil }
 func (db *DatabaseMock) Unassign(process *core.Process) error { return nil }
 func (db *DatabaseMock) MarkFailed(processID string, errs []string) error { return nil }
 func (db *DatabaseMock) CountProcesses() (int, error) { return 0, nil }
@@ -571,6 +590,8 @@ func (db *DatabaseMock) GetLogsByProcessID(processID string, limit int) ([]*core
 func (db *DatabaseMock) GetLogsByProcessIDSince(processID string, limit int, since int64) ([]*core.Log, error) { return nil, nil }
 func (db *DatabaseMock) GetLogsByExecutor(executorName string, limit int) ([]*core.Log, error) { return nil, nil }
 func (db *DatabaseMock) GetLogsByExecutorSince(executorName string, limit int, since int64) ([]*core.Log, error) { return nil, nil }
+func (db *DatabaseMock) GetLogsByProcessIDLatest(processID string, limit int) ([]*core.Log, error) { return nil, nil }
+func (db *DatabaseMock) GetLogsByExecutorLatest(executorName string, limit int) ([]*core.Log, error) { return nil, nil }
 func (db *DatabaseMock) RemoveLogsByColonyName(colonyName string) error { return nil }
 func (db *DatabaseMock) CountLogs(colonyName string) (int, error) { return 0, nil }
 func (db *DatabaseMock) SearchLogs(colonyName string, text string, days int, count int) ([]*core.Log, error) { return nil, nil }
@@ -619,6 +640,7 @@ func (db *DatabaseMock) GetBlueprintDefinitionByName(namespace, name string) (*c
 func (db *DatabaseMock) GetBlueprintDefinitions() ([]*core.BlueprintDefinition, error) { return nil, nil }
 func (db *DatabaseMock) GetBlueprintDefinitionsByNamespace(namespace string) ([]*core.BlueprintDefinition, error) { return nil, nil }
 func (db *DatabaseMock) GetBlueprintDefinitionsByGroup(group string) ([]*core.BlueprintDefinition, error) { return nil, nil }
+func (db *DatabaseMock) GetBlueprintDefinitionByKind(kind string) (*core.BlueprintDefinition, error) { return nil, nil }
 func (db *DatabaseMock) UpdateBlueprintDefinition(sd *core.BlueprintDefinition) error { return nil }
 func (db *DatabaseMock) RemoveBlueprintDefinitionByID(id string) error { return nil }
 func (db *DatabaseMock) RemoveBlueprintDefinitionByName(namespace, name string) error { return nil }
@@ -632,6 +654,7 @@ func (db *DatabaseMock) GetBlueprints() ([]*core.Blueprint, error) { return nil,
 func (db *DatabaseMock) GetBlueprintsByNamespace(namespace string) ([]*core.Blueprint, error) { return nil, nil }
 func (db *DatabaseMock) GetBlueprintsByKind(kind string) ([]*core.Blueprint, error) { return nil, nil }
 func (db *DatabaseMock) GetBlueprintsByNamespaceAndKind(namespace, kind string) ([]*core.Blueprint, error) { return nil, nil }
+func (db *DatabaseMock) GetBlueprintsByNamespaceKindAndLocation(namespace, kind, locationName string) ([]*core.Blueprint, error) { return nil, nil }
 func (db *DatabaseMock) UpdateBlueprint(blueprint *core.Blueprint) error { return nil }
 func (db *DatabaseMock) UpdateBlueprintStatus(id string, status map[string]interface{}) error { return nil }
 func (db *DatabaseMock) RemoveBlueprintByID(id string) error { return nil }

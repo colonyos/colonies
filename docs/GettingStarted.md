@@ -16,7 +16,7 @@ export LANGUAGE=en_US.UTF-8
 export LC_ALL=en_US.UTF-8
 export LC_CTYPE=UTF-8
 export TZ=Europe/Stockholm
-export COLONIES_SERVER_TLS="false"
+export COLONIES_TLS="false"
 export COLONIES_SERVER_HOST="localhost"
 export COLONIES_SERVER_PORT="50080"
 export COLONIES_MONITOR_PORT="21120"
@@ -38,10 +38,10 @@ or
 source devenv
 ```
 
-Now, start the development server. The development server will automatically add the keys from the environment (e.g. COLONIES_EXECUTOR_PRVKEY) to the Colonies keychain.
+Now, start the server. The server will use the keys from the environment variables.
 
 ```console
-colonies dev
+colonies server start
 ```
 
 ## Start an executor 

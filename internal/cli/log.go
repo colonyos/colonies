@@ -3,6 +3,8 @@ package cli
 import (
 	"fmt"
 	"os"
+	"regexp"
+	"strings"
 	"time"
 
 	"github.com/colonyos/colonies/internal/table"
@@ -29,6 +31,8 @@ func init() {
 	getLogsCmd.Flags().Int64VarP(&Since, "since", "", 0, "Fetch log generated since (unix nano) time")
 	getLogsCmd.Flags().IntVarP(&Count, "count", "", 100, "Number of messages to fetch")
 	getLogsCmd.Flags().BoolVarP(&Follow, "follow", "", false, "Follow process")
+	getLogsCmd.Flags().BoolVarP(&Latest, "latest", "l", true, "Show latest logs (most recent)")
+	getLogsCmd.Flags().BoolVarP(&First, "first", "f", false, "Show logs from the start")
 
 	searchLogsCmd.Flags().StringVarP(&Text, "text", "t", "", "Text to search")
 	searchLogsCmd.Flags().IntVarP(&Days, "days", "d", 1, "Number of days back in time to search")
@@ -57,6 +61,46 @@ var addLogCmd = &cobra.Command{
 	},
 }
 
+// logrusPattern matches logrus-style log format: time="..." level=... msg="..."
+var logrusPattern = regexp.MustCompile(`^time="([^"]+)"\s+level=(\w+)\s+msg="(.*)"$`)
+
+// formatLogMessage parses and colorizes logrus-style log messages
+// Falls back to plain output for non-matching formats
+func formatLogMessage(message string, theme table.Theme) string {
+	// Trim trailing newline for parsing, we'll add it back
+	trimmed := strings.TrimSuffix(message, "\n")
+
+	matches := logrusPattern.FindStringSubmatch(trimmed)
+	if matches == nil {
+		// Not logrus format, return as-is
+		return message
+	}
+
+	timestamp := matches[1]
+	level := matches[2]
+	msg := matches[3]
+
+	// Color the level based on severity
+	var levelColored string
+	switch strings.ToLower(level) {
+	case "error", "fatal", "panic":
+		levelColored = termenv.String(strings.ToUpper(level)).Foreground(theme.ColorRed).Bold().String()
+	case "warn", "warning":
+		levelColored = termenv.String(strings.ToUpper(level)).Foreground(theme.ColorYellow).Bold().String()
+	case "info":
+		levelColored = termenv.String(strings.ToUpper(level)).Foreground(theme.ColorGreen).String()
+	case "debug", "trace":
+		levelColored = termenv.String(strings.ToUpper(level)).Foreground(theme.ColorGray).String()
+	default:
+		levelColored = termenv.String(strings.ToUpper(level)).Foreground(theme.ColorBlue).String()
+	}
+
+	// Format: [timestamp] LEVEL  message
+	timeColored := termenv.String(timestamp).Foreground(theme.ColorCyan).String()
+
+	return fmt.Sprintf("[%s] %-7s %s\n", timeColored, levelColored, msg)
+}
+
 var getLogsCmd = &cobra.Command{
 	Use:   "get",
 	Short: "Get logs added to a process",
@@ -64,7 +108,12 @@ var getLogsCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		client := setup()
 
-		var err error
+		theme, err := table.LoadTheme("solarized-dark")
+		CheckError(err)
+
+		// If --first is specified, disable --latest
+		useLatest := Latest && !First
+
 		if Follow {
 			var logs []*core.Log
 			var lastTimestamp int64
@@ -80,23 +129,34 @@ var getLogsCmd = &cobra.Command{
 					time.Sleep(1 * time.Second)
 					continue
 				} else {
-					for _, log := range logs {
-						fmt.Print(log.Message)
+					for _, logEntry := range logs {
+						fmt.Print(formatLogMessage(logEntry.Message, theme))
 					}
 					lastTimestamp = logs[len(logs)-1].Timestamp
 				}
 			}
 		} else {
-			var err error
 			var logs []*core.Log
 			if TargetExecutorName == "" {
-				logs, err = client.GetLogsByProcessSince(ColonyName, ProcessID, Count, Since, PrvKey)
+				if useLatest && Since == 0 {
+					// Get latest logs (most recent count logs)
+					logs, err = client.GetLogsByProcessLatest(ColonyName, ProcessID, Count, PrvKey)
+				} else {
+					// Get logs from start or since timestamp
+					logs, err = client.GetLogsByProcessSince(ColonyName, ProcessID, Count, Since, PrvKey)
+				}
 			} else {
-				logs, err = client.GetLogsByExecutorSince(ColonyName, TargetExecutorName, Count, Since, PrvKey)
+				if useLatest && Since == 0 {
+					// Get latest logs (most recent count logs)
+					logs, err = client.GetLogsByExecutorLatest(ColonyName, TargetExecutorName, Count, PrvKey)
+				} else {
+					// Get logs from start or since timestamp
+					logs, err = client.GetLogsByExecutorSince(ColonyName, TargetExecutorName, Count, Since, PrvKey)
+				}
 			}
 			CheckError(err)
-			for _, log := range logs {
-				fmt.Print(log.Message)
+			for _, logEntry := range logs {
+				fmt.Print(formatLogMessage(logEntry.Message, theme))
 			}
 		}
 	},

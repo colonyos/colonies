@@ -283,5 +283,28 @@ Output:
 
 ## Delete a cron
 ```console
-colonies cron delete --cronid  ba6e938289b8e33c399678f9b812af0c3602a36704841965c2dc8c672efc1834 
+colonies cron delete --cronid  ba6e938289b8e33c399678f9b812af0c3602a36704841965c2dc8c672efc1834
 ```
+
+## Preventing Duplicate Workflows
+
+The `WaitForPrevProcessGraph` flag prevents a cron from spawning a new workflow if the previous workflow is still running. This is useful to avoid resource contention and duplicate processing.
+
+When `WaitForPrevProcessGraph` is set to `true`:
+- The cron will only spawn a new workflow if the previous workflow has completed (SUCCESS or FAILED state)
+- If the previous workflow is still running, the cron trigger is skipped
+- This applies to both scheduled triggers and manual `RunCron` API calls
+
+This is particularly important for blueprint reconciliation crons, which are automatically created with `WaitForPrevProcessGraph: true` to prevent multiple reconcilers from processing the same blueprint simultaneously.
+
+## Manually Triggering a Cron
+
+You can manually trigger a cron using the `RunCron` API. This is useful for:
+- Testing cron workflows without waiting for the scheduled time
+- Triggering immediate reconciliation after blueprint changes
+
+```console
+colonies cron run --cronid ba6e938289b8e33c399678f9b812af0c3602a36704841965c2dc8c672efc1834
+```
+
+Note: If `WaitForPrevProcessGraph` is enabled and the previous workflow is still running, the manual trigger will be skipped to prevent duplicate workflows.

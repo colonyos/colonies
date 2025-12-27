@@ -43,10 +43,8 @@ Only the colony owner is allowed to add a new executor.
 ```console
 colonies executor add --colonyid 0f4f350d264d1cffdec0d62c723a7da8b730c6863365da75697fd26a6d79ccc5 --colonyprvkey d95c54b63ac7c9ba624445fd755998e14e6aa71a17a74889c6a1754be80bcf09 --spec ./examples/executors/executor.json
 ```
-Output:
-```
-The *colonyprvkey* is automatically obtained from the keychain or environmental variable (COLONIES_COLONY_PRVKEY) if not specified. The *colonyid* can also be specified using an environmental variables.
-```
+
+The *colonyprvkey* is automatically obtained from the COLONIES_COLONY_PRVKEY environment variable if not specified. The *colonyid* can also be specified using environment variables.
 
 ```console
 export COLONIES_COLONY_ID="0f4f350d264d1cffdec0d62c723a7da8b730c6863365da75697fd26a6d79ccc5"
@@ -80,7 +78,7 @@ Output:
 Executor with Id <4599f89a8afb7ecd9beec0b7861fab3bacba3a0e2dbe050e9f7584f3c9d7ac58> is not approved
 ```
 
-A Colony Executor needs to be approved by the Colony Owner before it can execute processes. As before, the Colony Owner's private key is automatically fetched from the keychain.
+A Colony Executor needs to be approved by the Colony Owner before it can execute processes. The Colony Owner's private key is automatically obtained from the COLONIES_COLONY_PRVKEY environment variable.
 
 ```console
 colonies executor approve --executorid 4599f89a8afb7ecd9beec0b7861fab3bacba3a0e2dbe050e9f7584f3c9d7ac58 
