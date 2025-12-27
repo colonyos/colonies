@@ -11,69 +11,32 @@ import (
 	ginframework "github.com/gin-gonic/gin"
 )
 
-// Backend implements the complete Backend interface for Gin
-type Backend struct{}
-
-// NewBackend creates a new Gin backend implementation
-func NewBackend() backends.Backend {
-	return &Backend{}
-}
-
-func (g *Backend) NewEngine() backends.Engine {
+// CreateEngine creates a new blank Engine without middleware, wrapped as backends.Engine
+func CreateEngine() backends.Engine {
 	return NewEngineAdapter(New())
 }
 
-func (g *Backend) NewEngineWithDefaults() backends.Engine {
+// CreateEngineWithDefaults creates a new Engine with default middleware, wrapped as backends.Engine
+func CreateEngineWithDefaults() backends.Engine {
 	return NewEngineAdapter(Default())
 }
 
-func (g *Backend) NewServer(port int, engine backends.Engine) backends.Server {
+// NewBackendServer creates a new Server from a backends.Engine, wrapped as backends.Server
+func NewBackendServer(port int, engine backends.Engine) backends.Server {
 	ginEngineAdapter := engine.(*EngineAdapter)
 	ginServer := NewServer(port, ginEngineAdapter.engine)
 	return NewServerAdapter(ginServer)
 }
 
-func (g *Backend) NewServerWithAddr(addr string, engine backends.Engine) backends.Server {
+// NewBackendServerWithAddr creates a new Server with address from a backends.Engine
+func NewBackendServerWithAddr(addr string, engine backends.Engine) backends.Server {
 	ginEngineAdapter := engine.(*EngineAdapter)
 	ginServer := NewServerWithAddr(addr, ginEngineAdapter.engine)
 	return NewServerAdapter(ginServer)
 }
 
-func (g *Backend) SetMode(mode string) {
-	ginframework.SetMode(mode)
-}
-
-func (g *Backend) GetMode() string {
-	return ginframework.Mode()
-}
-
-func (g *Backend) Logger() backends.MiddlewareFunc {
-	return func(c backends.Context) {
-		adapter := c.(*ContextAdapter)
-		ginframework.Logger()(adapter.ginContext)
-	}
-}
-
-func (g *Backend) Recovery() backends.MiddlewareFunc {
-	return func(c backends.Context) {
-		adapter := c.(*ContextAdapter)
-		ginframework.Recovery()(adapter.ginContext)
-	}
-}
-
-// CORSBackend implements CORSBackend interface
-type CORSBackend struct {
-	*Backend
-}
-
-// NewCORSBackend creates a new Gin CORS backend implementation
-func NewCORSBackend() backends.CORSBackend {
-	return &CORSBackend{
-		Backend: &Backend{},
-	}
-}
-
-func (g *CORSBackend) CORS() backends.MiddlewareFunc {
+// CORS returns the default CORS middleware
+func CORS() backends.MiddlewareFunc {
 	corsMiddleware := cors.Default()
 	return func(c backends.Context) {
 		adapter := c.(*ContextAdapter)
@@ -81,8 +44,8 @@ func (g *CORSBackend) CORS() backends.MiddlewareFunc {
 	}
 }
 
-func (g *CORSBackend) CORSWithConfig(config backends.CORSConfig) backends.MiddlewareFunc {
-	// Convert generic CORSConfig to gin-contrib/cors Config
+// CORSWithConfig returns CORS middleware with custom configuration
+func CORSWithConfig(config backends.CORSConfig) backends.MiddlewareFunc {
 	corsConfig := cors.Config{
 		AllowOrigins:     config.AllowOrigins,
 		AllowMethods:     config.AllowMethods,

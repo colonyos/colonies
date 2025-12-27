@@ -48,7 +48,6 @@ type WSController interface {
 }
 
 type Server struct {
-	backend                 backends.CORSBackend
 	engine                  backends.Engine
 	server                  backends.Server
 	controller              controllers.Controller
@@ -145,10 +144,9 @@ func createServerInternal(db database.Database,
 	}).Info("=== INITIALIZING COLONIES SERVER ===")
 
 	// Initialize Gin HTTP backend
-	server.backend = gin.NewCORSBackend()
-	server.engine = server.backend.NewEngineWithDefaults()
-	server.engine.Use(server.backend.CORS())
-	server.server = server.backend.NewServer(port, server.engine)
+	server.engine = gin.CreateEngineWithDefaults()
+	server.engine.Use(gin.CORS())
+	server.server = gin.NewBackendServer(port, server.engine)
 	log.Info("Gin HTTP backend initialized successfully")
 
 	// Set all the specific database interfaces

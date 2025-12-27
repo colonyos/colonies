@@ -4,7 +4,6 @@ package backends
 
 import (
 	"context"
-	"io"
 	"net/http"
 	"time"
 
@@ -103,23 +102,6 @@ type Server interface {
 	HTTPServer() *http.Server
 }
 
-// Backend represents a complete HTTP backend implementation
-type Backend interface {
-	// Factory methods
-	NewEngine() Engine
-	NewEngineWithDefaults() Engine
-	NewServer(port int, engine Engine) Server
-	NewServerWithAddr(addr string, engine Engine) Server
-	
-	// Backend-specific configuration
-	SetMode(mode string)
-	GetMode() string
-	
-	// Common middleware
-	Logger() MiddlewareFunc
-	Recovery() MiddlewareFunc
-}
-
 // CORSConfig represents CORS configuration options
 type CORSConfig struct {
 	AllowOrigins     []string
@@ -128,60 +110,6 @@ type CORSConfig struct {
 	ExposeHeaders    []string
 	AllowCredentials bool
 	MaxAge           time.Duration
-}
-
-// CORSBackend represents a backend that supports CORS middleware
-type CORSBackend interface {
-	Backend
-	
-	// CORS middleware
-	CORS() MiddlewareFunc
-	CORSWithConfig(config CORSConfig) MiddlewareFunc
-}
-
-// ResponseWriter represents a generic response writer interface
-type ResponseWriter interface {
-	http.ResponseWriter
-	
-	// Additional methods that some frameworks provide
-	Size() int
-	Status() int
-	Written() bool
-	WriteHeaderNow()
-}
-
-// LogFormatter represents a log formatter function
-type LogFormatter func(params LogFormatterParams) string
-
-// LogFormatterParams contains the parameters for log formatting
-type LogFormatterParams struct {
-	Request      *http.Request
-	TimeStamp    time.Time
-	StatusCode   int
-	Latency      time.Duration
-	ClientIP     string
-	Method       string
-	Path         string
-	ErrorMessage string
-	BodySize     int
-	Keys         map[string]interface{}
-}
-
-// LoggingBackend represents a backend that supports custom logging
-type LoggingBackend interface {
-	Backend
-	
-	// Logging middleware with custom configuration
-	LoggerWithFormatter(formatter LogFormatter) MiddlewareFunc
-	LoggerWithWriter(out io.Writer, notlogged ...string) MiddlewareFunc
-}
-
-// AuthBackend represents a backend that supports authentication middleware
-type AuthBackend interface {
-	Backend
-	
-	// Authentication middleware
-	BasicAuth(accounts map[string]string) MiddlewareFunc
 }
 
 // =============================================================================
@@ -249,10 +177,4 @@ type RealtimeBackend interface {
 	CreateTestableEventHandler(relayServer interface{}) TestableRealtimeEventHandler
 	// CreateSubscriptionController creates a subscription controller
 	CreateSubscriptionController(eventHandler RealtimeEventHandler) RealtimeSubscriptionController
-}
-
-// FullBackend represents a complete backend implementation with both HTTP and realtime support
-type FullBackend interface {
-	Backend
-	RealtimeBackend
 }
