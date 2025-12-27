@@ -9,7 +9,6 @@ import (
 )
 
 const DBPrefix = "PROD_"
-const KEYCHAIN_PATH = ".colonies"
 const TimeLayout = "2006-01-02 15:04:05"
 const DefaultDBHost = "localhost"
 const DefaultDBPort = 5432

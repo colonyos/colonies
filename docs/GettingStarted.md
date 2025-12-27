@@ -38,7 +38,7 @@ or
 source devenv
 ```
 
-Now, start the development server. The development server will automatically add the keys from the environment (e.g. COLONIES_EXECUTOR_PRVKEY) to the Colonies keychain.
+Now, start the development server. The development server will use the keys from the environment variables (e.g. COLONIES_EXECUTOR_PRVKEY).
 
 ```console
 colonies dev
