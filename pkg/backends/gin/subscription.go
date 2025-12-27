@@ -92,11 +92,19 @@ func (ctrl *SubscriptionController) sendProcessToConnection(executorID string,
 }
 
 func (ctrl *SubscriptionController) subscribe(executorID string, processID string, subscription *backends.RealtimeSubscription) {
+	// Use a channel to signal when subscription is registered
+	// This prevents the race condition where Signal() is called before Subscribe() completes
+	registered := make(chan struct{})
+
 	go func() {
 		ctx, cancelCtx := context.WithTimeout(context.Background(), time.Duration(subscription.Timeout)*time.Second)
 		defer cancelCtx()
 
 		processChan, errChan := ctrl.eventHandler.Subscribe(subscription.ExecutorType, subscription.State, processID, subscription.Location, ctx)
+
+		// Signal that registration is complete
+		close(registered)
+
 		for {
 			select {
 			case err := <-errChan:
@@ -115,6 +123,10 @@ func (ctrl *SubscriptionController) subscribe(executorID string, processID strin
 			}
 		}
 	}()
+
+	// Wait for subscription to be registered before returning
+	// This ensures Signal() won't miss events due to timing
+	<-registered
 }
 
 // AddProcessesSubscriber implements backends.RealtimeSubscriptionController
