@@ -47,6 +47,7 @@ type Controller interface {
 	CloseFailed(processID string, errs []string) error
 	HandleDefunctProcessgraph(processGraphID string, processID string, err error) error
 	Assign(executorID string, colonyName string, cpu int64, memory int64) (*AssignResult, error)
+	DistributedAssign(executor *core.Executor, colonyName string, cpu int64, memory int64, storage int64) (*AssignResult, error)
 	UnassignExecutor(processID string) error
 	ResetProcess(processID string) error
 	GetColonyStatistics(colonyName string) (*core.Statistics, error)

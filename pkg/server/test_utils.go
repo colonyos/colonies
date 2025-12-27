@@ -224,7 +224,7 @@ func prepareTestsWithRetention(t *testing.T, retention bool) (*client.ColoniesCl
 	node := cluster.Node{Name: "etcd", Host: "localhost", EtcdClientPort: 24100, EtcdPeerPort: 23100, RelayPort: 25100, APIPort: constants.TESTPORT}
 	clusterConfig := cluster.Config{}
 	clusterConfig.AddNode(node)
-	server := CreateServer(db, constants.TESTPORT, EnableTLS, "", "", node, clusterConfig, "/tmp/colonies/etcd", constants.GENERATOR_TRIGGER_PERIOD, constants.CRON_TRIGGER_PERIOD, true, false, retention, 1, 500)
+	server := CreateServer(db, constants.TESTPORT, EnableTLS, "", "", node, clusterConfig, "/tmp/colonies/etcd", constants.GENERATOR_TRIGGER_PERIOD, constants.CRON_TRIGGER_PERIOD, false, false, retention, 1, 500)
 
 	done := make(chan bool)
 	go func() {
@@ -400,6 +400,59 @@ func StartCluster(t *testing.T, db database.Database, size int) []ServerInfo {
 		go func(i int, node cluster.Node) {
 			log.WithFields(log.Fields{"APIPort": node.APIPort}).Info("Starting ColoniesServer")
 			server := CreateServer(db, node.APIPort, false, "", "", node, clusterConfig, "/tmp/colonies/etcd"+strconv.Itoa(i), constants.GENERATOR_TRIGGER_PERIOD, constants.CRON_TRIGGER_PERIOD, true, false, false, -1, 500)
+			done := make(chan struct{})
+			s := ServerInfo{ServerID: serverID, ServerPrvKey: serverPrvKey, Server: server, Node: node, Done: done}
+			go func(i int) {
+				log.Info("ColoniesServer serving")
+				server.ServeForever()
+				log.Info("ColoniesServer stopped")
+				done <- struct{}{}
+			}(i)
+			sChan <- s
+		}(i, node)
+	}
+
+	var servers []ServerInfo
+	for range clusterConfig.Nodes {
+		s := <-sChan
+		servers = append(servers, s)
+	}
+
+	return servers
+}
+
+// StartClusterDistributed creates a cluster with ExclusiveAssign=false for testing distributed assignment
+func StartClusterDistributed(t *testing.T, db database.Database, size int) []ServerInfo {
+	os.RemoveAll("/tmp/colonies")
+	gin.SetMode(gin.ReleaseMode)
+	gin.DefaultWriter = ioutil.Discard
+
+	clusterConfig := cluster.Config{}
+	for i := 0; i < size; i++ {
+		node := cluster.Node{
+			Name:           "etcd" + strconv.Itoa(i),
+			Host:           "localhost",
+			EtcdClientPort: 21000 + i,
+			EtcdPeerPort:   22000 + i,
+			RelayPort:      23000 + i,
+			APIPort:        24000 + i}
+		clusterConfig.AddNode(node)
+	}
+
+	crypto := crypto.CreateCrypto()
+	serverPrvKey, err := crypto.GeneratePrivateKey()
+	assert.Nil(t, err)
+	serverID, err := crypto.GenerateID(serverPrvKey)
+	assert.Nil(t, err)
+
+	db.SetServerID("", serverID)
+
+	sChan := make(chan ServerInfo)
+	for i, node := range clusterConfig.Nodes {
+		go func(i int, node cluster.Node) {
+			log.WithFields(log.Fields{"APIPort": node.APIPort}).Info("Starting ColoniesServer")
+			// ExclusiveAssign=false for distributed assignment
+			server := CreateServer(db, node.APIPort, false, "", "", node, clusterConfig, "/tmp/colonies/etcd"+strconv.Itoa(i), constants.GENERATOR_TRIGGER_PERIOD, constants.CRON_TRIGGER_PERIOD, false, false, false, -1, 500)
 			done := make(chan struct{})
 			s := ServerInfo{ServerID: serverID, ServerPrvKey: serverPrvKey, Server: server, Node: node, Done: done}
 			go func(i int) {

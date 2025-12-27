@@ -1,6 +1,8 @@
 package postgresql
 
 import (
+	"math"
+	"sort"
 	"testing"
 	"time"
 
@@ -8,6 +10,40 @@ import (
 	"github.com/colonyos/colonies/pkg/utils"
 	"github.com/stretchr/testify/assert"
 )
+
+// byLowestPriorityTime is used to sort processes by priority time (same as scheduler)
+type byLowestPriorityTime []*core.Process
+
+func (c byLowestPriorityTime) Len() int           { return len(c) }
+func (c byLowestPriorityTime) Less(i, j int) bool { return c[i].PriorityTime < c[j].PriorityTime }
+func (c byLowestPriorityTime) Swap(i, j int)      { c[i], c[j] = c[j], c[i] }
+
+// schedulerSelect replicates scheduler.Select logic for testing
+func schedulerSelect(db *PQDatabase, colonyName string, executor *core.Executor, cpu, memory int64) (*core.Process, error) {
+	storage := int64(0)
+	nodes := math.MaxInt8
+	processes := math.MaxInt8
+	processesPerNode := math.MaxInt8
+
+	candidates, err := db.FindCandidatesByName(colonyName, executor.Name, executor.Type, executor.LocationName, cpu, memory, storage, nodes, processes, processesPerNode, 100)
+	if err != nil {
+		return nil, err
+	}
+
+	candidates2, err := db.FindCandidates(colonyName, executor.Type, executor.LocationName, cpu, memory, storage, nodes, processes, processesPerNode, 100)
+	if err != nil {
+		return nil, err
+	}
+
+	candidates = append(candidates, candidates2...)
+	if len(candidates) == 0 {
+		return nil, nil
+	}
+
+	c := byLowestPriorityTime(candidates)
+	sort.Sort(&c)
+	return c[0], nil
+}
 
 func TestProcessClosedDB(t *testing.T) {
 	db, err := PrepareTests()
@@ -2399,4 +2435,487 @@ func TestFindCandidatesByNameCaseInsensitiveLocation(t *testing.T) {
 	candidates, err = db.FindCandidatesByName(colony.Name, "specific_executor", executor.Type, "home", 0, 0, 0, 0, 0, 0, 100)
 	assert.Nil(t, err)
 	assert.Len(t, candidates, 2)
+}
+
+func TestSelectAndAssign(t *testing.T) {
+	db, err := PrepareTests()
+	assert.Nil(t, err)
+
+	defer db.Close()
+
+	colony := core.CreateColony(core.GenerateRandomID(), "test_colony_name")
+	err = db.AddColony(colony)
+	assert.Nil(t, err)
+
+	executor := utils.CreateTestExecutor(colony.Name)
+	err = db.AddExecutor(executor)
+	assert.Nil(t, err)
+
+	// Create and add a process
+	process := utils.CreateTestProcess(colony.Name)
+	err = db.AddProcess(process)
+	assert.Nil(t, err)
+
+	// Verify process is in WAITING state
+	processFromDB, err := db.GetProcessByID(process.ID)
+	assert.Nil(t, err)
+	assert.Equal(t, core.WAITING, processFromDB.State)
+	assert.False(t, processFromDB.IsAssigned)
+
+	// SelectAndAssign should atomically select and assign the process
+	assignedProcess, err := db.SelectAndAssign(
+		colony.Name,
+		executor.ID,
+		executor.Name,
+		executor.Type,
+		executor.LocationName,
+		0, 0, 0,  // cpu, memory, storage
+		0, 0, 0,  // nodes, processes, processesPerNode
+		1,        // count
+	)
+	assert.Nil(t, err)
+	assert.NotNil(t, assignedProcess)
+	assert.Equal(t, process.ID, assignedProcess.ID)
+	assert.True(t, assignedProcess.IsAssigned)
+	assert.Equal(t, core.RUNNING, assignedProcess.State)
+	assert.Equal(t, executor.ID, assignedProcess.AssignedExecutorID)
+
+	// Verify process is assigned in database
+	processFromDB, err = db.GetProcessByID(process.ID)
+	assert.Nil(t, err)
+	assert.True(t, processFromDB.IsAssigned)
+	assert.Equal(t, core.RUNNING, processFromDB.State)
+
+	// SelectAndAssign again should return nil (no more processes)
+	assignedProcess2, err := db.SelectAndAssign(
+		colony.Name,
+		executor.ID,
+		executor.Name,
+		executor.Type,
+		executor.LocationName,
+		0, 0, 0,
+		0, 0, 0,
+		1,
+	)
+	assert.Nil(t, err)
+	assert.Nil(t, assignedProcess2)
+}
+
+func TestSelectAndAssignPriority(t *testing.T) {
+	db, err := PrepareTests()
+	assert.Nil(t, err)
+
+	defer db.Close()
+
+	colony := core.CreateColony(core.GenerateRandomID(), "test_colony_name")
+	err = db.AddColony(colony)
+	assert.Nil(t, err)
+
+	executor := utils.CreateTestExecutor(colony.Name)
+	err = db.AddExecutor(executor)
+	assert.Nil(t, err)
+
+	// Create processes with different priority times
+	process1 := utils.CreateTestProcess(colony.Name)
+	process1.FunctionSpec.Priority = 10
+	err = db.AddProcess(process1)
+	assert.Nil(t, err)
+
+	time.Sleep(10 * time.Millisecond)
+
+	process2 := utils.CreateTestProcess(colony.Name)
+	process2.FunctionSpec.Priority = 1 // Higher priority (lower number = higher priority)
+	err = db.AddProcess(process2)
+	assert.Nil(t, err)
+
+	// SelectAndAssign should pick the process with lowest PriorityTime
+	// Since process1 was added first, it should have lower PriorityTime
+	assignedProcess, err := db.SelectAndAssign(
+		colony.Name,
+		executor.ID,
+		executor.Name,
+		executor.Type,
+		executor.LocationName,
+		0, 0, 0,
+		0, 0, 0,
+		1,
+	)
+	assert.Nil(t, err)
+	assert.NotNil(t, assignedProcess)
+	assert.Equal(t, process1.ID, assignedProcess.ID)
+
+	// Next SelectAndAssign should pick process2
+	assignedProcess2, err := db.SelectAndAssign(
+		colony.Name,
+		executor.ID,
+		executor.Name,
+		executor.Type,
+		executor.LocationName,
+		0, 0, 0,
+		0, 0, 0,
+		1,
+	)
+	assert.Nil(t, err)
+	assert.NotNil(t, assignedProcess2)
+	assert.Equal(t, process2.ID, assignedProcess2.ID)
+}
+
+func TestSelectAndAssignByExecutorName(t *testing.T) {
+	db, err := PrepareTests()
+	assert.Nil(t, err)
+
+	defer db.Close()
+
+	colony := core.CreateColony(core.GenerateRandomID(), "test_colony_name")
+	err = db.AddColony(colony)
+	assert.Nil(t, err)
+
+	executor := utils.CreateTestExecutor(colony.Name)
+	executor.Name = "specific_executor"
+	err = db.AddExecutor(executor)
+	assert.Nil(t, err)
+
+	// Create a process targeting the specific executor
+	process := utils.CreateTestProcess(colony.Name)
+	process.FunctionSpec.Conditions.ExecutorNames = []string{"specific_executor"}
+	err = db.AddProcess(process)
+	assert.Nil(t, err)
+
+	// SelectAndAssign with matching executor name should work
+	assignedProcess, err := db.SelectAndAssign(
+		colony.Name,
+		executor.ID,
+		"specific_executor",
+		executor.Type,
+		executor.LocationName,
+		0, 0, 0,
+		0, 0, 0,
+		1,
+	)
+	assert.Nil(t, err)
+	assert.NotNil(t, assignedProcess)
+	assert.Equal(t, process.ID, assignedProcess.ID)
+}
+
+func TestSelectAndAssignByExecutorNameNotMatching(t *testing.T) {
+	db, err := PrepareTests()
+	assert.Nil(t, err)
+
+	defer db.Close()
+
+	colony := core.CreateColony(core.GenerateRandomID(), "test_colony_name")
+	err = db.AddColony(colony)
+	assert.Nil(t, err)
+
+	executor := utils.CreateTestExecutor(colony.Name)
+	executor.Name = "different_executor"
+	err = db.AddExecutor(executor)
+	assert.Nil(t, err)
+
+	// Create a process targeting a specific executor
+	process := utils.CreateTestProcess(colony.Name)
+	process.FunctionSpec.Conditions.ExecutorNames = []string{"specific_executor"}
+	err = db.AddProcess(process)
+	assert.Nil(t, err)
+
+	// SelectAndAssign with non-matching executor name should return nil
+	assignedProcess, err := db.SelectAndAssign(
+		colony.Name,
+		executor.ID,
+		"different_executor",
+		executor.Type,
+		executor.LocationName,
+		0, 0, 0,
+		0, 0, 0,
+		1,
+	)
+	assert.Nil(t, err)
+	assert.Nil(t, assignedProcess)
+}
+
+func TestSelectAndAssignLocation(t *testing.T) {
+	db, err := PrepareTests()
+	assert.Nil(t, err)
+
+	defer db.Close()
+
+	colony := core.CreateColony(core.GenerateRandomID(), "test_colony_name")
+	err = db.AddColony(colony)
+	assert.Nil(t, err)
+
+	executor := utils.CreateTestExecutor(colony.Name)
+	executor.LocationName = "datacenter-1"
+	err = db.AddExecutor(executor)
+	assert.Nil(t, err)
+
+	// Create a process requiring specific location
+	process := utils.CreateTestProcess(colony.Name)
+	process.FunctionSpec.Conditions.LocationName = "datacenter-1"
+	err = db.AddProcess(process)
+	assert.Nil(t, err)
+
+	// SelectAndAssign with matching location should work
+	assignedProcess, err := db.SelectAndAssign(
+		colony.Name,
+		executor.ID,
+		executor.Name,
+		executor.Type,
+		"datacenter-1",
+		0, 0, 0,
+		0, 0, 0,
+		1,
+	)
+	assert.Nil(t, err)
+	assert.NotNil(t, assignedProcess)
+	assert.Equal(t, process.ID, assignedProcess.ID)
+}
+
+func TestSelectAndAssignLocationNotMatching(t *testing.T) {
+	db, err := PrepareTests()
+	assert.Nil(t, err)
+
+	defer db.Close()
+
+	colony := core.CreateColony(core.GenerateRandomID(), "test_colony_name")
+	err = db.AddColony(colony)
+	assert.Nil(t, err)
+
+	executor := utils.CreateTestExecutor(colony.Name)
+	executor.LocationName = "datacenter-2"
+	err = db.AddExecutor(executor)
+	assert.Nil(t, err)
+
+	// Create a process requiring specific location
+	process := utils.CreateTestProcess(colony.Name)
+	process.FunctionSpec.Conditions.LocationName = "datacenter-1"
+	err = db.AddProcess(process)
+	assert.Nil(t, err)
+
+	// SelectAndAssign with non-matching location should return nil
+	assignedProcess, err := db.SelectAndAssign(
+		colony.Name,
+		executor.ID,
+		executor.Name,
+		executor.Type,
+		"datacenter-2",
+		0, 0, 0,
+		0, 0, 0,
+		1,
+	)
+	assert.Nil(t, err)
+	assert.Nil(t, assignedProcess)
+}
+
+// TestSelectAndAssignMatchesScheduler verifies that SelectAndAssign selects the same process
+// as the old scheduler (FindCandidates + FindCandidatesByName with priority sorting)
+func TestSelectAndAssignMatchesScheduler(t *testing.T) {
+	db, err := PrepareTests()
+	assert.Nil(t, err)
+	defer db.Close()
+
+	colony := core.CreateColony(core.GenerateRandomID(), "test_colony_name")
+	err = db.AddColony(colony)
+	assert.Nil(t, err)
+
+	executor := utils.CreateTestExecutor(colony.Name)
+	executor.Name = "test-executor"
+	// Keep default executor.Type = "test_executor_type" to match CreateTestProcess
+	executor.LocationName = "us-east"
+	err = db.AddExecutor(executor)
+	assert.Nil(t, err)
+
+	// Test case 1: Multiple general pool processes - should select by PriorityTime
+	t.Run("GeneralPoolByPriority", func(t *testing.T) {
+		// Create processes in general pool (no specific executor names)
+		process1 := utils.CreateTestProcess(colony.Name)
+		process1.FunctionSpec.Conditions.ExecutorNames = nil // General pool
+		process1.FunctionSpec.Conditions.LocationName = ""   // No location requirement
+		process1.FunctionSpec.Priority = 5
+		err = db.AddProcess(process1)
+		assert.Nil(t, err)
+
+		time.Sleep(10 * time.Millisecond)
+
+		process2 := utils.CreateTestProcess(colony.Name)
+		process2.FunctionSpec.Conditions.ExecutorNames = nil
+		process2.FunctionSpec.Conditions.LocationName = "" // No location requirement
+		process2.FunctionSpec.Priority = 1
+		err = db.AddProcess(process2)
+		assert.Nil(t, err)
+
+		// Scheduler should select process1 (added first, lower PriorityTime)
+		schedulerSelected, err := schedulerSelect(db, colony.Name, executor, 0, 0)
+		assert.Nil(t, err)
+		assert.Equal(t, process1.ID, schedulerSelected.ID)
+
+		// SelectAndAssign should select the same
+		selectAndAssignSelected, err := db.SelectAndAssign(
+			colony.Name,
+			executor.ID,
+			executor.Name,
+			executor.Type,
+			executor.LocationName,
+			0, 0, 0,
+			math.MaxInt8, math.MaxInt8, math.MaxInt8,
+			1,
+		)
+		assert.Nil(t, err)
+		assert.NotNil(t, selectAndAssignSelected)
+		assert.Equal(t, schedulerSelected.ID, selectAndAssignSelected.ID)
+
+		// Cleanup for next test
+		db.RemoveProcessByID(process2.ID)
+	})
+
+	// Test case 2: Targeted process by executor name takes priority
+	t.Run("TargetedByExecutorName", func(t *testing.T) {
+		// Create a process targeting specific executor (added later but should be selected)
+		process3 := utils.CreateTestProcess(colony.Name)
+		process3.FunctionSpec.Conditions.ExecutorNames = []string{"test-executor"}
+		process3.FunctionSpec.Conditions.LocationName = "" // No location requirement
+		process3.FunctionSpec.Priority = 10
+		err = db.AddProcess(process3)
+		assert.Nil(t, err)
+
+		time.Sleep(10 * time.Millisecond)
+
+		// Create general pool process (added after but not targeted)
+		process4 := utils.CreateTestProcess(colony.Name)
+		process4.FunctionSpec.Conditions.ExecutorNames = nil
+		process4.FunctionSpec.Conditions.LocationName = "" // No location requirement
+		process4.FunctionSpec.Priority = 1
+		err = db.AddProcess(process4)
+		assert.Nil(t, err)
+
+		// Scheduler selects from both pools, sorts by PriorityTime
+		// process3 was added first, so it should be selected
+		schedulerSelected, err := schedulerSelect(db, colony.Name, executor, 0, 0)
+		assert.Nil(t, err)
+		assert.Equal(t, process3.ID, schedulerSelected.ID)
+
+		// SelectAndAssign should select the same
+		selectAndAssignSelected, err := db.SelectAndAssign(
+			colony.Name,
+			executor.ID,
+			executor.Name,
+			executor.Type,
+			executor.LocationName,
+			0, 0, 0,
+			math.MaxInt8, math.MaxInt8, math.MaxInt8,
+			1,
+		)
+		assert.Nil(t, err)
+		assert.NotNil(t, selectAndAssignSelected)
+		assert.Equal(t, schedulerSelected.ID, selectAndAssignSelected.ID)
+
+		// Cleanup for next test
+		db.RemoveProcessByID(process4.ID)
+	})
+
+	// Test case 3: Location matching
+	t.Run("LocationMatching", func(t *testing.T) {
+		// Create process with matching location
+		process5 := utils.CreateTestProcess(colony.Name)
+		process5.FunctionSpec.Conditions.ExecutorNames = nil
+		process5.FunctionSpec.Conditions.LocationName = "us-east"
+		err = db.AddProcess(process5)
+		assert.Nil(t, err)
+
+		time.Sleep(10 * time.Millisecond)
+
+		// Create process with non-matching location
+		process6 := utils.CreateTestProcess(colony.Name)
+		process6.FunctionSpec.Conditions.ExecutorNames = nil
+		process6.FunctionSpec.Conditions.LocationName = "eu-west"
+		err = db.AddProcess(process6)
+		assert.Nil(t, err)
+
+		// Scheduler should select process5 (matching location)
+		schedulerSelected, err := schedulerSelect(db, colony.Name, executor, 0, 0)
+		assert.Nil(t, err)
+		assert.Equal(t, process5.ID, schedulerSelected.ID)
+
+		// SelectAndAssign should select the same
+		selectAndAssignSelected, err := db.SelectAndAssign(
+			colony.Name,
+			executor.ID,
+			executor.Name,
+			executor.Type,
+			executor.LocationName,
+			0, 0, 0,
+			math.MaxInt8, math.MaxInt8, math.MaxInt8,
+			1,
+		)
+		assert.Nil(t, err)
+		assert.NotNil(t, selectAndAssignSelected)
+		assert.Equal(t, schedulerSelected.ID, selectAndAssignSelected.ID)
+
+		// Cleanup
+		db.RemoveProcessByID(process6.ID)
+	})
+
+	// Test case 4: Mixed scenario - targeted and general pool with locations
+	t.Run("MixedScenario", func(t *testing.T) {
+		// Clear remaining processes
+		db.RemoveAllProcesses()
+
+		// Re-add executor
+		executor2 := utils.CreateTestExecutor(colony.Name)
+		executor2.Name = "specific-executor"
+		executor2.Type = "worker-type"
+		executor2.LocationName = "datacenter-1"
+		db.AddExecutor(executor2)
+
+		// Create processes with various configurations
+		// Process A: Targeted, high priority, matching location
+		processA := utils.CreateTestProcess(colony.Name)
+		processA.FunctionSpec.Conditions.ExecutorType = "worker-type"
+		processA.FunctionSpec.Conditions.ExecutorNames = []string{"specific-executor"}
+		processA.FunctionSpec.Conditions.LocationName = "datacenter-1"
+		processA.FunctionSpec.Priority = 1
+		err = db.AddProcess(processA)
+		assert.Nil(t, err)
+
+		time.Sleep(10 * time.Millisecond)
+
+		// Process B: General pool, matching location
+		processB := utils.CreateTestProcess(colony.Name)
+		processB.FunctionSpec.Conditions.ExecutorType = "worker-type"
+		processB.FunctionSpec.Conditions.ExecutorNames = nil
+		processB.FunctionSpec.Conditions.LocationName = "datacenter-1"
+		processB.FunctionSpec.Priority = 1
+		err = db.AddProcess(processB)
+		assert.Nil(t, err)
+
+		time.Sleep(10 * time.Millisecond)
+
+		// Process C: Targeted, non-matching location (should be filtered out)
+		processC := utils.CreateTestProcess(colony.Name)
+		processC.FunctionSpec.Conditions.ExecutorType = "worker-type"
+		processC.FunctionSpec.Conditions.ExecutorNames = []string{"specific-executor"}
+		processC.FunctionSpec.Conditions.LocationName = "datacenter-2"
+		processC.FunctionSpec.Priority = 1
+		err = db.AddProcess(processC)
+		assert.Nil(t, err)
+
+		// Scheduler should select processA (added first among valid candidates)
+		schedulerSelected, err := schedulerSelect(db, colony.Name, executor2, 0, 0)
+		assert.Nil(t, err)
+		assert.Equal(t, processA.ID, schedulerSelected.ID)
+
+		// SelectAndAssign should select the same
+		selectAndAssignSelected, err := db.SelectAndAssign(
+			colony.Name,
+			executor2.ID,
+			executor2.Name,
+			executor2.Type,
+			executor2.LocationName,
+			0, 0, 0,
+			math.MaxInt8, math.MaxInt8, math.MaxInt8,
+			1,
+		)
+		assert.Nil(t, err)
+		assert.NotNil(t, selectAndAssignSelected)
+		assert.Equal(t, schedulerSelected.ID, selectAndAssignSelected.ID)
+	})
 }

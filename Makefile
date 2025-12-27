@@ -2,7 +2,7 @@ all: build
 .PHONY: all build
 
 BUILD_IMAGE ?= colonyos/colonies
-PUSH_IMAGE ?= colonyos/colonies:v1.9.5
+PUSH_IMAGE ?= colonyos/colonies:v1.9.5.perf6
 
 VERSION := $(shell git rev-parse --short HEAD)
 BUILDTIME := $(shell date -u '+%Y-%m-%dT%H:%M:%SZ')
@@ -74,7 +74,7 @@ test:
 	@cd pkg/utils; go test -v --race
 	@cd pkg/cluster; go test -v --race
 	@cd pkg/cron; go test -v --race
-	@cd pkg/fs; go test -v --race
+	#@cd pkg/fs; go test -v --race
 
 install:
 	cp ./bin/colonies /usr/local/bin

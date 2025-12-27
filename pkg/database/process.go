@@ -34,6 +34,7 @@ type ProcessDatabase interface {
 	SetChildren(processID string, children []string) error
 	SetWaitForParents(processID string, waitingForParent bool) error
 	Assign(executorID string, process *core.Process) error
+	SelectAndAssign(colonyName string, executorID string, executorName string, executorType string, executorLocation string, cpu int64, memory int64, storage int64, nodes int, processes int, processesPerNode int, count int) (*core.Process, error)
 	Unassign(process *core.Process) error
 	MarkSuccessful(processID string) (float64, float64, error)
 	MarkFailed(processID string, errs []string) error

@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -65,6 +66,46 @@ func (db *PQDatabase) Connect() error {
 		return err
 	}
 	db.postgresql = postgresql
+
+	// Configure connection pool
+	// Defaults: 100 max open, 100 max idle, 5 min lifetime, 1 min idle time
+	maxOpenConns := 100
+	maxIdleConns := 100
+	connMaxLifetime := 5 * time.Minute
+	connMaxIdleTime := 1 * time.Minute
+
+	if v := os.Getenv("COLONIES_DB_MAX_OPEN_CONNS"); v != "" {
+		if n, err := strconv.Atoi(v); err == nil && n > 0 {
+			maxOpenConns = n
+		}
+	}
+	if v := os.Getenv("COLONIES_DB_MAX_IDLE_CONNS"); v != "" {
+		if n, err := strconv.Atoi(v); err == nil && n > 0 {
+			maxIdleConns = n
+		}
+	}
+	if v := os.Getenv("COLONIES_DB_CONN_MAX_LIFETIME"); v != "" {
+		if n, err := strconv.Atoi(v); err == nil && n > 0 {
+			connMaxLifetime = time.Duration(n) * time.Second
+		}
+	}
+	if v := os.Getenv("COLONIES_DB_CONN_MAX_IDLE_TIME"); v != "" {
+		if n, err := strconv.Atoi(v); err == nil && n > 0 {
+			connMaxIdleTime = time.Duration(n) * time.Second
+		}
+	}
+
+	db.postgresql.SetMaxOpenConns(maxOpenConns)
+	db.postgresql.SetMaxIdleConns(maxIdleConns)
+	db.postgresql.SetConnMaxLifetime(connMaxLifetime)
+	db.postgresql.SetConnMaxIdleTime(connMaxIdleTime)
+
+	log.WithFields(log.Fields{
+		"MaxOpenConns":    maxOpenConns,
+		"MaxIdleConns":    maxIdleConns,
+		"ConnMaxLifetime": connMaxLifetime,
+		"ConnMaxIdleTime": connMaxIdleTime,
+	}).Info("Database connection pool configured")
 
 	err = db.postgresql.Ping()
 	if err != nil {
@@ -690,6 +731,32 @@ func (db *PQDatabase) createProcessesIndex11() error {
 	return nil
 }
 
+// createProcessesAssignGIN creates a GIN index for efficient array membership searches
+// on TARGET_EXECUTOR_NAMES. This optimizes the "$1 = ANY(TARGET_EXECUTOR_NAMES)" condition
+// in SelectAndAssign. Partial index only includes waiting, unassigned processes.
+func (db *PQDatabase) createProcessesAssignGIN() error {
+	sqlStatement := `CREATE INDEX ` + db.dbPrefix + `PROCESSES_ASSIGN_GIN ON ` + db.dbPrefix + `PROCESSES USING GIN (TARGET_EXECUTOR_NAMES) WHERE STATE = 0 AND IS_ASSIGNED = FALSE`
+	_, err := db.postgresql.Exec(sqlStatement)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// createProcessesAssignBTree creates a partial B-tree index optimized for the
+// SelectAndAssign hot path. Only includes waiting, unassigned processes that
+// are not waiting for parents.
+func (db *PQDatabase) createProcessesAssignBTree() error {
+	sqlStatement := `CREATE INDEX ` + db.dbPrefix + `PROCESSES_ASSIGN_BTREE ON ` + db.dbPrefix + `PROCESSES (TARGET_COLONY_NAME, EXECUTOR_TYPE, PRIORITYTIME) WHERE STATE = 0 AND IS_ASSIGNED = FALSE AND WAIT_FOR_PARENTS = FALSE`
+	_, err := db.postgresql.Exec(sqlStatement)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (db *PQDatabase) createAttributesIndex1() error {
 	sqlStatement := `CREATE INDEX ` + db.dbPrefix + `ATTRIBUTES_INDEX1 ON ` + db.dbPrefix + `ATTRIBUTES (TARGET_ID, ATTRIBUTE_TYPE)`
 	_, err := db.postgresql.Exec(sqlStatement)
@@ -929,6 +996,16 @@ func (db *PQDatabase) Initialize() error {
 	}
 
 	err = db.createProcessesIndex11()
+	if err != nil {
+		return err
+	}
+
+	err = db.createProcessesAssignGIN()
+	if err != nil {
+		return err
+	}
+
+	err = db.createProcessesAssignBTree()
 	if err != nil {
 		return err
 	}

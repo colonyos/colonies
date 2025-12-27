@@ -313,6 +313,7 @@ type processControllerAdapter struct {
 		CloseSuccessful(processID string, executorID string, output []interface{}) error
 		CloseFailed(processID string, errs []string) error
 		Assign(executorID string, colonyName string, cpu int64, memory int64) (*controllers.AssignResult, error)
+		DistributedAssign(executor *core.Executor, colonyName string, cpu int64, memory int64, storage int64) (*controllers.AssignResult, error)
 		UnassignExecutor(processID string) error
 		PauseColonyAssignments(colonyName string) error
 		ResumeColonyAssignments(colonyName string) error
@@ -365,6 +366,19 @@ func (c *processControllerAdapter) CloseFailed(processID string, errs []string) 
 
 func (c *processControllerAdapter) Assign(executorID string, colonyName string, cpu int64, memory int64) (*process.AssignResult, error) {
 	result, err := c.controller.Assign(executorID, colonyName, cpu, memory)
+	if err != nil {
+		return nil, err
+	}
+	// Convert the internal assign result to the process handler's AssignResult
+	return &process.AssignResult{
+		Process:       result.Process,
+		IsPaused:      result.IsPaused,
+		ResumeChannel: result.ResumeChannel,
+	}, nil
+}
+
+func (c *processControllerAdapter) DistributedAssign(executor *core.Executor, colonyName string, cpu int64, memory int64, storage int64) (*process.AssignResult, error) {
+	result, err := c.controller.DistributedAssign(executor, colonyName, cpu, memory, storage)
 	if err != nil {
 		return nil, err
 	}

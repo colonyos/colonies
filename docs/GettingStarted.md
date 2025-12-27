@@ -38,10 +38,10 @@ or
 source devenv
 ```
 
-Now, start the development server. The development server will use the keys from the environment variables (e.g. COLONIES_EXECUTOR_PRVKEY).
+Now, start the server. The server will use the keys from the environment variables.
 
 ```console
-colonies dev
+colonies server start
 ```
 
 ## Start an executor 

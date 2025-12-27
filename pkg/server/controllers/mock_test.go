@@ -165,6 +165,10 @@ func (v *ControllerMock) Assign(executorID string, colonyName string, cpu int64,
 	return nil, nil
 }
 
+func (v *ControllerMock) DistributedAssign(executor *core.Executor, colonyName string, cpu int64, memory int64, storage int64) (*AssignResult, error) {
+	return nil, nil
+}
+
 func (v *ControllerMock) UnassignExecutor(processID string) error {
 	return nil
 }
@@ -453,6 +457,7 @@ func (db *DatabaseMock) SetErrors(processID string, errs []string) error { retur
 func (db *DatabaseMock) SetParents(processID string, parents []string) error { return nil }
 func (db *DatabaseMock) SetChildren(processID string, children []string) error { return nil }
 func (db *DatabaseMock) Assign(executorID string, process *core.Process) error { return nil }
+func (db *DatabaseMock) SelectAndAssign(colonyName string, executorID string, executorName string, executorType string, executorLocation string, cpu int64, memory int64, storage int64, nodes int, processes int, processesPerNode int, count int) (*core.Process, error) { return nil, nil }
 func (db *DatabaseMock) Unassign(process *core.Process) error { return nil }
 func (db *DatabaseMock) MarkFailed(processID string, errs []string) error { return nil }
 func (db *DatabaseMock) CountProcesses() (int, error) { return 0, nil }

@@ -1,0 +1,65 @@
+# Performance test values
+# Copy and modify as needed for different test scenarios
+
+# Use local storage for testing
+StorageClassName: local-path
+Timezone: "Europe/Stockholm"
+
+# Expose via NodePort for external access
+Ingress: false
+ExposeNodePort: true
+NodePort: 30080
+
+# Colonies server settings
+ColoniesDBHost: "colonies-postgres-service.colonies-perf"
+ColoniesDBPort: "5432"
+
+# MODIFY THESE FOR DIFFERENT TEST SCENARIOS:
+ColoniesServerReplicas: 1          # 1, 2, 3, etc.
+ColoniesResourceLimit: true        # Enable CPU limits
+ColoniesServerCPU: "1000m"         # 1 CPU per replica
+ColoniesServerMemory: "2000Mi"
+
+ColoniesServerImage: "colonyos/colonies:v1.9.5.perf6"
+# Keys are passed via --set in the deploy script
+# ColoniesServerID and ColoniesServerPrvKey must be provided at deploy time
+
+ColoniesServerProfiler: false
+ColoniesCronCheckerPeriod: "1000"
+ColoniesGeneratorCheckerPeriod: "500"
+ColoniesVerbose: false              # Disable for performance
+ColoniesExclusiveAssign: false
+ColoniesAllowExecutorReregister: false
+ColoniesRetention: false
+
+# Database settings
+DBUser: "postgres"
+DBPassword: "rFcLGNkgsNtksg6Pgtn9CumL4xXBQ7"
+DBImage: timescale/timescaledb:2.13.0-pg16
+DBResourceLimit: true
+DBCPU: "8000m"
+DBMemory: "16000Mi"
+DBStorage: 10Gi
+TimescaleDB: true
+
+# Database connection pool settings
+ColoniesDBMaxOpenConns: 100
+ColoniesDBMaxIdleConns: 100
+ColoniesDBConnMaxLifetime: 300
+ColoniesDBConnMaxIdleTime: 60
+
+# Disable monitoring for perf tests
+ColoniesMonitorInterval: 60
+ColoniesServerInternalHostname: "colonies-service.colonies-perf"
+ColoniesMonitorResourceLimit: false
+ColoniesMonitorServerCPU: "500m"
+ColoniesMonitorServerMemory: "1Gi"
+
+# Prometheus (minimal for tests)
+PrometheusImage: prom/prometheus
+PrometheusStorage: 1Gi
+PrometheusResourceLimit: false
+PrometheusCPU: "500m"
+PrometheusMemory: "1Gi"
+ScrapeIntervall: 30s
+ColoniesMonitoringServer: colonies-monitor-service.colonies-perf

@@ -8,15 +8,15 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/colonyos/colonies/pkg/backends"
 	"github.com/colonyos/colonies/pkg/client"
+	"github.com/colonyos/colonies/pkg/constants"
 	"github.com/colonyos/colonies/pkg/core"
 	"github.com/colonyos/colonies/pkg/database"
 	"github.com/colonyos/colonies/pkg/parsers"
 	"github.com/colonyos/colonies/pkg/rpc"
 	"github.com/colonyos/colonies/pkg/security"
-	"github.com/colonyos/colonies/pkg/constants"
 	"github.com/colonyos/colonies/pkg/server/registry"
-	"github.com/colonyos/colonies/pkg/backends"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -80,6 +80,7 @@ type Controller interface {
 	CloseSuccessful(processID string, executorID string, output []interface{}) error
 	CloseFailed(processID string, errs []string) error
 	Assign(executorID string, colonyName string, cpu int64, memory int64) (*AssignResult, error)
+	DistributedAssign(executor *core.Executor, colonyName string, cpu int64, memory int64, storage int64) (*AssignResult, error)
 	UnassignExecutor(processID string) error
 	PauseColonyAssignments(colonyName string) error
 	ResumeColonyAssignments(colonyName string) error
@@ -375,8 +376,22 @@ func (h *Handlers) HandleAssignProcess(c backends.Context, recoveredID string, p
 		defer cancelCtx()
 	}
 
+	// Use distributed assign when ExclusiveAssign is false
+	useDistributedAssign := !h.server.ExclusiveAssign()
+
 	for {
-		result, assignErr := h.server.ProcessController().Assign(recoveredID, msg.ColonyName, cpu, memory)
+		var result *AssignResult
+		var assignErr error
+
+		if useDistributedAssign {
+			// Distributed mode: use atomic database-level locking
+			// This bypasses the scheduler and blocking queue for horizontal scaling
+			result, assignErr = h.server.ProcessController().DistributedAssign(executor, msg.ColonyName, cpu, memory, math.MaxInt64)
+		} else {
+			// Exclusive mode: use leader-only assignment with scheduler
+			result, assignErr = h.server.ProcessController().Assign(recoveredID, msg.ColonyName, cpu, memory)
+		}
+
 		if assignErr != nil {
 			h.server.HandleHTTPError(c, assignErr, http.StatusInternalServerError)
 			return
@@ -410,7 +425,7 @@ func (h *Handlers) HandleAssignProcess(c backends.Context, recoveredID string, p
 
 		// No process available, wait for new processes if timeout is specified
 		if msg.Timeout > 0 {
-			// Wait for a new process to be submitted to a ColoniesServer in the cluster
+			// Wait for a new process event (fires when processes are submitted)
 			h.server.ProcessController().GetEventHandler().WaitForProcess(executor.Type, core.WAITING, "", executor.LocationName, ctx)
 			// Check if we timed out during the wait
 			select {
@@ -422,7 +437,7 @@ func (h *Handlers) HandleAssignProcess(c backends.Context, recoveredID string, p
 				continue
 			}
 		}
-		
+
 		// No timeout specified or timeout occurred, exit loop
 		break
 	}

@@ -939,6 +939,90 @@ func (db *PQDatabase) Assign(executorID string, process *core.Process) error {
 	return nil
 }
 
+// SelectAndAssign atomically selects a candidate process and assigns it to the executor.
+// Uses FOR UPDATE SKIP LOCKED to handle concurrent access without race conditions.
+// This enables distributed assignment across multiple server replicas.
+func (db *PQDatabase) SelectAndAssign(colonyName string, executorID string, executorName string, executorType string, executorLocation string, cpu int64, memory int64, storage int64, nodes int, processes int, processesPerNode int, count int) (*core.Process, error) {
+	// Atomic SELECT FOR UPDATE SKIP LOCKED + UPDATE in a single statement
+	// The subquery locks the row, preventing other transactions from selecting it.
+	// Uses OR to combine both FindCandidatesByName and FindCandidates logic:
+	// - Matches processes targeting this specific executor by name
+	// - OR matches general pool processes (no specific executor names)
+	sqlStatement := `
+		UPDATE ` + db.dbPrefix + `PROCESSES
+		SET IS_ASSIGNED = TRUE,
+		    START_TIME = NOW(),
+		    ASSIGNED_EXECUTOR_ID = $12,
+		    STATE = $13,
+		    EXEC_DEADLINE = CASE
+		        WHEN MAX_EXEC_TIME > 0 THEN NOW() + (MAX_EXEC_TIME * INTERVAL '1 second')
+		        ELSE EXEC_DEADLINE
+		    END
+		WHERE PROCESS_ID = (
+			SELECT PROCESS_ID FROM ` + db.dbPrefix + `PROCESSES
+			WHERE (
+				-- By executor name (processes targeting this specific executor)
+				$1 = ANY(TARGET_EXECUTOR_NAMES)
+				OR
+				-- By executor type (general pool - processes not targeting specific executors)
+				(array_length(TARGET_EXECUTOR_NAMES, 1) IS NULL OR TARGET_EXECUTOR_NAMES = ARRAY['*']::text[])
+			)
+			  AND EXECUTOR_TYPE = $2
+			  AND STATE = $3
+			  AND IS_ASSIGNED = FALSE
+			  AND WAIT_FOR_PARENTS = FALSE
+			  AND TARGET_COLONY_NAME = $4
+			  AND CPU <= $5 AND MEMORY <= $6 AND STORAGE <= $7
+			  AND NODES <= $8 AND PROCESSES <= $9 AND PROCESSES_PER_NODE <= $10
+			  AND (LOCATION_NAME IS NULL OR LOCATION_NAME = '' OR LOWER(LOCATION_NAME) = LOWER($11))
+			ORDER BY PRIORITYTIME ASC
+			LIMIT 1
+			FOR UPDATE SKIP LOCKED
+		)
+		RETURNING *
+	`
+
+	rows, err := db.postgresql.Query(sqlStatement,
+		executorName,     // $1
+		executorType,     // $2
+		core.WAITING,     // $3
+		colonyName,       // $4
+		cpu,              // $5
+		memory,           // $6
+		storage,          // $7
+		nodes,            // $8
+		processes,        // $9
+		processesPerNode, // $10
+		executorLocation, // $11
+		executorID,       // $12
+		core.RUNNING,     // $13
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	selectedProcesses, err := db.parseProcesses(rows)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(selectedProcesses) == 0 {
+		// No process could be selected (either none available or all locked by other transactions)
+		return nil, nil
+	}
+
+	process := selectedProcesses[0]
+
+	// Update attribute state
+	err = db.SetAttributeState(process.ID, core.RUNNING)
+	if err != nil {
+		return nil, err
+	}
+
+	return process, nil
+}
+
 func (db *PQDatabase) Unassign(process *core.Process) error {
 	endTime := time.Now()
 

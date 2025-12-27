@@ -16,7 +16,7 @@ docker run -d --name timescaledb -p 5432:5432 -e POSTGRES_PASSWORD=rFcLGNkgsNtks
 
 ## Generate Server Private Key
 ```console
-./bin/colonies key generate
+./bin/colonies security generate
 ```
 
 Output:
@@ -63,5 +63,5 @@ Private keys should be stored securely and set as environment variables. The fol
 
 To generate a new key pair:
 ```console
-./bin/colonies key generate
+./bin/colonies security generate
 ```
