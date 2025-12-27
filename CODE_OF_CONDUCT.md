@@ -36,6 +36,23 @@ Examples of unacceptable behavior include:
 * Other conduct which could reasonably be considered inappropriate in a
   professional setting
 
+## Project Governance
+
+ColonyOS was created by and is maintained by **Johan Kristiansson** (Project Founder).
+
+As the founder and lead maintainer, Johan has final say on:
+- Project direction and roadmap
+- Architectural decisions
+- Feature inclusion and prioritization
+- Resolving disputes when consensus cannot be reached
+
+This doesn't mean decisions are made unilaterally. We value community input and
+strive for consensus. But when the community cannot agree, or when quick decisions
+are needed, the founder makes the call.
+
+Contributors are always welcome to voice opinions, propose alternatives, and
+challenge decisions respectfully. Good ideas win, regardless of where they come from.
+
 ## Enforcement Responsibilities
 
 Community leaders are responsible for clarifying and enforcing our standards of
