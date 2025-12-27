@@ -58,7 +58,7 @@ func CreateS3Client() (*S3Client, error) {
 		return nil, err
 	}
 
-	log.WithFields(log.Fields{"Endpoint": endpoint, "AccessKey": accessKey, "SecretKey": secretKey, "Region": region, "TLS": useTLS, "InsecureSkipVerify": skipVerify, "Bucket": bucketName}).Debug("Creating S3 client")
+	log.WithFields(log.Fields{"Endpoint": endpoint, "Region": region, "TLS": useTLS, "InsecureSkipVerify": skipVerify, "Bucket": bucketName}).Debug("Creating S3 client")
 
 	s3Client.mc = mc
 	s3Client.BucketName = bucketName
