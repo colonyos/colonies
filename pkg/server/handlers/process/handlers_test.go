@@ -1311,3 +1311,70 @@ func TestPauseResumeAssignmentsColonyIsolation(t *testing.T) {
 	coloniesServer.Shutdown()
 	<-done
 }
+
+// TestCloseSuccessfulOnFailedProcess tests that trying to close a failed process
+// as successful returns a proper single error response (not concatenated JSON).
+// This test verifies the fix for the double HandleHTTPError bug.
+func TestCloseSuccessfulOnFailedProcess(t *testing.T) {
+	env, client, coloniesServer, _, done := server.SetupTestEnv2(t)
+
+	// Submit and assign a process
+	funcSpec := utils.CreateTestFunctionSpec(env.ColonyName)
+	addedProcess, err := client.Submit(funcSpec, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.Equal(t, core.PENDING, addedProcess.State)
+
+	assignedProcess, err := client.Assign(env.ColonyName, -1, "", "", env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.Equal(t, addedProcess.ID, assignedProcess.ID)
+
+	// Fail the process first
+	err = client.Fail(assignedProcess.ID, []string{"intentional failure"}, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+
+	// Verify process is in FAILED state
+	processFromServer, err := client.GetProcess(assignedProcess.ID, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.Equal(t, core.FAILED, processFromServer.State)
+
+	// Try to close the failed process as successful - this should fail with a proper error
+	err = client.Close(assignedProcess.ID, env.ExecutorPrvKey)
+	assert.NotNil(t, err, "Closing a failed process as successful should return an error")
+	assert.Contains(t, err.Error(), "Tried to set failed process as successful")
+
+	coloniesServer.Shutdown()
+	<-done
+}
+
+// TestSetOutputOnFailedProcess tests that trying to set output on a failed process
+// returns a proper single error response (not concatenated JSON).
+func TestSetOutputOnFailedProcess(t *testing.T) {
+	env, client, coloniesServer, _, done := server.SetupTestEnv2(t)
+
+	// Submit and assign a process
+	funcSpec := utils.CreateTestFunctionSpec(env.ColonyName)
+	addedProcess, err := client.Submit(funcSpec, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+
+	assignedProcess, err := client.Assign(env.ColonyName, -1, "", "", env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.Equal(t, addedProcess.ID, assignedProcess.ID)
+
+	// Fail the process first
+	err = client.Fail(assignedProcess.ID, []string{"intentional failure"}, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+
+	// Verify process is in FAILED state
+	processFromServer, err := client.GetProcess(assignedProcess.ID, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.Equal(t, core.FAILED, processFromServer.State)
+
+	// Try to set output on the failed process - this should fail with a proper error
+	output := make([]interface{}, 1)
+	output[0] = "test output"
+	err = client.SetOutput(assignedProcess.ID, output, env.ExecutorPrvKey)
+	assert.NotNil(t, err, "Setting output on a failed process should return an error")
+
+	coloniesServer.Shutdown()
+	<-done
+}

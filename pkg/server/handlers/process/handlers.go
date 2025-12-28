@@ -750,7 +750,6 @@ func (h *Handlers) HandleSetOutput(c backends.Context, recoveredID string, paylo
 	err = h.server.ProcessController().SetOutput(process.ID, msg.Output)
 	if h.server.HandleHTTPError(c, err, http.StatusBadRequest) {
 		log.WithFields(log.Fields{"Error": err}).Debug("Failed to set output")
-		h.server.HandleHTTPError(c, err, http.StatusInternalServerError)
 		return
 	}
 
@@ -808,7 +807,6 @@ func (h *Handlers) HandleCloseSuccessful(c backends.Context, recoveredID string,
 	err = h.server.ProcessController().CloseSuccessful(process.ID, recoveredID, msg.Output)
 	if h.server.HandleHTTPError(c, err, http.StatusBadRequest) {
 		log.WithFields(log.Fields{"Error": err}).Debug("Failed to close process as successful")
-		h.server.HandleHTTPError(c, err, http.StatusInternalServerError)
 		return
 	}
 
@@ -928,7 +926,6 @@ func (h *Handlers) HandleCloseFailed(c backends.Context, recoveredID string, pay
 	err = h.server.ProcessController().CloseFailed(process.ID, msg.Errors)
 	if h.server.HandleHTTPError(c, err, http.StatusBadRequest) {
 		log.WithFields(log.Fields{"Error": err}).Debug("Failed to close process as failed")
-		h.server.HandleHTTPError(c, err, http.StatusInternalServerError)
 		return
 	}
 
