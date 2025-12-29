@@ -4,12 +4,12 @@ import (
 	"errors"
 	"net/http"
 
+	"github.com/colonyos/colonies/pkg/backends"
 	"github.com/colonyos/colonies/pkg/core"
 	"github.com/colonyos/colonies/pkg/database"
 	"github.com/colonyos/colonies/pkg/rpc"
 	"github.com/colonyos/colonies/pkg/security"
 	"github.com/colonyos/colonies/pkg/server/registry"
-	"github.com/colonyos/colonies/pkg/backends"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -119,6 +119,10 @@ func (h *Handlers) HandleGetAttribute(c backends.Context, recoveredID string, pa
 
 	attribute, err := h.server.AttributeDB().GetAttributeByID(msg.AttributeID)
 	if h.server.HandleHTTPError(c, err, http.StatusBadRequest) {
+		return
+	}
+	if attribute.ID == "" {
+		h.server.HandleHTTPError(c, errors.New("Failed to get attribute, attribute not found"), http.StatusNotFound)
 		return
 	}
 

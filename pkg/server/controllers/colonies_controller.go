@@ -1274,6 +1274,13 @@ func (controller *ColoniesController) ResetProcess(processID string) error {
 	return <-cmd.errorChan
 }
 
+// TODO: This function is incomplete for clustered deployments. When the database is reset,
+// in-memory state (channels, subscriptions) becomes orphaned and can cause memory leaks.
+// Each server replica should have a periodic cleanup routine that:
+// 1. Iterates through channels in channelRouter
+// 2. Checks if referenced processes still exist in DB
+// 3. Removes orphaned channels and cancels stale subscriptions
+// This cleanup should also be integrated with error handling paths (CloseFailed, TimeoutLoop, etc.)
 func (controller *ColoniesController) ResetDatabase() error {
 	cmd := &command{threaded: true, errorChan: make(chan error, 1),
 		handler: func(cmd *command) {

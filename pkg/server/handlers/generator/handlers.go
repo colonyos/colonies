@@ -27,9 +27,6 @@ type Server interface {
 
 type Controller interface {
 	AddGenerator(generator *core.Generator) (*core.Generator, error)
-	GetGenerator(generatorID string) (*core.Generator, error)
-	ResolveGenerator(colonyName string, generatorName string) (*core.Generator, error)
-	GetGenerators(colonyName string, count int) ([]*core.Generator, error)
 	PackGenerator(generatorID string, colonyName string, arg string) error
 	RemoveGenerator(generatorID string) error
 	GetGeneratorPeriod() int
@@ -143,7 +140,7 @@ func (h *Handlers) HandleGetGenerator(c backends.Context, recoveredID string, pa
 		return
 	}
 
-	generator, err := h.server.GeneratorController().GetGenerator(msg.GeneratorID)
+	generator, err := h.server.GeneratorDB().GetGeneratorByID(msg.GeneratorID)
 	if h.server.HandleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
@@ -187,7 +184,7 @@ func (h *Handlers) HandleResolveGenerator(c backends.Context, recoveredID string
 		return
 	}
 
-	generator, err := h.server.GeneratorController().ResolveGenerator(msg.ColonyName, msg.GeneratorName)
+	generator, err := h.server.GeneratorDB().GetGeneratorByName(msg.ColonyName, msg.GeneratorName)
 	if h.server.HandleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
@@ -229,7 +226,7 @@ func (h *Handlers) HandleGetGenerators(c backends.Context, recoveredID string, p
 		return
 	}
 
-	generators, err := h.server.GeneratorController().GetGenerators(msg.ColonyName, msg.Count)
+	generators, err := h.server.GeneratorDB().FindGeneratorsByColonyName(msg.ColonyName, msg.Count)
 	if h.server.HandleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
@@ -257,7 +254,7 @@ func (h *Handlers) HandlePackGenerator(c backends.Context, recoveredID string, p
 		return
 	}
 
-	generator, err := h.server.GeneratorController().GetGenerator(msg.GeneratorID)
+	generator, err := h.server.GeneratorDB().GetGeneratorByID(msg.GeneratorID)
 	if h.server.HandleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
@@ -294,7 +291,7 @@ func (h *Handlers) HandleRemoveGenerator(c backends.Context, recoveredID string,
 		return
 	}
 
-	generator, err := h.server.GeneratorController().GetGenerator(msg.GeneratorID)
+	generator, err := h.server.GeneratorDB().GetGeneratorByID(msg.GeneratorID)
 	if h.server.HandleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}

@@ -37,18 +37,12 @@ type Controller interface {
 	UnassignExecutor(processID string) error
 	ResetProcess(processID string) error
 	AddGenerator(generator *core.Generator) (*core.Generator, error)
-	GetGenerator(generatorID string) (*core.Generator, error)
-	ResolveGenerator(colonyName string, generatorName string) (*core.Generator, error)
-	GetGenerators(colonyName string, count int) ([]*core.Generator, error)
 	PackGenerator(generatorID string, colonyName, arg string) error
 	GeneratorTriggerLoop()
 	TriggerGenerators()
 	SubmitWorkflow(generator *core.Generator, counter int, recoveredID string) // TODO: change name, there is also a submitWorkflowSpec()
 	AddCron(cron *core.Cron) (*core.Cron, error)
 	RemoveGenerator(generatorID string) error
-	GetCron(cronID string) (*core.Cron, error)
-	GetCrons(colonyName string, count int) ([]*core.Cron, error)
-	GetCronByName(colonyName string, cronName string) (*core.Cron, error)
 	RunCron(cronID string) (*core.Cron, error)
 	RemoveCron(cronID string) error
 	CalcNextRun(cron *core.Cron) time.Time

@@ -23,11 +23,9 @@ type Server interface {
 	BlueprintDB() database.BlueprintDatabase
 	LocationDB() database.LocationDatabase
 	ProcessController() process.Controller
+	CronDB() database.CronDatabase
 	CronController() interface {
 		AddCron(cron *core.Cron) (*core.Cron, error)
-		GetCron(cronID string) (*core.Cron, error)
-		GetCrons(colonyName string, count int) ([]*core.Cron, error)
-		GetCronByName(colonyName string, cronName string) (*core.Cron, error)
 		RunCron(cronID string) (*core.Cron, error)
 		RemoveCron(cronID string) error
 		GetCronPeriod() int
@@ -646,7 +644,7 @@ func (h *Handlers) HandleAddBlueprint(c backends.Context, recoveredID string, pa
 		}
 
 		// Check if cron for this handler already exists
-		existingCron, err := h.server.CronController().GetCronByName(msg.Blueprint.Metadata.ColonyName, cronName)
+		existingCron, err := h.server.CronDB().GetCronByName(msg.Blueprint.Metadata.ColonyName, cronName)
 		if err != nil {
 			log.WithFields(log.Fields{
 				"Error":    err,
@@ -1072,7 +1070,7 @@ func (h *Handlers) HandleRemoveBlueprint(c backends.Context, recoveredID string,
 
 	// Only remove cron if no blueprints of this Kind remain at this location
 	if remainingAtLocation == 0 {
-		existingCron, err := h.server.CronController().GetCronByName(msg.Namespace, cronName)
+		existingCron, err := h.server.CronDB().GetCronByName(msg.Namespace, cronName)
 		if err != nil {
 			log.WithFields(log.Fields{
 				"Error":    err,
