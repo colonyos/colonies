@@ -20,11 +20,9 @@ type Server interface {
 	SendHTTPReply(c backends.Context, payloadType string, jsonString string)
 	SendEmptyHTTPReply(c backends.Context, payloadType string)
 	Validator() security.Validator
+	CronDB() database.CronDatabase
 	CronController() interface {
 		AddCron(cron *core.Cron) (*core.Cron, error)
-		GetCron(cronID string) (*core.Cron, error)
-		GetCrons(colonyName string, count int) ([]*core.Cron, error)
-		GetCronByName(colonyName string, cronName string) (*core.Cron, error)
 		RunCron(cronID string) (*core.Cron, error)
 		RemoveCron(cronID string) error
 		GetCronPeriod() int
@@ -177,7 +175,7 @@ func (h *Handlers) HandleGetCron(c backends.Context, recoveredID string, payload
 		return
 	}
 
-	cron, err := h.server.CronController().GetCron(msg.CronID)
+	cron, err := h.server.CronDB().GetCronByID(msg.CronID)
 	if h.server.HandleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
@@ -221,7 +219,7 @@ func (h *Handlers) HandleGetCrons(c backends.Context, recoveredID string, payloa
 		return
 	}
 
-	crons, err := h.server.CronController().GetCrons(msg.ColonyName, msg.Count)
+	crons, err := h.server.CronDB().FindCronsByColonyName(msg.ColonyName, msg.Count)
 	if h.server.HandleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
@@ -291,7 +289,7 @@ func (h *Handlers) HandleRemoveCron(c backends.Context, recoveredID string, payl
 		return
 	}
 
-	cron, err := h.server.CronController().GetCron(msg.CronID)
+	cron, err := h.server.CronDB().GetCronByID(msg.CronID)
 	if h.server.HandleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}

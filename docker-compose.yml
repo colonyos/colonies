@@ -1,6 +1,6 @@
 services:
   timescaledb:
-    image: timescale/timescaledb:latest-pg16
+    image: timescale/timescaledb:latest-pg17
     environment:
       POSTGRES_USER: ${COLONIES_DB_USER}
       POSTGRES_PASSWORD: ${COLONIES_DB_PASSWORD}
@@ -64,6 +64,10 @@ services:
       COLONIES_DB_USER: ${COLONIES_DB_USER}
       COLONIES_DB_PASSWORD: ${COLONIES_DB_PASSWORD}
       COLONIES_DB_TIMESCALEDB: "true"
+      COLONIES_DB_MAX_OPEN_CONNS: "100"
+      COLONIES_DB_MAX_IDLE_CONNS: "100"
+      COLONIES_DB_CONN_MAX_LIFETIME: "300"
+      COLONIES_DB_CONN_MAX_IDLE_TIME: "60"
       # COLONIES_TLSCERT: "/path/to/cert.pem"
       # COLONIES_TLSKEY: "/path/to/key.pem"
       COLONIES_VERBOSE: "true"

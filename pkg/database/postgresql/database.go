@@ -809,6 +809,26 @@ func (db *PQDatabase) createRetentionIndex4() error {
 	return nil
 }
 
+func (db *PQDatabase) createProcessesStateIndex() error {
+	sqlStatement := `CREATE INDEX ` + db.dbPrefix + `PROCESSES_STATE_INDEX ON ` + db.dbPrefix + `PROCESSES (STATE)`
+	_, err := db.postgresql.Exec(sqlStatement)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (db *PQDatabase) createProcessGraphsStateIndex() error {
+	sqlStatement := `CREATE INDEX ` + db.dbPrefix + `PROCESSGRAPHS_STATE_INDEX ON ` + db.dbPrefix + `PROCESSGRAPHS (STATE)`
+	_, err := db.postgresql.Exec(sqlStatement)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (db *PQDatabase) createFileIndex1() error {
 	sqlStatement := `CREATE INDEX ` + db.dbPrefix + `FILE_INDEX1 ON ` + db.dbPrefix + `FILES (COLONY_NAME, LABEL, NAME)`
 	_, err := db.postgresql.Exec(sqlStatement)
@@ -1021,6 +1041,16 @@ func (db *PQDatabase) Initialize() error {
 	}
 
 	err = db.createRetentionIndex4()
+	if err != nil {
+		return err
+	}
+
+	err = db.createProcessesStateIndex()
+	if err != nil {
+		return err
+	}
+
+	err = db.createProcessGraphsStateIndex()
 	if err != nil {
 		return err
 	}

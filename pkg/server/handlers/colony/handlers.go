@@ -230,7 +230,7 @@ func (h *Handlers) HandleGetColony(c backends.Context, recoveredID, payloadType 
 		return
 	}
 	if colony == nil {
-		h.server.HandleHTTPError(c, errors.New("Failed to get colony, colony not found"), http.StatusBadRequest)
+		h.server.HandleHTTPError(c, errors.New("Failed to get colony, colony is nil"), http.StatusInternalServerError)
 		return
 	}
 
@@ -273,76 +273,76 @@ func (h *Handlers) HandleColonyStatistics(c backends.Context, recoveredID string
 		return
 	}
 
-	// Gather statistics directly from DBs
-	executors, err := h.server.ExecutorDB().CountExecutorsByColonyName(msg.ColonyName)
+	// Gather statistics directly from databases
+	executors, err := h.server.ExecutorDB().CountExecutorsByColonyName(colony.Name)
 	if h.server.HandleHTTPError(c, err, http.StatusInternalServerError) {
 		return
 	}
 
-	activeExecutors, err := h.server.ExecutorDB().CountExecutorsByColonyNameAndState(msg.ColonyName, core.APPROVED)
+	activeExecutors, err := h.server.ExecutorDB().CountExecutorsByColonyNameAndState(colony.Name, core.APPROVED)
 	if h.server.HandleHTTPError(c, err, http.StatusInternalServerError) {
 		return
 	}
 
-	unregisteredExecutors, err := h.server.ExecutorDB().CountExecutorsByColonyNameAndState(msg.ColonyName, core.UNREGISTERED)
+	unregisteredExecutors, err := h.server.ExecutorDB().CountExecutorsByColonyNameAndState(colony.Name, core.UNREGISTERED)
 	if h.server.HandleHTTPError(c, err, http.StatusInternalServerError) {
 		return
 	}
 
-	waitingProcesses, err := h.server.ProcessDB().CountWaitingProcessesByColonyName(msg.ColonyName)
+	waitingProcesses, err := h.server.ProcessDB().CountWaitingProcessesByColonyName(colony.Name)
 	if h.server.HandleHTTPError(c, err, http.StatusInternalServerError) {
 		return
 	}
 
-	runningProcesses, err := h.server.ProcessDB().CountRunningProcessesByColonyName(msg.ColonyName)
+	runningProcesses, err := h.server.ProcessDB().CountRunningProcessesByColonyName(colony.Name)
 	if h.server.HandleHTTPError(c, err, http.StatusInternalServerError) {
 		return
 	}
 
-	successProcesses, err := h.server.ProcessDB().CountSuccessfulProcessesByColonyName(msg.ColonyName)
+	successProcesses, err := h.server.ProcessDB().CountSuccessfulProcessesByColonyName(colony.Name)
 	if h.server.HandleHTTPError(c, err, http.StatusInternalServerError) {
 		return
 	}
 
-	failedProcesses, err := h.server.ProcessDB().CountFailedProcessesByColonyName(msg.ColonyName)
+	failedProcesses, err := h.server.ProcessDB().CountFailedProcessesByColonyName(colony.Name)
 	if h.server.HandleHTTPError(c, err, http.StatusInternalServerError) {
 		return
 	}
 
-	waitingWorkflows, err := h.server.ProcessGraphDB().CountWaitingProcessGraphsByColonyName(msg.ColonyName)
+	waitingWorkflows, err := h.server.ProcessGraphDB().CountWaitingProcessGraphsByColonyName(colony.Name)
 	if h.server.HandleHTTPError(c, err, http.StatusInternalServerError) {
 		return
 	}
 
-	runningWorkflows, err := h.server.ProcessGraphDB().CountRunningProcessGraphsByColonyName(msg.ColonyName)
+	runningWorkflows, err := h.server.ProcessGraphDB().CountRunningProcessGraphsByColonyName(colony.Name)
 	if h.server.HandleHTTPError(c, err, http.StatusInternalServerError) {
 		return
 	}
 
-	successWorkflows, err := h.server.ProcessGraphDB().CountSuccessfulProcessGraphsByColonyName(msg.ColonyName)
+	successWorkflows, err := h.server.ProcessGraphDB().CountSuccessfulProcessGraphsByColonyName(colony.Name)
 	if h.server.HandleHTTPError(c, err, http.StatusInternalServerError) {
 		return
 	}
 
-	failedWorkflows, err := h.server.ProcessGraphDB().CountFailedProcessGraphsByColonyName(msg.ColonyName)
+	failedWorkflows, err := h.server.ProcessGraphDB().CountFailedProcessGraphsByColonyName(colony.Name)
 	if h.server.HandleHTTPError(c, err, http.StatusInternalServerError) {
 		return
 	}
 
-	stat := &core.Statistics{
-		Colonies:              1,
-		Executors:             executors,
-		ActiveExecutors:       activeExecutors,
-		UnregisteredExecutors: unregisteredExecutors,
-		WaitingProcesses:      waitingProcesses,
-		RunningProcesses:      runningProcesses,
-		SuccessfulProcesses:   successProcesses,
-		FailedProcesses:       failedProcesses,
-		WaitingWorkflows:      waitingWorkflows,
-		RunningWorkflows:      runningWorkflows,
-		SuccessfulWorkflows:   successWorkflows,
-		FailedWorkflows:       failedWorkflows,
-	}
+	stat := core.CreateStatistics(
+		1, // colonies count for single colony stats
+		executors,
+		activeExecutors,
+		unregisteredExecutors,
+		waitingProcesses,
+		runningProcesses,
+		successProcesses,
+		failedProcesses,
+		waitingWorkflows,
+		runningWorkflows,
+		successWorkflows,
+		failedWorkflows,
+	)
 
 	jsonString, err = stat.ToJSON()
 	if h.server.HandleHTTPError(c, err, http.StatusInternalServerError) {
