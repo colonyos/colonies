@@ -13,19 +13,12 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-type Controller interface {
-	AddExecutor(executor *core.Executor, allowReregister bool) (*core.Executor, error)
-	GetExecutor(executorID string) (*core.Executor, error)
-	GetExecutorByColonyName(colonyName string) ([]*core.Executor, error)
-}
-
 type Server interface {
 	HandleHTTPError(c backends.Context, err error, errorCode int) bool
 	SendHTTPReply(c backends.Context, payloadType string, jsonString string)
 	SendEmptyHTTPReply(c backends.Context, payloadType string)
 	Validator() security.Validator
 	ExecutorDB() database.ExecutorDatabase
-	ExecutorController() Controller
 	AllowExecutorReregister() bool
 }
 
@@ -94,8 +87,33 @@ func (h *Handlers) HandleAddExecutor(c backends.Context, recoveredID string, pay
 		return
 	}
 
-	addedExecutor, err := h.server.ExecutorController().AddExecutor(msg.Executor, h.server.AllowExecutorReregister())
+	// Check if executor already exists
+	executorFromDB, err := h.server.ExecutorDB().GetExecutorByName(msg.Executor.ColonyName, msg.Executor.Name)
 	if h.server.HandleHTTPError(c, err, http.StatusBadRequest) {
+		return
+	}
+
+	if executorFromDB != nil {
+		if h.server.AllowExecutorReregister() {
+			err = h.server.ExecutorDB().RemoveExecutorByName(msg.Executor.ColonyName, executorFromDB.Name)
+			if h.server.HandleHTTPError(c, err, http.StatusBadRequest) {
+				return
+			}
+		} else {
+			h.server.HandleHTTPError(c, errors.New("Executor with name <"+executorFromDB.Name+"> in Colony <"+executorFromDB.ColonyName+"> already exists"), http.StatusBadRequest)
+			return
+		}
+	}
+
+	// Add executor
+	err = h.server.ExecutorDB().AddExecutor(msg.Executor)
+	if h.server.HandleHTTPError(c, err, http.StatusBadRequest) {
+		return
+	}
+
+	// Get added executor
+	addedExecutor, err := h.server.ExecutorDB().GetExecutorByID(msg.Executor.ID)
+	if h.server.HandleHTTPError(c, err, http.StatusInternalServerError) {
 		return
 	}
 
@@ -137,7 +155,7 @@ func (h *Handlers) HandleGetExecutors(c backends.Context, recoveredID string, pa
 		return
 	}
 
-	executors, err := h.server.ExecutorController().GetExecutorByColonyName(msg.ColonyName)
+	executors, err := h.server.ExecutorDB().GetExecutorsByColonyName(msg.ColonyName)
 	if h.server.HandleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}

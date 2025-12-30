@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/colonyos/colonies/pkg/backends"
+	"github.com/colonyos/colonies/pkg/database"
 	"github.com/colonyos/colonies/pkg/rpc"
 	"github.com/colonyos/colonies/pkg/security"
 	"github.com/colonyos/colonies/pkg/server/registry"
@@ -24,7 +25,11 @@ func (s *SimpleTestServer) Validator() security.Validator {
 	return nil
 }
 
-func (s *SimpleTestServer) AttributeController() Controller {
+func (s *SimpleTestServer) ProcessDB() database.ProcessDatabase {
+	return nil
+}
+
+func (s *SimpleTestServer) AttributeDB() database.AttributeDatabase {
 	return nil
 }
 

@@ -45,34 +45,6 @@ func (v *ControllerMock) SubscribeProcess(executorID string, subscription *backe
 	return nil
 }
 
-func (v *ControllerMock) GetColonies() ([]*core.Colony, error) {
-	return nil, nil
-}
-
-func (v *ControllerMock) GetColony(colonyName string) (*core.Colony, error) {
-	return nil, nil
-}
-
-func (v *ControllerMock) AddColony(colony *core.Colony) (*core.Colony, error) {
-	return nil, nil
-}
-
-func (v *ControllerMock) RemoveColony(colonyName string) error {
-	return nil
-}
-
-func (v *ControllerMock) AddExecutor(executor *core.Executor, allowExecutorReregister bool) (*core.Executor, error) {
-	return nil, nil
-}
-
-func (v *ControllerMock) GetExecutor(executorID string) (*core.Executor, error) {
-	return nil, nil
-}
-
-func (v *ControllerMock) GetExecutorByColonyName(colonyName string) ([]*core.Executor, error) {
-	return nil, nil
-}
-
 func (v *ControllerMock) AddProcessToDB(process *core.Process) (*core.Process, error) {
 	return nil, nil
 }
@@ -82,14 +54,6 @@ func (v *ControllerMock) AddProcess(process *core.Process) (*core.Process, error
 }
 
 func (v *ControllerMock) AddChild(processGraphID string, parentProcessID string, childProcessID string, process *core.Process, executorID string, insert bool) (*core.Process, error) {
-	return nil, nil
-}
-
-func (v *ControllerMock) GetProcess(processID string) (*core.Process, error) {
-	return nil, nil
-}
-
-func (v *ControllerMock) FindProcessHistory(colonyName string, executorID string, seconds int, state int) ([]*core.Process, error) {
 	return nil, nil
 }
 
@@ -125,26 +89,6 @@ func (v *ControllerMock) FindFailedProcessGraphs(colonyName string, count int) (
 	return nil, nil
 }
 
-func (v *ControllerMock) RemoveProcess(processID string) error {
-	return nil
-}
-
-func (v *ControllerMock) RemoveAllProcesses(colonyName string, state int) error {
-	return nil
-}
-
-func (v *ControllerMock) RemoveProcessGraph(processID string) error {
-	return nil
-}
-
-func (v *ControllerMock) RemoveAllProcessGraphs(colonyName string, state int) error {
-	return nil
-}
-
-func (v *ControllerMock) SetOutput(processID string, output []interface{}) error {
-	return nil
-}
-
 func (v *ControllerMock) CloseSuccessful(processID string, executorID string, output []interface{}) error {
 	return nil
 }
@@ -174,42 +118,6 @@ func (v *ControllerMock) UnassignExecutor(processID string) error {
 }
 
 func (v *ControllerMock) ResetProcess(processID string) error {
-	return nil
-}
-
-func (v *ControllerMock) GetColonyStatistics(colonyName string) (*core.Statistics, error) {
-	return nil, nil
-}
-
-func (v *ControllerMock) GetStatistics() (*core.Statistics, error) {
-	return nil, nil
-}
-
-func (v *ControllerMock) AddAttribute(attribute *core.Attribute) (*core.Attribute, error) {
-	return nil, nil
-}
-
-func (v *ControllerMock) GetAttribute(attributeID string) (*core.Attribute, error) {
-	return nil, nil
-}
-
-func (v *ControllerMock) AddFunction(function *core.Function) (*core.Function, error) {
-	return nil, nil
-}
-
-func (v *ControllerMock) GetFunctionsByExecutorName(colonyName string, executorName string) ([]*core.Function, error) {
-	return nil, nil
-}
-
-func (v *ControllerMock) GetFunctionsByColonyName(colonyName string) ([]*core.Function, error) {
-	return nil, nil
-}
-
-func (v *ControllerMock) GetFunctionByID(functionID string) (*core.Function, error) {
-	return nil, nil
-}
-
-func (v *ControllerMock) RemoveFunction(functionID string) error {
 	return nil
 }
 

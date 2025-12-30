@@ -1660,3 +1660,38 @@ func TestCloseWithWrongExecutor(t *testing.T) {
 	coloniesServer.Shutdown()
 	<-done
 }
+
+func TestRemoveRunningProcess(t *testing.T) {
+	env, client, coloniesServer, _, done := server.SetupTestEnv2(t)
+
+	// Submit a process
+	funcSpec := utils.CreateTestFunctionSpec(env.ColonyName)
+	addedProcess, err := client.Submit(funcSpec, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+
+	// Assign the process (making it RUNNING)
+	assignedProcess, err := client.Assign(env.ColonyName, -1, "", "", env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.Equal(t, addedProcess.ID, assignedProcess.ID)
+
+	// Verify process is running
+	processFromServer, err := client.GetProcess(addedProcess.ID, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.Equal(t, core.RUNNING, processFromServer.State)
+
+	// Try to remove the running process - should fail
+	err = client.RemoveProcess(addedProcess.ID, env.ExecutorPrvKey)
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "cannot remove a running process")
+
+	// Close the process
+	err = client.Close(addedProcess.ID, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+
+	// Now removing should succeed
+	err = client.RemoveProcess(addedProcess.ID, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+
+	coloniesServer.Shutdown()
+	<-done
+}

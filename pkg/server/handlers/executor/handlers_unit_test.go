@@ -69,6 +69,7 @@ type MockExecutorDB struct {
 	executor      *core.Executor
 	executors     []*core.Executor
 	executorErr   error
+	addErr        error
 	approveErr    error
 	rejectErr     error
 	removeErr     error
@@ -76,7 +77,7 @@ type MockExecutorDB struct {
 	updateCapErr  error
 }
 
-func (m *MockExecutorDB) AddExecutor(executor *core.Executor) error                    { return nil }
+func (m *MockExecutorDB) AddExecutor(executor *core.Executor) error                    { return m.addErr }
 func (m *MockExecutorDB) SetAllocations(colonyName string, executorName string, allocations core.Allocations) error {
 	return m.allocErr
 }
@@ -107,28 +108,9 @@ func (m *MockExecutorDB) UpdateExecutorCapabilities(colonyName string, executorN
 	return m.updateCapErr
 }
 
-type MockController struct {
-	executor    *core.Executor
-	executors   []*core.Executor
-	addErr      error
-	getErr      error
-	getByColErr error
-}
-
-func (m *MockController) AddExecutor(executor *core.Executor, allowReregister bool) (*core.Executor, error) {
-	return m.executor, m.addErr
-}
-func (m *MockController) GetExecutor(executorID string) (*core.Executor, error) {
-	return m.executor, m.getErr
-}
-func (m *MockController) GetExecutorByColonyName(colonyName string) ([]*core.Executor, error) {
-	return m.executors, m.getByColErr
-}
-
 type MockServer struct {
 	validator       *MockValidator
 	executorDB      *MockExecutorDB
-	controller      *MockController
 	httpError       bool
 	lastErrCode     int
 	lastResponse    string
@@ -160,10 +142,6 @@ func (m *MockServer) ExecutorDB() database.ExecutorDatabase {
 	return m.executorDB
 }
 
-func (m *MockServer) ExecutorController() Controller {
-	return m.controller
-}
-
 func (m *MockServer) AllowExecutorReregister() bool {
 	return m.allowReregister
 }
@@ -172,7 +150,6 @@ func createMockServer() *MockServer {
 	return &MockServer{
 		validator:  &MockValidator{},
 		executorDB: &MockExecutorDB{},
-		controller: &MockController{},
 	}
 }
 
@@ -244,9 +221,9 @@ func TestHandleAddExecutorColonyOwnerErrorUnit(t *testing.T) {
 	assert.Equal(t, http.StatusForbidden, server.lastErrCode)
 }
 
-func TestHandleAddExecutorControllerErrorUnit(t *testing.T) {
+func TestHandleAddExecutorDBErrorUnit(t *testing.T) {
 	server := createMockServer()
-	server.controller.addErr = errors.New("controller error")
+	server.executorDB.addErr = errors.New("db error")
 	handlers := NewHandlers(server)
 	ctx := &MockContext{}
 
@@ -260,7 +237,7 @@ func TestHandleAddExecutorControllerErrorUnit(t *testing.T) {
 
 func TestHandleAddExecutorNilResultUnit(t *testing.T) {
 	server := createMockServer()
-	server.controller.executor = nil
+	server.executorDB.executor = nil
 	handlers := NewHandlers(server)
 	ctx := &MockContext{}
 
@@ -275,7 +252,9 @@ func TestHandleAddExecutorNilResultUnit(t *testing.T) {
 
 func TestHandleAddExecutorSuccessUnit(t *testing.T) {
 	server := createMockServer()
-	server.controller.executor = &core.Executor{
+	// Need to allow reregister since GetExecutorByName will return the same executor
+	server.allowReregister = true
+	server.executorDB.executor = &core.Executor{
 		ID:         "executor-id",
 		Name:       "test-executor",
 		ColonyName: "test-colony",
@@ -329,9 +308,9 @@ func TestHandleGetExecutorsMembershipErrorUnit(t *testing.T) {
 	assert.Equal(t, http.StatusForbidden, server.lastErrCode)
 }
 
-func TestHandleGetExecutorsControllerErrorUnit(t *testing.T) {
+func TestHandleGetExecutorsDBErrorUnit(t *testing.T) {
 	server := createMockServer()
-	server.controller.getByColErr = errors.New("controller error")
+	server.executorDB.executorErr = errors.New("db error")
 	handlers := NewHandlers(server)
 	ctx := &MockContext{}
 
@@ -344,7 +323,7 @@ func TestHandleGetExecutorsControllerErrorUnit(t *testing.T) {
 
 func TestHandleGetExecutorsSuccessUnit(t *testing.T) {
 	server := createMockServer()
-	server.controller.executors = []*core.Executor{}
+	server.executorDB.executors = []*core.Executor{}
 	handlers := NewHandlers(server)
 	ctx := &MockContext{}
 

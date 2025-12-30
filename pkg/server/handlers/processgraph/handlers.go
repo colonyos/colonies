@@ -4,10 +4,11 @@ import (
 	"errors"
 	"net/http"
 
+	"github.com/colonyos/colonies/pkg/backends"
 	"github.com/colonyos/colonies/pkg/core"
+	"github.com/colonyos/colonies/pkg/database"
 	"github.com/colonyos/colonies/pkg/rpc"
 	"github.com/colonyos/colonies/pkg/server/registry"
-	"github.com/colonyos/colonies/pkg/backends"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -18,8 +19,6 @@ type Controller interface {
 	FindRunningProcessGraphs(colonyName string, count int) ([]*core.ProcessGraph, error)
 	FindSuccessfulProcessGraphs(colonyName string, count int) ([]*core.ProcessGraph, error)
 	FindFailedProcessGraphs(colonyName string, count int) ([]*core.ProcessGraph, error)
-	RemoveProcessGraph(processGraphID string) error
-	RemoveAllProcessGraphs(colonyName string, state int) error
 	AddChild(processGraphID string, parentProcessID string, childProcessID string, process *core.Process, initiatorID string, insert bool) (*core.Process, error)
 }
 
@@ -34,6 +33,7 @@ type Server interface {
 	SendEmptyHTTPReply(c backends.Context, payloadType string)
 	Validator() Validator
 	Controller() Controller
+	ProcessGraphDB() database.ProcessGraphDatabase
 }
 
 type Handlers struct {
@@ -237,7 +237,15 @@ func (h *Handlers) HandleRemoveProcessGraph(c backends.Context, recoveredID stri
 		return
 	}
 
-	err = h.server.Controller().RemoveProcessGraph(msg.ProcessGraphID)
+	// Check if processgraph is running
+	if graph.State == core.RUNNING {
+		err := errors.New("Failed to remove processgraph, cannot remove a running processgraph")
+		if h.server.HandleHTTPError(c, err, http.StatusBadRequest) {
+		}
+		return
+	}
+
+	err = h.server.ProcessGraphDB().RemoveProcessGraphByID(msg.ProcessGraphID)
 	if h.server.HandleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
@@ -265,7 +273,21 @@ func (h *Handlers) HandleRemoveAllProcessGraphs(c backends.Context, recoveredID 
 		return
 	}
 
-	err = h.server.Controller().RemoveAllProcessGraphs(msg.ColonyName, msg.State)
+	// Remove process graphs based on state using database directly
+	switch msg.State {
+	case core.WAITING:
+		err = h.server.ProcessGraphDB().RemoveAllWaitingProcessGraphsByColonyName(msg.ColonyName)
+	case core.RUNNING:
+		err = errors.New("not possible to remove running processgraphs")
+	case core.SUCCESS:
+		err = h.server.ProcessGraphDB().RemoveAllSuccessfulProcessGraphsByColonyName(msg.ColonyName)
+	case core.FAILED:
+		err = h.server.ProcessGraphDB().RemoveAllFailedProcessGraphsByColonyName(msg.ColonyName)
+	case core.NOTSET:
+		err = h.server.ProcessGraphDB().RemoveAllProcessGraphsByColonyName(msg.ColonyName)
+	default:
+		err = errors.New("invalid state when deleting all processgraphs")
+	}
 	if h.server.HandleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
