@@ -661,16 +661,6 @@ func (db *PQDatabase) createProcessesIndex4() error {
 	return nil
 }
 
-func (db *PQDatabase) createProcessesIndex5() error {
-	sqlStatement := `CREATE INDEX ` + db.dbPrefix + `PROCESSES_INDEX5 ON ` + db.dbPrefix + `PROCESSES (IS_ASSIGNED, START_TIME, ASSIGNED_EXECUTOR_ID, STATE, PROCESS_ID)`
-	_, err := db.postgresql.Exec(sqlStatement)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
 func (db *PQDatabase) createProcessesIndex6() error {
 	sqlStatement := `CREATE INDEX ` + db.dbPrefix + `PROCESSES_INDEX6 ON ` + db.dbPrefix + `PROCESSES (STATE, EXECUTOR_TYPE, IS_ASSIGNED, WAIT_FOR_PARENTS, TARGET_COLONY_NAME, LOCATION_NAME, PRIORITYTIME)`
 	_, err := db.postgresql.Exec(sqlStatement)
@@ -961,11 +951,6 @@ func (db *PQDatabase) Initialize() error {
 	}
 
 	err = db.createProcessesIndex4()
-	if err != nil {
-		return err
-	}
-
-	err = db.createProcessesIndex5()
 	if err != nil {
 		return err
 	}

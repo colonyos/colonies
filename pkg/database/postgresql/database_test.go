@@ -312,10 +312,6 @@ func TestInitialize(t *testing.T) {
 	err = db.Initialize()
 	assert.NotNil(t, err)
 
-	dbMock.returnErrorOnCaller("createProcessesIndex5")
-	err = db.Initialize()
-	assert.NotNil(t, err)
-
 	dbMock.returnErrorOnCaller("createProcessesIndex6")
 	err = db.Initialize()
 	assert.NotNil(t, err)
@@ -502,18 +498,6 @@ func TestCreateProcessIndex4(t *testing.T) {
 
 	dbMock.setReturnError(false)
 	err = db.createProcessesIndex4()
-	assert.Nil(t, err)
-}
-
-func TestCreateProcessIndex5(t *testing.T) {
-	dbMock := &DBMock{}
-	db := &PQDatabase{postgresql: dbMock}
-	dbMock.setReturnError(true)
-	err := db.createProcessesIndex5()
-	assert.NotNil(t, err)
-
-	dbMock.setReturnError(false)
-	err = db.createProcessesIndex5()
 	assert.Nil(t, err)
 }
 
