@@ -318,6 +318,17 @@ func parseEnv() {
 		CheckError(err)
 	}
 
+	// Parse stale executor duration (in seconds), defaults to 10 minutes
+	StaleExecutorDuration = constants.DEFAULT_STALE_EXECUTOR_DURATION
+	staleExecutorStr := os.Getenv("COLONIES_STALE_EXECUTOR_DURATION")
+	if staleExecutorStr != "" {
+		StaleExecutorDuration, err = strconv.Atoi(staleExecutorStr)
+		if err != nil {
+			log.Error("Failed to parse COLONIES_STALE_EXECUTOR_DURATION")
+		}
+		CheckError(err)
+	}
+
 	monitorPortStr := os.Getenv("COLONIES_MONITOR_PORT")
 	if monitorPortStr != "" {
 		MonitorPort, err = strconv.Atoi(monitorPortStr)

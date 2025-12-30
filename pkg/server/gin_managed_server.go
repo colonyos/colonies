@@ -42,6 +42,7 @@ func NewGinManagedServer(config *ServerConfig, sharedResources *SharedResources)
 		config.Retention,
 		config.RetentionPolicy,
 		config.RetentionPeriod,
+		config.StaleExecutorDuration,
 	)
 	
 	return &GinManagedServer{

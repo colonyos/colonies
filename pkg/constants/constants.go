@@ -34,3 +34,6 @@ const CHANNEL_MAX_LOG_ENTRIES = 10000 // Maximum entries per channel, oldest rem
 
 // Channel Limit - Maximum number of channels per process
 const CHANNEL_MAX_CHANNELS_PER_PROCESS = 100 // Maximum channels a single process can have
+
+// Executor Cleanup - Configuration for automatic stale executor removal
+const DEFAULT_STALE_EXECUTOR_DURATION = 600 // Default duration in seconds (10 minutes) before an executor is considered stale

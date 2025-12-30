@@ -6,6 +6,7 @@ import (
 
 	"github.com/colonyos/colonies/pkg/client"
 	"github.com/colonyos/colonies/pkg/cluster"
+	"github.com/colonyos/colonies/pkg/constants"
 	"github.com/colonyos/colonies/pkg/core"
 	"github.com/colonyos/colonies/pkg/database/postgresql"
 	"github.com/colonyos/colonies/pkg/security/crypto"
@@ -58,6 +59,7 @@ func TestChannelEndToEndIntegration(t *testing.T) {
 		false, // retention
 		0,     // retention policy
 		0,     // retention period
+		time.Duration(constants.DEFAULT_STALE_EXECUTOR_DURATION)*time.Second, // stale executor duration
 	)
 
 	// Start server in background
@@ -246,6 +248,7 @@ func TestChannelCleanupOnProcessFail(t *testing.T) {
 		false, // retention
 		0,     // retention policy
 		0,     // retention period
+		time.Duration(constants.DEFAULT_STALE_EXECUTOR_DURATION)*time.Second, // stale executor duration
 	)
 
 	// Start server in background

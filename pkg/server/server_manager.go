@@ -48,6 +48,7 @@ type ServerConfig struct {
 	Retention               bool
 	RetentionPolicy         int64
 	RetentionPeriod         int
+	StaleExecutorDuration   time.Duration
 	Enabled                 bool
 }
 
