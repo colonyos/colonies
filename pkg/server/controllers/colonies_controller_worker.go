@@ -144,24 +144,18 @@ func (controller *ColoniesController) CmdQueueWorker() {
 }
 
 func (controller *ColoniesController) CleanupWorker() {
-	cleanupInterval := 60 * time.Second       // 60 second interval
-	staleExecutorDuration := 10 * time.Minute // Executors not heard from in 10 minutes are stale
+	cleanupInterval := 60 * time.Second // 60 second interval
 
-	// Read cleanup intervals from environment if set
+	// Read cleanup interval from environment if set
 	if envInterval := os.Getenv("COLONIES_CLEANUP_INTERVAL"); envInterval != "" {
 		if interval, err := strconv.Atoi(envInterval); err == nil {
 			cleanupInterval = time.Duration(interval) * time.Second
 		}
 	}
-	if envStaleExecutor := os.Getenv("COLONIES_STALE_EXECUTOR_DURATION"); envStaleExecutor != "" {
-		if duration, err := strconv.Atoi(envStaleExecutor); err == nil {
-			staleExecutorDuration = time.Duration(duration) * time.Second
-		}
-	}
 
 	log.WithFields(log.Fields{
 		"CleanupInterval":       cleanupInterval,
-		"StaleExecutorDuration": staleExecutorDuration,
+		"StaleExecutorDuration": controller.staleExecutorDuration,
 	}).Info("Starting cleanup worker")
 
 	ticker := time.NewTicker(cleanupInterval)
@@ -184,13 +178,13 @@ func (controller *ColoniesController) CleanupWorker() {
 			controller.leaderMutex.Unlock()
 
 			if isLeader {
-				controller.cleanupStaleExecutors(staleExecutorDuration)
+				controller.cleanupStaleExecutors()
 			}
 		}
 	}
 }
 
-func (controller *ColoniesController) cleanupStaleExecutors(staleDuration time.Duration) {
+func (controller *ColoniesController) cleanupStaleExecutors() {
 	executors, err := controller.executorDB.GetExecutors()
 	if err != nil {
 		log.WithFields(log.Fields{"Error": err}).Warn("Failed to get executors for cleanup")
@@ -201,8 +195,14 @@ func (controller *ColoniesController) cleanupStaleExecutors(staleDuration time.D
 	cleanedCount := 0
 
 	for _, executor := range executors {
+		// Skip executors that have never communicated (LastHeardFromTime is zero)
+		// This prevents removing newly registered executors before they have a chance to communicate
+		if executor.LastHeardFromTime.IsZero() {
+			continue
+		}
+
 		timeSinceLastHeard := now.Sub(executor.LastHeardFromTime)
-		if timeSinceLastHeard > staleDuration {
+		if timeSinceLastHeard > controller.staleExecutorDuration {
 			log.WithFields(log.Fields{
 				"ExecutorName":       executor.Name,
 				"ExecutorID":         executor.ID,

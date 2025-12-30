@@ -125,6 +125,8 @@ type ColoniesController struct {
 	pauseChannelsMux sync.RWMutex
 	// Channel router for bidirectional communication
 	channelRouter *channel.Router
+	// Stale executor cleanup configuration
+	staleExecutorDuration time.Duration
 }
 
 func CreateColoniesController(db database.Database,
@@ -135,7 +137,8 @@ func CreateColoniesController(db database.Database,
 	cronPeriod int,
 	retention bool,
 	retentionPolicy int64,
-	retentionPeriod int) *ColoniesController {
+	retentionPeriod int,
+	staleExecutorDuration time.Duration) *ColoniesController {
 
 	controller := &ColoniesController{}
 	// Set all the specific database interfaces
@@ -165,6 +168,7 @@ func CreateColoniesController(db database.Database,
 	controller.retention = retention
 	controller.retentionPolicy = retentionPolicy
 	controller.retentionPeriod = retentionPeriod
+	controller.staleExecutorDuration = staleExecutorDuration
 	controller.pauseChannels = make(map[string][]chan bool)
 	controller.channelRouter = channel.NewRouter()
 

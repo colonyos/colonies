@@ -118,8 +118,9 @@ func CreateServer(db database.Database,
 	allowExecutorReregister bool,
 	retention bool,
 	retentionPolicy int64,
-	retentionPeriod int) *Server {
-	return createServerInternal(db, port, tls, tlsPrivateKeyPath, tlsCertPath, thisNode, clusterConfig, etcdDataPath, generatorPeriod, cronPeriod, exclusiveAssign, allowExecutorReregister, retention, retentionPolicy, retentionPeriod)
+	retentionPeriod int,
+	staleExecutorDuration time.Duration) *Server {
+	return createServerInternal(db, port, tls, tlsPrivateKeyPath, tlsCertPath, thisNode, clusterConfig, etcdDataPath, generatorPeriod, cronPeriod, exclusiveAssign, allowExecutorReregister, retention, retentionPolicy, retentionPeriod, staleExecutorDuration)
 }
 
 func createServerInternal(db database.Database,
@@ -136,18 +137,14 @@ func createServerInternal(db database.Database,
 	allowExecutorReregister bool,
 	retention bool,
 	retentionPolicy int64,
-	retentionPeriod int) *Server {
+	retentionPeriod int,
+	staleExecutorDuration time.Duration) *Server {
 	server := &Server{}
-
-	log.WithFields(log.Fields{
-		"HTTPPort": port,
-	}).Info("=== INITIALIZING COLONIES SERVER ===")
 
 	// Initialize Gin HTTP backend
 	server.engine = gin.CreateEngineWithDefaults()
 	server.engine.Use(gin.CORS())
 	server.server = gin.NewBackendServer(port, server.engine)
-	log.Info("Gin HTTP backend initialized successfully")
 
 	// Set all the specific database interfaces
 	server.userDB = db
@@ -166,7 +163,7 @@ func createServerInternal(db database.Database,
 	server.securityDB = db
 	server.locationDB = db
 
-	server.controller = controllers.CreateColoniesController(db, thisNode, clusterConfig, etcdDataPath, generatorPeriod, cronPeriod, retention, retentionPolicy, retentionPeriod)
+	server.controller = controllers.CreateColoniesController(db, thisNode, clusterConfig, etcdDataPath, generatorPeriod, cronPeriod, retention, retentionPolicy, retentionPeriod, staleExecutorDuration)
 
 	server.tls = tls
 	server.port = port
@@ -322,11 +319,6 @@ func (server *Server) registerHandlers() {
 	if err := server.locationHandlers.RegisterHandlers(server.handlerRegistry); err != nil {
 		log.WithFields(log.Fields{"Error": err}).Fatal("Failed to register location handlers")
 	}
-
-	log.WithFields(log.Fields{
-		"RegisteredHandlers": len(server.handlerRegistry.GetRegisteredTypes()),
-		"HandlerTypes":       server.handlerRegistry.GetRegisteredTypes(),
-	}).Info("Handler registration completed")
 }
 
 func (server *Server) getServerID() (string, error) {

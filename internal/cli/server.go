@@ -61,6 +61,9 @@ func startServer(
 ) {
 	retentionPeriod := 60000 // Run retention worker once a minute
 
+	// Convert stale executor duration from seconds to time.Duration
+	staleExecutorDuration := time.Duration(StaleExecutorDuration) * time.Second
+
 	srv := server.CreateServer(
 		db,
 		ServerPort,
@@ -77,6 +80,7 @@ func startServer(
 		Retention,
 		RetentionPolicy,
 		retentionPeriod,
+		staleExecutorDuration,
 	)
 
 	for {
