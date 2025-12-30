@@ -22,6 +22,7 @@ type Server interface {
 	ColonyDB() database.ColonyDatabase
 	ExecutorDB() database.ExecutorDatabase
 	ProcessDB() database.ProcessDatabase
+	ProcessGraphDB() database.ProcessGraphDatabase
 }
 
 type Handlers struct {
@@ -308,6 +309,26 @@ func (h *Handlers) HandleColonyStatistics(c backends.Context, recoveredID string
 		return
 	}
 
+	waitingWorkflows, err := h.server.ProcessGraphDB().CountWaitingProcessGraphsByColonyName(msg.ColonyName)
+	if h.server.HandleHTTPError(c, err, http.StatusInternalServerError) {
+		return
+	}
+
+	runningWorkflows, err := h.server.ProcessGraphDB().CountRunningProcessGraphsByColonyName(msg.ColonyName)
+	if h.server.HandleHTTPError(c, err, http.StatusInternalServerError) {
+		return
+	}
+
+	successWorkflows, err := h.server.ProcessGraphDB().CountSuccessfulProcessGraphsByColonyName(msg.ColonyName)
+	if h.server.HandleHTTPError(c, err, http.StatusInternalServerError) {
+		return
+	}
+
+	failedWorkflows, err := h.server.ProcessGraphDB().CountFailedProcessGraphsByColonyName(msg.ColonyName)
+	if h.server.HandleHTTPError(c, err, http.StatusInternalServerError) {
+		return
+	}
+
 	stat := &core.Statistics{
 		Colonies:              1,
 		Executors:             executors,
@@ -317,6 +338,10 @@ func (h *Handlers) HandleColonyStatistics(c backends.Context, recoveredID string
 		RunningProcesses:      runningProcesses,
 		SuccessfulProcesses:   successProcesses,
 		FailedProcesses:       failedProcesses,
+		WaitingWorkflows:      waitingWorkflows,
+		RunningWorkflows:      runningWorkflows,
+		SuccessfulWorkflows:   successWorkflows,
+		FailedWorkflows:       failedWorkflows,
 	}
 
 	jsonString, err = stat.ToJSON()
