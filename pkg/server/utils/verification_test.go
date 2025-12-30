@@ -3,9 +3,40 @@ package server
 import (
 	"testing"
 
+	"github.com/colonyos/colonies/pkg/constants"
 	"github.com/colonyos/colonies/pkg/core"
 	"github.com/stretchr/testify/assert"
 )
+
+func TestVerifyFunctionSpecValidPriority(t *testing.T) {
+	funcSpec := &core.FunctionSpec{
+		Priority: 0,
+	}
+	err := VerifyFunctionSpec(funcSpec)
+	assert.Nil(t, err)
+
+	funcSpec.Priority = constants.MAX_PRIORITY
+	err = VerifyFunctionSpec(funcSpec)
+	assert.Nil(t, err)
+
+	funcSpec.Priority = constants.MIN_PRIORITY
+	err = VerifyFunctionSpec(funcSpec)
+	assert.Nil(t, err)
+}
+
+func TestVerifyFunctionSpecInvalidPriority(t *testing.T) {
+	funcSpec := &core.FunctionSpec{
+		Priority: constants.MIN_PRIORITY - 1,
+	}
+	err := VerifyFunctionSpec(funcSpec)
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "priority outside range")
+
+	funcSpec.Priority = constants.MAX_PRIORITY + 1
+	err = VerifyFunctionSpec(funcSpec)
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "priority outside range")
+}
 
 func TestVerifyWorkflowSpec(t *testing.T) {
 	colonyName := core.GenerateRandomID()
