@@ -2,14 +2,19 @@ package controllers
 
 import (
 	"errors"
+	"fmt"
+	"sync/atomic"
 	"time"
 
+	"github.com/colonyos/colonies/pkg/backends"
 	"github.com/colonyos/colonies/pkg/cluster"
 	"github.com/colonyos/colonies/pkg/constants"
 	"github.com/colonyos/colonies/pkg/core"
 	"github.com/colonyos/colonies/pkg/database/postgresql"
-	"github.com/colonyos/colonies/pkg/backends"
 )
+
+// portCounter is used to allocate unique ports for each test to avoid port conflicts
+var portCounter int32 = 0
 
 // ControllerMock implements the Controller interface for testing
 type ControllerMock struct {
@@ -587,11 +592,19 @@ func (db *DatabaseMock) ApplyRetentionPolicy(retentionPeriod int64) error { retu
 
 // Test utility functions
 func createFakeColoniesController() (*ColoniesController, *DatabaseMock) {
-	node := cluster.Node{Name: "etcd", Host: "localhost", EtcdClientPort: 24100, EtcdPeerPort: 23100, RelayPort: 25100, APIPort: constants.TESTPORT}
+	// Use atomic counter to get unique ports for each test to avoid "address already in use" errors
+	portOffset := atomic.AddInt32(&portCounter, 1)
+	etcdClientPort := 24100 + int(portOffset)*10
+	etcdPeerPort := 23100 + int(portOffset)*10
+	relayPort := 25100 + int(portOffset)*10
+	nodeName := fmt.Sprintf("etcd-%d", portOffset)
+	dataPath := fmt.Sprintf("/tmp/colonies/etcd-%d", portOffset)
+
+	node := cluster.Node{Name: nodeName, Host: "localhost", EtcdClientPort: etcdClientPort, EtcdPeerPort: etcdPeerPort, RelayPort: relayPort, APIPort: constants.TESTPORT}
 	clusterConfig := cluster.Config{}
 	clusterConfig.AddNode(node)
 	dbMock := &DatabaseMock{}
-	return CreateColoniesController(dbMock, node, clusterConfig, "/tmp/colonies/etcd", constants.GENERATOR_TRIGGER_PERIOD, constants.CRON_TRIGGER_PERIOD, false, -1, 500, time.Duration(constants.DEFAULT_STALE_EXECUTOR_DURATION)*time.Second), dbMock
+	return CreateColoniesController(dbMock, node, clusterConfig, dataPath, constants.GENERATOR_TRIGGER_PERIOD, constants.CRON_TRIGGER_PERIOD, false, -1, 500, time.Duration(constants.DEFAULT_STALE_EXECUTOR_DURATION)*time.Second), dbMock
 }
 
 func createTestColoniesController(db *postgresql.PQDatabase) *ColoniesController {

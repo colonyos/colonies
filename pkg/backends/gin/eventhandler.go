@@ -77,7 +77,8 @@ func CreateEventHandler(relayServer *cluster.RelayServer) backends.RealtimeEvent
 	handler.listeners = make(map[string]map[string]chan *core.Process)
 	handler.processIDs = make(map[string]string)
 	handler.nextExecutor = make(map[string]int)
-	handler.msgQueue = make(chan *message)
+	// Use a buffered channel to prevent blocking under high concurrency
+	handler.msgQueue = make(chan *message, 1000)
 	handler.relayServer = relayServer
 
 	handler.mutex.Lock()
@@ -102,7 +103,8 @@ func CreateTestableEventHandler(relayServer *cluster.RelayServer) backends.Testa
 	handler.listeners = make(map[string]map[string]chan *core.Process)
 	handler.processIDs = make(map[string]string)
 	handler.nextExecutor = make(map[string]int)
-	handler.msgQueue = make(chan *message)
+	// Use a buffered channel to prevent blocking under high concurrency
+	handler.msgQueue = make(chan *message, 1000)
 	handler.relayServer = relayServer
 
 	handler.mutex.Lock()
@@ -321,23 +323,41 @@ func (handler *DefaultEventHandler) Signal(process *core.Process) {
 
 // WaitForProcess implements EventHandler interface
 func (handler *DefaultEventHandler) WaitForProcess(executorType string, state int, processID string, location string, ctx context.Context) (*core.Process, error) {
-	// Register
+	// Register - use select to respect context timeout
 	msg := &message{reply: make(chan replyMessage, 100), handler: func(msg *message) {
 		listenerID, c := handler.register(executorType, state, processID, location)
 		r := replyMessage{processChan: c, listenerID: listenerID}
 		msg.reply <- r
 	}}
-	handler.msgQueue <- msg
+
+	// Send registration message with timeout
+	select {
+	case handler.msgQueue <- msg:
+		// Message sent successfully
+	case <-ctx.Done():
+		return nil, errors.New("timeout waiting to register")
+	}
 
 	// Wait for the masterworker to execute the handler code
-	r := <-msg.reply
+	var r replyMessage
+	select {
+	case r = <-msg.reply:
+		// Registration complete
+	case <-ctx.Done():
+		return nil, errors.New("timeout waiting for registration")
+	}
 
-	// Unregister
+	// Unregister - non-blocking since we're in defer and don't want to hang
 	defer func() {
-		msg := &message{reply: make(chan replyMessage, 100), handler: func(msg *message) {
+		unregMsg := &message{reply: make(chan replyMessage, 100), handler: func(msg *message) {
 			handler.unregister(executorType, state, r.listenerID, location)
 		}}
-		handler.msgQueue <- msg
+		select {
+		case handler.msgQueue <- unregMsg:
+			// Unregister message sent
+		default:
+			// Queue full, skip unregister (will be cleaned up eventually)
+		}
 	}()
 
 	for {

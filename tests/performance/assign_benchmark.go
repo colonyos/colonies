@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/csv"
 	"flag"
 	"fmt"
@@ -304,8 +305,12 @@ func runBenchmark(c *client.ColoniesClient, config Config, executors []ExecutorI
 	var results []Result
 	var resultsMu sync.Mutex
 	var wg sync.WaitGroup
+	var closeWg sync.WaitGroup
 	var assignedCount int64
 	var failedCount int64
+
+	// Semaphore to limit concurrent Close operations (prevents overwhelming the server)
+	closeSemaphore := make(chan struct{}, 100)
 
 	startTime := time.Now()
 
@@ -321,8 +326,13 @@ func runBenchmark(c *client.ColoniesClient, config Config, executors []ExecutorI
 					break
 				}
 
+				// Create a context with client-side timeout (server timeout + buffer)
+				// This ensures we don't hang if the server gets stuck
+				ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+
 				start := time.Now()
-				process, err := c.Assign(config.ColonyName, 1, "", "", execInfo.PrvKey)
+				process, err := c.AssignWithContext(config.ColonyName, 1, ctx, "", "", execInfo.PrvKey)
+				cancel() // Clean up context
 				latency := time.Since(start).Seconds() * 1000 // ms
 
 				result := Result{
@@ -335,9 +345,18 @@ func runBenchmark(c *client.ColoniesClient, config Config, executors []ExecutorI
 				if result.Success {
 					atomic.AddInt64(&assignedCount, 1)
 
-					// Close the process immediately
+					// Close the process with rate limiting
+					closeWg.Add(1)
 					go func(pid string) {
-						c.Close(pid, execInfo.PrvKey)
+						defer closeWg.Done()
+						closeSemaphore <- struct{}{} // Acquire semaphore
+						defer func() { <-closeSemaphore }() // Release semaphore
+
+						closeCtx, closeCancel := context.WithTimeout(context.Background(), 10*time.Second)
+						defer closeCancel()
+						if err := c.CloseWithContext(pid, closeCtx, execInfo.PrvKey); err != nil {
+							log.Printf("Warning: Close failed for process %s: %v", pid[:8], err)
+						}
 					}(process.ID)
 				} else {
 					// Timeout or no process available
@@ -363,6 +382,10 @@ func runBenchmark(c *client.ColoniesClient, config Config, executors []ExecutorI
 	}
 
 	wg.Wait()
+
+	// Wait for all Close operations to complete
+	fmt.Println("Waiting for Close operations to complete...")
+	closeWg.Wait()
 
 	elapsed := time.Since(startTime)
 	fmt.Printf("\nBenchmark completed in %.2f seconds\n", elapsed.Seconds())

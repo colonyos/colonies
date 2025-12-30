@@ -4,12 +4,12 @@ import (
 	"errors"
 	"net/http"
 
+	"github.com/colonyos/colonies/pkg/backends"
 	"github.com/colonyos/colonies/pkg/core"
 	"github.com/colonyos/colonies/pkg/database"
 	"github.com/colonyos/colonies/pkg/rpc"
 	"github.com/colonyos/colonies/pkg/security"
 	"github.com/colonyos/colonies/pkg/server/registry"
-	"github.com/colonyos/colonies/pkg/backends"
 	log "github.com/sirupsen/logrus"
 )
 

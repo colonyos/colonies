@@ -182,6 +182,21 @@ func (client *ColoniesClient) Close(processID string, prvKey string) error {
 	return nil
 }
 
+func (client *ColoniesClient) CloseWithContext(processID string, ctx context.Context, prvKey string) error {
+	msg := rpc.CreateCloseSuccessfulMsg(processID)
+	jsonString, err := msg.ToJSON()
+	if err != nil {
+		return err
+	}
+
+	_, err = client.sendMessage(rpc.CloseSuccessfulPayloadType, jsonString, prvKey, false, ctx)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (client *ColoniesClient) CloseWithOutput(processID string, output []interface{}, prvKey string) error {
 	msg := rpc.CreateCloseSuccessfulMsg(processID)
 	msg.Output = output

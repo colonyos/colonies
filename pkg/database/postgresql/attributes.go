@@ -3,20 +3,38 @@ package postgresql
 import (
 	"database/sql"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/colonyos/colonies/pkg/core"
 )
 
 func (db *PQDatabase) AddAttributes(attributes []core.Attribute) error {
-	for _, attribute := range attributes {
-		err := db.AddAttribute(attribute)
-		if err != nil {
-			return err
-		}
+	if len(attributes) == 0 {
+		return nil
 	}
 
-	return nil
+	// Use batch insert for better performance
+	if len(attributes) == 1 {
+		return db.AddAttribute(attributes[0])
+	}
+
+	// Build batch INSERT statement
+	sqlStatement := `INSERT INTO ` + db.dbPrefix + `ATTRIBUTES (ATTRIBUTE_ID, KEY, VALUE, ATTRIBUTE_TYPE, TARGET_ID, TARGET_COLONY_NAME, PROCESSGRAPH_ID, ADDED, STATE) VALUES `
+
+	vals := []interface{}{}
+	now := time.Now()
+	for i, attr := range attributes {
+		if i > 0 {
+			sqlStatement += ", "
+		}
+		base := i * 9
+		sqlStatement += fmt.Sprintf("($%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d)", base+1, base+2, base+3, base+4, base+5, base+6, base+7, base+8, base+9)
+		vals = append(vals, attr.ID, attr.Key, attr.Value, attr.AttributeType, attr.TargetID, attr.TargetColonyName, attr.TargetProcessGraphID, now, attr.State)
+	}
+
+	_, err := db.postgresql.Exec(sqlStatement, vals...)
+	return err
 }
 
 func (db *PQDatabase) AddAttribute(attribute core.Attribute) error {
