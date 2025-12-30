@@ -1118,3 +1118,50 @@ func TestRemoveAllProcessGraphsWithStateUnauthorized(t *testing.T) {
 	s.Shutdown()
 	<-done
 }
+
+// TestRemoveRunningProcessGraph tests that a running processgraph cannot be removed
+func TestRemoveRunningProcessGraph(t *testing.T) {
+	env, client, coloniesServer, _, done := server.SetupTestEnv2(t)
+
+	// Create a simple workflow with a single task
+	wf := server.GenerateSingleWorkflowSpec(env.ColonyName)
+	submittedGraph, err := client.SubmitWorkflowSpec(wf, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.NotNil(t, submittedGraph)
+
+	// Verify processgraph is in WAITING state initially
+	graphFromServer, err := client.GetProcessGraph(submittedGraph.ID, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.Equal(t, core.PENDING, graphFromServer.State)
+
+	// Assign the process (making the processgraph RUNNING)
+	assignedProcess, err := client.Assign(env.ColonyName, -1, "", "", env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.NotNil(t, assignedProcess)
+
+	// Verify processgraph is now RUNNING
+	graphFromServer, err = client.GetProcessGraph(submittedGraph.ID, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.Equal(t, core.RUNNING, graphFromServer.State)
+
+	// Try to remove the running processgraph - should fail
+	err = client.RemoveProcessGraph(submittedGraph.ID, env.ExecutorPrvKey)
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "cannot remove a running processgraph")
+
+	// Close the process (making the processgraph SUCCESSFUL)
+	err = client.Close(assignedProcess.ID, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+
+	// Verify processgraph is now SUCCESSFUL
+	graphFromServer, err = client.GetProcessGraph(submittedGraph.ID, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.Equal(t, core.SUCCESS, graphFromServer.State)
+
+	// Now removing should succeed
+	err = client.RemoveProcessGraph(submittedGraph.ID, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+
+	coloniesServer.Shutdown()
+	<-done
+}

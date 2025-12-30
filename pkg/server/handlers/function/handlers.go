@@ -18,18 +18,9 @@ type Server interface {
 	SendHTTPReply(c backends.Context, payloadType string, jsonString string)
 	SendEmptyHTTPReply(c backends.Context, payloadType string)
 	Validator() security.Validator
-	FunctionController() Controller
 	FunctionDB() database.FunctionDatabase
 	ExecutorDB() database.ExecutorDatabase
 	UserDB() database.UserDatabase
-}
-
-type Controller interface {
-	AddFunction(function *core.Function) (*core.Function, error)
-	GetFunction(functionID string) (*core.Function, error)
-	GetFunctions(colonyName string, executorName string, count int) ([]*core.Function, error)
-	GetFunctionsByColonyName(colonyName string) ([]*core.Function, error)
-	RemoveFunction(functionID string, initiatorID string) error
 }
 
 type Handlers struct {
@@ -101,17 +92,20 @@ func (h *Handlers) HandleAddFunction(c backends.Context, recoveredID string, pay
 		}
 	}
 
-	addedFunction, err := h.server.FunctionController().AddFunction(msg.Function)
-	if err != nil {
-		h.server.HandleHTTPError(c, err, http.StatusInternalServerError)
+	err = h.server.FunctionDB().AddFunction(msg.Function)
+	if h.server.HandleHTTPError(c, err, http.StatusInternalServerError) {
+		return
+	}
+
+	addedFunction, err := h.server.FunctionDB().GetFunctionByID(msg.Function.FunctionID)
+	if h.server.HandleHTTPError(c, err, http.StatusInternalServerError) {
 		return
 	}
 
 	log.WithFields(log.Fields{"FunctionId": addedFunction.FunctionID, "ExecutorName": addedFunction.ExecutorName, "ColonyName": addedFunction.ColonyName, "FuncName": addedFunction.FuncName}).Debug("Adding function")
 
 	jsonString, err = addedFunction.ToJSON()
-	if err != nil {
-		h.server.HandleHTTPError(c, err, http.StatusInternalServerError)
+	if h.server.HandleHTTPError(c, err, http.StatusInternalServerError) {
 		return
 	}
 
@@ -140,10 +134,10 @@ func (h *Handlers) HandleGetFunctions(c backends.Context, recoveredID string, pa
 	var functions []*core.Function
 	if msg.ExecutorName == "" {
 		// Get all functions in the colony
-		functions, err = h.server.FunctionController().GetFunctionsByColonyName(msg.ColonyName)
+		functions, err = h.server.FunctionDB().GetFunctionsByColonyName(msg.ColonyName)
 	} else {
 		// Get functions for specific executor
-		functions, err = h.server.FunctionController().GetFunctions(msg.ColonyName, msg.ExecutorName, 100)
+		functions, err = h.server.FunctionDB().GetFunctionsByExecutorName(msg.ColonyName, msg.ExecutorName)
 	}
 	if err != nil {
 		h.server.HandleHTTPError(c, err, http.StatusInternalServerError)
@@ -178,16 +172,16 @@ func (h *Handlers) HandleRemoveFunction(c backends.Context, recoveredID string, 
 	}
 
 	log.WithFields(log.Fields{"FunctionID": msg.FunctionID, "Length": len(msg.FunctionID)}).Debug("Looking up function by ID")
-	function, err := h.server.FunctionController().GetFunction(msg.FunctionID)
+	function, err := h.server.FunctionDB().GetFunctionByID(msg.FunctionID)
 	if err != nil {
 		log.WithFields(log.Fields{"FunctionID": msg.FunctionID, "Error": err.Error()}).Error("Failed to get function by ID")
-		h.server.HandleHTTPError(c, err, http.StatusForbidden)
+		h.server.HandleHTTPError(c, err, http.StatusBadRequest)
 		return
 	}
-	
+
 	if function == nil {
-		log.WithField("FunctionID", msg.FunctionID).Error("Function not found by controller")
-		h.server.HandleHTTPError(c, errors.New("Failed to remove function, function does not exist"), http.StatusBadRequest)
+		log.WithField("FunctionID", msg.FunctionID).Error("Function not found")
+		h.server.HandleHTTPError(c, errors.New("Failed to remove function, function does not exist"), http.StatusNotFound)
 		return
 	}
 	log.WithField("Function", function).Debug("Found function for removal")
@@ -208,7 +202,7 @@ func (h *Handlers) HandleRemoveFunction(c backends.Context, recoveredID string, 
 		return
 	}
 
-	err = h.server.FunctionController().RemoveFunction(msg.FunctionID, recoveredID)
+	err = h.server.FunctionDB().RemoveFunctionByID(msg.FunctionID)
 	if err != nil {
 		h.server.HandleHTTPError(c, err, http.StatusInternalServerError)
 		return

@@ -8,14 +8,14 @@ import (
 	"sync"
 	"time"
 
+	"github.com/colonyos/colonies/pkg/backends"
+	backendGin "github.com/colonyos/colonies/pkg/backends/gin"
 	"github.com/colonyos/colonies/pkg/channel"
 	"github.com/colonyos/colonies/pkg/cluster"
 	"github.com/colonyos/colonies/pkg/constants"
 	"github.com/colonyos/colonies/pkg/core"
 	"github.com/colonyos/colonies/pkg/database"
 	"github.com/colonyos/colonies/pkg/scheduler"
-	"github.com/colonyos/colonies/pkg/backends"
-	backendGin "github.com/colonyos/colonies/pkg/backends/gin"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -265,185 +265,6 @@ func (controller *ColoniesController) SubscribeProcess(executorID string, subscr
 	return <-cmd.errorChan
 }
 
-func (controller *ColoniesController) GetColonies() ([]*core.Colony, error) {
-	cmd := &command{threaded: true, coloniesReplyChan: make(chan []*core.Colony),
-		errorChan: make(chan error, 1),
-		handler: func(cmd *command) {
-			colonies, err := controller.colonyDB.GetColonies()
-			if err != nil {
-				cmd.errorChan <- err
-				return
-			}
-			cmd.coloniesReplyChan <- colonies
-		}}
-
-	controller.cmdQueue <- cmd
-	var colonies []*core.Colony
-	select {
-	case err := <-cmd.errorChan:
-		return colonies, err
-	case colonies := <-cmd.coloniesReplyChan:
-		return colonies, nil
-	}
-}
-
-func (controller *ColoniesController) GetColony(colonyName string) (*core.Colony, error) {
-	cmd := &command{threaded: true, colonyReplyChan: make(chan *core.Colony),
-		errorChan: make(chan error, 1),
-		handler: func(cmd *command) {
-			colony, err := controller.colonyDB.GetColonyByName(colonyName)
-			if err != nil {
-				cmd.errorChan <- err
-				return
-			}
-			cmd.colonyReplyChan <- colony
-		}}
-
-	controller.cmdQueue <- cmd
-	select {
-	case err := <-cmd.errorChan:
-		return nil, err
-	case colony := <-cmd.colonyReplyChan:
-		return colony, nil
-	}
-}
-
-func (controller *ColoniesController) AddColony(colony *core.Colony) (*core.Colony, error) {
-	cmd := &command{threaded: true, colonyReplyChan: make(chan *core.Colony, 1),
-		errorChan: make(chan error, 1),
-		handler: func(cmd *command) {
-			err := controller.colonyDB.AddColony(colony)
-			if err != nil {
-				cmd.errorChan <- err
-				return
-			}
-			if colony == nil {
-				cmd.errorChan <- errors.New("Invalid colony, colony is nil")
-				return
-			}
-
-			addedColony, err := controller.colonyDB.GetColonyByID(colony.ID)
-			if err != nil {
-				cmd.errorChan <- err
-				return
-			}
-			cmd.colonyReplyChan <- addedColony
-		}}
-
-	controller.cmdQueue <- cmd
-	select {
-	case err := <-cmd.errorChan:
-		return nil, err
-	case addedColony := <-cmd.colonyReplyChan:
-		return addedColony, nil
-	}
-}
-
-func (controller *ColoniesController) RemoveColony(colonyName string) error {
-	cmd := &command{threaded: true, errorChan: make(chan error, 1),
-		handler: func(cmd *command) {
-			err := controller.colonyDB.RemoveColonyByName(colonyName)
-			if err != nil {
-				cmd.errorChan <- err
-				return
-			}
-			cmd.errorChan <- nil
-		}}
-
-	controller.cmdQueue <- cmd
-	return <-cmd.errorChan
-}
-
-func (controller *ColoniesController) AddExecutor(executor *core.Executor, allowExecutorReregister bool) (*core.Executor, error) {
-	cmd := &command{threaded: true, executorReplyChan: make(chan *core.Executor, 1),
-		errorChan: make(chan error, 1),
-		handler: func(cmd *command) {
-			if executor == nil {
-				cmd.errorChan <- errors.New("Invalid executor, executor is nil")
-				return
-			}
-			executorFromDB, err := controller.executorDB.GetExecutorByName(executor.ColonyName, executor.Name)
-			if err != nil {
-				cmd.errorChan <- err
-				return
-			}
-			if executorFromDB != nil {
-				if allowExecutorReregister {
-					err := controller.executorDB.RemoveExecutorByName(executor.ColonyName, executorFromDB.Name)
-					if err != nil {
-						cmd.errorChan <- err
-						return
-					}
-				} else {
-					cmd.errorChan <- errors.New("Executor with name <" + executorFromDB.Name + "> in Colony <" + executorFromDB.ColonyName + "> already exists")
-					return
-				}
-			}
-			err = controller.executorDB.AddExecutor(executor)
-			if err != nil {
-				cmd.errorChan <- err
-				return
-			}
-			addedExecutor, err := controller.executorDB.GetExecutorByID(executor.ID)
-			if err != nil {
-				cmd.errorChan <- err
-				return
-			}
-			cmd.executorReplyChan <- addedExecutor
-		}}
-
-	controller.cmdQueue <- cmd
-	select {
-	case err := <-cmd.errorChan:
-		return nil, err
-	case addedExecutor := <-cmd.executorReplyChan:
-		return addedExecutor, nil
-	}
-}
-
-func (controller *ColoniesController) GetExecutor(executorID string) (*core.Executor, error) {
-	cmd := &command{threaded: true, executorReplyChan: make(chan *core.Executor),
-		errorChan: make(chan error, 1),
-		handler: func(cmd *command) {
-			executor, err := controller.executorDB.GetExecutorByID(executorID)
-			if err != nil {
-				cmd.errorChan <- err
-				return
-			}
-			cmd.executorReplyChan <- executor
-		}}
-
-	controller.cmdQueue <- cmd
-	select {
-	case err := <-cmd.errorChan:
-		return nil, err
-	case executor := <-cmd.executorReplyChan:
-		return executor, nil
-	}
-}
-
-func (controller *ColoniesController) GetExecutorByColonyName(colonyName string) ([]*core.Executor, error) {
-	cmd := &command{threaded: true, executorsReplyChan: make(chan []*core.Executor),
-		errorChan: make(chan error, 1),
-		handler: func(cmd *command) {
-			executors, err := controller.executorDB.GetExecutorsByColonyName(colonyName)
-			if err != nil {
-				cmd.errorChan <- err
-				return
-			}
-			cmd.executorsReplyChan <- executors
-		}}
-
-	controller.cmdQueue <- cmd
-	var executors []*core.Executor
-	select {
-	case err := <-cmd.errorChan:
-		return executors, err
-	case executors := <-cmd.executorsReplyChan:
-		return executors, nil
-	}
-}
-
 func (controller *ColoniesController) AddProcessToDB(process *core.Process) (*core.Process, error) {
 	if process == nil {
 		return nil, errors.New("Invalid process, process is nil")
@@ -606,59 +427,6 @@ func (controller *ColoniesController) AddChild(
 		return nil, err
 	case process := <-cmd.processReplyChan:
 		return process, nil
-	}
-}
-
-func (controller *ColoniesController) GetProcess(processID string) (*core.Process, error) {
-	cmd := &command{threaded: true, processReplyChan: make(chan *core.Process, 1),
-		errorChan: make(chan error, 1),
-		handler: func(cmd *command) {
-			process, err := controller.processDB.GetProcessByID(processID)
-			if err != nil {
-				cmd.errorChan <- err
-				return
-			}
-			cmd.processReplyChan <- process
-		}}
-
-	controller.cmdQueue <- cmd
-	select {
-	case err := <-cmd.errorChan:
-		return nil, err
-	case process := <-cmd.processReplyChan:
-		return process, nil
-	}
-}
-
-func (controller *ColoniesController) FindProcessHistory(colonyName string, executorID string, seconds int, state int) ([]*core.Process, error) {
-	cmd := &command{threaded: true, processesReplyChan: make(chan []*core.Process),
-		errorChan: make(chan error, 1),
-		handler: func(cmd *command) {
-			var processes []*core.Process
-			var err error
-			if executorID == "" {
-				processes, err = controller.processDB.FindProcessesByColonyName(colonyName, seconds, state)
-				if err != nil {
-					cmd.errorChan <- err
-					return
-				}
-			} else {
-				processes, err = controller.processDB.FindProcessesByExecutorID(colonyName, executorID, seconds, state)
-				if err != nil {
-					cmd.errorChan <- err
-					return
-				}
-			}
-			cmd.processesReplyChan <- processes
-		}}
-
-	controller.cmdQueue <- cmd
-	var processes []*core.Process
-	select {
-	case err := <-cmd.errorChan:
-		return processes, err
-	case processes := <-cmd.processesReplyChan:
-		return processes, nil
 	}
 }
 
@@ -973,91 +741,6 @@ func (controller *ColoniesController) FindFailedProcessGraphs(colonyName string,
 	case graphs := <-cmd.processGraphsReplyChan:
 		return graphs, nil
 	}
-}
-
-func (controller *ColoniesController) RemoveProcess(processID string) error {
-	cmd := &command{threaded: true, errorChan: make(chan error, 1),
-		handler: func(cmd *command) {
-			err := controller.processDB.RemoveProcessByID(processID)
-			cmd.errorChan <- err
-		}}
-
-	controller.cmdQueue <- cmd
-	return <-cmd.errorChan
-}
-
-func (controller *ColoniesController) RemoveAllProcesses(colonyName string, state int) error {
-	cmd := &command{threaded: true, errorChan: make(chan error, 1),
-		handler: func(cmd *command) {
-			switch state {
-			case core.WAITING:
-				cmd.errorChan <- controller.processDB.RemoveAllWaitingProcessesByColonyName(colonyName)
-			case core.RUNNING:
-				cmd.errorChan <- errors.New("Not possible to remove running processes")
-			case core.SUCCESS:
-				cmd.errorChan <- controller.processDB.RemoveAllSuccessfulProcessesByColonyName(colonyName)
-			case core.FAILED:
-				cmd.errorChan <- controller.processDB.RemoveAllFailedProcessesByColonyName(colonyName)
-			case core.NOTSET:
-				cmd.errorChan <- controller.processDB.RemoveAllProcessesByColonyName(colonyName)
-			default:
-				cmd.errorChan <- errors.New("Invalid state when deleting all processes")
-			}
-		}}
-
-	controller.cmdQueue <- cmd
-	return <-cmd.errorChan
-}
-
-func (controller *ColoniesController) RemoveProcessGraph(processID string) error {
-	cmd := &command{threaded: true, errorChan: make(chan error, 1),
-		handler: func(cmd *command) {
-			err := controller.processGraphDB.RemoveProcessGraphByID(processID)
-			cmd.errorChan <- err
-		}}
-
-	controller.cmdQueue <- cmd
-	return <-cmd.errorChan
-}
-
-func (controller *ColoniesController) RemoveAllProcessGraphs(colonyName string, state int) error {
-	cmd := &command{threaded: true, errorChan: make(chan error, 1),
-		handler: func(cmd *command) {
-			switch state {
-			case core.WAITING:
-				cmd.errorChan <- controller.processGraphDB.RemoveAllWaitingProcessGraphsByColonyName(colonyName)
-			case core.RUNNING:
-				cmd.errorChan <- errors.New("not possible to remove running processgraphs")
-			case core.SUCCESS:
-				cmd.errorChan <- controller.processGraphDB.RemoveAllSuccessfulProcessGraphsByColonyName(colonyName)
-			case core.FAILED:
-				cmd.errorChan <- controller.processGraphDB.RemoveAllFailedProcessGraphsByColonyName(colonyName)
-			case core.NOTSET:
-				cmd.errorChan <- controller.processGraphDB.RemoveAllProcessGraphsByColonyName(colonyName)
-			default:
-				cmd.errorChan <- errors.New("invalid state when deleting all processgraphs")
-			}
-		}}
-
-	controller.cmdQueue <- cmd
-	return <-cmd.errorChan
-}
-
-func (controller *ColoniesController) SetOutput(processID string, output []interface{}) error {
-	cmd := &command{threaded: true, errorChan: make(chan error, 1),
-		handler: func(cmd *command) {
-			if len(output) > 0 {
-				err := controller.processDB.SetOutput(processID, output)
-				if err != nil {
-					cmd.errorChan <- err
-					return
-				}
-			}
-			cmd.errorChan <- nil
-		}}
-
-	controller.cmdQueue <- cmd
-	return <-cmd.errorChan
 }
 
 func (controller *ColoniesController) CloseSuccessful(processID string, executorID string, output []interface{}) error {
@@ -1587,321 +1270,6 @@ func (controller *ColoniesController) ResetProcess(processID string) error {
 	return <-cmd.errorChan
 }
 
-func (controller *ColoniesController) GetColonyStatistics(colonyName string) (*core.Statistics, error) {
-	cmd := &command{threaded: true, statisticsReplyChan: make(chan *core.Statistics),
-		errorChan: make(chan error, 1),
-		handler: func(cmd *command) {
-			colonies := 1
-			executors, err := controller.executorDB.CountExecutorsByColonyName(colonyName)
-			if err != nil {
-				cmd.errorChan <- err
-				return
-			}
-			activeExecutors, err := controller.executorDB.CountExecutorsByColonyNameAndState(colonyName, core.APPROVED)
-			if err != nil {
-				cmd.errorChan <- err
-				return
-			}
-			unregisteredExecutors, err := controller.executorDB.CountExecutorsByColonyNameAndState(colonyName, core.UNREGISTERED)
-			if err != nil {
-				cmd.errorChan <- err
-				return
-			}
-			waitingProcesses, err := controller.processDB.CountWaitingProcessesByColonyName(colonyName)
-			if err != nil {
-				cmd.errorChan <- err
-				return
-			}
-			runningProcesses, err := controller.processDB.CountRunningProcessesByColonyName(colonyName)
-			if err != nil {
-				cmd.errorChan <- err
-				return
-			}
-			successProcesses, err := controller.processDB.CountSuccessfulProcessesByColonyName(colonyName)
-			if err != nil {
-				cmd.errorChan <- err
-				return
-			}
-			failedProcesses, err := controller.processDB.CountFailedProcessesByColonyName(colonyName)
-			if err != nil {
-				cmd.errorChan <- err
-				return
-			}
-			waitingWorkflows, err := controller.processGraphDB.CountWaitingProcessGraphsByColonyName(colonyName)
-			if err != nil {
-				cmd.errorChan <- err
-				return
-			}
-			runningWorkflows, err := controller.processGraphDB.CountRunningProcessGraphsByColonyName(colonyName)
-			if err != nil {
-				cmd.errorChan <- err
-				return
-			}
-			successWorkflows, err := controller.processGraphDB.CountSuccessfulProcessGraphsByColonyName(colonyName)
-			if err != nil {
-				cmd.errorChan <- err
-				return
-			}
-			failedWorkflows, err := controller.processGraphDB.CountFailedProcessGraphsByColonyName(colonyName)
-			if err != nil {
-				cmd.errorChan <- err
-				return
-			}
-
-			cmd.statisticsReplyChan <- core.CreateStatistics(colonies,
-				executors,
-				activeExecutors,
-				unregisteredExecutors,
-				waitingProcesses,
-				runningProcesses,
-				successProcesses,
-				failedProcesses,
-				waitingWorkflows,
-				runningWorkflows,
-				successWorkflows,
-				failedWorkflows)
-		}}
-
-	controller.cmdQueue <- cmd
-	select {
-	case err := <-cmd.errorChan:
-		return nil, err
-	case stat := <-cmd.statisticsReplyChan:
-		return stat, nil
-	}
-}
-
-func (controller *ColoniesController) GetStatistics() (*core.Statistics, error) {
-	cmd := &command{threaded: true, statisticsReplyChan: make(chan *core.Statistics),
-		errorChan: make(chan error, 1),
-		handler: func(cmd *command) {
-			colonies, err := controller.colonyDB.CountColonies()
-			if err != nil {
-				cmd.errorChan <- err
-				return
-			}
-			executors, err := controller.executorDB.CountExecutors()
-			if err != nil {
-				cmd.errorChan <- err
-				return
-			}
-			waitingProcesses, err := controller.processDB.CountWaitingProcesses()
-			if err != nil {
-				cmd.errorChan <- err
-				return
-			}
-			runningProcesses, err := controller.processDB.CountRunningProcesses()
-			if err != nil {
-				cmd.errorChan <- err
-				return
-			}
-			successProcesses, err := controller.processDB.CountSuccessfulProcesses()
-			if err != nil {
-				cmd.errorChan <- err
-				return
-			}
-			failedProcesses, err := controller.processDB.CountFailedProcesses()
-			if err != nil {
-				cmd.errorChan <- err
-				return
-			}
-			waitingWorkflows, err := controller.processGraphDB.CountWaitingProcessGraphs()
-			if err != nil {
-				cmd.errorChan <- err
-				return
-			}
-			runningWorkflows, err := controller.processGraphDB.CountRunningProcessGraphs()
-			if err != nil {
-				cmd.errorChan <- err
-				return
-			}
-			successWorkflows, err := controller.processGraphDB.CountSuccessfulProcessGraphs()
-			if err != nil {
-				cmd.errorChan <- err
-				return
-			}
-			failedWorkflows, err := controller.processGraphDB.CountFailedProcessGraphs()
-			if err != nil {
-				cmd.errorChan <- err
-				return
-			}
-
-			// For global statistics, active/unregistered counts are not meaningful across colonies
-			// These fields are populated at the colony level
-			cmd.statisticsReplyChan <- core.CreateStatistics(colonies,
-				executors,
-				0, // activeExecutors (not applicable for global stats)
-				0, // unregisteredExecutors (not applicable for global stats)
-				waitingProcesses,
-				runningProcesses,
-				successProcesses,
-				failedProcesses,
-				waitingWorkflows,
-				runningWorkflows,
-				successWorkflows,
-				failedWorkflows)
-		}}
-
-	controller.cmdQueue <- cmd
-	select {
-	case err := <-cmd.errorChan:
-		return nil, err
-	case stat := <-cmd.statisticsReplyChan:
-		return stat, nil
-	}
-}
-
-func (controller *ColoniesController) AddAttribute(attribute *core.Attribute) (*core.Attribute, error) {
-	cmd := &command{threaded: true, attributeReplyChan: make(chan *core.Attribute, 1),
-		errorChan: make(chan error, 1),
-		handler: func(cmd *command) {
-			err := controller.attributeDB.AddAttribute(*attribute)
-			if err != nil {
-				cmd.errorChan <- err
-				return
-			}
-			addedAttribute, err := controller.attributeDB.GetAttributeByID(attribute.ID)
-			if err != nil {
-				cmd.errorChan <- err
-				return
-			}
-			cmd.attributeReplyChan <- &addedAttribute
-		}}
-
-	controller.cmdQueue <- cmd
-	select {
-	case err := <-cmd.errorChan:
-		return nil, err
-	case addedAttribute := <-cmd.attributeReplyChan:
-		return addedAttribute, nil
-	}
-}
-
-func (controller *ColoniesController) GetAttribute(attributeID string) (*core.Attribute, error) {
-	cmd := &command{threaded: true, attributeReplyChan: make(chan *core.Attribute, 1),
-		errorChan: make(chan error, 1),
-		handler: func(cmd *command) {
-			attribute, err := controller.attributeDB.GetAttributeByID(attributeID)
-			if err != nil {
-				cmd.errorChan <- err
-				return
-			}
-			cmd.attributeReplyChan <- &attribute
-		}}
-
-	controller.cmdQueue <- cmd
-	select {
-	case err := <-cmd.errorChan:
-		return nil, err
-	case attribute := <-cmd.attributeReplyChan:
-		return attribute, nil
-	}
-}
-
-func (controller *ColoniesController) AddFunction(function *core.Function) (*core.Function, error) {
-	cmd := &command{threaded: true, functionReplyChan: make(chan *core.Function, 1),
-		errorChan: make(chan error, 1),
-		handler: func(cmd *command) {
-			err := controller.functionDB.AddFunction(function)
-			if err != nil {
-				cmd.errorChan <- err
-				return
-			}
-			addedFunction, err := controller.functionDB.GetFunctionByID(function.FunctionID)
-			if err != nil {
-				cmd.errorChan <- err
-				return
-			}
-			cmd.functionReplyChan <- addedFunction
-		}}
-
-	controller.cmdQueue <- cmd
-	select {
-	case err := <-cmd.errorChan:
-		return nil, err
-	case addedFunction := <-cmd.functionReplyChan:
-		return addedFunction, nil
-	}
-}
-
-func (controller *ColoniesController) GetFunctionsByExecutorName(colonyName string, executorName string) ([]*core.Function, error) {
-	cmd := &command{threaded: true, functionsReplyChan: make(chan []*core.Function, 1),
-		errorChan: make(chan error, 1),
-		handler: func(cmd *command) {
-			functions, err := controller.functionDB.GetFunctionsByExecutorName(colonyName, executorName)
-			if err != nil {
-				cmd.errorChan <- err
-				return
-			}
-			cmd.functionsReplyChan <- functions
-		}}
-
-	controller.cmdQueue <- cmd
-	select {
-	case err := <-cmd.errorChan:
-		return nil, err
-	case functions := <-cmd.functionsReplyChan:
-		return functions, nil
-	}
-}
-
-func (controller *ColoniesController) GetFunctionsByColonyName(colonyName string) ([]*core.Function, error) {
-	cmd := &command{threaded: true, functionsReplyChan: make(chan []*core.Function, 1),
-		errorChan: make(chan error, 1),
-		handler: func(cmd *command) {
-			functions, err := controller.functionDB.GetFunctionsByColonyName(colonyName)
-			if err != nil {
-				cmd.errorChan <- err
-				return
-			}
-			cmd.functionsReplyChan <- functions
-		}}
-
-	controller.cmdQueue <- cmd
-	select {
-	case err := <-cmd.errorChan:
-		return nil, err
-	case functions := <-cmd.functionsReplyChan:
-		return functions, nil
-	}
-}
-
-func (controller *ColoniesController) GetFunctionByID(functionID string) (*core.Function, error) {
-	cmd := &command{threaded: true, functionReplyChan: make(chan *core.Function, 1),
-		errorChan: make(chan error, 1),
-		handler: func(cmd *command) {
-			function, err := controller.functionDB.GetFunctionByID(functionID)
-			if err != nil {
-				cmd.errorChan <- err
-				return
-			}
-			cmd.functionReplyChan <- function
-		}}
-
-	controller.cmdQueue <- cmd
-	select {
-	case err := <-cmd.errorChan:
-		return nil, err
-	case function := <-cmd.functionReplyChan:
-		return function, nil
-	}
-}
-
-func (controller *ColoniesController) RemoveFunction(functionID string) error {
-	cmd := &command{threaded: true, errorChan: make(chan error, 1),
-		handler: func(cmd *command) {
-			err := controller.functionDB.RemoveFunctionByID(functionID)
-			if err != nil {
-				cmd.errorChan <- err
-				return
-			}
-			cmd.errorChan <- nil
-		}}
-
-	controller.cmdQueue <- cmd
-	return <-cmd.errorChan
-}
-
 func (controller *ColoniesController) ResetDatabase() error {
 	cmd := &command{threaded: true, errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
@@ -1927,7 +1295,7 @@ func (controller *ColoniesController) ResumeColonyAssignments(colonyName string)
 	if err != nil {
 		return err
 	}
-	
+
 	// Wake up all waiting executors for this colony
 	controller.WakeupPausedAssignments(colonyName)
 	return nil
@@ -1941,13 +1309,13 @@ func (controller *ColoniesController) AreColonyAssignmentsPaused(colonyName stri
 func (controller *ColoniesController) CreateResumeChannel(colonyName string) <-chan bool {
 	controller.pauseChannelsMux.Lock()
 	defer controller.pauseChannelsMux.Unlock()
-	
+
 	resumeChannel := make(chan bool, 1)
 	if controller.pauseChannels[colonyName] == nil {
 		controller.pauseChannels[colonyName] = make([]chan bool, 0)
 	}
 	controller.pauseChannels[colonyName] = append(controller.pauseChannels[colonyName], resumeChannel)
-	
+
 	return resumeChannel
 }
 
@@ -1955,7 +1323,7 @@ func (controller *ColoniesController) CreateResumeChannel(colonyName string) <-c
 func (controller *ColoniesController) WakeupPausedAssignments(colonyName string) {
 	controller.pauseChannelsMux.Lock()
 	defer controller.pauseChannelsMux.Unlock()
-	
+
 	if channels, exists := controller.pauseChannels[colonyName]; exists {
 		for _, ch := range channels {
 			select {

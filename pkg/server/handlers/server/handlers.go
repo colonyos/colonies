@@ -7,6 +7,7 @@ import (
 	"github.com/colonyos/colonies/pkg/build"
 	"github.com/colonyos/colonies/pkg/cluster"
 	"github.com/colonyos/colonies/pkg/core"
+	"github.com/colonyos/colonies/pkg/database"
 	"github.com/colonyos/colonies/pkg/rpc"
 	"github.com/colonyos/colonies/pkg/server/registry"
 	"github.com/colonyos/colonies/pkg/backends"
@@ -14,7 +15,6 @@ import (
 )
 
 type Controller interface {
-	GetStatistics() (*core.Statistics, error)
 	GetEtcdServer() EtcdServer
 }
 
@@ -32,6 +32,9 @@ type Server interface {
 	GetServerID() (string, error)
 	Validator() Validator
 	Controller() Controller
+	ColonyDB() database.ColonyDatabase
+	ExecutorDB() database.ExecutorDatabase
+	ProcessDB() database.ProcessDatabase
 }
 
 type Handlers struct {
@@ -103,9 +106,44 @@ func (h *Handlers) HandleStatistics(c backends.Context, recoveredID string, payl
 		return
 	}
 
-	stat, err := h.server.Controller().GetStatistics()
+	// Gather statistics directly from DBs
+	colonies, err := h.server.ColonyDB().CountColonies()
 	if h.server.HandleHTTPError(c, err, http.StatusInternalServerError) {
 		return
+	}
+
+	executors, err := h.server.ExecutorDB().CountExecutors()
+	if h.server.HandleHTTPError(c, err, http.StatusInternalServerError) {
+		return
+	}
+
+	waitingProcesses, err := h.server.ProcessDB().CountWaitingProcesses()
+	if h.server.HandleHTTPError(c, err, http.StatusInternalServerError) {
+		return
+	}
+
+	runningProcesses, err := h.server.ProcessDB().CountRunningProcesses()
+	if h.server.HandleHTTPError(c, err, http.StatusInternalServerError) {
+		return
+	}
+
+	successProcesses, err := h.server.ProcessDB().CountSuccessfulProcesses()
+	if h.server.HandleHTTPError(c, err, http.StatusInternalServerError) {
+		return
+	}
+
+	failedProcesses, err := h.server.ProcessDB().CountFailedProcesses()
+	if h.server.HandleHTTPError(c, err, http.StatusInternalServerError) {
+		return
+	}
+
+	stat := &core.Statistics{
+		Colonies:            colonies,
+		Executors:           executors,
+		WaitingProcesses:    waitingProcesses,
+		RunningProcesses:    runningProcesses,
+		SuccessfulProcesses: successProcesses,
+		FailedProcesses:     failedProcesses,
 	}
 
 	jsonString, err = stat.ToJSON()

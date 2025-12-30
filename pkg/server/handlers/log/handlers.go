@@ -27,11 +27,6 @@ type Server interface {
 	ExecutorDB() database.ExecutorDatabase
 	ProcessDB() database.ProcessDatabase
 	LogDB() database.LogDatabase
-	LogProcessController() Controller
-}
-
-type Controller interface {
-	GetProcess(processID string) (*core.Process, error)
 }
 
 type Handlers struct {
@@ -74,7 +69,7 @@ func (h *Handlers) HandleAddLog(c backends.Context, recoveredID string, payloadT
 		return
 	}
 
-	process, err := h.server.LogProcessController().GetProcess(msg.ProcessID)
+	process, err := h.server.ProcessDB().GetProcessByID(msg.ProcessID)
 	if h.server.HandleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
@@ -214,7 +209,7 @@ func (h *Handlers) HandleGetLogs(c backends.Context, recoveredID string, payload
 			return
 		}
 	} else {
-		process, err := h.server.LogProcessController().GetProcess(msg.ProcessID)
+		process, err := h.server.ProcessDB().GetProcessByID(msg.ProcessID)
 		if h.server.HandleHTTPError(c, err, http.StatusBadRequest) {
 			return
 		}

@@ -71,12 +71,6 @@ type Cluster interface {
 type Controller interface {
 	AddProcessToDB(process *core.Process) (*core.Process, error)
 	AddProcess(process *core.Process) (*core.Process, error)
-	GetProcess(processID string) (*core.Process, error)
-	GetExecutor(executorID string) (*core.Executor, error)
-	FindProcessHistory(colonyName string, executorID string, seconds int, state int) ([]*core.Process, error)
-	RemoveProcess(processID string) error
-	RemoveAllProcesses(colonyName string, state int) error
-	SetOutput(processID string, output []interface{}) error
 	CloseSuccessful(processID string, executorID string, output []interface{}) error
 	CloseFailed(processID string, errs []string) error
 	Assign(executorID string, colonyName string, cpu int64, memory int64) (*AssignResult, error)
@@ -326,7 +320,7 @@ func (h *Handlers) HandleAssignProcess(c backends.Context, recoveredID string, p
 		return
 	}
 
-	executor, err := h.server.ProcessController().GetExecutor(recoveredID)
+	executor, err := h.server.ExecutorDB().GetExecutorByID(recoveredID)
 	if h.server.HandleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
@@ -477,7 +471,12 @@ func (h *Handlers) HandleGetProcessHist(c backends.Context, recoveredID string, 
 		return
 	}
 
-	processes, err := h.server.ProcessController().FindProcessHistory(msg.ColonyName, msg.ExecutorID, msg.Seconds, msg.State)
+	var processes []*core.Process
+	if msg.ExecutorID == "" {
+		processes, err = h.server.ProcessDB().FindProcessesByColonyName(msg.ColonyName, msg.Seconds, msg.State)
+	} else {
+		processes, err = h.server.ProcessDB().FindProcessesByExecutorID(msg.ColonyName, msg.ExecutorID, msg.Seconds, msg.State)
+	}
 	if h.server.HandleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
@@ -605,12 +604,12 @@ func (h *Handlers) HandleGetProcess(c backends.Context, recoveredID string, payl
 		return
 	}
 
-	process, err := h.server.ProcessController().GetProcess(msg.ProcessID)
+	process, err := h.server.ProcessDB().GetProcessByID(msg.ProcessID)
 	if h.server.HandleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
 	if process == nil {
-		h.server.HandleHTTPError(c, errors.New("Failed to get process, process is nil"), http.StatusInternalServerError)
+		h.server.HandleHTTPError(c, errors.New("Failed to get process, process not found"), http.StatusNotFound)
 		return
 	}
 
@@ -642,7 +641,7 @@ func (h *Handlers) HandleRemoveProcess(c backends.Context, recoveredID string, p
 		return
 	}
 
-	process, err := h.server.ProcessController().GetProcess(msg.ProcessID)
+	process, err := h.server.ProcessDB().GetProcessByID(msg.ProcessID)
 	if h.server.HandleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
@@ -663,7 +662,15 @@ func (h *Handlers) HandleRemoveProcess(c backends.Context, recoveredID string, p
 		return
 	}
 
-	err = h.server.ProcessController().RemoveProcess(msg.ProcessID)
+	// Check if process is running
+	if process.State == core.RUNNING {
+		err := errors.New("Failed to remove process, cannot remove a running process")
+		if h.server.HandleHTTPError(c, err, http.StatusBadRequest) {
+		}
+		return
+	}
+
+	err = h.server.ProcessDB().RemoveProcessByID(msg.ProcessID)
 	if h.server.HandleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
@@ -691,7 +698,21 @@ func (h *Handlers) HandleRemoveAllProcesses(c backends.Context, recoveredID stri
 		return
 	}
 
-	err = h.server.ProcessController().RemoveAllProcesses(msg.ColonyName, msg.State)
+	// Remove processes based on state using database directly
+	switch msg.State {
+	case core.WAITING:
+		err = h.server.ProcessDB().RemoveAllWaitingProcessesByColonyName(msg.ColonyName)
+	case core.RUNNING:
+		err = errors.New("Not possible to remove running processes")
+	case core.SUCCESS:
+		err = h.server.ProcessDB().RemoveAllSuccessfulProcessesByColonyName(msg.ColonyName)
+	case core.FAILED:
+		err = h.server.ProcessDB().RemoveAllFailedProcessesByColonyName(msg.ColonyName)
+	case core.NOTSET:
+		err = h.server.ProcessDB().RemoveAllProcessesByColonyName(msg.ColonyName)
+	default:
+		err = errors.New("Invalid state when deleting all processes")
+	}
 	if h.server.HandleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
@@ -714,7 +735,7 @@ func (h *Handlers) HandleSetOutput(c backends.Context, recoveredID string, paylo
 		return
 	}
 
-	process, err := h.server.ProcessController().GetProcess(msg.ProcessID)
+	process, err := h.server.ProcessDB().GetProcessByID(msg.ProcessID)
 	if h.server.HandleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
@@ -747,10 +768,12 @@ func (h *Handlers) HandleSetOutput(c backends.Context, recoveredID string, paylo
 		return
 	}
 
-	err = h.server.ProcessController().SetOutput(process.ID, msg.Output)
-	if h.server.HandleHTTPError(c, err, http.StatusBadRequest) {
-		log.WithFields(log.Fields{"Error": err}).Debug("Failed to set output")
-		return
+	if len(msg.Output) > 0 {
+		err = h.server.ProcessDB().SetOutput(process.ID, msg.Output)
+		if h.server.HandleHTTPError(c, err, http.StatusBadRequest) {
+			log.WithFields(log.Fields{"Error": err}).Debug("Failed to set output")
+			return
+		}
 	}
 
 	log.WithFields(log.Fields{"ProcessId": process.ID}).Debug("Set output")
@@ -771,7 +794,7 @@ func (h *Handlers) HandleCloseSuccessful(c backends.Context, recoveredID string,
 		return
 	}
 
-	process, err := h.server.ProcessController().GetProcess(msg.ProcessID)
+	process, err := h.server.ProcessDB().GetProcessByID(msg.ProcessID)
 	if h.server.HandleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
@@ -891,7 +914,7 @@ func (h *Handlers) HandleCloseFailed(c backends.Context, recoveredID string, pay
 		return
 	}
 
-	process, err := h.server.ProcessController().GetProcess(msg.ProcessID)
+	process, err := h.server.ProcessDB().GetProcessByID(msg.ProcessID)
 	if h.server.HandleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}

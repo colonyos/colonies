@@ -13,14 +13,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-type Controller interface {
-	AddColony(colony *core.Colony) (*core.Colony, error)
-	RemoveColony(colonyName string) error
-	GetColonies() ([]*core.Colony, error)
-	GetColony(colonyName string) (*core.Colony, error)
-	GetColonyStatistics(colonyName string) (*core.Statistics, error)
-}
-
 type Server interface {
 	HandleHTTPError(c backends.Context, err error, errorCode int) bool
 	GetServerID() (string, error)
@@ -28,7 +20,8 @@ type Server interface {
 	SendEmptyHTTPReply(c backends.Context, payloadType string)
 	Validator() security.Validator
 	ColonyDB() database.ColonyDatabase
-	Controller() Controller
+	ExecutorDB() database.ExecutorDatabase
+	ProcessDB() database.ProcessDatabase
 }
 
 type Handlers struct {
@@ -105,8 +98,13 @@ func (h *Handlers) HandleAddColony(c backends.Context, recoveredID string, paylo
 		}
 	}
 
-	addedColony, err := h.server.Controller().AddColony(msg.Colony)
+	err = h.server.ColonyDB().AddColony(msg.Colony)
 	if h.server.HandleHTTPError(c, err, http.StatusBadRequest) {
+		return
+	}
+
+	addedColony, err := h.server.ColonyDB().GetColonyByID(msg.Colony.ID)
+	if h.server.HandleHTTPError(c, err, http.StatusInternalServerError) {
 		return
 	}
 
@@ -159,7 +157,7 @@ func (h *Handlers) HandleRemoveColony(c backends.Context, recoveredID string, pa
 		}
 	}
 
-	err = h.server.Controller().RemoveColony(colony.Name)
+	err = h.server.ColonyDB().RemoveColonyByName(colony.Name)
 	if h.server.HandleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
@@ -193,7 +191,7 @@ func (h *Handlers) HandleGetColonies(c backends.Context, recoveredID string, pay
 		return
 	}
 
-	colonies, err := h.server.Controller().GetColonies()
+	colonies, err := h.server.ColonyDB().GetColonies()
 	if h.server.HandleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
@@ -226,12 +224,12 @@ func (h *Handlers) HandleGetColony(c backends.Context, recoveredID, payloadType 
 		return
 	}
 
-	colony, err := h.server.Controller().GetColony(msg.ColonyName)
+	colony, err := h.server.ColonyDB().GetColonyByName(msg.ColonyName)
 	if h.server.HandleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
 	if colony == nil {
-		h.server.HandleHTTPError(c, errors.New("Failed to get colony, colony is nil"), http.StatusInternalServerError)
+		h.server.HandleHTTPError(c, errors.New("Failed to get colony, colony not found"), http.StatusBadRequest)
 		return
 	}
 
@@ -274,9 +272,51 @@ func (h *Handlers) HandleColonyStatistics(c backends.Context, recoveredID string
 		return
 	}
 
-	stat, err := h.server.Controller().GetColonyStatistics(colony.Name)
+	// Gather statistics directly from DBs
+	executors, err := h.server.ExecutorDB().CountExecutorsByColonyName(msg.ColonyName)
 	if h.server.HandleHTTPError(c, err, http.StatusInternalServerError) {
 		return
+	}
+
+	activeExecutors, err := h.server.ExecutorDB().CountExecutorsByColonyNameAndState(msg.ColonyName, core.APPROVED)
+	if h.server.HandleHTTPError(c, err, http.StatusInternalServerError) {
+		return
+	}
+
+	unregisteredExecutors, err := h.server.ExecutorDB().CountExecutorsByColonyNameAndState(msg.ColonyName, core.UNREGISTERED)
+	if h.server.HandleHTTPError(c, err, http.StatusInternalServerError) {
+		return
+	}
+
+	waitingProcesses, err := h.server.ProcessDB().CountWaitingProcessesByColonyName(msg.ColonyName)
+	if h.server.HandleHTTPError(c, err, http.StatusInternalServerError) {
+		return
+	}
+
+	runningProcesses, err := h.server.ProcessDB().CountRunningProcessesByColonyName(msg.ColonyName)
+	if h.server.HandleHTTPError(c, err, http.StatusInternalServerError) {
+		return
+	}
+
+	successProcesses, err := h.server.ProcessDB().CountSuccessfulProcessesByColonyName(msg.ColonyName)
+	if h.server.HandleHTTPError(c, err, http.StatusInternalServerError) {
+		return
+	}
+
+	failedProcesses, err := h.server.ProcessDB().CountFailedProcessesByColonyName(msg.ColonyName)
+	if h.server.HandleHTTPError(c, err, http.StatusInternalServerError) {
+		return
+	}
+
+	stat := &core.Statistics{
+		Colonies:              1,
+		Executors:             executors,
+		ActiveExecutors:       activeExecutors,
+		UnregisteredExecutors: unregisteredExecutors,
+		WaitingProcesses:      waitingProcesses,
+		RunningProcesses:      runningProcesses,
+		SuccessfulProcesses:   successProcesses,
+		FailedProcesses:       failedProcesses,
 	}
 
 	jsonString, err = stat.ToJSON()

@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/colonyos/colonies/pkg/core"
+	"github.com/colonyos/colonies/pkg/database"
 	"github.com/colonyos/colonies/pkg/rpc"
 	"github.com/colonyos/colonies/pkg/security"
 	"github.com/colonyos/colonies/pkg/server/registry"
@@ -16,13 +17,8 @@ type Server interface {
 	HandleHTTPError(c backends.Context, err error, errorCode int) bool
 	SendHTTPReply(c backends.Context, payloadType string, jsonString string)
 	Validator() security.Validator
-	AttributeController() Controller
-}
-
-type Controller interface {
-	GetProcess(processID string) (*core.Process, error)
-	AddAttribute(attribute *core.Attribute) (*core.Attribute, error)
-	GetAttribute(attributeID string) (*core.Attribute, error)
+	ProcessDB() database.ProcessDatabase
+	AttributeDB() database.AttributeDatabase
 }
 
 type Handlers struct {
@@ -59,12 +55,12 @@ func (h *Handlers) HandleAddAttribute(c backends.Context, recoveredID string, pa
 		return
 	}
 
-	process, err := h.server.AttributeController().GetProcess(msg.Attribute.TargetID)
+	process, err := h.server.ProcessDB().GetProcessByID(msg.Attribute.TargetID)
 	if h.server.HandleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
 	if process == nil {
-		h.server.HandleHTTPError(c, errors.New("Failed to add attribute, process is nil"), http.StatusInternalServerError)
+		h.server.HandleHTTPError(c, errors.New("Failed to add attribute, process not found"), http.StatusNotFound)
 		return
 	}
 
@@ -88,8 +84,13 @@ func (h *Handlers) HandleAddAttribute(c backends.Context, recoveredID string, pa
 	msg.Attribute.GenerateID()
 	msg.Attribute.TargetProcessGraphID = process.ProcessGraphID
 
-	addedAttribute, err := h.server.AttributeController().AddAttribute(&msg.Attribute)
+	err = h.server.AttributeDB().AddAttribute(msg.Attribute)
 	if h.server.HandleHTTPError(c, err, http.StatusBadRequest) {
+		return
+	}
+
+	addedAttribute, err := h.server.AttributeDB().GetAttributeByID(msg.Attribute.ID)
+	if h.server.HandleHTTPError(c, err, http.StatusInternalServerError) {
 		return
 	}
 
@@ -116,17 +117,17 @@ func (h *Handlers) HandleGetAttribute(c backends.Context, recoveredID string, pa
 		return
 	}
 
-	attribute, err := h.server.AttributeController().GetAttribute(msg.AttributeID)
+	attribute, err := h.server.AttributeDB().GetAttributeByID(msg.AttributeID)
 	if h.server.HandleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
 
-	process, err := h.server.AttributeController().GetProcess(attribute.TargetID)
+	process, err := h.server.ProcessDB().GetProcessByID(attribute.TargetID)
 	if h.server.HandleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
 	if process == nil {
-		h.server.HandleHTTPError(c, errors.New("Failed to get attribute, process is nil"), http.StatusInternalServerError)
+		h.server.HandleHTTPError(c, errors.New("Failed to get attribute, process not found"), http.StatusNotFound)
 		return
 	}
 

@@ -19,58 +19,6 @@ func TestColoniesControllerInvalidDB(t *testing.T) {
 	err := controller.SubscribeProcess("invalid_id", &backends.RealtimeSubscription{})
 	assert.NotNil(t, err)
 
-	dbMock.ReturnError = "GetColonies"
-	_, err = controller.GetColonies()
-	assert.NotNil(t, err)
-
-	dbMock.ReturnError = "GetColonyByName"
-	_, err = controller.GetColony("invalid_id")
-	assert.NotNil(t, err)
-
-	dbMock.ReturnError = "AddColony"
-	_, err = controller.AddColony(nil)
-	assert.NotNil(t, err)
-
-	dbMock.ReturnError = ""
-	_, err = controller.AddColony(nil)
-	assert.NotNil(t, err)
-
-	dbMock.ReturnError = "GetColonyByID"
-	_, err = controller.AddColony(&core.Colony{})
-	assert.NotNil(t, err)
-
-	dbMock.ReturnError = "RemoveColonyByName"
-	err = controller.RemoveColony("invalid_id")
-	assert.NotNil(t, err)
-
-	_, err = controller.AddExecutor(nil, false)
-	assert.NotNil(t, err)
-
-	dbMock.ReturnError = "GetExecutorByName"
-	_, err = controller.AddExecutor(&core.Executor{}, false)
-	assert.NotNil(t, err)
-
-	dbMock.ReturnValue = "GetExecutorByName"
-	_, err = controller.AddExecutor(&core.Executor{}, false)
-	assert.NotNil(t, err)
-	dbMock.ReturnValue = ""
-
-	dbMock.ReturnError = "AddExecutor"
-	_, err = controller.AddExecutor(&core.Executor{}, false)
-	assert.NotNil(t, err)
-
-	dbMock.ReturnError = "GetExecutorByID"
-	_, err = controller.AddExecutor(&core.Executor{}, false)
-	assert.NotNil(t, err)
-
-	dbMock.ReturnError = "GetExecutorByID"
-	_, err = controller.GetExecutor("invalid_id")
-	assert.NotNil(t, err)
-
-	dbMock.ReturnError = "GetExecutorByColonyName"
-	_, err = controller.GetExecutorByColonyName("invalid_id")
-	assert.NotNil(t, err)
-
 	_, err = controller.AddProcessToDB(nil)
 	assert.NotNil(t, err)
 
@@ -89,37 +37,6 @@ func TestColoniesControllerInvalidDB(t *testing.T) {
 	controller.Stop()
 }
 
-func TestColoniesControllerAddColony(t *testing.T) {
-	db, err := postgresql.PrepareTestsWithPrefix("TEST_ADD_COLONY")
-	defer db.Close()
-	assert.Nil(t, err)
-
-	controller := createTestColoniesController(db)
-	defer controller.Stop()
-
-	colony, _, err := utils.CreateTestColonyWithKey()
-	assert.Nil(t, err)
-	addedColony, err := controller.AddColony(colony)
-	assert.Nil(t, err)
-	assert.True(t, colony.Equals(addedColony))
-}
-
-func TestColoniesControllerAddExecutor(t *testing.T) {
-	db, err := postgresql.PrepareTestsWithPrefix("TEST_ADD_EXECUTOR")
-	defer db.Close()
-	assert.Nil(t, err)
-
-	controller := createTestColoniesController(db)
-	defer controller.Stop()
-
-	executor, _, err := utils.CreateTestExecutorWithKey(core.GenerateRandomID())
-	assert.Nil(t, err)
-
-	addedExecutor, err := controller.AddExecutor(executor, false)
-	assert.Nil(t, err)
-	assert.True(t, executor.Equals(addedExecutor))
-}
-
 func TestColoniesControllerAddProcess(t *testing.T) {
 	db, err := postgresql.PrepareTestsWithPrefix("TEST_ADD_PROCESS")
 	defer db.Close()
@@ -133,7 +50,7 @@ func TestColoniesControllerAddProcess(t *testing.T) {
 	executor, _, err := utils.CreateTestExecutorWithKey(colonyName)
 	assert.Nil(t, err)
 
-	_, err = controller.AddExecutor(executor, false)
+	err = db.AddExecutor(executor)
 	assert.Nil(t, err)
 
 	funcSpec := utils.CreateTestFunctionSpecWithEnv(colonyName, make(map[string]string))
@@ -157,7 +74,7 @@ func TestColoniesControllerAssignExecutor(t *testing.T) {
 	executor, _, err := utils.CreateTestExecutorWithKey(colonyName)
 	assert.Nil(t, err)
 
-	_, err = controller.AddExecutor(executor, false)
+	err = db.AddExecutor(executor)
 	assert.Nil(t, err)
 
 	funcSpec := utils.CreateTestFunctionSpecWithEnv(colonyName, make(map[string]string))
@@ -189,12 +106,12 @@ func TestColoniesControllerAssignExecutorConcurrency(t *testing.T) {
 
 	executor1, _, err := utils.CreateTestExecutorWithKey(colonyName)
 	assert.Nil(t, err)
-	_, err = controller1.AddExecutor(executor1, false)
+	err = db.AddExecutor(executor1)
 	assert.Nil(t, err)
 
 	executor2, _, err := utils.CreateTestExecutorWithKey(colonyName)
 	assert.Nil(t, err)
-	_, err = controller1.AddExecutor(executor2, false)
+	err = db.AddExecutor(executor2)
 	assert.Nil(t, err)
 
 	for i := 0; i < processCount; i++ {
@@ -395,7 +312,7 @@ func TestColoniesControllerProcessOperations(t *testing.T) {
 	// Create and add executor
 	executor, _, err := utils.CreateTestExecutorWithKey(colonyName)
 	assert.Nil(t, err)
-	_, err = controller.AddExecutor(executor, false)
+	err = db.AddExecutor(executor)
 	assert.Nil(t, err)
 
 	// Create and add process
@@ -403,64 +320,29 @@ func TestColoniesControllerProcessOperations(t *testing.T) {
 	process := core.CreateProcess(funcSpec)
 	addedProcess, err := controller.AddProcess(process)
 	assert.Nil(t, err)
-
-	// Test GetProcess
-	retrievedProcess, err := controller.GetProcess(addedProcess.ID)
-	assert.Nil(t, err)
-	assert.Equal(t, addedProcess.ID, retrievedProcess.ID)
-
-	// Test FindProcessHistory
-	processes, err := controller.FindProcessHistory(colonyName, executor.ID, 86400, core.WAITING)
-	assert.Nil(t, err)
-	assert.GreaterOrEqual(t, len(processes), 0) // May be 0 if process was already assigned/completed
+	assert.NotNil(t, addedProcess)
 }
 
 // Test more controller methods with mocks
 func TestColoniesControllerAdditionalMethods(t *testing.T) {
-	controller, dbMock := createFakeColoniesController()
+	controller, _ := createFakeColoniesController()
 	defer controller.Stop()
 
 	// Test IsLeader
 	isLeader := controller.IsLeader()
 	assert.True(t, isLeader) // Should be true for fake controller with etcd node
 
-	// Test database error handling
-	dbMock.ReturnError = "GetColonies"
-	_, err := controller.GetColonies()
-	assert.NotNil(t, err)
-
 	// Note: Stop method is tested by the defer statement
 }
 
 // Test error conditions and edge cases
 func TestColoniesControllerErrorHandling(t *testing.T) {
-	controller, dbMock := createFakeColoniesController()
+	controller, _ := createFakeColoniesController()
 	defer controller.Stop()
 
 	// Test nil process
 	_, err := controller.AddProcessToDB(nil)
 	assert.NotNil(t, err)
-
-	// Test nil colony
-	_, err = controller.AddColony(nil)
-	assert.NotNil(t, err)
-
-	// Test nil executor
-	_, err = controller.AddExecutor(nil, false)
-	assert.NotNil(t, err)
-
-	// Test database errors for various operations
-	dbMock.ReturnError = "AddColony"
-	colony := &core.Colony{Name: "test-colony", ID: "test-id"}
-	_, err = controller.AddColony(colony)
-	assert.NotNil(t, err)
-
-	dbMock.ReturnError = "AddExecutor"
-	executor := &core.Executor{ID: "test-id", ColonyName: "test-colony"}
-	_, err = controller.AddExecutor(executor, false)
-	assert.NotNil(t, err)
-
-	dbMock.ReturnError = ""
 }
 
 // Test websocket subscriptions with better error handling
@@ -498,7 +380,7 @@ func TestColoniesControllerProcessGraphOperations(t *testing.T) {
 	assert.Nil(t, graph)  // But the graph should be nil
 }
 
-// Test assignment functionality 
+// Test assignment functionality
 func TestColoniesControllerAssignmentOperations(t *testing.T) {
 	db, err := postgresql.PrepareTestsWithPrefix("TEST_ASSIGNMENT")
 	defer db.Close()
@@ -512,7 +394,7 @@ func TestColoniesControllerAssignmentOperations(t *testing.T) {
 	// Create and add executor
 	executor, _, err := utils.CreateTestExecutorWithKey(colonyName)
 	assert.Nil(t, err)
-	_, err = controller.AddExecutor(executor, false)
+	err = db.AddExecutor(executor)
 	assert.Nil(t, err)
 
 	// Create and add process
@@ -530,8 +412,8 @@ func TestColoniesControllerAssignmentOperations(t *testing.T) {
 	_, err = controller.Assign("invalid-executor-id", colonyName, 0, 0)
 	assert.NotNil(t, err)
 
-	// Test SetOutput
-	err = controller.SetOutput(addedProcess.ID, []interface{}{"test", "output"})
+	// Test SetOutput via database directly
+	err = db.SetOutput(addedProcess.ID, []interface{}{"test", "output"})
 	assert.Nil(t, err)
 }
 
@@ -637,7 +519,7 @@ func TestColoniesControllerProcessLifecycleOperations(t *testing.T) {
 	// Create and add executor
 	executor, _, err := utils.CreateTestExecutorWithKey(colonyName)
 	assert.Nil(t, err)
-	_, err = controller.AddExecutor(executor, false)
+	err = db.AddExecutor(executor)
 	assert.Nil(t, err)
 
 	// Create and add process
@@ -646,16 +528,16 @@ func TestColoniesControllerProcessLifecycleOperations(t *testing.T) {
 	addedProcess, err := controller.AddProcess(process)
 	assert.Nil(t, err)
 
-	// Test SetOutput
+	// Test SetOutput via database directly
 	output := []interface{}{"test", "result", 123}
-	err = controller.SetOutput(addedProcess.ID, output)
+	err = db.SetOutput(addedProcess.ID, output)
 	assert.Nil(t, err)
 
 	// Assign process first before closing successfully
 	result, err := controller.Assign(executor.ID, colonyName, 0, 0)
 	assert.Nil(t, err)
 	assert.NotNil(t, result)
-	
+
 	// Test CloseSuccessful (use the assigned process)
 	if result.Process != nil {
 		err = controller.CloseSuccessful(result.Process.ID, executor.ID, output)
@@ -668,8 +550,8 @@ func TestColoniesControllerProcessLifecycleOperations(t *testing.T) {
 	assert.Nil(t, err)
 
 	// Test CloseFailed
-	errors := []string{"error1", "error2"}
-	err = controller.CloseFailed(addedProcess2.ID, errors)
+	errs := []string{"error1", "error2"}
+	err = controller.CloseFailed(addedProcess2.ID, errs)
 	assert.Nil(t, err)
 }
 
@@ -687,7 +569,7 @@ func TestColoniesControllerProcessGraphOperations2(t *testing.T) {
 	// Create and add executor
 	executor, _, err := utils.CreateTestExecutorWithKey(colonyName)
 	assert.Nil(t, err)
-	_, err = controller.AddExecutor(executor, false)
+	err = db.AddExecutor(executor)
 	assert.Nil(t, err)
 
 	// Test FindWaitingProcessGraphs
@@ -710,21 +592,21 @@ func TestColoniesControllerProcessGraphOperations2(t *testing.T) {
 	assert.Nil(t, err)
 	assert.GreaterOrEqual(t, len(failedGraphs), 0) // May be empty
 
-	// Test RemoveProcess
+	// Test RemoveProcess via database directly (moved to handler)
 	funcSpec := utils.CreateTestFunctionSpecWithEnv(colonyName, make(map[string]string))
 	process := core.CreateProcess(funcSpec)
 	addedProcess, err := controller.AddProcess(process)
 	assert.Nil(t, err)
 
-	err = controller.RemoveProcess(addedProcess.ID)
+	err = db.RemoveProcessByID(addedProcess.ID)
 	assert.Nil(t, err)
 
-	// Test RemoveAllProcesses
-	err = controller.RemoveAllProcesses(colonyName, core.WAITING)
+	// Test RemoveAllProcesses via database directly (moved to handler)
+	err = db.RemoveAllWaitingProcessesByColonyName(colonyName)
 	assert.Nil(t, err)
 
-	// Test RemoveAllProcessGraphs
-	err = controller.RemoveAllProcessGraphs(colonyName, core.WAITING)
+	// Test RemoveAllProcessGraphs via database directly (moved to handler)
+	err = db.RemoveAllWaitingProcessGraphsByColonyName(colonyName)
 	assert.Nil(t, err)
 }
 
@@ -742,7 +624,7 @@ func TestColoniesControllerAssignmentOperations2(t *testing.T) {
 	// Create and add executor
 	executor, _, err := utils.CreateTestExecutorWithKey(colonyName)
 	assert.Nil(t, err)
-	_, err = controller.AddExecutor(executor, false)
+	err = db.AddExecutor(executor)
 	assert.Nil(t, err)
 
 	// Create and add process
@@ -767,28 +649,6 @@ func TestColoniesControllerAssignmentOperations2(t *testing.T) {
 	assert.Nil(t, err)
 }
 
-// Test statistics operations
-func TestColoniesControllerStatisticsOperations(t *testing.T) {
-	db, err := postgresql.PrepareTestsWithPrefix("TEST_STATISTICS")
-	defer db.Close()
-	assert.Nil(t, err)
-
-	controller := createTestColoniesController(db)
-	defer controller.Stop()
-
-	colonyName := core.GenerateRandomID()
-
-	// Test GetColonyStatistics
-	stats, err := controller.GetColonyStatistics(colonyName)
-	assert.Nil(t, err)
-	assert.NotNil(t, stats)
-
-	// Test GetStatistics
-	globalStats, err := controller.GetStatistics()
-	assert.Nil(t, err)
-	assert.NotNil(t, globalStats)
-}
-
 // Test attribute operations
 func TestColoniesControllerAttributeOperations(t *testing.T) {
 	db, err := postgresql.PrepareTestsWithPrefix("TEST_ATTRIBUTES")
@@ -799,25 +659,27 @@ func TestColoniesControllerAttributeOperations(t *testing.T) {
 	defer controller.Stop()
 
 	colonyName := core.GenerateRandomID()
+	targetID := core.GenerateRandomID()
 
 	// Create test attribute
-	attribute := &core.Attribute{
-		ID:                   core.GenerateRandomID(),
-		TargetID:             core.GenerateRandomID(),
-		TargetColonyName:     colonyName,
-		AttributeType:        core.IN,
-		Key:                  "test-key",
-		Value:                "test-value",
+	attribute := core.Attribute{
+		ID:               core.GenerateRandomID(),
+		TargetID:         targetID,
+		TargetColonyName: colonyName,
+		AttributeType:    core.IN,
+		Key:              "test-key",
+		Value:            "test-value",
 	}
 
-	// Test AddAttribute
-	addedAttribute, err := controller.AddAttribute(attribute)
+	// Test AddAttribute via database directly
+	err = db.AddAttribute(attribute)
 	assert.Nil(t, err)
-	assert.NotNil(t, addedAttribute)
 
-	// Test GetAttribute (may not exist if database doesn't support this exact lookup)
-	_, err = controller.GetAttribute(addedAttribute.ID)
-	// Don't assert on the error as the database might not store it exactly as expected
+	// Verify attribute was added by fetching it via target ID and key
+	addedAttribute, err := db.GetAttribute(targetID, "test-key", core.IN)
+	assert.Nil(t, err)
+	assert.Equal(t, "test-key", addedAttribute.Key)
+	assert.Equal(t, "test-value", addedAttribute.Value)
 }
 
 // Test function management operations
@@ -840,28 +702,17 @@ func TestColoniesControllerFunctionOperations(t *testing.T) {
 		FuncName:     "test-function",
 	}
 
-	// Test AddFunction
-	addedFunction, err := controller.AddFunction(function)
+	// Test AddFunction via database directly
+	err = db.AddFunction(function)
+	assert.Nil(t, err)
+
+	// Verify function was added
+	addedFunction, err := db.GetFunctionByID(function.FunctionID)
 	assert.Nil(t, err)
 	assert.NotNil(t, addedFunction)
 
-	// Test GetFunctionsByExecutorName
-	functions, err := controller.GetFunctionsByExecutorName(colonyName, executorName)
-	assert.Nil(t, err)
-	assert.NotNil(t, functions)
-
-	// Test GetFunctionsByColonyName
-	colonyFunctions, err := controller.GetFunctionsByColonyName(colonyName)
-	assert.Nil(t, err)
-	assert.NotNil(t, colonyFunctions)
-
-	// Test GetFunctionByID
-	retrievedFunction, err := controller.GetFunctionByID(addedFunction.FunctionID)
-	assert.Nil(t, err)
-	assert.NotNil(t, retrievedFunction)
-
-	// Test RemoveFunction
-	err = controller.RemoveFunction(addedFunction.FunctionID)
+	// Test RemoveFunction via database directly (moved to handler)
+	err = db.RemoveFunctionByID(addedFunction.FunctionID)
 	assert.Nil(t, err)
 }
 
@@ -885,65 +736,22 @@ func TestColoniesControllerSafeMockTests(t *testing.T) {
 	defer controller.Stop()
 
 	// Test basic operations that are safe with mocks
-	
-	// Test GetProcess
-	dbMock.ReturnError = "GetProcessByID"
-	_, err := controller.GetProcess("test-process-id")
-	assert.NotNil(t, err)
-
-	dbMock.ReturnError = ""
-	_, err = controller.GetProcess("test-process-id")
-	assert.Nil(t, err)
-
-	// Test FindProcessHistory
-	dbMock.ReturnError = ""
-	_, err = controller.FindProcessHistory("test-colony", "test-executor-id", 86400, core.WAITING)
-	assert.Nil(t, err)
 
 	// Test GetProcessGraphByID
 	dbMock.ReturnError = "GetProcessGraphByID"
-	_, err = controller.GetProcessGraphByID("test-graph-id")
+	_, err := controller.GetProcessGraphByID("test-graph-id")
 	// Don't assert error as mock may not behave exactly as expected
 
 	dbMock.ReturnError = ""
 	_, err = controller.GetProcessGraphByID("test-graph-id")
 	assert.Nil(t, err)
 
-	// Test statistics operations 
-	dbMock.ReturnError = ""
-	_, err = controller.GetColonyStatistics("test-colony")
+	// Test RemoveProcess via database directly (moved to handler)
+	err = dbMock.RemoveProcessByID("test-process-id")
 	assert.Nil(t, err)
 
-	_, err = controller.GetStatistics()
-	assert.Nil(t, err)
-
-	// Test attribute operations
-	attribute := &core.Attribute{ID: "test-attr-id"}
-	dbMock.ReturnError = ""
-	_, err = controller.AddAttribute(attribute)
-	assert.Nil(t, err)
-
-	_, err = controller.GetAttribute("test-attr-id")
-	assert.Nil(t, err)
-
-	// Test SetOutput
-	err = controller.SetOutput("test-process-id", []interface{}{"output"})
-	assert.Nil(t, err)
-
-	// Test RemoveProcess
-	err = controller.RemoveProcess("test-process-id")
-	assert.Nil(t, err)
-
-	// Test RemoveAllProcesses
-	err = controller.RemoveAllProcesses("test-colony", core.WAITING)
-	assert.Nil(t, err)
-
-	// Test RemoveProcessGraph
-	err = controller.RemoveProcessGraph("test-graph-id")
-	assert.Nil(t, err)
-
-	// Test RemoveAllProcessGraphs
-	err = controller.RemoveAllProcessGraphs("test-colony", core.WAITING)
+	// Test RemoveProcessGraph via database directly (moved to handler)
+	err = dbMock.RemoveProcessGraphByID("test-graph-id")
 	assert.Nil(t, err)
 
 	// Test ResetDatabase

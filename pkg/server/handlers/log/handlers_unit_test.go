@@ -447,21 +447,11 @@ func (m *MockLogDB) SearchLogs(colonyName string, text string, days int, count i
 	return m.logs, m.getLogErr
 }
 
-type MockController struct {
-	process    *core.Process
-	processErr error
-}
-
-func (m *MockController) GetProcess(processID string) (*core.Process, error) {
-	return m.process, m.processErr
-}
-
 type MockServer struct {
 	validator    *MockValidator
 	executorDB   *MockExecutorDB
 	processDB    *MockProcessDB
 	logDB        *MockLogDB
-	controller   *MockController
 	httpError    bool
 	lastErrCode  int
 	lastResponse string
@@ -500,17 +490,12 @@ func (m *MockServer) LogDB() database.LogDatabase {
 	return m.logDB
 }
 
-func (m *MockServer) LogProcessController() Controller {
-	return m.controller
-}
-
 func createMockServer() *MockServer {
 	return &MockServer{
 		validator:  &MockValidator{},
 		executorDB: &MockExecutorDB{},
 		processDB:  &MockProcessDB{},
 		logDB:      &MockLogDB{},
-		controller: &MockController{},
 	}
 }
 
@@ -554,7 +539,7 @@ func TestHandleAddLogMsgTypeMismatchUnit(t *testing.T) {
 
 func TestHandleAddLogProcessNilUnit(t *testing.T) {
 	server := createMockServer()
-	server.controller.process = nil
+	server.processDB.process = nil
 	handlers := NewHandlers(server)
 	ctx := &MockContext{}
 
@@ -567,7 +552,7 @@ func TestHandleAddLogProcessNilUnit(t *testing.T) {
 
 func TestHandleAddLogProcessNotRunningUnit(t *testing.T) {
 	server := createMockServer()
-	server.controller.process = &core.Process{
+	server.processDB.process = &core.Process{
 		ID:    "process-id",
 		State: core.WAITING,
 		FunctionSpec: core.FunctionSpec{
@@ -592,7 +577,7 @@ func TestHandleAddLogProcessNotRunningUnit(t *testing.T) {
 
 func TestHandleAddLogNotAssignedExecutorUnit(t *testing.T) {
 	server := createMockServer()
-	server.controller.process = &core.Process{
+	server.processDB.process = &core.Process{
 		ID:                 "process-id",
 		State:              core.RUNNING,
 		AssignedExecutorID: "other-executor-id",
@@ -618,7 +603,7 @@ func TestHandleAddLogNotAssignedExecutorUnit(t *testing.T) {
 
 func TestHandleAddLogSuccessUnit(t *testing.T) {
 	server := createMockServer()
-	server.controller.process = &core.Process{
+	server.processDB.process = &core.Process{
 		ID:                 "process-id",
 		State:              core.RUNNING,
 		AssignedExecutorID: "test-id",
@@ -645,7 +630,7 @@ func TestHandleAddLogSuccessUnit(t *testing.T) {
 func TestHandleAddLogMembershipErrorUnit(t *testing.T) {
 	server := createMockServer()
 	server.validator.requireMembershipErr = errors.New("not a member")
-	server.controller.process = &core.Process{
+	server.processDB.process = &core.Process{
 		ID:    "process-id",
 		State: core.RUNNING,
 		FunctionSpec: core.FunctionSpec{
@@ -667,7 +652,7 @@ func TestHandleAddLogMembershipErrorUnit(t *testing.T) {
 
 func TestHandleAddLogExecutorDBErrorUnit(t *testing.T) {
 	server := createMockServer()
-	server.controller.process = &core.Process{
+	server.processDB.process = &core.Process{
 		ID:    "process-id",
 		State: core.RUNNING,
 		FunctionSpec: core.FunctionSpec{
@@ -690,7 +675,7 @@ func TestHandleAddLogExecutorDBErrorUnit(t *testing.T) {
 
 func TestHandleAddLogDBErrorUnit(t *testing.T) {
 	server := createMockServer()
-	server.controller.process = &core.Process{
+	server.processDB.process = &core.Process{
 		ID:                 "process-id",
 		State:              core.RUNNING,
 		AssignedExecutorID: "test-id",
@@ -851,7 +836,7 @@ func TestHandleGetLogsByExecutorNotFoundUnit(t *testing.T) {
 
 func TestHandleGetLogsByProcessNotFoundUnit(t *testing.T) {
 	server := createMockServer()
-	server.controller.process = nil
+	server.processDB.process = nil
 	handlers := NewHandlers(server)
 	ctx := &MockContext{}
 
@@ -864,7 +849,7 @@ func TestHandleGetLogsByProcessNotFoundUnit(t *testing.T) {
 
 func TestHandleGetLogsExceedsMaxCountUnit(t *testing.T) {
 	server := createMockServer()
-	server.controller.process = &core.Process{
+	server.processDB.process = &core.Process{
 		ID: "process-id",
 		FunctionSpec: core.FunctionSpec{
 			Conditions: core.Conditions{
@@ -884,7 +869,7 @@ func TestHandleGetLogsExceedsMaxCountUnit(t *testing.T) {
 
 func TestHandleGetLogsByProcessSuccessUnit(t *testing.T) {
 	server := createMockServer()
-	server.controller.process = &core.Process{
+	server.processDB.process = &core.Process{
 		ID: "process-id",
 		FunctionSpec: core.FunctionSpec{
 			Conditions: core.Conditions{
@@ -944,7 +929,7 @@ func TestHandleGetLogsByExecutorMembershipErrorUnit(t *testing.T) {
 
 func TestHandleGetLogsByProcessMembershipErrorUnit(t *testing.T) {
 	server := createMockServer()
-	server.controller.process = &core.Process{
+	server.processDB.process = &core.Process{
 		ID: "process-id",
 		FunctionSpec: core.FunctionSpec{
 			Conditions: core.Conditions{
@@ -966,7 +951,7 @@ func TestHandleGetLogsByProcessMembershipErrorUnit(t *testing.T) {
 
 func TestHandleGetLogsDBErrorUnit(t *testing.T) {
 	server := createMockServer()
-	server.controller.process = &core.Process{
+	server.processDB.process = &core.Process{
 		ID: "process-id",
 		FunctionSpec: core.FunctionSpec{
 			Conditions: core.Conditions{
@@ -987,7 +972,7 @@ func TestHandleGetLogsDBErrorUnit(t *testing.T) {
 
 func TestHandleGetLogsByProcessLatestUnit(t *testing.T) {
 	server := createMockServer()
-	server.controller.process = &core.Process{
+	server.processDB.process = &core.Process{
 		ID: "process-id",
 		FunctionSpec: core.FunctionSpec{
 			Conditions: core.Conditions{
@@ -1009,7 +994,7 @@ func TestHandleGetLogsByProcessLatestUnit(t *testing.T) {
 
 func TestHandleGetLogsByProcessSinceUnit(t *testing.T) {
 	server := createMockServer()
-	server.controller.process = &core.Process{
+	server.processDB.process = &core.Process{
 		ID: "process-id",
 		FunctionSpec: core.FunctionSpec{
 			Conditions: core.Conditions{
