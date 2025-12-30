@@ -1,11 +1,18 @@
 package gin
 
 import (
+	"context"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/colonyos/colonies/pkg/client/backends"
+	"github.com/colonyos/colonies/pkg/core"
+	"github.com/colonyos/colonies/pkg/rpc"
 	"github.com/gorilla/websocket"
 	"github.com/stretchr/testify/assert"
 )
@@ -75,19 +82,318 @@ func TestNewGinClientBackendSkipTLSVerify(t *testing.T) {
 }
 
 func TestGinClientBackendSendRawMessage(t *testing.T) {
-	t.Skip("Skipping HTTP test - requires proper URL parsing for test server")
+	// Create test server
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, "/api", r.URL.Path)
+		assert.Equal(t, "POST", r.Method)
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"result": "ok"}`))
+	}))
+	defer server.Close()
+
+	// Parse server URL to get host and port
+	parts := strings.Split(strings.TrimPrefix(server.URL, "http://"), ":")
+	host := parts[0]
+	port, _ := strconv.Atoi(parts[1])
+
+	config := &backends.ClientConfig{
+		BackendType: backends.GinClientBackendType,
+		Host:        host,
+		Port:        port,
+		Insecure:    true,
+	}
+
+	backend, err := NewGinClientBackend(config)
+	assert.NoError(t, err)
+
+	resp, err := backend.SendRawMessage(`{"test": "message"}`, true)
+	assert.NoError(t, err)
+	assert.Contains(t, resp, "ok")
+}
+
+func TestGinClientBackendSendRawMessageHTTPS(t *testing.T) {
+	// Create HTTPS test server
+	server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, "/api", r.URL.Path)
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"result": "ok"}`))
+	}))
+	defer server.Close()
+
+	// Parse server URL to get host and port
+	parts := strings.Split(strings.TrimPrefix(server.URL, "https://"), ":")
+	host := parts[0]
+	port, _ := strconv.Atoi(parts[1])
+
+	config := &backends.ClientConfig{
+		BackendType:   backends.GinClientBackendType,
+		Host:          host,
+		Port:          port,
+		Insecure:      false,
+		SkipTLSVerify: true,
+	}
+
+	backend, err := NewGinClientBackend(config)
+	assert.NoError(t, err)
+
+	resp, err := backend.SendRawMessage(`{"test": "message"}`, false)
+	assert.NoError(t, err)
+	assert.Contains(t, resp, "ok")
+}
+
+func TestGinClientBackendSendRawMessageError(t *testing.T) {
+	config := &backends.ClientConfig{
+		BackendType: backends.GinClientBackendType,
+		Host:        "invalid-host-that-does-not-exist",
+		Port:        99999,
+		Insecure:    true,
+	}
+
+	backend, err := NewGinClientBackend(config)
+	assert.NoError(t, err)
+
+	_, err = backend.SendRawMessage(`{"test": "message"}`, true)
+	assert.Error(t, err)
 }
 
 func TestGinClientBackendSendMessageInsecure(t *testing.T) {
-	t.Skip("Skipping HTTP test - requires proper URL parsing for test server")
+	// Create a valid RPC reply
+	rpcReply, _ := rpc.CreateRPCReplyMsg("test", `{"status": "success"}`)
+	replyJSON, _ := rpcReply.ToJSON()
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, "/api", r.URL.Path)
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(replyJSON))
+	}))
+	defer server.Close()
+
+	parts := strings.Split(strings.TrimPrefix(server.URL, "http://"), ":")
+	host := parts[0]
+	port, _ := strconv.Atoi(parts[1])
+
+	config := &backends.ClientConfig{
+		BackendType: backends.GinClientBackendType,
+		Host:        host,
+		Port:        port,
+		Insecure:    true,
+	}
+
+	backend, err := NewGinClientBackend(config)
+	assert.NoError(t, err)
+
+	resp, err := backend.SendMessage("test", `{"data": "test"}`, "", true, context.Background())
+	assert.NoError(t, err)
+	assert.Contains(t, resp, "success")
+}
+
+func TestGinClientBackendSendMessageSecure(t *testing.T) {
+	// Create a valid RPC reply
+	rpcReply, _ := rpc.CreateRPCReplyMsg("test", `{"status": "success"}`)
+	replyJSON, _ := rpcReply.ToJSON()
+
+	server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, "/api", r.URL.Path)
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(replyJSON))
+	}))
+	defer server.Close()
+
+	parts := strings.Split(strings.TrimPrefix(server.URL, "https://"), ":")
+	host := parts[0]
+	port, _ := strconv.Atoi(parts[1])
+
+	config := &backends.ClientConfig{
+		BackendType:   backends.GinClientBackendType,
+		Host:          host,
+		Port:          port,
+		Insecure:      false,
+		SkipTLSVerify: true,
+	}
+
+	backend, err := NewGinClientBackend(config)
+	assert.NoError(t, err)
+
+	// Use a valid private key for signing
+	prvKey := "ddf7f7791208083b6a9ed975a72684f6406a269cfa36f1b1c32045c0a71fff05"
+	resp, err := backend.SendMessage("test", `{"data": "test"}`, prvKey, false, context.Background())
+	assert.NoError(t, err)
+	assert.Contains(t, resp, "success")
 }
 
 func TestGinClientBackendSendMessageWithError(t *testing.T) {
-	t.Skip("Skipping HTTP test - requires proper URL parsing for test server")
+	// Create an error RPC reply
+	failure := core.CreateFailure(400, "test error message")
+	failureJSON, _ := failure.ToJSON()
+	rpcReply, _ := rpc.CreateRPCErrorReplyMsg(rpc.ErrorPayloadType, failureJSON)
+	replyJSON, _ := rpcReply.ToJSON()
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(replyJSON))
+	}))
+	defer server.Close()
+
+	parts := strings.Split(strings.TrimPrefix(server.URL, "http://"), ":")
+	host := parts[0]
+	port, _ := strconv.Atoi(parts[1])
+
+	config := &backends.ClientConfig{
+		BackendType: backends.GinClientBackendType,
+		Host:        host,
+		Port:        port,
+		Insecure:    true,
+	}
+
+	backend, err := NewGinClientBackend(config)
+	assert.NoError(t, err)
+
+	_, err = backend.SendMessage("test", `{"data": "test"}`, "", true, context.Background())
+	assert.Error(t, err)
+
+	// Verify it's a ColoniesError
+	coloniesErr, ok := err.(*core.ColoniesError)
+	assert.True(t, ok)
+	assert.Equal(t, 400, coloniesErr.Status)
+	assert.Contains(t, coloniesErr.Message, "test error message")
+}
+
+func TestGinClientBackendSendMessageInvalidResponse(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`not valid json`))
+	}))
+	defer server.Close()
+
+	parts := strings.Split(strings.TrimPrefix(server.URL, "http://"), ":")
+	host := parts[0]
+	port, _ := strconv.Atoi(parts[1])
+
+	config := &backends.ClientConfig{
+		BackendType: backends.GinClientBackendType,
+		Host:        host,
+		Port:        port,
+		Insecure:    true,
+	}
+
+	backend, err := NewGinClientBackend(config)
+	assert.NoError(t, err)
+
+	_, err = backend.SendMessage("test", `{"data": "test"}`, "", true, context.Background())
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "Expected a valid Colonies RPC message")
+}
+
+func TestGinClientBackendSendMessageNetworkError(t *testing.T) {
+	config := &backends.ClientConfig{
+		BackendType: backends.GinClientBackendType,
+		Host:        "invalid-host-that-does-not-exist",
+		Port:        99999,
+		Insecure:    true,
+	}
+
+	backend, err := NewGinClientBackend(config)
+	assert.NoError(t, err)
+
+	_, err = backend.SendMessage("test", `{"data": "test"}`, "", true, context.Background())
+	assert.Error(t, err)
+}
+
+func TestGinClientBackendSendMessageWithCanceledContext(t *testing.T) {
+	// Create a server that delays response
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		time.Sleep(2 * time.Second)
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
+
+	parts := strings.Split(strings.TrimPrefix(server.URL, "http://"), ":")
+	host := parts[0]
+	port, _ := strconv.Atoi(parts[1])
+
+	config := &backends.ClientConfig{
+		BackendType: backends.GinClientBackendType,
+		Host:        host,
+		Port:        port,
+		Insecure:    true,
+	}
+
+	backend, err := NewGinClientBackend(config)
+	assert.NoError(t, err)
+
+	// Create a context that gets canceled quickly
+	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
+	defer cancel()
+
+	_, err = backend.SendMessage("test", `{"data": "test"}`, "", true, ctx)
+	assert.Error(t, err)
 }
 
 func TestGinClientBackendCheckHealth(t *testing.T) {
-	t.Skip("Skipping HTTP test - requires proper URL parsing for test server")
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, "/health", r.URL.Path)
+		assert.Equal(t, "GET", r.Method)
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
+
+	parts := strings.Split(strings.TrimPrefix(server.URL, "http://"), ":")
+	host := parts[0]
+	port, _ := strconv.Atoi(parts[1])
+
+	config := &backends.ClientConfig{
+		BackendType: backends.GinClientBackendType,
+		Host:        host,
+		Port:        port,
+		Insecure:    true,
+	}
+
+	backend, err := NewGinClientBackend(config)
+	assert.NoError(t, err)
+
+	err = backend.CheckHealth()
+	assert.NoError(t, err)
+}
+
+func TestGinClientBackendCheckHealthHTTPS(t *testing.T) {
+	server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, "/health", r.URL.Path)
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
+
+	parts := strings.Split(strings.TrimPrefix(server.URL, "https://"), ":")
+	host := parts[0]
+	port, _ := strconv.Atoi(parts[1])
+
+	config := &backends.ClientConfig{
+		BackendType:   backends.GinClientBackendType,
+		Host:          host,
+		Port:          port,
+		Insecure:      false,
+		SkipTLSVerify: true,
+	}
+
+	backend, err := NewGinClientBackend(config)
+	assert.NoError(t, err)
+
+	err = backend.CheckHealth()
+	assert.NoError(t, err)
+}
+
+func TestGinClientBackendCheckHealthError(t *testing.T) {
+	config := &backends.ClientConfig{
+		BackendType: backends.GinClientBackendType,
+		Host:        "invalid-host-that-does-not-exist",
+		Port:        99999,
+		Insecure:    true,
+	}
+
+	backend, err := NewGinClientBackend(config)
+	assert.NoError(t, err)
+
+	err = backend.CheckHealth()
+	assert.Error(t, err)
 }
 
 func TestGinClientBackendClose(t *testing.T) {
@@ -107,13 +413,13 @@ func TestGinClientBackendClose(t *testing.T) {
 }
 
 func TestGinClientBackendEstablishRealtimeConnInsecure(t *testing.T) {
-	// Create a WebSocket test server
 	var upgrader = websocket.Upgrader{
 		CheckOrigin: func(r *http.Request) bool { return true },
 	}
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/pubsub" {
+			http.NotFound(w, r)
 			return
 		}
 
@@ -134,35 +440,95 @@ func TestGinClientBackendEstablishRealtimeConnInsecure(t *testing.T) {
 	}))
 	defer server.Close()
 
-	// Parse the test server URL (format: http://127.0.0.1:port)
-	// We need to extract just the host and port
-	testURL := server.URL[7:] // Remove "http://"
+	// Parse the server address
+	addr := server.Listener.Addr().String()
+	parts := strings.Split(addr, ":")
+	host := parts[0]
+	port, _ := strconv.Atoi(parts[1])
 
 	config := &backends.ClientConfig{
 		BackendType: backends.GinClientBackendType,
-		Host:        testURL,
-		Port:        80, // Will be overridden
+		Host:        host,
+		Port:        port,
 		Insecure:    true,
 	}
 
 	backend, err := NewGinClientBackend(config)
 	assert.NoError(t, err)
 
-	// Set the host to just the hostname without port (EstablishRealtimeConn adds the port)
-	backend.host = testURL
-	backend.port = 0 // Use 0 to prevent adding :80 to the URL
+	conn, err := backend.EstablishRealtimeConn(`{"type": "subscribe"}`)
+	assert.NoError(t, err)
+	assert.NotNil(t, conn)
+	defer conn.Close()
 
-	// For this test, we need to manually build the correct WebSocket URL
-	// Skip this test as it requires complex URL manipulation
-	t.Skip("Skipping WebSocket test - requires test server setup refactoring")
+	// Read the echoed message
+	_, data, err := conn.ReadMessage()
+	assert.NoError(t, err)
+	assert.Contains(t, string(data), "subscribe")
 }
 
-func TestGinClientBackendSendMessageWithContext(t *testing.T) {
-	t.Skip("Skipping HTTP test - requires proper URL parsing for test server")
+func TestGinClientBackendEstablishRealtimeConnSecure(t *testing.T) {
+	var upgrader = websocket.Upgrader{
+		CheckOrigin: func(r *http.Request) bool { return true },
+	}
+
+	server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/pubsub" {
+			http.NotFound(w, r)
+			return
+		}
+
+		conn, err := upgrader.Upgrade(w, r, nil)
+		if err != nil {
+			return
+		}
+		defer conn.Close()
+
+		// Read and echo
+		_, message, err := conn.ReadMessage()
+		if err != nil {
+			return
+		}
+		conn.WriteMessage(websocket.TextMessage, message)
+	}))
+	defer server.Close()
+
+	// Parse the server address
+	addr := strings.TrimPrefix(server.URL, "https://")
+	parts := strings.Split(addr, ":")
+	host := parts[0]
+	port, _ := strconv.Atoi(parts[1])
+
+	config := &backends.ClientConfig{
+		BackendType:   backends.GinClientBackendType,
+		Host:          host,
+		Port:          port,
+		Insecure:      false,
+		SkipTLSVerify: true,
+	}
+
+	backend, err := NewGinClientBackend(config)
+	assert.NoError(t, err)
+
+	conn, err := backend.EstablishRealtimeConn(`{"type": "subscribe"}`)
+	assert.NoError(t, err)
+	assert.NotNil(t, conn)
+	defer conn.Close()
 }
 
-func TestGinClientBackendSendMessageWithCanceledContext(t *testing.T) {
-	t.Skip("Skipping HTTP test - requires proper URL parsing for test server")
+func TestGinClientBackendEstablishRealtimeConnError(t *testing.T) {
+	config := &backends.ClientConfig{
+		BackendType: backends.GinClientBackendType,
+		Host:        "invalid-host-that-does-not-exist",
+		Port:        99999,
+		Insecure:    true,
+	}
+
+	backend, err := NewGinClientBackend(config)
+	assert.NoError(t, err)
+
+	_, err = backend.EstablishRealtimeConn(`{"type": "subscribe"}`)
+	assert.Error(t, err)
 }
 
 func TestGinClientBackendFactory(t *testing.T) {
@@ -307,6 +673,56 @@ func TestGinClientBackendProtocolSelection(t *testing.T) {
 	assert.False(t, backend.insecure)
 }
 
-func TestGinClientBackendSendMessageInvalidJSON(t *testing.T) {
-	t.Skip("Skipping HTTP test - requires proper URL parsing for test server")
+func TestGetGinClientBackendFactory(t *testing.T) {
+	factory := GetGinClientBackendFactory()
+	assert.NotNil(t, factory)
+
+	// Verify it returns a GinClientBackendFactory
+	_, ok := factory.(*GinClientBackendFactory)
+	assert.True(t, ok)
+
+	// Verify the factory works
+	config := &backends.ClientConfig{
+		BackendType: backends.GinClientBackendType,
+		Host:        "localhost",
+		Port:        8080,
+		Insecure:    true,
+	}
+
+	backend, err := factory.CreateBackend(config)
+	assert.NoError(t, err)
+	assert.NotNil(t, backend)
+}
+
+func TestGinClientBackendSendMessageWithInvalidFailureJSON(t *testing.T) {
+	// Create an error RPC reply with invalid failure JSON
+	rpcReply := &rpc.RPCReplyMsg{
+		PayloadType: rpc.ErrorPayloadType,
+		Error:       true,
+		Payload:     "not valid json for failure",
+	}
+	replyJSON, _ := json.Marshal(rpcReply)
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write(replyJSON)
+	}))
+	defer server.Close()
+
+	parts := strings.Split(strings.TrimPrefix(server.URL, "http://"), ":")
+	host := parts[0]
+	port, _ := strconv.Atoi(parts[1])
+
+	config := &backends.ClientConfig{
+		BackendType: backends.GinClientBackendType,
+		Host:        host,
+		Port:        port,
+		Insecure:    true,
+	}
+
+	backend, err := NewGinClientBackend(config)
+	assert.NoError(t, err)
+
+	_, err = backend.SendMessage("test", `{"data": "test"}`, "", true, context.Background())
+	assert.Error(t, err)
 }
