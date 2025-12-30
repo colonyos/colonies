@@ -1378,3 +1378,285 @@ func TestSetOutputOnFailedProcess(t *testing.T) {
 	coloniesServer.Shutdown()
 	<-done
 }
+
+func TestGetPauseStatus(t *testing.T) {
+	env, client, coloniesServer, _, done := server.SetupTestEnv2(t)
+
+	// Initially, assignments should not be paused
+	isPaused, err := client.AreColonyAssignmentsPaused(env.ColonyName, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.False(t, isPaused)
+
+	// Pause assignments
+	err = client.PauseColonyAssignments(env.ColonyName, env.ColonyPrvKey)
+	assert.Nil(t, err)
+
+	// Now the status should be paused
+	isPaused, err = client.AreColonyAssignmentsPaused(env.ColonyName, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.True(t, isPaused)
+
+	// Resume assignments
+	err = client.ResumeColonyAssignments(env.ColonyName, env.ColonyPrvKey)
+	assert.Nil(t, err)
+
+	// Status should be unpaused again
+	isPaused, err = client.AreColonyAssignmentsPaused(env.ColonyName, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.False(t, isPaused)
+
+	coloniesServer.Shutdown()
+	<-done
+}
+
+func TestGetProcessesByState(t *testing.T) {
+	env, client, coloniesServer, _, done := server.SetupTestEnv2(t)
+
+	// Submit processes
+	funcSpec := utils.CreateTestFunctionSpec(env.ColonyName)
+	process1, err := client.Submit(funcSpec, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+
+	funcSpec2 := utils.CreateTestFunctionSpec(env.ColonyName)
+	process2, err := client.Submit(funcSpec2, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+
+	// Test getting waiting processes
+	waitingProcesses, err := client.GetWaitingProcesses(env.ColonyName, "", "", "", 100, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.Equal(t, 2, len(waitingProcesses))
+
+	// Assign first process
+	assignedProcess, err := client.Assign(env.ColonyName, -1, "", "", env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.Equal(t, process1.ID, assignedProcess.ID)
+
+	// Test getting running processes
+	runningProcesses, err := client.GetRunningProcesses(env.ColonyName, "", "", "", 100, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.Equal(t, 1, len(runningProcesses))
+
+	// Test getting waiting processes (should be 1 now)
+	waitingProcesses, err = client.GetWaitingProcesses(env.ColonyName, "", "", "", 100, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.Equal(t, 1, len(waitingProcesses))
+	assert.Equal(t, process2.ID, waitingProcesses[0].ID)
+
+	// Close successful
+	err = client.Close(assignedProcess.ID, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+
+	// Test getting successful processes
+	successfulProcesses, err := client.GetSuccessfulProcesses(env.ColonyName, "", "", "", 100, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.Equal(t, 1, len(successfulProcesses))
+	assert.Equal(t, assignedProcess.ID, successfulProcesses[0].ID)
+
+	// Assign and fail second process
+	assignedProcess2, err := client.Assign(env.ColonyName, -1, "", "", env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.Equal(t, process2.ID, assignedProcess2.ID)
+
+	err = client.Fail(assignedProcess2.ID, []string{"test failure"}, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+
+	// Test getting failed processes
+	failedProcesses, err := client.GetFailedProcesses(env.ColonyName, "", "", "", 100, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.Equal(t, 1, len(failedProcesses))
+	assert.Equal(t, assignedProcess2.ID, failedProcesses[0].ID)
+
+	coloniesServer.Shutdown()
+	<-done
+}
+
+func TestGetProcessesWithLabel(t *testing.T) {
+	env, client, coloniesServer, _, done := server.SetupTestEnv2(t)
+
+	// Submit processes with different labels
+	funcSpec1 := utils.CreateTestFunctionSpec(env.ColonyName)
+	funcSpec1.Label = "label1"
+	process1, err := client.Submit(funcSpec1, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+
+	funcSpec2 := utils.CreateTestFunctionSpec(env.ColonyName)
+	funcSpec2.Label = "label2"
+	process2, err := client.Submit(funcSpec2, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+
+	// Test getting processes with label filter
+	processes, err := client.GetWaitingProcesses(env.ColonyName, "", "label1", "", 100, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.Equal(t, 1, len(processes))
+	assert.Equal(t, process1.ID, processes[0].ID)
+
+	processes, err = client.GetWaitingProcesses(env.ColonyName, "", "label2", "", 100, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.Equal(t, 1, len(processes))
+	assert.Equal(t, process2.ID, processes[0].ID)
+
+	coloniesServer.Shutdown()
+	<-done
+}
+
+func TestGetProcessesWithInitiator(t *testing.T) {
+	env, client, coloniesServer, _, done := server.SetupTestEnv2(t)
+
+	// Create a user in the colony
+	user, userPrvKey, err := utils.CreateTestUserWithKey(env.ColonyName, "test_user")
+	assert.Nil(t, err)
+	_, err = client.AddUser(user, env.ColonyPrvKey)
+	assert.Nil(t, err)
+
+	// Submit a process as the executor
+	funcSpec1 := utils.CreateTestFunctionSpec(env.ColonyName)
+	_, err = client.Submit(funcSpec1, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+
+	// Submit a process as the user
+	funcSpec2 := utils.CreateTestFunctionSpec(env.ColonyName)
+	process2, err := client.Submit(funcSpec2, userPrvKey)
+	assert.Nil(t, err)
+
+	// Get processes with initiator filter
+	processes, err := client.GetWaitingProcesses(env.ColonyName, "", "", "test_user", 100, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.Equal(t, 1, len(processes))
+	assert.Equal(t, process2.ID, processes[0].ID)
+
+	coloniesServer.Shutdown()
+	<-done
+}
+
+func TestGetProcessesWithInvalidInitiator(t *testing.T) {
+	env, client, coloniesServer, _, done := server.SetupTestEnv2(t)
+
+	// Try to get processes with a non-existent initiator
+	_, err := client.GetWaitingProcesses(env.ColonyName, "", "", "nonexistent_user", 100, env.ExecutorPrvKey)
+	assert.NotNil(t, err)
+
+	coloniesServer.Shutdown()
+	<-done
+}
+
+func TestCloseFailedNotAssigned(t *testing.T) {
+	env, client, coloniesServer, _, done := server.SetupTestEnv2(t)
+
+	// Submit a process
+	funcSpec := utils.CreateTestFunctionSpec(env.ColonyName)
+	process, err := client.Submit(funcSpec, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+
+	// Try to close the process as failed without assigning it first
+	err = client.Fail(process.ID, []string{"test error"}, env.ExecutorPrvKey)
+	assert.NotNil(t, err)
+
+	coloniesServer.Shutdown()
+	<-done
+}
+
+func TestCloseSuccessfulNotAssigned(t *testing.T) {
+	env, client, coloniesServer, _, done := server.SetupTestEnv2(t)
+
+	// Submit a process
+	funcSpec := utils.CreateTestFunctionSpec(env.ColonyName)
+	process, err := client.Submit(funcSpec, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+
+	// Try to close the process as successful without assigning it first
+	err = client.Close(process.ID, env.ExecutorPrvKey)
+	assert.NotNil(t, err)
+
+	coloniesServer.Shutdown()
+	<-done
+}
+
+func TestRemoveProcessInWorkflow(t *testing.T) {
+	env, client, coloniesServer, _, done := server.SetupTestEnv2(t)
+
+	// Create a simple workflow with 2 processes
+	funcSpec1 := utils.CreateTestFunctionSpec(env.ColonyName)
+	funcSpec1.NodeName = "task1"
+	funcSpec2 := utils.CreateTestFunctionSpec(env.ColonyName)
+	funcSpec2.NodeName = "task2"
+	funcSpec2.Conditions.Dependencies = []string{"task1"}
+
+	workflowSpec := core.CreateWorkflowSpec(env.ColonyName)
+	workflowSpec.FunctionSpecs = append(workflowSpec.FunctionSpecs, *funcSpec1)
+	workflowSpec.FunctionSpecs = append(workflowSpec.FunctionSpecs, *funcSpec2)
+
+	graph, err := client.SubmitWorkflowSpec(workflowSpec, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.NotNil(t, graph)
+	assert.Equal(t, 2, len(graph.ProcessIDs))
+
+	// Try to remove a process that is part of the workflow - should fail
+	err = client.RemoveProcess(graph.ProcessIDs[0], env.ExecutorPrvKey)
+	assert.NotNil(t, err)
+
+	coloniesServer.Shutdown()
+	<-done
+}
+
+func TestSetOutputOnWaitingProcess(t *testing.T) {
+	env, client, coloniesServer, _, done := server.SetupTestEnv2(t)
+
+	// Submit a process
+	funcSpec := utils.CreateTestFunctionSpec(env.ColonyName)
+	process, err := client.Submit(funcSpec, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+
+	// Try to set output on a waiting process - should fail
+	output := make([]interface{}, 1)
+	output[0] = "test output"
+	err = client.SetOutput(process.ID, output, env.ExecutorPrvKey)
+	assert.NotNil(t, err)
+
+	coloniesServer.Shutdown()
+	<-done
+}
+
+func TestCloseWithWrongExecutor(t *testing.T) {
+	client, coloniesServer, serverPrvKey, done := server.PrepareTests(t)
+
+	// Create colony
+	colony, colonyPrvKey, err := utils.CreateTestColonyWithKey()
+	assert.Nil(t, err)
+	_, err = client.AddColony(colony, serverPrvKey)
+	assert.Nil(t, err)
+
+	// Create two executors
+	executor1, executor1PrvKey, err := utils.CreateTestExecutorWithKey(colony.Name)
+	assert.Nil(t, err)
+	_, err = client.AddExecutor(executor1, colonyPrvKey)
+	assert.Nil(t, err)
+	err = client.ApproveExecutor(colony.Name, executor1.Name, colonyPrvKey)
+	assert.Nil(t, err)
+
+	executor2, executor2PrvKey, err := utils.CreateTestExecutorWithKey(colony.Name)
+	assert.Nil(t, err)
+	_, err = client.AddExecutor(executor2, colonyPrvKey)
+	assert.Nil(t, err)
+	err = client.ApproveExecutor(colony.Name, executor2.Name, colonyPrvKey)
+	assert.Nil(t, err)
+
+	// Submit and assign a process to executor1
+	funcSpec := utils.CreateTestFunctionSpec(colony.Name)
+	process, err := client.Submit(funcSpec, executor1PrvKey)
+	assert.Nil(t, err)
+
+	assignedProcess, err := client.Assign(colony.Name, -1, "", "", executor1PrvKey)
+	assert.Nil(t, err)
+	assert.Equal(t, process.ID, assignedProcess.ID)
+
+	// Try to close the process with executor2 - should fail
+	err = client.Close(assignedProcess.ID, executor2PrvKey)
+	assert.NotNil(t, err)
+
+	// Try to fail the process with executor2 - should fail
+	err = client.Fail(assignedProcess.ID, []string{"error"}, executor2PrvKey)
+	assert.NotNil(t, err)
+
+	coloniesServer.Shutdown()
+	<-done
+}

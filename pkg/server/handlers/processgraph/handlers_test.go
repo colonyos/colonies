@@ -800,3 +800,321 @@ func TestRemoveAllProcessGraphsWithStateFailed(t *testing.T) {
 	coloniesServer.Shutdown()
 	<-done
 }
+
+// TestGetProcessGraphNotFound tests getting a process graph that doesn't exist
+func TestGetProcessGraphNotFound(t *testing.T) {
+	env, client, coloniesServer, _, done := server.SetupTestEnv2(t)
+
+	_, err := client.GetProcessGraph("non_existent_id", env.ExecutorPrvKey)
+	assert.NotNil(t, err)
+
+	coloniesServer.Shutdown()
+	<-done
+}
+
+// TestGetProcessGraphUnauthorized tests that non-members cannot get process graphs
+func TestGetProcessGraphUnauthorized(t *testing.T) {
+	client, s, serverPrvKey, done := server.PrepareTests(t)
+
+	colony1, colonyPrvKey1, err := utils.CreateTestColonyWithKey()
+	assert.Nil(t, err)
+	_, err = client.AddColony(colony1, serverPrvKey)
+	assert.Nil(t, err)
+
+	executor1, executor1PrvKey, err := utils.CreateTestExecutorWithKey(colony1.Name)
+	assert.Nil(t, err)
+	_, err = client.AddExecutor(executor1, colonyPrvKey1)
+	assert.Nil(t, err)
+	err = client.ApproveExecutor(colony1.Name, executor1.Name, colonyPrvKey1)
+	assert.Nil(t, err)
+
+	colony2, colonyPrvKey2, err := utils.CreateTestColonyWithKey()
+	assert.Nil(t, err)
+	_, err = client.AddColony(colony2, serverPrvKey)
+	assert.Nil(t, err)
+
+	executor2, executor2PrvKey, err := utils.CreateTestExecutorWithKey(colony2.Name)
+	assert.Nil(t, err)
+	_, err = client.AddExecutor(executor2, colonyPrvKey2)
+	assert.Nil(t, err)
+	err = client.ApproveExecutor(colony2.Name, executor2.Name, colonyPrvKey2)
+	assert.Nil(t, err)
+
+	// Submit workflow to colony1
+	wf := core.CreateWorkflowSpec(colony1.Name)
+	funcSpec := core.CreateEmptyFunctionSpec()
+	funcSpec.NodeName = "task1"
+	funcSpec.Conditions.ColonyName = colony1.Name
+	funcSpec.Conditions.ExecutorType = executor1.Type
+	wf.AddFunctionSpec(funcSpec)
+
+	graph, err := client.SubmitWorkflowSpec(wf, executor1PrvKey)
+	assert.Nil(t, err)
+	assert.NotNil(t, graph)
+
+	// Try to get process graph from colony2 executor
+	_, err = client.GetProcessGraph(graph.ID, executor2PrvKey)
+	assert.NotNil(t, err)
+
+	s.Shutdown()
+	<-done
+}
+
+// TestRemoveProcessGraphNotFound tests removing a process graph that doesn't exist
+func TestRemoveProcessGraphNotFound(t *testing.T) {
+	env, client, coloniesServer, _, done := server.SetupTestEnv2(t)
+
+	err := client.RemoveProcessGraph("non_existent_id", env.ExecutorPrvKey)
+	assert.NotNil(t, err)
+
+	coloniesServer.Shutdown()
+	<-done
+}
+
+// TestRemoveProcessGraphUnauthorized tests that non-members cannot remove process graphs
+func TestRemoveProcessGraphUnauthorized(t *testing.T) {
+	client, s, serverPrvKey, done := server.PrepareTests(t)
+
+	colony1, colonyPrvKey1, err := utils.CreateTestColonyWithKey()
+	assert.Nil(t, err)
+	_, err = client.AddColony(colony1, serverPrvKey)
+	assert.Nil(t, err)
+
+	executor1, executor1PrvKey, err := utils.CreateTestExecutorWithKey(colony1.Name)
+	assert.Nil(t, err)
+	_, err = client.AddExecutor(executor1, colonyPrvKey1)
+	assert.Nil(t, err)
+	err = client.ApproveExecutor(colony1.Name, executor1.Name, colonyPrvKey1)
+	assert.Nil(t, err)
+
+	colony2, colonyPrvKey2, err := utils.CreateTestColonyWithKey()
+	assert.Nil(t, err)
+	_, err = client.AddColony(colony2, serverPrvKey)
+	assert.Nil(t, err)
+
+	executor2, executor2PrvKey, err := utils.CreateTestExecutorWithKey(colony2.Name)
+	assert.Nil(t, err)
+	_, err = client.AddExecutor(executor2, colonyPrvKey2)
+	assert.Nil(t, err)
+	err = client.ApproveExecutor(colony2.Name, executor2.Name, colonyPrvKey2)
+	assert.Nil(t, err)
+
+	// Submit workflow to colony1
+	wf := core.CreateWorkflowSpec(colony1.Name)
+	funcSpec := core.CreateEmptyFunctionSpec()
+	funcSpec.NodeName = "task1"
+	funcSpec.Conditions.ColonyName = colony1.Name
+	funcSpec.Conditions.ExecutorType = executor1.Type
+	wf.AddFunctionSpec(funcSpec)
+
+	graph, err := client.SubmitWorkflowSpec(wf, executor1PrvKey)
+	assert.Nil(t, err)
+	assert.NotNil(t, graph)
+
+	// Try to remove process graph from colony2 executor
+	err = client.RemoveProcessGraph(graph.ID, executor2PrvKey)
+	assert.NotNil(t, err)
+
+	s.Shutdown()
+	<-done
+}
+
+// TestRemoveAllProcessGraphsNotColonyOwner tests that non-owners cannot remove all process graphs
+func TestRemoveAllProcessGraphsNotColonyOwner(t *testing.T) {
+	env, client, coloniesServer, _, done := server.SetupTestEnv2(t)
+
+	diamond := server.GenerateSingleWorkflowSpec(env.ColonyName)
+	_, err := client.SubmitWorkflowSpec(diamond, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+
+	// Try to remove all process graphs with executor key (not colony owner)
+	err = client.RemoveAllProcessGraphs(env.ColonyName, env.ExecutorPrvKey)
+	assert.NotNil(t, err)
+
+	coloniesServer.Shutdown()
+	<-done
+}
+
+// TestGetProcessGraphsUnauthorized tests that non-members cannot get process graphs list
+func TestGetProcessGraphsUnauthorized(t *testing.T) {
+	client, s, serverPrvKey, done := server.PrepareTests(t)
+
+	colony1, colonyPrvKey1, err := utils.CreateTestColonyWithKey()
+	assert.Nil(t, err)
+	_, err = client.AddColony(colony1, serverPrvKey)
+	assert.Nil(t, err)
+
+	executor1, executor1PrvKey, err := utils.CreateTestExecutorWithKey(colony1.Name)
+	assert.Nil(t, err)
+	_, err = client.AddExecutor(executor1, colonyPrvKey1)
+	assert.Nil(t, err)
+	err = client.ApproveExecutor(colony1.Name, executor1.Name, colonyPrvKey1)
+	assert.Nil(t, err)
+
+	colony2, colonyPrvKey2, err := utils.CreateTestColonyWithKey()
+	assert.Nil(t, err)
+	_, err = client.AddColony(colony2, serverPrvKey)
+	assert.Nil(t, err)
+
+	executor2, executor2PrvKey, err := utils.CreateTestExecutorWithKey(colony2.Name)
+	assert.Nil(t, err)
+	_, err = client.AddExecutor(executor2, colonyPrvKey2)
+	assert.Nil(t, err)
+	err = client.ApproveExecutor(colony2.Name, executor2.Name, colonyPrvKey2)
+	assert.Nil(t, err)
+
+	// Submit workflow to colony1
+	wf := core.CreateWorkflowSpec(colony1.Name)
+	funcSpec := core.CreateEmptyFunctionSpec()
+	funcSpec.NodeName = "task1"
+	funcSpec.Conditions.ColonyName = colony1.Name
+	funcSpec.Conditions.ExecutorType = executor1.Type
+	wf.AddFunctionSpec(funcSpec)
+
+	_, err = client.SubmitWorkflowSpec(wf, executor1PrvKey)
+	assert.Nil(t, err)
+
+	// Try to get process graphs from colony1 using colony2 executor's key
+	_, err = client.GetWaitingProcessGraphs(colony1.Name, 100, executor2PrvKey)
+	assert.NotNil(t, err)
+
+	s.Shutdown()
+	<-done
+}
+
+// TestSubmitWorkflowSpecUnauthorized tests that non-members cannot submit workflows
+func TestSubmitWorkflowSpecUnauthorized(t *testing.T) {
+	client, s, serverPrvKey, done := server.PrepareTests(t)
+
+	colony1, colonyPrvKey1, err := utils.CreateTestColonyWithKey()
+	assert.Nil(t, err)
+	_, err = client.AddColony(colony1, serverPrvKey)
+	assert.Nil(t, err)
+
+	executor1, _, err := utils.CreateTestExecutorWithKey(colony1.Name)
+	assert.Nil(t, err)
+	_, err = client.AddExecutor(executor1, colonyPrvKey1)
+	assert.Nil(t, err)
+	err = client.ApproveExecutor(colony1.Name, executor1.Name, colonyPrvKey1)
+	assert.Nil(t, err)
+
+	colony2, colonyPrvKey2, err := utils.CreateTestColonyWithKey()
+	assert.Nil(t, err)
+	_, err = client.AddColony(colony2, serverPrvKey)
+	assert.Nil(t, err)
+
+	executor2, executor2PrvKey, err := utils.CreateTestExecutorWithKey(colony2.Name)
+	assert.Nil(t, err)
+	_, err = client.AddExecutor(executor2, colonyPrvKey2)
+	assert.Nil(t, err)
+	err = client.ApproveExecutor(colony2.Name, executor2.Name, colonyPrvKey2)
+	assert.Nil(t, err)
+
+	// Try to submit workflow to colony1 using colony2 executor's key
+	wf := core.CreateWorkflowSpec(colony1.Name)
+	funcSpec := core.CreateEmptyFunctionSpec()
+	funcSpec.NodeName = "task1"
+	funcSpec.Conditions.ColonyName = colony1.Name
+	funcSpec.Conditions.ExecutorType = executor1.Type
+	wf.AddFunctionSpec(funcSpec)
+
+	_, err = client.SubmitWorkflowSpec(wf, executor2PrvKey)
+	assert.NotNil(t, err)
+
+	s.Shutdown()
+	<-done
+}
+
+// TestAddChildUnauthorized tests that non-members cannot add children to process graphs
+func TestAddChildUnauthorized(t *testing.T) {
+	client, s, serverPrvKey, done := server.PrepareTests(t)
+
+	colony1, colonyPrvKey1, err := utils.CreateTestColonyWithKey()
+	assert.Nil(t, err)
+	_, err = client.AddColony(colony1, serverPrvKey)
+	assert.Nil(t, err)
+
+	executor1, executor1PrvKey, err := utils.CreateTestExecutorWithKey(colony1.Name)
+	assert.Nil(t, err)
+	_, err = client.AddExecutor(executor1, colonyPrvKey1)
+	assert.Nil(t, err)
+	err = client.ApproveExecutor(colony1.Name, executor1.Name, colonyPrvKey1)
+	assert.Nil(t, err)
+
+	colony2, colonyPrvKey2, err := utils.CreateTestColonyWithKey()
+	assert.Nil(t, err)
+	_, err = client.AddColony(colony2, serverPrvKey)
+	assert.Nil(t, err)
+
+	executor2, executor2PrvKey, err := utils.CreateTestExecutorWithKey(colony2.Name)
+	assert.Nil(t, err)
+	_, err = client.AddExecutor(executor2, colonyPrvKey2)
+	assert.Nil(t, err)
+	err = client.ApproveExecutor(colony2.Name, executor2.Name, colonyPrvKey2)
+	assert.Nil(t, err)
+
+	// Submit workflow to colony1
+	wf := core.CreateWorkflowSpec(colony1.Name)
+	funcSpec := core.CreateEmptyFunctionSpec()
+	funcSpec.NodeName = "task1"
+	funcSpec.Conditions.ColonyName = colony1.Name
+	funcSpec.Conditions.ExecutorType = executor1.Type
+	wf.AddFunctionSpec(funcSpec)
+
+	graph, err := client.SubmitWorkflowSpec(wf, executor1PrvKey)
+	assert.Nil(t, err)
+	assert.NotNil(t, graph)
+
+	// Assign the process
+	process, err := client.Assign(colony1.Name, -1, "", "", executor1PrvKey)
+	assert.Nil(t, err)
+
+	// Try to add child from colony2 executor
+	childFunctionSpec := utils.CreateTestFunctionSpec(colony2.Name) // Note: using colony2
+	childFunctionSpec.NodeName = "task2"
+	_, err = client.AddChild(graph.ID, process.ID, "", childFunctionSpec, false, executor2PrvKey)
+	assert.NotNil(t, err)
+
+	s.Shutdown()
+	<-done
+}
+
+// TestRemoveAllProcessGraphsWithStateUnauthorized tests unauthorized access to RemoveAllProcessGraphsWithState
+func TestRemoveAllProcessGraphsWithStateUnauthorized(t *testing.T) {
+	client, s, serverPrvKey, done := server.PrepareTests(t)
+
+	colony1, colonyPrvKey1, err := utils.CreateTestColonyWithKey()
+	assert.Nil(t, err)
+	_, err = client.AddColony(colony1, serverPrvKey)
+	assert.Nil(t, err)
+
+	executor1, executor1PrvKey, err := utils.CreateTestExecutorWithKey(colony1.Name)
+	assert.Nil(t, err)
+	_, err = client.AddExecutor(executor1, colonyPrvKey1)
+	assert.Nil(t, err)
+	err = client.ApproveExecutor(colony1.Name, executor1.Name, colonyPrvKey1)
+	assert.Nil(t, err)
+
+	colony2, colonyPrvKey2, err := utils.CreateTestColonyWithKey()
+	assert.Nil(t, err)
+	_, err = client.AddColony(colony2, serverPrvKey)
+	assert.Nil(t, err)
+
+	// Submit workflow to colony1
+	wf := core.CreateWorkflowSpec(colony1.Name)
+	funcSpec := core.CreateEmptyFunctionSpec()
+	funcSpec.NodeName = "task1"
+	funcSpec.Conditions.ColonyName = colony1.Name
+	funcSpec.Conditions.ExecutorType = executor1.Type
+	wf.AddFunctionSpec(funcSpec)
+
+	_, err = client.SubmitWorkflowSpec(wf, executor1PrvKey)
+	assert.Nil(t, err)
+
+	// Try to remove all process graphs from colony1 using colony2's key
+	err = client.RemoveAllProcessGraphsWithState(colony1.Name, core.PENDING, colonyPrvKey2)
+	assert.NotNil(t, err)
+
+	s.Shutdown()
+	<-done
+}

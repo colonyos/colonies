@@ -208,3 +208,237 @@ func TestRemoveAllSnapshots(t *testing.T) {
 	server.Shutdown()
 	<-done
 }
+
+// TestCreateSnapshotUnauthorized tests creating snapshot from different colony
+func TestCreateSnapshotUnauthorized(t *testing.T) {
+	client, s, serverPrvKey, done := server.PrepareTests(t)
+
+	colony1, colonyPrvKey1, err := utils.CreateTestColonyWithKey()
+	assert.Nil(t, err)
+	_, err = client.AddColony(colony1, serverPrvKey)
+	assert.Nil(t, err)
+
+	executor1, _, err := utils.CreateTestExecutorWithKey(colony1.Name)
+	assert.Nil(t, err)
+	_, err = client.AddExecutor(executor1, colonyPrvKey1)
+	assert.Nil(t, err)
+	err = client.ApproveExecutor(colony1.Name, executor1.Name, colonyPrvKey1)
+	assert.Nil(t, err)
+
+	colony2, colonyPrvKey2, err := utils.CreateTestColonyWithKey()
+	assert.Nil(t, err)
+	_, err = client.AddColony(colony2, serverPrvKey)
+	assert.Nil(t, err)
+
+	executor2, executor2PrvKey, err := utils.CreateTestExecutorWithKey(colony2.Name)
+	assert.Nil(t, err)
+	_, err = client.AddExecutor(executor2, colonyPrvKey2)
+	assert.Nil(t, err)
+	err = client.ApproveExecutor(colony2.Name, executor2.Name, colonyPrvKey2)
+	assert.Nil(t, err)
+
+	// Try to create snapshot in colony1 with executor2's key
+	_, err = client.CreateSnapshot(colony1.Name, "label", "test_snapshot", executor2PrvKey)
+	assert.NotNil(t, err)
+
+	s.Shutdown()
+	<-done
+}
+
+// TestGetSnapshotUnauthorized tests getting snapshot from different colony
+func TestGetSnapshotUnauthorized(t *testing.T) {
+	client, s, serverPrvKey, done := server.PrepareTests(t)
+
+	colony1, colonyPrvKey1, err := utils.CreateTestColonyWithKey()
+	assert.Nil(t, err)
+	_, err = client.AddColony(colony1, serverPrvKey)
+	assert.Nil(t, err)
+
+	executor1, executor1PrvKey, err := utils.CreateTestExecutorWithKey(colony1.Name)
+	assert.Nil(t, err)
+	_, err = client.AddExecutor(executor1, colonyPrvKey1)
+	assert.Nil(t, err)
+	err = client.ApproveExecutor(colony1.Name, executor1.Name, colonyPrvKey1)
+	assert.Nil(t, err)
+
+	colony2, colonyPrvKey2, err := utils.CreateTestColonyWithKey()
+	assert.Nil(t, err)
+	_, err = client.AddColony(colony2, serverPrvKey)
+	assert.Nil(t, err)
+
+	executor2, executor2PrvKey, err := utils.CreateTestExecutorWithKey(colony2.Name)
+	assert.Nil(t, err)
+	_, err = client.AddExecutor(executor2, colonyPrvKey2)
+	assert.Nil(t, err)
+	err = client.ApproveExecutor(colony2.Name, executor2.Name, colonyPrvKey2)
+	assert.Nil(t, err)
+
+	// Create snapshot in colony1
+	file := utils.CreateTestFile(colony1.Name)
+	_, err = client.AddFile(file, executor1PrvKey)
+	assert.Nil(t, err)
+
+	snapshot, err := client.CreateSnapshot(colony1.Name, "label", "test_snapshot", executor1PrvKey)
+	assert.Nil(t, err)
+
+	// Try to get snapshot from colony1 with executor2's key
+	_, err = client.GetSnapshotByID(colony1.Name, snapshot.ID, executor2PrvKey)
+	assert.NotNil(t, err)
+
+	s.Shutdown()
+	<-done
+}
+
+// TestGetSnapshotsUnauthorized tests getting snapshots list from different colony
+func TestGetSnapshotsUnauthorized(t *testing.T) {
+	client, s, serverPrvKey, done := server.PrepareTests(t)
+
+	colony1, colonyPrvKey1, err := utils.CreateTestColonyWithKey()
+	assert.Nil(t, err)
+	_, err = client.AddColony(colony1, serverPrvKey)
+	assert.Nil(t, err)
+
+	executor1, executor1PrvKey, err := utils.CreateTestExecutorWithKey(colony1.Name)
+	assert.Nil(t, err)
+	_, err = client.AddExecutor(executor1, colonyPrvKey1)
+	assert.Nil(t, err)
+	err = client.ApproveExecutor(colony1.Name, executor1.Name, colonyPrvKey1)
+	assert.Nil(t, err)
+
+	colony2, colonyPrvKey2, err := utils.CreateTestColonyWithKey()
+	assert.Nil(t, err)
+	_, err = client.AddColony(colony2, serverPrvKey)
+	assert.Nil(t, err)
+
+	executor2, executor2PrvKey, err := utils.CreateTestExecutorWithKey(colony2.Name)
+	assert.Nil(t, err)
+	_, err = client.AddExecutor(executor2, colonyPrvKey2)
+	assert.Nil(t, err)
+	err = client.ApproveExecutor(colony2.Name, executor2.Name, colonyPrvKey2)
+	assert.Nil(t, err)
+
+	// Create snapshot in colony1
+	file := utils.CreateTestFile(colony1.Name)
+	_, err = client.AddFile(file, executor1PrvKey)
+	assert.Nil(t, err)
+
+	_, err = client.CreateSnapshot(colony1.Name, "label", "test_snapshot", executor1PrvKey)
+	assert.Nil(t, err)
+
+	// Try to get snapshots from colony1 with executor2's key
+	_, err = client.GetSnapshotsByColonyName(colony1.Name, executor2PrvKey)
+	assert.NotNil(t, err)
+
+	s.Shutdown()
+	<-done
+}
+
+// TestRemoveSnapshotUnauthorized tests removing snapshot from different colony
+func TestRemoveSnapshotUnauthorized(t *testing.T) {
+	client, s, serverPrvKey, done := server.PrepareTests(t)
+
+	colony1, colonyPrvKey1, err := utils.CreateTestColonyWithKey()
+	assert.Nil(t, err)
+	_, err = client.AddColony(colony1, serverPrvKey)
+	assert.Nil(t, err)
+
+	executor1, executor1PrvKey, err := utils.CreateTestExecutorWithKey(colony1.Name)
+	assert.Nil(t, err)
+	_, err = client.AddExecutor(executor1, colonyPrvKey1)
+	assert.Nil(t, err)
+	err = client.ApproveExecutor(colony1.Name, executor1.Name, colonyPrvKey1)
+	assert.Nil(t, err)
+
+	colony2, colonyPrvKey2, err := utils.CreateTestColonyWithKey()
+	assert.Nil(t, err)
+	_, err = client.AddColony(colony2, serverPrvKey)
+	assert.Nil(t, err)
+
+	executor2, executor2PrvKey, err := utils.CreateTestExecutorWithKey(colony2.Name)
+	assert.Nil(t, err)
+	_, err = client.AddExecutor(executor2, colonyPrvKey2)
+	assert.Nil(t, err)
+	err = client.ApproveExecutor(colony2.Name, executor2.Name, colonyPrvKey2)
+	assert.Nil(t, err)
+
+	// Create snapshot in colony1
+	file := utils.CreateTestFile(colony1.Name)
+	_, err = client.AddFile(file, executor1PrvKey)
+	assert.Nil(t, err)
+
+	snapshot, err := client.CreateSnapshot(colony1.Name, "label", "test_snapshot", executor1PrvKey)
+	assert.Nil(t, err)
+
+	// Try to remove snapshot from colony1 with executor2's key
+	err = client.RemoveSnapshotByID(colony1.Name, snapshot.ID, executor2PrvKey)
+	assert.NotNil(t, err)
+
+	s.Shutdown()
+	<-done
+}
+
+// TestRemoveAllSnapshotsUnauthorized tests removing all snapshots from different colony
+func TestRemoveAllSnapshotsUnauthorized(t *testing.T) {
+	client, s, serverPrvKey, done := server.PrepareTests(t)
+
+	colony1, colonyPrvKey1, err := utils.CreateTestColonyWithKey()
+	assert.Nil(t, err)
+	_, err = client.AddColony(colony1, serverPrvKey)
+	assert.Nil(t, err)
+
+	executor1, executor1PrvKey, err := utils.CreateTestExecutorWithKey(colony1.Name)
+	assert.Nil(t, err)
+	_, err = client.AddExecutor(executor1, colonyPrvKey1)
+	assert.Nil(t, err)
+	err = client.ApproveExecutor(colony1.Name, executor1.Name, colonyPrvKey1)
+	assert.Nil(t, err)
+
+	colony2, colonyPrvKey2, err := utils.CreateTestColonyWithKey()
+	assert.Nil(t, err)
+	_, err = client.AddColony(colony2, serverPrvKey)
+	assert.Nil(t, err)
+
+	executor2, executor2PrvKey, err := utils.CreateTestExecutorWithKey(colony2.Name)
+	assert.Nil(t, err)
+	_, err = client.AddExecutor(executor2, colonyPrvKey2)
+	assert.Nil(t, err)
+	err = client.ApproveExecutor(colony2.Name, executor2.Name, colonyPrvKey2)
+	assert.Nil(t, err)
+
+	// Create snapshot in colony1
+	file := utils.CreateTestFile(colony1.Name)
+	_, err = client.AddFile(file, executor1PrvKey)
+	assert.Nil(t, err)
+
+	_, err = client.CreateSnapshot(colony1.Name, "label", "test_snapshot", executor1PrvKey)
+	assert.Nil(t, err)
+
+	// Try to remove all snapshots from colony1 with executor2's key
+	err = client.RemoveAllSnapshots(colony1.Name, executor2PrvKey)
+	assert.NotNil(t, err)
+
+	s.Shutdown()
+	<-done
+}
+
+// TestGetSnapshotByIDNotFound tests getting non-existent snapshot by ID
+func TestGetSnapshotByIDNotFound(t *testing.T) {
+	env, client, server, _, done := server.SetupTestEnv2(t)
+
+	_, err := client.GetSnapshotByID(env.ColonyName, "non_existent_id", env.ExecutorPrvKey)
+	assert.NotNil(t, err)
+
+	server.Shutdown()
+	<-done
+}
+
+// TestGetSnapshotByNameNotFound tests getting non-existent snapshot by name
+func TestGetSnapshotByNameNotFound(t *testing.T) {
+	env, client, server, _, done := server.SetupTestEnv2(t)
+
+	_, err := client.GetSnapshotByName(env.ColonyName, "non_existent_name", env.ExecutorPrvKey)
+	assert.NotNil(t, err)
+
+	server.Shutdown()
+	<-done
+}

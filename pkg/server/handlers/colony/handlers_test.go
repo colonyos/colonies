@@ -150,3 +150,134 @@ func TestGetColonyStatistics(t *testing.T) {
 	server.Shutdown()
 	<-done
 }
+
+// TestAddColonyDuplicate tests adding a colony with duplicate name
+func TestAddColonyDuplicate(t *testing.T) {
+	client, server, serverPrvKey, done := server.PrepareTests(t)
+
+	colony, _, err := utils.CreateTestColonyWithKey()
+	assert.Nil(t, err)
+	_, err = client.AddColony(colony, serverPrvKey)
+	assert.Nil(t, err)
+
+	// Try to add colony with same name
+	colony2, _, err := utils.CreateTestColonyWithKey()
+	assert.Nil(t, err)
+	colony2.Name = colony.Name
+	_, err = client.AddColony(colony2, serverPrvKey)
+	assert.NotNil(t, err)
+
+	server.Shutdown()
+	<-done
+}
+
+// TestAddColonyUnauthorized tests adding colony without server key
+func TestAddColonyUnauthorized(t *testing.T) {
+	client, server, serverPrvKey, done := server.PrepareTests(t)
+
+	colony, colonyPrvKey, err := utils.CreateTestColonyWithKey()
+	assert.Nil(t, err)
+	_, err = client.AddColony(colony, serverPrvKey)
+	assert.Nil(t, err)
+
+	// Try to add another colony with colony key instead of server key
+	colony2, _, err := utils.CreateTestColonyWithKey()
+	assert.Nil(t, err)
+	_, err = client.AddColony(colony2, colonyPrvKey)
+	assert.NotNil(t, err)
+
+	server.Shutdown()
+	<-done
+}
+
+// TestRemoveColonyUnauthorized tests removing colony without server key
+func TestRemoveColonyUnauthorized(t *testing.T) {
+	client, server, serverPrvKey, done := server.PrepareTests(t)
+
+	colony, colonyPrvKey, err := utils.CreateTestColonyWithKey()
+	assert.Nil(t, err)
+	_, err = client.AddColony(colony, serverPrvKey)
+	assert.Nil(t, err)
+
+	// Try to remove colony with colony key instead of server key
+	err = client.RemoveColony(colony.Name, colonyPrvKey)
+	assert.NotNil(t, err)
+
+	server.Shutdown()
+	<-done
+}
+
+// TestRemoveColonyNotFound tests removing a non-existent colony
+func TestRemoveColonyNotFound(t *testing.T) {
+	client, server, serverPrvKey, done := server.PrepareTests(t)
+
+	err := client.RemoveColony("non_existent_colony", serverPrvKey)
+	assert.NotNil(t, err)
+
+	server.Shutdown()
+	<-done
+}
+
+// TestGetColoniesUnauthorized tests getting colonies without server key
+func TestGetColoniesUnauthorized(t *testing.T) {
+	client, server, serverPrvKey, done := server.PrepareTests(t)
+
+	colony, colonyPrvKey, err := utils.CreateTestColonyWithKey()
+	assert.Nil(t, err)
+	_, err = client.AddColony(colony, serverPrvKey)
+	assert.Nil(t, err)
+
+	// Try to get colonies with colony key instead of server key
+	_, err = client.GetColonies(colonyPrvKey)
+	assert.NotNil(t, err)
+
+	server.Shutdown()
+	<-done
+}
+
+// TestGetColonyUnauthorized tests getting a colony without membership
+func TestGetColonyUnauthorized(t *testing.T) {
+	client, s, serverPrvKey, done := server.PrepareTests(t)
+
+	colony1, colonyPrvKey1, err := utils.CreateTestColonyWithKey()
+	assert.Nil(t, err)
+	_, err = client.AddColony(colony1, serverPrvKey)
+	assert.Nil(t, err)
+
+	executor1, _, err := utils.CreateTestExecutorWithKey(colony1.Name)
+	assert.Nil(t, err)
+	_, err = client.AddExecutor(executor1, colonyPrvKey1)
+	assert.Nil(t, err)
+	err = client.ApproveExecutor(colony1.Name, executor1.Name, colonyPrvKey1)
+	assert.Nil(t, err)
+
+	colony2, colonyPrvKey2, err := utils.CreateTestColonyWithKey()
+	assert.Nil(t, err)
+	_, err = client.AddColony(colony2, serverPrvKey)
+	assert.Nil(t, err)
+
+	executor2, executor2PrvKey, err := utils.CreateTestExecutorWithKey(colony2.Name)
+	assert.Nil(t, err)
+	_, err = client.AddExecutor(executor2, colonyPrvKey2)
+	assert.Nil(t, err)
+	err = client.ApproveExecutor(colony2.Name, executor2.Name, colonyPrvKey2)
+	assert.Nil(t, err)
+
+	// Try to get colony1 with executor2's key
+	_, err = client.GetColonyByName(colony1.Name, executor2PrvKey)
+	assert.NotNil(t, err)
+
+	s.Shutdown()
+	<-done
+}
+
+// TestGetColonyStatisticsNotFound tests getting statistics for non-existent colony
+func TestGetColonyStatisticsNotFound(t *testing.T) {
+	env, client, server, _, done := server.SetupTestEnv2(t)
+
+	_, err := client.ColonyStatistics("non_existent_colony", env.ExecutorPrvKey)
+	assert.NotNil(t, err)
+
+	server.Shutdown()
+	<-done
+}

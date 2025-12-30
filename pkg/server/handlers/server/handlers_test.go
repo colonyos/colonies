@@ -101,6 +101,30 @@ func TestCheckHealth(t *testing.T) {
 	<-done
 }
 
+// TestGetStatisticsUnauthorized tests getting statistics without server key
+func TestGetStatisticsUnauthorized(t *testing.T) {
+	env, client, coloniesServer, _, done := server.SetupTestEnv2(t)
+
+	// Try to get statistics with executor key instead of server key
+	_, err := client.Statistics(env.ExecutorPrvKey)
+	assert.NotNil(t, err)
+
+	coloniesServer.Shutdown()
+	<-done
+}
+
+// TestGetClusterInfoUnauthorized tests getting cluster info without server key
+func TestGetClusterInfoUnauthorized(t *testing.T) {
+	env, client, coloniesServer, _, done := server.SetupTestEnv2(t)
+
+	// Try to get cluster info with executor key instead of server key
+	_, err := client.GetClusterInfo(env.ExecutorPrvKey)
+	assert.NotNil(t, err)
+
+	coloniesServer.Shutdown()
+	<-done
+}
+
 // func TestResetDatabase(t *testing.T) {
 // 	_, client, coloniesServer, serverPrvKey, done := server.SetupTestEnv2(t)
 //

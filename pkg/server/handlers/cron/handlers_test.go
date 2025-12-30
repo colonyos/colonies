@@ -482,3 +482,246 @@ func TestRunCronWaitForPrevProcessGraph(t *testing.T) {
 	server.Shutdown()
 	<-done
 }
+
+// TestAddCronWithUserAsInitiator tests that a user can create a cron (covers resolveInitiator user path)
+func TestAddCronWithUserAsInitiator(t *testing.T) {
+	env, client, server, _, done := server.SetupTestEnv2(t)
+
+	// Create a user
+	user, userPrvKey, err := utils.CreateTestUserWithKey(env.ColonyName, "cron-user")
+	assert.Nil(t, err)
+	_, err = client.AddUser(user, env.ColonyPrvKey)
+	assert.Nil(t, err)
+
+	// User creates a cron
+	cron := utils.FakeCron(t, env.ColonyName, env.ExecutorID, env.ExecutorName)
+	cron.Interval = 1000 // Long interval
+
+	addedCron, err := client.AddCron(cron, userPrvKey)
+	assert.Nil(t, err)
+	assert.NotNil(t, addedCron)
+	assert.Equal(t, "cron-user", addedCron.InitiatorName)
+
+	server.Shutdown()
+	<-done
+}
+
+// TestGetCronNotFound tests getting a non-existent cron
+func TestGetCronNotFound(t *testing.T) {
+	env, client, server, _, done := server.SetupTestEnv2(t)
+
+	_, err := client.GetCron("nonexistent-cron-id", env.ExecutorPrvKey)
+	assert.NotNil(t, err)
+
+	server.Shutdown()
+	<-done
+}
+
+// TestRemoveCronNotFound tests removing a non-existent cron
+func TestRemoveCronNotFound(t *testing.T) {
+	env, client, server, _, done := server.SetupTestEnv2(t)
+
+	err := client.RemoveCron("nonexistent-cron-id", env.ExecutorPrvKey)
+	assert.NotNil(t, err)
+
+	server.Shutdown()
+	<-done
+}
+
+// TestRunCronNotFound tests running a non-existent cron
+func TestRunCronNotFound(t *testing.T) {
+	env, client, server, _, done := server.SetupTestEnv2(t)
+
+	_, err := client.RunCron("nonexistent-cron-id", env.ExecutorPrvKey)
+	assert.NotNil(t, err)
+
+	server.Shutdown()
+	<-done
+}
+
+// TestAddCronIntervalZero tests that interval=0 is rejected
+func TestAddCronIntervalZero(t *testing.T) {
+	env, client, server, _, done := server.SetupTestEnv2(t)
+
+	cron := utils.FakeCron(t, env.ColonyName, env.ExecutorID, env.ExecutorName)
+	cron.Interval = 0 // Invalid - must be -1 or > 0
+	cron.CronExpression = ""
+
+	_, err := client.AddCron(cron, env.ExecutorPrvKey)
+	assert.NotNil(t, err)
+
+	server.Shutdown()
+	<-done
+}
+
+// TestAddCronRandomWithCronExpression tests that random=true with cron expression is rejected
+func TestAddCronRandomWithCronExpression(t *testing.T) {
+	env, client, server, _, done := server.SetupTestEnv2(t)
+
+	cron := utils.FakeCron(t, env.ColonyName, env.ExecutorID, env.ExecutorName)
+	cron.Interval = -1                     // Use cron expression
+	cron.CronExpression = "0/1 * * * * *"  // Every second
+	cron.Random = true                     // Invalid with cron expression
+
+	_, err := client.AddCron(cron, env.ExecutorPrvKey)
+	assert.NotNil(t, err)
+
+	server.Shutdown()
+	<-done
+}
+
+// TestGetCronsEmpty tests getting crons when none exist
+func TestGetCronsEmpty(t *testing.T) {
+	env, client, server, _, done := server.SetupTestEnv2(t)
+
+	crons, err := client.GetCrons(env.ColonyName, 100, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.Len(t, crons, 0)
+
+	server.Shutdown()
+	<-done
+}
+
+// TestGetCronsUnauthorized tests that non-members cannot get crons
+func TestGetCronsUnauthorized(t *testing.T) {
+	env, client, server, serverPrvKey, done := server.SetupTestEnv2(t)
+
+	// Create another colony
+	colony2, colony2PrvKey, err := utils.CreateTestColonyWithKey()
+	assert.Nil(t, err)
+	_, err = client.AddColony(colony2, serverPrvKey)
+	assert.Nil(t, err)
+
+	executor2, executor2PrvKey, err := utils.CreateTestExecutorWithKey(colony2.Name)
+	assert.Nil(t, err)
+	_, err = client.AddExecutor(executor2, colony2PrvKey)
+	assert.Nil(t, err)
+	err = client.ApproveExecutor(colony2.Name, executor2.Name, colony2PrvKey)
+	assert.Nil(t, err)
+
+	// Try to get crons from a different colony
+	_, err = client.GetCrons(env.ColonyName, 100, executor2PrvKey)
+	assert.NotNil(t, err)
+
+	server.Shutdown()
+	<-done
+}
+
+// TestAddCronUnauthorized tests that non-members cannot add crons
+func TestAddCronUnauthorized(t *testing.T) {
+	env, client, server, serverPrvKey, done := server.SetupTestEnv2(t)
+
+	// Create another colony
+	colony2, colony2PrvKey, err := utils.CreateTestColonyWithKey()
+	assert.Nil(t, err)
+	_, err = client.AddColony(colony2, serverPrvKey)
+	assert.Nil(t, err)
+
+	executor2, executor2PrvKey, err := utils.CreateTestExecutorWithKey(colony2.Name)
+	assert.Nil(t, err)
+	_, err = client.AddExecutor(executor2, colony2PrvKey)
+	assert.Nil(t, err)
+	err = client.ApproveExecutor(colony2.Name, executor2.Name, colony2PrvKey)
+	assert.Nil(t, err)
+
+	// Try to add cron to a different colony
+	cron := utils.FakeCron(t, env.ColonyName, env.ExecutorID, env.ExecutorName)
+	_, err = client.AddCron(cron, executor2PrvKey)
+	assert.NotNil(t, err)
+
+	server.Shutdown()
+	<-done
+}
+
+// TestRemoveCronUnauthorized tests that non-members cannot remove crons
+func TestRemoveCronUnauthorized(t *testing.T) {
+	env, client, server, serverPrvKey, done := server.SetupTestEnv2(t)
+
+	// Add a cron
+	cron := utils.FakeCron(t, env.ColonyName, env.ExecutorID, env.ExecutorName)
+	cron.Interval = 1000
+	addedCron, err := client.AddCron(cron, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+
+	// Create another colony
+	colony2, colony2PrvKey, err := utils.CreateTestColonyWithKey()
+	assert.Nil(t, err)
+	_, err = client.AddColony(colony2, serverPrvKey)
+	assert.Nil(t, err)
+
+	executor2, executor2PrvKey, err := utils.CreateTestExecutorWithKey(colony2.Name)
+	assert.Nil(t, err)
+	_, err = client.AddExecutor(executor2, colony2PrvKey)
+	assert.Nil(t, err)
+	err = client.ApproveExecutor(colony2.Name, executor2.Name, colony2PrvKey)
+	assert.Nil(t, err)
+
+	// Try to remove cron from a different colony
+	err = client.RemoveCron(addedCron.ID, executor2PrvKey)
+	assert.NotNil(t, err)
+
+	server.Shutdown()
+	<-done
+}
+
+// TestGetCronUnauthorized tests that non-members cannot get cron details
+func TestGetCronUnauthorized(t *testing.T) {
+	env, client, server, serverPrvKey, done := server.SetupTestEnv2(t)
+
+	// Add a cron
+	cron := utils.FakeCron(t, env.ColonyName, env.ExecutorID, env.ExecutorName)
+	cron.Interval = 1000
+	addedCron, err := client.AddCron(cron, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+
+	// Create another colony
+	colony2, colony2PrvKey, err := utils.CreateTestColonyWithKey()
+	assert.Nil(t, err)
+	_, err = client.AddColony(colony2, serverPrvKey)
+	assert.Nil(t, err)
+
+	executor2, executor2PrvKey, err := utils.CreateTestExecutorWithKey(colony2.Name)
+	assert.Nil(t, err)
+	_, err = client.AddExecutor(executor2, colony2PrvKey)
+	assert.Nil(t, err)
+	err = client.ApproveExecutor(colony2.Name, executor2.Name, colony2PrvKey)
+	assert.Nil(t, err)
+
+	// Try to get cron from a different colony
+	_, err = client.GetCron(addedCron.ID, executor2PrvKey)
+	assert.NotNil(t, err)
+
+	server.Shutdown()
+	<-done
+}
+
+// TestRunCronUnauthorized tests that non-members cannot run crons
+func TestRunCronUnauthorized(t *testing.T) {
+	env, client, server, serverPrvKey, done := server.SetupTestEnv2(t)
+
+	// Add a cron
+	cron := utils.FakeCron(t, env.ColonyName, env.ExecutorID, env.ExecutorName)
+	cron.Interval = 1000
+	addedCron, err := client.AddCron(cron, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+
+	// Create another colony
+	colony2, colony2PrvKey, err := utils.CreateTestColonyWithKey()
+	assert.Nil(t, err)
+	_, err = client.AddColony(colony2, serverPrvKey)
+	assert.Nil(t, err)
+
+	executor2, executor2PrvKey, err := utils.CreateTestExecutorWithKey(colony2.Name)
+	assert.Nil(t, err)
+	_, err = client.AddExecutor(executor2, colony2PrvKey)
+	assert.Nil(t, err)
+	err = client.ApproveExecutor(colony2.Name, executor2.Name, colony2PrvKey)
+	assert.Nil(t, err)
+
+	// Try to run cron from a different colony
+	_, err = client.RunCron(addedCron.ID, executor2PrvKey)
+	assert.NotNil(t, err)
+
+	server.Shutdown()
+	<-done
+}
