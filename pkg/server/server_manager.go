@@ -82,14 +82,15 @@ type BackendFactory interface {
 
 // SharedResources contains blueprints shared between all server backends
 type SharedResources struct {
-	DB              database.Database
-	ThisNode        cluster.Node
-	ClusterConfig   cluster.Config
-	EtcdDataPath    string
-	GeneratorPeriod int
-	CronPeriod      int
-	Controller      controllers.Controller  // Shared controller to avoid etcd port conflicts
-	BaseServer      *Server                  // Shared base server for handler registration
+	DB                    database.Database
+	ThisNode              cluster.Node
+	ClusterConfig         cluster.Config
+	EtcdDataPath          string
+	GeneratorPeriod       int
+	CronPeriod            int
+	StaleExecutorDuration int
+	Controller            controllers.Controller  // Shared controller to avoid etcd port conflicts
+	BaseServer            *Server                  // Shared base server for handler registration
 }
 
 // NewServerManager creates a new ServerManager
@@ -175,12 +176,13 @@ func (sm *ServerManager) StartAll() error {
 	}
 	
 	sharedResources := &SharedResources{
-		DB:              sm.db,
-		ThisNode:        sm.thisNode,
-		ClusterConfig:   sm.clusterConfig,
-		EtcdDataPath:    sm.etcdDataPath,
-		GeneratorPeriod: sm.generatorPeriod,
-		CronPeriod:      sm.cronPeriod,
+		DB:                    sm.db,
+		ThisNode:              sm.thisNode,
+		ClusterConfig:         sm.clusterConfig,
+		EtcdDataPath:          sm.etcdDataPath,
+		GeneratorPeriod:       sm.generatorPeriod,
+		CronPeriod:            sm.cronPeriod,
+		StaleExecutorDuration: 600, // Default 10 minutes
 	}
 	
 	// Create and start servers for each enabled backend

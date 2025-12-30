@@ -74,6 +74,7 @@ func (db *PQDatabase) AddProcess(process *core.Process) error {
 	outJSONStr := string(outJSON)
 
 	process.SetSubmissionTime(submissionTime)
+	process.WaitDeadline = deadline
 
 	cpu, err := parsers.ConvertCPUToInt(process.FunctionSpec.Conditions.CPU)
 	if err != nil {

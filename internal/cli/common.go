@@ -273,6 +273,17 @@ func parseEnv() {
 		AllowExecutorReregister = false
 	}
 
+	StaleExecutorDurationEnvStr := os.Getenv("COLONIES_STALE_EXECUTOR_DURATION")
+	if StaleExecutorDurationEnvStr != "" {
+		StaleExecutorDuration, err = strconv.Atoi(StaleExecutorDurationEnvStr)
+		if err != nil {
+			log.Error("Failed to parse COLONIES_STALE_EXECUTOR_DURATION")
+		}
+		CheckError(err)
+	} else {
+		StaleExecutorDuration = 600 // Default 10 minutes
+	}
+
 	timescaleDBEnv := os.Getenv("COLONIES_DB_TIMESCALEDB")
 	if timescaleDBEnv == "true" {
 		TimescaleDB = true

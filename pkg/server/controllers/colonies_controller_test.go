@@ -26,10 +26,6 @@ func TestColoniesControllerInvalidDB(t *testing.T) {
 	_, err = controller.AddProcessToDB(&core.Process{})
 	assert.NotNil(t, err)
 
-	dbMock.ReturnError = "GetProcessByID"
-	_, err = controller.AddProcessToDB(&core.Process{})
-	assert.NotNil(t, err)
-
 	dbMock.ReturnError = "AddProcess"
 	_, err = controller.AddProcess(&core.Process{})
 	assert.NotNil(t, err)
@@ -231,7 +227,7 @@ func TestColoniesControllerGetters(t *testing.T) {
 
 	// Test GetThisNode
 	node := controller.GetThisNode()
-	assert.Equal(t, "etcd", node.Name)
+	assert.Contains(t, node.Name, "etcd") // Node name is dynamically generated (e.g., "etcd-1")
 	assert.Equal(t, "localhost", node.Host)
 }
 

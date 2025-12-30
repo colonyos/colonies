@@ -16,11 +16,18 @@ ColoniesDBPort: "5432"
 
 # MODIFY THESE FOR DIFFERENT TEST SCENARIOS:
 ColoniesServerReplicas: 1          # 1, 2, 3, etc.
-ColoniesResourceLimit: true        # Enable CPU limits
-ColoniesServerCPU: "1000m"         # 1 CPU per replica
-ColoniesServerMemory: "2000Mi"
+ColoniesResourceLimit: true        # Enable resource limits
+ColoniesServerCPU: "500m"          # 0.5 CPU request per replica
+ColoniesServerCPULimit: "500m"     # 0.5 CPU limit per replica (enables throttling)
+ColoniesServerMemory: "4Gi"        # Increased for 100k process tests
 
-ColoniesServerImage: "colonyos/colonies:v1.9.5.perf6"
+# With 500m CPU limit per replica:
+# - Single replica will become CPU-bound under load
+# - Adding replicas distributes load across more CPUs
+# - Expected: latency decreases as replicas increase
+# - Total cluster CPU scales: 1 replica = 0.5 CPU, 3 replicas = 1.5 CPU, etc.
+
+ColoniesServerImage: "colonyos/colonies:v1.9.7.beta7"
 # Keys are passed via --set in the deploy script
 # ColoniesServerID and ColoniesServerPrvKey must be provided at deploy time
 
@@ -35,9 +42,10 @@ ColoniesRetention: false
 # Database settings
 DBUser: "postgres"
 DBPassword: "rFcLGNkgsNtksg6Pgtn9CumL4xXBQ7"
-DBImage: timescale/timescaledb:2.13.0-pg16
-DBResourceLimit: true
+DBImage: timescale/timescaledb:2.24.0-pg17
+DBResourceLimit: false 
 DBCPU: "8000m"
+DBCPULimit: "8000m"               # Enable throttling at 8 CPUs
 DBMemory: "16000Mi"
 DBStorage: 10Gi
 TimescaleDB: true
@@ -50,6 +58,10 @@ ColoniesDBConnMaxIdleTime: 60
 
 # Disable monitoring for perf tests
 ColoniesMonitorInterval: 60
+
+# Disable stale executor cleanup during long benchmark runs
+# (executors created via API don't have LastHeardFromTime set until first Assign)
+ColoniesStaleExecutorDuration: 86400  # 24 hours in seconds
 ColoniesServerInternalHostname: "colonies-service.colonies-perf"
 ColoniesMonitorResourceLimit: false
 ColoniesMonitorServerCPU: "500m"
@@ -61,5 +73,5 @@ PrometheusStorage: 1Gi
 PrometheusResourceLimit: false
 PrometheusCPU: "500m"
 PrometheusMemory: "1Gi"
-ScrapeIntervall: 30s
+ScrapeIntervall: 5s
 ColoniesMonitoringServer: colonies-monitor-service.colonies-perf

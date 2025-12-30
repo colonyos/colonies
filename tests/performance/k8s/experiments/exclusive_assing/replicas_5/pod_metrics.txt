@@ -1,9 +1,0 @@
-NAME                                              CPU(cores)   MEMORY(bytes)   
-colonies-monitor-deployment-bf55f5f48-5hr7c       1m           14Mi            
-colonies-postgres-statefulset-0                   2831m        666Mi           
-colonies-prometheus-deployment-6d5bf7d49b-4sh76   1m           23Mi            
-colonies-server-0                                 288m         142Mi           
-colonies-server-1                                 270m         137Mi           
-colonies-server-2                                 752m         274Mi           
-colonies-server-3                                 288m         173Mi           
-colonies-server-4                                 220m         112Mi           

@@ -859,6 +859,46 @@ func (db *PQDatabase) createFileIndex3() error {
 	return nil
 }
 
+func (db *PQDatabase) createExecutorsIndex1() error {
+	sqlStatement := `CREATE INDEX IF NOT EXISTS ` + db.dbPrefix + `EXECUTORS_INDEX1 ON ` + db.dbPrefix + `EXECUTORS (EXECUTOR_ID)`
+	_, err := db.postgresql.Exec(sqlStatement)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (db *PQDatabase) createUsersIndex1() error {
+	sqlStatement := `CREATE INDEX IF NOT EXISTS ` + db.dbPrefix + `USERS_INDEX1 ON ` + db.dbPrefix + `USERS (COLONY_NAME, USER_ID)`
+	_, err := db.postgresql.Exec(sqlStatement)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (db *PQDatabase) createProcessesAssignedExecutorIndex() error {
+	sqlStatement := `CREATE INDEX IF NOT EXISTS ` + db.dbPrefix + `PROCESSES_ASSIGNED_EXECUTOR_INDEX ON ` + db.dbPrefix + `PROCESSES (ASSIGNED_EXECUTOR_ID, STATE)`
+	_, err := db.postgresql.Exec(sqlStatement)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (db *PQDatabase) createProcessGraphsIndex1() error {
+	sqlStatement := `CREATE INDEX IF NOT EXISTS ` + db.dbPrefix + `PROCESSGRAPHS_INDEX1 ON ` + db.dbPrefix + `PROCESSGRAPHS (TARGET_COLONY_NAME, STATE, SUBMISSION_TIME)`
+	_, err := db.postgresql.Exec(sqlStatement)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (db *PQDatabase) Initialize() error {
 	err := db.createUsersTable()
 	if err != nil {
@@ -1066,6 +1106,26 @@ func (db *PQDatabase) Initialize() error {
 	}
 
 	err = db.createFileIndex3()
+	if err != nil {
+		return err
+	}
+
+	err = db.createExecutorsIndex1()
+	if err != nil {
+		return err
+	}
+
+	err = db.createUsersIndex1()
+	if err != nil {
+		return err
+	}
+
+	err = db.createProcessesAssignedExecutorIndex()
+	if err != nil {
+		return err
+	}
+
+	err = db.createProcessGraphsIndex1()
 	if err != nil {
 		return err
 	}
