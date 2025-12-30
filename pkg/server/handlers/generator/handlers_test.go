@@ -340,3 +340,265 @@ func TestAddGeneratorTimeout3(t *testing.T) {
 	s.Shutdown()
 	<-done
 }
+
+// TestAddGeneratorWithUserAsInitiator tests that a user can create a generator (covers resolveInitiator user path)
+func TestAddGeneratorWithUserAsInitiator(t *testing.T) {
+	env, client, s, _, done := server.SetupTestEnv2(t)
+
+	// Create a user
+	user, userPrvKey, err := utils.CreateTestUserWithKey(env.ColonyName, "generator-user")
+	assert.Nil(t, err)
+	_, err = client.AddUser(user, env.ColonyPrvKey)
+	assert.Nil(t, err)
+
+	// User creates a generator
+	generator := utils.FakeGenerator(t, env.ColonyName, env.ExecutorID, env.ExecutorName)
+	addedGenerator, err := client.AddGenerator(generator, userPrvKey)
+	assert.Nil(t, err)
+	assert.NotNil(t, addedGenerator)
+	assert.Equal(t, "generator-user", addedGenerator.InitiatorName)
+
+	s.Shutdown()
+	<-done
+}
+
+// TestGetGeneratorNotFound tests getting a non-existent generator
+func TestGetGeneratorNotFound(t *testing.T) {
+	env, client, s, _, done := server.SetupTestEnv2(t)
+
+	_, err := client.GetGenerator("nonexistent-generator-id", env.ExecutorPrvKey)
+	assert.NotNil(t, err)
+
+	s.Shutdown()
+	<-done
+}
+
+// TestRemoveGeneratorNotFound tests removing a non-existent generator
+func TestRemoveGeneratorNotFound(t *testing.T) {
+	env, client, s, _, done := server.SetupTestEnv2(t)
+
+	err := client.RemoveGenerator("nonexistent-generator-id", env.ExecutorPrvKey)
+	assert.NotNil(t, err)
+
+	s.Shutdown()
+	<-done
+}
+
+// TestPackGeneratorNotFound tests packing a non-existent generator
+func TestPackGeneratorNotFound(t *testing.T) {
+	env, client, s, _, done := server.SetupTestEnv2(t)
+
+	err := client.PackGenerator("nonexistent-generator-id", "arg", env.ExecutorPrvKey)
+	assert.NotNil(t, err)
+
+	s.Shutdown()
+	<-done
+}
+
+// TestResolveGeneratorNotFound tests resolving a non-existent generator
+func TestResolveGeneratorNotFound(t *testing.T) {
+	env, client, s, _, done := server.SetupTestEnv2(t)
+
+	_, err := client.ResolveGenerator(env.ColonyName, "nonexistent-generator", env.ExecutorPrvKey)
+	assert.NotNil(t, err)
+
+	s.Shutdown()
+	<-done
+}
+
+// TestGetGeneratorsEmpty tests getting generators when none exist
+func TestGetGeneratorsEmpty(t *testing.T) {
+	env, client, s, _, done := server.SetupTestEnv2(t)
+
+	generators, err := client.GetGenerators(env.ColonyName, 100, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.Len(t, generators, 0)
+
+	s.Shutdown()
+	<-done
+}
+
+// TestAddGeneratorUnauthorized tests that non-members cannot add generators
+func TestAddGeneratorUnauthorized(t *testing.T) {
+	env, client, s, serverPrvKey, done := server.SetupTestEnv2(t)
+
+	// Create another colony
+	colony2, colony2PrvKey, err := utils.CreateTestColonyWithKey()
+	assert.Nil(t, err)
+	_, err = client.AddColony(colony2, serverPrvKey)
+	assert.Nil(t, err)
+
+	executor2, executor2PrvKey, err := utils.CreateTestExecutorWithKey(colony2.Name)
+	assert.Nil(t, err)
+	_, err = client.AddExecutor(executor2, colony2PrvKey)
+	assert.Nil(t, err)
+	err = client.ApproveExecutor(colony2.Name, executor2.Name, colony2PrvKey)
+	assert.Nil(t, err)
+
+	// Try to add generator to a different colony
+	generator := utils.FakeGenerator(t, env.ColonyName, env.ExecutorID, env.ExecutorName)
+	_, err = client.AddGenerator(generator, executor2PrvKey)
+	assert.NotNil(t, err)
+
+	s.Shutdown()
+	<-done
+}
+
+// TestGetGeneratorUnauthorized tests that non-members cannot get generator details
+func TestGetGeneratorUnauthorized(t *testing.T) {
+	env, client, s, serverPrvKey, done := server.SetupTestEnv2(t)
+
+	// Add a generator
+	generator := utils.FakeGenerator(t, env.ColonyName, env.ExecutorID, env.ExecutorName)
+	addedGenerator, err := client.AddGenerator(generator, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+
+	// Create another colony
+	colony2, colony2PrvKey, err := utils.CreateTestColonyWithKey()
+	assert.Nil(t, err)
+	_, err = client.AddColony(colony2, serverPrvKey)
+	assert.Nil(t, err)
+
+	executor2, executor2PrvKey, err := utils.CreateTestExecutorWithKey(colony2.Name)
+	assert.Nil(t, err)
+	_, err = client.AddExecutor(executor2, colony2PrvKey)
+	assert.Nil(t, err)
+	err = client.ApproveExecutor(colony2.Name, executor2.Name, colony2PrvKey)
+	assert.Nil(t, err)
+
+	// Try to get generator from a different colony
+	_, err = client.GetGenerator(addedGenerator.ID, executor2PrvKey)
+	assert.NotNil(t, err)
+
+	s.Shutdown()
+	<-done
+}
+
+// TestGetGeneratorsUnauthorized tests that non-members cannot get generators
+func TestGetGeneratorsUnauthorized(t *testing.T) {
+	env, client, s, serverPrvKey, done := server.SetupTestEnv2(t)
+
+	// Create another colony
+	colony2, colony2PrvKey, err := utils.CreateTestColonyWithKey()
+	assert.Nil(t, err)
+	_, err = client.AddColony(colony2, serverPrvKey)
+	assert.Nil(t, err)
+
+	executor2, executor2PrvKey, err := utils.CreateTestExecutorWithKey(colony2.Name)
+	assert.Nil(t, err)
+	_, err = client.AddExecutor(executor2, colony2PrvKey)
+	assert.Nil(t, err)
+	err = client.ApproveExecutor(colony2.Name, executor2.Name, colony2PrvKey)
+	assert.Nil(t, err)
+
+	// Try to get generators from a different colony
+	_, err = client.GetGenerators(env.ColonyName, 100, executor2PrvKey)
+	assert.NotNil(t, err)
+
+	s.Shutdown()
+	<-done
+}
+
+// TestRemoveGeneratorUnauthorized tests that non-members cannot remove generators
+func TestRemoveGeneratorUnauthorized(t *testing.T) {
+	env, client, s, serverPrvKey, done := server.SetupTestEnv2(t)
+
+	// Add a generator
+	generator := utils.FakeGenerator(t, env.ColonyName, env.ExecutorID, env.ExecutorName)
+	addedGenerator, err := client.AddGenerator(generator, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+
+	// Create another colony
+	colony2, colony2PrvKey, err := utils.CreateTestColonyWithKey()
+	assert.Nil(t, err)
+	_, err = client.AddColony(colony2, serverPrvKey)
+	assert.Nil(t, err)
+
+	executor2, executor2PrvKey, err := utils.CreateTestExecutorWithKey(colony2.Name)
+	assert.Nil(t, err)
+	_, err = client.AddExecutor(executor2, colony2PrvKey)
+	assert.Nil(t, err)
+	err = client.ApproveExecutor(colony2.Name, executor2.Name, colony2PrvKey)
+	assert.Nil(t, err)
+
+	// Try to remove generator from a different colony
+	err = client.RemoveGenerator(addedGenerator.ID, executor2PrvKey)
+	assert.NotNil(t, err)
+
+	s.Shutdown()
+	<-done
+}
+
+// TestPackGeneratorUnauthorized tests that non-members cannot pack generators
+func TestPackGeneratorUnauthorized(t *testing.T) {
+	env, client, s, serverPrvKey, done := server.SetupTestEnv2(t)
+
+	// Add a generator
+	generator := utils.FakeGenerator(t, env.ColonyName, env.ExecutorID, env.ExecutorName)
+	addedGenerator, err := client.AddGenerator(generator, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+
+	// Create another colony
+	colony2, colony2PrvKey, err := utils.CreateTestColonyWithKey()
+	assert.Nil(t, err)
+	_, err = client.AddColony(colony2, serverPrvKey)
+	assert.Nil(t, err)
+
+	executor2, executor2PrvKey, err := utils.CreateTestExecutorWithKey(colony2.Name)
+	assert.Nil(t, err)
+	_, err = client.AddExecutor(executor2, colony2PrvKey)
+	assert.Nil(t, err)
+	err = client.ApproveExecutor(colony2.Name, executor2.Name, colony2PrvKey)
+	assert.Nil(t, err)
+
+	// Try to pack generator from a different colony
+	err = client.PackGenerator(addedGenerator.ID, "arg", executor2PrvKey)
+	assert.NotNil(t, err)
+
+	s.Shutdown()
+	<-done
+}
+
+// TestResolveGeneratorUnauthorized tests that non-members cannot resolve generators
+func TestResolveGeneratorUnauthorized(t *testing.T) {
+	env, client, s, serverPrvKey, done := server.SetupTestEnv2(t)
+
+	// Add a generator
+	generator := utils.FakeGenerator(t, env.ColonyName, env.ExecutorID, env.ExecutorName)
+	generator.Name = "test-generator"
+	_, err := client.AddGenerator(generator, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+
+	// Create another colony
+	colony2, colony2PrvKey, err := utils.CreateTestColonyWithKey()
+	assert.Nil(t, err)
+	_, err = client.AddColony(colony2, serverPrvKey)
+	assert.Nil(t, err)
+
+	executor2, executor2PrvKey, err := utils.CreateTestExecutorWithKey(colony2.Name)
+	assert.Nil(t, err)
+	_, err = client.AddExecutor(executor2, colony2PrvKey)
+	assert.Nil(t, err)
+	err = client.ApproveExecutor(colony2.Name, executor2.Name, colony2PrvKey)
+	assert.Nil(t, err)
+
+	// Try to resolve generator from a different colony
+	_, err = client.ResolveGenerator(env.ColonyName, "test-generator", executor2PrvKey)
+	assert.NotNil(t, err)
+
+	s.Shutdown()
+	<-done
+}
+
+// TestAddGeneratorInvalidWorkflow tests that invalid workflow spec is rejected
+func TestAddGeneratorInvalidWorkflow(t *testing.T) {
+	env, client, s, _, done := server.SetupTestEnv2(t)
+
+	generator := utils.FakeGenerator(t, env.ColonyName, env.ExecutorID, env.ExecutorName)
+	generator.WorkflowSpec = "invalid-json"
+	_, err := client.AddGenerator(generator, env.ExecutorPrvKey)
+	assert.NotNil(t, err)
+
+	s.Shutdown()
+	<-done
+}

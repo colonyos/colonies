@@ -18,9 +18,8 @@ import (
 	loghandlers "github.com/colonyos/colonies/pkg/server/handlers/log"
 	"github.com/colonyos/colonies/pkg/server/handlers/process"
 	"github.com/colonyos/colonies/pkg/server/handlers/processgraph"
-	serverhandlers "github.com/colonyos/colonies/pkg/server/handlers/server"
 	realtimehandlers "github.com/colonyos/colonies/pkg/server/handlers/realtime"
-	log "github.com/sirupsen/logrus"
+	serverhandlers "github.com/colonyos/colonies/pkg/server/handlers/server"
 )
 
 // ServerAdapter implements interfaces needed by handler packages
@@ -745,74 +744,4 @@ func (s *ServerAdapter) ServerServer() serverhandlers.Server {
 // ChannelRouter returns the channel router for channel operations
 func (s *ServerAdapter) ChannelRouter() *channel.Router {
 	return s.server.channelRouter
-}
-
-// TriggerReconciliationForReconciler submits reconcile processes for all blueprints
-// that match the given reconciler's executor type and location.
-// This is called when a new reconciler registers to immediately reconcile any pending blueprints.
-func (s *ServerAdapter) TriggerReconciliationForReconciler(colonyName, executorType, locationName string) error {
-	// Get all blueprints
-	blueprints, err := s.server.resourceDB.GetBlueprints()
-	if err != nil {
-		return err
-	}
-
-	triggeredCount := 0
-	for _, blueprint := range blueprints {
-		// Check if this blueprint matches the reconciler's colony
-		if blueprint.Metadata.ColonyName != colonyName {
-			continue
-		}
-		// Check if this blueprint has a handler
-		if blueprint.Handler == nil {
-			continue
-		}
-		if blueprint.Handler.ExecutorType != executorType {
-			continue
-		}
-		if blueprint.Metadata.LocationName != locationName {
-			continue
-		}
-
-		// Create a reconcile process for this blueprint
-		funcSpec := core.CreateEmptyFunctionSpec()
-		funcSpec.NodeName = "reconcile"
-		funcSpec.Conditions.ColonyName = colonyName
-		funcSpec.Conditions.ExecutorType = executorType
-		funcSpec.Conditions.LocationName = locationName
-		funcSpec.FuncName = "reconcile"
-		funcSpec.KwArgs = map[string]interface{}{
-			"kind":          blueprint.Kind,
-			"blueprintName": blueprint.Metadata.Name,
-		}
-
-		process := core.CreateProcess(funcSpec)
-		process.InitiatorName = "system"
-
-		_, err := s.server.controller.AddProcess(process)
-		if err != nil {
-			log.WithFields(log.Fields{
-				"BlueprintName": blueprint.Metadata.Name,
-				"Error":         err,
-			}).Warn("Failed to trigger reconciliation for blueprint")
-			continue
-		}
-
-		triggeredCount++
-		log.WithFields(log.Fields{
-			"BlueprintName": blueprint.Metadata.Name,
-			"ExecutorType":  executorType,
-			"Location":      locationName,
-		}).Info("Triggered reconciliation for blueprint")
-	}
-
-	if triggeredCount > 0 {
-		log.WithFields(log.Fields{
-			"Count":        triggeredCount,
-			"ExecutorType": executorType,
-			"Location":     locationName,
-		}).Info("Triggered reconciliation for blueprints on reconciler registration")
-	}
-
-	return nil
 }

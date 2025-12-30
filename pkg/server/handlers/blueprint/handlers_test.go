@@ -1960,3 +1960,116 @@ func TestUpdateBlueprintSucceedsForExistingBlueprint(t *testing.T) {
 	server.Shutdown()
 	<-done
 }
+
+func TestUpdateBlueprintStatus(t *testing.T) {
+	env, client, server, _, done := server.SetupTestEnv2(t)
+
+	// Add BlueprintDefinition
+	sd := core.CreateBlueprintDefinition(
+		"status-test",
+		"example.com",
+		"v1",
+		"StatusTest",
+		"statustests",
+		"Namespaced",
+		"test_controller",
+		"reconcile",
+	)
+	sd.Metadata.ColonyName = env.ColonyName
+	_, err := client.AddBlueprintDefinition(sd, env.ColonyPrvKey)
+	assert.Nil(t, err)
+
+	// Add Blueprint
+	blueprint := core.CreateBlueprint("StatusTest", "test-blueprint", env.ColonyName)
+	blueprint.SetSpec("replicas", 3)
+	addedBlueprint, err := client.AddBlueprint(blueprint, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.NotNil(t, addedBlueprint)
+
+	// Update the blueprint status
+	status := map[string]interface{}{
+		"ready":    true,
+		"replicas": 3,
+		"message":  "All pods running",
+	}
+	err = client.UpdateBlueprintStatus(env.ColonyName, addedBlueprint.Metadata.Name, status, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+
+	// Get the blueprint and verify status was updated
+	retrievedBlueprint, err := client.GetBlueprint(env.ColonyName, addedBlueprint.Metadata.Name, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.NotNil(t, retrievedBlueprint.Status)
+	assert.Equal(t, true, retrievedBlueprint.Status["ready"])
+	assert.Equal(t, float64(3), retrievedBlueprint.Status["replicas"])
+	assert.Equal(t, "All pods running", retrievedBlueprint.Status["message"])
+
+	server.Shutdown()
+	<-done
+}
+
+func TestUpdateBlueprintStatusNotFound(t *testing.T) {
+	env, client, server, _, done := server.SetupTestEnv2(t)
+
+	// Try to update status for non-existent blueprint
+	status := map[string]interface{}{
+		"ready": true,
+	}
+	err := client.UpdateBlueprintStatus(env.ColonyName, "non-existent-blueprint", status, env.ExecutorPrvKey)
+	assert.NotNil(t, err)
+
+	server.Shutdown()
+	<-done
+}
+
+func TestReconcileBlueprintNotFound(t *testing.T) {
+	env, client, server, _, done := server.SetupTestEnv2(t)
+
+	// Try to reconcile non-existent blueprint
+	_, err := client.ReconcileBlueprint(env.ColonyName, "non-existent-blueprint", false, env.ExecutorPrvKey)
+	assert.NotNil(t, err)
+
+	server.Shutdown()
+	<-done
+}
+
+func TestGetBlueprintHistoryMultipleUpdates(t *testing.T) {
+	env, client, server, _, done := server.SetupTestEnv2(t)
+
+	// Add BlueprintDefinition
+	sd := core.CreateBlueprintDefinition(
+		"history-test",
+		"example.com",
+		"v1",
+		"HistoryTest",
+		"historytests",
+		"Namespaced",
+		"test_controller",
+		"reconcile",
+	)
+	sd.Metadata.ColonyName = env.ColonyName
+	_, err := client.AddBlueprintDefinition(sd, env.ColonyPrvKey)
+	assert.Nil(t, err)
+
+	// Add Blueprint
+	blueprint := core.CreateBlueprint("HistoryTest", "history-app", env.ColonyName)
+	blueprint.SetSpec("version", "1.0.0")
+	addedBlueprint, err := client.AddBlueprint(blueprint, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+
+	// Update Blueprint multiple times to create history
+	addedBlueprint.SetSpec("version", "1.1.0")
+	_, err = client.UpdateBlueprint(addedBlueprint, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+
+	addedBlueprint.SetSpec("version", "1.2.0")
+	_, err = client.UpdateBlueprint(addedBlueprint, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+
+	// Get history
+	history, err := client.GetBlueprintHistory(addedBlueprint.ID, 10, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.GreaterOrEqual(t, len(history), 2, "Should have at least 2 history entries")
+
+	server.Shutdown()
+	<-done
+}

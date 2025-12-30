@@ -3,7 +3,6 @@ package executor
 import (
 	"errors"
 	"net/http"
-	"strings"
 
 	"github.com/colonyos/colonies/pkg/core"
 	"github.com/colonyos/colonies/pkg/database"
@@ -28,7 +27,6 @@ type Server interface {
 	ExecutorDB() database.ExecutorDatabase
 	ExecutorController() Controller
 	AllowExecutorReregister() bool
-	TriggerReconciliationForReconciler(colonyName, executorType, locationName string) error
 }
 
 type Handlers struct {
@@ -117,24 +115,6 @@ func (h *Handlers) HandleAddExecutor(c backends.Context, recoveredID string, pay
 		"ExecutorType": addedExecutor.Type,
 		"ExecutorId":   addedExecutor.ID}).
 		Debug("Adding executor")
-
-	// If this is a reconciler registering, trigger reconciliation for blueprints at its location
-	if strings.Contains(addedExecutor.Type, "reconciler") && addedExecutor.LocationName != "" {
-		go func() {
-			if err := h.server.TriggerReconciliationForReconciler(
-				addedExecutor.ColonyName,
-				addedExecutor.Type,
-				addedExecutor.LocationName,
-			); err != nil {
-				log.WithFields(log.Fields{
-					"ExecutorName": addedExecutor.Name,
-					"ExecutorType": addedExecutor.Type,
-					"Location":     addedExecutor.LocationName,
-					"Error":        err,
-				}).Warn("Failed to trigger reconciliation on reconciler registration")
-			}
-		}()
-	}
 
 	h.server.SendHTTPReply(c, payloadType, jsonString)
 }

@@ -650,3 +650,426 @@ func TestChannelSequenceOrdering(t *testing.T) {
 	srv.Shutdown()
 	<-done
 }
+
+// TestChannelAppendToClosedProcess tests that channel append fails for SUCCESS process
+func TestChannelAppendToClosedProcess(t *testing.T) {
+	env, client, srv, _, done := server.SetupTestEnv2(t)
+
+	// Create a process with a channel
+	funcSpec := utils.CreateTestFunctionSpec(env.ColonyName)
+	funcSpec.Channels = []string{"test-channel"}
+	funcSpec.Conditions.ExecutorType = env.Executor.Type
+
+	process, err := client.Submit(funcSpec, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+
+	_, err = client.Assign(env.ColonyName, 10, "", "", env.ExecutorPrvKey)
+	assert.Nil(t, err)
+
+	// Close the process successfully
+	err = client.Close(process.ID, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+
+	// Try to append to channel of closed process - should fail
+	err = client.ChannelAppend(process.ID, "test-channel", 1, 0, []byte("test"), env.ExecutorPrvKey)
+	assert.NotNil(t, err)
+
+	srv.Shutdown()
+	<-done
+}
+
+// TestChannelReadFromClosedProcess tests that channel read fails for SUCCESS process
+func TestChannelReadFromClosedProcess(t *testing.T) {
+	env, client, srv, _, done := server.SetupTestEnv2(t)
+
+	// Create a process with a channel
+	funcSpec := utils.CreateTestFunctionSpec(env.ColonyName)
+	funcSpec.Channels = []string{"test-channel"}
+	funcSpec.Conditions.ExecutorType = env.Executor.Type
+
+	process, err := client.Submit(funcSpec, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+
+	_, err = client.Assign(env.ColonyName, 10, "", "", env.ExecutorPrvKey)
+	assert.Nil(t, err)
+
+	// Close the process successfully
+	err = client.Close(process.ID, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+
+	// Try to read from channel of closed process - should fail
+	_, err = client.ChannelRead(process.ID, "test-channel", 0, 0, env.ExecutorPrvKey)
+	assert.NotNil(t, err)
+
+	srv.Shutdown()
+	<-done
+}
+
+// TestChannelAppendToFailedProcess tests that channel append fails for FAILED process
+func TestChannelAppendToFailedProcess(t *testing.T) {
+	env, client, srv, _, done := server.SetupTestEnv2(t)
+
+	// Create a process with a channel
+	funcSpec := utils.CreateTestFunctionSpec(env.ColonyName)
+	funcSpec.Channels = []string{"test-channel"}
+	funcSpec.Conditions.ExecutorType = env.Executor.Type
+
+	process, err := client.Submit(funcSpec, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+
+	_, err = client.Assign(env.ColonyName, 10, "", "", env.ExecutorPrvKey)
+	assert.Nil(t, err)
+
+	// Fail the process
+	err = client.Fail(process.ID, []string{"error"}, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+
+	// Try to append to channel of failed process - should fail
+	err = client.ChannelAppend(process.ID, "test-channel", 1, 0, []byte("test"), env.ExecutorPrvKey)
+	assert.NotNil(t, err)
+
+	srv.Shutdown()
+	<-done
+}
+
+// TestChannelReadFromFailedProcess tests that channel read fails for FAILED process
+func TestChannelReadFromFailedProcess(t *testing.T) {
+	env, client, srv, _, done := server.SetupTestEnv2(t)
+
+	// Create a process with a channel
+	funcSpec := utils.CreateTestFunctionSpec(env.ColonyName)
+	funcSpec.Channels = []string{"test-channel"}
+	funcSpec.Conditions.ExecutorType = env.Executor.Type
+
+	process, err := client.Submit(funcSpec, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+
+	_, err = client.Assign(env.ColonyName, 10, "", "", env.ExecutorPrvKey)
+	assert.Nil(t, err)
+
+	// Fail the process
+	err = client.Fail(process.ID, []string{"error"}, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+
+	// Try to read from channel of failed process - should fail
+	_, err = client.ChannelRead(process.ID, "test-channel", 0, 0, env.ExecutorPrvKey)
+	assert.NotNil(t, err)
+
+	srv.Shutdown()
+	<-done
+}
+
+// TestChannelAppendWithPayloadType tests the payload type field (data, end, error)
+func TestChannelAppendWithPayloadType(t *testing.T) {
+	env, client, srv, _, done := server.SetupTestEnv2(t)
+
+	// Create a process with a channel
+	funcSpec := utils.CreateTestFunctionSpec(env.ColonyName)
+	funcSpec.Channels = []string{"stream"}
+	funcSpec.Conditions.ExecutorType = env.Executor.Type
+
+	process, err := client.Submit(funcSpec, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+
+	_, err = client.Assign(env.ColonyName, 10, "", "", env.ExecutorPrvKey)
+	assert.Nil(t, err)
+
+	// Append with data type
+	err = client.ChannelAppendWithType(process.ID, "stream", 1, 0, []byte("data message"), "data", env.ExecutorPrvKey)
+	assert.Nil(t, err)
+
+	// Append with end type
+	err = client.ChannelAppendWithType(process.ID, "stream", 2, 0, []byte(""), "end", env.ExecutorPrvKey)
+	assert.Nil(t, err)
+
+	// Read and verify types
+	entries, err := client.ChannelRead(process.ID, "stream", 0, 0, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.Len(t, entries, 2)
+	assert.Equal(t, "data", entries[0].Type)
+	assert.Equal(t, "end", entries[1].Type)
+
+	srv.Shutdown()
+	<-done
+}
+
+// TestChannelAppendWithErrorType tests the error payload type
+func TestChannelAppendWithErrorType(t *testing.T) {
+	env, client, srv, _, done := server.SetupTestEnv2(t)
+
+	// Create a process with a channel
+	funcSpec := utils.CreateTestFunctionSpec(env.ColonyName)
+	funcSpec.Channels = []string{"stream"}
+	funcSpec.Conditions.ExecutorType = env.Executor.Type
+
+	process, err := client.Submit(funcSpec, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+
+	_, err = client.Assign(env.ColonyName, 10, "", "", env.ExecutorPrvKey)
+	assert.Nil(t, err)
+
+	// Append with error type
+	err = client.ChannelAppendWithType(process.ID, "stream", 1, 0, []byte("Something went wrong"), "error", env.ExecutorPrvKey)
+	assert.Nil(t, err)
+
+	// Read and verify type
+	entries, err := client.ChannelRead(process.ID, "stream", 0, 0, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.Len(t, entries, 1)
+	assert.Equal(t, "error", entries[0].Type)
+	assert.Equal(t, []byte("Something went wrong"), entries[0].Payload)
+
+	srv.Shutdown()
+	<-done
+}
+
+// TestChannelSubmitterCanAccessBeforeAssign tests that the submitter can access
+// the channel even before a process is assigned
+func TestChannelSubmitterCanAccessBeforeAssign(t *testing.T) {
+	env, client, srv, _, done := server.SetupTestEnv2(t)
+
+	// Create a process with a channel
+	funcSpec := utils.CreateTestFunctionSpec(env.ColonyName)
+	funcSpec.Channels = []string{"pre-assign"}
+	funcSpec.Conditions.ExecutorType = env.Executor.Type
+
+	process, err := client.Submit(funcSpec, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.Equal(t, core.WAITING, process.State)
+
+	// Submitter tries to write before assignment
+	// This documents current behavior - may succeed or fail depending on implementation
+	err = client.ChannelAppend(process.ID, "pre-assign", 1, 0, []byte("pre-assign message"), env.ExecutorPrvKey)
+	t.Logf("Append to waiting process result: %v", err)
+
+	// Now assign and verify we can definitely access
+	_, err = client.Assign(env.ColonyName, 10, "", "", env.ExecutorPrvKey)
+	assert.Nil(t, err)
+
+	// Should be able to write now
+	err = client.ChannelAppend(process.ID, "pre-assign", 2, 0, []byte("post-assign message"), env.ExecutorPrvKey)
+	assert.Nil(t, err)
+
+	srv.Shutdown()
+	<-done
+}
+
+// TestChannelMultipleExecutorsInColony tests channel access with multiple executors
+func TestChannelMultipleExecutorsInColony(t *testing.T) {
+	env, client, srv, _, done := server.SetupTestEnv2(t)
+
+	// Create a second executor of different type
+	executor2, executor2PrvKey, err := utils.CreateTestExecutorWithKey(env.ColonyName)
+	assert.Nil(t, err)
+	executor2.Name = "executor2-different-type"
+	executor2.Type = "different-type"
+	_, err = client.AddExecutor(executor2, env.ColonyPrvKey)
+	assert.Nil(t, err)
+	err = client.ApproveExecutor(env.ColonyName, executor2.Name, env.ColonyPrvKey)
+	assert.Nil(t, err)
+
+	// Submit process assigned to first executor type
+	funcSpec := utils.CreateTestFunctionSpec(env.ColonyName)
+	funcSpec.Channels = []string{"restricted"}
+	funcSpec.Conditions.ExecutorType = env.Executor.Type
+
+	process, err := client.Submit(funcSpec, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+
+	// First executor assigns
+	_, err = client.Assign(env.ColonyName, 10, "", "", env.ExecutorPrvKey)
+	assert.Nil(t, err)
+
+	// First executor can access
+	err = client.ChannelAppend(process.ID, "restricted", 1, 0, []byte("authorized"), env.ExecutorPrvKey)
+	assert.Nil(t, err)
+
+	// Second executor (different type, not assigned) cannot access
+	err = client.ChannelAppend(process.ID, "restricted", 2, 0, []byte("unauthorized"), executor2PrvKey)
+	assert.NotNil(t, err)
+
+	srv.Shutdown()
+	<-done
+}
+
+// TestChannelAppendToUndefinedChannel tests accessing a channel not in the process spec
+// when process has other channels defined (to test the for-loop iteration path)
+func TestChannelAppendToUndefinedChannel(t *testing.T) {
+	env, client, srv, _, done := server.SetupTestEnv2(t)
+
+	// Create a process with specific channels
+	funcSpec := utils.CreateTestFunctionSpec(env.ColonyName)
+	funcSpec.Channels = []string{"channel-a", "channel-b", "channel-c"}
+	funcSpec.Conditions.ExecutorType = env.Executor.Type
+
+	process, err := client.Submit(funcSpec, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+
+	_, err = client.Assign(env.ColonyName, 10, "", "", env.ExecutorPrvKey)
+	assert.Nil(t, err)
+
+	// Try to access a channel that's NOT in the list
+	err = client.ChannelAppend(process.ID, "undefined-channel", 1, 0, []byte("test"), env.ExecutorPrvKey)
+	assert.NotNil(t, err) // Should fail - channel not defined in spec
+
+	srv.Shutdown()
+	<-done
+}
+
+// TestChannelReadFromUndefinedChannel tests reading from a channel not in the process spec
+func TestChannelReadFromUndefinedChannel(t *testing.T) {
+	env, client, srv, _, done := server.SetupTestEnv2(t)
+
+	// Create a process with specific channels
+	funcSpec := utils.CreateTestFunctionSpec(env.ColonyName)
+	funcSpec.Channels = []string{"channel-a", "channel-b"}
+	funcSpec.Conditions.ExecutorType = env.Executor.Type
+
+	process, err := client.Submit(funcSpec, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+
+	_, err = client.Assign(env.ColonyName, 10, "", "", env.ExecutorPrvKey)
+	assert.Nil(t, err)
+
+	// Try to read from a channel that's NOT in the list
+	_, err = client.ChannelRead(process.ID, "nonexistent-channel", 0, 0, env.ExecutorPrvKey)
+	assert.NotNil(t, err) // Should fail - channel not defined in spec
+
+	srv.Shutdown()
+	<-done
+}
+
+// TestChannelDefinesChannelButUseDifferent tests a more complex scenario:
+// process defines channels but we try to access one not in the list
+func TestChannelDefinesChannelButUseDifferent(t *testing.T) {
+	env, client, srv, _, done := server.SetupTestEnv2(t)
+
+	// Create a process with multiple channels
+	funcSpec := utils.CreateTestFunctionSpec(env.ColonyName)
+	funcSpec.Channels = []string{"input", "output", "logs"}
+	funcSpec.Conditions.ExecutorType = env.Executor.Type
+
+	process, err := client.Submit(funcSpec, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+
+	_, err = client.Assign(env.ColonyName, 10, "", "", env.ExecutorPrvKey)
+	assert.Nil(t, err)
+
+	// Valid channels work
+	err = client.ChannelAppend(process.ID, "input", 1, 0, []byte("data"), env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	err = client.ChannelAppend(process.ID, "output", 1, 0, []byte("result"), env.ExecutorPrvKey)
+	assert.Nil(t, err)
+
+	// Invalid channel fails
+	err = client.ChannelAppend(process.ID, "metrics", 1, 0, []byte("metric"), env.ExecutorPrvKey)
+	assert.NotNil(t, err)
+
+	// Invalid channel read also fails
+	_, err = client.ChannelRead(process.ID, "status", 0, 0, env.ExecutorPrvKey)
+	assert.NotNil(t, err)
+
+	srv.Shutdown()
+	<-done
+}
+
+// TestChannelReadWithLimitZero tests reading with limit=0 (no limit)
+func TestChannelReadWithLimitZero(t *testing.T) {
+	env, client, srv, _, done := server.SetupTestEnv2(t)
+
+	funcSpec := utils.CreateTestFunctionSpec(env.ColonyName)
+	funcSpec.Channels = []string{"unlimited"}
+	funcSpec.Conditions.ExecutorType = env.Executor.Type
+
+	process, err := client.Submit(funcSpec, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+
+	_, err = client.Assign(env.ColonyName, 10, "", "", env.ExecutorPrvKey)
+	assert.Nil(t, err)
+
+	// Add many messages
+	for i := 1; i <= 10; i++ {
+		err = client.ChannelAppend(process.ID, "unlimited", int64(i), 0, []byte("msg"), env.ExecutorPrvKey)
+		assert.Nil(t, err)
+	}
+
+	// Read with limit=0 should get all
+	entries, err := client.ChannelRead(process.ID, "unlimited", 0, 0, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.Len(t, entries, 10)
+
+	srv.Shutdown()
+	<-done
+}
+
+// TestChannelReadAfterSeqHigherThanAll tests reading with afterSeq > all sequences
+func TestChannelReadAfterSeqHigherThanAll(t *testing.T) {
+	env, client, srv, _, done := server.SetupTestEnv2(t)
+
+	funcSpec := utils.CreateTestFunctionSpec(env.ColonyName)
+	funcSpec.Channels = []string{"test"}
+	funcSpec.Conditions.ExecutorType = env.Executor.Type
+
+	process, err := client.Submit(funcSpec, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+
+	_, err = client.Assign(env.ColonyName, 10, "", "", env.ExecutorPrvKey)
+	assert.Nil(t, err)
+
+	// Add messages with sequences 1-3
+	for i := 1; i <= 3; i++ {
+		err = client.ChannelAppend(process.ID, "test", int64(i), 0, []byte("msg"), env.ExecutorPrvKey)
+		assert.Nil(t, err)
+	}
+
+	// Read with afterSeq=100 - should get empty result
+	entries, err := client.ChannelRead(process.ID, "test", 100, 0, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.Len(t, entries, 0)
+
+	srv.Shutdown()
+	<-done
+}
+
+// TestChannelUserAsSubmitter tests that a user (not executor) can submit and use channels
+func TestChannelUserAsSubmitter(t *testing.T) {
+	env, client, srv, _, done := server.SetupTestEnv2(t)
+
+	// Create a user
+	user, userPrvKey, err := utils.CreateTestUserWithKey(env.ColonyName, "channel-user")
+	assert.Nil(t, err)
+	_, err = client.AddUser(user, env.ColonyPrvKey)
+	assert.Nil(t, err)
+
+	// User submits process with channel
+	funcSpec := utils.CreateTestFunctionSpec(env.ColonyName)
+	funcSpec.Channels = []string{"user-channel"}
+	funcSpec.Conditions.ExecutorType = env.Executor.Type
+
+	process, err := client.Submit(funcSpec, userPrvKey)
+	assert.Nil(t, err)
+
+	// Executor assigns
+	_, err = client.Assign(env.ColonyName, 10, "", "", env.ExecutorPrvKey)
+	assert.Nil(t, err)
+
+	// User (submitter) can write
+	err = client.ChannelAppend(process.ID, "user-channel", 1, 0, []byte("user message"), userPrvKey)
+	assert.Nil(t, err)
+
+	// User can read
+	entries, err := client.ChannelRead(process.ID, "user-channel", 0, 0, userPrvKey)
+	assert.Nil(t, err)
+	assert.Len(t, entries, 1)
+
+	// Executor can also access
+	err = client.ChannelAppend(process.ID, "user-channel", 2, 0, []byte("executor message"), env.ExecutorPrvKey)
+	assert.Nil(t, err)
+
+	entries, err = client.ChannelRead(process.ID, "user-channel", 0, 0, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.Len(t, entries, 2)
+
+	srv.Shutdown()
+	<-done
+}

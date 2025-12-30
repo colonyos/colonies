@@ -270,3 +270,175 @@ func TestRemoveFile(t *testing.T) {
 	server.Shutdown()
 	<-done
 }
+
+// TestAddFileUnauthorized tests adding file from different colony
+func TestAddFileUnauthorized(t *testing.T) {
+	client, s, serverPrvKey, done := server.PrepareTests(t)
+
+	colony1, colonyPrvKey1, err := utils.CreateTestColonyWithKey()
+	assert.Nil(t, err)
+	_, err = client.AddColony(colony1, serverPrvKey)
+	assert.Nil(t, err)
+
+	executor1, _, err := utils.CreateTestExecutorWithKey(colony1.Name)
+	assert.Nil(t, err)
+	_, err = client.AddExecutor(executor1, colonyPrvKey1)
+	assert.Nil(t, err)
+	err = client.ApproveExecutor(colony1.Name, executor1.Name, colonyPrvKey1)
+	assert.Nil(t, err)
+
+	colony2, colonyPrvKey2, err := utils.CreateTestColonyWithKey()
+	assert.Nil(t, err)
+	_, err = client.AddColony(colony2, serverPrvKey)
+	assert.Nil(t, err)
+
+	executor2, executor2PrvKey, err := utils.CreateTestExecutorWithKey(colony2.Name)
+	assert.Nil(t, err)
+	_, err = client.AddExecutor(executor2, colonyPrvKey2)
+	assert.Nil(t, err)
+	err = client.ApproveExecutor(colony2.Name, executor2.Name, colonyPrvKey2)
+	assert.Nil(t, err)
+
+	// Try to add file to colony1 with executor2's key
+	file := utils.CreateTestFile(colony1.Name)
+	_, err = client.AddFile(file, executor2PrvKey)
+	assert.NotNil(t, err)
+
+	s.Shutdown()
+	<-done
+}
+
+// TestGetFileUnauthorized tests getting file from different colony
+func TestGetFileUnauthorized(t *testing.T) {
+	client, s, serverPrvKey, done := server.PrepareTests(t)
+
+	colony1, colonyPrvKey1, err := utils.CreateTestColonyWithKey()
+	assert.Nil(t, err)
+	_, err = client.AddColony(colony1, serverPrvKey)
+	assert.Nil(t, err)
+
+	executor1, executor1PrvKey, err := utils.CreateTestExecutorWithKey(colony1.Name)
+	assert.Nil(t, err)
+	_, err = client.AddExecutor(executor1, colonyPrvKey1)
+	assert.Nil(t, err)
+	err = client.ApproveExecutor(colony1.Name, executor1.Name, colonyPrvKey1)
+	assert.Nil(t, err)
+
+	colony2, colonyPrvKey2, err := utils.CreateTestColonyWithKey()
+	assert.Nil(t, err)
+	_, err = client.AddColony(colony2, serverPrvKey)
+	assert.Nil(t, err)
+
+	executor2, executor2PrvKey, err := utils.CreateTestExecutorWithKey(colony2.Name)
+	assert.Nil(t, err)
+	_, err = client.AddExecutor(executor2, colonyPrvKey2)
+	assert.Nil(t, err)
+	err = client.ApproveExecutor(colony2.Name, executor2.Name, colonyPrvKey2)
+	assert.Nil(t, err)
+
+	// Add file to colony1
+	file := utils.CreateTestFile(colony1.Name)
+	addedFile, err := client.AddFile(file, executor1PrvKey)
+	assert.Nil(t, err)
+
+	// Try to get file from colony1 with executor2's key
+	_, err = client.GetFileByID(colony1.Name, addedFile.ID, executor2PrvKey)
+	assert.NotNil(t, err)
+
+	s.Shutdown()
+	<-done
+}
+
+// TestGetFilesUnauthorized tests getting files from different colony
+func TestGetFilesUnauthorized(t *testing.T) {
+	client, s, serverPrvKey, done := server.PrepareTests(t)
+
+	colony1, colonyPrvKey1, err := utils.CreateTestColonyWithKey()
+	assert.Nil(t, err)
+	_, err = client.AddColony(colony1, serverPrvKey)
+	assert.Nil(t, err)
+
+	executor1, executor1PrvKey, err := utils.CreateTestExecutorWithKey(colony1.Name)
+	assert.Nil(t, err)
+	_, err = client.AddExecutor(executor1, colonyPrvKey1)
+	assert.Nil(t, err)
+	err = client.ApproveExecutor(colony1.Name, executor1.Name, colonyPrvKey1)
+	assert.Nil(t, err)
+
+	colony2, colonyPrvKey2, err := utils.CreateTestColonyWithKey()
+	assert.Nil(t, err)
+	_, err = client.AddColony(colony2, serverPrvKey)
+	assert.Nil(t, err)
+
+	executor2, executor2PrvKey, err := utils.CreateTestExecutorWithKey(colony2.Name)
+	assert.Nil(t, err)
+	_, err = client.AddExecutor(executor2, colonyPrvKey2)
+	assert.Nil(t, err)
+	err = client.ApproveExecutor(colony2.Name, executor2.Name, colonyPrvKey2)
+	assert.Nil(t, err)
+
+	// Add file to colony1
+	file := utils.CreateTestFile(colony1.Name)
+	file.Label = "/testlabel"
+	_, err = client.AddFile(file, executor1PrvKey)
+	assert.Nil(t, err)
+
+	// Try to get files from colony1 with executor2's key
+	_, err = client.GetFileData(colony1.Name, "/testlabel", executor2PrvKey)
+	assert.NotNil(t, err)
+
+	s.Shutdown()
+	<-done
+}
+
+// TestRemoveFileUnauthorized tests removing file from different colony
+func TestRemoveFileUnauthorized(t *testing.T) {
+	client, s, serverPrvKey, done := server.PrepareTests(t)
+
+	colony1, colonyPrvKey1, err := utils.CreateTestColonyWithKey()
+	assert.Nil(t, err)
+	_, err = client.AddColony(colony1, serverPrvKey)
+	assert.Nil(t, err)
+
+	executor1, executor1PrvKey, err := utils.CreateTestExecutorWithKey(colony1.Name)
+	assert.Nil(t, err)
+	_, err = client.AddExecutor(executor1, colonyPrvKey1)
+	assert.Nil(t, err)
+	err = client.ApproveExecutor(colony1.Name, executor1.Name, colonyPrvKey1)
+	assert.Nil(t, err)
+
+	colony2, colonyPrvKey2, err := utils.CreateTestColonyWithKey()
+	assert.Nil(t, err)
+	_, err = client.AddColony(colony2, serverPrvKey)
+	assert.Nil(t, err)
+
+	executor2, executor2PrvKey, err := utils.CreateTestExecutorWithKey(colony2.Name)
+	assert.Nil(t, err)
+	_, err = client.AddExecutor(executor2, colonyPrvKey2)
+	assert.Nil(t, err)
+	err = client.ApproveExecutor(colony2.Name, executor2.Name, colonyPrvKey2)
+	assert.Nil(t, err)
+
+	// Add file to colony1
+	file := utils.CreateTestFile(colony1.Name)
+	addedFile, err := client.AddFile(file, executor1PrvKey)
+	assert.Nil(t, err)
+
+	// Try to remove file from colony1 with executor2's key
+	err = client.RemoveFileByID(colony1.Name, addedFile.ID, executor2PrvKey)
+	assert.NotNil(t, err)
+
+	s.Shutdown()
+	<-done
+}
+
+// TestGetFileByIDNotFound tests getting non-existent file by ID
+func TestGetFileByIDNotFound(t *testing.T) {
+	env, client, server, _, done := server.SetupTestEnv2(t)
+
+	_, err := client.GetFileByID(env.ColonyName, "non_existent_id", env.ExecutorPrvKey)
+	assert.NotNil(t, err)
+
+	server.Shutdown()
+	<-done
+}
