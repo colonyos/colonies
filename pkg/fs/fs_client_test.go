@@ -19,7 +19,7 @@ func printSyncPlan(syncPlan *SyncPlan) {
 		fmt.Println("  file:", fileInfo.Name)
 	}
 
-	fmt.Println("Missing remote:", len(syncPlan.LocalMissing))
+	fmt.Println("Missing remote:", len(syncPlan.RemoteMissing))
 	for _, fileInfo := range syncPlan.RemoteMissing {
 		fmt.Println("  file:", fileInfo.Name)
 	}
@@ -789,6 +789,7 @@ func TestDownloadSnapshot(t *testing.T) {
 
 	// Download files in snapshot
 	downloadDir, err := os.MkdirTemp("/tmp/", "download")
+	assert.Nil(t, err)
 	err = fsClient.DownloadSnapshot(snapshot.ID, downloadDir)
 	assert.Nil(t, err)
 
@@ -1053,6 +1054,7 @@ func TestDownloadSnapshopRecursively(t *testing.T) {
 
 	// Download files in snapshot
 	downloadDir, err := os.MkdirTemp("/tmp/", "download")
+	assert.Nil(t, err)
 	err = fsClient.DownloadSnapshot(snapshot.ID, downloadDir)
 	assert.Nil(t, err)
 
@@ -1257,6 +1259,230 @@ func TestCleanNoLabel(t *testing.T) {
 
 	err = os.RemoveAll(syncDir)
 	assert.Nil(t, err)
+
+	coloniesServer.Shutdown()
+	<-done
+}
+
+func TestChecksumFileNotExist(t *testing.T) {
+	_, err := checksum("/nonexistent/path/to/file")
+	assert.NotNil(t, err)
+}
+
+func TestCalcSyncPlanNilClient(t *testing.T) {
+	fsClient := &FSClient{
+		coloniesClient: nil,
+		colonyName:     "test",
+		executorPrvKey: "test",
+		Quiet:          true,
+	}
+
+	syncDir, err := os.MkdirTemp("/tmp/", "sync")
+	assert.Nil(t, err)
+	defer os.RemoveAll(syncDir)
+
+	_, err = fsClient.CalcSyncPlan(syncDir, "test_label", true)
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "coloniesClient is nil")
+}
+
+func TestCalcSyncPlanDirNotExist(t *testing.T) {
+	env, coloniesClient, coloniesServer, _, done := setupTestEnv(t)
+
+	fsClient, err := CreateFSClient(coloniesClient, env.colonyName, env.executorPrvKey)
+	assert.Nil(t, err)
+	fsClient.Quiet = true
+
+	// CalcSyncPlan should handle non-existent directory gracefully
+	syncPlan, err := fsClient.CalcSyncPlan("/nonexistent/dir", "test_label", true)
+	assert.Nil(t, err)
+	assert.NotNil(t, syncPlan)
+	assert.Len(t, syncPlan.LocalMissing, 0)
+	assert.Len(t, syncPlan.RemoteMissing, 0)
+
+	coloniesServer.Shutdown()
+	<-done
+}
+
+func TestCalcSyncPlansNotDirectory(t *testing.T) {
+	env, coloniesClient, coloniesServer, _, done := setupTestEnv(t)
+
+	fsClient, err := CreateFSClient(coloniesClient, env.colonyName, env.executorPrvKey)
+	assert.Nil(t, err)
+	fsClient.Quiet = true
+
+	// Create a file (not a directory)
+	tmpFile, err := os.CreateTemp("/tmp/", "notadir")
+	assert.Nil(t, err)
+	defer os.Remove(tmpFile.Name())
+
+	_, err = fsClient.CalcSyncPlans(tmpFile.Name(), "test_label", true)
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "is not a directory")
+
+	coloniesServer.Shutdown()
+	<-done
+}
+
+func TestCalcCleanPlanNotDirectory(t *testing.T) {
+	env, coloniesClient, coloniesServer, _, done := setupTestEnv(t)
+
+	fsClient, err := CreateFSClient(coloniesClient, env.colonyName, env.executorPrvKey)
+	assert.Nil(t, err)
+	fsClient.Quiet = true
+
+	// Create a file (not a directory)
+	tmpFile, err := os.CreateTemp("/tmp/", "notadir")
+	assert.Nil(t, err)
+	defer os.Remove(tmpFile.Name())
+
+	_, err = fsClient.CalcCleanPlan(tmpFile.Name(), "test_label")
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "is not a directory")
+
+	coloniesServer.Shutdown()
+	<-done
+}
+
+func TestCalcCleanPlansNotDirectory(t *testing.T) {
+	env, coloniesClient, coloniesServer, _, done := setupTestEnv(t)
+
+	fsClient, err := CreateFSClient(coloniesClient, env.colonyName, env.executorPrvKey)
+	assert.Nil(t, err)
+	fsClient.Quiet = true
+
+	// Create a file (not a directory)
+	tmpFile, err := os.CreateTemp("/tmp/", "notadir")
+	assert.Nil(t, err)
+	defer os.Remove(tmpFile.Name())
+
+	_, err = fsClient.CalcCleanPlans(tmpFile.Name(), "test_label")
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "is not a directory")
+
+	coloniesServer.Shutdown()
+	<-done
+}
+
+func TestDownloadFileNotFound(t *testing.T) {
+	env, coloniesClient, coloniesServer, _, done := setupTestEnv(t)
+
+	fsClient, err := CreateFSClient(coloniesClient, env.colonyName, env.executorPrvKey)
+	assert.Nil(t, err)
+	fsClient.Quiet = true
+
+	downloadDir, err := os.MkdirTemp("/tmp/", "download")
+	assert.Nil(t, err)
+	defer os.RemoveAll(downloadDir)
+
+	// Try to download non-existent file
+	err = fsClient.Download(env.colonyName, "nonexistent-file-id", downloadDir)
+	assert.NotNil(t, err)
+
+	coloniesServer.Shutdown()
+	<-done
+}
+
+func TestRemoveFileByIDNotFound(t *testing.T) {
+	env, coloniesClient, coloniesServer, _, done := setupTestEnv(t)
+
+	fsClient, err := CreateFSClient(coloniesClient, env.colonyName, env.executorPrvKey)
+	assert.Nil(t, err)
+	fsClient.Quiet = true
+
+	// Try to remove non-existent file
+	err = fsClient.RemoveFileByID(env.colonyName, "nonexistent-file-id")
+	assert.NotNil(t, err)
+
+	coloniesServer.Shutdown()
+	<-done
+}
+
+func TestRemoveFileByNameNotFound(t *testing.T) {
+	env, coloniesClient, coloniesServer, _, done := setupTestEnv(t)
+
+	fsClient, err := CreateFSClient(coloniesClient, env.colonyName, env.executorPrvKey)
+	assert.Nil(t, err)
+	fsClient.Quiet = true
+
+	// Try to remove non-existent file
+	err = fsClient.RemoveFileByName(env.colonyName, "nonexistent-label", "nonexistent-file")
+	assert.NotNil(t, err)
+
+	coloniesServer.Shutdown()
+	<-done
+}
+
+func TestApplySyncPlanEmptyPlan(t *testing.T) {
+	env, coloniesClient, coloniesServer, _, done := setupTestEnv(t)
+
+	fsClient, err := CreateFSClient(coloniesClient, env.colonyName, env.executorPrvKey)
+	assert.Nil(t, err)
+	fsClient.Quiet = true
+
+	// Empty sync plan should return nil without doing anything
+	syncPlan := &SyncPlan{
+		Dir:           "/tmp",
+		LocalMissing:  []*FileInfo{},
+		RemoteMissing: []*FileInfo{},
+		Conflicts:     []*FileInfo{},
+		KeepLocal:     true,
+		Label:         "test",
+	}
+
+	err = fsClient.ApplySyncPlan(syncPlan)
+	assert.Nil(t, err)
+
+	coloniesServer.Shutdown()
+	<-done
+}
+
+func TestApplyCleanPlanEmpty(t *testing.T) {
+	env, coloniesClient, coloniesServer, _, done := setupTestEnv(t)
+
+	fsClient, err := CreateFSClient(coloniesClient, env.colonyName, env.executorPrvKey)
+	assert.Nil(t, err)
+	fsClient.Quiet = true
+
+	// Empty clean plan should return nil without doing anything
+	cleanPlan := &CleanPlan{
+		Dir:           "/tmp",
+		FilesToRemove: []*FileInfo{},
+		Label:         "test",
+	}
+
+	err = fsClient.ApplyCleanPlan(cleanPlan)
+	assert.Nil(t, err)
+
+	coloniesServer.Shutdown()
+	<-done
+}
+
+func TestLabelNormalization(t *testing.T) {
+	env, coloniesClient, coloniesServer, _, done := setupTestEnv(t)
+
+	// Test that labels without leading slash get normalized in CalcSyncPlans
+	label := "test_label" // No leading slash
+
+	syncDir, err := os.MkdirTemp("/tmp/", "sync")
+	assert.Nil(t, err)
+	defer os.RemoveAll(syncDir)
+
+	tmpFile, err := os.CreateTemp(syncDir, "test")
+	assert.Nil(t, err)
+	_, err = tmpFile.Write([]byte("testdata"))
+	assert.Nil(t, err)
+	tmpFile.Close()
+
+	fsClient, err := CreateFSClient(coloniesClient, env.colonyName, env.executorPrvKey)
+	assert.Nil(t, err)
+	fsClient.Quiet = true
+
+	// CalcSyncPlans should normalize the label (CalcSyncPlan does not)
+	syncPlans, err := fsClient.CalcSyncPlans(syncDir, label, true)
+	assert.Nil(t, err)
+	assert.Len(t, syncPlans, 1)
+	assert.Equal(t, "/test_label", syncPlans[0].Label)
 
 	coloniesServer.Shutdown()
 	<-done
