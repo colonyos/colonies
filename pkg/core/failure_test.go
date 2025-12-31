@@ -41,3 +41,11 @@ func TestFailureParseJSON(t *testing.T) {
 	assert.Nil(t, err)
 	assert.True(t, failure2.Equals(failure1))
 }
+
+func TestColoniesError(t *testing.T) {
+	err := &ColoniesError{Status: 500, Message: "internal error"}
+	assert.Equal(t, "internal error", err.Error())
+
+	err2 := &ColoniesError{Status: 404, Message: "not found"}
+	assert.Equal(t, "not found", err2.Error())
+}

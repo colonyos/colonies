@@ -81,3 +81,11 @@ func TestAttributeToJSON(t *testing.T) {
 	assert.Nil(t, err)
 	assert.True(t, attribute2.Equals(attribute1))
 }
+
+func TestAttributeSetValue(t *testing.T) {
+	attribute := CreateAttribute(GenerateRandomID(), GenerateRandomID(), "", OUT, "key", "original")
+	assert.Equal(t, "original", attribute.Value)
+
+	attribute.SetValue("updated")
+	assert.Equal(t, "updated", attribute.Value)
+}

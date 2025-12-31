@@ -257,3 +257,48 @@ func TestFunctionsToJSON(t *testing.T) {
 
 	assert.True(t, IsFunctionArraysEqual(functions1, functions2))
 }
+
+func TestCreateFunctionConstructor(t *testing.T) {
+	function := CreateFunction(
+		"func-id-123",
+		"executor-name",
+		"executor-type",
+		"colony-name",
+		"my-func",
+		100,
+		1.0,
+		10.0,
+		0.5,
+		5.0,
+		2.5,
+		1.5,
+	)
+
+	assert.Equal(t, "func-id-123", function.FunctionID)
+	assert.Equal(t, "executor-name", function.ExecutorName)
+	assert.Equal(t, "executor-type", function.ExecutorType)
+	assert.Equal(t, "colony-name", function.ColonyName)
+	assert.Equal(t, "my-func", function.FuncName)
+	assert.Equal(t, 100, function.Counter)
+	assert.Equal(t, 1.0, function.MinWaitTime)
+	assert.Equal(t, 10.0, function.MaxWaitTime)
+	assert.Equal(t, 0.5, function.MinExecTime)
+	assert.Equal(t, 5.0, function.MaxExecTime)
+	assert.Equal(t, 2.5, function.AvgWaitTime)
+	assert.Equal(t, 1.5, function.AvgExecTime)
+}
+
+func TestFunctionEqualsNil(t *testing.T) {
+	function := CreateFunction("id", "exec", "type", "colony", "func", 1, 1.0, 2.0, 0.5, 1.0, 1.5, 0.75)
+	assert.False(t, function.Equals(nil))
+}
+
+func TestConvertJSONToFunctionError(t *testing.T) {
+	_, err := ConvertJSONToFunction("invalid json")
+	assert.NotNil(t, err)
+}
+
+func TestConvertJSONToFunctionArrayError(t *testing.T) {
+	_, err := ConvertJSONToFunctionArray("invalid json")
+	assert.NotNil(t, err)
+}

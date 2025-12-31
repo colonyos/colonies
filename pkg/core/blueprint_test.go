@@ -1069,3 +1069,226 @@ func TestDeepEqualWithBlueprintSpec(t *testing.T) {
 	assert.False(t, deepEqual(spec1, spec3), "Different specs should not be equal")
 }
 
+func TestConvertBlueprintArrayToJSON(t *testing.T) {
+	bp1 := CreateBlueprint("TestKind", "test1", "ns")
+	bp1.SetSpec("replicas", 3)
+	bp2 := CreateBlueprint("TestKind", "test2", "ns")
+	bp2.SetSpec("replicas", 5)
+
+	blueprints := []*Blueprint{bp1, bp2}
+
+	jsonStr, err := ConvertBlueprintArrayToJSON(blueprints)
+	assert.NoError(t, err)
+	assert.NotEmpty(t, jsonStr)
+	assert.Contains(t, jsonStr, "test1")
+	assert.Contains(t, jsonStr, "test2")
+}
+
+func TestConvertJSONToBlueprintArray(t *testing.T) {
+	bp1 := CreateBlueprint("TestKind", "test1", "ns")
+	bp1.SetSpec("replicas", 3)
+	bp2 := CreateBlueprint("TestKind", "test2", "ns")
+	bp2.SetSpec("replicas", 5)
+
+	blueprints := []*Blueprint{bp1, bp2}
+
+	jsonStr, err := ConvertBlueprintArrayToJSON(blueprints)
+	assert.NoError(t, err)
+
+	parsed, err := ConvertJSONToBlueprintArray(jsonStr)
+	assert.NoError(t, err)
+	assert.Len(t, parsed, 2)
+	assert.Equal(t, "test1", parsed[0].Metadata.Name)
+	assert.Equal(t, "test2", parsed[1].Metadata.Name)
+
+	// Test invalid JSON
+	_, err = ConvertJSONToBlueprintArray("invalid json")
+	assert.Error(t, err)
+}
+
+func TestConvertBlueprintDefinitionArrayToJSON(t *testing.T) {
+	sd1 := CreateBlueprintDefinition("sd1", "test.io", "v1", "Kind1", "kinds1", "Namespaced", "executor1", "func1")
+	sd2 := CreateBlueprintDefinition("sd2", "test.io", "v1", "Kind2", "kinds2", "Namespaced", "executor2", "func2")
+
+	sds := []*BlueprintDefinition{sd1, sd2}
+
+	jsonStr, err := ConvertBlueprintDefinitionArrayToJSON(sds)
+	assert.NoError(t, err)
+	assert.NotEmpty(t, jsonStr)
+	assert.Contains(t, jsonStr, "Kind1")
+	assert.Contains(t, jsonStr, "Kind2")
+}
+
+func TestConvertJSONToBlueprintDefinitionArray(t *testing.T) {
+	sd1 := CreateBlueprintDefinition("sd1", "test.io", "v1", "Kind1", "kinds1", "Namespaced", "executor1", "func1")
+	sd2 := CreateBlueprintDefinition("sd2", "test.io", "v1", "Kind2", "kinds2", "Namespaced", "executor2", "func2")
+
+	sds := []*BlueprintDefinition{sd1, sd2}
+
+	jsonStr, err := ConvertBlueprintDefinitionArrayToJSON(sds)
+	assert.NoError(t, err)
+
+	parsed, err := ConvertJSONToBlueprintDefinitionArray(jsonStr)
+	assert.NoError(t, err)
+	assert.Len(t, parsed, 2)
+	assert.Equal(t, "Kind1", parsed[0].Spec.Names.Kind)
+	assert.Equal(t, "Kind2", parsed[1].Spec.Names.Kind)
+
+	// Test invalid JSON
+	_, err = ConvertJSONToBlueprintDefinitionArray("invalid json")
+	assert.Error(t, err)
+}
+
+func TestCreateBlueprintHistory(t *testing.T) {
+	bp := CreateBlueprint("TestKind", "test-name", "test-colony")
+	bp.SetSpec("replicas", 3)
+	bp.SetSpec("config", map[string]interface{}{"key": "value"})
+	bp.SetStatus("phase", "Running")
+
+	history := CreateBlueprintHistory(bp, "user-123", "create")
+
+	assert.NotEmpty(t, history.ID)
+	assert.Equal(t, bp.ID, history.BlueprintID)
+	assert.Equal(t, "TestKind", history.Kind)
+	assert.Equal(t, "test-colony", history.Namespace)
+	assert.Equal(t, "test-name", history.Name)
+	assert.Equal(t, bp.Metadata.Generation, history.Generation)
+	assert.Equal(t, "user-123", history.ChangedBy)
+	assert.Equal(t, "create", history.ChangeType)
+	assert.NotNil(t, history.Spec)
+	assert.NotNil(t, history.Status)
+}
+
+func TestBlueprintHistoryToJSON(t *testing.T) {
+	bp := CreateBlueprint("TestKind", "test-name", "test-colony")
+	bp.SetSpec("replicas", 3)
+	history := CreateBlueprintHistory(bp, "user-123", "update")
+
+	jsonStr, err := history.ToJSON()
+	assert.NoError(t, err)
+	assert.NotEmpty(t, jsonStr)
+	assert.Contains(t, jsonStr, "user-123")
+	assert.Contains(t, jsonStr, "update")
+}
+
+func TestConvertJSONToBlueprintHistory(t *testing.T) {
+	bp := CreateBlueprint("TestKind", "test-name", "test-colony")
+	bp.SetSpec("replicas", 3)
+	history := CreateBlueprintHistory(bp, "user-123", "delete")
+
+	jsonStr, err := history.ToJSON()
+	assert.NoError(t, err)
+
+	parsed, err := ConvertJSONToBlueprintHistory(jsonStr)
+	assert.NoError(t, err)
+	assert.Equal(t, history.ID, parsed.ID)
+	assert.Equal(t, history.BlueprintID, parsed.BlueprintID)
+	assert.Equal(t, "user-123", parsed.ChangedBy)
+	assert.Equal(t, "delete", parsed.ChangeType)
+
+	// Test invalid JSON
+	_, err = ConvertJSONToBlueprintHistory("invalid json")
+	assert.Error(t, err)
+}
+
+func TestConvertBlueprintHistoryArrayToJSON(t *testing.T) {
+	bp := CreateBlueprint("TestKind", "test-name", "test-colony")
+	bp.SetSpec("replicas", 3)
+
+	history1 := CreateBlueprintHistory(bp, "user-1", "create")
+	history2 := CreateBlueprintHistory(bp, "user-2", "update")
+
+	histories := []*BlueprintHistory{history1, history2}
+
+	jsonStr, err := ConvertBlueprintHistoryArrayToJSON(histories)
+	assert.NoError(t, err)
+	assert.NotEmpty(t, jsonStr)
+	assert.Contains(t, jsonStr, "user-1")
+	assert.Contains(t, jsonStr, "user-2")
+}
+
+func TestConvertJSONToBlueprintHistoryArray(t *testing.T) {
+	bp := CreateBlueprint("TestKind", "test-name", "test-colony")
+	bp.SetSpec("replicas", 3)
+
+	history1 := CreateBlueprintHistory(bp, "user-1", "create")
+	history2 := CreateBlueprintHistory(bp, "user-2", "update")
+
+	histories := []*BlueprintHistory{history1, history2}
+
+	jsonStr, err := ConvertBlueprintHistoryArrayToJSON(histories)
+	assert.NoError(t, err)
+
+	parsed, err := ConvertJSONToBlueprintHistoryArray(jsonStr)
+	assert.NoError(t, err)
+	assert.Len(t, parsed, 2)
+	assert.Equal(t, "user-1", parsed[0].ChangedBy)
+	assert.Equal(t, "user-2", parsed[1].ChangedBy)
+
+	// Test invalid JSON
+	_, err = ConvertJSONToBlueprintHistoryArray("invalid json")
+	assert.Error(t, err)
+}
+
+func TestCopyMapAndCopySlice(t *testing.T) {
+	// Test copyMap with nested structures
+	original := map[string]interface{}{
+		"simple":  "value",
+		"number":  42,
+		"boolean": true,
+		"nested": map[string]interface{}{
+			"inner": "innerValue",
+		},
+		"array": []interface{}{"a", "b", "c"},
+	}
+
+	copied := copyMap(original)
+
+	// Verify copy is not nil
+	assert.NotNil(t, copied)
+
+	// Verify values are equal
+	assert.Equal(t, original["simple"], copied["simple"])
+	assert.Equal(t, original["number"], copied["number"])
+
+	// Verify nested map is a deep copy
+	originalNested := original["nested"].(map[string]interface{})
+	copiedNested := copied["nested"].(map[string]interface{})
+	assert.Equal(t, originalNested["inner"], copiedNested["inner"])
+
+	// Modify original to verify deep copy
+	originalNested["inner"] = "modified"
+	assert.NotEqual(t, originalNested["inner"], copiedNested["inner"])
+
+	// Test nil map
+	assert.Nil(t, copyMap(nil))
+}
+
+func TestCopySliceNested(t *testing.T) {
+	original := []interface{}{
+		"string",
+		42,
+		map[string]interface{}{"key": "value"},
+		[]interface{}{1, 2, 3},
+	}
+
+	copied := copySlice(original)
+
+	assert.NotNil(t, copied)
+	assert.Len(t, copied, 4)
+	assert.Equal(t, "string", copied[0])
+	assert.Equal(t, 42, copied[1])
+
+	// Verify nested map is a deep copy
+	originalMap := original[2].(map[string]interface{})
+	copiedMap := copied[2].(map[string]interface{})
+	assert.Equal(t, originalMap["key"], copiedMap["key"])
+
+	// Modify original to verify deep copy
+	originalMap["key"] = "modified"
+	assert.NotEqual(t, originalMap["key"], copiedMap["key"])
+
+	// Test nil slice
+	assert.Nil(t, copySlice(nil))
+}
+

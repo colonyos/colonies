@@ -199,3 +199,150 @@ func TestExecutorToJSONArray(t *testing.T) {
 	assert.Nil(t, err)
 	assert.True(t, IsExecutorArraysEqual(executors1, executors2))
 }
+
+func TestCreateExecutorFromDB(t *testing.T) {
+	id := GenerateRandomID()
+	commissionTime := time.Now()
+	lastHeardFromTime := time.Now()
+
+	executor := CreateExecutorFromDB(id, "test_type", "test_name", "test_colony", APPROVED, true, commissionTime, lastHeardFromTime)
+
+	assert.Equal(t, id, executor.ID)
+	assert.Equal(t, "test_type", executor.Type)
+	assert.Equal(t, "test_name", executor.Name)
+	assert.Equal(t, "test_colony", executor.ColonyName)
+	assert.Equal(t, APPROVED, executor.State)
+	assert.True(t, executor.RequireFuncReg)
+}
+
+func TestExecutorApproveRejectUnregister(t *testing.T) {
+	executor := CreateExecutor(GenerateRandomID(), "test", "name", "colony", time.Now(), time.Now())
+
+	assert.True(t, executor.IsPending())
+	assert.False(t, executor.IsApproved())
+	assert.False(t, executor.IsRejected())
+	assert.False(t, executor.IsUnregistered())
+
+	executor.Approve()
+	assert.True(t, executor.IsApproved())
+	assert.False(t, executor.IsPending())
+
+	executor.Reject()
+	assert.True(t, executor.IsRejected())
+	assert.False(t, executor.IsApproved())
+
+	executor.Unregister()
+	assert.True(t, executor.IsUnregistered())
+	assert.False(t, executor.IsRejected())
+}
+
+func TestIsProjectEqual(t *testing.T) {
+	project1 := Project{AllocatedCPU: 10, UsedCPU: 5, AllocatedGPU: 2, UsedGPU: 1, AllocatedStorage: 100, UsedStorage: 50}
+	project2 := Project{AllocatedCPU: 10, UsedCPU: 5, AllocatedGPU: 2, UsedGPU: 1, AllocatedStorage: 100, UsedStorage: 50}
+	project3 := Project{AllocatedCPU: 20, UsedCPU: 5, AllocatedGPU: 2, UsedGPU: 1, AllocatedStorage: 100, UsedStorage: 50}
+
+	assert.True(t, IsProjectEqual(project1, project2))
+	assert.False(t, IsProjectEqual(project1, project3))
+
+	// Test each field difference
+	project3 = Project{AllocatedCPU: 10, UsedCPU: 10, AllocatedGPU: 2, UsedGPU: 1, AllocatedStorage: 100, UsedStorage: 50}
+	assert.False(t, IsProjectEqual(project1, project3))
+
+	project3 = Project{AllocatedCPU: 10, UsedCPU: 5, AllocatedGPU: 4, UsedGPU: 1, AllocatedStorage: 100, UsedStorage: 50}
+	assert.False(t, IsProjectEqual(project1, project3))
+
+	project3 = Project{AllocatedCPU: 10, UsedCPU: 5, AllocatedGPU: 2, UsedGPU: 2, AllocatedStorage: 100, UsedStorage: 50}
+	assert.False(t, IsProjectEqual(project1, project3))
+
+	project3 = Project{AllocatedCPU: 10, UsedCPU: 5, AllocatedGPU: 2, UsedGPU: 1, AllocatedStorage: 200, UsedStorage: 50}
+	assert.False(t, IsProjectEqual(project1, project3))
+
+	project3 = Project{AllocatedCPU: 10, UsedCPU: 5, AllocatedGPU: 2, UsedGPU: 1, AllocatedStorage: 100, UsedStorage: 100}
+	assert.False(t, IsProjectEqual(project1, project3))
+}
+
+func TestIsProjectsEqual(t *testing.T) {
+	project1 := Project{AllocatedCPU: 10, UsedCPU: 5}
+	project2 := Project{AllocatedCPU: 20, UsedCPU: 10}
+
+	projects1 := map[string]Project{"proj1": project1, "proj2": project2}
+	projects2 := map[string]Project{"proj1": project1, "proj2": project2}
+	projects3 := map[string]Project{"proj1": project1}
+
+	assert.True(t, IsProjectsEqual(projects1, projects2))
+	assert.False(t, IsProjectsEqual(projects1, projects3))
+}
+
+func TestExecutorEqualsNil(t *testing.T) {
+	executor := CreateExecutor(GenerateRandomID(), "test", "name", "colony", time.Now(), time.Now())
+	assert.False(t, executor.Equals(nil))
+}
+
+func TestExecutorEqualsAllocationsEdgeCases(t *testing.T) {
+	executor1 := CreateExecutor(GenerateRandomID(), "test", "name", "colony", time.Now(), time.Now())
+	executor2 := CreateExecutor(executor1.ID, "test", "name", "colony", time.Now(), time.Now())
+
+	// One has nil projects, other has non-nil
+	executor1.Allocations.Projects = nil
+	executor2.Allocations.Projects = map[string]Project{"proj": {AllocatedCPU: 1}}
+	assert.False(t, executor1.Equals(executor2))
+
+	// Swap
+	executor1.Allocations.Projects = map[string]Project{"proj": {AllocatedCPU: 1}}
+	executor2.Allocations.Projects = nil
+	assert.False(t, executor1.Equals(executor2))
+}
+
+func TestIsHardwareEqualAllFields(t *testing.T) {
+	base := Hardware{
+		Model: "model", Nodes: 1, CPU: "cpu", Cores: 8, Memory: "16GB",
+		Storage: "1TB", Platform: "linux", Architecture: "amd64",
+		GPU: GPU{Name: "gpu", Memory: "8GB", Count: 1, NodeCount: 1},
+		Network: []string{"192.168.1.1"},
+	}
+
+	tests := []struct {
+		name   string
+		modify func(h *Hardware)
+	}{
+		{"Model", func(h *Hardware) { h.Model = "different" }},
+		{"Nodes", func(h *Hardware) { h.Nodes = 2 }},
+		{"CPU", func(h *Hardware) { h.CPU = "different" }},
+		{"Memory", func(h *Hardware) { h.Memory = "32GB" }},
+		{"Storage", func(h *Hardware) { h.Storage = "2TB" }},
+		{"Platform", func(h *Hardware) { h.Platform = "darwin" }},
+		{"Architecture", func(h *Hardware) { h.Architecture = "arm64" }},
+		{"GPUName", func(h *Hardware) { h.GPU.Name = "different" }},
+		{"GPUMemory", func(h *Hardware) { h.GPU.Memory = "16GB" }},
+		{"GPUCount", func(h *Hardware) { h.GPU.Count = 2 }},
+		{"GPUNodeCount", func(h *Hardware) { h.GPU.NodeCount = 2 }},
+		{"NetworkLen", func(h *Hardware) { h.Network = []string{"192.168.1.1", "10.0.0.1"} }},
+		{"NetworkVal", func(h *Hardware) { h.Network = []string{"10.0.0.1"} }},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			hw := Hardware{
+				Model: "model", Nodes: 1, CPU: "cpu", Cores: 8, Memory: "16GB",
+				Storage: "1TB", Platform: "linux", Architecture: "amd64",
+				GPU: GPU{Name: "gpu", Memory: "8GB", Count: 1, NodeCount: 1},
+				Network: []string{"192.168.1.1"},
+			}
+			tt.modify(&hw)
+			assert.False(t, IsHardwareEqual(base, hw))
+		})
+	}
+}
+
+func TestIsSoftwareEqual(t *testing.T) {
+	sw1 := Software{Name: "test", Type: "runtime", Version: "1.0"}
+	sw2 := Software{Name: "test", Type: "runtime", Version: "1.0"}
+	sw3 := Software{Name: "other", Type: "runtime", Version: "1.0"}
+	sw4 := Software{Name: "test", Type: "library", Version: "1.0"}
+	sw5 := Software{Name: "test", Type: "runtime", Version: "2.0"}
+
+	assert.True(t, IsSoftwareEqual(sw1, sw2))
+	assert.False(t, IsSoftwareEqual(sw1, sw3))
+	assert.False(t, IsSoftwareEqual(sw1, sw4))
+	assert.False(t, IsSoftwareEqual(sw1, sw5))
+}
