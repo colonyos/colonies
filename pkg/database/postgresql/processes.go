@@ -29,15 +29,6 @@ func (db *PQDatabase) AddProcess(process *core.Process) error {
 		return nil
 	}
 
-	var reconciliationJSONStr string
-	if process.FunctionSpec.Reconciliation != nil {
-		reconciliationJSON, err := json.Marshal(process.FunctionSpec.Reconciliation)
-		if err != nil {
-			return err
-		}
-		reconciliationJSONStr = string(reconciliationJSON)
-	}
-
 	var blueprintJSONStr string
 	if process.FunctionSpec.Blueprint != nil {
 		blueprintJSON, err := json.Marshal(process.FunctionSpec.Blueprint)
@@ -47,7 +38,7 @@ func (db *PQDatabase) AddProcess(process *core.Process) error {
 		blueprintJSONStr = string(blueprintJSON)
 	}
 
-	sqlStatement := `INSERT INTO  ` + db.dbPrefix + `PROCESSES (PROCESS_ID, TARGET_COLONY_NAME, TARGET_EXECUTOR_NAMES, ASSIGNED_EXECUTOR_ID, STATE, IS_ASSIGNED, EXECUTOR_TYPE, SUBMISSION_TIME, START_TIME, END_TIME, WAIT_DEADLINE, EXEC_DEADLINE, ERRORS, RETRIES, NODENAME, FUNCNAME, ARGS, KWARGS, MAX_WAIT_TIME, MAX_EXEC_TIME, MAX_RETRIES, DEPENDENCIES, PRIORITY, PRIORITYTIME, WAIT_FOR_PARENTS, PARENTS, CHILDREN, PROCESSGRAPH_ID, INPUT, OUTPUT, LABEL, FS, NODES, CPU, PROCESSES, PROCESSES_PER_NODE, MEMORY, STORAGE, GPUNAME, GPUCOUNT, GPUMEM, WALLTIME, INITIATOR_ID, INITIATOR_NAME, RECONCILIATION, BLUEPRINT, CHANNELS, LOCATION_NAME) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35, $36, $37, $38, $39, $40, $41, $42, $43, $44, $45, $46, $47, $48)`
+	sqlStatement := `INSERT INTO  ` + db.dbPrefix + `PROCESSES (PROCESS_ID, TARGET_COLONY_NAME, TARGET_EXECUTOR_NAMES, ASSIGNED_EXECUTOR_ID, STATE, IS_ASSIGNED, EXECUTOR_TYPE, SUBMISSION_TIME, START_TIME, END_TIME, WAIT_DEADLINE, EXEC_DEADLINE, ERRORS, RETRIES, NODENAME, FUNCNAME, ARGS, KWARGS, MAX_WAIT_TIME, MAX_EXEC_TIME, MAX_RETRIES, DEPENDENCIES, PRIORITY, PRIORITYTIME, WAIT_FOR_PARENTS, PARENTS, CHILDREN, PROCESSGRAPH_ID, INPUT, OUTPUT, LABEL, FS, NODES, CPU, PROCESSES, PROCESSES_PER_NODE, MEMORY, STORAGE, GPUNAME, GPUCOUNT, GPUMEM, WALLTIME, INITIATOR_ID, INITIATOR_NAME, BLUEPRINT, CHANNELS, LOCATION_NAME) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35, $36, $37, $38, $39, $40, $41, $42, $43, $44, $45, $46, $47)`
 
 	argsJSON, err := json.Marshal(process.FunctionSpec.Args)
 	if err != nil {
@@ -96,7 +87,7 @@ func (db *PQDatabase) AddProcess(process *core.Process) error {
 		return err
 	}
 
-	_, err = db.postgresql.Exec(sqlStatement, process.ID, process.FunctionSpec.Conditions.ColonyName, pq.Array(targetExecutorNames), process.AssignedExecutorID, process.State, process.IsAssigned, process.FunctionSpec.Conditions.ExecutorType, submissionTime, time.Time{}, time.Time{}, deadline, process.ExecDeadline, pq.Array(process.Errors), 0, process.FunctionSpec.NodeName, process.FunctionSpec.FuncName, argsJSONStr, kwargsJSONStr, process.FunctionSpec.MaxWaitTime, process.FunctionSpec.MaxExecTime, process.FunctionSpec.MaxRetries, pq.Array(process.FunctionSpec.Conditions.Dependencies), process.FunctionSpec.Priority, process.PriorityTime, process.WaitForParents, pq.Array(process.Parents), pq.Array(process.Children), process.ProcessGraphID, inJSONStr, outJSONStr, process.FunctionSpec.Label, fsJSONStr, process.FunctionSpec.Conditions.Nodes, cpu, process.FunctionSpec.Conditions.Processes, process.FunctionSpec.Conditions.ProcessesPerNode, memory, storage, process.FunctionSpec.Conditions.GPU.Name, process.FunctionSpec.Conditions.GPU.Count, gpuMem, process.FunctionSpec.Conditions.WallTime, process.InitiatorID, process.InitiatorName, reconciliationJSONStr, blueprintJSONStr, pq.Array(process.FunctionSpec.Channels), process.FunctionSpec.Conditions.LocationName)
+	_, err = db.postgresql.Exec(sqlStatement, process.ID, process.FunctionSpec.Conditions.ColonyName, pq.Array(targetExecutorNames), process.AssignedExecutorID, process.State, process.IsAssigned, process.FunctionSpec.Conditions.ExecutorType, submissionTime, time.Time{}, time.Time{}, deadline, process.ExecDeadline, pq.Array(process.Errors), 0, process.FunctionSpec.NodeName, process.FunctionSpec.FuncName, argsJSONStr, kwargsJSONStr, process.FunctionSpec.MaxWaitTime, process.FunctionSpec.MaxExecTime, process.FunctionSpec.MaxRetries, pq.Array(process.FunctionSpec.Conditions.Dependencies), process.FunctionSpec.Priority, process.PriorityTime, process.WaitForParents, pq.Array(process.Parents), pq.Array(process.Children), process.ProcessGraphID, inJSONStr, outJSONStr, process.FunctionSpec.Label, fsJSONStr, process.FunctionSpec.Conditions.Nodes, cpu, process.FunctionSpec.Conditions.Processes, process.FunctionSpec.Conditions.ProcessesPerNode, memory, storage, process.FunctionSpec.Conditions.GPU.Name, process.FunctionSpec.Conditions.GPU.Count, gpuMem, process.FunctionSpec.Conditions.WallTime, process.InitiatorID, process.InitiatorName, blueprintJSONStr, pq.Array(process.FunctionSpec.Channels), process.FunctionSpec.Conditions.LocationName)
 	if err != nil {
 		return err
 	}
@@ -162,12 +153,11 @@ func (db *PQDatabase) parseProcesses(rows *sql.Rows) ([]*core.Process, error) {
 		var walltime int64
 		var initiatorID string
 		var initiatorName string
-		var reconciliationJSONStr sql.NullString
 		var blueprintJSONStr sql.NullString
 		var channels []string
 		var locationName sql.NullString
 
-		if err := rows.Scan(&processID, &targetColonyName, pq.Array(&targetExecutorNames), &assignedExecutorID, &state, &isAssigned, &executorType, &submissionTime, &startTime, &endTime, &waitDeadline, &execDeadline, pq.Array(&errs), &nodeName, &funcName, &argsJSONStr, &kwargsJSONStr, &maxWaitTime, &maxExecTime, &retries, &maxRetries, pq.Array(&dependencies), &priority, &priorityTime, &waitForParent, pq.Array(&parents), pq.Array(&children), &processGraphID, &inputJSONStr, &outputJSONStr, &label, &fsJSONStr, &nodes, &cpu, &processesCount, &processesPerNode, &memory, &storage, &gpuName, &gpuCount, &gpuMemory, &walltime, &initiatorID, &initiatorName, &reconciliationJSONStr, &blueprintJSONStr, pq.Array(&channels), &locationName); err != nil {
+		if err := rows.Scan(&processID, &targetColonyName, pq.Array(&targetExecutorNames), &assignedExecutorID, &state, &isAssigned, &executorType, &submissionTime, &startTime, &endTime, &waitDeadline, &execDeadline, pq.Array(&errs), &nodeName, &funcName, &argsJSONStr, &kwargsJSONStr, &maxWaitTime, &maxExecTime, &retries, &maxRetries, pq.Array(&dependencies), &priority, &priorityTime, &waitForParent, pq.Array(&parents), pq.Array(&children), &processGraphID, &inputJSONStr, &outputJSONStr, &label, &fsJSONStr, &nodes, &cpu, &processesCount, &processesPerNode, &memory, &storage, &gpuName, &gpuCount, &gpuMemory, &walltime, &initiatorID, &initiatorName, &blueprintJSONStr, pq.Array(&channels), &locationName); err != nil {
 			return nil, err
 		}
 
@@ -252,16 +242,6 @@ func (db *PQDatabase) parseProcesses(rows *sql.Rows) ([]*core.Process, error) {
 			return nil, err
 		}
 		functionSpec.Filesystem = fs
-
-		// Deserialize reconciliation if present
-		if reconciliationJSONStr.Valid && reconciliationJSONStr.String != "" {
-			var reconciliation core.Reconciliation
-			err = json.Unmarshal([]byte(reconciliationJSONStr.String), &reconciliation)
-			if err != nil {
-				return nil, err
-			}
-			functionSpec.Reconciliation = &reconciliation
-		}
 
 		// Deserialize blueprint if present
 		if blueprintJSONStr.Valid && blueprintJSONStr.String != "" {
