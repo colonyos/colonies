@@ -101,6 +101,19 @@ func TestCheckHealth(t *testing.T) {
 	<-done
 }
 
+func TestGetVersion(t *testing.T) {
+	_, client, coloniesServer, _, done := server.SetupTestEnv2(t)
+
+	buildVersion, buildTime, err := client.Version()
+	assert.Nil(t, err)
+	// Version is set at build time, just verify we get non-empty strings
+	assert.NotNil(t, buildVersion)
+	assert.NotNil(t, buildTime)
+
+	coloniesServer.Shutdown()
+	<-done
+}
+
 // TestGetStatisticsUnauthorized tests getting statistics without server key
 func TestGetStatisticsUnauthorized(t *testing.T) {
 	env, client, coloniesServer, _, done := server.SetupTestEnv2(t)
