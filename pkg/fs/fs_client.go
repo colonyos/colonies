@@ -686,11 +686,12 @@ func (fsClient *FSClient) Download(colonyName string, fileID string, downloadDir
 		return errors.New("Failed to get file info")
 	}
 
-	pw := utils.ProgressBar(1)
-	go pw.Render()
-
+	var pw progress.Writer
 	var downloadTracker progress.Tracker
 	if !fsClient.Quiet {
+		pw = utils.ProgressBar(1)
+		go pw.Render()
+
 		messageDownloadTracker := fmt.Sprintf("Downloading %s", file[0].Name)
 		downloadTracker = progress.Tracker{Message: messageDownloadTracker, Total: file[0].Size, Units: progress.UnitsBytes}
 		pw.AppendTracker(&downloadTracker)
@@ -707,6 +708,7 @@ func (fsClient *FSClient) Download(colonyName string, fileID string, downloadDir
 		}
 
 		downloadTracker.MarkAsDone()
+		pw.Stop()
 	}
 	return err
 }
@@ -876,6 +878,9 @@ func (fsClient *FSClient) DownloadSnapshot(snapshotID string, downloadDir string
 	}
 	for _, fileID := range snapshot.FileIDs {
 		file, err := fsClient.coloniesClient.GetFileByID(fsClient.colonyName, fileID, fsClient.executorPrvKey)
+		if err != nil {
+			return err
+		}
 		if len(file) != 1 {
 			return errors.New("Failed to download file, no revision found")
 		}
