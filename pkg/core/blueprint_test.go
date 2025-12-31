@@ -881,59 +881,6 @@ func TestBlueprintDiffComplexChanges(t *testing.T) {
 	assert.Equal(t, ChangeModified, configChange.Type)
 }
 
-func TestReconciliationInFunctionSpec(t *testing.T) {
-	// Create a reconciliation
-	oldBlueprint := CreateBlueprint("TestBlueprint", "test", "ns")
-	oldBlueprint.SetSpec("replicas", 3)
-
-	newBlueprint := CreateBlueprint("TestBlueprint", "test", "ns")
-	newBlueprint.SetSpec("replicas", 5)
-
-	reconciliation := CreateReconciliation(oldBlueprint, newBlueprint)
-
-	// Create a FunctionSpec with reconciliation
-	funcSpec := CreateEmptyFunctionSpec()
-	funcSpec.FuncName = "reconcile"
-	funcSpec.Reconciliation = reconciliation
-
-	assert.NotNil(t, funcSpec.Reconciliation)
-	assert.Equal(t, ReconciliationUpdate, funcSpec.Reconciliation.Action)
-	assert.True(t, funcSpec.Reconciliation.Diff.HasChanges)
-
-	// Test JSON conversion
-	jsonStr, err := funcSpec.ToJSON()
-	assert.NoError(t, err)
-	assert.Contains(t, jsonStr, "reconciliation")
-	assert.Contains(t, jsonStr, "update")
-}
-
-func TestReconciliationJSONConversion(t *testing.T) {
-	oldBlueprint := CreateBlueprint("TestBlueprint", "test", "ns")
-	oldBlueprint.SetSpec("replicas", 3)
-
-	newBlueprint := CreateBlueprint("TestBlueprint", "test", "ns")
-	newBlueprint.SetSpec("replicas", 5)
-
-	reconciliation := CreateReconciliation(oldBlueprint, newBlueprint)
-
-	// Create FunctionSpec with reconciliation
-	funcSpec := CreateEmptyFunctionSpec()
-	funcSpec.FuncName = "reconcile"
-	funcSpec.Reconciliation = reconciliation
-
-	// Convert to JSON
-	jsonStr, err := funcSpec.ToJSON()
-	assert.NoError(t, err)
-
-	// Convert back from JSON
-	funcSpec2, err := ConvertJSONToFunctionSpec(jsonStr)
-	assert.NoError(t, err)
-
-	assert.NotNil(t, funcSpec2.Reconciliation)
-	assert.Equal(t, ReconciliationUpdate, funcSpec2.Reconciliation.Action)
-	assert.True(t, funcSpec2.Reconciliation.Diff.HasChanges)
-}
-
 func TestHasFieldChange(t *testing.T) {
 	oldBlueprint := CreateBlueprint("TestBlueprint", "test", "ns")
 	oldBlueprint.SetSpec("replicas", 3)
