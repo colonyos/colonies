@@ -182,7 +182,7 @@ func (m *MockProcessGraphDB) RemoveAllProcessGraphsByColonyName(colonyName strin
 	return m.removeAllErr
 }
 func (m *MockProcessGraphDB) RemoveAllWaitingProcessGraphsByColonyName(colonyName string) error {
-	return nil
+	return m.removeAllErr
 }
 func (m *MockProcessGraphDB) RemoveAllRunningProcessGraphsByColonyName(colonyName string) error {
 	return nil
@@ -679,9 +679,9 @@ func TestHandleRemoveProcessGraph_MembershipError(t *testing.T) {
 	assert.Equal(t, http.StatusForbidden, server.lastStatusCode)
 }
 
-func TestHandleRemoveProcessGraph_ControllerError(t *testing.T) {
+func TestHandleRemoveProcessGraph_DBError(t *testing.T) {
 	server, ctx := createMockServer()
-	server.controller.removeErr = errors.New("remove error")
+	server.processGraphDB.removeErr = errors.New("database error")
 	handlers := NewHandlers(server)
 
 	msg := rpc.CreateRemoveProcessGraphMsg("processgraph-123")
@@ -743,9 +743,9 @@ func TestHandleRemoveAllProcessGraphs_ColonyOwnerError(t *testing.T) {
 	assert.Equal(t, http.StatusForbidden, server.lastStatusCode)
 }
 
-func TestHandleRemoveAllProcessGraphs_ControllerError(t *testing.T) {
+func TestHandleRemoveAllProcessGraphs_DBError(t *testing.T) {
 	server, ctx := createMockServer()
-	server.controller.removeAllErr = errors.New("remove all error")
+	server.processGraphDB.removeAllErr = errors.New("database error")
 	handlers := NewHandlers(server)
 
 	msg := rpc.CreateRemoveAllProcessGraphsMsg("test-colony")
