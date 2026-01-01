@@ -638,7 +638,7 @@ func TestHandleRemoveFunction_FunctionNotFound(t *testing.T) {
 	h.HandleRemoveFunction(ctx, "exec-123", rpc.RemoveFunctionPayloadType, jsonString)
 
 	assert.True(t, server.httpErrorCalled)
-	assert.Equal(t, http.StatusBadRequest, server.httpErrorCode)
+	assert.Equal(t, http.StatusNotFound, server.httpErrorCode)
 }
 
 func TestHandleRemoveFunction_GetFunctionError(t *testing.T) {
@@ -652,7 +652,7 @@ func TestHandleRemoveFunction_GetFunctionError(t *testing.T) {
 	h.HandleRemoveFunction(ctx, "exec-123", rpc.RemoveFunctionPayloadType, jsonString)
 
 	assert.True(t, server.httpErrorCalled)
-	assert.Equal(t, http.StatusForbidden, server.httpErrorCode)
+	assert.Equal(t, http.StatusBadRequest, server.httpErrorCode)
 }
 
 func TestHandleRemoveFunction_ExecutorDBError(t *testing.T) {
