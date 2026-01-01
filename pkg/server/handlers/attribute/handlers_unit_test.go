@@ -400,7 +400,7 @@ func TestHandleAddAttribute_ProcessNotFound(t *testing.T) {
 	ctx := &MockContext{}
 	handlers.HandleAddAttribute(ctx, "executor-123", rpc.AddAttributePayloadType, jsonStr)
 
-	assert.Equal(t, http.StatusInternalServerError, mockServer.httpErrorCode)
+	assert.Equal(t, http.StatusNotFound, mockServer.httpErrorCode)
 }
 
 func TestHandleAddAttribute_AuthError(t *testing.T) {
@@ -576,7 +576,7 @@ func TestHandleGetAttribute_ProcessNotFound(t *testing.T) {
 	ctx := &MockContext{}
 	handlers.HandleGetAttribute(ctx, "executor-123", rpc.GetAttributePayloadType, jsonStr)
 
-	assert.Equal(t, http.StatusInternalServerError, mockServer.httpErrorCode)
+	assert.Equal(t, http.StatusNotFound, mockServer.httpErrorCode)
 }
 
 func TestHandleGetAttribute_AuthError(t *testing.T) {
