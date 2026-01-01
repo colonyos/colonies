@@ -272,26 +272,6 @@ func TestBlueprintDefinitionHelperMethods(t *testing.T) {
 	assert.Equal(t, "test.io/v1", crd.GetAPIVersion())
 }
 
-func TestBlueprintInFunctionSpec(t *testing.T) {
-	cr := CreateBlueprint("TestBlueprint", "test-blueprint", "test-colony")
-	cr.SetSpec("replicas", 3)
-	cr.SetSpec("image", "test:latest")
-
-	// Create a FunctionSpec with the Blueprint attached
-	funcSpec := CreateEmptyFunctionSpec()
-	funcSpec.Blueprint = cr
-
-	// Verify the blueprint is properly attached
-	assert.NotNil(t, funcSpec.Blueprint)
-	assert.Equal(t, "TestBlueprint", funcSpec.Blueprint.Kind)
-	assert.Equal(t, "test-blueprint", funcSpec.Blueprint.Metadata.Name)
-	assert.Equal(t, "test-colony", funcSpec.Blueprint.Metadata.ColonyName)
-
-	replicas, ok := funcSpec.Blueprint.GetSpec("replicas")
-	assert.True(t, ok)
-	assert.Equal(t, 3, replicas)
-}
-
 func TestComplexBlueprintScenario(t *testing.T) {
 	// Create a CRD for ExecutorDeployment
 	crd := CreateBlueprintDefinition(

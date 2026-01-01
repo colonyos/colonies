@@ -15,15 +15,9 @@ import (
 type Blueprint struct {
 	ID       string                 `json:"blueprintid"`
 	Kind     string                 `json:"kind"`
-	Metadata BlueprintMetadata        `json:"metadata"`
-	Handler  *BlueprintHandler      `json:"handler,omitempty"`
+	Metadata BlueprintMetadata      `json:"metadata"`
 	Spec     map[string]interface{} `json:"spec"`
 	Status   map[string]interface{} `json:"status,omitempty"`
-}
-
-// BlueprintHandler defines executor type targeting for blueprint instances
-type BlueprintHandler struct {
-	ExecutorType string `json:"executorType,omitempty"`
 }
 
 // BlueprintMetadata contains metadata for blueprints

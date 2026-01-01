@@ -228,51 +228,6 @@ func (controller *ColoniesController) StartCron(cron *core.Cron) {
 		return
 	}
 
-	log.WithFields(log.Fields{
-		"FunctionSpecsLen": len(workflowSpec.FunctionSpecs),
-		"FuncName":         workflowSpec.FunctionSpecs[0].FuncName,
-	}).Info("Checking if this is a reconciliation cron")
-
-	// Update blueprint metadata for reconciliation crons (cron-based reconciliation)
-	if len(workflowSpec.FunctionSpecs) > 0 && workflowSpec.FunctionSpecs[0].FuncName == "reconcile" {
-		log.WithFields(log.Fields{
-			"FuncName": workflowSpec.FunctionSpecs[0].FuncName,
-		}).Info("Detected reconcile function in cron")
-		if blueprintName, ok := workflowSpec.FunctionSpecs[0].KwArgs["blueprintName"].(string); ok {
-			log.WithFields(log.Fields{
-				"BlueprintName": blueprintName,
-				"ColonyName":    workflowSpec.ColonyName,
-			}).Info("Attempting to update blueprint metadata")
-			blueprint, err := controller.blueprintDB.GetBlueprintByName(workflowSpec.ColonyName, blueprintName)
-			if err == nil && blueprint != nil && len(processGraph.Roots) > 0 {
-				blueprint.Metadata.LastReconciliationProcess = processGraph.Roots[0]
-				blueprint.Metadata.LastReconciliationTime = time.Now()
-				err = controller.blueprintDB.UpdateBlueprint(blueprint)
-				if err != nil {
-					log.WithFields(log.Fields{
-						"Error":         err,
-						"BlueprintName": blueprintName,
-						"ProcessID":     processGraph.Roots[0],
-					}).Warn("Failed to update blueprint reconciliation metadata")
-				} else {
-					log.WithFields(log.Fields{
-						"BlueprintName": blueprintName,
-						"ProcessID":     processGraph.Roots[0],
-					}).Info("Successfully updated blueprint reconciliation metadata")
-				}
-			} else {
-				log.WithFields(log.Fields{
-					"Error":           err,
-					"BlueprintName":   blueprintName,
-					"BlueprintNil":    blueprint == nil,
-					"ProcessGraphLen": len(processGraph.Roots),
-				}).Warn("Failed to get blueprint or process graph roots")
-			}
-		} else {
-			log.Warn("blueprintName not found in KwArgs")
-		}
-	}
-
 	nextRun := controller.CalcNextRun(cron)
 	controller.cronDB.UpdateCron(cron.ID, nextRun, time.Now(), processGraph.ID)
 }

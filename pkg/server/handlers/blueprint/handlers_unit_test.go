@@ -570,13 +570,10 @@ func createTestBlueprintDefinition(kind, executorType, colonyName string) *core.
 }
 
 // Helper to create a test Blueprint
+// Note: executorType is kept as parameter for compatibility but is no longer used
+// Handler config now comes from BlueprintDefinition only
 func createTestBlueprint(kind, name, colonyName, executorType string) *core.Blueprint {
 	bp := core.CreateBlueprint(kind, name, colonyName)
-	if executorType != "" {
-		bp.Handler = &core.BlueprintHandler{
-			ExecutorType: executorType,
-		}
-	}
 	return bp
 }
 
@@ -617,6 +614,8 @@ func TestCreateConsolidatedReconciliationWorkflowSpec_Success(t *testing.T) {
 	assert.Equal(t, "docker-reconciler", workflowSpec.FunctionSpecs[0].Conditions.ExecutorType)
 	assert.Equal(t, "reconcile", workflowSpec.FunctionSpecs[0].FuncName)
 	assert.Equal(t, kind, workflowSpec.FunctionSpecs[0].KwArgs["kind"])
+	// NodeName should be executorType-functionName-index
+	assert.Equal(t, "docker-reconciler-reconcile-0", workflowSpec.FunctionSpecs[0].NodeName)
 }
 
 func TestCreateConsolidatedReconciliationWorkflowSpec_NilBlueprintDefinition(t *testing.T) {
@@ -665,7 +664,7 @@ func TestCreateConsolidatedReconciliationWorkflowSpec_DBError(t *testing.T) {
 	assert.Contains(t, err.Error(), "failed to get blueprints for kind")
 }
 
-func TestCreateConsolidatedReconciliationWorkflowSpec_MultipleExecutorTypes(t *testing.T) {
+func TestCreateConsolidatedReconciliationWorkflowSpec_AllBlueprintsSameExecutorType(t *testing.T) {
 	mockBlueprintDB := &MockBlueprintDB{}
 	mockServer := &MockServer{
 		blueprintDB: mockBlueprintDB,
@@ -675,15 +674,15 @@ func TestCreateConsolidatedReconciliationWorkflowSpec_MultipleExecutorTypes(t *t
 	colonyName := "test-colony"
 	kind := "TestKind"
 
-	// Create a BlueprintDefinition with default handler
+	// Create a BlueprintDefinition with handler
 	sd := createTestBlueprintDefinition(kind, "default-reconciler", colonyName)
 	mockBlueprintDB.blueprintDefinitions = append(mockBlueprintDB.blueprintDefinitions, sd)
 
-	// Add blueprints with different executor types
-	bp1 := createTestBlueprint(kind, "bp1", colonyName, "")                     // Uses default
-	bp2 := createTestBlueprint(kind, "bp2", colonyName, "custom-reconciler-1") // Override
-	bp3 := createTestBlueprint(kind, "bp3", colonyName, "custom-reconciler-2") // Override
-	bp4 := createTestBlueprint(kind, "bp4", colonyName, "custom-reconciler-1") // Same as bp2
+	// Add multiple blueprints - all use the same executor type from BlueprintDefinition
+	bp1 := createTestBlueprint(kind, "bp1", colonyName, "")
+	bp2 := createTestBlueprint(kind, "bp2", colonyName, "")
+	bp3 := createTestBlueprint(kind, "bp3", colonyName, "")
+	bp4 := createTestBlueprint(kind, "bp4", colonyName, "")
 	mockBlueprintDB.blueprints = append(mockBlueprintDB.blueprints, bp1, bp2, bp3, bp4)
 
 	// Call the function
@@ -692,19 +691,11 @@ func TestCreateConsolidatedReconciliationWorkflowSpec_MultipleExecutorTypes(t *t
 	assert.Nil(t, err)
 	assert.NotEmpty(t, workflowJSON)
 
-	// Parse and verify - should have 3 unique executor types
+	// Parse and verify - should have only 1 executor type from BlueprintDefinition
 	workflowSpec, err := core.ConvertJSONToWorkflowSpec(workflowJSON)
 	assert.Nil(t, err)
-	assert.Equal(t, 3, len(workflowSpec.FunctionSpecs))
-
-	// Verify all executor types are present
-	executorTypes := make(map[string]bool)
-	for _, spec := range workflowSpec.FunctionSpecs {
-		executorTypes[spec.Conditions.ExecutorType] = true
-	}
-	assert.True(t, executorTypes["default-reconciler"])
-	assert.True(t, executorTypes["custom-reconciler-1"])
-	assert.True(t, executorTypes["custom-reconciler-2"])
+	assert.Equal(t, 1, len(workflowSpec.FunctionSpecs))
+	assert.Equal(t, "default-reconciler", workflowSpec.FunctionSpecs[0].Conditions.ExecutorType)
 }
 
 func TestCreateConsolidatedReconciliationWorkflowSpec_EmptyBlueprints(t *testing.T) {
@@ -727,10 +718,12 @@ func TestCreateConsolidatedReconciliationWorkflowSpec_EmptyBlueprints(t *testing
 	assert.Nil(t, err)
 	assert.NotEmpty(t, workflowJSON)
 
-	// Should have 0 function specs (no blueprints to reconcile)
+	// Should still have 1 function spec - reconciler needs to run even with no blueprints
+	// to handle cleanup of any orphaned resources
 	workflowSpec, err := core.ConvertJSONToWorkflowSpec(workflowJSON)
 	assert.Nil(t, err)
-	assert.Equal(t, 0, len(workflowSpec.FunctionSpecs))
+	assert.Equal(t, 1, len(workflowSpec.FunctionSpecs))
+	assert.Equal(t, "docker-reconciler", workflowSpec.FunctionSpecs[0].Conditions.ExecutorType)
 }
 
 // =============================================
@@ -746,9 +739,10 @@ func TestCreateReconcilerCronWorkflowSpec_Success(t *testing.T) {
 	colonyName := "test-colony"
 	kind := "TestKind"
 	executorType := "docker-reconciler"
+	functionName := "reconcile"
 	locationName := "datacenter-east"
 
-	workflowJSON, err := handlers.createReconcilerCronWorkflowSpec(colonyName, kind, executorType, locationName)
+	workflowJSON, err := handlers.createReconcilerCronWorkflowSpec(colonyName, kind, executorType, functionName, locationName)
 
 	assert.Nil(t, err)
 	assert.NotEmpty(t, workflowJSON)
@@ -760,8 +754,10 @@ func TestCreateReconcilerCronWorkflowSpec_Success(t *testing.T) {
 	assert.Equal(t, 1, len(workflowSpec.FunctionSpecs))
 	assert.Equal(t, executorType, workflowSpec.FunctionSpecs[0].Conditions.ExecutorType)
 	assert.Equal(t, locationName, workflowSpec.FunctionSpecs[0].Conditions.LocationName)
-	assert.Equal(t, "reconcile", workflowSpec.FunctionSpecs[0].FuncName)
+	assert.Equal(t, functionName, workflowSpec.FunctionSpecs[0].FuncName)
 	assert.Equal(t, kind, workflowSpec.FunctionSpecs[0].KwArgs["kind"])
+	// NodeName should be executorType-functionName
+	assert.Equal(t, "docker-reconciler-reconcile", workflowSpec.FunctionSpecs[0].NodeName)
 }
 
 func TestCreateReconcilerCronWorkflowSpec_EmptyExecutorType(t *testing.T) {
@@ -770,10 +766,22 @@ func TestCreateReconcilerCronWorkflowSpec_EmptyExecutorType(t *testing.T) {
 	}
 	handlers := NewHandlers(mockServer)
 
-	_, err := handlers.createReconcilerCronWorkflowSpec("test-colony", "TestKind", "", "datacenter")
+	_, err := handlers.createReconcilerCronWorkflowSpec("test-colony", "TestKind", "", "reconcile", "datacenter")
 
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), "no handler executorType defined")
+}
+
+func TestCreateReconcilerCronWorkflowSpec_EmptyFunctionName(t *testing.T) {
+	mockServer := &MockServer{
+		blueprintDB: &MockBlueprintDB{},
+	}
+	handlers := NewHandlers(mockServer)
+
+	_, err := handlers.createReconcilerCronWorkflowSpec("test-colony", "TestKind", "docker-reconciler", "", "datacenter")
+
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "no handler functionName defined")
 }
 
 func TestCreateReconcilerCronWorkflowSpec_EmptyLocation(t *testing.T) {
@@ -782,7 +790,7 @@ func TestCreateReconcilerCronWorkflowSpec_EmptyLocation(t *testing.T) {
 	}
 	handlers := NewHandlers(mockServer)
 
-	workflowJSON, err := handlers.createReconcilerCronWorkflowSpec("test-colony", "TestKind", "docker-reconciler", "")
+	workflowJSON, err := handlers.createReconcilerCronWorkflowSpec("test-colony", "TestKind", "docker-reconciler", "reconcile", "")
 
 	assert.Nil(t, err)
 	assert.NotEmpty(t, workflowJSON)
@@ -824,7 +832,7 @@ func TestCreateImmediateReconciliationProcess_Success(t *testing.T) {
 	assert.Equal(t, "test-initiator", process.InitiatorName)
 }
 
-func TestCreateImmediateReconciliationProcess_BlueprintHandlerOverride(t *testing.T) {
+func TestCreateImmediateReconciliationProcess_UsesDefinitionHandler(t *testing.T) {
 	mockServer := &MockServer{
 		blueprintDB: &MockBlueprintDB{},
 	}
@@ -833,15 +841,18 @@ func TestCreateImmediateReconciliationProcess_BlueprintHandlerOverride(t *testin
 	colonyName := "test-colony"
 	kind := "TestKind"
 
-	// Blueprint has its own handler that should override definition
-	blueprint := createTestBlueprint(kind, "my-blueprint", colonyName, "custom-reconciler")
+	// Handler comes from BlueprintDefinition only
+	blueprint := createTestBlueprint(kind, "my-blueprint", colonyName, "")
 	sd := createTestBlueprintDefinition(kind, "docker-reconciler", colonyName)
 
 	process, err := handlers.createImmediateReconciliationProcess(blueprint, sd, "initiator-123", "test-initiator")
 
 	assert.Nil(t, err)
 	assert.NotNil(t, process)
-	assert.Equal(t, "custom-reconciler", process.FunctionSpec.Conditions.ExecutorType)
+	assert.Equal(t, "docker-reconciler", process.FunctionSpec.Conditions.ExecutorType)
+	assert.Equal(t, "reconcile", process.FunctionSpec.FuncName)
+	// NodeName should be executorType-functionName
+	assert.Equal(t, "docker-reconciler-reconcile", process.FunctionSpec.NodeName)
 }
 
 func TestCreateImmediateReconciliationProcess_NoHandler(t *testing.T) {
@@ -860,29 +871,29 @@ func TestCreateImmediateReconciliationProcess_NoHandler(t *testing.T) {
 	assert.Contains(t, err.Error(), "no handler defined for blueprint kind")
 }
 
+func TestCreateImmediateReconciliationProcess_NoFunctionName(t *testing.T) {
+	mockServer := &MockServer{
+		blueprintDB: &MockBlueprintDB{},
+	}
+	handlers := NewHandlers(mockServer)
+
+	blueprint := createTestBlueprint("TestKind", "my-blueprint", "test-colony", "")
+	sd := createTestBlueprintDefinition("TestKind", "docker-reconciler", "test-colony")
+	sd.Spec.Handler.FunctionName = "" // No function name
+
+	_, err := handlers.createImmediateReconciliationProcess(blueprint, sd, "initiator-123", "test-initiator")
+
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "no handler function name defined for blueprint kind")
+}
+
 func TestCreateImmediateReconciliationProcess_NilDefinition(t *testing.T) {
 	mockServer := &MockServer{
 		blueprintDB: &MockBlueprintDB{},
 	}
 	handlers := NewHandlers(mockServer)
 
-	// Blueprint has its own handler, so nil definition should work
-	blueprint := createTestBlueprint("TestKind", "my-blueprint", "test-colony", "blueprint-handler")
-
-	process, err := handlers.createImmediateReconciliationProcess(blueprint, nil, "initiator-123", "test-initiator")
-
-	assert.Nil(t, err)
-	assert.NotNil(t, process)
-	assert.Equal(t, "blueprint-handler", process.FunctionSpec.Conditions.ExecutorType)
-}
-
-func TestCreateImmediateReconciliationProcess_NilDefinitionNoHandler(t *testing.T) {
-	mockServer := &MockServer{
-		blueprintDB: &MockBlueprintDB{},
-	}
-	handlers := NewHandlers(mockServer)
-
-	// Blueprint without handler and nil definition should fail
+	// Nil definition should fail - BlueprintDefinition is required
 	blueprint := createTestBlueprint("TestKind", "my-blueprint", "test-colony", "")
 
 	_, err := handlers.createImmediateReconciliationProcess(blueprint, nil, "initiator-123", "test-initiator")

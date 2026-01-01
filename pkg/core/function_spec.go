@@ -66,9 +66,8 @@ type FunctionSpec struct {
 	Conditions  Conditions             `json:"conditions"`
 	Label       string                 `json:"label"`
 	Filesystem  Filesystem             `json:"fs"`
-	Env         map[string]string      `json:"env"`
-	Blueprint   *Blueprint             `json:"blueprint,omitempty"`
-	Channels    []string               `json:"channels,omitempty"`
+	Env      map[string]string `json:"env"`
+	Channels []string          `json:"channels,omitempty"`
 }
 
 func CreateEmptyFunctionSpec() *FunctionSpec {
