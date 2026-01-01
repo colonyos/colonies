@@ -35,7 +35,8 @@ func TestCleanupStaleExecutors_SkipsZeroLastHeardFrom(t *testing.T) {
 	assert.Len(t, executors, 1)
 
 	// Run cleanup with a short stale duration - should NOT remove executor with zero LastHeardFromTime
-	controller.cleanupStaleExecutors(1 * time.Second)
+	controller.staleExecutorDuration = 1 * time.Second
+	controller.cleanupStaleExecutors()
 
 	// Executor should still exist (not removed because LastHeardFromTime is zero)
 	executors, err = db.GetExecutorsByColonyName(colonyName)
@@ -69,7 +70,8 @@ func TestCleanupStaleExecutors_RemovesStaleExecutor(t *testing.T) {
 	assert.Len(t, executors, 1)
 
 	// Run cleanup with 5 minute stale duration - should remove executor
-	controller.cleanupStaleExecutors(5 * time.Minute)
+	controller.staleExecutorDuration = 5 * time.Minute
+	controller.cleanupStaleExecutors()
 
 	// Executor should be removed (stale for 10 minutes, threshold is 5 minutes)
 	// Note: RemoveExecutorByName marks executor as UNREGISTERED rather than deleting,
@@ -111,7 +113,8 @@ func TestCleanupStaleExecutors_KeepsRecentExecutor(t *testing.T) {
 	assert.Len(t, executors, 1)
 
 	// Run cleanup with 10 minute stale duration - should keep executor
-	controller.cleanupStaleExecutors(10 * time.Minute)
+	controller.staleExecutorDuration = 10 * time.Minute
+	controller.cleanupStaleExecutors()
 
 	// Executor should still exist (last heard 1 minute ago, threshold is 10 minutes)
 	executors, err = db.GetExecutorsByColonyName(colonyName)

@@ -927,6 +927,60 @@ func TestCloseSuccessful(t *testing.T) {
 	<-done
 }
 
+func TestCloseWithContext(t *testing.T) {
+	env, client, coloniesServer, _, done := server.SetupTestEnv2(t)
+
+	// Submit and assign a process
+	funcSpec := utils.CreateTestFunctionSpec(env.ColonyName)
+	addedProcess, err := client.Submit(funcSpec, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.Equal(t, core.PENDING, addedProcess.State)
+
+	assignedProcess, err := client.Assign(env.ColonyName, -1, "", "", env.ExecutorPrvKey)
+	assert.Nil(t, err)
+
+	// Verify process is running
+	assignedProcessFromServer, err := client.GetProcess(assignedProcess.ID, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.Equal(t, core.RUNNING, assignedProcessFromServer.State)
+
+	// Close with a normal context
+	ctx := context.Background()
+	err = client.CloseWithContext(assignedProcess.ID, ctx, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+
+	// Verify process is successful
+	assignedProcessFromServer, err = client.GetProcess(assignedProcess.ID, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.Equal(t, core.SUCCESS, assignedProcessFromServer.State)
+
+	coloniesServer.Shutdown()
+	<-done
+}
+
+func TestCloseWithContextCancelled(t *testing.T) {
+	env, client, coloniesServer, _, done := server.SetupTestEnv2(t)
+
+	// Submit and assign a process
+	funcSpec := utils.CreateTestFunctionSpec(env.ColonyName)
+	_, err := client.Submit(funcSpec, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+
+	assignedProcess, err := client.Assign(env.ColonyName, -1, "", "", env.ExecutorPrvKey)
+	assert.Nil(t, err)
+
+	// Create a context that is already cancelled
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel() // Cancel immediately
+
+	// Close with a cancelled context - should return an error
+	err = client.CloseWithContext(assignedProcess.ID, ctx, env.ExecutorPrvKey)
+	assert.NotNil(t, err)
+
+	coloniesServer.Shutdown()
+	<-done
+}
+
 func TestCloseSuccessfulWithFunctions(t *testing.T) {
 	env, client, coloniesServer, _, done := server.SetupTestEnv2(t)
 
