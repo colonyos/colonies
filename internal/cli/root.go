@@ -132,7 +132,6 @@ var KwArgs []string
 var Snapshots []string
 var Retention bool
 var RetentionPolicy int64
-var StaleExecutorDuration int // Duration in seconds before an executor is considered stale
 var UserPrvKey string
 var Initiator string
 var UserID string

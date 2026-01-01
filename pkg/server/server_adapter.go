@@ -119,6 +119,10 @@ func (s *ServerAdapter) GeneratorDB() database.GeneratorDatabase {
 	return s.server.generatorDB
 }
 
+func (s *ServerAdapter) CronDB() database.CronDatabase {
+	return s.server.cronDB
+}
+
 func (s *ServerAdapter) ProcessGraphDB() database.ProcessGraphDatabase {
 	return s.server.processGraphDB
 }
@@ -126,9 +130,6 @@ func (s *ServerAdapter) ProcessGraphDB() database.ProcessGraphDatabase {
 type generatorControllerAdapter struct {
 	controller interface {
 		AddGenerator(generator *core.Generator) (*core.Generator, error)
-		GetGenerator(generatorID string) (*core.Generator, error)
-		ResolveGenerator(colonyName string, generatorName string) (*core.Generator, error)
-		GetGenerators(colonyName string, count int) ([]*core.Generator, error)
 		PackGenerator(generatorID string, colonyName string, arg string) error
 		RemoveGenerator(generatorID string) error
 		GetGeneratorPeriod() int
@@ -137,18 +138,6 @@ type generatorControllerAdapter struct {
 
 func (c *generatorControllerAdapter) AddGenerator(generator *core.Generator) (*core.Generator, error) {
 	return c.controller.AddGenerator(generator)
-}
-
-func (c *generatorControllerAdapter) GetGenerator(generatorID string) (*core.Generator, error) {
-	return c.controller.GetGenerator(generatorID)
-}
-
-func (c *generatorControllerAdapter) ResolveGenerator(colonyName string, generatorName string) (*core.Generator, error) {
-	return c.controller.ResolveGenerator(colonyName, generatorName)
-}
-
-func (c *generatorControllerAdapter) GetGenerators(colonyName string, count int) ([]*core.Generator, error) {
-	return c.controller.GetGenerators(colonyName, count)
 }
 
 func (c *generatorControllerAdapter) PackGenerator(generatorID string, colonyName string, arg string) error {
@@ -343,9 +332,6 @@ func (c *wsControllerAdapter) SubscribeProcess(executorID string, subscription *
 type cronControllerAdapter struct {
 	controller interface {
 		AddCron(cron *core.Cron) (*core.Cron, error)
-		GetCron(cronID string) (*core.Cron, error)
-		GetCrons(colonyName string, count int) ([]*core.Cron, error)
-		GetCronByName(colonyName string, cronName string) (*core.Cron, error)
 		RunCron(cronID string) (*core.Cron, error)
 		RemoveCron(cronID string) error
 		GetCronPeriod() int
@@ -354,18 +340,6 @@ type cronControllerAdapter struct {
 
 func (c *cronControllerAdapter) AddCron(cron *core.Cron) (*core.Cron, error) {
 	return c.controller.AddCron(cron)
-}
-
-func (c *cronControllerAdapter) GetCron(cronID string) (*core.Cron, error) {
-	return c.controller.GetCron(cronID)
-}
-
-func (c *cronControllerAdapter) GetCrons(colonyName string, count int) ([]*core.Cron, error) {
-	return c.controller.GetCrons(colonyName, count)
-}
-
-func (c *cronControllerAdapter) GetCronByName(colonyName string, cronName string) (*core.Cron, error) {
-	return c.controller.GetCronByName(colonyName, cronName)
 }
 
 func (c *cronControllerAdapter) RunCron(cronID string) (*core.Cron, error) {
@@ -383,9 +357,6 @@ func (c *cronControllerAdapter) GetCronPeriod() int {
 // CronController returns the server's controller interface for cron operations
 func (s *ServerAdapter) CronController() interface {
 	AddCron(cron *core.Cron) (*core.Cron, error)
-	GetCron(cronID string) (*core.Cron, error)
-	GetCrons(colonyName string, count int) ([]*core.Cron, error)
-	GetCronByName(colonyName string, cronName string) (*core.Cron, error)
 	RunCron(cronID string) (*core.Cron, error)
 	RemoveCron(cronID string) error
 	GetCronPeriod() int
