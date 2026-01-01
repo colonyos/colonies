@@ -74,7 +74,7 @@ test:
 	@cd pkg/utils; go test -v --race
 	@cd pkg/cluster; go test -v --race
 	@cd pkg/cron; go test -v --race
-	#@cd pkg/fs; go test -v --race
+	@cd pkg/fs; go test -v --race
 
 install:
 	cp ./bin/colonies /usr/local/bin

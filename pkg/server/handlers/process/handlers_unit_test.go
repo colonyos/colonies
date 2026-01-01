@@ -99,11 +99,12 @@ func (m *MockUserDB) RemoveUsersByColonyName(colonyName string) error           
 
 // MockProcessDB implements database.ProcessDatabase
 type MockProcessDB struct {
-	processes     []*core.Process
-	getByIDErr    error
-	findErr       error
-	returnNilByID bool
-	setOutputErr  error
+	processes            []*core.Process
+	getByIDErr           error
+	findErr              error
+	returnNilByID        bool
+	setOutputErr         error
+	removeAllProcessesErr error
 }
 
 func (m *MockProcessDB) AddProcess(process *core.Process) error { return nil }
@@ -153,13 +154,13 @@ func (m *MockProcessDB) FindAllRunningProcesses() ([]*core.Process, error)  { re
 func (m *MockProcessDB) FindAllWaitingProcesses() ([]*core.Process, error)  { return nil, nil }
 func (m *MockProcessDB) RemoveProcessByID(processID string) error           { return nil }
 func (m *MockProcessDB) RemoveAllProcesses() error                          { return nil }
-func (m *MockProcessDB) RemoveAllWaitingProcessesByColonyName(string) error { return nil }
+func (m *MockProcessDB) RemoveAllWaitingProcessesByColonyName(string) error { return m.removeAllProcessesErr }
 func (m *MockProcessDB) RemoveAllRunningProcessesByColonyName(string) error { return nil }
 func (m *MockProcessDB) RemoveAllSuccessfulProcessesByColonyName(string) error {
 	return nil
 }
 func (m *MockProcessDB) RemoveAllFailedProcessesByColonyName(string) error { return nil }
-func (m *MockProcessDB) RemoveAllProcessesByColonyName(string) error       { return nil }
+func (m *MockProcessDB) RemoveAllProcessesByColonyName(string) error       { return m.removeAllProcessesErr }
 func (m *MockProcessDB) RemoveAllProcessesByProcessGraphID(string) error   { return nil }
 func (m *MockProcessDB) RemoveAllProcessesInProcessGraphsByColonyName(string) error {
 	return nil
@@ -722,7 +723,7 @@ func TestHandleGetProcess_NotFound(t *testing.T) {
 	ctx := &MockContext{}
 	handlers.HandleGetProcess(ctx, "executor-123", rpc.GetProcessPayloadType, jsonStr)
 
-	assert.Equal(t, http.StatusInternalServerError, mockServer.httpErrorCode)
+	assert.Equal(t, http.StatusNotFound, mockServer.httpErrorCode)
 }
 
 func TestHandleGetProcess_AuthError(t *testing.T) {
@@ -742,8 +743,9 @@ func TestHandleGetProcess_AuthError(t *testing.T) {
 // HandleRemoveProcess tests
 func TestHandleRemoveProcess_Success(t *testing.T) {
 	mockServer := createMockServer()
-	// Process must not be part of a workflow for successful removal
+	// Process must not be part of a workflow and must not be running for successful removal
 	mockServer.processDB.processes[0].ProcessGraphID = ""
+	mockServer.processDB.processes[0].State = core.PENDING
 	handlers := NewHandlers(mockServer)
 
 	msg := rpc.CreateRemoveProcessMsg("process-123")
@@ -889,9 +891,9 @@ func TestHandleRemoveAllProcesses_AuthError(t *testing.T) {
 	assert.Equal(t, http.StatusForbidden, mockServer.httpErrorCode)
 }
 
-func TestHandleRemoveAllProcesses_ControllerError(t *testing.T) {
+func TestHandleRemoveAllProcesses_DBError(t *testing.T) {
 	mockServer := createMockServer()
-	mockServer.controller.removeAllProcessesErr = errors.New("controller error")
+	mockServer.processDB.removeAllProcessesErr = errors.New("database error")
 	handlers := NewHandlers(mockServer)
 
 	msg := rpc.CreateRemoveAllProcessesMsg("test-colony")

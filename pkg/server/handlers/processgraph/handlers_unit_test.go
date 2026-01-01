@@ -7,6 +7,7 @@ import (
 
 	"github.com/colonyos/colonies/pkg/backends"
 	"github.com/colonyos/colonies/pkg/core"
+	"github.com/colonyos/colonies/pkg/database"
 	"github.com/colonyos/colonies/pkg/rpc"
 	"github.com/colonyos/colonies/pkg/server/registry"
 	"github.com/stretchr/testify/assert"
@@ -153,10 +154,67 @@ func (m *MockContext) AbortWithStatusJSON(code int, jsonObj interface{}) {
 func (m *MockContext) IsAborted() bool { return m.aborted }
 func (m *MockContext) Next()           {}
 
+// MockProcessGraphDB implements database.ProcessGraphDatabase
+type MockProcessGraphDB struct {
+	removeErr    error
+	removeAllErr error
+}
+
+func (m *MockProcessGraphDB) AddProcessGraph(pg *core.ProcessGraph) error { return nil }
+func (m *MockProcessGraphDB) GetProcessGraphByID(id string) (*core.ProcessGraph, error) {
+	return nil, nil
+}
+func (m *MockProcessGraphDB) FindWaitingProcessGraphs(colonyName string, count int) ([]*core.ProcessGraph, error) {
+	return nil, nil
+}
+func (m *MockProcessGraphDB) FindRunningProcessGraphs(colonyName string, count int) ([]*core.ProcessGraph, error) {
+	return nil, nil
+}
+func (m *MockProcessGraphDB) FindSuccessfulProcessGraphs(colonyName string, count int) ([]*core.ProcessGraph, error) {
+	return nil, nil
+}
+func (m *MockProcessGraphDB) FindFailedProcessGraphs(colonyName string, count int) ([]*core.ProcessGraph, error) {
+	return nil, nil
+}
+func (m *MockProcessGraphDB) SetProcessGraphState(id string, state int) error { return nil }
+func (m *MockProcessGraphDB) RemoveProcessGraphByID(id string) error { return m.removeErr }
+func (m *MockProcessGraphDB) RemoveAllProcessGraphsByColonyName(colonyName string) error {
+	return m.removeAllErr
+}
+func (m *MockProcessGraphDB) RemoveAllWaitingProcessGraphsByColonyName(colonyName string) error {
+	return nil
+}
+func (m *MockProcessGraphDB) RemoveAllRunningProcessGraphsByColonyName(colonyName string) error {
+	return nil
+}
+func (m *MockProcessGraphDB) RemoveAllSuccessfulProcessGraphsByColonyName(colonyName string) error {
+	return nil
+}
+func (m *MockProcessGraphDB) RemoveAllFailedProcessGraphsByColonyName(colonyName string) error {
+	return nil
+}
+func (m *MockProcessGraphDB) CountWaitingProcessGraphs() (int, error)    { return 0, nil }
+func (m *MockProcessGraphDB) CountRunningProcessGraphs() (int, error)    { return 0, nil }
+func (m *MockProcessGraphDB) CountSuccessfulProcessGraphs() (int, error) { return 0, nil }
+func (m *MockProcessGraphDB) CountFailedProcessGraphs() (int, error)     { return 0, nil }
+func (m *MockProcessGraphDB) CountWaitingProcessGraphsByColonyName(colonyName string) (int, error) {
+	return 0, nil
+}
+func (m *MockProcessGraphDB) CountRunningProcessGraphsByColonyName(colonyName string) (int, error) {
+	return 0, nil
+}
+func (m *MockProcessGraphDB) CountSuccessfulProcessGraphsByColonyName(colonyName string) (int, error) {
+	return 0, nil
+}
+func (m *MockProcessGraphDB) CountFailedProcessGraphsByColonyName(colonyName string) (int, error) {
+	return 0, nil
+}
+
 // MockServer implements Server interface
 type MockServer struct {
 	controller      *MockController
 	validator       *MockValidator
+	processGraphDB  *MockProcessGraphDB
 	lastError       error
 	lastStatusCode  int
 	lastPayloadType string
@@ -192,6 +250,10 @@ func (m *MockServer) Validator() Validator {
 
 func (m *MockServer) Controller() Controller {
 	return m.controller
+}
+
+func (m *MockServer) ProcessGraphDB() database.ProcessGraphDatabase {
+	return m.processGraphDB
 }
 
 // Helper to create test process graph
@@ -254,8 +316,9 @@ func createMockServer() (*MockServer, *MockContext) {
 	validator := &MockValidator{}
 
 	server := &MockServer{
-		controller: controller,
-		validator:  validator,
+		controller:     controller,
+		validator:      validator,
+		processGraphDB: &MockProcessGraphDB{},
 	}
 
 	ctx := &MockContext{}
