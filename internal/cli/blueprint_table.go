@@ -205,16 +205,10 @@ func printBlueprintsTableWithClient(c *client.ColoniesClient, blueprints []*core
 			locationStr = blueprint.Metadata.LocationName
 		}
 
-		// Get executor type from handler or definition
+		// Get executor type from BlueprintDefinition
 		executorTypeStr := "-"
-		if blueprint.Handler != nil && blueprint.Handler.ExecutorType != "" {
-			executorTypeStr = blueprint.Handler.ExecutorType
-		}
-		// Fall back to executor type from definition
-		if executorTypeStr == "-" {
-			if execType, ok := kindToExecutorType[blueprint.Kind]; ok {
-				executorTypeStr = execType
-			}
+		if execType, ok := kindToExecutorType[blueprint.Kind]; ok {
+			executorTypeStr = execType
 		}
 
 		// Get replica information

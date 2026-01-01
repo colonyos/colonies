@@ -562,9 +562,10 @@ var logBlueprintCmd = &cobra.Command{
 			locationName := blueprint.Metadata.LocationName
 			executorType := ""
 
-			// Get handler type from blueprint or its definition
-			if blueprint.Handler != nil && blueprint.Handler.ExecutorType != "" {
-				executorType = blueprint.Handler.ExecutorType
+			// Get handler type from BlueprintDefinition
+			sd, err := client.GetBlueprintDefinitionByKind(ColonyName, blueprint.Kind, PrvKey)
+			if err == nil && sd != nil && sd.Spec.Handler.ExecutorType != "" {
+				executorType = sd.Spec.Handler.ExecutorType
 			}
 
 			// Find reconciler executors at this location
@@ -696,6 +697,16 @@ var doctorBlueprintCmd = &cobra.Command{
 		crons, err := client.GetCrons(ColonyName, 1000, PrvKey)
 		CheckError(err)
 
+		// Get all blueprint definitions for handler config lookup
+		blueprintDefs, err := client.GetBlueprintDefinitions(ColonyName, PrvKey)
+		CheckError(err)
+
+		// Build kind -> definition map
+		defsByKind := make(map[string]*core.BlueprintDefinition)
+		for _, sd := range blueprintDefs {
+			defsByKind[sd.Spec.Names.Kind] = sd
+		}
+
 		// Build cron name -> cron map
 		cronsByName := make(map[string]*core.Cron)
 		for _, cron := range crons {
@@ -720,8 +731,8 @@ var doctorBlueprintCmd = &cobra.Command{
 
 			locationName := blueprint.Metadata.LocationName
 			handlerType := ""
-			if blueprint.Handler != nil {
-				handlerType = blueprint.Handler.ExecutorType
+			if sd, ok := defsByKind[blueprint.Kind]; ok && sd.Spec.Handler.ExecutorType != "" {
+				handlerType = sd.Spec.Handler.ExecutorType
 			}
 
 			// Check 1: Does a reconciler exist at this location?

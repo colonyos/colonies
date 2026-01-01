@@ -51,7 +51,7 @@ services:
       "
 
   colonies-server:
-    image: colonyos/colonies:v1.9.6
+    image: colonyos/colonies:v1.9.7.beta8
     depends_on:
       - timescaledb
     environment:
@@ -154,7 +154,7 @@ services:
       EXECUTOR_HW_ARCHITECTURE: "amd64"
       EXECUTOR_LOCATION_LONG: "0"
       EXECUTOR_LOCATION_LAT: "0"
-      EXECUTOR_LOCATION_DESC: "Local"
+      EXECUTOR_LOCATION_DESC: "local"
       EXECUTOR_FS_DIR: ${EXECUTOR_FS_DIR}
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock

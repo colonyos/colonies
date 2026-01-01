@@ -833,37 +833,6 @@ func (h *Handlers) HandleCloseSuccessful(c backends.Context, recoveredID string,
 		return
 	}
 
-	// If this was a reconciliation process, update the blueprint status from the output
-	if process.FunctionSpec.FuncName == "reconcile" && len(msg.Output) > 0 {
-		if blueprintName, ok := process.FunctionSpec.KwArgs["blueprintName"].(string); ok {
-			colonyName := process.FunctionSpec.Conditions.ColonyName
-			blueprint, err := h.server.BlueprintDB().GetBlueprintByName(colonyName, blueprintName)
-			if err == nil && blueprint != nil {
-				// The first output entry should contain the status map and metadata
-				if statusMap, ok := msg.Output[0].(map[string]interface{}); ok {
-					// Update status if present
-					if status, ok := statusMap["status"]; ok {
-						if statusData, ok := status.(map[string]interface{}); ok {
-							err = h.server.BlueprintDB().UpdateBlueprintStatus(blueprint.ID, statusData)
-							if err != nil {
-								log.WithFields(log.Fields{
-									"Error":       err,
-									"BlueprintID": blueprint.ID,
-									"ProcessID":   process.ID,
-								}).Warn("Failed to update blueprint status from reconciliation output")
-							} else {
-								log.WithFields(log.Fields{
-									"BlueprintID": blueprint.ID,
-									"ProcessID":   process.ID,
-								}).Debug("Updated blueprint status from reconciliation output")
-							}
-						}
-					}
-				}
-			}
-		}
-	}
-
 	log.WithFields(log.Fields{"ProcessId": process.ID}).Debug("Close successful")
 
 	h.server.SendEmptyHTTPReply(c, payloadType)
