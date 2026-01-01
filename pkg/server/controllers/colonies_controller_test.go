@@ -709,7 +709,7 @@ func TestColoniesControllerSafeMockTests(t *testing.T) {
 	// Test GetProcessGraphByID
 	var err error
 	dbMock.ReturnError = "GetProcessGraphByID"
-	_, err := controller.GetProcessGraphByID("test-graph-id")
+	_, err = controller.GetProcessGraphByID("test-graph-id")
 	// Don't assert error as mock may not behave exactly as expected
 
 	dbMock.ReturnError = ""
