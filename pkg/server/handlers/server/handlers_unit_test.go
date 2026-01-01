@@ -144,64 +144,6 @@ func (m *MockProcessDB) CountFailedProcesses() (int, error) {
 	return m.failedCount, nil
 }
 
-// MockProcessGraphDB implements database.ProcessGraphDatabase
-type MockProcessGraphDB struct {
-	countWaitingErr   error
-	countRunningErr   error
-	countSuccessErr   error
-	countFailedErr    error
-	waitingCount      int
-	runningCount      int
-	successCount      int
-	failedCount       int
-}
-
-func (m *MockProcessGraphDB) AddProcessGraph(processGraph *core.ProcessGraph) error                                { return nil }
-func (m *MockProcessGraphDB) SetProcessGraphState(processGraphID string, state int) error                          { return nil }
-func (m *MockProcessGraphDB) GetProcessGraphByID(processGraphID string) (*core.ProcessGraph, error)                { return nil, nil }
-func (m *MockProcessGraphDB) FindWaitingProcessGraphs(colonyName string, count int) ([]*core.ProcessGraph, error)  { return nil, nil }
-func (m *MockProcessGraphDB) FindRunningProcessGraphs(colonyName string, count int) ([]*core.ProcessGraph, error)  { return nil, nil }
-func (m *MockProcessGraphDB) FindSuccessfulProcessGraphs(colonyName string, count int) ([]*core.ProcessGraph, error) { return nil, nil }
-func (m *MockProcessGraphDB) FindFailedProcessGraphs(colonyName string, count int) ([]*core.ProcessGraph, error)   { return nil, nil }
-func (m *MockProcessGraphDB) RemoveProcessGraphByID(processGraphID string) error                                   { return nil }
-func (m *MockProcessGraphDB) RemoveAllProcessGraphsByColonyName(colonyName string) error                           { return nil }
-func (m *MockProcessGraphDB) RemoveAllWaitingProcessGraphsByColonyName(colonyName string) error                    { return nil }
-func (m *MockProcessGraphDB) RemoveAllRunningProcessGraphsByColonyName(colonyName string) error                    { return nil }
-func (m *MockProcessGraphDB) RemoveAllSuccessfulProcessGraphsByColonyName(colonyName string) error                 { return nil }
-func (m *MockProcessGraphDB) RemoveAllFailedProcessGraphsByColonyName(colonyName string) error                     { return nil }
-func (m *MockProcessGraphDB) CountWaitingProcessGraphsByColonyName(colonyName string) (int, error)                 { return 0, nil }
-func (m *MockProcessGraphDB) CountRunningProcessGraphsByColonyName(colonyName string) (int, error)                 { return 0, nil }
-func (m *MockProcessGraphDB) CountSuccessfulProcessGraphsByColonyName(colonyName string) (int, error)              { return 0, nil }
-func (m *MockProcessGraphDB) CountFailedProcessGraphsByColonyName(colonyName string) (int, error)                  { return 0, nil }
-
-func (m *MockProcessGraphDB) CountWaitingProcessGraphs() (int, error) {
-	if m.countWaitingErr != nil {
-		return 0, m.countWaitingErr
-	}
-	return m.waitingCount, nil
-}
-
-func (m *MockProcessGraphDB) CountRunningProcessGraphs() (int, error) {
-	if m.countRunningErr != nil {
-		return 0, m.countRunningErr
-	}
-	return m.runningCount, nil
-}
-
-func (m *MockProcessGraphDB) CountSuccessfulProcessGraphs() (int, error) {
-	if m.countSuccessErr != nil {
-		return 0, m.countSuccessErr
-	}
-	return m.successCount, nil
-}
-
-func (m *MockProcessGraphDB) CountFailedProcessGraphs() (int, error) {
-	if m.countFailedErr != nil {
-		return 0, m.countFailedErr
-	}
-	return m.failedCount, nil
-}
-
 // MockEtcdServer implements EtcdServer interface
 type MockEtcdServer struct {
 	clusterConfig cluster.Config
@@ -280,7 +222,6 @@ type MockServer struct {
 	colonyDB        *MockColonyDB
 	executorDB      *MockExecutorDB
 	processDB       *MockProcessDB
-	processGraphDB  *MockProcessGraphDB
 	controller      *MockController
 	validator       *MockValidator
 	serverID        string
@@ -331,10 +272,6 @@ func (m *MockServer) ProcessDB() database.ProcessDatabase {
 	return m.processDB
 }
 
-func (m *MockServer) ProcessGraphDB() database.ProcessGraphDatabase {
-	return m.processGraphDB
-}
-
 // Helper to create mock server
 func createMockServer() (*MockServer, *MockContext) {
 	colonyDB := &MockColonyDB{coloniesCount: 5}
@@ -345,12 +282,6 @@ func createMockServer() (*MockServer, *MockContext) {
 		successCount: 100,
 		failedCount:  5,
 	}
-	processGraphDB := &MockProcessGraphDB{
-		waitingCount: 8,
-		runningCount: 3,
-		successCount: 50,
-		failedCount:  2,
-	}
 	etcdServer := &MockEtcdServer{
 		clusterConfig: cluster.Config{},
 	}
@@ -358,13 +289,12 @@ func createMockServer() (*MockServer, *MockContext) {
 	validator := &MockValidator{}
 
 	server := &MockServer{
-		colonyDB:       colonyDB,
-		executorDB:     executorDB,
-		processDB:      processDB,
-		processGraphDB: processGraphDB,
-		controller:     controller,
-		validator:      validator,
-		serverID:       "server-123",
+		colonyDB:   colonyDB,
+		executorDB: executorDB,
+		processDB:  processDB,
+		controller: controller,
+		validator:  validator,
+		serverID:   "server-123",
 	}
 
 	ctx := &MockContext{}
@@ -509,58 +439,6 @@ func TestHandleStatistics_CountSuccessfulProcessesError(t *testing.T) {
 func TestHandleStatistics_CountFailedProcessesError(t *testing.T) {
 	server, ctx := createMockServer()
 	server.processDB.countFailedErr = errors.New("count failed error")
-	handlers := NewHandlers(server)
-
-	msg := rpc.CreateGetStatisticsMsg()
-	jsonString, _ := msg.ToJSON()
-
-	handlers.HandleStatistics(ctx, "server-owner", rpc.GetStatisiticsPayloadType, jsonString)
-
-	assert.Equal(t, http.StatusInternalServerError, server.lastStatusCode)
-}
-
-func TestHandleStatistics_CountWaitingWorkflowsError(t *testing.T) {
-	server, ctx := createMockServer()
-	server.processGraphDB.countWaitingErr = errors.New("count waiting workflows error")
-	handlers := NewHandlers(server)
-
-	msg := rpc.CreateGetStatisticsMsg()
-	jsonString, _ := msg.ToJSON()
-
-	handlers.HandleStatistics(ctx, "server-owner", rpc.GetStatisiticsPayloadType, jsonString)
-
-	assert.Equal(t, http.StatusInternalServerError, server.lastStatusCode)
-}
-
-func TestHandleStatistics_CountRunningWorkflowsError(t *testing.T) {
-	server, ctx := createMockServer()
-	server.processGraphDB.countRunningErr = errors.New("count running workflows error")
-	handlers := NewHandlers(server)
-
-	msg := rpc.CreateGetStatisticsMsg()
-	jsonString, _ := msg.ToJSON()
-
-	handlers.HandleStatistics(ctx, "server-owner", rpc.GetStatisiticsPayloadType, jsonString)
-
-	assert.Equal(t, http.StatusInternalServerError, server.lastStatusCode)
-}
-
-func TestHandleStatistics_CountSuccessfulWorkflowsError(t *testing.T) {
-	server, ctx := createMockServer()
-	server.processGraphDB.countSuccessErr = errors.New("count success workflows error")
-	handlers := NewHandlers(server)
-
-	msg := rpc.CreateGetStatisticsMsg()
-	jsonString, _ := msg.ToJSON()
-
-	handlers.HandleStatistics(ctx, "server-owner", rpc.GetStatisiticsPayloadType, jsonString)
-
-	assert.Equal(t, http.StatusInternalServerError, server.lastStatusCode)
-}
-
-func TestHandleStatistics_CountFailedWorkflowsError(t *testing.T) {
-	server, ctx := createMockServer()
-	server.processGraphDB.countFailedErr = errors.New("count failed workflows error")
 	handlers := NewHandlers(server)
 
 	msg := rpc.CreateGetStatisticsMsg()
