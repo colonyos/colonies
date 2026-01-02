@@ -1,9 +1,0 @@
-Test Configuration
-==================
-Date: Tue Dec 30 08:35:06 AM CET 2025
-Replicas: 11
-CPU per replica: 2000m
-Processes: 50000
-Executors: 50
-Node: 10.0.0.201:30080
-Metrics Interval: 2s
