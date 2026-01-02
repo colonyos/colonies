@@ -1,0 +1,17 @@
+coverage:
+  status:
+    project:
+      default:
+        target: auto
+        threshold: 2%
+    patch:
+      default:
+        target: 50%
+        threshold: 5%
+
+ignore:
+  - "vendor/**"
+  - "**/*_test.go"
+  - "**/test_utils.go"
+  - "**/mock_*.go"
+  - "pkg/monitoring/**"
