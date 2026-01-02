@@ -1029,7 +1029,7 @@ func TestUpdateBlueprintTriggersCron(t *testing.T) {
 
 	// Verify reconciliation process was created
 	assert.NotNil(t, reconProcess, "Should have created a reconciliation process")
-	assert.Equal(t, "reconcile", reconProcess.FunctionSpec.FuncName) // Consolidated reconciliation always uses "reconcile"
+	assert.Equal(t, "reconcile_worker", reconProcess.FunctionSpec.FuncName) // Uses FunctionName from BlueprintDefinition
 	assert.Equal(t, "worker_reconciler", reconProcess.FunctionSpec.Conditions.ExecutorType)
 
 	// Verify the process has the correct kwargs
