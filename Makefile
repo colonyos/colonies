@@ -50,16 +50,21 @@ test:
 	@cd pkg/security/crypto; go test -v --race
 	@cd pkg/security/validator; go test -v --race
 	@cd pkg/backends/gin; go test -v --race
+	@cd pkg/client; go test -v --race
+	@cd pkg/client/backends; go test -v --race
 	@cd pkg/client/gin; go test -v --race
 	@cd pkg/server; go test -v --race
 	@cd pkg/server/controllers; go test -v --race
 	@cd pkg/server/handlers/attribute; go test -v --race
+	@cd pkg/server/handlers/blueprint; go test -v --race
+	@cd pkg/server/handlers/channel; go test -v --race
 	@cd pkg/server/handlers/colony; go test -v --race
 	@cd pkg/server/handlers/cron; go test -v --race
 	@cd pkg/server/handlers/executor; go test -v --race
 	@cd pkg/server/handlers/file; go test -v --race
 	@cd pkg/server/handlers/function; go test -v --race
 	@cd pkg/server/handlers/generator; go test -v --race
+	@cd pkg/server/handlers/location; go test -v --race
 	@cd pkg/server/handlers/log; go test -v --race
 	@cd pkg/server/handlers/process; go test -v --race
 	@cd pkg/server/handlers/processgraph; go test -v --race
@@ -68,10 +73,13 @@ test:
 	@cd pkg/server/handlers/snapshot; go test -v --race
 	@cd pkg/server/handlers/user; go test -v --race
 	@cd pkg/server/handlers/realtime; go test -v --race
+	@cd pkg/server/registry; go test -v --race
 	@cd pkg/server/utils; go test -v --race
 	@cd pkg/scheduler; go test -v --race
 	@cd pkg/parsers; go test -v --race
 	@cd pkg/utils; go test -v --race
+	@cd pkg/validate; go test -v --race
+	@cd pkg/channel; go test -v --race
 	@cd pkg/cluster; go test -v --race
 	@cd pkg/cron; go test -v --race
 	@cd pkg/fs; go test -v --race
