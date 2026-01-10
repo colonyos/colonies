@@ -285,6 +285,16 @@ func (db *PQDatabase) dropBlueprintsTable() error {
 	return nil
 }
 
+func (db *PQDatabase) dropBlueprintHistoryTable() error {
+	sqlStatement := `DROP TABLE IF EXISTS ` + db.dbPrefix + `BLUEPRINT_HISTORY`
+	_, err := db.postgresql.Exec(sqlStatement)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (db *PQDatabase) dropLocationsTable() error {
 	sqlStatement := `DROP TABLE IF EXISTS ` + db.dbPrefix + `LOCATIONS`
 	_, err := db.postgresql.Exec(sqlStatement)
@@ -382,6 +392,11 @@ func (db *PQDatabase) Drop() error {
 	}
 
 	err = db.dropBlueprintsTable()
+	if err != nil {
+		return err
+	}
+
+	err = db.dropBlueprintHistoryTable()
 	if err != nil {
 		return err
 	}
