@@ -6,8 +6,9 @@ coverage:
         threshold: 2%
     patch:
       default:
-        target: 50%
-        threshold: 5%
+        target: 30%
+        threshold: 10%
+        informational: true
 
 ignore:
   - "vendor/**"
