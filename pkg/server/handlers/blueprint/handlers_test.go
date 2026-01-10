@@ -954,6 +954,11 @@ func TestRemoveBlueprintCreatesCleanupProcess(t *testing.T) {
 	assert.True(t, ok, "blueprintName should be in kwargs")
 	assert.Equal(t, "test-executor", blueprintName)
 
+	// Verify kind is in kwargs (needed by reconciler to determine if executors should be deregistered)
+	kind, ok := cleanupProc.FunctionSpec.KwArgs["kind"].(string)
+	assert.True(t, ok, "kind should be in kwargs")
+	assert.Equal(t, "ExecutorDeployment", kind)
+
 	// Verify the blueprint was removed from database
 	_, err = client.GetBlueprint(env.ColonyName, addedBlueprint.Metadata.Name, env.ExecutorPrvKey)
 	assert.NotNil(t, err, "Blueprint should not exist in database after removal")

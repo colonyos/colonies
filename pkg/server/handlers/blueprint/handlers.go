@@ -1089,7 +1089,24 @@ func (h *Handlers) HandleRemoveBlueprint(c backends.Context, recoveredID string,
 	// Submit cleanup process to reconciler (best-effort)
 	// Look up the BlueprintDefinition by Kind to get the ExecutorType
 	blueprintDef, err := h.server.BlueprintDB().GetBlueprintDefinitionByKind(blueprint.Kind)
-	if blueprintDef != nil && blueprintDef.Spec.Handler.ExecutorType != "" {
+	if err != nil {
+		log.WithFields(log.Fields{
+			"Error":         err,
+			"Kind":          blueprint.Kind,
+			"BlueprintName": msg.Name,
+		}).Warn("Failed to lookup BlueprintDefinition for cleanup process")
+	}
+	if blueprintDef == nil {
+		log.WithFields(log.Fields{
+			"Kind":          blueprint.Kind,
+			"BlueprintName": msg.Name,
+		}).Warn("BlueprintDefinition not found - cleanup process not created")
+	} else if blueprintDef.Spec.Handler.ExecutorType == "" {
+		log.WithFields(log.Fields{
+			"Kind":          blueprint.Kind,
+			"BlueprintName": msg.Name,
+		}).Warn("BlueprintDefinition has no ExecutorType - cleanup process not created")
+	} else {
 		// Create cleanup function spec
 		funcSpec := core.CreateEmptyFunctionSpec()
 		funcSpec.NodeName = fmt.Sprintf("%s-cleanup", blueprintDef.Spec.Handler.ExecutorType)
@@ -1098,6 +1115,7 @@ func (h *Handlers) HandleRemoveBlueprint(c backends.Context, recoveredID string,
 		funcSpec.FuncName = "cleanup"
 		funcSpec.KwArgs = map[string]interface{}{
 			"blueprintName": msg.Name,
+			"kind":          blueprint.Kind,
 		}
 
 		// Resolve initiator name for the process
