@@ -1112,6 +1112,7 @@ func (h *Handlers) HandleRemoveBlueprint(c backends.Context, recoveredID string,
 		funcSpec.NodeName = fmt.Sprintf("%s-cleanup", blueprintDef.Spec.Handler.ExecutorType)
 		funcSpec.Conditions.ColonyName = msg.Namespace
 		funcSpec.Conditions.ExecutorType = blueprintDef.Spec.Handler.ExecutorType
+		funcSpec.Conditions.LocationName = blueprint.Metadata.LocationName
 		funcSpec.FuncName = "cleanup"
 		funcSpec.KwArgs = map[string]interface{}{
 			"blueprintName": msg.Name,
