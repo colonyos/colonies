@@ -19,6 +19,7 @@ type Server interface {
 	SendEmptyHTTPReply(c backends.Context, payloadType string)
 	Validator() security.Validator
 	ExecutorDB() database.ExecutorDatabase
+	FunctionDB() database.FunctionDatabase
 	AllowExecutorReregister() bool
 }
 
@@ -95,6 +96,11 @@ func (h *Handlers) HandleAddExecutor(c backends.Context, recoveredID string, pay
 
 	if executorFromDB != nil {
 		if h.server.AllowExecutorReregister() {
+			// Remove functions registered by the old executor before removing the executor
+			err = h.server.FunctionDB().RemoveFunctionsByExecutorName(msg.Executor.ColonyName, executorFromDB.Name)
+			if h.server.HandleHTTPError(c, err, http.StatusBadRequest) {
+				return
+			}
 			err = h.server.ExecutorDB().RemoveExecutorByName(msg.Executor.ColonyName, executorFromDB.Name)
 			if h.server.HandleHTTPError(c, err, http.StatusBadRequest) {
 				return
@@ -342,6 +348,12 @@ func (h *Handlers) HandleRemoveExecutor(c backends.Context, recoveredID string, 
 
 	err = h.server.Validator().RequireColonyOwner(recoveredID, executor.ColonyName)
 	if h.server.HandleHTTPError(c, err, http.StatusForbidden) {
+		return
+	}
+
+	// Remove functions registered by the executor before removing the executor
+	err = h.server.FunctionDB().RemoveFunctionsByExecutorName(msg.ColonyName, msg.ExecutorName)
+	if h.server.HandleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}
 

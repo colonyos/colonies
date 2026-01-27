@@ -24,6 +24,35 @@ func printFunctionTable(statMap map[string]statsEntry) {
 		}
 		t.AddRow(row)
 
+		// Show description if available
+		if s.description != "" {
+			row = []interface{}{
+				termenv.String("Description").Foreground(theme.ColorBlue),
+				termenv.String(s.description).Foreground(theme.ColorGray),
+			}
+			t.AddRow(row)
+		}
+
+		// Show arguments if available
+		if len(s.args) > 0 {
+			argsStr := ""
+			for i, arg := range s.args {
+				if i > 0 {
+					argsStr += ", "
+				}
+				reqStr := ""
+				if arg.Required {
+					reqStr = "*"
+				}
+				argsStr += fmt.Sprintf("%s%s (%s)", arg.Name, reqStr, arg.Type)
+			}
+			row = []interface{}{
+				termenv.String("Arguments").Foreground(theme.ColorBlue),
+				termenv.String(argsStr).Foreground(theme.ColorGray),
+			}
+			t.AddRow(row)
+		}
+
 		row = []interface{}{
 			termenv.String("Call counter").Foreground(theme.ColorBlue),
 			termenv.String(strconv.Itoa(s.callsCounter)).Foreground(theme.ColorGray),

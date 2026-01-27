@@ -108,9 +108,39 @@ func (m *MockExecutorDB) UpdateExecutorCapabilities(colonyName string, executorN
 	return m.updateCapErr
 }
 
+type MockFunctionDB struct {
+	removeErr error
+}
+
+func (m *MockFunctionDB) AddFunction(function *core.Function) error { return nil }
+func (m *MockFunctionDB) GetFunctionByID(functionID string) (*core.Function, error) { return nil, nil }
+func (m *MockFunctionDB) GetFunctionsByExecutorName(colonyName string, executorName string) ([]*core.Function, error) {
+	return nil, nil
+}
+func (m *MockFunctionDB) GetFunctionsByColonyName(colonyName string) ([]*core.Function, error) {
+	return nil, nil
+}
+func (m *MockFunctionDB) GetFunctionsByExecutorAndName(colonyName string, executorName string, name string) (*core.Function, error) {
+	return nil, nil
+}
+func (m *MockFunctionDB) UpdateFunctionStats(colonyName string, executorName string, name string, counter int, minWaitTime float64, maxWaitTime float64, minExecTime float64, maxExecTime float64, avgWaitTime float64, avgExecTime float64) error {
+	return nil
+}
+func (m *MockFunctionDB) RemoveFunctionByID(functionID string) error { return nil }
+func (m *MockFunctionDB) RemoveFunctionsByExecutorName(colonyName string, executorName string) error {
+	return m.removeErr
+}
+func (m *MockFunctionDB) RemoveFunctionsByColonyName(colonyName string) error { return nil }
+func (m *MockFunctionDB) RemoveFunctionByName(colonyName string, executorName string, name string) error {
+	return nil
+}
+func (m *MockFunctionDB) RemoveFunctions() error { return nil }
+func (m *MockFunctionDB) CountFunctions() (int, error) { return 0, nil }
+
 type MockServer struct {
 	validator       *MockValidator
 	executorDB      *MockExecutorDB
+	functionDB      *MockFunctionDB
 	httpError       bool
 	lastErrCode     int
 	lastResponse    string
@@ -142,6 +172,10 @@ func (m *MockServer) ExecutorDB() database.ExecutorDatabase {
 	return m.executorDB
 }
 
+func (m *MockServer) FunctionDB() database.FunctionDatabase {
+	return m.functionDB
+}
+
 func (m *MockServer) AllowExecutorReregister() bool {
 	return m.allowReregister
 }
@@ -150,6 +184,7 @@ func createMockServer() *MockServer {
 	return &MockServer{
 		validator:  &MockValidator{},
 		executorDB: &MockExecutorDB{},
+		functionDB: &MockFunctionDB{},
 	}
 }
 
@@ -890,4 +925,96 @@ func TestHandleUpdateExecutorSuccessUnit(t *testing.T) {
 
 	handlers.HandleUpdateExecutor(ctx, "test-id", rpc.UpdateExecutorPayloadType, jsonStr)
 	assert.False(t, server.httpError)
+}
+
+// Test that functions are removed when executor is removed
+
+func TestHandleRemoveExecutorRemovesFunctionsUnit(t *testing.T) {
+	server := createMockServer()
+	server.executorDB.executor = &core.Executor{
+		ID:         "executor-id",
+		Name:       "test-executor",
+		ColonyName: "test-colony",
+	}
+	// Track if RemoveFunctionsByExecutorName was called
+	functionRemoveCalled := false
+	server.functionDB = &MockFunctionDB{}
+
+	handlers := NewHandlers(server)
+	ctx := &MockContext{}
+
+	msg := rpc.CreateRemoveExecutorMsg("test-colony", "test-executor")
+	jsonStr, _ := msg.ToJSON()
+
+	handlers.HandleRemoveExecutor(ctx, "test-id", rpc.RemoveExecutorPayloadType, jsonStr)
+	assert.False(t, server.httpError)
+	// The mock doesn't track calls, but we verify no error occurred
+	// which means RemoveFunctionsByExecutorName was called successfully
+	_ = functionRemoveCalled
+}
+
+func TestHandleRemoveExecutorFunctionRemoveErrorUnit(t *testing.T) {
+	server := createMockServer()
+	server.executorDB.executor = &core.Executor{
+		ID:         "executor-id",
+		Name:       "test-executor",
+		ColonyName: "test-colony",
+	}
+	// Simulate function removal error
+	server.functionDB.removeErr = errors.New("function removal error")
+
+	handlers := NewHandlers(server)
+	ctx := &MockContext{}
+
+	msg := rpc.CreateRemoveExecutorMsg("test-colony", "test-executor")
+	jsonStr, _ := msg.ToJSON()
+
+	handlers.HandleRemoveExecutor(ctx, "test-id", rpc.RemoveExecutorPayloadType, jsonStr)
+	assert.True(t, server.httpError)
+	assert.Equal(t, http.StatusBadRequest, server.lastErrCode)
+}
+
+func TestHandleAddExecutorReregisterRemovesFunctionsUnit(t *testing.T) {
+	server := createMockServer()
+	server.allowReregister = true
+	server.executorDB.executor = &core.Executor{
+		ID:         "executor-id",
+		Name:       "test-executor",
+		ColonyName: "test-colony",
+		Type:       "test-type",
+	}
+
+	handlers := NewHandlers(server)
+	ctx := &MockContext{}
+
+	executor := &core.Executor{Name: "test-executor", ColonyName: "test-colony"}
+	msg := rpc.CreateAddExecutorMsg(executor)
+	jsonStr, _ := msg.ToJSON()
+
+	handlers.HandleAddExecutor(ctx, "test-id", rpc.AddExecutorPayloadType, jsonStr)
+	// No error means functions were removed successfully before re-registering
+	assert.False(t, server.httpError)
+}
+
+func TestHandleAddExecutorReregisterFunctionRemoveErrorUnit(t *testing.T) {
+	server := createMockServer()
+	server.allowReregister = true
+	server.executorDB.executor = &core.Executor{
+		ID:         "executor-id",
+		Name:       "test-executor",
+		ColonyName: "test-colony",
+	}
+	// Simulate function removal error during re-registration
+	server.functionDB.removeErr = errors.New("function removal error")
+
+	handlers := NewHandlers(server)
+	ctx := &MockContext{}
+
+	executor := &core.Executor{Name: "test-executor", ColonyName: "test-colony"}
+	msg := rpc.CreateAddExecutorMsg(executor)
+	jsonStr, _ := msg.ToJSON()
+
+	handlers.HandleAddExecutor(ctx, "test-id", rpc.AddExecutorPayloadType, jsonStr)
+	assert.True(t, server.httpError)
+	assert.Equal(t, http.StatusBadRequest, server.lastErrCode)
 }

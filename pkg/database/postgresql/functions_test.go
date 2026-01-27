@@ -326,6 +326,90 @@ func TestRemoveFunctionByColonyName(t *testing.T) {
 	assert.Len(t, functions, 1)
 }
 
+func TestFunctionWithDescriptionAndArgs(t *testing.T) {
+	db, err := PrepareTests()
+	assert.Nil(t, err)
+
+	defer db.Close()
+
+	colonyName := core.GenerateRandomID()
+	executorName := core.GenerateRandomID()
+
+	// Create function with description and args
+	args := []*core.FunctionArg{
+		{Name: "query", Type: "string", Description: "Search query", Required: true},
+		{Name: "limit", Type: "integer", Description: "Max results", Required: false},
+		{Name: "format", Type: "string", Description: "Output format", Enum: []string{"json", "text", "xml"}},
+	}
+
+	function1 := &core.Function{
+		FunctionID:   core.GenerateRandomID(),
+		ExecutorName: executorName,
+		ColonyName:   colonyName,
+		FuncName:     "search_tool",
+		Description:  "Search for content in the database",
+		Args:         args,
+		Counter:      0,
+		MinWaitTime:  0.0,
+		MaxWaitTime:  0.0,
+		MinExecTime:  0.0,
+		MaxExecTime:  0.0,
+		AvgWaitTime:  0.0,
+		AvgExecTime:  0.0,
+	}
+
+	err = db.AddFunction(function1)
+	assert.Nil(t, err)
+
+	// Retrieve and verify
+	functionFromDB, err := db.GetFunctionByID(function1.FunctionID)
+	assert.Nil(t, err)
+	assert.NotNil(t, functionFromDB)
+
+	assert.Equal(t, function1.Description, functionFromDB.Description)
+	assert.Equal(t, len(function1.Args), len(functionFromDB.Args))
+
+	// Verify each arg
+	for i, arg := range function1.Args {
+		assert.Equal(t, arg.Name, functionFromDB.Args[i].Name)
+		assert.Equal(t, arg.Type, functionFromDB.Args[i].Type)
+		assert.Equal(t, arg.Description, functionFromDB.Args[i].Description)
+		assert.Equal(t, arg.Required, functionFromDB.Args[i].Required)
+		assert.Equal(t, len(arg.Enum), len(functionFromDB.Args[i].Enum))
+	}
+}
+
+func TestFunctionWithEmptyDescriptionAndArgs(t *testing.T) {
+	db, err := PrepareTests()
+	assert.Nil(t, err)
+
+	defer db.Close()
+
+	colonyName := core.GenerateRandomID()
+	executorName := core.GenerateRandomID()
+
+	// Function without description and args (backwards compatibility)
+	function1 := &core.Function{
+		FunctionID:   core.GenerateRandomID(),
+		ExecutorName: executorName,
+		ColonyName:   colonyName,
+		FuncName:     "simple_func",
+		Counter:      5,
+		AvgWaitTime:  1.0,
+		AvgExecTime:  2.0,
+	}
+
+	err = db.AddFunction(function1)
+	assert.Nil(t, err)
+
+	functionFromDB, err := db.GetFunctionByID(function1.FunctionID)
+	assert.Nil(t, err)
+	assert.NotNil(t, functionFromDB)
+
+	assert.Equal(t, "", functionFromDB.Description)
+	assert.Nil(t, functionFromDB.Args)
+}
+
 func TestRemoveFunctions(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)

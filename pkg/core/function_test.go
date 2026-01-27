@@ -302,3 +302,105 @@ func TestConvertJSONToFunctionArrayError(t *testing.T) {
 	_, err := ConvertJSONToFunctionArray("invalid json")
 	assert.NotNil(t, err)
 }
+
+func TestCreateFunctionWithDesc(t *testing.T) {
+	args := []*FunctionArg{
+		CreateFunctionArg("query", "string", "The search query", true, nil),
+		CreateFunctionArg("limit", "integer", "Maximum results", false, nil),
+		CreateFunctionArg("format", "string", "Output format", false, []string{"json", "text", "xml"}),
+	}
+
+	function := CreateFunctionWithDesc(
+		"executor-name",
+		"executor-type",
+		"colony-name",
+		"search_tool",
+		"Search for content in the database",
+		args,
+	)
+
+	assert.Equal(t, "executor-name", function.ExecutorName)
+	assert.Equal(t, "executor-type", function.ExecutorType)
+	assert.Equal(t, "colony-name", function.ColonyName)
+	assert.Equal(t, "search_tool", function.FuncName)
+	assert.Equal(t, "Search for content in the database", function.Description)
+	assert.Len(t, function.Args, 3)
+
+	// Verify first arg
+	assert.Equal(t, "query", function.Args[0].Name)
+	assert.Equal(t, "string", function.Args[0].Type)
+	assert.Equal(t, "The search query", function.Args[0].Description)
+	assert.True(t, function.Args[0].Required)
+	assert.Nil(t, function.Args[0].Enum)
+
+	// Verify third arg with enum
+	assert.Equal(t, "format", function.Args[2].Name)
+	assert.Len(t, function.Args[2].Enum, 3)
+	assert.Equal(t, "json", function.Args[2].Enum[0])
+}
+
+func TestCreateFunctionArg(t *testing.T) {
+	arg := CreateFunctionArg("param", "integer", "A numeric parameter", true, []string{"1", "2", "3"})
+
+	assert.Equal(t, "param", arg.Name)
+	assert.Equal(t, "integer", arg.Type)
+	assert.Equal(t, "A numeric parameter", arg.Description)
+	assert.True(t, arg.Required)
+	assert.Len(t, arg.Enum, 3)
+}
+
+func TestFunctionWithDescriptionToJSON(t *testing.T) {
+	args := []*FunctionArg{
+		CreateFunctionArg("query", "string", "The search query", true, nil),
+	}
+
+	function1 := CreateFunctionWithDesc(
+		"executor-name",
+		"executor-type",
+		"colony-name",
+		"search_tool",
+		"Search for content",
+		args,
+	)
+
+	jsonStr, err := function1.ToJSON()
+	assert.Nil(t, err)
+
+	function2, err := ConvertJSONToFunction(jsonStr)
+	assert.Nil(t, err)
+
+	assert.Equal(t, function1.Description, function2.Description)
+	assert.Len(t, function2.Args, 1)
+	assert.Equal(t, function1.Args[0].Name, function2.Args[0].Name)
+	assert.Equal(t, function1.Args[0].Required, function2.Args[0].Required)
+}
+
+func TestFunctionEqualsWithDescription(t *testing.T) {
+	args := []*FunctionArg{
+		CreateFunctionArg("query", "string", "The search query", true, nil),
+	}
+
+	function1 := CreateFunctionWithDesc("exec", "type", "colony", "func", "Description 1", args)
+	function2 := CreateFunctionWithDesc("exec", "type", "colony", "func", "Description 1", args)
+	function3 := CreateFunctionWithDesc("exec", "type", "colony", "func", "Description 2", args)
+
+	// Same description should be equal (ignoring Args comparison in Equals)
+	assert.True(t, function1.Equals(function2))
+	// Different description should not be equal
+	assert.False(t, function1.Equals(function3))
+}
+
+func TestFunctionEqualsWithDifferentArgsLength(t *testing.T) {
+	args1 := []*FunctionArg{
+		CreateFunctionArg("query", "string", "Query", true, nil),
+	}
+	args2 := []*FunctionArg{
+		CreateFunctionArg("query", "string", "Query", true, nil),
+		CreateFunctionArg("limit", "integer", "Limit", false, nil),
+	}
+
+	function1 := CreateFunctionWithDesc("exec", "type", "colony", "func", "Desc", args1)
+	function2 := CreateFunctionWithDesc("exec", "type", "colony", "func", "Desc", args2)
+
+	assert.False(t, function1.Equals(function2))
+}

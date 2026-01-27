@@ -103,6 +103,7 @@ var removeFuncCmd = &cobra.Command{
 
 type statsEntry struct {
 	funcName        string
+	description     string
 	executorType    string
 	callsCounter    int
 	executorCounter int
@@ -112,6 +113,7 @@ type statsEntry struct {
 	maxExecTime     float64
 	avgWaitTime     float64
 	avgExecTime     float64
+	args            []*core.FunctionArg
 }
 
 var listFuncCmd = &cobra.Command{
@@ -132,6 +134,7 @@ var listFuncCmd = &cobra.Command{
 				statsMap[key] = statsEntry{
 					executorType:    function.ExecutorType,
 					funcName:        function.FuncName,
+					description:     function.Description,
 					callsCounter:    e.callsCounter + function.Counter,
 					executorCounter: e.executorCounter + 1,
 					minWaitTime:     math.Min(e.minWaitTime, function.MinWaitTime),
@@ -140,11 +143,13 @@ var listFuncCmd = &cobra.Command{
 					maxExecTime:     math.Max(e.maxExecTime, function.MaxExecTime),
 					avgWaitTime:     (e.avgWaitTime + function.AvgWaitTime) / 2.0,
 					avgExecTime:     (e.avgExecTime + function.AvgExecTime) / 2.0,
+					args:            function.Args,
 				}
 			} else {
 				statsMap[key] = statsEntry{
 					executorType:    function.ExecutorType,
 					funcName:        function.FuncName,
+					description:     function.Description,
 					callsCounter:    function.Counter,
 					executorCounter: 1,
 					minWaitTime:     function.MinWaitTime,
@@ -153,6 +158,7 @@ var listFuncCmd = &cobra.Command{
 					maxExecTime:     function.MaxExecTime,
 					avgWaitTime:     function.AvgWaitTime,
 					avgExecTime:     function.AvgExecTime,
+					args:            function.Args,
 				}
 			}
 		}

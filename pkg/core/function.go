@@ -2,14 +2,25 @@ package core
 
 import "encoding/json"
 
+// FunctionArg describes a function argument/parameter
+type FunctionArg struct {
+	Name        string   `json:"name"`
+	Type        string   `json:"type"`
+	Description string   `json:"description,omitempty"`
+	Required    bool     `json:"required,omitempty"`
+	Enum        []string `json:"enum,omitempty"`
+}
+
 type Function struct {
-	FunctionID   string  `json:"functionid"`
-	ExecutorName string  `json:"executorname"`
-	ExecutorType string  `json:"executortype"`
-	ColonyName   string  `json:"colonyname"`
-	FuncName     string  `json:"funcname"`
-	Counter      int     `json:"counter"`
-	MinWaitTime  float64 `json:"minwaittime"`
+	FunctionID   string         `json:"functionid"`
+	ExecutorName string         `json:"executorname"`
+	ExecutorType string         `json:"executortype"`
+	ColonyName   string         `json:"colonyname"`
+	FuncName     string         `json:"funcname"`
+	Description  string         `json:"description,omitempty"`
+	Args         []*FunctionArg `json:"args,omitempty"`
+	Counter      int            `json:"counter"`
+	MinWaitTime  float64        `json:"minwaittime"`
 	MaxWaitTime  float64 `json:"maxwaittime"`
 	MinExecTime  float64 `json:"minexectime"`
 	MaxExecTime  float64 `json:"maxexectime"`
@@ -42,6 +53,35 @@ func CreateFunction(functionID string,
 		MaxExecTime:  maxExecTime,
 		AvgWaitTime:  avgWaitTime,
 		AvgExecTime:  avgExecTime,
+	}
+}
+
+// CreateFunctionWithDesc creates a Function with description and arguments
+func CreateFunctionWithDesc(
+	executorName string,
+	executorType string,
+	colonyName string,
+	funcName string,
+	description string,
+	args []*FunctionArg) *Function {
+	return &Function{
+		ExecutorName: executorName,
+		ExecutorType: executorType,
+		ColonyName:   colonyName,
+		FuncName:     funcName,
+		Description:  description,
+		Args:         args,
+	}
+}
+
+// CreateFunctionArg creates a FunctionArg
+func CreateFunctionArg(name string, argType string, description string, required bool, enum []string) *FunctionArg {
+	return &FunctionArg{
+		Name:        name,
+		Type:        argType,
+		Description: description,
+		Required:    required,
+		Enum:        enum,
 	}
 }
 
@@ -101,6 +141,7 @@ func (function *Function) Equals(function2 *Function) bool {
 		function.ExecutorType != function2.ExecutorType ||
 		function.ColonyName != function2.ColonyName ||
 		function.FuncName != function2.FuncName ||
+		function.Description != function2.Description ||
 		function.Counter != function2.Counter ||
 		function.MinWaitTime != function2.MinWaitTime ||
 		function.MaxWaitTime != function2.MaxWaitTime ||
@@ -108,6 +149,11 @@ func (function *Function) Equals(function2 *Function) bool {
 		function.MaxExecTime != function2.MaxExecTime ||
 		function.AvgWaitTime != function2.AvgWaitTime ||
 		function.AvgExecTime != function2.AvgExecTime {
+		return false
+	}
+
+	// Compare Args
+	if len(function.Args) != len(function2.Args) {
 		return false
 	}
 
