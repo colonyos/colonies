@@ -26,6 +26,7 @@ type Function struct {
 	MaxExecTime  float64 `json:"maxexectime"`
 	AvgWaitTime  float64 `json:"avgwaittime"`
 	AvgExecTime  float64 `json:"avgexectime"`
+	LocationName string  `json:"locationname,omitempty"`
 }
 
 func CreateFunction(functionID string,
@@ -148,7 +149,8 @@ func (function *Function) Equals(function2 *Function) bool {
 		function.MinExecTime != function2.MinExecTime ||
 		function.MaxExecTime != function2.MaxExecTime ||
 		function.AvgWaitTime != function2.AvgWaitTime ||
-		function.AvgExecTime != function2.AvgExecTime {
+		function.AvgExecTime != function2.AvgExecTime ||
+		function.LocationName != function2.LocationName {
 		return false
 	}
 

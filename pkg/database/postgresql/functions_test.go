@@ -410,6 +410,55 @@ func TestFunctionWithEmptyDescriptionAndArgs(t *testing.T) {
 	assert.Nil(t, functionFromDB.Args)
 }
 
+func TestFunctionWithLocationName(t *testing.T) {
+	db, err := PrepareTests()
+	assert.Nil(t, err)
+
+	defer db.Close()
+
+	colonyName := core.GenerateRandomID()
+	executorName := core.GenerateRandomID()
+
+	function1 := &core.Function{
+		FunctionID:   core.GenerateRandomID(),
+		ExecutorName: executorName,
+		ColonyName:   colonyName,
+		FuncName:     "tool_read_file",
+		LocationName: "dev-location",
+		Counter:      0,
+		AvgWaitTime:  0.0,
+		AvgExecTime:  0.0,
+	}
+
+	err = db.AddFunction(function1)
+	assert.Nil(t, err)
+
+	functionFromDB, err := db.GetFunctionByID(function1.FunctionID)
+	assert.Nil(t, err)
+	assert.NotNil(t, functionFromDB)
+	assert.Equal(t, "dev-location", functionFromDB.LocationName)
+	assert.True(t, function1.Equals(functionFromDB))
+
+	// Test empty LocationName
+	function2 := &core.Function{
+		FunctionID:   core.GenerateRandomID(),
+		ExecutorName: executorName,
+		ColonyName:   colonyName,
+		FuncName:     "tool_write_file",
+		Counter:      0,
+		AvgWaitTime:  0.0,
+		AvgExecTime:  0.0,
+	}
+
+	err = db.AddFunction(function2)
+	assert.Nil(t, err)
+
+	functionFromDB2, err := db.GetFunctionByID(function2.FunctionID)
+	assert.Nil(t, err)
+	assert.NotNil(t, functionFromDB2)
+	assert.Equal(t, "", functionFromDB2.LocationName)
+}
+
 func TestRemoveFunctions(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)

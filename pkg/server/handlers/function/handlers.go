@@ -92,6 +92,9 @@ func (h *Handlers) HandleAddFunction(c backends.Context, recoveredID string, pay
 		}
 	}
 
+	// Auto-populate LocationName from the executor
+	msg.Function.LocationName = executor.LocationName
+
 	err = h.server.FunctionDB().AddFunction(msg.Function)
 	if h.server.HandleHTTPError(c, err, http.StatusInternalServerError) {
 		return

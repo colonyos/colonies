@@ -476,7 +476,7 @@ func (db *PQDatabase) createNodesTable() error {
 }
 
 func (db *PQDatabase) createFunctionsTable() error {
-	sqlStatement := `CREATE TABLE ` + db.dbPrefix + `FUNCTIONS (FUNCTION_ID TEXT PRIMARY KEY NOT NULL, EXECUTOR_NAME TEXT NOT NULL, EXECUTOR_TYPE TEXT NOT NULL, COLONY_NAME TEXT NOT NULL, FUNCNAME TEXT NOT NULL, DESCRIPTION TEXT, ARGS TEXT, COUNTER INTEGER, MINWAITTIME FLOAT, MAXWAITTIME FLOAT, MINEXECTIME FLOAT, MAXEXECTIME FLOAT, AVGWAITTIME FLOAT, AVGEXECTIME FLOAT)`
+	sqlStatement := `CREATE TABLE ` + db.dbPrefix + `FUNCTIONS (FUNCTION_ID TEXT PRIMARY KEY NOT NULL, EXECUTOR_NAME TEXT NOT NULL, EXECUTOR_TYPE TEXT NOT NULL, COLONY_NAME TEXT NOT NULL, FUNCNAME TEXT NOT NULL, DESCRIPTION TEXT, ARGS TEXT, COUNTER INTEGER, MINWAITTIME FLOAT, MAXWAITTIME FLOAT, MINEXECTIME FLOAT, MAXEXECTIME FLOAT, AVGWAITTIME FLOAT, AVGEXECTIME FLOAT, LOCATION_NAME TEXT)`
 	_, err := db.postgresql.Exec(sqlStatement)
 	if err != nil {
 		return err
@@ -874,6 +874,16 @@ func (db *PQDatabase) createFileIndex3() error {
 	return nil
 }
 
+func (db *PQDatabase) createFunctionsIndex1() error {
+	sqlStatement := `CREATE INDEX IF NOT EXISTS ` + db.dbPrefix + `FUNCTIONS_INDEX1 ON ` + db.dbPrefix + `FUNCTIONS (COLONY_NAME, EXECUTOR_NAME, LOCATION_NAME)`
+	_, err := db.postgresql.Exec(sqlStatement)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (db *PQDatabase) createExecutorsIndex1() error {
 	sqlStatement := `CREATE INDEX IF NOT EXISTS ` + db.dbPrefix + `EXECUTORS_INDEX1 ON ` + db.dbPrefix + `EXECUTORS (EXECUTOR_ID)`
 	_, err := db.postgresql.Exec(sqlStatement)
@@ -1121,6 +1131,11 @@ func (db *PQDatabase) Initialize() error {
 	}
 
 	err = db.createFileIndex3()
+	if err != nil {
+		return err
+	}
+
+	err = db.createFunctionsIndex1()
 	if err != nil {
 		return err
 	}

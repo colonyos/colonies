@@ -390,6 +390,37 @@ func TestFunctionEqualsWithDescription(t *testing.T) {
 	assert.False(t, function1.Equals(function3))
 }
 
+func TestFunctionEqualsWithLocationName(t *testing.T) {
+	function1 := CreateFunctionWithDesc("exec", "type", "colony", "func", "Desc", nil)
+	function1.LocationName = "location-a"
+
+	function2 := CreateFunctionWithDesc("exec", "type", "colony", "func", "Desc", nil)
+	function2.LocationName = "location-a"
+
+	function3 := CreateFunctionWithDesc("exec", "type", "colony", "func", "Desc", nil)
+	function3.LocationName = "location-b"
+
+	function4 := CreateFunctionWithDesc("exec", "type", "colony", "func", "Desc", nil)
+	// LocationName empty
+
+	assert.True(t, function1.Equals(function2))
+	assert.False(t, function1.Equals(function3))
+	assert.False(t, function1.Equals(function4))
+}
+
+func TestFunctionLocationNameJSON(t *testing.T) {
+	function1 := CreateFunctionWithDesc("exec", "type", "colony", "func", "Desc", nil)
+	function1.LocationName = "my-location"
+
+	jsonStr, err := function1.ToJSON()
+	assert.Nil(t, err)
+
+	function2, err := ConvertJSONToFunction(jsonStr)
+	assert.Nil(t, err)
+	assert.Equal(t, "my-location", function2.LocationName)
+	assert.True(t, function1.Equals(function2))
+}
+
 func TestFunctionEqualsWithDifferentArgsLength(t *testing.T) {
 	args1 := []*FunctionArg{
 		CreateFunctionArg("query", "string", "Query", true, nil),
