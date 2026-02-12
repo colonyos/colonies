@@ -51,7 +51,7 @@ services:
       "
 
   colonies-server:
-    image: colonyos/colonies:v1.9.11
+    image: colonyos/colonies:v1.9.12
     depends_on:
       - timescaledb
     environment:
@@ -87,7 +87,7 @@ services:
     command: sh -c "colonies server start --initdb --port ${COLONIES_SERVER_PORT} --relayport 25100 --etcdname server1 --etcdhost colonies-server --etcdclientport 23100 --etcdpeerport 24100 --initial-cluster server1=colonies-server:24100:25100:${COLONIES_SERVER_PORT} --etcddatadir /var/colonies/etcd --insecure"
 
   colonies-setup:
-    image: colonyos/colonies:v1.9.11
+    image: colonyos/colonies:v1.9.12
     depends_on:
       - colonies-server
     environment:
