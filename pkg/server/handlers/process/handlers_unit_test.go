@@ -159,7 +159,16 @@ func (m *MockProcessDB) RemoveAllRunningProcessesByColonyName(string) error { re
 func (m *MockProcessDB) RemoveAllSuccessfulProcessesByColonyName(string) error {
 	return nil
 }
-func (m *MockProcessDB) RemoveAllFailedProcessesByColonyName(string) error { return nil }
+func (m *MockProcessDB) RemoveAllFailedProcessesByColonyName(string) error    { return nil }
+func (m *MockProcessDB) RemoveAllCancelledProcessesByColonyName(string) error { return nil }
+func (m *MockProcessDB) FindCancelledProcesses(colonyName string, executorType string, label string, initiator string, count int) ([]*core.Process, error) {
+	return nil, nil
+}
+func (m *MockProcessDB) MarkCancelled(processID string) error          { return nil }
+func (m *MockProcessDB) CountCancelledProcesses() (int, error)        { return 0, nil }
+func (m *MockProcessDB) CountCancelledProcessesByColonyName(string) (int, error) {
+	return 0, nil
+}
 func (m *MockProcessDB) RemoveAllProcessesByColonyName(string) error       { return m.removeAllProcessesErr }
 func (m *MockProcessDB) RemoveAllProcessesByProcessGraphID(string) error   { return nil }
 func (m *MockProcessDB) RemoveAllProcessesInProcessGraphsByColonyName(string) error {
@@ -292,6 +301,7 @@ type MockController struct {
 	removeAllProcessesErr       error
 	closeSuccessfulErr          error
 	closeFailedErr              error
+	cancelProcessErr            error
 	pauseAssignmentsErr         error
 	resumeAssignmentsErr        error
 	pauseStatusResult           bool
@@ -325,6 +335,10 @@ func (m *MockController) CloseSuccessful(processID string, executorID string, ou
 
 func (m *MockController) CloseFailed(processID string, errs []string) error {
 	return m.closeFailedErr
+}
+
+func (m *MockController) CancelProcess(processID string) error {
+	return m.cancelProcessErr
 }
 
 func (m *MockController) Assign(executorID string, colonyName string, cpu int64, memory int64) (*AssignResult, error) {
@@ -1367,4 +1381,84 @@ func TestRegisterHandlers_DuplicateError(t *testing.T) {
 	// Try to register again
 	err = handlers.RegisterHandlers(handlerRegistry)
 	assert.NotNil(t, err)
+}
+
+// HandleCancelProcess tests
+func TestHandleCancelProcess_Success(t *testing.T) {
+	mockServer := createMockServer()
+	handlers := NewHandlers(mockServer)
+
+	msg := rpc.CreateCancelProcessMsg("process-123")
+	jsonStr, _ := msg.ToJSON()
+
+	ctx := &MockContext{}
+	handlers.HandleCancelProcess(ctx, "executor-123", rpc.CancelProcessPayloadType, jsonStr)
+
+	assert.Equal(t, 0, mockServer.httpErrorCode)
+	assert.Equal(t, rpc.CancelProcessPayloadType, mockServer.replyType)
+}
+
+func TestHandleCancelProcess_InvalidJSON(t *testing.T) {
+	mockServer := createMockServer()
+	handlers := NewHandlers(mockServer)
+
+	ctx := &MockContext{}
+	handlers.HandleCancelProcess(ctx, "executor-123", rpc.CancelProcessPayloadType, "invalid json")
+
+	assert.Equal(t, http.StatusBadRequest, mockServer.httpErrorCode)
+}
+
+func TestHandleCancelProcess_MsgTypeMismatch(t *testing.T) {
+	mockServer := createMockServer()
+	handlers := NewHandlers(mockServer)
+
+	msg := rpc.CreateCancelProcessMsg("process-123")
+	jsonStr, _ := msg.ToJSON()
+
+	ctx := &MockContext{}
+	handlers.HandleCancelProcess(ctx, "executor-123", "wrong-type", jsonStr)
+
+	assert.Equal(t, http.StatusBadRequest, mockServer.httpErrorCode)
+}
+
+func TestHandleCancelProcess_ProcessNotFound(t *testing.T) {
+	mockServer := createMockServer()
+	mockServer.processDB.returnNilByID = true
+	handlers := NewHandlers(mockServer)
+
+	msg := rpc.CreateCancelProcessMsg("non-existent")
+	jsonStr, _ := msg.ToJSON()
+
+	ctx := &MockContext{}
+	handlers.HandleCancelProcess(ctx, "executor-123", rpc.CancelProcessPayloadType, jsonStr)
+
+	assert.Equal(t, http.StatusInternalServerError, mockServer.httpErrorCode)
+}
+
+func TestHandleCancelProcess_AuthError(t *testing.T) {
+	mockServer := createMockServer()
+	mockServer.validator.requireMembershipErr = errors.New("not a member")
+	handlers := NewHandlers(mockServer)
+
+	msg := rpc.CreateCancelProcessMsg("process-123")
+	jsonStr, _ := msg.ToJSON()
+
+	ctx := &MockContext{}
+	handlers.HandleCancelProcess(ctx, "executor-123", rpc.CancelProcessPayloadType, jsonStr)
+
+	assert.Equal(t, http.StatusForbidden, mockServer.httpErrorCode)
+}
+
+func TestHandleCancelProcess_ControllerError(t *testing.T) {
+	mockServer := createMockServer()
+	mockServer.controller.cancelProcessErr = errors.New("controller error")
+	handlers := NewHandlers(mockServer)
+
+	msg := rpc.CreateCancelProcessMsg("process-123")
+	jsonStr, _ := msg.ToJSON()
+
+	ctx := &MockContext{}
+	handlers.HandleCancelProcess(ctx, "executor-123", rpc.CancelProcessPayloadType, jsonStr)
+
+	assert.Equal(t, http.StatusBadRequest, mockServer.httpErrorCode)
 }

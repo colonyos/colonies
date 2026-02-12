@@ -73,6 +73,7 @@ type Controller interface {
 	AddProcess(process *core.Process) (*core.Process, error)
 	CloseSuccessful(processID string, executorID string, output []interface{}) error
 	CloseFailed(processID string, errs []string) error
+	CancelProcess(processID string) error
 	Assign(executorID string, colonyName string, cpu int64, memory int64) (*AssignResult, error)
 	DistributedAssign(executor *core.Executor, colonyName string, cpu int64, memory int64, storage int64) (*AssignResult, error)
 	UnassignExecutor(processID string) error
@@ -165,6 +166,9 @@ func (h *Handlers) RegisterHandlers(handlerRegistry *registry.HandlerRegistry) e
 		return err
 	}
 	if err := handlerRegistry.Register(rpc.CloseFailedPayloadType, h.HandleCloseFailed); err != nil {
+		return err
+	}
+	if err := handlerRegistry.Register(rpc.CancelProcessPayloadType, h.HandleCancelProcess); err != nil {
 		return err
 	}
 	if err := handlerRegistry.Register(rpc.SetOutputPayloadType, h.HandleSetOutput); err != nil {
@@ -584,6 +588,16 @@ func (h *Handlers) HandleGetProcesses(c backends.Context, recoveredID string, pa
 			return
 		}
 		h.server.SendHTTPReply(c, payloadType, jsonString)
+	case core.CANCELLED:
+		processes, err := h.server.ProcessDB().FindCancelledProcesses(msg.ColonyName, msg.ExecutorType, msg.Label, msg.Initiator, msg.Count)
+		if h.server.HandleHTTPError(c, err, http.StatusBadRequest) {
+			return
+		}
+		jsonString, err := core.ConvertProcessArrayToJSON(processes)
+		if h.server.HandleHTTPError(c, err, http.StatusBadRequest) {
+			return
+		}
+		h.server.SendHTTPReply(c, payloadType, jsonString)
 	default:
 		err := errors.New("Failed to get processes, invalid msg.State")
 		h.server.HandleHTTPError(c, err, http.StatusBadRequest)
@@ -708,6 +722,8 @@ func (h *Handlers) HandleRemoveAllProcesses(c backends.Context, recoveredID stri
 		err = h.server.ProcessDB().RemoveAllSuccessfulProcessesByColonyName(msg.ColonyName)
 	case core.FAILED:
 		err = h.server.ProcessDB().RemoveAllFailedProcessesByColonyName(msg.ColonyName)
+	case core.CANCELLED:
+		err = h.server.ProcessDB().RemoveAllCancelledProcessesByColonyName(msg.ColonyName)
 	case core.NOTSET:
 		err = h.server.ProcessDB().RemoveAllProcessesByColonyName(msg.ColonyName)
 	default:
@@ -890,6 +906,46 @@ func (h *Handlers) HandleCloseFailed(c backends.Context, recoveredID string, pay
 	}
 
 	log.WithFields(log.Fields{"ProcessId": process.ID}).Debug("Close failed")
+
+	h.server.SendEmptyHTTPReply(c, payloadType)
+}
+
+func (h *Handlers) HandleCancelProcess(c backends.Context, recoveredID string, payloadType string, jsonString string) {
+	msg, err := rpc.CreateCancelProcessMsgFromJSON(jsonString)
+	if err != nil {
+		if h.server.HandleHTTPError(c, errors.New("Failed to cancel process, invalid JSON"), http.StatusBadRequest) {
+			return
+		}
+	}
+
+	if msg.MsgType != payloadType {
+		h.server.HandleHTTPError(c, errors.New("Failed to cancel process, msg.MsgType does not match payloadType"), http.StatusBadRequest)
+		return
+	}
+
+	process, err := h.server.ProcessDB().GetProcessByID(msg.ProcessID)
+	if h.server.HandleHTTPError(c, err, http.StatusBadRequest) {
+		return
+	}
+	if process == nil {
+		errmsg := "Failed to cancel process, process is nil"
+		log.Error(errmsg)
+		h.server.HandleHTTPError(c, errors.New(errmsg), http.StatusInternalServerError)
+		return
+	}
+
+	err = h.server.Validator().RequireMembership(recoveredID, process.FunctionSpec.Conditions.ColonyName, true)
+	if h.server.HandleHTTPError(c, err, http.StatusForbidden) {
+		return
+	}
+
+	err = h.server.ProcessController().CancelProcess(process.ID)
+	if h.server.HandleHTTPError(c, err, http.StatusBadRequest) {
+		log.WithFields(log.Fields{"Error": err}).Debug("Failed to cancel process")
+		return
+	}
+
+	log.WithFields(log.Fields{"ProcessId": process.ID}).Debug("Cancel process")
 
 	h.server.SendEmptyHTTPReply(c, payloadType)
 }

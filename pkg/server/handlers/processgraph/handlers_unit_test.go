@@ -15,20 +15,22 @@ import (
 
 // MockController implements Controller interface
 type MockController struct {
-	submitErr       error
-	getByIDErr      error
-	findWaitingErr  error
-	findRunningErr  error
-	findSuccessErr  error
-	findFailedErr   error
-	removeErr       error
-	removeAllErr    error
-	addChildErr     error
-	processGraph    *core.ProcessGraph
-	processGraphs   []*core.ProcessGraph
-	addedProcess    *core.Process
-	returnNil       bool
-	returnNilChild  bool
+	submitErr          error
+	getByIDErr         error
+	findWaitingErr     error
+	findRunningErr     error
+	findSuccessErr     error
+	findFailedErr      error
+	findCancelledErr   error
+	cancelGraphErr     error
+	removeErr          error
+	removeAllErr       error
+	addChildErr        error
+	processGraph       *core.ProcessGraph
+	processGraphs      []*core.ProcessGraph
+	addedProcess       *core.Process
+	returnNil          bool
+	returnNilChild     bool
 }
 
 func (m *MockController) SubmitWorkflowSpec(workflowSpec *core.WorkflowSpec, initiatorID string) (*core.ProcessGraph, error) {
@@ -74,6 +76,17 @@ func (m *MockController) FindFailedProcessGraphs(colonyName string, count int) (
 		return nil, m.findFailedErr
 	}
 	return m.processGraphs, nil
+}
+
+func (m *MockController) FindCancelledProcessGraphs(colonyName string, count int) ([]*core.ProcessGraph, error) {
+	if m.findCancelledErr != nil {
+		return nil, m.findCancelledErr
+	}
+	return m.processGraphs, nil
+}
+
+func (m *MockController) CancelProcessGraph(processGraphID string) error {
+	return m.cancelGraphErr
 }
 
 func (m *MockController) RemoveProcessGraph(processGraphID string) error {
@@ -207,6 +220,16 @@ func (m *MockProcessGraphDB) CountSuccessfulProcessGraphsByColonyName(colonyName
 	return 0, nil
 }
 func (m *MockProcessGraphDB) CountFailedProcessGraphsByColonyName(colonyName string) (int, error) {
+	return 0, nil
+}
+func (m *MockProcessGraphDB) FindCancelledProcessGraphs(colonyName string, count int) ([]*core.ProcessGraph, error) {
+	return nil, nil
+}
+func (m *MockProcessGraphDB) RemoveAllCancelledProcessGraphsByColonyName(colonyName string) error {
+	return m.removeAllErr
+}
+func (m *MockProcessGraphDB) CountCancelledProcessGraphs() (int, error) { return 0, nil }
+func (m *MockProcessGraphDB) CountCancelledProcessGraphsByColonyName(colonyName string) (int, error) {
 	return 0, nil
 }
 
@@ -858,4 +881,104 @@ func TestHandleAddChild_WithInsert(t *testing.T) {
 	handlers.HandleAddChild(ctx, "user-123", rpc.AddChildPayloadType, jsonString)
 
 	assert.Equal(t, rpc.AddChildPayloadType, server.lastPayloadType)
+}
+
+// Tests for HandleGetProcessGraphs with CANCELLED state
+func TestHandleGetProcessGraphs_Cancelled_Success(t *testing.T) {
+	server, ctx := createMockServer()
+	handlers := NewHandlers(server)
+
+	msg := rpc.CreateGetProcessGraphsMsg("test-colony", 10, core.CANCELLED)
+	jsonString, _ := msg.ToJSON()
+
+	handlers.HandleGetProcessGraphs(ctx, "user-123", rpc.GetProcessGraphsPayloadType, jsonString)
+
+	assert.Equal(t, rpc.GetProcessGraphsPayloadType, server.lastPayloadType)
+}
+
+func TestHandleGetProcessGraphs_CancelledError(t *testing.T) {
+	server, ctx := createMockServer()
+	server.controller.findCancelledErr = errors.New("cancelled error")
+	handlers := NewHandlers(server)
+
+	msg := rpc.CreateGetProcessGraphsMsg("test-colony", 10, core.CANCELLED)
+	jsonString, _ := msg.ToJSON()
+
+	handlers.HandleGetProcessGraphs(ctx, "user-123", rpc.GetProcessGraphsPayloadType, jsonString)
+
+	assert.Equal(t, http.StatusBadRequest, server.lastStatusCode)
+}
+
+// Tests for HandleCancelProcessGraph
+func TestHandleCancelProcessGraph_Success(t *testing.T) {
+	server, ctx := createMockServer()
+	handlers := NewHandlers(server)
+
+	msg := rpc.CreateCancelProcessGraphMsg("processgraph-123")
+	jsonString, _ := msg.ToJSON()
+
+	handlers.HandleCancelProcessGraph(ctx, "user-123", rpc.CancelProcessGraphPayloadType, jsonString)
+
+	assert.Equal(t, rpc.CancelProcessGraphPayloadType, server.lastPayloadType)
+	assert.True(t, server.emptyReplySent)
+}
+
+func TestHandleCancelProcessGraph_InvalidJSON(t *testing.T) {
+	server, ctx := createMockServer()
+	handlers := NewHandlers(server)
+
+	handlers.HandleCancelProcessGraph(ctx, "user-123", rpc.CancelProcessGraphPayloadType, "invalid json")
+
+	assert.Equal(t, http.StatusBadRequest, server.lastStatusCode)
+}
+
+func TestHandleCancelProcessGraph_MsgTypeMismatch(t *testing.T) {
+	server, ctx := createMockServer()
+	handlers := NewHandlers(server)
+
+	msg := rpc.CreateCancelProcessGraphMsg("processgraph-123")
+	jsonString, _ := msg.ToJSON()
+
+	handlers.HandleCancelProcessGraph(ctx, "user-123", "wrong-type", jsonString)
+
+	assert.Equal(t, http.StatusBadRequest, server.lastStatusCode)
+}
+
+func TestHandleCancelProcessGraph_NotFound(t *testing.T) {
+	server, ctx := createMockServer()
+	server.controller.returnNil = true
+	handlers := NewHandlers(server)
+
+	msg := rpc.CreateCancelProcessGraphMsg("processgraph-123")
+	jsonString, _ := msg.ToJSON()
+
+	handlers.HandleCancelProcessGraph(ctx, "user-123", rpc.CancelProcessGraphPayloadType, jsonString)
+
+	assert.Equal(t, http.StatusInternalServerError, server.lastStatusCode)
+}
+
+func TestHandleCancelProcessGraph_MembershipError(t *testing.T) {
+	server, ctx := createMockServer()
+	server.validator.membershipErr = errors.New("membership error")
+	handlers := NewHandlers(server)
+
+	msg := rpc.CreateCancelProcessGraphMsg("processgraph-123")
+	jsonString, _ := msg.ToJSON()
+
+	handlers.HandleCancelProcessGraph(ctx, "user-123", rpc.CancelProcessGraphPayloadType, jsonString)
+
+	assert.Equal(t, http.StatusForbidden, server.lastStatusCode)
+}
+
+func TestHandleCancelProcessGraph_ControllerError(t *testing.T) {
+	server, ctx := createMockServer()
+	server.controller.cancelGraphErr = errors.New("cancel error")
+	handlers := NewHandlers(server)
+
+	msg := rpc.CreateCancelProcessGraphMsg("processgraph-123")
+	jsonString, _ := msg.ToJSON()
+
+	handlers.HandleCancelProcessGraph(ctx, "user-123", rpc.CancelProcessGraphPayloadType, jsonString)
+
+	assert.Equal(t, http.StatusBadRequest, server.lastStatusCode)
 }

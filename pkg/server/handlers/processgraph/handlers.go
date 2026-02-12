@@ -19,6 +19,8 @@ type Controller interface {
 	FindRunningProcessGraphs(colonyName string, count int) ([]*core.ProcessGraph, error)
 	FindSuccessfulProcessGraphs(colonyName string, count int) ([]*core.ProcessGraph, error)
 	FindFailedProcessGraphs(colonyName string, count int) ([]*core.ProcessGraph, error)
+	FindCancelledProcessGraphs(colonyName string, count int) ([]*core.ProcessGraph, error)
+	CancelProcessGraph(processGraphID string) error
 	AddChild(processGraphID string, parentProcessID string, childProcessID string, process *core.Process, initiatorID string, insert bool) (*core.Process, error)
 }
 
@@ -64,6 +66,9 @@ func (h *Handlers) RegisterHandlers(handlerRegistry *registry.HandlerRegistry) e
 		return err
 	}
 	if err := handlerRegistry.Register(rpc.AddChildPayloadType, h.HandleAddChild); err != nil {
+		return err
+	}
+	if err := handlerRegistry.Register(rpc.CancelProcessGraphPayloadType, h.HandleCancelProcessGraph); err != nil {
 		return err
 	}
 	return nil
@@ -203,6 +208,16 @@ func (h *Handlers) HandleGetProcessGraphs(c backends.Context, recoveredID string
 			return
 		}
 		h.server.SendHTTPReply(c, payloadType, jsonString)
+	case core.CANCELLED:
+		graphs, err := h.server.Controller().FindCancelledProcessGraphs(msg.ColonyName, msg.Count)
+		if h.server.HandleHTTPError(c, err, http.StatusBadRequest) {
+			return
+		}
+		jsonString, err := core.ConvertProcessGraphArrayToJSON(graphs)
+		if h.server.HandleHTTPError(c, err, http.StatusBadRequest) {
+			return
+		}
+		h.server.SendHTTPReply(c, payloadType, jsonString)
 	default:
 		err := errors.New("invalid msg.State")
 		h.server.HandleHTTPError(c, err, http.StatusBadRequest)
@@ -283,6 +298,8 @@ func (h *Handlers) HandleRemoveAllProcessGraphs(c backends.Context, recoveredID 
 		err = h.server.ProcessGraphDB().RemoveAllSuccessfulProcessGraphsByColonyName(msg.ColonyName)
 	case core.FAILED:
 		err = h.server.ProcessGraphDB().RemoveAllFailedProcessGraphsByColonyName(msg.ColonyName)
+	case core.CANCELLED:
+		err = h.server.ProcessGraphDB().RemoveAllCancelledProcessGraphsByColonyName(msg.ColonyName)
 	case core.NOTSET:
 		err = h.server.ProcessGraphDB().RemoveAllProcessGraphsByColonyName(msg.ColonyName)
 	default:
@@ -293,6 +310,43 @@ func (h *Handlers) HandleRemoveAllProcessGraphs(c backends.Context, recoveredID 
 	}
 
 	log.WithFields(log.Fields{"ColonyId": msg.ColonyName}).Debug("Removing all processgraphs")
+
+	h.server.SendEmptyHTTPReply(c, payloadType)
+}
+
+func (h *Handlers) HandleCancelProcessGraph(c backends.Context, recoveredID string, payloadType string, jsonString string) {
+	msg, err := rpc.CreateCancelProcessGraphMsgFromJSON(jsonString)
+	if err != nil {
+		if h.server.HandleHTTPError(c, errors.New("Failed to cancel processgraph, invalid JSON"), http.StatusBadRequest) {
+			return
+		}
+	}
+
+	if msg.MsgType != payloadType {
+		h.server.HandleHTTPError(c, errors.New("Failed to cancel processgraph, msg.MsgType does not match payloadType"), http.StatusBadRequest)
+		return
+	}
+
+	graph, err := h.server.Controller().GetProcessGraphByID(msg.ProcessGraphID)
+	if h.server.HandleHTTPError(c, err, http.StatusBadRequest) {
+		return
+	}
+	if graph == nil {
+		h.server.HandleHTTPError(c, errors.New("Failed to cancel processgraph, graph is nil"), http.StatusInternalServerError)
+		return
+	}
+
+	err = h.server.Validator().RequireMembership(recoveredID, graph.ColonyName, true)
+	if h.server.HandleHTTPError(c, err, http.StatusForbidden) {
+		return
+	}
+
+	err = h.server.Controller().CancelProcessGraph(msg.ProcessGraphID)
+	if h.server.HandleHTTPError(c, err, http.StatusBadRequest) {
+		return
+	}
+
+	log.WithFields(log.Fields{"ProcessGraphId": graph.ID}).Debug("Cancel processgraph")
 
 	h.server.SendEmptyHTTPReply(c, payloadType)
 }
