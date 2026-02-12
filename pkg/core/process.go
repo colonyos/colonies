@@ -10,10 +10,11 @@ import (
 )
 
 const (
-	WAITING int = 0
-	RUNNING     = 1
-	SUCCESS     = 2
-	FAILED      = 3
+	WAITING   int = 0
+	RUNNING       = 1
+	SUCCESS       = 2
+	FAILED        = 3
+	CANCELLED     = 4
 )
 
 const NOTSET = -1
