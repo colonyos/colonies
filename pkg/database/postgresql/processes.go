@@ -878,6 +878,10 @@ func (db *PQDatabase) Assign(executorID string, process *core.Process) error {
 		return errors.New("Process already assigned")
 	}
 
+	if processFromDB.State == core.CANCELLED {
+		return errors.New("Cannot assign cancelled process")
+	}
+
 	startTime := time.Now()
 	if process.FunctionSpec.MaxExecTime > 0 {
 		deadline := time.Now().Add(time.Duration(process.FunctionSpec.MaxExecTime) * time.Second)
@@ -1033,6 +1037,10 @@ func (db *PQDatabase) MarkSuccessful(processID string) (float64, float64, error)
 		return 0.0, 0.0, errors.New("Tried to set failed process as successful")
 	}
 
+	if process.State == core.CANCELLED {
+		return 0.0, 0.0, errors.New("Tried to set cancelled process as successful")
+	}
+
 	if process.State == core.WAITING {
 		return 0.0, 0.0, errors.New("Tried to set waiting process as successful without being running")
 	}
@@ -1073,6 +1081,10 @@ func (db *PQDatabase) MarkFailed(processID string, errs []string) error {
 
 	if process.State == core.FAILED {
 		return errors.New("Tried to set failed process as failed")
+	}
+
+	if process.State == core.CANCELLED {
+		return errors.New("Tried to set cancelled process as failed")
 	}
 
 	sqlStatement := `UPDATE ` + db.dbPrefix + `PROCESSES SET END_TIME=$1, STATE=$2 WHERE PROCESS_ID=$3`
@@ -1189,4 +1201,108 @@ func (db *PQDatabase) CountSuccessfulProcessesByColonyName(colonyName string) (i
 
 func (db *PQDatabase) CountFailedProcessesByColonyName(colonyName string) (int, error) {
 	return db.countProcessesByColonyName(core.FAILED, colonyName)
+}
+
+func (db *PQDatabase) MarkCancelled(processID string) error {
+	process, err := db.GetProcessByID(processID)
+	if err != nil {
+		return err
+	}
+
+	if process == nil {
+		return errors.New("Process with Id <" + processID + "> not found")
+	}
+
+	if process.State == core.SUCCESS {
+		return errors.New("Tried to cancel successful process")
+	}
+
+	if process.State == core.FAILED {
+		return errors.New("Tried to cancel failed process")
+	}
+
+	if process.State == core.CANCELLED {
+		return errors.New("Tried to cancel already cancelled process")
+	}
+
+	endTime := time.Now()
+
+	sqlStatement := `UPDATE ` + db.dbPrefix + `PROCESSES SET END_TIME=$1, STATE=$2 WHERE PROCESS_ID=$3`
+	_, err = db.postgresql.Exec(sqlStatement, endTime, core.CANCELLED, process.ID)
+	if err != nil {
+		return err
+	}
+
+	err = db.SetAttributeState(process.ID, core.CANCELLED)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (db *PQDatabase) FindCancelledProcesses(colonyName string, executorType string, label string, initiator string, count int) ([]*core.Process, error) {
+	var sqlStatement string
+	var rows *sql.Rows
+	var err error
+
+	if executorType != "" {
+		sqlStatement = `SELECT * FROM ` + db.dbPrefix + `PROCESSES WHERE TARGET_COLONY_NAME=$1 AND EXECUTOR_TYPE=$2 AND STATE=$3 ORDER BY END_TIME DESC LIMIT $4`
+		rows, err = db.postgresql.Query(sqlStatement, colonyName, executorType, core.CANCELLED, count)
+		if err != nil {
+			return nil, err
+		}
+		defer rows.Close()
+	} else if initiator != "" {
+		sqlStatement = `SELECT * FROM ` + db.dbPrefix + `PROCESSES WHERE TARGET_COLONY_NAME=$1 AND INITIATOR_NAME=$2 AND STATE=$3 ORDER BY END_TIME DESC LIMIT $4`
+		rows, err = db.postgresql.Query(sqlStatement, colonyName, initiator, core.CANCELLED, count)
+		if err != nil {
+			return nil, err
+		}
+		defer rows.Close()
+	} else if label != "" {
+		sqlStatement = `SELECT * FROM ` + db.dbPrefix + `PROCESSES WHERE TARGET_COLONY_NAME=$1 AND LABEL=$2 AND STATE=$3 ORDER BY END_TIME DESC LIMIT $4`
+		rows, err = db.postgresql.Query(sqlStatement, colonyName, label, core.CANCELLED, count)
+		if err != nil {
+			return nil, err
+		}
+		defer rows.Close()
+	} else {
+		sqlStatement = `SELECT * FROM ` + db.dbPrefix + `PROCESSES WHERE TARGET_COLONY_NAME=$1 AND STATE=$2 ORDER BY END_TIME DESC LIMIT $3`
+		rows, err = db.postgresql.Query(sqlStatement, colonyName, core.CANCELLED, count)
+		if err != nil {
+			return nil, err
+		}
+		defer rows.Close()
+	}
+
+	matches, err := db.parseProcesses(rows)
+	if err != nil {
+		return nil, err
+	}
+
+	return matches, nil
+}
+
+func (db *PQDatabase) RemoveAllCancelledProcessesByColonyName(colonyName string) error {
+	sqlStatement := `DELETE FROM ` + db.dbPrefix + `PROCESSES WHERE TARGET_COLONY_NAME=$1 AND PROCESSGRAPH_ID=$2 AND STATE=$3`
+	_, err := db.postgresql.Exec(sqlStatement, colonyName, "", core.CANCELLED)
+	if err != nil {
+		return err
+	}
+
+	err = db.RemoveAllAttributesByColonyNameWithState(colonyName, core.CANCELLED)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (db *PQDatabase) CountCancelledProcesses() (int, error) {
+	return db.countProcesses(core.CANCELLED)
+}
+
+func (db *PQDatabase) CountCancelledProcessesByColonyName(colonyName string) (int, error) {
+	return db.countProcessesByColonyName(core.CANCELLED, colonyName)
 }
