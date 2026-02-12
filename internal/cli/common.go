@@ -100,6 +100,8 @@ func State2String(state int) string {
 		stateStr = "Successful"
 	case core.FAILED:
 		stateStr = "Failed"
+	case core.CANCELLED:
+		stateStr = "Cancelled"
 	default:
 		stateStr = "Unkown"
 	}
