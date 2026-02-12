@@ -94,6 +94,18 @@ func (v *ControllerMock) FindFailedProcessGraphs(colonyName string, count int) (
 	return nil, nil
 }
 
+func (v *ControllerMock) FindCancelledProcessGraphs(colonyName string, count int) ([]*core.ProcessGraph, error) {
+	return nil, nil
+}
+
+func (v *ControllerMock) CancelProcess(processID string) error {
+	return nil
+}
+
+func (v *ControllerMock) CancelProcessGraph(processGraphID string) error {
+	return nil
+}
+
 func (v *ControllerMock) CloseSuccessful(processID string, executorID string, output []interface{}) error {
 	return nil
 }
@@ -382,6 +394,11 @@ func (db *DatabaseMock) CountWaitingProcessesByColonyName(colonyName string) (in
 func (db *DatabaseMock) CountRunningProcessesByColonyName(colonyName string) (int, error) { return 0, nil }
 func (db *DatabaseMock) CountSuccessfulProcessesByColonyName(colonyName string) (int, error) { return 0, nil }
 func (db *DatabaseMock) CountFailedProcessesByColonyName(colonyName string) (int, error) { return 0, nil }
+func (db *DatabaseMock) MarkCancelled(processID string) error { return nil }
+func (db *DatabaseMock) FindCancelledProcesses(colonyName string, executorType string, label string, initiator string, count int) ([]*core.Process, error) { return nil, nil }
+func (db *DatabaseMock) RemoveAllCancelledProcessesByColonyName(colonyName string) error { return nil }
+func (db *DatabaseMock) CountCancelledProcesses() (int, error) { return 0, nil }
+func (db *DatabaseMock) CountCancelledProcessesByColonyName(colonyName string) (int, error) { return 0, nil }
 
 // UserDatabase interface
 func (db *DatabaseMock) AddUser(user *core.User) error { return nil }
@@ -451,6 +468,10 @@ func (db *DatabaseMock) CountWaitingProcessGraphsByColonyName(colonyName string)
 func (db *DatabaseMock) CountRunningProcessGraphsByColonyName(colonyName string) (int, error) { return 0, nil }
 func (db *DatabaseMock) CountSuccessfulProcessGraphsByColonyName(colonyName string) (int, error) { return 0, nil }
 func (db *DatabaseMock) CountFailedProcessGraphsByColonyName(colonyName string) (int, error) { return 0, nil }
+func (db *DatabaseMock) FindCancelledProcessGraphs(colonyName string, count int) ([]*core.ProcessGraph, error) { return nil, nil }
+func (db *DatabaseMock) RemoveAllCancelledProcessGraphsByColonyName(colonyName string) error { return nil }
+func (db *DatabaseMock) CountCancelledProcessGraphs() (int, error) { return 0, nil }
+func (db *DatabaseMock) CountCancelledProcessGraphsByColonyName(colonyName string) (int, error) { return 0, nil }
 
 // GeneratorDatabase interface
 func (db *DatabaseMock) AddGenerator(generator *core.Generator) error {

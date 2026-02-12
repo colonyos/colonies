@@ -28,6 +28,9 @@ type Controller interface {
 	FindRunningProcessGraphs(colonyName string, count int) ([]*core.ProcessGraph, error)
 	FindSuccessfulProcessGraphs(colonyName string, count int) ([]*core.ProcessGraph, error)
 	FindFailedProcessGraphs(colonyName string, count int) ([]*core.ProcessGraph, error)
+	FindCancelledProcessGraphs(colonyName string, count int) ([]*core.ProcessGraph, error)
+	CancelProcess(processID string) error
+	CancelProcessGraph(processGraphID string) error
 	CloseSuccessful(processID string, executorID string, output []interface{}) error
 	NotifyChildren(process *core.Process) error
 	CloseFailed(processID string, errs []string) error
