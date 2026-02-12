@@ -329,6 +329,16 @@ func (h *Handlers) HandleColonyStatistics(c backends.Context, recoveredID string
 		return
 	}
 
+	cancelledProcesses, err := h.server.ProcessDB().CountCancelledProcessesByColonyName(colony.Name)
+	if h.server.HandleHTTPError(c, err, http.StatusInternalServerError) {
+		return
+	}
+
+	cancelledWorkflows, err := h.server.ProcessGraphDB().CountCancelledProcessGraphsByColonyName(colony.Name)
+	if h.server.HandleHTTPError(c, err, http.StatusInternalServerError) {
+		return
+	}
+
 	stat := core.CreateStatistics(
 		1, // colonies count for single colony stats
 		executors,
@@ -338,10 +348,12 @@ func (h *Handlers) HandleColonyStatistics(c backends.Context, recoveredID string
 		runningProcesses,
 		successProcesses,
 		failedProcesses,
+		cancelledProcesses,
 		waitingWorkflows,
 		runningWorkflows,
 		successWorkflows,
 		failedWorkflows,
+		cancelledWorkflows,
 	)
 
 	jsonString, err = stat.ToJSON()

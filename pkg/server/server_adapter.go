@@ -170,6 +170,7 @@ type processControllerAdapter struct {
 		AddProcess(process *core.Process) (*core.Process, error)
 		CloseSuccessful(processID string, executorID string, output []interface{}) error
 		CloseFailed(processID string, errs []string) error
+		CancelProcess(processID string) error
 		Assign(executorID string, colonyName string, cpu int64, memory int64) (*controllers.AssignResult, error)
 		DistributedAssign(executor *core.Executor, colonyName string, cpu int64, memory int64, storage int64) (*controllers.AssignResult, error)
 		UnassignExecutor(processID string) error
@@ -196,6 +197,10 @@ func (c *processControllerAdapter) CloseSuccessful(processID string, executorID 
 
 func (c *processControllerAdapter) CloseFailed(processID string, errs []string) error {
 	return c.controller.CloseFailed(processID, errs)
+}
+
+func (c *processControllerAdapter) CancelProcess(processID string) error {
+	return c.controller.CancelProcess(processID)
 }
 
 func (c *processControllerAdapter) Assign(executorID string, colonyName string, cpu int64, memory int64) (*process.AssignResult, error) {
@@ -373,6 +378,8 @@ type processgraphControllerAdapter struct {
 		FindRunningProcessGraphs(colonyName string, count int) ([]*core.ProcessGraph, error)
 		FindSuccessfulProcessGraphs(colonyName string, count int) ([]*core.ProcessGraph, error)
 		FindFailedProcessGraphs(colonyName string, count int) ([]*core.ProcessGraph, error)
+		FindCancelledProcessGraphs(colonyName string, count int) ([]*core.ProcessGraph, error)
+		CancelProcessGraph(processGraphID string) error
 		AddChild(processGraphID string, parentProcessID string, childProcessID string, process *core.Process, initiatorID string, insert bool) (*core.Process, error)
 	}
 }
@@ -399,6 +406,14 @@ func (c *processgraphControllerAdapter) FindSuccessfulProcessGraphs(colonyName s
 
 func (c *processgraphControllerAdapter) FindFailedProcessGraphs(colonyName string, count int) ([]*core.ProcessGraph, error) {
 	return c.controller.FindFailedProcessGraphs(colonyName, count)
+}
+
+func (c *processgraphControllerAdapter) FindCancelledProcessGraphs(colonyName string, count int) ([]*core.ProcessGraph, error) {
+	return c.controller.FindCancelledProcessGraphs(colonyName, count)
+}
+
+func (c *processgraphControllerAdapter) CancelProcessGraph(processGraphID string) error {
+	return c.controller.CancelProcessGraph(processGraphID)
 }
 
 func (c *processgraphControllerAdapter) AddChild(processGraphID string, parentProcessID string, childProcessID string, process *core.Process, initiatorID string, insert bool) (*core.Process, error) {
