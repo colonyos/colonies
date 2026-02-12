@@ -926,6 +926,226 @@ func TestMarkFailed(t *testing.T) {
 	assert.NotNil(t, err) // Not possible to set failed process as failed
 }
 
+func TestMarkCancelled(t *testing.T) {
+	db, err := PrepareTests()
+	assert.Nil(t, err)
+
+	defer db.Close()
+
+	colony := core.CreateColony(core.GenerateRandomID(), "test_colony_name")
+
+	executor := utils.CreateTestExecutor(colony.Name)
+	err = db.AddExecutor(executor)
+	assert.Nil(t, err)
+
+	// Cancel a waiting process
+	process1 := utils.CreateTestProcess(colony.Name)
+	err = db.AddProcess(process1)
+	assert.Nil(t, err)
+	assert.Equal(t, core.WAITING, process1.State)
+
+	err = db.MarkCancelled(process1.ID)
+	assert.Nil(t, err)
+
+	processFromDB, err := db.GetProcessByID(process1.ID)
+	assert.Nil(t, err)
+	assert.Equal(t, core.CANCELLED, processFromDB.State)
+
+	// Cancel a running process
+	process2 := utils.CreateTestProcess(colony.Name)
+	err = db.AddProcess(process2)
+	assert.Nil(t, err)
+	err = db.Assign(executor.ID, process2)
+	assert.Nil(t, err)
+
+	processFromDB, err = db.GetProcessByID(process2.ID)
+	assert.Nil(t, err)
+	assert.Equal(t, core.RUNNING, processFromDB.State)
+
+	err = db.MarkCancelled(process2.ID)
+	assert.Nil(t, err)
+
+	processFromDB, err = db.GetProcessByID(process2.ID)
+	assert.Nil(t, err)
+	assert.Equal(t, core.CANCELLED, processFromDB.State)
+
+	// Cannot cancel an already cancelled process
+	err = db.MarkCancelled(process2.ID)
+	assert.NotNil(t, err)
+
+	// Cannot cancel a successful process
+	process3 := utils.CreateTestProcess(colony.Name)
+	err = db.AddProcess(process3)
+	assert.Nil(t, err)
+	err = db.Assign(executor.ID, process3)
+	assert.Nil(t, err)
+	_, _, err = db.MarkSuccessful(process3.ID)
+	assert.Nil(t, err)
+
+	err = db.MarkCancelled(process3.ID)
+	assert.NotNil(t, err)
+
+	// Cannot cancel a failed process
+	process4 := utils.CreateTestProcess(colony.Name)
+	err = db.AddProcess(process4)
+	assert.Nil(t, err)
+	err = db.Assign(executor.ID, process4)
+	assert.Nil(t, err)
+	err = db.MarkFailed(process4.ID, []string{"error"})
+	assert.Nil(t, err)
+
+	err = db.MarkCancelled(process4.ID)
+	assert.NotNil(t, err)
+
+	// Cannot mark a cancelled process as successful
+	err = db.MarkCancelled(process1.ID)
+	assert.NotNil(t, err) // already cancelled
+	_, _, err = db.MarkSuccessful(process1.ID)
+	assert.NotNil(t, err)
+
+	// Cannot mark a cancelled process as failed
+	err = db.MarkFailed(process1.ID, []string{"error"})
+	assert.NotNil(t, err)
+}
+
+func TestAssignCancelledProcess(t *testing.T) {
+	db, err := PrepareTests()
+	assert.Nil(t, err)
+
+	defer db.Close()
+
+	colony := core.CreateColony(core.GenerateRandomID(), "test_colony_name")
+
+	executor := utils.CreateTestExecutor(colony.Name)
+	err = db.AddExecutor(executor)
+	assert.Nil(t, err)
+
+	// Create and cancel a process
+	process := utils.CreateTestProcess(colony.Name)
+	err = db.AddProcess(process)
+	assert.Nil(t, err)
+
+	err = db.MarkCancelled(process.ID)
+	assert.Nil(t, err)
+
+	// Attempt to assign a cancelled process should fail
+	err = db.Assign(executor.ID, process)
+	assert.NotNil(t, err)
+
+	// Verify process is still cancelled and not assigned
+	processFromDB, err := db.GetProcessByID(process.ID)
+	assert.Nil(t, err)
+	assert.Equal(t, core.CANCELLED, processFromDB.State)
+	assert.False(t, processFromDB.IsAssigned)
+}
+
+func TestSelectAndAssignSkipsCancelledProcesses(t *testing.T) {
+	db, err := PrepareTests()
+	assert.Nil(t, err)
+
+	defer db.Close()
+
+	colony := core.CreateColony(core.GenerateRandomID(), "test_colony_name")
+
+	executor := utils.CreateTestExecutor(colony.Name)
+	err = db.AddExecutor(executor)
+	assert.Nil(t, err)
+
+	// Create a process and cancel it
+	cancelledProcess := utils.CreateTestProcess(colony.Name)
+	err = db.AddProcess(cancelledProcess)
+	assert.Nil(t, err)
+	err = db.MarkCancelled(cancelledProcess.ID)
+	assert.Nil(t, err)
+
+	// SelectAndAssign should not find the cancelled process
+	selected, err := db.SelectAndAssign(
+		colony.Name,
+		executor.ID,
+		executor.Name,
+		executor.Type,
+		executor.LocationName,
+		0, 0, 0,
+		math.MaxInt8, math.MaxInt8, math.MaxInt8,
+		1,
+	)
+	assert.Nil(t, err)
+	assert.Nil(t, selected) // No waiting processes available
+
+	// Add a waiting process - it should be assigned
+	waitingProcess := utils.CreateTestProcess(colony.Name)
+	err = db.AddProcess(waitingProcess)
+	assert.Nil(t, err)
+
+	selected, err = db.SelectAndAssign(
+		colony.Name,
+		executor.ID,
+		executor.Name,
+		executor.Type,
+		executor.LocationName,
+		0, 0, 0,
+		math.MaxInt8, math.MaxInt8, math.MaxInt8,
+		1,
+	)
+	assert.Nil(t, err)
+	assert.NotNil(t, selected)
+	assert.Equal(t, waitingProcess.ID, selected.ID)
+}
+
+func TestFindCancelledProcesses(t *testing.T) {
+	db, err := PrepareTests()
+	assert.Nil(t, err)
+
+	defer db.Close()
+
+	colony := core.CreateColony(core.GenerateRandomID(), "test_colony_name")
+
+	executor := utils.CreateTestExecutor(colony.Name)
+	err = db.AddExecutor(executor)
+	assert.Nil(t, err)
+
+	// Add 3 processes and cancel them
+	for i := 0; i < 3; i++ {
+		process := utils.CreateTestProcess(colony.Name)
+		err = db.AddProcess(process)
+		assert.Nil(t, err)
+		err = db.MarkCancelled(process.ID)
+		assert.Nil(t, err)
+	}
+
+	// Add 2 waiting processes (should not show up in cancelled)
+	for i := 0; i < 2; i++ {
+		process := utils.CreateTestProcess(colony.Name)
+		err = db.AddProcess(process)
+		assert.Nil(t, err)
+	}
+
+	cancelledProcesses, err := db.FindCancelledProcesses(colony.Name, "", "", "", 100)
+	assert.Nil(t, err)
+	assert.Len(t, cancelledProcesses, 3)
+
+	cancelledCount, err := db.CountCancelledProcesses()
+	assert.Nil(t, err)
+	assert.Equal(t, 3, cancelledCount)
+
+	cancelledCountByColony, err := db.CountCancelledProcessesByColonyName(colony.Name)
+	assert.Nil(t, err)
+	assert.Equal(t, 3, cancelledCountByColony)
+
+	// Remove all cancelled processes
+	err = db.RemoveAllCancelledProcessesByColonyName(colony.Name)
+	assert.Nil(t, err)
+
+	cancelledCount, err = db.CountCancelledProcessesByColonyName(colony.Name)
+	assert.Nil(t, err)
+	assert.Equal(t, 0, cancelledCount)
+
+	// Waiting processes should still be there
+	waitingCount, err := db.CountWaitingProcessesByColonyName(colony.Name)
+	assert.Nil(t, err)
+	assert.Equal(t, 2, waitingCount)
+}
+
 func TestResetProcess(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)

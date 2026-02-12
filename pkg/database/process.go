@@ -12,6 +12,7 @@ type ProcessDatabase interface {
 	FindRunningProcesses(colonyName string, executorType string, label string, initiator string, count int) ([]*core.Process, error)
 	FindSuccessfulProcesses(colonyName string, executorType string, label string, initiator string, count int) ([]*core.Process, error)
 	FindFailedProcesses(colonyName string, executorType string, label string, initiator string, count int) ([]*core.Process, error)
+	FindCancelledProcesses(colonyName string, executorType string, label string, initiator string, count int) ([]*core.Process, error)
 	FindAllRunningProcesses() ([]*core.Process, error)
 	FindAllWaitingProcesses() ([]*core.Process, error)
 	FindCandidates(colonyName string, executorType string, executorLocationName string, cpu int64, memory int64, storage int64, nodes int, processes int, processesPerNode int, count int) ([]*core.Process, error)
@@ -22,6 +23,7 @@ type ProcessDatabase interface {
 	RemoveAllRunningProcessesByColonyName(colonyName string) error
 	RemoveAllSuccessfulProcessesByColonyName(colonyName string) error
 	RemoveAllFailedProcessesByColonyName(colonyName string) error
+	RemoveAllCancelledProcessesByColonyName(colonyName string) error
 	RemoveAllProcessesByColonyName(colonyName string) error
 	RemoveAllProcessesByProcessGraphID(processGraphID string) error
 	RemoveAllProcessesInProcessGraphsByColonyName(colonyName string) error
@@ -38,13 +40,16 @@ type ProcessDatabase interface {
 	Unassign(process *core.Process) error
 	MarkSuccessful(processID string) (float64, float64, error)
 	MarkFailed(processID string, errs []string) error
+	MarkCancelled(processID string) error
 	CountProcesses() (int, error)
 	CountWaitingProcesses() (int, error)
 	CountRunningProcesses() (int, error)
 	CountSuccessfulProcesses() (int, error)
 	CountFailedProcesses() (int, error)
+	CountCancelledProcesses() (int, error)
 	CountWaitingProcessesByColonyName(colonyName string) (int, error)
 	CountRunningProcessesByColonyName(colonyName string) (int, error)
 	CountSuccessfulProcessesByColonyName(colonyName string) (int, error)
 	CountFailedProcessesByColonyName(colonyName string) (int, error)
+	CountCancelledProcessesByColonyName(colonyName string) (int, error)
 }
