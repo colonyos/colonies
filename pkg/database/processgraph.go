@@ -10,18 +10,22 @@ type ProcessGraphDatabase interface {
 	FindRunningProcessGraphs(colonyName string, count int) ([]*core.ProcessGraph, error)
 	FindSuccessfulProcessGraphs(colonyName string, count int) ([]*core.ProcessGraph, error)
 	FindFailedProcessGraphs(colonyName string, count int) ([]*core.ProcessGraph, error)
+	FindCancelledProcessGraphs(colonyName string, count int) ([]*core.ProcessGraph, error)
 	RemoveProcessGraphByID(processGraphID string) error
 	RemoveAllProcessGraphsByColonyName(colonyName string) error
 	RemoveAllWaitingProcessGraphsByColonyName(colonyName string) error
 	RemoveAllRunningProcessGraphsByColonyName(colonyName string) error
 	RemoveAllSuccessfulProcessGraphsByColonyName(colonyName string) error
 	RemoveAllFailedProcessGraphsByColonyName(colonyName string) error
+	RemoveAllCancelledProcessGraphsByColonyName(colonyName string) error
 	CountWaitingProcessGraphs() (int, error)
 	CountRunningProcessGraphs() (int, error)
 	CountSuccessfulProcessGraphs() (int, error)
 	CountFailedProcessGraphs() (int, error)
+	CountCancelledProcessGraphs() (int, error)
 	CountWaitingProcessGraphsByColonyName(colonyName string) (int, error)
 	CountRunningProcessGraphsByColonyName(colonyName string) (int, error)
 	CountSuccessfulProcessGraphsByColonyName(colonyName string) (int, error)
 	CountFailedProcessGraphsByColonyName(colonyName string) (int, error)
+	CountCancelledProcessGraphsByColonyName(colonyName string) (int, error)
 }
