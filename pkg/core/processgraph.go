@@ -61,6 +61,7 @@ type ProcessGraph struct {
 	Nodes          []GraphNode    `json:"nodes"`
 	Edges          []Edge    `json:"edges"`
 	nodesMap       map[string]*GraphNode
+	processCache   map[string]*Process
 }
 
 func CreateProcessGraph(colonyName string) (*ProcessGraph, error) {
@@ -141,15 +142,39 @@ func (graph *ProcessGraph) AddRoot(processID string) {
 
 func (graph *ProcessGraph) SetStorage(storage ProcessGraphStorage) {
 	graph.storage = storage
+	graph.processCache = make(map[string]*Process)
+}
+
+// getProcess returns a process by ID, using a cache to avoid redundant DB queries.
+// Within a single graph operation (e.g. Resolve, ToJSON), each process is fetched
+// from the database at most once.
+func (graph *ProcessGraph) getProcess(processID string) (*Process, error) {
+	if graph.processCache != nil {
+		if p, ok := graph.processCache[processID]; ok {
+			return p, nil
+		}
+	}
+	p, err := graph.storage.GetProcessByID(processID)
+	if err != nil {
+		return nil, err
+	}
+	if graph.processCache != nil && p != nil {
+		graph.processCache[processID] = p
+	}
+	return p, nil
 }
 
 func (graph *ProcessGraph) Resolve() error {
 	processes := 0
 	failedProcesses := 0
+	cancelledProcesses := 0
 	runningProcesses := 0
 	successfulProcesses := 0
 	waitingProcesses := 0
+	hasFailedParent := false
+	hasCancelledParent := false
 
+	// Pass 1: Count states, check parent dependencies, detect failures/cancellations
 	err := graph.Iterate(func(process *Process) error {
 		if process == nil {
 			errMsg := "Failed to iterate processgraph, process is nil"
@@ -163,6 +188,9 @@ func (graph *ProcessGraph) Resolve() error {
 		if process.State == FAILED {
 			failedProcesses++
 		}
+		if process.State == CANCELLED {
+			cancelledProcesses++
+		}
 		if process.State == RUNNING {
 			runningProcesses++
 		}
@@ -174,25 +202,16 @@ func (graph *ProcessGraph) Resolve() error {
 		}
 
 		for _, parentProcessID := range process.Parents {
-			parent, err := graph.storage.GetProcessByID(parentProcessID)
+			parent, err := graph.getProcess(parentProcessID)
 			if err != nil {
 				return err
 			}
 			if parent.State == SUCCESS {
 				nrParentsFinished++
 			} else if parent.State == FAILED {
-				// Set all processes in the graph as failed if one process fails
-				err := graph.Iterate(func(process *Process) error {
-					process.State = FAILED
-					err = graph.storage.SetProcessState(process.ID, FAILED)
-					if err != nil {
-						return err
-					}
-					return nil
-				})
-				if err != nil {
-					return err
-				}
+				hasFailedParent = true
+			} else if parent.State == CANCELLED {
+				hasCancelledParent = true
 			}
 		}
 		if nrParentsFinished == nrParents {
@@ -205,8 +224,48 @@ func (graph *ProcessGraph) Resolve() error {
 		return err
 	}
 
+	// Pass 2: If any parent failed, cascade failure to all processes in one pass
+	if hasFailedParent {
+		err = graph.Iterate(func(process *Process) error {
+			if process.State != FAILED {
+				process.State = FAILED
+				if err := graph.storage.SetProcessState(process.ID, FAILED); err != nil {
+					return err
+				}
+			}
+			return nil
+		})
+		if err != nil {
+			return err
+		}
+		graph.State = FAILED
+		graph.storage.SetProcessGraphState(graph.ID, graph.State)
+		return nil
+	}
+
+	// Pass 3: If any parent cancelled, cascade cancellation to all non-terminal processes
+	if hasCancelledParent {
+		err = graph.Iterate(func(process *Process) error {
+			if process.State != CANCELLED && process.State != SUCCESS && process.State != FAILED {
+				process.State = CANCELLED
+				if err := graph.storage.SetProcessState(process.ID, CANCELLED); err != nil {
+					return err
+				}
+			}
+			return nil
+		})
+		if err != nil {
+			return err
+		}
+		graph.State = CANCELLED
+		graph.storage.SetProcessGraphState(graph.ID, graph.State)
+		return nil
+	}
+
 	if failedProcesses >= 1 {
 		graph.State = FAILED
+	} else if cancelledProcesses >= 1 {
+		graph.State = CANCELLED
 	} else if successfulProcesses == processes {
 		graph.State = SUCCESS
 	} else if successfulProcesses > 0 || runningProcesses >= 1 {
@@ -217,7 +276,7 @@ func (graph *ProcessGraph) Resolve() error {
 
 	graph.storage.SetProcessGraphState(graph.ID, graph.State)
 
-	return err
+	return nil
 }
 
 func (graph *ProcessGraph) GetRoot(childProcessID string) (*Process, error) {
@@ -266,11 +325,7 @@ func (graph *ProcessGraph) calcNodes() error {
 	boxwidth := 150
 	padding := 50
 
-	err := graph.Iterate(func(process *Process) error {
-		depth, err := graph.Depth(process.ID)
-		if err != nil {
-			return err
-		}
+	err := graph.IterateWithDepth(func(process *Process, depth int) error {
 		w, ok := paddingsPerLevel[depth]
 		if ok {
 			w = paddingsPerLevel[depth] + boxwidth + padding
@@ -298,6 +353,8 @@ func (graph *ProcessGraph) calcNodes() error {
 			background = "#92d050"
 		case FAILED:
 			background = "#cb4239"
+		case CANCELLED:
+			background = "#f5a623"
 		}
 
 		style := Style{Background: background}
@@ -356,7 +413,7 @@ func (graph *ProcessGraph) calcNodes() error {
 }
 
 func (graph *ProcessGraph) getRoot(childProcessID string, counter int, visited map[string]bool) (*Process, int, error) {
-	process, err := graph.storage.GetProcessByID(childProcessID)
+	process, err := graph.getProcess(childProcessID)
 	if err != nil {
 		return nil, -1, err
 	}
@@ -442,6 +499,17 @@ func (graph *ProcessGraph) FailedProcesses() (int, error) {
 	return counter, err
 }
 
+func (graph *ProcessGraph) CancelledProcesses() (int, error) {
+	counter := 0
+	err := graph.Iterate(func(process *Process) error {
+		if process.State == CANCELLED {
+			counter++
+		}
+		return nil
+	})
+	return counter, err
+}
+
 func (graph *ProcessGraph) WaitForParents() (int, error) {
 	counter := 0
 	err := graph.Iterate(func(process *Process) error {
@@ -475,8 +543,51 @@ func (graph *ProcessGraph) Iterate(visitFunc func(process *Process) error) error
 	return nil
 }
 
+func (graph *ProcessGraph) IterateWithDepth(visitFunc func(process *Process, depth int) error) error {
+	visited := make(map[string]bool)
+	for _, root := range graph.Roots {
+		err := graph.iterateWithDepth(root, 0, visited, visitFunc)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (graph *ProcessGraph) iterateWithDepth(processID string, depth int, visited map[string]bool, visitFunc func(process *Process, depth int) error) error {
+	process, err := graph.getProcess(processID)
+	if err != nil {
+		return err
+	}
+
+	if process == nil {
+		errMsg := "Failed to iterate processgraph, process with ID=" + processID + " not found"
+		return errors.New(errMsg)
+	}
+
+	if visited[processID] {
+		return nil
+	}
+
+	visited[processID] = true
+
+	err = visitFunc(process, depth)
+	if err != nil {
+		return err
+	}
+
+	for _, childProcessID := range process.Children {
+		err := graph.iterateWithDepth(childProcessID, depth+1, visited, visitFunc)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 func (graph *ProcessGraph) iterate(processID string, visited map[string]bool, visitFunc func(process *Process) error) error {
-	process, err := graph.storage.GetProcessByID(processID)
+	process, err := graph.getProcess(processID)
 	if err != nil {
 		return err
 	}
