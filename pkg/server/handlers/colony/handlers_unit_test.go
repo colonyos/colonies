@@ -215,6 +215,13 @@ func (m *MockProcessDB) CountFailedProcessesByColonyName(colonyName string) (int
 	}
 	return m.failedCount, nil
 }
+func (m *MockProcessDB) FindCancelledProcesses(colonyName string, executorType string, label string, initiator string, count int) ([]*core.Process, error) { return nil, nil }
+func (m *MockProcessDB) RemoveAllCancelledProcessesByColonyName(string) error { return nil }
+func (m *MockProcessDB) MarkCancelled(string) error                           { return nil }
+func (m *MockProcessDB) CountCancelledProcesses() (int, error)                { return 0, nil }
+func (m *MockProcessDB) CountCancelledProcessesByColonyName(colonyName string) (int, error) {
+	return 0, nil
+}
 
 // MockProcessGraphDB implements database.ProcessGraphDatabase
 type MockProcessGraphDB struct {
@@ -274,6 +281,10 @@ func (m *MockProcessGraphDB) CountWaitingProcessGraphs() (int, error)    { retur
 func (m *MockProcessGraphDB) CountRunningProcessGraphs() (int, error)    { return 0, nil }
 func (m *MockProcessGraphDB) CountSuccessfulProcessGraphs() (int, error) { return 0, nil }
 func (m *MockProcessGraphDB) CountFailedProcessGraphs() (int, error)     { return 0, nil }
+func (m *MockProcessGraphDB) FindCancelledProcessGraphs(colonyName string, count int) ([]*core.ProcessGraph, error) { return nil, nil }
+func (m *MockProcessGraphDB) RemoveAllCancelledProcessGraphsByColonyName(colonyName string) error { return nil }
+func (m *MockProcessGraphDB) CountCancelledProcessGraphs() (int, error)                          { return 0, nil }
+func (m *MockProcessGraphDB) CountCancelledProcessGraphsByColonyName(colonyName string) (int, error) { return 0, nil }
 
 // MockValidator implements security.Validator
 type MockValidator struct {

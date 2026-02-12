@@ -411,6 +411,10 @@ func (m *MockProcessController) RemoveAllProcesses(colonyName string, state int)
 	return nil
 }
 
+func (m *MockProcessController) CancelProcess(processID string) error {
+	return nil
+}
+
 func (m *MockProcessController) CloseSuccessful(processID string, executorID string, output []interface{}) error {
 	return nil
 }

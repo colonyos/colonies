@@ -400,6 +400,13 @@ func (m *MockProcessDB) CountSuccessfulProcessesByColonyName(colonyName string) 
 func (m *MockProcessDB) CountFailedProcessesByColonyName(colonyName string) (int, error) {
 	return 0, nil
 }
+func (m *MockProcessDB) FindCancelledProcesses(colonyName string, executorType string, label string, initiator string, count int) ([]*core.Process, error) { return nil, nil }
+func (m *MockProcessDB) RemoveAllCancelledProcessesByColonyName(string) error { return nil }
+func (m *MockProcessDB) MarkCancelled(string) error                           { return nil }
+func (m *MockProcessDB) CountCancelledProcesses() (int, error)                { return 0, nil }
+func (m *MockProcessDB) CountCancelledProcessesByColonyName(string) (int, error) {
+	return 0, nil
+}
 
 type MockLogDB struct {
 	logs      []*core.Log
