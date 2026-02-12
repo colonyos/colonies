@@ -1386,6 +1386,8 @@ func TestRegisterHandlers_DuplicateError(t *testing.T) {
 // HandleCancelProcess tests
 func TestHandleCancelProcess_Success(t *testing.T) {
 	mockServer := createMockServer()
+	// Process must not be part of a workflow
+	mockServer.processDB.processes[0].ProcessGraphID = ""
 	handlers := NewHandlers(mockServer)
 
 	msg := rpc.CreateCancelProcessMsg("process-123")
@@ -1396,6 +1398,21 @@ func TestHandleCancelProcess_Success(t *testing.T) {
 
 	assert.Equal(t, 0, mockServer.httpErrorCode)
 	assert.Equal(t, rpc.CancelProcessPayloadType, mockServer.replyType)
+}
+
+func TestHandleCancelProcess_WorkflowProcess(t *testing.T) {
+	mockServer := createMockServer()
+	// Process is part of a workflow (ProcessGraphID is set)
+	mockServer.processDB.processes[0].ProcessGraphID = "graph-123"
+	handlers := NewHandlers(mockServer)
+
+	msg := rpc.CreateCancelProcessMsg("process-123")
+	jsonStr, _ := msg.ToJSON()
+
+	ctx := &MockContext{}
+	handlers.HandleCancelProcess(ctx, "executor-123", rpc.CancelProcessPayloadType, jsonStr)
+
+	assert.Equal(t, http.StatusBadRequest, mockServer.httpErrorCode)
 }
 
 func TestHandleCancelProcess_InvalidJSON(t *testing.T) {
@@ -1451,6 +1468,8 @@ func TestHandleCancelProcess_AuthError(t *testing.T) {
 
 func TestHandleCancelProcess_ControllerError(t *testing.T) {
 	mockServer := createMockServer()
+	// Process must not be part of a workflow to reach controller
+	mockServer.processDB.processes[0].ProcessGraphID = ""
 	mockServer.controller.cancelProcessErr = errors.New("controller error")
 	handlers := NewHandlers(mockServer)
 
