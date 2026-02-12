@@ -74,6 +74,11 @@ func (m *MockProcessDB) CountWaitingProcessesByColonyName(string) (int, error)  
 func (m *MockProcessDB) CountRunningProcessesByColonyName(string) (int, error)       { return 0, nil }
 func (m *MockProcessDB) CountSuccessfulProcessesByColonyName(string) (int, error)    { return 0, nil }
 func (m *MockProcessDB) CountFailedProcessesByColonyName(string) (int, error)        { return 0, nil }
+func (m *MockProcessDB) FindCancelledProcesses(colonyName string, executorType string, label string, initiator string, count int) ([]*core.Process, error) { return nil, nil }
+func (m *MockProcessDB) RemoveAllCancelledProcessesByColonyName(string) error        { return nil }
+func (m *MockProcessDB) MarkCancelled(string) error                                  { return nil }
+func (m *MockProcessDB) CountCancelledProcesses() (int, error)                       { return 0, nil }
+func (m *MockProcessDB) CountCancelledProcessesByColonyName(string) (int, error)     { return 0, nil }
 
 // MockValidator implements security.Validator
 type MockValidator struct {

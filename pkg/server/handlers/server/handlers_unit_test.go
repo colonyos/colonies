@@ -115,6 +115,11 @@ func (m *MockProcessDB) CountWaitingProcessesByColonyName(colonyName string) (in
 func (m *MockProcessDB) CountRunningProcessesByColonyName(colonyName string) (int, error)         { return 0, nil }
 func (m *MockProcessDB) CountSuccessfulProcessesByColonyName(colonyName string) (int, error)      { return 0, nil }
 func (m *MockProcessDB) CountFailedProcessesByColonyName(colonyName string) (int, error)          { return 0, nil }
+func (m *MockProcessDB) FindCancelledProcesses(colonyName string, executorType string, label string, initiator string, count int) ([]*core.Process, error) { return nil, nil }
+func (m *MockProcessDB) RemoveAllCancelledProcessesByColonyName(string) error                    { return nil }
+func (m *MockProcessDB) MarkCancelled(string) error                                              { return nil }
+func (m *MockProcessDB) CountCancelledProcesses() (int, error)                                   { return 0, nil }
+func (m *MockProcessDB) CountCancelledProcessesByColonyName(string) (int, error)                 { return 0, nil }
 
 func (m *MockProcessDB) CountWaitingProcesses() (int, error) {
 	if m.countWaitingErr != nil {
