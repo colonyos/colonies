@@ -105,6 +105,25 @@ func (client *ColoniesClient) GetFailedProcesses(colonyName string, executorType
 	return client.getProcesses(core.FAILED, colonyName, executorType, label, initiator, count, prvKey)
 }
 
+func (client *ColoniesClient) GetCancelledProcesses(colonyName string, executorType string, label string, initiator string, count int, prvKey string) ([]*core.Process, error) {
+	return client.getProcesses(core.CANCELLED, colonyName, executorType, label, initiator, count, prvKey)
+}
+
+func (client *ColoniesClient) CancelProcess(processID string, prvKey string) error {
+	msg := rpc.CreateCancelProcessMsg(processID)
+	jsonString, err := msg.ToJSON()
+	if err != nil {
+		return err
+	}
+
+	_, err = client.sendMessage(rpc.CancelProcessPayloadType, jsonString, prvKey, false, context.TODO())
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (client *ColoniesClient) GetProcess(processID string, prvKey string) (*core.Process, error) {
 	msg := rpc.CreateGetProcessMsg(processID)
 	jsonString, err := msg.ToJSON()

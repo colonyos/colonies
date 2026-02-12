@@ -150,9 +150,9 @@ func (g *GinClientBackend) CheckHealth() error {
 	return err
 }
 
-// Close closes the backend and cleans up blueprints
+// Close closes the backend and cleans up idle connections
 func (g *GinClientBackend) Close() error {
-	// Resty client doesn't need explicit cleanup
+	g.restyClient.GetClient().CloseIdleConnections()
 	return nil
 }
 

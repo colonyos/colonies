@@ -83,6 +83,25 @@ func (client *ColoniesClient) GetFailedProcessGraphs(colonyName string, count in
 	return client.getProcessGraphs(core.FAILED, colonyName, count, prvKey)
 }
 
+func (client *ColoniesClient) GetCancelledProcessGraphs(colonyName string, count int, prvKey string) ([]*core.ProcessGraph, error) {
+	return client.getProcessGraphs(core.CANCELLED, colonyName, count, prvKey)
+}
+
+func (client *ColoniesClient) CancelProcessGraph(processGraphID string, prvKey string) error {
+	msg := rpc.CreateCancelProcessGraphMsg(processGraphID)
+	jsonString, err := msg.ToJSON()
+	if err != nil {
+		return err
+	}
+
+	_, err = client.sendMessage(rpc.CancelProcessGraphPayloadType, jsonString, prvKey, false, context.TODO())
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (client *ColoniesClient) RemoveProcessGraph(processGraphID string, prvKey string) error {
 	msg := rpc.CreateRemoveProcessGraphMsg(processGraphID)
 	jsonString, err := msg.ToJSON()
