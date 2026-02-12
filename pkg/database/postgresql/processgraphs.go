@@ -93,7 +93,7 @@ func (db *PQDatabase) SetProcessGraphState(processGraphID string, state int) err
 		if err != nil {
 			return err
 		}
-	} else if state == core.SUCCESS || state == core.FAILED {
+	} else if state == core.SUCCESS || state == core.FAILED || state == core.CANCELLED {
 		sqlStatement := `UPDATE ` + db.dbPrefix + `PROCESSGRAPHS SET END_TIME=$1, STATE=$2 WHERE PROCESSGRAPH_ID=$3`
 		_, err := db.postgresql.Exec(sqlStatement, time.Now(), state, processGraphID)
 		if err != nil {
@@ -141,6 +141,10 @@ func (db *PQDatabase) FindSuccessfulProcessGraphs(colonyName string, count int) 
 
 func (db *PQDatabase) FindFailedProcessGraphs(colonyName string, count int) ([]*core.ProcessGraph, error) {
 	return db.findProcessGraphsByState(colonyName, core.FAILED, count)
+}
+
+func (db *PQDatabase) FindCancelledProcessGraphs(colonyName string, count int) ([]*core.ProcessGraph, error) {
+	return db.findProcessGraphsByState(colonyName, core.CANCELLED, count)
 }
 
 func (db *PQDatabase) countProcessGraphsByColonyName(state int, colonyName string) (int, error) {
@@ -269,6 +273,21 @@ func (db *PQDatabase) RemoveAllFailedProcessGraphsByColonyName(colonyName string
 	return nil
 }
 
+func (db *PQDatabase) RemoveAllCancelledProcessGraphsByColonyName(colonyName string) error {
+	sqlStatement := `DELETE FROM ` + db.dbPrefix + `PROCESSGRAPHS WHERE TARGET_COLONY_NAME=$1 AND STATE=$2`
+	_, err := db.postgresql.Exec(sqlStatement, colonyName, core.CANCELLED)
+	if err != nil {
+		return err
+	}
+
+	err = db.RemoveAllProcessesInProcessGraphsByColonyNameWithState(colonyName, core.CANCELLED)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (db *PQDatabase) RemoveProcessGraphByID(processGraphID string) error {
 	sqlStatement := `DELETE FROM ` + db.dbPrefix + `PROCESSGRAPHS WHERE PROCESSGRAPH_ID=$1`
 	_, err := db.postgresql.Exec(sqlStatement, processGraphID)
@@ -293,4 +312,12 @@ func (db *PQDatabase) CountSuccessfulProcessGraphs() (int, error) {
 
 func (db *PQDatabase) CountFailedProcessGraphs() (int, error) {
 	return db.countProcessGraphs(core.FAILED)
+}
+
+func (db *PQDatabase) CountCancelledProcessGraphs() (int, error) {
+	return db.countProcessGraphs(core.CANCELLED)
+}
+
+func (db *PQDatabase) CountCancelledProcessGraphsByColonyName(colonyName string) (int, error) {
+	return db.countProcessGraphsByColonyName(core.CANCELLED, colonyName)
 }

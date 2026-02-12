@@ -512,3 +512,84 @@ func TestFindProcessGraphs(t *testing.T) {
 	assert.Nil(t, err)
 	assert.True(t, count == 7*2)
 }
+
+func TestRemoveAllCancelledProcessGraphsByColonyName(t *testing.T) {
+	db, err := PrepareTests()
+	assert.Nil(t, err)
+	defer db.Close()
+
+	colonyName := core.GenerateRandomID()
+
+	process1, graph1 := generateProcessGraph2(t, db, colonyName)
+	err = db.AddProcessGraph(graph1)
+	assert.Nil(t, err)
+
+	process2, graph2 := generateProcessGraph2(t, db, colonyName)
+	err = db.AddProcessGraph(graph2)
+	assert.Nil(t, err)
+
+	err = db.SetProcessGraphState(graph1.ID, core.CANCELLED)
+	assert.Nil(t, err)
+	err = db.SetProcessState(process1.ID, core.CANCELLED)
+	assert.Nil(t, err)
+
+	err = db.SetProcessGraphState(graph2.ID, core.CANCELLED)
+	assert.Nil(t, err)
+	err = db.SetProcessState(process2.ID, core.CANCELLED)
+	assert.Nil(t, err)
+
+	cancelledProcesses, err := db.CountCancelledProcesses()
+	assert.Nil(t, err)
+	assert.Equal(t, cancelledProcesses, 2)
+
+	cancelledGraphs, err := db.CountCancelledProcessGraphs()
+	assert.Nil(t, err)
+	assert.Equal(t, cancelledGraphs, 2)
+
+	err = db.RemoveAllCancelledProcessGraphsByColonyName(colonyName)
+	assert.Nil(t, err)
+
+	cancelledProcesses, err = db.CountCancelledProcesses()
+	assert.Nil(t, err)
+	assert.Equal(t, cancelledProcesses, 0)
+
+	cancelledGraphs, err = db.CountCancelledProcessGraphs()
+	assert.Nil(t, err)
+	assert.Equal(t, cancelledGraphs, 0)
+}
+
+func TestFindCancelledProcessGraphs(t *testing.T) {
+	db, err := PrepareTests()
+	assert.Nil(t, err)
+	defer db.Close()
+
+	colonyName := core.GenerateRandomID()
+
+	for i := 0; i < 5; i++ {
+		graph := generateProcessGraph(t, db, colonyName)
+		err = db.AddProcessGraph(graph)
+		assert.Nil(t, err)
+		err = db.SetProcessGraphState(graph.ID, core.CANCELLED)
+		assert.Nil(t, err)
+	}
+
+	for i := 0; i < 3; i++ {
+		graph := generateProcessGraph(t, db, colonyName)
+		err = db.AddProcessGraph(graph)
+		assert.Nil(t, err)
+		err = db.SetProcessGraphState(graph.ID, core.WAITING)
+		assert.Nil(t, err)
+	}
+
+	graphs, err := db.FindCancelledProcessGraphs(colonyName, 100)
+	assert.Nil(t, err)
+	assert.Len(t, graphs, 5)
+
+	count, err := db.CountCancelledProcessGraphsByColonyName(colonyName)
+	assert.Nil(t, err)
+	assert.Equal(t, 5, count)
+
+	count, err = db.CountCancelledProcessGraphs()
+	assert.Nil(t, err)
+	assert.Equal(t, 5, count)
+}
