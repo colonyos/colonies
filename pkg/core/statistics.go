@@ -13,10 +13,12 @@ type Statistics struct {
 	RunningProcesses    int `json:"runningprocesses"`
 	SuccessfulProcesses int `json:"successfulprocesses"`
 	FailedProcesses     int `json:"failedprocesses"`
+	CancelledProcesses  int `json:"cancelledprocesses"`
 	WaitingWorkflows    int `json:"waitingworkflows"`
 	RunningWorkflows    int `json:"runningworkflows"`
 	SuccessfulWorkflows int `json:"successfulworkflows"`
 	FailedWorkflows     int `json:"failedworkflows"`
+	CancelledWorkflows  int `json:"cancelledworkflows"`
 }
 
 func CreateStatistics(colonies int,
@@ -27,10 +29,12 @@ func CreateStatistics(colonies int,
 	runningProcesses int,
 	successfulProcesses int,
 	failedProcesses int,
+	cancelledProcesses int,
 	waitingWorkflows int,
 	runningWorkflows int,
 	successfulWorkflows int,
-	failedWorkflows int) *Statistics {
+	failedWorkflows int,
+	cancelledWorkflows int) *Statistics {
 	stat := &Statistics{
 		Colonies:            colonies,
 		Executors:           executors,
@@ -40,10 +44,12 @@ func CreateStatistics(colonies int,
 		RunningProcesses:    runningProcesses,
 		SuccessfulProcesses: successfulProcesses,
 		FailedProcesses:     failedProcesses,
+		CancelledProcesses:  cancelledProcesses,
 		WaitingWorkflows:    waitingWorkflows,
 		RunningWorkflows:    runningWorkflows,
 		SuccessfulWorkflows: successfulWorkflows,
-		FailedWorkflows:     failedWorkflows}
+		FailedWorkflows:     failedWorkflows,
+		CancelledWorkflows:  cancelledWorkflows}
 
 	return stat
 }
@@ -71,10 +77,12 @@ func (stat *Statistics) Equals(stat2 *Statistics) bool {
 		stat.RunningProcesses == stat2.RunningProcesses &&
 		stat.SuccessfulProcesses == stat2.SuccessfulProcesses &&
 		stat.FailedProcesses == stat2.FailedProcesses &&
+		stat.CancelledProcesses == stat2.CancelledProcesses &&
 		stat.WaitingWorkflows == stat2.WaitingWorkflows &&
 		stat.RunningWorkflows == stat2.RunningWorkflows &&
 		stat.SuccessfulWorkflows == stat2.SuccessfulWorkflows &&
-		stat.FailedWorkflows == stat2.FailedWorkflows {
+		stat.FailedWorkflows == stat2.FailedWorkflows &&
+		stat.CancelledWorkflows == stat2.CancelledWorkflows {
 		return true
 	}
 
