@@ -747,6 +747,137 @@ func (controller *ColoniesController) FindFailedProcessGraphs(colonyName string,
 	}
 }
 
+func (controller *ColoniesController) FindCancelledProcessGraphs(colonyName string, count int) ([]*core.ProcessGraph, error) {
+	cmd := &command{threaded: true, processGraphsReplyChan: make(chan []*core.ProcessGraph),
+		errorChan: make(chan error, 1),
+		handler: func(cmd *command) {
+			if count > constants.MAX_COUNT {
+				cmd.errorChan <- errors.New("Count is larger than MaxCount limit <" + strconv.Itoa(constants.MAX_COUNT) + ">")
+				return
+			}
+			graphs, err := controller.processGraphDB.FindCancelledProcessGraphs(colonyName, count)
+			if err != nil {
+				cmd.errorChan <- err
+				return
+			}
+			for _, graph := range graphs {
+				err = controller.UpdateProcessGraph(graph)
+				if err != nil {
+					cmd.errorChan <- err
+					return
+				}
+			}
+			cmd.processGraphsReplyChan <- graphs
+		}}
+
+	controller.cmdQueue <- cmd
+	var graphs []*core.ProcessGraph
+	select {
+	case err := <-cmd.errorChan:
+		return graphs, err
+	case graphs := <-cmd.processGraphsReplyChan:
+		return graphs, nil
+	}
+}
+
+func (controller *ColoniesController) CancelProcess(processID string) error {
+	cmd := &command{threaded: true, errorChan: make(chan error, 1),
+		handler: func(cmd *command) {
+			err := controller.processDB.MarkCancelled(processID)
+			if err != nil {
+				cmd.errorChan <- err
+				return
+			}
+
+			process, err := controller.processDB.GetProcessByID(processID)
+			if err != nil {
+				cmd.errorChan <- err
+				return
+			}
+
+			if process.ProcessGraphID != "" {
+				log.WithFields(log.Fields{"ProcessGraphId": process.ProcessGraphID}).Debug("Resolving processgraph (cancel)")
+				processGraph, err := controller.processGraphDB.GetProcessGraphByID(process.ProcessGraphID)
+				if err != nil {
+					cmd.errorChan <- err
+					return
+				}
+				processGraph.SetStorage(controller.GetProcessGraphStorage())
+				err = processGraph.Resolve()
+				if err != nil {
+					err2 := controller.HandleDefunctProcessgraph(processGraph.ID, process.ID, err)
+					if err2 != nil {
+						log.Error(err2)
+						cmd.errorChan <- err2
+						return
+					}
+
+					log.Error(err)
+					cmd.errorChan <- err
+					return
+				}
+			}
+
+			// Cleanup channels for this process
+			controller.channelRouter.CleanupProcess(processID)
+
+			controller.eventHandler.Signal(process)
+			cmd.errorChan <- nil
+		}}
+
+	controller.cmdQueue <- cmd
+	return <-cmd.errorChan
+}
+
+func (controller *ColoniesController) CancelProcessGraph(processGraphID string) error {
+	cmd := &command{threaded: true, errorChan: make(chan error, 1),
+		handler: func(cmd *command) {
+			processGraph, err := controller.processGraphDB.GetProcessGraphByID(processGraphID)
+			if err != nil {
+				cmd.errorChan <- err
+				return
+			}
+			if processGraph == nil {
+				cmd.errorChan <- errors.New("ProcessGraph with Id <" + processGraphID + "> not found")
+				return
+			}
+
+			processGraph.SetStorage(controller.GetProcessGraphStorage())
+			err = processGraph.UpdateProcessIDs()
+			if err != nil {
+				cmd.errorChan <- err
+				return
+			}
+
+			for _, pid := range processGraph.ProcessIDs {
+				p, err := controller.processDB.GetProcessByID(pid)
+				if err != nil {
+					cmd.errorChan <- err
+					return
+				}
+				if p.State == core.WAITING || p.State == core.RUNNING {
+					err = controller.processDB.MarkCancelled(pid)
+					if err != nil {
+						cmd.errorChan <- err
+						return
+					}
+					controller.channelRouter.CleanupProcess(pid)
+				}
+			}
+
+			err = controller.processGraphDB.SetProcessGraphState(processGraphID, core.CANCELLED)
+			if err != nil {
+				cmd.errorChan <- err
+				return
+			}
+
+			cmd.errorChan <- nil
+		}}
+
+	controller.cmdQueue <- cmd
+	return <-cmd.errorChan
+}
+
 func (controller *ColoniesController) CloseSuccessful(processID string, executorID string, output []interface{}) error {
 	cmd := &command{threaded: true, errorChan: make(chan error, 1),
 		handler: func(cmd *command) {
