@@ -34,7 +34,7 @@ func (controller *ColoniesController) AddGenerator(generator *core.Generator) (*
 }
 
 func (controller *ColoniesController) TriggerGenerators() {
-	cmd := &command{handler: func(cmd *command) {
+	cmd := &command{threaded: true, handler: func(cmd *command) {
 		generatorsFromDB, err := controller.generatorDB.FindAllGenerators()
 		if err != nil {
 			log.WithFields(log.Fields{"Error": err}).Error("Failed get all generators from db")

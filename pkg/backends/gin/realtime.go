@@ -88,6 +88,7 @@ func (h *RealtimeHandler) HandleWSRequest(c backends.Context) {
 		log.WithFields(log.Fields{"Error": err}).Error("Failed to call wsupgrader.Upgrade()")
 		return
 	}
+	defer wsConn.Close()
 
 	for {
 		wsMsgType, data, err := wsConn.ReadMessage()
