@@ -399,6 +399,9 @@ func printProcessesTableWithClient(processes []*core.Process, mode int, client *
 	case core.FAILED:
 		timeid = "endtime"
 		timeTitle = "End time"
+	case core.CANCELLED:
+		timeid = "endtime"
+		timeTitle = "End time"
 	default:
 		CheckError(errors.New("Invalid table type"))
 	}
@@ -447,6 +450,9 @@ func printProcessesTableWithClient(processes []*core.Process, mode int, client *
 		case core.FAILED:
 			timeValue = process.EndTime.Format(TimeLayout)
 			timeColor = theme.ColorRed
+		case core.CANCELLED:
+			timeValue = process.EndTime.Format(TimeLayout)
+			timeColor = theme.ColorYellow
 		default:
 			CheckError(errors.New("Invalid table type"))
 		}

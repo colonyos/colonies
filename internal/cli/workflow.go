@@ -19,6 +19,8 @@ func init() {
 	workflowCmd.AddCommand(listRunningWorkflowsCmd)
 	workflowCmd.AddCommand(listSuccessfulWorkflowsCmd)
 	workflowCmd.AddCommand(listFailedWorkflowsCmd)
+	workflowCmd.AddCommand(listCancelledWorkflowsCmd)
+	workflowCmd.AddCommand(cancelWorkflowCmd)
 	workflowCmd.AddCommand(getWorkflowCmd)
 	workflowCmd.AddCommand(removeWorkflowCmd)
 	workflowCmd.AddCommand(removeAllWorkflowsCmd)
@@ -46,6 +48,14 @@ func init() {
 	listFailedWorkflowsCmd.Flags().StringVarP(&PrvKey, "prvkey", "", "", "Private key")
 	listFailedWorkflowsCmd.Flags().IntVarP(&Count, "count", "", DefaultCount, "Number of workflows to list")
 
+	listCancelledWorkflowsCmd.Flags().StringVarP(&ColonyName, "colonyid", "", "", "Colony Id")
+	listCancelledWorkflowsCmd.Flags().StringVarP(&PrvKey, "prvkey", "", "", "Private key")
+	listCancelledWorkflowsCmd.Flags().IntVarP(&Count, "count", "", DefaultCount, "Number of workflows to list")
+
+	cancelWorkflowCmd.Flags().StringVarP(&PrvKey, "prvkey", "", "", "Private key")
+	cancelWorkflowCmd.Flags().StringVarP(&WorkflowID, "workflowid", "", "", "Workflow Id")
+	cancelWorkflowCmd.MarkFlagRequired("workflowid")
+
 	removeWorkflowCmd.Flags().StringVarP(&PrvKey, "prvkey", "", "", "Private key")
 	removeWorkflowCmd.Flags().StringVarP(&ColonyName, "colonyid", "", "", "Colony Id")
 	removeWorkflowCmd.Flags().StringVarP(&WorkflowID, "workflowid", "", "", "Workflow Id")
@@ -56,6 +66,7 @@ func init() {
 	removeAllWorkflowsCmd.Flags().BoolVarP(&Waiting, "waiting", "", false, "Remove all waiting processes")
 	removeAllWorkflowsCmd.Flags().BoolVarP(&Successful, "successful", "", false, "Remove all successful processes")
 	removeAllWorkflowsCmd.Flags().BoolVarP(&Failed, "failed", "", false, "Remove all failed processes")
+	removeAllWorkflowsCmd.Flags().BoolVarP(&Cancelled, "cancelled", "", false, "Remove all cancelled workflows")
 
 	getWorkflowCmd.Flags().StringVarP(&PrvKey, "prvkey", "", "", "Private key")
 	getWorkflowCmd.Flags().StringVarP(&ColonyName, "colonyid", "", "", "Colony Id")
@@ -145,9 +156,13 @@ var removeAllWorkflowsCmd = &cobra.Command{
 			counter++
 			state = "failed"
 		}
+		if Cancelled {
+			counter++
+			state = "cancelled"
+		}
 
 		if counter > 1 {
-			CheckError(errors.New("Invalid flags, select --waiting, --successful or --failed"))
+			CheckError(errors.New("Invalid flags, select --waiting, --successful, --failed or --cancelled"))
 		}
 
 		if counter == 0 {
@@ -176,6 +191,10 @@ var removeAllWorkflowsCmd = &cobra.Command{
 				err = client.RemoveAllProcessGraphsWithState(ColonyName, core.FAILED, ColonyPrvKey)
 				CheckError(err)
 				log.WithFields(log.Fields{"ColonyName": ColonyName}).Info("Removing all failed workflows in colony <" + ColonyName + ">")
+			} else if Cancelled {
+				err = client.RemoveAllProcessGraphsWithState(ColonyName, core.CANCELLED, ColonyPrvKey)
+				CheckError(err)
+				log.WithFields(log.Fields{"ColonyName": ColonyName}).Info("Removing all cancelled workflows in colony <" + ColonyName + ">")
 			}
 		} else {
 			log.Info("Aborting ...")
@@ -281,6 +300,45 @@ var listFailedWorkflowsCmd = &cobra.Command{
 			printWorkflowTable(graphs, core.FAILED)
 		}
 
+	},
+}
+
+var listCancelledWorkflowsCmd = &cobra.Command{
+	Use:   "psc",
+	Short: "List all cancelled workflows",
+	Long:  "List all cancelled workflows",
+	Run: func(cmd *cobra.Command, args []string) {
+		client := setup()
+
+		graphs, err := client.GetCancelledProcessGraphs(ColonyName, Count, PrvKey)
+		CheckError(err)
+
+		if len(graphs) == 0 {
+			log.Warning("No cancelled workflows found")
+		} else {
+			if JSON {
+				jsonString, err := core.ConvertProcessGraphArrayToJSON(graphs)
+				CheckError(err)
+				fmt.Println(jsonString)
+				os.Exit(0)
+			}
+
+			printWorkflowTable(graphs, core.CANCELLED)
+		}
+	},
+}
+
+var cancelWorkflowCmd = &cobra.Command{
+	Use:   "cancel",
+	Short: "Cancel a workflow",
+	Long:  "Cancel a workflow",
+	Run: func(cmd *cobra.Command, args []string) {
+		client := setup()
+
+		err := client.CancelProcessGraph(WorkflowID, PrvKey)
+		CheckError(err)
+
+		log.WithFields(log.Fields{"WorkflowID": WorkflowID}).Info("Workflow cancelled")
 	},
 }
 

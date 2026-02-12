@@ -111,6 +111,7 @@ var Approve bool
 var Waiting bool
 var Successful bool
 var Failed bool
+var Cancelled bool
 var TimescaleDB bool
 var LogMsg string
 var Since int64

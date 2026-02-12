@@ -18,6 +18,8 @@ func init() {
 	processCmd.AddCommand(listRunningProcessesCmd)
 	processCmd.AddCommand(listSuccessfulProcessesCmd)
 	processCmd.AddCommand(listFailedProcessesCmd)
+	processCmd.AddCommand(listCancelledProcessesCmd)
+	processCmd.AddCommand(cancelProcessCmd)
 	processCmd.AddCommand(getProcessCmd)
 	processCmd.AddCommand(removeProcessCmd)
 	processCmd.AddCommand(removeAllProcessesCmd)
@@ -64,6 +66,18 @@ func init() {
 	listFailedProcessesCmd.Flags().StringVarP(&Label, "label", "", "", "Filter by label")
 	listFailedProcessesCmd.Flags().StringVarP(&Initiator, "initiator", "", "", "Filter by initiator")
 
+	listCancelledProcessesCmd.Flags().StringVarP(&PrvKey, "prvkey", "", "", "Private key")
+	listCancelledProcessesCmd.Flags().IntVarP(&Count, "count", "", DefaultCount, "Number of processes to list")
+	listCancelledProcessesCmd.Flags().BoolVarP(&JSON, "json", "", false, "Print JSON instead of tables")
+	listCancelledProcessesCmd.Flags().BoolVarP(&ShowIDs, "ids", "i", false, "Show IDs")
+	listCancelledProcessesCmd.Flags().StringVarP(&TargetExecutorType, "executortype", "", "", "Filter by executor type")
+	listCancelledProcessesCmd.Flags().StringVarP(&Label, "label", "", "", "Filter by label")
+	listCancelledProcessesCmd.Flags().StringVarP(&Initiator, "initiator", "", "", "Filter by initiator")
+
+	cancelProcessCmd.Flags().StringVarP(&PrvKey, "prvkey", "", "", "Private key")
+	cancelProcessCmd.Flags().StringVarP(&ProcessID, "processid", "p", "", "Process Id")
+	cancelProcessCmd.MarkFlagRequired("processid")
+
 	getProcessCmd.Flags().StringVarP(&ProcessID, "processid", "p", "", "Process Id")
 	getProcessCmd.MarkFlagRequired("processid")
 	getProcessCmd.Flags().BoolVarP(&JSON, "json", "", false, "Print JSON instead of tables")
@@ -75,6 +89,7 @@ func init() {
 	removeAllProcessesCmd.Flags().BoolVarP(&Waiting, "waiting", "", false, "Remove all waiting processes")
 	removeAllProcessesCmd.Flags().BoolVarP(&Successful, "successful", "", false, "Remove all successful processes")
 	removeAllProcessesCmd.Flags().BoolVarP(&Failed, "failed", "", false, "Remove all failed processes")
+	removeAllProcessesCmd.Flags().BoolVarP(&Cancelled, "cancelled", "", false, "Remove all cancelled processes")
 
 	assignProcessCmd.Flags().StringVarP(&PrvKey, "prvkey", "", "", "Private key")
 	assignProcessCmd.Flags().IntVarP(&Timeout, "timeout", "", 100, "Max time to wait for a process assignment")
@@ -283,6 +298,47 @@ var listFailedProcessesCmd = &cobra.Command{
 	},
 }
 
+var listCancelledProcessesCmd = &cobra.Command{
+	Use:   "psc",
+	Short: "List all cancelled processes",
+	Long:  "List all cancelled processes",
+	Run: func(cmd *cobra.Command, args []string) {
+		client := setup()
+
+		checkFilterArgs()
+
+		processes, err := client.GetCancelledProcesses(ColonyName, TargetExecutorType, Label, Initiator, Count, PrvKey)
+		CheckError(err)
+
+		if len(processes) == 0 {
+			log.WithFields(log.Fields{"ColonyName": ColonyName}).Info("No cancelled processes found")
+		} else {
+			if JSON {
+				jsonString, err := core.ConvertProcessArrayToJSON(processes)
+				CheckError(err)
+				fmt.Println(jsonString)
+				os.Exit(0)
+			}
+
+			printProcessesTableWithClient(processes, core.CANCELLED, client)
+		}
+	},
+}
+
+var cancelProcessCmd = &cobra.Command{
+	Use:   "cancel",
+	Short: "Cancel a process",
+	Long:  "Cancel a process",
+	Run: func(cmd *cobra.Command, args []string) {
+		client := setup()
+
+		err := client.CancelProcess(ProcessID, PrvKey)
+		CheckError(err)
+
+		log.WithFields(log.Fields{"ProcessId": ProcessID}).Info("Process cancelled")
+	},
+}
+
 var getProcessCmd = &cobra.Command{
 	Use:   "get",
 	Short: "Get info about a process",
@@ -348,9 +404,13 @@ var removeAllProcessesCmd = &cobra.Command{
 			counter++
 			state = "failed"
 		}
+		if Cancelled {
+			counter++
+			state = "cancelled"
+		}
 
 		if counter > 1 {
-			CheckError(errors.New("Invalid flags, select --waiting, --successful or --failed"))
+			CheckError(errors.New("Invalid flags, select --waiting, --successful, --failed or --cancelled"))
 		}
 
 		if counter == 0 {
@@ -379,6 +439,10 @@ var removeAllProcessesCmd = &cobra.Command{
 				err = client.RemoveAllProcessesWithState(ColonyName, core.FAILED, ColonyPrvKey)
 				CheckError(err)
 				log.WithFields(log.Fields{"ColonyName": ColonyName}).Info("Removing all failed processes in colony <" + ColonyName + ">")
+			} else if Cancelled {
+				err = client.RemoveAllProcessesWithState(ColonyName, core.CANCELLED, ColonyPrvKey)
+				CheckError(err)
+				log.WithFields(log.Fields{"ColonyName": ColonyName}).Info("Removing all cancelled processes in colony <" + ColonyName + ">")
 			}
 		} else {
 			log.Info("Aborting ...")

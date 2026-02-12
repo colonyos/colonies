@@ -37,6 +37,9 @@ func printWorkflowTable(graphs []*core.ProcessGraph, mode int) {
 	case core.FAILED:
 		timeid = "endtime"
 		timeTitle = "EndTime"
+	case core.CANCELLED:
+		timeid = "endtime"
+		timeTitle = "EndTime"
 	default:
 		CheckError(errors.New("Invalid table type"))
 	}
@@ -64,6 +67,9 @@ func printWorkflowTable(graphs []*core.ProcessGraph, mode int) {
 		case core.FAILED:
 			timeValue = graph.EndTime.Format(TimeLayout)
 			timeColor = theme.ColorRed
+		case core.CANCELLED:
+			timeValue = graph.EndTime.Format(TimeLayout)
+			timeColor = theme.ColorYellow
 		default:
 			CheckError(errors.New("Invalid table type"))
 		}
