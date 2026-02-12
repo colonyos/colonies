@@ -939,6 +939,13 @@ func (h *Handlers) HandleCancelProcess(c backends.Context, recoveredID string, p
 		return
 	}
 
+	if process.ProcessGraphID != "" {
+		err := errors.New("Failed to cancel, cannot cancel a process part of a workflow, cancel the entire workflow instead")
+		if h.server.HandleHTTPError(c, err, http.StatusBadRequest) {
+		}
+		return
+	}
+
 	err = h.server.ProcessController().CancelProcess(process.ID)
 	if h.server.HandleHTTPError(c, err, http.StatusBadRequest) {
 		log.WithFields(log.Fields{"Error": err}).Debug("Failed to cancel process")

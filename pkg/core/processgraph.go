@@ -171,10 +171,7 @@ func (graph *ProcessGraph) Resolve() error {
 	runningProcesses := 0
 	successfulProcesses := 0
 	waitingProcesses := 0
-	hasFailedParent := false
-	hasCancelledParent := false
 
-	// Pass 1: Count states, check parent dependencies, detect failures/cancellations
 	err := graph.Iterate(func(process *Process) error {
 		if process == nil {
 			errMsg := "Failed to iterate processgraph, process is nil"
@@ -209,9 +206,20 @@ func (graph *ProcessGraph) Resolve() error {
 			if parent.State == SUCCESS {
 				nrParentsFinished++
 			} else if parent.State == FAILED {
-				hasFailedParent = true
-			} else if parent.State == CANCELLED {
-				hasCancelledParent = true
+				// Cascade failure to all processes in the graph
+				err := graph.Iterate(func(p *Process) error {
+					if p.State != FAILED {
+						p.State = FAILED
+						return graph.storage.SetProcessState(p.ID, FAILED)
+					}
+					return nil
+				})
+				if err != nil {
+					return err
+				}
+				graph.State = FAILED
+				graph.storage.SetProcessGraphState(graph.ID, graph.State)
+				return nil
 			}
 		}
 		if nrParentsFinished == nrParents {
@@ -222,44 +230,6 @@ func (graph *ProcessGraph) Resolve() error {
 	})
 	if err != nil {
 		return err
-	}
-
-	// Pass 2: If any parent failed, cascade failure to all processes in one pass
-	if hasFailedParent {
-		err = graph.Iterate(func(process *Process) error {
-			if process.State != FAILED {
-				process.State = FAILED
-				if err := graph.storage.SetProcessState(process.ID, FAILED); err != nil {
-					return err
-				}
-			}
-			return nil
-		})
-		if err != nil {
-			return err
-		}
-		graph.State = FAILED
-		graph.storage.SetProcessGraphState(graph.ID, graph.State)
-		return nil
-	}
-
-	// Pass 3: If any parent cancelled, cascade cancellation to all non-terminal processes
-	if hasCancelledParent {
-		err = graph.Iterate(func(process *Process) error {
-			if process.State != CANCELLED && process.State != SUCCESS && process.State != FAILED {
-				process.State = CANCELLED
-				if err := graph.storage.SetProcessState(process.ID, CANCELLED); err != nil {
-					return err
-				}
-			}
-			return nil
-		})
-		if err != nil {
-			return err
-		}
-		graph.State = CANCELLED
-		graph.storage.SetProcessGraphState(graph.ID, graph.State)
-		return nil
 	}
 
 	if failedProcesses >= 1 {

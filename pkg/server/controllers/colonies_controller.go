@@ -795,29 +795,6 @@ func (controller *ColoniesController) CancelProcess(processID string) error {
 				return
 			}
 
-			if process.ProcessGraphID != "" {
-				log.WithFields(log.Fields{"ProcessGraphId": process.ProcessGraphID}).Debug("Resolving processgraph (cancel)")
-				processGraph, err := controller.processGraphDB.GetProcessGraphByID(process.ProcessGraphID)
-				if err != nil {
-					cmd.errorChan <- err
-					return
-				}
-				processGraph.SetStorage(controller.GetProcessGraphStorage())
-				err = processGraph.Resolve()
-				if err != nil {
-					err2 := controller.HandleDefunctProcessgraph(processGraph.ID, process.ID, err)
-					if err2 != nil {
-						log.Error(err2)
-						cmd.errorChan <- err2
-						return
-					}
-
-					log.Error(err)
-					cmd.errorChan <- err
-					return
-				}
-			}
-
 			// Cleanup channels for this process
 			controller.channelRouter.CleanupProcess(processID)
 
