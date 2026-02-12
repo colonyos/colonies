@@ -233,7 +233,7 @@ func (controller *ColoniesController) StartCron(cron *core.Cron) {
 }
 
 func (controller *ColoniesController) TriggerCrons() {
-	cmd := &command{handler: func(cmd *command) {
+	cmd := &command{threaded: true, handler: func(cmd *command) {
 		crons, err := controller.cronDB.FindAllCrons()
 		if err != nil {
 			log.WithFields(log.Fields{"Error": err}).Error("Failed getting all crons")

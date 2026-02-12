@@ -16,8 +16,10 @@ type Server struct {
 // NewServer creates a new HTTP server with the given engine
 func NewServer(port int, engine *Engine) *Server {
 	httpServer := &http.Server{
-		Addr:    ":" + strconv.Itoa(port),
-		Handler: engine.Handler(),
+		Addr:              ":" + strconv.Itoa(port),
+		Handler:           engine.Handler(),
+		ReadHeaderTimeout: 10 * time.Second,
+		IdleTimeout:       120 * time.Second,
 	}
 
 	return &Server{
@@ -29,8 +31,10 @@ func NewServer(port int, engine *Engine) *Server {
 // NewServerWithAddr creates a new HTTP server with the given address and engine
 func NewServerWithAddr(addr string, engine *Engine) *Server {
 	httpServer := &http.Server{
-		Addr:    addr,
-		Handler: engine.Handler(),
+		Addr:              addr,
+		Handler:           engine.Handler(),
+		ReadHeaderTimeout: 10 * time.Second,
+		IdleTimeout:       120 * time.Second,
 	}
 
 	return &Server{
