@@ -6,7 +6,6 @@ import (
 
 	"github.com/colonyos/colonies/pkg/client"
 	"github.com/colonyos/colonies/pkg/core"
-	"github.com/colonyos/colonies/pkg/database/postgresql"
 	"github.com/colonyos/colonies/pkg/utils"
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
@@ -16,7 +15,7 @@ import (
 // never results in double assignments under contention. Multiple executors connecting
 // to different servers in the cluster should each get unique processes.
 func TestDistributedAssign(t *testing.T) {
-	db, err := postgresql.PrepareTests()
+	db, err := prepareTestDB("")
 	defer db.Close()
 	assert.Nil(t, err)
 
@@ -136,7 +135,7 @@ func TestDistributedAssign(t *testing.T) {
 // TestDistributedAssignHighContention tests with more executors than processes
 // to maximize contention and verify no double assignments
 func TestDistributedAssignHighContention(t *testing.T) {
-	db, err := postgresql.PrepareTests()
+	db, err := prepareTestDB("")
 	defer db.Close()
 	assert.Nil(t, err)
 

@@ -15,6 +15,7 @@ import (
 	"github.com/colonyos/colonies/pkg/constants"
 	"github.com/colonyos/colonies/pkg/core"
 	"github.com/colonyos/colonies/pkg/database"
+	"github.com/colonyos/colonies/pkg/database/embedded"
 	"github.com/colonyos/colonies/pkg/database/postgresql"
 	"github.com/colonyos/colonies/pkg/rpc"
 	"github.com/colonyos/colonies/pkg/security/crypto"
@@ -205,11 +206,29 @@ func prepareTests(t *testing.T) (*client.ColoniesClient, *Server, string, chan b
 	return prepareTestsWithRetention(t, false)
 }
 
+func prepareTestDB(prefix string) (database.Database, error) {
+	if os.Getenv("COLONIES_DB_TYPE") == "embedded" {
+		dir, err := os.MkdirTemp("", "colonies-test-"+prefix+"-*")
+		if err != nil {
+			return nil, err
+		}
+		db := embedded.CreateEmbeddedDatabase(dir)
+		if err := db.Initialize(); err != nil {
+			return nil, err
+		}
+		return db, nil
+	}
+	if prefix == "" {
+		prefix = "TEST_"
+	}
+	return postgresql.PrepareTestsWithPrefix(prefix)
+}
+
 func prepareTestsWithRetention(t *testing.T, retention bool) (*client.ColoniesClient, *Server, string, chan bool) {
 	os.RemoveAll("/tmp/colonies")
 	client := client.CreateColoniesClient(constants.TESTHOST, constants.TESTPORT, Insecure, SkipTLSVerify)
 
-	db, err := postgresql.PrepareTests()
+	db, err := prepareTestDB("")
 	assert.Nil(t, err)
 
 	crypto := crypto.CreateCrypto()

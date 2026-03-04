@@ -3,6 +3,7 @@ package database
 import (
 	"fmt"
 
+	"github.com/colonyos/colonies/pkg/database/embedded"
 	"github.com/colonyos/colonies/pkg/database/postgresql"
 	log "github.com/sirupsen/logrus"
 )
@@ -11,6 +12,7 @@ type DatabaseType string
 
 const (
 	PostgreSQL DatabaseType = "postgresql"
+	Embedded   DatabaseType = "embedded"
 )
 
 type DatabaseConfig struct {
@@ -23,7 +25,7 @@ type DatabaseConfig struct {
 	Prefix      string
 	TimescaleDB bool
 
-	DataDir string // Future use
+	DataDir string
 }
 
 func CreateDatabase(config DatabaseConfig) (Database, error) {
@@ -47,6 +49,17 @@ func CreateDatabase(config DatabaseConfig) (Database, error) {
 		}).Info("Initializing PostgreSQL database")
 
 		db := postgresql.CreatePQDatabase(config.Host, config.Port, config.User, config.Password, config.Name, config.Prefix, config.TimescaleDB)
+		return db, nil
+
+	case Embedded:
+		log.WithFields(log.Fields{
+			"DataDir": config.DataDir,
+		}).Info("Initializing embedded database")
+
+		db := embedded.CreateEmbeddedDatabase(config.DataDir)
+		if err := db.Initialize(); err != nil {
+			return nil, fmt.Errorf("failed to initialize embedded database: %w", err)
+		}
 		return db, nil
 
 	default:
