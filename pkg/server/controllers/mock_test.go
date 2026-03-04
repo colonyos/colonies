@@ -3,6 +3,7 @@ package controllers
 import (
 	"errors"
 	"fmt"
+	"os"
 	"sync/atomic"
 	"time"
 
@@ -10,6 +11,8 @@ import (
 	"github.com/colonyos/colonies/pkg/cluster"
 	"github.com/colonyos/colonies/pkg/constants"
 	"github.com/colonyos/colonies/pkg/core"
+	"github.com/colonyos/colonies/pkg/database"
+	"github.com/colonyos/colonies/pkg/database/embedded"
 	"github.com/colonyos/colonies/pkg/database/postgresql"
 )
 
@@ -628,14 +631,39 @@ func createFakeColoniesController() (*ColoniesController, *DatabaseMock) {
 	return CreateColoniesController(dbMock, node, clusterConfig, dataPath, constants.GENERATOR_TRIGGER_PERIOD, constants.CRON_TRIGGER_PERIOD, false, -1, 500, time.Duration(constants.DEFAULT_STALE_EXECUTOR_DURATION)*time.Second), dbMock
 }
 
-func createTestColoniesController(db *postgresql.PQDatabase) *ColoniesController {
+func prepareTestDB(prefix string) (database.Database, error) {
+	if os.Getenv("COLONIES_DB_TYPE") == "embedded" {
+		dir, err := os.MkdirTemp("", "colonies-ctrl-test-"+prefix+"-*")
+		if err != nil {
+			return nil, err
+		}
+		db := embedded.CreateEmbeddedDatabase(dir)
+		if err := db.Initialize(); err != nil {
+			return nil, err
+		}
+		return db, nil
+	}
+	if prefix == "" {
+		prefix = "TEST_"
+	}
+	return postgresql.PrepareTestsWithPrefix(prefix)
+}
+
+func createTestColoniesController(db database.Database) *ColoniesController {
 	node := cluster.Node{Name: "test", Host: "localhost", EtcdClientPort: 24101, EtcdPeerPort: 23101, RelayPort: 25101, APIPort: constants.TESTPORT}
 	clusterConfig := cluster.Config{}
 	clusterConfig.AddNode(node)
 	return CreateColoniesController(db, node, clusterConfig, "/tmp/colonies/etcd_test", constants.GENERATOR_TRIGGER_PERIOD, constants.CRON_TRIGGER_PERIOD, false, -1, 500, time.Duration(constants.DEFAULT_STALE_EXECUTOR_DURATION)*time.Second)
 }
 
-func createTestColoniesController2(db *postgresql.PQDatabase) *ColoniesController {
+func createTestColoniesControllerWithStaleDuration(db database.Database, staleDuration time.Duration) *ColoniesController {
+	node := cluster.Node{Name: "test", Host: "localhost", EtcdClientPort: 24101, EtcdPeerPort: 23101, RelayPort: 25101, APIPort: constants.TESTPORT}
+	clusterConfig := cluster.Config{}
+	clusterConfig.AddNode(node)
+	return CreateColoniesController(db, node, clusterConfig, "/tmp/colonies/etcd_test", constants.GENERATOR_TRIGGER_PERIOD, constants.CRON_TRIGGER_PERIOD, false, -1, 500, staleDuration)
+}
+
+func createTestColoniesController2(db database.Database) *ColoniesController {
 	node := cluster.Node{Name: "test2", Host: "localhost", EtcdClientPort: 24102, EtcdPeerPort: 23102, RelayPort: 25102, APIPort: constants.TESTPORT}
 	clusterConfig := cluster.Config{}
 	clusterConfig.AddNode(node)

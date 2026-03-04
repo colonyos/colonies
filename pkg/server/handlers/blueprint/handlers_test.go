@@ -1336,15 +1336,17 @@ func TestCronNamingConsistencyBetweenAddAndUpdate(t *testing.T) {
 	assert.NotNil(t, foundCron, "AddBlueprint should create cron with name: %s", expectedCronName)
 	t.Logf("AddBlueprint created cron with name: %s", expectedCronName)
 
-	// Record the cron's last run time before update
-	cronBeforeUpdate := foundCron
+	// Count waiting processes before update
+	processesBefore, err := client.GetWaitingProcesses(env.ColonyName, "", "", "", 100, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	countBefore := len(processesBefore)
 
-	// Now update the blueprint - this should trigger the same cron
+	// Now update the blueprint - this should create an immediate reconciliation process
 	addedBlueprint.SetSpec("replicas", 5)
 	_, err = client.UpdateBlueprint(addedBlueprint, env.ExecutorPrvKey)
 	assert.Nil(t, err)
 
-	// Get crons again to verify the cron was triggered
+	// Get crons again to verify the cron still exists with consistent naming
 	cronsAfterUpdate, err := client.GetCrons(env.ColonyName, 100, env.ExecutorPrvKey)
 	assert.Nil(t, err)
 
@@ -1359,16 +1361,16 @@ func TestCronNamingConsistencyBetweenAddAndUpdate(t *testing.T) {
 
 	assert.NotNil(t, cronAfterUpdate, "Cron should still exist after update")
 
-	// Verify the cron was triggered by checking LastRun changed
-	// (The cron should have been run by UpdateBlueprint)
-	assert.True(t,
-		cronAfterUpdate.LastRun.After(cronBeforeUpdate.LastRun) || !cronAfterUpdate.LastRun.IsZero(),
-		"UpdateBlueprint should trigger the reconciliation cron (LastRun should be updated)")
+	// Verify UpdateBlueprint created an immediate reconciliation process
+	processesAfter, err := client.GetWaitingProcesses(env.ColonyName, "", "", "", 100, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.Greater(t, len(processesAfter), countBefore,
+		"UpdateBlueprint should create an immediate reconciliation process")
 
 	t.Logf("Cron naming is consistent:")
 	t.Logf("  AddBlueprint creates: %s", expectedCronName)
 	t.Logf("  UpdateBlueprint finds: %s", expectedCronName)
-	t.Logf("  Cron was triggered: LastRun before=%v, after=%v", cronBeforeUpdate.LastRun, cronAfterUpdate.LastRun)
+	t.Logf("  Immediate reconciliation processes created: %d", len(processesAfter)-countBefore)
 
 	server.Shutdown()
 	<-done

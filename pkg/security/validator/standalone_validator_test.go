@@ -1,15 +1,36 @@
 package validator
 
 import (
+	"os"
 	"testing"
 
 	"github.com/colonyos/colonies/pkg/core"
+	"github.com/colonyos/colonies/pkg/database"
+	"github.com/colonyos/colonies/pkg/database/embedded"
 	"github.com/colonyos/colonies/pkg/database/postgresql"
 	"github.com/stretchr/testify/assert"
 )
 
+func prepareTestDB(prefix string) (database.Database, error) {
+	if os.Getenv("COLONIES_DB_TYPE") == "embedded" {
+		dir, err := os.MkdirTemp("", "colonies-validator-test-"+prefix+"-*")
+		if err != nil {
+			return nil, err
+		}
+		db := embedded.CreateEmbeddedDatabase(dir)
+		if err := db.Initialize(); err != nil {
+			return nil, err
+		}
+		return db, nil
+	}
+	if prefix == "" {
+		prefix = "TEST_"
+	}
+	return postgresql.PrepareTestsWithPrefix(prefix)
+}
+
 func TestCreateStandaloneValidator(t *testing.T) {
-	db, err := postgresql.PrepareTests()
+	db, err := prepareTestDB("")
 	assert.Nil(t, err)
 
 	validator := CreateValidator(db)

@@ -244,7 +244,6 @@ func (controller *ColoniesController) TriggerCrons() {
 			if t.Unix() == cron.NextRun.Unix() { // This if-statement will be true the first time the cron is evaluted
 				nextRun := controller.CalcNextRun(cron)
 				controller.cronDB.UpdateCron(cron.ID, nextRun, time.Time{}, "")
-				cron.NextRun = nextRun
 				continue
 			}
 			if cron.HasExpired() {

@@ -6,6 +6,7 @@ import (
 	"sort"
 	"strconv"
 	"sync"
+	"time"
 
 	"github.com/colonyos/colonies/pkg/backends"
 	"github.com/colonyos/colonies/pkg/cluster"
@@ -347,16 +348,21 @@ func (handler *DefaultEventHandler) WaitForProcess(executorType string, state in
 		return nil, errors.New("timeout waiting for registration")
 	}
 
-	// Unregister - non-blocking since we're in defer and don't want to hang
+	// Unregister - blocking with timeout to ensure cleanup completes
 	defer func() {
+		done := make(chan struct{})
 		unregMsg := &message{reply: make(chan replyMessage, 100), handler: func(msg *message) {
 			handler.unregister(executorType, state, r.listenerID, location)
+			close(done)
 		}}
 		select {
 		case handler.msgQueue <- unregMsg:
-			// Unregister message sent
-		default:
-			// Queue full, skip unregister (will be cleaned up eventually)
+			// Wait for the master worker to process the unregister
+			select {
+			case <-done:
+			case <-time.After(5 * time.Second):
+			}
+		case <-time.After(5 * time.Second):
 		}
 	}()
 

@@ -6,7 +6,6 @@ import (
 
 	"github.com/colonyos/colonies/pkg/constants"
 	"github.com/colonyos/colonies/pkg/core"
-	"github.com/colonyos/colonies/pkg/database/postgresql"
 	"github.com/colonyos/colonies/pkg/backends"
 	"github.com/colonyos/colonies/pkg/utils"
 	"github.com/stretchr/testify/assert"
@@ -34,7 +33,7 @@ func TestColoniesControllerInvalidDB(t *testing.T) {
 }
 
 func TestColoniesControllerAddProcess(t *testing.T) {
-	db, err := postgresql.PrepareTestsWithPrefix("TEST_ADD_PROCESS")
+	db, err := prepareTestDB("TEST_ADD_PROCESS")
 	defer db.Close()
 	assert.Nil(t, err)
 
@@ -58,7 +57,7 @@ func TestColoniesControllerAddProcess(t *testing.T) {
 }
 
 func TestColoniesControllerAssignExecutor(t *testing.T) {
-	db, err := postgresql.PrepareTestsWithPrefix("TEST_ASSIGN_EXECUTOR")
+	db, err := prepareTestDB("TEST_ASSIGN_EXECUTOR")
 	defer db.Close()
 	assert.Nil(t, err)
 
@@ -87,7 +86,7 @@ func TestColoniesControllerAssignExecutor(t *testing.T) {
 
 // notest
 func TestColoniesControllerAssignExecutorConcurrency(t *testing.T) {
-	db, err := postgresql.PrepareTestsWithPrefix("TEST_ASSIGN_CONCURRENCY")
+	db, err := prepareTestDB("TEST_ASSIGN_CONCURRENCY")
 	defer db.Close()
 	assert.Nil(t, err)
 
@@ -171,7 +170,7 @@ func TestColoniesControllerPauseResumeAssignments(t *testing.T) {
 }
 
 func TestColoniesControllerPauseResumeAssignmentsWithEtcdServer(t *testing.T) {
-	db, err := postgresql.PrepareTestsWithPrefix("TEST_PAUSE_RESUME")
+	db, err := prepareTestDB("TEST_PAUSE_RESUME")
 	defer db.Close()
 	assert.Nil(t, err)
 
@@ -296,7 +295,7 @@ func TestColoniesControllerSubscribeProcesses(t *testing.T) {
 
 // Test additional process operations
 func TestColoniesControllerProcessOperations(t *testing.T) {
-	db, err := postgresql.PrepareTestsWithPrefix("TEST_PROCESS_OPS")
+	db, err := prepareTestDB("TEST_PROCESS_OPS")
 	defer db.Close()
 	assert.Nil(t, err)
 
@@ -362,7 +361,7 @@ func TestColoniesControllerWebSocketHandling(t *testing.T) {
 
 // Test process graph operations
 func TestColoniesControllerProcessGraphOperations(t *testing.T) {
-	db, err := postgresql.PrepareTestsWithPrefix("TEST_PROCESS_GRAPH")
+	db, err := prepareTestDB("TEST_PROCESS_GRAPH")
 	defer db.Close()
 	assert.Nil(t, err)
 
@@ -377,7 +376,7 @@ func TestColoniesControllerProcessGraphOperations(t *testing.T) {
 
 // Test assignment functionality
 func TestColoniesControllerAssignmentOperations(t *testing.T) {
-	db, err := postgresql.PrepareTestsWithPrefix("TEST_ASSIGNMENT")
+	db, err := prepareTestDB("TEST_ASSIGNMENT")
 	defer db.Close()
 	assert.Nil(t, err)
 
@@ -475,7 +474,7 @@ func TestColoniesControllerGeneratorOperations(t *testing.T) {
 
 // Test process lifecycle methods with real database
 func TestColoniesControllerProcessLifecycleOperations(t *testing.T) {
-	db, err := postgresql.PrepareTestsWithPrefix("TEST_LIFECYCLE")
+	db, err := prepareTestDB("TEST_LIFECYCLE")
 	defer db.Close()
 	assert.Nil(t, err)
 
@@ -525,7 +524,7 @@ func TestColoniesControllerProcessLifecycleOperations(t *testing.T) {
 
 // Test process graph operations
 func TestColoniesControllerProcessGraphOperations2(t *testing.T) {
-	db, err := postgresql.PrepareTestsWithPrefix("TEST_PROCESS_GRAPH_2")
+	db, err := prepareTestDB("TEST_PROCESS_GRAPH_2")
 	defer db.Close()
 	assert.Nil(t, err)
 
@@ -580,7 +579,7 @@ func TestColoniesControllerProcessGraphOperations2(t *testing.T) {
 
 // Test assignment and unassignment operations
 func TestColoniesControllerAssignmentOperations2(t *testing.T) {
-	db, err := postgresql.PrepareTestsWithPrefix("TEST_ASSIGNMENT_2")
+	db, err := prepareTestDB("TEST_ASSIGNMENT_2")
 	defer db.Close()
 	assert.Nil(t, err)
 
@@ -619,7 +618,7 @@ func TestColoniesControllerAssignmentOperations2(t *testing.T) {
 
 // Test attribute operations
 func TestColoniesControllerAttributeOperations(t *testing.T) {
-	db, err := postgresql.PrepareTestsWithPrefix("TEST_ATTRIBUTES")
+	db, err := prepareTestDB("TEST_ATTRIBUTES")
 	defer db.Close()
 	assert.Nil(t, err)
 
@@ -652,7 +651,7 @@ func TestColoniesControllerAttributeOperations(t *testing.T) {
 
 // Test function management operations
 func TestColoniesControllerFunctionOperations(t *testing.T) {
-	db, err := postgresql.PrepareTestsWithPrefix("TEST_FUNCTIONS")
+	db, err := prepareTestDB("TEST_FUNCTIONS")
 	defer db.Close()
 	assert.Nil(t, err)
 
@@ -687,7 +686,7 @@ func TestColoniesControllerFunctionOperations(t *testing.T) {
 
 // Test database reset and other utility functions
 func TestColoniesControllerDatabaseAndUtilityOperations(t *testing.T) {
-	db, err := postgresql.PrepareTestsWithPrefix("TEST_UTILITIES")
+	db, err := prepareTestDB("TEST_UTILITIES")
 	defer db.Close()
 	assert.Nil(t, err)
 

@@ -5,14 +5,13 @@ import (
 	"testing"
 
 	"github.com/colonyos/colonies/pkg/client"
-	"github.com/colonyos/colonies/pkg/database/postgresql"
 	"github.com/colonyos/colonies/pkg/utils"
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestExclusiveAssign(t *testing.T) {
-	db, err := postgresql.PrepareTests()
+	db, err := prepareTestDB("")
 	defer db.Close()
 	assert.Nil(t, err)
 
