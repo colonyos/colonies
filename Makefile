@@ -86,7 +86,11 @@ endif
 	@cd pkg/channel; go test -v --race
 	@cd pkg/cluster; go test -v --race
 	@cd pkg/cron; go test -v --race
-	#@cd pkg/fs; go test -v --race
+	@cd pkg/fs; go test -v --race
+	@cd pkg/fs/localstore; go test -v --race
+ifneq ($(COLONIES_FILE_STORAGE_TYPE),coloniesfs)
+	@cd pkg/fs/s3; go test -v --race
+endif
 
 install:
 	cp ./bin/colonies /usr/local/bin

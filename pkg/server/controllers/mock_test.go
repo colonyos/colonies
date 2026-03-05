@@ -650,22 +650,25 @@ func prepareTestDB(prefix string) (database.Database, error) {
 }
 
 func createTestColoniesController(db database.Database) *ColoniesController {
+	etcdDir, _ := os.MkdirTemp("", "colonies-test-etcd-*")
 	node := cluster.Node{Name: "test", Host: "localhost", EtcdClientPort: 24101, EtcdPeerPort: 23101, RelayPort: 25101, APIPort: constants.TESTPORT}
 	clusterConfig := cluster.Config{}
 	clusterConfig.AddNode(node)
-	return CreateColoniesController(db, node, clusterConfig, "/tmp/colonies/etcd_test", constants.GENERATOR_TRIGGER_PERIOD, constants.CRON_TRIGGER_PERIOD, false, -1, 500, time.Duration(constants.DEFAULT_STALE_EXECUTOR_DURATION)*time.Second)
+	return CreateColoniesController(db, node, clusterConfig, etcdDir, constants.GENERATOR_TRIGGER_PERIOD, constants.CRON_TRIGGER_PERIOD, false, -1, 500, time.Duration(constants.DEFAULT_STALE_EXECUTOR_DURATION)*time.Second)
 }
 
 func createTestColoniesControllerWithStaleDuration(db database.Database, staleDuration time.Duration) *ColoniesController {
+	etcdDir, _ := os.MkdirTemp("", "colonies-test-etcd-*")
 	node := cluster.Node{Name: "test", Host: "localhost", EtcdClientPort: 24101, EtcdPeerPort: 23101, RelayPort: 25101, APIPort: constants.TESTPORT}
 	clusterConfig := cluster.Config{}
 	clusterConfig.AddNode(node)
-	return CreateColoniesController(db, node, clusterConfig, "/tmp/colonies/etcd_test", constants.GENERATOR_TRIGGER_PERIOD, constants.CRON_TRIGGER_PERIOD, false, -1, 500, staleDuration)
+	return CreateColoniesController(db, node, clusterConfig, etcdDir, constants.GENERATOR_TRIGGER_PERIOD, constants.CRON_TRIGGER_PERIOD, false, -1, 500, staleDuration)
 }
 
 func createTestColoniesController2(db database.Database) *ColoniesController {
+	etcdDir, _ := os.MkdirTemp("", "colonies-test-etcd2-*")
 	node := cluster.Node{Name: "test2", Host: "localhost", EtcdClientPort: 24102, EtcdPeerPort: 23102, RelayPort: 25102, APIPort: constants.TESTPORT}
 	clusterConfig := cluster.Config{}
 	clusterConfig.AddNode(node)
-	return CreateColoniesController(db, node, clusterConfig, "/tmp/colonies/etcd_test2", constants.GENERATOR_TRIGGER_PERIOD, constants.CRON_TRIGGER_PERIOD, false, -1, 500, time.Duration(constants.DEFAULT_STALE_EXECUTOR_DURATION)*time.Second)
+	return CreateColoniesController(db, node, clusterConfig, etcdDir, constants.GENERATOR_TRIGGER_PERIOD, constants.CRON_TRIGGER_PERIOD, false, -1, 500, time.Duration(constants.DEFAULT_STALE_EXECUTOR_DURATION)*time.Second)
 }

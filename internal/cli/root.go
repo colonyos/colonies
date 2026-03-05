@@ -158,6 +158,8 @@ var PrvKeyPath string
 var Generation int
 var Force bool
 var Fix bool
+var FileStorageType string
+var FileStorageDir string
 
 func init() {
 	rootCmd.PersistentFlags().BoolVarP(&Verbose, "verbose", "v", false, "Verbose (debugging)")

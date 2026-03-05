@@ -342,6 +342,18 @@ func parseEnv() {
 		CheckError(err)
 	}
 
+	fileStorageTypeEnv := os.Getenv("COLONIES_FILE_STORAGE_TYPE")
+	if fileStorageTypeEnv != "" {
+		FileStorageType = fileStorageTypeEnv
+	} else if FileStorageType == "" {
+		FileStorageType = "s3"
+	}
+
+	fileStorageDirEnv := os.Getenv("COLONIES_FILE_STORAGE_DIR")
+	if fileStorageDirEnv != "" {
+		FileStorageDir = fileStorageDirEnv
+	}
+
 	monitorPortStr := os.Getenv("COLONIES_MONITOR_PORT")
 	if monitorPortStr != "" {
 		MonitorPort, err = strconv.Atoi(monitorPortStr)

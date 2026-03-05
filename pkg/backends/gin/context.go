@@ -175,6 +175,11 @@ func (c *Context) ReadBody() ([]byte, error) {
 	return io.ReadAll(c.ginContext.Request.Body)
 }
 
+// ResponseWriter returns the underlying http.ResponseWriter
+func (c *Context) ResponseWriter() http.ResponseWriter {
+	return c.ginContext.Writer
+}
+
 // Status sets the HTTP response code
 func (c *Context) Status(code int) {
 	c.ginContext.Status(code)

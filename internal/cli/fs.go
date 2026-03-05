@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/colonyos/colonies/pkg/client"
 	"github.com/colonyos/colonies/pkg/core"
 	"github.com/colonyos/colonies/pkg/fs"
 	log "github.com/sirupsen/logrus"
@@ -101,6 +102,18 @@ var snapshotCmd = &cobra.Command{
 	Long:  "Manage file snapshots",
 }
 
+func createFSClient(client *client.ColoniesClient) (*fs.FSClient, error) {
+	if FileStorageType == "coloniesfs" {
+		scheme := "https"
+		if Insecure {
+			scheme = "http"
+		}
+		serverURL := fmt.Sprintf("%s://%s:%d", scheme, ServerHost, ServerPort)
+		return fs.CreateFSClientWithColonyFS(client, ColonyName, PrvKey, serverURL)
+	}
+	return fs.CreateFSClient(client, ColonyName, PrvKey)
+}
+
 func printSyncPlans(syncPlans []*fs.SyncPlan) {
 	filesToDownload := 0
 	filesToUpload := 0
@@ -187,7 +200,7 @@ var syncCmd = &cobra.Command{
 		CheckError(err)
 
 		log.Debug("Starting a file storage client")
-		fsClient, err := fs.CreateFSClient(client, ColonyName, PrvKey)
+		fsClient, err := createFSClient(client)
 		CheckError(err)
 
 		if Quite {
@@ -298,7 +311,7 @@ var cleanCmd = &cobra.Command{
 		CheckError(err)
 
 		log.Debug("Starting a file storage client")
-		fsClient, err := fs.CreateFSClient(client, ColonyName, PrvKey)
+		fsClient, err := createFSClient(client)
 		CheckError(err)
 
 		if Quite {
@@ -380,7 +393,7 @@ var removeLabelCmd = &cobra.Command{
 		client := setup()
 
 		log.Debug("Starting a file storage client")
-		fsClient, err := fs.CreateFSClient(client, ColonyName, PrvKey)
+		fsClient, err := createFSClient(client)
 		CheckError(err)
 
 		if Yes {
@@ -517,7 +530,7 @@ var getFileCmd = &cobra.Command{
 		}
 
 		log.Debug("Starting a file storage client")
-		fsClient, err := fs.CreateFSClient(client, ColonyName, PrvKey)
+		fsClient, err := createFSClient(client)
 		CheckError(err)
 
 		err = fsClient.Download(ColonyName, coloniesFiles[0].ID, DownloadDir)
@@ -535,7 +548,7 @@ var removeFileCmd = &cobra.Command{
 		client := setup()
 
 		log.Debug("Starting a file storage client")
-		fsClient, err := fs.CreateFSClient(client, ColonyName, PrvKey)
+		fsClient, err := createFSClient(client)
 		CheckError(err)
 
 		if FileID != "" {
@@ -583,7 +596,7 @@ var downloadSnapshotCmd = &cobra.Command{
 		client := setup()
 
 		log.Debug("Starting a file storage client")
-		fsClient, err := fs.CreateFSClient(client, ColonyName, PrvKey)
+		fsClient, err := createFSClient(client)
 		CheckError(err)
 
 		if DownloadDir == "" {

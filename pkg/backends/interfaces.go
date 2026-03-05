@@ -22,6 +22,7 @@ type Context interface {
 	// Request access
 	Request() *http.Request
 	ReadBody() ([]byte, error)
+	ResponseWriter() http.ResponseWriter
 	
 	// Headers
 	GetHeader(key string) string

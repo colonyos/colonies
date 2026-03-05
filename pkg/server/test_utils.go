@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"math/rand"
 	"os"
+	"path/filepath"
 	"strconv"
 	"testing"
 	"time"
@@ -225,7 +226,7 @@ func prepareTestDB(prefix string) (database.Database, error) {
 }
 
 func prepareTestsWithRetention(t *testing.T, retention bool) (*client.ColoniesClient, *Server, string, chan bool) {
-	os.RemoveAll("/tmp/colonies")
+	dataDir := t.TempDir()
 	client := client.CreateColoniesClient(constants.TESTHOST, constants.TESTPORT, Insecure, SkipTLSVerify)
 
 	db, err := prepareTestDB("")
@@ -240,10 +241,11 @@ func prepareTestsWithRetention(t *testing.T, retention bool) (*client.ColoniesCl
 	err = db.SetServerID("", serverID)
 	assert.Nil(t, err)
 
+	etcdDataDir := filepath.Join(dataDir, "etcd")
 	node := cluster.Node{Name: "etcd", Host: "localhost", EtcdClientPort: 24100, EtcdPeerPort: 23100, RelayPort: 25100, APIPort: constants.TESTPORT}
 	clusterConfig := cluster.Config{}
 	clusterConfig.AddNode(node)
-	server := CreateServer(db, constants.TESTPORT, EnableTLS, "", "", node, clusterConfig, "/tmp/colonies/etcd", constants.GENERATOR_TRIGGER_PERIOD, constants.CRON_TRIGGER_PERIOD, false, false, retention, 1, 500, time.Duration(constants.DEFAULT_STALE_EXECUTOR_DURATION)*time.Second)
+	server := CreateServer(db, constants.TESTPORT, EnableTLS, "", "", node, clusterConfig, etcdDataDir, constants.GENERATOR_TRIGGER_PERIOD, constants.CRON_TRIGGER_PERIOD, false, false, retention, 1, 500, time.Duration(constants.DEFAULT_STALE_EXECUTOR_DURATION)*time.Second, "", "")
 
 	done := make(chan bool)
 	go func() {
@@ -259,14 +261,14 @@ func createTestColoniesController(db database.Database) *controllers.ColoniesCon
 	node := cluster.Node{Name: "etcd", Host: "localhost", EtcdClientPort: 24100, EtcdPeerPort: 23100, RelayPort: 25100, APIPort: constants.TESTPORT}
 	clusterConfig := cluster.Config{}
 	clusterConfig.AddNode(node)
-	return controllers.CreateColoniesController(db, node, clusterConfig, "/tmp/colonies/etcd", constants.GENERATOR_TRIGGER_PERIOD, constants.CRON_TRIGGER_PERIOD, false, -1, 500, time.Duration(constants.DEFAULT_STALE_EXECUTOR_DURATION)*time.Second)
+	return controllers.CreateColoniesController(db, node, clusterConfig, "", constants.GENERATOR_TRIGGER_PERIOD, constants.CRON_TRIGGER_PERIOD, false, -1, 500, time.Duration(constants.DEFAULT_STALE_EXECUTOR_DURATION)*time.Second)
 }
 
 func createTestColoniesController2(db database.Database) *controllers.ColoniesController {
 	node := cluster.Node{Name: "etcd2", Host: "localhost", EtcdClientPort: 26100, EtcdPeerPort: 27100, RelayPort: 28100, APIPort: constants.TESTPORT}
 	clusterConfig := cluster.Config{}
 	clusterConfig.AddNode(node)
-	return controllers.CreateColoniesController(db, node, clusterConfig, "/tmp/colonies/etcd", constants.GENERATOR_TRIGGER_PERIOD, constants.CRON_TRIGGER_PERIOD, false, -1, 500, time.Duration(constants.DEFAULT_STALE_EXECUTOR_DURATION)*time.Second)
+	return controllers.CreateColoniesController(db, node, clusterConfig, "", constants.GENERATOR_TRIGGER_PERIOD, constants.CRON_TRIGGER_PERIOD, false, -1, 500, time.Duration(constants.DEFAULT_STALE_EXECUTOR_DURATION)*time.Second)
 }
 
 func GenerateDiamondtWorkflowSpec(colonyName string) *core.WorkflowSpec {
@@ -390,7 +392,7 @@ type ServerInfo struct {
 }
 
 func StartCluster(t *testing.T, db database.Database, size int) []ServerInfo {
-	os.RemoveAll("/tmp/colonies")
+	dataDir := t.TempDir()
 	gin.SetMode(gin.ReleaseMode)
 	gin.DefaultWriter = ioutil.Discard
 
@@ -418,7 +420,8 @@ func StartCluster(t *testing.T, db database.Database, size int) []ServerInfo {
 	for i, node := range clusterConfig.Nodes {
 		go func(i int, node cluster.Node) {
 			log.WithFields(log.Fields{"APIPort": node.APIPort}).Info("Starting ColoniesServer")
-			server := CreateServer(db, node.APIPort, false, "", "", node, clusterConfig, "/tmp/colonies/etcd"+strconv.Itoa(i), constants.GENERATOR_TRIGGER_PERIOD, constants.CRON_TRIGGER_PERIOD, true, false, false, -1, 500, time.Duration(constants.DEFAULT_STALE_EXECUTOR_DURATION)*time.Second)
+			etcdDataDir := filepath.Join(dataDir, "etcd"+strconv.Itoa(i))
+			server := CreateServer(db, node.APIPort, false, "", "", node, clusterConfig, etcdDataDir, constants.GENERATOR_TRIGGER_PERIOD, constants.CRON_TRIGGER_PERIOD, true, false, false, -1, 500, time.Duration(constants.DEFAULT_STALE_EXECUTOR_DURATION)*time.Second, "", "")
 			done := make(chan struct{})
 			s := ServerInfo{ServerID: serverID, ServerPrvKey: serverPrvKey, Server: server, Node: node, Done: done}
 			go func(i int) {
@@ -442,7 +445,7 @@ func StartCluster(t *testing.T, db database.Database, size int) []ServerInfo {
 
 // StartClusterDistributed creates a cluster with ExclusiveAssign=false for testing distributed assignment
 func StartClusterDistributed(t *testing.T, db database.Database, size int) []ServerInfo {
-	os.RemoveAll("/tmp/colonies")
+	dataDir := t.TempDir()
 	gin.SetMode(gin.ReleaseMode)
 	gin.DefaultWriter = ioutil.Discard
 
@@ -470,8 +473,9 @@ func StartClusterDistributed(t *testing.T, db database.Database, size int) []Ser
 	for i, node := range clusterConfig.Nodes {
 		go func(i int, node cluster.Node) {
 			log.WithFields(log.Fields{"APIPort": node.APIPort}).Info("Starting ColoniesServer")
+			etcdDataDir := filepath.Join(dataDir, "etcd"+strconv.Itoa(i))
 			// ExclusiveAssign=false for distributed assignment
-			server := CreateServer(db, node.APIPort, false, "", "", node, clusterConfig, "/tmp/colonies/etcd"+strconv.Itoa(i), constants.GENERATOR_TRIGGER_PERIOD, constants.CRON_TRIGGER_PERIOD, false, false, false, -1, 500, time.Duration(constants.DEFAULT_STALE_EXECUTOR_DURATION)*time.Second)
+			server := CreateServer(db, node.APIPort, false, "", "", node, clusterConfig, etcdDataDir, constants.GENERATOR_TRIGGER_PERIOD, constants.CRON_TRIGGER_PERIOD, false, false, false, -1, 500, time.Duration(constants.DEFAULT_STALE_EXECUTOR_DURATION)*time.Second, "", "")
 			done := make(chan struct{})
 			s := ServerInfo{ServerID: serverID, ServerPrvKey: serverPrvKey, Server: server, Node: node, Done: done}
 			go func(i int) {

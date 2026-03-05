@@ -14,6 +14,7 @@ import (
 	"github.com/colonyos/colonies/pkg/cluster"
 	"github.com/colonyos/colonies/pkg/core"
 	"github.com/colonyos/colonies/pkg/database"
+	"github.com/colonyos/colonies/pkg/fs/localstore"
 	"github.com/colonyos/colonies/pkg/rpc"
 	"github.com/colonyos/colonies/pkg/security"
 	"github.com/colonyos/colonies/pkg/security/crypto"
@@ -102,6 +103,11 @@ type Server struct {
 	locationHandlers       *locationhandlers.Handlers
 	backendRealtimeHandler realtimehandlers.RealtimeHandler
 	channelRouter          *channel.Router
+
+	// ColonyFS file storage
+	objectStore     localstore.ObjectStore
+	dataHandlers    *filehandlers.DataHandlers
+	fileStorageType string
 }
 
 func CreateServer(db database.Database,
@@ -119,8 +125,10 @@ func CreateServer(db database.Database,
 	retention bool,
 	retentionPolicy int64,
 	retentionPeriod int,
-	staleExecutorDuration time.Duration) *Server {
-	return createServerInternal(db, port, tls, tlsPrivateKeyPath, tlsCertPath, thisNode, clusterConfig, etcdDataPath, generatorPeriod, cronPeriod, exclusiveAssign, allowExecutorReregister, retention, retentionPolicy, retentionPeriod, staleExecutorDuration)
+	staleExecutorDuration time.Duration,
+	fileStorageType string,
+	fileStorageDir string) *Server {
+	return createServerInternal(db, port, tls, tlsPrivateKeyPath, tlsCertPath, thisNode, clusterConfig, etcdDataPath, generatorPeriod, cronPeriod, exclusiveAssign, allowExecutorReregister, retention, retentionPolicy, retentionPeriod, staleExecutorDuration, fileStorageType, fileStorageDir)
 }
 
 func createServerInternal(db database.Database,
@@ -138,7 +146,9 @@ func createServerInternal(db database.Database,
 	retention bool,
 	retentionPolicy int64,
 	retentionPeriod int,
-	staleExecutorDuration time.Duration) *Server {
+	staleExecutorDuration time.Duration,
+	fileStorageType string,
+	fileStorageDir string) *Server {
 	server := &Server{}
 
 	// Initialize Gin HTTP backend
@@ -199,12 +209,25 @@ func createServerInternal(db database.Database,
 	server.channelHandlers = channelhandlers.NewHandlers(server.serverAdapter)
 	server.locationHandlers = locationhandlers.NewHandlers(server.serverAdapter)
 
+	// Initialize ColonyFS object store if configured
+	server.fileStorageType = fileStorageType
+	if fileStorageType == "coloniesfs" && fileStorageDir != "" {
+		store, err := localstore.NewLocalObjectStore(fileStorageDir)
+		if err != nil {
+			log.WithFields(log.Fields{"Error": err}).Fatal("Failed to create local object store")
+		}
+		server.objectStore = store
+		server.dataHandlers = filehandlers.NewDataHandlers(server.serverAdapter, store)
+		log.WithFields(log.Fields{"StorageDir": fileStorageDir}).Info("ColonyFS file storage enabled")
+	}
+
 	// Create backend-specific realtime handler
 	server.backendRealtimeHandler = gin.NewRealtimeHandler(server.serverAdapter)
 
 	// Register all handlers that implement self-registration
 	server.registerHandlers()
 
+	dbType := fmt.Sprintf("%T", db)
 	log.WithFields(log.Fields{"Port": port,
 		"TLS":                     tls,
 		"TLSPrivateKeyPath":       tlsPrivateKeyPath,
@@ -221,7 +244,9 @@ func createServerInternal(db database.Database,
 		"AllowExecutorReregister": allowExecutorReregister,
 		"ExclusiveAssign":         exclusiveAssign,
 		"Retention":               retention,
-		"RetentionPolicy":         retentionPolicy}).
+		"RetentionPolicy":         retentionPolicy,
+		"Database":                dbType,
+		"FileStorage":             fileStorageType}).
 		Info("Starting Colonies server")
 
 	server.setupRoutes()
@@ -334,6 +359,19 @@ func (server *Server) setupRoutes() {
 		server.engine.GET("/pubsub", func(c backends.Context) {
 			server.realtimeHandlers.HandleWSRequest(c)
 		})
+
+		// ColonyFS file data routes
+		if server.fileStorageType == "coloniesfs" && server.dataHandlers != nil {
+			server.engine.PUT("/api/fs/:objectName", server.dataHandlers.HandleUpload)
+			server.engine.GET("/api/fs/:objectName", server.dataHandlers.HandleDownload)
+			server.engine.DELETE("/api/fs/:objectName", server.dataHandlers.HandleDelete)
+			server.engine.POST("/api/fs/:objectName/init", server.dataHandlers.HandleChunkedInit)
+			server.engine.PUT("/api/fs/:objectName/:chunk", server.dataHandlers.HandleChunkUpload)
+			server.engine.POST("/api/fs/:objectName/complete", server.dataHandlers.HandleChunkedComplete)
+			server.engine.GET("/api/fs/:objectName/status", server.dataHandlers.HandleChunkStatus)
+			server.engine.GET("/api/fs", server.dataHandlers.HandleSearch)
+			log.Info("ColonyFS file data routes configured")
+		}
 
 		log.Info("HTTP routes configured")
 	}
