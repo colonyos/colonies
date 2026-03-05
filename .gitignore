@@ -15,3 +15,5 @@ pkg/logging/*.sw*
 pkg/client/*.sw*
 pkg/cmd/*.sw*
 *.etcd
+Data
+data

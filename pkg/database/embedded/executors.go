@@ -94,12 +94,19 @@ func (db *EmbeddedDatabase) SetAllocations(colonyName string, executorName strin
 		return err
 	}
 	if e == nil {
-		return errors.New("Executor with name <" + executorName + "> does not exists in Colony with name <" + colonyName + ">")
+		return errors.New("Executor with name <" + executorName + "> does not exist in Colony with name <" + colonyName + ">")
 	}
 
-	cp := *e
+	cp := copyExecutor(e)
 	cp.Allocations = allocations
-	return db.executors.Put(cp.ID, &cp)
+	// Deep copy Projects map to isolate from caller
+	if allocations.Projects != nil {
+		cp.Allocations.Projects = make(map[string]core.Project, len(allocations.Projects))
+		for k, v := range allocations.Projects {
+			cp.Allocations.Projects[k] = v
+		}
+	}
+	return db.executors.Put(cp.ID, cp)
 }
 
 func (db *EmbeddedDatabase) GetExecutors() ([]*core.Executor, error) {
@@ -121,12 +128,14 @@ func (db *EmbeddedDatabase) GetExecutorByID(executorID string) (*core.Executor, 
 	return copyExecutor(e), nil
 }
 
-func (db *EmbeddedDatabase) GetExecutorsByColonyName(colonyName string) ([]*core.Executor, error) {
+func (db *EmbeddedDatabase) GetExecutorsByColonyName(colonyName string, includeUnregistered bool) ([]*core.Executor, error) {
 	ids := db.executorsIdx.byColony.Lookup(colonyName)
 	var executors []*core.Executor
 	for _, id := range ids {
 		if e, ok := db.executors.Get(id); ok {
-			executors = append(executors, copyExecutor(e))
+			if includeUnregistered || e.State != core.UNREGISTERED {
+				executors = append(executors, copyExecutor(e))
+			}
 		}
 	}
 	return executors, nil
@@ -205,7 +214,7 @@ func (db *EmbeddedDatabase) RemoveExecutorByName(colonyName string, executorName
 		return err
 	}
 	if e == nil {
-		return errors.New("Executor <" + executorName + "> does not exists")
+		return errors.New("Executor <" + executorName + "> does not exist")
 	}
 
 	// Mark as UNREGISTERED instead of deleting
@@ -273,7 +282,7 @@ func (db *EmbeddedDatabase) CountExecutors() (int, error) {
 }
 
 func (db *EmbeddedDatabase) CountExecutorsByColonyName(colonyName string) (int, error) {
-	executors, err := db.GetExecutorsByColonyName(colonyName)
+	executors, err := db.GetExecutorsByColonyName(colonyName, false)
 	if err != nil {
 		return -1, err
 	}
@@ -296,7 +305,22 @@ func (db *EmbeddedDatabase) UpdateExecutorCapabilities(colonyName string, execut
 		return errors.New("Executor with name <" + executorName + "> does not exist in Colony with name <" + colonyName + ">")
 	}
 
-	cp := *e
+	cp := copyExecutor(e)
 	cp.Capabilities = capabilities
-	return db.executors.Put(cp.ID, &cp)
+	// Deep copy Hardware and Software slices to isolate from caller
+	if capabilities.Hardware != nil {
+		cp.Capabilities.Hardware = make([]core.Hardware, len(capabilities.Hardware))
+		for i, hw := range capabilities.Hardware {
+			cp.Capabilities.Hardware[i] = hw
+			if hw.Network != nil {
+				cp.Capabilities.Hardware[i].Network = make([]string, len(hw.Network))
+				copy(cp.Capabilities.Hardware[i].Network, hw.Network)
+			}
+		}
+	}
+	if capabilities.Software != nil {
+		cp.Capabilities.Software = make([]core.Software, len(capabilities.Software))
+		copy(cp.Capabilities.Software, capabilities.Software)
+	}
+	return db.executors.Put(cp.ID, cp)
 }

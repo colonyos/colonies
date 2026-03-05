@@ -10,7 +10,16 @@ func copyFunction(f *core.Function) *core.Function {
 	cp := *f
 	if f.Args != nil {
 		cp.Args = make([]*core.FunctionArg, len(f.Args))
-		copy(cp.Args, f.Args)
+		for i, arg := range f.Args {
+			if arg != nil {
+				argCopy := *arg
+				if arg.Enum != nil {
+					argCopy.Enum = make([]string, len(arg.Enum))
+					copy(argCopy.Enum, arg.Enum)
+				}
+				cp.Args[i] = &argCopy
+			}
+		}
 	}
 	return &cp
 }

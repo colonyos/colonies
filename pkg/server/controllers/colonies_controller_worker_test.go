@@ -29,7 +29,7 @@ func TestCleanupStaleExecutors_SkipsZeroLastHeardFrom(t *testing.T) {
 	assert.Nil(t, err)
 
 	// Verify executor exists
-	executors, err := db.GetExecutorsByColonyName(colonyName)
+	executors, err := db.GetExecutorsByColonyName(colonyName, false)
 	assert.Nil(t, err)
 	assert.Len(t, executors, 1)
 
@@ -37,7 +37,7 @@ func TestCleanupStaleExecutors_SkipsZeroLastHeardFrom(t *testing.T) {
 	controller.cleanupStaleExecutors()
 
 	// Executor should still exist (not removed because LastHeardFromTime is zero)
-	executors, err = db.GetExecutorsByColonyName(colonyName)
+	executors, err = db.GetExecutorsByColonyName(colonyName, false)
 	assert.Nil(t, err)
 	assert.Len(t, executors, 1, "Executor with zero LastHeardFromTime should not be removed")
 }
@@ -63,7 +63,7 @@ func TestCleanupStaleExecutors_RemovesStaleExecutor(t *testing.T) {
 	assert.Nil(t, err)
 
 	// Verify executor exists
-	executors, err := db.GetExecutorsByColonyName(colonyName)
+	executors, err := db.GetExecutorsByColonyName(colonyName, false)
 	assert.Nil(t, err)
 	assert.Len(t, executors, 1)
 
@@ -73,7 +73,7 @@ func TestCleanupStaleExecutors_RemovesStaleExecutor(t *testing.T) {
 	// Executor should be removed (stale for 10 minutes, threshold is 5 minutes)
 	// Note: RemoveExecutorByName marks executor as UNREGISTERED rather than deleting,
 	// so we check that no ACTIVE executors remain
-	executors, err = db.GetExecutorsByColonyName(colonyName)
+	executors, err = db.GetExecutorsByColonyName(colonyName, false)
 	assert.Nil(t, err)
 	activeExecutors := 0
 	for _, e := range executors {
@@ -105,7 +105,7 @@ func TestCleanupStaleExecutors_KeepsRecentExecutor(t *testing.T) {
 	assert.Nil(t, err)
 
 	// Verify executor exists
-	executors, err := db.GetExecutorsByColonyName(colonyName)
+	executors, err := db.GetExecutorsByColonyName(colonyName, false)
 	assert.Nil(t, err)
 	assert.Len(t, executors, 1)
 
@@ -113,7 +113,7 @@ func TestCleanupStaleExecutors_KeepsRecentExecutor(t *testing.T) {
 	controller.cleanupStaleExecutors()
 
 	// Executor should still exist (last heard 1 minute ago, threshold is 10 minutes)
-	executors, err = db.GetExecutorsByColonyName(colonyName)
+	executors, err = db.GetExecutorsByColonyName(colonyName, false)
 	assert.Nil(t, err)
 	assert.Len(t, executors, 1, "Recent executor should not be removed")
 }

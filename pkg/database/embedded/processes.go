@@ -213,51 +213,63 @@ func (db *EmbeddedDatabase) FindAllWaitingProcesses() ([]*core.Process, error) {
 }
 
 func (db *EmbeddedDatabase) FindCandidates(colonyName string, executorType string, executorLocationName string, cpu int64, memory int64, storage int64, nodes int, processes int, processesPerNode int, count int) ([]*core.Process, error) {
-	var result []*core.Process
-
+	// Collect candidate IDs first to avoid holding CompoundIndex RLock while
+	// acquiring processes store lock (which would deadlock with SelectAndAssign)
+	var candidates []index.IndexEntry[string]
 	db.processesIdx.byColony.AscendFirst(colonyName, core.WAITING, count*10, func(entry index.IndexEntry[string]) bool {
+		candidates = append(candidates, entry)
+		return true
+	})
+
+	var result []*core.Process
+	for _, entry := range candidates {
 		if len(result) >= count {
-			return false
+			break
 		}
 		p, ok := db.processes.Get(entry.PrimaryKey)
 		if !ok {
-			return true
+			continue
 		}
 		if !db.matchCandidate(p, executorType, executorLocationName, cpu, memory, storage, nodes, processes, processesPerNode) {
-			return true
+			continue
 		}
 		// General pool: no target executor names
 		if len(p.FunctionSpec.Conditions.ExecutorNames) > 0 {
-			return true
+			continue
 		}
 		result = append(result, db.enrichProcess(p))
-		return true
-	})
+	}
 
 	return result, nil
 }
 
 func (db *EmbeddedDatabase) FindCandidatesByName(colonyName string, executorName string, executorType string, executorLocationName string, cpu int64, memory int64, storage int64, nodes int, processes int, processesPerNode int, count int) ([]*core.Process, error) {
-	var result []*core.Process
-
+	// Collect candidate IDs first to avoid holding CompoundIndex RLock while
+	// acquiring processes store lock (which would deadlock with SelectAndAssign)
+	var candidates []index.IndexEntry[string]
 	db.processesIdx.byColony.AscendFirst(colonyName, core.WAITING, count*10, func(entry index.IndexEntry[string]) bool {
+		candidates = append(candidates, entry)
+		return true
+	})
+
+	var result []*core.Process
+	for _, entry := range candidates {
 		if len(result) >= count {
-			return false
+			break
 		}
 		p, ok := db.processes.Get(entry.PrimaryKey)
 		if !ok {
-			return true
+			continue
 		}
 		if !db.matchCandidate(p, executorType, executorLocationName, cpu, memory, storage, nodes, processes, processesPerNode) {
-			return true
+			continue
 		}
 		// Must target this executor by name
 		if !containsString(p.FunctionSpec.Conditions.ExecutorNames, executorName) {
-			return true
+			continue
 		}
 		result = append(result, db.enrichProcess(p))
-		return true
-	})
+	}
 
 	return result, nil
 }
@@ -398,7 +410,7 @@ func (db *EmbeddedDatabase) Unassign(process *core.Process) error {
 	cp.IsAssigned = false
 	cp.EndTime = endTime
 	cp.State = core.WAITING
-	cp.Retries = process.Retries + 1
+	cp.Retries = p.Retries + 1
 	cp.AssignedExecutorID = ""
 	if cp.FunctionSpec.MaxWaitTime > 0 {
 		cp.WaitDeadline = time.Now().Add(time.Duration(cp.FunctionSpec.MaxWaitTime) * time.Second)

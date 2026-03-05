@@ -74,10 +74,10 @@ func (db *EmbeddedDatabase) CreateSnapshot(colonyName string, label string, name
 func (db *EmbeddedDatabase) GetSnapshotByID(colonyName string, snapshotID string) (*core.Snapshot, error) {
 	s, ok := db.snapshots.Get(snapshotID)
 	if !ok {
-		return nil, errors.New("Snapshot not found with Id <" + snapshotID + "> in Colony <" + colonyName + "> does not exists")
+		return nil, errors.New("Snapshot not found with Id <" + snapshotID + "> in Colony <" + colonyName + "> does not exist")
 	}
 	if s.ColonyName != colonyName {
-		return nil, errors.New("Snapshot not found with Id <" + snapshotID + "> in Colony <" + colonyName + "> does not exists")
+		return nil, errors.New("Snapshot not found with Id <" + snapshotID + "> in Colony <" + colonyName + "> does not exist")
 	}
 	return copySnapshot(s), nil
 }
@@ -111,11 +111,11 @@ func (db *EmbeddedDatabase) RemoveSnapshotByID(colonyName string, snapshotID str
 func (db *EmbeddedDatabase) GetSnapshotByName(colonyName string, name string) (*core.Snapshot, error) {
 	ids := db.snapshotsIdx.byName.Lookup(colonyName + ":" + name)
 	if len(ids) == 0 {
-		return nil, errors.New("Snapshot not found with name <" + name + "> in Colony <" + colonyName + "> does not exists")
+		return nil, errors.New("Snapshot not found with name <" + name + "> in Colony <" + colonyName + "> does not exist")
 	}
 	s, ok := db.snapshots.Get(ids[0])
 	if !ok {
-		return nil, errors.New("Snapshot not found with name <" + name + "> in Colony <" + colonyName + "> does not exists")
+		return nil, errors.New("Snapshot not found with name <" + name + "> in Colony <" + colonyName + "> does not exist")
 	}
 	return copySnapshot(s), nil
 }

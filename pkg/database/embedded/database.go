@@ -218,133 +218,181 @@ func (db *EmbeddedDatabase) createStores(w wal.WAL) error {
 		}
 	}
 
-	newDisk := func(entity string) *diskstore.DiskStore[any] {
-		// We create typed disk stores in the typed helper below
-		return nil
-	}
-	_ = newDisk
-
 	// Helper to create typed DiskStore
 	createDiskStore := func(entity string) string {
 		return filepath.Join(baseDir, entity)
 	}
 
 	// Colonies
-	coloniesDisk, _ := diskstore.NewDiskStore[core.Colony](createDiskStore("colonies"), "")
+	coloniesDisk, err := diskstore.NewDiskStore[core.Colony](createDiskStore("colonies"), "")
+	if err != nil {
+		return fmt.Errorf("failed to create disk store for colonies: %w", err)
+	}
 	db.colonies = store.NewStore(store.Config[string, core.Colony]{
 		Disk: coloniesDisk, WAL: w, EntityName: "colonies",
 		KeyToStr: identity, StrToKey: identity,
 	})
 
 	// Users
-	usersDisk, _ := diskstore.NewDiskStore[core.User](createDiskStore("users"), "")
+	usersDisk, err := diskstore.NewDiskStore[core.User](createDiskStore("users"), "")
+	if err != nil {
+		return fmt.Errorf("failed to create disk store for users: %w", err)
+	}
 	db.users = store.NewStore(store.Config[string, core.User]{
 		Disk: usersDisk, WAL: w, EntityName: "users",
 		KeyToStr: identity, StrToKey: identity,
 	})
 
 	// Executors
-	executorsDisk, _ := diskstore.NewDiskStore[core.Executor](createDiskStore("executors"), "")
+	executorsDisk, err := diskstore.NewDiskStore[core.Executor](createDiskStore("executors"), "")
+	if err != nil {
+		return fmt.Errorf("failed to create disk store for executors: %w", err)
+	}
 	db.executors = store.NewStore(store.Config[string, core.Executor]{
 		Disk: executorsDisk, WAL: w, EntityName: "executors",
 		KeyToStr: identity, StrToKey: identity,
 	})
 
 	// Functions
-	functionsDisk, _ := diskstore.NewDiskStore[core.Function](createDiskStore("functions"), "")
+	functionsDisk, err := diskstore.NewDiskStore[core.Function](createDiskStore("functions"), "")
+	if err != nil {
+		return fmt.Errorf("failed to create disk store for functions: %w", err)
+	}
 	db.functions = store.NewStore(store.Config[string, core.Function]{
 		Disk: functionsDisk, WAL: w, EntityName: "functions",
 		KeyToStr: identity, StrToKey: identity,
 	})
 
 	// Generators
-	generatorsDisk, _ := diskstore.NewDiskStore[core.Generator](createDiskStore("generators"), "")
+	generatorsDisk, err := diskstore.NewDiskStore[core.Generator](createDiskStore("generators"), "")
+	if err != nil {
+		return fmt.Errorf("failed to create disk store for generators: %w", err)
+	}
 	db.generators = store.NewStore(store.Config[string, core.Generator]{
 		Disk: generatorsDisk, WAL: w, EntityName: "generators",
 		KeyToStr: identity, StrToKey: identity,
 	})
 
 	// GeneratorArgs
-	generatorArgsDisk, _ := diskstore.NewDiskStore[core.GeneratorArg](createDiskStore("generatorargs"), "")
+	generatorArgsDisk, err := diskstore.NewDiskStore[core.GeneratorArg](createDiskStore("generatorargs"), "")
+	if err != nil {
+		return fmt.Errorf("failed to create disk store for generatorargs: %w", err)
+	}
 	db.generatorArgs = store.NewStore(store.Config[string, core.GeneratorArg]{
 		Disk: generatorArgsDisk, WAL: w, EntityName: "generatorargs",
 		KeyToStr: identity, StrToKey: identity,
 	})
 
 	// Crons
-	cronsDisk, _ := diskstore.NewDiskStore[core.Cron](createDiskStore("crons"), "")
+	cronsDisk, err := diskstore.NewDiskStore[core.Cron](createDiskStore("crons"), "")
+	if err != nil {
+		return fmt.Errorf("failed to create disk store for crons: %w", err)
+	}
 	db.crons = store.NewStore(store.Config[string, core.Cron]{
 		Disk: cronsDisk, WAL: w, EntityName: "crons",
 		KeyToStr: identity, StrToKey: identity,
 	})
 
 	// Snapshots
-	snapshotsDisk, _ := diskstore.NewDiskStore[core.Snapshot](createDiskStore("snapshots"), "")
+	snapshotsDisk, err := diskstore.NewDiskStore[core.Snapshot](createDiskStore("snapshots"), "")
+	if err != nil {
+		return fmt.Errorf("failed to create disk store for snapshots: %w", err)
+	}
 	db.snapshots = store.NewStore(store.Config[string, core.Snapshot]{
 		Disk: snapshotsDisk, WAL: w, EntityName: "snapshots",
 		KeyToStr: identity, StrToKey: identity,
 	})
 
 	// Locations
-	locationsDisk, _ := diskstore.NewDiskStore[core.Location](createDiskStore("locations"), "")
+	locationsDisk, err := diskstore.NewDiskStore[core.Location](createDiskStore("locations"), "")
+	if err != nil {
+		return fmt.Errorf("failed to create disk store for locations: %w", err)
+	}
 	db.locations = store.NewStore(store.Config[string, core.Location]{
 		Disk: locationsDisk, WAL: w, EntityName: "locations",
 		KeyToStr: identity, StrToKey: identity,
 	})
 
 	// Server
-	serverDisk, _ := diskstore.NewDiskStore[string](createDiskStore("server"), "")
+	serverDisk, err := diskstore.NewDiskStore[string](createDiskStore("server"), "")
+	if err != nil {
+		return fmt.Errorf("failed to create disk store for server: %w", err)
+	}
 	db.server = store.NewStore(store.Config[string, string]{
 		Disk: serverDisk, WAL: w, EntityName: "server",
 		KeyToStr: identity, StrToKey: identity,
 	})
 
 	// Blueprint Definitions
-	blueprintDefsDisk, _ := diskstore.NewDiskStore[core.BlueprintDefinition](createDiskStore("blueprintdefs"), "")
+	blueprintDefsDisk, err := diskstore.NewDiskStore[core.BlueprintDefinition](createDiskStore("blueprintdefs"), "")
+	if err != nil {
+		return fmt.Errorf("failed to create disk store for blueprintdefs: %w", err)
+	}
 	db.blueprintDefs = store.NewStore(store.Config[string, core.BlueprintDefinition]{
 		Disk: blueprintDefsDisk, WAL: w, EntityName: "blueprintdefs",
 		KeyToStr: identity, StrToKey: identity,
 	})
 
 	// Blueprints
-	blueprintsDisk, _ := diskstore.NewDiskStore[core.Blueprint](createDiskStore("blueprints"), "")
+	blueprintsDisk, err := diskstore.NewDiskStore[core.Blueprint](createDiskStore("blueprints"), "")
+	if err != nil {
+		return fmt.Errorf("failed to create disk store for blueprints: %w", err)
+	}
 	db.blueprints = store.NewStore(store.Config[string, core.Blueprint]{
 		Disk: blueprintsDisk, WAL: w, EntityName: "blueprints",
 		KeyToStr: identity, StrToKey: identity,
 	})
 
 	// Blueprint History
-	blueprintHistoryDisk, _ := diskstore.NewDiskStore[core.BlueprintHistory](createDiskStore("blueprinthistory"), "")
+	blueprintHistoryDisk, err := diskstore.NewDiskStore[core.BlueprintHistory](createDiskStore("blueprinthistory"), "")
+	if err != nil {
+		return fmt.Errorf("failed to create disk store for blueprinthistory: %w", err)
+	}
 	db.blueprintHistory = store.NewStore(store.Config[string, core.BlueprintHistory]{
 		Disk: blueprintHistoryDisk, WAL: w, EntityName: "blueprinthistory",
 		KeyToStr: identity, StrToKey: identity,
 	})
 
-	processesDisk, _ := diskstore.NewDiskStore[core.Process](createDiskStore("processes"), "")
+	processesDisk, err := diskstore.NewDiskStore[core.Process](createDiskStore("processes"), "")
+	if err != nil {
+		return fmt.Errorf("failed to create disk store for processes: %w", err)
+	}
 	db.processes = store.NewStore(store.Config[string, core.Process]{
 		Disk: processesDisk, WAL: w, EntityName: "processes",
 		KeyToStr: identity, StrToKey: identity,
 	})
 
-	attributesDisk, _ := diskstore.NewDiskStore[core.Attribute](createDiskStore("attributes"), "")
+	attributesDisk, err := diskstore.NewDiskStore[core.Attribute](createDiskStore("attributes"), "")
+	if err != nil {
+		return fmt.Errorf("failed to create disk store for attributes: %w", err)
+	}
 	db.attributes = store.NewStore(store.Config[string, core.Attribute]{
 		Disk: attributesDisk, WAL: w, EntityName: "attributes",
 		KeyToStr: identity, StrToKey: identity,
 	})
 
-	processGraphsDisk, _ := diskstore.NewDiskStore[core.ProcessGraph](createDiskStore("processgraphs"), "")
+	processGraphsDisk, err := diskstore.NewDiskStore[core.ProcessGraph](createDiskStore("processgraphs"), "")
+	if err != nil {
+		return fmt.Errorf("failed to create disk store for processgraphs: %w", err)
+	}
 	db.processGraphs = store.NewStore(store.Config[string, core.ProcessGraph]{
 		Disk: processGraphsDisk, WAL: w, EntityName: "processgraphs",
 		KeyToStr: identity, StrToKey: identity,
 	})
 
-	logsDisk, _ := diskstore.NewDiskStore[core.Log](createDiskStore("logs"), "")
+	logsDisk, err := diskstore.NewDiskStore[core.Log](createDiskStore("logs"), "")
+	if err != nil {
+		return fmt.Errorf("failed to create disk store for logs: %w", err)
+	}
 	db.logs = store.NewStore(store.Config[string, core.Log]{
 		Disk: logsDisk, WAL: w, EntityName: "logs",
 		KeyToStr: identity, StrToKey: identity,
 	})
 
-	filesDisk, _ := diskstore.NewDiskStore[core.File](createDiskStore("files"), "")
+	filesDisk, err := diskstore.NewDiskStore[core.File](createDiskStore("files"), "")
+	if err != nil {
+		return fmt.Errorf("failed to create disk store for files: %w", err)
+	}
 	db.files = store.NewStore(store.Config[string, core.File]{
 		Disk: filesDisk, WAL: w, EntityName: "files",
 		KeyToStr: identity, StrToKey: identity,
@@ -740,15 +788,31 @@ func (db *EmbeddedDatabase) ApplyRetentionPolicy(retentionPeriod int64) error {
 	}
 
 	// Delete logs where Timestamp < cutoff
+	// Collect IDs first to avoid deadlock (ForEach holds RLock, Delete needs write Lock)
+	type logToDelete struct {
+		id           string
+		processID    string
+		executorName string
+		colonyName   string
+	}
+	var logsToDelete []logToDelete
 	db.logs.ForEach(func(logID string, l *core.Log) {
 		logTime := time.Unix(0, l.Timestamp)
 		if logTime.Before(cutoff) {
-			db.logsIdx.byProcess.Remove(logID, l.ProcessID)
-			db.logsIdx.byExecutor.Remove(logID, l.ExecutorName)
-			db.logsIdx.byColony.Remove(logID, l.ColonyName)
-			db.logs.Delete(logID)
+			logsToDelete = append(logsToDelete, logToDelete{
+				id:           logID,
+				processID:    l.ProcessID,
+				executorName: l.ExecutorName,
+				colonyName:   l.ColonyName,
+			})
 		}
 	})
+	for _, ld := range logsToDelete {
+		db.logsIdx.byProcess.Remove(ld.id, ld.processID)
+		db.logsIdx.byExecutor.Remove(ld.id, ld.executorName)
+		db.logsIdx.byColony.Remove(ld.id, ld.colonyName)
+		db.logs.Delete(ld.id)
+	}
 
 	// Delete SUCCESS processes where SubmissionTime < cutoff
 	for _, p := range db.processes.All() {

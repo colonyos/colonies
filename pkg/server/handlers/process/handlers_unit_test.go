@@ -40,7 +40,7 @@ func (m *MockExecutorDB) GetExecutorByID(executorID string) (*core.Executor, err
 	}
 	return nil, nil
 }
-func (m *MockExecutorDB) GetExecutorsByColonyName(colonyName string) ([]*core.Executor, error) {
+func (m *MockExecutorDB) GetExecutorsByColonyName(colonyName string, includeUnregistered bool) ([]*core.Executor, error) {
 	return nil, nil
 }
 func (m *MockExecutorDB) GetExecutorByName(colonyName, executorName string) (*core.Executor, error) {

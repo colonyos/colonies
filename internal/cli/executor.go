@@ -275,16 +275,12 @@ var lsExecutorsCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		client := setup()
 
-		executorsFromServer, err := client.GetExecutors(ColonyName, PrvKey)
+		executorsFromServer, err := client.GetExecutorsWithOpts(ColonyName, All, PrvKey)
 		CheckError(err)
 
-		// Filter by state, type and/or location
+		// Filter by type and/or location
 		var filteredExecutors []*core.Executor
 		for _, executor := range executorsFromServer {
-			// Filter out UNREGISTERED executors unless --all flag is set
-			if !All && executor.State == core.UNREGISTERED {
-				continue
-			}
 
 			// Filter by type
 			if TargetExecutorType != "" && executor.Type != TargetExecutorType {

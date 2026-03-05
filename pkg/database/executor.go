@@ -7,7 +7,7 @@ type ExecutorDatabase interface {
 	SetAllocations(colonyName string, executorName string, allocations core.Allocations) error
 	GetExecutors() ([]*core.Executor, error)
 	GetExecutorByID(executorID string) (*core.Executor, error)
-	GetExecutorsByColonyName(colonyName string) ([]*core.Executor, error)
+	GetExecutorsByColonyName(colonyName string, includeUnregistered bool) ([]*core.Executor, error)
 	GetExecutorByName(colonyName string, executorName string) (*core.Executor, error)
 	GetExecutorsByBlueprintID(blueprintID string) ([]*core.Executor, error)
 	ApproveExecutor(executor *core.Executor) error
