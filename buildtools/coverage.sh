@@ -28,6 +28,31 @@ if [ -f profile.out ]; then
   cat profile.out >> coverage.txt
   rm profile.out
 fi
+go test -race -coverprofile=profile.out -covermode=atomic ./pkg/database/embedded
+if [ -f profile.out ]; then
+  cat profile.out >> coverage.txt
+  rm profile.out
+fi
+go test -race -coverprofile=profile.out -covermode=atomic ./pkg/database/embedded/store
+if [ -f profile.out ]; then
+  cat profile.out >> coverage.txt
+  rm profile.out
+fi
+go test -race -coverprofile=profile.out -covermode=atomic ./pkg/database/embedded/wal
+if [ -f profile.out ]; then
+  cat profile.out >> coverage.txt
+  rm profile.out
+fi
+go test -race -coverprofile=profile.out -covermode=atomic ./pkg/database/embedded/flusher
+if [ -f profile.out ]; then
+  cat profile.out >> coverage.txt
+  rm profile.out
+fi
+go test -race -coverprofile=profile.out -covermode=atomic ./pkg/database/embedded/diskstore
+if [ -f profile.out ]; then
+  cat profile.out >> coverage.txt
+  rm profile.out
+fi
 go test -race -coverprofile=profile.out -covermode=atomic ./pkg/rpc
 if [ -f profile.out ]; then
   cat profile.out >> coverage.txt
