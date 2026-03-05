@@ -136,6 +136,7 @@ func (m *MockFunctionDB) RemoveFunctionByName(colonyName string, executorName st
 	return nil
 }
 func (m *MockFunctionDB) RemoveFunctions() error { return nil }
+func (m *MockFunctionDB) ResetFunctionStatsByColonyName(colonyName string) error { return nil }
 func (m *MockFunctionDB) CountFunctions() (int, error) { return 0, nil }
 
 type MockServer struct {
