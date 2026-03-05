@@ -13,6 +13,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	"github.com/colonyos/colonies/pkg/client"
 	"github.com/colonyos/colonies/pkg/core"
@@ -28,6 +29,8 @@ type FSClient struct {
 	colonyName     string
 	executorPrvKey string
 	s3Client       *s3.S3Client
+	s3Once         sync.Once
+	s3Err          error
 	protocol       string // "s3" or "coloniesfs"
 	serverURL      string // Colonies server URL for coloniesfs
 	Quiet          bool
@@ -71,14 +74,10 @@ func CreateFSClient(coloniesClient *client.ColoniesClient, colonyName string, ex
 }
 
 func (fsClient *FSClient) getS3Client() (*s3.S3Client, error) {
-	if fsClient.s3Client == nil {
-		c, err := s3.CreateS3Client()
-		if err != nil {
-			return nil, err
-		}
-		fsClient.s3Client = c
-	}
-	return fsClient.s3Client, nil
+	fsClient.s3Once.Do(func() {
+		fsClient.s3Client, fsClient.s3Err = s3.CreateS3Client()
+	})
+	return fsClient.s3Client, fsClient.s3Err
 }
 
 func CreateFSClientWithColonyFS(coloniesClient *client.ColoniesClient, colonyName string, executorPrvKey string, serverURL string) (*FSClient, error) {
