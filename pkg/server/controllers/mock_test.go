@@ -444,6 +444,7 @@ func (db *DatabaseMock) GetFunctionsByExecutorAndName(colonyName string, executo
 func (db *DatabaseMock) UpdateFunctionStats(colonyName string, executorName string, name string, counter int, minWaitTime float64, maxWaitTime float64, minExecTime float64, maxExecTime float64, avgWaitTime float64, avgExecTime float64) error { return nil }
 func (db *DatabaseMock) RemoveFunctionByName(colonyName string, executorName string, name string) error { return nil }
 func (db *DatabaseMock) RemoveFunctions() error { return nil }
+func (db *DatabaseMock) ResetFunctionStatsByColonyName(colonyName string) error { return nil }
 func (db *DatabaseMock) CountFunctions() (int, error) { return 0, nil }
 
 // ProcessGraphDatabase interface
