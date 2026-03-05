@@ -101,6 +101,10 @@ func (g *ContextAdapter) ReadBody() ([]byte, error) {
 	return io.ReadAll(g.ginContext.Request.Body)
 }
 
+func (g *ContextAdapter) ResponseWriter() http.ResponseWriter {
+	return g.ginContext.Writer
+}
+
 func (g *ContextAdapter) GetHeader(key string) string {
 	return g.ginContext.GetHeader(key)
 }

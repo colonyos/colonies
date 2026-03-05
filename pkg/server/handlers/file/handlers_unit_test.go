@@ -159,6 +159,7 @@ func (m *MockContext) Data(code int, contentType string, data []byte)        {}
 func (m *MockContext) Status(code int)                                       {}
 func (m *MockContext) Request() *http.Request                                { return nil }
 func (m *MockContext) ReadBody() ([]byte, error)                             { return nil, nil }
+func (m *MockContext) ResponseWriter() http.ResponseWriter                  { return nil }
 func (m *MockContext) GetHeader(key string) string                           { return "" }
 func (m *MockContext) Header(key, value string)                              {}
 func (m *MockContext) Param(key string) string                               { return "" }

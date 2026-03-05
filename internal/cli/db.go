@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strconv"
 	"time"
 
@@ -60,6 +61,17 @@ func parseDBEnv() {
 		TimescaleDB = true
 	} else {
 		TimescaleDB = false
+	}
+
+	dataDirEnv := os.Getenv("COLONIES_DATA_DIR")
+	if dataDirEnv != "" && DataDir == "" {
+		DataDir = dataDirEnv
+	}
+	if DataDir == "" {
+		home, err := os.UserHomeDir()
+		if err == nil {
+			DataDir = filepath.Join(home, ".colonies")
+		}
 	}
 
 	initDBStr := os.Getenv("COLONIES_INITDB")

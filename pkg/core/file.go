@@ -36,6 +36,9 @@ type File struct {
 	Added          time.Time `json:"added"`
 }
 
+func (ref *Reference) IsColonyFS() bool { return ref.Protocol == "coloniesfs" }
+func (ref *Reference) IsS3() bool       { return ref.Protocol == "s3" }
+
 func ConvertJSONToFile(jsonString string) (*File, error) {
 	var file *File
 	err := json.Unmarshal([]byte(jsonString), &file)

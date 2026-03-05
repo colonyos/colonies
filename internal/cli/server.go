@@ -3,6 +3,7 @@ package cli
 import (
 	"errors"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -81,6 +82,8 @@ func startServer(
 		RetentionPolicy,
 		retentionPeriod,
 		staleExecutorDuration,
+		FileStorageType,
+		FileStorageDir,
 	)
 
 	for {
@@ -198,6 +201,22 @@ var serverStartCmd = &cobra.Command{
 			log.Info("Insecure mode enabled, skipping TLS certificate checks")
 		}
 
+		// Default DataDir to ~/.colonies when using embedded DB
+		if DataDir == "" && DBType == "embedded" {
+			home, err := os.UserHomeDir()
+			CheckError(err)
+			DataDir = filepath.Join(home, ".colonies")
+		}
+
+		// When DataDir is set, derive subdirectories for embedded DB and file storage
+		dbDataDir := DataDir
+		if DataDir != "" && DBType == "embedded" {
+			dbDataDir = filepath.Join(DataDir, "embeddeddb")
+		}
+		if DataDir != "" && FileStorageType == "coloniesfs" && FileStorageDir == "" {
+			FileStorageDir = filepath.Join(DataDir, "fs")
+		}
+
 		log.WithFields(log.Fields{
 			"DBType":      DBType,
 			"DBHost":      DBHost,
@@ -217,7 +236,7 @@ var serverStartCmd = &cobra.Command{
 			Name:        DBName,
 			Prefix:      DBPrefix,
 			TimescaleDB: TimescaleDB,
-			DataDir:     DataDir,
+			DataDir:     dbDataDir,
 		}
 
 		log.WithField("DatabaseType", DBType).Info("Creating database using factory")
@@ -286,8 +305,8 @@ var serverStartCmd = &cobra.Command{
 		}
 
 		if EtcdDataDir == "" {
-			EtcdDataDir = "/tmp/colonies/prod/etcd"
-			log.Warning("EtcdDataDir not specified, setting it to " + EtcdDataDir)
+			EtcdDataDir = filepath.Join(DataDir, "etcd")
+			log.Info("EtcdDataDir not specified, setting it to " + EtcdDataDir)
 		}
 
 		setupProfiler()
@@ -304,7 +323,15 @@ var serverStartCmd = &cobra.Command{
 			}
 		}
 
-		log.Info("Starting HTTP server")
+		// For embedded DB, auto-set server ID if not yet configured
+		if DBType == "embedded" && ServerID != "" {
+			existingID, err := db.GetServerID()
+			if err != nil || existingID == "" {
+				log.WithFields(log.Fields{"ServerID": ServerID}).Info("Setting server ID for embedded database")
+				CheckError(db.SetServerID("", ServerID))
+			}
+		}
+
 		startServer(db, node, clusterConfig, EtcdDataDir)
 	},
 }

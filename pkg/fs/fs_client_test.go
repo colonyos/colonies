@@ -13,6 +13,12 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func requireS3(t *testing.T) {
+	if os.Getenv("COLONIES_FILE_STORAGE_TYPE") == "coloniesfs" {
+		t.Skip("S3 not available, skipping")
+	}
+}
+
 func printSyncPlan(syncPlan *SyncPlan) {
 	fmt.Println("Missing local:", len(syncPlan.LocalMissing))
 	for _, fileInfo := range syncPlan.LocalMissing {
@@ -227,6 +233,7 @@ func TestCalcSyncPlan3(t *testing.T) {
 //
 //	Expected result: tmpFile1 is uploaded to server
 func TestApplySyncPlan1(t *testing.T) {
+	requireS3(t)
 	env, coloniesClient, coloniesServer, _, done := setupTestEnv(t)
 
 	label := "test_label"
@@ -267,6 +274,7 @@ func TestApplySyncPlan1(t *testing.T) {
 //
 //	Expected result: tmpFile1 is downloaded to client
 func TestApplySyncPlan2(t *testing.T) {
+	requireS3(t)
 	env, coloniesClient, coloniesServer, _, done := setupTestEnv(t)
 
 	label := "test_label"
@@ -321,6 +329,7 @@ func TestApplySyncPlan2(t *testing.T) {
 //
 //	Expected result: tmpFile1 is downloaded and temp tmpFile2 is uploaded
 func TestApplySyncPlan3(t *testing.T) {
+	requireS3(t)
 	env, coloniesClient, coloniesServer, _, done := setupTestEnv(t)
 
 	label := "test_label"
@@ -390,6 +399,7 @@ func TestApplySyncPlan3(t *testing.T) {
 //
 //	Expected result: tmpFile1 at server is replaced
 func TestApplySyncPlan4(t *testing.T) {
+	requireS3(t)
 	env, coloniesClient, coloniesServer, _, done := setupTestEnv(t)
 
 	label := "test_label"
@@ -473,6 +483,7 @@ func TestApplySyncPlan4(t *testing.T) {
 //
 //	Expected result: local tmpFile is replaced
 func TestApplySyncPlan5(t *testing.T) {
+	requireS3(t)
 	env, coloniesClient, coloniesServer, _, done := setupTestEnv(t)
 
 	label := "test_label"
@@ -556,6 +567,7 @@ func TestApplySyncPlan5(t *testing.T) {
 //
 //	Expected result: tmpFile1 is uploaded to server
 func TestApplySyncPlanEmpty(t *testing.T) {
+	requireS3(t)
 	env, coloniesClient, coloniesServer, _, done := setupTestEnv(t)
 
 	label := "test_label"
@@ -596,6 +608,7 @@ func TestApplySyncPlanEmpty(t *testing.T) {
 //
 //	Expected result: tmpFile1 is downloaded to client
 func TestDownload(t *testing.T) {
+	requireS3(t)
 	env, coloniesClient, coloniesServer, _, done := setupTestEnv(t)
 
 	label := "test_label"
@@ -647,6 +660,7 @@ func TestDownload(t *testing.T) {
 }
 
 func TestRemoveByID(t *testing.T) {
+	requireS3(t)
 	env, coloniesClient, coloniesServer, _, done := setupTestEnv(t)
 
 	label := "test_label"
@@ -692,6 +706,7 @@ func TestRemoveByID(t *testing.T) {
 }
 
 func TestRemoveByName(t *testing.T) {
+	requireS3(t)
 	env, coloniesClient, coloniesServer, _, done := setupTestEnv(t)
 
 	label := "test_label"
@@ -752,6 +767,7 @@ func TestRemoveByName(t *testing.T) {
 }
 
 func TestDownloadSnapshot(t *testing.T) {
+	requireS3(t)
 	env, coloniesClient, coloniesServer, _, done := setupTestEnv(t)
 
 	label := "test_label"
@@ -813,6 +829,7 @@ func TestDownloadSnapshot(t *testing.T) {
 }
 
 func TestRemoveAllFilesWithLabel(t *testing.T) {
+	requireS3(t)
 	env, coloniesClient, coloniesServer, _, done := setupTestEnv(t)
 
 	label := "test_label"
@@ -884,6 +901,7 @@ func TestRemoveAllFilesWithLabel(t *testing.T) {
 }
 
 func TestAddFilesRecursively(t *testing.T) {
+	requireS3(t)
 	env, coloniesClient, coloniesServer, _, done := setupTestEnv(t)
 
 	label := "test_label"
@@ -980,6 +998,7 @@ func TestAddFilesRecursively(t *testing.T) {
 }
 
 func TestDownloadSnapshopRecursively(t *testing.T) {
+	requireS3(t)
 	env, coloniesClient, coloniesServer, _, done := setupTestEnv(t)
 
 	label := "/test_label"
@@ -1092,6 +1111,7 @@ func TestApplySyncPlansWindows(t *testing.T) {
 }
 
 func TestCleanNoSubdir(t *testing.T) {
+	requireS3(t)
 	env, coloniesClient, coloniesServer, _, done := setupTestEnv(t)
 
 	label := "/test_label"
@@ -1141,6 +1161,7 @@ func TestCleanNoSubdir(t *testing.T) {
 }
 
 func TestCleanSubDir(t *testing.T) {
+	requireS3(t)
 	env, coloniesClient, coloniesServer, _, done := setupTestEnv(t)
 
 	label := "/test_label"
@@ -1223,6 +1244,7 @@ func TestCleanSubDir(t *testing.T) {
 }
 
 func TestCleanNoLabel(t *testing.T) {
+	requireS3(t)
 	env, coloniesClient, coloniesServer, _, done := setupTestEnv(t)
 
 	label := "/test_label"
@@ -1489,6 +1511,7 @@ func TestLabelNormalization(t *testing.T) {
 }
 
 func TestCleanFilesRecursively(t *testing.T) {
+	requireS3(t)
 	env, coloniesClient, coloniesServer, _, done := setupTestEnv(t)
 
 	label := "test_label"

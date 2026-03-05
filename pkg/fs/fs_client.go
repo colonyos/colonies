@@ -1,18 +1,23 @@
 package fs
 
 import (
+	"bytes"
 	"crypto/sha256"
+	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/colonyos/colonies/pkg/client"
 	"github.com/colonyos/colonies/pkg/core"
+	"github.com/colonyos/colonies/pkg/fs/s3"
+	"github.com/colonyos/colonies/pkg/security/crypto"
 	"github.com/colonyos/colonies/pkg/utils"
 	"github.com/jedib0t/go-pretty/v6/progress"
 	log "github.com/sirupsen/logrus"
@@ -22,7 +27,9 @@ type FSClient struct {
 	coloniesClient *client.ColoniesClient
 	colonyName     string
 	executorPrvKey string
-	s3Client       *S3Client
+	s3Client       *s3.S3Client
+	protocol       string // "s3" or "coloniesfs"
+	serverURL      string // Colonies server URL for coloniesfs
 	Quiet          bool
 }
 
@@ -58,14 +65,47 @@ func CreateFSClient(coloniesClient *client.ColoniesClient, colonyName string, ex
 	fsClient.coloniesClient = coloniesClient
 	fsClient.colonyName = colonyName
 	fsClient.executorPrvKey = executorPrvKey
-
-	s3Client, err := CreateS3Client()
-	if err != nil {
-		return nil, err
-	}
-	fsClient.s3Client = s3Client
+	fsClient.protocol = "s3"
 
 	return fsClient, nil
+}
+
+func (fsClient *FSClient) getS3Client() (*s3.S3Client, error) {
+	if fsClient.s3Client == nil {
+		c, err := s3.CreateS3Client()
+		if err != nil {
+			return nil, err
+		}
+		fsClient.s3Client = c
+	}
+	return fsClient.s3Client, nil
+}
+
+func CreateFSClientWithColonyFS(coloniesClient *client.ColoniesClient, colonyName string, executorPrvKey string, serverURL string) (*FSClient, error) {
+	fsClient := &FSClient{}
+	fsClient.coloniesClient = coloniesClient
+	fsClient.colonyName = colonyName
+	fsClient.executorPrvKey = executorPrvKey
+	fsClient.protocol = "coloniesfs"
+	fsClient.serverURL = strings.TrimRight(serverURL, "/")
+
+	return fsClient, nil
+}
+
+// signPayload creates a base64-encoded signed payload for ColonyFS auth headers.
+func (fsClient *FSClient) signPayload(payload map[string]interface{}) (string, string, error) {
+	jsonBytes, err := json.Marshal(payload)
+	if err != nil {
+		return "", "", err
+	}
+
+	payloadB64 := base64.StdEncoding.EncodeToString(jsonBytes)
+	signature, err := crypto.CreateCrypto().GenerateSignature(payloadB64, fsClient.executorPrvKey)
+	if err != nil {
+		return "", "", err
+	}
+
+	return payloadB64, signature, nil
 }
 
 func checksum(filePath string) (string, error) {
@@ -85,21 +125,58 @@ func checksum(filePath string) (string, error) {
 }
 
 func (fsClient *FSClient) uploadFile(syncPlan *SyncPlan, fileInfo *FileInfo, tracker *progress.Tracker, quite bool) error {
+	if fsClient.protocol == "coloniesfs" {
+		return fsClient.uploadFileColonyFS(syncPlan, fileInfo, tracker, quite)
+	}
+	return fsClient.uploadFileS3(syncPlan, fileInfo, tracker, quite)
+}
+
+// progressWriter wraps a progress.Tracker and updates it on each Write.
+type progressWriter struct {
+	tracker *progress.Tracker
+}
+
+func (pw *progressWriter) Write(p []byte) (n int, err error) {
+	n = len(p)
+	pw.tracker.Increment(int64(n))
+	return n, nil
+}
+
+// progressReader wraps an io.Reader and updates a progress tracker on each Read.
+type progressReader struct {
+	reader  io.Reader
+	tracker *progress.Tracker
+}
+
+func (pr *progressReader) Read(p []byte) (int, error) {
+	n, err := pr.reader.Read(p)
+	if n > 0 && pr.tracker != nil {
+		pr.tracker.Increment(int64(n))
+	}
+	return n, err
+}
+
+func (fsClient *FSClient) uploadFileS3(syncPlan *SyncPlan, fileInfo *FileInfo, tracker *progress.Tracker, quite bool) error {
+	s3c, err := fsClient.getS3Client()
+	if err != nil {
+		return err
+	}
+
 	fileStat, err := os.Stat(syncPlan.Dir + "/" + fileInfo.Name)
 	if err != nil {
 		return err
 	}
 	s3Object := core.S3Object{
-		Server:        fsClient.s3Client.Endpoint,
+		Server:        s3c.Endpoint,
 		Port:          -1,
-		TLS:           fsClient.s3Client.TLS,
-		AccessKey:     fsClient.s3Client.AccessKey,
-		SecretKey:     fsClient.s3Client.SecretKey,
-		Region:        fsClient.s3Client.Region,
+		TLS:           s3c.TLS,
+		AccessKey:     s3c.AccessKey,
+		SecretKey:     s3c.SecretKey,
+		Region:        s3c.Region,
 		EncryptionKey: "",
 		EncryptionAlg: "",
 		Object:        core.GenerateRandomID(),
-		Bucket:        fsClient.s3Client.BucketName,
+		Bucket:        s3c.BucketName,
 	}
 	ref := core.Reference{Protocol: "s3", S3Object: s3Object}
 	coloniesFile := &core.File{
@@ -112,7 +189,7 @@ func (fsClient *FSClient) uploadFile(syncPlan *SyncPlan, fileInfo *FileInfo, tra
 		Reference:   ref}
 
 	if coloniesFile.Size > 0 {
-		err = fsClient.s3Client.Upload(syncPlan.Dir, coloniesFile.Name, coloniesFile.Reference.S3Object.Object, coloniesFile.Size, tracker, quite)
+		err = s3c.Upload(syncPlan.Dir, coloniesFile.Name, coloniesFile.Reference.S3Object.Object, coloniesFile.Size, tracker, quite)
 		if err != nil {
 			return err
 		}
@@ -121,6 +198,84 @@ func (fsClient *FSClient) uploadFile(syncPlan *SyncPlan, fileInfo *FileInfo, tra
 	_, err = fsClient.coloniesClient.AddFile(coloniesFile, fsClient.executorPrvKey)
 	if err != nil {
 		return err
+	}
+
+	return nil
+}
+
+func (fsClient *FSClient) uploadFileColonyFS(syncPlan *SyncPlan, fileInfo *FileInfo, tracker *progress.Tracker, quite bool) error {
+	filePath := syncPlan.Dir + "/" + fileInfo.Name
+	fileStat, err := os.Stat(filePath)
+	if err != nil {
+		return err
+	}
+
+	objectName := core.GenerateRandomID()
+
+	payload := map[string]interface{}{
+		"colonyname": fsClient.colonyName,
+		"objectname": objectName,
+		"checksum":   fileInfo.Checksum,
+		"label":      syncPlan.Label,
+		"name":       fileInfo.Name,
+		"size":       fileStat.Size(),
+	}
+
+	payloadB64, signature, err := fsClient.signPayload(payload)
+	if err != nil {
+		return err
+	}
+
+	if fileStat.Size() == 0 {
+		// Upload empty file
+		req, err := http.NewRequest("PUT", fsClient.serverURL+"/api/fs/"+objectName, bytes.NewReader(nil))
+		if err != nil {
+			return err
+		}
+		req.Header.Set("X-Colonies-Payload", payloadB64)
+		req.Header.Set("X-Colonies-Signature", signature)
+		req.ContentLength = 0
+
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			return err
+		}
+		defer resp.Body.Close()
+		if resp.StatusCode != http.StatusOK {
+			body, _ := io.ReadAll(resp.Body)
+			return fmt.Errorf("upload failed: %s", string(body))
+		}
+		return nil
+	}
+
+	f, err := os.Open(filePath)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	var bodyReader io.Reader = f
+	if !quite && tracker != nil {
+		bodyReader = &progressReader{reader: f, tracker: tracker}
+	}
+
+	req, err := http.NewRequest("PUT", fsClient.serverURL+"/api/fs/"+objectName, bodyReader)
+	if err != nil {
+		return err
+	}
+	req.Header.Set("X-Colonies-Payload", payloadB64)
+	req.Header.Set("X-Colonies-Signature", signature)
+	req.ContentLength = fileStat.Size()
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("upload failed: %s", string(body))
 	}
 
 	return nil
@@ -229,7 +384,14 @@ func (fsClient *FSClient) ApplySyncPlan(syncPlan *SyncPlan) error {
 		errChan := pool.Call(func(arg interface{}) error {
 			f := arg.(*FileInfo)
 			if f.Size > 0 {
-				return fsClient.s3Client.Download(f.Name, f.S3Filename, syncPlan.Dir, &downloadTracker, fsClient.Quiet)
+				if fsClient.protocol == "coloniesfs" {
+					return fsClient.downloadToDir(f.Name, f.S3Filename, syncPlan.Dir, &downloadTracker)
+				}
+				s3c, err := fsClient.getS3Client()
+				if err != nil {
+					return err
+				}
+				return s3c.Download(f.Name, f.S3Filename, syncPlan.Dir, &downloadTracker, fsClient.Quiet)
 			} else {
 				file, err := os.Create(syncPlan.Dir + "/" + f.Name)
 				if err != nil {
@@ -262,7 +424,14 @@ func (fsClient *FSClient) ApplySyncPlan(syncPlan *SyncPlan) error {
 		for _, fileInfo := range syncPlan.Conflicts {
 			errChan := pool.Call(func(arg interface{}) error {
 				f := arg.(*FileInfo)
-				return fsClient.s3Client.Download(f.Name, f.S3Filename, syncPlan.Dir, &conflictTracker, fsClient.Quiet)
+				if fsClient.protocol == "coloniesfs" {
+					return fsClient.downloadToDir(f.Name, f.S3Filename, syncPlan.Dir, &conflictTracker)
+				}
+				s3c, err := fsClient.getS3Client()
+				if err != nil {
+					return err
+				}
+				return s3c.Download(f.Name, f.S3Filename, syncPlan.Dir, &conflictTracker, fsClient.Quiet)
 			}, fileInfo)
 			go func() {
 				err := <-errChan
@@ -686,6 +855,10 @@ func (fsClient *FSClient) Download(colonyName string, fileID string, downloadDir
 		return errors.New("Failed to get file info")
 	}
 
+	if fsClient.protocol == "coloniesfs" || file[0].Reference.IsColonyFS() {
+		return fsClient.downloadColonyFS(file[0], downloadDir)
+	}
+
 	var pw progress.Writer
 	var downloadTracker progress.Tracker
 	if !fsClient.Quiet {
@@ -698,7 +871,12 @@ func (fsClient *FSClient) Download(colonyName string, fileID string, downloadDir
 		downloadTracker.Start()
 	}
 
-	err = fsClient.s3Client.Download(file[0].Name, file[0].Reference.S3Object.Object, downloadDir, &downloadTracker, fsClient.Quiet)
+	s3c, err := fsClient.getS3Client()
+	if err != nil {
+		return err
+	}
+
+	err = s3c.Download(file[0].Name, file[0].Reference.S3Object.Object, downloadDir, &downloadTracker, fsClient.Quiet)
 
 	if !fsClient.Quiet {
 		for {
@@ -713,6 +891,95 @@ func (fsClient *FSClient) Download(colonyName string, fileID string, downloadDir
 	return err
 }
 
+func (fsClient *FSClient) downloadColonyFS(file *core.File, downloadDir string) error {
+	objectName := file.Reference.S3Object.Object
+
+	payload := map[string]interface{}{
+		"colonyname": file.ColonyName,
+		"objectname": objectName,
+	}
+	payloadB64, signature, err := fsClient.signPayload(payload)
+	if err != nil {
+		return err
+	}
+
+	req, err := http.NewRequest("GET", fsClient.serverURL+"/api/fs/"+objectName, nil)
+	if err != nil {
+		return err
+	}
+	req.Header.Set("X-Colonies-Payload", payloadB64)
+	req.Header.Set("X-Colonies-Signature", signature)
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("download failed: %s", string(body))
+	}
+
+	outPath := filepath.Join(downloadDir, file.Name)
+	outFile, err := os.Create(outPath)
+	if err != nil {
+		return err
+	}
+	defer outFile.Close()
+
+	_, err = io.Copy(outFile, resp.Body)
+	return err
+}
+
+// downloadToDir downloads an object from ColonyFS to a local directory with optional progress tracking.
+func (fsClient *FSClient) downloadToDir(filename, objectName, dir string, tracker *progress.Tracker) error {
+	payload := map[string]interface{}{
+		"colonyname": fsClient.colonyName,
+		"objectname": objectName,
+	}
+	payloadB64, signature, err := fsClient.signPayload(payload)
+	if err != nil {
+		return err
+	}
+
+	req, err := http.NewRequest("GET", fsClient.serverURL+"/api/fs/"+objectName, nil)
+	if err != nil {
+		return err
+	}
+	req.Header.Set("X-Colonies-Payload", payloadB64)
+	req.Header.Set("X-Colonies-Signature", signature)
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("download failed: %s", string(body))
+	}
+
+	outPath := filepath.Join(dir, filename)
+	outFile, err := os.Create(outPath)
+	if err != nil {
+		return err
+	}
+	defer outFile.Close()
+
+	var writer io.Writer
+	if tracker != nil {
+		pw := &progressWriter{tracker: tracker}
+		writer = io.MultiWriter(outFile, pw)
+	} else {
+		writer = outFile
+	}
+
+	_, err = io.Copy(writer, resp.Body)
+	return err
+}
+
 func (fsClient *FSClient) RemoveFileByID(colonyName string, fileID string) error {
 	file, err := fsClient.coloniesClient.GetFileByID(colonyName, fileID, fsClient.executorPrvKey)
 	if err != nil {
@@ -723,12 +990,55 @@ func (fsClient *FSClient) RemoveFileByID(colonyName string, fileID string) error
 		return errors.New("Failed to get file info")
 	}
 
-	err = fsClient.s3Client.Remove(file[0].Reference.S3Object.Object)
+	if fsClient.protocol == "coloniesfs" || file[0].Reference.IsColonyFS() {
+		err = fsClient.removeColonyFS(file[0])
+	} else {
+		s3c, err := fsClient.getS3Client()
+		if err != nil {
+			return err
+		}
+		err = s3c.Remove(file[0].Reference.S3Object.Object)
+		if err != nil {
+			return err
+		}
+	}
 	if err != nil {
 		return err
 	}
 
 	return fsClient.coloniesClient.RemoveFileByID(colonyName, fileID, fsClient.executorPrvKey)
+}
+
+func (fsClient *FSClient) removeColonyFS(file *core.File) error {
+	objectName := file.Reference.S3Object.Object
+
+	payload := map[string]interface{}{
+		"colonyname": file.ColonyName,
+		"objectname": objectName,
+	}
+	payloadB64, signature, err := fsClient.signPayload(payload)
+	if err != nil {
+		return err
+	}
+
+	req, err := http.NewRequest("DELETE", fsClient.serverURL+"/api/fs/"+objectName, nil)
+	if err != nil {
+		return err
+	}
+	req.Header.Set("X-Colonies-Payload", payloadB64)
+	req.Header.Set("X-Colonies-Signature", signature)
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("delete failed: %s", string(body))
+	}
+	return nil
 }
 
 func (fsClient *FSClient) RemoveFileByName(colonyName string, label string, name string) error {
@@ -738,7 +1048,18 @@ func (fsClient *FSClient) RemoveFileByName(colonyName string, label string, name
 	}
 
 	for _, revision := range file {
-		err = fsClient.s3Client.Remove(revision.Reference.S3Object.Object)
+		if fsClient.protocol == "coloniesfs" || revision.Reference.IsColonyFS() {
+			err = fsClient.removeColonyFS(revision)
+		} else {
+			s3c, err := fsClient.getS3Client()
+			if err != nil {
+				return err
+			}
+			err = s3c.Remove(revision.Reference.S3Object.Object)
+			if err != nil {
+				return err
+			}
+		}
 		if err != nil {
 			return err
 		}
@@ -813,13 +1134,29 @@ func (fsClient *FSClient) RemoveAllFilesWithLabel(label string) error {
 		for _, fileData := range fileDataArr {
 			errChan := pool.Call(func(arg interface{}) error {
 				w := arg.(w)
-				log.WithFields(log.Fields{"S3Filename": w.filename, "BucketName": fsClient.s3Client.BucketName}).Debug("Removing file from S3")
-				err := fsClient.s3Client.Remove(w.s3Filename)
-				if err != nil {
-					return err
+				if fsClient.protocol == "coloniesfs" {
+					// Remove object data via ColonyFS HTTP endpoint
+					file := &core.File{
+						ColonyName: fsClient.colonyName,
+						Reference:  core.Reference{Protocol: "coloniesfs", S3Object: core.S3Object{Object: w.s3Filename}},
+					}
+					err := fsClient.removeColonyFS(file)
+					if err != nil {
+						return err
+					}
+				} else {
+					s3c, err := fsClient.getS3Client()
+					if err != nil {
+						return err
+					}
+					log.WithFields(log.Fields{"S3Filename": w.filename, "BucketName": s3c.BucketName}).Debug("Removing file from S3")
+					err = s3c.Remove(w.s3Filename)
+					if err != nil {
+						return err
+					}
 				}
 				log.WithFields(log.Fields{"ColonyName": fsClient.colonyName, "Filename": w.filename}).Debug("Remove file from Colonies FS")
-				err = fsClient.coloniesClient.RemoveFileByName(fsClient.colonyName, w.l, w.filename, fsClient.executorPrvKey)
+				err := fsClient.coloniesClient.RemoveFileByName(fsClient.colonyName, w.l, w.filename, fsClient.executorPrvKey)
 				if err != nil {
 					return err
 				}
@@ -917,7 +1254,16 @@ func (fsClient *FSClient) DownloadSnapshot(snapshotID string, downloadDir string
 				downloadTracker.Start()
 			}
 
-			err = fsClient.s3Client.Download(file[0].Name, file[0].Reference.S3Object.Object, dir, &downloadTracker, fsClient.Quiet)
+			if fsClient.protocol == "coloniesfs" || file[0].Reference.IsColonyFS() {
+				err = fsClient.downloadToDir(file[0].Name, file[0].Reference.S3Object.Object, dir, &downloadTracker)
+			} else {
+				var s3c *s3.S3Client
+				s3c, err = fsClient.getS3Client()
+				if err != nil {
+					return err
+				}
+				err = s3c.Download(file[0].Name, file[0].Reference.S3Object.Object, dir, &downloadTracker, fsClient.Quiet)
+			}
 			if err != nil {
 				return err
 			}

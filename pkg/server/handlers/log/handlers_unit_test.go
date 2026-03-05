@@ -50,6 +50,8 @@ func (m *MockContext) ReadBody() ([]byte, error) {
 	return nil, nil
 }
 
+func (m *MockContext) ResponseWriter() http.ResponseWriter { return nil }
+
 func (m *MockContext) GetHeader(key string) string {
 	return ""
 }

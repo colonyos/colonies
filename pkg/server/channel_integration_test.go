@@ -59,6 +59,8 @@ func TestChannelEndToEndIntegration(t *testing.T) {
 		0,     // retention policy
 		0,     // retention period
 		time.Duration(constants.DEFAULT_STALE_EXECUTOR_DURATION)*time.Second, // stale executor duration
+		"",    // file storage type
+		"",    // file storage dir
 	)
 
 	// Start server in background
@@ -248,6 +250,8 @@ func TestChannelCleanupOnProcessFail(t *testing.T) {
 		0,     // retention policy
 		0,     // retention period
 		time.Duration(constants.DEFAULT_STALE_EXECUTOR_DURATION)*time.Second, // stale executor duration
+		"",    // file storage type
+		"",    // file storage dir
 	)
 
 	// Start server in background

@@ -43,6 +43,8 @@ func NewHTTPManagedServer(config *ServerConfig, sharedResources *SharedResources
 		config.RetentionPolicy,
 		config.RetentionPeriod,
 		config.StaleExecutorDuration,
+		"",
+		"",
 	)
 
 	return &HTTPManagedServer{
