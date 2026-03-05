@@ -214,10 +214,16 @@ func (db *PQDatabase) GetExecutorByID(executorID string) (*core.Executor, error)
 	return executors[0], nil
 }
 
-func (db *PQDatabase) GetExecutorsByColonyName(colonyName string) ([]*core.Executor, error) {
-	// Return all executors (filtering happens in CLI layer)
-	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `EXECUTORS WHERE COLONY_NAME=$1`
-	rows, err := db.postgresql.Query(sqlStatement, colonyName)
+func (db *PQDatabase) GetExecutorsByColonyName(colonyName string, includeUnregistered bool) ([]*core.Executor, error) {
+	var rows *sql.Rows
+	var err error
+	if includeUnregistered {
+		sqlStatement := `SELECT * FROM ` + db.dbPrefix + `EXECUTORS WHERE COLONY_NAME=$1`
+		rows, err = db.postgresql.Query(sqlStatement, colonyName)
+	} else {
+		sqlStatement := `SELECT * FROM ` + db.dbPrefix + `EXECUTORS WHERE COLONY_NAME=$1 AND STATE!=$2`
+		rows, err = db.postgresql.Query(sqlStatement, colonyName, core.UNREGISTERED)
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -380,7 +386,7 @@ func (db *PQDatabase) CountExecutors() (int, error) {
 }
 
 func (db *PQDatabase) CountExecutorsByColonyName(colonyName string) (int, error) {
-	executors, err := db.GetExecutorsByColonyName(colonyName)
+	executors, err := db.GetExecutorsByColonyName(colonyName, false)
 	if err != nil {
 		return -1, err
 	}

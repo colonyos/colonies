@@ -305,7 +305,7 @@ func (db *DatabaseMock) GetExecutorByID(executorID string) (*core.Executor, erro
 	// Return a dummy executor when no error is set
 	return &core.Executor{ID: executorID, ColonyName: "test-colony"}, nil
 }
-func (db *DatabaseMock) GetExecutorsByColonyName(colonyName string) ([]*core.Executor, error) {
+func (db *DatabaseMock) GetExecutorsByColonyName(colonyName string, includeUnregistered bool) ([]*core.Executor, error) {
 	if db.ReturnError == "GetExecutorsByColonyName" || db.ReturnError == "GetExecutorByColonyName" { return nil, errors.New("mock error") }
 	return nil, nil
 }

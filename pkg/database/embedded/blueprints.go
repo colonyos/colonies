@@ -14,6 +14,44 @@ import (
 
 func copyBlueprintDefinition(sd *core.BlueprintDefinition) *core.BlueprintDefinition {
 	cp := *sd
+
+	// Deep copy ShortNames slice
+	if sd.Spec.Names.ShortNames != nil {
+		cp.Spec.Names.ShortNames = make([]string, len(sd.Spec.Names.ShortNames))
+		copy(cp.Spec.Names.ShortNames, sd.Spec.Names.ShortNames)
+	}
+
+	// Deep copy Schema pointer and its contents
+	if sd.Spec.Schema != nil {
+		schemaCopy := *sd.Spec.Schema
+		if sd.Spec.Schema.Required != nil {
+			schemaCopy.Required = make([]string, len(sd.Spec.Schema.Required))
+			copy(schemaCopy.Required, sd.Spec.Schema.Required)
+		}
+		if sd.Spec.Schema.Properties != nil {
+			schemaCopy.Properties = make(map[string]core.SchemaProperty, len(sd.Spec.Schema.Properties))
+			for k, v := range sd.Spec.Schema.Properties {
+				propCopy := v
+				if v.Enum != nil {
+					propCopy.Enum = make([]interface{}, len(v.Enum))
+					copy(propCopy.Enum, v.Enum)
+				}
+				if v.Properties != nil {
+					propCopy.Properties = make(map[string]core.SchemaProperty, len(v.Properties))
+					for pk, pv := range v.Properties {
+						propCopy.Properties[pk] = pv
+					}
+				}
+				if v.Items != nil {
+					itemsCopy := *v.Items
+					propCopy.Items = &itemsCopy
+				}
+				schemaCopy.Properties[k] = propCopy
+			}
+		}
+		cp.Spec.Schema = &schemaCopy
+	}
+
 	return &cp
 }
 
@@ -176,13 +214,28 @@ func copyStringMap(m map[string]string) map[string]string {
 	return cp
 }
 
+func deepCopyInterface(v interface{}) interface{} {
+	switch val := v.(type) {
+	case map[string]interface{}:
+		return copyInterfaceMap(val)
+	case []interface{}:
+		cp := make([]interface{}, len(val))
+		for i, item := range val {
+			cp[i] = deepCopyInterface(item)
+		}
+		return cp
+	default:
+		return v
+	}
+}
+
 func copyInterfaceMap(m map[string]interface{}) map[string]interface{} {
 	if m == nil {
 		return nil
 	}
 	cp := make(map[string]interface{}, len(m))
 	for k, v := range m {
-		cp[k] = v
+		cp[k] = deepCopyInterface(v)
 	}
 	return cp
 }
@@ -415,6 +468,8 @@ func (db *EmbeddedDatabase) CountBlueprintsByNamespace(namespace string) (int, e
 
 func copyBlueprintHistory(h *core.BlueprintHistory) *core.BlueprintHistory {
 	cp := *h
+	cp.Spec = copyInterfaceMap(h.Spec)
+	cp.Status = copyInterfaceMap(h.Status)
 	return &cp
 }
 

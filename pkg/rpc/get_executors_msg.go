@@ -7,13 +7,15 @@ import (
 const GetExecutorsPayloadType = "getexecutorsmsg"
 
 type GetExecutorsMsg struct {
-	ColonyName string `json:"colonyname"`
-	MsgType    string `json:"msgtype"`
+	ColonyName           string `json:"colonyname"`
+	IncludeUnregistered  bool   `json:"includeunregistered"`
+	MsgType              string `json:"msgtype"`
 }
 
-func CreateGetExecutorsMsg(colonyName string) *GetExecutorsMsg {
+func CreateGetExecutorsMsg(colonyName string, includeUnregistered bool) *GetExecutorsMsg {
 	msg := &GetExecutorsMsg{}
 	msg.ColonyName = colonyName
+	msg.IncludeUnregistered = includeUnregistered
 	msg.MsgType = GetExecutorsPayloadType
 
 	return msg
@@ -42,7 +44,7 @@ func (msg *GetExecutorsMsg) Equals(msg2 *GetExecutorsMsg) bool {
 		return false
 	}
 
-	if msg.MsgType == msg2.MsgType && msg.ColonyName == msg2.ColonyName {
+	if msg.MsgType == msg2.MsgType && msg.ColonyName == msg2.ColonyName && msg.IncludeUnregistered == msg2.IncludeUnregistered {
 		return true
 	}
 

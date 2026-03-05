@@ -115,7 +115,7 @@ func (m *MockExecutorDB) AddExecutor(executor *core.Executor) error             
 func (m *MockExecutorDB) SetAllocations(colonyName, executorName string, allocations core.Allocations) error { return nil }
 func (m *MockExecutorDB) GetExecutors() ([]*core.Executor, error)                              { return nil, nil }
 func (m *MockExecutorDB) GetExecutorByID(executorID string) (*core.Executor, error)            { return nil, nil }
-func (m *MockExecutorDB) GetExecutorsByColonyName(colonyName string) ([]*core.Executor, error) { return nil, nil }
+func (m *MockExecutorDB) GetExecutorsByColonyName(colonyName string, includeUnregistered bool) ([]*core.Executor, error) { return nil, nil }
 func (m *MockExecutorDB) GetExecutorsByBlueprintID(blueprintID string) ([]*core.Executor, error) { return nil, nil }
 func (m *MockExecutorDB) ApproveExecutor(executor *core.Executor) error                        { return nil }
 func (m *MockExecutorDB) RejectExecutor(executor *core.Executor) error                         { return nil }

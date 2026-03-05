@@ -83,7 +83,7 @@ func (m *MockExecutorDB) SetAllocations(colonyName string, executorName string, 
 }
 func (m *MockExecutorDB) GetExecutors() ([]*core.Executor, error)                      { return m.executors, m.executorErr }
 func (m *MockExecutorDB) GetExecutorByID(executorID string) (*core.Executor, error)    { return m.executor, m.executorErr }
-func (m *MockExecutorDB) GetExecutorsByColonyName(colonyName string) ([]*core.Executor, error) {
+func (m *MockExecutorDB) GetExecutorsByColonyName(colonyName string, includeUnregistered bool) ([]*core.Executor, error) {
 	return m.executors, m.executorErr
 }
 func (m *MockExecutorDB) GetExecutorByName(colonyName string, executorName string) (*core.Executor, error) {
@@ -322,7 +322,7 @@ func TestHandleGetExecutorsMsgTypeMismatchUnit(t *testing.T) {
 	handlers := NewHandlers(server)
 	ctx := &MockContext{}
 
-	msg := rpc.CreateGetExecutorsMsg("test-colony")
+	msg := rpc.CreateGetExecutorsMsg("test-colony", false)
 	jsonStr, _ := msg.ToJSON()
 
 	handlers.HandleGetExecutors(ctx, "test-id", "wrong-type", jsonStr)
@@ -335,7 +335,7 @@ func TestHandleGetExecutorsMembershipErrorUnit(t *testing.T) {
 	handlers := NewHandlers(server)
 	ctx := &MockContext{}
 
-	msg := rpc.CreateGetExecutorsMsg("test-colony")
+	msg := rpc.CreateGetExecutorsMsg("test-colony", false)
 	jsonStr, _ := msg.ToJSON()
 
 	handlers.HandleGetExecutors(ctx, "test-id", rpc.GetExecutorsPayloadType, jsonStr)
@@ -349,7 +349,7 @@ func TestHandleGetExecutorsDBErrorUnit(t *testing.T) {
 	handlers := NewHandlers(server)
 	ctx := &MockContext{}
 
-	msg := rpc.CreateGetExecutorsMsg("test-colony")
+	msg := rpc.CreateGetExecutorsMsg("test-colony", false)
 	jsonStr, _ := msg.ToJSON()
 
 	handlers.HandleGetExecutors(ctx, "test-id", rpc.GetExecutorsPayloadType, jsonStr)
@@ -362,7 +362,7 @@ func TestHandleGetExecutorsSuccessUnit(t *testing.T) {
 	handlers := NewHandlers(server)
 	ctx := &MockContext{}
 
-	msg := rpc.CreateGetExecutorsMsg("test-colony")
+	msg := rpc.CreateGetExecutorsMsg("test-colony", false)
 	jsonStr, _ := msg.ToJSON()
 
 	handlers.HandleGetExecutors(ctx, "test-id", rpc.GetExecutorsPayloadType, jsonStr)

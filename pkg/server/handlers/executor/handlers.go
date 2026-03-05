@@ -161,7 +161,7 @@ func (h *Handlers) HandleGetExecutors(c backends.Context, recoveredID string, pa
 		return
 	}
 
-	executors, err := h.server.ExecutorDB().GetExecutorsByColonyName(msg.ColonyName)
+	executors, err := h.server.ExecutorDB().GetExecutorsByColonyName(msg.ColonyName, msg.IncludeUnregistered)
 	if h.server.HandleHTTPError(c, err, http.StatusBadRequest) {
 		return
 	}

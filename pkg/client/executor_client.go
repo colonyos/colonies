@@ -35,7 +35,11 @@ func (client *ColoniesClient) ReportAllocation(colonyName string, executorName s
 }
 
 func (client *ColoniesClient) GetExecutors(colonyName string, prvKey string) ([]*core.Executor, error) {
-	msg := rpc.CreateGetExecutorsMsg(colonyName)
+	return client.GetExecutorsWithOpts(colonyName, false, prvKey)
+}
+
+func (client *ColoniesClient) GetExecutorsWithOpts(colonyName string, includeUnregistered bool, prvKey string) ([]*core.Executor, error) {
+	msg := rpc.CreateGetExecutorsMsg(colonyName, includeUnregistered)
 	jsonString, err := msg.ToJSON()
 	if err != nil {
 		return nil, err

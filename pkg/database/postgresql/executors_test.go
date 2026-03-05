@@ -25,7 +25,7 @@ func TestExecutorClosedDB(t *testing.T) {
 	_, err = db.GetExecutorByID("invalid_id")
 	assert.NotNil(t, err)
 
-	_, err = db.GetExecutorsByColonyName("invalid_colony_name")
+	_, err = db.GetExecutorsByColonyName("invalid_colony_name", false)
 	assert.NotNil(t, err)
 
 	_, err = db.GetExecutorByName("invalid_id", "invalid_name")
@@ -155,7 +155,7 @@ func TestAddDuplicateExecutorRejected(t *testing.T) {
 	assert.Contains(t, err.Error(), "already exists")
 
 	// Verify only one executor exists
-	executors, err := db.GetExecutorsByColonyName(colony.Name)
+	executors, err := db.GetExecutorsByColonyName(colony.Name, false)
 	assert.Nil(t, err)
 	assert.Len(t, executors, 1)
 	assert.Equal(t, executor1.ID, executors[0].ID)
@@ -204,7 +204,7 @@ func TestAddDuplicateExecutorConcurrentRejected(t *testing.T) {
 	assert.Equal(t, numGoroutines-1, failureCount, "All other attempts should fail with duplicate error")
 
 	// Verify only one executor exists in database
-	executors, err := db.GetExecutorsByColonyName(colony.Name)
+	executors, err := db.GetExecutorsByColonyName(colony.Name, false)
 	assert.Nil(t, err)
 	assert.Len(t, executors, 1)
 	assert.Equal(t, executorName, executors[0].Name)
@@ -237,11 +237,11 @@ func TestSameExecutorNameDifferentColoniesAllowed(t *testing.T) {
 	assert.Nil(t, err)
 
 	// Verify both executors exist
-	executorsColony1, err := db.GetExecutorsByColonyName(colony1.Name)
+	executorsColony1, err := db.GetExecutorsByColonyName(colony1.Name, false)
 	assert.Nil(t, err)
 	assert.Len(t, executorsColony1, 1)
 
-	executorsColony2, err := db.GetExecutorsByColonyName(colony2.Name)
+	executorsColony2, err := db.GetExecutorsByColonyName(colony2.Name, false)
 	assert.Nil(t, err)
 	assert.Len(t, executorsColony2, 1)
 }
@@ -432,11 +432,11 @@ func TestGetExecutorByColonyName(t *testing.T) {
 	executorsColony1 = append(executorsColony1, executor1)
 	executorsColony1 = append(executorsColony1, executor2)
 
-	executorsColony1FromDB, err := db.GetExecutorsByColonyName("invalid_colony_name")
+	executorsColony1FromDB, err := db.GetExecutorsByColonyName("invalid_colony_name", false)
 	assert.Nil(t, err)
 	assert.NotNil(t, executorsColony1)
 
-	executorsColony1FromDB, err = db.GetExecutorsByColonyName(colony1.Name)
+	executorsColony1FromDB, err = db.GetExecutorsByColonyName(colony1.Name, false)
 	assert.Nil(t, err)
 	assert.True(t, core.IsExecutorArraysEqual(executorsColony1, executorsColony1FromDB))
 }

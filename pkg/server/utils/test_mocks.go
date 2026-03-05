@@ -25,7 +25,7 @@ func (db *DatabaseMock) RemoveColonyByID(colonyID string) error { return nil }
 func (db *DatabaseMock) AddExecutor(executor *core.Executor) error { return nil }
 func (db *DatabaseMock) GetExecutorByName(colonyName string, executorName string) (*core.Executor, error) { return nil, nil }
 func (db *DatabaseMock) GetExecutorByID(executorID string) (*core.Executor, error) { return nil, nil }
-func (db *DatabaseMock) GetExecutorsByColonyName(colonyName string) ([]*core.Executor, error) { return nil, nil }
+func (db *DatabaseMock) GetExecutorsByColonyName(colonyName string, includeUnregistered bool) ([]*core.Executor, error) { return nil, nil }
 func (db *DatabaseMock) RemoveExecutorByName(colonyName string, executorName string) error { return nil }
 func (db *DatabaseMock) RemoveExecutorByID(executorID string) error { return nil }
 func (db *DatabaseMock) RemoveExecutorsByColonyName(colonyName string) error { return nil }

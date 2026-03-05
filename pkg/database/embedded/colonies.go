@@ -66,7 +66,7 @@ func (db *EmbeddedDatabase) GetColonyByName(name string) (*core.Colony, error) {
 func (db *EmbeddedDatabase) RenameColony(colonyName string, newName string) error {
 	colony, ok := db.colonies.Get(colonyName)
 	if !ok {
-		return errors.New("Colony does not exists")
+		return errors.New("Colony does not exist")
 	}
 
 	// Remove old entry
@@ -89,7 +89,7 @@ func (db *EmbeddedDatabase) RenameColony(colonyName string, newName string) erro
 func (db *EmbeddedDatabase) RemoveColonyByName(colonyName string) error {
 	colony, ok := db.colonies.Get(colonyName)
 	if !ok {
-		return errors.New("Colony does not exists")
+		return errors.New("Colony does not exist")
 	}
 
 	// Cascade delete all dependent entities

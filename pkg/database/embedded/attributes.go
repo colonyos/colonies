@@ -30,7 +30,7 @@ func (db *EmbeddedDatabase) AddAttributes(attributes []core.Attribute) error {
 func (db *EmbeddedDatabase) GetAttributeByID(attributeID string) (core.Attribute, error) {
 	a, ok := db.attributes.Get(attributeID)
 	if !ok {
-		return core.Attribute{}, errors.New("Attribute does not exists")
+		return core.Attribute{}, errors.New("Attribute does not exist")
 	}
 	return *a, nil
 }
@@ -55,7 +55,7 @@ func (db *EmbeddedDatabase) GetAttribute(targetID string, key string, attributeT
 			}
 		}
 	}
-	return core.Attribute{}, errors.New("Attribute does not exists")
+	return core.Attribute{}, errors.New("Attribute does not exist")
 }
 
 func (db *EmbeddedDatabase) GetAttributes(targetID string) ([]core.Attribute, error) {
@@ -88,7 +88,7 @@ func (db *EmbeddedDatabase) GetAttributesByType(targetID string, attributeType i
 func (db *EmbeddedDatabase) UpdateAttribute(attribute core.Attribute) error {
 	existing, ok := db.attributes.Get(attribute.ID)
 	if !ok {
-		return errors.New("Attribute does not exists")
+		return errors.New("Attribute does not exist")
 	}
 	cp := *existing
 	cp.Value = attribute.Value
