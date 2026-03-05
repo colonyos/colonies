@@ -42,6 +42,9 @@ func (h *Handlers) RegisterHandlers(handlerRegistry *registry.HandlerRegistry) e
 	if err := handlerRegistry.Register(rpc.RemoveFunctionPayloadType, h.HandleRemoveFunction); err != nil {
 		return err
 	}
+	if err := handlerRegistry.Register(rpc.ResetFunctionStatsPayloadType, h.HandleResetFunctionStats); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -154,6 +157,34 @@ func (h *Handlers) HandleGetFunctions(c backends.Context, recoveredID string, pa
 	}
 
 	h.server.SendHTTPReply(c, payloadType, jsonString)
+}
+
+func (h *Handlers) HandleResetFunctionStats(c backends.Context, recoveredID string, payloadType string, jsonString string) {
+	msg, err := rpc.CreateResetFunctionStatsMsgFromJSON(jsonString)
+	if err != nil {
+		if h.server.HandleHTTPError(c, errors.New("Failed to reset function stats, invalid JSON"), http.StatusBadRequest) {
+			return
+		}
+	}
+
+	if msg.MsgType != payloadType {
+		h.server.HandleHTTPError(c, errors.New("Failed to reset function stats, msg.MsgType does not match payloadType"), http.StatusBadRequest)
+		return
+	}
+
+	err = h.server.Validator().RequireMembership(recoveredID, msg.ColonyName, true)
+	if h.server.HandleHTTPError(c, err, http.StatusForbidden) {
+		return
+	}
+
+	err = h.server.FunctionDB().ResetFunctionStatsByColonyName(msg.ColonyName)
+	if h.server.HandleHTTPError(c, err, http.StatusInternalServerError) {
+		return
+	}
+
+	log.WithFields(log.Fields{"ColonyName": msg.ColonyName}).Debug("Resetting function stats")
+
+	h.server.SendEmptyHTTPReply(c, payloadType)
 }
 
 func (h *Handlers) HandleRemoveFunction(c backends.Context, recoveredID string, payloadType string, jsonString string) {

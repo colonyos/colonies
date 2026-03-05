@@ -105,6 +105,28 @@ func (db *EmbeddedDatabase) UpdateFunctionStats(colonyName string, executorName 
 	return db.functions.Put(cp.FunctionID, cp)
 }
 
+func (db *EmbeddedDatabase) ResetFunctionStatsByColonyName(colonyName string) error {
+	ids := db.functionsIdx.byColony.Lookup(colonyName)
+	for _, id := range ids {
+		f, ok := db.functions.Get(id)
+		if !ok {
+			continue
+		}
+		cp := copyFunction(f)
+		cp.Counter = 0
+		cp.MinWaitTime = 0
+		cp.MaxWaitTime = 0
+		cp.MinExecTime = 0
+		cp.MaxExecTime = 0
+		cp.AvgWaitTime = 0
+		cp.AvgExecTime = 0
+		if err := db.functions.Put(cp.FunctionID, cp); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (db *EmbeddedDatabase) RemoveFunctionByID(functionID string) error {
 	f, ok := db.functions.Get(functionID)
 	if !ok {

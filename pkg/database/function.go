@@ -14,4 +14,5 @@ type FunctionDatabase interface {
 	RemoveFunctionsByExecutorName(colonyName string, executorName string) error
 	RemoveFunctionsByColonyName(colonyName string) error
 	RemoveFunctions() error
+	ResetFunctionStatsByColonyName(colonyName string) error
 }

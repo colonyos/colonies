@@ -459,6 +459,56 @@ func TestFunctionWithLocationName(t *testing.T) {
 	assert.Equal(t, "", functionFromDB2.LocationName)
 }
 
+func TestResetFunctionStatsByColonyName(t *testing.T) {
+	db, err := PrepareTests()
+	assert.Nil(t, err)
+
+	defer db.Close()
+
+	colonyName1 := core.GenerateRandomID()
+	colonyName2 := core.GenerateRandomID()
+
+	function1 := &core.Function{FunctionID: core.GenerateRandomID(), ExecutorName: core.GenerateRandomID(), ColonyName: colonyName1, FuncName: "testfunc1", Counter: 10, MinWaitTime: 1.0, MaxWaitTime: 5.0, MinExecTime: 0.5, MaxExecTime: 3.0, AvgWaitTime: 2.0, AvgExecTime: 1.5}
+
+	err = db.AddFunction(function1)
+	assert.Nil(t, err)
+
+	function2 := &core.Function{FunctionID: core.GenerateRandomID(), ExecutorName: core.GenerateRandomID(), ColonyName: colonyName1, FuncName: "testfunc2", Counter: 20, MinWaitTime: 2.0, MaxWaitTime: 6.0, MinExecTime: 1.0, MaxExecTime: 4.0, AvgWaitTime: 3.0, AvgExecTime: 2.5}
+
+	err = db.AddFunction(function2)
+	assert.Nil(t, err)
+
+	function3 := &core.Function{FunctionID: core.GenerateRandomID(), ExecutorName: core.GenerateRandomID(), ColonyName: colonyName2, FuncName: "testfunc3", Counter: 30, MinWaitTime: 3.0, MaxWaitTime: 7.0, MinExecTime: 1.5, MaxExecTime: 5.0, AvgWaitTime: 4.0, AvgExecTime: 3.5}
+
+	err = db.AddFunction(function3)
+	assert.Nil(t, err)
+
+	err = db.ResetFunctionStatsByColonyName(colonyName1)
+	assert.Nil(t, err)
+
+	// Colony1 functions should be reset
+	functions, err := db.GetFunctionsByColonyName(colonyName1)
+	assert.Nil(t, err)
+	assert.Len(t, functions, 2)
+	for _, f := range functions {
+		assert.Equal(t, 0, f.Counter)
+		assert.Equal(t, 0.0, f.MinWaitTime)
+		assert.Equal(t, 0.0, f.MaxWaitTime)
+		assert.Equal(t, 0.0, f.MinExecTime)
+		assert.Equal(t, 0.0, f.MaxExecTime)
+		assert.Equal(t, 0.0, f.AvgWaitTime)
+		assert.Equal(t, 0.0, f.AvgExecTime)
+	}
+
+	// Colony2 function should be unaffected
+	functions, err = db.GetFunctionsByColonyName(colonyName2)
+	assert.Nil(t, err)
+	assert.Len(t, functions, 1)
+	assert.Equal(t, 30, functions[0].Counter)
+	assert.Equal(t, 3.0, functions[0].MinWaitTime)
+	assert.Equal(t, 7.0, functions[0].MaxWaitTime)
+}
+
 func TestRemoveFunctions(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)

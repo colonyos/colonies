@@ -938,6 +938,47 @@ func TestRemoveFunctions(t *testing.T) {
 	assert.Nil(t, got)
 }
 
+func TestResetFunctionStatsByColonyName(t *testing.T) {
+	db := setupTestDB(t)
+
+	f1 := core.CreateFunction("fid1", "exec1", "type1", "c1", "func1", 10, 1.0, 5.0, 0.5, 3.0, 2.0, 1.5)
+	f2 := core.CreateFunction("fid2", "exec1", "type1", "c1", "func2", 20, 2.0, 6.0, 1.0, 4.0, 3.0, 2.5)
+	f3 := core.CreateFunction("fid3", "exec2", "type1", "c2", "func3", 30, 3.0, 7.0, 1.5, 5.0, 4.0, 3.5)
+	if err := db.AddFunction(f1); err != nil {
+		t.Fatal(err)
+	}
+	if err := db.AddFunction(f2); err != nil {
+		t.Fatal(err)
+	}
+	if err := db.AddFunction(f3); err != nil {
+		t.Fatal(err)
+	}
+
+	err := db.ResetFunctionStatsByColonyName("c1")
+	assert.NoError(t, err)
+
+	got1, err := db.GetFunctionByID("fid1")
+	assert.NoError(t, err)
+	assert.Equal(t, 0, got1.Counter)
+	assert.Equal(t, 0.0, got1.MinWaitTime)
+	assert.Equal(t, 0.0, got1.MaxWaitTime)
+	assert.Equal(t, 0.0, got1.MinExecTime)
+	assert.Equal(t, 0.0, got1.MaxExecTime)
+	assert.Equal(t, 0.0, got1.AvgWaitTime)
+	assert.Equal(t, 0.0, got1.AvgExecTime)
+
+	got2, err := db.GetFunctionByID("fid2")
+	assert.NoError(t, err)
+	assert.Equal(t, 0, got2.Counter)
+	assert.Equal(t, 0.0, got2.AvgWaitTime)
+
+	// c2 should be unaffected
+	got3, err := db.GetFunctionByID("fid3")
+	assert.NoError(t, err)
+	assert.Equal(t, 30, got3.Counter)
+	assert.Equal(t, 3.0, got3.MinWaitTime)
+}
+
 // Generator tests
 
 func TestAddGenerator(t *testing.T) {
