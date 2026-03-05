@@ -203,6 +203,12 @@ func (db *PQDatabase) RemoveFunctionsByColonyName(colonyName string) error {
 	return nil
 }
 
+func (db *PQDatabase) ResetFunctionStatsByColonyName(colonyName string) error {
+	sqlStatement := `UPDATE ` + db.dbPrefix + `FUNCTIONS SET COUNTER=0, MINWAITTIME=0, MAXWAITTIME=0, MINEXECTIME=0, MAXEXECTIME=0, AVGWAITTIME=0, AVGEXECTIME=0 WHERE COLONY_NAME=$1`
+	_, err := db.postgresql.Exec(sqlStatement, colonyName)
+	return err
+}
+
 func (db *PQDatabase) RemoveFunctions() error {
 	sqlStatement := `DELETE FROM ` + db.dbPrefix + `FUNCTIONS`
 	_, err := db.postgresql.Exec(sqlStatement)

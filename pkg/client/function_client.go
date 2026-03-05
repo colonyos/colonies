@@ -52,6 +52,21 @@ func (client *ColoniesClient) GetFunctionsByColony(colonyName string, prvKey str
 	return core.ConvertJSONToFunctionArray(respBodyString)
 }
 
+func (client *ColoniesClient) ResetFunctionStats(colonyName string, prvKey string) error {
+	msg := rpc.CreateResetFunctionStatsMsg(colonyName)
+	jsonString, err := msg.ToJSON()
+	if err != nil {
+		return err
+	}
+
+	_, err = client.sendMessage(rpc.ResetFunctionStatsPayloadType, jsonString, prvKey, false, context.TODO())
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (client *ColoniesClient) RemoveFunction(functionID string, prvKey string) error {
 	msg := rpc.CreateRemoveFunctionMsg(functionID)
 	jsonString, err := msg.ToJSON()

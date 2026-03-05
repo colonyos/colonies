@@ -21,6 +21,7 @@ func init() {
 	functionCmd.AddCommand(registerFuncCmd)
 	functionCmd.AddCommand(removeFuncCmd)
 	functionCmd.AddCommand(listFuncCmd)
+	functionCmd.AddCommand(resetStatsFuncCmd)
 
 	registerFuncCmd.Flags().StringVarP(&PrvKey, "prvkey", "", "", "Private key")
 	registerFuncCmd.Flags().StringVarP(&TargetExecutorName, "name", "", "", "Executor name")
@@ -98,6 +99,20 @@ var removeFuncCmd = &cobra.Command{
 		CheckError(err)
 
 		log.WithFields(log.Fields{"ColonyName": ColonyName, "FunctionId": FunctionID}).Info("Function removed")
+	},
+}
+
+var resetStatsFuncCmd = &cobra.Command{
+	Use:   "resetstats",
+	Short: "Reset all function statistics in the colony",
+	Long:  "Reset all function statistics in the colony",
+	Run: func(cmd *cobra.Command, args []string) {
+		client := setup()
+
+		err := client.ResetFunctionStats(ColonyName, PrvKey)
+		CheckError(err)
+
+		log.WithFields(log.Fields{"ColonyName": ColonyName}).Info("Function stats reset")
 	},
 }
 

@@ -22,6 +22,7 @@ type MockFunctionDB struct {
 	getByColonyErr    error
 	getByExecutorErr  error
 	removeErr         error
+	resetStatsErr     error
 	returnNilByID     bool
 }
 
@@ -95,6 +96,9 @@ func (m *MockFunctionDB) UpdateFunctionStats(colonyName, executorName, name stri
 	return nil
 }
 func (m *MockFunctionDB) RemoveFunctions() error { return nil }
+func (m *MockFunctionDB) ResetFunctionStatsByColonyName(colonyName string) error {
+	return m.resetStatsErr
+}
 func (m *MockFunctionDB) GetFunctionsByExecutorAndName(colonyName, executorName, name string) (*core.Function, error) {
 	for _, f := range m.functions {
 		if f.ColonyName == colonyName && f.ExecutorName == executorName && f.FuncName == name {
@@ -727,6 +731,74 @@ func TestHandleRemoveFunction_RemoveError(t *testing.T) {
 	jsonString, _ := msg.ToJSON()
 
 	h.HandleRemoveFunction(ctx, "exec-123", rpc.RemoveFunctionPayloadType, jsonString)
+
+	assert.True(t, server.httpErrorCalled)
+	assert.Equal(t, http.StatusInternalServerError, server.httpErrorCode)
+}
+
+// =============================================
+// Tests for HandleResetFunctionStats
+// =============================================
+
+func TestHandleResetFunctionStats_Success(t *testing.T) {
+	server, _, _, _, ctx := createTestMocks()
+	h := NewHandlers(server)
+
+	msg := rpc.CreateResetFunctionStatsMsg("test-colony")
+	jsonString, _ := msg.ToJSON()
+
+	h.HandleResetFunctionStats(ctx, "member-123", rpc.ResetFunctionStatsPayloadType, jsonString)
+
+	assert.True(t, server.emptyReplyCalled)
+	assert.False(t, server.httpErrorCalled)
+}
+
+func TestHandleResetFunctionStats_InvalidJSON(t *testing.T) {
+	server, _, _, _, ctx := createTestMocks()
+	h := NewHandlers(server)
+
+	h.HandleResetFunctionStats(ctx, "member-123", rpc.ResetFunctionStatsPayloadType, "invalid json")
+
+	assert.True(t, server.httpErrorCalled)
+	assert.Equal(t, http.StatusBadRequest, server.httpErrorCode)
+}
+
+func TestHandleResetFunctionStats_MsgTypeMismatch(t *testing.T) {
+	server, _, _, _, ctx := createTestMocks()
+	h := NewHandlers(server)
+
+	msg := rpc.CreateResetFunctionStatsMsg("test-colony")
+	jsonString, _ := msg.ToJSON()
+
+	h.HandleResetFunctionStats(ctx, "member-123", "wrong_type", jsonString)
+
+	assert.True(t, server.httpErrorCalled)
+	assert.Equal(t, http.StatusBadRequest, server.httpErrorCode)
+}
+
+func TestHandleResetFunctionStats_AuthError(t *testing.T) {
+	server, _, _, validator, ctx := createTestMocks()
+	validator.requireMembershipErr = errors.New("not a member")
+	h := NewHandlers(server)
+
+	msg := rpc.CreateResetFunctionStatsMsg("test-colony")
+	jsonString, _ := msg.ToJSON()
+
+	h.HandleResetFunctionStats(ctx, "member-123", rpc.ResetFunctionStatsPayloadType, jsonString)
+
+	assert.True(t, server.httpErrorCalled)
+	assert.Equal(t, http.StatusForbidden, server.httpErrorCode)
+}
+
+func TestHandleResetFunctionStats_DBError(t *testing.T) {
+	server, functionDB, _, _, ctx := createTestMocks()
+	functionDB.resetStatsErr = errors.New("database error")
+	h := NewHandlers(server)
+
+	msg := rpc.CreateResetFunctionStatsMsg("test-colony")
+	jsonString, _ := msg.ToJSON()
+
+	h.HandleResetFunctionStats(ctx, "member-123", rpc.ResetFunctionStatsPayloadType, jsonString)
 
 	assert.True(t, server.httpErrorCalled)
 	assert.Equal(t, http.StatusInternalServerError, server.httpErrorCode)
