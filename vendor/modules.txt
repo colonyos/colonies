@@ -4,8 +4,8 @@ github.com/aymanbagabas/go-osc52/v2
 # github.com/beorn7/perks v1.0.1
 ## explicit; go 1.11
 github.com/beorn7/perks/quantile
-# github.com/btcsuite/btcd/btcec/v2 v2.3.2
-## explicit; go 1.17
+# github.com/btcsuite/btcd/btcec/v2 v2.3.6
+## explicit; go 1.22
 github.com/btcsuite/btcd/btcec/v2
 github.com/btcsuite/btcd/btcec/v2/ecdsa
 # github.com/bytedance/sonic v1.10.2

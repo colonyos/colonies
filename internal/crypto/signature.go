@@ -60,10 +60,7 @@ func Sign(hash *Hash, prv *ecdsa.PrivateKey) ([]byte, error) {
 		return nil, errors.New("invalid private key")
 	}
 	defer priv.Zero()
-	sig, err := becdsa.SignCompact(&priv, hash.Bytes(), false) // ref uncompressed pubkey
-	if err != nil {
-		return nil, err
-	}
+	sig := becdsa.SignCompact(&priv, hash.Bytes(), false) // ref uncompressed pubkey
 
 	v := sig[0] - 27
 	copy(sig, sig[1:])

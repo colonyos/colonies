@@ -354,6 +354,19 @@ func parseEnv() {
 		FileStorageDir = fileStorageDirEnv
 	}
 
+	if RelayHost == "" {
+		RelayHost = os.Getenv("COLONIES_RELAY_HOST")
+	}
+
+	RelayPortEnvStr := os.Getenv("COLONIES_RELAY_PORT")
+	if RelayPortEnvStr != "" {
+		RelayPort, err = strconv.Atoi(RelayPortEnvStr)
+		if err != nil {
+			log.Error("Failed to parse COLONIES_RELAY_PORT")
+		}
+		CheckError(err)
+	}
+
 	monitorPortStr := os.Getenv("COLONIES_MONITOR_PORT")
 	if monitorPortStr != "" {
 		MonitorPort, err = strconv.Atoi(monitorPortStr)
@@ -486,6 +499,7 @@ func checkDevEnv() {
 		envProposal += "export COLONIES_COLONY_PRVKEY=\"ba949fa134981372d6da62b6a56f336ab4d843b22c02a4257dcf7d0d73097514\"\n"
 		envProposal += "export COLONIES_PRVKEY=\"ddf7f7791208083b6a9ed975a72684f6406a269cfa36f1b1c32045c0a71fff05\"\n"
 		envProposal += "export COLONIES_EXECUTOR_TYPE=\"cli\"\n"
+		envProposal += "export COLONIES_RELAY_HOST=\"\"\n"
 
 		fmt.Println(envProposal)
 		os.Exit(-1)

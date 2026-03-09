@@ -2,6 +2,7 @@ package cli
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -12,6 +13,7 @@ import (
 	"github.com/colonyos/colonies/pkg/cluster"
 	"github.com/colonyos/colonies/pkg/database"
 	"github.com/colonyos/colonies/pkg/database/postgresql"
+	"github.com/colonyos/colonies/pkg/relay"
 	"github.com/colonyos/colonies/pkg/server"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -46,6 +48,7 @@ func init() {
 	serverCmd.PersistentFlags().StringVarP(&EtcdDataDir, "etcddatadir", "", "", "Etcd data dir")
 	serverCmd.PersistentFlags().BoolVarP(&InitDB, "initdb", "", false, "Initialize DB")
 	serverCmd.PersistentFlags().BoolVarP(&Insecure, "insecure", "", false, "Disable TLS")
+	serverCmd.PersistentFlags().StringVarP(&RelayHost, "relay", "", "", "Relay tunnel host (e.g. abc1234def-tunnel.colonyos.io)")
 
 	serverStatusCmd.PersistentFlags().StringVarP(&ServerHost, "host", "", "localhost", "Server host")
 	serverStatusCmd.PersistentFlags().IntVarP(&ServerPort, "port", "", -1, "Server HTTP port")
@@ -85,6 +88,13 @@ func startServer(
 		FileStorageType,
 		FileStorageDir,
 	)
+
+	if RelayHost != "" {
+		localAddr := fmt.Sprintf("localhost:%d", ServerPort)
+		tc := relay.NewTunnelClient(RelayHost, ServerPrvKey, localAddr, Insecure)
+		tc.Start()
+		log.WithFields(log.Fields{"RelayHost": RelayHost}).Info("Relay tunnel client started")
+	}
 
 	for {
 		err := srv.ServeForever()
@@ -201,11 +211,15 @@ var serverStartCmd = &cobra.Command{
 			log.Info("Insecure mode enabled, skipping TLS certificate checks")
 		}
 
-		// Default DataDir to ~/.colonies when using embedded DB
+		// Default DataDir to ~/.colonies/<server_id> when using embedded DB
 		if DataDir == "" && DBType == "embedded" {
 			home, err := os.UserHomeDir()
 			CheckError(err)
-			DataDir = filepath.Join(home, ".colonies")
+			if ServerID != "" {
+				DataDir = filepath.Join(home, ".colonies", ServerID)
+			} else {
+				DataDir = filepath.Join(home, ".colonies")
+			}
 		}
 
 		// When DataDir is set, derive subdirectories for embedded DB and file storage
@@ -323,12 +337,15 @@ var serverStartCmd = &cobra.Command{
 			}
 		}
 
-		// For embedded DB, auto-set server ID if not yet configured
+		// For embedded DB, always sync server ID from environment
 		if DBType == "embedded" && ServerID != "" {
 			existingID, err := db.GetServerID()
 			if err != nil || existingID == "" {
 				log.WithFields(log.Fields{"ServerID": ServerID}).Info("Setting server ID for embedded database")
 				CheckError(db.SetServerID("", ServerID))
+			} else if existingID != ServerID {
+				log.WithFields(log.Fields{"OldServerID": existingID, "NewServerID": ServerID}).Info("Updating server ID for embedded database")
+				CheckError(db.SetServerID(existingID, ServerID))
 			}
 		}
 

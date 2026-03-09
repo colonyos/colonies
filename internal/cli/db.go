@@ -70,7 +70,12 @@ func parseDBEnv() {
 	if DataDir == "" {
 		home, err := os.UserHomeDir()
 		if err == nil {
-			DataDir = filepath.Join(home, ".colonies")
+			serverID := os.Getenv("COLONIES_SERVER_ID")
+			if serverID != "" {
+				DataDir = filepath.Join(home, ".colonies", serverID)
+			} else {
+				DataDir = filepath.Join(home, ".colonies")
+			}
 		}
 	}
 
