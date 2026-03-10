@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
@@ -90,7 +91,11 @@ func (tc *TunnelClient) reconnectLoop() {
 }
 
 func (tc *TunnelClient) wsURL() string {
-	return fmt.Sprintf("wss://%s/tunnel", tc.relayHost)
+	scheme := "wss"
+	if tc.insecure {
+		scheme = "ws"
+	}
+	return fmt.Sprintf("%s://%s/tunnel", scheme, tc.relayHost)
 }
 
 func (tc *TunnelClient) localURL(path string) string {
@@ -170,6 +175,19 @@ func (tc *TunnelClient) handleRequests(conn *websocket.Conn) error {
 	// Use a mutex to serialize writes to the WebSocket connection
 	var writeMu sync.Mutex
 
+	// Track active local WS connections
+	var wsConnsMu sync.Mutex
+	wsConns := make(map[string]*websocket.Conn)
+
+	defer func() {
+		// Clean up all local WS connections on disconnect
+		wsConnsMu.Lock()
+		for _, localWS := range wsConns {
+			localWS.Close()
+		}
+		wsConnsMu.Unlock()
+	}()
+
 	for {
 		select {
 		case <-tc.done:
@@ -192,12 +210,148 @@ func (tc *TunnelClient) handleRequests(conn *websocket.Conn) error {
 			continue
 		}
 
-		if frame.Type != FrameTypeRequest {
+		switch frame.Type {
+		case FrameTypeRequest:
+			go tc.forwardRequest(conn, &writeMu, frame)
+
+		case FrameTypeWSUpgrade:
+			go tc.handleWSUpgrade(conn, &writeMu, frame, &wsConnsMu, wsConns)
+
+		case FrameTypeWSData:
+			wsConnsMu.Lock()
+			localWS, ok := wsConns[frame.ID]
+			wsConnsMu.Unlock()
+			if ok {
+				wsMsgType := websocket.TextMessage
+				if frame.Method == WSMsgTypeBinary {
+					wsMsgType = websocket.BinaryMessage
+				}
+				if err := localWS.WriteMessage(wsMsgType, frame.Body); err != nil {
+					log.WithFields(log.Fields{"Error": err, "ConnID": frame.ID}).Warn("Failed to write to local WS")
+				}
+			}
+
+		case FrameTypeWSClose:
+			wsConnsMu.Lock()
+			localWS, ok := wsConns[frame.ID]
+			delete(wsConns, frame.ID)
+			wsConnsMu.Unlock()
+			if ok {
+				localWS.Close()
+			}
+		}
+	}
+}
+
+// handleWSUpgrade opens a local WebSocket to the ColonyOS server and forwards messages bidirectionally.
+func (tc *TunnelClient) handleWSUpgrade(
+	tunnelConn *websocket.Conn,
+	writeMu *sync.Mutex,
+	frame *Frame,
+	wsConnsMu *sync.Mutex,
+	wsConns map[string]*websocket.Conn,
+) {
+	connID := frame.ID
+
+	// Build local WS URL
+	localWSURL := fmt.Sprintf("ws://%s%s", tc.localAddr, frame.Path)
+
+	// Forward relevant headers, excluding per-hop WS upgrade headers
+	// (gorilla/websocket adds its own Sec-Websocket-*, Connection, Upgrade headers)
+	reqHeaders := http.Header{}
+	for key, values := range frame.Headers {
+		lowerKey := strings.ToLower(key)
+		if strings.HasPrefix(lowerKey, "sec-websocket") ||
+			lowerKey == "connection" || lowerKey == "upgrade" {
 			continue
 		}
-
-		go tc.forwardRequest(conn, &writeMu, frame)
+		for _, v := range values {
+			reqHeaders.Add(key, v)
+		}
 	}
+
+	dialer := websocket.Dialer{
+		HandshakeTimeout: 10 * time.Second,
+	}
+	localWS, _, err := dialer.Dial(localWSURL, reqHeaders)
+	if err != nil {
+		log.WithFields(log.Fields{"Error": err, "URL": localWSURL}).Warn("Failed to open local WS")
+		// Send WSClose back to relay
+		closeFrame := &Frame{ID: connID, Type: FrameTypeWSClose}
+		if closeData, err := closeFrame.Marshal(); err == nil {
+			writeMu.Lock()
+			tunnelConn.WriteMessage(websocket.BinaryMessage, closeData)
+			writeMu.Unlock()
+		}
+		return
+	}
+
+	// Register local WS connection
+	wsConnsMu.Lock()
+	wsConns[connID] = localWS
+	wsConnsMu.Unlock()
+
+	// Send WSUpgradeOK
+	okFrame := &Frame{ID: connID, Type: FrameTypeWSUpgradeOK}
+	okData, err := okFrame.Marshal()
+	if err != nil {
+		localWS.Close()
+		return
+	}
+	writeMu.Lock()
+	err = tunnelConn.WriteMessage(websocket.BinaryMessage, okData)
+	writeMu.Unlock()
+	if err != nil {
+		localWS.Close()
+		return
+	}
+
+	// Read from local WS, forward through tunnel as WSData
+	go func() {
+		defer func() {
+			wsConnsMu.Lock()
+			delete(wsConns, connID)
+			wsConnsMu.Unlock()
+			localWS.Close()
+
+			// Send WSClose to relay
+			closeFrame := &Frame{ID: connID, Type: FrameTypeWSClose}
+			if closeData, err := closeFrame.Marshal(); err == nil {
+				writeMu.Lock()
+				tunnelConn.WriteMessage(websocket.BinaryMessage, closeData)
+				writeMu.Unlock()
+			}
+		}()
+
+		for {
+			msgType, msg, err := localWS.ReadMessage()
+			if err != nil {
+				return
+			}
+
+			wsMsgType := WSMsgTypeText
+			if msgType == websocket.BinaryMessage {
+				wsMsgType = WSMsgTypeBinary
+			}
+
+			dataFrame := &Frame{
+				ID:     connID,
+				Type:   FrameTypeWSData,
+				Method: wsMsgType,
+				Body:   msg,
+			}
+			frameData, err := dataFrame.Marshal()
+			if err != nil {
+				return
+			}
+			writeMu.Lock()
+			err = tunnelConn.WriteMessage(websocket.BinaryMessage, frameData)
+			writeMu.Unlock()
+			if err != nil {
+				return
+			}
+		}
+	}()
 }
 
 func (tc *TunnelClient) forwardRequest(conn *websocket.Conn, writeMu *sync.Mutex, reqFrame *Frame) {

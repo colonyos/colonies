@@ -11,6 +11,16 @@ const (
 	FrameTypeRequest  byte = 0x01
 	FrameTypeResponse byte = 0x02
 
+	// WebSocket frame types for multiplexed WS connections through the tunnel
+	FrameTypeWSUpgrade   byte = 0x03 // Relay -> tunnel client: open WS to local server
+	FrameTypeWSUpgradeOK byte = 0x04 // Tunnel client -> relay: WS opened successfully
+	FrameTypeWSData      byte = 0x05 // Bidirectional: WS message data
+	FrameTypeWSClose     byte = 0x06 // Either direction: WS connection closed
+
+	// WebSocket message types encoded in the Method byte of WSData frames
+	WSMsgTypeText   byte = 0x01
+	WSMsgTypeBinary byte = 0x02
+
 	MethodGET     byte = 0x01
 	MethodPOST    byte = 0x02
 	MethodPUT     byte = 0x03
