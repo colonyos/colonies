@@ -2,6 +2,7 @@ package relay
 
 import (
 	"bytes"
+	"context"
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
@@ -179,6 +180,24 @@ func (tc *TunnelClient) handleRequests(conn *websocket.Conn) error {
 	var wsConnsMu sync.Mutex
 	wsConns := make(map[string]*websocket.Conn)
 
+	// Set up read deadline for stale connection detection.
+	// The relay sends pings every 15s; allow 3x that before considering it dead.
+	pongWait := 45 * time.Second
+	conn.SetReadDeadline(time.Now().Add(pongWait))
+	conn.SetPingHandler(func(appData string) error {
+		conn.SetReadDeadline(time.Now().Add(pongWait))
+		// Respond with pong (gorilla default behavior)
+		writeMu.Lock()
+		err := conn.WriteControl(websocket.PongMessage, []byte(appData), time.Now().Add(5*time.Second))
+		writeMu.Unlock()
+		return err
+	})
+
+	// Create a context that is cancelled when the tunnel disconnects.
+	// This allows in-flight HTTP requests to be cancelled promptly.
+	ctx, cancelCtx := context.WithCancel(context.Background())
+	defer cancelCtx()
+
 	defer func() {
 		// Clean up all local WS connections on disconnect
 		wsConnsMu.Lock()
@@ -212,7 +231,7 @@ func (tc *TunnelClient) handleRequests(conn *websocket.Conn) error {
 
 		switch frame.Type {
 		case FrameTypeRequest:
-			go tc.forwardRequest(conn, &writeMu, frame)
+			go tc.forwardRequest(ctx, conn, &writeMu, frame)
 
 		case FrameTypeWSUpgrade:
 			go tc.handleWSUpgrade(conn, &writeMu, frame, &wsConnsMu, wsConns)
@@ -354,8 +373,8 @@ func (tc *TunnelClient) handleWSUpgrade(
 	}()
 }
 
-func (tc *TunnelClient) forwardRequest(conn *websocket.Conn, writeMu *sync.Mutex, reqFrame *Frame) {
-	respFrame := tc.doHTTPRequest(reqFrame)
+func (tc *TunnelClient) forwardRequest(ctx context.Context, conn *websocket.Conn, writeMu *sync.Mutex, reqFrame *Frame) {
+	respFrame := tc.doHTTPRequest(ctx, reqFrame)
 
 	data, err := respFrame.Marshal()
 	if err != nil {
@@ -372,7 +391,7 @@ func (tc *TunnelClient) forwardRequest(conn *websocket.Conn, writeMu *sync.Mutex
 	}
 }
 
-func (tc *TunnelClient) doHTTPRequest(reqFrame *Frame) *Frame {
+func (tc *TunnelClient) doHTTPRequest(ctx context.Context, reqFrame *Frame) *Frame {
 	method := MethodToString(reqFrame.Method)
 	url := tc.localURL(reqFrame.Path)
 
@@ -381,7 +400,7 @@ func (tc *TunnelClient) doHTTPRequest(reqFrame *Frame) *Frame {
 		bodyReader = bytes.NewReader(reqFrame.Body)
 	}
 
-	httpReq, err := http.NewRequest(method, url, bodyReader)
+	httpReq, err := http.NewRequestWithContext(ctx, method, url, bodyReader)
 	if err != nil {
 		return tc.errorFrame(reqFrame.ID, http.StatusBadGateway, fmt.Sprintf("failed to create request: %v", err))
 	}
@@ -393,11 +412,9 @@ func (tc *TunnelClient) doHTTPRequest(reqFrame *Frame) *Frame {
 		}
 	}
 
-	client := &http.Client{
-		Timeout: 120 * time.Second,
-	}
+	httpClient := &http.Client{}
 
-	httpResp, err := client.Do(httpReq)
+	httpResp, err := httpClient.Do(httpReq)
 	if err != nil {
 		return tc.errorFrame(reqFrame.ID, http.StatusBadGateway, fmt.Sprintf("request failed: %v", err))
 	}
