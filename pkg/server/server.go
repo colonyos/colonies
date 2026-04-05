@@ -156,7 +156,13 @@ func createServerInternal(db database.Database,
 
 	// Initialize Gin HTTP backend
 	server.engine = gin.CreateEngineWithDefaults()
-	server.engine.Use(gin.CORS())
+	server.engine.Use(gin.CORSWithConfig(backends.CORSConfig{
+		AllowOrigins:     []string{"*"},
+		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization", "X-Colonies-Payload", "X-Colonies-Signature"},
+		ExposeHeaders:    []string{"Content-Length"},
+		AllowCredentials: false,
+	}))
 	server.server = gin.NewBackendServer(port, server.engine)
 
 	// Set all the specific database interfaces
